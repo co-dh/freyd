@@ -356,7 +356,7 @@ public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
 /-- **code-laws**, second row: `F(⊤+⊤,R)α⊑αR`, the book's "routine" monotonicity condition —
     `snoc` adds one code element to both sides and its cost is a constant, so it never reverses
     `≤` on sizes. -/
-public theorem code_mono : Freyd.Alg.MonoAlg (F := F Unit Code) (graph con) ((R c p)°) :=
+public theorem code_mono : Freyd.Alg.Pres (F := F Unit Code) (graph con) ((R c p)°) :=
   le_iff.mpr fun u out h => by
     obtain ⟨v, hFv, hout⟩ := h
     obtain rfl : out = con v := hout

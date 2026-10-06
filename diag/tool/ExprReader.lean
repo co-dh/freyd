@@ -1655,9 +1655,9 @@ partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr))
     `@[diag_unfold]`'s answer — set beside the declaration, or in `diag/StrDiagNames.lean` where the
     declaration is not the diagram's to edit — so no picture functor carries a list of names.  The
     mirror of `diag_induced`: that one says a name is KEPT and dashed, this one that it is opened. -/
-def openNoted (e : Expr) : MetaM Expr := do
+def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) : MetaM Expr := do
   let .const n _ := e.getAppFn | return e
-  unless (← Lean.labelled `diag_unfold).contains n do return e
+  unless (← tags.anyM fun t => return (← Lean.labelled t).contains n) do return e
   match ← Meta.unfoldDefinition? e with
   -- A DEFINITION LEAN ELABORATED FOR ITSELF IS NOT A BODY THE NOTE WRITES.  `cons` opens to
   -- `cons.match_1 …`, an auxiliary `casesOn` or an internal name — Lean's own compilation of the
@@ -1672,7 +1672,7 @@ def openNoted (e : Expr) : MetaM Expr := do
     name nested, and a name left standing there is the same defect as one left standing on top. -/
 def openNotedAll (e : Expr) : MetaM Expr :=
   Meta.transform e (pre := fun x => do
-    let x' ← openNoted x
+    let x' ← openNoted x [`diag_unfold]   -- a `diag_drawn_open` name is opened in pictures, written in text
     return if x' == x then .continue else .visit x')
 
 /-- The option key naming the declaration being drawn, set by `withDeclScope` and read by

@@ -194,8 +194,8 @@ open Lean PrettyPrinter in
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
--- "`S` monotonic on `Q`" is written, as B&dM's (7.2) is, by its inequation `F(Q)S⊑SQ`.
-attribute [diag_unfold] MonoAlg
+-- "`S` preserves `Q`" is DRAWN by its inequation `F(Q)S⊑SQ`, as B&dM's (7.2) is; the formula keeps `Pres(S,Q)`.
+attribute [diag_drawn_open] Pres
 
 -- THE DUPLICATION RELATOR IS WRITTEN OUT AS THE PRODUCT IT IS: the note's corner is `A×A` and its
 -- side `R×R`, never `Δ(A)` — `Δ` is `Relator.prod` of two identities (`AOP.A5_2`), and a bundle

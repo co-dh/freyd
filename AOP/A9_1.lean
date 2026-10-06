@@ -98,7 +98,7 @@ calc_steps dynamic_programming_lower
     the same input.  One `calc` step per hint of the book. -/
 public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
     (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
         ⊑ (H T h)° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R°)) :=
@@ -117,7 +117,7 @@ public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
         repeat rw [Cat.assoc]
       _ ⊑ h° ≫ F.map (R°) ≫ h ≫ R° :=
         comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) _)
-      _ ⊑ R° ≫ R° := by simpa only [Cat.assoc] using comp_mono_right ((monoAlg_iff_conj hh).mp hmono) (R°)
+      _ ⊑ R° ≫ R° := by simpa only [Cat.assoc] using comp_mono_right ((pres_iff_conj hh).mp hmono) (R°)
       _ ⊑ R° := htrans
 
 calc_steps dynamic_programming_upper
@@ -127,7 +127,7 @@ calc_steps dynamic_programming_upper
     proof are exactly the components of `min`'s universal property (`le_Λ_comp_est_iff`). -/
 public theorem dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
     Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ Λ (H T h) ≫ est R :=
   le_Λ_comp_est_iff.mpr ⟨dynamic_programming_lower, dynamic_programming_upper hh hmono htrans⟩
 
@@ -139,7 +139,7 @@ public theorem dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A �
     By Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_prefixed`. -/
 public theorem dynamic_programming (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hh hmono htrans))
@@ -172,9 +172,9 @@ public theorem recip_thin_condition [InitialAlgebra F] {T : F.obj A ⟶ A} {h : 
   rwa [eL, eR] at hrm
 
 /-- `h` monotonic on `R`, conversed and shunted at the map `h`: `h°F(R°)h ⊑ R°`. -/
-public theorem recip_conj_le_of_monoAlg {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
-    (hmono : MonoAlg h R) : h° ≫ F.map (R°) ≫ h ⊑ R° :=
-  (monoAlg_iff_conj hh).mp ((monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono)
+public theorem recip_conj_le_of_pres {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : Pres h R) : h° ≫ F.map (R°) ≫ h ⊑ R° :=
+  (pres_iff_conj hh).mp ((pres_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono)
 
 /-- **(9.2) with thinning**: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`, mirrored. -/
 public theorem dynamic_programming_thin_lower [InitialAlgebra F] {h : F.obj B ⟶ B}
@@ -196,7 +196,7 @@ calc_steps dynamic_programming_thin_lower
 /-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored. -/
 public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : ThinCondition T h R Q) :
     (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
@@ -232,7 +232,7 @@ public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B �
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) _))
       _ ⊑ R° ≫ R° ≫ R° := comp_mono_left _ (by
         simpa only [Cat.assoc] using
-          comp_mono_right ((monoAlg_iff_conj hh).mp hmono) R°)
+          comp_mono_right ((pres_iff_conj hh).mp hmono) R°)
       _ ⊑ R° ≫ R° := comp_mono_left R° htrans
       _ ⊑ R° := htrans
 
@@ -243,7 +243,7 @@ calc_steps dynamic_programming_thin_upper
     property of `est` splits it into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin_prefixed (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : ThinCondition T h R Q) {X : A ⟶ B} (hX : X = Λ (H T h) ≫ est R) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ (H T h) ≫ est R := by
   subst hX
@@ -257,7 +257,7 @@ public theorem dynamic_programming_thin_prefixed (I : InitialAlgebra F)
     `est` splits into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
@@ -294,7 +294,7 @@ public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj B ⟶ B}
 
 theorem dynamic_programming_of_thin (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
+    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   le_trans mu_le_mu_thinRel_id (dynamic_programming_thin I hh hmono htrans (thin_condition_of_refl I hrefl))
@@ -312,7 +312,7 @@ public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A �
 /-- Proposition 9.2 (B&dM p.222), the book's chain after shunting at `cost`: one `calc` step per
     hint — the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k` monotonic
     on `≤`, and the assumption on `cost` again. -/
-public theorem monoAlg_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+public theorem pres_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
     F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost ⊑ h ≫ cost ≫ «≤» :=
@@ -323,23 +323,23 @@ public theorem monoAlg_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {cost : A 
       _ ⊑ F.map cost ≫ k ≫ «≤» := comp_mono_left _ hk
       _ = h ≫ cost ≫ «≤» := by rw [← Cat.assoc, ← hch, Cat.assoc]
 
-calc_steps monoAlg_of_cost_shunted
+calc_steps pres_of_cost_shunted
 
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on the order `R := cost·leq·cost°`
     (induced on `a` by pulling the order `leq` on `c` back along a "cost" function) whenever `h`
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
     monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
     `F(R)h cost ⊑ h cost leq`, which `monoAlg_of_cost_shunted` proves. -/
-public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    MonoAlg h (cost ≫ «≤» ≫ cost°) := by
+    Pres h (cost ≫ «≤» ≫ cost°) := by
   show F.map (cost ≫ «≤» ≫ cost°) ≫ h ⊑ h ≫ (cost ≫ «≤» ≫ cost°)
   have hsh : h ≫ (cost ≫ «≤» ≫ cost°) = (h ≫ cost ≫ «≤») ≫ cost° := by simp only [Cat.assoc]
   rw [hsh]
   apply (map_shunt_right hcost _ _).mp
   rw [Cat.assoc]
-  exact monoAlg_of_cost_shunted hcost hch hk
+  exact pres_of_cost_shunted hcost hch hk
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 
@@ -351,7 +351,7 @@ public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     the recursion (only for justifying that some valid `Q` exists). -/
 theorem thin_condition_of_optimum {h : F.obj A ⟶ A}
     {R : A ⟶ A} {H M : B ⟶ A}
-    (hh : Map h) (hmono : MonoAlg h R) (htrans : R ≫ R ⊑ R)
+    (hh : Map h) (hmono : Pres h R) (htrans : R ≫ R ⊑ R)
     (hMH : M ⊑ H) (hHMR : H° ≫ M ⊑ R) :
     (F.map (M ≫ R ≫ M°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R° := by
   have erecip : (M ≫ R ≫ M°)° = M ≫ R° ≫ M° := by
@@ -376,7 +376,7 @@ theorem thin_condition_of_optimum {h : F.obj A ⟶ A}
     rw [← F.map_comp]
   have hsplit : F.map (H ≫ R°) ≫ h = F.map H ≫ (F.map R° ≫ h) := by
     rw [F.map_comp, Cat.assoc]
-  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono
+  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (pres_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono
   rw [hrecipmap]
   have ereassoc : F.map (M ≫ R° ≫ M°) ≫ (F.map H ≫ h) = (F.map (M ≫ R° ≫ M°) ≫ F.map H) ≫ h := by
     rw [Cat.assoc]
@@ -403,7 +403,7 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
     chain, one `calc` step per hint: `cost` entire, products, the assumption on `cost`, `⟨cost,S⟩`
     simple, products and functors, the assumption on `k`, the assumption on `cost` read backwards. -/
-public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+public theorem pres_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hcost : Map cost) (hS : Simple S)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
@@ -430,7 +430,7 @@ public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C
         comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
     _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
 
-calc_steps monoAlg_in_context
+calc_steps pres_in_context
 
 end Prop9_3
 
@@ -1022,7 +1022,7 @@ public theorem thin_arm₁_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (
     draw. -/
 public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
     {Q : (F L W).obj b ⟶ (F L W).obj b} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
-    (hh : Map U) (hmono : MonoAlg U R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map U) (hmono : Pres U R°) (htrans : R° ≫ R° ⊑ R°)
     (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
     (hQ : Q ≫ (F L W).map ((relCata T)° ≫ relCata U) ≫ U

@@ -53,9 +53,9 @@ open PowerAllegory
 
 /-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
     every candidate list counts as sorted. -/
-public theorem graph_monoAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+public theorem graph_pres_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
     (f : (F.obj A).carrier → A.carrier) :
-    Freyd.Alg.MonoAlg (F := F) (RelSet.graph f) (topMor A A) :=
+    Freyd.Alg.Pres (F := F) (RelSet.graph f) (topMor A A) :=
   RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
 
 section Generic
@@ -489,7 +489,7 @@ public theorem headAlg_map : Map (headAlg (A := A)) := RelSet.graph_map _
     path: equal heads make the new edge cost the same, and the rest is the assumption.  On `R`
     alone it fails — `wt(a,head q)` can be arbitrarily large — which is why `Q` records the head. -/
 public theorem pathAlg_monotonic (wt : A → A → Nat) :
-    Freyd.Alg.MonoAlg (F := CL.F (A → Prop) (A → Prop)) (pathAlg (A := A)) (pathQ wt) := by
+    Freyd.Alg.Pres (F := CL.F (A → Prop) (A → Prop)) (pathAlg (A := A)) (pathQ wt) := by
   refine le_iff.mpr ?_
   rintro u p ⟨u', hu, hp⟩
   cases u with

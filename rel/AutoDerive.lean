@@ -155,7 +155,7 @@ theorem pareto_trans : P.pareto ≫ P.pareto ⊑ P.pareto := by
   exact ⟨P.ord_trans h1a h2a, Int.le_trans h2b h1b⟩
 
 /-- The deterministic step is MONOTONIC on the Pareto order. -/
-theorem alg_mono : Freyd.Alg.MonoAlg (F := F L E) P.alg P.pareto := by
+theorem alg_mono : Freyd.Alg.Pres (F := F L E) P.alg P.pareto := by
   show (F L E).map P.pareto ≫ P.alg ⊑ P.alg ≫ P.pareto
   rw [le_iff]; rintro u w ⟨u', hFR, rfl⟩
   refine ⟨P.algFn u, rfl, ?_⟩

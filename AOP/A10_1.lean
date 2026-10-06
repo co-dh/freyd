@@ -68,7 +68,7 @@ calc_steps greedy_dp_lower
 /-- **Theorem 10.1, (ii)**: `H°` followed by the greedy body at `M` is `⊑R°`. -/
 public theorem greedy_dp_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h)
-    (hmono : MonoAlg h R) (htrans : R ≫ R ⊑ R) (hQ : ThinCondition T h R Q) :
+    (hmono : Pres h R) (htrans : R ≫ R ⊑ R) (hQ : ThinCondition T h R Q) :
     (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h
         = h° ≫ F.map ((H T h)°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
@@ -89,7 +89,7 @@ public theorem greedy_dp_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
         repeat rw [Cat.assoc]
       _ ⊑ R° ≫ h° ≫ F.map R° ≫ h :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) h))
-      _ ⊑ R° ≫ R° := comp_mono_left _ (recip_conj_le_of_monoAlg hh hmono)
+      _ ⊑ R° ≫ R° := comp_mono_left _ (recip_conj_le_of_pres hh hmono)
       _ ⊑ R° := recip_trans_of_trans htrans
 
 calc_steps greedy_dp_upper
@@ -98,7 +98,7 @@ calc_steps greedy_dp_upper
     the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`) — (i) and (ii)
     joined by the `min` universal property. -/
 public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h) (hmono : MonoAlg h R)
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h) (hmono : Pres h R)
     (htrans : R ≫ R ⊑ R) (hQ : ThinCondition T h R Q) :
     Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h ⊑ Λ (H T h) ≫ est R :=
   le_Λ_comp_est_iff.mpr ⟨greedy_dp_lower, greedy_dp_upper hh hmono htrans hQ⟩
@@ -112,7 +112,7 @@ public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.
     Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
 public theorem greedy_dp_step1 [InitialAlgebra F]
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    {X : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R) (htrans : R ≫ R ⊑ R)
+    {X : A ⟶ B} (hh : Map h) (hmono : Pres h R) (htrans : R ≫ R ⊑ R)
     (hQ : ThinCondition T h R Q) (hX : X = Λ (H T h) ≫ est R) :
     Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ Λ (H T h) ≫ est R := by
   subst hX
@@ -127,7 +127,7 @@ public theorem greedy_dp_step1 [InitialAlgebra F]
     the Theorem 7.2 greedy theorem `⦇min R°·ΛS⦈ ⊆ min R°·Λ⦇S⦈`.) -/
 public theorem greedy_dp (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R) (htrans : R ≫ R ⊑ R)
+    (hh : Map h) (hmono : Freyd.Alg.Pres h R) (htrans : R ≫ R ⊑ R)
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ (H T h) ≫ est R :=
@@ -316,7 +316,7 @@ variable {L E : Type} {b c : RelSet.{0}}
     still refines `H%∋ est(R)`.  `AOP.A10_1.greedy_dp` at the snoc-list functor. -/
 public theorem greedy_dp_arms {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
     {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
-    (hh : Map U) (hmono : Freyd.Alg.MonoAlg U R) (htrans : R ≫ R ⊑ R)
+    (hh : Map U) (hmono : Freyd.Alg.Pres U R) (htrans : R ≫ R ⊑ R)
     (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
     (hQ : Q ≫ (F L E).map ((relCata T)° ≫ relCata U) ≫ U

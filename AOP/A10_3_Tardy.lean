@@ -671,7 +671,7 @@ public theorem tardy_mono :
     hom_ext fun u v => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
       subst h1; subst h3; exact h2⟩
   rw [e]
-  exact monoAlg_in_context (cost := costR ct dt wt) (S := bagify) («≤» := ListRel.geq)
+  exact pres_in_context (cost := costR ct dt wt) (S := bagify) («≤» := ListRel.geq)
     (k := k ct dt wt) (graph_map _) (graph_simple _) (cost_alg_k ct dt wt) (k_mono ct dt wt)
 
 /-! ## The greedy condition (10.3), B&dM p.257 — the book's calculation, one theorem per hint -/

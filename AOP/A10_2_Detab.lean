@@ -611,7 +611,7 @@ public theorem entab_V (n : Nat) (hn : 0 < n) :
 
 /-- **entab-laws**, second row: `F(⊤,R)α⊑αR`, the note's exercise — `snoc` adds one character
     to both sides, so it never reverses `≤` on lengths, whatever the two characters are. -/
-public theorem entab_mono : Freyd.Alg.MonoAlg (F := F Unit Char) (graph con) R :=
+public theorem entab_mono : Freyd.Alg.Pres (F := F Unit Char) (graph con) R :=
   le_iff.mpr fun u out h => by
     obtain ⟨v, hFv, hout⟩ := h
     obtain rfl : out = con v := hout

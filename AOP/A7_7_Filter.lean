@@ -196,7 +196,7 @@ public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
 public theorem filter_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    Freyd.Alg.MonoAlg (F := F Unit A) (Salg p) lenLE° := by
+    Freyd.Alg.Pres (F := F Unit A) (Salg p) lenLE° := by
   show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
   apply le_iff.mpr
   intro u ws h

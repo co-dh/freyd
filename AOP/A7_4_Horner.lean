@@ -55,11 +55,11 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     the plain non-deterministic catamorphism `⦇S⦈`.  Transitivity and monotonicity are
     transposed to `R°` by `recip_mono`/`monotonicAlg_recip_iff` (the latter needs `f` a map). -/
 public theorem greedy_of_refinement_mono (I : InitialAlgebra F) {R : A ⟶ A}
-    {S f : F.obj A ⟶ A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg f R)
+    {S f : F.obj A ⟶ A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres f R)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
-  have hmono' : Freyd.Alg.MonoAlg f R° := (Freyd.Alg.monoAlg_recip_iff hf (Relator.preservesRecip_of_tabular F)).mp hmono
+  have hmono' : Freyd.Alg.Pres f R° := (Freyd.Alg.pres_recip_iff hf (Relator.preservesRecip_of_tabular F)).mp hmono
   exact greedy_of_refinement I htrans' hmono' href
 
 end Abstract
@@ -92,7 +92,7 @@ public theorem horner_correct {L E A1 : Type}
     (foldFn : SnocList L E → A1 × Int)
     (halg_map : Map alg)
     (hfold : ∀ xs w, cataFold alg xs w ↔ w = foldFn xs)
-    (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg (F := F L E) alg R)
+    (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres (F := F L E) alg R)
     (href : alg ⊑ S%∋ ≫ est(R))
     (hR2 : ∀ x y : A1 × Int, R x y → y.2 ≤ x.2)
     (spec : (dSL L E) ⟶ (⟨Int⟩ : RelSet.{0}))

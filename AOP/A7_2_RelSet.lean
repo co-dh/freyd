@@ -272,13 +272,13 @@ public theorem recip_graph_comp_graph_apply {A B C D : RelSet.{0}} (f : A.carrie
         and_congr_right fun _ => iff_of_eq (graph_apply g v y)
 
 /-- **Shunting the map `f` at `≤`**: `F(≤)f⊑f≤` iff `f°F(≤)f⊑≤` — `map_shunt_left` at `R:=F(≤)f`. -/
-public theorem graph_monoAlg_iff_conj {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+public theorem graph_pres_iff_conj {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
     (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
     F.map «≤» ≫ graph f ⊑ graph f ≫ «≤» ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» :=
   calc F.map «≤» ≫ graph f ⊑ graph f ≫ «≤»
       ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» := (map_shunt_left (graph_map f) _ «≤»).symm
 
-calc_steps graph_monoAlg_iff_conj
+calc_steps graph_pres_iff_conj
 
 /-- **`f°F(≤)f⊑≤` at points**: `F(≤)`-related arguments go to `≤`-related results. -/
 public theorem graph_conj_le_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
@@ -293,22 +293,22 @@ public theorem graph_conj_le_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A
 
 /-- **A map `f` is monotonic on `≤` iff `F(≤)`-related arguments go to `≤`-related results** —
     the shunting step, then its reading at points. -/
-public theorem graph_monoAlg_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+public theorem graph_pres_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
     (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
-    MonoAlg (F := F) (graph f) «≤» ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) :=
-  calc MonoAlg (F := F) (graph f) «≤»
-      ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» := graph_monoAlg_iff_conj f «≤»
+    Pres (F := F) (graph f) «≤» ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) :=
+  calc Pres (F := F) (graph f) «≤»
+      ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» := graph_pres_iff_conj f «≤»
     _ ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) := graph_conj_le_iff_monotone f «≤»
 
 /-- **At `F(X)=L+E×X`, monotonic on a reflexive `≤` means monotone in the tail, `e` held still** —
     `F(≤)` relates a leaf only to itself and a pair only to one with the same element. -/
-public theorem CL.graph_monoAlg_iff_monotone_tail {L E : Type} {A : RelSet.{0}}
+public theorem CL.graph_pres_iff_monotone_tail {L E : Type} {A : RelSet.{0}}
     (f : L ⊕ (E × A.carrier) → A.carrier) {«≤» : A ⟶ A} (hrefl : 𝟙 A ⊑ «≤») :
-    MonoAlg (F := CL.F L E) (graph f) «≤» ↔
+    Pres (F := CL.F L E) (graph f) «≤» ↔
       ∀ e x y, «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e, y))) :=
-  calc MonoAlg (F := CL.F L E) (graph f) «≤»
+  calc Pres (F := CL.F L E) (graph f) «≤»
       ↔ ∀ u v, (CL.F L E).map «≤» u v → «≤» (f u) (f v) :=
-        graph_monoAlg_iff_monotone (F := CL.F L E) f «≤»
+        graph_pres_iff_monotone (F := CL.F L E) f «≤»
     _ ↔ (∀ l l', l = l' → «≤» (f (.inl l)) (f (.inl l'))) ∧
           ∀ e x e' y, e = e' ∧ «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e', y))) :=
       CL.forall_Fmap_imp_iff (Q := fun u v => «≤» (f u) (f v))

@@ -171,7 +171,7 @@ row((
     #src[thinning at every step of the reduce is a thinning of the whole candidate set]
      // thinning-of-reduce row: Theorem 8.1, p. 195
   ],
-     // lean:AOP.A8_1.thinning@818ac37b
+     // lean:AOP.A8_1.thinning@ae51956f
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond1") \
     #src[everything the thinning fold keeps is a value of the plain fold — @thin-laws:1, first
      condition, by @cata-fusion from the chain below]],
@@ -180,7 +180,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond2") \
     #src[every value of the plain fold is `Q`-above one the thinning fold keeps — @thin-laws:1,
      second condition, by @hylo-mu from the chain below]],
-     // lean:AOP.A8_1.thinning_cond2@5ea85cb4
+     // lean:AOP.A8_1.thinning_cond2@a9c5afe4
   lean-calc(calc-81),
 )]<thin-thm81>
 
@@ -210,7 +210,7 @@ row((
   [`ys` holds `y` with `y Q cons(v,p') Q cons(v,p) = a`],
   [the thinned set still holds an element `Q`-no-worse than `a` (`S` monotonic on `Q`, `Q`
    transitive)],
-  // lean:AOP.A8_1.thinning_prefixed@3628d19e
+  // lean:AOP.A8_1.thinning_prefixed@9de9d3e6
 )]<thin-thm81-steps>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
@@ -221,7 +221,7 @@ row((
     #src[the thinning fold refines the optimisation problem itself]
      // thinning-est row: Corollary 8.1
   ],
-     // lean:AOP.A8_1.thinning_est@6bdf56a5
+     // lean:AOP.A8_1.thinning_est@cdac371e
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
 )]<thin-cor>
@@ -337,7 +337,7 @@ row((
   [`S head⊑[𝟙,π₁]` #h(4pt) #src[`S≜F(𝟙,∋)α`]],
   [`S head` is simple, which gives `R∩(S°S)⊑Q`: between two paths `S` builds from one argument,
    equal cost and equal head already means `Q`],
-  // lean:AOP.A8_2.pathAlg_monotonic@7f6f2311 lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
+  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
 )]<path-mono>
 
 // B&dM §8.2, p. 198.  The `E` the transpose opens is born OUTSIDE the reduce in the specification
@@ -510,7 +510,7 @@ preorder.
      argument sets.
      // map_sort row: Lemma 8.1, p. 202
  ]],
-     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@1743a970
+     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@307a8486
   // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
   lean-calc(calc-l81),
 )]<thinlist-lem81>
@@ -629,13 +629,13 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
   [#leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_cons") \ #leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_drop")
  #src[,
-   // lean:AOP.A8_4_Knapsack.knap_mono_cons@d44e5999
+   // lean:AOP.A8_4_Knapsack.knap_mono_cons@72a2787a
  ]],
-   // lean:AOP.A8_4_Knapsack.knap_mono_drop@fce8ac80
+   // lean:AOP.A8_4_Knapsack.knap_mono_drop@e779f3ef
   [both halves are monotonic on `Q` once ties in value are broken by weight],
   [#leanf("Freyd.Alg.RelSet.Knapsack.knap_sort_cons") \ #leanf("Freyd.Alg.RelSet.Knapsack.knap_sort_drop")],
-  // lean:AOP.A8_4_Knapsack.knap_sort_cons@dce0f4b3
-  // lean:AOP.A8_4_Knapsack.knap_sort_drop@23381fc8
+  // lean:AOP.A8_4_Knapsack.knap_sort_cons@837e4575
+  // lean:AOP.A8_4_Knapsack.knap_sort_drop@c890ae16
   [both algebras are monotonic on `R` itself, so `R` is the sort order `P`],
 )]<knap-mono>
 
@@ -771,16 +771,16 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
    greedy algorithm solves this],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_mono_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_mono_glue") \ #src[`cons` monotonic on
  `collect≤collect°`. ,
-   // lean:AOP.A8_5_Paragraph.para_mono_new@7bd0f665
+   // lean:AOP.A8_5_Paragraph.para_mono_new@e5ccddce
  ]],
-   // lean:AOP.A8_5_Paragraph.para_mono_glue@d88580bd
+   // lean:AOP.A8_5_Paragraph.para_mono_glue@86db095e
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
   // lean:AOP.A8_3.merge_top@a86d5d43
   [`⊤` needs no sorting at all],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_sort_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_sort_glue")],
-  // lean:AOP.A8_5_Paragraph.para_sort_new@79ca91ea
-  // lean:AOP.A8_5_Paragraph.para_sort_glue@01887a30
+  // lean:AOP.A8_5_Paragraph.para_sort_new@c164c661
+  // lean:AOP.A8_5_Paragraph.para_sort_glue@65a740c1
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<para-mono>
 
@@ -926,14 +926,14 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
    of both lists],
   [#leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropr")
  #src[,
-   // lean:AOP.A8_6_Tour.tour_mono_dropl@a80a947d
+   // lean:AOP.A8_6_Tour.tour_mono_dropl@3401aca0
  ]],
-   // lean:AOP.A8_6_Tour.tour_mono_dropr@327889aa
+   // lean:AOP.A8_6_Tour.tour_mono_dropr@2e2401d3
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
   [#leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropr")],
-  // lean:AOP.A8_6_Tour.tour_sort_dropl@0dc4ff40
-  // lean:AOP.A8_6_Tour.tour_sort_dropr@f9356ac3
+  // lean:AOP.A8_6_Tour.tour_sort_dropl@2a2e451c
+  // lean:AOP.A8_6_Tour.tour_sort_dropr@cc84df43
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<tour-mono>
 

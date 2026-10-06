@@ -143,11 +143,11 @@ public theorem gen_cata_comm :
     (`Λ_absorption`, `cp = Λ(F(𝟙,∋))`).  The book's "the monotonicity condition is that `α` is
     monotonic on `R` and is easy to verify" is the hypothesis `hmono`. -/
 public theorem cyl_7_13 (R : I.t ⟶ I.t)
-    (hmono : Freyd.Alg.MonoAlg I.α R°) :
+    (hmono : Freyd.Alg.Pres I.α R°) :
     (F.appl A).map (est R) ≫ I.α ⊑ cpMap (F.appl A) I.t ≫ existsImage I.α ≫ est R := by
   have hcp : cpMap (F.appl A) I.t ≫ existsImage I.α = Λ ((F.appl A).map (∋ I.t) ≫ I.α) :=
     Λ_absorption _ _
-  have hd : Distributes I.α R := Freyd.Alg.distributes_of_monoAlg I.α_map hmono
+  have hd : Distributes I.α R := Freyd.Alg.distributes_of_pres I.α_map hmono
   calc (F.appl A).map (est R) ≫ I.α ⊑ Λ ((F.appl A).map (∋ I.t) ≫ I.α) ≫ est R := hd
     _ = cpMap (F.appl A) I.t ≫ existsImage I.α ≫ est R := by rw [← hcp, Cat.assoc]
 
