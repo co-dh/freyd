@@ -482,6 +482,10 @@ notation:max "r(" x ")" => Sum.inr x
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
 
+-- A Bool test's coreflexive prints as `pcor(p)`, never as the bare `p`: the test `p : A → Bool`
+-- is not the relation `A ⟶ A`, and `E(p)` of the test would be a different arrow.
+notation:max "pcor(" p ")" => RelSet.GCTakeWhile.pcor p
+
 -- THE SET OF SUMS IS SPELLED AS THE SET IT IS.  `sums xs ys` is the note's `{x+y∣x∈xs∧y∈ys}`,
 -- built from the two arguments the term carries; a name says what the point is called and the
 -- set-builder says what is IN it, which is what the corner of a distributivity square is read for.
@@ -577,15 +581,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.add] def unexpandTardyAdd : Unexpander | _ => `($(mkIdent `add))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.R] def unexpandKnapsackR : Unexpander | _ => `($(mkIdent `R))
--- The Bool tests `filter` takes are the book's coreflexives `within w`, `ok w` read as tests.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Knapsack.withinB] def unexpandKnapsackWithinB : Unexpander
-  | `($_ $w) => `($(mkIdent `within) $w)
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Paragraph.okB] def unexpandParagraphOkB : Unexpander
-  | `($_ $w) => `($(mkIdent `ok) $w)
-  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.R] def unexpandParagraphR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
