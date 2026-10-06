@@ -546,24 +546,24 @@ directly.
     [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.lhs"),
-    [`α prefix list(p)`])],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.lhs")])],
   [#tw-pfx1 \
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs"),
-    [`F(prefix) [nil,cons ∪ ⊸ nil] list(p)` \ #src[defining equation]])],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs") \ #src[defining equation]])],
   [#tw-pfx2 \ #src[the `cons` operand of `cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs"),
-    [`F(prefix) [nil,(p×list(p)) cons ∪ ⊸ nil]` \ #src[`list(p)` through `cons`]])],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs") \ #src[`list(p)` through `cons`]])],
   [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `(p×list(p)) cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs"),
-    [`[nil,(p×(prefix list(p))) cons ∪ ⊸ nil]` \ #src[relator, `prefix` entire]])],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs") \ #src[relator, `prefix` entire]])],
   [#tw-pfx4],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs"),
-    [`F(prefix list(p))S` \ #src[`prefix list(p)` entire]])], [],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs") \ #src[`prefix list(p)` entire]])], [],
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
   @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
@@ -754,26 +754,26 @@ directly.
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
   [#vstep([], leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs"),
-    [`[nil,cons ∪ ⊸ nil] sum`])],
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.lhs")])],
   [#mh-cons-sum \ #src[the `cons` operand of `cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs"),
-    [`[nil sum,⊸ nil sum ∪ cons sum]` \ #src[coproduct of maps, composition over `∪`, `∪` commutative]])],
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs") \ #src[coproduct of maps, composition over `∪`, `∪` commutative]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs"),
-    [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step2.rhs") \ #src[`sum`'s defining equation]])],
   [#lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs", step: true) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs"),
-    [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs") \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
   [],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step4.rhs"),
-    [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step4.rhs") \ #src[relator]])],
   [],
 ))
 #align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `R:=[nil,cons ∪ ⊸ nil]`,
@@ -805,10 +805,6 @@ directly.
   )],
 )]<mss-mono>
 
-#let mss-alg = $frac(#[`[zero,⊸ zero ∪ plus]`], ∋)$
-#let mss-zero = $frac(#[`zero`], ∋)$
-#let mss-plus = $frac(#[`⊸ zero ∪ plus`], ∋)$
-
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
 #disp[#calc-table(cols: (1fr, 1fr),
@@ -819,11 +815,11 @@ directly.
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.mss_step1.lhs"), [#mss-alg ` est(≥)`])],
+  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.mss_step1.lhs"), [#leanf("Freyd.Alg.RelSet.MSS.mss_step1.lhs")])],
   [#mh-alg-est \ #src[the `zero` arm of the bracket]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs"),
-    [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
+    [#leanf("Freyd.Alg.RelSet.MSS.mss_step1.rhs") \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @Freyd.Alg.junc_comp, composition over `∪`]])],
   [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its $frac(#[`𝟙`], ∋)$ `E(…)` and `est(≥)`]],
 
@@ -2004,19 +2000,19 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.lhs") \ #src[the `old` operand of `new ∪ old`, in every row]],
 
   [#vstep(EQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step1.rhs")],
-    [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn:14, `∪` distributes,
+    [#leanf("Freyd.Alg.RelSet.Van.van_mono_step1.rhs") \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn:14, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.rhs", branch: "inl")],
 
   [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step2.rhs")],
-    [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
+    [#leanf("Freyd.Alg.RelSet.Van.van_mono_step2.rhs") \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
  on `R∩H` — @van-721]])],
      // lean:AOP.A7_5_Van.van_strict_old@80a35936 lean:AOP.A7_5_Van.van_7_21@302aa148
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step2.rhs", branch: "inr")],
 
   [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step4.rhs")],
-    [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
+    [#leanf("Freyd.Alg.RelSet.Van.van_mono_step4.rhs") \ #src[`X∩Y⊑X;Y`, converses]])],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step3.rhs", branch: "inr")],
 )]<van-mono>
 
