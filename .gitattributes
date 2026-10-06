@@ -1,0 +1,4 @@
+# A text merge of two pdfs writes conflict markers into the binary and leaves a file that still opens;
+# binary makes git refuse the merge, so the pdf is rebuilt from its .typ instead.
+*.pdf binary
+*.png binary
