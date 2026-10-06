@@ -230,7 +230,7 @@ theorem Rm_preorder : Preorder P.Rm :=
 
 /-- The generator is MONOTONIC on `Q°` (THEOREM 8.1's hypothesis): `step_mono` on the `snoc`
     summand, reflexivity of `Q` on the leaf summand. -/
-theorem gen_mono : Freyd.Alg.MonoAlg (F := F L E) P.gen P.Qm° := by
+theorem gen_mono : Freyd.Alg.Pres (F := F L E) P.gen P.Qm° := by
   show (F L E).map P.Qm° ≫ P.gen ⊑ P.gen ≫ P.Qm°
   rw [le_iff]; rintro u y ⟨u', hF, hgen⟩
   cases u with

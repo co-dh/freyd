@@ -67,7 +67,7 @@ def cites (step thm : Name) : MetaM Bool := do
 -- 7.2b `F(R)φ ⊑ φR`: `φ` stands on both sides, `R` above it on the left: the down triangle on `φ`,
 -- in the left panel; the right panel is where the step arrives.
 /-- info: [[("φ", "down")], []] -/
-#guard_msgs in #eval pair ``Freyd.Alg.MonoAlg
+#guard_msgs in #eval pair ``Freyd.Alg.Pres
 -- 7.2.1b: `est(R)` crosses `f` below it in `F(est(R))f`: the up triangle on `est(R)`, left panel.
 /-- info: [[("est(R)", "up")], []] -/
 #guard_msgs in #eval pair ``Freyd.Alg.Distributes
@@ -81,7 +81,7 @@ def cites (step thm : Name) : MetaM Bool := do
 -- hollow circle on `cost` in (a), the down triangle on `cost` in (b), each BEFORE its sign.
 /-- info: [[("cost", "circle")], [("cost", "down")]] -/
 #guard_msgs in #eval do
-  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg.monoAlg_of_cost_shunted s!"step_{k}"
+  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg.pres_of_cost_shunted s!"step_{k}"
   return [← panel steps[0]! true steps, ← panel steps[1]! true steps]
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false, false] -/

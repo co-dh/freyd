@@ -1,11 +1,11 @@
 // cdref-mon.typ — the note's OWN lax square, standing alone, so `scripts/svg-check --against` can
 // hold the generated panel to it.  This is the first `#pair` of `diag/allegory-axioms.typ`'s
 // `<mon-str>` — `F(R)φ⊑φR` — copied mark for mark: same `ar`/`node`/`lab`, same corners, same
-// `length: 0.8cm`.  `Freyd.Alg.MonoAlg` IS that property, so its generated panel must be this
+// `length: 0.8cm`.  `Freyd.Alg.Pres` IS that property, so its generated panel must be this
 // picture: the transported `F(R)`/`R` hanging on the verticals and the algebra `φ` across.
 //
 //   typst compile --root . --format svg diag/cdref-mon.typ diag/cdref-mon.svg
-//   ./scripts/diag-export --commutative Freyd.Alg.MonoAlg
+//   ./scripts/diag-export --commutative Freyd.Alg.Pres
 #import "draw.typ": GIVEN1, GIVEN2, SLACK, ar, cetz, lab, node
 
 #set page(width: auto, height: auto, margin: 12pt, fill: white)

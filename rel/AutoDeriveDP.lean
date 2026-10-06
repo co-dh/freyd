@@ -235,7 +235,7 @@ theorem ord_trans : P.ord° ≫ P.ord° ⊑ P.ord° := by
   exact P.le_trans hxz hzy
 
 /-- `MonoAlg h R`, from `le_refl` (base) and `hstep_mono` (step). -/
-theorem alg_mono : Freyd.Alg.MonoAlg (F := F L E) P.alg P.ord° := by
+theorem alg_mono : Freyd.Alg.Pres (F := F L E) P.alg P.ord° := by
   show (F L E).map P.ord° ≫ P.alg ⊑ P.alg ≫ P.ord°
   apply le_iff.mpr
   rintro u x ⟨w, hFw, hx⟩

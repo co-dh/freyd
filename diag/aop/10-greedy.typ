@@ -62,7 +62,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
-     // lean:AOP.A10_1.greedy_dp_upper@2a1a87dc
+     // lean:AOP.A10_1.greedy_dp_upper@20216dd2
   lean-calc(calc-gu, breaks: (4,)),
 )]<greedy-upper>
 
@@ -159,7 +159,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
  #src[]: one character of input is
       // lean:AOP.A10_2_Detab.entab_thin_condition@1be2ea10
       decided at each step. `F(⊤,R)α⊑αR`#src[].
-      // lean:AOP.A10_2_Detab.entab_mono@1561c867
+      // lean:AOP.A10_2_Detab.entab_mono@d08087a2
       `detab prefix⊑R° detab` is
  FALSE #src[,
       // lean:AOP.A10_2_Detab.detab_prefix_false@373b3b35
@@ -359,7 +359,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (SQ, "Freyd.Alg.RelSet.Tardy.tardy_mono.rhs",
       src[Proposition 9.3 at `S≜bagify`, `≤≜≥` — @dp-context-mono, with @tardy-cost-k and
        @tardy-k-mono]),
-    // lean:AOP.A9_1.monoAlg_in_context@3ce8e2d0
+    // lean:AOP.A9_1.pres_in_context@3ce8e2d0
   ),
 )]<tardy-mono>
 

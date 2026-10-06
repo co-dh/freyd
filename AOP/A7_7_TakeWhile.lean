@@ -680,7 +680,7 @@ public theorem takewhile_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- The `takewhile-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step
     lands inside taking the step and then shortening the result. -/
 public theorem takewhile_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    Freyd.Alg.MonoAlg (F := F Unit A) (Salg p) lenLE° := by
+    Freyd.Alg.Pres (F := F Unit A) (Salg p) lenLE° := by
   show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
   apply le_iff.mpr
   intro u ws h

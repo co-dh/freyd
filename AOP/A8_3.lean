@@ -138,9 +138,9 @@ public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ P A}
 variable {F : Relator 𝒜 𝒜}
 
 /-- The union of two algebras monotonic on `Q` is monotonic on `Q`. -/
-public theorem monoAlg_union {S₁ S₂ : F.obj A ⟶ A} {Q : A ⟶ A}
-    (h₁ : Freyd.Alg.MonoAlg S₁ Q) (h₂ : Freyd.Alg.MonoAlg S₂ Q) :
-    Freyd.Alg.MonoAlg (S₁ ∪ S₂) Q := by
+public theorem pres_union {S₁ S₂ : F.obj A ⟶ A} {Q : A ⟶ A}
+    (h₁ : Freyd.Alg.Pres S₁ Q) (h₂ : Freyd.Alg.Pres S₂ Q) :
+    Freyd.Alg.Pres (S₁ ∪ S₂) Q := by
   show F.map Q ≫ (S₁ ∪ S₂) ⊑ (S₁ ∪ S₂) ≫ Q
   rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
   exact union_mono h₁ h₂
@@ -1384,7 +1384,7 @@ public theorem sortRel_mono {X Y : dE A ⟶ dE A} (h : X ⊑ Y) :
     transpose absorbs `E(fp)`. -/
 public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
     (p : dE A ⟶ dE A) (hp : Coreflexive p) {«≼» : dE A ⟶ dE A}
-    (hmono : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f) ≼) :
+    (hmono : Freyd.Alg.Pres (F := CL.F L E) (graph f) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
         ≫ Filter.filter p
       ⊑ Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ p)
@@ -1399,7 +1399,7 @@ public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E ×
           ≫ sortRel listRelator setify ordered (graph f ≫ ≼ ≫ (graph f)°)
           ≫ list (graph f) ≫ Filter.filter p :=
         comp_mono_left _ (comp_mono_right
-          (sortRel_mono ((Freyd.Alg.monoAlg_iff_sandwich (graph_map f)).mp hmono)) _)
+          (sortRel_mono ((Freyd.Alg.pres_iff_sandwich (graph_map f)).mp hmono)) _)
     _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ sortRel listRelator setify ordered ≼
           ≫ Filter.filter p := by
         refine comp_mono_left _ ?_
@@ -1452,8 +1452,8 @@ public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
 public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
     {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
-    (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
-    (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
+    (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
+    (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
         ≫ (relProd (dList A) (dList A)).pair (list (graph f₁) ≫ Filter.filter p₁)
           (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinlist Q
@@ -1569,11 +1569,11 @@ public theorem cup_laxNatural :
 public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
     {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
-    (hm₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁ ≫ p₁) Q)
-    (hm₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂ ≫ p₂) Q)
+    (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
+    (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
     (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
-    (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
-    (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
+    (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
+    (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
         (list (graph f₁) ≫ Filter.filter p₁) (list (graph f₂) ≫ Filter.filter p₂)
         ≫ merge ≼ ≫ thinlist Q) ≫ minlist R
@@ -1590,7 +1590,7 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
         le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ (sort_comp_minlist_le R))
     _ ⊑ Λ (relCata (I := CL.initial L E)
           ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
-        thinning_est (CL.initial L E) hQR hQ hR (Freyd.Alg.monoAlg_union hm₁ hm₂)
+        thinning_est (CL.initial L E) hQR hQ hR (Freyd.Alg.pres_union hm₁ hm₂)
 
 calc_steps thinningList
 

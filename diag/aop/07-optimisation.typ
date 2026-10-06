@@ -254,16 +254,17 @@ directly.
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its theorem instead;
 // Theorem 7.1 is the subsection below, which states and proves it.
 #disp[#definition[
-An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` when it is lax at `R` at #h(4pt)
+An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` — B&dM call this a monotonic algebra (Mono Algebra);
+read: `φ` *preserves* `R`, written #leanf("Freyd.Alg.Pres") — when it is lax at `R` at #h(4pt)
 `G:=F`, `F:=Id`: #h(4pt) `F(R)φ⊑φR`. #h(4pt) `R` is an *endorelation*, so `B=A` and
 the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all:15's `f°·⊣f·` at `X:=F(R)f`,
 `Y:=R`], #h(4pt) equivalently #h(4pt)
-// lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
+// lean:AOP.A7_2.pres_iff_conj@48299b93
 `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
 ].
-// lean:AOP.A7_2.monoAlg_iff_sandwich@5bcca5c8
+// lean:AOP.A7_2.pres_iff_sandwich@59d0e0bd
 
 `(≤×≤)+⊑+≤` — addition, #leant("Freyd.Alg.RelSet.plusRel"), is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -275,25 +276,25 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
 // the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
 // ONE call, so the two sides share a box and line up on the bead they share.
-#let mon-hm = lean("Freyd.Alg.MonoAlg.lhs", "Freyd.Alg.MonoAlg.rhs")
+#let mon-hm = lean("Freyd.Alg.Pres.lhs", "Freyd.Alg.Pres.rhs")
 
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
-  leancd("Freyd.Alg.MonoAlg"),
+  leancd("Freyd.Alg.Pres"),
   mon-hm,
  [`F(R)φ⊑φR` #src[]],
 )
-// lean:AOP.A7_2.MonoAlg@26944450
+// lean:AOP.A7_2.Pres@26944450
 ]<mon-str>
 
 === `f` monotonic on `≤`, read at points <sec-mon-points>
 
 // @mon-defn at `R:=≤` for a map `f : FA⟶A`, as one chain: the shunting step moves `f` from the
 // right of `F(≤)f` to a `f°` on the left.  The source of `f` is `FA`, so its order is `F(≤)`.
-#import "../generated/Freyd.Alg.RelSet.graph_monoAlg_iff_conj.calc.typ" as calc-mc
+#import "../generated/Freyd.Alg.RelSet.graph_pres_iff_conj.calc.typ" as calc-mc
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.graph_monoAlg_iff_conj") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.graph_pres_iff_conj") \
     #src[`F(≤)` then `f` stays below `f` then `≤` exactly when `f°`, `F(≤)`, `f` in a row stays
      below `≤`.]],
   lean-calc(calc-mc),
@@ -358,13 +359,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // Each step's two sides are one `lean(l, r)` call, so they share one box and stand one height.
 #disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
-  Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_iff_distributes") \
-    // lean:AOP.A7_2.monoAlg_iff_distributes@0c8d6289
+  Thm(cols: 1)[#leanf("Freyd.Alg.pres_iff_distributes") \
+    // lean:AOP.A7_2.pres_iff_distributes@0c8d6289
     #src[`f` carries `R`-related parts to `R`-related wholes (`f°F(R)f⊑R`) if and only if applying `f` to the
      `R`-best parts (`F(est(R))f`) is included in applying `f` to all parts, then taking an `R`-best (`F(∋)f` then `est(R)`)
-      // lean:AOP.A7_2.distributes_of_monoAlg@d1b87e50
+      // lean:AOP.A7_2.distributes_of_pres@eb40cbfc
  ]],
-      // lean:AOP.A7_2.monoAlg_of_distributes@5bfa3376
+      // lean:AOP.A7_2.pres_of_distributes@d24a71e6
 
   [#vstep([], lean("Freyd.Alg.Distributes.lhs", "Freyd.Alg.Distributes.rhs"), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
@@ -385,9 +386,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
     (IFF, lean("Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws:3
-     // lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
+     // lean:AOP.A7_2.pres_iff_conj@48299b93
     ]),
-    // lean:AOP.A7_2.monoAlg_recip_iff@d760ac4d
+    // lean:AOP.A7_2.pres_recip_iff@63e12dd5
   )],
 )]<mon-thm71>
 
@@ -414,7 +415,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@5876dfbf
+     // lean:AOP.A7_2.greedy@a6b26d38
   [],
 
   [#vstep(IFF, [],
@@ -646,7 +647,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch, which no row above draws, is
   `nil⊑nil R°`.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono@d7bb11c7
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono@dd666ed8
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -834,7 +835,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.MSS.mss_mono") \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
      branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
-    // lean:AOP.A7_7_MSS.mss_mono@77b25ac2
+    // lean:AOP.A7_7_MSS.mss_mono@72896877
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`]),
 
   [#hchain(fill: true,
@@ -980,7 +981,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_mono") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
-     // lean:AOP.A7_7_Filter.filter_mono@4e66c31e
+     // lean:AOP.A7_7_Filter.filter_mono@8fa9f2c8
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
@@ -1452,7 +1453,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   // Two rows, cut where the fold is opened — inside the `⦇ ⦈` in the first, outside it in the
   // second; the display breaks across the page between them.
-  // lean:AOP.A7_2.greedy@5876dfbf lean:AOP.A7_3_Party.pair_est_le@44802697
+  // lean:AOP.A7_2.greedy@a6b26d38 lean:AOP.A7_3_Party.pair_est_le@44802697
   // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree

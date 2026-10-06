@@ -406,7 +406,7 @@ public theorem tA_Q_tB : Q (fun p : Int × Int => p.1 * p.2) tA tB :=
     fails.  `tA` and `tB` cost the same, but continuing either to city `3` costs `tc (head,3)`
     on the return, which is `3` from `tA` and `0` from `tB`. -/
 public theorem tour_mono_dropl_false :
-    ¬ Freyd.Alg.MonoAlg (F := F (Int × Int) Int) (graph droplAlgFn)
+    ¬ Freyd.Alg.Pres (F := F (Int × Int) Int) (graph droplAlgFn)
         (R (fun p : Int × Int => p.1 * p.2)) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droplAlgFn (Sum.inr ((3 : Int), tB)))
@@ -424,7 +424,7 @@ public theorem tour_mono_dropl_false :
     (`+ tc(head y,a)`, B&dM p.215); the row holds once the heads are added, which is
     `tour_mono_dropl` below. -/
 public theorem tour_mono_dropl_Q_false :
-    ¬ Freyd.Alg.MonoAlg (F := F (Int × Int) Int) (graph droplAlgFn)
+    ¬ Freyd.Alg.Pres (F := F (Int × Int) Int) (graph droplAlgFn)
         (Q (fun p : Int × Int => p.1 * p.2)) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droplAlgFn (Sum.inr ((3 : Int), tB)))
@@ -440,7 +440,7 @@ public theorem tour_mono_dropl_Q_false :
 /-- **tour-mono**, second row (marked FALSE in the note): `(𝟙×R) dropr ⊑ dropr R` fails on the
     same two tours — `dropr` reads the head through `+ tc(a,head x)`. -/
 public theorem tour_mono_dropr_false :
-    ¬ Freyd.Alg.MonoAlg (F := F (Int × Int) Int) (graph droprAlgFn)
+    ¬ Freyd.Alg.Pres (F := F (Int × Int) Int) (graph droprAlgFn)
         (R (fun p : Int × Int => p.1 * p.2)) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droprAlgFn (Sum.inr ((3 : Int), tB)))
@@ -455,7 +455,7 @@ public theorem tour_mono_dropr_false :
 /-- **THE FINDING**, mirror: `tour-mono`'s POSITIVE second row `(𝟙×Q) dropr ⊑ dropr Q` is false
     as printed too, on the same two genuine tours. -/
 public theorem tour_mono_dropr_Q_false :
-    ¬ Freyd.Alg.MonoAlg (F := F (Int × Int) Int) (graph droprAlgFn)
+    ¬ Freyd.Alg.Pres (F := F (Int × Int) Int) (graph droprAlgFn)
         (Q (fun p : Int × Int => p.1 * p.2)) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr ((3 : Int), tA)) (droprAlgFn (Sum.inr ((3 : Int), tB)))
@@ -472,7 +472,7 @@ public theorem tour_mono_dropr_Q_false :
 /-- **tour-mono**, first row at `Qc`: `(𝟙×Qc) dropl ⊑ dropl Qc`.  Both deltas of `cost_dropl`
     are then the same number, and the result's own heads (`a`, `a`) and second cities
     (`next x`, `head y`) are fixed by `Qc`. -/
-public theorem tour_mono_dropl : Freyd.Alg.MonoAlg (F := F (City × City) City) (graph droplAlgFn)
+public theorem tour_mono_dropl : Freyd.Alg.Pres (F := F (City × City) City) (graph droplAlgFn)
     (Qc tc) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
@@ -510,7 +510,7 @@ public theorem tour_mono_dropl : Freyd.Alg.MonoAlg (F := F (City × City) City) 
         · rfl
 
 /-- **tour-mono**, second row at `Qc`: `(𝟙×Qc) dropr ⊑ dropr Qc`. -/
-public theorem tour_mono_dropr : Freyd.Alg.MonoAlg (F := F (City × City) City) (graph droprAlgFn)
+public theorem tour_mono_dropr : Freyd.Alg.Pres (F := F (City × City) City) (graph droprAlgFn)
     (Qc tc) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
@@ -549,14 +549,14 @@ public theorem tour_mono_dropr : Freyd.Alg.MonoAlg (F := F (City × City) City) 
 
 /-- **tour-defn**, `P ≜ ⊤`. -/
 public theorem tour_sort_dropl :
-    Freyd.Alg.MonoAlg (F := F (City × City) City) (graph (droplAlgFn (City := City)))
+    Freyd.Alg.Pres (F := F (City × City) City) (graph (droplAlgFn (City := City)))
       (topMor (dTour City) (dTour City)) :=
-  Freyd.Alg.graph_monoAlg_topMor _
+  Freyd.Alg.graph_pres_topMor _
 
 public theorem tour_sort_dropr :
-    Freyd.Alg.MonoAlg (F := F (City × City) City) (graph (droprAlgFn (City := City)))
+    Freyd.Alg.Pres (F := F (City × City) City) (graph (droprAlgFn (City := City)))
       (topMor (dTour City) (dTour City)) :=
-  Freyd.Alg.graph_monoAlg_topMor _
+  Freyd.Alg.graph_pres_topMor _
 
 /-! ## `tour-laws` -/
 

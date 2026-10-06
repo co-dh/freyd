@@ -72,7 +72,7 @@
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@72427731
+    // lean:AOP.A9_1.dynamic_programming@3719b2c6
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -88,8 +88,8 @@
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
-#import "../generated/Freyd.Alg.monoAlg_of_cost_shunted.calc.typ" as calc-cost
-#import "../generated/Freyd.Alg.monoAlg_in_context.calc.typ" as calc-ctx
+#import "../generated/Freyd.Alg.pres_of_cost_shunted.calc.typ" as calc-cost
+#import "../generated/Freyd.Alg.pres_in_context.calc.typ" as calc-ctx
 #import "../generated/Freyd.Alg.RelSet.dp_disjoint_ranges.calc.typ" as calc-dpd
 #import "../generated/Freyd.Alg.RelSet.Bracket.mct_rec.calc.typ" as calc-mct
 #import "../generated/Freyd.Alg.RelSet.Bracket.col_rec.calc.typ" as calc-col
@@ -108,7 +108,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@d6c7f3f2
+     // lean:AOP.A9_1.dynamic_programming_upper@072da263
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
@@ -175,11 +175,11 @@
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_of_cost") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
     #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on
      `cost≤cost°`, which compares two values by comparing their `cost`s under `≤`] \
-     // lean:AOP.A9_1.monoAlg_of_cost@18cabf17
-    #leanf("Freyd.Alg.monoAlg_of_cost_shunted") \
+     // lean:AOP.A9_1.pres_of_cost@a1f5a5c4
+    #leanf("Freyd.Alg.pres_of_cost_shunted") \
     #src[by shunting at the map `cost`, `F(cost≤cost°)h⊑h cost≤cost°` is
      `F(cost≤cost°)h cost⊑h cost ≤`, which the chain proves]],
   lean-calc(calc-cost),
@@ -193,12 +193,12 @@
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
  `F(≤)k⊑k≤`]],
-   // lean:AOP.A9_1.monoAlg_of_cost@18cabf17
+   // lean:AOP.A9_1.pres_of_cost@a1f5a5c4
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
  ]],
-   // lean:AOP.A9_1.monoAlg_in_context@3ce8e2d0
+   // lean:AOP.A9_1.pres_in_context@3ce8e2d0
   [monotonicity *in context*: `k` may also read the input the part was built from],
   [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
    `VH⊑HR`]],
@@ -208,9 +208,9 @@
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.pres_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
-     // lean:AOP.A9_1.monoAlg_in_context@3ce8e2d0
+     // lean:AOP.A9_1.pres_in_context@3ce8e2d0
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>

@@ -438,7 +438,7 @@ public theorem mct_mono (hassoc : Assoc sb) :
     (TT.F A).map (R st sb cb ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ R st sb cb := by
   rw [R_eq st sb cb]
-  exact Freyd.Alg.monoAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
+  exact Freyd.Alg.pres_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
     ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono st sb cb)
 
 /-- The same at the mirrored order, which is what `dynamic_programming_context` consumes. -/
@@ -446,7 +446,7 @@ public theorem mct_mono_recip (hassoc : Assoc sb) :
     (TT.F A).map ((R st sb cb)° ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ (R st sb cb)° := by
   rw [R_recip_eq st sb cb]
-  exact Freyd.Alg.monoAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
+  exact Freyd.Alg.pres_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
     ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono_geq st sb cb)
 
 /-- **mct-laws**, second row (B&dM p.231): a least-cost bracketing is the least fixed point of

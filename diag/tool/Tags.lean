@@ -16,6 +16,11 @@ open Lean
     module that imports the one declaring it, so the tags go in `diag/StrDiagNames.lean`. -/
 register_label_attr diag_unfold
 
+/-- WHICH DEFINITIONS ONLY A PICTURE OPENS.  `diag_unfold`'s weaker form: a picture needs the body's
+    wires, but a FORMULA keeps the name — the note writes `Pres(S,Q)`, never the inequation it
+    abbreviates.  Registered here and tagged in `diag/StrDiagNames.lean`, like `diag_unfold`. -/
+register_label_attr diag_drawn_open
+
 /-- WHICH CONSTANTS THE NOTE WRITES BY THEIR OWN NAME.  `checkSpelled` refuses a label that carries
     a constant no printing rule rewrote, because a page would then make its claim in Lean's
     vocabulary; but a name the note writes UNCHANGED — `dom`, `Entire`, `Map`, a case study's own

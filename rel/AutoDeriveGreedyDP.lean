@@ -293,7 +293,7 @@ theorem hV (P : GreedyDP L E S W) : P.Vp° ≫ P.specH ⊑ P.specH ≫ P.Rp° :=
   exact hR
 
 /-- `MonoAlg h R` for the pattern functor, via Prop 9.4(i) (`birelator_fixLeft_mono`). -/
-theorem hmono (P : GreedyDP L E S W) : Freyd.Alg.MonoAlg (F := CL.F L E) P.hAlg P.Rp := by
+theorem hmono (P : GreedyDP L E S W) : Freyd.Alg.Pres (F := CL.F L E) P.hAlg P.Rp := by
   have h := birelator_fixLeft_mono (G := sumBirel L) (e := CL.dE E)
     (h := P.hAlg) (R := P.Rp) (U := P.Up) P.hUrefl P.hU
   show (CL.F L E).map P.Rp ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp
@@ -327,7 +327,7 @@ theorem greedy_refine (P : GreedyDP L E S W) :
     rwa [Allegory.recip_comp] at h0
   exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
     (CL.initial L E) (graph_map P.hFn)
-    ((Freyd.Alg.monoAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
+    ((Freyd.Alg.pres_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 
 /-! ## The derived program and the executable-side bridge -/
 

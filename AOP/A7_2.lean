@@ -37,22 +37,23 @@ variable {𝒜 : Type u}
 
 /-! ## Monotonic algebras (B&dM p.172) -/
 
-section MonoAlg
+section PresSec
 
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
-/-- **B&dM p.172**: `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
+/-- **B&dM p.172** (they call it a monotonic algebra, `MonoAlg`; read: `φ` preserves `R`):
+    `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
     (An algebra `φ` "does not care" whether `R`-related recursive results are computed before
     or after applying `φ`.) -/
-@[expose] public def MonoAlg (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
+@[expose] public def Pres (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
-public theorem monoAlg_iff_conj (hf : Map f) : MonoAlg f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
+public theorem pres_iff_conj (hf : Map f) : Pres f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
   (map_shunt_left hf (F.map R ≫ f) R).symm
 
 /-- Function form (sandwich), for `f` a MAP: `FR ⊆ f°·R·f`, mirrored. -/
-public theorem monoAlg_iff_sandwich (hf : Map f) : MonoAlg f R ↔ F.map R ⊑ f ≫ R ≫ f° := by
+public theorem pres_iff_sandwich (hf : Map f) : Pres f R ↔ F.map R ⊑ f ≫ R ≫ f° := by
   rw [← Cat.assoc]
   exact map_shunt_right hf (F.map R) (f ≫ R)
 
@@ -72,9 +73,9 @@ public theorem conj_Fmap_eps_est_le (f : F.obj A ⟶ A) (R : A ⟶ A) :
 
 /-- `f` is monotonic on `R` iff it is monotonic on `R°` — conjugation is preserved by converse,
     using `hFr` to push `F.map` through `°`. -/
-public theorem monoAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
-    MonoAlg f R ↔ MonoAlg f R° := by
-  rw [monoAlg_iff_conj hf, monoAlg_iff_conj hf]
+public theorem pres_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
+    Pres f R ↔ Pres f R° := by
+  rw [pres_iff_conj hf, pres_iff_conj hf]
   have hconj : ∀ T : A ⟶ A, (f° ≫ F.map T ≫ f)° = f° ≫ F.map T° ≫ f := fun T => by
     rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc, ← hFr T]
   constructor
@@ -86,7 +87,7 @@ public theorem monoAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
     rw [hconj R°, Allegory.recip_recip] at h2
     exact h2
 
-end MonoAlg
+end PresSec
 
 /-! ## Distributivity and Theorem 7.1 (B&dM p.172-173)
 
@@ -153,13 +154,13 @@ public theorem mon_thm71_step3 (hrefl : 𝟙 A ⊑ R) :
 /-- **Theorem 7.1, step 4**: both sides conversed — `F(R°)° = F(R)` (Theorem 5.1(a)), `f` a map. -/
 public theorem mon_thm71_step4 (hf : Map f) :
     f° ≫ F.map R° ≫ f ⊑ R° ↔ f° ≫ F.map R ≫ f ⊑ R := by
-  rw [← Freyd.Alg.monoAlg_iff_conj hf, ← Freyd.Alg.monoAlg_iff_conj hf]
-  exact (Freyd.Alg.monoAlg_recip_iff hf (Relator.preservesRecip_of_tabular F)).symm
+  rw [← Freyd.Alg.pres_iff_conj hf, ← Freyd.Alg.pres_iff_conj hf]
+  exact (Freyd.Alg.pres_recip_iff hf (Relator.preservesRecip_of_tabular F)).symm
 
 /-- **Theorem 7.1 (B&dM p.172)**: `f` is monotonic on `R` exactly when it distributes over
     `min R°`, for `R` reflexive — the four steps composed.  The right side is `Distributes f R`
     written out, so the note prints the inequation itself rather than the predicate's name. -/
-public theorem monoAlg_iff_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) :
+public theorem pres_iff_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) :
     f° ≫ F.map R ≫ f ⊑ R ↔ F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R :=
   calc f° ≫ F.map R ≫ f ⊑ R
       ↔ f° ≫ F.map R° ≫ f ⊑ R° := (mon_thm71_step4 hf).symm
@@ -171,15 +172,15 @@ public theorem monoAlg_iff_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) :
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
     distributes over `min R°`.  Steps 1 and 2 are the whole content; step 3's `⊑` half is
     `conj_Fmap_eps_est_le`, which needs no reflexivity. -/
-public theorem distributes_of_monoAlg (hf : Map f) (hmono : MonoAlg f R°) : Distributes f R :=
+public theorem distributes_of_pres (hf : Map f) (hmono : Pres f R°) : Distributes f R :=
   mon_thm71_step1.mpr (mon_thm71_step2.mpr
-    (le_trans (conj_Fmap_eps_est_le f R) ((monoAlg_iff_conj hf).mp hmono)))
+    (le_trans (conj_Fmap_eps_est_le f R) ((pres_iff_conj hf).mp hmono)))
 
 /-- **Theorem 7.1 (B&dM p.172), converse half**: for `R` reflexive, distributivity of `f` over
     `min R°` implies `f` is monotonic on `R°`. -/
-theorem monoAlg_of_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) (hdist : Distributes f R) :
-    MonoAlg f R° :=
-  (monoAlg_iff_conj hf).mpr
+theorem pres_of_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) (hdist : Distributes f R) :
+    Pres f R° :=
+  (pres_iff_conj hf).mpr
     ((mon_thm71_step3 hrefl).mp (mon_thm71_step2.mp (mon_thm71_step1.mp hdist)))
 
 end Thm71
@@ -199,7 +200,7 @@ variable {R : A ⟶ A} {S : F.obj A ⟶ A}
     monotonicity hypothesis, conversed (`F(R)°=F(R°)`, `(SR)°=R°S°`), slides `R°` out of the
     relator's span and up above `S°`; the three arrows to its right do not move. -/
 public theorem greedy_step1 {R : A ⟶ A} {S : F.obj A ⟶ A}
-    (hmono : Freyd.Alg.MonoAlg S R) :
+    (hmono : Freyd.Alg.Pres S R) :
     S° ≫ F.map R° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ S° ≫ (S%∋ ≫ est(R)) := by
   have hslide : S° ≫ F.map R° ⊑ R° ≫ S° := by
     have h := recip_mono hmono
@@ -228,7 +229,7 @@ public theorem greedy_step3 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R°
     monotonic on the preorder `R`, mirrored.  (B&dM state it for `min R` with `S` monotonic
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
 public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
-    (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg S R) :
+    (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres S R) :
     ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   apply le_Λ_comp_est_iff.mpr
   refine ⟨?_, ?_⟩
@@ -244,7 +245,7 @@ public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
     form `Λ S ≫ est R` up to equality. -/
 public theorem greedy_of_refinement (I : InitialAlgebra F) {R : A ⟶ A}
-    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.MonoAlg f R°)
+    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.Pres f R°)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
   apply le_Λ_comp_est_iff.mpr
@@ -267,8 +268,8 @@ variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map
     forces `R` to be reflexive — `⦇α⦈ = id ⊆ R` follows from `α` being the least prefixed
     point of the `R`-recursion. -/
-theorem reflexive_of_alpha_monoAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
-    (hmono : MonoAlg I.α R) : Cat.id I.t ⊑ R := by
+theorem reflexive_of_alpha_pres (I : InitialAlgebra F) {R : I.t ⟶ I.t}
+    (hmono : Pres I.α R) : Cat.id I.t ⊑ R := by
   rw [← relCata_alpha I]
   apply relCata_le_of_prefixed
   have h2 := comp_mono_left I.α° hmono
