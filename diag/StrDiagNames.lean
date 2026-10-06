@@ -143,9 +143,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.dropFn] def unexpandKnapDropFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[nil,π₂]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.CL.con] def unexpandCLCon : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[nil,cons]")))
+-- The constructor map is `[nil,cons]` only at the empty leaf; a leaf carrying a value is B&dM's
+-- `list⁺` and its map is `[wrap,cons]`.  A DELABORATOR: the leaf type is implicit, so only the term has it.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.con] def delabCLCon : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size < 2 || args.size > 3 then failure
+  let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "wrap"
+  let f := mkIdent (Name.mkSimple s!"[{leaf},cons]")
+  if args.size == 2 then `($f) else `($f $(← withAppArg delab))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.droplAlgFn] def unexpandDroplAlgFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[start,dropl]")))
@@ -594,15 +600,24 @@ syntax:max "tail(" term ")" : term
 -- unexpander, for the reason `thin(` is one above: no term prints its own brackets.
 notation:max "bag(" J ")" => RelSet.Tardy.Bag J
 
+-- The projections' graphs are `π₁`/`π₂` only when the map IS the projection — the bare constant or
+-- its eta-expansion `fun p => p.1` — read off the term, so `fun p => (f p).1` is not taken for one.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.graph] def delabGraphProj : Delab := do
+  let e ← getExpr
+  unless e.getAppNumArgs == 3 do failure
+  let i ← match e.appArg!.eta with
+    | .lam _ _ (.proj ``Prod i (.bvar 0)) _ => pure i
+    | g => match g.getAppFn.constName?, g.getAppNumArgs with
+      | some ``Prod.fst, 2 => pure 0
+      | some ``Prod.snd, 2 => pure 1
+      | _, _ => failure
+  `($(mkIdent (if i == 0 then `π₁ else `π₂)))
+
 open Lean PrettyPrinter in
 /-- A map's GRAPH is written by the map's own name — the note's `edit`, `cons`, `nil` are all
     `graph f` — and the two projections have names of their own, B&dM's `π₁`/`π₂`. -/
 @[app_unexpander RelSet.graph] def unexpandGraph : Unexpander
-  | `($_ Prod.fst) => `($(mkIdent `π₁))
-  | `($_ Prod.snd) => `($(mkIdent `π₂))
-  -- Eta-expanded, which is how a `fun p => p.2` written at the use site comes back out.
-  | `($_ fun $_:ident => Prod.fst $_) => `($(mkIdent `π₁))
-  | `($_ fun $_:ident => Prod.snd $_) => `($(mkIdent `π₂))
   -- Only a map with a NAME: `graph (fun _ => 0)` keeps `AOP.A6_1_RelSet`'s own `⊸ 0`, which this
   -- clause would otherwise shadow with the lambda.
   | `($_ $f:ident) => `($f)
@@ -1621,11 +1636,17 @@ open Lean PrettyPrinter in
   | `($_ $q:ident) =>
     `($(mkIdent (Name.mkSimple (q.getId.eraseMacroScopes.toString (escape := false) ++ "₂"))))
   | _ => `($(mkIdent `Q₂))
--- `baseStepFn` is the note's algebra `[base,step]`; only `unstep_sound` prints it, at an `inr`, so `step`.
+-- `baseStepFn` is the note's algebra `[base,step]`, and only at an injection is it one arm:
+-- `[base,step](l(u)) = base(u)`, `[base,step](r(q)) = step(q)`; any other argument keeps the whole algebra.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditStepFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `step) $args*)
-  | _ => `($(mkIdent `step))
+@[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditBaseStep : Unexpander
+  | `($_ l($u)) => `($(mkIdent `base) $u)
+  | `($_ r($q)) => `($(mkIdent `step) $q)
+  -- `unexpandInrTuple` has already opened a tuple argument: `r((a,b))` arrives as `r(a,b)`.
+  -- Its components stay the printer's own nodes, read as B&dM's `step(cpy a,(xs,ys))`.
+  | `($_ r($a,$bs,*)) => `($(mkIdent `step) $a $(bs.getElems)*)
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "[base,step]")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
 -- A projection applied to a point is the note's `π₁`/`π₂` applied to it: `V(π₂(p),π₂(q))`.
 open Lean PrettyPrinter in
 @[app_unexpander Prod.fst] def unexpandProdFst : Unexpander

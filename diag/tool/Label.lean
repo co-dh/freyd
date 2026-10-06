@@ -1044,8 +1044,9 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   | (``Cat.comp, args) =>
     if args.size < 2 then plain f else
     return juxt (← mapLabel args[args.size - 2]! wired) (← mapLabel args.back! wired)
-  | (``Prod.fst, _) => return "π₁"
-  | (``Prod.snd, _) => return "π₂"
+  -- Only the projection itself, its two type arguments and no point: `π₁` applied is not `π₁`.
+  | (``Prod.fst, #[_, _]) => return "π₁"
+  | (``Prod.snd, #[_, _]) => return "π₂"
   -- A CONSTRUCTOR HANDED THE INPUT WHOLE is the same box as one handed its factors, so it gets the
   -- same name: `tip`, never `Tree.tip`.  One rule, both spellings.
   | _ => do if let some n ← ctorName? f then return n else plain f
