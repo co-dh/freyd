@@ -910,7 +910,7 @@
   [#leanf("Freyd.Alg.RelSet.Code.Code")],
   [a code is one character, or a pointer back to a repeated piece],
   [#rowkey("Freyd.Alg.RelSet.Code.extend")], [#leant("Freyd.Alg.RelSet.Code.extend")],
-  [#leanf("Freyd.Alg.RelSet.Code.extend")],
+  [#leanf("Freyd.Alg.RelSet.Code.extendP")],
   [a symbol appends its character; a pointer appends `zs` when `ys⧺zs` is a proper prefix of
    `xs⧺zs`],
   [#rowkey("Freyd.Alg.RelSet.Code.decode")], [#leant("Freyd.Alg.RelSet.Code.decode")],
@@ -935,7 +935,7 @@
   [#leanf("Freyd.Alg.RelSet.Code.Q_eq")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#rowkey("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
-  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
+  [#leanf("Freyd.Alg.RelSet.Code.mem_reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
 // lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab

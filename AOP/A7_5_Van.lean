@@ -99,8 +99,8 @@ public theorem floorFn_nonpos : ∀ x : Seg A, floorFn amount x ≤ 0
 /-- **van-defn**: `secure`, the stretches one van visit can serve — the book's p.185
     `bmax(ceiling x, ceiling x − floor x) ≤ N`, which says some starting reserve keeps the cash
     between `0` and `N` throughout. -/
-@[expose] public def secureP (amount : A → Int) (N : Int) (x : Seg A) : Prop :=
-  max (ceilingFn amount x) (ceilingFn amount x - floorFn amount x) ≤ N
+@[expose] public def secureP (amount : A → Int) (N : Int) (xs : Seg A) : Prop :=
+  max (ceilingFn amount xs) (ceilingFn amount xs - floorFn amount xs) ≤ N
 
 public instance decSecureP (amount : A → Int) (N : Int) (x : Seg A) :
     Decidable (secureP amount N x) := Int.decLe _ _
@@ -1243,6 +1243,26 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander floorR] public meta def unexpandFloorR : Unexpander
   | _ => `($(mkIdent `floor))
+
+-- The predicate and the two measures under the book's names, with the cost and the capacity left
+-- to the section's context, as on the arrows above: p.185's `bmax(ceiling x,ceiling x−floor x)≤N`.
+open Lean PrettyPrinter in
+@[app_unexpander secureP] public meta def unexpandSecureP : Unexpander
+  | `($_ $_ $_ $x) => `($(mkIdent `secure) $x)
+  | `($_ $_ $_) => `($(mkIdent `secure))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander ceilingFn] public meta def unexpandCeilingFn : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `ceiling) $x)
+  | `($_ $_) => `($(mkIdent `ceiling))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander floorFn] public meta def unexpandFloorFn : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `floor) $x)
+  | `($_ $_) => `($(mkIdent `floor))
+  | _ => throw ()
 
 -- THE SECTION'S ALGEBRA IS THE NOTE'S BEAD `S`, as it is in every other §13.4 case study
 -- (`A7_7_TakeWhile`, `A7_7_Filter`, `A7_7_MSS` each unexpand their own `Salg` to `S`): what it is

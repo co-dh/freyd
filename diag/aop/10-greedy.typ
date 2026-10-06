@@ -469,7 +469,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leanf("Freyd.Alg.RelSet.Tex.val")],
   [the real number a digit list denotes after the decimal point],
   [#rowkey("Freyd.Alg.RelSet.Tex.shift")], [#leant("Freyd.Alg.RelSet.Tex.shift")],
-  [#leanf("Freyd.Alg.RelSet.Tex.shift")],
+  [#leanf("Freyd.Alg.RelSet.Tex.shiftFn")],
   [put digit `d` in front of `r`: `(d+r)/10`],
   [#rowkey("Freyd.Alg.RelSet.Tex.round")], [#leant("Freyd.Alg.RelSet.Tex.round")],
   [#leanf("Freyd.Alg.RelSet.Tex.round_recip")],

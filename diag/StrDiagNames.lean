@@ -205,6 +205,12 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- Binary max is B&dM's `bmax` (p.185), applied to the pair it takes. -/
+@[app_unexpander Max.max] def unexpandMax : Unexpander
+  | `($_ $a $b) => `($(mkIdent `bmax) $a $b)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The preorder a measure induces is the note's `length≤length°`. -/
 @[app_unexpander RelSet.leOn] def unexpandLeOn : Unexpander
   | `($_ $f) => `($f ≤ $f°)

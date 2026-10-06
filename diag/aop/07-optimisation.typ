@@ -1702,7 +1702,7 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.okR")],
   [`ok` keeps `(a,[[b],[c]])` exactly when `[a,b]` is secure.],
 
-  [`new≜(wrap×𝟙) cons`],
+  [`new≜(wrap×𝟙) cons` #leank("Freyd.Alg.RelSet.Van.newFn")],
   [#leant("Freyd.Alg.RelSet.Van.newR")],
   [`new(a,[[b],[c]])=[[a],[b],[c]]`.],
 
