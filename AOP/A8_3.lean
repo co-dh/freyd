@@ -594,26 +594,19 @@ public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
     obtain ⟨y, ⟨rfl, hx⟩, hys⟩ := h
     exact ⟨ys, hys, rfl, orderedP_of_subseqP ≼ hys hx⟩
 
-/-- `thinlist(Q) ≜ (setify thin(Q))/setify ∩ subseq` (B&dM p.200): the largest list relation
+/-- `thinlist(Q) ≜ setify thin(Q) setify° ∩ subseq` (B&dM p.200): the largest list relation
     that only drops elements and, on the set of the elements, is a thinning by `Q`. -/
 @[expose] public def thinlist (Q : dE A ⟶ dE A) : dList A ⟶ dList A :=
-  ((setify ≫ thinRel Q) / setify) ∩ subseq
-
-/-- `setify` is a map, so dividing by it is composing with its reciprocal. -/
-public theorem setify_thin_div_setify (Q : dE A ⟶ dE A) :
-    (setify ≫ thinRel Q) / setify = setify ≫ thinRel Q ≫ setify° :=
-  calc (setify ≫ thinRel Q) / setify = (setify ≫ thinRel Q) ≫ setify° := div_map _ (graph_map _)
-    _ = setify ≫ thinRel Q ≫ setify° := Cat.assoc _ _ _
-
-calc_steps setify_thin_div_setify
+  (setify ≫ thinRel Q ≫ setify°) ∩ subseq
 
 /-- `T ⊑ thinlist(Q)` is B&dM's two conditions (p.200): `T` only drops elements, and on the set
-    of the elements it is a thinning — the meet's and the division's universal properties. -/
+    of the elements it is a thinning — the meet's universal property, and shunting the map
+    `setify` across `⊑`. -/
 public theorem le_thinlist_iff (Q : dE A ⟶ dE A) (T : dList A ⟶ dList A) :
     T ⊑ thinlist Q ↔ T ⊑ subseq ∧ T ≫ setify ⊑ setify ≫ thinRel Q :=
-  ⟨fun h => ⟨le_trans h (inter_lb_right _ _),
-      (le_div_iff _ _ _).mp (le_trans h (inter_lb_left _ _))⟩,
-    fun h => le_inter ((le_div_iff _ _ _).mpr h.2) h.1⟩
+  ⟨fun h => ⟨le_trans h (inter_lb_right _ _), (map_shunt_right (graph_map _) _ _).mpr
+      (by rw [Cat.assoc]; exact le_trans h (inter_lb_left _ _))⟩,
+    fun h => le_inter (by rw [← Cat.assoc]; exact (map_shunt_right (graph_map _) _ _).mp h.2) h.1⟩
 
 /-- `bump(Q)` keeps a subsequence: the output of `⦇[nil,bump(Q)]⦈` is a subsequence of its input. -/
 public theorem subseqP_of_bumpFold (Q : dE A ⟶ dE A) :

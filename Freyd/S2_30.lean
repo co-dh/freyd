@@ -62,20 +62,6 @@ public theorem le_div_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ 
     exact comp_mono_right h S
   · exact DivisionAllegory.le_div X R S
 
-/-- Right division by an ENTIRE arrow is bounded by composition with its reciprocal: `R/f ⊑ Rf°`. -/
-public theorem div_by_entire_le {a b c : 𝒜} (R : a ⟶ c) {f : b ⟶ c} (hf : Entire f) :
-    R / f ⊑ R ≫ f° :=
-  calc R / f = (R / f) ≫ 𝟙 b := (Cat.comp_id _).symm
-    _ ⊑ (R / f) ≫ f ≫ f° := comp_mono_left _ (entire_id_le hf)
-    _ = ((R / f) ≫ f) ≫ f° := (Cat.assoc _ _ _).symm
-    _ ⊑ R ≫ f° := comp_mono_right (DivisionAllegory.div_comp_le R f) _
-
-/-- Division by a MAP is composition with its reciprocal, `R/f = Rf°` (§1.782): `f` entire gives
-    `⊑`, and `f` simple gives `Rf°f ⊑ R`, the other half by the defining equivalence. -/
-public theorem div_map {a b c : 𝒜} (R : a ⟶ c) {f : b ⟶ c} (hf : Map f) : R / f = R ≫ f° :=
-  le_antisymm (div_by_entire_le R hf.1) ((le_div_iff _ _ _).mpr (by
-    rw [Cat.assoc]; exact le_trans (comp_mono_left R hf.2) (le_of_eq (Cat.comp_id R))))
-
 /-- (R ∩ R')/S = (R/S) ∩ (R'/S) (§2.31, full equality).
 
     Book §2.31: "The first containment may be replaced with an equality:

@@ -44,6 +44,19 @@ theorem div_den_antimono {a b c : 𝒜} (R : a ⟶ c) {S S' : b ⟶ c} (h : S �
   (le_div_iff _ _ _).mpr
     (le_trans (comp_mono_left _ h) (DivisionAllegory.div_comp_le R S'))
 
+/-- Right division by an ENTIRE morphism is bounded by composition with its reciprocal:
+    `R / f ⊑ R ≫ f°`.  (For a map `f`, this is an equality — §1.782 `R/f = Rf°` — but only
+    the `⊑` half is needed here, and it uses only entireness of `f`.) -/
+theorem div_by_entire_le {a b c : 𝒜} (R : a ⟶ c) {f : b ⟶ c} (hf : Entire f) :
+    R / f ⊑ R ≫ f° := by
+  have h1 : Cat.id b ⊑ f ≫ f° := by
+    have h := hf; dsimp [Entire, dom] at h; rw [← h]; exact inter_lb_right _ _
+  have step : R / f ⊑ (R / f) ≫ (f ≫ f°) := by
+    have hc := comp_mono_left (R / f) h1
+    rwa [Cat.comp_id] at hc
+  refine le_trans step ?_
+  rw [← Cat.assoc]
+  exact comp_mono_right (DivisionAllegory.div_comp_le R f) f°
 
 end DivHelpers
 

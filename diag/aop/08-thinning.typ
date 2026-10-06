@@ -445,19 +445,11 @@ row((
 // lean:AOP.A8_3.RelSet.CL.bumpRel@088a04f4
 // lean:AOP.A8_3.RelSet.CL.bumpRel_wrap@993629d2
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
-// lean:AOP.A8_3.RelSet.ListRel.thinlist@d3d9010a
+// lean:AOP.A8_3.RelSet.ListRel.thinlist@91e5cf00
 // lean:AOP.A8_3.RelSet.ListRel.le_thinlist_iff@a16f1cea
 // lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinlist@2636cb11
 // lean:AOP.A8_3.RelSet.CL.minlist@4457079b
 )]<thinlist-defn>
-
-#import "../generated/Freyd.Alg.RelSet.ListRel.setify_thin_div_setify.calc.typ" as calc-tdiv
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.setify_thin_div_setify") \
-    #src[dividing by `setify` is composing with its converse, because `setify` is a map.]],
-     // lean:AOP.A8_3.RelSet.ListRel.setify_thin_div_setify@3208b808
-  lean-calc(calc-tdiv),
-)]<thinlist-div>
 
 // The data Theorem 8.2 and its fusion condition are stated at: no single definition, so it stays
 // a list of assumptions rather than a row of the table above.
