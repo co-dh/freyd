@@ -459,7 +459,7 @@ preorder.
   [#leanf("Freyd.Alg.RelSet.CL.thinlist_eq_singleton_minlist") #h(6pt) #src[(8.5)]],
   [what thinning should come to when it can: one element],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_bump_thinlist_le") #h(6pt) #src[(8.6) — @thinlist-86]],
-  [thinning a sorted list is a thinning of the set — this is what `thinlist(Q)⊑subseq` buys],
+  [the thinning may run after the sort],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_minlist_le") #h(6pt) #src[(8.7)]],
   [a minimum of the sorted list is a minimum of the set],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_list_le") #h(6pt) #src[(8.8)]],
@@ -482,8 +482,8 @@ preorder.
 #disp(num: "(8.6)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_bump_thinlist_le") \
     // sortRel row: (8.6), p. 201
-    #src[sorting the set then thinning the list by `Q` lists, sorted, a `Q`-thinning of the
- set — `Q` a preorder. ]],
+    #src[every list got by sorting the set and then thinning it by `Q` is also got by thinning the
+     set by `Q` and then sorting.]],
      // lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc
   // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
   // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.

@@ -452,62 +452,61 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [], [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")],
   [nothing, or a head and a tail],
 
-  [], [`nil ≜` the first constructor of `[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns:1]],
-  [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit")],
-  [`nil=[]` — the empty list],
+  [], [`nil ≜ []`], [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit")],
+  [the empty list — the first constructor of `[A]`],
 
-  [], [`cons ≜` the second constructor of `[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns:1]],
-  [#leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
-  [`cons(3,[1,2])=[3,1,2]` — a head onto a tail],
+  [], [`cons(a,[x₁,…,xₙ]) ≜ [a,x₁,…,xₙ]`], [#leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
+  [`cons(3,[1,2])=[3,1,2]` — a head onto a tail, the second constructor],
 
   [], [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
   [both constructors as one map],
 
-  [], [`p ≜` a coreflexive, `p⊑𝟙`], [`A⟶A`],
+  [], [`p ⊑ 𝟙`], [`A⟶A`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
-  [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — `a` passes `p` when `a p a`],
+  [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [], [`R ≜ length≤length°`, a preorder #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
   // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
-  [], [`⊸ nil ≜` the constant `nil` — the second `nil` of `prefix`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
+  [], [`(⊸ nil)(a,x) ≜ nil`], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
   [`(⊸ nil)(3,[1,2])=nil` — drop the pair, return `nil`],
 
   [], [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [#leant("Freyd.Alg.RelSet.ListRel.prefixR")],
-  [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
+  [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, keep the head or stop],
 
   [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
-  // lean:AOP.A7_7_TakeWhile.Salg@fd30b6d5
-  [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — stop, or
-   keep a head that passes `p`],
+  // lean:AOP.A7_7_TakeWhile.Salg@c2130ccf
+  [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — keep a
+   head that passes `p`, or stop],
 
-  [], [`(g→X,Y) ≜` `X` where `g` is defined and `Y` where it is not], [#leant("Freyd.Alg.cond")],
-  [the test picks the branch],
+  [], [#leanf("Freyd.Alg.cond")], [#leant("Freyd.Alg.cond")],
+  [the test `X` picks the branch: `R` where `X` holds, `S` where it does not],
+
+  [], [`nil R=⊤`, #h(4pt) `nil R°=nil`], [],
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
+  [`nil` is the shortest list — below every list, and above only itself, so it loses every
+   `est(R°)`],
 )
-#v(6pt)
-#align(center)[`nil R=⊤`, #h(4pt) `nil R°=nil` #h(4pt) #src[`nil` is the shortest list — below
-  every list, and above only itself, so it loses every `est(R°)`]]
 ])]<takewhile-defn>
 
 // `prefix` ON ITS OWN, before `takewhile` specialises it: the fold's defining square, the two Hinze–Marsden
 // panels either side of the `=`, and the algebra's circuit.  Panels emitted verbatim by
 //   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" --sigs "α:F([A])⟶[A]" "α prefix"
-//   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
+//   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,cons ∪ ⊸ nil]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
 #let pfx-def-l = "Freyd.Alg.RelSet.ListRel.prefix_cancel.lhs"
-#let pfx-def-r = "Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs.inr.inr"
+#let pfx-def-r = "Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs.inr.inl"
 
 #disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
-    #src[the fold whose algebra, at each `cons`, stops with `nil` or keeps the head:
+    #src[the fold whose algebra, at each `cons`, keeps the head or stops with `nil`:
       `xs prefix ys⟺∃zs. xs=ys⧺zs`]
     // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0
     // lean:AOP.A5_6_ListCombinators.prefixP_iff_append@1c6dd07f
     ],
-  table.header([*the defining square* `α prefix=F(prefix)[nil,⊸ nil ∪ cons]` — build the list and then
+  table.header([*the defining square* `α prefix=F(prefix)[nil,cons ∪ ⊸ nil]` — build the list and then
       take a prefix, or take a prefix of the tail and then rebuild with the algebra],
     [*Hinze–Marsden*]),
 
@@ -516,10 +515,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A6_ConsList.F@61b71616
   ],
   [#lean(pfx-def-l, pfx-def-r, op: [=]) \
-   #src[the `cons` operand of `⊸ nil ∪ cons`; `⊸ nil` makes a constant and draws nothing]],
+   #src[the `cons` operand of `cons ∪ ⊸ nil`; `⊸ nil` makes a constant and draws nothing]],
 
   [#leanc("Freyd.Alg.RelSet.ListRel.prefAlg") \
-   #src[the algebra `[nil,⊸ nil ∪ cons] : F([A])⟶[A]` as a circuit: `nil` on the `𝟏` branch; on a pair
+   #src[the algebra `[nil,cons ∪ ⊸ nil] : F([A])⟶[A]` as a circuit: `nil` on the `𝟏` branch; on a pair
      `(a,ys′)` two outputs, `nil` and `cons(a,ys′)`]],
   [#src[`nil prefix ys⟺ys=nil`] \
    #src[`cons(a,xs′) prefix ys⟺ys=nil ∨ ∃ys′. xs′ prefix ys′ ∧ ys=cons(a,ys′)`] \
@@ -545,9 +544,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
 #let tw-pfx1 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.lhs")
-#let tw-pfx2 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs", branch: "inr.inr")
-#let tw-pfx3 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs", branch: "inr.inr")
-#let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs", branch: "inr.inr")
+#let tw-pfx2 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs", branch: "inr.inl")
+#let tw-pfx3 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs", branch: "inr.inl")
+#let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs", branch: "inr.inl")
 
 #disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
   Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm") \
@@ -566,15 +565,15 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs"),
-    [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
-  [#tw-pfx2 \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
+    [`F(prefix) [nil,cons ∪ ⊸ nil] list(p)` \ #src[defining equation]])],
+  [#tw-pfx2 \ #src[the `cons` operand of `cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs"),
-    [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
-  [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `⊸ nil ∪ (p×list(p)) cons`]],
+    [`F(prefix) [nil,(p×list(p)) cons ∪ ⊸ nil]` \ #src[`list(p)` through `cons`]])],
+  [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `(p×list(p)) cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs"),
-    [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])],
+    [`[nil,(p×(prefix list(p))) cons ∪ ⊸ nil]` \ #src[relator, `prefix` entire]])],
   [#tw-pfx4],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs"),
@@ -599,12 +598,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")]],
   [],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@d2b222de
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@4aaef484
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")]],
   [each operand is reached on its own #h(4pt) #src[@adj-all:9] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@6c113545
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@3e5355f1
 
   [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
@@ -615,7 +614,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@5b43bd21
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")]],
-  [`nil R°=nil` #h(4pt) #src[@takewhile-defn:6] #h(4pt) — so the constant branch may carry the `R°`
+  [`nil R°=nil` #h(4pt) #src[@takewhile-defn:11] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
 
@@ -772,18 +771,18 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // B&dM p.174, Ex 7.40: "Express prefix as a catamorphism on cons-lists, and use fusion to express
   // sum·prefix as a catamorphism."
   Thm[#leanf("Freyd.Alg.RelSet.MSS.prefAlg_comp_sum") \
-    #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
+    #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,cons ∪ ⊸ nil]⦈`, and this is
      the fusion condition that expresses `prefix sum` as a catamorphism]],
   table.header([*circuit* — the fork is the bracket's case split `F([Int])=𝟙+Int×[Int]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
   [#vstep([], leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs"),
-    [`[nil,⊸ nil ∪ cons] sum`])],
-  [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
+    [`[nil,cons ∪ ⊸ nil] sum`])],
+  [#mh-cons-sum \ #src[the `cons` operand of `cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs"),
-    [`[nil sum,⊸ nil sum ∪ cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
+    [`[nil sum,⊸ nil sum ∪ cons sum]` \ #src[coproduct of maps, composition over `∪`, `∪` commutative]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
@@ -801,7 +800,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
-#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `R:=[nil,⊸ nil ∪ cons]`,
+#align(center, block(inset: (y: 4pt))[#src[@cata-fusion at `R:=[nil,cons ∪ ⊸ nil]`,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
  ]])
@@ -928,11 +927,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [], [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
   [both constructors as one map],
 
-  [], [`p ≜` a coreflexive, `p⊑𝟙`], [`A⟶A`],
+  [], [`p ⊑ 𝟙`], [`A⟶A`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
-  [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — `a` passes `p` when `a p a`],
+  [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [], [`R ≜ length≤length°`, a preorder #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
   // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 

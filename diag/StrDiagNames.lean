@@ -2038,4 +2038,13 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `insert))
   | _ => throw ()
 
+-- B&dM's conditional `(p→f,g)` (§5.6), so `cond`'s definition prints as the note writes it; the
+-- coproduct `C` is context.
+syntax:max (name := noteCond) "(" term "→" term "," term ")" : noteArith
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.cond] def unexpandCond : Unexpander
+  | `($_ $_ $x $r $s) =>
+    pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
+  | _ => throw ()
+
 end Freyd.Alg
