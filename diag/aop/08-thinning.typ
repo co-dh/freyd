@@ -656,7 +656,7 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@106c9bd5
+     // lean:AOP.A8_4_Knapsack.knap_laws@f04481fb
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -805,7 +805,7 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@2b8bb5db
+     // lean:AOP.A8_5_Paragraph.para_laws@cf96b9c5
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
