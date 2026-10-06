@@ -233,15 +233,15 @@ row((
 #disp(num: "(8.4)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le") \
     #src[thinning each member set, then taking the union, is a thinning of the union]],
-     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@7b334e71
   Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond1") \
     #src[every member of the result is a member of a member set — @thin-laws:1, first condition]],
-     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond1@cfee5704
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond1@3774ee8b
   lean-calc(calc-84a),
   Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond2") \
     #src[every member of a member set has a `Q`-lower bound in the result — @thin-laws:1, second
      condition]],
-     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond2@3acd6d82
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond2@144e72b2
   lean-calc(calc-84b),
 )]<thin-84>
 
@@ -319,8 +319,8 @@ row((
 // lean:AOP.A8_2.sumCop_u₂_apply@774edfff
 // lean:AOP.A5_6.cplMap@a82b3919
 // lean:AOP.A5_6.cprMap@379d6c37
-// lean:AOP.A8_2.pathQ@adf20bfb
-// lean:AOP.A8_2.headRel@32b2507f
+// lean:AOP.A8_2.pathQ@9626226f
+// lean:AOP.A8_2.head@32b2507f
 // lean:AOP.A8_2.pathStep@f546a21f
 // lean:AOP.A8_2.Λ_pathF_map_eps_id@59cd9f69
 // lean:AOP.A8_2.Λ_pathF_map_id_eps@b7473cec
@@ -337,7 +337,7 @@ row((
   [`S head⊑[𝟙,π₁]` #h(4pt) #src[`S≜F(𝟙,∋)α`]],
   [`S head` is simple, which gives `R∩(S°S)⊑Q`: between two paths `S` builds from one argument,
    equal cost and equal head already means `Q`],
-  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
+  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@1e7c3c78 lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
 )]<path-mono>
 
 === Derivation
@@ -475,7 +475,7 @@ row((
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
   [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F` polynomial and linear]],
   [the same for every linear polynomial `F`],
-  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minlist@0407b6bb lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@ad2f5615 lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
+  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minlist@05ff3ba8 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@c2de68cc lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -561,7 +561,7 @@ preorder.
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@b0d971e1
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@8b11bce1
   lean-calc(calc-82),
 )]<thinlist-thm82>
 
@@ -594,7 +594,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@bdd21d57
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@2ef7b16c
   lean-calc(calc-82f),
 )]<thinlist-fusion>
 
@@ -738,8 +738,8 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#leann("Freyd.Alg.RelSet.Paragraph.widthFn")], [#leant("Freyd.Alg.RelSet.Paragraph.widthFn")],
   [#leanf("Freyd.Alg.RelSet.Paragraph.widthFn")],
   [the lengths of the words plus one space between neighbours],
-  [#leann("Freyd.Alg.RelSet.Paragraph.headLine")], [#leant("Freyd.Alg.RelSet.Paragraph.headLine")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.headLine")],
+  [#leann("Freyd.Alg.RelSet.Paragraph.head")], [#leant("Freyd.Alg.RelSet.Paragraph.head")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.head")],
   [the first line of the paragraph],
   [#leann("Freyd.Alg.RelSet.Paragraph.allFitP")], [#leant("Freyd.Alg.RelSet.Paragraph.allFitP")],
   [#leanf("Freyd.Alg.RelSet.Paragraph.allFitP")],
@@ -768,26 +768,26 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 // lean:AOP.A8_5_Paragraph.Line@5d1dfba3
 // lean:AOP.A8_5_Paragraph.Para@03a1f9c7
 // lean:AOP.A8_5_Paragraph.new@bda7247b
-// lean:AOP.A8_5_Paragraph.glue@01a4db05
+// lean:AOP.A8_5_Paragraph.glue@f4a46e72
 // lean:AOP.A8_5_Paragraph.newAlgFn@e587172a
 // lean:AOP.A8_5_Paragraph.glueAlgFn@65824f9e
 // lean:AOP.A8_5_Paragraph.partAlg@5fb0da43
 // lean:AOP.A8_5_Paragraph.partition@913aa4cf
 // lean:AOP.A8_5_Paragraph.widthFn@925793a1
-// lean:AOP.A8_5_Paragraph.headLine@52e4596a
-// lean:AOP.A8_5_Paragraph.allFitP@dbdf240f
+// lean:AOP.A8_5_Paragraph.head@d781968f
+// lean:AOP.A8_5_Paragraph.allFitP@1d59ef2e
 // lean:AOP.A8_5_Paragraph.fits@6274a548
-// lean:AOP.A8_5_Paragraph.ok@a900976e
+// lean:AOP.A8_5_Paragraph.ok@428573fa
 // lean:AOP.A8_5_Paragraph.sqr@0bb9fcb4
-// lean:AOP.A8_5_Paragraph.wasteFn@fb89a4e6
+// lean:AOP.A8_5_Paragraph.wasteFn@598047f9
 // lean:AOP.A8_5_Paragraph.R@1aaea13f
 // lean:AOP.A8_5_Paragraph.R_eq@cf0ea074
-// lean:AOP.A8_5_Paragraph.Q@11255ece
-// lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf
+// lean:AOP.A8_5_Paragraph.Q@546d086e
+// lean:AOP.A8_5_Paragraph.Q_eq@72a43c20
 // lean:AOP.A8_5_Paragraph.fits_apply@42c87fb1
-// lean:AOP.A8_5_Paragraph.ok_apply@a532e43a
+// lean:AOP.A8_5_Paragraph.ok_apply@b7eeed25
 // lean:AOP.A8_5_Paragraph.R_apply@358f7c84
-// lean:AOP.A8_5_Paragraph.Q_apply@4e24926a
+// lean:AOP.A8_5_Paragraph.Q_apply@57c91c80
 // lean:AOP.A8_5_Paragraph.start@056fc54e
 )]<para-defn>
 
@@ -807,7 +807,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
    // lean:AOP.A8_5_Paragraph.para_mono_glue@86db095e
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
-  // lean:AOP.A8_3.merge_top@a86d5d43
+  // lean:AOP.A8_3.merge_top@9e31b76a
   [`⊤` needs no sorting at all],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_sort_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_sort_glue")],
   // lean:AOP.A8_5_Paragraph.para_sort_new@c164c661
@@ -871,11 +871,11 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#leann("Freyd.Alg.RelSet.Tour.Tour")], [#leant("Freyd.Alg.RelSet.Tour.Tour")],
   [#leanf("Freyd.Alg.RelSet.Tour.Tour")],
   [the outward journey and the return journey],
-  [#leann("Freyd.Alg.RelSet.Tour.hd")], [#leant("Freyd.Alg.RelSet.Tour.hd")],
-  [#leanf("Freyd.Alg.RelSet.Tour.hd")],
+  [#leann("Freyd.Alg.RelSet.Tour.head")], [#leant("Freyd.Alg.RelSet.Tour.head")],
+  [#leanf("Freyd.Alg.RelSet.Tour.head")],
   [the first city of the journey],
-  [#leann("Freyd.Alg.RelSet.Tour.nxt")], [#leant("Freyd.Alg.RelSet.Tour.nxt")],
-  [#leanf("Freyd.Alg.RelSet.Tour.nxt")],
+  [#leann("Freyd.Alg.RelSet.Tour.next")], [#leant("Freyd.Alg.RelSet.Tour.next")],
+  [#leanf("Freyd.Alg.RelSet.Tour.next")],
   [the second city of the journey],
   [#leann("Freyd.Alg.RelSet.Tour.replaceHead")], [#leant("Freyd.Alg.RelSet.Tour.replaceHead")],
   [#leanf("Freyd.Alg.RelSet.Tour.replaceHead")],
@@ -924,11 +924,11 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [t costs no more than t′, and both journeys of t and t′ share their first two cities],
 // lean:AOP.A8_6_Tour.Journey@43d30e10
 // lean:AOP.A8_6_Tour.Tour@5351625c
-// lean:AOP.A8_6_Tour.hd@ec270d00
-// lean:AOP.A8_6_Tour.nxt@4eb9366c
-// lean:AOP.A8_6_Tour.replaceHead@b9cb84df
-// lean:AOP.A8_6_Tour.outcost@d41264e2
-// lean:AOP.A8_6_Tour.incost@6cc43105
+// lean:AOP.A8_6_Tour.head@8f3cba94
+// lean:AOP.A8_6_Tour.next@6c6f8f88
+// lean:AOP.A8_6_Tour.replaceHead@7ff6abf9
+// lean:AOP.A8_6_Tour.outcost@d2f4dc52
+// lean:AOP.A8_6_Tour.incost@f7717a87
 // lean:AOP.A8_6_Tour.cost@06de8db1
 // lean:AOP.A8_6_Tour.start@d985a9ce
 // lean:AOP.A8_6_Tour.droplFn@fbc7f8e7
@@ -939,12 +939,12 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 // lean:AOP.A8_6_Tour.tour@e98fe8cb
 // lean:AOP.A8_6_Tour.R@99271c4e
 // lean:AOP.A8_6_Tour.R_eq@15ad4adc
-// lean:AOP.A8_6_Tour.Qc@a73d3422
+// lean:AOP.A8_6_Tour.Qc@dc87d553
 // lean:AOP.A8_6_Tour.R_apply@f30bcc6e
-// lean:AOP.A8_6_Tour.next2@d792d805
-// lean:AOP.A8_6_Tour.head2@02940dda
+// lean:AOP.A8_6_Tour.next2@dc51681a
+// lean:AOP.A8_6_Tour.head2@593fe366
 // lean:AOP.A8_6_Tour.Qc_eq@1fd75015
-// lean:AOP.A8_6_Tour.Qc_apply@00f522e3
+// lean:AOP.A8_6_Tour.Qc_apply@cbc2eb9b
 )]<tour-defn>
 
 #disp[#table(

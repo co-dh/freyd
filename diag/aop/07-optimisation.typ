@@ -21,8 +21,8 @@
   [`X⊑est(R)⟺X⊑∋` and `X°∋⊑R`], [in the set, and below every element of it],
   [$frac(#[`𝟙`], ∋)$ `(∈\R)=R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
-  [#leanf("Freyd.Alg.bigUnion")], [flattens a set of sets],
-  // lean:Freyd.S2_40.bigUnion@a91eebb8
+  [#leanf("Freyd.Alg.union")], [flattens a set of sets],
+  // lean:Freyd.S2_40.union@a91eebb8
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
   [#leanf("Freyd.Alg.singletonMap_comp_est") #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
@@ -121,7 +121,7 @@ directly.
   zsqc(`X`, `∈\(∈\R)`),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.bigUnion_comp_lb@96c7fcdf
+// lean:AOP.A7_1.bigUnion_comp_lb@700fb933
 ]<est-73>
 
 === #leanf("Freyd.Alg.Λ_comp_est") — the smallest `S`-value is an `S`-value `R`-related to every `S`-value
@@ -224,7 +224,7 @@ directly.
   zpair(zsqc(`P(est(R))∋`, `∋est(R)`), zsqc(`∈P(est(R))`, `est(R)∈`)),
 )
 #align(center, block(inset: (y: 4pt))[#src[, `R` transitive]])
-// lean:AOP.A7_1.powerRel_est_le_bigUnion@a48e1dce
+// lean:AOP.A7_1.powerRel_est_le_bigUnion@0c8f5a68
 ]<est-711>
 
 == Monotonic algebras
@@ -441,7 +441,7 @@ directly.
   [`nil ≜ []`], [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit")],
   [the empty list — the first constructor of `[A]`],
 
-  [`cons(a,[x₁,…,xₙ]) ≜ [a,x₁,…,xₙ]`], [#leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
+  [`cons(a,[x₁,…,xₙ]) ≜ [a,x₁,…,xₙ]`], [#leant("Freyd.Alg.RelSet.ListRel.cons")],
   [`cons(3,[1,2])=[3,1,2]` — a head onto a tail, the second constructor],
 
   [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
@@ -451,8 +451,8 @@ directly.
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
-  // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.R")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.R")],
+  // lean:AOP.A7_7_TakeWhile.R@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
   [`(⊸ nil)(a,x) ≜ nil`], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
@@ -471,7 +471,7 @@ directly.
   [the test `X` picks the branch: `R` where `X` holds, `S` where it does not],
 
   [`nil R=⊤`, #h(4pt) `nil R°=nil`], [],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@2ab36ee1
   [`nil` is the shortest list — below every list, and above only itself, so it loses every
    `est(R°)`],
 )
@@ -584,25 +584,25 @@ directly.
 
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")]],
   [],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@4aaef484
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@8cb1c422
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")]],
   [each operand is reached on its own #h(4pt) #src[@adj-all:9] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@3e5355f1
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@78236911
 
   [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6237fa76
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@612fd410
 
   [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@5b43bd21
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@b6d81843
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn:11] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@2ab36ee1
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all:9]],
@@ -610,7 +610,7 @@ directly.
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch, which no row above draws, is
   `nil⊑nil R°`.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono@dd666ed8
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono@4057cb87
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -637,7 +637,7 @@ directly.
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_step@dfa01b38
+  // lean:AOP.A7_7_TakeWhile.takewhile_step@67f2affb
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -842,7 +842,7 @@ directly.
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
-     // lean:AOP.A7_7_MSS.Kalg@206c4ecd lean:AOP.A7_7_MSS.scanStep_union@051f2b01
+     // lean:AOP.A7_7_MSS.k@206c4ecd lean:AOP.A7_7_MSS.scanStep_union@051f2b01
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -868,7 +868,7 @@ directly.
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
-    // lean:AOP.A7_7_MSS.mss_eq_scan@520c4147
+    // lean:AOP.A7_7_MSS.mss_eq_scan@46dfc853
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
   // it, so no bead here carries a `%∋`.  `suffix` is only LAX natural in `Rel`, so it is a NODE on
   // the object wire like the rest; the outer `E` runs past it, and `prefix sum` is where `list` dies.
@@ -903,8 +903,8 @@ directly.
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
-  // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.R")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.R")],
+  // lean:AOP.A7_7_TakeWhile.R@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
   [`π₂(a,x) ≜ x`], [`A×[A]⟶[A]`],
@@ -920,7 +920,7 @@ directly.
    algebra with one extra `p` — keep a head that passes `p`, or drop the head],
 
   [`𝟙⊑π₂R cons°` #h(4pt) #src[]], [],
-  // lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@44ddd75e
+  // lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@4ffc4f2a
   [the tail is one shorter than the cons, so `π₂` loses the `est(R°)` at every step — where
    @takewhile-defn:7's loser is `nil`],
 )
@@ -930,7 +930,7 @@ directly.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_mono") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
-     // lean:AOP.A7_7_Filter.filter_mono@8fa9f2c8
+     // lean:AOP.A7_7_Filter.filter_mono@7c4f377d
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
@@ -959,7 +959,7 @@ directly.
   Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
-     // lean:AOP.A7_7_Filter.filter_step@b7f347f5
+     // lean:AOP.A7_7_Filter.filter_step@ca7c9c3b
   table.header([*formula*], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
@@ -1043,7 +1043,7 @@ directly.
    #h(4pt) #src[`est(R°)` is @est-defn]],
 
   [`R≜length≤length°`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.R")],
   [The preorder `filter` and `takewhile` maximise over: the longer list wins.
    #h(4pt) #src[`≥≜≤°`]],
 

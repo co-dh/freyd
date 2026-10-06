@@ -93,7 +93,7 @@ monad `iE`.]]
 #src[the monad is on `Map(𝒜)`, not on the allegory: `E` is a relator on all relations, but
 $frac(#[`𝟙`], ∋)$,
 `union` and `f E(g) union` are maps, and the Kleisli construction happens where they live.]
-// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@bca8d7c5 lean:AOP.A4_6.kleisliComp@70c8eb7e
+// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@97d23352 lean:AOP.A4_6.kleisliComp@c0432b65
 ]]]<kleisli-defn>
 
 #disp[

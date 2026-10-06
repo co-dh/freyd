@@ -82,7 +82,7 @@
   zstep(op: sym.subset.eq.sq, under: true)[@est-711],
   zsqc(`P(dom(est(R))) union est(R)`, none),
 )
-// lean:AOP.A7_1.powerRel_est_eq_bigUnion@edd67d04
+// lean:AOP.A7_1.powerRel_est_eq_bigUnion@9ca104ff
 ]<est-712>
 
 #disp[
@@ -114,7 +114,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`est(R)°⊑∈`, `∈∈union⊑∈`],
   zsqc(`est(R)∈est(R)`, `est(R)R°`, name: "UP of est"),
 )
-// lean:AOP.A7_1.powerRel_est_eq_bigUnion@edd67d04
+// lean:AOP.A7_1.powerRel_est_eq_bigUnion@9ca104ff
 ]<est-712-geq>
 
 == Shortest paths on a cylinder, on lists <sec-cyl-lists>
@@ -169,12 +169,12 @@
 
   [#leanf("Freyd.Alg.Cylinder.gen")
  #src[]],
-   // lean:AOP.A7_4_Cylinder.gen@9ccb5c34
+   // lean:AOP.A7_4_Cylinder.gen@e6a5f4d7
   [#leant("Freyd.Alg.Cylinder.gen")],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [#leanf("Freyd.Alg.Cylinder.paths") #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@d335f44f
+  // lean:AOP.A7_4_Cylinder.paths@da35d11c
   [#leant("Freyd.Alg.Cylinder.paths")],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
@@ -203,7 +203,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
       {[3,6],[3,7],[3,8]},
       {[4,5],[4,7],[4,8]} )
 ```]
-// lean:AOP.A7_4_Cylinder.gen@9ccb5c34 lean:AOP.A7_4_CylinderVec.gen_run@47a0e44e
+// lean:AOP.A7_4_Cylinder.gen@e6a5f4d7 lean:AOP.A7_4_CylinderVec.gen_run@47a0e44e
 ]<cyl-gen>
 
 #disp[#block(breakable: false)[
@@ -305,7 +305,7 @@ N(cp P(α))(that)
       {[3,6],[3,7],[3,8]},{[4,5],[4,7],[4,8]}) : N(E(L A))     cp pairs the square with each path,
                                                                α prefixes it: α(1,[5])=[1,5]
 ```]
-// lean:AOP.A7_4_Cylinder.gen@9ccb5c34
+// lean:AOP.A7_4_Cylinder.gen@e6a5f4d7
 ]<gen-step>
 
 === `gen` is an `F`-algebra; `⦇gen⦈`: `α⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-fold>

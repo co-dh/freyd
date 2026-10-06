@@ -1694,4 +1694,9 @@ open Lean PrettyPrinter in
     pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
   | _ => throw ()
 
+-- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
+attribute [diag_noted] connected head zero succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
+  RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
+  RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next
+
 end Freyd.Alg

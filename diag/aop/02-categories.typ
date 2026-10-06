@@ -49,7 +49,7 @@ The *initial algebra* `α : F(T)⟶T` has exactly one F-homomorphism `⦇f⦈ : 
   Thm(cols: 1)[#leanf("Freyd.Alg.nat_fold_spec") \
     #src[`h` is a homomorphism from `α = [zero,succ]` to `[c,f]` exactly when `h` sends `zero` to
      `c` and `succ` then `h` equals `h` then `f`]],
-  // lean:AOP.A2_6.nat_fold_spec@4f96f949
+  // lean:AOP.A2_6.nat_fold_spec@15a8703a
   lean-chain(
     (
       (none, "Freyd.Alg.nat_fold_spec_step1.lhs", src[the right side]),
@@ -61,16 +61,16 @@ The *initial algebra* `α : F(T)⟶T` has exactly one F-homomorphism `⦇f⦈ : 
     (
       (none, "Freyd.Alg.nat_fold_spec_step3.lhs", src[the left side]),
       (EQ, "Freyd.Alg.nat_fold_spec_step3.rhs", src[since `α = [zero,succ]`]),
-      // lean:AOP.A2_6.nat_fold_spec_step3@305350d9
+      // lean:AOP.A2_6.nat_fold_spec_step3@a9a30fd5
       (EQ, "Freyd.Alg.nat_fold_spec_step4.rhs", src[coproduct]),
-      // lean:AOP.A2_6.nat_fold_spec_step4@d3fec447
+      // lean:AOP.A2_6.nat_fold_spec_step4@46340f81
     ),
     (
       (IFF, ("Freyd.Alg.nat_fold_spec_step5_zero",), src[cancellation, `zero` arm]),
       (src[and], ("Freyd.Alg.nat_fold_spec_step5_succ",), src[cancellation, `succ` arm]),
-      // lean:AOP.A2_6.nat_fold_spec_step5@54298de9
-      // lean:AOP.A2_6.nat_fold_spec_step5_zero@d3a0daa1
-      // lean:AOP.A2_6.nat_fold_spec_step5_succ@b36deae1
+      // lean:AOP.A2_6.nat_fold_spec_step5@35ed707e
+      // lean:AOP.A2_6.nat_fold_spec_step5_zero@9c564d74
+      // lean:AOP.A2_6.nat_fold_spec_step5_succ@ba04cad9
     ),
   ),
 )]<nat-fold-spec>

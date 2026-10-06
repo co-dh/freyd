@@ -23,7 +23,7 @@
   - #leanf("Freyd.Alg.RelSet.Segment.fold_T") \
     #src[`T=[nil,cat]` takes a non-empty first list, so `T°` cuts a non-empty prefix off a list every
      way, and folding with `T` flattens a list of segments]
-    // lean:AOP.A9_0_SegmentExample.fold_T@984e4101
+    // lean:AOP.A9_0_SegmentExample.fold_T@57c206f5
   - #leanf("Freyd.Alg.RelSet.Segment.fold_h") \
     #src[`h=[nil,cons(sum×𝟙)]` puts a segment's sum in front, so folding with `h` sums every segment]
     // lean:AOP.A9_0_SegmentExample.fold_h@a85436e3
@@ -752,7 +752,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.row_rec") \
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
-     // lean:AOP.A9_3_Bracket.row_rec@2ee70011
+     // lean:AOP.A9_3_Bracket.row_rec@5ccbd94e
   lean-calc(calc-row, breaks: (3,)),
 )]<row-rec>
 
@@ -848,17 +848,17 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs"),
     [#src[(9.10) — @row-rec — on the non-singleton `tic` lists]])],
-     // lean:AOP.A9_3_Bracket.newrows_step2@01b6024a
+     // lean:AOP.A9_3_Bracket.newrows_step2@ce617066
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs"),
     [#src[`list⟨f,g⟩=⟨list(f),list(g)⟩ zip`; products; definitions of `tops` and `rests`]])],
-     // lean:AOP.A9_3_Bracket.newrows_step3@346dfb8b
+     // lean:AOP.A9_3_Bracket.newrows_step3@23246f72
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step4.rhs"),
     [#src[@tops-rec and @rests-eq; products; definition of `step`]])],
-     // lean:AOP.A9_3_Bracket.newrows_step4@1493a82d
+     // lean:AOP.A9_3_Bracket.newrows_step4@dde27828
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step4.rhs")],
 )]<newrows-rec>
 
@@ -878,22 +878,22 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs"),
     [#src[`cons inits=⟨π₁ wrap,tic⟩ cons`, abbreviating `cons inits tail` by `tic`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step2@5cb45254
+     // lean:AOP.A9_3_Bracket.array_cons_step2@43cb1e11
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs"),
     [#src[`cons list(f)=(f×list(f)) cons`; definition of `newrows`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step3@f5fb37d5
+     // lean:AOP.A9_3_Bracket.array_cons_step3@964babf4
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs"),
     [#src[`wrap row=tip wrap`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step4@ae800583
+     // lean:AOP.A9_3_Bracket.array_cons_step4@5deb2e18
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs"),
     [#src[@newrows-rec; products; definition of `addcol`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step5@a1cfe883
+     // lean:AOP.A9_3_Bracket.array_cons_step5@f6c0b516
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs")],
 )]<array-cons>
 
@@ -952,7 +952,7 @@
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
-  // lean:AOP.A9_4_Code.code_laws@8f508f50
+  // lean:AOP.A9_4_Code.code_laws@33fe6c93
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -1034,7 +1034,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Code.code_disj") \
     #src[no string is both a result of `extend` and the result `[]` of `nil`]],
-     // lean:AOP.A9_4_Code.code_disj@80dbea26 lean:AOP.A9_4_Code.null@2ab49554
+     // lean:AOP.A9_4_Code.code_disj@a47b732b lean:AOP.A9_4_Code.null@2ab49554
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_disj_step1.lhs"), [])],
@@ -1042,13 +1042,13 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step1.rhs"),
     [#src[`nil` returns only `[]`, so `nil°=null nil°`]])],
-     // lean:AOP.A9_4_Code.code_disj_step1@9698e2de
+     // lean:AOP.A9_4_Code.code_disj_step1@d70d7366
   [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step2.rhs"),
     [#src[`extend null=𝟘`: a symbol ends the string with a character, a pointer with its non-empty
       `zs`]])],
-     // lean:AOP.A9_4_Code.code_disj_step2@49ebf5ab lean:AOP.A9_4_Code.extend_ne_nil@4f36ac2c
+     // lean:AOP.A9_4_Code.code_disj_step2@a4858dcc lean:AOP.A9_4_Code.extend_ne_nil@4f36ac2c
   [#lean("Freyd.Alg.RelSet.Code.code_disj_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj.rhs"),

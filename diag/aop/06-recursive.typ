@@ -442,7 +442,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_step") \
     #src[if `(x,b,y)` is a `check`ed triple for a permutation of `l`, then `step(a,(x,b,y))` is a
      `check`ed triple for a permutation of `[a] ⧺ l`]],
-     // lean:AOP.A6_6e_Quicksort.split_step@b7a3c037
+     // lean:AOP.A6_6e_Quicksort.split_step@ce287cc3
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.split_step.lhs", []),
     (SQ, "Freyd.Alg.RelSet.Sort.split_step.rhs", src[`aRb` puts `a` in front of `x`; otherwise `bRa` and `a` goes in front of `y`]),
@@ -473,7 +473,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insert_add") \
     #src[inserting `a` into an ordered list puts `a` somewhere in it and keeps it ordered]],
-     // lean:AOP.A6_6c_ISort.insert_add@95dfc136
+     // lean:AOP.A6_6c_ISort.insert_add@77bb18bc
   lean-chain(
     (none, "Freyd.Alg.RelSet.ISort.insert_add.lhs", []),
     (SQ, "Freyd.Alg.RelSet.ISort.insert_add.rhs", src[`insert` splices `a` in, and `R` transitive and connected]),

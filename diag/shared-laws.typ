@@ -417,7 +417,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 
   [#leanf("Freyd.Alg.existsImage_eq_Λ_bigUnion")],
   [#src[the image of a set under `R` is the union of the `R`-sets of its points.]],
-  // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@cd08cc82
+  // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@ad08a48b
 
   [#leanf("Freyd.Alg.supset")],
   [`xs⊇ys⟺∀a. ys∋a→xs∋a`],
