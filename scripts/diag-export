@@ -35,5 +35,7 @@ fi
 # The binary under `lake env`, not `lake exe`: the build is done above or by the caller, and
 # `lake exe` re-checks every module per process, which queued behind other builds for up to 26 s.
 exe=.lake/build/bin/diag-export
+# A PANIC ABORTS: Lean's default prints it and continues on a default Expr, so a wrong panel exited 0.
+export LEAN_ABORT_ON_PANIC=1
 case " $* " in *" --list "*) exec lake env "$exe" "$@" ;; esac
 exec ./scripts/cap lake env "$exe" "$@"

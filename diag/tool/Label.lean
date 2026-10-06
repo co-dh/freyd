@@ -1428,8 +1428,11 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- A tagged MAP whose body is a `match` on its input, which `openNoted` leaves closed, is
       -- written by its arms (`[nil,π₂]`), as `mapLabel` writes its graph — bare, or at a point.
       if (← branchForm? e).isSome then return ← mapLabel e true
-      if e.isApp && (← branchForm? e.appFn!).isSome then
-        return (← mapLabel e.appFn! true) ++ "(" ++ (← labelTree 0 e.appArg!) ++ ")"
+      -- A MATCH, not `e.isApp && (← … e.appFn!)`: do-notation hoists the `←` above the `&&`, so a
+      -- bare tagged constant reached `appFn!` and panicked into a default Expr.
+      if let .app f a := e then
+        if (← branchForm? f).isSome then
+          return (← mapLabel f true) ++ "(" ++ (← labelTree 0 a) ++ ")"
       -- A tagged RELATION STATED AT POINTS is opened WITHOUT them and keeps them, `(R ∪ S)(u,t)`:
       -- opened whole, the operator its body is headed by takes the points for its operands.
       if ← Meta.isProp e then
