@@ -1664,6 +1664,8 @@ partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr))
     mirror of `diag_induced`: that one says a name is KEPT and dashed, this one that it is opened. -/
 def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) : MetaM Expr := do
   let .const n _ := e.getAppFn | return e
+  -- The name a definition's formula DEFINES stays closed on its left: opened, `x ≜ body` reads `body ≜ body`.
+  if (← getOptions).get `diag.keepClosed Name.anonymous == n then return e
   unless (← tags.anyM fun t => return (← Lean.labelled t).contains n) do return e
   match ← Meta.unfoldDefinition? e with
   -- A DEFINITION LEAN ELABORATED FOR ITSELF IS NOT A BODY THE NOTE WRITES.  `cons` opens to

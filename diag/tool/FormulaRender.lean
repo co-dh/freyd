@@ -186,7 +186,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       unless path.isEmpty do
         throwError "{declName}: `.{path.head!}` takes a side of a statement, and a definition has \
           none — its formula is `<name>≜<body>`"
-      let head ← labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
+      let head ← withOptions (·.set `diag.keepClosed declName)
+        (labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs))
       -- A STRUCTURE OF PROPOSITIONS (a `Prop` class) has no value but its FIELDS: what it states is
       -- their conjunction, read off the constructor at these arguments.
       if ci.value?.isNone && isStructure (← getEnv) declName then
