@@ -25,12 +25,7 @@
 #let ia-cata-r = "Freyd.Alg.InitialAlgebra.cata_comm.rhs"
 
 #disp[#definition[
-An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
-An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` with `f h=F(h)g`.
-The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
-every F-algebra `f`
-#src[].
-// lean:AOP.A5_5.InitialAlgebra@0ea41da0
+The *initial algebra* `α : F(T)⟶T` has exactly one F-homomorphism `⦇f⦈ : T⟶A` to every F-algebra `f : F(A)⟶A`.
 
   // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
   // paint the same carrier red in the row below and cyan in the row above.
@@ -131,13 +126,7 @@ then applying `S` is folding with `Q`.
 == Type functors
 
 #disp[#definition[
-Let `F` be a bifunctor taking both the parameter `A` and the recursive position `TA`, with an initial
-algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
-`f : A⟶B` by
-
-  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
- #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317
+#leanf("Freyd.Alg.typeMap") #h(4pt) — the type functor `T` acts on a map `f : A⟶B` through the initial algebras `α`#sub[`A`]` : F(A,TA)⟶TA`.
 ]]<tfun-defn>
 
 // The square is the five arrows `alpha_natural_split` states; the algebra `F(f,𝟙)α_B` is the path

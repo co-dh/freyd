@@ -6,19 +6,7 @@
 == Relators
 
 #disp[#definition[
-Every hom-set of an allegory is a poset, so an allegory is a *locally posetal 2-category*: the 2-cell
-from `R` to `S` IS `R⊑S`. A *relator* `F : 𝒞⟶𝓓` is a 2-functor between allegories:
-
-  #align(center, block(inset: (y: 6pt))[
- #text(12.5pt)[`F(𝟙)=𝟙` #src[] #h(1cm)
-    // lean:Freyd.S1_18.map_id@1cd85d8e
- `F(RS)=F(R)F(S)` #src[] #h(1cm)
-    // lean:Freyd.S1_18.map_comp@ab212d4e
- #leanf("Freyd.Alg.Relator.map_mono") #src[]]
-  ])
-
-Preserving `°` is *not* asked for — `°` is an identity-on-objects involution `𝒞ᵒᵖ⟶𝒞`, no part of
-the 2-category.
+A *relator* `F : 𝒞⟶𝓓` is a 2-functor between allegories: it preserves `𝟙`, composition and `⊑`.
 ]]<relator-defn>
 
 #disp[#table(
@@ -59,11 +47,9 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 == Relational products
 
 #disp(num: "(5.1)")[#definition[
-The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
-// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
-where `(π₁,π₂)` is the tabulation of `⊤`
-#src[].
-// lean:AOP.A5_2.eq_topMor@31e6622f lean:AOP.A5_2.joint_id@f9cba0f7
+#leanf("Freyd.Alg.RelProd.pair") #h(4pt) — the *fork* of `R : C⟶A` and `S : C⟶B`, with `(π₁,π₂)` the tabulation of `⊤`.
+
+`⟨R,S⟩≜Rπ₁°∩Sπ₂°` #h(4pt) `c ⟨R,S⟩ (a,b)⟺c R a∧c S b`.
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
@@ -92,10 +78,7 @@ the monoid's unit law:
 === Relational product `R×S`
 
 #disp(num: "(5.2)")[#definition[
-`R×S≜⟨π₁R,π₂S⟩` #src[], a relator in each argument
-// lean:AOP.A5_2.prodMap@28e34ad0
-#src[] but no longer a categorical product.
-// lean:AOP.A5_2.prod@64fdb8dc
+#leanf("Freyd.Alg.prodMap") #h(4pt) — the relational product `R×S≜⟨π₁R,π₂S⟩`.
 ]]<relprod-defn>
 
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
@@ -271,17 +254,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 // B&dM p. 119's three steps, in its order: the point-free line, the `Rel` set formula, one plain
 // sentence.
 #disp[#definition[
-For `R : A⟶B`,
-#grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
- [], [#leanf("Freyd.Alg.powerRel") #src[]],
-  // lean:AOP.A5_4.powerRel@ec676a67
- [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[]],
-  // lean:AOP.A4_6.existsImage@eb2a9f39
-)
+#leanf("Freyd.Alg.powerRel") #h(4pt) — the power relator `P(R) : PA⟶PB`, `R` lifted to sets.
 
 `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)`
-
-Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 ]]<powrel-defn>
 
 #disp[#align(center, table(
@@ -390,13 +365,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // @cata-reflection, @cata-fusion — moved to §2 (Functions and Categories, `02-categories.typ`).
 
 #disp[#definition[
-Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor. `F(R,S)` is its
-action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce section. For every object
-`A` the initial algebra is `α : F(A,TA)⟶TA`, among the maps. `T` acts on an arrow `R : A⟶B` by
-
-  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap_defn") #h(4pt)
- #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317 lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
+#leanf("Freyd.Alg.typeMap_defn") #h(4pt) — the type functor `T` acts on an arrow `R : A⟶B` by rebuilding with `α`, applying `R` to the parameter.
 ]]<tf-defn>
 
 // Same widths and stroke as the reduce table: the two tables are read one after the other, and
@@ -429,8 +398,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 == Relational catamorphisms <sec-cata>
 
 #disp[#definition[
-let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcategory of functions.
-`α` is also initial in the allegory:
+The initial algebra `α : F(T)⟶T` among the maps is also initial in the allegory:
 ]]<cata-defn>
 
 
@@ -668,10 +636,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
 // turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.
 #disp[#definition[
-`cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : PA×PA⟶PA`, #h(4pt) so
-$frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
-#h(4pt) #src[]
-// lean:AOP.A5_6.Λ_union@a769989a
+#leanf("Freyd.Alg.cup") #h(4pt) — `cup` unions two sets.
+
+`cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : PA×PA⟶PA`
 ]]<cup-defn>
 
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
@@ -778,17 +745,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 // B&dM §5.7, p. 133.  Same `⇒` the note gives an ordinary natural transformation: B&dM's own hooked
 // arrow marks laxness, but the word already does, and the inequation is right there.
 #disp[#definition[
-For relators `G,F : 𝒞⟶𝓓` and components `φ`#sub[`A`]` : GA⟶FA`, `φ` is *lax at*
-`R : A⟶B` when #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) — both sides `GA⟶FB`, the
-left through the component at `B`, the right through the one at `A`.
-
-`φ : G⇒F` is a *lax natural transformation* (LaT) when it is lax at *every* `R`. #h(4pt) #src[(5.13)]
-
-Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
-`G(f)φ=φF(f)`: #h(4pt) laxness is about relations only.
-// lax-defn row: Theorem 5.2
-#h(4pt) #src[]
-// lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23
+`φ : G⇒F` is *lax at* `R : A⟶B` when `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`; it is a *lax natural transformation* (LaT) when lax at every `R`.
 ]]<lax-defn>
 
 // The two panels of the inequation, emitted by `./scripts/diagram --sigs … --src … --tgt …` plus

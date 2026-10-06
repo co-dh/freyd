@@ -7,29 +7,9 @@
 
 // B&dM §7.1, p. 166.
 #disp[#definition[
-For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : PA⟶A` #h(4pt) #src[`X⊑∈\R°⟺∈X⊑R°`, and `∈X` runs `y⟶xs⟶x`, member first, so its pair `(y,x)` is in `R°` exactly when `x R y`; at `R≜≤` that is `x≤y` for every `y∈xs`, the least — `∈\≤` would give `y≤x`, the greatest].
-// lean:AOP.A7_1.est@f615ac35
+#leanf("Freyd.Alg.est") #h(4pt) — `x` is the `est(R)` of `xs` when `x∈xs` and `x R y` for every `y∈xs`; B&dM call it `min R`.
 
-#leanf("Freyd.Alg.est_eq_subset_Λ") #h(4pt) #src[`x` is the `est(R)` of `xs` when `x∈xs` and `xs ⊆ Λ(R)(x)`, the set of every `y` with `x R y` — @mem-ldiv at `Z≜R°`]
-// lean:AOP.A7_1.est_eq_subset_Λ@be447c48
-
-#lean("Freyd.Alg.est_eq_subset_Λ.rhs.inl", "Freyd.Alg.est_eq_subset_Λ.rhs.inr", op: [`∩`])
-
-`xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[the same predicate under the same
-letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
-]
-// lean:AOP.A7_2_RelSet.est_apply@9438ceab
-// B&dM's `min R` has `R : A⟵A` reading `x R y` as the arrow `y⟶x`, ours `R : A⟶A` reading `x⟶y`.
-
-`xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
-
-`est(R)=∋∩all R°` #h(4pt) #src[`all R≜∈\R`, q's `all`; the chains below keep it written `∈\`]
-
-`E(R)≜` $frac(#[`∋R`], ∋)$ ` : PA⟶PB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
-#src[the image of `xs`, @Freyd.Alg.existsImage]
-
-`P(R) : PA⟶PB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
-#src[every `x` and every `y` has a partner, @powrel-readings:5]
+`est(≤)` #h(4pt) `xs (est(≤)) x⟺x∈xs∧(∀y∈xs. x≤y)`.
 ]]<est-defn>
 
 #disp[#table(
@@ -300,13 +280,9 @@ directly.
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
 #disp[#definition[
-`f : FA⟶A` *distributes over* `R` if #h(4pt) `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`
-#src[].
-// lean:AOP.A7_2.Distributes@311e8198
+`f : FA⟶A` *distributes over* `R` when `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`.
 
-`+` distributes over `≤`, at the point level #h(4pt)
-`min(xs)+min(ys)` is a least element of `{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
-`min≜est(≤)`.
+`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)` — addition distributes over `≤`: #h(4pt) `min(xs)+min(ys)` is a least element of `{x+y∣x∈xs∧y∈ys}`.
 ]]<dist-defn>
 
 // The two panels of the inequation, emitted by `./scripts/diagram --frame 12 --sigs "f:F(A)⟶A"`
@@ -711,19 +687,9 @@ directly.
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
 #disp[#definition[
-`FX=𝟏+Int×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
-#leanf("Freyd.Alg.RelSet.ListRel.sum_cata") and `segment=suffix prefix` from @Freyd.Alg.RelSet.ListRel.segment_eq.
-#h(4pt) #src[]
-// lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
+#leanf("Freyd.Alg.RelSet.MSS.oplus") #h(4pt) — `⊕` is the larger of `0` and `a+b`; B&dM write `max(Λ(zero ∪ plus))`.
 
-`head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
-one-element list, beside @Freyd.Alg.RelSet.ListRel.suffix_cat's `tail≜cons° π₂`]
-
-`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) #src[the
-set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
-]
-// B&dM's `oplus=max(Λ(zero ∪ plus))`.
-// lean:AOP.A7_7_MSS.oplus@9a541ed6 lean:AOP.A7_7_MSS.oplus_eq@b0466a25
+`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) `FX=𝟏+Int×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons`.
 ]]<mss-defn>
 
 
