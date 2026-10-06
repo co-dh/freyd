@@ -195,7 +195,7 @@ open Lean PrettyPrinter in
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
 -- "`S` preserves `Q`" is DRAWN by its inequation `F(Q)S⊑SQ`, as B&dM's (7.2) is; the formula keeps `Pres(S,Q)`.
-attribute [diag_drawn_open] Pres
+attribute [diag_drawn_open, diag_noted] Pres
 
 -- THE DUPLICATION RELATOR IS WRITTEN OUT AS THE PRODUCT IT IS: the note's corner is `A×A` and its
 -- side `R×R`, never `Δ(A)` — `Δ` is `Relator.prod` of two identities (`AOP.A5_2`), and a bundle
