@@ -123,5 +123,6 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [ ] Printer: symbol rules become Lean notation beside the definition.
 [ ] Printer: 14 hand-typed formula names → diag_unfold.
 [ ] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses.
-[ ] RCA: the Lemma 8.1 chain lost its triangles; why no gate caught it.
+[-] RCA: the Lemma 8.1 chain lost its triangles — DROPPED by the user ("I told u to give up on 8.1 triangles").
+    Do not reopen; branch worktree-agent-acb10c66a3d8ff8b6 discarded.
 [ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
