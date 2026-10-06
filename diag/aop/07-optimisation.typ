@@ -300,10 +300,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 - #leanf("Freyd.Alg.RelSet.graph_conj_le_iff_monotone") #h(4pt) #src[`f°F(≤)f` relates `f(u)` to
   `f(v)` whenever `u F(≤) v`; `⊑≤` says each such pair has `f(u)≤f(v)`.]
-- #src[read `f°F(≤)f` as the path `f(u)` #h(2pt) `f°` #h(2pt) `u` #h(2pt) `F(≤)` #h(2pt) `v` #h(2pt) `f` #h(2pt)
-  `f(v)`: the middle step `u F(≤) v` is the premise, and `⊑≤` relates the two ends, so `f(u)≤f(v)`; it does
-  not say that `f(u)≤f(v)` gives `u F(≤) v`. `u`, `v` are in `FA` and `F(≤)` compares them component by
-  component; `f(u)`, `f(v)` are in `A`.]
+- #src[`R⊑≤` says every pair of ends that `R` connects satisfies `≤`.]
+- #src[`f°F(≤)f` is the path `f(u) —f°→ u —F(≤)→ v —f→ f(v)`; it goes through exactly when its middle
+  step `u F(≤) v` holds, which is the premise.]
+- #src[the ends it connects are `f(u)` and `f(v)`, and `⊑≤` requires `f(u)≤f(v)`, which is the conclusion.]
+- #src[so the whole says: whenever `u F(≤) v`, then `f(u)≤f(v)`, i.e. `f` preserves `≤`.]
+- #src[`u`, `v` are in `FA`, tuples with components, and "componentwise `≤`" is about them; `f(u)`, `f(v)` are
+  in `A` and have no components.]
 ]<mon-points>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
