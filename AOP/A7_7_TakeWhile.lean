@@ -871,8 +871,3 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.GCTakeWhile.holds] public meta def Freyd.Alg.RelSet.GCTakeWhile.unexpandHolds : Unexpander
   | `($_ $p) => `($p)
   | _ => throw ()
-open Lean PrettyPrinter in
-/-- `discNil` is the note's `⊸ nil`, the constant map it is the graph of. -/
-@[app_unexpander Freyd.Alg.RelSet.GCTakeWhile.discNil] public meta def Freyd.Alg.RelSet.GCTakeWhile.unexpandDiscNil : Unexpander
-  | `($_:ident) => `($(mkIdent (Name.mkSimple "⊸")) $(mkIdent `nil))
-  | _ => throw ()
