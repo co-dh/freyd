@@ -278,13 +278,13 @@
 // lean:AOP.A9_2_Edit.Q_inl@881e94ca
 // lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
-// lean:AOP.A9_2_Edit.unstep_sound@d5b21374
+// lean:AOP.A9_2_Edit.unstep_sound@53bec1d2
 // lean:AOP.A9_2_Edit.con_nil@56d08b95
 // lean:AOP.A9_2_Edit.con_cons@347d25ed
-// lean:AOP.A9_2_Edit.base_nil@eba6cc46
-// lean:AOP.A9_2_Edit.step_cpy@ef7fd738
-// lean:AOP.A9_2_Edit.step_del@eee5b78e
-// lean:AOP.A9_2_Edit.step_ins@1fed2e53
+// lean:AOP.A9_2_Edit.base_nil@da59d83b
+// lean:AOP.A9_2_Edit.step_cpy@8a9cb310
+// lean:AOP.A9_2_Edit.step_del@4871c629
+// lean:AOP.A9_2_Edit.step_ins@78a5ae08
 // lean:AOP.A9_2_Edit.unstep_nil@1e0900c5
 // lean:AOP.A9_2_Edit.unstep_del@07222c75
 // lean:AOP.A9_2_Edit.unstep_ins@d0e84c5e
@@ -473,7 +473,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@3b1de06b lean:AOP.A9_2_Edit.empty@ff28cd4c
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@ff28cd4c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
