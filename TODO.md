@@ -104,13 +104,10 @@
 [ ] 9.3a definition table looks weird, squeezed, especially <cost, size>.
 
 B&dM companion note (diag/aop/), open as of 2026-10-05:
-[ ] Pres: "can Pres be infix? so instead of Pres(S, Q), we see S Pres Q?" — agent on branch
-    worktree-agent-abbe748bcf6c026fb (rename + pr3 two-line definition done, "pr3 good"); review pr4.
-[ ] 8.3a thinlist: "why use / setify if setify' do?" — define `thinlist(Q) ≜ setify thin(Q) setify° ∩ subseq`;
-    agent on branch worktree-agent-a065e8e87f3161c91; review t2. Needs a full `lake build` in main (S2_30).
-[ ] Row numbers outside every table, SD labels (1),(2),…, every section on a new page — branch
-    worktree-agent-a0b1e249915cd4f68, "n1–n4 good". The axioms note's section breaks and numbers are unchecked.
-[ ] Merge the three branches above to master: full `lake build`, diag-regen, `make c` per chapter, cite, push.
+[X] Pres: "can Pres be infix? so instead of Pres(S, Q), we see S Pres Q?" — "pr4 good", on master.
+[X] 8.3a thinlist: "why use / setify if setify' do?" — `thinlist(Q) ≜ setify thin(Q) setify° ∩ subseq`, "t2 good".
+[X] Row numbers outside every table, SD labels (1),(2),…, every section on a new page — "n1–n4 good".
+[X] Merge the three branches above to master: full `lake build`, diag-regen, `make c` per chapter, cite, push.
 [ ] "8.3e should have a subsection titled Binary thinning", with a step-by-step table like 8.3d; "this is a
     general rule. you should add sorting sets too." — every B&dM paragraph title becomes a subsection, ch1–10.
     After the merge above (it touches 08-thinning.typ).
