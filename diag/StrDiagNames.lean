@@ -216,6 +216,21 @@ open Lean PrettyPrinter in
   | `($_ $R) => `($(mkIdent `preorder) $R)
   | _ => throw ()
 
+-- A naturality premise is the note's adjective on the family (§5.7: `φ` is "lax", "oplax", "strictly
+-- natural"); `F`, `G` are `φ`'s own type, which the picture beside the formula already draws.
+open Lean PrettyPrinter in
+@[app_unexpander LaxNatural] def unexpandLaxNatural : Unexpander
+  | `($_ $_ $_ $φ) => `($(mkIdent `lax) $φ)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander StrictNatural] def unexpandStrictNatural : Unexpander
+  | `($_ $_ $_ $φ) => `($(mkIdent `strict) $φ)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander OpLaxNatural] def unexpandOpLaxNatural : Unexpander
+  | `($_ $_ $_ $φ) => `($(mkIdent `oplax) $φ)
+  | _ => throw ()
+
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- A `RelProd a b`'s apex IS the product of `a` and `b` — that is what tabulating `⊤ : a ⟶ b`
     says — so the note writes it `a×b`, never by the field's own name.  A DELABORATOR and not an
