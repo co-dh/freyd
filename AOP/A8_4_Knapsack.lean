@@ -37,12 +37,12 @@ open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
-variable {Item : Type} {vol wt : Item → Int} {w : Int}
+variable {Item : Type} {val wt : Item → Int} {w : Int}
 
 /-! ## `knap-defn` -/
 
 /-- **knap-defn**: `within w`, the coreflexive on the packings whose weight fits the knapsack
-    (`value ≜ total vol`, `weight ≜ total wt`). -/
+    (`value ≜ total val`, `weight ≜ total wt`). -/
 -- The weight function is the SECTION'S data, not part of the name the note writes (`within(w)`),
 -- so it is an implicit binder supplied by name where a use site has to pin it.
 @[expose] public def within (w : Int) : dList Item ⟶ dList Item :=
@@ -53,30 +53,30 @@ public theorem within_coreflexive : Coreflexive (within (wt := wt) w) :=
 
 /-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `xs R ys` iff `xs` is worth at
     least as much as `y`. -/
-@[expose] public def R (vol : Item → Int) : dList Item ⟶ dList Item :=
-  fun xs ys => total vol ys ≤ total vol xs
+@[expose] public def R (val : Item → Int) : dList Item ⟶ dList Item :=
+  fun xs ys => total val ys ≤ total val xs
 
 /-- `R = value ≥ value°`, point-free. -/
 public theorem R_eq :
-    R vol
-      = graph (total vol) ≫ geq ≫ (graph (total vol) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))° := by
+    R val
+      = graph (total val) ≫ geq ≫ (graph (total val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))° := by
   apply hom_ext; intro x y
   constructor
-  · intro h; exact ⟨total vol x, rfl, total vol y, h, rfl⟩
+  · intro h; exact ⟨total val x, rfl, total val y, h, rfl⟩
   · rintro ⟨m, hm, n, hmn, hn⟩
-    show total vol y ≤ total vol x
-    rw [← (show m = total vol x from hm), ← (show n = total vol y from hn)]
+    show total val y ≤ total val x
+    rw [← (show m = total val x from hm), ← (show n = total val y from hn)]
     exact hmn
 
 /-- **knap-defn**: `Q ≜ R ∩ (weight ≤ weight°)` — at least as valuable AND no heavier, the
     order that makes the cons branch monotonic. -/
-@[expose] public def Q (vol wt : Item → Int) : dList Item ⟶ dList Item :=
-  fun xs ys => total vol ys ≤ total vol xs ∧ total wt xs ≤ total wt ys
+@[expose] public def Q (val wt : Item → Int) : dList Item ⟶ dList Item :=
+  fun xs ys => total val ys ≤ total val xs ∧ total wt xs ≤ total wt ys
 
 /-- `Q = R ∩ (weight ≤ weight°)`, point-free. -/
 public theorem Q_eq :
-    Q vol wt
-      = R vol
+    Q val wt
+      = R val
         ∩ (graph (total wt) ≫ leq ≫ (graph (total wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))°) := by
   apply hom_ext; intro x y
   constructor
@@ -89,36 +89,36 @@ public theorem Q_eq :
     exact hmn
 
 /-- `xs R ys` iff `xs` is worth at least as much as `ys`: the pointwise reading of `R_eq`. -/
-public theorem R_apply (xs ys : ConsList Unit Item) : R vol xs ys ↔ total vol ys ≤ total vol xs := Iff.rfl
+public theorem R_apply (xs ys : ConsList Unit Item) : R val xs ys ↔ total val ys ≤ total val xs := Iff.rfl
 
 /-- `xs Q ys` iff `xs` is worth at least as much as `ys` and weighs no more. -/
 public theorem Q_apply (xs ys : ConsList Unit Item) :
-    Q vol wt xs ys ↔ total vol ys ≤ total vol xs ∧ total wt xs ≤ total wt ys := Iff.rfl
+    Q val wt xs ys ↔ total val ys ≤ total val xs ∧ total wt xs ≤ total wt ys := Iff.rfl
 
 /-- `xs (within w) ys` iff `xs = ys` and `xs` weighs at most `w`. -/
 public theorem within_apply (xs ys : ConsList Unit Item) :
     within (wt := wt) w xs ys ↔ xs = ys ∧ total wt xs ≤ w := Iff.rfl
 
-public theorem Q_le_R : Q vol wt ⊑ R vol := le_iff.mpr fun _ _ h => h.1
+public theorem Q_le_R : Q val wt ⊑ R val := le_iff.mpr fun _ _ h => h.1
 
-public theorem R_refl : 𝟙 (dList Item) ⊑ R vol :=
+public theorem R_refl : 𝟙 (dList Item) ⊑ R val :=
   le_iff.mpr fun x y h => by obtain rfl : x = y := h; exact Int.le_refl _
 
-public theorem Q_refl : 𝟙 (dList Item) ⊑ Q vol wt :=
+public theorem Q_refl : 𝟙 (dList Item) ⊑ Q val wt :=
   le_iff.mpr fun x y h => by
     obtain rfl : x = y := h; exact ⟨Int.le_refl _, Int.le_refl _⟩
 
-public theorem Q_trans : Q vol wt ≫ Q vol wt ⊑ Q vol wt :=
+public theorem Q_trans : Q val wt ≫ Q val wt ⊑ Q val wt :=
   le_iff.mpr fun _ _ h => by
     obtain ⟨_, ⟨hv1, hw1⟩, ⟨hv2, hw2⟩⟩ := h
     exact ⟨Int.le_trans hv2 hv1, Int.le_trans hw1 hw2⟩
 
 /-- `R°` is transitive — Theorem 8.2's `htransR`. -/
-public theorem R_recip_trans : (R vol)° ≫ (R vol)° ⊑ (R vol)° :=
+public theorem R_recip_trans : (R val)° ≫ (R val)° ⊑ (R val)° :=
   le_iff.mpr fun x z h => by
     obtain ⟨y, h1, h2⟩ := h
-    have h1' : total vol x ≤ total vol y := h1
-    have h2' : total vol y ≤ total vol z := h2
+    have h1' : total val x ≤ total val y := h1
+    have h2' : total val y ≤ total val z := h2
     exact Int.le_trans h1' h2'
 
 /-! ## The two algebras `[nil,cons]` and `[nil,π₂]` -/
@@ -210,7 +210,7 @@ public theorem Salg_junc :
 /-- **knap-mono**, first row: `(𝟙×Q)(cons (within w)) ⊑ cons (within w)Q` — bettering a
     packing keeps it inside the knapsack, because `Q` also forbids getting heavier. -/
 public theorem knap_mono_cons :
-    Freyd.Alg.Pres (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q vol wt) :=
+    Freyd.Alg.Pres (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q val wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hcon⟩ := h
     obtain ⟨rfl, hwr⟩ := (con_within_apply (wt := wt) (w := w) v r).mp hcon
@@ -230,13 +230,13 @@ public theorem knap_mono_cons :
         obtain ⟨b, y⟩ := q
         obtain ⟨ha, hQ⟩ := hFv
         obtain rfl : a = b := ha
-        have hv : total vol y ≤ total vol x := hQ.1
+        have hv : total val y ≤ total val x := hQ.1
         have hwxy : total wt x ≤ total wt y := hQ.2
         have hwy : wt a + total wt y ≤ w := hwr
         refine ⟨ConsList.cons a x,
           (con_within_apply (wt := wt) (w := w) (Sum.inr (a, x)) (ConsList.cons a x)).mpr
             ⟨rfl, show wt a + total wt x ≤ w by omega⟩, ?_⟩
-        exact ⟨show vol a + total vol y ≤ vol a + total vol x by omega,
+        exact ⟨show val a + total val y ≤ val a + total val x by omega,
           show wt a + total wt x ≤ wt a + total wt y by omega⟩
 
 /-- **knap-mono**, the FALSE row (B&dM p.206, "the problem is that `within w·[nil,cons]` is
@@ -261,7 +261,7 @@ public theorem knap_mono_cons_false :
 
 /-- **knap-mono**, second row: `(𝟙×Q)π₂ ⊑ π₂Q` — dropping the head cannot undo `Q`. -/
 public theorem knap_mono_drop :
-    Freyd.Alg.Pres (F := F Unit Item) (graph dropFn) (Q vol wt) :=
+    Freyd.Alg.Pres (F := F Unit Item) (graph dropFn) (Q val wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
@@ -279,7 +279,7 @@ public theorem knap_mono_drop :
 
 /-- **knap-defn**, `P ≜ R`: `[nil,cons]` is monotonic on `R`, so the candidate lists may be
     sorted in descending order of value. -/
-public theorem knap_sort_cons : Freyd.Alg.Pres (F := F Unit Item) (graph con) (R vol) :=
+public theorem knap_sort_cons : Freyd.Alg.Pres (F := F Unit Item) (graph con) (R val) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = con v := hr
@@ -298,11 +298,11 @@ public theorem knap_sort_cons : Freyd.Alg.Pres (F := F Unit Item) (graph con) (R
         obtain ⟨b, y⟩ := q
         obtain ⟨ha, hR⟩ := hFv
         obtain rfl : a = b := ha
-        have hv : total vol y ≤ total vol x := hR
-        exact ⟨ConsList.cons a x, rfl, show vol a + total vol y ≤ vol a + total vol x by omega⟩
+        have hv : total val y ≤ total val x := hR
+        exact ⟨ConsList.cons a x, rfl, show val a + total val y ≤ val a + total val x by omega⟩
 
 /-- **knap-defn**, `P ≜ R`: `[nil,π₂]` is monotonic on `R` too. -/
-public theorem knap_sort_drop : Freyd.Alg.Pres (F := F Unit Item) (graph dropFn) (R vol) :=
+public theorem knap_sort_drop : Freyd.Alg.Pres (F := F Unit Item) (graph dropFn) (R val) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
@@ -378,8 +378,8 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
         exact ⟨subseqP.weaken hsy, hwy⟩
 
 /-- `R ≜ value ≥ value°` is connected: any two packings compare by value one way or the other. -/
-public theorem R_connected : Freyd.Alg.connected (R vol) :=
-  le_iff.mpr fun x y _ => (Int.le_total (total vol y) (total vol x)).imp id id
+public theorem R_connected : Freyd.Alg.connected (R val) :=
+  le_iff.mpr fun x y _ => (Int.le_total (total val y) (total val x)).imp id id
 
 /-- B&dM's `g₁ ≜ list(cons) filter(within w)` (§8.4, p.206): extend each packing by the item, keep those that fit. -/
 @[expose] public def g₁ := list (graph con) ≫ Filter.filter (within (Item := Item) (wt := wt) w)
@@ -393,10 +393,10 @@ public theorem R_connected : Freyd.Alg.connected (R vol) :=
 public theorem knap_laws_step1 :
     ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
         (g₁ (wt := wt) (w := w)) g₂
-        ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
-      ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
+        ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
+      ⊑ Λ ⦇Salg wt w⦈ ≫ est (R val) := by
   have key := thinningList con dropFn (within (wt := wt) w) (𝟙 _) within_coreflexive (le_refl _)
-    («≼» := R vol) (Q := Q vol wt) (R := R vol) Q_le_R ⟨Q_refl, Q_trans⟩
+    («≼» := R val) (Q := Q val wt) (R := R val) Q_le_R ⟨Q_refl, Q_trans⟩
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩
     knap_mono_cons (by rw [Cat.comp_id]; exact knap_mono_drop)
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩ R_connected knap_sort_cons knap_sort_drop
@@ -405,7 +405,7 @@ public theorem knap_laws_step1 :
 
 /-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
 public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    Λ ⦇Salg wt w⦈ ≫ est (R vol) = Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
+    Λ ⦇Salg wt w⦈ ≫ est (R val) = Λ (subseq ≫ within (wt := wt) w) ≫ est (R val) := by
   rw [knap_spec hw hwt]
 
 /-- **knap-laws** (B&dM §8.4, p.206): the knapsack problem as a fold that thins the packings
@@ -417,8 +417,8 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
 public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
         (g₁ (wt := wt) (w := w)) g₂
-        ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
-      ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
+        ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
+      ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R val) := by
   rw [← knap_laws_step2 hw hwt]
   exact knap_laws_step1
 

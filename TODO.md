@@ -119,14 +119,14 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [X] Cut every old definition block to two lines like pr3 (#leanf + one reading + book's name once; one example).
 [-] Review the ch9/ch10 def table crops — dropped: no question behind it; his findings are the items below.
 Requests of 2026-10-06 morning, not yet done:
-[ ] Def tables: drop the name column — "the name column is use less and deplicated, as it's appear in def column".
-    In flight (deftab agent), every def table.
-[ ] Def tables: one definition per row, the point-free one — "you have 2 def in 8.4a row 1, keep the point free one."
-    In flight (deftab agent), every def table.
-[ ] 8.4a subseq — "the definition of subseq at (8.4a) is wrong. it's the notation defintion": print
-    `subseq = ⦇[nil, cons ∪ π₂]⦈` (subseq_cata); same check on every def row. In flight (deftab agent).
-[ ] Knapsack `vol` → `val` — "what's vol in 8.4a? are you suppose to ues val for value?" (B&dM p.205 prints val; OCR
-    read vol). In flight (deftab agent), Lean binders and note.
+[X] Def tables: drop the name column — "the name column is use less and deplicated, as it's appear in def column".
+    Every def table; reviewed dt1–dt10 "all dt good".
+[X] Def tables: one definition per row, the point-free one — "you have 2 def in 8.4a row 1, keep the point free one."
+    Rows with no point-free statement keep theirs: within (below), bumpRel, Edit Q/unstep/con/baseStep, Bracket szFn.
+[X] 8.4a subseq — "the definition of subseq at (8.4a) is wrong. it's the notation defintion": prints
+    `subseq = ⦇[nil, cons ∪ π₂]⦈` (subseq_cata).
+[ ] 9.4a prefix has the same defect (`xs prefix ys ⟺ (prefix°)(ys,xs)`): needs a point-free prefix theorem in Lean.
+[X] Knapsack `vol` → `val` — "what's vol in 8.4a? are you suppose to ues val for value?" (B&dM p.205 prints val).
 [ ] 8.4a within — "why your defintion of within on 8.4a has ys while the book not? P 205." B&dM: `within w x =
     (weight x ≤ w)`, a predicate on ONE packing, used as a coreflexive; ours prints the coreflexive as a relation
     `within(w)(xs,ys) ⟺ xs = ys ∧ total(wt,xs) ≤ w`. Define it as the book does (predicate, with `weight ≜ sum

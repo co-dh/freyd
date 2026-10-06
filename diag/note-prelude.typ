@@ -137,10 +137,15 @@
 // Walked, not queried: a query is answered one layout pass late, and that pass, added to the
 // companion's other introspection, kept the layout from converging within typst's five.
 #let type-ends(c) = if type(c) != content { () } else if c.func() == metadata and c.at("label", default: none) == <type-end> { (c.value,) } else if c.has("children") { c.children.map(type-ends).flatten() } else if c.has("body") { type-ends(c.body) } else if c.has("child") { type-ends(c.child) } else { () }
+// A ROW KEY, `leann` without its visible name: the definition cell already begins with the name.
+#let rowkey(sel) = [#metadata(sel)<lean-row-key>]
+// Cells come four to a row as name | type | definition | meaning; the name cell is only a `rowkey`
+// (or empty), which joins the definition cell; the row number is the table rule's, in the margin.
 #let deftab(..cells) = context {
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
-  table(columns: (auto, w + 10.5pt, 3fr, 1fr), align: left + horizon, inset: 5pt,
-    stroke: 0.4pt + luma(190), table.header([*name*], [*type*], [*definition*], [*meaning*]), ..cells)
+  table(columns: (3fr, w + 10.5pt, 1fr), align: left + horizon, inset: 5pt,
+    stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
+    ..cells.pos().chunks(4).map(r => ([#r.at(0)#r.at(2)], r.at(1), r.at(3))).flatten())
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
