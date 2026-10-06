@@ -56,9 +56,11 @@
 #let Rh = 0.088         // hollow dot radius — larger, or the ring closes up at `lw`
 #let BW = 0.92          // default box width
 #let BH = 0.60          // default box height
-// A stroked shape to the frame round it, before the panel is scaled: `scripts/labelfit`'s 3pt on the
-// page at the least scale a circuit is set at (`cpanel`'s 74%), so no scale can close it up.
-#let CFRAME = 3.2pt / 0.74
+// A stroked shape to the frame round it ON THE PAGE: `scripts/labelfit`'s 3pt and a margin.
+#let PFRAME = 3.2pt
+// The same before the panel is scaled, at `cpanel`'s 74%; `cpanel` itself pads by `PFRAME` after
+// `P`'s fit scale too, which a `divbox` drawn inside a canvas cannot know.
+#let CFRAME = PFRAME / 0.74
 #let LEAD = 0.34        // wire stub before the first box of a chain and after the last
 #let TAPEFILL = rgb("#f6cfcf")
 #let TAPEEDGE = rgb("#c25b5b")

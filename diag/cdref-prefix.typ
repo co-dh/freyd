@@ -16,7 +16,7 @@
   ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
   ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
   ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-  lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`[nil,⊸ nil ∪ cons]`]
+  lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`[nil,cons ∪ ⊸ nil]`]
   lab(-4.2, 0, INDUCED)[`F(prefix)`]; lab(3.7, 0, INDUCED)[`prefix`]
   node(FT.at(0), FT.at(1), black, `F[A]`); node(T.at(0), T.at(1), black, `[A]`)
   node(FA.at(0), FA.at(1), GIVEN1, `F[A]`); node(A.at(0), A.at(1), GIVEN1, `[A]`)

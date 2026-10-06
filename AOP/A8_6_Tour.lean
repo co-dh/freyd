@@ -148,12 +148,12 @@ public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
 /-- **tour-defn**: `next ≜ tail head`, the second city of a journey. -/
 @[expose] public def nxt : Journey City → City
   | ConsList.wrap p => p.2
-  | ConsList.cons _ x => hd x
+  | ConsList.cons _ xs => hd xs
 
-/-- `[a]⧺x` with the old head dropped — what `dropl` does to the outward journey. -/
+/-- `[a]⧺xs` with the old head dropped — what `dropl` does to the outward journey. -/
 @[expose] public def replaceHead (a : City) : Journey City → Journey City
   | ConsList.wrap p => ConsList.wrap (a, p.2)
-  | ConsList.cons _ x => ConsList.cons a x
+  | ConsList.cons _ xs => ConsList.cons a xs
 
 public theorem hd_replaceHead (a : City) (x : Journey City) : hd (replaceHead a x) = a := by
   cases x <;> rfl
@@ -164,12 +164,12 @@ public theorem nxt_replaceHead (a : City) (x : Journey City) : nxt (replaceHead 
 /-- **tour-defn**: `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`. -/
 @[expose] public def outcost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc p
-  | ConsList.cons a x => tc (a, hd x) + outcost tc x
+  | ConsList.cons a xs => tc (a, hd xs) + outcost tc xs
 
 /-- **tour-defn**: `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`. -/
 @[expose] public def incost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc (p.2, p.1)
-  | ConsList.cons a x => tc (hd x, a) + incost tc x
+  | ConsList.cons a xs => tc (hd xs, a) + incost tc xs
 
 /-- **tour-defn**: `cost (xs,ys)=outcost xs+incost ys`. -/
 @[expose] public def cost (tc : City × City → Int) (t : Tour City) : Int :=
@@ -583,13 +583,13 @@ public theorem tour_laws :
         (g₁ (City := City)) g₂
         ≫ catR ≫ thinlist (Qc tc)⦈ ≫ minlist (R tc)
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
-  have key := thinningList droplAlgFn droprAlgFn (fun _ => true) (fun _ => true)
+  have key := thinningList droplAlgFn droprAlgFn (𝟙 _) (𝟙 _) (le_refl _) (le_refl _)
     («≼» := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
     Qc_le_R ⟨Qc_refl, Qc_trans⟩ ⟨le_trans Qc_refl Qc_le_R, trans_of_recip_trans R_recip_trans⟩
-    (by rw [pcor_true, Cat.comp_id]; exact tour_mono_dropl)
-    (by rw [pcor_true, Cat.comp_id]; exact tour_mono_dropr)
+    (by rw [Cat.comp_id]; exact tour_mono_dropl)
+    (by rw [Cat.comp_id]; exact tour_mono_dropr)
     preorder_topMor connected_topMor tour_sort_dropl tour_sort_dropr
-  rw [filter_true, Cat.comp_id, Cat.comp_id, pcor_true, Cat.comp_id, Cat.comp_id, merge_top] at key
+  rw [filter_id, Cat.comp_id, Cat.comp_id, Cat.comp_id, Cat.comp_id, merge_top] at key
   exact key
 
 end Freyd.Alg.RelSet.Tour

@@ -563,6 +563,11 @@ def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM St
   let gap := (List.range args.size).filter fun i => expl i && !keepArg args[i]!
   if !gap.isEmpty then
     if let some s ← sectionShow f args gap then return s
+  -- Drawn arguments that close the application leave a WELL-TYPED prefix, implicits in place, so the
+  -- printer's unexpanders see the term they were written for (`holds p` prints `p`).
+  if let some g0 := gap.head? then
+    if (List.range (args.size - g0)).all fun k => gap.contains (g0 + k) then
+      return ← plain (mkAppN f (args.extract 0 g0))
   plain (mkAppN f keep)
 where
   /-- The application with each taken-out operand a hole, spelled from the printer's syntax tree
@@ -891,7 +896,9 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
   | some 0 => return "π₁"
   | some _ => return "π₂"
   | none =>
-    if let some g ← guardLabel s body then return g
+    -- The `if` is looked for in `body₁`, not the case-taken `body`: its arms are constructors built
+    -- from the input, and taking that "case" opens `ite` into its `Decidable` recursor.
+    if let some g ← guardLabel s body₁ body then return g
     -- A `match` ON A COPRODUCT IS THE JUNCTION `[f,g]`, wherever it is spelled: the picture opens it
     -- as a tape and a label names it, and both read the arms off the same `sumArms`.  The brackets
     -- are `labelTree`'s own for `junc`, because it is the same arrow.
@@ -967,25 +974,39 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     writes it into the box's own name: `(π₁p→cons,⊸ nil)`, the test, the arm taken when it holds,
     and the other.  The arms are read by REDUCING the matcher at each value of `Bool`, so nothing
     here depends on the order the alternatives were written in or on how the `match` compiled. -/
-partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := do
+partial def guardLabel (s : FVarId) (ite₀ body₀ : Expr) : MetaM (Option String) := do
+  -- An ARM is a map like any other, and it is written INSIDE this label, so its discard is written
+  -- too: one rule decides the `⊸`, and it is `mapLabel`'s.
+  let arm (b : Expr) : MetaM String := do mapLabel (← Meta.mkLambdaFVars #[.fvar s] b) false
+  -- The test is a value computed from the input and named as ONE word — it labels no wire of its
+  -- own, so its steps are written with nothing between them (`π₁p`), where a composite wants a space.
+  let test (c : Expr) : MetaM String := do
+    match ← valSteps s c with
+    | some steps => pure (String.join steps.toList)
+    | none => plain c
+  let guard (c t e : Expr) : MetaM String := do
+    return "(" ++ (← test c) ++ "→" ++ (← arm t) ++ "," ++ (← arm e) ++ ")"
+  -- The SAME guard on a decidable PROPOSITION is an `if`, `ite c t e` — a coreflexive's test, which
+  -- no `Bool` stands for; reached by deltas, since `whnfD` would open the instance it is stuck on.
+  if let some (c, t, e) ← iteParts? ite₀ then
+    if c.containsFVar s then return some (← guard c t e)
   -- A step is a `def` around its own `match`, so the matcher is behind one delta; the ARMS are then
   -- taken by `whnfCore`, which fires the matcher without unfolding a numeral into a constructor.
   let some ma ← Meta.matchMatcherApp? (← Meta.whnfD body₀) | return none
   unless ma.discrs.size == 1 && ma.alts.size == 2 && ma.remaining.isEmpty do return none
   unless (← Meta.whnfD (← Meta.inferType ma.discrs[0]!)).isConstOf ``Bool do return none
   let hd := mkAppN (mkConst ma.matcherName ma.matcherLevels.toList) ma.params
-  -- An ARM is a map like any other, and it is written INSIDE this label, so its discard is written
-  -- too: one rule decides the `⊸`, and it is `mapLabel`'s.
-  let arm (v : Name) : MetaM String := do
-    let b ← Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
-    mapLabel (← Meta.mkLambdaFVars #[.fvar s] b) false
-  -- The test is a value computed from the input and named as ONE word — it labels no wire of its
-  -- own, so its steps are written with nothing between them (`π₁p`), where a composite wants a space.
-  let discr ← match ← valSteps s ma.discrs[0]! with
-    | some steps => pure (String.join steps.toList)
-    | none => plain ma.discrs[0]!
-  return some ("(" ++ discr ++ "→" ++ (← arm ``Bool.true) ++ ","
-    ++ (← arm ``Bool.false) ++ ")")
+  let armAt (v : Name) : MetaM Expr := Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
+  return some (← guard ma.discrs[0]! (← armAt ``Bool.true) (← armAt ``Bool.false))
+where
+  /-- `ite c t e` at most ONE delta in, the step's own name, as the matcher is: an `if` deeper down
+      belongs to a `def` the note writes by name (`bmax`), which is no guard of this step. -/
+  iteParts? (e : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
+    let parts (e : Expr) := if e.isAppOfArity ``ite 5 then some (e.getArg! 1, e.getArg! 3, e.getArg! 4) else none
+    let e ← Meta.whnfCore e
+    if let some r := parts e then return some r
+    let some v ← Meta.unfoldDefinition? e | return none
+    return parts (← Meta.whnfCore v)
 
 /-- The label of a MAP given by its function.  A cons cell is `cons`, a projection its `π`, a
     constant the thing it creates — each read off the function's own body, so the next map built

@@ -208,8 +208,8 @@ public instance permSetoid (Job : Type) : Setoid (List Job) where
 public theorem bagifyFn_wrap (u : Unit) : bagifyFn (SnocList.wrap u : SnocList Unit Job) = nilBag := rfl
 
 /-- **tardy-defn**, pointwise: the last job of a schedule joins the bag of its front. -/
-public theorem bagifyFn_snoc (x : SnocList Unit Job) (a : Job) :
-    bagifyFn (SnocList.snoc x a) = snag (bagifyFn x, a) := rfl
+public theorem bagifyFn_snoc (xs : SnocList Unit Job) (a : Job) :
+    bagifyFn (SnocList.snoc xs a) = snag (bagifyFn xs, a) := rfl
 
 /-- **tardy-defn**: `bagify` as a morphism; `H = bagify°`. -/
 @[expose] public def bagify : dSL Unit Job ⟶ Bag Job := graph bagifyFn
@@ -277,8 +277,8 @@ public theorem ctsumL_perm {xs ys : List Job} (h : xs.Perm ys) : ctsumL ct xs = 
   (bagCt ct p.1 + ct p.2 - dt p.2) * wt p.2
 
 /-- **tardy-defn**: `penalty(xs,j)=(sum(list(ct)(xs))+ct(j)−dt(j))×wt(j)`. -/
-@[expose] public def penalty (s : SnocList Unit Job) (j : Job) : Int :=
-  (ctsum ct s + ct j - dt j) * wt j
+@[expose] public def penalty (xs : SnocList Unit Job) (j : Job) : Int :=
+  (ctsum ct xs + ct j - dt j) * wt j
 
 /-- **B&dM p.255**: `penalty (x,j)` depends only on the JOBS in `x`, not on their order — the
     fact the whole context argument rests on. -/
@@ -303,11 +303,11 @@ public theorem bmax_le {a b c : Int} (ha : a ≤ c) (hb : b ≤ c) : bmax a b �
 /-- **tardy-defn**: `cost []=0`, `cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`. -/
 @[expose] public def cost : SnocList Unit Job → Int
   | SnocList.wrap _ => 0
-  | SnocList.snoc x a => bmax (cost x) (penalty ct dt wt x a)
+  | SnocList.snoc xs a => bmax (cost xs) (penalty ct dt wt xs a)
 
 /-- **tardy-defn**: `R≜cost≤cost°`. -/
 @[expose] public def R : dSL Unit Job ⟶ dSL Unit Job :=
-  fun u v => cost ct dt wt u ≤ cost ct dt wt v
+  fun xs ys => cost ct dt wt xs ≤ cost ct dt wt ys
 
 public theorem R_trans : R ct dt wt ≫ R ct dt wt ⊑ R ct dt wt :=
   le_iff.mpr fun u w h => by
@@ -366,7 +366,7 @@ public inductive AddP : SnocList Unit Job → Job → SnocList Unit Job → Prop
 
 /-- **tardy-defn**: `add`, the step of `perm=⦇[nil,add]⦈`. -/
 @[expose] public def add : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ dSL Unit Job :=
-  fun p w => AddP p.1 p.2 w
+  fun p ys => AddP p.1 p.2 ys
 
 /-- Adding `j` puts it in the bag. -/
 public theorem blist_add {x w : SnocList Unit Job} {j : Job} :
@@ -591,9 +591,9 @@ public theorem kFn_inl (u : Unit) :
     kFn ct dt wt (Sum.inl u : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier) = 0 := rfl
 
 /-- **tardy-defn**, pointwise: the larger of the front's cost and the last job's penalty on the bag. -/
-public theorem kFn_inr (c : Int) (b : (Bag Job).carrier) (j : Job) :
-    kFn ct dt wt (Sum.inr ((c, b), j) : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier)
-      = bmax c (bagPenalty ct dt wt (b, j)) := rfl
+public theorem kFn_inr (c : Int) (xs : (Bag Job).carrier) (j : Job) :
+    kFn ct dt wt (Sum.inr ((c, xs), j) : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier)
+      = bmax c (bagPenalty ct dt wt (xs, j)) := rfl
 
 /-- **tardy-defn**: `k` as an arrow. -/
 @[expose] public def k :
@@ -698,8 +698,8 @@ public theorem g_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier) (c : Int) :
 public theorem gFn_inl (u : Unit) : gFn ct dt wt (Sum.inl u : (Fobj Unit Job (dSL Unit Job)).carrier) = 0 := rfl
 
 /-- `g`, pointwise: the penalty of the last job after its front. -/
-public theorem gFn_inr (x : SnocList Unit Job) (j : Job) :
-    gFn ct dt wt (Sum.inr (x, j) : (Fobj Unit Job (dSL Unit Job)).carrier) = penalty ct dt wt x j := rfl
+public theorem gFn_inr (xs : SnocList Unit Job) (j : Job) :
+    gFn ct dt wt (Sum.inr (xs, j) : (Fobj Unit Job (dSL Unit Job)).carrier) = penalty ct dt wt xs j := rfl
 
 /-- `F(bagify)` read as the function it is. -/
 @[expose] public def FbFn : (Fobj Unit Job (dSL Unit Job)).carrier → (Fobj Unit Job (Bag Job)).carrier
@@ -748,9 +748,9 @@ public theorem R_eq : R ct dt wt = costR ct dt wt ≫ ListRel.leq ≫ (costR ct 
   hom_ext fun _ _ => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
     subst h1; subst h3; exact h2⟩
 
-/-- **tardy-defn**, pointwise: `u R v` iff `u` costs no more than `v`. -/
-public theorem R_apply (u v : SnocList Unit Job) :
-    R ct dt wt u v ↔ cost ct dt wt u ≤ cost ct dt wt v :=
+/-- **tardy-defn**, pointwise: `xs R ys` iff `xs` costs no more than `ys`. -/
+public theorem R_apply (xs ys : SnocList Unit Job) :
+    R ct dt wt xs ys ↔ cost ct dt wt xs ≤ cost ct dt wt ys :=
   Iff.rfl
 
 /-- `β°F(bagify°)α=bagify°`: the step of the fold `bagify=⦇β⦈`, read backwards. -/

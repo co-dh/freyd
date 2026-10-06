@@ -202,7 +202,7 @@ public theorem choose_eq :
     the root out, so each subtree is free to choose.  Not a map (`exclude_eq` is the
     point-free form). -/
 @[expose] public def excludeR : dBranch A ⟶ dList A :=
-  fun u y => ∃ qs, listP choose u.2 qs ∧ y = cconcat qs
+  fun u xs => ∃ xss, listP choose u.2 xss ∧ xs = cconcat xss
 
 /-- `exclude = (𝟙×(list(choose) concat))π₂`, point-free. -/
 public theorem exclude_eq :

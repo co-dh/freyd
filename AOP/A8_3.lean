@@ -706,60 +706,64 @@ public theorem sort_comp_minlist_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A
   have := comp_mono_right hset.2 (est R)
   rwa [Cat.id_comp] at this
 
-/-- `filter(p)` only drops elements. -/
-public theorem subseqP_filtCL (p : A → Bool) : ∀ x : ConsList Unit A, subseqP (Filter.filtCL p x) x
-  | ConsList.wrap _ => trivial
-  | ConsList.cons a x => by
-    show subseqP (Filter.fStep p a (Filter.filtCL p x)) (ConsList.cons a x)
-    unfold Filter.fStep
-    split
-    · exact Or.inl ⟨rfl, subseqP_filtCL p x⟩
-    · exact subseqP.weaken (subseqP_filtCL p x)
+/-- `list(p)` at a coreflexive `p` relates a list only to itself. -/
+public theorem listP_eq_of_coreflexive {p : dE A ⟶ dE A} (hp : Coreflexive p)
+    {z ys : ConsList Unit A} (h : listP p z ys) : z = ys :=
+  (listP_id z ys).mp (le_iff.mp (list_mono hp) z ys h)
 
-/-- `filter(p)` keeps exactly the elements that pass `p`. -/
-public theorem inlistP_filtCL (p : A → Bool) (w : A) : ∀ x : ConsList Unit A,
-    inlistP (Filter.filtCL p x) w ↔ inlistP x w ∧ p w = true
-  | ConsList.wrap _ => ⟨False.elim, fun h => h.1.elim⟩
-  | ConsList.cons a x => by
-    show inlistP (Filter.fStep p a (Filter.filtCL p x)) w ↔ (w = a ∨ inlistP x w) ∧ p w = true
-    unfold Filter.fStep
-    split
-    · rename_i h
-      show (w = a ∨ inlistP (Filter.filtCL p x) w) ↔ _
-      rw [inlistP_filtCL p w x]
-      constructor
-      · rintro (rfl | ⟨hx, hw⟩)
-        · exact ⟨Or.inl rfl, h⟩
-        · exact ⟨Or.inr hx, hw⟩
-      · rintro ⟨rfl | hx, hw⟩
-        · exact Or.inl rfl
-        · exact Or.inr ⟨hx, hw⟩
-    · rename_i h
-      rw [inlistP_filtCL p w x]
-      constructor
-      · rintro ⟨hx, hw⟩
-        exact ⟨Or.inr hx, hw⟩
-      · rintro ⟨rfl | hx, hw⟩
-        · exact Bool.noConfusion (h.symm.trans hw)
-        · exact ⟨hx, hw⟩
+/-- A subsequence of `a::x` either keeps `a` in front or is a subsequence of `x`. -/
+public theorem subseqP_cons_cases {a : A} {x : ConsList Unit A} : ∀ {z : ConsList Unit A},
+    subseqP z (ConsList.cons a x) → (∃ z', z = ConsList.cons a z' ∧ subseqP z' x) ∨ subseqP z x
+  | ConsList.wrap (), _ => Or.inr (subseqP.nil x)
+  | ConsList.cons _ _, Or.inl ⟨rfl, h⟩ => Or.inl ⟨_, rfl, h⟩
+  | ConsList.cons _ _, Or.inr h => Or.inr h
 
-/-- **(8.9)** in `Rel` (book p.201), `sort(≼)·filter p ⊑ E p·sort(≼)`, with no hypothesis:
-    `filter(p)` is the book's (§7.7, `Filter.filter`, a function by `filter_emerges`), and `p` is
-    the coreflexive of the test, so `filter(p)` only drops elements and lists `E(p)` of the set. -/
-public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A} (p : A → Bool) :
+/-- A longest `p`-passing subsequence of `x` keeps every element of `x` that passes `p`: one that
+    dropped it could put it back and be longer. -/
+public theorem inlistP_of_longest {p : dE A ⟶ dE A} (hp : Coreflexive p) {w : A} (hw : p w w) :
+    ∀ (x ys : ConsList Unit A), (subseq ≫ list p) x ys →
+      (∀ zs, (subseq ≫ list p) x zs → clen zs ≤ clen ys) → inlistP x w → inlistP ys w
+  | ConsList.wrap _, _, _, _, hx => hx.elim
+  | ConsList.cons a x, ys, ⟨z, hz, hl⟩, hmax, hx => by
+    obtain rfl : z = ys := listP_eq_of_coreflexive hp hl
+    rcases subseqP_cons_cases hz with ⟨z', rfl, hd⟩ | hd
+    · rcases hx with hx | hx
+      · exact Or.inl hx
+      · exact Or.inr (inlistP_of_longest hp hw x z' ⟨z', hd, hl.2⟩
+          (fun zs ⟨u, hu, hlu⟩ => Nat.le_of_succ_le_succ
+            (hmax (ConsList.cons a zs) ⟨ConsList.cons a u, Or.inl ⟨rfl, hu⟩, hl.1, hlu⟩)) hx)
+    · rcases hx with hx | hx
+      · exact absurd (hmax (ConsList.cons a z) ⟨ConsList.cons a z, Or.inl ⟨rfl, hd⟩, hx ▸ hw, hl⟩)
+          (Nat.not_succ_le_self _)
+      · exact inlistP_of_longest hp hw x z ⟨z, hd, hl⟩
+          (fun zs ⟨u, hu, hlu⟩ => hmax zs ⟨u, subseqP.weaken hu, hlu⟩) hx
+
+/-- **(8.9)** in `Rel` (book p.201), `sort(≼)·filter p ⊑ E p·sort(≼)`, `p` a coreflexive as the
+    book assumes: `filter(p)` (§7.7, `Filter.filter`) only drops elements, and a longest
+    `p`-passing subsequence keeps every passer, so it lists `E(p)` of the set. -/
+public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A} (p : dE A ⟶ dE A) (hp : Coreflexive p) :
     sortRel listRelator setify ordered ≼ ≫ Filter.filter p
-      ⊑ existsImage (GCTakeWhile.pcor p) ≫ sortRel listRelator setify ordered ≼ := by
-  rw [(Filter.filter_eq_cata p).trans (Filter.filter_emerges p).symm]
+      ⊑ existsImage p ≫ sortRel listRelator setify ordered ≼ := by
   refine Freyd.Alg.sortRel_comp_filter_le listRelator (graph_map _) (ordered_coreflexive ≼) ?_
     (ordered_comp_subseq_le ≼) ?_
-  · exact le_iff.mpr fun x y h => by
-      obtain rfl := (h : y = Filter.filtCL p x)
-      exact subseqP_filtCL p x
+  · refine le_iff.mpr fun x ys h => ?_
+    obtain ⟨⟨z, hz, hl⟩, -⟩ :=
+      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.lenLE (A := A))° x ys).mp h
+    obtain rfl : z = ys := listP_eq_of_coreflexive hp hl
+    exact hz
   · refine le_iff.mpr fun x S h => ?_
-    obtain ⟨y, rfl, rfl⟩ := h
+    obtain ⟨ys, hf, rfl⟩ := h
+    obtain ⟨⟨z, hz, hl⟩, hmax⟩ :=
+      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.lenLE (A := A))° x ys).mp hf
     refine ⟨inlistP x, rfl, (existsImage_apply _ _ _).mpr (funext fun w => propext ?_)⟩
-    rw [inlistP_filtCL p w x]
-    exact ⟨fun ⟨hx, hw⟩ => ⟨w, hx, rfl, hw⟩, fun ⟨_, hx, rfl, hw⟩ => ⟨hx, hw⟩⟩
+    constructor
+    · intro hw
+      obtain ⟨s, hs, hsw⟩ := (listP_inlistP_split p z ys hl).2 w hw
+      exact ⟨s, inlistP_of_subseqP hz hs, hsw⟩
+    · rintro ⟨s, hs, hsw⟩
+      have e : s = w := le_iff.mp hp s w hsw
+      subst e
+      exact inlistP_of_longest hp hsw x ys ⟨z, hz, hl⟩ hmax hs
 
 /-! ## `listcp(F)` and (8.11)
 
@@ -1347,19 +1351,19 @@ public theorem orderedP_of_listP_graph {B : Type} (g : A → B) («≼» : B →
 /-- **(8.8)** in `Rel` (book p.203), `sort(g≼g°)·list g ⊑ P g·sort(≼)` for a function `g`, with
     no hypothesis: `setify`'s naturality and the order condition both follow from `list`'s
     definition. -/
-public theorem sort_comp_list_le {B : Type} (g : A → B) {«≼» : dE B ⟶ dE B} :
-    sortRel listRelator setify ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°)
-        ≫ list (graph g) ⊑ powerRel (graph g) ≫ sortRel listRelator setify ordered ≼ := by
-  have hnat : list (graph g : dE A ⟶ dE B) ≫ setify ⊑ setify ≫ existsImage (graph g) := by
-    have := setify_lax_natural (graph g : dE A ⟶ dE B)
-    rwa [powerRel_map (graph_map g)] at this
-  have hordf : ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°) ≫ list (graph g)
-      ⊑ list (graph g) ≫ ordered ≼ :=
+public theorem sort_comp_list_le {B : Type} (f : A → B) {«≼» : dE B ⟶ dE B} :
+    sortRel listRelator setify ordered ((graph f : dE A ⟶ dE B) ≫ ≼ ≫ (graph f)°)
+        ≫ list (graph f) ⊑ powerRel (graph f) ≫ sortRel listRelator setify ordered ≼ := by
+  have hnat : list (graph f : dE A ⟶ dE B) ≫ setify ⊑ setify ≫ existsImage (graph f) := by
+    have := setify_lax_natural (graph f : dE A ⟶ dE B)
+    rwa [powerRel_map (graph_map f)] at this
+  have hordf : ordered ((graph f : dE A ⟶ dE B) ≫ ≼ ≫ (graph f)°) ≫ list (graph f)
+      ⊑ list (graph f) ≫ ordered ≼ :=
     le_iff.mpr fun x y h => by
       obtain ⟨_, ⟨rfl, hx⟩, hxy⟩ := h
-      exact ⟨y, hxy, rfl, orderedP_of_listP_graph g ≼ hxy hx⟩
+      exact ⟨y, hxy, rfl, orderedP_of_listP_graph f ≼ hxy hx⟩
   exact Freyd.Alg.sortRel_comp_listMap_le listRelator (graph_map _) (graph_map _)
-    (ordered := fun R => ordered R) (graph_map g) hnat hordf
+    (ordered := fun R => ordered R) (graph_map f) hnat hordf
 
 /-- A list ordered by `X` is ordered by any larger `Y`. -/
 public theorem orderedP_mono {X Y : A → A → Prop} (h : ∀ a b, X a b → Y a b) :
@@ -1379,10 +1383,11 @@ public theorem sortRel_mono {X Y : dE A ⟶ dE A} (h : X ⊑ Y) :
     monotonic, past `list(f)` by (8.8), past `filter(p)` by (8.9), then `E(f) = P(f)` and the
     transpose absorbs `E(fp)`. -/
 public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
-    (p : A → Bool) {«≼» : dE A ⟶ dE A} (hmono : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f) ≼) :
+    (p : dE A ⟶ dE A) (hp : Coreflexive p) {«≼» : dE A ⟶ dE A}
+    (hmono : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
         ≫ Filter.filter p
-      ⊑ Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ GCTakeWhile.pcor p)
+      ⊑ Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ p)
         ≫ sortRel listRelator setify ordered ≼ :=
   calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
           ≫ Filter.filter p
@@ -1400,43 +1405,36 @@ public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E ×
         refine comp_mono_left _ ?_
         rw [← Cat.assoc, ← Cat.assoc (powerRel (graph f))]
         exact comp_mono_right (sort_comp_list_le f) _
-    _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ existsImage (GCTakeWhile.pcor p)
+    _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ existsImage (p)
           ≫ sortRel listRelator setify ordered ≼ :=
-        comp_mono_left _ (comp_mono_left _ (sort_comp_filter_le p))
-    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f) ≫ existsImage (GCTakeWhile.pcor p)
+        comp_mono_left _ (comp_mono_left _ (sort_comp_filter_le p hp))
+    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f) ≫ existsImage (p)
           ≫ sortRel listRelator setify ordered ≼ := by rw [powerRel_map (graph_map f)]
-    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f ≫ GCTakeWhile.pcor p)
+    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f ≫ p)
           ≫ sortRel listRelator setify ordered ≼ := by
         rw [← Cat.assoc (existsImage (graph f)), ← existsImage_comp]
-    _ = Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ GCTakeWhile.pcor p)
+    _ = Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ p)
           ≫ sortRel listRelator setify ordered ≼ := by
         rw [← Cat.assoc, show cpMap (CL.F L E) (dE A) = Λ ((CL.F L E).map (∋ (dE A))) from rfl,
           Λ_absorption]
 
 calc_steps Fmap_sort_comp_listcp_list_filter_le
 
-/-- `filter` by the test every element passes keeps every list. -/
-public theorem filter_true : Filter.filter (fun _ : A => true) = 𝟙 (dList A) := by
-  have h : ∀ x : ConsList Unit A, Filter.filtCL (fun _ => true) x = x := by
-    intro x
-    induction x with
-    | wrap D => cases D; rfl
-    | cons a x ih =>
-      show Filter.fStep _ a (Filter.filtCL _ x) = _
-      unfold Filter.fStep
-      split
-      · rw [ih]
-      · rename_i hn; exact Bool.noConfusion hn
-  rw [(Filter.filter_eq_cata _).trans (Filter.filter_emerges _).symm]
+/-- `filter` by the identity keeps every list: the list is its own longest subsequence. -/
+public theorem filter_id : Filter.filter (𝟙 (dE A)) = 𝟙 (dList A) := by
   apply hom_ext; intro x y
   rw [id_apply]
-  exact ⟨fun hy => ((hy : y = _).trans (h x)).symm, fun hy => show y = _ from hy ▸ (h x).symm⟩
-
-/-- The coreflexive of the test every element passes is the identity. -/
-public theorem pcor_true : GCTakeWhile.pcor (fun _ : A => true) = 𝟙 (dE A) := by
-  apply hom_ext; intro x y
-  rw [id_apply]
-  exact ⟨fun h => h.1, fun h => ⟨h, rfl⟩⟩
+  unfold Filter.filter
+  rw [Λ_comp_est_apply]
+  constructor
+  · rintro ⟨⟨z, hz, hl⟩, hmax⟩
+    obtain rfl : z = y := (listP_id z y).mp hl
+    exact (Filter.subseqP_eq_of_clen_le hz
+      (hmax x ⟨x, subseqP.refl x, (listP_id x x).mpr rfl⟩)).symm
+  · rintro rfl
+    refine ⟨⟨x, subseqP.refl x, (listP_id x x).mpr rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+    obtain rfl : u = zs := (listP_id u zs).mp hlu
+    exact Filter.subseqP_clen_le hu
 
 /-- `⊤` is a preorder: it relates everything. -/
 public theorem preorder_topMor : Preorder (topMor (dE A) (dE A)) :=
@@ -1451,7 +1449,8 @@ public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
     `f₁,p₁` and at `f₂,p₂` puts the sort inside `F`, (8.10) exchanges `merge(≼)` for the union of
     the two sorted sets, `Λ` of the union splits by `cup`, and (8.6) exchanges `thinlist(Q)` for
     `thin(Q)`. -/
-public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : A → Bool)
+public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
+    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
     {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
@@ -1459,7 +1458,7 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
         ≫ (relProd (dList A) (dList A)).pair (list (graph f₁) ≫ Filter.filter p₁)
           (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinlist Q
       ⊑ Λ ((CL.F L E).map (∋ (dE A))
-          ≫ ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂)))
+          ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
   calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
           ≫ (relProd (dList A) (dList A)).pair (list (graph f₁) ≫ Filter.filter p₁)
@@ -1474,39 +1473,39 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
         refine comp_mono_right (le_trans (RelProd.comp_pair_le _ _ _) (le_of_eq ?_)) _
         rw [Cat.assoc, Cat.assoc]
     _ ⊑ (relProd (dList A) (dList A)).pair
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ GCTakeWhile.pcor p₁)
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁)
               ≫ sortRel listRelator setify ordered ≼)
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ GCTakeWhile.pcor p₂)
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂)
               ≫ sortRel listRelator setify ordered ≼)
           ≫ merge ≼ ≫ thinlist Q :=
-        comp_mono_right (RelProd.pair_mono (Fmap_sort_comp_listcp_list_filter_le f₁ p₁ hmono₁)
-          (Fmap_sort_comp_listcp_list_filter_le f₂ p₂ hmono₂)) _
+        comp_mono_right (RelProd.pair_mono (Fmap_sort_comp_listcp_list_filter_le f₁ p₁ hp₁ hmono₁)
+          (Fmap_sort_comp_listcp_list_filter_le f₂ p₂ hp₂ hmono₂)) _
     _ = (relProd (P (dE A)) (P (dE A))).pair
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ GCTakeWhile.pcor p₁))
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ GCTakeWhile.pcor p₂))
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁))
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
           ≫ prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
             (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼)
           ≫ merge ≼ ≫ thinlist Q := by
         rw [← RelProd.pair_prodMap (P := relProd (P (dE A)) (P (dE A)))
           (Q := relProd (dList A) (dList A)), Cat.assoc]
     _ ⊑ (relProd (P (dE A)) (P (dE A))).pair
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ GCTakeWhile.pcor p₁))
-            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ GCTakeWhile.pcor p₂))
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁))
+            (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
           ≫ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼
           ≫ thinlist Q := by
         refine comp_mono_left _ ?_
         rw [← Cat.assoc (prodMap _ _ _ _) (merge ≼), ← Cat.assoc (cup _)]
         exact comp_mono_right (prodMap_sort_comp_merge_le hP hc) _
-    _ = Λ (((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ GCTakeWhile.pcor p₁)
-          ∪ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ GCTakeWhile.pcor p₂))
+    _ = Λ (((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁)
+          ∪ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
         ≫ sortRel listRelator setify ordered ≼ ≫ thinlist Q := by
         rw [Λ_union _ _ (relProd (P (dE A)) (P (dE A))), Cat.assoc]
     _ = Λ ((CL.F L E).map (∋ (dE A))
-          ≫ ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂)))
+          ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ sortRel listRelator setify ordered ≼ ≫ thinlist Q := by
         rw [DistributiveAllegory.comp_union_distrib]
     _ ⊑ Λ ((CL.F L E).map (∋ (dE A))
-          ≫ ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂)))
+          ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
         comp_mono_left _ (sort_comp_bump_thinlist_le hQ)
 
@@ -1567,10 +1566,11 @@ public theorem cup_laxNatural :
     monotonic on it; `R` a preorder for `min R`.  `relCata_le_comp` fuses `sort ≼` into the
     algebra by `sortedAlg_fusion`, (8.7) reads the minimum off the sorted list, and Corollary 8.1
     puts `thin Q` inside the fold.  No set is ever built. -/
-public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : A → Bool)
+public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
+    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
     {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
-    (hm₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁ ≫ GCTakeWhile.pcor p₁) Q)
-    (hm₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂ ≫ GCTakeWhile.pcor p₂) Q)
+    (hm₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁ ≫ p₁) Q)
+    (hm₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂ ≫ p₂) Q)
     (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
@@ -1578,18 +1578,18 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
         (list (graph f₁) ≫ Filter.filter p₁) (list (graph f₂) ≫ Filter.filter p₂)
         ≫ merge ≼ ≫ thinlist Q) ≫ minlist R
       ⊑ Λ (relCata (I := CL.initial L E)
-          ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂))) ≫ est R :=
+          ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
   calc _ ⊑ (relCata (I := CL.initial L E) (Λ ((CL.F L E).map (∋ (dE A))
-            ≫ ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂)))
+            ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
             ≫ thinRel Q) ≫ sortRel listRelator setify ordered ≼) ≫ minlist R :=
         comp_mono_right (relCata_le_comp (CL.initial L E) (by
-          rw [Cat.assoc]; exact sortedAlg_fusion f₁ f₂ p₁ p₂ hQ hP hc hmono₁ hmono₂)) _
+          rw [Cat.assoc]; exact sortedAlg_fusion f₁ f₂ p₁ p₂ hp₁ hp₂ hQ hP hc hmono₁ hmono₂)) _
     _ ⊑ relCata (I := CL.initial L E) (Λ ((CL.F L E).map (∋ (dE A))
-            ≫ ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂)))
+            ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
             ≫ thinRel Q) ≫ est R :=
         le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ (sort_comp_minlist_le R))
     _ ⊑ Λ (relCata (I := CL.initial L E)
-          ((graph f₁ ≫ GCTakeWhile.pcor p₁) ∪ (graph f₂ ≫ GCTakeWhile.pcor p₂))) ≫ est R :=
+          ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
         thinning_est (CL.initial L E) hQR hQ hR (Freyd.Alg.monoAlg_union hm₁ hm₂)
 
 calc_steps thinningList

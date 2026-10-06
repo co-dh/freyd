@@ -222,7 +222,7 @@
     calc.min(1.0, (width - (w.len() - if lead { 1 } else { 0 }) * (OPW + 2 * hgut)) / tot)
   }
 }
-#let hchain(..steps, fill: none) = layout(sz => {
+#let hchain-at(steps, fill, k0) = layout(sz => {
   let gut = hgut
   // `u`, a second picture UNDER the first — the step's circuit under its Hinze–Marsden panel.
   // `pm`, `um`: the sizes `pic-meta` reports, kept from this one `measure` rather than taken again.
@@ -234,6 +234,8 @@
   })
   if fill != none {
     let k = if fill == true { chain-k(sz.width, ss.first().op == none, ss.map(s => s.w)) } else { fill }
+    assert(fill != true or k >= 0.98 * k0, message: "hchain: the pictures widened by more than 2% "
+      + "once measured at the scale " + repr(k0) + " (" + repr(k) + "); its frames would then pad by less than `PFRAME`")
     let sk(m) = if m == none { none } else { (width: m.width * k, height: m.height * k) }
     ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k, pm: sk(s.pm), um: sk(s.um),
       u: if s.u == none { none } else { scale(k * 100%, reflow: true, box(s.u)) }))
@@ -269,6 +271,17 @@
       align: (x, y) => if y == py { center + horizon } else if under and y == py + 2 { center + top } else { left + top },
       ..if py == 1 { fr } else { () }, ..pr, ..rr, ..if under { ur } else { () })
   }))
+})
+// `fill: true` measures twice: a first guess `k0` is set into `pscale` BEFORE the pictures are measured
+// again, since a picture that pads by a length on the page widens as `k0` falls and `measure` sees only
+// an update placed before it.  The second `k` then fits the widths that are drawn.
+#let hchain(..steps, fill: none) = layout(sz => {
+  let w(s) = calc.max(measure(box(s.at(1))).width, measure(box(s.at(4, default: none))).width)
+  let k0 = if fill == true { chain-k(sz.width, steps.pos().first().at(0) == none, steps.pos().map(w)) }
+    else if fill == none { 1.0 } else { fill }
+  pscale.update(a => a + (k0,))
+  hchain-at(steps, fill, k0)
+  pscale.update(a => a.slice(0, -1))
 })
 // The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
@@ -375,7 +388,7 @@
 #let fit-w(f) = layout(sz => {
   let need = measure(f).width
   let ratio = if need > sz.width and need > 0pt { sz.width / need } else { 1.0 }
-  scale(ratio * 100%, reflow: true, f)
+  pscaled(ratio, f)
 })
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 // `formula: true` sets each panel's own statement side above it, generated from the panel's

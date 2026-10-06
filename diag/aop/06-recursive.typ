@@ -288,8 +288,19 @@
 
 == Sorting by selection
 
-// B&dM (6.6), p.151.  `ok(a,x) ≡ ∀b∈x. aRb`; the preorder `R` is fixed, so `ordered` and `ok`
+// B&dM (6.6), p.151.  The preorder `R` is fixed, so `ordered` and `ok`
 // carry no argument.
+#disp[#deftab(
+  [#leann("Freyd.Alg.RelSet.ListRel.orderedP")], [#leant("Freyd.Alg.RelSet.ListRel.orderedP")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.orderedP")],
+  [every element is `R`-below each element after it],
+  [#leann("Freyd.Alg.RelSet.ListRel.ordered")], [#leant("Freyd.Alg.RelSet.ListRel.ordered")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.ordered")],
+  [the coreflexive passing exactly the lists `orderedP` holds of],
+  [#leann("Freyd.Alg.RelSet.Sort.ok")], [#leant("Freyd.Alg.RelSet.Sort.ok")],
+  [#leanf("Freyd.Alg.RelSet.Sort.ok")],
+  [the coreflexive passing `(a, x)` when `a` is `R`-below every element of `x`],
+)]
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.ordered_cata") \
     #src[a list is sorted exactly when the fold that rebuilds it passes `ok` at every `cons`, i.e.

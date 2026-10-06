@@ -565,6 +565,10 @@ open Lean PrettyPrinter in
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
 
+-- A Bool test's coreflexive prints as `pcor(p)`, never as the bare `p`: the test `p : A → Bool`
+-- is not the relation `A ⟶ A`, and `E(p)` of the test would be a different arrow.
+notation:max "pcor(" p ")" => RelSet.GCTakeWhile.pcor p
+
 -- THE SET OF SUMS IS SPELLED AS THE SET IT IS.  `sums xs ys` is the note's `{x+y∣x∈xs∧y∈ys}`,
 -- built from the two arguments the term carries; a name says what the point is called and the
 -- set-builder says what is IN it, which is what the corner of a distributivity square is read for.
@@ -602,14 +606,6 @@ open Lean PrettyPrinter in
   -- Only a map with a NAME: `graph (fun _ => 0)` keeps `AOP.A6_1_RelSet`'s own `⊸ 0`, which this
   -- clause would otherwise shadow with the lambda.
   | `($_ $f:ident) => `($f)
-  | _ => throw ()
-
-open Lean PrettyPrinter in
-/-- A PREDICATE'S COREFLEXIVE is written by the predicate's own name, for the reason a map's graph
-    is: the note's `p` box and its `(p×𝟙)` lane are this partial identity, and `pcor` is the Lean
-    spelling of the same arrow. -/
-@[app_unexpander RelSet.GCTakeWhile.pcor] def unexpandPcor : Unexpander
-  | `($_ $p) => `($p)
   | _ => throw ()
 
 -- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
@@ -664,15 +660,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.k] def unexpandTardyK : Unexpander | _ => `($(mkIdent `k))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.R] def unexpandKnapsackR : Unexpander | _ => `($(mkIdent `R))
--- The Bool tests `filter` takes are the book's coreflexives `within w`, `ok w` read as tests.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Knapsack.withinB] def unexpandKnapsackWithinB : Unexpander
-  | `($_ $w) => `($(mkIdent `within) $w)
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Paragraph.okB] def unexpandParagraphOkB : Unexpander
-  | `($_ $w) => `($(mkIdent `ok) $w)
-  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.R] def unexpandParagraphR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
@@ -1150,10 +1137,10 @@ attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
 -- The take-while section's algebras the same way: the note draws what each arm DOES — `prefix`,
--- `cons`, `p`, `(π₁p→cons,⊸ nil)` — and `prefConsAlg`, `consScalarAlg` and the step `twStep` are
--- Lean names for those arms, so opened they are read off their own `match`.
+-- `cons`, `p`, `(π₁p→cons,⊸ nil)` — and `prefConsAlg` and `consScalarAlg` are Lean names for those
+-- arms, so they are opened; a step (`twStep`, `fStep`) is read as the guard its `if` is.
 attribute [diag_unfold] RelSet.GCTakeWhile.prefConsAlg
-  RelSet.GCTakeWhile.twStep RelSet.CL.consScalarAlg
+  RelSet.CL.consScalarAlg
 -- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
 -- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
 attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
@@ -1745,6 +1732,10 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `ordered))
   | _ => throw ()
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.orderedP] def unexpandOrderedP : Unexpander
+  | `($_ $_ $x) => `(orderedP $x)
+  | _ => throw ()
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Sort.ok] def unexpandOk : Unexpander
   | `($_ $_) => `($(mkIdent `ok))
   | _ => throw ()
@@ -1815,6 +1806,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ISort.insertR] def unexpandInsertR : Unexpander
   | `($_ $_) => `($(mkIdent `insert))
+  | _ => throw ()
+
+-- B&dM's conditional `(p→f,g)` (§5.6), so `cond`'s definition prints as the note writes it; the
+-- coproduct `C` is context.
+syntax:max (name := noteCond) "(" term "→" term "," term ")" : noteArith
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.cond] def unexpandCond : Unexpander
+  | `($_ $_ $x $r $s) =>
+    pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
   | _ => throw ()
 
 end Freyd.Alg

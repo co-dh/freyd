@@ -304,14 +304,14 @@ public theorem cons_comp_sum :
     show w = q.1 + csum q.2
     rw [hw', hs']
 
-/-- **`mss-prefix-sum`, step 1**: `[nil,⊸ nil ∪ cons] sum = [nil sum,⊸ nil sum ∪ cons sum]` — a
+/-- **`mss-prefix-sum`, step 1**: `[nil,cons ∪ ⊸ nil] sum = [nil sum,⊸ nil sum ∪ cons sum]` — a
     bracket composed is the bracket of the composites, and composition distributes over the `∪`. -/
 public theorem mss_prefix_sum_step1 :
     prefAlg ≫ sumR
       = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((wrapR : dL Unit ⟶ dList Int) ≫ sumR)
           ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR) := by
   unfold prefAlg
-  rw [junc_comp, union_comp_distrib]
+  rw [junc_comp, union_comp_distrib, DistributiveAllegory.union_comm]
 
 /-- **`mss-prefix-sum`, step 2**: `[nil sum,⊸ nil sum ∪ cons sum] = [zero,⊸ zero ∪ (𝟙×sum) plus]`
     — `sum`'s three defining equations, one per branch. -/
@@ -344,7 +344,7 @@ public theorem mss_prefix_sum_step4 :
       = (F Unit Int).map sumR ≫ junc (sumCop (dL Unit) ⟨Int × Int⟩) zero zeroPlus :=
   (Fmap_comp_junc Unit Int sumR zero zeroPlus).symm
 
-/-- What the `mss-prefix-sum` display proves: **`[nil,⊸ nil ∪ cons] sum = F(sum) S`** — `sum` is a
+/-- What the `mss-prefix-sum` display proves: **`[nil,cons ∪ ⊸ nil] sum = F(sum) S`** — `sum` is a
     homomorphism from `prefix`'s algebra to `S`, which is why the fold absorbs it. -/
 public theorem prefAlg_comp_sum :
     prefAlg ≫ sumR = (F Unit Int).map sumR ≫ Salg := by

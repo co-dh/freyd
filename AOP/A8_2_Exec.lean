@@ -371,7 +371,7 @@ public theorem mcp_spec (wt : A → A → Nat) (net : ConsList (List A) (List A)
 /-- `minpath` (book p.196): the program's graph — a network, read as its layers' sets, is related
     to the path `mcp` returns on it. -/
 @[expose] public def minpath (wt : A → A → Nat) : dCL (A → Prop) (A → Prop) ⟶ dCL A A :=
-  fun x p => ∃ net, x = netSet net ∧ mcp wt net = some p
+  fun xs ys => ∃ xss, xs = netSet xss ∧ mcp wt xss = some ys
 
 /-- `F(A,X) = A+A×X` (book p.196): the layered network's base bifunctor on objects, the
     statement 8.2a's first row prints. -/

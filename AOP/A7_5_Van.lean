@@ -190,8 +190,8 @@ public theorem secureP_tail {a : A} {x : Seg A} (h : secureP amount N (ConsList.
 
 /-- `R = length ≤ length°`, point-free. -/
 public theorem R_eq :
-    R A = graph (fun p : Sched A => (clen p : Int)) ≫ leq
-      ≫ (graph (fun p : Sched A => (clen p : Int)) : dSched A ⟶ (⟨Int⟩ : RelSet.{0}))° := by
+    R A = graph (fun xss : Sched A => (clen xss : Int)) ≫ leq
+      ≫ (graph (fun xss : Sched A => (clen xss : Int)) : dSched A ⟶ (⟨Int⟩ : RelSet.{0}))° := by
   apply hom_ext; intro p q
   constructor
   · intro h
@@ -243,7 +243,7 @@ public theorem RH_eq : RH A = R A ∩ ((R A)° ⇨ Hrel A) := by
     exact le_iff.mp (impl_cancel ((R A)°) (Hrel A)) p q ⟨h.2, hle⟩
 
 /-- **van-defn**: `|R| ≜ R∩¬R°`, the strict part `R` splits into. -/
-@[expose] public def strictR (A : Type) : dSched A ⟶ dSched A := fun p q => clen p < clen q
+@[expose] public def strictR (A : Type) : dSched A ⟶ dSched A := fun xss yss => clen xss < clen yss
 
 /-- **van-defn**: `R∩H` — no longer, AND with the first segment a prefix of the other's.  The §7.5
     displays draw it as ONE bead, so it is one arrow here: a bead is an arrow, and an arrow the note
@@ -309,20 +309,20 @@ public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
 /-- **van-defn**: `glue ≜ (𝟙×cons°) assocl (cons×𝟙) cons` — the transaction goes on the front
     of the first segment, so the schedule must have one. -/
 @[expose] public def glueR (A : Type) : (⟨A × Sched A⟩ : RelSet.{0}) ⟶ dSched A :=
-  fun p r => ∃ s t, p.2 = ConsList.cons s t ∧ r = ConsList.cons (ConsList.cons p.1 s) t
+  fun p yss => ∃ xs xss, p.2 = ConsList.cons xs xss ∧ yss = ConsList.cons (ConsList.cons p.1 xs) xss
 
 /-- **van-defn**: `ok`, the test the final program runs — the schedule is non-empty and
     `[a]⧺head xs` is secure. -/
 @[expose] public def okR (amount : A → Int) (N : Int) :
     (⟨A × Sched A⟩ : RelSet.{0}) ⟶ ⟨A × Sched A⟩ := fun p q =>
-  p = q ∧ ∃ s t, p.2 = ConsList.cons s t ∧ secureP amount N (ConsList.cons p.1 s)
+  p = q ∧ ∃ xs xss, p.2 = ConsList.cons xs xss ∧ secureP amount N (ConsList.cons p.1 xs)
 
 /-- **van-defn**: `old ≜ (𝟙×cons°) assocl ((cons secure)×𝟙) cons` — `glue` restricted to a
     first segment that stays secure. -/
 @[expose] public def oldR (amount : A → Int) (N : Int) :
-    (⟨A × Sched A⟩ : RelSet.{0}) ⟶ dSched A := fun p r =>
-  ∃ s t, p.2 = ConsList.cons s t ∧ r = ConsList.cons (ConsList.cons p.1 s) t
-    ∧ secureP amount N (ConsList.cons p.1 s)
+    (⟨A × Sched A⟩ : RelSet.{0}) ⟶ dSched A := fun p yss =>
+  ∃ xs xss, p.2 = ConsList.cons xs xss ∧ yss = ConsList.cons (ConsList.cons p.1 xs) xss
+    ∧ secureP amount N (ConsList.cons p.1 xs)
 
 /-- **van-laws**, the last row's reason read as an equation: `ok` is exactly where `old`
     returns anything, so `old = ok glue`. -/

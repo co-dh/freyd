@@ -115,7 +115,7 @@ public theorem exists_rot_index {n : Nat} (k i : Fin n) : ∃ j : Fin n, k + j =
     is the set of the `k`-th components. -/
 @[expose] public def transT :
     P (dTuple n A) ⟶ dTuple n (P A) :=
-  graph fun S => fun k => fun x => ∃ t, S t ∧ t k = x
+  graph fun xs => fun k => fun x => ∃ t, xs t ∧ t k = x
 
 /-- **`setify(1,2,3,4) = {1,2,3,4}`** (book p.181): the components of a tuple as a set — which
     row a component came from is forgotten. -/

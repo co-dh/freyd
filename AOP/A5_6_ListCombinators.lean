@@ -94,8 +94,8 @@ theorem perm_transitive : (perm : dList A ⟶ dList A) ≫ perm ⊑ perm :=
   | ConsList.cons a x, ConsList.cons b y => a = b ∧ prefixP x y
 
 /-- The prefix relation `prefix : list A ⟶ list A`, mirrored to diagram order:
-    `prefixR x ys` iff `ys` is an initial segment of `x`. -/
-@[expose] public def prefixR : dList A ⟶ dList A := fun x ys => prefixP ys x
+    `prefixR xs ys` iff `ys` is an initial segment of `xs`. -/
+@[expose] public def prefixR : dList A ⟶ dList A := fun xs ys => prefixP ys xs
 
 public theorem prefixP.refl : ∀ x : ConsList Unit A, prefixP x x
   | ConsList.wrap _ => trivial
@@ -124,10 +124,10 @@ theorem prefix_transitive : (prefixR : dList A ⟶ dList A) ≫ prefixR ⊑ pref
   | ConsList.cons a x, ConsList.cons b y => (a = b ∧ subseqP x y) ∨ subseqP (ConsList.cons a x) y
 
 /-- The subsequence relation `subseq : list A ⟶ list A`, mirrored to diagram order:
-    `subseq x ys` iff `ys` is `x` with some elements dropped. -/
-@[expose] public def subseq : dList A ⟶ dList A := fun x ys => subseqP ys x
+    `subseq xs ys` iff `ys` is `xs` with some elements dropped. -/
+@[expose] public def subseq : dList A ⟶ dList A := fun xs ys => subseqP ys xs
 
-theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
+public theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => Or.inl ⟨rfl, subseqP.refl x⟩
 
@@ -158,18 +158,18 @@ theorem subseq_reflexive : Cat.id (dList A) ⊑ subseq :=
 
 variable (R : A → A → Prop)
 
-/-- `x` is sorted under `R`: each element is `R`-below every later element (matches B&dM's `ok`
-    coreflexive, `ok(a,x)` iff `∀ b ∈ x, aRb`, threaded through the list). -/
+/-- `xs` is sorted under `R`: each element is `R`-below every later element (matches B&dM's `ok`
+    coreflexive, `ok(a,xs)` iff `∀ x ∈ xs, aRx`, threaded through the list). -/
 @[expose] public def orderedP : ConsList Unit A → Prop
   | ConsList.wrap _ => True
-  | ConsList.cons a x => (∀ b, inlistP x b → R a b) ∧ orderedP x
+  | ConsList.cons a xs => (∀ x, inlistP xs x → R a x) ∧ orderedP xs
 
 /-- `R` is CONNECTED (B&dM p.152, `R ∪ R° = Π`): any two elements are related one way or the
     other — what sorting under `R` needs of `R` besides transitivity. -/
 @[expose] public def connectedP : Prop := ∀ a b, R a b ∨ R b a
 
 /-- The sortedness coreflexive `ordered : list A ⟶ list A`. -/
-@[expose] public def ordered : dList A ⟶ dList A := fun x y => x = y ∧ orderedP R x
+@[expose] public def ordered : dList A ⟶ dList A := fun xs ys => xs = ys ∧ orderedP R xs
 
 /-- **`ordered` is coreflexive** (`ordered ⊑ id`) — discharges the `hord` hypothesis of §6.6's
     `selection_sort_correct` for the concrete sortedness relation. -/
@@ -199,10 +199,10 @@ public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.i
   | ConsList.cons seg rest => isNonempty seg ∧ allNonempty rest
 
 /-- **`partition : list A ⟶ list (list⁺ A)`** (B&dM p.128, `partition = concat°`): a decomposition
-    of `x` into a list of non-empty contiguous segments — `ps` is a partition of `x` iff flattening
-    `ps` gives `x` and every segment is non-empty. -/
+    of `xs` into a list of non-empty contiguous segments — `xss` is a partition of `xs` iff flattening
+    `xss` gives `xs` and every segment is non-empty. -/
 @[expose] public def partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
-  fun x ps => cconcat ps = x ∧ allNonempty ps
+  fun xs xss => cconcat xss = xs ∧ allNonempty xss
 
 /-- The one-segment non-emptiness coreflexive `neSeg ⊑ 𝟙`: pass a segment iff it is not `nil`. -/
 @[expose] public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s
@@ -953,8 +953,8 @@ public theorem list_graph {B : Type} (f : A → B) :
 /-! ### `total f = sum·list f`, the shape every case study's cost has -/
 
 /-- B&dM's `sum·list f` — the total of a list under a weighting `f` (`value = total vol` and
-    `weight = total wt` in §8.4).  `total f (cons a x) = f a + total f x` holds by `rfl`. -/
-@[expose] public def total (f : A → Int) (x : ConsList Unit A) : Int := csum (cmap f x)
+    `weight = total wt` in §8.4).  `total f (cons a xs) = f a + total f xs` holds by `rfl`. -/
+@[expose] public def total (f : A → Int) (xs : ConsList Unit A) : Int := csum (cmap f xs)
 
 /-- `total f = list(f) sum`, point-free. -/
 public theorem total_eq (f : A → Int) :
@@ -1196,15 +1196,15 @@ public theorem Λ_subseq :
         rw [subseq_alg_Λ]
     _ = _ := by rw [subseq_alg_transpose]
 
-/-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
-    display draws: on the leaf, `nil`; on a head and a tail-prefix, either discard and stop with
-    `nil` or keep the head.  Named so the fold below has an arrow to be the fold OF. -/
+/-- The prefix algebra **`[nil, cons ∪ ⊸ nil] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
+    display draws: on the leaf, `nil`; on a head and a tail-prefix, either keep the head or
+    discard and stop with `nil`.  `cons` first, as in `subseq`'s `[nil, cons ∪ π₂]`. -/
 @[expose] public def prefAlg : (F Unit A).obj (dList A) ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-    ((graph fun _ => ConsList.wrap ()) ∪ consR)
+    (consR ∪ (graph fun _ => ConsList.wrap ()))
 
-/-- **`prefix = ⦇[nil, ⊸ nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
-    branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
+/-- **`prefix = ⦇[nil, cons ∪ ⊸ nil]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; `cons`
+    keeps going, the second branch (`⊸nil`, discard then `nil`) stops early. -/
 public theorem prefix_cata :
     (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
@@ -1214,17 +1214,17 @@ public theorem prefix_cata :
     | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
   · show prefixP r (ConsList.cons a x)
-        ↔ ∃ y, prefixP y x ∧ (r = ConsList.wrap () ∨ r = ConsList.cons a y)
+        ↔ ∃ y, prefixP y x ∧ (r = ConsList.cons a y ∨ r = ConsList.wrap ())
     constructor
     · intro h
       cases r with
-      | wrap u => exact ⟨ConsList.wrap (), prefixP.nil x, Or.inl rfl⟩
-      | cons b z => exact ⟨z, h.2, Or.inr (by rw [h.1])⟩
+      | wrap u => exact ⟨ConsList.wrap (), prefixP.nil x, Or.inr rfl⟩
+      | cons b z => exact ⟨z, h.2, Or.inl (by rw [h.1])⟩
     · rintro ⟨y, hy, rfl | rfl⟩
-      · exact trivial
       · exact ⟨rfl, hy⟩
+      · exact trivial
 
-/-- **`α prefix = F(𝟙,prefix)[nil, ⊸nil ∪ cons]`**: the fold law of `prefix` in the cancellation
+/-- **`α prefix = F(𝟙,prefix)[nil, cons ∪ ⊸nil]`**: the fold law of `prefix` in the cancellation
     form (5.12) — build the list, then take a prefix, is take a prefix of the tail and then
     either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
     picture of the two sides is drawn from. -/
@@ -1667,7 +1667,7 @@ public theorem id_eq_graph {C : Type} : 𝟙 (dE C) = graph id :=
   hom_ext fun x y => (id_eq_graph_iff x y).trans Iff.rfl
 
 /-- `setify ∋ = inlist`: `setify` is the transpose of list membership. -/
-public theorem setify_ni_iff (x : ConsList Unit A) (a : A) : (setify ≫ ∋ (dE A)) x a ↔ inlistP x a :=
+public theorem setify_ni_iff (xs : ConsList Unit A) (x : A) : (setify ≫ ∋ (dE A)) xs x ↔ inlistP xs x :=
   ⟨fun ⟨_, hS, ha⟩ => by subst hS; exact ha, fun ha => ⟨_, rfl, ha⟩⟩
 
 /-- A list-valued `g` whose result holds exactly the elements `R` relates to its argument:

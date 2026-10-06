@@ -50,9 +50,9 @@ Each step of the book's calculation is one declaration, stated in the relations 
 only the laws the book cites without proof (`perm°=perm`, the cons-branch of `perm`'s fold,
 Ex 6.22) drop to points. -/
 
-/-- B&dM p.152 `ok`: the coreflexive holding at `(a, x)` when `a` is `R`-below every element of `x`. -/
+/-- B&dM p.152 `ok`: the coreflexive holding at `(a, xs)` when `a` is `R`-below every element of `xs`. -/
 @[expose] public def ok : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ ⟨A × ConsList Unit A⟩ :=
-  fun p q => p = q ∧ ∀ b, inlistP p.2 b → R p.1 b
+  fun (a, xs) q => (a, xs) = q ∧ ∀ x, inlistP xs x → R a x
 
 /-- **(6.6)** `ordered = ⦇[nil, ok cons]⦈`: sortedness is the fold that checks `ok` at each `cons`. -/
 public theorem ordered_cata :

@@ -112,6 +112,33 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
     | _, e => e
   return go pi.numParams ty
 
+/-- `x R y ⟺ P`, the one spelling of a relation at two points. -/
+def relAt (sp : Bool) (R x y p : Expr) : MetaM Lbl :=
+  return (← labelT x) ++ " " ++ (← labelT R) ++ " " ++ (← labelT y) ++ spaced "⟺" sp ++ (← labelT p)
+
+/-- A relation `R : A ⟶ B` DEFINED BY CASES, one `x R y ⟺ P` per equation Lean derived from it: the
+    equation's left side is `R` at the def's own arguments and then the two points, each the case's
+    pattern (`(a, x) ok q`).  A catch-all case's equation holds only off the earlier cases, and
+    those hypotheses print before `⟹`, as any conditional law's do: dropped, the case would claim all. -/
+def pointwiseEqn (sp : Bool) (declName : Name) (arity : Nat) (eqn : Name) : MetaM (Array Lbl) := do
+  let ty := primeBinders [] (← getConstInfo eqn).type
+  Meta.forallTelescope ty fun xs st => do
+    let hyps ← xs.filterM fun x => do
+      return (← x.fvarId!.getDecl).binderInfo.isExplicit && (← Meta.isProp (← Meta.inferType x))
+    let tys ← hyps.mapM Meta.inferType
+    let (pre, ante, br) ← match tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none with
+      | some c => pure (#[(← labelTree (Prec.impl + 1) c) ++ Lbl.text " "], Lbl.text implArrow.trimLeft, true)
+      | none => pure (#[], Lbl.text "", false)
+    let some (_, lhs, rhs) := st.eq? |
+      throwError "{eqn}: an equation of {declName} states {← Meta.ppExpr st}, which is no `=`"
+    let args := lhs.getAppArgs
+    unless lhs.getAppFn.constName? == some declName && args.size == arity + 2 do
+      throwError "{eqn}: the left side {← Meta.ppExpr lhs} is not {declName} at its {arity} \
+        arguments and two points"
+    let eq ← relAt sp (mkAppN lhs.getAppFn (args.extract 0 arity)) args[arity]! args[arity + 1]! rhs
+    -- nothing ranks `⟹` against `⟺`, so under hypotheses the equation is bracketed
+    return pre ++ #[ante ++ (if br then Lbl.text "(" ++ eq ++ Lbl.text ")" else eq)]
+
 /-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
     elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none
     can drift.  Any value that is not two lambdas is refused. -/
@@ -125,10 +152,8 @@ def pointwise (sp : Bool) (declName : Name) : MetaM Lbl :=
     let body := v.beta xs
     unless body.isLambda && body.bindingBody!.isLambda do
       throwError "{declName}: a pointwise relation is `fun x y => …`; this one is {← Meta.ppExpr body}"
-    Meta.lambdaBoundedTelescope body 2 fun ys p => do
-      let R := mkAppN (.const declName (ci.levelParams.map .param)) xs
-      return (← labelT ys[0]!) ++ " " ++ (← labelT R) ++ " " ++ (← labelT ys[1]!)
-        ++ spaced "⟺" sp ++ (← labelT p)
+    Meta.lambdaBoundedTelescope body 2 fun ys p =>
+      relAt sp (mkAppN (.const declName (ci.levelParams.map .param)) xs) ys[0]! ys[1]! p
 
 /-- A CLASS THAT STATES A CONDITION rather than supplying data: its type is a proposition, or it is a
     structure every field of which is a proof — read off the constructor at the class's arguments. -/
@@ -200,8 +225,11 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         let some eqs ← Meta.getEqnsFor? declName |
           throwError "{declName}: a definition by cases, and Lean derives no equations for it"
         -- An equation is a closed statement: rendered in an EMPTY context, so the definition's own
-        -- binders opened above take no name its variables could need.
-        let rs ← eqs.mapM fun q => Meta.withLCtx {} {} (render sp q none [] [])
+        -- binders opened above take no name its variables could need.  A RELATION by cases is
+        -- written at two points, as one given by `fun x y => P` is, the case's pattern at each.
+        let rel := (homObjs? body).isSome
+        let rs ← eqs.mapM fun q => Meta.withLCtx {} {} do
+          if rel then pointwiseEqn sp declName xs.size q else render sp q none [] []
         return rs.foldl (init := #[]) fun acc r =>
           if acc.isEmpty then r else acc ++ r.modify 0 (Lbl.text ", " ++ ·)
       -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.
@@ -211,7 +239,12 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
-        | some x => Meta.inferType x
+        -- A DATA BINDER states no proposition but its typing, so it prints as `p : A → Bool`: its
+        -- type alone would leave the reader to guess which binder the cell is about.
+        | some x => do
+          let t ← Meta.inferType x
+          if !(← Meta.isProp t) then return #[(← labelT x) ++ spaced ":" sp ++ (← labelT t)]
+          pure t
         | none =>
           let names ← xs.mapM fun x => return (← x.fvarId!.getUserName).toString
           throwError "{declName} has no binder `{h}`; its binders are \

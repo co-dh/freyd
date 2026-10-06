@@ -49,23 +49,23 @@ public theorem Λ_comp_est_apply {B A : RelSet.{0}} (T : B ⟶ A) (R : A ⟶ A) 
 
 /-- Pointwise form of `E R` in Rel(Set): the `E R`-image of a set `P` is the set of all
     `R`-images of its members. -/
-public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) : existsImage R P Q ↔ Q = fun w => ∃ s, P s ∧ R s w := by
-  show Λ (epsRel A ≫ R) P Q ↔ _
+public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (xs : (pow A).carrier)
+    (ys : (pow B).carrier) : existsImage R xs ys ↔ ys = fun y => ∃ x, xs x ∧ R x y := by
+  show Λ (epsRel A ≫ R) xs ys ↔ _
   rw [Λ_eq_classifier]
   exact Iff.rfl
 
-/-- `(∋R)/∋` read pointwise: every member of `Q` is reached from `P`. -/
-public theorem powrel_reading_reached {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) : ((∋ A ≫ R) / ∋ B) P Q ↔ ∀ w, Q w → ∃ s, P s ∧ R s w := Iff.rfl
+/-- `(∋R)/∋` read pointwise: every member of `ys` is reached from `xs`. -/
+public theorem powrel_reading_reached {A B : RelSet.{0}} (R : A ⟶ B) (xs : (pow A).carrier)
+    (ys : (pow B).carrier) : ((∋ A ≫ R) / ∋ B) xs ys ↔ ∀ y, ys y → ∃ x, xs x ∧ R x y := Iff.rfl
 
-/-- `(∋/(∋R))°` read pointwise: every element reached from `P` is in `Q`. -/
-public theorem powrel_reading_closed {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) : (∋ B / (∋ A ≫ R))° P Q ↔ ∀ w, (∃ s, P s ∧ R s w) → Q w := Iff.rfl
+/-- `(∋/(∋R))°` read pointwise: every element reached from `xs` is in `ys`. -/
+public theorem powrel_reading_closed {A B : RelSet.{0}} (R : A ⟶ B) (xs : (pow A).carrier)
+    (ys : (pow B).carrier) : (∋ B / (∋ A ≫ R))° xs ys ↔ ∀ y, (∃ x, xs x ∧ R x y) → ys y := Iff.rfl
 
-/-- `((∋R°)/∋)°` read pointwise: every member of `P` reaches into `Q`. -/
-public theorem powrel_reading_reaches {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) : ((∋ B ≫ R°) / ∋ A)° P Q ↔ ∀ s, P s → ∃ w, Q w ∧ R s w := Iff.rfl
+/-- `((∋R°)/∋)°` read pointwise: every member of `xs` reaches into `ys`. -/
+public theorem powrel_reading_reaches {A B : RelSet.{0}} (R : A ⟶ B) (xs : (pow A).carrier)
+    (ys : (pow B).carrier) : ((∋ B ≫ R°) / ∋ A)° xs ys ↔ ∀ x, xs x → ∃ y, ys y ∧ R x y := Iff.rfl
 
 /-- The pointwise readings of the three relations between subsets that `P(R)` and `E(R)` are
     built from, together. -/
@@ -181,8 +181,8 @@ public theorem plus_distributes_le
     {xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
     (mx : {a // est leRel xs a}) (my : {a // est leRel ys a})
     {fea : ((Δ RelSet.{0}).obj (pow (⟨Nat⟩ : RelSet.{0}))).carrier} (_hfea : fea = (xs, ys))
-    {ea : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
-    (_hea : ea = sums xs ys)
+    {zs : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
+    (_hzs : zs = sums xs ys)
     {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier}
     (_hfa : fa = (minOf xs mx, minOf ys my))
     {c : Nat} (_hc : c = minOf xs mx + minOf ys my) :

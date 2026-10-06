@@ -88,9 +88,9 @@ macro:max "dCodes" : term => `(dSL Unit Code)
   | x, SnocList.wrap _ => x = SnocList.wrap ()
   | x, SnocList.snoc y a => x = SnocList.snoc y a ∨ prefixS x y
 
-/-- **code-defn**: `prefix`, mirrored to diagram order — `prefixR x ys` reads "`ys` is a prefix
-    of `x`", so `prefix°` is "is a prefix of". -/
-@[expose] public def prefixR : dStr ⟶ dStr := fun x ys => prefixS ys x
+/-- **code-defn**: `prefix`, mirrored to diagram order — `prefixR xs ys` reads "`ys` is a prefix
+    of `xs`", so `prefix°` is "is a prefix of". -/
+@[expose] public def prefixR : dStr ⟶ dStr := fun xs ys => prefixS ys xs
 
 /-- `x` is a PROPER prefix of `y` — the book's `init⁺`.  Properness is spelled as strictly
     shorter, which on prefixes is the same thing and needs no injectivity lemma. -/
@@ -202,9 +202,9 @@ public theorem properPrefixS_shorten {xs ys zs zs' : Str}
 /-- **code-defn**: `extend (xs,sym a)=xs⧺[a]`, and `extend (xs,ptr (ys,zs))=xs⧺zs` when `zs` is
     non-empty and `ys⧺zs` is a proper prefix of `xs⧺zs` — a PARTIAL function. -/
 @[expose] public def extendP : Str × Code → Str → Prop
-  | (xs, Code.sym a), w => w = SnocList.snoc xs a
-  | (xs, Code.ptr ys zs), w =>
-      w = sappend xs zs ∧ zs ≠ SnocList.wrap ()
+  | (xs, Code.sym a), ws => ws = SnocList.snoc xs a
+  | (xs, Code.ptr ys zs), ws =>
+      ws = sappend xs zs ∧ zs ≠ SnocList.wrap ()
         ∧ properPrefixS (sappend ys zs) (sappend xs zs)
 
 /-- **code-defn**: `extend`, the partial map above read as the arrow the note draws. -/
@@ -279,7 +279,7 @@ public theorem size_cata :
       exact ⟨sizeFn c p cs', (ih _).mpr rfl, h⟩
 
 /-- **code-defn**: `R≜size≤size°`. -/
-@[expose] public def R (c p : Nat) : dCodes ⟶ dCodes := fun u v => sizeFn c p u ≤ sizeFn c p v
+@[expose] public def R (c p : Nat) : dCodes ⟶ dCodes := fun xs ys => sizeFn c p xs ≤ sizeFn c p ys
 
 /-- `R = size≤size°`, point-free. -/
 public theorem R_eq :
@@ -293,8 +293,8 @@ public theorem R_eq :
     obtain rfl : n = sizeFn c p v := hn
     exact hmn
 
-/-- **code-defn**, pointwise: `u R v` iff `u` costs no more than `v`. -/
-public theorem R_apply (u v : SnocList Unit Code) : R c p u v ↔ sizeFn c p u ≤ sizeFn c p v :=
+/-- **code-defn**, pointwise: `xs R ys` iff `xs` costs no more than `ys`. -/
+public theorem R_apply (xs ys : SnocList Unit Code) : R c p xs ys ↔ sizeFn c p xs ≤ sizeFn c p ys :=
   Iff.rfl
 
 /-- `R°` is transitive — Theorem 9.2's `htrans`. -/
@@ -348,7 +348,7 @@ public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
 @[expose] public def Q : (F Unit Code).obj dStr ⟶ (F Unit Code).obj dStr := fun u v =>
   match u, v with
   | Sum.inl _, Sum.inl _ => True
-  | Sum.inr q, Sum.inr r => prefixS q.1 r.1 ∧ U q.2 r.2
+  | Sum.inr p, Sum.inr q => prefixS p.1 q.1 ∧ U p.2 q.2
   | _, _ => False
 
 /-! ## `code-laws` -/
@@ -933,18 +933,18 @@ public theorem mem_keepExtends (w : Str) (q : Str × Code) :
 /-- `reduce : String⟶[(String,Code)]`, the map the note's panel draws. -/
 @[expose] public def reduce : dStr ⟶ ListRel.dList (Str × Code) := graph reduceFn
 
-/-- `reduce` LISTS `extend°`: `(xs,e)` occurs in `reduceFn w` exactly when `extend (xs,e) = w`. -/
-public theorem mem_reduce (w : Str) (q : Str × Code) :
-    ListRel.inlistP (reduceFn w) q ↔ extendP q w := by
+/-- `reduce` LISTS `extend°`: `(xs,e)` occurs in `reduceFn ws` exactly when `extend (xs,e) = ws`. -/
+public theorem mem_reduce (ws : Str) (q : Str × Code) :
+    ListRel.inlistP (reduceFn ws) q ↔ extendP q ws := by
   show ListRel.inlistP
-      (keepExtends w (ListRel.cappend (symCands w) (ptrCands (prefixesFn w) (splitsFn w)))) q
-    ↔ extendP q w
+      (keepExtends ws (ListRel.cappend (symCands ws) (ptrCands (prefixesFn ws) (splitsFn ws)))) q
+    ↔ extendP q ws
   rw [mem_keepExtends, inlistP_cappend]
   refine ⟨fun h => h.2, fun h => ⟨?_, h⟩⟩
   obtain ⟨xs, e⟩ := q
   cases e with
   | sym a =>
-      have hw : w = SnocList.snoc xs a := h
+      have hw : ws = SnocList.snoc xs a := h
       subst hw
       exact Or.inl (Or.inl rfl)
   | ptr ys zs =>
