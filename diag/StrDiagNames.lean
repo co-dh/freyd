@@ -114,6 +114,8 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
   RelSet.Sort.base RelSet.ISort.add
 -- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §6.4 `Bin`, §7.3 `exclude`).
 attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
+attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails
+  RelSet.Bracket.flatten
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- AN OBJECT THE NOTE HAS NO WORD FOR IS THE SET IT WRAPS: a `def` whose body is a one-field record
@@ -150,9 +152,6 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let f := mkIdent (Name.mkSimple s!"[{leaf},cons]")
   if args.size == 2 then `($f) else `($f $(← withAppArg delab))
 -- The node arm of `g≜[zero,(𝟙×sz)² opb π₁]`, and of the size algebra `[zero,distr [𝟙×c,𝟙×p] plus]`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.gArmFn] def unexpandBracketGArmFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "(𝟙×sz)² opb π₁")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.sizeArmFn] def unexpandCodeSizeArmFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))
@@ -731,28 +730,6 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `unstep))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.detabR] def unexpandDetabFn : Unexpander | _ => `($(mkIdent `detab))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.flattenFn] def unexpandFlattenFn : Unexpander
-  | _ => `($(mkIdent `flatten))
--- §9.3's fold components and `g` drop the leaf map, split cost and combine cost, as `R` does.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.costFn] def unexpandBracketCostFn : Unexpander
-  | _ => `($(mkIdent `cost))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.sizeFn] def unexpandBracketSizeFn : Unexpander
-  | _ => `($(mkIdent `size))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.szFn] def unexpandBracketSzFn : Unexpander
-  | _ => `($(mkIdent `sz))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.zeroFn] def unexpandBracketZeroFn : Unexpander
-  | _ => `($(mkIdent `zero))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
-  | _ => `($(mkIdent `opb))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.gR] def unexpandBracketGR : Unexpander
-  | _ => `($(mkIdent `g))
 -- The label summand of `F X = A + X²` is the label type itself; `≤` on `Int` is its operator.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.TT.dA] def unexpandTTdA : Unexpander
@@ -1147,13 +1124,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.Salg] def unexpandKnapsackSalg : Unexpander
   | _ => `($(mkIdent `S))
--- The note's `cp(F)` (B&dM §5.6) is `cpMap F A`: the relator is its argument and the object `A` is
--- the wire under the bead, so only `F` is printed (`$args*` here matched nothing and wrote bare `cp`).
-open Lean PrettyPrinter in
-@[app_unexpander cpMap] def unexpandCpMap : Unexpander
-  | `($_ $F $_) => `($(mkIdent `cp) $F)
-  | `($_ $F) => `($(mkIdent `cp) $F)
-  | _ => `($(mkIdent `cp))
 -- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
 -- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): a bundled relator
 -- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
@@ -1173,71 +1143,18 @@ open Lean PrettyPrinter in
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
   | `($_ $_ $_ $_ $o) => `($(mkIdent `sort) $o)
   | _ => `($(mkIdent `sortRel))
--- B&dM p.196 names the cost order `R` and p.197 its refinement `Q`; `path` is only Lean's prefix,
--- and the note's `path-defn` lines print these from the defs' values.
-open Lean PrettyPrinter in
-@[app_unexpander pathR] def unexpandPathR : Unexpander
-  | `($_ $args*) => `($(mkIdent `R) $args*)
-  | _ => `($(mkIdent `R))
-open Lean PrettyPrinter in
-@[app_unexpander pathQ] def unexpandPathQ : Unexpander
-  | `($_ $args*) => `($(mkIdent `Q) $args*)
-  | _ => `($(mkIdent `Q))
--- B&dM p.196 writes `cost` and `head`; the weight `wt` is the section's one parameter and no
--- argument the note writes.
-open Lean PrettyPrinter in
-@[app_unexpander costOf] def unexpandCostOf : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
-  | _ => `($(mkIdent `cost))
-open Lean PrettyPrinter in
-@[app_unexpander headOf] def unexpandHeadOf : Unexpander
-  | `($_ $args*) => `($(mkIdent `head) $args*)
-  | _ => `($(mkIdent `head))
--- B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter, as for `cost`.
-open Lean PrettyPrinter in
-@[app_unexpander minpath] def unexpandMinpath : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `minpath) $args*)
-  | _ => `($(mkIdent `minpath))
--- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
-open Lean PrettyPrinter in
-@[app_unexpander pathStep] def unexpandPathStep : Unexpander
-  | `($_ $args*) => `($(mkIdent `step) $args*)
-  | _ => `($(mkIdent `step))
 -- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
 open Lean PrettyPrinter in
 @[app_unexpander pathF] def unexpandPathF : Unexpander
   | _ => `($(mkIdent `F))
--- B&dM p.126 writes `cpr`/`cpl` for the cross product at `A×−`/`−×A`; the objects are the wires.
-open Lean PrettyPrinter in
-@[app_unexpander cprMap] def unexpandCprMap : Unexpander
-  | _ => `($(mkIdent `cpr))
-open Lean PrettyPrinter in
-@[app_unexpander cplMap] def unexpandCplMap : Unexpander
-  | _ => `($(mkIdent `cpl))
 -- B&dM p.201's `listcp(F)`; the functor is the wire's, as for `cp`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
   | _ => `($(mkIdent `listcp))
--- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
+-- B&dM p.196's `zero`; the weight `wt` is the section's parameter.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
   | _ => `($(mkIdent `zero))
-open Lean PrettyPrinter in
-@[app_unexpander conswFn] def unexpandConswFn : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
-  | _ => `($(mkIdent `consw))
-open Lean PrettyPrinter in
-@[app_unexpander consw] def unexpandConsw : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
-  | _ => `($(mkIdent `consw))
-open Lean PrettyPrinter in
-@[app_unexpander pathCost] def unexpandPathCost : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
-  | _ => `($(mkIdent `cost))
--- `S ≜ F(𝟙,∋)α`, the letter of the 8.2d side condition `R∩(S°S)⊑Q` only.
-open Lean PrettyPrinter in
-@[app_unexpander algSplit] def unexpandAlgSplit : Unexpander
-  | _ => `($(mkIdent `S))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
@@ -1385,46 +1302,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.splitsFn] def unexpandBracketSplitsFn : Unexpander
   | `($_ $args*) => `($(mkIdent `splits) $args*)
   | _ => `($(mkIdent `splits))
--- §9.3's tabulation: the list functions by the book's names, `row`/`col` without the `mct` they
--- are taken of, `mix`/`next` without the leaf map, split cost and combine cost, as `R` does.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.initFn] def unexpandBracketInitFn : Unexpander
-  | _ => `($(mkIdent `init))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.tailFn] def unexpandBracketTailFn : Unexpander
-  | _ => `($(mkIdent `tail))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.neInitsFn] def unexpandBracketInitsFn : Unexpander
-  | _ => `($(mkIdent `inits))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.neTailsFn] def unexpandBracketTailsFn : Unexpander
-  | _ => `($(mkIdent `tails))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.initsPFn] def unexpandBracketInitsPFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "inits⁺")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.tailsPFn] def unexpandBracketTailsPFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "tails⁺")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.zipFn] def unexpandBracketZipFn : Unexpander
-  | _ => `($(mkIdent `zip))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.snocFn] def unexpandBracketSnocFn : Unexpander
-  | _ => `($(mkIdent `snoc))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.row] def unexpandBracketRow : Unexpander
-  | _ => `($(mkIdent `row))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.col] def unexpandBracketCol : Unexpander
-  | _ => `($(mkIdent `col))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.mct] def unexpandBracketMct : Unexpander
-  | _ => `($(mkIdent `mct))
--- B&dM's `minlist(R)`, the function folded from `bmin`, in `CL.minlist`'s own spelling.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.minlistFn] def unexpandBracketMinlistFn : Unexpander
-  | `($_ $q) => `(minlist($q))
-  | _ => throw ()
 -- The constructor `wrap` as a relation is `wrap`, as `consR` is `cons`; a delaborator, since
 -- `wrapR` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
 -- Out of the EMPTY leaf `𝟏` it is the list's `nil`, the name `Label.lean` gives every map out of a
@@ -1440,40 +1317,6 @@ def delabCLWrapR : Delab := do
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
 def delabBracketTic : Delab := `($(mkIdent `tic))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.mix] def unexpandBracketMix : Unexpander
-  | _ => `($(mkIdent `mix))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.next] def unexpandBracketNext : Unexpander
-  | _ => `($(mkIdent `next))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.array] def unexpandBracketArray : Unexpander
-  | _ => `($(mkIdent `array))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.process] def unexpandBracketProcess : Unexpander
-  | _ => `($(mkIdent `process))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.addcol] def unexpandBracketAddcol : Unexpander
-  | _ => `($(mkIdent `addcol))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.step] def unexpandBracketStep : Unexpander
-  | _ => `($(mkIdent `step))
--- Our own names for §9.3's long composites (not the book's): `graft`, `tops`, `rests`, `newrows`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.graft] def unexpandBracketGraft : Unexpander
-  | _ => `($(mkIdent `graft))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.tops] def unexpandBracketTops : Unexpander
-  | _ => `($(mkIdent `tops))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.rests] def unexpandBracketRests : Unexpander
-  | _ => `($(mkIdent `rests))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.newrows] def unexpandBracketNewrows : Unexpander
-  | _ => `($(mkIdent `newrows))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.listTailFn] def unexpandBracketListTailFn : Unexpander
-  | _ => `($(mkIdent `tail))
 -- `prefixS x y` is "`x` is a prefix of `y`", the note's `prefix°` (`Q≜F(⊤+⊤,prefix°)`).
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.prefixS] def unexpandCodePrefixS : Unexpander
