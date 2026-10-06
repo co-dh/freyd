@@ -521,14 +521,6 @@ open Lean PrettyPrinter in
   | `($_ $f:ident) => `($f)
   | _ => throw ()
 
-open Lean PrettyPrinter in
-/-- A PREDICATE'S COREFLEXIVE is written by the predicate's own name, for the reason a map's graph
-    is: the note's `p` box and its `(p×𝟙)` lane are this partial identity, and `pcor` is the Lean
-    spelling of the same arrow. -/
-@[app_unexpander RelSet.GCTakeWhile.pcor] def unexpandPcor : Unexpander
-  | `($_ $p) => `($p)
-  | _ => throw ()
-
 -- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
 -- two apart: the note's region has only the arrow, and `consR`/`concatR` already print that way.
 open Lean PrettyPrinter in

@@ -54,9 +54,9 @@ variable {A : Type}
     ((graph fun q => q.2) ∪ pcons p)
 
 /-- Ex 7.41's specification: `filter(p) ≜ Λ(subseq list(p)) est(R°)` — the longest subsequence
-    all of whose elements pass `p`. -/
-@[expose] public def filter (p : A → Bool) : dList A ⟶ dList A :=
-  (subseq ≫ listP p)%∋ ≫ est(lenLE°)
+    all of whose elements pass the coreflexive `p` (B&dM: "the relation `p` is a coreflexive"). -/
+@[expose] public def filter (p : dE A ⟶ dE A) : dList A ⟶ dList A :=
+  (subseq ≫ ListRel.list p)%∋ ≫ est(lenLE°)
 
 /-- The `filter-defn` table's last row, `𝟙 ⊑ π₂ R cons°`: the tail is one shorter than the cons,
     so `π₂` loses the `est(R°)` at every step — where takewhile's loser is `nil`. -/
@@ -343,12 +343,12 @@ public theorem filter_step (p : A → Bool) :
     (`filter_alg`), and the result is `filter` by definition. -/
 public theorem filter_cata_le (p : A → Bool) :
     cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
-      ⊑ filter p :=
+      ⊑ filter (pcor p) :=
   calc cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
         = cataR ((Salg p)%∋ ≫ est(lenLE°)) := by rw [filter_step]
     _ ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := filter_greedy p
     _ = (subseq ≫ listP p)%∋ ≫ est(lenLE°) := by rw [filter_alg]
-    _ = filter p := rfl
+    _ = filter (pcor p) := rfl
 
 calc_steps filter_cata_le
 
@@ -373,7 +373,7 @@ public theorem filter_emerges (p : A → Bool) :
   consFold_unique (fun _ => ConsList.wrap ()) (fStep p) (filtCL p) (fun _ => rfl) (fun _ _ => rfl)
 
 /-- A subsequence is no longer than its host. -/
-theorem subseqP_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → clen x ≤ clen y
+public theorem subseqP_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → clen x ≤ clen y
   | ConsList.wrap _, _, _ => Nat.zero_le _
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
   | ConsList.cons a x, ConsList.cons b y, h => by
@@ -382,7 +382,7 @@ theorem subseqP_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → clen x �
       · exact Nat.le_trans (subseqP_clen_le hs) (Nat.le_succ _)
 
 /-- A subsequence of its host's length IS the host. -/
-theorem subseqP_eq_of_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → clen y ≤ clen x → x = y
+public theorem subseqP_eq_of_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → clen y ≤ clen x → x = y
   | ConsList.wrap _, ConsList.wrap _, _, _ => rfl
   | ConsList.wrap _, ConsList.cons _ _, _, hlen => absurd hlen (Nat.not_succ_le_zero _)
   | ConsList.cons _ _, ConsList.wrap _, h, _ => h.elim
@@ -437,8 +437,8 @@ public theorem filt_best (p : A → Bool) :
 /-- The simplicity row: `filter(p)° filter(p) ⊑ 𝟙`.  NOT the takewhile argument — two
     `p`-subsequences of one list can be of equal length and different — but through `filtCL`:
     a longest `p`-subsequence is a subsequence of `filtCL p u` of its length, hence IS it. -/
-public theorem filter_simple (p : A → Bool) : Simple (filter p) := by
-  show (filter p)° ≫ filter p ⊑ 𝟙 _
+public theorem filter_simple (p : A → Bool) : Simple (filter (pcor p)) := by
+  show (filter (pcor p))° ≫ filter (pcor p) ⊑ 𝟙 _
   apply le_iff.mpr
   intro ws zs h
   obtain ⟨u, h1, h2⟩ := h
@@ -455,7 +455,7 @@ public theorem filter_simple (p : A → Bool) : Simple (filter p) := by
     The greedy `⊒` becomes `=`: the program is entire (a reduce of maps) and the specification
     is simple, so `eq_of_le_entire_simple` closes the gap. -/
 public theorem filter_eq_cata (p : A → Bool) :
-    filter p
+    filter (pcor p)
       = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) := by
   have hentire : Entire
       (cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))) := by
@@ -465,7 +465,7 @@ public theorem filter_eq_cata (p : A → Bool) :
 
 /-- The entirety row: `Λ(subseq list(p)) est(R°)` is entire — `nil` is always a `p`-subsequence
     and a longest one exists; read off the headline, whose program is a reduce of maps. -/
-public theorem filter_entire (p : A → Bool) : Entire (filter p) := by
+public theorem filter_entire (p : A → Bool) : Entire (filter (pcor p)) := by
   rw [filter_eq_cata p, ← filter_emerges p]
   exact graph_entire _
 

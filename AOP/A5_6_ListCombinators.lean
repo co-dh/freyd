@@ -127,7 +127,7 @@ theorem prefix_transitive : (prefixR : dList A ⟶ dList A) ≫ prefixR ⊑ pref
     `subseq xs ys` iff `ys` is `xs` with some elements dropped. -/
 @[expose] public def subseq : dList A ⟶ dList A := fun xs ys => subseqP ys xs
 
-theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
+public theorem subseqP.refl : ∀ x : ConsList Unit A, subseqP x x
   | ConsList.wrap _ => trivial
   | ConsList.cons _ x => Or.inl ⟨rfl, subseqP.refl x⟩
 

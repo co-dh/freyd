@@ -377,23 +377,12 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
         obtain rfl : r = y := hcase
         exact ⟨subseqP.weaken hsy, hwy⟩
 
-/-- `within w` as the test `filter` takes: the packing's weight fits the knapsack. -/
-@[expose] public def withinB (w : Int) (x : ConsList Unit Item) : Bool := decide (total wt x ≤ w)
-
-/-- `within w` is the coreflexive of the test `withinB w`. -/
-public theorem within_eq_pcor :
-    within (wt := wt) w = GCTakeWhile.pcor (withinB (wt := wt) w) := by
-  apply hom_ext; intro x y
-  constructor
-  · rintro ⟨rfl, h⟩; exact ⟨rfl, decide_eq_true h⟩
-  · rintro ⟨rfl, h⟩; exact ⟨rfl, of_decide_eq_true h⟩
-
 /-- `R ≜ value ≥ value°` is connected: any two packings compare by value one way or the other. -/
 public theorem R_connected : Freyd.Alg.Connected (R vol) :=
   le_iff.mpr fun x y _ => (Int.le_total (total vol y) (total vol x)).imp id id
 
 /-- B&dM's `g₁ ≜ list(cons) filter(within w)` (§8.4, p.206): extend each packing by the item, keep those that fit. -/
-@[expose] public def g₁ := list (graph con) ≫ Filter.filter (withinB (Item := Item) (wt := wt) w)
+@[expose] public def g₁ := list (graph con) ≫ Filter.filter (within (Item := Item) (wt := wt) w)
 
 /-- B&dM's `g₂ ≜ list(π₂)`: keep each packing without the item. -/
 @[expose] public def g₂ := list (graph (dropFn (Item := Item)))
@@ -406,12 +395,12 @@ public theorem knap_laws_step1 :
         (g₁ (wt := wt) (w := w)) g₂
         ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
-  have key := thinningList con dropFn (withinB (wt := wt) w) (fun _ => true)
+  have key := thinningList con dropFn (within (wt := wt) w) (𝟙 _) within_coreflexive (le_refl _)
     («≼» := R vol) (Q := Q vol wt) (R := R vol) Q_le_R ⟨Q_refl, Q_trans⟩
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩
-    (by rw [← within_eq_pcor]; exact knap_mono_cons) (by rw [pcor_true, Cat.comp_id]; exact knap_mono_drop)
+    knap_mono_cons (by rw [Cat.comp_id]; exact knap_mono_drop)
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩ R_connected knap_sort_cons knap_sort_drop
-  rw [filter_true, Cat.comp_id, pcor_true, Cat.comp_id, ← within_eq_pcor] at key
+  rw [filter_id, Cat.comp_id, Cat.comp_id] at key
   exact key
 
 /-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
