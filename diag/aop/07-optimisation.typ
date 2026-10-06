@@ -289,15 +289,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 === `f` monotonic on `≤`, read at points <sec-mon-points>
 
-// @mon-str's two sides at `R := ≤`, `φ := f` a map.  ONE call, so the two sides share a box.
+// The two sides of `MonoAlg (graph f) ≤` as the theorem below states it, so the panels and the
+// bullets share the letters `f` and `≤`.  ONE call, so the two sides share a box.
 // The source of `f` is `FA`, which is why the order on its arguments is `F(≤)` and not `≤`.
-#disp[#align(center, lean("Freyd.Alg.MonoAlg.lhs", "Freyd.Alg.MonoAlg.rhs", op: [#SQ]))
+#disp[#align(center, lean("Freyd.Alg.RelSet.graph_monoAlg_iff_monotone.lhs.lhs",
+  "Freyd.Alg.RelSet.graph_monoAlg_iff_monotone.lhs.rhs", op: [#SQ]))
 - #leanf("Freyd.Alg.RelSet.graph_monoAlg_iff_monotone") #h(4pt) #src[`F(≤)f` relates `u` to `f(v)` for
   each `v` with `u F(≤) v`, `f≤` relates `u` to each `z` with `f(u)≤z`, so the inclusion is
   `u F(≤) v ⟹ f(u)≤f(v)`: `f` monotone, with `F(≤)` as the order on its source `FA`.]
 - #leanf("Freyd.Alg.RelSet.CL.graph_monoAlg_iff_monotone_tail") #h(4pt) #src[at `F(X)=L+E×X`, `F(≤)`
-  relates `inl(l)` only to itself and `inr(e,x)` to `inr(e,y)` when `x≤y`, so for a reflexive `≤`
-  monotonic is `x≤y ⟹ f(inr(e,x))≤f(inr(e,y))`: monotone in the recursive argument with `e` fixed.]
+  relates `l(d)` to itself, which needs `f(l(d))≤f(l(d))` and so `≤` reflexive (`𝟙⊑≤`), and
+  `r(e,x)` to `r(e,y)` when `x≤y`, so monotonic is `x≤y ⟹ f(r(e,x))≤f(r(e,y))`: monotone in the
+  recursive argument with `e` fixed.]
 ]<mon-points>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
