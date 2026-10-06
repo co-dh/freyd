@@ -128,7 +128,6 @@ then applying `S` is folding with `Q`.
   s: 92%,
 )]<cata-fusion>
 
-#pagebreak(weak: true)
 == Type functors
 
 #disp[#definition[

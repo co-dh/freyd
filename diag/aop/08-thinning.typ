@@ -394,9 +394,6 @@ row((
 - An `inl` never relates to an `inr`: `R+S≜[R inl, S inr]` returns to the summand it came from, and `F(𝟙)=𝟙` allows no crossing.
 - `F(∋,∋)` relates `inr({a,b},{p,q})` to `inr(a,p)`, `inr(a,q)`, `inr(b,p)`, `inr(b,q)`, and `inl({a,b})` to `inl(a)`, `inl(b)`.
 
-// Same reason as the hand-placed breaks in §@sec-opt: `sticky` cannot hold a heading to a BREAKABLE
-// figure, so this heading stranded itself at the foot of the page.
-#pagebreak(weak: true)
 == Implementing thin
 
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
@@ -674,8 +671,6 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   [],
 )]<knap-laws>
 
-// Stranded at the foot of its page for the same reason as the break above.
-#pagebreak(weak: true)
 == The paragraph problem
 
 // B&dM §8.5, p. 207.  `P ≜ ⊤` works because `merge ⊤ = cat`, which already brings equal first lines

@@ -348,10 +348,10 @@
 }
 #let union = branches.with([∪])
 #let sum = branches.with([+])
-// NO REASON STANDS UNDER A PANEL: every column of a row gets a letter (a branches group ONE, shared
-// by its members), and the row lists a 3-column table under it — letter, formula, hint — the hint
-// being the rule applied to THAT column's picture to get the next one.
-#let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
+// NO REASON STANDS UNDER A PANEL: every column of a row gets a number (a branches group ONE, shared
+// by its members), `(1)` under its picture, and the row lists a 2-column table under it — formula,
+// hint — numbered the same outside its left border (`rownum`), the hint being the rule applied to
+// THAT column's picture to get the next one.
 // The maximal runs of a flat step list `r` that share one `union`/`sum` call: each run is
 // `(i0, n)`, `n == 1` a plain step, `n > 1` a branches group — identified by the `gid` the
 // group's expansion stamped on every one of its flat members (never by comparing formula text).
@@ -405,12 +405,13 @@
   for (j, (i0, n)) in gs.enumerate() {
     let s = r.at(i0)
     let into = if j + 1 < gs.len() { r.at(gs.at(j + 1).at(0)) } else if nxt != none and nxt.at(0) != none { nxt } else { none }
-    lines.push(([(#chain-tags.at(off + j))],
-      fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })),
+    // `<chain-row>`: numbered here, by the chain, so `law-row` leaves the cell alone.
+    lines.push(([#metadata(none)<chain-row>#block({ rownum(off + j + 1, CALC-INSET.x)
+      fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })) })],
       if into == none { [] } else { into.at(2) }))
   }
-  block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
-    al: (center + horizon, left + horizon, left + horizon), ..lines.flatten()))
+  block(above: 6pt, below: 0pt, calc-table(cols: (1fr, 1fr),
+    al: (left + horizon, left + horizon), ..lines.flatten()))
 }
 // A ROW'S FIRST REASON, when that row OPENS a chain (its first step has no op): no step leaves a
 // panel into its first one, so no table line carries it, and it stands as ONE LINE ABOVE the row.
@@ -561,8 +562,8 @@
       // A row that CONTINUES a chain gave its reason to the line before it, and `circuit: true`
       // prints every reason beside its own circuit.
       if not circuit { chain-opening(r) }
-      // `circuit: false`: a letter under every column, and the 3-column table (letter, formula,
-      // hint) under the row — see the comment above `chain-tags`; `circuit: true`: the panels bare,
+      // `circuit: false`: a number under every column, and the 2-column table (formula, hint)
+      // under the row — see the comment above `chain-groups`; `circuit: true`: the panels bare,
       // and under them one circuit row per step carrying its op and its reason.
       let pw = w.map(x => x * k)
       let gs = chain-groups(r)
@@ -572,7 +573,7 @@
       // would eat two letters of the row's alphabet and print them joined ("(b, c)") under one picture.
       let tags = ()
       for (n, (i0, gn)) in gs.enumerate() {
-        for idx in range(i0, i0 + gn) { tags.push(if circuit { none } else { chain-tags.at(offs.at(ri) + n) }) }
+        for idx in range(i0, i0 + gn) { tags.push(if circuit { none } else { str(offs.at(ri) + n + 1) }) }
       }
       // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
       // below, the group's own `sym` between them as a plain centred label — instead of standing

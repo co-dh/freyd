@@ -186,8 +186,17 @@
 }
 /// The first cell of every row of a display's table, numbered from 1: a header (`h`) is row 0 and the table's,
 /// not a row; a table with none starts its rows at `y = 0`, and that row is a law too (`<dom-laws>`).
-/// The rebuilt cell matches this rule again; its leading `<law-row>` marker is what stops it.
-#let law-row(h, it) = if (h and it.y == 0) or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) == <law-row>) { it } else {
+/// A cell's LEFT inset, from any form typst accepts for `inset`: a length, a side dictionary, a
+/// per-column array or a function of the cell's position.
+#let left-inset(i, x, y) = if type(i) == dictionary { i.at("left", default: i.at("x", default: i.at("rest", default: 0pt))) } else if type(i) == array { left-inset(i.at(calc.rem(x, i.len())), x, y) } else if type(i) == function { left-inset(i(x, y), x, y) } else { i }
+/// A ROW'S NUMBER, just outside the table's left border: a number column inside the table spends
+/// width every row needs, and the page margin is too far from a table that does not start the line.
+/// `inset`: the cell's left inset, which separates its content from the border.  Placed, so the cell
+/// keeps its width; call it first in a `block` with the body, so it sits on the body's first line.
+#let rownum(n, inset) = place(left + top, dx: -inset - 1.5em, box(width: 1.2em, align(right, text(9pt, luma(140))[#n])))
+/// The rebuilt cell matches this rule again; its leading `<law-row>` marker is what stops it.  A
+/// `<chain-row>` cell is a chain's own line (`chain-table`), numbered by the chain, not by this rule.
+#let law-row(h, inset, it) = if (h and it.y == 0) or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) in (<law-row>, <chain-row>)) { it } else {
   let n = if h { it.y } else { it.y + 1 }
   let f = it.fields()
   let _ = f.remove("body")
@@ -198,13 +207,15 @@
       // The markers a link lands on, INLINE beside the body: as flow items ahead of it, a `horizon`
       // cell placed them against its full-height region, about half a page above the row.
       // `<law-row-keys>`: what a reference to this row prints (`cite`).
-      let marks = [#metadata(lean-keys(it.body).dedup())<law-row-keys>] + for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
+      // A key labels only the FIRST row stating it: a table restating a definition stated earlier
+      // (a running example's rows) leaves the link on its home.  Read off `<law-row-keys>`, which
+      // every row emits unconditionally, so the choice settles in one pass.
+      let ks = lean-keys(it.body).dedup()
+      let seen = query(selector(<law-row-keys>).before(here())).map(m => m.value).flatten()
+      let marks = [#metadata(ks)<law-row-keys>] + for k in ks.filter(k => k not in seen) [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        // In the page margin only where the table starts the line: a number column widened every `auto`
-        // first column past the paper edge, and a nested table's margin holds a bullet, a fill or a neighbour.
-        let num = box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))
-        let x = here().position().x
-        if x - MARGIN < 1em.to-absolute() { block({ place(left + top, dx: MARGIN - 1.5em - x, num); marks; it.body }) } else { box(width: 1.5em, num); marks; it.body }
+        let i = f.at("inset", default: auto)
+        block({ rownum(n, left-inset(if i == auto { inset } else { i }, it.x, it.y)); marks; it.body })
       } else { marks; it.body }
     }
   })
@@ -367,7 +378,7 @@
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     show list: set align(left)
     show table: set align(left)
-    show table: t => { show table.cell.where(x: 0): law-row.with(t.children.any(c => c.func() == table.header)); t }
+    show table: t => { show table.cell.where(x: 0): law-row.with(t.children.any(c => c.func() == table.header), t.at("inset", default: 5pt)); t }
     set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
@@ -450,9 +461,27 @@
 // Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
 // initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
 // a layout pass, so the note's position-dependent blocks ran out of passes ("did not converge").
+/// EVERY SECTION OPENS A PAGE, except one that follows its chapter heading with nothing between, which
+/// shares the chapter's opening page.  Read off the chapter body's own children, never by a query: a
+/// break that depends on the heading before it, queried, ran the companion out of layout passes.
+#let has-section(c) = type(c) == content and ((c.func() == heading and c.depth == 2)
+  or (c.has("children") and c.children.any(has-section)) or (c.has("child") and has-section(c.child)))
+#let section-breaks(doc) = if type(doc) != content or not doc.has("children") { doc } else {
+  let (prev, gap) = (none, ([ ].func(), parbreak))
+  for c in doc.children {
+    // A `set`/`show` wraps what follows it in one styled element, which cannot be rebuilt around a break.
+    assert(not (c.has("child") and c.has("styles") and has-section(c.child)), message: "section-breaks: a "
+      + "set/show rule wraps a section heading, so it gets no page break; scope the rule to a block")
+    if c.func() == heading and c.depth == 2 and not (prev != none and prev.func() == heading and prev.depth == 1) {
+      pagebreak(weak: true)
+    }
+    if c.func() == doc.func() { section-breaks(c) } else { c }
+    if c.func() not in gap { prev = c }
+  }
+}
 #let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
   show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
-  doc
+  section-breaks(doc)
 } else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
   if title == none {
@@ -481,7 +510,7 @@
         }
       }
     }
-    doc
+    section-breaks(doc)
   })
 }
 
@@ -582,9 +611,10 @@
 // (`./scripts/labelfit`), which no per-panel geometry can prevent.
 // A ROW IS NEVER SPLIT at a page break: its cells are pictures, which cannot be cut, so a row split
 // there overran the page foot and drew its panels over the row above (`<edit-mono>`'s last rows).
+#let CALC-INSET = (x: 9pt, y: 3pt)
 #let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = {
   set table.cell(breakable: false)
-  pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows)) }
+  pad(right: pr, table(columns: cols, align: al, inset: CALC-INSET, stroke: 0.4pt + luma(190), ..rows)) }
 
 #let EQ = text(luma(140))[$=$]
 // A chain step that only opens a definition (`FormulaRender.stepRel`'s `≜`).

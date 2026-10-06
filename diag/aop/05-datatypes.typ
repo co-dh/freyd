@@ -265,9 +265,7 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   P(leanc("Freyd.Alg.sumMap_inter_junc_recip"), s: 62%),
 )]<bdm-coprod-laws>
 
-// B&dM §5.4, p. 119.  The heading gets its own page: the definition, the paragraph that explains its
-// shape, and the table are one argument, and the coproduct figure above ends a page mid-way.
-#pagebreak(weak: true)
+// B&dM §5.4, p. 119.
 == The power relator `P(R)` <sec-powrel>
 
 // B&dM p. 119's three steps, in its order: the point-free line, the `Rel` set formula, one plain
@@ -427,9 +425,6 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 // The type functor `T` itself (its definition, the naturality square of `α`, and its fusion law —
 // @tfun-defn, @tfun-sq, @tfun-fusion) moved to §2's "Type functor" section (`02-categories.typ`).
 
-// Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
-// a page away from the definition it names, and the defining square below straddles the break.
-#pagebreak(weak: true)
 // B&dM and Freyd call this a catamorphism; the note says reduce, after q's `/`.
 == Relational catamorphisms <sec-cata>
 
@@ -778,8 +773,6 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @Freyd.Alg.powerRel_map.]
 ])]<subseq-alg>
 
-#pagebreak(weak: true)
-#pagebreak(weak: true)
 == Lax natural transformations (LaT)
 
 // B&dM §5.7, p. 133.  Same `⇒` the note gives an ordinary natural transformation: B&dM's own hooked
