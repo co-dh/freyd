@@ -119,7 +119,7 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [X] Cut every old definition block to two lines like pr3 (#leanf + one reading + book's name once; one example).
 [ ] Review the ch9/ch10 def table crops.
 [X] Printer: fix the 4 wrong rules (merged 9fa72d0).
-[ ] Printer: rename Lean decls to book names (including 𝒫/ℰ), delete the ~306 rename rules.
+[-] Printer: rename Lean decls to book names. 5 renamed (text-preserving); 259 unexpanders listed in tmp/rename-rules.tsv: 182 are not pure renames, the rest collide (short names, single letters, symbols, duplicates → dedup, core). 𝒫/ℰ switch changes the printed text everywhere: waits for his go.
 [X] Printer: symbol rules become Lean notation beside the definition. 6 moved (thin, pcor, bag, min, {x+y∣…}, −); the rest collide with core notation or name core constants.
 [X] Printer: 14 hand-typed formula names → diag_unfold. 9 moved; gArmFn, sizeArmFn, kStep, bagPenalty wait for point-free bodies; typePair is a picture lane.
 [X] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses; they print as lax(φ)/strict(φ)/oplax(φ).
