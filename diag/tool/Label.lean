@@ -434,6 +434,9 @@ def binOps : Array (Name × String × String) := #[
   -- B&dM's subtraction (p.159), at `∪`'s level by the notation in diag/StrDiagNames.lean.
   (``Freyd.Alg.sub, "−", "−"),
   (``Freyd.Alg.thenRel, "⨾", "⨾"),
+  -- `S Pres Q`: a word, so no token of its own (it would break the identifier `Pres`); the level is
+  -- a relation's, `⊑`'s.
+  (`Freyd.Alg.Pres, "⊑", "Pres"),   -- single tick: `AOP.A7_2` is no import of the printer
   (``Freyd.Alg.kleisliComp, "⋄", "⋄"),
   (``Freyd.Alg.impl, "⇨", "⇨"),
   -- The tape layer's own two (`diag/FO.lean`, `diag/Monoidal.lean`).
@@ -456,7 +459,7 @@ def chainPrec (op : String) (p : Nat) (x : Expr) : Nat :=
     COMPACT, closed up, `∪` and the statement connectives set off, since a connective joins whole
     statements and `A∧B⊑C` reads as if `∧` bound tighter than `⊑`. -/
 def spaced (op : String) (sp : Bool := false) : String :=
-  if sp || ["∪", "∧", "∨", "⟺"].contains op then s!" {op} " else op
+  if sp || ["∪", "∧", "∨", "⟺", "Pres"].contains op then s!" {op} " else op
 
 /-- The heads the note sets TIGHT: the product and the fork.  Lean's formatter sets an INFIX off
     from its operands (`A × B`, `⟨f, g⟩`, `a + b`) where the note closes them up; the SPELLING is
