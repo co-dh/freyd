@@ -121,9 +121,10 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [X] Printer: fix the 4 wrong rules (merged 9fa72d0).
 [ ] Printer: rename Lean decls to book names (including 𝒫/ℰ), delete the ~306 rename rules.
 [ ] Printer: symbol rules become Lean notation beside the definition.
-[ ] Printer: 14 hand-typed formula names → diag_unfold.
+[X] Printer: 14 hand-typed formula names → diag_unfold. 9 moved; gArmFn, sizeArmFn, kStep, bagPenalty wait for point-free bodies; typePair is a picture lane.
 [X] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses; they print as lax(φ)/strict(φ)/oplax(φ).
 [-] RCA: the Lemma 8.1 chain lost its triangles — DROPPED by the user ("I told u to give up on 8.1 triangles").
     Do not reopen; branch worktree-agent-acb10c66a3d8ff8b6 discarded.
 [ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
 [ ] diff-crop --key lax-closure --rev 76e5391 said "crops pixel-identical" although p.17 gained three lax(φ) ∧ lax(ψ) ⟹ premises.
+[ ] Hand-typed vstep labels beside a leanc/lean selector (e.g. 08-thinning tour_laws_defn: `⦇[start,dropl ∪ dropr]⦈ est(R)`) drift from Lean; print them from the same selector.
