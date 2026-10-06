@@ -50,8 +50,6 @@ local infixr:70 " × " => rprodMap
 @[expose] public def Digit : Type := Fin 10
 /-- The nine nonzero digits `{1,…,9}`. -/
 @[expose] public def DigitP : Type := { d : Fin 10 // d.val ≠ 0 }
--- B&dM's name has a superscript, which no Lean identifier can carry; a notation can.
-notation "Digit⁺" => Freyd.Alg.RelSet.Digits.DigitP
 
 /-- Decimal representations: `wrap` a leading nonzero digit, then `snoc` further digits. -/
 public inductive Decimal where
@@ -82,7 +80,6 @@ public inductive Decimal where
   map_id C := rprodMap_id C dDigit
   map_comp R S := by rw [rprodMap_comp]; exact congrArg (rprodMap (R ≫ S)) (Cat.id_comp (𝟙 dDigit)).symm
   map_mono h := rprodMap_mono h (le_iff.mpr fun _ _ e => e)
-notation "−×Digit" => Freyd.Alg.RelSet.Digits.timesDigit
 
 /-- The relator `Digit⁺+−`: `C ↦ Digit⁺+C`, `R ↦ 𝟙+R`. -/
 @[expose] public def plusDigitP : Relator RelSet.{0} RelSet.{0} where
@@ -91,7 +88,6 @@ notation "−×Digit" => Freyd.Alg.RelSet.Digits.timesDigit
   map_id C := sumMap_id (sumCop dDigitP C)
   map_comp R S := by dsimp only [HAdd.hAdd, rsumMap]; rw [sumMap_comp, Cat.id_comp]
   map_mono h := sumMap_mono _ _ (le_iff.mpr fun _ _ e => e) h
-notation "Digit⁺+−" => Freyd.Alg.RelSet.Digits.plusDigitP
 
 /-- `F = (−×Digit)(Digit⁺+−)` in diagram order, so `F(R)` is `𝟙+(R×𝟙)`.  A notation, not a
     constant, so every statement carries the `Relator.comp` the exporter splits into two lanes. -/

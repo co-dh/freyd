@@ -868,6 +868,18 @@ open Lean PrettyPrinter in
   | `($_ $φ) => `(⦇$φ⦈)
   | _ => throw ()
 
+-- KEPT AS RULES, NOT `notation`: a relator spelled by a notation atom reaches the label printer
+-- as `toFunctor(…)` — it reads a relator's name off an identifier (tried 2026-10-06).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.timesDigit] def unexpandDigitsTimes : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "−×Digit")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "−×Digit")))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.plusDigitP] def unexpandDigitsPlus : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
+
 
 -- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
 -- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
@@ -1355,6 +1367,10 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($(mkIdent `tree) $A)
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
+-- The non-zero digits `{d // d ≠ 0}` are B&dM's `Digit⁺`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.DigitP] def unexpandDigitP : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
 -- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME, as `edit` does above: one
 -- arrow, drawn as a map in one panel and as a relation in another.
 open Lean PrettyPrinter in

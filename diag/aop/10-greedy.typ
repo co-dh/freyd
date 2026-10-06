@@ -370,7 +370,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_bmax") \
     #src[the cost of a schedule is the larger of the penalty of its last job and the cost of the
      schedule before it]],
-  // lean:AOP.A10_3_Tardy.cost_alg_bmax@6bdd5030
+  // lean:AOP.A10_3_Tardy.cost_alg_bmax@30fe295d
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",
