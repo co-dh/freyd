@@ -45,12 +45,9 @@
 // B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,
 // and nothing before this said what it was.
 #disp[#definition[
-`φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`
-#src[].
-// lean:AOP.A6_2.Monotonic@66dddf1e
+#leanf("Freyd.Alg.Monotonic") #h(4pt) — `φ` maps the hom-set `A⟶B` into itself with `X⊑Y⟹φ(X)⊑φ(Y)`.
 
-`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X` #src[].
-// lean:AOP.A6_2.mu@4928a490
+`(μX : φ(X))` is the least `X : A⟶B` with `φ(X)⊑X`.
 ]]<mu-defn>
 
 #disp[#table(

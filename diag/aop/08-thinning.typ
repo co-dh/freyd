@@ -19,10 +19,9 @@
 // B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
 // and `est(Q) (𝟙%∋)` keeps one, `thin(Q)` keeps a representative collection.
 #disp(num: "(8.1)")[#definition[
-For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt) #src[(8.1)].
+#leanf("Freyd.Alg.thinRel") #h(4pt) — `thin(Q)` takes a set `ys` to a subset `xs` that keeps a `Q`-lower bound of every `a∈ys`.
 
-`ys thin(Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[the same `°` as @est-defn: `∈X` runs `a⟶ys⟶xs`, member of `ys` first, and `Q°∈` runs `a⟶b⟶xs`, so `(a,b)∈Q°` reads `b Q a`; at `Q≜≤` every `a∈ys` keeps some `b≤a` in `xs`, the end `est(≤)` picks]
-// lean:AOP.A8_1.thinRel_pt@f6ff770e
+`thin(≤)` #h(4pt) `ys thin(≤) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b≤a)`.
 ]]<thin-defn>
 
 #disp[#table(
