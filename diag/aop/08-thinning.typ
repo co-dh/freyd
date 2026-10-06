@@ -464,7 +464,8 @@ preorder.
   [a minimum of the sorted list is a minimum of the set],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_list_le") #h(6pt) #src[(8.8)]],
   [shunt a function through a sort],
-  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_filter_le") #h(6pt) #src[(8.9)]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_filter_le") #h(6pt) #src[(8.9)] \
+   #leanf("Freyd.Alg.RelSet.ListRel.sort_comp_filter_le#p")],
   [filtering a sorted list sorts the restricted set],
   [#leanf("Freyd.Alg.RelSet.ListRel.prodMap_sort_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],

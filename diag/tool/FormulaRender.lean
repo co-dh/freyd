@@ -239,7 +239,12 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
-        | some x => Meta.inferType x
+        -- A DATA BINDER states no proposition but its typing, so it prints as `p : A → Bool`: its
+        -- type alone would leave the reader to guess which binder the cell is about.
+        | some x => do
+          let t ← Meta.inferType x
+          if !(← Meta.isProp t) then return #[(← labelT x) ++ spaced ":" sp ++ (← labelT t)]
+          pure t
         | none =>
           let names ← xs.mapM fun x => return (← x.fvarId!.getUserName).toString
           throwError "{declName} has no binder `{h}`; its binders are \
