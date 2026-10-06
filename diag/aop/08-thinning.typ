@@ -496,9 +496,11 @@ preorder.
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le") \
-    #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
+    #src[sorting each argument set (`F(sort(≼))`), forming every combination of their elements
+     (`listcp`), applying `f` to each (`list(f)`) and keeping those that pass `p` (`filter(p)`)
+     gives one of the sorted lists of the set of all `f(u)` that pass `p`, with `u` drawn from the
+     argument sets.
      // map_sort row: Lemma 8.1, p. 202
-     `f : FA⟶A` monotonic on `≼`.
  ]],
      // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@1743a970
   // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
