@@ -139,7 +139,7 @@
 #let type-ends(c) = if type(c) != content { () } else if c.func() == metadata and c.at("label", default: none) == <type-end> { (c.value,) } else if c.has("children") { c.children.map(type-ends).flatten() } else if c.has("body") { type-ends(c.body) } else if c.has("child") { type-ends(c.child) } else { () }
 #let deftab(..cells) = context {
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
-  table(columns: (auto, w + 10.5pt, 1.6fr, 1fr), align: left + horizon, inset: 5pt,
+  table(columns: (auto, w + 10.5pt, 3fr, 1fr), align: left + horizon, inset: 5pt,
     stroke: 0.4pt + luma(190), table.header([*name*], [*type*], [*definition*], [*meaning*]), ..cells)
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
