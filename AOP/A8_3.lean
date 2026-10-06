@@ -1132,19 +1132,19 @@ public theorem orderedP_of_listP_graph {B : Type} (g : A → B) («≼» : B →
 /-- **(8.8)** in `Rel` (book p.203), `sort(g≼g°)·list g ⊑ P g·sort(≼)` for a function `g`, with
     no hypothesis: `setify`'s naturality and the order condition both follow from `list`'s
     definition. -/
-public theorem sort_comp_list_le {B : Type} (g : A → B) {«≼» : dE B ⟶ dE B} :
-    sortRel listRelator setify ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°)
-        ≫ list (graph g) ⊑ powerRel (graph g) ≫ sortRel listRelator setify ordered ≼ := by
-  have hnat : list (graph g : dE A ⟶ dE B) ≫ setify ⊑ setify ≫ existsImage (graph g) := by
-    have := setify_lax_natural (graph g : dE A ⟶ dE B)
-    rwa [powerRel_map (graph_map g)] at this
-  have hordf : ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°) ≫ list (graph g)
-      ⊑ list (graph g) ≫ ordered ≼ :=
+public theorem sort_comp_list_le {B : Type} (f : A → B) {«≼» : dE B ⟶ dE B} :
+    sortRel listRelator setify ordered ((graph f : dE A ⟶ dE B) ≫ ≼ ≫ (graph f)°)
+        ≫ list (graph f) ⊑ powerRel (graph f) ≫ sortRel listRelator setify ordered ≼ := by
+  have hnat : list (graph f : dE A ⟶ dE B) ≫ setify ⊑ setify ≫ existsImage (graph f) := by
+    have := setify_lax_natural (graph f : dE A ⟶ dE B)
+    rwa [powerRel_map (graph_map f)] at this
+  have hordf : ordered ((graph f : dE A ⟶ dE B) ≫ ≼ ≫ (graph f)°) ≫ list (graph f)
+      ⊑ list (graph f) ≫ ordered ≼ :=
     le_iff.mpr fun x y h => by
       obtain ⟨_, ⟨rfl, hx⟩, hxy⟩ := h
-      exact ⟨y, hxy, rfl, orderedP_of_listP_graph g ≼ hxy hx⟩
+      exact ⟨y, hxy, rfl, orderedP_of_listP_graph f ≼ hxy hx⟩
   exact Freyd.Alg.sortRel_comp_listMap_le listRelator (graph_map _) (graph_map _)
-    (ordered := fun R => ordered R) (graph_map g) hnat hordf
+    (ordered := fun R => ordered R) (graph_map f) hnat hordf
 
 /-- A list ordered by `X` is ordered by any larger `Y`. -/
 public theorem orderedP_mono {X Y : A → A → Prop} (h : ∀ a b, X a b → Y a b) :
