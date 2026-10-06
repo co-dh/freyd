@@ -111,6 +111,11 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [ ] "8.3e should have a subsection titled Binary thinning", with a step-by-step table like 8.3d; "this is a
     general rule. you should add sorting sets too." — every B&dM paragraph title becomes a subsection, ch1–10.
     After the merge above (it touches 08-thinning.typ).
+    In flight 2026-10-05 (usage limit hit): worktrees agent-a4fda901d0b07e858 (Binary thinning / Sorting sets),
+    agent-adc9392c99b2581e8 (paragraph titles sweep), agent-a3d6bb828c30a7c94 (definition blocks); check
+    `git -C <worktree> log`/`diff` and resume, do not redo.
+    Printer "4 wrong rules": pcor(p)→p (done), baseStepFn→step, CL.con→[nil,cons] for non-Unit leaves,
+    graph wildcard→π₁ (StrDiagNames.lean).
 [ ] Cut every old definition block to two lines like pr3 (#leanf + one reading + book's name once; one example).
 [ ] Review the ch9/ch10 def table crops.
 [ ] Printer: fix the 4 wrong rules.
