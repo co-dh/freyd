@@ -466,47 +466,47 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // One running example: `A≜Nat` and `p≜even`, fixed by the `p` row and used by every row below it.
 #disp[#align(center, block(width: 21cm)[
 #table(
-  columns: (1.2cm, 7.6cm, 2.9cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  columns: (7.6cm, 2.9cm, 1fr),
+  align: left + horizon,
   inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*\#*], [*definition*], [*type*], [*example and in words*]),
+  table.header([*definition*], [*type*], [*example and in words*]),
 
-  [], [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")],
+  [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")],
   [nothing, or a head and a tail],
 
-  [], [`nil ≜ []`], [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit")],
+  [`nil ≜ []`], [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit")],
   [the empty list — the first constructor of `[A]`],
 
-  [], [`cons(a,[x₁,…,xₙ]) ≜ [a,x₁,…,xₙ]`], [#leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
+  [`cons(a,[x₁,…,xₙ]) ≜ [a,x₁,…,xₙ]`], [#leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
   [`cons(3,[1,2])=[3,1,2]` — a head onto a tail, the second constructor],
 
-  [], [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
+  [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
   [both constructors as one map],
 
-  [], [`p ⊑ 𝟙`], [`A⟶A`],
+  [`p ⊑ 𝟙`], [`A⟶A`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
   // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
-  [], [`(⊸ nil)(a,x) ≜ nil`], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
+  [`(⊸ nil)(a,x) ≜ nil`], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
   [`(⊸ nil)(3,[1,2])=nil` — drop the pair, return `nil`],
 
-  [], [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [#leant("Freyd.Alg.RelSet.ListRel.prefixR")],
   [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, keep the head or stop],
 
-  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
   // lean:AOP.A7_7_TakeWhile.Salg@c2130ccf
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — keep a
    head that passes `p`, or stop],
 
-  [], [#leanf("Freyd.Alg.cond")], [#leant("Freyd.Alg.cond")],
+  [#leanf("Freyd.Alg.cond")], [#leant("Freyd.Alg.cond")],
   [the test `X` picks the branch: `R` where `X` holds, `S` where it does not],
 
-  [], [`nil R=⊤`, #h(4pt) `nil R°=nil`], [],
+  [`nil R=⊤`, #h(4pt) `nil R°=nil`], [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
   [`nil` is the shortest list — below every list, and above only itself, so it loses every
    `est(R°)`],
@@ -682,12 +682,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // is repeated here rather than looked up, in that table's own five columns.
 #disp[#align(center, block(width: 21cm)[
 #table(
-  columns: (1.2cm, 7.6cm, 2.9cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  columns: (7.6cm, 2.9cm, 1fr),
+  align: left + horizon,
   inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*\#*], [*definition*], [*type*], [*example and in words*]),
+  table.header([*definition*], [*type*], [*example and in words*]),
 
-  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — stop, or
    keep a head that passes `p`],
 )])]
@@ -938,38 +938,38 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // One running example, as @takewhile-defn's: `A≜Nat` and `p≜even`.
 #disp[#align(center, block(width: 21cm)[
 #table(
-  columns: (1.2cm, 7.6cm, 2.9cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  columns: (7.6cm, 2.9cm, 1fr),
+  align: left + horizon,
   inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*\#*], [*definition*], [*type*], [*example and in words*]),
+  table.header([*definition*], [*type*], [*example and in words*]),
 
-  [], [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")],
+  [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")],
   [nothing, or a head and a tail],
 
-  [], [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
+  [`α ≜ [nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")],
   [both constructors as one map],
 
-  [], [`p ⊑ 𝟙`], [`A⟶A`],
+  [`p ⊑ 𝟙`], [`A⟶A`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)` — a coreflexive: `a` passes `p` when `a p a`],
 
-  [], [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
   // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
-  [], [`π₂(a,x) ≜ x`], [`A×[A]⟶[A]`],
+  [`π₂(a,x) ≜ x`], [`A×[A]⟶[A]`],
   [`π₂(3,[1,2])=[1,2]` — drop the head, keep the tail],
 
-  [], [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata")], [#leant("Freyd.Alg.RelSet.ListRel.subseq")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata")], [#leant("Freyd.Alg.RelSet.ListRel.subseq")],
   [`[3,1,2] subseq [3,2]` — `xs subseq ys⟺ys` is `xs` with elements dropped #h(4pt) — at each `cons`, keep
    the head or drop it],
 
-  [], [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
+  [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
   // lean:AOP.A7_7_Filter.Salg@afda2748
   [`(4,[2]) S [4,2]` #h(4pt) and #h(4pt) `(4,[2]) S [2]`, #h(4pt) but `(3,[2]) S [2]` only — `subseq`'s
    algebra with one extra `p` — keep a head that passes `p`, or drop the head],
 
-  [], [`𝟙⊑π₂R cons°` #h(4pt) #src[]], [],
+  [`𝟙⊑π₂R cons°` #h(4pt) #src[]], [],
   // lean:AOP.A7_7_Filter.id_le_pi2_lenLE_cons@44ddd75e
   [the tail is one shorter than the cons, so `π₂` loses the `est(R°)` at every step — where
    @takewhile-defn:7's loser is `nil`],
@@ -1041,12 +1041,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // repeated here rather than looked up, in that table's own five columns.
 #disp[#align(center, block(width: 21cm)[
 #table(
-  columns: (1.2cm, 7.6cm, 2.9cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  columns: (7.6cm, 2.9cm, 1fr),
+  align: left + horizon,
   inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*\#*], [*definition*], [*type*], [*example and in words*]),
+  table.header([*definition*], [*type*], [*example and in words*]),
 
-  [], [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
+  [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
   [`(4,[2]) S [4,2]` #h(4pt) and #h(4pt) `(4,[2]) S [2]`, #h(4pt) but `(3,[2]) S [2]` only — `subseq`'s
    algebra with one extra `p` — keep a head that passes `p`, or drop the head],
 )])]
