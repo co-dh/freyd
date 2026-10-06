@@ -384,7 +384,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
 #pagebreak(weak: true)
-=== Type relator
+=== Type relators
 
 // `F`-algebra, `F`-homomorphism, the initial algebra, its reflection and fusion laws — @initial-defn,
 // @cata-reflection, @cata-fusion — moved to §2 (Functions and Categories, `02-categories.typ`).

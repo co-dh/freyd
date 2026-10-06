@@ -204,6 +204,7 @@
     // lean:AOP.A6_5.inductive_of_comp_le@17eb3b43
   lean-calc(calc-ind),
 )]<inductive-comp-le>
+=== Membership
 // TODO p.148 member: `member(id)=𝟙`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
 //   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `P`, `T` missing.
 // B&dM p.148, the constant, sum and product rows
@@ -220,6 +221,7 @@
 )]<member-sum-prod>
 // TODO p.148 lax: `F(R)member ⊑ member R`, the largest lax natural `F ⟶ id`, hence unique — Lean
 //   LaxMembership.laxNatural, largestLax_unique.
+=== Consequences
 // TODO p.148 member α°: `α°member(F)` inductive; examples `[zero,succ]°[𝟘,𝟙]=succ°`,
 //   `[nil,cons]°[𝟘,outr]=cons°outr=tail` — Lean missing.
 // B&dM Theorem 6.3, p.149
@@ -286,6 +288,7 @@
 
 == Sorting by selection
 
+=== The function sort
 // B&dM (6.6), p.151.  The preorder `R` is fixed, so `ordered` and `ok`
 // carry no argument.
 #disp[#deftab(
@@ -310,6 +313,7 @@
   ),
 )]<sort-ordered>
 
+=== Selection sort
 // B&dM 6.6a, p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
 // `perm` is strictly natural (lean:AOP.A6_6b_SortConcrete.perm_strictNatural@f0271ba3).
 #import "../generated/Freyd.Alg.RelSet.Sort.selection_sort.calc.typ" as calc-selection
@@ -343,6 +347,7 @@
     (EQ, "Freyd.Alg.RelSet.Sort.sort_rec.rhs", src[unfolding the converse of a fold]),
   ),
 )]<sort-rec>
+=== Quicksort
 // B&dM 6.6d, p.154, "quicksort": the specification `perm ordered` refined through a tree; `R` is a
 // preorder, which the claim `flatten ordered = inordered flatten` needs.
 #import "../generated/Freyd.Alg.RelSet.Sort.quicksort.calc.typ" as calc-quick
@@ -552,6 +557,7 @@
   lean-calc(calc-tails),
 )]<closure-tails>
 
+=== Computing closure
 // B&dM 6.7e, p.159: the subtraction laws, chapter 4's (`AOP.A4_5`), each a statement row.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.sub_zero") \ #src[taking nothing away leaves `R`]],
