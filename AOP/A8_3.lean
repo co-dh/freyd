@@ -955,7 +955,7 @@ open Freyd.Alg.RelSet.ListRel (cmap cppFn cappend inlistP orderedP ordered setif
     on `arg₂`, `list(inl)`/`list(inr)` on a sum, `cpp` on a product. -/
 @[expose] public def listcpFn {A X : Type} :
     (F : PolyF) → sem F A (ConsList Unit X) → ConsList Unit (sem F A X)
-  | .zer, e => Empty.elim e
+  | .zer, _ => ConsList.wrap ()
   | .one, u => ConsList.cons u (ConsList.wrap ())
   | .arg₁, a => ConsList.cons a (ConsList.wrap ())
   | .arg₂, xs => xs

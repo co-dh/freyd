@@ -1459,10 +1459,28 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Poly.Linear] def unexpandPolyLinear : Unexpander
   | `($_ $F) => `($(mkIdent `linear) $F)
   | _ => throw ()
+-- `cpp`/`cpr`/`cpl` pointwise; `Fn` is Lean's disambiguator from the graphs of the same names.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cppFn] def unexpandCppFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpp) $args*)
+  | _ => `($(mkIdent `cpp))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cprFn] def unexpandCprFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpr) $args*)
+  | _ => `($(mkIdent `cpr))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cplFn] def unexpandCplFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpl) $args*)
+  | _ => `($(mkIdent `cpl))
 -- The codes of polynomial functors; the `F` suffix is Lean's.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Poly.PolyF] def unexpandPolyF : Unexpander
   | _ => `($(mkIdent `Poly))
+-- "`F` mentions its argument": the second argument occurs in the code.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Poly.hasArg₂] def unexpandPolyHasArg₂ : Unexpander
+  | `($_ $F) => `($(mkIdent `arg₂) ∈ $F)
+  | _ => throw ()
 -- The polynomial bifunctor with its first argument fixed is the lane `F(A,−)`, as `BiRelator.appl`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Poly.relator] def unexpandPolyRelator : Unexpander
