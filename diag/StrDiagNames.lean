@@ -106,7 +106,7 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
   RelSet.Tex.R RelSet.Tex.H RelSet.Tex.Q RelSet.Tex.l RelSet.Tex.r RelSet.Tex.zero RelSet.Tex.shift
   RelSet.Tex.w RelSet.Tex.extern RelSet.Bracket.nonsingle RelSet.Bracket.loop RelSet.TT.Tree.tip
   RelSet.TT.Tree.bin RelSet.Code.Code.sym RelSet.Code.Code.ptr RelSet.Bracket.cat RelSet.SL.arm₂
-  _root_.Fin RelSet.Edit.Op.cpy RelSet.Edit.Op.del RelSet.Edit.Op.ins RelSet.ListRel.perm
+  _root_.Fin RelSet.Edit.Op.cpy RelSet.Edit.Op.ins RelSet.ListRel.perm
   RelSet.Sort.flatten RelSet.Sort.join RelSet.Sort.fork RelSet.Sort.null RelSet.Sort.embed
   RelSet.Sort.base RelSet.ISort.add
 
@@ -173,6 +173,13 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[start,dropl ∪ dropr]")))
+-- `Op.del` shares its last component with another `del`, so the printer would qualify it; the
+-- edit operation is the book's bare `del a` (p.225).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.del] def unexpandEditDel : Unexpander
+  | `($_ $a) => `($(mkIdent `del) $a)
+  | `($_:ident) => `($(mkIdent `del))
+  | _ => throw ()
 -- `dNE A ≜ dCL A A` is no record but `list⁺`'s own name, the note's `L`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
