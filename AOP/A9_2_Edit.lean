@@ -632,27 +632,7 @@ public theorem edit_V :
 public theorem Fbimap_comp {L E E' E'' : Type} {C C' C'' : RelSet.{0}} (U : dE E ⟶ dE E')
     (V : C ⟶ C') (U' : dE E' ⟶ dE E'') (V' : C' ⟶ C'') :
     Fbimap L U V ≫ Fbimap L U' V' = Fbimap L (U ≫ U') (V ≫ V') :=
-  hom_ext fun u w => by
-    cases u with
-    | inl d => cases w with
-      | inl d' => exact ⟨fun ⟨v, h1, h2⟩ => by
-          cases v with
-          | inl _ => exact h1.trans h2
-          | inr _ => exact h1.elim, fun h => ⟨Sum.inl d, rfl, h⟩⟩
-      | inr _ => exact ⟨fun ⟨v, h1, h2⟩ => by
-          cases v with
-          | inl _ => exact h2.elim
-          | inr _ => exact h1.elim, fun h => h.elim⟩
-    | inr p => cases w with
-      | inl _ => exact ⟨fun ⟨v, h1, h2⟩ => by
-          cases v with
-          | inl _ => exact h1.elim
-          | inr _ => exact h2.elim, fun h => h.elim⟩
-      | inr q => exact ⟨fun ⟨v, h1, h2⟩ => by
-          cases v with
-          | inl _ => exact h1.elim
-          | inr r => exact ⟨⟨r.1, h1.1, h2.1⟩, ⟨r.2, h1.2, h2.2⟩⟩,
-        fun ⟨⟨a, ha1, ha2⟩, ⟨b, hb1, hb2⟩⟩ => ⟨Sum.inr (a, b), ⟨ha1, hb1⟩, ⟨ha2, hb2⟩⟩⟩
+  Poly.bimapR_functor (clF L) U U' V V'
 
 /-- `Q≜𝟙+(U×V)` IS `F(U,V)` at `U≜⊤`. -/
 public theorem Q_eq_Fbimap :
@@ -1006,7 +986,7 @@ public theorem opF_map {x y : RelSet.{0}} (S : x ⟶ y) :
   apply hom_ext; intro u v
   cases u <;> cases v <;>
     simp [opF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap,
-      junc, RelProd.pair, prodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      junc, RelProd.pair, prodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
       opRelator, listRelator] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[nil,cons]` is STRICTLY natural** in the alphabet: `F(Op(S),list(Op(S)))[nil,cons] =
@@ -1030,7 +1010,7 @@ public theorem pairF_map {x y : RelSet.{0}} (S : x ⟶ y) :
   apply hom_ext; intro u v
   cases u <;> cases v <;>
     simp [pairF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap, junc,
-      RelProd.pair, prodMap, rprodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      RelProd.pair, prodMap, rprodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
       opRelator, listRelator] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[base,step]` is LAX natural** in the alphabet: `F(Op(S),S×S)[base,step] ⊑
@@ -1045,12 +1025,12 @@ public theorem editAlg_laxNatural :
   refine le_iff.mpr fun u q => ?_
   rintro ⟨v, hv, rfl⟩
   rcases u with d | ⟨op, xs, ys⟩ <;> rcases v with d' | ⟨op', xs', ys'⟩
-  · simp_all [Fbimap, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+  · simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
       instHasRelProd, rprodMap, listRelator, list, listP]
   · exact (hv : False).elim
   · exact (hv : False).elim
   · rcases op with a | a | a <;> rcases op' with b | b | b <;>
-      simp_all [Fbimap, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+      simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
         instHasRelProd, rprodMap, opRel, opP, listRelator, list, listP]
 
 /-- **`step` is LAX natural** — the `inr` arm of `editAlg_laxNatural`, at the arm's own lane
@@ -1165,7 +1145,7 @@ public theorem pairF_apply_inr {x y : RelSet.{0}} (S : x ⟶ y)
     pairF.map S (Sum.inr p) (Sum.inr q)
       ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
   rw [pairF_map]
-  simp [Fbimap, rprodMap, opRel, list]
+  simp [Fbimap, clF, Poly.bimapR, rprodMap, opRel, list]
 
 public theorem toU_short : listP toU shortB shortU := ⟨rfl, trivial⟩
 
@@ -1305,7 +1285,7 @@ public theorem sumOp_map (K : Relator RelSet.{0} RelSet.{0}) {x y : RelSet.{0}} 
   apply hom_ext; intro u v
   cases u <;> cases v <;>
     simp [Relator.sum, Relator.prod, Relator.const, Relator.comp, Relator.idRelator, sumMap,
-      junc, RelProd.pair, prodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      junc, RelProd.pair, prodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
       opRelator] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[zero,π₂ succ]` is LAX natural** in the alphabet: `F(Op(S),𝟙)` keeps the tail's length. -/
@@ -1344,12 +1324,12 @@ public theorem Fbimap_top_not_laxNatural {F₂ G₂ : Relator RelSet.{0} RelSet.
   intro hlax
   obtain ⟨v, -, hv⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
     (Sum.inr (Op.cpy (), c)) (Sum.inr (Op.cpy false, w'))
-    ⟨Sum.inr (Op.cpy true, c'), by rw [sumOp_map]; exact ⟨by simp [opRel, opP, graph], hc⟩,
+    ⟨Sum.inr (Op.cpy true, c'), by rw [sumOp_map]; exact ⟨by simp [Poly.bimapR, opRel, opP, graph], hc⟩,
       ⟨topMor_apply _ _, hw⟩⟩
   rw [sumOp_map] at hv
   rcases v with d | ⟨o, e⟩
   · exact hv
-  · rcases o with a | a | a <;> simp [Fbimap, opRel, opP, graph] at hv
+  · rcases o with a | a | a <;> simp [Fbimap, clF, Poly.bimapR, opRel, opP, graph] at hv
 
 /-- `([],[])` is related to `([],[])` by the pair lanes, whatever `S`. -/
 public theorem listLanes_nil {x y : RelSet.{0}} (S : x ⟶ y) :

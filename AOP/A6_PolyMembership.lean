@@ -78,6 +78,7 @@ theorem ε_wpre_sub (F : PolyF) {A B C : Type} (S : (⟨C⟩ : RelSet.{0}) ⟶ F
   induction F with
   | zer => intro c hc elt _; exact (elt : Empty).elim
   | one => intro c hc _ _; trivial
+  | const k => exact k.elim
   | arg₁ => intro c hc _ _; trivial
   | arg₂ => intro c hc elt hSc; exact hc elt ⟨elt, hSc, rfl⟩
   | oplus l r ihl ihr =>
@@ -110,6 +111,7 @@ theorem ε_wpre_sup (F : PolyF) {A B C : Type} (S : (⟨C⟩ : RelSet.{0}) ⟶ F
   induction F with
   | zer => intro c hc b hb; obtain ⟨elt, _, _⟩ := hb; exact (elt : Empty).elim
   | one => intro c hc b hb; obtain ⟨_, _, he⟩ := hb; exact he.elim
+  | const k => exact k.elim
   | arg₁ => intro c hc b hb; obtain ⟨_, _, he⟩ := hb; exact he.elim
   | arg₂ => intro c hc b hb; obtain ⟨elt, hSc, he⟩ := hb; exact he.symm ▸ hc elt hSc
   | oplus l r ihl ihr =>

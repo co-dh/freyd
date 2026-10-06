@@ -92,8 +92,8 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
 attribute [diag_noted] RelSet.Poly.listcp RelSet.Poly.listcpFn RelSet.Poly.linear RelSet.Poly.hasArg₂
-  RelSet.Poly.relator RelSet.Poly.PolyF RelSet.Poly.PolyF.zer RelSet.Poly.PolyF.one RelSet.Poly.PolyF.arg₁
-  RelSet.Poly.PolyF.arg₂ RelSet.ListRel.cppFn RelSet.ListRel.cprFn RelSet.ListRel.cplFn
+  RelSet.Poly.relator RelSet.Poly.PolyF RelSet.Poly.PolyC RelSet.Poly.PolyC.zer RelSet.Poly.PolyC.one
+  RelSet.Poly.PolyC.const RelSet.Poly.PolyC.arg₁ RelSet.Poly.PolyC.arg₂ RelSet.CL.clF RelSet.ListRel.cppFn RelSet.ListRel.cprFn RelSet.ListRel.cplFn
   RelSet.CL.thinlist RelSet.ListRel.IsThinlist
 -- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
 attribute [diag_noted] _root_.Int
@@ -1439,11 +1439,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
   | _ => `($(mkIdent `listcp))
--- `listcp = wrap+cpr` (B&dM p.201): the right arm is `cpr`; `Inr` only marks the summand it lands in.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cprInr] def unexpandCprInr : Unexpander
-  | `($_ $args*) => `($(mkIdent `cpr) $args*)
-  | _ => `($(mkIdent `cpr))
 -- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
 open Lean PrettyPrinter in
 @[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
