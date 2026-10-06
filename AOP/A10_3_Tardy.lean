@@ -1532,3 +1532,51 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `snag))
 
 end Freyd.Alg.RelSet.Tardy
+
+-- printing-only: the note's names for this section's declarations.
+-- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
+-- the line width, the due dates — is the section's context and not part of the name, exactly as
+-- `AOP.A9_3_Bracket.R`'s own unexpander already has it.  One per constant: the attribute keys on one.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.R] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyR : Unexpander | _ => `($(mkIdent `R))
+-- §10.3's arrows drop the job quantities `ct dt wt` as `R` does; `costR`/`penaltyR` only
+-- tell the arrow from the Int function of the same name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.costR] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyCostR : Unexpander | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.penaltyR] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyPenaltyR : Unexpander
+  | _ => `($(mkIdent `penalty))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.g] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyGRel : Unexpander | _ => `($(mkIdent `g))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.m] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyM : Unexpander | _ => `($(mkIdent `m))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.k] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyKRel : Unexpander | _ => `($(mkIdent `k))
+-- A section's thinning preorder is the note's `Q`, for the reason its ordering is `R`: which
+-- relation it is, is the `code-defn` line above the table, not what the box is labelled with.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.Q] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.Q'] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyQ' : Unexpander | _ => `($(mkIdent `Q'))
+-- The bag's quotient is taken of the note's `perm`, the permutation relation `16-greedy` defines
+-- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.  The job type is the section's
+-- context, dropped as `R` drops its own.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.permSetoid] public meta def Freyd.Alg.RelSet.Tardy.unexpandPermSetoid : Unexpander
+  | _ => `($(mkIdent `perm))
+-- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
+-- `(bagify°×𝟙) penalty`, the penalty of putting the job last after any ordering of the bag; both
+-- drop the job quantities `ct dt wt`, as the section's arrows do.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.AddP] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyAddP : Unexpander
+  | `($_ $x $j $w) => `($(mkIdent `add) ($x, $j) $w)
+  | _ => `($(mkIdent `add))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.bagPenalty] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyBagPenalty : Unexpander
+  | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")) $p)
+  | _ => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")))
+-- `k`'s second arm as B&dM p.256 write it, in diagram order; costs and due dates are context.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.kStep] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyKStep : Unexpander
+  | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")) $p)
+  | _ => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")))

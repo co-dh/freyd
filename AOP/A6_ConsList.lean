@@ -515,3 +515,10 @@ open Lean PrettyPrinter Delaborator SubExpr in
   | ConsList.cons e x => st e (cfold g st x)
 
 end Freyd.Alg.RelSet.CL
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- The carrier of `F X = L + E×X`, written as the sum it is (B&dM's `FX=𝟏+A×X`). -/
+@[app_unexpander Freyd.Alg.RelSet.CL.Fobj] public meta def Freyd.Alg.RelSet.CL.unexpandCLFobj : Unexpander
+  | `($_ $L $E $C) => `($L + $E × $C)
+  | _ => throw ()

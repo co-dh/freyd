@@ -441,3 +441,21 @@ public theorem tree_recip {B : Type} (R : dA A ⟶ dA B) : tree R° = (tree R)°
   map_mono h := tree_mono h
 
 end Freyd.Alg.RelSet.TT
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- The tip-tree relator is the note's lane `tree` as much as the rose tree's is: which of the two
+    datatypes a section's trees are is the section's business, not the wire's.  A rule, not a
+    rename: `TT.tree`, the action on arrows, already holds the name in `TT`. -/
+@[app_unexpander Freyd.Alg.RelSet.TT.treeRelator] public meta def Freyd.Alg.RelSet.TT.unexpandTreeRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.TT.Tree] public meta def Freyd.Alg.RelSet.TT.unexpandTreeType : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+-- The label summand of `F X = A + X²` is the label type itself; `≤` on `Int` is its operator.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.TT.dA] public meta def Freyd.Alg.RelSet.TT.unexpandTTdA : Unexpander
+  | `($_ $a) => `($a)
+  | _ => throw ()

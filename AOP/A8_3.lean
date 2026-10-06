@@ -1590,3 +1590,11 @@ public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → 
     (thinningList f₁ f₂ p₁ p₂ hp₁ hp₂ hQR hQ hR hm₁ hm₂ hP hc hmono₁ hmono₂)
 
 end Freyd.Alg.RelSet.ListRel
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+-- `sortRel L setify ordered ≼` is the book's `sort(≼)`: `L`, `setify` and `ordered` are what its
+-- definition `setify° ordered(≼)` is made of, and the note writes only the order it sorts by.
+@[app_unexpander Freyd.Alg.sortRel] public meta def Freyd.Alg.unexpandSortRel : Unexpander
+  | `($_ $_ $_ $_ $o) => `($(mkIdent `sort) $o)
+  | _ => `($(mkIdent `sortRel))

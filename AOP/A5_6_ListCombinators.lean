@@ -1897,3 +1897,22 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.ListRel.orderedP] public meta def Freyd.Alg.RelSet.ListRel.unexpandOrderedP : Unexpander
   | `($_ $_ $x) => `(orderedP $x)
   | _ => throw ()
+
+-- printing-only: the note's names for this section's declarations.
+-- `dNE A ≜ dCL A A` is no record but `list⁺`'s own name, the note's `L`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.dNE] public meta def Freyd.Alg.RelSet.ListRel.unexpandDNE : Unexpander
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
+  | _ => throw ()
+-- The relator's ACTION on an arrow is the same letter applied: `nelist R` is `L(R)`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.nelist] public meta def Freyd.Alg.RelSet.ListRel.unexpandNEListMap : Unexpander
+  | `($_ $R) => `($(mkIdent (Name.mkSimple "L")) $R)
+  | _ => throw ()
+-- The CARRIER needs the clause as much as the object: `NEList A` is an `abbrev`, so the term keeps
+-- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
+-- declared objects is labelled from the carrier and would print the Lean name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.NEList] public meta def Freyd.Alg.RelSet.ListRel.unexpandNEListType : Unexpander
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
+  | _ => throw ()

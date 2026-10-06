@@ -2122,3 +2122,9 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 end Freyd.Alg.RelSet.Bracket
+
+-- `splits ≜ graph(splitsFn)`: the graph and the function it is taken of share the note's name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.splitsFn] public meta def Freyd.Alg.RelSet.Bracket.unexpandBracketSplitsFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `splits) $args*)
+  | _ => `($(mkIdent `splits))

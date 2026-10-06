@@ -672,3 +672,13 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `S))
 
 end Freyd.Alg
+
+-- printing-only: the note's names for this section's declarations.
+-- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.pathF] public meta def Freyd.Alg.unexpandPathF : Unexpander
+  | _ => `($(mkIdent `F))
+-- B&dM p.196's `zero`; the weight `wt` is the section's parameter.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.zeroCost] public meta def Freyd.Alg.unexpandZeroCost : Unexpander
+  | _ => `($(mkIdent `zero))

@@ -447,3 +447,28 @@ public theorem embed_recip_defined (m : Nat) : (∃ d : DigitP, (embed°) m d) �
     exact ⟨⟨⟨m, h.2⟩, by show m ≠ 0; omega⟩, by rw [recip_apply, embed]; show m = m; rfl⟩
 
 end Freyd.Alg.RelSet.Digits
+
+-- printing-only: the note's names for this section's declarations.
+-- B&dM §6.1's datatype `Decimal = wrap Digit⁺ | snoc (Decimal, Digit)`: its constructor map is the
+-- book's `α`, its base relator the section's `F`, its objects the book's `Digit⁺`, `Digit`, `Decimal`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Digits.con] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitsCon : Unexpander
+  | _ => `($(mkIdent `α))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Digits.cataR] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitsCata : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+-- KEPT AS RULES, NOT `notation`: a relator spelled by a notation atom reaches the label printer
+-- as `toFunctor(…)` — it reads a relator's name off an identifier (tried 2026-10-06).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Digits.timesDigit] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitsTimes : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "−×Digit")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "−×Digit")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Digits.plusDigitP] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitsPlus : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
+-- The non-zero digits `{d // d ≠ 0}` are B&dM's `Digit⁺`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Digits.DigitP] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitP : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))

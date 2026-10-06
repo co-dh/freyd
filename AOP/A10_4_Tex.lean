@@ -1167,3 +1167,13 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tex.intervalFn] public meta def Freyd.Alg.RelSet.Tex.unexpandTexIntervalFn : Unexpander
   | `($_ $args*) => `($(mkIdent `interval) $args*)
   | _ => `($(mkIdent `interval))
+
+-- printing-only: the note's names for this section's declarations.
+-- B&dM p.263 on points: `Real`'s order and `10a−d` wear the book's arithmetic, a representative
+-- `(p,0)` is `p/w`, and the program's `f` shares the book's letter.  `unshift`, `mkR`, `IsDigit`
+-- and `shiftPre` are KEPT here: they build the note-arithmetic syntax (`noteSub`, `noteDiv`,
+-- `noteFloor`) declared in this file, which no `AOP` module can import (`diag` imports `AOP`).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.rlt] public meta def Freyd.Alg.RelSet.Tex.unexpandTexRlt : Unexpander
+  | `($_ $a $b) => `($a < $b)
+  | _ => throw ()
