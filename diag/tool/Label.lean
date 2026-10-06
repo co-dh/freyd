@@ -1084,6 +1084,9 @@ inductive Lbl where
   /-- A form CLOSED IN ITS OWN BRACKETS, `o` and `c` a mating pair with no name in them
       (`(μX : φ(X))`, `⟨R,S⟩`, `⦇R⦈`): applied to, it takes no second pair (`φ(μX : φ(X))`). -/
   | delim (o c : String) (body : Lbl)
+  /-- AN APPLICATION — `f(x)`, `⟨f,g⟩(x)`, `FA` — set as ONE unbreakable unit, so a line breaks only
+      at an operator between applications, never between a head and its argument. -/
+  | unit (body : Lbl)
   deriving Inhabited, BEq
 
 /-- THE FLAT SPELLING, which is what a string label always was: a division writes the note's inline
@@ -1099,6 +1102,7 @@ partial def Lbl.flat : Lbl → String
   | .frac n d t => (if t then "(" ++ n.flat ++ ")" else n.flat) ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
   | .delim o c b => o ++ b.flat ++ c
+  | .unit b => b.flat
 
 /-- The tree with every component's index dropped — `flat`'s rule, kept in the tree so a picture
     that sets the label as typst content still gets its fractions. -/
@@ -1107,6 +1111,7 @@ partial def Lbl.bare : Lbl → Lbl
   | .frac n d t => .frac n.bare d.bare t
   | .seq ps => .seq (ps.map Lbl.bare)
   | .delim o c b => .delim o c b.bare
+  | .unit b => .unit b.bare
   | l => l
 
 /-- Whether a fraction stands anywhere in the tree: its bar makes the label two lines tall. -/
@@ -1116,6 +1121,7 @@ partial def Lbl.hasFrac : Lbl → Bool
   | .frac .. => true
   | .seq ps => ps.any Lbl.hasFrac
   | .delim _ _ b => b.hasFrac
+  | .unit b => b.hasFrac
 
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
@@ -1132,6 +1138,7 @@ where
     | .frac n d t => #[.frac n.norm d.norm t]
     -- The brackets are the JOIN's business and no shape of the writer's: they are written as text.
     | .delim o c b => go (.seq #[.text o, b, .text c])
+    | .unit b => #[.unit b.norm]
   push (acc : Array Lbl) (x : Lbl) : Array Lbl :=
     match acc.back?, x with
     | some (.text a), .text b => acc.pop.push (.text (a ++ b))
@@ -1151,6 +1158,8 @@ partial def Lbl.typst (l : Lbl) : String :=
   | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
   | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
   | .delim o c b => (Lbl.seq #[.text o, b, .text c]).typst
+  -- a `box` is one word to the line breaker: `⟩(` and `)(` are break opportunities in plain text
+  | .unit b => "box(" ++ b.typst ++ ")"
 
 /-- The name of the `i`th local an operand is handed to the printer as: a token no printer writes
     and no label contains, so the printed head can be cut at exactly the places the operands went. -/
@@ -1168,6 +1177,7 @@ where
     | .text t => .seq (((t.splitOn h).map Lbl.text).intersperse x).toArray
     | .seq ps => .seq (ps.map (put · h x))
     | .delim o c b => .delim o c (put b h x)
+    | .unit b => .unit (put b h x)
     | l => l
 
 /-- Every TEXT leaf rewritten by `f`, the shape left alone. -/
@@ -1177,6 +1187,7 @@ partial def Lbl.mapText (f : String → String) : Lbl → Lbl
   | .frac n d t => .frac (n.mapText f) (d.mapText f) t
   | .seq ps => .seq (ps.map (Lbl.mapText f))
   | .delim o c b => .delim (f o) (f c) (b.mapText f)
+  | .unit b => .unit (b.mapText f)
 
 instance : Coe String Lbl := ⟨Lbl.text⟩
 instance : HAppend Lbl Lbl Lbl := ⟨fun a b => .seq #[a, b]⟩
@@ -1187,7 +1198,7 @@ instance : HAppend Lbl String Lbl := ⟨fun a b => .seq #[a, .text b]⟩
     off the spelling. -/
 partial def Lbl.delimited : Lbl → Bool
   | .delim .. => true
-  | .seq #[x] => x.delimited
+  | .seq #[x] | .unit x => x.delimited
   | _ => false
 
 /-- Whether the label's FIRST factor is closed in its own brackets — the one a factor to its left
@@ -1197,10 +1208,14 @@ partial def Lbl.leadsDelim : Lbl → Bool
   | .seq ps => match ps.find? (· != .text "") with
     | some x => x.leadsDelim
     | none => false
+  | .unit x => x.leadsDelim
   | _ => false
 
 /-- A term's printed spelling as a leaf of the tree — the printer's answer has no shape in it. -/
-def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
+def txt (e : Expr) : MetaM Lbl := do
+  -- the printer's own application is one unit, as every clause's is (`Lbl.unit`)
+  let l := Lbl.text (← plain e)
+  return if (appParts (stxPeel (← delabP e))).isSome then .unit l else l
 
 /-- The note's juxtaposition spacing between two labels, decided on their flat spelling (`juxt`), so
     one rule answers for the string and for the tree alike.  `a` IS ONE FACTOR, `next` the factor
@@ -1225,7 +1240,7 @@ def commaL (l r : String) (ps : Array Lbl) : Lbl := .delim l r (Lbl.join "," ps)
 /-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
     spelling exactly as the string rule reads it. -/
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
-  if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
+  .unit (if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")")
 
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the arrow `r°` IS, read off a `diag_opposite`
     theorem `Q = P°` in EITHER direction — `r` matching `P` gives `Q`, `r` matching `Q` gives `P` —
@@ -1536,10 +1551,10 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         let a ← labelTree 0 i
         -- an input the printer writes as a tuple is already the application's own brackets
         let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
-        return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
+        return wrap Prec.rel (Lbl.unit ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a))
           ++ spaced "=" sp ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
       if arrow then
-        return (← labelTree Prec.atom hd) ++ commaL "(" ")" #[← labelTree 0 i, ← labelTree 0 args.back!]
+        return Lbl.unit ((← labelTree Prec.atom hd) ++ commaL "(" ")" #[← labelTree 0 i, ← labelTree 0 args.back!])
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
@@ -1749,7 +1764,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       let h : Lbl ← match ← relatorName? f with
         | some n => pure (.text n)
         | none => labelTree Prec.atom f
-      return h ++ "(" ++ (← labelTree 0 r) ++ ")"
+      return .unit (h ++ "(" ++ (← labelTree 0 r) ++ ")")
     | none => txt e
   -- A BIFUNCTOR'S action takes the same bracket and BOTH its arrows: `F(𝟙,f)`, `F(f,T(f))`.  An
   -- unexpander cannot write it — `F(𝟙,f)` is no term — and the one beside the constant prints the
@@ -1759,7 +1774,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     | some (x, y) => do
       let fns ← args.filterM fun a => return (← Meta.inferType a).isAppOf ``Freyd.Alg.BiRelator
       match fns.back? with
-      | some fn => return (← labelTree Prec.atom fn) ++ commaL "(" ")" #[← labelTree 0 x, ← labelTree 0 y]
+      | some fn => return .unit ((← labelTree Prec.atom fn) ++ commaL "(" ")" #[← labelTree 0 x, ← labelTree 0 y])
       | none => txt e
     | none => txt e
   -- A QUOTIENT LIFT IS THE FUNCTION IT LIFTS applied to the class: the note writes a bag or a real by
@@ -1777,7 +1792,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
     -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
     if let some (hd, pts) ← swallowedPoints? e then
-      return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
+      return .unit ((← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0)))
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
     -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
     -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
@@ -1807,8 +1822,10 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       match as with
       | [] =>
         let t := t.replace fun s => (ops.findIdx? (· == s)).map (xs[·]!)
-        return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
+        let l := Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
           (Name.mkSimple ∘ holeName)).toArray) holes
+        -- an APPLICATION is one unit; a notation's own spelling (`⦇R⦈`, `0<π₁(p)`) keeps its breaks
+        return if (appParts stx).isSome then .unit l else l
       | a :: rest =>
         let nm := Name.mkSimple (holeName holes.size)
         let l ← labelTree p a
