@@ -1693,7 +1693,8 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.floorR")],
   [`floor[a,b]` is the smallest of `0`, `a`, `a+b`, so `[a,b]` carries `ceiling−floor` cash.],
 
-  [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`],
+  [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`
+   #leank("Freyd.Alg.RelSet.Van.secureP")],
   [#leant("Freyd.Alg.RelSet.Van.secure")],
   [`secure` keeps `[a]` exactly when `−N≤a≤N`.],
 
