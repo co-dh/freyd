@@ -10,16 +10,16 @@
 // `ys(nout)`.  Branch equalisation — §4e's `w` — lives here and nowhere else.
 
 // `cetz` through `circuit.typ`, not from the package: that is where the `--input nodraw=1` shim lives.
-#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc
+#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc, PFRAME
 #import "draw.typ": lab
-#import "note-style.typ": P, TYCOL
+#import "note-style.typ": P, TYCOL, fit
 
 #let UIP = 0.4          // the pair's half-height — one strand of a product to the next
 #let UHH = 0.7          // a `∪` copy's half-height
 #let UDY = UHH + 0.55   // copy separation, wider than the strands inside one copy
 #let UM = 0.2           // region edge to the deepest box inside a copy
 #let BRT = 1.6          // the bracket's branch height
-#let CHPAD = 0.30       // `∪` region edge to the body inside it
+#let CHPAD = 0.30       // a tape's edge to the body inside it, at least; `cpanel` raises it to `PFRAME` on the page
 #let CHFAN = 0.50       // how far outside the region the dashed fan reaches
 
 #let CGAP = 0.34        // wire stub before the first box, between two boxes, and after the last
@@ -45,14 +45,14 @@
 
 // The dashed fan into and out of a region holding alternatives, one arm per height in `ss`;
 // the panel's port stubs (`cbody`) give each port its straight run.
-#let fan(nin, nout, x0, x1, ss) = {
+#let fan(nin, nout, x0, x1, ss, pad) = {
   for s in ss {
-    for y in ys(nin) { bend((0, y), (x0 + CHPAD, s + y), stroke: FAN) }
-    for y in ys(nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN, y), stroke: FAN) }
+    for y in ys(nin) { bend((0, y), (x0 + pad, s + y), stroke: FAN) }
+    for y in ys(nout) { bend((x1 - pad, s + y), (x1 + CHFAN, y), stroke: FAN) }
   }
 }
 
-#let pic(t, length) = {
+#let pic(t, length, pad) = {
   // ---- §3 rows 1-2, 7, 10, 15-16: one box.  A box spanning several strands is as tall as they are.
   if t.k == "box" {
     let n = calc.max(t.nin, t.nout)
@@ -72,7 +72,7 @@
     for (i, it) in t.items.enumerate() {
       // two boxes with no strand between them (`l°` into `nil`) still stand a stub apart
       let (x2, s) = if n == 0 and i > 0 { (x + CGAP, none) } else { stub(x, n) }; x = x2; body.push(s)
-      let p = pic(it, length)
+      let p = pic(it, length, pad)
       body.push(d.group({ d.translate((x, 0)); p.body }))
       x = x + p.w; n = it.nout; hh = calc.max(hh, p.hh)
       if str(i) in seam {
@@ -92,7 +92,7 @@
   }
   // ---- §3 row 6: a product is a vertical stack, one lane per ×-factor, padded to one right edge.
   if t.k == "stack" {
-    let ps = t.lanes.map(l => pic(l, length))
+    let ps = t.lanes.map(l => pic(l, length, pad))
     let mw = calc.max(..ps.map(p => p.w))
     // each lane centred on its own strands; a lane taller than its strands' span (a fork, a nested
     // stack) would overlap its neighbour there, so then the lanes are spread and bent to the ports
@@ -137,7 +137,7 @@
   }
   // ---- §3 row 14: `⊸ x`, the constant.  Every input strand ends at a dot, then `x` is created.
   if t.k == "konst" {
-    let p = pic(t.body, length)
+    let p = pic(t.body, length, pad)
     let body = ys(t.nin).map(y => bang((0.35, y), li: 0.35)).join()
     return (w: 0.6 + p.w, hh: calc.max(p.hh, (t.nin - 1) * UIP + 0.1),
       body: { body; d.group({ d.translate((0.6, 0)); p.body }) })
@@ -152,7 +152,7 @@
   // ---- §3 row 12: `x∩y`.  Copy every strand, run BOTH lanes, merge.  `∇=Δ°` forces the two to
   // carry the same value, and that is the whole of the intersection: no box says `∩`.
   if t.k == "cap" {
-    let ps = t.lanes.map(l => pic(l, length))
+    let ps = t.lanes.map(l => pic(l, length, pad))
     let mw = calc.max(..ps.map(p => p.w))
     let mh = calc.max(..ps.map(p => p.hh))
     let sp = mh + 0.22
@@ -173,7 +173,7 @@
   // ---- §3 row 20: `⟨x,y⟩`.  Copy every strand, run BOTH lanes, and leave on their outputs STACKED,
   // the upper lane's over the lower's, bent to the port heights — a `cap` with no merge.
   if t.k == "fork" {
-    let ps = t.lanes.map(l => pic(l, length))
+    let ps = t.lanes.map(l => pic(l, length, pad))
     let mw = calc.max(..ps.map(p => p.w))
     let mh = calc.max(..ps.map(p => p.hh))
     let sp = mh + 0.22
@@ -196,7 +196,7 @@
   // ---- `⟨x,y⟩°`: row 20 mirrored.  The stacked inputs bend apart to the two lanes, which run the
   // converses and MERGE — the fork's copy read backwards, as `cap` ends.
   if t.k == "cofork" {
-    let ps = t.lanes.map(l => pic(l, length))
+    let ps = t.lanes.map(l => pic(l, length, pad))
     let mw = calc.max(..ps.map(p => p.w))
     let mh = calc.max(..ps.map(p => p.hh))
     let sp = mh + 0.22
@@ -220,7 +220,7 @@
   // input arrives at them and the algebra's own strands start inside, and that break IS the
   // recursion.  The algebra's output is the fold's, so it runs out through the right pair.
   if t.k == "cata" {
-    let p = pic(t.body, length)
+    let p = pic(t.body, length, pad)
     let yh = calc.max(p.hh, (t.nin - 1) * UIP) + 0.28
     let ld = calc.max(..t.port.map(s => cu(measure(tx(s)).width, length))) + 2 * CLEAD
     // A stub before the left bars, the mirror of the one after the right bars: the source label
@@ -251,35 +251,35 @@
   // ---- §3 row 11: the `∪` region.  The input arrives once and a dashed fan hands it to BOTH
   // bodies, which are padded to a common right edge (§4e) and merge into one output.
   if t.k == "union" {
-    let ps = t.bodies.map(b => pic(b, length))
+    let ps = t.bodies.map(b => pic(b, length, pad))
     let mw = calc.max(..ps.map(p => p.w))
     // The region is drawn round what the copies REACH, as the bracket's tape is: a copy taller than
     // `UHH` would otherwise set the region's stroke on its boxes.
-    let x0 = CHFAN; let x1 = CHFAN + mw + 2 * CHPAD
-    let hh = UDY + calc.max(UHH + UM, ..ps.map(p => p.hh + CHPAD))
+    let x0 = CHFAN; let x1 = CHFAN + mw + 2 * pad
+    let hh = UDY + calc.max(UHH + UM, ..ps.map(p => p.hh + pad))
     let body = {
       // no `∪` label: the tape itself says union, and the letter only crowded the copy above it
       tape((x0, -hh), (x1, hh))
       for (i, p) in ps.enumerate() {
         let s = if i == 0 { 1 } else { -1 }
-        d.group({ d.translate((x0 + CHPAD, s * UDY)); p.body; wire((p.w, 0), (mw, 0)) })
+        d.group({ d.translate((x0 + pad, s * UDY)); p.body; wire((p.w, 0), (mw, 0)) })
       }
-      fan(t.nin, t.nout, x0, x1, (UDY, -UDY))
+      fan(t.nin, t.nout, x0, x1, (UDY, -UDY), pad)
     }
     return (w: x1 + CHFAN, hh: hh, body: body)
   }
   // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  The fork
   // hands ONE coproduct wire to each arm and the arm's `open` generator splits or ends it, so the
   // seam after that generator names the summand's strands.
-  let ps = t.bodies.map(b => pic(b, length))
+  let ps = t.bodies.map(b => pic(b, length, pad))
   let oys = (BRT, -BRT)
   let mw = calc.max(..ps.map(p => p.w))
-  let xf = 1.26; let xj = xf + mw + 0.7
+  // The fork and the join keep their own room, widened only when `pad` asks for more.
+  let xf = calc.max(1.26, CGAP + pad); let ex = calc.max(0.7, pad); let xj = xf + mw + ex
   // The tape is drawn round what the branches actually reach, top and bottom apart: the `𝟏` summand
-  // is one small box where the pair below it carries a whole `∪` region.  `CHPAD`, the `∪` region's
-  // edge-to-body pad: any less and a panel scaled below 74% sets the tape's stroke on a box's edge.
-  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + CHPAD
-  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - CHPAD
+  // is one small box where the pair below it carries a whole `∪` region.
+  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + pad
+  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - pad
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
   let body = {
     tape((CGAP, bot), (xj, top))
@@ -287,7 +287,7 @@
     for (i, p) in ps.enumerate() {
       let oy = oys.at(i)
       d.bezier((0.56, 0), (xf, oy), (0.98, 0), (0.98, oy), stroke: st)
-      d.group({ d.translate((xf, oy)); p.body; wire((p.w, 0), (mw, 0)) })
+      d.group({ d.translate((xf, oy)); p.body; wire((p.w, 0), (mw + ex - 0.7, 0)) })
     }
     tape-join((xj, 0), sp: BRT, len: 0.7)
     // The join sits on the tape edge, so the label needs a stub after it, the mirror of the input stub.
@@ -301,8 +301,8 @@
 // EVERY PORT GETS ITS OWN STUB here, whatever node the tree starts or ends with: a bare box has none
 // of its own, and a label placed at its edge was struck by that edge.  The label then stands
 // `CLGAP` past the stub's end, measured on its own width.
-#let cbody(t, length) = {
-  let p = pic(t, length)
+#let cbody(t, length, pad) = {
+  let p = pic(t, length, pad)
   d.group({ d.translate((CGAP, 0)); p.body })
   let xr = p.w + 2 * CGAP
   for (i, y) in ys(t.nin).enumerate() {
@@ -315,9 +315,25 @@
   }
 }
 
+// A frame's `pad` is `CHPAD`, raised until it is `PFRAME` on the PAGE after both `s` and the fit
+// scale `P` will spend.  The pad widens the panel, so the fit falls as it grows: iterate to the fixed point.
 #let cpanel(tree, s: 74%, length: 0.8cm, cert: (:)) = {
-  context P(cetz.canvas(length: length, cbody(tree, length)), s: s,
-    key: cert.at("expect", default: "cpanel"))
+  layout(sz => {
+    let draw(pad) = cetz.canvas(length: length, cbody(tree, length, pad))
+    let need(pad) = calc.max(CHPAD,
+      PFRAME / (length * (s / 100%) * (fit(measure(draw(pad)).width * (s / 100%), sz) / 100%)))
+    let pad = CHPAD
+    let q = need(pad)
+    let n = 0
+    while q > pad * 1.001 {
+      n += 1
+      assert(n < 12, message: "cpanel: frame pad not converging (" + repr(pad) + " -> " + repr(q)
+        + " canvas units in a region " + repr(sz.width) + " wide) for " + repr(cert))
+      pad = q
+      q = need(pad)
+    }
+    P(draw(pad), s: s, key: cert.at("expect", default: "cpanel"))
+  })
   // The drawn lists want the note's `plain` to serialise; the cert is the part that is text already.
   metadata((kind: "circuit", helper: "cpanel", cert: cert))
 }

@@ -513,10 +513,12 @@
 /// label of one lands on a label of the other (`./scripts/labelfit`).  No geometry inside a panel
 /// can prevent that — the panel is not told the width — so the one place that knows it, this one,
 /// spends the second scale factor.  `s` stays what the picture asked for whenever it fits.
+/// `fit(w, sz)`: that second factor for a picture `w` wide, already at `s`, in the region `sz`.
+#let fit(w, sz) = if w > sz.width and sz.width > 0pt { sz.width / w * 100% } else { 100% }
 #let P(p, s: 92%, key: none) = layout(sz => align(center, box({
   let q = scale(x: s, y: s, reflow: true, p)
   let m = measure(q)
-  let f = if m.width > sz.width and sz.width > 0pt { sz.width / m.width * 100% } else { 100% }
+  let f = fit(m.width, sz)
   let q = if f == 100% { q } else { scale(x: f, y: f, reflow: true, q) }
   // `m * f`, not a second `measure` of the scaled `q`: the two differ only in the last bit (~1e-14pt).
   if key != none { pic-meta(key, q, size: (width: m.width * (f / 100%), height: m.height * (f / 100%))) }
