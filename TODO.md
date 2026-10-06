@@ -101,7 +101,7 @@
     left 23 panels printing `leq` until they were deleted by hand. Key freshness on what the picture prints.
 [X] ch14: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
 [X] ch16: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
-[ ] 9.3a definition table looks weird, squeezed, especially <cost, size>. Widths done ("q9 ok"); the line break inside `⟨cost,size⟩(bin(xs,ys))` is in flight.
+[X] 9.3a definition table looks weird, squeezed, especially <cost, size>. Widths ("q9 ok"); a formula no longer breaks inside an application.
 
 B&dM companion note (diag/aop/), open as of 2026-10-05:
 [X] Pres: "can Pres be infix? so instead of Pres(S, Q), we see S Pres Q?" — "pr4 good", on master.
@@ -122,7 +122,8 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [ ] Printer: rename Lean decls to book names (including 𝒫/ℰ), delete the ~306 rename rules.
 [ ] Printer: symbol rules become Lean notation beside the definition.
 [ ] Printer: 14 hand-typed formula names → diag_unfold.
-[ ] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses.
+[X] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses; they print as lax(φ)/strict(φ)/oplax(φ).
 [-] RCA: the Lemma 8.1 chain lost its triangles — DROPPED by the user ("I told u to give up on 8.1 triangles").
     Do not reopen; branch worktree-agent-acb10c66a3d8ff8b6 discarded.
 [ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
+[ ] diff-crop --key lax-closure --rev 76e5391 said "crops pixel-identical" although p.17 gained three lax(φ) ∧ lax(ψ) ⟹ premises.
