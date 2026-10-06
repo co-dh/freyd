@@ -304,10 +304,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   #box(stroke: 0.4pt, inset: 3pt)[`u`] #h(2pt) $stretch(->, size: #3em)^(F(≤))$ #h(2pt)
   #box(stroke: 0.4pt, inset: 3pt)[`v`] #h(2pt) $stretch(->, size: #3em)^f$ #h(2pt)
   #box(stroke: 0.4pt, inset: 3pt)[`f(v)`]]
-- #src[`f°`: from `f(u)` back to an input `u` of `f`.]
 - #src[`F(≤)`: from `u` to any `v` above it; `u`, `v` are in `FA`, compared component by component.
   This step is the premise.]
-- #src[`f`: from `v` to `f(v)`.]
 - #src[`⊑≤`: the two ends satisfy `f(u)≤f(v)`, the conclusion. So `u F(≤) v ⟹ f(u)≤f(v)`: `f` preserves `≤`.]
 ]<mon-points>
 
