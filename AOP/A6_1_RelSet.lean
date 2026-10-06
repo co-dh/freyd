@@ -104,6 +104,12 @@ public theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x :
     this name where Lean's pointwise lambda would print. -/
 @[expose] public def corefl {A : RelSet.{u}} (P : A.carrier → Prop) : A ⟶ A := fun x y => x = y ∧ P x
 
+-- B&dM's convention: a predicate used as an arrow IS its coreflexive, so `corefl(p)` prints `p`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.corefl] public meta def unexpandCorefl : Unexpander
+  | `($_ $p) => `($p)
+  | _ => throw ()
+
 /-- The preorder a measure induces, `f≤f°`: `x` below `y` when `f(x)≤f(y)`. -/
 @[expose] public def leOn {A : RelSet.{u}} (f : A.carrier → Nat) : A ⟶ A := fun x y => f x ≤ f y
 

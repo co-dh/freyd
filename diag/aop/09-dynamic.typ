@@ -256,7 +256,7 @@
   [the identity on the `base` summand; on the `step` summand any two operations, and the two pairs
    of strings by `V`],
   [#rowkey("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
-  [#leanf("Freyd.Alg.RelSet.Edit.empty_iff")],
+  [#leanf("Freyd.Alg.RelSet.Edit.emptyP")],
   [holds only at the pair of two empty strings],
   [#rowkey("Freyd.Alg.RelSet.Edit.unstep")], [#leant("Freyd.Alg.RelSet.Edit.unstep")],
   [#leanf("Freyd.Alg.RelSet.Edit.unstep_sound"), #leanf("Freyd.Alg.RelSet.Edit.unstep_nil"), #leanf("Freyd.Alg.RelSet.Edit.unstep_del"), #leanf("Freyd.Alg.RelSet.Edit.unstep_ins"), #leanf("Freyd.Alg.RelSet.Edit.unstep_cons")],
@@ -471,7 +471,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@ff28cd4c
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@d83b12c4
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
@@ -554,8 +554,9 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.gR")],
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#rowkey("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.nonsingle")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.nonsingleP")],
   [holds at the lists of two or more elements],
+// lean:AOP.A9_3_Bracket.nonsingleP@ae78e8cc
   [#rowkey("Freyd.Alg.RelSet.Bracket.splits")], [#leant("Freyd.Alg.RelSet.Bracket.splits")],
   [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq")],
   [every way to cut a list into two non-empty parts — an implementation of #frc([`cat°`])],

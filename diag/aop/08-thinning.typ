@@ -753,10 +753,10 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#leanf("Freyd.Alg.RelSet.Paragraph.allFitP")],
   [every line is at most w wide],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.fits")], [#leant("Freyd.Alg.RelSet.Paragraph.fits")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.fits_apply")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.allFitP")],
   [the paragraphs whose every line is at most w wide],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.ok")], [#leant("Freyd.Alg.RelSet.Paragraph.ok")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.ok_apply")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.okP")],
   [the paragraphs whose first line is at most w wide],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.sqr")], [#leant("Freyd.Alg.RelSet.Paragraph.sqr")],
   [#leanf("Freyd.Alg.RelSet.Paragraph.sqr")],
@@ -784,8 +784,8 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 // lean:AOP.A8_5_Paragraph.widthFn@925793a1
 // lean:AOP.A8_5_Paragraph.head@d781968f
 // lean:AOP.A8_5_Paragraph.allFitP@1d59ef2e
-// lean:AOP.A8_5_Paragraph.fits@6274a548
-// lean:AOP.A8_5_Paragraph.ok@428573fa
+// lean:AOP.A8_5_Paragraph.fits@e9533e02 lean:AOP.A8_5_Paragraph.allFitP@1d59ef2e
+// lean:AOP.A8_5_Paragraph.ok@6a24d4f2 lean:AOP.A8_5_Paragraph.okP@5ebaf3a1
 // lean:AOP.A8_5_Paragraph.sqr@0bb9fcb4
 // lean:AOP.A8_5_Paragraph.wasteFn@598047f9
 // lean:AOP.A8_5_Paragraph.R@1aaea13f
