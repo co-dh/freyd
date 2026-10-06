@@ -59,7 +59,7 @@ public theorem weight_eq :
     arrow it is its coreflexive `corefl(within(w))`, the book's `within w` in `Λ(subseq within w)`. -/
 -- The weight function is the SECTION'S data, not part of the name the note writes (`within(w)`),
 -- so it is an implicit binder supplied by name where a use site has to pin it.
-@[expose] public def within (w : Int) (x : ConsList Unit Item) : Prop := weight wt x ≤ w
+@[expose] public def within (w : Int) (xs : ConsList Unit Item) : Prop := weight wt xs ≤ w
 
 public theorem within_coreflexive :
     Coreflexive (corefl (within (wt := wt) w) : dList Item ⟶ dList Item) :=
@@ -109,8 +109,8 @@ public theorem R_apply (xs ys : ConsList Unit Item) : R val xs ys ↔ value val 
 public theorem Q_apply (xs ys : ConsList Unit Item) :
     Q val wt xs ys ↔ value val ys ≤ value val xs ∧ weight wt xs ≤ weight wt ys := Iff.rfl
 
-/-- `within(w)(x)` iff `x` weighs at most `w`. -/
-public theorem within_apply (x : ConsList Unit Item) : within (wt := wt) w x ↔ weight wt x ≤ w := Iff.rfl
+/-- `within(w)(xs)` iff `xs` weighs at most `w`. -/
+public theorem within_apply (xs : ConsList Unit Item) : within (wt := wt) w xs ↔ weight wt xs ≤ w := Iff.rfl
 
 public theorem Q_le_R : Q val wt ⊑ R val := le_iff.mpr fun _ _ h => h.1
 

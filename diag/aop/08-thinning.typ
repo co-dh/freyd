@@ -611,6 +611,12 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#rowkey("Freyd.Alg.RelSet.ListRel.subseq")], [#leant("Freyd.Alg.RelSet.ListRel.subseq")],
   [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata")],
   [every subsequence of the list],
+  [#rowkey("Freyd.Alg.RelSet.Knapsack.value")], [#leant("Freyd.Alg.RelSet.Knapsack.value")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.value_eq")],
+  [the total value of a packing],
+  [#rowkey("Freyd.Alg.RelSet.Knapsack.weight")], [#leant("Freyd.Alg.RelSet.Knapsack.weight")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.weight_eq")],
+  [the total weight of a packing],
   [#rowkey("Freyd.Alg.RelSet.Knapsack.con_eq_junc")], [#leant("Freyd.Alg.RelSet.Knapsack.con_eq_junc")],
   [#leanf("Freyd.Alg.RelSet.Knapsack.con_eq_junc")],
   [keep the item: the list constructor],
@@ -619,7 +625,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [drop the item: keep the tail],
   [#rowkey("Freyd.Alg.RelSet.Knapsack.within")], [#leant("Freyd.Alg.RelSet.Knapsack.within")],
   [#leanf("Freyd.Alg.RelSet.Knapsack.within_apply")],
-  [the packings whose total weight is at most w],
+  [the packing weighs at most w],
   [#rowkey("Freyd.Alg.RelSet.Knapsack.Salg")], [#leant("Freyd.Alg.RelSet.Knapsack.Salg")],
   [#leanf("Freyd.Alg.RelSet.Knapsack.Salg")],
   [at each item, keep it if the packing still fits, or drop it],
@@ -633,19 +639,23 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 // lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
 // lean:AOP.A5_6_ListCombinators.subseq@9db1a985
 // lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+// lean:AOP.A8_4_Knapsack.value@37f1f8ed
+// lean:AOP.A8_4_Knapsack.value_eq@f814ce68
+// lean:AOP.A8_4_Knapsack.weight@37f1f8ed
+// lean:AOP.A8_4_Knapsack.weight_eq@267afa15
 // lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6
 // lean:AOP.A8_4_Knapsack.dropFn@08a216bd
 // lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77
-// lean:AOP.A8_4_Knapsack.within@172899da
-// lean:AOP.A8_4_Knapsack.Salg@a25a32d6
-// lean:AOP.A8_4_Knapsack.Salg_junc@1c8b59e1
-// lean:AOP.A8_4_Knapsack.R@88e39502
-// lean:AOP.A8_4_Knapsack.R_eq@1c13d35d
-// lean:AOP.A8_4_Knapsack.Q@0a7ed9db
-// lean:AOP.A8_4_Knapsack.Q_eq@22acbe51
-// lean:AOP.A8_4_Knapsack.within_apply@36f4b7b0
-// lean:AOP.A8_4_Knapsack.R_apply@dc58c6b8
-// lean:AOP.A8_4_Knapsack.Q_apply@41c1da16
+// lean:AOP.A8_4_Knapsack.within@945da576
+// lean:AOP.A8_4_Knapsack.Salg@7d39c25b
+// lean:AOP.A8_4_Knapsack.Salg_junc@56a14e5c
+// lean:AOP.A8_4_Knapsack.R@9a274328
+// lean:AOP.A8_4_Knapsack.R_eq@d1b279af
+// lean:AOP.A8_4_Knapsack.Q@7cb37d7d
+// lean:AOP.A8_4_Knapsack.Q_eq@79079c45
+// lean:AOP.A8_4_Knapsack.within_apply@9a705752
+// lean:AOP.A8_4_Knapsack.R_apply@787706e9
+// lean:AOP.A8_4_Knapsack.Q_apply@43d4a123
 )]<knap-defn>
 
 #disp[#table(
@@ -658,7 +668,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
   [#leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_cons") \ #leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_drop")
  #src[,
-   // lean:AOP.A8_4_Knapsack.knap_mono_cons@72a2787a
+   // lean:AOP.A8_4_Knapsack.knap_mono_cons@53c00514
  ]],
    // lean:AOP.A8_4_Knapsack.knap_mono_drop@e779f3ef
   [both halves are monotonic on `Q` once ties in value are broken by weight],
@@ -675,7 +685,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@f04481fb
+     // lean:AOP.A8_4_Knapsack.knap_laws@3afe2d7d
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -687,7 +697,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs"),
     [#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs") \
  #src[@cata-fusion, weights non-negative. ]])],
-     // lean:AOP.A8_4_Knapsack.knap_spec@89359e6f
+     // lean:AOP.A8_4_Knapsack.knap_spec@4c91383d
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
