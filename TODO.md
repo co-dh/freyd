@@ -117,7 +117,26 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
     Printer "4 wrong rules": pcor(p)→p (done), baseStepFn→step, CL.con→[nil,cons] for non-Unit leaves,
     graph wildcard→π₁ (StrDiagNames.lean).
 [X] Cut every old definition block to two lines like pr3 (#leanf + one reading + book's name once; one example).
-[ ] Review the ch9/ch10 def table crops.
+[-] Review the ch9/ch10 def table crops — dropped: no question behind it; his findings are the items below.
+Requests of 2026-10-06 morning, not yet done:
+[ ] Def tables: drop the name column — "the name column is use less and deplicated, as it's appear in def column".
+    In flight (deftab agent), every def table.
+[ ] Def tables: one definition per row, the point-free one — "you have 2 def in 8.4a row 1, keep the point free one."
+    In flight (deftab agent), every def table.
+[ ] 8.4a subseq — "the definition of subseq at (8.4a) is wrong. it's the notation defintion": print
+    `subseq = ⦇[nil, cons ∪ π₂]⦈` (subseq_cata); same check on every def row. In flight (deftab agent).
+[ ] Knapsack `vol` → `val` — "what's vol in 8.4a? are you suppose to ues val for value?" (B&dM p.205 prints val; OCR
+    read vol). In flight (deftab agent), Lean binders and note.
+[ ] 8.4a within — "why your defintion of within on 8.4a has ys while the book not? P 205." B&dM: `within w x =
+    (weight x ≤ w)`, a predicate on ONE packing, used as a coreflexive; ours prints the coreflexive as a relation
+    `within(w)(xs,ys) ⟺ xs = ys ∧ total(wt,xs) ≤ w`. Define it as the book does (predicate, with `weight ≜ sum
+    list(wt)`, `value ≜ sum list(val)` under the book's names) and let the coreflexive be its use. After the deftab
+    agent lands (same table).
+[ ] Renames — "You should spend More time on renaming instead of giving up": still left in StrDiagNames — row 3
+    (natF/pathF, Edit.pairF/opF, zeroCost, dNE/nelist/NEList: needs theorems moved into sub-namespaces), Tardy, Van,
+    Digits, RT/TB/TT/SL/CL, sub, cond, mem, star/theta, graph/img/leOn, minOf/sums, GCTakeWhile, thinRel, sortRel,
+    H/M, armQ₂, Tex.rlt; and why a one-argument rule prints `f x` from a module but `f(x)` from StrDiagNames
+    (blocks moving Code.reduceFn, Bracket.splitsFn).
 [X] Printer: fix the 4 wrong rules (merged 9fa72d0).
 [-] Printer: rename Lean decls to book names. 5 renamed (text-preserving); 259 unexpanders listed in tmp/rename-rules.tsv: 182 are not pure renames, the rest collide (short names, single letters, symbols, duplicates → dedup, core). 𝒫/ℰ switch: his answer "B", not now; P/E rules stay.
 [X] Printer: symbol rules become Lean notation beside the definition. 6 moved (thin, pcor, bag, min, {x+y∣…}, −); the rest collide with core notation or name core constants.
