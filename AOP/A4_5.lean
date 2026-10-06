@@ -198,6 +198,10 @@ theorem schroeder_right {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C)
 /-- Subtraction `R − S := R ∩ ∼S`. -/
 @[expose] public def sub {A B : 𝒜} (R S : A ⟶ B) : A ⟶ B := R ∩ (∼S)
 
+/-- The book's subtraction `R−S` (B&dM p.159), at `∪`'s level as the book brackets it.  A
+    notation, not an unexpander, so the label printer reads its precedence off the declaration. -/
+infixl:65 " − " => sub
+
 /-- The universal property of subtraction: `R−S ⊑ X ↔ R ⊑ S∪X`. -/
 theorem sub_le_iff {A B : 𝒜} (R S X : A ⟶ B) : sub R S ⊑ X ↔ R ⊑ S ∪ X := by
   show R ∩ (∼S) ⊑ X ↔ R ⊑ S ∪ X

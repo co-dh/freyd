@@ -73,6 +73,10 @@ public theorem coreflexive_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) {a b :
     identity on the elements a test `p : A → Bool` passes. -/
 @[expose] public def pcor (p : A → Bool) : dE A ⟶ dE A := corefl fun x => p x = true
 
+-- A Bool test's coreflexive prints as `pcor(p)`, never as the bare `p`: the test `p : A → Bool`
+-- is not the relation `A ⟶ A`, and `E(p)` of the test would be a different arrow.
+notation:max "pcor(" p ")" => pcor p
+
 public theorem pcor_coreflexive (p : A → Bool) : Coreflexive (pcor p) :=
   le_iff.mpr fun _ _ h => h.1
 

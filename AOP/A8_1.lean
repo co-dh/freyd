@@ -69,6 +69,10 @@ public theorem Λ_comp_supset (W : B ⟶ A) : Λ W ≫ supset = W / (∋ A) := b
 @[expose] public def thinRel (Q : A ⟶ A) : P A ⟶ P A :=
   supset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
 
+-- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
+-- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
+notation:max "thin(" Q ")" => thinRel Q
+
 /-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
     and every member of `P` has a `Q`-lower bound in `Y`.  Stated here, beside the definition it
     reads, because the thinning beads of §9.2 need it as much as `rel.AutoDeriveThin`'s driver

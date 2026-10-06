@@ -559,38 +559,8 @@ open Lean PrettyPrinter in
   | `($_ ($a, $bs,*)) => `(r($a,$bs,*))
   | _ => throw ()
 
--- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
--- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
-notation:max "thin(" Q ")" => thinRel Q
-
--- A Bool test's coreflexive prints as `pcor(p)`, never as the bare `p`: the test `p : A → Bool`
--- is not the relation `A ⟶ A`, and `E(p)` of the test would be a different arrow.
-notation:max "pcor(" p ")" => RelSet.GCTakeWhile.pcor p
-
--- THE SET OF SUMS IS SPELLED AS THE SET IT IS.  `sums xs ys` is the note's `{x+y∣x∈xs∧y∈ys}`,
--- built from the two arguments the term carries; a name says what the point is called and the
--- set-builder says what is IN it, which is what the corner of a distributivity square is read for.
--- A NOTATION for the reason `thin(` is one: no term prints its own brackets.
-notation:max "{x+y∣x∈" xs "∧y∈" ys "}" => RelSet.sums xs ys
-
--- THE LEAST MEMBER IS SPELLED AS THE OPERATOR IT IS — an operator applied takes brackets, so
--- `minOf xs m` is the note's `min(xs)`.  Its second argument is the WITNESS that `xs` has a least
--- member, which the note does not write, so the unexpander drops it and the parser takes it as the
--- hole it is; a notation cannot do that, since a notation supplies every argument.
-syntax:max "min(" term ")" : term
-macro_rules | `(min($xs)) => `(RelSet.minOf $xs _)
-
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.minOf] def unexpandMinOf : Unexpander
-  | `($_ $xs $_m) => `(min($xs))
-  | _ => throw ()
 -- `tail(x)` inside a `⧺` keeps its brackets, which a plain application loses there.
 syntax:max "tail(" term ")" : term
-
--- A DATATYPE'S OBJECT IS SPELLED THE WAY THE NOTE'S OBJECT LANGUAGE SPELLS IT: lower case, and
--- bracketed where the argument is applied — `tree A`, `list⁺ A`, `bag(Job)`.  A NOTATION and not an
--- unexpander, for the reason `thin(` is one above: no term prints its own brackets.
-notation:max "bag(" J ")" => RelSet.Tardy.Bag J
 
 -- The projections' graphs are `π₁`/`π₂` only when the map IS the projection — the bare constant or
 -- its eta-expansion `fun p => p.1` — read off the term, so `fun p => (f p).1` is not taken for one.
@@ -898,10 +868,6 @@ open Lean PrettyPrinter in
 @[app_unexpander mu] def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
-
-/-- The book's subtraction `R−S` (B&dM p.159), at `∪`'s level as the book brackets it.  A
-    notation, not an unexpander, so the label printer reads its precedence off the declaration. -/
-infixl:65 " − " => sub
 
 open Lean PrettyPrinter in
 /-- The rolling rule's hypothesis (B&dM Ex 6.35) in the book's word: `φ` is monotonic. -/
