@@ -669,7 +669,11 @@ def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
         unless rest.isEmpty do
           throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which has fewer factors"
         pure fs
-    Meta.mkLambdaFVars #[s] (mkAppN alt fs).headBeta
+    -- An arm that IS a defined map (`fun u => baseFn u`) is written by its name, `base`; a
+    -- constructor's arm keeps its body, which `bodyLabel` reads (`wrap` at `Unit` is `nil`).
+    let f ← Meta.mkLambdaFVars #[s] (mkAppN alt fs).headBeta
+    let some c := f.eta.getAppFn.constName? | return f
+    return if ((← getEnv).find? c).any (· matches .defnInfo _) then f.eta else f
 
 /-- The arms of a map given by a `match` ON ITS INPUT at a coproduct — the junction `[f,g]` the note
     writes, whether the picture opens it as a tape or a label names it.  `matchMatcherApp?` reads
@@ -1419,6 +1423,24 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
+  if let .const n _ := e.getAppFn then
+    if (← Lean.labelled `diag_unfold).contains n then
+      -- A tagged MAP whose body is a `match` on its input, which `openNoted` leaves closed, is
+      -- written by its arms (`[nil,π₂]`), as `mapLabel` writes its graph — bare, or at a point.
+      if (← branchForm? e).isSome then return ← mapLabel e true
+      if e.isApp && (← branchForm? e.appFn!).isSome then
+        return (← mapLabel e.appFn! true) ++ "(" ++ (← labelTree 0 e.appArg!) ++ ")"
+      -- A tagged RELATION STATED AT POINTS is opened WITHOUT them and keeps them, `(R ∪ S)(u,t)`:
+      -- opened whole, the operator its body is headed by takes the points for its operands.
+      if ← Meta.isProp e then
+        let args := e.getAppArgs
+        let mut k := args.size
+        while k > 0 do
+          unless ← isPoint e (k - 1) do break
+          k := k - 1
+        if k < args.size then
+          return .unit ((← labelTree Prec.atom (mkAppN e.getAppFn (args.extract 0 k)))
+            ++ commaL "(" ")" (← (args.extract k args.size).mapM (labelTree 0)))
   let e' ← openNotedAll e
   if e' != e then return ← labelTree prec e'
   -- A ONE-FIELD RECORD IS ITS FIELD, the rule `plain` already prints by: the object `⟨X⟩` of a

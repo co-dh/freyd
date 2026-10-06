@@ -130,19 +130,14 @@ open Lean PrettyPrinter Delaborator SubExpr in
   unless ci.numFields == 1 && ii.ctors.length == 1 && v.getAppNumArgs == ci.numParams + 1 do failure
   withTheReader SubExpr (fun s => { s with expr := v.appArg! }) delab
 
--- THE JUNCTIONS LEAN DOES NOT STATE AS JUNCTIONS.  Each body below is a pattern match (`con`,
--- `dropFn`, the arms) or a union of two graphs (`partAlg`, `tourAlg`), so `diag_unfold` would
--- print Lean's match or `[a,b] ∪ [a,c]` where the note writes `[a,b ∪ c]`; the spelling stays here
--- until the definition is restated as the junction.
+-- THE ARMS WHOSE BODY IS POINTWISE.  `gArmFn`/`sizeArmFn` (and `kStep`/`bagPenalty` below) compute
+-- on points, so their body prints no arrow; the spelling stays until each is restated point-free.
 open Lean PrettyPrinter in
 /-- The path count is the note's `3^m`; `pow3` sits inside a `Vec` type index, where the label
     printer opens no `diag_unfold`. -/
 @[app_unexpander Vec.pow3] def unexpandPow3 : Unexpander
   | `($_ $m) => `(3 ^ $m)
   | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Knapsack.dropFn] def unexpandKnapDropFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[nil,π₂]")))
 -- The constructor map is `[nil,cons]` only at the empty leaf; a leaf carrying a value is B&dM's
 -- `list⁺` and its map is `[wrap,cons]`.  A DELABORATOR: the leaf type is implicit, so only the term has it.
 open Lean PrettyPrinter Delaborator SubExpr in
@@ -152,21 +147,6 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "wrap"
   let f := mkIdent (Name.mkSimple s!"[{leaf},cons]")
   if args.size == 2 then `($f) else `($f $(← withAppArg delab))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tour.droplAlgFn] def unexpandDroplAlgFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[start,dropl]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tour.droprAlgFn] def unexpandDroprAlgFn : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[start,dropr]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Paragraph.newAlgFn] def unexpandParaNewAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,new]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Paragraph.glueAlgFn] def unexpandParaGlueAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,glue]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Paragraph.partAlg] def unexpandParaPartAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,new ∪ glue]")))
 -- The node arm of `g≜[zero,(𝟙×sz)² opb π₁]`, and of the size algebra `[zero,distr [𝟙×c,𝟙×p] plus]`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.gArmFn] def unexpandBracketGArmFn : Unexpander
@@ -174,14 +154,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.sizeArmFn] def unexpandCodeSizeArmFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))
--- B&dM p.225's `edit = ⦇[base, step]⦈` (`editAlg_junc`): the bead keeps its term, whose naturality
--- `editAlg_laxNatural` states, so this is a spelling and not a `diag_unfold`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Edit.editAlg] def unexpandEditAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[start,dropl ∪ dropr]")))
+-- The algebras a section names but the note writes by their body: a union of two graphs, or the
+-- graph of a map given by a `match` on a coproduct, whose arms `mapLabel` reads as the junction.
+attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
+  RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Paragraph.newAlgFn
+  RelSet.Paragraph.glueAlgFn RelSet.Edit.baseStepFn
 -- `Op.del` shares its last component with another `del`, so the printer would qualify it; the
 -- edit operation is the book's bare `del a` (p.225).
 open Lean PrettyPrinter in
@@ -1651,11 +1628,8 @@ open Lean PrettyPrinter in
   | `($_ $q:ident) =>
     `($(mkIdent (Name.mkSimple (q.getId.eraseMacroScopes.toString (escape := false) ++ "₂"))))
   | _ => `($(mkIdent `Q₂))
--- The edit algebra is the junction `[base,step]`; its arms are declarations of their own
--- (`baseFn`, `stepFn`), so a term at one arm is spelled by that arm and no rule here guesses it.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditBaseStep : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
+-- The edit algebra's arms are declarations of their own (`baseFn`, `stepFn`), so a term at one arm
+-- is spelled by that arm and no rule here guesses it.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.stepFn] def unexpandEditStepFn : Unexpander | _ => `($(mkIdent `step))
 open Lean PrettyPrinter in
