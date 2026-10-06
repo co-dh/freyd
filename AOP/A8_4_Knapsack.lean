@@ -378,7 +378,7 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
         exact ⟨subseqP.weaken hsy, hwy⟩
 
 /-- `R ≜ value ≥ value°` is connected: any two packings compare by value one way or the other. -/
-public theorem R_connected : Freyd.Alg.Connected (R vol) :=
+public theorem R_connected : Freyd.Alg.connected (R vol) :=
   le_iff.mpr fun x y _ => (Int.le_total (total vol y) (total vol x)).imp id id
 
 /-- B&dM's `g₁ ≜ list(cons) filter(within w)` (§8.4, p.206): extend each packing by the item, keep those that fit. -/

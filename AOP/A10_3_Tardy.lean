@@ -440,7 +440,7 @@ public theorem add_le (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
 public theorem bagify_recip_cata [DecidableEq Job] :
     bagAlg ≫ (bagify (Job := Job))°
       = (F Unit Job).map (bagify (Job := Job))°
-          ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add := by
+          ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil add := by
   apply hom_ext; intro u w
   rw [comp_apply, comp_apply]
   cases u with
@@ -457,7 +457,7 @@ public theorem bagify_recip_cata [DecidableEq Job] :
       cases v with
       | inr _ => exact hv.elim
       | inl d' =>
-        have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nilR add d' w).mp hj
+        have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nil add d' w).mp hj
         subst hw
         exact ⟨nilBag, rfl, rfl⟩
   | inr p =>
@@ -477,7 +477,7 @@ public theorem bagify_recip_cata [DecidableEq Job] :
         obtain ⟨x, j'⟩ := q
         obtain ⟨hb, rfl⟩ := hv
         obtain rfl : b = bagifyFn x := hb
-        exact ⟨_, rfl, Quotient.sound (blist_add ((ListRel.junc_sum_inr nilR add _ w).mp hj)).symm⟩
+        exact ⟨_, rfl, Quotient.sound (blist_add ((ListRel.junc_sum_inr nil add _ w).mp hj)).symm⟩
 
 /-! ## `cost` as an arrow, and the calculation of (10.3)'s tail bound (B&dM p.256) -/
 
@@ -538,7 +538,7 @@ public theorem cost_alg_bmax :
 
 /-- `[nil,outl R]⊑[zero,outl cost]≤cost°`: the definition of `R`, and `nil⊑zero≤cost°`. -/
 public theorem nil_R_le_cost :
-    junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+    junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
         ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt)
       ⊑ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
           ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
@@ -546,7 +546,7 @@ public theorem nil_R_le_cost :
   le_iff.mpr fun v w hj => by
     cases v with
     | inl d =>
-      have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nilR _ d w).mp hj
+      have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nil _ d w).mp hj
       subst hw
       exact ⟨0, (ListRel.junc_sum_inl _ _ _ _).mpr rfl, 0, Int.le_refl 0, rfl⟩
     | inr q =>
@@ -563,11 +563,11 @@ public theorem bagify_recip_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt 
       ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
   calc bagAlg ≫ (bagify (Job := Job))°
       = (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add := bagify_recip_cata
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil add := bagify_recip_cata
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
             ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt) :=
-        comp_mono_left _ (junc_mono _ (le_refl nilR) (add_le ct dt wt hct hwt))
+        comp_mono_left _ (junc_mono _ (le_refl nil) (add_le ct dt wt hct hwt))
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
             ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
@@ -1017,13 +1017,13 @@ private theorem notNull_comp_le {c : RelSet.{0}} (S : Bag Job ⟶ c) :
     guard is written out where `cond` would take `corNeg null`. -/
 @[expose] public def schedule : Bag Job ⟶ dSL Unit Job :=
   mu fun X : Bag Job ⟶ dSL Unit Job =>
-    (null ≫ bangBag ≫ nilR)
+    (null ≫ bangBag ≫ nil)
       ∪ (notNull ≫ pick
           ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))
 
 private theorem scheduleBody_monotonic :
     Monotonic (fun X : Bag Job ⟶ dSL Unit Job =>
-      (null ≫ bangBag ≫ nilR)
+      (null ≫ bangBag ≫ nil)
         ∪ (notNull ≫ pick
             ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))) :=
   fun h =>
@@ -1034,7 +1034,7 @@ private theorem scheduleBody_monotonic :
     fixed point being a fixed point (Theorem 6.1). -/
 public theorem schedule_unfold :
     schedule pick
-      = (null ≫ bangBag ≫ nilR)
+      = (null ≫ bangBag ≫ nil)
         ∪ (notNull ≫ pick
             ≫ rprodMap (schedule pick) (𝟙 (⟨Job⟩ : RelSet.{0}))
             ≫ arm₂ (graph (con (L := Unit) (E := Job)))) :=
@@ -1073,14 +1073,14 @@ public theorem pick_branch_simple {X : Bag Job ⟶ dSL Unit Job} (hX : Simple X)
 /-- The base case: on the empty bag the search `est(Q)Λ[nil,snag]°` leaves `nil` itself, so the
     guarded constant `null≫nil` is below the `nil` arm of the specification's body. -/
 private theorem null_nil_le :
-    null ≫ bangBag ≫ nilR
+    null ≫ bangBag ≫ nil
       ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt))
           ≫ arm₁ (graph (con (L := Unit) (E := Job))) := by
   have haux : null ≫ bangBag ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt)) :=
     le_iff.mpr fun b u h => by
       obtain ⟨_b', ⟨_, hb0⟩, _⟩ := h
       exact (Λ_comp_est_apply _ _ b u).mpr ⟨hb0, fun _z _ => Int.le_refl _⟩
-  have h := comp_mono_right haux (nilR (E := Job))
+  have h := comp_mono_right haux (nil (E := Job))
   rw [Cat.assoc, Cat.assoc] at h
   exact h
 
@@ -1452,7 +1452,7 @@ public theorem add_strictNatural :
 
 /-- **`nil` IS LAX NATURAL** in the element type: `list(S)` relates `[]` to `[]`. -/
 public theorem nilR_laxNatural :
-    LaxNatural (snocRelator Unit) (Relator.const (dL Unit)) (fun a => nilR (E := a.carrier)) := by
+    LaxNatural (snocRelator Unit) (Relator.const (dL Unit)) (fun a => nil (E := a.carrier)) := by
   intro x y S
   refine le_iff.mpr fun d ys h => ?_
   obtain ⟨d', _, hys⟩ := h
@@ -1464,7 +1464,7 @@ public theorem nilR_laxNatural :
 public theorem bagAdd_laxNatural :
     LaxNatural (snocRelator Unit)
       (Relator.sum (Relator.const (dL Unit)) (Relator.prod bag (Relator.idRelator RelSet.{0})))
-      (fun a => junc (sumCop (dL Unit) ⟨(Bag a.carrier).carrier × a.carrier⟩) nilR
+      (fun a => junc (sumCop (dL Unit) ⟨(Bag a.carrier).carrier × a.carrier⟩) nil
         (prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
           (bagify (Job := a.carrier))° (𝟙 a) ≫ add)) := by
   intro A B R

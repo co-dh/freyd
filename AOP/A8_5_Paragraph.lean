@@ -77,7 +77,7 @@ open Lean PrettyPrinter in
   | ConsList.cons a xs => len a + widthFn len xs + 1
 
 /-- `head : Line ⟵ Para` — the first line of a paragraph. -/
-@[expose] public def headLine : Para Word → Line Word
+@[expose] public def head : Para Word → Line Word
   | ConsList.wrap xs => xs
   | ConsList.cons xs _ => xs
 
@@ -88,7 +88,7 @@ open Lean PrettyPrinter in
   | ConsList.cons xs xss => ConsList.cons (ConsList.cons a xs) xss
 
 public theorem headLine_glue (a : Word) (p : Para Word) :
-    headLine (glue a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
+    head (glue a p) = ConsList.cons a (head p) := by cases p <;> rfl
 
 /-- **para-defn**: `sqr`, the summand of `collect ≜ list(sqr) sum`. -/
 @[expose] public def sqr (n : Int) : Int := n * n
@@ -127,7 +127,7 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
 /-- **para-defn**: `ok w`, the coreflexive on `[x]⧺xs` with `width x ≤ w` — only the FIRST
     line is tested. -/
 @[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => xss = yss ∧ widthFn len (headLine xss) ≤ w
+  fun xss yss => xss = yss ∧ widthFn len (head xss) ≤ w
 
 public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
@@ -154,18 +154,18 @@ public theorem R_eq :
 
 /-- **para-defn**: `Q ≜ R ∩ (head head°)` — no more wasteful, and with the same first line. -/
 @[expose] public def Q (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss ∧ headLine xss = headLine yss
+  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss ∧ head xss = head yss
 
 /-- `Q = R ∩ (head head°)`, point-free. -/
 public theorem Q_eq :
     Q len w
-      = R len w ∩ (graph headLine ≫ (graph headLine : dPara Word ⟶ ⟨Line Word⟩)°) := by
+      = R len w ∩ (graph head ≫ (graph head : dPara Word ⟶ ⟨Line Word⟩)°) := by
   apply hom_ext; intro p q
   constructor
-  · rintro ⟨hr, hh⟩; exact ⟨hr, headLine p, rfl, hh⟩
+  · rintro ⟨hr, hh⟩; exact ⟨hr, head p, rfl, hh⟩
   · rintro ⟨hr, m, hm, hm'⟩
     refine ⟨hr, ?_⟩
-    rw [(show m = headLine p from hm)] at hm'
+    rw [(show m = head p from hm)] at hm'
     exact hm'
 
 /-- `xss R yss` iff `xss` wastes no more than `yss`: the pointwise reading of `R_eq`. -/
@@ -174,7 +174,7 @@ public theorem R_apply (xss yss : Para Word) :
 
 /-- `xss Q yss` iff `xss` wastes no more than `yss` and has the same first line. -/
 public theorem Q_apply (xss yss : Para Word) :
-    Q len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss ∧ headLine xss = headLine yss := Iff.rfl
+    Q len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss ∧ head xss = head yss := Iff.rfl
 
 /-- `xss (fits w) yss` iff `xss = yss` and every line of `xss` is at most `w` wide. -/
 public theorem fits_apply (xss yss : Para Word) :
@@ -182,7 +182,7 @@ public theorem fits_apply (xss yss : Para Word) :
 
 /-- `xss (ok w) yss` iff `xss = yss` and the first line of `xss` is at most `w` wide. -/
 public theorem ok_apply (xss yss : Para Word) :
-    ok (len := len) w xss yss ↔ xss = yss ∧ widthFn len (headLine xss) ≤ w := Iff.rfl
+    ok (len := len) w xss yss ↔ xss = yss ∧ widthFn len (head xss) ≤ w := Iff.rfl
 
 public theorem Q_le_R : Q len w ⊑ R len w := le_iff.mpr fun _ _ h => h.1
 
@@ -368,7 +368,7 @@ end Natural
     line is wider than the line it was glued to. -/
 public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para Word) :
     allFitP len w (glue a p)
-      ↔ allFitP len w p ∧ widthFn len (headLine (glue a p)) ≤ w := by
+      ↔ allFitP len w p ∧ widthFn len (head (glue a p)) ≤ w := by
   have hgrow : ∀ l : Line Word, widthFn len l ≤ widthFn len (ConsList.cons a l) := by
     intro l
     have := hlen a
@@ -438,9 +438,9 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
         obtain ⟨hab, hQ⟩ := hFv
         obtain rfl : a = b := hab
         have hwaste : wasteFn len w x ≤ wasteFn len w y := hQ.1
-        have hhead : headLine x = headLine y := hQ.2
+        have hhead : head x = head y := hQ.2
         -- the two glued paragraphs have the same first line, so `ok w` transfers
-        have hokx : widthFn len (headLine (glue a x)) ≤ w := by
+        have hokx : widthFn len (head (glue a x)) ≤ w := by
           rw [headLine_glue, hhead, ← headLine_glue a y]
           exact hok
         refine ⟨glue a x, ⟨glue a x, rfl, rfl, hokx⟩, ?_, ?_⟩
@@ -460,22 +460,22 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
               have hz : sqr (w - widthFn len lx) = 0 := by omega
               have hlx : widthFn len lx = w := by
                 have := sqr_eq_zero hz; omega
-              have hly : ly = lx := (show headLine (ConsList.cons lx x') = headLine
+              have hly : ly = lx := (show head (ConsList.cons lx x') = head
                 (ConsList.wrap ly) from hhead).symm
               have hokw : len a + widthFn len ly + 1 ≤ w := hok
               have := hlen a
               rw [hly, hlx] at hokw
               omega
             | cons ly y' =>
-              have hly : ly = lx := (show headLine (ConsList.cons lx x')
-                = headLine (ConsList.cons ly y') from hhead).symm
+              have hly : ly = lx := (show head (ConsList.cons lx x')
+                = head (ConsList.cons ly y') from hhead).symm
               subst hly
               show sqr (w - widthFn len (ConsList.cons a ly)) + wasteFn len w x'
                 ≤ sqr (w - widthFn len (ConsList.cons a ly)) + wasteFn len w y'
               have hx : sqr (w - widthFn len ly) + wasteFn len w x'
                 ≤ sqr (w - widthFn len ly) + wasteFn len w y' := hwaste
               omega
-        · show headLine (glue a x) = headLine (glue a y)
+        · show head (glue a x) = head (glue a y)
           rw [headLine_glue, headLine_glue, hhead]
 
 /-- **para-mono**, the FALSE row (B&dM p.209, "the obvious greedy algorithm does not solve this

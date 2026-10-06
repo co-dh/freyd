@@ -589,7 +589,7 @@ public theorem thinning_paths_alg_transpose_exec [DecidableEq A] (wt : A → A �
     (x : List A ⊕ (List A × List (ConsList A A))) :
     (Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR))
-        ≫ bigUnion ≫ thinRel (pathQ wt)) (toS x) (memS (row3 wt x)) := by
+        ≫ union ≫ thinRel (pathQ wt)) (toS x) (memS (row3 wt x)) := by
   rw [Λ_eq_classifier, Λ_eq_classifier]
   refine ⟨_, rfl, fun T => ∃ z ∈ cpl x, T = fun p => p ∈ sExec z,
     (powerRel_apply _ _ _).mpr ⟨?_, ?_⟩, fun p => ∃ z ∈ cpl x, p ∈ sExec z,
@@ -644,7 +644,7 @@ public theorem thinning_paths_alg_distrib_exec [DecidableEq A] (wt : A → A →
     (x : List A ⊕ (List A × List (ConsList A A))) :
     (Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ thinRel (pathQ wt))
-        ≫ bigUnion) (toS x) (memS (row4 wt x)) := by
+        ≫ union) (toS x) (memS (row4 wt x)) := by
   have hz : ∀ z, (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ thinRel (pathQ wt))
       (toS1 z) (memS (thinExec wt (sExec z))) := by
     intro z
@@ -677,7 +677,7 @@ public theorem thinning_paths_alg_elim_exec (wt : A → A → Nat)
     (hx : ∀ vs ps, x = .inr (vs, ps) → ps ≠ []) :
     (Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ est (pathR wt)
-          ≫ singletonMap) ≫ bigUnion) (toS x) (memS (row5 wt x)) := by
+          ≫ singletonMap) ≫ union) (toS x) (memS (row5 wt x)) := by
   have hsome : ∀ z ∈ cpl x, ∃ p, minPath wt (sExec z) = some p := by
     intro z hz
     apply minPath_isSome

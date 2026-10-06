@@ -474,7 +474,7 @@ public theorem relSetEmpty_zero :
   uncovered member empties `P(est(R))` at `xss`, hence empties `P(est(R)) est(R)` there. -/
 public theorem powerRel_est_lt_bigUnion :
     ∃ (A : RelSet.{0}) (R : A ⟶ A), 𝟙 A ⊑ R ∧ R ≫ R ⊑ R ∧
-      ¬ (bigUnion ≫ est R ⊑ powerRel (est R) ≫ est R) := by
+      ¬ (union ≫ est R ⊑ powerRel (est R) ≫ est R) := by
   refine ⟨⟨Unit⟩, 𝟙 _, le_refl _, ?_, ?_⟩
   · rw [Cat.id_comp]; exact le_refl _
   intro h
@@ -485,8 +485,8 @@ public theorem powerRel_est_lt_bigUnion :
   rw [(est_eq_eps_iff (𝟙 (⟨Unit⟩ : RelSet.{0}))).mpr htop] at h
   -- `union xss = s ∋ ()`, so the left side relates `xss` to `()`
   have hbe : (∋ (P (⟨Unit⟩ : RelSet.{0})) ≫ ∋ (⟨Unit⟩ : RelSet.{0}))
-      = bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0}) := (Λ_eps_eq' _).symm
-  have hmem : (bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0})) (fun _ => True) () := by
+      = union ≫ ∋ (⟨Unit⟩ : RelSet.{0}) := (Λ_eps_eq' _).symm
+  have hmem : (union ≫ ∋ (⟨Unit⟩ : RelSet.{0})) (fun _ => True) () := by
     rw [← hbe]; exact ⟨fun _ => True, trivial, trivial⟩
   obtain ⟨ys, hys, -⟩ := RelSet.le_iff.mp h (fun _ => True) () hmem
   -- term₁ of `P(∋)` at the member `∅`: it would have to `∋`-reach into `ys`

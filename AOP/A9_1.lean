@@ -719,7 +719,7 @@ private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = class
 /-- **`α = [nil,snoc]`** — the initial algebra as the JUNCTION the note writes, at the one label
     where `wrap` carries nothing.  Every §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this
     equation and then the relator sliding into the bracket. -/
-public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _) nilR snocR := by
+public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _) nil snocR := by
   apply hom_ext; intro u r
   constructor
   · intro h

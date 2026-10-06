@@ -161,7 +161,7 @@ public theorem singletonMap_comp_lb (R : A ⟶ A) : singletonMap ≫ (((∋ A)°
 /-- **(7.3)**: `(R/∋)·union = (R/∋)/∋`, mirrored: `bigUnion ≫ ((∋a)° \ R) =
     ((∋[a])° \ ((∋a)° \ R))`, via `bigUnion = Λ(∋[a]≫∋a)`, (7.2), and `leftDiv_comp`. -/
 public theorem bigUnion_comp_lb (R : A ⟶ A) :
-    bigUnion ≫ (((∋ A)°) \ R) =
+    union ≫ (((∋ A)°) \ R) =
       (((∋ (P A))°) \ (((∋ A)°) \ R)) := by
   show Λ (∋ (P A) ≫ ∋ A) ≫ (((∋ A)°) \ R) =
       (((∋ (P A))°) \ (((∋ A)°) \ R))
@@ -566,7 +566,7 @@ public theorem powerRel_map_comp_est {f : A ⟶ B} (hf : Map f) (R : B ⟶ B) :
     `(∋[a]·∋a)°·(powerRel(est R)·est R) ⊑ R°` chains `powerRel_term1_cancel (est R)` with
     the `hb` bound twice and `htrans` transposed. -/
 public theorem powerRel_est_le_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
-    powerRel (est R) ≫ est R ⊑ bigUnion ≫ est R := by
+    powerRel (est R) ≫ est R ⊑ union ≫ est R := by
   show powerRel (est R) ≫ est R
       ⊑ Λ (∋ (P A) ≫ ∋ A) ≫ est R
   have htrans' : R° ≫ R° ⊑ R° := by
@@ -694,36 +694,36 @@ public theorem powerRel_dom_comp_existsImage_le {A B : 𝒜} (S : A ⟶ B) :
     lower bound below), and every member set is `R`-below it (`∋'union est(R) ⊑ ∈\R°`, since
     `union` is simple and `∈ est(R) ⊑ R°`). -/
 public theorem bigUnion_comp_est_le (R : A ⟶ A) :
-    bigUnion ≫ est R ⊑ existsImage (est R) ≫ est R := by
+    union ≫ est R ⊑ existsImage (est R) ≫ est R := by
   have hmap : Map (existsImage (est R)) := Λ_is_map' _
-  have hUmap : Map (bigUnion (a := A)) := Λ_is_map' _
+  have hUmap : Map (union (a := A)) := Λ_is_map' _
   have heps : existsImage (est R) ≫ ∋ A = ∋ (P A) ≫ est R :=
     existsImage_eps (est R)
-  have hbeps : ∋ (P A) ≫ ∋ A = bigUnion ≫ ∋ A := (Λ_eps_eq' _).symm
-  have hlb : (∋ (P A))° ≫ (bigUnion ≫ est R) ⊑ ((∋ A)° \ R°) := by
+  have hbeps : ∋ (P A) ≫ ∋ A = union ≫ ∋ A := (Λ_eps_eq' _).symm
+  have hlb : (∋ (P A))° ≫ (union ≫ est R) ⊑ ((∋ A)° \ R°) := by
     apply (le_leftDiv_iff _ _ _).mpr
-    have e1 : (∋ A)° ≫ ((∋ (P A))° ≫ (bigUnion ≫ est R))
-        = ((∋ (P A) ≫ ∋ A)°) ≫ (bigUnion ≫ est R) := by
+    have e1 : (∋ A)° ≫ ((∋ (P A))° ≫ (union ≫ est R))
+        = ((∋ (P A) ≫ ∋ A)°) ≫ (union ≫ est R) := by
       rw [Allegory.recip_comp, Cat.assoc]
     rw [e1, hbeps, Allegory.recip_comp, Cat.assoc,
-      ← Cat.assoc ((bigUnion : P (P A) ⟶
-        P A)°) bigUnion (est R)]
+      ← Cat.assoc ((union : P (P A) ⟶
+        P A)°) union (est R)]
     refine le_trans (comp_mono_left _ (comp_mono_right hUmap.2 (est R))) ?_
     rw [Cat.id_comp]
     exact recip_eps_comp_est_le R
-  have hmem : bigUnion ≫ est R ⊑ ∋ (P A) ≫ est R := by
-    have hsub : bigUnion ≫ est R ⊑ ∋ (P A) ≫ ∋ A := by
-      have h1 : bigUnion ≫ est R ⊑ bigUnion ≫ ∋ A :=
+  have hmem : union ≫ est R ⊑ ∋ (P A) ≫ est R := by
+    have hsub : union ≫ est R ⊑ ∋ (P A) ≫ ∋ A := by
+      have h1 : union ≫ est R ⊑ union ≫ ∋ A :=
         comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)
       rwa [← hbeps] at h1
     refine le_trans (le_trans (le_inter hsub (le_refl _))
-      (modular_le_right (∋ (P A)) (∋ A) (bigUnion ≫ est R))) ?_
+      (modular_le_right (∋ (P A)) (∋ A) (union ≫ est R))) ?_
     exact comp_mono_left _ (inter_mono (le_refl _) hlb)
   apply (map_shunt_left hmap _ _).mp
   apply le_est_iff.mpr
   refine ⟨(map_shunt_left hmap _ _).mpr (by rw [heps]; exact hmem), ?_⟩
-  have e3 : (∋ A)° ≫ ((existsImage (est R))° ≫ (bigUnion ≫ est R))
-      = ((est R)° ≫ (∋ (P A))°) ≫ (bigUnion ≫ est R) := by
+  have e3 : (∋ A)° ≫ ((existsImage (est R))° ≫ (union ≫ est R))
+      = ((est R)° ≫ (∋ (P A))°) ≫ (union ≫ est R) := by
     rw [← Cat.assoc, ← Allegory.recip_comp, heps, Allegory.recip_comp]
   rw [e3]
   refine le_trans (comp_mono_right (comp_mono_right
@@ -738,7 +738,7 @@ public theorem bigUnion_comp_est_le (R : A ⟶ A) :
     is `R` a preorder, but reflexivity is never used: only the `⊑` half constrains `R`, and it
     asks for transitivity alone. -/
 public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
-    powerRel (est R) ≫ est R = powerRel (dom (est R)) ≫ (bigUnion ≫ est R) := by
+    powerRel (est R) ≫ est R = powerRel (dom (est R)) ≫ (union ≫ est R) := by
   apply le_antisymm
   · have hcor : powerRel (dom (est R)) ⊑ 𝟙 (P (P A)) := by
       have h := powerRel_mono (dom_coreflexive (est R)); rwa [powerRel_id] at h
@@ -746,9 +746,9 @@ public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
         ⊑ (powerRel (dom (est R)) ≫ powerRel (est R)) ≫ est R :=
           comp_mono_right ((dom_UP hcor).mp (dom_powerRel_le (est R))) _
       _ = powerRel (dom (est R)) ≫ (powerRel (est R) ≫ est R) := Cat.assoc _ _ _
-      _ ⊑ powerRel (dom (est R)) ≫ (bigUnion ≫ est R) :=
+      _ ⊑ powerRel (dom (est R)) ≫ (union ≫ est R) :=
           comp_mono_left _ (powerRel_est_le_bigUnion htrans)
-  · calc powerRel (dom (est R)) ≫ (bigUnion ≫ est R)
+  · calc powerRel (dom (est R)) ≫ (union ≫ est R)
         ⊑ powerRel (dom (est R)) ≫ (existsImage (est R) ≫ est R) :=
           comp_mono_left _ (bigUnion_comp_est_le R)
       _ = (powerRel (dom (est R)) ≫ existsImage (est R)) ≫ est R := (Cat.assoc _ _ _).symm

@@ -141,56 +141,56 @@ public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
   map_mono h := journey_mono h
 
 /-- `head` of a journey. -/
-@[expose] public def hd : Journey City → City
+@[expose] public def head : Journey City → City
   | ConsList.wrap p => p.1
   | ConsList.cons a _ => a
 
 /-- **tour-defn**: `next ≜ tail head`, the second city of a journey. -/
-@[expose] public def nxt : Journey City → City
+@[expose] public def next : Journey City → City
   | ConsList.wrap p => p.2
-  | ConsList.cons _ xs => hd xs
+  | ConsList.cons _ xs => head xs
 
 /-- `[a]⧺xs` with the old head dropped — what `dropl` does to the outward journey. -/
 @[expose] public def replaceHead (a : City) : Journey City → Journey City
   | ConsList.wrap p => ConsList.wrap (a, p.2)
   | ConsList.cons _ xs => ConsList.cons a xs
 
-public theorem hd_replaceHead (a : City) (x : Journey City) : hd (replaceHead a x) = a := by
+public theorem hd_replaceHead (a : City) (x : Journey City) : head (replaceHead a x) = a := by
   cases x <;> rfl
 
-public theorem nxt_replaceHead (a : City) (x : Journey City) : nxt (replaceHead a x) = nxt x := by
+public theorem nxt_replaceHead (a : City) (x : Journey City) : next (replaceHead a x) = next x := by
   cases x <;> rfl
 
 /-- **tour-defn**: `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`. -/
 @[expose] public def outcost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc p
-  | ConsList.cons a xs => tc (a, hd xs) + outcost tc xs
+  | ConsList.cons a xs => tc (a, head xs) + outcost tc xs
 
 /-- **tour-defn**: `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`. -/
 @[expose] public def incost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc (p.2, p.1)
-  | ConsList.cons a xs => tc (hd xs, a) + incost tc xs
+  | ConsList.cons a xs => tc (head xs, a) + incost tc xs
 
 /-- **tour-defn**: `cost (xs,ys)=outcost xs+incost ys`. -/
 @[expose] public def cost (tc : City × City → Int) (t : Tour City) : Int :=
   outcost tc t.1 + incost tc t.2
 
 public theorem outcost_replaceHead (a : City) (x : Journey City) :
-    outcost tc (replaceHead a x) = outcost tc x - tc (hd x, nxt x) + tc (a, nxt x) := by
+    outcost tc (replaceHead a x) = outcost tc x - tc (head x, next x) + tc (a, next x) := by
   cases x with
   | wrap p => show tc (a, p.2) = tc (p.1, p.2) - tc (p.1, p.2) + tc (a, p.2); omega
   | cons b x =>
-    show tc (a, hd x) + outcost tc x
-      = tc (b, hd x) + outcost tc x - tc (b, hd x) + tc (a, hd x)
+    show tc (a, head x) + outcost tc x
+      = tc (b, head x) + outcost tc x - tc (b, head x) + tc (a, head x)
     omega
 
 public theorem incost_replaceHead (a : City) (x : Journey City) :
-    incost tc (replaceHead a x) = incost tc x - tc (nxt x, hd x) + tc (nxt x, a) := by
+    incost tc (replaceHead a x) = incost tc x - tc (next x, head x) + tc (next x, a) := by
   cases x with
   | wrap p => show tc (p.2, a) = tc (p.2, p.1) - tc (p.2, p.1) + tc (p.2, a); omega
   | cons b x =>
-    show tc (hd x, a) + incost tc x
-      = tc (hd x, b) + incost tc x - tc (hd x, b) + tc (hd x, a)
+    show tc (head x, a) + incost tc x
+      = tc (head x, b) + incost tc x - tc (head x, b) + tc (head x, a)
     omega
 
 /-- **tour-defn**: `dropl (a,([b]⧺xs,ys))=([a]⧺xs,[a]⧺ys)` — drop the head of the outward
@@ -206,9 +206,9 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
     + tc(head y,a)` — the step reads both heads and the outward second city. -/
 public theorem cost_dropl (a : City) (t : Tour City) :
     cost tc (droplFn a t)
-      = cost tc t + tc (a, nxt t.1) - tc (hd t.1, nxt t.1) + tc (hd t.2, a) := by
-  show outcost tc (replaceHead a t.1) + (tc (hd t.2, a) + incost tc t.2)
-    = outcost tc t.1 + incost tc t.2 + tc (a, nxt t.1) - tc (hd t.1, nxt t.1) + tc (hd t.2, a)
+      = cost tc t + tc (a, next t.1) - tc (head t.1, next t.1) + tc (head t.2, a) := by
+  show outcost tc (replaceHead a t.1) + (tc (head t.2, a) + incost tc t.2)
+    = outcost tc t.1 + incost tc t.2 + tc (a, next t.1) - tc (head t.1, next t.1) + tc (head t.2, a)
   rw [outcost_replaceHead]
   omega
 
@@ -216,9 +216,9 @@ public theorem cost_dropl (a : City) (t : Tour City) :
     + tc(next y,a)`. -/
 public theorem cost_dropr (a : City) (t : Tour City) :
     cost tc (droprFn a t)
-      = cost tc t + tc (a, hd t.1) - tc (nxt t.2, hd t.2) + tc (nxt t.2, a) := by
-  show tc (a, hd t.1) + outcost tc t.1 + incost tc (replaceHead a t.2)
-    = outcost tc t.1 + incost tc t.2 + tc (a, hd t.1) - tc (nxt t.2, hd t.2) + tc (nxt t.2, a)
+      = cost tc t + tc (a, head t.1) - tc (next t.2, head t.2) + tc (next t.2, a) := by
+  show tc (a, head t.1) + outcost tc t.1 + incost tc (replaceHead a t.2)
+    = outcost tc t.1 + incost tc t.2 + tc (a, head t.1) - tc (next t.2, head t.2) + tc (next t.2, a)
   rw [incost_replaceHead]
   omega
 
@@ -238,19 +238,19 @@ public theorem R_eq :
 
 /-- **tour-defn**: `Q ≜ R ∩ (next2 next2°)` — the note's order, `next2 ≜ next×next`. -/
 @[expose] public def Q (tc : City × City → Int) : dTour City ⟶ dTour City :=
-  fun t t' => cost tc t ≤ cost tc t' ∧ nxt t.1 = nxt t'.1 ∧ nxt t.2 = nxt t'.2
+  fun t t' => cost tc t ≤ cost tc t' ∧ next t.1 = next t'.1 ∧ next t.2 = next t'.2
 
 /-- `Qc ≜ Q ∩ (head2 head2°)` — `Q` with the invariant the book appeals to on p.215 ("tours of
     the same input") written down: the two candidates start from the same city. -/
 @[expose] public def Qc (tc : City × City → Int) : dTour City ⟶ dTour City :=
-  fun t t' => cost tc t ≤ cost tc t' ∧ (nxt t.1 = nxt t'.1 ∧ nxt t.2 = nxt t'.2)
-    ∧ (hd t.1 = hd t'.1 ∧ hd t.2 = hd t'.2)
+  fun t t' => cost tc t ≤ cost tc t' ∧ (next t.1 = next t'.1 ∧ next t.2 = next t'.2)
+    ∧ (head t.1 = head t'.1 ∧ head t.2 = head t'.2)
 
 /-- **tour-defn**: `next2 ≜ next×next`, the second cities of both journeys. -/
-@[expose] public def next2 (t : Tour City) : City × City := (nxt t.1, nxt t.2)
+@[expose] public def next2 (t : Tour City) : City × City := (next t.1, next t.2)
 
 /-- **tour-defn**: `head2 ≜ head×head`, the first cities of both journeys. -/
-@[expose] public def head2 (t : Tour City) : City × City := (hd t.1, hd t.2)
+@[expose] public def head2 (t : Tour City) : City × City := (head t.1, head t.2)
 
 /-- `t R t′` iff `t` costs no more than `t′`: the pointwise reading of `R_eq`. -/
 public theorem R_apply (t t' : Tour City) : R tc t t' ↔ cost tc t ≤ cost tc t' := Iff.rfl
@@ -262,8 +262,8 @@ public theorem Qc_eq :
   apply hom_ext; intro t t'
   constructor
   · rintro ⟨hc, ⟨hn1, hn2⟩, hh1, hh2⟩
-    exact ⟨⟨hc, next2 t, rfl, (by rw [hn1, hn2] : (nxt t.1, nxt t.2) = (nxt t'.1, nxt t'.2))⟩,
-      head2 t, rfl, (by rw [hh1, hh2] : (hd t.1, hd t.2) = (hd t'.1, hd t'.2))⟩
+    exact ⟨⟨hc, next2 t, rfl, (by rw [hn1, hn2] : (next t.1, next t.2) = (next t'.1, next t'.2))⟩,
+      head2 t, rfl, (by rw [hh1, hh2] : (head t.1, head t.2) = (head t'.1, head t'.2))⟩
   · rintro ⟨⟨hc, m, hm, hm'⟩, k, hk, hk'⟩
     have hn : next2 t = next2 t' := (hm : m = next2 t).symm.trans hm'
     have hh : head2 t = head2 t' := (hk : k = head2 t).symm.trans hk'
@@ -271,8 +271,8 @@ public theorem Qc_eq :
 
 /-- `t Qc t′` iff `t` costs no more than `t′` and both journeys share their first two cities. -/
 public theorem Qc_apply (t t' : Tour City) :
-    Qc tc t t' ↔ cost tc t ≤ cost tc t' ∧ (nxt t.1 = nxt t'.1 ∧ nxt t.2 = nxt t'.2)
-      ∧ (hd t.1 = hd t'.1 ∧ hd t.2 = hd t'.2) := Iff.rfl
+    Qc tc t t' ↔ cost tc t ≤ cost tc t' ∧ (next t.1 = next t'.1 ∧ next t.2 = next t'.2)
+      ∧ (head t.1 = head t'.1 ∧ head t.2 = head t'.2) := Iff.rfl
 
 public theorem Qc_le_Q : Qc tc ⊑ Q tc := le_iff.mpr fun _ _ h => ⟨h.1, h.2.1⟩
 
@@ -493,19 +493,19 @@ public theorem tour_mono_dropl : Freyd.Alg.Pres (F := F (City × City) City) (gr
         obtain ⟨hab, hQ⟩ := hFv
         obtain rfl : a = b := hab
         have hcost : cost tc t ≤ cost tc t' := hQ.1
-        have hn1 : nxt t.1 = nxt t'.1 := hQ.2.1.1
-        have hn2 : nxt t.2 = nxt t'.2 := hQ.2.1.2
-        have hh1 : hd t.1 = hd t'.1 := hQ.2.2.1
-        have hh2 : hd t.2 = hd t'.2 := hQ.2.2.2
+        have hn1 : next t.1 = next t'.1 := hQ.2.1.1
+        have hn2 : next t.2 = next t'.2 := hQ.2.1.2
+        have hh1 : head t.1 = head t'.1 := hQ.2.2.1
+        have hh2 : head t.2 = head t'.2 := hQ.2.2.2
         refine ⟨droplFn a t, rfl, ?_, ⟨?_, ?_⟩, ?_, ?_⟩
         · show cost tc (droplFn a t) ≤ cost tc (droplFn a t')
           rw [cost_dropl, cost_dropl, hn1, hh1, hh2]
           omega
-        · show nxt (replaceHead a t.1) = nxt (replaceHead a t'.1)
+        · show next (replaceHead a t.1) = next (replaceHead a t'.1)
           rw [nxt_replaceHead, nxt_replaceHead]; exact hn1
-        · show hd t.2 = hd t'.2
+        · show head t.2 = head t'.2
           exact hh2
-        · show hd (replaceHead a t.1) = hd (replaceHead a t'.1)
+        · show head (replaceHead a t.1) = head (replaceHead a t'.1)
           rw [hd_replaceHead, hd_replaceHead]
         · rfl
 
@@ -531,20 +531,20 @@ public theorem tour_mono_dropr : Freyd.Alg.Pres (F := F (City × City) City) (gr
         obtain ⟨hab, hQ⟩ := hFv
         obtain rfl : a = b := hab
         have hcost : cost tc t ≤ cost tc t' := hQ.1
-        have hn1 : nxt t.1 = nxt t'.1 := hQ.2.1.1
-        have hn2 : nxt t.2 = nxt t'.2 := hQ.2.1.2
-        have hh1 : hd t.1 = hd t'.1 := hQ.2.2.1
-        have hh2 : hd t.2 = hd t'.2 := hQ.2.2.2
+        have hn1 : next t.1 = next t'.1 := hQ.2.1.1
+        have hn2 : next t.2 = next t'.2 := hQ.2.1.2
+        have hh1 : head t.1 = head t'.1 := hQ.2.2.1
+        have hh2 : head t.2 = head t'.2 := hQ.2.2.2
         refine ⟨droprFn a t, rfl, ?_, ⟨?_, ?_⟩, ?_, ?_⟩
         · show cost tc (droprFn a t) ≤ cost tc (droprFn a t')
           rw [cost_dropr, cost_dropr, hn2, hh1, hh2]
           omega
-        · show hd t.1 = hd t'.1
+        · show head t.1 = head t'.1
           exact hh1
-        · show nxt (replaceHead a t.2) = nxt (replaceHead a t'.2)
+        · show next (replaceHead a t.2) = next (replaceHead a t'.2)
           rw [nxt_replaceHead, nxt_replaceHead]; exact hn2
         · rfl
-        · show hd (replaceHead a t.2) = hd (replaceHead a t'.2)
+        · show head (replaceHead a t.2) = head (replaceHead a t'.2)
           rw [hd_replaceHead, hd_replaceHead]
 
 /-- **tour-defn**, `P ≜ ⊤`. -/
@@ -581,7 +581,7 @@ public theorem tour_laws_defn :
 public theorem tour_laws :
     ⦇listcp ≫ (relProd (dList (Tour City)) (dList (Tour City))).pair
         (g₁ (City := City)) g₂
-        ≫ catR ≫ thinlist (Qc tc)⦈ ≫ minlist (R tc)
+        ≫ cat ≫ thinlist (Qc tc)⦈ ≫ minlist (R tc)
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
   have key := thinningList droplAlgFn droprAlgFn (𝟙 _) (𝟙 _) (le_refl _) (le_refl _)
     («≼» := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)

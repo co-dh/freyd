@@ -67,7 +67,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
     `Λ V` absorbs the existential image of `S`, and an existential image is the transpose's own
     image followed by `union`. -/
 public theorem Λ_comp_eq_Λ_comp_powerRel_bigUnion (V : C ⟶ w) (S : w ⟶ A) :
-    Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
+    Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ union := by
   rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
 
 /-! ## The layered network's algebra is a BIFUNCTOR at `∋` and the structure map
@@ -448,17 +448,17 @@ public theorem pathSplit_apply (u : (Fobj A A (pow (dCL A A))).carrier) (p : Con
       exact ⟨Sum.inr (a, t), ⟨rfl, ht⟩, rfl⟩
 
 /-- `head : LA ⟶ A`. -/
-@[expose] public def headRel : dCL A A ⟶ (⟨A⟩ : RelSet.{0}) := RelSet.graph headOf
+@[expose] public def head : dCL A A ⟶ (⟨A⟩ : RelSet.{0}) := RelSet.graph headOf
 
 /-- `[𝟙,π₁] : F(A,E(LA)) ⟶ A`, the first vertex of whatever `S` builds. -/
 @[expose] public def headAlg : Fobj A A (pow (dCL A A)) ⟶ (⟨A⟩ : RelSet.{0}) :=
   RelSet.graph fun u => match u with | Sum.inl v => v | Sum.inr q => q.1
 
-public theorem headRel_map : Map (headRel (A := A)) := RelSet.graph_map _
+public theorem headRel_map : Map (head (A := A)) := RelSet.graph_map _
 
 /-- `Q ≜ R∩(head head°)` (book p.197): no dearer, and starting at the same vertex. -/
 @[expose] public def pathQ (wt : A → A → Nat) : dCL A A ⟶ dCL A A :=
-  pathR wt ∩ (headRel ≫ headRel°)
+  pathR wt ∩ (head ≫ head°)
 
 public theorem pathQ_apply (wt : A → A → Nat) (p q : ConsList A A) :
     pathQ wt p q ↔ costOf wt p ≤ costOf wt q ∧ headOf p = headOf q :=
@@ -515,7 +515,7 @@ public theorem pathAlg_monotonic (wt : A → A → Nat) :
 /-- **The second law of the note's `path-mono`** (book p.198, left as an exercise there):
     `S head ⊑ [𝟙,π₁]` — whichever path `S` builds, its first vertex is fixed by `S`'s argument
     alone, so `S head` is simple. -/
-public theorem pathSplit_comp_headRel_le : pathSplit (A := A) ≫ headRel ⊑ headAlg := by
+public theorem pathSplit_comp_headRel_le : pathSplit (A := A) ≫ head ⊑ headAlg := by
   refine le_iff.mpr ?_
   rintro u x ⟨p, hp, hx⟩
   have hp := (pathSplit_apply u p).mp hp
@@ -528,7 +528,7 @@ public theorem pathSplit_comp_headRel_le : pathSplit (A := A) ≫ headRel ⊑ he
     `S°S ⊑ head head°`. -/
 public theorem pathR_inter_recip_le_pathQ (wt : A → A → Nat) :
     pathR wt ∩ ((pathSplit (A := A))° ≫ pathSplit) ⊑ pathQ wt := by
-  have hsimple : Simple (pathSplit (A := A) ≫ headRel) :=
+  have hsimple : Simple (pathSplit (A := A) ≫ head) :=
     le_trans (le_trans (comp_mono_right (recip_mono pathSplit_comp_headRel_le) _)
       (comp_mono_left _ pathSplit_comp_headRel_le)) headAlg_map.2
   exact inter_mono (le_refl (pathR wt)) (recip_comp_le_of_simple_comp headRel_map hsimple)

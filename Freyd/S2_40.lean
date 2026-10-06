@@ -987,7 +987,7 @@ theorem straight_semiSimple_of_eps_semiSimple {a b : 𝒜} [PowerAllegory 𝒜]
 /-- The big-UNION map ⊔ : [[a]] → [a] (§2.442/§2.443).
     ⊔ = Λ(∋' ≫ ∋) where ∋' = ∋_{[a]} : [[a]] → [a] and ∋ = ∋_a : [a] → a.
     Semantically `F (∋'∋) x ↔ ∃ A∈F, x∈A`, so `Λ(∋'∋) : F ↦ ⋃F` (Freyd §2.443). -/
-@[expose] public def bigUnion {a : 𝒜} [PowerAllegory 𝒜] :
+@[expose] public def union {a : 𝒜} [PowerAllegory 𝒜] :
     P (P a) ⟶ P a :=
   Λ (∋ (P a) ≫ ∋ a)
 
@@ -1020,7 +1020,7 @@ def bigInter {a : 𝒜} [PowerAllegory 𝒜] :
     matching this law exactly (an earlier OCR-era encoding had the operands swapped as
     `bigInter° ≫ bigUnion`, the spurious "obstacle (iii)"; now resolved). -/
 def MetonymyLaw (𝒜 : Type u) [PowerAllegory 𝒜] : Prop :=
-  ∀ (a : 𝒜), supset (a := a) ⊑ (@bigUnion 𝒜 a _)° ≫ (@bigInter 𝒜 a _)
+  ∀ (a : 𝒜), supset (a := a) ⊑ (@union 𝒜 a _)° ≫ (@bigInter 𝒜 a _)
 
 /-! ### §2.443  The `Λ`-calculus on the second power object
 
@@ -1095,11 +1095,11 @@ theorem bigUnion_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     (f g : c ⟶ P a)
     (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
     (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a)) :
-    Λ (f ∪ g) ≫ bigUnion = Λ ((f ≫ ∋ a) ∪ (g ≫ ∋ a)) := by
-  have hmap : Map (Λ (f ∪ g) ≫ bigUnion) :=
-    map_comp (Λ_is_map _ hbfg) (by rw [bigUnion]; exact Λ_is_map _ hbU)
-  have heps : (Λ (f ∪ g) ≫ bigUnion) ≫ ∋ a = (f ≫ ∋ a) ∪ (g ≫ ∋ a) := by
-    rw [bigUnion, Cat.assoc, Λ_eps_eq _ hbU, ← Cat.assoc, Λ_eps_eq _ hbfg, union_comp_distrib]
+    Λ (f ∪ g) ≫ union = Λ ((f ≫ ∋ a) ∪ (g ≫ ∋ a)) := by
+  have hmap : Map (Λ (f ∪ g) ≫ union) :=
+    map_comp (Λ_is_map _ hbfg) (by rw [union]; exact Λ_is_map _ hbU)
+  have heps : (Λ (f ∪ g) ≫ union) ≫ ∋ a = (f ≫ ∋ a) ∪ (g ≫ ∋ a) := by
+    rw [union, Cat.assoc, Λ_eps_eq _ hbU, ← Cat.assoc, Λ_eps_eq _ hbfg, union_comp_distrib]
   exact Λ_unique _ _ hmap heps
 
 /-- §2.443 BIG-INTERSECTION IDENTITY: `Λ(f ∪ g) ≫ bigInter = Λ(f∋ ∩ g∋)`.
@@ -1122,8 +1122,8 @@ theorem bigInter_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     (Freyd's `∋_R□ = R□` for the union-defining relation `R = ∋_{[a]}≫∋_a`). -/
 theorem bigUnion_is_map {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
     (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a)) :
-    Map (bigUnion (a := a)) := by
-  rw [bigUnion]; exact Λ_is_map _ hbU
+    Map (union (a := a)) := by
+  rw [union]; exact Λ_is_map _ hbU
 
 /-- §2.442: `bigInter` is a map (hence simple), when `∋'\∋` is in ∋'s box. -/
 theorem bigInter_is_map {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
@@ -1133,7 +1133,7 @@ theorem bigInter_is_map {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
 
 /-- §2.442: `bigUnion` is SIMPLE unconditionally (`Λ_simple`; entireness is the box-guarded part). -/
 theorem bigUnion_simple {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
-    Simple (bigUnion (a := a)) := by rw [bigUnion]; exact Λ_simple _
+    Simple (union (a := a)) := by rw [union]; exact Λ_simple _
 
 /-- §2.442: `bigInter` is SIMPLE unconditionally. -/
 theorem bigInter_simple {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
@@ -1195,24 +1195,24 @@ theorem le_supset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : �
     (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
     (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a))
     (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a))
-    (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : f° ≫ g ⊑ bigUnion° ≫ bigInter := by
+    (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : f° ≫ g ⊑ union° ≫ bigInter := by
   -- f∋ ∪ g∋ = f∋ and f∋ ∩ g∋ = g∋ from hle.
   have hu : (f ≫ ∋ a) ∪ (g ≫ ∋ a) = f ≫ ∋ a := by
     rw [DistributiveAllegory.union_comm, (le_iff_union_eq_left _ _).mp hle]
   have hi : (f ≫ ∋ a) ∩ (g ≫ ∋ a) = g ≫ ∋ a := by
     rw [Allegory.inter_comm]; exact inter_eq_left hle
   -- f = Λ(f∪g) ≫ bigUnion, g = Λ(f∪g) ≫ bigInter.
-  have hfeq : Λ (f ∪ g) ≫ bigUnion = f := by
+  have hfeq : Λ (f ∪ g) ≫ union = f := by
     rw [bigUnion_comp_eq f g hbfg hbU, hu]; exact (Λ_unique _ f hf rfl).symm
   have hgeq : Λ (f ∪ g) ≫ bigInter = g := by
     rw [bigInter_comp_eq f g hf hg hbfg hbI, hi]; exact (Λ_unique _ g hg rfl).symm
   -- f° ≫ g = bigUnion° ≫ (Λ(f∪g)° ≫ Λ(f∪g)) ≫ bigInter ⊑ bigUnion° ≫ bigInter.
-  calc f° ≫ g = (Λ (f ∪ g) ≫ bigUnion)° ≫ (Λ (f ∪ g) ≫ bigInter) := by rw [hfeq, hgeq]
-    _ = bigUnion° ≫ ((Λ (f ∪ g))° ≫ Λ (f ∪ g)) ≫ bigInter := by
+  calc f° ≫ g = (Λ (f ∪ g) ≫ union)° ≫ (Λ (f ∪ g) ≫ bigInter) := by rw [hfeq, hgeq]
+    _ = union° ≫ ((Λ (f ∪ g))° ≫ Λ (f ∪ g)) ≫ bigInter := by
         rw [Allegory.recip_comp]; simp [Cat.assoc]
-    _ ⊑ bigUnion° ≫ Cat.id _ ≫ bigInter :=
+    _ ⊑ union° ≫ Cat.id _ ≫ bigInter :=
         comp_mono_left _ (comp_mono_right (Λ_simple _) bigInter)
-    _ = bigUnion° ≫ bigInter := by rw [Cat.id_comp]
+    _ = union° ≫ bigInter := by rw [Cat.id_comp]
 
 theorem semiSimple_of_le_supset {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ P a} (hf : Map f) (hg : Map g)
@@ -1220,7 +1220,7 @@ theorem semiSimple_of_le_supset {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜
     (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a))
     (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a))
     (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : SemiSimple (f° ≫ g) :=
-  semiSimple_of_le ⟨_, bigUnion, bigInter, bigUnion_simple, bigInter_simple,
+  semiSimple_of_le ⟨_, union, bigInter, bigUnion_simple, bigInter_simple,
     le_supset_metonymy_bound hf hg hbfg hbU hbI hle⟩
 
 /-- §2.442 forward — metonymy ⟹ the partial-order `2 = ∋/∋ = supset` is semi-simple.
@@ -1233,7 +1233,7 @@ private theorem supset_semiSimple_of_metonymy {𝒜 : Type u} [PowerAllegory �
     (hMet : MetonymyLaw 𝒜) (b : 𝒜) : SemiSimple (supset (a := b)) := by
   -- Metonymy is exactly `2 ⊑ bigUnion° ≫ bigInter`, a `simple° ≫ simple` (both maps);
   -- `semiSimple_of_le` then makes `supset = ∋/∋` semi-simple.
-  exact semiSimple_of_le ⟨_, bigUnion, bigInter, bigUnion_simple, bigInter_simple, hMet b⟩
+  exact semiSimple_of_le ⟨_, union, bigInter, bigUnion_simple, bigInter_simple, hMet b⟩
 
 /-- §2.442 forward GAP (1/2) — metonymy ⟹ `∋` semi-simple.
     Book: metonymy `⊓ ⊑ ⊔` forces the partial-order `2 = ∋/∋` to be semi-simple, and from

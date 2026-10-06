@@ -551,22 +551,22 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
  #leanf("Freyd.Alg.RelSet.ListRel.prefix_cat")`=init*` #src[]],
-   // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
+   // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0 lean:AOP.A5_6_ListCombinators.prefix_cat@b43b39aa
   [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.suffix_cat")`=tail*` #src[]],
-  // lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e
+  // lean:AOP.A5_6_ListCombinators.suffix_cat@40a13c1b
   [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.partition_concat") #src[]],
-  // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
+  // lean:AOP.A5_6_ListCombinators.partition_concat@9f94e572
   [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.concat_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.concat_cata@37766c0d
+  // lean:AOP.A5_6_ListCombinators.concat_cata@ff360a1d
   [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
   [Joins the segments back up, which is why its converse splits a list.],
 
@@ -618,16 +618,16 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     (DF, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.rhs", src[definition of glue]),
     // lean:AOP.A5_6_ListCombinators.concat_glue_step1@116e04aa
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step2.rhs", src[since `concat=⦇[nil,cat]⦈`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step2@6a274ac8
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step2@d30d8ac5
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step3.rhs", src[naturality of `assocl`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step3@f23e8b63
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step3@89c72316
   ), (
     (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step4.rhs", src[since `concat=⦇[nil,cat]⦈`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step4@6a0affce
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step4@f9d6a78e
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step5.rhs", src[since `(cons×𝟙) cat=assocr (𝟙×cat) cons`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step5@72b82363
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step5@b7b7ca2b
     (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step6.rhs", src[since `assocl assocr=𝟙` and `cat° cat⊑𝟙`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step6@ff4485e8
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step6@27053de0
   )),
 )]<concat-glue>
 

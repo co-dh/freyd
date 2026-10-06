@@ -1149,10 +1149,10 @@ public theorem snoc_list {X Y : Type} (f : X → Y) :
 
 /-- `cons list(f)=(f×list(f)) cons`: `cons` is natural in maps. -/
 public theorem cons_list {X Y : Type} (f : X → Y) :
-    (consAtUnit : _ ⟶ dList X) ≫ list (graph f : CL.dE X ⟶ CL.dE Y)
+    (cons : _ ⟶ dList X) ≫ list (graph f : CL.dE X ⟶ CL.dE Y)
       = rprodMap (graph f : CL.dE X ⟶ CL.dE Y) (list (graph f : CL.dE X ⟶ CL.dE Y))
-        ≫ (consAtUnit : _ ⟶ dList Y) := by
-  simp only [consAtUnit, CL.consR, rprodMap_graph_pair, list_graph, graph_comp]
+        ≫ (cons : _ ⟶ dList Y) := by
+  simp only [cons, CL.consR, rprodMap_graph_pair, list_graph, graph_comp]
   rfl
 
 /-- `nonsingle⟨U,V⟩=⟨nonsingle U,nonsingle V⟩`: a coreflexive distributes into a pair. -/
@@ -1196,8 +1196,8 @@ public theorem tails_consR {W : RelSet.{0}} (M : dList (NEList A) ⟶ W) :
     nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ M
       = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-        ≫ consAtUnit ≫ M := by
-  simp only [consAtUnit, CL.consR, id_eq_graph, graph_comp, rpair_graph, graph_comp_comp]
+        ≫ cons ≫ M := by
+  simp only [cons, CL.consR, id_eq_graph, graph_comp, rpair_graph, graph_comp_comp]
   exact nonsingle_graph_comp M fun a z => by rw [tailFn_cons]; rfl
 
 /-! ### What the tabulation's beads claim: each list function is lax natural -/
@@ -1354,8 +1354,8 @@ public theorem snoc_lax_natural {X X' : Type} (R : CL.dE X ⟶ CL.dE X') :
 
 /-- The `cons` bead is lax natural. -/
 public theorem consAtUnit_lax_natural {X X' : Type} (R : CL.dE X ⟶ CL.dE X') :
-    rprodMap R (list R) ≫ (consAtUnit : _ ⟶ dList X') ⊑ (consAtUnit : _ ⟶ dList X) ≫ list R := by
-  simp only [consAtUnit, CL.consR]
+    rprodMap R (list R) ≫ (cons : _ ⟶ dList X') ⊑ (cons : _ ⟶ dList X) ≫ list R := by
+  simp only [cons, CL.consR]
   exact graph_lax _ _ _ _ fun p q h => ⟨h.1, h.2⟩
 
 /-- The `cons` bead on `list⁺` is lax natural. -/
@@ -1547,24 +1547,24 @@ calc_steps col_rec
 public theorem row_rec :
     nonsingle ≫ row st sb cb
       = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
-          ≫ consAtUnit :=
+          ≫ cons :=
   calc nonsingle ≫ row st sb cb
         = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := by
         rw [row]
       _ = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-          ≫ consAtUnit ≫ list (graph (mct st sb cb)) := by
+          ≫ cons ≫ list (graph (mct st sb cb)) := by
         rw [tails_consR]
       _ = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-          ≫ rprodMap (graph (mct st sb cb)) (list (graph (mct st sb cb))) ≫ consAtUnit := by
+          ≫ rprodMap (graph (mct st sb cb)) (list (graph (mct st sb cb))) ≫ cons := by
         rw [cons_list]
       _ = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
-          ≫ consAtUnit := by
+          ≫ cons := by
         rw [← Cat.assoc (rpair _ _), rpair_comp_rprodMap, Cat.id_comp, Cat.assoc]
       _ = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A)
-            ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ consAtUnit := by
+            ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ cons := by
         rw [row]
 
 calc_steps row_rec
@@ -1821,21 +1821,21 @@ local notation "outrA" => (graph Prod.snd
 set_option hygiene false in
 local notation "wrapNE" => (CL.wrapR : dA A ⟶ dNE A)
 set_option hygiene false in
-local notation "consN" => (consAtUnit
+local notation "consN" => (cons
   : (⟨NEList A × CL.ConsList Unit (NEList A)⟩ : RelSet.{0}) ⟶ dList (NEList A))
 set_option hygiene false in
-local notation "consC" => (consAtUnit
+local notation "consC" => (cons
   : (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (CL.ConsList Unit (Tree A))⟩ : RelSet.{0})
     ⟶ dList (CL.ConsList Unit (Tree A)))
 set_option hygiene false in
-local notation "consT" => (consAtUnit
+local notation "consT" => (cons
   : (⟨Tree A × CL.ConsList Unit (Tree A)⟩ : RelSet.{0}) ⟶ dList (Tree A))
 set_option hygiene false in
 local notation "zipC" => (graph zipFn
   : (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (CL.ConsList Unit (Tree A))⟩ : RelSet.{0})
     ⟶ dList (Tree A × CL.ConsList Unit (Tree A)))
 set_option hygiene false in
-local notation "listConsT" => list (consAtUnit
+local notation "listConsT" => list (cons
   : CL.dE (Tree A × CL.ConsList Unit (Tree A)) ⟶ CL.dE (CL.ConsList Unit (Tree A)))
 
 /-- `step≜⟨process tail,π₂⟩ zip list(cons)`. -/
@@ -1858,7 +1858,7 @@ public theorem array_cons_step1 :
 public theorem array_cons_step2 :
     consNE ≫ initsG ≫ list (row st sb cb)
       = rpair (outlN ≫ wrapNE) tic ≫ consN ≫ list (row st sb cb) := by
-  simp only [tic, row, CL.consR, CL.wrapR, consAtUnit, list_graph, graph_comp, rpair_graph]
+  simp only [tic, row, CL.consR, CL.wrapR, cons, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
   simp only [neInitsFn, listTailFn_cons]
@@ -1980,7 +1980,7 @@ public theorem newrows_step2 :
     tic ≫ list (row st sb cb)
       = tic ≫ list (rpair (graph (mct st sb cb) : dNE A ⟶ dTree A)
           ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ consT) := by
-  simp only [tic, row, CL.consR, consAtUnit, list_graph, graph_comp, rpair_graph]
+  simp only [tic, row, CL.consR, cons, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
   simp only [neInitsFn, neTailsFn, listTailFn_cons, cmap_cmap, cmap, tailFn_cons] <;> rfl
@@ -1991,7 +1991,7 @@ public theorem newrows_step3 :
     tic ≫ list (rpair (graph (mct st sb cb) : dNE A ⟶ dTree A)
         ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ consT)
       = rpair (tops st sb cb) (rests st sb cb) ≫ zipC ≫ listConsT := by
-  simp only [tops, rests, tic, row, CL.consR, consAtUnit, list_graph, graph_comp, rpair_graph]
+  simp only [tops, rests, tic, row, CL.consR, cons, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   rw [zipFn_cmap_pair, cmap_cmap]
 
@@ -2011,7 +2011,7 @@ public theorem newrows_rec : newrows st sb cb = rprodMap (𝟙 (dA A)) (array st
 public theorem array_cons_step3 :
     rpair (outlN ≫ wrapNE) tic ≫ consN ≫ list (row st sb cb)
       = rpair (outlN ≫ wrapNE ≫ row st sb cb) (newrows st sb cb) ≫ consC := by
-  simp only [newrows, tic, row, CL.consR, CL.wrapR, consAtUnit, list_graph, graph_comp, rpair_graph]
+  simp only [newrows, tic, row, CL.consR, CL.wrapR, cons, list_graph, graph_comp, rpair_graph]
   rfl
 
 /-- `addcol`, fourth step: `row` of a singleton is `tip wrap`. -/

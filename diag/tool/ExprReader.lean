@@ -30,9 +30,16 @@ namespace Freyd.StrDiag
     PRINTER: it knows which namespaces are open and keeps exactly the qualification two constants
     sharing a name need to be told apart, where cutting namespaces off the printed string knows
     only the ones someone wrote into the chain and leaves `MSS.geq` for every one it does not.
-    Read off the environment, so a namespace added tomorrow needs no edit here. -/
-def repoNamespaces (env : Environment) : List Name :=
-  env.getNamespaceSet.toList.filter fun n => n.getRoot == `Freyd
+    Read off the environment, so a namespace added tomorrow needs no edit here.
+    Only the namespaces a BOOK or AOP module introduces: the tool's own (`Freyd.StrDiag.Read`)
+    would make the note's `head` ambiguous with a reader nobody draws, and print it qualified. -/
+def repoNamespaces (env : Environment) : List Name := Id.run do
+  let mods := env.header.moduleNames
+  let mut ns : Array Name := #[]
+  for i in [:mods.size] do
+    unless mods[i]!.getRoot == `diag do
+      ns := ns ++ (namespacesExt.getModuleEntries env i).filter (·.getRoot == `Freyd)
+  return ns.toList
 
 /-- THE PRINTING CONTEXT OF ONE DRAWN DECLARATION: it prints as its own source file reads it, so it
     is built per declaration and `currNamespace` is that declaration's namespace.  Which is what

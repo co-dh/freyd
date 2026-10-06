@@ -579,13 +579,13 @@ public theorem Λ_comp_thinRel_context (S : B ⟶ A) (Q : A ⟶ A) :
     it into the two conditions below, each a `calc` whose steps `calc_steps` names. -/
 
 /-- A member of the union is a member of a member: `union ∋ = ∋ ∋`. -/
-public theorem bigUnion_comp_eps : (bigUnion : P (P A) ⟶ P A) ≫ ∋ A = ∋ (P A) ≫ ∋ A := by
+public theorem bigUnion_comp_eps : (union : P (P A) ⟶ P A) ≫ ∋ A = ∋ (P A) ≫ ∋ A := by
   rw [bigUnion_eq_existsImage_eps, existsImage_eps]
 
 /-- The UP's first condition: a member of the union of thinnings is a member of a member. -/
 public theorem powerRel_thinRel_comp_bigUnion_cond1 (Q : A ⟶ A) :
-    (powerRel (thinRel Q) ≫ bigUnion) ≫ ∋ A ⊑ ∋ (P A) ≫ ∋ A :=
-  calc (powerRel (thinRel Q) ≫ bigUnion) ≫ ∋ A = powerRel (thinRel Q) ≫ ∋ (P A) ≫ ∋ A := by
+    (powerRel (thinRel Q) ≫ union) ≫ ∋ A ⊑ ∋ (P A) ≫ ∋ A :=
+  calc (powerRel (thinRel Q) ≫ union) ≫ ∋ A = powerRel (thinRel Q) ≫ ∋ (P A) ≫ ∋ A := by
         rw [Cat.assoc, bigUnion_comp_eps]
     _ ⊑ ∋ (P A) ≫ thinRel Q ≫ ∋ A := by
         rw [← Cat.assoc, ← Cat.assoc]
@@ -597,20 +597,20 @@ calc_steps powerRel_thinRel_comp_bigUnion_cond1
 /-- The UP's second condition: every member of a member has a `Q`-lower bound in the union of
     thinnings. -/
 public theorem powerRel_thinRel_comp_bigUnion_cond2 (Q : A ⟶ A) :
-    (∋ (P A) ≫ ∋ A)° ≫ powerRel (thinRel Q) ≫ bigUnion ⊑ Q° ≫ (∋ A)° :=
-  calc (∋ (P A) ≫ ∋ A)° ≫ powerRel (thinRel Q) ≫ bigUnion
-        = (∋ A)° ≫ (∋ (P A))° ≫ powerRel (thinRel Q) ≫ bigUnion := by
+    (∋ (P A) ≫ ∋ A)° ≫ powerRel (thinRel Q) ≫ union ⊑ Q° ≫ (∋ A)° :=
+  calc (∋ (P A) ≫ ∋ A)° ≫ powerRel (thinRel Q) ≫ union
+        = (∋ A)° ≫ (∋ (P A))° ≫ powerRel (thinRel Q) ≫ union := by
         rw [Allegory.recip_comp, Cat.assoc]
-    _ ⊑ (∋ A)° ≫ thinRel Q ≫ (∋ (P A))° ≫ bigUnion := by
-        rw [← Cat.assoc ((∋ (P A))°) (powerRel (thinRel Q)) bigUnion,
-          ← Cat.assoc (thinRel Q) ((∋ (P A))°) bigUnion]
-        exact comp_mono_left _ (comp_mono_right (powerRel_term1_cancel (thinRel Q)) bigUnion)
-    _ ⊑ Q° ≫ (∋ A)° ≫ (∋ (P A))° ≫ bigUnion := by
+    _ ⊑ (∋ A)° ≫ thinRel Q ≫ (∋ (P A))° ≫ union := by
+        rw [← Cat.assoc ((∋ (P A))°) (powerRel (thinRel Q)) union,
+          ← Cat.assoc (thinRel Q) ((∋ (P A))°) union]
+        exact comp_mono_left _ (comp_mono_right (powerRel_term1_cancel (thinRel Q)) union)
+    _ ⊑ Q° ≫ (∋ A)° ≫ (∋ (P A))° ≫ union := by
         rw [← Cat.assoc ((∋ A)°) (thinRel Q), ← Cat.assoc Q° ((∋ A)°)]
         exact comp_mono_right (recip_eps_comp_thinRel_le Q) _
-    _ = Q° ≫ (∋ (P A) ≫ ∋ A)° ≫ bigUnion := by rw [Allegory.recip_comp, Cat.assoc]
-    _ = Q° ≫ (bigUnion ≫ ∋ A)° ≫ bigUnion := by rw [bigUnion_comp_eps]
-    _ = Q° ≫ (∋ A)° ≫ bigUnion° ≫ bigUnion := by rw [Allegory.recip_comp, Cat.assoc]
+    _ = Q° ≫ (∋ (P A) ≫ ∋ A)° ≫ union := by rw [Allegory.recip_comp, Cat.assoc]
+    _ = Q° ≫ (union ≫ ∋ A)° ≫ union := by rw [bigUnion_comp_eps]
+    _ = Q° ≫ (∋ A)° ≫ union° ≫ union := by rw [Allegory.recip_comp, Cat.assoc]
     _ ⊑ Q° ≫ (∋ A)° := by
         rw [← Cat.comp_id (Q° ≫ (∋ A)°), Cat.assoc, bigUnion_eq_existsImage_eps]
         exact comp_mono_left _ (comp_mono_left _ (Λ_is_map' _).2)
@@ -619,10 +619,10 @@ calc_steps powerRel_thinRel_comp_bigUnion_cond2
 
 /-- **(8.4) / Ex 8.7**: the two conditions above, closed by the UP of `thin`. -/
 public theorem powerRel_thinRel_comp_bigUnion_le (Q : A ⟶ A) :
-    powerRel (thinRel Q) ≫ (bigUnion : P (P A)
+    powerRel (thinRel Q) ≫ (union : P (P A)
         ⟶ P A)
-      ⊑ bigUnion ≫ thinRel Q :=
-  show powerRel (thinRel Q) ≫ bigUnion ⊑ Λ (∋ (P A) ≫ ∋ A) ≫ thinRel Q from
+      ⊑ union ≫ thinRel Q :=
+  show powerRel (thinRel Q) ≫ union ⊑ Λ (∋ (P A) ≫ ∋ A) ≫ thinRel Q from
   le_Λ_comp_thinRel_iff.mpr
     ⟨powerRel_thinRel_comp_bigUnion_cond1 Q, powerRel_thinRel_comp_bigUnion_cond2 Q⟩
 

@@ -229,13 +229,6 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-/-- B&dM's `head : Line ⟵ Para`, the first line of a paragraph (§8.5). -/
-@[app_unexpander RelSet.Paragraph.headLine] def unexpandHeadLine : Unexpander
-  | `($_:ident) => `($(mkIdent `head))
-  | `($_ $p) => `($(mkIdent `head) $p)
-  | _ => throw ()
-
-open Lean PrettyPrinter in
 /-- The preorder a measure induces is the note's `length≤length°`. -/
 @[app_unexpander RelSet.leOn] def unexpandLeOn : Unexpander
   | `($_ $f) => `($f ≤ $f°)
@@ -665,14 +658,6 @@ open Lean PrettyPrinter in
   | `($_ $x $y) => `($(mkIdent `suffix) $x $y)
   | _ => `($(mkIdent `suffix))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tour.hd] def unexpandTourHd : Unexpander
-  | `($_ $x) => `($(mkIdent `head) $x)
-  | _ => `($(mkIdent `head))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tour.nxt] def unexpandTourNxt : Unexpander
-  | `($_ $x) => `($(mkIdent `next) $x)
-  | _ => `($(mkIdent `next))
-open Lean PrettyPrinter in
 -- B&dM name no function for "the head replaced": `dropl(a,([b]⧺x,y))=([a]⧺x,…)` writes it as the
 -- new head before the old tail, so the note does too.
 @[app_unexpander RelSet.Tour.replaceHead] def unexpandTourReplaceHead : Unexpander
@@ -736,10 +721,6 @@ open Lean PrettyPrinter in
   | `($_ $_ $_ $x) => `($(mkIdent `secure) $x)
   | _ => `($(mkIdent `secure))
 
--- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
--- and the note draws `R` on that box and `est(R°)` on the greedy step.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.GCTakeWhile.lenLE] def unexpandLenLE : Unexpander | _ => `($(mkIdent `R))
 
 -- THE MAP A SECTION IS NAMED AFTER.  The note draws the specification's own name, not the Lean
 -- function the graph is taken of: `edit`, `detab`, `flatten` are `editFn`, `detabR`, `flattenFn`.
@@ -912,10 +893,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander natF] def unexpandNatF : Unexpander | _ => `($(mkIdent `F))
 open Lean PrettyPrinter in
-@[app_unexpander natZero] def unexpandNatZero : Unexpander | _ => `($(mkIdent `zero))
-open Lean PrettyPrinter in
-@[app_unexpander natSucc] def unexpandNatSucc : Unexpander | _ => `($(mkIdent `succ))
-open Lean PrettyPrinter in
 @[app_unexpander UnitaryAllegory.unit_obj] def unexpandUnitObj : Unexpander | _ => `(1)
 
 open Lean PrettyPrinter in
@@ -984,9 +961,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.expand] def unexpandDetabExpand : Unexpander
   | _ => `($(mkIdent `expand))
 
-open Lean PrettyPrinter in
-/-- The note's bead for the maximum-segment-sum step algebra is `k`; `Kalg` is only the Lean name. -/
-@[app_unexpander RelSet.MSS.Kalg] def unexpandKalg : Unexpander | _ => `($(mkIdent `k))
 
 
 -- ONE BEAD, `R∩H`.  A meet is a bead's LABEL and never a wiring, and the note writes it TIGHT —
@@ -1005,10 +979,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Van.Hrel] def unexpandVanH : Unexpander | _ => `($(mkIdent `H))
 
-open Lean PrettyPrinter in
-/-- The note draws the union of a set of sets as `union`: which of the many `union`s of the book it
-    is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
-@[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
 
 open Lean PrettyPrinter in
 /-- AN INDEX FUNCTOR IS THE NOTE'S `[k]`, and the length it indexes is the whole of its name — one
@@ -1101,7 +1071,7 @@ attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
 attribute [diag_unfold] RelSet.MSS.zeroPlus RelSet.MSS.mssPre
 -- `nilR` is the same story one step down: the note's `nil` is read off the CONSTANT the map creates
 -- (`diag/tool/Label.lean`), and the arrow's own Lean name says nothing a picture of `𝟏⟼[E]` does not.
-attribute [diag_unfold] RelSet.SL.nilR
+attribute [diag_unfold] RelSet.SL.nil
 -- The bag's algebra is the coproduct the note writes out, `[nil,snag]`, never its Lean name: the
 -- arms are read off the `match` by `diag/tool/Label.lean` once the name is opened, and `arm₂` of it
 -- is then the arm alone.
@@ -1189,10 +1159,6 @@ open Lean PrettyPrinter in
 -- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
 -- when the rule became that Lean follows the note: an algebra prints as the junction the note writes.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Edit.opRelator] def unexpandEditOpRelator : Unexpander
-  | `($_ $args*) => `($(mkIdent `op) $args*)
-  | _ => `($(mkIdent `op))
-open Lean PrettyPrinter in
 -- The cons-list `setify` is the note's `setify` (`setifyCL_eq_setify`): `CL` says which file.
 @[app_unexpander RelSet.CL.setifyCL] def unexpandSetifyCL : Unexpander
   | `($_ $args*) => `($(mkIdent `setify) $args*)
@@ -1227,9 +1193,6 @@ open Lean PrettyPrinter in
 @[app_unexpander headOf] def unexpandHeadOf : Unexpander
   | `($_ $args*) => `($(mkIdent `head) $args*)
   | _ => `($(mkIdent `head))
-open Lean PrettyPrinter in
-@[app_unexpander headRel] def unexpandHeadRel : Unexpander
-  | _ => `($(mkIdent `head))
 -- B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter, as for `cost`.
 open Lean PrettyPrinter in
 @[app_unexpander minpath] def unexpandMinpath : Unexpander
@@ -1255,16 +1218,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
   | _ => `($(mkIdent `listcp))
--- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
-open Lean PrettyPrinter in
-@[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
-  | `($_ $R) => `($(mkIdent `connected) $R)
-  | _ => throw ()
--- The same connectedness, on a pointwise relation `A → A → Prop` (§6.6's sorts).
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.connectedP] def unexpandConnectedP : Unexpander
-  | `($_ $R) => `($(mkIdent `connected) $R)
-  | _ => throw ()
 -- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
@@ -1309,12 +1262,6 @@ open Lean PrettyPrinter in
 -- `Q`, stated over the section's own data.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.Q] def unexpandEditQ : Unexpander | _ => `($(mkIdent `Q))
--- The section's GRAPH OF THE SNOC LIST'S EMPTY CASE is the note's `nil`; the `R` is Lean's, as
--- `detabR`'s is.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.SL.nilR] def unexpandSLNilR : Unexpander
-  | `($_ $args*) => `($(mkIdent `nil) $args*)
-  | _ => `($(mkIdent `nil))
 -- THE TOP RELATION IS THE NOTE'S `⊤` — `thin(prefix°×(⊤+⊤))` is how its tables write it, and
 -- `topMor` is the Lean name.  No Lean identifier, so it goes through the same escape `⊕` does.
 open Lean PrettyPrinter in
@@ -1428,16 +1375,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.DigitP] def unexpandDigitP : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.catR] def unexpandListRelCatR : Unexpander
-  | `($_ $args*) => `($(mkIdent `cat) $args*)
-  | _ => `($(mkIdent `cat))
--- B&dM writes `partition = concat°` with `concat` restricted to non-empty segments; the restriction
--- is no second name.  Not `cat`: that is `catR`'s, the binary join, and `cat°` splits in two.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.concatNE] def unexpandListRelConcatNE : Unexpander
-  | `($_ $args*) => `($(mkIdent `concat) $args*)
-  | _ => `($(mkIdent `concat))
 -- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME, as `edit` does above: one
 -- arrow, drawn as a map in one panel and as a relation in another.
 open Lean PrettyPrinter in
@@ -1560,9 +1497,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.sappend] def unexpandCodeSappend : Unexpander
   | `($_ $args*) => `($(mkIdent `cat) $args*)
   | _ => `($(mkIdent `cat))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
-  | _ => `($(mkIdent `cons))
 -- The edit operations are the note's `cpy`/`del`/`ins`; `inlistP xs q` is membership `q∈xs`.
 open Lean PrettyPrinter in
 -- The arm of a preorder `Q` is the note's `Q₂` (chapter 10 writes `est(Qᵢ)`): the preorder's own
@@ -1725,14 +1659,6 @@ open Lean PrettyPrinter Delaborator SubExpr in
   withNaryArg 2 delab
 -- §10.2/§10.4 (B&dM pp.246, 258): a string's or a decimal's `length`, and the `prefix` order.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Detab.slen] def unexpandDetabSlen : Unexpander
-  | `($_ $x) => `($(mkIdent `length) $x)
-  | _ => `($(mkIdent `length))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.len] def unexpandTexLen : Unexpander
-  | `($_ $x) => `($(mkIdent `length) $x)
-  | _ => `($(mkIdent `length))
-open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.prefixS] def unexpandDetabPrefix : Unexpander
   | `($_ $x $y) => `($(mkIdent `prefix) $x $y)
   | _ => `($(mkIdent `prefix))
@@ -1767,5 +1693,10 @@ open Lean PrettyPrinter in
   | `($_ $_ $x $r $s) =>
     pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
   | _ => throw ()
+
+-- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
+attribute [diag_noted] connected head zero succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
+  RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
+  RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next
 
 end Freyd.Alg

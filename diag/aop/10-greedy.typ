@@ -117,7 +117,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leanf("Freyd.Alg.RelSet.Detab.tripleR")],
   [what `entab` keeps: the unfilled output, its trailing blank count and its column],
 // lean:AOP.A10_2_Detab.detab_cata@37355797
-// lean:AOP.A10_2_Detab.R@5b23da25
+// lean:AOP.A10_2_Detab.R@2b264e9a
 // lean:AOP.A10_2_Detab.V@b0fc79bc
 // lean:AOP.A10_2_Detab.Q@7a0a1541 lean:AOP.A10_2_Detab.Q_eq@74544c65
 )]<entab-defn>
@@ -166,11 +166,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
  FALSE #src[,
       // lean:AOP.A10_2_Detab.detab_prefix_false@373b3b35
  ] — at `n=8`,
-      // lean:AOP.A10_2_Detab.detab_len_of_short@bfc4b886
+      // lean:AOP.A10_2_Detab.detab_len_of_short@912f357f
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
       `[a,b,c,d,e,BL,BL]` is longer than any input giving it, and `detab V°⊑R° detab`
  #src[]
-      // lean:Freyd.Alg.RelSet.Detab.detab_V@837dc115 lean:AOP.A10_2_Detab.entab_V@0324bd01
+      // lean:Freyd.Alg.RelSet.Detab.detab_V@844fdafe lean:AOP.A10_2_Detab.entab_V@0324bd01
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
       // lean:AOP.A10_2_Detab.expand_V@5930d9f4
@@ -396,7 +396,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.bagify_recip_cata") \
     #src[the orderings of a bag with one more job are the orderings of the bag with that job put
      in anywhere]],
-  // lean:AOP.A10_3_Tardy.bagify_recip_cata@9781e524
+  // lean:AOP.A10_3_Tardy.bagify_recip_cata@aa858fc5
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs",
@@ -439,7 +439,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[`schedule=(null→nil,pick (schedule×𝟙) snoc)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tardy.tardy_laws") \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
-  // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
+  // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d509c632
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.rhs", src[the specification — @Freyd.Alg.RelSet.Tardy.bagify]),
     // job-schedule row: Theorem 10.1
@@ -520,7 +520,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // lean:AOP.A10_4_Tex.Freyd.Alg.RelSet.Tex.interval@9dc05d20
 // lean:AOP.A10_4_Tex.inrange@324d56b2
 // lean:AOP.A10_4_Tex.round_recip@8787573e
-// lean:AOP.A10_4_Tex.R@393e9bb8
+// lean:AOP.A10_4_Tex.R@6bf311b6
 // lean:AOP.A10_4_Tex.Legal@ad318946
 // lean:AOP.A10_4_Tex.step@1b245185
 // lean:AOP.A10_4_Tex.H@f5c2c294

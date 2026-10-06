@@ -187,28 +187,28 @@ public theorem singletonMap_recip_oplax {A B : 𝒜} (f : A ⟶ B) (hf : Map f) 
 
 /-- `bigUnion = E ∋` (definitional: both unfold to `Λ (∋' ≫ ∋)`). -/
 public theorem bigUnion_eq_existsImage_eps {A : 𝒜} :
-    (bigUnion : P (P A) ⟶ P A)
+    (union : P (P A) ⟶ P A)
       = existsImage (∋ A) := rfl
 
 /-- Monad law `μ·τ = id`: `singletonMap ≫ bigUnion = 1`. -/
 theorem bigUnion_singleton {A : 𝒜} :
-    singletonMap ≫ bigUnion (a := A) = Cat.id (P A) := by
+    singletonMap ≫ union (a := A) = Cat.id (P A) := by
   rw [bigUnion_eq_existsImage_eps, singletonMap, Λ_absorption, Cat.id_comp, Λ_eps_reflection]
 
 /-- Monad law `μ·Pτ = id`: `E singletonMap ≫ bigUnion = 1`. -/
 public theorem bigUnion_existsImage_singleton {A : 𝒜} :
-    existsImage (singletonMap (a := A)) ≫ bigUnion = Cat.id (P A) := by
+    existsImage (singletonMap (a := A)) ≫ union = Cat.id (P A) := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, Λ_eps_eq', existsImage_id]
 
 /-- Monad law `μ·μ = μ·Pμ`: `bigUnion ≫ bigUnion = E bigUnion ≫ bigUnion`. -/
 theorem bigUnion_assoc {A : 𝒜} :
-    bigUnion ≫ bigUnion (a := A)
-      = existsImage (bigUnion (a := A)) ≫ bigUnion := by
-  have hL : bigUnion (a := P A) ≫ bigUnion (a := A)
+    union ≫ union (a := A)
+      = existsImage (union (a := A)) ≫ union := by
+  have hL : union (a := P A) ≫ union (a := A)
       = existsImage (∋ (P A) ≫ ∋ A) := by
     rw [bigUnion_eq_existsImage_eps (A := P A),
         bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp]
-  have hR : existsImage (bigUnion (a := A)) ≫ bigUnion (a := A)
+  have hR : existsImage (union (a := A)) ≫ union (a := A)
       = existsImage (∋ (P A) ≫ ∋ A) := by
     rw [bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp, existsImage_eps]
   exact hL.trans hR.symm
@@ -219,7 +219,7 @@ theorem bigUnion_assoc {A : 𝒜} :
     a power object is determined by its composite with `∋` — so this square cannot be phrased as
     `LaxNatural`; for the relator `P` of §5.4 it becomes `bigUnion_lax_natural` (AOP.A5_4). -/
 public theorem bigUnion_natural {A B : 𝒜} (R : A ⟶ B) :
-    existsImage (existsImage R) ≫ bigUnion = bigUnion ≫ existsImage R := by
+    existsImage (existsImage R) ≫ union = union ≫ existsImage R := by
   rw [bigUnion_eq_existsImage_eps (A := B), bigUnion_eq_existsImage_eps (A := A),
       ← existsImage_comp, ← existsImage_comp, existsImage_eps]
 
@@ -316,7 +316,7 @@ public theorem simple_le_singleton_existsImage {A B : 𝒜} (F : A ⟶ P B)
 
 /-- `E R = E (Λ R) ≫ bigUnion`. -/
 public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
-    existsImage R = existsImage (Λ R) ≫ bigUnion := by
+    existsImage R = existsImage (Λ R) ≫ union := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, Λ_eps_eq']
 
 /-! ## Kleisli composition for the monad `E` -/
@@ -325,7 +325,7 @@ public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
     composition of `Kleisli(E)`, which `Λ` carries the allegory's own composition to. -/
 @[expose] public def kleisliComp {A B C : 𝒜} (f : A ⟶ P B)
     (g : B ⟶ P C) : A ⟶ P C :=
-  f ≫ existsImage g ≫ bigUnion
+  f ≫ existsImage g ≫ union
 
 @[inherit_doc] infixl:70 " ⋄ " => kleisliComp
 

@@ -451,12 +451,12 @@ public theorem step_legal (d : Digit) (q : Iv) (h : Legal q) :
 @[expose] public def H : Interval ⟶ Decimal := (cataR (junc cop arb step))°
 
 /-- `length`, the number of digits of a decimal. -/
-@[expose] public def len : ConsList Unit Digit → Nat
+@[expose] public def length : ConsList Unit Digit → Nat
   | ConsList.wrap _ => 0
-  | ConsList.cons _ x => len x + 1
+  | ConsList.cons _ x => length x + 1
 
 /-- **tex-defn**: `R≜length≤length°` — a shortest decimal is wanted. -/
-@[expose] public def R : Decimal ⟶ Decimal := fun xs ys => len xs ≤ len ys
+@[expose] public def R : Decimal ⟶ Decimal := fun xs ys => length xs ≤ length ys
 
 public theorem R_refl : 𝟙 Decimal ⊑ R :=
   le_iff.mpr fun x y h => by
@@ -466,7 +466,7 @@ public theorem R_refl : 𝟙 Decimal ⊑ R :=
 public theorem R_trans : R ≫ R ⊑ R :=
   le_iff.mpr fun x z h => by
     obtain ⟨y, h1, h2⟩ := h
-    exact Nat.le_trans (h1 : len x ≤ len y) h2
+    exact Nat.le_trans (h1 : length x ≤ length y) h2
 
 /-- **tex-defn**: `l : 𝟏⟶FX`, the left injection of `FX=1+(Digit×X)`. -/
 @[expose] public def l {X : RelSet.{0}} : dL Unit ⟶ (F Unit Digit).obj X := graph Sum.inl
@@ -581,8 +581,8 @@ public theorem tex_mono : Freyd.Alg.Pres (F := F Unit Digit) alphaR R :=
     | Sum.inl _, Sum.inl _, hd => exact Nat.le_of_eq (by rw [show _ = _ from hd])
     | Sum.inr a, Sum.inr b, hd =>
       obtain ⟨he, hR⟩ := hd
-      show len (ConsList.cons a.1 a.2) ≤ len (ConsList.cons b.1 b.2)
-      exact Nat.succ_le_succ (hR : len a.2 ≤ len b.2)
+      show length (ConsList.cons a.1 a.2) ≤ length (ConsList.cons b.1 b.2)
+      exact Nat.succ_le_succ (hR : length a.2 ≤ length b.2)
 
 /-- `F(X)` leaves the `nil` summand alone: `l F(X)=l` — definition of `F`. -/
 public theorem l_Fmap (X : Interval ⟶ Decimal) : l ≫ (F Unit Digit).map X = l := by
@@ -681,7 +681,7 @@ public theorem val_bounds (y : Dec) (r : Real.carrier) (h : val y r) :
     a decimal no longer than `y`: follow `y`'s digits while they agree with `p`'s, and stop at the
     first that differs — there `p`'s remainder already contains `0`. -/
 public theorem tex_short (y : Dec) : ∀ (r : Real.carrier) (p : Interval.carrier) (x : Dec),
-    val y r → inrange p r → H p x → ∃ z, H p z ∧ len z ≤ len y := by
+    val y r → inrange p r → H p x → ∃ z, H p z ∧ length z ≤ length y := by
   induction y with
   | wrap u =>
     intro r p x hv hin _

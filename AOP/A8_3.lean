@@ -70,7 +70,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L :
 
 /-- CONNECTED (B&dM p.153, "a connected preorder"): any two elements are comparable one way or the
     other, `Π ⊑ R ∪ R°`.  §8.3's sort order and (8.5)'s thinning order are connected preorders. -/
-@[expose] public def Connected (R : A ⟶ A) : Prop := topMor A A ⊑ R ∪ R°
+@[expose] public def connected (R : A ⟶ A) : Prop := topMor A A ⊑ R ∪ R°
 
 /-! ## `sort(≼)` and (8.6) -/
 
@@ -485,7 +485,7 @@ public theorem preorder_apply {Q : dE A ⟶ dE A} (h : preorder Q) :
   ⟨fun a => le_iff.mp h.1 a a rfl, fun a b c hab hbc => le_iff.mp h.2 a c ⟨b, hab, hbc⟩⟩
 
 /-- `Connected(Q)` in `Rel`, pointwise: any two elements are comparable. -/
-public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.Connected Q) :
+public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.connected Q) :
     ∀ a b, Q a b ∨ Q b a := fun a b => by
   have := le_iff.mp h a b (topMor_apply a b)
   rwa [union_apply] at this
@@ -493,7 +493,7 @@ public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.Connected Q) :
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
     the fold `⦇[nil,bump(Q)]⦈` sends `xs` to `[minlist Q xs]` — thinning comes down to one element. -/
 public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder Q)
-    (hc : Freyd.Alg.Connected Q) (a : A) (xs ys : ConsList Unit A) :
+    (hc : Freyd.Alg.connected Q) (a : A) (xs ys : ConsList Unit A) :
     bumpFold Q (ConsList.cons a xs) ys
       ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
   obtain ⟨hrefl, htrans⟩ := preorder_apply hQ
@@ -753,13 +753,13 @@ public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A} (p : dE A ⟶ dE A)
     (ordered_comp_subseq_le ≼) ?_
   · refine le_iff.mpr fun x ys h => ?_
     obtain ⟨⟨z, hz, hl⟩, -⟩ :=
-      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.lenLE (A := A))° x ys).mp h
+      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.R (A := A))° x ys).mp h
     obtain rfl : z = ys := listP_eq_of_coreflexive hp hl
     exact hz
   · refine le_iff.mpr fun x S h => ?_
     obtain ⟨ys, hf, rfl⟩ := h
     obtain ⟨⟨z, hz, hl⟩, hmax⟩ :=
-      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.lenLE (A := A))° x ys).mp hf
+      (Λ_comp_est_apply (subseq ≫ list p) (GCTakeWhile.R (A := A))° x ys).mp hf
     refine ⟨inlistP x, rfl, (existsImage_apply _ _ _).mpr (funext fun w => propext ?_)⟩
     constructor
     · intro hw
@@ -1190,7 +1190,7 @@ open Lean PrettyPrinter in
 /-- `merge(⊤)=cat` (B&dM p.212): with every pair in order a merge takes all of the first list
     before the second, so `P≜⊤` needs no sorting. -/
 public theorem merge_top :
-    (merge (topMor (dE A) (dE A)) : (relProd (dList A) (dList A)).p ⟶ dList A) = catR := by
+    (merge (topMor (dE A) (dE A)) : (relProd (dList A) (dList A)).p ⟶ dList A) = cat := by
   have hnil : ∀ x : ConsList Unit A, cappend x (ConsList.wrap ()) = x := by
     intro x; induction x with
     | wrap _ => rfl
@@ -1317,7 +1317,7 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: both conditions on
     `merge(≼)` are theorems, so the order's two properties are all that is left. -/
 public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
-    (h : preorder ≼) (hc : Freyd.Alg.Connected ≼) :
+    (h : preorder ≼) (hc : Freyd.Alg.connected ≼) :
     prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
         (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼) ≫ merge ≼
       ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼ :=
@@ -1446,7 +1446,7 @@ public theorem preorder_topMor : preorder (topMor (dE A) (dE A)) :=
   ⟨le_iff.mpr fun a b _ => RelSet.topMor_apply a b, le_iff.mpr fun a b _ => RelSet.topMor_apply a b⟩
 
 /-- `⊤` is connected: it relates everything. -/
-public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
+public theorem connected_topMor : Freyd.Alg.connected (topMor (dE A) (dE A)) :=
   le_iff.mpr fun a b _ => Or.inl (RelSet.topMor_apply a b)
 
 /-- The fusion side condition of **Theorem 8.2** in `Rel` (book p.203) at `FX = L+E×X`: sorting
@@ -1456,7 +1456,7 @@ public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
     `thin(Q)`. -/
 public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q : dE A ⟶ dE A} (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    {«≼» Q : dE A ⟶ dE A} (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
@@ -1576,7 +1576,7 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
     {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
@@ -1606,7 +1606,7 @@ public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → 
     {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair

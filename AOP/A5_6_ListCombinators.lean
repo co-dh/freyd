@@ -166,7 +166,7 @@ variable (R : A → A → Prop)
 
 /-- `R` is CONNECTED (B&dM p.152, `R ∪ R° = Π`): any two elements are related one way or the
     other — what sorting under `R` needs of `R` besides transitivity. -/
-@[expose] public def connectedP : Prop := ∀ a b, R a b ∨ R b a
+@[expose] public def connected : Prop := ∀ a b, R a b ∨ R b a
 
 /-- The sortedness coreflexive `ordered : list A ⟶ list A`. -/
 @[expose] public def ordered : dList A ⟶ dList A := fun xs ys => xs = ys ∧ orderedP R xs
@@ -222,17 +222,17 @@ public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.i
 @[expose] public def suffixR : dList A ⟶ dList A := fun x ys => suffixP ys x
 
 /-- B&dM's `cat` (append) as a relation: the graph of `cappend`. -/
-@[expose] public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+@[expose] public def cat : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun p => cappend p.1 p.2
 
 /-- `cat` at the restricted type `list A ⟵ list⁺ A × list A` (B&dM p.128), the restriction carried
     by the coreflexive `neSeg` on the first argument. -/
 public def catNE : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
-  rprodMap neSeg (𝟙 (dList A)) ≫ catR
+  rprodMap neSeg (𝟙 (dList A)) ≫ cat
 
 /-- B&dM's `concat = ⦇[nil, cat]⦈` at p.128, where that `cat` is `catNE`: only a flattening whose
     segments are all non-empty, so that `concat°` is `partition`. -/
-@[expose] public def concatNE : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
+@[expose] public def concat : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
   ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catNE
     : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
 
@@ -841,7 +841,7 @@ public theorem alphaR_eq_junc :
 /-- `nil` and `cons` at the EMPTY leaf — the two factors of `alphaR_eq_junc`'s junction, named so
     the note's `nil`,`cons` row takes its type cell from Lean instead of typing one by hand. -/
 @[expose] public def nilAtUnit : dL Unit ⟶ dList A := wrapR
-@[expose] public def consAtUnit : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := consR
+@[expose] public def cons : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := consR
 
 /-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is
     STRICT: `α list(R) = F(R,list R) α`.  The `nil` branch is the leaf identity, the `cons` branch is
@@ -1238,7 +1238,7 @@ public theorem prefix_cancel :
 /-- **`prefix = cat° π₁`** (note `comb-fns`): split `x` as `ys ++ v` and keep the left part.
     `π₁ = graph (·.1)`, as in `subseq_cata`. -/
 public theorem prefix_cat :
-    (prefixR : dList A ⟶ dList A) = catR° ≫ graph (fun p => p.1) := by
+    (prefixR : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.1) := by
   apply hom_ext; intro x ys
   constructor
   · intro h
@@ -1250,7 +1250,7 @@ public theorem prefix_cat :
 /-- **`suffix = cat° π₂`** (note `comb-fns`; B&dM §5.6): split `x` as `u ++ ys` and keep the
     right part.  `π₂ = graph (·.2)`, as in `subseq_cata`. -/
 public theorem suffix_cat :
-    (suffixR : dList A ⟶ dList A) = catR° ≫ graph (fun p => p.2) := by
+    (suffixR : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.2) := by
   apply hom_ext; intro x ys
   constructor
   · intro h
@@ -1292,10 +1292,10 @@ public theorem perm_cata :
 /-- **`partition = concat°`** (note `comb-fns`; B&dM p.128), the book's own spelling: the `concat`
     it converses is `concatNE`, built on `cat` at the restricted type. -/
 public theorem partition_concat :
-    (partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0})) = concatNE° := by
+    (partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0})) = concat° := by
   have h : (fun ps x => cconcat ps = x ∧ allNonempty ps
         : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
-      = concatNE := by
+      = concat := by
     refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
       ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
     · show (ConsList.wrap () = r ∧ True) ↔ r = ConsList.wrap D
@@ -1316,7 +1316,7 @@ public theorem partition_concat :
     appending each onto the flattened rest. -/
 public theorem concat_cata :
     (concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catR
+      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR cat
           : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
@@ -1345,8 +1345,8 @@ public theorem concat_cata :
 /-- The hint of p.129's fifth step, `cat·(cons×id) = cons·(id×cat)·assocr` mirrored: `cons`ing onto
     the front segment then appending is re-bracketing, appending, then `cons`ing. -/
 public theorem cat_cons :
-    rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
-      = assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+    rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ cat
+      = assocr ≫ rprodMap (𝟙 (dE A)) cat ≫ consR (L := Unit) (E := A) := by
   apply hom_ext; rintro ⟨⟨a, s⟩, t⟩ r
   constructor
   · rintro ⟨⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
@@ -1369,7 +1369,7 @@ public theorem concat_glue_step2 :
           ≫ consR (L := Unit) (E := ConsList Unit A) ≫ concatR
       = rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
           ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
-          ≫ rprodMap (𝟙 (dList A)) concatR ≫ catR := by
+          ≫ rprodMap (𝟙 (dList A)) concatR ≫ cat := by
   apply hom_ext; rintro ⟨a, x⟩ r
   constructor
   · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, _, rfl, rfl⟩
@@ -1384,10 +1384,10 @@ public theorem concat_glue_step2 :
 public theorem concat_glue_step3 :
     rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
           ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
-          ≫ rprodMap (𝟙 (dList A)) concatR ≫ catR
+          ≫ rprodMap (𝟙 (dList A)) concatR ≫ cat
       = rprodMap (𝟙 (dE A))
             ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
-          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ cat := by
   apply hom_ext; rintro ⟨a, x⟩ r
   constructor
   · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
@@ -1405,7 +1405,7 @@ public theorem cat_recip_strictNatural :
       (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
         (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
       (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
-      (fun a => (catR (A := a.carrier))°) := by
+      (fun a => (cat (A := a.carrier))°) := by
   intro x y S
   simp only [Relator.prod, prodMap_eq_rprodMap]
   apply hom_ext; intro w q
@@ -1425,7 +1425,7 @@ public theorem cat_strictNatural :
     StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
       (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
         (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
-      (fun a => catR (A := a.carrier)) := by
+      (fun a => cat (A := a.carrier)) := by
   intro x y S
   simp only [Relator.prod, prodMap_eq_rprodMap]
   apply hom_ext; intro p r
@@ -1507,26 +1507,26 @@ public theorem glue_strictNatural :
 public theorem concat_glue_step4 :
     rprodMap (𝟙 (dE A))
             ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
-          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
-      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
-          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ cat
+      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) cat°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ cat := by
   refine le_iff.mpr ?_
   rintro ⟨a, x⟩ r ⟨⟨_, _, _⟩, ⟨rfl, ⟨s, x'⟩, rfl, rfl, rfl⟩, h⟩
   exact ⟨(a, cconcat (ConsList.cons s x')), ⟨rfl, rfl⟩, (a, (s, cconcat x')), ⟨rfl, rfl⟩, h⟩
 
 /-- p.129 {since cat·(cons×id) = cons·(id×cat)·assocr}. -/
 public theorem concat_glue_step5 :
-    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
-          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
-      = rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
-          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) cat°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ cat
+      = rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) cat°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) cat ≫ consR (L := Unit) (E := A) := by
   rw [cat_cons]
 
 /-- p.129 {since assocr·assocl = id and cat·cat° ⊆ id}: mirrored, `assocl assocr = 𝟙` and
     `cat° cat ⊑ 𝟙`. -/
 public theorem concat_glue_step6 :
-    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
-          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A)
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) cat°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) cat ≫ consR (L := Unit) (E := A)
       ⊑ rprodMap (𝟙 (dE A)) concatR ≫ consR (L := Unit) (E := A) := by
   refine le_iff.mpr ?_
   rintro ⟨a, x⟩ r ⟨⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, s, t⟩, ⟨rfl, hst⟩, _, rfl, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
