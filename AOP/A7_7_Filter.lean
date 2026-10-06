@@ -46,13 +46,13 @@ variable {A : Type}
 
 /-! ## The note's `filter-defn`: the algebra `S` and the specification -/
 
-/-- The note's `S ≜ [nil, π₂ ∪ (p×𝟙) cons]` — `subseq`'s algebra with one extra `p`: drop the
-    head, or keep a head that passes `p`.  `π₂` is spelled as its Rel(Set) value `graph (·.2)`,
-    as in `subseq_cata`, to keep `Classical.choice` out of the axioms. -/
+/-- The note's `S ≜ [nil, (p×𝟙) cons ∪ π₂]` — `subseq`'s algebra `[nil, cons ∪ π₂]` with one extra
+    `p`: keep a head that passes `p`, or drop it.  `π₂` is spelled as its Rel(Set) value
+    `graph (·.2)`, as in `subseq_cata`, to keep `Classical.choice` out of the axioms. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-    ((graph fun q => q.2) ∪ pcons p)
+    (pcons p ∪ graph fun q => q.2)
 
 /-- Ex 7.41's specification: `filter(p) ≜ Λ(subseq list(p)) est(R°)` — the longest subsequence
     all of whose elements pass the coreflexive `p` (B&dM: "the relation `p` is a coreflexive"). -/
@@ -74,20 +74,20 @@ theorem Salg_inl (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A) :
     Salg p (Sum.inl D) ws ↔ ws = ConsList.wrap () := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
-/-- `S`'s cons branch `π₂ ∪ (p×𝟙) cons` at `(a,c)`: drop the head, or keep a passing one. -/
+/-- `S`'s cons branch `(p×𝟙) cons ∪ π₂` at `(a,c)`: keep a passing head, or drop it. -/
 public theorem Scons_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
-    ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p) (a, c) ws
-      ↔ ws = c ∨ (holds p a ∧ ws = ConsList.cons a c) := by
+    (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) (a, c) ws
+      ↔ (holds p a ∧ ws = ConsList.cons a c) ∨ ws = c := by
   constructor
   · rintro (h | h)
-    · exact Or.inl h
-    · exact Or.inr ((pcons_apply hC a c ws).mp h)
+    · exact Or.inl ((pcons_apply hC a c ws).mp h)
+    · exact Or.inr h
   · rintro (h | h)
-    · exact Or.inl h
-    · exact Or.inr ((pcons_apply hC a c ws).mpr h)
+    · exact Or.inl ((pcons_apply hC a c ws).mpr h)
+    · exact Or.inr h
 
 theorem Salg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
-    Salg p (Sum.inr (a, c)) ws ↔ ws = c ∨ (holds p a ∧ ws = ConsList.cons a c) := by
+    Salg p (Sum.inr (a, c)) ws ↔ (holds p a ∧ ws = ConsList.cons a c) ∨ ws = c := by
   unfold Salg
   exact (junc_sum_inr _ _ _ _).trans (Scons_apply hC a c ws)
 
@@ -115,20 +115,20 @@ public theorem filter_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
       | wrap v =>
           have hr : r = ConsList.wrap () := (listPAlg_inl p v r).mp hl
           exact ⟨ConsList.wrap (), ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr rfl⟩,
-            (Scons_apply hC a (ConsList.wrap ()) r).mpr (Or.inl hr)⟩
+            (Scons_apply hC a (ConsList.wrap ()) r).mpr (Or.inr hr)⟩
       | cons b z =>
           obtain ⟨y, hzy, hstep⟩ := hl
           obtain ⟨hpb, hr⟩ := (listPAlg_inr hC b y r).mp hstep
           rcases hs with ⟨hba, hzx⟩ | hsub
           · exact ⟨y, ⟨z, hzx, hzy⟩,
-              (Scons_apply hC a y r).mpr (Or.inr ⟨hba ▸ hpb, hba ▸ hr⟩)⟩
+              (Scons_apply hC a y r).mpr (Or.inl ⟨hba ▸ hpb, hba ▸ hr⟩)⟩
           · exact ⟨r, ⟨ConsList.cons b z, hsub, y, hzy,
-              (listPAlg_inr hC b y r).mpr ⟨hpb, hr⟩⟩, (Scons_apply hC a r r).mpr (Or.inl rfl)⟩
+              (listPAlg_inr hC b y r).mpr ⟨hpb, hr⟩⟩, (Scons_apply hC a r r).mpr (Or.inr rfl)⟩
     · rintro ⟨y, ⟨zs, hzs, hzy⟩, hcase⟩
-      rcases (Scons_apply hC a y r).mp hcase with hr | ⟨hp, hr⟩
-      · exact ⟨zs, subseqP.weaken hzs, hr ▸ hzy⟩
+      rcases (Scons_apply hC a y r).mp hcase with ⟨hp, hr⟩ | hr
       · exact ⟨ConsList.cons a zs, Or.inl ⟨rfl, hzs⟩, y, hzy,
           (listPAlg_inr hC a y r).mpr ⟨hp, hr⟩⟩
+      · exact ⟨zs, subseqP.weaken hzs, hr ▸ hzy⟩
 
 /-- The `filter-alg` row: `subseq list(p) = ⦇S⦈`, read off the defining equation above by the
     Eilenberg–Wright universal property. -/
@@ -138,37 +138,37 @@ public theorem filter_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : subseq ≫ 
 
 /-! ## The note's `filter-mono` and the greedy row -/
 
-/-- **`filter-mono`'s first step**: `(𝟙×R°)(π₂ ∪ (p×𝟙) cons)=(𝟙×R°)π₂ ∪ (p×R°) cons` — `R°`
+/-- **`filter-mono`'s first step**: `(𝟙×R°)((p×𝟙) cons ∪ π₂)=(p×R°) cons ∪ (𝟙×R°)π₂` — `R°`
     reaches each operand of the `∪` on its own, and on the `cons` one it stands beside `p` as the
     pair's second strand. -/
 public theorem filter_mono_step1 (p : dE A ⟶ dE A) :
     rprodMap (𝟙 (dE A)) (lenLE (A := A))°
-        ≫ ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)
-      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR := by
+        ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
+      = rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) := by
   have hcons : rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p
       = rprodMap p (lenLE (A := A))° ≫ consR := by
     unfold pcons
     rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
   rw [DistributiveAllegory.comp_union_distrib, hcons]
 
-/-- **`filter-mono`'s second step**: `(𝟙×R°)π₂ ∪ (p×R°) cons=π₂R° ∪ (p×R°) cons` — the
+/-- **`filter-mono`'s second step**: `(p×R°) cons ∪ (𝟙×R°)π₂=(p×R°) cons ∪ π₂R°` — the
     projection's naturality square, `(𝟙×R°)π₂=π₂R°`. -/
 public theorem filter_mono_step2 (p : dE A ⟶ dE A) :
-    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR
-      = (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR := by
+    rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
+      = rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := by
   rw [rprodMap_id_snd]
 
-/-- **`filter-mono`'s third step**: `π₂R° ∪ (p×R°) cons ⊑ π₂R° ∪ (p×𝟙) cons R°` — the `cons`
+/-- **`filter-mono`'s third step**: `(p×R°) cons ∪ π₂R° ⊑ (p×𝟙) cons R° ∪ π₂R°` — the `cons`
     operand slides its `R°` out, which is `takewhile-mono`'s own step. -/
 public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR
-      ⊑ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-        ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := by
-  refine union_mono (le_refl _) ?_
+    rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
+      ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := by
+  refine union_mono ?_ (le_refl _)
   rw [← Cat.assoc]
   exact takewhile_mono_slide hC
 
@@ -177,19 +177,19 @@ public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
 public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     rprodMap (𝟙 (dE A)) (lenLE (A := A))°
-        ≫ ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)
-      ⊑ ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p) ≫ lenLE° :=
+        ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
+      ⊑ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ lenLE° :=
   calc rprodMap (𝟙 (dE A)) (lenLE (A := A))°
-          ≫ ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)
-      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
-          ∪ rprodMap p (lenLE (A := A))° ≫ consR :=
+          ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
+      = rprodMap p (lenLE (A := A))° ≫ consR
+          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) :=
         filter_mono_step1 p
-    _ = (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-          ∪ rprodMap p (lenLE (A := A))° ≫ consR :=
+    _ = rprodMap p (lenLE (A := A))° ≫ consR
+          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° :=
         filter_mono_step2 p
-    _ ⊑ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-          ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := filter_mono_step3 hC
-    _ = ((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p) ≫ lenLE° := by
+    _ ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
+          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := filter_mono_step3 hC
+    _ = (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ lenLE° := by
         rw [← Cat.assoc]
         exact (union_comp_distrib _ _ _).symm
 
@@ -245,14 +245,14 @@ public abbrev PL : RelProd (P (dList A))
     (P (dList A)) :=
   relProd _ _
 
-/-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the
+/-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),((p×𝟙) cons ∪ π₂)%∋ est(R°)]` — the
     transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
     is the coproduct of the composites. -/
 public theorem filter_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
           ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
-          (((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)%∋ ≫ est(R°)) := by
+          ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°)) := by
   unfold Salg; exact junc_Λ_est _ _ _ R°
 
 /-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` for reflexive `R°` — the `nil` arm, as in
@@ -261,33 +261,33 @@ public theorem filter_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
     (hrefl : 𝟙 (dList A) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
-        (((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)%∋ ≫ est(R°))
+        ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
           (wrapR : dL Unit ⟶ dList A)
-          (((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)%∋ ≫ est(R°)) := by
+          ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
-/-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
+/-- Step 3 of `filter-step`: `((p×𝟙) cons ∪ π₂)%∋ = ⟨((p×𝟙) cons)%∋,π₂%∋⟩ cup` — the transpose of
     a union is the pair of the transposes followed by the power object's union. -/
 public theorem filter_step3 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
-        (((graph fun q : A × ConsList Unit A => q.2) ∪ pcons p)%∋ ≫ est(R°))
+        ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
           (wrapR : dL Unit ⟶ dList A)
-          (rpair ((graph fun q : A × ConsList Unit A => q.2)%∋) ((pcons p)%∋)
+          (rpair ((pcons p)%∋) ((graph fun q : A × ConsList Unit A => q.2)%∋)
             ≫ cup (PL (A := A)) ≫ est(R°)) := by
   rw [Λ_union _ _ (PL (A := A)), pair_eq_rpair, Cat.assoc]
 
-/-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
-    `(a,xs)` the union is `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and
-    `xs` loses the second.  The head is dropped, not the whole tail: the one place `π₂` shows
+/-- Step 4 of `filter-step`: `[nil,⟨((p×𝟙) cons)%∋,π₂%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
+    `(a,xs)` the union is `{cons(a,xs),xs}` where `p` holds on `a` and `{xs}` where it fails, and
+    `xs` loses the first.  The head is dropped, not the whole tail: the one place `π₂` shows
     against takewhile's `⊸ nil`. -/
 public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
-        (rpair ((graph fun q : A × ConsList Unit A => q.2)%∋) ((pcons p)%∋)
+        (rpair ((pcons p)%∋) ((graph fun q : A × ConsList Unit A => q.2)%∋)
           ≫ cup (PL (A := A)) ≫ est(lenLE°))
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) := by
   rw [← filter_step3]
@@ -300,28 +300,28 @@ public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = fStep p a c
-        rcases (Scons_apply hC a c ws).mp hS with hws | ⟨hpa, hws⟩
+        rcases (Scons_apply hC a c ws).mp hS with ⟨hpa, hws⟩ | hws
+        · rw [fStep_pos hpa, hws]
         · subst hws
           by_cases hpa : holds p a
-          · have hz := hmax (ConsList.cons a ws) ((Scons_apply hC a ws _).mpr (Or.inr ⟨hpa, rfl⟩))
+          · have hz := hmax (ConsList.cons a ws) ((Scons_apply hC a ws _).mpr (Or.inl ⟨hpa, rfl⟩))
             exact absurd hz (Nat.not_succ_le_self _)
           · rw [fStep_neg hpa]
-        · rw [fStep_pos hpa, hws]
       · intro h0
         have hws : ws = fStep p a c := h0
         by_cases hpa : holds p a
         · rw [fStep_pos hpa] at hws
           subst hws
-          refine ⟨(Scons_apply hC a c _).mpr (Or.inr ⟨hpa, rfl⟩), fun z hz => ?_⟩
-          rcases (Scons_apply hC a c z).mp hz with hz' | ⟨-, hz'⟩
-          · subst hz'; exact Nat.le_succ _
+          refine ⟨(Scons_apply hC a c _).mpr (Or.inl ⟨hpa, rfl⟩), fun z hz => ?_⟩
+          rcases (Scons_apply hC a c z).mp hz with ⟨-, hz'⟩ | hz'
           · subst hz'; exact Nat.le_refl _
+          · subst hz'; exact Nat.le_succ _
         · rw [fStep_neg hpa] at hws
           subst hws
-          refine ⟨(Scons_apply hC a ws _).mpr (Or.inl rfl), fun z hz => ?_⟩
-          rcases (Scons_apply hC a ws z).mp hz with hz' | ⟨hp', hz'⟩
-          · subst hz'; exact Nat.le_refl _
+          refine ⟨(Scons_apply hC a ws _).mpr (Or.inr rfl), fun z hz => ?_⟩
+          rcases (Scons_apply hC a ws z).mp hz with ⟨hp', hz'⟩ | hz'
           · exact absurd hp' hpa
+          · subst hz'; exact Nat.le_refl _
 
 /-- The `filter-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,π₂)]` — at `(a,xs)` the algebra allows
     `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
