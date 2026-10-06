@@ -476,3 +476,11 @@ public theorem theta_step {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) :
 end ThetaSection
 
 end Freyd.Alg
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- `theta R P Q` is the book's `θ(P,Q)` (6.9): `R` is the section's fixed relation, which the
+    region already carries, so the label writes only the two arguments that change. -/
+@[app_unexpander Freyd.Alg.theta] public meta def Freyd.Alg.unexpandTheta : Unexpander
+  | `($_ $_ $p $q) => `($(mkIdent `θ) $p $q)
+  | _ => throw ()

@@ -1733,3 +1733,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Op] public meta def Freyd.Alg.RelSet.Edit.unexpandEditOp : Unexpander
   | _ => `($(mkIdent `Op))
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.pairF] public meta def Freyd.Alg.RelSet.Edit.unexpandEditPairF : Unexpander | _ => `($(mkIdent `F))
+-- The edit lanes are the base functor `F` of the section; the carrier is the wire under it.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.opF] public meta def Freyd.Alg.RelSet.Edit.unexpandEditOpF : Unexpander | _ => `($(mkIdent `F))

@@ -859,3 +859,11 @@ open Lean PrettyPrinter in
 notation:max "list(" p ")" => listP p
 
 end Freyd.Alg.RelSet.GCTakeWhile
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- A Bool test read as a predicate is still the test: the note writes `corefl(p)`, never the
+    coercion between `Bool` and `Prop`. -/
+@[app_unexpander Freyd.Alg.RelSet.GCTakeWhile.holds] public meta def Freyd.Alg.RelSet.GCTakeWhile.unexpandHolds : Unexpander
+  | `($_ $p) => `($p)
+  | _ => throw ()

@@ -98,3 +98,9 @@ public theorem nat_fold_spec {A : 𝒜} (h : I.t ⟶ A)
   exact nat_fold_spec_step5 h c f
 
 end Freyd.Alg
+
+-- printing-only: the note's names for this section's declarations.
+-- A rule, not a rename: `F` is the base functor's letter in every section, and a bare `F` would
+-- print bare only inside this namespace.  B&dM pp.46–47 write `Nat`'s functor `F`, its constructors `zero`, `succ`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.natF] public meta def Freyd.Alg.unexpandNatF : Unexpander | _ => `($(mkIdent `F))

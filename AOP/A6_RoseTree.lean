@@ -348,3 +348,28 @@ public theorem tree_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : tree R
   map_mono h := tree_mono h
 
 end Freyd.Alg.RelSet.RT
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- The rose-tree relator is the note's lane `tree`, the letter its action on arrows already
+    prints with — so `dRose A` and the initial algebra's carrier draw as the one lane.  A rule, not a
+    rename: `RT.tree`, the action on arrows, already holds the name in `RT`. -/
+@[app_unexpander Freyd.Alg.RelSet.RT.roseRelator] public meta def Freyd.Alg.RelSet.RT.unexpandRoseRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+open Lean PrettyPrinter in
+/-- The rose tree's BASE relator is the note's `F`, the letter §13.4.3 writes on both objects of
+    `party-mono` — which datatype's base it is, and at which leaf type, is the section's context and
+    not part of the name, exactly as `typeRelator`'s `T` is. -/
+@[app_unexpander Freyd.Alg.RelSet.RT.F] public meta def Freyd.Alg.RelSet.RT.unexpandRTF : Unexpander
+  | `($_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+-- A DATATYPE'S OWN Lean carrier is the note's object, as its `d…` wrapper above already is: the
+-- rose tree is the note's `tree`, and which of the two tree datatypes a section uses is the
+-- section's business.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.RT.Rose] public meta def Freyd.Alg.RelSet.RT.unexpandRoseType : Unexpander
+  -- Element type first: a catch-all clause matched the bare head and the `A` was lost.
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()

@@ -555,3 +555,11 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 end Freyd.Alg.RelSet.SL
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `unexpandDSL` already
+    writes every snoc list `[E]`, and this is that object's wire. -/
+@[app_unexpander Freyd.Alg.RelSet.SL.snocRelator] public meta def Freyd.Alg.RelSet.SL.unexpandSnocRelator : Unexpander
+  | `($_ $_) => `($(mkIdent `list))
+  | _ => throw ()

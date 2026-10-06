@@ -1268,3 +1268,14 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `new))
 
 end Freyd.Alg.RelSet.Van
+
+-- printing-only: the note's names for this section's declarations.
+-- "`x` is secure" is the note's word for the predicate under the coreflexive `secure`; `amount` and
+-- `N` are the section's context, dropped as `R` drops its own.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Van.secureP] public meta def Freyd.Alg.RelSet.Van.unexpandSecureP : Unexpander
+  | `($_ $_ $_ $x) => `($(mkIdent `secure) $x)
+  | _ => `($(mkIdent `secure))
+-- §7.5's prefix condition is the note's `H`, as its ordering is `R` (`unexpandVanR` above).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Van.Hrel] public meta def Freyd.Alg.RelSet.Van.unexpandVanH : Unexpander | _ => `($(mkIdent `H))

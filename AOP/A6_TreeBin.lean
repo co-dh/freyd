@@ -383,3 +383,20 @@ public theorem tree_mono {B : Type} {R S : dA A ⟶ dA B} (h : R ⊑ S) : tree R
   map_mono h := tree_mono h
 
 end Freyd.Alg.RelSet.TB
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- The binary-tree relator (§6.6 quicksort) is the note's lane `tree` as much as the tip tree's.
+    A rule, not a rename: `TB.tree`, the action on arrows, already holds the name in `TB`. -/
+@[app_unexpander Freyd.Alg.RelSet.TB.treeRelator] public meta def Freyd.Alg.RelSet.TB.unexpandTBTreeRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.TB.Tree] public meta def Freyd.Alg.RelSet.TB.unexpandTBTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+open Lean PrettyPrinter in
+/-- The binary tree's BASE relator is the book's `F` (p.154 `F f = f×id×f`), as `RT.F` is. -/
+@[app_unexpander Freyd.Alg.RelSet.TB.F] public meta def Freyd.Alg.RelSet.TB.unexpandTBF : Unexpander
+  | `($_ $_) => `($(mkIdent `F))
+  | _ => throw ()

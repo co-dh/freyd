@@ -1318,3 +1318,24 @@ calc_steps Freyd.Alg.RelSet.dp_disjoint_ranges
 end Prop91
 
 end Freyd.Alg.RelSet.SL
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+-- The arm of a preorder `Q` is the note's `Q₂` (chapter 10 writes `est(Qᵢ)`): the preorder's own
+-- name, subscripted, never `armQ₂` — the Lean name only says which arm the declaration takes.
+@[app_unexpander Freyd.Alg.RelSet.SL.armQ₂] public meta def Freyd.Alg.RelSet.SL.unexpandSLArmQ2 : Unexpander
+  | `($_ $q:ident) =>
+    `($(mkIdent (Name.mkSimple (q.getId.eraseMacroScopes.toString (escape := false) ++ "₂"))))
+  | _ => `($(mkIdent `Q₂))
+open Lean PrettyPrinter in
+/-- `H≜⦇T⦈°⦇h⦈` is the note's ONE bead `H`: which coalgebra and algebra it is built from is what
+    the definition above the table states, not what the wire is labelled with. -/
+-- Applied to points, `H` keeps them: `H([a,b,c],ys)` is a claim about one input, not about `H`.
+@[app_unexpander Freyd.Alg.H] public meta def Freyd.Alg.unexpandH : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `H) $x $args*)
+  | _ => `($(mkIdent `H))
+open Lean PrettyPrinter in
+-- `M≜Λ(H) est(R)` is the note's one bead `M`, for `H`'s reason.
+@[app_unexpander Freyd.Alg.M] public meta def Freyd.Alg.unexpandM : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `M) $x $args*)
+  | _ => `($(mkIdent `M))

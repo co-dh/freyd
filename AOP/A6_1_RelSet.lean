@@ -522,3 +522,23 @@ end RelSet
     (inferInstance : PositiveAllegory RelSet) with }
 
 end Freyd.Alg
+
+-- printing-only: the note's names for this section's declarations.
+open Lean PrettyPrinter in
+/-- A map's GRAPH is written by the map's own name — the note's `edit`, `cons`, `nil` are all
+    `graph f` — and the two projections have names of their own, B&dM's `π₁`/`π₂`. -/
+@[app_unexpander Freyd.Alg.RelSet.graph] public meta def Freyd.Alg.RelSet.unexpandGraph : Unexpander
+  -- Only a map with a NAME: `graph (fun _ => 0)` keeps `AOP.A6_1_RelSet`'s own `⊸ 0`, which this
+  -- clause would otherwise shadow with the lambda.
+  | `($_ $f:ident) => `($f)
+  | _ => throw ()
+open Lean PrettyPrinter in
+/-- The subset `R` reaches from `s` is B&dM's `(ER)x` (p.32): the existential image `E(R)` at `s`. -/
+@[app_unexpander Freyd.Alg.RelSet.img] public meta def Freyd.Alg.RelSet.unexpandImg : Unexpander
+  | `($_ $R $s) => `(($(mkIdent `E) $R) $s)
+  | _ => throw ()
+open Lean PrettyPrinter in
+/-- The preorder a measure induces is the note's `length≤length°`. -/
+@[app_unexpander Freyd.Alg.RelSet.leOn] public meta def Freyd.Alg.RelSet.unexpandLeOn : Unexpander
+  | `($_ $f) => `($f ≤ $f°)
+  | _ => throw ()
