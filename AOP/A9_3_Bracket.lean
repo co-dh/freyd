@@ -834,9 +834,16 @@ public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
   `init`, `tail` are total, a singleton being its own `init` and `tail`: every equation that uses
   them is taken on non-singletons, behind the coreflexive `nonsingle`. -/
 
-/-- `nonsingle`, the coreflexive on lists of two or more elements — the book's "on non-singletons". -/
-@[expose] public def nonsingle : dNE A ⟶ dNE A :=
-  fun xs ys => xs = ys ∧ ∃ a zs, xs = CL.ConsList.cons a zs
+/-- `nonsingle`, the predicate on lists of two or more elements — the book's "on non-singletons". -/
+@[expose] public def nonsingleP (xs : (dNE A).carrier) : Prop := ∃ a zs, xs = CL.ConsList.cons a zs
+
+/-- `nonsingle` as an arrow: the coreflexive of `nonsingleP`. -/
+@[expose] public def nonsingle : dNE A ⟶ dNE A := corefl nonsingleP
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.nonsingleP] public meta def unexpandNonsingleP : Unexpander
+  | `($_ $xs) => `($(mkIdent `nonsingle) $xs)
+  | _ => `($(mkIdent `nonsingle))
 
 /-- The `nonsingle` bead is STRICTLY natural: `list⁺(R)` keeps the length, so relating the
     elements and then testing for two or more is testing first. -/

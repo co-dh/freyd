@@ -455,7 +455,7 @@ directly.
   // lean:AOP.A7_7_TakeWhile.R@dc9aa9fe
   [`[1] R [1,2]` — `xs R ys⟺length(xs)≤length(ys)`],
 
-  [`(⊸ nil)(a,x) ≜ nil`], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
+  [#leanf("Freyd.Alg.RelSet.GCTakeWhile.discNil_apply.mapsto")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
   [`(⊸ nil)(3,[1,2])=nil` — drop the pair, return `nil`],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata")],
@@ -1693,7 +1693,8 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.floorR")],
   [`floor[a,b]` is the smallest of `0`, `a`, `a+b`, so `[a,b]` carries `ceiling−floor` cash.],
 
-  [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`],
+  [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`
+   #leank("Freyd.Alg.RelSet.Van.secureP")],
   [#leant("Freyd.Alg.RelSet.Van.secure")],
   [`secure` keeps `[a]` exactly when `−N≤a≤N`.],
 
@@ -1701,7 +1702,7 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.okR")],
   [`ok` keeps `(a,[[b],[c]])` exactly when `[a,b]` is secure.],
 
-  [`new≜(wrap×𝟙) cons`],
+  [`new≜(wrap×𝟙) cons` #leank("Freyd.Alg.RelSet.Van.newFn")],
   [#leant("Freyd.Alg.RelSet.Van.newR")],
   [`new(a,[[b],[c]])=[[a],[b],[c]]`.],
 

@@ -110,6 +110,8 @@ all=$(./scripts/note-files --generated) || exit 1
 # puts it back — on the file the exporter writes and on the one `--stale` reads.
 ls=$(mktemp -d) || exit 1
 trap 'rm -rf "$ls"' EXIT
+# Every file a full redraw writes is newer than this; one that is not is an ORPHAN, removed at the end.
+touch "$ls/start" || exit 1
 # A PICTURE is a `#lean(...)` call and nothing else; an `#import` draws only a PROOF (`branches`, data
 # a call cannot return beside its metadata) or a CALC (the steps `lean-calc` reads), so a picture
 # imported under an alias is refused by name.
@@ -149,4 +151,13 @@ draw "$(cat "$ls/lean-value.stale")" --value
 # EVERY ROUTE IS DRAWN BEFORE THE RUN FAILS: a red stub in one route stopped the run before the next,
 # and the gate then failed on a formula file that was never drawn instead of on the panel.
 [ -z "$failed" ] || { echo "diag-regen: a drawing above failed (its message names it); every route was still drawn" >&2; exit 1; }
+# ORPHANS GO, on a full redraw only: it rewrote every file a note names, so a file it did not write
+# draws a selector no note names any more, and kept it answers a grep with a picture of an old printing
+# (`knap_spec` after `corefl(p)` printed as `p`).  A chapter's `--missing` run sees one chapter's
+# selectors and cannot tell.  Dotfiles are make's (`.drawn`), never the exporter's.
+if [ -z "$missing$verify$stage" ]; then
+  find diag/generated -type f ! -name '.*' ! -newer "$ls/start" \
+    -printf 'diag-regen: removed %p, which no note names\n' -delete >&2 || exit 1
+  find diag/generated -mindepth 1 -type d -empty -delete || exit 1
+fi
 exit 0

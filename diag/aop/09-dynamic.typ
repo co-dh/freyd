@@ -256,7 +256,7 @@
   [the identity on the `base` summand; on the `step` summand any two operations, and the two pairs
    of strings by `V`],
   [#rowkey("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
-  [#leanf("Freyd.Alg.RelSet.Edit.empty_iff")],
+  [#leanf("Freyd.Alg.RelSet.Edit.emptyP")],
   [holds only at the pair of two empty strings],
   [#rowkey("Freyd.Alg.RelSet.Edit.unstep")], [#leant("Freyd.Alg.RelSet.Edit.unstep")],
   [#leanf("Freyd.Alg.RelSet.Edit.unstep_sound"), #leanf("Freyd.Alg.RelSet.Edit.unstep_nil"), #leanf("Freyd.Alg.RelSet.Edit.unstep_del"), #leanf("Freyd.Alg.RelSet.Edit.unstep_ins"), #leanf("Freyd.Alg.RelSet.Edit.unstep_cons")],
@@ -471,7 +471,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@ff28cd4c
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@d83b12c4
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
@@ -554,8 +554,9 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.gR")],
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#rowkey("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.nonsingle")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.nonsingleP")],
   [holds at the lists of two or more elements],
+// lean:AOP.A9_3_Bracket.nonsingleP@ae78e8cc
   [#rowkey("Freyd.Alg.RelSet.Bracket.splits")], [#leant("Freyd.Alg.RelSet.Bracket.splits")],
   [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq")],
   [every way to cut a list into two non-empty parts — an implementation of #frc([`cat°`])],
@@ -909,7 +910,7 @@
   [#leanf("Freyd.Alg.RelSet.Code.Code")],
   [a code is one character, or a pointer back to a repeated piece],
   [#rowkey("Freyd.Alg.RelSet.Code.extend")], [#leant("Freyd.Alg.RelSet.Code.extend")],
-  [#leanf("Freyd.Alg.RelSet.Code.extend")],
+  [#leanf("Freyd.Alg.RelSet.Code.extendP")],
   [a symbol appends its character; a pointer appends `zs` when `ys⧺zs` is a proper prefix of
    `xs⧺zs`],
   [#rowkey("Freyd.Alg.RelSet.Code.decode")], [#leant("Freyd.Alg.RelSet.Code.decode")],
@@ -925,8 +926,8 @@
   [#leanf("Freyd.Alg.RelSet.Code.R_eq")],
   [`u` costs no more than `v`],
   [#rowkey("Freyd.Alg.RelSet.Code.prefixR")], [#leant("Freyd.Alg.RelSet.Code.prefixR")],
-  [#leanf("Freyd.Alg.RelSet.Code.prefixR")],
-  [`ys` is a prefix of `x`],
+  [#leanf("Freyd.Alg.RelSet.Code.prefixR_eq")],
+  [split the string in two and keep the first part],
   [#rowkey("Freyd.Alg.RelSet.Code.U")], [#leant("Freyd.Alg.RelSet.Code.U")],
   [#leanf("Freyd.Alg.RelSet.Code.U_eq")],
   [any symbol to any symbol, any pointer to any pointer],
@@ -934,10 +935,10 @@
   [#leanf("Freyd.Alg.RelSet.Code.Q_eq")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#rowkey("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
-  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
+  [#leanf("Freyd.Alg.RelSet.Code.mem_reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
-// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
+// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the

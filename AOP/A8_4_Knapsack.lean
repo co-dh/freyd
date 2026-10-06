@@ -41,25 +41,39 @@ variable {Item : Type} {val wt : Item → Int} {w : Int}
 
 /-! ## `knap-defn` -/
 
-/-- **knap-defn**: `within w`, the coreflexive on the packings whose weight fits the knapsack
-    (`value ≜ total val`, `weight ≜ total wt`). -/
+/-- **knap-defn**: `value ≜ sum list(val)`, the total value of a packing (B&dM p.205). -/
+@[expose] public def value (val : Item → Int) : ConsList Unit Item → Int := total val
+
+/-- **knap-defn**: `weight ≜ sum list(wt)`, the total weight of a packing (B&dM p.205). -/
+@[expose] public def weight (wt : Item → Int) : ConsList Unit Item → Int := total wt
+
+/-- `value = list(val) sum`, point-free. -/
+public theorem value_eq :
+    (graph (value val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph val) ≫ sumR := total_eq val
+
+/-- `weight = list(wt) sum`, point-free. -/
+public theorem weight_eq :
+    (graph (weight wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph wt) ≫ sumR := total_eq wt
+
+/-- **knap-defn**: `within(w)(x) ⟺ weight(x) ≤ w` (B&dM p.205), a predicate on ONE packing; as an
+    arrow it is its coreflexive `corefl(within(w))`, the book's `within w` in `Λ(subseq within w)`. -/
 -- The weight function is the SECTION'S data, not part of the name the note writes (`within(w)`),
 -- so it is an implicit binder supplied by name where a use site has to pin it.
-@[expose] public def within (w : Int) : dList Item ⟶ dList Item :=
-  fun xs ys => xs = ys ∧ total wt xs ≤ w
+@[expose] public def within (w : Int) (xs : ConsList Unit Item) : Prop := weight wt xs ≤ w
 
-public theorem within_coreflexive : Coreflexive (within (wt := wt) w) :=
+public theorem within_coreflexive :
+    Coreflexive (corefl (within (wt := wt) w) : dList Item ⟶ dList Item) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `xs R ys` iff `xs` is worth at
     least as much as `y`. -/
 @[expose] public def R (val : Item → Int) : dList Item ⟶ dList Item :=
-  fun xs ys => total val ys ≤ total val xs
+  fun xs ys => value val ys ≤ value val xs
 
 /-- `R = value ≥ value°`, point-free. -/
 public theorem R_eq :
     R val
-      = graph (total val) ≫ geq ≫ (graph (total val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))° := by
+      = graph (value val) ≫ geq ≫ (graph (value val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))° := by
   apply hom_ext; intro x y
   constructor
   · intro h; exact ⟨total val x, rfl, total val y, h, rfl⟩
@@ -71,13 +85,13 @@ public theorem R_eq :
 /-- **knap-defn**: `Q ≜ R ∩ (weight ≤ weight°)` — at least as valuable AND no heavier, the
     order that makes the cons branch monotonic. -/
 @[expose] public def Q (val wt : Item → Int) : dList Item ⟶ dList Item :=
-  fun xs ys => total val ys ≤ total val xs ∧ total wt xs ≤ total wt ys
+  fun xs ys => value val ys ≤ value val xs ∧ weight wt xs ≤ weight wt ys
 
 /-- `Q = R ∩ (weight ≤ weight°)`, point-free. -/
 public theorem Q_eq :
     Q val wt
       = R val
-        ∩ (graph (total wt) ≫ leq ≫ (graph (total wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))°) := by
+        ∩ (graph (weight wt) ≫ leq ≫ (graph (weight wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0}))°) := by
   apply hom_ext; intro x y
   constructor
   · rintro ⟨hv, hwxy⟩
@@ -89,15 +103,14 @@ public theorem Q_eq :
     exact hmn
 
 /-- `xs R ys` iff `xs` is worth at least as much as `ys`: the pointwise reading of `R_eq`. -/
-public theorem R_apply (xs ys : ConsList Unit Item) : R val xs ys ↔ total val ys ≤ total val xs := Iff.rfl
+public theorem R_apply (xs ys : ConsList Unit Item) : R val xs ys ↔ value val ys ≤ value val xs := Iff.rfl
 
 /-- `xs Q ys` iff `xs` is worth at least as much as `ys` and weighs no more. -/
 public theorem Q_apply (xs ys : ConsList Unit Item) :
-    Q val wt xs ys ↔ total val ys ≤ total val xs ∧ total wt xs ≤ total wt ys := Iff.rfl
+    Q val wt xs ys ↔ value val ys ≤ value val xs ∧ weight wt xs ≤ weight wt ys := Iff.rfl
 
-/-- `xs (within w) ys` iff `xs = ys` and `xs` weighs at most `w`. -/
-public theorem within_apply (xs ys : ConsList Unit Item) :
-    within (wt := wt) w xs ys ↔ xs = ys ∧ total wt xs ≤ w := Iff.rfl
+/-- `within(w)(xs)` iff `xs` weighs at most `w`. -/
+public theorem within_apply (xs : ConsList Unit Item) : within (wt := wt) w xs ↔ weight wt xs ≤ w := Iff.rfl
 
 public theorem Q_le_R : Q val wt ⊑ R val := le_iff.mpr fun _ _ h => h.1
 
@@ -163,12 +176,12 @@ public theorem drop_eq_junc :
     item, keep it if the packing still fits, or drop it. -/
 @[expose] public def Salg (wt : Item → Int) (w : Int) :
     (F Unit Item).obj (dList Item) ⟶ dList Item :=
-  (graph con ≫ within (wt := wt) w) ∪ graph dropFn
+  (graph con ≫ corefl (within (wt := wt) w)) ∪ graph dropFn
 
 /-- Pointwise reading of `[nil,cons](within w)`. -/
 public theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     (rs : ConsList Unit Item) :
-    (graph con ≫ within (wt := wt) w) u rs ↔ rs = con u ∧ total wt rs ≤ w := by
+    (graph con ≫ corefl (within (wt := wt) w)) u rs ↔ rs = con u ∧ total wt rs ≤ w := by
   constructor
   · rintro ⟨c, hc, hcr, hwc⟩
     obtain rfl : c = con u := hc
@@ -182,7 +195,7 @@ public theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     redundant beside the unfiltered one. -/
 public theorem Salg_junc :
     Salg wt w = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR
-      ((consR ≫ within (wt := wt) w) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
+      ((consR ≫ corefl (within (wt := wt) w)) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
   | inl D =>
@@ -210,7 +223,7 @@ public theorem Salg_junc :
 /-- **knap-mono**, first row: `(𝟙×Q)(cons (within w)) ⊑ cons (within w)Q` — bettering a
     packing keeps it inside the knapsack, because `Q` also forbids getting heavier. -/
 public theorem knap_mono_cons :
-    Freyd.Alg.Pres (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q val wt) :=
+    Freyd.Alg.Pres (F := F Unit Item) (graph con ≫ corefl (within (wt := wt) w)) (Q val wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hcon⟩ := h
     obtain ⟨rfl, hwr⟩ := (con_within_apply (wt := wt) (w := w) v r).mp hcon
@@ -244,7 +257,7 @@ public theorem knap_mono_cons :
     and each is worth 1, the capacity is 5: `[10]` and `[0]` tie on value, so `R` lets the
     fold replace one by the other, but only `[0]` still admits another item. -/
 public theorem knap_mono_cons_false :
-    ¬ Freyd.Alg.Pres (F := F Unit Int) (graph con ≫ within (wt := fun i : Int => i) 5)
+    ¬ Freyd.Alg.Pres (F := F Unit Int) (graph con ≫ corefl (within (wt := fun i : Int => i) 5))
         (R (fun _ : Int => (1 : Int))) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr (0, ConsList.cons (10 : Int) (ConsList.wrap ())))
@@ -325,9 +338,9 @@ public theorem knap_sort_drop : Freyd.Alg.Pres (F := F Unit Item) (graph dropFn)
     partial packing because weights are non-negative — a subsequence of a packing that fits,
     fits — and the empty packing is legal because `0 ≤ w`. -/
 public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    (subseq ≫ within (wt := wt) w : dList Item ⟶ dList Item) = ⦇Salg wt w⦈ := by
+    (subseq ≫ corefl (within (wt := wt) w) : dList Item ⟶ dList Item) = ⦇Salg wt w⦈ := by
   have hspec : ∀ x r : ConsList Unit Item,
-      (subseq ≫ within (wt := wt) w : dList Item ⟶ dList Item) x r ↔ subseqP r x ∧ total wt r ≤ w := by
+      (subseq ≫ corefl (within (wt := wt) w) : dList Item ⟶ dList Item) x r ↔ subseqP r x ∧ total wt r ≤ w := by
     intro x r
     constructor
     · rintro ⟨y, hy, hxy, hwy⟩
@@ -382,7 +395,7 @@ public theorem R_connected : Freyd.Alg.connected (R val) :=
   le_iff.mpr fun x y _ => (Int.le_total (total val y) (total val x)).imp id id
 
 /-- B&dM's `g₁ ≜ list(cons) filter(within w)` (§8.4, p.206): extend each packing by the item, keep those that fit. -/
-@[expose] public def g₁ := list (graph con) ≫ Filter.filter (within (Item := Item) (wt := wt) w)
+@[expose] public def g₁ := list (graph con) ≫ Filter.filter (corefl (within (Item := Item) (wt := wt) w))
 
 /-- B&dM's `g₂ ≜ list(π₂)`: keep each packing without the item. -/
 @[expose] public def g₂ := list (graph (dropFn (Item := Item)))
@@ -395,7 +408,7 @@ public theorem knap_laws_step1 :
         (g₁ (wt := wt) (w := w)) g₂
         ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R val) := by
-  have key := thinningList con dropFn (within (wt := wt) w) (𝟙 _) within_coreflexive (le_refl _)
+  have key := thinningList con dropFn (corefl (within (wt := wt) w)) (𝟙 _) within_coreflexive (le_refl _)
     («≼» := R val) (Q := Q val wt) (R := R val) Q_le_R ⟨Q_refl, Q_trans⟩
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩
     knap_mono_cons (by rw [Cat.comp_id]; exact knap_mono_drop)
@@ -405,7 +418,7 @@ public theorem knap_laws_step1 :
 
 /-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
 public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    Λ ⦇Salg wt w⦈ ≫ est (R val) = Λ (subseq ≫ within (wt := wt) w) ≫ est (R val) := by
+    Λ ⦇Salg wt w⦈ ≫ est (R val) = Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) := by
   rw [knap_spec hw hwt]
 
 /-- **knap-laws** (B&dM §8.4, p.206): the knapsack problem as a fold that thins the packings
@@ -418,7 +431,7 @@ public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
         (g₁ (wt := wt) (w := w)) g₂
         ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
-      ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R val) := by
+      ⊑ Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) := by
   rw [← knap_laws_step2 hw hwt]
   exact knap_laws_step1
 
@@ -433,3 +446,14 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Knapsack.Salg] public meta def Freyd.Alg.RelSet.Knapsack.unexpandKnapsackSalg : Unexpander
   | _ => `($(mkIdent `S))
+-- `value`/`weight` print as the book's names alone: the item functions are the section's context.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Knapsack.value] public meta def Freyd.Alg.RelSet.Knapsack.unexpandKnapsackValue : Unexpander
+  | `($_ $_) => `($(mkIdent `value))
+  | `($_ $_ $x) => `($(mkIdent `value) $x)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Knapsack.weight] public meta def Freyd.Alg.RelSet.Knapsack.unexpandKnapsackWeight : Unexpander
+  | `($_ $_) => `($(mkIdent `weight))
+  | `($_ $_ $x) => `($(mkIdent `weight) $x)
+  | _ => throw ()

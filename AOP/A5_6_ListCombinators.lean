@@ -169,7 +169,7 @@ variable (R : A → A → Prop)
 @[expose] public def connected : Prop := ∀ a b, R a b ∨ R b a
 
 /-- The sortedness coreflexive `ordered : list A ⟶ list A`. -/
-@[expose] public def ordered : dList A ⟶ dList A := fun xs ys => xs = ys ∧ orderedP R xs
+@[expose] public def ordered : dList A ⟶ dList A := corefl (orderedP R)
 
 /-- **`ordered` is coreflexive** (`ordered ⊑ id`) — discharges the `hord` hypothesis of §6.6's
     `selection_sort_correct` for the concrete sortedness relation. -/
@@ -1895,7 +1895,8 @@ open Lean PrettyPrinter in
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.ListRel.orderedP] public meta def Freyd.Alg.RelSet.ListRel.unexpandOrderedP : Unexpander
-  | `($_ $_ $x) => `(orderedP $x)
+  | `($_ $_ $x) => `($(mkIdent `ordered) $x)
+  | `($_ $_) => `($(mkIdent `ordered))
   | _ => throw ()
 
 -- printing-only: the note's names for this section's declarations.

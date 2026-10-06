@@ -121,13 +121,14 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
 -- The line-length function is the SECTION'S data, not part of the names the note writes
 -- (`fits(w)`, `ok(w)`), so it is an implicit binder supplied by name where a use site pins it.
 /-- **para-defn**: `list⁺(fits w)`, the coreflexive on paragraphs all of whose lines fit. -/
-@[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => xss = yss ∧ allFitP len w xss
+@[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word := corefl (allFitP len w)
 
-/-- **para-defn**: `ok w`, the coreflexive on `[x]⧺xs` with `width x ≤ w` — only the FIRST
-    line is tested. -/
-@[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => xss = yss ∧ widthFn len (head xss) ≤ w
+/-- **para-defn**: `ok w`, the predicate on `[x]⧺xs` with `width x ≤ w` — only the FIRST line is
+    tested. -/
+@[expose] public def okP (w : Int) (xss : Para Word) : Prop := widthFn len (head xss) ≤ w
+
+/-- `ok w` as an arrow: the coreflexive of `okP`. -/
+@[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word := corefl (okP (len := len) w)
 
 public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
@@ -660,3 +661,8 @@ open Lean PrettyPrinter in
   | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
   | `($_ $_ $w) => `($(mkIdent `fits) $w)
   | _ => `($(mkIdent `fits))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.okP] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaOkP : Unexpander
+  | `($_ $w $xss) => `($(mkIdent `ok) $w $xss)
+  | `($_ $w) => `($(mkIdent `ok) $w)
+  | _ => `($(mkIdent `ok))

@@ -777,9 +777,17 @@ public theorem editAlg_junc :
       exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
     | inr q => simp [editAlg, step, junc, graph, sumCop]; exact Iff.rfl
 
-/-- **edit-defn**: `empty`, the coreflexive on `(xs,ys)` with both lists empty. -/
-@[expose] public def empty : dPair Char ⟶ dPair Char :=
-  fun p q => p = q ∧ p = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ())
+/-- **edit-defn**: `empty`, the predicate on `(xs,ys)` with both lists empty. -/
+@[expose] public def emptyP (p : ConsList Unit Char × ConsList Unit Char) : Prop :=
+  p = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ())
+
+/-- `empty` as an arrow: the coreflexive of `emptyP`. -/
+@[expose] public def empty : dPair Char ⟶ dPair Char := corefl emptyP
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.emptyP] public meta def unexpandEmptyP : Unexpander
+  | `($_ $p) => `($(mkIdent `empty) $p)
+  | _ => `($(mkIdent `empty))
 
 /-! ### `edit-defn`, one declaration per line of the note's display -/
 

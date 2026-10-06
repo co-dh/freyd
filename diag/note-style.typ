@@ -123,7 +123,7 @@
 /// `<name>≜<body>` — else the one declaration its picture draws (`<lean-decls>` of a single
 /// selector), else `()`.
 #let row-keys(loc) = {
-  let ks = query(selector(<law-row-keys>).before(loc)).last().value
+  let ks = query(selector(<law-row-cite>).before(loc)).last().value
   if ks.len() > 0 { ks } else {
     let a = query(selector(<law-row>).before(loc)).last().location()
     let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
@@ -212,7 +212,10 @@
       // every row emits unconditionally, so the choice settles in one pass.
       let ks = lean-keys(it.body).dedup()
       let seen = query(selector(<law-row-keys>).before(here())).map(m => m.value).flatten()
-      let marks = [#metadata(ks)<law-row-keys>] + for k in ks.filter(k => k not in seen) [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
+      // A cite prints the row's FORMULAS; its row key only labels it, and prints only when the row has
+      // no formula — a key `x` of `x≜graph(x)` would print `x ≜ x`.
+      let fs = lean-keys(it.body, labels: (<lean-formula>,)).dedup()
+      let marks = [#metadata(ks)<law-row-keys>#metadata(if fs.len() > 0 { fs } else { ks })<law-row-cite>] + for k in ks.filter(k => k not in seen) [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
         let i = f.at("inset", default: auto)
         block({ rownum(n, left-inset(if i == auto { inset } else { i }, it.x, it.y)); marks; it.body })

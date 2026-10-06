@@ -268,6 +268,10 @@ public theorem listP_cata (p : dE A ⟶ dE A) : listP p = cataR (listPAlg p) := 
 @[expose] public def discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun _ => ConsList.wrap ()
 
+/-- `(⊸ nil)(a,xs) = nil` — whatever the pair, the answer is `nil`. -/
+public theorem discNil_apply (a : A) (xs ys : ConsList Unit A) :
+    discNil (a, xs) ys ↔ ys = ConsList.wrap () := Iff.rfl
+
 /-- The note's `S ≜ [nil, (p×𝟙) cons ∪ ⊸ nil]` — `prefix`'s algebra with one extra `p`. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
@@ -866,4 +870,9 @@ open Lean PrettyPrinter in
     coercion between `Bool` and `Prop`. -/
 @[app_unexpander Freyd.Alg.RelSet.GCTakeWhile.holds] public meta def Freyd.Alg.RelSet.GCTakeWhile.unexpandHolds : Unexpander
   | `($_ $p) => `($p)
+  | _ => throw ()
+open Lean PrettyPrinter in
+/-- `discNil` is the note's `⊸ nil`, the constant map it is the graph of. -/
+@[app_unexpander Freyd.Alg.RelSet.GCTakeWhile.discNil] public meta def Freyd.Alg.RelSet.GCTakeWhile.unexpandDiscNil : Unexpander
+  | `($_:ident) => `($(mkIdent (Name.mkSimple "⊸")) $(mkIdent `nil))
   | _ => throw ()

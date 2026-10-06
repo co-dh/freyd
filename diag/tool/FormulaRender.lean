@@ -186,7 +186,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       unless path.isEmpty do
         throwError "{declName}: `.{path.head!}` takes a side of a statement, and a definition has \
           none — its formula is `<name>≜<body>`"
-      let head ← labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
+      let head ← withOptions (·.set `diag.keepClosed declName)
+        (labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs))
       -- A STRUCTURE OF PROPOSITIONS (a `Prop` class) has no value but its FIELDS: what it states is
       -- their conjunction, read off the constructor at these arguments.
       if ci.value?.isNone && isStructure (← getEnv) declName then
@@ -235,7 +236,15 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.
       if branch.isEmpty && (homObjs? body).isSome && (val.beta xs).isLambda then
         return #[← pointwise sp declName]
-      return ← withBody declName branch (val.beta xs) fun v => return #[head ++ spaced "≜" sp ++ (← labelT v)]
+      return ← withBody declName branch (val.beta xs) fun v => do
+        let b ← labelT v
+        -- `x ≜ x` says nothing: the body is a wrapper (`graph f`, `corefl p`) whose argument prints
+        -- under the same name, and the note must cite that argument's declaration instead.
+        if b.flat == head.flat then
+          throwError "{declName}: its formula prints `{head.flat} ≜ {b.flat}`, which says nothing — \
+            cite the declaration its body applies ({(v.getAppFn.constName?.getD .anonymous)} of \
+            {(v.getAppArgs.filterMap (·.getAppFn.constName?)).toList})"
+        return #[head ++ spaced "≜" sp ++ b]
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with

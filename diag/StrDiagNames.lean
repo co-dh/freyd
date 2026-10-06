@@ -193,6 +193,11 @@ open Lean PrettyPrinter Delaborator SubExpr in
   `($a × $b)
 
 
+open Lean PrettyPrinter in
+/-- Binary max is B&dM's `bmax` (p.185), applied to the pair it takes. -/
+@[app_unexpander Max.max] def unexpandMax : Unexpander
+  | `($_ $a $b) => `($(mkIdent `bmax) $a $b)
+  | _ => throw ()
 
 
 
