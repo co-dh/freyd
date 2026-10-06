@@ -1315,11 +1315,6 @@ open Lean PrettyPrinter in
 @[app_unexpander cplMap] def unexpandCplMap : Unexpander
   | _ => `($(mkIdent `cpl))
 -- B&dM p.201's `listcp(F)`; the functor is the wire's, as for `cp`.
--- `listcp = wrap+cpr` (B&dM p.201): the right arm is `cpr`; `Inr` only marks the summand it lands in.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cprInr] def unexpandCprInr : Unexpander
-  | `($_ $args*) => `($(mkIdent `cpr) $args*)
-  | _ => `($(mkIdent `cpr))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
   | _ => `($(mkIdent `listcp))
