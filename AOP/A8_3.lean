@@ -946,10 +946,10 @@ open Freyd.Alg.RelSet.ListRel (cmap cppFn cappend inlistP orderedP ordered setif
 
 /-- **`F` is linear** (B&dM p.202): `F` distributes over (nonempty) joins.  For a polynomial `F`
     that is: no product both of whose factors mention the argument. -/
-@[expose] public def Linear : PolyF → Prop
+@[expose] public def linear : PolyF → Prop
   | .zer | .one | .arg₁ | .arg₂ => True
-  | .oplus l r => Linear l ∧ Linear r
-  | .otimes l r => Linear l ∧ Linear r ∧ (¬ hasArg₂ l ∨ ¬ hasArg₂ r)
+  | .oplus l r => linear l ∧ linear r
+  | .otimes l r => linear l ∧ linear r ∧ (¬ hasArg₂ l ∨ ¬ hasArg₂ r)
 
 /-- `listcp(F)` pointwise, by recursion on `F`: `[−]` on a constant and on `arg₁`, the list itself
     on `arg₂`, `list(inl)`/`list(inr)` on a sum, `cpp` on a product. -/
@@ -1077,7 +1077,7 @@ public theorem cppFn_single_right {B C : Type} (b : C) : ∀ xs : ConsList Unit 
 
 /-- For linear `F`, `listcp(F)` of `F`-many `≼`-ordered lists is `F(≼)`-ordered. -/
 public theorem orderedP_listcpFn {A : RelSet.{0}} {X : Type} («≼» : dE X ⟶ dE X) :
-    (F : PolyF) → Linear F → ∀ w, fmapR (A := A) F (ordered ≼) w w →
+    (F : PolyF) → linear F → ∀ w, fmapR (A := A) F (ordered ≼) w w →
       orderedP (fmapR (A := A) F ≼) (listcpFn (A := A.carrier) (X := X) F w)
   | .zer, _, e, _ => Empty.elim e
   | .one, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
@@ -1112,7 +1112,7 @@ public theorem orderedP_listcpFn {A : RelSet.{0}} {X : Type} («≼» : dE X ⟶
 
 /-- **`F(ordered(≼)) listcp(F) ⊑ listcp(F) ordered(F(≼))`** for linear `F`: `listcp(F)` carries
     `F`-many `≼`-ordered lists to an `F(≼)`-ordered one. -/
-public theorem Fmap_ordered_comp_listcp_le (F : PolyF) (hF : Linear F) (A : RelSet.{0}) {X : Type}
+public theorem Fmap_ordered_comp_listcp_le (F : PolyF) (hF : linear F) (A : RelSet.{0}) {X : Type}
     («≼» : dE X ⟶ dE X) :
     (relator F A).map (ordered ≼) ≫ listcp F A X ⊑ listcp F A X ≫ ordered ((relator F A).map ≼) :=
   have hco : (relator F A).map (ordered ≼) ⊑ 𝟙 _ :=
@@ -1128,7 +1128,7 @@ public theorem Fmap_ordered_comp_listcp_le (F : PolyF) (hF : Linear F) (A : RelS
 /-- **(8.11)** for every linear polynomial `F` (B&dM p.202, Exercise 8.19), mirrored
     `F(sort(≼)) listcp(F) ⊑ cp(F) sort(F(≼))`: the abstract (8.11) from `listcp(F)`'s two
     defining properties, each proved by induction on `F`. -/
-public theorem Fmap_sort_comp_listcp_le (F : PolyF) (hF : Linear F) (A : RelSet.{0}) {X : Type}
+public theorem Fmap_sort_comp_listcp_le (F : PolyF) (hF : linear F) (A : RelSet.{0}) {X : Type}
     {«≼» : dE X ⟶ dE X} :
     (relator F A).map (sortRel listRelator setify ordered ≼) ≫ listcp F A X
       ⊑ cpMap (relator F A) (dE X) ≫ sortRel listRelator setify ordered ((relator F A).map ≼) :=

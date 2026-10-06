@@ -416,8 +416,8 @@ row((
   [#leanf("Freyd.Alg.RelSet.Poly.listcpFn")],
   [by the shape of `F`: a constant or `arg₁` is a one-element list, `arg₂` the list itself, a sum
    lists its summand, a product pairs every element of one list with every element of the other],
-  [#leann("Freyd.Alg.RelSet.Poly.Linear")], [#leant("Freyd.Alg.RelSet.Poly.Linear")],
-  [#leanf("Freyd.Alg.RelSet.Poly.Linear")],
+  [#leann("Freyd.Alg.RelSet.Poly.linear")], [#leant("Freyd.Alg.RelSet.Poly.linear")],
+  [#leanf("Freyd.Alg.RelSet.Poly.linear")],
   [no product in `F` has the argument on both sides],
   [#leann("Freyd.Alg.sortRel")], [#leant("Freyd.Alg.sortRel")],
   [#leanf("Freyd.Alg.sortRel")],

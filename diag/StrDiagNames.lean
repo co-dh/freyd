@@ -91,6 +91,9 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
+attribute [diag_noted] RelSet.Poly.listcp RelSet.Poly.listcpFn RelSet.Poly.linear RelSet.Poly.hasArg₂
+  RelSet.Poly.relator RelSet.Poly.PolyF RelSet.Poly.PolyF.zer RelSet.Poly.PolyF.one RelSet.Poly.PolyF.arg₁
+  RelSet.Poly.PolyF.arg₂ RelSet.ListRel.cppFn RelSet.ListRel.cprFn RelSet.ListRel.cplFn
   RelSet.CL.thinlist RelSet.ListRel.IsThinlist
 -- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
 attribute [diag_noted] _root_.Int
@@ -1441,72 +1444,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.cprInr] def unexpandCprInr : Unexpander
   | `($_ $args*) => `($(mkIdent `cpr) $args*)
   | _ => `($(mkIdent `cpr))
--- B&dM p.202's `listcp(F)` for a polynomial `F`: as for `cp`, only the functor is printed, the
--- constant `A` and the element type `X` are the wires'.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.listcp] def unexpandPolyListcp : Unexpander
-  | `($_ $F $_ $_) => `($(mkIdent `listcp) $F)
-  | `($_ $F $_) => `($(mkIdent `listcp) $F)
-  | `($_ $F) => `($(mkIdent `listcp) $F)
-  | _ => `($(mkIdent `listcp))
--- `Fn` is Lean's disambiguator: the pointwise function is the same `listcp(F)`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.listcpFn] def unexpandPolyListcpFn : Unexpander
-  | `($_ $F $args*) => `($(mkIdent `listcp) $F $args*)
-  | _ => `($(mkIdent `listcp))
--- B&dM p.202's "such a functor is called linear", lower case as `preorder` and `connected`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.Linear] def unexpandPolyLinear : Unexpander
-  | `($_ $F) => `($(mkIdent `linear) $F)
-  | _ => throw ()
--- `cpp`/`cpr`/`cpl` pointwise; `Fn` is Lean's disambiguator from the graphs of the same names.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cppFn] def unexpandCppFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `cpp) $args*)
-  | _ => `($(mkIdent `cpp))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cprFn] def unexpandCprFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `cpr) $args*)
-  | _ => `($(mkIdent `cpr))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cplFn] def unexpandCplFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `cpl) $args*)
-  | _ => `($(mkIdent `cpl))
--- The codes of polynomial functors; the `F` suffix is Lean's.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF] def unexpandPolyF : Unexpander
-  | _ => `($(mkIdent `Poly))
--- "`F` mentions its argument": the second argument occurs in the code.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.hasArg₂] def unexpandPolyHasArg₂ : Unexpander
-  | `($_ $F) => `($(mkIdent `arg₂) ∈ $F)
-  | _ => throw ()
--- The polynomial bifunctor with its first argument fixed is the lane `F(A,−)`, as `BiRelator.appl`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.relator] def unexpandPolyRelator : Unexpander
-  | `($_ $F $A) => `($F $A $(mkIdent (Name.mkSimple "−")))
-  | _ => throw ()
--- A code prints as the functor it names: `0`, `1`, the two arguments, `+` and `×`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.zer] def unexpandPolyZer : Unexpander
-  | _ => `(0)
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.one] def unexpandPolyOne : Unexpander
-  | _ => `(1)
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.arg₁] def unexpandPolyArg₁ : Unexpander
-  | _ => `($(mkIdent `arg₁))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.arg₂] def unexpandPolyArg₂ : Unexpander
-  | _ => `($(mkIdent `arg₂))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.oplus] def unexpandPolyOplus : Unexpander
-  | `($_ $l $r) => `($l + $r)
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Poly.PolyF.otimes] def unexpandPolyOtimes : Unexpander
-  | `($_ $l $r) => `($l × $r)
-  | _ => throw ()
 -- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
 open Lean PrettyPrinter in
 @[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander

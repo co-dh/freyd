@@ -40,6 +40,10 @@ public inductive PolyF where
   | oplus  : PolyF → PolyF → PolyF   -- aopa `_⊕_`
   | otimes : PolyF → PolyF → PolyF   -- aopa `_⊗_`
 
+-- aopa's own spelling of the two codes; `⊕` on types stays `Sum`, the argument types decide.
+@[inherit_doc] infixr:30 " ⊕ " => PolyF.oplus
+@[inherit_doc] infixr:70 " ⊗ " => PolyF.otimes
+
 /-- Action on types, aopa `⟦_⟧`.  `reducible` so the `Body`/`sem` round-trip stays transparent. -/
 @[reducible, expose] public def sem : PolyF → Type → Type → Type
   | .zer,       _, _ => Empty
