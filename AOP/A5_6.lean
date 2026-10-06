@@ -156,4 +156,16 @@ public theorem cpMap_sum_eq_junc (G H : Relator 𝒜 𝒜) (A : 𝒜) :
 
 end
 
+-- printing-only: the note's `cp(F)` is `cpMap F A`: the object `A` is the wire under the bead, so
+-- only `F` is printed.  B&dM p.126 writes `cpr`/`cpl` at `A×−`/`−×A`; the objects are the wires.
+open Lean PrettyPrinter in
+@[app_unexpander cpMap] public meta def unexpandCpMap : Unexpander
+  | `($_ $F $_) => `($(mkIdent `cp) $F)
+  | `($_ $F) => `($(mkIdent `cp) $F)
+  | _ => `($(mkIdent `cp))
+open Lean PrettyPrinter in
+@[app_unexpander cprMap] public meta def unexpandCprMap : Unexpander | _ => `($(mkIdent `cpr))
+open Lean PrettyPrinter in
+@[app_unexpander cplMap] public meta def unexpandCplMap : Unexpander | _ => `($(mkIdent `cpl))
+
 end Freyd.Alg

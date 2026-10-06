@@ -1154,13 +1154,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.Salg] def unexpandKnapsackSalg : Unexpander
   | _ => `($(mkIdent `S))
--- The note's `cp(F)` (B&dM §5.6) is `cpMap F A`: the relator is its argument and the object `A` is
--- the wire under the bead, so only `F` is printed (`$args*` here matched nothing and wrote bare `cp`).
-open Lean PrettyPrinter in
-@[app_unexpander cpMap] def unexpandCpMap : Unexpander
-  | `($_ $F $_) => `($(mkIdent `cp) $F)
-  | `($_ $F) => `($(mkIdent `cp) $F)
-  | _ => `($(mkIdent `cp))
 -- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
 -- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): a bundled relator
 -- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
@@ -1184,50 +1177,13 @@ open Lean PrettyPrinter in
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
   | `($_ $_ $_ $_ $o) => `($(mkIdent `sort) $o)
   | _ => `($(mkIdent `sortRel))
--- B&dM p.196 names the cost order `R` and p.197 its refinement `Q`; `path` is only Lean's prefix,
--- and the note's `path-defn` lines print these from the defs' values.
-open Lean PrettyPrinter in
-@[app_unexpander pathR] def unexpandPathR : Unexpander
-  | `($_ $args*) => `($(mkIdent `R) $args*)
-  | _ => `($(mkIdent `R))
-open Lean PrettyPrinter in
-@[app_unexpander pathQ] def unexpandPathQ : Unexpander
-  | `($_ $args*) => `($(mkIdent `Q) $args*)
-  | _ => `($(mkIdent `Q))
--- B&dM p.196 writes `cost` and `head`; the weight `wt` is the section's one parameter and no
--- argument the note writes.
-open Lean PrettyPrinter in
-@[app_unexpander costOf] def unexpandCostOf : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
-  | _ => `($(mkIdent `cost))
-open Lean PrettyPrinter in
-@[app_unexpander headOf] def unexpandHeadOf : Unexpander
-  | `($_ $args*) => `($(mkIdent `head) $args*)
-  | _ => `($(mkIdent `head))
 open Lean PrettyPrinter in
 @[app_unexpander headRel] def unexpandHeadRel : Unexpander
   | _ => `($(mkIdent `head))
--- B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter, as for `cost`.
-open Lean PrettyPrinter in
-@[app_unexpander minpath] def unexpandMinpath : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `minpath) $args*)
-  | _ => `($(mkIdent `minpath))
--- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
-open Lean PrettyPrinter in
-@[app_unexpander pathStep] def unexpandPathStep : Unexpander
-  | `($_ $args*) => `($(mkIdent `step) $args*)
-  | _ => `($(mkIdent `step))
 -- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
 open Lean PrettyPrinter in
 @[app_unexpander pathF] def unexpandPathF : Unexpander
   | _ => `($(mkIdent `F))
--- B&dM p.126 writes `cpr`/`cpl` for the cross product at `A×−`/`−×A`; the objects are the wires.
-open Lean PrettyPrinter in
-@[app_unexpander cprMap] def unexpandCprMap : Unexpander
-  | _ => `($(mkIdent `cpr))
-open Lean PrettyPrinter in
-@[app_unexpander cplMap] def unexpandCplMap : Unexpander
-  | _ => `($(mkIdent `cpl))
 -- B&dM p.201's `listcp(F)`; the functor is the wire's, as for `cp`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
@@ -1242,26 +1198,10 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.connectedP] def unexpandConnectedP : Unexpander
   | `($_ $R) => `($(mkIdent `connected) $R)
   | _ => throw ()
--- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
+-- B&dM p.196's `zero`; the weight `wt` is the section's parameter.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
   | _ => `($(mkIdent `zero))
-open Lean PrettyPrinter in
-@[app_unexpander conswFn] def unexpandConswFn : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
-  | _ => `($(mkIdent `consw))
-open Lean PrettyPrinter in
-@[app_unexpander consw] def unexpandConsw : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
-  | _ => `($(mkIdent `consw))
-open Lean PrettyPrinter in
-@[app_unexpander pathCost] def unexpandPathCost : Unexpander
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
-  | _ => `($(mkIdent `cost))
--- `S ≜ F(𝟙,∋)α`, the letter of the 8.2d side condition `R∩(S°S)⊑Q` only.
-open Lean PrettyPrinter in
-@[app_unexpander algSplit] def unexpandAlgSplit : Unexpander
-  | _ => `($(mkIdent `S))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.

@@ -621,4 +621,54 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat
 
 end Paths
 
+-- printing-only: B&dM p.196 names the cost order `R` and p.197 its refinement `Q`, and p.198 the
+-- step `step`; `path` is only Lean's prefix, kept apart from `Edit`'s `step`.  Each drops `wt`.
+open Lean PrettyPrinter in
+@[app_unexpander pathR] public meta def unexpandPathR : Unexpander
+  | `($_ $_) => `($(mkIdent `R))
+  | `($_ $_ $args*) => `($(mkIdent `R) $args*)
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander pathQ] public meta def unexpandPathQ : Unexpander
+  | `($_ $_) => `($(mkIdent `Q))
+  | `($_ $_ $args*) => `($(mkIdent `Q) $args*)
+  | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander pathStep] public meta def unexpandPathStep : Unexpander
+  | `($_ $_) => `($(mkIdent `step))
+  | `($_ $_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander headOf] public meta def unexpandHeadOf : Unexpander
+  | `($_ $args*) => `($(mkIdent `head) $args*)
+  | _ => `($(mkIdent `head))
+
+-- printing-only: B&dM p.196's `cost` and `consw`; the weight `wt` is the section's one parameter
+-- and no argument the note writes.
+open Lean PrettyPrinter in
+@[app_unexpander costOf] public meta def unexpandCostOf : Unexpander
+  | `($_ $_) => `($(mkIdent `cost))
+  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander pathCost] public meta def unexpandPathCost : Unexpander
+  | `($_ $_) => `($(mkIdent `cost))
+  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander conswFn] public meta def unexpandConswFn : Unexpander
+  | `($_ $_) => `($(mkIdent `consw))
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+open Lean PrettyPrinter in
+@[app_unexpander consw] public meta def unexpandConsw : Unexpander
+  | `($_ $_) => `($(mkIdent `consw))
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+
+-- printing-only: `S ≜ F(𝟙,∋)α`, the letter of the 8.2d side condition `R∩(S°S)⊑Q` only.
+open Lean PrettyPrinter in
+@[app_unexpander algSplit] public meta def unexpandAlgSplit : Unexpander
+  | _ => `($(mkIdent `S))
+
 end Freyd.Alg

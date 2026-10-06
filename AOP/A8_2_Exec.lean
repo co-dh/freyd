@@ -810,4 +810,11 @@ end Exec
     && c == best (row4 wt x) && c == best (row5 wt x) && c == best (row6 wt x)
     && c == best (row7 wt x) && c == best (pathAlgExec wt x) && c.isSome
 
+-- printing-only: B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter.
+open Lean PrettyPrinter in
+@[app_unexpander minpath] public meta def unexpandMinpath : Unexpander
+  | `($_ $_) => `($(mkIdent `minpath))
+  | `($_ $_ $args*) => `($(mkIdent `minpath) $args*)
+  | _ => `($(mkIdent `minpath))
+
 end Freyd.Alg
