@@ -284,14 +284,16 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 /-- The rose-tree relator is the note's lane `tree`, the letter its action on arrows already
-    prints with — so `dRose A` and the initial algebra's carrier draw as the one lane. -/
+    prints with — so `dRose A` and the initial algebra's carrier draw as the one lane.  A rule, not a
+    rename: `RT.tree`, the action on arrows, already holds the name in `RT`. -/
 @[app_unexpander RelSet.RT.roseRelator] def unexpandRoseRelator : Unexpander
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
 
 open Lean PrettyPrinter in
 /-- The tip-tree relator is the note's lane `tree` as much as the rose tree's is: which of the two
-    datatypes a section's trees are is the section's business, not the wire's. -/
+    datatypes a section's trees are is the section's business, not the wire's.  A rule, not a
+    rename: `TT.tree`, the action on arrows, already holds the name in `TT`. -/
 @[app_unexpander RelSet.TT.treeRelator] def unexpandTreeRelator : Unexpander
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
@@ -363,7 +365,8 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-/-- The binary-tree relator (§6.6 quicksort) is the note's lane `tree` as much as the tip tree's. -/
+/-- The binary-tree relator (§6.6 quicksort) is the note's lane `tree` as much as the tip tree's.
+    A rule, not a rename: `TB.tree`, the action on arrows, already holds the name in `TB`. -/
 @[app_unexpander RelSet.TB.treeRelator] def unexpandTBTreeRelator : Unexpander
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
@@ -701,12 +704,14 @@ open Lean PrettyPrinter in
   | `($_ $_ $w) => `($(mkIdent `fits) $w)
   | _ => `($(mkIdent `fits))
 -- B&dM's `y subseq x` (p.123) is the predicate under the relation `subseq`, as `allFitP` is `fits`.
+-- A rule, not a rename: the arrow `ListRel.subseq` already holds the name in `ListRel`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.subseqP] def unexpandSubseqP : Unexpander
   | `($_ $y $x) => `($(mkIdent `subseq) $y $x)
   | `($_ $y) => `($(mkIdent `subseq) $y)
   | _ => `($(mkIdent `subseq))
 -- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), the relator's letter.
+-- A rule, not a rename: the arrow `ListRel.list` already holds the name in `ListRel`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.cmap] def unexpandCmap : Unexpander
   | `($_ $f $x) => `($(mkIdent `list) $f $x)
@@ -1160,6 +1165,7 @@ open Lean PrettyPrinter in
 -- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
 -- when the rule became that Lean follows the note: an algebra prints as the junction the note writes.
 open Lean PrettyPrinter in
+-- A rule, not a rename: the type `Tour.Journey` already holds the name in `Tour`.
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
