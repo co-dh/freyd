@@ -604,6 +604,12 @@ def functorLaw (c : Name) : MetaM Bool := do
     let (l, r) := (← instantiateMVars l, ← instantiateMVars r)
     return distributes l r || distributes r l
 
+/-- Whether the proof `a` relates two arrows or two statements under its premises — a rewrite a
+    law may be applied around — rather than a premise the law consumes (`Map f`). -/
+def rewrites (a : Expr) : MetaM Bool := do
+  Meta.forallTelescope (← instantiateMVars (← Meta.inferType a)) fun _ c => do
+    return (← splitM c).isSome || (← stmtSides? c).isSome
+
 /-- THE LAWS A STEP'S PROOF APPLIES.  A theorem application counts when its statement relates two
     arrows and no proof argument is rewritten inside it: one handed a proof that applies a theorem,
     or a hypothesis it carries to both sides, is congruence or monotonicity around that law
@@ -640,7 +646,8 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
     for (a, i) in args.toList.zipIdx do
       unless a.isFVar do
         let l ← lawsIn coerced a
-        let applies := (a.find? isThm).isSome && (← Meta.isProof a)
+        -- A premise (`graph_map f : Map (graph f)`) relates nothing, so it rewrites nothing inside.
+        let applies := (a.find? isThm).isSome && (← Meta.isProof a) && (← rewrites a)
         inner := inner ++ l; built := built || !l.isEmpty || applies
         continue
       -- A hypothesis is a law the step rewrites with unless a law takes it as its premise.

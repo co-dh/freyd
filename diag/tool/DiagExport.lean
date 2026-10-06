@@ -1875,10 +1875,9 @@ def main (args : List String) : IO UInt32 := do
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
-        -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
-        -- naming the statement rather than drawing a side nobody asked for.
+        -- A circuit reads ONE arrow side; the selector steps through `↔`/`∧`/`→` to reach it.
         else if circuitMode then
-          Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
+          Freyd.CircuitDiagram.drawDecl base.toName sides binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
         else if typeMode then Freyd.TypeRender.file base.toName sides

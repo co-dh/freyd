@@ -287,6 +287,28 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // lean:AOP.A7_2.MonoAlg@26944450
 ]<mon-str>
 
+=== `f` monotonic on `≤`, read at points <sec-mon-points>
+
+// @mon-defn at `R:=≤` for a map `f : FA⟶A`, as one chain: the shunting step moves `f` from the
+// right of `F(≤)f` to a `f°` on the left.  The source of `f` is `FA`, so its order is `F(≤)`.
+#import "../generated/Freyd.Alg.RelSet.graph_monoAlg_iff_conj.calc.typ" as calc-mc
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.graph_monoAlg_iff_conj") \
+    #src[`F(≤)` then `f` stays below `f` then `≤` exactly when `f°`, `F(≤)`, `f` in a row stays
+     below `≤`.]],
+  lean-calc(calc-mc),
+)
+// Hand-drawn at the user's request: a box per point, an arrow per relation of the path `f°F(≤)f`.
+// The pointwise reading is Freyd.Alg.RelSet.graph_conj_le_iff_monotone.
+#align(center)[#box(stroke: 0.4pt, inset: 3pt)[`f(u)`] #h(2pt) $stretch(->, size: #3em)^(f°)$ #h(2pt)
+  #box(stroke: 0.4pt, inset: 3pt)[`u`] #h(2pt) $stretch(->, size: #3em)^(F(≤))$ #h(2pt)
+  #box(stroke: 0.4pt, inset: 3pt)[`v`] #h(2pt) $stretch(->, size: #3em)^f$ #h(2pt)
+  #box(stroke: 0.4pt, inset: 3pt)[`f(v)`]]
+- #src[`F(≤)`: from `u` to any `v` above it; `u`, `v` are in `FA`, compared component by component.
+  This step is the premise.]
+- #src[`⊑≤`: the two ends satisfy `f(u)≤f(v)`, the conclusion. So `u F(≤) v ⟹ f(u)≤f(v)`: `f` preserves `≤`.]
+]<mon-points>
+
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
 #disp[#definition[

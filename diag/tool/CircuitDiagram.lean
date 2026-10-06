@@ -1114,7 +1114,7 @@ partial def withSel (sel : List StrDiag.Sel) (e : Expr) : MetaM Val := do
     the FORM of the type — every binder of every declaration is reachable this way — not a table of
     the hypotheses somebody wanted; a `def`'s body is not unfolded when a binder is named, since
     the binder belongs to the type. -/
-def drawDecl (declName : Name) (side : Option String) (binder : Option String := none)
+def drawDecl (declName : Name) (sides : List String) (binder : Option String := none)
     (branch : List StrDiag.Sel := []) : MetaM String := do
   let some ci := (← getEnv).find? declName
     | throwError "no such declaration: {declName}"
@@ -1140,9 +1140,26 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
             else mkAppN (mkConst declName (ci.levelParams.map .param)) xs)
         | none => pure tybody
       else pure tybody
-    let body ← toRelation body
+    -- A side of an `↔`/`∧`/`→` is itself a statement with no circuit of its own, so the selector
+    -- goes on through it, as the string route's `reqParts` does; what is left names an arrow's side.
+    let mut stmt := body
+    let mut pre : List String := []
+    let mut rest := sides
+    repeat
+      match rest, StrDiag.conn? stmt with
+      | s :: tl, some (l, r) =>
+        if s == "lhs" || s == "rhs" then
+          stmt := if s == "lhs" then l else r; pre := pre ++ [s]; rest := tl
+        else break
+      | _, _ => break
+    if rest.length > 1 then
+      throwError "`{declName}`: `.{String.intercalate "." rest}` — a side has no sides of its own"
+    let side := rest.head?
+    let body ← toRelation stmt
+    let path := String.join (pre.map ("." ++ ·))
     let name (s : Option String) := declName.toString
-      ++ (match binder with | some h => "#" ++ h | none => "") ++ (match s with | some s => "." ++ s | none => "")
+      ++ (match binder with | some h => "#" ++ h | none => "") ++ path
+      ++ (match s with | some s => "." ++ s | none => "")
       ++ String.join (branch.map (·.suffix))
     let one (e : Expr) (s : Option String) : MetaM String := do
       return "cpanel(" ++ (← withSel branch e).render ++ ",\n  cert: (lean: " ++ tstr (name s) ++ "))"

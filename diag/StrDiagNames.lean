@@ -548,6 +548,18 @@ open Lean PrettyPrinter Delaborator in
 -- The coproduct injections applied to a point are applications, so they take parentheses.
 notation:max "l(" x ")" => Sum.inl x
 notation:max "r(" x ")" => Sum.inr x
+-- …and a TUPLE operand is that application's own comma list, `r(e,x)`: the tuple's brackets beside
+-- the injection's would print `r((e, x))`.  Print-only syntax, read by no elaborator.
+syntax:max "l(" term "," term,+ ")" : term
+syntax:max "r(" term "," term,+ ")" : term
+open Lean PrettyPrinter in
+@[app_unexpander Sum.inl] def unexpandInlTuple : Unexpander
+  | `($_ ($a, $bs,*)) => `(l($a,$bs,*))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Sum.inr] def unexpandInrTuple : Unexpander
+  | `($_ ($a, $bs,*)) => `(r($a,$bs,*))
+  | _ => throw ()
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
