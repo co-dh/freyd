@@ -127,4 +127,4 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
     Do not reopen; branch worktree-agent-acb10c66a3d8ff8b6 discarded.
 [ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
 [ ] diff-crop --key lax-closure --rev 76e5391 said "crops pixel-identical" although p.17 gained three lax(φ) ∧ lax(ψ) ⟹ premises.
-[ ] Hand-typed vstep labels beside a leanc/lean selector (e.g. 08-thinning tour_laws_defn: `⦇[start,dropl ∪ dropr]⦈ est(R)`) drift from Lean; print them from the same selector.
+[X] Hand-typed vstep labels beside a leanc/lean selector (e.g. 08-thinning tour_laws_defn: `⦇[start,dropl ∪ dropr]⦈ est(R)`) drift from Lean; print them from the same selector.
