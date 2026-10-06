@@ -1196,15 +1196,15 @@ public theorem Λ_subseq :
         rw [subseq_alg_Λ]
     _ = _ := by rw [subseq_alg_transpose]
 
-/-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
-    display draws: on the leaf, `nil`; on a head and a tail-prefix, either discard and stop with
-    `nil` or keep the head.  Named so the fold below has an arrow to be the fold OF. -/
+/-- The prefix algebra **`[nil, cons ∪ ⊸ nil] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
+    display draws: on the leaf, `nil`; on a head and a tail-prefix, either keep the head or
+    discard and stop with `nil`.  `cons` first, as in `subseq`'s `[nil, cons ∪ π₂]`. -/
 @[expose] public def prefAlg : (F Unit A).obj (dList A) ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-    ((graph fun _ => ConsList.wrap ()) ∪ consR)
+    (consR ∪ (graph fun _ => ConsList.wrap ()))
 
-/-- **`prefix = ⦇[nil, ⊸ nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
-    branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
+/-- **`prefix = ⦇[nil, cons ∪ ⊸ nil]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; `cons`
+    keeps going, the second branch (`⊸nil`, discard then `nil`) stops early. -/
 public theorem prefix_cata :
     (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
@@ -1214,17 +1214,17 @@ public theorem prefix_cata :
     | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
   · show prefixP r (ConsList.cons a x)
-        ↔ ∃ y, prefixP y x ∧ (r = ConsList.wrap () ∨ r = ConsList.cons a y)
+        ↔ ∃ y, prefixP y x ∧ (r = ConsList.cons a y ∨ r = ConsList.wrap ())
     constructor
     · intro h
       cases r with
-      | wrap u => exact ⟨ConsList.wrap (), prefixP.nil x, Or.inl rfl⟩
-      | cons b z => exact ⟨z, h.2, Or.inr (by rw [h.1])⟩
+      | wrap u => exact ⟨ConsList.wrap (), prefixP.nil x, Or.inr rfl⟩
+      | cons b z => exact ⟨z, h.2, Or.inl (by rw [h.1])⟩
     · rintro ⟨y, hy, rfl | rfl⟩
-      · exact trivial
       · exact ⟨rfl, hy⟩
+      · exact trivial
 
-/-- **`α prefix = F(𝟙,prefix)[nil, ⊸nil ∪ cons]`**: the fold law of `prefix` in the cancellation
+/-- **`α prefix = F(𝟙,prefix)[nil, cons ∪ ⊸nil]`**: the fold law of `prefix` in the cancellation
     form (5.12) — build the list, then take a prefix, is take a prefix of the tail and then
     either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
     picture of the two sides is drawn from. -/

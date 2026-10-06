@@ -264,10 +264,10 @@ public theorem listP_cata (p : dE A ⟶ dE A) : listP p = cataR (listPAlg p) := 
 @[expose] public def discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun _ => ConsList.wrap ()
 
-/-- The note's `S ≜ [nil, ⊸ nil ∪ (p×𝟙) cons]` — `prefix`'s algebra with one extra `p`. -/
+/-- The note's `S ≜ [nil, (p×𝟙) cons ∪ ⊸ nil]` — `prefix`'s algebra with one extra `p`. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (discNil ∪ pcons p)
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (pcons p ∪ discNil)
 
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix
     all of whose elements pass `p`. -/
@@ -292,7 +292,7 @@ theorem prefAlg_inl (D : Unit) (ys : ConsList Unit A) :
 
 theorem prefAlg_inr (a : A) (r ys : ConsList Unit A) :
     prefAlg (Sum.inr (a, r)) ys ↔ ys = ConsList.wrap () ∨ ys = ConsList.cons a r := by
-  unfold prefAlg; exact junc_sum_inr _ _ _ _
+  unfold prefAlg; exact (junc_sum_inr _ _ _ _).trans Or.comm
 
 public theorem listPAlg_inl (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A) :
     listPAlg p (Sum.inl D) ws ↔ ws = ConsList.wrap () := by
@@ -313,11 +313,11 @@ theorem Salg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsLi
   refine (junc_sum_inr _ _ _ _).trans ?_
   constructor
   · rintro (h | h)
-    · exact Or.inl h
     · exact Or.inr ((pcons_apply hC a c ws).mp h)
-  · rintro (h | h)
     · exact Or.inl h
-    · exact Or.inr ((pcons_apply hC a c ws).mpr h)
+  · rintro (h | h)
+    · exact Or.inr h
+    · exact Or.inl ((pcons_apply hC a c ws).mpr h)
 
 /-! ### Supporting facts: prefixes of equal length agree -/
 
@@ -400,23 +400,23 @@ public theorem listP_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (t : 
   · rintro ⟨hp, w', hw', hws⟩
     exact ⟨w', hw', (listPAlg_inr hC a w' ws).mpr ⟨hp, hws⟩⟩
 
-/-- `[nil, ⊸ nil ∪ (p×X) cons]` — `prefix`'s algebra with `list(p)`'s own `p` on the head it keeps
+/-- `[nil, (p×X) cons ∪ ⊸ nil]` — `prefix`'s algebra with `list(p)`'s own `p` on the head it keeps
     and the strand `X` the chain has already pushed onto the tail.  `X ≜ list(p)` is the third row
     of the note's `takewhile-alg`, `X ≜ prefix list(p)` its fourth. -/
 @[expose] public def prefConsAlg (p : dE A ⟶ dE A) {C : RelSet.{0}}
     (X : C ⟶ dList A) : Fobj Unit A C ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × C.carrier⟩)
     (wrapR : dL Unit ⟶ dList A)
-    ((graph (fun _ => (ConsList.wrap () : ConsList Unit A))
-        : (⟨A × C.carrier⟩ : RelSet.{0}) ⟶ dList A)
-      ∪ (rprodMap p X ≫ consR))
+    ((rprodMap p X ≫ consR)
+      ∪ (graph (fun _ => (ConsList.wrap () : ConsList Unit A))
+        : (⟨A × C.carrier⟩ : RelSet.{0}) ⟶ dList A))
 
-/-- The `nil` arm of `[nil, ⊸ nil ∪ (p×X) cons]`. -/
+/-- The `nil` arm of `[nil, (p×X) cons ∪ ⊸ nil]`. -/
 public theorem prefConsAlg_inl (p : dE A ⟶ dE A) {C : RelSet.{0}}
     (X : C ⟶ dList A) (D : Unit) (ws : ConsList Unit A) :
     prefConsAlg p X (Sum.inl D) ws ↔ ws = ConsList.wrap () := junc_sum_inl _ _ _ _
 
-/-- The `cons` arm of `[nil, ⊸ nil ∪ (p×X) cons]`: stop with `nil`, or keep a `p`-passing head on
+/-- The `cons` arm of `[nil, (p×X) cons ∪ ⊸ nil]`: stop with `nil`, or keep a `p`-passing head on
     an `X` of the tail. -/
 public theorem prefConsAlg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) {C : RelSet.{0}}
     (X : C ⟶ dList A) (a : A) (t : C.carrier) (ws : ConsList Unit A) :
@@ -424,15 +424,15 @@ public theorem prefConsAlg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) {C : Rel
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ∃ w', X t w' ∧ ws = ConsList.cons a w') := by
   refine (junc_sum_inr _ _ _ _).trans ?_
   constructor
-  · rintro (h | ⟨⟨a', w'⟩, ⟨ha, hX⟩, hws⟩)
-    · exact Or.inl h
+  · rintro (⟨⟨a', w'⟩, ⟨ha, hX⟩, hws⟩ | h)
     · obtain ⟨rfl, hpa⟩ := (coreflexive_apply hC).mp ha; exact Or.inr ⟨hpa, w', hX, hws⟩
-  · rintro (h | ⟨hpa, w', hX, hws⟩)
     · exact Or.inl h
-    · exact Or.inr ⟨(a, w'), ⟨hpa, hX⟩, hws⟩
+  · rintro (h | ⟨hpa, w', hX, hws⟩)
+    · exact Or.inr h
+    · exact Or.inl ⟨(a, w'), ⟨hpa, hX⟩, hws⟩
 
-/-- Row 2 of `takewhile-alg`: `α prefix list(p) = F(prefix)[nil,⊸ nil ∪ cons] list(p)` — the fold's
-    computation rule at `prefix ≜ ⦇[nil,⊸ nil ∪ cons]⦈`, with `list(p)` carried along. -/
+/-- Row 2 of `takewhile-alg`: `α prefix list(p) = F(prefix)[nil,cons ∪ ⊸ nil] list(p)` — the fold's
+    computation rule at `prefix ≜ ⦇[nil,cons ∪ ⊸ nil]⦈`, with `list(p)` carried along. -/
 public theorem takewhile_alg_step1 (p : dE A ⟶ dE A) :
     (initial Unit A).α ≫ (prefixR ≫ listP p)
       = (F Unit A).map prefixR ≫ prefAlg ≫ listP p := by
@@ -440,7 +440,7 @@ public theorem takewhile_alg_step1 (p : dE A ⟶ dE A) :
     (relCata_UP (initial Unit A) prefAlg prefixR).mpr prefix_cata
   rw [← Cat.assoc, h, Cat.assoc]
 
-/-- `[nil,⊸ nil ∪ cons] list(p) = [nil,⊸ nil ∪ (p×list(p)) cons]` — `list(p)` after `prefix`'s
+/-- `[nil,cons ∪ ⊸ nil] list(p) = [nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` after `prefix`'s
     algebra is `list(p)` on the tail it conses to and one `p` on the head it keeps. -/
 public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     prefAlg ≫ listP p = prefConsAlg p (listP p) := by
@@ -468,15 +468,15 @@ public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : Coreflexive p) :
         · exact ⟨ConsList.cons a t, (prefAlg_inr a t _).mpr (Or.inr rfl),
             (listP_cons hC a t ws).mpr hc⟩
 
-/-- Row 3 of `takewhile-alg`: `F(prefix)[nil,⊸ nil ∪ cons] list(p)
-    = F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]` — `list(p)` moves through the algebra. -/
+/-- Row 3 of `takewhile-alg`: `F(prefix)[nil,cons ∪ ⊸ nil] list(p)
+    = F(prefix)[nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` moves through the algebra. -/
 public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     (F Unit A).map prefixR ≫ prefAlg ≫ listP p
       = (F Unit A).map prefixR ≫ prefConsAlg p (listP p) := by
   rw [prefAlg_comp_listP hC]
 
-/-- Row 4 of `takewhile-alg`: `F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]
-    = [nil,⊸ nil ∪ (p×(prefix list(p))) cons]` — the relator's tape joins the strand it runs
+/-- Row 4 of `takewhile-alg`: `F(prefix)[nil,(p×list(p)) cons ∪ ⊸ nil]
+    = [nil,(p×(prefix list(p))) cons ∪ ⊸ nil]` — the relator's tape joins the strand it runs
     alongside, `prefix` landing on the tail `list(p)` already holds.  `⊸ nil` swallows it because
     `nil` prefixes every list. -/
 public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
@@ -513,7 +513,7 @@ public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
         · exact ⟨Sum.inr (a, r), ⟨rfl, hr⟩,
             (prefConsAlg_inr hC (listP p) a r ws).mpr (Or.inr ⟨hp, w', hw', hws⟩)⟩
 
-/-- Row 5 of `takewhile-alg`: `[nil,⊸ nil ∪ (p×(prefix list(p))) cons] = F(prefix list(p)) S` —
+/-- Row 5 of `takewhile-alg`: `[nil,(p×(prefix list(p))) cons ∪ ⊸ nil] = F(prefix list(p)) S` —
     `prefix list(p)` leaves the algebra for the relator's tape, and `S` is what is left. -/
 public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     prefConsAlg p (prefixR ≫ listP p)
@@ -578,12 +578,12 @@ public theorem takewhile_mono_disc :
       ⊑ discNil :=
   le_iff.mpr fun _ _ h => h.elim fun _ hy => hy.2
 
-/-- `(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)=(𝟙×R°)⊸ nil ∪ (p×R°) cons` — `R°` reaches each operand of the
+/-- `(𝟙×R°)((p×𝟙) cons ∪ ⊸ nil)=(p×R°) cons ∪ (𝟙×R°)⊸ nil` — `R°` reaches each operand of the
     `∪` on its own, and on the `cons` one it stands beside `p` as the pair's second strand. -/
 public theorem takewhile_mono_fork (p : dE A ⟶ dE A) :
-    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (discNil ∪ pcons p)
-      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR := by
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (pcons p ∪ discNil)
+      = rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil := by
   have hcons : rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p
       = rprodMap p (lenLE (A := A))° ≫ consR := by
     unfold pcons
@@ -631,49 +631,49 @@ public theorem pcons_slide {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     exact ⟨ConsList.cons a c, (pcons_apply hC a c (ConsList.cons a c)).mpr ⟨hpa, rfl⟩,
       Nat.succ_le_succ hlen⟩
 
-/-- **`takewhile-mono`'s second step**: `(𝟙×R°)⊸ nil ∪ (p×R°) cons ⊑ ⊸ nil ∪ (p×R°) cons` —
+/-- **`takewhile-mono`'s second step**: `(p×R°) cons ∪ (𝟙×R°)⊸ nil ⊑ (p×R°) cons ∪ ⊸ nil` —
     `takewhile_mono_disc` on the constant operand, the other left where it stands. -/
 public theorem takewhile_mono_step2 (p : dE A ⟶ dE A) :
-    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR
-      ⊑ discNil ∪ rprodMap p (lenLE (A := A))° ≫ consR :=
-  union_mono takewhile_mono_disc (le_refl _)
+    rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
+      ⊑ rprodMap p (lenLE (A := A))° ≫ consR ∪ discNil :=
+  union_mono (le_refl _) takewhile_mono_disc
 
-/-- **`takewhile-mono`'s third step**: `⊸ nil ∪ (p×R°) cons ⊑ ⊸ nil ∪ (p×𝟙) cons R°` —
+/-- **`takewhile-mono`'s third step**: `(p×R°) cons ∪ ⊸ nil ⊑ (p×𝟙) cons R° ∪ ⊸ nil` —
     `takewhile_mono_slide` on the `cons` operand. -/
 public theorem takewhile_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    (discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
-        ∪ rprodMap p (lenLE (A := A))° ≫ consR
-      ⊑ discNil ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := by
-  refine union_mono (le_refl _) ?_
+    rprodMap p (lenLE (A := A))° ≫ consR
+        ∪ (discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
+      ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° ∪ discNil := by
+  refine union_mono ?_ (le_refl _)
   rw [← Cat.assoc]
   exact takewhile_mono_slide hC
 
-/-- **`takewhile-mono`'s fourth step**: `⊸ nil ∪ (p×𝟙) cons R° = ⊸ nil R° ∪ (p×𝟙) cons R°` —
+/-- **`takewhile-mono`'s fourth step**: `(p×𝟙) cons R° ∪ ⊸ nil = (p×𝟙) cons R° ∪ ⊸ nil R°` —
     `nil R°=nil`, so the constant operand may carry the `R°` the other one already has. -/
 public theorem takewhile_mono_step4 (p : dE A ⟶ dE A) :
-    (discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
-        ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
-      = discNil ≫ (lenLE (A := A))°
-        ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := by
+    rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
+        ∪ (discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
+      = rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
+        ∪ discNil ≫ (lenLE (A := A))° := by
   rw [takewhile_mono_nil]
 
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
 public theorem takewhile_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     rprodMap (𝟙 (dE A)) (lenLE (A := A))°
-        ≫ (discNil ∪ pcons p)
-      ⊑ (discNil ∪ pcons p) ≫ lenLE° :=
+        ≫ (pcons p ∪ discNil)
+      ⊑ (pcons p ∪ discNil) ≫ lenLE° :=
   calc rprodMap (𝟙 (dE A)) (lenLE (A := A))°
-          ≫ (discNil ∪ pcons p)
-      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
-          ∪ rprodMap p (lenLE (A := A))° ≫ consR :=
+          ≫ (pcons p ∪ discNil)
+      = rprodMap p (lenLE (A := A))° ≫ consR
+          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil :=
         takewhile_mono_fork p
-    _ ⊑ discNil ∪ rprodMap p (lenLE (A := A))° ≫ consR :=
+    _ ⊑ rprodMap p (lenLE (A := A))° ≫ consR ∪ discNil :=
         takewhile_mono_step2 p
-    _ ⊑ discNil ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := takewhile_mono_step3 hC
-    _ = discNil ≫ (lenLE (A := A))°
-          ∪ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° := takewhile_mono_step4 p
-    _ = (discNil ∪ pcons p) ≫ lenLE° := by
+    _ ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE° ∪ discNil := takewhile_mono_step3 hC
+    _ = rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
+          ∪ discNil ≫ (lenLE (A := A))° := takewhile_mono_step4 p
+    _ = (pcons p ∪ discNil) ≫ lenLE° := by
         rw [← Cat.assoc]
         exact (union_comp_distrib _ _ _).symm
 
@@ -711,20 +711,20 @@ public theorem takewhile_greedy {p : dE A ⟶ dE A} (hC : Coreflexive p) :
   exact greedy (initial Unit A) lenLE_recip_trans (takewhile_mono hC)
 
 /-- The algebra's cons branch at a point: stop with `nil`, or keep a head that passes `p`. -/
-theorem discNil_union_pcons_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
-    (discNil ∪ pcons p) (a, c) ws
+theorem pcons_union_discNil_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+    (pcons p ∪ discNil) (a, c) ws
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ws = ConsList.cons a c) :=
-  (junc_sum_inr (wrapR : dL Unit ⟶ dList A) (discNil ∪ pcons p) (a, c) ws).symm.trans
+  (junc_sum_inr (wrapR : dL Unit ⟶ dList A) (pcons p ∪ discNil) (a, c) ws).symm.trans
     (Salg_inr hC a c ws)
 
-/-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]` —
+/-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),((p×𝟙) cons ∪ ⊸ nil)%∋ est(R°)]` —
     the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
     coproduct is the coproduct of the composites. -/
 public theorem takewhile_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
           ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
-          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
+          ((pcons p ∪ discNil)%∋ ≫ est(R°)) := by
   unfold Salg; exact junc_Λ_est _ _ _ R°
 
 /-- `nil%∋ est(R) = nil` for any REFLEXIVE `R` — `nil` is a map, so its singleton has one element
@@ -740,20 +740,20 @@ public theorem takewhile_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
     (hrefl : 𝟙 (dList A) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
-        ((discNil ∪ pcons p)%∋ ≫ est(R°))
+        ((pcons p ∪ discNil)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
           (wrapR : dL Unit ⟶ dList A)
-          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
+          ((pcons p ∪ discNil)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
-/-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
+/-- Step 3 of `takewhile-step`: `((p×𝟙) cons ∪ ⊸ nil)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
     offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
     loses the second. -/
 public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
-        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+        ((pcons p ∪ discNil)%∋ ≫ est(lenLE°))
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p) := by
   apply hom_ext; intro u ws
   cases u with
@@ -764,11 +764,11 @@ public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = twStep p a c
-        rcases (discNil_union_pcons_apply hC a c ws).mp hS with hws | ⟨hpa, hws⟩
+        rcases (pcons_union_discNil_apply hC a c ws).mp hS with hws | ⟨hpa, hws⟩
         · subst hws
           by_cases hpa : holds p a
           · have hz := hmax (ConsList.cons a c)
-                ((discNil_union_pcons_apply hC a c _).mpr (Or.inr ⟨hpa, rfl⟩))
+                ((pcons_union_discNil_apply hC a c _).mpr (Or.inr ⟨hpa, rfl⟩))
             exact absurd hz (Nat.not_succ_le_zero _)
           · rw [twStep_neg hpa]
         · rw [twStep_pos hpa, hws]
@@ -777,14 +777,14 @@ public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
         by_cases hpa : holds p a
         · rw [twStep_pos hpa] at hws
           subst hws
-          refine ⟨(discNil_union_pcons_apply hC a c _).mpr (Or.inr ⟨hpa, rfl⟩), fun z hz => ?_⟩
-          rcases (discNil_union_pcons_apply hC a c z).mp hz with hz' | ⟨-, hz'⟩
+          refine ⟨(pcons_union_discNil_apply hC a c _).mpr (Or.inr ⟨hpa, rfl⟩), fun z hz => ?_⟩
+          rcases (pcons_union_discNil_apply hC a c z).mp hz with hz' | ⟨-, hz'⟩
           · subst hz'; exact Nat.zero_le _
           · subst hz'; exact Nat.le_refl _
         · rw [twStep_neg hpa] at hws
           subst hws
-          refine ⟨(discNil_union_pcons_apply hC a c _).mpr (Or.inl rfl), fun z hz => ?_⟩
-          rcases (discNil_union_pcons_apply hC a c z).mp hz with hz' | ⟨hp', hz'⟩
+          refine ⟨(pcons_union_discNil_apply hC a c _).mpr (Or.inl rfl), fun z hz => ?_⟩
+          rcases (pcons_union_discNil_apply hC a c z).mp hz with hz' | ⟨hp', hz'⟩
           · subst hz'; exact Nat.le_refl _
           · exact absurd hp' hpa
 
