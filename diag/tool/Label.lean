@@ -202,7 +202,12 @@ partial def stxShow (s : Syntax) (brk : Array Name := #[]) : MetaM String := do
   -- threw `Unknown constant null`, so it is written as its children.
   if p.isOfKind nullKind then
     return " ".intercalate ((← p.getArgs.toList.mapM (stxShow · brk)).filter (· != ""))
-  let t := (toString (← PrettyPrinter.ppTerm ⟨p⟩)).replace "«" "" |>.replace "»" ""
+  -- A TUPLE an unexpander built is the note's comma list, as `labelTree` writes a pair: each
+  -- field by this same rule, no space after the comma.  Its fields are read off the grammar's nodes.
+  if p.isOfKind ``Lean.Parser.Term.tuple && p[1].getNumArgs == 3 then
+    let fs := #[p[1][0]] ++ p[1][2].getSepArgs
+    return "(" ++ ",".intercalate (← fs.toList.mapM (stxShow · brk)) ++ ")"
+  let t :=(toString (← PrettyPrinter.ppTerm ⟨p⟩)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
 
 /-- A HEAD IS WRITTEN BY ITS LAST COMPONENT.  A qualifier — the record it is a field of, the
@@ -1044,8 +1049,9 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   | (``Cat.comp, args) =>
     if args.size < 2 then plain f else
     return juxt (← mapLabel args[args.size - 2]! wired) (← mapLabel args.back! wired)
-  | (``Prod.fst, _) => return "π₁"
-  | (``Prod.snd, _) => return "π₂"
+  -- Only the projection itself, its two type arguments and no point: `π₁` applied is not `π₁`.
+  | (``Prod.fst, #[_, _]) => return "π₁"
+  | (``Prod.snd, #[_, _]) => return "π₂"
   -- A CONSTRUCTOR HANDED THE INPUT WHOLE is the same box as one handed its factors, so it gets the
   -- same name: `tip`, never `Tree.tip`.  One rule, both spellings.
   | _ => do if let some n ← ctorName? f then return n else plain f
