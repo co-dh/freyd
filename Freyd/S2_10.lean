@@ -1187,3 +1187,8 @@ theorem equiv_rel_split_iff_effective {a : 𝒜} {E : a ⟶ a} (hE : Equivalence
 public theorem le_of_eq {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {R S : a ⟶ b}
     (h : R = S) : R ⊑ S := h ▸ le_refl R
 end Freyd.Alg
+
+-- printing-only: the unit object is the book's `1`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.UnitaryAllegory.unit_obj] public meta def Freyd.Alg.unexpandUnitObj : Unexpander
+  | _ => `(1)

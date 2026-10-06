@@ -471,3 +471,14 @@ public theorem Q_run :
   exact ⟨k, funext fun j => match j with | ⟨0, _⟩ => hk⟩
 
 end Freyd.Alg.Vec.Rel
+
+-- printing-only: the cost order on paths is the note's `R ≜ sum≤sum°`, the length the wire's own
+-- type; the cylinder `est` IS §7.1's operator at a tuple, written with its operand, `est(R)`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Vec.Rel.costLE] public meta def Freyd.Alg.Vec.Rel.unexpandCostLE : Unexpander
+  | `($_ $_) => `($(mkIdent `R))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Vec.Rel.est] public meta def Freyd.Alg.Vec.Rel.unexpandVecRelEst : Unexpander
+  | `($_ $S) => `(est($S))
+  | _ => throw ()

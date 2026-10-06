@@ -429,3 +429,15 @@ public theorem oneRow_laws {A : 𝒜} (I : InitialAlgebra (F.appl A)) (R : I.t �
 end OneRow
 
 end Freyd.Alg.Cylinder
+
+-- printing-only: `gen`, `Q` and `paths` are stated over the cylinder's fixed data (`I`, `moves`,
+-- `trans`, `zip`, …), which every panel of §17.3 sits in, so the label drops it.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Cylinder.gen] public meta def Freyd.Alg.Cylinder.unexpandCylinderGen : Unexpander
+  | _ => `($(mkIdent `gen))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Cylinder.Q] public meta def Freyd.Alg.Cylinder.unexpandCylinderQ : Unexpander
+  | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Cylinder.paths] public meta def Freyd.Alg.Cylinder.unexpandCylinderPaths : Unexpander
+  | _ => `($(mkIdent `paths))

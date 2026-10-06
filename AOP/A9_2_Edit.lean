@@ -1699,3 +1699,37 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent (Name.mkSimple "[Char]×[Char]")))
 
 end Freyd.Alg.RelSet.Edit
+
+-- printing-only: the section's ordering `R`, thinning preorder `Q` and order `V` wear the note's
+-- letters; the map the section is named after is `edit`, and the algebra's arms are `base`/`step`
+-- (B&dM p.225).  `Op.del` shares its last component with another `del`, so the printer would
+-- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `Char`).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
+  | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.V] public meta def Freyd.Alg.RelSet.Edit.unexpandEditV : Unexpander
+  | _ => `($(mkIdent `V))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.editFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditFn : Unexpander
+  | _ => `($(mkIdent `edit))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.unstepFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditUnstepFn : Unexpander
+  | _ => `($(mkIdent `unstep))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.stepFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditStepFn : Unexpander
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.baseFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditBaseFn : Unexpander
+  | _ => `($(mkIdent `base))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.Op.del] public meta def Freyd.Alg.RelSet.Edit.unexpandEditDel : Unexpander
+  | `($_ $a) => `($(mkIdent `del) $a)
+  | `($_:ident) => `($(mkIdent `del))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.Op] public meta def Freyd.Alg.RelSet.Edit.unexpandEditOp : Unexpander
+  | _ => `($(mkIdent `Op))

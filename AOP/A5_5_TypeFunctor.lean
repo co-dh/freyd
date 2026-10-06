@@ -378,3 +378,29 @@ public theorem tri_cata_fusion {A : 𝒜} {f : A ⟶ A} {g : F.obj A A ⟶ A}
     _ = F.map (𝟙 A) (relCata (I := I A) g) ≫ (F.map (𝟙 A) f ≫ g) := Cat.assoc _ _ _
 
 end Freyd.Alg
+
+-- printing-only.  The bifunctor's unary form is still the bifunctor, the lane `F`; with its FIRST
+-- argument fixed it is the lane `F(A,−)` (two such lanes over one region differ by the argument);
+-- on objects it is `F(A,B)`.  The type functor as a relator is the lane `T`, the letter its action
+-- on arrows prints with, and the pairing that packs a bifunctor's two arguments is the lane
+-- `⟨𝟙,T⟩`; which initial algebras `T` is built from is not part of either name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.BiRelator.toRelator] public meta def Freyd.Alg.BiRelator.unexpandToRelator : Unexpander
+  | `($_ $F) => `($F)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.BiRelator.appl] public meta def Freyd.Alg.BiRelator.unexpandAppl : Unexpander
+  | `($_ $F $A) => `($F $A $(mkIdent (Name.mkSimple "−")))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.BiRelator.obj] public meta def Freyd.Alg.BiRelator.unexpandBiRelObj : Unexpander
+  | `($_ $F $A $B) => `($F $A $B)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.typeRelator] public meta def Freyd.Alg.unexpandTypeRelator : Unexpander
+  | `($_ $_) => `($(mkIdent `T))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.typePair] public meta def Freyd.Alg.unexpandTypePair : Unexpander
+  | `($_ $_) => `($(mkIdent (Name.mkSimple "⟨𝟙,T⟩")))
+  | _ => throw ()

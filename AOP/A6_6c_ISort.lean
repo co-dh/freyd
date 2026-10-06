@@ -418,3 +418,9 @@ example : isortFn (· ≤ · : Nat → Nat → Prop)
     = ConsList.cons 1 (ConsList.cons 2 (ConsList.cons 2 (ConsList.wrap ()))) := rfl
 
 end Freyd.Alg.RelSet.ISort
+
+-- printing-only: Ex 6.30's `insert` (B&dM p.157); the preorder is the section's.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ISort.insertR] public meta def Freyd.Alg.RelSet.ISort.unexpandInsertR : Unexpander
+  | `($_ $_) => `($(mkIdent `insert))
+  | _ => throw ()

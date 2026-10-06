@@ -1488,3 +1488,9 @@ public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ 
 --   Axioms: [propext, Classical.choice, Quot.sound], no `sorryAx`.
 
 end Freyd.Alg
+
+-- printing-only: the top relation is the book's `⊤`; no Lean identifier, so it goes through the
+-- escape `diag/tool/ExprReader` undoes.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.topMor] public meta def Freyd.Alg.unexpandTopMor : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊤")))

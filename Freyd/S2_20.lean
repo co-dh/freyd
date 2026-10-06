@@ -1525,3 +1525,9 @@ public theorem coreflexive_splits {𝒜 : Type u} [TabularAllegory 𝒜] {a : �
 -- The category of maps of O(Y)-valued sets is equivalent to H(Y).
 
 end Freyd.Alg
+
+-- printing-only: the chosen coproduct object is the book's `a+b`, never the class field's name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.PositiveAllegory.coprod] public meta def Freyd.Alg.unexpandCoprod : Unexpander
+  | `($_ $a $b) => `($a + $b)
+  | _ => throw ()

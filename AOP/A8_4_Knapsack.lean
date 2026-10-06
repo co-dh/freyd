@@ -424,3 +424,12 @@ public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
 
 end Freyd.Alg.RelSet.Knapsack
 
+
+-- printing-only: the ordering is the note's `R` and the step algebra `S` (drawn opened, so the
+-- letter shows only where a label names it whole); the volume function is the section's context.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Knapsack.R] public meta def Freyd.Alg.RelSet.Knapsack.unexpandKnapsackR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Knapsack.Salg] public meta def Freyd.Alg.RelSet.Knapsack.unexpandKnapsackSalg : Unexpander
+  | _ => `($(mkIdent `S))
