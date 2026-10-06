@@ -15,6 +15,7 @@ module
 
 public import AOP.A6_1_OrdRelSet
 public import AOP.A7_2
+public import AOP.A6_ConsList
 
 namespace Freyd.Alg.RelSet
 open PowerAllegory
@@ -200,5 +201,87 @@ public theorem plus_distributes_le
   have h2 : Nat.le q.2 r.2 := hd2 r.2 hr2
   show Nat.le w z
   exact hw' ▸ hz' ▸ Nat.add_le_add h1 h2
+
+/-! ## Monotonic algebras at points (B&dM p.172) -/
+
+/-- **A bound over the image of `f` is a bound over `f`'s arguments**: `Q` holds at every `z = f(v)`
+    with `P(v)` iff `P(v) ⟹ Q(f(v))`. -/
+public theorem forall_image_imp_iff {α β : Type _} {P : α → Prop} {Q : β → Prop} {f : α → β} :
+    (∀ z, (∃ v, P v ∧ z = f v) → Q z) ↔ ∀ v, P v → Q (f v) :=
+  calc (∀ z, (∃ v, P v ∧ z = f v) → Q z)
+      ↔ ∀ z v, P v ∧ z = f v → Q z := forall_congr' fun _ => exists_imp
+    _ ↔ ∀ v z, P v ∧ z = f v → Q z := forall_comm
+    _ ↔ ∀ v z, z = f v ∧ P v → Q z :=
+      forall_congr' fun _ => forall_congr' fun _ => imp_congr_left and_comm
+    _ ↔ ∀ v z, z = f v → P v → Q z := forall_congr' fun _ => forall_congr' fun _ => and_imp
+    _ ↔ ∀ v, P v → Q (f v) := forall_congr' fun _ => forall_eq
+
+/-- **`F(R)` at `F(X)=L+E×X`, case by case**: a statement over `F(R)`-related pairs is one over
+    equal leaves and one over pairs with the same element and `R`-related tails. -/
+public theorem CL.forall_Fmap_imp_iff {L E : Type} {C : RelSet.{0}} {R : C ⟶ C}
+    {Q : L ⊕ (E × C.carrier) → L ⊕ (E × C.carrier) → Prop} :
+    (∀ u v : L ⊕ (E × C.carrier), (CL.F L E).map R u v → Q u v) ↔
+      (∀ l l', l = l' → Q (.inl l) (.inl l')) ∧
+        ∀ e x e' y, e = e' ∧ R x y → Q (.inr (e, x)) (.inr (e', y)) :=
+  calc (∀ u v : L ⊕ (E × C.carrier), (CL.F L E).map R u v → Q u v)
+      ↔ (∀ l v, (CL.F L E).map R (.inl l) v → Q (.inl l) v) ∧
+          ∀ p v, (CL.F L E).map R (.inr p) v → Q (.inr p) v := Sum.forall
+    _ ↔ (∀ l, (∀ l', (CL.F L E).map R (.inl l) (.inl l') → Q (.inl l) (.inl l')) ∧
+            ∀ q, (CL.F L E).map R (.inl l) (.inr q) → Q (.inl l) (.inr q)) ∧
+          ∀ p, (∀ l', (CL.F L E).map R (.inr p) (.inl l') → Q (.inr p) (.inl l')) ∧
+            ∀ q, (CL.F L E).map R (.inr p) (.inr q) → Q (.inr p) (.inr q) :=
+      and_congr (forall_congr' fun _ => Sum.forall) (forall_congr' fun _ => Sum.forall)
+    _ ↔ (∀ l l', l = l' → Q (.inl l) (.inl l')) ∧
+          ∀ p q, (p.1 = q.1 ∧ R p.2 q.2) → Q (.inr p) (.inr q) :=
+      and_congr (forall_congr' fun _ => and_iff_left fun _ h => (h : False).elim)
+        (forall_congr' fun _ => and_iff_right fun _ h => (h : False).elim)
+    _ ↔ (∀ l l', l = l' → Q (.inl l) (.inl l')) ∧
+          ∀ e x q, (e = q.1 ∧ R x q.2) → Q (.inr (e, x)) (.inr q) := and_congr_right fun _ => Prod.forall
+    _ ↔ (∀ l l', l = l' → Q (.inl l) (.inl l')) ∧
+          ∀ e x e' y, e = e' ∧ R x y → Q (.inr (e, x)) (.inr (e', y)) :=
+      and_congr_right fun _ => forall_congr' fun _ => forall_congr' fun _ => Prod.forall
+
+/-- **A map `f` is monotonic on `≤` iff `F(≤)`-related arguments go to `≤`-related results** —
+    `F(≤)f⊑f≤` read at points: `f`'s source is `FA`, so its source order is `≤` lifted by `F`. -/
+public theorem graph_monoAlg_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+    (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
+    MonoAlg (F := F) (graph f) «≤» ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) :=
+  calc MonoAlg (F := F) (graph f) «≤»
+      ↔ ∀ u z, (F.map «≤» ≫ graph f) u z → (graph f ≫ «≤») u z := le_iff
+    _ ↔ ∀ u z, (∃ v, F.map «≤» u v ∧ z = f v) → (graph f ≫ «≤») u z :=
+      forall_congr' fun u => forall_congr' fun z => imp_congr_left (iff_of_eq (comp_apply _ _ u z))
+    _ ↔ ∀ u z, (∃ v, F.map «≤» u v ∧ z = f v) → «≤» (f u) z :=
+      forall_congr' fun u => forall_congr' fun z => imp_congr_right fun _ =>
+        iff_of_eq (congrFun (congrFun (graph_comp_left f «≤») u) z)
+    _ ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) := forall_congr' fun _ => forall_image_imp_iff
+
+/-- **At `F(X)=L+E×X`, monotonic on a reflexive `≤` means monotone in the tail, `e` held still** —
+    `F(≤)` relates a leaf only to itself and a pair only to one with the same element. -/
+public theorem CL.graph_monoAlg_iff_monotone_tail {L E : Type} {A : RelSet.{0}}
+    (f : L ⊕ (E × A.carrier) → A.carrier) {«≤» : A ⟶ A} (hrefl : 𝟙 A ⊑ «≤») :
+    MonoAlg (F := CL.F L E) (graph f) «≤» ↔
+      ∀ e x y, «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e, y))) :=
+  calc MonoAlg (F := CL.F L E) (graph f) «≤»
+      ↔ ∀ u v, (CL.F L E).map «≤» u v → «≤» (f u) (f v) :=
+        graph_monoAlg_iff_monotone (F := CL.F L E) f «≤»
+    _ ↔ (∀ l l', l = l' → «≤» (f (.inl l)) (f (.inl l'))) ∧
+          ∀ e x e' y, e = e' ∧ «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e', y))) :=
+      CL.forall_Fmap_imp_iff (Q := fun u v => «≤» (f u) (f v))
+    _ ↔ (∀ l, «≤» (f (.inl l)) (f (.inl l))) ∧
+          ∀ e x e' y, e = e' ∧ «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e', y))) :=
+      and_congr_left fun _ => forall_congr' fun _ => forall_eq'
+    _ ↔ (∀ l, «≤» (f (.inl l)) (f (.inl l))) ∧
+          ∀ e x y e', e = e' ∧ «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e', y))) :=
+      and_congr_right fun _ => forall_congr' fun _ => forall_congr' fun _ => forall_comm
+    _ ↔ (∀ l, «≤» (f (.inl l)) (f (.inl l))) ∧
+          ∀ e x y e', e = e' → «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e', y))) :=
+      and_congr_right fun _ => forall_congr' fun _ => forall_congr' fun _ => forall_congr' fun _ =>
+        forall_congr' fun _ => and_imp
+    _ ↔ (∀ l, «≤» (f (.inl l)) (f (.inl l))) ∧
+          ∀ e x y, «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e, y))) :=
+      and_congr_right fun _ => forall_congr' fun _ => forall_congr' fun _ => forall_congr' fun _ =>
+        forall_eq'
+    _ ↔ ∀ e x y, «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e, y))) :=
+      and_iff_right fun _ => le_iff.mp hrefl _ _ ((id_apply _ _).mpr rfl)
 
 end Freyd.Alg.RelSet

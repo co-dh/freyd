@@ -212,7 +212,8 @@ partial def stxShow (s : Syntax) (brk : Array Name := #[]) : MetaM String := do
     heads a wire's name is built out of, so a lane and the label above it cannot be spelled two
     ways.  On the IDENT only: a head that is a notation delimits its own operand and has no name to
     shorten. -/
-partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[]) : MetaM String := do
+partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[]) (pt := false) :
+    MetaM String := do
   match ops with
   -- AN OPERAND HANDED IN AS A HOLE joins as the TREE it stands for: `brk` names the holes whose
   -- label closes itself in its own brackets (`Lbl.delimited`), which the hole's name cannot show.
@@ -220,7 +221,8 @@ partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[])
     let j := match stxPeel a with
       | .ident _ _ n _ => if brk.contains n then .bracket else stxJoin (stxPeel a)
       | p => stxJoin p
-    return applyLabel h (← stxShow a brk) j
+    -- a POINT (`pt`) never joins as a name; its own brackets (a tuple) still serve as the call's
+    return applyLabel h (← stxShow a brk) (if pt && j == .name then .other else j)
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
 partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
@@ -236,6 +238,22 @@ partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := d
 
 end
 
+/-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
+    data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
+def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
+  let args := e.getAppArgs
+  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+  let a := args[i]!
+  let ty ← Meta.inferType a
+  if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
+  if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
+    return false
+  -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
+  -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
+  -- own category, so it would never count as a point.
+  unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
+  return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
+
 /-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
     rule: ONE operand goes through `applyLabel`, so a ONE-LETTER head juxtaposes with it (`TA`,
     `PA`, `E[A]`) and a longer name applies with parentheses (`thin(Q)`, `bag(Job)`, `list⁺(A)`),
@@ -250,7 +268,11 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   let stx ← delabP e
   checkSpelled e stx
   match appParts stx with
-  | some (h, ops) => appSpell (← headShown h brk) ops brk
+  -- A MAP APPLIED TO A POINT takes parentheses at any length, `f(u)`, never `fu`: the one-letter
+  -- juxtaposition is a functor's on an OBJECT (`EA`), and `fu` would read as a composite.
+  | some (h, ops) =>
+    let pt := e.getAppNumArgs > 0 && (← isPoint e (e.getAppNumArgs - 1))
+    appSpell (← headShown h brk) ops brk pt
   -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
   -- already applies to the head of an application: a qualifier is what the printer adds to keep a
   -- short name unambiguous against every other `A` in the environment, which is Lean's business,
@@ -1226,22 +1248,6 @@ def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
       if t.isAppOf ``Freyd.Alg.Coproduct && args.size == 5 then
         if ← Meta.isDefEqGuarded args[2]! e then return some (args[3]!, args[4]!)
   return none
-
-/-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
-    data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
-def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
-  let args := e.getAppArgs
-  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
-  let a := args[i]!
-  let ty ← Meta.inferType a
-  if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
-  if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
-    return false
-  -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
-  -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
-  -- own category, so it would never count as a point.
-  unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
-  return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
 
 /-- A RELATION OR A MAP APPLIED TO POINTS whose points the printer SWALLOWED: `Q Char a b` came out
     `Q` and `unstepFn p` `unstep`, because an unexpander written for the arrow (`| _ => Q`) matches
