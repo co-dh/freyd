@@ -243,16 +243,6 @@ partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := d
 
 end
 
-/-- A NOTATION'S OWN JUXTAPOSITIONS are applications like any other: each `f x` the printer wrote
-    inside `q ∈ f x` or `x ++ blanks y` is re-set by `appSpell`, where Lean's formatter kept `f x`
-    and a hole filled in beside it read as a composite (`blanks tbc(xs)`). -/
-partial def reSetApps (s : Syntax) (brk : Array Name) : MetaM Syntax := do
-  if let some (h, ops) := appParts s then
-    return mkIdent (Name.mkSimple (← appSpell (← headShown h brk) ops brk))
-  match s with
-  | .node i k args => return .node i k (← args.mapM (reSetApps · brk))
-  | _ => return s
-
 /-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
     data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
 def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
@@ -269,6 +259,18 @@ def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
   unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
   return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
 
+/-- The closed applications inside `e`, outermost first: what a juxtaposition the printer wrote
+    can be the spelling of. -/
+partial def appSubs (e : Expr) : Array Expr :=
+  (if e.isApp && !e.hasLooseBVars then #[e] else #[]) ++ match e with
+  | .app f a => appSubs f ++ appSubs a
+  | .lam _ t b _ | .forallE _ t b _ => appSubs t ++ appSubs b
+  | .letE _ t v b _ => appSubs t ++ appSubs v ++ appSubs b
+  | .mdata _ b | .proj _ _ b => appSubs b
+  | _ => #[]
+
+mutual
+
 /-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
     rule: ONE operand goes through `applyLabel`, so a ONE-LETTER head juxtaposes with it (`TA`,
     `PA`, `E[A]`) and a longer name applies with parentheses (`thin(Q)`, `bag(Job)`, `list⁺(A)`),
@@ -279,7 +281,7 @@ def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
     (`est(R)`, `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote.
 
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
-def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
+partial def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   let stx ← delabP e
   checkSpelled e stx
   match appParts stx with
@@ -288,7 +290,8 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   | some (h, ops) =>
     -- `if`, not `&&`: a `(← …)` is hoisted out of `&&`, so it would run on a term with no argument.
     let pt ← if e.getAppNumArgs > 0 then isPoint e (e.getAppNumArgs - 1) else pure false
-    appSpell (← headShown h brk) ops brk pt
+    let (ops, call) ← pointCall e ops brk
+    return (← appSpell (← headShown h brk) ops brk (pt && call.isEmpty)) ++ call
   -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
   -- already applies to the head of an application: a qualifier is what the printer adds to keep a
   -- short name unambiguous against every other `A` in the environment, which is Lean's business,
@@ -303,8 +306,52 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
     -- joins by the functor rule (`PA`, `(PA)[n]`), whose grouping an atom in its place would lose.
     else if (stx.raw.find? (appParts · |>.isSome)).isSome
         && (← Meta.whnf (← Meta.inferType (← Meta.inferType e))) == .sort 1
-        && (← homEnds? e).isNone then stxShow (← reSetApps stx.raw brk) brk
+        && (← homEnds? e).isNone then stxShow (← reSetApps stx.raw (appSubs e) brk) brk
     else plain e
+
+/-- The printer's operands `ops` read against the TERM's arguments: when they delaborate to `e`'s
+    last arguments, each point among them is spelled from its own term by `appShow`, and points
+    trailing an arrow are the CALL of the operator the arrows build, `list(bin)(zip(p))` — the
+    syntax alone cannot tell `bin` from `zip p` and wrote one comma list `list(bin,zip(p))`.
+    Returns the operator's operands and the call, `""` when there is none. -/
+partial def pointCall (e : Expr) (ops : Array Syntax) (brk : Array Name) :
+    MetaM (Array Syntax × String) := do
+  let args := e.getAppArgs
+  let (n, m) := (args.size, ops.size)
+  if m == 0 || m > n then return (ops, "")
+  -- ALIGNED only when every operand IS its argument's spelling; an unexpander that dropped or
+  -- reordered operands keeps the syntax-only rule.
+  for i in [0:m] do
+    unless (stxPeel (← delabP args[n - m + i]!).raw).structEq (stxPeel ops[i]!) do return (ops, "")
+  let mut k := 0
+  while k < m do
+    unless ← isPoint e (n - 1 - k) do break
+    k := k + 1
+  let mut ops' := ops
+  for i in [m - k:m] do
+    let a := args[n - m + i]!
+    if a.isApp then ops' := ops'.set! i (mkIdent (Name.mkSimple (← appShow a brk)))
+  if k == 0 || k == m then return (ops', "")
+  let pts ← (ops'.extract (m - k) m).toList.mapM (stxShow · brk)
+  return (ops'.extract 0 (m - k), "(" ++ ",".intercalate pts ++ ")")
+
+/-- A NOTATION'S OWN JUXTAPOSITIONS are applications like any other: each `f x` the printer wrote
+    inside `q ∈ f x` or `x ++ blanks y` is re-set as an application, where Lean's formatter kept
+    `f x` and a hole filled in beside it read as a composite (`blanks tbc(xs)`).  Spelled from the
+    SUBTERM it prints (`subs`), so arrows and points are told apart by type; syntax alone only when
+    no closed subterm prints it (one under a binder). -/
+partial def reSetApps (s : Syntax) (subs : Array Expr) (brk : Array Name) : MetaM Syntax := do
+  if let some (h, ops) := appParts s then
+    let sub? ← subs.findM? fun a => return (← delabP a).raw.structEq s
+    let t ← match sub? with
+      | some a => appShow a brk
+      | none => do appSpell (← headShown h brk) ops brk
+    return mkIdent (Name.mkSimple t)
+  match s with
+  | .node i k args => return .node i k (← args.mapM (reSetApps · subs brk))
+  | _ => return s
+
+end
 
 /-- Whether a factor OPENS WITH A WORD: a name of two letters or more, standing alone (`cost`) or
     heading an application (`est(R)`).  The name is the run the LEXER would read as one identifier
