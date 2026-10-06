@@ -247,8 +247,6 @@ directly.
 // lean:AOP.A7_1.powerRel_est_le_bigUnion@a48e1dce
 ]<est-711>
 
-// would sit alone at the foot of §13.2's last page.
-#pagebreak(weak: true)
 == Monotonic algebras
 
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its theorem instead;
@@ -1110,8 +1108,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    on each suffix. #h(4pt) #src[]],
 )]<comb-fns-7>
 
-// Its own page: the section opens with a long definition display and was starting mid-page.
-#pagebreak(weak: true)
 == Planning a company party
 
 // B&dM §7.3, p. 175.  No numbered equations; the two monotonicity claims are the section's own
@@ -1462,8 +1458,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lean-calc(calc-party, breaks: (5,)),
 )]<party-laws>
 
-// Its own page: the section opens with a long definition display and was starting mid-page.
-#pagebreak(weak: true)
 == Shortest paths on a cylinder
 
 // B&dM §7.4, p. 179, with every type a matrix: `A[1]≜A`, `A[m+1]≜A×A[m]`, `A[m][n]≜(A[n])[m]`,

@@ -40,8 +40,6 @@
 )]<op-recip>
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 
-// Otherwise the heading lands alone at the foot of the reduce-of-maps page.
-#pagebreak(weak: true)
 == Least fixed points <sec-mu>
 
 // B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,

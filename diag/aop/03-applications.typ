@@ -177,7 +177,6 @@ For the definition to make sense `f : A‚ü∂A` is required, and then `tri(f) : TA‚
   // lean:AOP.A6_TreeTip.tree@192697f6
 )]<tree-depth>
 
-#pagebreak(weak: true)
 
 == The TeX problem
 

@@ -461,9 +461,27 @@
 // Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
 // initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
 // a layout pass, so the note's position-dependent blocks ran out of passes ("did not converge").
+/// EVERY SECTION OPENS A PAGE, except one that follows its chapter heading with nothing between, which
+/// shares the chapter's opening page.  Read off the chapter body's own children, never by a query: a
+/// break that depends on the heading before it, queried, ran the companion out of layout passes.
+#let has-section(c) = type(c) == content and ((c.func() == heading and c.depth == 2)
+  or (c.has("children") and c.children.any(has-section)) or (c.has("child") and has-section(c.child)))
+#let section-breaks(doc) = if type(doc) != content or not doc.has("children") { doc } else {
+  let (prev, gap) = (none, ([ ].func(), parbreak))
+  for c in doc.children {
+    // A `set`/`show` wraps what follows it in one styled element, which cannot be rebuilt around a break.
+    assert(not (c.has("child") and c.has("styles") and has-section(c.child)), message: "section-breaks: a "
+      + "set/show rule wraps a section heading, so it gets no page break; scope the rule to a block")
+    if c.func() == heading and c.depth == 2 and not (prev != none and prev.func() == heading and prev.depth == 1) {
+      pagebreak(weak: true)
+    }
+    if c.func() == doc.func() { section-breaks(c) } else { c }
+    if c.func() not in gap { prev = c }
+  }
+}
 #let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
   show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
-  doc
+  section-breaks(doc)
 } else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
   if title == none {
@@ -492,7 +510,7 @@
         }
       }
     }
-    doc
+    section-breaks(doc)
   })
 }
 
