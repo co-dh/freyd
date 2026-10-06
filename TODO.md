@@ -120,7 +120,7 @@ B&dM companion note (diag/aop/), open as of 2026-10-05:
 [ ] Review the ch9/ch10 def table crops.
 [X] Printer: fix the 4 wrong rules (merged 9fa72d0).
 [ ] Printer: rename Lean decls to book names (including 𝒫/ℰ), delete the ~306 rename rules.
-[ ] Printer: symbol rules become Lean notation beside the definition.
+[X] Printer: symbol rules become Lean notation beside the definition. 6 moved (thin, pcor, bag, min, {x+y∣…}, −); the rest collide with core notation or name core constants.
 [X] Printer: 14 hand-typed formula names → diag_unfold. 9 moved; gArmFn, sizeArmFn, kStep, bagPenalty wait for point-free bodies; typePair is a picture lane.
 [X] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses; they print as lax(φ)/strict(φ)/oplax(φ).
 [-] RCA: the Lemma 8.1 chain lost its triangles — DROPPED by the user ("I told u to give up on 8.1 triangles").
