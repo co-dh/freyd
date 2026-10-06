@@ -254,20 +254,9 @@ directly.
 // B&dM §7.2, p. 172.  The section numbers no equation, so the table names its theorem instead;
 // Theorem 7.1 is the subsection below, which states and proves it.
 #disp[#definition[
-An F-algebra `φ : FA⟶A` is *monotonic on* `R : A⟶A` — B&dM call this a monotonic algebra (Mono Algebra);
-read: `φ` *preserves* `R`, written #leanf("Freyd.Alg.Pres") — when it is lax at `R` at #h(4pt)
-`G:=F`, `F:=Id`: #h(4pt) `F(R)φ⊑φR`. #h(4pt) `R` is an *endorelation*, so `B=A` and
-the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an algebra, not a family.
+#leanf("Freyd.Alg.Pres") #h(4pt) — `φ` *preserves* `R`; B&dM call `φ` *monotonic on* `R`.
 
-For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all:15's `f°·⊣f·` at `X:=F(R)f`,
-`Y:=R`], #h(4pt) equivalently #h(4pt)
-// lean:AOP.A7_2.pres_iff_conj@48299b93
-`F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
-].
-// lean:AOP.A7_2.pres_iff_sandwich@59d0e0bd
-
-`(≤×≤)+⊑+≤` — addition, #leant("Freyd.Alg.RelSet.plusRel"), is monotonic on `≤`, which at the point level
-reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
+`(≤×≤)+⊑+≤` — addition, #leant("Freyd.Alg.RelSet.plusRel"), preserves `≤`: #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
 // @lax-hm-l/@lax-hm-r at `G := F`, `F := Id`, emitted by
