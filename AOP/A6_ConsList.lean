@@ -13,6 +13,8 @@ public import AOP.A6_1_RelSet
 public import AOP.A5_5_TypeFunctor
 -- for `F_eq_sum_prod`: the `+` half of the generic relator combination lives in §5.3.
 public import AOP.A5_3
+-- `F(A,X) = L+A×X` is the polynomial code `clF(L)`, and its relator laws are the polynomial ones.
+public import AOP.A6_Poly
 
 set_option linter.unusedVariables false
 
@@ -51,15 +53,17 @@ public inductive ConsList (L E : Type) where
 /-- Carrier of `F X`. -/
 @[expose] public def Fobj (L E : Type) (C : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × C.carrier)⟩
 
+/-- The code of B&dM's `F(A,X) = L+A×X` (p.201): the constant `L`, plus the first argument times
+    the second. -/
+@[expose] public def clF (L : Type) : Poly.PolyC (fun _ : Unit => L) :=
+  .oplus (.const ()) (.otimes .arg₁ .arg₂)
+
 /-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
-    on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
-    square needs the action that moves it. -/
+    on the pair — the polynomial relator of `clF(L)`.  `Fmap` is its `R=𝟙` case — the element type
+    is what `α` is natural in, so the square needs the action that moves it. -/
 @[expose] public def Fbimap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R : dE E ⟶ dE E')
     (S : C ⟶ c') : Fobj L E C ⟶ Fobj L E' c' :=
-  fun u v => match u, v with
-    | Sum.inl d, Sum.inl d' => d = d'
-    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
-    | _, _ => False
+  Poly.bimapR (clF L) R S
 
 /-- Action of `F` on a relation: identity on the `L` summand, `id × R` on `E × X` — the binary
     action with the element type held still, which is the ONE definition either reads. -/
@@ -79,42 +83,12 @@ public inductive ConsList (L E : Type) where
 @[expose] public def F (L E : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj L E
   map R := Fmap L E R
-  -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
-  -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound}).
-  map_id C := hom_ext fun u v => by
-    cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;>
-      first
-        | exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
-        | exact ⟨False.elim, fun h => nomatch h⟩
-        | exact ⟨fun h => congrArg Sum.inr (Prod.ext_iff.mpr h),
-            fun h => Prod.ext_iff.mp (Sum.inr.inj h)⟩
-  map_comp R S := hom_ext fun u v => by
-    cases u with
-    | inl d => cases v with
-      | inl d' => exact ⟨fun h => ⟨Sum.inl d, rfl, h⟩,
-          fun ⟨w, hw1, hw2⟩ => by cases w with
-            | inl e => exact hw1.trans hw2
-            | inr q => exact hw1.elim⟩
-      | inr q => exact ⟨fun h => h.elim,
-          fun ⟨w, hw1, hw2⟩ => by cases w with
-            | inl e => exact hw2.elim
-            | inr q' => exact hw1.elim⟩
-    | inr p => cases v with
-      | inl d' => exact ⟨fun h => h.elim,
-          fun ⟨w, hw1, hw2⟩ => by cases w with
-            | inl e => exact hw1.elim
-            | inr q' => exact hw2.elim⟩
-      | inr q =>
-        obtain ⟨pa, pd⟩ := p; obtain ⟨qa, qd⟩ := q
-        exact ⟨fun ⟨hpq, m, hRm, hSm⟩ => ⟨Sum.inr (pa, m), ⟨rfl, hRm⟩, ⟨hpq, hSm⟩⟩,
-          fun ⟨w, hw1, hw2⟩ => by cases w with
-            | inl e => exact hw1.elim
-            | inr md =>
-              obtain ⟨ma, mtl⟩ := md
-              exact ⟨hw1.1.trans hw2.1, mtl, hw1.2, hw2.2⟩⟩
-  map_mono {C c' R S} h := le_iff.mpr fun u v => by
-    cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
-      first | exact id | exact fun hh => ⟨hh.1, le_iff.mp h _ _ hh.2⟩ | exact False.elim
+  map_id C := Poly.bimapR_id (clF L) (dE E) C
+  map_comp R S := (Poly.fmapR_functor (clF L) (dE E) R S).symm
+  map_mono h := Poly.fmapR_monotonic (clF L) h
+
+/-- **`F X = L+E×X` is the polynomial relator of the code `clF(L)` at `E`**, definitionally. -/
+public theorem F_eq_relator (L E : Type) : F L E = Poly.relator (clF L) (dE E) := rfl
 
 /-- `F`'s object action, `FX=L+E×X`: the formula a reference to its definition prints. -/
 public theorem F_obj (L E : Type) (X : RelSet.{0}) : (F L E).obj X = Fobj L E X := rfl
@@ -128,39 +102,8 @@ public theorem F_obj (L E : Type) (X : RelSet.{0}) : (F L E).obj X = Fobj L E X 
   obj a x := Fobj L a.carrier x
   map R S := Fbimap L R S
   map_id A B := (F L A.carrier).map_id B
-  map_comp R R' S S' := by
-    apply hom_ext; intro u w
-    constructor
-    · intro h
-      cases u with
-      | inl d => cases w with
-        | inl d' => exact ⟨Sum.inl d, rfl, h⟩
-        | inr q => exact h.elim
-      | inr p => cases w with
-        | inl d' => exact h.elim
-        | inr q =>
-            obtain ⟨⟨e, h1, h2⟩, ⟨x, h3, h4⟩⟩ := h
-            exact ⟨Sum.inr (e, x), ⟨h1, h3⟩, ⟨h2, h4⟩⟩
-    · rintro ⟨v, hv, hw⟩
-      cases u with
-      | inl d => cases v with
-        | inl d' => cases w with
-          | inl d'' => exact hv.trans hw
-          | inr q => exact hw.elim
-        | inr q => exact hv.elim
-      | inr p => cases v with
-        | inl d => exact hv.elim
-        | inr q => cases w with
-          | inl d => exact hw.elim
-          | inr r => exact ⟨⟨q.1, hv.1, hw.1⟩, ⟨q.2, hv.2, hw.2⟩⟩
-  map_mono h1 h2 := le_iff.mpr fun u v hu => by
-    cases u with
-    | inl d => cases v with
-      | inl d' => exact hu
-      | inr q => exact hu.elim
-    | inr p => cases v with
-      | inl d => exact hu.elim
-      | inr q => exact ⟨le_iff.mp h1 _ _ hu.1, le_iff.mp h2 _ _ hu.2⟩
+  map_comp R R' S S' := (Poly.bimapR_functor (clF L) R R' S S').symm
+  map_mono h1 h2 := Poly.bimapR_monotonic (clF L) h1 h2
 
 /-- **`F(A,−) = F L A`**: the unary relator the list's initial algebra is taken over IS the
     bifunctor with its first argument fixed, definitionally — which is what lets `CL.initial`
@@ -187,7 +130,7 @@ public theorem F_eq_sum_prod (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
       = (F L E).map R := by
   apply hom_ext; intro u v
   cases u <;> cases v <;>
-    simp [F, Fmap, Fbimap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
+    simp [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
       RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> exact eq_comm
 
 /-- **`F(R) = 𝟙 + 𝟙×R`** in the coproduct calculus: `F`'s action as a `sumMap` over the concrete

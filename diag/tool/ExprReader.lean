@@ -1464,7 +1464,9 @@ def homEnds? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   if let some p := homObjs? t then return some p
   if let .forallE _ a b _ := t then
     if !b.hasLooseBVars && (← isObjType (← Meta.inferType a)) then
-      if ← Meta.isDefEq t (← Meta.mkAppM ``Cat.Hom #[a, b]) then return some (a, b)
+      -- Both ends objects of ONE category: `K → Type` has its ends in `Type` and `Type 1`.
+      if ← Meta.isDefEq (← Meta.inferType a) (← Meta.inferType b) then
+        if ← Meta.isDefEq t (← Meta.mkAppM ``Cat.Hom #[a, b]) then return some (a, b)
   return none
 
 def homEnds (e : Expr) : MetaM (Expr × Expr) := do

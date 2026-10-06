@@ -90,6 +90,7 @@ public theorem mapFold_bimap (F G : PolyF) {A B : Type} (R : Fo F ⟨A⟩ ⟨B�
   induction G with
   | zer => apply hom_ext; intro s; exact (s : Empty).elim
   | one => apply hom_ext; intro s y; exact ⟨fun _ => trivial, fun _ => trivial⟩
+  | const k => exact k.elim
   | arg₁ => apply hom_ext; intro s y; exact Iff.rfl
   | arg₂ => apply hom_ext; intro s y; exact Iff.rfl
   | oplus l r ihl ihr =>
