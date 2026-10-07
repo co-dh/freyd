@@ -290,11 +290,11 @@
 // carry no argument.
 #disp[#deftab(
   [#rowkey("Freyd.Alg.RelSet.ListRel.orderedP")], [#leant("Freyd.Alg.RelSet.ListRel.orderedP")],
-  [#leanf("Freyd.Alg.RelSet.ListRel.orderedP")],
+  "Freyd.Alg.RelSet.ListRel.orderedP",
   [every element is `R`-below each element after it],
 // lean:AOP.A5_6_ListCombinators.orderedP@7a55f3ef
   [#rowkey("Freyd.Alg.RelSet.Sort.ok")], [#leant("Freyd.Alg.RelSet.Sort.ok")],
-  [#leanf("Freyd.Alg.RelSet.Sort.ok")],
+  "Freyd.Alg.RelSet.Sort.ok",
   [the coreflexive passing `(a, x)` when `a` is `R`-below every element of `x`],
 )]
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

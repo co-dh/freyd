@@ -1395,6 +1395,9 @@ def stubFile (sel err : String) : String :=
     keeps its place among them (`.body.inr` is the body, then that body's operand). -/
 def parseArg (arg : String) (sel : Bool) :
     String × Option String × List String × List StrDiag.Sel := Id.run do
+  -- `<sel>≜<def>`: a FORMULA in a definition table's row, which defines `def` (`note-prelude.typ`'s
+  -- `deftab`); the step `≜<def>` reaches `FormulaRender.file`, which prints that row's `=` as `≜`.
+  let (arg, dfn) := match arg.splitOn "≜" with | [a, d] => (a, ["≜" ++ d]) | _ => (arg, [])
   let mut stem : String.Slice := arg
   let mut branch : List StrDiag.Sel := []
   let mut sides : List String := []
@@ -1443,7 +1446,7 @@ def parseArg (arg : String) (sel : Bool) :
   let (base, binder) := match stem.toString.splitOn "#" with
     | [b, h] => (b, some h)
     | _ => (stem.toString, none)
-  return (base, binder, sides, branch)
+  return (base, binder, sides ++ dfn, branch)
 
 /-- A FORMULA CALL OF TWO SELECTORS joined by `+` is a CHAIN STEP (`lean-rel`): the relation Lean
     proves from the first panel to the second (`FormulaRender.relFile`), not a statement to print. -/

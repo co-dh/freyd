@@ -173,7 +173,7 @@ def conditionClass (t : Expr) : MetaM Bool := do
     from.  `sp` IS THE PRINT MODE (`StrDiag.withSpaced`), the caller's: a formula set as text has the
     room and is SPACED, and the same statement inside a drawn panel is not. -/
 partial def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
-    (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
+    (branch : List StrDiag.Sel) (defines : Option Name := none) : MetaM (Array Lbl) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- An equation Lean derives binds a pattern's `_` as `a✝` or `a_1` — at every depth, since a
@@ -298,16 +298,15 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       let sides ← match target'.getAppFn.constName? with
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
-      -- A `diag_def` equation DEFINES its left side's head: `≜`, checked — a `def`, absent on the right.
-      let sides ← match sides with
-        | some ("=", l, r) =>
-          if !(← Lean.labelled `diag_def).contains declName then pure sides else
-          let c? := (← l.getUsedConstants.filterM fun c => return (← getEnv).find? c matches some (.defnInfo _)).find? (!r.getUsedConstants.contains ·)
-          unless cond.isNone && c?.isSome do
-            throwError "{declName} is tagged `diag_def`, but it is conditional or its left side \
-              {← Meta.ppExpr l} names no definition its right side {← Meta.ppExpr r} does not"
-          pure (some ("≜", l, r))
-        | s => pure s
+      -- A DEFINITION TABLE'S ROW `defines` its `def`: an `=` whose left side that `def` heads, and
+      -- whose right side does not name it, is that definition, `≜`; a recursive one stays `=`.
+      let sides ← match sides, defines with
+        | some ("=", l, r), some d =>
+          unless cond.isNone && l.getAppFn.constName? == some d do
+            throwError "{declName} is the definition-table row of `{d}`, but it is conditional or its \
+              left side {← Meta.ppExpr l} is not headed by `{d}`"
+          pure (some (if r.getUsedConstants.contains d then "=" else "≜", l, r))
+        | s, _ => pure s
       match sides with
       | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
       | none => return pre ++ #[ante ++ (← labelT target')]
@@ -337,7 +336,10 @@ def mapsto (declName : Name) : MetaM Lbl :=
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
   if path.contains "mapsto" then return "#" ++ (← mapsto declName).bare.typst ++ "\n"
-  let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
+  -- `≜<def>`: the selector's definition-table row (`DiagExport.parseArg`), the `def` it defines.
+  let defines := path.findSome? fun s => (s.dropPrefix? "≜").map (·.toString.toName)
+  let ls ← render (!path.contains "compact") declName binder
+    (path.filter fun s => s != "compact" && !s.startsWith "≜") branch defines
   -- A definition whose body prints as its own name (`render`): the note reads the mark, not a formula.
   if ls.isEmpty then return s!"#metadata(\"{declName}\")<formula-says-nothing>\n"
   return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"

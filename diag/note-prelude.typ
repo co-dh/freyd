@@ -94,8 +94,10 @@
 }
 // SPACED by default — a formula set as text has the room; `compact: true` is the call that has none
 // (a formula fitted above a panel), and it names the exporter's `.compact` step of the selector.
-#let leanf(sel, compact: false) = {
-  let c = lean-text("generated/formula/", <lean-formula>, sel + if compact { ".compact" } else { "" })
+// `defines`: the `def` a definition table's row defines (`deftab`), so the printer writes that row's
+// `=` as `≜` when the `def` heads its left side (`FormulaRender.render`).
+#let leanf(sel, compact: false, defines: none) = {
+  let c = lean-text("generated/formula/", <lean-formula>, sel + (if compact { ".compact" } else { "" }) + if defines != none { "≜" + defines } else { "" })
   if says-nothing(c) { panic(sel + " prints `x ≜ x`, which says nothing: set the formula of the declaration its body applies") }
   c }
 // A KEY WITH NO PRINT: the row or display is cited as `sel`'s formula, though its own cell is a picture or
@@ -144,11 +146,18 @@
 #let rowkey(sel) = [#metadata(sel)<lean-row-key>]
 // Cells come four to a row as name | type | definition | meaning; the name cell is only a `rowkey`
 // (or empty), which joins the definition cell; the row number is the table rule's, in the margin.
+// The definition cell is a SELECTOR (or an array of them), printed here with the row's key as the
+// `def` it defines; a cell of content holding a formula is refused, since it would print without it.
 #let deftab(..cells) = context {
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
+  let def(r) = { let k = lean-keys(r.at(0), labels: (<lean-row-key>,)).at(0, default: none)
+    let d = r.at(2)
+    if type(d) == str { leanf(d, defines: k) } else if type(d) == array { d.map(s => leanf(s, defines: k)).join([, ]) }
+    else if lean-keys(d, labels: (<lean-formula>,)).len() > 0 { panic("deftab: the definition cell of " + repr(k) + " holds a formula as content; give its selector, so the row's def reaches the printer") }
+    else { d } }
   table(columns: (3fr, w + 10.5pt, 1fr), align: left + horizon, inset: 5pt,
     stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
-    ..cells.pos().chunks(4).map(r => ([#r.at(0)#r.at(2)], r.at(1), r.at(3))).flatten())
+    ..cells.pos().chunks(4).map(r => ([#r.at(0)#def(r)], r.at(1), r.at(3))).flatten())
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
