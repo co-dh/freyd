@@ -942,9 +942,10 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 -- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
-attribute [diag_noted] connected head zero succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
+attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
-  RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next
+  RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next RelSet.Edit.Pair.F
+  RelSet.Tardy.snag
 
 /-- The book's closure `R*` (6.7), postfix like `°`.  LAST IN THE FILE: below it every quotation's
     splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing. -/
