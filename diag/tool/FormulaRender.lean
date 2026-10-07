@@ -308,7 +308,11 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
           if cond.isNone && head l == some d && !r.getUsedConstants.contains d then some ("≜", l, r) else sides
         | s, _ => s
       match sides with
-      | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
+      | some (sym, l, r) =>
+        let (lt, rt) := (← labelT l (some r), ← labelT r (some l))
+        -- A row's `x ≜ x` says nothing, as a definition's does above: `file` marks it, `leanf` refuses it.
+        if sym == "≜" && lt.flat == rt.flat then return #[]
+        return pre ++ #[ante ++ lt ++ spaced sym sp, rt]
       | none => return pre ++ #[ante ++ (← labelT target')]
 
 /-- The selector step `.mapsto`: an arrow on a point, `x ↦ e`, read off a statement `R x r ↔ r = e`

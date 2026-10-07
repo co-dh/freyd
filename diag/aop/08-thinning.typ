@@ -620,9 +620,6 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#rowkey("Freyd.Alg.RelSet.Knapsack.con_eq_junc")], [#leant("Freyd.Alg.RelSet.Knapsack.con_eq_junc")],
   "Freyd.Alg.RelSet.Knapsack.con_eq_junc",
   [keep the item: the list constructor],
-  [#rowkey("Freyd.Alg.RelSet.Knapsack.dropFn")], [#leant("Freyd.Alg.RelSet.Knapsack.dropFn")],
-  "Freyd.Alg.RelSet.Knapsack.drop_eq_junc",
-  [drop the item: keep the tail],
   [#rowkey("Freyd.Alg.RelSet.Knapsack.within")], [#leant("Freyd.Alg.RelSet.Knapsack.within")],
   "Freyd.Alg.RelSet.Knapsack.within_apply",
   [the packing weighs at most w],
@@ -645,7 +642,6 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 // lean:AOP.A8_4_Knapsack.weight_eq@267afa15
 // lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6
 // lean:AOP.A8_4_Knapsack.dropFn@08a216bd
-// lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77
 // lean:AOP.A8_4_Knapsack.within@945da576
 // lean:AOP.A8_4_Knapsack.Salg@7d39c25b
 // lean:AOP.A8_4_Knapsack.Salg_junc@56a14e5c
@@ -708,7 +704,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 
   [#vstep(EQ, [],
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, @Freyd.Alg.RelSet.Knapsack.dropFn; `minlist(R)` is `head`, packings
+     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minlist(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
