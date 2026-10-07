@@ -298,6 +298,16 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       let sides ← match target'.getAppFn.constName? with
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
+      -- A `diag_def` equation DEFINES its left side's head: `≜`, checked — a `def`, absent on the right.
+      let sides ← match sides with
+        | some ("=", l, r) =>
+          if !(← Lean.labelled `diag_def).contains declName then pure sides else
+          let c? := (← l.getUsedConstants.filterM fun c => return (← getEnv).find? c matches some (.defnInfo _)).find? (!r.getUsedConstants.contains ·)
+          unless cond.isNone && c?.isSome do
+            throwError "{declName} is tagged `diag_def`, but it is conditional or its left side \
+              {← Meta.ppExpr l} names no definition its right side {← Meta.ppExpr r} does not"
+          pure (some ("≜", l, r))
+        | s => pure s
       match sides with
       | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
       | none => return pre ++ #[ante ++ (← labelT target')]

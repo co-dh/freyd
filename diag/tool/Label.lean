@@ -363,7 +363,9 @@ partial def reSetApps (s : Syntax) (subs : Array Expr) (brk : Array Name) : Meta
     let sub? ← subs.findM? fun a => return (← delabP a).raw.structEq s
     let t ← match sub? with
       | some a => appShow a brk
-      | none => do appSpell (← headShown h brk) ops brk
+      -- no subterm prints it: its operands are re-set first, so `col xs` inside `blanks (n − col xs)`
+      -- is an application too and not the formatter's juxtaposition.
+      | none => do appSpell (← headShown h brk) (← ops.mapM (reSetApps · subs brk)) brk
     return mkIdent (Name.mkSimple t)
   match s with
   | .node i k args => return .node i k (← args.mapM (reSetApps · subs brk))
@@ -1138,7 +1140,8 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   | (``Prod.snd, #[_, _]) => return "π₂"
   -- A CONSTRUCTOR HANDED THE INPUT WHOLE is the same box as one handed its factors, so it gets the
   -- same name: `tip`, never `Tree.tip`.  One rule, both spellings.
-  | _ => do if let some n ← ctorName? f then return n else plain f
+  -- A NAMED MAP APPLIED TO ITS PARAMETERS applies with parentheses, `total(f)`, by `appShow`'s rule.
+  | _ => do if let some n ← ctorName? f then return n else if f.isApp then appShow f else plain f
 
 end
 
@@ -1897,7 +1900,11 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
     -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
     if let some (hd, pts) ← swallowedPoints? e then
-      return .unit ((← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0)))
+      -- ONE point already closed in its own brackets (a tuple, `[xs]`) is the call's: `unstep(p,q)`.
+      let ls ← pts.mapM (labelTree 0)
+      return .unit ((← labelTree Prec.atom hd) ++ match ls with
+        | #[l] => if l.delimited then l else commaL "(" ")" ls
+        | _ => commaL "(" ")" ls)
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
     -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
     -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
@@ -2039,7 +2046,12 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- A PAIR OPERAND is respelled too, FIRST, so the pair's own clause writes it whole — `(xs,ys)`,
     -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
-      (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)
+      -- …and a pair NESTED ON THE RIGHT at any depth (`[(cpy(a),(xs,ys))]` under `if`), which the
+      -- printer flattens to `(cpy(a), xs, ys)`; the pair itself is holed, not the list holding it.
+      ((fun ps => ps.filter fun p => !ps.any fun q => q != p && (q.find? (· == p)).isSome)
+          (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (args.flatMap appSubs).filter (fun p =>
+            p.isAppOfArity ``Prod.mk 4 && p.appArg!.isAppOfArity ``Prod.mk 4))
+        ++ (← arrows args) ++ (← relatorArgs args)
         -- a swallowed point at ANY depth: `appShow` re-sets an operand from the printer's syntax,
         -- which never had it (`list(bin)(zip)` for `cmap binFn (zip p)`)
         ++ (← args.filterM fun a => (appSubs a).anyM fun s => return (← swallowedPoints? s).isSome)

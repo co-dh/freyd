@@ -1335,7 +1335,9 @@ open Lean PrettyPrinter in
 -- `pad blank y k` appends `k` blanks: the book's `y⧺blanks(k)`.
 open Lean PrettyPrinter in
 @[app_unexpander pad] public meta def unexpandPad : Unexpander
-  | `($_ $_ $y $k) => `($y ++ $(mkIdent `blanks) $k) | _ => throw ()
+  -- the note's `⧺` node (`diag/StrDiagNames.lean`), by kind: this module cannot import its syntax
+  | `($_ $_ $y $k) => do pure (.node .none `Freyd.Alg.noteCat #[y, mkAtom "⧺", ← `($(mkIdent `blanks) $k)])
+  | _ => throw ()
 
 open Lean PrettyPrinter in
 @[app_unexpander loop] public meta def unexpandLoop : Unexpander

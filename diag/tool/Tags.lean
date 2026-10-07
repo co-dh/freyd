@@ -46,6 +46,12 @@ register_label_attr diag_indexed
     in `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
 register_label_attr diag_rewrite
 
+/-- WHICH EQUATIONS ARE THE NOTE'S DEFINITION of the constant on their left.  A `def` whose Lean value
+    is pointwise (`total f xs ≜ csum (cmap f xs)`) is defined in the note by the point-free theorem
+    beside it (`total(f) ≜ list(f) sum`), which a formula prints with `≜`, not `=`.  Which theorem
+    that is is a convention and not a shape, so it is TAGGED, in `diag/StrDiagNames.lean`. -/
+register_label_attr diag_def
+
 /-- WHICH EQUATION DEFINES AN INDUCED ARROW.  The mirror of `diag_induced`: that attribute says a
     constant's application is what a universal property GIVES, this one says which theorem is the
     equation it gives it BY — `relCata_cancel`, `α⦇R⦈=F(⦇R⦈)R`.  A commutative diagram draws that
