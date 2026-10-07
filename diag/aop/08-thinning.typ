@@ -471,7 +471,7 @@ row((
   [filtering a sorted list sorts the restricted set],
   [#leanf("Freyd.Alg.RelSet.ListRel.prodMap_sort_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],
-  [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `FX=L+E×X`]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F(A,X)=1+A×X`]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
   [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F` polynomial and linear]],
   [the same for every linear polynomial `F`],
@@ -513,15 +513,15 @@ row((
 
 // Lemma 8.1 worked example, asked for by the user: each side step by step on one input.
 #disp[
-At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, input `r(3,{4,1,2})`.
+At `F(A,X)=1+A×X`, `f(r(a,x))=a+x`, `≼` is `≤`, `p` passes the odd numbers, input `r(3,{4,1,2})`.
 #table(
   columns: (2.6cm, 1fr, 4.6cm),
   align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*left side*], [*what it does*], [*result*]),
-  [input], [an `r(e,xs)`, `xs` a set], [`r(3,{4,1,2})`],
-  [`F(sort(≼))`], [sorts the set in the `X` place; `e` is untouched], [`r(3,[1,2,4])`],
-  [`listcp`], [pairs `e` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
+  [input], [an `r(a,xs)`, `xs` a set], [`r(3,{4,1,2})`],
+  [`F(sort(≼))`], [sorts the set in the `X` place; `a` is untouched], [`r(3,[1,2,4])`],
+  [`listcp`], [pairs `a` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
   [`list(f)`], [`f` on each], [`[4,5,7]`],
   [`filter(p)`], [keeps the odd ones, order kept], [`[5,7]`],
 )
@@ -539,7 +539,7 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
 )
 - `⊑`: the left's `[5,7]` is one result of the right; with ties `sort(≼)` has several orders.
 - `f` preserving `≼` is used at `list(f)`: `[1,2,4]` is sorted, so `[4,5,7]` is; `filter(p)` only drops
-  elements. With `f(r(e,x))=e−x` the left gives `[1,−1]` after `p`, not sorted, so `⊑` fails.
+  elements. With `f(r(a,x))=a−x` the left gives `[1,−1]` after `p`, not sorted, so `⊑` fails.
 ]
 
 // B&dM Theorem 8.2, p. 202–203: the binary thinning theorem.
@@ -568,7 +568,7 @@ preorder.
 // Theorem 8.2 worked example, asked for by the user, laid out like the Lemma 8.1 one: one row per
 // fold step.  `Q` is `=`, so `Q⊑R` and both `fᵢpᵢ` monotonic on `Q` hold trivially.
 #disp[
-At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))=e+x`, `p₁` passes all,
+At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x`, `p₁` passes all,
 `p₂` passes values `≤6`, `≼` is `≤`, `Q` is `=`, `R` is `≥`, input `[3,3,1]`.
 #table(
   columns: (2.8cm, 1fr, 1fr, 1fr, 1fr),
@@ -576,7 +576,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*input*], [`list(f₁) filter(p₁)`], [`list(f₂) filter(p₂)`], [`merge(≼)`],
     [`thinlist(Q)`]),
-  [`inl(l)`], [`[0]`], [`[0]`], [`[0,0]`], [`[0]`],
+  [`l()`], [`[0]`], [`[0]`], [`[0,0]`], [`[0]`],
   [`r(1,[0])`], [`[0]`], [`[1]`], [`[0,1]`], [`[0,1]`],
   [`r(3,[0,1])`], [`[0,1]`], [`[3,4]`], [`[0,1,3,4]`], [`[0,1,3,4]`],
   [`r(3,[0,1,3,4])`], [`[0,1,3,4]`], [`[3,4,6]`], [`[0,1,3,3,4,4,6]`], [`[0,1,3,4,6]`],
