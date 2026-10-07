@@ -688,6 +688,36 @@ structure Placement where
   parts : Array (Diagram × Array Nat)   -- each part with the frame row of each of its beads
   frame : Nat
 
+/-- A BEAD TRADED ACROSS A STEP IS ONE BEAD FOR ITS HEIGHT.  Neighbouring parts `a`, `b` are the two
+    sides of a step, read off their own factors (a row's outermost `ctx`).  Where they differ in a
+    two-factor window — the shared ends trimmed, as `moveStep?` trims — and one factor crosses from
+    one end of it to the other as the same constant, under a functor or not (`F(sort(≼))` above
+    `listcp`, `sort(F(≼))` below `cp(F)`), the factor it crossed was traded on the way past, not
+    replaced: `listcp` becomes `cp(F)`, `thinlist(Q)` becomes `thin(Q)`.  Answers (row of `a`, row of
+    `b`) for each traded factor drawn as one bead on either side. -/
+def tradedRows (a b : Diagram) : Array (Nat × Nat) := Id.run do
+  let side (d : Diagram) : Array Expr := (d.rows.findSome? (·.ctx.back?)).getD #[]
+  let (l, r) := (side a, side b)
+  let mut p := 0
+  for _ in [0 : min l.size r.size] do
+    if l[p]! == r[p]! then p := p + 1 else break
+  let mut s := 0
+  for _ in [0 : min (l.size - p) (r.size - p)] do
+    if l[l.size - 1 - s]! == r[r.size - 1 - s]! then s := s + 1 else break
+  let (wl, wr) := (l.extract p (l.size - s), r.extract p (r.size - s))
+  if wl.size != 2 || wr.size != 2 then return #[]
+  let head (e : Expr) : Option Name :=
+    (if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then e.appArg! else e).getAppFn.constName?
+  let rowsOf (d : Diagram) (f : Expr) : Array Nat := (Array.range d.rows.size).filter fun i =>
+    d.rows[i]!.ident.any fun t => (f.find? (· == t)).isSome
+  let mut out := #[]
+  for (m, m', t, t') in [(wl[0]!, wr[1]!, wl[1]!, wr[0]!), (wl[1]!, wr[0]!, wl[0]!, wr[1]!)] do
+    unless (head m).isSome && head m == head m' do continue
+    match rowsOf a t, rowsOf b t' with
+    | #[i], #[j] => out := out.push (i, j)
+    | _, _ => pure ()
+  return out
+
 /-- ONE COLUMN OF LEVELS FOR THE WHOLE CALL, and every bead of every part on one of them.  Parts
     are taken left to right; each lays its beads, in order, on the levels the earlier parts made,
     matching the most shared beads it can (an order-keeping alignment, `Row.pin`-weighted) and
@@ -723,8 +753,11 @@ def placement (ps : Array Diagram) : Placement := Id.run do
         if fs.size > 1 then return fs.filter fun f => !(r.ctx.extract 0 i).any (·.contains f)
       return #[]
     let kin (x y : Row) : Bool := (sib x).any (sib y).contains
+    -- A bead the step TRADED (`tradedRows`) is the neighbour's bead for its height.
+    let tw := if k == 0 then #[] else tradedRows ps[k - 1]! b
     let w (i j : Nat) : Int :=
-      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.same b.rows[i]!
+      let hits := slots[j]!.filter fun (p, r) =>
+        ps[p]!.rows[r]!.same b.rows[i]! || (p + 1 == k && tw.contains (r, i))
       let nbr := hits.filter (·.1 + 1 == k)
       let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)
       if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
@@ -3350,9 +3383,10 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         let b := qs[j]!
         -- The beads the two parts share, as (row in `a`, row in `b`, level in both).
         let mut shared : Array (Nat × Nat × Bool) := #[]
+        let tw := tradedRows a b
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
-            if a.rows[ra]!.same b.rows[rb]! then
+            if a.rows[ra]!.same b.rows[rb]! || tw.contains (ra, rb) then
               shared := shared.push (ra, rb, (pl.rows a)[ra]! == (pl.rows b)[rb]!)
         -- A BEAD THAT MOVED PAST A LEVEL ONE IS THE STATEMENT, not a misplacement: a slide
         -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.
