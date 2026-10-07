@@ -299,14 +299,14 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       -- A DEFINITION TABLE'S ROW `defines` its `def`: an `=` whose left side that `def` heads, and
-      -- whose right side does not name it, is that definition, `≜`; a recursive one stays `=`.
-      let sides ← match sides, defines with
+      -- whose right side does not name it, is that definition, `≜`.  A map's head is its function's,
+      -- as `mapLabel` names `graph f` by `f`.  Anything else in the row (a hypothesis, a fold on the
+      -- left, a recursive right side, one clause of a case split) is a law about the `def`: `=`.
+      let head (e : Expr) := (if e.isAppOf ``Freyd.Alg.RelSet.graph then e.appArg! else e).getAppFn.constName?
+      let sides := match sides, defines with
         | some ("=", l, r), some d =>
-          unless cond.isNone && l.getAppFn.constName? == some d do
-            throwError "{declName} is the definition-table row of `{d}`, but it is conditional or its \
-              left side {← Meta.ppExpr l} is not headed by `{d}`"
-          pure (some (if r.getUsedConstants.contains d then "=" else "≜", l, r))
-        | s, _ => pure s
+          if cond.isNone && head l == some d && !r.getUsedConstants.contains d then some ("≜", l, r) else sides
+        | s, _ => s
       match sides with
       | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
       | none => return pre ++ #[ante ++ (← labelT target')]

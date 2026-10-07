@@ -152,7 +152,10 @@
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
   let def(r) = { let k = lean-keys(r.at(0), labels: (<lean-row-key>,)).at(0, default: none)
     let d = r.at(2)
-    if type(d) == str { leanf(d, defines: k) } else if type(d) == array { d.map(s => leanf(s, defines: k)).join([, ]) }
+    // A row whose formula IS its key's declaration has no `=` to read as the key's definition, and a
+    // second selector for it would print it twice wherever the row is cited.
+    let f(s) = leanf(s, defines: if s == k { none } else { k })
+    if type(d) == str { f(d) } else if type(d) == array { d.map(f).join([, ]) }
     else if lean-keys(d, labels: (<lean-formula>,)).len() > 0 { panic("deftab: the definition cell of " + repr(k) + " holds a formula as content; give its selector, so the row's def reaches the printer") }
     else { d } }
   table(columns: (3fr, w + 10.5pt, 1fr), align: left + horizon, inset: 5pt,
