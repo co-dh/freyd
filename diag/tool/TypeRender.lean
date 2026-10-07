@@ -11,7 +11,8 @@
   WHAT "THE TYPE" IS, read off the ELABORATED statement and nothing else: an arrow-valued `def` has
   its hom, an (in)equation between arrows has the hom its two sides share, a relator-valued `def`
   runs between two categories, and any other non-theorem — a plain function, a `Type`, a `Prop`
-  predicate — has the Lean type of the name cell's term.  A theorem that is no (in)equation gets an
+  predicate — has the Lean type of the name cell's term, except a predicate made a coreflexive by
+  `corefl`, which has that coreflexive's hom (`coreflHom?`).  A theorem that is no (in)equation gets an
   error naming the statement, never a guessed cell.
 
   NO STRING SURGERY ON THE PRINTED TYPE.  The spelling is whatever the delaborator and the repo's
@@ -98,6 +99,45 @@ private partial def funPieces (ty : Expr) (piece : String → String := id) (brk
     return piece (dom ++ "⟶") ++ brk ++ piece (← funPieces c)
   | _ => return piece (← label ty)
 
+/-- A PREDICATE the environment turns into a relation through `corefl` has the coreflexive's hom,
+    `X⟶X`: B&dM name the coreflexive by the predicate (p.152 `ok`), so the note composes the name as
+    an arrow and a `Prop` cell would contradict every composite it sits in.  Read off the `corefl p …`
+    terms themselves — every definition and statement building one — at the predicate's own binders. -/
+private def coreflHom? (declName : Name) (ci : ConstantInfo) (piece : String → String) (brk : String) :
+    MetaM (Option String) := do
+  noteRead .thms
+  let uses (e : Expr) := (e.find? (·.isConstOf ``Freyd.Alg.RelSet.corefl)).isSome && (e.find? (·.isConstOf declName)).isSome
+  let es := (← getEnv).constants.fold (init := #[]) fun acc _ c =>
+    let acc := if uses c.type then acc.push c.type else acc
+    match c with
+    | .defnInfo d => if uses d.value then acc.push d.value else acc
+    | _ => acc
+  -- `k` on every `corefl (p as)` of `es`, in the context of the binders it sits under.
+  let visit (k : Expr → Array Expr → MetaM Unit) : MetaM Unit := do
+    for e in es do
+      discard <| Meta.transform e (pre := fun t => do
+        if t.isAppOfArity ``Freyd.Alg.RelSet.corefl 2 then
+          let p := t.appArg!.eta
+          if p.getAppFn.isConstOf declName then k t p.getAppArgs
+        return .continue)
+  -- A GENERIC use applies `p` to distinct variables, so its type abstracted over them is the
+  -- coreflexive's type as a function of `p`'s arguments; a use at `Item := Int` is an instance of it.
+  let gens ← IO.mkRef (#[] : Array Expr)
+  visit fun t as => do
+    if as.all (·.isFVar) && as.toList.eraseDups.length == as.size then
+      let g ← Meta.mkLambdaFVars as (← Meta.inferType t)
+      unless g.hasFVar do gens.modify (·.push g)
+  let some g := (← gens.get)[0]? | return none
+  visit fun t as => do
+    let ty ← Meta.inferType t
+    unless ← Meta.isDefEq ty (g.beta as) do
+      throwError "{declName}: the coreflexive {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, not the \
+        {← Meta.ppExpr (g.beta as)} its generic use gives"
+  Meta.forallBoundedTelescope ci.type g.getNumHeadLambdas fun ys _ => do
+    let ty := g.beta ys
+    let some s ← hom? ty piece brk | throwError "{declName}: its coreflexive has type {← Meta.ppExpr ty}, no hom"
+    return some s
+
 /-- A FACTOR STEP `f<k>`, `k ≥ 1`: the k-th factor of the composite the step follows. -/
 def factorIdx? (s : String) : Option Nat :=
   if s.startsWith "f" then (String.toNat? (toString (s.drop 1))).filter (· ≥ 1) else none
@@ -173,6 +213,8 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
         -- arrow the signature wrote `A → B` has a hygienic binder and stays in the type (`hd : J → C`).
         -- An INSTANCE binder is hygienic too, but is a constraint and no arrow: it is passed over,
         -- never left in the type as `[inst : …] →`.
+        let isPred ← Meta.forallTelescope ci.type fun _ c => pure c.isProp
+        if isPred && !nameOnly then if let some s ← coreflHom? declName ci piece brk then return s
         let rec named : Expr → Nat
           | .forallE n _ b bi => if n.hasMacroScopes && !bi.isInstImplicit then 0 else named b + 1
           | _ => 0
