@@ -305,8 +305,8 @@ open Lean PrettyPrinter Delaborator SubExpr in
 attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
 
 -- THE NOTE'S ARITHMETIC, as B&dM sets it (p.263: `⌊10b⌋`, `10a−d`, `[d]⧺x`): closed up, a product
--- by juxtaposition.  A category of its own, so no source file parses these (`f(x)` would be a product).
-declare_syntax_cat noteArith
+-- by juxtaposition.  In the print-only category `noteArith` (`AOP.A5_3`), so no source file parses
+-- these (`f(x)` would be a product).
 syntax:70 (name := noteMul) term:70 noWs term:71 : noteArith
 syntax:70 (name := noteDot) term:70 "·" term:71 : noteArith
 syntax:70 (name := noteDiv) term:70 "/" term:71 : noteArith
@@ -439,16 +439,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.leRel] def unexpandLeRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
 
--- THE INCLUSION ORDER ON A POWER OBJECT IS WRITTEN BY ITS OWN SYMBOL, for the reason `≤` is: the
--- note's `⊆ ≜ ∈\∈` and its converse `⊇ ≜ ∋/∋`, never the Lean names that tell the two apart.
--- KEPT here, with `mem` below: all three are `Freyd.S2_40`'s, and the Freyd core takes no note spelling.
-open Lean PrettyPrinter in
-@[app_unexpander subset] def unexpandSubset : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "⊆")))
-open Lean PrettyPrinter in
-@[app_unexpander supset] def unexpandSupset : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "⊇")))
-
 -- The section's own integer ordering is written by its operator, as `leRel` is.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.leq] def unexpandPartyLeq : Unexpander
@@ -484,12 +474,9 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.geq] def unexpandListRelGeq : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≥")))
-open Lean PrettyPrinter in
-@[app_unexpander mem] def unexpandMem : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "∈")))
 
 -- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): each theorem `Q = P°` names `P°` as `Q` and `Q°`
--- as `P` (`diag/tool/Label.lean`, `namedRecip?`), both spelled by their unexpanders above.
+-- as `P` (`diag/tool/Label.lean`, `namedRecip?`), both spelled by their unexpanders (`Freyd.S2_40`, above).
 attribute [diag_opposite] mem_eq_recip_eps subset_eq_recip_supset RelSet.ListRel.geq_eq_recip_leq
 
 open Lean PrettyPrinter in
@@ -932,22 +919,15 @@ open Lean PrettyPrinter in
   | `($_ $d $x) => do pure (.node .none ``noteDiv #[← `(($d + $x)), mkAtom "/", Syntax.mkNumLit "10"])
   | _ => throw ()
 
--- B&dM's conditional `(p→f,g)` (§5.6), so `cond`'s definition prints as the note writes it; the
--- coproduct `C` is context.  KEPT: it builds `noteCond`, declared here, which no `AOP` module imports.
-syntax:max (name := noteCond) "(" term "→" term "," term ")" : noteArith
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.cond] def unexpandCond : Unexpander
-  | `($_ $_ $x $r $s) =>
-    pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
-  | _ => throw ()
-
 -- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
 attribute [diag_noted] connected head zero succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
   RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next
 
 /-- The book's closure `R*` (6.7), postfix like `°`.  LAST IN THE FILE: below it every quotation's
-    splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing. -/
+    splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing.  KEPT here, not
+    beside `star`: `*` is core's splice suffix (`Init/Notation.lean`, `stx "*"`), and every module
+    importing `AOP.A6_7` would lose its `$args*`. -/
 postfix:max "*" => star
 
 end Freyd.Alg

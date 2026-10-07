@@ -493,4 +493,17 @@ open Lean PrettyPrinter in
   | `($_ $_ $R $S) => `([$R, $S])
   | _ => throw ()
 
+-- THE NOTE'S PRINT-ONLY SYNTAX, a category no source file parses: as a `term`, `(p→f,g)` is core's
+-- tuple of an arrow, which core's formatter spaces `(p → f, g)`.  `diag/StrDiagNames` adds the arithmetic.
+declare_syntax_cat noteArith
+syntax:max (name := noteCond) "(" term "→" term "," term ")" : noteArith
+
+-- B&dM's conditional `(p→f,g)` (§5.6), so `cond`'s definition prints as the note writes it; the
+-- coproduct `C` is context.
+open Lean PrettyPrinter in
+@[app_unexpander cond] public meta def unexpandCond : Unexpander
+  | `($_ $_ $x $r $s) =>
+    pure (.node .none ``noteCond #[mkAtom "(", x.raw, mkAtom "→", r.raw, mkAtom ",", s.raw, mkAtom ")"])
+  | _ => throw ()
+
 end Freyd.Alg

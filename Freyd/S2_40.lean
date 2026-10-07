@@ -1548,4 +1548,16 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 
+-- Rules, not renames: `⊆`, `⊇` and `∈` are core tokens (`Init/Core.lean`'s `Subset`/`Superset`,
+-- `Init/Notation.lean`'s `Membership.mem`), so no declaration can be named by them.
+open Lean PrettyPrinter in
+@[app_unexpander subset] public meta def unexpandSubset : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊆")))
+open Lean PrettyPrinter in
+@[app_unexpander supset] public meta def unexpandSupset : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊇")))
+open Lean PrettyPrinter in
+@[app_unexpander mem] public meta def unexpandMem : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "∈")))
+
 end Freyd.Alg
