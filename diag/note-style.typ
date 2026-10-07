@@ -39,7 +39,14 @@
 /// `scanline` metadata can use it as an address; `conf` parenthesises it for the display.
 /// ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
 /// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
-#let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
+/// AN APPENDIX IS NUMBERED APART FROM THE CHAPTER it is included in: its heading counter's first slot
+/// holds `APPX + k`, printed as the k-th capital letter, so its sections are `A.1`, `A.2`, … and its
+/// displays `(A.3a)`.  The marker is the heading's supplement (`appendix-heading`), never its text.
+#let APPX = 1000
+#let hnum(h) = h.enumerate().map(((i, k)) => if i == 0 and k >= APPX { numbering("A", k - APPX + 1) } else { str(k) }).join(".")
+#let appendix-heading(body) = heading(depth: 1, supplement: [Appendix], body)
+#let is-appendix(it) = type(it.supplement) == content and it.supplement == [Appendix]
+#let dispnum(h, n) = hnum(h) + numbering("a", n)
 /// THE DISPLAY'S NUMBER, at the given location — the figure's own print and every `@ref` to it call
 /// this ONE function, so neither can show a number the other disagrees with.  An explicit book
 /// number (`disp`'s own `<disp-num>` metadata, the first thing in its body) is spelled exactly as
@@ -270,7 +277,7 @@
 #let pic-meta(key, body, width: auto, disp: false, size: auto, parts: auto) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
-    numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
+    hnum(counter(heading).get()) + " " + plain(hs.last().body) }
   let (sz, pos) = (if size == auto { measure(body, width: width) } else { size }, here().position())
   let parts = if parts == auto { ((page: pos.page, y: pos.y, h: sz.height),) } else { parts }
   // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
@@ -330,6 +337,8 @@
   // Everything the template sets is merged into, not replaced by, the rules above.
   // `author: none` or the template prints a bare "by" under the title.
   show: dvdtyp.with(title: title, author: none)
+  // After dvdtyp, which sets `"1."`: a function prints an appendix section's `A` where the pattern would print 1000.
+  set heading(numbering: (..n) => hnum(n.pos()) + ".")
   // The reader needs to know where they are; the same title on every page says nothing.
   set page(header: context {
     let hs = query(heading.where(level: 1).or(heading.where(level: 2)))
@@ -369,7 +378,9 @@
         else { let (ks, at) = disp-keys(s); (rowid(el.location(), el.value), ks, booknum(s) == none, at) } }
       else { (none, (), false, none) }
     if el != none and el.func() == figure { law-gate(it) }
-    if id == none { it } else { link(if to == none or not row { el.location() } else { to }, cite(id, keys, row: row)) }
+    // A bare heading reference prints `hnum`: typst drops a trailing `.` only from a numbering PATTERN, not from `hnum`'s function.
+    if id == none { if el != none and el.func() == heading and el.numbering != none and el.supplement in (none, []) {
+      link(el.location(), hnum(counter(heading).at(el.location()))) } else { it } } else { link(if to == none or not row { el.location() } else { to }, cite(id, keys, row: row)) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.
     // A heading reference prints its counter dot-joined: typst drops the numbering pattern's trailing `.`.
@@ -377,7 +388,7 @@
     // an older tree's compile (`diff-crop`'s before) still prints.
     if NOTEROOT.get() and id != none [#metadata((str(it.target) + "#cite", (keys: keys, row: row)))<ref-id>]
     let rec = if id != none { plain(id) } else if el != none and el.func() == heading and el.numbering != none {
-      counter(heading).at(el.location()).map(str).join(".") }
+      hnum(counter(heading).at(el.location())) }
     if NOTEROOT.get() and rec != none [#metadata((str(it.target), rec))<ref-id>]
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
@@ -465,13 +476,20 @@
 // level-1 heading replaces the heading element outright and so no longer matches dvdtyp's.
 #let chapter-number(N) = {
   text(colors.at(6), weight: 500)[#sym.section]
-  text(colors.at(6))[#numbering("1.", N) ]
+  text(colors.at(6))[#if type(N) == int { numbering("1.", N) } else { N + "." } ]
 }
 #let chapter-heading(N, it) = {
   set text(font: "New Computer Modern Sans")
   set par(first-line-indent: 0em)
   chapter-number(N)
   it.body
+}
+// `N` is the chapter number, or `"A"` for an appendix, whose counter then starts at `APPX`.
+#let level1(N, it) = {
+  let a = is-appendix(it)
+  set heading(numbering: none)
+  chapter-heading(if a { "A" } else { N }, it)
+  counter(heading).update(if a { APPX } else { N })
 }
 // Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
 // initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
@@ -495,7 +513,7 @@
   }
 }
 #let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
-  show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
+  show heading.where(level: 1): it => level1(N, it)
   section-breaks(doc)
 } else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
@@ -504,7 +522,7 @@
       "--input title=\"$(./scripts/note-files --title)\"")
   }
   conf(title: title, {
-    show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
+    show heading.where(level: 1): it => level1(N, it)
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
     // never reaches `it.element`: reading that is what turns a cross-chapter reference into an error.
     show ref: it => context {
