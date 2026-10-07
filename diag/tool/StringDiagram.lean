@@ -773,7 +773,10 @@ def placement (ps : Array Diagram) : Placement := Id.run do
         ps[p]!.rows[r]!.same b.rows[i]! || (p + 1 == k && tw.contains (r, i))
       let nbr := hits.filter (·.1 + 1 == k)
       let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)
-      if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
+      -- A TRADED PAIR OUTRANKS THE TRIANGLE: where the passed bead crosses it no row holds both, and
+      -- the reader's question is which bead the step rewrote into which, so that pair stays level.
+      if nbr.any (fun (_, r) => tw.contains (r, i)) then 60 * (tot + 1) * (rest + base i)
+      else if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
       else if !nbr.isEmpty then 10 * (tot + 1) * pin else if hits.isEmpty then 0 else 10 * pin
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
     -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
@@ -3434,11 +3437,21 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         -- A LABEL THAT OCCURS TWICE is two beads (`Λ(T°)` and `Λ(H)` both open with `𝟙%∋`), so a
         -- pairing is only a misplacement when neither bead has a level partner of its label.
         -- A bead only one side has is no excuse: `placement` gives the other side an empty row.
+        let crossed := shared.filter fun (ra, rb, l) => !l && shared.any fun (sa, sb, l') =>
+          l' && (decide (ra < sa) != decide (rb < sb))
+        IO.eprintln s!"one-height: {declName} parts {i},{j}: {shared.size} obligations, \
+          {(shared.filter (·.2.2)).size} level, {crossed.size} crossed"
         for (ra, rb, level) in shared do
+          let ya := (pl.rows a)[ra]!
+          let yb := (pl.rows b)[rb]!
+          -- AN OBLIGATION NO ROW CAN MEET IS SAID, never dropped: its crossing pair is named.
+          if let some (sa, _, _) := (if level then none else shared.find? fun (sa, sb, l) =>
+              l && (decide (ra < sa) != decide (rb < sb))) then
+            IO.eprintln s!"one-height: {declName} parts {i},{j}: `{a.rows[ra]!.label}` row {ya} and \
+              `{b.rows[rb]!.label}` row {yb} cross `{a.rows[sa]!.label}`, level at row \
+              {(pl.rows a)[sa]!}: no row holds both"
           unless level || shared.any (fun (sa, sb, l) => l && (sa == ra || sb == rb))
               || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
-            let ya := (pl.rows a)[ra]!
-            let yb := (pl.rows b)[rb]!
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
