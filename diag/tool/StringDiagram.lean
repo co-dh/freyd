@@ -689,12 +689,15 @@ structure Placement where
   frame : Nat
 
 /-- A BEAD TRADED ACROSS A STEP IS ONE BEAD FOR ITS HEIGHT.  Neighbouring parts `a`, `b` are the two
-    sides of a step, read off their own factors (a row's outermost `ctx`).  Where they differ in a
-    two-factor window — the shared ends trimmed, as `moveStep?` trims — and one factor crosses from
-    one end of it to the other as the same constant, under a functor or not (`F(sort(≼))` above
-    `listcp`, `sort(F(≼))` below `cp(F)`), the factor it crossed was traded on the way past, not
-    replaced: `listcp` becomes `cp(F)`, `thinlist(Q)` becomes `thin(Q)`.  Answers (row of `a`, row of
-    `b`) for each traded factor drawn as one bead on either side. -/
+    sides of a step, read off their own factors (a row's outermost `ctx`).  In the window where they
+    differ — the shared ends trimmed, as `moveStep?` trims — a factor of one side MATCHES one of the
+    other when it is the same term or the same constant, under a functor or not (`F(sort(≼))` and
+    `sort(F(≼))`).  Once some factor matches, the factors left unmatched were traded on the way
+    past, in order — `listcp` becomes `cp(F)`, `thinlist(Q)` becomes `thin(Q)` — and are one bead;
+    so is a factor matched by its constant alone, its argument rewritten (`sort(F(≼))` and
+    `sort(f≼f°)`), unless it crosses another pair: then it is the factor that moved, and no height
+    holds it level with both.  Answers (row of `a`, row of `b`) for each pair drawn as one bead on
+    either side. -/
 def tradedRows (a b : Diagram) : Array (Nat × Nat) := Id.run do
   let side (d : Diagram) : Array Expr := (d.rows.findSome? (·.ctx.back?)).getD #[]
   let (l, r) := (side a, side b)
@@ -705,18 +708,28 @@ def tradedRows (a b : Diagram) : Array (Nat × Nat) := Id.run do
   for _ in [0 : min (l.size - p) (r.size - p)] do
     if l[l.size - 1 - s]! == r[r.size - 1 - s]! then s := s + 1 else break
   let (wl, wr) := (l.extract p (l.size - s), r.extract p (r.size - s))
-  if wl.size != 2 || wr.size != 2 then return #[]
   let head (e : Expr) : Option Name :=
     (if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then e.appArg! else e).getAppFn.constName?
+  -- Matches, the same term first: (index in `wl`, index in `wr`, matched by its constant alone).
+  let mut ms : Array (Nat × Nat × Bool) := #[]
+  for byHead in [false, true] do
+    for i in [0 : wl.size] do
+      if ms.any (·.1 == i) then continue
+      let hit := (List.range wr.size).find? fun j => !ms.any (·.2.1 == j) &&
+        if byHead then (head wl[i]!).isSome && head wl[i]! == head wr[j]! else wl[i]! == wr[j]!
+      if let some j := hit then ms := ms.push (i, j, byHead)
+  if ms.isEmpty then return #[]
+  let ul := (List.range wl.size).filter fun i => !ms.any (·.1 == i)
+  let ur := (List.range wr.size).filter fun j => !ms.any (·.2.1 == j)
+  let traded := if ul.length == ur.length then ul.zip ur else []
+  let all := ms.toList.map (fun (i, j, _) => (i, j)) ++ traded
+  let crosses (i j : Nat) := all.any fun (i', j') => i' != i && decide (i < i') != decide (j < j')
+  let pairs := traded ++ (ms.toList.filterMap fun (i, j, h) => if h && !crosses i j then some (i, j) else none)
   let rowsOf (d : Diagram) (f : Expr) : Array Nat := (Array.range d.rows.size).filter fun i =>
     d.rows[i]!.ident.any fun t => (f.find? (· == t)).isSome
-  let mut out := #[]
-  for (m, m', t, t') in [(wl[0]!, wr[1]!, wl[1]!, wr[0]!), (wl[1]!, wr[0]!, wl[0]!, wr[1]!)] do
-    unless (head m).isSome && head m == head m' do continue
-    match rowsOf a t, rowsOf b t' with
-    | #[i], #[j] => out := out.push (i, j)
-    | _, _ => pure ()
-  return out
+  return pairs.toArray.filterMap fun (i, j) => match rowsOf a wl[i]!, rowsOf b wr[j]! with
+    | #[x], #[y] => some (x, y)
+    | _, _ => none
 
 /-- ONE COLUMN OF LEVELS FOR THE WHOLE CALL, and every bead of every part on one of them.  Parts
     are taken left to right; each lays its beads, in order, on the levels the earlier parts made,
@@ -2411,7 +2424,10 @@ def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
     the one underlying structure by unfolding + iota, so reducing each instance-implicit argument to
     normal form (never re-synthesizing — that goes through instance search, which can hand back a
     term standing on a search-local metavariable the caller's context no longer has) collapses them
-    to one spelling regardless of which path the surrounding term happened to need first. -/
+    to one spelling regardless of which path the surrounding term happened to need first.
+    AN OBJECT REACHED TWO WAYS IS TWO TERMS TOO: the steps of one chain each elaborate their own
+    statement, so `graph` stands at `dE(carrier(F A))` in one and at `F A` in the next, and the same
+    `f` was two beads.  Implicit arguments get the same normal form, then structure eta (`etaStruct`). -/
 partial def canonInsts (e : Expr) : MetaM Expr := do
   let .app .. := e | return e
   let fn := e.getAppFn
@@ -2421,9 +2437,32 @@ partial def canonInsts (e : Expr) : MetaM Expr := do
   let mut args := args
   for i in [0 : args.size] do
     if h : i < info.paramInfo.size then
-      if info.paramInfo[i].binderInfo.isInstImplicit then
-        args := args.set! i (← Meta.reduce args[i]! (skipTypes := false))
+      if !info.paramInfo[i].binderInfo.isExplicit then
+        args := args.set! i (← etaStruct (← Meta.reduce args[i]! (skipTypes := false)))
   return mkAppN fn args
+where
+  /-- `S.mk (x.1) … (x.n)` is `x`: a normal form leaves a one-field object as `mk (carrier A)` on
+      one side and `A` on the other. -/
+  etaStruct (e : Expr) : MetaM Expr := do
+    let env ← getEnv
+    Core.transform e (post := fun e => do
+      let .const c _ := e.getAppFn | return .done e
+      let some (.ctorInfo ci) := env.find? c | return .done e
+      unless isStructure env ci.induct && ci.numFields > 0 && e.getAppNumArgs == ci.numParams + ci.numFields do
+        return .done e
+      let fields := getStructureFields env ci.induct
+      let mut x? : Option Expr := none
+      for i in [0 : ci.numFields] do
+        let f := e.getArg! (ci.numParams + i)
+        let y? := match f with
+          | .proj _ j y => if j == i then some y else none
+          | _ => match getProjFnForField? env ci.induct fields[i]! with
+            | some p => if f.isAppOfArity p (ci.numParams + 1) then some f.appArg! else none
+            | none => none
+        let some y := y? | return .done e
+        if x?.any (· != y) then return .done e
+        x? := some y
+      return .done (x?.getD e))
 
 /-- A TERM EVERY STEP OF A CHAIN READS ALIKE: each step is its own declaration and each peer is read
     in its own telescope, so one binder is a different free variable in each.  Every free variable
