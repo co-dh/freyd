@@ -340,6 +340,11 @@ open Lean PrettyPrinter in
 @[app_unexpander HSub.hSub] def unexpandNoteSub : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteSub #[a, mkAtom "−", b])
   | _ => throw ()
+-- Lists concatenate with the note's `⧺`, never Lean's `++`.
+open Lean PrettyPrinter in
+@[app_unexpander HAppend.hAppend] def unexpandNoteCat : Unexpander
+  | `($_ $a $b) => pure (.node .none ``noteCat #[a, mkAtom "⧺", b])
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander HDiv.hDiv] def unexpandNoteDiv : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteDiv #[a, mkAtom "/", b])
