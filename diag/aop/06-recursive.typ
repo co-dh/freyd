@@ -36,7 +36,7 @@
   // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@c44897b0
   [#leanf("Freyd.Alg.RelSet.Digits.embed_recip_defined") \
     #src[`embed°` gives a digit exactly at the one-digit numbers]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c
+  // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@4047325f
 )]<op-recip>
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 

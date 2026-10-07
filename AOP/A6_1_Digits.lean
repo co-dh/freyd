@@ -49,17 +49,17 @@ local infixr:70 " × " => rprodMap
 /-- The ten decimal digits `{0,…,9}`. -/
 @[expose] public def Digit : Type := Fin 10
 /-- The nine nonzero digits `{1,…,9}`. -/
-@[expose] public def DigitP : Type := { d : Fin 10 // d.val ≠ 0 }
+@[expose] public def «Digit⁺» : Type := { d : Fin 10 // d.val ≠ 0 }
 
 /-- Decimal representations: `wrap` a leading nonzero digit, then `snoc` further digits. -/
 public inductive Decimal where
-  | wrap : DigitP → Decimal
+  | wrap : «Digit⁺» → Decimal
   | snoc : Decimal → Digit → Decimal
 
 /-- Object of `Rel(Set)` carrying `Digit`.  `abbrev` so `.carrier` reduces to `Digit`. -/
 @[expose] public abbrev dDigit : RelSet.{0} := ⟨Digit⟩
 /-- Object of `Rel(Set)` carrying `Digit⁺`. -/
-@[expose] public abbrev dDigitP : RelSet.{0} := ⟨DigitP⟩
+@[expose] public abbrev dDigitP : RelSet.{0} := ⟨«Digit⁺»⟩
 /-- Object of `Rel(Set)` carrying `Decimal`. -/
 @[expose] public abbrev dDec : RelSet.{0} := ⟨Decimal⟩
 
@@ -100,14 +100,14 @@ local notation:max "F(" R ")" => Freyd.Functor.map (Relator.toFunctor (Relator.c
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ p.2 = q.2
     | _, _ => False
 
-@[simp] theorem Fmap_ll {C c' : RelSet.{0}} (R : C ⟶ c') (d d' : DigitP) :
+@[simp] theorem Fmap_ll {C c' : RelSet.{0}} (R : C ⟶ c') (d d' : «Digit⁺») :
     Fmap R (Sum.inl d) (Sum.inl d') = (d = d') := rfl
 @[simp] theorem Fmap_rr {C c' : RelSet.{0}} (R : C ⟶ c') (p : C.carrier × Digit)
     (q : c'.carrier × Digit) :
     Fmap R (Sum.inr p) (Sum.inr q) = (R p.1 q.1 ∧ p.2 = q.2) := rfl
-@[simp] theorem Fmap_lr {C c' : RelSet.{0}} (R : C ⟶ c') (d : DigitP) (q : c'.carrier × Digit) :
+@[simp] theorem Fmap_lr {C c' : RelSet.{0}} (R : C ⟶ c') (d : «Digit⁺») (q : c'.carrier × Digit) :
     Fmap R (Sum.inl d) (Sum.inr q) = False := rfl
-@[simp] theorem Fmap_rl {C c' : RelSet.{0}} (R : C ⟶ c') (p : C.carrier × Digit) (d : DigitP) :
+@[simp] theorem Fmap_rl {C c' : RelSet.{0}} (R : C ⟶ c') (p : C.carrier × Digit) (d : «Digit⁺») :
     Fmap R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F`'s action in the coproduct calculus: `F(R) = 𝟙 + (R × 𝟙)` as a `sumMap` over the
@@ -147,7 +147,7 @@ public def con : ((Relator.comp timesDigit plusDigitP).obj dDec).carrier → Dec
   | Decimal.wrap d => fun r => f (Sum.inl d) r
   | Decimal.snoc dec dig => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r
 
-@[simp] theorem cataFold_wrap {C : RelSet.{0}} (f : Fobj C ⟶ C) (d : DigitP) (r : C.carrier) :
+@[simp] theorem cataFold_wrap {C : RelSet.{0}} (f : Fobj C ⟶ C) (d : «Digit⁺») (r : C.carrier) :
     cataFold f (Decimal.wrap d) r = f (Sum.inl d) r := rfl
 @[simp] theorem cataFold_snoc {C : RelSet.{0}} (f : Fobj C ⟶ C) (dec : Decimal) (dig : Digit)
     (r : C.carrier) :
@@ -436,7 +436,7 @@ public theorem op_recip_defined (m : Nat) : (∃ p : Nat × Digit, 0 < p.1 ∧ (
       (op_recip_iff m _).mpr ⟨rfl, rfl⟩⟩
 
 /-- **B&dM p.139**: `embed°` is defined iff `0 < m < 10`. -/
-public theorem embed_recip_defined (m : Nat) : (∃ d : DigitP, (embed°) m d) ↔ 0 < m ∧ m < 10 := by
+public theorem embed_recip_defined (m : Nat) : (∃ d : «Digit⁺», (embed°) m d) ↔ 0 < m ∧ m < 10 := by
   constructor
   · rintro ⟨d, h⟩
     have h' : m = d.1.val := by rw [recip_apply, embed] at h; exact h
@@ -468,7 +468,3 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Digits.plusDigitP] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitsPlus : Unexpander
   | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
   | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
--- The non-zero digits `{d // d ≠ 0}` are B&dM's `Digit⁺`.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Digits.DigitP] public meta def Freyd.Alg.RelSet.Digits.unexpandDigitP : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))

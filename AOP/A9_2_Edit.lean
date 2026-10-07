@@ -1029,15 +1029,15 @@ public theorem con_strictNatural :
   exact (ListRel.alphaR_natural (opRel S)).symm
 
 /-- The `F` lane at the PAIR carrier: `𝟏 + Op×([Char]×[Char])`, the source of `[base,step]`. -/
-@[expose] public def pairF : Relator RelSet.{0} RelSet.{0} :=
+@[expose] public def Pair.F : Relator RelSet.{0} RelSet.{0} :=
   Relator.sum (Relator.const (dL Unit))
     (Relator.prod op (Relator.prod listRelator listRelator))
 
-public theorem pairF_map {x y : RelSet.{0}} (S : x ⟶ y) :
-    pairF.map S = Fbimap Unit (opRel S) (rprodMap (list S) (list S)) := by
+public theorem Pair.F_map {x y : RelSet.{0}} (S : x ⟶ y) :
+    Pair.F.map S = Fbimap Unit (opRel S) (rprodMap (list S) (list S)) := by
   apply hom_ext; intro u v
   cases u <;> cases v <;>
-    simp [pairF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap, junc,
+    simp [Pair.F, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap, junc,
       RelProd.pair, prodMap, rprodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
       op, listRelator] <;> first | grind | exact Subsingleton.elim _ _
 
@@ -1045,11 +1045,11 @@ public theorem pairF_map {x y : RelSet.{0}} (S : x ⟶ y) :
     [base,step](list(S)×list(S))`.  Not STRICT — `cpy a` writes ONE character into BOTH outputs, so
     the right side may send the two copies to two different characters of the new alphabet where
     the left side, which chooses the operation first, can only send them to one. -/
-public theorem editAlg_laxNatural :
-    LaxNatural (Relator.prod listRelator listRelator) pairF
+public theorem Pair.editAlg_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) Pair.F
       (fun a => editAlg (Char := a.carrier)) := by
   intro x y S
-  rw [pairF_map]
+  rw [Pair.F_map]
   refine le_iff.mpr fun u q => ?_
   rintro ⟨v, hv, rfl⟩
   rcases u with d | ⟨op, xs, ys⟩ <;> rcases v with d' | ⟨op', xs', ys'⟩
@@ -1167,12 +1167,12 @@ public theorem stepF_apply {x y : RelSet.{0}} (S : x ⟶ y)
     opRel, list, graph]
 
 /-- `F(Op(S),S×S)`'s action on the `step` summand, the lane `edit-laws`' thinning bead runs on. -/
-public theorem pairF_apply_inr {x y : RelSet.{0}} (S : x ⟶ y)
+public theorem Pair.F_apply_inr {x y : RelSet.{0}} (S : x ⟶ y)
     (p : Op x.carrier × (dPair x.carrier).carrier)
     (q : Op y.carrier × (dPair y.carrier).carrier) :
-    pairF.map S (Sum.inr p) (Sum.inr q)
+    Pair.F.map S (Sum.inr p) (Sum.inr q)
       ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
-  rw [pairF_map]
+  rw [Pair.F_map]
   simp [Fbimap, clF, Poly.bimapR, rprodMap, opRel, list]
 
 public theorem toU_short : listP toU shortB shortU := ⟨rfl, trivial⟩
@@ -1193,8 +1193,8 @@ public theorem shortU_suffix_longU : suffixP shortU longU := Or.inr (Or.inl rfl)
     fails at `S := toU` on the set of the two `del` candidates.  Over `Bool` neither `V`-dominates
     the other, so the right side keeps both and its image has two members; over `Unit` the shorter
     dominates, so the left side reaches the one-element set. -/
-public theorem thin_Q_not_lax_natural :
-    ¬ LaxNatural (pairF.comp powerRelator) (pairF.comp powerRelator)
+public theorem Pair.thin_Q_not_lax_natural :
+    ¬ LaxNatural (Pair.F.comp powerRelator) (Pair.F.comp powerRelator)
       (fun a : RelSet.{0} => thinRel (Q a.carrier)) := by
   intro hlax
   obtain ⟨W, hthin, hpow⟩ :=
@@ -1205,12 +1205,12 @@ public theorem thin_Q_not_lax_natural :
         (powerRel_apply _ _ _).mpr
           ⟨fun p hp => by
               rcases hp with rfl | rfl
-              · exact ⟨Sum.inr (cand () shortU), (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
-              · exact ⟨Sum.inr (cand () longU), (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
+              · exact ⟨Sum.inr (cand () shortU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
+              · exact ⟨Sum.inr (cand () longU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
            fun q hq => by
               rcases hq with rfl | rfl
-              · exact ⟨Sum.inr (cand true shortB), Or.inl rfl, (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
-              · exact ⟨Sum.inr (cand true longB), Or.inr rfl, (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
+              · exact ⟨Sum.inr (cand true shortB), Or.inl rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
+              · exact ⟨Sum.inr (cand true longB), Or.inr rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
         (thinRel_pt _ _ _).mpr
           ⟨fun y hy => Or.inl hy,
            fun z hz => by
@@ -1223,7 +1223,7 @@ public theorem thin_Q_not_lax_natural :
   rcases hsub w hwW with rfl | rfl
   · exact short_not_suffix_long (hwQ : V Bool _ _).1
   · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
-    exact toU_long_not_short ((pairF_apply_inr _ _ _).mp hq).2.1
+    exact toU_long_not_short ((Pair.F_apply_inr _ _ _).mp hq).2.1
 
 /-- **`thin(⊤×V)` is not even lax natural** — `edit-branch`'s thinning bead, at the same witness:
     the operations are `⊤`-comparable either way, so the whole verdict rests on `V`, which is the
@@ -1280,30 +1280,30 @@ public theorem R_not_lax_natural :
 /-- **`Q` is not even lax natural** in the alphabet: `Q` puts above a decomposition one whose
     operation carries any character, and an alphabet map that misses `false` has no preimage of
     `del false`. -/
-public theorem Q_not_lax_natural :
-    ¬ LaxNatural pairF pairF (fun a : RelSet.{0} => Q a.carrier) := by
+public theorem Pair.Q_not_lax_natural :
+    ¬ LaxNatural Pair.F Pair.F (fun a : RelSet.{0} => Q a.carrier) := by
   intro hlax
   obtain ⟨v₀, -, hv₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
     (Sum.inr (cand () (ConsList.wrap ())))
     (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ()))))
-    ⟨Sum.inr (cand true (ConsList.wrap ())), (pairF_apply_inr _ _ _).mpr ⟨rfl, trivial, trivial⟩,
+    ⟨Sum.inr (cand true (ConsList.wrap ())), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, trivial, trivial⟩,
       (show Q Bool (Sum.inr (cand true (ConsList.wrap ())))
           (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ())))) from
         (V_apply _ _).mpr ⟨Or.inr rfl, rfl⟩)⟩
   rcases v₀ with d | p
-  · rw [pairF_map] at hv₀; exact hv₀
-  · obtain ⟨hop, -⟩ := (pairF_apply_inr _ _ _).mp hv₀
+  · rw [Pair.F_map] at hv₀; exact hv₀
+  · obtain ⟨hop, -⟩ := (Pair.F_apply_inr _ _ _).mp hv₀
     rcases p with ⟨a | a | a, _⟩ <;> simp [opP, graph, cand] at hop
 
 /-- **`F(⊤,V)` is not even lax natural**: it is `Q` itself, spelled as the bifunctor. -/
-public theorem Fbimap_top_V_not_lax_natural :
-    ¬ LaxNatural pairF pairF (fun a : RelSet.{0} =>
+public theorem Pair.Fbimap_top_V_not_lax_natural :
+    ¬ LaxNatural Pair.F Pair.F (fun a : RelSet.{0} =>
       Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier)) := by
   rw [show (fun a : RelSet.{0} =>
       Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier))
       = fun a : RelSet.{0} => Q a.carrier from
       funext fun a => (Q_eq_Fbimap (Char := a.carrier)).symm]
-  exact Q_not_lax_natural
+  exact Pair.Q_not_lax_natural
 
 /-- The lane stack `𝟏 + Op×K` of the edit pictures acts as the bifunctor: `F(Op(S),K(S))`. -/
 public theorem sumOp_map (K : Relator RelSet.{0} RelSet.{0}) {x y : RelSet.{0}} (S : x ⟶ y) :
@@ -1743,8 +1743,8 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `Op))
 
 -- printing-only: the note's names for this section's declarations.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Edit.pairF] public meta def Freyd.Alg.RelSet.Edit.unexpandEditPairF : Unexpander | _ => `($(mkIdent `F))
 -- The edit lanes are the base functor `F` of the section; the carrier is the wire under it.
+-- A rule, not a rename: `con_strictNatural` states `opF` beside `CL.F`, and the note writes both
+-- `F`, which no namespace can print bare at once.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.opF] public meta def Freyd.Alg.RelSet.Edit.unexpandEditOpF : Unexpander | _ => `($(mkIdent `F))

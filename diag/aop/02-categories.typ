@@ -46,31 +46,31 @@ The *initial algebra* `α : F(T)⟶T` has exactly one F-homomorphism `⦇f⦈ : 
 // is of equivalences between equations; its first four steps each rewrite ONE side, so the right
 // side's two steps are the first row, the left side's two the second, and cancellation the third.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.nat_fold_spec") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.Nat.nat_fold_spec") \
     #src[`h` is a homomorphism from `α = [zero,succ]` to `[c,f]` exactly when `h` sends `zero` to
      `c` and `succ` then `h` equals `h` then `f`]],
-  // lean:AOP.A2_6.nat_fold_spec@15a8703a
+  // lean:AOP.A2_6.nat_fold_spec@56643bd0
   lean-chain(
     (
-      (none, "Freyd.Alg.nat_fold_spec_step1.lhs", src[the right side]),
-      (EQ, "Freyd.Alg.nat_fold_spec_step1.rhs", src[definition of `F`]),
-      // lean:AOP.A2_6.nat_fold_spec_step1@3617b276
-      (EQ, "Freyd.Alg.nat_fold_spec_step2.rhs", src[coproduct]),
-      // lean:AOP.A2_6.nat_fold_spec_step2@34821c4d
+      (none, "Freyd.Alg.Nat.nat_fold_spec_step1.lhs", src[the right side]),
+      (EQ, "Freyd.Alg.Nat.nat_fold_spec_step1.rhs", src[definition of `F`]),
+      // lean:AOP.A2_6.nat_fold_spec_step1@828c3533
+      (EQ, "Freyd.Alg.Nat.nat_fold_spec_step2.rhs", src[coproduct]),
+      // lean:AOP.A2_6.nat_fold_spec_step2@d3c3db74
     ),
     (
-      (none, "Freyd.Alg.nat_fold_spec_step3.lhs", src[the left side]),
-      (EQ, "Freyd.Alg.nat_fold_spec_step3.rhs", src[since `α = [zero,succ]`]),
-      // lean:AOP.A2_6.nat_fold_spec_step3@a9a30fd5
-      (EQ, "Freyd.Alg.nat_fold_spec_step4.rhs", src[coproduct]),
-      // lean:AOP.A2_6.nat_fold_spec_step4@46340f81
+      (none, "Freyd.Alg.Nat.nat_fold_spec_step3.lhs", src[the left side]),
+      (EQ, "Freyd.Alg.Nat.nat_fold_spec_step3.rhs", src[since `α = [zero,succ]`]),
+      // lean:AOP.A2_6.nat_fold_spec_step3@3d171a52
+      (EQ, "Freyd.Alg.Nat.nat_fold_spec_step4.rhs", src[coproduct]),
+      // lean:AOP.A2_6.nat_fold_spec_step4@7fb3a8ee
     ),
     (
-      (IFF, ("Freyd.Alg.nat_fold_spec_step5_zero",), src[cancellation, `zero` arm]),
-      (src[and], ("Freyd.Alg.nat_fold_spec_step5_succ",), src[cancellation, `succ` arm]),
-      // lean:AOP.A2_6.nat_fold_spec_step5@35ed707e
-      // lean:AOP.A2_6.nat_fold_spec_step5_zero@9c564d74
-      // lean:AOP.A2_6.nat_fold_spec_step5_succ@ba04cad9
+      (IFF, ("Freyd.Alg.Nat.nat_fold_spec_step5_zero",), src[cancellation, `zero` arm]),
+      (src[and], ("Freyd.Alg.Nat.nat_fold_spec_step5_succ",), src[cancellation, `succ` arm]),
+      // lean:AOP.A2_6.nat_fold_spec_step5@89a783e1
+      // lean:AOP.A2_6.nat_fold_spec_step5_zero@e81dd294
+      // lean:AOP.A2_6.nat_fold_spec_step5_succ@92988046
     ),
   ),
 )]<nat-fold-spec>
