@@ -1,10 +1,10 @@
 // `#include`d by allegory-axioms.typ, which does not share its scope: the helpers must be re-imported.
-#import "note-style.typ": definition, disp, P, d, src, Thm, calc-table, EQ, vstep
+#import "note-style.typ": appendix-heading, definition, disp, P, d, src, Thm, calc-table, EQ, vstep
 #import "draw.typ": zline, zpair, zsqc, zstep, SQ, RQ
 #import "dpanel.typ": dpanel, hm-meta
 #import "note-prelude.typ": lean, leanc, leant, leanf, leank
 
-= Appendix <sec-appendix>
+#appendix-heading[Appendix] <sec-appendix>
 
 == `P(S) est(R)=(∋S)∩(∈\(SR°))`
 
