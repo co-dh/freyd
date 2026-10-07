@@ -1513,11 +1513,6 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `bagify))
 
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.bmax] public meta def unexpandBmax : Unexpander
-  | `($_ $args*) => `($(mkIdent `bmax) $args*)
-  | _ => `($(mkIdent `bmax))
-
-open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.kFn] public meta def unexpandTardyK : Unexpander
   | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `k) $x $args*)
   | _ => `($(mkIdent `k))

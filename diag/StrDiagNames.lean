@@ -945,7 +945,7 @@ open Lean PrettyPrinter in
 attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
   RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next RelSet.Edit.Pair.F
-  RelSet.Tardy.snag
+  RelSet.Tardy.snag RelSet.Tardy.bmax RelSet.Digits.«Digit⁺»
 
 /-- The book's closure `R*` (6.7), postfix like `°`.  LAST IN THE FILE: below it every quotation's
     splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing. -/
