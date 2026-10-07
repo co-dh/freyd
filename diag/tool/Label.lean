@@ -2047,7 +2047,10 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
       -- A pair at ANY depth (`[(cpy(a),(xs,ys))]` under `if`): the printer flattens a nested pair.
-      (args.filter (fun a => (appSubs a).any (·.isAppOfArity ``Prod.mk 4)) ++ (← arrows args) ++ (← relatorArgs args)
+      -- The PAIR is the operand, not what holds it: a list holding it holed whole is no literal.
+      ((fun ps => ps.filter fun p => !ps.any fun q => q != p && (q.find? (· == p)).isSome)
+          ((args.flatMap appSubs).filter (·.isAppOfArity ``Prod.mk 4))
+        ++ (← arrows args) ++ (← relatorArgs args)
         -- a swallowed point at ANY depth: `appShow` re-sets an operand from the printer's syntax,
         -- which never had it (`list(bin)(zip)` for `cmap binFn (zip p)`)
         ++ (← args.filterM fun a => (appSubs a).anyM fun s => return (← swallowedPoints? s).isSome)

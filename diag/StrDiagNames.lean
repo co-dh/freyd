@@ -97,6 +97,9 @@ attribute [diag_noted] RelSet.Poly.listcp RelSet.Poly.listcpFn RelSet.Poly.linea
   RelSet.CL.bumpFold RelSet.ListRel.thinlist
 -- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
 attribute [diag_noted] _root_.Int
+-- The note's definitions of maps whose Lean value is pointwise (`diag_def`).
+attribute [diag_def] RelSet.ListRel.total_eq RelSet.ListRel.subseq_cata RelSet.Knapsack.value_eq
+  RelSet.Knapsack.weight_eq RelSet.Knapsack.R_eq RelSet.Knapsack.Q_eq
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.listcp
 -- The case studies' own words, every explicit argument printed as Lean has it.
 attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelSet.Tour.next2
