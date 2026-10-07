@@ -1888,7 +1888,7 @@ def main (args : List String) : IO UInt32 := do
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName
-        else if calcMode then Freyd.FormulaRender.calcFile arg.toName else draw arg.toName)
+        else if calcMode then Freyd.FormulaRender.calcFile StrDiag.drawsSame arg.toName else draw arg.toName)
       if sigMode then return body
       -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
       -- Every route's file opens with its library's relative `#import`, whichever library it is.

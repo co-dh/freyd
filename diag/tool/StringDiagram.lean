@@ -831,6 +831,16 @@ def Diagram.drawnAs (a b : Diagram) : Bool :=
     && a.rows.all (·.ident.isSome) && a.rows.map (·.ident.map dropUnits) == b.rows.map (·.ident.map dropUnits)
     && a.top == b.top && a.bot == b.bot
 
+/-- TWO PARTS THE READER SEES AS ONE PICTURE, at the rows `la`/`lb` their box gives them: every field
+    `panelCode` draws from — lanes, bead labels, arms, legs, marks, edges — and none it does not.
+    Unlike `drawnAs` beads compare as PRINTED, so `P(f)` and `E(f)`, two terms, draw alike.  Not
+    `panelCode` itself: a peer's objects are terms of a context that has closed. -/
+def Diagram.drawsLike (a b : Diagram) (la lb : Array Nat) : Bool :=
+  let lane (l : Lane) := (l.label, l.born, l.dies, l.conv.map fun c => (c.first, c.last, c.outer, c.inner, c.whole))
+  let row (r : Row) := (r.label, r.obj, r.arms, r.legs, r.nat, r.tri, r.eq)
+  la == lb && a.lanes.map lane == b.lanes.map lane && a.rows.map row == b.rows.map row
+    && a.top == b.top && a.bot == b.bot && a.otop == b.otop && a.obot == b.obot
+
 /-- Two selector atoms as the same fork-arm. -/
 def selEq : Sel → Sel → Bool
   | .inl, .inl => true | .inr, .inr => true | .body, .body => true | _, _ => false
@@ -3134,6 +3144,20 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   Prof.phase "scan" <| run <| scanCheck regionTy cat objVars side d
   Prof.phase "settle" do settlePass d (← steps) (some side)
 
+/-- TWO ARROWS THAT DRAW AS ONE STRING PANEL, read in the local context they are stated in: a law
+    between them (`P(f) = E(f)` at a map) shows the reader no step, so a calc step citing it beside
+    its real law cites one law (`FormulaRender.lawsIn`). -/
+def drawsSame (l r : Expr) : MetaM Bool :=
+  withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
+  let cat ← catalogue
+  let regionTy ← Meta.inferType (← homEnds l).1
+  let idxTy ← regionIndexType? regionTy
+  let objVars ← (← getLCtx).getFVars.filterM fun x => do
+    let t ← Meta.inferType x
+    return (← Meta.isDefEq t regionTy) || (← idxTy.elim (pure false) (Meta.isDefEq t ·))
+  let code (e : Expr) : MetaM String := do panelCode (← panelOf regionTy cat e objVars (pure #[])) none none
+  return (← code l) == (← code r)
+
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
     the picture draws that local as a wire and prints it by that name — so the panel has to be built
@@ -3419,6 +3443,15 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       if framex a > pl.frame then
         throwError "{declName}: one part of this call needs {framex a} rows where the call's box is \
           {pl.frame}: every panel of one `#lean(…)` call is drawn at ONE height, the deepest part's"
+      -- TWO NEIGHBOURS DRAWN AS ONE PICTURE show the reader a step with nothing in it.  The one pair
+      -- the reader never sees is the one `dup` merges (`Diagram.drawnAs`); any other is a step
+      -- whose laws all re-spell the term, and is merged into its neighbour in the proof.
+      if h : i + 1 < qs.size then
+        let b := qs[i + 1]
+        if !a.drawnAs b && a.drawsLike b (pl.rows a) (pl.rows b) then
+            throwError "{declName}: parts {i} and {i + 1} of this call draw one picture: a step \
+              whose two panels are the same picture shows nothing — merge it into its neighbour \
+              in the proof, citing both laws as one step"
       -- NEIGHBOURS ONLY: a chain's step is the two panels either side of its symbol, and a bead
       -- may move over several steps, so panels two steps apart owe each other nothing.
       for j in [i + 1 : min (i + 2) qs.size] do

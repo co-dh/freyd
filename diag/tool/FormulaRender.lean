@@ -676,11 +676,11 @@ def rewrites (a : Expr) : MetaM Bool := do
     sides only PRINT alike (`graph_comp`, `graph` unprinted) is that coercion; on a step whose sides
     differ on the page the law printing alike is the label dropping a factor (`X 𝟙 = X` by
     `Cat.comp_id`), and it is the step's reason. -/
-partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
+partial def lawsIn (drawsSame : Expr → Expr → MetaM Bool) (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
   match e with
-  | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn coerced b
-  | .letE _ _ v b _ => return (← lawsIn coerced v) ++ (← lawsIn coerced (b.instantiate1 v))
-  | .mdata _ b => lawsIn coerced b
+  | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn drawsSame coerced b
+  | .letE _ _ v b _ => return (← lawsIn drawsSame coerced v) ++ (← lawsIn drawsSame coerced (b.instantiate1 v))
+  | .mdata _ b => lawsIn drawsSame coerced b
   | .fvar f =>
     unless ← Meta.isProof e do return #[]
     let n ← f.getUserName
@@ -701,14 +701,14 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
     let mut built := false
     for (a, i) in args.toList.zipIdx do
       unless a.isFVar do
-        let l ← lawsIn coerced a
+        let l ← lawsIn drawsSame coerced a
         -- A premise (`graph_map f : Map (graph f)`) relates nothing, so it rewrites nothing inside.
         let applies := (a.find? isThm).isSome && (← Meta.isProof a) && (← rewrites a)
         inner := inner ++ l; built := built || !l.isEmpty || applies
         continue
       -- A hypothesis is a law the step rewrites with unless a law takes it as its premise.
       if !law || (← e.getAppFn.constName?.elim (pure false) (around · i)) then
-        let l ← lawsIn coerced a
+        let l ← lawsIn drawsSame coerced a
         if !law && (← e.getAppFn.constName?.elim (pure false) (carries · i)) then
           carried := carried ++ l
         else
@@ -726,7 +726,9 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
       -- an instance may hold a raw algebra lambda no label writes (`qsort_rec`'s `fun p q => …`).
       let alike ← if ← sameDrawn l r then pure true else if ← readsAlike c then coerced
         else if ← coerced then drawnAlike l r else pure false
-      return if alike || (← functorLaw c) then inner else inner.push (.thm c)
+      -- A law whose two sides draw as one panel (`P(f) = E(f)`) is bracketing no picture shows.
+      let shown ← if alike || (← functorLaw c) then pure false else do pure !(← drawsSame l r)
+      return if shown then inner.push (.thm c) else inner
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
@@ -734,7 +736,7 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
     `calc_steps`' `<decl>.step_i` theorems, so every panel is a side of a statement like any other;
     the relation is `stepRel`'s between the two panels the chain shows, so `lean-chain`'s own check
     reads the same answer; a step whose proof applies more than one law is refused, naming them. -/
-def calcFile (declName : Name) : MetaM String := do
+def calcFile (drawsSame : Expr → Expr → MetaM Bool) (declName : Name) : MetaM String := do
   let env ← getEnv
   let step (i : Nat) := declName ++ Name.mkSimple s!"step_{i + 1}"
   let n := (List.range 1000).find? (fun i => !env.contains (step i)) |>.getD 1000
@@ -778,7 +780,10 @@ def calcFile (declName : Name) : MetaM String := do
         Meta.forallTelescope ci.type fun _ st => do
           let some (_, l, r) := split st | throwError "{step i}: its statement relates no two sides"
           drawnAlike l r
-      pure (← lawsIn coerced v).toList.eraseDups.toArray
+      -- Pictures of a law's sides are asked only of a step citing several: elsewhere they decide
+      -- nothing, and a law of an abstract region may have sides no string panel draws.
+      let ls := (← lawsIn (fun _ _ => pure false) coerced v).toList.eraseDups.toArray
+      if ls.size ≤ 1 then pure ls else pure (← lawsIn drawsSame coerced v).toList.eraseDups.toArray
     -- A hypothesis prints as its own statement: the `#h` selector of the step that binds it.
     let lawSel : Law → String | .thm c => c.toString | .hyp h => s!"{step i}#{h}"
     if laws.size > 1 then

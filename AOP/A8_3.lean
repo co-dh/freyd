@@ -1384,14 +1384,12 @@ public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E ×
     _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ existsImage (p)
           ≫ sortRel listRelator setify ordered ≼ :=
         comp_mono_left _ (comp_mono_left _ (sort_comp_filter_le p hp))
-    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f) ≫ existsImage (p)
-          ≫ sortRel listRelator setify ordered ≼ := by rw [powerRel_map (graph_map f)]
-    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f ≫ p)
-          ≫ sortRel listRelator setify ordered ≼ := by
-        rw [← Cat.assoc (existsImage (graph f)), ← existsImage_comp]
+    -- one step, as the book's: E is a functor and agrees with P on functions; P(f), E(f) and
+    -- E(f)E(p) = E(fp) draw as one picture, so a step per law would show three identical panels
     _ = Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ p)
           ≫ sortRel listRelator setify ordered ≼ := by
-        rw [← Cat.assoc, show cpMap (CL.F L E) (dE A) = Λ ((CL.F L E).map (∋ (dE A))) from rfl,
+        rw [powerRel_map (graph_map f), ← Cat.assoc (existsImage (graph f)), ← existsImage_comp,
+          ← Cat.assoc, show cpMap (CL.F L E) (dE A) = Λ ((CL.F L E).map (∋ (dE A))) from rfl,
           Λ_absorption]
 
 calc_steps Fmap_sort_comp_listcp_list_filter_le
