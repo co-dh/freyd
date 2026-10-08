@@ -252,7 +252,7 @@ directly.
   mon-hm,
  [`F(R)φ⊑φR` #src[]],
 )
-// lean:AOP.A7_2.Pres@26944450
+// lean:AOP.A7_2_Pres.Pres@26944450
 ]<mon-str>
 
 === `f` monotonic on `≤`, read at points <sec-mon-points>

@@ -16,6 +16,8 @@ import Lean
 -- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
 -- relator is one, and its partial application is what `openBuiltField?` opens.
 import AOP.A5_5_TypeFunctor
+-- `functorProd`, named by a quoted constant the import graph cannot see.
+import Freyd.S1_422_FunctorCategory
 import diag.Monoidal
 import diag.tool.Tags
 import diag.tool.Prof

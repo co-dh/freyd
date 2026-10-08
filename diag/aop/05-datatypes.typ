@@ -348,7 +348,7 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
  #src[]],
-   // lean:AOP.A5_4.powerRel_map@e6f91701
+   // lean:AOP.A5_4_PowerRel.powerRel_map@e6f91701
 
   [#leanf("Freyd.Alg.powerRel_comp")],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
