@@ -266,39 +266,8 @@ import AOP.A6_6b_SortConcrete
 -- Bird & de Moor §10.2: detab-entab — the tupled catamorphism `(detab, col·detab) = ⦇[base,step]⦈`
 -- over snoc-lists of chars, with its loop recursion (base/step case).
 import AOP.A10_2_Detab
--- LeetCode 121 (Best Time to Buy and Sell Stock) — programmed in the allegory Rel(Set): the O(n)
--- scan as a snoc-list catamorphism, proven equal to max(≤)·Λspec.  Uses the copied `exacts` tactic.
+-- The copied `exacts` tactic (leet/rel use it; those libs build only by `lake build leet rel`).
 import Freyd.Exacts
-import leet.L121
--- LeetCode 322 (Coin Change) re-derived through the ∞-DP theorem `A9_2.dynamic_programming_inf`:
--- the value-axis DP whose optimality now comes from the A-layer, not a hand fuel-induction.
-import leet.L322_dp
--- A relation-algebra INTERPRETER: a term AST + two sound evaluators — `eval` into finite Bool
--- matrices (`FinRel`, a proven allegory ⇒ soundness free; runs ground terms + the exponential
--- powerset specs) and `evalP`, a structural fold running the derived catamorphism programs in
--- polynomial time — bridged by the proven `solve = A spec ≫ est D` (differential testing).
-import rel.RelInterp
--- Auto-derive: a generic driver theorem `RunningBest` that discharges every `horner_correct` side
--- condition (monotonicity, greedy refinement, order transitivity) from 8 one-line arithmetic facts,
--- so a new running-best-pair greedy problem supplies only its creative inputs (pair state + generator
--- + dominance order), not the ~100 lines of relational boilerplate. Kadane (L53) is derived through it.
-import rel.AutoDerive
-import leet.L53
--- Auto-derive increment 2: DP drivers (`DPInf` ∞-DP + `DPCount` step-counting) that discharge every
--- `dynamic_programming_inf` hypothesis + the concrete memo packaging from a small bundle. Cuts
--- `L322_dp` 518→189 lines; reused fresh on `L279` (Perfect Squares).
-import rel.AutoDeriveDP
-import leet.L279
--- Thread B — propose→test→certify glue: enumerate candidate program shapes from a catalog, TEST each
--- (run the spec `A spec ≫ est D` via FinRel.eval vs the candidate fold via evalP) to auto-select
--- the correct shape, then CERTIFY the winner via `RunningBest`. Demo picks L121's pair program (proved
--- `= prog121` by rfl) after rejecting 17 wrong shapes. Soundness caveat: the runnable-spec ↔ Rel(Set)-
--- spec link is by construction, not yet a Lean proof (the spec-transport gap, next to close).
-import rel.AutoDeriveSearch
--- Auto-derive: thinning driver (`ThinBest`) — discharges Theorem-8.1/Cor-8.1 side conditions + a
--- verified generic Pareto prune (`thinList`, closing §8.3's deferred implementation) + the set-valued
--- fold-bridge. Demo closes B&dM §8.4's concrete 0/1-knapsack binary-thinning program (was only abstract).
-import rel.AutoDeriveThin
 
 /-! ## Axiom hygiene
 
