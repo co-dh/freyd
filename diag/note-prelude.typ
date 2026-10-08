@@ -242,6 +242,33 @@
     calc.min(1.0, (width - (w.len() - if lead { 1 } else { 0 }) * (OPW + 2 * hgut)) / tot)
   }
 }
+// THE SMALLEST SCALE A CHAIN ROW IS DRAWN AT: below it the labels and beads stop being legible, so
+// a row needing a smaller factor to fit the width breaks into more rows instead (`chain-cuts`).
+// 0.6: the least factor any hand-set `breaks:` settled on (9.4's `mct_rec`); 8.3.2c at 0.32 was unreadable.
+#let CHAIN-KMIN = 0.6
+// A ROW OF COLUMNS `cw` BROKEN INTO THE FEWEST ROWS whose shared factor (the least row's `chain-k`)
+// reaches `kmin`, the cuts placed to make that factor as large as it gets — balanced rows, not a full
+// first row and a stub.  Returns each row's first column index.  `lead`: the first column has no op.
+// More rows never lower the factor, so when no count reaches `kmin` every column stands alone.
+#let chain-cuts(width, lead, cw, kmin) = {
+  let m = cw.len()
+  let rk(a, b) = chain-k(width, lead and a == 0, cw.slice(a, b))
+  // `f.at(i)`: the best (factor, cuts) for the first `i` columns in the current number of rows
+  let f = range(m + 1).map(i => if i == 0 { (0.0, ()) } else { (rk(0, i), (0,)) })
+  let n = 1
+  while f.at(m).at(0) < kmin and n < m {
+    n += 1
+    f = range(m + 1).map(i => {
+      let best = (0.0, ())
+      for t in range(n - 1, i) {
+        let k = calc.min(f.at(t).at(0), rk(t, i))
+        if k > best.at(0) { best = (k, f.at(t).at(1) + (t,)) }
+      }
+      best
+    })
+  }
+  f.at(m).at(1)
+}
 #let hchain-at(steps, fill, k0) = layout(sz => {
   let gut = hgut
   // `u`, a second picture UNDER the first — the step's circuit under its Hinze–Marsden panel.
@@ -568,13 +595,25 @@
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
   table.cell(breakable: true, { metas; for c in calls { c.at(0) }; layout(sz => {
-    let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
     // The scale factor treats a GROUP as one column, not `n` side by side — its members stack
     // vertically (below), so the row only spends one picture's worth of width on them, the widest.
-    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none,
-      chain-groups(c.at(2)).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx)))))))
+    let colw(r, w) = chain-groups(r).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx))))
+    // EVERY ROW TOO WIDE FOR `CHAIN-KMIN` BREAKS by its measured widths (`chain-cuts`) into runs of
+    // consecutive columns; a run after the first continues the chain, so it has no `Sub` header.
+    let subs = ()
+    for (row, c) in rows.zip(calls) {
+      let (r, w) = (c.at(2), c.at(1).map(p => measure(box(p)).width))
+      let gs = chain-groups(r)
+      let fl = chain-cuts(sz.width, r.first().at(0) == none, colw(r, w), CHAIN-KMIN).map(j => gs.at(j).at(0)) + (r.len(),)
+      for t in range(fl.len() - 1) {
+        let (a, b) = (fl.at(t), fl.at(t + 1))
+        subs.push((if t == 0 { row } else { (:) }, (none, c.at(1).slice(a, b), r.slice(a, b)), w.slice(a, b)))
+      }
+    }
+    let k = calc.min(..subs.map(((_, c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none, colw(c.at(2), w))))
+    let calls = subs.map(s => s.at(1))
     let offs = chain-offsets(calls.map(c => c.at(2)))
-    for (ri, ((row, c), w)) in rows.zip(calls).zip(ws).enumerate() {
+    for (ri, (row, c, w)) in subs.enumerate() {
       let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
@@ -675,7 +714,8 @@
     else { cite(none, (law,), row: true) }
   }
 }
-// `breaks`: the step indices a new row starts at, for a chain too long to read on one row;
+// `breaks`: the step indices a new row starts at, each row one exporter call; a row too wide for
+// `CHAIN-KMIN` breaks further by itself (`chain-cuts`), so `breaks` is never needed only to fit.
 // A chain taller than the page is still ONE display: it breaks between rows (`kept`, `lean-chain`'s
 // breakable cell), so a long proof takes more `breaks`, never a second display.
 #let lean-calc(c, breaks: (), ..opts) = {
