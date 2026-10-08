@@ -13,7 +13,10 @@
   (functorialSemanticsForRelationalTheories.pdf p. 22), and the inequational axioms (37)–(43)
   mention `≤` before `∩` exists.
 -/
-import Freyd.S1_10
+module
+
+public import Freyd.S1_10
+@[expose] public section
 
 universe v u
 

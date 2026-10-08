@@ -13,8 +13,11 @@
   relations between Lean types — which is what the AOP layer manipulates.  Without it the strict
   tower says nothing about `AOP/`.
 -/
-import diag.Monoidal
-import AOP.A6_1_RelSet
+module
+
+public import diag.Monoidal
+public import AOP.A6_1_RelSet
+@[expose] public section
 
 universe u
 

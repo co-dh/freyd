@@ -23,7 +23,10 @@
   `allegoryOfCartBicat` it already transfers here.  This is a second, independent proof of a
   book-numbered result, kept because it is the one `diag/S2_124.typ` draws.
 -/
-import diag.CB_Allegory
+module
+
+public import diag.CB_Allegory
+@[expose] public section
 
 universe v u
 

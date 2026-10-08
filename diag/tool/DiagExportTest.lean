@@ -21,7 +21,11 @@
   BEAUTIFUL — they check that the model is self-consistent, which is the part a reader cannot see and
   the part that has been wrong.
 -/
-import diag.tool.DiagExport
+module
+
+public import diag.tool.DiagExport
+meta import diag.tool.DiagExport
+public section
 
 namespace Freyd.DiagExport.Test
 

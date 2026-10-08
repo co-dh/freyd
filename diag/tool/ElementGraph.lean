@@ -16,7 +16,10 @@
   The layout — which column a type stands in, where an element sits, how a relation is inked — is
   the note's call's, because it says nothing about which pairs hold.
 -/
-import Lean
+module
+
+public import Lean
+public section
 
 open Lean Meta
 

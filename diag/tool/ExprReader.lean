@@ -12,16 +12,19 @@
   `¬ LaxNatural G F φ` and looks for a declaration in the environment proving one; nothing is
   inferred from the family's shape or its name.  No declaration, no dot.
 -/
-import Lean
+module
+
+public import Lean
 -- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
 -- relator is one, and its partial application is what `openBuiltField?` opens.
-import AOP.A5_5_TypeFunctor
+public import AOP.A5_5_TypeFunctor
 -- `functorProd`, named by a quoted constant the import graph cannot see.
-import Freyd.S1_422_FunctorCategory
-import diag.Monoidal
-import diag.tool.Tags
-import diag.tool.Prof
-import diag.tool.Reads
+public import Freyd.S1_422_FunctorCategory
+public import diag.Monoidal
+public import diag.tool.Tags
+public import diag.tool.Prof
+public import diag.tool.Reads
+public section
 
 open Lean
 

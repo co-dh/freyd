@@ -39,7 +39,10 @@
   field or unbundling `CartBicat`'s parents into instance arguments, and both cost more than the
   transcription saves.  The black composition is therefore a FIELD on `𝒞`, not a second `Cat`.
 -/
-import diag.CB_Derived
+module
+
+public import diag.CB_Derived
+@[expose] public section
 
 universe v u
 

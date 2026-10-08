@@ -1,4 +1,7 @@
-import diag.tool.ExprReader
+module
+
+public import diag.tool.ExprReader
+public section
 /-!
 # `cite-check` and `cite-cover` — the notes' citations, read in Lean against the index
 

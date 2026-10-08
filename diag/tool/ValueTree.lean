@@ -15,8 +15,11 @@
   THE LAYOUT IS THE VALUE'S: leaves take consecutive columns left to right, and a parent stands
   midway between its first and last child, one level above them.  `diag/vtree.typ` only scales.
 -/
-import diag.tool.StringDiagram
-import diag.tool.CommutativeDiagram
+module
+
+public import diag.tool.StringDiagram
+public import diag.tool.CommutativeDiagram
+public section
 
 open Lean Meta
 

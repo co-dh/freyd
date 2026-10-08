@@ -17,8 +17,11 @@
   `Frobenius.pdf` USES the law rather than deriving it.  The derivation below is therefore
   reconstructed, not transcribed.
 -/
-import diag.CB_Derived
-import Freyd.S2_10
+module
+
+public import diag.CB_Derived
+public import Freyd.S2_10
+@[expose] public section
 
 universe v u
 

@@ -50,17 +50,20 @@
   `importModules` retains its environment for the life of the process, so this exe imports once and
   handles every declaration named on the command line from that one environment.
 -/
-import Lean
-import diag.tool.FormulaRender
+module
+
+public import Lean
+public import diag.tool.FormulaRender
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 -- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
 -- box = morphism, left to right), emitted for `diag/cpanel.typ`.
-import diag.tool.CircuitDiagram
+public import diag.tool.CircuitDiagram
 -- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
-import diag.tool.ValueTree
+public import diag.tool.ValueTree
 -- `--graph`: a concrete relation between finite types, decided pair by pair.
-import diag.tool.ElementGraph
+public import diag.tool.ElementGraph
+public section
 
 open Lean
 

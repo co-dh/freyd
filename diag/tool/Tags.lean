@@ -4,8 +4,11 @@
   this and not the reader, so the exporter's code is no module of the statements it draws, and an
   edit of it leaves the verdict cache's `depText` of every statement unchanged.
 -/
-import Lean
-import AOP.A5_7
+module
+
+public import Lean
+public import AOP.A5_7
+public section
 
 open Lean
 

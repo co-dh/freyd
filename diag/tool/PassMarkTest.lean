@@ -10,9 +10,13 @@
   The panel a step arrives at gets no mark from it, and the last panel of a chain has none.
   A theorem the step's proof does not cite marks nothing (`Step.cited`, 10.4c's `tex_mono`).
 -/
-import diag.tool.StringDiagram
-import AOP.A5_5_AlgCat
-import AOP.A10_4_Tex
+module
+
+public import diag.tool.StringDiagram
+meta import diag.tool.StringDiagram
+public import AOP.A5_5_AlgCat
+public import AOP.A10_4_Tex
+public section
 
 namespace Freyd.StrDiag.PassMarkTest
 

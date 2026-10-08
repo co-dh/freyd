@@ -40,11 +40,14 @@
 -- `AOP.A4_5` pulls the `Freyd` core and the allegory layer, so `Cat.comp`, `Cat.Hom` and `Alg.le`
 -- are names this file can quote.  It does NOT import `DiagExport`: that module imports THIS one, to
 -- route `--commutative`, so the typst helpers below are its own rather than made circular.
-import Lean
+module
+
+public import Lean
 -- `StrDiag`: one copy of what a statement states, of an arrow's two ends, and of an application's
 -- last two arguments.
 -- The note's spelling of a term, shared with the string and circuit pictures.
-import diag.tool.Label
+public import diag.tool.Label
+public section
 
 open Lean
 

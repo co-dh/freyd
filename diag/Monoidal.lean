@@ -43,8 +43,11 @@
   free for the biproduct that `diag.Tape` adds (TapeDiagrams.pdf Def. 7.1), so the two products never
   collide once both layers exist.
 -/
-import diag.Basic
-import Freyd.S1_18
+module
+
+public import diag.Basic
+public import Freyd.S1_18
+@[expose] public section
 
 universe v u
 

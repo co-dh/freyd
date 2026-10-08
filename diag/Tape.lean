@@ -23,8 +23,11 @@
   commutativity, associativity, the two absorption laws and `⊥ ∪ R = R` are lattice facts about a
   join and the meet `diag/CB_Derived.lean` already established — not eleven separate derivations.
 -/
-import diag.CB_Allegory
-import Freyd.S2_20
+module
+
+public import diag.CB_Allegory
+public import Freyd.S2_20
+@[expose] public section
 
 universe v u
 

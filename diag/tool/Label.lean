@@ -13,19 +13,22 @@
   composition, which has no symbol left to parse back; the bracketing that makes it readable; and
   the note's own spacing.
 -/
-import diag.tool.ExprReader
+module
+
+public import diag.tool.ExprReader
 -- The tape and first-order layers' own operators (`⨟•`, `⊥`, the four generators): `labelTree` is one
 -- rule over both towers, so it has to see both.
-import diag.FO
-import diag.Tape
+public import diag.FO
+public import diag.Tape
 -- `est`, the one operator of the allegory layer that lives above `ExprReader`'s own import, and the
 -- type functor, whose action on an arrow is spelled here rather than by a notation (no term prints
 -- its own brackets, and `T(f)` is brackets).
-import AOP.A7_1
-import AOP.A5_5_TypeFunctor
+public import AOP.A7_1
+public import AOP.A5_5_TypeFunctor
 -- The graph of a function, the one arrow whose content is a Lean TERM and not an operator: its
 -- name is read off that term, here, so every picture writes the same one.
-import AOP.A6_1_RelSet
+public import AOP.A6_1_RelSet
+public section
 
 open Lean
 

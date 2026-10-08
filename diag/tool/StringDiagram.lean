@@ -13,10 +13,21 @@
   the same place.  The numbers are IntroString's own (pp. 46/75/79), measured there and not chosen.
 -/
 -- The note's spelling of a term, shared with the circuit and commutative pictures.
-import diag.tool.Label
+module
+
+public import diag.tool.Label
+import all diag.tool.Label
 -- The `lean:<Module>.<decl>@<key>` marker, computed exactly once in the exe: `cite-check` verifies
 -- the notes' citations with it and the panels' `nat:` trace is written with the same function.
-import diag.tool.Cite
+public import diag.tool.Cite
+import all diag.tool.Cite
+public import diag.tool.DeclsHash
+meta import diag.tool.DeclsHash
+import all diag.tool.ExprReader
+import all diag.tool.Tags
+import all diag.tool.Prof
+import all diag.tool.Reads
+public section
 
 open Lean
 
@@ -1621,35 +1632,6 @@ initialize failPrintRef : IO.Ref (Option String) ← IO.mkRef none
 
 /-- `declsHash #[verdict]`, set by the `initialize` after `verdict`. -/
 initialize verdictCodeRef : IO.Ref (Option UInt64) ← IO.mkRef none
-
-/-- The hash of every declaration `roots` reach — a type, a definition's value, an `implemented_by`
-    or `partial` body, an `initialize` action; a theorem by its statement alone — outside the
-    toolchain, which the keys name by version.  A name with macro scopes (an `initialize`'s) is left
-    out, since its scope moves with any edit above. -/
-def declsHash (roots : Array Name) : CoreM UInt64 := do
-  let env ← getEnv
-  let mut seen : NameSet := {}
-  let mut todo := roots
-  let mut hs : Array UInt64 := #[]
-  while h : todo.size > 0 do
-    let n := todo[todo.size - 1]
-    todo := todo.pop
-    if seen.contains n then continue
-    seen := seen.insert n
-    let some ci := env.find? n | throwError "diag-export: {n}, reached from {roots}, names no constant"
-    if let some i := env.getModuleIdxFor? n then
-      if [`Init, `Std, `Lean, `Lake].contains env.header.moduleNames[i.toNat]!.getRoot then continue
-    let (es, more) : Array Expr × Array Name := match ci with
-      | .defnInfo d => (#[d.type, d.value], #[])
-      | .opaqueInfo d => (#[d.type, d.value], #[])
-      | .inductInfo d => (#[d.type], d.ctors.toArray)
-      | .ctorInfo d => (#[d.type], #[d.induct])
-      | c => (#[c.type], #[])
-    hs := hs.push (es.foldl (fun a e => mixHash a (hash e)) (if n.hasMacroScopes then 0 else hash n))
-    let impl := [Compiler.implementedByAttr.getParam? env n, some (n ++ `_unsafe_rec), getInitFnNameFor? env n]
-    todo := todo ++ more ++ ((impl.filterMap id).filter env.contains).toArray
-    unless ci matches .thmInfo _ do todo := todo ++ es.flatMap (·.getUsedConstants)
-  return (hs.qsort (· < ·)).foldl mixHash 7
 
 def sortNames (ns : Array Name) : Array Name := ns.qsort (·.toString < ·.toString)
 

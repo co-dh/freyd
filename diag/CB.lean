@@ -28,7 +28,10 @@
   4.2 (iii) needs — the converse bends round `cap = ∇;!`, so only that side is ever at a composite
   object.  The comonoid half is not stated because nothing cups at a composite.
 -/
-import diag.Monoidal
+module
+
+public import diag.Monoidal
+@[expose] public section
 
 universe v u
 

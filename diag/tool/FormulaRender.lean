@@ -20,7 +20,11 @@
   `label` cannot read fails naming the declaration and the sub-term, and the run exits nonzero
   through the same stub-file machinery every other route already uses.
 -/
-import diag.tool.TypeRender
+module
+
+public import diag.tool.TypeRender
+public import AOP.CalcSpine
+public section
 
 open Lean
 

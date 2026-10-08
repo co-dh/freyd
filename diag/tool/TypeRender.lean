@@ -20,7 +20,10 @@
   head with no unexpander prints as its raw Lean name and is a DEFECT to fix where those live —
   never here.
 -/
-import diag.tool.StringDiagram
+module
+
+public import diag.tool.StringDiagram
+public section
 
 open Lean
 

@@ -19,11 +19,14 @@
   functor at a carrier — is one wire at a port and the summand's two inside a tape.  No table
   states any of that; `whnf` does.
 -/
-import Lean
+module
+
+public import Lean
 -- `StrDiag.split` and the rest of the elaborated-term reader: one copy of a question every picture
 -- functor asks — what relation a statement states, and what its two sides are.
 -- The note's spelling of a term, shared with the string and commutative pictures.
-import diag.tool.Label
+public import diag.tool.Label
+public section
 
 open Lean
 

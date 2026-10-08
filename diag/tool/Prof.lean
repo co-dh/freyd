@@ -14,7 +14,10 @@
   `ts_ms` is the run's start (Unix epoch ms), `sha` the tree's HEAD, `selector` `-` for a
   process-level line; `extra` is `k=v` pairs (heartbeats `hb`, `calls`, the route `kind`, …).
 -/
-import Lean
+module
+
+public import Lean
+public section
 
 namespace Freyd.Prof
 

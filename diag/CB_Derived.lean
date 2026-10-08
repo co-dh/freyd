@@ -7,7 +7,10 @@
   object and so need no associator; here the monoidal structure is strict and no result in `diag/`
   needs one, so the ordering is only the paper's.
 -/
-import diag.CB
+module
+
+public import diag.CB
+@[expose] public section
 
 universe v u
 

@@ -10,7 +10,10 @@
   imported environment instead redrew every picture after any edit, since the exporter imports
   nearly the whole library.
 -/
-import Lean
+module
+
+public import Lean
+public section
 
 open Lean
 

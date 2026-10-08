@@ -1,4 +1,7 @@
-import Lean
+module
+
+public import Lean
+public section
 /-! # BinderNames — a collection is named `xs`, one of its elements `x`
 
     `lake env lean --run diag/tool/BinderNames.lean <selector list>…` reads the note's selector

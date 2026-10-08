@@ -8,44 +8,48 @@
   vocabulary, not the algebra's — `T` is what the note calls the type functor's relator, and the
   `AOP` module already spells the same functor's action on arrows `T(R)`.
 -/
-import AOP.A2_6
+module
+
+public import AOP.A2_6
 -- `laxNatural_birel_eps_eps`, the verdict the exporter reads for the bifunctor family at `(∋,∋)`:
 -- proved beside the other power beads, in scope here because the exporter looks it up by name.
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
-import AOP.A7_3_Party
-import AOP.A7_4_CylinderVecRel
-import AOP.A7_7_MSS
-import AOP.A8_4_Knapsack
+public import AOP.A7_3_Party
+public import AOP.A7_4_CylinderVecRel
+public import AOP.A7_7_MSS
+public import AOP.A8_4_Knapsack
 -- Appendix `wrap` (B&dM p.267), which §8.5's paragraph table defines.
-import AOP.A8_4_KnapsackProgram
-import AOP.A8_5_Paragraph
-import AOP.A9_4_Code
+public import AOP.A8_4_KnapsackProgram
+public import AOP.A8_5_Paragraph
+public import AOP.A9_4_Code
 -- The constants the unexpanders below key on, formerly in scope only through re-exports.
-import AOP.A6_TreeTip
-import AOP.A9_2_Edit
-import AOP.A9_3_Bracket
+public import AOP.A6_TreeTip
+public import AOP.A9_2_Edit
+public import AOP.A9_3_Bracket
 -- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
-import AOP.A9_0_SegmentExample
-import AOP.A10_2_Detab
-import AOP.A10_3_Tardy
-import AOP.A10_4_Tex
+public import AOP.A9_0_SegmentExample
+public import AOP.A10_2_Detab
+public import AOP.A10_3_Tardy
+public import AOP.A10_4_Tex
 -- §6.5's membership, which Theorem 6.4's claim draws as a bead.
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
-import AOP.A8_6_Tour
+public import AOP.A8_6_Tour
 -- `star`, `sub`'s chains and `theta` (§6.7), whose beads the closure displays draw.
-import AOP.A6_7
+public import AOP.A6_7
 -- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
-import AOP.A6_6e_Quicksort
-import AOP.A6_6c_ISort
+public import AOP.A6_6e_Quicksort
+public import AOP.A6_6c_ISort
 -- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
-import AOP.A6_1_Digits
-import AOP.A6_4_FastExp
+public import AOP.A6_1_Digits
+public import AOP.A6_4_FastExp
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
-import diag.tool.Tags
+public import AOP.A8_2
+public meta import diag.tool.Tags
+@[expose] public section
 
 namespace Freyd.Alg
 
@@ -112,7 +116,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 /-- AN OBJECT THE NOTE HAS NO WORD FOR IS THE SET IT WRAPS: a `def` whose body is a one-field record
     (`dRose A ≜ ⟨Rose A⟩`) prints as that field, so `dRose A` is `tree A` by `Rose`'s own rule.  A
     constant the note does name (`diag_noted`, or a rule of its own) keeps its name. -/
-@[delab app] def delabWrapperObject : Delab := do
+@[delab app] meta def delabWrapperObject : Delab := do
   let e ← getExpr
   let .const c ls := e.getAppFn | failure
   let env ← getEnv
@@ -130,7 +134,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The constructor map is `[nil,cons]` only at the empty leaf; a leaf carrying a value is B&dM's
 -- `list⁺` and its map is `[wrap,cons]`.  A DELABORATOR: the leaf type is implicit, so only the term has it.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.CL.con] def delabCLCon : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.con] meta def delabCLCon : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size < 2 || args.size > 3 then failure
   let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "wrap"
@@ -159,15 +163,15 @@ attribute [diag_unfold] Δ
 -- A naturality premise is the note's adjective on the family (§5.7: `φ` is "lax", "oplax", "strictly
 -- natural"); `F`, `G` are `φ`'s own type, which the picture beside the formula already draws.
 open Lean PrettyPrinter in
-@[app_unexpander LaxNatural] def unexpandLaxNatural : Unexpander
+@[app_unexpander LaxNatural] meta def unexpandLaxNatural : Unexpander
   | `($_ $_ $_ $φ) => `($(mkIdent `lax) $φ)
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander StrictNatural] def unexpandStrictNatural : Unexpander
+@[app_unexpander StrictNatural] meta def unexpandStrictNatural : Unexpander
   | `($_ $_ $_ $φ) => `($(mkIdent `strict) $φ)
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander OpLaxNatural] def unexpandOpLaxNatural : Unexpander
+@[app_unexpander OpLaxNatural] meta def unexpandOpLaxNatural : Unexpander
   | `($_ $_ $_ $φ) => `($(mkIdent `oplax) $φ)
   | _ => throw ()
 
@@ -177,7 +181,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     unexpander: the two objects are the `RelProd` argument's TYPE, which an unexpander, seeing only
     the syntax the elaborator produced, does not have.  One rule for every product apex the
     statements name, the abstract `P.p` of `prodMap` included. -/
-@[delab app.Freyd.Alg.RelProd.p] def delabRelProdApex : Delab := do
+@[delab app.Freyd.Alg.RelProd.p] meta def delabRelProdApex : Delab := do
   guard ((← getExpr).getAppNumArgs == 5)
   let a ← withNaryArg 2 delab
   let b ← withNaryArg 3 delab
@@ -186,7 +190,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 
 open Lean PrettyPrinter in
 /-- Binary max is B&dM's `bmax` (p.185), applied to the pair it takes. -/
-@[app_unexpander Max.max] def unexpandMax : Unexpander
+@[app_unexpander Max.max] meta def unexpandMax : Unexpander
   | `($_ $a $b) => `($(mkIdent `bmax) $a $b)
   | _ => throw ()
 
@@ -197,7 +201,7 @@ open Lean PrettyPrinter in
 /-- The category of relations on sets is the note's REGION `𝒜`, the letter every panel over it is
     drawn in.  An `app_unexpander` and not a `notation`: a token would make every binder the repo
     already names `𝒜` (`AOP.A5_3`'s `{s A B : 𝒜}`) print escaped. -/
-@[app_unexpander RelSet] def unexpandRelSet : Unexpander
+@[app_unexpander RelSet] meta def unexpandRelSet : Unexpander
   | `($_:ident) => `($(mkIdent `𝒜))
   | _ => throw ()
 
@@ -207,7 +211,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     two-argument functor and Lean's `RT.F A` is that functor at the leaf `A`, so its ACTION ON AN
     OBJECT writes both — `F(A,[A]×[A])`.  The LANE keeps the one letter (`unexpandRTF`): a panel
     carries its leaf type in the section's context, where a type cell states it. -/
-@[delab app.Freyd.Functor.obj] def delabRoseFObj : Delab := do
+@[delab app.Freyd.Functor.obj] meta def delabRoseFObj : Delab := do
   let e ← getExpr
   guard (e.getAppNumArgs == 6)
   let f := e.getArg! 4
@@ -226,7 +230,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 /-- The abbreviation is a SEAM, the one `unexpandNEListType` names: `dBranch A` keeps its own
     constant in every statement, so the object action above never sees it and a cell would print
     the Lean name.  Delaborate what it abbreviates, which IS that action. -/
-@[delab app.Freyd.Alg.RelSet.Party.dBranch] def delabDBranch : Delab := do
+@[delab app.Freyd.Alg.RelSet.Party.dBranch] meta def delabDBranch : Delab := do
   let some e ← Meta.unfoldDefinition? (← getExpr) | failure
   PrettyPrinter.delab e
 
@@ -249,7 +253,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 
 -- `pow` is `Rel(Set)`'s power object, the object the note writes `P` (`P A` in `S2_40`).
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.pow] def unexpandRelSetPow : Unexpander
+@[app_unexpander RelSet.pow] meta def unexpandRelSetPow : Unexpander
   | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 
@@ -258,7 +262,7 @@ open Lean PrettyPrinter in
 -- The NATURAL NUMBERS are the note's `ℕ`.  Keyed `app.Nat`: the delaborator files a bare constant as a
 -- nullary application, so a `const.Nat` key alone never fires and the label printed `Nat`.
 open Lean PrettyPrinter Delaborator in
-@[delab app.Nat] def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
+@[delab app.Nat] meta def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
 
 
 -- THE LEAF TYPE SAYS WHICH LIST A CONS-LIST IS, and a leaf carrying an ELEMENT is a one-element
@@ -269,7 +273,7 @@ open Lean PrettyPrinter Delaborator in
 -- `dCL L E` is an `abbrev` and keeps its own constant, so it is keyed here as well.
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.ConsList, delab app.Freyd.Alg.RelSet.CL.dCL]
-def delabConsList : Delab := do
+meta def delabConsList : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size != 2 then failure
   -- The EMPTY leaf decides first: at `ConsList Unit Unit` both tests hold, and a leaf carrying
@@ -285,7 +289,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 /-- The LEAF object is the leaf type itself — `dL L` names no former — and the EMPTY leaf is the
     note's terminal object `𝟏`, the source `nil` comes out of.  `isDefEq` and not a syntactic
     `Unit`, for the reason the cons-list delaborator above gives. -/
-@[delab app.Freyd.Alg.RelSet.CL.dL] def delabDL : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.dL] meta def delabDL : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size != 1 then failure
   -- `Name.mkSimple`: `𝟏` is a digit to Lean's parser, so no name literal can spell it.
@@ -308,7 +312,7 @@ syntax:max (name := noteTuple) "(" term "," term ")" : noteArith
 
 open Lean in
 /-- The first (`last = false`) or last token of a printed term. -/
-partial def stxLeaf (last : Bool) : Syntax → Option Syntax
+meta partial def stxLeaf (last : Bool) : Syntax → Option Syntax
   | s@(.atom ..) | s@(.ident ..) => some s
   | .node _ _ args => (if last then args.reverse else args).findSome? (stxLeaf last)
   | .missing => none
@@ -316,7 +320,7 @@ partial def stxLeaf (last : Bool) : Syntax → Option Syntax
 open Lean in
 /-- `ab`, or `a·b` where juxtaposition would weld two tokens into another one: a numeral after
     anything (`n·3`, `3·2^m`), or anything after a name of two letters or more. -/
-def mulStx (a b : Syntax) : Syntax :=
+meta def mulStx (a b : Syntax) : Syntax :=
   let num := match stxLeaf false b with | some (.atom _ v) => v.front.isDigit | _ => false
   let word := match stxLeaf true a with
     | some (.ident _ _ n _) => !(n.toString.drop 1).all (· == '\'')
@@ -324,32 +328,32 @@ def mulStx (a b : Syntax) : Syntax :=
   if num || word then .node .none ``noteDot #[a, mkAtom "·", b] else .node .none ``noteMul #[a, b]
 
 open Lean PrettyPrinter in
-@[app_unexpander HMul.hMul] def unexpandNoteMul : Unexpander
+@[app_unexpander HMul.hMul] meta def unexpandNoteMul : Unexpander
   | `($_ $a $b) => pure (mulStx a b)
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander HSub.hSub] def unexpandNoteSub : Unexpander
+@[app_unexpander HSub.hSub] meta def unexpandNoteSub : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteSub #[a, mkAtom "−", b])
   | _ => throw ()
 -- Lists concatenate with the note's `⧺`, never Lean's `++`.
 open Lean PrettyPrinter in
-@[app_unexpander HAppend.hAppend] def unexpandNoteCat : Unexpander
+@[app_unexpander HAppend.hAppend] meta def unexpandNoteCat : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteCat #[a, mkAtom "⧺", b])
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander HDiv.hDiv] def unexpandNoteDiv : Unexpander
+@[app_unexpander HDiv.hDiv] meta def unexpandNoteDiv : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteDiv #[a, mkAtom "/", b])
   | _ => throw ()
 -- Lean's `List α` is the note's `[α]` (B&dM's list type), the spelling `delabConsList` gives `ConsList Unit α`.
 open Lean PrettyPrinter in
-@[app_unexpander List] def unexpandNoteList : Unexpander
+@[app_unexpander List] meta def unexpandNoteList : Unexpander
   | `($_ $a) => `([$a])
   | _ => throw ()
 
 -- A COERCION PRINTS AS WHAT IT COERCES: a digit used as a number is `d`, never `↑↑d`.  Read off the
 -- `@[coe]` registry, so every coercion Lean knows of goes the same way.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app] def delabNoteCoe : Delab := do
+@[delab app] meta def delabNoteCoe : Delab := do
   let e ← getExpr
   let .const c _ := e.getAppFn | failure
   let some info ← Meta.getCoeFnInfo? c | failure
@@ -363,7 +367,7 @@ attribute [coe] Subtype.val
 -- A cons-list VALUE is written as the list it is: `cons a (cons b [])` is `[a,b]`, and a variable
 -- tail is the book's `[a]⧺x`.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
+@[app_unexpander RelSet.CL.ConsList.cons] meta def unexpandConsLit : Unexpander
   | `($_ $x []) => `([$x])
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
   | `($_ $x $xs) => do pure (.node .none ``noteCat #[← `([$x]), mkAtom "⧺", xs])
@@ -373,7 +377,7 @@ open Lean PrettyPrinter in
 -- element type is the one-element list `[x]`, a `Unit` leaf the empty list `[]`; any other leaf
 -- keeps the constructor's own name.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] def delabConsWrap : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] meta def delabConsWrap : Delab := do
   let e ← getExpr
   unless e.getAppNumArgs == 3 do failure
   let args := e.getAppArgs
@@ -386,9 +390,9 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
-def delabSegmentT : Delab := `($(mkIdent `T))
+meta def delabSegmentT : Delab := `($(mkIdent `T))
 open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Segment.h, delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
+@[delab app.Freyd.Alg.RelSet.Segment.h, delab const.Freyd.Alg.RelSet.Segment.h] meta def delabSegmentH : Delab := `($(mkIdent `h))
 
 -- The coproduct injections applied to a point are applications, so they take parentheses.
 notation:max "l(" x ")" => Sum.inl x
@@ -398,11 +402,11 @@ notation:max "r(" x ")" => Sum.inr x
 syntax:max "l(" term "," term,+ ")" : term
 syntax:max "r(" term "," term,+ ")" : term
 open Lean PrettyPrinter in
-@[app_unexpander Sum.inl] def unexpandInlTuple : Unexpander
+@[app_unexpander Sum.inl] meta def unexpandInlTuple : Unexpander
   | `($_ ($a, $bs,*)) => `(l($a,$bs,*))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander Sum.inr] def unexpandInrTuple : Unexpander
+@[app_unexpander Sum.inr] meta def unexpandInrTuple : Unexpander
   | `($_ ($a, $bs,*)) => `(r($a,$bs,*))
   | _ => throw ()
 
@@ -412,7 +416,7 @@ syntax:max "tail(" term ")" : term
 -- The projections' graphs are `π₁`/`π₂` only when the map IS the projection — the bare constant or
 -- its eta-expansion `fun p => p.1` — read off the term, so `fun p => (f p).1` is not taken for one.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.graph] def delabGraphProj : Delab := do
+@[delab app.Freyd.Alg.RelSet.graph] meta def delabGraphProj : Delab := do
   let e ← getExpr
   unless e.getAppNumArgs == 3 do failure
   let i ← match e.appArg!.eta with
@@ -427,53 +431,53 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
 -- two apart: the note's region has only the arrow, and `consR`/`concatR` already print that way.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Party.includeR] def unexpandIncludeR : Unexpander
+@[app_unexpander RelSet.Party.includeR] meta def unexpandIncludeR : Unexpander
   | _ => `($(mkIdent `«include»))
 
 -- AN ARITHMETIC RELATION IS WRITTEN BY ITS OWN OPERATOR, the way the note writes it: `+` for the
 -- addition's graph, `≤` for the ordering, so `est(leRel)` reads `est(≤)`.  The `Rel` the Lean name
 -- carries tells the relation from the function and is no part of what the note spells.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.plusRel] def unexpandPlusRel : Unexpander
+@[app_unexpander RelSet.plusRel] meta def unexpandPlusRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "+")))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.leRel] def unexpandLeRel : Unexpander
+@[app_unexpander RelSet.leRel] meta def unexpandLeRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
 
 -- The section's own integer ordering is written by its operator, as `leRel` is.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Party.leq] def unexpandPartyLeq : Unexpander
+@[app_unexpander RelSet.Party.leq] meta def unexpandPartyLeq : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
 -- KEPT: it builds `noteCat`, the note-arithmetic syntax declared in this file, which no `AOP`
 -- module can import (`diag` imports `AOP`).
 open Lean PrettyPrinter in
 -- B&dM name no function for "the head replaced": `dropl(a,([b]⧺x,y))=([a]⧺x,…)` writes it as the
 -- new head before the old tail, so the note does too.
-@[app_unexpander RelSet.Tour.replaceHead] def unexpandTourReplaceHead : Unexpander
+@[app_unexpander RelSet.Tour.replaceHead] meta def unexpandTourReplaceHead : Unexpander
   | `($_ $a $x) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail($x))])
   | `($_ $a) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail(·))])
   | _ => throw ()
 -- B&dM's `y subseq x` (p.123) is the predicate under the relation `subseq`, as `allFitP` is `fits`.
 -- A rule, not a rename: the arrow `ListRel.subseq` already holds the name in `ListRel`.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.subseqP] def unexpandSubseqP : Unexpander
+@[app_unexpander RelSet.ListRel.subseqP] meta def unexpandSubseqP : Unexpander
   | `($_ $y $x) => `($(mkIdent `subseq) $y $x)
   | `($_ $y) => `($(mkIdent `subseq) $y)
   | _ => `($(mkIdent `subseq))
 -- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), printed as the
 -- relator's own `f′` (`ListRel.list`'s notation), so a map and its graph read alike.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cmap] def unexpandCmap : Unexpander
+@[app_unexpander RelSet.ListRel.cmap] meta def unexpandCmap : Unexpander
   | `($_ $f $x) => `($f′ $x)
   | `($_ $f) => `($f′)
   | _ => `($(mkIdent `list))
 
 
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.leq] def unexpandListRelLeq : Unexpander
+@[app_unexpander RelSet.ListRel.leq] meta def unexpandListRelLeq : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.geq] def unexpandListRelGeq : Unexpander
+@[app_unexpander RelSet.ListRel.geq] meta def unexpandListRelGeq : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≥")))
 
 -- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): each theorem `Q = P°` names `P°` as `Q` and `Q°`
@@ -483,7 +487,7 @@ attribute [diag_opposite] mem_eq_recip_eps subset_eq_recip_supset RelSet.ListRel
 open Lean PrettyPrinter in
 /-- The maximum-segment-sum step is the note's `⊕`, which is no Lean identifier: the formatter
     escapes it and `diag/tool/ExprReader` unescapes, as it already does for `≥`. -/
-@[app_unexpander RelSet.MSS.oplus] def unexpandOplus : Unexpander
+@[app_unexpander RelSet.MSS.oplus] meta def unexpandOplus : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⊕")))
 
 open Lean PrettyPrinter Delaborator in
@@ -492,13 +496,13 @@ open Lean PrettyPrinter Delaborator in
     OBJECT NEEDS A `delab`, not an unexpander: it prints as a bare constant, never as an
     application. -/
 @[delab app.Freyd.Alg.RelSet.Tex.Ix, delab const.Freyd.Alg.RelSet.Tex.Ix]
-def delabTexIx : Delab := `($(mkIdent (Name.mkSimple "[0,2¹⁶)")))
+meta def delabTexIx : Delab := `($(mkIdent (Name.mkSimple "[0,2¹⁶)")))
 
 -- `Real`'s carrier is a quotient, so a circuit opening `Digit×Real` reaches `Quotient realSetoid`:
 -- the setoid argument, read off the `Expr`, says it is the TeX problem's `Real`.
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Quotient]
-def delabTexRealCarrier : Delab := do
+meta def delabTexRealCarrier : Delab := do
   unless (← getExpr).appArg!.isConstOf ``Freyd.Alg.RelSet.Tex.realSetoid do failure
   `($(mkIdent `Real))
 
@@ -506,7 +510,7 @@ def delabTexRealCarrier : Delab := do
 -- reaches `{p // Legal p}`: the predicate, read off the `Expr`, says it is the TeX `Interval`.
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Subtype]
-def delabTexIntervalCarrier : Delab := do
+meta def delabTexIntervalCarrier : Delab := do
   unless (← getExpr).appArg!.eta.isConstOf ``Freyd.Alg.RelSet.Tex.Legal do failure
   `($(mkIdent `Interval))
 
@@ -517,26 +521,26 @@ open Lean PrettyPrinter in
 /-- The power relator's lane is `P`: on arrows it is `powerRel`, a relation, where `E`'s is
     `existsImage`, a function, so a `P` lane around `R` reads `P(R)` and an `E` lane `E(R)`.  Its
     OBJECTS print `P A` (`unexpandPowerObj`); a lane prints the letter of the ARROW it gives. -/
-@[app_unexpander powerRelator] def unexpandPowerRelator : Unexpander
+@[app_unexpander powerRelator] meta def unexpandPowerRelator : Unexpander
   | _ => `($(mkIdent `P))
 
 open Lean PrettyPrinter in
 /-- The existential-image functor's lane is `E`: it has the power relator's object action but
     acts on arrows by `existsImage`, so the two lanes print different letters. -/
-@[app_unexpander existsImageFunctor] def unexpandExistsImageFunctor : Unexpander
+@[app_unexpander existsImageFunctor] meta def unexpandExistsImageFunctor : Unexpander
   | _ => `($(mkIdent `E))
 
 
 open Lean PrettyPrinter in
 /-- The least fixed point is the note's bead `(μX : S°F(X)R)` — the binder and the body it binds,
     which is what a TYPE ASCRIPTION already spells, so no new notation is needed for the brackets. -/
-@[app_unexpander mu] def unexpandMu : Unexpander
+@[app_unexpander mu] meta def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
 
 open Lean PrettyPrinter in
 /-- The hypothesis of B&dM p.158 in the book's word (p.147): `R` is inductive. -/
-@[app_unexpander Inductive] def unexpandInductive : Unexpander
+@[app_unexpander Inductive] meta def unexpandInductive : Unexpander
   | `($_ $r) => `($(mkIdent `inductive) $r)
   | _ => throw ()
 
@@ -544,7 +548,7 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 /-- The greatest fixed point, `(νX : α°F(X)R)`, spelled as its least twin above. -/
-@[app_unexpander nu] def unexpandNu : Unexpander
+@[app_unexpander nu] meta def unexpandNu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("ν" ++ x.getId.toString))) : $b))
   | _ => throw ()
 
@@ -565,19 +569,19 @@ open Lean PrettyPrinter in
 -- constants, which `app_unexpander` cannot fire on.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.gen, delab const.Freyd.Alg.Vec.gen]
-def delabVecGen : Delab := `($(mkIdent `gen))
+meta def delabVecGen : Delab := `($(mkIdent `gen))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.genFold, delab const.Freyd.Alg.Vec.genFold]
-def delabVecGenFold : Delab := `(⦇$(mkIdent `gen)⦈)
+meta def delabVecGenFold : Delab := `(⦇$(mkIdent `gen)⦈)
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.paths, delab const.Freyd.Alg.Vec.paths]
-def delabVecPaths : Delab := `($(mkIdent `paths))
+meta def delabVecPaths : Delab := `($(mkIdent `paths))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.Rel.Q, delab const.Freyd.Alg.Vec.Rel.Q]
-def delabVecRelQ : Delab := `($(mkIdent `Q))
+meta def delabVecRelQ : Delab := `($(mkIdent `Q))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.Rel.Qfold, delab const.Freyd.Alg.Vec.Rel.Qfold]
-def delabVecRelQfold : Delab := `(⦇$(mkIdent `Q)⦈)
+meta def delabVecRelQfold : Delab := `(⦇$(mkIdent `Q)⦈)
 
 
 -- ONE BEAD, `R∩H`.  A meet is a bead's LABEL and never a wiring, and the note writes it TIGHT —
@@ -595,7 +599,7 @@ open Lean PrettyPrinter in
 /-- One more index bracket on the BASE object, never at the end of the name: `A[m][n]` is
     `[m]([n](A))`, so the brackets read left to right in the order the wires of a cut do, and the
     bracket a nest adds goes in front of the ones already there. -/
-private partial def spliceIndex {m} [Monad m] [MonadQuotation m] (s i : Term) : m Term := do
+private meta partial def spliceIndex {m} [Monad m] [MonadQuotation m] (s i : Term) : m Term := do
   match s with
   | `($b[$j]) => let b ← spliceIndex b i; `($b[$j])
   | _ => `($s[$i])
@@ -606,7 +610,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     (`scripts/scanline`) instead of a lane called one thing standing over an object called another.
     A delaborator and not an unexpander: the outermost bracket is written FIRST, so the nest has to
     be walked, and the syntax the elaborator produced for the inner object is what is spliced. -/
-@[delab app.Freyd.Alg.RelSet.Tuple.dTuple] def delabDTuple : Delab := do
+@[delab app.Freyd.Alg.RelSet.Tuple.dTuple] meta def delabDTuple : Delab := do
   guard ((← getExpr).getAppNumArgs == 2)
   let i ← withNaryArg 0 delab
   let inner ← withNaryArg 1 delab
@@ -618,7 +622,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     to print the way the object does — `Fin n → X` is `X[n]`, through `spliceIndex` and not a second
     rule, so a numeric index, a compound one and a nest `Fin m → Fin n → X` all come out as the
     object forms do.  A pi whose codomain USES its argument indexes nothing and is left alone. -/
-@[delab forallE] def delabFinPi : Delab := do
+@[delab forallE] meta def delabFinPi : Delab := do
   let .forallE _ d b _ ← getExpr | failure
   guard (d.isAppOfArity ``Fin 1 && !b.hasLooseBVars)
   let i ← withBindingDomain (withNaryArg 0 delab)
@@ -629,7 +633,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 /-- THE POWER OBJECT'S CARRIER IS THE POWER OBJECT.  `pow B` is `⟨Sub B⟩`, `Sub B = B → Prop`, so a
     TYPE that is a non-dependent pi into `Prop` is that object's carrier and prints as `pow` does,
     `P A` — `list⁺(V → Prop)` is `list⁺(PV)`.  Read off the pi's codomain, not a printed string. -/
-@[delab forallE] def delabPowCarrier : Delab := do
+@[delab forallE] meta def delabPowCarrier : Delab := do
   let .forallE _ _ b _ ← getExpr | failure
   guard (b.isProp && !b.hasLooseBVars)
   let a ← withBindingDomain delab
@@ -638,7 +642,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- `Vec(n)`'s object is the same `A[n]`: the object the lane `[n]` carries is spelled like the
     tuple object, or a product wire over it prints `Vec(A)×−` with the index gone. -/
-@[delab app.Freyd.Functor.obj] def delabVecObj : Delab := do
+@[delab app.Freyd.Functor.obj] meta def delabVecObj : Delab := do
   let e ← getExpr
   guard (e.getAppNumArgs == 6 && (e.getArg! 4).isAppOfArity ``Freyd.Alg.Vec 1)
   let i ← withNaryArg 4 (withNaryArg 0 delab)
@@ -724,88 +728,88 @@ attribute [diag_coherence] RelSet.Van.assoclR
 -- when the rule became that Lean follows the note: an algebra prints as the junction the note writes.
 open Lean PrettyPrinter in
 -- A rule, not a rename: the type `Tour.Journey` already holds the name in `Tour`.
-@[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
+@[app_unexpander RelSet.Tour.journeyRelator] meta def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
 -- B&dM p.201's `cpL(F)`; the functor is the wire's, as for `cp`.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cpL] def unexpandCpL : Unexpander
+@[app_unexpander RelSet.ListRel.cpL] meta def unexpandCpL : Unexpander
   | _ => `($(mkIdent `cpL))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.moves, delab const.Freyd.Alg.Vec.moves]
-def delabVecMoves : Delab := `($(mkIdent `moves))
+meta def delabVecMoves : Delab := `($(mkIdent `moves))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.cons, delab const.Freyd.Alg.Vec.cons]
-def delabVecCons : Delab := `($(mkIdent `cons))
+meta def delabVecCons : Delab := `($(mkIdent `cons))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.concat, delab const.Freyd.Alg.Vec.concat]
-def delabVecConcat : Delab := `($(mkIdent `concat))
+meta def delabVecConcat : Delab := `($(mkIdent `concat))
 -- The concrete cylinder's transition, beside its `moves` and `cons`.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.trans, delab const.Freyd.Alg.Vec.trans]
-def delabVecTrans : Delab := `($(mkIdent `trans))
+meta def delabVecTrans : Delab := `($(mkIdent `trans))
 
 -- A SECTION'S RELATION, ORDER AND HELPER wear the note's letters, as `Party.R`, `Detab.V` and
 -- `Van.Hrel` above do: which relation it is, is the definition line over the table.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.bang] def unexpandTexBang : Unexpander | _ => `($(mkIdent (Name.mkSimple "!")))
+@[app_unexpander RelSet.Tex.bang] meta def unexpandTexBang : Unexpander | _ => `($(mkIdent (Name.mkSimple "!")))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.unshift] def unexpandTexUnshift : Unexpander
+@[app_unexpander RelSet.Tex.unshift] meta def unexpandTexUnshift : Unexpander
   | `($_ $d $a) => pure (.node .none ``noteSub #[mulStx (Syntax.mkNumLit "10") a, mkAtom "−", d])
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.mkR] def unexpandTexMkR : Unexpander
+@[app_unexpander RelSet.Tex.mkR] meta def unexpandTexMkR : Unexpander
   | `($_ ($p, 0)) => pure (.node .none ``noteDiv #[p, mkAtom "/", mkIdent `w])
   | `($_ $x) => pure x
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.IsDigit] def unexpandTexIsDigit : Unexpander
+@[app_unexpander RelSet.Tex.IsDigit] meta def unexpandTexIsDigit : Unexpander
   | `($_ $d $b) =>
     `($d = $(⟨.node .none ``noteFloor #[mkAtom "⌊", mulStx (Syntax.mkNumLit "10") b, mkAtom "⌋"]⟩))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.Prog.f] def unexpandTexProgF : Unexpander
+@[app_unexpander RelSet.Tex.Prog.f] meta def unexpandTexProgF : Unexpander
   | `($_ ($p, $q)) => `($(mkIdent `f) $p $q)
   | _ => throw ()
 -- A SUBTYPE'S POINT IS ITS VALUE: `⟨(a,b),h⟩` is the interval `(a,b)`, the proof `h` a statement
 -- about it that no formula of the note writes.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Subtype.mk] def delabSubtypeMk : Delab := do
+@[delab app.Subtype.mk] meta def delabSubtypeMk : Delab := do
   guard ((← getExpr).getAppNumArgs == 4)
   withNaryArg 2 delab
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- An interval `(a,b)` is the pair it is, not a structure instance with field names. -/
-@[delab app.Freyd.Alg.RelSet.Tex.Iv.mk] def delabTexIvMk : Delab := do
+@[delab app.Freyd.Alg.RelSet.Tex.Iv.mk] meta def delabTexIvMk : Delab := do
   guard ((← getExpr).getAppNumArgs == 2)
   let a ← withNaryArg 0 delab
   let b ← withNaryArg 1 delab
   pure ⟨.node .none ``noteTuple #[mkAtom "(", a, mkAtom ",", b, mkAtom ")"]⟩
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.zip, delab const.Freyd.Alg.Vec.zip]
-def delabVecZip : Delab := `($(mkIdent `zip))
+meta def delabVecZip : Delab := `($(mkIdent `zip))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.cp, delab const.Freyd.Alg.Vec.cp]
-def delabVecCp : Delab := `($(mkIdent `cp))
+meta def delabVecCp : Delab := `($(mkIdent `cp))
 -- THE PRODUCT OF TWO MAPS IS THE NOTE'S `f×g`, the same spelling the allegory's own `prodMap`
 -- wears; `Prod.map` is the underlying function's Lean name.  No fallback: a shape this clause does
 -- not match is one nobody has written a spelling for, and the label gate says so.
 open Lean PrettyPrinter in
-@[app_unexpander Prod.map] def unexpandCoreProdMap : Unexpander
+@[app_unexpander Prod.map] meta def unexpandCoreProdMap : Unexpander
   | `($_ $f $g) => `($f × $g)
   | _ => throw ()
 -- THE IDENTITY FUNCTION IS THE NOTE'S `𝟙`: in §1.241's category of types the identity arrow is core's
 -- `id`, the factor `Prod.map id f` keeps unchanged.  Applied to a point it is no arrow, so no rule.
 open Lean PrettyPrinter in
-@[app_unexpander id] def unexpandCoreId : Unexpander
+@[app_unexpander id] meta def unexpandCoreId : Unexpander
   | `($_:ident) => `($(mkIdent (Name.mkSimple "𝟙")))
   | _ => throw ()
 -- THE SUM OF TWO ARROWS IS THE NOTE'S `R+S` (B&dM 5.10).  A delaborator, not an unexpander: the two
 -- coproducts `sumMap` runs between are explicit arguments, and only the last two are the arrows.
 open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.sumMap] def delabSumMap : Delab := do
+@[delab app.Freyd.Alg.sumMap] meta def delabSumMap : Delab := do
   let n := (← SubExpr.getExpr).getAppNumArgs
   guard (n ≥ 4)
   let r ← SubExpr.withNaryArg (n - 2) delab
@@ -818,7 +822,7 @@ open Lean PrettyPrinter Delaborator in
 -- source with no strands; `isDefEq`, as `delabDL` above tests the same leaf.
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.wrapR, delab const.Freyd.Alg.RelSet.CL.wrapR]
-def delabCLWrapR : Delab := do
+meta def delabCLWrapR : Delab := do
   let args := (← getExpr).getAppArgs
   if let some l := args[0]? then
     if ← Meta.isDefEq l (mkConst ``Unit) then return ← `($(mkIdent `nil))
@@ -826,23 +830,23 @@ def delabCLWrapR : Delab := do
 -- The book's `tic≜cons inits tail` (p. 235), implicit-only like `wrapR`.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
-def delabBracketTic : Delab := `($(mkIdent `tic))
+meta def delabBracketTic : Delab := `($(mkIdent `tic))
 -- A relation given by cases holds outright on a case as `true`, the Boolean spelling beside it.
 open Lean PrettyPrinter in
-@[app_unexpander True] def unexpandTrue : Unexpander
+@[app_unexpander True] meta def unexpandTrue : Unexpander
   | `($_:ident) => `($(mkIdent `true))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander False] def unexpandFalse : Unexpander
+@[app_unexpander False] meta def unexpandFalse : Unexpander
   | `($_:ident) => `($(mkIdent `false))
   | _ => throw ()
 -- A projection applied to a point is the note's `π₁`/`π₂` applied to it: `V(π₂(p),π₂(q))`.
 open Lean PrettyPrinter in
-@[app_unexpander Prod.fst] def unexpandProdFst : Unexpander
+@[app_unexpander Prod.fst] meta def unexpandProdFst : Unexpander
   | `($_ $x) => `($(mkIdent `π₁) $x)
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander Prod.snd] def unexpandProdSnd : Unexpander
+@[app_unexpander Prod.snd] meta def unexpandProdSnd : Unexpander
   | `($_ $x) => `($(mkIdent `π₂) $x)
   | _ => throw ()
 open Lean PrettyPrinter Delaborator SubExpr in
@@ -852,7 +856,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
     an action nothing performs, and `EV(list⁺(V))` reads as two functors composed.  The reduction
     and the list of combinators are `StrDiag.relatorObj?`'s, the one the label and the wire stack
     ask too, so every other relator keeps its `F(X)`/`FX` in all three. -/
-@[delab app.Freyd.Functor.obj] def delabRelatorObj : Delab := do
+@[delab app.Freyd.Functor.obj] meta def delabRelatorObj : Delab := do
   let e ← getExpr
   guard (e.getAppNumArgs == 6)
   let some v ← StrDiag.relatorObj? (e.getArg! 4) e | failure
@@ -860,7 +864,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- THE SUM RELATOR ON A GIVEN COPRODUCT FAMILY IS THE NOTE'S `G+H`, as `Relator.sum` is.  A
 -- delaborator: `G`, `H` are implicit, read off the coproduct family's type; the family is last.
 open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Relator.sumOn] def delabRelatorSumOn : Delab := do
+@[delab app.Freyd.Alg.Relator.sumOn] meta def delabRelatorSumOn : Delab := do
   let n := (← SubExpr.getExpr).getAppNumArgs
   guard (n ≥ 4)
   let g ← SubExpr.withNaryArg (n - 4) delab
@@ -871,28 +875,28 @@ open Lean PrettyPrinter Delaborator in
 -- spelling that leaked.  They are registered here for the same reason every other name is: the
 -- vocabulary is this file, and a type nobody wrote down draws nothing.
 open Lean PrettyPrinter Delaborator in
-@[delab app.Int, delab const.Int] def delabIntName : Delab := `($(mkIdent `Int))
+@[delab app.Int, delab const.Int] meta def delabIntName : Delab := `($(mkIdent `Int))
 open Lean PrettyPrinter Delaborator in
-@[delab app.Char, delab const.Char] def delabCharName : Delab := `($(mkIdent `Char))
+@[delab app.Char, delab const.Char] meta def delabCharName : Delab := `($(mkIdent `Char))
 -- B&dM's own name for the booleans (§1.7, the answers of `p` in `filter`).
 open Lean PrettyPrinter Delaborator in
-@[delab app.Bool, delab const.Bool] def delabBoolName : Delab := `($(mkIdent `Bool))
+@[delab app.Bool, delab const.Bool] meta def delabBoolName : Delab := `($(mkIdent `Bool))
 -- The counterexample's objects and relation are the note's `A`, `B`, `R`; which sets they are, is
 -- the paragraph above the panel.  Delaborators, because they take no explicit argument.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.MeetCounterex.A, delab const.Freyd.Alg.MeetCounterex.A]
-def delabMeetCounterexA : Delab := `($(mkIdent `A))
+meta def delabMeetCounterexA : Delab := `($(mkIdent `A))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.MeetCounterex.B, delab const.Freyd.Alg.MeetCounterex.B]
-def delabMeetCounterexB : Delab := `($(mkIdent `B))
+meta def delabMeetCounterexB : Delab := `($(mkIdent `B))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.MeetCounterex.R, delab const.Freyd.Alg.MeetCounterex.R]
-def delabMeetCounterexR : Delab := `($(mkIdent `R))
+meta def delabMeetCounterexR : Delab := `($(mkIdent `R))
 open Lean PrettyPrinter Delaborator in
-@[delab app.Unit, delab const.Unit] def delabUnitName : Delab := `($(mkIdent `Unit))
+@[delab app.Unit, delab const.Unit] meta def delabUnitName : Delab := `($(mkIdent `Unit))
 -- B&dM p.148 writes `member(F)`; the bead's `F` and object are the wires it joins, so the label is bare.
 open Lean PrettyPrinter in
-@[app_unexpander LaxMembership.mem] def unexpandMember : Unexpander
+@[app_unexpander LaxMembership.mem] meta def unexpandMember : Unexpander
   | `($_ $_ $_) => `($(mkIdent `member))
   | _ => throw ()
 -- `Fin` KEEPS ITS ARGUMENT — `Fin n` is the object, where `Int` and `Char` are whole names; an
@@ -900,23 +904,23 @@ open Lean PrettyPrinter in
 
 -- The Boolean test `leb` of a sort's comparison states its hypotheses with `true`/`false`.
 open Lean PrettyPrinter in
-@[app_unexpander Bool.true] def unexpandBoolTrue : Unexpander
+@[app_unexpander Bool.true] meta def unexpandBoolTrue : Unexpander
   | `($_:ident) => `($(mkIdent `true))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander Bool.false] def unexpandBoolFalse : Unexpander
+@[app_unexpander Bool.false] meta def unexpandBoolFalse : Unexpander
   | `($_:ident) => `($(mkIdent `false))
   | _ => throw ()
 -- A QUOTIENT IS WRITTEN BY ITS REPRESENTATIVES, as a coercion is by what it coerces: the class of `x`
 -- is `x` — a bag is its list — and the label reads a lift as the function it lifts (`labelTreeCore`).
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Quotient.mk] def delabNoteQuotMk : Delab := do
+@[delab app.Quotient.mk] meta def delabNoteQuotMk : Delab := do
   unless (← getExpr).getAppNumArgs == 3 do failure
   withNaryArg 2 delab
 -- B&dM p.258: `shift(d,r)=(d+r)/10`, the representative `shiftPre` computes; the class `mkR x` of
 -- any other representative is `x`, as `Quotient.mk`'s is.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tex.shiftPre] def unexpandTexShiftPre : Unexpander
+@[app_unexpander RelSet.Tex.shiftPre] meta def unexpandTexShiftPre : Unexpander
   | `($_ $d $x) => do pure (.node .none ``noteDiv #[← `(($d + $x)), mkAtom "/", Syntax.mkNumLit "10"])
   | _ => throw ()
 
