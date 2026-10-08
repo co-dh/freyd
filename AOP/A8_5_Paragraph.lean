@@ -208,21 +208,14 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
     own name. -/
 @[expose] public def new (a : Word) (xss : Para Word) : Para Word := ConsList.cons (ConsList.wrap a) xss
 
-/-- **para-defn**: `[wrap wrap,new]` — a single word becomes a one-word paragraph, and
-    `new (a,xs)=[[a]]⧺xs` opens a new line. -/
-@[expose] public def newAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
-  | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => new q.1 q.2
-
-/-- **para-defn**: `[wrap wrap,glue]`. -/
-@[expose] public def glueAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
-  | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => glue q.1 q.2
+-- The algebras `[wrap wrap,new]` and `[wrap wrap,glue]` are the copairing `Sum.elim` of maps
+-- already named, so they are written out at each use rather than given names of their own.
 
 /-- **para-defn**: `partition ≜ ⦇[wrap wrap,new∪glue]⦈` — every way of breaking the words into
     lines. -/
 @[expose] public def partAlg : (F Word Word).obj (dPara Word) ⟶ dPara Word :=
-  graph (newAlgFn (Word := Word)) ∪ graph glueAlgFn
+  graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
+    ∪ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
 
 @[expose] public def partition : dCL Word Word ⟶ dPara Word := ⦇partAlg⦈
 
@@ -360,7 +353,9 @@ end Natural
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
 @[expose] public def Salg (len : Word → Int) (w : Int) :
     (F Word Word).obj (dPara Word) ⟶ dPara Word :=
-  graph (newAlgFn (Word := Word)) ∪ (graph glueAlgFn ≫ ok (len := len) w)
+  graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
+    ∪ (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
+      ≫ ok (len := len) w)
 
 /-! ## `para-mono` -/
 
@@ -390,16 +385,18 @@ public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para
 /-- **para-mono**, first row: `(𝟙×Q) new ⊑ new Q` — opening a new line adds the same waste to
     both paragraphs and gives them the same first line. -/
 public theorem para_mono_new :
-    Freyd.Alg.Pres (F := F Word Word) (graph (newAlgFn (Word := Word))) (Q len w) :=
+    Freyd.Alg.Pres (F := F Word Word)
+      (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2)))
+      (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
-    obtain rfl : r = newAlgFn v := hr
+    obtain rfl : r = _ := hr
     cases u with
     | inl a =>
       cases v with
       | inl a' =>
         obtain rfl : a = a' := hFv
-        exact ⟨newAlgFn (Sum.inl a), rfl, Int.le_refl _, rfl⟩
+        exact ⟨ConsList.wrap (ConsList.wrap a), rfl, Int.le_refl _, rfl⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
       cases v with
@@ -417,17 +414,19 @@ public theorem para_mono_new :
 /-- **para-mono**, second row: `(𝟙×Q)(glue (ok w)) ⊑ glue (ok w)Q` — `Q` pins the first line,
     which is the only thing `glue` changes and the only thing `waste` reads about it. -/
 public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
-    Freyd.Alg.Pres (F := F Word Word) (graph glueAlgFn ≫ ok (len := len) w) (Q len w) :=
+    Freyd.Alg.Pres (F := F Word Word)
+      (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
+        ≫ ok (len := len) w) (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, s, hs, hsr, hok⟩ := h
-    obtain rfl : s = glueAlgFn v := hs
-    obtain rfl : glueAlgFn v = r := hsr
+    obtain rfl : s = _ := hs
+    obtain rfl := hsr
     cases u with
     | inl a =>
       cases v with
       | inl a' =>
         obtain rfl : a = a' := hFv
-        exact ⟨glueAlgFn (Sum.inl a), ⟨glueAlgFn (Sum.inl a), rfl, rfl, hok⟩,
+        exact ⟨ConsList.wrap (ConsList.wrap a), ⟨ConsList.wrap (ConsList.wrap a), rfl, rfl, hok⟩,
           Int.le_refl _, rfl⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
@@ -484,7 +483,9 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
     paragraph `[10]·[0]` wastes nothing and `[9]·[0]` wastes 1, yet gluing a length-0 word onto
     each reverses that — the first line overflows to 11, the second lands exactly on 10. -/
 public theorem para_mono_glue_false :
-    ¬ Freyd.Alg.Pres (F := F Int Int) (graph glueAlgFn) (R (fun i : Int => i) 10) := by
+    ¬ Freyd.Alg.Pres (F := F Int Int)
+      (graph (Sum.elim (fun a : Int => ConsList.wrap (ConsList.wrap a)) (fun q : Int × Para Int => glue q.1 q.2)))
+      (R (fun i : Int => i) 10) := by
   intro h
   have hRxy : wasteFn (fun i : Int => i) 10
         (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))
@@ -493,31 +494,30 @@ public theorem para_mono_glue_false :
     decide
   have hstep := le_iff.mp h
     (Sum.inr (0, ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))))
-    (glueAlgFn (Sum.inr (0,
-      ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))))
+    (glue 0 (ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))))
     ⟨Sum.inr (0, ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))),
       ⟨rfl, hRxy⟩, rfl⟩
   obtain ⟨s, hs, hR⟩ := hstep
-  obtain rfl : s = glueAlgFn (Sum.inr (0,
-    ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))) := hs
+  obtain rfl : s = glue 0
+    (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))) := hs
   have hbad : wasteFn (fun i : Int => i) 10
-        (glueAlgFn (Sum.inr (0, ConsList.cons (ConsList.wrap (10 : Int))
-          (ConsList.wrap (ConsList.wrap (0 : Int))))))
+        (glue 0 (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))))
       ≤ wasteFn (fun i : Int => i) 10
-        (glueAlgFn (Sum.inr (0, ConsList.cons (ConsList.wrap (9 : Int))
-          (ConsList.wrap (ConsList.wrap (0 : Int)))))) := hR
+        (glue 0 (ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))) := hR
   revert hbad
   decide
 
 /-- **para-defn**, `P ≜ ⊤`: nothing is asked of the sorting order, so both algebras are
     monotonic on it. -/
 public theorem para_sort_new :
-    Freyd.Alg.Pres (F := F Word Word) (graph (newAlgFn (Word := Word)))
+    Freyd.Alg.Pres (F := F Word Word)
+      (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2)))
       (topMor (dPara Word) (dPara Word)) :=
   Freyd.Alg.graph_pres_topMor _
 
 public theorem para_sort_glue :
-    Freyd.Alg.Pres (F := F Word Word) (graph (glueAlgFn (Word := Word)))
+    Freyd.Alg.Pres (F := F Word Word)
+      (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)))
       (topMor (dPara Word) (dPara Word)) :=
   Freyd.Alg.graph_pres_topMor _
 
@@ -537,7 +537,7 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
     · rintro ⟨s, hs, hsr, -⟩
       refine ⟨Sum.inl a, rfl, ?_⟩
       refine Or.inl ?_
-      show r = newAlgFn (Sum.inl a)
+      show r = ConsList.wrap (ConsList.wrap a)
       cases hs with
       | inl hs => rw [← (hsr : s = r)]; exact hs
       | inr hs => rw [← (hsr : s = r)]; exact hs
@@ -587,10 +587,13 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   relCata_fusion (initial Word Word) (para_alg_fusion hlen hfit)
 
 /-- B&dM's `g₁ ≜ list(new)` (§8.5, p.210): start a new line with the word. -/
-@[expose] public def g₁ := list (graph (newAlgFn (Word := Word)))
+@[expose] public def g₁ :=
+  list (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2)))
 
 /-- B&dM's `g₂ ≜ list(glue) filter(ok w)`: glue the word onto the last line, keep the layouts that fit. -/
-@[expose] public def g₂ := list (graph (glueAlgFn (Word := Word))) ≫ Filter.filter (ok (len := len) w)
+@[expose] public def g₂ :=
+  list (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)))
+    ≫ Filter.filter (ok (len := len) w)
 
 /-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
@@ -600,7 +603,9 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a) :
         (g₁ (Word := Word)) (g₂ (len := len) (w := w))
         ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)⦈ ≫ minL (R len w)
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
-  have key := thinningList newAlgFn glueAlgFn (𝟙 _) (ok (len := len) w) (le_refl _) ok_coreflexive
+  have key := thinningList
+    (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
+    (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)) (𝟙 _) (ok (len := len) w) (le_refl _) ok_coreflexive
     («≼» := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     Q_le_R ⟨Q_refl, Q_trans⟩ ⟨le_trans Q_refl Q_le_R, trans_of_recip_trans R_recip_trans⟩
     (by rw [Cat.comp_id]; exact para_mono_new) (para_mono_glue hlen)
@@ -617,7 +622,10 @@ public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
     takes it in. -/
 public theorem para_laws_split :
     Λ ⦇Salg len w⦈ ≫ est (R len w)
-      = Λ ⦇(graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) ∪ (graph glueAlgFn ≫ ok (len := len) w)⦈
+      = Λ ⦇(graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
+              (fun q : Word × Para Word => new q.1 q.2)) ≫ 𝟙 (dPara Word))
+          ∪ (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
+              (fun q : Word × Para Word => glue q.1 q.2)) ≫ ok (len := len) w)⦈
           ≫ est (R len w) := by
   rw [Cat.comp_id]; rfl
 

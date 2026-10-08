@@ -759,6 +759,24 @@ def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
     let some c := f.eta.getAppFn.constName? | return f
     return if ((← getEnv).find? c).any (· matches .defnInfo _) then f.eta else f
 
+/-- A branch read off the term: discriminants, alternatives, their arities and whether arguments
+    remain.  A `match` comes from `matchMatcherApp?`; a `casesOn` — what `Sum.elim f g` unfolds to,
+    the copairing written with no `match` — from its inductive's declaration, for any inductive. -/
+def branchApp? (body : Expr) : MetaM (Option (Array Expr × Array Expr × Array Nat × Bool)) := do
+  if let some ma ← Meta.matchMatcherApp? body then
+    return some (ma.discrs, ma.alts, ma.altNumParams, ma.remaining.isEmpty)
+  let .const c _ := body.getAppFn | return none
+  unless isCasesOnRecursor (← getEnv) c do return none
+  let .inductInfo ind ← getConstInfo c.getPrefix | return none
+  let args := body.getAppArgs
+  let major := ind.numParams + 1 + ind.numIndices
+  let stop := major + 1 + ind.ctors.length
+  unless args.size ≥ stop do return none
+  let ns ← ind.ctors.toArray.mapM fun k => do
+    let .ctorInfo ci ← getConstInfo k | throwError "{k}, a constructor of {ind.name}, has no constructor info"
+    return ci.numFields
+  return some (#[args[major]!], args.extract (major + 1) stop, ns, args.size == stop)
+
 /-- The arms of a map given by a `match` ON ITS INPUT at a coproduct — the junction `[f,g]` the note
     writes, whether the picture opens it as a tape or a label names it.  `matchMatcherApp?` reads
     the discriminant, the alternatives and their arities off the elaborated term and the coproduct
@@ -768,12 +786,10 @@ def sumArms (fw : Expr) : MetaM (Option (Array Expr)) := do
   unless fw.isLambda do return none
   Meta.lambdaBoundedTelescope fw 1 fun xs body => do
     let some u := xs[0]? | return none
-    let some ma ← Meta.matchMatcherApp? body | return none
-    unless ma.discrs.size == 1 && ma.discrs[0]! == u && ma.alts.size == 2
-      && ma.altNumParams.size == 2 && ma.remaining.isEmpty do return none
+    let some (discrs, alts, ns, done) ← branchApp? body | return none
+    unless discrs.size == 1 && discrs[0]! == u && alts.size == 2 && ns.size == 2 && done do return none
     let (``Sum, #[a, b]) := (← Meta.whnfD (← Meta.inferType u)).getAppFnArgs | return none
-    return some #[← armFun ma.alts[0]! a ma.altNumParams[0]!,
-      ← armFun ma.alts[1]! b ma.altNumParams[1]!]
+    return some #[← armFun alts[0]! a ns[0]!, ← armFun alts[1]! b ns[1]!]
 
 /-- Whether a map BRANCHES ON ITS INPUT: a lambda whose body is a matcher applied to a discriminant
     the input occurs in.  The two shapes the note writes out are both this — a coproduct match is
@@ -783,17 +799,17 @@ def branchesOnInput (f : Expr) : MetaM Bool := do
   unless f.isLambda do return false
   Meta.lambdaBoundedTelescope f 1 fun xs body => do
     let some x := xs[0]? | return false
-    let some ma ← Meta.matchMatcherApp? body | return false
+    let some (discrs, alts, _, _) ← branchApp? body | return false
     -- ONE ALTERNATIVE IS NO BRANCH.  A match on a single-constructor type is the elaborator's
     -- spelling of taking the input apart — `fun (a,v) => Fin.cases a v` — so there is no second arm
     -- to name and opening the map's name reaches a matcher that names no arrow at all (`cons`).  A
     -- junction and a guard both have two, which is what the two shapes above are.  MORE THAN TWO is
     -- no branch the picture draws either: `unstep`'s four cases on a pair of lists are its
     -- implementation, so its name stands, as a recursive map's does.
-    unless ma.alts.size == 2 do return false
+    unless alts.size == 2 do return false
     -- ONLY THE TWO SHAPES THE NOTE WRITES BY THEIR ARMS: a match on a carrier's own constructors
     -- (`headLine` on `ConsList`) is opened by no picture (`sumArms` wants a `Sum`), so its name stands.
-    ma.discrs.anyM fun d => do
+    discrs.anyM fun d => do
       unless d.containsFVar x.fvarId! do return false
       let t ← Meta.whnfD (← Meta.inferType d)
       return t.isConstOf ``Bool || t.isAppOfArity ``Sum 2

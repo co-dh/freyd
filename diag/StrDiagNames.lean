@@ -143,8 +143,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The algebras a section names but the note writes by their body: a union of two graphs, or the
 -- graph of a map given by a `match` on a coproduct, whose arms `mapLabel` reads as the junction.
 attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
-  RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Paragraph.newAlgFn
-  RelSet.Paragraph.glueAlgFn RelSet.Edit.baseStepFn
+  RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Edit.baseStepFn
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇cpL(F)⟨g₁,g₂⟩cat thinL(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,

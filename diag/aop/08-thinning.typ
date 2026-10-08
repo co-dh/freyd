@@ -730,12 +730,6 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Paragraph.glue")], [#leant("Freyd.Alg.RelSet.Paragraph.glue")],
   "Freyd.Alg.RelSet.Paragraph.glue",
   [put the word a at the front of the first line],
-  [#rowkey("Freyd.Alg.RelSet.Paragraph.newAlgFn")], [#leant("Freyd.Alg.RelSet.Paragraph.newAlgFn")],
-  "Freyd.Alg.RelSet.Paragraph.newAlgFn",
-  [one word is a one-line paragraph; each further word starts a new line],
-  [#rowkey("Freyd.Alg.RelSet.Paragraph.glueAlgFn")], [#leant("Freyd.Alg.RelSet.Paragraph.glueAlgFn")],
-  "Freyd.Alg.RelSet.Paragraph.glueAlgFn",
-  [one word is a one-line paragraph; each further word joins the first line],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.partition")], [#leant("Freyd.Alg.RelSet.Paragraph.partition")],
   "Freyd.Alg.RelSet.Paragraph.partition",
   [every way of breaking the words into lines],
@@ -771,8 +765,6 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A8_4_KnapsackProgram.Knap207.wrap@813a6410
 // lean:AOP.A8_5_Paragraph.new@bda7247b
 // lean:AOP.A8_5_Paragraph.glue@f4a46e72
-// lean:AOP.A8_5_Paragraph.newAlgFn@e587172a
-// lean:AOP.A8_5_Paragraph.glueAlgFn@65824f9e
 // lean:AOP.A8_5_Paragraph.partition@913aa4cf
 // lean:AOP.A8_5_Paragraph.widthFn@925793a1
 // lean:AOP.A8_5_Paragraph.head@d781968f
@@ -802,16 +794,16 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
    greedy algorithm solves this],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_mono_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_mono_glue") \ #src[`cons` monotonic on
  `collect≤collect°`. ,
-   // lean:AOP.A8_5_Paragraph.para_mono_new@e5ccddce
+   // lean:AOP.A8_5_Paragraph.para_mono_new@3ae7ff0e
  ]],
-   // lean:AOP.A8_5_Paragraph.para_mono_glue@86db095e
+   // lean:AOP.A8_5_Paragraph.para_mono_glue@6ac35920
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
   // lean:AOP.A8_3.merge_top@9e31b76a
   [`⊤` needs no sorting at all],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_sort_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_sort_glue")],
-  // lean:AOP.A8_5_Paragraph.para_sort_new@c164c661
-  // lean:AOP.A8_5_Paragraph.para_sort_glue@65a740c1
+  // lean:AOP.A8_5_Paragraph.para_sort_new@d934a583
+  // lean:AOP.A8_5_Paragraph.para_sort_glue@aa99bf38
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<para-mono>
 
@@ -855,7 +847,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(EQ, [],
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ` along the coproduct — @para-defn:5, @para-defn:6]])],
+     #src[`cpL=wrap+cpr`, `gᵢ` along the coproduct — @Freyd.Alg.RelSet.Paragraph.start, @Freyd.Alg.RelSet.Paragraph.new, @Freyd.Alg.RelSet.Paragraph.glue]])],
   [],
 )]<para-laws>
 
