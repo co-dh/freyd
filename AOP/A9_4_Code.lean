@@ -35,7 +35,9 @@
 -/
 module
 
-public import AOP.A9_3_Bracket
+public import AOP.A7_2_RelSet
+public import AOP.A8_3
+public import AOP.A9_1
 
 namespace Freyd.Alg.RelSet.Code
 

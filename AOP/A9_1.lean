@@ -25,14 +25,16 @@
 module
 
 public import AOP.A8_1
-public import AOP.A7_2
 -- Proposition 9.1's coproduct split is proved at the END of this file in the Set model, over
 -- `F L E X = L+(X×E)`; the generic form needs a typeclass the repo does not have (drop note).
 public import AOP.A6_SnocList
 -- For `junc` AT AN INJECTION (`ListRel.junc_sum_inl`/`_inr`): the one place the coproduct's own
 -- equations are read back, and the snoc-list side needs the same two facts the cons-list side did.
-public import AOP.A5_6_ListCombinators
-import AOP.CalcSteps
+public import AOP.A5_5_TypeFunctor
+import AOP.A5_4
+import AOP.A5_6_ListCombinators
+import AOP.A6_3
+import AOP.A7_2
 
 universe u
 

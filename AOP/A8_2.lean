@@ -40,7 +40,7 @@ public import AOP.A8_1
 -- `est`'s pointwise form at Rel(Set), `Λ_comp_est_apply`, proved where §7.1's `est` and §6.1's
 -- set model meet; the `path-defn` rows at the end read the two transposes off it.
 public import AOP.A7_2_RelSet
-import AOP.CalcSteps
+import AOP.A5_4
 
 universe u
 

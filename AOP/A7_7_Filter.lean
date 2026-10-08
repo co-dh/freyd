@@ -31,7 +31,7 @@ module
 
 public import AOP.A7_7_TakeWhile
 public import AOP.A1_7_Pointfree
-import AOP.CalcSteps
+import AOP.A7_2_RelSet
 
 set_option linter.unusedVariables false
 

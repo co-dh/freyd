@@ -19,7 +19,8 @@
 module
 
 public import Freyd.S2_40
-public import AOP.A4_4  -- map_comp_div (and, via A4_2, the shunting rules)
+import AOP.A4_4
+import Freyd.S1_56
 
 universe u
 

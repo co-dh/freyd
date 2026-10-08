@@ -14,7 +14,8 @@ module
 
 -- The junction's two injection laws (`ListRel.junc_sum_inl`/`_inr`) are stated once, over any
 -- `sumCop`, and the slide `F(X)[tip,bin] = [tip,(X×X)bin]` below is proved from them.
-public import AOP.A5_6_ListCombinators
+public import AOP.A6_1_RelSet
+import AOP.A5_6_ListCombinators
 
 set_option linter.unusedVariables false
 

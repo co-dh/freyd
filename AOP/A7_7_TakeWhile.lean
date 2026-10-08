@@ -39,10 +39,15 @@
 -/
 module
 
-public import AOP.A7_6_Shrink
-public import AOP.A7_5_VanBeads
 public import AOP.A6_GenFold
-import AOP.CalcSteps
+public import AOP.A5_4
+public import AOP.A5_6_ListCombinators
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A5_7_PowerBeads
+import AOP.A7_2_RelSet
+import AOP.A7_5_VanBeads
+import AOP.A7_6_Shrink
 
 set_option linter.unusedVariables false
 

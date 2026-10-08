@@ -21,7 +21,7 @@
 -/
 module
 
-public import AOP.A6_PolyFold
+import AOP.A6_PolyFold
 
 set_option linter.unusedVariables false
 

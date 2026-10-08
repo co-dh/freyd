@@ -52,7 +52,12 @@
 -/
 module
 
-public import AOP.A8_2
+public import AOP.A5_4
+public import AOP.A5_5_TypeFunctor
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A7_2
+import AOP.A8_1
 
 universe u
 

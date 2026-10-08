@@ -10,7 +10,8 @@
 
 module
 
-public import AOP.A4_1
+public import Freyd.S2_10
+import AOP.A4_1
 
 universe v u
 

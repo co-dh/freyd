@@ -45,7 +45,9 @@
 
 module
 
-public import AOP.A5_7
+public import AOP.A5_2
+public import Freyd.S2_147_MapCat
+import AOP.A5_7
 
 universe v₁ u₁
 

@@ -1,6 +1,5 @@
 module
 
-public import AOP.A5_6
 public import AOP.A5_5
 import all AOP.A5_5
 

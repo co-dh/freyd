@@ -5,7 +5,7 @@
 -/
 module
 
-public import AOP.A5_6_ListCombinators
+public import AOP.A5_6_ListCombinators -- shake: keep
 
 namespace Freyd.Alg.RelSet.Sort
 

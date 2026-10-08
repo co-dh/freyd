@@ -36,6 +36,7 @@
 module
 
 public import AOP.A8_3
+import AOP.A8_2
 
 namespace Freyd.Alg.RelSet.Tour
 open PowerAllegory

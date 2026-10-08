@@ -9,10 +9,12 @@
 -/
 module
 
-public import AOP.A6_6d_QSort
 public import AOP.A6_TreeBin
-public import AOP.A6_3
-import AOP.CalcSteps
+public import AOP.A5_6_ListCombinators
+import AOP.A6_3
+import AOP.A6_6_Sort
+import AOP.A6_6b_SortConcrete
+import AOP.A6_6d_QSort
 
 namespace Freyd.Alg.RelSet.Sort
 

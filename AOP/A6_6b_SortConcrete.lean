@@ -11,8 +11,8 @@
 -/
 module
 
-public import AOP.A6_6_Sort
-import AOP.CalcSteps
+public import AOP.A5_6_ListCombinators
+import AOP.A6_6_Sort
 
 namespace Freyd.Alg.RelSet.Sort
 

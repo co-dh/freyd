@@ -9,6 +9,8 @@
 module
 
 public import AOP.A4_6
+import AOP.A4_2
+import Freyd.S1_56
 
 universe u
 

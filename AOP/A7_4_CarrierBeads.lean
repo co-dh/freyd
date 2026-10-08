@@ -19,9 +19,11 @@
 -/
 module
 
-public import AOP.A5_7_PowerBeads
 public import AOP.A6_Poly_List
 public import AOP.A5_6_ListCombinators
+public import AOP.A7_1
+import AOP.A5_7_PowerBeads
+import AOP.A7_2_RelSet
 
 namespace Freyd.Alg.RelSet.Carrier
 

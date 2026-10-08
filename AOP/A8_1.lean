@@ -26,11 +26,12 @@ module
 
 public import AOP.A7_2_Pres
 public import AOP.A7_1
-public import AOP.A6_3
 -- `thinRel_pt`, the pointwise reading every Rel(Set) user of `thinRel` needs, is stated beside the
 -- definition it reads rather than re-derived in each of them.
 public import AOP.A6_1_RelSet
-import AOP.CalcSteps
+public import AOP.A4_2
+import AOP.A5_4
+import AOP.A6_3
 
 universe u
 

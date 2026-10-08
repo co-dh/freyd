@@ -13,9 +13,10 @@
 -/
 module
 
-public import AOP.A6_3
-public import AOP.A5_7
-import AOP.CalcSteps
+public import AOP.A5_7 -- shake: keep
+import AOP.A4_2
+public import AOP.A6_2
+import AOP.A6_3
 
 universe u
 

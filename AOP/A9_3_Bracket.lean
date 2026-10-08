@@ -35,7 +35,6 @@
 module
 
 public import AOP.A6_TreeTip
-import AOP.CalcSteps
 -- The fourth row is the PROGRAM: `minL R` (8.7's list minimum, `AOP.A8_3`) standing in for
 -- `est(R)`, and `setify`'s lax naturality (`AOP.A5_7_ListBeads`) shunting `list(f)` to `P(f)`.
 -- `bmin`, B&dM's binary minimum, from which `minL(R)` is folded.

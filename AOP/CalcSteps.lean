@@ -10,7 +10,8 @@
 -/
 module
 
-public import Lean
+public meta import Lean.Elab.Command
+import Lean.Exception
 
 open Lean Elab Command Meta
 

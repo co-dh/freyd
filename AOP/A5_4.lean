@@ -16,10 +16,10 @@
 
 module
 
-public import AOP.A4_6
 public import AOP.A5_1
 public import AOP.A5_4_PowerRel
 public import Freyd.S2_41b
+import AOP.A4_2
 
 universe u
 

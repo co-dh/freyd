@@ -9,6 +9,8 @@
 module
 
 public import AOP.A9_1
+public import AOP.A5_6_ListCombinators
+import AOP.A6_3
 
 namespace Freyd.Alg.RelSet.Segment
 

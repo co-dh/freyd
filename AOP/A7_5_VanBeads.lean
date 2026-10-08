@@ -36,6 +36,9 @@ module
 
 public import AOP.A7_5_Van
 public import AOP.A5_7_ListBeads
+public import AOP.A5_4
+import AOP.A5_7_PowerBeads
+import AOP.A7_2_RelSet
 
 namespace Freyd.Alg.RelSet.Van
 open PowerAllegory

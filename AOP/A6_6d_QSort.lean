@@ -32,7 +32,8 @@
 -/
 module
 
-public import AOP.A6_6b_SortConcrete
+public import AOP.A5_6_ListCombinators
+import AOP.A6_6b_SortConcrete
 
 set_option linter.unusedVariables false
 

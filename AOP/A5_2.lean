@@ -28,6 +28,7 @@ module
 
 public import Freyd.S2_30
 public import AOP.A5_1
+import AOP.A4_2
 
 universe v v₂ v₃ u₂ u₃ u
 

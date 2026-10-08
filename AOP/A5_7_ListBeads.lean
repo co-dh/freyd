@@ -25,7 +25,7 @@
 module
 
 public import AOP.A5_6_ListCombinators
-public import AOP.A5_7_PowerBeads
+import AOP.A5_7_PowerBeads
 
 namespace Freyd.Alg.RelSet.ListRel
 

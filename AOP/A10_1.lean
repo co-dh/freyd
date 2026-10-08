@@ -32,8 +32,8 @@
 module
 
 public import AOP.A9_1
-public import AOP.A7_2_RelSet
-import AOP.CalcSteps
+import AOP.A5_6_ListCombinators
+import AOP.A7_2_RelSet
 
 universe u
 

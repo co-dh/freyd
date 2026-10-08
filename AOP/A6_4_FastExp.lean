@@ -15,8 +15,7 @@
 module
 
 public import AOP.A6_SnocList
-public import AOP.A6_3
-import AOP.CalcSteps
+import AOP.A6_3
 
 namespace Freyd.Alg.RelSet.FastExp
 

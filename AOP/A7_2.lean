@@ -25,8 +25,9 @@
 module
 
 public import AOP.A7_1
-public import AOP.A6_3
 public import AOP.A7_2_Pres
+import AOP.A4_2
+import AOP.A6_3
 
 universe u
 

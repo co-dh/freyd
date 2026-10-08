@@ -13,6 +13,7 @@ module
 public import AOP.A5_7
 public import AOP.A6_1_RelSet
 public import AOP.A7_1
+import AOP.A5_4
 
 namespace Freyd.Alg
 open PowerAllegory

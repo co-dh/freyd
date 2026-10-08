@@ -43,7 +43,7 @@
 -/
 module
 
-public import AOP.Deriv1
+import AOP.Deriv1
 
 set_option linter.unusedVariables false
 

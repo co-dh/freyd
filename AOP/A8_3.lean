@@ -38,9 +38,11 @@ module
 -- cons-list `setify` must be reconciled with `ListRel`'s and its lax naturality available here.
 -- (8.9) and (8.11) in `Rel`: the book's `filter(p)` is §7.7's, `cp(F)` at `L+E×X` is §7.4's.
 public import AOP.A7_7_Filter
-public import AOP.A7_4_CylinderPaths
 -- `cpL(F)` for every polynomial `F` recurses on the code `PolyF`.
-import AOP.CalcSteps
+public import AOP.A8_1
+import AOP.A5_7_ListBeads
+import AOP.A7_2_RelSet
+import AOP.A7_4_CylinderPaths
 
 universe u
 

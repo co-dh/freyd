@@ -37,7 +37,7 @@
 -/
 module
 
-public import AOP.A7_6_Shrink
+import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 

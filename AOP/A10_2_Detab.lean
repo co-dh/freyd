@@ -10,8 +10,11 @@
 -/
 module
 
-import AOP.CalcSteps
-public import AOP.A10_1
+public import AOP.A6_SnocList
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A10_1
+import AOP.A7_2_RelSet
 
 namespace Freyd.Alg.RelSet.Detab
 

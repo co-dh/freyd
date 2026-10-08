@@ -41,9 +41,10 @@
 -/
 module
 
-import AOP.CalcSteps
-public import AOP.A8_2
 public import AOP.A5_6_ListCombinators
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A7_2
 
 namespace Freyd.Alg.RelSet.Van
 

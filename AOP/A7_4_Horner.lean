@@ -36,7 +36,9 @@ module
 public import AOP.A6_SnocList
 -- `Λ`/`est`/`E` read pointwise at Rel(Set), where §7.1's `est` and §6.1's set model first meet;
 -- the packaging below reads the greedy conclusion off them rather than re-proving them.
-public import AOP.A7_2_RelSet
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A7_2_RelSet
 
 set_option linter.unusedVariables false
 

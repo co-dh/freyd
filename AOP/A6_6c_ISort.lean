@@ -32,9 +32,9 @@
 -/
 module
 
-public import AOP.A6_GenFold
-public import AOP.A6_6b_SortConcrete
-import AOP.CalcSteps
+public import AOP.A5_6_ListCombinators
+import AOP.A6_6b_SortConcrete
+import AOP.A6_GenFold
 
 set_option linter.unusedVariables false
 

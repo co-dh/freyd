@@ -18,9 +18,11 @@
 -/
 module
 
-public import AOP.A10_1
 public import AOP.A7_5_Van
-import AOP.CalcSteps
+public import AOP.A9_1
+import AOP.A10_1
+import AOP.A6_3
+import AOP.A7_2_RelSet
 
 universe u
 

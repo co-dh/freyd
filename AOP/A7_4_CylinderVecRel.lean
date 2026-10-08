@@ -9,8 +9,8 @@
 module
 
 public import AOP.A7_4_CylinderVec
-public import AOP.A7_4_CylinderPaths
-import AOP.CalcSteps
+public import AOP.A7_4_CylinderBeads
+import AOP.A7_1
 
 namespace Freyd.Alg.Vec.Rel
 

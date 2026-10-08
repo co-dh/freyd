@@ -14,6 +14,7 @@
 module
 
 public import AOP.A4_4
+import Freyd.S1_56
 
 universe v u
 

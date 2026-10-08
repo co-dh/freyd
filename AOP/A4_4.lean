@@ -18,8 +18,9 @@
 
 module
 
-public import Freyd.S2_147_MapCat
-public import AOP.A4_2  -- modular_sym/modular_le_right (via A4_1), map_shunt_left/right, entire_id_le
+public import Freyd.S2_22
+import AOP.A4_2
+import Freyd.S2_147_MapCat
 
 universe v u
 

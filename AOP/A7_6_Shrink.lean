@@ -24,7 +24,7 @@
 module
 
 public import AOP.A7_1
-public import AOP.A6_1_RelSet
+import AOP.A6_1_RelSet
 
 set_option linter.unusedVariables false
 

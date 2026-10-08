@@ -24,8 +24,7 @@
 -/
 module
 
-public import AOP.A5_7_PowerBeads
-public import AOP.A6_ConsList
+public import AOP.A6_1_RelSet
 
 namespace Freyd.Alg.RelSet.Tuple
 open PowerAllegory

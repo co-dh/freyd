@@ -25,7 +25,7 @@ public import AOP.A5_5
 public import Freyd.S2_41b
 -- the tabular half of the chapter-6 setting: `AOP.A5_4`'s `powerRel_comp` (`P` a relator on ALL
 -- relations) is what chapters 7-8 need, and it is stated over `AOP.A5_6`'s tabular merge.
-import AOP.CalcSteps
+public import AOP.CalcSteps
 
 universe u
 

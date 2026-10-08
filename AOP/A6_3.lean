@@ -24,7 +24,6 @@
 module
 
 public import AOP.A6_2
-import AOP.CalcSteps
 
 namespace Freyd.Alg
 

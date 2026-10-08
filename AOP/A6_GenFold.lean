@@ -24,8 +24,8 @@
 module
 
 public import AOP.A6_8_Tupling
-public import AOP.A6_9_TreeTupling
 public import AOP.A6_ConsList
+public import AOP.A6_TreeBin
 
 set_option linter.unusedVariables false
 

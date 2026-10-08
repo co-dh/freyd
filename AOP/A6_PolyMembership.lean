@@ -13,7 +13,7 @@
 -/
 module
 
-public import AOP.A6_Poly
+import AOP.A6_Poly
 
 set_option linter.unusedVariables false
 

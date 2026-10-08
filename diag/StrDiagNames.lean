@@ -21,6 +21,10 @@ import AOP.A8_4_Knapsack
 import AOP.A8_4_KnapsackProgram
 import AOP.A8_5_Paragraph
 import AOP.A9_4_Code
+-- The constants the unexpanders below key on, formerly in scope only through re-exports.
+import AOP.A6_TreeTip
+import AOP.A9_2_Edit
+import AOP.A9_3_Bracket
 -- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
 import AOP.A9_0_SegmentExample
 import AOP.A10_2_Detab

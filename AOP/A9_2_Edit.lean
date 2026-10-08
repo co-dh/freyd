@@ -45,6 +45,9 @@ module
 
 public import AOP.A9_1
 public import AOP.A8_3
+public import AOP.A7_2_RelSet
+import AOP.A5_7_PowerBeads
+import AOP.A7_5_VanBeads
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
 

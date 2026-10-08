@@ -21,9 +21,9 @@
 -/
 module
 
-import AOP.CalcSteps
 public import AOP.A6_RoseTree
-public import AOP.A7_4_Horner
+public import AOP.A7_1
+import AOP.A7_2_RelSet
 
 universe u
 

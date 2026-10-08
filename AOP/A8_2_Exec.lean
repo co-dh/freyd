@@ -11,12 +11,12 @@
 
   A layer is a `List V`, a set of paths a `List (ConsList V V)`; `memS` reads either as a set.
 -/
-module
+module -- shake: keep-all
 
 public import AOP.A5_7_PowerBeads
 public import AOP.A5_6_ListCombinators
 meta import AOP.A8_2
-import AOP.CalcSteps
+public import AOP.A8_2
 
 namespace Freyd.Alg
 open PowerAllegory

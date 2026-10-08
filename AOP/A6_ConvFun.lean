@@ -17,7 +17,7 @@
 -/
 module
 
-public import AOP.A6_1_RelSet
+import AOP.A6_1_RelSet
 
 namespace Freyd.Alg
 namespace RelSet

@@ -25,8 +25,10 @@
 -/
 module
 
-public import AOP.A10_1
-import AOP.CalcSteps
+public import AOP.A5_6_ListCombinators
+public import AOP.A9_1
+import AOP.A10_1
+import AOP.A7_2_RelSet
 
 namespace Freyd.Alg.RelSet.Tex
 

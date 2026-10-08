@@ -13,10 +13,10 @@
 -/
 module
 
-public import AOP.A6_1_OrdRelSet
 public import AOP.A7_2
 public import AOP.A6_ConsList
-import AOP.CalcSteps
+import AOP.A4_2
+import AOP.A6_1_OrdRelSet
 
 namespace Freyd.Alg.RelSet
 open PowerAllegory

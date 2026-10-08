@@ -40,10 +40,11 @@
 -/
 module
 
-public import AOP.A7_4_Horner
 public import AOP.A6_GenFold
 public import AOP.A5_6_ListCombinators
-import AOP.CalcSteps
+public import AOP.A7_1
+public import AOP.A7_2_Pres
+import AOP.A7_2_RelSet
 
 set_option linter.unusedVariables false
 
