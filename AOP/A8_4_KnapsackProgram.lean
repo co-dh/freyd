@@ -1,7 +1,7 @@
 /-
   B&dM p.207: the Gofer program for the 0/1 knapsack (§8.4), transcribed.  Gofer combinators take a
   PAIR of functions (`cross (f, g)`, `pair (f, g)`), while `merge r`, `filter p`, `addin f` are
-  curried — kept as in the book.
+  curried — kept as in the book.  `dupl`, `pair`, `cross` follow the book's Appendix prelude (p.265–266).
 -/
 module
 
@@ -10,8 +10,9 @@ namespace Knap207
 variable {α β γ δ : Type}
 
 @[expose] public def cross : (α → γ) × (β → δ) → α × β → γ × δ | (f, g), (a, b) => (f a, g b)
-@[expose] public def dupl (a : α) : α × α := (a, a)
-@[expose] public def pair (fg : (α → β) × (α → γ)) : α → β × γ := cross fg ∘ dupl
+-- the Appendix's dupl (p.266), not the diagonal
+@[expose] public def dupl : α × (β × γ) → (α × β) × (α × γ) | (a, (b, c)) => ((a, b), (a, c))
+@[expose] public def pair : (α → β) × (α → γ) → α → β × γ | (f, g), a => (f a, g a)
 @[expose] public def outl : α × β → α := Prod.fst
 @[expose] public def outr : α × β → β := Prod.snd
 @[expose] public def plus : Int × Int → Int := fun (m, n) => m + n
@@ -48,18 +49,8 @@ variable {Item : Type} (val wt : Item → Int)
 @[expose] public def within (w : Int) : Rep Item → Bool := (fun n => decide (n ≤ w)) ∘ weight
 @[expose] public def addin (f : Item → Int) : Item × Int → Int := plus ∘ cross (f, id)
 
--- as printed: augment = cross (addin val, addin wt) · dupl  (does not typecheck: no projections)
-#check_failure (cross (addin val, addin wt) ∘ dupl : Item × (Int × Int) → Int × Int)
-
-/-- With the missing projections. -/
-@[expose] public def augment : Item × (Int × Int) → Int × Int :=
-  cross (addin val ∘ cross (id, outl), addin wt ∘ cross (id, outr)) ∘ dupl
-
--- as printed: cons' = cross (cons, augment) · dupl  (even with the repaired `augment`)
-#check_failure (cross (cons, augment val wt) ∘ dupl : Item × Rep Item → Rep Item)
-
-@[expose] public def cons' : Item × Rep Item → Rep Item :=
-  cross (cons ∘ cross (id, outl), augment val wt ∘ cross (id, outr)) ∘ dupl
+@[expose] public def augment : Item × (Int × Int) → Int × Int := cross (addin val, addin wt) ∘ dupl
+@[expose] public def cons' : Item × Rep Item → Rep Item := cross (cons, augment val wt) ∘ dupl
 
 @[expose] public def start : List (Rep Item) := [([], (0, 0))]
 @[expose] public def step (w : Int) : Item × List (Rep Item) → List (Rep Item) × List (Rep Item) :=
