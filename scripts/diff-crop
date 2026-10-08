@@ -17,7 +17,9 @@ One image per CONNECTED REGION of change, not one per page: a page-wide bounding
 and the chamfer that vanished inside it is invisible once a phone scales the pair down.  `before` is
 stacked ABOVE `after` so each half keeps the full screen width, and a small crop is blown up to MINW.
 A page whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
-whole review.
+whole review.  A `--key` pair carries no ring: the key names the display and the caption says what
+changed, so a ring adds nothing (on a re-layout it circles the whole display).  `-h`/`--help` prints
+this text; an unknown `-flag` exits.
 
 A picture is REFUSED, not written, when it would misinform: when the crop draws none of the names its
 key composes or its caption puts in backticks, and when the two halves are pixel-identical.  Choosing
@@ -812,7 +814,8 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
               f"after {', '.join(ids)} p{apages} — the edit is in another display; try the key of the "
               f"display that cites `{key}`")
         return None
-    rings(bcuts, acuts, cb, ca, tmp, key)
+    # No ring on a --key review: the key names the display and the caption says what changed; on a
+    # re-layout a ring circles the whole display.
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
     label(ca, f"{tmp}/lla.png", f"{'/'.join(ids)} AFTER p{apages[0]}", tmp, [])
     emit("magick", f"{tmp}/llb.png", f"{tmp}/lla.png", "-background", "gray70", "-append", "+repage", name)
@@ -1237,6 +1240,13 @@ def cut_keys(keys, before_pdf, after_pdf, out, captions=()):
 
 
 def main(argv):
+    if "-h" in argv or "--help" in argv:
+        print(__doc__)
+        return
+    known = {"--changed", "--stack", "--key", "--caption", "--after", "--before", "--rev"}
+    for a in argv:
+        if a.startswith("-") and a not in known:
+            sys.exit(f"diff-crop: unknown flag {a} — see --help")
     if "--changed" in argv:
         # The review of a note edit, with nothing chosen by hand: the panels whose GEOMETRY moved are
         # read out of the two .typ files, and each is cropped by its own key.  Picking display keys by
