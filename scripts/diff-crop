@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """diff-crop — the before/after pictures for a review, cut to what actually changed.
 
-    ./scripts/diff-crop                          # HEAD's PDF vs the working tree's, for both notes
     ./scripts/diff-crop --changed [REV] [OUTDIR] # every PANEL whose drawing changed since REV
     ./scripts/diff-crop --key 7.2b [--key 13.3.1a] [OUTDIR]   # one pair per named display
     ./scripts/diff-crop --key 7.2b --caption "what changed" [--key 13.3.1a --caption "..."] [OUTDIR]
@@ -10,13 +9,12 @@
                          # a key is a label, an after number, or a range `first:last` of either;
                          # a number is a letter-key `7.2b`, a book number `9.3` / `(9.3)`, or a
                          # book name `Proposition 9.2` (any case) — zero or several matches refuse
-    ./scripts/diff-crop BEFORE.pdf AFTER.pdf [OUTDIR]
     ./scripts/diff-crop --stack BEFORE.png AFTER.png --caption "what changed" [OUT.png]
 
-One image per CONNECTED REGION of change, not one per page: a page-wide bounding box is a whole table,
-and the chamfer that vanished inside it is invisible once a phone scales the pair down.  `before` is
-stacked ABOVE `after` so each half keeps the full screen width, and a small crop is blown up to MINW.
-A page whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
+One image per named display or changed panel, never a whole-pdf sweep: a review always names its display
+(`--key`) or a panel set (`--changed`); no recognised mode prints this text and exits 2.  `before` is
+stacked ABOVE `after` so each half keeps the full screen width.
+A pair whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
 whole review.  A `--key` pair carries no ring: the key names the display and the caption says what
 changed, so a ring adds nothing (on a re-layout it circles the whole display).  `-h`/`--help` prints
 this text; an unknown `-flag` exits.
@@ -39,24 +37,19 @@ Three measured faults shipped clipped or silent reviews, and all three are fixed
     page 8 or 10 of the before; cropping the before at the after's page number silently pictures
     unrelated content (this is what happened to 13.3.1a).  Each PDF is searched for the display's own
     text anchor, and a key whose anchor cannot be pinned to exactly one before page fails loudly
-    rather than falling back to the after's page number.  The whole-page mode aligns its pages by
-    text for the same reason, instead of diffing page i against page i and printing a warning.
+    rather than falling back to the after's page number.
   * THE `pic` TABLE'S PAGE IS THE WHOLE NOTE'S, NOT WHOEVER'S PDF IS HANDED IN.  The note is now split
     into per-chapter PDFs that renumber their pages from 1; `--key 13.2a` against the chapter 13 PDF
     used to cut page 32 (the whole note's page for that key) of the CHAPTER pdf, landing on a
     different display's anchor entirely.  `resolve()` uses the db row only once it is VERIFIED to
     carry the key's own printed anchor `(key)` on the page it names in the pdf actually handed in;
     otherwise every page of that pdf is searched for the anchor directly, and a key found nowhere
-    refuses by name rather than guessing.  `neighbours()` follows the same split.  The whole-pdf mode
-    is held to the same rule from the other end: a page `align` could not pair, or a picture nobody
-    wrote despite one, exits non-zero instead of returning silently.
+    refuses by name rather than guessing.  `neighbours()` follows the same split.
 """
-import difflib, hashlib, math, os, re, shutil, subprocess, sys, tempfile
+import hashlib, math, os, re, shutil, subprocess, sys, tempfile
 import xml.etree.ElementTree as ET
 
-DPI, PAD, MINW, MAXH = 300, 52, 2000, 3000
-VPAD = 180                       # a display's worth of context above and below a changed band
-MINAREA = 40                     # ignore antialiasing specks
+DPI = 300
 GAP = 90                         # change regions closer than this are one edit
 KEYPAD = 9                       # pt of white kept around a display's measured ink, white permitting
 GUT = 15                         # pt: a wider gap than this is the gutter the display ends at
@@ -66,7 +59,6 @@ LABELOFF = 3                     # pt: a margin label sits 1.1 pt above its disp
 MARG = 3                         # pt the crop must clear the ink by, or the run aborts
 STRIP = 6                        # px checked blank at the top and bottom of every crop
 SHAPETOL = 0.2                   # pt: two drawings of one primitive differ by float noise, no more
-MINSIM = 0.5                   # below this two pages are different pages, not an edited one
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -849,54 +841,6 @@ def cut_labels(keys, rev, before_pdf, after_pdf, out):
     return made, bad
 
 
-# ---------------------------------------------------------------- whole-note pixel diff
-
-def components(diff):
-    """Bounding boxes of the changed blobs in an `compare -metric AE` difference image, and, when every
-    blob was page-wide, those instead: a page that changed all over is still worth showing, whole."""
-    W, H = size(diff)
-    r = run("magick", diff, "-alpha", "off",
-            "-fuzz", "20%", "-fill", "white", "-opaque", "red", "-threshold", "50%",
-            "-define", "connected-components:verbose=true",
-            "-define", f"connected-components:area-threshold={MINAREA}",
-            "-connected-components", "8", "null:")
-    out, big = [], []
-    for ln in r.stdout.splitlines():
-        # id: bounding-box centroid area mean-color — the area sits between centroid and colour, and a
-        # match that stopped one column short read the area as the colour, so the black background was
-        # never skipped and every crop came out as one page-wide box.
-        m = re.match(r"\s*\d+:\s+(\d+)x(\d+)([+-]\d+)([+-]\d+)\s+[\d.,-]+\s+\d+\s+(\S+)", ln)
-        if not m:
-            continue
-        w, h, x, y = (int(v) for v in m.groups()[:4])
-        # THE BACKGROUND IS THE PAGE-SIZED BLOB, NOT THE BLACK ONE.  `compare` marks the change red
-        # over a faded original, and after `-opaque red -threshold` a change comes out WHITE where it
-        # fell on paper and BLACK where it fell on ink — so a colour test keeps whichever half of an
-        # edit happened to land on paper and drops the other, and drops the edit entirely when none
-        # of it did, writing no picture and exiting 0.  Every blob that is not the whole page is a
-        # difference.
-        if w >= W and h >= H:
-            continue
-        (big if w > 1200 and w * h > 600000 else out).append((x, y, x + w, y + h))
-    return out or big
-
-
-def snap(y0, y1, spans, H):
-    """The crop's edges pushed out of any line of text they land inside.  A fixed margin lands wherever
-    it lands, and an edge through a word cuts in half the very formula the reader is being asked to
-    compare — measured on the page's own word boxes, not guessed from the ink."""
-    # The slack for ink the text box does not cover goes on FIRST: added after the snap it puts the edge
-    # back inside the next line, which is the word the last pass still cut in half.
-    y0, y1 = y0 - 4, y1 + 4
-    for _ in range(8):
-        lo = min([a for a, b in spans if a < y0 < b], default=y0)
-        hi = max([b for a, b in spans if a < y1 < b], default=y1)
-        if (lo, hi) == (y0, y1):
-            break
-        y0, y1 = lo, hi
-    return max(0, int(y0)), min(H, int(y1) + 1)
-
-
 def merge(boxes):
     boxes, again = list(boxes), True
     while again:
@@ -1083,126 +1027,6 @@ def stack(before_png, after_png, out, caption=""):
     return out
 
 
-def page_texts(pdf):
-    ps = run("pdftotext", "-q", pdf, "-").stdout.split("\f")
-    return [re.sub(r"\s+", " ", p).strip() for p in (ps[:-1] if ps and not ps[-1].strip() else ps)]
-
-
-def pair_run(bs, as_):
-    """Monotone best match inside a run of pages that all changed: maximise the summed text similarity,
-    and leave a page unpaired rather than pair it with one it does not resemble."""
-    n, m = len(bs), len(as_)
-    sim = [[difflib.SequenceMatcher(None, b, a).quick_ratio() for a in as_] for b in bs]
-    dp = [[0.0] * (m + 1) for _ in range(n + 1)]
-    for i in range(n - 1, -1, -1):
-        for j in range(m - 1, -1, -1):
-            take = sim[i][j] + dp[i + 1][j + 1] if sim[i][j] >= MINSIM else -1
-            dp[i][j] = max(take, dp[i + 1][j], dp[i][j + 1])
-    i, j, pairs = 0, 0, []
-    while i < n and j < m:
-        if sim[i][j] >= MINSIM and abs(dp[i][j] - (sim[i][j] + dp[i + 1][j + 1])) < 1e-9:
-            pairs.append((i, j))
-            i, j = i + 1, j + 1
-        elif dp[i + 1][j] >= dp[i][j + 1]:
-            i += 1
-        else:
-            j += 1
-    return pairs, [i for i in range(n) if i not in {p[0] for p in pairs}], \
-        [j for j in range(m) if j not in {p[1] for p in pairs}]
-
-
-def align(bt, at):
-    """Pair before pages with after pages BY CONTENT.  An edit that reflows the note shifts every later
-    page, and diffing page i against page i then reports a whole note of phantom changes."""
-    pairs, lb, la = [], [], []
-    for op, i1, i2, j1, j2 in difflib.SequenceMatcher(None, bt, at, autojunk=False).get_opcodes():
-        if op == "equal":
-            pairs += list(zip(range(i1, i2), range(j1, j2)))
-        elif op == "delete":
-            lb += list(range(i1, i2))
-        elif op == "insert":
-            la += list(range(j1, j2))
-        else:
-            p, ub, ua = pair_run(bt[i1:i2], at[j1:j2])
-            pairs += [(i1 + i, j1 + j) for i, j in p]
-            lb += [i1 + i for i in ub]
-            la += [j1 + j for j in ua]
-    return sorted(pairs), lb, la
-
-
-def crops(before_pdf, after_pdf, out, tag_="", caption=""):
-    tmp = tempfile.mkdtemp(prefix="diff-crop.")
-    os.makedirs(out, exist_ok=True)
-    os.makedirs(tmp + "/b"), os.makedirs(tmp + "/a")
-    emit("pdftoppm", "-r", str(DPI), "-png", before_pdf, tmp + "/b/p")
-    emit("pdftoppm", "-r", str(DPI), "-png", after_pdf, tmp + "/a/p")
-    bs, as_ = sorted(os.listdir(tmp + "/b")), sorted(os.listdir(tmp + "/a"))
-    pairs, lb, la = align(page_texts(before_pdf), page_texts(after_pdf))
-    wb, wa = words(before_pdf), words(after_pdf)
-    for i in lb:
-        print(f"{tag_}before page {i + 1} has no match in the after PDF — not diffed")
-    for j in la:
-        print(f"{tag_}after page {j + 1} has no match in the before PDF — not diffed")
-    made = []
-    for i, j in pairs:
-        if i >= len(bs) or j >= len(as_):
-            continue
-        b, a, d = f"{tmp}/b/{bs[i]}", f"{tmp}/a/{as_[j]}", f"{tmp}/d.png"
-        m = re.match(r"([\d.e+]+)", run("compare", "-metric", "AE", b, a, d).stderr.strip())
-        if not m or float(m.group(1)) <= 0:
-            continue
-        n = f"{j + 1}" if i == j else f"b{i + 1}a{j + 1}"
-        W, H = size(b)
-        # A CHANGED PANEL IS READ AGAINST THE ROW IT SITS IN, so a crop takes the page's full width and
-        # the changed band with a display's worth of margin either side: a box cut to the ink alone shows
-        # a picture the reader cannot place.  Merging again after widening keeps two changes inside one
-        # display from arriving as two nearly identical pictures.
-        wide = merge([(0, max(0, b[1] - VPAD), W, min(H, b[3] + VPAD)) for b in merge(components(d))])
-        spans = [(w[2] * DPI / 72, w[4] * DPI / 72) for w in wb if w[0] == i + 1]
-        spans += [(w[2] * DPI / 72, w[4] * DPI / 72) for w in wa if w[0] == j + 1]
-        for k, (x0, y0, x1, y1) in enumerate(wide, 1):
-            y0, y1 = snap(y0, y1, spans, H)
-            geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
-            emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
-            emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
-            # One pixel crop of both pages, so both frames start at the same y0 px.
-            pt = 72.0 / DPI
-            rings([(before_pdf, i + 1, y0 * pt, y1 * pt)], [(after_pdf, j + 1, y0 * pt, y1 * pt)],
-                  f"{tmp}/cb.png", f"{tmp}/ca.png", tmp, f"{tag_}p{n}-{k}")
-            scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
-            label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
-            label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag_}p{j + 1} AFTER", tmp, scale)
-            pair = os.path.join(out, f"{tag_.strip('- ')}p{n}-{k}.png".lstrip("-"))
-            emit("magick", f"{tmp}/lb.png", f"{tmp}/la.png", "-background", "gray70", "-append", "+repage", pair)
-            if caption:
-                caption_strip(pair, pair, caption)
-            if size(pair)[1] > MAXH:
-                emit("magick", pair, "-resize", f"x{MAXH}", pair)
-            print(f"{tag_}page {n} region {k}: {geo} -> {pair}")
-            made.append(pair)
-    shutil.rmtree(tmp, ignore_errors=True)
-    # `align` already proves it: a page it could not pair (lb/la) is a page that differs, so writing
-    # nothing here would be the silent wrong answer this tool exists to refuse; every PAIRED page
-    # compared pixel-identical is the only case where nothing-written is the true answer.
-    if not made and (lb or la):
-        sys.exit(f"diff-crop: {before_pdf} and {after_pdf} differ ({len(lb)} before / {len(la)} after "
-                 f"page(s) left unmatched, named above) but no picture was written")
-    if not made:
-        print(f"{tag_}{before_pdf} and {after_pdf} are pixel-identical")
-    return made
-
-
-def head_copy(note):
-    """HEAD's committed PDF, written where the tools can open it; None if HEAD has no such file."""
-    old = os.path.join(tempfile.gettempdir(), "head-" + os.path.basename(note))
-    r = subprocess.run(["git", "-C", ROOT, "show", f"HEAD:{note}"], capture_output=True)
-    if r.returncode:
-        print(f"git show HEAD:{note}: {r.stderr.decode().strip()}")
-        return None
-    open(old, "wb").write(r.stdout)
-    return old
-
-
 def at_rev(rev, path, binary=False):
     """`path` as of `rev`, written beside the tools when it is a PDF they have to open."""
     r = subprocess.run(["git", "-C", ROOT, "show", f"{rev}:{path}"], capture_output=True)
@@ -1318,24 +1142,8 @@ def main(argv):
         os.makedirs(out, exist_ok=True)
         made, bad = cut_labels(keys, rev, before, after, out)
         sys.exit(1 if bad else 0)
-    if len(argv) >= 2:
-        crops(argv[0], argv[1], argv[2] if len(argv) > 2 else "review",
-              caption=argv[3] if len(argv) > 3 else "")
-        return
-    # No arguments: the usual review, HEAD's committed PDF against the one `make p` just built.
-    out = os.path.join(tempfile.gettempdir(), "diff-crop")
-    shutil.rmtree(out, ignore_errors=True)
-    made = []
-    for note in NOTES:
-        # A note that is not there is a wrong cwd, not a note with no changes: run from the scratchpad
-        # this answered "nothing changed since HEAD" with exit 0.
-        if not os.path.exists(note):
-            sys.exit(f"diff-crop: {note} not found from {os.getcwd()} — run it from the repository root")
-        old = head_copy(note)
-        if old:
-            made += crops(old, note, out, tag_=os.path.basename(note).replace(".pdf", "") + "-")
-    if not made:
-        print("nothing changed since HEAD")
+    print(__doc__)
+    sys.exit(2)
 
 
 if __name__ == "__main__":
