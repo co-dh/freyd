@@ -209,7 +209,7 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
           throwError "{declName} : {← Meta.ppExpr body} is a theorem but neither an (in)equation \
             between arrows nor about a hom — it has no type to render"
         -- ANY OTHER DECLARATION has the type Lean gave it: `sqr(n) : Int`, `Para(Word) : Type`,
-        -- `IsThinlist(Q,thinlist) : Prop`.  The name cell applies it to its OWN binders only; an
+        -- `IsThinlist(Q,thinL) : Prop`.  The name cell applies it to its OWN binders only; an
         -- arrow the signature wrote `A → B` has a hygienic binder and stays in the type (`hd : J → C`).
         -- An INSTANCE binder is hygienic too, but is a constraint and no arrow: it is passed over,
         -- never left in the type as `[inst : …] →`.

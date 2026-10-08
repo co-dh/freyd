@@ -23,7 +23,7 @@
 
   What is proved here instead is the row at `Qc ≜ Q ∩ (head2 head2°)`, which does record it —
   `tour_mono_dropl`, `tour_mono_dropr` — and `tour_laws` is Theorem 8.2 at `Qc`.  The note's
-  `thinlist Q` therefore has to become `thinlist Qc`, or Theorem 8.2 has to be replaced by its
+  `thinL Q` therefore has to become `thinL Qc`, or Theorem 8.2 has to be replaced by its
   in-context form (`AOP.A8_1`'s `Λ_comp_thinRel_context`, which is exactly `Λ S ≫ thinRel (Q ∩
   (S°S)) = Λ S ≫ thinRel Q`).
 
@@ -574,7 +574,7 @@ public theorem tour_laws_defn :
 
 /-- **tour-laws** (B&dM §8.6, p.215): a least-cost bitonic tour as a fold that thins the tours
     kept at each city —
-    `Λ(tour) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge ⊤ thinlist Qc⦈ minlist R`.
+    `Λ(tour) est(R) ⊒ ⦇cpL(F) ⟨g₁,g₂⟩ merge ⊤ thinL Qc⦈ minL R`.
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [start,dropl]`, `f₂ ≜ [start,dropr]`,
     `p₁ = p₂ ≜ 𝟙`, `P ≜ ⊤`.  The thinning order is `Qc`, NOT the note's `Q`: see
     `tour_mono_dropl_Q_false`.  `merge ⊤ = cat` (`merge_top`). -/

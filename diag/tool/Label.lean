@@ -159,8 +159,8 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
       -- A HEAD THE PRINTER PARENTHESISED IS A HEAD, never a factor to flatten into the operands:
       -- the note's curried `Vec(n)(R)` says the operator is `Vec(n)` and `R` is what it is applied
       -- to, where flattening would spell one application of three parts.
-      -- A HEAD WRITTEN AS A NOTATION (`minlist(R)`, `loop(step)`) is an operator the same way: what
-      -- follows it is applied, and left to Lean it juxtaposed the point, `minlist(R) list(bin)(…)`.
+      -- A HEAD WRITTEN AS A NOTATION (`minL(R)`, `loop(step)`) is an operator the same way: what
+      -- follows it is applied, and left to Lean it juxtaposed the point, `minL(R) list(bin)(…)`.
       if f matches .ident .. then some (f, ops)
       else if f.isOfKind ``Lean.Parser.Term.app then (appParts f).map fun (h, prev) => (h, prev ++ ops)
       else some (f, ops)

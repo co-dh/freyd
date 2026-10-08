@@ -21,8 +21,8 @@
     candidate lists are sorted by.
   - `knap_laws`: the note's `knap-laws` headline, Theorem 8.2 at those data.
 
-  The sorted-list combinators are `AOP.A8_3`'s concrete ones (`sort`, `listcp`, `list`,
-  `filter`, `merge`, `thinlist`, `minlist`), so (8.6)-(8.11) are theorems, not hypotheses.
+  The sorted-list combinators are `AOP.A8_3`'s concrete ones (`sort`, `cpL`, `list`,
+  `filter`, `merge`, `thinL`, `minL`), so (8.6)-(8.11) are theorems, not hypotheses.
 
   B&dM's `Real` is `Int` here (the repo is Mathlib-free; only `+` and `≤` are ever used), as
   in `AOP.A7_3_Party`.
@@ -423,7 +423,7 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
 
 /-- **knap-laws** (B&dM §8.4, p.206): the knapsack problem as a fold that thins the packings
     kept at each item —
-    `Λ(subseq (within w)) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R`.
+    `Λ(subseq (within w)) est(R) ⊒ ⦇cpL(F) ⟨g₁,g₂⟩ merge R thinL Q⦈ minL R`.
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [nil,cons]`, `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`,
     `p₂ ≜ 𝟙`, `P ≜ R`, with `knap-mono` discharging the monotonicity conditions and
     `knap_spec` the specification. -/

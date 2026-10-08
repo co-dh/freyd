@@ -30,7 +30,7 @@
 
   ASSUMED, as in the book and in `AOP.A8_3`: the sorted-list interface (8.7)-(8.11) stays a
   family of abstract arrows with the laws it is used by as hypotheses.  Two rows of the note
-  are therefore out of reach here: `merge ⊤ = cat` and `listcp(F) = wrap+cpr` compute inside a
+  are therefore out of reach here: `merge ⊤ = cat` and `cpL(F) = wrap+cpr` compute inside a
   CONCRETE list implementation, and the list object is abstract.
 -/
 module
@@ -623,7 +623,7 @@ public theorem para_laws_split :
 
 /-- **para-laws** (B&dM §8.5, p.210): a paragraph laid out as a fold that thins the layouts
     kept at each word —
-    `Λ(partition list⁺(fits w)) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge ⊤ thinlist Q⦈ minlist R`.
+    `Λ(partition list⁺(fits w)) est(R) ⊒ ⦇cpL(F) ⟨g₁,g₂⟩ merge ⊤ thinL Q⦈ minL R`.
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`, `p₁ ≜ 𝟙`,
     `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`, with `para-mono` discharging the
     monotonicity conditions and `para_spec` the specification. -/

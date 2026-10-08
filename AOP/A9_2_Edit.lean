@@ -268,7 +268,7 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
             (ConsList.cons (Op.ins b, (ConsList.cons a xs, ys)) (ConsList.wrap ()))
 
 -- The note's `[·]` is `ConsList Unit`, so the program returns one of THOSE: the panel's
--- `list((𝟙×mle)cons)` is the list relator at the same list type its `minlist(R)` reads, and a
+-- `list((𝟙×mle)cons)` is the list relator at the same list type its `minL(R)` reads, and a
 -- Lean `List` here would put a second list type on the one wire.
 /-- **edit-laws**, fourth row: `unstep : [Char]×[Char]⟶[Op×([Char]×[Char])]`, the arrow the
     panel draws. -/
@@ -953,10 +953,10 @@ public theorem unstep_thins [DecidableEq Char] :
     obtain ⟨q', hq', hV⟩ := unstep_complete p q (hq : p = baseStepFn (Sum.inr q)).symm
     exact ⟨q', ⟨topMor_apply q'.1 q.1, hV⟩, hq'⟩
 
-/-- **edit-laws**, fourth row (B&dM p.228): `unstep list((𝟙×mle)cons)minlist(R)` refines the branch
+/-- **edit-laws**, fourth row (B&dM p.228): `unstep list((𝟙×mle)cons)minL(R)` refines the branch
     `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` — `unstep` implements `(step°)%∋ thin(U×V)`
-    (`unstep_thins`) and `minlist(R)` implements `est(R)`, the list standing in for the set it
-    `setify`s to (`CL.list_comp_minlist_le`, `setify`'s lax naturality). -/
+    (`unstep_thins`) and `minL(R)` implements `est(R)`, the list standing in for the set it
+    `setify`s to (`CL.list_comp_minL_le`, `setify`'s lax naturality). -/
 public theorem edit_prog [DecidableEq Char] (mle : dPair Char ⟶ dEdit Char) :
     unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minL(R Char)
       ⊑ Λ ((step (Char := Char))°)
@@ -1106,7 +1106,7 @@ public theorem edit_laxNatural :
   obtain ⟨h1, h2⟩ := editFn_rel S es fs hfs
   exact ⟨editFn es, rfl, h1, h2⟩
 
-/-- **`minlist(R)` is LAX natural**: `list(list(Op(S)))minlist(R) ⊑ minlist(R)list(Op(S))`.  The
+/-- **`minL(R)` is LAX natural**: `list(list(Op(S)))minL(R) ⊑ minL(R)list(Op(S))`.  The
     argument of `est_R_laxNatural` with the LIST standing in for the set it `setify`s to: a shortest
     member of the image list comes from a member of the original, of the same length, and every
     other member of the original has an image of its own length. -/

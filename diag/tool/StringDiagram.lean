@@ -693,7 +693,7 @@ structure Placement where
     differ — the shared ends trimmed, as `moveStep?` trims — a factor of one side MATCHES one of the
     other when it is the same term or the same constant, under a functor or not (`F(sort(≼))` and
     `sort(F(≼))`).  Once some factor matches, the factors left unmatched were traded on the way
-    past, in order — `listcp` becomes `cp(F)`, `thinlist(Q)` becomes `thin(Q)` — and are one bead;
+    past, in order — `cpL` becomes `cp(F)`, `thinL(Q)` becomes `thin(Q)` — and are one bead;
     so is a factor matched by its constant alone, its argument rewritten (`sort(F(≼))` and
     `sort(f≼f°)`), unless it crosses another pair: then it is the factor that moved, and no height
     holds it level with both.  Answers (row of `a`, row of `b`) for each pair drawn as one bead on

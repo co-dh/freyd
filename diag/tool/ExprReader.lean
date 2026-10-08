@@ -432,7 +432,7 @@ def isObjType (ty : Expr) : MetaM Bool := do
 
     AN INDEX IS AN OBJECT, and that is what makes the note set the component tight: `φA` is `φ` at
     the wire under it, one name.  Every OTHER argument makes the term an operator APPLIED, which
-    takes parentheses like every other application (`thin(Q)`, `est(R)`, `sort(P)`, `listcp(F)`) —
+    takes parentheses like every other application (`thin(Q)`, `est(R)`, `sort(P)`, `cpL(F)`) —
     so the test is on the arguments' TYPES: an object of SOME category, which is `isObjType`, and an
     arrow index or a relator index goes the other way without a clause of its own.
 

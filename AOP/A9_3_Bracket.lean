@@ -26,7 +26,7 @@
     the setting-mismatch note at the end of `AOP.A9_1`.
   * rows 5-7 (the array tabulation (9.7)-(9.10)) relate arrays of trees, which the note itself
     marks as outside the relational picture.  Row 4 is NOT one of them and is proved below
-    (`mct_prog`): `splits` and `minlist R` are arrows of the same allegory the body is written in.
+    (`mct_prog`): `splits` and `minL R` are arrows of the same allegory the body is written in.
 
   B&dM's `Real` is `Int`, as everywhere in this repo's chapter 8-10 case studies.  `list⁺ A` is
   `AOP.A6_ConsList`'s `ConsList A A` — a leaf carries the last element, so the datatype IS the
@@ -38,11 +38,11 @@ public import AOP.A9_1
 public import AOP.A6_TreeTip
 public import AOP.A5_6_ListCombinators
 import AOP.CalcSteps
--- The fourth row is the PROGRAM: `minlist R` (8.7's list minimum, `AOP.A8_3`) standing in for
+-- The fourth row is the PROGRAM: `minL R` (8.7's list minimum, `AOP.A8_3`) standing in for
 -- `est(R)`, and `setify`'s lax naturality (`AOP.A5_7_ListBeads`) shunting `list(f)` to `P(f)`.
 public import AOP.A8_3
 public import AOP.A5_7_ListBeads
--- `bmin`, B&dM's binary minimum, from which `minlist(R)` is folded.
+-- `bmin`, B&dM's binary minimum, from which `minL(R)` is folded.
 public import AOP.A9_2_Edit
 
 namespace Freyd.Alg.RelSet.Bracket
@@ -576,10 +576,10 @@ public theorem mem_splits : ∀ (x : NEList A) (p : NEList A × NEList A),
             · injection h with _ hxv
               exact (ih (u, v)).mpr hxv
 
-/-- **mct-laws**, fourth row (B&dM p.232): `splits list((mct×mct)bin)minlist R` refines the body
+/-- **mct-laws**, fourth row (B&dM p.232): `splits list((mct×mct)bin)minL R` refines the body
     `(cat°)%∋ P((X×X)bin)est(R)` of the fixed point — `splits` implements `cat°` (`mem_splits`)
-    and `minlist R` implements `est(R)`, the list standing in for the set it `setify`s to.  The
-    one inequality is `CL.list_comp_minlist_le`, `setify`'s lax naturality: a list of `f`-images of
+    and `minL R` implements `est(R)`, the list standing in for the set it `setify`s to.  The
+    one inequality is `CL.list_comp_minL_le`, `setify`'s lax naturality: a list of `f`-images of
     the splits has, as a SET, an `P(f)`-image of the set of splits.  Exponential,
     since the segments of one list overlap — the tabulation (9.7)-(9.10) is what fixes that, and
     it relates arrays of trees, outside the relational picture. -/
@@ -828,7 +828,7 @@ public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
 
 /-! ## The tabulation (9.7)-(9.10) and `addcol` (B&dM pp. 233-236)
 
-  Every arrow here is a MAP except `minlist(R)` inside `mix`; `mct` is a map satisfying its
+  Every arrow here is a MAP except `minL(R)` inside `mix`; `mct` is a map satisfying its
   recursive case, the program being tabulated.  `inits`, `tails` land in `list`, not `list⁺`, so
   the one relator `list` serves the rows and the proper prefixes alike (those can be empty).
   `init`, `tail` are total, a singleton being its own `init` and `tail`: every equation that uses
@@ -913,7 +913,7 @@ public theorem tailsPFn_cons (a : A) (z : NEList A) :
 @[expose] public def snoc {X : Type} (p : CL.ConsList Unit X × X) : CL.ConsList Unit X :=
   cappend p.1 (CL.ConsList.cons p.2 (CL.ConsList.wrap ()))
 
-/-- `minlist(R) : list A⟶A` as B&dM implement it (p. 267), `foldr1 bmin(R)`: the leftmost of the
+/-- `minL(R) : list A⟶A` as B&dM implement it (p. 267), `foldr1 bmin(R)`: the leftmost of the
     `R`-least elements, so a FUNCTION.  `default` answers `[]`, which no non-singleton's `splits` is. -/
 @[expose] public def minLFn {X : Type} [Inhabited X] (Q : CL.dE X ⟶ CL.dE X)
     [∀ a b, Decidable (Q a b)] : CL.ConsList Unit X → X
@@ -924,7 +924,7 @@ public theorem tailsPFn_cons (a : A) (z : NEList A) :
 public instance instDecR (t t' : Tree A) : Decidable (R st sb cb t t') :=
   inferInstanceAs (Decidable (costFn st sb cb t ≤ costFn st sb cb t'))
 
-/-- A tree to answer `minlist(R)` of `[]` with. -/
+/-- A tree to answer `minL(R)` of `[]` with. -/
 public instance [Inhabited A] : Inhabited (Tree A) := ⟨Tree.tip default⟩
 
 /-- The length of a non-empty list — the bound `mct`'s recursion runs to. -/
@@ -932,7 +932,7 @@ public instance [Inhabited A] : Inhabited (Tree A) := ⟨Tree.tip default⟩
   | CL.ConsList.wrap _ => 1
   | CL.ConsList.cons _ x => neLen x + 1
 
-/-- `mct` unfolded `n` times: the recursion `(single→tip head,minlist(R) list(bin(X×X)) splits)`
+/-- `mct` unfolded `n` times: the recursion `(single→tip head,minL(R) list(bin(X×X)) splits)`
     by structural recursion on the depth, since a split's halves are shorter but not sub-terms. -/
 @[expose] public def mctN [Inhabited A] : Nat → NEList A → Tree A
   | _, CL.ConsList.wrap a => Tree.tip a
@@ -940,7 +940,7 @@ public instance [Inhabited A] : Inhabited (Tree A) := ⟨Tree.tip default⟩
   | n + 1, x@(CL.ConsList.cons _ _) =>
       minLFn (R st sb cb) (cmap (fun p => Tree.bin (mctN n p.1) (mctN n p.2)) (splitsFn x))
 
-/-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minlist(R) list(bin(mct×mct)) splits)`,
+/-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minL(R) list(bin(mct×mct)) splits)`,
     unfolded as deep as the list is long. -/
 @[expose] public def mct [Inhabited A] (x : NEList A) : Tree A := mctN st sb cb (neLen x) x
 
@@ -1018,7 +1018,7 @@ public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X
 @[expose] public def col [Inhabited A] : dNE A ⟶ dList (Tree A) :=
   (graph inits : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))
 
-/-- `mix≜zip list(bin) minlist(R)`. -/
+/-- `mix≜zip list(bin) minL(R)`. -/
 @[expose] public def mix [Inhabited A] (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)⟩ : RelSet.{0}) ⟶ dTree A :=
   (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
@@ -1382,7 +1382,7 @@ variable [Inhabited A]
   rprodMap (graph (mct st sb cb) : dNE A ⟶ dTree A) (graph (mct st sb cb) : dNE A ⟶ dTree A) ≫ binG
 
 /-- **mct-defn**: `mct`'s recursive equation, proved once — on non-singletons
-    `mct=splits list(bin(mct×mct)) minlist(R)`. -/
+    `mct=splits list(bin(mct×mct)) minL(R)`. -/
 public theorem mct_eq :
     nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
       = nonsingle ≫ splits ≫ list (graft st sb cb)
@@ -2107,7 +2107,7 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent (Name.mkSimple "(𝟙×sz)² opb π₁")))
 
 -- `inits⁺`/`tails⁺` carry a superscript no identifier can; `listTailFn` is `tail` on a possibly
--- empty list, a second `tail` beside `NEList`'s; `minlist(R)` in `CL.minlist`'s own spelling.
+-- empty list, a second `tail` beside `NEList`'s; `minL(R)` in `CL.minL`'s own spelling.
 open Lean PrettyPrinter in
 @[app_unexpander initsPFn] public meta def unexpandInitsPFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "inits⁺")))

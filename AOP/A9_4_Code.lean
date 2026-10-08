@@ -20,7 +20,7 @@
   * `code_thin_condition` — Theorem 9.2's `hQ`, Proposition 9.4 at `U ≜ ⊤+⊤` and `V ≜ prefix°`;
   * `code_laws` — the note's `code-laws` headline, Theorem 9.2 at those data.
 
-  * `code_prog` — the note's fourth row, `reduce list((encode×𝟙)snoc)minlist(R)` refining that
+  * `code_prog` — the note's fourth row, `reduce list((encode×𝟙)snoc)minL(R)` refining that
     branch, with `reduce` listing `extend°`.
 
   NOT DONE, and why: the book's `lrt` (longest repeated tail) is an efficient `reduce`; `reduce`
@@ -975,10 +975,10 @@ public theorem mem_reduce (ws : Str) (q : Str × Code) :
       exact ⟨(xs, zs), (mem_splits _ (xs, zs)).mpr rfl, ys,
         (mem_prefixes _ ys).mpr (prefixS_trans (prefixS_sappend_self ys zs) hpp.1), rfl⟩
 
-/-- **code-laws**, fourth row (B&dM p.242): `reduce list((encode×𝟙)snoc)minlist(R)` refines the
+/-- **code-laws**, fourth row (B&dM p.242): `reduce list((encode×𝟙)snoc)minL(R)` refines the
     branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((encode×𝟙)snoc)est(R)` — `reduce` implements
-    `extend°` (`mem_reduce`) and `minlist R` implements `est(R)`, the list standing in for the set
-    it `setify`s to.  The one inequality is `CL.list_comp_minlist_le`, `setify`'s lax naturality: a
+    `extend°` (`mem_reduce`) and `minL R` implements `est(R)`, the list standing in for the set
+    it `setify`s to.  The one inequality is `CL.list_comp_minL_le`, `setify`'s lax naturality: a
     list of `f`-images of the splits has, as a SET, a `P(f)`-image of the set of splits.  Thinning
     is free on the way in — `prefix°×(⊤+⊤)` is
     reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`

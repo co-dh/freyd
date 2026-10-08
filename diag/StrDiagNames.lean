@@ -152,7 +152,7 @@ attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour
   RelSet.Paragraph.glueAlgFn RelSet.Edit.baseStepFn
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
--- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
+-- the note's `⦇cpL(F)⟨g₁,g₂⟩cat thinL(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
