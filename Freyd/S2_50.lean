@@ -603,7 +603,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
     and cong.rel S (1 ∩ SS°). -/
 theorem quotient_coreflexive_named (amen : AmenableCongruence 𝒜) {a : 𝒜} (S : a ⟶ a)
     (h : amen.largest S ⊑ Cat.id a) :
-    Coreflexive (dom S) ∧ amen.cong.rel S (dom S) := by
+    cor (dom S) ∧ amen.cong.rel S (dom S) := by
   constructor
   · -- dom S = 1 ∩ SS° ⊑ 1, so coreflexive by definition
     exact dom_coreflexive S
@@ -617,7 +617,7 @@ theorem quotient_coreflexive_named (amen : AmenableCongruence 𝒜) {a : 𝒜} (
         (amen.cong.comp_congr hS_rel (amen.cong.recip_congr hS_rel))
     -- dom(S⁺) = S⁺: S⁺ ⊑ 1 implies S⁺ symmetric+idempotent, so
     --   S⁺(S⁺)° = S⁺ S⁺ = S⁺  and  1 ∩ S⁺ = S⁺.
-    have hcoref : Coreflexive (amen.largest S) := h
+    have hcoref : cor (amen.largest S) := h
     obtain ⟨hSym, hIdem⟩ := coreflexive_symmetric_idempotent hcoref
     have hSo : (amen.largest S)° = amen.largest S := symmetric_eq hSym
     have hdom_sp : dom (amen.largest S) = amen.largest S := by

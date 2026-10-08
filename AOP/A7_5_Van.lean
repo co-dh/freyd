@@ -109,7 +109,7 @@ public instance decSecureP (amount : A → Int) (N : Int) (x : Seg A) :
 @[expose] public def secure (amount : A → Int) (N : Int) : dList A ⟶ dList A :=
   corefl (secureP amount N)
 
-public theorem secure_coreflexive : Coreflexive (secure amount N) :=
+public theorem secure_coreflexive : cor (secure amount N) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-! ### `secure` is the coreflexive of the book's p.185 test -/

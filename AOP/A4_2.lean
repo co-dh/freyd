@@ -25,26 +25,26 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- A PREORDER on `a`: reflexive and transitive (B&dM p.86).  Core has no `Preorder` (only
     `Std.IsPreorder`, `Std.PreorderPackage`), so the book's name is free. -/
-@[expose] public def preorder {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
+@[expose] public def PreOrd {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
 
 /-- ANTISYMMETRIC: `R ∩ R° ⊑ id` (B&dM p.86). -/
 @[expose] public def AntiSymmetric {A : 𝒜} (R : A ⟶ A) : Prop := R ∩ R° ⊑ Cat.id A
 
 /-- A PARTIAL ORDER on `a`: a preorder that is also antisymmetric (B&dM p.86). -/
-@[expose] public def PartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := preorder R ∧ AntiSymmetric R
+@[expose] public def PartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := PreOrd R ∧ AntiSymmetric R
 
 /-! ### Closure of preorders/symmetric relations under `°` and `∩` -/
 
 /-- A preorder's reciprocal is a preorder (B&dM p.86). -/
-public theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : preorder R) : preorder R° := by
+public theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : PreOrd R) : PreOrd R° := by
   obtain ⟨hRefl, hTrans⟩ := hR
   refine ⟨?_, ?_⟩
   · have h := recip_mono hRefl; rwa [recip_id] at h
   · have h := recip_mono hTrans; rwa [Allegory.recip_comp] at h
 
 /-- The intersection of two preorders is a preorder (B&dM p.86). -/
-theorem isPreorder_inter {A : 𝒜} {R S : A ⟶ A} (hR : preorder R) (hS : preorder S) :
-    preorder (R ∩ S) := by
+theorem isPreorder_inter {A : 𝒜} {R S : A ⟶ A} (hR : PreOrd R) (hS : PreOrd S) :
+    PreOrd (R ∩ S) := by
   obtain ⟨hRRefl, hRTrans⟩ := hR
   obtain ⟨hSRefl, hSTrans⟩ := hS
   refine ⟨le_inter hRRefl hSRefl, ?_⟩
@@ -63,7 +63,7 @@ theorem symmetric_inter {A : 𝒜} {R S : A ⟶ A} (hR : Symmetric R) (hS : Symm
 
 /-- **B&dM p.86**: if `R` is a preorder then `R ∩ R°` is an equivalence relation
     (the equivalence induced by the preorder). -/
-theorem equivalence_inter_recip {A : 𝒜} {R : A ⟶ A} (hR : preorder R) :
+theorem equivalence_inter_recip {A : 𝒜} {R : A ⟶ A} (hR : PreOrd R) :
     EquivalenceRel (R ∩ R°) := by
   obtain ⟨hRefl, hTrans⟩ := hR
   obtain ⟨hReflRecip, hTransRecip⟩ := isPreorder_recip ⟨hRefl, hTrans⟩
@@ -81,16 +81,16 @@ theorem equivalence_inter_recip {A : 𝒜} {R : A ⟶ A} (hR : preorder R) :
 
 /-- **Ex 4.8**: a coreflexive morphism is transitive (immediate from
     `coreflexive_symmetric_idempotent`'s idempotence half). -/
-theorem coreflexive_transitive {A : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) : Transitive C := by
+theorem coreflexive_transitive {A : 𝒜} {C : A ⟶ A} (hC : cor C) : Transitive C := by
   show C ≫ C ⊑ C
   rw [(coreflexive_symmetric_idempotent hC).2]
   exact le_refl C
 
 /-- **Ex 4.10**: for coreflexive `C : a ⟶ a` and `R S : b ⟶ a`, `(R≫C)∩S = (R∩S)≫C`. -/
-public theorem coreflexive_comp_inter {A B : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) (R S : B ⟶ A) :
+public theorem coreflexive_comp_inter {A B : 𝒜} {C : A ⟶ A} (hC : cor C) (R S : B ⟶ A) :
     (R ≫ C) ∩ S = (R ∩ S) ≫ C := by
   apply le_antisymm
-  · have hCrecip : Coreflexive C° := by
+  · have hCrecip : cor C° := by
       have h := recip_mono hC; rwa [recip_id] at h
     have h1 : (R ≫ C) ∩ S ⊑ (R ∩ S ≫ C°) ≫ C := modular_le R C S
     have h2 : S ≫ C° ⊑ S := by
@@ -107,7 +107,7 @@ public theorem coreflexive_comp_inter {A B : 𝒜} {C : A ⟶ A} (hC : Coreflexi
 
 /-- Mirror of `coreflexive_comp_inter` with `C` on the left: for coreflexive `C : a ⟶ a`
     and `R S : a ⟶ b`, `(C≫R)∩S = C≫(R∩S)`.  (Used to reach both Ex 4.11 identities.) -/
-theorem coreflexive_comp_inter_left {A B : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) (R S : A ⟶ B) :
+theorem coreflexive_comp_inter_left {A B : 𝒜} {C : A ⟶ A} (hC : cor C) (R S : A ⟶ B) :
     (C ≫ R) ∩ S = C ≫ (R ∩ S) := by
   apply le_antisymm
   · have hCsymm : C° = C := symmetric_eq (coreflexive_symmetric_idempotent hC).1
@@ -127,16 +127,16 @@ theorem coreflexive_comp_inter_left {A B : 𝒜} {C : A ⟶ A} (hC : Coreflexive
 /-- **Ex 4.11** (second identity): for coreflexive `C` and `X : a ⟶ a`,
     `(X≫C)∩id = C≫(X∩id)`.  `X∩id` is automatically coreflexive, so `coreflexive_comp_inter`
     and `coreflexive_comp_eq_inter` (§2.121) collapse both sides to `(X∩id)∩C`. -/
-theorem coreflexive_shunt_inter {A : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) (X : A ⟶ A) :
+theorem coreflexive_shunt_inter {A : 𝒜} {C : A ⟶ A} (hC : cor C) (X : A ⟶ A) :
     (X ≫ C) ∩ Cat.id A = C ≫ (X ∩ Cat.id A) := by
-  have hD : Coreflexive (X ∩ Cat.id A) := inter_lb_right X (Cat.id A)
+  have hD : cor (X ∩ Cat.id A) := inter_lb_right X (Cat.id A)
   calc (X ≫ C) ∩ Cat.id A = (X ∩ Cat.id A) ≫ C := coreflexive_comp_inter hC X (Cat.id A)
     _ = (X ∩ Cat.id A) ∩ C := coreflexive_comp_eq_inter hD hC
     _ = C ∩ (X ∩ Cat.id A) := Allegory.inter_comm _ _
     _ = C ≫ (X ∩ Cat.id A) := (coreflexive_comp_eq_inter hC hD).symm
 
 /-- **Ex 4.11** (first identity): for coreflexive `C` and `X : a ⟶ a`, `(X≫C)∩id = (C≫X)∩id`. -/
-theorem coreflexive_shunt_left {A : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) (X : A ⟶ A) :
+theorem coreflexive_shunt_left {A : 𝒜} {C : A ⟶ A} (hC : cor C) (X : A ⟶ A) :
     (X ≫ C) ∩ Cat.id A = (C ≫ X) ∩ Cat.id A := by
   rw [coreflexive_shunt_inter hC X, coreflexive_comp_inter_left hC X (Cat.id A)]
 
@@ -146,7 +146,7 @@ theorem coreflexive_shunt_left {A : 𝒜} {C : A ⟶ A} (hC : Coreflexive C) (X 
   book's modular-law chain: `dom R ⊑ dom(X≫R) ⊑ dom X ⊑ X`. -/
 
 /-- **B&dM 4.11** (mirrored to `dom`): for coreflexive `X : a ⟶ a`, `dom R ⊑ X ↔ R ⊑ X≫R`. -/
-public theorem dom_UP {A B : 𝒜} {R : A ⟶ B} {X : A ⟶ A} (hX : Coreflexive X) :
+public theorem dom_UP {A B : 𝒜} {R : A ⟶ B} {X : A ⟶ A} (hX : cor X) :
     dom R ⊑ X ↔ R ⊑ X ≫ R := by
   constructor
   · intro h

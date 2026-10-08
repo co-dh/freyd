@@ -75,7 +75,7 @@ theorem Salg_inl (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A) :
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 /-- `S`'s cons branch `(p×𝟙) cons ∪ π₂` at `(a,c)`: keep a passing head, or drop it. -/
-public theorem Scons_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+public theorem Scons_apply {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) (a, c) ws
       ↔ (holds p a ∧ ws = ConsList.cons a c) ∨ ws = c := by
   constructor
@@ -86,7 +86,7 @@ public theorem Scons_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c w
     · exact Or.inl ((pcons_apply hC a c ws).mpr h)
     · exact Or.inr h
 
-theorem Salg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+theorem Salg_inr {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     Salg p (Sum.inr (a, c)) ws ↔ (holds p a ∧ ws = ConsList.cons a c) ∨ ws = c := by
   unfold Salg
   exact (junc_sum_inr _ _ _ _).trans (Scons_apply hC a c ws)
@@ -97,7 +97,7 @@ theorem Salg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsLi
     list and then keeping a `p`-passing subsequence of it is keeping one of the tail first, and
     then building with `S`.  (Fusion is blocked — `list(p)` is not entire — so this is proved
     pointwise and fed to the universal property below.) -/
-public theorem filter_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem filter_alg_comm {p : dE A ⟶ dE A} (hC : cor p) :
     (initial Unit A).α ≫ (subseq ≫ listP p)
       = (F Unit A).map (subseq ≫ listP p) ≫ Salg p := by
   rw [listP_cata]
@@ -132,7 +132,7 @@ public theorem filter_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- The `filter-alg` row: `subseq list(p) = ⦇S⦈`, read off the defining equation above by the
     Eilenberg–Wright universal property. -/
-public theorem filter_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : subseq ≫ listP p = cataR (Salg p) := by
+public theorem filter_alg {p : dE A ⟶ dE A} (hC : cor p) : subseq ≫ listP p = cataR (Salg p) := by
   rw [cataR_eq_relCata]
   exact (relCata_UP (initial Unit A) (Salg p) (subseq ≫ listP p)).mp (filter_alg_comm hC)
 
@@ -163,7 +163,7 @@ public theorem filter_mono_step2 (p : dE A ⟶ dE A) :
 
 /-- **`filter-mono`'s third step**: `(p×R°) cons ∪ π₂R° ⊑ (p×𝟙) cons R° ∪ π₂R°` — the `cons`
     operand slides its `R°` out, which is `takewhile-mono`'s own step. -/
-public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap p (R (A := A))° ≫ consR
         ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))°
       ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ R°
@@ -175,7 +175,7 @@ public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- The `filter-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step lands
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
-public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap (𝟙 (dE A)) (R (A := A))°
         ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
       ⊑ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ R° :=
@@ -195,7 +195,7 @@ public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
-public theorem filter_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem filter_mono {p : dE A ⟶ dE A} (hC : cor p) :
     Freyd.Alg.Pres (F := F Unit A) (Salg p) R° := by
   show (F Unit A).map R° ≫ Salg p ⊑ Salg p ≫ R°
   apply le_iff.mpr
@@ -221,7 +221,7 @@ public theorem filter_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
     every `p`-subsequence collected and one chosen at the end. -/
-public theorem filter_greedy {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem filter_greedy {p : dE A ⟶ dE A} (hC : cor p) :
     cataR ((Salg p)%∋ ≫ est(R°)) ⊑ (cataR (Salg p))%∋ ≫ est(R°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact greedy (initial Unit A) lenLE_recip_trans (filter_mono hC)
@@ -283,7 +283,7 @@ public theorem filter_step3 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     `(a,xs)` the union is `{cons(a,xs),xs}` where `p` holds on `a` and `{xs}` where it fails, and
     `xs` loses the first.  The head is dropped, not the whole tail: the one place `π₂` shows
     against takewhile's `⊸ nil`. -/
-public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_step4 {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
@@ -327,7 +327,7 @@ public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
     The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
     `⊸ nil`. -/
-public theorem filter_step {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_step {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     (Salg p)%∋ ≫ est(R°)
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) :=
@@ -338,7 +338,7 @@ public theorem filter_step {p : dE A ⟶ dE A} (hC : Coreflexive p)
     program's algebra is the greedy one (`filter_step`), Theorem 7.2 puts its fold below the
     transposed fold's choice (`filter_greedy`), that fold is the specification's relation
     (`filter_alg`), and the result is `filter` by definition. -/
-public theorem filter_cata_le {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_cata_le {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
       ⊑ filter p :=
@@ -390,7 +390,7 @@ public theorem subseqP_eq_of_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y 
       · exact absurd (Nat.le_trans hlen (subseqP_clen_le hs)) (Nat.not_succ_le_self _)
 
 /-- Achievability: `filtCL p u` is itself a `p`-passing subsequence of `u`. -/
-public theorem filt_sound {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filt_sound {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     ∀ u : ConsList Unit A, (subseq ≫ listP p) u (filtCL p u)
   | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listP_wrap p () _).mpr (filtCL_wrap p D)⟩
@@ -404,7 +404,7 @@ public theorem filt_sound {p : dE A ⟶ dE A} (hC : Coreflexive p)
 
 /-- Domination: every `p`-passing subsequence is a subsequence of `filtCL p u` — a subsequence
     that drops a passing element is beaten by the one that keeps it. -/
-public theorem filt_best {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filt_best {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     ∀ (u : ConsList Unit A) (ws : ConsList Unit A), (subseq ≫ listP p) u ws → subseqP ws (filtCL p u)
   | ConsList.wrap D, ws, ⟨ys, hs, hl⟩ => by
@@ -435,7 +435,7 @@ public theorem filt_best {p : dE A ⟶ dE A} (hC : Coreflexive p)
 /-- The simplicity row: `filter(p)° filter(p) ⊑ 𝟙`.  NOT the takewhile argument — two
     `p`-subsequences of one list can be of equal length and different — but through `filtCL`:
     a longest `p`-subsequence is a subsequence of `filtCL p u` of its length, hence IS it. -/
-public theorem filter_simple {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_simple {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] : Simple (filter p) := by
   show (filter p)° ≫ filter p ⊑ 𝟙 _
   apply le_iff.mpr
@@ -453,7 +453,7 @@ public theorem filter_simple {p : dE A ⟶ dE A} (hC : Coreflexive p)
 /-- **Ex 7.41's headline** (the note's `filter-deriv`): `filter(p) = ⦇[nil,(π₁p→cons,π₂)]⦈`.
     The greedy `⊒` becomes `=`: the program is entire (a reduce of maps) and the specification
     is simple, so `eq_of_le_entire_simple` closes the gap. -/
-public theorem filter_eq_cata {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_eq_cata {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     filter p
       = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) := by
@@ -465,7 +465,7 @@ public theorem filter_eq_cata {p : dE A ⟶ dE A} (hC : Coreflexive p)
 
 /-- The entirety row: `Λ(subseq list(p)) est(R°)` is entire — `nil` is always a `p`-subsequence
     and a longest one exists; read off the headline, whose program is a reduce of maps. -/
-public theorem filter_entire {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem filter_entire {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] : Entire (filter p) := by
   rw [filter_eq_cata hC, ← filter_emerges p]
   exact graph_entire _

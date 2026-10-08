@@ -192,7 +192,7 @@ public theorem modular_le {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ 
 @[expose] public def Transitive {a : 𝒜} (R : a ⟶ a) : Prop := R ≫ R ⊑ R
 
 /-- R is COREFLEXIVE if R ⊑ 1 (§2.12). -/
-@[expose] public def Coreflexive {a : 𝒜} (R : a ⟶ a) : Prop := R ⊑ Cat.id a
+@[expose] public def cor {a : 𝒜} (R : a ⟶ a) : Prop := R ⊑ Cat.id a
 
 /-! ### Symmetric iff R = R° -/
 
@@ -234,7 +234,7 @@ public theorem recip_id {a : 𝒜} : (Cat.id a)° = Cat.id a := by
     Proof chain: R ⊑ RR°R (modular law) ⊑ R° (since R ⊑ 1), so R ⊑ R°.
     Taking ° gives R° ⊑ R, hence symmetric.  Idempotent: R = R° gives
     R ⊑ R²R ⊑ R² (from modular law + R⊑1) and R² ⊑ 1R = R. -/
-public theorem coreflexive_symmetric_idempotent {a : 𝒜} {R : a ⟶ a} (h : Coreflexive R) :
+public theorem coreflexive_symmetric_idempotent {a : 𝒜} {R : a ⟶ a} (h : cor R) :
     Symmetric R ∧ R ≫ R = R := by
   -- h: R ⊑ 1
   have h_le_one : R ⊑ Cat.id a := h
@@ -296,11 +296,11 @@ public theorem coreflexive_symmetric_idempotent {a : 𝒜} {R : a ⟶ a} (h : Co
 /-! ## §2.121  Coreflexive composition
 
   For coreflexive morphisms, AB = A ∩ B (§2.121). -/
-public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : Coreflexive A) (hB : Coreflexive B) :
+public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : cor A) (hB : cor B) :
     A ≫ B = A ∩ B := by
   -- A∩B is also coreflexive (it's below A which is below 1)
-  have h_inter_coref : Coreflexive (A ∩ B) := by
-    dsimp [Coreflexive]
+  have h_inter_coref : cor (A ∩ B) := by
+    dsimp [cor]
     -- A∩B ⊑ A ⊑ 1, so A∩B ⊑ 1 by transitivity (but we need the equation: (A∩B)∩1 = A∩B)
     -- Actually A∩B ⊑ 1 because inter_lb_left gives A∩B ⊑ A and hA: A ⊑ 1
     apply le_trans (inter_lb_left A B) hA
@@ -331,7 +331,7 @@ public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : Corefl
 @[expose] public def ran {a b : 𝒜} (R : a ⟶ b) : b ⟶ b := dom R°
 
 /-- Domain is coreflexive (§2.122). -/
-public theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : Coreflexive (dom R) :=
+public theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : cor (dom R) :=
   inter_lb_left (Cat.id a) (R ≫ R°)
 
 /-- dom is symmetric: (dom R)° = dom R. -/
@@ -378,7 +378,7 @@ public theorem dom_inter {a b : 𝒜} (R S : a ⟶ b) : dom (R ∩ S) = Cat.id a
     rw [h_eq1]
     -- Step 2: 1 ∩ (R∩S) R° = 1 ∩ R (R°∩S°)  (via recip symmetry of coreflexives)
     have h_eq2 : Cat.id a ∩ ((R ∩ S) ≫ R°) = Cat.id a ∩ (R ≫ (R° ∩ S°)) := by
-      have h_coref : Coreflexive (Cat.id a ∩ (R ≫ (R° ∩ S°))) :=
+      have h_coref : cor (Cat.id a ∩ (R ≫ (R° ∩ S°))) :=
         inter_lb_left _ _
       have h_symm : Symmetric (Cat.id a ∩ (R ≫ (R° ∩ S°))) :=
         (coreflexive_symmetric_idempotent h_coref).1
@@ -953,7 +953,7 @@ public theorem tabulation_unique_iso {a b c c' : 𝒜} {f : c ⟶ a} {g : c ⟶ 
 -- §2.145: If a coreflexive morphism A is tabular then ∃ monic map h with A = h°h.
 /-- §2.145: if a coreflexive `A` is tabular by `(f,g)` then `g = f` (by [2.133]) and `f` is
     a monic map with `A = f°f`.  (`g ⊑ ff°g ⊑ fA ⊑ f`, so `g = f`; clearly `ff° = 1`.) -/
-theorem coreflexive_tabular_monic {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) (hTab : Tabular A) :
+theorem coreflexive_tabular_monic {a : 𝒜} {A : a ⟶ a} (hA : cor A) (hTab : Tabular A) :
     ∃ (c : 𝒜) (h : c ⟶ a), Map h ∧ Freyd.Monic h ∧ A = h° ≫ h ∧ h ≫ h° = Cat.id c := by
   obtain ⟨c, f, g, hf_map, hg_map, hA_eq, h_tab_eq⟩ := hTab
   have hidff : Cat.id c ⊑ f ≫ f° := h_tab_eq ▸ inter_lb_left _ _
@@ -1127,7 +1127,7 @@ theorem split_symm_idem_recip {a c : 𝒜} {R : a ⟶ c} {S : c ⟶ a} {T : a �
 
 -- §2.163: A coreflexive morphism A is a split idempotent iff A is tabular.
 -- Split form (source-apex): ∃ map h : c → a with h°≫h = A and h≫h° = id_c.
-theorem coreflexive_split_iff_tabular {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) :
+theorem coreflexive_split_iff_tabular {a : 𝒜} {A : a ⟶ a} (hA : cor A) :
     (∃ (c : 𝒜) (h : c ⟶ a), Map h ∧ h° ≫ h = A ∧ h ≫ h° = Cat.id c) ↔ Tabular A := by
   constructor
   · -- Split ⟹ Tabular: tabulate A by the pair (h, h).

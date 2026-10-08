@@ -698,7 +698,7 @@ variable {𝒜 : Type u}
     `C ⊑ id ∩ R≫R° = dom R`. -/
 public theorem id_inter_le_dom [Allegory 𝒜] {a : 𝒜} (R : a ⟶ a) :
     Cat.id a ∩ R ⊑ dom R := by
-  have hcor : Coreflexive (Cat.id a ∩ R) := inter_lb_left _ _
+  have hcor : cor (Cat.id a ∩ R) := inter_lb_left _ _
   have hidem : (Cat.id a ∩ R) ≫ (Cat.id a ∩ R)° = Cat.id a ∩ R := by
     have h := coreflexive_symmetric_idempotent hcor
     rw [symmetric_eq h.1]; exact h.2
@@ -822,7 +822,7 @@ public theorem map_retr_leg {A : Type u} [Allegory A] {p q : A} {u : p ⟶ q} {w
     exact ⟨⟨⟨hm, hhm⟩, hh1, hh2⟩⟩)
 
 /-- Helper for mapHasEqualizer: extract the splitting data via Classical.choice. -/
-private noncomputable def mapCorSplit {a : A} {R : a ⟶ a} (hcor : Coreflexive R) :
+private noncomputable def mapCorSplit {a : A} {R : a ⟶ a} (hcor : cor R) :
     PSigma fun c : A => PSigma fun g : c ⟶ a =>
         Map g ∧ g° ≫ g = R ∧ g ≫ g° = Cat.id c :=
   Classical.choice (by
@@ -2172,7 +2172,7 @@ public theorem corOf_invImage {B C : MapObj A}
   rw [hRR, ← dom_eq_dom_comp_recip]
 
 /-- Extract the splitting of a coreflexive as Type-valued data via `Classical.choice`. -/
-private noncomputable def corSplitData {B : A} {R : B ⟶ B} (hcor : Coreflexive R) :
+private noncomputable def corSplitData {B : A} {R : B ⟶ B} (hcor : cor R) :
     PSigma fun u : A => PSigma fun e : u ⟶ B =>
         Map e ∧ e° ≫ e = R ∧ e ≫ e° = Cat.id u :=
   Classical.choice (by
@@ -2181,14 +2181,14 @@ private noncomputable def corSplitData {B : A} {R : B ⟶ B} (hcor : Coreflexive
 
 /-- Build a subobject of `B` from a coreflexive `R` on `B` by splitting it: the splitting map
     `e : u → B` is monic in Map(𝒜) (a retraction), and `corOf (splitSub R) = R`. -/
-public noncomputable def splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
+public noncomputable def splitSub {B : MapObj A} {R : B ⟶ B} (hcor : cor R) :
     @Subobject (MapObj A) (mapCat (𝒜 := A)) B :=
   let d := corSplitData hcor
   @Subobject.mk (MapObj A) (mapCat (𝒜 := A)) B d.1 ⟨d.2.1, d.2.2.1⟩
     (map_retract_monic d.2.2.1 d.2.2.2.2)
 
 /-- The coreflexive recovered from `splitSub` is the original `R`. -/
-public theorem corOf_splitSub {B : MapObj A} {R : B ⟶ B} (hcor : Coreflexive R) :
+public theorem corOf_splitSub {B : MapObj A} {R : B ⟶ B} (hcor : cor R) :
     corOf (splitSub hcor) = R :=
   (corSplitData hcor).2.2.2.1
 
@@ -2430,7 +2430,7 @@ variable {A : Type u} [TabularUnitaryDivisionAllegory A]
   Cat.id b ∩ (f.val \ (DivisionAllegory.div (oneHeyting A') f.val°))
 
 public theorem rightAdjCor_coref {a b : MapObj A}
-    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) (A' : a ⟶ a) : Coreflexive (rightAdjCor f A') :=
+    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) (A' : a ⟶ a) : cor (rightAdjCor f A') :=
   inter_lb_left _ _
 
 /-- **§2.32 adjunction (coreflexive form)**: for a map `f : a → b`, coreflexive `A` on `a`
@@ -2438,7 +2438,7 @@ public theorem rightAdjCor_coref {a b : MapObj A}
         `(1 ∩ f c f°) ⊑ A   ↔   c ⊑ rightAdjCor f A`. -/
 public theorem rightAdjCor_adj {a b : MapObj A}
     (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b) {A' : a ⟶ a} {c : b ⟶ b}
-    (hc : Coreflexive c) :
+    (hc : cor c) :
     (Cat.id a ∩ (f.val ≫ c ≫ f.val°)) ⊑ A' ↔ c ⊑ rightAdjCor f A' := by
   have hf : Map f.val := f.property
   -- c ⊑ 1_b ∩ D  ↔  c ⊑ D   (c ⊑ 1_b)
@@ -2460,7 +2460,7 @@ public theorem rightAdjCor_adj {a b : MapObj A}
       -- LHS: InverseImage f B' ≤ A'  ↔  corOf (InverseImage f B') ⊑ corOf A'
       rw [le_iff_corOf_le, le_iff_corOf_le, corOf_splitSub,
           corOf_invImage f B',
-          dom_map_coref f.val f.property (show Coreflexive (corOf B') from (subArr_map B').2)]
+          dom_map_coref f.val f.property (show cor (corOf B') from (subArr_map B').2)]
       -- goal: (1 ∩ f (corOf B') f°) ⊑ corOf A'  ↔  corOf B' ⊑ rightAdjCor f (corOf A')
       exact rightAdjCor_adj f (subArr_map B').2)
 

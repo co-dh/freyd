@@ -94,7 +94,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L :
     `≼`-ordered, so `g` may run before the order test. -/
 public theorem ordered_comp_le_of_subseq
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
-    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hord : cor (ordered ≼)) (hsub : g ⊑ subseq)
     (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
     ordered ≼ ≫ g ⊑ g ≫ ordered ≼ := by
   have h1 : ordered ≼ ≫ g ⊑ subseq ≫ ordered ≼ := le_trans (comp_mono_left _ hsub) hos
@@ -108,7 +108,7 @@ public theorem ordered_comp_le_of_subseq
 /-- Step 1: `ordered_comp_le_of_subseq` under `setify°`. -/
 public theorem sortRel_comp_le_step1 (setify : L.obj A ⟶ P A)
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
-    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hord : cor (ordered ≼)) (hsub : g ⊑ subseq)
     (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
     setify° ≫ ordered ≼ ≫ g ⊑ setify° ≫ g ≫ ordered ≼ :=
   comp_mono_left _ (ordered_comp_le_of_subseq L hord hsub hos)
@@ -168,7 +168,7 @@ public theorem sortRel_comp_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
     {T : P A ⟶ P A}
-    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hord : cor (ordered ≼)) (hsub : g ⊑ subseq)
     (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
     (hspec : g ≫ setify ⊑ setify ≫ T) :
     sortRel L setify ordered ≼ ≫ g ⊑ T ≫ sortRel L setify ordered ≼ := by
@@ -184,7 +184,7 @@ public theorem sortRel_comp_filter_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A}
     {subseq filterp : L.obj A ⟶ L.obj A} {p : A ⟶ A}
-    (hord : Coreflexive (ordered ≼)) (hsub : filterp ⊑ subseq)
+    (hord : cor (ordered ≼)) (hsub : filterp ⊑ subseq)
     (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
     (hspec : filterp ≫ setify ⊑ setify ≫ existsImage p) :
     sortRel L setify ordered ≼ ≫ filterp ⊑ existsImage p ≫ sortRel L setify ordered ≼ :=
@@ -199,7 +199,7 @@ public theorem sortRel_comp_filter_le
 public theorem sortRel_comp_minL_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {minL : L.obj A ⟶ A} {R : A ⟶ A}
-    (hord : Coreflexive (ordered ≼))
+    (hord : cor (ordered ≼))
     (hmem : minL ⊑ setify ≫ ∋ A)
     (hleast : (setify ≫ ∋ A)° ≫ minL ⊑ R°) :
     sortRel L setify ordered ≼ ≫ minL ⊑ est R := by
@@ -452,7 +452,7 @@ public theorem minL_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
         · exact hm.2 z hz'
 
 /-- `Preorder(Q)` in `Rel`, pointwise: reflexive and transitive. -/
-public theorem preorder_apply {Q : dE A ⟶ dE A} (h : preorder Q) :
+public theorem preorder_apply {Q : dE A ⟶ dE A} (h : PreOrd Q) :
     (∀ a, Q a a) ∧ ∀ a b c, Q a b → Q b c → Q a c :=
   ⟨fun a => le_iff.mp h.1 a a rfl, fun a b c hab hbc => le_iff.mp h.2 a c ⟨b, hab, hbc⟩⟩
 
@@ -464,7 +464,7 @@ public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.connected Q) :
 
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
     the fold `⦇[nil,bump(Q)]⦈` sends `xs` to `[minL Q xs]` — thinning comes down to one element. -/
-public theorem bumpFold_eq_singleton_minL {Q : dE A ⟶ dE A} (hQ : preorder Q)
+public theorem bumpFold_eq_singleton_minL {Q : dE A ⟶ dE A} (hQ : PreOrd Q)
     (hc : Freyd.Alg.connected Q) (a : A) (xs ys : ConsList Unit A) :
     bumpFold Q (ConsList.cons a xs) ys
       ↔ ∃ w, minL Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
@@ -598,7 +598,7 @@ public theorem subseqP_of_bumpFold (Q : dE A ⟶ dE A) :
 /-- For a preorder `Q`, every member of the input of `⦇[nil,bump(Q)]⦈` has a `Q`-lower bound in
     its output: reflexivity covers a kept element, transitivity passes on what a bumped head
     covered. -/
-public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
+public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : PreOrd Q) :
     ∀ {x ys : ConsList Unit A}, bumpFold Q x ys → ∀ z, inlistP x z → ∃ w, Q w z ∧ inlistP ys w
   | ConsList.wrap _, _, _, _, hz => hz.elim
   | ConsList.cons c d, ys, h, z, hz => by
@@ -630,7 +630,7 @@ public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
 
 /-- The fold `⦇[nil,bump(Q)]⦈` is an implementation of `thinL(Q)` (B&dM p.200) when `Q` is a
     preorder: it only drops elements, and every dropped element is covered by a kept one. -/
-public theorem bumpFold_le_thinL {Q : dE A ⟶ dE A} (hQ : preorder Q) :
+public theorem bumpFold_le_thinL {Q : dE A ⟶ dE A} (hQ : PreOrd Q) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
       : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinL Q := by
   rw [← bumpFold_eq]
@@ -683,7 +683,7 @@ public theorem sort_comp_minL_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
   rwa [Cat.id_comp] at this
 
 /-- `list(p)` at a coreflexive `p` relates a list only to itself. -/
-public theorem listP_eq_of_coreflexive {p : dE A ⟶ dE A} (hp : Coreflexive p)
+public theorem listP_eq_of_coreflexive {p : dE A ⟶ dE A} (hp : cor p)
     {z ys : ConsList Unit A} (h : listP p z ys) : z = ys :=
   (listP_id z ys).mp (le_iff.mp (list_mono hp) z ys h)
 
@@ -696,7 +696,7 @@ public theorem subseqP_cons_cases {a : A} {x : ConsList Unit A} : ∀ {z : ConsL
 
 /-- A longest `p`-passing subsequence of `x` keeps every element of `x` that passes `p`: one that
     dropped it could put it back and be longer. -/
-public theorem inlistP_of_longest {p : dE A ⟶ dE A} (hp : Coreflexive p) {w : A} (hw : p w w) :
+public theorem inlistP_of_longest {p : dE A ⟶ dE A} (hp : cor p) {w : A} (hw : p w w) :
     ∀ (x ys : ConsList Unit A), (subseq ≫ list p) x ys →
       (∀ zs, (subseq ≫ list p) x zs → clen zs ≤ clen ys) → inlistP x w → inlistP ys w
   | ConsList.wrap _, _, _, _, hx => hx.elim
@@ -717,7 +717,7 @@ public theorem inlistP_of_longest {p : dE A ⟶ dE A} (hp : Coreflexive p) {w : 
 /-- **(8.9)** in `Rel` (book p.201), `sort(≼)·filter p ⊑ E p·sort(≼)`, `p` a coreflexive as the
     book assumes: `filter(p)` (§7.7, `Filter.filter`) only drops elements, and a longest
     `p`-passing subsequence keeps every passer, so it lists `E(p)` of the set. -/
-public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A} (p : dE A ⟶ dE A) (hp : Coreflexive p) :
+public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A} (p : dE A ⟶ dE A) (hp : cor p) :
     sortRel listRelator setify ordered ≼ ≫ Filter.filter p
       ⊑ existsImage p ≫ sortRel listRelator setify ordered ≼ := by
   refine Freyd.Alg.sortRel_comp_filter_le listRelator (graph_map _) (ordered_coreflexive ≼) ?_
@@ -1288,7 +1288,7 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: both conditions on
     `merge(≼)` are theorems, so the order's two properties are all that is left. -/
 public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
-    (h : preorder ≼) (hc : Freyd.Alg.connected ≼) :
+    (h : PreOrd ≼) (hc : Freyd.Alg.connected ≼) :
     prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
         (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼) ≫ merge ≼
       ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼ :=
@@ -1359,7 +1359,7 @@ public theorem sortRel_mono {X Y : dE A ⟶ dE A} (h : X ⊑ Y) :
     monotonic, past `list(f)` by (8.8), past `filter(p)` by (8.9), then `E(f) = P(f)` and the
     transpose absorbs `E(fp)`. -/
 public theorem Fmap_sort_comp_cpL_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
-    (p : dE A ⟶ dE A) (hp : Coreflexive p) {«≼» : dE A ⟶ dE A}
+    (p : dE A ⟶ dE A) (hp : cor p) {«≼» : dE A ⟶ dE A}
     (hmono : Freyd.Alg.Pres (F := CL.F L E) (graph f) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL ≫ list (graph f)
         ≫ Filter.filter p
@@ -1411,7 +1411,7 @@ public theorem filter_id : Filter.filter (𝟙 (dE A)) = 𝟙 (dList A) := by
     exact Filter.subseqP_clen_le hu
 
 /-- `⊤` is a preorder: it relates everything. -/
-public theorem preorder_topMor : preorder (topMor (dE A) (dE A)) :=
+public theorem preorder_topMor : PreOrd (topMor (dE A) (dE A)) :=
   ⟨le_iff.mpr fun a b _ => RelSet.topMor_apply a b, le_iff.mpr fun a b _ => RelSet.topMor_apply a b⟩
 
 /-- `⊤` is connected: it relates everything. -/
@@ -1424,8 +1424,8 @@ public theorem connected_topMor : Freyd.Alg.connected (topMor (dE A) (dE A)) :=
     the two sorted sets, `Λ` of the union splits by `cup`, and (8.6) exchanges `thinL(Q)` for
     `thin(Q)`. -/
 public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
-    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q : dE A ⟶ dE A} (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
+    (hp₁ : cor p₁) (hp₂ : cor p₂)
+    {«≼» Q : dE A ⟶ dE A} (hP : PreOrd ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
@@ -1541,11 +1541,11 @@ public theorem cup_laxNatural :
     algebra by `sortedAlg_fusion`, (8.7) reads the minimum off the sorted list, and Corollary 8.1
     puts `thin Q` inside the fold.  No set is ever built. -/
 public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
-    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
+    (hp₁ : cor p₁) (hp₂ : cor p₂)
+    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : PreOrd Q) (hR : PreOrd R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
+    (hP : PreOrd ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (cpL ≫ (relProd (dList A) (dList A)).pair
@@ -1571,11 +1571,11 @@ calc_steps thinningList
 /-- **THEOREM 8.2** at the implementation `⦇[nil,bump(Q)]⦈` of `thinL(Q)`: the fold and
     composition are monotonic, so the smaller algebra gives the smaller fold. -/
 public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
-    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
+    (hp₁ : cor p₁) (hp₂ : cor p₂)
+    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : PreOrd Q) (hR : PreOrd R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
+    (hP : PreOrd ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (cpL ≫ (relProd (dList A) (dList A)).pair

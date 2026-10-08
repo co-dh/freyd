@@ -250,11 +250,11 @@ public theorem Relator.map_inter_le {𝒜 : Type u₁} {ℬ : Type u₂}
 
 public theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
-    {A : 𝒜} {X Y : A ⟶ A} (hX : Coreflexive X) (hY : Coreflexive Y) :
+    {A : 𝒜} {X Y : A ⟶ A} (hX : cor X) (hY : cor Y) :
     F.map (X ∩ Y) = F.map X ∩ F.map Y := by
-  have hFX : Coreflexive (F.map X) := by
+  have hFX : cor (F.map X) := by
     have := F.map_mono hX; rwa [F.map_id] at this
-  have hFY : Coreflexive (F.map Y) := by
+  have hFY : cor (F.map Y) := by
     have := F.map_mono hY; rwa [F.map_id] at this
   rw [← coreflexive_comp_eq_inter hX hY, F.map_comp, coreflexive_comp_eq_inter hFX hFY]
 
@@ -268,7 +268,7 @@ public theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂
 public theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
     {A B : 𝒜} (R : A ⟶ B) : F.map (dom R) = dom (F.map R) := by
-  have hcoref : Coreflexive (F.map (dom R)) := by
+  have hcoref : cor (F.map (dom R)) := by
     have := F.map_mono (dom_coreflexive R); rwa [F.map_id] at this
   apply le_antisymm
   · have h2 : F.map (dom R) ⊑ F.map R ≫ (F.map R)° := by

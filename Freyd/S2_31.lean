@@ -255,7 +255,7 @@ end OneObj
 
 /-- The coreflexives (subidentities) on `a`: `{R : a ⟶ a // R ⊑ 1}`. -/
 @[expose] public def Cor {𝒜 : Type u} [DivisionAllegory 𝒜] (a : 𝒜) : Type v :=
-  {R : a ⟶ a // Coreflexive R}
+  {R : a ⟶ a // cor R}
 
 namespace Cor
 

@@ -179,7 +179,7 @@ public theorem div_comp_assoc {a b c d : 𝒜} (R : a ⟶ d) (S₁ : b ⟶ c) (S
 /-- Heyting adjointness for coreflexive morphisms (§2.316):
     if A, B, C : a → a are coreflexive, then A ≫ C ⊑ B ↔ C ⊑ 1 ∩ B/A. -/
 public theorem heyting_adj_coref {a : 𝒜} {A B C : a ⟶ a}
-    (hA : Coreflexive A) (hC : Coreflexive C) :
+    (hA : cor A) (hC : cor C) :
     A ≫ C ⊑ B ↔ C ⊑ heytingImpl A B := by
   -- Coreflexive morphisms commute: A≫C = A∩C = C∩A = C≫A
   have hac_comm : A ≫ C = C ≫ A :=
@@ -440,7 +440,7 @@ theorem leftDiv_div_recip {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (T : c �
     Backward: `S/ₛS` is itself symmetric (`symmDiv_recip`) and satisfies `(S/ₛS)S ⊑ S`, so the
     hypothesis forces `S/ₛS ⊑ 1`, i.e. `S` is straight. -/
 theorem straight_iff_symmetric_invariant_coreflexive {a b : 𝒜} (S : a ⟶ b) :
-    Straight S ↔ ∀ (T : a ⟶ a), Symmetric T → T ≫ S ⊑ S → Coreflexive T := by
+    Straight S ↔ ∀ (T : a ⟶ a), Symmetric T → T ≫ S ⊑ S → cor T := by
   constructor
   · intro hstr T hsym hTS
     have hTsd : T ⊑ S /ₛ S :=
@@ -610,7 +610,7 @@ public theorem dom_comp_self [Allegory 𝒜] {a b : 𝒜} (R : a ⟶ b) : dom R 
 /-- `Simple (E ≫ F)` when `E` is coreflexive and `F` simple
     (E°E ⊑ 1 so (EF)°(EF) = F°(E°E)F ⊑ F°F ⊑ 1). -/
 public theorem simple_coref_comp {a c : 𝒜} {E : c ⟶ c} {F : c ⟶ a}
-    (hE : Coreflexive E) (hF : Simple F) : Simple (E ≫ F) := by
+    (hE : cor E) (hF : Simple F) : Simple (E ≫ F) := by
   dsimp [Simple]
   have hErec : E° ⊑ Cat.id c := by have := recip_mono hE; rwa [recip_id] at this
   have hEE : E° ≫ E ⊑ Cat.id c := by
@@ -639,7 +639,7 @@ theorem dom_comm {a b₁ b₂ : 𝒜} (F : a ⟶ b₁) (G : a ⟶ b₂) :
       (coreflexive_comp_eq_inter (dom_coreflexive G) (dom_coreflexive F)).symm)
 
 /-- Coreflexive sandwich: for coreflexive `E`, `1 ∩ (E ≫ X ≫ E°) = E ∩ X`. -/
-theorem coref_sandwich {c : 𝒜} (E : c ⟶ c) (X : c ⟶ c) (hE : Coreflexive E) :
+theorem coref_sandwich {c : 𝒜} (E : c ⟶ c) (X : c ⟶ c) (hE : cor E) :
     Cat.id c ∩ (E ≫ X ≫ E°) = E ∩ X := by
   have hEsym : E° = E := symmetric_eq (coreflexive_symmetric_idempotent hE).1
   have hEidem : E ≫ E = E := (coreflexive_symmetric_idempotent hE).2
@@ -666,7 +666,7 @@ theorem coref_sandwich {c : 𝒜} (E : c ⟶ c) (X : c ⟶ c) (hE : Coreflexive 
   · apply le_inter
     · exact le_trans (inter_lb_left _ _) hE
     · -- E ∩ X ⊑ E X E°: C := E∩X coreflexive, C = C C C ⊑ E X E°
-      have hC : Coreflexive (E ∩ X) := le_trans (inter_lb_left _ _) hE
+      have hC : cor (E ∩ X) := le_trans (inter_lb_left _ _) hE
       have hCidem : (E ∩ X) ≫ (E ∩ X) = E ∩ X := (coreflexive_symmetric_idempotent hC).2
       calc E ∩ X
           = (E ∩ X) ≫ (E ∩ X) ≫ (E ∩ X) := by rw [hCidem, hCidem]
@@ -678,7 +678,7 @@ theorem coref_sandwich {c : 𝒜} (E : c ⟶ c) (X : c ⟶ c) (hE : Coreflexive 
             rw [hEsym]; exact inter_lb_left _ _
 
 /-- `dom (E ≫ F) = E ∩ dom F` for coreflexive `E` (instance of `coref_sandwich`). -/
-theorem dom_coref_comp {a c : 𝒜} (E : c ⟶ c) (F : c ⟶ a) (hE : Coreflexive E) :
+theorem dom_coref_comp {a c : 𝒜} (E : c ⟶ c) (F : c ⟶ a) (hE : cor E) :
     dom (E ≫ F) = E ∩ dom F := by
   have hEsym : E° = E := symmetric_eq (coreflexive_symmetric_idempotent hE).1
   -- RHS: E ∩ dom F = E ∩ (F ≫ F°), since E ⊑ 1
@@ -909,7 +909,7 @@ theorem domSimplicity_eq {a b : 𝒜} (R : a ⟶ b) :
     symmDiv characterization: AR ⊑ R and (AR)°R ⊑ 1.
     (The book's proof of the equivalence with Simple uses A°A = A for coreflexive A.) -/
 public theorem simplePart_largest {a b : 𝒜} (R : a ⟶ b) (A : a ⟶ a)
-    (hA : Coreflexive A) (hAR : (A ≫ R)° ≫ R ⊑ Cat.id b) :
+    (hA : cor A) (hAR : (A ≫ R)° ≫ R ⊑ Cat.id b) :
     A ≫ R ⊑ simplePart R := by
   dsimp [simplePart]
   rw [le_symmDiv_iff (A ≫ R) R (Cat.id b)]
@@ -1137,7 +1137,7 @@ public theorem psi_phi {a : 𝒜} (R : a ⟶ a) : psiCor (phiCor R) = R :=
     `(f, g)` are maps with `f ≫ f° ∩ g ≫ g° = 1_γ` (jointly monic).  I.e.
     `1_γ ∩ f ≫ (f° ≫ c ≫ g) ≫ g° = c`. -/
 public theorem tab_corecover {a γ : 𝒜} {c : γ ⟶ γ} {f g : γ ⟶ a} (hfm : Map f) (hgm : Map g)
-    (hjm : f ≫ f° ∩ g ≫ g° = Cat.id γ) (hc : Coreflexive c) :
+    (hjm : f ≫ f° ∩ g ≫ g° = Cat.id γ) (hc : cor c) :
     Cat.id γ ∩ f ≫ (f° ≫ c ≫ g) ≫ g° = c := by
   have hfe : Cat.id γ ⊑ f ≫ f° := by
     have := hfm.1; rw [Entire, dom] at this; exact this ▸ inter_lb_right _ _
@@ -1217,7 +1217,7 @@ public theorem psiCor_mono {a : 𝒜} {c d : (topTab a).1 ⟶ (topTab a).1} (h :
 
 /-- `φ(ψ(c)) = c` for coreflexive `c` (specialization of `tab_corecover` to the chosen
     tabulation of `⊤_a`). -/
-public theorem phi_psi {a : 𝒜} {c : (topTab a).1 ⟶ (topTab a).1} (hc : Coreflexive c) :
+public theorem phi_psi {a : 𝒜} {c : (topTab a).1 ⟶ (topTab a).1} (hc : cor c) :
     phiCor (psiCor c) = c :=
   tab_corecover
     (TabularAllegory.tabular (topMor a a)).choose_spec.choose_spec.choose_spec.1
@@ -1234,7 +1234,7 @@ public theorem phiCor_le_iff {a : 𝒜} (X Y : a ⟶ a) : phiCor X ⊑ phiCor Y 
 
 /-- `ψ`-`φ` Galois iff for coreflexive targets: `Z ⊑ ψ(c) ↔ φ(Z) ⊑ c`. -/
 public theorem le_psiCor_iff {a : 𝒜} (Z : a ⟶ a) {c : (topTab a).1 ⟶ (topTab a).1}
-    (hc : Coreflexive c) : Z ⊑ psiCor c ↔ phiCor Z ⊑ c := by
+    (hc : cor c) : Z ⊑ psiCor c ↔ phiCor Z ⊑ c := by
   constructor
   · intro h
     have := phiCor_mono h
@@ -1250,7 +1250,7 @@ public theorem phiCor_inter {a : 𝒜} (X Y : a ⟶ a) : phiCor (X ∩ Y) = phiC
   · -- φX ∩ φY ⊑ φ(X∩Y): both coreflexive; transport back via ψ and the meet-on-Cor.
     have hle : phiCor X ∩ phiCor Y ⊑ phiCor (X ∩ Y) := by
       -- ψ(φX ∩ φY) ⊑ X and ⊑ Y, so ⊑ X∩Y; then φ-monotone + φψ.
-      have hcor : Coreflexive (phiCor X ∩ phiCor Y) :=
+      have hcor : cor (phiCor X ∩ phiCor Y) :=
         le_trans (inter_lb_left _ _) (inter_lb_left _ _)
       have hX : psiCor (phiCor X ∩ phiCor Y) ⊑ X := by
         have := psiCor_mono (inter_lb_left (phiCor X) (phiCor Y)); rwa [psi_phi] at this
@@ -1271,14 +1271,14 @@ public theorem phiCor_inter {a : 𝒜} (X Y : a ⟶ a) : phiCor (X ∩ Y) = phiC
     `Z : (a,a)` whose coreflexive part lies under `A`:  `Z ∩ 1 ⊑ A ↔ Z ⊑ oneHeyting A`. -/
 public theorem oneHeyting_adj {a : 𝒜} (A : a ⟶ a) (Z : a ⟶ a) :
     Z ∩ Cat.id a ⊑ A ↔ Z ⊑ oneHeyting A := by
-  have hP : Coreflexive (heytingImpl (phiCor (Cat.id a)) (phiCor A)) := inter_lb_left _ _
+  have hP : cor (heytingImpl (phiCor (Cat.id a)) (phiCor A)) := inter_lb_left _ _
   rw [oneHeyting, le_psiCor_iff Z hP]
   -- φZ ⊑ (φ1 ⟹ φA)  ↔  φ1 ≫ φZ ⊑ φA   (heyting_adj_coref)
-  rw [← heyting_adj_coref (show Coreflexive (phiCor (Cat.id a)) from inter_lb_left _ _)
-      (show Coreflexive (phiCor Z) from inter_lb_left _ _)]
+  rw [← heyting_adj_coref (show cor (phiCor (Cat.id a)) from inter_lb_left _ _)
+      (show cor (phiCor Z) from inter_lb_left _ _)]
   -- φ1 ≫ φZ = φ1 ∩ φZ = φ(1 ∩ Z); and ⊑ φA ↔ 1 ∩ Z ⊑ A.
-  rw [coreflexive_comp_eq_inter (show Coreflexive (phiCor (Cat.id a)) from inter_lb_left _ _)
-      (show Coreflexive (phiCor Z) from inter_lb_left _ _),
+  rw [coreflexive_comp_eq_inter (show cor (phiCor (Cat.id a)) from inter_lb_left _ _)
+      (show cor (phiCor Z) from inter_lb_left _ _),
       Allegory.inter_comm (phiCor (Cat.id a)) (phiCor Z), ← phiCor_inter,
       phiCor_le_iff, Allegory.inter_comm Z (Cat.id a)]
 
@@ -1299,7 +1299,7 @@ end HeytingHom
     book's "domain of `fB`" lower function is `dom (f ≫ c) = 1 ∩ f c f°` (using `c° = c`,
     `c ≫ c = c`).  This is the coreflexive on `a` that `corOf_invImage` (MapCat) computes for the
     inverse image `f#` once the subobject `B` of `b` is read as the coreflexive `c = corOf B`. -/
-theorem dom_comp_coref {a b : 𝒜} (f : a ⟶ b) {c : b ⟶ b} (hc : Coreflexive c) :
+theorem dom_comp_coref {a b : 𝒜} (f : a ⟶ b) {c : b ⟶ b} (hc : cor c) :
     dom (f ≫ c) = Cat.id a ∩ (f ≫ c ≫ f°) := by
   have hcsym : c° = c := symmetric_eq (coreflexive_symmetric_idempotent hc).1
   have hcidem : c ≫ c = c := (coreflexive_symmetric_idempotent hc).2
@@ -1311,7 +1311,7 @@ theorem dom_comp_coref {a b : 𝒜} (f : a ⟶ b) {c : b ⟶ b} (hc : Coreflexiv
     `dom R = 1 ∩ R R°` collapses because `R := f c f°` is symmetric and `f° f ⊑ 1` makes
     `R R° ⊑ R`, while `R` is itself a meet of symmetric idempotents.)  Together with
     `dom_comp_coref` this says `dom (f ≫ c) = dom (f ≫ c ≫ f°) = 1 ∩ f c f°`. -/
-public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ b} (hc : Coreflexive c) :
+public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ b} (hc : cor c) :
     dom (f ≫ c ≫ f°) = Cat.id a ∩ (f ≫ c ≫ f°) := by
   have hsym : (f ≫ c ≫ f°)° = f ≫ c ≫ f° := by
     have hCsym : c° = c := symmetric_eq (coreflexive_symmetric_idempotent hc).1
@@ -1331,7 +1331,7 @@ public theorem dom_map_coref {a b : 𝒜} (f : a ⟶ b) (hf : Map f) {c : b ⟶ 
   apply le_antisymm
   · exact le_inter (inter_lb_left _ _) (le_trans (inter_lb_right _ _) hidem_le)
   · apply le_inter (inter_lb_left _ _)
-    have hKcor : Coreflexive (Cat.id a ∩ (f ≫ c ≫ f°)) := inter_lb_left _ _
+    have hKcor : cor (Cat.id a ∩ (f ≫ c ≫ f°)) := inter_lb_left _ _
     have hKidem : (Cat.id a ∩ (f ≫ c ≫ f°)) ≫ (Cat.id a ∩ (f ≫ c ≫ f°))
         = Cat.id a ∩ (f ≫ c ≫ f°) := (coreflexive_symmetric_idempotent hKcor).2
     rw [← hKidem]

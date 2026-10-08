@@ -415,7 +415,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
     lax inequality alone does not pin `mem` down — `mem = 𝟘` satisfies it, and then Theorem 6.3
     would solve p.146's equation uniquely, which `X = 𝟙` refutes. -/
 public structure Membership (F : Relator 𝒜 𝒜) extends LaxMembership F where
-  all : ∀ {B : 𝒜} {Q : B ⟶ B}, Coreflexive Q → 𝟙 (F.obj B) ∩ ((mem B ≫ Q) / mem B) ⊑ F.map Q
+  all : ∀ {B : 𝒜} {Q : B ⟶ B}, cor Q → 𝟙 (F.obj B) ∩ ((mem B ≫ Q) / mem B) ⊑ F.map Q
 
 end MembershipAll
 
@@ -432,7 +432,7 @@ public theorem le_topHom_dom {C B : 𝒜} (W : C ⟶ B) : W ⊑ topHom C B ≫ (
   exact le_trans (le_inter (le_Sup trivial) (le_refl W)) h
 
 /-- A coreflexive `Q` with `Π ⊑ ΠQ` is the identity. -/
-public theorem id_le_of_topHom_le {B : 𝒜} {Q : B ⟶ B} (hQ : Coreflexive Q)
+public theorem id_le_of_topHom_le {B : 𝒜} {Q : B ⟶ B} (hQ : cor Q)
     (h : topHom B B ⊑ topHom B B ≫ Q) : 𝟙 B ⊑ Q := by
   have h1 : 𝟙 B ⊑ (topHom B B ≫ Q) ∩ 𝟙 B := le_inter (le_trans (le_Sup trivial) h) (le_refl _)
   have h2 : topHom B B ∩ 𝟙 B ≫ Q° ⊑ 𝟙 B := by
@@ -443,7 +443,7 @@ public theorem id_le_of_topHom_le {B : 𝒜} {Q : B ⟶ B} (hQ : Coreflexive Q)
 /-- The induction step of Theorem 6.3: where every member of an `S`-image passes `Q` after `W`,
     the points `P` that `W` reaches go through `S` into `F(Q)`. -/
 public theorem membership_step (M : Membership F) {B C : 𝒜} (S : B ⟶ F.obj B) {Q : B ⟶ B}
-    (hQ : Coreflexive Q) (W : C ⟶ B) (hW : W ≫ S ≫ M.mem B ⊑ topHom C B ≫ Q) :
+    (hQ : cor Q) (W : C ⟶ B) (hW : W ≫ S ≫ M.mem B ⊑ topHom C B ≫ Q) :
     (𝟙 B ∩ topHom B C ≫ W) ≫ S ⊑ S ≫ F.map Q := by
   have hUS : (𝟙 B ∩ topHom B C ≫ W) ≫ S ⊑ S := by
     have := comp_mono_right (inter_lb_left (𝟙 B) (topHom B C ≫ W)) S; rwa [Cat.id_comp] at this
@@ -483,7 +483,7 @@ public theorem membership_step (M : Membership F) {B C : 𝒜} (S : B ⟶ F.obj 
 /-- **Theorem 6.3**, its induction principle: when `S member(F)` is inductive, a coreflexive `Q`
     that holds wherever `S` sends every member into `Q` holds everywhere. -/
 public theorem thm63_induction (M : Membership F) {B : 𝒜} (S : B ⟶ F.obj B)
-    (hind : Inductive (S ≫ M.mem B)) {Q : B ⟶ B} (hQ : Coreflexive Q)
+    (hind : Inductive (S ≫ M.mem B)) {Q : B ⟶ B} (hQ : cor Q)
     (hclosed : ∀ P : B ⟶ B, P ⊑ 𝟙 B → P ≫ S ⊑ S ≫ F.map Q → P ⊑ Q) : 𝟙 B ⊑ Q := by
   apply id_le_of_topHom_le hQ
   apply hind
@@ -497,7 +497,7 @@ public theorem thm63_induction (M : Membership F) {B : 𝒜} (S : B ⟶ F.obj B)
 public theorem thm63_le (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
     (hind : Inductive (S ≫ M.mem B)) {X Y : B ⟶ A} (hX : X = S ≫ F.map X ≫ R)
     (hY : S ≫ F.map Y ≫ R ⊑ Y) : X ⊑ Y := by
-  have hQ : Coreflexive (𝟙 B ∩ (Y / X)) := inter_lb_left _ _
+  have hQ : cor (𝟙 B ∩ (Y / X)) := inter_lb_left _ _
   have h := thm63_induction M S hind hQ (fun P hP hPS => by
     refine le_inter hP ((le_div_iff _ _ _).mpr ?_)
     have hQX : (𝟙 B ∩ (Y / X)) ≫ X ⊑ Y :=
@@ -524,7 +524,7 @@ public theorem thm63_unique (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} 
 public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
     (hind : Inductive (S ≫ M.mem B)) (hS : Entire S) (hR : Entire R) {X : B ⟶ A}
     (hX : S ≫ F.map X ≫ R ⊑ X) : Entire X := by
-  have hQ : Coreflexive (𝟙 B ∩ X ≫ topHom A B) := inter_lb_left _ _
+  have hQ : cor (𝟙 B ∩ X ≫ topHom A B) := inter_lb_left _ _
   have hRtop : topHom (F.obj A) B ⊑ R ≫ topHom A B := by
     have := comp_mono_right (entire_id_le hR) (topHom (F.obj A) B)
     rw [Cat.id_comp, Cat.assoc] at this
