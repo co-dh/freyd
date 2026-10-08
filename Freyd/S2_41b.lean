@@ -32,7 +32,9 @@
 
 module
 
-public import Freyd.S2_41
+public import Freyd.S2_147_MapCat
+public import Freyd.S1_90
+public import Freyd.S2_40
 
 universe v u
 

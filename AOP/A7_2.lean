@@ -26,6 +26,7 @@ module
 
 public import AOP.A7_1
 public import AOP.A6_3
+public import AOP.A7_2_Pres
 
 universe u
 
@@ -41,12 +42,6 @@ section PresSec
 
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
-
-/-- **B&dM p.172** (they call it a monotonic algebra, `MonoAlg`; read: `φ` preserves `R`):
-    `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
-    (An algebra `φ` "does not care" whether `R`-related recursive results are computed before
-    or after applying `φ`.) -/
-@[expose] public def Pres (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
 public theorem pres_iff_conj (hf : Map f) : Pres f R ↔ f° ≫ F.map R ≫ f ⊑ R :=

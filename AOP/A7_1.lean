@@ -18,6 +18,7 @@
 module
 
 public import AOP.A6_2
+public import AOP.A5_4
 -- for `junc_Λ_est`: the coproduct bracket and `Λ_junc` live in §5.3.
 
 universe u

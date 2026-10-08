@@ -1,5 +1,6 @@
 module
 
+public import Freyd.S1_58
 public import Freyd.S1_60 open Freyd
 universe v u variable {𝒞 : Type u} [Cat.{v} 𝒞]
 namespace Freyd

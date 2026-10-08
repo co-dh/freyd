@@ -34,6 +34,7 @@ module
 
 public import Freyd.S2_147_MapCat
 public import Freyd.S2_165_Spl
+public import Freyd.S1_64
 
 open Freyd
 open Freyd.Alg

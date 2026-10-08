@@ -36,7 +36,9 @@
 module
 
 public import Freyd.S2_16b
-public import Freyd.S1_64
+public import Freyd.S1_59
+public import Freyd.S1_62
+public import Freyd.S1_70
 
 universe v u
 

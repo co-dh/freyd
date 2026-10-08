@@ -25,6 +25,7 @@
 module
 
 public import AOP.A8_1
+public import AOP.A7_2
 -- Proposition 9.1's coproduct split is proved at the END of this file in the Set model, over
 -- `F L E X = L+(X×E)`; the generic form needs a typeclass the repo does not have (drop note).
 public import AOP.A6_SnocList

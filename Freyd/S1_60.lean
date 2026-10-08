@@ -14,7 +14,7 @@
 module
 
 public import Freyd.S1_34
-public import Freyd.S1_58
+public import Freyd.S1_56
 
 
 open Freyd
