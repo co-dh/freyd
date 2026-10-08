@@ -513,7 +513,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
       (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @Freyd.Alg.Λ_fusion]),
       (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
-      // lean:AOP.A5_5.relCata_UP_step5@cdbc6943
+      // lean:AOP.A5_5_Leaf.relCata_UP_step5@cdbc6943
   )],
 )]<cata-map-proof>
 

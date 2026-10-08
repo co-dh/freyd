@@ -35,13 +35,13 @@
 
   [banana-split law \
    #leanf("Freyd.Alg.pair_relCata_eq_relCata_pair")],
-  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@e8d45159
+  // lean:AOP.A5_5_Leaf.pair_relCata_eq_relCata_pair@e8d45159
   [#leant("Freyd.Alg.pair_relCata_eq_relCata_pair")],
   [Any fork of folds is a single fold, hence one traversal — `F` the base functor.],
 
   [what it reduces to \
    #leanf("Freyd.Alg.pair_relCata_hom")],
-  // lean:AOP.A5_5.pair_relCata_hom@e885edfd
+  // lean:AOP.A5_5_Leaf.pair_relCata_hom@e885edfd
   [#leant("Freyd.Alg.pair_relCata_hom")],
   [All that @cata-defining leaves to check: the fork satisfies the defining equation.],
 
@@ -65,7 +65,7 @@
     lean("Freyd.Alg.pair_relCata_hom"),
   )),
   [#leanf("Freyd.Alg.pair_relCata_eq_relCata_pair") #h(6pt) #src[banana split]],
-  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@e8d45159
+  // lean:AOP.A5_5_Leaf.pair_relCata_eq_relCata_pair@e8d45159
 )]<banana-split>
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
@@ -93,7 +93,7 @@
 #disp[#capbox(
   leancd("Freyd.Alg.pair_eq_relCata_pair_iff.lhs"),
   [#leanf("Freyd.Alg.pair_eq_relCata_pair_iff")],
-  // lean:AOP.A5_5.pair_eq_relCata_pair_iff@c35035a2
+  // lean:AOP.A5_5_Leaf.pair_eq_relCata_pair_iff@c35035a2
 )]<fokkinga>
 
 == Ruby triangles and Horner's rule
