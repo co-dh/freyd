@@ -510,7 +510,7 @@ directly.
    #src[`cons(a,xs′) prefix ys⟺ys=nil ∨ ∃ys′. xs′ prefix ys′ ∧ ys=cons(a,ys′)`] \
    #src[a right fold: `α°` peels, `F(prefix)` recurses, the algebra runs on the way back; `init*`
      (@Freyd.Alg.RelSet.ListRel.prefix_cat) is the tail-recursive form] \
-   #src[lax natural only, `list(R) prefix⊑prefix list(R)`: `list(R)` first needs an `R`-image of every
+   #src[lax natural only, `R′ prefix⊑prefix R′`: `R′` first needs an `R`-image of every
      element, `prefix` first may have dropped the ones without]
    // lean:AOP.A5_6_ListCombinators.prefixP@6b59adf4
    // lean:AOP.A5_7_ListBeads.prefix_lax_natural@b07fb2c5
@@ -523,8 +523,8 @@ directly.
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
 // nothing.  `[A]` is TWO wires, `list` beside `A`: `p : A⟶A` is a bead on the object wire with the
 // `list` running past it, and `prefix : [A]⟶[A]` eats that `list` and makes another.
-// `prefix`/`subseq` are only LAX natural in `Rel` — `list(p) prefix⊑prefix list(p)` and no more, since
-// `list(p)` needs every element to have a `p`-image — so `p` stays strictly below.
+// `prefix`/`subseq` are only LAX natural in `Rel` — `p′ prefix⊑prefix p′` and no more, since
+// `p′` needs every element to have a `p`-image — so `p` stays strictly below.
 
 // Emitted verbatim by `./scripts/diagram --src "F([A])" --tgt "[A]" "<the row's formula>"`: the
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
@@ -555,18 +555,18 @@ directly.
   [#tw-pfx2 \ #src[the `cons` operand of `cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs"),
-    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs") \ #src[`list(p)` through `cons`]])],
-  [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `(p×list(p)) cons ∪ ⊸ nil`]],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs") \ #src[`p′` through `cons`]])],
+  [#tw-pfx3 \ #src[the `(p×p′) cons` operand of `(p×p′) cons ∪ ⊸ nil`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs"),
     [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs") \ #src[relator, `prefix` entire]])],
   [#tw-pfx4],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs"),
-    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs") \ #src[`prefix list(p)` entire]])], [],
+    [#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs") \ #src[`prefix p′` entire]])], [],
 )
-#align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
-  @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
+#align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix p′=⦇S⦈`.
+  @cata-fusion cannot: `p′` is not entire, `(𝟙×p′)⊸ nil⊏⊸ nil`, and no algebra meets
  the side condition. ,
   // lean:AOP.A7_7_TakeWhile.takewhile_alg@a2e1ff8a
  ]])
@@ -670,11 +670,11 @@ directly.
   lean-calc(calc-tw),
 )
 #align(center, block(inset: (y: 4pt))[#src[`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
-  `takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
+  `takewhile(p)⊑prefix p′` and `(prefix p′)° takewhile(p)⊑R` — @est-75 at `est(R°)` —
    and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
    longest, not *a* longest.]])
   // lean:AOP.A7_7_TakeWhile.takewhile_simple@63f4e6a3
-#align(center, block(inset: (y: 4pt))[#src[#frc([`prefix list(p)`]) ` est(R°)` entire \ `nil` is always
+#align(center, block(inset: (y: 4pt))[#src[#frc([`prefix p′`]) ` est(R°)` entire \ `nil` is always
   a `p`-prefix and `R` is connected on the prefixes of one list, so the longest exists.]])
   // lean:AOP.A7_7_TakeWhile.takewhile_entire@8fdb32c9
 #align(center, block(inset: (y: 4pt))[#src[`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \
@@ -1018,7 +1018,7 @@ directly.
   // lean:AOP.A7_7_Filter.filter_entire@1f3c4c56
   // lean:AOP.A7_7_Filter.filter_simple@f0eba84c
   // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
-#align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
+#align(center, block(inset: (y: 4pt))[#src[`(subseq p′)°(subseq p′)∩R∩R°⊑𝟙` fails — two
   `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness
   argument does not transfer. What survives `est(R°)` is the one keeping *exactly* the passing
   elements: a subsequence that drops a passing element is beaten by the one that keeps it.]])
@@ -1036,7 +1036,7 @@ directly.
   [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
-  [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
+  [`filter(p)≜` $frac(#[`subseq p′`], ∋)$ `est(R°)`],
   [#leant("Freyd.Alg.RelSet.Filter.filter")],
   [The longest subsequence of `xs` whose every element passes `p`.
    // filter row: Ex 7.41
@@ -1047,7 +1047,7 @@ directly.
   [The preorder `filter` and `takewhile` maximise over: the longer list wins.
    #h(4pt) #src[`≥≜≤°`]],
 
-  [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
+  [`takewhile(p)≜` $frac(#[`prefix p′`], ∋)$ `est(R°)`],
   [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
   [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
    // takewhile row: Ex 7.39
@@ -1172,11 +1172,11 @@ directly.
 // lean:AOP.A7_3_Party.exclude_eq@9c937c68
 ]<exclude-pic>
 
-// `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
+// `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `choose′` multiplies: two items, four lists.
 #disp[#align(center, grid(
   columns: 5, column-gutter: 16pt, row-gutter: 6pt,
   align: (left + horizon, center + horizon, center + horizon, center + horizon, center + horizon),
-  grid.cell(colspan: 5, align: left)[`list(choose) [([d],[]),([e],[])]`],
+  grid.cell(colspan: 5, align: left)[`choose′ [([d],[]),([e],[])]`],
   [#h(1em)`1st item`], grid.cell(colspan: 4, align: left)[`([d],[])  choose↦[d]  or  []`],
   [#h(1em)`2nd item`], grid.cell(colspan: 4, align: left)[`([e],[])  choose↦[e]  or  []`],
   [#h(1em)`2×2=4 combinations:`], [`[[d],[e]]`], [`[[d],[]]`], [`[[],[e]]`], [`[[],[]]`],
@@ -1185,17 +1185,17 @@ directly.
 // lean:AOP.A7_3_Party.party_list_choose_example@cb7ee147
 ]<party-list-choose>
 
-=== `list((R×R)°)` <sec-party-listrr>
+=== `(R×R)°′` <sec-party-listrr>
 
 // The two lists are stacked so the correspondence is read DOWN a column: `list` relates lists of the
-// same length position by position, so everything `list((R×R)°)` says is what `(R×R)°` says of one item.
+// same length position by position, so everything `(R×R)°′` says is what `(R×R)°` says of one item.
 #disp[#align(center, grid(
   columns: 6, column-gutter: 10pt, row-gutter: 5pt,
   align: (center + horizon, center + horizon, center + horizon, center + horizon, center + horizon,
           left + horizon),
   [`[`], [`([b],[d,e])`], [`,`], [`([c],[f])`], [`]`], [],
   [], [`│`], [], [`│`], [], [],
-  [], [`▼`], [], [`▼`], [], src[`list((R×R)°)`, elementwise],
+  [], [`▼`], [], [`▼`], [], src[`(R×R)°′`, elementwise],
   [`[`], [`([b],[d])`], [`,`], [`([c],[])`], [`]`], [],
 ))
 // One raw block, not a grid: the ticks land under `b` and `d` because every glyph is one monospace
@@ -1226,7 +1226,7 @@ directly.
   [`[c] R° [c]` \ #src[`2≥2`, reflexivity]],
   [`[f] R° []` \ #src[`8≥0`, and `([c],[f])` is the pair `est(R°)` keeps at `c`]],
 )
-#align(center, src[the first component of `𝟙×list((R×R)°)` is the root employee.
+#align(center, src[the first component of `𝟙×(R×R)°′` is the root employee.
  ])
   // lean:AOP.A7_3_Party.party_listrr_example@286e6447
 ]<party-rr>
@@ -1242,11 +1242,11 @@ directly.
 
 === #leanf("Freyd.Alg.RelSet.Party.party_mono") — `S` is monotonic on `(R×R)°` <sec-party-mono>
 
-// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`.
+// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×(R×R)°′`.
 #disp[#pair(
   leancd("Freyd.Alg.RelSet.Party.party_mono"),
   lean("Freyd.Alg.RelSet.Party.party_mono.lhs", "Freyd.Alg.RelSet.Party.party_mono.rhs"),
- [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[]],
+ [`(𝟙×(R×R)°′)S⊑S(R×R)°` #src[]],
   // lean:AOP.A7_3_Party.party_mono@8a43178e
 )]<party-mono>
 
@@ -1262,10 +1262,10 @@ directly.
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
-// per row is a width that drifts.  No chamfer is a map — `concat` is one, `list(g)` is not (`choose`).
+// per row is a width that drifts.  No chamfer is a map — `concat` is one, `g′` is not (`choose`).
 
 // A PRODUCT IS TWO WIRES.  `F([A]×[A])=A×[[A]×[A]]` enters as two, `[A]×[A]` leaves as two, and
-// `𝟙×list((R×R)°)` is the root's wire running straight past a box that sits on the other one — `×` costs no
+// `𝟙×(R×R)°′` is the root's wire running straight past a box that sits on the other one — `×` costs no
 // notation, it IS the second wire.  `[[A]×[A]]` stays ONE wire: its outermost former is the list.
 // The shape below opens with `pairin`, at two strand heights, so the height is its parameter.
 #let pairin(y, items) = {
@@ -1320,7 +1320,7 @@ directly.
    `list` monotonic, @relator-defn],
   [`concat`],
   [a LEAF: no law above it. `cost` is a sum, so
-   `cost(concat(xss))=sum(list(cost)(xss))` and a cheaper part makes a cheaper whole.
+   `cost(concat(xss))=sum(cost′(xss))` and a cheaper part makes a cheaper whole.
  #src[]],
    // lean:AOP.A7_3_Party.concat_monotonic@084e46a9  — B&dM's exercise
   [`h`],
@@ -1338,7 +1338,7 @@ directly.
 #align(center, table(
   columns: 3, align: center + horizon,
   inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
-  table.header([`(𝟙×(list(g) concat))h`], [`g`], [`h`]),
+  table.header([`(𝟙×(g′ concat))h`], [`g`], [`h`]),
   [`include`], [`π₂`], [`cons`],
  [`exclude` #src[]], [`choose`], [`π₂`],
   // lean:AOP.A7_3_Party.exclude_monotonic@242e469c
@@ -1750,7 +1750,7 @@ zip(that)                                         each row: its square, and the 
   // lean:AOP.A7_5_Van.strictR@9f4d506f
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`: `1<2`.],
 
-  [the specification \ $frac(#[`partition list(secure)`], ∋)$ `est(R)`],
+  [the specification \ $frac(#[`partition secure′`], ∋)$ `est(R)`],
   [`[A]⟶[[A]]`],
   [`[a,b]` gives `[[a,b]]` when `[a,b]` is secure, and `[[a],[b]]` otherwise.],
 )]<van-defn>
@@ -1833,7 +1833,7 @@ zip(that)                                         each row: its square, and the 
 )]<van-fusion-cond>
 
 // The chain the book runs on p.185: `partition` is a fold, and the fold law absorbs
-// `list(secure)` into that fold's algebra.
+// `secure′` into that fold's algebra.
 #disp(num: "Exercise 7.51")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_spec") \
     #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
@@ -1841,16 +1841,16 @@ zip(that)                                         each row: its square, and the 
      // lean:AOP.A7_5_Van.van_spec@104cf5ec
   table.header([*step*], [*Hinze–Marsden*]),
 
-  [`partition list(secure)` \ #src[the specification: cut the transactions every way, then keep
+  [`partition secure′` \ #src[the specification: cut the transactions every way, then keep
    the cuts whose every segment is secure]],
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.lhs", step: true)],
 
-  [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ list(secure)` \ #src[`partition` is the fold that either opens a
+  [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ secure′` \ #src[`partition` is the fold that either opens a
    segment for the transaction in hand or puts it on the front of the segment already open]],
      // lean:AOP.A7_5_Van.partition_cata@09deaaa5
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs", step: true)],
 
-  [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `list(secure)` inside
+  [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `secure′` inside
    that fold, which is what turns `glue` into `old`]],
      // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step2.rhs")],
