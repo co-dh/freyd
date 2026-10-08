@@ -32,15 +32,7 @@
 
 module
 
-public import Freyd.S1_56
-public import Freyd.S1_59
-public import Freyd.S1_60
-public import Freyd.S1_61
-public import Freyd.S1_62
-public import Freyd.S2_10
-public import Freyd.S2_20
 public import Freyd.S2_147_MapCat
-public import Freyd.S2_216_MatrixAllegory
 public import Freyd.S2_165_Spl
 
 open Freyd

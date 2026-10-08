@@ -11,12 +11,7 @@
   A theorem the step's proof does not cite marks nothing (`Step.cited`, 10.4c's `tex_mono`).
 -/
 import diag.tool.StringDiagram
-import AOP.A5_5
 import AOP.A5_5_AlgCat
-import AOP.A6_2
-import AOP.A6_3
-import AOP.A7_2
-import AOP.A9_1
 import AOP.A10_4_Tex
 
 namespace Freyd.StrDiag.PassMarkTest

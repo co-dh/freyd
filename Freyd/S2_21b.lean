@@ -2,8 +2,6 @@ module
 
 public import Freyd.S2_218_CapDataPositiveTower
 public import Freyd.S1_635_StalkRepr
-public import Freyd.S2_147_MapCat
-public import Freyd.S2_216_MatrixAllegory
 public import Freyd.S2_217_PositiveRepr
 
 universe u u₁ u₂ u₃ v

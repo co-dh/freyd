@@ -1,8 +1,5 @@
 module
 
-public import Freyd.S1_543_CatColimitRegular
-public import Freyd.S1_62
-public import Freyd.S1_543_UnionFromCoproduct
 public import Freyd.S2_218_ColimitPreLogos
 
 /-!

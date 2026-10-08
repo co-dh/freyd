@@ -20,16 +20,7 @@
 -/
 module
 
-public import Freyd.S1_44
-public import Freyd.S1_45
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_56
-public import Freyd.S1_59
-public import Freyd.S1_62
-public import Freyd.S1_77
 public import Freyd.S1_64
-public import Freyd.S1_658_Complement
 public import Freyd.S1_53_SliceRegular
 
 universe v u

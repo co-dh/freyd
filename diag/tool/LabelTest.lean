@@ -5,7 +5,6 @@
 -/
 import diag.tool.FormulaRender
 import diag.StrDiagNames
-import AOP.A9_1
 
 namespace Freyd.LabelTest
 

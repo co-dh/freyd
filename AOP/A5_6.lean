@@ -15,9 +15,6 @@
 module
 
 public import AOP.A5_2
-public import Freyd.S2_40
-public import AOP.A4_6
-public import Freyd.S2_41b
 -- the cp-pattern at a SUM of relators: `Relator.sum`/`junc` (§5.3) and `P` on a map (§5.4).
 public import AOP.A5_3
 public import AOP.A5_4

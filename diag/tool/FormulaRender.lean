@@ -21,7 +21,6 @@
   through the same stub-file machinery every other route already uses.
 -/
 import diag.tool.TypeRender
-import AOP.CalcSteps
 
 open Lean
 

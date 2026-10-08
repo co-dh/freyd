@@ -36,7 +36,6 @@
 module
 
 public import AOP.A8_3
-public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Paragraph
 open PowerAllegory

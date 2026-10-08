@@ -43,7 +43,6 @@ module
 
 import AOP.CalcSteps
 public import AOP.A8_2
-public import AOP.A7_2
 public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Van

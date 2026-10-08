@@ -18,7 +18,6 @@
 -/
 module
 
-public import Freyd.S2_10
 public import AOP.A4_2
 -- for the printing-only unexpanders at the end of this file.  Lean 4 core's own metaprogramming
 -- API, which ships with the toolchain: no `require`, no manifest entry, the mathlib-free build

@@ -6,10 +6,7 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_18
 public import Freyd.S1_31
-public import Freyd.S1_41
 
 
 open Freyd

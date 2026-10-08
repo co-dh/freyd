@@ -18,14 +18,6 @@
 
 module
 
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_56
-public import Freyd.S1_57
-public import Freyd.S1_58
-public import Freyd.S1_60
-public import Freyd.S1_61
-public import Freyd.S1_62
 public import Freyd.S1_658_Complement
 
 open Freyd

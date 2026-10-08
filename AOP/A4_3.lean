@@ -16,7 +16,6 @@
 module
 
 public import Freyd.S2_10
-public import AOP.A4_2  -- entire_id_le
 
 universe v u
 

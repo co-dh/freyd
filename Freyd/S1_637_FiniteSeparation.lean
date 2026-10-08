@@ -40,7 +40,6 @@
 module
 
 public import Freyd.S1_55
-public import Freyd.S1_47
 
 
 open Freyd

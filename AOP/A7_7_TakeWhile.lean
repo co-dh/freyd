@@ -40,12 +40,8 @@
 module
 
 public import AOP.A7_6_Shrink
-public import AOP.A7_4_Horner
 public import AOP.A7_5_VanBeads
-public import AOP.A7_2
-public import AOP.A6_ConsList
 public import AOP.A6_GenFold
-public import AOP.A5_7_ListBeads
 import AOP.CalcSteps
 
 set_option linter.unusedVariables false

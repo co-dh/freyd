@@ -48,7 +48,6 @@
 module
 
 public import Freyd.S2_433_SplEqInstance2
-public import Freyd.S2_16b
 
 universe v u
 

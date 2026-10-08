@@ -42,7 +42,6 @@
 
 module
 
-public import Freyd.S1_51
 -- NOTE: `Topos` lives in S1_9 (S1_51 does not transitively import it).  We used to
 -- reach it via `import Freyd.S1_94`, but that created the cycle
 -- S1_94 → InternalForall → InternalForallTopos → S1_94, which blocked S1_94 from

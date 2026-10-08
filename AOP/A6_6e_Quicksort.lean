@@ -9,7 +9,6 @@
 -/
 module
 
-public import AOP.A6_6b_SortConcrete
 public import AOP.A6_6d_QSort
 public import AOP.A6_TreeBin
 public import AOP.A6_3

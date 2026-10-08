@@ -24,7 +24,6 @@
 
 module
 
-public import Freyd.S2_20
 public import Freyd.S2_16
 public import Freyd.S2_22  -- le_comp_recip_comp (A4_1, via S2_22), symmetric_transitive_idempotent (§2.12)
 

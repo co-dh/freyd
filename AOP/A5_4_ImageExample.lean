@@ -6,7 +6,6 @@
 module
 
 public import Freyd.S2_30_Example
-public import AOP.A7_2_RelSet
 public import AOP.A5_7_PowerBeads
 
 @[expose] public section

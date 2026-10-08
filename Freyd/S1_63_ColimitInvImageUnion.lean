@@ -23,12 +23,8 @@
 -/
 module
 
-public import Freyd.S1_543_CatColimitRegular
 public import Freyd.S1_543_ColimitCoproductGerm
 public import Freyd.S1_543_Capitalization
-public import Freyd.S1_61
-public import Freyd.S1_62
-public import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
 

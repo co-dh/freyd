@@ -1,6 +1,5 @@
 module
 
-public import Freyd.S2_10
 public import Freyd.S2_20
 
 universe v u

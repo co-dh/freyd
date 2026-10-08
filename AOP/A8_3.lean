@@ -31,21 +31,15 @@
 -/
 module
 
-public import AOP.A8_2
 -- (8.5) is the one law of `<thinL-laws>` that is NOT abstract: it needs `bump Q` and
 -- `minL Q` written out on a concrete list, hence the cons-list algebra and `est`'s
 -- pointwise reading.
-public import AOP.A6_ConsList
-public import AOP.A7_4_Horner
 -- `minL Q` is `setify est(Q)`, and every §9 program step pushes a `list g` past it, so the
 -- cons-list `setify` must be reconciled with `ListRel`'s and its lax naturality available here.
-public import AOP.A5_6_ListCombinators
-public import AOP.A5_7_ListBeads
 -- (8.9) and (8.11) in `Rel`: the book's `filter(p)` is §7.7's, `cp(F)` at `L+E×X` is §7.4's.
 public import AOP.A7_7_Filter
 public import AOP.A7_4_CylinderPaths
 -- `cpL(F)` for every polynomial `F` recurses on the code `PolyF`.
-public import AOP.A6_Poly
 import AOP.CalcSteps
 
 universe u

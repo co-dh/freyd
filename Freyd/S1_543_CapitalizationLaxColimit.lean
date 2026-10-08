@@ -67,10 +67,7 @@
 -/
 module
 
-public import Freyd.S1_31
 public import Freyd.S1_36
-public import Freyd.S1_41
-public import Freyd.S1_543_DirectedColimit
 public import Freyd.S1_543_CatColimit
 public import Freyd.S1_53_SliceRegular
 

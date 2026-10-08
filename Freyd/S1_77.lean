@@ -16,8 +16,6 @@
 
 module
 
-public import Freyd.S1_56
-public import Freyd.S1_60
 public import Freyd.S1_70
 public import Freyd.S1_85
 

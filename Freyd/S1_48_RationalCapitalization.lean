@@ -265,10 +265,6 @@
 
 module
 
-public import Freyd.S1_45
-public import Freyd.S1_47
-public import Freyd.S1_52
-public import Freyd.S1_53_SliceRegular
 public import Freyd.S1_541_RelativeCapitalization
 
 namespace Freyd

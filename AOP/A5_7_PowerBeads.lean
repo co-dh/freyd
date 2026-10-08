@@ -11,7 +11,6 @@
 -/
 module
 
-public import AOP.A5_7
 public import AOP.A8_2
 
 universe u

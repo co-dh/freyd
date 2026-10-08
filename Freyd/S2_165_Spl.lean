@@ -72,7 +72,6 @@
 
 module
 
-public import Freyd.S2_16
 public import Freyd.S2_16b
 public import Freyd.S2_40
 

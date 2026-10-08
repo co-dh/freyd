@@ -35,11 +35,7 @@
 
 module
 
-public import Freyd.S2_10
-public import Freyd.S2_30
 public import Freyd.S2_16b
-public import Freyd.S1_60
-public import Freyd.S1_62
 public import Freyd.S1_64
 
 universe v u

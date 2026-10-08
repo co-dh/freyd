@@ -18,7 +18,6 @@ import diag.tool.ExprReader
 -- rule over both towers, so it has to see both.
 import diag.FO
 import diag.Tape
-import diag.S2_124
 -- `est`, the one operator of the allegory layer that lives above `ExprReader`'s own import, and the
 -- type functor, whose action on an arrow is spelled here rather than by a notation (no term prints
 -- its own brackets, and `T(f)` is brackets).

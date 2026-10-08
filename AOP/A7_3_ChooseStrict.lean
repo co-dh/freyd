@@ -18,7 +18,6 @@
 module
 
 public import AOP.A7_3_Party
-public import AOP.A6_1_RelSet
 
 universe u
 

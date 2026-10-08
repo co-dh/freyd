@@ -43,10 +43,8 @@
 import Lean
 -- `StrDiag`: one copy of what a statement states, of an arrow's two ends, and of an application's
 -- last two arguments.
-import diag.tool.ExprReader
 -- The note's spelling of a term, shared with the string and circuit pictures.
 import diag.tool.Label
-import AOP.A4_5
 
 open Lean
 

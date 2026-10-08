@@ -18,18 +18,8 @@
 
 module
 
-public import Freyd.S1_91
-public import Freyd.S1_92
-public import Freyd.S1_45
-public import Freyd.S1_60
-public import Freyd.S1_94_InterIntersection
-public import Freyd.S1_94_InternalForallTopos
-public import Freyd.S1_95_ToposColimits
 public import Freyd.S1_946_ForallAlong
-public import Freyd.S1_56
-public import Freyd.S1_61
 public import Freyd.S1_94
-public import Freyd.S1_944_ToposStrictZero
 public import Freyd.S1_934_PartialMapClassifier
 
 universe v u

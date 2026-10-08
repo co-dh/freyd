@@ -16,10 +16,7 @@
 
 module
 
-public import Freyd.S1_94_InternalForallTopos
 public import Freyd.S1_946_RightAdjointImage
-public import Freyd.S1_45
-public import Freyd.S1_60
 public import Freyd.S1_95_ToposColimits
 
 universe v u

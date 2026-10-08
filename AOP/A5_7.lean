@@ -10,7 +10,6 @@
 
 module
 
-public import AOP.A5_1
 public import AOP.A5_2
 public import AOP.A5_3
 public import AOP.A5_4

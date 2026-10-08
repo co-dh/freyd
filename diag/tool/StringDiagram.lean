@@ -12,7 +12,6 @@
   arithmetic, so a panel drawn from Lean and a panel drawn from a formula land on the same page in
   the same place.  The numbers are IntroString's own (pp. 46/75/79), measured there and not chosen.
 -/
-import diag.tool.ExprReader
 -- The note's spelling of a term, shared with the circuit and commutative pictures.
 import diag.tool.Label
 -- The `lean:<Module>.<decl>@<key>` marker, computed exactly once in the exe: `cite-check` verifies

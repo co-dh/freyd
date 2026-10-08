@@ -101,16 +101,7 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_26
-public import Freyd.S1_41
-public import Freyd.S1_42
-public import Freyd.S1_51
-public import Freyd.S1_52
 public import Freyd.S1_54
-public import Freyd.S1_56
-public import Freyd.S1_53_SliceRegular
-public import Freyd.S1_543_Capitalization
 
 open Freyd
 open Freyd.Colim

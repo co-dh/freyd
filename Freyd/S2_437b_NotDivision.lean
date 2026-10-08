@@ -43,7 +43,6 @@ module
 
 public import Freyd.S2_437_REAllegory
 public import Freyd.S2_438_Godel
-public import Freyd.S2_43
 
 namespace Freyd.REAlleg
 

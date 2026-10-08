@@ -17,17 +17,6 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_18
-public import Freyd.S1_31
-public import Freyd.S1_33
-public import Freyd.S1_41
-public import Freyd.S1_42
-public import Freyd.S1_44
-public import Freyd.S1_45
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_53
 public import Freyd.S1_543_Capitalization
 
 

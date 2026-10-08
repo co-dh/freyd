@@ -30,7 +30,6 @@
 module
 
 public import Freyd.S2_111_RelCat
-public import Freyd.S2_40
 public import Freyd.S1_923_Baseable
 
 universe v u

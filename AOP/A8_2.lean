@@ -33,14 +33,10 @@
 module
 
 public import AOP.A8_1
-public import AOP.A5_6
 -- §8.2's algebra IS a bifunctor at `∋` and the structure map, so the binary relator of §5.5 is
 -- what states it; the split of the algebra's source is that bifunctor's interchange.
-public import AOP.A5_5_TypeFunctor
-public import AOP.A6_1_RelSet
 -- the layered network's paths are `ConsList V V`, whose base relator `X ↦ (V→Prop)+(V→Prop)×X`
 -- is what `thinning_paths`'s `F` is instantiated to below.
-public import AOP.A6_ConsList
 -- `est`'s pointwise form at Rel(Set), `Λ_comp_est_apply`, proved where §7.1's `est` and §6.1's
 -- set model meet; the `path-defn` rows at the end read the two transposes off it.
 public import AOP.A7_2_RelSet

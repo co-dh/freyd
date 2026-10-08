@@ -6,7 +6,6 @@
 -/
 import Lean
 import AOP.A5_7
-import AOP.A5_5_TypeFunctor
 
 open Lean
 

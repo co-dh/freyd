@@ -34,11 +34,6 @@
 module
 
 public import Freyd.S1_594_AbAbelian
-public import Freyd.S1_31
-public import Freyd.S1_33
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_56
 
 open Freyd
 

@@ -19,7 +19,6 @@
 module
 
 public import AOP.A6_1_RelSet
-public import Freyd.S2_10  -- Reflexive / Transitive on `𝒜`
 
 universe u
 

@@ -19,14 +19,7 @@
 
 module
 
-public import Freyd.S1_10
 public import Freyd.S1_90
-public import Freyd.S1_42
-public import Freyd.S1_47
-public import Freyd.S1_51
-public import Freyd.S1_57
-public import Freyd.S1_58
-public import Freyd.S1_64
 public import Freyd.S1_85
 public import Freyd.S1_92
 public import Freyd.S1_94

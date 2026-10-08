@@ -44,12 +44,9 @@
 module
 
 public import AOP.A9_1
-public import AOP.A5_6_ListCombinators
 public import AOP.A8_3
-public import AOP.A6_GenFold
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
-public import AOP.A7_5_VanBeads
 
 namespace Freyd.Alg.RelSet.Edit
 

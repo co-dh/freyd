@@ -55,7 +55,6 @@
 module
 
 public import Freyd.S2_16d
-public import Freyd.S2_111_RelCat
 
 universe u
 

@@ -61,15 +61,7 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_18
-public import Freyd.S1_31
-public import Freyd.S1_33
-public import Freyd.S1_52
-public import Freyd.S1_53_SliceRegular
-public import Freyd.S1_543_CatColimit
 public import Freyd.S2_154_SmallRegCat
-public import Freyd.S1_543_CatColimitRegular
 public import Freyd.S1_544_Inflation
 
 open Freyd

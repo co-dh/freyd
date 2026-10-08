@@ -36,8 +36,6 @@ module
 
 public import Freyd.S1_547_UniformCapStep
 public import Freyd.S2_218_RatCapPositive
-public import Freyd.S1_543_LaxGermCoproduct
-public import Freyd.S1_543_RatCapHcanon
 
 open Freyd
 open Freyd.Colim

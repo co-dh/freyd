@@ -32,8 +32,6 @@
 module
 
 public import Freyd.S1_572_Recursive
-public import Freyd.S1_28
-public import Freyd.S1_39
 public import Freyd.S1_55
 public import Freyd.S2_21c
 

@@ -24,7 +24,6 @@
 -/
 module
 
-public import Freyd.S1_543_UniformWellPoints
 public import Freyd.S1_543_CofinalHstage
 public import Freyd.S1_546_FibreDensityProof
 

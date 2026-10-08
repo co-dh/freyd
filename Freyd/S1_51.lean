@@ -7,10 +7,7 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_18
 public import Freyd.S1_33
-public import Freyd.S1_41
 public import Freyd.S1_51_Order  -- §1.51 preorder-level order theory (GaloisConnection, IsSup, IsClosureOp)
 
 

@@ -53,7 +53,6 @@
 module
 
 public import AOP.A8_2
-public import AOP.A7_2
 
 universe u
 

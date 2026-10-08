@@ -18,9 +18,6 @@
 module
 
 public import AOP.A6_2
-public import AOP.A5_5
-public import AOP.A5_2
-public import AOP.A5_6
 
 -- The pointwise instance proofs name the relation/element they quantify (documenting each law)
 -- even where the term-mode witness does not reference the binder; silence that lint file-wide.

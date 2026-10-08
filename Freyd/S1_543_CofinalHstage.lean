@@ -1,8 +1,6 @@
 module
 
 public import Freyd.S1_543_CapitalizationTransfinite
-public import Freyd.S1_51
-public import Freyd.S1_41
 
 /-! # §1.543 — the `hstage` bridge: `StepWellPoints` ⟹ `StageRelCap`
 

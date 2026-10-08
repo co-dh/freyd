@@ -73,14 +73,6 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_18
-public import Freyd.S1_26
-public import Freyd.S1_31
-public import Freyd.S1_33
-public import Freyd.S1_42
-public import Freyd.S1_44
-public import Freyd.S1_53_SliceRegular
 public import Freyd.S1_65_SlicePreTopos
 public import Freyd.S1_543_CatColimitRegular
 

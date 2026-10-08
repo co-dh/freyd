@@ -16,9 +16,7 @@
 
 module
 
-public import Freyd.S2_40
 public import AOP.A4_6
-public import AOP.A4_2
 public import AOP.A5_1
 public import Freyd.S2_41b
 

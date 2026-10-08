@@ -22,8 +22,6 @@
 module
 
 import AOP.CalcSteps
-public import AOP.A7_2
-public import AOP.A5_2
 public import AOP.A6_RoseTree
 public import AOP.A7_4_Horner
 

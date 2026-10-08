@@ -27,7 +27,6 @@
 
 module
 
-public import Freyd.S1_94_InternalForallTopos
 public import Freyd.S1_987_LeastClosedTopos
 
 universe v u

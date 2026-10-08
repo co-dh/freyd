@@ -17,24 +17,9 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_90
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_56
-public import Freyd.S1_58
-public import Freyd.S1_59
-public import Freyd.S1_60
-public import Freyd.S1_62
-public import Freyd.S1_64
-public import Freyd.S1_77
+public import Freyd.S1_14
 public import Freyd.S1_82
 public import Freyd.S1_84
-public import Freyd.S1_85
-public import Freyd.S1_91
-public import Freyd.S1_92
-public import Freyd.S1_94
-public import Freyd.S1_967_ToposExists
 public import Freyd.S1_75
 public import Freyd.S1_97_ToposDistributive
 public import Freyd.S1_943_ToposRTC

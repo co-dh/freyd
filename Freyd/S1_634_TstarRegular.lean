@@ -17,9 +17,7 @@
 -/
 module
 
-public import Freyd.S1_625_StalkRegular
 public import Freyd.S2_21
-public import Freyd.S1_635_StalkDetect
 
 universe u v w
 

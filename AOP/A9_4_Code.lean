@@ -35,10 +35,6 @@
 -/
 module
 
-public import AOP.A9_1
-public import AOP.A6_SnocList
-public import AOP.A5_6_ListCombinators
-public import AOP.A5_7_ListBeads
 public import AOP.A9_3_Bracket
 
 namespace Freyd.Alg.RelSet.Code

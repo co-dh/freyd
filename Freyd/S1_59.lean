@@ -17,14 +17,6 @@
 
 module
 
-public import Freyd.S1_10
-public import Freyd.S1_34
-public import Freyd.S1_41
-public import Freyd.S1_42
-public import Freyd.S1_43
-public import Freyd.S1_51
-public import Freyd.S1_52
-public import Freyd.S1_56
 public import Freyd.S1_58
 
 

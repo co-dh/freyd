@@ -21,12 +21,9 @@
 -/
 module
 
-public import AOP.A4_4
-public import AOP.A4_5
 public import AOP.A5_5
 -- the tabular half of the chapter-6 setting: `AOP.A5_4`'s `powerRel_comp` (`P` a relator on ALL
 -- relations) is what chapters 7-8 need, and it is stated over `AOP.A5_6`'s tabular merge.
-public import AOP.A5_6
 import AOP.CalcSteps
 
 universe u

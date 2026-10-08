@@ -23,4 +23,3 @@
 
 module
 
-public import Freyd.S1_91

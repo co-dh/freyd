@@ -2,7 +2,6 @@ module
 
 public import Freyd.S1_48_RationalCapitalization
 public import Freyd.S1_546_SliceWellPointed
-public import Freyd.S1_47
 public import Freyd.S1_36
 
 /-! # §1.543 C — the §1.547 slice equivalence interface, and the precise well-pointedness gap

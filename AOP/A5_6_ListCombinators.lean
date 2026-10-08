@@ -19,7 +19,6 @@ module
 public import AOP.A6_ConsList
 -- `StrictNatural` and the lane combinators `Relator.sum`/`prod`/`const`, which `α`'s square below
 -- is stated in; §5.7 is upstream of every chapter-6 engine, so this adds no cycle.
-public import AOP.A5_7
 
 namespace Freyd.Alg.RelSet.ListRel
 open PowerAllegory

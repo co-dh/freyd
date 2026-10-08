@@ -21,7 +21,6 @@
 module
 
 public import AOP.A6_1_RelSet
-public import AOP.A5_3
 import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Digits

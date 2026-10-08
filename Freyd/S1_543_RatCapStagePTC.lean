@@ -29,7 +29,6 @@
 -/
 module
 
-public import Freyd.S1_543_RatCapPreReg
 public import Freyd.S1_53_BaseChangeDescent
 public import Freyd.S1_543_RatCapHcanon
 

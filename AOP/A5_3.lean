@@ -23,7 +23,6 @@
 -/
 module
 
-public import Freyd.S2_20
 public import AOP.A4_5
 public import AOP.A4_6  -- `Λ` (§4.6), for the power transpose of a junction
 public import AOP.A5_1

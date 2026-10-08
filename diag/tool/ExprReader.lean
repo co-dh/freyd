@@ -13,7 +13,6 @@
   inferred from the family's shape or its name.  No declaration, no dot.
 -/
 import Lean
-import AOP.A5_7
 -- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
 -- relator is one, and its partial application is what `openBuiltField?` opens.
 import AOP.A5_5_TypeFunctor

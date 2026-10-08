@@ -32,12 +32,7 @@
 
 module
 
-public import Freyd.S1_91
-public import Freyd.S1_92
-public import Freyd.S1_60
-public import Freyd.S1_94_InterIntersection
 public import Freyd.S1_94_InternalForallTopos
-public import Freyd.S1_934_PartialMapClassifier
 
 universe v u
 

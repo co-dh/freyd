@@ -16,7 +16,6 @@ module
 
 public import Freyd.S2_111_RelCat
 public import Freyd.S1_543_Capitalization
-public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim

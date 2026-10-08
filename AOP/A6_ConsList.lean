@@ -9,10 +9,8 @@
 -/
 module
 
-public import AOP.A6_1_RelSet
 public import AOP.A5_5_TypeFunctor
 -- for `F_eq_sum_prod`: the `+` half of the generic relator combination lives in §5.3.
-public import AOP.A5_3
 -- `F(A,X) = L+A×X` is the polynomial code `clF(L)`, and its relator laws are the polynomial ones.
 public import AOP.A6_Poly
 

@@ -23,7 +23,6 @@
 module
 
 public import Freyd.S1_93_SlicePower
-public import Freyd.S1_53_SliceRegular
 public import Freyd.S1_913_ToposCoversEpis
 
 open Freyd

@@ -26,10 +26,7 @@
 
 module
 
-public import Freyd.S1_42
-public import Freyd.S1_43
 public import Freyd.S1_47
-public import Freyd.S1_241
 
 open Freyd
 

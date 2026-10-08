@@ -51,23 +51,13 @@
   handles every declaration named on the command line from that one environment.
 -/
 import Lean
-import diag.FO
-import diag.Tape
-import diag.S2_124
-import diag.tool.Label
-import diag.tool.StringDiagram
-import diag.tool.TypeRender
 import diag.tool.FormulaRender
-import AOP.CalcSteps
-import diag.tool.Cite
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
-import AOP.A4_5
 -- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
 -- box = morphism, left to right), emitted for `diag/cpanel.typ`.
 import diag.tool.CircuitDiagram
 -- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
-import diag.tool.CommutativeDiagram
 import diag.tool.ValueTree
 -- `--graph`: a concrete relation between finite types, decided pair by pair.
 import diag.tool.ElementGraph

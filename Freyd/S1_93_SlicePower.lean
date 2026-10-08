@@ -36,10 +36,7 @@
 
 module
 
-public import Freyd.S1_90
-public import Freyd.S1_44
 public import Freyd.S1_92
-public import Freyd.S1_53_SliceRegular
 public import Freyd.S1_93_SliceTopos
 
 universe v u

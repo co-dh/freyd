@@ -8,32 +8,18 @@
   vocabulary, not the algebra's — `T` is what the note calls the type functor's relator, and the
   `AOP` module already spells the same functor's action on arrows `T(R)`.
 -/
-import AOP.A5_5_TypeFunctor
-import AOP.A5_5
-import AOP.A5_5_AlgCat
 import AOP.A2_6
 -- `laxNatural_birel_eps_eps`, the verdict the exporter reads for the bifunctor family at `(∋,∋)`:
 -- proved beside the other power beads, in scope here because the exporter looks it up by name.
-import AOP.A5_7_PowerBeads
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
-import AOP.A7_2_RelSet
 import AOP.A7_3_Party
-import AOP.A7_4_Cylinder
 import AOP.A7_4_CylinderVecRel
-import AOP.A7_5_Van
 import AOP.A7_7_MSS
-import AOP.A7_7_TakeWhile
-import AOP.A7_7_Filter
-import AOP.A8_1
-import AOP.A8_2
-import AOP.A8_2_Exec
 import AOP.A8_4_Knapsack
 -- Appendix `wrap` (B&dM p.267), which §8.5's paragraph table defines.
 import AOP.A8_4_KnapsackProgram
 import AOP.A8_5_Paragraph
-import AOP.A9_2_Edit
-import AOP.A9_3_Bracket
 import AOP.A9_4_Code
 -- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
 import AOP.A9_0_SegmentExample
@@ -41,13 +27,11 @@ import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- §6.5's membership, which Theorem 6.4's claim draws as a bead.
-import AOP.A6_5
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
 -- `star`, `sub`'s chains and `theta` (§6.7), whose beads the closure displays draw.
 import AOP.A6_7
 -- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
-import AOP.A6_6b_SortConcrete
 import AOP.A6_6e_Quicksort
 import AOP.A6_6c_ISort
 -- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
@@ -56,7 +40,6 @@ import AOP.A6_4_FastExp
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
-import Freyd.S2_50
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
 import diag.tool.Tags
 

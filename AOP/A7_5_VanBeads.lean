@@ -36,7 +36,6 @@ module
 
 public import AOP.A7_5_Van
 public import AOP.A5_7_ListBeads
-public import AOP.A7_4_Horner
 
 namespace Freyd.Alg.RelSet.Van
 open PowerAllegory

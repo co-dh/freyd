@@ -8,10 +8,6 @@
 module
 
 public import Freyd.S1_543_CatColimit
-public import Freyd.S1_42
-public import Freyd.S1_43
-public import Freyd.S1_51
-public import Freyd.S1_52
 public import Freyd.S1_58
 open Freyd
 namespace Freyd.Colim

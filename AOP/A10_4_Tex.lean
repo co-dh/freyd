@@ -26,7 +26,6 @@
 module
 
 public import AOP.A10_1
-public import AOP.A6_ConsList
 import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Tex

@@ -12,7 +12,6 @@
 module
 
 public import AOP.A6_6_Sort
-public import AOP.A5_6_ListCombinators
 import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Sort

@@ -51,8 +51,6 @@
 -/
 module
 
-public import Freyd.S1_541_RelativeCapitalization
-public import Freyd.S1_53_SliceRegular
 public import Freyd.S1_543_Capitalization
 public import Freyd.S1_543_CapitalizationLaxColimit
 public import Freyd.S1_543_WellOrdering

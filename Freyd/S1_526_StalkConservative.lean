@@ -25,7 +25,6 @@
 
 module
 
-public import Freyd.S1_625_StalkRegular
 public import Freyd.S2_21
 
 universe u

@@ -37,7 +37,6 @@
 module
 
 public import Freyd.S1_543_RatCapHcanon
-public import Freyd.S1_543_CatColimitRegular
 
 open Freyd
 open Freyd.Colim

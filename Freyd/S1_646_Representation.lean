@@ -2,7 +2,6 @@ module
 
 public import Freyd.S1_646_Ultraproduct
 public import Freyd.S1_637_FiniteSeparation
-public import Freyd.S1_444_Horn
 
 open Freyd Freyd.UF
 

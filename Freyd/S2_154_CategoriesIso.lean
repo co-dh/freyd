@@ -40,11 +40,8 @@
 -/
 module
 
-public import Freyd.S2_154_SmallRegCat
-public import Freyd.S2_111_RelCat
 public import Freyd.S2_218_ObjInclRegular
 public import Freyd.S2_51
-public import Freyd.S1_31
 
 universe v u v₁ v₂ u₁ u₂
 

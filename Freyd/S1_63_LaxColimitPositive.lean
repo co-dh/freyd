@@ -31,10 +31,7 @@
 module
 
 public import Freyd.S1_63_LaxInvImageUnion
-public import Freyd.S1_61_LaxStrictInitial
 public import Freyd.S1_621_LaxDisjoint
-public import Freyd.S2_218_ColimitPreLogos
-public import Freyd.S1_621_ColimitPositive
 
 open Freyd
 open Freyd.Colim

@@ -38,8 +38,6 @@ module
 public import Freyd.S1_63_ColimitInvImageUnion
 public import Freyd.S1_543_LaxGermCoproduct
 public import Freyd.S1_543_LaxGermImages
-public import Freyd.S1_543_LaxColimitImages
-public import Freyd.S1_543_UnionFromCoproduct
 
 open Freyd
 open Freyd.Colim

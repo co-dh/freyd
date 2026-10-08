@@ -40,7 +40,6 @@
 module
 
 public import Freyd.S2_11
-public import Freyd.S2_147_MapCat
 public import Freyd.S2_51
 
 universe v u v₁ v₂ u₁ u₂

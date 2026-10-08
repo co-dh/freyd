@@ -13,7 +13,6 @@
 module
 
 public import AOP.A6_3
-public import AOP.A5_6
 
 namespace Freyd.Alg
 

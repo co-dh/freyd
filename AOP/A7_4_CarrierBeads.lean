@@ -19,7 +19,6 @@
 -/
 module
 
-public import AOP.A7_4_Horner
 public import AOP.A5_7_PowerBeads
 public import AOP.A6_Poly_List
 public import AOP.A5_6_ListCombinators

@@ -16,8 +16,6 @@ module
 
 public import Freyd.S2_218_CapDataPositive
 public import Freyd.S1_547_UniformStepCoproduct
-public import Freyd.S1_543_CapDataRegular
-public import Freyd.S1_621_ColimitPositive
 public import Freyd.S2_218_ObjInclRegular
 
 open Freyd

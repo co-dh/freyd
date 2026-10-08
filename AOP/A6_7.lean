@@ -15,9 +15,7 @@
 -/
 module
 
-public import AOP.A6_2
 public import AOP.A6_5
-public import AOP.A5_6
 import AOP.CalcSteps
 
 universe u

@@ -1,9 +1,7 @@
 module
 
-public import Freyd.S2_111_RelCat
 public import Freyd.S1_625_StalkRegular
 public import Freyd.S1_637_FiniteSeparation
-public import Freyd.S1_543_Capitalization
 public import Freyd.S1_631_CapitalProjective
 
 universe u w

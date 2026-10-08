@@ -32,7 +32,6 @@
 -/
 module
 
-public import AOP.A6_GenFold
 public import AOP.A6_6b_SortConcrete
 
 set_option linter.unusedVariables false

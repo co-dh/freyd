@@ -22,13 +22,8 @@
 import Lean
 -- `StrDiag.split` and the rest of the elaborated-term reader: one copy of a question every picture
 -- functor asks — what relation a statement states, and what its two sides are.
-import diag.tool.ExprReader
 -- The note's spelling of a term, shared with the string and commutative pictures.
 import diag.tool.Label
-import AOP.A10_1
-import AOP.A7_7_MSS
-import AOP.A7_7_Filter
-import AOP.A5_6_ListCombinators
 
 open Lean
 

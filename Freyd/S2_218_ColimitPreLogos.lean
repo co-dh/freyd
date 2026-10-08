@@ -1,8 +1,5 @@
 module
 
-public import Freyd.S1_543_CatColimitRegular
-public import Freyd.S1_61
-public import Freyd.S1_543_UnionFromCoproduct
 public import Freyd.S1_421_Initial
 public import Freyd.S1_63_ColimitInvImageUnion
 

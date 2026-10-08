@@ -15,7 +15,6 @@
 -/
 module
 
-public import AOP.A5_1
 public import AOP.A6_1_RelSet
 
 universe u u₂ v₂

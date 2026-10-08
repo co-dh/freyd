@@ -13,7 +13,6 @@
 -/
 module
 
-public import AOP.A6_2
 public import AOP.A6_3
 public import AOP.A5_7
 import AOP.CalcSteps

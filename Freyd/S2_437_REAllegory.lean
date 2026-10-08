@@ -40,7 +40,6 @@
 module
 
 public import Freyd.S2_153b_RecursiveModulus
-public import Freyd.S2_31
 
 namespace Freyd.REAlleg
 

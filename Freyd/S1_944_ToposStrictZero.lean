@@ -23,8 +23,6 @@ module
 
 public import Freyd.S1_946_RightAdjointImage
 public import Freyd.S1_95_ToposColimits
-public import Freyd.S1_58
-public import Freyd.S1_61
 
 open Freyd HasSubobjectClassifier
 

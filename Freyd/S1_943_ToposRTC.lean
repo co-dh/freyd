@@ -23,9 +23,6 @@
 
 module
 
-public import Freyd.S1_60
-public import Freyd.S1_77
-public import Freyd.S1_987_LeastClosedTopos
 public import Freyd.S1_967_ToposExists
 
 universe v u

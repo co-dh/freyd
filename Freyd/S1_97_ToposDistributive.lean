@@ -22,7 +22,6 @@
 
 module
 
-public import Freyd.S1_42
 public import Freyd.S1_58
 public import Freyd.S1_85
 

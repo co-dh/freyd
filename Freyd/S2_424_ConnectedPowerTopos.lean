@@ -40,7 +40,6 @@
 module
 
 public import Freyd.S2_43
-public import Freyd.S2_165_Spl
 public import Freyd.S2_41b
 
 universe v u

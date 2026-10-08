@@ -41,7 +41,6 @@
 module
 
 public import Freyd.S1_543_UniformWellPoints
-public import Freyd.S1_43
 
 open Freyd
 open Freyd.Colim
