@@ -1865,7 +1865,10 @@ def main (args : List String) : IO UInt32 := do
           || !branch.isEmpty || binder.isSome) then
         throwError "{arg}: --type reads a declaration, or a side `.lhs`/`.rhs` and its factors \
           `.f<k>`, then optionally `.name`"
-      let body ←
+      -- EVERY CONSTANT A LABEL WROTE UNDER ITS LEAN NAME fails the panel, after it is drawn or on
+      -- top of the error it ended with, so one run names them all (`checkSpelled` only notes them).
+      let unspelled := do return StrDiag.unspelledIn (← StrDiag.readsRef.get).toArray
+      let body ← tryCatch
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
         -- A circuit reads ONE arrow side; the selector steps through `↔`/`∧`/`→` to reach it.
@@ -1879,6 +1882,12 @@ def main (args : List String) : IO UInt32 := do
         else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName
         else if calcMode then Freyd.FormulaRender.calcFile StrDiag.drawsSame arg.toName else draw arg.toName)
+        fun e => do
+          let cs ← unspelled
+          if cs.isEmpty then throw e
+          throwError "{e.toMessageData}\n  and {StrDiag.unspelledMsg cs}"
+      let cs ← unspelled
+      unless cs.isEmpty do throwError (StrDiag.unspelledMsg cs)
       if sigMode then return body
       -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
       -- Every route's file opens with its library's relative `#import`, whichever library it is.
@@ -1904,11 +1913,14 @@ def main (args : List String) : IO UInt32 := do
       for d in selDecls commutativeMode graphMode formulaMode n b do StrDiag.noteRead (.decl d)
     let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
     let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO
-    return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain, wasFresh)
+    -- A drawn panel took its reads, so what is left are the reads of one that failed.
+    let cs := StrDiag.unspelledIn (← StrDiag.readsRef.get).toArray
+    return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain, wasFresh, cs)
   -- The results are reported in ARGUMENT order.
   let mut failed : Array String := #[]
   let mut wrong : Array String := #[]
   let mut prof : Array Prof.Line := #[]
+  let mut unspelled : Std.HashMap Name (Array String) := {}
   for ((arg, call), t) in jobs.zip tasks do
     let path := outPath kind suffix call arg
     unless sigMode do if let some p := path.parent then IO.FS.createDirAll p
@@ -1933,7 +1945,8 @@ def main (args : List String) : IO UInt32 := do
     -- and a bead whose naturality nobody proved has a message naming the three statements it
     -- looked for.  THE DEFECT ALSO GOES ON THE PAGE: the note imports this file by name, so a
     -- selector that drew nothing still gets one — a red box holding the error — and the run fails.
-    let (res, ns, hb, subs, wasFresh) := t
+    let (res, ns, hb, subs, wasFresh, cs) := t
+    for c in cs do unspelled := unspelled.insert c ((unspelled.getD c #[]).push arg)
     let tw ← IO.monoNanosNow
     match res with
     | .error ex =>
@@ -1962,6 +1975,12 @@ def main (args : List String) : IO UInt32 := do
   unless failed.isEmpty do
     IO.eprintln s!"diag-export: {if verifyMode then "could not draw" else "drew a red stub for"} \
       {failed.size} selector(s): {" ".intercalate failed.toList}"
+  -- The run's whole list in one place, each constant with the panels that wrote it.
+  unless unspelled.isEmpty do
+    IO.eprintln s!"diag-export: {unspelled.size} constant(s) written under their own Lean names — \
+      give each a printing rule or a `diag_noted` tag in diag/StrDiagNames.lean:"
+    for c in (unspelled.toArray.map (·.1)).qsort Name.lt do
+      IO.eprintln s!"  {c}  ← {" ".intercalate (unspelled.getD c #[]).toList}"
   unless wrong.isEmpty do
     IO.eprintln s!"diag-export --verify: {wrong.size} fresh picture(s) draw otherwise: \
       {" ".intercalate wrong.toList}"

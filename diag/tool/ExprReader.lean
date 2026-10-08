@@ -282,14 +282,23 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
     -- would report the exporter's own declarations as the note's vocabulary.
     let cs : List Name :=
       ((ResolveName.resolveGlobalName env opts ns ods n).map Prod.fst).filter used.contains
+    -- NOTED, NOT THROWN: a throw ended the panel at its first such name, so each run named one
+    -- more and the fix took a run per constant.  The panel fails on the full list (`unspelledMsg`).
     match cs with
     | [] => continue
-    | c :: _ =>
-      if ← cs.anyM noteNames then continue
-      throwError "the label of `{← Meta.ppExpr e}` writes `{c}` under its own Lean name: no \
-        printing rule rewrote it, so the page would carry Lean's vocabulary where the note writes \
-        its own.  Give it an `app_unexpander {c}` — or a `delab app.{c}` where the spelling needs \
-        an implicit argument — in diag/StrDiagNames.lean, beside its kin"
+    | c :: _ => unless ← cs.anyM noteNames do noteRead (.unspelled c)
+
+/-- The constants `rs` holds as written under their own Lean names, sorted. -/
+def unspelledIn (rs : Array Read) : Array Name :=
+  (rs.filterMap fun | .unspelled c => some c | _ => none).qsort Name.lt
+
+/-- The one failure for every constant a panel's labels wrote under its own Lean name. -/
+def unspelledMsg (cs : Array Name) : String :=
+  s!"the labels write {cs.size} constant(s) under their own Lean names: \
+    {", ".intercalate (cs.toList.map toString)}.  No printing rule rewrote them, so the page would \
+    carry Lean's vocabulary where the note writes its own.  Give each an `app_unexpander` — or a \
+    `delab app.<c>` where the spelling needs an implicit argument — or, where the Lean name already \
+    is the book's word, a `diag_noted` tag, in diag/StrDiagNames.lean beside its kin"
 
 /-- `m` when `n` is `m.appendIndexAfter k` — the `x_1` Lean's `getUnusedName` and an equation's
     sanitized binder make of `x` — read by Lean's own numeral reader and kept only when
@@ -2344,6 +2353,7 @@ def readPrintNow (p : EnvPrint) (r : Read) : MetaM UInt64 := do
   | .thms => return p.thms
   | .stmt n => return stmt n
   | .decl n => return mixHash (stmt n) (((env.find? n).bind (·.value? (allowOpaque := true))).elim 0 exprKey)
+  | .unspelled c => return mixHash (hash c) (hash (← noteNames c))
 
 /-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
     since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise.  A `scan`

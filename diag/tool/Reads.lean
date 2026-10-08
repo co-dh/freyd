@@ -69,6 +69,9 @@ inductive Read where
   | stmt (n : Name)
   /-- `n`'s statement and value: a declaration the picture draws -/
   | decl (n : Name)
+  /-- a label wrote the constant `c` under its own Lean name (`checkSpelled`).  A read, so a memo
+      that answers a later panel replays it; a panel that noted one fails, so no file stores it. -/
+  | unspelled (c : Name)
   deriving BEq, Hashable
 
 def Read.json : Read → Json
@@ -79,6 +82,7 @@ def Read.json : Read → Json
   | .thms => .arr #["thms"]
   | .stmt n => .arr #["stmt", nameJson n]
   | .decl n => .arr #["decl", nameJson n]
+  | .unspelled c => .arr #["unspelled", nameJson c]
 
 def Read.ofJson (j : Json) : Except String Read := do
   match ← j.getArr? with
@@ -89,6 +93,7 @@ def Read.ofJson (j : Json) : Except String Read := do
   | #[.str "thms"] => return .thms
   | #[.str "stmt", n] => return .stmt (← jsonName n)
   | #[.str "decl", n] => return .decl (← jsonName n)
+  | #[.str "unspelled", c] => return .unspelled (← jsonName c)
   | _ => throw s!"no read: {j.compress}"
 
 /-- The reads of the picture being drawn.  Pictures are drawn one after another in a process, and
