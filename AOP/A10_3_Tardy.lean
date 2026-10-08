@@ -1504,8 +1504,8 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.ctsum] public meta def unexpandCtsum : Unexpander
-  | `($_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(list(ct))")) $x $args*)
-  | _ => `($(mkIdent (Name.mkSimple "sum(list(ct))")))
+  | `($_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(ct′)")) $x $args*)
+  | _ => `($(mkIdent (Name.mkSimple "sum(ct′)")))
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.bagifyFn] public meta def unexpandBagifyFn : Unexpander

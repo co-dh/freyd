@@ -530,6 +530,10 @@ variable {B : Type}
 /-- The list relator's action `list(R) : list A ⟶ list B` (B&dM's `listr R`). -/
 @[expose] public def list (R : dE A ⟶ dE B) : dList A ⟶ dList B := listP R
 
+/-- `R′` is `list(R)`, the list relator on an arrow (q's `f'`, "each"). The prime `′`, not `'`,
+    because `'` is an identifier character in Lean and `f'` is a name. -/
+notation:max R:max "′" => list R
+
 /-- **`list(R) = ⦇[nil, (R⊗𝟙) cons]⦈`** (note `comb-fns`; B&dM p.126): one `R` per element,
     the shape untouched. -/
 public theorem list_cata (R : dE A ⟶ dE B) :
@@ -1787,6 +1791,15 @@ open Lean PrettyPrinter in
 @[app_unexpander listRelator] public meta def unexpandListRelator : Unexpander
   | `($_:ident) => `($(mkIdent `list))
   | _ => throw ()
+-- `listRelator`'s ACTION on an arrow is `list`'s, so it prints `list`'s `R′`; the functor is read
+-- off the term's argument, because after `unexpandListRelator` its syntax is only the name `list`.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Functor.map] public meta def delabListRelatorMap : Delab := do
+  let e ← getExpr
+  guard (e.getAppNumArgs == (← getConstInfo ``Freyd.Functor.map).type.getForallArity)
+  guard (e.getAppArgs.any fun a => a.isAppOf ``Relator.toFunctor && a.appArg!.isConstOf ``listRelator)
+  let r ← withAppArg delab
+  `($r′)
 -- `nelistRelator` is the note's lane `L`, the pair `listRelator`/`list` is above.  The OBJECT
 -- `dNE` and the carrier `NEList` keep their clauses in `diag/StrDiagNames.lean`, where every
 -- datatype's object is named.
@@ -1863,10 +1876,6 @@ open Lean PrettyPrinter in
 @[app_unexpander cplist] public meta def unexpandCplist : Unexpander
   | `($_:ident) => `($(mkIdent `cplist))
   | _ => throw ()
-
-/-- The list relator's action on an arrow, with its own brackets like every other relator's `F(R)`,
-    because juxtaposition in this repo is composition. -/
-notation:max "list(" R ")" => list R
 
 end Freyd.Alg.RelSet.ListRel
 
