@@ -216,6 +216,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         let some (a₀ : Lbl) := alts[0]? | throwError "{declName}: a datatype with no constructors"
         let body := alts[1:].foldl (fun (acc : Lbl) (a : Lbl) => acc ++ spaced "∣" sp ++ a) a₀
         return #[head ++ spaced "≜" sp ++ body]
+      -- A CONSTRUCTOR has no value either: what defines it is the datatype it is one alternative of.
+      if let .ctorInfo cv := ci then return ← render sp cv.induct none [] branch defines
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
       -- A DEFINITION BY CASES — its value made of a matcher or a recursor, the KIND test `plain`

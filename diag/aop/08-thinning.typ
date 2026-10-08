@@ -721,9 +721,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Paragraph.Para")], [#leant("Freyd.Alg.RelSet.Paragraph.Para")],
   "Freyd.Alg.RelSet.Paragraph.Para",
   [a paragraph is a non-empty list of lines],
-  [#rowkey("Knap207.wrap")], [#leant("Knap207.wrap")],
-  "Knap207.wrap",
-  [the one-element list holding a],
+  [#rowkey("Freyd.Alg.RelSet.CL.ConsList.wrap")], [#leant("Freyd.Alg.RelSet.CL.ConsList.wrap")],
+  "Freyd.Alg.RelSet.CL.ConsList.wrap",
+  [the one-element non-empty list holding a],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.new")], [#leant("Freyd.Alg.RelSet.Paragraph.new")],
   "Freyd.Alg.RelSet.Paragraph.new",
   [start a new first line holding only the word a],
@@ -762,7 +762,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [the one candidate for a single word: the paragraph of one line holding that word],
 // lean:AOP.A8_5_Paragraph.Line@5d1dfba3
 // lean:AOP.A8_5_Paragraph.Para@03a1f9c7
-// lean:AOP.A8_4_KnapsackProgram.Knap207.wrap@813a6410
+// lean:AOP.A6_ConsList.ConsList.wrap@55e9e5c6
 // lean:AOP.A8_5_Paragraph.new@bda7247b
 // lean:AOP.A8_5_Paragraph.glue@f4a46e72
 // lean:AOP.A8_5_Paragraph.partition@913aa4cf
