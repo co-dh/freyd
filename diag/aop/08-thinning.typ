@@ -124,7 +124,7 @@ row((
 #import "../generated/Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2.calc.typ" as calc-83b
 #import "../generated/Freyd.Alg.thinning_fusion.calc.typ" as calc-81a
 #import "../generated/Freyd.Alg.thinning_prefixed.calc.typ" as calc-81
-#import "../generated/Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le.calc.typ" as calc-l81
+#import "../generated/Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le.calc.typ" as calc-l81
 === Properties of thinning
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
 // the first cancels the singleton against the `∋`, the second is the chain.
@@ -410,8 +410,8 @@ row((
   [#rowkey("Freyd.Alg.cpMap")], [#leant("Freyd.Alg.cpMap")],
   "Freyd.Alg.cpMap",
   [every `F`-shaped value whose parts are chosen from the given sets],
-  [#rowkey("Freyd.Alg.RelSet.Poly.listcp")], [#leant("Freyd.Alg.RelSet.Poly.listcp")],
-  "Freyd.Alg.RelSet.Poly.listcpFn",
+  [#rowkey("Freyd.Alg.RelSet.Poly.cpL")], [#leant("Freyd.Alg.RelSet.Poly.cpL")],
+  "Freyd.Alg.RelSet.Poly.cpLFn",
   [by the shape of `F`: a constant or `arg₁` is a one-element list, `arg₂` the list itself, a sum
    lists its summand, a product pairs every element of one list with every element of the other],
   [#rowkey("Freyd.Alg.RelSet.Poly.linear")], [#leant("Freyd.Alg.RelSet.Poly.linear")],
@@ -423,17 +423,17 @@ row((
   [#rowkey("Freyd.Alg.RelSet.CL.bumpRel")], [#leant("Freyd.Alg.RelSet.CL.bumpRel")],
   ("Freyd.Alg.RelSet.CL.bumpRel_wrap.mapsto", "Freyd.Alg.RelSet.CL.bumpRel_cons"),
   [put `a` in front of a thinned list, dropping whichever of `a` and the old head the other beats],
-  [#rowkey("Freyd.Alg.RelSet.ListRel.thinlist")], [#leant("Freyd.Alg.RelSet.ListRel.thinlist")],
-  "Freyd.Alg.RelSet.ListRel.thinlist",
+  [#rowkey("Freyd.Alg.RelSet.ListRel.thinL")], [#leant("Freyd.Alg.RelSet.ListRel.thinL")],
+  "Freyd.Alg.RelSet.ListRel.thinL",
   [only drop elements, and on the set of the elements be a thinning by `Q`],
   [], [],
-  "Freyd.Alg.RelSet.ListRel.le_thinlist_iff",
+  "Freyd.Alg.RelSet.ListRel.le_thinL_iff",
   [what a list implementation of `thin(Q)` must do: only drop elements, and thin the set],
   [], [],
-  "Freyd.Alg.RelSet.ListRel.bumpFold_le_thinlist",
+  "Freyd.Alg.RelSet.ListRel.bumpFold_le_thinL",
   [an implementation: thin a list in one pass, bumping each element into the thinned rest],
-  [#rowkey("Freyd.Alg.RelSet.CL.minlist")], [#leant("Freyd.Alg.RelSet.CL.minlist")],
-  "Freyd.Alg.RelSet.CL.minlist",
+  [#rowkey("Freyd.Alg.RelSet.CL.minL")], [#leant("Freyd.Alg.RelSet.CL.minL")],
+  "Freyd.Alg.RelSet.CL.minL",
   [a `Q`-least element of the list],
 // lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@c31d6e6f
 // lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify_ni_iff@fefd0da3
@@ -443,11 +443,11 @@ row((
 // lean:AOP.A8_3.RelSet.CL.bumpRel@415b7c12
 // lean:AOP.A8_3.RelSet.CL.bumpRel_wrap@993629d2
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
-// lean:AOP.A8_3.RelSet.ListRel.thinlist@91e5cf00
-// lean:AOP.A8_3.RelSet.ListRel.le_thinlist_iff@a16f1cea
-// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinlist@a3505422
-// lean:AOP.A8_3.RelSet.CL.minlist@7684e8d6
-)]<thinlist-defn>
+// lean:AOP.A8_3.RelSet.ListRel.thinL@91e5cf00
+// lean:AOP.A8_3.RelSet.ListRel.le_thinL_iff@ee5ca858
+// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinL@7e66aade
+// lean:AOP.A8_3.RelSet.CL.minL@7684e8d6
+)]<thinL-defn>
 
 // B&dM's paragraph title "Sorting sets", p. 200: `sort(≼)`, its laws (8.6)–(8.11) and Lemma 8.1.
 === Sorting sets
@@ -458,11 +458,11 @@ row((
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [#leanf("Freyd.Alg.RelSet.CL.bumpFold_eq_singleton_minlist") #h(6pt) #src[(8.5)]],
+  [#leanf("Freyd.Alg.RelSet.CL.bumpFold_eq_singleton_minL") #h(6pt) #src[(8.5)]],
   [what thinning should come to when it can: one element],
-  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_thinlist_le") #h(6pt) #src[(8.6) — @thinlist-86]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_thinL_le") #h(6pt) #src[(8.6) — @thinL-86]],
   [the thinning may run after the sort],
-  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_minlist_le") #h(6pt) #src[(8.7)]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_minL_le") #h(6pt) #src[(8.7)]],
   [a minimum of the sorted list is a minimum of the set],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_list_le") #h(6pt) #src[(8.8)]],
   [shunt a function through a sort],
@@ -471,45 +471,45 @@ row((
   [filtering a sorted list sorts the restricted set],
   [#leanf("Freyd.Alg.RelSet.ListRel.prodMap_sort_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],
-  [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F(A,X)=1+A×X`]],
-  [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F` polynomial and linear]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_cpL_le") \ #src[(8.11), `F(A,X)=1+A×X`]],
+  [`cpL` is the list implementation of the cartesian product `cp(F)`],
+  [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_cpL_le") \ #src[(8.11), `F` polynomial and linear]],
   [the same for every linear polynomial `F`],
-  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minlist@05ff3ba8 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@c2de68cc lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
-)]<thinlist-laws>
+  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minL@8020c233 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinL_le@0c9e19d7 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minL_le@d97ac79b lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@c2de68cc lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_cpL_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_le@133b7a75
+)]<thinL-laws>
 
-// B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
+// B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinL(Q)` only drops elements, and a
 // subsequence of a `≼`-ordered list is `≼`-ordered, so the thinning may run before the sort.
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#import "../generated/Freyd.Alg.RelSet.ListRel.sort_comp_thinlist_le.calc.typ" as calc-86
+#import "../generated/Freyd.Alg.RelSet.ListRel.sort_comp_thinL_le.calc.typ" as calc-86
 #disp(num: "(8.6)")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_thinlist_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_thinL_le") \
     // sortRel row: (8.6), p. 201
     #src[every list got by sorting the set and then thinning it by `Q` is also got by thinning the
      set by `Q` and then sorting.]],
-     // lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58
-  // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
+     // lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinL_le@0c9e19d7
+  // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinL(Q) : [A]⟶[A]` — @thinL-defn's
   // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.
   lean-calc(calc-86),
-)]<thinlist-86>
+)]<thinL-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
 // `sort(≼) : PA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le") \
     #src[sorting each argument set (`F(sort(≼))`), forming every combination of their elements
-     (`listcp`), applying `f` to each (`list(f)`) and keeping those that pass `p` (`filter(p)`)
+     (`cpL`), applying `f` to each (`list(f)`) and keeping those that pass `p` (`filter(p)`)
      gives one of the sorted lists of the set of all `f(u)` that pass `p`, with `u` drawn from the
      argument sets.
      // map_sort row: Lemma 8.1, p. 202
  ]],
-     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@307a8486
-  // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
+     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le@48ad374c
+  // `filter(p) : [A]⟶[A]` — @thinL-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
   lean-calc(calc-l81),
-)]<thinlist-lem81>
+)]<thinL-lem81>
 
 // Lemma 8.1 worked example, asked for by the user: each side step by step on one input.
 #disp[
@@ -521,7 +521,7 @@ At `F(A,X)=1+A×X`, `f(r(a,x))=a+x`, `≼` is `≤`, `p` passes the odd numbers,
   table.header([*left side*], [*what it does*], [*result*]),
   [input], [an `r(a,xs)`, `xs` a set], [`r(3,{4,1,2})`],
   [`F(sort(≼))`], [sorts the set in the `X` place; `a` is untouched], [`r(3,[1,2,4])`],
-  [`listcp`], [pairs `a` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
+  [`cpL`], [pairs `a` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
   [`list(f)`], [`f` on each], [`[4,5,7]`],
   [`filter(p)`], [keeps the odd ones, order kept], [`[5,7]`],
 )
@@ -554,16 +554,16 @@ preorder.
 ]]<binthin-data>
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
-// LIST: `E` is killed by `est(R)`, `list` by `minlist(R)`.
+// LIST: `E` is killed by `est(R)`, `list` by `minL(R)`.
 #import "../generated/Freyd.Alg.RelSet.ListRel.thinningList.calc.typ" as calc-82
 #disp(num: "Theorem 8.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.thinningList") \
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@8b11bce1
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@610421b6
   lean-calc(calc-82),
-)]<thinlist-thm82>
+)]<thinL-thm82>
 
 // Theorem 8.2 worked example, asked for by the user, laid out like the Lemma 8.1 one: one row per
 // fold step.  `Q` is `=`, so `Q⊑R` and both `fᵢpᵢ` monotonic on `Q` hold trivially.
@@ -575,16 +575,16 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*input*], [`list(f₁) filter(p₁)`], [`list(f₂) filter(p₂)`], [`merge(≼)`],
-    [`thinlist(Q)`]),
+    [`thinL(Q)`]),
   [`l()`], [`[0]`], [`[0]`], [`[0,0]`], [`[0]`],
   [`r(1,[0])`], [`[0]`], [`[1]`], [`[0,1]`], [`[0,1]`],
   [`r(3,[0,1])`], [`[0,1]`], [`[3,4]`], [`[0,1,3,4]`], [`[0,1,3,4]`],
   [`r(3,[0,1,3,4])`], [`[0,1,3,4]`], [`[3,4,6]`], [`[0,1,3,3,4,4,6]`], [`[0,1,3,4,6]`],
-  [`minlist(R)`], [], [], [], [`6`],
+  [`minL(R)`], [], [], [], [`6`],
 )
 - `merge(≼)` is one pass: both copies arrive `≤`-sorted (`fᵢ` monotonic on `≼`, `filter(pᵢ)` only
   drops), so it only compares their two heads.
-- `thinlist(Q)` compares neighbours only; the list is `≤`-sorted, so equal values are neighbours and one
+- `thinL(Q)` compares neighbours only; the list is `≤`-sorted, so equal values are neighbours and one
   pass drops every repeat.
 ]
 
@@ -594,9 +594,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@2ef7b16c
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@5cc59a5d
   lean-calc(calc-82f),
-)]<thinlist-fusion>
+)]<thinL-fusion>
 
 
 == The knapsack problem
@@ -676,12 +676,12 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
 === Derivation
 // B&dM §8.4, p. 206.  The set the transpose opens becomes a LIST at the binary thinning step, and
-// that swap — `E` killed by `est(R)`, `list` killed by `minlist(R)` — is what the right column draws.
+// that swap — `E` killed by `est(R)`, `list` killed by `minL(R)` — is what the right column draws.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@3afe2d7d
+     // lean:AOP.A8_4_Knapsack.knap_laws@3054f895
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -698,13 +698,13 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
     [#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs") \
-     #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono:2]])],
+     #src[@thinL-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono:2]])],
   // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs")],
 
   [#vstep(EQ, [],
-    [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minlist(R)` is `head`, packings
+    [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinL(Q)]⦈ minL(R)` \
+     #src[`cpL=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
@@ -815,12 +815,12 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
 // bead on the object wire with three list wires at it, and the candidate set is a fourth.
 // The source is ONE `L`; `partition` births the paragraph's, and the reduce of the last two rows
-// births a third — the list of candidate paragraphs `minlist(R)` reads back down.
+// births a third — the list of candidate paragraphs `minL(R)` reads back down.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@cf96b9c5
+     // lean:AOP.A8_5_Paragraph.para_laws@41291903
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -838,7 +838,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
     [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs") \
-     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinlist-thm82.
+     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinL-thm82.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_spec@0ec1a795
   // Empty: the step renames the algebra and the panel above already draws the reduce.
@@ -846,12 +846,12 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs"),
     [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs") \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat` (@para-mono:3), `Q` from @para-mono:2]])],
+     #src[@thinL-thm82, at `P≜⊤` with `merge ⊤=cat` (@para-mono:3), `Q` from @para-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs")],
 
   [#vstep(EQ, [],
-    [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ` along the coproduct — @para-defn:5, @para-defn:6]])],
+    [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinL(Q)]⦈ minL(R)` \
+     #src[`cpL=wrap+cpr`, `gᵢ` along the coproduct — @para-defn:5, @para-defn:6]])],
   [],
 )]<para-laws>
 
@@ -982,12 +982,12 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws.lhs"),
     [#leanf("Freyd.Alg.RelSet.Tour.tour_laws.lhs") \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono:2]])],
+     #src[@thinL-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 
   [#vstep(EQ, [],
-    [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
+    [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinL(Q)]⦈ minL(R)` \
+     #src[`cpL=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
       added per step]])],
   [],
 )]<tour-laws>

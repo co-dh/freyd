@@ -585,7 +585,7 @@ public theorem mem_splits : ∀ (x : NEList A) (p : NEList A × NEList A),
     it relates arrays of trees, outside the relational picture. -/
 public theorem mct_prog (mct : dNE A ⟶ dTree A) :
     splits ≫ list (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
-        ≫ CL.minlist (R st sb cb)
+        ≫ CL.minL (R st sb cb)
       ⊑ Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
               : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)°)
           ≫ powerRel (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
@@ -605,7 +605,7 @@ public theorem mct_prog (mct : dNE A ⟶ dTree A) :
       exact ⟨splitsFn x, rfl,
         (hS : S = fun p => x = cat p.1 p.2).trans (hmem x).symm⟩
   rw [← hsplit, Cat.assoc]
-  exact comp_mono_left splits (CL.list_comp_minlist_le _ _)
+  exact comp_mono_left splits (CL.list_comp_minL_le _ _)
 
 /-! ## What the panels' beads claim: the naturality of `splits`, `bin` and `flatten°` -/
 
@@ -915,11 +915,11 @@ public theorem tailsPFn_cons (a : A) (z : NEList A) :
 
 /-- `minlist(R) : list A⟶A` as B&dM implement it (p. 267), `foldr1 bmin(R)`: the leftmost of the
     `R`-least elements, so a FUNCTION.  `default` answers `[]`, which no non-singleton's `splits` is. -/
-@[expose] public def minlistFn {X : Type} [Inhabited X] (Q : CL.dE X ⟶ CL.dE X)
+@[expose] public def minLFn {X : Type} [Inhabited X] (Q : CL.dE X ⟶ CL.dE X)
     [∀ a b, Decidable (Q a b)] : CL.ConsList Unit X → X
   | CL.ConsList.wrap _ => default
   | CL.ConsList.cons a (CL.ConsList.wrap _) => a
-  | CL.ConsList.cons a (CL.ConsList.cons b x) => Edit.bmin Q (a, minlistFn Q (CL.ConsList.cons b x))
+  | CL.ConsList.cons a (CL.ConsList.cons b x) => Edit.bmin Q (a, minLFn Q (CL.ConsList.cons b x))
 
 public instance instDecR (t t' : Tree A) : Decidable (R st sb cb t t') :=
   inferInstanceAs (Decidable (costFn st sb cb t ≤ costFn st sb cb t'))
@@ -938,7 +938,7 @@ public instance [Inhabited A] : Inhabited (Tree A) := ⟨Tree.tip default⟩
   | _, CL.ConsList.wrap a => Tree.tip a
   | 0, CL.ConsList.cons a _ => Tree.tip a
   | n + 1, x@(CL.ConsList.cons _ _) =>
-      minlistFn (R st sb cb) (cmap (fun p => Tree.bin (mctN n p.1) (mctN n p.2)) (splitsFn x))
+      minLFn (R st sb cb) (cmap (fun p => Tree.bin (mctN n p.1) (mctN n p.2)) (splitsFn x))
 
 /-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minlist(R) list(bin(mct×mct)) splits)`,
     unfolded as deep as the list is long. -/
@@ -976,17 +976,17 @@ public theorem mctN_stable [Inhabited A] : ∀ (n m : Nat) (x : NEList A),
   | 0, _, CL.ConsList.cons _ z, h, _ => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
   | _ + 1, 0, CL.ConsList.cons _ z, _, h => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
   | n + 1, m + 1, CL.ConsList.cons a z, hn, hm => by
-      show minlistFn _ (cmap _ _) = minlistFn _ (cmap _ _)
+      show minLFn _ (cmap _ _) = minLFn _ (cmap _ _)
       refine congrArg _ (cmap_congr _ fun p hp => ?_)
       have hs := neLen_splits hp
       rw [mctN_stable n m p.1 (by omega) (by omega), mctN_stable n m p.2 (by omega) (by omega)]
 
 /-- `mct`'s recursive case, pointwise. -/
 public theorem mct_cons [Inhabited A] (a : A) (z : NEList A) :
-    mct st sb cb (CL.ConsList.cons a z) = minlistFn (R st sb cb)
+    mct st sb cb (CL.ConsList.cons a z) = minLFn (R st sb cb)
       (cmap (fun p => Tree.bin (mct st sb cb p.1) (mct st sb cb p.2))
         (splitsFn (CL.ConsList.cons a z))) := by
-  show minlistFn _ (cmap _ _) = minlistFn _ (cmap _ _)
+  show minLFn _ (cmap _ _) = minLFn _ (cmap _ _)
   refine congrArg _ (cmap_congr _ fun p hp => ?_)
   have hs := neLen_splits hp
   simp only [neLen] at hs
@@ -1021,7 +1021,7 @@ public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X
 /-- `mix≜zip list(bin) minlist(R)`. -/
 @[expose] public def mix [Inhabited A] (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)⟩ : RelSet.{0}) ⟶ dTree A :=
-  (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
+  (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
 
 /-- `next≜⟨π₁,mix⟩ snoc`. -/
 @[expose] public def next [Inhabited A] (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
@@ -1386,7 +1386,7 @@ variable [Inhabited A]
 public theorem mct_eq :
     nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
       = nonsingle ≫ splits ≫ list (graft st sb cb)
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
   simp only [graft, splits, rprodMap_graph_pair, list_graph, graph_comp]
   refine nonsingle_graph fun a z => ?_
   rw [mct_cons, splitsFn_eq]
@@ -1399,36 +1399,36 @@ public theorem mct_rec :
           ((graph tail : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb :=
   calc nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
         = nonsingle ≫ splits ≫ list (graft st sb cb)
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := mct_eq st sb cb
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := mct_eq st sb cb
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ (graph zip : _ ⟶ dList (NEList A × NEList A))
-          ≫ list (graft st sb cb) ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ list (graft st sb cb) ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
         rw [splits_eq, Cat.assoc]
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ (graph zip : _ ⟶ dList (NEList A × NEList A))
           ≫ list (rprodMap (graph (mct st sb cb) : dNE A ⟶ dTree A)
               (graph (mct st sb cb) : dNE A ⟶ dTree A) ≫ binG)
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
         rw [graft]
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ (graph zip : _ ⟶ dList (NEList A × NEList A))
           ≫ list (rprodMap (graph (mct st sb cb) : dNE A ⟶ dTree A)
               (graph (mct st sb cb) : dNE A ⟶ dTree A)) ≫ list binG
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
         rw [list_comp, Cat.assoc]
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ rprodMap (list (graph (mct st sb cb))) (list (graph (mct st sb cb)))
           ≫ (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
         rw [zip_list]
       _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
             ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
           ≫ (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG
-          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
         rw [← Cat.assoc (rpair _ _), rpair_comp_rprodMap]
       _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
             ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
@@ -1906,8 +1906,8 @@ public theorem array_apply (xs : NEList A) (xss : CL.ConsList Unit (CL.ConsList 
 
 /-- `mix`, pointwise: a cheapest of the trees joining matching prefix and suffix trees. -/
 public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)) (xs : Tree A) :
-    mix st sb cb p xs ↔ xs = minlistFn (R st sb cb) (cmap binFn (zip p)) := by
-  have h : mix st sb cb = (graph (fun p => minlistFn (R st sb cb) (cmap binFn (zip p))) : _ ⟶ dTree A) := by
+    mix st sb cb p xs ↔ xs = minLFn (R st sb cb) (cmap binFn (zip p)) := by
+  have h : mix st sb cb = (graph (fun p => minLFn (R st sb cb) (cmap binFn (zip p))) : _ ⟶ dTree A) := by
     simp only [mix, list_graph, graph_comp]; try rfl
   rw [h]; exact Iff.rfl
 
@@ -1915,7 +1915,7 @@ public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tre
 public theorem next_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A))
     (xss : CL.ConsList Unit (Tree A)) :
     next st sb cb p xss
-      ↔ xss = snoc (p.1, minlistFn (R st sb cb) (cmap binFn (zip p))) := by
+      ↔ xss = snoc (p.1, minLFn (R st sb cb) (cmap binFn (zip p))) := by
   constructor
   · rintro ⟨⟨u, t⟩, ⟨hu, hm⟩, rfl⟩
     rw [mix_apply] at hm
@@ -2124,8 +2124,8 @@ open Lean PrettyPrinter in
   | `($f:ident $_*) | `($f:ident) => `($(mkIdent (Name.mkSimple f.getId.getString!)))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander minlistFn] public meta def unexpandMinlistFn : Unexpander
-  | `($_ $q) => `(minlist($q))
+@[app_unexpander minLFn] public meta def unexpandMinLFn : Unexpander
+  | `($_ $q) => `(minL($q))
   | _ => throw ()
 
 end Freyd.Alg.RelSet.Bracket

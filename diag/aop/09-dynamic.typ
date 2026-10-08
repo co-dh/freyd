@@ -293,7 +293,7 @@
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
 #disp[#calc-table(
-  Thm[`mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
+  Thm[`mle=(empty→nil,unstep list((𝟙×mle)cons) minL(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -344,7 +344,7 @@
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_prog.lhs"),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
-      copy beating a delete or an insert wherever it is available — and `minlist(R)` implements
+      copy beating a delete or an insert wherever it is available — and `minL(R)` implements
       `est(R)`. The same subproblem is solved many times over, so the running time is exponential in
       the two lengths]])],
   // The program is the branch above with each box replaced by a function computing it, so the wires
@@ -580,7 +580,7 @@
   [start the column at a tip and run `next` over the rows],
 // lean:AOP.A9_3_Bracket.gFn_inl@8e7dad0f lean:AOP.A9_3_Bracket.gFn_inr@2e7bf01a
 // lean:AOP.A9_3_Bracket.array_apply@afffb79a lean:AOP.A9_3_Bracket.row_apply@a1d6b91f lean:AOP.A9_3_Bracket.col_apply@df9fde94
-// lean:AOP.A9_3_Bracket.mix_apply@3e11b064 lean:AOP.A9_3_Bracket.next_apply@5a615019 lean:AOP.A9_3_Bracket.process_apply@a365e25c
+// lean:AOP.A9_3_Bracket.mix_apply@21bdbc9b lean:AOP.A9_3_Bracket.next_apply@6ab79196 lean:AOP.A9_3_Bracket.process_apply@a365e25c
 // lean:AOP.A9_3_Bracket.flatten_cata@60392b59
 // lean:AOP.A9_3_Bracket.size_eq_sz_flatten@bc971c19
 // lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
@@ -698,7 +698,7 @@
   [],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Bracket.mct_prog.lhs"),
-    [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist(R)` implements
+    [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minL(R)` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
   [#lean("Freyd.Alg.RelSet.Bracket.mct_prog.lhs")],
 
@@ -706,7 +706,7 @@
     [`mct=(single→head tip,⟨init col,tail row⟩ mix)` #h(4pt) #src[(9.7)] \
      #src[the tabulation: `mct xs` is needed for every non-empty segment `xs`, so the values are
       held as an array of rows, `array≜inits list(row)`, `row≜tails list(mct)`,
-      `col≜inits list(mct)`, `mix≜zip list(bin) minlist(R)`]])],
+      `col≜inits list(mct)`, `mix≜zip list(bin) minL(R)`]])],
   // No picture: the tabulated program relates arrays of trees, not the objects the panels carry.
   [],
 
@@ -945,7 +945,7 @@
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Code.code_laws"), #h(6pt)
-    `encode=(null→nil,reduce list((encode×𝟙)snoc) minlist(R))` \
+    `encode=(null→nil,reduce list((encode×𝟙)snoc) minL(R))` \
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],

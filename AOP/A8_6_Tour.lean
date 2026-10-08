@@ -579,9 +579,9 @@ public theorem tour_laws_defn :
     `p₁ = p₂ ≜ 𝟙`, `P ≜ ⊤`.  The thinning order is `Qc`, NOT the note's `Q`: see
     `tour_mono_dropl_Q_false`.  `merge ⊤ = cat` (`merge_top`). -/
 public theorem tour_laws :
-    ⦇listcp ≫ (relProd (dList (Tour City)) (dList (Tour City))).pair
+    ⦇cpL ≫ (relProd (dList (Tour City)) (dList (Tour City))).pair
         (g₁ (City := City)) g₂
-        ≫ cat ≫ thinlist (Qc tc)⦈ ≫ minlist (R tc)
+        ≫ cat ≫ thinL (Qc tc)⦈ ≫ minL (R tc)
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
   have key := thinningList droplAlgFn droprAlgFn (𝟙 _) (𝟙 _) (le_refl _) (le_refl _)
     («≼» := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)

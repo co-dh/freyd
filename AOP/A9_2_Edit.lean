@@ -958,14 +958,14 @@ public theorem unstep_thins [DecidableEq Char] :
     (`unstep_thins`) and `minlist(R)` implements `est(R)`, the list standing in for the set it
     `setify`s to (`CL.list_comp_minlist_le`, `setify`'s lax naturality). -/
 public theorem edit_prog [DecidableEq Char] (mle : dPair Char ⟶ dEdit Char) :
-    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minlist(R Char)
+    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minL(R Char)
       ⊑ Λ ((step (Char := Char))°)
           ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
           ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
-  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minlist(R Char)
+  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minL(R Char)
       ⊑ unstep ≫ ListRel.setify
           ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
-        comp_mono_left unstep (CL.list_comp_minlist_le _ _)
+        comp_mono_left unstep (CL.list_comp_minL_le _ _)
     _ = (unstep ≫ ListRel.setify)
           ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
         rw [← Cat.assoc]
@@ -1110,16 +1110,16 @@ public theorem edit_laxNatural :
     argument of `est_R_laxNatural` with the LIST standing in for the set it `setify`s to: a shortest
     member of the image list comes from a member of the original, of the same length, and every
     other member of the original has an image of its own length. -/
-public theorem minlist_R_laxNatural :
+public theorem minL_R_laxNatural :
     LaxNatural (op.comp listRelator) ((op.comp listRelator).comp listRelator)
-      (fun a => CL.minlist (R a.carrier)) := by
+      (fun a => CL.minL (R a.carrier)) := by
   intro x y S
   refine le_iff.mpr fun ess r => ?_
   rintro ⟨fss, hff, hmin⟩
-  obtain ⟨hr, hleast⟩ := (minlist_apply _ _ _).mp hmin
+  obtain ⟨hr, hleast⟩ := (minL_apply _ _ _).mp hmin
   obtain ⟨hfwd, hbwd⟩ := listP_inlistP_split (list (opRel S)) ess fss hff
   obtain ⟨w, hw, hwr⟩ := hbwd r hr
-  refine ⟨w, (minlist_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
+  refine ⟨w, (minL_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
   obtain ⟨v, hzv, hv⟩ := hfwd z hz
   show clen w ≤ clen z
   rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]

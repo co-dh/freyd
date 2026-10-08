@@ -984,7 +984,7 @@ public theorem mem_reduce (ws : Str) (q : Str × Code) :
     reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`
     would exploit. -/
 public theorem code_prog (encode : dStr ⟶ dCodes) :
-    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minlist(R c p)
+    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R c p)
       ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
           ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
   have hmem : ∀ w : Str, (fun q => ListRel.inlistP (reduceFn w) q) = fun q => extendP q w :=
@@ -1005,10 +1005,10 @@ public theorem code_prog (encode : dStr ⟶ dCodes) :
       cases e with
       | sym _ => exact trivial
       | ptr _ _ => exact trivial
-  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minlist(R c p)
+  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R c p)
       ⊑ reduce ≫ ListRel.setify
           ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) :=
-        comp_mono_left reduce (CL.list_comp_minlist_le _ _)
+        comp_mono_left reduce (CL.list_comp_minL_le _ _)
     _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
         rw [← Cat.assoc, hred]
     _ ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)

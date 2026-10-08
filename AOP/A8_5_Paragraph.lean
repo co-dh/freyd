@@ -596,9 +596,9 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
 public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a) :
-    ⦇listcp ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+    ⦇cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
         (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinlist (Q len w)⦈ ≫ minlist (R len w)
+        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)⦈ ≫ minL (R len w)
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
   have key := thinningList newAlgFn glueAlgFn (𝟙 _) (ok (len := len) w) (le_refl _) ok_coreflexive
     («≼» := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
@@ -628,9 +628,9 @@ public theorem para_laws_split :
     `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`, with `para-mono` discharging the
     monotonicity conditions and `para_spec` the specification. -/
 public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    ⦇listcp ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+    ⦇cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
         (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinlist (Q len w)⦈ ≫ minlist (R len w)
+        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)⦈ ≫ minL (R len w)
       ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [← para_laws_step2 hlen hfit]
   exact para_laws_step1 hlen

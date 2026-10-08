@@ -404,9 +404,9 @@ public theorem R_connected : Freyd.Alg.connected (R val) :=
     `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
     `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
 public theorem knap_laws_step1 :
-    ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+    ⦇cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
         (g₁ (wt := wt) (w := w)) g₂
-        ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
+        ≫ merge (R val) ≫ thinL (Q val wt)⦈ ≫ minL (R val)
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R val) := by
   have key := thinningList con dropFn (corefl (within (wt := wt) w)) (𝟙 _) within_coreflexive (le_refl _)
     («≼» := R val) (Q := Q val wt) (R := R val) Q_le_R ⟨Q_refl, Q_trans⟩
@@ -428,9 +428,9 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `p₂ ≜ 𝟙`, `P ≜ R`, with `knap-mono` discharging the monotonicity conditions and
     `knap_spec` the specification. -/
 public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+    ⦇cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
         (g₁ (wt := wt) (w := w)) g₂
-        ≫ merge (R val) ≫ thinlist (Q val wt)⦈ ≫ minlist (R val)
+        ≫ merge (R val) ≫ thinL (Q val wt)⦈ ≫ minL (R val)
       ⊑ Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) := by
   rw [← knap_laws_step2 hw hwt]
   exact knap_laws_step1

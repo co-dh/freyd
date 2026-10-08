@@ -196,7 +196,7 @@ public theorem sortRel_comp_filter_le
     ELEMENT of the list (`minlist ⊑ setify·∋`), and it is `R`-below every element of the list
     (`(setify·∋)°·minlist ⊑ R°`).  `ordered(≼)` is dropped by coreflexivity and `setify` by
     simplicity, so the order plays no part. -/
-public theorem sortRel_comp_minlist_le
+public theorem sortRel_comp_minL_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {minlist : L.obj A ⟶ A} {R : A ⟶ A}
     (hord : Coreflexive (ordered ≼))
@@ -257,7 +257,7 @@ public theorem sortRel_comp_listMap_le
     (`listcp·setifyF ⊑ F(setify)·cp(F)`), and it carries `F`-many `≼`-ordered lists to an
     `F(≼)`-ordered one.  A relator preserves a map and its converse (Lemma 5.1), which is what
     lets the `setify°` of the sort come out from under `F`. -/
-public theorem map_sortRel_comp_listcp_le
+public theorem map_sortRel_comp_cpL_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
     {setifyF : L.obj (F.obj A) ⟶ P (F.obj A)} (hsetF : Map setifyF)
     {ordered : ∀ {X : 𝒜}, (X ⟶ X) → (L.obj X ⟶ L.obj X)} {«≼» : A ⟶ A}
@@ -336,24 +336,24 @@ public theorem inlistP_cons {w c : A} {d : ConsList Unit A} :
     ListRel.inlistP (ConsList.cons c d) w ↔ (w = c ∨ ListRel.inlistP d w) := Iff.rfl
 
 /-- `minlist Q : [A]⟶A` — a `Q`-least member of the list, i.e. `setify` then `est Q`. -/
-@[expose] public def minlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := ListRel.setify ≫ est Q
+@[expose] public def minL (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := ListRel.setify ≫ est Q
 
 /-- Applying an operator takes its own brackets, like `P(R)` and `est(R)`.  The spelling is also
     what keeps the arrow ONE box in a circuit: a constant printed under its own bare name is opened
     and drawn by its body, and `minlist`'s body is the `setify est(Q)` the step exists to replace. -/
-notation:max "minlist(" Q ")" => Freyd.Alg.RelSet.CL.minlist Q
+notation:max "minL(" Q ")" => Freyd.Alg.RelSet.CL.minL Q
 
 /-- The one step every §9 program shares (B&dM pp.232, 242): `list(g)minlist(R) ⊑ setify P(g)est(R)`
     — a list of `g`-images has, as a SET, a `P(g)`-image of the set, which is `setify`'s lax
     naturality, and `est(R)` reads the least member off either. -/
-public theorem list_comp_minlist_le {B : Type} (g : dE A ⟶ dE B) (R : dE B ⟶ dE B) :
-    ListRel.list g ≫ minlist R ⊑ ListRel.setify ≫ powerRel g ≫ est R := by
+public theorem list_comp_minL_le {B : Type} (g : dE A ⟶ dE B) (R : dE B ⟶ dE B) :
+    ListRel.list g ≫ minL R ⊑ ListRel.setify ≫ powerRel g ≫ est R := by
   show ListRel.list g ≫ (ListRel.setify ≫ est R) ⊑ _
   rw [← Cat.assoc, ← Cat.assoc]
   exact comp_mono_right (ListRel.setify_lax_natural g) _
 
-public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
-    minlist Q xs w ↔ ListRel.inlistP xs w ∧ ∀ z, ListRel.inlistP xs z → Q w z := by
+public theorem minL_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
+    minL Q xs w ↔ ListRel.inlistP xs w ∧ ∀ z, ListRel.inlistP xs z → Q w z := by
   constructor
   · rintro ⟨P, hP, hest⟩
     have hP' : P = ListRel.inlistP xs := hP
@@ -425,27 +425,27 @@ public theorem bumpFold_cons (Q : dE A ⟶ dE A) (c : A) (d r : ConsList Unit A)
     bumpFold Q (ConsList.cons c d) r ↔ ∃ r', bumpFold Q d r' ∧ bumpRel Q (c, r') r := Iff.rfl
 
 /-- A non-empty list has a `Q`-least member when `Q` is a connected preorder. -/
-public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
+public theorem minL_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
     (htrans : ∀ a b c, Q a b → Q b c → Q a c) (hconn : ∀ a b, Q a b ∨ Q b a) :
-    ∀ (a : A) (xs : ConsList Unit A), ∃ w, minlist Q (ConsList.cons a xs) w := by
+    ∀ (a : A) (xs : ConsList Unit A), ∃ w, minL Q (ConsList.cons a xs) w := by
   intro a xs
   induction xs generalizing a with
   | wrap u =>
-      refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
+      refine ⟨a, (minL_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
       intro z hz
       rcases inlistP_cons.mp hz with rfl | hz'
       · exact hrefl _
       · exact hz'.elim
   | cons b zs ih =>
       obtain ⟨m, hm⟩ := ih b
-      rw [minlist_apply] at hm
+      rw [minL_apply] at hm
       rcases hconn a m with h | h
-      · refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
+      · refine ⟨a, (minL_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
         intro z hz
         rcases inlistP_cons.mp hz with rfl | hz'
         · exact hrefl _
         · exact htrans a m z h (hm.2 z hz')
-      · refine ⟨m, (minlist_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩⟩
+      · refine ⟨m, (minL_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩⟩
         intro z hz
         rcases inlistP_cons.mp hz with rfl | hz'
         · exact h
@@ -464,10 +464,10 @@ public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.connected Q) :
 
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
     the fold `⦇[nil,bump(Q)]⦈` sends `xs` to `[minlist Q xs]` — thinning comes down to one element. -/
-public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder Q)
+public theorem bumpFold_eq_singleton_minL {Q : dE A ⟶ dE A} (hQ : preorder Q)
     (hc : Freyd.Alg.connected Q) (a : A) (xs ys : ConsList Unit A) :
     bumpFold Q (ConsList.cons a xs) ys
-      ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
+      ↔ ∃ w, minL Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
   obtain ⟨hrefl, htrans⟩ := preorder_apply hQ
   have hconn := connected_apply hc
   induction xs generalizing a ys with
@@ -477,13 +477,13 @@ public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder 
       · rintro ⟨r', hr', hb⟩
         rw [bumpFold_wrap] at hr'
         subst hr'
-        refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
+        refine ⟨a, (minL_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
         intro z hz
         rcases inlistP_cons.mp hz with rfl | hz'
         · exact hrefl _
         · exact hz'.elim
       · rintro ⟨w, hw, rfl⟩
-        rw [minlist_apply] at hw
+        rw [minL_apply] at hw
         rcases inlistP_cons.mp hw.1 with rfl | hw'
         · exact ⟨ConsList.wrap (), rfl, rfl⟩
         · exact hw'.elim
@@ -492,29 +492,29 @@ public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder 
       constructor
       · rintro ⟨r', hr', hb⟩
         obtain ⟨m, hm, rfl⟩ := (ih b r').mp hr'
-        rw [minlist_apply] at hm
+        rw [minL_apply] at hm
         rcases hb with ⟨hab, rfl⟩ | ⟨hba, rfl⟩ | ⟨h1, h2, _⟩
-        · refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, rfl⟩
+        · refine ⟨a, (minL_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, rfl⟩
           intro z hz
           rcases inlistP_cons.mp hz with rfl | hz'
           · exact hrefl _
           · exact htrans a m z hab (hm.2 z hz')
-        · refine ⟨m, (minlist_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩, rfl⟩
+        · refine ⟨m, (minL_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩, rfl⟩
           intro z hz
           rcases inlistP_cons.mp hz with rfl | hz'
           · exact hba
           · exact hm.2 z hz'
         · exact ((hconn a m).elim h1 h2).elim
       · rintro ⟨w, hw, rfl⟩
-        rw [minlist_apply] at hw
+        rw [minL_apply] at hw
         rcases inlistP_cons.mp hw.1 with rfl | hwtail
-        · obtain ⟨m, hm⟩ := minlist_exists hrefl htrans hconn b zs
-          rw [minlist_apply] at hm
+        · obtain ⟨m, hm⟩ := minL_exists hrefl htrans hconn b zs
+          rw [minL_apply] at hm
           refine ⟨ConsList.cons m (ConsList.wrap ()),
-            (ih b _).mpr ⟨m, (minlist_apply Q _ m).mpr hm, rfl⟩, ?_⟩
+            (ih b _).mpr ⟨m, (minL_apply Q _ m).mpr hm, rfl⟩, ?_⟩
           exact Or.inl ⟨hw.2 m (inlistP_cons.mpr (Or.inr hm.1)), rfl⟩
         · refine ⟨ConsList.cons w (ConsList.wrap ()),
-            (ih b _).mpr ⟨w, (minlist_apply Q _ w).mpr
+            (ih b _).mpr ⟨w, (minL_apply Q _ w).mpr
               ⟨hwtail, fun z hz => hw.2 z (inlistP_cons.mpr (Or.inr hz))⟩, rfl⟩, ?_⟩
           exact Or.inr (Or.inl ⟨hw.2 a (inlistP_cons.mpr (Or.inl rfl)), rfl⟩)
 
@@ -568,14 +568,14 @@ public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
 
 /-- `thinlist(Q) ≜ setify thin(Q) setify° ∩ subseq` (B&dM p.200): the largest list relation
     that only drops elements and, on the set of the elements, is a thinning by `Q`. -/
-@[expose] public def thinlist (Q : dE A ⟶ dE A) : dList A ⟶ dList A :=
+@[expose] public def thinL (Q : dE A ⟶ dE A) : dList A ⟶ dList A :=
   (setify ≫ thinRel Q ≫ setify°) ∩ subseq
 
 /-- `T ⊑ thinlist(Q)` is B&dM's two conditions (p.200): `T` only drops elements, and on the set
     of the elements it is a thinning — the meet's universal property, and shunting the map
     `setify` across `⊑`. -/
-public theorem le_thinlist_iff (Q : dE A ⟶ dE A) (T : dList A ⟶ dList A) :
-    T ⊑ thinlist Q ↔ T ⊑ subseq ∧ T ≫ setify ⊑ setify ≫ thinRel Q :=
+public theorem le_thinL_iff (Q : dE A ⟶ dE A) (T : dList A ⟶ dList A) :
+    T ⊑ thinL Q ↔ T ⊑ subseq ∧ T ≫ setify ⊑ setify ≫ thinRel Q :=
   ⟨fun h => ⟨le_trans h (inter_lb_right _ _), (map_shunt_right (graph_map _) _ _).mpr
       (by rw [Cat.assoc]; exact le_trans h (inter_lb_left _ _))⟩,
     fun h => le_inter (by rw [← Cat.assoc]; exact (map_shunt_right (graph_map _) _ _).mp h.2) h.1⟩
@@ -630,47 +630,47 @@ public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
 
 /-- The fold `⦇[nil,bump(Q)]⦈` is an implementation of `thinlist(Q)` (B&dM p.200) when `Q` is a
     preorder: it only drops elements, and every dropped element is covered by a kept one. -/
-public theorem bumpFold_le_thinlist {Q : dE A ⟶ dE A} (hQ : preorder Q) :
+public theorem bumpFold_le_thinL {Q : dE A ⟶ dE A} (hQ : preorder Q) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
-      : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinlist Q := by
+      : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinL Q := by
   rw [← bumpFold_eq]
-  refine (le_thinlist_iff Q _).mpr ⟨le_iff.mpr fun _ _ h => subseqP_of_bumpFold Q h,
+  refine (le_thinL_iff Q _).mpr ⟨le_iff.mpr fun _ _ h => subseqP_of_bumpFold Q h,
     le_iff.mpr fun x S h => ?_⟩
   obtain ⟨ys, hys, rfl⟩ := h
   exact ⟨inlistP x, rfl, fun _ hy => inlistP_of_subseqP (subseqP_of_bumpFold Q hys) hy,
     bumpFold_covers hQ hys⟩
 
 /-- `thinlist(Q)` only drops elements, so it may run before the order test. -/
-public theorem ordered_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} :
-    ordered ≼ ≫ thinlist Q ⊑ thinlist Q ≫ ordered ≼ :=
+public theorem ordered_comp_thinL_le {«≼» Q : dE A ⟶ dE A} :
+    ordered ≼ ≫ thinL Q ⊑ thinL Q ≫ ordered ≼ :=
   ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼) (inter_lb_right _ _)
     (ordered_comp_subseq_le ≼)
 
 /-- `thinlist(Q)` lists a thinning of the set it lists, read across `setify°`. -/
-public theorem setify_conv_comp_thinlist_le {Q : dE A ⟶ dE A} :
-    setify° ≫ thinlist Q ⊑ thinRel Q ≫ setify° :=
-  setify_conv_comp_le listRelator (graph_map _) ((le_thinlist_iff Q _).mp (le_refl _)).2
+public theorem setify_conv_comp_thinL_le {Q : dE A ⟶ dE A} :
+    setify° ≫ thinL Q ⊑ thinRel Q ≫ setify° :=
+  setify_conv_comp_le listRelator (graph_map _) ((le_thinL_iff Q _).mp (le_refl _)).2
 
 /-- **(8.6)** in `Rel` (book p.201) at the specification `thinlist(Q)`: no hypothesis — both
     conditions of p.200 are in the definition. -/
-public theorem sort_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} :
-    sortRel listRelator setify ordered ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-  calc sortRel listRelator setify ordered ≼ ≫ thinlist Q = setify° ≫ ordered ≼ ≫ thinlist Q := by
-        show (setify° ≫ ordered ≼) ≫ thinlist Q = _
+public theorem sort_comp_thinL_le {«≼» Q : dE A ⟶ dE A} :
+    sortRel listRelator setify ordered ≼ ≫ thinL Q ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
+  calc sortRel listRelator setify ordered ≼ ≫ thinL Q = setify° ≫ ordered ≼ ≫ thinL Q := by
+        show (setify° ≫ ordered ≼) ≫ thinL Q = _
         exact Cat.assoc _ _ _
-    _ ⊑ setify° ≫ thinlist Q ≫ ordered ≼ := comp_mono_left _ ordered_comp_thinlist_le
+    _ ⊑ setify° ≫ thinL Q ≫ ordered ≼ := comp_mono_left _ ordered_comp_thinL_le
     _ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ := by
-        rw [← Cat.assoc (setify°) (thinlist Q) (ordered ≼), ← Cat.assoc (thinRel Q) (setify°)]
-        exact comp_mono_right setify_conv_comp_thinlist_le _
+        rw [← Cat.assoc (setify°) (thinL Q) (ordered ≼), ← Cat.assoc (thinRel Q) (setify°)]
+        exact comp_mono_right setify_conv_comp_thinL_le _
     _ = thinRel Q ≫ sortRel listRelator setify ordered ≼ := rfl
 
-calc_steps sort_comp_thinlist_le
+calc_steps sort_comp_thinL_le
 
 /-- **(8.7)** in `Rel` (book p.203), `sort(≼)·minlist R ⊑ min R`, with no hypothesis: `minlist(R)`
     is `setify est(R)`, so `ordered(≼)` drops by coreflexivity and `setify° setify` by `setify`
     being a function. -/
-public theorem sort_comp_minlist_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
-    sortRel listRelator setify ordered ≼ ≫ minlist R ⊑ est R := by
+public theorem sort_comp_minL_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
+    sortRel listRelator setify ordered ≼ ≫ minL R ⊑ est R := by
   have hset : Map (setify : dList A ⟶ P (dE A)) := graph_map _
   show (setify° ≫ ordered ≼) ≫ setify ≫ est R ⊑ est R
   rw [Cat.assoc]
@@ -854,21 +854,21 @@ variable {K : Type} {ι : K → Type}
 
 /-- `listcp(F)` pointwise, by recursion on `F`: `[−]` on a constant and on `arg₁`, the list itself
     on `arg₂`, `list(inl)`/`list(inr)` on a sum, `cpp` on a product. -/
-@[expose] public def listcpFn {A X : Type} :
+@[expose] public def cpLFn {A X : Type} :
     (F : PolyC ι) → sem F A (ConsList Unit X) → ConsList Unit (sem F A X)
   | .zer, _ => ConsList.wrap ()
   | .one, u => ConsList.cons u (ConsList.wrap ())
   | .const _, c => ConsList.cons c (ConsList.wrap ())
   | .arg₁, a => ConsList.cons a (ConsList.wrap ())
   | .arg₂, xs => xs
-  | .oplus l _, Sum.inl u => cmap Sum.inl (listcpFn l u)
-  | .oplus _ r, Sum.inr v => cmap Sum.inr (listcpFn r v)
-  | .otimes l r, (u, v) => cppFn (listcpFn l u, listcpFn r v)
+  | .oplus l _, Sum.inl u => cmap Sum.inl (cpLFn l u)
+  | .oplus _ r, Sum.inr v => cmap Sum.inr (cpLFn r v)
+  | .otimes l r, (u, v) => cppFn (cpLFn l u, cpLFn r v)
 
 /-- **`listcp(F) : F[X]⟶[FX]`** for every polynomial `F` (B&dM p.202, Exercise 8.19). -/
-@[expose] public def listcp (F : PolyC ι) (A : RelSet.{0}) (X : Type) :
+@[expose] public def cpL (F : PolyC ι) (A : RelSet.{0}) (X : Type) :
     (relator F A).obj (listRelator.obj (dE X)) ⟶ listRelator.obj ((relator F A).obj (dE X)) :=
-  graph (listcpFn (A := A.carrier) (X := X) F)
+  graph (cpLFn (A := A.carrier) (X := X) F)
 
 /-- `list(g)` along an injective `g` keeps membership: `g(b)` is in `list(g)(xs)` iff `b` is in `xs`. -/
 public theorem inlistP_cmap_inj {B C : Type} {g : B → C} (hg : ∀ {a b}, g a = g b → a = b) (b : B) :
@@ -893,9 +893,9 @@ public theorem inlistP_cmap_inr_inl {B C : Type} (b : B) :
 
 /-- `listcp(F)` lists exactly `F(∈)`: `y` is in `listcp(F)(w)` iff `F` of list membership relates
     `w` to `y`. -/
-public theorem inlistP_listcpFn {A : RelSet.{0}} {X : Type} (R : listRelator.obj (dE X) ⟶ dE X)
+public theorem inlistP_cpLFn {A : RelSet.{0}} {X : Type} (R : listRelator.obj (dE X) ⟶ dE X)
     (hR : ∀ xs x, R xs x ↔ inlistP xs x) :
-    (F : PolyC ι) → ∀ w y, inlistP (listcpFn (A := A.carrier) (X := X) F w) y ↔ fmapR F R w y
+    (F : PolyC ι) → ∀ w y, inlistP (cpLFn (A := A.carrier) (X := X) F w) y ↔ fmapR F R w y
   | .zer, e, _ => Empty.elim e
   | .one, _, _ => ⟨fun _ => trivial, fun _ => Or.inl rfl⟩
   | .const _, c, y =>
@@ -907,51 +907,51 @@ public theorem inlistP_listcpFn {A : RelSet.{0}} {X : Type} (R : listRelator.obj
         _ ↔ (Cat.id A) a y := Iff.of_eq (id_apply a y).symm
   | .arg₂, xs, y => (hR xs y).symm
   | .oplus l _, Sum.inl u, Sum.inl b =>
-      calc inlistP (cmap Sum.inl (listcpFn l u)) (Sum.inl b) ↔ inlistP (listcpFn l u) b :=
+      calc inlistP (cmap Sum.inl (cpLFn l u)) (Sum.inl b) ↔ inlistP (cpLFn l u) b :=
             inlistP_cmap_inj Sum.inl.inj b _
-        _ ↔ fmapR l R u b := inlistP_listcpFn R hR l u b
+        _ ↔ fmapR l R u b := inlistP_cpLFn R hR l u b
   | .oplus _ _, Sum.inl _, Sum.inr b =>
       ⟨fun h => inlistP_cmap_inl_inr b _ h, fun h => False.elim h⟩
   | .oplus _ r, Sum.inr v, Sum.inr b =>
-      calc inlistP (cmap Sum.inr (listcpFn r v)) (Sum.inr b) ↔ inlistP (listcpFn r v) b :=
+      calc inlistP (cmap Sum.inr (cpLFn r v)) (Sum.inr b) ↔ inlistP (cpLFn r v) b :=
             inlistP_cmap_inj Sum.inr.inj b _
-        _ ↔ fmapR r R v b := inlistP_listcpFn R hR r v b
+        _ ↔ fmapR r R v b := inlistP_cpLFn R hR r v b
   | .oplus _ _, Sum.inr _, Sum.inl b =>
       ⟨fun h => inlistP_cmap_inr_inl b _ h, fun h => False.elim h⟩
   | .otimes l r, (u, v), y =>
-      calc inlistP (cppFn (listcpFn l u, listcpFn r v)) y
-            ↔ inlistP (listcpFn l u) y.1 ∧ inlistP (listcpFn r v) y.2 := inlistP_cpp _ _ _
+      calc inlistP (cppFn (cpLFn l u, cpLFn r v)) y
+            ↔ inlistP (cpLFn l u) y.1 ∧ inlistP (cpLFn r v) y.2 := inlistP_cpp _ _ _
         _ ↔ fmapR l R u y.1 ∧ fmapR r R v y.2 :=
-            and_congr (inlistP_listcpFn R hR l u y.1) (inlistP_listcpFn R hR r v y.2)
+            and_congr (inlistP_cpLFn R hR l u y.1) (inlistP_cpLFn R hR r v y.2)
 
 /-- **`listcp(F) setify = F(setify) cp(F)`** (mirrored): on the underlying sets `listcp(F)` IS
     the cartesian product, for every polynomial `F`, linear or not. -/
-public theorem listcp_comp_setify (F : PolyC ι) (A : RelSet.{0}) (X : Type) :
-    listcp F A X ≫ setify = (relator F A).map setify ≫ cpMap (relator F A) (dE X) :=
-  calc listcp F A X ≫ setify
+public theorem cpL_comp_setify (F : PolyC ι) (A : RelSet.{0}) (X : Type) :
+    cpL F A X ≫ setify = (relator F A).map setify ≫ cpMap (relator F A) (dE X) :=
+  calc cpL F A X ≫ setify
       = Λ ((relator F A).map (setify ≫ ∋ (dE X))) :=
-        graph_setify_Λ _ _ fun w y => inlistP_listcpFn _ setify_ni_iff F w y
+        graph_setify_Λ _ _ fun w y => inlistP_cpLFn _ setify_ni_iff F w y
     _ = Λ ((relator F A).map setify ≫ (relator F A).map (∋ (dE X))) := by rw [(relator F A).map_comp]
     _ = (relator F A).map setify ≫ cpMap (relator F A) (dE X) :=
         Λ_fusion ((relator F A).map_is_map (graph_map _)) _
 
 /-- A code that does not mention `arg₂` lists exactly one value. -/
-public theorem listcpFn_single {A X : Type} : (F : PolyC ι) → ¬ hasArg₂ F →
-    ∀ w : sem F A (ConsList Unit X), ∃ u, listcpFn F w = ConsList.cons u (ConsList.wrap ())
+public theorem cpLFn_single {A X : Type} : (F : PolyC ι) → ¬ hasArg₂ F →
+    ∀ w : sem F A (ConsList Unit X), ∃ u, cpLFn F w = ConsList.cons u (ConsList.wrap ())
   | .zer, _, e => Empty.elim e
   | .one, _, _ => ⟨_, rfl⟩
   | .const _, _, _ => ⟨_, rfl⟩
   | .arg₁, _, _ => ⟨_, rfl⟩
   | .arg₂, h, _ => (h trivial).elim
   | .oplus l _, h, Sum.inl u =>
-      let ⟨u', hu⟩ := listcpFn_single l (fun x => h (Or.inl x)) u
+      let ⟨u', hu⟩ := cpLFn_single l (fun x => h (Or.inl x)) u
       ⟨Sum.inl u', congrArg (cmap Sum.inl) hu⟩
   | .oplus _ r, h, Sum.inr v =>
-      let ⟨v', hv⟩ := listcpFn_single r (fun x => h (Or.inr x)) v
+      let ⟨v', hv⟩ := cpLFn_single r (fun x => h (Or.inr x)) v
       ⟨Sum.inr v', congrArg (cmap Sum.inr) hv⟩
   | .otimes l r, h, (u, v) =>
-      let ⟨u', hu⟩ := listcpFn_single l (fun x => h (Or.inl x)) u
-      let ⟨v', hv⟩ := listcpFn_single r (fun x => h (Or.inr x)) v
+      let ⟨u', hu⟩ := cpLFn_single l (fun x => h (Or.inl x)) u
+      let ⟨v', hv⟩ := cpLFn_single r (fun x => h (Or.inr x)) v
       ⟨(u', v'), congr (congrArg (fun x y => cppFn (x, y)) hu) hv⟩
 
 /-- A code that does not mention `arg₂` relates every value to itself under `F(S)`. -/
@@ -983,65 +983,65 @@ public theorem cppFn_single_right {B C : Type} (b : C) : ∀ xs : ConsList Unit 
   | ConsList.cons a x => congrArg (ConsList.cons (a, b)) (cppFn_single_right b x)
 
 /-- For linear `F`, `listcp(F)` of `F`-many `≼`-ordered lists is `F(≼)`-ordered. -/
-public theorem orderedP_listcpFn {A : RelSet.{0}} {X : Type} («≼» : dE X ⟶ dE X) :
+public theorem orderedP_cpLFn {A : RelSet.{0}} {X : Type} («≼» : dE X ⟶ dE X) :
     (F : PolyC ι) → linear F → ∀ w, fmapR (A := A) F (ordered ≼) w w →
-      orderedP (fmapR (A := A) F ≼) (listcpFn (A := A.carrier) (X := X) F w)
+      orderedP (fmapR (A := A) F ≼) (cpLFn (A := A.carrier) (X := X) F w)
   | .zer, _, e, _ => Empty.elim e
   | .one, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
   | .const _, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
   | .arg₁, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
   | .arg₂, _, _, h => And.right h
   | .oplus l _, hF, Sum.inl u, h =>
-      orderedP_cmap Sum.inl _ _ (fun _ _ h' => h') _ (orderedP_listcpFn ≼ l (And.left hF) u h)
+      orderedP_cmap Sum.inl _ _ (fun _ _ h' => h') _ (orderedP_cpLFn ≼ l (And.left hF) u h)
   | .oplus _ r, hF, Sum.inr v, h =>
-      orderedP_cmap Sum.inr _ _ (fun _ _ h' => h') _ (orderedP_listcpFn ≼ r (And.right hF) v h)
+      orderedP_cmap Sum.inr _ _ (fun _ _ h' => h') _ (orderedP_cpLFn ≼ r (And.right hF) v h)
   | .otimes l r, hF, (u, v), h =>
       match And.right (And.right hF) with
       | Or.inl hl =>
-        let ⟨u', hu⟩ := listcpFn_single l hl u
-        have he : cppFn (listcpFn l u, listcpFn r v) = cmap (fun y => (u', y)) (listcpFn r v) :=
-          calc cppFn (listcpFn l u, listcpFn r v)
-                = cppFn (ConsList.cons u' (ConsList.wrap ()), listcpFn r v) :=
-                  congrArg (fun z => cppFn (z, listcpFn r v)) hu
-            _ = cmap (fun y => (u', y)) (listcpFn r v) := cppFn_single_left u' _
+        let ⟨u', hu⟩ := cpLFn_single l hl u
+        have he : cppFn (cpLFn l u, cpLFn r v) = cmap (fun y => (u', y)) (cpLFn r v) :=
+          calc cppFn (cpLFn l u, cpLFn r v)
+                = cppFn (ConsList.cons u' (ConsList.wrap ()), cpLFn r v) :=
+                  congrArg (fun z => cppFn (z, cpLFn r v)) hu
+            _ = cmap (fun y => (u', y)) (cpLFn r v) := cppFn_single_left u' _
         Eq.mpr (congrArg (orderedP (fmapR (A := A) (.otimes l r) ≼)) he)
           (orderedP_cmap _ _ _ (fun _ _ h' => ⟨fmapR_refl ≼ l hl u', h'⟩) _
-            (orderedP_listcpFn ≼ r (And.left (And.right hF)) v (And.right h)))
+            (orderedP_cpLFn ≼ r (And.left (And.right hF)) v (And.right h)))
       | Or.inr hr =>
-        let ⟨v', hv⟩ := listcpFn_single r hr v
-        have he : cppFn (listcpFn l u, listcpFn r v) = cmap (fun x => (x, v')) (listcpFn l u) :=
-          calc cppFn (listcpFn l u, listcpFn r v)
-                = cppFn (listcpFn l u, ConsList.cons v' (ConsList.wrap ())) :=
-                  congrArg (fun z => cppFn (listcpFn l u, z)) hv
-            _ = cmap (fun x => (x, v')) (listcpFn l u) := cppFn_single_right v' _
+        let ⟨v', hv⟩ := cpLFn_single r hr v
+        have he : cppFn (cpLFn l u, cpLFn r v) = cmap (fun x => (x, v')) (cpLFn l u) :=
+          calc cppFn (cpLFn l u, cpLFn r v)
+                = cppFn (cpLFn l u, ConsList.cons v' (ConsList.wrap ())) :=
+                  congrArg (fun z => cppFn (cpLFn l u, z)) hv
+            _ = cmap (fun x => (x, v')) (cpLFn l u) := cppFn_single_right v' _
         Eq.mpr (congrArg (orderedP (fmapR (A := A) (.otimes l r) ≼)) he)
           (orderedP_cmap _ _ _ (fun _ _ h' => ⟨h', fmapR_refl ≼ r hr v'⟩) _
-            (orderedP_listcpFn ≼ l (And.left hF) u (And.left h)))
+            (orderedP_cpLFn ≼ l (And.left hF) u (And.left h)))
 
 /-- **`F(ordered(≼)) listcp(F) ⊑ listcp(F) ordered(F(≼))`** for linear `F`: `listcp(F)` carries
     `F`-many `≼`-ordered lists to an `F(≼)`-ordered one. -/
-public theorem Fmap_ordered_comp_listcp_le (F : PolyC ι) (hF : linear F) (A : RelSet.{0}) {X : Type}
+public theorem Fmap_ordered_comp_cpL_le (F : PolyC ι) (hF : linear F) (A : RelSet.{0}) {X : Type}
     («≼» : dE X ⟶ dE X) :
-    (relator F A).map (ordered ≼) ≫ listcp F A X ⊑ listcp F A X ≫ ordered ((relator F A).map ≼) :=
+    (relator F A).map (ordered ≼) ≫ cpL F A X ⊑ cpL F A X ≫ ordered ((relator F A).map ≼) :=
   have hco : (relator F A).map (ordered ≼) ⊑ 𝟙 _ :=
     calc (relator F A).map (ordered ≼) ⊑ (relator F A).map (𝟙 _) :=
           (relator F A).map_mono (ordered_coreflexive ≼)
       _ = 𝟙 _ := (relator F A).map_id _
   le_iff.mpr fun w ys ⟨w', hw, hys⟩ =>
     have he : w = w' := cast (id_apply w w') (le_iff.mp hco w w' hw)
-    have hys' : ys = listcpFn F w' := hys
+    have hys' : ys = cpLFn F w' := hys
     match w', ys, he, hw, hys' with
-    | _, _, rfl, hw, rfl => ⟨_, rfl, rfl, orderedP_listcpFn ≼ F hF w hw⟩
+    | _, _, rfl, hw, rfl => ⟨_, rfl, rfl, orderedP_cpLFn ≼ F hF w hw⟩
 
 /-- **(8.11)** for every linear polynomial `F` (B&dM p.202, Exercise 8.19), mirrored
     `F(sort(≼)) listcp(F) ⊑ cp(F) sort(F(≼))`: the abstract (8.11) from `listcp(F)`'s two
     defining properties, each proved by induction on `F`. -/
-public theorem Fmap_sort_comp_listcp_le (F : PolyC ι) (hF : linear F) (A : RelSet.{0}) {X : Type}
+public theorem Fmap_sort_comp_cpL_le (F : PolyC ι) (hF : linear F) (A : RelSet.{0}) {X : Type}
     {«≼» : dE X ⟶ dE X} :
-    (relator F A).map (sortRel listRelator setify ordered ≼) ≫ listcp F A X
+    (relator F A).map (sortRel listRelator setify ordered ≼) ≫ cpL F A X
       ⊑ cpMap (relator F A) (dE X) ≫ sortRel listRelator setify ordered ((relator F A).map ≼) :=
-  map_sortRel_comp_listcp_le listRelator (ordered := fun R => ordered R) («≼» := ≼) (graph_map _) (graph_map _)
-    (le_of_eq (listcp_comp_setify F A X)) (Fmap_ordered_comp_listcp_le F hF A ≼)
+  map_sortRel_comp_cpL_le listRelator (ordered := fun R => ordered R) («≼» := ≼) (graph_map _) (graph_map _)
+    (le_of_eq (cpL_comp_setify F A X)) (Fmap_ordered_comp_cpL_le F hF A ≼)
 
 end Freyd.Alg.RelSet.Poly
 
@@ -1054,37 +1054,37 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL
 
 /-- **`listcp(F) : F[X]⟶[FX]`** at the linear `FX = L+E×X` (B&dM p.201, Exercise 8.19): the
     polynomial `listcp(F)` at the code `clF(L)`, which is `wrap` on the leaf and `cpr` on the pair. -/
-@[expose] public def listcp {L E X : Type} :
+@[expose] public def cpL {L E X : Type} :
     (CL.F L E).obj (listRelator.obj (dE X)) ⟶ listRelator.obj ((CL.F L E).obj (dE X)) :=
-  Poly.listcp (clF L) (dE E) X
+  Poly.cpL (clF L) (dE E) X
 
 /-- **(8.11)** in `Rel` (book p.201), `listcp(F)·F(sort ≼) ⊑ sort(F(≼))·cp(F)`, at
     `FX = L+E×X`: the polynomial (8.11) at the linear code `clF(L)`. -/
-public theorem Fmap_sort_comp_listcp_le {L E X : Type} {«≼» : dE X ⟶ dE X} :
-    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
+public theorem Fmap_sort_comp_cpL_le {L E X : Type} {«≼» : dE X ⟶ dE X} :
+    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
       ⊑ cpMap (CL.F L E) (dE X) ≫ sortRel listRelator setify ordered ((CL.F L E).map ≼) :=
-  Poly.Fmap_sort_comp_listcp_le (clF L) ⟨trivial, trivial, trivial, Or.inl id⟩ (dE E)
+  Poly.Fmap_sort_comp_cpL_le (clF L) ⟨trivial, trivial, trivial, Or.inl id⟩ (dE E)
 
 /-- On the pair, `listcp` is `cpr` landing in the right summand: `list(inr)(list(e,·)(xs))`. -/
-public theorem listcpFn_inr {L E X : Type} (e : E) (xs : ConsList Unit X) :
-    Poly.listcpFn (A := E) (clF L) (Sum.inr (e, xs)) = cmap Sum.inr (cmap (fun x => (e, x)) xs) :=
+public theorem cpLFn_inr {L E X : Type} (e : E) (xs : ConsList Unit X) :
+    Poly.cpLFn (A := E) (clF L) (Sum.inr (e, xs)) = cmap Sum.inr (cmap (fun x => (e, x)) xs) :=
   congrArg (cmap Sum.inr) (Poly.cppFn_single_left e xs)
 
 -- Stated in the relators the bead's two lanes spell (`L+E×𝟙` then `list`, and `L+E×(𝟙 list)`),
 -- because that is the statement the diagram exporter asks for the `listcp` bead.
 /-- **`listcp` is STRICTLY natural**: `F(list(R)) listcp = listcp list(F(R))`. -/
-public theorem listcp_strictNatural {L E : Type} :
+public theorem cpL_strictNatural {L E : Type} :
     StrictNatural
       (Relator.comp (Relator.sum (Relator.const (dL L))
           (Relator.prod (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))) listRelator)
       (Relator.sum (Relator.const (dL L))
           (Relator.prod (Relator.const (dE E))
             (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
-      (fun a : RelSet.{0} => listcp (L := L) (E := E) (X := a.carrier)) := by
+      (fun a : RelSet.{0} => cpL (L := L) (E := E) (X := a.carrier)) := by
   intro x y R
   show (Relator.sum (Relator.const (dL L)) (Relator.prod (Relator.const (dE E))
-      (Relator.idRelator RelSet.{0}))).map (listRelator.map R) ≫ listcp
-    = listcp ≫ listRelator.map ((Relator.sum (Relator.const (dL L)) (Relator.prod
+      (Relator.idRelator RelSet.{0}))).map (listRelator.map R) ≫ cpL
+    = cpL ≫ listRelator.map ((Relator.sum (Relator.const (dL L)) (Relator.prod
       (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))).map R)
   rw [F_eq_sum_prod, F_eq_sum_prod]
   apply hom_ext
@@ -1112,12 +1112,12 @@ public theorem listcp_strictNatural {L E : Type} :
       · exact (hw : False).elim
       · obtain ⟨rfl, hys⟩ := hw
         refine ⟨_, rfl, ?_⟩
-        rw [listcpFn_inr, listcpFn_inr]
+        rw [cpLFn_inr, cpLFn_inr]
         exact (listP_Fmap_cmap_inr R e xs _).mpr ⟨ys, hys, rfl⟩
     · rintro ⟨v, rfl, hv⟩
-      rw [listcpFn_inr] at hv
+      rw [cpLFn_inr] at hv
       obtain ⟨ys, hys, rfl⟩ := (listP_Fmap_cmap_inr R e xs zs).mp hv
-      exact ⟨Sum.inr (e, ys), ⟨rfl, hys⟩, (listcpFn_inr e ys).symm⟩
+      exact ⟨Sum.inr (e, ys), ⟨rfl, hys⟩, (cpLFn_inr e ys).symm⟩
 
 end Freyd.Alg.RelSet.ListRel
 
@@ -1358,19 +1358,19 @@ public theorem sortRel_mono {X Y : dE A ⟶ dE A} (h : X ⊑ Y) :
     monotonic on `≼`.  The sort walks inwards one law at a time: under `F` by (8.11), `f`
     monotonic, past `list(f)` by (8.8), past `filter(p)` by (8.9), then `E(f) = P(f)` and the
     transpose absorbs `E(fp)`. -/
-public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
+public theorem Fmap_sort_comp_cpL_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
     (p : dE A ⟶ dE A) (hp : Coreflexive p) {«≼» : dE A ⟶ dE A}
     (hmono : Freyd.Alg.Pres (F := CL.F L E) (graph f) ≼) :
-    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
+    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL ≫ list (graph f)
         ≫ Filter.filter p
       ⊑ Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ p)
         ≫ sortRel listRelator setify ordered ≼ :=
-  calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
+  calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL ≫ list (graph f)
           ≫ Filter.filter p
         ⊑ cpMap (CL.F L E) (dE A) ≫ sortRel listRelator setify ordered ((CL.F L E).map ≼)
           ≫ list (graph f) ≫ Filter.filter p := by
         rw [← Cat.assoc, ← Cat.assoc (cpMap (CL.F L E) (dE A))]
-        exact comp_mono_right Fmap_sort_comp_listcp_le _
+        exact comp_mono_right Fmap_sort_comp_cpL_le _
     _ ⊑ cpMap (CL.F L E) (dE A)
           ≫ sortRel listRelator setify ordered (graph f ≫ ≼ ≫ (graph f)°)
           ≫ list (graph f) ≫ Filter.filter p :=
@@ -1392,7 +1392,7 @@ public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E ×
           ← Cat.assoc, show cpMap (CL.F L E) (dE A) = Λ ((CL.F L E).map (∋ (dE A))) from rfl,
           Λ_absorption]
 
-calc_steps Fmap_sort_comp_listcp_list_filter_le
+calc_steps Fmap_sort_comp_cpL_list_filter_le
 
 /-- `filter` by the identity keeps every list: the list is its own longest subsequence. -/
 public theorem filter_id : Filter.filter (𝟙 (dE A)) = 𝟙 (dList A) := by
@@ -1428,22 +1428,22 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
     {«≼» Q : dE A ⟶ dE A} (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
-    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
+    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
         ≫ (relProd (dList A) (dList A)).pair (list (graph f₁) ≫ Filter.filter p₁)
-          (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinlist Q
+          (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinL Q
       ⊑ Λ ((CL.F L E).map (∋ (dE A))
           ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-  calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
+  calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
           ≫ (relProd (dList A) (dList A)).pair (list (graph f₁) ≫ Filter.filter p₁)
-            (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinlist Q
+            (list (graph f₂) ≫ Filter.filter p₂) ≫ merge ≼ ≫ thinL Q
         ⊑ (relProd (dList A) (dList A)).pair
-            ((CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
+            ((CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
               ≫ list (graph f₁) ≫ Filter.filter p₁)
-            ((CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
+            ((CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ cpL
               ≫ list (graph f₂) ≫ Filter.filter p₂)
-          ≫ merge ≼ ≫ thinlist Q := by
-        rw [← Cat.assoc ((CL.F L E).map _) listcp, ← Cat.assoc (_ ≫ listcp)]
+          ≫ merge ≼ ≫ thinL Q := by
+        rw [← Cat.assoc ((CL.F L E).map _) cpL, ← Cat.assoc (_ ≫ cpL)]
         refine comp_mono_right (le_trans (RelProd.comp_pair_le _ _ _) (le_of_eq ?_)) _
         rw [Cat.assoc, Cat.assoc]
     _ ⊑ (relProd (dList A) (dList A)).pair
@@ -1451,37 +1451,37 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
               ≫ sortRel listRelator setify ordered ≼)
             (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂)
               ≫ sortRel listRelator setify ordered ≼)
-          ≫ merge ≼ ≫ thinlist Q :=
-        comp_mono_right (RelProd.pair_mono (Fmap_sort_comp_listcp_list_filter_le f₁ p₁ hp₁ hmono₁)
-          (Fmap_sort_comp_listcp_list_filter_le f₂ p₂ hp₂ hmono₂)) _
+          ≫ merge ≼ ≫ thinL Q :=
+        comp_mono_right (RelProd.pair_mono (Fmap_sort_comp_cpL_list_filter_le f₁ p₁ hp₁ hmono₁)
+          (Fmap_sort_comp_cpL_list_filter_le f₂ p₂ hp₂ hmono₂)) _
     _ = (relProd (P (dE A)) (P (dE A))).pair
             (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁))
             (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
           ≫ prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
             (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼)
-          ≫ merge ≼ ≫ thinlist Q := by
+          ≫ merge ≼ ≫ thinL Q := by
         rw [← RelProd.pair_prodMap (P := relProd (P (dE A)) (P (dE A)))
           (Q := relProd (dList A) (dList A)), Cat.assoc]
     _ ⊑ (relProd (P (dE A)) (P (dE A))).pair
             (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁))
             (Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
           ≫ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼
-          ≫ thinlist Q := by
+          ≫ thinL Q := by
         refine comp_mono_left _ ?_
         rw [← Cat.assoc (prodMap _ _ _ _) (merge ≼), ← Cat.assoc (cup _)]
         exact comp_mono_right (prodMap_sort_comp_merge_le hP hc) _
     _ = Λ (((CL.F L E).map (∋ (dE A)) ≫ graph f₁ ≫ p₁)
           ∪ ((CL.F L E).map (∋ (dE A)) ≫ graph f₂ ≫ p₂))
-        ≫ sortRel listRelator setify ordered ≼ ≫ thinlist Q := by
+        ≫ sortRel listRelator setify ordered ≼ ≫ thinL Q := by
         rw [Λ_union _ _ (relProd (P (dE A)) (P (dE A))), Cat.assoc]
     _ = Λ ((CL.F L E).map (∋ (dE A))
           ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
-        ≫ sortRel listRelator setify ordered ≼ ≫ thinlist Q := by
+        ≫ sortRel listRelator setify ordered ≼ ≫ thinL Q := by
         rw [DistributiveAllegory.comp_union_distrib]
     _ ⊑ Λ ((CL.F L E).map (∋ (dE A))
           ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-        comp_mono_left _ sort_comp_thinlist_le
+        comp_mono_left _ sort_comp_thinL_le
 
 calc_steps sortedAlg_fusion
 
@@ -1548,20 +1548,20 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
     (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
-    relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
+    relCata (I := CL.initial L E) (cpL ≫ (relProd (dList A) (dList A)).pair
         (list (graph f₁) ≫ Filter.filter p₁) (list (graph f₂) ≫ Filter.filter p₂)
-        ≫ merge ≼ ≫ thinlist Q) ≫ minlist R
+        ≫ merge ≼ ≫ thinL Q) ≫ minL R
       ⊑ Λ (relCata (I := CL.initial L E)
           ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
   calc _ ⊑ (relCata (I := CL.initial L E) (Λ ((CL.F L E).map (∋ (dE A))
             ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
-            ≫ thinRel Q) ≫ sortRel listRelator setify ordered ≼) ≫ minlist R :=
+            ≫ thinRel Q) ≫ sortRel listRelator setify ordered ≼) ≫ minL R :=
         comp_mono_right (relCata_le_comp (CL.initial L E) (by
           rw [Cat.assoc]; exact sortedAlg_fusion f₁ f₂ p₁ p₂ hp₁ hp₂ hP hc hmono₁ hmono₂)) _
     _ ⊑ relCata (I := CL.initial L E) (Λ ((CL.F L E).map (∋ (dE A))
             ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
             ≫ thinRel Q) ≫ est R :=
-        le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ (sort_comp_minlist_le R))
+        le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ (sort_comp_minL_le R))
     _ ⊑ Λ (relCata (I := CL.initial L E)
           ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
         thinning_est (CL.initial L E) hQR hQ hR (Freyd.Alg.pres_union hm₁ hm₂)
@@ -1578,13 +1578,13 @@ public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → 
     (hP : preorder ≼) (hc : Freyd.Alg.connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
-    relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
+    relCata (I := CL.initial L E) (cpL ≫ (relProd (dList A) (dList A)).pair
         (list (graph f₁) ≫ Filter.filter p₁) (list (graph f₂) ≫ Filter.filter p₂)
-        ≫ merge ≼ ≫ bumpFold Q) ≫ minlist R
+        ≫ merge ≼ ≫ bumpFold Q) ≫ minL R
       ⊑ Λ (relCata (I := CL.initial L E)
           ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
   le_trans (comp_mono_right (relCata_mono (CL.initial L E) (comp_mono_left _ (comp_mono_left _
-      (comp_mono_left _ (by rw [bumpFold_eq]; exact bumpFold_le_thinlist hQ))))) _)
+      (comp_mono_left _ (by rw [bumpFold_eq]; exact bumpFold_le_thinL hQ))))) _)
     (thinningList f₁ f₂ p₁ p₂ hp₁ hp₂ hQR hQ hR hm₁ hm₂ hP hc hmono₁ hmono₂)
 
 end Freyd.Alg.RelSet.ListRel
