@@ -776,7 +776,7 @@ def mnlRel (R : A ⟶ A) : P A ⟶ A := est (R° ⇨ R)
     symmetric (`coreflexive_symmetric_idempotent`), so `id∩R° = (id∩R°)° = id∩R ⊑ R`. -/
 theorem id_le_impl_recip (R : A ⟶ A) : Cat.id A ⊑ R° ⇨ R := by
   apply (le_impl_iff _ _ _).mpr
-  have hcoref : Coreflexive (Cat.id A ∩ R°) := inter_lb_left _ _
+  have hcoref : cor (Cat.id A ∩ R°) := inter_lb_left _ _
   have hsym : (Cat.id A ∩ R°)° = Cat.id A ∩ R° :=
     symmetric_eq (coreflexive_symmetric_idempotent hcoref).1
   have hunfold : (Cat.id A ∩ R°)° = Cat.id A ∩ R := by

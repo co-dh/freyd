@@ -192,8 +192,8 @@ def InterUnionDistrib (𝒜 : Type u) [UnionAllegory 𝒜] : Prop :=
 /-- For a tabulation, `φ Q = f° Q g` is coreflexive whenever `Q ⊑ f g°`. -/
 theorem tab_phi_coreflexive [UnionAllegory 𝒜] {a p c : 𝒜}
     {f : a ⟶ c} {g : p ⟶ c} (hff1 : f° ≫ f = Cat.id c) (hgg1 : g° ≫ g = Cat.id c)
-    {Q : a ⟶ p} (hQ : Q ⊑ f ≫ g°) : Coreflexive (f° ≫ Q ≫ g) := by
-  dsimp [Coreflexive]
+    {Q : a ⟶ p} (hQ : Q ⊑ f ≫ g°) : cor (f° ≫ Q ≫ g) := by
+  dsimp [cor]
   have h1 : f° ≫ Q ≫ g ⊑ f° ≫ (f ≫ g°) ≫ g :=
     comp_mono_left f° (comp_mono_right hQ g)
   have h2 : f° ≫ (f ≫ g°) ≫ g = Cat.id c := by
@@ -432,9 +432,9 @@ theorem src_apex_roundtrip [UnionAllegory 𝒜] {a p c : 𝒜} {F : c ⟶ a} {G 
     (`comp_union_distrib`); hence ∩ distributes over ∪ *as an equality*.
     This is the distributivity that §2.228(a) transports back to `{Q ⊑ U}`. -/
 theorem coreflexive_inter_unionU_distrib [UnionAllegory 𝒜] {c : 𝒜} {A B C : c ⟶ c}
-    (hA : Coreflexive A) (hB : Coreflexive B) (hC : Coreflexive C) :
+    (hA : cor A) (hB : cor B) (hC : cor C) :
     A ∩ (B ∪ᵤ C) = (A ∩ B) ∪ᵤ (A ∩ C) := by
-  have hBC : Coreflexive (B ∪ᵤ C) := unionU_lub hB hC
+  have hBC : cor (B ∪ᵤ C) := unionU_lub hB hC
   rw [← coreflexive_comp_eq_inter hA hBC, UnionAllegory.comp_union_distrib,
       coreflexive_comp_eq_inter hA hB, coreflexive_comp_eq_inter hA hC]
 
@@ -454,9 +454,9 @@ theorem interUnionU_distrib_of_transport [UnionAllegory 𝒜] {a p c : 𝒜}
     (ψ : (c ⟶ c) → (a ⟶ p))
     (hsplitR : ψ (f° ≫ R ≫ g) = R) (hsplitS : ψ (f° ≫ S ≫ g) = S)
     (hsplitT : ψ (f° ≫ T ≫ g) = T)
-    (hcR : Coreflexive (f° ≫ R ≫ g)) (hcS : Coreflexive (f° ≫ S ≫ g))
-    (hcT : Coreflexive (f° ≫ T ≫ g))
-    (hψcap : ∀ A B : c ⟶ c, Coreflexive A → Coreflexive B → ψ (A ∩ B) = ψ A ∩ ψ B)
+    (hcR : cor (f° ≫ R ≫ g)) (hcS : cor (f° ≫ S ≫ g))
+    (hcT : cor (f° ≫ T ≫ g))
+    (hψcap : ∀ A B : c ⟶ c, cor A → cor B → ψ (A ∩ B) = ψ A ∩ ψ B)
     (hψcup : ∀ A B : c ⟶ c, ψ (A ∪ᵤ B) = ψ A ∪ᵤ ψ B) :
     R ∩ (S ∪ᵤ T) ⊑ (R ∩ S) ∪ᵤ (R ∩ T) := by
   have key := coreflexive_inter_unionU_distrib hcR hcS hcT
@@ -502,7 +502,7 @@ public theorem left_modular_le {a b d : 𝒜} [Allegory 𝒜] (R : a ⟶ b) (S :
     jointly-monic span (`F F° ∩ G G° = 1_c`) and a coreflexive `A`, the two
     coupled composites meet inside `A`: `(F F°≫A) ∩ (G G°≫A) ⊑ A`. -/
 theorem srcTab_cap {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
-    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : Coreflexive A) :
+    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : cor A) :
     ((F ≫ F°) ≫ A) ∩ ((G ≫ G°) ≫ A) ⊑ A := by
   have hAcoref : A ⊑ Cat.id c := hA
   have hAsymm : A° = A := symmetric_eq (coreflexive_symmetric_idempotent hA).1
@@ -521,7 +521,7 @@ theorem srcTab_cap {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
 
 /-- One-sided deflation feeding `src_phipsi_le`: `1_c ∩ F F° A G G° ⊑ A G G°`. -/
 theorem srcTab_peel {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
-    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : Coreflexive A) :
+    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : cor A) :
     Cat.id c ∩ ((F ≫ F°) ≫ A ≫ (G ≫ G°)) ⊑ A ≫ (G ≫ G°) := by
   have hAsymm : A° = A := symmetric_eq (coreflexive_symmetric_idempotent hA).1
   have hAidem : A ≫ A = A := (coreflexive_symmetric_idempotent hA).2
@@ -543,7 +543,7 @@ theorem srcTab_peel {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
 /-- **`φψ ⊑ id`** (§2.143/§2.166).  For a jointly-monic span the round-trip
     `φ(ψ A) = 1_c ∩ F F° A G G°` lands back below the coreflexive `A`. -/
 theorem src_phipsi_le {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
-    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : Coreflexive A) :
+    (hmonic : F ≫ F° ∩ G ≫ G° = Cat.id c) {A : c ⟶ c} (hA : cor A) :
     Cat.id c ∩ (F ≫ (F° ≫ A ≫ G) ≫ G°) ⊑ A := by
   have hAsymm : A° = A := symmetric_eq (coreflexive_symmetric_idempotent hA).1
   rw [show F ≫ (F° ≫ A ≫ G) ≫ G° = (F ≫ F°) ≫ A ≫ (G ≫ G°) by simp [Cat.assoc]]
@@ -567,7 +567,7 @@ theorem src_phipsi_le {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
 /-- **`id ⊑ φψ`** (§2.143/§2.166).  For an *entire* span `1_c ⊑ F F°`, `1_c ⊑ G G°`,
     the round-trip `φ(ψ A)` contains the coreflexive `A`. -/
 theorem src_phipsi_ge {a p c : 𝒜} [Allegory 𝒜] {F : c ⟶ a} {G : c ⟶ p}
-    (hFe : Entire F) (hGe : Entire G) {A : c ⟶ c} (hA : Coreflexive A) :
+    (hFe : Entire F) (hGe : Entire G) {A : c ⟶ c} (hA : cor A) :
     A ⊑ Cat.id c ∩ (F ≫ (F° ≫ A ≫ G) ≫ G°) := by
   have hf1 : Cat.id c ⊑ F ≫ F° := by
     dsimp [Entire, dom] at hFe
@@ -637,12 +637,12 @@ theorem interUnionU_distrib_of_srcTabulation [UnionAllegory 𝒜] {a p c : 𝒜}
       (le_trans (inter_lb_right _ _) (comp_mono_left F (comp_mono_right h G°)))
   have hψmono : ∀ {A B : c ⟶ c}, A ⊑ B → F° ≫ A ≫ G ⊑ F° ≫ B ≫ G := by
     intro A B h; exact comp_mono_left F° (comp_mono_right h G)
-  have hφcoref : ∀ Q : a ⟶ p, Coreflexive (Cat.id c ∩ (F ≫ Q ≫ G°)) := fun Q => inter_lb_left _ _
+  have hφcoref : ∀ Q : a ⟶ p, cor (Cat.id c ∩ (F ≫ Q ≫ G°)) := fun Q => inter_lb_left _ _
   have hrtle : ∀ Q : a ⟶ p, F° ≫ (Cat.id c ∩ (F ≫ Q ≫ G°)) ≫ G ⊑ Q :=
     fun Q => src_roundtrip_le hFm.2 hGm.2 Q
   have hrtge : ∀ {Q : a ⟶ p}, Q ⊑ F° ≫ G → Q ⊑ F° ≫ (Cat.id c ∩ (F ≫ Q ≫ G°)) ≫ G :=
     fun h => src_roundtrip_ge h
-  have hpple : ∀ {A : c ⟶ c}, Coreflexive A → Cat.id c ∩ (F ≫ (F° ≫ A ≫ G) ≫ G°) ⊑ A :=
+  have hpple : ∀ {A : c ⟶ c}, cor A → Cat.id c ∩ (F ≫ (F° ≫ A ≫ G) ≫ G°) ⊑ A :=
     fun hA => src_phipsi_le hmonic hA
   have hψcup : ∀ A B : c ⟶ c, F° ≫ (A ∪ᵤ B) ≫ G = (F° ≫ A ≫ G) ∪ᵤ (F° ≫ B ≫ G) := by
     intro A B; rw [unionU_comp_distrib, UnionAllegory.comp_union_distrib]

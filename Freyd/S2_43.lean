@@ -181,7 +181,7 @@ theorem one_object_pre_power_inconsistent {a : 𝒜} (T : a ⟶ a) (hT : Thick T
   have hEnt' : Cat.id a ⊑ W ≫ W° := by
     dsimp [Entire, dom] at hEnt; rw [← hEnt]; exact inter_lb_right _ _
   -- (1∩T) is coreflexive, hence idempotent: (1∩T)(1∩T) = 1∩T.
-  have hcoref : Coreflexive (Cat.id a ∩ T) := inter_lb_left _ _
+  have hcoref : cor (Cat.id a ∩ T) := inter_lb_left _ _
   have hidem : (Cat.id a ∩ T) ≫ (Cat.id a ∩ T) = Cat.id a ∩ T :=
     (coreflexive_symmetric_idempotent hcoref).2
   -- W(1∩T) ⊑ WT ⊑ diag T (since 1∩T ⊑ T and hWT).

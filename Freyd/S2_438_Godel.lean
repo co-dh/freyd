@@ -132,7 +132,7 @@ public structure GodelHyp [DistributiveAllegory 𝒜] {a : 𝒜} (T R : a ⟶ a)
 public theorem godel_collapse {a : 𝒜} (W : HatWitness a) (H : GodelHyp W.T W.R) :
     Cat.id a = (𝟘 : a ⟶ a) := by
   -- The coreflexive cut c = 1 ∩ T is idempotent and below T.
-  have hc_coref : Coreflexive (Cat.id a ∩ W.T) := inter_lb_left _ _
+  have hc_coref : cor (Cat.id a ∩ W.T) := inter_lb_left _ _
   have hc_idem : (Cat.id a ∩ W.T) ≫ (Cat.id a ∩ W.T) = Cat.id a ∩ W.T :=
     (coreflexive_symmetric_idempotent hc_coref).2
   have hc_le_T : Cat.id a ∩ W.T ⊑ W.T := inter_lb_right _ _

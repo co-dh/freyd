@@ -130,10 +130,10 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
 /-- `ok w` as an arrow: the coreflexive of `okP`. -/
 @[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word := corefl (okP (len := len) w)
 
-public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
+public theorem fits_coreflexive : cor (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
-public theorem ok_coreflexive : Coreflexive (ok (len := len) w) :=
+public theorem ok_coreflexive : cor (ok (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **para-defn**: `R ≜ (waste w) ≤ (waste w)°`. -/

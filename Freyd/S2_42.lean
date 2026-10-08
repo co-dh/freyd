@@ -65,14 +65,14 @@ theorem equivRel_eq_div_self {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} 
     `coreflexive_splits` (S2_2): a coreflexive `A` splits as `g° ≫ g = A`, `g ≫ g° = 1`. -/
 theorem equivRel_effective_of_coreflexives_split {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
     (E : a ⟶ a) (hE : EquivalenceRel E) (hbox : codBox E = codBox (∋ a))
-    (hsplit : ∀ {x : 𝒜} {A : x ⟶ x}, Coreflexive A →
+    (hsplit : ∀ {x : 𝒜} {A : x ⟶ x}, cor A →
       ∃ (c : 𝒜) (g : c ⟶ x), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id c) :
     ∃ (c : 𝒜) (h : a ⟶ c), Map h ∧ h ≫ h° = E ∧ h° ≫ h = Cat.id c := by
   -- §2.421/§2.422: E = f ≫ f° with f = Λ(E) a map.
   obtain ⟨f, hf, hEeq⟩ := equivRel_eq_map_comp_recip E hE hbox
   have hffE : f ≫ f° = E := hEeq.symm
   -- f° ≫ f is coreflexive (f is simple); split it.
-  have hcor : Coreflexive (f° ≫ f) := hf.2
+  have hcor : cor (f° ≫ f) := hf.2
   obtain ⟨d, g, _, hgg, hgg1⟩ := hsplit hcor   -- hgg : g° ≫ g = f° ≫ f,  hgg1 : g ≫ g° = 1_d
   -- The candidate splitting map h = f ≫ g°.
   have hrecip : (f ≫ g°)° = g ≫ f° := by rw [Allegory.recip_comp, Allegory.recip_recip]

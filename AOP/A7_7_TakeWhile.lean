@@ -65,7 +65,7 @@ variable {A : Type}
 @[expose, reducible] public def holds (p : dE A ⟶ dE A) (x : A) : Prop := p x x
 
 /-- A coreflexive relates `a` to `b` only when `b = a` and `a` passes it. -/
-public theorem coreflexive_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) {a b : A} :
+public theorem coreflexive_apply {p : dE A ⟶ dE A} (hC : cor p) {a b : A} :
     p a b ↔ a = b ∧ holds p a :=
   ⟨fun h => by obtain rfl : a = b := le_iff.mp hC a b h; exact ⟨rfl, h⟩, fun ⟨e, h⟩ => e ▸ h⟩
 
@@ -77,7 +77,7 @@ public theorem coreflexive_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) {a b :
 -- is not the relation `A ⟶ A`, and `E(p)` of the test would be a different arrow.
 notation:max "pcor(" p ")" => pcor p
 
-public theorem pcor_coreflexive (p : A → Bool) : Coreflexive (pcor p) :=
+public theorem pcor_coreflexive (p : A → Bool) : cor (pcor p) :=
   le_iff.mpr fun _ _ h => h.1
 
 public instance (p : A → Bool) : DecidablePred (holds (pcor p)) :=
@@ -284,7 +284,7 @@ public theorem discNil_apply (a : A) (xs ys : ConsList Unit A) :
 
 /-! ### Pointwise unfolds of the three `junc` algebras -/
 
-public theorem pcons_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+public theorem pcons_apply {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     pcons p (a, c) ws ↔ holds p a ∧ ws = ConsList.cons a c := by
   constructor
   · rintro ⟨⟨qa, qc⟩, ⟨ha, hc⟩, hw⟩
@@ -306,7 +306,7 @@ public theorem listPAlg_inl (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A
     listPAlg p (Sum.inl D) ws ↔ ws = ConsList.wrap () := by
   unfold listPAlg; exact junc_sum_inl _ _ _ _
 
-public theorem listPAlg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+public theorem listPAlg_inr {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     listPAlg p (Sum.inr (a, c)) ws ↔ holds p a ∧ ws = ConsList.cons a c := by
   unfold listPAlg; exact (junc_sum_inr _ _ _ _).trans (pcons_apply hC a c ws)
 
@@ -314,7 +314,7 @@ theorem Salg_inl (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A) :
     Salg p (Sum.inl D) ws ↔ ws = ConsList.wrap () := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
-theorem Salg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+theorem Salg_inr {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     Salg p (Sum.inr (a, c)) ws
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ws = ConsList.cons a c) := by
   unfold Salg
@@ -343,7 +343,7 @@ theorem prefixP_eq_of_clen : ∀ {x y v : ConsList Unit A},
 
 /-- The two routes' specifications agree pointwise: `x (prefix list(p)) ws` iff `ws` is a
     `p`-passing prefix of `x`. -/
-theorem spec_iff {p : dE A ⟶ dE A} (hC : Coreflexive p) (u : ConsList Unit A) (ws : ConsList Unit A) :
+theorem spec_iff {p : dE A ⟶ dE A} (hC : cor p) (u : ConsList Unit A) (ws : ConsList Unit A) :
     (prefixR ≫ listP p) u ws ↔ prefixP ws u ∧ AllP p ws := by
   rw [listP_cata]
   induction u generalizing ws with
@@ -397,7 +397,7 @@ public theorem listP_wrap (p : dE A ⟶ dE A) (D : Unit) (ws : ConsList Unit A) 
 
 /-- `list(p)` at a `cons`: the head must pass `p`, and what is left is a `list(p)` of the tail —
     the fold's computation rule on the `cons` summand. -/
-public theorem listP_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (t : ConsList Unit A) (ws : ConsList Unit A) :
+public theorem listP_cons {p : dE A ⟶ dE A} (hC : cor p) (a : A) (t : ConsList Unit A) (ws : ConsList Unit A) :
     listP p (ConsList.cons a t) ws
       ↔ holds p a ∧ ∃ w', listP p t w' ∧ ws = ConsList.cons a w' := by
   rw [listP_cata]
@@ -426,7 +426,7 @@ public theorem prefConsAlg_inl (p : dE A ⟶ dE A) {C : RelSet.{0}}
 
 /-- The `cons` arm of `[nil, (p×X) cons ∪ ⊸ nil]`: stop with `nil`, or keep a `p`-passing head on
     an `X` of the tail. -/
-public theorem prefConsAlg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) {C : RelSet.{0}}
+public theorem prefConsAlg_inr {p : dE A ⟶ dE A} (hC : cor p) {C : RelSet.{0}}
     (X : C ⟶ dList A) (a : A) (t : C.carrier) (ws : ConsList Unit A) :
     prefConsAlg p X (Sum.inr (a, t)) ws
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ∃ w', X t w' ∧ ws = ConsList.cons a w') := by
@@ -450,7 +450,7 @@ public theorem takewhile_alg_step1 (p : dE A ⟶ dE A) :
 
 /-- `[nil,cons ∪ ⊸ nil] list(p) = [nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` after `prefix`'s
     algebra is `list(p)` on the tail it conses to and one `p` on the head it keeps. -/
-public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : cor p) :
     prefAlg ≫ listP p = prefConsAlg p (listP p) := by
   apply hom_ext; intro v ws
   cases v with
@@ -478,7 +478,7 @@ public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- Row 3 of `takewhile-alg`: `F(prefix)[nil,cons ∪ ⊸ nil] list(p)
     = F(prefix)[nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` moves through the algebra. -/
-public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : cor p) :
     (F Unit A).map prefixR ≫ prefAlg ≫ listP p
       = (F Unit A).map prefixR ≫ prefConsAlg p (listP p) := by
   rw [prefAlg_comp_listP hC]
@@ -487,7 +487,7 @@ public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     = [nil,(p×(prefix list(p))) cons ∪ ⊸ nil]` — the relator's tape joins the strand it runs
     alongside, `prefix` landing on the tail `list(p)` already holds.  `⊸ nil` swallows it because
     `nil` prefixes every list. -/
-public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : cor p) :
     (F Unit A).map prefixR ≫ prefConsAlg p (listP p)
       = prefConsAlg p (prefixR ≫ listP p) := by
   apply hom_ext; intro u ws
@@ -523,7 +523,7 @@ public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- Row 5 of `takewhile-alg`: `[nil,(p×(prefix list(p))) cons ∪ ⊸ nil] = F(prefix list(p)) S` —
     `prefix list(p)` leaves the algebra for the relator's tape, and `S` is what is left. -/
-public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : cor p) :
     prefConsAlg p (prefixR ≫ listP p)
       = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
   rw [listP_cata]
@@ -561,7 +561,7 @@ public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     then building with `S`.  (Fusion cannot derive this — `list(p)` is not entire and no algebra
     meets the side condition — so the display's four steps are proved pointwise and composed
     here, and the result is fed to @cata-defining below.) -/
-public theorem takewhile_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_alg_comm {p : dE A ⟶ dE A} (hC : cor p) :
     (initial Unit A).α ≫ (prefixR ≫ listP p)
       = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p :=
   (takewhile_alg_step1 p).trans ((takewhile_alg_step2 hC).trans
@@ -569,7 +569,7 @@ public theorem takewhile_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- The `takewhile-alg` row: `prefix list(p) = ⦇S⦈`, read off the defining equation above by
     @cata-defining (the Eilenberg–Wright universal property). -/
-public theorem takewhile_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : prefixR ≫ listP p = cataR (Salg p) := by
+public theorem takewhile_alg {p : dE A ⟶ dE A} (hC : cor p) : prefixR ≫ listP p = cataR (Salg p) := by
   rw [cataR_eq_relCata]
   exact (relCata_UP (initial Unit A) (Salg p) (prefixR ≫ listP p)).mp (takewhile_alg_comm hC)
 
@@ -600,7 +600,7 @@ public theorem takewhile_mono_fork (p : dE A ⟶ dE A) :
 
 /-- `(p×R°) cons⊑(p×𝟙) cons R°` — a shorter tail makes a shorter list, so the `R°` the pair
     carried in comes back out on the built list. -/
-public theorem takewhile_mono_slide {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_mono_slide {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap p (R (A := A))° ≫ consR
       ⊑ pcons p ≫ R° := by
   refine le_iff.mpr fun q ws h => ?_
@@ -626,7 +626,7 @@ public theorem takewhile_mono_nil :
 
 /-- The step both mono chains share: **`(𝟙×R°) pcons(p) ⊑ pcons(p) R°`** — `p` still holds of the
     head, and a shorter tail makes a shorter `cons`. -/
-public theorem pcons_slide {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem pcons_slide {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap (𝟙 (dE A)) (R (A := A))° ≫ pcons p ⊑ pcons p ≫ R° :=
   le_iff.mpr fun q ws h => by
     obtain ⟨a, c⟩ := q
@@ -649,7 +649,7 @@ public theorem takewhile_mono_step2 (p : dE A ⟶ dE A) :
 
 /-- **`takewhile-mono`'s third step**: `(p×R°) cons ∪ ⊸ nil ⊑ (p×𝟙) cons R° ∪ ⊸ nil` —
     `takewhile_mono_slide` on the `cons` operand. -/
-public theorem takewhile_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_mono_step3 {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap p (R (A := A))° ≫ consR
         ∪ (discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
       ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ R° ∪ discNil := by
@@ -667,7 +667,7 @@ public theorem takewhile_mono_step4 (p : dE A ⟶ dE A) :
   rw [takewhile_mono_nil]
 
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
-public theorem takewhile_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_mono_cons {p : dE A ⟶ dE A} (hC : cor p) :
     rprodMap (𝟙 (dE A)) (R (A := A))°
         ≫ (pcons p ∪ discNil)
       ⊑ (pcons p ∪ discNil) ≫ R° :=
@@ -687,7 +687,7 @@ public theorem takewhile_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 
 /-- The `takewhile-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step
     lands inside taking the step and then shortening the result. -/
-public theorem takewhile_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_mono {p : dE A ⟶ dE A} (hC : cor p) :
     Freyd.Alg.Pres (F := F Unit A) (Salg p) R° := by
   show (F Unit A).map R° ≫ Salg p ⊑ Salg p ≫ R°
   apply le_iff.mpr
@@ -713,13 +713,13 @@ public theorem takewhile_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,
     with `takewhile-mono` for its hypothesis: one longest `p`-prefix kept at each `cons`
     refines every `p`-prefix collected and one chosen at the end. -/
-public theorem takewhile_greedy {p : dE A ⟶ dE A} (hC : Coreflexive p) :
+public theorem takewhile_greedy {p : dE A ⟶ dE A} (hC : cor p) :
     cataR ((Salg p)%∋ ≫ est(R°)) ⊑ (cataR (Salg p))%∋ ≫ est(R°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact greedy (initial Unit A) lenLE_recip_trans (takewhile_mono hC)
 
 /-- The algebra's cons branch at a point: stop with `nil`, or keep a head that passes `p`. -/
-theorem pcons_union_discNil_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
+theorem pcons_union_discNil_apply {p : dE A ⟶ dE A} (hC : cor p) (a : A) (c ws : ConsList Unit A) :
     (pcons p ∪ discNil) (a, c) ws
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ws = ConsList.cons a c) :=
   (junc_sum_inr (wrapR : dL Unit ⟶ dList A) (pcons p ∪ discNil) (a, c) ws).symm.trans
@@ -757,7 +757,7 @@ public theorem takewhile_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
 /-- Step 3 of `takewhile-step`: `((p×𝟙) cons ∪ ⊸ nil)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
     offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
     loses the second. -/
-public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
@@ -799,7 +799,7 @@ public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
 /-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
     lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
     not.  The right side is the AoPA route's algebra, so both routes share one program. -/
-public theorem takewhile_step {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem takewhile_step {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     (Salg p)%∋ ≫ est(R°)
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p) :=
@@ -810,7 +810,7 @@ public theorem takewhile_step {p : dE A ⟶ dE A} (hC : Coreflexive p)
     — the program's algebra is the greedy one (`takewhile_step`), Theorem 7.2 puts its fold below
     the transposed fold's choice (`takewhile_greedy`), that fold is the specification's relation
     (`takewhile_alg`), and the result is `takewhile` by definition. -/
-public theorem takewhile_cata_le {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem takewhile_cata_le {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))
       ⊑ takewhile p :=
@@ -824,7 +824,7 @@ calc_steps takewhile_cata_le
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
-public theorem takewhile_simple {p : dE A ⟶ dE A} (hC : Coreflexive p) : Simple (takewhile p) := by
+public theorem takewhile_simple {p : dE A ⟶ dE A} (hC : cor p) : Simple (takewhile p) := by
   show (takewhile p)° ≫ takewhile p ⊑ 𝟙 _
   apply le_iff.mpr
   intro ws zs h
@@ -837,7 +837,7 @@ public theorem takewhile_simple {p : dE A ⟶ dE A} (hC : Coreflexive p) : Simpl
 /-- **Ex 7.39's headline** (the note's `takewhile-laws`): `takewhile(p) = ⦇[nil,(π₁p→cons,⊸ nil)]⦈`.
     The greedy `⊒` becomes `=`: the program is entire (a reduce of maps, via `takeWhile_emerges`)
     and the specification is simple, so `eq_of_le_entire_simple` closes the gap. -/
-public theorem takewhile_eq_cata {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem takewhile_eq_cata {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] :
     takewhile p
       = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p)) := by
@@ -849,7 +849,7 @@ public theorem takewhile_eq_cata {p : dE A ⟶ dE A} (hC : Coreflexive p)
 
 /-- The entirety row: `Λ(prefix list(p)) est(R°)` is entire — `nil` is always a `p`-prefix and
     the longest exists; read off the headline, whose program is a reduce of maps. -/
-public theorem takewhile_entire {p : dE A ⟶ dE A} (hC : Coreflexive p)
+public theorem takewhile_entire {p : dE A ⟶ dE A} (hC : cor p)
     [DecidablePred (holds p)] : Entire (takewhile p) := by
   rw [takewhile_eq_cata hC, ← takeWhile_emerges p]
   exact graph_entire _

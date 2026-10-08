@@ -470,13 +470,13 @@ public theorem pathQ_le_pathR (wt : A → A → Nat) : pathQ wt ⊑ pathR wt :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- `R ≜ cost≤cost°` is a preorder (book p.197), because `≤` on costs is. -/
-public theorem pathR_preorder (wt : A → A → Nat) : preorder (pathR wt) :=
+public theorem pathR_preorder (wt : A → A → Nat) : PreOrd (pathR wt) :=
   ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathR_apply wt p p).mpr (Nat.le_refl _),
    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
      (pathR_apply wt _ _).mpr (Nat.le_trans ((pathR_apply wt _ _).mp h1) ((pathR_apply wt _ _).mp h2))⟩
 
 /-- `Q ≜ R∩(head head°)` is a preorder (book p.197): both `≤` on costs and `=` on heads are. -/
-public theorem pathQ_preorder (wt : A → A → Nat) : preorder (pathQ wt) :=
+public theorem pathQ_preorder (wt : A → A → Nat) : PreOrd (pathQ wt) :=
   ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩,
    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
      have h1 := (pathQ_apply wt _ _).mp h1; have h2 := (pathQ_apply wt _ _).mp h2

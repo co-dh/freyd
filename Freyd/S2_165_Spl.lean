@@ -823,7 +823,7 @@ public theorem splObj_semiSimple_of_ssd {𝒜 : Type u} [SemiSimpleDivisionAlleg
     symmetric idempotent `E.idem.e` is coreflexive (`E.idem.e ⊑ Cat.id E.carrier`).
     This is Freyd's `ℬℳ(𝒞𝑜𝓇ℯ𝒻𝓁 𝒜)` (§2.167): split only the coreflexive SymIdem. -/
 @[expose] public def SplCorObj (𝒜 : Type u) [Allegory 𝒜] : Type u :=
-  { E : SplObj 𝒜 // Coreflexive E.idem.e }
+  { E : SplObj 𝒜 // cor E.idem.e }
 
 namespace SplCorObj
 
@@ -900,8 +900,8 @@ public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p :
     have := le_comp_cod p°
     rwa [Allegory.recip_recip] at this
   have hdomq : q ⊑ (Cat.id c ∩ q ≫ q°) ≫ q := le_dom_comp' q
-  have hcorL : Coreflexive (Cat.id c ∩ p ≫ p°) := inter_lb_left _ _
-  have hcorR : Coreflexive (Cat.id c ∩ q ≫ q°) := inter_lb_left _ _
+  have hcorL : cor (Cat.id c ∩ p ≫ p°) := inter_lb_left _ _
+  have hcorR : cor (Cat.id c ∩ q ≫ q°) := inter_lb_left _ _
   -- p°≫q ⊑ (p°≫(1∩pp°))≫q ⊑ (p°≫(1∩pp°))≫((1∩qq°)≫q)
   have h1 : p° ≫ q ⊑ p° ≫ (Cat.id c ∩ p ≫ p°) ≫ q := by
     rw [← Cat.assoc]; exact comp_mono_right hcodp q
@@ -926,7 +926,7 @@ public theorem splCor_factor {𝒜 : Type u} [Allegory 𝒜] {c x y : 𝒜} (p :
 public theorem coref_inter_comp_le {𝒜 : Type u} [Allegory 𝒜] {a : 𝒜}
     {Ee : a ⟶ a} (hsym : Ee° = Ee) (hidem : Ee ≫ Ee = Ee) (X : a ⟶ a) :
     Cat.id a ∩ Ee ≫ X ⊑ Ee := by
-  have hDcor : Coreflexive (Cat.id a ∩ Ee ≫ X) := inter_lb_left _ _
+  have hDcor : cor (Cat.id a ∩ Ee ≫ X) := inter_lb_left _ _
   have hDsym : (Cat.id a ∩ Ee ≫ X)° = Cat.id a ∩ Ee ≫ X :=
     symmetric_eq (coreflexive_symmetric_idempotent hDcor).1
   -- D = D° = 1 ∩ X°≫Ee  ⊑ X°≫Ee
@@ -984,7 +984,7 @@ public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
       -- `legX≫legX° = (·≫E.e)≫(·≫E.e)° = ·≫E.e≫·°` (E.e sym+idem).
       let M : c ⟶ c := f ≫ E.1.idem.e ≫ f° ∩ g ≫ F.1.idem.e ≫ g°
       let D : c ⟶ c := Cat.id c ∩ M
-      have hDcor : Coreflexive D := inter_lb_left _ _
+      have hDcor : cor D := inter_lb_left _ _
       have hDsym : D° = D := symmetric_eq (coreflexive_symmetric_idempotent hDcor).1
       have hDidem : D ≫ D = D := (coreflexive_symmetric_idempotent hDcor).2
       have hDsimple : Simple D := by dsimp [Simple]; rw [hDsym, hDidem]; exact hDcor
@@ -1192,7 +1192,7 @@ public theorem dual_modular_le {𝒜 : Type u} [Allegory 𝒜] {a b c : 𝒜}
       have hΨR : Ψ.R ≫ F.1.idem.e = Ψ.R := Ψ.fixed_right
       -- Freyd's apex `A = 1 ∩ f≫Ψ.R≫g°` on c (depends on Ψ.R).
       let A : c ⟶ c := Cat.id c ∩ f ≫ Ψ.R ≫ g°
-      have hAcor : Coreflexive A := inter_lb_left _ _
+      have hAcor : cor A := inter_lb_left _ _
       have hAsym : A° = A := symmetric_eq (coreflexive_symmetric_idempotent hAcor).1
       have hAidem : A ≫ A = A := (coreflexive_symmetric_idempotent hAcor).2
       have hAle : A ⊑ Cat.id c := hAcor

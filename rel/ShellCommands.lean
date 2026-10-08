@@ -129,7 +129,7 @@ def grepE (p : Fin 5 → Bool) : RE Entry Entry := .meet (.id Entry) (.atom (pDi
 
 /-- **`grep p` evaluates to a COREFLEXIVE** (`⊑ id`): it is a filter, a sub-diagonal.  Immediate
     from `id ∩ _ ⊑ id`.  (`Coreflexive R` unfolds to `R ⊑ id`, so this IS `grep ⊑ id`.) -/
-theorem grepE_coref (p : Fin 5 → Bool) : Coreflexive (eval (grepE p)) :=
+theorem grepE_coref (p : Fin 5 → Bool) : cor (eval (grepE p)) :=
   inter_lb_left (Cat.id Entry) (pDiag p)
 
 /-- **grep FUSION**: `grep p ≫ grep q = grep (p ∧ q)`.  The composition collapses to an
@@ -321,7 +321,7 @@ def headKE (k : Nat) : RE Entry Entry := .meet (.id Entry) (.atom (boundDiag k))
 
 /-- **`head -k` is COREFLEXIVE** (`⊑ id`): it only keeps a prefix, never adds.  `Coreflexive R`
     unfolds to `R ⊑ id`, so this IS `head ⊑ id`. -/
-theorem headKE_coref (k : Nat) : Coreflexive (eval (headKE k)) :=
+theorem headKE_coref (k : Nat) : cor (eval (headKE k)) :=
   inter_lb_left (Cat.id Entry) (boundDiag k)
 
 -- `head -3` keeps entries 0,1,2 (the diagonal column is `true` there, `false` at 3,4).
@@ -367,7 +367,7 @@ def rmE (p : Fin 5 → Bool) : RE Entry Entry := .meet (.id Entry) (.atom (notDi
 
 /-- **`rm p` is COREFLEXIVE** (`⊑ id`): it only removes.  `Coreflexive R` unfolds to `R ⊑ id`, so
     this IS `rm ⊑ id`. -/
-theorem rmE_coref (p : Fin 5 → Bool) : Coreflexive (eval (rmE p)) :=
+theorem rmE_coref (p : Fin 5 → Bool) : cor (eval (rmE p)) :=
   inter_lb_left (Cat.id Entry) (notDiag p)
 
 /-- **`grep p ≫ rm p = ∅`**: grep-then-rm-same deletes exactly the survivors — the empty relation.

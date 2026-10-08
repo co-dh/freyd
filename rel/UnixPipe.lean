@@ -132,7 +132,7 @@ def grepE (p : Fin 5 → Bool) : RE Entry Entry := .meet (.id Entry) (.atom (pDi
 
 /-- **`grep p` evaluates to a COREFLEXIVE** (`⊑ id`) — required deliverable: it is a filter, a
     sub-diagonal.  Immediate from `id ∩ _ ⊑ id`. -/
-theorem grepE_coref (p : Fin 5 → Bool) : Coreflexive (eval (grepE p)) :=
+theorem grepE_coref (p : Fin 5 → Bool) : cor (eval (grepE p)) :=
   inter_lb_left (Cat.id Entry) (pDiag p)
 
 /-! ## Payoff 1 — grep FUSION and idempotence via the abstract §2.121 theorem

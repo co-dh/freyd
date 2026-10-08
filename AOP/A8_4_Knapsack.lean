@@ -62,7 +62,7 @@ public theorem weight_eq :
 @[expose] public def within (w : Int) (xs : ConsList Unit Item) : Prop := weight wt xs ≤ w
 
 public theorem within_coreflexive :
-    Coreflexive (corefl (within (wt := wt) w) : dList Item ⟶ dList Item) :=
+    cor (corefl (within (wt := wt) w) : dList Item ⟶ dList Item) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `xs R ys` iff `xs` is worth at

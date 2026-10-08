@@ -359,7 +359,7 @@ variable {𝒜 : Type u} [BooleanAllegory 𝒜]
 /-- The complement of `X` within the coreflexives (Ex 5.17). -/
 def corNeg {A : 𝒜} (X : A ⟶ A) : A ⟶ A := (∼X) ∩ Cat.id A
 
-theorem corNeg_coreflexive {A : 𝒜} (X : A ⟶ A) : Coreflexive (corNeg X) :=
+theorem corNeg_coreflexive {A : 𝒜} (X : A ⟶ A) : cor (corNeg X) :=
   inter_lb_right (∼X) (Cat.id A)
 
 /-- `X ∩ corNeg X = 0` — holds unconditionally (no coreflexivity hypothesis needed). -/
@@ -370,7 +370,7 @@ theorem inter_corNeg {A : 𝒜} (X : A ⟶ A) : X ∩ corNeg X = 𝟘 := by
 
 /-- `X ∪ corNeg X = 1` when `X` is coreflexive (Ex 5.17): `X` and its coreflexive complement
     exhaust the identity. -/
-theorem union_corNeg {A : 𝒜} {X : A ⟶ A} (hX : Coreflexive X) : X ∪ corNeg X = Cat.id A := by
+theorem union_corNeg {A : 𝒜} {X : A ⟶ A} (hX : cor X) : X ∪ corNeg X = Cat.id A := by
   have hsplit : Cat.id A ∩ (X ∪ ∼X) = (Cat.id A ∩ X) ∪ (Cat.id A ∩ (∼X)) :=
     DistributiveAllegory.inter_union_distrib (Cat.id A) X (∼X)
   rw [union_neg_eq_top X, inter_eq_left (show Cat.id A ⊑ topHom A A from LocallyCompleteDistributiveAllegory.le_Sup trivial),
@@ -383,12 +383,12 @@ def guard {s A : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) : A ⟶ s :=
   (junc C X (corNeg X))°
 
 /-- Two coreflexive helper facts (symmetry + idempotence), packaged once for reuse. -/
-private theorem coreflexive_facts {A : 𝒜} {X : A ⟶ A} (hX : Coreflexive X) :
+private theorem coreflexive_facts {A : 𝒜} {X : A ⟶ A} (hX : cor X) :
     X° = X ∧ X ≫ X = X :=
   ⟨symmetric_eq (coreflexive_symmetric_idempotent hX).1, (coreflexive_symmetric_idempotent hX).2⟩
 
 /-- **Ex 5.17**: `guard C X` is a map (entire and simple) whenever `X` is coreflexive. -/
-theorem guard_map {s A : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X) :
+theorem guard_map {s A : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : cor X) :
     Map (guard C X) := by
   have hCX := corNeg_coreflexive X
   obtain ⟨hXsymm, hXidem⟩ := coreflexive_facts hX
@@ -439,7 +439,7 @@ public def cond {s A B : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) (R S : A ⟶ 
 
 /-- `cond` unfolds to the explicit union form `(X≫R) ∪ (corNeg X≫S)`, via the (5.11)
     cancellation law. -/
-theorem cond_eq_union {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X)
+theorem cond_eq_union {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : cor X)
     (R S : A ⟶ B) : cond C X R S = (X ≫ R) ∪ (corNeg X ≫ S) := by
   obtain ⟨hXsymm, _⟩ := coreflexive_facts hX
   obtain ⟨hCsymm, _⟩ := coreflexive_facts (corNeg_coreflexive X)
@@ -448,7 +448,7 @@ theorem cond_eq_union {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : C
 
 /-- **Ex 5.17**: the universal characterisation of `cond` — `T` refines `cond C X R S` iff its
     `X`-guarded restriction refines `R` and its `corNeg X`-guarded restriction refines `S`. -/
-theorem cond_spec {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X)
+theorem cond_spec {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : cor X)
     (R S : A ⟶ B) (T : A ⟶ B) :
     T ⊑ cond C X R S ↔ (X ≫ T ⊑ R ∧ corNeg X ≫ T ⊑ S) := by
   have hCX := corNeg_coreflexive X

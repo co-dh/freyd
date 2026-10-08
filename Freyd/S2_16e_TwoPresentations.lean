@@ -101,7 +101,7 @@ theorem setGraph_comp_recip (A : Assembly.{u} K) :
 
 /-- **`ι° ≫ ι ⊑ 1`** — `e_A := ι° ≫ ι` is coreflexive (the graph map `ι` is simple). -/
 theorem setGraph_recip_comp_coreflexive (A : Assembly.{u} K) :
-    Coreflexive ((setGraph K A)° ≫ setGraph K A) :=
+    cor ((setGraph K A)° ≫ setGraph K A) :=
   (relClass_graph_map (idInto K A)).2
 
 /-- **`e_A ≫ e_A = e_A`** — `e_A := ι° ≫ ι` is idempotent (uses `ι ≫ ι° = 1`). -/

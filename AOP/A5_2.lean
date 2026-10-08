@@ -655,7 +655,7 @@ open Lean PrettyPrinter in
 /-- `𝓓 ⊣ ·⊤`: `𝓓S ⊑ X ≡ S ⊑ X⊤`, for a COREFLEXIVE `X : c ⟶ c` and `S : c ⟶ b`.  Taking the
     domain is LEFT adjoint to composing with `⊤`.  Left to right is `S = (𝓓S)S ⊑ XS ⊑ X⊤`;
     right to left is monotonicity of `𝓓` followed by `𝓓(XT) = X ∩ 𝓓T ⊑ X`. -/
-public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX : Coreflexive X) :
+public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX : cor X) :
     dom S ⊑ X ↔ S ⊑ X ≫ topMor c b := by
   -- a coreflexive is its own domain: `𝓓X = 𝟙∩XX° = 𝟙∩X = X`, by symmetry and idempotence.
   have hdomX : dom X = X := by
@@ -677,7 +677,7 @@ public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX 
     left is the division UP alone; left to right adds `X ⊑ 𝟙`, which is coreflexivity — the
     `𝟙∩` is exactly what lands the right adjoint back in the coreflexives. -/
 public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X : c ⟶ c}
-    (hX : Coreflexive X) :
+    (hX : cor X) :
     X ≫ topMor c b ⊑ R ↔ X ⊑ Cat.id c ∩ (R / topMor c b) := by
   constructor
   · intro h; exact le_inter hX ((le_div_iff X R (topMor c b)).mpr h)

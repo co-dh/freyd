@@ -1478,7 +1478,7 @@ theorem systemic_completion_tabular_effective
 /-- **§2.145**: the two legs of a (source-apex) tabulation of a coreflexive coincide. -/
 public theorem tabulation_coreflexive_legs_eq {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ a} {A : a ⟶ a} (hf : Map f) (hg : Map g) (hA : A = f° ≫ g)
-    (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : Coreflexive A) : f = g := by
+    (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : cor A) : f = g := by
   have hcoref1 : A ⊑ Cat.id a := hcor
   -- g ⊑ f:  g = (f f° ∩ g g°)g = … ⊑ (f f°)g = f(f°g) = f A ⊑ f·1 = f
   have hgf : g ⊑ f := by
@@ -1494,7 +1494,7 @@ public theorem tabulation_coreflexive_legs_eq {𝒜 : Type u} [Allegory 𝒜] {a
     `f° ≫ f = A` and `f ≫ f° = 1_c` — i.e. `f` *splits* `A` (`h°h = A`, `hh° = 1`). -/
 public theorem coreflexive_split_of_tabulation {𝒜 : Type u} [Allegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ a} {A : a ⟶ a} (hf : Map f) (hg : Map g) (hA : A = f° ≫ g)
-    (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : Coreflexive A) :
+    (htab : f ≫ f° ∩ g ≫ g° = Cat.id c) (hcor : cor A) :
     Map f ∧ f° ≫ f = A ∧ f ≫ f° = Cat.id c := by
   have hfeqg : f = g := tabulation_coreflexive_legs_eq hf hg hA htab hcor
   subst hfeqg
@@ -1506,7 +1506,7 @@ public theorem coreflexive_split_of_tabulation {𝒜 : Type u} [Allegory 𝒜] {
     `g : c → a` with `g° ≫ g = A`, `g ≫ g° = 1_c` (§2.163).  (The splitting map
     points FROM the apex: in `Rel(Set)` it is the inclusion of the support subset.) -/
 public theorem coreflexive_splits {𝒜 : Type u} [TabularAllegory 𝒜] {a : 𝒜} {A : a ⟶ a}
-    (hcor : Coreflexive A) :
+    (hcor : cor A) :
     ∃ (c : 𝒜) (g : c ⟶ a), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id c := by
   obtain ⟨c, f, g, hf, hg, hA, htab⟩ := TabularAllegory.tabular A
   exact ⟨c, f, coreflexive_split_of_tabulation hf hg hA htab hcor⟩
