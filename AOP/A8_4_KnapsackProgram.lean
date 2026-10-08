@@ -22,6 +22,9 @@ def geq : Int × Int → Bool := fun (m, n) => decide (m ≥ n)
 def leq : Int × Int → Bool := fun (m, n) => decide (m ≤ n)
 def meet : Bool × Bool → Bool := fun (a, b) => a && b
 def cons : α × List α → List α := fun (a, x) => a :: x
+def nil : α → List β := fun _ => []
+def wrap : α → List α := cons ∘ pair (id, nil)
+#guard wrap 3 = [3]
 def cpr : α × List β → List (α × β) := fun (a, ys) => ys.map (a, ·)
 def catalist (start : β) (f : α × β → β) : List α → β
   | [] => start
