@@ -13,11 +13,10 @@
 
 One image per named display or changed panel, never a whole-pdf sweep: a review always names its display
 (`--key`) or a panel set (`--changed`); no recognised mode prints this text and exits 2.  `before` is
-stacked ABOVE `after` so each half keeps the full screen width.
+stacked ABOVE `after` so each half keeps the full screen width.  Each half is ringed round what it draws
+that the other does not, matched up to a move and a uniform rescale, so a re-layout rings nothing.
 A pair whose pixels are identical produces nothing — a pair the reader cannot tell apart costs him the
-whole review.  A `--key` pair carries no ring: the key names the display and the caption says what
-changed, so a ring adds nothing (on a re-layout it circles the whole display).  `-h`/`--help` prints
-this text; an unknown `-flag` exits.
+whole review.  `-h`/`--help` prints this text; an unknown `-flag` exits.
 
 A picture is REFUSED, not written, when it would misinform: when the crop draws none of the names its
 key composes or its caption puts in backticks, and when the two halves are pixel-identical.  Choosing
@@ -806,8 +805,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
               f"after {', '.join(ids)} p{apages} — the edit is in another display; try the key of the "
               f"display that cites `{key}`")
         return None
-    # No ring on a --key review: the key names the display and the caption says what changed; on a
-    # re-layout a ring circles the whole display.
+    rings(bcuts, acuts, cb, ca, tmp, key)
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
     label(ca, f"{tmp}/lla.png", f"{'/'.join(ids)} AFTER p{apages[0]}", tmp, [])
     emit("magick", f"{tmp}/llb.png", f"{tmp}/lla.png", "-background", "gray70", "-append", "+repage", name)
@@ -879,21 +877,40 @@ def content(pdf, page, y0, y1, tmp):
 def unmatched(bs, as_):
     """The items of each side with no counterpart on the other: same key, same shape to within SHAPETOL
     pt, paired nearest-first.  A pair's distance is its MOVE, which is no change at all."""
+    # A uniform rescale is a move: a primitive matches at the median after/before size ratio f of the
+    # primitives unique on each side, or at 1 (beads keep their size); stroke-width leaves the key.
+    sizeless = lambda k: k if k[0] != "p" else (*k[:2], tuple(a for a in k[2] if a[0] != "stroke-width"), k[3])
+    def lone(items):
+        cnt = {}
+        for i in items:
+            cnt.setdefault(sizeless(i[0]), []).append(i)
+        return {k: v[0] for k, v in cnt.items() if len(v) == 1}
+    lb, la = lone(bs), lone(as_)
+    hs = lambda i: max(i[3][2] - i[3][0], i[3][3] - i[3][1])
+    rat = sorted(hs(la[k]) / hs(lb[k]) for k in lb if k[0] == "p" and k in la and hs(lb[k]) > 0 and hs(la[k]) > 0)
+    f = rat[len(rat) // 2] if rat else 1.0
     ctr = lambda i: ((i[3][0] + i[3][2]) / 2, (i[3][1] + i[3][3]) / 2)
-    same = lambda s, t: all(abs(p[0] - q[0]) <= SHAPETOL and abs(p[1] - q[1]) <= SHAPETOL for p, q in zip(s, t))
+    # A rule, box or filled region is layout furniture: it resizes with its
+    # content, so it pairs by key alone (an unpaired one is still a change); a bead (<= 4pt) pairs by key too.
+    tiny = lambda i: i[0][0] == "p" and max(i[3][2] - i[3][0], i[3][3] - i[3][1]) <= 4
+    rule = lambda i: len({round(p[0], 2) for p in i[2]}) <= 2 and len({round(p[1], 2) for p in i[2]}) <= 2
+    furn = lambda i: i[0][0] == "p" and not tiny(i) and (rule(i) or dict(i[0][2]).get("fill", "none") != "none")
+    same = lambda s, t: any(all(abs(p[0] * g - q[0]) <= SHAPETOL and abs(p[1] * g - q[1]) <= SHAPETOL
+                                for p, q in zip(s, t)) for g in (1.0, f))
+    ok = lambda b, a: (furn(b) and furn(a)) or (tiny(b) and tiny(a)) or same(b[2], a[2])
     groups = {}
     for side, items in ((0, bs), (1, as_)):
         for n, i in enumerate(items):
-            groups.setdefault(i[0], ([], []))[side].append(n)
+            groups.setdefault(sizeless(i[0]), ([], []))[side].append(n)
     used, pairs = (set(), set()), []
     for kb, ka in groups.values():
         # Equal counts pair in reading order: nearest-first crosses rows once a reflow shifts a row by
         # more than the row pitch.  Unequal counts, or a shape that differs, fall back to nearest-first.
         rank = lambda ns, s: sorted(ns, key=lambda n: (s[n][3][1], s[n][3][0]))
-        cand = [(0, i, j) for i, j in zip(rank(kb, bs), rank(ka, as_)) if same(bs[i][2], as_[j][2])] \
+        cand = [(0, i, j) for i, j in zip(rank(kb, bs), rank(ka, as_)) if ok(bs[i], as_[j])] \
             if len(kb) == len(ka) else []
         cand += sorted((math.dist(ctr(bs[i]), ctr(as_[j])), i, j) for i in kb for j in ka
-                       if same(bs[i][2], as_[j][2]))
+                       if ok(bs[i], as_[j]))
         for _, i, j in cand:
             if i not in used[0] and j not in used[1]:
                 used[0].add(i), used[1].add(j)
@@ -910,7 +927,7 @@ def unmatched(bs, as_):
                   and s[m][3][0] <= x <= s[m][3][2] and s[m][3][1] <= y <= s[m][3][3]]
         return min(inside, key=lambda m: area(s[m][3]), default=None)
     twin = dict(pairs)
-    for i, j in pairs:
+    for i, j in pairs if abs(f - 1) < 0.05 else []:  # containment is meaningless across a rescale
         c, d = box(0, i), box(1, j)
         if (c is None) != (d is None) or (c is not None and twin.get(c) != d):
             used[0].discard(i), used[1].discard(j)
