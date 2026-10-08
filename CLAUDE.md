@@ -248,3 +248,13 @@ Which module needs which comes from the view `module_need(src, dst, kind, grp)` 
 join you write over `dep`/`syntax_node`: one `in (select …)` filter around those joins made sqlite take
 130 s for what the view answers in 1 s. Copy it first, `create temp table t as select * from module_need`,
 then query `t`.
+
+## Before optimising build time, read one probe's `Built` list
+Add a public `theorem probe_<unique> : True := trivial` to the module in question, run
+`lake build Freyd AOP diag`, and read WHICH modules lake rebuilt, not only how many — before any model,
+split or import change. A public edit rebuilds the module, its direct importers, the modules that reach
+it through `public import`, and every legacy (non-`module`) file downstream; it does not rebuild the
+transitive closure. A cost model built on the closure sent several rounds of module splitting and
+import narrowing after modules that were never the cost, while the `Built` list of the first probe
+already showed the rebuild was the legacy `diag/` files. Give each probe a fresh name, because lake's
+artifact cache replays a build it has seen.
