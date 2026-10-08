@@ -293,7 +293,7 @@
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
 #disp[#calc-table(
-  Thm[`mle=(empty→nil,unstep list((𝟙×mle)cons) minL(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
+  Thm[`mle=(empty→nil,unstep ((𝟙×mle)cons)′ minL(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -504,7 +504,7 @@
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.mle_head_column"), #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
      // lean:AOP.A9_2_Edit.mle@9c01e9fc lean:AOP.A9_2_Edit.mle_head_column@c8a15220 lean:AOP.A9_2_Edit.column@87907e0c
-     `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=list(del) tails` \
+     `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=del′ tails` \
      // lean:AOP.A9_2_Edit.column_cata@06a76bd9 lean:AOP.A9_2_Edit.fstcol@e72647f8 lean:AOP.A9_2_Edit.column_nil@63c24991
      #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
@@ -705,8 +705,8 @@
   [#vstep(EQ, [],
     [`mct=(single→head tip,⟨init col,tail row⟩ mix)` #h(4pt) #src[(9.7)] \
      #src[the tabulation: `mct xs` is needed for every non-empty segment `xs`, so the values are
-      held as an array of rows, `array≜inits list(row)`, `row≜tails list(mct)`,
-      `col≜inits list(mct)`, `mix≜zip list(bin) minL(R)`]])],
+      held as an array of rows, `array≜inits row′`, `row≜tails mct′`,
+      `col≜inits mct′`, `mix≜zip bin′ minL(R)`]])],
   // No picture: the tabulated program relates arrays of trees, not the objects the panels carry.
   [],
 
@@ -720,7 +720,7 @@
 
   [#vstep(EQ, [],
     [`array=⦇[fstcol,addcol]⦈`, #h(4pt) `fstcol≜tip wrap wrap` \
-     `addcol≜⟨π₁ tip wrap,step⟩ cons`, #h(4pt) `step≜⟨process tail,π₂⟩ zip list(cons)` \
+     `addcol≜⟨π₁ tip wrap,step⟩ cons`, #h(4pt) `step≜⟨process tail,π₂⟩ zip cons′` \
      #src[the program: one fold building the array column by column, cubic in the length of the
       input]])],
   [],
@@ -780,7 +780,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs")],
 )]<col-cons>
 
-// B&dM pp. 235-236, "We reason:", the second component `tic list(row)` split off under our own names
+// B&dM pp. 235-236, "We reason:", the second component `tic row′` split off under our own names
 // `tops`, `rests` and `newrows` (not the book's), so no bead carries a long composite.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.tops_rec") \
@@ -793,12 +793,12 @@
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step1.rhs"),
-    [#src[definition of `tops≜tic list(mct)`, our name]])],
+    [#src[definition of `tops≜tic mct′`, our name]])],
      // lean:AOP.A9_3_Bracket.tops_step1@59fe41e2
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step2.rhs"),
-    [#src[`tail list(f)=list(f) tail`; definition of `col`]])],
+    [#src[`tail f′=f′ tail`; definition of `col`]])],
      // lean:AOP.A9_3_Bracket.tops_step2@331c9a78
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step2.rhs")],
 
@@ -818,12 +818,12 @@
   [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step1.rhs"),
-    [#src[definition of `rests≜tic list(tail row)`, our name]])],
+    [#src[definition of `rests≜tic (tail row)′`, our name]])],
      // lean:AOP.A9_3_Bracket.rests_step1@f4799061
   [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step2.rhs"),
-    [#src[`tic list(tail)=π₂ inits`; definition of `array`]])],
+    [#src[`tic tail′=π₂ inits`; definition of `array`]])],
      // lean:AOP.A9_3_Bracket.rests_step2@81975272
   [#lean("Freyd.Alg.RelSet.Bracket.rests_step2.rhs")],
 )]<rests-eq>
@@ -839,7 +839,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs"),
-    [#src[definition of `newrows≜tic list(row)`, our name]])],
+    [#src[definition of `newrows≜tic row′`, our name]])],
      // lean:AOP.A9_3_Bracket.newrows_step1@74ecf218
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs", step: true)],
 
@@ -849,7 +849,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs"),
-    [#src[`list⟨f,g⟩=⟨list(f),list(g)⟩ zip`; products; definitions of `tops` and `rests`]])],
+    [#src[`⟨f,g⟩′=⟨f′,g′⟩ zip`; products; definitions of `tops` and `rests`]])],
      // lean:AOP.A9_3_Bracket.newrows_step3@1cfc3a93
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs")],
 
@@ -879,7 +879,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs"),
-    [#src[`cons list(f)=(f×list(f)) cons`; definition of `newrows`]])],
+    [#src[`cons f′=(f×f′) cons`; definition of `newrows`]])],
      // lean:AOP.A9_3_Bracket.array_cons_step3@964babf4
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs")],
 
@@ -945,7 +945,7 @@
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Code.code_laws"), #h(6pt)
-    `encode=(null→nil,reduce list((encode×𝟙)snoc) minL(R))` \
+    `encode=(null→nil,reduce ((encode×𝟙)snoc)′ minL(R))` \
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],

@@ -464,12 +464,12 @@ open Lean PrettyPrinter in
   | `($_ $y $x) => `($(mkIdent `subseq) $y $x)
   | `($_ $y) => `($(mkIdent `subseq) $y)
   | _ => `($(mkIdent `subseq))
--- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), the relator's letter.
--- A rule, not a rename: the arrow `ListRel.list` already holds the name in `ListRel`.
+-- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), printed as the
+-- relator's own `f′` (`ListRel.list`'s notation), so a map and its graph read alike.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.cmap] def unexpandCmap : Unexpander
-  | `($_ $f $x) => `($(mkIdent `list) $f $x)
-  | `($_ $f) => `($(mkIdent `list) $f)
+  | `($_ $f $x) => `($f′ $x)
+  | `($_ $f) => `($f′)
   | _ => `($(mkIdent `list))
 
 

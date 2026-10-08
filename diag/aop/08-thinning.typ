@@ -495,19 +495,19 @@ row((
 )]<thinL-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
-// `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
+// `f′`, then under `F` — each step one of (8.9), (8.8), (8.11).
 // `sort(≼) : PA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le") \
     #src[sorting each argument set (`F(sort(≼))`), forming every combination of their elements
-     (`cpL`), applying `f` to each (`list(f)`) and keeping those that pass `p` (`filter(p)`)
+     (`cpL`), applying `f` to each (`f′`) and keeping those that pass `p` (`filter(p)`)
      gives one of the sorted lists of the set of all `f(u)` that pass `p`, with `u` drawn from the
      argument sets.
      // map_sort row: Lemma 8.1, p. 202
  ]],
      // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_cpL_list_filter_le@48ad374c
-  // `filter(p) : [A]⟶[A]` — @thinL-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
+  // `filter(p) : [A]⟶[A]` — @thinL-defn's `gᵢ≜fᵢ′ filter(pᵢ)`.
   lean-calc(calc-l81),
 )]<thinL-lem81>
 
@@ -522,7 +522,7 @@ At `F(A,X)=1+A×X`, `f(r(a,x))=a+x`, `≼` is `≤`, `p` passes the odd numbers,
   [input], [an `r(a,xs)`, `xs` a set], [`r(3,{4,1,2})`],
   [`F(sort(≼))`], [sorts the set in the `X` place; `a` is untouched], [`r(3,[1,2,4])`],
   [`cpL`], [pairs `a` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
-  [`list(f)`], [`f` on each], [`[4,5,7]`],
+  [`f′`], [`f` on each], [`[4,5,7]`],
   [`filter(p)`], [keeps the odd ones, order kept], [`[5,7]`],
 )
 #table(
@@ -538,7 +538,7 @@ At `F(A,X)=1+A×X`, `f(r(a,x))=a+x`, `≼` is `≤`, `p` passes the odd numbers,
   [`sort(≼)`], [], [`[5,7]`],
 )
 - `⊑`: the left's `[5,7]` is one result of the right; with ties `sort(≼)` has several orders.
-- `f` preserving `≼` is used at `list(f)`: `[1,2,4]` is sorted, so `[4,5,7]` is; `filter(p)` only drops
+- `f` preserving `≼` is used at `f′`: `[1,2,4]` is sorted, so `[4,5,7]` is; `filter(p)` only drops
   elements. With `f(r(a,x))=a−x` the left gives `[1,−1]` after `p`, not sorted, so `⊑` fails.
 ]
 
@@ -574,7 +574,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   columns: (2.8cm, 1fr, 1fr, 1fr, 1fr),
   align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*input*], [`list(f₁) filter(p₁)`], [`list(f₂) filter(p₂)`], [`merge(≼)`],
+  table.header([*input*], [`f₁′ filter(p₁)`], [`f₂′ filter(p₂)`], [`merge(≼)`],
     [`thinL(Q)`]),
   [`l()`], [`[0]`], [`[0]`], [`[0,0]`], [`[0]`],
   [`r(1,[0])`], [`[0]`], [`[1]`], [`[0,1]`], [`[0,1]`],
@@ -704,7 +704,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(EQ, [],
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
+     #src[`cpL=wrap+cpr`, `gᵢ=[nil′,hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
@@ -986,8 +986,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 
   [#vstep(EQ, [],
-    [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
+    [`⦇[start wrap,cpr ⟨dropl′,dropr′⟩ cat thinL(Q)]⦈ minL(R)` \
+     #src[`cpL=wrap+cpr`, `gᵢ=[start′,dropᵢ′]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
       added per step]])],
   [],
 )]<tour-laws>

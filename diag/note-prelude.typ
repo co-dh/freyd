@@ -201,7 +201,7 @@
   "van-defn": [≜ `secure`],
   "thin-defn": [≜ `thin`],
   "path-defn": [≜ `cost`],
-  "thinlist-defn": [≜ `thinlist`],
+  "thinL-defn": [≜ `thinL`],
   "binthin-data": [binary thinning data],
   "knap-defn": [≜ `within`],
   "para-defn": [≜ `partition`],
@@ -222,7 +222,7 @@
   "greedy-thm72": [greedy theorem],
   "thin-83": [thin-elimination variant],
   "thin-thm81": [thinning theorem],
-  "thinlist-thm82": [binary thinning theorem],
+  "thinL-thm82": [binary thinning theorem],
   "dp-laws": [dynamic programming theorem],
 )
 #let TH = 1.2   // a fraction box is two lines tall

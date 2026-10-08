@@ -598,7 +598,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leanf("Freyd.Alg.RelSet.ListRel.cp_list") \ #leanf("Freyd.Alg.RelSet.ListRel.cp_list_alg") #src[]],
   // lean:AOP.A5_6_ListCombinators.cp_list@b2418f21 lean:AOP.A5_6_ListCombinators.cp_list_alg@34227b70
   [#leant("Freyd.Alg.RelSet.ListRel.cp_list")],
-  [`cp(list)`: @cata-map-calc at `list(∋)=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
+  [`cp(list)`: @cata-map-calc at `∋′=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.cplist_cata") #src[]],
   // lean:AOP.A5_6_ListCombinators.cplist_cata@69ef2d49
