@@ -29,6 +29,8 @@ import AOP.A8_1
 import AOP.A8_2
 import AOP.A8_2_Exec
 import AOP.A8_4_Knapsack
+-- Appendix `wrap` (B&dM p.267), which §8.5's paragraph table defines.
+import AOP.A8_4_KnapsackProgram
 import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
 import AOP.A9_3_Bracket
@@ -114,6 +116,8 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
   RelSet.Sort.base RelSet.ISort.add
 -- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §6.4 `Bin`, §7.3 `exclude`).
 attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
+-- B&dM p.267 Appendix: `wrap = cons . pair (id, nil)`.
+attribute [diag_noted] Knap207.wrap Knap207.cons Knap207.nil Knap207.pair
 attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails
   RelSet.Bracket.flatten
 
@@ -348,6 +352,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander HDiv.hDiv] def unexpandNoteDiv : Unexpander
   | `($_ $a $b) => pure (.node .none ``noteDiv #[a, mkAtom "/", b])
+  | _ => throw ()
+-- Lean's `List α` is the note's `[α]` (B&dM's list type), the spelling `delabConsList` gives `ConsList Unit α`.
+open Lean PrettyPrinter in
+@[app_unexpander List] def unexpandNoteList : Unexpander
+  | `($_ $a) => `([$a])
   | _ => throw ()
 
 -- A COERCION PRINTS AS WHAT IT COERCES: a digit used as a number is `d`, never `↑↑d`.  Read off the
