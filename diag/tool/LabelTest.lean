@@ -3,13 +3,8 @@
   Apart from `DiagExportTest` because `StrDiagNames`' notations (`*`, `−`) re-read that file's
   float literals.
 -/
-module
-
-public import diag.tool.FormulaRender
-meta import diag.tool.FormulaRender
-public import diag.StrDiagNames
-meta import diag.StrDiagNames
-public section
+import diag.tool.FormulaRender
+import diag.StrDiagNames
 
 namespace Freyd.LabelTest
 
