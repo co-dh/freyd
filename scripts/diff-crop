@@ -946,7 +946,7 @@ def unmatched(bs, as_):
     f = rat[len(rat) // 2] if rat else 1.0
     ctr = lambda i: ((i[3][0] + i[3][2]) / 2, (i[3][1] + i[3][3]) / 2)
     # A rule, box or filled region is layout furniture: it resizes with its
-    # content, so it pairs by key alone and an unpaired one is not a change; a bead (<= 4pt) pairs by key too.
+    # content, so it pairs by key alone (an unpaired one is still a change); a bead (<= 4pt) pairs by key too.
     tiny = lambda i: i[0][0] == "p" and max(i[3][2] - i[3][0], i[3][3] - i[3][1]) <= 4
     rule = lambda i: len({round(p[0], 2) for p in i[2]}) <= 2 and len({round(p[1], 2) for p in i[2]}) <= 2
     furn = lambda i: i[0][0] == "p" and not tiny(i) and (rule(i) or dict(i[0][2]).get("fill", "none") != "none")
@@ -986,8 +986,7 @@ def unmatched(bs, as_):
         c, d = box(0, i), box(1, j)
         if (c is None) != (d is None) or (c is not None and twin.get(c) != d):
             used[0].discard(i), used[1].discard(j)
-    return [i for n, i in enumerate(bs) if n not in used[0] and not furn(i)], \
-           [i for n, i in enumerate(as_) if n not in used[1] and not furn(i)]
+    return [i for n, i in enumerate(bs) if n not in used[0]], [i for n, i in enumerate(as_) if n not in used[1]]
 
 
 def rings(before, after, cb, ca, tmp, key):
