@@ -243,3 +243,8 @@ compiler's own declarations. `sl1` is 0-based, hence the `+1`. Give the ABSOLUTE
 worktree — a worktree has no `.lake` of its own.
 That `printf` is the `lean:<Mod>.<decl>@<key>` marker's key: the low 32 bits of `stmt_key`, the same
 number `scripts/cite-check` recomputes when it re-verifies a citation in the notes.
+Which module needs which comes from the view `module_need(src, dst, kind, grp)` — `kind` is `const`,
+`syntax`, `eval` or `open`, and an `open` row is satisfied by ANY one `dst` of its `grp` — never from a
+join you write over `dep`/`syntax_node`: one `in (select …)` filter around those joins made sqlite take
+130 s for what the view answers in 1 s. Copy it first, `create temp table t as select * from module_need`,
+then query `t`.
