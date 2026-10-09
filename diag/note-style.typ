@@ -314,11 +314,14 @@
 // over two pages can only be one that height made breakable.  `>=` a FULL page, not `>`: laid out
 // unbreakable, a taller body is cut at the page foot and reports exactly the content height; 1e-4pt
 // is typst's own `fits` tolerance.  Under `NODRAW` there are no markers.
+// The height is measured ACROSS pages, never "two pages, so tall": a breakable display opens with an
+// empty fragment at the foot under its heading, and read as a span that kept it breakable for good.
 #let kept(f) = context {
   let k = here()
   let s = if NODRAW { none } else { pic-span(k, k) }
-  set block(breakable: NODRAW or (s != none and (s.first().page != s.last().page
-    or s.last().y - s.first().y >= PAGEH - 2 * MARGIN - 0.0001pt)))
+  let C = PAGEH - 2 * MARGIN
+  set block(breakable: NODRAW or (s != none
+    and s.last().y - s.first().y + (s.last().page - s.first().page) * C >= C - 0.0001pt))
   f(k)
 }
 #let conf(title: "", body) = {
@@ -494,13 +497,16 @@
 // Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
 // initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
 // a layout pass, so the note's position-dependent blocks ran out of passes ("did not converge").
-/// EVERY SECTION OPENS A PAGE, except one that follows its chapter heading with nothing between, which
+/// EVERY SECTION OPENS A PAGE, except one that follows its chapter heading with nothing drawn between, which
 /// shares the chapter's opening page.  Read off the chapter body's own children, never by a query: a
 /// break that depends on the heading before it, queried, ran the companion out of layout passes.
 #let has-section(c) = type(c) == content and ((c.func() == heading and c.depth == 2)
   or (c.has("children") and c.children.any(has-section)) or (c.has("child") and has-section(c.child)))
+// What draws nothing: a `#let` or a comment line leaves an empty sequence, which is not "something between".
+#let blank(c) = c.func() in ([ ].func(), parbreak, metadata, counter("x").update(0).func(),
+  state("x").update(0).func()) or (c.func() == [].func() and c.children.all(blank))
 #let section-breaks(doc) = if type(doc) != content or not doc.has("children") { doc } else {
-  let (prev, gap) = (none, ([ ].func(), parbreak))
+  let prev = none
   for c in doc.children {
     // A `set`/`show` wraps what follows it in one styled element, which cannot be rebuilt around a break.
     assert(not (c.has("child") and c.has("styles") and has-section(c.child)), message: "section-breaks: a "
@@ -509,7 +515,7 @@
       pagebreak(weak: true)
     }
     if c.func() == doc.func() { section-breaks(c) } else { c }
-    if c.func() not in gap { prev = c }
+    if not blank(c) { prev = c }
   }
 }
 #let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
