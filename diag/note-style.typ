@@ -314,14 +314,11 @@
 // over two pages can only be one that height made breakable.  `>=` a FULL page, not `>`: laid out
 // unbreakable, a taller body is cut at the page foot and reports exactly the content height; 1e-4pt
 // is typst's own `fits` tolerance.  Under `NODRAW` there are no markers.
-// The height is measured ACROSS pages, never "two pages, so tall": a breakable display opens with an
-// empty fragment at the foot under its heading, and read as a span that kept it breakable for good.
 #let kept(f) = context {
   let k = here()
   let s = if NODRAW { none } else { pic-span(k, k) }
-  let C = PAGEH - 2 * MARGIN
-  set block(breakable: NODRAW or (s != none
-    and s.last().y - s.first().y + (s.last().page - s.first().page) * C >= C - 0.0001pt))
+  set block(breakable: NODRAW or (s != none and (s.first().page != s.last().page
+    or s.last().y - s.first().y >= PAGEH - 2 * MARGIN - 0.0001pt)))
   f(k)
 }
 #let conf(title: "", body) = {
@@ -340,6 +337,9 @@
   // Everything the template sets is merged into, not replaced by, the rules above.
   // `author: none` or the template prints a bare "by" under the title.
   show: dvdtyp.with(title: title, author: none)
+  // dvdtyp's `show heading` returns bare text, which drops typst's own sticky heading block, so the
+  // rule above had no block to act on.  Not level 1: its rule's `pagebreak` cannot sit in a block.
+  show heading: it => if it.depth == 1 { it } else { block(it) }
   // After dvdtyp, which sets `"1."`: a function prints an appendix section's `A` where the pattern would print 1000.
   set heading(numbering: (..n) => hnum(n.pos()) + ".")
   // The reader needs to know where they are; the same title on every page says nothing.
