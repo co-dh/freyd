@@ -58,7 +58,7 @@ def before : E2 ⟶ E2 := corefl fun ((_, j), (_, k)) => j < k
 def ans (t : Int) : E2 ⟶ Ans := corefl (fun ((a, _), (b, _)) => a + b = t) ≫ graph fun ((_, j), (_, k)) => (j, k)
 
 /-- `pairs(t) ≜ ⟨∋,∋⟩ (j<k)? ans(t)`: two members taken independently, in index order, summing to `t`. -/
-def pairs (t : Int) : IL ⟶ Ans := rpair ∋ ∋ ≫ before ≫ ans t
+def pairs (t : Int) : IL ⟶ Ans := ⟪∋, ∋⟫ ≫ before ≫ ans t
 
 /-- `twoSum(t) ≜ zipIdx pairs(t)`. -/
 def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ Ans := zipIdxR ≫ pairs t
@@ -153,7 +153,7 @@ theorem zipIdx_sorted (xs : List Int) (n : Nat) : (xs.zipIdx n).Pairwise fun (_,
 
 /-- `sorted? ⟨∋,∋⟩ (j<k)? = sorted? splits (∋×𝟙)`: on a sorted list two members in index order
     are a member of `pre` and the split element of `pre ++ (b,k) :: post`. -/
-theorem sorted_pairs : sortedR ≫ rpair ∋ ∋ ≫ before = sortedR ≫ splits ≫ rprodMap ∋ (𝟙 E) := by
+theorem sorted_pairs : sortedR ≫ ⟪∋, ∋⟫ ≫ before = sortedR ≫ splits ≫ rprodMap ∋ (𝟙 E) := by
   refine hom_ext fun L ⟨⟨a, j⟩, ⟨b, k⟩⟩ => ⟨?_, ?_⟩
   · rintro ⟨_, ⟨rfl, hL⟩, _, ⟨ha, hb⟩, rfl, hjk⟩
     obtain ⟨pre, post, rfl⟩ := List.append_of_mem hb
@@ -184,7 +184,7 @@ def memPre (t : Int) : Split ⟶ Ans := rprodMap ∋ (𝟙 E) ≫ ans t
 /-- `sorted? pairs(t) = sorted? splits memPre(t)`. -/
 theorem pairs_split (t : Int) : sortedR ≫ pairs t = sortedR ≫ splits ≫ memPre t :=
   calc sortedR ≫ pairs t
-      = (sortedR ≫ rpair ∋ ∋ ≫ before) ≫ ans t := by simp only [pairs, Cat.assoc]
+      = (sortedR ≫ ⟪∋, ∋⟫ ≫ before) ≫ ans t := by simp only [pairs, Cat.assoc]
     _ = (sortedR ≫ splits ≫ rprodMap ∋ (𝟙 E)) ≫ ans t := by rw [sorted_pairs]
     _ = sortedR ≫ splits ≫ memPre t := by simp only [memPre, Cat.assoc]
 
@@ -297,27 +297,28 @@ def scanSpec (t : Int) : IL ⟶ (⟨Std.HashMap Int Nat × Opt.carrier⟩ : RelS
 /-- `scan(t) ≜ scanSpec(t) / ev`: the scans whose every start-map/answer pair `scanSpec(t)` allows. -/
 def scan (t : Int) : IL ⟶ Scan := scanSpec t / ev
 
-/-- **`go(t) ⊑ scan(t)`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`** with `go(t) = ⦇[const none, scanStep(t)]⦈`
-    (`foldr_cata`): on `[]` there is no split; on `(x,k) :: L'` a lookup hit is the head split's
-    answer, a miss is `hits_insert_le`/`hits_cons_dom`. -/
-theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scan t := by
-  rw [show (graph (go t) : IL ⟶ Scan) = _ from
-    foldr_cata (C := Std.HashMap Int Nat → Option (Nat × Nat)) (fun _ _ => none) (scanStep t)]
-  refine relCata_le_of_prefixed (listInitial (Int × Nat)) (le_iff.mpr ?_)
-  rintro L f ⟨u, hu, v, hv, hf⟩ ⟨m, o⟩ (ho : f m = o)
-  have hu : L = listCon u := hu
-  have hf : f = consScalarFn (fun _ _ => none) (scanStep t) v := hf
-  subst hu hf ho
-  show orNone (hits t m) _ _
-  rcases u with _ | ⟨⟨x, k⟩, L'⟩ <;> rcases v with _ | ⟨e', f'⟩
-  · refine Or.inr ⟨_, ⟨rfl, fun _ ⟨⟨pre, bk⟩, hs, _⟩ => ?_⟩, rfl⟩
+/-- The `[]` arm of the fold premise: `const none ⊑ nil scan(t)`, since `[]` has no split. -/
+theorem scan_nil (t : Int) :
+    (graph fun _ => fun _ => none : dL Unit ⟶ Scan) ⊑ graph (fun _ => ([] : List (Int × Nat))) ≫ scan t :=
+  le_iff.mpr fun _ f (hf : f = fun _ => none) => ⟨[], rfl, fun ⟨m, o⟩ ho => by
+    have ho : f m = o := ho
+    subst hf ho
+    refine Or.inr ⟨_, ⟨rfl, fun _ ⟨⟨pre, bk⟩, hs, _⟩ => ?_⟩, rfl⟩
     obtain ⟨post, hs⟩ := (splits_apply _ _ _).mp hs
-    simp [listCon] at hs
-  · exact (hv : False).elim
-  · exact (hv : False).elim
-  · obtain ⟨rfl, hX⟩ : (x, k) = e' ∧ scan t L' f' := hv
-    show orNone (hits t m) ((x, k) :: L') (scanStep t (x, k) f' m)
-    cases hm : m[t - x]? with
+    simp at hs⟩
+
+/-- The `(x,k) :: L'` arm: `(𝟙×scan(t)) scanStep(t) ⊑ cons scan(t)`.  A lookup hit is the head
+    split's answer, a miss is `hits_insert_le`/`hits_cons_dom`. -/
+theorem scan_cons (t : Int) :
+    rprodMap (𝟙 (dE (Int × Nat))) (scan t) ≫ graph (fun p : (Int × Nat) × Scan.carrier => scanStep t p.1 p.2)
+      ⊑ graph (fun p : (Int × Nat) × List (Int × Nat) => p.1 :: p.2) ≫ scan t := by
+  refine le_iff.mpr fun ⟨⟨x, k⟩, L'⟩ f ⟨⟨e', f'⟩, ⟨he, hX⟩, hf⟩ => ⟨_, rfl, fun ⟨m, o⟩ ho => ?_⟩
+  have ho : f m = o := ho
+  have he : (x, k) = e' := he
+  have hf : f = scanStep t e' f' := hf
+  subst he hf ho
+  show orNone (hits t m) ((x, k) :: L') (scanStep t (x, k) f' m)
+  cases hm : m[t - x]? with
     | some j =>
       exact Or.inl ⟨(j, k), ⟨([], (x, k)), (splits_apply _ _ _).mpr ⟨L', rfl⟩, ((t - x, j), (x, k)),
         ⟨Or.inl hm, rfl⟩, _, ⟨rfl, Int.sub_add_cancel t x⟩, rfl⟩, by simp only [scanStep, hm, Option.elim]; rfl⟩
@@ -326,6 +327,22 @@ theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scan t := by
       exact orNone_of (fun r hr => let ⟨_, he, h⟩ := le_iff.mp (hits_insert_le t m x k) L' r hr; he ▸ h)
         (hits_cons_dom t m x k (fun j (hj : m[t - x]? = some j) => nomatch hm.symm.trans hj) L')
         (hX (m.insert x k, _) rfl)
+
+/-- **`go(t) ⊑ scan(t)`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`** with `go(t) = ⦇[const none, scanStep(t)]⦈`
+    (`foldr_cata`); the premise is `[scan_nil, scan_cons]` under the copair. -/
+theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scan t := by
+  rw [show (graph (go t) : IL ⟶ Scan) = _ from
+    foldr_cata (C := Std.HashMap Int Nat → Option (Nat × Nat)) (fun _ _ => none) (scanStep t)]
+  refine relCata_le_of_prefixed (listInitial (Int × Nat)) ?_
+  calc (graph listCon)° ≫ (F Unit (Int × Nat)).map (scan t) ≫ consScalarAlg (fun _ _ => none) (scanStep t)
+      = (graph listCon)° ≫ junc (sumCop (dL Unit) _) (graph fun _ => fun _ => none)
+          (rprodMap (𝟙 (dE (Int × Nat))) (scan t) ≫ graph fun p => scanStep t p.1 p.2) := by
+        rw [consScalarAlg_eq_junc, Fmap_comp_junc]
+    _ ⊑ (graph listCon)° ≫ junc (sumCop (dL Unit) _) (graph (fun _ => []) ≫ scan t)
+          (graph (fun p : (Int × Nat) × List (Int × Nat) => p.1 :: p.2) ≫ scan t) :=
+        comp_mono_left _ (junc_mono _ (scan_nil t) (scan_cons t))
+    _ = ((graph listCon)° ≫ graph listCon) ≫ scan t := by rw [← junc_comp, ← listCon_eq_junc, Cat.assoc]
+    _ = scan t := (congrArg (· ≫ scan t) (listInitial (Int × Nat)).recip_alpha_alpha).trans (Cat.id_comp _)
 
 /-! ## The derivation -/
 

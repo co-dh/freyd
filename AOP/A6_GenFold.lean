@@ -178,4 +178,16 @@ public theorem foldr_cata {E C : Type} (g : Unit → C) (st : E → C → C) :
           obtain ⟨hy, hc⟩ := (hv : x = y ∧ _)
           subst hy; subst hc; exact h⟩
 
+/-- `α = [nil, cons]`: core list's constructor map is the junction of its two constructors. -/
+public theorem listCon_eq_junc {E : Type} :
+    (graph listCon : Fobj Unit E ⟨List E⟩ ⟶ ⟨List E⟩)
+      = junc (sumCop (dL Unit) ⟨E × List E⟩) (graph fun _ => []) (graph fun p => p.1 :: p.2) :=
+  junc_unique _ (graph_comp _ _) (graph_comp _ _)
+
+/-- `[g, st]` as the junction of its two arms. -/
+public theorem consScalarAlg_eq_junc {L E C : Type} (g : L → C) (st : E → C → C) :
+    consScalarAlg g st
+      = junc (sumCop (dL L) ⟨E × C⟩) (graph g) (graph fun p : E × C => st p.1 p.2) :=
+  junc_unique _ (graph_comp _ _) (graph_comp _ _)
+
 end Freyd.Alg.RelSet.CL

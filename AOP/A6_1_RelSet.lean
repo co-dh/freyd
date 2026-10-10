@@ -455,6 +455,9 @@ open Lean PrettyPrinter in
   | `($_ $R $S) => `(⟨$R, $S⟩)
   | _ => throw ()
 
+/-- Input-only spelling of `rpair R S`; printing stays `⟨R, S⟩` (`unexpandRpair`). -/
+notation "⟪" R ", " S "⟫" => rpair R S
+
 /-- `rpair` is monotonic in both arguments. -/
 public theorem rpair_mono {C A B : RelSet.{u}} {R R' : C ⟶ A} {S S' : C ⟶ B}
     (hR : R ⊑ R') (hS : S ⊑ S') : rpair R S ⊑ rpair R' S' :=
