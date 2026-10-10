@@ -545,6 +545,21 @@ public theorem graph_orNone {A B C : RelSet.{u}} (f : A.carrier → B.carrier) (
       · exact Or.inl ⟨b, hy ▸ hb, rfl⟩
       · exact Or.inr ⟨_, ⟨rfl, fun b hb => hn b ⟨_, rfl, hb⟩⟩, rfl⟩⟩⟩
 
+/-- `R ⊑ ⊤ R ⊤`. -/
+public theorem le_top_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ relTop A A ≫ R ≫ relTop B B :=
+  le_iff.mpr fun x y h => ⟨x, trivial, y, h, trivial⟩
+
+/-- `∋ : ⟨A ⟶ B⟩ ⟶ A×B`, a relation as the set of its pairs. -/
+@[expose] public def relMem (A B : RelSet.{u}) : (⟨A ⟶ B⟩ : RelSet.{u}) ⟶ ⟨A.carrier × B.carrier⟩ :=
+  fun R p => R p.1 p.2
+
+/-- `orNone(∋)` at `R'` gives an answer allowed at `R` when `R' ⊑ R` and `R` is nonempty only where `R'` is. -/
+public theorem orNone_relMem_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' ⊑ R)
+    (h2 : R ⊑ relTop A A ≫ R' ≫ relTop B B) (o : Option (A.carrier × B.carrier))
+    (h : orNone (relMem A B) R' o) : orNone (relMem A B) R o :=
+  Or.elim h (fun ⟨p, hp, ho⟩ => Or.inl ⟨p, le_iff.mp h1 _ _ hp, ho⟩) fun ⟨_, ⟨rfl, hn⟩, ho⟩ =>
+    Or.inr ⟨_, ⟨rfl, fun _ hp => let ⟨_, _, _, h, _⟩ := le_iff.mp h2 _ _ hp; hn (_, _) h⟩, ho⟩
+
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so an object has to PRINT as what the note calls it.  The
 -- bundling is Lean's, not the book's: the note writes one name for the object and for the type it
