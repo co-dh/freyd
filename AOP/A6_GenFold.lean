@@ -190,4 +190,21 @@ public theorem consScalarAlg_eq_junc {L E C : Type} (g : L → C) (st : E → C 
       = junc (sumCop (dL L) ⟨E × C⟩) (graph g) (graph fun p : E × C => st p.1 p.2) :=
   junc_unique _ (graph_comp _ _) (graph_comp _ _)
 
+/-- **`foldr(st, e) ⊑ X`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`** with `foldr(st,e) = ⦇[e, st]⦈`
+    (`foldr_cata`); the premise is the copair of its `[]` and `::` arms. -/
+public theorem foldr_le {E C : Type} {X : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨C⟩} (e : C) (st : E → C → C)
+    (hnil : (graph fun _ => e : dL Unit ⟶ ⟨C⟩) ⊑ (graph fun _ => ([] : List E) : dL Unit ⟶ ⟨List E⟩) ≫ X)
+    (hcons : rprodMap (𝟙 (dE E)) X ≫ graph (fun p : E × C => st p.1 p.2)
+      ⊑ graph (fun p : E × List E => p.1 :: p.2) ≫ X) :
+    (graph (List.foldr st e) : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨C⟩) ⊑ X := by
+  rw [show (graph (List.foldr st e) : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨C⟩) = _ from foldr_cata (fun _ => e) st]
+  refine relCata_le_of_prefixed (listInitial E) ?_
+  calc (graph listCon)° ≫ (F Unit E).map X ≫ consScalarAlg (fun _ => e) st
+      = (graph listCon)° ≫ junc (sumCop (dL Unit) _) (graph fun _ => e)
+          (rprodMap (𝟙 (dE E)) X ≫ graph fun p => st p.1 p.2) := by rw [consScalarAlg_eq_junc, Fmap_comp_junc]
+    _ ⊑ (graph listCon)° ≫ junc (sumCop (dL Unit) _) (graph (fun _ => []) ≫ X)
+          (graph (fun p : E × List E => p.1 :: p.2) ≫ X) := comp_mono_left _ (junc_mono _ hnil hcons)
+    _ = ((graph listCon)° ≫ graph listCon) ≫ X := by rw [← junc_comp, ← listCon_eq_junc, Cat.assoc]
+    _ = X := (congrArg (· ≫ X) (listInitial E).recip_alpha_alpha).trans (Cat.id_comp _)
+
 end Freyd.Alg.RelSet.CL

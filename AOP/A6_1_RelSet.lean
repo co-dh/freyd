@@ -474,6 +474,74 @@ public theorem pair_eq_rpair {C A B : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B) :
   · rintro ⟨h1, h2⟩
     exact ⟨⟨p.1, h1, rfl⟩, ⟨p.2, h2, rfl⟩⟩
 
+/-- `⟪R ∪ R', S⟫ = ⟪R, S⟫ ∪ ⟪R', S⟫`. -/
+public theorem rpair_union_left {C A B : RelSet.{u}} (R R' : C ⟶ A) (S : C ⟶ B) :
+    ⟪R ∪ R', S⟫ = ⟪R, S⟫ ∪ ⟪R', S⟫ :=
+  hom_ext fun _ _ => ⟨fun ⟨h, s⟩ => Or.elim h (fun h => Or.inl ⟨h, s⟩) (fun h => Or.inr ⟨h, s⟩),
+    fun h => Or.elim h (fun ⟨h, s⟩ => ⟨Or.inl h, s⟩) (fun ⟨h, s⟩ => ⟨Or.inr h, s⟩)⟩
+
+/-- `⟪R, S ∪ S'⟫ = ⟪R, S⟫ ∪ ⟪R, S'⟫`. -/
+public theorem rpair_union_right {C A B : RelSet.{u}} (R : C ⟶ A) (S S' : C ⟶ B) :
+    ⟪R, S ∪ S'⟫ = ⟪R, S⟫ ∪ ⟪R, S'⟫ :=
+  hom_ext fun _ _ => ⟨fun ⟨r, h⟩ => Or.elim h (fun h => Or.inl ⟨r, h⟩) (fun h => Or.inr ⟨r, h⟩),
+    fun h => Or.elim h (fun ⟨r, h⟩ => ⟨r, Or.inl h⟩) (fun ⟨r, h⟩ => ⟨r, Or.inr h⟩)⟩
+
+/-- `⟪𝟘, S⟫ = 𝟘`. -/
+public theorem rpair_zero_left {C A B : RelSet.{u}} (S : C ⟶ B) : ⟪(𝟘 : C ⟶ A), S⟫ = 𝟘 :=
+  hom_ext fun _ _ => ⟨fun h => h.1, fun h => (h : False).elim⟩
+
+/-- `⟪R ⊤, S⟫ ⊑ ⟪R, S⟫ ⊤`: forgetting the first component's value keeps the pair defined. -/
+public theorem rpair_top {C A A' B : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B) :
+    ⟪R ≫ relTop A A', S⟫ ⊑ ⟪R, S⟫ ≫ relTop ⟨A.carrier × B.carrier⟩ ⟨A'.carrier × B.carrier⟩ :=
+  le_iff.mpr fun _ p ⟨⟨y, hy, _⟩, hs⟩ => ⟨(y, p.2), ⟨hy, hs⟩, trivial⟩
+
+/-- `R ⊑ R ⊤`. -/
+public theorem le_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ R ≫ relTop B B :=
+  le_iff.mpr fun _ y h => ⟨y, h, trivial⟩
+
+/-- A map followed by a pair is the pair of the map followed by each component. -/
+public theorem graph_rpair {C D P Q : RelSet.{u}} (f : C.carrier → D.carrier) (U : D ⟶ P) (V : D ⟶ Q) :
+    graph f ≫ ⟪U, V⟫ = ⟪graph f ≫ U, graph f ≫ V⟫ :=
+  hom_ext fun _ _ => ⟨fun ⟨_, h, u, v⟩ => ⟨⟨_, h, u⟩, ⟨_, h, v⟩⟩,
+    fun ⟨⟨_, h, u⟩, ⟨_, h', v⟩⟩ => ⟨_, h, u, h ▸ h' ▸ v⟩⟩
+
+/-- `(¬dom R)? ≜ 𝟙 ∩ 𝟘/R`: the largest coreflexive `C` with `C R ⊑ 𝟘`.  The residual gives the
+    complement of `dom R` among coreflexives without the Boolean `∼`, which is not constructive. -/
+@[expose] public def undef {A B : RelSet.{u}} (R : A ⟶ B) : A ⟶ A := 𝟙 A ∩ ((𝟘 : A ⟶ B) / R)
+
+/-- `orNone(R) ≜ R some ∪ (¬dom R)? none`, the entire relation that totals `R`. -/
+@[expose] public def orNone {A B : RelSet.{u}} (R : A ⟶ B) : A ⟶ ⟨Option B.carrier⟩ :=
+  R ≫ graph some ∪ undef R ≫ graph fun _ => none
+
+/-- `orNone(𝟘) = none`. -/
+public theorem orNone_zero {A B : RelSet.{u}} : orNone (𝟘 : A ⟶ B) = graph fun _ => none :=
+  hom_ext fun _ _ => ⟨fun h => Or.elim h (fun ⟨_, h, _⟩ => (h : False).elim) (fun ⟨_, ⟨rfl, _⟩, h⟩ => h),
+    fun h => Or.inr ⟨_, ⟨rfl, fun _ h => h⟩, h⟩⟩
+
+/-- `orNone(R') ⊑ orNone(R)` when `R' ⊑ R` and `R` is defined only where `R'` is. -/
+public theorem orNone_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' ⊑ R) (h2 : R ⊑ R' ≫ relTop B B) :
+    orNone R' ⊑ orNone R :=
+  have hd : (𝟘 : A ⟶ B) / R' ⊑ 𝟘 / R := (le_div_iff _ _ _).mpr <|
+    calc ((𝟘 : A ⟶ B) / R') ≫ R ⊑ ((𝟘 : A ⟶ B) / R') ≫ R' ≫ relTop B B := comp_mono_left _ h2
+      _ = (((𝟘 : A ⟶ B) / R') ≫ R') ≫ relTop B B := (Cat.assoc _ _ _).symm
+      _ ⊑ 𝟘 ≫ relTop B B := comp_mono_right ((le_div_iff _ _ _).mp (le_refl _)) _
+      _ = 𝟘 := DistributiveAllegory.zero_comp _
+  union_lub (le_trans (comp_mono_right h1 _) (le_union_left _ _))
+    (le_trans (comp_mono_right (le_iff.mpr fun x y ⟨h, hn⟩ => ⟨h, le_iff.mp hd x y hn⟩) _) (le_union_right _ _))
+
+/-- `f orNone(R) = orNone(f R)` for a map `f`: a map neither adds nor drops a point of the domain. -/
+public theorem graph_orNone {A B C : RelSet.{u}} (f : A.carrier → B.carrier) (R : B ⟶ C) :
+    graph f ≫ orNone R = orNone (graph f ≫ R) :=
+  hom_ext fun a r => ⟨fun ⟨_, hy, h⟩ => by
+      subst hy
+      rcases h with ⟨b, hb, rfl⟩ | ⟨_, ⟨rfl, hn⟩, rfl⟩
+      · exact Or.inl ⟨b, ⟨_, rfl, hb⟩, rfl⟩
+      · exact Or.inr ⟨a, ⟨rfl, fun b ⟨_, hy, hb⟩ => hn b (hy ▸ hb)⟩, rfl⟩,
+    fun h => ⟨_, rfl, by
+      rcases h with ⟨b, ⟨_, hy, hb⟩, rfl⟩ | ⟨_, ⟨rfl, hn⟩, rfl⟩
+      · exact Or.inl ⟨b, hy ▸ hb, rfl⟩
+      · exact Or.inr ⟨_, ⟨rfl, fun b hb => hn b ⟨_, rfl, hb⟩⟩, rfl⟩⟩⟩
+
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so an object has to PRINT as what the note calls it.  The
 -- bundling is Lean's, not the book's: the note writes one name for the object and for the type it

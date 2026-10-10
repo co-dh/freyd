@@ -1762,15 +1762,6 @@ public theorem zipFn_cmap_pair {X Y Z : Type} (f : X → Y) (g : X → Z) :
   | CL.ConsList.wrap _ => by simp only [cmap, zip]
   | CL.ConsList.cons x xs => by simp only [cmap, zip]; rw [zipFn_cmap_pair f g xs]
 
-/-- A map followed by a pair is the pair of the map followed by each component. -/
-public theorem graph_rpair {C D P Q : RelSet.{0}} (f : C.carrier → D.carrier) (U : D ⟶ P) (V : D ⟶ Q) :
-    graph f ≫ rpair U V = rpair (graph f ≫ U) (graph f ≫ V) := by
-  apply hom_ext; intro x w
-  constructor
-  · rintro ⟨m, hm, hU, hV⟩; exact ⟨⟨m, hm, hU⟩, ⟨m, hm, hV⟩⟩
-  · rintro ⟨⟨m, hm, hU⟩, ⟨m', hm', hV⟩⟩
-    obtain rfl := hm; obtain rfl := hm'
-    exact ⟨_, rfl, hU, hV⟩
 
 omit [Inhabited A] in
 /-- `tic≜cons inits tail`, the book's abbreviation (B&dM p. 235). -/
