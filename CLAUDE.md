@@ -49,14 +49,14 @@ book version requires more typeclasses (e.g., `Entire R := 1_A ≤ R°R` via
 If a proof used theorem from other section but not defined yet, prove them in $a_bc.lean.
 Make the prove constructive: do not use atom of choice unless unavoidable.
 feel free to copy ideas from Mathlib, but do not bring in them as dependency.
-  STRICTLY MATHLIB-FREE, NO EXCEPTIONS. The repo has ZERO external dependencies:
-  `lake-manifest.json` lists no packages and nothing imports outside the Lean toolchain
-  (`Init`, `Std`, `Lean`) and the repo's own libs. `Std` ships with the toolchain and needs no
-  `require`, so `Std.HashMap` and friends are allowed. The §1.543 transfinite-recursion work that once
+  The Freyd book core (`Freyd/`) is STRICTLY MATHLIB-FREE, NO EXCEPTIONS: it imports nothing
+  outside the Lean toolchain (`Init`, `Std`, `Lean`) and `Freyd.*`. `Std` ships with the toolchain
+  and needs no `require`. The rule is for `Freyd/`, not `leet/`: a LeetCode case study may use
+  whatever library fits. The §1.543 transfinite-recursion work that once
   earmarked mathlib's ordinals was hand-built instead (`Freyd/WellOrdering.lean`, Zermelo
   from `Classical.choice`); order/lattice/Frame machinery is hand-rolled too (`Locale.lean`,
-  `S1_72`). Never add a `require` and never `import Mathlib`/`Batteries`/`Aesop` — keep
-  the repo self-contained so builds stay fast and clones stay tiny.
+  `S1_72`). Never `import Mathlib`/`Batteries`/`Aesop` from `Freyd/` — keep the book core
+  self-contained so its builds stay fast.
 DRY as much as possible.
 For stronger/weaker near-clone theorems, prefer one canonical stronger proof in the earliest legal
 book module and define the weaker theorem by projection or specialization. Move genuinely shared
