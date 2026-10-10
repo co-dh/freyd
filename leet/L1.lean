@@ -7,13 +7,10 @@
   Program: `go(t) ≜ ⦇[const none, step(t)]⦈` over `[Int]`, a function of the offset `n` and the map
   `m`; `zipIdx` fuses into it because `zipIdx(x::xs, n) = (x,n) :: zipIdx(xs, n+1)`.
 
-  Derivation (diagram order):
-      graph(prog(t)) = graph(go(t)) at₀ ⊑ scan(t) at₀ ⊑ orNone(hits(t,0,∅)) = orNone(twoSum(t))
-  with `hits(t,n,m) ≜ zipIdx(n) (pairs(t) ∪ ∋ found(t,m))`: a pair inside the rest, or a member of
-  the rest whose complement `m` already holds.  The fold premise is `[scan_nil, scan_cons]`; on a
-  miss `hits_insert_le` gives `⊑` and `hits_cons_dom` the domain.
+  Derivation: `graph(prog(t)) = graph(go(t)) at₀ ⊑ scan(t) at₀ ⊑ orNone(hits(t,0,∅)) = twoSumO(t)`;
+  the fold premise is `[scan_nil, scan_cons]`, a miss is `hits_insert_le` (⊑) and `hits_cons_dom` (dom).
 
-  Mathlib-free.  `Classical.choice` enters only through core's `Std.HashMap` lemmas in `look_insert`.
+  Mathlib-free.  `Classical.choice` enters only through core's `Std.HashMap` lemmas (`look_insert`).
 -/
 import AOP.A6_GenFold
 import AOP.A6_2
@@ -186,6 +183,13 @@ theorem nil_hits (t : Int) (n : Nat) (m : HM) : (graph fun _ => ([] : List Int) 
         simp only [comp_union_distrib, pairs, ← Cat.assoc, graph_rpair]; rw [mem_nil]
         simp only [rpair_zero_left, zero_comp, union_zero]
 
+/-- `cons(x) hits(t,n,m) = zipIdx(n+1) (⟪κ(x,n)∪∋, κ(x,n)∪∋⟫ (j<k)? ans(t) ∪ (κ(x,n)∪∋) found(t,m))`:
+    the head `(x,n)` joins both members of a pair and the member of a find. -/
+theorem cons_hits (t : Int) (n : Nat) (m : HM) (x : Int) : (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m
+    = zipIdxR (n + 1) ≫ (⟪κ(x, n) ∪ ∋, κ(x, n) ∪ ∋⟫ ≫ before ≫ ans t ∪ (κ(x, n) ∪ ∋) ≫ found t (look m)) := by
+  rw [hits, ← Cat.assoc, zipIdx_cons, Cat.assoc, comp_union_distrib (graph _), pairs, ← Cat.assoc (graph _) ⟪∋, ∋⟫,
+    ← Cat.assoc (graph _) ∋, graph_rpair, mem_cons]
+
 /-- `hits(t,n+1,insert(x,n)(m)) ⊑ cons(x) hits(t,n,m)`: a later hit is a hit one member earlier. -/
 theorem hits_insert_le (t : Int) (n : Nat) (m : HM) (x : Int) :
     hits t (n + 1) (m.insert x n) ⊑ (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m :=
@@ -200,22 +204,17 @@ theorem hits_insert_le (t : Int) (n : Nat) (m : HM) (x : Int) :
           (union_lub
             (le_trans (comp_mono_right (rpair_mono (le_union_left _ _) (le_union_right _ _)) _) (le_union_left _ _))
             (le_trans (comp_mono_right (le_union_right _ _) _) (le_union_right _ _))))
-    _ = zipIdxR (n + 1) ≫ (graph (List.cons (x, n)) : IL ⟶ IL) ≫ (pairs t ∪ ∋ ≫ found t (look m)) := by
-        rw [comp_union_distrib (graph _), pairs, ← Cat.assoc (graph _) ⟪∋, ∋⟫, ← Cat.assoc (graph _) ∋,
-          graph_rpair, mem_cons]
-    _ = (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m := by rw [← Cat.assoc, ← zipIdx_cons, Cat.assoc]; rfl
+    _ = (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m := (cons_hits t n m x).symm
 
 /-- `cons(x) hits(t,n,m) ⊑ hits(t,n+1,insert(x,n)(m)) ⊤` on a miss: the head finds nothing, a later
     hit keeps its key. -/
 theorem hits_cons_dom (t : Int) (n : Nat) (m : HM) (x : Int) (hm : m[t - x]? = none) :
     (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m ⊑ hits t (n + 1) (m.insert x n) ≫ relTop Ans Ans :=
   calc (graph (List.cons x) : LI ⟶ LI) ≫ hits t n m
-      = zipIdxR (n + 1) ≫ (graph (List.cons (x, n)) : IL ⟶ IL) ≫ (pairs t ∪ ∋ ≫ found t (look m)) := by
-        rw [hits, ← Cat.assoc, zipIdx_cons, Cat.assoc]
+      = zipIdxR (n + 1) ≫ (⟪κ(x, n) ∪ ∋, κ(x, n) ∪ ∋⟫ ≫ before ≫ ans t ∪ (κ(x, n) ∪ ∋) ≫ found t (look m)) :=
+        cons_hits t n m x
     _ = zipIdxR (n + 1) ≫ (⟪κ(x, n), ∋⟫ ≫ ans t ∪ pairs t ∪ ∋ ≫ found t (look m)) := by
-        rw [comp_union_distrib (graph _), pairs, ← Cat.assoc (graph _) ⟪∋, ∋⟫, ← Cat.assoc (graph _) ∋,
-          graph_rpair, mem_cons]
-        simp only [rpair_union_left, rpair_union_right, union_comp_distrib, comp_union_distrib, before_const,
+        simp only [pairs, rpair_union_left, rpair_union_right, union_comp_distrib, comp_union_distrib, before_const,
           found_miss n hm, zero_union]
         rw [zipIdx_before', zipIdx_before, zero_union]
     _ ⊑ zipIdxR (n + 1) ≫ (pairs t ∪ ∋ ≫ found t (look (m.insert x n))) ≫ relTop Ans Ans := by
