@@ -343,4 +343,75 @@ public theorem CL.graph_pres_iff_monotone_tail {L E : Type} {A : RelSet.{0}}
     _ ↔ ∀ e x y, «≤» x y → «≤» (f (.inr (e, x))) (f (.inr (e, y))) :=
       and_iff_right fun _ => le_iff.mp hrefl _ _ ((id_apply _ _).mpr rfl)
 
+/-! ## Down-sets under `(≥)`: the laws behind a running maximum -/
+
+/-- `(≥) : A ⟶ A`, `v (≥) k` when `k ≤ v`. -/
+@[expose] public def geR {α : Type} [LE α] : (⟨α⟩ : RelSet.{0}) ⟶ ⟨α⟩ := fun v k => k ≤ v
+
+/-- `(≤) : A ⟶ A`, `v (≤) k` when `v ≤ k`. -/
+@[expose] public def leR {α : Type} [LE α] : (⟨α⟩ : RelSet.{0}) ⟶ ⟨α⟩ := fun v k => v ≤ k
+
+/-- `min : ℕ×ℕ ⟶ ℕ`. -/
+@[expose] public def minR : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := graph fun p => min p.1 p.2
+
+/-- `Λ(S) est(≥) = f` when `f(a)` is the greatest `S`-image of `a`. -/
+public theorem Λ_est_greatest {A : RelSet.{0}} (S : A ⟶ ⟨Nat⟩) (f : A.carrier → Nat)
+    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : Λ S ≫ est geR = graph f :=
+  hom_ext fun a m => (Λ_comp_est_apply S geR a m).trans
+    ⟨fun ⟨hm, hmax⟩ => Nat.le_antisymm ((h a).2 m hm) (hmax _ (h a).1), fun e => by subst e; exact h a⟩
+
+/-- `S(≥) = Λ(S) est(≥) (≥)` when every `S`-fibre has a greatest element: below some image is below the greatest. -/
+public theorem down_est {A : RelSet.{0}} (S : A ⟶ ⟨Nat⟩) (f : A.carrier → Nat)
+    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : S ≫ geR = (Λ S ≫ est geR) ≫ geR := by
+  rw [Λ_est_greatest S f h]
+  exact hom_ext fun a k => ⟨fun ⟨v, hv, hk⟩ => ⟨f a, rfl, Nat.le_trans hk ((h a).2 v hv)⟩,
+    fun ⟨_, e, hk⟩ => ⟨f a, (h a).1, by subst e; exact hk⟩⟩
+
+/-- `X(≥) ∩ Y(≥) = ⟪X,Y⟫ min (≥)`: below an image of each is below their minimum. -/
+public theorem down_inter {A : RelSet.{0}} (X Y : A ⟶ ⟨Nat⟩) :
+    (X ≫ geR) ∩ (Y ≫ geR) = ⟪X, Y⟫ ≫ minR ≫ geR :=
+  hom_ext fun _ k => ⟨fun ⟨⟨x, hx, hkx⟩, ⟨y, hy, hky⟩⟩ => ⟨(x, y), ⟨hx, hy⟩, _, rfl, Nat.le_min.mpr ⟨hkx, hky⟩⟩,
+    fun ⟨⟨x, y⟩, ⟨hx, hy⟩, _, e, hk⟩ => by
+      subst e; exact ⟨⟨x, hx, (Nat.le_min.mp hk).1⟩, ⟨y, hy, (Nat.le_min.mp hk).2⟩⟩⟩
+
+/-- `Λ(X(≥)) est(≥) = X` for simple `X`: the greatest point below `X(a)` is `X(a)`. -/
+public theorem est_down {A : RelSet.{0}} (X : A ⟶ ⟨Nat⟩) (hX : Simple X) : Λ (X ≫ geR) ≫ est geR = X := by
+  have hs : ∀ a y y', X a y → X a y' → y = y' := fun a y y' hy hy' =>
+    le_iff.mp (show X° ≫ X ⊑ 𝟙 _ from hX) y y' ⟨a, hy, hy'⟩
+  exact hom_ext fun a m => (Λ_comp_est_apply _ geR a m).trans
+    ⟨fun ⟨⟨x, hx, hmx⟩, hmax⟩ => by rw [Nat.le_antisymm hmx (hmax x ⟨x, hx, Nat.le_refl x⟩)]; exact hx,
+     fun hm => ⟨⟨m, hm, Nat.le_refl m⟩, fun z ⟨x, hx, hz⟩ => by rw [← hs a x m hx hm]; exact hz⟩⟩
+
+/-! ## `|W|`: the number of pairs of a finite relation into `ℕ` -/
+
+/-- `|W| ≜ Σ_{a∈as} #{k<b ∣ W(a,k)}`: the pairs of `W`, over an enumeration `as` of its source and a bound `b`
+    on its target. -/
+@[expose] public def card {A : RelSet.{0}} (as : List A.carrier) (b : Nat) (W : A ⟶ ⟨Nat⟩)
+    [∀ a k, Decidable (W a k)] : Nat :=
+  (as.map fun a => ((List.range b).filter fun k => decide (W a k)).length).sum
+
+/-- `#{k<b ∣ lo<k≤hi} = min(b,hi+1) − min(b,lo+1)`. -/
+public theorem count_interval (p : Nat → Prop) [DecidablePred p] (lo hi : Nat) (hp : ∀ k, p k ↔ lo < k ∧ k ≤ hi) :
+    ∀ b, ((List.range b).filter fun k => decide (p k)).length = min b (hi + 1) - min b (lo + 1)
+  | 0 => by simp
+  | b + 1 => by
+    rw [List.range_succ, List.filter_append, List.length_append, count_interval p lo hi hp b]
+    by_cases h : p b
+    · have := (hp b).mp h; simp [h]; omega
+    · -- split the negated conjunction by hand: `omega` reads `¬(A ∧ B)` classically
+      have hn : ¬(lo < b ∧ b ≤ hi) := mt (hp b).mpr h
+      simp [h]
+      by_cases hl : lo < b
+      · have : hi < b := Nat.lt_of_not_le fun hb => hn ⟨hl, hb⟩
+        omega
+      · omega
+
+/-- `|W| = Σ_{a∈as} (hi(a)−lo(a))` when each fibre of `W` is the interval `(lo(a), hi(a)]` below the bound. -/
+public theorem card_intervals {A : RelSet.{0}} (as : List A.carrier) (b : Nat) (W : A ⟶ ⟨Nat⟩)
+    [∀ a k, Decidable (W a k)] (lo hi : A.carrier → Nat) (hW : ∀ a k, W a k ↔ lo a < k ∧ k ≤ hi a)
+    (hb : ∀ a, hi a < b) : card as b W = (as.map fun a => hi a - lo a).sum := by
+  unfold card
+  congr 1; apply List.map_congr_left; intro a _
+  exact (count_interval (fun k => W a k) (lo a) (hi a) (hW a) b).trans (by have := hb a; omega)
+
 end Freyd.Alg.RelSet
