@@ -157,4 +157,25 @@ public theorem cfold_cata {L E C : Type} (g : L → C) (st : E → C → C) :
     (graph (cfold g st) : dCL L E ⟶ ⟨C⟩) = cataR (consScalarAlg g st) :=
   consFold_unique g st _ (fun _ => rfl) (fun _ _ => rfl)
 
+/-- `List.foldr st (g ())` is the fold `⦇[g,st]⦈` over core lists (`listInitial`). -/
+public theorem foldr_cata {E C : Type} (g : Unit → C) (st : E → C → C) :
+    (graph (List.foldr st (g ())) : (listInitial E).t ⟶ ⟨C⟩)
+      = relCata (I := listInitial E) (consScalarAlg g st) :=
+  (relCata_UP (listInitial E) _ _).mp <| by
+    show graph listCon ≫ graph (List.foldr st (g ())) = _
+    rw [graph_comp_left]
+    refine hom_ext fun u r => ?_
+    rcases u with ⟨⟨⟩⟩ | ⟨x, xs⟩
+    · exact ⟨fun h => ⟨Sum.inl (), rfl, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact h
+        | inr _ => exact hv.elim⟩
+    · exact ⟨fun h => ⟨Sum.inr (x, List.foldr st (g ()) xs), ⟨rfl, rfl⟩, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact hv.elim
+        | inr q =>
+          obtain ⟨y, c⟩ := q
+          obtain ⟨hy, hc⟩ := (hv : x = y ∧ _)
+          subst hy; subst hc; exact h⟩
+
 end Freyd.Alg.RelSet.CL

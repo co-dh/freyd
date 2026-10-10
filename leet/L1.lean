@@ -63,8 +63,9 @@ def pairs (t : Int) : IL ⟶ Ans := rpair ∋ ∋ ≫ before ≫ ans t
 /-- `twoSum(t) ≜ zipIdx pairs(t)`. -/
 def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ Ans := zipIdxR ≫ pairs t
 
-/-- `(¬dom R)?`: the points where `R` has no value. -/
-def undef {A B : RelSet.{0}} (R : A ⟶ B) : A ⟶ A := corefl fun a => ∀ b, ¬ R a b
+/-- `(¬dom R)? ≜ 𝟙 ∩ ⊥/R`: the largest coreflexive `C` with `C R ⊑ ⊥`.  The residual gives the
+    complement of `dom R` among coreflexives without the Boolean `∼`, which is not constructive. -/
+def undef {A B : RelSet.{0}} (R : A ⟶ B) : A ⟶ A := 𝟙 A ∩ ((𝟘 : A ⟶ B) / R)
 
 /-- `orNone(R) ≜ R some ∪ (¬dom R)? none`, the entire relation that totals `R`. -/
 def orNone {A B : RelSet.{0}} (R : A ⟶ B) : A ⟶ ⟨Option B.carrier⟩ :=
@@ -205,12 +206,13 @@ theorem envR_empty : envR {} = ∋ :=
 /-- `env(insert(x,k)(m),pre) ⊑ env(m,(x,k)::pre)`: the override drops entries, adds `x↦k`. -/
 theorem env_insert_le (m : Std.HashMap Int Nat) (x : Int) (k : Nat) (pre : List (Int × Nat)) :
     env (m.insert x k) pre ⊑ env m ((x, k) :: pre) := by
-  rw [env, env, look_insert, ent_cons]
-  exact le_iff.mpr fun a j => by
-    rintro ((h | ⟨_, ⟨rfl, -⟩, h⟩) | h)
-    · exact Or.inr (Or.inl h)
-    · exact Or.inl h
-    · exact Or.inr (Or.inr h)
+  calc env (m.insert x k) pre
+      = (single x k ∪ corefl (· ≠ x) ≫ look m) ∪ ent pre := by rw [env, look_insert]
+    _ ⊑ (single x k ∪ 𝟙 Key ≫ look m) ∪ ent pre :=
+        union_mono (union_mono (le_refl _) (comp_mono_right (le_iff.mpr fun _ _ h => h.1) _)) (le_refl _)
+    _ = env m ((x, k) :: pre) := by
+        rw [Cat.id_comp, env, ent_cons, DistributiveAllegory.union_comm (single x k),
+          DistributiveAllegory.union_assoc]
 
 /-- `env(m,(x,k)::pre) ⊑ env(insert(x,k)(m),pre) ⊤`: the override keeps every key. -/
 theorem env_keys (m : Std.HashMap Int Nat) (x : Int) (k : Nat) (pre : List (Int × Nat)) :
@@ -285,36 +287,28 @@ theorem graph_orNone {A B C : RelSet.{0}} (f : A.carrier → B.carrier) (R : B �
 
 /-! ## The fold -/
 
-/-- `scan(t) : L ↦ f` when from every start map `m`, `f(m)` is `orNone(hits(t,m))` of `L`. -/
-def scan (t : Int) : IL ⟶ Scan := fun L f => ∀ m, orNone (hits t m) L (f m)
+/-- `ev : f ↦ (m, f(m))`, a scan as the set of its start-map/answer pairs. -/
+def ev : Scan ⟶ (⟨Std.HashMap Int Nat × Opt.carrier⟩ : RelSet.{0}) := fun f (m, o) => f m = o
 
-/-- **`go(t) ⊑ scan(t)`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`**: on `[]` there is no split; on
-    `(x,k) :: L'` a lookup hit is the head split's answer, a miss is `hits_insert_le`/`hits_cons_dom`. -/
+/-- `scanSpec(t) : L ↦ (m, o)` when `o` is `orNone(hits(t,m))` of `L`. -/
+def scanSpec (t : Int) : IL ⟶ (⟨Std.HashMap Int Nat × Opt.carrier⟩ : RelSet.{0}) :=
+  fun L (m, o) => orNone (hits t m) L o
+
+/-- `scan(t) ≜ scanSpec(t) / ev`: the scans whose every start-map/answer pair `scanSpec(t)` allows. -/
+def scan (t : Int) : IL ⟶ Scan := scanSpec t / ev
+
+/-- **`go(t) ⊑ scan(t)`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`** with `go(t) = ⦇[const none, scanStep(t)]⦈`
+    (`foldr_cata`): on `[]` there is no split; on `(x,k) :: L'` a lookup hit is the head split's
+    answer, a miss is `hits_insert_le`/`hits_cons_dom`. -/
 theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scan t := by
-  -- `go(t)` satisfies the fold square of `listInitial`, so it is `⦇[const none, scanStep(t)]⦈`.
-  have hgo : graph (go t) = relCata (I := listInitial (Int × Nat))
-      (consScalarAlg (fun _ _ => none) (scanStep t)) := (relCata_UP (listInitial _) _ _).mp <| by
-    show graph listCon ≫ graph (go t) = _
-    rw [graph_comp_left]
-    refine hom_ext fun u r => ?_
-    rcases u with d | ⟨x, L'⟩
-    · exact ⟨fun h => ⟨Sum.inl d, rfl, h⟩, fun ⟨v, hv, h⟩ => by
-        cases v with
-        | inl _ => exact h
-        | inr _ => exact hv.elim⟩
-    · exact ⟨fun h => ⟨Sum.inr (x, go t L'), ⟨rfl, rfl⟩, h⟩, fun ⟨v, hv, h⟩ => by
-        cases v with
-        | inl _ => exact hv.elim
-        | inr q =>
-          obtain ⟨y, f'⟩ := q
-          obtain ⟨hy, hf'⟩ := (hv : x = y ∧ _)
-          subst hy; subst hf'; exact h⟩
-  rw [hgo]
+  rw [show (graph (go t) : IL ⟶ Scan) = _ from
+    foldr_cata (C := Std.HashMap Int Nat → Option (Nat × Nat)) (fun _ _ => none) (scanStep t)]
   refine relCata_le_of_prefixed (listInitial (Int × Nat)) (le_iff.mpr ?_)
-  rintro L f ⟨u, hu, v, hv, hf⟩ m
+  rintro L f ⟨u, hu, v, hv, hf⟩ ⟨m, o⟩ (ho : f m = o)
   have hu : L = listCon u := hu
   have hf : f = consScalarFn (fun _ _ => none) (scanStep t) v := hf
-  subst hu hf
+  subst hu hf ho
+  show orNone (hits t m) _ _
   rcases u with _ | ⟨⟨x, k⟩, L'⟩ <;> rcases v with _ | ⟨e', f'⟩
   · refine Or.inr ⟨_, ⟨rfl, fun _ ⟨⟨pre, bk⟩, hs, _⟩ => ?_⟩, rfl⟩
     obtain ⟨post, hs⟩ := (splits_apply _ _ _).mp hs
@@ -330,7 +324,8 @@ theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scan t := by
     | none =>
       rw [show scanStep t (x, k) f' m = f' (m.insert x k) by simp only [scanStep, hm, Option.elim]]
       exact orNone_of (fun r hr => let ⟨_, he, h⟩ := le_iff.mp (hits_insert_le t m x k) L' r hr; he ▸ h)
-        (hits_cons_dom t m x k (fun j (hj : m[t - x]? = some j) => nomatch hm.symm.trans hj) L') (hX _)
+        (hits_cons_dom t m x k (fun j (hj : m[t - x]? = some j) => nomatch hm.symm.trans hj) L')
+        (hX (m.insert x k, _) rfl)
 
 /-! ## The derivation -/
 
@@ -347,7 +342,8 @@ theorem prog_le (t : Int) : (graph (prog t) : (⟨List Int⟩ : RelSet.{0}) ⟶ 
   calc graph (prog t)
       = zipIdxR ≫ graph (go t) ≫ atEmpty := by rw [zipIdxR, atEmpty, graph_comp, graph_comp]; rfl
     _ ⊑ zipIdxR ≫ scan t ≫ atEmpty := comp_mono_left _ (comp_mono_right (scan_le t) _)
-    _ ⊑ zipIdxR ≫ orNone (hits t {}) := comp_mono_left _ (le_iff.mpr fun L r ⟨f, hX, hr⟩ => hr ▸ hX {})
+    _ ⊑ zipIdxR ≫ orNone (hits t {}) := comp_mono_left _ (le_iff.mpr fun L r ⟨f, hX, hr⟩ =>
+        hr ▸ (hX ({}, f {}) rfl : orNone (hits t {}) L (f {})))
     _ = orNone (zipIdxR ≫ hits t {}) := graph_orNone _ _
     _ = twoSumO t := by rw [hits_empty]; rfl
 
