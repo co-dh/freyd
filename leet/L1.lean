@@ -13,7 +13,7 @@
     ⊒ zipIdx sorted? splits hit(t,∅)          hit_memPre: a hit of `toMap(pre)` at `t-b` is in `pre`
     = zipIdx splits hit(t,∅)                  zipIdx_sorted
     ⊒ zipIdx go(t,∅) some°                    go_splits: fold law (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`
-                                              with `X = scanSpec(t)` (`scan_le`), at `m = ∅`
+                                              over `List`, `X = scanSpec(t)` (`scan_le`), at `m = ∅`
     = prog(t) some°                           prog ≜ zipIdx go(t,∅)
   `toMap(m)(pre)` is the left fold of `insert` over `pre`, which is the map `go` carries.  Both `⊒`
   steps keep the domain (`dom_hit`, `dom_go`), so `dom` of the same chain gives completeness.
@@ -38,7 +38,7 @@ abbrev Scan : RelSet.{0} := ⟨Std.HashMap Int Nat → Option (Nat × Nat)⟩
 
 /-! ## The specification -/
 
-/-- Membership `∋ : [A] ⟶ A` on core lists.  `ListRel.inlist` is the same relation on `ConsList`;
+/-- Membership `∋ : [A] ⟶ A` on core lists;
     `zipIdx` is core's, so its membership is core's `∈` too. -/
 def ni {A : Type} : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨A⟩ := fun xs x => x ∈ xs
 
@@ -65,13 +65,13 @@ def scanStep (t : Int) : Int × Nat → (Std.HashMap Int Nat → Option (Nat × 
     | some j => some (j, k)
     | none => r (m.insert x k)
 
-/-- `go(t) ≜ ⦇[const none, scanStep(t)]⦈`: a right fold whose result is a function of the start
-    map, so the left-to-right map threads through it and a hit stops the scan. -/
-def go (t : Int) : ConsList Unit (Int × Nat) → Std.HashMap Int Nat → Option (Nat × Nat) :=
-  cfold (fun _ _ => none) (scanStep t)
+/-- `go(t) ≜ ⦇[const none, scanStep(t)]⦈`, the right fold over `List`: its result is a function of
+    the start map, so the left-to-right map threads through it and a hit stops the scan. -/
+def go (t : Int) : List (Int × Nat) → Std.HashMap Int Nat → Option (Nat × Nat) :=
+  List.foldr (scanStep t) fun _ => none
 
 /-- `prog(t)(xs)`: the scan over `zipIdx(xs)` from the empty map. -/
-def prog (t : Int) (xs : List Int) : Option (Nat × Nat) := go t (ofList xs.zipIdx) {}
+def prog (t : Int) (xs : List Int) : Option (Nat × Nat) := go t xs.zipIdx {}
 
 /-- `some° : Option (Nat × Nat) ⟶ Nat × Nat`, the answer inside a `some`. -/
 def unsome : (⟨Option (Nat × Nat)⟩ : RelSet.{0}) ⟶ Ans := (graph some)°
@@ -95,13 +95,13 @@ def toMap (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) : Std.HashMap Int 
 def hit (t : Int) (m : Std.HashMap Int Nat) : Split ⟶ Ans :=
   fun (pre, (b, k)) (j, k') => k' = k ∧ (toMap m pre)[t - b]? = some j
 
-/-- `go(t)` from `∅` on the cons-list of an indexed list, as a relation. -/
-def goR (t : Int) : IL ⟶ ⟨Option (Nat × Nat)⟩ := graph fun L => go t (ofList L) {}
+/-- `go(t)` from `∅` on an indexed list, as a relation. -/
+def goR (t : Int) : IL ⟶ ⟨Option (Nat × Nat)⟩ := graph fun L => go t L {}
 
 /-- The scan's specification from every start map `m`: a `some` answer is a split hitting
     `toMap(m)(pre)`, and a list with such a split gets a `some` answer. -/
-def scanSpec (t : Int) : dCL Unit (Int × Nat) ⟶ Scan :=
-  fun c f => ∀ L m, ofList L = c →
+def scanSpec (t : Int) : IL ⟶ Scan :=
+  fun L f => ∀ m,
     (∀ a, f m = some a → (splits ≫ hit t m) L a) ∧ ∀ a, (splits ≫ hit t m) L a → ∃ r, f m = some r
 
 /-! ## The step laws -/
@@ -208,49 +208,61 @@ theorem dom_hit (t : Int) : dom (memPre t) ⊑ dom (hit t {}) :=
     let ⟨j', h⟩ := toMap_some {} pre _ (Or.inr ⟨j, hj⟩); ⟨(j', k), rfl, h⟩
 
 /-- **`go(t) ⊑ scanSpec(t)`, by (6.2) `⦇R⦈ ⊑ X ⟸ α° F(X) R ⊑ X`** with `X = scanSpec(t)`: the
-    premise is one step of the scan, checked on `nil` and on `(x,k) :: L` from either map lookup. -/
-theorem scan_le (t : Int) : (graph (go t) : dCL Unit (Int × Nat) ⟶ Scan) ⊑ scanSpec t := by
-  show graph (cfold _ (scanStep t)) ⊑ _
-  rw [cfold_cata, cataR_eq_relCata]
-  refine relCata_le_of_prefixed (initial Unit (Int × Nat)) (le_iff.mpr ?_)
-  rintro c f ⟨u, hu, v, hv, hf⟩ L m hL
-  have hu : c = con u := hu
+    premise is one step of the scan, checked on `[]` and on `(x,k) :: L'` from either map lookup. -/
+theorem scan_le (t : Int) : (graph (go t) : IL ⟶ Scan) ⊑ scanSpec t := by
+  -- `go(t)` satisfies the fold square of `listInitial`, so it is `⦇[const none, scanStep(t)]⦈`.
+  have hgo : graph (go t) = relCata (I := listInitial (Int × Nat))
+      (consScalarAlg (fun _ _ => none) (scanStep t)) := (relCata_UP (listInitial _) _ _).mp <| by
+    show graph listCon ≫ graph (go t) = _
+    rw [graph_comp_left]
+    refine hom_ext fun u r => ?_
+    rcases u with d | ⟨x, L'⟩
+    · exact ⟨fun h => ⟨Sum.inl d, rfl, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact h
+        | inr _ => exact hv.elim⟩
+    · exact ⟨fun h => ⟨Sum.inr (x, go t L'), ⟨rfl, rfl⟩, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact hv.elim
+        | inr q =>
+          obtain ⟨y, f'⟩ := q
+          obtain ⟨hy, hf'⟩ := (hv : x = y ∧ _)
+          subst hy; subst hf'; exact h⟩
+  rw [hgo]
+  refine relCata_le_of_prefixed (listInitial (Int × Nat)) (le_iff.mpr ?_)
+  rintro L f ⟨u, hu, v, hv, hf⟩ m
+  have hu : L = listCon u := hu
   have hf : f = consScalarFn (fun _ _ => none) (scanStep t) v := hf
   subst hu hf
-  rcases u with _ | ⟨⟨x, k⟩, c'⟩ <;> rcases v with _ | ⟨e', f'⟩
-  · cases L with
-    | cons => cases hL
-    | nil => exact ⟨fun _ h => (nomatch h), fun _ ⟨_, ⟨_, hs⟩, _⟩ => by simp at hs⟩
+  rcases u with _ | ⟨⟨x, k⟩, L'⟩ <;> rcases v with _ | ⟨e', f'⟩
+  · exact ⟨fun _ h => (nomatch h), fun _ ⟨_, ⟨_, hs⟩, _⟩ => by simp [listCon] at hs⟩
   · exact (hv : False).elim
   · exact (hv : False).elim
-  · obtain ⟨rfl, hX⟩ : (x, k) = e' ∧ scanSpec t c' f' := hv
-    cases L with
-    | nil => cases hL
-    | cons p L' =>
-      cases hL
-      show (∀ a, scanStep t (x, k) f' m = some a → _) ∧ ∀ a, _ → ∃ r, scanStep t (x, k) f' m = some r
-      have ih := hX L' (m.insert x k) rfl
-      cases hm : m[t - x]? with
-      | some j =>
-        simp only [scanStep, hm]
-        exact ⟨fun _ h => Option.some.inj h ▸ ⟨([], (x, k)), ⟨L', rfl⟩, rfl, hm⟩, fun _ _ => ⟨_, rfl⟩⟩
-      | none =>
-        simp only [scanStep, hm]
-        refine ⟨fun a h => ?_, fun a ⟨⟨pre, b, k'⟩, ⟨post, hs⟩, hh⟩ => ?_⟩
-        · obtain ⟨⟨pre, bk⟩, ⟨post, hs⟩, hh⟩ := ih.1 a h
-          exact ⟨((x, k) :: pre, bk), ⟨post, by rw [hs]; rfl⟩, hh⟩
-        · cases pre with
-          | nil => cases hs; exact nomatch hm.symm.trans hh.2
-          | cons p pre => cases hs; exact ih.2 a ⟨(pre, (b, k')), ⟨post, rfl⟩, hh⟩
+  · obtain ⟨rfl, hX⟩ : (x, k) = e' ∧ scanSpec t L' f' := hv
+    show (∀ a, scanStep t (x, k) f' m = some a → (splits ≫ hit t m) ((x, k) :: L') a) ∧
+      ∀ a, (splits ≫ hit t m) ((x, k) :: L') a → ∃ r, scanStep t (x, k) f' m = some r
+    have ih := hX (m.insert x k)
+    cases hm : m[t - x]? with
+    | some j =>
+      simp only [scanStep, hm]
+      exact ⟨fun _ h => Option.some.inj h ▸ ⟨([], (x, k)), ⟨L', rfl⟩, rfl, hm⟩, fun _ _ => ⟨_, rfl⟩⟩
+    | none =>
+      simp only [scanStep, hm]
+      refine ⟨fun a h => ?_, fun a ⟨⟨pre, b, k'⟩, ⟨post, hs⟩, hh⟩ => ?_⟩
+      · obtain ⟨⟨pre, bk⟩, ⟨post, hs⟩, hh⟩ := ih.1 a h
+        exact ⟨((x, k) :: pre, bk), ⟨post, by rw [hs]; rfl⟩, hh⟩
+      · cases pre with
+        | nil => cases hs; exact nomatch hm.symm.trans hh.2
+        | cons p pre => cases hs; exact ih.2 a ⟨(pre, (b, k')), ⟨post, rfl⟩, hh⟩
 
 /-- `go(t,∅) some° ⊑ splits hit(t,∅)`: `scan_le` at the empty map, soundness half. -/
 theorem go_splits (t : Int) : goR t ≫ unsome ⊑ splits ≫ hit t {} :=
-  le_iff.mpr fun L a ⟨_, ho, hs⟩ => (le_iff.mp (scan_le t) _ _ rfl L {} rfl).1 a ((show _ = _ from ho).symm.trans hs)
+  le_iff.mpr fun L a ⟨_, ho, hs⟩ => (le_iff.mp (scan_le t) L _ rfl {}).1 a ((show _ = _ from ho).symm.trans hs)
 
 /-- `dom(splits hit(t,∅)) ⊑ dom(go(t,∅) some°)`: `scan_le` at the empty map, completeness half. -/
 theorem dom_go (t : Int) : dom (splits ≫ hit t {}) ⊑ dom (goR t ≫ unsome) :=
   dom_le_dom fun L a h =>
-    let ⟨r, hr⟩ := (le_iff.mp (scan_le t) _ _ rfl L {} rfl).2 a h; ⟨r, some r, hr.symm, rfl⟩
+    let ⟨r, hr⟩ := (le_iff.mp (scan_le t) L _ rfl {}).2 a h; ⟨r, some r, hr.symm, rfl⟩
 
 /-- `prog(t) = zipIdx go(t,∅)`. -/
 theorem prog_eq (t : Int) : graph (prog t) ≫ unsome = zipIdxR ≫ goR t ≫ unsome := by

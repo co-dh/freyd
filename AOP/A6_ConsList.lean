@@ -313,6 +313,72 @@ public theorem cataFold_map {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (hf : Map f)
         obtain ⟨d', hd', hh⟩ := hrhs
         have hd : d' = ConsList.cons dig tail := hd'; subst hd; exact hh
 
+/-! ## Core `List E` is an initial algebra of the same `F Unit E` -/
+
+/-- `ofList`'s inverse: `wrap () ↦ []`, `cons x c ↦ x :: toList(c)`. -/
+@[expose] public def toList : ConsList Unit E → List E
+  | ConsList.wrap _ => []
+  | ConsList.cons x c => x :: toList c
+
+public theorem toList_ofList : ∀ xs : List E, toList (ofList xs) = xs
+  | [] => rfl
+  | x :: xs => congrArg (x :: ·) (toList_ofList xs)
+
+/-- `[nil, cons] : F([E]) → [E]` on core lists. -/
+@[expose] public def listCon : (Fobj Unit E ⟨List E⟩).carrier → List E
+  | Sum.inl _ => []
+  | Sum.inr (x, xs) => x :: xs
+
+/-- **Core `List E` is an initial `F Unit E`-algebra**, carried across `ofList`/`toList` from
+    `initial`: the fold of `f` folds `ofList(xs)`.  A `def`, not an instance, so `relCata` at
+    `F Unit E` keeps meaning the `ConsList` fold unless `I` is named. -/
+@[expose] public def listInitial (E : Type) : InitialAlgebra (F Unit E) where
+  t := ⟨List E⟩
+  α := graph listCon
+  α_map := graph_map _
+  cata f hf := graph ofList ≫ (initial Unit E).cata f hf
+  cata_map f hf := map_comp (graph_map _) ((initial Unit E).cata_map f hf)
+  cata_comm f hf := by
+    rw [graph_comp_left, graph_comp_left]
+    apply hom_ext; intro u r
+    cases u with
+    | inl d => exact ⟨fun h => ⟨Sum.inl d, rfl, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact h
+        | inr _ => exact hv.elim⟩
+    | inr p =>
+      obtain ⟨x, xs⟩ := p
+      exact ⟨fun ⟨r', hr', h⟩ => ⟨Sum.inr (x, r'), ⟨rfl, hr'⟩, h⟩, fun ⟨v, hv, h⟩ => by
+        cases v with
+        | inl _ => exact hv.elim
+        | inr q =>
+          obtain ⟨y, r'⟩ := q
+          obtain ⟨hy, hr'⟩ := (hv : x = y ∧ _)
+          subst hy; exact ⟨r', hr', h⟩⟩
+  cata_unique f hf h hmap hcomm := by
+    -- `toList` then `h` satisfies `initial`'s square, so it is `initial`'s fold; `ofList` undoes `toList`.
+    have hk := (initial Unit E).cata_unique f hf (graph toList ≫ h) (map_comp (graph_map _) hmap) (by
+      show graph con ≫ graph toList ≫ h = _
+      rw [graph_comp_left, graph_comp_left]
+      rw [graph_comp_left] at hcomm
+      apply hom_ext; intro u r
+      cases u with
+      | inl d =>
+        refine (Iff.of_eq (congrFun (congrFun hcomm (Sum.inl d)) r)).trans
+          ⟨fun ⟨v, hv, hf⟩ => ⟨v, by cases v <;> exact hv, hf⟩,
+           fun ⟨v, hv, hf⟩ => ⟨v, by cases v <;> exact hv, hf⟩⟩
+      | inr p =>
+        obtain ⟨x, c⟩ := p
+        refine (Iff.of_eq (congrFun (congrFun hcomm (Sum.inr (x, toList c))) r)).trans
+          ⟨fun ⟨v, hv, hf⟩ => ?_, fun ⟨v, hv, hf⟩ => ?_⟩ <;> cases v with
+        | inl _ => exact hv.elim
+        | inr q =>
+          obtain ⟨y, a⟩ := q
+          obtain ⟨hy, ha⟩ := (hv : x = y ∧ _)
+          exact ⟨Sum.inr (y, a), ⟨hy, ha⟩, hf⟩)
+    rw [← hk, graph_comp_left, graph_comp_left]
+    exact hom_ext fun xs r => by show h xs r ↔ h (toList (ofList xs)) r; rw [toList_ofList]
+
 /-! ## The recursive equation for the converse of a catamorphism -/
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dCL L E ⟶ c`. -/
