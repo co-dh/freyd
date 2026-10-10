@@ -4,14 +4,13 @@
   `leet/L253.lean` computes `roomsFn ivs := (ivs.map (fun iv => countCover ivs iv.1)).foldr nmax 0`
   by hand: a plain `List.map` + `List.foldr` composite.  This file RESHAPES the same computation onto
   the canonical cons-list initial algebra `ConsList Unit (Int × Int)` (`Freyd.Alg.RelSet.CL.ofList`)
-  and shows the fold EMERGES from the general-carrier law `CL.consFold_unique` — the same recipe as
-  `leet/L1.lean`'s hash scan, with carrier `C := Nat`.
+  and shows the fold EMERGES from the general-carrier law `CL.consFold_unique`, with carrier
+  `C := Nat`.
 
-  The key point, exactly as in `leet/L1.lean` (where `target` is fixed for the whole scan): the step
+  The key point: the step
   needs `countCover ivs iv.1` — "how many meetings cover THIS meeting's own start" — which reads the
   WHOLE interval list `ivs`, not just the folded-so-far prefix.  So `ivs` is carried as a FIXED
-  parameter of the base/step (never threaded through the recursion), exactly like `leet/L1.lean`'s
-  `target`; `countCover` itself is `List.filter |>.length`, i.e. already a fold of its own (a
+  parameter of the base/step (never threaded through the recursion); `countCover` itself is `List.filter |>.length`, i.e. already a fold of its own (a
   `foldr`-over-`Bool`-test count) — reused verbatim from `L253.lean`, not re-derived, since
   `consFold_unique` only asks for `countCover`'s VALUE at each step, not its internal recursion.
 
@@ -49,7 +48,7 @@ namespace Freyd.Alg.RelSet.LC253D
 
 open Freyd Freyd.Alg.RelSet.CL
 
-/-! ## The `Nat` max-fold, `ivs` fixed for the whole recursion (as `leet/L1.lean`'s `target`) -/
+/-! ## The `Nat` max-fold, `ivs` fixed for the whole recursion -/
 
 /-- Base of the emergent algebra, parameterized by the fixed whole list `ivs`: the empty suffix
     contributes `0` to the max. -/

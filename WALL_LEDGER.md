@@ -40,8 +40,6 @@ hylomorphism of the chosen coalgebra.
 
 | file  | carrier (the human choice)               | inv    | invariant / note                                        |
 |-------|------------------------------------------|--------|---------------------------------------------------------|
-| L1    | CPS `AHashMap → Nat → Option (Nat×Nat)`  | schema | hash models assoc list (`hashModels_insert` L1:119,     |
-|       |                                          |        | `foldCL_go` :136); spec reuse `LC1.twoSum_correct`      |
 | L5    | CPS `List Int → Nat × Nat` (two radii)   | schema | lockstep bridge `foldCL_ofList`; reuse L5 correctness   |
 | L13   | `Int × Option Int` (lookahead)           | schema | bridge `romanCL_ofList`; reuse `roman` value proof      |
 | L14   | `Option (List Int)` (none = no string)   | schema | bridge `bridge`; reuse `lcp` correctness                |

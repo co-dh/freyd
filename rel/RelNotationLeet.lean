@@ -27,9 +27,7 @@ example : eval rel⟦ (elem217 ≫ elem217°) ∩ lt217 ⟧ 1 2 = false := by de
     `Λ(spec) ≫ est(le)` DERIVES a deterministic function from it — `Λ` transposes the spec to its
     answer-SET, `est(le)` selects one member.  The interpreter EVALUATES the derived term: it computes
     the answer FROM the spec, nothing supplied; and the derivation is PROVED correct (the function
-    refines the spec, and is single-valued).  (Exponential spec side, `2^|Ans|` codes; the general
-    derivation `solve = Λ spec ≫ est D` for ARBITRARY inputs — via the thinning theorem, equal to
-    the O(n) hash program — is `leet/L1.lean`.) -/
+    refines the spec, and is single-valued).  (Exponential spec side, `2^|Ans|` codes.) -/
 abbrev One1 : FinObj := ⟨1⟩
 abbrev Ans1 : FinObj := ⟨6⟩   -- the 6 ordered index-pairs of positions [0..3]
 def pairOf1 : Fin 6 → Nat × Nat
