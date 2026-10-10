@@ -67,6 +67,43 @@ def tsSpec : Input ⟶ Ans := fun p a =>
   (a = none ∧ ∀ i j, ¬ TwoSum p.1 p.2 i j) ∨
     ∃ i j, a = some (i, j) ∧ TwoSum p.1 p.2 i j
 
+/-! ## The same spec point-free: `twoSum(t) ≜ zipIdx ⟨∋,∋⟩ (j<k ∧ sum=t)? (π₂×π₂)` -/
+
+/-- Membership `∋ : [A] ⟶ A` on core lists.  `ListRel.inlist` is the same relation on `ConsList`;
+    `zipIdx` is core's, so its membership is core's `∈` too. -/
+def ni {A : Type} : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨A⟩ := fun xs x => x ∈ xs
+
+/-- `twoSum(t) ≜ zipIdx ⟨∋,∋⟩ (j<k ∧ a+b=t)? (π₂×π₂)`: index the list, take two members
+    `((a,j),(b,k))` independently, keep those with `j<k` and `a+b=t`, return the two indices. -/
+def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨Nat × Nat⟩ :=
+  (graph List.zipIdx : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨List (Int × Nat)⟩) ≫ rpair ni ni ≫
+    corefl (fun c : (Int × Nat) × (Int × Nat) => c.1.2 < c.2.2 ∧ c.1.1 + c.2.1 = t) ≫
+    rprodMap (graph Prod.snd : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) (graph Prod.snd)
+
+/-- The point-free `twoSum(t)` relates `xs` to exactly the pairs `TwoSum` accepts. -/
+theorem twoSum_iff (xs : List Int) (t : Int) (i j : Nat) : twoSum t xs (i, j) ↔ TwoSum xs t i j := by
+  simp only [twoSum, comp_apply, graph, rpair, ni, corefl, rprodMap, TwoSum]
+  constructor
+  · rintro ⟨_, rfl, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hlt, hs⟩, rfl, rfl⟩
+    exact ⟨hlt, a, b, List.mem_zipIdx_iff_getElem?.mp ha, List.mem_zipIdx_iff_getElem?.mp hb, hs⟩
+  · rintro ⟨hlt, a, b, ha, hb, hs⟩
+    exact ⟨_, rfl, ((a, i), (b, j)), ⟨List.mem_zipIdx_iff_getElem?.mpr ha,
+      List.mem_zipIdx_iff_getElem?.mpr hb⟩, _, ⟨rfl, hlt, hs⟩, rfl, rfl⟩
+
+/-- `tsSpec` through the point-free core: a found answer is `twoSum(t)` followed by `some`, and
+    `none` is answered exactly off the domain of `twoSum(t)`. -/
+theorem tsSpec_eq_twoSum : tsSpec = fun p a =>
+    (a = none ∧ ∀ q, ¬ twoSum p.2 p.1 q) ∨ (twoSum p.2 ≫ graph some) p.1 a := by
+  apply hom_ext; rintro ⟨xs, t⟩ a
+  simp only [tsSpec, comp_apply, graph]
+  constructor
+  · rintro (⟨rfl, h⟩ | ⟨i, j, rfl, h⟩)
+    · exact Or.inl ⟨rfl, fun ⟨i, j⟩ hq => h i j ((twoSum_iff xs t i j).mp hq)⟩
+    · exact Or.inr ⟨(i, j), (twoSum_iff xs t i j).mpr h, rfl⟩
+  · rintro (⟨rfl, h⟩ | ⟨⟨i, j⟩, h, rfl⟩)
+    · exact Or.inl ⟨rfl, fun i j hq => h (i, j) ((twoSum_iff xs t i j).mpr hq)⟩
+    · exact Or.inr ⟨i, j, rfl, (twoSum_iff xs t i j).mp h⟩
+
 /-! ## `getElem?` plumbing across an append at the boundary -/
 
 /-- The freshly-appended element sits exactly at index `l1.length`. -/
