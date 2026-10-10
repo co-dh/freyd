@@ -31,13 +31,11 @@ def ix (xs : List Int) : Idx ⟶ Key := fun j a => xs[j]? = some a
 /-- `(t−) : a ↦ t-a`, its own converse. -/
 def sub (t : Int) : Key ⟶ Key := graph (t - ·)
 
-def lt : Idx ⟶ Idx := fun j k => j < k
-
 /-- `(+n) : i ↦ i+n`, so `(+n)° ix(xs)` is `xs` placed from index `n` on. -/
 def plus (n : Nat) : Idx ⟶ Idx := graph (· + n)
 
 /-- `pairs(t)(S) ≜ S (t−) S° ∩ (<)`: two indices in order whose values sum to `t`. -/
-def pairs (t : Int) (S : Idx ⟶ Key) : Idx ⟶ Idx := S ≫ sub t ≫ S° ∩ lt
+def pairs (t : Int) (S : Idx ⟶ Key) : Idx ⟶ Idx := S ≫ sub t ≫ S° ∩ (· < ·)
 
 def twoSum (t : Int) (xs : List Int) : Idx ⟶ Idx := pairs t (ix xs)
 

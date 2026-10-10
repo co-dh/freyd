@@ -560,6 +560,20 @@ public theorem orNone_relMem_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' �
   Or.elim h (fun ⟨p, hp, ho⟩ => Or.inl ⟨p, le_iff.mp h1 _ _ hp, ho⟩) fun ⟨_, ⟨rfl, hn⟩, ho⟩ =>
     Or.inr ⟨_, ⟨rfl, fun _ hp => let ⟨_, _, _, h, _⟩ := le_iff.mp h2 _ _ hp; hn (_, _) h⟩, ho⟩
 
+/-- `⟨R,S⟩(U×V)=⟨RU,SV⟩` — a pair followed by a product action acts on each component. -/
+public theorem rpair_comp_rprodMap {C A B a' b' : RelSet.{0}} (R : C ⟶ A) (S : C ⟶ B)
+    (U : A ⟶ a') (V : B ⟶ b') : rpair R S ≫ rprodMap U V = rpair (R ≫ U) (S ≫ V) :=
+  hom_ext fun _ _ => ⟨fun ⟨m, ⟨hR, hS⟩, hU, hV⟩ => ⟨⟨m.1, hR, hU⟩, ⟨m.2, hS, hV⟩⟩,
+    fun ⟨⟨y, hR, hU⟩, ⟨z, hS, hV⟩⟩ => ⟨(y, z), ⟨hR, hS⟩, hU, hV⟩⟩
+
+/-- A pair of graphs is the graph of the paired function. -/
+public theorem rpair_graph {C A B : RelSet.{0}} (f : C.carrier → A.carrier)
+    (g : C.carrier → B.carrier) :
+    rpair (graph f) (graph g)
+      = (graph (fun x => (f x, g x)) : C ⟶ (⟨A.carrier × B.carrier⟩ : RelSet.{0})) :=
+  hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
+    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
+
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so an object has to PRINT as what the note calls it.  The
 -- bundling is Lean's, not the book's: the note writes one name for the object and for the type it

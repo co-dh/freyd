@@ -205,20 +205,6 @@ public theorem gFn_inr (cx cy : Int) (xs ys : NEList A) :
     (TT.F A).obj (⟨Int × NEList A⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}) :=
   graph (gFn st sb cb)
 
-/-- `⟨R,S⟩(U×V)=⟨RU,SV⟩` — a pair followed by a product action acts on each component. -/
-public theorem rpair_comp_rprodMap {C A B a' b' : RelSet.{0}} (R : C ⟶ A) (S : C ⟶ B)
-    (U : A ⟶ a') (V : B ⟶ b') : rpair R S ≫ rprodMap U V = rpair (R ≫ U) (S ≫ V) :=
-  hom_ext fun _ _ => ⟨fun ⟨m, ⟨hR, hS⟩, hU, hV⟩ => ⟨⟨m.1, hR, hU⟩, ⟨m.2, hS, hV⟩⟩,
-    fun ⟨⟨y, hR, hU⟩, ⟨z, hS, hV⟩⟩ => ⟨(y, z), ⟨hR, hS⟩, hU, hV⟩⟩
-
-/-- A pair of graphs is the graph of the paired function. -/
-public theorem rpair_graph {C A B : RelSet.{0}} (f : C.carrier → A.carrier)
-    (g : C.carrier → B.carrier) :
-    rpair (graph f) (graph g)
-      = (graph (fun x => (f x, g x)) : C ⟶ (⟨A.carrier × B.carrier⟩ : RelSet.{0})) :=
-  hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
-    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
-
 set_option hygiene false in
 local notation "costG" => (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0}))
 set_option hygiene false in

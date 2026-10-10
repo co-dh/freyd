@@ -345,40 +345,34 @@ public theorem CL.graph_pres_iff_monotone_tail {L E : Type} {A : RelSet.{0}}
 
 /-! ## Down-sets under `(≥)`: the laws behind a running maximum -/
 
-/-- `(≥) : A ⟶ A`, `v (≥) k` when `k ≤ v`. -/
-@[expose] public def geR {α : Type} [LE α] : (⟨α⟩ : RelSet.{0}) ⟶ ⟨α⟩ := fun v k => k ≤ v
-
-/-- `(≤) : A ⟶ A`, `v (≤) k` when `v ≤ k`. -/
-@[expose] public def leR {α : Type} [LE α] : (⟨α⟩ : RelSet.{0}) ⟶ ⟨α⟩ := fun v k => v ≤ k
-
 /-- `min : ℕ×ℕ ⟶ ℕ`. -/
 @[expose] public def minR : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := graph fun p => min p.1 p.2
 
 /-- `Λ(S) est(≥) = f` when `f(a)` is the greatest `S`-image of `a`. -/
 public theorem Λ_est_greatest {A : RelSet.{0}} (S : A ⟶ ⟨Nat⟩) (f : A.carrier → Nat)
-    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : Λ S ≫ est geR = graph f :=
-  hom_ext fun a m => (Λ_comp_est_apply S geR a m).trans
+    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : Λ S ≫ est (· ≥ ·) = graph f :=
+  hom_ext fun a m => (Λ_comp_est_apply S (· ≥ ·) a m).trans
     ⟨fun ⟨hm, hmax⟩ => Nat.le_antisymm ((h a).2 m hm) (hmax _ (h a).1), fun e => by subst e; exact h a⟩
 
 /-- `S(≥) = Λ(S) est(≥) (≥)` when every `S`-fibre has a greatest element: below some image is below the greatest. -/
 public theorem down_est {A : RelSet.{0}} (S : A ⟶ ⟨Nat⟩) (f : A.carrier → Nat)
-    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : S ≫ geR = (Λ S ≫ est geR) ≫ geR := by
+    (h : ∀ a, S a (f a) ∧ ∀ z, S a z → z ≤ f a) : S ≫ (· ≥ ·) = (Λ S ≫ est (· ≥ ·)) ≫ (· ≥ ·) := by
   rw [Λ_est_greatest S f h]
   exact hom_ext fun a k => ⟨fun ⟨v, hv, hk⟩ => ⟨f a, rfl, Nat.le_trans hk ((h a).2 v hv)⟩,
     fun ⟨_, e, hk⟩ => ⟨f a, (h a).1, by subst e; exact hk⟩⟩
 
 /-- `X(≥) ∩ Y(≥) = ⟪X,Y⟫ min (≥)`: below an image of each is below their minimum. -/
 public theorem down_inter {A : RelSet.{0}} (X Y : A ⟶ ⟨Nat⟩) :
-    (X ≫ geR) ∩ (Y ≫ geR) = ⟪X, Y⟫ ≫ minR ≫ geR :=
+    (X ≫ (· ≥ ·)) ∩ (Y ≫ (· ≥ ·)) = ⟪X, Y⟫ ≫ minR ≫ (· ≥ ·) :=
   hom_ext fun _ k => ⟨fun ⟨⟨x, hx, hkx⟩, ⟨y, hy, hky⟩⟩ => ⟨(x, y), ⟨hx, hy⟩, _, rfl, Nat.le_min.mpr ⟨hkx, hky⟩⟩,
     fun ⟨⟨x, y⟩, ⟨hx, hy⟩, _, e, hk⟩ => by
       subst e; exact ⟨⟨x, hx, (Nat.le_min.mp hk).1⟩, ⟨y, hy, (Nat.le_min.mp hk).2⟩⟩⟩
 
 /-- `Λ(X(≥)) est(≥) = X` for simple `X`: the greatest point below `X(a)` is `X(a)`. -/
-public theorem est_down {A : RelSet.{0}} (X : A ⟶ ⟨Nat⟩) (hX : Simple X) : Λ (X ≫ geR) ≫ est geR = X := by
+public theorem est_down {A : RelSet.{0}} (X : A ⟶ ⟨Nat⟩) (hX : Simple X) : Λ (X ≫ (· ≥ ·)) ≫ est (· ≥ ·) = X := by
   have hs : ∀ a y y', X a y → X a y' → y = y' := fun a y y' hy hy' =>
     le_iff.mp (show X° ≫ X ⊑ 𝟙 _ from hX) y y' ⟨a, hy, hy'⟩
-  exact hom_ext fun a m => (Λ_comp_est_apply _ geR a m).trans
+  exact hom_ext fun a m => (Λ_comp_est_apply _ ((· ≥ ·) : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) a m).trans
     ⟨fun ⟨⟨x, hx, hmx⟩, hmax⟩ => by rw [Nat.le_antisymm hmx (hmax x ⟨x, hx, Nat.le_refl x⟩)]; exact hx,
      fun hm => ⟨⟨m, hm, Nat.le_refl m⟩, fun z ⟨x, hx, hz⟩ => by rw [← hs a x m hx hm]; exact hz⟩⟩
 

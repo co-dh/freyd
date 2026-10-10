@@ -109,13 +109,6 @@ public theorem cataR_graph {C : RelSet.{0}} (φ : (Fobj Unit Char C).carrier →
     · intro (hy : y = h (SnocList.snoc x a))
       exact ⟨h x, (ih _).mpr rfl, hy.trans (h1 x a)⟩
 
-/-- `⟨f,g⟩` of two graphs is the graph of the paired function. -/
-public theorem rpair_graph {C A B : RelSet.{0}} (f : C.carrier → A.carrier)
-    (g : C.carrier → B.carrier) :
-    rpair (graph f) (graph g) = graph (B := ⟨A.carrier × B.carrier⟩) (fun x => (f x, g x)) :=
-  hom_ext fun _ _ => ⟨fun ⟨h1, h2⟩ => Prod.ext h1 h2,
-    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
-
 /-- `𝟙×g` of a graph is the graph of the product function. -/
 public theorem rprodMap_id_graph {A B b' : RelSet.{0}} (g : B.carrier → b'.carrier) :
     rprodMap (𝟙 A) (graph g)

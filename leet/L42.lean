@@ -21,14 +21,11 @@ variable (xs : List Nat)
 /-- `R(xs) : Idx ⟶ Val`, `i ↦ xs[i]`: the bar heights. -/
 def R : Idx xs ⟶ Val := graph fun i => xs[i]
 
-/-- `(<) : Val ⟶ Val`, `h (<) k` when `h < k`. -/
-def ltV : Val ⟶ Val := fun h k => h < k
-
 /-- `D ≜ (≥)R(≥) ∩ (≤)R(≥)`: cell `(i,k)` is sheltered, a bar `≥ k` at or left of `i` and one at or right of `i`. -/
-def D : Idx xs ⟶ Val := (geR ≫ R xs ≫ geR) ∩ (leR ≫ R xs ≫ geR)
+def D : Idx xs ⟶ Val := ((· ≥ ·) ≫ R xs ≫ (· ≥ ·)) ∩ ((· ≤ ·) ≫ R xs ≫ (· ≥ ·))
 
 /-- `W ≜ R(<) ∩ D`: cell `(i,k)` holds water, above the bar at `i` and sheltered. -/
-def W : Idx xs ⟶ Val := (R xs ≫ ltV) ∩ D xs
+def W : Idx xs ⟶ Val := (R xs ≫ (· < ·)) ∩ D xs
 
 /-- `W` is decidable: its two `∃`s range over the finite `Idx`. -/
 instance (i : Fin xs.length) (k : Nat) : Decidable (W xs i k) :=
@@ -116,35 +113,29 @@ def sf (i : Fin xs.length) : Nat := (suf xs).getD i 0
 def lv (i : Fin xs.length) : Nat := min (pf xs i) (sf xs i)
 
 /-- `pmax ≜ Λ((≥)R) est(≥)`: the tallest bar at or left of `i`. -/
-def pmax : Idx xs ⟶ Val := Λ (geR ≫ R xs) ≫ est geR
+def pmax : Idx xs ⟶ Val := Λ ((· ≥ ·) ≫ R xs) ≫ est (· ≥ ·)
 /-- `smax ≜ Λ((≤)R) est(≥)`: the tallest bar at or right of `i`. -/
-def smax : Idx xs ⟶ Val := Λ (leR ≫ R xs) ≫ est geR
+def smax : Idx xs ⟶ Val := Λ ((· ≤ ·) ≫ R xs) ≫ est (· ≥ ·)
 /-- `lvl ≜ Λ(D) est(≥)`: the highest sheltered cell over `i`, the water level. -/
-def lvl : Idx xs ⟶ Val := Λ (D xs) ≫ est geR
+def lvl : Idx xs ⟶ Val := Λ (D xs) ≫ est (· ≥ ·)
 
 theorem pf_greatest (i : Fin xs.length) :
-    (geR ≫ R xs) i (pf xs i) ∧ ∀ z, (geR ≫ R xs) i z → z ≤ pf xs i :=
+    ((· ≥ ·) ≫ R xs) i (pf xs i) ∧ ∀ z, ((· ≥ ·) ≫ R xs) i z → z ≤ pf xs i :=
   let ⟨_, j, hj, hji, e⟩ := pre_spec xs i i.2
   ⟨⟨⟨j, hj⟩, hji, e⟩, fun _ ⟨j', hj', e'⟩ => e' ▸ (pre_spec xs i i.2).1 j' j'.2 hj'⟩
 
 theorem sf_greatest (i : Fin xs.length) :
-    (leR ≫ R xs) i (sf xs i) ∧ ∀ z, (leR ≫ R xs) i z → z ≤ sf xs i :=
+    ((· ≤ ·) ≫ R xs) i (sf xs i) ∧ ∀ z, ((· ≤ ·) ≫ R xs) i z → z ≤ sf xs i :=
   let ⟨_, j, hj, hij, e⟩ := suf_spec xs i i.2
   ⟨⟨⟨j, hj⟩, hij, e⟩, fun _ ⟨j', hj', e'⟩ => e' ▸ (suf_spec xs i i.2).1 j' j'.2 hj'⟩
 
-/-- `⟪f, g⟫ h = (f, g) h` on graphs. -/
-theorem rpair_graph_comp {A B C E : RelSet.{0}} (f : A.carrier → B.carrier) (g : A.carrier → C.carrier)
-    (h : B.carrier × C.carrier → E.carrier) :
-    ⟪graph f, graph g⟫ ≫ (graph h : (⟨B.carrier × C.carrier⟩ : RelSet.{0}) ⟶ E) = graph fun a => h (f a, g a) :=
-  hom_ext fun a _ => ⟨fun ⟨⟨_, _⟩, ⟨e1, e2⟩, e⟩ => by subst e1 e2; exact e, fun e => ⟨(f a, g a), ⟨rfl, rfl⟩, e⟩⟩
-
 /-- `D = ⟪pmax, smax⟫ min (≥)`: sheltered is below both running maxima. -/
-theorem D_eq : D xs = ⟪pmax xs, smax xs⟫ ≫ minR ≫ geR :=
+theorem D_eq : D xs = ⟪pmax xs, smax xs⟫ ≫ minR ≫ (· ≥ ·) :=
   calc D xs
-      = ((geR ≫ R xs) ≫ geR) ∩ ((leR ≫ R xs) ≫ geR) := by simp only [D, Cat.assoc]
-    _ = (pmax xs ≫ geR) ∩ (smax xs ≫ geR) := by
+      = ((((· ≥ ·) : Idx xs ⟶ Idx xs) ≫ R xs) ≫ (· ≥ ·)) ∩ ((((· ≤ ·) : Idx xs ⟶ Idx xs) ≫ R xs) ≫ (· ≥ ·)) := by simp only [D, Cat.assoc]
+    _ = (pmax xs ≫ (· ≥ ·)) ∩ (smax xs ≫ (· ≥ ·)) := by
         rw [down_est _ _ (pf_greatest xs), down_est _ _ (sf_greatest xs)]; rfl
-    _ = ⟪pmax xs, smax xs⟫ ≫ minR ≫ geR := down_inter _ _
+    _ = ⟪pmax xs, smax xs⟫ ≫ minR ≫ (· ≥ ·) := down_inter _ _
 
 /-- `pmax = pf`, the prefix scan. -/
 theorem pmax_eq : pmax xs = (graph (pf xs) : Idx xs ⟶ Val) := Λ_est_greatest _ _ (pf_greatest xs)
@@ -153,22 +144,22 @@ theorem smax_eq : smax xs = (graph (sf xs) : Idx xs ⟶ Val) := Λ_est_greatest 
 
 /-- `⟪pmax, smax⟫ min = lv`, the scans' pointwise minimum. -/
 theorem pair_min : ⟪pmax xs, smax xs⟫ ≫ minR = (graph (lv xs) : Idx xs ⟶ Val) := by
-  rw [pmax_eq, smax_eq, minR, rpair_graph_comp]; rfl
+  rw [pmax_eq, smax_eq, minR, rpair_graph, graph_comp]; rfl
 
 /-- `lvl = ⟪pmax, smax⟫ min`. -/
 theorem lvl_eq : lvl xs = ⟪pmax xs, smax xs⟫ ≫ minR :=
   calc lvl xs
-      = Λ ((⟪pmax xs, smax xs⟫ ≫ minR) ≫ geR) ≫ est geR := by rw [lvl, D_eq, Cat.assoc]
+      = Λ ((⟪pmax xs, smax xs⟫ ≫ minR) ≫ (· ≥ ·)) ≫ est (· ≥ ·) := by rw [lvl, D_eq, Cat.assoc]
     _ = ⟪pmax xs, smax xs⟫ ≫ minR := est_down _ (by rw [pair_min]; exact graph_simple _)
 
 /-- `D = lvl (≥)`: a cell is sheltered iff it is at or below the water level. -/
-theorem D_lvl : D xs = lvl xs ≫ geR := by rw [D_eq, lvl_eq, Cat.assoc]
+theorem D_lvl : D xs = lvl xs ≫ (· ≥ ·) := by rw [D_eq, lvl_eq, Cat.assoc]
 
 /-! ## Step 1: `|R(<) ∩ D| = Σ(col)` -/
 
 /-- The fibre of `R(<) ∩ D` at `i` is the interval `(xs[i], lv(i)]`. -/
 theorem W_iff (i : Fin xs.length) (k : Nat) : W xs i k ↔ xs[i] < k ∧ k ≤ lv xs i := by
-  show (R xs ≫ ltV) i k ∧ D xs i k ↔ _
+  show (R xs ≫ (· < ·)) i k ∧ D xs i k ↔ _
   rw [D_lvl, lvl_eq, pair_min]
   exact ⟨fun ⟨⟨_, e, h⟩, _, e', hk⟩ => by subst e e'; exact ⟨h, hk⟩, fun ⟨h, hk⟩ => ⟨⟨_, rfl, h⟩, _, rfl, hk⟩⟩
 
@@ -192,7 +183,7 @@ def colSum : dL Unit ⟶ Val := (graph fun _ => List.finRange xs.length) ≫
 /-! ## Step 3–4: the fold is the two-pass sum -/
 
 theorem col_eq : col xs = (graph fun i => lv xs i - xs[i] : Idx xs ⟶ Val) := by
-  rw [col, lvl_eq, pair_min, R, rpair_graph_comp]
+  rw [col, lvl_eq, pair_min, R, rpair_graph, graph_comp]
 
 /-- `Σ(col) = Σ_i (lv(i) − xs[i])`: `col` is a map, so the fold is `foldr` (`foldr_cata`). -/
 theorem colSum_eq : colSum xs
