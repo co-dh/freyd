@@ -42,13 +42,10 @@ abbrev Scan : RelSet.{0} := ⟨Std.HashMap Int Nat → Option (Nat × Nat)⟩
 
 def zipIdxR : (⟨List Int⟩ : RelSet.{0}) ⟶ IL := graph List.zipIdx
 
-/-- `π₂ : (a,j) ↦ j`, the index of an indexed element. -/
-def π₂ : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := graph fun (_, j) => j
-
 /-- `pairs(t) ≜ ⟨∋,∋⟩ (j<k ∧ a+b=t)? (π₂×π₂)`: two members `((a,j),(b,k))` taken independently,
     kept when `j<k` and `a+b=t`, answered by their indices. -/
 def pairs (t : Int) : IL ⟶ Ans :=
-  rpair (Membership.mem : (⟨List (Int × Nat)⟩ : RelSet.{0}) ⟶ ⟨Int × Nat⟩) Membership.mem ≫ corefl (fun ((a, j), (b, k)) => j < k ∧ a + b = t) ≫ rprodMap π₂ π₂
+  rpair (Membership.mem : (⟨List (Int × Nat)⟩ : RelSet.{0}) ⟶ ⟨Int × Nat⟩) Membership.mem ≫ corefl (fun ((a, j), (b, k)) => j < k ∧ a + b = t) ≫ graph fun ((_, j), (_, k)) => (j, k)
 
 /-- `twoSum(t) ≜ zipIdx pairs(t)`. -/
 def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ Ans := zipIdxR ≫ pairs t
@@ -140,16 +137,16 @@ theorem pair_iff_split {L : List (Int × Nat)} (hL : L.Pairwise (fun (_, j) (_, 
 /-- `sorted? pairs(t) = sorted? splits memPre(t)`. -/
 theorem pairs_split (t : Int) : sortedR ≫ pairs t = sortedR ≫ splits ≫ memPre t := by
   refine hom_ext fun L ⟨j, k⟩ => ?_
-  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair, rprodMap]
+  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair]
   constructor
-  · rintro ⟨_, ⟨rfl, hL⟩, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, hj, hk⟩
-    subst hj hk
+  · rintro ⟨_, ⟨rfl, hL⟩, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, h⟩
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj h
     obtain ⟨pre, b, post, hsplit, hm⟩ := (pair_iff_split hL t j k).mp ⟨a, b, ha, hb, hjk, hs⟩
     exact ⟨L, ⟨rfl, hL⟩, (pre, (b, k)), ⟨post, hsplit⟩, rfl, hm⟩
   · rintro ⟨_, ⟨rfl, hL⟩, ⟨pre, ⟨b, k'⟩⟩, ⟨post, hsplit⟩, hk, hm⟩
     subst hk
     obtain ⟨a, b', ha, hb, hjk, hs⟩ := (pair_iff_split hL t j k).mpr ⟨pre, b, post, hsplit, hm⟩
-    exact ⟨L, ⟨rfl, hL⟩, ((a, j), (b', k)), ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, rfl, rfl⟩
+    exact ⟨L, ⟨rfl, hL⟩, ((a, j), (b', k)), ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, rfl⟩
 
 /-- A value found in `toMap(m)(pre)` is found in `pre` or already in `m`. -/
 theorem toMap_lookup (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) (v : Int) (j : Nat)
