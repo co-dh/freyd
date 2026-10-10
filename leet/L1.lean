@@ -40,11 +40,13 @@ def ni {A : Type} : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨A⟩ := fun xs x => x ∈
 
 def zipIdxR : (⟨List Int⟩ : RelSet.{0}) ⟶ IL := graph List.zipIdx
 
+/-- `π₂ : (a,j) ↦ j`, the index of an indexed element. -/
+def π₂ : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := graph fun (_, j) => j
+
 /-- `pairs(t) ≜ ⟨∋,∋⟩ (j<k ∧ a+b=t)? (π₂×π₂)`: two members `((a,j),(b,k))` taken independently,
     kept when `j<k` and `a+b=t`, answered by their indices. -/
 def pairs (t : Int) : IL ⟶ Ans :=
-  rpair ni ni ≫ corefl (fun c : (Int × Nat) × (Int × Nat) => c.1.2 < c.2.2 ∧ c.1.1 + c.2.1 = t) ≫
-    rprodMap (graph Prod.snd : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) (graph Prod.snd)
+  rpair ni ni ≫ corefl (fun ((a, j), (b, k)) => j < k ∧ a + b = t) ≫ rprodMap π₂ π₂
 
 /-- `twoSum(t) ≜ zipIdx pairs(t)`. -/
 def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ Ans := zipIdxR ≫ pairs t
@@ -68,20 +70,21 @@ def unsome : (⟨Option (Nat × Nat)⟩ : RelSet.{0}) ⟶ Ans := (graph some)°
 /-! ## The relations the derivation passes through -/
 
 /-- `sorted?`: indices strictly increase along the list. -/
-def sortedR : IL ⟶ IL := corefl fun L => L.Pairwise (fun a b => a.2 < b.2)
+def sortedR : IL ⟶ IL := corefl fun L => L.Pairwise fun (_, j) (_, k) => j < k
 
 /-- `splits : L ↦ (pre,(b,k))` whenever `L = pre ++ (b,k) :: post`. -/
-def splits : IL ⟶ Split := fun L p => ∃ post, L = p.1 ++ p.2 :: post
+def splits : IL ⟶ Split := fun L (pre, bk) => ∃ post, L = pre ++ bk :: post
 
 /-- `memPre(t) : (pre,(b,k)) ↦ (j,k)` for a member `(t-b,j)` of `pre`. -/
-def memPre (t : Int) : Split ⟶ Ans := fun p q => q.2 = p.2.2 ∧ (t - p.2.1, q.1) ∈ p.1
+def memPre (t : Int) : Split ⟶ Ans := fun (pre, (b, k)) (j, k') => k' = k ∧ (t - b, j) ∈ pre
 
 /-- `toMap(m)(pre)`: the left fold of `insert` over `pre` from `m` — the map `go` has built. -/
 def toMap (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) : Std.HashMap Int Nat :=
-  pre.foldl (fun m p => m.insert p.1 p.2) m
+  pre.foldl (fun m (x, k) => m.insert x k) m
 
 /-- `hit(t) : (pre,(b,k)) ↦ (j,k)` when `toMap(∅)(pre)` maps `t-b` to `j`. -/
-def hit (t : Int) : Split ⟶ Ans := fun p q => q.2 = p.2.2 ∧ (toMap {} p.1)[t - p.2.1]? = some q.1
+def hit (t : Int) : Split ⟶ Ans :=
+  fun (pre, (b, k)) (j, k') => k' = k ∧ (toMap {} pre)[t - b]? = some j
 
 /-- `go(t,m)` as a relation. -/
 def goR (t : Int) : IL ⟶ ⟨Option (Nat × Nat)⟩ := graph (go t {})
@@ -89,7 +92,8 @@ def goR (t : Int) : IL ⟶ ⟨Option (Nat × Nat)⟩ := graph (go t {})
 /-! ## The step laws -/
 
 /-- Indices along `zipIdx` strictly increase. -/
-theorem zipIdx_sorted (xs : List Int) (n : Nat) : (xs.zipIdx n).Pairwise (fun a b => a.2 < b.2) := by
+theorem zipIdx_sorted (xs : List Int) (n : Nat) :
+    (xs.zipIdx n).Pairwise fun (_, j) (_, k) => j < k := by
   induction xs generalizing n with
   | nil => exact List.Pairwise.nil
   | cons x xs ih =>
@@ -103,7 +107,8 @@ theorem zipIdxR_sorted {B : RelSet.{0}} (Y : IL ⟶ B) : zipIdxR ≫ sortedR ≫
 
 /-- On a sorted list a pair of members `(a,j)`, `(b,k)` with `j<k` and `a+b=t` is a split
     `pre ++ (b,k) :: post` with `(t-b,j) ∈ pre`. -/
-theorem pair_iff_split {L : List (Int × Nat)} (hL : L.Pairwise (fun a b => a.2 < b.2)) (t : Int)
+theorem pair_iff_split {L : List (Int × Nat)} (hL : L.Pairwise (fun (_, j) (_, k) => j < k))
+    (t : Int)
     (j k : Nat) : (∃ a b, (a, j) ∈ L ∧ (b, k) ∈ L ∧ j < k ∧ a + b = t) ↔
       ∃ pre b post, L = pre ++ (b, k) :: post ∧ (t - b, j) ∈ pre := by
   constructor
@@ -122,7 +127,7 @@ theorem pair_iff_split {L : List (Int × Nat)} (hL : L.Pairwise (fun a b => a.2 
 /-- `sorted? pairs(t) = sorted? splits memPre(t)`. -/
 theorem pairs_split (t : Int) : sortedR ≫ pairs t = sortedR ≫ splits ≫ memPre t := by
   refine hom_ext fun L ⟨j, k⟩ => ?_
-  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair, ni, rprodMap, graph]
+  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair, ni, rprodMap]
   constructor
   · rintro ⟨_, ⟨rfl, hL⟩, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, hj, hk⟩
     subst hj hk
@@ -139,10 +144,11 @@ theorem toMap_lookup (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) (v : In
   induction pre generalizing m with
   | nil => exact Or.inr h
   | cons p pre ih =>
+    obtain ⟨x, k⟩ := p
     rcases ih _ h with h | h
     · exact Or.inl (List.mem_cons_of_mem _ h)
     · rw [Std.HashMap.getElem?_insert] at h
-      by_cases hv : p.1 = v
+      by_cases hv : x = v
       · simp only [hv, beq_self_eq_true, if_true, Option.some.injEq] at h
         exact Or.inl (h ▸ hv ▸ List.mem_cons_self)
       · simp only [beq_iff_eq, hv, if_false] at h
@@ -154,10 +160,11 @@ theorem toMap_some (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) (v : Int)
   induction pre generalizing m with
   | nil => simpa using h
   | cons p pre ih =>
+    obtain ⟨x, k⟩ := p
     refine ih _ ?_
     rw [Std.HashMap.getElem?_insert]
-    by_cases hv : p.1 = v
-    · exact Or.inl ⟨p.2, by simp [hv]⟩
+    by_cases hv : x = v
+    · exact Or.inl ⟨k, by simp [hv]⟩
     · simp only [beq_iff_eq, hv, if_false]
       rcases h with h | ⟨j, h⟩
       · exact Or.inl h
@@ -167,7 +174,7 @@ theorem toMap_some (m : Std.HashMap Int Nat) (pre : List (Int × Nat)) (v : Int)
 
 /-- `hit(t) ⊑ memPre(t)`: the map's index for `t-b` is an index of `t-b` in `pre`. -/
 theorem hit_memPre (t : Int) : hit t ⊑ memPre t :=
-  le_iff.mpr fun ⟨pre, _⟩ _ ⟨hk, hj⟩ =>
+  le_iff.mpr fun ⟨pre, _, _⟩ ⟨_, _⟩ ⟨hk, hj⟩ =>
     ⟨hk, (toMap_lookup {} pre _ _ hj).resolve_right (by simp)⟩
 
 /-- `dom(R) ⊑ dom(S)` from: every source `R` relates, `S` relates too. -/
@@ -223,7 +230,7 @@ theorem go_splits (t : Int) : goR t ≫ unsome ⊑ splits ≫ hit t :=
 
 /-- `dom(splits hit(t)) ⊑ dom(go(t,∅) some°)`: on a list with a hitting split the scan answers. -/
 theorem dom_go (t : Int) : dom (splits ≫ hit t) ⊑ dom (goR t ≫ unsome) :=
-  dom_le_dom fun L _ ⟨⟨pre, b, k⟩, ⟨post, hL⟩, _, hj⟩ =>
+  dom_le_dom fun L ⟨_, _⟩ ⟨⟨pre, b, k⟩, ⟨post, hL⟩, _, hj⟩ =>
     let ⟨r, hr⟩ := go_hits t {} pre post b k _ hj; ⟨r, some r, by rw [hL]; exact hr.symm, rfl⟩
 
 /-- `prog(t) = zipIdx go(t,∅)`. -/
