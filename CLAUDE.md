@@ -50,11 +50,12 @@ If a proof used theorem from other section but not defined yet, prove them in $a
 Make the prove constructive: do not use atom of choice unless unavoidable.
 feel free to copy ideas from Mathlib, but do not bring in them as dependency.
   STRICTLY MATHLIB-FREE, NO EXCEPTIONS. The repo has ZERO external dependencies:
-  `lake-manifest.json` lists no packages and no `Freyd/*.lean` imports anything outside
-  Lean 4 core (`Init`) and `Freyd.*`. The §1.543 transfinite-recursion work that once
+  `lake-manifest.json` lists no packages and nothing imports outside the Lean toolchain
+  (`Init`, `Std`, `Lean`) and the repo's own libs. `Std` ships with the toolchain and needs no
+  `require`, so `Std.HashMap` and friends are allowed. The §1.543 transfinite-recursion work that once
   earmarked mathlib's ordinals was hand-built instead (`Freyd/WellOrdering.lean`, Zermelo
   from `Classical.choice`); order/lattice/Frame machinery is hand-rolled too (`Locale.lean`,
-  `S1_72`). Never add a `require` and never `import Mathlib`/`Batteries`/`Aesop`/`Std` — keep
+  `S1_72`). Never add a `require` and never `import Mathlib`/`Batteries`/`Aesop` — keep
   the repo self-contained so builds stay fast and clones stay tiny.
 DRY as much as possible.
 For stronger/weaker near-clone theorems, prefer one canonical stronger proof in the earliest legal
