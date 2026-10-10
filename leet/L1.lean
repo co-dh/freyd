@@ -18,6 +18,8 @@
   `toMap(m)(pre)` is the left fold of `insert` over `pre`, which is the map `go` carries.  Both `⊒`
   steps keep the domain (`dom_hit`, `dom_go`), so `dom` of the same chain gives completeness.
 
+  `∋` is core's `Membership.mem : List A → A → Prop`, already a relation `[A] ⟶ A`.
+
   Mathlib-free.  Axioms: `prog_sound`/`prog_complete` ⊆ {propext, Classical.choice, Quot.sound};
   `Classical.choice` is inherited from core's `Std.HashMap.getElem?_insert`/`getElem?_empty`.
 -/
@@ -38,10 +40,6 @@ abbrev Scan : RelSet.{0} := ⟨Std.HashMap Int Nat → Option (Nat × Nat)⟩
 
 /-! ## The specification -/
 
-/-- Membership `∋ : [A] ⟶ A` on core lists;
-    `zipIdx` is core's, so its membership is core's `∈` too. -/
-def ni {A : Type} : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨A⟩ := fun xs x => x ∈ xs
-
 def zipIdxR : (⟨List Int⟩ : RelSet.{0}) ⟶ IL := graph List.zipIdx
 
 /-- `π₂ : (a,j) ↦ j`, the index of an indexed element. -/
@@ -50,7 +48,7 @@ def π₂ : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := graph fun (_, j) =>
 /-- `pairs(t) ≜ ⟨∋,∋⟩ (j<k ∧ a+b=t)? (π₂×π₂)`: two members `((a,j),(b,k))` taken independently,
     kept when `j<k` and `a+b=t`, answered by their indices. -/
 def pairs (t : Int) : IL ⟶ Ans :=
-  rpair ni ni ≫ corefl (fun ((a, j), (b, k)) => j < k ∧ a + b = t) ≫ rprodMap π₂ π₂
+  rpair (Membership.mem : (⟨List (Int × Nat)⟩ : RelSet.{0}) ⟶ ⟨Int × Nat⟩) Membership.mem ≫ corefl (fun ((a, j), (b, k)) => j < k ∧ a + b = t) ≫ rprodMap π₂ π₂
 
 /-- `twoSum(t) ≜ zipIdx pairs(t)`. -/
 def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ Ans := zipIdxR ≫ pairs t
@@ -142,7 +140,7 @@ theorem pair_iff_split {L : List (Int × Nat)} (hL : L.Pairwise (fun (_, j) (_, 
 /-- `sorted? pairs(t) = sorted? splits memPre(t)`. -/
 theorem pairs_split (t : Int) : sortedR ≫ pairs t = sortedR ≫ splits ≫ memPre t := by
   refine hom_ext fun L ⟨j, k⟩ => ?_
-  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair, ni, rprodMap]
+  simp only [sortedR, pairs, splits, memPre, comp_apply, corefl, rpair, rprodMap]
   constructor
   · rintro ⟨_, ⟨rfl, hL⟩, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, hj, hk⟩
     subst hj hk
