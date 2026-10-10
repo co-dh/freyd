@@ -3,17 +3,18 @@
 
   1. **Spec** — `twoSum(t) ≜ zipIdx ⟨∋,∋⟩ (j<k ∧ a+b=t)? (π₂×π₂) : [Int] ⟶ Nat × Nat`: index the
      list, take two members `((a,j),(b,k))`, keep those with `j<k` and `a+b=t`, return `(j,k)`.
-     `twoSum_iff` reads it pointwise as `TwoSum`.
   2. **Program** — `prog(t)`: one scan over `zipIdx(xs)` with a `Std.HashMap Int Nat` from each value
      seen so far to an index of it; at `(x,k)` look up `t-x`, return `(j,k)` on a hit `j`, else
      insert `x ↦ k`.  O(n) lookups and inserts.
-  3. **Correctness** — `prog_sound`: an answer `some (j,k)` is related to `xs` by `twoSum(t)` (the
-     program refines the relation); `prog_complete`: `none` only off the domain of `twoSum(t)`.
+  3. **Correctness**, point-free, with the program as the relation `graph(prog(t)) graph(some)°`
+     (`prog(t)` followed by unwrapping a `some` answer):
+     `prog_sound`:    `graph(prog(t)) graph(some)° ⊑ twoSum(t)`;
+     `prog_complete`: `dom(twoSum(t)) ⊑ dom(graph(prog(t)) graph(some)°)`.
      Both by the scan invariant `Inv`: the map holds, for each value among the elements already
      scanned, an index where it occurs among them.
 
-  Mathlib-free.  Axioms: `twoSum_iff` ⊆ {propext, Quot.sound}; `prog_sound`/`prog_complete` add
-  `Classical.choice`, inherited from core's `Std.HashMap.getElem?_insert`/`getElem?_empty`.
+  Mathlib-free.  Axioms: `prog_sound`/`prog_complete` ⊆ {propext, Classical.choice, Quot.sound};
+  `Classical.choice` is inherited from core's `Std.HashMap.getElem?_insert`/`getElem?_empty`.
 -/
 import AOP.A6_1_RelSet
 import Std.Data.HashMap
@@ -23,11 +24,6 @@ namespace Freyd.Alg.RelSet.LC1
 open Freyd
 
 /-! ## The specification -/
-
-/-- `TwoSum xs t i j` — `i` and `j` are distinct positions (`i < j`) of `xs` whose values sum to
-    `t`.  `i < xs.length` follows from `xs[i]? = some vi`. -/
-def TwoSum (xs : List Int) (t : Int) (i j : Nat) : Prop :=
-  i < j ∧ ∃ vi vj, xs[i]? = some vi ∧ xs[j]? = some vj ∧ vi + vj = t
 
 /-- Membership `∋ : [A] ⟶ A` on core lists.  `ListRel.inlist` is the same relation on `ConsList`;
     `zipIdx` is core's, so its membership is core's `∈` too. -/
@@ -39,16 +35,6 @@ def twoSum (t : Int) : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨Nat × Nat⟩ :=
   (graph List.zipIdx : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨List (Int × Nat)⟩) ≫ rpair ni ni ≫
     corefl (fun c : (Int × Nat) × (Int × Nat) => c.1.2 < c.2.2 ∧ c.1.1 + c.2.1 = t) ≫
     rprodMap (graph Prod.snd : (⟨Int × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) (graph Prod.snd)
-
-/-- The point-free `twoSum(t)` relates `xs` to exactly the pairs `TwoSum` accepts. -/
-theorem twoSum_iff (xs : List Int) (t : Int) (i j : Nat) : twoSum t xs (i, j) ↔ TwoSum xs t i j := by
-  simp only [twoSum, comp_apply, graph, rpair, ni, corefl, rprodMap, TwoSum]
-  constructor
-  · rintro ⟨_, rfl, ⟨⟨a, j'⟩, ⟨b, k'⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hlt, hs⟩, rfl, rfl⟩
-    exact ⟨hlt, a, b, List.mem_zipIdx_iff_getElem?.mp ha, List.mem_zipIdx_iff_getElem?.mp hb, hs⟩
-  · rintro ⟨hlt, a, b, ha, hb, hs⟩
-    exact ⟨_, rfl, ((a, i), (b, j)), ⟨List.mem_zipIdx_iff_getElem?.mpr ha,
-      List.mem_zipIdx_iff_getElem?.mpr hb⟩, _, ⟨rfl, hlt, hs⟩, rfl, rfl⟩
 
 /-! ## The program: one hash-map scan over `zipIdx(xs)` -/
 
@@ -132,21 +118,29 @@ theorem go_complete (t : Int) (L : List (Int × Nat)) (hL : L.Pairwise (fun a b 
           cases hx
         · exact Nat.lt_irrefl _ hjk
 
-/-- **Soundness**: an answer of the program is related to `xs` by `twoSum(t)`. -/
-theorem prog_sound (t : Int) (xs : List Int) (p : Nat × Nat) (h : prog t xs = some p) :
-    twoSum t xs p := by
-  obtain ⟨j, k⟩ := p
+/-- **Soundness**: every `some` answer of the program is a `twoSum(t)` pair. -/
+theorem prog_sound (t : Int) :
+    (graph (prog t) : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨Option (Nat × Nat)⟩) ≫
+      (graph some : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Option (Nat × Nat)⟩)° ⊑ twoSum t := by
+  refine le_iff.mpr fun xs ⟨j, k⟩ ⟨o, ho, hs⟩ => ?_
+  simp only [graph, recip_apply] at ho hs
   obtain ⟨a, b, ha, hb, hjk, hs⟩ :=
-    go_sound t _ (zipIdx_sorted xs 0) xs.zipIdx [] {} rfl inv_empty j k h
-  exact (twoSum_iff xs t j k).mpr
-    ⟨hjk, a, b, List.mem_zipIdx_iff_getElem?.mp ha, List.mem_zipIdx_iff_getElem?.mp hb, hs⟩
+    go_sound t _ (zipIdx_sorted xs 0) xs.zipIdx [] {} rfl inv_empty j k (ho.symm.trans hs)
+  exact ⟨_, rfl, ((a, j), (b, k)), ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, rfl, rfl⟩
 
-/-- **Completeness**: the program answers `none` only off the domain of `twoSum(t)`. -/
-theorem prog_complete (t : Int) (xs : List Int) (h : prog t xs = none) : ∀ p, ¬ twoSum t xs p := by
-  rintro ⟨j, k⟩ hp
-  obtain ⟨hjk, a, b, ha, hb, hs⟩ := (twoSum_iff xs t j k).mp hp
-  exact go_complete t _ (zipIdx_sorted xs 0) xs.zipIdx [] {} rfl inv_empty (by simp) h a b j k
-    (List.mem_zipIdx_iff_getElem?.mpr ha) (List.mem_zipIdx_iff_getElem?.mpr hb) hjk hs
+/-- **Completeness**: the program answers `some` on the whole domain of `twoSum(t)`. -/
+theorem prog_complete (t : Int) :
+    dom (twoSum t) ⊑ dom ((graph (prog t) : (⟨List Int⟩ : RelSet.{0}) ⟶ ⟨Option (Nat × Nat)⟩) ≫
+      (graph some : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Option (Nat × Nat)⟩)°) := by
+  refine le_iff.mpr fun xs ys ⟨hxy, _, hp, _⟩ => ⟨hxy, ?_⟩
+  subst hxy
+  simp only [twoSum, comp_apply, graph, rpair, ni, corefl, rprodMap] at hp
+  obtain ⟨_, rfl, ⟨⟨a, j⟩, ⟨b, k⟩⟩, ⟨ha, hb⟩, _, ⟨rfl, hjk, hs⟩, -⟩ := hp
+  cases h : prog t xs with
+  | some p => exact ⟨p, ⟨_, h.symm, rfl⟩, _, h.symm, rfl⟩
+  | none =>
+    exact (go_complete t _ (zipIdx_sorted xs 0) xs.zipIdx [] {} rfl inv_empty (by simp) h a b j k ha hb
+      hjk hs).elim
 
 #eval prog 9 [2, 7, 11, 15]   -- some (0, 1)
 #eval prog 6 [3, 2, 4]        -- some (1, 2)
