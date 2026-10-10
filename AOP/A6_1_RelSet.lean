@@ -107,6 +107,9 @@ open Lean PrettyPrinter in
   | `($_ $p) => `($p)
   | _ => throw ()
 
+/-- `P? ⊑ 𝟙`: a coreflexive is below the identity. -/
+public theorem corefl_le_id {A : RelSet.{u}} (P : A.carrier → Prop) : corefl P ⊑ 𝟙 A := le_iff.mpr fun _ _ h => h.1
+
 /-- The preorder a measure induces, `f≤f°`: `x` below `y` when `f(x)≤f(y)`. -/
 @[expose] public def leOn {A : RelSet.{u}} (f : A.carrier → Nat) : A ⟶ A := fun x y => f x ≤ f y
 
