@@ -387,6 +387,12 @@ open Lean PrettyPrinter Delaborator SubExpr in
     let x ← withAppArg delab
     `([$x])
   else if (← Meta.isDefEq args[0]! (.const ``Unit [])) then `([])
+  -- A LEAF PAIR of the element type holds the last two elements: `wrap (b,c)` is `[b,c]`.
+  else if (← Meta.isDefEq args[0]! (← Meta.mkAppM ``Prod #[args[1]!, args[1]!])) then
+    unless args[2]!.isAppOfArity ``Prod.mk 4 do failure
+    let b ← withAppArg <| withAppFn <| withAppArg delab
+    let c ← withAppArg <| withAppArg delab
+    `([$b, $c])
   else failure
 
 -- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
@@ -470,11 +476,14 @@ open Lean PrettyPrinter in
 -- KEPT: it builds `noteCat`, the note-arithmetic syntax declared in this file, which no `AOP`
 -- module can import (`diag` imports `AOP`).
 open Lean PrettyPrinter in
--- B&dM name no function for "the head replaced": `dropl(a,([b]⧺x,y))=([a]⧺x,…)` writes it as the
--- new head before the old tail, so the note does too.
-@[app_unexpander RelSet.Tour.replaceHead] meta def unexpandTourReplaceHead : Unexpander
-  | `($_ $a $x) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail($x))])
-  | `($_ $a) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail(·))])
+-- B&dM's `[a]⧺x` (p.215's `dropl(a,([b]⧺x,y))`): the city put in front of a `list⁺`.  The arrow
+-- alone, `⧺ : City×list⁺ ⟶ Journey`, is the operator's own symbol.
+@[app_unexpander RelSet.Tour.prepend] meta def unexpandTourPrepend : Unexpander
+  | `($_ $a $x) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", x])
+  | _ => `($(mkIdent (Name.mkSimple "⧺")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.tail] meta def unexpandTourTail : Unexpander
+  | `($_ $x) => `(tail($x))
   | _ => throw ()
 -- B&dM's `y subseq x` (p.123) is the predicate under the relation `subseq`, as `allFitP` is `fits`.
 -- A rule, not a rename: the arrow `ListRel.subseq` already holds the name in `ListRel`.
