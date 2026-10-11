@@ -395,9 +395,9 @@ public theorem bumpRel_cons (Q : dE A ⟶ dE A) (a b : A) (xs ys : ConsList Unit
 
 /-- `bumpFold(Q) = ⦇[nil,bump(Q)]⦈`, the junction written out. -/
 public theorem bumpFold_eq (Q : dE A ⟶ dE A) :
-    bumpFold Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+    bumpFold Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
       : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ := by
-  have h : bumpAlg Q = (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+  have h : bumpAlg Q = (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
       : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A) := by
     funext u ys
     cases u with
@@ -627,7 +627,7 @@ public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
 /-- The fold `⦇[nil,bump(Q)]⦈` is an implementation of `thinL(Q)` (B&dM p.200) when `Q` is a
     preorder: it only drops elements, and every dropped element is covered by a kept one. -/
 public theorem bumpFold_le_thinL {Q : dE A ⟶ dE A} (hQ : preorder Q) :
-    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
       : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinL Q := by
   rw [← bumpFold_eq]
   refine (le_thinL_iff Q _).mpr ⟨le_iff.mpr fun _ _ h => subseqP_of_bumpFold Q h,

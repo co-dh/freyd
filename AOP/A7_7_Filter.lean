@@ -50,7 +50,7 @@ variable {A : Type}
     `graph (·.2)`, as in `subseq_cata`, to keep `Classical.choice` out of the axioms. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
     (pcons p ∪ graph fun q => q.2)
 
 /-- Ex 7.41's specification: `filter(p) ≜ Λ(subseq list(p)) est(R°)` — the longest subsequence
@@ -250,7 +250,7 @@ public abbrev PL : RelProd (P (dList A))
 public theorem filter_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-          ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
+          ((τ : dL Unit ⟶ dList A)%∋ ≫ est(R°))
           ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°)) := by
   unfold Salg; exact junc_Λ_est _ _ _ R°
 
@@ -259,10 +259,10 @@ public theorem filter_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
 public theorem filter_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
     (hrefl : 𝟙 (dList A) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-        ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
+        ((τ : dL Unit ⟶ dList A)%∋ ≫ est(R°))
         ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-          (wrapR : dL Unit ⟶ dList A)
+          (τ : dL Unit ⟶ dList A)
           ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
@@ -270,10 +270,10 @@ public theorem filter_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
     a union is the pair of the transposes followed by the power object's union. -/
 public theorem filter_step3 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-        (wrapR : dL Unit ⟶ dList A)
+        (τ : dL Unit ⟶ dList A)
         ((pcons p ∪ graph fun q : A × ConsList Unit A => q.2)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-          (wrapR : dL Unit ⟶ dList A)
+          (τ : dL Unit ⟶ dList A)
           (rpair ((pcons p)%∋) ((graph fun q : A × ConsList Unit A => q.2)%∋)
             ≫ cup (PL (A := A)) ≫ est(R°)) := by
   rw [Λ_union _ _ (PL (A := A)), pair_eq_rpair, Cat.assoc]
@@ -285,7 +285,7 @@ public theorem filter_step3 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
 public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-        (wrapR : dL Unit ⟶ dList A)
+        (τ : dL Unit ⟶ dList A)
         (rpair ((pcons p)%∋) ((graph fun q : A × ConsList Unit A => q.2)%∋)
           ≫ cup (PL (A := A)) ≫ est(R°))
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) := by
@@ -478,7 +478,7 @@ public theorem filter_bool_eq_pcor (b : A → Bool) :
   have pos : ∀ {a}, b a = true → holds (pcor b) a := fun h => ⟨rfl, h⟩
   have neg : ∀ {a}, b a = false → ¬ holds (pcor b) a := fun h h' => Bool.noConfusion (h.symm.trans h'.2)
   calc Pointfree.filter (graph b) = graph (filtCL (pcor b)) := by
-        have hC : (Pointfree.conditional (graph b) (singleR ()) Pointfree.nil
+        have hC : (Pointfree.conditional (graph b) (τₗ ()) Pointfree.nil
               : dE A ⟶ dE (ConsList Unit A)) = graph fun a => fStep (pcor b) a (ConsList.wrap ()) := by
           apply hom_ext; intro a z
           show (true = b a ∧ z = _) ∨ (false = b a ∧ z = _) ↔ z = fStep (pcor b) a (ConsList.wrap ())

@@ -463,7 +463,7 @@ directly.
   [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, keep the head or stop],
 
   [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
-  // lean:AOP.A7_7_TakeWhile.Salg@c2130ccf
+  // lean:AOP.A7_7_TakeWhile.Salg@7e873b1f
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — keep a
    head that passes `p`, or stop],
 
@@ -689,7 +689,7 @@ directly.
 #disp[#definition[
 #leanf("Freyd.Alg.RelSet.MSS.oplus") #h(4pt) — `⊕` is the larger of `0` and `a+b`; B&dM write `max(Λ(zero ∪ plus))`.
 
-`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) `FX=𝟏+Int×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons`.
+`⊕≜` $frac(#[`⊸ zero ∪ plus`], ∋)$ ` est(≥)` #h(4pt) `FX=𝟏+Int×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `head≜cons° π₁`, #h(4pt) `τ≜⟨𝟙,⊸ nil⟩ cons`.
 ]]<mss-defn>
 
 
@@ -915,7 +915,7 @@ directly.
    the head or drop it],
 
   [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
-  // lean:AOP.A7_7_Filter.Salg@afda2748
+  // lean:AOP.A7_7_Filter.Salg@aca23b55
   [`(4,[2]) S [4,2]` #h(4pt) and #h(4pt) `(4,[2]) S [2]`, #h(4pt) but `(3,[2]) S [2]` only — `subseq`'s
    algebra with one extra `p` — keep a head that passes `p`, or drop the head],
 
@@ -1414,7 +1414,7 @@ directly.
 
 // B&dM §7.4, p. 179, with every type a matrix: `A[1]≜A`, `A[m+1]≜A×A[m]`, `A[m][n]≜(A[n])[m]`,
 // outermost index first, and `Vec(k)` the functor `X↦X[k]`.  The count of columns crossed and of
-// candidate paths is then in the type, so `E` never appears and `wrap`/`cons` are identities.  The
+// candidate paths is then in the type, so `E` never appears and `τ`/`cons` are identities.  The
 // list version is @sec-cyl-lists.
 #disp[#table(
   columns: (2.6cm, 4.4cm, 7.4cm, 1fr),
@@ -1443,9 +1443,9 @@ directly.
   [Three moves per column crossed, so this count is in the type too; a set forgets it.],
 
   [`α`],
-  [`[wrap,cons]` \ `F(A,LA)⟶LA`],
-  [`wrap=𝟙:A⟶A[1]` \ `cons:A×A[m]⟶A[m+1]`],
-  [`wrap` is an identity; `cons` is only an iso, so it stays a bead.],
+  [`[τ,cons]` \ `F(A,LA)⟶LA`],
+  [`τ=𝟙:A⟶A[1]` \ `cons:A×A[m]⟶A[m+1]`],
+  [`τ` is an identity; `cons` is only an iso, so it stays a bead.],
 
   [`moves`],
   [`NA⟶PNA`],
@@ -1489,7 +1489,7 @@ directly.
   [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(P(LA)))` \ `⟶N(P(LA))`],
   [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(cons))` \ `F(A[n],A[n][p][m])⟶A[n][3p][m+1]`],
   // lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f
-  [The same composite without `α`; the type shown is the `cons` side, the `wrap` side is `𝟙:A[n]⟶A[n]`.],
+  [The same composite without `α`; the type shown is the `cons` side, the `τ` side is `𝟙:A[n]⟶A[n]`.],
 
   [`⦇gen⦈`],
   [`L(N A)⟶N(P(L A))`],
@@ -1518,7 +1518,7 @@ directly.
 === #leanf("Freyd.Alg.Vec.gen") — one more column: each square's paths go to its three neighbours, then the square goes in front <sec-cyl-vec>
 
 // Beside @sec-cyl-gen: `union` becomes `concat`, `trans` the transpose, and `α` drops out because
-// `wrap` and `cons` are identities.  A one-square path is its square, which is what keeps `[1]` out
+// `τ` and `cons` are identities.  A one-square path is its square, which is what keeps `[1]` out
 // of every type; the `[m+1]` bracket under the ports is the hidden `cons`.
 #disp[#align(center, lean("Freyd.Alg.Vec.gen"))]<vec-gen-diag>
 
@@ -1673,7 +1673,7 @@ zip(that)                                         each row: its square, and the 
 == The security van problem
 
 // B&dM §7.5, p. 184.  `Π`, the universal relation, is this note's `⊤`; the p. 187 printing of the
-// greedy result puts `wrap wrap` where p. 185 and the final program both put `nil`.
+// greedy result puts `τ τ` where p. 185 and the final program both put `nil`.
 #disp[#table(
   columns: (8.0cm, 4.7cm, 1fr),
   align: (left + horizon, left + horizon, left + horizon),
@@ -1702,7 +1702,7 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.okR")],
   [`ok` keeps `(a,[[b],[c]])` exactly when `[a,b]` is secure.],
 
-  [`new≜(wrap×𝟙) cons` #leank("Freyd.Alg.RelSet.Van.newFn")],
+  [`new≜(τ×𝟙) cons` #leank("Freyd.Alg.RelSet.Van.newFn")],
   [#leant("Freyd.Alg.RelSet.Van.newR")],
   [`new(a,[[b],[c]])=[[a],[b],[c]]`.],
 
@@ -1718,7 +1718,7 @@ zip(that)                                         each row: its square, and the 
  [#leanf("Freyd.Alg.RelSet.Van.partition_cata") \
    #src[cutting the transactions into non-empty segments is one pass along them that either opens
     a segment for the transaction in hand or puts it on the front of the segment already open]],
-  // lean:AOP.A7_5_Van.partition_cata@09deaaa5
+  // lean:AOP.A7_5_Van.partition_cata@77b2367f
   [#leant("Freyd.Alg.RelSet.ListRel.partition")],
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
@@ -1734,7 +1734,7 @@ zip(that)                                         each row: its square, and the 
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
-  // lean:AOP.A7_5_Van.Hrel@9b25c946
+  // lean:AOP.A7_5_Van.Hrel@bb078385
   [#leant("Freyd.Alg.RelSet.Van.Hrel")],
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
@@ -1797,8 +1797,8 @@ zip(that)                                         each row: its square, and the 
 #disp[#calc-table(
   table.header([*definition*], [*Hinze–Marsden*]),
 
-  [`new≜(wrap×𝟙) cons` \
-   #src[`wrap` makes the transaction a segment on its own, and `cons` puts that segment at the
+  [`new≜(τ×𝟙) cons` \
+   #src[`τ` makes the transaction a segment on its own, and `cons` puts that segment at the
     front of the schedule: the van is called]],
   [#lean("Freyd.Alg.RelSet.Van.new_eq.rhs")],
 
@@ -1812,7 +1812,7 @@ zip(that)                                         each row: its square, and the 
     only where the longer segment still passes]],
   [#lean("Freyd.Alg.RelSet.Van.old_eq.rhs")],
 )
-// lean:AOP.A7_5_Van.new_eq@e9699c4a
+// lean:AOP.A7_5_Van.new_eq@e0c8c2f8
 // lean:AOP.A7_5_Van.glue_eq@f4301628
 // lean:AOP.A7_5_Van.old_eq@b9c3949e
 ]<van-algebras>
@@ -1825,7 +1825,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   lean(van-cond-l, van-cond-r, op: [=]),
-  // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
+  // lean:AOP.A7_5_Van.van_fusion_cond@ff5bfaef
  [#leanf("Freyd.Alg.RelSet.Van.van_fusion_cond") \
    #src[testing every segment for security after the algebra has run is testing it before it ran:
     a segment `glue` has extended is secure exactly where `old` would have let it be, and the one
@@ -1847,12 +1847,12 @@ zip(that)                                         each row: its square, and the 
 
   [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ secure′` \ #src[`partition` is the fold that either opens a
    segment for the transaction in hand or puts it on the front of the segment already open]],
-     // lean:AOP.A7_5_Van.partition_cata@09deaaa5
+     // lean:AOP.A7_5_Van.partition_cata@77b2367f
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs", step: true)],
 
   [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `secure′` inside
    that fold, which is what turns `glue` into `old`]],
-     // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
+     // lean:AOP.A7_5_Van.van_fusion_cond@ff5bfaef
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step2.rhs")],
 )]<van-fusion-steps>
 
@@ -1885,7 +1885,7 @@ zip(that)                                         each row: its square, and the 
   [`(𝟙×R)new` \ #src[the left side of (7.14) — @van-defn:1, @van-defn:6]],
   [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.lhs", step: true)],
 
-  [#EQ #h(5pt) `(wrap×R)cons` \ #src[`new≜(wrap×𝟙)cons` — @van-algebras:1 — and `(wrap×𝟙)(𝟙×R)=(wrap×R)`]],
+  [#EQ #h(5pt) `(τ×R)cons` \ #src[`new≜(τ×𝟙)cons` — @van-algebras:1 — and `(τ×𝟙)(𝟙×R)=(τ×R)`]],
   [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.rhs", step: true)],
 
   [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
@@ -1906,7 +1906,7 @@ zip(that)                                         each row: its square, and the 
  [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
-// lean:AOP.A7_5_Van.Hrel@9b25c946
+// lean:AOP.A7_5_Van.Hrel@bb078385
 ]<van-h>
 
 === #leanf("Freyd.Alg.RelSet.Van.van_mono_new") — `new` on an `R;H`-related schedule is matched by `new` or `old` <sec-van-716>

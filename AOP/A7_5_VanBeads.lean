@@ -54,7 +54,7 @@ variable {A B : Type}
     by `cons_natural` at the segment type. -/
 public theorem new_natural (S : dE A ⟶ dE B) :
     rprodMap S (list (list S)) ≫ newR B = newR A ≫ list (list S) := by
-  rw [new_eq, new_eq, ← Cat.assoc, rprodMap_comp, Cat.comp_id, ← wrap_natural S, Cat.assoc,
+  rw [new_eq, new_eq, ← Cat.assoc, rprodMap_comp, Cat.comp_id, ← τ_natural S, Cat.assoc,
     ← cons_natural (list S), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
 
 /-! ## `head` is lax only -/
@@ -208,7 +208,7 @@ public theorem glue_natural (S : dE A ⟶ dE B) :
 public theorem partition_cata_natural :
     StrictNatural schedRelator ((Relator.idRelator RelSet.{0}).comp listRelator)
       (fun a => ⦇(junc (sumCop (dL Unit) ⟨a.carrier × Sched a.carrier⟩)
-            (wrapR : dL Unit ⟶ dSched a.carrier) (newR a.carrier ∪ glueR a.carrier) :
+            (τ : dL Unit ⟶ dSched a.carrier) (newR a.carrier ∪ glueR a.carrier) :
           (F Unit a.carrier).obj (dSched a.carrier) ⟶ dSched a.carrier)⦈) := by
   intro x y S
   have h : list S ≫ (partition : dList y.carrier ⟶ dSched y.carrier)
@@ -344,8 +344,8 @@ public theorem est_RH_not_lax_natural :
     out of the one point and looks at no transaction, and `list(list S)` relates the empty
     schedule to itself and to nothing else, so both sides are the single pair `((), [])`. -/
 public theorem nil_natural (S : dE A ⟶ dE B) :
-    𝟙 (dL Unit) ≫ (wrapR : dL Unit ⟶ dSched B)
-      = (wrapR : dL Unit ⟶ dSched A) ≫ list (list S) := by
+    𝟙 (dL Unit) ≫ (τ : dL Unit ⟶ dSched B)
+      = (τ : dL Unit ⟶ dSched A) ≫ list (list S) := by
   rw [Cat.id_comp]
   apply hom_ext; rintro ⟨⟩ w
   constructor

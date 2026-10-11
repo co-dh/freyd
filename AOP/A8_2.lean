@@ -207,7 +207,7 @@ public theorem pathR_apply (wt : A → A → Nat) (p q : ConsList A A) :
 @[expose] public def zeroCost : dL A ⟶ (⟨Nat⟩ : RelSet.{0}) := RelSet.graph fun _ => 0
 
 /-- `wrapz ≜ ⟨wrap,zero⟩` (book p.196). -/
-@[expose] public def wrapz : dL A ⟶ (⟨ConsList A A × Nat⟩ : RelSet.{0}) := rpair wrapR zeroCost
+@[expose] public def wrapz : dL A ⟶ (⟨ConsList A A × Nat⟩ : RelSet.{0}) := rpair τ zeroCost
 
 /-- `consw` (book p.196) as a function on points. -/
 @[expose] public def conswFn (wt : A → A → Nat) (a : A) (q : ConsList A A × Nat) : ConsList A A × Nat :=
@@ -555,7 +555,7 @@ public theorem pathSplit_eq_Fmap_comp_alphaR :
 public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat) :
     cpMap (CL.F A A) (dCL A A)
         ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
-      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) wrapR (pathStep wt) := by
+      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
   have hα : Map (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) := graph_map _
   have hc : Map (consR : (⟨A × ConsList A A⟩ : RelSet.{0}) ⟶ dCL A A) := graph_map _
   have hL : cpMap (CL.F A A) (dCL A A)
