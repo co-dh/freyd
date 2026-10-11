@@ -620,6 +620,18 @@ def projIndex (x body : Expr) : Option Nat :=
     | (``Prod.snd, #[_, _, s]) => if s == x then some 1 else none
     | _ => none
 
+/-- THE NAME THE PRINTER GIVES A HEAD AT ITS LEADING IMPLICIT ARGUMENTS, when that differs from the
+    declared one: an arrow whose name depends on the TYPES it is taken at (`ConsList.wrap` at a leaf
+    of the element type is `τ`) is named by the delaborator reading those types, never by a string. -/
+def implicitName? (e : Expr) : MetaM (Option String) := do
+  let .const n _ := e.getAppFn | return none
+  let args := e.getAppArgs
+  let k := ((← Meta.getFunInfoNArgs e.getAppFn args.size).paramInfo.toList.takeWhile (!·.isExplicit)).length
+  if k == 0 then return none
+  let .ident _ _ m _ := stxPeel (← delabP (mkAppN e.getAppFn (args.extract 0 k))) | return none
+  let s ← identText m
+  return if s != (← identText n) then some s else none
+
 /-- The last component of a declaration's name, for the places a picture writes a declaration by
     name and nothing else.  A namespace is what a resolver needs, and nothing inside a picture
     resolves a name, so `cat` is what the box says wherever `cat` is what was declared. -/
@@ -648,6 +660,7 @@ def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM St
     if expl i && keepArg args[i]! then
       keep := keep.push args[i]!
   if keep.isEmpty then
+    if let some n ← implicitName? (mkAppN f args) then return n
     if let some n ← declName? f then return n
   -- AN OPERATOR WITH A DRAWN OPERAND TAKEN OUT IS A SECTION, the operator marking its own gap:
   -- `x+1` with `x` drawn is `(+1)`.  `mkAppN f keep` below would hand the printer `HAdd.hAdd 1`,
@@ -927,7 +940,7 @@ partial def objJoin (e : Expr) : MetaM Join := do
 def ctorName? (e : Expr) : MetaM (Option String) := do
   let .const n _ := e.getAppFn | return none
   match (← getEnv).find? n with
-  | some (.ctorInfo _) => return some (← identText n)
+  | some (.ctorInfo _) => return some ((← implicitName? e).getD (← identText n))
   | _ => return none
 
 /-- AN OBJECT OF THE GIVEN CATEGORY INSIDE AN ARGUMENT, at whatever depth it sits: the algebra of a

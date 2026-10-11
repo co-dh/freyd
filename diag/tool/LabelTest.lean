@@ -5,6 +5,7 @@
 -/
 import diag.tool.FormulaRender
 import diag.StrDiagNames
+import AOP.A8_5_Paragraph
 
 namespace Freyd.LabelTest
 
@@ -89,5 +90,12 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   Lean.logInfo (← formula ``Freyd.Alg.RelSet.powerRel_reading false)
+
+-- POINTWISE `ConsList.wrap` AT A LEAF OF THE ELEMENT TYPE IS THE ARROW `CL.τ` and prints `τ`, decided
+-- from the type arguments by the delaborator: `wrap (wrap a)` printed `wrap wrap`.
+/-- info: τ τ = τ τ -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.Paragraph.τ_τ)
 
 end Freyd.LabelTest
