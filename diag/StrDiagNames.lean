@@ -79,6 +79,8 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
   RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition Freyd.Alg.optimality
   RelSet.CL.ConsList.cons RelSet.Tour.start
+  -- 8.6's definition table names it (`replaceHead ≜ (𝟙×tail)⧺`), so dropl/dropr print the name.
+  RelSet.Tour.replaceHead
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn

@@ -77,19 +77,19 @@ set_option linter.unusedVariables false in
   | ConsList.cons a x => ConsList.cons a (toNE x)
 
 set_option linter.unusedVariables false in
-/-- **tour-defn**: `tail([b,c])=[c]`, `tail([b]⧺x)=x` — a journey without its first city, a `list⁺`.
+/-- **tour-defn**: `tail([b,c])=[c]`, `tail([b]⧺xs)=xs` — a journey without its first city, a `list⁺`.
     The one place the two shapes of a journey are told apart. -/
 @[expose] public def tail : Journey City → NEList City
   | ConsList.wrap (b, c) => ConsList.wrap c
-  | ConsList.cons _ x => toNE x
+  | ConsList.cons _ xs => toNE xs
 
-/-- **tour-defn**: `[a]⧺x`, the city `a` put in front of a `list⁺`: a journey. -/
+/-- **tour-defn**: `[a]⧺xs`, the city `a` put in front of a `list⁺`: a journey. -/
 @[expose] public def prepend (a : City) : NEList City → Journey City
   | ConsList.wrap c => ConsList.wrap (a, c)
-  | ConsList.cons b x => ConsList.cons a (prepend b x)
+  | ConsList.cons b xs => ConsList.cons a (prepend b xs)
 
 /-- **tour-defn**: `replaceHead ≜ (𝟙×tail) ⧺` — the first city replaced by `a`. -/
-@[expose] public def replaceHead (a : City) : Journey City → Journey City := fun x => prepend a (tail x)
+@[expose] public def replaceHead (a : City) : Journey City → Journey City := fun xs => prepend a (tail xs)
 
 /-- `replaceHead ≜ (𝟙×tail) ⧺`, point-free. -/
 public theorem replaceHead_eq :

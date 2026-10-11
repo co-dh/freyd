@@ -1220,6 +1220,33 @@ public theorem graph_lax {X Y X' Y' : RelSet.{0}} (F : X ⟶ X') (G : Y ⟶ Y') 
     F ≫ graph f' ⊑ graph f ≫ G :=
   le_iff.mpr fun x z ⟨x', hx, hz⟩ => ⟨f x, rfl, by rw [hz]; exact h x x' hx⟩
 
+/-- Lax squares paste vertically: `Rf' ⊑ fP` and `Pg' ⊑ gQ` give `Rf'g' ⊑ fgQ`. -/
+public theorem comp_lax {X X' Y Y' Z Z' : RelSet.{0}} {R : X ⟶ X'} {P : Y ⟶ Y'} {Q : Z ⟶ Z'}
+    {f : X ⟶ Y} {f' : X' ⟶ Y'} {g : Y ⟶ Z} {g' : Y' ⟶ Z'}
+    (hf : R ≫ f' ⊑ f ≫ P) (hg : P ≫ g' ⊑ g ≫ Q) : R ≫ f' ≫ g' ⊑ (f ≫ g) ≫ Q :=
+  le_iff.mpr fun _ _ ⟨y, hR, w, h₁, h₂⟩ =>
+    let ⟨m, hm, hP⟩ := le_iff.mp hf _ _ ⟨y, hR, h₁⟩
+    let ⟨k, hk, hQ⟩ := le_iff.mp hg _ _ ⟨w, hP, h₂⟩
+    ⟨k, ⟨m, hm, hk⟩, hQ⟩
+
+/-- Lax squares pair: `Rf' ⊑ fP` and `Rg' ⊑ gQ` give `R⟨f',g'⟩ ⊑ ⟨f,g⟩(P×Q)`. -/
+public theorem rpair_lax {X X' Y Y' Z Z' : RelSet.{0}} {R : X ⟶ X'} {P : Y ⟶ Y'} {Q : Z ⟶ Z'}
+    {f : X ⟶ Y} {f' : X' ⟶ Y'} {g : X ⟶ Z} {g' : X' ⟶ Z'}
+    (hf : R ≫ f' ⊑ f ≫ P) (hg : R ≫ g' ⊑ g ≫ Q) : R ≫ rpair f' g' ⊑ rpair f g ≫ rprodMap P Q := by
+  rw [rpair_comp_rprodMap]
+  exact le_iff.mpr fun x p ⟨y, hR, h₁, h₂⟩ =>
+    ⟨le_iff.mp hf _ _ ⟨y, hR, h₁⟩, le_iff.mp hg _ _ ⟨y, hR, h₂⟩⟩
+
+/-- Lax squares side by side: `Rf' ⊑ fP` and `Sg' ⊑ gQ` give `(R×S)(f'×g') ⊑ (f×g)(P×Q)`. -/
+public theorem rprodMap_lax {X X' Y Y' U U' V V' : RelSet.{0}} {R : X ⟶ X'} {S : U ⟶ U'}
+    {P : Y ⟶ Y'} {Q : V ⟶ V'} {f : X ⟶ Y} {f' : X' ⟶ Y'} {g : U ⟶ V} {g' : U' ⟶ V'}
+    (hf : R ≫ f' ⊑ f ≫ P) (hg : S ≫ g' ⊑ g ≫ Q) :
+    rprodMap R S ≫ rprodMap f' g' ⊑ rprodMap f g ≫ rprodMap P Q :=
+  le_iff.mpr fun _ _ ⟨m, ⟨h₁, h₂⟩, h₃, h₄⟩ =>
+    let ⟨a, ha, hP⟩ := le_iff.mp hf _ _ ⟨m.1, h₁, h₃⟩
+    let ⟨b, hb, hQ⟩ := le_iff.mp hg _ _ ⟨m.2, h₂, h₄⟩
+    ⟨(a, b), ⟨ha, hb⟩, hP, hQ⟩
+
 public theorem listP_cmap_cons {B : Type} {R : CL.dE A ⟶ CL.dE B} {a : A} {b : B} (hab : R a b) :
     ∀ (I : CL.ConsList Unit (NEList A)) (J : CL.ConsList Unit (NEList B)),
       listP (nelist R) I J → listP (nelist R) (cmap (CL.ConsList.cons a) I) (cmap (CL.ConsList.cons b) J)
@@ -1376,6 +1403,75 @@ public theorem consNE_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
       ⊑ (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ nelist R := by
   simp only [CL.consR]
   exact graph_lax _ _ _ _ fun p q h => ⟨h.1, h.2⟩
+
+/-- The `init` bead on `list⁺` is lax natural. -/
+public theorem initNE_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (graph init : dNE B ⟶ dNE B) ⊑ (graph init : dNE A ⟶ dNE A) ≫ nelist R :=
+  graph_lax _ _ _ _ (nelistP_init R)
+
+/-- The `nonsingle` bead is lax natural (it is strict: `nonsingle_strictNatural`). -/
+public theorem nonsingle_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (nonsingle : dNE B ⟶ dNE B) ⊑ (nonsingle : dNE A ⟶ dNE A) ≫ nelist R :=
+  le_iff.mpr fun x y hxy => by
+    obtain ⟨m, h, rfl, c, z, rfl⟩ := hxy
+    cases x with
+    | wrap _ => exact h.elim
+    | cons a' z' => exact ⟨_, ⟨rfl, a', z', rfl⟩, h⟩
+
+/-- The `⟨init,tail⟩` bead is lax natural. -/
+public theorem initTail_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (graph init : dNE B ⟶ dNE B) (graph tail : dNE B ⟶ dNE B)
+      ⊑ rpair (graph init : dNE A ⟶ dNE A) (graph tail : dNE A ⟶ dNE A)
+        ≫ rprodMap (nelist R) (nelist R) :=
+  rpair_lax (initNE_lax_natural R) (tailNE_lax_natural R)
+
+/-- The `⟨init,nonsingle⟩` bead is lax natural. -/
+public theorem initNonsingle_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (graph init : dNE B ⟶ dNE B) (nonsingle : dNE B ⟶ dNE B)
+      ⊑ rpair (graph init : dNE A ⟶ dNE A) (nonsingle : dNE A ⟶ dNE A)
+        ≫ rprodMap (nelist R) (nelist R) :=
+  rpair_lax (initNE_lax_natural R) (nonsingle_lax_natural R)
+
+/-- The `⟨nonsingle,nonsingle⟩` bead is lax natural. -/
+public theorem nonsingleNonsingle_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (nonsingle : dNE B ⟶ dNE B) (nonsingle : dNE B ⟶ dNE B)
+      ⊑ rpair (nonsingle : dNE A ⟶ dNE A) (nonsingle : dNE A ⟶ dNE A)
+        ≫ rprodMap (nelist R) (nelist R) :=
+  rpair_lax (nonsingle_lax_natural R) (nonsingle_lax_natural R)
+
+/-- The `⟨nonsingle init,nonsingle⟩` bead is lax natural. -/
+public theorem nonsingleInit_nonsingle_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair ((nonsingle : dNE B ⟶ dNE B) ≫ (graph init : dNE B ⟶ dNE B))
+        (nonsingle : dNE B ⟶ dNE B)
+      ⊑ rpair ((nonsingle : dNE A ⟶ dNE A) ≫ (graph init : dNE A ⟶ dNE A))
+          (nonsingle : dNE A ⟶ dNE A)
+        ≫ rprodMap (nelist R) (nelist R) :=
+  rpair_lax (comp_lax (nonsingle_lax_natural R) (initNE_lax_natural R)) (nonsingle_lax_natural R)
+
+/-- The `⟨init,tail tails⟩` bead is lax natural. -/
+public theorem init_tailTails_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (graph init : dNE B ⟶ dNE B)
+        ((graph tail : dNE B ⟶ dNE B) ≫ (graph tails : dNE B ⟶ dList (NEList B)))
+      ⊑ rpair (graph init : dNE A ⟶ dNE A)
+          ((graph tail : dNE A ⟶ dNE A) ≫ (graph tails : dNE A ⟶ dList (NEList A)))
+        ≫ rprodMap (nelist R) (list (nelist R)) :=
+  rpair_lax (initNE_lax_natural R) (comp_lax (tailNE_lax_natural R) (tails_lax_natural R))
+
+/-- The `inits⁺×tails⁺` bead is lax natural. -/
+public theorem initsP_times_tailsP_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    rprodMap (nelist R) (nelist R)
+        ≫ rprodMap (graph initsPFn : dNE B ⟶ dList (NEList B)) (graph tailsPFn : dNE B ⟶ dList (NEList B))
+      ⊑ rprodMap (graph initsPFn : dNE A ⟶ dList (NEList A)) (graph tailsPFn : dNE A ⟶ dList (NEList A))
+        ≫ rprodMap (list (nelist R)) (list (nelist R)) :=
+  rprodMap_lax (graph_lax _ _ _ _ (listP_initsP R)) (graph_lax _ _ _ _ (listP_tailsP R))
+
+/-- The `inits×tails⁺` bead is lax natural. -/
+public theorem inits_times_tailsP_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    rprodMap (nelist R) (nelist R)
+        ≫ rprodMap (graph inits : dNE B ⟶ dList (NEList B)) (graph tailsPFn : dNE B ⟶ dList (NEList B))
+      ⊑ rprodMap (graph inits : dNE A ⟶ dList (NEList A)) (graph tailsPFn : dNE A ⟶ dList (NEList A))
+        ≫ rprodMap (list (nelist R)) (list (nelist R)) :=
+  rprodMap_lax (inits_lax_natural R) (graph_lax _ _ _ _ (listP_tailsP R))
 
 /-! ### (9.7): `mct` in terms of `row` and `col` -/
 
