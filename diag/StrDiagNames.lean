@@ -378,8 +378,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] meta def delabConsWrap : Delab := do
   let e ← getExpr
-  unless e.getAppNumArgs == 3 do failure
   let args := e.getAppArgs
+  -- AS AN ARROW (no value yet) at a leaf of the element type it is `CL.τ`, the unit of `list⁺`,
+  -- and prints as that one name; the `Unit` leaf's arrow is `nil`, named by `Label.lean` from its source.
+  if e.getAppNumArgs == 2 && (← Meta.isDefEq args[0]! args[1]!) then return ← `($(mkIdent `τ))
+  unless e.getAppNumArgs == 3 do failure
   if (← Meta.isDefEq args[0]! args[1]!) then
     let x ← withAppArg delab
     `([$x])

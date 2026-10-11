@@ -256,7 +256,7 @@ row((
   [a path is either one vertex a, or a vertex a followed by a path xs],
   [#rowkey("Freyd.Alg.alphaR_pathF")], [#leant("Freyd.Alg.alphaR_pathF")],
   "Freyd.Alg.alphaR_pathF",
-  [build a path: τ one vertex as [a], or put a in front of xs],
+  [build a path: wrap one vertex as [a], or put a in front of xs],
   [#rowkey("Freyd.Alg.wrapz")], [#leant("Freyd.Alg.wrapz")],
   "Freyd.Alg.wrapz",
   [a path of one vertex, no edge, cost 0],
