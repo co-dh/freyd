@@ -861,6 +861,19 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [],
 )]<para-laws>
 
+=== Splitting the fold's body
+// B&dM §8.5, pp. 210–211: the body of the thinned fold, split along the coproduct into the base
+// case `start` and the pair case.  `⊑`: on `[s,s]` `thinL(Q)` may keep both copies.
+#import "../generated/Freyd.Alg.RelSet.Paragraph.para_body_split.calc.typ" as calc-pbs
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Paragraph.para_body_split") \
+    // para-body-split row: B&dM pp. 210–211
+    #src[the fold's body splits into a base case `start` for a single word and a step that extends
+ each kept layout by `new` and by `glue`]],
+     // lean:AOP.A8_5_Paragraph.para_body_split@d59fee1b
+  lean-calc(calc-pbs),
+)]<para-body-split>
+
 == Bitonic tours
 
 // B&dM §8.6, p. 212.  `Q` keeps the `head2` conjunct p.215 derives and then drops on the grounds

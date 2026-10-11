@@ -643,6 +643,299 @@ public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   rw [← para_laws_step2 hlen hfit]
   exact para_laws_step1 hlen
 
+/-! ## The fold's body split at the two summands (B&dM pp.210–211) -/
+
+/-- B&dM's `h₁ ≜ list(new)` (p.211): `g₁` on the pair summand. -/
+@[expose] public def h₁ : dList (Word × Para Word) ⟶ dList (Para Word) :=
+  list (graph (fun q : Word × Para Word => new q.1 q.2))
+
+/-- B&dM's `h₂ ≜ list(glue) filter(ok w)` (p.211): `g₂` on the pair summand. -/
+@[expose] public def h₂ : dList (Word × Para Word) ⟶ dList (Para Word) :=
+  list (graph (fun q : Word × Para Word => glue q.1 q.2)) ≫ Filter.filter (ok (len := len) w)
+
+/-- Two wraps are the map to the one-word paragraph: `wrap wrap = [[·]]`. -/
+public theorem wrapR_wrapR :
+    ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word))
+      = graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) := by
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨_, h1, h2⟩; obtain rfl : _ = ConsList.wrap a := h1; exact h2
+  · intro h; exact ⟨_, rfl, h⟩
+
+/-- A word that fits makes a one-word paragraph that passes `ok w`: `[[·]] ok(w) = [[·]]`. -/
+public theorem wrap_wrap_ok (hfit : ∀ a, len a ≤ w) :
+    graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) ≫ ok (len := len) w
+      = (graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word) := by
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨_, rfl, rfl, -⟩; rfl
+  · rintro rfl; exact ⟨_, rfl, rfl, hfit a⟩
+
+/-- `inl [f,g] = f`, at graphs. -/
+public theorem inl_elim {A B C : Type} (g : A → C) (h : B → C) :
+    (graph Sum.inl : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A ⊕ B⟩) ≫ graph (Sum.elim g h)
+      = (graph g : (⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩) := by
+  rw [graph_comp]; rfl
+
+/-- `list(inr) list([f,g]) = list(g)`: the list functor applied to `inr [f,g] = g`. -/
+public theorem list_inr_elim {A B C : Type} (g : A → C) (h : B → C) :
+    list (graph Sum.inr : dE B ⟶ dE (A ⊕ B)) ≫ list (graph (Sum.elim g h)) = list (graph h) := by
+  rw [← list_comp, graph_comp]; rfl
+
+/-- `merge(⊤)` on lists of paragraphs is natural in the word type, since it is `cat` (`merge_top`),
+`cat` is, and composing with the paragraph relator on the inside keeps it so. -/
+public theorem merge_top_strictNatural :
+    StrictNatural
+      (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+        nelistRelator) listRelator)
+      (Relator.prod
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator)
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator))
+      (fun a => merge (topMor (dPara a.carrier) (dPara a.carrier))) := by
+  have h : (fun a : RelSet.{0} => (merge (topMor (dPara a.carrier) (dPara a.carrier))
+      : (relProd (dList (Para a.carrier)) (dList (Para a.carrier))).p ⟶ dList (Para a.carrier)))
+      = fun a : RelSet.{0} => cat (A := Para a.carrier) := funext fun _ => merge_top
+  rw [h]
+  intro _ _ R
+  exact strictNatural_inside (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+    nelistRelator) (@cat_strictNatural) R
+
+/-- `list(f)` of a map is a map. -/
+public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
+  rw [list_graph]; exact graph_map _
+
+/-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
+public theorem inl_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ singleR () := by
+  apply hom_ext; intro d r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+
+/-- On the pair, `cpL` is `cpr` then `list(inr)`: `inr cpL = cpr list(inr)`. -/
+public theorem inr_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₂ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = cpr ≫ list (graph Sum.inr : dE (E × X) ⟶ dE (L ⊕ E × X)) := by
+  rw [list_graph]; apply hom_ext; rintro ⟨e, xs⟩ r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, cpLFn_inr e xs⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, (cpLFn_inr e xs).symm⟩
+
+/-- `[a]` is one thinning of `[a,a]` when `Q` is reflexive: `wrap ⊑ ⟨wrap,wrap⟩ cat thinL(Q)`. -/
+public theorem single_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
+    (singleR () : dE A ⟶ dList A)
+      ⊑ (relProd (dList A) (dList A)).pair (singleR ()) (singleR ()) ≫ cat ≫ thinL Q := by
+  refine le_iff.mpr fun a ws h => ?_
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := h
+  have hset : inlistP (ConsList.cons a (ConsList.cons a (ConsList.wrap ())))
+      = inlistP (ConsList.cons a (ConsList.wrap ())) :=
+    funext fun c => propext ⟨fun h => h.elim Or.inl id, Or.inr⟩
+  refine ⟨(ConsList.cons a (ConsList.wrap ()), ConsList.cons a (ConsList.wrap ())),
+    ⟨⟨_, rfl, rfl⟩, _, rfl, rfl⟩,
+    ConsList.cons a (ConsList.cons a (ConsList.wrap ())), rfl, ?_, Or.inl ⟨rfl, subseqP.nil _⟩⟩
+  refine ⟨_, rfl, _, ?_, rfl⟩
+  rw [hset]
+  exact le_iff.mp (id_le_thinRel hQ) _ _ rfl
+
+/-- `filter(p)` keeps a one-element list whose element passes `p`: `p wrap ⊑ wrap filter(p)`. -/
+public theorem corefl_single_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
+    p ≫ (singleR () : dE A ⟶ dList A) ⊑ singleR () ≫ Filter.filter p := by
+  refine le_iff.mpr fun a ws ⟨b, hab, hws⟩ => ?_
+  obtain ⟨rfl, -⟩ := (GCTakeWhile.coreflexive_apply hp).mp hab
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := hws
+  refine ⟨ConsList.cons a (ConsList.wrap ()), rfl, ?_⟩
+  unfold Filter.filter
+  rw [Λ_comp_est_apply]
+  refine ⟨⟨_, subseqP.refl _, hab, trivial⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+  obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
+  exact Filter.subseqP_clen_le hu
+
+/-- **The fold's body split** (B&dM pp.210–211): on a single word the body keeps the one-word
+    paragraph `start ≜ wrap wrap wrap`, and on a word and a list of layouts it is
+    `cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q)`.  `⊑`, not `=`: on `[s,s]` `thinL(Q)` may keep both copies. -/
+public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
+    junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word)
+          ≫ singleR ())
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+      ⊑ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w) :=
+  calc junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word)
+          ≫ singleR ())
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+      = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+          ≫ singleR ())
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc wrapR wrapR, wrapR_wrapR]
+    _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (singleR ()) (singleR ())
+          ≫ cat ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
+        junc_mono _ (comp_mono_left _ (single_le_dup_cat_thinL Q_refl)) (le_refl _)
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (singleR ()) (singleR ())
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [merge_top]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ singleR ())
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ singleR ())
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc (graph _), RelProd.map_comp_pair (graph_map _)]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ singleR ())
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ ok (len := len) w ≫ singleR ())
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc (graph _) (ok _), wrap_wrap_ok hfit]
+    _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ singleR ())
+            ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
+              ≫ singleR () ≫ Filter.filter (ok (len := len) w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
+        junc_mono _ (comp_mono_right (RelProd.pair_mono (le_refl _)
+          (comp_mono_left _ (corefl_single_le_filter ok_coreflexive))) _) (le_refl _)
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word))
+              ≫ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
+                  (fun q : Word × Para Word => new q.1 q.2))
+              ≫ singleR ())
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word))
+              ≫ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
+                  (fun q : Word × Para Word => glue q.1 q.2))
+              ≫ singleR () ≫ Filter.filter (ok (len := len) w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc (graph Sum.inl) (graph (Sum.elim _ (fun q : Word × Para Word => new q.1 q.2))),
+          ← Cat.assoc (graph Sum.inl) (graph (Sum.elim _ (fun q : Word × Para Word => glue q.1 q.2))),
+          inl_elim, inl_elim]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ singleR ()
+              ≫ g₁ (Word := Word))
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ singleR ()
+              ≫ g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        unfold g₁ g₂
+        rw [← Cat.assoc (singleR ()) (list _) (Filter.filter _), wrap_natural, wrap_natural,
+          Cat.assoc]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁ ≫ cpL ≫ g₁ (Word := Word))
+            ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁ ≫ cpL
+              ≫ g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc _ cpL g₁, ← Cat.assoc _ cpL g₂, inl_cpL, Cat.assoc _ _ g₁,
+          Cat.assoc _ _ g₂]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← RelProd.map_comp_pair (show Map (sumCop (dL Word)
+            (⟨Word × ConsList Unit (Para Word)⟩ : RelSet.{0})).u₁ from graph_map _),
+          ← RelProd.map_comp_pair (show Map (cpL (L := Word) (E := Word) (X := Para Word))
+            from graph_map _), Cat.assoc, Cat.assoc]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            (cpr ≫ h₁ (Word := Word)) (cpr ≫ h₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc cpr, RelProd.map_comp_pair
+          (show Map (cpr (A := Word) (B := Para Word)) from graph_map _)]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        ((relProd (dList (Para Word)) (dList (Para Word))).pair
+            (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
+              ≫ g₁ (Word := Word))
+            (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
+              ≫ g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        unfold g₁ g₂ h₁ h₂
+        rw [list_inr_elim, ← Cat.assoc (list (graph Sum.inr)) (list _) (Filter.filter _),
+          list_inr_elim]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
+          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← RelProd.map_comp_pair (show Map (cpr (A := Word) (B := Para Word)) from graph_map _),
+          ← RelProd.map_comp_pair (map_list_graph (Sum.inr : Word × Para Word → Word ⊕ Word × Para Word)),
+          Cat.assoc, Cat.assoc]
+    _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+        ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₂
+          ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+        rw [← Cat.assoc (sumCop (dL Word) (⟨Word × ConsList Unit (Para Word)⟩ : RelSet.{0})).u₂ cpL,
+          inr_cpL, Cat.assoc]
+    _ = cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
+          (g₁ (Word := Word)) (g₂ (len := len) (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w) :=
+        (junc_unique _ rfl rfl).symm
+
+calc_steps para_body_split
+
 end Freyd.Alg.RelSet.Paragraph
 
 -- printing-only (B&dM pp.207–210): the ordering is the note's `R` and the step algebra `S` (drawn
