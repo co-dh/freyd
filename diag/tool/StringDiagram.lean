@@ -377,6 +377,21 @@ def spreadEdge (ls : Array Lane) (xo : Float) (edge : Array Nat) (ol : String) :
       xo := roundTo 2 (xo + d)
   return (ls, xo)
 
+/-- A PURE WIRING — identities, projections, `⟨,⟩` and composites of them.  In this convention the
+    copy and the discards ARE the wiring, so such a bead is drawn with no mark and no name. -/
+partial def isWiring (e : Expr) : MetaM Bool := do
+  match e.getAppFnArgs with
+  | (``Cat.id, _) | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) => return true
+  | (``Cat.comp, _) => (factors e).allM isWiring
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    let some (f, g) := lastTwo args | return false
+    return (← isWiring f) && (← isWiring g)
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    let some f := args.back? | return false
+    let .lam _ _ body _ ← Meta.whnfD f | return false
+    return (StrDiag.projIndex (.bvar 0) body).isSome
+  | _ => return false
+
 /-- The `dpanel(...)` call this panel is.  `frame` and `levels` are ROW COUNTS, the two halves of
     lining a short panel up with a tall one: the frame gives them one box, `levels` each bead's
     row in it (`placement`).  Left off, the frame is one row deeper than the panel and the beads
@@ -2494,21 +2509,6 @@ def spansTimesId (e b : Expr) : MetaM Bool := do
   let regionTy ← Meta.inferType b
   let (s, t) ← homEnds φ
   return (← splitTimes? regionTy s).isSome || (← splitTimes? regionTy t).isSome
-
-/-- A PURE WIRING — identities, projections, `⟨,⟩` and composites of them.  In this convention the
-    copy and the discards ARE the wiring, so such a bead is drawn with no mark and no name. -/
-partial def isWiring (e : Expr) : MetaM Bool := do
-  match e.getAppFnArgs with
-  | (``Cat.id, _) | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) => return true
-  | (``Cat.comp, _) => (factors e).allM isWiring
-  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
-    let some (f, g) := lastTwo args | return false
-    return (← isWiring f) && (← isWiring g)
-  | (``Freyd.Alg.RelSet.graph, args) =>
-    let some f := args.back? | return false
-    let .lam _ _ body _ ← Meta.whnfD f | return false
-    return (StrDiag.projIndex (.bvar 0) body).isSome
-  | _ => return false
 
 mutual
 
