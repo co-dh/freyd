@@ -726,7 +726,7 @@ public theorem start_strictNatural :
   intro x y R
   apply hom_ext; intro a r
   constructor
-  · rintro ⟨b, hab, _, rfl, rfl⟩; exact ⟨_, ⟨_, rfl, rfl⟩, hab, trivial⟩
+  · rintro ⟨b, hab, _, rfl, rfl⟩; exact ⟨_, ⟨_, rfl, rfl⟩, hab, rfl⟩
   · rintro ⟨_, ⟨_, rfl, rfl⟩, h⟩
     match r, h with
     | ConsList.cons (ConsList.wrap (ConsList.wrap b)) (ConsList.wrap ()), ⟨h, _⟩ =>
