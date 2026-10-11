@@ -1628,6 +1628,27 @@ variable {B : Type}
 /-- `cpr : A×[B]⟶[A×B]`. -/
 @[expose] public def cpr : (⟨A × ConsList Unit B⟩ : RelSet.{0}) ⟶ dList (A × B) := graph cprFn
 
+/-- `cpr` is LAX natural, `(F(R)×list(G(R))) cpr ⊑ cpr list(F(R)×G(R))`, and no more: on the right
+    each pair may take its own `F(R)`-image of `a`, and the empty list needs none at all. -/
+public theorem cpr_laxNatural {F G : Relator RelSet.{0} RelSet.{0}} :
+    LaxNatural (Relator.comp (Relator.prod F G) listRelator)
+      (Relator.prod F (Relator.comp G listRelator))
+      (fun a => cpr (A := (F.obj a).carrier) (B := (G.obj a).carrier)) := by
+  intro x y R
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  refine le_iff.mpr ?_
+  rintro ⟨a, bs⟩ zs ⟨⟨a', bs'⟩, ⟨ha, hb⟩, rfl⟩
+  refine ⟨_, rfl, ?_⟩
+  replace ha : F.map R a a' := ha
+  show listP _ (cmap (fun b => (a, b)) bs) (cmap (fun b => (a', b)) bs')
+  induction bs generalizing bs' with
+  | wrap _ => cases bs' with
+    | wrap _ => trivial
+    | cons _ _ => exact hb.elim
+  | cons b t ih => cases bs' with
+    | wrap _ => exact hb.elim
+    | cons b' t' => exact ⟨⟨⟨_, ⟨_, rfl, ha⟩, rfl⟩, ⟨_, ⟨_, rfl, hb.1⟩, rfl⟩⟩, ih t' hb.2⟩
+
 public theorem inlistP_cappend (y : ConsList Unit A) (a : A) :
     ∀ x : ConsList Unit A, inlistP (cappend x y) a ↔ inlistP x a ∨ inlistP y a
   | ConsList.wrap _ => ⟨Or.inr, fun h => h.elim False.elim id⟩

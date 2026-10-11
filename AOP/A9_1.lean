@@ -1124,6 +1124,17 @@ public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inr {V₁ : α ⟶ A} {
         obtain rfl : b = b' := Sum.inr.inj he
         exact hb'
 
+/-- `inl` into `F(a)+F'(a)` is strictly natural for EVERY pair of relators: the dot on an `inl`
+    bead whatever its two summands are made of. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inl_strictNatural {F F' : Relator RelSet.{0} RelSet.{0}} :
+    StrictNatural (Relator.sum F F') F (fun a => (sumCop (F.obj a) (F'.obj a)).u₁) :=
+  (strictNatural_sum_structure (F := F) (F' := F')).1
+
+/-- `inr` into `F(a)+F'(a)` is strictly natural for every pair of relators. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inr_strictNatural {F F' : Relator RelSet.{0} RelSet.{0}} :
+    StrictNatural (Relator.sum F F') F' (fun a => (sumCop (F.obj a) (F'.obj a)).u₂) :=
+  (strictNatural_sum_structure (F := F) (F' := F')).2.1
+
 /-- `inl` into `α+a` is natural in the summand `a` that varies, from the constant relator `α` —
     the dot on `P(inl)` in Proposition 9.1. -/
 public theorem _root_.Freyd.Alg.RelSet.sumCop_inl_right_strictNatural :
