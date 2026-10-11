@@ -54,121 +54,43 @@ variable {City : Type} {tc : City × City → Int}
 /-- The object carrying `Tour`. -/
 @[expose] public abbrev dTour (City : Type) : RelSet.{0} := ⟨Tour City⟩
 
-/-! ### A journey is a relator
+/-- `Journey(R) ≜ cl(R×R,R)`: `clRelator` at the leaf relator `X ↦ X×X`, its laws `clRelator`'s.
+    Named because a lane of the tour pictures is a relator CONSTANT the exporter peels. -/
+@[expose] public def journeyRelator : Relator RelSet.{0} RelSet.{0} :=
+  clRelator (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.idRelator RelSet.{0}))
 
-  A journey is a cons-list whose LEAF carries a pair of cities, so both of its type arguments are
-  built from the one alphabet of cities: `Journey` is a functor of `City` and every end of this
-  section — `Journey`, `Tour = Journey×Journey`, `F(City×City,City)` — is one too.  Bundled as a
-  lane, that is what lets `⦇tourAlg⦈` state a naturality; without it the pictures had `City` varying
-  inside an end no lane spelled. -/
-
-/-- `Journey(R)` pointwise: the same shape, each city related by `R`, the leaf's two cities
-    included. -/
-@[expose] public def journeyP {A B : Type} (R : dE A ⟶ dE B) : Journey A → Journey B → Prop
-  | ConsList.wrap p, ConsList.wrap q => R p.1 q.1 ∧ R p.2 q.2
-  | ConsList.wrap _, ConsList.cons _ _ => False
-  | ConsList.cons _ _, ConsList.wrap _ => False
-  | ConsList.cons a x, ConsList.cons b y => R a b ∧ journeyP R x y
-
-/-- `Journey(R) : Journey A ⟶ Journey B`, the relator's action. -/
-@[expose] public def journeyRel {A B : Type} (R : dE A ⟶ dE B) :
-    (⟨Journey A⟩ : RelSet.{0}) ⟶ (⟨Journey B⟩ : RelSet.{0}) := journeyP R
-
-public theorem journeyP_id {A : Type} : ∀ x y : Journey A, journeyP (𝟙 (dE A)) x y ↔ x = y
-  | ConsList.wrap p, ConsList.wrap q =>
-      ⟨fun h => by
-        obtain ⟨a, b⟩ := p; obtain ⟨c, d⟩ := q
-        rw [show a = c from h.1, show b = d from h.2],
-       fun h => by cases h; exact ⟨rfl, rfl⟩⟩
-  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons a x, ConsList.cons b y =>
-      ⟨fun h => by rw [show a = b from h.1, (journeyP_id x y).mp h.2],
-       fun h => by cases h; exact ⟨rfl, (journeyP_id x x).mpr rfl⟩⟩
-
-/-- `Journey(𝟙) = 𝟙`. -/
-public theorem journey_id {A : Type} :
-    journeyRel (𝟙 (dE A)) = 𝟙 (⟨Journey A⟩ : RelSet.{0}) := hom_ext journeyP_id
-
-public theorem journeyP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    ∀ (x : Journey A) (z : Journey C),
-      journeyP (R ≫ S) x z ↔ ∃ y, journeyP R x y ∧ journeyP S y z
-  | ConsList.wrap p, ConsList.wrap r =>
-      ⟨fun ⟨⟨b1, h1, h2⟩, ⟨b2, h3, h4⟩⟩ => ⟨ConsList.wrap (b1, b2), ⟨h1, h3⟩, h2, h4⟩,
-       fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap q => exact ⟨⟨q.1, h1.1, h2.1⟩, ⟨q.2, h1.2, h2.2⟩⟩
-        | cons _ _ => exact h1.elim⟩
-  | ConsList.wrap _, ConsList.cons _ _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h2.elim
-        | cons _ _ => exact h1.elim⟩
-  | ConsList.cons _ _, ConsList.wrap _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h1.elim
-        | cons _ _ => exact h2.elim⟩
-  | ConsList.cons a x, ConsList.cons c z =>
-      ⟨fun ⟨⟨b, hR, hS⟩, hxz⟩ =>
-        have ⟨y, hy1, hy2⟩ := (journeyP_comp R S x z).mp hxz
-        ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩,
-       fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h1.elim
-        | cons b ys =>
-            exact ⟨⟨b, h1.1, h2.1⟩, (journeyP_comp R S x z).mpr ⟨ys, h1.2, h2.2⟩⟩⟩
-
-/-- `Journey(RS) = Journey(R) Journey(S)`. -/
-public theorem journey_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    journeyRel (R ≫ S) = journeyRel R ≫ journeyRel S := hom_ext (journeyP_comp R S)
-
-public theorem journeyP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
-    ∀ x y, journeyP R x y → journeyP S x y
-  | ConsList.wrap p, ConsList.wrap q, hxy => ⟨h p.1 q.1 hxy.1, h p.2 q.2 hxy.2⟩
-  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
-  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
-  | ConsList.cons a x, ConsList.cons b y, hxy =>
-      ⟨h a b hxy.1, journeyP_mono h x y hxy.2⟩
-
-/-- `R ⊑ S ⟹ Journey(R) ⊑ Journey(S)`. -/
-public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
-    journeyRel R ⊑ journeyRel S :=
-  le_iff.mpr (journeyP_mono (le_iff.mp h))
-
-/-- `Journey` BUNDLED as a relator: the lane the tour pictures run the cities along. -/
-@[expose] public def journeyRelator : Relator RelSet.{0} RelSet.{0} where
-  obj a := ⟨Journey a.carrier⟩
-  map R := journeyRel R
-  map_id _ := journey_id
-  map_comp R S := journey_comp R S
-  map_mono h := journey_mono h
-
+set_option linter.unusedVariables false in
 /-- `head` of a journey. -/
 @[expose] public def head : Journey City → City
-  | ConsList.wrap p => p.1
+  | ConsList.wrap (a, b) => a
   | ConsList.cons a _ => a
 
+set_option linter.unusedVariables false in
 /-- **tour-defn**: `next ≜ tail head`, the second city of a journey. -/
 @[expose] public def next : Journey City → City
-  | ConsList.wrap p => p.2
+  | ConsList.wrap (a, b) => b
   | ConsList.cons _ xs => head xs
 
+set_option linter.unusedVariables false in
 /-- `[a]⧺xs` with the old head dropped — what `dropl` does to the outward journey. -/
 @[expose] public def replaceHead (a : City) : Journey City → Journey City
-  | ConsList.wrap p => ConsList.wrap (a, p.2)
+  | ConsList.wrap (c, b) => ConsList.wrap (a, b)
   | ConsList.cons _ xs => ConsList.cons a xs
 
 public theorem hd_replaceHead (a : City) (x : Journey City) : head (replaceHead a x) = a := by
-  cases x <;> rfl
+  rcases x with ⟨_, _⟩ | _ <;> rfl
 
 public theorem nxt_replaceHead (a : City) (x : Journey City) : next (replaceHead a x) = next x := by
-  cases x <;> rfl
+  rcases x with ⟨_, _⟩ | _ <;> rfl
 
 /-- **tour-defn**: `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`. -/
 @[expose] public def outcost (tc : City × City → Int) : Journey City → Int
-  | ConsList.wrap p => tc p
+  | ConsList.wrap (a, b) => tc (a, b)
   | ConsList.cons a xs => tc (a, head xs) + outcost tc xs
 
 /-- **tour-defn**: `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`. -/
 @[expose] public def incost (tc : City × City → Int) : Journey City → Int
-  | ConsList.wrap p => tc (p.2, p.1)
+  | ConsList.wrap (a, b) => tc (b, a)
   | ConsList.cons a xs => tc (head xs, a) + incost tc xs
 
 /-- **tour-defn**: `cost (xs,ys)=outcost xs+incost ys`. -/
@@ -178,7 +100,9 @@ public theorem nxt_replaceHead (a : City) (x : Journey City) : next (replaceHead
 public theorem outcost_replaceHead (a : City) (x : Journey City) :
     outcost tc (replaceHead a x) = outcost tc x - tc (head x, next x) + tc (a, next x) := by
   cases x with
-  | wrap p => show tc (a, p.2) = tc (p.1, p.2) - tc (p.1, p.2) + tc (a, p.2); omega
+  | wrap p =>
+    obtain ⟨p₁, p₂⟩ := p
+    show tc (a, p₂) = tc (p₁, p₂) - tc (p₁, p₂) + tc (a, p₂); omega
   | cons b x =>
     show tc (a, head x) + outcost tc x
       = tc (b, head x) + outcost tc x - tc (b, head x) + tc (a, head x)
@@ -187,7 +111,9 @@ public theorem outcost_replaceHead (a : City) (x : Journey City) :
 public theorem incost_replaceHead (a : City) (x : Journey City) :
     incost tc (replaceHead a x) = incost tc x - tc (next x, head x) + tc (next x, a) := by
   cases x with
-  | wrap p => show tc (p.2, a) = tc (p.2, p.1) - tc (p.2, p.1) + tc (p.2, a); omega
+  | wrap p =>
+    obtain ⟨p₁, p₂⟩ := p
+    show tc (p₂, a) = tc (p₂, p₁) - tc (p₂, p₁) + tc (p₂, a); omega
   | cons b x =>
     show tc (head x, a) + incost tc x
       = tc (head x, b) + incost tc x - tc (head x, b) + tc (head x, a)
@@ -298,8 +224,8 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
 
 /-- **tour-defn**: `start (a,b)=([a,b],[a,b])`, the one-edge tour both algebras begin at.  A `def`
     because a picture of either algebra draws this arm, and a `fun` has no name a label can write. -/
-@[expose] public def start : City × City → Tour City :=
-  fun p => (ConsList.wrap p, ConsList.wrap p)
+@[expose] public def start : City × City → Tour City
+  | (a, b) => (ConsList.wrap (a, b), ConsList.wrap (a, b))
 
 /-- **tour-defn**: `[start,dropl]` with `start (a,b)=([a,b],[a,b])`. -/
 @[expose] public def droplAlgFn :
@@ -326,26 +252,27 @@ public theorem tourAlg_apply (u : (((F (City × City) City).obj (dTour City))).c
     (t : Tour City) : tourAlg u t = (t = droplAlgFn u ∨ t = droprAlgFn u) := by
   simp only [tourAlg, union_apply]; rfl
 
-/-- Replacing the head on both sides keeps a journey `Journey(R)`-related. -/
-public theorem journeyP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b) :
-    ∀ (x : Journey A) (y : Journey B), journeyP R x y →
-      journeyP R (replaceHead a x) (replaceHead b y)
-  | ConsList.wrap _, ConsList.wrap _, h => ⟨hab, h.2⟩
+/-- Replacing the head on both sides keeps a journey `cl(R×R,R)`-related. -/
+public theorem clP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b) :
+    ∀ (x : Journey A) (y : Journey B), clP (rprodMap R R) R x y →
+      clP (rprodMap R R) R (replaceHead a x) (replaceHead b y)
+  | ConsList.wrap (_, _), ConsList.wrap (_, _), h => ⟨hab, h.2⟩
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
   | ConsList.cons _ _, ConsList.cons _ _, h => ⟨hab, h.2⟩
 
-/-- The fold POINTWISE: a `Journey(R)`-related journey folds to a `Tour(R)`-related tour.  One
+/-- The fold POINTWISE: a `cl(R×R,R)`-related journey folds to a related tour.  One
     direction only — `dropl` writes its one city into BOTH journeys, so an image pair whose two
     heads differ is reached by no journey at all. -/
 public theorem cataFoldTour_lax {A B : Type} (R : dE A ⟶ dE B) :
     ∀ (x : Journey A) (x' : Journey B) (t : Tour B),
-      journeyP R x x' → cataFold (tourAlg (City := B)) x' t →
-      ∃ t₀, cataFold (tourAlg (City := A)) x t₀ ∧ journeyP R t₀.1 t.1 ∧ journeyP R t₀.2 t.2
-  | ConsList.wrap p, ConsList.wrap q, t, h, hf => by
+      clP (rprodMap R R) R x x' → cataFold (tourAlg (City := B)) x' t →
+      ∃ t₀, cataFold (tourAlg (City := A)) x t₀ ∧ clP (rprodMap R R) R t₀.1 t.1
+        ∧ clP (rprodMap R R) R t₀.2 t.2
+  | ConsList.wrap (p₁, p₂), ConsList.wrap (q₁, q₂), t, h, hf => by
       rw [cataFold_wrap, tourAlg_apply] at hf
-      obtain rfl : t = (ConsList.wrap q, ConsList.wrap q) := hf.elim id id
-      refine ⟨(ConsList.wrap p, ConsList.wrap p), ?_, h, h⟩
+      obtain rfl : t = (ConsList.wrap (q₁, q₂), ConsList.wrap (q₁, q₂)) := hf.elim id id
+      refine ⟨(ConsList.wrap (p₁, p₂), ConsList.wrap (p₁, p₂)), ?_, h, h⟩
       rw [cataFold_wrap, tourAlg_apply]
       exact Or.inl rfl
   | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
@@ -356,10 +283,10 @@ public theorem cataFoldTour_lax {A B : Type} (R : dE A ⟶ dE B) :
       rw [tourAlg_apply] at hstep
       obtain ⟨r₀, hr₀, hrel₁, hrel₂⟩ := cataFoldTour_lax R x y r h.2 hr
       rcases hstep with rfl | rfl
-      · refine ⟨droplFn a r₀, ?_, journeyP_replaceHead R h.1 r₀.1 r.1 hrel₁, h.1, hrel₂⟩
+      · refine ⟨droplFn a r₀, ?_, clP_replaceHead R h.1 r₀.1 r.1 hrel₁, h.1, hrel₂⟩
         rw [cataFold_cons]
         exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inl rfl⟩
-      · refine ⟨droprFn a r₀, ?_, ⟨h.1, hrel₁⟩, journeyP_replaceHead R h.1 r₀.2 r.2 hrel₂⟩
+      · refine ⟨droprFn a r₀, ?_, ⟨h.1, hrel₁⟩, clP_replaceHead R h.1 r₀.2 r.2 hrel₂⟩
         rw [cataFold_cons]
         exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inr rfl⟩
 
@@ -371,12 +298,13 @@ public theorem tour_lax_natural :
       (fun a : RelSet.{0} =>
         (⦇tourAlg⦈ : dCL (a.carrier × a.carrier) a.carrier ⟶ dTour a.carrier)) := by
   intro a b R
-  have h : journeyRel R ≫ cataR (tourAlg (City := b.carrier))
+  have h : cl (prodMap (relProd a a) (relProd b b) R R) R ≫ cataR (tourAlg (City := b.carrier))
       ⊑ cataR (tourAlg (City := a.carrier))
         ≫ prodMap (relProd (⟨Journey a.carrier⟩ : RelSet.{0}) ⟨Journey a.carrier⟩)
             (relProd (⟨Journey b.carrier⟩ : RelSet.{0}) ⟨Journey b.carrier⟩)
-            (journeyRel R) (journeyRel R) := by
-    rw [prodMap_eq_rprodMap]
+            (cl (prodMap (relProd a a) (relProd b b) R R) R)
+            (cl (prodMap (relProd a a) (relProd b b) R R) R) := by
+    simp only [prodMap_eq_rprodMap]
     exact le_iff.mpr fun x t hh => by
       obtain ⟨x', hx, ht⟩ := hh
       obtain ⟨t₀, ht₀, h₁, h₂⟩ := cataFoldTour_lax R x x' t hx ht

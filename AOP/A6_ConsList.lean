@@ -573,6 +573,99 @@ open Lean PrettyPrinter Delaborator SubExpr in
   unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure
   `($(mkIdent `nil))
 
+-- At a leaf type `E×E` the leaf `(a,b)` is two ELEMENTS, the last two of the list, so `wrap (a,b)`
+-- is the note's `[a,b]`; a delaborator because the leaf type is implicit, as for `nil` above.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] public meta def delabWrapPair : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size != 3 || !args[2]!.isAppOfArity ``Prod.mk 4 then failure
+  unless ← Meta.isDefEq args[0]! (mkApp2 (.const ``Prod [.zero, .zero]) args[1]! args[1]!) do failure
+  let a ← withAppArg <| withAppFn <| withAppArg delab
+  let b ← withAppArg <| withAppArg delab
+  `([$a, $b])
+
+/-! ## The two-parameter relator `cl(Rl,Re)`
+
+  `cl(Rl,Re) : ConsList L E ⟶ ConsList L' E'` relates two lists of the same shape, leaves by `Rl`
+  and elements by `Re`.  `list(R) = cl(𝟙,R)` and `list⁺(R) = cl(R,R)` are its instances; a leaf type
+  that is itself a relator of the elements gives the relator `clRelator`. -/
+
+/-- `cl(Rl,Re)` pointwise: the same shape, leaves related by `Rl`, elements by `Re`. -/
+@[expose] public def clP {L L' E E' : Type} (Rl : dL L ⟶ dL L') (Re : dE E ⟶ dE E') :
+    ConsList L E → ConsList L' E' → Prop
+  | ConsList.wrap l, ConsList.wrap l' => Rl l l'
+  | ConsList.wrap _, ConsList.cons _ _ => False
+  | ConsList.cons _ _, ConsList.wrap _ => False
+  | ConsList.cons a x, ConsList.cons b y => Re a b ∧ clP Rl Re x y
+
+/-- `cl(Rl,Re) : ConsList L E ⟶ ConsList L' E'`, the relator's action. -/
+@[expose] public def cl {L L' E E' : Type} (Rl : dL L ⟶ dL L') (Re : dE E ⟶ dE E') :
+    dCL L E ⟶ dCL L' E' := clP Rl Re
+
+public theorem clP_id : ∀ x y : ConsList L E, clP (𝟙 (dL L)) (𝟙 (dE E)) x y ↔ x = y
+  | ConsList.wrap a, ConsList.wrap b => ⟨fun h => by rw [show a = b from h], fun h => by cases h; rfl⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons a x, ConsList.cons b y =>
+      ⟨fun h => by rw [show a = b from h.1, (clP_id x y).mp h.2],
+       fun h => by cases h; exact ⟨rfl, (clP_id x x).mpr rfl⟩⟩
+
+/-- `cl(𝟙,𝟙) = 𝟙`. -/
+public theorem cl_id : cl (𝟙 (dL L)) (𝟙 (dE E)) = 𝟙 (dCL L E) := hom_ext clP_id
+
+public theorem clP_comp {L₁ L₂ L₃ E₁ E₂ E₃ : Type} (Rl : dL L₁ ⟶ dL L₂) (Sl : dL L₂ ⟶ dL L₃)
+    (Re : dE E₁ ⟶ dE E₂) (Se : dE E₂ ⟶ dE E₃) :
+    ∀ (x : ConsList L₁ E₁) (z : ConsList L₃ E₃),
+      clP (Rl ≫ Sl) (Re ≫ Se) x z ↔ ∃ y, clP Rl Re x y ∧ clP Sl Se y z
+  | ConsList.wrap _, ConsList.wrap _ =>
+      ⟨fun ⟨l, h1, h2⟩ => ⟨ConsList.wrap l, h1, h2⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap l => exact ⟨l, h1, h2⟩
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.wrap _, ConsList.cons _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h2.elim
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.cons _ _, ConsList.wrap _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons _ _ => exact h2.elim⟩
+  | ConsList.cons a x, ConsList.cons c z =>
+      ⟨fun ⟨⟨b, hR, hS⟩, hxz⟩ =>
+        have ⟨y, hy1, hy2⟩ := (clP_comp Rl Sl Re Se x z).mp hxz
+        ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons b ys =>
+            exact ⟨⟨b, h1.1, h2.1⟩, (clP_comp Rl Sl Re Se x z).mpr ⟨ys, h1.2, h2.2⟩⟩⟩
+
+/-- `cl(Rl Sl, Re Se) = cl(Rl,Re) cl(Sl,Se)`. -/
+public theorem cl_comp {L₁ L₂ L₃ E₁ E₂ E₃ : Type} (Rl : dL L₁ ⟶ dL L₂) (Sl : dL L₂ ⟶ dL L₃)
+    (Re : dE E₁ ⟶ dE E₂) (Se : dE E₂ ⟶ dE E₃) :
+    cl (Rl ≫ Sl) (Re ≫ Se) = cl Rl Re ≫ cl Sl Se := hom_ext (clP_comp Rl Sl Re Se)
+
+public theorem clP_mono {L' E' : Type} {Rl Sl : dL L ⟶ dL L'} {Re Se : dE E ⟶ dE E'}
+    (hl : ∀ a b, Rl a b → Sl a b) (he : ∀ a b, Re a b → Se a b) :
+    ∀ x y, clP Rl Re x y → clP Sl Se x y
+  | ConsList.wrap a, ConsList.wrap b, hxy => hl a b hxy
+  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
+  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
+  | ConsList.cons a x, ConsList.cons b y, hxy => ⟨he a b hxy.1, clP_mono hl he x y hxy.2⟩
+
+/-- `Rl ⊑ Sl ⟹ Re ⊑ Se ⟹ cl(Rl,Re) ⊑ cl(Sl,Se)`. -/
+public theorem cl_mono {L' E' : Type} {Rl Sl : dL L ⟶ dL L'} {Re Se : dE E ⟶ dE E'}
+    (hl : Rl ⊑ Sl) (he : Re ⊑ Se) : cl Rl Re ⊑ cl Sl Se :=
+  le_iff.mpr (clP_mono (le_iff.mp hl) (le_iff.mp he))
+
+/-- The cons-list relator whose leaf type is a relator `Lf` of the elements:
+    `A ↦ ConsList (Lf(A)) A`, `R ↦ cl(Lf(R),R)`.  A journey is `Lf ≜ X ↦ X×X`. -/
+@[expose] public def clRelator (Lf : Relator RelSet.{0} RelSet.{0}) : Relator RelSet.{0} RelSet.{0} where
+  obj a := dCL (Lf.obj a).carrier a.carrier
+  map R := cl (Lf.map R) R
+  map_id a := by rw [Lf.map_id]; exact cl_id
+  map_comp R S := by rw [Lf.map_comp]; exact cl_comp _ _ _ _
+  map_mono h := cl_mono (Lf.map_mono h) h
+
 /-- The cons-list fold `⦇[g,st]⦈` as a function; `CL.cfold_cata` says it is the fold. -/
 @[expose] public def cfold {L E C : Type} (g : L → C) (st : E → C → C) : ConsList L E → C
   | ConsList.wrap d => g d
