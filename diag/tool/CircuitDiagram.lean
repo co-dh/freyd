@@ -130,11 +130,6 @@ def opaqObj (e : Expr) : MetaM Obj :=
     built (`Obj.join`), never re-read off its finished name. -/
 def objApply (f : String) (a : Obj) : String := applyLabel f a.label a.join
 
-/-- A number as the exponent a power is written with. -/
-def supNum (n : Nat) : String :=
-  String.join ((toString n).toList.map fun c =>
-    #["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"][c.toNat - '0'.toNat]!)
-
 /-- The label of a PRODUCT of objects, and how it joins.  `n` EQUAL factors are a POWER (`A²`,
     `E[A]²`): writing one name n times says nothing the exponent does not, and the picture's n
     strands are the same either way.  A power heads with its base's own head, so it juxtaposes
@@ -144,7 +139,7 @@ def prodObj (ps : Array Obj) : Obj :=
   | none => .mk "𝟏" .one #[] .name
   | some p =>
     if ps.size > 1 && ps.all fun q => q.label == p.label then
-      .mk (p.label ++ supNum ps.size) .prod ps p.join
+      .mk (p.label ++ StrDiag.supNum ps.size) .prod ps p.join
     else .mk (String.intercalate "×" (ps.toList.map Obj.label)) .prod ps .other
 
 /-- Whether a CARRIER TYPE has a spelling of its own — the same question `isNamed` asks of an arrow,
