@@ -67,7 +67,7 @@ use ordinary lists with partial functions. Analysis by a fable agent.
 - Two real costs, both outside §8.6:
   1. `thinningList` takes `graph fᵢ` of TOTAL functions; it must be generalised to simple `φᵢ` (A8_3, also under
      §8.5's `para_laws`).
-  2. `preorder Qc` on all of `[City]×[City]` is FALSE with a partial `head` (`head2 head2°` is not reflexive at
+  2. `preorder Qc` on all of `[City]×[City]` is FALSE with a partial `head` (`head₂ head₂°` is not reflexive at
      `([],y)`), so `hQ` must become the in-context form of `Λ_comp_thinRel_context` (`A8_1.lean:546`, `Q ∩ S°S`) —
      a new Theorem 8.2 variant.
 - Plus all 77 declarations of A8_6 and its 25 note citations (`diag/aop/08-thinning.typ`) re-keyed.

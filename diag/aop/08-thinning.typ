@@ -876,7 +876,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
 == Bitonic tours
 
-// B&dM §8.6, p. 212.  `Q` keeps the `head2` conjunct p.215 derives and then drops on the grounds
+// B&dM §8.6, p. 212.  `Q` keeps the `head₂` conjunct p.215 derives and then drops on the grounds
 // that tours of one input share their heads: without it the two `tour-mono` rows are false.
 #disp[#deftab(
 
@@ -928,11 +928,11 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Tour.R")], [#leant("Freyd.Alg.RelSet.Tour.R")],
   "Freyd.Alg.RelSet.Tour.R_eq",
   [t costs no more than t′],
-  [#rowkey("Freyd.Alg.RelSet.Tour.next2")], [#leant("Freyd.Alg.RelSet.Tour.next2")],
-  "Freyd.Alg.RelSet.Tour.next2",
+  [#rowkey("Freyd.Alg.RelSet.Tour.next₂")], [#leant("Freyd.Alg.RelSet.Tour.next₂")],
+  "Freyd.Alg.RelSet.Tour.next₂",
   [the second cities of both journeys],
-  [#rowkey("Freyd.Alg.RelSet.Tour.head2")], [#leant("Freyd.Alg.RelSet.Tour.head2")],
-  "Freyd.Alg.RelSet.Tour.head2",
+  [#rowkey("Freyd.Alg.RelSet.Tour.head₂")], [#leant("Freyd.Alg.RelSet.Tour.head₂")],
+  "Freyd.Alg.RelSet.Tour.head₂",
   [the first cities of both journeys],
   [#rowkey("Freyd.Alg.RelSet.Tour.Qc")], [#leant("Freyd.Alg.RelSet.Tour.Qc")],
   "Freyd.Alg.RelSet.Tour.Qc_eq",
@@ -957,9 +957,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A8_6_Tour.R_eq@15ad4adc
 // lean:AOP.A8_6_Tour.Qc@dc87d553
 // lean:AOP.A8_6_Tour.R_apply@f30bcc6e
-// lean:AOP.A8_6_Tour.next2@dc51681a
-// lean:AOP.A8_6_Tour.head2@593fe366
-// lean:AOP.A8_6_Tour.Qc_eq@1fd75015
+// lean:AOP.A8_6_Tour.next₂@dc51681a
+// lean:AOP.A8_6_Tour.head₂@593fe366
+// lean:AOP.A8_6_Tour.Qc_eq@3246db55
 // lean:AOP.A8_6_Tour.Qc_apply@cbc2eb9b
 )]<tour-defn>
 

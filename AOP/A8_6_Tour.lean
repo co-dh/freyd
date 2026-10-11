@@ -11,7 +11,7 @@
   functions, replacing the head of one list and consing onto the other.
 
   A FINDING ON THE NOTE.  `tour-mono`'s two positive rows, `(𝟙×Q) dropl ⊑ dropl Q` and
-  `(𝟙×Q) dropr ⊑ dropr Q` at `Q ≜ R ∩ (next2 next2°)`, are FALSE as printed.
+  `(𝟙×Q) dropr ⊑ dropr Q` at `Q ≜ R ∩ (next₂ next₂°)`, are FALSE as printed.
   `tour_mono_dropl_Q_false` and `tour_mono_dropr_Q_false` refute them on two GENUINE tours —
   each with its own two heads equal, as p.214 says every partial tour has — that are tours of
   DIFFERENT inputs.  The book says why (p.215): the cost of `dropl (a,(x,y))` is
@@ -21,7 +21,7 @@
   the candidates the fold actually holds together, not of tours at large, and `Q` as printed
   does not record it.
 
-  What is proved here instead is the row at `Qc ≜ Q ∩ (head2 head2°)`, which does record it —
+  What is proved here instead is the row at `Qc ≜ Q ∩ (head₂ head₂°)`, which does record it —
   `tour_mono_dropl`, `tour_mono_dropr` — and `tour_laws` is Theorem 8.2 at `Qc`.  The note's
   `thinL Q` therefore has to become `thinL Qc`, or Theorem 8.2 has to be replaced by its
   in-context form (`AOP.A8_1`'s `Λ_comp_thinRel_context`, which is exactly `Λ S ≫ thinRel (Q ∩
@@ -198,37 +198,37 @@ public theorem R_eq :
     rw [← (show m = cost tc t from hm), ← (show n = cost tc t' from hn)]
     exact hmn
 
-/-- **tour-defn**: `Q ≜ R ∩ (next2 next2°)` — the note's order, `next2 ≜ next×next`. -/
+/-- **tour-defn**: `Q ≜ R ∩ (next₂ next₂°)` — the note's order, `next₂ ≜ next×next`. -/
 @[expose] public def Q (tc : City × City → Int) : dTour City ⟶ dTour City :=
   fun t t' => cost tc t ≤ cost tc t' ∧ next t.1 = next t'.1 ∧ next t.2 = next t'.2
 
-/-- `Qc ≜ Q ∩ (head2 head2°)` — `Q` with the invariant the book appeals to on p.215 ("tours of
+/-- `Qc ≜ Q ∩ (head₂ head₂°)` — `Q` with the invariant the book appeals to on p.215 ("tours of
     the same input") written down: the two candidates start from the same city. -/
 @[expose] public def Qc (tc : City × City → Int) : dTour City ⟶ dTour City :=
   fun t t' => cost tc t ≤ cost tc t' ∧ (next t.1 = next t'.1 ∧ next t.2 = next t'.2)
     ∧ (head t.1 = head t'.1 ∧ head t.2 = head t'.2)
 
-/-- **tour-defn**: `next2 ≜ next×next`, the second cities of both journeys. -/
-@[expose] public def next2 (t : Tour City) : City × City := (next t.1, next t.2)
+/-- **tour-defn**: `next₂ ≜ next×next`, the second cities of both journeys. -/
+@[expose] public def next₂ (t : Tour City) : City × City := (next t.1, next t.2)
 
-/-- **tour-defn**: `head2 ≜ head×head`, the first cities of both journeys. -/
-@[expose] public def head2 (t : Tour City) : City × City := (head t.1, head t.2)
+/-- **tour-defn**: `head₂ ≜ head×head`, the first cities of both journeys. -/
+@[expose] public def head₂ (t : Tour City) : City × City := (head t.1, head t.2)
 
 /-- `t R t′` iff `t` costs no more than `t′`: the pointwise reading of `R_eq`. -/
 public theorem R_apply (t t' : Tour City) : R tc t t' ↔ cost tc t ≤ cost tc t' := Iff.rfl
 
-/-- `Qc = R ∩ (next2 next2°) ∩ (head2 head2°)`, point-free. -/
+/-- `Qc = R ∩ (next₂ next₂°) ∩ (head₂ head₂°)`, point-free. -/
 public theorem Qc_eq :
-    Qc tc = R tc ∩ (graph next2 ≫ (graph next2 : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°)
-      ∩ (graph head2 ≫ (graph head2 : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°) := by
+    Qc tc = R tc ∩ (graph next₂ ≫ (graph next₂ : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°)
+      ∩ (graph head₂ ≫ (graph head₂ : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°) := by
   apply hom_ext; intro t t'
   constructor
   · rintro ⟨hc, ⟨hn1, hn2⟩, hh1, hh2⟩
-    exact ⟨⟨hc, next2 t, rfl, (by rw [hn1, hn2] : (next t.1, next t.2) = (next t'.1, next t'.2))⟩,
-      head2 t, rfl, (by rw [hh1, hh2] : (head t.1, head t.2) = (head t'.1, head t'.2))⟩
+    exact ⟨⟨hc, next₂ t, rfl, (by rw [hn1, hn2] : (next t.1, next t.2) = (next t'.1, next t'.2))⟩,
+      head₂ t, rfl, (by rw [hh1, hh2] : (head t.1, head t.2) = (head t'.1, head t'.2))⟩
   · rintro ⟨⟨hc, m, hm, hm'⟩, k, hk, hk'⟩
-    have hn : next2 t = next2 t' := (hm : m = next2 t).symm.trans hm'
-    have hh : head2 t = head2 t' := (hk : k = head2 t).symm.trans hk'
+    have hn : next₂ t = next₂ t' := (hm : m = next₂ t).symm.trans hm'
+    have hh : head₂ t = head₂ t' := (hk : k = head₂ t).symm.trans hk'
     exact ⟨hc, ⟨congrArg Prod.fst hn, congrArg Prod.snd hn⟩, congrArg Prod.fst hh, congrArg Prod.snd hh⟩
 
 /-- `t Qc t′` iff `t` costs no more than `t′` and both journeys share their first two cities. -/
@@ -386,7 +386,7 @@ public theorem dropl_lax_natural :
 @[expose] public def tB : Tour Int :=
   (ConsList.wrap ((0 : Int), (0 : Int)), ConsList.wrap ((0 : Int), (0 : Int)))
 
-/-- `tA` and `tB` are `Q`-related: equal cost, equal `next2`.  They differ only in their shared
+/-- `tA` and `tB` are `Q`-related: equal cost, equal `next₂`.  They differ only in their shared
     head, which `Q` does not record. -/
 public theorem tA_Q_tB : Q (fun p : Int × Int => p.1 * p.2) tA tB :=
   ⟨by decide, by decide, by decide⟩
@@ -408,7 +408,7 @@ public theorem tour_mono_dropl_false :
   decide
 
 /-- **THE FINDING**: `tour-mono`'s POSITIVE first row, `(𝟙×Q) dropl ⊑ dropl Q` at
-    `Q ≜ R ∩ (next2 next2°)`, is false as printed — `tA` and `tB` are `Q`-related genuine tours,
+    `Q ≜ R ∩ (next₂ next₂°)`, is false as printed — `tA` and `tB` are `Q`-related genuine tours,
     and `dropl` separates them.  What it reads and `Q` does not record is the HEAD
     (`+ tc(head y,a)`, B&dM p.215); the row holds once the heads are added, which is
     `tour_mono_dropl` below. -/
@@ -584,7 +584,7 @@ public theorem tour_laws :
 end Freyd.Alg.RelSet.Tour
 
 -- printing-only: the section's ordering is the note's `R` and its thinning preorder `Q` (the note's
--- `Q` already carries the `head2` conjunct; Lean's `Q` without it is never drawn); the cost function
+-- `Q` already carries the `head₂` conjunct; Lean's `Q` without it is never drawn); the cost function
 -- `tc` is the section's context, dropped as `R` drops it.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tour.R] public meta def Freyd.Alg.RelSet.Tour.unexpandTourR : Unexpander
