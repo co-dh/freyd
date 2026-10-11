@@ -693,27 +693,63 @@ where
         | _ => stxShow k
       return some ("(" ++ String.join parts ++ ")")
 
+/-- A number as the exponent a power is written with. -/
+def supNum (n : Nat) : String :=
+  String.join ((toString n).toList.map fun c =>
+    #["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"][c.toNat - '0'.toNat]!)
+
+/-- A factor with what the note does not write erased — implicit and instance arguments, universe
+    levels, a binder's type — so `wrap` at `A` and `wrap` at `[A]` are one factor: two factors are
+    the SAME FACTOR exactly when their skeletons are equal. -/
+partial def skel (e : Expr) : MetaM Expr := do
+  let hole := mkConst `_
+  match e with
+  | .mdata _ b => skel b
+  | .const n _ => return .const n []
+  | .lam n _ b bi => return .lam n hole (← skel b) bi
+  | .app .. =>
+    let (f, args) := (e.getAppFn, e.getAppArgs)
+    let expl ← if f.isConst then
+        pure ((← Meta.getFunInfoNArgs f args.size).paramInfo.map (·.isExplicit))
+      else pure #[]
+    return mkAppN (← skel f) (← args.mapIdxM fun i a => if expl[i]?.getD true then skel a else pure hole)
+  | _ => return e
+
+/-- A RUN OF n ≥ 2 EQUAL FACTORS IS A POWER, `wrap³`: writing one factor n times says nothing the
+    exponent does not.  `xs` pairs each factor's skeleton with its spelling; equal neighbours merge. -/
+def powers {α} (xs : Array (Expr × α)) : Array (α × Nat) :=
+  let runs := xs.foldl (init := (#[] : Array (Expr × α × Nat))) fun acc (k, a) =>
+    match acc.back? with
+    | some (k', a', n) => if k' == k then acc.pop.push (k', a', n + 1) else acc.push (k, a, 1)
+    | none => acc.push (k, a, 1)
+  runs.map fun (_, a, n) => (a, n)
+
 /-- THE STEPS a value computed FROM THE INPUT is made of, in diagram order: `p(π₁ s)` is `π₁`, `p` —
     first the projection, then the test.  The input itself is the identity and contributes nothing,
     and an argument that does not mention the input is a PARAMETER of the function, not a step of the
     computation, so it stays inside the function's own name.  `none` where the walk does not reach the
     input: the term is then no chain of steps and whoever asked prints it whole. -/
 partial def valSteps (s : FVarId) (x : Expr) : MetaM (Option (Array String)) := do
-  if x == .fvar s then return some #[]
-  let step (st : Expr) (h : String) : MetaM (Option (Array String)) := do
-    return (← valSteps s st).map (·.push h)
-  match x with
-  | .proj ``Prod i st => step st (if i == 0 then "π₁" else "π₂")
-  | _ =>
-    let args := x.getAppArgs
-    match x.getAppFnArgs.1, args.back? with
-    | ``Prod.fst, some st => step st "π₁"
-    | ``Prod.snd, some st => step st "π₂"
-    | _, _ =>
-      let deps := args.filter fun a => a.containsFVar s
-      if deps.size == 1 then
-        step deps[0]! (← headShow x.getAppFn args fun a => !a.containsFVar s)
-      else return none
+  return (← go x).map fun st => (powers st).map fun (h, n) => if n ≥ 2 then h ++ supNum n else h
+where
+  /-- Each step with its skeleton (`skel`, the input a hole), so equal steps become a power. -/
+  go (x : Expr) : MetaM (Option (Array (Expr × String))) := do
+    if x == .fvar s then return some #[]
+    let step (st k : Expr) (h : String) : MetaM (Option (Array (Expr × String))) := do
+      return (← go st).map (·.push (k, h))
+    match x with
+    | .proj ``Prod i st => step st (mkConst (if i == 0 then ``Prod.fst else ``Prod.snd)) (if i == 0 then "π₁" else "π₂")
+    | _ =>
+      let args := x.getAppArgs
+      match x.getAppFnArgs.1, args.back? with
+      | ``Prod.fst, some st => step st (mkConst ``Prod.fst) "π₁"
+      | ``Prod.snd, some st => step st (mkConst ``Prod.snd) "π₂"
+      | _, _ =>
+        let deps := args.filter fun a => a.containsFVar s
+        if deps.size == 1 then
+          let k ← skel (mkAppN x.getAppFn (args.map fun a => if a.containsFVar s then mkConst `_ else a))
+          step deps[0]! k (← headShow x.getAppFn args fun a => !a.containsFVar s)
+        else return none
 
 /-- Which factor of the bound pair `bvar 0` the term `x` is — `0` for `π₁`, `1` for `π₂` — under any
     coercions, which print as what they coerce (`delabNoteCoe`). -/
@@ -1983,7 +2019,12 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
           -- so the one test that catches every depth is trying the substitution and type-checking
           -- the result, the rule `interpAt.split` already uses for a picture's bead
           -- (StringDiagram.lean).  An operand that breaks it is skipped, not handed to the printer.
-          if ← Meta.isTypeCorrect (t.replace fun s => (ops'.findIdx? (· == s)).map (xs'[·]!)) then
+          -- A DELABORATOR THAT READS THE OPERAND (`wrap (a,b)` is `[a,b]`) stops firing once the
+          -- operand is a local, and the printer falls back to the bare application: an operand whose
+          -- hole changes the KIND of syntax the printer writes is the delaborator's, and stays.
+          let t' := t.replace fun s => (ops'.findIdx? (· == s)).map (xs'[·]!)
+          if (← Meta.isTypeCorrect t') &&
+              (stxPeel (← delabP t')).getKind == (stxPeel (← delabP t)).getKind then
             respell p (rest.filter (· != a)) ops' xs' (holes.push l) t
           else
             respell p (rest.filter (· != a)) ops xs holes t
@@ -2120,17 +2161,21 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     FLAT is the whole point of the array: juxtaposition is associative, so a bracket round the
     factors would say a grouping the note does not. -/
 partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
-  let e' ← openNotedAll e
-  if e' != e then return ← labelRunT e'
-  match e.getAppFnArgs with
-  | (``Cat.comp, args) =>
-    if (lastTwo args).isNone then return #[← labelTree (← Prec.factor) e]
-    -- the picture draws no identity factor (`dropUnits`), so neither does its label: `𝟙U` is `U`
-    if dropUnits e != e then return ← labelRunT (dropUnits e)
-    let mut out := #[]
-    for f in factors e do out := out ++ (← labelRunT f)
-    return out
-  | _ => return #[← labelTree (← Prec.factor) e]
+  -- n EQUAL NEIGHBOURS ARE ONE FACTOR WITH AN EXPONENT (`powers`), decided on the TERMS (`skel`)
+  (powers (← (← runFactors e).mapM fun f => return (← skel f, f))).mapM fun (f, n) => do
+    let l ← labelTree (← Prec.factor) f
+    return if n ≥ 2 then .unit (l ++ supNum n) else l
+where
+  runFactors (e : Expr) : MetaM (Array Expr) := do
+    let e' ← openNotedAll e
+    if e' != e then return ← runFactors e'
+    match e.getAppFnArgs with
+    | (``Cat.comp, args) =>
+      if (lastTwo args).isNone then return #[e]
+      -- the picture draws no identity factor (`dropUnits`), so neither does its label: `𝟙U` is `U`
+      if dropUnits e != e then return ← runFactors (dropUnits e)
+      (factors e).foldlM (init := #[]) fun acc f => return acc ++ (← runFactors f)
+    | _ => return #[e]
 
 end
 

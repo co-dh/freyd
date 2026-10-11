@@ -5,6 +5,7 @@
 -/
 import diag.tool.FormulaRender
 import diag.StrDiagNames
+import AOP.A8_6_Tour
 import AOP.A8_5_Paragraph
 
 namespace Freyd.LabelTest
@@ -93,9 +94,23 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 
 -- POINTWISE `ConsList.wrap` AT A LEAF OF THE ELEMENT TYPE IS THE ARROW `CL.τ` and prints `τ`, decided
 -- from the type arguments by the delaborator: `wrap (wrap a)` printed `wrap wrap`.
-/-- info: τ τ = τ τ -/
+/-- info: τ² = τ² -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   Lean.logInfo (← formula ``Freyd.Alg.RelSet.Paragraph.τ_τ)
+
+-- A DELABORATOR THAT READS AN OPERAND PRINTS THE APPLICATION: `ConsList.wrap (a,b)` is the note's
+-- `[a, b]` (`delabWrapPair`), and holing the pair `(a,b)` as an operand stopped it firing.
+/-- info: start(a,b) = ([a, b],[a, b]) -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.Tour.start)
+
+-- n EQUAL NEIGHBOURING FACTORS ARE A POWER: the two `CL.τ`s are `τ²`; the third `τ` is
+-- `CL.τₗ ()`, a different arrow the printer also calls `τ`, so it stays a factor of its own.
+/-- info: (∀a. len(a) ≤ w) ⟹ [τ² τ,cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q(len)(w))] ⊑ cpL ⟨g₁,g₂⟩ merge(⊤) thinL(Q(len)(w)) -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.Paragraph.para_body_split)
 
 end Freyd.LabelTest
