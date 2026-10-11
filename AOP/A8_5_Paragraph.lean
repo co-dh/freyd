@@ -654,8 +654,8 @@ public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   list (graph (fun q : Word × Para Word => glue q.1 q.2)) ≫ Filter.filter (ok (len := len) w)
 
 /-- Two wraps are the map to the one-word paragraph: `wrap wrap = [[·]]`. -/
-public theorem wrapR_wrapR :
-    ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word))
+public theorem τ_τ :
+    ((τ : dL Word ⟶ dCL Word Word) ≫ (τ : dL (Line Word) ⟶ dPara Word))
       = graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) := by
   apply hom_ext; intro a r
   constructor
@@ -663,7 +663,7 @@ public theorem wrapR_wrapR :
   · intro h; exact ⟨_, rfl, h⟩
 
 /-- A word that fits makes a one-word paragraph that passes `ok w`: `[[·]] ok(w) = [[·]]`. -/
-public theorem wrap_wrap_ok (hfit : ∀ a, len a ≤ w) :
+public theorem τ_τ_ok (hfit : ∀ a, len a ≤ w) :
     graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) ≫ ok (len := len) w
       = (graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word) := by
   apply hom_ext; intro a r
@@ -704,7 +704,7 @@ public theorem merge_top_strictNatural :
 
 /-- The one-word paragraph `wrap wrap` is STRICTLY natural, `R [[·]] = [[·]] list⁺(list⁺(R))`:
     the dot on the base arm of the fold's body once `[f,g]` is drawn as its two arms. -/
-public theorem wrap_wrap_strictNatural :
+public theorem τ_τ_strictNatural :
     StrictNatural (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
         nelistRelator) (Relator.idRelator RelSet.{0})
       (fun a => (graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
@@ -722,7 +722,7 @@ public theorem start_strictNatural :
     StrictNatural (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0})
         nelistRelator) nelistRelator) listRelator) (Relator.idRelator RelSet.{0})
       (fun a => (graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
-        : a ⟶ dPara a.carrier) ≫ singleR ()) := by
+        : a ⟶ dPara a.carrier) ≫ τₗ ()) := by
   intro x y R
   apply hom_ext; intro a r
   constructor
@@ -744,9 +744,9 @@ public theorem start_pair_laxNatural :
       (Relator.idRelator RelSet.{0})
       (fun a => (relProd (dList (Para a.carrier)) (dList (Para a.carrier))).pair
         ((graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
-          : a ⟶ dPara a.carrier) ≫ singleR ())
+          : a ⟶ dPara a.carrier) ≫ τₗ ())
         ((graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
-          : a ⟶ dPara a.carrier) ≫ singleR ())) :=
+          : a ⟶ dPara a.carrier) ≫ τₗ ())) :=
   laxNatural_pair (laxNatural_of_strictNatural start_strictNatural)
     (laxNatural_of_strictNatural start_strictNatural)
 
@@ -757,7 +757,7 @@ public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : 
 /-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
 public theorem inl_cpL {L E X : Type} :
     ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
-      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ singleR () := by
+      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ τₗ () := by
   apply hom_ext; intro d r
   constructor
   · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
@@ -773,9 +773,9 @@ public theorem inr_cpL {L E X : Type} :
   · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, (cpLFn_inr e xs).symm⟩
 
 /-- `[a]` is one thinning of `[a,a]` when `Q` is reflexive: `wrap ⊑ ⟨wrap,wrap⟩ cat thinL(Q)`. -/
-public theorem single_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
-    (singleR () : dE A ⟶ dList A)
-      ⊑ (relProd (dList A) (dList A)).pair (singleR ()) (singleR ()) ≫ cat ≫ thinL Q := by
+public theorem τ_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
+    (τₗ () : dE A ⟶ dList A)
+      ⊑ (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ cat ≫ thinL Q := by
   refine le_iff.mpr fun a ws h => ?_
   obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := h
   have hset : inlistP (ConsList.cons a (ConsList.cons a (ConsList.wrap ())))
@@ -789,8 +789,8 @@ public theorem single_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙
   exact le_iff.mp (id_le_thinRel hQ) _ _ rfl
 
 /-- `filter(p)` keeps a one-element list whose element passes `p`: `p wrap ⊑ wrap filter(p)`. -/
-public theorem corefl_single_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
-    p ≫ (singleR () : dE A ⟶ dList A) ⊑ singleR () ≫ Filter.filter p := by
+public theorem corefl_τ_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
+    p ≫ (τₗ () : dE A ⟶ dList A) ⊑ τₗ () ≫ Filter.filter p := by
   refine le_iff.mpr fun a ws ⟨b, hab, hws⟩ => ?_
   obtain ⟨rfl, -⟩ := (GCTakeWhile.coreflexive_apply hp).mp hab
   obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := hws
@@ -806,8 +806,8 @@ public theorem corefl_single_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Core
     `cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q)`.  `⊑`, not `=`: on `[s,s]` `thinL(Q)` may keep both copies. -/
 public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
     junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
-        ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word)
-          ≫ singleR ())
+        ((τ : dL Word ⟶ dCL Word Word) ≫ (τ : dL (Line Word) ⟶ dPara Word)
+          ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
@@ -815,29 +815,29 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
           (g₁ (Word := Word)) (g₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w) :=
   calc junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
-        ((wrapR : dL Word ⟶ dCL Word Word) ≫ (wrapR : dL (Line Word) ⟶ dPara Word)
-          ≫ singleR ())
+        ((τ : dL Word ⟶ dCL Word Word) ≫ (τ : dL (Line Word) ⟶ dPara Word)
+          ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
       = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-          ≫ singleR ())
+          ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
-        rw [← Cat.assoc wrapR wrapR, wrapR_wrapR]
+        rw [← Cat.assoc τ τ, τ_τ]
     _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (singleR ()) (singleR ())
+          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (τₗ ()) (τₗ ())
           ≫ cat ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
-        junc_mono _ (comp_mono_left _ (single_le_dup_cat_thinL Q_refl)) (le_refl _)
+        junc_mono _ (comp_mono_left _ (τ_le_dup_cat_thinL Q_refl)) (le_refl _)
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (singleR ()) (singleR ())
+          ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (τₗ ()) (τₗ ())
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
@@ -846,9 +846,9 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ singleR ())
+              ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ singleR ())
+              ≫ τₗ ())
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
@@ -857,36 +857,36 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ singleR ())
+              ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ ok (len := len) w ≫ singleR ())
+              ≫ ok (len := len) w ≫ τₗ ())
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
-        rw [← Cat.assoc (graph _) (ok _), wrap_wrap_ok hfit]
+        rw [← Cat.assoc (graph _) (ok _), τ_τ_ok hfit]
     _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ singleR ())
+              ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ singleR () ≫ Filter.filter (ok (len := len) w))
+              ≫ τₗ () ≫ Filter.filter (ok (len := len) w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
         junc_mono _ (comp_mono_right (RelProd.pair_mono (le_refl _)
-          (comp_mono_left _ (corefl_single_le_filter ok_coreflexive))) _) (le_refl _)
+          (comp_mono_left _ (corefl_τ_le_filter ok_coreflexive))) _) (le_refl _)
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word))
               ≫ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
                   (fun q : Word × Para Word => new q.1 q.2))
-              ≫ singleR ())
+              ≫ τₗ ())
             ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word))
               ≫ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
                   (fun q : Word × Para Word => glue q.1 q.2))
-              ≫ singleR () ≫ Filter.filter (ok (len := len) w))
+              ≫ τₗ () ≫ Filter.filter (ok (len := len) w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
@@ -896,16 +896,16 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
           inl_elim, inl_elim]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
-            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ singleR ()
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ τₗ ()
               ≫ g₁ (Word := Word))
-            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ singleR ()
+            ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ τₗ ()
               ≫ g₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
         unfold g₁ g₂
-        rw [← Cat.assoc (singleR ()) (list _) (Filter.filter _), wrap_natural, wrap_natural,
+        rw [← Cat.assoc (τₗ ()) (list _) (Filter.filter _), τ_natural, τ_natural,
           Cat.assoc]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair

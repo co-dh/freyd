@@ -301,7 +301,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.ordered_cata") \
     #src[a list is sorted exactly when the fold that rebuilds it passes `ok` at every `cons`, i.e.
      each head is `R`-below every element after it]],
-     // lean:AOP.A6_6b_SortConcrete.ordered_cata@38414536
+     // lean:AOP.A6_6b_SortConcrete.ordered_cata@d7a9ecd6
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.ordered_cata.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.ordered_cata.rhs", src[fold uniqueness]),
@@ -315,7 +315,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
     #src[every output of unfolding the input by `select` is a sorted permutation of it]],
-     // lean:AOP.A6_6b_SortConcrete.selection_sort@617e20db
+     // lean:AOP.A6_6b_SortConcrete.selection_sort@6f017672
   lean-calc(calc-selection),
 )]<sort-selection>
 
@@ -327,16 +327,16 @@
      // lean:AOP.A6_6b_SortConcrete.select_proviso@924131a0
   lean-calc(calc-select),
 )]<sort-select>
-// TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
+// TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ τ perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
 // B&dM 6.6c, p.153, the program.  Uniqueness of the solution is Theorem 6.3 (thm63_unique), which
 // needs a `member` for the list functor that Lean lacks; drawn here is that `⦇[nil,select°]⦈°` IS a solution.  `nil` is strictly natural
-// (lean:AOP.A6_6b_SortConcrete.nil_strictNatural@c7a02590).
+// (lean:AOP.A6_6b_SortConcrete.nil_strictNatural@3011407c).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.sort_rec") \
     #src[selection sort returns `[]` on `[]`, and otherwise selects `(a,y)`, sorts `y` and conses
      `a` back on]],
-     // lean:AOP.A6_6b_SortConcrete.sort_rec@19c1b660
+     // lean:AOP.A6_6b_SortConcrete.sort_rec@39c026e7
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.sort_rec.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.sort_rec.rhs", src[unfolding the converse of a fold]),
@@ -350,7 +350,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.quicksort") \
     #src[every output of unfolding the input by `split` into a tree and flattening that tree is a
      sorted permutation of the input]],
-     // lean:AOP.A6_6e_Quicksort.quicksort@2ff8cd0e
+     // lean:AOP.A6_6e_Quicksort.quicksort@19415e1d
   lean-calc(calc-quick),
 )]<sort-quick>
 
@@ -419,7 +419,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_cata") \
     #src[turning a list into a non-empty list and folding it with any `[bs, st]` meeting the two conditions below gives only
      `check`ed triples `(x,a,y)` whose join `x ⧺ [a] ⧺ y` is a permutation of the list]],
-     // lean:AOP.A6_6e_Quicksort.split_cata@6dc148a1
+     // lean:AOP.A6_6e_Quicksort.split_cata@e6c0f6ba
   lean-calc(calc-split-cata),
 )]<split-cata>
 
@@ -427,7 +427,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_base") \
     #src[`base(a)` is a `check`ed triple whose join is a permutation of the one-element list `[a]`]],
-     // lean:AOP.A6_6e_Quicksort.split_base@5518d1ff
+     // lean:AOP.A6_6e_Quicksort.split_base@e079548b
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.split_base.lhs", []),
     (SQ, "Freyd.Alg.RelSet.Sort.split_base.rhs", src[`[] ⧺ [a] ⧺ [] = [a]`, and `check'` holds on empty lists]),
@@ -447,13 +447,13 @@
   ),
 )]<split-step>
 // B&dM 6.6f, p.155, the program: by the hylomorphism theorem `X=⦇[nil,split°]⦈°flatten` solves the
-// equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@3e9893c3).
+// equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@5fb9eeaa).
 #import "../generated/Freyd.Alg.RelSet.Sort.qsort_rec.calc.typ" as calc-qsort-rec
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.qsort_rec") \
     #src[quicksort returns `[]` on `[]`, and otherwise splits into `(x,a,y)`, sorts `x` and `y` and
      joins them around `a`]],
-     // lean:AOP.A6_6e_Quicksort.qsort_rec@acd4b32a
+     // lean:AOP.A6_6e_Quicksort.qsort_rec@63975f39
   lean-calc(calc-qsort-rec),
 )]<qsort-rec>
 // B&dM p.157 (Ex 6.30): insertion sort, from `perm = ⦇[nil,add]⦈` (§5.6) with `add` putting an
@@ -463,7 +463,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insertion_sort") \
     #src[for any `ins` that, on an ordered list, returns only ordered results of `add`, folding
      with `[nil, ins]` gives only sorted permutations]],
-     // lean:AOP.A6_6c_ISort.insertion_sort@3dcc9fbb
+     // lean:AOP.A6_6c_ISort.insertion_sort@6b537da6
   lean-calc(calc-isort),
 )]<isort-ex630>
 

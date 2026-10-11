@@ -540,12 +540,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [The list type, under the short name it keeps.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.list_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.list_cata@08d57306
+  // lean:AOP.A5_6_ListCombinators.list_cata@6237b1a1
   [#leant("Freyd.Alg.RelSet.ListRel.list_cata")],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+  // lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
   [#leant("Freyd.Alg.RelSet.ListRel.subseq_cata")],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
@@ -566,7 +566,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.concat_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.concat_cata@ff360a1d
+  // lean:AOP.A5_6_ListCombinators.concat_cata@b572bfe6
   [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
   [Joins the segments back up, which is why its converse splits a list.],
 
@@ -596,12 +596,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`cp(F)`, the transpose of a relator's action on `∋`; `cpp` implements it at `F(A)=A×A`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.cp_list") \ #leanf("Freyd.Alg.RelSet.ListRel.cp_list_alg") #src[]],
-  // lean:AOP.A5_6_ListCombinators.cp_list@b2418f21 lean:AOP.A5_6_ListCombinators.cp_list_alg@34227b70
+  // lean:AOP.A5_6_ListCombinators.cp_list@7209839e lean:AOP.A5_6_ListCombinators.cp_list_alg@4029f002
   [#leant("Freyd.Alg.RelSet.ListRel.cp_list")],
   [`cp(list)`: @cata-map-calc at `∋′=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.cplist_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.cplist_cata@69ef2d49
+  // lean:AOP.A5_6_ListCombinators.cplist_cata@7f23f1bb
   [#leant("Freyd.Alg.RelSet.ListRel.cplist")],
   [`cp(list)` with every set a list: `cpp` in place of $frac(#[`∋×∋`], ∋)$.],
 
@@ -662,7 +662,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
      `subseq=⦇[nil,cons ∪ π₂]⦈`, @Freyd.Alg.RelSet.ListRel.subseq_cata.
  ]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@e9ebf14d lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@a7b0d98d lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
@@ -678,7 +678,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
     [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs")) \ #src[`F(X)=𝟏+A×X` — @comb-fns:1]])],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@5548e84e lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@eda211f9 lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs")) \
@@ -692,7 +692,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs") \
     #src[@Freyd.Alg.Λ_of_map, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
-    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@d276006e
+    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@ea5a21a2
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 )]<subseq-EW-case>
 

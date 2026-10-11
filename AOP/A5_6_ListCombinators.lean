@@ -232,7 +232,7 @@ public def catNE : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ d
 /-- B&dM's `concat = ⦇[nil, cat]⦈` at p.128, where that `cat` is `catNE`: only a flattening whose
     segments are all non-empty, so that `concat°` is `partition`. -/
 @[expose] public def concat : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
-  ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catNE
+  ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ catNE
     : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
 
 /-- The length of a list. -/
@@ -533,7 +533,7 @@ notation:max R:max "′" => list R
 /-- **`list(R) = ⦇[nil, (R⊗𝟙) cons]⦈`** (note `comb-fns`; B&dM p.126): one `R` per element,
     the shape untouched. -/
 public theorem list_cata (R : dE A ⟶ dE B) :
-    list R = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit B⟩) wrapR
+    list R = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit B⟩) τ
         (rprodMap R (𝟙 (dList B)) ≫ consR) : (F Unit A).obj (dList B) ⟶ dList B)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
@@ -599,10 +599,10 @@ public theorem listRelator_obj (A : RelSet.{0}) : listRelator.obj A = dList A.ca
   clRelator (Relator.idRelator RelSet.{0})
 
 /-- The one-element non-empty list is STRICTLY natural, `R wrap = wrap list⁺(R)`. -/
-public theorem nelist_wrap_strictNatural :
+public theorem nelist_τ_strictNatural :
     StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
       (Relator.idRelator RelSet.{0})
-      (fun a => (CL.wrapR : CL.dL a.carrier ⟶ CL.dCL a.carrier a.carrier)) := by
+      (fun a => (CL.τ : CL.dL a.carrier ⟶ CL.dCL a.carrier a.carrier)) := by
   intro x y R
   apply hom_ext; intro a r
   constructor
@@ -708,8 +708,8 @@ public theorem cons_natural {B : Type} (R : dE A ⟶ dE B) :
 
 /-- **The free theorem of `wrap`**, and it is STRICT: `wrap list(R) = R wrap`.  Both sides relate
     `a` to the one-element list `[b]` exactly when `R a b`, and to nothing else. -/
-public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
-    (singleR () : dE A ⟶ dList A) ≫ list R = R ≫ singleR () := by
+public theorem τ_natural {B : Type} (R : dE A ⟶ dE B) :
+    (τₗ () : dE A ⟶ dList A) ≫ list R = R ≫ τₗ () := by
   apply hom_ext; intro a w
   constructor
   · rintro ⟨_, rfl, hz⟩
@@ -726,7 +726,7 @@ public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
     constructors, which is what the note's `α` cell claims and nothing else states. -/
 public theorem alphaR_eq_junc :
     (alphaR : (F Unit A).obj (dList A) ⟶ dList A)
-      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR consR := by
+      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ consR := by
   apply hom_ext; intro u w
   cases u with
   | inl d =>
@@ -742,7 +742,7 @@ public theorem alphaR_eq_junc :
 
 /-- `nil` and `cons` at the EMPTY leaf — the two factors of `alphaR_eq_junc`'s junction, named so
     the note's `nil`,`cons` row takes its type cell from Lean instead of typing one by hand. -/
-@[expose] public def nilAtUnit : dL Unit ⟶ dList A := wrapR
+@[expose] public def nilAtUnit : dL Unit ⟶ dList A := τ
 @[expose] public def cons : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := consR
 
 /-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is
@@ -878,7 +878,7 @@ public theorem total_eq (f : A → Int) :
     reduces on a pair, which the abstract projection does not. -/
 public theorem subseq_cata :
     (subseq : dList A ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
           (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
@@ -982,9 +982,9 @@ public theorem subseq_alg_join :
     the branches (`sumMap_junc`), the leaf arm's `𝟙` cancelling. -/
 public theorem subseq_alg_sum_junc :
     (F Unit A).map (∋ (dList A))
-        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
             (consR ∪ graph fun p : A × ConsList Unit A => p.2)
-      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) τ
           (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
   rw [← F_eq_sum_prod]
@@ -1001,9 +1001,9 @@ public theorem subseq_alg_sum_map :
     sumMap (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
         (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
         (rprodMap (𝟙 (dE A)) (∋ (dList A)))
-      ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+      ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
           (consR ∪ graph fun p : A × ConsList Unit A => p.2)
-      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) τ
           (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
   rw [sumMap_junc, Cat.id_comp]
@@ -1011,7 +1011,7 @@ public theorem subseq_alg_sum_map :
 /-- The note's `subseq-EW-case` last row: **`nil%∋ = nil 𝟙%∋`** — the leaf arm alone.  `nil` is a
     map, so `Λ` fuses out of it (`Λ_fusion` at `𝟙`), leaving the singleton `𝟙%∋ = Λ(𝟙)`. -/
 public theorem Λ_nil_singleton :
-    Λ (wrapR : dL Unit ⟶ dList A) = wrapR ≫ singletonMap := by
+    Λ (τ : dL Unit ⟶ dList A) = τ ≫ singletonMap := by
   have h := Λ_fusion (graph_map (ConsList.wrap : Unit → ConsList Unit A)) (Cat.id (dList A))
   rw [Cat.comp_id] at h
   exact h
@@ -1019,11 +1019,11 @@ public theorem Λ_nil_singleton :
 /-- The note's `subseq-EW-case` fourth row: **`[nil,(𝟙×∋)(cons ∪ π₂)]%∋ = [nil%∋,((𝟙×∋)(cons ∪
     π₂))%∋]`** — the transpose of a junction is the junction of the transposes (`Λ_junc`). -/
 public theorem subseq_alg_Λ_junc :
-    Λ (junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
+    Λ (junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) τ
         (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
       = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (Λ (wrapR : dL Unit ⟶ dList A))
+          (Λ (τ : dL Unit ⟶ dList A))
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) :=
   Λ_junc _ _ _
@@ -1032,11 +1032,11 @@ public theorem subseq_alg_Λ_junc :
     leaf arm, the cons arm untouched. -/
 public theorem subseq_alg_Λ_nil :
     junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-        (Λ (wrapR : dL Unit ⟶ dList A))
+        (Λ (τ : dL Unit ⟶ dList A))
         (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
       = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap)
+          (τ ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
   rw [Λ_nil_singleton]
@@ -1046,10 +1046,10 @@ public theorem subseq_alg_Λ_nil :
     splitting over the junction and the leaf arm's `Λ` fusing into the singleton. -/
 public theorem subseq_alg_Λ :
     Λ ((F Unit A).map (∋ (dList A))
-        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
             (consR ∪ graph fun p : A × ConsList Unit A => p.2))
       = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap)
+          (τ ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
   rw [subseq_alg_sum_junc, subseq_alg_Λ_junc, Λ_nil_singleton]
@@ -1059,11 +1059,11 @@ public theorem subseq_alg_Λ :
     the power transpose. -/
 public theorem subseq_alg_transpose :
     junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-        (wrapR ≫ singletonMap)
+        (τ ≫ singletonMap)
         (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
       = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap)
+          (τ ≫ singletonMap)
           (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
               (graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ cup (relProd (P (dList A))
@@ -1076,22 +1076,22 @@ public theorem subseq_alg_transpose :
 public theorem Λ_subseq :
     Λ (subseq : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap)
+          (τ ≫ singletonMap)
           (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
               (graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ cup (relProd (P (dList A)) (P (dList A))))
           : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
   calc Λ (subseq : dList A ⟶ dList A)
-      = Λ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+      = Λ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
           (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
         rw [← subseq_cata]
     _ = ⦇(Λ ((F Unit A).map (∋ (dList A))
-          ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+          ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
             (consR ∪ graph fun p : A × ConsList Unit A => p.2))
           : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
         (Λ_relCata (initial Unit A) _).trans (relCata_map (initial Unit A) _ (Λ_is_map' _)).symm
     _ = ⦇(junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap)
+          (τ ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
           : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ := by
@@ -1102,7 +1102,7 @@ public theorem Λ_subseq :
     display draws: on the leaf, `nil`; on a head and a tail-prefix, either keep the head or
     discard and stop with `nil`.  `cons` first, as in `subseq`'s `[nil, cons ∪ π₂]`. -/
 @[expose] public def prefAlg : (F Unit A).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
     (consR ∪ (graph fun _ => ConsList.wrap ()))
 
 /-- **`prefix = ⦇[nil, cons ∪ ⊸ nil]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; `cons`
@@ -1177,7 +1177,7 @@ public theorem segment_eq : (segment : dList A ⟶ dList A) = suffixR ≫ prefix
     step `cons`es the head onto a permuted tail and permutes the result. -/
 public theorem perm_cata :
     (perm : dList A ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (consR ≫ perm)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (consR ≫ perm)
           : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
@@ -1218,7 +1218,7 @@ public theorem partition_concat :
     appending each onto the flattened rest. -/
 public theorem concat_cata :
     (concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
-      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR cat
+      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ cat
           : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
@@ -1631,11 +1631,11 @@ end cartesian
 /-- The relator `F(∋)` slid into `list(∋)`'s algebra: `F(∋)[nil,(∋×𝟙)cons] = [nil,(∋×∋)cons]`. -/
 public theorem cp_list_alg_sum_junc :
     (F Unit (P (dE A)).carrier).map (∋ (dList A))
-        ≫ junc (sumCop (dL Unit) ⟨(P (dE A)).carrier × ConsList Unit A⟩) wrapR
+        ≫ junc (sumCop (dL Unit) ⟨(P (dE A)).carrier × ConsList Unit A⟩) τ
             (rprodMap (∋ (dE A)) (𝟙 (dList A)) ≫ consR)
       = junc (sumCop (dL Unit)
             ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
-          wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR) := by
+          τ (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR) := by
   rw [← F_eq_sum_prod]
   show sumMap (sumCop (dL Unit)
         ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
@@ -1652,7 +1652,7 @@ public theorem cp_list :
       = (initial Unit (P (dE A)).carrier).cata
           (Λ (junc (sumCop (dL Unit)
             ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
-            wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))) (Λ_is_map' _) := by
+            τ (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))) (Λ_is_map' _) := by
   show Λ (list (∋ (dE A))) = _
   rw [list_cata, Λ_relCata (initial Unit _)]
   congr 2
@@ -1664,10 +1664,10 @@ public theorem cp_list :
 public theorem cp_list_alg :
     Λ (junc (sumCop (dL Unit)
         ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
-        wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))
+        τ (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))
       = junc (sumCop (dL Unit)
           ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
-          (wrapR ≫ singletonMap) (Λ (rprodMap (∋ (dE A)) (∋ (dList A))) ≫ existsImage consR) := by
+          (τ ≫ singletonMap) (Λ (rprodMap (∋ (dE A)) (∋ (dList A))) ≫ existsImage consR) := by
   rw [Λ_junc, Λ_nil_singleton, Λ_absorption]
 
 /-- `cplist`, the list implementation of `cp(list)`: `cplist [] = [[]]`, and
@@ -1683,7 +1683,7 @@ public theorem cp_list_alg :
 public theorem cplist_cata :
     (cplist : dList (ConsList Unit A) ⟶ dList (ConsList Unit A))
       = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit (ConsList Unit A)⟩)
-          ((wrapR : dL Unit ⟶ dList A) ≫ singleR ())
+          ((τ : dL Unit ⟶ dList A) ≫ τₗ ())
           (cpp ≫ list (consR (L := Unit) (E := A)))
           : (F Unit (ConsList Unit A)).obj (dList (ConsList Unit A)) ⟶ dList (ConsList Unit A))⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp

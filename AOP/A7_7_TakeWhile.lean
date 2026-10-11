@@ -254,7 +254,7 @@ public theorem est_lenLE_lax_natural :
 /-- `list(p)`'s algebra `[nil, (p×𝟙) cons]`. -/
 @[expose] public def listPAlg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (pcons p)
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (pcons p)
 
 /-- `list(p)` — the relator `list` AT the coreflexive `p`, which is what the name says and what a
     picture must draw: `p` on the object wire, `list` running past it untouched. -/
@@ -276,7 +276,7 @@ public theorem discNil_apply (a : A) (xs ys : ConsList Unit A) :
 /-- The note's `S ≜ [nil, (p×𝟙) cons ∪ ⊸ nil]` — `prefix`'s algebra with one extra `p`. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
     (F Unit A).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (pcons p ∪ discNil)
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (pcons p ∪ discNil)
 
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix
     all of whose elements pass `p`. -/
@@ -415,7 +415,7 @@ public theorem listP_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (t : 
 @[expose] public def prefConsAlg (p : dE A ⟶ dE A) {C : RelSet.{0}}
     (X : C ⟶ dList A) : Fobj Unit A C ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × C.carrier⟩)
-    (wrapR : dL Unit ⟶ dList A)
+    (τ : dL Unit ⟶ dList A)
     ((rprodMap p X ≫ consR)
       ∪ (graph (fun _ => (ConsList.wrap () : ConsList Unit A))
         : (⟨A × C.carrier⟩ : RelSet.{0}) ⟶ dList A))
@@ -723,7 +723,7 @@ public theorem takewhile_greedy {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 theorem pcons_union_discNil_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : A) (c ws : ConsList Unit A) :
     (pcons p ∪ discNil) (a, c) ws
       ↔ ws = ConsList.wrap () ∨ (holds p a ∧ ws = ConsList.cons a c) :=
-  (junc_sum_inr (wrapR : dL Unit ⟶ dList A) (pcons p ∪ discNil) (a, c) ws).symm.trans
+  (junc_sum_inr (τ : dL Unit ⟶ dList A) (pcons p ∪ discNil) (a, c) ws).symm.trans
     (Salg_inr hC a c ws)
 
 /-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),((p×𝟙) cons ∪ ⊸ nil)%∋ est(R°)]` —
@@ -732,7 +732,7 @@ theorem pcons_union_discNil_apply {p : dE A ⟶ dE A} (hC : Coreflexive p) (a : 
 public theorem takewhile_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-          ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
+          ((τ : dL Unit ⟶ dList A)%∋ ≫ est(R°))
           ((pcons p ∪ discNil)%∋ ≫ est(R°)) := by
   unfold Salg; exact junc_Λ_est _ _ _ R°
 
@@ -740,7 +740,7 @@ public theorem takewhile_step1 (p : dE A ⟶ dE A) (R : dList A ⟶ dList A) :
     and the `R`-greatest of a one-element set is that element.  The `nil` arm of every algebra of
     §7.7; the order never enters beyond `𝟙 ⊑ R`. -/
 public theorem Λ_nil_comp_est {R : dList A ⟶ dList A} (hrefl : 𝟙 (dList A) ⊑ R) :
-    (wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R) = wrapR :=
+    (τ : dL Unit ⟶ dList A)%∋ ≫ est(R) = τ :=
   Λ_map_comp_est (graph_map _) hrefl
 
 /-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
@@ -748,10 +748,10 @@ public theorem Λ_nil_comp_est {R : dList A ⟶ dList A} (hrefl : 𝟙 (dList A)
 public theorem takewhile_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
     (hrefl : 𝟙 (dList A) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-        ((wrapR : dL Unit ⟶ dList A)%∋ ≫ est(R°))
+        ((τ : dL Unit ⟶ dList A)%∋ ≫ est(R°))
         ((pcons p ∪ discNil)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-          (wrapR : dL Unit ⟶ dList A)
+          (τ : dL Unit ⟶ dList A)
           ((pcons p ∪ discNil)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
@@ -761,7 +761,7 @@ public theorem takewhile_step2 (p : dE A ⟶ dE A) {R : dList A ⟶ dList A}
 public theorem takewhile_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     [DecidablePred (holds p)] :
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
-        (wrapR : dL Unit ⟶ dList A)
+        (τ : dL Unit ⟶ dList A)
         ((pcons p ∪ discNil)%∋ ≫ est(R°))
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p) := by
   apply hom_ext; intro u ws

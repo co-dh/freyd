@@ -271,7 +271,7 @@ public theorem sumR_entire : Entire (sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0
   unfold sumR; exact graph_entire _
 
 /-- **`nil sum = zero`** — the empty list sums to `zero`. -/
-public theorem nil_comp_sum : (wrapR : dL Unit ⟶ dList Int) ≫ sumR = zero := by
+public theorem nil_comp_sum : (τ : dL Unit ⟶ dList Int) ≫ sumR = zero := by
   refine hom_ext fun u w => ⟨?_, ?_⟩
   · rintro ⟨_, rfl, hw⟩; exact hw
   · rintro rfl; exact ⟨ConsList.wrap u, rfl, rfl⟩
@@ -307,7 +307,7 @@ public theorem cons_comp_sum :
     bracket composed is the bracket of the composites, and composition distributes over the `∪`. -/
 public theorem mss_prefix_sum_step1 :
     prefAlg ≫ sumR
-      = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((wrapR : dL Unit ⟶ dList Int) ≫ sumR)
+      = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sumR)
           ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR) := by
   unfold prefAlg
   rw [junc_comp, union_comp_distrib, DistributiveAllegory.union_comm]
@@ -315,7 +315,7 @@ public theorem mss_prefix_sum_step1 :
 /-- **`mss-prefix-sum`, step 2**: `[nil sum,⊸ nil sum ∪ cons sum] = [zero,⊸ zero ∪ (𝟙×sum) plus]`
     — `sum`'s three defining equations, one per branch. -/
 public theorem mss_prefix_sum_step2 :
-    junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((wrapR : dL Unit ⟶ dList Int) ≫ sumR)
+    junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sumR)
         ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR)
       = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) zero
           ((graph fun _ : Int × ConsList Unit Int => zeroVal)
@@ -961,7 +961,7 @@ public theorem scan_pair_eq_cata :
 /-- **@cata-defining at `k`**: the pair `⟨g,Λ(suffix)E(g)⟩` satisfies the initial algebra's
     equation for `k`, which is what makes it the fold `⦇k⦈` above. -/
 public theorem scan_pair_comm :
-    (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) wrapR consR
+    (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) τ consR
         : (F Unit Int).obj (dCL Unit Int) ⟶ dCL Unit Int)
       ≫ rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
@@ -971,7 +971,7 @@ public theorem scan_pair_comm :
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
           (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))) ≫ k := by
-  have hcon : (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) wrapR consR
+  have hcon : (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) τ consR
       : (F Unit Int).obj (dCL Unit Int) ⟶ dCL Unit Int) = graph con := by
     apply hom_ext; intro u y
     cases u with

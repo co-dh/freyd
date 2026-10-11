@@ -191,7 +191,7 @@ row((
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*step*], [*type*], [*example*], [*what it does*]),
-  table.cell(colspan: 4)[`S:F(A)⟶A` is 8.1's algebra; example `F(X)=V+V×X`, `S=[wrap,cons]`,
+  table.cell(colspan: 4)[`S:F(A)⟶A` is 8.1's algebra; example `F(X)=V+V×X`, `S=[τ,cons]`,
    candidate `a=cons(v,p)`],
 
   [#leann("Freyd.Alg.thinning_prefixed.lhs.f1")], [#leant("Freyd.Alg.thinning_prefixed.lhs.f1")],
@@ -256,7 +256,7 @@ row((
   [a path is either one vertex a, or a vertex a followed by a path xs],
   [#rowkey("Freyd.Alg.alphaR_pathF")], [#leant("Freyd.Alg.alphaR_pathF")],
   "Freyd.Alg.alphaR_pathF",
-  [build a path: wrap one vertex as [a], or put a in front of xs],
+  [build a path: τ one vertex as [a], or put a in front of xs],
   [#rowkey("Freyd.Alg.wrapz")], [#leant("Freyd.Alg.wrapz")],
   "Freyd.Alg.wrapz",
   [a path of one vertex, no edge, cost 0],
@@ -302,7 +302,7 @@ row((
 // lean:AOP.A8_2_Exec.pathF_obj@55c448b1
 // lean:AOP.A8_2.pathF@2dcf37fa
 // lean:AOP.A8_2_Exec.alphaR_pathF@6536d8fa
-// lean:AOP.A8_2.wrapz@e528d496
+// lean:AOP.A8_2.wrapz@940e3786
 // lean:AOP.A8_2.wrapz_apply@e7256951
 // lean:AOP.A8_2.consw@53d456cc
 // lean:AOP.A8_2.consw_apply@e512412c
@@ -370,8 +370,8 @@ row((
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
-  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @Freyd.Alg.pathStep]],
-    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
+  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[τ,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[τ,step]` — @Freyd.Alg.pathStep]],
+    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@1fd47700
     // lean:AOP.A8_2.pathStep@f546a21f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
@@ -445,7 +445,7 @@ row((
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
 // lean:AOP.A8_3.RelSet.ListRel.thinL@91e5cf00
 // lean:AOP.A8_3.RelSet.ListRel.le_thinL_iff@ee5ca858
-// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinL@7e66aade
+// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinL@65734f87
 // lean:AOP.A8_3.RelSet.CL.minL@7684e8d6
 )]<thinL-defn>
 
@@ -601,8 +601,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
 == The knapsack problem
 
-// B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `wrap` that
-// §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
+// B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `τ` that
+// §8.5 and §8.6 do print (`τ τ τ`, `start τ`).
 #disp[#deftab(
 
   [#rowkey("Freyd.Alg.RelSet.CL.F")], [#leant("Freyd.Alg.RelSet.CL.F")],
@@ -640,16 +640,16 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A5_6_ListCombinators.total@374f995b
 // lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
 // lean:AOP.A5_6_ListCombinators.subseq@9db1a985
-// lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+// lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
 // lean:AOP.A8_4_Knapsack.value@37f1f8ed
 // lean:AOP.A8_4_Knapsack.value_eq@f814ce68
 // lean:AOP.A8_4_Knapsack.weight@37f1f8ed
 // lean:AOP.A8_4_Knapsack.weight_eq@267afa15
-// lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6
+// lean:AOP.A8_4_Knapsack.con_eq_junc@f9b6dc6b
 // lean:AOP.A8_4_Knapsack.dropFn@08a216bd
 // lean:AOP.A8_4_Knapsack.within@945da576
 // lean:AOP.A8_4_Knapsack.Salg@7d39c25b
-// lean:AOP.A8_4_Knapsack.Salg_junc@56a14e5c
+// lean:AOP.A8_4_Knapsack.Salg_junc@1b79b8cb
 // lean:AOP.A8_4_Knapsack.R@9a274328
 // lean:AOP.A8_4_Knapsack.R_eq@d1b279af
 // lean:AOP.A8_4_Knapsack.Q@7cb37d7d
@@ -709,7 +709,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(EQ, [],
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ=[nil′,hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
+     #src[`cpL=τ+cpr`, `gᵢ=[nil′,hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
@@ -857,7 +857,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(EQ, [],
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ` along the coproduct — @Freyd.Alg.RelSet.Paragraph.start, @Freyd.Alg.RelSet.Paragraph.new, @Freyd.Alg.RelSet.Paragraph.glue]])],
+     #src[`cpL=τ+cpr`, `gᵢ` along the coproduct — @Freyd.Alg.RelSet.Paragraph.start, @Freyd.Alg.RelSet.Paragraph.new, @Freyd.Alg.RelSet.Paragraph.glue]])],
   [],
 )]<para-laws>
 
@@ -870,7 +870,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     // para-body-split row: B&dM pp. 210–211
     #src[the fold's body splits into a base case `start` for a single word and a step that extends
  each kept layout by `new` and by `glue`]],
-     // lean:AOP.A8_5_Paragraph.para_body_split@d59fee1b
+     // lean:AOP.A8_5_Paragraph.para_body_split@ba8838a1
   lean-calc(calc-pbs),
 )]<para-body-split>
 
@@ -1010,8 +1010,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 
   [#vstep(EQ, [],
-    [`⦇[start wrap,cpr ⟨dropl′,dropr′⟩ cat thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=wrap+cpr`, `gᵢ=[start′,dropᵢ′]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
+    [`⦇[start τ,cpr ⟨dropl′,dropr′⟩ cat thinL(Q)]⦈ minL(R)` \
+     #src[`cpL=τ+cpr`, `gᵢ=[start′,dropᵢ′]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
       added per step]])],
   [],
 )]<tour-laws>

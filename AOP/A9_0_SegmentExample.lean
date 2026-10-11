@@ -21,7 +21,7 @@ variable {A : Type}
 /-- **`T = [nil, cat] : FA⟶A`**, `A = [a]`: `inl(()) ↦ []`, `inr(xs,ys) ↦ xs⧺ys` with `xs`
     non-empty, so `T°` cuts off a non-empty prefix every way. -/
 @[expose] public def T : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A :=
-  junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catNE
+  junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ catNE
 
 /-- **`⦇T⦈ = concat`**: folding with `T` flattens a list of non-empty segments. -/
 public theorem fold_T :
@@ -38,7 +38,7 @@ public theorem fold_T_recip :
 
 /-- **`h = [nil, cons(sum×𝟙)] : FB⟶B`**, `B = [ℕ]`: `inl(()) ↦ []`, `inr(xs,ys) ↦ sum(xs):ys`. -/
 @[expose] public def h : (F Unit (ConsList Unit Nat)).obj (dList Nat) ⟶ dList Nat :=
-  junc (sumCop (dL Unit) ⟨ConsList Unit Nat × ConsList Unit Nat⟩) wrapR
+  junc (sumCop (dL Unit) ⟨ConsList Unit Nat × ConsList Unit Nat⟩) τ
     (rprodMap sumR (𝟙 (dList Nat)) ≫ consR)
 
 /-- **`⦇h⦈ = list(sum)`**: folding with `h` sends a list of segments to the list of their sums. -/

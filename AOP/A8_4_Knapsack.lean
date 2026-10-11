@@ -151,24 +151,24 @@ public theorem con_cons (a : Item) (xs : ConsList Unit Item) :
 /-- `[nil,cons] = con`, the initial algebra. -/
 public theorem con_eq_junc :
     (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
-      = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR consR := by
+      = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) τ consR := by
   apply hom_ext; intro u r
   cases u with
-  | inl D => exact (junc_sum_inl (wrapR : dL Unit ⟶ dList Item) consR D r).symm
-  | inr p => exact (junc_sum_inr (wrapR : dL Unit ⟶ dList Item) consR p r).symm
+  | inl D => exact (junc_sum_inl (τ : dL Unit ⟶ dList Item) consR D r).symm
+  | inr p => exact (junc_sum_inr (τ : dL Unit ⟶ dList Item) consR p r).symm
 
 /-- `[nil,π₂] = dropFn`. -/
 public theorem drop_eq_junc :
     (graph dropFn : (F Unit Item).obj (dList Item) ⟶ dList Item)
-      = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR
+      = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) τ
           (graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
   | inl D =>
-    exact (junc_sum_inl (wrapR : dL Unit ⟶ dList Item)
+    exact (junc_sum_inl (τ : dL Unit ⟶ dList Item)
       (graph fun p : Item × ConsList Unit Item => p.2) D r).symm
   | inr p =>
-    exact (junc_sum_inr (wrapR : dL Unit ⟶ dList Item)
+    exact (junc_sum_inr (τ : dL Unit ⟶ dList Item)
       (graph fun p : Item × ConsList Unit Item => p.2) p r).symm
 
 /-- **knap-defn**: the specification's algebra `S ≜ [nil,cons](within w) ∪ [nil,π₂]` — at each
@@ -193,7 +193,7 @@ public theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     the base branch of the union is plain `nil`, since `within w ⊑ 𝟙` makes the filtered copy
     redundant beside the unfiltered one. -/
 public theorem Salg_junc :
-    Salg wt w = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR
+    Salg wt w = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) τ
       ((consR ≫ corefl (within (wt := wt) w)) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
