@@ -4,7 +4,8 @@
   `FinRel` stores the pairs as two parallel arrays and is a finite relation algebra: every operation is
   an array program with one law against `rep`, the relation it denotes — `conv` (`°`), `comp` (`≫`),
   `inter` (`∩`), `union` (`∪`), `le` (`⊑`), `div` (`\` on `ran`), `filter` (`∩` a decidable relation),
-  `map` (`≫ graph f`).  A `SortedRel` has its keys sorted, so `lookup` is two binary searches; the ops
+  `map` (`≫ graph f`), `dom`, `ran`; `dedup` sorts the pairs and drops the repeats, and `div`, `dom`,
+  `ran` return through it.  A `SortedRel` has its keys sorted, so `lookup` is two binary searches; the ops
   that look up repeatedly sort the looked-up side once.  Programs use a structure only through `rep`
   and the `rep_*`/`lookup_rep` laws.
 -/
@@ -76,6 +77,63 @@ theorem head?_le_orNone : (graph List.head? : (⟨List V⟩ : RelSet.{0}) ⟶ �
     | nil => exact Or.inr ⟨[], ⟨rfl, fun _ h => absurd h List.not_mem_nil⟩, rfl⟩
     | cons x t => exact Or.inl ⟨x, List.mem_cons.2 (Or.inl rfl), rfl⟩
 
+/-! ## Sorted lists without repeats -/
+
+/-- `mergeSort` by `compare` on `f` sorts by it. -/
+theorem pairwise_mergeSort_on [Ord B] [Std.TransOrd B] (f : A → B) (l : List A) :
+    (l.mergeSort fun a b => (compare (f a) (f b)).isLE).Pairwise fun a b => (compare (f a) (f b)).isLE :=
+  List.pairwise_mergeSort (fun _ _ _ => Std.TransCmp.isLE_trans) (fun a b => by
+    rw [Std.OrientedCmp.eq_swap (cmp := compare) (a := f a) (b := f b), Ordering.isLE_swap]
+    cases compare (f b) (f a) <;> rfl) _
+
+/-- Cons `a`, unless it equals the head. -/
+def push [Ord A] (a : A) : List A → List A
+  | b :: u => if compare a b = .eq then b :: u else a :: b :: u
+  | [] => [a]
+
+/-- Drop each element equal to the next kept one: on a sorted list, every repeat. -/
+def uniq [Ord A] (l : List A) : List A := l.foldr push []
+
+theorem mem_push [Ord A] [Std.LawfulEqOrd A] (a x : A) : (u : List A) → (x ∈ push a u ↔ x ∈ a :: u)
+  | [] => Iff.rfl
+  | b :: u => by
+    by_cases h : compare a b = .eq
+    · rw [push, if_pos h, (Std.LawfulEqCmp.compare_eq_iff_eq (cmp := compare)).1 h]
+      exact ⟨List.mem_cons_of_mem _, fun h => (List.mem_cons.1 h).elim (fun e => List.mem_cons.2 (.inl e)) id⟩
+    · rw [push, if_neg h]
+
+theorem mem_uniq [Ord A] [Std.LawfulEqOrd A] (x : A) : (l : List A) → (x ∈ uniq l ↔ x ∈ l)
+  | [] => Iff.rfl
+  | a :: t => (mem_push a x _).trans
+      (List.mem_cons.trans ((or_congr_right (mem_uniq x t)).trans List.mem_cons.symm))
+
+theorem pairwise_push [Ord A] [Std.TransOrd A] {a : A} {u : List A}
+    (hu : u.Pairwise fun x y => compare x y = .lt) (ha : ∀ x ∈ u, (compare a x).isLE) :
+    (push a u).Pairwise fun x y => compare x y = .lt := by
+  cases u with
+  | nil => exact List.pairwise_singleton _ _
+  | cons b u =>
+    by_cases h : compare a b = .eq
+    · rw [push, if_pos h]; exact hu
+    · rw [push, if_neg h]
+      refine List.pairwise_cons.2 ⟨fun x hx => ?_, hu⟩
+      have hab := ha b (List.mem_cons.2 (.inl rfl))
+      rcases List.mem_cons.1 hx with rfl | hx
+      · revert hab h; cases compare a x <;> decide
+      · exact Std.TransCmp.lt_of_isLE_of_lt hab ((List.pairwise_cons.1 hu).1 x hx)
+
+/-- On a sorted list, `uniq` is strictly increasing. -/
+theorem pairwise_uniq [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] : {l : List A} →
+    l.Pairwise (fun x y => (compare x y).isLE) → (uniq l).Pairwise fun x y => compare x y = .lt
+  | [], _ => List.Pairwise.nil
+  | _ :: t, h =>
+    let ⟨ha, ht⟩ := List.pairwise_cons.1 h
+    pairwise_push (pairwise_uniq ht) fun x hx => ha x ((mem_uniq x t).1 hx)
+
+theorem nodup_uniq [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] {l : List A}
+    (h : l.Pairwise fun x y => (compare x y).isLE) : (uniq l).Nodup :=
+  (pairwise_uniq h).imp fun hl e => by subst e; rw [Std.ReflCmp.compare_self (cmp := compare)] at hl; cases hl
+
 /-! ## Two parallel arrays -/
 
 /-- A finite relation as two parallel arrays, `keys[i] ↦ vals[i]`. -/
@@ -93,8 +151,10 @@ def rep (r : FinRel K V) : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩ := rel r.toList
 
 def ofList (l : List (K × V)) : FinRel K V := ⟨l.unzip.1.toArray, l.unzip.2.toArray, by simp⟩
 
-theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := by
-  simp only [rep, toList, ofList, List.toList_toArray, List.zip_unzip]
+theorem toList_ofList (l : List (K × V)) : (ofList l).toList = l := by
+  simp only [toList, ofList, List.toList_toArray, List.zip_unzip]
+
+theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := congrArg rel (toList_ofList l)
 
 /-- The converse swaps the two arrays: no copy, no sort. -/
 def conv (r : FinRel K V) : FinRel V K := ⟨r.vals, r.keys, r.len.symm⟩
@@ -144,9 +204,7 @@ def sortByKey [Ord K] [Std.TransOrd K] (r : FinRel K V) : SortedRel K V :=
   { ofList m with
     sorted := by
       simp only [ofList, List.toList_toArray, List.unzip_fst, List.pairwise_map]
-      exact List.pairwise_mergeSort (fun _ _ _ => Std.TransCmp.isLE_trans) (fun a b => by
-        rw [Std.OrientedCmp.eq_swap (cmp := compare) (a := a.1) (b := b.1), Ordering.isLE_swap]
-        cases compare b.1 a.1 <;> rfl) _ }
+      exact pairwise_mergeSort_on Prod.fst _ }
 
 theorem rep_sortByKey [Ord K] [Std.TransOrd K] (r : FinRel K V) : (sortByKey r).rep = r.rep :=
   (rep_ofList _).trans (rel_perm (List.mergeSort_perm _ _))
@@ -234,6 +292,18 @@ theorem rep_filter (p : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) [∀ k v, Decidable 
 
 variable [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K]
 
+attribute [local instance] lexOrd
+
+/-- Sort the pairs by `(key, value)` and drop the repeats, which sorting puts side by side. -/
+def dedup [Ord V] (r : FinRel K V) : FinRel K V := ofList (uniq (r.toList.mergeSort fun a b => (compare a b).isLE))
+
+omit [Std.TransOrd K] in
+theorem rep_dedup [Ord V] [Std.TransOrd V] [Std.LawfulEqOrd V] (r : FinRel K V) : (dedup r).rep = r.rep :=
+  (rep_ofList _).trans <| hom_ext fun k v => (mem_uniq (k, v) _).trans (List.mergeSort_perm _ _).mem_iff
+
+theorem nodup_dedup [Ord V] [Std.TransOrd V] [Std.LawfulEqOrd V] (r : FinRel K V) : (dedup r).toList.Nodup := by
+  simp only [dedup, toList_ofList]; exact nodup_uniq (pairwise_mergeSort_on id _)
+
 /-- A lookup in the sorted copy denotes the relation itself. -/
 theorem lookup_sortByKey (s : FinRel K V) :
     (fun k v => v ∈ (sortByKey s).lookup k : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) = s.rep :=
@@ -277,20 +347,43 @@ theorem rep_comp (r : FinRel A K) (s : FinRel K V) : (comp r s).rep = r.rep ≫ 
 
 /-- `R \ S` on `ran R`: for `b` of `r` and `c` of `s`, keep `(b,c)` when every `a` of `b`'s run in the
     sorted `r°` has `a s c`.  Off `ran R` the quotient holds of every `c`, which no array holds. -/
-def div [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] [DecidableEq V] (r : FinRel A K) (s : FinRel A V) :
-    FinRel K V :=
+def div [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] [DecidableEq V] [Ord V] (r : FinRel A K)
+    (s : FinRel A V) : FinRel K V :=
   let rc := sortByKey r.conv
   let ss := sortByKey s
-  ofList (r.toList.flatMap fun p =>
-    (s.toList.filter fun q => (rc.lookup p.2).all fun a => decide (q.2 ∈ ss.lookup a)).map (p.2, ·.2))
+  dedup (ofList (r.toList.flatMap fun p =>
+    (s.toList.filter fun q => (rc.lookup p.2).all fun a => decide (q.2 ∈ ss.lookup a)).map (p.2, ·.2)))
 
-theorem rep_div [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] [DecidableEq V] (r : FinRel A K)
-    (s : FinRel A V) : (div r s).rep = ran r.rep ≫ (r.rep \ s.rep) :=
-  (rep_ofList _).trans <| hom_ext fun b c => by
+theorem rep_div [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] [DecidableEq V] [Ord V] [Std.TransOrd V]
+    [Std.LawfulEqOrd V] (r : FinRel A K) (s : FinRel A V) : (div r s).rep = ran r.rep ≫ (r.rep \ s.rep) :=
+  (rep_dedup _).trans <| (rep_ofList _).trans <| hom_ext fun b c => by
     simp only [rel, List.mem_flatMap, List.mem_map, List.mem_filter, List.all_eq_true, decide_eq_true_eq,
       mem_lookup_sortByKey, rep_conv, recip_apply, Prod.mk.injEq, comp_apply]
     exact ⟨fun ⟨⟨a, _⟩, hp, ⟨_, _⟩, ⟨_, hall⟩, e1, e2⟩ => e1 ▸ e2 ▸ ⟨_, ⟨rfl, a, hp, hp⟩, hall⟩,
       fun ⟨_, ⟨(e : b = _), a, ha, _⟩, hall⟩ => by subst e; exact ⟨(a, b), ha, (a, c), ⟨hall a ha, hall⟩, rfl, rfl⟩⟩
+
+theorem nodup_div [Ord A] [Std.TransOrd A] [Std.LawfulEqOrd A] [DecidableEq V] [Ord V] [Std.TransOrd V]
+    [Std.LawfulEqOrd V] (r : FinRel A K) (s : FinRel A V) : (div r s).toList.Nodup := nodup_dedup _
+
+/-- `dom R`: the pair `(k,k)` for each key `k` of `r`, once. -/
+def dom (r : FinRel K V) : FinRel K K := dedup (ofList (r.toList.map fun p => (p.1, p.1)))
+
+theorem rep_dom (r : FinRel K V) : (dom r).rep = Alg.dom r.rep :=
+  (rep_dedup _).trans <| (rep_ofList _).trans <| hom_ext fun k k' =>
+    ⟨fun h => by
+      obtain ⟨⟨a, b⟩, hm, he⟩ := List.mem_map.1 h
+      simp only [Prod.mk.injEq] at he; obtain ⟨rfl, rfl⟩ := he; exact ⟨rfl, b, hm, hm⟩,
+     fun ⟨(e : k = k'), v, hv, _⟩ => by subst e; exact List.mem_map.2 ⟨(k, v), hv, rfl⟩⟩
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+/-- `ran R = dom R°`. -/
+def ran [Ord V] [Std.TransOrd V] [Std.LawfulEqOrd V] (r : FinRel K V) : FinRel V V := dom r.conv
+
+omit [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K] in
+theorem rep_ran [Ord V] [Std.TransOrd V] [Std.LawfulEqOrd V] (r : FinRel K V) : (ran r).rep = Alg.ran r.rep :=
+  calc (ran r).rep
+      = Alg.dom r.conv.rep := rep_dom _
+    _ = Alg.dom r.rep° := by rw [rep_conv]
 
 end FinRel
 
