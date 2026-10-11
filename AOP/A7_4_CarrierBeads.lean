@@ -84,7 +84,7 @@ public theorem listAlg_not_lax_natural :
 public theorem sum_not_lax_natural : ¬ (list succI ≫ sumR ⊑ sumR ≫ succI) := by
   intro h
   obtain ⟨c, hc, hf⟩ :=
-    RelSet.le_iff.mp h (ConsList.wrap ()) 0 ⟨ConsList.wrap (), trivial, rfl⟩
+    RelSet.le_iff.mp h (ConsList.wrap ()) 0 ⟨ConsList.wrap (), rfl, rfl⟩
   have hc' : c = 0 := hc
   subst hc'
   exact absurd (show (0 : Int) = 1 from hf) (by decide)

@@ -376,7 +376,7 @@ theorem best_dominates :
       listP (Λ choose ≫ est((R rating)°)) l ys →
       listP choose l qs →
       listP ((R rating)°) ys qs
-  | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => trivial
+  | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => rfl
   | ConsList.wrap _, ConsList.wrap _, ConsList.cons _ _, _, g => g.elim
   | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
   | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
@@ -409,7 +409,7 @@ public theorem exclude_step :
   rintro ⟨m, hm, ys, hys, hy⟩
   obtain rfl : m = u.2 := hm
   have hmem : listP choose u.2 ys := by
-    refine listP_mono (fun p q hpq => ?_) u.2 ys hys
+    refine clP_mono (fun _ _ h => h) (fun p q hpq => ?_) u.2 ys hys
     obtain ⟨P0, hP0, hest⟩ := hpq
     have hP0' : P0 = fun z => choose p z := by
       rw [Λ_eq_classifier] at hP0; exact hP0
@@ -520,7 +520,7 @@ public theorem party_listrr_example :
     listP ((rprodMap (R (id : Int → Int)) (R (id : Int → Int)))°)
       (ofList [(ofList [7], ofList [5, 1]), (ofList [2], ofList [8])])
       (ofList [(ofList [7], ofList [5]), (ofList [2], ofList [])]) := by
-  refine ⟨⟨?_, ?_⟩, ⟨?_, ?_⟩, trivial⟩
+  refine ⟨⟨?_, ?_⟩, ⟨?_, ?_⟩, rfl⟩
   all_goals (show _ ≤ _; decide)
 
 /-- **party-list-choose**: `choose` is a choice PER ELEMENT, so `list(choose)` then `concat`
@@ -532,38 +532,38 @@ public theorem party_list_choose_example :
         (ofList [(ofList [5], ofList []), (ofList [1], ofList [])]) y := by
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   rintro y (rfl | rfl | rfl | rfl)
-  · exact ⟨ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, trivial⟩, rfl⟩
-  · exact ⟨ofList [ofList [5], ofList []], ⟨Or.inl rfl, Or.inr rfl, trivial⟩, rfl⟩
-  · exact ⟨ofList [ofList [], ofList [1]], ⟨Or.inr rfl, Or.inl rfl, trivial⟩, rfl⟩
-  · exact ⟨ofList [ofList [], ofList []], ⟨Or.inr rfl, Or.inr rfl, trivial⟩, rfl⟩
+  · exact ⟨ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, rfl⟩, rfl⟩
+  · exact ⟨ofList [ofList [5], ofList []], ⟨Or.inl rfl, Or.inr rfl, rfl⟩, rfl⟩
+  · exact ⟨ofList [ofList [], ofList [1]], ⟨Or.inr rfl, Or.inl rfl, rfl⟩, rfl⟩
+  · exact ⟨ofList [ofList [], ofList []], ⟨Or.inr rfl, Or.inr rfl, rfl⟩, rfl⟩
 
 /-- **party-example**: the fold's run on the example tree — `b` hands up `([7],[5,1])`, `c`
     hands up `([2],[8])`, and the root's `include = [a,d,e,f]` (cost 17) is a legal `party`
     answer. -/
 public theorem party_example_run : party exTree (ofList [3, 5, 1, 8]) := by
   have hd : RT.cataFold S (Rose.node (5 : Int) (ofList [])) (ofList [5], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
   have he : RT.cataFold S (Rose.node (1 : Int) (ofList [])) (ofList [1], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
   have hf : RT.cataFold S (Rose.node (8 : Int) (ofList [])) (ofList [8], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
   have hb : RT.cataFold S
       (Rose.node (7 : Int) (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]))
       (ofList [7], ofList [5, 1]) :=
     ⟨ofList [(ofList [5], ofList []), (ofList [1], ofList [])],
      ⟨(ofList [5], ofList []), ofList [(ofList [1], ofList [])], hd,
        ⟨(ofList [1], ofList []), ofList [], he, rfl, rfl⟩, rfl⟩,
-     rfl, ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, trivial⟩, rfl⟩
+     rfl, ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, rfl⟩, rfl⟩
   have hc : RT.cataFold S (Rose.node (2 : Int) (ofList [Rose.node 8 (ofList [])]))
       (ofList [2], ofList [8]) :=
     ⟨ofList [(ofList [8], ofList [])],
      ⟨(ofList [8], ofList []), ofList [], hf, rfl, rfl⟩,
-     rfl, ofList [ofList [8]], ⟨Or.inl rfl, trivial⟩, rfl⟩
+     rfl, ofList [ofList [8]], ⟨Or.inl rfl, rfl⟩, rfl⟩
   refine ⟨(ofList [3, 5, 1, 8], ofList [7, 8]), ?_, Or.inl rfl⟩
   refine ⟨ofList [(ofList [7], ofList [5, 1]), (ofList [2], ofList [8])],
     ⟨(ofList [7], ofList [5, 1]), ofList [(ofList [2], ofList [8])], hb,
       ⟨(ofList [2], ofList [8]), ofList [], hc, rfl, rfl⟩, rfl⟩,
-    rfl, ofList [ofList [7], ofList [8]], ⟨Or.inl rfl, Or.inr rfl, trivial⟩, rfl⟩
+    rfl, ofList [ofList [7], ofList [8]], ⟨Or.inl rfl, Or.inr rfl, rfl⟩, rfl⟩
 
 end Party
 

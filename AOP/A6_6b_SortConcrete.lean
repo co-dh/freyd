@@ -112,7 +112,7 @@ public theorem nil_strictNatural :
   constructor
   · rintro ⟨u, hu, h⟩
     cases u; subst h
-    exact ⟨ConsList.wrap (), rfl, trivial⟩
+    exact ⟨ConsList.wrap (), rfl, rfl⟩
   · rintro ⟨y, hy, hl⟩
     subst hy
     cases z with

@@ -56,13 +56,13 @@ public theorem nil_list {X : RelSet.{0}} (R : dE A ⟶ dE B) :
     cases z with
     | wrap _ => rfl
     | cons _ _ => exact hz.elim
-  · rintro rfl; exact ⟨ConsList.wrap (), rfl, trivial⟩
+  · rintro rfl; exact ⟨ConsList.wrap (), rfl, rfl⟩
 
 theorem listP_rpair (R : dE A ⟶ dE B) (S : dE A ⟶ dE C) :
     ∀ (x : ConsList Unit A) (z : ConsList Unit (B × C)),
       listP (rpair R S) x z ↔ ∃ y w, listP R x y ∧ listP S x w ∧ z = czip y w
   | ConsList.wrap _, ConsList.wrap _ =>
-      ⟨fun _ => ⟨ConsList.wrap (), ConsList.wrap (), trivial, trivial, rfl⟩, fun _ => trivial⟩
+      ⟨fun _ => ⟨ConsList.wrap (), ConsList.wrap (), rfl, rfl, rfl⟩, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ =>
       ⟨False.elim, fun ⟨y, w, hy, hw, hz⟩ => by
         cases y with
@@ -154,10 +154,10 @@ theorem listP_rprodMap_czip {D : Type} (R : dE A ⟶ dE C) (S : dE B ⟶ dE D) :
       ⟨⟨h1.1, h2.1⟩, listP_rprodMap_czip R S x y (u, v) h1.2 h2.2⟩
   | ConsList.cons _ _, ConsList.cons _ _, (ConsList.wrap _, _), h1, _ => h1.elim
   | ConsList.cons _ _, ConsList.cons _ _, (ConsList.cons _ _, ConsList.wrap _), _, h2 => h2.elim
-  | ConsList.wrap _, _, (ConsList.wrap _, _), _, _ => trivial
+  | ConsList.wrap _, _, (ConsList.wrap _, _), _, _ => rfl
   | ConsList.wrap _, _, (ConsList.cons _ _, _), h1, _ => h1.elim
-  | ConsList.cons _ _, ConsList.wrap _, (ConsList.wrap _, _), _, _ => trivial
-  | ConsList.cons _ _, ConsList.wrap _, (ConsList.cons _ _, ConsList.wrap _), _, _ => trivial
+  | ConsList.cons _ _, ConsList.wrap _, (ConsList.wrap _, _), _, _ => rfl
+  | ConsList.cons _ _, ConsList.wrap _, (ConsList.cons _ _, ConsList.wrap _), _, _ => rfl
   | ConsList.cons _ _, ConsList.wrap _, (ConsList.cons _ _, ConsList.cons _ _), _, h2 => h2.elim
 
 /-- `zip` is lax natural in its left element type: `(list(R)×𝟙) zip ⊑ zip list(R×𝟙)`. -/
@@ -206,8 +206,8 @@ public theorem conditional_wrap_laxNatural :
   subst ht
   rcases hc with ⟨hb, hy⟩ | ⟨hb, hy⟩
   · exact ⟨ConsList.cons (x, t) (ConsList.wrap ()), Or.inl ⟨hb, rfl⟩,
-      (show y = _ from hy) ▸ ⟨⟨hR, (id_apply t t).mpr rfl⟩, trivial⟩⟩
-  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ trivial⟩
+      (show y = _ from hy) ▸ ⟨⟨hR, (id_apply t t).mpr rfl⟩, rfl⟩⟩
+  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ rfl⟩
 
 /-- `(π₂ → π₁ wrap, nil)` is lax natural: `(R×𝟙)(π₂ → π₁ wrap, nil) ⊑ (π₂ → π₁ wrap, nil) list(R)`. -/
 public theorem conditional_outl_wrap_laxNatural :
@@ -225,8 +225,8 @@ public theorem conditional_outl_wrap_laxNatural :
   · have hx : x'' = x' := hx
     subst hx
     exact ⟨ConsList.cons x (ConsList.wrap ()), Or.inl ⟨hb, x, rfl, rfl⟩,
-      (show y = _ from hy) ▸ ⟨hR, trivial⟩⟩
-  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ trivial⟩
+      (show y = _ from hy) ▸ ⟨hR, rfl⟩⟩
+  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ rfl⟩
 
 /-- `filter(π₂)` is lax natural: `list(R×𝟙) filter(π₂) ⊑ filter(π₂) list(R×𝟙)` — the conditional's
     square under `list`, then (1.6). -/

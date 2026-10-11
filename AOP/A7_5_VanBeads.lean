@@ -103,7 +103,7 @@ public theorem trueOnly_no_preimage : ∀ r : Sched Bool, ¬ listP (list trueOnl
   | ConsList.cons (ConsList.cons _ _) _, h => Bool.noConfusion h.1.1.2
 
 /-- `[[]]` is `list(list(trueOnly))`-related to itself: no element is looked at. -/
-public theorem schedNil_related : listP (list trueOnly) schedNil schedNil := ⟨trivial, trivial⟩
+public theorem schedNil_related : listP (list trueOnly) schedNil schedNil := ⟨rfl, rfl⟩
 
 /-- **`head` is not strictly natural**: `head list(S) ⋢ list(list S) head`.  Out of `[[],[false]]`
     the right side reaches `[]` — the first segment is empty and `list(trueOnly)` relates `[]` to
@@ -113,7 +113,7 @@ public theorem head_not_strict :
     ∃ S : dE Bool ⟶ dE Bool, ¬ (headR Bool ≫ list S ⊑ list (list S) ≫ headR Bool) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨q, hq, -⟩ :=
-    le_iff.mp h schedNilFalse (ConsList.wrap ()) ⟨ConsList.wrap (), ⟨schedFalse, rfl⟩, trivial⟩
+    le_iff.mp h schedNilFalse (ConsList.wrap ()) ⟨ConsList.wrap (), ⟨schedFalse, rfl⟩, rfl⟩
   cases q with
   | wrap _ => exact hq.elim
   | cons _ v => exact trueOnly_no_image_sched v hq.2
@@ -132,7 +132,7 @@ public theorem R_not_lax_natural : ¬ LaxNatural schedRelator schedRelator (fun 
   intro hlax
   have h : list (list trueOnly) ≫ R Bool ⊑ R Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
-    le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), trivial, Nat.zero_le _⟩
+    le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), rfl, Nat.zero_le _⟩
   exact trueOnly_no_preimage r hr
 
 /-- **`|R|` is not even lax natural**: `list(list S) |R| ⊑ |R| list(list S)` fails on the same
@@ -142,7 +142,7 @@ public theorem strict_not_lax_natural :
   intro hlax
   have h : list (list trueOnly) ≫ strictR Bool ⊑ strictR Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
-    le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), trivial, Nat.zero_lt_succ _⟩
+    le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), rfl, Nat.zero_lt_succ _⟩
   exact trueOnly_no_preimage r hr
 
 /-- **`R;H` is not even lax natural**: same witness again — `[]` is strictly shorter than
@@ -153,7 +153,7 @@ public theorem RH_not_lax_natural :
   have h : list (list trueOnly) ≫ RH Bool ⊑ RH Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h (ConsList.wrap ()) schedFalse
-      ⟨ConsList.wrap (), trivial, Nat.zero_le _, fun hle => absurd hle (by decide)⟩
+      ⟨ConsList.wrap (), rfl, Nat.zero_le _, fun hle => absurd hle (by decide)⟩
   exact trueOnly_no_preimage r hr
 
 /-- **`H` is not even lax natural**: `list(list S) H ⊑ H list(list S)` fails out of `[[]]`, whose
@@ -320,7 +320,7 @@ public theorem est_RH_not_lax_natural :
       ⊑ est (RH Bool) ≫ list (list (relTop (dE Bool) (dE Bool))) :=
     hlax (relTop (dE Bool) (dE Bool))
   have himg : ∀ a b : Bool, list (list (relTop (dE Bool) (dE Bool))) (schedOne a) (schedOne b) :=
-    fun _ _ => ⟨⟨trivial, trivial⟩, trivial⟩
+    fun _ _ => ⟨⟨trivial, rfl⟩, rfl⟩
   obtain ⟨w, hw, -⟩ :=
     le_iff.mp h (fun p => p = schedOne false ∨ p = schedOne true) (schedOne true)
       ⟨fun q => q = schedOne true,
@@ -350,7 +350,7 @@ public theorem nil_natural (S : dE A ⟶ dE B) :
   apply hom_ext; rintro ⟨⟩ w
   constructor
   · rintro rfl
-    exact ⟨ConsList.wrap (), rfl, trivial⟩
+    exact ⟨ConsList.wrap (), rfl, rfl⟩
   · rintro ⟨r, rfl, hrw⟩
     cases w with
     | wrap u => cases u; rfl

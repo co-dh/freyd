@@ -270,7 +270,7 @@ theorem combine_listP {B : Type} (Q : dE A ⟶ dE B) (a : A) :
   | ConsList.wrap _, w, z, hw, hz => by
     have e : w = _ := hw; subst e
     match z, hz with
-    | ConsList.cons b (ConsList.wrap u), hz => exact ⟨b, ConsList.wrap (), hz.1, trivial, by cases u; rfl⟩
+    | ConsList.cons b (ConsList.wrap u), hz => exact ⟨b, ConsList.wrap (), hz.1, rfl, by cases u; rfl⟩
     | ConsList.cons _ (ConsList.cons _ _), hz => exact hz.2.elim
     | ConsList.wrap _, hz => exact hz.elim
   | ConsList.cons c x, w, z, hw, hz => by
@@ -290,7 +290,7 @@ theorem listP_combine {B : Type} (Q : dE A ⟶ dE B) (a : A) (b : B) (hab : Q a 
       ∃ w, combineP a x w ∧ listP Q w z
   | ConsList.wrap u, ConsList.wrap _, z, _, hz => by
     have e : z = _ := hz; subst e
-    exact ⟨_, combine_head a (ConsList.wrap u), hab, trivial⟩
+    exact ⟨_, combine_head a (ConsList.wrap u), hab, rfl⟩
   | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
   | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
   | ConsList.cons c x, ConsList.cons d y, z, hxy, hz => by

@@ -1015,7 +1015,7 @@ public theorem opF_map {x y : RelSet.{0}} (S : x ⟶ y) :
   cases u <;> cases v <;>
     simp [opF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap,
       junc, RelProd.pair, prodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
-      op, listRelator] <;> first | grind | exact Subsingleton.elim _ _
+      op, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[nil,cons]` is STRICTLY natural** in the alphabet: `F(Op(S),list(Op(S)))[nil,cons] =
     [nil,cons]list(Op(S))`.  `ListRel.alphaR_natural` at the alphabet `Op(Char)`, with the lane
@@ -1039,7 +1039,7 @@ public theorem Pair.F_map {x y : RelSet.{0}} (S : x ⟶ y) :
   cases u <;> cases v <;>
     simp [Pair.F, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap, junc,
       RelProd.pair, prodMap, rprodMap, graph, Fbimap, clF, Poly.bimapR, instPositiveAllegory, instHasRelProd, sumCop,
-      op, listRelator] <;> first | grind | exact Subsingleton.elim _ _
+      op, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[base,step]` is LAX natural** in the alphabet: `F(Op(S),S×S)[base,step] ⊑
     [base,step](list(S)×list(S))`.  Not STRICT — `cpy a` writes ONE character into BOTH outputs, so
@@ -1054,12 +1054,12 @@ public theorem Pair.editAlg_laxNatural :
   rintro ⟨v, hv, rfl⟩
   rcases u with d | ⟨op, xs, ys⟩ <;> rcases v with d' | ⟨op', xs', ys'⟩
   · simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, baseFn, stepFn, Relator.prod, prodMap, RelProd.pair,
-      instHasRelProd, rprodMap, listRelator, list, listP]
+      instHasRelProd, rprodMap, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP]
   · exact (hv : False).elim
   · exact (hv : False).elim
   · rcases op with a | a | a <;> rcases op' with b | b | b <;>
       simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, baseFn, stepFn, Relator.prod, prodMap, RelProd.pair,
-        instHasRelProd, rprodMap, opRel, opP, listRelator, list, listP]
+        instHasRelProd, rprodMap, opRel, opP, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP]
 
 /-- **`step` is LAX natural** — the `inr` arm of `editAlg_laxNatural`, at the arm's own lane
     `Op×([Char]×[Char])`, which is the relator `edit-laws`' third row draws. -/
@@ -1074,7 +1074,7 @@ public theorem step_laxNatural :
   obtain ⟨op', xs', ys'⟩ := v
   rcases op with a | a | a <;> rcases op' with b | b | b <;>
     simp_all [step, graph, baseStepFn, stepFn, Relator.prod, prodMap, RelProd.pair, instHasRelProd,
-      rprodMap, op, opRel, opP, listRelator, list, listP]
+      rprodMap, op, opRel, opP, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP]
 
 /-- An edit sequence and one it is `Op(S)`-related to reconstitute `S`-related strings: every
     operation puts its own character where the related operation puts the related one. -/
@@ -1084,13 +1084,13 @@ public theorem editFn_rel {x y : RelSet.{0}} (S : x ⟶ y) :
       listP S (editFn es).1 (editFn fs).1 ∧ listP S (editFn es).2 (editFn fs).2 := by
   intro es
   induction es with
-  | wrap u => rintro (fs | ⟨op', fs⟩) h <;> simp_all [opRel, opP, listP]
+  | wrap u => rintro (fs | ⟨op', fs⟩) h <;> simp_all [opRel, opP, listP, clP]
   | cons op es ih =>
     rintro (fs | ⟨op', fs⟩) h
-    · simp_all [opRel, opP, listP]
+    · simp_all [opRel, opP, listP, clP]
     · obtain ⟨h1, h2⟩ := ih fs h.2
       rcases op with a | a | a <;> rcases op' with b | b | b <;>
-        simp_all [opRel, opP, listP]
+        simp_all [opRel, opP, listP, clP]
 
 /-- **`edit` is LAX natural**: `list(Op(S))edit ⊑ edit(list(S)×list(S))`.  Not STRICT — a `cpy`
     writes ONE character into BOTH strings, so a pair whose two copies of it are sent to different
@@ -1163,7 +1163,7 @@ public theorem stepF_apply {x y : RelSet.{0}} (S : x ⟶ y)
     (q : Op y.carrier × (dPair y.carrier).carrier) :
     (Relator.prod op (Relator.prod listRelator listRelator)).map S p q
       ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
-  simp [Relator.prod, prodMap, RelProd.pair, instHasRelProd, op, listRelator,
+  simp [Relator.prod, prodMap, RelProd.pair, instHasRelProd, op, listRelator, clRelator, Relator.const, cl, clP, listP,
     opRel, list, graph]
 
 /-- `F(Op(S),S×S)`'s action on the `step` summand, the lane `edit-laws`' thinning bead runs on. -/
@@ -1173,11 +1173,11 @@ public theorem Pair.F_apply_inr {x y : RelSet.{0}} (S : x ⟶ y)
     Pair.F.map S (Sum.inr p) (Sum.inr q)
       ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
   rw [Pair.F_map]
-  simp [Fbimap, clF, Poly.bimapR, rprodMap, opRel, list]
+  simp [Fbimap, clF, Poly.bimapR, rprodMap, opRel, list, cl, listP]
 
-public theorem toU_short : listP toU shortB shortU := ⟨rfl, trivial⟩
+public theorem toU_short : listP toU shortB shortU := ⟨rfl, rfl⟩
 
-public theorem toU_long : listP toU longB longU := ⟨rfl, rfl, trivial⟩
+public theorem toU_long : listP toU longB longU := ⟨rfl, rfl, rfl⟩
 
 /-- `[true,true]` has no `list(toU)`-image of length one. -/
 public theorem toU_long_not_short : ¬ listP toU longB shortU := fun h => h.2.elim
@@ -1205,12 +1205,12 @@ public theorem Pair.thin_Q_not_lax_natural :
         (powerRel_apply _ _ _).mpr
           ⟨fun p hp => by
               rcases hp with rfl | rfl
-              · exact ⟨Sum.inr (cand () shortU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
-              · exact ⟨Sum.inr (cand () longU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
+              · exact ⟨Sum.inr (cand () shortU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, rfl⟩, Or.inl rfl⟩
+              · exact ⟨Sum.inr (cand () longU), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, rfl⟩, Or.inr rfl⟩,
            fun q hq => by
               rcases hq with rfl | rfl
-              · exact ⟨Sum.inr (cand true shortB), Or.inl rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
-              · exact ⟨Sum.inr (cand true longB), Or.inr rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
+              · exact ⟨Sum.inr (cand true shortB), Or.inl rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_short, rfl⟩⟩
+              · exact ⟨Sum.inr (cand true longB), Or.inr rfl, (Pair.F_apply_inr _ _ _).mpr ⟨rfl, toU_long, rfl⟩⟩⟩,
         (thinRel_pt _ _ _).mpr
           ⟨fun y hy => Or.inl hy,
            fun z hz => by
@@ -1242,12 +1242,12 @@ public theorem thin_UV_not_lax_natural :
         (powerRel_apply _ _ _).mpr
           ⟨fun p hp => by
               rcases hp with rfl | rfl
-              · exact ⟨cand () shortU, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
-              · exact ⟨cand () longU, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
+              · exact ⟨cand () shortU, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, rfl⟩, Or.inl rfl⟩
+              · exact ⟨cand () longU, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, rfl⟩, Or.inr rfl⟩,
            fun q hq => by
               rcases hq with rfl | rfl
-              · exact ⟨cand true shortB, Or.inl rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
-              · exact ⟨cand true longB, Or.inr rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
+              · exact ⟨cand true shortB, Or.inl rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, rfl⟩⟩
+              · exact ⟨cand true longB, Or.inr rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, rfl⟩⟩⟩,
         (thinRel_pt _ _ _).mpr
           ⟨fun y hy => Or.inl hy,
            fun z hz => by
@@ -1271,11 +1271,11 @@ public theorem R_not_lax_natural :
   intro hlax
   obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (fun _ _ => False : dE Bool ⟶ dE Bool))
     (ConsList.wrap () : ConsList Unit (Op Bool)) (ConsList.cons (Op.cpy true) (ConsList.wrap ()))
-    ⟨ConsList.wrap (), by simp [Relator.comp, listRelator, op, list, listP], Nat.zero_le _⟩
+    ⟨ConsList.wrap (), by simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP], Nat.zero_le _⟩
   rcases fs₀ with _ | ⟨op, t⟩
-  · simp [Relator.comp, listRelator, op, list, listP] at hfs₀
+  · simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP] at hfs₀
   · rcases op with a | a | a <;>
-      simp [Relator.comp, listRelator, op, list, listP, opRel, opP] at hfs₀
+      simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP, opRel, opP] at hfs₀
 
 /-- **`Q` is not even lax natural** in the alphabet: `Q` puts above a decomposition one whose
     operation carries any character, and an alphabet map that misses `false` has no preimage of
@@ -1286,7 +1286,7 @@ public theorem Pair.Q_not_lax_natural :
   obtain ⟨v₀, -, hv₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
     (Sum.inr (cand () (ConsList.wrap ())))
     (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ()))))
-    ⟨Sum.inr (cand true (ConsList.wrap ())), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, trivial, trivial⟩,
+    ⟨Sum.inr (cand true (ConsList.wrap ())), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, rfl, rfl⟩,
       (show Q Bool (Sum.inr (cand true (ConsList.wrap ())))
           (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ())))) from
         (V_apply _ _).mpr ⟨Or.inr rfl, rfl⟩)⟩
@@ -1367,7 +1367,7 @@ public theorem listLanes_nil {x y : RelSet.{0}} (S : x ⟶ y) :
   rw [show (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
       (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)).map S = rprodMap (list S) (list S)
     from prodMap_eq_rprodMap _ _]
-  exact ⟨trivial, trivial⟩
+  exact ⟨rfl, rfl⟩
 
 /-- `F(⊤,V)`, at the lanes the step pictures read. -/
 public theorem Fbimap_top_V_not_laxNatural :
@@ -1439,7 +1439,7 @@ public theorem Fbimap_top_R_not_laxNatural :
   by
   refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (fun a => R a.carrier)
     (ConsList.wrap ()) (ConsList.wrap ())
-    (ConsList.wrap ()) trivial ?_
+    (ConsList.wrap ()) rfl ?_
   exact Nat.le_refl _
 
 /-- **`R°` is not even lax natural**, at the alphabet map `() ↦ true`: `[cpy false]` is no longer
@@ -1451,11 +1451,11 @@ public theorem R_recip_not_lax_natural :
   obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
     (ConsList.cons (Op.cpy ()) (ConsList.wrap ())) (ConsList.cons (Op.cpy false) (ConsList.wrap ()))
     ⟨ConsList.cons (Op.cpy true) (ConsList.wrap ()),
-      by simp [Relator.comp, listRelator, op, list, listP, opRel, opP, graph], Nat.le_refl _⟩
+      by simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP, opRel, opP, graph], Nat.le_refl _⟩
   rcases fs₀ with _ | ⟨op, t⟩
-  · simp [Relator.comp, listRelator, op, list, listP] at hfs₀
+  · simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP] at hfs₀
   · rcases op with a | a | a <;>
-      simp [Relator.comp, listRelator, op, list, listP, opRel, opP, graph] at hfs₀
+      simp [Relator.comp, listRelator, clRelator, Relator.const, cl, clP, list, listP, op, list, listP, opRel, opP, graph] at hfs₀
 
 /-- A suffix of the image of a list is the image of a suffix of the list. -/
 public theorem suffixP_listP {x y : RelSet.{0}} (S : x ⟶ y) :
@@ -1463,7 +1463,7 @@ public theorem suffixP_listP {x y : RelSet.{0}} (S : x ⟶ y) :
       listP S xs xs' → suffixP zs' xs' → ∃ zs, suffixP zs xs ∧ listP S zs zs'
   | ConsList.wrap _, ConsList.wrap _, zs', _, hs => by
       obtain rfl : zs' = ConsList.wrap () := hs
-      exact ⟨ConsList.wrap (), rfl, trivial⟩
+      exact ⟨ConsList.wrap (), rfl, rfl⟩
   | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
   | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
   | ConsList.cons a xs, ConsList.cons b xs', zs', h, hs => by
