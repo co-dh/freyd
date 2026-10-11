@@ -926,10 +926,15 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
+  -- A COPAIRING'S ARMS ARE FRAMED: the panels a `+` joins are the parts of ONE arrow `[f,g]`, where
+  -- `=`/`⊑` join two arrows; the frame is on the panel itself, so every caller — a chain's lanes
+  -- (`lean-chain`) as much as `pic` — draws it.
+  let arm := parts.any (·.1 == "+")
   for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
     cells := cells.push ("panels.at(" ++ toString panels.size ++ ")")
-    panels := panels.push (← panelCode p (some pl.frame) (some (pl.rows p)))
+    let code ← panelCode p (some pl.frame) (some (pl.rows p))
+    panels := panels.push (if arm then "box(stroke: 0.6pt + luma(140), radius: 3pt, inset: 3pt, " ++ code ++ ")" else code)
     hs := hs.push (frameHeight p (some pl.frame))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
   -- different heights, which reads as two displays rather than one statement.

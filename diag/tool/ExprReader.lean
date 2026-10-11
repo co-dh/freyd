@@ -1186,6 +1186,18 @@ partial def peelCutsCore (objVars : Array Expr) (cat : Array Name) (regionTy X :
       return some acc
     let some fa ← lane ca | return none
     let some fb ← lane cb | return none
+    -- TWO EQUAL FACTORS ARE `Δ` OVER ONE OF THEM: `F(A)×F(A)` is `Δ` over the lanes of `F(A)`
+    -- (`comp F Δ = prod F F`, `Relator.comp_prod`), so `F`'s own wires run on under it, where the
+    -- one lane `F×F` hid them and two cuts of one type read as two types (8.5.2a's `+` arms).
+    if op == ``Freyd.Alg.Relator.prod && (← Meta.isDefEq fa fb) then
+      let c ← Meta.mkConstWithFreshMVarLevels ``Freyd.Alg.Δ
+      let (ms, bis, _) ← Meta.forallMetaTelescope (← Meta.inferType c)
+      if ms.size ≥ 1 && (← Meta.isDefEq ms[0]! regionTy) then
+        let ok ← (ms.zip bis).allM fun (m, bi) => do
+          if !bi.isInstImplicit then return true
+          let some inst ← Meta.synthInstance? (← instantiateMVars (← Meta.inferType m)) | return false
+          Meta.isDefEq m inst
+        if ok then return some (#[(Wire.rel (← instantiateMVars (mkAppN c ms)), a)] ++ ca, oa)
     -- THE PAIR LANE IS `op F G`, so it exists only where the region carries the instances `op`
     -- asks for: a statement over a local `Pr : RelProd` (`sortedAlg_fusion`) has no chosen product.
     let c ← Meta.mkConstWithFreshMVarLevels op
