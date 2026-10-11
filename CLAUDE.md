@@ -259,5 +259,13 @@ split or import change. A public edit rebuilds the module, its direct importers,
 it through `public import`, and every legacy (non-`module`) file downstream; it does not rebuild the
 transitive closure. A cost model built on the closure sent several rounds of module splitting and
 import narrowing after modules that were never the cost, while the `Built` list of the first probe
-already showed the rebuild was the legacy `diag/` files. Give each probe a fresh name, because lake's
+already showed the rebuild was the legacy `diag/` files.
+
+## An exporter change is gated on the whole note before it is merged
+A dispatch that touches `diag/tool/*`, `diag/StrDiagNames.lean` or `diag/*.typ` drawing code writes
+`regen: approved` and requires, in the worktree and before the hand-back: `cp -a <main>/diag/generated
+<worktree>/diag/` (seed), a full `./scripts/diag-regen` with zero `red stub`, and `make c NOTE=aop CH=<n>` for
+every chapter, each exit 0 — because the drawing rules are shared by every panel, a check of only the panels
+the change was for passes in the worktree and leaves the red stubs to be found in `master` after the merge,
+which cost two rounds of merge, stub, re-dispatch. Give each probe a fresh name, because lake's
 artifact cache replays a build it has seen.
