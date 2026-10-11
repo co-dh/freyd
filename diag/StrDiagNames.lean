@@ -426,6 +426,23 @@ open Lean PrettyPrinter Delaborator SubExpr in
       | _, _ => failure
   `($(mkIdent (if i == 0 then `π₁ else `π₂)))
 
+-- A GRAPH OF A CURRIED FUNCTION FED A PAIR'S TWO HALVES IS THAT FUNCTION: `graph fun q => g q.1 q.2`
+-- prints `g`, as `uncurried?` writes it at a box — here for a bead a `×` holds, whose label is printed
+-- whole and would otherwise write Lean's lambda.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.graph] meta def delabGraphUncurried : Delab := do
+  let e ← getExpr
+  unless e.getAppNumArgs == 3 do failure
+  let .lam _ _ (.app (.app g x) y) _ := e.appArg! | failure
+  if g.hasLooseBVars then failure
+  let part (t : Expr) : Option Nat := match t with
+    | .proj ``Prod i (.bvar 0) => some i
+    | .app (.app (.app (.const ``Prod.fst _) _) _) (.bvar 0) => some 0
+    | .app (.app (.app (.const ``Prod.snd _) _) _) (.bvar 0) => some 1
+    | _ => none
+  unless part x == some 0 && part y == some 1 do failure
+  withAppArg <| withBindingBody `q <| withAppFn <| withAppFn delab
+
 
 -- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
 -- two apart: the note's region has only the arrow, and `consR`/`concatR` already print that way.
