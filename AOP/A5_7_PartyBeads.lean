@@ -29,7 +29,7 @@ variable {A B : Type}
 public theorem listP_cmap_snd {A₁ A₂ B₁ B₂ : Type} (R : dE A₁ ⟶ dE B₁) (S : dE A₂ ⟶ dE B₂) :
     ∀ (us : ConsList Unit (A₁ × A₂)) (vs : ConsList Unit (B₁ × B₂)),
       listP (rprodMap R S) us vs → listP S (cmap Prod.snd us) (cmap Prod.snd vs)
-  | ConsList.wrap _, ConsList.wrap _, _ => trivial
+  | ConsList.wrap _, ConsList.wrap _, _ => rfl
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
   | ConsList.cons _ us, ConsList.cons _ vs, h => ⟨h.1.2, listP_cmap_snd R S us vs h.2⟩
@@ -67,7 +67,7 @@ public theorem listP_choose_transfer (R : dE A ⟶ dE B) :
       (qs : ConsList Unit (ConsList Unit B)),
       listP (rprodMap (list R) (list R)) us vs → listP choose vs qs →
       ∃ ps, listP choose us ps ∧ listP (list R) ps qs
-  | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => ⟨ConsList.wrap (), trivial, trivial⟩
+  | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => ⟨ConsList.wrap (), rfl, rfl⟩
   | ConsList.wrap _, ConsList.wrap _, ConsList.cons _ _, _, hq => hq.elim
   | ConsList.wrap _, ConsList.cons _ _, _, hp, _ => hp.elim
   | ConsList.cons _ _, ConsList.wrap _, _, hp, _ => hp.elim
@@ -125,7 +125,7 @@ mutual
         ∃ rs₀, listP (cataFold S) ts rs₀ ∧ listP (rprodMap (list R) (list R)) rs₀ rs
     | ConsList.wrap _, ConsList.wrap _, rs, _, hr => by
         cases rs with
-        | wrap _ => exact ⟨ConsList.wrap (), trivial, trivial⟩
+        | wrap _ => exact ⟨ConsList.wrap (), rfl, rfl⟩
         | cons _ _ => exact hr.elim
     | ConsList.wrap _, ConsList.cons _ _, _, ht, _ => ht.elim
     | ConsList.cons _ _, ConsList.wrap _, _, ht, _ => ht.elim
@@ -196,7 +196,7 @@ public theorem include_not_strict :
   intro hle
   have hrhs : ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt) uEx
       (ConsList.cons true (ConsList.wrap ())) :=
-    ⟨«include» uEx, rfl, ⟨rfl, rfl⟩, trivial⟩
+    ⟨«include» uEx, rfl, ⟨rfl, rfl⟩, rfl⟩
   obtain ⟨v, hv, -⟩ := le_iff.mp hle _ _ hrhs
   exact branch_Rtt_empty v hv
 
@@ -210,8 +210,8 @@ public theorem S_not_strict :
       ≫ rprodMap (list Rtt) (list Rtt)) uEx
       (ConsList.cons true (ConsList.wrap ()), ConsList.wrap ()) :=
     ⟨(«include» uEx, ConsList.wrap ()),
-     ⟨rfl, ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), ⟨Or.inr rfl, trivial⟩, rfl⟩,
-     ⟨⟨rfl, rfl⟩, trivial⟩, trivial⟩
+     ⟨rfl, ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), ⟨Or.inr rfl, rfl⟩, rfl⟩,
+     ⟨⟨rfl, rfl⟩, rfl⟩, rfl⟩
   obtain ⟨v, hv, -⟩ := le_iff.mp hle _ _ hrhs
   exact branch_Rtt_empty v hv
 
@@ -232,15 +232,15 @@ public theorem party_not_strict :
   intro hle
   have hleaf : cataFold S (Rose.node false (ConsList.wrap ()))
       (ConsList.cons false (ConsList.wrap ()), ConsList.wrap ()) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), trivial, rfl⟩
+    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
   have hroot : cataFold S tEx (ConsList.cons true (ConsList.wrap ()), ConsList.wrap ()) :=
     ⟨ConsList.cons (ConsList.cons false (ConsList.wrap ()), ConsList.wrap ()) (ConsList.wrap ()),
      ⟨_, ConsList.wrap (), hleaf, rfl, rfl⟩,
-     rfl, ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), ⟨Or.inr rfl, trivial⟩, rfl⟩
+     rfl, ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), ⟨Or.inr rfl, rfl⟩, rfl⟩
   have hrhs : ((party : dRose Bool ⟶ dList Bool) ≫ list Rtt) tEx
       (ConsList.cons true (ConsList.wrap ())) :=
     ⟨ConsList.cons true (ConsList.wrap ()),
-     ⟨_, hroot, Or.inl rfl⟩, ⟨rfl, rfl⟩, trivial⟩
+     ⟨_, hroot, Or.inl rfl⟩, ⟨rfl, rfl⟩, rfl⟩
   obtain ⟨t', ht, -⟩ := le_iff.mp hle _ _ hrhs
   exact rose_Rtt_empty t' ht
 

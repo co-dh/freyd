@@ -62,12 +62,12 @@ public theorem listP_subseq_split (R : dE A ⟶ dE B) :
     ∀ (x : ConsList Unit A) (y w : ConsList Unit B),
       listP R x y → subseqP w y → ∃ ys, subseqP ys x ∧ listP R ys w
   | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ =>
-      ⟨ConsList.wrap (), trivial, trivial⟩
+      ⟨ConsList.wrap (), trivial, rfl⟩
   | ConsList.wrap _, ConsList.wrap _, ConsList.cons _ _, _, hw => hw.elim
   | ConsList.wrap _, ConsList.cons _ _, _, hxy, _ => hxy.elim
   | ConsList.cons _ _, ConsList.wrap _, _, hxy, _ => hxy.elim
   | ConsList.cons _ _, ConsList.cons _ _, ConsList.wrap _, _, _ =>
-      ⟨ConsList.wrap (), trivial, trivial⟩
+      ⟨ConsList.wrap (), trivial, rfl⟩
   | ConsList.cons a x, ConsList.cons b y, ConsList.cons c w, hxy, hw => by
       have hw' : (c = b ∧ subseqP w y) ∨ subseqP (ConsList.cons c w) y := hw
       have hR : R a b := hxy.1
@@ -186,7 +186,7 @@ public theorem prefix_not_strict :
     ∃ R : dE Bool ⟶ dE Bool, ¬ (prefixR ≫ list R ⊑ list R ≫ prefixR) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
-    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), trivial, trivial⟩
+    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), trivial, rfl⟩
   exact trueOnly_no_image y hy
 
 /-- **`suffix` is not strictly natural**: `suffix list(R) ⋢ list(R) suffix`. -/
@@ -194,7 +194,7 @@ public theorem suffix_not_strict :
     ∃ R : dE Bool ⟶ dE Bool, ¬ (suffixR ≫ list R ⊑ list R ≫ suffixR) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
-    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), Or.inr rfl, trivial⟩
+    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), Or.inr rfl, rfl⟩
   exact trueOnly_no_image y hy
 
 /-- **`subseq` is not strictly natural**: `subseq list(R) ⋢ list(R) subseq`. -/
@@ -202,7 +202,7 @@ public theorem subseq_not_strict :
     ∃ R : dE Bool ⟶ dE Bool, ¬ (subseq ≫ list R ⊑ list R ≫ subseq) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
-    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), trivial, trivial⟩
+    le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), trivial, rfl⟩
   exact trueOnly_no_image y hy
 
 /-- **`segment` is not strictly natural**: `segment list(R) ⋢ list(R) segment`. -/
@@ -211,7 +211,7 @@ public theorem segment_not_strict :
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
     le_iff.mp h falseOne (ConsList.wrap ())
-      ⟨ConsList.wrap (), ⟨ConsList.wrap (), falseOne, rfl⟩, trivial⟩
+      ⟨ConsList.wrap (), ⟨ConsList.wrap (), falseOne, rfl⟩, rfl⟩
   exact trueOnly_no_image y hy
 
 /-! ## `setify` is lax ONLY, for the opposite reason

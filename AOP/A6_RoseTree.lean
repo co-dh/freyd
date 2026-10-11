@@ -53,7 +53,7 @@ public inductive Rose (A : Type) where
           ≫ rprodMap (𝟙 (dE A)) (list (A := c'.carrier) (B := c''.carrier) S)
     rw [rprodMap_comp, Cat.id_comp, list_comp]
   map_mono {C c'} {R S} h :=
-    le_iff.mpr fun p q hpq => ⟨hpq.1, listP_mono (le_iff.mp h) _ _ hpq.2⟩
+    le_iff.mpr fun p q hpq => ⟨hpq.1, clP_mono (fun _ _ h => h) (le_iff.mp h) _ _ hpq.2⟩
 
 /-- THE NOTE SPELLS THIS RELATOR'S ACTION OUT — `F((R×R)°) = 𝟙×list((R×R)°)` (§13.4.3a) — where it
     keeps the letter `F` on the objects, so a picture of a statement naming `F` is rewritten along
@@ -89,7 +89,7 @@ end
 public theorem cataFoldList_eq_listP {C : RelSet.{0}} (f : Fobj A C ⟶ C) :
     ∀ (ts : ConsList Unit (Rose A)) (rs : ConsList Unit C.carrier),
       cataFoldList f ts rs ↔ listP (cataFold f) ts rs
-  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => trivial, fun _ => rfl⟩
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨(fun h => nomatch h), False.elim⟩
   | ConsList.cons t ts, ConsList.wrap _ =>
       ⟨(fun ⟨_, _, _, _, h⟩ => nomatch h), False.elim⟩
@@ -249,7 +249,7 @@ end
 public theorem roseListP_eq_listP {B : Type} (R : dE A ⟶ dE B) :
     ∀ (ts : ConsList Unit (Rose A)) (us : ConsList Unit (Rose B)),
       roseListP R ts us ↔ listP (roseP R) ts us
-  | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => trivial⟩
   | ConsList.wrap _, ConsList.cons _ _ => Iff.rfl
   | ConsList.cons _ _, ConsList.wrap _ => Iff.rfl
   | ConsList.cons t ts, ConsList.cons u us =>

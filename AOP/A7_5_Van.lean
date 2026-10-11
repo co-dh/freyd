@@ -494,7 +494,7 @@ public theorem progFn_wrap {a : A} {D : Unit} :
 
 public theorem listP_secure_iff : ∀ ps r : Sched A,
     listP (secure amount N) ps r ↔ (ps = r ∧ allSecureP amount N ps)
-  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨rfl, trivial⟩, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨rfl, trivial⟩, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨fun h => False.elim h, fun h => nomatch h.1⟩
   | ConsList.cons _ _, ConsList.wrap _ => ⟨fun h => False.elim h, fun h => nomatch h.1⟩
   | ConsList.cons s p, ConsList.cons s' r => by

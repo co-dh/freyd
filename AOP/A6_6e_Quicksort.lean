@@ -268,7 +268,7 @@ public theorem check'_perm :
 
 theorem flat_treeP {B : Type} (Q : dE A ⟶ dE B) :
     ∀ (t : Tree A) (t' : Tree B), TB.treeP Q t t' → listP Q (flat t) (flat t')
-  | Tree.nil, Tree.nil, _ => trivial
+  | Tree.nil, Tree.nil, _ => rfl
   | Tree.nil, Tree.node _ _ _, h => h.elim
   | Tree.node _ _ _, Tree.nil, h => h.elim
   | Tree.node l _ r, Tree.node l' _ r', ⟨hl, hab, hr⟩ =>
@@ -500,7 +500,7 @@ public theorem qsort_least {Y : dList A ⟶ dList A}
 
 theorem neList_nelistP {B : Type} (Q : dE A ⟶ dE B) :
     ∀ (y : NEList A) (z : NEList B), nelistP Q y z → listP Q (neList y) (neList z)
-  | ConsList.wrap _, ConsList.wrap _, h => ⟨h, trivial⟩
+  | ConsList.wrap _, ConsList.wrap _, h => ⟨h, rfl⟩
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
   | ConsList.cons _ y, ConsList.cons _ z, ⟨h1, h2⟩ => ⟨h1, neList_nelistP Q y z h2⟩
@@ -547,7 +547,7 @@ public theorem base_strictNatural :
   apply hom_ext; intro x q
   constructor
   · rintro ⟨y, hxy, rfl⟩
-    exact ⟨_, rfl, trivial, hxy, trivial⟩
+    exact ⟨_, rfl, rfl, hxy, rfl⟩
   · rintro ⟨p, rfl, h1, h2, h3⟩
     obtain ⟨l, y, r⟩ := q
     cases l with

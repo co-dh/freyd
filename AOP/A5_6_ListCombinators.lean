@@ -519,15 +519,12 @@ public theorem cata_square_junc_iff {L E : Type} {C : RelSet.{0}} (g : dL L ⟶ 
 variable {B : Type}
 
 /-- Elementwise lifting, concretely: `listP R x y` iff `y` has the shape of `x` with each
-    element related by `R`. -/
-@[expose] public def listP (R : dE A ⟶ dE B) : ConsList Unit A → ConsList Unit B → Prop
-  | ConsList.wrap _, ConsList.wrap _ => True
-  | ConsList.wrap _, ConsList.cons _ _ => False
-  | ConsList.cons _ _, ConsList.wrap _ => False
-  | ConsList.cons a x, ConsList.cons b y => R a b ∧ listP R x y
+    element related by `R` — `cl(𝟙,R)` pointwise, the leaf `()` related to itself. -/
+@[expose] public def listP (R : dE A ⟶ dE B) : ConsList Unit A → ConsList Unit B → Prop :=
+  clP (𝟙 (dL Unit)) R
 
-/-- The list relator's action `list(R) : list A ⟶ list B` (B&dM's `listr R`). -/
-@[expose] public def list (R : dE A ⟶ dE B) : dList A ⟶ dList B := listP R
+/-- The list relator's action `list(R) = cl(𝟙,R) : list A ⟶ list B` (B&dM's `listr R`). -/
+@[expose] public def list (R : dE A ⟶ dE B) : dList A ⟶ dList B := cl (𝟙 (dL Unit)) R
 
 /-- `R′` is `list(R)`, the list relator on an arrow (q's `f'`, "each"). The prime `′`, not `'`,
     because `'` is an identifier character in Lean and `f'` is a name. -/
@@ -542,7 +539,7 @@ public theorem list_cata (R : dE A ⟶ dE B) :
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show listP R (ConsList.wrap ()) r ↔ r = ConsList.wrap D
     cases r with
-    | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
+    | wrap u => exact ⟨fun _ => rfl, fun _ => rfl⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
   · show listP R (ConsList.cons a x) r
         ↔ ∃ y, listP R x y
@@ -557,66 +554,21 @@ public theorem list_cata (R : dE A ⟶ dE B) :
 
 /-! ### `list` is a relator: identities, composition, monotonicity, converse (B&dM p.126) -/
 
-public theorem listP_id : ∀ x y : ConsList Unit A, listP (𝟙 (dE A)) x y ↔ x = y
-  | ConsList.wrap (), ConsList.wrap () => ⟨fun _ => rfl, fun _ => trivial⟩
-  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons a x, ConsList.cons b y =>
-      ⟨fun h => by rw [show a = b from h.1, (listP_id x y).mp h.2],
-       fun h => by cases h; exact ⟨rfl, (listP_id x x).mpr rfl⟩⟩
+/-- `list` BUNDLED as a relator, `list(R) = cl(𝟙,R)`: `clRelator` at the constant leaf relator
+    `Unit`, its laws `cl`'s.  Named because a lane is a relator CONSTANT the exporter peels. -/
+@[expose] public def listRelator : Relator RelSet.{0} RelSet.{0} :=
+  clRelator (Relator.const (dL Unit))
 
 /-- `list(𝟙) = 𝟙`. -/
-public theorem list_id : list (𝟙 (dE A)) = 𝟙 (dList A) := hom_ext listP_id
-
-public theorem listP_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    ∀ (x : ConsList Unit A) (z : ConsList Unit C),
-      listP (R ≫ S) x z ↔ ∃ y, listP R x y ∧ listP S y z
-  | ConsList.wrap _, ConsList.wrap _ =>
-      ⟨fun _ => ⟨ConsList.wrap (), trivial, trivial⟩, fun _ => trivial⟩
-  | ConsList.wrap _, ConsList.cons _ _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h2
-        | cons _ _ => exact h1⟩
-  | ConsList.cons _ _, ConsList.wrap _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h1
-        | cons _ _ => exact h2⟩
-  | ConsList.cons a x, ConsList.cons c z => by
-      constructor
-      · rintro ⟨⟨b, hR, hS⟩, hxz⟩
-        obtain ⟨y, hy1, hy2⟩ := (listP_comp R S x z).mp hxz
-        exact ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩
-      · rintro ⟨y, hy1, hy2⟩
-        cases y with
-        | wrap _ => exact hy1.elim
-        | cons b ys =>
-            exact ⟨⟨b, hy1.1, hy2.1⟩, (listP_comp R S x z).mpr ⟨ys, hy1.2, hy2.2⟩⟩
+public theorem list_id : list (𝟙 (dE A)) = 𝟙 (dList A) := listRelator.map_id (dE A)
 
 /-- `list(RS) = list(R) list(S)`. -/
 public theorem list_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    list (R ≫ S) = list R ≫ list S := hom_ext (listP_comp R S)
-
-public theorem listP_mono {B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
-    ∀ x y, listP R x y → listP S x y
-  | ConsList.wrap _, ConsList.wrap _, _ => trivial
-  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
-  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
-  | ConsList.cons a x, ConsList.cons b y, hxy =>
-      ⟨h a b hxy.1, listP_mono h x y hxy.2⟩
+    list (R ≫ S) = list R ≫ list S := listRelator.map_comp R S
 
 /-- `R ⊑ S ⟹ list(R) ⊑ list(S)` — `list` is monotonic. -/
 public theorem list_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : list R ⊑ list S :=
-  le_iff.mpr (listP_mono (le_iff.mp h))
-
-/-- `list` BUNDLED as a relator, so §5.7's closure theorems — `laxNatural_prod`,
-    `strictNatural_prod` — can be read at it.  `RelSet` is a one-field structure, so `dE a.carrier`
-    IS `a` and the object part is just `list`'s own target. -/
-@[expose] public def listRelator : Relator RelSet.{0} RelSet.{0} where
-  obj a := dList a.carrier
-  map R := list R
-  map_id _ := list_id
-  map_comp R S := list_comp R S
-  map_mono h := list_mono h
+  listRelator.map_mono h
 
 /-- The list relator's object action, `list(A)=[A]`: the formula a reference to its definition prints. -/
 public theorem listRelator_obj (A : RelSet.{0}) : listRelator.obj A = dList A.carrier := rfl
@@ -626,11 +578,7 @@ public theorem listRelator_obj (A : RelSet.{0}) : listRelator.obj A = dList A.ca
   `list⁺ A` is `ConsList A A` — a leaf carries the LAST element, so the datatype IS the non-empty
   lists with no side condition (`AOP.A6_ConsList`).  It lives here, beside `list`, because it is
   the ONE object §8.5's paragraphs, §9.3's bracketings and every other non-empty list are taken
-  over, and a section of chapter 8 cannot import one of chapter 9.
-
-  It is stated afresh rather than as the two-parameter cons-list relator `cl(Rl,Re)` specialised
-  (`list(R) = cl(𝟙,R)`, `list⁺(R) = cl(R,R)`): that generalisation would have to REPLACE `listP`,
-  moving every `stmt_key` in this file and with it every citation the note carries. -/
+  over, and a section of chapter 8 cannot import one of chapter 9. -/
 
 /-- `list⁺ A = ConsList A A` — `wrap a` is `[a]`, `cons a x` is `[a]⧺x`. -/
 @[expose] public abbrev NEList (A : Type) : Type := ConsList A A
@@ -639,79 +587,16 @@ public theorem listRelator_obj (A : RelSet.{0}) : listRelator.obj A = dList A.ca
 @[expose] public abbrev dNE (A : Type) : RelSet.{0} := dCL A A
 
 /-- Elementwise lifting on non-empty lists: same shape, each element related by `R` — the LEAF
-    element included, which is the whole difference from `listP`. -/
-@[expose] public def nelistP (R : dE A ⟶ dE B) : NEList A → NEList B → Prop
-  | ConsList.wrap a, ConsList.wrap b => R a b
-  | ConsList.wrap _, ConsList.cons _ _ => False
-  | ConsList.cons _ _, ConsList.wrap _ => False
-  | ConsList.cons a x, ConsList.cons b y => R a b ∧ nelistP R x y
+    element included, which is the whole difference from `listP` — `cl(R,R)` pointwise. -/
+@[expose] public def nelistP (R : dE A ⟶ dE B) : NEList A → NEList B → Prop := clP R R
 
-/-- The non-empty-list relator's action `list⁺(R) : list⁺ A ⟶ list⁺ B`. -/
-@[expose] public def nelist (R : dE A ⟶ dE B) : dNE A ⟶ dNE B := nelistP R
-
-public theorem nelistP_id : ∀ x y : NEList A, nelistP (𝟙 (dE A)) x y ↔ x = y
-  | ConsList.wrap a, ConsList.wrap b =>
-      ⟨fun h => by rw [show a = b from h], fun h => by cases h; rfl⟩
-  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
-  | ConsList.cons a x, ConsList.cons b y =>
-      ⟨fun h => by rw [show a = b from h.1, (nelistP_id x y).mp h.2],
-       fun h => by cases h; exact ⟨rfl, (nelistP_id x x).mpr rfl⟩⟩
-
-/-- `list⁺(𝟙) = 𝟙`. -/
-public theorem nelist_id : nelist (𝟙 (dE A)) = 𝟙 (dNE A) := hom_ext nelistP_id
-
-public theorem nelistP_comp {C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    ∀ (x : NEList A) (z : NEList C),
-      nelistP (R ≫ S) x z ↔ ∃ y, nelistP R x y ∧ nelistP S y z
-  | ConsList.wrap _, ConsList.wrap _ =>
-      ⟨fun ⟨b, hR, hS⟩ => ⟨ConsList.wrap b, hR, hS⟩,
-       fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap b => exact ⟨b, h1, h2⟩
-        | cons _ _ => exact h1.elim⟩
-  | ConsList.wrap _, ConsList.cons _ _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h2
-        | cons _ _ => exact h1⟩
-  | ConsList.cons _ _, ConsList.wrap _ =>
-      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
-        | wrap _ => exact h1
-        | cons _ _ => exact h2⟩
-  | ConsList.cons a x, ConsList.cons c z => by
-      constructor
-      · rintro ⟨⟨b, hR, hS⟩, hxz⟩
-        obtain ⟨y, hy1, hy2⟩ := (nelistP_comp R S x z).mp hxz
-        exact ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩
-      · rintro ⟨y, hy1, hy2⟩
-        cases y with
-        | wrap _ => exact hy1.elim
-        | cons b ys =>
-            exact ⟨⟨b, hy1.1, hy2.1⟩, (nelistP_comp R S x z).mpr ⟨ys, hy1.2, hy2.2⟩⟩
-
-/-- `list⁺(RS) = list⁺(R) list⁺(S)`. -/
-public theorem nelist_comp {C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
-    nelist (R ≫ S) = nelist R ≫ nelist S := hom_ext (nelistP_comp R S)
-
-public theorem nelistP_mono {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
-    ∀ x y, nelistP R x y → nelistP S x y
-  | ConsList.wrap a, ConsList.wrap b, hxy => h a b hxy
-  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
-  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
-  | ConsList.cons a x, ConsList.cons b y, hxy =>
-      ⟨h a b hxy.1, nelistP_mono h x y hxy.2⟩
-
-/-- `R ⊑ S ⟹ list⁺(R) ⊑ list⁺(S)` — `list⁺` is monotonic. -/
-public theorem nelist_mono {R S : dE A ⟶ dE B} (h : R ⊑ S) : nelist R ⊑ nelist S :=
-  le_iff.mpr (nelistP_mono (le_iff.mp h))
+/-- The non-empty-list relator's action `list⁺(R) = cl(R,R) : list⁺ A ⟶ list⁺ B`. -/
+@[expose] public def nelist (R : dE A ⟶ dE B) : dNE A ⟶ dNE B := cl R R
 
 /-- `list⁺` BUNDLED as a relator, the wire the note draws over `Word`, `A` and every other
-    element type — one lane for all three sections, where each used to spell its own object. -/
-@[expose] public def nelistRelator : Relator RelSet.{0} RelSet.{0} where
-  obj a := dNE a.carrier
-  map R := nelist R
-  map_id _ := nelist_id
-  map_comp R S := nelist_comp R S
-  map_mono h := nelist_mono h
+    element type: `clRelator` at the identity leaf relator, its laws `cl`'s. -/
+@[expose] public def nelistRelator : Relator RelSet.{0} RelSet.{0} :=
+  clRelator (Relator.idRelator RelSet.{0})
 
 /-- The one-element non-empty list is STRICTLY natural, `R wrap = wrap list⁺(R)`. -/
 public theorem nelist_wrap_strictNatural :
@@ -779,7 +664,7 @@ public theorem listP_cappend {B : Type} (R : dE A ⟶ dE B) :
 public theorem listP_cappend_split {B : Type} (R : dE A ⟶ dE B) :
     ∀ (x u : ConsList Unit A) (w : ConsList Unit B), listP R (cappend x u) w →
       ∃ y v, listP R x y ∧ listP R u v ∧ w = cappend y v
-  | ConsList.wrap _, _, w, h => ⟨ConsList.wrap (), w, trivial, h, rfl⟩
+  | ConsList.wrap _, _, w, h => ⟨ConsList.wrap (), w, rfl, h, rfl⟩
   | ConsList.cons _ _, _, ConsList.wrap _, h => h.elim
   | ConsList.cons _ x, u, ConsList.cons b w, h => by
       obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split R x u w h.2
@@ -789,7 +674,7 @@ public theorem listP_cappend_split {B : Type} (R : dE A ⟶ dE B) :
 public theorem listP_cconcat {B : Type} (R : dE A ⟶ dE B) :
     ∀ (xs : ConsList Unit (ConsList Unit A)) (ys : ConsList Unit (ConsList Unit B)),
       listP (list R) xs ys → listP R (cconcat xs) (cconcat ys)
-  | ConsList.wrap _, ConsList.wrap _, _ => trivial
+  | ConsList.wrap _, ConsList.wrap _, _ => rfl
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
   | ConsList.cons x xs, ConsList.cons y ys, h =>
@@ -800,7 +685,7 @@ public theorem listP_cconcat {B : Type} (R : dE A ⟶ dE B) :
 public theorem listP_cconcat_split {B : Type} (R : dE A ⟶ dE B) :
     ∀ (xs : ConsList Unit (ConsList Unit A)) (w : ConsList Unit B), listP R (cconcat xs) w →
       ∃ ys, listP (list R) xs ys ∧ w = cconcat ys
-  | ConsList.wrap _, ConsList.wrap _, _ => ⟨ConsList.wrap (), trivial, rfl⟩
+  | ConsList.wrap _, ConsList.wrap _, _ => ⟨ConsList.wrap (), rfl, rfl⟩
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons x xs, w, h => by
       obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split R x (cconcat xs) w h
@@ -835,7 +720,7 @@ public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
       | wrap _ => exact ⟨b, hz.1, rfl⟩
       | cons _ _ => exact hz.2.elim
   · rintro ⟨b, hab, rfl⟩
-    exact ⟨ConsList.cons a (ConsList.wrap ()), rfl, hab, trivial⟩
+    exact ⟨ConsList.cons a (ConsList.wrap ()), rfl, hab, rfl⟩
 
 /-- **`α = [nil,cons]`** (note `takewhile`): the initial list algebra IS the junction of its two
     constructors, which is what the note's `α` cell claims and nothing else states. -/
@@ -872,7 +757,7 @@ public theorem alphaR_natural (R : dE A ⟶ dE B) :
   cases u with
   | inl D =>
     cases w with
-    | wrap e => exact ⟨fun _ => ⟨Sum.inl e, rfl, rfl⟩, fun _ => ⟨ConsList.wrap D, rfl, trivial⟩⟩
+    | wrap e => exact ⟨fun _ => ⟨Sum.inl e, rfl, rfl⟩, fun _ => ⟨ConsList.wrap D, rfl, rfl⟩⟩
     | cons b y =>
       refine ⟨fun h => ?_, fun h => ?_⟩
       · obtain ⟨_, rfl, hz⟩ := h; exact hz.elim
@@ -931,7 +816,7 @@ public theorem concat_natural {B : Type} (R : dE A ⟶ dE B) :
 
 public theorem listP_graph {B : Type} (f : A → B) :
     ∀ (x : ConsList Unit A) (y : ConsList Unit B), listP (graph f) x y ↔ y = cmap f x
-  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
   | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
   | ConsList.cons a x, ConsList.cons b y =>

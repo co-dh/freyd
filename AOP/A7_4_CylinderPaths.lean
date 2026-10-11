@@ -524,8 +524,8 @@ public theorem genFn_lax (R : dE A ⟶ dE B) :
       listP (tupleP n R) xs ys → ∀ k, powerRel (list R) (genFn xs k) (genFn ys k)
   | ConsList.wrap _, ConsList.wrap _, _, _ =>
       (powerRel_apply _ _ _).mpr
-        ⟨by rintro p rfl; exact ⟨ConsList.wrap (), trivial, rfl⟩,
-         by rintro p rfl; exact ⟨ConsList.wrap (), rfl, trivial⟩⟩
+        ⟨by rintro p rfl; exact ⟨ConsList.wrap (), rfl, rfl⟩,
+         by rintro p rfl; exact ⟨ConsList.wrap (), rfl, rfl⟩⟩
   | ConsList.wrap _, ConsList.cons _ _, h, _ => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h, _ => h.elim
   | ConsList.cons c cs, ConsList.cons d ds, h, k =>

@@ -797,7 +797,7 @@ public theorem corefl_single_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Core
   refine ⟨ConsList.cons a (ConsList.wrap ()), rfl, ?_⟩
   unfold Filter.filter
   rw [Λ_comp_est_apply]
-  refine ⟨⟨_, subseqP.refl _, hab, trivial⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+  refine ⟨⟨_, subseqP.refl _, hab, rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
   obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
   exact Filter.subseqP_clen_le hu
 

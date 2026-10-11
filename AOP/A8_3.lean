@@ -681,7 +681,7 @@ public theorem sort_comp_minL_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
 /-- `list(p)` at a coreflexive `p` relates a list only to itself. -/
 public theorem listP_eq_of_coreflexive {p : dE A ⟶ dE A} (hp : Coreflexive p)
     {z ys : ConsList Unit A} (h : listP p z ys) : z = ys :=
-  (listP_id z ys).mp (le_iff.mp (list_mono hp) z ys h)
+  (clP_id z ys).mp (le_iff.mp (list_mono hp) z ys h)
 
 /-- A subsequence of `a::x` either keeps `a` in front or is a subsequence of `x`. -/
 public theorem subseqP_cons_cases {a : A} {x : ConsList Unit A} : ∀ {z : ConsList Unit A},
@@ -773,7 +773,7 @@ public theorem listP_Fmap_cmap_inr {L E X Y : Type} (R : dE X ⟶ dE Y) (e : E) 
     ∀ (xs : ConsList Unit X) (zs : ConsList Unit (L ⊕ E × Y)),
       listP ((CL.F L E).map R) (cmap Sum.inr (cmap (fun x => (e, x)) xs)) zs ↔
         ∃ ys, listP R xs ys ∧ zs = cmap Sum.inr (cmap (fun y => (e, y)) ys)
-  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨ConsList.wrap (), trivial, rfl⟩, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨ConsList.wrap (), rfl, rfl⟩, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun ⟨ys, h, hz⟩ => by
       cases ys with
       | wrap _ => exact nomatch hz
@@ -1090,7 +1090,7 @@ public theorem cpL_strictNatural {L E : Type} :
     · rintro ⟨w, hw, rfl⟩
       rcases w with d' | _
       · obtain rfl : d = d' := hw
-        exact ⟨_, rfl, rfl, trivial⟩
+        exact ⟨_, rfl, rfl, rfl⟩
       · exact (hw : False).elim
     · rintro ⟨v, rfl, hv⟩
       rcases zs with _ | ⟨z, zs⟩
@@ -1398,12 +1398,12 @@ public theorem filter_id : Filter.filter (𝟙 (dE A)) = 𝟙 (dList A) := by
   rw [Λ_comp_est_apply]
   constructor
   · rintro ⟨⟨z, hz, hl⟩, hmax⟩
-    obtain rfl : z = y := (listP_id z y).mp hl
+    obtain rfl : z = y := (clP_id z y).mp hl
     exact (Filter.subseqP_eq_of_clen_le hz
-      (hmax x ⟨x, subseqP.refl x, (listP_id x x).mpr rfl⟩)).symm
+      (hmax x ⟨x, subseqP.refl x, (clP_id x x).mpr rfl⟩)).symm
   · rintro rfl
-    refine ⟨⟨x, subseqP.refl x, (listP_id x x).mpr rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
-    obtain rfl : u = zs := (listP_id u zs).mp hlu
+    refine ⟨⟨x, subseqP.refl x, (clP_id x x).mpr rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+    obtain rfl : u = zs := (clP_id u zs).mp hlu
     exact Filter.subseqP_clen_le hu
 
 /-- `⊤` is a preorder: it relates everything. -/
