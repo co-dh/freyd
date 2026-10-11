@@ -771,6 +771,30 @@ public theorem tipBin_strictNatural :
       | bin _ _ => exact h.elim
   · exact bin_natural R
 
+/-- `tip` alone is STRICTLY natural, `R tip = tip tree(R)`: the left arm of `tipBin_strictNatural`,
+    the dot on `tip` once `[tip,bin]` is drawn as its two arms. -/
+public theorem tip_strictNatural :
+    StrictNatural treeRelator (Relator.idRelator RelSet.{0})
+      (fun a => (graph (Tree.tip (A := a.carrier)) : a ⟶ dTree a.carrier)) := by
+  intro a b R
+  apply hom_ext; intro x t
+  constructor
+  · rintro ⟨y, hy, rfl⟩; exact ⟨Tree.tip x, rfl, hy⟩
+  · rintro ⟨u, rfl, h⟩
+    cases t with
+    | tip y => exact ⟨y, h, rfl⟩
+    | bin _ _ => exact h.elim
+
+/-- `zero` is LAX natural, `R zero ⊑ zero`, and strict only at an entire `R`: a leaf the relation
+    sends nowhere still costs `0` on the right. -/
+public theorem zero_laxNatural :
+    LaxNatural (Relator.const (⟨Int⟩ : RelSet.{0})) (Relator.idRelator RelSet.{0})
+      (fun a => (graph (zeroFn (A := a.carrier)) : a ⟶ (⟨Int⟩ : RelSet.{0}))) := by
+  intro a b R
+  refine le_iff.mpr ?_
+  rintro x r ⟨y, -, rfl⟩
+  exact ⟨_, rfl, rfl⟩
+
 /-- `consSplits` transports along `list⁺(R)`: one more element at the front of both lists leaves
     the two split lists position for position related. -/
 public theorem listP_consSplits {B : Type} {R : CL.dE A ⟶ CL.dE B} {a : A} {b : B} (hab : R a b) :

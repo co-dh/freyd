@@ -702,6 +702,54 @@ public theorem merge_top_strictNatural :
   exact strictNatural_inside (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
     nelistRelator) (@cat_strictNatural) R
 
+/-- The one-word paragraph `wrap wrap` is STRICTLY natural, `R [[·]] = [[·]] list⁺(list⁺(R))`:
+    the dot on the base arm of the fold's body once `[f,g]` is drawn as its two arms. -/
+public theorem wrap_wrap_strictNatural :
+    StrictNatural (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+        nelistRelator) (Relator.idRelator RelSet.{0})
+      (fun a => (graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
+        : a ⟶ dPara a.carrier)) := by
+  intro x y R
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨b, hab, rfl⟩; exact ⟨_, rfl, hab⟩
+  · rintro ⟨_, rfl, h⟩
+    match r, h with
+    | ConsList.wrap (ConsList.wrap b), h => exact ⟨b, h, rfl⟩
+
+/-- `start ≜ wrap wrap wrap` is STRICTLY natural, `R [[[·]]] = [[[·]]] list(list⁺(list⁺(R)))`. -/
+public theorem start_strictNatural :
+    StrictNatural (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0})
+        nelistRelator) nelistRelator) listRelator) (Relator.idRelator RelSet.{0})
+      (fun a => (graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
+        : a ⟶ dPara a.carrier) ≫ singleR ()) := by
+  intro x y R
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨b, hab, _, rfl, rfl⟩; exact ⟨_, ⟨_, rfl, rfl⟩, hab, trivial⟩
+  · rintro ⟨_, ⟨_, rfl, rfl⟩, h⟩
+    match r, h with
+    | ConsList.cons (ConsList.wrap (ConsList.wrap b)) (ConsList.wrap ()), ⟨h, _⟩ =>
+      exact ⟨b, h, _, rfl, rfl⟩
+
+/-- The pair `⟨start,start⟩` is LAX natural, and no more: the two copies may move apart under
+    `R` on the right, where on the left they are the one word's image. -/
+public theorem start_pair_laxNatural :
+    LaxNatural
+      (Relator.prod
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator)
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator))
+      (Relator.idRelator RelSet.{0})
+      (fun a => (relProd (dList (Para a.carrier)) (dList (Para a.carrier))).pair
+        ((graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
+          : a ⟶ dPara a.carrier) ≫ singleR ())
+        ((graph (fun x : a.carrier => (ConsList.wrap (ConsList.wrap x) : Para a.carrier))
+          : a ⟶ dPara a.carrier) ≫ singleR ())) :=
+  laxNatural_pair (laxNatural_of_strictNatural start_strictNatural)
+    (laxNatural_of_strictNatural start_strictNatural)
+
 /-- `list(f)` of a map is a map. -/
 public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
   rw [list_graph]; exact graph_map _

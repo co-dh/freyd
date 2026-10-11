@@ -713,6 +713,20 @@ public theorem nelist_mono {R S : dE A ⟶ dE B} (h : R ⊑ S) : nelist R ⊑ ne
   map_comp R S := nelist_comp R S
   map_mono h := nelist_mono h
 
+/-- The one-element non-empty list is STRICTLY natural, `R wrap = wrap list⁺(R)`. -/
+public theorem nelist_wrap_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+      (Relator.idRelator RelSet.{0})
+      (fun a => (CL.wrapR : CL.dL a.carrier ⟶ CL.dCL a.carrier a.carrier)) := by
+  intro x y R
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨b, hab, rfl⟩; exact ⟨_, rfl, hab⟩
+  · rintro ⟨_, rfl, h⟩
+    cases r with
+    | wrap b => exact ⟨b, h, rfl⟩
+    | cons _ _ => exact h.elim
+
 public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
     ∀ (y : ConsList Unit B) (x : ConsList Unit A), listP R° y x ↔ listP R x y
   | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
