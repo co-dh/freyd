@@ -605,6 +605,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
 #disp[#deftab(
 
+  [#rowkey("Freyd.Alg.RelSet.CL.F")], [#leant("Freyd.Alg.RelSet.CL.F")],
+  "Freyd.Alg.RelSet.CL.F_obj",
+  [here L ≜ 1 and E ≜ Item: the trivial base, or an item and what is built from the rest],
   [#rowkey("Freyd.Alg.RelSet.ListRel.total")], [#leant("Freyd.Alg.RelSet.ListRel.total")],
   "Freyd.Alg.RelSet.ListRel.total_eq",
   [add up f over the items of the list],
@@ -632,6 +635,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Knapsack.Q")], [#leant("Freyd.Alg.RelSet.Knapsack.Q")],
   "Freyd.Alg.RelSet.Knapsack.Q_eq",
   [x is worth at least as much as y and weighs no more],
+// lean:AOP.A6_ConsList.F@61b71616
+// lean:AOP.A6_ConsList.F_obj@6e42d8c2
 // lean:AOP.A5_6_ListCombinators.total@374f995b
 // lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
 // lean:AOP.A5_6_ListCombinators.subseq@9db1a985
@@ -715,6 +720,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // together; the book's first choice `head prefix head°` is correct but not needed.
 #disp[#deftab(
 
+  [#rowkey("Freyd.Alg.RelSet.CL.F")], [#leant("Freyd.Alg.RelSet.CL.F")],
+  "Freyd.Alg.RelSet.CL.F_obj",
+  [here L ≜ Word and E ≜ Word: one word, or a word and what is built from the rest],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.Line")], [#leant("Freyd.Alg.RelSet.Paragraph.Line")],
   "Freyd.Alg.RelSet.Paragraph.Line",
   [a line is a non-empty list of words],
@@ -760,6 +768,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Paragraph.start")], [#leant("Freyd.Alg.RelSet.Paragraph.start")],
   "Freyd.Alg.RelSet.Paragraph.start",
   [the one candidate for a single word: the paragraph of one line holding that word],
+// lean:AOP.A6_ConsList.F@61b71616
+// lean:AOP.A6_ConsList.F_obj@6e42d8c2
 // lean:AOP.A8_5_Paragraph.Line@5d1dfba3
 // lean:AOP.A8_5_Paragraph.Para@03a1f9c7
 // lean:AOP.A6_ConsList.ConsList.wrap@55e9e5c6
@@ -857,6 +867,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // that tours of one input share their heads: without it the two `tour-mono` rows are false.
 #disp[#deftab(
 
+  [#rowkey("Freyd.Alg.RelSet.CL.F")], [#leant("Freyd.Alg.RelSet.CL.F")],
+  "Freyd.Alg.RelSet.CL.F_obj",
+  [here L ≜ City×City and E ≜ City: the last two cities, or a city and what is built from the rest],
   [#rowkey("Freyd.Alg.RelSet.Tour.Journey")], [#leant("Freyd.Alg.RelSet.Tour.Journey")],
   "Freyd.Alg.RelSet.Tour.Journey",
   [a list of at least two cities, the last two held as a pair],
@@ -911,6 +924,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Tour.Qc")], [#leant("Freyd.Alg.RelSet.Tour.Qc")],
   "Freyd.Alg.RelSet.Tour.Qc_eq",
   [t costs no more than t′, and both journeys of t and t′ share their first two cities],
+// lean:AOP.A6_ConsList.F@61b71616
+// lean:AOP.A6_ConsList.F_obj@6e42d8c2
 // lean:AOP.A8_6_Tour.Journey@43d30e10
 // lean:AOP.A8_6_Tour.Tour@5351625c
 // lean:AOP.A8_6_Tour.head@8f3cba94
