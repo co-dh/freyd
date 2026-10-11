@@ -2504,16 +2504,16 @@ def canon (e : Expr) : MetaM Expr := do
     | _ => none
 
 /-- `φ×𝟙_B` with `φ`'s source or target itself a product — the map that SPANS its bracketed lanes
-    (`asProdMap?`) — and `B` the object `b`: the arrow whose lanes of `b` run past it. -/
-def spansTimesId (e b : Expr) : MetaM Bool := do
+    (`asProdMap?`) — and `B` the object `b`: `φ` is the bead and the lanes of `b` run past it. -/
+def spansTimesId (e b : Expr) : MetaM (Option Expr) := do
   let arrows ← e.getAppArgs.filterM fun a => return (← homEnds? a).isSome
-  let #[φ, i] := arrows | return false
-  unless ← isIdArrow i do return false
+  let #[φ, i] := arrows | return none
+  unless ← isIdArrow i do return none
   let (ib, _) ← homEnds i
-  unless ← Meta.isDefEq ib b do return false
+  unless ← Meta.isDefEq ib b do return none
   let regionTy ← Meta.inferType b
   let (s, t) ← homEnds φ
-  return (← splitTimes? regionTy s).isSome || (← splitTimes? regionTy t).isSome
+  return if (← splitTimes? regionTy s).isSome || (← splitTimes? regionTy t).isSome then some φ else none
 
 mutual
 
@@ -2524,9 +2524,18 @@ partial def splitOpened? (e : Expr) : MetaM (Option Expr) := do
   let (``Freyd.Alg.RelSet.rpair, args) := e.getAppFnArgs | return none
   if h : args.size ≥ 2 then
     let (ff, gf) := (factors args[args.size - 2], factors args[args.size - 1])
+    -- `W` is each part's longest WIRING prefix, so the copy splits off whole and every bead of
+    -- `R` (`(𝟙×tail)⧺`, not only its last factor) is drawn under it.
+    let wired (fs : Array Expr) : MetaM Nat := do
+      let mut k := 0
+      while k + 1 < fs.size && (← isWiring fs[k]!) do k := k + 1
+      return k
+    let (kf, kg) := (← wired ff, ← wired gf)
+    let (kf, kg) := (if kf == 0 then ff.size - 1 else kf, if kg == 0 then gf.size - 1 else kg)
     if ff.size > 1 && gf.size > 1 then
       let pf ← Meta.mkAppM ``Freyd.Alg.RelSet.rpair_comp_rprodMap
-        #[← compose ff.pop, ← compose gf.pop, ff.back!, gf.back!]
+        #[← compose (ff.extract 0 kf), ← compose (gf.extract 0 kg),
+          ← compose (ff.extract kf ff.size), ← compose (gf.extract kg gf.size)]
       if let some (_, l, _) := (← Meta.inferType pf).eq? then return some l
   return none
 
@@ -2653,7 +2662,8 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     if (← familyVar e objVars).isSome then
       let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
-      return some (drew (← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+      -- The bead is `φ`: the `𝟙`'s lanes are `over` it, and `φ×𝟙` as its label drew them twice.
+      return some (drew (← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy φ
         (over := (cx.extract 1 cx.size).map (·.1))))
     return none
   unless pairLane do
@@ -2695,9 +2705,11 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       -- `φ×𝟙` WHOSE `φ` SPANS A BRACKETED END (`asProdMap?`'s `none`): the identity's lanes run past,
       -- the family being the statement's own as for `φ×𝟙` on one lane.  `kabstract` cannot say so
       -- where `φ`'s end IS the identity's object (`replaceHead×𝟙` at `City×J(City)`): it takes both.
-      if (← spansTimesId e x') && (← familyVar e objVars).isSome then
-        return some (drew (← Diagram.bead regionTy cat objVars (ax.extract 0 (ax.size - k))
-          (ay.extract 0 (ay.size - k)) ox oy e (over := ax.extract (ax.size - k) ax.size)))
+      -- The bead IS `φ`: the lanes of `𝟙` are `over` it, so a `×𝟙` in its label would draw them twice.
+      if let some φ ← spansTimesId e x' then
+        if (← familyVar e objVars).isSome then
+          return some (drew (← Diagram.bead regionTy cat objVars (ax.extract 0 (ax.size - k))
+            (ay.extract 0 (ay.size - k)) ox oy φ (over := ax.extract (ax.size - k) ax.size)))
       let e' ← Meta.kabstract e x'
       unless e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) do return none
       -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too, but
