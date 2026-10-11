@@ -686,13 +686,13 @@
  #src[] (`g` monotonic on `≤` in its two
       // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
       cost arguments)]])],
-  // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
+  // `[τ,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `L` dies and is remade at both, so it runs as a loop between them.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.lhs.body")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_branch.lhs"),
-    [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
-      singleton lists, where `wrap` returns]])],
+    [#src[Proposition 9.1: `τ` and `cat` have disjoint ranges, and `single` is the coreflexive on
+      singleton lists, where `τ` returns]])],
   // No picture: the disjointness of the two ranges is a case split on a coproduct, which has no
   // shape of its own; the panel above already draws the `cat` branch.
   [],
@@ -711,16 +711,16 @@
   [],
 
   [#vstep(EQ, [],
-    [`col=(single→head tip wrap,⟨init col,tail row⟩ next)` #h(4pt) #src[(9.8)] \
+    [`col=(single→head tip τ,⟨init col,tail row⟩ next)` #h(4pt) #src[(9.8)] \
      `cons col=(𝟙×array) process` #h(4pt) #src[(9.9)] \
-     `row=(single→head tip wrap,⟨mct,tail row⟩ cons)` #h(4pt) #src[(9.10)] \
+     `row=(single→head tip τ,⟨mct,tail row⟩ cons)` #h(4pt) #src[(9.10)] \
      #src[a column extends the column to its left, a row the row below it; (9.9) is (9.8) rewritten
-      as a loop, `next≜⟨π₁,mix⟩ snoc`, `process≜((tip wrap)×𝟙) loop(next)`]])],
+      as a loop, `next≜⟨π₁,mix⟩ snoc`, `process≜((tip τ)×𝟙) loop(next)`]])],
   [],
 
   [#vstep(EQ, [],
-    [`array=⦇[fstcol,addcol]⦈`, #h(4pt) `fstcol≜tip wrap wrap` \
-     `addcol≜⟨π₁ tip wrap,step⟩ cons`, #h(4pt) `step≜⟨process tail,π₂⟩ zip cons′` \
+    [`array=⦇[fstcol,addcol]⦈`, #h(4pt) `fstcol≜tip τ τ` \
+     `addcol≜⟨π₁ tip τ,step⟩ cons`, #h(4pt) `step≜⟨process tail,π₂⟩ zip cons′` \
      #src[the program: one fold building the array column by column, cubic in the length of the
       input]])],
   [],
@@ -764,19 +764,19 @@
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs"),
-    [#src[Exercise 9.13 with `k≜cons col`, `g≜tip wrap`, `h≜row`, `f≜next`: its two equations are
+    [#src[Exercise 9.13 with `k≜cons col`, `g≜tip τ`, `h≜row`, `f≜next`: its two equations are
      (9.8) — @col-rec — at `a:[b]` and at `a:(u++[b])`, with `[a] col=[tip(a)]`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step1@e278817f
+     // lean:AOP.A9_3_Bracket.col_cons_step1@267e6a07
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs"),
     [#src[products]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step2@ef9df3eb
+     // lean:AOP.A9_3_Bracket.col_cons_step2@fb9fd2d4
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs"),
     [#src[definition of `process`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step3@06b6dc0a
+     // lean:AOP.A9_3_Bracket.col_cons_step3@2219293b
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs")],
 )]<col-cons>
 
@@ -874,23 +874,23 @@
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs"),
-    [#src[`cons inits=⟨π₁ wrap,tic⟩ cons`, abbreviating `cons inits tail` by `tic`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step2@b1319788
+    [#src[`cons inits=⟨π₁ τ,tic⟩ cons`, abbreviating `cons inits tail` by `tic`]])],
+     // lean:AOP.A9_3_Bracket.array_cons_step2@a505d5a0
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs"),
     [#src[`cons f′=(f×f′) cons`; definition of `newrows`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step3@964babf4
+     // lean:AOP.A9_3_Bracket.array_cons_step3@beead9eb
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs"),
-    [#src[`wrap row=tip wrap`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step4@5deb2e18
+    [#src[`τ row=tip τ`]])],
+     // lean:AOP.A9_3_Bracket.array_cons_step4@19fec047
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs"),
     [#src[@newrows-rec; products; definition of `addcol`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step5@f6c0b516
+     // lean:AOP.A9_3_Bracket.array_cons_step5@292d6d2c
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs")],
 )]<array-cons>
 

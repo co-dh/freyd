@@ -167,7 +167,7 @@ public theorem minPath_isSome (wt : A → A → Nat) :
     to which the row's own theorem rewrites `[wrap,step]`. -/
 public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc_exec (wt : A → A → Nat)
     (z : A ⊕ (A × List (ConsList A A))) (p : ConsList A A) (h : wrapStep wt z = some p) :
-    junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) wrapR (pathStep wt)
+    junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt)
       (toS1 z) p := by
   rw [← cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt]
   have hL : cpMap (CL.F A A) (dCL A A)
@@ -194,7 +194,7 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc_exec (wt : A → A �
       ⟶ P (dCL A A) :=
   Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
     ≫ powerRel (junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0}))
-      wrapR (pathStep wt))
+      τ (pathStep wt))
 
 /-- **8.2d row 8, the fold's algebra executable** (book p.198): `pathAlgExec`'s graph is contained
     in `Λ(F(∋,𝟙)) P([wrap,step])`, provided a non-leaf input carries at least one path — on an
@@ -353,7 +353,7 @@ public theorem mcp_spec (wt : A → A → Nat) (net : ConsList (List A) (List A)
   rw [← thinning_paths_alg_map (F := pathF) (A := dE A) hα (pathR wt)] at hthin
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))
       ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
-      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) wrapR (pathStep wt) := by
+      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
     rw [pathF_map_id]
     exact cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt
   rw [e8, pathF_map_comp_alphaR_eq_pathAlg, relCata_pathInit, relCata_pathInit] at hthin
@@ -749,7 +749,7 @@ public theorem thinning_paths_alg_map_exec (wt : A → A → Nat)
       (toS x) (memS (row7 wt x)) := by
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))
       ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
-      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) wrapR (pathStep wt) := by
+      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
     rw [pathF_map_id]
     exact cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt
   rw [e8, show row7 wt x = row6 wt x from rfl, row6_eq]

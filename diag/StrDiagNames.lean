@@ -132,12 +132,12 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- THE ARMS WHOSE BODY IS POINTWISE.  `gArmFn`/`sizeArmFn` (and `kStep`/`bagPenalty` below) compute
 -- on points, so their body prints no arrow; the spelling stays until each is restated point-free.
 -- The constructor map is `[nil,cons]` only at the empty leaf; a leaf carrying a value is B&dM's
--- `list⁺` and its map is `[wrap,cons]`.  A DELABORATOR: the leaf type is implicit, so only the term has it.
+-- `list⁺` and its map is `[τ,cons]`.  A DELABORATOR: the leaf type is implicit, so only the term has it.
 open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.con] meta def delabCLCon : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size < 2 || args.size > 3 then failure
-  let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "wrap"
+  let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "τ"
   let f := mkIdent (Name.mkSimple s!"[{leaf},cons]")
   if args.size == 2 then `($f) else `($f $(← withAppArg delab))
 -- The algebras a section names but the note writes by their body: a union of two graphs, or the
@@ -819,18 +819,18 @@ open Lean PrettyPrinter Delaborator in
   let s ← SubExpr.withNaryArg (n - 1) delab
   `($r + $s)
 
--- The constructor `wrap` as a relation is `wrap`, as `consR` is `cons`; a delaborator, since
--- `wrapR` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
+-- The leaf constructor as a relation is `τ`, as `consR` is `cons`; a delaborator, since
+-- `τ` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
 -- Out of the EMPTY leaf `𝟏` it is the list's `nil`, the name `Label.lean` gives every map out of a
 -- source with no strands; `isDefEq`, as `delabDL` above tests the same leaf.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.CL.wrapR, delab const.Freyd.Alg.RelSet.CL.wrapR]
-meta def delabCLWrapR : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.τ, delab const.Freyd.Alg.RelSet.CL.τ]
+meta def delabCLτ : Delab := do
   let args := (← getExpr).getAppArgs
   if let some l := args[0]? then
     if ← Meta.isDefEq l (mkConst ``Unit) then return ← `($(mkIdent `nil))
-  `($(mkIdent `wrap))
--- The book's `tic≜cons inits tail` (p. 235), implicit-only like `wrapR`.
+  `($(mkIdent `τ))
+-- The book's `tic≜cons inits tail` (p. 235), implicit-only like `τ`.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
 meta def delabBracketTic : Delab := `($(mkIdent `tic))

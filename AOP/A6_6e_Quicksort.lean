@@ -39,7 +39,7 @@ variable {A : Type}
 
 /-- B&dM p.154 `flatten = ⦇[nil, join]⦈`: the elements of a tree in left-to-right order. -/
 @[expose] public def flatten : dTree A ⟶ dList A :=
-  ⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR join : (TB.F A).obj (dList A) ⟶ dList A)⦈
+  ⦇(junc (sumCop (dL Unit) (dLAL A)) τ join : (TB.F A).obj (dList A) ⟶ dList A)⦈
 
 /-- `intree : A ← tree A`, membership in a tree. -/
 @[expose] public def intreeP : Tree A → A → Prop
@@ -106,7 +106,7 @@ theorem flatten_graph : (flatten : dTree A ⟶ dList A) = graph flat := by
     · subst ht; exact hy
     · cases v with
       | inl d' =>
-        have h' := (junc_sum_inl wrapR join d' y).mp h
+        have h' := (junc_sum_inl τ join d' y).mp h
         exact ⟨Tree.nil, rfl, by cases d'; exact h'⟩
       | inr q => exact hv.elim
   | inr p =>
@@ -402,7 +402,7 @@ public theorem inordered_recip : (inordered R : dTree A ⟶ dTree A)° = inorder
 /-- **p.154**: `(inordered flatten perm)° flatten ⊒ ⦇[nil, split°]⦈° flatten` — fusion
     (6.4) under the proviso. -/
 public theorem quicksort_fusion (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
-    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+    (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten
       ⊑ (inordered R ≫ flatten ≫ perm)° ≫ flatten := by
   refine comp_mono_right (recip_mono (relCata_le_comp (TB.initial A) ?_)) _
@@ -417,10 +417,10 @@ public theorem quicksort_fusion (hsplit : split° ⊑ check' R ≫ join ≫ perm
     the bottom line up. -/
 public theorem quicksort (htrans : ∀ a b c, R a b → R b c → R a c)
     (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
-    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+    (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten
       ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
-  calc (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+  calc (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten
         ⊑ (inordered R ≫ flatten ≫ perm)° ≫ flatten := quicksort_fusion hsplit
     _ = ((flatten ≫ perm)° ≫ (inordered R)°) ≫ flatten := by
@@ -444,37 +444,37 @@ calc_steps quicksort
 /-- **p.155, recursion step 1**: `[nil, split°]° F(X) [nil, join] = [nil, split°]° [nil, join (X×id×X)]`
     — `F` acting on `X` passes into the `fork` branch of the algebra. -/
 public theorem qrec_step1 (X : dList A ⟶ dList A) :
-    (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join
-      = (junc (sumCop (dL Unit) (dLAL A)) wrapR split°)°
-        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
+    (junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) τ join
+      = (junc (sumCop (dL Unit) (dLAL A)) τ split°)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) τ (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
   rw [TFmap_comp_junc]
 
 /-- **p.155, recursion step 2**: `[nil, split°]° [nil, join (X×id×X)] = nil nil° ∪ join (X×id×X) split`
     — a converse coproduct join against a coproduct join is the union of the branches. -/
 public theorem qrec_step2 (X : dList A ⟶ dList A) :
-    (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join)
-      = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
+    (junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) τ (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join)
+      = τ° ≫ τ ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
   rw [junc_recip_junc, Allegory.recip_recip]
 
 /-- **The quicksort recursion (B&dM p.155)**: `X = flatten ⦇[nil, split°]⦈°` solves
     `X = nil nil° ∪ join (X×id×X) split`, by the hylomorphism theorem. -/
 public theorem qsort_rec {X : dList A ⟶ dList A}
-    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
-    X = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join :=
-  calc X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
+    X = τ° ≫ τ ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join :=
+  calc X = (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten := hX
-    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ (TB.F A).map ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
+    _ = (junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map ((⦇(junc (sumCop (dL Unit) (dLAL A)) τ split°
           : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)
-        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := (hylo_fixed (TB.initial A) _ _).symm
-    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by rw [← hX]
-    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split°)°
-        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
+        ≫ junc (sumCop (dL Unit) (dLAL A)) τ join := (hylo_fixed (TB.initial A) _ _).symm
+    _ = (junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) τ join := by rw [← hX]
+    _ = (junc (sumCop (dL Unit) (dLAL A)) τ split°)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) τ (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
       rw [TFmap_comp_junc]
-    _ = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
+    _ = τ° ≫ τ ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
       rw [junc_recip_junc, Allegory.recip_recip]
 
 calc_steps qsort_rec
@@ -482,8 +482,8 @@ calc_steps qsort_rec
 /-- **The quicksort recursion is the least solution (B&dM p.155)**: every `Y` with
     `nil nil° ∪ join (Y×id×Y) split ⊆ Y` contains `flatten ⦇[nil, split°]⦈°`. -/
 public theorem qsort_least {Y : dList A ⟶ dList A}
-    (h : wrapR° ≫ wrapR ∪ split ≫ rprodMap Y (rprodMap (𝟙 (dE A)) Y) ≫ join ⊑ Y) :
-    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+    (h : τ° ≫ τ ∪ split ≫ rprodMap Y (rprodMap (𝟙 (dE A)) Y) ≫ join ⊑ Y) :
+    (⦇(junc (sumCop (dL Unit) (dLAL A)) τ split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten ⊑ Y := by
   refine hylo_le_of_prefixed (TB.initial A) ?_
   rw [qrec_step1, qrec_step2]; exact h
@@ -576,7 +576,7 @@ theorem pjc_iff (x : ConsList Unit A) (q : (dLAL A).carrier) :
 
 /-- The fold below `embed° perm join° check'`, by induction on the non-empty list. -/
 theorem split_fold_le {bs : dL A ⟶ dLAL A} {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
-    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hb : bs ⊑ τₗ () ≫ perm ≫ join° ≫ check' R)
     (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
     ∀ (y : NEList A) q, cataR (junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st) y q
       → ((perm : dList A ⟶ dList A) ≫ join° ≫ check' R) (neList y) q := by
@@ -599,7 +599,7 @@ variable (R) in
     below `embed° perm join° check'` when `base` and `step` meet the two fusion conditions. -/
 public theorem split_fold_spec {bs : dL A ⟶ dLAL A}
     {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
-    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hb : bs ⊑ τₗ () ≫ perm ≫ join° ≫ check' R)
     (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
     embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
       ⊑ embed ≫ embed° ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R := by
@@ -619,7 +619,7 @@ variable (R) in
     satisfies the specification `split ⊑ perm join° check'`. -/
 public theorem split_cata {bs : dL A ⟶ dLAL A}
     {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
-    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hb : bs ⊑ τₗ () ≫ perm ≫ join° ≫ check' R)
     (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
     embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
       ⊑ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
@@ -631,7 +631,7 @@ calc_steps split_cata
 
 variable (R) in
 /-- **p.155, the `base` condition**: `base ⊑ wrap perm join° check'`. -/
-public theorem split_base : (base : dL A ⟶ dLAL A) ⊑ singleR () ≫ perm ≫ join° ≫ check' R :=
+public theorem split_base : (base : dL A ⟶ dLAL A) ⊑ τₗ () ≫ perm ≫ join° ≫ check' R :=
   le_iff.mpr fun a q h => by
     subst h
     exact ⟨_, rfl, (pjc_iff _ _).mpr ⟨Perm.refl _, fun _ hb => hb.elim, fun _ hb => hb.elim⟩⟩

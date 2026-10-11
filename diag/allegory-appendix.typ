@@ -393,7 +393,7 @@ N(α)(that)
   [#cc2],
 
   [#vstep(EQ, leanc("Freyd.Alg.Cylinder.cyl_step.rhs"),
-    [#src[`zip=𝟙+zip'`, `α=[wrap,cons]`]])],
+    [#src[`zip=𝟙+zip'`, `α=[τ,cons]`]])],
   // A coproduct is a case split, not a composite of functors: Hinze–Marsden has no wiring for it.
   [],
 )]<cyl-step>

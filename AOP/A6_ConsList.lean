@@ -443,19 +443,19 @@ public theorem cataR_con : cataR (graph (con (L := L) (E := E))) = 𝟙 (dCL L E
 @[expose] public def algCons {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) : (⟨E × C.carrier⟩ : RelSet.{0}) ⟶ C :=
   fun p r => φ (Sum.inr p) r
 
-/-- The constructor `wrap` (`nil`) as a relation. -/
-@[expose] public def wrapR : dL L ⟶ dCL L E := graph ConsList.wrap
+/-- `ConsList.wrap` as a relation, `τ`: the unit of the non-empty lists `ConsList A A`; `nil` at the empty leaf. -/
+@[expose] public def τ : dL L ⟶ dCL L E := graph ConsList.wrap
 /-- The constructor `cons` as a relation. -/
 @[expose] public def consR : (⟨E × ConsList L E⟩ : RelSet.{0}) ⟶ dCL L E := graph (fun p => ConsList.cons p.1 p.2)
-/-- B&dM's `wrap`, the one-element list `a ↦ [a]` (the note's `wrap≜⟨𝟙,⊸nil⟩ cons`) — NOT this
-    file's `wrapR`/`ConsList.wrap`, which is a cons-list's `nil`: that is the leaf `l` this one
-    conses the element onto. -/
-@[expose] public def singleR (l : L) : dE E ⟶ dCL L E := graph (fun a => ConsList.cons a (ConsList.wrap l))
+/-- B&dM's `τ`, the one-element list `a ↦ [a]` (the note's `τ≜⟨𝟙,⊸nil⟩ cons`): the unit of the ordinary
+    lists, which conses the element onto the leaf `l`; `CL.τ` above is the leaf constructor itself,
+    the unit of the non-empty lists. -/
+@[expose] public def τₗ (l : L) : dE E ⟶ dCL L E := graph (fun a => ConsList.cons a (ConsList.wrap l))
 
 /-- The recursive equation for the converse of a cons-list catamorphism:
     `val° = (wrap·g°) ∪ (cons·(id×val°)·h°)` (mirrored), for any algebra `φ = [g, h]`. -/
 public theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
-    (cataR φ)° = (algWrap φ)° ≫ wrapR
+    (cataR φ)° = (algWrap φ)° ≫ τ
       ∪ (algCons φ)° ≫ rprodMap (Cat.id (dE E)) (cataR φ)° ≫ consR := by
   apply hom_ext; intro r dec
   cases dec with
@@ -556,18 +556,18 @@ open Lean PrettyPrinter in
   | `($_ $φ) => `(⦇$φ⦈)
   | _ => throw ()
 
--- B&dM's `wrap` is `singleR` at the empty leaf: the leaf argument is matched as `()` for the same
+-- B&dM's `τ` is `τₗ` at the empty leaf: the leaf argument is matched as `()` for the same
 -- reason as `nil` above.
 open Lean PrettyPrinter in
-@[app_unexpander singleR] public meta def unexpandWrap : Unexpander
-  | `($_ ()) => `($(mkIdent `wrap))
+@[app_unexpander τₗ] public meta def unexpandτₗ : Unexpander
+  | `($_ ()) => `($(mkIdent `τ))
   | _ => throw ()
 
 -- The leaf CONSTRUCTOR as an arrow, at the empty leaf type, is that same `nil`.  A DELABORATOR and
 -- not an unexpander: the leaf type is an implicit argument, so it is in the term and not in the
 -- syntax, and only something that reads the term can tell `nil` from a leaf carrying a value.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.CL.wrapR] public meta def delabWrapRAsNil : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.τ] public meta def delabWrapRAsNil : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size != 2 then failure
   unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure

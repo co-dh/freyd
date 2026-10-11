@@ -215,7 +215,7 @@ notation:max "𝟏" => Freyd.Alg.RelSet.CL.dL Unit
 /-- **van-defn**: `H ≜ (head prefix° head°)∪(nil° nil)` — `nil` being `wrapR` out of the one
     point `𝟏`, so `nil° nil` is the coreflexive on the empty schedule. -/
 @[expose] public def Hrel (A : Type) : dSched A ⟶ dSched A :=
-  (headR A ≫ (prefixR : dList A ⟶ dList A)° ≫ (headR A)°) ∪ ((wrapR : 𝟏 ⟶ dSched A)° ≫ wrapR)
+  (headR A ≫ (prefixR : dList A ⟶ dList A)° ≫ (headR A)°) ∪ ((τ : 𝟏 ⟶ dSched A)° ≫ τ)
 
 /-- `H` pointwise: one schedule's first segment is a prefix of the other's, or both are empty. -/
 public theorem Hrel_apply {p q : Sched A} :
@@ -376,7 +376,7 @@ public theorem assocl_natural :
 /-- **van-defn**: `new = (wrap×𝟙) cons` (book p.185) — the transaction becomes a segment of its
     own, and that segment is consed onto the schedule. -/
 public theorem new_eq :
-    newR A = rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dSched A)) ≫ consR := by
+    newR A = rprodMap (τₗ () : dE A ⟶ dList A) (𝟙 (dSched A)) ≫ consR := by
   apply hom_ext; rintro ⟨a, x⟩ r
   constructor
   · intro h
@@ -432,7 +432,7 @@ public theorem old_eq :
     transactions into secure segments. -/
 @[expose] public def Salg (amount : A → Int) (N : Int) :
     (F Unit A).obj (dSched A) ⟶ dSched A :=
-  junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+  junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
     (newR A ∪ oldR amount N)
 
 /-- **van-defn**: `ok` as the BOOLEAN the final program tests — the schedule has a first segment
@@ -477,7 +477,7 @@ public theorem progFn_wrap {a : A} {D : Unit} :
 
 @[expose] public def progAlg (amount : A → Int) (N : Int) :
     (F Unit A).obj (dSched A) ⟶ dSched A :=
-  junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+  junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
     (graph (progFn amount N))
 
 /-- **van-laws**, the greedy fold `⦇S%∋ est(R;H)⦈` the note's §13.4 draws: at each transaction
@@ -534,7 +534,7 @@ public theorem eq_nil_of_cconcat_nil : ∀ r : Sched A,
     or puts it on the front of the segment already there (`glue`). -/
 public theorem partition_cata :
     (partition : dList A ⟶ dSched A)
-      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
             (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp ((cata_square_junc_iff _ _ _).mpr ⟨?_, ?_⟩)
   · intro D r
@@ -591,11 +591,11 @@ public theorem partition_cata :
     opens is secure by the book's standing assumption (`hsingle`). -/
 public theorem van_fusion_cond
     (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
-    (junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+    (junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
           (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)
         ≫ list (secure amount N)
       = (F Unit A).map (list (secure amount N)) ≫ Salg amount N := by
-  have hnil : (wrapR : dL Unit ⟶ dSched A) ≫ list (secure amount N) = wrapR := by
+  have hnil : (τ : dL Unit ⟶ dSched A) ≫ list (secure amount N) = τ := by
     apply hom_ext; intro d r
     constructor
     · rintro ⟨s, hs, hlist⟩
@@ -638,14 +638,14 @@ public theorem van_fusion_cond
         exact ⟨ConsList.cons (ConsList.cons a s) t, Or.inr ⟨s, t, rfl, rfl⟩,
           (listP_secure_iff _ _).mpr ⟨rfl, hsec, hall.2⟩⟩
   have hS : Salg amount N
-      = junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+      = junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
           (newR A ∪ oldR amount N) := rfl
   rw [junc_comp, hS, Fmap_comp_junc, hnil, hstep]
 
 /-- **van-laws**, the fusion row's first step: `partition` replaced by the fold it is. -/
 public theorem van_spec_step1 :
     partition ≫ list (secure amount N)
-      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
             (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
           ≫ list (secure amount N) := by
   rw [partition_cata]
@@ -654,7 +654,7 @@ public theorem van_spec_step1 :
     (`relCata_fusion`) at the condition above absorbs `list(secure)` into the algebra. -/
 public theorem van_spec_step2
     (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
-    ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+    ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
           (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
         ≫ list (secure amount N)
       = ⦇Salg amount N⦈ :=
@@ -695,7 +695,7 @@ public theorem cons_mono_R :
     `wrap` on the first, the two acting on disjoint halves of the pair. -/
 public theorem new_eq_cons :
     rprodMap (𝟙 (⟨A⟩ : RelSet.{0})) (R A) ≫ newR A
-      = rprodMap (singleR () : dE A ⟶ dList A) (R A)
+      = rprodMap (τₗ () : dE A ⟶ dList A) (R A)
         ≫ (consR : (⟨Seg A × Sched A⟩ : RelSet.{0}) ⟶ dSched A) := by
   apply hom_ext; rintro ⟨a, x⟩ r
   constructor
@@ -711,7 +711,7 @@ public theorem new_eq_cons :
     below the `cons`, which lengthens both sides by one segment.  The chain's FIRST step is
     `new_eq_cons`, which already states `(𝟙×R)new = (wrap×R)cons`. -/
 public theorem van_7_14_step2 :
-    rprodMap (singleR () : dE A ⟶ dList A) (R A)
+    rprodMap (τₗ () : dE A ⟶ dList A) (R A)
         ≫ (consR : (⟨Seg A × Sched A⟩ : RelSet.{0}) ⟶ dSched A)
       ⊑ newR A ≫ R A := by
   rw [← new_eq_cons]
@@ -1136,7 +1136,7 @@ calc_steps van_laws
 public theorem van_spec_false_without_hsingle :
     partition ≫ list (secure (fun i : Int => i) 0) ≠ ⦇Salg (fun i : Int => i) 0⦈ := by
   intro hEq
-  have hsq := (cata_square_junc_iff (wrapR : dL Unit ⟶ dSched Int)
+  have hsq := (cata_square_junc_iff (τ : dL Unit ⟶ dSched Int)
     (newR Int ∪ oldR (fun i : Int => i) 0) ⦇Salg (fun i : Int => i) 0⦈).mp
     (relCata_cancel (initial Unit Int) (Salg (fun i : Int => i) 0))
   have hcata : ⦇Salg (fun i : Int => i) 0⦈

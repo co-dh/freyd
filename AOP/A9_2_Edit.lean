@@ -813,11 +813,11 @@ public theorem con_cons (o : Op Char) (es : ConsList Unit (Op Char)) :
     constructors, at the empty leaf. -/
 public theorem con_eq_junc :
     graph (con (L := Unit) (E := Op Char))
-      = junc (sumCop (dL Unit) ⟨Op Char × ConsList Unit (Op Char)⟩) wrapR consR :=
+      = junc (sumCop (dL Unit) ⟨Op Char × ConsList Unit (Op Char)⟩) τ consR :=
   hom_ext fun u es => by
     cases u with
     | inl d =>
-      cases d; simp [junc, graph, sumCop, wrapR, con]
+      cases d; simp [junc, graph, sumCop, τ, con]
       exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
     | inr p => simp [junc, graph, sumCop, consR, con]
 
