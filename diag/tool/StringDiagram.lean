@@ -492,7 +492,9 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    let mark := match r.tri, r.nat with
+    -- A WIRING (copy, discard, `⟨,⟩` of projections) is drawn as the strands meeting, no mark, no name.
+    let wire ← match r.term with | some t => isWiring t | none => pure false
+    let mark := if wire then ", \"wire\"" else match r.tri, r.nat with
       -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
       | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"passup\"" else ", \"pass\""
       | none, none => ""
@@ -2481,6 +2483,33 @@ def canon (e : Expr) : MetaM Expr := do
     | .fvar f => ren[f]?
     | _ => none
 
+/-- `φ×𝟙_B` with `φ`'s source or target itself a product — the map that SPANS its bracketed lanes
+    (`asProdMap?`) — and `B` the object `b`: the arrow whose lanes of `b` run past it. -/
+def spansTimesId (e b : Expr) : MetaM Bool := do
+  let arrows ← e.getAppArgs.filterM fun a => return (← homEnds? a).isSome
+  let #[φ, i] := arrows | return false
+  unless ← isIdArrow i do return false
+  let (ib, _) ← homEnds i
+  unless ← Meta.isDefEq ib b do return false
+  let regionTy ← Meta.inferType b
+  let (s, t) ← homEnds φ
+  return (← splitTimes? regionTy s).isSome || (← splitTimes? regionTy t).isSome
+
+/-- A PURE WIRING — identities, projections, `⟨,⟩` and composites of them.  In this convention the
+    copy and the discards ARE the wiring, so such a bead is drawn with no mark and no name. -/
+partial def isWiring (e : Expr) : MetaM Bool := do
+  match e.getAppFnArgs with
+  | (``Cat.id, _) | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) => return true
+  | (``Cat.comp, _) => (factors e).allM isWiring
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    let some (f, g) := lastTwo args | return false
+    return (← isWiring f) && (← isWiring g)
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    let some f := args.back? | return false
+    let .lam _ _ body _ ← Meta.whnfD f | return false
+    return (StrDiag.projIndex (.bvar 0) body).isSome
+  | _ => return false
+
 mutual
 
 /-- A SPLIT OF TWO COMPOSITES OPENS: `⟨W₁R₁,W₂R₂⟩ = ⟨W₁,W₂⟩(R₁×R₂)` (`rpair_comp_rprodMap`), so the
@@ -2658,6 +2687,12 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
       unless ← Meta.isDefEq (← Meta.inferType x') regionTy do return none
       unless ← Meta.isDefEq x' y' do return none
+      -- `φ×𝟙` WHOSE `φ` SPANS A BRACKETED END (`asProdMap?`'s `none`): the identity's lanes run past,
+      -- the family being the statement's own as for `φ×𝟙` on one lane.  `kabstract` cannot say so
+      -- where `φ`'s end IS the identity's object (`replaceHead×𝟙` at `City×J(City)`): it takes both.
+      if (← spansTimesId e x') && (← familyVar e objVars).isSome then
+        return some (drew (← Diagram.bead regionTy cat objVars (ax.extract 0 (ax.size - k))
+          (ay.extract 0 (ay.size - k)) ox oy e (over := ax.extract (ax.size - k) ax.size)))
       let e' ← Meta.kabstract e x'
       unless e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) do return none
       -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too, but

@@ -124,6 +124,17 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
 @[expose] public def droplFn (a : City) (t : Tour City) : Tour City :=
   (replaceHead a t.1, ConsList.cons a t.2)
 
+/-- `droplFn`'s defining equation, stated so the formula printer can print it. -/
+public theorem droplFn_pair (a : City) (x y : Journey City) :
+    droplFn a (x, y) = (replaceHead a x, ConsList.cons a y) := rfl
+
+/-- `replaceHead`'s two defining equations, stated so the formula printer can print them. -/
+public theorem replaceHead_wrap (a b c : City) :
+    replaceHead a (ConsList.wrap (b, c)) = ConsList.wrap (a, c) := rfl
+
+public theorem replaceHead_cons (a b : City) (x : Journey City) :
+    replaceHead a (ConsList.cons b x) = ConsList.cons a x := rfl
+
 /-- **tour-defn**: `dropr (a,(xs,[b]⧺ys))=([a]⧺xs,[a]⧺ys)`. -/
 @[expose] public def droprFn (a : City) (t : Tour City) : Tour City :=
   (ConsList.cons a t.1, replaceHead a t.2)
