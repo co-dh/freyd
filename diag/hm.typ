@@ -112,7 +112,7 @@
 #let HMC = HMS * HMR
 
 /// How far a mark reaches either side of its point: what a name set beside the point must clear.
-#let hm-mark-half(nat) = if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
+#let hm-mark-half(nat) = if nat == "wire" { 0 } else if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
@@ -180,6 +180,8 @@
   (true, calc.max(HMC, calc.sqrt(w * w + calc.pow(sz.height / 0.8cm, 2)) / 2 + HPAD))
 }
 #let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none, nat: "strict") = {
+  // `wire`: a copy or discard — the strands meeting ARE the arrow, so no mark and no name.
+  if nat == "wire" { return }
   let (inside, r) = hm-fit(nat, label, col)
   hm-mark(p, nat, col, bg, r: r)
   if inside {

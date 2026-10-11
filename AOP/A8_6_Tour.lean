@@ -124,6 +124,17 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
 @[expose] public def droplFn (a : City) (t : Tour City) : Tour City :=
   (replaceHead a t.1, ConsList.cons a t.2)
 
+/-- `droplFn`'s defining equation, stated so the formula printer can print it. -/
+public theorem droplFn_pair (a : City) (x y : Journey City) :
+    droplFn a (x, y) = (replaceHead a x, ConsList.cons a y) := rfl
+
+/-- `replaceHead`'s two defining equations, stated so the formula printer can print them. -/
+public theorem replaceHead_wrap (a b c : City) :
+    replaceHead a (ConsList.wrap (b, c)) = ConsList.wrap (a, c) := rfl
+
+public theorem replaceHead_cons (a b : City) (x : Journey City) :
+    replaceHead a (ConsList.cons b x) = ConsList.cons a x := rfl
+
 /-- **tour-defn**: `dropr (a,(xs,[b]⧺ys))=([a]⧺xs,[a]⧺ys)`. -/
 @[expose] public def droprFn (a : City) (t : Tour City) : Tour City :=
   (ConsList.cons a t.1, replaceHead a t.2)
@@ -371,6 +382,57 @@ public theorem dropl_lax_natural :
   exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂, h₃⟩, ht⟩ => by
     obtain rfl : t = droplFn q.1 q.2 := ht
     exact ⟨droplFn p.1 p.2, rfl, clP_replaceHead R h₁ p.2.1 q.2.1 h₂, h₁, h₃⟩
+
+/-- **the copy `⟨⟨π₁,π₂π₁⟩,⟨π₁,π₂π₂⟩⟩` that opens `dropl` is LAX**: `(R×J(R)×J(R)) copy ⊑
+    copy ((R×J(R))×(R×J(R)))` — one city copied into both pairs, so two different images of it
+    are reached by no input. -/
+public theorem droplCopy_lax_natural :
+    LaxNatural
+      (Relator.prod (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator))
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.prod journeyRelator journeyRelator))
+      (fun a : RelSet.{0} =>
+        rpair
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+            ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+              ≫ (graph Prod.fst : dTour a.carrier ⟶ ⟨Journey a.carrier⟩)))
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+            ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+              ≫ (graph Prod.snd : dTour a.carrier ⟶ ⟨Journey a.carrier⟩)))) := by
+  intro a b R
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂, h₃⟩, ht⟩ => by
+    obtain ⟨⟨e₁, m, e₂, e₃⟩, e₄, m', e₅, e₆⟩ := ht
+    have e₁ : t.1.1 = q.1 := e₁; have e₄ : t.2.1 = q.1 := e₄
+    have e₂ : m = q.2 := e₂; have e₅ : m' = q.2 := e₅
+    have e₃ : t.1.2 = m.1 := e₃; have e₆ : t.2.2 = m'.2 := e₆
+    subst e₂ e₅
+    exact ⟨((p.1, p.2.1), (p.1, p.2.2)), ⟨⟨rfl, p.2, rfl, rfl⟩, rfl, p.2, rfl, rfl⟩,
+      ⟨e₁ ▸ h₁, e₃ ▸ h₂⟩, e₄ ▸ h₁, e₆ ▸ h₃⟩
+
+/-- **`replaceHead` is LAX** in the city type: `(R×J(R)) replaceHead ⊑ replaceHead J(R)`. -/
+public theorem replaceHead_lax_natural :
+    LaxNatural journeyRelator (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator)
+      (fun a : RelSet.{0} =>
+        (graph (fun q : a.carrier × Journey a.carrier => replaceHead q.1 q.2)
+          : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩)) := by
+  intro a b R
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂⟩, ht⟩ => by
+    obtain rfl : t = replaceHead q.1 q.2 := ht
+    exact ⟨replaceHead p.1 p.2, rfl, clP_replaceHead R h₁ p.2 q.2 h₂⟩
+
+/-- **`cons` is LAX** in the city type: `(R×J(R)) cons ⊑ cons J(R)`. -/
+public theorem journeyCons_lax_natural :
+    LaxNatural journeyRelator (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator)
+      (fun a : RelSet.{0} =>
+        (graph (fun q : a.carrier × Journey a.carrier => ConsList.cons q.1 q.2)
+          : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩)) := by
+  intro a b R
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂⟩, ht⟩ => by
+    obtain rfl : t = ConsList.cons q.1 q.2 := ht
+    exact ⟨ConsList.cons p.1 p.2, rfl, h₁, h₂⟩
 
 /-! ## `tour-mono` -/
 
