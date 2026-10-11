@@ -5,6 +5,8 @@
 -/
 import diag.tool.FormulaRender
 import diag.StrDiagNames
+import AOP.A8_6_Tour
+import AOP.A8_5_Paragraph
 
 namespace Freyd.LabelTest
 
@@ -89,5 +91,19 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   Lean.logInfo (← formula ``Freyd.Alg.RelSet.powerRel_reading false)
+
+-- A DELABORATOR THAT READS AN OPERAND PRINTS THE APPLICATION: `ConsList.wrap (a,b)` is the note's
+-- `[a, b]` (`delabWrapPair`), and holing the pair `(a,b)` as an operand stopped it firing.
+/-- info: start(a,b) = ([a, b],[a, b]) -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.Tour.start)
+
+-- n EQUAL NEIGHBOURING FACTORS ARE A POWER: the two `wrapR`s are `wrap²`; the third `wrap` is
+-- `singleR ()`, a different arrow the printer also calls `wrap`, so it stays a factor of its own.
+/-- info: (∀a. len(a) ≤ w) ⟹ [wrap² wrap,cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q(len)(w))] ⊑ cpL ⟨g₁,g₂⟩ merge(⊤) thinL(Q(len)(w)) -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.Paragraph.para_body_split)
 
 end Freyd.LabelTest
