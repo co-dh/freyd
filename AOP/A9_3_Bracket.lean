@@ -1206,7 +1206,7 @@ public theorem listP_cmap_cons {B : Type} {R : CL.dE A ⟶ CL.dE B} {a : A} {b :
 
 public theorem listP_inits {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (inits x) (inits y)
-  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, rfl⟩
   | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
   | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
   | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h =>
@@ -1214,14 +1214,14 @@ public theorem listP_inits {B : Type} (R : CL.dE A ⟶ CL.dE B) :
 
 public theorem listP_tails {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (tails x) (tails y)
-  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, rfl⟩
   | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
   | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
   | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h => ⟨h, listP_tails R x y h.2⟩
 
 public theorem listP_initsP {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (initsPFn x) (initsPFn y)
-  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => trivial
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => rfl
   | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
   | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
   | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h =>
@@ -1273,7 +1273,7 @@ public theorem listP_zip {X X' Y Y' : Type} (R : CL.dE X ⟶ CL.dE X') (S : CL.d
 public theorem listP_snoc {X X' : Type} (R : CL.dE X ⟶ CL.dE X') {a : X} {a' : X'} (ha : R a a') :
     ∀ (xs : CL.ConsList Unit X) (xs' : CL.ConsList Unit X'), listP R xs xs' →
       listP R (snoc (xs, a)) (snoc (xs', a'))
-  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => ⟨ha, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => ⟨ha, rfl⟩
   | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
   | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
   | CL.ConsList.cons _ xs, CL.ConsList.cons _ xs', h => ⟨h.1, listP_snoc R ha xs xs' h.2⟩
