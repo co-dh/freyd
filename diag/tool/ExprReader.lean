@@ -1033,6 +1033,22 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     catch _ => s.restore
   return none
 
+/-- THE ARROW UNDER A LANE IS SPELLED AS THE STATEMENT SPELLS IT: the first proper subterm of `e`,
+    outermost first, that is `r` up to unfolding.  `isDefEq` against `F.map ?r` may unfold a named
+    relation on the way (`Δ.map ?r` against `sort(≼)×sort(≼)` assigns `setify° ordered(≼)`), and a
+    bead must keep the name the statement gives it, never draw its body. -/
+partial def spelledIn (e r : Expr) : MetaM (Option Expr) := do
+  let ty ← Meta.inferType r
+  let rec go (t : Expr) : MetaM (Option Expr) := do
+    if t.hasLooseBVars then return none
+    -- A subterm that does not type on its own (an instance's field) is no candidate, not a failure.
+    let hit ← try Meta.withNewMCtxDepth do
+        pure ((← Meta.isDefEq (← Meta.inferType t) ty) && (← Meta.isDefEq t r))
+      catch _ => pure false
+    if hit then return some t
+    t.getAppArgs.findSomeM? go
+  e.consumeMData.getAppArgs.findSomeM? go
+
 /-- `e` as `G.map r` for the functor `g`, with `r` the arrow underneath.  The functor is the FIRST
     explicit argument of the projection, so the application is built with it already in place: an
     all-metavariable one cannot synthesise `Cat ?𝒞` and throws.  `none` ROLLS THE STATE BACK, so a
@@ -1048,7 +1064,8 @@ def mapOfFunctor? (g : Expr) (regionTy e : Expr) : MetaM (Option Expr) := do
     unless ← Meta.isDefEq app e do s.restore; return none
     let r ← instantiateMVars r
     if r.hasExprMVar || (← Meta.isDefEq r e) then s.restore; return none
-    return some r
+    if (e.find? (· == r)).isSome then return some r
+    return some ((← spelledIn e r).getD r)
   catch _ => s.restore; return none
 
 /-- The ARROW analogue of `peelWith?`: `e` as `F(r)` for the catalogue entry `n`, or `none`.  A
