@@ -682,6 +682,30 @@ public theorem list_inr_elim {A B C : Type} (g : A → C) (h : B → C) :
     list (graph Sum.inr : dE B ⟶ dE (A ⊕ B)) ≫ list (graph (Sum.elim g h)) = list (graph h) := by
   rw [← list_comp, graph_comp]; rfl
 
+/-- `merge(⊤)` on lists of paragraphs is natural in the word type, since it is `cat` (`merge_top`),
+`cat` is, and composing with the paragraph relator on the inside keeps it so. -/
+public theorem merge_top_strictNatural :
+    StrictNatural
+      (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+        nelistRelator) listRelator)
+      (Relator.prod
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator)
+        (Relator.comp (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+          nelistRelator) listRelator))
+      (fun a => merge (topMor (dPara a.carrier) (dPara a.carrier))) := by
+  have h : (fun a : RelSet.{0} => (merge (topMor (dPara a.carrier) (dPara a.carrier))
+      : (relProd (dList (Para a.carrier)) (dList (Para a.carrier))).p ⟶ dList (Para a.carrier)))
+      = fun a : RelSet.{0} => cat (A := Para a.carrier) := funext fun _ => merge_top
+  rw [h]
+  intro _ _ R
+  exact strictNatural_inside (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+    nelistRelator) (@cat_strictNatural) R
+
+/-- `list(f)` of a map is a map. -/
+public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
+  rw [list_graph]; exact graph_map _
+
 /-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
 public theorem inl_cpL {L E X : Type} :
     ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
@@ -844,8 +868,8 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
           (h₁ (Word := Word)) (h₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
-        rw [← Cat.assoc _ cpL g₁, ← Cat.assoc _ cpL g₂, inl_cpL]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc _ cpL g₁, ← Cat.assoc _ cpL g₂, inl_cpL, Cat.assoc _ _ g₁,
+          Cat.assoc _ _ g₂]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
@@ -857,8 +881,7 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
         rw [← RelProd.map_comp_pair (show Map (sumCop (dL Word)
             (⟨Word × ConsList Unit (Para Word)⟩ : RelSet.{0})).u₁ from graph_map _),
           ← RelProd.map_comp_pair (show Map (cpL (L := Word) (E := Word) (X := Para Word))
-            from graph_map _)]
-        simp only [Cat.assoc]
+            from graph_map _), Cat.assoc, Cat.assoc]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
@@ -893,9 +916,8 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
             (g₁ (Word := Word)) (g₂ (len := len) (w := w))
           ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
         rw [← RelProd.map_comp_pair (show Map (cpr (A := Word) (B := Para Word)) from graph_map _),
-          ← RelProd.map_comp_pair (show Map (list (graph Sum.inr : dE (Word × Para Word)
-            ⟶ dE (Word ⊕ Word × Para Word))) by rw [list_graph]; exact graph_map _)]
-        simp only [Cat.assoc]
+          ← RelProd.map_comp_pair (map_list_graph (Sum.inr : Word × Para Word → Word ⊕ Word × Para Word)),
+          Cat.assoc, Cat.assoc]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
