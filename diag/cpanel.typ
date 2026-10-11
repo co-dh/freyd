@@ -10,7 +10,7 @@
 // `ys(nout)`.  Branch equalisation — §4e's `w` — lives here and nowhere else.
 
 // `cetz` through `circuit.typ`, not from the package: that is where the `--input nodraw=1` shim lives.
-#import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc, PFRAME
+#import "circuit.typ": cetz, gbox, wire, bend, dot, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc, PFRAME
 #import "draw.typ": lab
 #import "note-style.typ": P, TYCOL, fit, pscale-get
 
@@ -189,7 +189,21 @@
         })
         for (j, y) in ys(l.nout).enumerate() { bend((x1, s * sp + y), (x1 + CSP, outs.at(o + j)), k: 0.5) }
       }
-      for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp) }
+      // `reads`: lane i's input j is source strand reads[i][j].  A strand read by two lanes is
+      // copied, by one is routed straight to it, by none is discarded.
+      let rd = t.at("reads", default: none)
+      if rd == none { for y in ys(t.nin) { delta((0, y), li: 0, lo: CSP, sp: sp) } } else {
+        for (k, y) in ys(t.nin).enumerate() {
+          let to = ()
+          for (i, r) in rd.enumerate() {
+            let s = if i == 0 { 1 } else { -1 }
+            for (j, x) in r.enumerate() { if x == k { to.push(s * sp + ys(t.lanes.at(i).nin).at(j)) } }
+          }
+          if to.len() == 0 { bang((CDL, y), li: CDL) }
+          for q in to { bend((0, y), (CSP, q), k: if to.len() > 1 { 0.6 } else { 0.5 }) }
+          if to.len() > 1 { dot((0, y)) }
+        }
+      }
     }
     return (w: x1 + CSP, hh: sp + mh, body: body)
   }

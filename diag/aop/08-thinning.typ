@@ -895,8 +895,14 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Tour.next")], [#leant("Freyd.Alg.RelSet.Tour.next")],
   "Freyd.Alg.RelSet.Tour.next",
   [the second city of the journey],
+  [#rowkey("Freyd.Alg.RelSet.Tour.tail")], [#leant("Freyd.Alg.RelSet.Tour.tail")],
+  "Freyd.Alg.RelSet.Tour.tail",
+  [the journey without its first city, a non-empty list],
+  [#rowkey("Freyd.Alg.RelSet.Tour.prepend")], [#leant("Freyd.Alg.RelSet.Tour.prepend")],
+  "Freyd.Alg.RelSet.Tour.prepend",
+  [a put in front of a non-empty list, a journey],
   [#rowkey("Freyd.Alg.RelSet.Tour.replaceHead")], [#leant("Freyd.Alg.RelSet.Tour.replaceHead")],
-  "Freyd.Alg.RelSet.Tour.replaceHead",
+  "Freyd.Alg.RelSet.Tour.replaceHead_eq",
   [replace the first city of the journey by a],
   [#rowkey("Freyd.Alg.RelSet.Tour.outcost")], [#leant("Freyd.Alg.RelSet.Tour.outcost")],
   "Freyd.Alg.RelSet.Tour.outcost",
@@ -943,7 +949,10 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A8_6_Tour.Tour@5351625c
 // lean:AOP.A8_6_Tour.head@03f58dbc
 // lean:AOP.A8_6_Tour.next@461ac890
-// lean:AOP.A8_6_Tour.replaceHead@ae4d76cf
+// lean:AOP.A8_6_Tour.tail@7addf003
+// lean:AOP.A8_6_Tour.prepend@b4d4f758
+// lean:AOP.A8_6_Tour.replaceHead@e9d516c0
+// lean:AOP.A8_6_Tour.replaceHead_eq@b1f91c3c
 // lean:AOP.A8_6_Tour.outcost@1a419787
 // lean:AOP.A8_6_Tour.incost@8cd0d498
 // lean:AOP.A8_6_Tour.cost@06de8db1

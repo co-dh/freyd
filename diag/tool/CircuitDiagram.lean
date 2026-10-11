@@ -492,6 +492,16 @@ def wiresOf (o : Obj) : MetaM (Array Obj) :=
   | .ok ws => return ws
   | .error m => throwError m
 
+/-- How many strands each factor of a product is, for the projection `πᵢ : src ⟶ tgt`.  The kept
+    factor is as wide as `tgt`, and in a binary product the other takes the rest of `src`'s strands:
+    a factor read off `src.parts` can stay one opaque wire (`Tour City`) where the whole object and
+    the projection's target open it (`Journey(City)²`), and then the strand counts disagree. -/
+def projWidths (src tgt : Obj) (i : Nat) : MetaM (Array Nat) := do
+  let n := (← wiresOf tgt).size
+  let ks := (← src.parts.mapM fun p => do return (← wiresOf p).size).set! i n
+  if ks.size == 2 then return ks.set! (1 - i) ((← wiresOf src).size - n)
+  return ks
+
 /-- The fork's `open` generator: the coproduct arrives as ONE wire and the arm splits or ends it
     according to its summand. -/
 def openPic (src s : Obj) : MetaM Pic := return mkPic "open" #[src] (← wiresOf s) src s true #[]
@@ -641,6 +651,58 @@ partial def runParts (e : Expr) : MetaM (Array Pic × Array Obj) := do
   for it in items do objs := objs.push it.tgt
   return (items, objs)
 
+/-- A PURE WIRING — identities, projections, `⟨,⟩` and composites of them — as the source strand
+    each target strand is; `none` for anything that does work.  What lets a fork copy a strand only
+    to the lanes that read it (`forkLane`). -/
+partial def wiring? (e : Expr) : MetaM (Option (Array Nat)) := do
+  let (src, tgt) ← endsOf e
+  match e.getAppFnArgs with
+  | (``Cat.id, _) => return some (List.range (← wiresOf src).size).toArray
+  | (``Cat.comp, _) =>
+    let mut acc : Option (Array Nat) := none
+    for f in factorList e do
+      let some w ← wiring? f | return none
+      if let some a := acc then
+        if w.any (· ≥ a.size) then
+          throwError "wiring {← StrDiag.label f} reads strands {w} of a {a.size}-strand object \
+            {(← endsOf f).1.label} ({(← wiresOf (← endsOf f).1).map (·.label)})"
+      acc := some (match acc with | none => w | some a => w.map (a[·]!))
+    return acc
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    let some (f, g) := lastTwo args | return none
+    let some a ← wiring? f | return none
+    let some b ← wiring? g | return none
+    return some (a ++ b)
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    let some f := args.back? | return none
+    let .lam _ _ body _ ← Meta.whnfD f | return none
+    let some i := StrDiag.projIndex (.bvar 0) body | return none
+    if src.kind != .prod || i ≥ src.parts.size then return none
+    let ks ← projWidths src tgt i
+    let lo := (ks.extract 0 i).foldl (· + ·) 0
+    return some ((List.range ks[i]!).toArray.map (lo + ·))
+  | _ => return none
+
+/-- A `⟨,⟩` lane opened at its longest leading wiring: the source strands it READS, in order, and
+    the picture of the rest, which starts on exactly those strands — so the fork copies a strand
+    only to the lanes that read it and discards one no lane reads, instead of copying every strand
+    and dropping most of them at dots.  A wiring that permutes or duplicates keeps the whole lane. -/
+partial def forkLane (x : Expr) (ws : Array Obj) : MetaM (Array Nat × Pic) := do
+  let fs := factorList x
+  let mut best : Option (Nat × Array Nat) := none
+  for j in [1 : fs.size + 1] do
+    match ← wiring? (← StrDiag.compose (fs.extract 0 j)) with
+    | some w => best := some (j, w)
+    | none => break
+  if let some (j, w) := best then
+    if (List.range (w.size - 1)).all fun i => w[i]! < w[i + 1]! then
+      if j < fs.size then return (w, ← lane (← drawRun (← StrDiag.compose (fs.extract j fs.size))))
+      let ins := w.map (ws[·]!)
+      let (_, t) ← endsOf x
+      return (w, { val := nodeOf "seq" ins.size ins.size #[("items", .arr #[]), ("seams", .arr #[])],
+                   ins, outs := ins, src := t, tgt := t, isMap := true })
+  return ((List.range ws.size).toArray, ← lane (← drawRun x))
+
 /-- One picture for one arrow. -/
 partial def draw (e : Expr) : MetaM Pic := do
   let (src, tgt) ← endsOf e
@@ -668,15 +730,21 @@ partial def draw (e : Expr) : MetaM Pic := do
       return mkPic "cap" bs[0]!.ins bs[0]!.outs src tgt false
         #[("lanes", .arr (bs.map (·.val)))]
     | none => leaf e src tgt
-  -- §3 row 20: `⟨R,S⟩` — copy every strand, run BOTH lanes, and leave on their outputs STACKED.
-  -- A `cap` with no merge: the pair's target IS the product of the lanes' targets, so the node's
-  -- outputs are the lanes' outputs in order and no box says `⟨,⟩`.
+  -- §3 row 20: `⟨R,S⟩` — copy each strand to the lanes that read it, run BOTH lanes, and leave on
+  -- their outputs STACKED.  A `cap` with no merge: the pair's target IS the product of the lanes'
+  -- targets, so the node's outputs are the lanes' outputs in order and no box says `⟨,⟩`.
+  -- `reads` is written only when some lane reads less than every strand in order.
   | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
     match lastTwo args with
     | some (f, g) => do
-      let bs := #[← lane (← drawRun f), ← lane (← drawRun g)]
-      return mkPic "fork" bs[0]!.ins (bs.foldl (fun a b => a ++ b.outs) #[]) src tgt
-        (bs.all (·.isMap)) #[("lanes", .arr (bs.map (·.val)))]
+      let ws ← wiresOf src
+      let ls ← #[f, g].mapM (forkLane · ws)
+      let bs := ls.map (·.2)
+      let all := (List.range ws.size).toArray
+      let rd := if ls.all (·.1 == all) then #[]
+        else #[("reads", Val.arr (ls.map fun (r, _) => .arr (r.map .n)))]
+      return mkPic "fork" ws (bs.foldl (fun a b => a ++ b.outs) #[]) src tgt
+        (bs.all (·.isMap)) (#[("lanes", .arr (bs.map (·.val)))] ++ rd)
     | none => leaf e src tgt
   -- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.
   | (``Freyd.Alg.junc, args) =>
@@ -1033,7 +1101,7 @@ partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none)
     | some i =>
       if src.kind != .prod || i ≥ src.parts.size then
         throwError "a projection out of {src.label}, which is not a product of {i + 1} factors"
-      let keep ← src.parts.mapM fun p => do return (← wiresOf p).size
+      let keep ← projWidths src tgt i
       return mkPic "proj" ws (← wiresOf tgt) src tgt true
         #[("at", .n i), ("label", .s (if i == 0 then "π₁" else "π₂")),
           ("keep", .arr (keep.map .n))]

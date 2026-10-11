@@ -71,17 +71,64 @@ set_option linter.unusedVariables false in
   | ConsList.wrap (a, b) => b
   | ConsList.cons _ xs => head xs
 
+/-- A journey READ AS a `list⁺`: the same cities, the leaf pair `[b,c]` taken apart into `[b]⧺[c]`. -/
+@[expose, coe] public def toNE : Journey City → NEList City
+  | ConsList.wrap (b, c) => ConsList.cons b (ConsList.wrap c)
+  | ConsList.cons a x => ConsList.cons a (toNE x)
+
 set_option linter.unusedVariables false in
-/-- `[a]⧺xs` with the old head dropped — what `dropl` does to the outward journey. -/
-@[expose] public def replaceHead (a : City) : Journey City → Journey City
-  | ConsList.wrap (c, b) => ConsList.wrap (a, b)
-  | ConsList.cons _ xs => ConsList.cons a xs
+/-- **tour-defn**: `tail([b,c])=[c]`, `tail([b]⧺x)=x` — a journey without its first city, a `list⁺`.
+    The one place the two shapes of a journey are told apart. -/
+@[expose] public def tail : Journey City → NEList City
+  | ConsList.wrap (b, c) => ConsList.wrap c
+  | ConsList.cons _ x => toNE x
+
+/-- **tour-defn**: `[a]⧺x`, the city `a` put in front of a `list⁺`: a journey. -/
+@[expose] public def prepend (a : City) : NEList City → Journey City
+  | ConsList.wrap c => ConsList.wrap (a, c)
+  | ConsList.cons b x => ConsList.cons a (prepend b x)
+
+/-- **tour-defn**: `replaceHead ≜ (𝟙×tail) ⧺` — the first city replaced by `a`. -/
+@[expose] public def replaceHead (a : City) : Journey City → Journey City := fun x => prepend a (tail x)
+
+/-- `replaceHead ≜ (𝟙×tail) ⧺`, point-free. -/
+public theorem replaceHead_eq :
+    (graph (fun q : City × Journey City => replaceHead q.1 q.2)
+      : (⟨City × Journey City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩)
+    = rprodMap (𝟙 (⟨City⟩ : RelSet.{0}))
+        (graph tail : (⟨Journey City⟩ : RelSet.{0}) ⟶ dNE City)
+      ≫ (graph (fun q : City × NEList City => prepend q.1 q.2)
+          : (⟨City × NEList City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩) := by
+  apply hom_ext; intro p q
+  constructor
+  · intro h; exact ⟨(p.1, tail p.2), ⟨rfl, rfl⟩, h⟩
+  · rintro ⟨⟨u₁, u₂⟩, ⟨h₁, h₂⟩, h⟩
+    have e₁ : p.1 = u₁ := h₁
+    have e₂ : u₂ = tail p.2 := h₂
+    have e : q = prepend u₁ u₂ := h
+    show q = prepend p.1 (tail p.2)
+    rw [e, e₁, e₂]
+
+/-- `⧺` undoes the reading as a `list⁺`: `[a]⧺↑x = [a]⧺x`, the cons of the journey. -/
+public theorem prepend_toNE (a : City) : ∀ x : Journey City, prepend a (toNE x) = ConsList.cons a x
+  | ConsList.wrap (_, _) => rfl
+  | ConsList.cons b x => congrArg (ConsList.cons a) (prepend_toNE b x)
+
+public theorem replaceHead_wrap (a b c : City) :
+    replaceHead a (ConsList.wrap (b, c)) = ConsList.wrap (a, c) := rfl
+
+public theorem replaceHead_cons (a b : City) (x : Journey City) :
+    replaceHead a (ConsList.cons b x) = ConsList.cons a x := prepend_toNE a x
 
 public theorem hd_replaceHead (a : City) (x : Journey City) : head (replaceHead a x) = a := by
-  rcases x with ⟨_, _⟩ | _ <;> rfl
+  rcases x with ⟨_, _⟩ | ⟨_, _⟩
+  · rfl
+  · rw [replaceHead_cons]; rfl
 
 public theorem nxt_replaceHead (a : City) (x : Journey City) : next (replaceHead a x) = next x := by
-  rcases x with ⟨_, _⟩ | _ <;> rfl
+  rcases x with ⟨_, _⟩ | ⟨_, _⟩
+  · rfl
+  · rw [replaceHead_cons]; rfl
 
 /-- **tour-defn**: `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`. -/
 @[expose] public def outcost (tc : City × City → Int) : Journey City → Int
@@ -104,6 +151,7 @@ public theorem outcost_replaceHead (a : City) (x : Journey City) :
     obtain ⟨p₁, p₂⟩ := p
     show tc (a, p₂) = tc (p₁, p₂) - tc (p₁, p₂) + tc (a, p₂); omega
   | cons b x =>
+    rw [replaceHead_cons]
     show tc (a, head x) + outcost tc x
       = tc (b, head x) + outcost tc x - tc (b, head x) + tc (a, head x)
     omega
@@ -115,6 +163,7 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
     obtain ⟨p₁, p₂⟩ := p
     show tc (p₂, a) = tc (p₂, p₁) - tc (p₂, p₁) + tc (p₂, a); omega
   | cons b x =>
+    rw [replaceHead_cons]
     show tc (head x, a) + incost tc x
       = tc (head x, b) + incost tc x - tc (head x, b) + tc (head x, a)
     omega
@@ -124,12 +173,22 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
 @[expose] public def droplFn (a : City) (t : Tour City) : Tour City :=
   (replaceHead a t.1, ConsList.cons a t.2)
 
+/-- `droplFn`'s defining equation, stated so the formula printer can print it. -/
+public theorem droplFn_pair (a : City) (x y : Journey City) :
+    droplFn a (x, y) = (prepend a (tail x), ConsList.cons a y) := rfl
+
+/-- `tail`'s two defining equations, stated so the formula printer can print them. -/
+public theorem tail_wrap (b c : City) :
+    tail (ConsList.wrap (b, c)) = (ConsList.wrap c : NEList City) := rfl
+
+public theorem tail_cons (b : City) (x : Journey City) : tail (ConsList.cons b x) = toNE x := rfl
+
 /-- **tour-defn**: `dropr (a,(xs,[b]⧺ys))=([a]⧺xs,[a]⧺ys)`. -/
 @[expose] public def droprFn (a : City) (t : Tour City) : Tour City :=
   (ConsList.cons a t.1, replaceHead a t.2)
 
-/-- `dropl` point-free: `dropl = ⟨⟨π₁,π₂π₁⟩ replaceHead, ⟨π₁,π₂π₂⟩ cons⟩` — copy `a`, replace the
-    outward journey's head with it, and cons it onto the return journey. -/
+/-- `dropl` point-free: `dropl = ⟨⟨π₁,π₂π₁⟩(𝟙×tail)⧺, ⟨π₁,π₂π₂⟩ cons⟩` — copy `a`, put it in
+    front of the outward journey's tail, and cons it onto the return journey. -/
 public theorem dropl_pointfree :
     (graph (fun p : City × Tour City => droplFn p.1 p.2)
       : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
@@ -137,13 +196,16 @@ public theorem dropl_pointfree :
         (rpair (graph Prod.fst : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ ⟨City⟩)
             ((graph Prod.snd : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
               ≫ (graph Prod.fst : dTour City ⟶ ⟨Journey City⟩))
-          ≫ (graph (fun q : City × Journey City => replaceHead q.1 q.2)
-              : (⟨City × Journey City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩))
+          ≫ rprodMap (𝟙 (⟨City⟩ : RelSet.{0}))
+              (graph tail : (⟨Journey City⟩ : RelSet.{0}) ⟶ dNE City)
+          ≫ (graph (fun q : City × NEList City => prepend q.1 q.2)
+              : (⟨City × NEList City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩))
         (rpair (graph Prod.fst : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ ⟨City⟩)
             ((graph Prod.snd : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
               ≫ (graph Prod.snd : dTour City ⟶ ⟨Journey City⟩))
           ≫ (graph (fun q : City × Journey City => ConsList.cons q.1 q.2)
               : (⟨City × Journey City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩)) := by
+  rw [← replaceHead_eq]
   apply hom_ext; intro p q
   constructor
   · intro h
@@ -288,14 +350,36 @@ public theorem tourAlg_apply (u : (((F (City × City) City).obj (dTour City))).c
     (t : Tour City) : tourAlg u t = (t = droplAlgFn u ∨ t = droprAlgFn u) := by
   simp only [tourAlg, union_apply]; rfl
 
-/-- Replacing the head on both sides keeps a journey `cl(R×R,R)`-related. -/
-public theorem clP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b) :
-    ∀ (x : Journey A) (y : Journey B), clP (rprodMap R R) R x y →
-      clP (rprodMap R R) R (replaceHead a x) (replaceHead b y)
-  | ConsList.wrap (_, _), ConsList.wrap (_, _), h => ⟨hab, h.2⟩
+/-- Reading as a `list⁺` keeps journeys related: `cl(R×R,R)` becomes `cl(R,R)`. -/
+public theorem clP_toNE {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x : Journey A) (y : Journey B), clP (rprodMap R R) R x y → clP R R (toNE x) (toNE y)
+  | ConsList.wrap (_, _), ConsList.wrap (_, _), h => ⟨h.1, h.2⟩
   | ConsList.wrap _, ConsList.cons _ _, h => h.elim
   | ConsList.cons _ _, ConsList.wrap _, h => h.elim
-  | ConsList.cons _ _, ConsList.cons _ _, h => ⟨hab, h.2⟩
+  | ConsList.cons _ x, ConsList.cons _ y, h => ⟨h.1, clP_toNE R x y h.2⟩
+
+/-- `tail` keeps journeys related: `cl(R×R,R)` on the journeys gives `cl(R,R)` on the tails. -/
+public theorem clP_tail {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x : Journey A) (y : Journey B), clP (rprodMap R R) R x y → clP R R (tail x) (tail y)
+  | ConsList.wrap (_, _), ConsList.wrap (_, _), h => h.2
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ x, ConsList.cons _ y, h => clP_toNE R x y h.2
+
+/-- `⧺` keeps related cities and related `list⁺`s related as journeys. -/
+public theorem clP_prepend {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ {a : A} {b : B} (u : NEList A) (v : NEList B), R a b → clP R R u v →
+      clP (rprodMap R R) R (prepend a u) (prepend b v)
+  | _, _, ConsList.wrap _, ConsList.wrap _, hab, h => ⟨hab, h⟩
+  | _, _, ConsList.wrap _, ConsList.cons _ _, _, h => h.elim
+  | _, _, ConsList.cons _ _, ConsList.wrap _, _, h => h.elim
+  | _, _, ConsList.cons _ u, ConsList.cons _ v, hab, h => ⟨hab, clP_prepend R u v h.1 h.2⟩
+
+/-- Replacing the head on both sides keeps a journey `cl(R×R,R)`-related. -/
+public theorem clP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b)
+    (x : Journey A) (y : Journey B) (h : clP (rprodMap R R) R x y) :
+    clP (rprodMap R R) R (replaceHead a x) (replaceHead b y) :=
+  clP_prepend R (tail x) (tail y) hab (clP_tail R x y h)
 
 /-- The fold POINTWISE: a `cl(R×R,R)`-related journey folds to a related tour.  One
     direction only — `dropl` writes its one city into BOTH journeys, so an image pair whose two
@@ -357,8 +441,9 @@ public theorem dropl_lax_natural :
           (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
               ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
                 ≫ (graph Prod.fst : dTour a.carrier ⟶ ⟨Journey a.carrier⟩))
-            ≫ (graph (fun q : a.carrier × Journey a.carrier => replaceHead q.1 q.2)
-                : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩))
+            ≫ rprodMap (𝟙 a) (graph tail : (⟨Journey a.carrier⟩ : RelSet.{0}) ⟶ dNE a.carrier)
+            ≫ (graph (fun q : a.carrier × NEList a.carrier => prepend q.1 q.2)
+                : (⟨a.carrier × NEList a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩))
           (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
               ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
                 ≫ (graph Prod.snd : dTour a.carrier ⟶ ⟨Journey a.carrier⟩))
@@ -371,6 +456,70 @@ public theorem dropl_lax_natural :
   exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂, h₃⟩, ht⟩ => by
     obtain rfl : t = droplFn q.1 q.2 := ht
     exact ⟨droplFn p.1 p.2, rfl, clP_replaceHead R h₁ p.2.1 q.2.1 h₂, h₁, h₃⟩
+
+/-- **the copy `⟨⟨π₁,π₂π₁⟩,⟨π₁,π₂π₂⟩⟩` that opens `dropl` is LAX**: `(R×J(R)×J(R)) copy ⊑
+    copy ((R×J(R))×(R×J(R)))` — one city copied into both pairs, so two different images of it
+    are reached by no input. -/
+public theorem droplCopy_lax_natural :
+    LaxNatural
+      (Relator.prod (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator))
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.prod journeyRelator journeyRelator))
+      (fun a : RelSet.{0} =>
+        rpair
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+            ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+              ≫ (graph Prod.fst : dTour a.carrier ⟶ ⟨Journey a.carrier⟩)))
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+            ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+              ≫ (graph Prod.snd : dTour a.carrier ⟶ ⟨Journey a.carrier⟩)))) := by
+  intro a b R
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂, h₃⟩, ht⟩ => by
+    obtain ⟨⟨e₁, m, e₂, e₃⟩, e₄, m', e₅, e₆⟩ := ht
+    have e₁ : t.1.1 = q.1 := e₁; have e₄ : t.2.1 = q.1 := e₄
+    have e₂ : m = q.2 := e₂; have e₅ : m' = q.2 := e₅
+    have e₃ : t.1.2 = m.1 := e₃; have e₆ : t.2.2 = m'.2 := e₆
+    subst e₂ e₅
+    exact ⟨((p.1, p.2.1), (p.1, p.2.2)), ⟨⟨rfl, p.2, rfl, rfl⟩, rfl, p.2, rfl, rfl⟩,
+      ⟨e₁ ▸ h₁, e₃ ▸ h₂⟩, e₄ ▸ h₁, e₆ ▸ h₃⟩
+
+/-- **`tail` is LAX** in the city type: `J(R) tail ⊑ tail list⁺(R)`. -/
+public theorem tail_lax_natural :
+    LaxNatural nelistRelator journeyRelator
+      (fun a : RelSet.{0} =>
+        (graph tail : (⟨Journey a.carrier⟩ : RelSet.{0}) ⟶ dNE a.carrier)) := by
+  intro a b R
+  simp only [journeyRelator, nelistRelator, clRelator, Relator.prod, Relator.idRelator,
+    prodMap_eq_rprodMap]
+  exact le_iff.mpr fun x t ⟨y, h, ht⟩ => by
+    obtain rfl : t = tail y := ht
+    exact ⟨tail x, rfl, clP_tail R x y h⟩
+
+/-- **`⧺` is LAX** in the city type: `(R×list⁺(R)) ⧺ ⊑ ⧺ J(R)`. -/
+public theorem prepend_lax_natural :
+    LaxNatural journeyRelator (Relator.prod (Relator.idRelator RelSet.{0}) nelistRelator)
+      (fun a : RelSet.{0} =>
+        (graph (fun q : a.carrier × NEList a.carrier => prepend q.1 q.2)
+          : (⟨a.carrier × NEList a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩)) := by
+  intro a b R
+  simp only [journeyRelator, nelistRelator, clRelator, Relator.prod, Relator.idRelator,
+    prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂⟩, ht⟩ => by
+    obtain rfl : t = prepend q.1 q.2 := ht
+    exact ⟨prepend p.1 p.2, rfl, clP_prepend R p.2 q.2 h₁ h₂⟩
+
+/-- **`cons` is LAX** in the city type: `(R×J(R)) cons ⊑ cons J(R)`. -/
+public theorem journeyCons_lax_natural :
+    LaxNatural journeyRelator (Relator.prod (Relator.idRelator RelSet.{0}) journeyRelator)
+      (fun a : RelSet.{0} =>
+        (graph (fun q : a.carrier × Journey a.carrier => ConsList.cons q.1 q.2)
+          : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩)) := by
+  intro a b R
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂⟩, ht⟩ => by
+    obtain rfl : t = ConsList.cons q.1 q.2 := ht
+    exact ⟨ConsList.cons p.1 p.2, rfl, h₁, h₂⟩
 
 /-! ## `tour-mono` -/
 

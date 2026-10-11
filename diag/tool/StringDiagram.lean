@@ -377,6 +377,21 @@ def spreadEdge (ls : Array Lane) (xo : Float) (edge : Array Nat) (ol : String) :
       xo := roundTo 2 (xo + d)
   return (ls, xo)
 
+/-- A PURE WIRING — identities, projections, `⟨,⟩` and composites of them.  In this convention the
+    copy and the discards ARE the wiring, so such a bead is drawn with no mark and no name. -/
+partial def isWiring (e : Expr) : MetaM Bool := do
+  match e.getAppFnArgs with
+  | (``Cat.id, _) | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) => return true
+  | (``Cat.comp, _) => (factors e).allM isWiring
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    let some (f, g) := lastTwo args | return false
+    return (← isWiring f) && (← isWiring g)
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    let some f := args.back? | return false
+    let .lam _ _ body _ ← Meta.whnfD f | return false
+    return (StrDiag.projIndex (.bvar 0) body).isSome
+  | _ => return false
+
 /-- The `dpanel(...)` call this panel is.  `frame` and `levels` are ROW COUNTS, the two halves of
     lining a short panel up with a tall one: the frame gives them one box, `levels` each bead's
     row in it (`placement`).  Left off, the frame is one row deeper than the panel and the beads
@@ -492,7 +507,9 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    let mark := match r.tri, r.nat with
+    -- A WIRING (copy, discard, `⟨,⟩` of projections) is drawn as the strands meeting, no mark, no name.
+    let wire ← match r.term with | some t => isWiring t | none => pure false
+    let mark := if wire then ", \"wire\"" else match r.tri, r.nat with
       -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
       | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"passup\"" else ", \"pass\""
       | none, none => ""
@@ -2493,7 +2510,41 @@ def canon (e : Expr) : MetaM Expr := do
     | .fvar f => ren[f]?
     | _ => none
 
+/-- `φ×𝟙_B` with `φ`'s source or target itself a product — the map that SPANS its bracketed lanes
+    (`asProdMap?`) — and `B` the object `b`: `φ` is the bead and the lanes of `b` run past it. -/
+def spansTimesId (e b : Expr) : MetaM (Option Expr) := do
+  let arrows ← e.getAppArgs.filterM fun a => return (← homEnds? a).isSome
+  let #[φ, i] := arrows | return none
+  unless ← isIdArrow i do return none
+  let (ib, _) ← homEnds i
+  unless ← Meta.isDefEq ib b do return none
+  let regionTy ← Meta.inferType b
+  let (s, t) ← homEnds φ
+  return if (← splitTimes? regionTy s).isSome || (← splitTimes? regionTy t).isSome then some φ else none
+
 mutual
+
+/-- A SPLIT OF TWO COMPOSITES OPENS: `⟨W₁R₁,W₂R₂⟩ = ⟨W₁,W₂⟩(R₁×R₂)` (`rpair_comp_rprodMap`), so the
+    last factor of each part is a bead of its own under the copy, not one bead naming the split.
+    One reading for `interp` and `scanStmt`, so the drawn tree and the statement's agree. -/
+partial def splitOpened? (e : Expr) : MetaM (Option Expr) := do
+  let (``Freyd.Alg.RelSet.rpair, args) := e.getAppFnArgs | return none
+  if h : args.size ≥ 2 then
+    let (ff, gf) := (factors args[args.size - 2], factors args[args.size - 1])
+    -- `W` is each part's longest WIRING prefix, so the copy splits off whole and every bead of
+    -- `R` (`(𝟙×tail)⧺`, not only its last factor) is drawn under it.
+    let wired (fs : Array Expr) : MetaM Nat := do
+      let mut k := 0
+      while k + 1 < fs.size && (← isWiring fs[k]!) do k := k + 1
+      return k
+    let (kf, kg) := (← wired ff, ← wired gf)
+    let (kf, kg) := (if kf == 0 then ff.size - 1 else kf, if kg == 0 then gf.size - 1 else kg)
+    if ff.size > 1 && gf.size > 1 then
+      let pf ← Meta.mkAppM ``Freyd.Alg.RelSet.rpair_comp_rprodMap
+        #[← compose (ff.extract 0 kf), ← compose (gf.extract 0 kg),
+          ← compose (ff.extract kf ff.size), ← compose (gf.extract kg gf.size)]
+      if let some (_, l, _) := (← Meta.inferType pf).eq? then return some l
+  return none
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
     on ONE contiguous block of lanes, and the parts that are identities are what runs past:
@@ -2573,6 +2624,7 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
   -- clause reads, and there the `F.map` route below draws it under its own lane.
   if let some r ← openedBuilt? regionTy e then return ← interp regionTy cat objVars vpass expect r
+  if let some l ← splitOpened? e then return ← interp regionTy cat objVars vpass expect l
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
@@ -2613,7 +2665,8 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     if (← familyVar e objVars).isSome then
       let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
-      return some (drew (← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+      -- The bead is `φ`: the `𝟙`'s lanes are `over` it, and `φ×𝟙` as its label drew them twice.
+      return some (drew (← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy φ
         (over := (cx.extract 1 cx.size).map (·.1))))
     return none
   unless pairLane do
@@ -2652,6 +2705,14 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
       unless ← Meta.isDefEq (← Meta.inferType x') regionTy do return none
       unless ← Meta.isDefEq x' y' do return none
+      -- `φ×𝟙` WHOSE `φ` SPANS A BRACKETED END (`asProdMap?`'s `none`): the identity's lanes run past,
+      -- the family being the statement's own as for `φ×𝟙` on one lane.  `kabstract` cannot say so
+      -- where `φ`'s end IS the identity's object (`replaceHead×𝟙` at `City×J(City)`): it takes both.
+      -- The bead IS `φ`: the lanes of `𝟙` are `over` it, so a `×𝟙` in its label would draw them twice.
+      if let some φ ← spansTimesId e x' then
+        if (← familyVar e objVars).isSome then
+          return some (drew (← Diagram.bead regionTy cat objVars (ax.extract 0 (ax.size - k))
+            (ay.extract 0 (ay.size - k)) ox oy φ (over := ax.extract (ax.size - k) ax.size)))
       let e' ← Meta.kabstract e x'
       unless e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) do return none
       -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too, but
@@ -2994,6 +3055,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       return (← (← recipFactors fs).mapM (scanStmt regionTy cat objVars · split)).flatten
     return #[.conv (Scan.rev (← scanStmt regionTy cat objVars z))]
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
+  if let some l ← splitOpened? e then return ← scanStmt regionTy cat objVars l split
   -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
   -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
   unless (oneLane (← peelRead objVars cat regionTy (← homEnds e).1).1) && !split do
