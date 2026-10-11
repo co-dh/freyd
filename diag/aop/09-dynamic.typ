@@ -68,16 +68,27 @@
 // lean:AOP.A9_1.H@71852cf7
 )]<dp-defn>
 
+=== Principle of optimality
+
+#disp[
+  - #leanf("Freyd.Alg.optimality") \
+    #src[replacing each part by one `R°`-related to it (`F(R°)`) and then assembling (`h`) gives only
+     wholes `R°`-related to the assembly of the original parts (`hR°`): a better part never makes the
+     whole worse]
+    // lean:AOP.A9_1.optimality@fc266c74
+    // B&dM p.219; formalised as monotonicity p.242
+]<dp-optimality>
+
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@3719b2c6
+    // lean:AOP.A9_1.dynamic_programming@0dfb5027
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
-    - `h` monotonic on `R`: a better part never makes the whole worse
+    - `optimality(h,R)`: the principle of optimality, @dp-optimality
     - `⊑`, not `=`: some optima may not be returned; that the recursion returns anything at all
       needs `T°` to stop taking apart — @dp-laws
   ]],
@@ -108,7 +119,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@072da263
+     // lean:AOP.A9_1.dynamic_programming_upper@9bf7e84d
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>

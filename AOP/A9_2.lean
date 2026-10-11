@@ -52,6 +52,8 @@ module
 
 public import AOP.A7_1
 public import AOP.A7_2_Pres
+-- `optimality`, the principle of optimality Theorem 9.1 assumes and this generalisation keeps.
+public import AOP.A9_1
 import AOP.A5_4
 import AOP.A6_3
 import AOP.A7_2
@@ -93,7 +95,7 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` (`hτ`) in the lower-bound half. -/
 public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
-    (hh : Map h) (hmono : Freyd.Alg.Pres h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : optimality h R) (htrans : R° ≫ R° ⊑ R°)
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hstrict : T° ≫ F.map (H ∪ τ) ≫ h ⊑ H ∪ τ)
     (hτ : τ° ≫ topHom B A ⊑ R°) :
@@ -223,7 +225,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
 public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜}
     (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A}
-    (hh : Map h) (hmono : Freyd.Alg.Pres h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : optimality h R) (htrans : R° ≫ R° ⊑ R°)
     (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
         ⊑ ((relCata T)° ≫ relCata h) ∪ τ)
     (hτ : τ° ≫ topHom B A ⊑ R°) :
