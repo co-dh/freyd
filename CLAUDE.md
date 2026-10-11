@@ -47,7 +47,9 @@ Always prefer the book's definition over ad-hoc simplifications — even if the
 book version requires more typeclasses (e.g., `Entire R := 1_A ≤ R°R` via
 `compose` rather than `∃ h, h ≫ R.colA = id_A`).
 If a proof used theorem from other section but not defined yet, prove them in $a_bc.lean.
-Make the prove constructive: do not use atom of choice unless unavoidable.
+Make proofs in `Freyd/` and `AOP/` constructive: no axiom of choice unless unavoidable — because a choice-free
+theorem holds in every topos/allegory, not only in Set. `leet/` is about concrete `Int`/`List` in Set, so choice
+there (e.g. from core's `Int` order instances) is allowed.
 feel free to copy ideas from Mathlib, but do not bring in them as dependency.
   The Freyd book core (`Freyd/`) is STRICTLY MATHLIB-FREE, NO EXCEPTIONS: it imports nothing
   outside the Lean toolchain (`Init`, `Std`, `Lean`) and `Freyd.*`. `Std` ships with the toolchain
