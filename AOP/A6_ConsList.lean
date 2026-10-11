@@ -579,7 +579,8 @@ open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] public meta def delabWrapPair : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size != 3 || !args[2]!.isAppOfArity ``Prod.mk 4 then failure
-  unless ← Meta.isDefEq args[0]! (mkApp2 (.const ``Prod [.zero, .zero]) args[1]! args[1]!) do failure
+  let l := (← instantiateMVars args[0]!).consumeMData
+  unless l.isAppOfArity ``Prod 2 && l.appFn!.appArg! == args[1]! && l.appArg! == args[1]! do failure
   let a ← withAppArg <| withAppFn <| withAppArg delab
   let b ← withAppArg <| withAppArg delab
   `([$a, $b])
