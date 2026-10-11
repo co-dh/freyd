@@ -2322,6 +2322,13 @@ def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name
     s.restore
   peelRead objVars cat regionTy X
 
+/-- A PRODUCT MAP IS SPLIT ACROSS LANES ONLY WHERE ITS SOURCE PEELS AS `A×−` over the rest: where
+    `peelCuts` read it as ONE lane — the pair lane `G×G'`, or `Δ` over `F` (`pairLane?`) — the cuts
+    either side are that lane, a split would spell them `A×−`, and the map is ONE bead on it.  One
+    test for `interp` and `scanStmt`, so the drawing and its read-back cannot disagree. -/
+def oneLane (cx : Array (Wire × Expr)) : Bool :=
+  match cx[0]? with | some (Wire.timesL _, _) | none => false | _ => true
+
 /-- THE CUT BELOW `d` AS `d` DREW IT, which is what "read once, by the factor above" means.  An
     object `a×b` has two readings — the pair lane `peelCuts` prefers where both factors are lanes
     over one object, and `a×−` over `b` — and a product map split across its lanes (`wrap×𝟙`)
@@ -2577,11 +2584,7 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let (cx, ox) ← peelReadAt expect objVars cat regionTy x
     return ← Diagram.id (cx.map (·.1)) ox
   | _ => pure ()
-  -- A PRODUCT MAP WHOSE SOURCE IS ONE PAIR LANE (`G×G'` over `B`, `peelCuts`) is no pair of lanes
-  -- to split it across: it is ONE bead on that lane, `φ×ψ : G×G' ⇒ F×F'`, read by the tail below.
-  let pairLane ← do
-    let (cx, _) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
-    pure (match cx[0]? with | some (.rel f, _) => f.isAppOf ``Freyd.Alg.Relator.prod | _ => false)
+  let pairLane := oneLane (← peelReadAt expect objVars cat regionTy (← homEnds e).1).1
   -- `none` from the product-map reading is "not drawn here": the tail below reads the factor.
   let prod (φψ : Option (Expr × Expr)) : MetaM (Option Diagram) := do
     let some (φ, ψ) := φψ | return none
@@ -2993,10 +2996,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
   -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
   -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
-  let pairLane ← do
-    let (cx, _) ← peelRead objVars cat regionTy (← homEnds e).1
-    pure (match cx[0]? with | some (.rel f, _) => f.isAppOf ``Freyd.Alg.Relator.prod | _ => false)
-  unless pairLane && !split do
+  unless (oneLane (← peelRead objVars cat regionTy (← homEnds e).1).1) && !split do
     let prod (φψ : Option (Expr × Expr)) : MetaM (Option (Array Scan)) := do
       let some (φ, ψ) := φψ | return none
       let (a, a') ← homEnds φ
