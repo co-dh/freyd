@@ -702,6 +702,10 @@ attribute [diag_unfold] singletonMap
 -- the allegory's `∪`: the exe imports `diag` and `AOP`, so a tag in the drawer's own module reaches
 -- no drawing.
 attribute [diag_join "∪"] DistributiveAllegory.union
+-- A COPAIRING `[f,g]` is one panel per arm with `+` between them (`copairOperands?`): one bead
+-- labelled with the whole `[f,g]` showed only its type, the same in every row of a calc over it.
+-- `Sum.elim` is the copairing of functions, drawn when `graph` carries it to relations.
+attribute [diag_join "+"] junc Sum.elim
 
 -- THE PARAMETRISED ALGEBRA'S `α` IS A FAMILY OVER ITS PARAMETER (§2.7), and its own notation writes
 -- the letter alone: the note sets the parameter beneath it (`α`#sub[`A`], `α`#sub[`B`]), which is

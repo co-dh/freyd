@@ -893,6 +893,11 @@ def stepGroups (peers : Array (String × Option String × List String × List Se
     with a single panel, and never with its own sibling branch, because neither is the next STEP. -/
 def dupLine (dup : Bool) : String := "#let dup = " ++ (if dup then "true" else "false") ++ "\n"
 
+/-- `syms`: the symbol standing BEFORE each panel of `panels`, `""` for the first — what a chain
+    reads to set a copairing's arms in lanes (`lean-chain`), where `pic` has already joined them. -/
+def symsLine (ss : Array String) : String :=
+  "#let syms = (" ++ String.join (ss.toList.map (·.quote ++ ",")) ++ ")\n"
+
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
     re-splitting the picture.
@@ -910,7 +915,7 @@ def emit (decl : Name) (p : Diagram) (pl : Placement) (dup : Bool) : MetaM Strin
     throwError "a part {p.rows.size} beads deep reaches row {ls} of a frame of {pl.frame} rows: the \
       placement is the DECLARATION's, so every part of it must be among the ones it was taken over"
   return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some ls))
-    ++ ",)\n#let pic = panels.at(0)\n" ++ dupLine dup) (← natLines decl #[p])
+    ++ ",)\n#let pic = panels.at(0)\n" ++ dupLine dup ++ symsLine #[""]) (← natLines decl #[p])
 
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
@@ -937,7 +942,8 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n" ++ dupLine dup) (← natLines decl (parts.map (·.2)))
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n" ++ dupLine dup ++ symsLine (parts.map (·.1)))
+    (← natLines decl (parts.map (·.2)))
 
 /-! ### The functor: an arrow of the allegory as a panel
 

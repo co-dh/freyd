@@ -32,7 +32,7 @@
   // a call of several selectors is its own directory, the exporter's `outPath`: a selector drawn in
   // a shared box and drawn alone are two pictures
   // each file's MODULE: a chain reads the string route's `dup` beside `pic` (`lean-chain`)
-  if "list" in sys.inputs { ns.map(n => (pic: [], dup: false)) } else {
+  if "list" in sys.inputs { ns.map(n => (pic: [], dup: false, panels: ([],), syms: ("",))) } else {
     let sub = if ns.len() > 1 { ns.join("/") + "/" } else { "" }
     ns.map(n => { import dir + sub + n + ".typ" as f; f }) })
 #let lean-call(dir, label, ns, op: SQ) = {
@@ -572,10 +572,15 @@
     let i = 0
     let got = ()
     for s in r.steps {
-      if type(s.at(1)) == array { got.push((pic: lean-call("generated/", <lean-panel>, stmt-sel(s.at(1))), dup: false)) }
-      else { got.push(sp.at(i)); i += 1 }
+      if type(s.at(1)) == array {
+        let p = lean-call("generated/", <lean-panel>, stmt-sel(s.at(1)))
+        got.push((pic: p, dup: false, panels: (p,), syms: ("",)))
+      } else { got.push(sp.at(i)); i += 1 }
     }
-    let (steps, pics, held) = ((), (), none)
+    // A COPAIRING `[f,g]` IS ITS ARMS, one per summand of its source, so the lanes below line up the
+    // arms of every step: `+` only, since a `∪`'s operands name no summand that persists across steps.
+    let lanes(g) = if g.syms.len() > 1 and g.syms.slice(1).all(x => x == "+") { g.syms.zip(g.panels) } else { (("", g.pic),) }
+    let (steps, pics, held, lns) = ((), (), none, ())
     for grp in r.groups {
       let i0 = grp.first()
       let s = r.steps.at(i0)
@@ -584,17 +589,39 @@
       } else { (rel-compose(held.at(0), s.at(0)), s.at(1), [#held.at(2) \ #s.at(2)]) }
       held = if got.at(i0).dup and s.at(0) != none { s } else { none }
       if held == none {
-        steps.push(s); pics.push(got.at(i0).pic)
-        for idx in grp.slice(1) { steps.push(r.steps.at(idx)); pics.push(got.at(idx).pic) }
+        steps.push(s); pics.push(got.at(i0).pic); lns.push(lanes(got.at(i0)))
+        for idx in grp.slice(1) { steps.push(r.steps.at(idx)); pics.push(got.at(idx).pic); lns.push(lanes(got.at(idx))) }
       }
     }
     assert(held == none, message: "the last step of a lean-chain row is marked `dup`: it has no next step to merge into")
-    (m, pics, steps)
+    (m, pics, steps, lns)
   })
   // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
   table.cell(breakable: true, { metas; for c in calls { c.at(0) }; layout(sz => {
+    // ARMS IN LANES: in a row where some step is a copairing, lane `i` of every column is that
+    // step's `i`-th arm, each lane one height across the row and the `+` between a column's lanes,
+    // so one arm's change reads along one line.  A step of fewer arms fills the lanes from the top;
+    // a step of one panel spans them all, centred.  Each column is still ONE picture to everything
+    // below, so the cuts, the scale and the table are unchanged.
+    let calls = calls.map(c => {
+      let ln = c.at(3)
+      let n = calc.max(..ln.map(l => l.len()))
+      if n == 1 or c.at(2).any(s => type(s.at(3, default: none)) == dictionary) { return c }
+      let lh = range(n).map(i => calc.max(..ln.filter(l => l.len() > i).map(l => measure(box(l.at(i).at(1))).height)))
+      let gap = 2 * measure(text(15pt)[+]).height
+      let pics = ln.map(l => {
+        let w = calc.max(..l.map(((_, p)) => measure(box(p)).width))
+        if l.len() == 1 { return box(width: w, height: lh.sum() + (n - 1) * gap, align(center + horizon, l.first().at(1))) }
+        stack(dir: ttb, ..range(n).map(i => {
+          let (sym, p) = l.at(i, default: ("", none))
+          (if i > 0 { box(width: w, height: gap, align(center + horizon, if p == none { [] } else { text(15pt, sym) })) },
+            box(width: w, height: lh.at(i), align(center + horizon, if p == none { [] } else { p })))
+        }).flatten().filter(x => x != none))
+      })
+      (c.at(0), pics, c.at(2), ln)
+    })
     // The scale factor treats a GROUP as one column, not `n` side by side — its members stack
     // vertically (below), so the row only spends one picture's worth of width on them, the widest.
     let colw(r, w) = chain-groups(r).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx))))

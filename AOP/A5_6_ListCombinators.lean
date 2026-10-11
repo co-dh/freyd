@@ -713,6 +713,20 @@ public theorem nelist_mono {R S : dE A ⟶ dE B} (h : R ⊑ S) : nelist R ⊑ ne
   map_comp R S := nelist_comp R S
   map_mono h := nelist_mono h
 
+/-- The one-element non-empty list is STRICTLY natural, `R wrap = wrap list⁺(R)`. -/
+public theorem nelist_wrap_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+      (Relator.idRelator RelSet.{0})
+      (fun a => (CL.wrapR : CL.dL a.carrier ⟶ CL.dCL a.carrier a.carrier)) := by
+  intro x y R
+  apply hom_ext; intro a r
+  constructor
+  · rintro ⟨b, hab, rfl⟩; exact ⟨_, rfl, hab⟩
+  · rintro ⟨_, rfl, h⟩
+    cases r with
+    | wrap b => exact ⟨b, h, rfl⟩
+    | cons _ _ => exact h.elim
+
 public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
     ∀ (y : ConsList Unit B) (x : ConsList Unit A), listP R° y x ↔ listP R x y
   | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
@@ -1627,6 +1641,27 @@ variable {B : Type}
 @[expose] public def cpl : (⟨ConsList Unit A × B⟩ : RelSet.{0}) ⟶ dList (A × B) := graph cplFn
 /-- `cpr : A×[B]⟶[A×B]`. -/
 @[expose] public def cpr : (⟨A × ConsList Unit B⟩ : RelSet.{0}) ⟶ dList (A × B) := graph cprFn
+
+/-- `cpr` is LAX natural, `(F(R)×list(G(R))) cpr ⊑ cpr list(F(R)×G(R))`, and no more: on the right
+    each pair may take its own `F(R)`-image of `a`, and the empty list needs none at all. -/
+public theorem cpr_laxNatural {F G : Relator RelSet.{0} RelSet.{0}} :
+    LaxNatural (Relator.comp (Relator.prod F G) listRelator)
+      (Relator.prod F (Relator.comp G listRelator))
+      (fun a => cpr (A := (F.obj a).carrier) (B := (G.obj a).carrier)) := by
+  intro x y R
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  refine le_iff.mpr ?_
+  rintro ⟨a, bs⟩ zs ⟨⟨a', bs'⟩, ⟨ha, hb⟩, rfl⟩
+  refine ⟨_, rfl, ?_⟩
+  replace ha : F.map R a a' := ha
+  show listP _ (cmap (fun b => (a, b)) bs) (cmap (fun b => (a', b)) bs')
+  induction bs generalizing bs' with
+  | wrap _ => cases bs' with
+    | wrap _ => trivial
+    | cons _ _ => exact hb.elim
+  | cons b t ih => cases bs' with
+    | wrap _ => exact hb.elim
+    | cons b' t' => exact ⟨⟨⟨_, ⟨_, rfl, ha⟩, rfl⟩, ⟨_, ⟨_, rfl, hb.1⟩, rfl⟩⟩, ih t' hb.2⟩
 
 public theorem inlistP_cappend (y : ConsList Unit A) (a : A) :
     ∀ x : ConsList Unit A, inlistP (cappend x y) a ↔ inlistP x a ∨ inlistP y a

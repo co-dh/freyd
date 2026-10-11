@@ -1664,11 +1664,44 @@ def joinOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
   let some (l, r) ← binOperands? e | return none
   return some (sym, l, r)
 
-/-- A side as the PANELS it is drawn as: a join at its head is its operands with the join's symbol
-    between them, all the way down, and anything else is one panel.  `sym` is the symbol before the
-    first panel.  The string route's reader; a circuit draws the union as its tape instead. -/
+/-- The symbol and the two ARMS of a COPAIRING `[f,g]` written at the head: a `@[diag_join]` operator
+    whose last two arguments are arrows into the whole's TARGET from two other sources (`junc C f g`),
+    or `graph` of a tagged copairing of FUNCTIONS (`graph (Sum.elim f g)`), whose arms are the graphs
+    of `f` and `g`.  A join's operands share the whole's source too and are `joinOperands?`'s; the
+    commutative route never asks this, since an arm is not of the whole's type and cannot stand in
+    for it inside a statement. -/
+def copairOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
+  let tags := diagJoinExt.getState (← getEnv)
+  let some n := e.getAppFn.constName? | return none
+  let some (src, tgt) ← homEnds? e | return none
+  if n == `Freyd.Alg.RelSet.graph then
+    let el := e.appArg!
+    let some s := el.getAppFn.constName?.bind tags.find? | return none
+    let fs := el.getAppArgs
+    if fs.size < 2 then return none
+    let arm (f : Expr) : MetaM Expr := do
+      let .forallE _ α _ _ ← Meta.whnf (← Meta.inferType f) | throwError "`{← Meta.ppExpr f}` is an arm of \
+          `{← Meta.ppExpr el}` and no function"
+      Meta.mkAppOptM `Freyd.Alg.RelSet.graph #[some (← Meta.mkAppM `Freyd.Alg.RelSet.mk #[α]), some tgt, some f]
+    return some (s, ← arm fs[fs.size - 2]!, ← arm fs[fs.size - 1]!)
+  let some s := tags.find? n | return none
+  let some (l, r) := lastTwo e.getAppArgs | return none
+  let some (ls, lt) ← homEnds? l | return none
+  let some (rs, rt) ← homEnds? r | return none
+  unless (← Meta.isDefEq lt tgt) && (← Meta.isDefEq rt tgt) do return none
+  if (← Meta.isDefEq ls src) || (← Meta.isDefEq rs src) then return none
+  return some (s, l, r)
+
+/-- A side as the PANELS it is drawn as: a join or a copairing at its head is its operands with the
+    operator's symbol between them, all the way down, and anything else is one panel — a copairing
+    inside a composite (`cpL [f,g]`) is that composite's bead, as a union inside one is.  `sym` is
+    the symbol before the first panel.  The string route's reader; a circuit draws the union as its
+    tape instead. -/
 partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr)) := do
-  let some (s, l, r) ← joinOperands? e | return #[(sym, e)]
+  let j ← match ← joinOperands? e with
+    | some j => pure (some j)
+    | none => copairOperands? e
+  let some (s, l, r) := j | return #[(sym, e)]
   return (← joinParts sym l) ++ (← joinParts s r)
 
 /-- A term whose head the NOTE writes as its BODY, opened; anything else unchanged.  Which heads is
