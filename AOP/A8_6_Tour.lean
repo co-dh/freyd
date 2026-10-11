@@ -128,6 +128,42 @@ public theorem incost_replaceHead (a : City) (x : Journey City) :
 @[expose] public def droprFn (a : City) (t : Tour City) : Tour City :=
   (ConsList.cons a t.1, replaceHead a t.2)
 
+/-- `dropl` point-free: `dropl = ⟨⟨π₁,π₂π₁⟩ replaceHead, ⟨π₁,π₂π₂⟩ cons⟩` — copy `a`, replace the
+    outward journey's head with it, and cons it onto the return journey. -/
+public theorem dropl_pointfree :
+    (graph (fun p : City × Tour City => droplFn p.1 p.2)
+      : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
+    = rpair
+        (rpair (graph Prod.fst : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ ⟨City⟩)
+            ((graph Prod.snd : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
+              ≫ (graph Prod.fst : dTour City ⟶ ⟨Journey City⟩))
+          ≫ (graph (fun q : City × Journey City => replaceHead q.1 q.2)
+              : (⟨City × Journey City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩))
+        (rpair (graph Prod.fst : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ ⟨City⟩)
+            ((graph Prod.snd : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ dTour City)
+              ≫ (graph Prod.snd : dTour City ⟶ ⟨Journey City⟩))
+          ≫ (graph (fun q : City × Journey City => ConsList.cons q.1 q.2)
+              : (⟨City × Journey City⟩ : RelSet.{0}) ⟶ ⟨Journey City⟩)) := by
+  apply hom_ext; intro p q
+  constructor
+  · intro h
+    have h' : q = droplFn p.1 p.2 := h
+    subst h'
+    exact ⟨⟨(p.1, p.2.1), ⟨rfl, p.2, rfl, rfl⟩, rfl⟩, ⟨(p.1, p.2.2), ⟨rfl, p.2, rfl, rfl⟩, rfl⟩⟩
+  · rintro ⟨⟨⟨u₁, u₂⟩, ⟨hu₁, y, hy, hu₂⟩, h₁⟩, ⟨⟨v₁, v₂⟩, ⟨hv₁, z, hz, hv₂⟩, h₂⟩⟩
+    have e₁ : q.1 = replaceHead u₁ u₂ := h₁
+    have e₂ : q.2 = ConsList.cons v₁ v₂ := h₂
+    have f₁ : u₁ = p.1 := hu₁
+    have f₂ : u₂ = y.1 := hu₂
+    have f₃ : v₁ = p.1 := hv₁
+    have f₄ : v₂ = z.2 := hv₂
+    have g₁ : y = p.2 := hy
+    have g₂ : z = p.2 := hz
+    show q = droplFn p.1 p.2
+    rw [Prod.ext_iff]
+    subst f₁ f₂ f₃ f₄ g₁ g₂
+    exact ⟨e₁, e₂⟩
+
 /-- **B&dM p.215**: `cost (dropl (a,(x,y))) = cost (x,y) + tc(a,next x) − tc(head x,next x)
     + tc(head y,a)` — the step reads both heads and the outward second city. -/
 public theorem cost_dropl (a : City) (t : Tour City) :
@@ -310,6 +346,31 @@ public theorem tour_lax_natural :
       obtain ⟨t₀, ht₀, h₁, h₂⟩ := cataFoldTour_lax R x x' t hx ht
       exact ⟨t₀, ht₀, h₁, h₂⟩
   rwa [cataR_eq_relCata, cataR_eq_relCata] at h
+
+/-- **the point-free `dropl` is LAX** in the city type: `(R×Journey(R)×Journey(R)) dropl ⊑
+    dropl (Journey(R)×Journey(R))`, the family being `dropl_pointfree`'s right-hand side. -/
+public theorem dropl_lax_natural :
+    LaxNatural (Relator.prod journeyRelator journeyRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.prod journeyRelator journeyRelator))
+      (fun a : RelSet.{0} =>
+        rpair
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+              ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+                ≫ (graph Prod.fst : dTour a.carrier ⟶ ⟨Journey a.carrier⟩))
+            ≫ (graph (fun q : a.carrier × Journey a.carrier => replaceHead q.1 q.2)
+                : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩))
+          (rpair (graph Prod.fst : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ ⟨a.carrier⟩)
+              ((graph Prod.snd : (⟨a.carrier × Tour a.carrier⟩ : RelSet.{0}) ⟶ dTour a.carrier)
+                ≫ (graph Prod.snd : dTour a.carrier ⟶ ⟨Journey a.carrier⟩))
+            ≫ (graph (fun q : a.carrier × Journey a.carrier => ConsList.cons q.1 q.2)
+                : (⟨a.carrier × Journey a.carrier⟩ : RelSet.{0}) ⟶ ⟨Journey a.carrier⟩))) := by
+  intro a b R
+  dsimp only
+  rw [← dropl_pointfree, ← dropl_pointfree]
+  simp only [journeyRelator, clRelator, Relator.prod, Relator.idRelator, prodMap_eq_rprodMap]
+  exact le_iff.mpr fun p t ⟨q, ⟨h₁, h₂, h₃⟩, ht⟩ => by
+    obtain rfl : t = droplFn q.1 q.2 := ht
+    exact ⟨droplFn p.1 p.2, rfl, clP_replaceHead R h₁ p.2.1 q.2.1 h₂, h₁, h₃⟩
 
 /-! ## `tour-mono` -/
 
