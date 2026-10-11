@@ -16,6 +16,27 @@ abbrev Opt : RelSet.{0} := ⟨Option (Nat × Nat)⟩
 /-- `∋ : ⟨Idx ⟶ Idx⟩ ⟶ Idx×Idx`, a relation as its set of pairs. -/
 local notation (priority := high) "∋" => relMem Idx Idx
 
+-- `Int`'s order laws again: core's `Int.instTransOrd`/`Int.instLawfulEqOrd` use `Classical.choice`.
+local instance (priority := high) : Std.TransOrd Int where
+  eq_swap {a b} := by
+    show compareOfLessAndEq a b = (compareOfLessAndEq b a).swap
+    unfold compareOfLessAndEq; repeat' split
+    all_goals first | rfl | omega
+  isLE_trans {a b c} := by
+    show (compareOfLessAndEq a b).isLE = true → (compareOfLessAndEq b c).isLE = true → (compareOfLessAndEq a c).isLE = true
+    unfold compareOfLessAndEq; repeat' split
+    all_goals intro h1 h2; first | rfl | exact absurd h1 (by decide) | exact absurd h2 (by decide) | omega
+
+local instance (priority := high) : Std.LawfulEqOrd Int where
+  compare_self {a} := by
+    show compareOfLessAndEq a a = .eq
+    unfold compareOfLessAndEq; repeat' split
+    all_goals first | rfl | omega
+  eq_of_compare {a b} := by
+    show compareOfLessAndEq a b = .eq → a = b
+    unfold compareOfLessAndEq; repeat' split
+    all_goals intro h; first | assumption | exact absurd h (by decide)
+
 /-- `(t−) : a ↦ t-a`. -/
 def sub (t : Int) : Key ⟶ Key := graph (t - ·)
 
