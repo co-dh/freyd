@@ -110,6 +110,13 @@ open Lean PrettyPrinter in
 /-- `P? ⊑ 𝟙`: a coreflexive is below the identity. -/
 public theorem corefl_le_id {A : RelSet.{u}} (P : A.carrier → Prop) : corefl P ⊑ 𝟙 A := le_iff.mpr fun _ _ h => h.1
 
+/-- `(a↦b) ≜ (=a)? (⊸b)`, the one-pair relation. -/
+@[expose] public def single {A B : RelSet.{u}} (a : A.carrier) (b : B.carrier) : A ⟶ B :=
+  corefl (· = a) ≫ graph fun _ => b
+
+public theorem single_recip {A B : RelSet.{u}} (a : A.carrier) (b : B.carrier) : (single a b)° = single b a :=
+  hom_ext fun _ _ => ⟨fun ⟨_, ⟨_, h2⟩, h3⟩ => ⟨_, ⟨rfl, h3⟩, h2⟩, fun ⟨_, ⟨_, h2⟩, h3⟩ => ⟨_, ⟨rfl, h3⟩, h2⟩⟩
+
 /-- The preorder a measure induces, `f≤f°`: `x` below `y` when `f(x)≤f(y)`. -/
 @[expose] public def leOn {A : RelSet.{u}} (f : A.carrier → Nat) : A ⟶ A := fun x y => f x ≤ f y
 
@@ -142,7 +149,7 @@ public theorem graph_comp_left {A B C : RelSet.{u}} (f : A.carrier → B.carrier
 
 /-- The graph of the identity function is the identity relation.  Not `rfl`: `graph` orients its
     equation as `y = f x` and the identity as `x = y`. -/
-theorem graph_id (A : RelSet.{u}) : graph (fun x : A.carrier => x) = 𝟙 A :=
+public theorem graph_id (A : RelSet.{u}) : graph (fun x : A.carrier => x) = 𝟙 A :=
   hom_ext fun _ _ => ⟨Eq.symm, Eq.symm⟩
 
 /-! ### Distributive structure: `𝟘` = empty relation, `∪` = union -/
