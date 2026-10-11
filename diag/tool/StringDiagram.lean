@@ -2483,6 +2483,19 @@ def canon (e : Expr) : MetaM Expr := do
 
 mutual
 
+/-- A SPLIT OF TWO COMPOSITES OPENS: `⟨W₁R₁,W₂R₂⟩ = ⟨W₁,W₂⟩(R₁×R₂)` (`rpair_comp_rprodMap`), so the
+    last factor of each part is a bead of its own under the copy, not one bead naming the split.
+    One reading for `interp` and `scanStmt`, so the drawn tree and the statement's agree. -/
+partial def splitOpened? (e : Expr) : MetaM (Option Expr) := do
+  let (``Freyd.Alg.RelSet.rpair, args) := e.getAppFnArgs | return none
+  if h : args.size ≥ 2 then
+    let (ff, gf) := (factors args[args.size - 2], factors args[args.size - 1])
+    if ff.size > 1 && gf.size > 1 then
+      let pf ← Meta.mkAppM ``Freyd.Alg.RelSet.rpair_comp_rprodMap
+        #[← compose ff.pop, ← compose gf.pop, ff.back!, gf.back!]
+      if let some (_, l, _) := (← Meta.inferType pf).eq? then return some l
+  return none
+
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
     on ONE contiguous block of lanes, and the parts that are identities are what runs past:
 
@@ -2561,6 +2574,7 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
   -- clause reads, and there the `F.map` route below draws it under its own lane.
   if let some r ← openedBuilt? regionTy e then return ← interp regionTy cat objVars vpass expect r
+  if let some l ← splitOpened? e then return ← interp regionTy cat objVars vpass expect l
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
@@ -2986,6 +3000,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       return (← (← recipFactors fs).mapM (scanStmt regionTy cat objVars · split)).flatten
     return #[.conv (Scan.rev (← scanStmt regionTy cat objVars z))]
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
+  if let some l ← splitOpened? e then return ← scanStmt regionTy cat objVars l split
   -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
   -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
   let pairLane ← do
