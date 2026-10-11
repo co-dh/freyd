@@ -2022,9 +2022,12 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
           -- A DELABORATOR THAT READS THE OPERAND (`wrap (a,b)` is `[a,b]`) stops firing once the
           -- operand is a local, and the printer falls back to the bare application: an operand whose
           -- hole changes the KIND of syntax the printer writes is the delaborator's, and stays.
+          -- A HEAD THAT PRINTS AS ITS OPERAND (`graph h` is `h`) writes nothing of its own, so the
+          -- kind is the operand's and says nothing about the head: the hole stays (`graph fun p => …`).
           let t' := t.replace fun s => (ops'.findIdx? (· == s)).map (xs'[·]!)
-          if (← Meta.isTypeCorrect t') &&
-              (stxPeel (← delabP t')).getKind == (stxPeel (← delabP t)).getKind then
+          let s' := stxPeel (← delabP t')
+          if (← Meta.isTypeCorrect t') && ((s'.isIdent && s'.getId == nm) ||
+              s'.getKind == (stxPeel (← delabP t)).getKind) then
             respell p (rest.filter (· != a)) ops' xs' (holes.push l) t
           else
             respell p (rest.filter (· != a)) ops xs holes t
