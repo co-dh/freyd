@@ -138,7 +138,8 @@
 // A DEFINITION TABLE, rows of name | type | definition | meaning. A type cell breaks only after its
 // top-level arrow (`TypeRender.file`) and each end is one unbreakable unit, so the type column is
 // exactly as wide as the widest end — read off the `<type-end>` texts in the cells' own content,
-// since typst cannot measure a cell's widest unbreakable piece — and the definition gets the rest.
+// since typst cannot measure a cell's widest unbreakable piece; the definition is as wide as its widest formula,
+// capped at the old 3:1 share (a fixed share left short ones a wide empty column); the meaning gets the rest.
 // Walked, not queried: a query is answered one layout pass late, and that pass, added to the
 // companion's other introspection, kept the layout from converging within typst's five.
 #let type-ends(c) = if type(c) != content { () } else if c.func() == metadata and c.at("label", default: none) == <type-end> { (c.value,) } else if c.has("children") { c.children.map(type-ends).flatten() } else if c.has("body") { type-ends(c.body) } else if c.has("child") { type-ends(c.child) } else { () }
@@ -158,9 +159,13 @@
     if type(d) == str { f(d) } else if type(d) == array { d.map(f).join([, ]) }
     else if lean-keys(d, labels: (<lean-formula>,)).len() > 0 { panic("deftab: the definition cell of " + repr(k) + " holds a formula as content; give its selector, so the row's def reaches the printer") }
     else { d } }
-  table(columns: (3fr, w + 10.5pt, 1fr), align: left + horizon, inset: 5pt,
-    stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
-    ..cells.pos().chunks(4).map(r => ([#r.at(0)#def(r)], r.at(1), r.at(3))).flatten())
+  let rows = cells.pos().chunks(4)
+  layout(size => {
+    let d = calc.max(..rows.map(r => measure([#r.at(0)#def(r)]).width)) + 10pt
+    table(columns: (calc.min(d, (size.width - w - 10.5pt) * 3 / 4), w + 10.5pt, 1fr), align: left + horizon,
+      inset: 5pt, stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
+      ..rows.map(r => ([#r.at(0)#def(r)], r.at(1), r.at(3))).flatten())
+  })
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
