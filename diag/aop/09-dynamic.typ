@@ -48,7 +48,7 @@
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
-#import "../generated/Freyd.Alg.pres_of_cost_shunted.calc.typ" as calc-cost
+#import "../generated/Freyd.Alg.pres_of_cost.calc.typ" as calc-cost
 #import "../generated/Freyd.Alg.pres_in_context.calc.typ" as calc-ctx
 #import "../generated/Freyd.Alg.RelSet.dp_disjoint_ranges.calc.typ" as calc-dpd
 #import "../generated/Freyd.Alg.RelSet.dp_disjoint_branch.calc.typ" as calc-dpb
@@ -73,20 +73,6 @@
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
-
-// B&dM p. 222: the hypothesis Theorem 9.2 adds to Theorem 9.1, defined before its first use.
-#disp[#deftab(
-  [#rowkey("Freyd.Alg.ThinCondition")], [#leant("Freyd.Alg.ThinCondition")],
-  "Freyd.Alg.ThinCondition",
-  [the second condition of dynamic programming, beside `Pres(h,R°)`: thinning the decompositions
-   by `Q` before solving them only moves the answer up `R`],
-// lean:AOP.A9_1.ThinCondition@981f8a2d
-)]<dp-thin-cond>
-
-#disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
-  #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
-   by `R` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
-   decompositions never loses an answer that is not matched by a kept one at least as good]]]<dp-thin-cd>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
@@ -146,7 +132,8 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  lean-calc(calc-dpd, breaks: (3,)),
+  // Only the split is drawn: each part is the branch below, the `V₂` one with `V₁`,`V₂` swapped.
+  lean-calc((steps: calc-dpd.steps.slice(0, 2))),
 )]<dp-disjoint>
 
 // The one branch both steps of Proposition 9.1 cite; the `V₂` one is it at swapped arguments.
@@ -158,15 +145,41 @@
 
 === Checking the conditions
 
+// B&dM p. 222: the two conditions of dynamic programming.
+#disp[#deftab(
+  [#rowkey("Freyd.Alg.H")], [#leant("Freyd.Alg.H")],
+  "Freyd.Alg.H",
+  [take the input apart by the `T`-decompositions, and put it together by `h`],
+  [#rowkey("Freyd.Alg.ThinCondition")], [#leant("Freyd.Alg.ThinCondition")],
+  "Freyd.Alg.ThinCondition",
+  [thinning the decompositions by `Q` before solving them only moves the answer up `R`],
+// lean:AOP.A9_1.ThinCondition@981f8a2d
+// lean:AOP.A9_1.H@71852cf7
+)]<dp-thin-cond>
+
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the condition*], [*what it says*]),
+  [#leanf("Freyd.Alg.dynamic_programming_thin#hmono")],
+  [`h` preserves `R°`: a better part never makes the whole worse],
+  [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
+  [thinning the decompositions by `Q` loses no optimal answer],
+)]<dp-conds>
+// lean:AOP.A9_1.dynamic_programming_thin@b98897ae
+
+#disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
+  #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
+   by `R` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
+   decompositions never loses an answer that is not matched by a kept one at least as good]]]<dp-thin-cd>
+
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
     #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on
-     `cost≤cost°`, which compares two values by comparing their `cost`s under `≤`] \
+     `cost≤cost°`, which compares two values by comparing their `cost`s under `≤`]],
      // lean:AOP.A9_1.pres_of_cost@a1f5a5c4
-    #leanf("Freyd.Alg.pres_of_cost_shunted") \
-    #src[by shunting at the map `cost`, `F(cost≤cost°)h⊑h cost≤cost°` is
-     `F(cost≤cost°)h cost⊑h cost ≤`, which the chain proves]],
   lean-calc(calc-cost),
 )]<dp-cost>
 

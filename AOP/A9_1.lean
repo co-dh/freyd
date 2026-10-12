@@ -310,37 +310,29 @@ public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A �
   rw [Cat.comp_id] at e
   rw [hR]; simpa only [Cat.assoc] using e
 
-/-- Proposition 9.2 (B&dM p.222), the book's chain after shunting at `cost`: one `calc` step per
-    hint — the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k` monotonic
-    on `≤`, and the assumption on `cost` again. -/
-public theorem pres_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
-    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost ⊑ h ≫ cost ≫ «≤» :=
-  calc F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost
-        = F.map (cost ≫ «≤» ≫ cost°) ≫ F.map cost ≫ k := congrArg (F.map (cost ≫ «≤» ≫ cost°) ≫ ·) hch
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := by
-        simpa only [← Cat.assoc, ← F.map_comp] using comp_mono_right (F.map_mono (conj_comp_map_le hcost rfl)) k
-      _ ⊑ F.map cost ≫ k ≫ «≤» := comp_mono_left _ hk
-      _ = h ≫ cost ≫ «≤» := by rw [← Cat.assoc, ← hch, Cat.assoc]
-
-calc_steps pres_of_cost_shunted
-
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on the order `R := cost·leq·cost°`
     (induced on `a` by pulling the order `leq` on `c` back along a "cost" function) whenever `h`
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
-    monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
-    `F(R)h cost ⊑ h cost leq`, which `monoAlg_of_cost_shunted` proves. -/
+    monotonic on `leq`.  One `calc` step per hint: `cost` entire, the assumption on `cost`,
+    `R cost ⊑ cost ≤` under the functor `F`, `k` monotonic on `≤`, and the assumption on `cost`
+    again. -/
 public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    Pres h (cost ≫ «≤» ≫ cost°) := by
-  show F.map (cost ≫ «≤» ≫ cost°) ≫ h ⊑ h ≫ (cost ≫ «≤» ≫ cost°)
-  have hsh : h ≫ (cost ≫ «≤» ≫ cost°) = (h ≫ cost ≫ «≤») ≫ cost° := by simp only [Cat.assoc]
-  rw [hsh]
-  apply (map_shunt_right hcost _ _).mp
-  rw [Cat.assoc]
-  exact pres_of_cost_shunted hcost hch hk
+    Pres h (cost ≫ «≤» ≫ cost°) :=
+  calc F.map (cost ≫ «≤» ≫ cost°) ≫ h
+        ⊑ F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost ≫ cost° := by
+        simpa only [Cat.comp_id, Cat.assoc] using comp_mono_left (F.map (cost ≫ «≤» ≫ cost°) ≫ h) (map_entire_le hcost)
+      _ = F.map (cost ≫ «≤» ≫ cost°) ≫ F.map cost ≫ k ≫ cost° :=
+        congrArg (F.map (cost ≫ «≤» ≫ cost°) ≫ ·) (by rw [← Cat.assoc, hch, Cat.assoc])
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° := by
+        simpa only [← Cat.assoc, ← F.map_comp] using
+          comp_mono_right (comp_mono_right (F.map_mono (conj_comp_map_le hcost rfl)) k) cost°
+      _ ⊑ F.map cost ≫ k ≫ «≤» ≫ cost° := by
+        simpa only [Cat.assoc] using comp_mono_left (F.map cost) (comp_mono_right hk cost°)
+      _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc, ← hch, Cat.assoc]
+
+calc_steps pres_of_cost
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 

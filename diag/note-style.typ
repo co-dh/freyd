@@ -71,7 +71,7 @@
 }
 /// A display's number as printed, `(13.4.3c)` or `Theorem 10.1`: grey, a size under the text — the
 /// parens, when there are any, are already in `id` (`dispid`'s job, not this styling).
-#let numtext(id) = text(9pt, luma(130))[#id]
+#let numtext(id) = text(9pt, weight: "bold", fill: rgb("#b03a2e"))[#id]  // brick red: set off from the black formula it sits beside
 /// THE `Thm` HEADERS OF A DISPLAY are the `<thm-num>` markers between its `<disp-start>` and its
 /// `<disp-end>`.  Every marker is emitted unconditionally, so each query settles in one pass: a
 /// marker that depends on a state or query of its own costs a layout pass per link and never converged.

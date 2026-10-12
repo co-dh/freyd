@@ -43,10 +43,10 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 
 -- …and through a whole statement: `h cost` keeps its space on both sides of `=`, while the
 -- one-letter `k` still closes up against `F(cost)` and against `≤`.
-/-- info: h cost=F(cost)k ⟹ F(cost)k≤=h cost≤ -/
+/-- info: h cost=F(cost)k ⟹ F(cost)k≤cost°=h cost≤cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
-  Lean.logInfo (← formula ``Freyd.Alg.pres_of_cost_shunted.step_4 false)
+  Lean.logInfo (← formula ``Freyd.Alg.pres_of_cost.step_5 false)
 
 -- WE ONLY REMOVE SPACE WHEN SPACE ARE LIMITED: the same declaration SPACED, as a formula set as text
 -- prints it — every two juxtaposed factors apart, every relation sign set off — and the two modes
@@ -55,11 +55,11 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 #guard Freyd.StrDiag.juxt "F(R)" "h" true == "F(R) h"
 #guard Freyd.StrDiag.juxt "k" "≤" true == "k ≤"
 #guard Freyd.StrDiag.spaced "=" true == " = " && Freyd.StrDiag.spaced "=" == "="
-/-- info: h cost = F(cost) k ⟹ F(cost) k ≤ = h cost ≤ -/
+/-- info: h cost = F(cost) k ⟹ F(cost) k ≤ cost° = h cost ≤ cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
-  let s ← formula ``Freyd.Alg.pres_of_cost_shunted.step_4
-  unless s.replace " " "" == (← formula ``Freyd.Alg.pres_of_cost_shunted.step_4 false).replace " " "" do
+  let s ← formula ``Freyd.Alg.pres_of_cost.step_5
+  unless s.replace " " "" == (← formula ``Freyd.Alg.pres_of_cost.step_5 false).replace " " "" do
     throwError "the two modes differ in more than spaces: {s}"
   Lean.logInfo s
 
@@ -70,10 +70,10 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
     let c ← Freyd.StrDiag.label e
     let s ← Freyd.StrDiag.withSpaced true (Freyd.StrDiag.label e)
     unless c == want && s == want do throwError "`{want}` prints `{c}` compact and `{s}` spaced"
-  let ci ← Lean.getConstInfo ``Freyd.Alg.pres_of_cost_shunted.step_4
+  let ci ← Lean.getConstInfo ``Freyd.Alg.pres_of_cost.step_5
   Lean.Meta.forallTelescope ci.type fun xs body => do
     -- `F.map cost`, the first factor of the statement's left side
-    let some (_, l, _) := Freyd.StrDiag.split body | throwError "pres_of_cost_shunted.step_4 states no relation"
+    let some (_, l, _) := Freyd.StrDiag.split body | throwError "pres_of_cost.step_5 states no relation"
     let some f := (Freyd.StrDiag.factors l)[0]? | throwError "its left side has no factor"
     both f "F(cost)"
     -- `F.obj A`, the source of `h`
