@@ -73,8 +73,6 @@
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
 
-=== The thinning condition
-
 // B&dM p. 222: the hypothesis Theorem 9.2 adds to Theorem 9.1, defined before its first use.
 #disp[#deftab(
   [#rowkey("Freyd.Alg.ThinCondition")], [#leant("Freyd.Alg.ThinCondition")],
@@ -140,7 +138,6 @@
   lean-calc(calc-dptu, breaks: (4, 7)),
 )]<dp-laws-93>
 
-=== Checking the conditions
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
@@ -150,6 +147,8 @@
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
   lean-calc(calc-dpd, breaks: (3, 6)),
 )]<dp-disjoint>
+
+=== Checking the conditions
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
