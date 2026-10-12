@@ -15,46 +15,6 @@
 
 == Theory
 
-=== Example: segmenting a list <dp-example>
-
-// @dp-defn's `H≜⦇T⦈°⦇h⦈` at one instance: `A=B=[ℕ]`, `F(X)=𝟏+[ℕ]×X`, and the non-emptiness of a
-// segment carried by `T`'s `cat`, not by the element type.
-#disp[
-  - #leanf("Freyd.Alg.RelSet.Segment.fold_T") \
-    #src[`T=[nil,cat]` takes a non-empty first list, so `T°` cuts a non-empty prefix off a list every
-     way, and folding with `T` flattens a list of segments]
-    // lean:AOP.A9_0_SegmentExample.fold_T@57c206f5
-  - #leanf("Freyd.Alg.RelSet.Segment.fold_h") \
-    #src[`h=[nil,cons(sum×𝟙)]` puts a segment's sum in front, so folding with `h` sums every segment]
-    // lean:AOP.A9_0_SegmentExample.fold_h@a85436e3
-  - #leanf("Freyd.Alg.RelSet.Segment.H_eq") \
-    #src[`H` segments a list every way, then sums each segment; with `R` comparing the largest entry,
-     `M` cuts the list so that the largest segment sum is as small as possible]
-    // lean:AOP.A9_0_SegmentExample.H_eq@49b18be4
-]<dp-example-defs>
-
-// `h` is a map (`h_iff_hFn`), so each row is one equation of its function, input | output.
-#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*`x`*], [*`h(x)`*]),
-  [#leanf("Freyd.Alg.RelSet.Segment.h_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_nil.rhs")],
-  // lean:AOP.A9_0_SegmentExample.h_nil@89d46cbf
-  [#leanf("Freyd.Alg.RelSet.Segment.h_c.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_c.rhs")],
-  // lean:AOP.A9_0_SegmentExample.h_c@ebeb0e4d
-  [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c.rhs")],
-  // lean:AOP.A9_0_SegmentExample.h_ab_c@cc4f586e
-  [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc.rhs")],
-  // lean:AOP.A9_0_SegmentExample.h_a_bc@fff1c8b6
-)]<dp-example-h>
-
-#disp[
-  - #leanf("Freyd.Alg.RelSet.Segment.H_abc") \
-    #src[`H` sends `[a,b,c]` to the sums of its four segmentations and nothing else]
-    // lean:AOP.A9_0_SegmentExample.H_abc@1d74200c
-  - #leanf("Freyd.Alg.RelSet.Segment.H_fix") \
-    #src[cut once, solve the rest, put the pieces back together]
-    // lean:AOP.A9_0_SegmentExample.H_fix@80717498
-]<dp-example-H>
-
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
 // come from `⦇T⦈°`, and the recursion is over them rather than over an initial algebra.
 #disp[#deftab(
@@ -68,27 +28,16 @@
 // lean:AOP.A9_1.H@71852cf7
 )]<dp-defn>
 
-=== Principle of optimality
-
-#disp[
-  - #leanf("Freyd.Alg.optimality") \
-    #src[replacing each part by one `R°`-related to it (`F(R°)`) and then assembling (`h`) gives only
-     wholes `R°`-related to the assembly of the original parts (`hR°`): a better part never makes the
-     whole worse]
-    // lean:AOP.A9_1.optimality@fc266c74
-    // B&dM p.219; formalised as monotonicity p.242
-]<dp-optimality>
-
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@0dfb5027
+    // lean:AOP.A9_1.dynamic_programming@3719b2c6
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
-    - @dp-optimality: the principle of optimality
+    - `Pres(h,R°)`: the principle of optimality — a better part never makes the whole worse
     - `⊑`, not `=`: some optima may not be returned; that the recursion returns anything at all
       needs `T°` to stop taking apart — @dp-laws
   ]],
@@ -119,7 +68,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@9bf7e84d
+     // lean:AOP.A9_1.dynamic_programming_upper@072da263
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
