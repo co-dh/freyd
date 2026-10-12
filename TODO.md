@@ -147,3 +147,9 @@ Requests of 2026-10-06 morning, not yet done:
 [ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
 [X] (not a bug: the premises are in 5.7.2a, which only cites lax-closure; messages now say so) diff-crop --key lax-closure --rev 76e5391 said "crops pixel-identical" although p.17 gained three lax(φ) ∧ lax(ψ) ⟹ premises.
 [X] Hand-typed vstep labels beside a leanc/lean selector (e.g. 08-thinning tour_laws_defn: `⦇[start,dropl ∪ dropr]⦈ est(R)`) drift from Lean; print them from the same selector.
+[X] ThinCondition — "we don't have ThinCondition in the companion.pdf. add it before first appear. we seemed to have it in
+    Theorem 9.2 . and we use equal. it deserve it's own subsection."
+[X] Knapsack fold body — "I want something like 8.5.2a": a Splitting-the-fold's-body table for knap_body (agent running).
+[X] Companion pdf still shows optimality — rebuild after the 9.1 merge (make p NOTE=aop running).
+[ ] AOP/A8_4_KnapsackProgram.q: the 10-08 "more q like" rewrite is uncommitted.
+[ ] Pres prints infix `h Pres R°`; the convention wants `Pres(h,R°)`.

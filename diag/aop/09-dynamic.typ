@@ -73,6 +73,22 @@
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
 
+=== The thinning condition
+
+// B&dM p. 222: the hypothesis Theorem 9.2 adds to Theorem 9.1, defined before its first use.
+#disp[#deftab(
+  [#rowkey("Freyd.Alg.ThinCondition")], [#leant("Freyd.Alg.ThinCondition")],
+  "Freyd.Alg.ThinCondition",
+  [the second condition of dynamic programming, beside `Pres(h,R°)`: thinning the decompositions
+   by `Q` before solving them only moves the answer up `R`],
+// lean:AOP.A9_1.ThinCondition@981f8a2d
+)]<dp-thin-cond>
+
+#disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
+  #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
+   by `R` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
+   decompositions never loses an answer that is not matched by a kept one at least as good]]]<dp-thin-cd>
+
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
@@ -91,7 +107,7 @@
     // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
     (RQ, "Freyd.Alg.dynamic_programming_thin_prefixed.lhs",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @Freyd.Alg.thinRel_comp_est, @est-up]),
+      src[@Freyd.Alg.ThinCondition, `h` monotonic on `R` — @Freyd.Alg.thinRel_comp_est, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : PFA⟶PFA` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
@@ -125,6 +141,7 @@
 )]<dp-laws-93>
 
 === Checking the conditions
+
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
 #disp(num: "Proposition 9.1")[#calc-table(cols: (1fr,), al: (left + top,),

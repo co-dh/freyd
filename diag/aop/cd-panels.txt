@@ -56,6 +56,7 @@ prefix-defn#1             | cdref-prefix.typ
 party-mono#1              | cdref-party.typ
 party-absorb#1            | cdref-absorb-l.typ
 party-absorb#2            | cdref-absorb-r.typ
+dp-thin-cd#1                | -  # the definition ThinCondition, drawn from its own body
 dp-laws#1                   | -  # the ASSUMPTION `hQ` of Theorem 9.2, read in the theorem that assumes it; the note never drew it by hand, so the panel is held to its own geometry
 dp-laws#2                   | -
 - | Freyd.Alg.alpha_natural                          | -
