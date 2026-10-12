@@ -1229,12 +1229,6 @@ public theorem _root_.Freyd.Alg.RelSet.thin_est_ran_split {V₁ : α ⟶ A} {V�
       exact Or.inr ⟨y, ⟨rfl, b, hb, hb⟩, S, hS, Y, hY, W, hW, hest⟩
   · rintro (⟨y', ⟨rfl, -⟩, h⟩ | ⟨y', ⟨rfl, -⟩, h⟩) <;> exact h
 
-/-- Disjoint ranges is symmetric: `V₂V₁°=𝟘` gives `V₁V₂°=𝟘`, the hypothesis of the other branch. -/
-public theorem _root_.Freyd.Alg.RelSet.recip_zero_swap {V₁ : α ⟶ A} {V₂ : β ⟶ A}
-    (hdisj : V₂ ≫ V₁° = 𝟘) : V₁ ≫ V₂° = 𝟘 := by
-  have h : (V₂ ≫ V₁°)° = (𝟘 : β ⟶ α)° := by rw [hdisj]
-  rwa [Allegory.recip_comp, Allegory.recip_recip, recip_zero] at h
-
 /-- `[g,h]` over `β+α` at `w` is `[h,g]` over `α+β` at the swapped point. -/
 theorem junc_swap {X : RelSet.{0}} (g : α ⟶ X) (h : β ⟶ X) (w : β.carrier ⊕ α.carrier)
     (r : X.carrier) : junc (sumCop β α) h g w r ↔ junc (sumCop α β) g h (Sum.swap w) r := by
@@ -1319,10 +1313,11 @@ calc_steps Freyd.Alg.RelSet.dp_disjoint_branch
 /-- **Proposition 9.1 (B&dM p.222)**, in `Rel(Set)`: when `V₁` and `V₂` have disjoint ranges,
     thinning by `Q₁+Q₂` over the decompositions `[V₁,V₂]°` and assembling by `[U₁,U₂]` runs, on
     `ran V₁`, the `V₁` problem `W₁≜Λ(V₁°)thin(Q₁)P(U₁)est(R)` and, on `ran V₂`, the `V₂` one.
-    Each branch is `dp_disjoint_branch`; the `V₂` one after naming the summands the other way. -/
+    Each branch is `dp_disjoint_branch`; the `V₂` one after naming the summands the other way.
+    Disjoint ranges is stated from both ends, so each branch is handed its own side unchanged. -/
 public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
     {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
-    (hdisj : V₂ ≫ V₁° = 𝟘) :
+    (hdisj : V₂ ≫ V₁° = 𝟘) (hdisj' : V₁ ≫ V₂° = 𝟘) :
     Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
         ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
       = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
@@ -1347,7 +1342,7 @@ public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V�
         rw [RelSet.thin_est_junc_swap (V₁ := V₁)]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) := by
-        rw [RelSet.dp_disjoint_branch (RelSet.recip_zero_swap hdisj)]
+        rw [RelSet.dp_disjoint_branch hdisj']
 
 calc_steps Freyd.Alg.RelSet.dp_disjoint_ranges
 
