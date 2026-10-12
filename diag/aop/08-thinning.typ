@@ -709,18 +709,23 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs"),
     [#leanf("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs") \
-     #src[#leanf("Freyd.Alg.RelSet.ListRel.inl_cpL"), #leanf("Freyd.Alg.RelSet.ListRel.inr_cpL"),
-      #leanf("Freyd.Alg.RelSet.Knapsack.list_inr_pair"); on the empty arm `thinL(Q)` keeps one
-      of the two empty packings, weight bound non-negative; `minL(R)` is `head`, packings coming
-      out in descending value]])],
+     #src[@knap-body-split under the fold; `minL(R)` is `head`, packings coming out in
+      descending value]])],
      // lean:AOP.A8_4_Knapsack.knap_fold@185b51be
-     // lean:AOP.A8_4_Knapsack.knap_body@24dea291
-     // lean:AOP.A8_4_Knapsack.knap_base@3b9fbf82
-     // lean:AOP.A8_4_Knapsack.list_inr_pair@98c469ff
-     // lean:AOP.A8_3.inl_cpL@baeaa3d0
-     // lean:AOP.A8_3.inr_cpL@5ce65b22
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs")],
 )]<knap-laws>
+
+=== Splitting the fold's body
+// B&dM §8.4, p. 206: the body of the thinned fold, split along the coproduct into the base
+// case `nil τ` and the item case.  `⊑`: on `[nil,nil]` `thinL(Q)` may keep both copies.
+#import "../generated/Freyd.Alg.RelSet.Knapsack.knap_body.calc.typ" as calc-kbs
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Knapsack.knap_body") \
+    #src[the fold's body splits into a base case `nil τ` and a step that extends each kept
+ packing by the item or leaves it out]],
+     // lean:AOP.A8_4_Knapsack.knap_body@24dea291
+  lean-calc(calc-kbs),
+)]<knap-body-split>
 
 == The paragraph problem
 

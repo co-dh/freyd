@@ -1622,6 +1622,45 @@ public theorem corefl_τ_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflex
   refine ⟨⟨_, subseqP.refl _, hab, rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
   obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
   exact Filter.subseqP_clen_le hu
+
+
+/-- `inl [f,g] = f`, at graphs. -/
+public theorem inl_elim {A B C : Type} (g : A → C) (h : B → C) :
+    (graph Sum.inl : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A ⊕ B⟩) ≫ graph (Sum.elim g h)
+      = (graph g : (⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩) := by
+  rw [graph_comp]; rfl
+
+
+/-- `list(inr) list([f,g]) = list(g)`: the list functor applied to `inr [f,g] = g`. -/
+public theorem list_inr_elim {A B C : Type} (g : A → C) (h : B → C) :
+    list (graph Sum.inr : dE B ⟶ dE (A ⊕ B)) ≫ list (graph (Sum.elim g h)) = list (graph h) := by
+  rw [← list_comp, graph_comp]; rfl
+
+
+/-- `[a]` is one thinning of `[a,a]` when `Q` is reflexive: `wrap ⊑ ⟨wrap,wrap⟩ cat thinL(Q)`. -/
+public theorem τ_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
+    (τₗ () : dE A ⟶ dList A)
+      ⊑ (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ cat ≫ thinL Q := by
+  refine le_iff.mpr fun a ws h => ?_
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := h
+  have hset : inlistP (ConsList.cons a (ConsList.cons a (ConsList.wrap ())))
+      = inlistP (ConsList.cons a (ConsList.wrap ())) :=
+    funext fun c => propext ⟨fun h => h.elim Or.inl id, Or.inr⟩
+  refine ⟨(ConsList.cons a (ConsList.wrap ()), ConsList.cons a (ConsList.wrap ())),
+    ⟨⟨_, rfl, rfl⟩, _, rfl, rfl⟩,
+    ConsList.cons a (ConsList.cons a (ConsList.wrap ())), rfl, ?_, Or.inl ⟨rfl, subseqP.nil _⟩⟩
+  refine ⟨_, rfl, _, ?_, rfl⟩
+  rw [hset]
+  exact le_iff.mp (id_le_thinRel hQ) _ _ rfl
+
+/-- `[a,a]` is one merge of `[a]` with `[a]` when `≼` is reflexive: `⟨τ,τ⟩ cat ⊑ ⟨τ,τ⟩ merge(≼)`. -/
+public theorem dup_cat_le_merge {A : Type} {«≼» : dE A ⟶ dE A} (h : 𝟙 (dE A) ⊑ ≼) :
+    (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ cat
+      ⊑ (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ merge ≼ := by
+  refine le_iff.mpr fun a ws ⟨⟨x, y⟩, hp, hws⟩ => ⟨(x, y), hp, ?_⟩
+  obtain ⟨⟨_, h₁, h₂⟩, _, h₃, h₄⟩ := hp
+  cases h₁; cases h₂; cases h₃; cases h₄; cases hws
+  exact Merge.consl a a (le_iff.mp h a a rfl) (Merge.nill _)
 end Freyd.Alg.RelSet.ListRel
 
 -- printing-only: the note's names for this section's declarations.

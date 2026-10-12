@@ -442,86 +442,206 @@ public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
   rw [← knap_laws_step2 hw hwt]
   exact knap_laws_step1
 
-/-- `gᵢ = [·,hᵢ]` on the item arm: `list(inr) ⟨g₁,g₂⟩ = ⟨h₁,h₂⟩`, because `inr [nil,cons] = cons`
-    and `inr [nil,π₂] = π₂`. -/
-public theorem list_inr_pair :
+/-- The empty packing fits: `nil within(w) = nil` when `0 ≤ w`. -/
+public theorem τ_within (hw : 0 ≤ w) :
+    (τ : dL Unit ⟶ dList Item) ≫ corefl (within (wt := wt) w) = τ := by
+  apply hom_ext; intro u r
+  constructor
+  · rintro ⟨_, h₁, h₂, -⟩; cases h₁; cases h₂; exact rfl
+  · intro h; cases h; exact ⟨_, rfl, rfl, (within_apply _).mpr hw⟩
+
+/-- `inl [nil,cons] = nil`: on the empty arm `[nil,cons]` is the empty packing. -/
+public theorem inl_con :
+    (graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item)) ≫ graph con
+      = (τ : dL Unit ⟶ dList Item) := by
+  rw [con_eq_junc]; exact u₁_junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) _ _
+
+/-- `inl [nil,π₂] = nil`: on the empty arm `[nil,π₂]` is the empty packing. -/
+public theorem inl_drop :
+    (graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item)) ≫ graph dropFn
+      = (τ : dL Unit ⟶ dList Item) := by
+  rw [drop_eq_junc]; exact u₁_junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) _ _
+
+/-- `list(inr) list([nil,cons]) = list(cons)`: on the item arm `[nil,cons]` is `cons`. -/
+public theorem list_inr_con :
     list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
-        ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-          (g₁ (wt := wt) (w := w)) g₂
-      = (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-          (h₁ (wt := wt) (w := w)) h₂ := by
-  have e₁ : (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
-      ≫ graph con = consR := by
-    apply hom_ext; rintro ⟨a, xs⟩ r
-    constructor
-    · rintro ⟨_, rfl, rfl⟩; rfl
-    · rintro rfl; exact ⟨_, rfl, rfl⟩
-  have e₂ : (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
-      ≫ graph dropFn = graph fun p : Item × ConsList Unit Item => p.2 := by
-    apply hom_ext; rintro ⟨a, xs⟩ r
-    constructor
-    · rintro ⟨_, rfl, rfl⟩; rfl
-    · rintro rfl; exact ⟨_, rfl, rfl⟩
-  rw [RelProd.map_comp_pair (map_list_graph _)]
-  unfold g₁ g₂ h₁ h₂
-  rw [← Cat.assoc, ← list_comp, ← list_comp, e₁, e₂]
+        ≫ list (graph con) = list consR := by
+  rw [← list_comp, con_eq_junc]; exact congrArg list (u₂_junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) _ _)
 
-/-- `gᵢ = [·,hᵢ]` on the empty arm: the one-element list of the empty packing is one result of
-    `[nil]` merged with `[nil]` and thinned; `0 ≤ w` lets the empty packing through `within w`. -/
-public theorem knap_base (hw : 0 ≤ w) :
-    (τ ≫ τₗ () : dL Unit ⟶ dList (ConsList Unit Item))
-      ⊑ (graph Sum.inl : dL Unit ⟶ dE (Unit ⊕ Item × ConsList Unit Item)) ≫ τₗ ()
-          ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-            (g₁ (wt := wt) (w := w)) g₂
-          ≫ merge (R val) ≫ thinL (Q val wt) := by
-  refine le_iff.mpr fun u ws h => ?_
-  obtain ⟨_, rfl, rfl⟩ := h
-  have hnil : within (wt := wt) w (ConsList.wrap u : ConsList Unit Item) := (within_apply _).mpr hw
-  obtain ⟨_, rfl, hf⟩ := le_iff.mp (corefl_τ_le_filter (within_coreflexive (wt := wt) (w := w)))
-    (ConsList.wrap u) _ ⟨_, ⟨rfl, hnil⟩, rfl⟩
-  have hset : inlistP (ConsList.cons (ConsList.wrap u : ConsList Unit Item)
-        (ConsList.cons (ConsList.wrap u) (ConsList.wrap ())))
-      = inlistP (ConsList.cons (ConsList.wrap u : ConsList Unit Item) (ConsList.wrap ())) :=
-    funext fun c => propext ⟨fun h => h.elim Or.inl id, Or.inr⟩
-  refine ⟨Sum.inl u, rfl, _, rfl, (_, _),
-    ⟨⟨_, ⟨_, (listP_graph _ _ _).mpr rfl, hf⟩, rfl⟩, _, (listP_graph _ _ _).mpr rfl, rfl⟩,
-    _, Merge.consl _ _ ((R_apply _ _).mpr (Int.le_refl _)) (Merge.nill _), ?_,
-    Or.inl ⟨rfl, subseqP.nil _⟩⟩
-  refine ⟨_, rfl, _, ?_, rfl⟩
-  show thinRel (Q val wt) (inlistP (ConsList.cons (ConsList.wrap u : ConsList Unit Item)
-      (ConsList.cons (ConsList.wrap u) (ConsList.wrap ()))))
-    (inlistP (ConsList.cons (ConsList.wrap u : ConsList Unit Item) (ConsList.wrap ())))
-  rw [hset]
-  exact le_iff.mp (id_le_thinRel Q_refl) _ _ rfl
+/-- `list(inr) list([nil,π₂]) = list(π₂)`: on the item arm `[nil,π₂]` is `π₂`. -/
+public theorem list_inr_drop :
+    list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
+        ≫ list (graph dropFn) = list (graph fun p : Item × ConsList Unit Item => p.2) := by
+  rw [← list_comp, drop_eq_junc]; exact congrArg list (u₂_junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) _ _)
 
-/-- **knap-body** (B&dM p.206, "an easy simplification"): the body of the thinning fold contains
-    `[τ τₗ, cpr ⟨h₁,h₂⟩ merge(R) thinL(Q)]`.  Not an equation: on the empty arm `thinL(Q)` may also
-    keep both copies of the empty packing, and the book's `nil` is the one-element list `τ τₗ`. -/
+/-- **The fold's body split** (B&dM p.206, "an easy simplification"): on the empty arm the body
+    keeps the one-element list `nil τ` of the empty packing, and on an item and a list of packings
+    it is `cpr ⟨h₁,h₂⟩ merge(R) thinL(Q)`.  `⊑`, not `=`: on `[nil,nil]` `thinL(Q)` may keep both. -/
 public theorem knap_body (hw : 0 ≤ w) :
     junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩) (τ ≫ τₗ ())
         (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
           (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt))
       ⊑ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
           (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt) :=
-  calc _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩) (τ ≫ τₗ ())
-          (cpr ≫ list (graph Sum.inr) ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-            (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
-        rw [← list_inr_pair]; simp only [Cat.assoc]
+  calc junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt))
+      ⊑ junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((τ : dL Unit ⟶ dList Item)
+          ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair (τₗ ()) (τₗ ())
+          ≫ cat ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) :=
+        junc_mono _ (comp_mono_left _ (τ_le_dup_cat_thinL Q_refl)) (le_refl _)
     _ ⊑ junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
-          ((graph Sum.inl : dL Unit ⟶ dE (Unit ⊕ Item × ConsList Unit Item)) ≫ τₗ ()
-            ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-              (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt))
-          (cpr ≫ list (graph Sum.inr) ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-            (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt)) :=
-        junc_mono _ (knap_base hw) (le_refl _)
-    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩) (graph Sum.inl ≫ τₗ ())
-          (cpr ≫ list (graph Sum.inr))
+        ((τ : dL Unit ⟶ dList Item)
+          ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair (τₗ ()) (τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        have h := comp_mono_right (dup_cat_le_merge (R_refl (val := val))) (thinL (Q val wt))
+        rw [Cat.assoc, Cat.assoc] at h
+        exact junc_mono _ (comp_mono_left _ h) (le_refl _)
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((τ : dL Unit ⟶ dList Item) ≫ τₗ ()) ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc (τ : dL Unit ⟶ dList Item),
+          RelProd.map_comp_pair (show Map (τ : dL Unit ⟶ dList Item) from graph_map _)]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((τ : dL Unit ⟶ dList Item) ≫ corefl (within (wt := wt) w) ≫ τₗ ())
+            ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc (τ : dL Unit ⟶ dList Item) (corefl _), τ_within hw]
+    _ ⊑ junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((τ : dL Unit ⟶ dList Item) ≫ τₗ () ≫ Filter.filter (corefl (within (wt := wt) w)))
+            ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) :=
+        junc_mono _ (comp_mono_right (RelProd.pair_mono
+          (comp_mono_left _ (corefl_τ_le_filter within_coreflexive)) (le_refl _)) _) (le_refl _)
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
+              ≫ (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
+              ≫ τₗ () ≫ Filter.filter (corefl (within (wt := wt) w)))
+            ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc (graph Sum.inl) (graph con), inl_con]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
+              ≫ (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
+              ≫ τₗ () ≫ Filter.filter (corefl (within (wt := wt) w)))
+            ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
+              ≫ (graph dropFn : (F Unit Item).obj (dList Item) ⟶ dList Item) ≫ τₗ ())
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc (graph Sum.inl) (graph dropFn), inl_drop]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item)) ≫ τₗ ()
+              ≫ g₁ (wt := wt) (w := w))
+            ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item)) ≫ τₗ () ≫ g₂)
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        unfold g₁ g₂
+        rw [← Cat.assoc (τₗ ()) (list _) (Filter.filter _), τ_natural, τ_natural, Cat.assoc]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁ ≫ cpL
+              ≫ g₁ (wt := wt) (w := w))
+            ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁ ≫ cpL ≫ g₂)
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc _ cpL g₁, ← Cat.assoc _ cpL g₂, inl_cpL, Cat.assoc _ _ g₁,
+          Cat.assoc _ _ g₂]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+          (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← RelProd.map_comp_pair (show Map (sumCop (dL Unit)
+            (⟨Item × ConsList Unit (ConsList Unit Item)⟩ : RelSet.{0})).u₁ from graph_map _),
+          ← RelProd.map_comp_pair (show Map (cpL (L := Unit) (E := Item) (X := ConsList Unit Item))
+            from graph_map _), Cat.assoc, Cat.assoc]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (cpr ≫ h₁ (wt := wt) (w := w)) (cpr ≫ h₂)
+          ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc cpr, RelProd.map_comp_pair
+          (show Map (cpr (A := Item) (B := ConsList Unit Item)) from graph_map _)]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (cpr ≫ h₁ (wt := wt) (w := w))
+            (cpr ≫ list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
+              ≫ g₂)
+          ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        unfold g₂ h₂; rw [list_inr_drop]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (cpr ≫ list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
+              ≫ g₁ (wt := wt) (w := w))
+            (cpr ≫ list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
+              ≫ g₂)
+          ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        unfold g₁ h₁; rw [← Cat.assoc (list (graph Sum.inr)) (list _) (Filter.filter _), list_inr_con]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        (cpr ≫ list (graph Sum.inr : dE (Item × ConsList Unit Item) ⟶ dE (Unit ⊕ Item × ConsList Unit Item))
           ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-            (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt) := by
-        rw [junc_comp]; simp only [Cat.assoc]
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← RelProd.map_comp_pair (show Map (cpr (A := Item) (B := ConsList Unit Item)) from graph_map _),
+          ← RelProd.map_comp_pair
+            (map_list_graph (Sum.inr : Item × ConsList Unit Item → Unit ⊕ Item × ConsList Unit Item)),
+          Cat.assoc, Cat.assoc]
+    _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₁
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt))
+        ((sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩).u₂
+          ≫ cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+            (g₁ (wt := wt) (w := w)) g₂
+          ≫ merge (R val) ≫ thinL (Q val wt)) := by
+        rw [← Cat.assoc (sumCop (dL Unit)
+            (⟨Item × ConsList Unit (ConsList Unit Item)⟩ : RelSet.{0})).u₂ cpL, inr_cpL, Cat.assoc]
     _ = cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-          (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt) := by
-        rw [← inl_cpL, ← inr_cpL, ← junc_comp, junc_injections, Cat.id_comp]
+          (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt) :=
+        (junc_unique _ rfl rfl).symm
+
+calc_steps knap_body
 
 /-- **knap-laws**, last row (B&dM p.206): `knapsack w = ⦇[nil, cpr ⟨h₁,h₂⟩ merge(R) thinL(Q)]⦈ minL(R)`
     refines the specification — `knap-body` under the fold, then `knap_laws`. -/
