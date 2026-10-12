@@ -474,6 +474,34 @@ public theorem list_inr_drop :
         ≫ list (graph dropFn) = list (graph fun p : Item × ConsList Unit Item => p.2) := by
   rw [← list_comp, drop_eq_junc]; exact congrArg list (u₂_junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) _ _)
 
+/-- `nil τ` is STRICTLY natural: the empty packing's one-element list is moved by nothing. -/
+public theorem nil_τ_strictNatural :
+    StrictNatural (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) listRelator)
+      (Relator.const (dL Unit)) (fun a => (τ : dL Unit ⟶ dList a.carrier) ≫ τₗ ()) := by
+  intro a b Q
+  apply hom_ext; intro d z
+  cases d
+  constructor
+  · rintro ⟨u, -, m, hm, hz⟩
+    cases u; subst hm; subst hz
+    exact ⟨_, ⟨_, rfl, rfl⟩, rfl, rfl⟩
+  · rintro ⟨y, ⟨m, hm, hy⟩, hl⟩
+    subst hm; subst hy
+    match z, hl with
+    | ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), _ => exact ⟨(), rfl, _, rfl, rfl⟩
+
+/-- The pair `⟨nil τ, nil τ⟩` is LAX natural, as `⟨start,start⟩` is in the paragraph problem. -/
+public theorem nil_τ_pair_laxNatural :
+    LaxNatural
+      (Relator.prod
+        (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) listRelator)
+        (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) listRelator))
+      (Relator.const (dL Unit))
+      (fun a => (relProd (dList (ConsList Unit a.carrier)) (dList (ConsList Unit a.carrier))).pair
+        ((τ : dL Unit ⟶ dList a.carrier) ≫ τₗ ()) ((τ : dL Unit ⟶ dList a.carrier) ≫ τₗ ())) :=
+  laxNatural_pair (laxNatural_of_strictNatural nil_τ_strictNatural)
+    (laxNatural_of_strictNatural nil_τ_strictNatural)
+
 /-- **The fold's body split** (B&dM p.206, "an easy simplification"): on the empty arm the body
     keeps the one-element list `nil τ` of the empty packing, and on an item and a list of packings
     it is `cpr ⟨h₁,h₂⟩ merge(R) thinL(Q)`.  `⊑`, not `=`: on `[nil,nil]` `thinL(Q)` may keep both. -/
