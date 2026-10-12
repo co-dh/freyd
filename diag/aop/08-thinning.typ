@@ -601,8 +601,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 
 == The knapsack problem
 
-// B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `τ` that
-// §8.5 and §8.6 do print (`τ τ τ`, `start τ`).
+// B&dM §8.4, p. 205.  The book prints the base of the final fold as `nil`; its type is the
+// one-element list of the empty packing, `nil τ` in Lean, as §8.5 and §8.6 print (`τ τ τ`, `start τ`).
 #disp[#deftab(
 
   [#rowkey("Freyd.Alg.RelSet.CL.F")], [#leant("Freyd.Alg.RelSet.CL.F")],
@@ -707,12 +707,25 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs")],
 
-  [#vstep(EQ, [],
-    [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinL(Q)]⦈ minL(R)` \
-     #src[`cpL=τ+cpr`, `gᵢ=[nil′,hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, #leanf("Freyd.Alg.RelSet.Knapsack.dropFn"); `minL(R)` is `head`, packings
-      coming out in descending value]])],
-  [],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs"),
+    [#leanf("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs") \
+     #src[@knap-body-split under the fold; `minL(R)` is `head`, packings coming out in
+      descending value]])],
+     // lean:AOP.A8_4_Knapsack.knap_fold@185b51be
+  [#lean("Freyd.Alg.RelSet.Knapsack.knap_fold.lhs")],
 )]<knap-laws>
+
+=== Splitting the fold's body
+// B&dM §8.4, p. 206: the body of the thinned fold, split along the coproduct into the base
+// case `nil τ` and the item case.  `⊑`: on `[nil,nil]` `thinL(Q)` may keep both copies.
+#import "../generated/Freyd.Alg.RelSet.Knapsack.knap_body.calc.typ" as calc-kbs
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Knapsack.knap_body") \
+    #src[the fold's body splits into a base case `nil τ` and a step that extends each kept
+ packing by the item or leaves it out]],
+     // lean:AOP.A8_4_Knapsack.knap_body@24dea291
+  lean-calc(calc-kbs),
+)]<knap-body-split>
 
 == The paragraph problem
 

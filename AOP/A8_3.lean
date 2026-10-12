@@ -1583,6 +1583,84 @@ public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → 
       (comp_mono_left _ (by rw [bumpFold_eq]; exact bumpFold_le_thinL hQ))))) _)
     (thinningList f₁ f₂ p₁ p₂ hp₁ hp₂ hQR hQ hR hm₁ hm₂ hP hc hmono₁ hmono₂)
 
+
+
+/-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
+public theorem inl_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ τₗ () := by
+  apply hom_ext; intro d r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+
+
+/-- On the pair, `cpL` is `cpr` then `list(inr)`: `inr cpL = cpr list(inr)`. -/
+public theorem inr_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₂ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = cpr ≫ list (graph Sum.inr : dE (E × X) ⟶ dE (L ⊕ E × X)) := by
+  rw [list_graph]; apply hom_ext; rintro ⟨e, xs⟩ r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, cpLFn_inr e xs⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, (cpLFn_inr e xs).symm⟩
+
+
+/-- `list(f)` of a map is a map. -/
+public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
+  rw [list_graph]; exact graph_map _
+
+
+/-- `filter(p)` keeps a one-element list whose element passes `p`: `p wrap ⊑ wrap filter(p)`. -/
+public theorem corefl_τ_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
+    p ≫ (τₗ () : dE A ⟶ dList A) ⊑ τₗ () ≫ Filter.filter p := by
+  refine le_iff.mpr fun a ws ⟨b, hab, hws⟩ => ?_
+  obtain ⟨rfl, -⟩ := (GCTakeWhile.coreflexive_apply hp).mp hab
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := hws
+  refine ⟨ConsList.cons a (ConsList.wrap ()), rfl, ?_⟩
+  unfold Filter.filter
+  rw [Λ_comp_est_apply]
+  refine ⟨⟨_, subseqP.refl _, hab, rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+  obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
+  exact Filter.subseqP_clen_le hu
+
+
+/-- `inl [f,g] = f`, at graphs. -/
+public theorem inl_elim {A B C : Type} (g : A → C) (h : B → C) :
+    (graph Sum.inl : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A ⊕ B⟩) ≫ graph (Sum.elim g h)
+      = (graph g : (⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩) := by
+  rw [graph_comp]; rfl
+
+
+/-- `list(inr) list([f,g]) = list(g)`: the list functor applied to `inr [f,g] = g`. -/
+public theorem list_inr_elim {A B C : Type} (g : A → C) (h : B → C) :
+    list (graph Sum.inr : dE B ⟶ dE (A ⊕ B)) ≫ list (graph (Sum.elim g h)) = list (graph h) := by
+  rw [← list_comp, graph_comp]; rfl
+
+
+/-- `[a]` is one thinning of `[a,a]` when `Q` is reflexive: `wrap ⊑ ⟨wrap,wrap⟩ cat thinL(Q)`. -/
+public theorem τ_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
+    (τₗ () : dE A ⟶ dList A)
+      ⊑ (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ cat ≫ thinL Q := by
+  refine le_iff.mpr fun a ws h => ?_
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := h
+  have hset : inlistP (ConsList.cons a (ConsList.cons a (ConsList.wrap ())))
+      = inlistP (ConsList.cons a (ConsList.wrap ())) :=
+    funext fun c => propext ⟨fun h => h.elim Or.inl id, Or.inr⟩
+  refine ⟨(ConsList.cons a (ConsList.wrap ()), ConsList.cons a (ConsList.wrap ())),
+    ⟨⟨_, rfl, rfl⟩, _, rfl, rfl⟩,
+    ConsList.cons a (ConsList.cons a (ConsList.wrap ())), rfl, ?_, Or.inl ⟨rfl, subseqP.nil _⟩⟩
+  refine ⟨_, rfl, _, ?_, rfl⟩
+  rw [hset]
+  exact le_iff.mp (id_le_thinRel hQ) _ _ rfl
+
+/-- `[a,a]` is one merge of `[a]` with `[a]` when `≼` is reflexive: `⟨τ,τ⟩ cat ⊑ ⟨τ,τ⟩ merge(≼)`. -/
+public theorem dup_cat_le_merge {A : Type} {«≼» : dE A ⟶ dE A} (h : 𝟙 (dE A) ⊑ ≼) :
+    (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ cat
+      ⊑ (relProd (dList A) (dList A)).pair (τₗ ()) (τₗ ()) ≫ merge ≼ := by
+  refine le_iff.mpr fun a ws ⟨⟨x, y⟩, hp, hws⟩ => ⟨(x, y), hp, ?_⟩
+  obtain ⟨⟨_, h₁, h₂⟩, _, h₃, h₄⟩ := hp
+  cases h₁; cases h₂; cases h₃; cases h₄; cases hws
+  exact Merge.consl a a (le_iff.mp h a a rfl) (Merge.nill _)
 end Freyd.Alg.RelSet.ListRel
 
 -- printing-only: the note's names for this section's declarations.
