@@ -202,8 +202,9 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
             | throwError "{declName}: a structure with no fields states nothing"
           return #[head ++ spaced "≜" sp ++ (← labelT c)]
-      -- A DATATYPE has no value but its CONSTRUCTORS: `tree A≜tip(A) ∣ bin(tree A,tree A)`, each
+      -- A DATATYPE has no value but its CONSTRUCTORS: `tree A ::= tip(A) ∣ bin(tree A,tree A)`, each
       -- constructor at these parameters beside the types of its fields, read off its own type.
+      -- `::=` and not `≜`: it is the book's sign for a datatype declaration (B&dM p.225, `Op::=…`).
       if let .inductInfo iv := ci then
         let lv := ci.levelParams.map Level.param
         let alts ← iv.ctors.toArray.mapM fun c => do
@@ -215,7 +216,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
             return (← labelT k) ++ Lbl.text "(" ++ args ++ Lbl.text ")"
         let some (a₀ : Lbl) := alts[0]? | throwError "{declName}: a datatype with no constructors"
         let body := alts[1:].foldl (fun (acc : Lbl) (a : Lbl) => acc ++ spaced "∣" sp ++ a) a₀
-        return #[head ++ spaced "≜" sp ++ body]
+        return #[head ++ spaced "::=" sp ++ body]
       -- A CONSTRUCTOR has no value either: what defines it is the datatype it is one alternative of.
       if let .ctorInfo cv := ci then return ← render sp cv.induct none [] branch defines
       let some val := ci.value? | throwError "{declName}: a definition with no value — \

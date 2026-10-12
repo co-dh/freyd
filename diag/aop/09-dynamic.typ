@@ -231,7 +231,7 @@
 #disp[#deftab(
 
   [#rowkey("Freyd.Alg.RelSet.Edit.Op")], [#leant("Freyd.Alg.RelSet.Edit.Op")],
-  "Freyd.Alg.RelSet.Edit.op_cases",
+  "Freyd.Alg.RelSet.Edit.Op",
   [an edit operation copies, deletes or inserts one character],
   [], [],
   "Freyd.Alg.RelSet.Edit.F_obj",
@@ -264,7 +264,7 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
   ("Freyd.Alg.RelSet.Edit.base_nil", "Freyd.Alg.RelSet.Edit.step_cpy", "Freyd.Alg.RelSet.Edit.step_del", "Freyd.Alg.RelSet.Edit.step_ins"),
   [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
-// lean:AOP.A9_2_Edit.op_cases@c6eaf29f
+// lean:AOP.A9_2_Edit.Op@5aeb2081
 // lean:AOP.A9_2_Edit.F_obj@c75acbc8
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
