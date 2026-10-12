@@ -51,6 +51,7 @@
 #import "../generated/Freyd.Alg.pres_of_cost_shunted.calc.typ" as calc-cost
 #import "../generated/Freyd.Alg.pres_in_context.calc.typ" as calc-ctx
 #import "../generated/Freyd.Alg.RelSet.dp_disjoint_ranges.calc.typ" as calc-dpd
+#import "../generated/Freyd.Alg.RelSet.dp_disjoint_branch.calc.typ" as calc-dpb
 #import "../generated/Freyd.Alg.RelSet.Bracket.mct_rec.calc.typ" as calc-mct
 #import "../generated/Freyd.Alg.RelSet.Bracket.col_rec.calc.typ" as calc-col
 #import "../generated/Freyd.Alg.RelSet.Bracket.row_rec.calc.typ" as calc-row
@@ -131,8 +132,15 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  lean-calc(calc-dpd, breaks: (3, 6)),
+  lean-calc(calc-dpd, breaks: (3,)),
 )]<dp-disjoint>
+
+// The one branch both steps of Proposition 9.1 cite; the `V₂` one is it at swapped arguments.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_branch") \
+    #src[on inputs `V₁` reaches, the body over `[V₁,V₂]` is the `V₁` problem]],
+  lean-calc(calc-dpb, breaks: (3,)),
+)]<dp-disjoint-branch>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
