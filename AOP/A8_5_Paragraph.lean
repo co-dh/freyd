@@ -750,28 +750,6 @@ public theorem start_pair_laxNatural :
   laxNatural_pair (laxNatural_of_strictNatural start_strictNatural)
     (laxNatural_of_strictNatural start_strictNatural)
 
-/-- `list(f)` of a map is a map. -/
-public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
-  rw [list_graph]; exact graph_map _
-
-/-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
-public theorem inl_cpL {L E X : Type} :
-    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
-      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ τₗ () := by
-  apply hom_ext; intro d r
-  constructor
-  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
-  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
-
-/-- On the pair, `cpL` is `cpr` then `list(inr)`: `inr cpL = cpr list(inr)`. -/
-public theorem inr_cpL {L E X : Type} :
-    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₂ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
-      = cpr ≫ list (graph Sum.inr : dE (E × X) ⟶ dE (L ⊕ E × X)) := by
-  rw [list_graph]; apply hom_ext; rintro ⟨e, xs⟩ r
-  constructor
-  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, cpLFn_inr e xs⟩
-  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, (cpLFn_inr e xs).symm⟩
-
 /-- `[a]` is one thinning of `[a,a]` when `Q` is reflexive: `wrap ⊑ ⟨wrap,wrap⟩ cat thinL(Q)`. -/
 public theorem τ_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE A) ⊑ Q) :
     (τₗ () : dE A ⟶ dList A)
@@ -787,19 +765,6 @@ public theorem τ_le_dup_cat_thinL {A : Type} {Q : dE A ⟶ dE A} (hQ : 𝟙 (dE
   refine ⟨_, rfl, _, ?_, rfl⟩
   rw [hset]
   exact le_iff.mp (id_le_thinRel hQ) _ _ rfl
-
-/-- `filter(p)` keeps a one-element list whose element passes `p`: `p wrap ⊑ wrap filter(p)`. -/
-public theorem corefl_τ_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
-    p ≫ (τₗ () : dE A ⟶ dList A) ⊑ τₗ () ≫ Filter.filter p := by
-  refine le_iff.mpr fun a ws ⟨b, hab, hws⟩ => ?_
-  obtain ⟨rfl, -⟩ := (GCTakeWhile.coreflexive_apply hp).mp hab
-  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := hws
-  refine ⟨ConsList.cons a (ConsList.wrap ()), rfl, ?_⟩
-  unfold Filter.filter
-  rw [Λ_comp_est_apply]
-  refine ⟨⟨_, subseqP.refl _, hab, rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
-  obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
-  exact Filter.subseqP_clen_le hu
 
 /-- **The fold's body split** (B&dM pp.210–211): on a single word the body keeps the one-word
     paragraph `start ≜ wrap wrap wrap`, and on a word and a list of layouts it is

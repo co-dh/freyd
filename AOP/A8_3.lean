@@ -1583,6 +1583,45 @@ public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → 
       (comp_mono_left _ (by rw [bumpFold_eq]; exact bumpFold_le_thinL hQ))))) _)
     (thinningList f₁ f₂ p₁ p₂ hp₁ hp₂ hQR hQ hR hm₁ hm₂ hP hc hmono₁ hmono₂)
 
+
+
+/-- On the leaf, `cpL` is `wrap`: `inl cpL = inl wrap`. -/
+public theorem inl_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₁ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = (graph Sum.inl : dL L ⟶ dE (L ⊕ E × X)) ≫ τₗ () := by
+  apply hom_ext; intro d r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, rfl⟩
+
+
+/-- On the pair, `cpL` is `cpr` then `list(inr)`: `inr cpL = cpr list(inr)`. -/
+public theorem inr_cpL {L E X : Type} :
+    ((sumCop (dL L) ⟨E × ConsList Unit X⟩).u₂ ≫ (cpL : (CL.F L E).obj (dList X) ⟶ dList (L ⊕ E × X)))
+      = cpr ≫ list (graph Sum.inr : dE (E × X) ⟶ dE (L ⊕ E × X)) := by
+  rw [list_graph]; apply hom_ext; rintro ⟨e, xs⟩ r
+  constructor
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, cpLFn_inr e xs⟩
+  · rintro ⟨_, rfl, rfl⟩; exact ⟨_, rfl, (cpLFn_inr e xs).symm⟩
+
+
+/-- `list(f)` of a map is a map. -/
+public theorem map_list_graph {A B : Type} (f : A → B) : Map (list (graph f : dE A ⟶ dE B)) := by
+  rw [list_graph]; exact graph_map _
+
+
+/-- `filter(p)` keeps a one-element list whose element passes `p`: `p wrap ⊑ wrap filter(p)`. -/
+public theorem corefl_τ_le_filter {A : Type} {p : dE A ⟶ dE A} (hp : Coreflexive p) :
+    p ≫ (τₗ () : dE A ⟶ dList A) ⊑ τₗ () ≫ Filter.filter p := by
+  refine le_iff.mpr fun a ws ⟨b, hab, hws⟩ => ?_
+  obtain ⟨rfl, -⟩ := (GCTakeWhile.coreflexive_apply hp).mp hab
+  obtain rfl : ws = ConsList.cons a (ConsList.wrap ()) := hws
+  refine ⟨ConsList.cons a (ConsList.wrap ()), rfl, ?_⟩
+  unfold Filter.filter
+  rw [Λ_comp_est_apply]
+  refine ⟨⟨_, subseqP.refl _, hab, rfl⟩, fun zs ⟨u, hu, hlu⟩ => ?_⟩
+  obtain rfl : u = zs := listP_eq_of_coreflexive hp hlu
+  exact Filter.subseqP_clen_le hu
 end Freyd.Alg.RelSet.ListRel
 
 -- printing-only: the note's names for this section's declarations.
