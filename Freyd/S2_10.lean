@@ -431,6 +431,9 @@ public theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a 
 public theorem map_entire_le {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : 𝟙 a ⊑ f ≫ f° :=
   entire_id_le hf.1
 
+/-- A map is simple, in the inequality form `f°f ⊑ 1` (§2.13). -/
+public theorem map_simple_le {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : f° ≫ f ⊑ 𝟙 b := hf.2
+
 /-! ## §2.133  Order on maps is discrete -/
 
 /-- An ENTIRE relation below a SIMPLE one equals it — §2.133's engine, which never uses the
