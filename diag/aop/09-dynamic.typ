@@ -177,9 +177,9 @@
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
-    #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on
-     `cost≤cost°`, which compares two values by comparing their `cost`s under `≤`]],
-     // lean:AOP.A9_1.pres_of_cost@a1f5a5c4
+    #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`,
+     which compares two values by comparing their `cost`s under `≤`]],
+     // lean:AOP.A9_1.pres_of_cost@36c0b25f
   lean-calc(calc-cost),
 )]<dp-cost>
 
@@ -191,7 +191,7 @@
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
  `F(≤)k⊑k≤`]],
-   // lean:AOP.A9_1.pres_of_cost@a1f5a5c4
+   // lean:AOP.A9_1.pres_of_cost@36c0b25f
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
