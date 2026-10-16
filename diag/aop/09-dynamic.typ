@@ -196,6 +196,7 @@
   [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
   [`R`], [`R = length ≤ length°`], [`s R t` iff `length(s) ≤ length(t)`],
   [`F(R) h`], [`list(R) concat`], [elementwise longer, then concat],
+  [`F(cost) F(≤) k cost°`], [`#' <= +/ #~` (in k)], [`#'` count each, `<=` elementwise, `+/` sum, `#~` converse of length],
   [`cost : h ⟶ k`],
   [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
    #src[`length(concat(xs)) = sum(map(length)(xs))`]],
