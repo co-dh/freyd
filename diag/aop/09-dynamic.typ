@@ -148,8 +148,17 @@
 
 === Checking the conditions
 
-// B&dM p. 222: the two conditions of dynamic programming, then the two names they use.
+// B&dM p. 222: the two names, then the two conditions of dynamic programming that use them.
 #disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*meaning*]),
+  [#rowkey("Freyd.Alg.H")#leanf("Freyd.Alg.H")],
+  [take the input apart by the `T`-decompositions, and put it together by `h`],
+  [#rowkey("Freyd.Alg.ThinCondition")#leanf("Freyd.Alg.ThinCondition")],
+  [thinning the decompositions by `Q` before solving them only moves the answer up `R`],
+) #v(-1.2em) #table(
   columns: (1fr, 1fr),
   align: (left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
@@ -158,10 +167,6 @@
   [#pt[xs][F(R°)][ys][h][Y] ⟹ #pt[xs][h][X][R°][Y] for some `X` (`h` brings the parts to the whole)],
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
-  [#rowkey("Freyd.Alg.H")#leanf("Freyd.Alg.H")],
-  [take the input apart by the `T`-decompositions, and put it together by `h`],
-  [#rowkey("Freyd.Alg.ThinCondition")#leanf("Freyd.Alg.ThinCondition")],
-  [thinning the decompositions by `Q` before solving them only moves the answer up `R`],
 )]<dp-conds>
 // lean:AOP.A9_1.dynamic_programming_thin@b98897ae
 // lean:AOP.A9_1.ThinCondition@981f8a2d
