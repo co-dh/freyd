@@ -77,7 +77,7 @@ attribute [diag_defines] relCata_cancel
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
-  RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition
+  RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition IsFHom Pres
   RelSet.CL.ConsList.cons RelSet.Tour.start
   -- 8.6's definition table names it (`replaceHead ≜ (𝟙×tail)⧺`), so dropl/dropr print the name.
   RelSet.Tour.replaceHead
