@@ -628,6 +628,8 @@
 // on the left keeps the theorem centred on the cell.  Outside a display it is the plain header.
 #let Thm(body, cols: 2) = table.cell(colspan: cols, fill: luma(233), align: center + horizon,
   stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), {
+    // A conditional law's conclusion takes its own row here; elsewhere `<impl-break>` is a break chance.
+    show <impl-break>: linebreak()
     [#metadata(none)<thm-num>]
     context {
       let s = query(selector(<disp-start>).before(here())).at(-1, default: none)
