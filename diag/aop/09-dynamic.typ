@@ -399,7 +399,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
-    [#src[`Q≜F(⊤,V)` — @Freyd.Alg.RelSet.Edit.Q; and the bifunctor `F` preserves
+    [#src[@Freyd.Alg.RelSet.Edit.Q; and the bifunctor `F` preserves
       composition: `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`]])],
      // lean:AOP.A9_2_Edit.edit_thin_step1@a9117843 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
