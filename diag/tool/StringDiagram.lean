@@ -799,14 +799,14 @@ def placement (ps : Array Diagram) : Placement := Id.run do
       let hits := slots[j]!.filter fun (p, r) =>
         ps[p]!.rows[r]!.same b.rows[i]! || (p + 1 == k && tw.contains (r, i))
       let nbr := hits.filter (·.1 + 1 == k)
-      -- A MARK BELONGS TO THE STEP LEAVING ITS PANEL, so only the earlier part's mark anchors this
-      -- part: this row's own mark is the next step's, and anchoring on it here let `k`, marked for
-      -- the step after, outweigh the `cost°` the step into this part passes `h` over.
+      -- A MARK BELONGS TO THE STEP LEAVING ITS PANEL, so only the earlier part's mark, on this very
+      -- bead, outranks a trade: this row's own mark is the next step's, and counting it here let
+      -- `k`, marked for the step after, outweigh the `cost°` the step into this part passes `h` over.
       let tri := nbr.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome && ps[p]!.rows[r]!.same b.rows[i]!
-      let pin := pin i tri
-      -- THE TRIANGLE OUTRANKS A TRADED PAIR: the marked bead is what the step passes the traded
-      -- pair over, so it stays level and the pair, which crosses it, takes two heights.
-      if tri then 120 * (tot + 1) * (rest + base i)
+      let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)      -- THE TRIANGLE OUTRANKS A TRADED PAIR: the marked bead is what the step passes the traded
+      -- pair over, so it stays level and the pair, which crosses it, takes two heights — against
+      -- every traded pair of the part together, hence the `n + 1`.
+      if tri then 120 * (n + 1) * (tot + 1) * (rest + base i)
       else if nbr.any (fun (_, r) => tw.contains (r, i)) then 60 * (tot + 1) * (rest + base i)
       else if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
       else if !nbr.isEmpty then 10 * (tot + 1) * pin else if hits.isEmpty then 0 else 10 * pin
