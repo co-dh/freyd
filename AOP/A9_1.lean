@@ -31,6 +31,8 @@ public import AOP.A6_SnocList
 -- For `junc` AT AN INJECTION (`ListRel.junc_sum_inl`/`_inr`): the one place the coproduct's own
 -- equations are read back, and the snoc-list side needs the same two facts the cons-list side did.
 public import AOP.A5_5_TypeFunctor
+-- Proposition 9.2's hypothesis on `cost` is the homomorphism condition `IsFHom`.
+public import AOP.A5_5_AlgCat
 import AOP.A5_4
 -- The worked instance of Proposition 9.2 states `concat`, `length`, `sum` and `≤` on `ℕ`.
 public import AOP.A5_6_ListCombinators
@@ -320,7 +322,7 @@ public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A �
 public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} {R : A ⟶ A} (hcost : Map cost)
     (hR : R = cost ≫ «≤» ≫ cost°)
-    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
+    (hch : IsFHom h k cost) (hk : Pres k «≤») :
     Pres h R :=
   calc F.map R ≫ h
         ⊑ F.map R ≫ h ≫ cost ≫ cost° := by
@@ -1377,19 +1379,17 @@ theorem csum_le : ∀ u v : ConsList Unit Nat, listP leRel u v → csum u ≤ cs
     let ⟨hab, huv⟩ : _ ∧ listP leRel u v := h
     Nat.add_le_add hab (csum_le u v huv)
 
-/-- **`h cost = F(cost) k`** at `h = concat`, `cost = length`, `k = sum`: the joined string is
-    as long as its pieces together. -/
+/-- **`length : concat ⟶ sum`**: `length` is an `F`-algebra homomorphism from `concat` to `sum`
+    — the joined string is as long as its pieces together. -/
 public theorem concat_length_hom :
-    (concatR : listRelator.obj (dList α) ⟶ dList α) ≫ lengthR
-      = listRelator.map (lengthR : dList α ⟶ ⟨Nat⟩) ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) := by
+    IsFHom (F := listRelator) (concatR : listRelator.obj (dList α) ⟶ dList α)
+      (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) (lengthR : dList α ⟶ ⟨Nat⟩) := by
   show graph cconcat ≫ graph clen = list (graph clen) ≫ graph csum
   rw [list_graph, graph_comp, graph_comp]
   exact congrArg graph (funext clen_cconcat)
 
-/-- **`F(≤) k ⊑ k ≤`** at `k = sum`: `sum` is monotonic on `≤`. -/
-public theorem sum_mono :
-    listRelator.map leRel ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩)
-      ⊑ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) ≫ leRel :=
+/-- **`sum Pres ≤`**: `sum` is monotonic on `≤`. -/
+public theorem sum_mono : Pres (F := listRelator) (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) leRel :=
   (graph_pres_iff_monotone (F := listRelator) (csum : ConsList Unit Nat → Nat) leRel).mpr csum_le
 
 /-- **Proposition 9.2** at `h = concat`, `cost = length`, `k = sum`: `concat` is monotonic on

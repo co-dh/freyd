@@ -41,9 +41,9 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 #guard Freyd.StrDiag.juxt "S" "(S\\T)" == "S(S\\T)"
 #guard Freyd.StrDiag.juxt "F(R)" "h" == "F(R)h"
 
--- …and through a whole statement: `h cost` keeps its space on both sides of `=`, while the
+-- …and through a whole statement: `h cost` keeps its space on the right of `=`, while the
 -- one-letter `k` still closes up against `F(cost)` and against `≤`.
-/-- info: h cost=F(cost)k ⟹ F(cost)k≤cost°=h cost≤cost° -/
+/-- info: (cost : h ⟶ k) ⟹ F(cost)k≤cost°=h cost≤cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   Lean.logInfo (← formula ``Freyd.Alg.pres_of_cost.step_5 false)
@@ -55,7 +55,7 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 #guard Freyd.StrDiag.juxt "F(R)" "h" true == "F(R) h"
 #guard Freyd.StrDiag.juxt "k" "≤" true == "k ≤"
 #guard Freyd.StrDiag.spaced "=" true == " = " && Freyd.StrDiag.spaced "=" == "="
-/-- info: h cost = F(cost) k ⟹ F(cost) k ≤ cost° = h cost ≤ cost° -/
+/-- info: (cost : h ⟶ k) ⟹ F(cost) k ≤ cost° = h cost ≤ cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   let s ← formula ``Freyd.Alg.pres_of_cost.step_5
