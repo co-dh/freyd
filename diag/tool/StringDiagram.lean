@@ -1525,6 +1525,8 @@ def peerStep (n : Name) (side : Expr) : MetaM (Option Step) := do
     the step cites (`passThm`) says it crosses (`passOf?`).  THE SHAPE IS THE STEP'S SIGN: a hollow
     circle for `=`, a triangle for `⊑` — down where the partner stands above, up where below.  A
     panel no step leaves (`steps` empty) keeps every bead plain.
+    ONE MARK PER PAIR: binders are matched first, over every row, and the fallbacks (the step's own
+    statement, `passThm`, `moveThm`) only reach a pair neither of whose beads is marked toward the other.
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
 def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
@@ -1532,23 +1534,33 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
   -- here; no theorem can be instantiated at a term that does not exist in this context.
   let lctx ← getLCtx
   let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
+  -- THE PARTNER ABOVE gives the down triangle, THE ONE BELOW the up one (`passOf?`).
+  let nbsOf (rows : Array Row) (i : Nat) := (if i == 0 then #[] else #[(rows[i - 1]!, false)]) ++
+    (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
+  -- THE BINDERS FIRST, over every row of every step: a binder names the bead whose square the proof
+  -- uses, so a fallback that read the same pair from the other bead must find it already marked.
   for st in steps do
     for i in [0 : rows.size] do
       let r := rows[i]!
       unless r.nat.isNone && r.tri.isNone do continue
-      -- THE PARTNER ABOVE gives the down triangle, THE ONE BELOW the up one (`passOf?`).
-      let nbs := (if i == 0 then #[] else #[(rows[i - 1]!, false)]) ++
-        (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
-      let mut hit : Option (Name × String × Bool × Bool) := none
-      for (nr, below) in nbs do
-        if hit.isSome then break
+      let mut hit : Option (Name × String × Bool) := none
+      for (nr, below) in nbsOf rows i do
+        if hit.isSome || nr.tri == some (!below) then continue
         let some Y := nr.core | continue
         for (h, xl, X, up, v) in r.passCands do
           -- A binder the step's proof never mentions moved nothing past this bead (`stepProof`).
           unless up == below && st.proof.containsFVar v do continue
           if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
-            hit := some (h, xl, true, below)
+            hit := some (h, xl, below)
             break
+      if let some (h, xl, dir) := hit then
+        rows := rows.set! i { r with pass := some (h, xl, true), tri := some dir, eq := st.eq }
+  for st in steps do
+    for i in [0 : rows.size] do
+      let r := rows[i]!
+      unless r.nat.isNone && r.tri.isNone do continue
+      let nbs := nbsOf rows i
+      let mut hit : Option (Name × String × Bool × Bool) := none
       for (nr, below) in nbs do
         -- A mark already drawn on the partner, pointing at this bead, is this very pair.
         if hit.isSome || nr.tri == some (!below) then continue
@@ -1565,6 +1577,7 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
             s.restore
       for (nr, below) in nbs do
         if hit.isSome then break
+        if nr.tri == some (!below) then continue
         let (some c, some Y) := (r.core, nr.core) | continue
         if inScope c && inScope Y then
           if let some n ← passThm c Y below st then hit := some (n, ← label Y, false, below)
@@ -1579,10 +1592,16 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
             let r := rows[i]!
             let j := if below then i + 1 else i - 1
             if r.tri.isSome || r.nat.any (· != .spider) || (!below && i == 0) || j ≥ rows.size then continue
+            if rows[j]!.tri == some (!below) then continue
             let (some c, some n) := (r.core, rows[j]!.core) | continue
             if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
               rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below, eq := st.eq }
               break
+  -- ONE MARK PER PAIR: two neighbours whose marks point at each other state one crossing twice.
+  for i in [1 : rows.size] do
+    if rows[i - 1]!.tri == some true && rows[i]!.tri == some false then
+      throwError "settlePass: the pair {rows[i - 1]!.label} / {rows[i]!.label} is marked twice, by \
+        {rows[i - 1]!.pass.map (·.1)} on the upper bead and {rows[i]!.pass.map (·.1)} on the lower"
   return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
