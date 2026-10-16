@@ -12,7 +12,9 @@
 // the input carries `THN`, `THP`.  An `est` bead spans from the `E` lane down to the object wire,
 // the way `scripts/diagram` draws it; the crossings that makes are the accepted ones.
 #let THP = 4.15                                   // a datatype inside `THN`
-#let kq(s) = text(fill: rgb("#1f5fbf"), raw(s))  // k code: the blue says "in k", so no "(in k)" beside it
+// a pointwise chain `x ─R→ y ─S→ z`: juxtaposition is composition, so an element-level relation gets a labelled arrow
+#let pt(..xs) = raw(xs.pos().enumerate().map(((i, c)) => if calc.odd(i) { "─" + c.text + "→" } else { c.text }).join(" "))
+#let kq(s) =text(fill: rgb("#1f5fbf"), raw(s))  // k code: the blue says "in k", so no "(in k)" beside it
 
 == Theory
 
@@ -153,7 +155,7 @@
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*2 conditions of DP*], [*what it says*]),
   [#leanf("Freyd.Alg.dynamic_programming_thin#hmono")],
-  [`xs F(R°) ys h Y` ⟹ `xs h X R° Y` for some `X` (`h` brings the parts to the whole)],
+  [#pt[xs][F(R°)][ys][h][Y] ⟹ #pt[xs][h][X][R°][Y] for some `X` (`h` brings the parts to the whole)],
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
   [#rowkey("Freyd.Alg.H")#leanf("Freyd.Alg.H")],
