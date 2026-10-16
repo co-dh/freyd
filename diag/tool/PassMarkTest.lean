@@ -72,9 +72,9 @@ def cites (step thm : Name) : MetaM Bool := do
 -- 2.6 `cata_comm`, `α⦇f⦈ = F(⦇f⦈)f`: the hollow circle on `⦇f⦈`, in the left panel.
 /-- info: [[("⦇f⦈", "circle")], []] -/
 #guard_msgs in #eval pair ``Freyd.Alg.InitialAlgebra.cata_comm
--- 9.2 dp-cost: panel (b) is left by the `=` step `h cost = F(cost)k`, panel (c) by a `⊑` step — the
--- hollow circle on `cost` in (b), the down triangle on `cost` in (c), each BEFORE its sign.
-/-- info: [[("cost", "circle")], [("cost", "down")]] -/
+-- 9.2 dp-cost: panel (b) is left by the `=` step `F` preserves composition, which marks nothing; panel
+-- (c) by the `⊑` step `F(cost°)h ⊑ k cost°` — the up triangle on `cost°`, BEFORE its sign.
+/-- info: [[], [("cost°", "up")]] -/
 #guard_msgs in #eval do
   let steps := [1, 2, 3, 4, 5, 6].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
   return [← panel steps[1]! true steps, ← panel steps[2]! true steps]

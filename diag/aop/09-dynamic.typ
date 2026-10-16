@@ -177,9 +177,9 @@
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
-    #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`,
-     which compares two values by comparing their `cost`s under `≤`]],
-     // lean:AOP.A9_1.pres_of_cost@36c0b25f
+    #src[an F-algebra homomorphism `cost : h ⟶ k` carries preservation back from `k` to `h`: if `k`
+     preserves `≤`, then `h` preserves `R`, the order `≤` pulled back along `cost`]],
+     // lean:AOP.A9_1.pres_of_cost@8b941c9c
   lean-calc(calc-cost),
 )]<dp-cost>
 
@@ -195,17 +195,18 @@
   [`≤`], [`≤` on `ℕ`], [],
   [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
   [`R`], [`R = length ≤ length°`], [`s R t` iff `length(s) ≤ length(t)`],
-  [`h cost = F(cost) k`],
+  [`F(R) h`], [`list(R) concat`], [elementwise longer, then concat],
+  [`cost : h ⟶ k`],
   [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
    #src[`length(concat(xs)) = sum(map(length)(xs))`]],
   [the joined string is as long as its pieces together],
-  [`F(≤) k ⊑ k ≤`],
+  [`k Pres ≤`],
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
    #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
   [`sum` is monotonic on `≤`],
 )]<dp-conditions>
-// lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@f978666e
-// lean:AOP.A9_1.RelSet.ListRel.sum_mono@938fd241
+// lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@0f26eadc
+// lean:AOP.A9_1.RelSet.ListRel.sum_mono@8e77e6ae
 // lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@10919b1e
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.

@@ -31,6 +31,8 @@ public import AOP.A6_SnocList
 -- For `junc` AT AN INJECTION (`ListRel.junc_sum_inl`/`_inr`): the one place the coproduct's own
 -- equations are read back, and the snoc-list side needs the same two facts the cons-list side did.
 public import AOP.A5_5_TypeFunctor
+-- Proposition 9.2's hypothesis on `cost` is the homomorphism condition `IsFHom`.
+public import AOP.A5_5_AlgCat
 import AOP.A5_4
 -- The worked instance of Proposition 9.2 states `concat`, `length`, `sum` and `≤` on `ℕ`.
 public import AOP.A5_6_ListCombinators
@@ -304,32 +306,37 @@ theorem dynamic_programming_of_thin (I : InitialAlgebra F)
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
-/-- A relation `R ≜ f S f°` pulled back along a map `f` is reached from `f S`: `R f ⊑ f S`, because
-    `f` is simple (`f°f ⊑ 𝟙`). -/
-public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A ⟶ A} (hf : Map f)
-    (hR : R = f ≫ S ≫ f°) : R ≫ f ⊑ f ≫ S := by
-  have e := comp_mono_left f (comp_mono_left S hf.2)
-  rw [Cat.comp_id] at e
-  rw [hR]; simpa only [Cat.assoc] using e
+/-- **`F(cost°) h ⊑ k cost°`**: when a map `cost` is a homomorphism from `h` to `k`, `cost°` is a
+    LAX homomorphism from `k` to `h` — only an inclusion, strict in general: `h` passes over
+    `cost°` and becomes `k`.  `cost` entire, then the homomorphism, then `F(cost)` simple. -/
+public theorem recip_lax_hom {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C} {k : F.obj C ⟶ C}
+    (hcost : Map cost) (hch : IsFHom h k cost) : F.map cost° ≫ h ⊑ k ≫ cost° :=
+  calc F.map cost° ≫ h
+        ⊑ F.map cost° ≫ h ≫ cost ≫ cost° := by
+        simpa only [Cat.comp_id, Cat.assoc] using comp_mono_left (F.map cost° ≫ h) (map_entire_le hcost)
+      _ = F.map cost° ≫ F.map cost ≫ k ≫ cost° :=
+        congrArg (F.map cost° ≫ ·) (by rw [← Cat.assoc, hch, Cat.assoc])
+      _ ⊑ k ≫ cost° := by
+        have e := comp_mono_right (F.map_is_map hcost).2 (k ≫ cost°)
+        rw [← Relator.preservesRecip_of_tabular F cost] at e
+        simpa only [Cat.id_comp, Cat.assoc] using e
 
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on an order `R` that compares
-    values by their cost (`R = cost ≤ cost°`) whenever `h` followed by `cost` factors as
-    `F(cost)` followed by an algebra `k` that is itself monotonic on `≤`.  One `calc` step per
-    hint: `cost` entire, the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k`
-    monotonic on `≤`, the assumption on `cost` again, and the definition of `R`. -/
+    values by their cost (`R = cost ≤ cost°`) whenever `cost : h ⟶ k` for an algebra `k` that is
+    itself monotonic on `≤`.  One `calc` step per hint: expand `R`, `F` preserves composition,
+    `h` passes over `cost°` and becomes `k`, `k` passes `≤`, `k` passes over `cost` and becomes
+    `h`, and put `R` back. -/
 public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} {R : A ⟶ A} (hcost : Map cost)
     (hR : R = cost ≫ «≤» ≫ cost°)
-    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
+    (hch : IsFHom h k cost) (hk : Pres k «≤») :
     Pres h R :=
   calc F.map R ≫ h
-        ⊑ F.map R ≫ h ≫ cost ≫ cost° := by
-        simpa only [Cat.comp_id, Cat.assoc] using comp_mono_left (F.map R ≫ h) (map_entire_le hcost)
-      _ = F.map R ≫ F.map cost ≫ k ≫ cost° :=
-        congrArg (F.map R ≫ ·) (by rw [← Cat.assoc, hch, Cat.assoc])
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° := by
-        simpa only [← Cat.assoc, ← F.map_comp] using
-          comp_mono_right (comp_mono_right (F.map_mono (conj_comp_map_le hcost hR)) k) cost°
+        = F.map (cost ≫ «≤» ≫ cost°) ≫ h := congrArg (fun X => F.map X ≫ h) hR
+      _ = F.map cost ≫ F.map «≤» ≫ F.map cost° ≫ h := by
+        rw [F.map_comp, F.map_comp, Cat.assoc, Cat.assoc]
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° :=
+        comp_mono_left (F.map cost) (comp_mono_left (F.map «≤») (recip_lax_hom hcost hch))
       _ ⊑ F.map cost ≫ k ≫ «≤» ≫ cost° := by
         simpa only [Cat.assoc] using comp_mono_left (F.map cost) (comp_mono_right hk cost°)
       _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc, ← hch, Cat.assoc]
@@ -1377,19 +1384,17 @@ theorem csum_le : ∀ u v : ConsList Unit Nat, listP leRel u v → csum u ≤ cs
     let ⟨hab, huv⟩ : _ ∧ listP leRel u v := h
     Nat.add_le_add hab (csum_le u v huv)
 
-/-- **`h cost = F(cost) k`** at `h = concat`, `cost = length`, `k = sum`: the joined string is
-    as long as its pieces together. -/
+/-- **`length : concat ⟶ sum`**: `length` is an `F`-algebra homomorphism from `concat` to `sum`
+    — the joined string is as long as its pieces together. -/
 public theorem concat_length_hom :
-    (concatR : listRelator.obj (dList α) ⟶ dList α) ≫ lengthR
-      = listRelator.map (lengthR : dList α ⟶ ⟨Nat⟩) ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) := by
+    IsFHom (F := listRelator) (concatR : listRelator.obj (dList α) ⟶ dList α)
+      (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) (lengthR : dList α ⟶ ⟨Nat⟩) := by
   show graph cconcat ≫ graph clen = list (graph clen) ≫ graph csum
   rw [list_graph, graph_comp, graph_comp]
   exact congrArg graph (funext clen_cconcat)
 
-/-- **`F(≤) k ⊑ k ≤`** at `k = sum`: `sum` is monotonic on `≤`. -/
-public theorem sum_mono :
-    listRelator.map leRel ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩)
-      ⊑ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) ≫ leRel :=
+/-- **`sum Pres ≤`**: `sum` is monotonic on `≤`. -/
+public theorem sum_mono : Pres (F := listRelator) (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) leRel :=
   (graph_pres_iff_monotone (F := listRelator) (csum : ConsList Unit Nat → Nat) leRel).mpr csum_le
 
 /-- **Proposition 9.2** at `h = concat`, `cost = length`, `k = sum`: `concat` is monotonic on
