@@ -183,26 +183,30 @@
   lean-calc(calc-cost),
 )]<dp-cost>
 
+// Proposition 9.2 at one instance: strings joined by `concat`, compared by length.
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
+  columns: (auto, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the condition*], [*how it is discharged*]),
-
-  [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
- `F(≤)k⊑k≤`]],
-   // lean:AOP.A9_1.pres_of_cost@36c0b25f
-  [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
-  [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
-   `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
- ]],
-   // lean:AOP.A9_1.pres_in_context@3ce8e2d0
-  [monotonicity *in context*: `k` may also read the input the part was built from],
-  [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
-   `VH⊑HR`]],
-  // combined row: Theorem 9.2
-  [both conditions at once, split along the two arguments of a bifunctor],
+  table.header([*symbol*], [*value*], [*meaning*]),
+  [`F`], [`F(X) = [X]`], [the list functor],
+  [`h`], [`concat : [String] ⟶ String`], [joins the pieces into one string],
+  [`cost`], [`length : String ⟶ ℕ`], [string length],
+  [`≤`], [`≤` on `ℕ`], [],
+  [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
+  [`R`], [`R = length ≤ length°`], [`s R t` iff `length(s) ≤ length(t)`],
+  [`h cost = F(cost) k`],
+  [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
+   #src[`length(concat(xs)) = sum(map(length)(xs))`]],
+  [the joined string is as long as its pieces together],
+  [`F(≤) k ⊑ k ≤`],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
+   #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
+  [`sum` is monotonic on `≤`],
 )]<dp-conditions>
+// lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@f978666e
+// lean:AOP.A9_1.RelSet.ListRel.sum_mono@938fd241
+// lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@10919b1e
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),

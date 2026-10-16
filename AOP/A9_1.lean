@@ -32,7 +32,9 @@ public import AOP.A6_SnocList
 -- equations are read back, and the snoc-list side needs the same two facts the cons-list side did.
 public import AOP.A5_5_TypeFunctor
 import AOP.A5_4
-import AOP.A5_6_ListCombinators
+-- The worked instance of Proposition 9.2 states `concat`, `length`, `sum` and `≤` on `ℕ`.
+public import AOP.A5_6_ListCombinators
+public import AOP.A7_2_RelSet
 import AOP.A6_3
 import AOP.A7_2
 
@@ -1342,6 +1344,62 @@ calc_steps Freyd.Alg.RelSet.dp_disjoint_ranges
 end Prop91
 
 end Freyd.Alg.RelSet.SL
+
+/-! # Proposition 9.2 at one instance: joining strings, compared by length
+
+  `F` the list relator, `h = concat : [[α]] ⟶ [α]`, `cost = length`, `≤` on `ℕ`, `k = sum`, so
+  `R = length ≤ length°` compares two strings by their lengths. -/
+
+namespace Freyd.Alg.RelSet.ListRel
+open PowerAllegory Freyd.Alg.RelSet.CL
+
+variable {α : Type}
+
+theorem clen_cappend (y : ConsList Unit α) : ∀ x : ConsList Unit α,
+    clen (cappend x y) = clen x + clen y
+  | .wrap _ => (Nat.zero_add _).symm
+  | .cons _ x => by
+    show clen (cappend x y) + 1 = clen x + 1 + clen y
+    rw [clen_cappend y x, Nat.add_right_comm]
+
+theorem clen_cconcat : ∀ xss : ConsList Unit (ConsList Unit α),
+    clen (cconcat xss) = csum (cmap clen xss)
+  | .wrap _ => rfl
+  | .cons xs xss => by
+    show clen (cappend xs (cconcat xss)) = clen xs + csum (cmap clen xss)
+    rw [clen_cappend, clen_cconcat xss]
+
+theorem csum_le : ∀ u v : ConsList Unit Nat, listP leRel u v → csum u ≤ csum v
+  | .wrap _, .wrap _, _ => Nat.le_refl 0
+  | .wrap _, .cons _ _, h => False.elim h
+  | .cons _ _, .wrap _, h => False.elim h
+  | .cons _ u, .cons _ v, h =>
+    let ⟨hab, huv⟩ : _ ∧ listP leRel u v := h
+    Nat.add_le_add hab (csum_le u v huv)
+
+/-- **`h cost = F(cost) k`** at `h = concat`, `cost = length`, `k = sum`: the joined string is
+    as long as its pieces together. -/
+public theorem concat_length_hom :
+    (concatR : listRelator.obj (dList α) ⟶ dList α) ≫ lengthR
+      = listRelator.map (lengthR : dList α ⟶ ⟨Nat⟩) ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) := by
+  show graph cconcat ≫ graph clen = list (graph clen) ≫ graph csum
+  rw [list_graph, graph_comp, graph_comp]
+  exact congrArg graph (funext clen_cconcat)
+
+/-- **`F(≤) k ⊑ k ≤`** at `k = sum`: `sum` is monotonic on `≤`. -/
+public theorem sum_mono :
+    listRelator.map leRel ≫ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩)
+      ⊑ (sumR : listRelator.obj ⟨Nat⟩ ⟶ ⟨Nat⟩) ≫ leRel :=
+  (graph_pres_iff_monotone (F := listRelator) (csum : ConsList Unit Nat → Nat) leRel).mpr csum_le
+
+/-- **Proposition 9.2** at `h = concat`, `cost = length`, `k = sum`: `concat` is monotonic on
+    `R = length ≤ length°`. -/
+public theorem pres_concat_length :
+    Pres (F := listRelator) (concatR : listRelator.obj (dList α) ⟶ dList α)
+      (lengthR ≫ leRel ≫ lengthR°) :=
+  pres_of_cost (graph_map clen) rfl concat_length_hom sum_mono
+
+end Freyd.Alg.RelSet.ListRel
 
 -- printing-only: the note's names for this section's declarations.
 open Lean PrettyPrinter in
