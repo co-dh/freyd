@@ -799,10 +799,15 @@ def placement (ps : Array Diagram) : Placement := Id.run do
       let hits := slots[j]!.filter fun (p, r) =>
         ps[p]!.rows[r]!.same b.rows[i]! || (p + 1 == k && tw.contains (r, i))
       let nbr := hits.filter (·.1 + 1 == k)
-      let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)
-      -- A TRADED PAIR OUTRANKS THE TRIANGLE: where the passed bead crosses it no row holds both, and
-      -- the reader's question is which bead the step rewrote into which, so that pair stays level.
-      if nbr.any (fun (_, r) => tw.contains (r, i)) then 60 * (tot + 1) * (rest + base i)
+      -- A MARK BELONGS TO THE STEP LEAVING ITS PANEL, so only the earlier part's mark, on this very
+      -- bead, outranks a trade: this row's own mark is the next step's, and counting it here let
+      -- `k`, marked for the step after, outweigh the `cost°` the step into this part passes `h` over.
+      let tri := nbr.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome && ps[p]!.rows[r]!.same b.rows[i]!
+      let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)      -- THE TRIANGLE OUTRANKS A TRADED PAIR: the marked bead is what the step passes the traded
+      -- pair over, so it stays level and the pair, which crosses it, takes two heights — against
+      -- every traded pair of the part together, hence the `n + 1`.
+      if tri then 120 * (n + 1) * (tot + 1) * (rest + base i)
+      else if nbr.any (fun (_, r) => tw.contains (r, i)) then 60 * (tot + 1) * (rest + base i)
       else if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
       else if !nbr.isEmpty then 10 * (tot + 1) * pin else if hits.isEmpty then 0 else 10 * pin
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
@@ -3537,6 +3542,12 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
             IO.eprintln s!"one-height: {declName} parts {i},{j}: `{a.rows[ra]!.label}` row {ya} and \
               `{b.rows[rb]!.label}` row {yb} cross `{a.rows[sa]!.label}`, level at row \
               {(pl.rows a)[sa]!}: no row holds both"
+            -- THE MARKED BEAD IS THE ONE THAT STAYS: it crosses a level pair only when that pair is
+            -- marked too, for the step passes the others over it (`placement`).
+            if a.rows[ra]!.tri.isSome && a.rows[ra]!.same b.rows[rb]! && a.rows[sa]!.tri.isNone then
+              throwError "{declName}: parts {i},{j}: the marked `{a.rows[ra]!.label}` stands on rows \
+                {ya} and {yb} while the unmarked `{a.rows[sa]!.label}` it crosses is level: the bead \
+                a step passes the others over is the one drawn at one height"
           unless level || shared.any (fun (sa, sb, l) => l && (sa == ra || sb == rb))
               || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
