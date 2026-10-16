@@ -29,6 +29,7 @@ public import AOP.A9_2_Edit
 public import AOP.A9_3_Bracket
 -- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
 public import AOP.A9_0_SegmentExample
+public import AOP.A9_1_Stairs
 public import AOP.A10_2_Detab
 public import AOP.A10_3_Tardy
 public import AOP.A10_4_Tex
@@ -146,6 +147,10 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- graph of a map given by a `match` on a coproduct, whose arms `mapLabel` reads as the junction.
 attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
   RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Edit.baseStepFn
+  RelSet.Stairs.stairsFn RelSet.Stairs.costFn
+-- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
+attribute [diag_noted] RelSet.Stairs.Move RelSet.Stairs.Move.one RelSet.Stairs.Move.two
+  RelSet.Stairs.T RelSet.Stairs.h RelSet.Stairs.walk RelSet.Stairs.paid
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇cpL(F)⟨g₁,g₂⟩cat thinL(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
