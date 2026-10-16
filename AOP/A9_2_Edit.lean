@@ -7,7 +7,7 @@
   from which both strings can be reconstituted.
 
   What is certified here is the note's `edit-defn` and the second row of `edit-laws`, Theorem
-  9.2 at `Q ≜ 𝟙+(U×V)`, `U ≜ ⊤`, `V ≜ suffix°×suffix°`.  The two `#src` claims that carry it:
+  9.2 at `Q ≜ F(⊤,V)`, `U ≜ ⊤`, `V ≜ suffix°×suffix°`.  The two `#src` claims that carry it:
 
   * monotonicity `F(R)α ⊑ αR` is Proposition 9.2 (`AOP.A9_1.monotonicAlg_of_cost`) at
     `length ≜ ⦇[zero,π₂ succ]⦈` — `edit_mono`;
@@ -213,6 +213,11 @@ public theorem length_cata :
     · intro (h : n = clen es + 1)
       exact ⟨clen es, (ih _).mpr rfl, h⟩
 
+/-- **edit-defn**: `α≜[nil,cons]` — the initial algebra of edit sequences: the empty sequence, or
+    one operation in front of a sequence. A `def` so that §9.2's statements print `α`. -/
+@[expose] public def α (Char : Type) : (F Unit (Op Char)).obj (dEdit Char) ⟶ dEdit Char :=
+  graph con
+
 /-- **edit-defn**: `R≜length≤length°`. -/
 @[expose] public def R (Char : Type) : dEdit Char ⟶ dEdit Char := fun es fs => clen es ≤ clen fs
 
@@ -241,14 +246,11 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
 @[expose] public def V (Char : Type) : dPair Char ⟶ dPair Char :=
   rprodMap (suffixR (A := Char))° (suffixR (A := Char))°
 
-/-- **edit-defn**: `U≜⊤`, `Q≜𝟙+(U×V)` — the identity on the `base` summand; on the `step`
-    summand `U≜⊤` leaves any two operations comparable and `V` orders the two strings. -/
+/-- **edit-defn** (B&dM p.226): `Q≜F(U,V)` at `U≜⊤` — any two operations, and the two remaining
+    pairs of strings compared by `V`. -/
 @[expose] public def Q (Char : Type) :
     (F Unit (Op Char)).obj (dPair Char) ⟶ (F Unit (Op Char)).obj (dPair Char) :=
-  fun u v => match u, v with
-    | Sum.inl _, Sum.inl _ => True
-    | Sum.inr p, Sum.inr q => V Char p.2 q.2
-    | _, _ => False
+  Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char)
 
 /-- **edit-defn**: `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
     `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, and
@@ -401,11 +403,11 @@ public theorem lenAlg_mono :
 
 /-- `edit-mono`, first step: `R≜length≤length°`, and `F` preserves composition. -/
 public theorem edit_mono_step1 :
-    (F Unit (Op Char)).map (R Char) ≫ graph con
+    (F Unit (Op Char)).map (R Char) ≫ α Char
       = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
           ≫ (F Unit (Op Char)).map leRel
           ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-          ≫ graph con := by
+          ≫ α Char := by
   rw [R_eq, (F Unit (Op Char)).map_comp, (F Unit (Op Char)).map_comp]; simp only [Cat.assoc]
 
 /-- `edit-mono`, second step: `length` is entire, `𝟙⊑length length°`. -/
@@ -413,13 +415,13 @@ public theorem edit_mono_step2 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ graph con
+        ≫ α Char
       ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_left (graph con : (F Unit (Op Char)).obj (dEdit Char) ⟶ dEdit Char)
+  have h := comp_mono_left (α Char : (F Unit (Op Char)).obj (dEdit Char) ⟶ dEdit Char)
     (map_entire_le (graph_map (A := dEdit Char) (B := (⟨Nat⟩ : RelSet.{0})) clen))
   rw [Cat.comp_id] at h
   exact comp_mono_left _ (comp_mono_left _ (comp_mono_left _ h))
@@ -429,7 +431,7 @@ public theorem edit_mono_step3 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
       = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (F Unit (Op Char)).map leRel
@@ -479,7 +481,7 @@ public theorem edit_mono_step5 :
 public theorem edit_mono_step6 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+      = α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   have h := congrArg (fun Z => Z ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
     (lenAlg_comm (Char := Char))
@@ -488,18 +490,18 @@ public theorem edit_mono_step6 :
 /-- **edit-laws**, second row's monotonicity `F(R)α⊑αR`: Proposition 9.2 at
     `length≜⦇[zero,π₂ succ]⦈`, `succ` monotonic on `≤`, so `cons` is monotonic on `R`. -/
 public theorem edit_mono :
-    (F Unit (Op Char)).map (R Char) ≫ graph con ⊑ graph con ≫ R Char :=
-  calc (F Unit (Op Char)).map (R Char) ≫ graph con
+    (F Unit (Op Char)).map (R Char) ≫ α Char ⊑ α Char ≫ R Char :=
+  calc (F Unit (Op Char)).map (R Char) ≫ α Char
       _ = _ := edit_mono_step1
       _ ⊑ _ := edit_mono_step2
       _ = _ := edit_mono_step3
       _ ⊑ _ := edit_mono_step4
       _ ⊑ _ := edit_mono_step5
       _ = _ := edit_mono_step6
-      _ = graph con ≫ R Char := by rw [R_eq]
+      _ = α Char ≫ R Char := by rw [R_eq]
 
 /-- Theorem 9.2 asks for monotonicity at the mirrored `R°`, which `cons` also has. -/
-public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op Char)) (graph con) (R Char)° :=
+public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op Char)) (α Char) (R Char)° :=
   (Freyd.Alg.pres_recip_iff (graph_map con) (F_preservesRecip Unit (Op Char))).mp edit_mono
 
 /-! ## `edit-laws` — the `V` condition, B&dM p.226
@@ -643,34 +645,22 @@ public theorem Fbimap_comp {L E E' E'' : Type} {C C' C'' : RelSet.{0}} (U : dE E
     Fbimap L U V ≫ Fbimap L U' V' = Fbimap L (U ≫ U') (V ≫ V') :=
   Poly.bimapR_functor (clF L) U U' V V'
 
-/-- `Q≜𝟙+(U×V)` IS `F(U,V)` at `U≜⊤`. -/
-public theorem Q_eq_Fbimap :
-    Q Char = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char) :=
-  hom_ext fun u w => by
-    cases u with
-    | inl _ => cases w with
-      | inl _ => exact ⟨fun _ => rfl, fun _ => trivial⟩
-      | inr _ => exact Iff.rfl
-    | inr p => cases w with
-      | inl _ => exact Iff.rfl
-      | inr q => exact ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
-
-/-- `edit-thin`, first step: `Q` is `F(⊤,V)` (`Q_eq_Fbimap`), and `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`.
+/-- `edit-thin`, first step: `Q≜F(⊤,V)`, and `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`.
     One step and not two: the exporter cannot cut `F(⊤,V)F(𝟙,edit°)` between its two beads. -/
 public theorem edit_thin_step1 :
-    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
+    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
       = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph editFn)°)
-          ≫ graph con := by
-  rw [Q_eq_Fbimap, ← Cat.assoc]
+          ≫ α Char := by
+  rw [Q, ← Cat.assoc]
   congr 1
   exact (Fbimap_comp _ _ _ _).trans (by rw [Cat.comp_id])
 
 /-- `edit-thin`, second step: Proposition 9.4's `V edit°⊑edit° R` (`edit_V`) under `F(U,−)`. -/
 public theorem edit_thin_step2 :
     Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph (editFn (Char := Char)))°)
-        ≫ graph con
+        ≫ α Char
       ⊑ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph editFn)° ≫ R Char)
-          ≫ graph con :=
+          ≫ α Char :=
   comp_mono_right (le_iff.mpr fun u w h => by
     cases u with
     | inl _ => cases w with
@@ -683,9 +673,9 @@ public theorem edit_thin_step2 :
 /-- `edit-thin`, third step: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`. -/
 public theorem edit_thin_step3 :
     Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph (editFn (Char := Char)))° ≫ R Char)
-        ≫ graph con
+        ≫ α Char
       = (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
-          ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ graph con := by
+          ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char := by
   rw [← Cat.assoc]
   congr 1
   exact ((Fbimap_comp _ _ _ _).trans (by rw [Cat.id_comp])).symm
@@ -694,8 +684,8 @@ public theorem edit_thin_step3 :
     lengths whatever the two operations are. -/
 public theorem edit_thin_step4 :
     (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
-        ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ graph con
-      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ graph con ≫ R Char :=
+        ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char
+      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ α Char ≫ R Char :=
   comp_mono_left _ (le_iff.mpr fun u es h => by
     obtain ⟨v, hv, hcon⟩ := h
     obtain rfl : es = con v := hcon
@@ -713,29 +703,29 @@ public theorem edit_thin_step4 :
     summand `U≜⊤` leaves the operation free and `edit_V` supplies the shorter sequence for the
     `V`-smaller pair of strings, which `cons` then lengthens by one on both sides. -/
 public theorem edit_thin_condition :
-    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
-      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ graph con ≫ R Char :=
-  calc Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
+    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
+      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ α Char ≫ R Char :=
+  calc Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
       _ = _ := edit_thin_step1
       _ ⊑ _ := edit_thin_step2
       _ = _ := edit_thin_step3
       _ ⊑ _ := edit_thin_step4
 
 /-- **edit-laws**, second row (B&dM p.226): a shortest edit sequence is the least fixed point
-    of `(μX : [base,step]° thin Q P([nil,(𝟙×X)cons]) est(R))` — Theorem 9.2 at `Q≜𝟙+(U×V)`,
+    of `(μX : [base,step]° thin Q P([nil,(𝟙×X)cons]) est(R))` — Theorem 9.2 at `Q≜F(⊤,V)`,
     `U≜⊤`, `V≜suffix°×suffix°`.  `H = ⦇α⦈·⦇[base,step]⦈°` collapses to `edit°` by reflection
     (`AOP.A6_ConsList.cataR_con`). -/
 public theorem edit_laws :
     mu (fun X : dPair Char ⟶ dEdit Char =>
         Λ ((editAlg (Char := Char))°) ≫ thinRel (Q Char)
-          ≫ powerRel ((F Unit (Op Char)).map X ≫ graph con) ≫ est (R Char))
+          ≫ powerRel ((F Unit (Op Char)).map X ≫ α Char) ≫ est (R Char))
       ⊑ Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char) := by
-  have hH : (relCata (editAlg (Char := Char)))° ≫ relCata (graph con)
+  have hH : (relCata (editAlg (Char := Char)))° ≫ relCata (α Char)
       = (graph (editFn (Char := Char)))° := by
-    rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
+    unfold α; rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit (Op Char))
-    (initial Unit (Op Char)) (h := graph con) (T := editAlg (Char := Char)) (R := R Char)
+    (initial Unit (Op Char)) (h := α Char) (T := editAlg (Char := Char)) (R := R Char)
     (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H] at key; rwa [hH] at key
@@ -803,12 +793,6 @@ public theorem op_cases (o : Op Char) :
 public theorem F_obj (X : RelSet.{0}) :
     ((F Unit (Op Char)).obj X).carrier = (Unit ⊕ (Op Char × X.carrier)) := rfl
 
-/-- **edit-defn**: `α=[nil,cons]`, the `nil` arm. -/
-public theorem con_nil (u : Unit) :
-    con (Sum.inl u : (Fobj Unit (Op Char) (dEdit Char)).carrier) = ConsList.wrap u := rfl
-/-- **edit-defn**: `α=[nil,cons]`, the `cons` arm. -/
-public theorem con_cons (o : Op Char) (es : ConsList Unit (Op Char)) :
-    con (Sum.inr (o, es) : (Fobj Unit (Op Char) (dEdit Char)).carrier) = ConsList.cons o es := rfl
 /-- **edit-defn**: the edit sequences' initial algebra IS the junction `α=[nil,cons]` of its two
     constructors, at the empty leaf. -/
 public theorem con_eq_junc :
@@ -836,12 +820,6 @@ public theorem step_ins (a : Char) (xs ys : ConsList Unit Char) :
 
 /-- **edit-defn**: `V≜suffix°×suffix°`. -/
 public theorem V_eq : V Char = rprodMap (suffixR (A := Char))° (suffixR (A := Char))° := rfl
-
-/-- **edit-defn**: `Q≜𝟙+(U×V)` on the `base` summand is `𝟙`. -/
-public theorem Q_inl (u : Unit) : Q Char (Sum.inl u) (Sum.inl u) := trivial
-/-- **edit-defn**: `Q≜𝟙+(U×V)` on the `step` summand, `U≜⊤`, compares only the strings by `V`. -/
-public theorem Q_inr (p q : Op Char × (ConsList Unit Char × ConsList Unit Char)) :
-    Q Char (Sum.inr p) (Sum.inr q) ↔ V Char p.2 q.2 := Iff.rfl
 
 /-- **edit-defn**: `empty` holds exactly at `(([],[]),([],[]))`. -/
 public theorem empty_iff (p q : ConsList Unit Char × ConsList Unit Char) :
@@ -894,7 +872,7 @@ public theorem edit_disj : step (Char := Char) ≫ (base (Char := Char))° = �
 public theorem arm_Fmap_con (X : dPair Char ⟶ dEdit Char)
     (p : Op Char × (dPair Char).carrier) (z : (dEdit Char).carrier) :
     (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) p z
-      ↔ ((F Unit (Op Char)).map X ≫ graph con) (Sum.inr p) z := by
+      ↔ ((F Unit (Op Char)).map X ≫ α Char) (Sum.inr p) z := by
   constructor
   · rintro ⟨q, hq, hz⟩
     exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, hz⟩
@@ -906,22 +884,22 @@ public theorem arm_Fmap_con (X : dPair Char ⟶ dEdit Char)
 /-- **edit-laws**, third row (Proposition 9.1): the branch
     `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` refines `edit_laws`' body
     `([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)` — `AOP.A9_1.thin_summand_le` at
-    `ι ≜ Sum.inr`, whose `Qᵢ` at `Q ≜ 𝟙+(U×V)` is `U×V` with `U ≜ ⊤`. -/
+    `ι ≜ Sum.inr`, whose `Qᵢ` at `Q ≜ F(⊤,V)` is `U×V` with `U ≜ ⊤`. -/
 public theorem edit_branch (X : dPair Char ⟶ dEdit Char) :
     Λ ((step (Char := Char))°)
         ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
         ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) ≫ est (R Char)
       ⊑ Λ ((editAlg (Char := Char))°) ≫ thinRel (Q Char)
-          ≫ powerRel ((F Unit (Op Char)).map X ≫ graph con) ≫ est (R Char) := by
+          ≫ powerRel ((F Unit (Op Char)).map X ≫ α Char) ≫ est (R Char) := by
   have hmap : (Relator.prod (Relator.const (dE (Op Char)))
       (Relator.idRelator RelSet.{0})).map X = rprodMap (𝟙 (dE (Op Char))) X :=
     prodMap_eq_rprodMap _ _
   have key := RelSet.thin_summand_le
     (Fᵢ := Relator.prod (Relator.const (dE (Op Char))) (Relator.idRelator RelSet.{0}))
     (F := F Unit (Op Char)) (T := editAlg (Char := Char)) (Q := Q Char) (X := X)
-    (h := graph con) (R := R Char) (Vᵢ := step) (Uᵢ := consR)
+    (h := α Char) (R := R Char) (Vᵢ := step) (Uᵢ := consR)
     (Qᵢ := rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
-    Sum.inr (graph_map _) (fun _ _ => Iff.rfl) (fun _ _ h => h.2)
+    Sum.inr (graph_map _) (fun _ _ => Iff.rfl) (fun _ _ h => h)
     (fun p z => by rw [hmap]; exact arm_Fmap_con X p z)
     (fun w p y hstep hT => by
       cases w with
@@ -1215,13 +1193,13 @@ public theorem Pair.thin_Q_not_lax_natural :
           ⟨fun y hy => Or.inl hy,
            fun z hz => by
              rcases hz with rfl | rfl
-             · exact ⟨Sum.inr (cand () shortU), ⟨suffixP.refl _, rfl⟩, rfl⟩
-             · exact ⟨Sum.inr (cand () shortU), ⟨shortU_suffix_longU, rfl⟩, rfl⟩⟩⟩
+             · exact ⟨Sum.inr (cand () shortU), ⟨topMor_apply _ _, suffixP.refl _, rfl⟩, rfl⟩
+             · exact ⟨Sum.inr (cand () shortU), ⟨topMor_apply _ _, shortU_suffix_longU, rfl⟩, rfl⟩⟩⟩
   obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp hthin
   obtain ⟨w, hwQ, hwW⟩ := hdom (Sum.inr (cand true longB)) (Or.inr rfl)
   obtain ⟨hfwd, -⟩ := (powerRel_apply _ _ _).mp hpow
   rcases hsub w hwW with rfl | rfl
-  · exact short_not_suffix_long (hwQ : V Bool _ _).1
+  · exact short_not_suffix_long hwQ.2.1
   · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
     exact toU_long_not_short ((Pair.F_apply_inr _ _ _).mp hq).2.1
 
@@ -1289,7 +1267,7 @@ public theorem Pair.Q_not_lax_natural :
     ⟨Sum.inr (cand true (ConsList.wrap ())), (Pair.F_apply_inr _ _ _).mpr ⟨rfl, rfl, rfl⟩,
       (show Q Bool (Sum.inr (cand true (ConsList.wrap ())))
           (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ())))) from
-        (V_apply _ _).mpr ⟨Or.inr rfl, rfl⟩)⟩
+        ⟨topMor_apply _ _, (V_apply _ _).mpr ⟨Or.inr rfl, rfl⟩⟩)⟩
   rcases v₀ with d | p
   · rw [Pair.F_map] at hv₀; exact hv₀
   · obtain ⟨hop, -⟩ := (Pair.F_apply_inr _ _ _).mp hv₀
@@ -1298,12 +1276,8 @@ public theorem Pair.Q_not_lax_natural :
 /-- **`F(⊤,V)` is not even lax natural**: it is `Q` itself, spelled as the bifunctor. -/
 public theorem Pair.Fbimap_top_V_not_lax_natural :
     ¬ LaxNatural Pair.F Pair.F (fun a : RelSet.{0} =>
-      Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier)) := by
-  rw [show (fun a : RelSet.{0} =>
-      Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier))
-      = fun a : RelSet.{0} => Q a.carrier from
-      funext fun a => (Q_eq_Fbimap (Char := a.carrier)).symm]
-  exact Pair.Q_not_lax_natural
+      Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier)) :=
+  Pair.Q_not_lax_natural
 
 /-- The lane stack `𝟏 + Op×K` of the edit pictures acts as the bifunctor: `F(Op(S),K(S))`. -/
 public theorem sumOp_map (K : Relator RelSet.{0} RelSet.{0}) {x y : RelSet.{0}} (S : x ⟶ y) :
@@ -1718,6 +1692,9 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
   | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.α] public meta def Freyd.Alg.RelSet.Edit.unexpandEditα : Unexpander
+  | _ => `($(mkIdent `α))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.V] public meta def Freyd.Alg.RelSet.Edit.unexpandEditV : Unexpander
   | _ => `($(mkIdent `V))

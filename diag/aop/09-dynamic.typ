@@ -253,18 +253,14 @@
   "Freyd.Alg.RelSet.Edit.V_eq",
   [each string of the first pair is a suffix of the matching string of the second],
   [#rowkey("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
-  ("Freyd.Alg.RelSet.Edit.Q", "Freyd.Alg.RelSet.Edit.Q_inl", "Freyd.Alg.RelSet.Edit.Q_inr"),
-  [the identity on the `base` summand; on the `step` summand any two operations, and the two pairs
-   of strings by `V`],
+  "Freyd.Alg.RelSet.Edit.Q",
+  [any two operations, and the two remaining pairs of strings compared by `V`],
   [#rowkey("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
   "Freyd.Alg.RelSet.Edit.emptyP",
   [holds only at the pair of two empty strings],
-  [#rowkey("Freyd.Alg.RelSet.Edit.unstep")], [#leant("Freyd.Alg.RelSet.Edit.unstep")],
-  ("Freyd.Alg.RelSet.Edit.unstep_sound", "Freyd.Alg.RelSet.Edit.unstep_nil", "Freyd.Alg.RelSet.Edit.unstep_del", "Freyd.Alg.RelSet.Edit.unstep_ins", "Freyd.Alg.RelSet.Edit.unstep_cons"),
-  [every split of a pair of strings into one operation and a smaller pair; `step` puts it back],
-  [#rowkey("Freyd.Alg.RelSet.Edit.con_eq_junc")], [#leant("Freyd.Alg.RelSet.Edit.con_eq_junc")],
-  ("Freyd.Alg.RelSet.Edit.con_nil", "Freyd.Alg.RelSet.Edit.con_cons"),
-  [`[nil,cons]`: the empty edit sequence, or one operation in front of a sequence],
+  [#rowkey("Freyd.Alg.RelSet.Edit.α")], [#leant("Freyd.Alg.RelSet.Edit.α")],
+  "Freyd.Alg.RelSet.Edit.α",
+  [the empty edit sequence, or one operation in front of a sequence],
   [#rowkey("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
   ("Freyd.Alg.RelSet.Edit.base_nil", "Freyd.Alg.RelSet.Edit.step_cpy", "Freyd.Alg.RelSet.Edit.step_del", "Freyd.Alg.RelSet.Edit.step_ins"),
   [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
@@ -274,20 +270,11 @@
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
-// lean:AOP.A9_2_Edit.Q_inl@881e94ca
-// lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
-// lean:AOP.A9_2_Edit.unstep_sound@53bec1d2
-// lean:AOP.A9_2_Edit.con_nil@56d08b95
-// lean:AOP.A9_2_Edit.con_cons@347d25ed
 // lean:AOP.A9_2_Edit.base_nil@da59d83b
 // lean:AOP.A9_2_Edit.step_cpy@8a9cb310
 // lean:AOP.A9_2_Edit.step_del@4871c629
 // lean:AOP.A9_2_Edit.step_ins@78a5ae08
-// lean:AOP.A9_2_Edit.unstep_nil@1e0900c5
-// lean:AOP.A9_2_Edit.unstep_del@07222c75
-// lean:AOP.A9_2_Edit.unstep_ins@d0e84c5e
-// lean:AOP.A9_2_Edit.unstep_cons@008bce13
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
@@ -313,11 +300,11 @@
      // edit_mono row: Theorem 9.2
      #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
  #src[] is Proposition 9.2 at
-      // lean:AOP.A9_2_Edit.edit_mono@02093686
+      // lean:AOP.A9_2_Edit.edit_mono@e083dbea
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
  #src[] over `F(Op,[Char]×[Char])` is
-      // lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4
+      // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
       Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
  #src[,
@@ -359,7 +346,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
     #src[comparing the tails by `R` and then putting an operation in front (`F(R)α`) relates only
      sequences that `R` also relates once the operation is in front (`αR`)]],
-     // lean:AOP.A9_2_Edit.edit_mono@02093686
+     // lean:AOP.A9_2_Edit.edit_mono@e083dbea
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs"), [])],
@@ -367,17 +354,17 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
     [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step1@36eb5b3f
+     // lean:AOP.A9_2_Edit.edit_mono_step1@29c07433
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs"),
     [#src[`length` is a map, so entire: `𝟙⊑length length°`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step2@d411c950
+     // lean:AOP.A9_2_Edit.edit_mono_step2@128390f9
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
     [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @Freyd.Alg.RelSet.Edit.R]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step3@3495c8d6
+     // lean:AOP.A9_2_Edit.edit_mono_step3@69fd8dc4
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs"),
@@ -392,7 +379,7 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs"),
     [#src[`F(length)[zero,π₂ succ]=α length` again]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step6@52d6f873
+     // lean:AOP.A9_2_Edit.edit_mono_step6@27c03b21
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
@@ -407,30 +394,30 @@
       [`F(Op,[Char]×[Char])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
       [$stretch(->, size: #2em)^alpha$], [`[Op]`],
       [`Q` compares here], [], [], [], [`R` compares here])],
-     // lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4
+     // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs"), [])],
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"), [])],
-     // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
+     // lean:AOP.A9_2_Edit.edit_thin_step1@a9117843 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
     [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step2@fa716636
+     // lean:AOP.A9_2_Edit.edit_thin_step2@ff0479d5
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
     [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step3@cf285d6c
+     // lean:AOP.A9_2_Edit.edit_thin_step3@896bfb56
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
       adds one to both lengths whatever the two operations are]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step4@d0f1f0c6
+     // lean:AOP.A9_2_Edit.edit_thin_step4@7e7d3079
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
 )]<edit-thin>
 
