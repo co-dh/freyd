@@ -12,6 +12,7 @@
 // the input carries `THN`, `THP`.  An `est` bead spans from the `E` lane down to the object wire,
 // the way `scripts/diagram` draws it; the crossings that makes are the accepted ones.
 #let THP = 4.15                                   // a datatype inside `THN`
+#let kq(s) = text(fill: rgb("#1f5fbf"), raw(s))  // k code: the blue says "in k", so no "(in k)" beside it
 
 == Theory
 
@@ -196,11 +197,11 @@
   [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
   [`R`], [`R = length ≤ length°`], [`s R t` iff `length(s) ≤ length(t)`],
   [`F(R) h`], [`list(R) concat`], [elementwise longer, then concat],
-  [`F(cost) F(≤) k cost°`], [`#' ≤ +/ #°` (in k)], [`#'` count each, `≤` elementwise, `+/` sum, `#°` converse of length],
+  [`F(cost) F(≤) k cost°`], [#kq("#' ≤ +/ #°")], [#kq("#'") count each, #kq("≤") elementwise, #kq("+/") sum, #kq("#°") converse of length],
   [`cost : h ⟶ k`],
   [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
    #src[`length(concat(xs)) = sum(map(length)(xs))`]],
-  [`+/#' = #,/`, i.e. `# : ,/ ⟶ +/` (in k)],
+  [#kq("+/#' = #,/"), i.e. #kq("# : ,/ ⟶ +/")],
   [`k Pres ≤`],
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
    #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
