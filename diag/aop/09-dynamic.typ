@@ -153,7 +153,7 @@
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*2 conditions of DP*], [*what it says*]),
   [#leanf("Freyd.Alg.dynamic_programming_thin#hmono")],
-  [`h` preserves `R°`: a better part never makes the whole worse],
+  [`xs F(R°) ys h Y` ⟹ `xs h X R° Y` for some `X` (`h` brings the parts to the whole)],
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
   [#rowkey("Freyd.Alg.H")#leanf("Freyd.Alg.H")],
