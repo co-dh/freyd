@@ -204,7 +204,7 @@
   [`k Pres ≤`],
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
    #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
-  [`sum` is monotonic on `≤`],
+  [elementwise smaller implies total smaller],
 )]<dp-conditions>
 // lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@0f26eadc
 // lean:AOP.A9_1.RelSet.ListRel.sum_mono@8e77e6ae
