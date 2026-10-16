@@ -306,32 +306,37 @@ theorem dynamic_programming_of_thin (I : InitialAlgebra F)
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
-/-- A relation `R ≜ f S f°` pulled back along a map `f` is reached from `f S`: `R f ⊑ f S`, because
-    `f` is simple (`f°f ⊑ 𝟙`). -/
-public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A ⟶ A} (hf : Map f)
-    (hR : R = f ≫ S ≫ f°) : R ≫ f ⊑ f ≫ S := by
-  have e := comp_mono_left f (comp_mono_left S hf.2)
-  rw [Cat.comp_id] at e
-  rw [hR]; simpa only [Cat.assoc] using e
+/-- **`F(cost°) h ⊑ k cost°`**: when a map `cost` is a homomorphism from `h` to `k`, `cost°` is a
+    LAX homomorphism from `k` to `h` — only an inclusion, strict in general: `h` passes over
+    `cost°` and becomes `k`.  `cost` entire, then the homomorphism, then `F(cost)` simple. -/
+public theorem recip_lax_hom {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C} {k : F.obj C ⟶ C}
+    (hcost : Map cost) (hch : IsFHom h k cost) : F.map cost° ≫ h ⊑ k ≫ cost° :=
+  calc F.map cost° ≫ h
+        ⊑ F.map cost° ≫ h ≫ cost ≫ cost° := by
+        simpa only [Cat.comp_id, Cat.assoc] using comp_mono_left (F.map cost° ≫ h) (map_entire_le hcost)
+      _ = F.map cost° ≫ F.map cost ≫ k ≫ cost° :=
+        congrArg (F.map cost° ≫ ·) (by rw [← Cat.assoc, hch, Cat.assoc])
+      _ ⊑ k ≫ cost° := by
+        have e := comp_mono_right (F.map_is_map hcost).2 (k ≫ cost°)
+        rw [← Relator.preservesRecip_of_tabular F cost] at e
+        simpa only [Cat.id_comp, Cat.assoc] using e
 
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on an order `R` that compares
-    values by their cost (`R = cost ≤ cost°`) whenever `h` followed by `cost` factors as
-    `F(cost)` followed by an algebra `k` that is itself monotonic on `≤`.  One `calc` step per
-    hint: `cost` entire, the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k`
-    monotonic on `≤`, the assumption on `cost` again, and the definition of `R`. -/
+    values by their cost (`R = cost ≤ cost°`) whenever `cost : h ⟶ k` for an algebra `k` that is
+    itself monotonic on `≤`.  One `calc` step per hint: expand `R`, `F` preserves composition,
+    `h` passes over `cost°` and becomes `k`, `k` passes `≤`, `k` passes over `cost` and becomes
+    `h`, and put `R` back. -/
 public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} {R : A ⟶ A} (hcost : Map cost)
     (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : IsFHom h k cost) (hk : Pres k «≤») :
     Pres h R :=
   calc F.map R ≫ h
-        ⊑ F.map R ≫ h ≫ cost ≫ cost° := by
-        simpa only [Cat.comp_id, Cat.assoc] using comp_mono_left (F.map R ≫ h) (map_entire_le hcost)
-      _ = F.map R ≫ F.map cost ≫ k ≫ cost° :=
-        congrArg (F.map R ≫ ·) (by rw [← Cat.assoc, hch, Cat.assoc])
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° := by
-        simpa only [← Cat.assoc, ← F.map_comp] using
-          comp_mono_right (comp_mono_right (F.map_mono (conj_comp_map_le hcost hR)) k) cost°
+        = F.map (cost ≫ «≤» ≫ cost°) ≫ h := congrArg (fun X => F.map X ≫ h) hR
+      _ = F.map cost ≫ F.map «≤» ≫ F.map cost° ≫ h := by
+        rw [F.map_comp, F.map_comp, Cat.assoc, Cat.assoc]
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° :=
+        comp_mono_left (F.map cost) (comp_mono_left (F.map «≤») (recip_lax_hom hcost hch))
       _ ⊑ F.map cost ≫ k ≫ «≤» ≫ cost° := by
         simpa only [Cat.assoc] using comp_mono_left (F.map cost) (comp_mono_right hk cost°)
       _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc, ← hch, Cat.assoc]
