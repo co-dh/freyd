@@ -172,22 +172,6 @@
 // lean:AOP.A9_1.ThinCondition@981f8a2d
 // lean:AOP.A9_1.H@71852cf7
 
-// `H` at one instance: LeetCode 746, Min Cost Climbing Stairs, with a 0-cost stair in front for the start.
-#disp[#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [`F(X) = 1 + ℕ×X + ℕ×ℕ×X`], [a climb is a list of moves: `one c` or `two c d`],
-  [`T`], [`[nil, one c xs ↦ c:xs, two c d xs ↦ c:d:xs]`], [put the stairs of one move in front of the rest],
-  [`⦇T⦈`], [`[Move] ⟶ [ℕ]`], [the cost list a climb walks over],
-  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [any climb over a cost list],
-  [`h`], [`[zero, one c k ↦ c+k, two c d k ↦ c+k]`], [pay the stair stood on, not the `d` stepped over],
-  [`⦇h⦈`], [`[Move] ⟶ ℕ`], [the total paid on a climb],
-  [`H`], [`⦇T⦈° ⦇h⦈`], [the total paid on some climb over a cost list],
-  [`R`], [`≤`], [cheapest wins],
-)]<dp-h-746>
-
 #disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
   #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
    by `R` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
@@ -248,6 +232,24 @@
      // lean:AOP.A9_1.birelator_thin_condition@178e7cca
   lean-calc(calc-bithin),
 )]<dp-bifunctor-thin>
+
+=== Example: Min cost climbing stairs
+
+// `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
+#disp[#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*symbol*], [*value*], [*meaning*]),
+  [`F`], [`F(X) = 1 + ℕ×X + ℕ×ℕ×X`], [a climb is a list of moves: `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
+  [`T`], [`[nil, one c xs ↦ c:xs, two c d xs ↦ c:d:xs]`], [put the stairs of one move in front of the rest],
+  [`⦇T⦈`], [`[Move] ⟶ [ℕ]`], [the cost list a climb walks over],
+  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [any climb over a cost list],
+  [`h`], [`[zero, one c k ↦ c+k, two c d k ↦ c+k]`], [pay the stair stood on, not the `d` stepped over],
+  [`⦇h⦈`], [`[Move] ⟶ ℕ`], [the total paid on a climb],
+  [`H`], [`⦇T⦈° ⦇h⦈`], [the total paid on some climb over a cost list],
+  [`R`], [`≤`], [cheapest wins],
+)]<dp-h-746>
 
 == The string edit problem
 
