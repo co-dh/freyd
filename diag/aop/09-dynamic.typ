@@ -200,7 +200,7 @@
   [`cost : h ⟶ k`],
   [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
    #src[`length(concat(xs)) = sum(map(length)(xs))`]],
-  [the joined string is as long as its pieces together],
+  [`+/#' = #,/`, i.e. `# : ,/ ⟶ +/` (in k)],
   [`k Pres ≤`],
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
    #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
