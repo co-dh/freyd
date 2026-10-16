@@ -403,17 +403,17 @@
 // B&dM p.226, "it is sufficient to show that": Proposition 9.4's argument at `Q≜F(⊤,V)`.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_thin_condition") \
-    #src[every edit sequence built from a decomposition `Q` puts above a given one — any operation,
-     each string lengthened at the front — is at least as long as one built from the given one]],
+    #grid(columns: 5, align: center + horizon, column-gutter: 6pt, row-gutter: 4pt,
+      [`F(Op,[Char]×[Char])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
+      [$stretch(->, size: #2em)^alpha$], [`[Op]`],
+      [`Q` compares here], [], [], [], [`R` compares here])],
      // lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs"), [])],
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @Freyd.Alg.RelSet.Edit.Q; and the bifunctor `F` preserves
-      composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"), [])],
      // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
 
