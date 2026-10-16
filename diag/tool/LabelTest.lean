@@ -12,7 +12,7 @@ namespace Freyd.LabelTest
 
 /-- The statement's formula: SPACED as `--formula` writes it, COMPACT as a panel label sets it. -/
 def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
-  return String.join ((← Freyd.FormulaRender.render sp n none [] []).map Freyd.StrDiag.Lbl.flat).toList
+  return String.join ((← Freyd.FormulaRender.render sp n none [] []).map (·.1.flat)).toList
 
 -- `R` sits inside `θ`'s second operand; replacing the operands one at a time rewrote it there first,
 -- and that operand then printed raw: `θ(P ∪ Q,Q ≫ R − P − Q)`.
