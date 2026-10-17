@@ -34,30 +34,18 @@
 === Stair example
 
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
-#disp[#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj")], [one layer of a climb: `1` ends it; `[ℕ] × X` takes one segment, then `X` for the rest],
-  [`1or2`], [#leanf("Freyd.Alg.RelSet.Stairs.«1or2»")], [a segment has one or two stairs],
-  [`T`],
-  [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T")],
-  [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`],
-  [`T°`], [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], [take 1 or 2 from the head: `T°([10,15,20,30])` is `([10], [15,20,30])` or `([10,15], [20,30])`],
-  [`⦇T⦈`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.T_cata")],
-  [concat, flattening a climb into its cost list],
-  [`⦇T⦈°`], [`[ℕ] ⟶ [[ℕ]]`], [every way to cut a cost list into segments of length 1–2],
-  [`h`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.h")],
-  [pay the stair stood on, not the `d` stepped over],
-  [`⦇h⦈`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.paid_cata") \ `paid :` #leant("Freyd.Alg.RelSet.Stairs.paid")],
-  [the total paid on a climb],
-  [`H`], [#leanf("Freyd.Alg.RelSet.Stairs.H_eq")], [the total paid on some climb over a cost list],
-  [`≤`], [`≤` on `ℕ`], [cheapest wins],
-)]<dp-h-746>
+#ex-table(
+  (sym: [`F`], decl: "Freyd.Alg.RelSet.Stairs.F_obj", type: [`Rel ⟶ Rel`], meaning: [one layer of a climb: `1` ends it; `[ℕ] × X` takes one segment, then `X` for the rest]),
+  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [a segment has one or two stairs]),
+  (sym: [`T`], decl: "Freyd.Alg.RelSet.Stairs.T", meaning: [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`]),
+  (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], meaning: [take 1 or 2 from the head: `T°([10,15,20,30])` is `([10], [15,20,30])` or `([10,15], [20,30])`]),
+  (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [q's `raze` (`,/`) on a legal climb only: every segment's count is in `1 2` (`1or2′`, `′` = each), then `concat` joins them]),
+  (sym: [`⦇T⦈°`], type: [`[ℕ] ⟶ [[ℕ]]`], meaning: [every way to cut a cost list into segments of count 1 or 2 that `raze` back to it]),
+  (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [pay the stair stood on, not the `d` stepped over]),
+  (sym: [`⦇h⦈`], decl: "Freyd.Alg.RelSet.Stairs.paid_cata", type: leant("Freyd.Alg.RelSet.Stairs.paid"), meaning: [the total paid on a climb]),
+  (sym: [`H`], decl: "Freyd.Alg.RelSet.Stairs.H_eq", meaning: [the total paid on some climb over a cost list]),
+  (sym: [`≤`], type: [`ℕ ⟶ ℕ`], value: [`≤` on `ℕ`], meaning: [cheapest wins]),
+)<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@f692c664
 // lean:AOP.A9_1_Stairs.T@4fbd1673
 // lean:AOP.A9_1_Stairs.T_cata@50f1c339
@@ -146,22 +134,18 @@
 )]<dp-upper-tail>
 
 // The tail at the Stair example (strings by `concat` give no `H`): `b` an answer of `H`, `b'` of the step.
-#disp[#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header(table.cell(colspan: 3)[*example of* #context link(<dp-upper-tail>, dispid(query(<dp-upper-tail>).first().location(), raw: true))], [*symbol*], [*value*], [*meaning*]),
-  [`h`], [#leanf("Freyd.Alg.RelSet.Stairs.h")], [`h(s,n) = head(s)+n`: pay the stair segment `s` stands on, then the rest's total `n`; `h(()) = 0`],
-  [`h°`], [`b ↦ (s, b−head(s))`, `0 ↦ ()`], [every way to cut a total `b` into the stair paid first and the rest's total `n`],
-  [`H°`], [#kq("(+/*')° ,/")], [from a total `n` to every cost list `xs` some climb over which pays `n`: #kq("(+/*')°") every climb paying `n`, #kq(",/") its cost list],
-  [`F(H°)`], [`𝟙 + 𝟙 × H°`], [keeps `s`, replaces the rest's total `n` by such an `xs`],
-  [`∈`], [`∈ : FA ⟶ PFA`], [a pair `(s,xs)` to any set `ps` holding it],
-  [`M`], [`M : [ℕ] ⟶ ℕ`], [the recursion; on `xs` it returns only the cheapest total of a climb over `xs`],
-  [`F(M) h`], [`(s,xs) ↦ head(s) + M(xs)`], [pay the stair `s` stands on, then solve the rest by the recursion],
-  [`≥`], [`≥` on `ℕ`], [`c ≥ b'` iff `b' ≤ c`],
-  [`∈ \ (F(M) h ≥)`], [`PFA ⟶ ℕ`], [`ps` to every `b'` with `b' ≤ head(s)+M(xs)` for each `(s,xs)` in `ps`],
-  [`⊑ ≥`], [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], [`b' ≤ head(s)+M(xs) ≤ head(s)+n = b`: `M(xs)` is cheapest and some climb over `xs` pays `n`],
-)]<dp-upper-tail-746>
+#ex-table(head: [*example of* #context link(<dp-upper-tail>, dispid(query(<dp-upper-tail>).first().location(), raw: true))],
+  (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [`h(s,n) = head(s)+n`: pay the stair segment `s` stands on, then the rest's total `n`; `h(()) = 0`]),
+  (sym: [`h°`], type: [`ℕ ⟶ F(ℕ)`], value: [`b ↦ (s, b−head(s))`, `0 ↦ ()`], meaning: [every way to cut a total `b` into the stair paid first and the rest's total `n`]),
+  (sym: [`H°`], type: [`ℕ ⟶ [ℕ]`], value: [#kq("(+/*')° ,/")], meaning: [from a total `n` to every cost list `xs` some climb over which pays `n`: #kq("(+/*')°") every climb paying `n`, #kq(",/") its cost list]),
+  (sym: [`F(H°)`], type: [`F(ℕ) ⟶ FA`], value: [`𝟙 + 𝟙 × H°`], meaning: [keeps `s`, replaces the rest's total `n` by such an `xs`]),
+  (sym: [`∈`], type: [`FA ⟶ PFA`], meaning: [a pair `(s,xs)` to any set `ps` holding it]),
+  (sym: [`M`], type: [`[ℕ] ⟶ ℕ`], meaning: [the recursion; on `xs` it returns only the cheapest total of a climb over `xs`]),
+  (sym: [`F(M) h`], type: [`FA ⟶ ℕ`], value: [`(s,xs) ↦ head(s) + M(xs)`], meaning: [pay the stair `s` stands on, then solve the rest by the recursion]),
+  (sym: [`≥`], type: [`ℕ ⟶ ℕ`], value: [`≥` on `ℕ`], meaning: [`c ≥ b'` iff `b' ≤ c`]),
+  (sym: [`∈ \ (F(M) h ≥)`], type: [`PFA ⟶ ℕ`], meaning: [`ps` to every `b'` with `b' ≤ head(s)+M(xs)` for each `(s,xs)` in `ps`]),
+  (sym: [`⊑ ≥`], type: [`ℕ ⟶ ℕ`], value: [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], meaning: [`b' ≤ head(s)+M(xs) ≤ head(s)+n = b`: `M(xs)` is cheapest and some climb over `xs` pays `n`]),
+)<dp-upper-tail-746>
 // lean:AOP.A9_1_Stairs.h@de1ff917
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -274,28 +258,24 @@
 )]<dp-cost>
 
 // Proposition 9.2 at one instance: strings joined by `concat`, compared by length.
-#disp[#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [`F(X) = [X]`], [the list functor],
-  [`h`], [`concat : [String] ⟶ String`], [joins the pieces into one string],
-  [`cost`], [`length : String ⟶ ℕ`], [string length],
-  [`≼`], [`≤` on `ℕ`], [compares the costs],
-  [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
-  [`≤`], [`≤ = length ≼ length°`], [`s ≤ t` iff `length(s) ≤ length(t)`],
-  [`F(≤) h`], [`list(≤) concat`], [elementwise longer, then concat],
-  [`F(cost) F(≼) k cost°`], [#kq("#' ≤ +/ #°")], [#kq("#'") count each, #kq("≤") elementwise, #kq("+/") sum, #kq("#°") converse of length],
-  [`cost : h ⟶ k`],
-  [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
-   #src[`length(concat(xs)) = sum(map(length)(xs))`]],
-  [#kq("+/#' = #,/"), i.e. #kq("# : ,/ ⟶ +/")],
-  [`k Pres ≼`],
-  [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
-   #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
-  [elementwise smaller implies total smaller],
-)]<dp-conditions>
+#ex-table(
+  (sym: [`F`], type: [`Rel ⟶ Rel`], value: [`F(X) = [X]`], meaning: [the list functor]),
+  (sym: [`h`], type: [`[String] ⟶ String`], value: [`concat`], meaning: [joins the pieces into one string]),
+  (sym: [`cost`], type: [`String ⟶ ℕ`], value: [`length`], meaning: [string length]),
+  (sym: [`≼`], type: [`ℕ ⟶ ℕ`], value: [`≤` on `ℕ`], meaning: [compares the costs]),
+  (sym: [`k`], type: [`[ℕ] ⟶ ℕ`], value: [`sum`], meaning: [adds the lengths up]),
+  (sym: [`≤`], type: [`String ⟶ String`], value: [`≤ = length ≼ length°`], meaning: [`s ≤ t` iff `length(s) ≤ length(t)`]),
+  (sym: [`F(≤) h`], type: [`[String] ⟶ String`], value: [`list(≤) concat`], meaning: [elementwise longer, then concat]),
+  (sym: [`F(cost) F(≼) k cost°`], type: [`[String] ⟶ String`], value: [#kq("#' ≤ +/ #°")], meaning: [#kq("#'") count each, #kq("≤") elementwise, #kq("+/") sum, #kq("#°") converse of length]),
+  (sym: [`cost : h ⟶ k`],
+   value: [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
+     #src[`length(concat(xs)) = sum(map(length)(xs))`]],
+   meaning: [#kq("+/#' = #,/"), i.e. #kq("# : ,/ ⟶ +/")]),
+  (sym: [`k Pres ≼`],
+   value: [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
+     #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
+   meaning: [elementwise smaller implies total smaller]),
+)<dp-conditions>
 // lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@0f26eadc
 // lean:AOP.A9_1.RelSet.ListRel.sum_mono@8e77e6ae
 // lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@10919b1e

@@ -765,5 +765,21 @@
   lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named(),
     metas: context for s in c.steps { if s.law != none [#metadata(if s.at("inst", default: none) == none { s.law } else { s.inst })<lean-cited>] })
 }
+// AN EXAMPLE TABLE, `symbol | type | value | meaning`, with its own `#disp`.  A row is a dictionary
+// `(sym:, meaning:)` plus `decl:`, whose type and value cells are `leant`/`leanf` of that ONE name, so
+// nothing is typed twice; a `type:`/`value:` entry is the cell for what no declaration states.
+// `head`: a first row spanning all four columns.
+#let ex-table(head: none, ..rows) = disp(table(
+  columns: (auto, auto, 1fr, 1fr),
+  align: left + horizon,
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header(..if head != none { (table.cell(colspan: 4, head),) }, [*symbol*], [*type*], [*value*], [*meaning*]),
+  ..rows.pos().map(r => (
+    r.sym,
+    if "type" in r { r.type } else if "decl" in r { leant(r.decl) } else { [] },
+    if "value" in r { r.value } else if "decl" in r { leanf(r.decl) } else { [] },
+    r.meaning,
+  )).flatten(),
+))
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

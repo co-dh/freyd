@@ -18,7 +18,7 @@ namespace Freyd.Alg.RelSet.Stairs
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
 /-- `1or2(xs)`: the segment `xs` has length 1 or 2. -/
-@[expose] public def «1or2» (xs : ConsList Unit Nat) : Prop := clen xs = 1 ∨ clen xs = 2
+@[expose] public def «1or2» (xs : ConsList Unit Nat) : Prop := clen xs ∈ ([1, 2] : List Nat)
 
 /-- The object carrying climbs `[[ℕ]]`. -/
 @[expose] public abbrev dClimb : RelSet.{0} := dCL Unit (ConsList Unit Nat)
