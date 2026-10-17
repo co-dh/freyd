@@ -303,25 +303,25 @@ public theorem recip_lax_hom {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C} {k 
         rw [← Relator.preservesRecip_of_tabular F cost] at e
         simpa only [Cat.id_comp, Cat.assoc] using e
 
-/-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on an order `R` that compares
-    values by their cost (`R = cost ≤ cost°`) whenever `cost : h ⟶ k` for an algebra `k` that is
-    itself monotonic on `≤`.  One `calc` step per hint: expand `R`, `F` preserves composition,
-    `h` passes over `cost°` and becomes `k`, `k` passes `≤`, `k` passes over `cost` and becomes
-    `h`, and put `R` back. -/
+/-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on an order `≤` that compares
+    values by their cost (`≤ = cost ≼ cost°`) whenever `cost : h ⟶ k` for an algebra `k` that is
+    itself monotonic on `≼`.  One `calc` step per hint: expand `≤`, `F` preserves composition,
+    `h` passes over `cost°` and becomes `k`, `k` passes `≼`, `k` passes over `cost` and becomes
+    `h`, and put `≤` back. -/
 public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} {R : A ⟶ A} (hcost : Map cost)
-    (hR : R = cost ≫ «≤» ≫ cost°)
-    (hch : IsFHom h k cost) (hk : Pres k «≤») :
-    Pres h R :=
-  calc F.map R ≫ h
-        = F.map cost ≫ F.map «≤» ≫ F.map cost° ≫ h := by
+    {«≼» : C ⟶ C} {k : F.obj C ⟶ C} {«≤» : A ⟶ A} (hcost : Map cost)
+    (hR : «≤» = cost ≫ «≼» ≫ cost°)
+    (hch : IsFHom h k cost) (hk : Pres k «≼») :
+    Pres h «≤» :=
+  calc F.map «≤» ≫ h
+        = F.map cost ≫ F.map «≼» ≫ F.map cost° ≫ h := by
         rw [hR, F.map_comp, F.map_comp, Cat.assoc, Cat.assoc]
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° :=
-        comp_mono_left (F.map cost) (comp_mono_left (F.map «≤») (recip_lax_hom hcost hch))
-      _ ⊑ F.map cost ≫ k ≫ «≤» ≫ cost° := by
+      _ ⊑ F.map cost ≫ F.map «≼» ≫ k ≫ cost° :=
+        comp_mono_left (F.map cost) (comp_mono_left (F.map «≼») (recip_lax_hom hcost hch))
+      _ ⊑ F.map cost ≫ k ≫ «≼» ≫ cost° := by
         simpa only [Cat.assoc] using comp_mono_left (F.map cost) (comp_mono_right hk cost°)
-      _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc, ← hch, Cat.assoc]
-      _ = h ≫ R := congrArg (h ≫ ·) hR.symm
+      _ = h ≫ cost ≫ «≼» ≫ cost° := by rw [← Cat.assoc, ← hch, Cat.assoc]
+      _ = h ≫ «≤» := congrArg (h ≫ ·) hR.symm
 
 calc_steps pres_of_cost
 
@@ -384,38 +384,38 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜
 
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
     bundled with a simple context relation `H°` via a chosen product `P`, and an algebra `k`
-    (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
-    on `R = cost·leq·cost°` RESTRICTED to solutions of one problem (`R ∩ H°·H`).  The book's
-    chain, one `calc` step per hint: `cost` entire, converse an involution, expand `R`, products,
+    (on the bundle) monotonic on `≼ × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
+    on `≤ = cost·≼·cost°` RESTRICTED to solutions of one problem (`≤ ∩ H°·H`).  The book's
+    chain, one `calc` step per hint: `cost` entire, converse an involution, expand `≤`, products,
     the assumption on `cost`, `⟨cost,H°⟩` simple, products and functors, the assumption on `k`,
     the assumption on `cost` read backwards, and put `R` back. -/
 public theorem pres_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {H : B ⟶ A} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} {R : A ⟶ A}
-    (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°) (hH : Simple H°)
+    {H : B ⟶ A} {P : RelProd C B} {«≼» : C ⟶ C} {k : F.obj P.p ⟶ C} {«≤» : A ⟶ A}
+    (hcost : Map cost) (hR : «≤» = cost ≫ «≼» ≫ cost°) (hH : Simple H°)
     (hch : h ≫ cost = F.map (P.pair cost H°) ≫ k)
-    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
-    F.map (R ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R :=
-  calc F.map (R ∩ (H° ≫ H)) ≫ h
-        = F.map (R ∩ (H° ≫ H)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
-    _ ⊑ F.map (R ∩ (H° ≫ H)) ≫ h ≫ cost ≫ cost° :=
+    (hk : F.map (prodMap P P «≼» (𝟙 B)) ≫ k ⊑ k ≫ «≼») :
+    F.map («≤» ∩ (H° ≫ H)) ≫ h ⊑ h ≫ «≤» :=
+  calc F.map («≤» ∩ (H° ≫ H)) ≫ h
+        = F.map («≤» ∩ (H° ≫ H)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
+    _ ⊑ F.map («≤» ∩ (H° ≫ H)) ≫ h ≫ cost ≫ cost° :=
         comp_mono_left _ (comp_mono_left h (map_entire_le hcost))
-    _ = F.map (R ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost° := by
+    _ = F.map («≤» ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost° := by
         rw [Allegory.recip_recip]
-    _ = F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost° :=
+    _ = F.map ((cost ≫ «≼» ≫ cost°) ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost° :=
         congrArg (fun X => F.map (X ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost°) hR
-    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)°) ≫ h ≫ cost ≫ cost° := by
-        rw [P.pair_recip_pair, Cat.assoc cost «≤» cost°]
-    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)° ≫ P.pair cost H°) ≫ k ≫ cost° := by
+    _ = F.map (P.pair (cost ≫ «≼») H° ≫ (P.pair cost H°)°) ≫ h ≫ cost ≫ cost° := by
+        rw [P.pair_recip_pair, Cat.assoc cost «≼» cost°]
+    _ = F.map (P.pair (cost ≫ «≼») H° ≫ (P.pair cost H°)° ≫ P.pair cost H°) ≫ k ≫ cost° := by
         rw [← Cat.assoc h cost, hch, Cat.assoc, ← Cat.assoc (F.map _) (F.map _), ← F.map_comp, Cat.assoc]
-    _ ⊑ F.map (P.pair (cost ≫ «≤») H° ≫ 𝟙 P.p) ≫ k ≫ cost° :=
+    _ ⊑ F.map (P.pair (cost ≫ «≼») H° ≫ 𝟙 P.p) ≫ k ≫ cost° :=
         comp_mono_right (F.map_mono (comp_mono_left _ (tabulation_simple_of_simple P.tab hcost.2 hH))) _
-    _ = F.map (P.pair (cost ≫ «≤») H°) ≫ k ≫ cost° := by rw [Cat.comp_id]
-    _ = F.map (P.pair cost H°) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
-        rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, RelProd.pair_prodMap_fst (P := P) (Q := P) cost H° «≤»]
-    _ ⊑ F.map (P.pair cost H°) ≫ k ≫ «≤» ≫ cost° :=
+    _ = F.map (P.pair (cost ≫ «≼») H°) ≫ k ≫ cost° := by rw [Cat.comp_id]
+    _ = F.map (P.pair cost H°) ≫ F.map (prodMap P P «≼» (𝟙 B)) ≫ k ≫ cost° := by
+        rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, RelProd.pair_prodMap_fst (P := P) (Q := P) cost H° «≼»]
+    _ ⊑ F.map (P.pair cost H°) ≫ k ≫ «≼» ≫ cost° :=
         comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
-    _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
-    _ = h ≫ R := congrArg (h ≫ ·) hR.symm
+    _ = h ≫ cost ≫ «≼» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
+    _ = h ≫ «≤» := congrArg (h ≫ ·) hR.symm
 
 calc_steps pres_in_context
 

@@ -236,7 +236,7 @@
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
     #src[an F-algebra homomorphism `cost : h ⟶ k` carries preservation back from `k` to `h`: if `k`
-     preserves `≤`, then `h` preserves `R`, the order `≤` pulled back along `cost`]],
+     preserves `≼`, then `h` preserves `≤`, the order `≼` pulled back along `cost`]],
      // lean:AOP.A9_1.pres_of_cost@8b941c9c
   lean-calc(calc-cost),
 )]<dp-cost>
@@ -250,16 +250,16 @@
   [`F`], [`F(X) = [X]`], [the list functor],
   [`h`], [`concat : [String] ⟶ String`], [joins the pieces into one string],
   [`cost`], [`length : String ⟶ ℕ`], [string length],
-  [`≤`], [`≤` on `ℕ`], [],
+  [`≼`], [`≤` on `ℕ`], [compares the costs],
   [`k`], [`sum : [ℕ] ⟶ ℕ`], [adds the lengths up],
-  [`R`], [`R = length ≤ length°`], [`s R t` iff `length(s) ≤ length(t)`],
-  [`F(R) h`], [`list(R) concat`], [elementwise longer, then concat],
-  [`F(cost) F(≤) k cost°`], [#kq("#' ≤ +/ #°")], [#kq("#'") count each, #kq("≤") elementwise, #kq("+/") sum, #kq("#°") converse of length],
+  [`≤`], [`≤ = length ≼ length°`], [`s ≤ t` iff `length(s) ≤ length(t)`],
+  [`F(≤) h`], [`list(≤) concat`], [elementwise longer, then concat],
+  [`F(cost) F(≼) k cost°`], [#kq("#' ≤ +/ #°")], [#kq("#'") count each, #kq("≤") elementwise, #kq("+/") sum, #kq("#°") converse of length],
   [`cost : h ⟶ k`],
   [#leanf("Freyd.Alg.RelSet.ListRel.concat_length_hom") \
    #src[`length(concat(xs)) = sum(map(length)(xs))`]],
   [#kq("+/#' = #,/"), i.e. #kq("# : ,/ ⟶ +/")],
-  [`k Pres ≤`],
+  [`k Pres ≼`],
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_mono") \
    #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
   [elementwise smaller implies total smaller],
@@ -271,7 +271,7 @@
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each.
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_in_context") \
-    #src[improving each part by `R` within its `H°`-context, then assembling by `h`, is below `hR`]],
+    #src[improving each part by `≤` within its `H°`-context, then assembling by `h`, is below `h ≤`]],
      // lean:AOP.A9_1.pres_in_context@b0db9b3a
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
@@ -288,8 +288,9 @@
   [`H`], [`B ⟶ A`], [`flatten° : [X] ⟶ tree X`], [sends a list to every bracketing of it; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
   [`H°`], [`A ⟶ B`], [`flatten`], [sends a bracketing to the one list it brackets; a map, so simple],
   [`⟨cost, H°⟩`], [`A ⟶ C×B`], [`⟨cost, flatten⟩`], [tags a bracketing with its cost and the list it brackets],
+  [`≼`], [`C ⟶ C`], [`≤` on `ℕ`], [compares the costs],
   [`k`], [`F(C×B) ⟶ C`], [`g`], [`0` at a tip; at a join, the two costs plus `cb` of the two sizes, and a size is read off the list (`sz`), so `k` needs the context],
-  [`R ∩ H°H`], [`A ⟶ A`], [`R ∩ flatten flatten°`], [`t` costs no more than `t'`, and both bracket the same list],
+  [`≤ ∩ H°H`], [`A ⟶ A`], [`≤ ∩ flatten flatten°`, where `≤ = cost ≼ cost°`], [`t` costs no more than `t'`, and both bracket the same list],
 )]<dp-context-types>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
