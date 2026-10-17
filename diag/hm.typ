@@ -108,19 +108,18 @@
 #let HMD = HMR * 1.45
 // The scale of the triangles and circles over `HMR`/`HMD`: at `HMR` the hollow circle was unreadable.
 #let HMS = 2
-// The circle marks' radius (`strict`, `lax`, `maps`).
+// The circle marks' radius (`strict`, `eq`, `maps`).
 #let HMC = HMS * HMR
 
 /// How far a mark reaches either side of its point: what a name set beside the point must clear.
-#let hm-mark-half(nat) = if nat == "wire" { 0 } else if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
+#let hm-mark-half(nat) = if nat == "wire" { 0 } else if nat in ("pass", "passup") { HMS * HMD } else if nat == "maps-oplax" { HMD } else if nat == "spider" { HMR } else { HMC }
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
-/// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
-/// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
-/// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
-/// proved for every map and nothing proved at a relation, which is half of what the filled dot
-/// claims.  `pass` is a hollow DOWN triangle, for a bead what stands above may pass down across `⊑`;
-/// `passup` the UP one, for a bead what stands below may pass up.
+/// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `maps` a
+/// HALF-FILLED circle, the square proved for every map and nothing proved at a relation, which is
+/// half of what the filled dot claims, and `maps-oplax` the half-filled diamond.  `pass` is a hollow
+/// DOWN triangle, for a bead what stands above may pass down across `⊑` — a LAX family's mark;
+/// `passup` the UP one, an OPLAX family's (`Mark.ink` in `diag/tool/StringDiagram.lean`).
 /// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg, r: HMC) = {
@@ -135,9 +134,6 @@
     // the square `φF(X)⊑G(X)φ`.  The mirror of `pass`, so its size is `HMS` too.
     d.line((rel: (-HMS * HMD, -HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, -HMS * HMR * 0.8), to: p),
            (rel: (0, HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
-  } else if nat == "oplax" {
-    d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
-           (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
   } else if nat == "maps-oplax" {
     // The op-lax diamond over the maps only: its left half filled, as `maps` fills the circle's.
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
@@ -155,9 +151,9 @@
     d.circle(p, radius: HMC, fill: none, stroke: col + lw)
   } else if nat != "spider" {
     // `eq`: A HOLLOW CIRCLE, the mark of an EQUAL rule — the sign right of the panel is `=`, where
-    // the triangles say `⊑`.  The exporter draws a lax family as `pass`, so the hollow circle is the
-    // equation's alone; against `strict` it is hollow, against `maps` it has no filled half.
-    let hollow = nat in ("lax", "eq")
+    // the triangles say `⊑`.  The exporter draws a lax family as `pass`, bead and unit alike, so the
+    // hollow circle is the equation's alone; against `strict` it is hollow, against `maps` it has no filled half.
+    let hollow = nat == "eq"
     d.circle(p, radius: r, fill: if hollow { bg } else { col },
              stroke: if hollow { col + lw } else { none })
   }
@@ -173,7 +169,7 @@
 #let HMIN = 0.9
 #let HPAD = 0.16
 #let hm-fit(nat, label, col) = {
-  if nat not in ("lax", "eq") or label == none { return (false, HMC) }
+  if nat != "eq" or label == none { return (false, HMC) }
   let sz = measure(text(col)[#label])
   let w = sz.width / 0.8cm
   if w > HMIN { return (false, HMC) }
