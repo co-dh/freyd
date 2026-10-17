@@ -1530,6 +1530,29 @@ def peerStep (n : Name) (side : Expr) : MetaM (Option Step) := do
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
 def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
+  -- A MARK SAYS THE STEP CARRIES THE PARTNER ACROSS THE BEAD, so the step's other side must show it:
+  -- the bead is still a factor there, and what stands on the partner's side of it changed.  A proof
+  -- that only USES the bead's square (`h°F(≥)h ≥ ⊑ ≥ ≥` drops `h` outright) crosses nothing.
+  let crosses (st : Step) (c : Expr) (below : Bool) : MetaM Bool := do
+    let some ty := st.stmt | return false
+    let some rel ← stmtRel? ty | return false
+    let args := rel.getAppArgs
+    let l := compFactors (← instantiateMVars args[args.size - 2]!)
+    let r := compFactors (← instantiateMVars args[args.size - 1]!)
+    let c ← instantiateMVars c
+    -- The bead is found up to instances: the walk rebuilds its term, so `==` misses it; the head
+    -- filters the subterms first.
+    let hd := c.getAppFn
+    let occ (xs : Array Expr) : MetaM (List Nat) := (List.range xs.size).filterM fun k => do
+      let hit ← IO.mkRef false
+      xs[k]!.forEach fun e => do
+        if !(← hit.get) && e.getAppFn == hd && e.getAppNumArgs == c.getAppNumArgs then
+          if ← Meta.withNewMCtxDepth <| Meta.withTransparency .instances <| Meta.isDefEq e c then
+            hit.set true
+      hit.get
+    let past (xs : Array Expr) (k : Nat) := if below then xs.extract (k + 1) xs.size else xs.extract 0 k
+    let (ol, or) := (← occ l, ← occ r)
+    return ol.any fun i => or.any fun j => past l i != past r j
   -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
   -- here; no theorem can be instantiated at a term that does not exist in this context.
   let lctx ← getLCtx
@@ -1550,7 +1573,7 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
         for (h, xl, X, up, v) in r.passCands do
           -- A binder the step's proof never mentions moved nothing past this bead (`stepProof`).
           unless up == below && st.proof.containsFVar v do continue
-          if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
+          if (← Meta.withNewMCtxDepth (Meta.isDefEq Y X)) && (← match r.core with | some c => crosses st c below | none => pure false) then
             hit := some (h, xl, below)
             break
       if let some (h, xl, dir) := hit then
@@ -1571,7 +1594,7 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
             if hit.isSome then break
             let s ← Meta.saveState
             if let some (X, up) ← passOf? ty c rev then
-              if up == below && (← Meta.isDefEq X Y) then
+              if up == below && (← Meta.isDefEq X Y) && (← crosses st c below) then
                 hit := some (st.name, ← label Y, false, below)
                 continue
             s.restore
@@ -1580,7 +1603,8 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
         if nr.tri == some (!below) then continue
         let (some c, some Y) := (r.core, nr.core) | continue
         if inScope c && inScope Y then
-          if let some n ← passThm c Y below st then hit := some (n, ← label Y, false, below)
+          if let some n ← passThm c Y below st then
+            if ← crosses st c below then hit := some (n, ← label Y, false, below)
       if let some (n, xl, b, dir) := hit then
         rows := rows.set! i { r with pass := some (n, xl, b), tri := some dir, eq := st.eq }
     -- THE STEP OUT OF THIS SIDE moves its neighbour across `h`: the mark stands on `h` BEFORE the
@@ -1594,7 +1618,7 @@ def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) 
             if r.tri.isSome || r.nat.any (· != .spider) || (!below && i == 0) || j ≥ rows.size then continue
             if rows[j]!.tri == some (!below) then continue
             let (some c, some n) := (r.core, rows[j]!.core) | continue
-            if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
+            if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) && (← crosses st c below) then
               rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below, eq := st.eq }
               break
   -- ONE MARK PER PAIR: two neighbours whose marks point at each other state one crossing twice.
