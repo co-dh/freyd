@@ -221,17 +221,17 @@
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>
+// Proposition 9.3 at one instance: the string edit problem of the next section, where `H = edit°`.
 #disp[#table(
-  columns: (auto, auto, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
+  columns: (auto, auto, auto, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*type*], [*meaning*]),
-  [`h`], [`F(A) ⟶ A`], [assembles a solution from its parts],
-  [`cost`], [`A ⟶ C`], [the cost of a solution],
-  [`H`], [`B ⟶ A`], [sends a problem to its solutions; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
-  [`H°`], [`A ⟶ B`], [sends a solution back to the problem it solves; simple: each solution solves one problem],
-  [`⟨cost, H°⟩`], [`A ⟶ C×B`], [tags a solution with its cost and its problem],
-  [`k`], [`F(C×B) ⟶ C`], [the cost of the whole, from the parts' costs and their problems only],
+  table.header([*symbol*], [*type*], [*value*], [*meaning*]),
+  [`H`], [`B ⟶ A`], [`edit°`], [sends a pair of strings `(x,y)` to every edit sequence that turns `x` into `y`; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
+  [`H°`], [`A ⟶ B`], [`edit`], [sends an edit sequence to the one pair `(x,y)` it turns into each other; a map, so simple],
+  [`⟨cost, H°⟩`], [`A ⟶ C×B`], [`⟨length, edit⟩`], [`es ↦ (length(es), (x,y))`: tags a sequence with its length and the pair it edits],
+  [`k`], [`F(C×B) ⟶ C`], [`[zero, π₂ π₁ succ]`], [`0` for the empty sequence, one more than the tail's length otherwise; it never reads the pair],
+  [`R ∩ H°H`], [`A ⟶ A`], [`R ∩ edit edit°`], [`es` is no longer than `fs`, and both turn the same `x` into the same `y`],
 )]<dp-context-types>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
