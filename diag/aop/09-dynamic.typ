@@ -358,6 +358,9 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.α")], [#leant("Freyd.Alg.RelSet.Edit.α")],
   "Freyd.Alg.RelSet.Edit.α",
   [the empty edit sequence, or one operation in front of a sequence],
+  [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mleSpec")],
+  "Freyd.Alg.RelSet.Edit.mleSpec",
+  [`mle` must be contained in it: a shortest edit sequence that edits back to the given pair],
 // lean:AOP.A9_2_Edit.Op@5aeb2081
 // lean:AOP.A9_2_Edit.F_obj@ec51a642
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
@@ -367,6 +370,7 @@
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
 // lean:AOP.A9_2_Edit.baseFn@69cf0cc4
 // lean:AOP.A9_2_Edit.stepFn@427367e6
+// lean:AOP.A9_2_Edit.mleSpec@87170ef5
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
