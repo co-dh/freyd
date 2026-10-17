@@ -47,6 +47,7 @@ public import AOP.A9_1
 public import AOP.A8_3
 public import AOP.A7_2_RelSet
 import AOP.A5_7_PowerBeads
+import AOP.A6_7
 import AOP.A7_5_VanBeads
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
@@ -1556,6 +1557,33 @@ public instance instDecR (es fs : (dEdit Char).carrier) : Decidable (R Char es f
   inferInstanceAs (Decidable (clen es ≤ clen fs))
 
 end Tabulation
+
+/-- `tail` picks one of the suffixes: `tail⊑suffix`. -/
+public theorem tail_le_suffix : graph (tail (A := Char)) ⊑ suffixR :=
+  le_iff.mpr fun x y h => by
+    obtain rfl : y = tail x := h
+    cases x with
+    | wrap _ => exact (rfl : ConsList.wrap () = ConsList.wrap ())
+    | cons _ x => exact Or.inr (suffixP.refl x)
+
+/-- **edit-tail** (B&dM p.226): `edit (𝟙×tail)⊑R° edit` — dropping the head of the target
+    string leaves a pair that an edit sequence no longer reaches. -/
+public theorem edit_tail_snd :
+    graph (editFn (Char := Char)) ≫ rprodMap (𝟙 (dList Char)) (graph tail)
+      ⊑ (R Char)° ≫ graph editFn :=
+  calc graph (editFn (Char := Char)) ≫ rprodMap (𝟙 (dList Char)) (graph tail)
+      _ ⊑ graph editFn ≫ rprodMap (𝟙 (dList Char)) suffixR :=
+          comp_mono_left _ (rprodMap_mono (le_refl _) tail_le_suffix)
+      _ ⊑ (R Char)° ≫ graph editFn := edit_suffix_right
+
+/-- **edit-tail** (B&dM p.226): `edit (tail×𝟙)⊑R° edit`, the same for the source string. -/
+public theorem edit_tail_fst :
+    graph (editFn (Char := Char)) ≫ rprodMap (graph tail) (𝟙 (dList Char))
+      ⊑ (R Char)° ≫ graph editFn :=
+  calc graph (editFn (Char := Char)) ≫ rprodMap (graph tail) (𝟙 (dList Char))
+      _ ⊑ graph editFn ≫ rprodMap suffixR (𝟙 (dList Char)) :=
+          comp_mono_left _ (rprodMap_mono tail_le_suffix (le_refl _))
+      _ ⊑ (R Char)° ≫ graph editFn := edit_suffix_left
 
 variable [DecidableEq Char]
 
