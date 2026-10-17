@@ -728,7 +728,7 @@ public theorem edit_laws :
     (initial Unit (Op Char)) (h := α Char) (T := editAlg (Char := Char)) (R := R Char)
     (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
-  simp only [H] at key; rwa [hH] at key
+  simp only [H, M] at key; rwa [hH] at key
 
 /-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
 

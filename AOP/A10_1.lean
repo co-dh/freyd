@@ -55,7 +55,7 @@ public theorem est_le_eps {C : 𝒜} (Q : C ⟶ C) : est Q ⊑ ∋ C := inter_lb
 /-- **Theorem 10.1, (i)**: the greedy body at `M` returns only what `H` returns. -/
 public theorem greedy_dp_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} :
-    Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h ⊑ H T h :=
+    Λ (T°) ≫ est Q ≫ F.map (M T h R) ≫ h ⊑ H T h :=
   calc Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h
         ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
         comp_mono_left _ (comp_mono_right (est_le_eps Q) _)
@@ -69,7 +69,7 @@ calc_steps greedy_dp_lower
 public theorem greedy_dp_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h)
     (hmono : Pres h R) (htrans : R ≫ R ⊑ R) (hQ : ThinCondition T h R Q) :
-    (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h ⊑ R° :=
+    (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (M T h R) ≫ h ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h
         = h° ≫ F.map ((H T h)°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
         id ((congrArg (· ≫ _) (recip_of_fixed T h)).trans
@@ -100,7 +100,7 @@ calc_steps greedy_dp_upper
 public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h) (hmono : Pres h R)
     (htrans : R ≫ R ⊑ R) (hQ : ThinCondition T h R Q) :
-    Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est R) ≫ h ⊑ Λ (H T h) ≫ est R :=
+    Λ (T°) ≫ est Q ≫ F.map (M T h R) ≫ h ⊑ M T h R :=
   le_Λ_comp_est_iff.mpr ⟨greedy_dp_lower, greedy_dp_upper hh hmono htrans hQ⟩
 
 /-! ### The optimisation chain (note §16.1b)
@@ -113,8 +113,8 @@ public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.
 public theorem greedy_dp_step1 [InitialAlgebra F]
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     {X : A ⟶ B} (hh : Map h) (hmono : Pres h R) (htrans : R ≫ R ⊑ R)
-    (hQ : ThinCondition T h R Q) (hX : X = Λ (H T h) ≫ est R) :
-    Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ Λ (H T h) ≫ est R := by
+    (hQ : ThinCondition T h R Q) (hX : X = M T h R) :
+    Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ M T h R := by
   subst hX
   exact greedy_dp_prefixed hh hmono htrans hQ
 
@@ -130,7 +130,7 @@ public theorem greedy_dp (I : InitialAlgebra F)
     (hh : Map h) (hmono : Freyd.Alg.Pres h R) (htrans : R ≫ R ⊑ R)
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
     (greedy_dp_step1 hh hmono htrans hQ rfl))
 
@@ -156,7 +156,7 @@ theorem greedy_dp_of_birelator {G : BiRelator 𝒜} {e : 𝒜}
     (hU : G.map U R ≫ h ⊑ h ≫ R)
     (hV : V ≫ (H T h) ⊑ (H T h) ≫ R) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ est (G.map U V) ≫ (G.appl e).map X ≫ h)
-      ⊑ Λ (H T h) ≫ est R := by
+      ⊑ M T h R := by
   exact greedy_dp (F := G.appl e) I hh (birelator_fixLeft_mono hUrefl hU) htrans
     (birelator_thin_condition (H := (relCata T)° ≫ relCata h) hU hV)
 

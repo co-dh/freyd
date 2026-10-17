@@ -161,6 +161,8 @@ attribute [diag_noted] RelSet.Stairs.Move RelSet.Stairs.Move.one RelSet.Stairs.M
 attribute [diag_unfold] RelSet.Tour.tour
 -- "`S` preserves `Q`" is DRAWN by its inequation `F(Q)S⊑SQ`, as B&dM's (7.2) is; the formula keeps `Pres(S,Q)`.
 attribute [diag_drawn_open] Pres
+-- Chapter 9's `M≜Λ(H) est(R)` is DRAWN by its body, as B&dM's Theorem 9.1 picture is; the formula keeps `M`.
+attribute [diag_drawn_open] Freyd.Alg.M
 
 -- THE DUPLICATION RELATOR IS WRITTEN OUT AS THE PRODUCT IT IS: the note's corner is `A×A` and its
 -- side `R×R`, never `Δ(A)` — `Δ` is `Relator.prod` of two identities (`AOP.A5_2`), and a bundle

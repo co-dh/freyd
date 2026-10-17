@@ -76,7 +76,7 @@
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@3719b2c6
+    // lean:AOP.A9_1.dynamic_programming@8d0df985
   pad(left: -9pt)[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -104,7 +104,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_lower@2ac2fd1f
+     // lean:AOP.A9_1.dynamic_programming_lower@6f86895e
   lean-calc(calc-dpl),
 )]<dp-lower>
 
@@ -113,7 +113,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@072da263
+     // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
@@ -157,7 +157,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), dropping the parts `thin(Q)`
      rejects, solving each rest by `M` and keeping an optimum returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_thin_lower@e2b2509f
+     // lean:AOP.A9_1.dynamic_programming_thin_lower@00839e9b
   lean-calc(calc-dptl),
 )]<dp-laws-92>
 
@@ -209,7 +209,7 @@
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
 )]<dp-conds>
-// lean:AOP.A9_1.dynamic_programming_thin@b98897ae
+// lean:AOP.A9_1.dynamic_programming_thin@d7b28302
 // lean:AOP.A9_1.ThinCondition@981f8a2d
 // lean:AOP.A9_1.H@71852cf7
 
