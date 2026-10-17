@@ -43,7 +43,7 @@
   [`T`],
   [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.nil_nil") \
    #leanf("Freyd.Alg.RelSet.Stairs.put_one") \ #leanf("Freyd.Alg.RelSet.Stairs.put_two")],
-  [put the stairs of one move in front of the rest],
+  [put the stairs of one move in front of the rest: `T(two 10 15, [20,30]) = [10,15,20,30]` stands on 10, climbs 2 over 15, and leaves `[20,30]` for the rest. `T°` splits `[10,15,20,30]` both ways a first move allows: `(one 10, [15,20,30])` and `(two 10 15, [20,30])`],
   [`⦇T⦈`],
   [#leanf("Freyd.Alg.RelSet.Stairs.walk_cata") \ `walk :` #leant("Freyd.Alg.RelSet.Stairs.walk")],
   [the cost list a climb walks over],
