@@ -333,7 +333,7 @@
   [an edit operation copies, deletes or inserts one character],
   [], [],
   "Freyd.Alg.RelSet.Edit.F_obj",
-  [`F(Op,X)` is the empty sequence or one operation paired with an `X`],
+  [`F(A,B)` is the empty sequence or one `A` paired with a `B`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
   "Freyd.Alg.RelSet.Edit.edit_cata",
   [the two strings an edit sequence turns one into the other],
@@ -359,7 +359,7 @@
   "Freyd.Alg.RelSet.Edit.α",
   [the empty edit sequence, or one operation in front of a sequence],
 // lean:AOP.A9_2_Edit.Op@5aeb2081
-// lean:AOP.A9_2_Edit.F_obj@c75acbc8
+// lean:AOP.A9_2_Edit.F_obj@ec51a642
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa

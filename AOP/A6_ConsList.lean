@@ -680,3 +680,7 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.CL.Fobj] public meta def Freyd.Alg.RelSet.CL.unexpandCLFobj : Unexpander
   | `($_ $L $E $C) => `($L + $E × $C)
   | _ => throw ()
+-- B&dM §9.2 writes the cons-list base bifunctor `F(A,B)=𝟏+A×B` as `F`; the leaf `L` shows in its carrier.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.CL.FB] public meta def Freyd.Alg.RelSet.CL.unexpandCLFB : Unexpander
+  | _ => `($(mkIdent `F))

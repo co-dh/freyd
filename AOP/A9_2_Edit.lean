@@ -789,9 +789,9 @@ public theorem op_cases (o : Op Char) :
   | del a => exact Or.inr (Or.inl ⟨a, rfl⟩)
   | ins a => exact Or.inr (Or.inr ⟨a, rfl⟩)
 
-/-- **edit-defn**: `F(Op,X)=𝟏+(Op×X)`. -/
-public theorem F_obj (X : RelSet.{0}) :
-    ((F Unit (Op Char)).obj X).carrier = (Unit ⊕ (Op Char × X.carrier)) := rfl
+/-- **edit-defn**: the base bifunctor `F(A,B)=𝟏+(A×B)`. -/
+public theorem F_obj (A B : RelSet.{0}) :
+    (FB Unit).obj A B = ⟨Unit ⊕ (A.carrier × B.carrier)⟩ := rfl
 
 /-- **edit-defn**: the edit sequences' initial algebra IS the junction `α=[nil,cons]` of its two
     constructors, at the empty leaf. -/
