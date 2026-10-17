@@ -393,35 +393,35 @@ theorem existsImage_comp_supset (R : A ⟶ B) :
     Egli–Milner conjunct, `inter_lb_left` of `powerRel`'s definition) and its lax-naturality
     of `∈`, `powerRel_eps_lax : powerRel R≫∋b ⊑ ∋a≫R`. -/
 
-/-- **(7.10)**: `min R·P S ⊆ (∈·S) ∩ (R/S·∋)` at `R°`, mirrored: `powerRel S ≫ est R ⊑ (∋b≫S) ∩
-    ((∋b)° \ (S≫R°))`.  (i) `powerRel S≫est R ⊑ powerRel S≫∋a ⊑ ∋b≫S` (`inter_lb_left`,
-    `powerRel_eps_lax`).  (ii) `(∋b)°≫(powerRel S≫est R) = ((∋b)°≫powerRel S)≫est R ⊑
-    (S≫(∋a)°)≫est R = S≫((∋a)°≫est R) ⊑ S≫R°` (`powerRel_term1_cancel`, then
+/-- **(7.10)**: `min R·P X ⊆ (∈·X) ∩ (R/X·∋)` at `R°`, mirrored: `powerRel X ≫ est R ⊑ (∋b≫X) ∩
+    ((∋b)° \ (X≫R°))`.  (i) `powerRel X≫est R ⊑ powerRel X≫∋a ⊑ ∋b≫X` (`inter_lb_left`,
+    `powerRel_eps_lax`).  (ii) `(∋b)°≫(powerRel X≫est R) = ((∋b)°≫powerRel X)≫est R ⊑
+    (X≫(∋a)°)≫est R = X≫((∋a)°≫est R) ⊑ X≫R°` (`powerRel_term1_cancel`, then
     `recip_eps_comp_est_le`). -/
-public theorem powerRel_comp_est_le (S : B ⟶ A) (R : A ⟶ A) :
-    powerRel S ≫ est R ⊑ (∋ B ≫ S) ∩ (((∋ B)°) \ (S ≫ R°)) := by
+public theorem powerRel_comp_est_le (X : B ⟶ A) (R : A ⟶ A) :
+    powerRel X ≫ est R ⊑ (∋ B ≫ X) ∩ (((∋ B)°) \ (X ≫ R°)) := by
   have haR := recip_eps_comp_est_le R
   apply le_inter
-  · exact le_trans (comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)) (powerRel_eps_lax S)
+  · exact le_trans (comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)) (powerRel_eps_lax X)
   · apply (le_leftDiv_iff _ _ _).mpr
-    have hcancel : (∋ B)° ≫ powerRel S ⊑ S ≫ (∋ A)° := powerRel_term1_cancel S
-    have e1 : (∋ B)° ≫ (powerRel S ≫ est R) = ((∋ B)° ≫ powerRel S) ≫ est R := by
+    have hcancel : (∋ B)° ≫ powerRel X ⊑ X ≫ (∋ A)° := powerRel_term1_cancel X
+    have e1 : (∋ B)° ≫ (powerRel X ≫ est R) = ((∋ B)° ≫ powerRel X) ≫ est R := by
       rw [Cat.assoc]
     rw [e1]
-    have hstep1 : ((∋ B)° ≫ powerRel S) ≫ est R ⊑ (S ≫ (∋ A)°) ≫ est R :=
+    have hstep1 : ((∋ B)° ≫ powerRel X) ≫ est R ⊑ (X ≫ (∋ A)°) ≫ est R :=
       comp_mono_right hcancel _
-    have hstep2 : (S ≫ (∋ A)°) ≫ est R ⊑ S ≫ R° := by
-      rw [Cat.assoc]; exact comp_mono_left S haR
+    have hstep2 : (X ≫ (∋ A)°) ≫ est R ⊑ X ≫ R° := by
+      rw [Cat.assoc]; exact comp_mono_left X haR
     exact le_trans hstep1 hstep2
 
-/-- (7.10), left component: `P(S) est(R) ⊑ ∋S`. -/
-public theorem powerRel_comp_est_le_eps (S : B ⟶ A) (R : A ⟶ A) : powerRel S ≫ est R ⊑ ∋ B ≫ S :=
-  le_trans (powerRel_comp_est_le S R) (inter_lb_left _ _)
+/-- (7.10), left component: `P(X) est(R) ⊑ ∋X`. -/
+public theorem powerRel_comp_est_le_eps (X : B ⟶ A) (R : A ⟶ A) : powerRel X ≫ est R ⊑ ∋ B ≫ X :=
+  le_trans (powerRel_comp_est_le X R) (inter_lb_left _ _)
 
-/-- (7.10), right component: `P(S) est(R) ⊑ ∈\(SR°)`. -/
-public theorem powerRel_comp_est_le_div (S : B ⟶ A) (R : A ⟶ A) :
-    powerRel S ≫ est R ⊑ ((∋ B)°) \ (S ≫ R°) :=
-  le_trans (powerRel_comp_est_le S R) (inter_lb_right _ _)
+/-- (7.10), right component: `P(X) est(R) ⊑ ∈\(SR°)`. -/
+public theorem powerRel_comp_est_le_div (X : B ⟶ A) (R : A ⟶ A) :
+    powerRel X ≫ est R ⊑ ((∋ B)°) \ (X ≫ R°) :=
+  le_trans (powerRel_comp_est_le X R) (inter_lb_right _ _)
 
 /-! ### (7.8): shunting a map through `est`
 
