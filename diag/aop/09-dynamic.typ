@@ -46,13 +46,12 @@
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [`h(()) = 0`: the empty climb pays nothing. `h`#kq("(10 15;20)")` = 10 + 20 = 30`: pay the stair stood on (`10`), not the `15` stepped over, plus the `20` already paid for the rest]),
   (sym: [`⦇h⦈`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.rhs.unfold.f2"), meaning: [the total paid on a climb: `⦇h⦈`#kq("(10;15 20;30)")` = 10 + 15 + 30 = 55`; `⦇h⦈`#kq("(10 15;20 30)")` = 10 + 20 = 30`]),
   (sym: [`H`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.rhs"), value: leanf("Freyd.Alg.H"), meaning: [`H` relates #kq("10 15 20 30") to `30` (climb #kq("(10 15;20 30)")) and to `55` (climb #kq("(10;15 20;30)")), ...]),
-  (sym: [`≤`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f3.arg"), value: [`≤` on `ℕ`], meaning: [cheapest wins: `30 ≤ 55`]),
   (sym: [`M`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1.arg"), value: leanf("Freyd.Alg.M"), meaning: [the 5 cuts of #kq("10 15 20 30") pay `75`, `60`, `55`, `45`, `30`, so `M(`#kq("10 15 20 30")`) = 30`]),
 )<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@243eae25
 // lean:AOP.A9_1_Stairs.T@cbaeba15
 // lean:AOP.A9_1_Stairs.T_cata@1c042a9d
-// lean:AOP.A9_1_Stairs.h@c0012d19
+// lean:AOP.A9_1_Stairs.h@46844dc4
 // lean:AOP.A9_1.M@374f3050
 
 === The dynamic programming theorem
@@ -157,7 +156,7 @@
   (sym: [`∈ \ (F(M) h ≥)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f4"), meaning: [`{`#kq("(10 15;20 30)")`, `#kq("(10;15 20 30)")`}` has bounds `30` and `10 + 35 = 45`, so it maps to every `b' ≤ 30`, e.g. `30` and `25`]),
   (sym: [`⊑ ≥`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.rhs"), value: [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], meaning: [`30 ─h°→ `#kq("(10 15;20)")` ─F(H°)→ `#kq("(10 15;20 30)")` ─∈→ ps ─∈\(F(M)h≥)→ 30`: `b' = 30 ≤ 10 + M(`#kq("20 30")`) = 30 ≤ 10 + 20 = b`; in general `b' ≤ head(s)+M(xs) ≤ head(s)+n = b`]),
 )<dp-upper-tail-746>
-// lean:AOP.A9_1_Stairs.h@c0012d19
+// lean:AOP.A9_1_Stairs.h@46844dc4
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A

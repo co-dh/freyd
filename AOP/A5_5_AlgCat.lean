@@ -1,6 +1,6 @@
 /-
-  Bird & de Moor, *Algebra of Programming* §5.5 — the CATEGORY of `F`-algebras, and the
-  structure map as a natural transformation on it.
+  Bird & de Moor, *Algebra of Programming* §5.5 — the HOMOMORPHISM CONDITION of `F`-algebras,
+  unbundled.
 
   An `F`-algebra's structure map `α` is NOT a natural transformation `F ⇒ Id` on the
   underlying allegory `𝒜`: the square `α_A ≫ h = F(h) ≫ α_B` is the HOMOMORPHISM condition,
@@ -8,12 +8,8 @@
   `Freyd.Alg.RelSet.Carrier.listAlg_not_lax_natural` in `AOP.A7_4_CarrierBeads`, which
   exhibits a concrete `h` breaking it even laxly.  It is NOT reproved here.
 
-  What IS true is the statement this file formalises: once the arrows are cut down to the
-  ones that satisfy that square — i.e. once we pass to `Alg(F)`, whose objects are algebras
-  and whose arrows are homomorphisms — and `F` is lifted to `Alg(F)` by
-  `F̃(X) = ⟨F(X.carrier), F(X.α)⟩`, the family `α` becomes a natural transformation
-  `F̃ ⇒ Id` on `Alg(F)`.  Naturality is then true BY CONSTRUCTION: `alpha_natural_alg` is
-  literally the `comm` field of the arrow it is given.
+  The bundled algebra and the category of algebras and homomorphisms are `Algebra`, `AlgHom` and
+  `instCatAlgebra` in `AOP.A5_5`; this file keeps only the square itself, free in its three arrows.
 
   All composition is diagram order (Freyd `≫`), mirroring B&dM's `·`.
 -/
@@ -27,48 +23,13 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u₁} [Allegory.{v₁} 𝒜]
 
-/-- An `F`-ALGEBRA: a carrier object together with a structure map `F(carrier) ⟶ carrier`.
-    The map is an arbitrary arrow of `𝒜` — a relation, not necessarily a map. -/
-public structure FAlg (F : Relator 𝒜 𝒜) where
-  carrier : 𝒜
-  α : F.obj carrier ⟶ carrier
-
-
-
 /-- The HOMOMORPHISM CONDITION, UNBUNDLED: `h : A ⟶ B` carries the algebra `f : F(A) ⟶ A` to
     `g : F(B) ⟶ B` when `f h = F(h) g`.  Free in all three arrows — which is what the square
     says, and what a picture of it draws: three named arrows, none of them a projection of a
-    bundled pair.  `FHom.comm` below IS this predicate, so the equation is written once.
+    bundled pair.
     Reducible because the name is all it adds: `rw [φ.comm]` has to see the `Eq` through it. -/
 @[reducible, expose] public def IsFHom {F : Relator 𝒜 𝒜} {A B : 𝒜}
     (f : F.obj A ⟶ A) (g : F.obj B ⟶ B) (h : A ⟶ B) : Prop := f ≫ h = F.map h ≫ g
-
-/-- An `F`-ALGEBRA HOMOMORPHISM: an arrow of `𝒜` between the carriers satisfying `IsFHom`.
-    That square is the homomorphism condition; it is the very condition that fails for a
-    general arrow, and requiring it is what makes `α` natural below. -/
-public structure FHom {F : Relator 𝒜 𝒜} (X Y : FAlg F) where
-  h : X.carrier ⟶ Y.carrier
-  comm : IsFHom X.α Y.α h
-
-/-- Two homomorphisms with the same underlying arrow are equal: `comm` is a `Prop`, so
-    proof irrelevance settles the second field. -/
-public theorem FHom.ext {F : Relator 𝒜 𝒜} {X Y : FAlg F} {f g : FHom X Y} (e : f.h = g.h) : f = g := by
-  cases f; cases g; cases e; rfl
-
-/-- `Alg(F)`, the category of `F`-algebras and their homomorphisms.  Identities need
-    `F.map_id`; composition is the two homomorphism squares pasted, which needs
-    `F.map_comp`.  The three category axioms are the `𝒜` ones under `FHom.ext`. -/
-public instance instCatFAlg {F : Relator 𝒜 𝒜} : Cat.{v₁} (FAlg F) where
-  Hom X Y := FHom X Y
-  -- `unfold`: `rw` matches on the goal as written, and `IsFHom` names the equation rather than
-  -- being one, so the first rewrite has nothing to find until the name is gone.
-  id X := ⟨𝟙 X.carrier, by unfold IsFHom; rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
-  comp f g := ⟨f.h ≫ g.h, by
-    unfold IsFHom
-    rw [← Cat.assoc, f.comm, Cat.assoc, g.comm, ← Cat.assoc, ← F.map_comp]⟩
-  id_comp f := FHom.ext (Cat.id_comp f.h)
-  comp_id f := FHom.ext (Cat.comp_id f.h)
-  assoc f g h := FHom.ext (Cat.assoc f.h g.h h.h)
 
 end Freyd.Alg
 
