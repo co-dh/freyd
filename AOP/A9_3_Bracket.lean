@@ -451,7 +451,7 @@ public theorem mct_laws (hassoc : Assoc sb) :
     (graph_map con)
     (by simp only [H]; rw [hH, Allegory.recip_recip]; exact mct_mono_recip st sb cb hassoc)
     (R_recip_trans st sb cb) (R_recip_refl st sb cb)
-  simp only [H] at key; rwa [hH] at key
+  simp only [H, M] at key; rwa [hH] at key
 
 /-- `cat` ALWAYS RETURNS A `cons`: joining two non-empty lists never gives a one-element list.
     That is the disjointness the summand law asks for — at a list `cat` reaches, `[wrap,cat]`

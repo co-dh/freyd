@@ -53,7 +53,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_lower") \
     #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
      `h` returns only what `H` returns]],
-     // lean:AOP.A10_1.greedy_dp_lower@d5e796fe
+     // lean:AOP.A10_1.greedy_dp_lower@2447499c
   lean-calc(calc-gl),
 )]<greedy-lower>
 
@@ -62,7 +62,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
-     // lean:AOP.A10_1.greedy_dp_upper@20216dd2
+     // lean:AOP.A10_1.greedy_dp_upper@7732fe1f
   lean-calc(calc-gu, breaks: (4,)),
 )]<greedy-upper>
 

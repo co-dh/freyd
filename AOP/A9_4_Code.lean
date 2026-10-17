@@ -614,7 +614,7 @@ public theorem code_laws :
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
     (R := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
     (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p)
-  simp only [H] at key; rwa [hH] at key
+  simp only [H, M] at key; rwa [hH] at key
 
 /-- `extend` never returns the empty string: the symbol case snocs, and the pointer case appends
     a `zs` its own side condition keeps non-empty.  This is B&dM's Proposition 9.1 hypothesis

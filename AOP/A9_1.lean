@@ -88,7 +88,7 @@ public theorem comp_Λ_recip_le_recip_eps {C : 𝒜} (T : C ⟶ A) : T ≫ Λ (T
     inside `H`.  One `calc` step per hint of the book. -/
 public theorem dynamic_programming_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} :
-    Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ H T h :=
+    Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ H T h :=
   calc Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
         ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
         comp_mono_left _ (powerRel_comp_est_le_eps _ R)
@@ -104,7 +104,7 @@ calc_steps dynamic_programming_lower
 public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
-    (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ R° :=
+    (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
         ⊑ (H T h)° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ R))
@@ -133,7 +133,7 @@ calc_steps dynamic_programming_upper
 public theorem dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
-    Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ Λ (H T h) ≫ est R :=
+    Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ M T h R :=
   le_Λ_comp_est_iff.mpr ⟨dynamic_programming_lower, dynamic_programming_upper hh hmono htrans⟩
 
 /-- **Theorem 9.1 (B&dM p.220)**, the basic theorem of DYNAMIC PROGRAMMING:
@@ -146,7 +146,7 @@ public theorem dynamic_programming (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hh hmono htrans))
 
 /-! ## Theorem 9.2 (B&dM p.221) — thinning dynamic programming
@@ -184,7 +184,7 @@ public theorem recip_conj_le_of_pres {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map
 /-- **(9.2) with thinning**: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`, mirrored. -/
 public theorem dynamic_programming_thin_lower [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ H T h :=
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ H T h :=
   calc Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
         ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
         comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_eps _ R))
@@ -203,7 +203,7 @@ public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B �
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : ThinCondition T h R Q) :
-    (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R ⊑ R° :=
+    (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ R° :=
   calc (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
         ⊑ (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ R)))
@@ -249,8 +249,8 @@ calc_steps dynamic_programming_thin_upper
 public theorem dynamic_programming_thin_prefixed (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : ThinCondition T h R Q) {X : A ⟶ B} (hX : X = Λ (H T h) ≫ est R) :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ (H T h) ≫ est R := by
+    (hQ : ThinCondition T h R Q) {X : A ⟶ B} (hX : X = M T h R) :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ M T h R := by
   subst hX
   exact le_Λ_comp_est_iff.mpr ⟨dynamic_programming_thin_lower, dynamic_programming_thin_upper hh hmono htrans hQ⟩
 
@@ -265,7 +265,7 @@ public theorem dynamic_programming_thin (I : InitialAlgebra F)
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   mu_le (dynamic_programming_thin_prefixed I hh hmono htrans hQ rfl)
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
@@ -301,7 +301,7 @@ theorem dynamic_programming_of_thin (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
     (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   le_trans mu_le_mu_thinRel_id (dynamic_programming_thin I hh hmono htrans (thin_condition_of_refl I hrefl))
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
@@ -655,7 +655,7 @@ public theorem dynamic_programming_thin_context (I : InitialAlgebra F)
     (htrans : R° ≫ R° ⊑ R°)
     (hctx2 : ThinCondition T h R (Q ∩ (T ≫ T°))) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hh hctx1 htrans (hylo_fixed I h T) hctx2))
 
 /-- **Theorem 9.1 in context**: the plain (un-thinned) dynamic-programming recursion refines the
@@ -668,7 +668,7 @@ public theorem dynamic_programming_context (I : InitialAlgebra F)
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ (H T h) ≫ est R :=
+      ⊑ M T h R :=
   le_trans mu_le_mu_thinRel_id
     (dynamic_programming_thin_context I hh hctx1 htrans
       (le_trans (comp_mono_right (inter_lb_left _ _) _) (thin_condition_of_refl I hrefl)))

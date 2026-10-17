@@ -2587,10 +2587,10 @@ partial def splitOpened? (e : Expr) : MetaM (Option Expr) := do
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
   let d ← interpAt regionTy cat objVars vpass expect e
-  -- Recorded as DRAWN — after `rewriteSpine`, which is what its factors are — and each factor as
+  -- Recorded as DRAWN — after `openNoted` and `rewriteSpine`, which is what its factors are — and each factor as
   -- `canon` reads it, so the steps of a chain, each its own declaration, share the binders they
   -- name alike.  The innermost level sets `ident`, from the factor `interpAt` drew.
-  let fs ← (compFactors (← instantiateMVars (← rewriteSpine e))).mapM canon
+  let fs ← (compFactors (← instantiateMVars (← rewriteSpine (← openNoted e)))).mapM canon
   let rows ← d.rows.mapM fun r => do
     let ident ← match r.ident with | some i => pure (some i) | none => r.term.mapM canon
     return { r with ctx := r.ctx.push fs, ident }
