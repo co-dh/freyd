@@ -278,6 +278,19 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         let ctor := getStructureCtor (← getEnv) declName
         let cty ← Meta.instantiateForall (← Meta.inferType
           (mkConst ctor.name (ci.levelParams.map Level.param))) xs
+        -- ONE DATUM AND PROOFS ABOUT IT (`Subtype`) is a SET, `{x : α ∣ p(x)}`: conjoining its fields
+        -- would read the datum `val : α` as a statement.  Several data fields have no such reading.
+        if let .forallE _ d b bi := cty then
+          if !(← Meta.isProp d) then
+            let set? ← Meta.withLocalDecl ((← getLCtx).getUnusedName `x) bi d fun x =>
+              Meta.forallTelescope (b.instantiate1 x) fun fs _ => do
+                let tys ← fs.mapM Meta.inferType
+                unless ← tys.allM Meta.isProp do return none
+                let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
+                  | return none
+                return some (Lbl.text "{" ++ (← labelT x) ++ spaced ":" sp ++ (← labelT d)
+                  ++ spaced "∣" sp ++ (← labelT c) ++ Lbl.text "}")
+            if let some s := set? then return #[(head ++ spaced "≜" sp ++ s, false)]
         return ← Meta.forallTelescope cty fun fs _ => do
           let tys ← fs.mapM Meta.inferType
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none

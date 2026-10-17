@@ -40,6 +40,8 @@
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*symbol*], [*value*], [*meaning*]),
   [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [one layer of a climb: `1` ends it; `Move × X` takes one segment, then `X` for the rest. Segments are `[c]` (stand on `c`, climb 1) or `[c,d]` (stand on `c`, climb 2 over `d`)],
+  [`oneOrTwo`], [#leanf("Freyd.Alg.RelSet.Stairs.oneOrTwo")], [a segment has one or two stairs],
+  [`Subtype`], [#leanf("Subtype")], [the elements of `[ℕ]` that satisfy the predicate; `ι` sends one back into `[ℕ]`],
   [`T`],
   [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T")],
   [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`. `T°` splits `[10,15,20,30]` both ways a first segment allows: `([10], [15,20,30])` and `([10,15], [20,30])`],
