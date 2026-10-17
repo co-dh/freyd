@@ -571,7 +571,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let args := (← getExpr).getAppArgs
   if args.size != 2 then failure
   unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure
-  `($(mkIdent `nil))
+  `([])
 
 -- At a leaf type `E×E` the leaf `(a,b)` is two ELEMENTS, the last two of the list, so `wrap (a,b)`
 -- is the note's `[a,b]`; a delaborator because the leaf type is implicit, as for `nil` above.

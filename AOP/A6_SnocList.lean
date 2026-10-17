@@ -563,3 +563,9 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.SL.snocRelator] public meta def Freyd.Alg.RelSet.SL.unexpandSnocRelator : Unexpander
   | `($_ $_) => `($(mkIdent `list))
   | _ => throw ()
+
+-- printing-only: the constant empty-list ARROW prints as the empty-list value `[]`; `nil` takes only
+-- implicit arguments, so it is a bare constant no `app_unexpander` fires on and a delaborator names it.
+open Lean PrettyPrinter Delaborator in
+@[delab const.Freyd.Alg.RelSet.SL.nil, delab app.Freyd.Alg.RelSet.SL.nil]
+public meta def Freyd.Alg.RelSet.SL.delabNilArrow : Delab := `([])

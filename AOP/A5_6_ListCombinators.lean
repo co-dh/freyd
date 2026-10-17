@@ -743,6 +743,10 @@ public theorem alphaR_eq_junc :
 /-- `nil` and `cons` at the EMPTY leaf — the two factors of `alphaR_eq_junc`'s junction, named so
     the note's `nil`,`cons` row takes its type cell from Lean instead of typing one by hand. -/
 @[expose] public def nilAtUnit : dL Unit ⟶ dList A := τ
+-- printing-only: the constant empty-list arrow at the unit leaf prints as the empty list `[]`.
+open Lean PrettyPrinter Delaborator in
+@[delab const.Freyd.Alg.RelSet.ListRel.nilAtUnit, delab app.Freyd.Alg.RelSet.ListRel.nilAtUnit]
+public meta def delabNilAtUnit : Delab := `([])
 @[expose] public def cons : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := consR
 
 /-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is

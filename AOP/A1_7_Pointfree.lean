@@ -354,7 +354,7 @@ public theorem filter_pointfree :
 -- bare constants no `app_unexpander` fires on; a delaborator names them.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Pointfree.nil, delab const.Freyd.Alg.RelSet.Pointfree.nil]
-public meta def delabNil : Delab := `($(mkIdent `nil))
+public meta def delabNil : Delab := `([])
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Pointfree.zip, delab const.Freyd.Alg.RelSet.Pointfree.zip]
 public meta def delabZip : Delab := `($(mkIdent `zip))

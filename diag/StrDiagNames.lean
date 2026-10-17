@@ -140,7 +140,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.con] meta def delabCLCon : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size < 2 || args.size > 3 then failure
-  let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "nil" else "τ"
+  let leaf := if ← Meta.isDefEq args[0]! (mkConst ``Unit) then "[]" else "τ"
   let f := mkIdent (Name.mkSimple s!"[{leaf},cons]")
   if args.size == 2 then `($f) else `($f $(← withAppArg delab))
 -- The algebras a section names but the note writes by their body: a union of two graphs, or the
@@ -867,7 +867,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 meta def delabCLτ : Delab := do
   let args := (← getExpr).getAppArgs
   if let some l := args[0]? then
-    if ← Meta.isDefEq l (mkConst ``Unit) then return ← `($(mkIdent `nil))
+    if ← Meta.isDefEq l (mkConst ``Unit) then return ← `([])
   `($(mkIdent `τ))
 -- The book's `tic≜cons inits tail` (p. 235), implicit-only like `τ`.
 open Lean PrettyPrinter Delaborator in
