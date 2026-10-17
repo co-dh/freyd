@@ -193,7 +193,22 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
         let some f := fs[k - 1]? |
           throwError "{declName}: `.{s}` asks for factor {k} of {← Meta.ppExpr u}, which has {fs.size}"
         pure f
+      -- An INFERRED end may be a concrete instance's carrier (`(cataR T)°` ends at the initial
+      -- algebra's `T[ℕ]`); it prints as the object the instance gives (`[[ℕ]]`), as a stated type would.
       let ty ← Meta.inferType t
+      -- Only to a real object: a step that lands on another class's projection (`P` of a parent
+      -- class) is no object of the note, so the original end stays.
+      let o (e : Expr) : MetaM Expr := do
+        let env ← getEnv
+        let mut cur := e
+        for _ in [0:8] do
+          let some n ← Meta.unfoldProjInst? cur | break
+          cur := n
+          unless (cur.getAppFn.constName?.map env.isProjectionFn).getD false do return cur
+        return e
+      let ty ← match homObjs? ty with
+        | some (a, b) => pure (mkApp2 ty.appFn!.appFn! (← o a) (← o b))
+        | none => pure ty
       let some s ← hom? ty piece brk |
         throwError "{declName}: the selected subterm {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, \
           not an arrow of a category"
