@@ -139,6 +139,13 @@ def Mark.key : Mark → String
   | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .maps => "maps" | .mapsOplax => "maps-oplax"
   | .spider => "spider"
 
+/-- The INK a verdict draws, as the tuple's mark field: the one table for a bead AND a unit lane,
+    because two tables let the 09-27 `lax ↦ pass` reach the beads and miss the lanes.  A lax square
+    `G(R)φ ⊑ φF(R)` lets every arrow above pass down, so it IS the down triangle; oplax the up one. -/
+def Mark.ink : Mark → String
+  | .strict => "" | .lax => ", \"pass\"" | .oplax => ", \"passup\""
+  | m@.maps | m@.mapsOplax | m@.spider => ", \"" ++ m.key ++ "\""
+
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
     declaration says it is natural. -/
 structure Row where
@@ -485,7 +492,6 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
   -- A label is set from its TREE (`Lbl.typst`), so a division is the fraction the note draws
   -- wherever it stands — the unit `𝟙%∋`, and one nested in a composite (`[R%∋,S%∋]`) alike.
   let cell (l : Lbl) : String := l.bare.typst
-  let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
   let held := heldLanes p
   let mut beads : Array String := #[]
   let mut objs : Array String := #[]
@@ -513,13 +519,7 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
       -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
       | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"passup\"" else ", \"pass\""
       | none, none => ""
-      | none, some .strict => ""
-      -- A LAX SQUARE `G(R)φ ⊑ φF(R)` lets every arrow above down past the bead, so it IS the down
-      -- triangle; oplax is the converse `⊑`, the up one.  The pass test is for beads with no family.
-      | none, some .lax => ", \"pass\"" | none, some .oplax => ", \"passup\""
-      | none, some .maps => key .maps
-      | none, some .mapsOplax => key .mapsOplax
-      | none, some .spider => key .spider
+      | none, some m => m.ink
     -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
     if r.unit then
       objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
@@ -552,10 +552,9 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     let tail := match un with
       | none => "none"
       | some r => cell r.shape ++ match r.nat with
-        | some .strict => ""
-        | some m => key m
+        | some m => m.ink
         -- A refuted unit draws no mark, as a refuted bead draws no dot; the `nat:` row says which.
-        | none => key .spider
+        | none => Mark.spider.ink
     "(" ++ num l.x ++ ", " ++ birth ++ ", " ++ death ++ ", " ++ nm ++ ", " ++ tail ++ ")"
   -- THE LANE LIST IS `scripts/diagram`'s `made`: a bead's legs are written where the arms they
   -- replace stood, not at the end.  `dnamed` reads that order to decide which segment of a chain of
