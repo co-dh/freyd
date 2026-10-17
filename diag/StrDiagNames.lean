@@ -151,7 +151,7 @@ attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour
 attribute [diag_unfold] RelSet.Stairs.dClimb RelSet.Stairs.dCost
 -- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
 attribute [diag_noted] RelSet.Stairs.«1or2» RelSet.Stairs.head RelSet.Stairs.zeroRel
-  RelSet.Stairs.T RelSet.Stairs.h RelSet.Stairs.paid
+  RelSet.Stairs.T RelSet.Stairs.h
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇cpL(F)⟨g₁,g₂⟩cat thinL(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
