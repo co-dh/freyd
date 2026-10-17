@@ -101,8 +101,7 @@ public theorem hylo_fixed (I : InitialAlgebra F) {A B : 𝒜}
     (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
   calc T° ≫ F.map (H T h) ≫ h
       = T° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h := by rw [H]
-    _ = T° ≫ F.map ((relCata T)°) ≫ F.map (relCata h) ≫ h := by rw [F.map_comp, Cat.assoc]
-    _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [relCata_cancel I h]
+    _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [F.map_comp, Cat.assoc, relCata_cancel I h]
     _ = (relCata T)° ≫ I.α° ≫ I.α ≫ relCata h := by
         rw [← Cat.assoc T°, ← relCata_cancel_recip I T, Cat.assoc]
     _ = (relCata T)° ≫ relCata h := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha, Cat.id_comp]

@@ -125,7 +125,7 @@
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
   // two rows: nine panels in one row shrink the fractions past reading
-  lean-calc(calc-dpu, breaks: (5,)),
+  lean-calc(calc-dpu, breaks: (4,)),
 )]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -194,7 +194,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_branch") \
     #src[on inputs `V₁` reaches, the body over `[V₁,V₂]` is the `V₁` problem]],
-  lean-calc(calc-dpb, breaks: (3,)),
+  lean-calc(calc-dpb, breaks: (2,)),
 )]<dp-disjoint-branch>
 
 === Checking the conditions
@@ -791,7 +791,7 @@
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.mct_rec@0b3fb980
-  lean-calc(calc-mct, breaks: (3, 6, 9, 12)),
+  lean-calc(calc-mct, breaks: (3, 5, 8, 11)),
 )]<mct-rec>
 
 // B&dM (9.8), p. 234: the book's five hints split into one law per step.

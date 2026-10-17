@@ -1515,17 +1515,10 @@ public theorem mct_rec :
         rw [graft]
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
-          ≫ (graph zip : _ ⟶ dList (NEList A × NEList A))
-          ≫ list (rprodMap (graph (mct st sb cb) : dNE A ⟶ dTree A)
-              (graph (mct st sb cb) : dNE A ⟶ dTree A)) ≫ list binG
-          ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
-        rw [list_comp, Cat.assoc]
-      _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
-            (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ rprodMap (list (graph (mct st sb cb))) (list (graph (mct st sb cb)))
           ≫ (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG
           ≫ (graph (minLFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
-        rw [zip_list]
+        rw [list_comp, Cat.assoc, zip_list]
       _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
             ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
           ≫ (graph zip : _ ⟶ dList (Tree A × Tree A)) ≫ list binG

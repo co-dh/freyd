@@ -46,7 +46,7 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 /-- info: (cost : h ⟶ k) ⟹ F(cost)k≤cost°=h cost≤cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
-  Lean.logInfo (← formula ``Freyd.Alg.pres_of_cost.step_5 false)
+  Lean.logInfo (← formula ``Freyd.Alg.pres_of_cost.step_4 false)
 
 -- WE ONLY REMOVE SPACE WHEN SPACE ARE LIMITED: the same declaration SPACED, as a formula set as text
 -- prints it — every two juxtaposed factors apart, every relation sign set off — and the two modes
@@ -58,8 +58,8 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 /-- info: (cost : h ⟶ k) ⟹ F(cost) k ≤ cost° = h cost ≤ cost° -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
-  let s ← formula ``Freyd.Alg.pres_of_cost.step_5
-  unless s.replace " " "" == (← formula ``Freyd.Alg.pres_of_cost.step_5 false).replace " " "" do
+  let s ← formula ``Freyd.Alg.pres_of_cost.step_4
+  unless s.replace " " "" == (← formula ``Freyd.Alg.pres_of_cost.step_4 false).replace " " "" do
     throwError "the two modes differ in more than spaces: {s}"
   Lean.logInfo s
 
@@ -70,7 +70,7 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
     let c ← Freyd.StrDiag.label e
     let s ← Freyd.StrDiag.withSpaced true (Freyd.StrDiag.label e)
     unless c == want && s == want do throwError "`{want}` prints `{c}` compact and `{s}` spaced"
-  let ci ← Lean.getConstInfo ``Freyd.Alg.pres_of_cost.step_5
+  let ci ← Lean.getConstInfo ``Freyd.Alg.pres_of_cost.step_4
   Lean.Meta.forallTelescope ci.type fun xs body => do
     -- `F.map cost`, the first factor of the statement's left side
     let some (_, l, _) := Freyd.StrDiag.split body | throwError "pres_of_cost.step_5 states no relation"
