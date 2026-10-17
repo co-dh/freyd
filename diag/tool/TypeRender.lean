@@ -87,6 +87,11 @@ def hex8 (k : UInt64) : String :=
 /-- A hom in the note's spelling: each end through `label`, the rule every route's text goes
     through, and the arrow set tight as the note sets it, `[A]⟶[B]`. -/
 private def hom? (t : Expr) (piece : String → String := id) (brk := "") : MetaM (Option String) := do
+  -- An ALGEBRA's type `Alg F X` is a hom too, but it names what the arrow is: `Alg(F,X)`, the
+  -- relator as its lane spells it and the carrier as an object.  Matched on the head constant,
+  -- before anything reduces the abbreviation to the bare `F(X)⟶X`.
+  if let (``Freyd.Alg.Alg, #[_, _, f, x]) := t.getAppFnArgs then
+    return some (piece ("Alg(" ++ (← relLabel f) ++ "," ++ (← label x) ++ ")"))
   let some (a, b) := homObjs? t | return none
   return some (piece ((← label a) ++ "⟶") ++ brk ++ piece (← label b))
 

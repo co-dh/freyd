@@ -244,11 +244,15 @@ public theorem relCata_fusion (I : InitialAlgebra F) {B C : 𝒜} {R : F.obj B �
   So the strict category is what the proof gives, and it is the cheaper one; the lax category's
   statement is `comp_le_relCata` and is not restated here. -/
 
+/-- `Alg(F,X)`, the type of an `F`-ALGEBRA on the carrier `X`: an arrow `F(X)⟶X`, a relation, not
+    necessarily a map.  A declaration that IS an algebra is stated at this type, so its type says so. -/
+@[expose] public abbrev Alg {𝒜 : Type u} [Allegory 𝒜] (F : Relator 𝒜 𝒜) (X : 𝒜) := F.obj X ⟶ X
+
 /-- An `F`-ALGEBRA (B&dM p. 121): a carrier with an algebra — a RELATION, not necessarily a
     map — on it.  The objects of the category the fold is natural over. -/
 public structure Algebra {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
   carrier : 𝒜
-  alg : F.obj carrier ⟶ carrier
+  alg : Alg F carrier
 
 /-- A HOMOMORPHISM of `F`-algebras: `R S = F(S) Q`, the arrows of the STRICT algebra category
     (see the section note for why the lax condition is not the one taken). -/

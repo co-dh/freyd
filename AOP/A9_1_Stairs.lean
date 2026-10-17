@@ -57,8 +57,8 @@ public theorem T_cata : (cataR T : dClimb ⟶ dCost) = list ι ≫ concatR := by
 /-- `0 : 𝟏⟶ℕ`, nothing paid on the empty climb. -/
 @[expose] public def zeroRel : dL Unit ⟶ (⟨Nat⟩ : RelSet.{0}) := graph fun _ => 0
 
-/-- **`h : F(ℕ)⟶ℕ`**, `h ≜ [0,(head×𝟙)+]`: pay the stair stood on, not the one stepped over. -/
-@[expose] public def h : (F Unit N2).obj (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+/-- **`h : Alg(F,ℕ)`**, `h ≜ [0,(head×𝟙)+]`: pay the stair stood on, not the one stepped over. -/
+@[expose] public def h : Alg (F Unit N2) (⟨Nat⟩ : RelSet.{0}) :=
   junc (sumCop (dL Unit) ⟨N2 × Nat⟩) zeroRel
     (rprodMap head (𝟙 (⟨Nat⟩ : RelSet.{0})) ≫ (plusRel : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ _))
 
