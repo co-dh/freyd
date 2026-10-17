@@ -130,14 +130,17 @@ FORCE:
 cite: $(DB)
 	./scripts/cite-check $(CITESRC)
 ifeq ($(NOTE),aop)
-	$(MAKE) binders
+cite: binders
 endif
 
 # Collections are `xs` (a collection of collections `xss`) and a membership's element is named after its
 # collection, in every declaration the companion note draws; the rule is AOP's, so only `NOTE=aop` runs it.
 # The lists are `diag-export --list`'s, i.e. exactly the declarations the note's selectors name.
+# A PREREQUISITE, not a `$(MAKE) binders` sub-make, so it orders against the parent's goals under `-j`:
+# the listing compiles the note, so it waits for `ref-ids` to draw the `#import`s (a new `.calc` failed
+# "file not found" on the first run), and for `panels`, whose listing writes the same typst-run log.
 BINDERLISTS := .lake/build/binder-lists
-binders: exe
+binders: $(DB) | ref-ids panels
 	mkdir -p $(BINDERLISTS)
 	./scripts/diag-export --prepared --list $(BINDERLISTS) lean-panel lean-circuit lean-walk lean-cd lean-graph lean-formula lean-cited lean-type lean-value
 	./scripts/cap lake env lean --run diag/tool/BinderNames.lean $(BINDERLISTS)/*
