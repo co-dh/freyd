@@ -213,7 +213,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑≥`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-calc(calc-dptu, breaks: (3,)),
+  lean-calc(calc-dptu, breaks: (4,)),
 )]<dp-laws-93>
 
 
