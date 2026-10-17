@@ -361,15 +361,15 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mleSpec")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`mle` must be contained in it: a shortest edit sequence that edits back to the given pair],
-// lean:AOP.A9_2_Edit.Op@5aeb2081
+// lean:AOP.A9_2_Edit.Op@088ec9af
 // lean:AOP.A9_2_Edit.F_obj@ec51a642
-// lean:AOP.A9_2_Edit.edit_cata@2dc97e76
+// lean:AOP.A9_2_Edit.edit_cata@1952f0c0
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
-// lean:AOP.A9_2_Edit.empty_iff@0a966621
-// lean:AOP.A9_2_Edit.baseFn@69cf0cc4
-// lean:AOP.A9_2_Edit.stepFn@427367e6
+// lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
+// lean:AOP.A9_2_Edit.baseFn@450d4154
+// lean:AOP.A9_2_Edit.stepFn@e8719088
 // lean:AOP.A9_2_Edit.mleSpec@87170ef5
 )]<edit-defn>
 
@@ -406,11 +406,11 @@
  #src[,
       // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
  ] —
-      // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+      // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
  `edit (𝟙×suffix)⊑R° edit` #src[],
-      // lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+      // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
  `edit (suffix×𝟙)⊑R° edit` #src[]. `suffix=tail*`
-      // lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
+      // lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
@@ -507,13 +507,13 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
     [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step3@896bfb56
+     // lean:AOP.A9_2_Edit.edit_thin_step3@3276aa63
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
       adds one to both lengths whatever the two operations are]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step4@7e7d3079
+     // lean:AOP.A9_2_Edit.edit_thin_step4@46e2e6a4
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
 )]<edit-thin>
 
@@ -522,7 +522,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
     #src[cutting a front off either string an edit sequence produces (`edit V°`) leaves a pair that
      a sequence no longer produces (`R° edit`)]],
-     // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+     // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs"), [])],
@@ -530,24 +530,24 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs"),
     [#src[`V≜suffix°×suffix°`, and `×` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@0604c8cb
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@93b78f1f
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
     [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
       `cpy` to an `ins`. Proved by induction at `suffix` directly, not through `suffix=tail*` and
       `BA⊑CB⟹BA*⊑C*B` as the book does]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@5adf6ffd lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@1cc1f51a lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs"),
     [#src[`edit (𝟙×suffix)⊑R° edit`, the mirror image: `cpy` weakens to a `del`]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@9062388e lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@57addf8e lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs"),
     [#src[`R°` is transitive, `≤` being so]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@12b537e9
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@0b83e93d
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
 )]<edit-V>
 
@@ -555,7 +555,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@d83b12c4
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@54c2fc03
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
@@ -587,15 +587,15 @@
 
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.mle_head_column"), #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
-     // lean:AOP.A9_2_Edit.mle@9c01e9fc lean:AOP.A9_2_Edit.mle_head_column@c8a15220 lean:AOP.A9_2_Edit.column@87907e0c
+     // lean:AOP.A9_2_Edit.mle@58d2b679 lean:AOP.A9_2_Edit.mle_head_column@8970f6bf lean:AOP.A9_2_Edit.column@c718c599
      `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=del′ tails` \
-     // lean:AOP.A9_2_Edit.column_cata@06a76bd9 lean:AOP.A9_2_Edit.fstcol@e72647f8 lean:AOP.A9_2_Edit.column_nil@63c24991
+     // lean:AOP.A9_2_Edit.column_cata@5daa35d1 lean:AOP.A9_2_Edit.fstcol@980d0d9a lean:AOP.A9_2_Edit.column_nil@508f2638
      #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
 
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.column_cons") \
-     // lean:AOP.A9_2_Edit.column_cons@bc563c5b lean:AOP.A9_2_Edit.nextcol@170c07d3
+     // lean:AOP.A9_2_Edit.column_cons@e47bc355 lean:AOP.A9_2_Edit.nextcol@b9871d24
      `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`, #h(4pt)
      `xus=zip(xs,zip(init(us),tail(us)))` \
      #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the

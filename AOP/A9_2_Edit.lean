@@ -70,7 +70,7 @@ public inductive Op (A : Type) where
 
 /-- The object carrying the two strings `[A]×[A]`. -/
 @[expose] public abbrev dPair (A : Type) : RelSet.{0} :=
-  ⟨ConsList Unit A × ConsList Unit A⟩
+  ⟨Str A × Str A⟩
 
 /-! ### `Op` is a relator
 
@@ -137,20 +137,20 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
   map_mono h := op_mono h
 
 /-- **edit-defn**: `base` returning `([],[])`. -/
-@[expose] public def baseFn (_ : Unit) : ConsList Unit A × ConsList Unit A :=
+@[expose] public def baseFn (_ : Unit) : Str A × Str A :=
   (ConsList.wrap (), ConsList.wrap ())
 
 /-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, `step (del a,(xs,ys))=([a]⧺xs,ys)`,
     `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
 @[expose] public def stepFn :
-    Op A × (ConsList Unit A × ConsList Unit A) → ConsList Unit A × ConsList Unit A
+    Op A × (Str A × Str A) → Str A × Str A
   | (Op.cpy a, (xs, ys)) => (ConsList.cons a xs, ConsList.cons a ys)
   | (Op.del a, (xs, ys)) => (ConsList.cons a xs, ys)
   | (Op.ins a, (xs, ys)) => (xs, ConsList.cons a ys)
 
 /-- **edit-defn**: the junction `[base,step]` of the two arms, B&dM's algebra of `edit`. -/
 @[expose] public def baseStepFn :
-    (Fobj Unit (Op A) (dPair A)).carrier → ConsList Unit A × ConsList Unit A
+    (Fobj Unit (Op A) (dPair A)).carrier → Str A × Str A
   | Sum.inl u => baseFn u
   | Sum.inr q => stepFn q
 
@@ -159,7 +159,7 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
   graph baseStepFn
 
 /-- **edit-defn**: `edit≜⦇[base,step]⦈`, read as the function it is. -/
-@[expose] public def editFn : ConsList Unit (Op A) → ConsList Unit A × ConsList Unit A
+@[expose] public def editFn : ConsList Unit (Op A) → Str A × Str A
   | ConsList.wrap _ => (ConsList.wrap (), ConsList.wrap ())
   | ConsList.cons op es => stepFn (op, editFn es)
 
@@ -257,8 +257,8 @@ public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
     `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`
     — the thinned decompositions, a copy beating a delete and an insert where available. -/
 @[expose] public def unstepFn [DecidableEq A] :
-    ConsList Unit A × ConsList Unit A →
-      ConsList Unit (Op A × (ConsList Unit A × ConsList Unit A))
+    Str A × Str A →
+      ConsList Unit (Op A × (Str A × Str A))
   | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
   | (ConsList.cons a xs, ConsList.wrap _) =>
       ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ())
@@ -280,8 +280,8 @@ public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
 /-- **edit-laws**, the sound half of `unstep` implementing `frac(step°,∋) thin(U×V)`:
     everything `unstep` returns really is a decomposition, `step (unstep p) = p`. -/
 public theorem unstep_sound [DecidableEq A]
-    (p : ConsList Unit A × ConsList Unit A)
-    (q : Op A × (ConsList Unit A × ConsList Unit A)) (h : inlistP (unstepFn p) q) :
+    (p : Str A × Str A)
+    (q : Op A × (Str A × Str A)) (h : inlistP (unstepFn p) q) :
     stepFn q = p := by
   obtain ⟨xs, ys⟩ := p
   cases xs with
@@ -312,8 +312,8 @@ public theorem unstep_sound [DecidableEq A]
     `del` and `ins` it hides leave behind a LONGER pair, one operation more to spend; where they
     differ both survivors are returned, so nothing is dropped at all. -/
 public theorem unstep_complete [DecidableEq A]
-    (p : ConsList Unit A × ConsList Unit A)
-    (q : Op A × (ConsList Unit A × ConsList Unit A))
+    (p : Str A × Str A)
+    (q : Op A × (Str A × Str A))
     (h : stepFn q = p) :
     ∃ q', inlistP (unstepFn p) q' ∧ V A q'.2 q.2 := by
   obtain ⟨op, x, y⟩ := q
@@ -512,7 +512,7 @@ public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R A
 
 /-- Dropping heads off the RIGHT output: every suffix `y` of `(edit es).2` is reached by an
     edit sequence `fs` no longer than `es`, with the left output unchanged. -/
-public theorem shrink_right : ∀ (es : ConsList Unit (Op A)) {y : ConsList Unit A},
+public theorem shrink_right : ∀ (es : ConsList Unit (Op A)) {y : Str A},
     suffixP y (editFn es).2 → ∃ fs, editFn fs = ((editFn es).1, y) ∧ clen fs ≤ clen es := by
   intro es
   induction es with
@@ -540,7 +540,7 @@ public theorem shrink_right : ∀ (es : ConsList Unit (Op A)) {y : ConsList Unit
         exact ⟨fs, by simp only [editFn_ins, hfs], Nat.le_trans hlen (Nat.le_succ _)⟩
 
 /-- Dropping heads off the LEFT output — the mirror of `shrink_right`, `ins` for `del`. -/
-public theorem shrink_left : ∀ (es : ConsList Unit (Op A)) {x : ConsList Unit A},
+public theorem shrink_left : ∀ (es : ConsList Unit (Op A)) {x : Str A},
     suffixP x (editFn es).1 → ∃ fs, editFn fs = (x, (editFn es).2) ∧ clen fs ≤ clen es := by
   intro es
   induction es with
@@ -751,7 +751,7 @@ public theorem edit_laws :
     `ins` one on the right — and `base` returns nothing else.  This is Proposition 9.1's
     disjointness hypothesis at `[base,step]`. -/
 public theorem step_ne_base (q : Op A × (dPair A).carrier) :
-    stepFn q ≠ ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ()) := by
+    stepFn q ≠ ((ConsList.wrap () : Str A), ConsList.wrap ()) := by
   obtain ⟨op, p⟩ := q
   cases op with
   | cpy a => intro h; injection h with h1 _; cases h1
@@ -773,8 +773,8 @@ public theorem editAlg_junc :
     | inr q => simp [editAlg, step, junc, graph, sumCop]; exact Iff.rfl
 
 /-- **edit-defn**: `empty`, the predicate on `(xs,ys)` with both lists empty. -/
-@[expose] public def emptyP (p : ConsList Unit A × ConsList Unit A) : Prop :=
-  p = ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ())
+@[expose] public def emptyP (p : Str A × Str A) : Prop :=
+  p = ((ConsList.wrap () : Str A), ConsList.wrap ())
 
 /-- `empty` as an arrow: the coreflexive of `emptyP`. -/
 @[expose] public def empty : dPair A ⟶ dPair A := corefl emptyP
@@ -815,24 +815,24 @@ public theorem con_eq_junc :
 public theorem V_eq : V A = rprodMap (suffixR (A := A))° (suffixR (A := A))° := rfl
 
 /-- **edit-defn**: `empty` holds exactly at `(([],[]),([],[]))`. -/
-public theorem empty_iff (p q : ConsList Unit A × ConsList Unit A) :
+public theorem empty_iff (p q : Str A × Str A) :
     empty p q ↔ p = q ∧ p = (ConsList.wrap (), ConsList.wrap ()) := Iff.rfl
 
 /-- **edit-defn**: `unstep ([],[])=[]`. -/
 public theorem unstep_nil [DecidableEq A] :
-    unstepFn ((ConsList.wrap (), ConsList.wrap ()) : ConsList Unit A × ConsList Unit A)
+    unstepFn ((ConsList.wrap (), ConsList.wrap ()) : Str A × Str A)
       = ConsList.wrap () := rfl
 /-- **edit-defn**: `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`. -/
-public theorem unstep_del [DecidableEq A] (a : A) (xs : ConsList Unit A) :
+public theorem unstep_del [DecidableEq A] (a : A) (xs : Str A) :
     unstepFn (ConsList.cons a xs, ConsList.wrap ())
       = ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ()) := rfl
 /-- **edit-defn**: `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`. -/
-public theorem unstep_ins [DecidableEq A] (b : A) (ys : ConsList Unit A) :
+public theorem unstep_ins [DecidableEq A] (b : A) (ys : Str A) :
     unstepFn (ConsList.wrap (), ConsList.cons b ys)
       = ConsList.cons (Op.ins b, (ConsList.wrap (), ys)) (ConsList.wrap ()) := rfl
 /-- **edit-defn**: `unstep ([a]⧺xs,[b]⧺ys)`, a copy where the heads agree, else a delete and an
     insert. -/
-public theorem unstep_cons [DecidableEq A] (a b : A) (xs ys : ConsList Unit A) :
+public theorem unstep_cons [DecidableEq A] (a b : A) (xs ys : Str A) :
     unstepFn (ConsList.cons a xs, ConsList.cons b ys)
       = if a = b then ConsList.cons (Op.cpy a, (xs, ys)) (ConsList.wrap ())
         else ConsList.cons (Op.del a, (xs, ConsList.cons b ys))
@@ -898,7 +898,7 @@ public theorem edit_branch (X : dPair A ⟶ dEdit A) :
       cases w with
       | inl d =>
         have hy : baseStepFn (Sum.inr p)
-            = ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ()) :=
+            = ((ConsList.wrap () : Str A), ConsList.wrap ()) :=
           Eq.trans (Eq.symm hstep) hT
         exact absurd hy (step_ne_base p)
       | inr q => exact ⟨q, rfl⟩)
@@ -1121,7 +1121,7 @@ public theorem minL_R_laxNatural :
   ConsList.cons () (ConsList.cons () (ConsList.wrap ()))
 
 /-- A candidate decomposition: one `del`, the given first string, the second string empty. -/
-@[expose] public def cand (a : A) (xs : ConsList Unit A) : Op A × (dPair A).carrier :=
+@[expose] public def cand (a : A) (xs : Str A) : Op A × (dPair A).carrier :=
   (Op.del a, (xs, ConsList.wrap ()))
 
 /-- `V` pointwise: each string of `p` is a suffix of the corresponding string of `q`. -/
@@ -1508,32 +1508,32 @@ section Tabulation
 
 variable {A : Type}
 
-public instance instInhabitedCL : Inhabited (ConsList Unit A) := ⟨ConsList.wrap ()⟩
+public instance instInhabitedCL : Inhabited (Str A) := ⟨ConsList.wrap ()⟩
 
 /-- `head : [A] → A`; the tabulation only takes it of a non-empty column. -/
-@[expose] public def head [Inhabited A] : ConsList Unit A → A
+@[expose] public def head [Inhabited A] : Str A → A
   | ConsList.wrap _ => default
   | ConsList.cons a _ => a
 
 /-- `tail : [A] → [A]`. -/
-@[expose] public def tail : ConsList Unit A → ConsList Unit A
+@[expose] public def tail : Str A → Str A
   | ConsList.wrap _ => ConsList.wrap ()
   | ConsList.cons _ x => x
 
 /-- `init : [A] → [A]`, the list without its last element. -/
-@[expose] public def init : ConsList Unit A → ConsList Unit A
+@[expose] public def init : Str A → Str A
   | ConsList.wrap _ => ConsList.wrap ()
   | ConsList.cons _ (ConsList.wrap _) => ConsList.wrap ()
   | ConsList.cons a (ConsList.cons b x) => ConsList.cons a (init (ConsList.cons b x))
 
 /-- `last : [A] → A`; the tabulation only takes it of a non-empty column. -/
-@[expose] public def last [Inhabited A] : ConsList Unit A → A
+@[expose] public def last [Inhabited A] : Str A → A
   | ConsList.wrap _ => default
   | ConsList.cons a (ConsList.wrap _) => a
   | ConsList.cons _ (ConsList.cons b x) => last (ConsList.cons b x)
 
 /-- `zip : [A]×[B] → [A×B]`, cut to the shorter list. -/
-@[expose] public def zip {B : Type} : ConsList Unit A → ConsList Unit B → ConsList Unit (A × B)
+@[expose] public def zip {B : Type} : Str A → ConsList Unit B → ConsList Unit (A × B)
   | ConsList.wrap _, ConsList.wrap _ => ConsList.wrap ()
   | ConsList.wrap _, ConsList.cons _ _ => ConsList.wrap ()
   | ConsList.cons _ _, ConsList.wrap _ => ConsList.wrap ()
@@ -1555,7 +1555,7 @@ variable [DecidableEq A]
 /-- **edit-tabulation**: `mle`, the recursive characterisation of the program `edit-laws` states
     (B&dM p.228): a copy where the heads agree, otherwise the `R`-better of a delete and an
     insert. -/
-@[expose] public def mle : ConsList Unit A × ConsList Unit A → ConsList Unit (Op A)
+@[expose] public def mle : Str A × Str A → ConsList Unit (Op A)
   | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
   | (ConsList.cons a xs, ConsList.wrap _) => ConsList.cons (Op.del a) (mle (xs, ConsList.wrap ()))
   | (ConsList.wrap _, ConsList.cons b ys) => ConsList.cons (Op.ins b) (mle (ConsList.wrap (), ys))
@@ -1567,11 +1567,11 @@ termination_by p => clen p.1 + clen p.2
 decreasing_by all_goals (simp only [clen]; omega)
 
 /-- **edit-tabulation**: `column(xs)(ys)=[mle(u,ys)∣u←tails(xs)]`. -/
-@[expose] public def column (xs ys : ConsList Unit A) : ConsList Unit (ConsList Unit (Op A)) :=
+@[expose] public def column (xs ys : Str A) : ConsList Unit (ConsList Unit (Op A)) :=
   cmap (fun u => mle (u, ys)) (tailsFn xs)
 
 /-- **edit-tabulation**: `fstcol=list(del) tails`, the rightmost column. -/
-@[expose] public def fstcol (xs : ConsList Unit A) : ConsList Unit (ConsList Unit (Op A)) :=
+@[expose] public def fstcol (xs : Str A) : ConsList Unit (ConsList Unit (Op A)) :=
   tailsFn (cmap Op.del xs)
 
 namespace Tab
@@ -1594,36 +1594,36 @@ end Tab
 
 /-- **edit-tabulation**: `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`,
     `xus=zip(xs,zip(init(us),tail(us)))`. -/
-@[expose] public def nextcol (xs : ConsList Unit A)
+@[expose] public def nextcol (xs : Str A)
     (p : A × ConsList Unit (ConsList Unit (Op A))) :
     ConsList Unit (ConsList Unit (Op A)) :=
   cfold (fun _ => Tab.base (p.1, last p.2)) (Tab.step p.1) (zip xs (zip (init p.2) (tail p.2)))
 
-theorem nextcol_cons (a b : A) (x : ConsList Unit A) (u v : ConsList Unit (Op A))
+theorem nextcol_cons (a b : A) (x : Str A) (u v : ConsList Unit (Op A))
     (t : ConsList Unit (ConsList Unit (Op A))) :
     nextcol (ConsList.cons a x) (b, ConsList.cons u (ConsList.cons v t))
       = Tab.step b (a, (u, v)) (nextcol x (b, ConsList.cons v t)) := by
   cases t <;> rfl
 
 /-- The top entry of `column(xs)(ys)` is `mle(xs,ys)`. -/
-theorem column_top (xs ys : ConsList Unit A) :
+theorem column_top (xs ys : Str A) :
     ∃ t, column xs ys = ConsList.cons (mle (xs, ys)) t := by
   cases xs with
   | wrap u => cases u; exact ⟨_, rfl⟩
   | cons _ _ => exact ⟨_, rfl⟩
 
 /-- **edit-tabulation**: `mle(xs,ys)=head(column(xs,ys))`. -/
-public theorem mle_head_column (xs ys : ConsList Unit A) :
+public theorem mle_head_column (xs ys : Str A) :
     mle (xs, ys) = head (column xs ys) := by
   obtain ⟨t, ht⟩ := column_top xs ys
   rw [ht]; rfl
 
-theorem mle_nil_right (u : Unit) : ∀ xs : ConsList Unit A,
+theorem mle_nil_right (u : Unit) : ∀ xs : Str A,
     mle (xs, ConsList.wrap u) = cmap Op.del xs
   | ConsList.wrap _ => by rw [mle]; rfl
   | ConsList.cons a xs => by rw [mle, mle_nil_right () xs]; rfl
 
-theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : ConsList Unit A,
+theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : Str A,
     tailsFn (cmap f xs) = cmap (cmap f) (tailsFn xs)
   | ConsList.wrap _ => rfl
   | ConsList.cons a xs => by
@@ -1631,7 +1631,7 @@ theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : ConsList Unit A,
       rw [tails_cmap f xs]; rfl
 
 /-- **edit-tabulation**: the rightmost column is `fstcol(xs)`. -/
-public theorem column_nil (xs : ConsList Unit A) (u : Unit) :
+public theorem column_nil (xs : Str A) (u : Unit) :
     column xs (ConsList.wrap u) = fstcol xs := by
   show cmap _ (tailsFn xs) = tailsFn (cmap Op.del xs)
   rw [tails_cmap, show (fun v => mle (v, ConsList.wrap u)) = cmap Op.del from
@@ -1639,7 +1639,7 @@ public theorem column_nil (xs : ConsList Unit A) (u : Unit) :
 
 /-- **edit-tabulation**: `column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` — each column is
     built from the one to its right. -/
-public theorem column_cons (b : A) (ys : ConsList Unit A) : ∀ xs : ConsList Unit A,
+public theorem column_cons (b : A) (ys : Str A) : ∀ xs : Str A,
     column xs (ConsList.cons b ys) = nextcol xs (b, column xs ys)
   | ConsList.wrap u => by
       cases u
@@ -1659,7 +1659,7 @@ public theorem column_cons (b : A) (ys : ConsList Unit A) : ∀ xs : ConsList Un
 
 /-- **edit-tabulation**: `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈` — the columns are built right to
     left. -/
-public theorem column_cata (xs : ConsList Unit A) :
+public theorem column_cata (xs : Str A) :
     (graph (column xs) : dList A ⟶ ⟨ConsList Unit (ConsList Unit (Op A))⟩)
       = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
   consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
