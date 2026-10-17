@@ -101,7 +101,7 @@
   (sym: [`Λ(T°)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1"), meaning: [#kq("10 15 20 30") ↦ `{`#kq("(,10;15 20 30)")`, `#kq("(10 15;20 30)")`}`]),
   (sym: [`F(M)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1"), value: leanf("Freyd.Alg.RelSet.CL.Fmap_eq_sumMap"), meaning: [#kq("(,10;15 20 30)") ↦ #kq("(,10;35)"), #kq("(10 15;20 30)") ↦ #kq("(10 15;20)"): `M(`#kq("15 20 30")`) = 35` (cuts pay `65`, `35`, `45`), `M(`#kq("20 30")`) = 20` (cuts pay `50`, `20`)]),
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [#kq("(,10;35)") ↦ `10 + 35 = 45`; #kq("(10 15;20)") ↦ `10 + 20 = 30`]),
-  (sym: [`P(F(M)h)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2"), meaning: [`{45, 30}`]),
+  (sym: [`P(F(M)h)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2"), meaning: [#kq("x[;0]+'.z.s' y") \ `{45, 30}`]),
   (sym: [`est(≤)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f3"), meaning: [`{45, 30} ↦ 30`]),
 )<dp-lower-746>
 
