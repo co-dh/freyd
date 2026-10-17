@@ -47,7 +47,7 @@
   [`T°`], [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], [take 1 or 2 from the head: `T°([10,15,20,30])` is `([10], [15,20,30])` or `([10,15], [20,30])`],
   [`⦇T⦈`],
   [#leanf("Freyd.Alg.RelSet.Stairs.T_cata")],
-  [concat, flattening a climb into its cost list],
+  [each segment has 1 or 2 stairs (`′` = on every element), then `concat` joins them into the cost list],
   [`⦇T⦈°`], [`[ℕ] ⟶ [[ℕ]]`], [every way to cut a cost list into segments of length 1–2],
   [`h`],
   [#leanf("Freyd.Alg.RelSet.Stairs.h")],
