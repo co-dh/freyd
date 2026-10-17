@@ -61,7 +61,7 @@ public theorem greedy_dp_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj
         comp_mono_left _ (comp_mono_right (est_le_eps Q) _)
       _ = T° ≫ F.map (Λ (H T h) ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
       _ ⊑ T° ≫ F.map (H T h) ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le (H T h) R)) h)
-      _ = H T h := H_fixed inferInstance T h
+      _ = H T h := hylo_fixed inferInstance T h
 
 calc_steps greedy_dp_lower
 

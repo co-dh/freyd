@@ -155,7 +155,7 @@ public theorem greedy_dp_context (I : InitialAlgebra F)
     mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (greedy_dp_prefixed_context hh hctx1 htrans (hylo_fixed I h T) hctx2))
+    (greedy_dp_prefixed_context hh hctx1 htrans (hylo_fixed I T h) hctx2))
 
 end Freyd.Alg
 
@@ -940,8 +940,8 @@ public theorem tardy_laws_prefixed [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (
       ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) := by
   subst hX
   have hfix := hylo_fixed (F := F Unit Job) (initial Unit Job)
-    (graph (con (L := Unit) (E := Job))) bagAlg
-  rw [tardy_H] at hfix
+    bagAlg (graph (con (L := Unit) (E := Job)))
+  rw [H, tardy_H] at hfix
   exact greedy_dp_prefixed_context (graph_map con)
     (by rw [Allegory.recip_recip]; exact tardy_mono ct dt wt) (R_trans ct dt wt) hfix
     (tardy_greedy ct dt wt hct hwt)

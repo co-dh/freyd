@@ -82,23 +82,31 @@ public theorem relCata_cancel_recip (I : InitialAlgebra F) {A : 𝒜}
   rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F (relCata R)] at hcancel_recip
   exact hcancel_recip
 
+/-- **`H≜⦇T⦈°⦇h⦈ : A⟶B`** (B&dM p.220): decompose through the coalgebra `T°` and reassemble
+    through the algebra `h`.  It is the arrow the optimisation problem `H%∋ est(R)` is taken of,
+    and a name of its own is what lets a picture draw it as one bead. -/
+@[expose] public def H {A B : 𝒜} [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
+  (relCata T)° ≫ relCata h
+
 /-! ### The fixed-point chain (note §11.6.4a)
 
-  `S°F(⦇S⦈°⦇R⦈)R = S°F(⦇S⦈°)F(⦇R⦈)R = S°F(⦇S⦈°)α⦇R⦈ = ⦇S⦈°α°α⦇R⦈ = ⦇S⦈°𝟙⦇R⦈ = ⦇S⦈°⦇R⦈`, one
-  `calc`, one law per step; `calc_steps` names the steps. -/
+  `T°F(H)h = T°F(⦇T⦈°⦇h⦈)h = T°F(⦇T⦈°)F(⦇h⦈)h = T°F(⦇T⦈°)α⦇h⦈ = ⦇T⦈°α°α⦇h⦈ = ⦇T⦈°⦇h⦈ = H`, one
+  `calc`, one law per step, with `H≜⦇T⦈°⦇h⦈` unfolded at both ends so the table draws `H` as one
+  arrow; `calc_steps` names the steps. -/
 
-/-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored) — the form in which
-    ch. 9's dynamic-programming theorems consume the hylomorphism theorem (B&dM p.220, "definition
-    of `H` and hylomorphism theorem"). -/
+/-- The hylomorphism FIXED-POINT EQUATION `T°F(H)h = H`: `H` solves its own recursion — the form in
+    which ch. 9's dynamic-programming theorems consume the hylomorphism theorem (B&dM p.220,
+    "definition of `H` and hylomorphism theorem"). -/
 public theorem hylo_fixed (I : InitialAlgebra F) {A B : 𝒜}
-    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
-    S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R :=
-  calc S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
-      = S° ≫ F.map ((relCata S)°) ≫ F.map (relCata R) ≫ R := by rw [F.map_comp, Cat.assoc]
-    _ = S° ≫ F.map ((relCata S)°) ≫ I.α ≫ relCata R := by rw [relCata_cancel I R]
-    _ = (relCata S)° ≫ I.α° ≫ I.α ≫ relCata R := by
-        rw [← Cat.assoc S°, ← relCata_cancel_recip I S, Cat.assoc]
-    _ = (relCata S)° ≫ relCata R := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha, Cat.id_comp]
+    (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
+  calc T° ≫ F.map (H T h) ≫ h
+      = T° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h := by rw [H]
+    _ = T° ≫ F.map ((relCata T)°) ≫ F.map (relCata h) ≫ h := by rw [F.map_comp, Cat.assoc]
+    _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [relCata_cancel I h]
+    _ = (relCata T)° ≫ I.α° ≫ I.α ≫ relCata h := by
+        rw [← Cat.assoc T°, ← relCata_cancel_recip I T, Cat.assoc]
+    _ = (relCata T)° ≫ relCata h := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha, Cat.id_comp]
+    _ = H T h := by rw [H]
 
 calc_steps hylo_fixed
 
@@ -144,7 +152,7 @@ public theorem hylo_eq_mu (I : InitialAlgebra F) {A B : 𝒜}
     (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
     (relCata S)° ≫ relCata R = mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
   le_antisymm (hylo_le_of_prefixed I (mu_prefixed (hyloBody_monotonic R S)))
-    (mu_le_of_fixed (hylo_fixed I R S))
+    (mu_le_of_fixed (hylo_fixed I S R))
 
 end Hylo
 

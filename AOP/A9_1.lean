@@ -37,7 +37,7 @@ import AOP.A5_4
 -- The worked instance of Proposition 9.2 states `concat`, `length`, `sum` and `≤` on `ℕ`.
 public import AOP.A5_6_ListCombinators
 public import AOP.A7_2_RelSet
-import AOP.A6_3
+public import AOP.A6_3
 import AOP.A7_2
 
 universe u
@@ -47,31 +47,9 @@ open PowerAllegory
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
-/-- **`H≜⦇T⦈°⦇h⦈ : A⟶B`** (B&dM p.220): decompose through the coalgebra `T°` and reassemble
-    through the algebra `h`.  It is the arrow the optimisation problem `H%∋ est(R)` is taken of,
-    and a name of its own is what lets a picture draw it as one bead. -/
-@[expose] public def H [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
-  (relCata T)° ≫ relCata h
-
 /-- **`M≜Λ(H) est(R)`** (B&dM p.220): the problem to be solved — an `R`-extreme answer of `H`. -/
 @[expose] public def M [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) (R : B ⟶ B) : A ⟶ B :=
   Λ (H T h) ≫ est R
-
-/-- **`T°F(H)h = H`**: `H` solves its own recursion — the fold law for `h`, the fold law for `T`
-    conversed and `α°α = 𝟙`, one `calc` step each, with `H≜⦇T⦈°⦇h⦈` unfolded at both ends so the
-    table draws `H` as one arrow. -/
-public theorem H_fixed (I : InitialAlgebra F) (T : F.obj A ⟶ A)
-    (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
-  calc T° ≫ F.map (H T h) ≫ h
-      = T° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h := by rw [H]
-    _ = T° ≫ F.map ((relCata T)°) ≫ F.map (relCata h) ≫ h := by rw [F.map_comp, Cat.assoc]
-    _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [relCata_cancel I h]
-    _ = (relCata T)° ≫ I.α° ≫ I.α ≫ relCata h := by
-        rw [← Cat.assoc T°, ← relCata_cancel_recip I T, Cat.assoc]
-    _ = (relCata T)° ≫ relCata h := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha, Cat.id_comp]
-    _ = H T h := by rw [H]
-
-calc_steps H_fixed
 
 /-- **The thinning condition** of Theorem 9.2 (B&dM p.222): `QF(H)h ⊑ F(H)hR` — thinning the
     decompositions by `Q` before solving them only moves the answer up `R`. -/
@@ -87,7 +65,7 @@ public theorem recip_of_fixed [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj 
   have h1 : (T° ≫ F.map (H T h) ≫ h)° = h° ≫ F.map ((H T h)°) ≫ T := by
     rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip,
       ← Relator.preservesRecip_of_tabular F (H T h), Cat.assoc]
-  rw [← h1, H_fixed inferInstance T h]
+  rw [← h1, hylo_fixed inferInstance T h]
 
 /-- `TΛ(T°) ⊑ ∈`: the cancellation of the transpose `Λ(T°)`, conversed. -/
 public theorem comp_Λ_recip_le_recip_eps {C : 𝒜} (T : C ⟶ A) : T ≫ Λ (T°) ⊑ (∋ C)° := by
@@ -102,7 +80,7 @@ public theorem dynamic_programming_lower [InitialAlgebra F] {h : F.obj B ⟶ B} 
   calc Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R
         ⊑ T° ≫ F.map (M T h R) ≫ h := Λ_comp_powerRel_comp_est_le _ _ R
       _ ⊑ T° ≫ F.map (H T h) ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le (H T h) R)) h)
-      _ = H T h := H_fixed inferInstance T h
+      _ = H T h := hylo_fixed inferInstance T h
 
 calc_steps dynamic_programming_lower
 
@@ -202,7 +180,7 @@ public theorem dynamic_programming_thin_lower [InitialAlgebra F] {h : F.obj B �
           comp_mono_right (thinRel_comp_eps_le Q) (F.map (Λ (H T h) ≫ est R) ≫ h))
       _ = T° ≫ F.map (Λ (H T h) ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
       _ ⊑ T° ≫ F.map (H T h) ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le (H T h) R)) h)
-      _ = H T h := H_fixed inferInstance T h
+      _ = H T h := hylo_fixed inferInstance T h
 
 calc_steps dynamic_programming_thin_lower
 
@@ -664,7 +642,7 @@ public theorem dynamic_programming_thin_context (I : InitialAlgebra F)
     (hctx2 : ThinCondition T h R (Q ∩ (T ≫ T°))) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ M T h R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hh hctx1 htrans (hylo_fixed I h T) hctx2))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hh hctx1 htrans (hylo_fixed I T h) hctx2))
 
 /-- **Theorem 9.1 in context**: the plain (un-thinned) dynamic-programming recursion refines the
     optimisation spec when `h` is monotonic only ON `H`'s domain of definition, `R° ∩ (H°·H)` —
