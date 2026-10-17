@@ -730,6 +730,11 @@ public theorem edit_laws :
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H, M] at key; rwa [hH] at key
 
+/-- **edit-laws**, the specification `mle` is derived from: `(edit°)%∋ est(R)`, a shortest edit
+    sequence among those that edit back to the given pair. -/
+@[expose] public def mleSpec : dPair Char ⟶ dEdit Char :=
+  Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char)
+
 /-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
 
   `base` returns `([],[])` and no `step` returns it, so the body's thinning splits and the third
@@ -1701,6 +1706,9 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.editFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditFn : Unexpander
   | _ => `($(mkIdent `edit))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.mleSpec] public meta def Freyd.Alg.RelSet.Edit.unexpandMleSpec : Unexpander
+  | _ => `($(mkIdent `spec))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.unstepFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditUnstepFn : Unexpander
   | _ => `($(mkIdent `unstep))
