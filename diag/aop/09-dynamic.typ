@@ -84,6 +84,7 @@
 
 #import "../generated/Freyd.Alg.dynamic_programming_lower.calc.typ" as calc-dpl
 #import "../generated/Freyd.Alg.dynamic_programming_upper.calc.typ" as calc-dpu
+#import "../generated/Freyd.Alg.dynamic_programming_upper_head.calc.typ" as calc-dpuh
 #import "../generated/Freyd.Alg.dynamic_programming_upper_tail.calc.typ" as calc-dput
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
@@ -122,6 +123,17 @@
      // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
   lean-calc(calc-dpu),
 )]<dp-upper>
+
+// The head (9.3) shares with (9.3) with thinning below, `Y` standing for what follows #frc([`T°`]).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper_head") \
+    #src[going from an answer `b` of `H` back to its input, then by #frc([`T°`]), `Y` and the step
+     `P(F(M)h) est(≤)` to `b'`, is within taking `b` apart by `h°F(H°)`, passing to a set `∈` holds
+     the parts in, then by `Y` to a set whose every member, solved by `M` and assembled by `h`, gives
+     some `c` with `b' ≤ c`]],
+     // lean:AOP.A9_1.dynamic_programming_upper_head@28c5deb8
+  lean-calc(calc-dpuh),
+)]<dp-upper-head>
 
 // The tail (9.3) shares with (9.3) with thinning below: both end by citing it.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -180,7 +192,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑≥`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-calc(calc-dptu, breaks: (4,)),
+  lean-calc(calc-dptu, breaks: (3,)),
 )]<dp-laws-93>
 
 

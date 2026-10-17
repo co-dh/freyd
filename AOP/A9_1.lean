@@ -84,6 +84,26 @@ public theorem dynamic_programming_lower [InitialAlgebra F] {h : F.obj B ⟶ B} 
 
 calc_steps dynamic_programming_lower
 
+/-- The head (9.3) and (9.3) with thinning share, `Y` the segment between `Λ(T°)` and `P(F(M)h)`:
+    `H°Λ(T°)Y P(F(M)h) est(≤) ⊑ h°F(H°)∈Y(∈\F(M)h≥)`. -/
+public theorem dynamic_programming_upper_head [InitialAlgebra F] {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {«≤» : B ⟶ B} (Y : P (F.obj A) ⟶ P (F.obj A)) :
+    (H T h)° ≫ Λ (T°) ≫ Y ≫ powerRel (F.map (M T h «≤») ≫ h) ≫ est «≤»
+      ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ Y ≫ ((∋ (F.obj A))° \ ((F.map (M T h «≤») ≫ h) ≫ «≤»°)) :=
+  calc (H T h)° ≫ Λ (T°) ≫ Y ≫ powerRel (F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ est «≤»
+        ⊑ (H T h)° ≫ Λ (T°) ≫ Y ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
+        comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ «≤»)))
+      _ = h° ≫ F.map ((H T h)°) ≫ T ≫ Λ (T°) ≫ Y ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
+        id ((congrArg (· ≫ _) (recip_of_fixed T h)).trans
+          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
+      _ ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ Y ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
+        comp_mono_left _ (comp_mono_left _ (by
+        simpa only [Cat.assoc] using
+          comp_mono_right (comp_Λ_recip_le_recip_eps T)
+            (Y ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)))))
+
+calc_steps dynamic_programming_upper_head
+
 /-- The tail (9.3) and (9.3) with thinning share: `h°F(H°)∈(∈\F(M)h≥) ⊑ ≥` — once an answer of `H`
     is taken apart by `h°F(H°)` into the parts `∈` reaches, solving those parts by `M` and assembling
     by `h` lands `≥`-below it. -/
@@ -111,15 +131,8 @@ public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
     (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°) :
     (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (M T h «≤») ≫ h) ≫ est «≤» ⊑ «≤»° :=
   calc (H T h)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ est «≤»
-        ⊑ (H T h)° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ «≤»))
-      _ = h° ≫ F.map ((H T h)°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        id ((congrArg (· ≫ _) (recip_of_fixed T h)).trans
-          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
-      _ ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        comp_mono_left _ (comp_mono_left _ (by
-        simpa only [Cat.assoc] using
-          comp_mono_right (comp_Λ_recip_le_recip_eps T) ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°))))
+        ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) := by
+        simpa only [Cat.id_comp] using dynamic_programming_upper_head (T := T) (h := h) («≤» := «≤») (𝟙 _)
       _ ⊑ «≤»° := dynamic_programming_upper_tail hh hmono htrans
 
 calc_steps dynamic_programming_upper
@@ -202,18 +215,9 @@ public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B �
     (hQ : ThinCondition T h «≤» Q) :
     (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (M T h «≤») ≫ h) ≫ est «≤» ⊑ «≤»° :=
   calc (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ est «≤»
-        ⊑ (H T h)° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ «≤»)))
-      _ = h° ≫ F.map ((H T h)°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+        ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ thinRel Q
             ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        id ((congrArg (· ≫ _) (recip_of_fixed T h)).trans
-          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
-      _ ⊑ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ thinRel Q
-            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
-        comp_mono_left _ (comp_mono_left _ (by
-        simpa only [Cat.assoc] using
-          comp_mono_right (comp_Λ_recip_le_recip_eps T)
-            (thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)))))
+        dynamic_programming_upper_head (thinRel Q)
       _ ⊑ h° ≫ F.map ((H T h)°) ≫ Q° ≫ (∋ (F.obj A))°
             ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) :=
         comp_mono_left _ (comp_mono_left _ (by
