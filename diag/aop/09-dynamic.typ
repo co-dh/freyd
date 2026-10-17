@@ -36,7 +36,7 @@
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
 #ex-table(
   (sym: [`F`], decl: "Freyd.Alg.RelSet.Stairs.F_obj", type: [`Rel ⟶ Rel`], meaning: [`()` ends a climb; `(`#kq("10 15")`, x)` takes the segment #kq("10 15"), then `x` for the rest]),
-  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`) = `#kq(",10"), `1or2(`#kq("10 15")`) = `#kq("10 15"); #kq("10 15 20") has no image: three stairs]),
+  (sym: [`1or2?`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`) = `#kq(",10"), `1or2(`#kq("10 15")`) = `#kq("10 15"); #kq("10 15 20") has no image: three stairs; `ℕ`#super[1,2]: the lists it lets through]),
   (sym: [`T`], decl: "Freyd.Alg.RelSet.Stairs.T", meaning: [put the segment in front of the rest: `T`#kq("(10 15;20 30)")` = `#kq("10 15 20 30")]),
   (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], meaning: [take 1 or 2 from the head: `T°(`#kq("10 15 20 30")`)` is #kq("(10;15 20 30)") or #kq("(10 15;20 30)")]),
   (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈`#kq("(10;15 20;30)")` = `#kq("10 15 20 30"); #kq("(10 15 20;30)") has no image: #kq("10 15 20") has three stairs (q's `raze` `,/` on a legal climb only)]),
@@ -96,7 +96,7 @@
 
 // (9.2)'s left side on the stair input, one arrow per row.
 #ex-table(head: [*example of* #context link(<dp-lower>, dispid(query(<dp-lower>).first().location(), raw: true))],
-  (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ]×[ℕ]`], meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): `1or2` keeps the first part at 1 or 2 stairs]),
+  (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ]×[ℕ]`], meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): the first part is in `ℕ`#super[1,2]]),
   (sym: [`Λ(T°)`], type: [`[ℕ] ⟶ P(1 + [ℕ]×[ℕ])`], meaning: [#kq("10 15 20 30") ↦ `{`#kq("(,10;15 20 30)")`, `#kq("(10 15;20 30)")`}`]),
   (sym: [`F(M)`], type: [`1 + [ℕ]×[ℕ] ⟶ 1 + [ℕ]×ℕ`], value: [`𝟙 + 𝟙×M`], meaning: [#kq("(,10;15 20 30)") ↦ #kq("(,10;35)"), #kq("(10 15;20 30)") ↦ #kq("(10 15;20)"): `M(`#kq("15 20 30")`) = 35` (cuts pay `65`, `35`, `45`), `M(`#kq("20 30")`) = 20` (cuts pay `50`, `20`)]),
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [#kq("(,10;35)") ↦ `10 + 35 = 45`; #kq("(10 15;20)") ↦ `10 + 20 = 30`]),
