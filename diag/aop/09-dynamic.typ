@@ -94,6 +94,16 @@
   lean-calc(calc-dpl),
 )]<dp-lower>
 
+// (9.2)'s left side on the stair input, one arrow per row.
+#ex-table(head: [*example of* #context link(<dp-lower>, dispid(query(<dp-lower>).first().location(), raw: true))],
+  (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ]×[ℕ]`], meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): `1or2` keeps the first part at 1 or 2 stairs]),
+  (sym: [`Λ(T°)`], type: [`[ℕ] ⟶ P(1 + [ℕ]×[ℕ])`], meaning: [#kq("10 15 20 30") ↦ `{`#kq("(,10;15 20 30)")`, `#kq("(10 15;20 30)")`}`]),
+  (sym: [`F(M)`], type: [`1 + [ℕ]×[ℕ] ⟶ 1 + [ℕ]×ℕ`], value: [`𝟙 + 𝟙×M`], meaning: [#kq("(,10;15 20 30)") ↦ #kq("(,10;35)"), #kq("(10 15;20 30)") ↦ #kq("(10 15;20)"): `M(`#kq("15 20 30")`) = 35` (cuts pay `65`, `35`, `45`), `M(`#kq("20 30")`) = 20` (cuts pay `50`, `20`)]),
+  (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [#kq("(,10;35)") ↦ `10 + 35 = 45`; #kq("(10 15;20)") ↦ `10 + 20 = 30`]),
+  (sym: [`P(F(M)h)`], type: [`P(1 + [ℕ]×[ℕ]) ⟶ Pℕ`], meaning: [`{45, 30}`]),
+  (sym: [`est(≤)`], type: [`Pℕ ⟶ ℕ`], meaning: [`{45, 30} ↦ 30`]),
+)<dp-lower-746>
+
 // `T° F(H) h = H`, the last step of (9.2): `H` solves its own recursion.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
