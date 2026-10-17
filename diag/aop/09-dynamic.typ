@@ -217,7 +217,7 @@
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_in_context") \
     #src[improving each part by `R` within its `H°`-context, then assembling by `h`, is below `hR`]],
-     // lean:AOP.A9_1.pres_in_context@4173ef20
+     // lean:AOP.A9_1.pres_in_context@b0db9b3a
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>

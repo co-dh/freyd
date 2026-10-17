@@ -358,7 +358,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (SQ, "Freyd.Alg.RelSet.Tardy.tardy_mono.rhs",
       src[Proposition 9.3 at `S≜bagify`, `≤≜≥` — @dp-context-mono, with @tardy-cost-k and
        @tardy-k-mono]),
-    // lean:AOP.A9_1.pres_in_context@3ce8e2d0
+    // lean:AOP.A9_1.pres_in_context@b0db9b3a
   ),
 )]<tardy-mono>
 
