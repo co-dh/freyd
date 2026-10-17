@@ -221,17 +221,20 @@
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>
-// Proposition 9.3 at one instance: the string edit problem of the next section, where `H = edit°`.
+// Proposition 9.3 at one instance: optimal bracketing (B&dM §9.3), where `H = flatten°` and `k` reads the sizes.
 #disp[#table(
   columns: (auto, auto, auto, 1fr),
   align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*symbol*], [*type*], [*value*], [*meaning*]),
-  [`H`], [`B ⟶ A`], [`edit°`], [sends a pair of strings `(x,y)` to every edit sequence that turns `x` into `y`; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
-  [`H°`], [`A ⟶ B`], [`edit`], [sends an edit sequence to the one pair `(x,y)` it turns into each other; a map, so simple],
-  [`⟨cost, H°⟩`], [`A ⟶ C×B`], [`⟨length, edit⟩`], [`es ↦ (length(es), (x,y))`: tags a sequence with its length and the pair it edits],
-  [`k`], [`F(C×B) ⟶ C`], [`[zero, π₂ π₁ succ]`], [`0` for the empty sequence, one more than the tail's length otherwise; it never reads the pair],
-  [`R ∩ H°H`], [`A ⟶ A`], [`R ∩ edit edit°`], [`es` is no longer than `fs`, and both turn the same `x` into the same `y`],
+  [`F`], [], [`F(Y) = X + Y×Y`], [a tip holding one `x`, or two parts to join],
+  [`h`], [`F(A) ⟶ A`], [`[tip, bin] : F(tree X) ⟶ tree X`], [a bracketing is a tip, or two bracketings joined],
+  [`cost`], [`A ⟶ C`], [`cost : tree X ⟶ ℕ`], [the cost of evaluating a bracketing],
+  [`H`], [`B ⟶ A`], [`flatten° : [X] ⟶ tree X`], [sends a list to every bracketing of it; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
+  [`H°`], [`A ⟶ B`], [`flatten`], [sends a bracketing to the one list it brackets; a map, so simple],
+  [`⟨cost, H°⟩`], [`A ⟶ C×B`], [`⟨cost, flatten⟩`], [tags a bracketing with its cost and the list it brackets],
+  [`k`], [`F(C×B) ⟶ C`], [`g`], [`0` at a tip; at a join, the two costs plus `cb` of the two sizes, and a size is read off the list (`sz`), so `k` needs the context],
+  [`R ∩ H°H`], [`A ⟶ A`], [`R ∩ flatten flatten°`], [`t` costs no more than `t'`, and both bracket the same list],
 )]<dp-context-types>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
