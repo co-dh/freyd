@@ -39,16 +39,16 @@
   align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [one layer of a climb: `1` ends it; `Move × X` takes one segment, then `X` for the rest. Segments are `[c]` (stand on `c`, climb 1) or `[c,d]` (stand on `c`, climb 2 over `d`)],
-  [`oneOrTwo`], [#leanf("Freyd.Alg.RelSet.Stairs.oneOrTwo")], [a segment has one or two stairs],
-  [`Subtype`], [#leanf("Subtype")], [the elements of `[ℕ]` that satisfy the predicate; `ι` sends one back into `[ℕ]`],
+  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj")], [one layer of a climb: `1` ends it; `[ℕ] × X` takes one segment, then `X` for the rest],
+  [`1or2`], [#leanf("Freyd.Alg.RelSet.Stairs.«1or2»")], [a segment has one or two stairs],
   [`T`],
   [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T")],
-  [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`. `T°` splits `[10,15,20,30]` both ways a first segment allows: `([10], [15,20,30])` and `([10,15], [20,30])`],
+  [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`],
+  [`T°`], [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], [take 1 or 2 from the head: `T°([10,15,20,30])` is `([10], [15,20,30])` or `([10,15], [20,30])`],
   [`⦇T⦈`],
   [#leanf("Freyd.Alg.RelSet.Stairs.T_cata")],
   [concat, flattening a climb into its cost list],
-  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [every way to cut a cost list into segments of length 1–2],
+  [`⦇T⦈°`], [`[ℕ] ⟶ [[ℕ]]`], [every way to cut a cost list into segments of length 1–2],
   [`h`],
   [#leanf("Freyd.Alg.RelSet.Stairs.h")],
   [pay the stair stood on, not the `d` stepped over],
@@ -58,14 +58,13 @@
   [`H`], [#leanf("Freyd.Alg.RelSet.Stairs.H_eq")], [the total paid on some climb over a cost list],
   [`≤`], [`≤` on `ℕ`], [cheapest wins],
 )]<dp-h-746>
-// lean:AOP.A9_1_Stairs.F_obj@97e1f4df
-// lean:AOP.A9_1_Stairs.Move@3c618959
-// lean:AOP.A9_1_Stairs.T@c7a9c4ae
-// lean:AOP.A9_1_Stairs.T_cata@542ad7b7
-// lean:AOP.A9_1_Stairs.h@d23abf16
-// lean:AOP.A9_1_Stairs.paid_cata@ba693939
-// lean:AOP.A9_1_Stairs.paid@ac93050b
-// lean:AOP.A9_1_Stairs.H_eq@cb6f916d
+// lean:AOP.A9_1_Stairs.F_obj@f692c664
+// lean:AOP.A9_1_Stairs.T@4fbd1673
+// lean:AOP.A9_1_Stairs.T_cata@50f1c339
+// lean:AOP.A9_1_Stairs.h@de1ff917
+// lean:AOP.A9_1_Stairs.paid_cata@eae6c993
+// lean:AOP.A9_1_Stairs.paid@948ef303
+// lean:AOP.A9_1_Stairs.H_eq@dfa35dae
 
 === The dynamic programming theorem
 
@@ -163,7 +162,7 @@
   [`∈ \ (F(M) h ≥)`], [`PFA ⟶ ℕ`], [`ps` to every `b'` with `b' ≤ head(s)+M(xs)` for each `(s,xs)` in `ps`],
   [`⊑ ≥`], [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], [`b' ≤ head(s)+M(xs) ≤ head(s)+n = b`: `M(xs)` is cheapest and some climb over `xs` pays `n`],
 )]<dp-upper-tail-746>
-// lean:AOP.A9_1_Stairs.h@d23abf16
+// lean:AOP.A9_1_Stairs.h@de1ff917
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
