@@ -212,8 +212,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  // Only the split is drawn: each part is the branch below, the `V₂` one with `V₁`,`V₂` swapped.
-  lean-calc((steps: calc-dpd.steps.slice(0, 2))),
+  lean-calc(calc-dpd),
 )]<dp-disjoint>
 
 // The one branch both steps of Proposition 9.1 cite; the `V₂` one is it at swapped arguments.
