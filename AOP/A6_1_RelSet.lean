@@ -101,16 +101,10 @@ public theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x :
     this name where Lean's pointwise lambda would print. -/
 @[expose] public def corefl {A : RelSet.{u}} (P : A.carrier → Prop) : A ⟶ A := fun x y => x = y ∧ P x
 
-/-- printing-only: `(p)?`, the coreflexive of a compound predicate `p`; nothing elaborates it. -/
--- `?` is an identifier character, so a bare postfix would re-lex `p?` as one name; the parentheses
--- delimit the predicate instead.
-syntax:max (name := coreflPostfix) "(" term ")" noWs "?" : term
-
--- `corefl(p)` prints `p?`: the `?` marks the arrow as the coreflexive of the predicate `p`.
+-- B&dM's convention: a predicate used as an arrow IS its coreflexive, so `corefl(p)` prints `p`.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.corefl] public meta def unexpandCorefl : Unexpander
-  | `($_ $p:ident) => `($(mkIdent (p.getId.appendAfter "?")))
-  | `($_ $p) => `(($p)?)
+  | `($_ $p) => `($p)
   | _ => throw ()
 
 /-- `P? ⊑ 𝟙`: a coreflexive is below the identity. -/
