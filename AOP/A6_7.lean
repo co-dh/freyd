@@ -279,6 +279,19 @@ public theorem comp_star_eq_mu {A B : 𝒜} (S : B ⟶ A) (R : A ⟶ A) :
     le_trans (comp_mono_left S hstep) (leftDiv_comp_le S (closureFrom S R))
   exact le_antisymm hleM hMle
 
+/-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`.
+    `B A*` is the least `X` with `B ∪ X A ⊑ X` (`comp_star_eq_mu`), and `C* B` is such an `X`. -/
+public theorem comp_star_le_star_comp {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B := by
+  rw [comp_star_eq_mu]
+  refine closureFrom_le (T := star C ≫ B) ?_ ?_
+  · calc B = 𝟙 X ≫ B := (Cat.id_comp B).symm
+      _ ⊑ star C ≫ B := comp_mono_right (id_le_star C) B
+  · calc (star C ≫ B) ≫ A = star C ≫ (B ≫ A) := Cat.assoc _ _ _
+      _ ⊑ star C ≫ (C ≫ B) := comp_mono_left _ h
+      _ = (star C ≫ C) ≫ B := (Cat.assoc _ _ _).symm
+      _ ⊑ star C ≫ B := comp_mono_right (star_comp_le C) B
+
 /-- PRIVATE closure-from-`S` body (recursion on the right) `S ∪ R·X` ↦ `S ∪ (R≫X)`; used only
     to prove `star_comp_eq_mu` below. -/
 private def closureFromR {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) : A ⟶ B :=
