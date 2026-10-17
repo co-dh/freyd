@@ -89,10 +89,8 @@ public theorem comp_Λ_recip_le_recip_eps {C : 𝒜} (T : C ⟶ A) : T ≫ Λ (T
 public theorem dynamic_programming_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} :
     Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R ⊑ H T h :=
-  calc Λ (T°) ≫ powerRel (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ est R
-        ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ (H T h) ≫ est R) ≫ h :=
-        comp_mono_left _ (powerRel_comp_est_le_eps _ R)
-      _ = T° ≫ F.map (Λ (H T h) ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
+  calc Λ (T°) ≫ powerRel (F.map (M T h R) ≫ h) ≫ est R
+        ⊑ T° ≫ F.map (M T h R) ≫ h := Λ_comp_powerRel_comp_est_le _ _ R
       _ ⊑ T° ≫ F.map (H T h) ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le (H T h) R)) h)
       _ = H T h := H_fixed inferInstance T h
 

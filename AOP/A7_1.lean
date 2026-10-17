@@ -108,10 +108,6 @@ public theorem le_Λ_comp_est_iff {S : B ⟶ A} {R : A ⟶ A} {X : B ⟶ A} :
   · rintro ⟨h1, h2⟩
     exact le_inter h1 ((le_leftDiv_iff _ _ _).mpr h2)
 
-/-- (7.5) at `X ≜ Λ(S) est(R)`, first component: an optimum of `S` is a result of `S`. -/
-public theorem Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : Λ S ≫ est R ⊑ S :=
-  (le_Λ_comp_est_iff.mp (le_refl _)).1
-
 /-- (7.5) at `X ≜ Λ(S) est(R)`, second component: `S° Λ(S) est(R) ⊑ R°`. -/
 public theorem recip_comp_Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : S° ≫ Λ S ≫ est R ⊑ R° :=
   (le_Λ_comp_est_iff.mp (le_refl _)).2
@@ -417,6 +413,18 @@ public theorem powerRel_comp_est_le (X : B ⟶ A) (R : A ⟶ A) :
 /-- (7.10), left component: `P(X) est(R) ⊑ ∋X`. -/
 public theorem powerRel_comp_est_le_eps (X : B ⟶ A) (R : A ⟶ A) : powerRel X ≫ est R ⊑ ∋ B ≫ X :=
   le_trans (powerRel_comp_est_le X R) (inter_lb_left _ _)
+
+/-- `Λ(S) P(X) est(R) ⊑ S X`: an optimum among the `X`-images of the `S`-results is an
+    `X`-image of an `S`-result. -/
+public theorem Λ_comp_powerRel_comp_est_le {C : 𝒜} (S : C ⟶ B) (X : B ⟶ A) (R : A ⟶ A) :
+    Λ S ≫ powerRel X ≫ est R ⊑ S ≫ X :=
+  calc Λ S ≫ powerRel X ≫ est R
+        ⊑ Λ S ≫ ∋ B ≫ X := comp_mono_left _ (powerRel_comp_est_le_eps X R)
+      _ = S ≫ X := by rw [← Cat.assoc, Λ_comp_eps]
+
+/-- `Λ(S) est(R) ⊑ S`, the case `X ≜ 𝟙` (`P(𝟙) = 𝟙`): an optimum of `S` is a result of `S`. -/
+public theorem Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : Λ S ≫ est R ⊑ S := by
+  simpa only [powerRel_id, Cat.id_comp, Cat.comp_id] using Λ_comp_powerRel_comp_est_le S (𝟙 A) R
 
 /-- (7.10), right component: `P(X) est(R) ⊑ ∈\(SR°)`. -/
 public theorem powerRel_comp_est_le_div (X : B ⟶ A) (R : A ⟶ A) :
