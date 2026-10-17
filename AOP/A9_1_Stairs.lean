@@ -60,6 +60,22 @@ public theorem T_cata :
   junc (sumCop (dL Unit) ⟨ConsList Unit Nat × Nat⟩) zeroRel
     (rprodMap head (𝟙 (⟨Nat⟩ : RelSet.{0})) ≫ (plusRel : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ _))
 
+/-- **(9.2) at the stairs**: `Λ(T°) P(F(M)h) est(≤) ⊑ H` with `≤` the order on `ℕ`.  Each stage of
+    the left side is a subterm, so the example table after (9.2) reads every type off this one statement. -/
+public theorem dynamic_programming_lower :
+    Λ (T°) ≫ powerRel ((F Unit (ConsList Unit Nat)).map (M T h leRel) ≫ h) ≫ est leRel ⊑ H T h :=
+  Freyd.Alg.dynamic_programming_lower
+
+/-- **The tail of (9.3) at the stairs**, under (9.3)'s hypotheses on `h` and `≥`: the example table of
+    the tail reads every stage's type off this statement. -/
+public theorem dynamic_programming_upper_tail (hh : Map h) (hmono : Pres h leRel°)
+    (htrans : leRel° ≫ leRel° ⊑ leRel°) :
+    h° ≫ (F Unit (ConsList Unit Nat)).map ((H T h)°) ≫ (∋ ((F Unit (ConsList Unit Nat)).obj dCost))°
+      ≫ ((∋ ((F Unit (ConsList Unit Nat)).obj dCost))° \
+          (((F Unit (ConsList Unit Nat)).map (M T h leRel) ≫ h) ≫ leRel°))
+      ⊑ leRel° :=
+  Freyd.Alg.dynamic_programming_upper_tail hh hmono htrans
+
 end Freyd.Alg.RelSet.Stairs
 
 -- printing-only: the constant arrow is written by its value, as `plusRel` is by its operator `+`.
