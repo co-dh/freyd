@@ -1391,6 +1391,8 @@ def parseArg (arg : String) (sel : Bool) :
   -- `<sel>≜<def>`: a FORMULA in a definition table's row, which defines `def` (`note-prelude.typ`'s
   -- `deftab`); the step `≜<def>` reaches `FormulaRender.file`, which prints that row's `=` as `≜`.
   let (arg, dfn) := match arg.splitOn "≜" with | [a, d] => (a, ["≜" ++ d]) | _ => (arg, [])
+  -- `<law>@<step>`: a calc step's REASON, the law as that step applies it (`FormulaRender.calcFile`).
+  let (arg, dfn) := match arg.splitOn "@" with | [a, s] => (a, dfn ++ ["@" ++ s]) | _ => (arg, dfn)
   let mut stem : String.Slice := arg
   let mut branch : List StrDiag.Sel := []
   let mut sides : List String := []
