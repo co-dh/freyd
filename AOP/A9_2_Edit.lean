@@ -725,7 +725,7 @@ public theorem edit_laws :
     unfold α; rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit (Op Char))
-    (initial Unit (Op Char)) (h := α Char) (T := editAlg (Char := Char)) (R := R Char)
+    (initial Unit (Op Char)) (h := α Char) (T := editAlg (Char := Char)) («≤» := R Char)
     (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H, M] at key; rwa [hH] at key

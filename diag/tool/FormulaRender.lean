@@ -215,6 +215,8 @@ def stepInsts (c step : Name) : MetaM (Option (Array Inst)) := do
       let a := a.headBeta.consumeMData
       if a.hasLooseBVars || lawBis[i]?.any (·.isInstImplicit) || (← Meta.isProof a) then return Inst.keep
       if let .fvar f := a then return .rename (← f.getUserName)
+      if a.isAppOf ``Freyd.Alg.Allegory.recip then
+        if let some s ← localConverse? a.appArg! then return .rename (Name.mkSimple s)
       -- A converse with a name of its own prints as that name (`labelTree`'s `°` clause).
       let a ← if a.isAppOf ``Freyd.Alg.Allegory.recip then pure ((← namedRecip? a.appArg!).getD a) else pure a
       return match stxPeel (← delabP a).raw with
@@ -466,9 +468,10 @@ def sideM (d : Side) : MetaM (Array Expr × Expr) := do
 
 /-- The relation read with its two sides swapped: what `B sym A` says of `A` and `B`. -/
 def converseSym (sym : String) : MetaM String :=
-  match sym with
-  | "=" => pure "=" | "⊑" => pure "⊒" | "≤" => pure "≥"
-  | s => throwError "a chain step's relation `{s}` has no converse in the note's notation"
+  if sym == "=" then return "=" else
+  match converseSymbol? sym with
+  | some s => pure s
+  | none => throwError "a chain step's relation `{sym}` has no converse in the note's notation"
 
 /-- Opens the statement `t` under the locals `xs` already in scope, one binder at a time so each
     type sees the values chosen before it.  ONE VARIABLE PER BINDER NAME, as `canon` reads a chain's

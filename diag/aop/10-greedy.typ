@@ -8,7 +8,7 @@
 // B&dM §10.1, p. 245.  Theorem 9.2 with `est(Q)` for `thin(Q)`: the same hypotheses, a much stronger
 // conclusion, and one far harder to refine into a program.
 #disp[#definition[
-`h`, `T`, `R`, `H`, `M` as in @Freyd.Alg.M; #h(4pt) additionally `Q` a *connected* preorder on the sets
+`h`, `T`, `≤`, `H`, `M` as in @Freyd.Alg.M; #h(4pt) additionally `Q` a *connected* preorder on the sets
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
@@ -60,7 +60,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // The second half of the same proof.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
-    #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
+    #src[`H°` followed by the greedy body at `M` is `⊑≥`: an answer of the body is never worse
      than an answer of `H` to the same input]],
      // lean:AOP.A10_1.greedy_dp_upper@7732fe1f
   lean-calc(calc-gu, breaks: (4,)),

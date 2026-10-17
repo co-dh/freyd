@@ -1396,6 +1396,19 @@ def commaL (l r : String) (ps : Array Lbl) : Lbl := .delim l r (Lbl.join "," ps)
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
   .unit (if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")")
 
+/-- The ORDER SYMBOLS paired with their converses, read in both directions: `≤°` is `≥`. -/
+def converseSymbols : List (String × String) := [("≤", "≥"), ("≼", "≽"), ("⊑", "⊒"), ("⊆", "⊇")]
+
+def converseSymbol? (s : String) : Option String :=
+  (converseSymbols.find? (·.1 == s)).map (·.2) <|> (converseSymbols.find? (·.2 == s)).map (·.1)
+
+/-- A LOCAL NAMED BY AN ORDER SYMBOL (`«≤»`) has no `diag_opposite` theorem behind it, so its
+    converse's name is the paired symbol: `«≤»°` is written `≥`.  Only a spelling exists, no arrow. -/
+def localConverse? (r : Expr) : MetaM (Option String) := do
+  let .fvar f := r | return none
+  let .str .anonymous s ← f.getUserName | return none
+  return converseSymbol? s
+
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the arrow `r°` IS, read off a `diag_opposite`
     theorem `Q = P°` in EITHER direction — `r` matching `P` gives `Q`, `r` matching `Q` gives `P` —
     since a `°` makes the reader undo one level of indirection to get back to the name.  Read in
@@ -1812,7 +1825,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         match avoid with
         | some sib => if ← Meta.isDefEqGuarded q sib then literal else labelTree prec q
         | none => labelTree prec q
-      | none => literal
+      | none => match ← localConverse? r with
+        | some s => pure (Lbl.text s)
+        | none => literal
     | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un Prec.atom Prec.atom "" "⊥" args
   -- `codBox` IS FREYD'S `R□` (§2.122), a POSTFIX like `°`: the box terminates its operand exactly

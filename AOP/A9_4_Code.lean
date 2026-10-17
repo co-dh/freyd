@@ -612,7 +612,7 @@ public theorem code_laws :
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit Code)
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
-    (R := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
+    («≤» := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
     (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p)
   simp only [H, M] at key; rwa [hH] at key
 
