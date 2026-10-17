@@ -39,7 +39,7 @@
   align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [a climb is a list of moves: `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
+  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [one layer of a climb: `1` ends it; `Move × X` takes one move, then `X` for the rest. `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
   [`T`],
   [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.nil_nil") \
    #leanf("Freyd.Alg.RelSet.Stairs.put_one") \ #leanf("Freyd.Alg.RelSet.Stairs.put_two")],
