@@ -28,7 +28,7 @@
   [#rowkey("Freyd.Alg.M")], [#leant("Freyd.Alg.M")],
   "Freyd.Alg.M",
   [the problem to be solved: an answer of `H` that is best under `R`],
-// lean:AOP.A9_1.H@71852cf7
+// lean:AOP.A6_3.H@71852cf7
 )]<dp-defn>
 
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
@@ -99,7 +99,7 @@
 #import "../generated/Freyd.Alg.RelSet.Bracket.mct_rec.calc.typ" as calc-mct
 #import "../generated/Freyd.Alg.RelSet.Bracket.col_rec.calc.typ" as calc-col
 #import "../generated/Freyd.Alg.RelSet.Bracket.row_rec.calc.typ" as calc-row
-#import "../generated/Freyd.Alg.H_fixed.calc.typ" as calc-hfixed
+#import "../generated/Freyd.Alg.hylo_fixed.calc.typ" as calc-hfixed
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -111,10 +111,10 @@
 
 // `T° F(H) h = H`, the last step of (9.2): `H` solves its own recursion.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.H_fixed") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
     #src[taking the input apart one level by `T°`, solving each part by `H` and assembling by `h`
      gives `H` itself]],
-     // lean:AOP.A9_1.H_fixed@1e8edca6
+     // lean:AOP.A6_3.hylo_fixed@b61d2802
   lean-calc(calc-hfixed),
 )]<dp-h-fixed>
 
@@ -156,7 +156,7 @@
       #src[`QF(H)h⊑F(H)hR`: every result of thinning by `Q`, solving the parts by `F(H)` and
       assembling by `h` is reached by `R` from a result of solving by `F(H)` and assembling by `h`
       without `Q`]],
-    [#leancd("Freyd.Alg.H_fixed") \
+    [#leancd("Freyd.Alg.hylo_fixed") \
       #src[`T°F(H)h=H`: taking the input apart once by `T°`, solving the parts by `F(H)` and
       assembling by `h` returns exactly what `H` returns]]),
 )]<dp-laws>
@@ -221,7 +221,7 @@
 )]<dp-conds>
 // lean:AOP.A9_1.dynamic_programming_thin@d7b28302
 // lean:AOP.A9_1.ThinCondition@981f8a2d
-// lean:AOP.A9_1.H@71852cf7
+// lean:AOP.A6_3.H@71852cf7
 
 #disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
   #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached

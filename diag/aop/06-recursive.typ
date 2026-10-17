@@ -128,7 +128,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
-  // lean:AOP.A6_3.hylo_fixed@67ca7394
+  // lean:AOP.A6_3.hylo_fixed@b61d2802
   // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
   // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
   lean-calc(calc-hf),
