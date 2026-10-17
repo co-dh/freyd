@@ -151,7 +151,7 @@
   columns: (auto, 1fr, 1fr),
   align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*value*], [*meaning*]),
+  table.header(table.cell(colspan: 3)[*example of* #context link(<dp-upper-tail>, dispid(query(<dp-upper-tail>).first().location(), raw: true))], [*symbol*], [*value*], [*meaning*]),
   [`h`], [#leanf("Freyd.Alg.RelSet.Stairs.h")], [`h(s,n) = head(s)+n`: pay the stair segment `s` stands on, then the rest's total `n`; `h(()) = 0`],
   [`h°`], [`b ↦ (s, b−head(s))`, `0 ↦ ()`], [every way to cut a total `b` into the stair paid first and the rest's total `n`],
   [`H°`], [#kq("(+/*')° ,/")], [from a total `n` to every cost list `xs` some climb over which pays `n`: #kq("(+/*')°") every climb paying `n`, #kq(",/") its cost list],
