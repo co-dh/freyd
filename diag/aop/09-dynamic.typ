@@ -31,6 +31,8 @@
 // lean:AOP.A6_3.H@71852cf7
 )]<dp-defn>
 
+=== Stair example
+
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
 #disp[#table(
   columns: (auto, 1fr, 1fr),
@@ -71,6 +73,8 @@
 // lean:AOP.A9_1_Stairs.paid_cata@ba693939
 // lean:AOP.A9_1_Stairs.paid@4e5ed213
 // lean:AOP.A9_1_Stairs.H_eq@341557ce
+
+=== The dynamic programming theorem
 
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
