@@ -36,12 +36,12 @@
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
 #ex-table(
   (sym: [`F`], decl: "Freyd.Alg.RelSet.Stairs.F_obj", type: leant("Freyd.Alg.RelSet.CL.F"), meaning: [`()` ends a climb; `(`#kq("10 15")`, x)` takes the segment #kq("10 15"), then `x` for the rest]),
-  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`)` holds, `1or2(`#kq("10 15 20")`)` fails: three stairs]),
+  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`)` holds \ `1or2(`#kq("10 15 20")`)` fails: three stairs]),
   (sym: [`N2`], decl: "Freyd.Alg.RelSet.Stairs.N2", meaning: [the lists `1or2` lets through: #kq(",10"), #kq("10 15")]),
   (sym: [`ι`], decl: "Freyd.Alg.RelSet.Stairs.ι", meaning: [`ι(`#kq("10 15")`) = `#kq("10 15"), forgets that the length is 1 or 2]),
   (sym: [`T`], decl: "Freyd.Alg.RelSet.Stairs.T", meaning: [put the segment in front of the rest: `T`#kq("(10 15;20 30)")` = `#kq("10 15 20 30")]),
   (sym: [`T°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1.arg"), meaning: [take 1 or 2 from the head: `T°(`#kq("10 15 20 30")`)` is #kq("(10;15 20 30)") or #kq("(10 15;20 30)")]),
-  (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈`#kq("(10;15 20;30)")` = `#kq("10 15 20 30"); #kq("(10 15 20;30)") has no image: #kq("10 15 20") has three stairs (q's `raze` `,/` on a legal climb only)]),
+  (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈`#kq("(10;15 20;30)")` = `#kq("10 15 20 30") \ #kq("(10 15 20;30)") has no image: #kq("10 15 20") has three stairs (q's `raze` `,/` on a legal climb only)]),
   (sym: [`⦇T⦈°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.rhs.unfold.f1"), meaning: [`⦇T⦈°(`#kq("10 15 20 30")`)` is #kq("(10;15;20;30)"), #kq("(10 15;20;30)"), #kq("(10;15 20;30)"), #kq("(10;15;20 30)") or #kq("(10 15;20 30)")]),
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [`h(()) = 0`: the empty climb pays nothing. `h`#kq("(10 15;20)")` = 10 + 20 = 30`: pay the stair stood on (`10`), not the `15` stepped over, plus the `20` already paid for the rest]),
   (sym: [`⦇h⦈`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.rhs.unfold.f2"), meaning: [the total paid on a climb: `⦇h⦈`#kq("(10;15 20;30)")` = 10 + 15 + 30 = 55`; `⦇h⦈`#kq("(10 15;20 30)")` = 10 + 20 = 30`]),

@@ -206,6 +206,23 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
           cur := n
           unless (cur.getAppFn.constName?.map env.isProjectionFn).getD false do return cur
         return e
+      -- A CONCRETE relator's object map prints as the object Lean reduces it to (`F[ℕ]` ⇝
+      -- `𝟏 + N2×[ℕ]`), so the instance's own parts reach the cell; one with a free variable (a generic
+      -- table's `F`) stays `FA`, and the combinators keep `StrDiag.relatorObj?`'s rule.
+      let inst (e : Expr) : MetaM Expr := Meta.transform e (post := fun u => do
+        let some f := (if u.isAppOfArity ``Freyd.Functor.obj 6 then some (u.getArg! 4) else none)
+          | return .continue
+        unless f.isAppOf ``Freyd.Alg.Relator.toFunctor && f.appArg!.getAppFn.isConst
+            && !f.hasFVar && !f.hasMVar && (← StrDiag.relatorObj? f u).isNone do return .continue
+        let v ← Meta.whnf u
+        unless v.isAppOfArity ``Freyd.Alg.RelSet.mk 1 do return .continue
+        -- the carrier's own objects (`dCost.carrier`) back to the object they carry (`[ℕ]`)
+        let c ← Meta.transform v.appArg! (post := fun w => do
+          unless w.isAppOfArity ``Freyd.Alg.RelSet.carrier 1 && !w.hasFVar do return .continue
+          let r ← Meta.withReducible (Meta.whnf w)
+          return if r.isAppOf ``Freyd.Alg.RelSet.carrier then .continue else .done r)
+        return .done c)
+      let o (e : Expr) : MetaM Expr := do inst (← o e)
       let ty ← match homObjs? ty with
         | some (a, b) => pure (mkApp2 ty.appFn!.appFn! (← o a) (← o b))
         | none => pure ty

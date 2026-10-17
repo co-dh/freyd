@@ -1867,7 +1867,8 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- note's for the same reason the arrow's is: the printer sets a product off from its factors
   -- (`P ([A] × [A])`) where the note writes `P([A]×[A])`, and how the letter joins is the note's own
   -- rule — `P[A]` against the brackets the printer closed, `PA` against a name, parentheses otherwise.
-  | (``Freyd.Alg.PowerAllegory.P, args) =>
+  -- `RelSet`'s own power object is that `P`, reached when a type cell unfolds the instance.
+  | (``Freyd.Alg.PowerAllegory.P, args) | (`Freyd.Alg.RelSet.pow, args) =>
     match args.back? with
     | some x => return applyLabelL "P" (← labelTree 0 x) (← objJoin x)
     | none => txt e
