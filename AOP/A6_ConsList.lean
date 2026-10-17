@@ -27,6 +27,9 @@ public inductive ConsList (L E : Type) where
   | wrap : L → ConsList L E
   | cons : E → ConsList L E → ConsList L E
 
+/-- The book's `list A`, a string over the alphabet `A`. -/
+@[expose] public abbrev Str (A : Type) : Type := ConsList Unit A
+
 /-- Reshape a raw Lean `List E` onto the initial algebra as a `ConsList Unit E`
     (`[] ↦ wrap ()`, `x :: xs ↦ cons x (ofList xs)`).  The book's `list A` is `ConsList Unit A`,
     so this is the canonical bridge for deriving folds over raw input lists; use it instead of

@@ -374,8 +374,8 @@
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
-// chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
-// `Char` — sugar undone at the ends too.
+// chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
+// `A` — sugar undone at the ends too.
 #disp[#calc-table(
   Thm[`mle=(empty→nil,unstep ((𝟙×mle)cons)′ minL(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
@@ -399,7 +399,7 @@
       // lean:AOP.A9_2_Edit.edit_mono@e083dbea
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
- #src[] over `F(Op,[Char]×[Char])` is
+ #src[] over `F(Op,[A]×[A])` is
       // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
       Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
@@ -487,7 +487,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_thin_condition") \
     #grid(columns: 5, align: center + horizon, column-gutter: 6pt, row-gutter: 4pt,
-      [`F(Op,[Char]×[Char])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
+      [`F(Op,[A]×[A])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
       [$stretch(->, size: #2em)^alpha$], [`[Op]`],
       [`Q` compares here], [], [], [], [`R` compares here])],
      // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3

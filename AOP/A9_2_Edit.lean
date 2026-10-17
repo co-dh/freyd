@@ -1,7 +1,7 @@
 /-
   Bird & de Moor, *Algebra of Programming* §9.2  The string edit problem (book pp. 224-230).
 
-  `edit ≜ ⦇[base,step]⦈ : [Op] ⟶ [Char]×[Char]` reconstitutes two strings from an edit
+  `edit ≜ ⦇[base,step]⦈ : [Op] ⟶ [A]×[A]` reconstitutes two strings from an edit
   sequence — `cpy a` appends `a` to both, `del a` to the left only, `ins a` to the right only.
   The specification is `edit° est(R)` with `R ≜ length ≤ length°`: a SHORTEST edit sequence
   from which both strings can be reconstituted.
@@ -55,28 +55,28 @@ namespace Freyd.Alg.RelSet.Edit
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
-variable {Char : Type}
+variable {A : Type}
 
 /-! ## `edit-defn` -/
 
-/-- **edit-defn**: `Op::=cpy Char∣del Char∣ins Char`. -/
-public inductive Op (Char : Type) where
-  | cpy : Char → Op Char
-  | del : Char → Op Char
-  | ins : Char → Op Char
+/-- **edit-defn**: `Op::=cpy A∣del A∣ins A`. -/
+public inductive Op (A : Type) where
+  | cpy : A → Op A
+  | del : A → Op A
+  | ins : A → Op A
 
 /-- The object carrying edit sequences `[Op]`. -/
-@[expose] public abbrev dEdit (Char : Type) : RelSet.{0} := dCL Unit (Op Char)
+@[expose] public abbrev dEdit (A : Type) : RelSet.{0} := dCL Unit (Op A)
 
-/-- The object carrying the two strings `[Char]×[Char]`. -/
-@[expose] public abbrev dPair (Char : Type) : RelSet.{0} :=
-  ⟨ConsList Unit Char × ConsList Unit Char⟩
+/-- The object carrying the two strings `[A]×[A]`. -/
+@[expose] public abbrev dPair (A : Type) : RelSet.{0} :=
+  ⟨ConsList Unit A × ConsList Unit A⟩
 
 /-! ### `Op` is a relator
 
-  `Op` is an operation on the ALPHABET, so every end of this section — `[Op]`, `F(Op,[Char]×[Char])`,
-  `Op×([Char]×[Char])` — is a functor of `Char` and states a naturality.  It is that functor only
-  once `Op` is bundled as a lane; until then the pictures had `Op Char` varying with the index and
+  `Op` is an operation on the ALPHABET, so every end of this section — `[Op]`, `F(Op,[A]×[A])`,
+  `Op×([A]×[A])` — is a functor of `A` and states a naturality.  It is that functor only
+  once `Op` is bundled as a lane; until then the pictures had `Op A` varying with the index and
   no relator to read it as. -/
 
 /-- `Op(R)` pointwise: the SAME operation, its character related by `R`. -/
@@ -137,47 +137,47 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
   map_mono h := op_mono h
 
 /-- **edit-defn**: `base` returning `([],[])`. -/
-@[expose] public def baseFn (_ : Unit) : ConsList Unit Char × ConsList Unit Char :=
+@[expose] public def baseFn (_ : Unit) : ConsList Unit A × ConsList Unit A :=
   (ConsList.wrap (), ConsList.wrap ())
 
 /-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, `step (del a,(xs,ys))=([a]⧺xs,ys)`,
     `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
 @[expose] public def stepFn :
-    Op Char × (ConsList Unit Char × ConsList Unit Char) → ConsList Unit Char × ConsList Unit Char
+    Op A × (ConsList Unit A × ConsList Unit A) → ConsList Unit A × ConsList Unit A
   | (Op.cpy a, (xs, ys)) => (ConsList.cons a xs, ConsList.cons a ys)
   | (Op.del a, (xs, ys)) => (ConsList.cons a xs, ys)
   | (Op.ins a, (xs, ys)) => (xs, ConsList.cons a ys)
 
 /-- **edit-defn**: the junction `[base,step]` of the two arms, B&dM's algebra of `edit`. -/
 @[expose] public def baseStepFn :
-    (Fobj Unit (Op Char) (dPair Char)).carrier → ConsList Unit Char × ConsList Unit Char
+    (Fobj Unit (Op A) (dPair A)).carrier → ConsList Unit A × ConsList Unit A
   | Sum.inl u => baseFn u
   | Sum.inr q => stepFn q
 
-/-- **edit-defn**: the algebra `[base,step] : F(Op,[Char]×[Char])⟶[Char]×[Char]`. -/
-@[expose] public def editAlg : Alg (F Unit (Op Char)) (dPair Char) :=
+/-- **edit-defn**: the algebra `[base,step] : F(Op,[A]×[A])⟶[A]×[A]`. -/
+@[expose] public def editAlg : Alg (F Unit (Op A)) (dPair A) :=
   graph baseStepFn
 
 /-- **edit-defn**: `edit≜⦇[base,step]⦈`, read as the function it is. -/
-@[expose] public def editFn : ConsList Unit (Op Char) → ConsList Unit Char × ConsList Unit Char
+@[expose] public def editFn : ConsList Unit (Op A) → ConsList Unit A × ConsList Unit A
   | ConsList.wrap _ => (ConsList.wrap (), ConsList.wrap ())
   | ConsList.cons op es => stepFn (op, editFn es)
 
 @[simp] public theorem editFn_nil (u : Unit) :
-    editFn (ConsList.wrap u : ConsList Unit (Op Char))
+    editFn (ConsList.wrap u : ConsList Unit (Op A))
       = (ConsList.wrap (), ConsList.wrap ()) := rfl
-@[simp] public theorem editFn_cpy (a : Char) (es : ConsList Unit (Op Char)) :
+@[simp] public theorem editFn_cpy (a : A) (es : ConsList Unit (Op A)) :
     editFn (ConsList.cons (Op.cpy a) es)
       = (ConsList.cons a (editFn es).1, ConsList.cons a (editFn es).2) := rfl
-@[simp] public theorem editFn_del (a : Char) (es : ConsList Unit (Op Char)) :
+@[simp] public theorem editFn_del (a : A) (es : ConsList Unit (Op A)) :
     editFn (ConsList.cons (Op.del a) es)
       = (ConsList.cons a (editFn es).1, (editFn es).2) := rfl
-@[simp] public theorem editFn_ins (a : Char) (es : ConsList Unit (Op Char)) :
+@[simp] public theorem editFn_ins (a : A) (es : ConsList Unit (Op A)) :
     editFn (ConsList.cons (Op.ins a) es)
       = ((editFn es).1, ConsList.cons a (editFn es).2) := rfl
 
 /-- **edit-defn**: the catamorphism of `[base,step]` IS `editFn`. -/
-public theorem edit_cata : graph editFn = cataR (editAlg (Char := Char)) := by
+public theorem edit_cata : graph editFn = cataR (editAlg (A := A)) := by
   refine Eq.symm ?_
   apply hom_ext; intro es
   induction es with
@@ -192,14 +192,14 @@ public theorem edit_cata : graph editFn = cataR (editAlg (Char := Char)) := by
       exact ⟨editFn es, (ih _).mpr rfl, h⟩
 
 /-- **edit-defn**: the algebra `[zero,π₂ succ]` of `length`. -/
-@[expose] public def lenAlgFn : (Fobj Unit (Op Char) (⟨Nat⟩ : RelSet.{0})).carrier → Nat
+@[expose] public def lenAlgFn : (Fobj Unit (Op A) (⟨Nat⟩ : RelSet.{0})).carrier → Nat
   | Sum.inl _ => Nat.zero
   | Sum.inr p => Nat.succ p.2
 
 /-- **edit-defn**: `length≜⦇[zero,π₂ succ]⦈` is the list length `clen`. -/
 public theorem length_cata :
-    (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-      = cataR (graph (lenAlgFn (Char := Char))) := by
+    (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = cataR (graph (lenAlgFn (A := A))) := by
   refine Eq.symm ?_
   apply hom_ext; intro es
   induction es with
@@ -215,15 +215,15 @@ public theorem length_cata :
 
 /-- **edit-defn**: `α≜[nil,cons]` — the initial algebra of edit sequences: the empty sequence, or
     one operation in front of a sequence. A `def` so that §9.2's statements print `α`. -/
-@[expose] public def α (Char : Type) : Alg (F Unit (Op Char)) (dEdit Char) :=
+@[expose] public def α (A : Type) : Alg (F Unit (Op A)) (dEdit A) :=
   graph con
 
 /-- **edit-defn**: `R≜length≤length°`. -/
-@[expose] public def R (Char : Type) : dEdit Char ⟶ dEdit Char := fun es fs => clen es ≤ clen fs
+@[expose] public def R (A : Type) : dEdit A ⟶ dEdit A := fun es fs => clen es ≤ clen fs
 
 public theorem R_eq :
-    R Char = (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
-      ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+    R A = (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+      ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   apply hom_ext; intro es fs
   constructor
   · intro h; exact ⟨clen es, rfl, clen fs, h, rfl⟩
@@ -233,32 +233,32 @@ public theorem R_eq :
     exact hmn
 
 /-- **edit-defn**, pointwise: `es R fs` iff `es` is no longer than `fs`. -/
-public theorem R_apply (es fs : ConsList Unit (Op Char)) : R Char es fs ↔ clen es ≤ clen fs :=
+public theorem R_apply (es fs : ConsList Unit (Op A)) : R A es fs ↔ clen es ≤ clen fs :=
   Iff.rfl
 
-public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
+public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
   le_iff.mpr fun es gs h => by
     obtain ⟨fs, h1, h2⟩ := h
     exact Nat.le_trans (h2 : clen gs ≤ clen fs) (h1 : clen fs ≤ clen es)
 
 /-- **edit-defn**: `V≜suffix°×suffix°` — `V (xs,ys) (xs',ys')` iff `xs` is a suffix of `xs'`
     and `ys` a suffix of `ys'`. -/
-@[expose] public def V (Char : Type) : dPair Char ⟶ dPair Char :=
-  rprodMap (suffixR (A := Char))° (suffixR (A := Char))°
+@[expose] public def V (A : Type) : dPair A ⟶ dPair A :=
+  rprodMap (suffixR (A := A))° (suffixR (A := A))°
 
 /-- **edit-defn** (B&dM p.226): `Q≜F(U,V)` at `U≜⊤` — any two operations, and the two remaining
     pairs of strings compared by `V`. -/
-@[expose] public def Q (Char : Type) :
-    (F Unit (Op Char)).obj (dPair Char) ⟶ (F Unit (Op Char)).obj (dPair Char) :=
-  Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char)
+@[expose] public def Q (A : Type) :
+    (F Unit (Op A)).obj (dPair A) ⟶ (F Unit (Op A)).obj (dPair A) :=
+  Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (V A)
 
 /-- **edit-defn**: `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
     `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, and
     `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`
     — the thinned decompositions, a copy beating a delete and an insert where available. -/
-@[expose] public def unstepFn [DecidableEq Char] :
-    ConsList Unit Char × ConsList Unit Char →
-      ConsList Unit (Op Char × (ConsList Unit Char × ConsList Unit Char))
+@[expose] public def unstepFn [DecidableEq A] :
+    ConsList Unit A × ConsList Unit A →
+      ConsList Unit (Op A × (ConsList Unit A × ConsList Unit A))
   | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
   | (ConsList.cons a xs, ConsList.wrap _) =>
       ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ())
@@ -272,16 +272,16 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
 -- The note's `[·]` is `ConsList Unit`, so the program returns one of THOSE: the panel's
 -- `list((𝟙×mle)cons)` is the list relator at the same list type its `minL(R)` reads, and a
 -- Lean `List` here would put a second list type on the one wire.
-/-- **edit-laws**, fourth row: `unstep : [Char]×[Char]⟶[Op×([Char]×[Char])]`, the arrow the
+/-- **edit-laws**, fourth row: `unstep : [A]×[A]⟶[Op×([A]×[A])]`, the arrow the
     panel draws. -/
-@[expose] public def unstep [DecidableEq Char] :
-    dPair Char ⟶ dList (Op Char × (dPair Char).carrier) := graph unstepFn
+@[expose] public def unstep [DecidableEq A] :
+    dPair A ⟶ dList (Op A × (dPair A).carrier) := graph unstepFn
 
 /-- **edit-laws**, the sound half of `unstep` implementing `frac(step°,∋) thin(U×V)`:
     everything `unstep` returns really is a decomposition, `step (unstep p) = p`. -/
-public theorem unstep_sound [DecidableEq Char]
-    (p : ConsList Unit Char × ConsList Unit Char)
-    (q : Op Char × (ConsList Unit Char × ConsList Unit Char)) (h : inlistP (unstepFn p) q) :
+public theorem unstep_sound [DecidableEq A]
+    (p : ConsList Unit A × ConsList Unit A)
+    (q : Op A × (ConsList Unit A × ConsList Unit A)) (h : inlistP (unstepFn p) q) :
     stepFn q = p := by
   obtain ⟨xs, ys⟩ := p
   cases xs with
@@ -311,11 +311,11 @@ public theorem unstep_sound [DecidableEq Char]
     strings is `V`-below `q`'s — where the two heads agree the copy is returned alone, and the
     `del` and `ins` it hides leave behind a LONGER pair, one operation more to spend; where they
     differ both survivors are returned, so nothing is dropped at all. -/
-public theorem unstep_complete [DecidableEq Char]
-    (p : ConsList Unit Char × ConsList Unit Char)
-    (q : Op Char × (ConsList Unit Char × ConsList Unit Char))
+public theorem unstep_complete [DecidableEq A]
+    (p : ConsList Unit A × ConsList Unit A)
+    (q : Op A × (ConsList Unit A × ConsList Unit A))
     (h : stepFn q = p) :
-    ∃ q', inlistP (unstepFn p) q' ∧ V Char q'.2 q.2 := by
+    ∃ q', inlistP (unstepFn p) q' ∧ V A q'.2 q.2 := by
   obtain ⟨op, x, y⟩ := q
   cases op with
   | cpy a =>
@@ -356,8 +356,8 @@ public theorem unstep_complete [DecidableEq Char]
 /-! ## `edit-laws` — monotonicity, Proposition 9.2 at `length` -/
 
 public theorem lenAlg_comm :
-    graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-      = (F Unit (Op Char)).map (graph clen) ≫ graph lenAlgFn := by
+    graph con ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = (F Unit (Op A)).map (graph clen) ≫ graph lenAlgFn := by
   apply hom_ext; intro u n
   constructor
   · rintro ⟨dec, hdec, hn⟩
@@ -382,7 +382,7 @@ public theorem lenAlg_comm :
         exact hn
 
 public theorem lenAlg_mono :
-    (F Unit (Op Char)).map leRel ≫ graph lenAlgFn ⊑ graph lenAlgFn ≫ leRel :=
+    (F Unit (Op A)).map leRel ≫ graph lenAlgFn ⊑ graph lenAlgFn ≫ leRel :=
   le_iff.mpr fun u n h => by
     obtain ⟨w, hw, hn⟩ := h
     cases u with
@@ -403,106 +403,106 @@ public theorem lenAlg_mono :
 
 /-- `edit-mono`, first step: `R≜length≤length°`, and `F` preserves composition. -/
 public theorem edit_mono_step1 :
-    (F Unit (Op Char)).map (R Char) ≫ α Char
-      = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-          ≫ (F Unit (Op Char)).map leRel
-          ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-          ≫ α Char := by
-  rw [R_eq, (F Unit (Op Char)).map_comp, (F Unit (Op Char)).map_comp]; simp only [Cat.assoc]
+    (F Unit (Op A)).map (R A) ≫ α A
+      = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (F Unit (Op A)).map leRel
+          ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+          ≫ α A := by
+  rw [R_eq, (F Unit (Op A)).map_comp, (F Unit (Op A)).map_comp]; simp only [Cat.assoc]
 
 /-- `edit-mono`, second step: `length` is entire, `𝟙⊑length length°`. -/
 public theorem edit_mono_step2 :
-    (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α Char
-      ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_left (α Char : Alg (F Unit (Op Char)) (dEdit Char))
-    (map_entire_le (graph_map (A := dEdit Char) (B := (⟨Nat⟩ : RelSet.{0})) clen))
+    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        ≫ α A
+      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        ≫ α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+  have h := comp_mono_left (α A : Alg (F Unit (Op A)) (dEdit A))
+    (map_entire_le (graph_map (A := dEdit A) (B := (⟨Nat⟩ : RelSet.{0})) clen))
   rw [Cat.comp_id] at h
   exact comp_mono_left _ (comp_mono_left _ (comp_mono_left _ h))
 
 /-- `edit-mono`, third step: `α length=F(length)[zero,π₂ succ]` (`lenAlg_comm`). -/
 public theorem edit_mono_step3 :
-    (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := congrArg (fun Z => (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-    ≫ (F Unit (Op Char)).map leRel
-    ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-    ≫ Z ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°) (lenAlg_comm (Char := Char))
+    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        ≫ α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
+      = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+  have h := congrArg (fun Z => (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+    ≫ (F Unit (Op A)).map leRel
+    ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+    ≫ Z ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°) (lenAlg_comm (A := A))
   simpa only [Cat.assoc] using h
 
 /-- `edit-mono`, fourth step: `F(length)` is simple, `F(length°)F(length)⊑F(𝟙)=𝟙`. -/
 public theorem edit_mono_step4 :
-    (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have hs : (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-      ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
+    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
+      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+  have hs : (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+      ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
       ⊑ 𝟙 _ := by
-    rw [← (F Unit (Op Char)).map_comp, ← (F Unit (Op Char)).map_id]
-    exact (F Unit (Op Char)).map_mono (graph_map clen).2
+    rw [← (F Unit (Op A)).map_comp, ← (F Unit (Op A)).map_id]
+    exact (F Unit (Op A)).map_mono (graph_map clen).2
   have h := comp_mono_right hs
-    (graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+    (graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
   rw [Cat.id_comp, Cat.assoc] at h
   exact comp_mono_left _ (comp_mono_left _ h)
 
 /-- `edit-mono`, fifth step: `succ` is monotonic on `≤`, `F(≤)[zero,π₂ succ]⊑[zero,π₂ succ]≤`
     (`lenAlg_mono`). -/
 public theorem edit_mono_step5 :
-    (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leRel
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_right (lenAlg_mono (Char := Char))
-    (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
+    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ (F Unit (Op A)).map leRel
+        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
+      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+  have h := comp_mono_right (lenAlg_mono (A := A))
+    (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
   simp only [Cat.assoc] at h
   exact comp_mono_left _ h
 
 /-- `edit-mono`, sixth step: `lenAlg_comm` read backwards. -/
 public theorem edit_mono_step6 :
-    (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
-        ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := congrArg (fun Z => Z ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-    (lenAlg_comm (Char := Char))
+    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
+      = α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+  have h := congrArg (fun Z => Z ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+    (lenAlg_comm (A := A))
   simpa only [Cat.assoc] using h.symm
 
 /-- **edit-laws**, second row's monotonicity `F(R)α⊑αR`: Proposition 9.2 at
     `length≜⦇[zero,π₂ succ]⦈`, `succ` monotonic on `≤`, so `cons` is monotonic on `R`. -/
 public theorem edit_mono :
-    (F Unit (Op Char)).map (R Char) ≫ α Char ⊑ α Char ≫ R Char :=
-  calc (F Unit (Op Char)).map (R Char) ≫ α Char
+    (F Unit (Op A)).map (R A) ≫ α A ⊑ α A ≫ R A :=
+  calc (F Unit (Op A)).map (R A) ≫ α A
       _ = _ := edit_mono_step1
       _ ⊑ _ := edit_mono_step2
       _ = _ := edit_mono_step3
       _ ⊑ _ := edit_mono_step4
       _ ⊑ _ := edit_mono_step5
       _ = _ := edit_mono_step6
-      _ = α Char ≫ R Char := by rw [R_eq]
+      _ = α A ≫ R A := by rw [R_eq]
 
 /-- Theorem 9.2 asks for monotonicity at the mirrored `R°`, which `cons` also has. -/
-public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op Char)) (α Char) (R Char)° :=
-  (Freyd.Alg.pres_recip_iff (graph_map con) (F_preservesRecip Unit (Op Char))).mp edit_mono
+public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R A)° :=
+  (Freyd.Alg.pres_recip_iff (graph_map con) (F_preservesRecip Unit (Op A))).mp edit_mono
 
 /-! ## `edit-laws` — the `V` condition, B&dM p.226
 
@@ -512,7 +512,7 @@ public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op Char)) (α Char
 
 /-- Dropping heads off the RIGHT output: every suffix `y` of `(edit es).2` is reached by an
     edit sequence `fs` no longer than `es`, with the left output unchanged. -/
-public theorem shrink_right : ∀ (es : ConsList Unit (Op Char)) {y : ConsList Unit Char},
+public theorem shrink_right : ∀ (es : ConsList Unit (Op A)) {y : ConsList Unit A},
     suffixP y (editFn es).2 → ∃ fs, editFn fs = ((editFn es).1, y) ∧ clen fs ≤ clen es := by
   intro es
   induction es with
@@ -540,7 +540,7 @@ public theorem shrink_right : ∀ (es : ConsList Unit (Op Char)) {y : ConsList U
         exact ⟨fs, by simp only [editFn_ins, hfs], Nat.le_trans hlen (Nat.le_succ _)⟩
 
 /-- Dropping heads off the LEFT output — the mirror of `shrink_right`, `ins` for `del`. -/
-public theorem shrink_left : ∀ (es : ConsList Unit (Op Char)) {x : ConsList Unit Char},
+public theorem shrink_left : ∀ (es : ConsList Unit (Op A)) {x : ConsList Unit A},
     suffixP x (editFn es).1 → ∃ fs, editFn fs = (x, (editFn es).2) ∧ clen fs ≤ clen es := by
   intro es
   induction es with
@@ -569,8 +569,8 @@ public theorem shrink_left : ∀ (es : ConsList Unit (Op Char)) {x : ConsList Un
 
 /-- **edit-laws**, second row: `edit (𝟙×suffix)⊑R° edit`. -/
 public theorem edit_suffix_right :
-    graph (editFn (Char := Char)) ≫ rprodMap (𝟙 (dList Char)) suffixR
-      ⊑ (R Char)° ≫ graph editFn :=
+    graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
+      ⊑ (R A)° ≫ graph editFn :=
   le_iff.mpr fun es q h => by
     obtain ⟨p, hp, hx, hy⟩ := h
     obtain rfl : p = editFn es := hp
@@ -581,8 +581,8 @@ public theorem edit_suffix_right :
 
 /-- **edit-laws**, second row: `edit (suffix×𝟙)⊑R° edit`. -/
 public theorem edit_suffix_left :
-    graph (editFn (Char := Char)) ≫ rprodMap suffixR (𝟙 (dList Char))
-      ⊑ (R Char)° ≫ graph editFn :=
+    graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
+      ⊑ (R A)° ≫ graph editFn :=
   le_iff.mpr fun es q h => by
     obtain ⟨p, hp, hx, hy⟩ := h
     obtain rfl : p = editFn es := hp
@@ -593,38 +593,38 @@ public theorem edit_suffix_left :
 
 /-- `edit-V`, first step: `V°=suffix×suffix` splits into `(suffix×𝟙)(𝟙×suffix)`. -/
 public theorem edit_Vrecip_step1 :
-    graph (editFn (Char := Char)) ≫ (V Char)°
-      = graph editFn ≫ rprodMap (suffixR (A := Char)) (𝟙 (dList Char))
-          ≫ rprodMap (𝟙 (dList Char)) (suffixR (A := Char)) := by
+    graph (editFn (A := A)) ≫ (V A)°
+      = graph editFn ≫ rprodMap (suffixR (A := A)) (𝟙 (dList A))
+          ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
   rw [rprodMap_comp, Cat.comp_id, Cat.id_comp, V, rprodMap_recip]
   simp only [Allegory.recip_recip]
 
 /-- `edit-V`, second step: `edit (suffix×𝟙)⊑R° edit` (`edit_suffix_left`). -/
 public theorem edit_Vrecip_step2 :
-    graph (editFn (Char := Char)) ≫ rprodMap (suffixR (A := Char)) (𝟙 (dList Char))
-        ≫ rprodMap (𝟙 (dList Char)) (suffixR (A := Char))
-      ⊑ (R Char)° ≫ graph editFn ≫ rprodMap (𝟙 (dList Char)) (suffixR (A := Char)) := by
-  have h := comp_mono_right (edit_suffix_left (Char := Char))
-    (rprodMap (𝟙 (dList Char)) (suffixR (A := Char)))
+    graph (editFn (A := A)) ≫ rprodMap (suffixR (A := A)) (𝟙 (dList A))
+        ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
+      ⊑ (R A)° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
+  have h := comp_mono_right (edit_suffix_left (A := A))
+    (rprodMap (𝟙 (dList A)) (suffixR (A := A)))
   simpa only [Cat.assoc] using h
 
 /-- `edit-V`, third step: `edit (𝟙×suffix)⊑R° edit` (`edit_suffix_right`). -/
 public theorem edit_Vrecip_step3 :
-    (R Char)° ≫ graph editFn ≫ rprodMap (𝟙 (dList Char)) (suffixR (A := Char))
-      ⊑ (R Char)° ≫ (R Char)° ≫ graph editFn :=
+    (R A)° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
+      ⊑ (R A)° ≫ (R A)° ≫ graph editFn :=
   comp_mono_left _ edit_suffix_right
 
 /-- `edit-V`, fourth step: `R°` is transitive (`R_recip_trans`). -/
 public theorem edit_Vrecip_step4 :
-    (R Char)° ≫ (R Char)° ≫ graph (editFn (Char := Char)) ⊑ (R Char)° ≫ graph editFn := by
-  have h := comp_mono_right (R_recip_trans (Char := Char)) (graph (editFn (Char := Char)))
+    (R A)° ≫ (R A)° ≫ graph (editFn (A := A)) ⊑ (R A)° ≫ graph editFn := by
+  have h := comp_mono_right (R_recip_trans (A := A)) (graph (editFn (A := A)))
   simpa only [Cat.assoc] using h
 
 /-- **edit-V**: `edit V°⊑R° edit` at `V≜suffix°×suffix°` — shorten one output, then the other,
     never lengthening. -/
 public theorem edit_Vrecip :
-    graph (editFn (Char := Char)) ≫ (V Char)° ⊑ (R Char)° ≫ graph editFn :=
-  calc graph (editFn (Char := Char)) ≫ (V Char)°
+    graph (editFn (A := A)) ≫ (V A)° ⊑ (R A)° ≫ graph editFn :=
+  calc graph (editFn (A := A)) ≫ (V A)°
       _ = _ := edit_Vrecip_step1
       _ ⊑ _ := edit_Vrecip_step2
       _ ⊑ _ := edit_Vrecip_step3
@@ -632,8 +632,8 @@ public theorem edit_Vrecip :
 
 /-- **edit-laws**, second row: Proposition 9.4's `hV`, `V edit°⊑edit° R`. -/
 public theorem edit_V :
-    V Char ≫ (graph (editFn (Char := Char)))° ⊑ (graph editFn)° ≫ R Char := by
-  have h := recip_mono (edit_Vrecip (Char := Char))
+    V A ≫ (graph (editFn (A := A)))° ⊑ (graph editFn)° ≫ R A := by
+  have h := recip_mono (edit_Vrecip (A := A))
   rw [Allegory.recip_comp, Allegory.recip_comp] at h
   exact h
 
@@ -648,19 +648,19 @@ public theorem Fbimap_comp {L E E' E'' : Type} {C C' C'' : RelSet.{0}} (U : dE E
 /-- `edit-thin`, first step: `Q≜F(⊤,V)`, and `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`.
     One step and not two: the exporter cannot cut `F(⊤,V)F(𝟙,edit°)` between its two beads. -/
 public theorem edit_thin_step1 :
-    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
-      = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph editFn)°)
-          ≫ α Char := by
+    Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
+      = Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (V A ≫ (graph editFn)°)
+          ≫ α A := by
   rw [Q, ← Cat.assoc]
   congr 1
   exact (Fbimap_comp _ _ _ _).trans (by rw [Cat.comp_id])
 
 /-- `edit-thin`, second step: Proposition 9.4's `V edit°⊑edit° R` (`edit_V`) under `F(U,−)`. -/
 public theorem edit_thin_step2 :
-    Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph (editFn (Char := Char)))°)
-        ≫ α Char
-      ⊑ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph editFn)° ≫ R Char)
-          ≫ α Char :=
+    Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (V A ≫ (graph (editFn (A := A)))°)
+        ≫ α A
+      ⊑ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph editFn)° ≫ R A)
+          ≫ α A :=
   comp_mono_right (le_iff.mpr fun u w h => by
     cases u with
     | inl _ => cases w with
@@ -672,10 +672,10 @@ public theorem edit_thin_step2 :
 
 /-- `edit-thin`, third step: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`. -/
 public theorem edit_thin_step3 :
-    Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph (editFn (Char := Char)))° ≫ R Char)
-        ≫ α Char
-      = (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
-          ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char := by
+    Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph (editFn (A := A)))° ≫ R A)
+        ≫ α A
+      = (F Unit (Op A)).map ((graph (editFn (A := A)))°)
+          ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A := by
   rw [← Cat.assoc]
   congr 1
   exact ((Fbimap_comp _ _ _ _).trans (by rw [Cat.id_comp])).symm
@@ -683,9 +683,9 @@ public theorem edit_thin_step3 :
 /-- `edit-thin`, fourth step: Proposition 9.4's `F(U,R)α⊑αR` at `U≜⊤` — `cons` adds one to both
     lengths whatever the two operations are. -/
 public theorem edit_thin_step4 :
-    (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
-        ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char
-      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ α Char ≫ R Char :=
+    (F Unit (Op A)).map ((graph (editFn (A := A)))°)
+        ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A
+      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
   comp_mono_left _ (le_iff.mpr fun u es h => by
     obtain ⟨v, hv, hcon⟩ := h
     obtain rfl : es = con v := hcon
@@ -703,9 +703,9 @@ public theorem edit_thin_step4 :
     summand `U≜⊤` leaves the operation free and `edit_V` supplies the shorter sequence for the
     `V`-smaller pair of strings, which `cons` then lengthens by one on both sides. -/
 public theorem edit_thin_condition :
-    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
-      ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ α Char ≫ R Char :=
-  calc Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ α Char
+    Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
+      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
+  calc Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
       _ = _ := edit_thin_step1
       _ ⊑ _ := edit_thin_step2
       _ = _ := edit_thin_step3
@@ -716,24 +716,24 @@ public theorem edit_thin_condition :
     `U≜⊤`, `V≜suffix°×suffix°`.  `H = ⦇α⦈·⦇[base,step]⦈°` collapses to `edit°` by reflection
     (`AOP.A6_ConsList.cataR_con`). -/
 public theorem edit_laws :
-    mu (fun X : dPair Char ⟶ dEdit Char =>
-        Λ ((editAlg (Char := Char))°) ≫ thinRel (Q Char)
-          ≫ powerRel ((F Unit (Op Char)).map X ≫ α Char) ≫ est (R Char))
-      ⊑ Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char) := by
-  have hH : (relCata (editAlg (Char := Char)))° ≫ relCata (α Char)
-      = (graph (editFn (Char := Char)))° := by
+    mu (fun X : dPair A ⟶ dEdit A =>
+        Λ ((editAlg (A := A))°) ≫ thinRel (Q A)
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A))
+      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R A) := by
+  have hH : (relCata (editAlg (A := A)))° ≫ relCata (α A)
+      = (graph (editFn (A := A)))° := by
     unfold α; rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
-  have key := dynamic_programming_thin (F := F Unit (Op Char))
-    (initial Unit (Op Char)) (h := α Char) (T := editAlg (Char := Char)) («≤» := R Char)
-    (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
+  have key := dynamic_programming_thin (F := F Unit (Op A))
+    (initial Unit (Op A)) (h := α A) (T := editAlg (A := A)) («≤» := R A)
+    (Q := Q A) (graph_map con) edit_mono_recip R_recip_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H, M] at key; rwa [hH] at key
 
 /-- **edit-laws**, the specification `mle` is derived from: `(edit°)%∋ est(R)`, a shortest edit
     sequence among those that edit back to the given pair. -/
-@[expose] public def mleSpec : dPair Char ⟶ dEdit Char :=
-  Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char)
+@[expose] public def mleSpec : dPair A ⟶ dEdit A :=
+  Λ ((graph (editFn (A := A)))°) ≫ est (R A)
 
 /-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
 
@@ -744,14 +744,14 @@ public theorem edit_laws :
 
 /-- **edit-defn**: `step`, the second arm of `[base,step]`.  The note writes the third row at
     this arm alone, so the arm has the name the note gives it. -/
-@[expose] public def step : (⟨Op Char × (dPair Char).carrier⟩ : RelSet.{0}) ⟶ dPair Char :=
+@[expose] public def step : (⟨Op A × (dPair A).carrier⟩ : RelSet.{0}) ⟶ dPair A :=
   graph stepFn
 
 /-- `step` never returns the empty pair — `cpy` and `del` put a character on the left string,
     `ins` one on the right — and `base` returns nothing else.  This is Proposition 9.1's
     disjointness hypothesis at `[base,step]`. -/
-public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
-    stepFn q ≠ ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) := by
+public theorem step_ne_base (q : Op A × (dPair A).carrier) :
+    stepFn q ≠ ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ()) := by
   obtain ⟨op, p⟩ := q
   cases op with
   | cpy a => intro h; injection h with h1 _; cases h1
@@ -759,12 +759,12 @@ public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
   | ins a => intro h; injection h with _ h2; cases h2
 
 /-- **edit-defn**: `base`, the first arm of `[base,step]`, returning `([],[])`. -/
-@[expose] public def base : dL Unit ⟶ dPair Char := graph baseFn
+@[expose] public def base : dL Unit ⟶ dPair A := graph baseFn
 
 /-- **edit-defn**: the algebra IS the junction `[base,step]` of its two arms, as B&dM write it. -/
 public theorem editAlg_junc :
-    editAlg (Char := Char)
-      = junc (sumCop (dL Unit) ⟨Op Char × (dPair Char).carrier⟩) base step :=
+    editAlg (A := A)
+      = junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step :=
   hom_ext fun u v => by
     cases u with
     | inl d =>
@@ -773,11 +773,11 @@ public theorem editAlg_junc :
     | inr q => simp [editAlg, step, junc, graph, sumCop]; exact Iff.rfl
 
 /-- **edit-defn**: `empty`, the predicate on `(xs,ys)` with both lists empty. -/
-@[expose] public def emptyP (p : ConsList Unit Char × ConsList Unit Char) : Prop :=
-  p = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ())
+@[expose] public def emptyP (p : ConsList Unit A × ConsList Unit A) : Prop :=
+  p = ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ())
 
 /-- `empty` as an arrow: the coreflexive of `emptyP`. -/
-@[expose] public def empty : dPair Char ⟶ dPair Char := corefl emptyP
+@[expose] public def empty : dPair A ⟶ dPair A := corefl emptyP
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.emptyP] public meta def unexpandEmptyP : Unexpander
@@ -787,7 +787,7 @@ open Lean PrettyPrinter in
 /-! ### `edit-defn`, one declaration per line of the note's display -/
 
 /-- **edit-defn**: every `Op` is a `cpy`, a `del` or an `ins`. -/
-public theorem op_cases (o : Op Char) :
+public theorem op_cases (o : Op A) :
     (∃ a, o = Op.cpy a) ∨ (∃ a, o = Op.del a) ∨ ∃ a, o = Op.ins a := by
   cases o with
   | cpy a => exact Or.inl ⟨a, rfl⟩
@@ -801,8 +801,8 @@ public theorem F_obj (A B : RelSet.{0}) :
 /-- **edit-defn**: the edit sequences' initial algebra IS the junction `α=[nil,cons]` of its two
     constructors, at the empty leaf. -/
 public theorem con_eq_junc :
-    graph (con (L := Unit) (E := Op Char))
-      = junc (sumCop (dL Unit) ⟨Op Char × ConsList Unit (Op Char)⟩) τ consR :=
+    graph (con (L := Unit) (E := Op A))
+      = junc (sumCop (dL Unit) ⟨Op A × ConsList Unit (Op A)⟩) τ consR :=
   hom_ext fun u es => by
     cases u with
     | inl d =>
@@ -812,27 +812,27 @@ public theorem con_eq_junc :
 
 
 /-- **edit-defn**: `V≜suffix°×suffix°`. -/
-public theorem V_eq : V Char = rprodMap (suffixR (A := Char))° (suffixR (A := Char))° := rfl
+public theorem V_eq : V A = rprodMap (suffixR (A := A))° (suffixR (A := A))° := rfl
 
 /-- **edit-defn**: `empty` holds exactly at `(([],[]),([],[]))`. -/
-public theorem empty_iff (p q : ConsList Unit Char × ConsList Unit Char) :
+public theorem empty_iff (p q : ConsList Unit A × ConsList Unit A) :
     empty p q ↔ p = q ∧ p = (ConsList.wrap (), ConsList.wrap ()) := Iff.rfl
 
 /-- **edit-defn**: `unstep ([],[])=[]`. -/
-public theorem unstep_nil [DecidableEq Char] :
-    unstepFn ((ConsList.wrap (), ConsList.wrap ()) : ConsList Unit Char × ConsList Unit Char)
+public theorem unstep_nil [DecidableEq A] :
+    unstepFn ((ConsList.wrap (), ConsList.wrap ()) : ConsList Unit A × ConsList Unit A)
       = ConsList.wrap () := rfl
 /-- **edit-defn**: `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`. -/
-public theorem unstep_del [DecidableEq Char] (a : Char) (xs : ConsList Unit Char) :
+public theorem unstep_del [DecidableEq A] (a : A) (xs : ConsList Unit A) :
     unstepFn (ConsList.cons a xs, ConsList.wrap ())
       = ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ()) := rfl
 /-- **edit-defn**: `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`. -/
-public theorem unstep_ins [DecidableEq Char] (b : Char) (ys : ConsList Unit Char) :
+public theorem unstep_ins [DecidableEq A] (b : A) (ys : ConsList Unit A) :
     unstepFn (ConsList.wrap (), ConsList.cons b ys)
       = ConsList.cons (Op.ins b, (ConsList.wrap (), ys)) (ConsList.wrap ()) := rfl
 /-- **edit-defn**: `unstep ([a]⧺xs,[b]⧺ys)`, a copy where the heads agree, else a delete and an
     insert. -/
-public theorem unstep_cons [DecidableEq Char] (a b : Char) (xs ys : ConsList Unit Char) :
+public theorem unstep_cons [DecidableEq A] (a b : A) (xs ys : ConsList Unit A) :
     unstepFn (ConsList.cons a xs, ConsList.cons b ys)
       = if a = b then ConsList.cons (Op.cpy a, (xs, ys)) (ConsList.wrap ())
         else ConsList.cons (Op.del a, (xs, ConsList.cons b ys))
@@ -840,13 +840,13 @@ public theorem unstep_cons [DecidableEq Char] (a b : Char) (xs ys : ConsList Uni
 
 /-- `edit-disj`, first step: `base` returns only `([],[])`, so `base°=empty base°`. -/
 public theorem edit_disj_step1 :
-    step (Char := Char) ≫ (base (Char := Char))° = step ≫ empty ≫ (base (Char := Char))° := by
+    step (A := A) ≫ (base (A := A))° = step ≫ empty ≫ (base (A := A))° := by
   congr 1
   exact hom_ext fun p d => ⟨fun h => ⟨p, ⟨rfl, h⟩, h⟩, fun ⟨_, ⟨h1, _⟩, h2⟩ => h1 ▸ h2⟩
 
 /-- `edit-disj`, second step: `step empty=𝟘`, no `step` returns `([],[])` (`step_ne_base`). -/
 public theorem edit_disj_step2 :
-    step (Char := Char) ≫ empty ≫ (base (Char := Char))° = 𝟘 ≫ (base (Char := Char))° := by
+    step (A := A) ≫ empty ≫ (base (A := A))° = 𝟘 ≫ (base (A := A))° := by
   rw [← Cat.assoc]
   congr 1
   exact hom_ext fun q p => ⟨fun ⟨_, h1, _, h2⟩ => absurd (h1.symm.trans h2) (step_ne_base q),
@@ -854,18 +854,18 @@ public theorem edit_disj_step2 :
 
 /-- **edit-disj** (B&dM p.227): `base` and `step` have disjoint ranges, `step base°=𝟘` —
     Proposition 9.1's hypothesis. -/
-public theorem edit_disj : step (Char := Char) ≫ (base (Char := Char))° = 𝟘 :=
-  calc step (Char := Char) ≫ (base (Char := Char))°
+public theorem edit_disj : step (A := A) ≫ (base (A := A))° = 𝟘 :=
+  calc step (A := A) ≫ (base (A := A))°
       _ = _ := edit_disj_step1
       _ = _ := edit_disj_step2
       _ = 𝟘 := hom_ext fun _ _ => ⟨fun ⟨_, h, _⟩ => h.elim, fun h => h.elim⟩
 
 /-- The `step` arm of `F(X)[nil,cons]` is the note's `(𝟙×X)cons`: `F(X)` keeps the operation and
     recurses in the second component. -/
-public theorem arm_Fmap_con (X : dPair Char ⟶ dEdit Char)
-    (p : Op Char × (dPair Char).carrier) (z : (dEdit Char).carrier) :
-    (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) p z
-      ↔ ((F Unit (Op Char)).map X ≫ α Char) (Sum.inr p) z := by
+public theorem arm_Fmap_con (X : dPair A ⟶ dEdit A)
+    (p : Op A × (dPair A).carrier) (z : (dEdit A).carrier) :
+    (rprodMap (𝟙 (dE (Op A))) X ≫ consR) p z
+      ↔ ((F Unit (Op A)).map X ≫ α A) (Sum.inr p) z := by
   constructor
   · rintro ⟨q, hq, hz⟩
     exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, hz⟩
@@ -878,27 +878,27 @@ public theorem arm_Fmap_con (X : dPair Char ⟶ dEdit Char)
     `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` refines `edit_laws`' body
     `([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)` — `AOP.A9_1.thin_summand_le` at
     `ι ≜ Sum.inr`, whose `Qᵢ` at `Q ≜ F(⊤,V)` is `U×V` with `U ≜ ⊤`. -/
-public theorem edit_branch (X : dPair Char ⟶ dEdit Char) :
-    Λ ((step (Char := Char))°)
-        ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
-        ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) ≫ est (R Char)
-      ⊑ Λ ((editAlg (Char := Char))°) ≫ thinRel (Q Char)
-          ≫ powerRel ((F Unit (Op Char)).map X ≫ α Char) ≫ est (R Char) := by
-  have hmap : (Relator.prod (Relator.const (dE (Op Char)))
-      (Relator.idRelator RelSet.{0})).map X = rprodMap (𝟙 (dE (Op Char))) X :=
+public theorem edit_branch (X : dPair A ⟶ dEdit A) :
+    Λ ((step (A := A))°)
+        ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+        ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)
+      ⊑ Λ ((editAlg (A := A))°) ≫ thinRel (Q A)
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by
+  have hmap : (Relator.prod (Relator.const (dE (Op A)))
+      (Relator.idRelator RelSet.{0})).map X = rprodMap (𝟙 (dE (Op A))) X :=
     prodMap_eq_rprodMap _ _
   have key := RelSet.thin_summand_le
-    (Fᵢ := Relator.prod (Relator.const (dE (Op Char))) (Relator.idRelator RelSet.{0}))
-    (F := F Unit (Op Char)) (T := editAlg (Char := Char)) (Q := Q Char) (X := X)
-    (h := α Char) (R := R Char) (Vᵢ := step) (Uᵢ := consR)
-    (Qᵢ := rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
+    (Fᵢ := Relator.prod (Relator.const (dE (Op A))) (Relator.idRelator RelSet.{0}))
+    (F := F Unit (Op A)) (T := editAlg (A := A)) (Q := Q A) (X := X)
+    (h := α A) (R := R A) (Vᵢ := step) (Uᵢ := consR)
+    (Qᵢ := rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
     Sum.inr (graph_map _) (fun _ _ => Iff.rfl) (fun _ _ h => h)
     (fun p z => by rw [hmap]; exact arm_Fmap_con X p z)
     (fun w p y hstep hT => by
       cases w with
       | inl d =>
         have hy : baseStepFn (Sum.inr p)
-            = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) :=
+            = ((ConsList.wrap () : ConsList Unit A), ConsList.wrap ()) :=
           Eq.trans (Eq.symm hstep) hT
         exact absurd hy (step_ne_base p)
       | inr q => exact ⟨q, rfl⟩)
@@ -911,10 +911,10 @@ public theorem edit_branch (X : dPair Char ⟶ dEdit Char) :
     set: `setify(unstep p)` is a subset of `p`'s decompositions (`unstep_sound`) that still
     dominates all of them (`unstep_complete`), which is what a thinning is.  `U≜⊤` on the
     operation leaves the three comparable and `V` orders the two strings. -/
-public theorem unstep_thins [DecidableEq Char] :
+public theorem unstep_thins [DecidableEq A] :
     unstep ≫ setify
-      ⊑ Λ ((step (Char := Char))°)
-          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char)) := by
+      ⊑ Λ ((step (A := A))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)) := by
   rw [le_iff]
   rintro p Y ⟨L, rfl, rfl⟩
   refine ⟨fun q => step q p, by rw [Λ_eq_classifier]; rfl, ?_, ?_⟩
@@ -928,25 +928,25 @@ public theorem unstep_thins [DecidableEq Char] :
     `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` — `unstep` implements `(step°)%∋ thin(U×V)`
     (`unstep_thins`) and `minL(R)` implements `est(R)`, the list standing in for the set it
     `setify`s to (`CL.list_comp_minL_le`, `setify`'s lax naturality). -/
-public theorem edit_prog [DecidableEq Char] (mle : dPair Char ⟶ dEdit Char) :
-    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minL(R Char)
-      ⊑ Λ ((step (Char := Char))°)
-          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
-  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minL(R Char)
+public theorem edit_prog [DecidableEq A] (mle : dPair A ⟶ dEdit A) :
+    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL(R A)
+      ⊑ Λ ((step (A := A))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
+  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL(R A)
       ⊑ unstep ≫ ListRel.setify
-          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
         comp_mono_left unstep (CL.list_comp_minL_le _ _)
     _ = (unstep ≫ ListRel.setify)
-          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) := by
         rw [← Cat.assoc]
-    _ ⊑ (Λ ((step (Char := Char))°)
-            ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char)))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
+    _ ⊑ (Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
         comp_mono_right unstep_thins _
-    _ = Λ ((step (Char := Char))°)
-          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
+    _ = Λ ((step (A := A))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) := by
         rw [Cat.assoc]
 
 /-! ## The beads of the `edit` panels, and what the environment says about them -/
@@ -972,8 +972,8 @@ public theorem est_R_laxNatural :
   exact hmin v hv
 
 /-- The `F` lane of the edit panels, spelled as the sum and product of the lanes its two summands
-    are — `𝟏 + Op×[Op]` — which is what `[nil,cons]`'s two ends read as.  `F Unit (Op Char)` holds
-    the alphabet FIXED, so its own `map` moves the tail alone and states no naturality in `Char`. -/
+    are — `𝟏 + Op×[Op]` — which is what `[nil,cons]`'s two ends read as.  `F Unit (Op A)` holds
+    the alphabet FIXED, so its own `map` moves the tail alone and states no naturality in `A`. -/
 @[expose] public def opF : Relator RelSet.{0} RelSet.{0} :=
   Relator.sum (Relator.const (dL Unit)) (Relator.prod op (op.comp listRelator))
 
@@ -989,7 +989,7 @@ public theorem opF_map {x y : RelSet.{0}} (S : x ⟶ y) :
       op, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP] <;> first | grind | exact Subsingleton.elim _ _
 
 /-- **`[nil,cons]` is STRICTLY natural** in the alphabet: `F(Op(S),list(Op(S)))[nil,cons] =
-    [nil,cons]list(Op(S))`.  `ListRel.alphaR_natural` at the alphabet `Op(Char)`, with the lane
+    [nil,cons]list(Op(S))`.  `ListRel.alphaR_natural` at the alphabet `Op(A)`, with the lane
     stack's action put in place of `Fbimap`'s — the canonical home is `A5_6_ListCombinators`, and
     this specialisation belongs beside it once that file is free. -/
 public theorem con_strictNatural :
@@ -999,7 +999,7 @@ public theorem con_strictNatural :
   rw [opF_map]
   exact (ListRel.alphaR_natural (opRel S)).symm
 
-/-- The `F` lane at the PAIR carrier: `𝟏 + Op×([Char]×[Char])`, the source of `[base,step]`. -/
+/-- The `F` lane at the PAIR carrier: `𝟏 + Op×([A]×[A])`, the source of `[base,step]`. -/
 @[expose] public def Pair.F : Relator RelSet.{0} RelSet.{0} :=
   Relator.sum (Relator.const (dL Unit))
     (Relator.prod op (Relator.prod listRelator listRelator))
@@ -1018,7 +1018,7 @@ public theorem Pair.F_map {x y : RelSet.{0}} (S : x ⟶ y) :
     the left side, which chooses the operation first, can only send them to one. -/
 public theorem Pair.editAlg_laxNatural :
     LaxNatural (Relator.prod listRelator listRelator) Pair.F
-      (fun a => editAlg (Char := a.carrier)) := by
+      (fun a => editAlg (A := a.carrier)) := by
   intro x y S
   rw [Pair.F_map]
   refine le_iff.mpr fun u q => ?_
@@ -1033,11 +1033,11 @@ public theorem Pair.editAlg_laxNatural :
         instHasRelProd, rprodMap, opRel, opP, listRelator, clRelator, Relator.const, cl, clP, list, listP, list, listP]
 
 /-- **`step` is LAX natural** — the `inr` arm of `editAlg_laxNatural`, at the arm's own lane
-    `Op×([Char]×[Char])`, which is the relator `edit-laws`' third row draws. -/
+    `Op×([A]×[A])`, which is the relator `edit-laws`' third row draws. -/
 public theorem step_laxNatural :
     LaxNatural (Relator.prod listRelator listRelator)
       (Relator.prod op (Relator.prod listRelator listRelator))
-      (fun a => step (Char := a.carrier)) := by
+      (fun a => step (A := a.carrier)) := by
   intro x y S
   refine le_iff.mpr fun u q => ?_
   rintro ⟨v, hv, rfl⟩
@@ -1068,7 +1068,7 @@ public theorem editFn_rel {x y : RelSet.{0}} (S : x ⟶ y) :
     characters of the new alphabet is reached by no edit sequence. -/
 public theorem edit_laxNatural :
     LaxNatural (Relator.prod listRelator listRelator) (op.comp listRelator)
-      (fun a => graph (editFn (Char := a.carrier))) := by
+      (fun a => graph (editFn (A := a.carrier))) := by
   intro x y S
   rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
     prodMap_eq_rprodMap _ _]
@@ -1121,14 +1121,14 @@ public theorem minL_R_laxNatural :
   ConsList.cons () (ConsList.cons () (ConsList.wrap ()))
 
 /-- A candidate decomposition: one `del`, the given first string, the second string empty. -/
-@[expose] public def cand (a : Char) (xs : ConsList Unit Char) : Op Char × (dPair Char).carrier :=
+@[expose] public def cand (a : A) (xs : ConsList Unit A) : Op A × (dPair A).carrier :=
   (Op.del a, (xs, ConsList.wrap ()))
 
 /-- `V` pointwise: each string of `p` is a suffix of the corresponding string of `q`. -/
-public theorem V_apply (p q : (dPair Char).carrier) :
-    V Char p q ↔ suffixP p.1 q.1 ∧ suffixP p.2 q.2 := Iff.rfl
+public theorem V_apply (p q : (dPair A).carrier) :
+    V A p q ↔ suffixP p.1 q.1 ∧ suffixP p.2 q.2 := Iff.rfl
 
-/-- `Op×([Char]×[Char])`'s action pointwise, the lane `edit-branch`'s thinning bead runs on. -/
+/-- `Op×([A]×[A])`'s action pointwise, the lane `edit-branch`'s thinning bead runs on. -/
 public theorem stepF_apply {x y : RelSet.{0}} (S : x ⟶ y)
     (p : Op x.carrier × (dPair x.carrier).carrier)
     (q : Op y.carrier × (dPair y.carrier).carrier) :
@@ -1289,7 +1289,7 @@ public theorem lenAlg_laxNatural :
       (Relator.sum (Relator.const (dL Unit))
         (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op)
           (Relator.const (⟨Nat⟩ : RelSet.{0}))))
-      (fun a : RelSet.{0} => graph (lenAlgFn (Char := a.carrier))) := by
+      (fun a : RelSet.{0} => graph (lenAlgFn (A := a.carrier))) := by
   intro x y S
   refine le_iff.mpr fun u n h => ?_
   obtain ⟨u', hu, hn⟩ := h
@@ -1366,10 +1366,10 @@ public theorem Fbimap_top_Vedit_not_laxNatural :
           (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
             (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
       (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier)))
-        (V a.carrier ≫ (graph (editFn (Char := a.carrier)))°)) :=
+        (V a.carrier ≫ (graph (editFn (A := a.carrier)))°)) :=
   by
   refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
-    (fun a => V a.carrier ≫ (graph (editFn (Char := a.carrier)))°)
+    (fun a => V a.carrier ≫ (graph (editFn (A := a.carrier)))°)
     (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap ())
     (listLanes_nil _) ?_
   exact ⟨(ConsList.wrap (), ConsList.wrap ()), (V_apply _ _).mpr ⟨rfl, rfl⟩, rfl⟩
@@ -1385,10 +1385,10 @@ public theorem Fbimap_top_editR_not_laxNatural :
           (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
             (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
       (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier)))
-        ((graph (editFn (Char := a.carrier)))° ≫ R a.carrier)) :=
+        ((graph (editFn (A := a.carrier)))° ≫ R a.carrier)) :=
   by
   refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
-    (fun a => (graph (editFn (Char := a.carrier)))° ≫ R a.carrier)
+    (fun a => (graph (editFn (A := a.carrier)))° ≫ R a.carrier)
     (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap ())
     (listLanes_nil _) ?_
   exact ⟨ConsList.wrap (), rfl, Nat.le_refl _⟩
@@ -1456,7 +1456,7 @@ public theorem V_recip_laxNatural :
 /-- **`base°` is LAX natural**: only `([],[])` is related to `([],[])` by `list(S)×list(S)`. -/
 public theorem base_recip_laxNatural :
     LaxNatural (Relator.const (dL Unit)) (Relator.prod listRelator listRelator)
-      (fun a : RelSet.{0} => (base (Char := a.carrier))°) := by
+      (fun a : RelSet.{0} => (base (A := a.carrier))°) := by
   intro x y S
   rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
     prodMap_eq_rprodMap _ _]
@@ -1474,7 +1474,7 @@ public theorem base_recip_laxNatural :
 /-- **`empty` is LAX natural**, for the reason `base°` is. -/
 public theorem empty_laxNatural :
     LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
-      (fun a : RelSet.{0} => empty (Char := a.carrier)) := by
+      (fun a : RelSet.{0} => empty (A := a.carrier)) := by
   intro x y S
   rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
     prodMap_eq_rprodMap _ _]
@@ -1545,80 +1545,80 @@ public instance instInhabitedCL : Inhabited (ConsList Unit A) := ⟨ConsList.wra
     (p : X.carrier × X.carrier) : X.carrier :=
   if Q p.1 p.2 then p.1 else p.2
 
-public instance instDecR (es fs : (dEdit Char).carrier) : Decidable (R Char es fs) :=
+public instance instDecR (es fs : (dEdit A).carrier) : Decidable (R A es fs) :=
   inferInstanceAs (Decidable (clen es ≤ clen fs))
 
 end Tabulation
 
-variable [DecidableEq Char]
+variable [DecidableEq A]
 
 /-- **edit-tabulation**: `mle`, the recursive characterisation of the program `edit-laws` states
     (B&dM p.228): a copy where the heads agree, otherwise the `R`-better of a delete and an
     insert. -/
-@[expose] public def mle : ConsList Unit Char × ConsList Unit Char → ConsList Unit (Op Char)
+@[expose] public def mle : ConsList Unit A × ConsList Unit A → ConsList Unit (Op A)
   | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
   | (ConsList.cons a xs, ConsList.wrap _) => ConsList.cons (Op.del a) (mle (xs, ConsList.wrap ()))
   | (ConsList.wrap _, ConsList.cons b ys) => ConsList.cons (Op.ins b) (mle (ConsList.wrap (), ys))
   | (ConsList.cons a xs, ConsList.cons b ys) =>
       if a = b then ConsList.cons (Op.cpy a) (mle (xs, ys))
-      else bmin (R Char) (ConsList.cons (Op.del a) (mle (xs, ConsList.cons b ys)),
+      else bmin (R A) (ConsList.cons (Op.del a) (mle (xs, ConsList.cons b ys)),
                           ConsList.cons (Op.ins b) (mle (ConsList.cons a xs, ys)))
 termination_by p => clen p.1 + clen p.2
 decreasing_by all_goals (simp only [clen]; omega)
 
 /-- **edit-tabulation**: `column(xs)(ys)=[mle(u,ys)∣u←tails(xs)]`. -/
-@[expose] public def column (xs ys : ConsList Unit Char) : ConsList Unit (ConsList Unit (Op Char)) :=
+@[expose] public def column (xs ys : ConsList Unit A) : ConsList Unit (ConsList Unit (Op A)) :=
   cmap (fun u => mle (u, ys)) (tailsFn xs)
 
 /-- **edit-tabulation**: `fstcol=list(del) tails`, the rightmost column. -/
-@[expose] public def fstcol (xs : ConsList Unit Char) : ConsList Unit (ConsList Unit (Op Char)) :=
+@[expose] public def fstcol (xs : ConsList Unit A) : ConsList Unit (ConsList Unit (Op A)) :=
   tailsFn (cmap Op.del xs)
 
 namespace Tab
 
 /-- **edit-tabulation**: `base(b,u)=[[ins(b)]⧺u]`, the bottom entry of the next column. -/
-@[expose] public def base (p : Char × ConsList Unit (Op Char)) :
-    ConsList Unit (ConsList Unit (Op Char)) :=
+@[expose] public def base (p : A × ConsList Unit (Op A)) :
+    ConsList Unit (ConsList Unit (Op A)) :=
   ConsList.cons (ConsList.cons (Op.ins p.1) p.2) (ConsList.wrap ())
 
 /-- **edit-tabulation**: `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,[bmin(R)([del(a)]⧺w,[ins(b)]⧺u)]⧺ws)`
     with `w=head(ws)`: the entry above `ws` in the next column. -/
-@[expose] public def step (b : Char)
-    (q : Char × (ConsList Unit (Op Char) × ConsList Unit (Op Char)))
-    (ws : ConsList Unit (ConsList Unit (Op Char))) : ConsList Unit (ConsList Unit (Op Char)) :=
+@[expose] public def step (b : A)
+    (q : A × (ConsList Unit (Op A) × ConsList Unit (Op A)))
+    (ws : ConsList Unit (ConsList Unit (Op A))) : ConsList Unit (ConsList Unit (Op A)) :=
   if q.1 = b then ConsList.cons (ConsList.cons (Op.cpy q.1) q.2.2) ws
-  else ConsList.cons (bmin (R Char) (ConsList.cons (Op.del q.1) (head ws),
+  else ConsList.cons (bmin (R A) (ConsList.cons (Op.del q.1) (head ws),
                                      ConsList.cons (Op.ins b) q.2.1)) ws
 
 end Tab
 
 /-- **edit-tabulation**: `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`,
     `xus=zip(xs,zip(init(us),tail(us)))`. -/
-@[expose] public def nextcol (xs : ConsList Unit Char)
-    (p : Char × ConsList Unit (ConsList Unit (Op Char))) :
-    ConsList Unit (ConsList Unit (Op Char)) :=
+@[expose] public def nextcol (xs : ConsList Unit A)
+    (p : A × ConsList Unit (ConsList Unit (Op A))) :
+    ConsList Unit (ConsList Unit (Op A)) :=
   cfold (fun _ => Tab.base (p.1, last p.2)) (Tab.step p.1) (zip xs (zip (init p.2) (tail p.2)))
 
-theorem nextcol_cons (a b : Char) (x : ConsList Unit Char) (u v : ConsList Unit (Op Char))
-    (t : ConsList Unit (ConsList Unit (Op Char))) :
+theorem nextcol_cons (a b : A) (x : ConsList Unit A) (u v : ConsList Unit (Op A))
+    (t : ConsList Unit (ConsList Unit (Op A))) :
     nextcol (ConsList.cons a x) (b, ConsList.cons u (ConsList.cons v t))
       = Tab.step b (a, (u, v)) (nextcol x (b, ConsList.cons v t)) := by
   cases t <;> rfl
 
 /-- The top entry of `column(xs)(ys)` is `mle(xs,ys)`. -/
-theorem column_top (xs ys : ConsList Unit Char) :
+theorem column_top (xs ys : ConsList Unit A) :
     ∃ t, column xs ys = ConsList.cons (mle (xs, ys)) t := by
   cases xs with
   | wrap u => cases u; exact ⟨_, rfl⟩
   | cons _ _ => exact ⟨_, rfl⟩
 
 /-- **edit-tabulation**: `mle(xs,ys)=head(column(xs,ys))`. -/
-public theorem mle_head_column (xs ys : ConsList Unit Char) :
+public theorem mle_head_column (xs ys : ConsList Unit A) :
     mle (xs, ys) = head (column xs ys) := by
   obtain ⟨t, ht⟩ := column_top xs ys
   rw [ht]; rfl
 
-theorem mle_nil_right (u : Unit) : ∀ xs : ConsList Unit Char,
+theorem mle_nil_right (u : Unit) : ∀ xs : ConsList Unit A,
     mle (xs, ConsList.wrap u) = cmap Op.del xs
   | ConsList.wrap _ => by rw [mle]; rfl
   | ConsList.cons a xs => by rw [mle, mle_nil_right () xs]; rfl
@@ -1631,7 +1631,7 @@ theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : ConsList Unit A,
       rw [tails_cmap f xs]; rfl
 
 /-- **edit-tabulation**: the rightmost column is `fstcol(xs)`. -/
-public theorem column_nil (xs : ConsList Unit Char) (u : Unit) :
+public theorem column_nil (xs : ConsList Unit A) (u : Unit) :
     column xs (ConsList.wrap u) = fstcol xs := by
   show cmap _ (tailsFn xs) = tailsFn (cmap Op.del xs)
   rw [tails_cmap, show (fun v => mle (v, ConsList.wrap u)) = cmap Op.del from
@@ -1639,7 +1639,7 @@ public theorem column_nil (xs : ConsList Unit Char) (u : Unit) :
 
 /-- **edit-tabulation**: `column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` — each column is
     built from the one to its right. -/
-public theorem column_cons (b : Char) (ys : ConsList Unit Char) : ∀ xs : ConsList Unit Char,
+public theorem column_cons (b : A) (ys : ConsList Unit A) : ∀ xs : ConsList Unit A,
     column xs (ConsList.cons b ys) = nextcol xs (b, column xs ys)
   | ConsList.wrap u => by
       cases u
@@ -1659,8 +1659,8 @@ public theorem column_cons (b : Char) (ys : ConsList Unit Char) : ∀ xs : ConsL
 
 /-- **edit-tabulation**: `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈` — the columns are built right to
     left. -/
-public theorem column_cata (xs : ConsList Unit Char) :
-    (graph (column xs) : dList Char ⟶ ⟨ConsList Unit (ConsList Unit (Op Char))⟩)
+public theorem column_cata (xs : ConsList Unit A) :
+    (graph (column xs) : dList A ⟶ ⟨ConsList Unit (ConsList Unit (Op A))⟩)
       = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
   consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
 
@@ -1671,14 +1671,14 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.dPair] public meta def unexpandDPair : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[Char]×[Char]")))
+  | _ => `($(mkIdent (Name.mkSimple "[A]×[A]")))
 
 end Freyd.Alg.RelSet.Edit
 
 -- printing-only: the section's ordering `R`, thinning preorder `Q` and order `V` wear the note's
 -- letters; the map the section is named after is `edit`, and the algebra's arms are `base`/`step`
 -- (B&dM p.225).  `Op.del` shares its last component with another `del`, so the printer would
--- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `Char`).
+-- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `A`).
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
   | _ => `($(mkIdent `R))
