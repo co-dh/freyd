@@ -36,7 +36,9 @@
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
 #ex-table(
   (sym: [`F`], decl: "Freyd.Alg.RelSet.Stairs.F_obj", type: leant("Freyd.Alg.RelSet.CL.F"), meaning: [`()` ends a climb; `(`#kq("10 15")`, x)` takes the segment #kq("10 15"), then `x` for the rest]),
-  (sym: [`1or2?`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`) = `#kq(",10"), `1or2(`#kq("10 15")`) = `#kq("10 15"); #kq("10 15 20") has no image: three stairs]),
+  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`)` holds, `1or2(`#kq("10 15 20")`)` fails: three stairs]),
+  (sym: [`N2`], decl: "Freyd.Alg.RelSet.Stairs.N2", meaning: [the lists `1or2` lets through: #kq(",10"), #kq("10 15")]),
+  (sym: [`ι`], decl: "Freyd.Alg.RelSet.Stairs.ι", meaning: [`ι(`#kq("10 15")`) = `#kq("10 15"), forgets that the length is 1 or 2]),
   (sym: [`T`], decl: "Freyd.Alg.RelSet.Stairs.T", meaning: [put the segment in front of the rest: `T`#kq("(10 15;20 30)")` = `#kq("10 15 20 30")]),
   (sym: [`T°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1.arg"), meaning: [take 1 or 2 from the head: `T°(`#kq("10 15 20 30")`)` is #kq("(10;15 20 30)") or #kq("(10 15;20 30)")]),
   (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈`#kq("(10;15 20;30)")` = `#kq("10 15 20 30"); #kq("(10 15 20;30)") has no image: #kq("10 15 20") has three stairs (q's `raze` `,/` on a legal climb only)]),
@@ -47,10 +49,10 @@
   (sym: [`≤`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f3.arg"), value: [`≤` on `ℕ`], meaning: [cheapest wins: `30 ≤ 55`]),
   (sym: [`M`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1.arg"), value: leanf("Freyd.Alg.M"), meaning: [the 5 cuts of #kq("10 15 20 30") pay `75`, `60`, `55`, `45`, `30`, so `M(`#kq("10 15 20 30")`) = 30`]),
 )<dp-h-746>
-// lean:AOP.A9_1_Stairs.F_obj@f692c664
-// lean:AOP.A9_1_Stairs.T@4fbd1673
-// lean:AOP.A9_1_Stairs.T_cata@50f1c339
-// lean:AOP.A9_1_Stairs.h@de1ff917
+// lean:AOP.A9_1_Stairs.F_obj@243eae25
+// lean:AOP.A9_1_Stairs.T@cbaeba15
+// lean:AOP.A9_1_Stairs.T_cata@1c042a9d
+// lean:AOP.A9_1_Stairs.h@c0012d19
 // lean:AOP.A9_1.M@374f3050
 
 === The dynamic programming theorem
@@ -96,7 +98,7 @@
 
 // (9.2)'s left side on the stair input, one arrow per row.
 #ex-table(head: [*example of* #context link(<dp-lower>, dispid(query(<dp-lower>).first().location(), raw: true))],
-  (sym: [`T°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1.arg"), meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): `1or2` keeps the first part at 1 or 2 stairs]),
+  (sym: [`T°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1.arg"), meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): the first part is in `N2`]),
   (sym: [`Λ(T°)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1"), meaning: [#kq("10 15 20 30") ↦ `{`#kq("(,10;15 20 30)")`, `#kq("(10 15;20 30)")`}`]),
   (sym: [`F(M)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1"), value: leanf("Freyd.Alg.RelSet.CL.Fmap_eq_sumMap"), meaning: [#kq("(,10;15 20 30)") ↦ #kq("(,10;35)"), #kq("(10 15;20 30)") ↦ #kq("(10 15;20)"): `M(`#kq("15 20 30")`) = 35` (cuts pay `65`, `35`, `45`), `M(`#kq("20 30")`) = 20` (cuts pay `50`, `20`)]),
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [#kq("(,10;35)") ↦ `10 + 35 = 45`; #kq("(10 15;20)") ↦ `10 + 20 = 30`]),
@@ -155,7 +157,7 @@
   (sym: [`∈ \ (F(M) h ≥)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f4"), meaning: [`{`#kq("(10 15;20 30)")`, `#kq("(10;15 20 30)")`}` has bounds `30` and `10 + 35 = 45`, so it maps to every `b' ≤ 30`, e.g. `30` and `25`]),
   (sym: [`⊑ ≥`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.rhs"), value: [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], meaning: [`30 ─h°→ `#kq("(10 15;20)")` ─F(H°)→ `#kq("(10 15;20 30)")` ─∈→ ps ─∈\(F(M)h≥)→ 30`: `b' = 30 ≤ 10 + M(`#kq("20 30")`) = 30 ≤ 10 + 20 = b`; in general `b' ≤ head(s)+M(xs) ≤ head(s)+n = b`]),
 )<dp-upper-tail-746>
-// lean:AOP.A9_1_Stairs.h@de1ff917
+// lean:AOP.A9_1_Stairs.h@c0012d19
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A

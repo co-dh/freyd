@@ -150,8 +150,14 @@ attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour
 -- the climb and cost-list objects print as their body `dCL Unit _`, i.e. `[[ℕ]]` and `[ℕ]`
 attribute [diag_unfold] RelSet.Stairs.dClimb RelSet.Stairs.dCost
 -- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
-attribute [diag_noted] RelSet.Stairs.«1or2» RelSet.Stairs.head RelSet.Stairs.zeroRel
-  RelSet.Stairs.T RelSet.Stairs.h
+attribute [diag_noted] RelSet.Stairs.«1or2» RelSet.Stairs.N2 RelSet.Stairs.ι RelSet.Stairs.head
+  RelSet.Stairs.zeroRel RelSet.Stairs.T RelSet.Stairs.h
+
+-- A subtype's inclusion, unapplied (`ι ≜ graph(val)`), prints as the map `val`; applied, Lean's `↑x` stays.
+open Lean PrettyPrinter in
+@[app_unexpander Subtype.val] meta def unexpandSubtypeVal : Unexpander
+  | `($_:ident) => `($(mkIdent `val))
+  | _ => throw ()
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇cpL(F)⟨g₁,g₂⟩cat thinL(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
