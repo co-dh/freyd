@@ -730,10 +730,6 @@ public theorem edit_laws :
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H, M] at key; rwa [hH] at key
 
-/-- **edit-laws**, the specification `mle` is derived from: `(edit°)%∋ est(R)`, a shortest edit
-    sequence among those that edit back to the given pair. -/
-@[expose] public def mleSpec : dPair Char ⟶ dEdit Char :=
-  Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char)
 
 /-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
 
@@ -797,6 +793,10 @@ public theorem op_cases (o : Op Char) :
 /-- **edit-defn**: the base bifunctor `F(A,B)=𝟏+(A×B)`. -/
 public theorem F_obj (A B : RelSet.{0}) :
     (FB Unit).obj A B = ⟨Unit ⊕ (A.carrier × B.carrier)⟩ := rfl
+
+/-- **edit-defn**: `F(𝟙,edit°)`, the base bifunctor at the identity on `Op` and the converse of
+    `edit`: an operation kept, a pair of strings taken back to an edit sequence that edits to it. -/
+@[expose] public def FeditR := (FB Unit).map (𝟙 (dE (Op Char))) (graph (editFn (Char := Char)))°
 
 /-- **edit-defn**: the edit sequences' initial algebra IS the junction `α=[nil,cons]` of its two
     constructors, at the empty leaf. -/
@@ -1623,6 +1623,11 @@ theorem mle_nil_right (u : Unit) : ∀ xs : ConsList Unit Char,
   | ConsList.wrap _ => by rw [mle]; rfl
   | ConsList.cons a xs => by rw [mle, mle_nil_right () xs]; rfl
 
+/-- **edit-laws**, the specification `mle` is derived from: `mle ⊑ Λ(edit°) est(≤)`, a shortest
+    edit sequence among those that edit back to the given pair.  Stated, not yet proved. -/
+@[expose] public def mleSpec : Prop :=
+  (graph mle : dPair Char ⟶ dEdit Char) ⊑ Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char)
+
 theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : ConsList Unit A,
     tailsFn (cmap f xs) = cmap (cmap f) (tailsFn xs)
   | ConsList.wrap _ => rfl
@@ -1681,7 +1686,7 @@ end Freyd.Alg.RelSet.Edit
 -- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `Char`).
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
-  | _ => `($(mkIdent `R))
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
   | _ => `($(mkIdent `Q))
@@ -1695,8 +1700,8 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.editFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditFn : Unexpander
   | _ => `($(mkIdent `edit))
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Edit.mleSpec] public meta def Freyd.Alg.RelSet.Edit.unexpandMleSpec : Unexpander
-  | _ => `($(mkIdent `spec))
+@[app_unexpander Freyd.Alg.RelSet.Edit.FeditR] public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "F(𝟙,edit°)")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.unstepFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditUnstepFn : Unexpander
   | _ => `($(mkIdent `unstep))

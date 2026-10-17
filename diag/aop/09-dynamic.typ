@@ -330,37 +330,41 @@
 
   [#rowkey("Freyd.Alg.RelSet.Edit.Op")], [#leant("Freyd.Alg.RelSet.Edit.Op")],
   "Freyd.Alg.RelSet.Edit.Op",
-  [an edit operation copies, deletes or inserts one character],
+  [`cpy(a)`, `del(a)`, `ins(a)`],
   [], [],
   "Freyd.Alg.RelSet.Edit.F_obj",
-  [`F(A,B)` is the empty sequence or one `A` paired with a `B`],
+  [`inl(())`, `inr(a,b)`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
   "Freyd.Alg.RelSet.Edit.edit_cata",
-  [the two strings an edit sequence turns one into the other],
+  [`[] ↦ ([],[])`, `[cpy(a)] ↦ ([a],[a])`, `[del(a)] ↦ ([a],[])`, `[ins(a)] ↦ ([],[a])`],
   [#rowkey("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
   ("Freyd.Alg.RelSet.Edit.baseFn", "Freyd.Alg.RelSet.Edit.stepFn"),
-  [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
+  [`inl(()) ↦ ([],[])`, `inr(cpy(a),(xs,ys)) ↦ ([a]⧺xs,[a]⧺ys)`, `inr(del(a),(xs,ys)) ↦ ([a]⧺xs,ys)`,
+   `inr(ins(a),(xs,ys)) ↦ (xs,[a]⧺ys)`],
+  [#rowkey("Freyd.Alg.RelSet.Edit.FeditR")], [#leant("Freyd.Alg.RelSet.Edit.FeditR")],
+  "Freyd.Alg.RelSet.Edit.FeditR",
+  [`inl(()) ↦ inl(())`, `inr(del(a),([b],[b])) ↦ inr(del(a),[cpy(b)])`],
   [], [],
   "Freyd.Alg.RelSet.Edit.length_cata",
-  [the number of operations in a sequence],
+  [`[] ↦ 0`, `[cpy(a)] ↦ 1`],
   [#rowkey("Freyd.Alg.RelSet.Edit.R")], [#leant("Freyd.Alg.RelSet.Edit.R")],
   "Freyd.Alg.RelSet.Edit.R_eq",
-  [`es` is no longer than `fs`],
+  [`[cpy(a)] ≤ [del(a),ins(a)]`],
   [#rowkey("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
   "Freyd.Alg.RelSet.Edit.V_eq",
-  [each string of the first pair is a suffix of the matching string of the second],
+  [`([],[b]) V ([a],[a,b])`],
   [#rowkey("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
   "Freyd.Alg.RelSet.Edit.Q",
-  [any two operations, and the two remaining pairs of strings compared by `V`],
+  [`inl(()) Q inl(())`, `inr(cpy(a),([],[])) Q inr(del(b),([a],[]))`],
   [#rowkey("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
   "Freyd.Alg.RelSet.Edit.emptyP",
-  [holds only at the pair of two empty strings],
+  [`([],[]) ↦ ([],[])` — `([a],[])` has no image],
   [#rowkey("Freyd.Alg.RelSet.Edit.α")], [#leant("Freyd.Alg.RelSet.Edit.α")],
   "Freyd.Alg.RelSet.Edit.α",
-  [the empty edit sequence, or one operation in front of a sequence],
-  [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mleSpec")],
+  [`inl(()) ↦ []`, `inr(cpy(a),es) ↦ [cpy(a)]⧺es`],
+  [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
-  [`mle` must be contained in it: a shortest edit sequence that edits back to the given pair],
+  [`([a],[a]) ↦ [cpy(a)]`, not `[del(a),ins(a)]` — the shortest],
 // lean:AOP.A9_2_Edit.Op@5aeb2081
 // lean:AOP.A9_2_Edit.F_obj@ec51a642
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
@@ -370,7 +374,8 @@
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
 // lean:AOP.A9_2_Edit.baseFn@69cf0cc4
 // lean:AOP.A9_2_Edit.stepFn@427367e6
-// lean:AOP.A9_2_Edit.mleSpec@87170ef5
+// lean:AOP.A9_2_Edit.mleSpec@ba2551c8
+// lean:AOP.A9_2_Edit.FeditR@ce7c2463
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the

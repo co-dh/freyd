@@ -271,6 +271,15 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
   let ty ← match step with
     | some s => do noteRead (.decl s); specialize declName s ci.type
     | none => pure ci.type
+  -- A `def` THE NOTE WRITES BY ITS BODY (`diag_unfold`) has no name of its own to define, so its
+  -- formula is the body alone; a `Prop` def's body is a statement, so it is rendered as one.
+  let opened := binder.isNone && step.isNone && (← Lean.labelled `diag_unfold).contains declName
+  let ty ← match ci.value? with
+    | some v => do
+      if opened && (← Meta.forallTelescope ty fun _ b => pure b.isProp) then
+        Meta.lambdaTelescope v fun ys b => Meta.mkForallFVars ys b
+      else pure ty
+    | none => pure ty
   -- An equation Lean derives binds a pattern's `_` as `a✝` or `a_1` — at every depth, since a
   -- catch-all case binds them inside its hypotheses too — so the binders are the note's.
   Meta.forallTelescope (primeBinders [] (← nameSelf declName ty)) fun xs body => do
@@ -349,6 +358,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         return #[(← pointwise sp declName, .rel)]
       return ← withBody declName branch (val.beta xs) fun v => do
         let b ← labelT v
+        if opened then return #[(b, .rel)]
         -- `x ≜ x` says nothing: the body is a wrapper (`graph f`, `corefl p`) whose argument prints
         -- under the same name.  No line: `file` marks it, a citation skips it, a `leanf` refuses it.
         if b.flat == head.flat then return #[]

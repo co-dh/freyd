@@ -147,6 +147,9 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- graph of a map given by a `match` on a coproduct, whose arms `mapLabel` reads as the junction.
 attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
   RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Edit.baseStepFn
+-- Named in Lean only to be cited: the note writes their body (`F(𝟙,edit°)`, and the inclusion
+-- `mle ⊑ Λ(edit°) est(≤)` the spec states), so a definition cell prints the body alone.
+attribute [diag_unfold] RelSet.Edit.FeditR RelSet.Edit.mleSpec
 -- the climb and cost-list objects print as their body `dCL Unit _`, i.e. `[[ℕ]]` and `[ℕ]`
 attribute [diag_unfold] RelSet.Stairs.dClimb RelSet.Stairs.dCost
 -- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
