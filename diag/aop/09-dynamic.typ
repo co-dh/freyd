@@ -93,6 +93,7 @@
 
 #import "../generated/Freyd.Alg.dynamic_programming_lower.calc.typ" as calc-dpl
 #import "../generated/Freyd.Alg.dynamic_programming_upper.calc.typ" as calc-dpu
+#import "../generated/Freyd.Alg.dynamic_programming_upper_tail.calc.typ" as calc-dput
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
@@ -128,9 +129,17 @@
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(≤)` returns
      from that input only `b'` with `b' ≤ b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
-  // two rows: nine panels in one row shrink the fractions past reading
-  lean-calc(calc-dpu, breaks: (4,)),
+  lean-calc(calc-dpu),
 )]<dp-upper>
+
+// The tail (9.3) shares with (9.3) with thinning below: both end by citing it.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper_tail") \
+    #src[taking an answer `b` of `H` apart by `h°F(H°)`, and keeping each set of parts whose every
+     solution by `M` assembles by `h` to a `b'` with `b' ≤ b`, relates `b` only to such `b'`]],
+     // lean:AOP.A9_1.dynamic_programming_upper_tail@868481aa
+  lean-calc(calc-dput),
+)]<dp-upper-tail>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
@@ -180,7 +189,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑≥`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-calc(calc-dptu, breaks: (4, 7)),
+  lean-calc(calc-dptu, breaks: (4,)),
 )]<dp-laws-93>
 
 

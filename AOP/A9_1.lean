@@ -84,6 +84,25 @@ public theorem dynamic_programming_lower [InitialAlgebra F] {h : F.obj B ⟶ B} 
 
 calc_steps dynamic_programming_lower
 
+/-- The tail (9.3) and (9.3) with thinning share: `h°F(H°)∈(∈\F(M)h≥) ⊑ ≥` — once an answer of `H`
+    is taken apart by `h°F(H°)` into the parts `∈` reaches, solving those parts by `M` and assembling
+    by `h` lands `≥`-below it. -/
+public theorem dynamic_programming_upper_tail [InitialAlgebra F] {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {«≤» : B ⟶ B}
+    (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°) :
+    h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (M T h «≤») ≫ h) ≫ «≤»°))
+      ⊑ «≤»° :=
+  calc h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°))
+        ⊑ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est «≤») ≫ h ≫ «≤»° := by
+        rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est «≤»)]
+        simpa only [Cat.assoc] using comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
+      _ ⊑ h° ≫ F.map («≤»°) ≫ h ≫ «≤»° :=
+        comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) «≤»)) _)
+      _ ⊑ «≤»° ≫ «≤»° := by simpa only [Cat.assoc] using comp_mono_right ((pres_iff_conj hh).mp hmono) («≤»°)
+      _ ⊑ «≤»° := htrans
+
+calc_steps dynamic_programming_upper_tail
+
 /-- **(9.3)** (B&dM p.221): `min R·P(h·FM)·ΛT°·H° ⊆ R`, mirrored — with `M ≜ Λ(H) est(≤)`,
     whatever the dynamic-programming step returns is `≤`-related to everything `H` returns from
     the same input.  One `calc` step per hint of the book. -/
@@ -101,13 +120,7 @@ public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
         comp_mono_left _ (comp_mono_left _ (by
         simpa only [Cat.assoc] using
           comp_mono_right (comp_Λ_recip_le_recip_eps T) ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°))))
-      _ ⊑ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est «≤») ≫ h ≫ «≤»° := by
-        rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est «≤»)]
-        simpa only [Cat.assoc] using comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
-      _ ⊑ h° ≫ F.map («≤»°) ≫ h ≫ «≤»° :=
-        comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) «≤»)) _)
-      _ ⊑ «≤»° ≫ «≤»° := by simpa only [Cat.assoc] using comp_mono_right ((pres_iff_conj hh).mp hmono) («≤»°)
-      _ ⊑ «≤»° := htrans
+      _ ⊑ «≤»° := dynamic_programming_upper_tail hh hmono htrans
 
 calc_steps dynamic_programming_upper
 
@@ -207,20 +220,12 @@ public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B �
         simpa only [Cat.assoc] using
           comp_mono_right (recip_eps_comp_thinRel_le Q)
             (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°))))
-      _ ⊑ h° ≫ F.map ((H T h)°) ≫ Q° ≫ F.map (Λ (H T h) ≫ est «≤») ≫ h ≫ «≤»° :=
-        comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (by
+      _ ⊑ «≤»° ≫ h° ≫ F.map ((H T h)°) ≫ (∋ (F.obj A))°
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)) := by
         simpa only [Cat.assoc] using
-          leftDiv_comp_le ((∋ (F.obj A))°) ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°))))
-      _ ⊑ «≤»° ≫ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est «≤») ≫ h ≫ «≤»° := by
-        rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est «≤»)]
-        simpa only [Cat.assoc] using
-          comp_mono_right (recip_thin_condition hQ) (F.map (Λ (H T h) ≫ est «≤») ≫ h ≫ «≤»°)
-      _ ⊑ «≤»° ≫ h° ≫ F.map («≤»°) ≫ h ≫ «≤»° :=
-        comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) «≤»)) _))
-      _ ⊑ «≤»° ≫ «≤»° ≫ «≤»° := comp_mono_left _ (by
-        simpa only [Cat.assoc] using
-          comp_mono_right ((pres_iff_conj hh).mp hmono) «≤»°)
-      _ ⊑ «≤»° ≫ «≤»° := comp_mono_left «≤»° htrans
+          comp_mono_right (recip_thin_condition hQ)
+            ((∋ (F.obj A))° ≫ (((∋ (F.obj A))°) \ ((F.map (Λ (H T h) ≫ est «≤») ≫ h) ≫ «≤»°)))
+      _ ⊑ «≤»° ≫ «≤»° := comp_mono_left «≤»° (dynamic_programming_upper_tail hh hmono htrans)
       _ ⊑ «≤»° := htrans
 
 calc_steps dynamic_programming_thin_upper
