@@ -729,7 +729,10 @@
 // the row by the label `law-row` gives each of its selectors, never by the formula text.
 // No `<lean-formula>` of its own: `lean-calc` lists every law it cites from a `context`, and one
 // placed in flow here would read, to `lean-keys`, as a law the display states.
-#let law-ref(law) = {
+// `key`: the formula printed, when it is not the law's own — a calc step's `inst`, the law in the
+// step's letters; the link still goes to the row or display that states `law`.
+#let law-ref(law, key: none) = {
+  let k = if key == none { law } else { key }
   context {
     let at = query(selector(<disp-start>).before(here())).at(-1, default: none)
     let home = query(<lean-formula>).filter(m => m.value == law).find(m => {
@@ -741,9 +744,9 @@
     let row = query(label(law)).find(m => m.func() == metadata and type(m.value) == int)
     if "list" in sys.inputs { none }
     else if s != none and (at == none or s.location() != at.location()) {
-      link(s.location(), cite(dispid(s.location()), (law,))) }
-    else if row != none { link(row.location(), cite(none, (law,), row: true)) }
-    else { cite(none, (law,), row: true) }
+      link(s.location(), cite(dispid(s.location()), (k,))) }
+    else if row != none { link(row.location(), cite(none, (k,), row: true)) }
+    else { cite(none, (k,), row: true) }
   }
 }
 // `breaks`: the step indices a new row starts at, each row one exporter call; a row too wide for
@@ -752,7 +755,7 @@
 // breakable cell), so a long proof takes more `breaks`, never a second display.
 #let lean-calc(c, breaks: (), ..opts) = {
   let steps = c.steps.map(s => (
-    if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { law-ref(s.law) }))
+    if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { law-ref(s.law, key: s.at("inst", default: none)) }))
   steps.at(0) = (none, steps.at(0).at(1), [])
   let cuts = (0,) + breaks + (steps.len(),)
   // EVERY LAW THE CALC NAMES is a formula to draw, listed here wherever
@@ -760,7 +763,7 @@
   // Under `<lean-cited>`, not `<lean-formula>`: a law a step CITES is no law its row
   // STATES, and labelling the row with it duplicated the label of the row that does.
   lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named(),
-    metas: context for s in c.steps { if s.law != none [#metadata(s.law)<lean-cited>] })
+    metas: context for s in c.steps { if s.law != none [#metadata(if s.at("inst", default: none) == none { s.law } else { s.inst })<lean-cited>] })
 }
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

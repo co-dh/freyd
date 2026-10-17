@@ -182,6 +182,67 @@ def conditionClass (t : Expr) : MetaM Bool := do
     if fs.isEmpty then return false
     fs.allM fun f => do Meta.isProp (← Meta.inferType f)
 
+/-- What a step's proof applies one binder of its law at: a term the printer writes as ONE TOKEN
+    (`h`, `T`, `H`, `∈`) renames the binder to that token; anything else keeps the law's letter. -/
+inductive Inst | keep | rename (n : Name)
+  deriving BEq, Inhabited
+
+/-- Every application of `c` in `e`, its arguments read where it stands. -/
+partial def appsOf (c : Name) (e : Expr) : Array Expr :=
+  match e with
+  | .app .. =>
+    let as := e.getAppArgs.flatMap (appsOf c)
+    if e.getAppFn.isConstOf c then #[e] ++ as else appsOf c e.getAppFn ++ as
+  | .lam _ d b _ | .forallE _ d b _ => appsOf c d ++ appsOf c b
+  | .letE _ t v b _ => appsOf c t ++ appsOf c v ++ appsOf c b
+  | .mdata _ b | .proj _ _ b => appsOf c b
+  | _ => #[]
+
+/-- THE BINDERS STEP `step` INSTANTIATES ITS LAW `c` AT, read off `c`'s applications in the step's
+    proof, by binder position; `none` when the proof applies `c` nowhere (a `rw` leaves only a motive)
+    or at two different instances.  A hypothesis and an instance stay the law's: they print as
+    premises or not at all.  ONE TOKEN is the printer's answer (`delabP`, `stxPeel`), never the
+    term's shape: `H T h` prints `H` and `(∋ C)°` prints `∈`, where a local is always its own name. -/
+def stepInsts (c step : Name) : MetaM (Option (Array Inst)) := do
+  let env ← getEnv
+  let some v := (env.find? step).bind (·.value?) | throwError "{step} has no proof to read"
+  let some ci := env.find? c | throwError "no such declaration: {c}"
+  let rec bis : Expr → List BinderInfo | .forallE _ _ b bi => bi :: bis b | _ => []
+  let lawBis := (bis ci.type).toArray
+  Meta.lambdaTelescope v fun _ b => do
+    let apps := appsOf c (← instantiateMVars b)
+    let insts ← apps.mapM fun app => app.getAppArgs.zipIdx.mapM fun (a, i) => do
+      let a := a.headBeta.consumeMData
+      if a.hasLooseBVars || lawBis[i]?.any (·.isInstImplicit) || (← Meta.isProof a) then return Inst.keep
+      if let .fvar f := a then return .rename (← f.getUserName)
+      -- A converse with a name of its own prints as that name (`labelTree`'s `°` clause).
+      let a ← if a.isAppOf ``Freyd.Alg.Allegory.recip then pure ((← namedRecip? a.appArg!).getD a) else pure a
+      return match stxPeel (← delabP a).raw with
+        | .ident _ _ n _ => .rename n
+        | .atom _ t => .rename (Name.mkSimple t)
+        | _ => .keep
+    let some i₀ := insts[0]? | return none
+    return if insts.all (· == i₀) && i₀.any (· != .keep) then some i₀ else none
+
+/-- `specialize`'s walk down law type `ty` from binder `i`: `xs` the binders opened, `kept` the
+    letters the law keeps that print (a hypothesis or an instance is no variable of it), `put` the
+    names the step's tokens give. -/
+partial def specializeGo (is : Array Inst) (ty : Expr) (i : Nat) (xs : Array Expr)
+    (kept put : Array Name) : MetaM (Expr × Array Name × Array Name) := do
+  let .forallE n d b bi := ty | return (← Meta.mkForallFVars xs ty, kept, put)
+  let (m, kept, put) ← match is[i]?.getD .keep with
+    | .rename m => pure (m, kept, put.push m)
+    | .keep => pure (n, if (← Meta.isProp d) || bi.isInstImplicit then kept else kept.push n, put)
+  Meta.withLocalDecl m bi d fun x => specializeGo is (b.instantiate1 x) (i + 1) (xs.push x) kept put
+
+/-- LAW TYPE `ty` IN STEP `step`'S LETTERS (`stepInsts`): each binder the step applies at one token
+    is renamed to it; only names change, so the statement is the law's own.  When a token would
+    equal a letter the law keeps, the law prints in its own letters throughout: one name, two variables. -/
+def specialize (c step : Name) (ty : Expr) : MetaM Expr := do
+  let some is ← stepInsts c step | return ty
+  let (ty', kept, put) ← Meta.withLCtx {} {} (specializeGo is ty 0 #[] #[] #[])
+  return if kept.any put.contains then ty else ty'
+
 /-- The declaration's statement, or the one side `path`/`branch` names, in the note's own
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
@@ -189,12 +250,17 @@ def conditionClass (t : Expr) : MetaM Bool := do
     room and is SPACED, and the same statement inside a drawn panel is not.  A part's `Bool` says
     the gap BEFORE it is a conditional law's `⟹` (`implBreak`), not a relation's (`relBreak`). -/
 partial def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
-    (branch : List StrDiag.Sel) (defines : Option Name := none) : MetaM (Array (Lbl × Bool)) :=
+    (branch : List StrDiag.Sel) (defines : Option Name := none) (step : Option Name := none) :
+    MetaM (Array (Lbl × Bool)) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
+  -- `step`: the law as that calc step applies it, in the step's own letters (`specialize`).
+  let ty ← match step with
+    | some s => do noteRead (.decl s); specialize declName s ci.type
+    | none => pure ci.type
   -- An equation Lean derives binds a pattern's `_` as `a✝` or `a_1` — at every depth, since a
   -- catch-all case binds them inside its hypotheses too — so the binders are the note's.
-  Meta.forallTelescope (primeBinders [] (← nameSelf declName ci.type)) fun xs body => do
+  Meta.forallTelescope (primeBinders [] (← nameSelf declName ty)) fun xs body => do
     -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
     -- the definition itself: the name under its own arguments, `≜`, and the VALUE.  Read off the
     -- type, so every `def` a table heads with prints this way and none is named here.
@@ -360,8 +426,10 @@ def file (declName : Name) (binder : Option String) (path : List String)
   if path.contains "mapsto" then return "#" ++ (← mapsto declName).bare.typst ++ "\n"
   -- `≜<def>`: the selector's definition-table row (`DiagExport.parseArg`), the `def` it defines.
   let defines := path.findSome? fun s => (s.dropPrefix? "≜").map (·.toString.toName)
+  -- `@<step>`: the law as that calc step applies it (`DiagExport.parseArg`, `calcFile`'s `inst`).
+  let step := path.findSome? fun s => (s.dropPrefix? "@").map (·.toString.toName)
   let ls ← render (!path.contains "compact") declName binder
-    (path.filter fun s => s != "compact" && !s.startsWith "≜") branch defines
+    (path.filter fun s => s != "compact" && !s.startsWith "≜" && !s.startsWith "@") branch defines step
   -- A definition whose body prints as its own name (`render`): the note reads the mark, not a formula.
   if ls.isEmpty then return s!"#metadata(\"{declName}\")<formula-says-nothing>\n"
   return String.join (ls.toList.mapIdx fun i (l, b) =>
@@ -813,7 +881,11 @@ def calcFile (drawsSame : Expr → Expr → MetaM Bool) (declName : Name) : Meta
     -- A term that is a statement draws whole: lean-chain's statement selector is a 1-tuple.
     let sel := if ← Meta.isProp t then s!"({sel.quote},)" else sel.quote
     let law := laws[0]?.elim "none" fun l => (lawSel l).quote
-    rows := rows.push s!"(sel: {sel}, rel: {rel.quote}, law: {law})"
+    -- `inst`: the reason's formula, the law in the letters this step instantiates it at (`specialize`).
+    let inst ← match laws[0]? with
+      | some (Law.thm c) => do pure (if (← stepInsts c (step i)).isSome then s!"{c}@{step i}".quote else "none")
+      | _ => pure "none"
+    rows := rows.push s!"(sel: {sel}, rel: {rel.quote}, law: {law}, inst: {inst})"
   return "#let steps = (\n  " ++ ",\n  ".intercalate rows.toList ++ ",\n)\n"
 
 /-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
