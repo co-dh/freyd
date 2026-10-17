@@ -72,18 +72,18 @@ def cites (step thm : Name) : MetaM Bool := do
 -- 2.6 `cata_comm`, `α⦇f⦈ = F(⦇f⦈)f`: the hollow circle on `⦇f⦈`, in the left panel.
 /-- info: [[("⦇f⦈", "circle")], []] -/
 #guard_msgs in #eval pair ``Freyd.Alg.InitialAlgebra.cata_comm
--- 9.2 dp-cost: panel (b) is left by the `=` step `F` preserves composition, which marks nothing; panel
--- (c) by the `⊑` step `F(cost°)h ⊑ k cost°` — the up triangle on `cost°`, BEFORE its sign.
+-- 9.2 dp-cost: panel (a) is left by the `=` step `R = cost≤cost°`, which marks nothing; panel
+-- (b) by the `⊑` step `F(cost°)h ⊑ k cost°` — the up triangle on `cost°`, BEFORE its sign.
 /-- info: [[], [("cost°", "up")]] -/
 #guard_msgs in #eval do
-  let steps := [1, 2, 3, 4, 5, 6].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
-  return [← panel steps[1]! true steps, ← panel steps[2]! true steps]
--- 9.2 dp-cost panel (d) `F(cost)F(≤)k cost°`: the pair `≤`/`k` is one crossing, marked once, on `k`,
+  let steps := [1, 2, 3, 4, 5].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
+  return [← panel steps[0]! true steps, ← panel steps[1]! true steps]
+-- 9.2 dp-cost panel (c) `F(cost)F(≤)k cost°`: the pair `≤`/`k` is one crossing, marked once, on `k`,
 -- whose square the binder `hk : F(≤)k ⊑ k≤` states — never also on `≤` from the step's own statement.
 /-- info: [("k", "down")] -/
 #guard_msgs in #eval do
-  let steps := [1, 2, 3, 4, 5, 6].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
-  panel steps[3]! true steps
+  let steps := [1, 2, 3, 4, 5].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
+  panel steps[2]! true steps
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false, false] -/
 #guard_msgs in #eval [1, 2, 3, 4, 5, 6, 7, 8].mapM fun k =>

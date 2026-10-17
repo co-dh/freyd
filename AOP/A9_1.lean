@@ -101,11 +101,9 @@ public theorem dynamic_programming_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
         comp_mono_left _ (comp_mono_left _ (by
         simpa only [Cat.assoc] using
           comp_mono_right (comp_Λ_recip_le_recip_eps T) ((∋ (F.obj A))° \ ((F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R°))))
-      _ ⊑ h° ≫ F.map ((H T h)°) ≫ (F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R° :=
-        comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
-      _ = h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est R) ≫ h ≫ R° := by
+      _ ⊑ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est R) ≫ h ≫ R° := by
         rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est R)]
-        repeat rw [Cat.assoc]
+        simpa only [Cat.assoc] using comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
       _ ⊑ h° ≫ F.map (R°) ≫ h ≫ R° :=
         comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) _)
       _ ⊑ R° ≫ R° := by simpa only [Cat.assoc] using comp_mono_right ((pres_iff_conj hh).mp hmono) (R°)
@@ -213,12 +211,10 @@ public theorem dynamic_programming_thin_upper [InitialAlgebra F] {h : F.obj B �
         comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (by
         simpa only [Cat.assoc] using
           leftDiv_comp_le ((∋ (F.obj A))°) ((F.map (Λ (H T h) ≫ est R) ≫ h) ≫ R°))))
-      _ ⊑ R° ≫ h° ≫ F.map ((H T h)°) ≫ F.map (Λ (H T h) ≫ est R) ≫ h ≫ R° := by
+      _ ⊑ R° ≫ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est R) ≫ h ≫ R° := by
+        rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est R)]
         simpa only [Cat.assoc] using
           comp_mono_right (recip_thin_condition hQ) (F.map (Λ (H T h) ≫ est R) ≫ h ≫ R°)
-      _ = R° ≫ h° ≫ F.map ((H T h)° ≫ Λ (H T h) ≫ est R) ≫ h ≫ R° := by
-        rw [F.map_comp ((H T h)°) (Λ (H T h) ≫ est R)]
-        repeat rw [Cat.assoc]
       _ ⊑ R° ≫ h° ≫ F.map (R°) ≫ h ≫ R° :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) _))
       _ ⊑ R° ≫ R° ≫ R° := comp_mono_left _ (by
@@ -318,9 +314,8 @@ public theorem pres_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     (hch : IsFHom h k cost) (hk : Pres k «≤») :
     Pres h R :=
   calc F.map R ≫ h
-        = F.map (cost ≫ «≤» ≫ cost°) ≫ h := congrArg (fun X => F.map X ≫ h) hR
-      _ = F.map cost ≫ F.map «≤» ≫ F.map cost° ≫ h := by
-        rw [F.map_comp, F.map_comp, Cat.assoc, Cat.assoc]
+        = F.map cost ≫ F.map «≤» ≫ F.map cost° ≫ h := by
+        rw [hR, F.map_comp, F.map_comp, Cat.assoc, Cat.assoc]
       _ ⊑ F.map cost ≫ F.map «≤» ≫ k ≫ cost° :=
         comp_mono_left (F.map cost) (comp_mono_left (F.map «≤») (recip_lax_hom hcost hch))
       _ ⊑ F.map cost ≫ k ≫ «≤» ≫ cost° := by
@@ -410,17 +405,13 @@ public theorem pres_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
         congrArg (fun X => F.map (X ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost°) hR
     _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)°) ≫ h ≫ cost ≫ cost° := by
         rw [P.pair_recip_pair, Cat.assoc cost «≤» cost°]
-    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)°) ≫ F.map (P.pair cost H°) ≫ k ≫ cost° := by
-        rw [← Cat.assoc h cost, hch, Cat.assoc]
     _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)° ≫ P.pair cost H°) ≫ k ≫ cost° := by
-        rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, Cat.assoc]
+        rw [← Cat.assoc h cost, hch, Cat.assoc, ← Cat.assoc (F.map _) (F.map _), ← F.map_comp, Cat.assoc]
     _ ⊑ F.map (P.pair (cost ≫ «≤») H° ≫ 𝟙 P.p) ≫ k ≫ cost° :=
         comp_mono_right (F.map_mono (comp_mono_left _ (tabulation_simple_of_simple P.tab hcost.2 hH))) _
     _ = F.map (P.pair (cost ≫ «≤») H°) ≫ k ≫ cost° := by rw [Cat.comp_id]
-    _ = F.map (P.pair cost H° ≫ prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
-        rw [RelProd.pair_prodMap_fst (P := P) (Q := P) cost H° «≤»]
     _ = F.map (P.pair cost H°) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
-        rw [F.map_comp, Cat.assoc]
+        rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, RelProd.pair_prodMap_fst (P := P) (Q := P) cost H° «≤»]
     _ ⊑ F.map (P.pair cost H°) ≫ k ≫ «≤» ≫ cost° :=
         comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
     _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
@@ -1294,12 +1285,10 @@ public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_branch {V₁ : α ⟶ A} {V�
         ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
         ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R := by
         rw [← Cat.assoc (Freyd.Alg.ran V₁), RelSet.ran_Λ_junc_recip_inl hdisj, Cat.assoc, Cat.assoc]
-    _ = Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
-        ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel, Cat.assoc]
     _ = Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁
         ≫ powerRel ((sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂) ≫ est R := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₁), ← powerRel_comp]
+        rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel, Cat.assoc,
+          ← Cat.assoc (powerRel (sumCop α β).u₁), ← powerRel_comp]
     _ = Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R := by
         rw [u₁_junc]
 
