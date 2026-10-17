@@ -511,7 +511,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     let wire ← match r.term with | some t => isWiring t | none => pure false
     let mark := if wire then ", \"wire\"" else match r.tri, r.nat with
       -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
-      | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"passup\"" else ", \"pass\""
+      -- A JUMP is the chain's own mark, filled, so it is never read as a lax bead's hollow triangle.
+      | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"jumpup\"" else ", \"jump\""
       | none, none => ""
       | none, some .strict => ""
       -- A LAX SQUARE `G(R)φ ⊑ φF(R)` lets every arrow above down past the bead, so it IS the down

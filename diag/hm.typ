@@ -112,7 +112,7 @@
 #let HMC = HMS * HMR
 
 /// How far a mark reaches either side of its point: what a name set beside the point must clear.
-#let hm-mark-half(nat) = if nat == "wire" { 0 } else if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
+#let hm-mark-half(nat) = if nat == "wire" { 0 } else if nat in ("pass", "passup", "jump", "jumpup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
@@ -120,21 +120,25 @@
 /// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
 /// proved for every map and nothing proved at a relation, which is half of what the filled dot
 /// claims.  `pass` is a hollow DOWN triangle, for a bead what stands above may pass down across `⊑`;
-/// `passup` the UP one, for a bead what stands below may pass up.
+/// `passup` the UP one, for a bead what stands below may pass up.  `jump`/`jumpup` are the same
+/// triangles FILLED: the chain's mark, the bead the step leaving the panel carries its neighbour
+/// across — a different claim from a lax verdict, so not the same ink.
 /// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg, r: HMC) = {
-  if nat == "pass" {
-    // A HOLLOW TRIANGLE POINTING DOWN: the bead lets what stands above it pass below it across a
+  if nat in ("pass", "jump") {
+    // A TRIANGLE POINTING DOWN: the bead lets what stands above it pass below it across a
     // `⊑` — one `X` a statement names (`F(X)φ⊑WX`), or every arrow, a lax square `G(X)φ⊑φF(X)`.
-    // `HMS` is its one size.
+    // `HMS` is its one size; hollow for the verdict, filled for the chain's jump.
     d.line((rel: (-HMS * HMD, HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, HMS * HMR * 0.8), to: p),
-           (rel: (0, -HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
-  } else if nat == "passup" {
+           (rel: (0, -HMS * HMD), to: p), close: true, fill: if nat == "jump" { col } else { bg },
+           stroke: col + lw)
+  } else if nat in ("passup", "jumpup") {
     // THE SAME TRIANGLE POINTING UP: what stands below the bead may pass up across `⊑`, every arrow,
     // the square `φF(X)⊑G(X)φ`.  The mirror of `pass`, so its size is `HMS` too.
     d.line((rel: (-HMS * HMD, -HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, -HMS * HMR * 0.8), to: p),
-           (rel: (0, HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
+           (rel: (0, HMS * HMD), to: p), close: true, fill: if nat == "jumpup" { col } else { bg },
+           stroke: col + lw)
   } else if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
