@@ -213,9 +213,6 @@ public theorem bimap_comp (F : PolyC ι) {A₁ A₂ A₃ B₁ B₂ B₃ : Type}
 @[expose] public def fmapP (F : PolyC ι) {A B : Type} (Q : B → Prop) : sem F A B → Prop :=
   bimapP F (fun _ => True) Q
 
-/-- The coreflexive (partial identity) `P¿` of a predicate `P` (aopa `_¿`). -/
-def corefl {B : RelSet.{0}} (P : B.carrier → Prop) : B ⟶ B := fun x y => x = y ∧ P x
-
 /-! ## Action on relations — the relator (`bimapR`, `fmapR`) -/
 
 /-- aopa `bimapR`: the polynomial functor's action on `Rel(Set)` morphisms. -/
