@@ -147,10 +147,10 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- graph of a map given by a `match` on a coproduct, whose arms `mapLabel` reads as the junction.
 attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
   RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Edit.baseStepFn
--- the climb and cost-list objects print as their body `dCL Unit _`, i.e. `[Move]` and `[ℕ]`
+-- the climb and cost-list objects print as their body `dCL Unit _`, i.e. `[[ℕ]]` and `[ℕ]`
 attribute [diag_unfold] RelSet.Stairs.dClimb RelSet.Stairs.dCost
 -- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
-attribute [diag_noted] RelSet.Stairs.Move RelSet.Stairs.oneOrTwo RelSet.Stairs.ι RelSet.Stairs.head RelSet.Stairs.zeroRel
+attribute [diag_noted] RelSet.Stairs.«1or2» RelSet.Stairs.head RelSet.Stairs.zeroRel
   RelSet.Stairs.T RelSet.Stairs.h RelSet.Stairs.paid
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
