@@ -97,10 +97,8 @@
 
 // (9.2)'s left side on the stair input, one arrow per row.
 #ex-table(head: [*example of* #context link(<dp-lower>, dispid(query(<dp-lower>).first().location(), raw: true))],
-  (sym: [`T°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1.arg"), meaning: [#kq("10 15 20 30") ↦ #kq("(,10;15 20 30)") or #kq("(10 15;20 30)"): the first part is in `N2`]),
   (sym: [`Λ(T°)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f1"), meaning: [#kq("10 15 20 30") ↦ `{`#kq("(,10;15 20 30)")`, `#kq("(10 15;20 30)")`}`]),
   (sym: [`F(M)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1"), value: leanf("Freyd.Alg.RelSet.CL.Fmap_eq_sumMap"), meaning: [#kq("(,10;15 20 30)") ↦ #kq("(,10;35)"), #kq("(10 15;20 30)") ↦ #kq("(10 15;20)"): `M(`#kq("15 20 30")`) = 35` (cuts pay `65`, `35`, `45`), `M(`#kq("20 30")`) = 20` (cuts pay `50`, `20`)]),
-  (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [#kq("(,10;35)") ↦ `10 + 35 = 45`; #kq("(10 15;20)") ↦ `10 + 20 = 30`]),
   (sym: [`P(F(M)h)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2"), meaning: [#kq("x[;0]+'.z.s' y") \ `{45, 30}`]),
   (sym: [`est(≤)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f3"), meaning: [`{45, 30} ↦ 30`]),
 )<dp-lower-746>
@@ -145,12 +143,10 @@
 
 // The tail at the Stair example (strings by `concat` give no `H`): `b` an answer of `H`, `b'` of the step.
 #ex-table(head: [*example of* #context link(<dp-upper-tail>, dispid(query(<dp-upper-tail>).first().location(), raw: true))],
-  (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [`h(s,n) = head(s)+n`: pay the stair segment `s` stands on, then the rest's total `n`. `h(()) = 0`; `h`#kq("(10 15;20)")` = 10 + 20 = 30`]),
   (sym: [`h°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f1"), value: [`b ↦ (s, b−head(s))`, `0 ↦ ()`], meaning: [`h°(30)` is #kq("(,10;20)") or #kq("(10 15;20)"), ...; `h°(0) = ()`]),
   (sym: [`H°`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f2.arg"), value: [#kq("(+/*')° ,/")], meaning: [`H°(30)` is #kq(",30") (climb #kq(",30")) or #kq("10 20") (climb #kq("(10;20)")), ...: #kq("(+/*')°") every climb paying `n`, #kq(",/") its cost list]),
   (sym: [`F(H°)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f2"), value: leanf("Freyd.Alg.RelSet.CL.Fmap_eq_sumMap"), meaning: [#kq("(10 15;20)") `↦` #kq("(10 15;20 30)"), since `H°(20)` holds #kq("20 30") (climb #kq(",20 30"))]),
   (sym: [`∈`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f3"), meaning: [#kq("(10;15)") `↦ {`#kq("(10;15)")`, `#kq("(10 15;20)")`}`: the pair to any set `ps` holding it]),
-  (sym: [`M`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f4.arg.f1.arg"), meaning: [`M(`#kq(",10")`) = 10`; `M(`#kq("10 15 20 30")`) = 30`, the cheapest of `75`, `60`, `55`, `45`, `30`]),
   (sym: [`F(M) h`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg"), value: [`(s,xs) ↦ head(s) + M(xs)`], meaning: [#kq("(10 15;20 30)") `↦ 10 + M(`#kq("20 30")`) = 10 + 20 = 30`]),
   (sym: [`≥`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.rhs"), value: [`≥` on `ℕ`], meaning: [`30 ≥ 20`, since `20 ≤ 30`; `c ≥ b'` iff `b' ≤ c`]),
   (sym: [`∈ \ (F(M) h ≥)`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_upper_tail.lhs.f4"), meaning: [`{`#kq("(10 15;20 30)")`, `#kq("(10;15 20 30)")`}` has bounds `30` and `10 + 35 = 45`, so it maps to every `b' ≤ 30`, e.g. `30` and `25`]),
