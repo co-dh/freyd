@@ -57,11 +57,21 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 @[expose] public def M [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) (R : B ⟶ B) : A ⟶ B :=
   Λ (H T h) ≫ est R
 
-/-- **`T°F(H)h = H`**: `H` solves its own recursion — `hylo_fixed` read at `H≜⦇T⦈°⦇h⦈`, stated
-    on the name so a picture draws `H` as one arrow. -/
+/-- **`T°F(H)h = H`**: `H` solves its own recursion — the fold law for `h`, the fold law for `T`
+    conversed and `α°α = 𝟙`, one `calc` step each, with `H≜⦇T⦈°⦇h⦈` unfolded at both ends so the
+    table draws `H` as one arrow. -/
 public theorem H_fixed (I : InitialAlgebra F) (T : F.obj A ⟶ A)
     (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
-  hylo_fixed I h T
+  calc T° ≫ F.map (H T h) ≫ h
+      = T° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h := by rw [H]
+    _ = T° ≫ F.map ((relCata T)°) ≫ F.map (relCata h) ≫ h := by rw [F.map_comp, Cat.assoc]
+    _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [relCata_cancel I h]
+    _ = (relCata T)° ≫ I.α° ≫ I.α ≫ relCata h := by
+        rw [← Cat.assoc T°, ← relCata_cancel_recip I T, Cat.assoc]
+    _ = (relCata T)° ≫ relCata h := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha, Cat.id_comp]
+    _ = H T h := by rw [H]
+
+calc_steps H_fixed
 
 /-- **The thinning condition** of Theorem 9.2 (B&dM p.222): `QF(H)h ⊑ F(H)hR` — thinning the
     decompositions by `Q` before solving them only moves the answer up `R`. -/

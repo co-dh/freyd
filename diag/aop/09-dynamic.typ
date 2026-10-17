@@ -99,6 +99,7 @@
 #import "../generated/Freyd.Alg.RelSet.Bracket.mct_rec.calc.typ" as calc-mct
 #import "../generated/Freyd.Alg.RelSet.Bracket.col_rec.calc.typ" as calc-col
 #import "../generated/Freyd.Alg.RelSet.Bracket.row_rec.calc.typ" as calc-row
+#import "../generated/Freyd.Alg.H_fixed.calc.typ" as calc-hfixed
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -107,6 +108,15 @@
      // lean:AOP.A9_1.dynamic_programming_lower@6f86895e
   lean-calc(calc-dpl),
 )]<dp-lower>
+
+// `T° F(H) h = H`, the last step of (9.2): `H` solves its own recursion.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.H_fixed") \
+    #src[taking the input apart one level by `T°`, solving each part by `H` and assembling by `h`
+     gives `H` itself]],
+     // lean:AOP.A9_1.H_fixed@1e8edca6
+  lean-calc(calc-hfixed),
+)]<dp-h-fixed>
 
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
 #disp(num: "(9.3)")[#calc-table(cols: (1fr,), al: (left + top,),
