@@ -164,20 +164,51 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
     -- A SUBTERM's type: `.lhs`/`.rhs` a side, then `.f<k>` its k-th factor in diagram order — so a
     -- table walking a composite stage by stage reads every stage's type off the one statement.
     let steps := sides.filter (· != "name")
+    -- A leading `.unfold` opens a predicate the statement is built from (`Pres h R` ⇝ `F(R)h ⊑ hR`),
+    -- so its sides are selectable as an (in)equation's are.
+    let body ← (steps.takeWhile (· == "unfold")).foldlM (init := body) fun b _ => do
+      let some v ← Meta.unfoldDefinition? b |
+        throwError "{declName}: `.unfold` asks for the definition of {← Meta.ppExpr b}, whose head unfolds to nothing"
+      pure v.headBeta
+    let steps := steps.dropWhile (· == "unfold")
     if let s₀ :: rest := steps then
       let some (_, l, r) ← splitM body |
         throwError "{declName}: `.{s₀}` selects a side, but {← Meta.ppExpr body} is no (in)equation"
       let side ← match s₀ with
         | "lhs" => pure l | "rhs" => pure r
         | s => throwError "{declName}: a subterm selector starts at `.lhs` or `.rhs`, not `.{s}`"
+      -- `.arg` the operand an operator is applied to (`Λ(T°)` ⇝ `T°`), as the formula route reads it;
+      -- `.unfold` the head constant's definition (`H` ⇝ `⦇T⦈°⦇h⦈`), so a definition's stages are typed too.
       let t ← rest.foldlM (init := side) fun (u : Expr) (s : String) => do
+        if s == "arg" then
+          unless u.isApp do throwError "{declName}: `.arg` asks for the operand of {← Meta.ppExpr u}, no application"
+          return u.appArg!
+        if s == "unfold" then
+          let some v ← Meta.unfoldDefinition? u |
+            throwError "{declName}: `.unfold` asks for the definition of {← Meta.ppExpr u}, whose head unfolds to nothing"
+          return v.headBeta
         let some k := factorIdx? s |
-          throwError "{declName}: selector step `.{s}` is not a factor `.f<k>` (k ≥ 1)"
+          throwError "{declName}: selector step `.{s}` is not a factor `.f<k>` (k ≥ 1), `.arg` or `.unfold`"
         let fs := compFactors u
         let some f := fs[k - 1]? |
           throwError "{declName}: `.{s}` asks for factor {k} of {← Meta.ppExpr u}, which has {fs.size}"
         pure f
+      -- An INFERRED end may be a concrete instance's carrier (`(cataR T)°` ends at the initial
+      -- algebra's `T[ℕ]`); it prints as the object the instance gives (`[[ℕ]]`), as a stated type would.
       let ty ← Meta.inferType t
+      -- Only to a real object: a step that lands on another class's projection (`P` of a parent
+      -- class) is no object of the note, so the original end stays.
+      let o (e : Expr) : MetaM Expr := do
+        let env ← getEnv
+        let mut cur := e
+        for _ in [0:8] do
+          let some n ← Meta.unfoldProjInst? cur | break
+          cur := n
+          unless (cur.getAppFn.constName?.map env.isProjectionFn).getD false do return cur
+        return e
+      let ty ← match homObjs? ty with
+        | some (a, b) => pure (mkApp2 ty.appFn!.appFn! (← o a) (← o b))
+        | none => pure ty
       let some s ← hom? ty piece brk |
         throwError "{declName}: the selected subterm {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, \
           not an arrow of a category"

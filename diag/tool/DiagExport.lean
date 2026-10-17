@@ -1416,6 +1416,10 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".arg" then
       stem := stem.dropEnd 4
       sides := "arg" :: sides
+    -- `.unfold`: the TYPE route's definition of the head of the term before it (`TypeRender.render`).
+    else if stem.endsWith ".unfold" then
+      stem := stem.dropEnd 7
+      sides := "unfold" :: sides
     -- `.compact`: the FORMULA's print mode, the caller's — a formula fitted above a panel has no
     -- room, where every other formula is set as text and spaced (`FormulaRender.file`).
     else if stem.endsWith ".compact" then
@@ -1854,8 +1858,10 @@ def main (args : List String) : IO UInt32 := do
       -- EVERY ROUTE RECORDS THE KEY IT DREW FROM, here and not in the routes: one writer, one
       -- reader (`--stale`), and a route that records none is a picture nobody can tell is stale.
       -- `.arg` is a formula step only: a picture has no argument of a side to draw on its own.
-      if sides.contains "arg" && !formulaMode then
-        throwError "{arg}: `.arg` (the argument a side is applied to) is read by --formula only"
+      if sides.contains "arg" && !(formulaMode || typeMode) then
+        throwError "{arg}: `.arg` (the argument a side is applied to) is read by --formula and --type only"
+      if sides.contains "unfold" && !typeMode then
+        throwError "{arg}: `.unfold` (the definition of a subterm's head) is read by --type only"
       if sides.contains "compact" && !formulaMode then
         throwError "{arg}: `.compact` is a formula's print mode, read by --formula only — a panel's \
           labels are compact already"
@@ -1866,10 +1872,10 @@ def main (args : List String) : IO UInt32 := do
       let factorStep (s : String) := (Freyd.TypeRender.factorIdx? s).isSome
       if sides.any factorStep && !typeMode then
         throwError "{arg}: `.f<k>` (a factor of a side) is read by --type only"
-      if typeMode && (sides.any (fun s => !(s ∈ ["name", "lhs", "rhs"] || factorStep s))
+      if typeMode && (sides.any (fun s => !(s ∈ ["name", "lhs", "rhs", "arg", "unfold"] || factorStep s))
           || !branch.isEmpty || binder.isSome) then
         throwError "{arg}: --type reads a declaration, or a side `.lhs`/`.rhs` and its factors \
-          `.f<k>`, then optionally `.name`"
+          `.f<k>`, operands `.arg` and definitions `.unfold`, then optionally `.name`"
       -- EVERY CONSTANT A LABEL WROTE UNDER ITS LEAN NAME fails the panel, after it is drawn or on
       -- top of the error it ended with, so one run names them all (`checkSpelled` only notes them).
       let unspelled := do return StrDiag.unspelledIn (← StrDiag.readsRef.get).toArray
