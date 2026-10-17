@@ -87,77 +87,77 @@ theorem div_inter_le {a b c : 𝒜} (R R' : a ⟶ c) (S : b ⟶ c) :
     (R ∩ R') / S ⊑ (R / S) ∩ (R' / S) := by
   rw [div_inter_eq]; exact le_refl _
 
-/-- R/1 = R (§2.314). -/
-public theorem div_one {a b : 𝒜} (R : a ⟶ b) : R / Cat.id b = R := by
+/-- X/1 = X (§2.314). -/
+public theorem div_one {a b : 𝒜} (X : a ⟶ b) : X / Cat.id b = X := by
   apply le_antisymm
-  · -- (R/1) ⊑ R: DivisionAllegory.div_comp_le gives (R/1)≫1 ⊑ R, and (R/1)≫1 = R/1
-    have h := DivisionAllegory.div_comp_le R (Cat.id b)
+  · -- (X/1) ⊑ X: DivisionAllegory.div_comp_le gives (X/1)≫1 ⊑ X, and (X/1)≫1 = X/1
+    have h := DivisionAllegory.div_comp_le X (Cat.id b)
     simpa [Cat.comp_id] using h
-  · -- R ⊑ R/1: by le_div_iff, this is equivalent to R≫1 ⊑ R
+  · -- X ⊑ X/1: by le_div_iff, this is equivalent to X≫1 ⊑ X
     rw [le_div_iff]
-    simpa [Cat.comp_id] using le_refl R
+    simpa [Cat.comp_id] using le_refl X
 
-/-- 1 ⊑ R/R (§2.314). -/
-public theorem one_le_div_self {a b : 𝒜} (R : a ⟶ b) : Cat.id a ⊑ R / R := by
+/-- 1 ⊑ X/X (§2.314). -/
+public theorem one_le_div_self {a b : 𝒜} (X : a ⟶ b) : Cat.id a ⊑ X / X := by
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
 
-/-- (R/R)R ⊑ R (§2.314). -/
-public theorem div_self_comp_le {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R ⊑ R :=
-  DivisionAllegory.div_comp_le R R
+/-- (X/X)X ⊑ X (§2.314). -/
+public theorem div_self_comp_le {a b : 𝒜} (X : a ⟶ b) : (X / X) ≫ X ⊑ X :=
+  DivisionAllegory.div_comp_le X X
 
 /-- Division is monotone in the numerator: R ⊑ R' → R/S ⊑ R'/S. -/
 public theorem div_mono_left {a b c : 𝒜} {R R' : a ⟶ c} (h : R ⊑ R') (S : b ⟶ c) :
     R / S ⊑ R' / S :=
   (le_div_iff _ _ _).mpr (le_trans (DivisionAllegory.div_comp_le R S) h)
 
-/-- (R/S)(S/W) ⊑ R/W (§2.314).
+/-- (X/S)(S/W) ⊑ X/W (§2.314).
     `W`, not the book's `T`: `diag/allegory-axioms.typ` §8 exports its picture from this
     statement, and reads the third relation as what a guest **wants**. -/
-public theorem div_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
-    (R / S) ≫ (S / W) ⊑ R / W := by
+public theorem div_comp {a b c d : 𝒜} (X : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+    (X / S) ≫ (S / W) ⊑ X / W := by
   apply (le_div_iff _ _ _).mpr
-  apply le_trans ?_ (DivisionAllegory.div_comp_le R S)
+  apply le_trans ?_ (DivisionAllegory.div_comp_le X S)
   rw [Cat.assoc]
-  exact comp_mono_left (R / S) (DivisionAllegory.div_comp_le S W)
+  exact comp_mono_left (X / S) (DivisionAllegory.div_comp_le S W)
 
-/-- R/(S₁∪S₂) = (R/S₁) ∩ (R/S₂) (§2.314). -/
-public theorem div_union {a b c : 𝒜} (R : a ⟶ c) (S₁ S₂ : b ⟶ c) :
-    R / (S₁ ∪ S₂) = (R / S₁) ∩ (R / S₂) := by
+/-- X/(S₁∪S₂) = (X/S₁) ∩ (X/S₂) (§2.314). -/
+public theorem div_union {a b c : 𝒜} (X : a ⟶ c) (S₁ S₂ : b ⟶ c) :
+    X / (S₁ ∪ S₂) = (X / S₁) ∩ (X / S₂) := by
   apply le_antisymm
-  · -- R/(S₁∪S₂) ⊑ R/S₁: by le_div_iff, (R/(S₁∪S₂))(S₁) ⊑ (R/(S₁∪S₂))(S₁∪S₂) ⊑ R
+  · -- X/(S₁∪S₂) ⊑ X/S₁: by le_div_iff, (X/(S₁∪S₂))(S₁) ⊑ (X/(S₁∪S₂))(S₁∪S₂) ⊑ X
     apply le_inter
     · apply (le_div_iff _ _ _).mpr
-      exact le_trans (comp_mono_left _ (le_union_left S₁ S₂)) (DivisionAllegory.div_comp_le R _)
+      exact le_trans (comp_mono_left _ (le_union_left S₁ S₂)) (DivisionAllegory.div_comp_le X _)
     · apply (le_div_iff _ _ _).mpr
-      exact le_trans (comp_mono_left _ (le_union_right S₁ S₂)) (DivisionAllegory.div_comp_le R _)
-  · -- R/S₁ ∩ R/S₂ ⊑ R/(S₁∪S₂): need T(S₁∪S₂) ⊑ R whenever TS₁ ⊑ R and TS₂ ⊑ R
+      exact le_trans (comp_mono_left _ (le_union_right S₁ S₂)) (DivisionAllegory.div_comp_le X _)
+  · -- X/S₁ ∩ X/S₂ ⊑ X/(S₁∪S₂): need T(S₁∪S₂) ⊑ X whenever TS₁ ⊑ X and TS₂ ⊑ X
     apply (le_div_iff _ _ _).mpr
     rw [DistributiveAllegory.comp_union_distrib]
     exact union_lub
-      (le_trans (comp_mono_right (inter_lb_left _ _) S₁) (DivisionAllegory.div_comp_le R S₁))
-      (le_trans (comp_mono_right (inter_lb_right _ _) S₂) (DivisionAllegory.div_comp_le R S₂))
+      (le_trans (comp_mono_right (inter_lb_left _ _) S₁) (DivisionAllegory.div_comp_le X S₁))
+      (le_trans (comp_mono_right (inter_lb_right _ _) S₂) (DivisionAllegory.div_comp_le X S₂))
 
-/-- R/(S₁≫S₂) = (R/S₂)/S₁ (§2.314). -/
-public theorem div_comp_assoc {a b c d : 𝒜} (R : a ⟶ d) (S₁ : b ⟶ c) (S₂ : c ⟶ d) :
-    R / (S₁ ≫ S₂) = (R / S₂) / S₁ := by
+/-- X/(S₁≫S₂) = (X/S₂)/S₁ (§2.314). -/
+public theorem div_comp_assoc {a b c d : 𝒜} (X : a ⟶ d) (S₁ : b ⟶ c) (S₂ : c ⟶ d) :
+    X / (S₁ ≫ S₂) = (X / S₂) / S₁ := by
   apply le_antisymm
-  · -- R/(S₁S₂) ⊑ (R/S₂)/S₁: need ((R/(S₁S₂)) ≫ S₁) ≫ S₂ ⊑ R
+  · -- X/(S₁S₂) ⊑ (X/S₂)/S₁: need ((X/(S₁S₂)) ≫ S₁) ≫ S₂ ⊑ X
     apply (le_div_iff _ _ _).mpr
     apply (le_div_iff _ _ _).mpr
-    -- goal: ((R / (S₁ ≫ S₂)) ≫ S₁) ≫ S₂ ⊑ R
-    -- ((R/(S₁S₂))S₁)S₂ = (R/(S₁S₂))(S₁S₂) ⊑ R
-    have : ((R / (S₁ ≫ S₂)) ≫ S₁) ≫ S₂ = (R / (S₁ ≫ S₂)) ≫ (S₁ ≫ S₂) := by
+    -- goal: ((X / (S₁ ≫ S₂)) ≫ S₁) ≫ S₂ ⊑ X
+    -- ((X/(S₁S₂))S₁)S₂ = (X/(S₁S₂))(S₁S₂) ⊑ X
+    have : ((X / (S₁ ≫ S₂)) ≫ S₁) ≫ S₂ = (X / (S₁ ≫ S₂)) ≫ (S₁ ≫ S₂) := by
       rw [Cat.assoc]
-    rw [this]; exact DivisionAllegory.div_comp_le R (S₁ ≫ S₂)
-  · -- (R/S₂)/S₁ ⊑ R/(S₁S₂): need ((R/S₂)/S₁)(S₁S₂) ⊑ R
+    rw [this]; exact DivisionAllegory.div_comp_le X (S₁ ≫ S₂)
+  · -- (X/S₂)/S₁ ⊑ X/(S₁S₂): need ((X/S₂)/S₁)(S₁S₂) ⊑ X
     apply (le_div_iff _ _ _).mpr
-    -- ((R/S₂)/S₁)(S₁S₂) = ((R/S₂)/S₁)S₁ · S₂ ⊑ (R/S₂) · S₂ ⊑ R
-    have step1 : ((R / S₂) / S₁) ≫ (S₁ ≫ S₂) = (((R / S₂) / S₁) ≫ S₁) ≫ S₂ := by
+    -- ((X/S₂)/S₁)(S₁S₂) = ((X/S₂)/S₁)S₁ · S₂ ⊑ (X/S₂) · S₂ ⊑ X
+    have step1 : ((X / S₂) / S₁) ≫ (S₁ ≫ S₂) = (((X / S₂) / S₁) ≫ S₁) ≫ S₂ := by
       rw [Cat.assoc]
     rw [step1]
-    exact le_trans (comp_mono_right (DivisionAllegory.div_comp_le (R / S₂) S₁) S₂) (DivisionAllegory.div_comp_le R S₂)
+    exact le_trans (comp_mono_right (DivisionAllegory.div_comp_le (X / S₂) S₁) S₂) (DivisionAllegory.div_comp_le X S₂)
 
 /-! ## §2.316  Heyting algebra structure on (a,a)
 
@@ -236,44 +236,44 @@ public theorem le_symmDiv_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b 
 
 /-! ### Properties of symmetric division (§2.35) -/
 
-/-- Symmetric division satisfies (R/ₛS)° = S/ₛR (§2.35). -/
-public theorem symmDiv_recip {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
-    (R /ₛ S)° = S /ₛ R := by
+/-- Symmetric division satisfies (X/ₛS)° = S/ₛX (§2.35). -/
+public theorem symmDiv_recip {a b c : 𝒜} (X : a ⟶ c) (S : b ⟶ c) :
+    (X /ₛ S)° = S /ₛ X := by
   apply le_antisymm
-  · -- (R/ₛS)° ⊑ S/ₛR.  R:a→c, S:b→c, R/ₛS:a→b, (R/ₛS)°:b→a, S/ₛR:b→a.
-    -- le_symmDiv_iff: (R/ₛS)° ⊑ S/ₛR ↔ (R/ₛS)°≫R ⊑ S ∧ ((R/ₛS)°)°≫S ⊑ R.
+  · -- (X/ₛS)° ⊑ S/ₛX.  X:a→c, S:b→c, X/ₛS:a→b, (X/ₛS)°:b→a, S/ₛX:b→a.
+    -- le_symmDiv_iff: (X/ₛS)° ⊑ S/ₛX ↔ (X/ₛS)°≫X ⊑ S ∧ ((X/ₛS)°)°≫S ⊑ X.
     rw [le_symmDiv_iff]
-    have h := (le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)
+    have h := (le_symmDiv_iff (X /ₛ S) X S).mp (le_refl _)
     exact ⟨h.2, by rw [Allegory.recip_recip]; exact h.1⟩
-  · -- S/ₛR ⊑ (R/ₛS)°.  Equivalently (S/ₛR)° ⊑ R/ₛS (by recip_le_iff).
+  · -- S/ₛX ⊑ (X/ₛS)°.  Equivalently (S/ₛX)° ⊑ X/ₛS (by recip_le_iff).
     rw [← recip_le_iff]
-    apply (le_symmDiv_iff _ R S).mpr
-    have h := (le_symmDiv_iff (S /ₛ R) S R).mp (le_refl _)
-    -- goal: (S/ₛR)°≫S ⊑ R ∧ (S/ₛR)°°≫R ⊑ S
-    -- h.2 : (S/ₛR)°≫S ⊑ R; h.1 : (S/ₛR)≫R ⊑ S, and (S/ₛR)°° = S/ₛR
+    apply (le_symmDiv_iff _ X S).mpr
+    have h := (le_symmDiv_iff (S /ₛ X) S X).mp (le_refl _)
+    -- goal: (S/ₛX)°≫S ⊑ X ∧ (S/ₛX)°°≫X ⊑ S
+    -- h.2 : (S/ₛX)°≫S ⊑ X; h.1 : (S/ₛX)≫X ⊑ S, and (S/ₛX)°° = S/ₛX
     exact ⟨h.2, by rw [Allegory.recip_recip]; exact h.1⟩
 
-/-- Symmetric division is transitive: (R/ₛS)(S/ₛW) ⊑ R/ₛW (§2.35).
+/-- Symmetric division is transitive: (X/ₛS)(S/ₛW) ⊑ X/ₛW (§2.35).
     `W` for the third relation, as in `div_comp`. -/
-public theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
-    (R /ₛ S) ≫ (S /ₛ W) ⊑ R /ₛ W := by
+public theorem symmDiv_comp {a b c d : 𝒜} (X : a ⟶ d) (S : b ⟶ d) (W : c ⟶ d) :
+    (X /ₛ S) ≫ (S /ₛ W) ⊑ X /ₛ W := by
   rw [le_symmDiv_iff]
-  have hRS := (le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)
+  have hRS := (le_symmDiv_iff (X /ₛ S) X S).mp (le_refl _)
   have hSW := (le_symmDiv_iff (S /ₛ W) S W).mp (le_refl _)
   constructor
-  · -- ((R/ₛS)(S/ₛW)) ≫ W ⊑ R
+  · -- ((X/ₛS)(S/ₛW)) ≫ W ⊑ X
     rw [Cat.assoc]
     exact le_trans (comp_mono_left _ hSW.1) hRS.1
-  · -- ((R/ₛS)(S/ₛW))° ≫ R ⊑ W
-    -- = (S/ₛW)°(R/ₛS)° ≫ R ⊑ W
+  · -- ((X/ₛS)(S/ₛW))° ≫ X ⊑ W
+    -- = (S/ₛW)°(X/ₛS)° ≫ X ⊑ W
     rw [Allegory.recip_comp, Cat.assoc]
-    -- (R/ₛS)° = S/ₛR, and (S/ₛW)° = W/ₛS
-    have h_rs_rec : (R /ₛ S)° ≫ R ⊑ S := hRS.2
+    -- (X/ₛS)° = S/ₛX, and (S/ₛW)° = W/ₛS
+    have h_rs_rec : (X /ₛ S)° ≫ X ⊑ S := hRS.2
     exact le_trans (comp_mono_left _ h_rs_rec) hSW.2
 
-/-- Symmetric division cancels on the right: `(R/ₛS)S ⊑ R` (§2.35). -/
-public theorem symmDiv_comp_le {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
-    (R /ₛ S) ≫ S ⊑ R := ((le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)).1
+/-- Symmetric division cancels on the right: `(X/ₛS)S ⊑ X` (§2.35). -/
+public theorem symmDiv_comp_le {a b c : 𝒜} (X : a ⟶ c) (S : b ⟶ c) :
+    (X /ₛ S) ≫ S ⊑ X := ((le_symmDiv_iff (X /ₛ S) X S).mp (le_refl _)).1
 
 -- Note: "R/ₛS ⊑ R" is listed in the book as a containment (§2.35) but only for the
 -- case where the objects match (S = 1), i.e. simplePart R ⊑ R. See simplePart_le.
@@ -288,46 +288,46 @@ public theorem symmDiv_comp_le {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
 /-- R is STRAIGHT if R/ₛR ⊑ 1 (§2.351). -/
 @[expose] public def Straight {a b : 𝒜} (R : a ⟶ b) : Prop := R /ₛ R ⊑ Cat.id a
 
-/-- In a division allegory, (R/R)R = R (§2.314). -/
-public theorem div_self_comp {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ R = R := by
-  apply le_antisymm (DivisionAllegory.div_comp_le R R)
-  -- R ⊑ (R/R)R: since 1 ⊑ R/R, we have R = 1R ⊑ (R/R)R
-  have h : R ⊑ (R / R) ≫ R := by
+/-- In a division allegory, (X/X)X = X (§2.314). -/
+public theorem div_self_comp {a b : 𝒜} (X : a ⟶ b) : (X / X) ≫ X = X := by
+  apply le_antisymm (DivisionAllegory.div_comp_le X X)
+  -- X ⊑ (X/X)X: since 1 ⊑ X/X, we have X = 1R ⊑ (X/X)X
+  have h : X ⊑ (X / X) ≫ X := by
     calc
-      R = (Cat.id a) ≫ R := by rw [Cat.id_comp]
-      _ ⊑ (R / R) ≫ R := comp_mono_right (one_le_div_self R) R
+      X = (Cat.id a) ≫ X := by rw [Cat.id_comp]
+      _ ⊑ (X / X) ≫ X := comp_mono_right (one_le_div_self X) X
   exact h
 
-/-- R/ₛR is reflexive: 1 ⊑ R/ₛR (§2.351). -/
+/-- X/ₛX is reflexive: 1 ⊑ X/ₛX (§2.351). -/
 -- The `.mpr` term, not `rw [le_symmDiv_iff]`: rewriting by an Iff drags in `propext`,
 -- and this way the proof — and `symmDiv_self_comp` below — stays axiom-free.
-public theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R /ₛ R) :=
-  (le_symmDiv_iff (Cat.id a) R R).mpr
-    ⟨by rw [Cat.id_comp]; exact le_refl R,
-     by rw [recip_id, Cat.id_comp]; exact le_refl R⟩
+public theorem symmDiv_self_reflexive {a b : 𝒜} (X : a ⟶ b) : Reflexive (X /ₛ X) :=
+  (le_symmDiv_iff (Cat.id a) X X).mpr
+    ⟨by rw [Cat.id_comp]; exact le_refl X,
+     by rw [recip_id, Cat.id_comp]; exact le_refl X⟩
 
-/-- In a division allegory, (R/ₛR)R = R (§2.314).
-    The book's list has only `(R/ₛR)R ⊑ R`; it is an equality because 1 ⊑ R/ₛR. -/
-public theorem symmDiv_self_comp {a b : 𝒜} (R : a ⟶ b) : (R /ₛ R) ≫ R = R := by
+/-- In a division allegory, (X/ₛX)X = X (§2.314).
+    The book's list has only `(X/ₛX)X ⊑ X`; it is an equality because 1 ⊑ X/ₛX. -/
+public theorem symmDiv_self_comp {a b : 𝒜} (X : a ⟶ b) : (X /ₛ X) ≫ X = X := by
   apply le_antisymm
-  · -- (R/ₛR)R ⊑ (R/R)R = R, since R/ₛR is an intersection with R/R as its left factor
-    have h : (R /ₛ R) ≫ R ⊑ (R / R) ≫ R :=
-      comp_mono_right (show R /ₛ R ⊑ R / R from inter_lb_left _ _) R
-    rw [div_self_comp R] at h
+  · -- (X/ₛX)X ⊑ (X/X)X = X, since X/ₛX is an intersection with X/X as its left factor
+    have h : (X /ₛ X) ≫ X ⊑ (X / X) ≫ X :=
+      comp_mono_right (show X /ₛ X ⊑ X / X from inter_lb_left _ _) X
+    rw [div_self_comp X] at h
     exact h
-  · -- R ⊑ (R/ₛR)R: since 1 ⊑ R/ₛR, we have R = 1R ⊑ (R/ₛR)R
+  · -- X ⊑ (X/ₛX)X: since 1 ⊑ X/ₛX, we have X = 1R ⊑ (X/ₛX)X
     calc
-      R = (Cat.id a) ≫ R := by rw [Cat.id_comp]
-      _ ⊑ (R /ₛ R) ≫ R := comp_mono_right (symmDiv_self_reflexive R) R
+      X = (Cat.id a) ≫ X := by rw [Cat.id_comp]
+      _ ⊑ (X /ₛ X) ≫ X := comp_mono_right (symmDiv_self_reflexive X) X
 
-/-- `R/ₛR` is idempotent: `(R/ₛR)(R/ₛR) = R/ₛR` (§2.351).  Transitivity gives `⊑`,
+/-- `X/ₛX` is idempotent: `(X/ₛX)(X/ₛX) = X/ₛX` (§2.351).  Transitivity gives `⊑`,
     reflexivity `⊒`, so *admires the same people* is an equivalence relation. -/
-public theorem symmDiv_self_idem {a b : 𝒜} (R : a ⟶ b) :
-    (R /ₛ R) ≫ (R /ₛ R) = R /ₛ R := by
-  apply le_antisymm (symmDiv_comp R R R)
+public theorem symmDiv_self_idem {a b : 𝒜} (X : a ⟶ b) :
+    (X /ₛ X) ≫ (X /ₛ X) = X /ₛ X := by
+  apply le_antisymm (symmDiv_comp X X X)
   calc
-    R /ₛ R = (Cat.id a) ≫ (R /ₛ R) := by rw [Cat.id_comp]
-    _ ⊑ (R /ₛ R) ≫ (R /ₛ R) := comp_mono_right (symmDiv_self_reflexive R) _
+    X /ₛ X = (Cat.id a) ≫ (X /ₛ X) := by rw [Cat.id_comp]
+    _ ⊑ (X /ₛ X) ≫ (X /ₛ X) := comp_mono_right (symmDiv_self_reflexive X) _
 
 /-! ## §2.312  Left division
 
@@ -352,32 +352,32 @@ public theorem le_leftDiv_iff {a b c : 𝒜} (X : b ⟶ c) (S : a ⟶ b) (R : a 
   rw [← recip_le_iff, le_div_iff, ← Allegory.recip_comp, recip_le_iff,
       Allegory.recip_recip]
 
-/-- The semi-commutative triangle for left division: S(S\R) ⊑ R (§2.312). -/
-public theorem leftDiv_comp_le {a b c : 𝒜} (S : a ⟶ b) (R : a ⟶ c) : S ≫ (S \ R) ⊑ R :=
-  (le_leftDiv_iff _ S R).mp (le_refl _)
+/-- The semi-commutative triangle for left division: S(S\X) ⊑ X (§2.312). -/
+public theorem leftDiv_comp_le {a b c : 𝒜} (S : a ⟶ b) (X : a ⟶ c) : S ≫ (S \ X) ⊑ X :=
+  (le_leftDiv_iff _ S X).mp (le_refl _)
 
 /-- Left division is monotone in the numerator: R ⊑ R' → S\R ⊑ S\R'. -/
 public theorem leftDiv_mono_right {a b c : 𝒜} (S : a ⟶ b) {R R' : a ⟶ c} (h : R ⊑ R') :
     (S \ R) ⊑ (S \ R') :=
   (le_leftDiv_iff _ _ _).mpr (le_trans (leftDiv_comp_le S R) h)
 
-/-- Division by the identity is trivial: `1\R = R`. -/
-public theorem leftDiv_id {a b : 𝒜} (R : a ⟶ b) : ((Cat.id a) \ R) = R := by
+/-- Division by the identity is trivial: `1\X = X`. -/
+public theorem leftDiv_id {a b : 𝒜} (X : a ⟶ b) : ((Cat.id a) \ X) = X := by
   apply le_antisymm
-  · have h := leftDiv_comp_le (Cat.id a) R; rwa [Cat.id_comp] at h
-  · apply (le_leftDiv_iff _ _ _).mpr; rw [Cat.id_comp]; exact le_refl R
+  · have h := leftDiv_comp_le (Cat.id a) X; rwa [Cat.id_comp] at h
+  · apply (le_leftDiv_iff _ _ _).mpr; rw [Cat.id_comp]; exact le_refl X
 
-/-- Left division composes: `(ST)\R = T\(S\R)`, by the double universal property. -/
-public theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (R : a ⟶ d) :
-    ((S₁ ≫ S₂) \ R) = (S₂ \ (S₁ \ R)) := by
+/-- Left division composes: `(ST)\X = T\(S\X)`, by the double universal property. -/
+public theorem leftDiv_comp {a b c d : 𝒜} (S₁ : a ⟶ b) (S₂ : b ⟶ c) (X : a ⟶ d) :
+    ((S₁ ≫ S₂) \ X) = (S₂ \ (S₁ \ X)) := by
   apply le_antisymm
   · apply (le_leftDiv_iff _ S₂ _).mpr
     apply (le_leftDiv_iff _ S₁ _).mpr
     rw [← Cat.assoc]
-    exact leftDiv_comp_le (S₁ ≫ S₂) R
+    exact leftDiv_comp_le (S₁ ≫ S₂) X
   · apply (le_leftDiv_iff _ (S₁ ≫ S₂) _).mpr
     rw [Cat.assoc]
-    exact le_trans (comp_mono_left S₁ (leftDiv_comp_le S₂ (S₁ \ R))) (leftDiv_comp_le S₁ R)
+    exact le_trans (comp_mono_left S₁ (leftDiv_comp_le S₂ (S₁ \ X))) (leftDiv_comp_le S₁ X)
 
 /-- Numerator meets distribute over left division: `S\(R∩R') = (S\R)∩(S\R')`. -/
 public theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
@@ -387,50 +387,50 @@ public theorem leftDiv_inter {a b c : 𝒜} (S : a ⟶ b) (R R' : a ⟶ c) :
 
 /-! ## §2.314  The equation S\(R/T) = (S\R)/T -/
 
-/-- S\(R/W) = (S\R)/W (§2.314).
-    S : a ⟶ b, R : a ⟶ d, W : c ⟶ d.
-    LHS: (S \ (R/W)) where R/W : a ⟶ c, so (S \ (R/W)) : b ⟶ c.
-    RHS: (S \ R) / W where (S \ R) : b ⟶ d, W : c ⟶ d, so result : b ⟶ c. ✓
+/-- S\(X/W) = (S\X)/W (§2.314).
+    S : a ⟶ b, X : a ⟶ d, W : c ⟶ d.
+    LHS: (S \ (X/W)) where X/W : a ⟶ c, so (S \ (X/W)) : b ⟶ c.
+    RHS: (S \ X) / W where (S \ X) : b ⟶ d, W : c ⟶ d, so result : b ⟶ c. ✓
     -/
-public theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (W : c ⟶ d) :
-    (S \ (R / W)) = (S \ R) / W := by
+public theorem leftDiv_div {a b c d : 𝒜} (S : a ⟶ b) (X : a ⟶ d) (W : c ⟶ d) :
+    (S \ (X / W)) = (S \ X) / W := by
   apply le_antisymm
-  · -- S\(R/W) ⊑ (S\R)/W: show S ≫ ((S \ (R/W)) ≫ W) ⊑ R
+  · -- S\(X/W) ⊑ (S\X)/W: show S ≫ ((S \ (X/W)) ≫ W) ⊑ X
     apply (le_div_iff _ _ _).mpr
-    apply (le_leftDiv_iff _ S R).mpr
-    have h1 : (S ≫ (S \ (R / W))) ≫ W ⊑ (R / W) ≫ W :=
-      comp_mono_right (leftDiv_comp_le S (R / W)) W
-    have h2 : (R / W) ≫ W ⊑ R := DivisionAllegory.div_comp_le R W
+    apply (le_leftDiv_iff _ S X).mpr
+    have h1 : (S ≫ (S \ (X / W))) ≫ W ⊑ (X / W) ≫ W :=
+      comp_mono_right (leftDiv_comp_le S (X / W)) W
+    have h2 : (X / W) ≫ W ⊑ X := DivisionAllegory.div_comp_le X W
     rw [← Cat.assoc]; exact le_trans h1 h2
-  · -- (S\R)/W ⊑ S\(R/W): show (S ≫ (S\R)/W) ≫ W ⊑ R
+  · -- (S\X)/W ⊑ S\(X/W): show (S ≫ (S\X)/W) ≫ W ⊑ X
     apply (le_leftDiv_iff _ S _).mpr
     apply (le_div_iff _ _ _).mpr
-    -- goal: (S ≫ (S \ R)/W) ≫ W ⊑ R
-    have step1 : ((S \ R) / W) ≫ W ⊑ (S \ R) := DivisionAllegory.div_comp_le (S \ R) W
-    have step2 : S ≫ (((S \ R) / W) ≫ W) ⊑ S ≫ (S \ R) :=
+    -- goal: (S ≫ (S \ X)/W) ≫ W ⊑ X
+    have step1 : ((S \ X) / W) ≫ W ⊑ (S \ X) := DivisionAllegory.div_comp_le (S \ X) W
+    have step2 : S ≫ (((S \ X) / W) ≫ W) ⊑ S ≫ (S \ X) :=
       comp_mono_left S step1
-    have step3 : S ≫ (S \ R) ⊑ R := leftDiv_comp_le S R
-    have step4 : S ≫ (((S \ R) / W) ≫ W) ⊑ R := le_trans step2 step3
+    have step3 : S ≫ (S \ X) ⊑ X := leftDiv_comp_le S X
+    have step4 : S ≫ (((S \ X) / W) ≫ W) ⊑ X := le_trans step2 step3
     rwa [← Cat.assoc] at step4
 
-/-- **§2.314**: `(R/R)² ⊑ R/R`.  Immediate instance of `div_comp` with `S = W = R`. -/
-public theorem div_self_idem {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) ⊑ R / R :=
-  div_comp R R R
+/-- **§2.314**: `(X/X)² ⊑ X/X`.  Immediate instance of `div_comp` with `S = W = X`. -/
+public theorem div_self_idem {a b : 𝒜} (X : a ⟶ b) : (X / X) ≫ (X / X) ⊑ X / X :=
+  div_comp X X X
 
-/-- `(R/R)² = R/R`.  Freyd states §2.314 as two containments, `1 ⊑ R/R` and `(R/R)² ⊑ R/R` — that
-    `R/R` is a preorder — but the two together give the equality: reflexivity turns `R/R = 1(R/R)`
-    into `⊑ (R/R)(R/R)`, which is the missing direction.  A preorder is idempotent under
+/-- `(X/X)² = X/X`.  Freyd states §2.314 as two containments, `1 ⊑ X/X` and `(X/X)² ⊑ X/X` — that
+    `X/X` is a preorder — but the two together give the equality: reflexivity turns `X/X = 1(X/X)`
+    into `⊑ (X/X)(X/X)`, which is the missing direction.  A preorder is idempotent under
     composition. -/
-public theorem div_self_comp_self {a b : 𝒜} (R : a ⟶ b) : (R / R) ≫ (R / R) = R / R := by
-  apply le_antisymm (div_self_idem R)
-  calc R / R = (Cat.id a) ≫ (R / R) := by rw [Cat.id_comp]
-    _ ⊑ (R / R) ≫ (R / R) := comp_mono_right (one_le_div_self R) (R / R)
+public theorem div_self_comp_self {a b : 𝒜} (X : a ⟶ b) : (X / X) ≫ (X / X) = X / X := by
+  apply le_antisymm (div_self_idem X)
+  calc X / X = (Cat.id a) ≫ (X / X) := by rw [Cat.id_comp]
+    _ ⊑ (X / X) ≫ (X / X) := comp_mono_right (one_le_div_self X) (X / X)
 
-/-- **§2.314**: `(S\R/T)° = T°\R°/S°`.  With `(S \ X) = (X°/S°)°`, both sides reduce
-    by `recip_recip` to `(R/T)°/S°` (the LHS unfolds directly; the RHS via `R°° = R`, `T°° = T`).
-    This is what makes the two-sided division `S\R/T` self-dual under reciprocation. -/
-theorem leftDiv_div_recip {a b c d : 𝒜} (S : a ⟶ b) (R : a ⟶ d) (T : c ⟶ d) :
-    (S \ (R / T))° = (T° \ R°) / S° := by
+/-- **§2.314**: `(S\X/T)° = T°\X°/S°`.  With `(S \ Y) = (Y°/S°)°`, both sides reduce
+    by `recip_recip` to `(X/T)°/S°` (the LHS unfolds directly; the RHS via `X°° = X`, `T°° = T`).
+    This is what makes the two-sided division `S\X/T` self-dual under reciprocation. -/
+theorem leftDiv_div_recip {a b c d : 𝒜} (S : a ⟶ b) (X : a ⟶ d) (T : c ⟶ d) :
+    (S \ (X / T))° = (T° \ X°) / S° := by
   simp only [leftDiv, Allegory.recip_recip]
 
 /-- **§2.351**: `S` is STRAIGHT iff every symmetric `T` with `TS ⊑ S` is coreflexive.
@@ -452,50 +452,50 @@ theorem straight_iff_symmetric_invariant_coreflexive {a b : 𝒜} (S : a ⟶ b) 
 
   The book's §2.351 states that R/ₛR is an equivalence relation. -/
 
-/-- R/ₛR is symmetric (§2.351).
-    (R/ₛR)° = ((R/R) ∩ (R/R)°)° = (R/R)° ∩ (R/R)°° = (R/R)° ∩ (R/R) = R/ₛR. -/
-public theorem symmDiv_self_symmetric {a b : 𝒜} (R : a ⟶ b) : Symmetric (R /ₛ R) := by
-  -- R/ₛR = (R/R) ∩ (R/R)°. Show (R/ₛR)° ⊑ R/ₛR.
-  -- (R/ₛR)° ⊑ R/ₛR = (R/R) ∩ (R/R)°. Check each component:
-  -- (R/ₛR)° ⊑ R/R: (R/ₛR)° ⊑ ((R/R)°)° = R/R. ✓
-  -- (R/ₛR)° ⊑ (R/R)°: (R/ₛR)° ⊑ ((R/R))° = (R/R)°... wait need (R/ₛR)° ⊑ (R/R)°.
-  -- (R/ₛR) ⊑ R/R, so (R/ₛR)° ⊑ (R/R)°. ✓
+/-- X/ₛX is symmetric (§2.351).
+    (X/ₛX)° = ((X/X) ∩ (X/X)°)° = (X/X)° ∩ (X/X)°° = (X/X)° ∩ (X/X) = X/ₛX. -/
+public theorem symmDiv_self_symmetric {a b : 𝒜} (X : a ⟶ b) : Symmetric (X /ₛ X) := by
+  -- X/ₛX = (X/X) ∩ (X/X)°. Show (X/ₛX)° ⊑ X/ₛX.
+  -- (X/ₛX)° ⊑ X/ₛX = (X/X) ∩ (X/X)°. Check each component:
+  -- (X/ₛX)° ⊑ X/X: (X/ₛX)° ⊑ ((X/X)°)° = X/X. ✓
+  -- (X/ₛX)° ⊑ (X/X)°: (X/ₛX)° ⊑ ((X/X))° = (X/X)°... wait need (X/ₛX)° ⊑ (X/X)°.
+  -- (X/ₛX) ⊑ X/X, so (X/ₛX)° ⊑ (X/X)°. ✓
   dsimp [Symmetric, le, symmDiv]
-  -- goal: ((R/R) ∩ (R/R)°)° ∩ ((R/R) ∩ (R/R)°) = ((R/R) ∩ (R/R)°)°
+  -- goal: ((X/X) ∩ (X/X)°)° ∩ ((X/X) ∩ (X/X)°) = ((X/X) ∩ (X/X)°)°
   rw [Allegory.recip_inter, Allegory.recip_recip]
-  -- goal: ((R/R)° ∩ (R/R)) ∩ ((R/R) ∩ (R/R)°) = (R/R)° ∩ (R/R)
-  rw [show Allegory.inter (R / R) (Allegory.recip (R / R)) =
-        Allegory.inter (Allegory.recip (R / R)) (R / R) from Allegory.inter_comm _ _]
+  -- goal: ((X/X)° ∩ (X/X)) ∩ ((X/X) ∩ (X/X)°) = (X/X)° ∩ (X/X)
+  rw [show Allegory.inter (X / X) (Allegory.recip (X / X)) =
+        Allegory.inter (Allegory.recip (X / X)) (X / X) from Allegory.inter_comm _ _]
   apply Allegory.inter_idem
 
-/-- R/ₛR is transitive: (R/ₛR)(R/ₛR) ⊑ R/ₛR (§2.351). -/
-public theorem symmDiv_self_transitive {a b : 𝒜} (R : a ⟶ b) : Transitive (R /ₛ R) := by
+/-- X/ₛX is transitive: (X/ₛX)(X/ₛX) ⊑ X/ₛX (§2.351). -/
+public theorem symmDiv_self_transitive {a b : 𝒜} (X : a ⟶ b) : Transitive (X /ₛ X) := by
   dsimp [Transitive]
-  rw [le_symmDiv_iff ((R /ₛ R) ≫ (R /ₛ R)) R R]
-  have h1 : (R /ₛ R) ≫ R ⊑ R := ((le_symmDiv_iff (R /ₛ R) R R).mp (le_refl _)).1
-  have h_sym : (R /ₛ R)° ⊑ R /ₛ R := symmDiv_self_symmetric R
+  rw [le_symmDiv_iff ((X /ₛ X) ≫ (X /ₛ X)) X X]
+  have h1 : (X /ₛ X) ≫ X ⊑ X := ((le_symmDiv_iff (X /ₛ X) X X).mp (le_refl _)).1
+  have h_sym : (X /ₛ X)° ⊑ X /ₛ X := symmDiv_self_symmetric X
   constructor
-  · -- ((R/ₛR)(R/ₛR)) ≫ R ⊑ R
-    -- ((R/ₛR)(R/ₛR)) ≫ R = (R/ₛR) ≫ ((R/ₛR) ≫ R) by assoc; ⊑ (R/ₛR) ≫ R ⊑ R
-    have : ((R /ₛ R) ≫ (R /ₛ R)) ≫ R = (R /ₛ R) ≫ (R /ₛ R) ≫ R := Cat.assoc _ _ _
+  · -- ((X/ₛX)(X/ₛX)) ≫ X ⊑ X
+    -- ((X/ₛX)(X/ₛX)) ≫ X = (X/ₛX) ≫ ((X/ₛX) ≫ X) by assoc; ⊑ (X/ₛX) ≫ X ⊑ X
+    have : ((X /ₛ X) ≫ (X /ₛ X)) ≫ X = (X /ₛ X) ≫ (X /ₛ X) ≫ X := Cat.assoc _ _ _
     rw [this]
-    exact le_trans (comp_mono_left (R /ₛ R) h1) h1
-  · -- ((R/ₛR)(R/ₛR))° ≫ R ⊑ R: = (R/ₛR)°(R/ₛR)° ≫ R ⊑ ... ⊑ R
+    exact le_trans (comp_mono_left (X /ₛ X) h1) h1
+  · -- ((X/ₛX)(X/ₛX))° ≫ X ⊑ X: = (X/ₛX)°(X/ₛX)° ≫ X ⊑ ... ⊑ X
     rw [Allegory.recip_comp]
-    have step1 : (R /ₛ R)° ≫ (R /ₛ R)° ≫ R ⊑ (R /ₛ R) ≫ (R /ₛ R)° ≫ R :=
-      comp_mono_right h_sym ((R /ₛ R)° ≫ R)
-    have step2 : (R /ₛ R) ≫ (R /ₛ R)° ≫ R ⊑ (R /ₛ R) ≫ (R /ₛ R) ≫ R :=
-      comp_mono_left (R /ₛ R) (comp_mono_right h_sym R)
-    have step3 : (R /ₛ R) ≫ (R /ₛ R) ≫ R = ((R /ₛ R) ≫ (R /ₛ R)) ≫ R := (Cat.assoc _ _ _).symm
-    have step4 : ((R /ₛ R) ≫ (R /ₛ R)) ≫ R ⊑ R := by
-      rw [Cat.assoc]; exact le_trans (comp_mono_left (R /ₛ R) h1) h1
+    have step1 : (X /ₛ X)° ≫ (X /ₛ X)° ≫ X ⊑ (X /ₛ X) ≫ (X /ₛ X)° ≫ X :=
+      comp_mono_right h_sym ((X /ₛ X)° ≫ X)
+    have step2 : (X /ₛ X) ≫ (X /ₛ X)° ≫ X ⊑ (X /ₛ X) ≫ (X /ₛ X) ≫ X :=
+      comp_mono_left (X /ₛ X) (comp_mono_right h_sym X)
+    have step3 : (X /ₛ X) ≫ (X /ₛ X) ≫ X = ((X /ₛ X) ≫ (X /ₛ X)) ≫ X := (Cat.assoc _ _ _).symm
+    have step4 : ((X /ₛ X) ≫ (X /ₛ X)) ≫ X ⊑ X := by
+      rw [Cat.assoc]; exact le_trans (comp_mono_left (X /ₛ X) h1) h1
     rw [Cat.assoc]
     exact le_trans step1 (le_trans step2 (step3 ▸ step4))
 
-/-- R/ₛR is an EQUIVALENCE RELATION (§2.351). -/
-theorem symmDiv_self_equiv {a b : 𝒜} (R : a ⟶ b) :
-    Reflexive (R /ₛ R) ∧ Symmetric (R /ₛ R) ∧ Transitive (R /ₛ R) :=
-  ⟨symmDiv_self_reflexive R, symmDiv_self_symmetric R, symmDiv_self_transitive R⟩
+/-- X/ₛX is an EQUIVALENCE RELATION (§2.351). -/
+theorem symmDiv_self_equiv {a b : 𝒜} (X : a ⟶ b) :
+    Reflexive (X /ₛ X) ∧ Symmetric (X /ₛ X) ∧ Transitive (X /ₛ X) :=
+  ⟨symmDiv_self_reflexive X, symmDiv_self_symmetric X, symmDiv_self_transitive X⟩
 
 /-! ## §2.352  Left cancellation for straight morphisms -/
 
@@ -834,29 +834,29 @@ public theorem rightInvertible_straight {a b : 𝒜} {S : a ⟶ b} {T : b ⟶ a}
 
 /-! ## §2.356  If S is straight then R/ₛS is simple -/
 
-/-- If S is straight then R/ₛS is simple (§2.356).
-    Proof: (R/ₛS)°(R/ₛS) ⊑ S/ₛS ⊑ 1. -/
+/-- If S is straight then X/ₛS is simple (§2.356).
+    Proof: (X/ₛS)°(X/ₛS) ⊑ S/ₛS ⊑ 1. -/
 public theorem straight_symmDiv_simple {a b c : 𝒜} {S : b ⟶ c} (hS : Straight S)
-    (R : a ⟶ c) : Simple (R /ₛ S) := by
+    (X : a ⟶ c) : Simple (X /ₛ S) := by
   dsimp [Simple]
   apply le_trans _ hS
   rw [le_symmDiv_iff]
-  -- Let T := (R/ₛS)°(R/ₛS). T° = T (symmetric). TS ⊑ S.
-  -- (R/ₛS)S ⊑ R and (R/ₛS)°R ⊑ S, from le_symmDiv for T = R/ₛS.
-  have hRS_le : (R /ₛ S) ≫ S ⊑ R := ((le_symmDiv_iff _ _ _).mp (le_refl _)).1
-  have hRS_rec : (R /ₛ S)° ≫ R ⊑ S := ((le_symmDiv_iff _ _ _).mp (le_refl _)).2
+  -- Let T := (X/ₛS)°(X/ₛS). T° = T (symmetric). TS ⊑ S.
+  -- (X/ₛS)S ⊑ X and (X/ₛS)°X ⊑ S, from le_symmDiv for T = X/ₛS.
+  have hRS_le : (X /ₛ S) ≫ S ⊑ X := ((le_symmDiv_iff _ _ _).mp (le_refl _)).1
+  have hRS_rec : (X /ₛ S)° ≫ X ⊑ S := ((le_symmDiv_iff _ _ _).mp (le_refl _)).2
   constructor
-  · -- ((R/ₛS)°(R/ₛS))S ⊑ (R/ₛS)°R ⊑ S
+  · -- ((X/ₛS)°(X/ₛS))S ⊑ (X/ₛS)°X ⊑ S
     rw [Cat.assoc]; exact le_trans (comp_mono_left _ hRS_le) hRS_rec
-  · -- ((R/ₛS)°(R/ₛS))° ≫ S ⊑ S.
-    -- T := (R/ₛS)°(R/ₛS). T° = (R/ₛS)°(R/ₛS)°° = (R/ₛS)°(R/ₛS) = T.
+  · -- ((X/ₛS)°(X/ₛS))° ≫ S ⊑ S.
+    -- T := (X/ₛS)°(X/ₛS). T° = (X/ₛS)°(X/ₛS)°° = (X/ₛS)°(X/ₛS) = T.
     -- So T° ≫ S = T ≫ S ⊑ S (same as first bullet).
-    -- In Lean, ((R/ₛS)° ≫ R/ₛS)° = (R/ₛS)° ≫ (R/ₛS)°° = (R/ₛS)° ≫ R/ₛS.
-    -- After rw [recip_comp, recip_recip], goal: (R/ₛS)° ≫ (R/ₛS) ≫ S ⊑ S.
+    -- In Lean, ((X/ₛS)° ≫ X/ₛS)° = (X/ₛS)° ≫ (X/ₛS)°° = (X/ₛS)° ≫ X/ₛS.
+    -- After rw [recip_comp, recip_recip], goal: (X/ₛS)° ≫ (X/ₛS) ≫ S ⊑ S.
     -- That IS the first bullet (same expression, just associativity).
     rw [Allegory.recip_comp, Allegory.recip_recip]
-    -- goal: ((R/ₛS)° ≫ R/ₛS) ≫ S ⊑ S (same as first bullet after assoc)
-    exact le_trans (Cat.assoc (R /ₛ S)° (R /ₛ S) S ▸ comp_mono_left _ hRS_le) hRS_rec
+    -- goal: ((X/ₛS)° ≫ X/ₛS) ≫ S ⊑ S (same as first bullet after assoc)
+    exact le_trans (Cat.assoc (X /ₛ S)° (X /ₛ S) S ▸ comp_mono_left _ hRS_le) hRS_rec
 
 /-! ## §2.357  Simple part and domain of simplicity -/
 
@@ -888,17 +888,17 @@ theorem one_inter_eq_one_inter_recip {a : 𝒜} (M : a ⟶ a) :
   rw [Allegory.recip_inter, recip_id] at hsym
   exact hsym.symm
 
-/-- **§2.357**: `Dom(R/ₛS) = 1 ∩ (R/S)(S/R)`.  Unfold `R/ₛS = (R/S) ∩ (S/R)°`, apply `dom_inter`,
-    then `(S/R)°(R/S)° = ((R/S)(S/R))°` (`recip_comp`) and `1 ∩ X° = 1 ∩ X`. -/
-public theorem dom_symmDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
-    dom (R /ₛ S) = Cat.id a ∩ (R / S) ≫ (S / R) := by
+/-- **§2.357**: `Dom(X/ₛS) = 1 ∩ (X/S)(S/X)`.  Unfold `X/ₛS = (X/S) ∩ (S/X)°`, apply `dom_inter`,
+    then `(S/X)°(X/S)° = ((X/S)(S/X))°` (`recip_comp`) and `1 ∩ Y° = 1 ∩ Y`. -/
+public theorem dom_symmDiv {a b c : 𝒜} (X : a ⟶ c) (S : b ⟶ c) :
+    dom (X /ₛ S) = Cat.id a ∩ (X / S) ≫ (S / X) := by
   dsimp only [symmDiv]
   rw [dom_inter, ← Allegory.recip_comp, ← one_inter_eq_one_inter_recip]
 
-/-- **§2.357**: `Dom(R/ₛ1) = 1 ∩ R(1/R)` — the DOMAIN OF SIMPLICITY of `R`.  The `S = 1` case of
-    `dom_symmDiv`, simplified by `R/1 = R`. -/
-theorem domSimplicity_eq {a b : 𝒜} (R : a ⟶ b) :
-    domSimplicity R = Cat.id a ∩ R ≫ (Cat.id b / R) := by
+/-- **§2.357**: `Dom(X/ₛ1) = 1 ∩ X(1/X)` — the DOMAIN OF SIMPLICITY of `X`.  The `S = 1` case of
+    `dom_symmDiv`, simplified by `X/1 = X`. -/
+theorem domSimplicity_eq {a b : 𝒜} (X : a ⟶ b) :
+    domSimplicity X = Cat.id a ∩ X ≫ (Cat.id b / X) := by
   dsimp only [domSimplicity, simplePart]
   rw [dom_symmDiv, div_one]
 
