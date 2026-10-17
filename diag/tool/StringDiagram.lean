@@ -2431,10 +2431,9 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   -- A ONE-SIDED `F(z)°`/`F(z°)` expands too, never one bead wearing a `°`: "E(R)° should be
   -- expanded with the converse functor" (the author, on §13.1's `⊆Λ(R)°`).
   let z := inner.getD r
-  -- ONE conversed bead wears its `°` in the label (`⦇S⦈°`); the `°` wire is for a converse that runs
-  -- over several beads, where one wire says it once (`panelOf` sets `diag.convWire` for such a side).
-  if !(← getOptions).getBool `diag.convWire false && (factors (← rewriteSpine (← openNoted z))).size ≤ 1 then
-    return none
+  -- ONE conversed bead wears its `°` in the label (`⦇S⦈°`, `F(H°)`) wherever it stands, even beside a
+  -- `°` wire: the wire is for a converse over several beads, which one wire says once.
+  if (factors (← rewriteSpine (← openNoted z))).size ≤ 1 then return none
   let s ← Meta.saveState
   try
     let F ← laneFunctor R
@@ -3210,16 +3209,10 @@ def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : D
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr)
     (steps : MetaM (Array Step)) : MetaM Diagram := do
   let side ← instantiateMVars side
-  let wide {α} (m : MetaM α) : MetaM α :=
-    withTheReader Core.Context (fun c => { c with options := c.options.setBool `diag.convWire true }) m
-  -- A SIDE WHOSE CONVERSE IS ON TWO OR MORE FACTORS draws every one of them as a `°` wire.
-  let convs ← Prof.phase "convs" <| wide <| (factors (← rewriteSpine (← openNoted side))).filterM fun f => do
-    return (← conjugate? cat objVars regionTy f).isSome || (← conversedComposite? f).isSome
-  let run {α} (m : MetaM α) : MetaM α := if convs.size ≥ 2 then wide m else m
-  let d ← Prof.phase "interp" <| run do joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none side)
+  let d ← Prof.phase "interp" do joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none side)
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
-  Prof.phase "scan" <| run <| scanCheck regionTy cat objVars side d
+  Prof.phase "scan" <| scanCheck regionTy cat objVars side d
   Prof.phase "settle" do settlePass d (← steps) (some side)
 
 /-- TWO ARROWS THAT DRAW AS ONE STRING PANEL, read in the local context they are stated in: a law
