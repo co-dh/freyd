@@ -39,18 +39,16 @@
   align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [one layer of a climb: `1` ends it; `Move × X` takes one move, then `X` for the rest. `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
+  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [one layer of a climb: `1` ends it; `Move × X` takes one segment, then `X` for the rest. Segments are `[c]` (stand on `c`, climb 1) or `[c,d]` (stand on `c`, climb 2 over `d`)],
   [`T`],
-  [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.nil_nil") \
-   #leanf("Freyd.Alg.RelSet.Stairs.put_one") \ #leanf("Freyd.Alg.RelSet.Stairs.put_two")],
-  [put the stairs of one move in front of the rest: `T(two 10 15, [20,30]) = [10,15,20,30]` stands on 10, climbs 2 over 15, and leaves `[20,30]` for the rest. `T°` splits `[10,15,20,30]` both ways a first move allows: `(one 10, [15,20,30])` and `(two 10 15, [20,30])`],
+  [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T")],
+  [put the segment in front of the rest: `T([10,15], [20,30]) = [10,15,20,30]`. `T°` splits `[10,15,20,30]` both ways a first segment allows: `([10], [15,20,30])` and `([10,15], [20,30])`],
   [`⦇T⦈`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.walk_cata") \ `walk :` #leant("Freyd.Alg.RelSet.Stairs.walk")],
-  [the cost list a climb walks over],
-  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [any climb over a cost list],
+  [#leanf("Freyd.Alg.RelSet.Stairs.T_cata")],
+  [concat, flattening a climb into its cost list],
+  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [every way to cut a cost list into segments of length 1–2],
   [`h`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.h") \ #leanf("Freyd.Alg.RelSet.Stairs.zero_zero") \
-   #leanf("Freyd.Alg.RelSet.Stairs.pay_one") \ #leanf("Freyd.Alg.RelSet.Stairs.pay_two")],
+  [#leanf("Freyd.Alg.RelSet.Stairs.h")],
   [pay the stair stood on, not the `d` stepped over],
   [`⦇h⦈`],
   [#leanf("Freyd.Alg.RelSet.Stairs.paid_cata") \ `paid :` #leant("Freyd.Alg.RelSet.Stairs.paid")],
@@ -59,20 +57,13 @@
   [`R`], [`≤`], [cheapest wins],
 )]<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@97e1f4df
-// lean:AOP.A9_1_Stairs.Move@3c8df82f
-// lean:AOP.A9_1_Stairs.T@14d9dd31
-// lean:AOP.A9_1_Stairs.nil_nil@ee1932bc
-// lean:AOP.A9_1_Stairs.put_one@c3ef114e
-// lean:AOP.A9_1_Stairs.put_two@99274240
-// lean:AOP.A9_1_Stairs.walk_cata@e30098bd
-// lean:AOP.A9_1_Stairs.walk@ea7ea63c
-// lean:AOP.A9_1_Stairs.h@ff2d45c9
-// lean:AOP.A9_1_Stairs.zero_zero@41ad2985
-// lean:AOP.A9_1_Stairs.pay_one@998bb213
-// lean:AOP.A9_1_Stairs.pay_two@159152cb
+// lean:AOP.A9_1_Stairs.Move@3c618959
+// lean:AOP.A9_1_Stairs.T@c7a9c4ae
+// lean:AOP.A9_1_Stairs.T_cata@542ad7b7
+// lean:AOP.A9_1_Stairs.h@d23abf16
 // lean:AOP.A9_1_Stairs.paid_cata@ba693939
-// lean:AOP.A9_1_Stairs.paid@4e5ed213
-// lean:AOP.A9_1_Stairs.H_eq@341557ce
+// lean:AOP.A9_1_Stairs.paid@ac93050b
+// lean:AOP.A9_1_Stairs.H_eq@cb6f916d
 
 === The dynamic programming theorem
 
