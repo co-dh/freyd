@@ -220,7 +220,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_branch") \
     #src[on inputs `V₁` reaches, the body over `[V₁,V₂]` is the `V₁` problem]],
-  lean-calc(calc-dpb, breaks: (2,)),
+  lean-calc(calc-dpb),
 )]<dp-disjoint-branch>
 
 === Checking the conditions
