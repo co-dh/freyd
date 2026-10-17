@@ -18,6 +18,6 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 
     `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
     (An algebra `φ` "does not care" whether `R`-related recursive results are computed before
     or after applying `φ`.) -/
-@[expose] public def Pres (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
+@[expose] public def Pres (φ : Alg F A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
 
 end Freyd.Alg

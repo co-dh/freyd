@@ -253,7 +253,7 @@ public theorem est_lenLE_lax_natural :
 
 /-- `list(p)`'s algebra `[nil, (p×𝟙) cons]`. -/
 @[expose] public def listPAlg (p : dE A ⟶ dE A) :
-    (F Unit A).obj (dList A) ⟶ dList A :=
+    Alg (F Unit A) (dList A) :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (pcons p)
 
 /-- `list(p)` — the relator `list` AT the coreflexive `p`, which is what the name says and what a
@@ -275,7 +275,7 @@ public theorem discNil_apply (a : A) (xs ys : ConsList Unit A) :
 
 /-- The note's `S ≜ [nil, (p×𝟙) cons ∪ ⊸ nil]` — `prefix`'s algebra with one extra `p`. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
-    (F Unit A).obj (dList A) ⟶ dList A :=
+    Alg (F Unit A) (dList A) :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (pcons p ∪ discNil)
 
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix

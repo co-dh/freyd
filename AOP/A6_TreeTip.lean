@@ -324,7 +324,7 @@ public theorem cataTreeFold_comm {C : RelSet.{0}} (φ : TFobj A C ⟶ C) :
         exact ⟨Tree.bin pl pr, rfl, ql, qr, hv.1, hv.2, hfv⟩
 
 /-- The structural tree fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright). -/
-public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : Alg (F A) C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataTreeFold_comm φ)
 

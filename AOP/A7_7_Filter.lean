@@ -49,7 +49,7 @@ variable {A : Type}
     `p`: keep a head that passes `p`, or drop it.  `π₂` is spelled as its Rel(Set) value
     `graph (·.2)`, as in `subseq_cata`, to keep `Classical.choice` out of the axioms. -/
 @[expose] public def Salg (p : dE A ⟶ dE A) :
-    (F Unit A).obj (dList A) ⟶ dList A :=
+    Alg (F Unit A) (dList A) :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
     (pcons p ∪ graph fun q => q.2)
 

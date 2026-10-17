@@ -155,7 +155,7 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
   | Sum.inr q => stepFn q
 
 /-- **edit-defn**: the algebra `[base,step] : F(Op,[Char]×[Char])⟶[Char]×[Char]`. -/
-@[expose] public def editAlg : (F Unit (Op Char)).obj (dPair Char) ⟶ dPair Char :=
+@[expose] public def editAlg : Alg (F Unit (Op Char)) (dPair Char) :=
   graph baseStepFn
 
 /-- **edit-defn**: `edit≜⦇[base,step]⦈`, read as the function it is. -/
@@ -215,7 +215,7 @@ public theorem length_cata :
 
 /-- **edit-defn**: `α≜[nil,cons]` — the initial algebra of edit sequences: the empty sequence, or
     one operation in front of a sequence. A `def` so that §9.2's statements print `α`. -/
-@[expose] public def α (Char : Type) : (F Unit (Op Char)).obj (dEdit Char) ⟶ dEdit Char :=
+@[expose] public def α (Char : Type) : Alg (F Unit (Op Char)) (dEdit Char) :=
   graph con
 
 /-- **edit-defn**: `R≜length≤length°`. -/
@@ -421,7 +421,7 @@ public theorem edit_mono_step2 :
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ α Char ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_left (α Char : (F Unit (Op Char)).obj (dEdit Char) ⟶ dEdit Char)
+  have h := comp_mono_left (α Char : Alg (F Unit (Op Char)) (dEdit Char))
     (map_entire_le (graph_map (A := dEdit Char) (B := (⟨Nat⟩ : RelSet.{0})) clen))
   rw [Cat.comp_id] at h
   exact comp_mono_left _ (comp_mono_left _ (comp_mono_left _ h))
@@ -1001,7 +1001,7 @@ public theorem opF_map {x y : RelSet.{0}} (S : x ⟶ y) :
     this specialisation belongs beside it once that file is free. -/
 public theorem con_strictNatural :
     StrictNatural (op.comp listRelator) opF
-      (fun a => (graph con : (F Unit (Op a.carrier)).obj (dEdit a.carrier) ⟶ dEdit a.carrier)) := by
+      (fun a => (graph con : Alg (F Unit (Op a.carrier)) (dEdit a.carrier))) := by
   intro x y S
   rw [opF_map]
   exact (ListRel.alphaR_natural (opRel S)).symm

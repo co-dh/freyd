@@ -209,7 +209,7 @@ public theorem partition_cata_natural :
     StrictNatural schedRelator ((Relator.idRelator RelSet.{0}).comp listRelator)
       (fun a => ⦇(junc (sumCop (dL Unit) ⟨a.carrier × Sched a.carrier⟩)
             (τ : dL Unit ⟶ dSched a.carrier) (newR a.carrier ∪ glueR a.carrier) :
-          (F Unit a.carrier).obj (dSched a.carrier) ⟶ dSched a.carrier)⦈) := by
+          Alg (F Unit a.carrier) (dSched a.carrier))⦈) := by
   intro x y S
   have h : list S ≫ (partition : dList y.carrier ⟶ dSched y.carrier)
       = (partition : dList x.carrier ⟶ dSched x.carrier) ≫ list (list S) := partition_natural S

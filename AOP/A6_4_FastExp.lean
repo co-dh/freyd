@@ -101,7 +101,7 @@ noncomputable abbrev Isum : InitialAlgebra Fsum where
   cata_unique f hf h hh hc := I.cata_unique f hf h hh (hc.trans (by rw [Fmap_eq_sumMap]))
 
 /-- The fold over `Fsum` is the fold over `F`: the transposed algebras agree by `Fmap_eq_sumMap`. -/
-theorem relCata_Isum {A : RelSet.{0}} (R : (F Unit Bit).obj A ⟶ A) :
+theorem relCata_Isum {A : RelSet.{0}} (R : Alg (F Unit Bit) A) :
     relCata (I := Isum) R = relCata (I := I) R := by
   unfold relCata; (simp only [Fmap_eq_sumMap]) <;> rfl
 

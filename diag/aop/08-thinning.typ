@@ -171,16 +171,16 @@ row((
     #src[thinning at every step of the reduce is a thinning of the whole candidate set]
      // thinning-of-reduce row: Theorem 8.1, p. 195
   ],
-     // lean:AOP.A8_1.thinning@6d6c6473
+     // lean:AOP.A8_1.thinning@21821d2b
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond1") \
     #src[everything the thinning fold keeps is a value of the plain fold — @thin-laws:1, first
      condition, by @cata-fusion from the chain below]],
-     // lean:AOP.A8_1.thinning_cond1@daa38052
+     // lean:AOP.A8_1.thinning_cond1@e4204ecb
   lean-calc(calc-81a),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond2") \
     #src[every value of the plain fold is `Q`-above one the thinning fold keeps — @thin-laws:1,
      second condition, by @hylo-mu from the chain below]],
-     // lean:AOP.A8_1.thinning_cond2@6a7d582f
+     // lean:AOP.A8_1.thinning_cond2@6b3f59b8
   lean-calc(calc-81),
 )]<thin-thm81>
 
@@ -210,7 +210,7 @@ row((
   [`ys` holds `y` with `y Q cons(v,p') Q cons(v,p) = a`],
   [the thinned set still holds an element `Q`-no-worse than `a` (`S` monotonic on `Q`, `Q`
    transitive)],
-  // lean:AOP.A8_1.thinning_prefixed@3d1dc0a4
+  // lean:AOP.A8_1.thinning_prefixed@a735406b
 )]<thin-thm81-steps>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
@@ -221,7 +221,7 @@ row((
     #src[the thinning fold refines the optimisation problem itself]
      // thinning-est row: Corollary 8.1
   ],
-     // lean:AOP.A8_1.thinning_est@6aa3a7c1
+     // lean:AOP.A8_1.thinning_est@faa63642
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
 )]<thin-cor>
@@ -648,8 +648,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A8_4_Knapsack.con_eq_junc@f9b6dc6b
 // lean:AOP.A8_4_Knapsack.dropFn@08a216bd
 // lean:AOP.A8_4_Knapsack.within@945da576
-// lean:AOP.A8_4_Knapsack.Salg@7d39c25b
-// lean:AOP.A8_4_Knapsack.Salg_junc@1b79b8cb
+// lean:AOP.A8_4_Knapsack.Salg@2e57f1a5
+// lean:AOP.A8_4_Knapsack.Salg_junc@80a04e26
 // lean:AOP.A8_4_Knapsack.R@9a274328
 // lean:AOP.A8_4_Knapsack.R_eq@d1b279af
 // lean:AOP.A8_4_Knapsack.Q@7cb37d7d
@@ -852,7 +852,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs") \
      #src[@cata-fusion, every word fits on a line by itself.
  ]])],
-     // lean:AOP.A8_5_Paragraph.para_alg_fusion@031c245f
+     // lean:AOP.A8_5_Paragraph.para_alg_fusion@9ba5f9f5
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),

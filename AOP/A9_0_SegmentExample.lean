@@ -20,24 +20,24 @@ variable {A : Type}
 
 /-- **`T = [nil, cat] : FA⟶A`**, `A = [a]`: `inl(()) ↦ []`, `inr(xs,ys) ↦ xs⧺ys` with `xs`
     non-empty, so `T°` cuts off a non-empty prefix every way. -/
-@[expose] public def T : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A :=
+@[expose] public def T : Alg (F Unit (ConsList Unit A)) (dList A) :=
   junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ catNE
 
 /-- **`⦇T⦈ = concat`**: folding with `T` flattens a list of non-empty segments. -/
 public theorem fold_T :
-    (⦇(T : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
+    (⦇(T : Alg (F Unit (ConsList Unit A)) (dList A))⦈
       : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A) = concat := rfl
 
 /-- **`⦇T⦈° = partition`**: unfolding with `T°` segments a list every way. -/
 public theorem fold_T_recip :
-    (⦇(T : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈)°
+    (⦇(T : Alg (F Unit (ConsList Unit A)) (dList A))⦈)°
       = (partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0})) := by
   rw [fold_T, partition_concat]
 
 /-! ## The algebra `h = [nil, cons(sum×𝟙)]`: each segment replaced by its sum -/
 
 /-- **`h = [nil, cons(sum×𝟙)] : FB⟶B`**, `B = [ℕ]`: `inl(()) ↦ []`, `inr(xs,ys) ↦ sum(xs):ys`. -/
-@[expose] public def h : (F Unit (ConsList Unit Nat)).obj (dList Nat) ⟶ dList Nat :=
+@[expose] public def h : Alg (F Unit (ConsList Unit Nat)) (dList Nat) :=
   junc (sumCop (dL Unit) ⟨ConsList Unit Nat × ConsList Unit Nat⟩) τ
     (rprodMap sumR (𝟙 (dList Nat)) ≫ consR)
 
@@ -56,7 +56,7 @@ public theorem fold_h :
 
 /-- **`H = ⦇T⦈°⦇h⦈ = partition list(sum)`**: segment the list every way, then sum each segment. -/
 public theorem H_eq : H T h = partition ≫ list sumR := by
-  show (⦇(T : (F Unit (ConsList Unit Nat)).obj (dList Nat) ⟶ dList Nat)⦈)° ≫ ⦇h⦈ = _
+  show (⦇(T : Alg (F Unit (ConsList Unit Nat)) (dList Nat))⦈)° ≫ ⦇h⦈ = _
   rw [fold_T_recip, fold_h]
 
 /-- **`H = T°F(H)h`**: cut once, solve the rest, put the pieces back together — the fixed-point

@@ -150,7 +150,7 @@ public theorem con_cons (a : Item) (xs : ConsList Unit Item) :
 
 /-- `[nil,cons] = con`, the initial algebra. -/
 public theorem con_eq_junc :
-    (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
+    (graph con : Alg (F Unit Item) (dList Item))
       = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) τ consR := by
   apply hom_ext; intro u r
   cases u with
@@ -159,7 +159,7 @@ public theorem con_eq_junc :
 
 /-- `[nil,π₂] = dropFn`. -/
 public theorem drop_eq_junc :
-    (graph dropFn : (F Unit Item).obj (dList Item) ⟶ dList Item)
+    (graph dropFn : Alg (F Unit Item) (dList Item))
       = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) τ
           (graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
@@ -174,7 +174,7 @@ public theorem drop_eq_junc :
 /-- **knap-defn**: the specification's algebra `S ≜ [nil,cons](within w) ∪ [nil,π₂]` — at each
     item, keep it if the packing still fits, or drop it. -/
 @[expose] public def Salg (wt : Item → Int) (w : Int) :
-    (F Unit Item).obj (dList Item) ⟶ dList Item :=
+    Alg (F Unit Item) (dList Item) :=
   (graph con ≫ corefl (within (wt := wt) w)) ∪ graph dropFn
 
 /-- Pointwise reading of `[nil,cons](within w)`. -/
@@ -559,7 +559,7 @@ public theorem knap_body (hw : 0 ≤ w) :
     _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
         ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
             ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
-              ≫ (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
+              ≫ (graph con : Alg (F Unit Item) (dList Item))
               ≫ τₗ () ≫ Filter.filter (corefl (within (wt := wt) w)))
             ((τ : dL Unit ⟶ dList Item) ≫ τₗ ())
           ≫ merge (R val) ≫ thinL (Q val wt))
@@ -569,10 +569,10 @@ public theorem knap_body (hw : 0 ≤ w) :
     _ = junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩)
         ((relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
             ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
-              ≫ (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)
+              ≫ (graph con : Alg (F Unit Item) (dList Item))
               ≫ τₗ () ≫ Filter.filter (corefl (within (wt := wt) w)))
             ((graph Sum.inl : dL Unit ⟶ (F Unit Item).obj (dList Item))
-              ≫ (graph dropFn : (F Unit Item).obj (dList Item) ⟶ dList Item) ≫ τₗ ())
+              ≫ (graph dropFn : Alg (F Unit Item) (dList Item)) ≫ τₗ ())
           ≫ merge (R val) ≫ thinL (Q val wt))
         (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
           (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt)) := by
@@ -677,7 +677,7 @@ public theorem knap_fold (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     ⦇(junc (sumCop (dL Unit) ⟨Item × ConsList Unit (ConsList Unit Item)⟩) (τ ≫ τₗ ())
         (cpr ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
           (h₁ (wt := wt) (w := w)) h₂ ≫ merge (R val) ≫ thinL (Q val wt))
-        : (F Unit Item).obj (dList (ConsList Unit Item)) ⟶ dList (ConsList Unit Item))⦈ ≫ minL (R val)
+        : Alg (F Unit Item) (dList (ConsList Unit Item)))⦈ ≫ minL (R val)
       ⊑ Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) :=
   calc _ ⊑ ⦇cpL ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
           (g₁ (wt := wt) (w := w)) g₂ ≫ merge (R val) ≫ thinL (Q val wt)⦈ ≫ minL (R val) :=

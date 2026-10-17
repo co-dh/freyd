@@ -3308,7 +3308,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     region.  Counted with the very peel the panel's cuts are read by, so what is compared is the
     wire stack the picture WOULD draw and not the shape the term happens to have. -/
 def opensFewerLanes (cat : Array Name) (declTy opened : Expr) : MetaM Bool := do
-  let some (x, y) := homObjs? declTy | return false
+  let some (x, y) ← homObjs? declTy | return false
   let some (x', y') ← homEnds? opened | return false
   let lanes (t : Expr) : MetaM Nat := do
     let (cs, _) ← peelRead #[] cat (← Meta.inferType t) t

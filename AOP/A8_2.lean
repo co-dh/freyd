@@ -293,7 +293,7 @@ public theorem cataR_wrapz_consw (wt : A → A → Nat) :
 
 /-- `Sspec ≜ F(∋,𝟙)α`, the specification's algebra: take a vertex out of the layer and `wrap` it,
     or `cons` it onto the partial path already built. -/
-@[expose] public def pathAlg : (CL.F (A → Prop) (A → Prop)).obj (dCL A A) ⟶ dCL A A :=
+@[expose] public def pathAlg : Alg (CL.F (A → Prop) (A → Prop)) (dCL A A) :=
   fun u p => match u with
     | Sum.inl S => ∃ v, S v ∧ p = ConsList.wrap v
     | Sum.inr q => ∃ v, q.1 v ∧ p = ConsList.cons v q.2
@@ -554,12 +554,12 @@ public theorem pathSplit_eq_Fmap_comp_alphaR :
     `cpr`, and consing onto each tail and keeping a cheapest one is `step`. -/
 public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat) :
     cpMap (CL.F A A) (dCL A A)
-        ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
+        ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) ≫ est (pathR wt)
       = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
-  have hα : Map (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) := graph_map _
+  have hα : Map (alphaR : Alg (CL.F A A) (dCL A A)) := graph_map _
   have hc : Map (consR : (⟨A × ConsList A A⟩ : RelSet.{0}) ⟶ dCL A A) := graph_map _
   have hL : cpMap (CL.F A A) (dCL A A)
-      ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) = Λ (pathSplit (A := A)) := by
+      ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) = Λ (pathSplit (A := A)) := by
     simp only [cpMap]
     rw [powerRel_map hα, Λ_absorption, ← pathSplit_eq_Fmap_comp_alphaR]
   have hS : pathStep wt

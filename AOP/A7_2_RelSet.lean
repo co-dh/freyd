@@ -151,7 +151,7 @@ public theorem eq_Λ_comp_est {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet
 /-! ## §7.2's instance: `+` distributes over `≤` -/
 
 /-- Addition as an arrow `Nat×Nat ⟶ Nat` of `Rel(Set)`, the algebra of the relator `Δ`. -/
-@[expose] public def plusRel : (Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+@[expose] public def plusRel : Alg (Δ RelSet.{0}) (⟨Nat⟩ : RelSet.{0}) :=
   -- `Nat.add`/`Nat.le` and not `+`/`≤`: the `binop%` elaborator reads the OPERANDS' types, and a
   -- component of the relator's object is one only up to unfolding, where the instance search stops.
   fun p n => Nat.add p.1 p.2 = n

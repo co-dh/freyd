@@ -42,7 +42,7 @@ variable {𝒜 : Type u}
 section PresSec
 
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
-variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
+variable {R : A ⟶ A} {S f : Alg F A}
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
 public theorem pres_iff_conj (hf : Map f) : Pres f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
@@ -61,7 +61,7 @@ public theorem Fmap_eps_comp_Fmap_est_le (R : A ⟶ A) :
 
 /-- The `mon-thm71` middle step: **`f° F(∈)F(est R)f ⊑ f° F(R°)f`** — the same bound, conjugated
     by `f`.  It is what turns the transposed side of Theorem 7.1 into the order itself. -/
-public theorem conj_Fmap_eps_est_le (f : F.obj A ⟶ A) (R : A ⟶ A) :
+public theorem conj_Fmap_eps_est_le (f : Alg F A) (R : A ⟶ A) :
     f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ f° ≫ F.map (R°) ≫ f := by
   refine comp_mono_left _ ?_
   rw [← Cat.assoc]
@@ -94,15 +94,15 @@ end PresSec
 section Distributes
 
 variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
-variable {R : A ⟶ A} {f : F.obj A ⟶ A}
+variable {R : A ⟶ A} {f : Alg F A}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R°`: `f·F(min R°) ⊆ min R°·Λ(f·F∈)`, mirrored. -/
-@[expose] public def Distributes (f : F.obj A ⟶ A) (R : A ⟶ A) : Prop :=
+@[expose] public def Distributes (f : Alg F A) (R : A ⟶ A) : Prop :=
   F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R
 
 /-- **`F(est R)f ⊑ F(∋)f`** — the first of the two bounds Theorem 7.1's inequation splits into:
     `est(R) ⊑ ∋` carried through the relator and postcomposed with `f`. -/
-public theorem Fmap_est_comp_le_Fmap_eps_comp (f : F.obj A ⟶ A) (R : A ⟶ A) :
+public theorem Fmap_est_comp_le_Fmap_eps_comp (f : Alg F A) (R : A ⟶ A) :
     F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f :=
   comp_mono_right (F.map_mono (show est R ⊑ ∋ A from inter_lb_left _ _)) f
 
@@ -113,7 +113,7 @@ end Distributes
 section Thm71
 
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
-variable {R : A ⟶ A} {f : F.obj A ⟶ A}
+variable {R : A ⟶ A} {f : Alg F A}
 
 /-- **Theorem 7.1, step 1**: a bound by `Λ X ≫ est R` is exactly a bound by `X` together with
     `X° ≫ (−) ⊑ R°`, and `F(∋)° = F(∈)` (Theorem 5.1(a)) moves `(F(∋)f)°` across as `f° F(∈)`. -/
@@ -190,12 +190,12 @@ end Thm71
 section Greedy
 
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
-variable {R : A ⟶ A} {S : F.obj A ⟶ A}
+variable {R : A ⟶ A} {S : Alg F A}
 
 /-- Step 1 of the greedy chain: `S°F(R°)(`#frc(S)` est(R)) ⊑ R°S°(`#frc(S)` est(R))` — the
     monotonicity hypothesis, conversed (`F(R)°=F(R°)`, `(SR)°=R°S°`), slides `R°` out of the
     relator's span and up above `S°`; the three arrows to its right do not move. -/
-public theorem greedy_step1 {R : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem greedy_step1 {R : A ⟶ A} {S : Alg F A}
     (hmono : Freyd.Alg.Pres S R) :
     S° ≫ F.map R° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ S° ≫ (S%∋ ≫ est(R)) := by
   have hslide : S° ≫ F.map R° ⊑ R° ≫ S° := by
@@ -209,7 +209,7 @@ public theorem greedy_step1 {R : A ⟶ A} {S : F.obj A ⟶ A}
 
 /-- Step 2 of the greedy chain: `R°S°(`#frc(S)` est(R)) ⊑ R°R°` — `S%∋ est(R)` is below the
     left division `S°\R°` (`est(R) ⊑ ∈\R°`), and `S°(S°\R°) ⊑ R°` cancels it against `S°`. -/
-public theorem greedy_step2 {R : A ⟶ A} {S : F.obj A ⟶ A} :
+public theorem greedy_step2 {R : A ⟶ A} {S : Alg F A} :
     R° ≫ S° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ R° := by
   have hdiv : S%∋ ≫ est(R) ⊑ (S° \ R°) := by
     rw [Λ_comp_est]; exact inter_lb_right _ _
@@ -224,7 +224,7 @@ public theorem greedy_step3 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R°
 /-- **Theorem 7.2 (THE GREEDY THEOREM, B&dM p.173)**: `⦇est R·ΛS⦈ ⊆ est R·Λ⦇S⦈` if `S` is
     monotonic on the preorder `R`, mirrored.  (B&dM state it for `min R` with `S` monotonic
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
-public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : Alg F A}
     (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres S R) :
     ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   apply le_Λ_comp_est_iff.mpr
@@ -241,7 +241,7 @@ public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
     form `Λ S ≫ est R` up to equality. -/
 public theorem greedy_of_refinement (I : InitialAlgebra F) {R : A ⟶ A}
-    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.Pres f R°)
+    {S : Alg F A} {f : Alg F A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.Pres f R°)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
   apply le_Λ_comp_est_iff.mpr
@@ -259,7 +259,7 @@ end Greedy
 section Exercises
 
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
-variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
+variable {R : A ⟶ A} {S f : Alg F A}
 
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map
     forces `R` to be reflexive — `⦇α⦈ = id ⊆ R` follows from `α` being the least prefixed

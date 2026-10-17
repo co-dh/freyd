@@ -193,7 +193,7 @@ public theorem Fbimap_eq_sumMap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R 
 /-- **The initial list algebra `α = [nil,cons] : F([A]) ⟶ [A]`** — `con` as a relation, the arrow
     the note's `α` bead draws.  `initial`'s own `α` field, named so the picture has a declaration
     to cite at the carrier the list actually is. -/
-@[expose] public def alphaR : (F L E).obj (dCL L E) ⟶ dCL L E := graph con
+@[expose] public def alphaR : Alg (F L E) (dCL L E) := graph con
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
 @[expose] public def cataFold {C : RelSet.{0}} (f : Fobj L E C ⟶ C) : ConsList L E → C.carrier → Prop
@@ -418,7 +418,7 @@ public theorem cataFold_comm {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
 /-- The structural fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright, via
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, …) apply to `cataR`. -/
-public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F L E).obj C ⟶ C) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : Alg (F L E) C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 

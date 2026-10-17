@@ -341,7 +341,7 @@ public theorem moves_trans_union :
 /-- **`cp P(α) = consFn`** — the tail of `gen`, read as a function. -/
 public theorem cpMap_comp_existsImage_alphaR :
     cpMap (F Unit A) (dList A)
-        ≫ existsImage (alphaR : (F Unit A).obj (dList A) ⟶ dList A)
+        ≫ existsImage (alphaR : Alg (F Unit A) (dList A))
       = graph consFn := by
   rw [show cpMap (F Unit A) (dList A) = Λ ((F Unit A).map (∋ (dList A))) from rfl, Λ_absorption]
   refine ((Λ_UP _ (graph_map _)).mpr ?_).symm
@@ -398,7 +398,7 @@ public theorem gen_eq_graph :
   show (F Unit (Fin n → A)).map
         (moves ≫ transT ≫ tupleP n (union (a := dList A)))
       ≫ zipCL ≫ tupleP n (cpMap (F Unit A) (dList A)
-        ≫ existsImage (alphaR : (F Unit A).obj (dList A) ⟶ dList A))
+        ≫ existsImage (alphaR : Alg (F Unit A) (dList A)))
     = graph (genFun (n := n) (A := A))
   rw [moves_trans_union, cpMap_comp_existsImage_alphaR]
   apply hom_ext

@@ -44,7 +44,7 @@ open RelSet RelSet.CL
 /-- A fold over `pathInit` is the fold over `CL.initial`: the two differ only in how `F(𝟙,∋)`
     is spelled (8.2d, book p.198). -/
 public theorem relCata_pathInit {A : Type} {B : RelSet.{0}}
-    (R : (pathF.appl (P (dE A))).obj B ⟶ B) :
+    (R : Alg (pathF.appl (P (dE A))) B) :
     relCata (I := pathInit A) R = relCata (I := CL.initial (A → Prop) (A → Prop)) R := by
   show cataFold (Λ (pathF.map (𝟙 _) (∋ B) ≫ R)) ≫ ∋ B = cataFold (Λ (Fmap _ _ (∋ B) ≫ R)) ≫ ∋ B
   rw [pathF_map_id]
@@ -171,8 +171,8 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc_exec (wt : A → A �
       (toS1 z) p := by
   rw [← cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt]
   have hL : cpMap (CL.F A A) (dCL A A)
-      ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) = Λ (pathSplit (A := A)) := by
-    have hα : Map (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) := graph_map _
+      ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) = Λ (pathSplit (A := A)) := by
+    have hα : Map (alphaR : Alg (CL.F A A) (dCL A A)) := graph_map _
     simp only [cpMap]
     rw [powerRel_map hα, Λ_absorption, ← pathSplit_eq_Fmap_comp_alphaR]
   rw [← Cat.assoc, hL, Λ_comp_est_apply]
@@ -352,7 +352,7 @@ public theorem mcp_spec (wt : A → A → Nat) (net : ConsList (List A) (List A)
   have hα : Map (alphaR : pathF.obj (dE A) (dCL A A) ⟶ dCL A A) := graph_map _
   rw [← thinning_paths_alg_map (F := pathF) (A := dE A) hα (pathR wt)] at hthin
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))
-      ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
+      ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) ≫ est (pathR wt)
       = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
     rw [pathF_map_id]
     exact cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt
@@ -748,7 +748,7 @@ public theorem thinning_paths_alg_map_exec (wt : A → A → Nat)
           ≫ powerRel (alphaR : pathF.obj (dE A) (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)))
       (toS x) (memS (row7 wt x)) := by
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))
-      ≫ powerRel (alphaR : (CL.F A A).obj (dCL A A) ⟶ dCL A A) ≫ est (pathR wt)
+      ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) ≫ est (pathR wt)
       = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
     rw [pathF_map_id]
     exact cpMap_comp_powerRel_alphaR_comp_est_eq_junc wt

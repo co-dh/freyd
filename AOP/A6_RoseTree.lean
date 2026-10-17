@@ -226,7 +226,7 @@ end
 /-- The structural fold IS the relational catamorphism (Eilenberg–Wright, via `cataFold_comm`
     and the universal property `relCata_UP`).  Lets the abstract catamorphism laws apply to
     `cataR`. -/
-public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : Alg (F A) C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataFold_comm φ)
 

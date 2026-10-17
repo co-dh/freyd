@@ -18,7 +18,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.cata_converse_eq") \
     #src[the converse of a fold over decimals undoes the algebra `[g,h]` and then either `wrap`, or
      the fold's converse on the front and `snoc`]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
+  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@01e2bdda
   lean-calc(calc-val),
   [#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
     #src[a number is read back into digits either as one nonzero digit, or by splitting off its
@@ -72,10 +72,10 @@
   [a relation `X` contained in one unfolding of the fold's recursion at `X` is contained in the fold],
  // lean:AOP.A6_2.mu_le@9918bd39
  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
- // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
- // lean:AOP.A6_2.le_relCata_of_postfixed@6d0c3236
- // lean:AOP.A6_2.relCata_eq_mu@c2d55908
- // lean:AOP.A6_2.relCata_eq_nu@0af949db
+ // lean:AOP.A6_2.relCata_le_of_prefixed@25ab8bda
+ // lean:AOP.A6_2.le_relCata_of_postfixed@89f91798
+ // lean:AOP.A6_2.relCata_eq_mu@e590ba34
+ // lean:AOP.A6_2.relCata_eq_nu@51ff7528
 )]<mu-laws>
 
 #import "../generated/Freyd.Alg.relCata_comp_prefixed.calc.typ" as calc-64p
@@ -88,8 +88,8 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_le_comp") \
     #src[if `S` followed by `R` absorbs `T` after `F(S)`, the fold of `T` is below the fold of `R`
      followed by `S`]],
-  // lean:AOP.A6_2.relCata_le_comp@b54d0a6b
-  // lean:AOP.A6_2.relCata_comp_prefixed@95daa9e8
+  // lean:AOP.A6_2.relCata_le_comp@694ec608
+  // lean:AOP.A6_2.relCata_comp_prefixed@e4512012
   lean-calc(calc-64p),
   lean-calc(calc-64),
 )]<cata-fusion-le>
@@ -99,8 +99,8 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.comp_le_relCata") \
     #src[if `R` followed by `S` is absorbed by `F(S)` followed by `T`, the fold of `R` followed by `S`
      is below the fold of `T`]],
-  // lean:AOP.A6_2.comp_le_relCata@5874cf45
-  // lean:AOP.A6_2.relCata_comp_postfixed@aae78c87
+  // lean:AOP.A6_2.comp_le_relCata@e473f484
+  // lean:AOP.A6_2.relCata_comp_postfixed@6bccbf55
   lean-calc(calc-65p),
   lean-calc(calc-65),
 )]<fusion-le-cata>
@@ -127,10 +127,10 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
-  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
-  // lean:AOP.A6_3.hylo_fixed@b61d2802
+  // lean:AOP.A6_3.hylo_eq_mu@c2745321
+  // lean:AOP.A6_3.hylo_fixed@282999a7
   // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-  // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
+  // lean:AOP.A6_2.relCata_le_of_prefixed@25ab8bda
   lean-calc(calc-hf),
   lean-calc(calc-hlc),
   lean-calc(calc-hl),
@@ -143,7 +143,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu_coprod") \
     #src[when both algebras are case splits over the same sum, the recursion runs each case on its
      own and unites the results]],
-  // lean:AOP.A6_3.hylo_eq_mu_coprod@aaac99b8
+  // lean:AOP.A6_3.hylo_eq_mu_coprod@1df03c0f
   lean-calc(calc-hcop),
 )]<hylo-coprod>
 
@@ -208,13 +208,13 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_const") \
     #src[a constant relator records no elements, so its membership is empty]],
-    // lean:AOP.A6_5.member_const@91d83a84
+    // lean:AOP.A6_5.member_const@b37190ef
   Thm(cols: 1)[#leanf("Freyd.Alg.member_sum") \
     #src[a member of `F+G` is a member of whichever summand the value is in]],
-    // lean:AOP.A6_5.member_sum@f2ed47bd
+    // lean:AOP.A6_5.member_sum@33a3eccf
   Thm(cols: 1)[#leanf("Freyd.Alg.member_prod") \
     #src[a member of `F×G` is a member of either component]],
-    // lean:AOP.A6_5.member_prod@fefd83ec
+    // lean:AOP.A6_5.member_prod@8c3a6c88
 )]<member-sum-prod>
 // TODO p.148 lax: `F(R)member ⊑ member R`, the largest lax natural `F ⟶ id`, hence unique — Lean
 //   LaxMembership.laxNatural, largestLax_unique.
@@ -225,14 +225,14 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm63_unique") \
     #src[when `S member` is inductive, two solutions `X`, `Y` of `X=SF(X)R` are equal]],
-    // lean:AOP.A6_5.thm63_unique@7de915fc
+    // lean:AOP.A6_5.thm63_unique@158e4dd2
 )]<thm63-unique>
 
 // B&dM Theorem 6.3 (entire), p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm63_entire") \
     #src[when `S member` is inductive and `S`, `R` are entire, a pre-fixed point of `X↦SF(X)R` is entire]],
-    // lean:AOP.A6_5.thm63_entire@d76aca23
+    // lean:AOP.A6_5.thm63_entire@cf8d4a0a
 )]<thm63-entire>
 
 // B&dM Corollary 6.2, p.149
@@ -242,15 +242,15 @@
     #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map] \
     #leanf("Freyd.Alg.cor62_simple") \
     #src[`(gF(Y)f)°` followed by `X` stays below `𝟙` when `g`, `f` are simple and `Y°X⊑𝟙`]],
-    // lean:AOP.A6_5.cor62@6df24a22
-    // lean:AOP.A6_5.cor62_simple@efffca93
+    // lean:AOP.A6_5.cor62@8b41f2bc
+    // lean:AOP.A6_5.cor62_simple@42b6a32d
   lean-calc(calc-62),
 )]<cor62>
 // B&dM Corollary 6.3, p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor63") \
     #src[when `R°member` is inductive and `R` is surjective, the fold `⦇R⦈` is surjective]],
-    // lean:AOP.A6_5.cor63@a768e5a5
+    // lean:AOP.A6_5.cor63@5f01cd57
   lean-chain(
     (none, "Freyd.Alg.cor63.lhs", []),
     (SQ, "Freyd.Alg.cor63.rhs", src[@thm63-entire at `S=R°`]),
@@ -261,17 +261,17 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64") \
     #src[a map `f` with `Rf⊑F(f)α`, for a surjective `R`, has the fold `⦇R⦈` as its converse]],
-    // lean:AOP.A6_5.thm64@3db80141
+    // lean:AOP.A6_5.thm64@26560ae7
   lean-chain(
     (none, "Freyd.Alg.thm64_forward.lhs", []),
     (SQ, "Freyd.Alg.thm64_forward.rhs", src[shunting `f`, fusion, `Rf⊑F(f)α`]),
   ),
-    // lean:AOP.A6_5.thm64_forward@f35729d1
+    // lean:AOP.A6_5.thm64_forward@56f2fbed
   lean-chain(
     (none, "Freyd.Alg.thm64_backward.lhs", []),
     (SQ, "Freyd.Alg.thm64_backward.rhs", src[@cor63 and `⦇R⦈f⊑𝟙`]),
   ),
-    // lean:AOP.A6_5.thm64_backward@117de421
+    // lean:AOP.A6_5.thm64_backward@b52e6f1c
 )]<thm64>
 
 // B&dM Theorem 6.4 (the claim), p.150
@@ -279,7 +279,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64_claim") \
     #src[`R°member` is below `α°member` conjugated by `f`, so it is inductive when `α°member` is]],
-    // lean:AOP.A6_5.thm64_claim@4b02dea3
+    // lean:AOP.A6_5.thm64_claim@7db94c5a
   lean-calc(calc-64c),
 )]<thm64-claim>
 

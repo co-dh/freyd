@@ -209,7 +209,7 @@ public theorem properPrefixS_shorten {xs ys zs zs' : Str}
 @[expose] public def extend : (⟨Str × Code⟩ : RelSet.{0}) ⟶ dStr := extendP
 
 /-- **code-defn**: `[nil,extend]`, the algebra `decode` folds. -/
-@[expose] public def extendAlg : (F Unit Code).obj dStr ⟶ dStr := fun u w =>
+@[expose] public def extendAlg : Alg (F Unit Code) dStr := fun u w =>
   match u with
   | Sum.inl _ => w = SnocList.wrap ()
   | Sum.inr q => extendP q w
@@ -600,7 +600,7 @@ public theorem code_thin_condition :
 public theorem code_laws :
     mu (fun X : dStr ⟶ dCodes =>
         Λ ((junc (sumCop _ _) nil extend
-              : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
+              : Alg (F Unit Code) dStr)°) ≫ thinRel Q
           ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR) ≫ est (R c p))
       ⊑ Λ (Allegory.recip decode) ≫ est (R c p) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
@@ -677,7 +677,7 @@ public theorem code_branch (X : dStr ⟶ dCodes) :
     Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
         ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R c p)
       ⊑ Λ ((junc (sumCop _ _) nil extend
-              : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
+              : Alg (F Unit Code) dStr)°) ≫ thinRel Q
           ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR)
           ≫ est (R c p) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]

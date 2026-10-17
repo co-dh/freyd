@@ -213,7 +213,7 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 
 /-- **para-defn**: `partition ≜ ⦇[wrap wrap,new∪glue]⦈` — every way of breaking the words into
     lines. -/
-@[expose] public def partAlg : (F Word Word).obj (dPara Word) ⟶ dPara Word :=
+@[expose] public def partAlg : Alg (F Word Word) (dPara Word) :=
   graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
     ∪ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
 
@@ -352,7 +352,7 @@ end Natural
 /-- **para-defn**: the specification's algebra `S ≜ [wrap wrap,new] ∪ ([wrap wrap,glue](ok w))`,
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
 @[expose] public def Salg (len : Word → Int) (w : Int) :
-    (F Word Word).obj (dPara Word) ⟶ dPara Word :=
+    Alg (F Word Word) (dPara Word) :=
   graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
     ∪ (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
       ≫ ok (len := len) w)

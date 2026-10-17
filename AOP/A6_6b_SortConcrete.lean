@@ -57,7 +57,7 @@ Ex 6.22) drop to points. -/
 public theorem ordered_cata :
     (ordered R : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (ok R ≫ consR)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · cases D
@@ -161,9 +161,9 @@ calc_steps select_proviso
     proviso. -/
 public theorem selection_fusion (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
+          : Alg (F Unit A) (dList A))⦈)°
       ⊑ (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (ok R ≫ consR)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ perm)° := by
+          : Alg (F Unit A) (dList A))⦈ ≫ perm)° := by
   have hfus : (F Unit A).map perm ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
       ⊑ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (ok R ≫ consR) ≫ perm := by
     rw [Fmap_comp_junc, junc_comp, Cat.assoc]
@@ -174,12 +174,12 @@ public theorem selection_fusion (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     the bottom line up. -/
 public theorem selection_sort (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
+          : Alg (F Unit A) (dList A))⦈)°
       ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
   calc (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
+          : Alg (F Unit A) (dList A))⦈)°
         ⊑ (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (ok R ≫ consR)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ perm)° := selection_fusion hsel
+          : Alg (F Unit A) (dList A))⦈ ≫ perm)° := selection_fusion hsel
     _ = ((ordered R : dList A ⟶ dList A) ≫ perm)° := by rw [ordered_cata]
     _ = perm° ≫ (ordered R)° := Allegory.recip_comp _ _
     _ = perm ≫ (ordered R)° := by rw [perm_recip]
@@ -196,16 +196,16 @@ variable (select) in
     the converse of the fold unfolds one `select` at a time. -/
 public theorem sort_rec :
     (cataR (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-        : (F Unit A).obj (dList A) ⟶ dList A))°
+        : Alg (F Unit A) (dList A)))°
       = τ° ≫ τ
         ∪ select ≫ rprodMap (𝟙 (dE A))
             (cataR (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-              : (F Unit A).obj (dList A) ⟶ dList A))° ≫ consR := by
+              : Alg (F Unit A) (dList A)))° ≫ consR := by
   have hw : algWrap (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-      : (F Unit A).obj (dList A) ⟶ dList A) = τ :=
+      : Alg (F Unit A) (dList A)) = τ :=
     hom_ext fun d r => junc_sum_inl _ _ d r
   have hc : algCons (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ select°
-      : (F Unit A).obj (dList A) ⟶ dList A) = select° :=
+      : Alg (F Unit A) (dList A)) = select° :=
     hom_ext fun p r => junc_sum_inr _ _ p r
   refine (cata_converse_eq _).trans ?_
   rw [hw, hc, Allegory.recip_recip]

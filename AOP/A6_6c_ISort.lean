@@ -255,7 +255,7 @@ theorem perm_combine {s r : ConsList Unit A} (hp : Perm s r) :
 public theorem perm_add :
     (perm : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ add
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show Perm (ConsList.wrap ()) r ↔ r = ConsList.wrap D
@@ -322,7 +322,7 @@ public theorem add_cata_strictNatural :
     StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
       (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
       (fun a => (⦇(junc (sumCop (dL Unit) ⟨a.carrier × ConsList Unit a.carrier⟩) τ add
-          : (F Unit a.carrier).obj (dList a.carrier) ⟶ dList a.carrier)⦈)) := by
+          : Alg (F Unit a.carrier) (dList a.carrier))⦈)) := by
   simp only [← perm_add]; exact Sort.perm_strictNatural
 
 variable (R : A → A → Prop)
@@ -357,9 +357,9 @@ public theorem ordered_add :
     `ordered_add`. -/
 public theorem add_ordered_fusion :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ add
-        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R
+        : Alg (F Unit A) (dList A))⦈ ≫ ordered R
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (add ≫ ordered R)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ :=
+          : Alg (F Unit A) (dList A))⦈ :=
   relCata_fusion (initial Unit A)
     (by rw [junc_comp, Fmap_comp_junc, ← ordered_add R, wrap_ordered R])
 
@@ -368,9 +368,9 @@ public theorem add_ordered_fusion :
 public theorem insert_fusion {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ ins
-        : (F Unit A).obj (dList A) ⟶ dList A)⦈
+        : Alg (F Unit A) (dList A))⦈
       ⊑ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (add ≫ ordered R)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          : Alg (F Unit A) (dList A))⦈ := by
   rw [← add_ordered_fusion R]
   refine relCata_le_comp (initial Unit A) ?_
   rw [Fmap_comp_junc, junc_comp, wrap_ordered R]
@@ -381,13 +381,13 @@ public theorem insert_fusion {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) �
 public theorem insertion_sort {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ ins
-        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
+        : Alg (F Unit A) (dList A))⦈ ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
   calc ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ ins
-        : (F Unit A).obj (dList A) ⟶ dList A)⦈
+        : Alg (F Unit A) (dList A))⦈
         ⊑ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (add ≫ ordered R)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := insert_fusion R hins
+          : Alg (F Unit A) (dList A))⦈ := insert_fusion R hins
     _ = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ add
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R := (add_ordered_fusion R).symm
+          : Alg (F Unit A) (dList A))⦈ ≫ ordered R := (add_ordered_fusion R).symm
     _ = (perm : dList A ⟶ dList A) ≫ ordered R := by rw [← perm_add]
 
 calc_steps insertion_sort

@@ -53,7 +53,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 public theorem est_le_eps {C : 𝒜} (Q : C ⟶ C) : est Q ⊑ ∋ C := inter_lb_left _ _
 
 /-- **Theorem 10.1, (i)**: the greedy body at `M` returns only what `H` returns. -/
-public theorem greedy_dp_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+public theorem greedy_dp_lower [InitialAlgebra F] {h : Alg F B} {T : Alg F A}
     {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A} :
     Λ (T°) ≫ est Q ≫ F.map (M T h «≤») ≫ h ⊑ H T h :=
   calc Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est «≤») ≫ h
@@ -66,8 +66,8 @@ public theorem greedy_dp_lower [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj
 calc_steps greedy_dp_lower
 
 /-- **Theorem 10.1, (ii)**: `H°` followed by the greedy body at `M` is `⊑≥`. -/
-public theorem greedy_dp_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
-    {T : F.obj A ⟶ A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h)
+public theorem greedy_dp_upper [InitialAlgebra F] {h : Alg F B}
+    {T : Alg F A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h)
     (hmono : Pres h «≤») (htrans : «≤» ≫ «≤» ⊑ «≤») (hQ : ThinCondition T h «≤» Q) :
     (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (M T h «≤») ≫ h ⊑ «≤»° :=
   calc (H T h)° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ (H T h) ≫ est «≤») ≫ h
@@ -97,7 +97,7 @@ calc_steps greedy_dp_upper
 /-- **Core of Theorem 10.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`) — (i) and (ii)
     joined by the `min` universal property. -/
-public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+public theorem greedy_dp_prefixed [InitialAlgebra F] {h : Alg F B} {T : Alg F A}
     {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A} (hh : Map h) (hmono : Pres h «≤»)
     (htrans : «≤» ≫ «≤» ⊑ «≤») (hQ : ThinCondition T h «≤» Q) :
     Λ (T°) ≫ est Q ≫ F.map (M T h «≤») ≫ h ⊑ M T h «≤» :=
@@ -111,7 +111,7 @@ public theorem greedy_dp_prefixed [InitialAlgebra F] {h : F.obj B ⟶ B} {T : F.
 /-- Step 1: at `X≜H%∋ est(≤)` the greedy body is below the spec — the prefixed point
     Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
 public theorem greedy_dp_step1 [InitialAlgebra F]
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
+    {h : Alg F B} {T : Alg F A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     {X : A ⟶ B} (hh : Map h) (hmono : Pres h «≤») (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hQ : ThinCondition T h «≤» Q) (hX : X = M T h «≤») :
     Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ M T h «≤» := by
@@ -126,7 +126,7 @@ public theorem greedy_dp_step1 [InitialAlgebra F]
     (`Sup_le`'s lower-bound half) via `greedy_dp_prefixed`.  (Distinct from `AOP.A7_2`'s `greedy`,
     the Theorem 7.2 greedy theorem `⦇min R°·ΛS⦈ ⊆ min R°·Λ⦇S⦈`.) -/
 public theorem greedy_dp (I : InitialAlgebra F)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
+    {h : Alg F B} {T : Alg F A} {«≤» : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : Freyd.Alg.Pres h «≤») (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hQ : ThinCondition T h «≤» Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
@@ -150,8 +150,8 @@ public theorem greedy_dp (I : InitialAlgebra F)
     folded `°`, the note's letters), discharge all of `greedy_dp`'s hypotheses — so the
     greedy recursion refines the spec. -/
 theorem greedy_dp_of_birelator {G : BiRelator 𝒜} {e : 𝒜}
-    (I : InitialAlgebra (G.appl e)) {h : (G.appl e).obj B ⟶ B}
-    {T : (G.appl e).obj A ⟶ A} {«≤» : B ⟶ B}
+    (I : InitialAlgebra (G.appl e)) {h : Alg (G.appl e) B}
+    {T : Alg (G.appl e) A} {«≤» : B ⟶ B}
     {U : e ⟶ e} {V : A ⟶ A} (hh : Map h) (htrans : «≤» ≫ «≤» ⊑ «≤») (hUrefl : Cat.id e ⊑ U)
     (hU : G.map U «≤» ≫ h ⊑ h ≫ «≤»)
     (hV : V ≫ (H T h) ⊑ (H T h) ≫ «≤») :
@@ -314,8 +314,8 @@ variable {L E : Type} {b c : RelSet.{0}}
 /-- **Theorem 10.1 in coproduct form** — the note's @greedy-laws, third row: at `T=[V₁,V₂]`,
     `h=[U₁,U₂]`, `Q=Q₁+Q₂` and `V₂V₁°=⊥`, the greedy recursion split into its two branches
     still refines `H%∋ est(≤)`.  `AOP.A10_1.greedy_dp` at the snoc-list functor. -/
-public theorem greedy_dp_arms {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
-    {U : (F L E).obj c ⟶ c} {«≤» : c ⟶ c}
+public theorem greedy_dp_arms {T : Alg (F L E) b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {U : Alg (F L E) c} {«≤» : c ⟶ c}
     (hh : Map U) (hmono : Freyd.Alg.Pres U «≤») (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)

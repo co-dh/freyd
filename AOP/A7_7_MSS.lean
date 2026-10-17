@@ -676,8 +676,7 @@ private theorem suffix_mssPre_ys (v : Int) : (suffixR ≫ mssPre) ys v ↔ (v = 
     read `⦇[zero,⊕]⦈ x` back out of the SET of that fold's values on the suffixes of `x`, and
     `xs`, `ys` are two lists where the set is the same and the value is not. -/
 public theorem suffixMax_not_relCata :
-    ¬ ∃ h : (F Unit Int).obj (P (⟨Int⟩ : RelSet.{0}))
-              ⟶ P (⟨Int⟩ : RelSet.{0}),
+    ¬ ∃ h : Alg (F Unit Int) (P (⟨Int⟩ : RelSet.{0})),
         suffixR%∋ ≫ existsImage mssPre = ⦇h⦈ := by
   rintro ⟨h, hh⟩
   have hcomm := (relCata_UP (initial Unit Int) h _).mpr hh
@@ -755,7 +754,7 @@ public theorem suffixMax_not_relCata :
     `suffixMax_not_relCata` shows a bare `E(Int)` cannot carry — `E(⦇[zero,⊕]⦈)` forgets which
     member of the set came from that list. -/
 @[expose] public def k :
-    (F Unit Int).obj (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ ⟨Int × (Int → Prop)⟩ :=
+    Alg (F Unit Int) (⟨Int × (Int → Prop)⟩ : RelSet.{0}) :=
   junc (sumCop (dL Unit) ⟨Int × (Int × (Int → Prop))⟩)
     (graph (fun _ : Unit => (0 : Int)) ≫ rpair (𝟙 (⟨Int⟩ : RelSet.{0})) singletonMap)
     (rpair wstep (Λ (wstep ∪ tailSet)))
@@ -962,7 +961,7 @@ public theorem scan_pair_eq_cata :
     equation for `k`, which is what makes it the fold `⦇k⦈` above. -/
 public theorem scan_pair_comm :
     (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) τ consR
-        : (F Unit Int).obj (dCL Unit Int) ⟶ dCL Unit Int)
+        : Alg (F Unit Int) (dCL Unit Int))
       ≫ rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
           (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
@@ -972,7 +971,7 @@ public theorem scan_pair_comm :
           (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))) ≫ k := by
   have hcon : (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) τ consR
-      : (F Unit Int).obj (dCL Unit Int) ⟶ dCL Unit Int) = graph con := by
+      : Alg (F Unit Int) (dCL Unit Int)) = graph con := by
     apply hom_ext; intro u y
     cases u with
     | inl d => rw [junc_sum_inl]; exact Iff.rfl
