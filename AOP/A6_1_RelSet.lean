@@ -101,9 +101,13 @@ public theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x :
     this name where Lean's pointwise lambda would print. -/
 @[expose] public def corefl {A : RelSet.{u}} (P : A.carrier → Prop) : A ⟶ A := fun x y => x = y ∧ P x
 
--- B&dM's convention: a predicate used as an arrow IS its coreflexive, so `corefl(p)` prints `p`.
+-- A predicate used as an arrow is its coreflexive, marked `?` as in `get?`: `corefl(p)` prints `p?`.
+-- Only a NAME takes the mark; any other argument prints bare, as B&dM write it.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.corefl] public meta def unexpandCorefl : Unexpander
+  | `($_ $p:ident) => match p.getId with
+    | .str pre s => `($(mkIdentFrom p (.str pre (s ++ "?"))))
+    | _ => `($p)
   | `($_ $p) => `($p)
   | _ => throw ()
 

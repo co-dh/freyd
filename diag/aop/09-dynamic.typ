@@ -36,7 +36,7 @@
 // `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
 #ex-table(
   (sym: [`F`], decl: "Freyd.Alg.RelSet.Stairs.F_obj", type: [`Rel ⟶ Rel`], meaning: [`()` ends a climb; `(`#kq("10 15")`, x)` takes the segment #kq("10 15"), then `x` for the rest]),
-  (sym: [`1or2`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`) = `#kq(",10"), `1or2(`#kq("10 15")`) = `#kq("10 15"); #kq("10 15 20") has no image: three stairs]),
+  (sym: [`1or2?`], decl: "Freyd.Alg.RelSet.Stairs.«1or2»", meaning: [`1or2(`#kq(",10")`) = `#kq(",10"), `1or2(`#kq("10 15")`) = `#kq("10 15"); #kq("10 15 20") has no image: three stairs; `ℕ`#super[1,2]: the lists it lets through]),
   (sym: [`T`], decl: "Freyd.Alg.RelSet.Stairs.T", meaning: [put the segment in front of the rest: `T`#kq("(10 15;20 30)")` = `#kq("10 15 20 30")]),
   (sym: [`T°`], type: [`[ℕ] ⟶ 1 + [ℕ] × [ℕ]`], meaning: [take 1 or 2 from the head: `T°(`#kq("10 15 20 30")`)` is #kq("(10;15 20 30)") or #kq("(10 15;20 30)")]),
   (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈`#kq("(10;15 20;30)")` = `#kq("10 15 20 30"); #kq("(10 15 20;30)") has no image: #kq("10 15 20") has three stairs (q's `raze` `,/` on a legal climb only)]),
