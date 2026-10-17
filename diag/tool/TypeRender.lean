@@ -92,7 +92,7 @@ private def hom? (t : Expr) (piece : String → String := id) (brk := "") : Meta
   -- before anything reduces the abbreviation to the bare `F(X)⟶X`.
   if let (``Freyd.Alg.Alg, #[_, _, f, x]) := t.getAppFnArgs then
     return some (piece ("Alg(" ++ (← relLabel f) ++ "," ++ (← label x) ++ ")"))
-  let some (a, b) := homObjs? t | return none
+  let some (a, b) ← homObjs? t | return none
   return some (piece ((← label a) ++ "⟶") ++ brk ++ piece (← label b))
 
 /-- A TYPE LEAN GAVE, its top-level non-dependent `→` split off the type tree, so `piece` can keep
@@ -228,7 +228,7 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
           return if r.isAppOf ``Freyd.Alg.RelSet.carrier then .continue else .done r)
         return .done c)
       let o (e : Expr) : MetaM Expr := do inst (← o e)
-      let ty ← match homObjs? ty with
+      let ty ← match ← homObjs? ty with
         | some (a, b) => pure (mkApp2 ty.appFn!.appFn! (← o a) (← o b))
         | none => pure ty
       let some s ← hom? ty piece brk |

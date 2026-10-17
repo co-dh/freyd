@@ -338,7 +338,7 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
   | Sum.inr q => droprFn q.1 q.2
 
 /-- **tour-defn**: `tour ≜ ⦇[start,dropl∪dropr]⦈`. -/
-@[expose] public def tourAlg : (F (City × City) City).obj (dTour City) ⟶ dTour City :=
+@[expose] public def tourAlg : Alg (F (City × City) City) (dTour City) :=
   graph (droplAlgFn (City := City)) ∪ graph droprAlgFn
 
 @[expose] public def tour : dCL (City × City) City ⟶ dTour City := ⦇tourAlg⦈

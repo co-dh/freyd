@@ -282,7 +282,7 @@ public theorem cataFold_comm {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, greedy, …) apply to `cataR` over snoc-lists.  ConsList has the same bridge
     (`A6_ConsList.cataR_eq_relCata`); this is the missing SnocList counterpart. -/
-public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F L E).obj C ⟶ C) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : Alg (F L E) C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 

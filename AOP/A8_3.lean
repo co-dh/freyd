@@ -134,7 +134,7 @@ public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ P A}
 variable {F : Relator 𝒜 𝒜}
 
 /-- The union of two algebras monotonic on `Q` is monotonic on `Q`. -/
-public theorem pres_union {S₁ S₂ : F.obj A ⟶ A} {Q : A ⟶ A}
+public theorem pres_union {S₁ S₂ : Alg F A} {Q : A ⟶ A}
     (h₁ : Freyd.Alg.Pres S₁ Q) (h₂ : Freyd.Alg.Pres S₂ Q) :
     Freyd.Alg.Pres (S₁ ∪ S₂) Q := by
   show F.map Q ≫ (S₁ ∪ S₂) ⊑ (S₁ ∪ S₂) ≫ Q
@@ -194,7 +194,7 @@ public theorem sortRel_comp_filter_le
     simplicity, so the order plays no part. -/
 public theorem sortRel_comp_minL_le
     {setify : L.obj A ⟶ P A} (hset : Map setify)
-    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {minL : L.obj A ⟶ A} {R : A ⟶ A}
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {minL : Alg L A} {R : A ⟶ A}
     (hord : Coreflexive (ordered ≼))
     (hmem : minL ⊑ setify ≫ ∋ A)
     (hleast : (setify ≫ ∋ A)° ≫ minL ⊑ R°) :
@@ -396,9 +396,9 @@ public theorem bumpRel_cons (Q : dE A ⟶ dE A) (a b : A) (xs ys : ConsList Unit
 /-- `bumpFold(Q) = ⦇[nil,bump(Q)]⦈`, the junction written out. -/
 public theorem bumpFold_eq (Q : dE A ⟶ dE A) :
     bumpFold Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
-      : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ := by
+      : Alg (F Unit A) (dCL Unit A))⦈ := by
   have h : bumpAlg Q = (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
-      : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A) := by
+      : Alg (F Unit A) (dCL Unit A)) := by
     funext u ys
     cases u with
     | inl d =>
@@ -628,7 +628,7 @@ public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
     preorder: it only drops elements, and every dropped element is covered by a kept one. -/
 public theorem bumpFold_le_thinL {Q : dE A ⟶ dE A} (hQ : preorder Q) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (bumpRel Q)
-      : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinL Q := by
+      : Alg (CL.F Unit A) (dCL Unit A))⦈ ⊑ thinL Q := by
   rw [← bumpFold_eq]
   refine (le_thinL_iff Q _).mpr ⟨le_iff.mpr fun _ _ h => subseqP_of_bumpFold Q h,
     le_iff.mpr fun x S h => ?_⟩
@@ -889,7 +889,7 @@ public theorem inlistP_cmap_inr_inl {B C : Type} (b : B) :
 
 /-- `cpL(F)` lists exactly `F(∈)`: `y` is in `cpL(F)(w)` iff `F` of list membership relates
     `w` to `y`. -/
-public theorem inlistP_cpLFn {A : RelSet.{0}} {X : Type} (R : listRelator.obj (dE X) ⟶ dE X)
+public theorem inlistP_cpLFn {A : RelSet.{0}} {X : Type} (R : Alg listRelator (dE X))
     (hR : ∀ xs x, R xs x ↔ inlistP xs x) :
     (F : PolyC ι) → ∀ w y, inlistP (cpLFn (A := A.carrier) (X := X) F w) y ↔ fmapR F R w y
   | .zer, e, _ => Empty.elim e

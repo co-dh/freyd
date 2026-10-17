@@ -28,7 +28,7 @@
   [#rowkey("Freyd.Alg.M")], [#leant("Freyd.Alg.M")],
   "Freyd.Alg.M",
   [the problem to be solved: an answer of `H` that is best under `≤`],
-// lean:AOP.A6_3.H@71852cf7
+// lean:AOP.A6_3.H@503ff86f
 )]<dp-defn>
 
 === Stair example
@@ -49,10 +49,10 @@
   (sym: [`M`], type: leant("Freyd.Alg.RelSet.Stairs.dynamic_programming_lower.lhs.f2.arg.f1.arg"), value: leanf("Freyd.Alg.M"), meaning: [the 5 cuts of #kq("10 15 20 30") pay `75`, `60`, `55`, `45`, `30`, so `M(`#kq("10 15 20 30")`) = 30`]),
 )<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@243eae25
-// lean:AOP.A9_1_Stairs.T@cbaeba15
+// lean:AOP.A9_1_Stairs.T@9ed2e85a
 // lean:AOP.A9_1_Stairs.T_cata@1c042a9d
 // lean:AOP.A9_1_Stairs.h@46844dc4
-// lean:AOP.A9_1.M@374f3050
+// lean:AOP.A9_1.M@4ee14e9f
 
 === The dynamic programming theorem
 
@@ -60,7 +60,7 @@
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@8d0df985
+    // lean:AOP.A9_1.dynamic_programming@08b29fcf
   pad(left: -9pt)[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(≤)` keeps a best one
@@ -91,7 +91,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(≤)`) returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_lower@6f86895e
+     // lean:AOP.A9_1.dynamic_programming_lower@dcadf271
   lean-calc(calc-dpl),
 )]<dp-lower>
 
@@ -110,7 +110,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
     #src[taking the input apart one level by `T°`, solving each part by `H` and assembling by `h`
      gives `H` itself]],
-     // lean:AOP.A6_3.hylo_fixed@b61d2802
+     // lean:AOP.A6_3.hylo_fixed@282999a7
   lean-calc(calc-hfixed),
 )]<dp-h-fixed>
 
@@ -119,7 +119,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(≤)` returns
      from that input only `b'` with `b' ≤ b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
+     // lean:AOP.A9_1.dynamic_programming_upper@623f2abb
   lean-calc(calc-dpu),
 )]<dp-upper>
 
@@ -130,7 +130,7 @@
      `P(F(M)h) est(≤)` to `b'`, is within taking `b` apart by `h°F(H°)`, passing to a set `∈` holds
      the parts in, then by `Y` to a set whose every member, solved by `M` and assembled by `h`, gives
      some `c` with `b' ≤ c`]],
-     // lean:AOP.A9_1.dynamic_programming_upper_head@28c5deb8
+     // lean:AOP.A9_1.dynamic_programming_upper_head@08554f00
   lean-calc(calc-dpuh),
 )]<dp-upper-head>
 
@@ -139,7 +139,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper_tail") \
     #src[taking an answer `b` of `H` apart by `h°F(H°)`, and keeping each set of parts whose every
      solution by `M` assembles by `h` to a `b'` with `b' ≤ b`, relates `b` only to such `b'`]],
-     // lean:AOP.A9_1.dynamic_programming_upper_tail@868481aa
+     // lean:AOP.A9_1.dynamic_programming_upper_tail@4e510c24
   lean-calc(calc-dput),
 )]<dp-upper-tail>
 
@@ -197,7 +197,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), dropping the parts `thin(Q)`
      rejects, solving each rest by `M` and keeping an optimum returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_thin_lower@00839e9b
+     // lean:AOP.A9_1.dynamic_programming_thin_lower@905ae28a
   lean-calc(calc-dptl),
 )]<dp-laws-92>
 
@@ -249,9 +249,9 @@
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
 )]<dp-conds>
-// lean:AOP.A9_1.dynamic_programming_thin@d7b28302
-// lean:AOP.A9_1.ThinCondition@981f8a2d
-// lean:AOP.A6_3.H@71852cf7
+// lean:AOP.A9_1.dynamic_programming_thin@f497b597
+// lean:AOP.A9_1.ThinCondition@be24d66d
+// lean:AOP.A6_3.H@503ff86f
 
 #disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
   #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
@@ -263,7 +263,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
     #src[an F-algebra homomorphism `cost : h ⟶ k` carries preservation back from `k` to `h`: if `k`
      preserves `≼`, then `h` preserves `≤`, the order `≼` pulled back along `cost`]],
-     // lean:AOP.A9_1.pres_of_cost@8b941c9c
+     // lean:AOP.A9_1.pres_of_cost@42e4340c
   lean-calc(calc-cost),
 )]<dp-cost>
 
@@ -294,7 +294,7 @@
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_in_context") \
     #src[improving each part by `≤` within its `H°`-context, then assembling by `h`, is below `h ≤`]],
-     // lean:AOP.A9_1.pres_in_context@b0db9b3a
+     // lean:AOP.A9_1.pres_in_context@12588624
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>
@@ -477,7 +477,7 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs"),
     [#src[`F(length)[zero,π₂ succ]=α length` again]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step6@27c03b21
+     // lean:AOP.A9_2_Edit.edit_mono_step6@d40f4b4e
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
@@ -1024,7 +1024,7 @@
   "Freyd.Alg.RelSet.Code.mem_reduce",
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
-// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
+// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@fa14f6ce lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the

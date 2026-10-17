@@ -421,11 +421,16 @@ def objSpelling (e : Expr) : MetaM Expr := do
     | some y => return .visit y
     | none => return .continue)
 
-/-- The source and target of a hom type `a ⟶ b`. -/
-def homObjs? (t : Expr) : Option (Expr × Expr) :=
+/-- The source and target of a hom type `a ⟶ b`, read through a reducible abbreviation of one
+    (`Alg F X` is `F.obj X ⟶ X`) but never through `Cat.Hom`, which at a concrete category unfolds
+    to the arrow's own type. -/
+partial def homObjs? (t : Expr) : MetaM (Option (Expr × Expr)) := do
   match t.getAppFnArgs with
-  | (``Cat.Hom, #[_, _, a, b]) => some (a, b)
-  | _ => none
+  | (``Cat.Hom, #[_, _, a, b]) => return some (a, b)
+  | (c, _) =>
+    unless c != .anonymous && (← isReducible c) && !(← getEnv).isProjectionFn c do return none
+    let some u ← Meta.unfoldDefinition? t | return none
+    homObjs? u.headBeta
 
 /-- Whether a type is the OBJECTS of a category — it carries a `Cat` instance.  The class decides,
     not a list of carriers: `Allegory` extends `Cat`, so every category the book builds answers yes
@@ -455,13 +460,13 @@ def isObjType (ty : Expr) : MetaM Bool := do
     square the note draws. -/
 def isComponent (e : Expr) : MetaM Bool := do
   unless e.isApp && e.getAppFn.isFVar do return false
-  unless (homObjs? (← Meta.inferType e)).isSome do return false
+  unless (← homObjs? (← Meta.inferType e)).isSome do return false
   e.getAppArgs.allM fun a => do
     let ty ← Meta.inferType a
     -- AN ARROW IS NEVER AN OBJECT INDEX, whatever instance its hom type carries: `sort P` is `sort`
     -- applied to a relation, which takes the brackets of every application, so the hom test comes
     -- first and `isObjType` never gets to answer for it.
-    if (homObjs? ty).isSome then return false else isObjType ty
+    if (← homObjs? ty).isSome then return false else isObjType ty
 
 /-- The last two arguments of an application. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
@@ -1510,7 +1515,7 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
     `isDefEq` against `Cat.Hom`, so every such arrow answers rather than a listed few. -/
 def homEnds? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let t ← Meta.inferType e
-  if let some p := homObjs? t then return some p
+  if let some p := (← homObjs? t) then return some p
   if let .forallE _ a b _ := t then
     if !b.hasLooseBVars && (← isObjType (← Meta.inferType a)) then
       -- Both ends objects of ONE category: `K → Type` has its ends in `Type` and `Type 1`.
@@ -1529,7 +1534,7 @@ def homEnds (e : Expr) : MetaM (Expr × Expr) := do
     statement is no hom, so a theorem's telescope is the reducing one's, binder for binder. -/
 partial def stmtTelescope [Inhabited α] (ty : Expr) (k : Array Expr → Expr → MetaM α)
     (xs : Array Expr := #[]) : MetaM α := do
-  if (homObjs? ty).isSome then return ← k xs ty
+  if (← homObjs? ty).isSome then return ← k xs ty
   -- `whnf` only where the walk is STUCK, and hand `k` the type it was stuck on — both as
   -- `forallTelescopeReducing` does.  Reducing a statement that is already a `∀`, or the statement
   -- the walk ends on, unfolds the named predicate the panel is drawn from.

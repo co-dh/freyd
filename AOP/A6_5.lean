@@ -289,7 +289,7 @@ variable {𝒜 : Type u} [Allegory 𝒜] {F : Relator 𝒜 𝒜}
     with `R·mem ⊑ mem·FR` for all `R : A⟶B` (mirrored: `F.map R ≫ mem b ⊑ mem a ≫ R`), i.e.
     `mem` is lax natural from the identity relator to `F`. -/
 public structure LaxMembership (F : Relator 𝒜 𝒜) where
-  mem : ∀ A : 𝒜, F.obj A ⟶ A
+  mem : ∀ A : 𝒜, Alg F A
   lax : ∀ {A B : 𝒜} (R : A ⟶ B), F.map R ≫ mem B ⊑ mem A ≫ R
 
 /-- A `LaxMembership`'s `mem` family is exactly a lax natural transformation from the
@@ -299,8 +299,8 @@ public theorem LaxMembership.laxNatural (M : LaxMembership F) :
 
 /-- **B&dM p.149**: `mem`, provided it exists, is the LARGEST lax natural transformation of
     this type. -/
-public def LargestLax (F : Relator 𝒜 𝒜) (φ : ∀ A : 𝒜, F.obj A ⟶ A) : Prop :=
-  ∀ (ψ : ∀ A : 𝒜, F.obj A ⟶ A), (∀ {A B : 𝒜} (R : A ⟶ B), F.map R ≫ ψ B ⊑ ψ A ≫ R) →
+public def LargestLax (F : Relator 𝒜 𝒜) (φ : ∀ A : 𝒜, Alg F A) : Prop :=
+  ∀ (ψ : ∀ A : 𝒜, Alg F A), (∀ {A B : 𝒜} (R : A ⟶ B), F.map R ≫ ψ B ⊑ ψ A ≫ R) →
     ∀ A, ψ A ⊑ φ A
 
 /-- **B&dM p.149**: "it follows that membership relations, if they exist, are unique" —
@@ -494,7 +494,7 @@ public theorem thm63_induction (M : Membership F) {B : 𝒜} (S : B ⟶ F.obj B)
 
 /-- **Theorem 6.3**, uniqueness as an inequality: when `S member(F)` is inductive, a solution of
     `X = SF(X)R` lies below every `Y` with `SF(Y)R ⊑ Y`. -/
-public theorem thm63_le (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+public theorem thm63_le (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : Alg F A}
     (hind : Inductive (S ≫ M.mem B)) {X Y : B ⟶ A} (hX : X = S ≫ F.map X ≫ R)
     (hY : S ≫ F.map Y ≫ R ⊑ Y) : X ⊑ Y := by
   have hQ : Coreflexive (𝟙 B ∩ (Y / X)) := inter_lb_left _ _
@@ -513,7 +513,7 @@ public theorem thm63_le (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R :
 
 /-- **Theorem 6.3** (B&dM p.149): if `S member(F)` is inductive, `X = SF(X)R` has at most one
     solution. -/
-public theorem thm63_unique (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+public theorem thm63_unique (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : Alg F A}
     (hind : Inductive (S ≫ M.mem B)) {X Y : B ⟶ A} (hX : X = S ≫ F.map X ≫ R)
     (hY : Y = S ≫ F.map Y ≫ R) : X = Y :=
   le_antisymm (thm63_le M hind hX (by rw [← hY]; exact le_refl _))
@@ -521,7 +521,7 @@ public theorem thm63_unique (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} 
 
 /-- **Theorem 6.3** (B&dM p.149), entire half: if `S member(F)` is inductive and `R`, `S` are
     entire, every `X` with `SF(X)R ⊑ X` is entire — the unique solution in particular. -/
-public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : Alg F A}
     (hind : Inductive (S ≫ M.mem B)) (hS : Entire S) (hR : Entire R) {X : B ⟶ A}
     (hX : S ≫ F.map X ≫ R ⊑ X) : Entire X := by
   have hQ : Coreflexive (𝟙 B ∩ X ≫ topHom A B) := inter_lb_left _ _
@@ -555,7 +555,7 @@ public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} 
     unique solution `φ(R,S) = μX : SF(X)R` — its least fixed point solves it (Knaster–Tarski),
     every solution equals it (`thm63_unique`), and it is entire when `R` and `S` are
     (`thm63_entire`). -/
-public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : Alg F A}
     (hind : Inductive (S ≫ M.mem B)) :
     mu (fun X : B ⟶ A => S ≫ F.map X ≫ R) = S ≫ F.map (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)) ≫ R
     ∧ (∀ Y : B ⟶ A, Y = S ≫ F.map Y ≫ R → Y = mu (fun X : B ⟶ A => S ≫ F.map X ≫ R))
@@ -568,7 +568,7 @@ public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.
 
 /-- Corollary 6.2, simple half: when `X = gF(X)f`, `g` and `f` are simple and `Y°X ⊑ 𝟙`, then
     `(gF(Y)f)°X ⊑ 𝟙`; one law per step. -/
-public theorem cor62_simple {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} {X Y : B ⟶ A}
+public theorem cor62_simple {A B : 𝒜} {g : B ⟶ F.obj B} {f : Alg F A} {X Y : B ⟶ A}
     (hX : X = g ≫ F.map X ≫ f) (hg : Simple g) (hf : Simple f) (hY : Y° ≫ X ⊑ 𝟙 A) :
     (g ≫ F.map Y ≫ f)° ≫ X ⊑ 𝟙 A :=
   calc (g ≫ F.map Y ≫ f)° ≫ X = (g ≫ F.map Y ≫ f)° ≫ g ≫ F.map X ≫ f := by rw [← hX]
@@ -589,7 +589,7 @@ calc_steps cor62_simple
 /-- **Corollary 6.2** (B&dM p.149): if `g member(F)` is inductive and `f`, `g` are maps, the
     solution of `X = gF(X)f` is a map — entire by Theorem 6.3, simple (Ex 6.10) by Theorem 6.3's
     induction against `X ∩ (𝟙/X)°`. -/
-public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A}
+public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : Alg F A}
     (hind : Inductive (g ≫ M.mem B)) (hg : Map g) (hf : Map f) {X : B ⟶ A}
     (hX : X = g ≫ F.map X ≫ f) : Map X := by
   refine ⟨thm63_entire M hind hg.1 hf.1 (by rw [← hX]; exact le_refl _), ?_⟩
@@ -611,7 +611,7 @@ public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.
 /-- **Corollary 6.2** (B&dM p.149), the book's proof: the unique solution of `X = gF(X)f` is the
     hylomorphism `⦇f⦈⦇g°⦈°` (Theorem 6.2), and it is a function (`cor62`). -/
 public theorem cor62_hylo (I : InitialAlgebra F) (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B}
-    {f : F.obj A ⟶ A} (hind : Inductive (g ≫ M.mem B)) (hg : Map g) (hf : Map f) :
+    {f : Alg F A} (hind : Inductive (g ≫ M.mem B)) (hg : Map g) (hf : Map f) :
     Map ((relCata g°)° ≫ relCata f)
     ∧ ∀ Y : B ⟶ A, Y = g ≫ F.map Y ≫ f → Y = (relCata g°)° ≫ relCata f := by
   have h := hylo_eq_mu I f g°
@@ -622,7 +622,7 @@ public theorem cor62_hylo (I : InitialAlgebra F) (M : Membership F) {A B : 𝒜}
 
 /-- **Corollary 6.3** (B&dM p.149): if `R° member(F)` is inductive, `⦇R⦈` is surjective when `R`
     is — `⦇R⦈°` solves `X = R°F(X)α`, entire by Theorem 6.3. -/
-public theorem cor63 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+public theorem cor63 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : Alg F A}
     (hind : Inductive (R° ≫ M.mem A)) (hR : 𝟙 A ⊑ R° ≫ R) :
     𝟙 A ⊑ (relCata R)° ≫ relCata R := by
   have hfix : relCata R = I.α° ≫ F.map (relCata R) ≫ R := (eq_relCata_iff_fixed I R _).mpr rfl
@@ -647,14 +647,14 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     commuting hypothesis, `(|R|)·f ⊑ 1` (mirrored: `relCata I R ≫ f ⊑ 1`).  This is
     B&dM's fusion step: `comp_le_relCata` ((6.5), `AOP.A6_2`) against `⦇α⦈ = id`
     (`relCata_alpha`, `AOP.A6_3`). -/
-private theorem relCata_comp_le_id (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A}
+private theorem relCata_comp_le_id (I : InitialAlgebra F) {A : 𝒜} {R : Alg F A}
     {f : A ⟶ I.t} (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ≫ f ⊑ 𝟙 I.t := by
   have h1 : relCata R ≫ f ⊑ relCata I.α := comp_le_relCata I hcomm
   rwa [relCata_alpha] at h1
 
 /-- **Theorem 6.4** (B&dM p.150), forward/provable half: if `f` is a map and
     `R·f ⊑ α·Ff` (mirrored: `R≫f ⊑ F.map f≫I.α`), then `(|R|) ⊑ f°`. -/
-public theorem thm64_forward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
+public theorem thm64_forward (I : InitialAlgebra F) {A : 𝒜} {R : Alg F A} {f : A ⟶ I.t}
     (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ⊑ f° := by
   have h1 : relCata R ≫ f ⊑ 𝟙 I.t := relCata_comp_le_id I hcomm
   have h2 : relCata R ⊑ 𝟙 I.t ≫ f° := (map_shunt_right hf (relCata R) (𝟙 I.t)).mp h1
@@ -662,7 +662,7 @@ public theorem thm64_forward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ 
 
 /-- **Theorem 6.4**, backward half: given `(|R|)` surjective (`hsur`) and `(|R|)·f ⊑ 1`
     (`hcancel`), `f° ⊑ (|R|)`. -/
-public theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
+public theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : Alg F A} {f : A ⟶ I.t}
     (hsur : 𝟙 A ⊑ (relCata R)° ≫ relCata R) (hcancel : relCata R ≫ f ⊑ 𝟙 I.t) :
     f° ⊑ relCata R := by
   have s1 : f° ≫ 𝟙 A ⊑ f° ≫ ((relCata R)° ≫ relCata R) := comp_mono_left f° hsur
@@ -676,7 +676,7 @@ public theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶
 
 /-- The claim in Theorem 6.4, its shunting half: `Rf ⊑ F(f)α` shunted and conversed to
     `R°F(f) ⊑ fα°`, against `F(f)` entire, gives `R° ⊑ fα°F(f°)`. -/
-public theorem thm64_recip_le (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
+public theorem thm64_recip_le (I : InitialAlgebra F) {A : 𝒜} {R : Alg F A} {f : A ⟶ I.t}
     (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : R° ⊑ f ≫ I.α° ≫ F.map f° := by
   have hE : 𝟙 (F.obj A) ⊑ F.map f ≫ F.map f° := by
     rw [← F.map_comp, ← F.map_id]; exact F.map_mono (map_entire_le hf)
@@ -697,7 +697,7 @@ public theorem thm64_recip_le (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶
 /-- **Theorem 6.4**, the claim (B&dM p.150): `R° member ⊑ f α° member f°`, so `R° member` is
     inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive):
     `R° ⊑ fα°F(f°)`, then `member` lax natural. -/
-public theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+public theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : Alg F A}
     {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
     R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° :=
   calc R° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
@@ -741,7 +741,7 @@ public theorem alpha_member_inductive (I : InitialAlgebra F) (M : LaxMembership 
   exact le_trans this hW
 
 /-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `Rf ⊑ F(f)α`, then `f° = ⦇R⦈`. -/
-public theorem thm64 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+public theorem thm64 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : Alg F A}
     {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (hR : 𝟙 A ⊑ R° ≫ R) :
     f° = relCata R :=
   le_antisymm

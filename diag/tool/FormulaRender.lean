@@ -162,7 +162,7 @@ def pointwise (sp : Bool) (declName : Name) : MetaM Lbl :=
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   let some v := ci.value? | throwError "{declName}: a pointwise relation needs a value, and it has none"
   Meta.forallTelescope ci.type fun xs ty => do
-    let some _ := homObjs? ty |
+    let some _ ← homObjs? ty |
       throwError "{declName}: a pointwise relation is an `R : A ⟶ B`; its type is {← Meta.ppExpr ty}"
     let body := v.beta xs
     unless body.isLambda && body.bindingBody!.isLambda do
@@ -328,13 +328,13 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         -- An equation is a closed statement: rendered in an EMPTY context, so the definition's own
         -- binders opened above take no name its variables could need.  A RELATION by cases is
         -- written at two points, as one given by `fun x y => P` is, the case's pattern at each.
-        let rel := (homObjs? body).isSome
+        let rel := (← homObjs? body).isSome
         let rs ← eqs.mapM fun q => Meta.withLCtx {} {} do
           if rel then pointwiseEqn sp declName xs.size q else render sp q none [] []
         return rs.foldl (init := #[]) fun acc r =>
           if acc.isEmpty then r else acc ++ r.modify 0 fun (l, b) => (Lbl.text ", " ++ l, b)
       -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.
-      if branch.isEmpty && (homObjs? body).isSome && (val.beta xs).isLambda then
+      if branch.isEmpty && (← homObjs? body).isSome && (val.beta xs).isLambda then
         return #[(← pointwise sp declName, false)]
       return ← withBody declName branch (val.beta xs) fun v => do
         let b ← labelT v
@@ -427,7 +427,7 @@ def mapsto (declName : Name) : MetaM Lbl :=
     let some (_, r, e) := rhs.eq? | refuse
     unless lhs.getAppNumArgs ≥ 2 && lhs.appArg! == r && r.isFVar && xs.contains r do return ← refuse
     let x := lhs.appFn!.appArg!
-    let some _ := homObjs? (← Meta.inferType lhs.appFn!.appFn!) | refuse
+    let some _ ← homObjs? (← Meta.inferType lhs.appFn!.appFn!) | refuse
     return (← labelT x) ++ spaced "↦" true ++ (← labelT e)
 
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
@@ -519,7 +519,7 @@ def opened (A B : Expr) : MetaM (Array Name) := do
       || Meta.isMatcherCore env c then return false
     -- NOT `forallTelescopeReducing`: at a concrete category it unfolds `X ⟶ Y` itself (in `RelSet`
     -- to `X → Y → Prop`) and opens the arrow's own arguments, so `takewhile`, `paths` read as no arrow.
-    Meta.forallTelescope ci.type fun _ t => return (homObjs? t).isSome || (homObjs? (← Meta.whnfR t)).isSome
+    Meta.forallTelescope ci.type fun _ t => do return (← homObjs? t).isSome
 
 /-- One term up to instances, the bracketing of `≫` and identity factors, which no panel draws. -/
 partial def sameDrawn (a b : Expr) : MetaM Bool := do

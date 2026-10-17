@@ -28,7 +28,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   // since a step relates two sides of one generality.
   lean-chain(
     (none, "Freyd.Alg.RelSet.SL.est_arm₂_le.rhs", src[the body at `T` a coproduct of two arms]),
-    // lean:AOP.A9_1.est_summand_le@096fa074
+    // lean:AOP.A9_1.est_summand_le@599fa245
     // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
     // the object wire.
     (RQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
@@ -53,7 +53,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_lower") \
     #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
      `h` returns only what `H` returns]],
-     // lean:AOP.A10_1.greedy_dp_lower@2447499c
+     // lean:AOP.A10_1.greedy_dp_lower@7018e48b
   lean-calc(calc-gl),
 )]<greedy-lower>
 
@@ -62,7 +62,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
     #src[`H°` followed by the greedy body at `M` is `⊑≥`: an answer of the body is never worse
      than an answer of `H` to the same input]],
-     // lean:AOP.A10_1.greedy_dp_upper@7732fe1f
+     // lean:AOP.A10_1.greedy_dp_upper@450eaa94
   lean-calc(calc-gu, breaks: (4,)),
 )]<greedy-upper>
 
@@ -310,7 +310,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [`Q` on the `snag` summand: compare the penalties of the two last jobs],
 // lean:AOP.A10_3_Tardy.bagifyFn_wrap@bf98bd9a lean:AOP.A10_3_Tardy.bagifyFn_snoc@e893608e lean:AOP.A10_3_Tardy.kFn_inl@bdad6597 lean:AOP.A10_3_Tardy.kFn_inr@7ad10e44
 // lean:AOP.A10_3_Tardy.gFn_inl@5bc3cee0 lean:AOP.A10_3_Tardy.gFn_inr@76eab831
-// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
+// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@e7aab730 lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
   [#rowkey("Freyd.Alg.RelSet.Tardy.g")], [#leant("Freyd.Alg.RelSet.Tardy.g")],
   "Freyd.Alg.RelSet.Tardy.g",
   [(10.5): the penalty of the last job, zero for the empty schedule],
@@ -358,7 +358,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (SQ, "Freyd.Alg.RelSet.Tardy.tardy_mono.rhs",
       src[Proposition 9.3 at `S≜bagify`, `≼≜≥` — @dp-context-mono, with @tardy-cost-k and
        @tardy-k-mono]),
-    // lean:AOP.A9_1.pres_in_context@b0db9b3a
+    // lean:AOP.A9_1.pres_in_context@12588624
   ),
 )]<tardy-mono>
 
@@ -393,7 +393,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.bagify_recip_cata") \
     #src[the orderings of a bag with one more job are the orderings of the bag with that job put
      in anywhere]],
-  // lean:AOP.A10_3_Tardy.bagify_recip_cata@aa858fc5
+  // lean:AOP.A10_3_Tardy.bagify_recip_cata@47557b4a
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs",
@@ -453,7 +453,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (RQ, "Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs",
       src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]),
   ),
-  // lean:AOP.A10_3_Tardy.tardy_laws@9a4c81ea lean:AOP.A10_3_Tardy.greedy_dp_context@78d89cdf lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
+  // lean:AOP.A10_3_Tardy.tardy_laws@9a4c81ea lean:AOP.A10_3_Tardy.greedy_dp_context@da8a63ce lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
 )]<tardy-laws>
 
 == The TeX problem

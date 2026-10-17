@@ -461,18 +461,17 @@ public theorem party_laws :
         ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
           ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-          ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+      : Alg (RT.F A) (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°)
       ⊑ Λ party ≫ est((R rating)°) :=
   calc _ ⊑ ⦇(rpair (graph «include»)
         (Λ (exclude : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+      : Alg (RT.F A) (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°) :=
         comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (le_refl _) (exclude_step rating))) _
     _ ⊑ ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
         (Λ (exclude : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+      : Alg (RT.F A) (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°) :=
         comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (include_step rating) (le_refl _))) _
     _ ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°) :=

@@ -233,7 +233,7 @@ public def catNE : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ d
     segments are all non-empty, so that `concat°` is `partition`. -/
 @[expose] public def concat : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
   ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ catNE
-    : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
+    : Alg (F Unit (ConsList Unit A)) (dList A))⦈
 
 /-- The length of a list. -/
 @[expose] public def clen : ConsList Unit A → Nat
@@ -534,7 +534,7 @@ notation:max R:max "′" => list R
     the shape untouched. -/
 public theorem list_cata (R : dE A ⟶ dE B) :
     list R = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit B⟩) τ
-        (rprodMap R (𝟙 (dList B)) ≫ consR) : (F Unit A).obj (dList B) ⟶ dList B)⦈ := by
+        (rprodMap R (𝟙 (dList B)) ≫ consR) : Alg (F Unit A) (dList B))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show listP R (ConsList.wrap ()) r ↔ r = ConsList.wrap D
@@ -725,7 +725,7 @@ public theorem τ_natural {B : Type} (R : dE A ⟶ dE B) :
 /-- **`α = [nil,cons]`** (note `takewhile`): the initial list algebra IS the junction of its two
     constructors, which is what the note's `α` cell claims and nothing else states. -/
 public theorem alphaR_eq_junc :
-    (alphaR : (F Unit A).obj (dList A) ⟶ dList A)
+    (alphaR : Alg (F Unit A) (dList A))
       = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ consR := by
   apply hom_ext; intro u w
   cases u with
@@ -755,8 +755,8 @@ public meta def delabNilAtUnit : Delab := `([])
     `F∘⟨𝟙,list⟩ ⇒ list` and leaves the object wire.  (The OTHER family, `α` over its CARRIER at a
     fixed element type, is refuted by `Carrier.listAlg_not_lax_natural`; these are different squares.) -/
 public theorem alphaR_natural (R : dE A ⟶ dE B) :
-    (alphaR : (F Unit A).obj (dList A) ⟶ dList A) ≫ list R
-      = Fbimap Unit R (list R) ≫ (alphaR : (F Unit B).obj (dList B) ⟶ dList B) := by
+    (alphaR : Alg (F Unit A) (dList A)) ≫ list R
+      = Fbimap Unit R (list R) ≫ (alphaR : Alg (F Unit B) (dList B)) := by
   apply hom_ext; intro u w
   cases u with
   | inl D =>
@@ -883,7 +883,7 @@ public theorem total_eq (f : A → Int) :
 public theorem subseq_cata :
     (subseq : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
-          (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          (consR ∪ graph fun p => p.2) : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show subseqP r (ConsList.wrap D) ↔ r = ConsList.wrap D
@@ -1084,35 +1084,35 @@ public theorem Λ_subseq :
           (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
               (graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ cup (relProd (P (dList A)) (P (dList A))))
-          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
+          : Alg (F Unit A) (P (dList A)))⦈ :=
   calc Λ (subseq : dList A ⟶ dList A)
       = Λ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
-          (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          (consR ∪ graph fun p => p.2) : Alg (F Unit A) (dList A))⦈ := by
         rw [← subseq_cata]
     _ = ⦇(Λ ((F Unit A).map (∋ (dList A))
           ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
             (consR ∪ graph fun p : A × ConsList Unit A => p.2))
-          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
+          : Alg (F Unit A) (P (dList A)))⦈ :=
         (Λ_relCata (initial Unit A) _).trans (relCata_map (initial Unit A) _ (Λ_is_map' _)).symm
     _ = ⦇(junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
           (τ ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
-          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ := by
+          : Alg (F Unit A) (P (dList A)))⦈ := by
         rw [subseq_alg_Λ]
     _ = _ := by rw [subseq_alg_transpose]
 
 /-- The prefix algebra **`[nil, cons ∪ ⊸ nil] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
     display draws: on the leaf, `nil`; on a head and a tail-prefix, either keep the head or
     discard and stop with `nil`.  `cons` first, as in `subseq`'s `[nil, cons ∪ π₂]`. -/
-@[expose] public def prefAlg : (F Unit A).obj (dList A) ⟶ dList A :=
+@[expose] public def prefAlg : Alg (F Unit A) (dList A) :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ
     (consR ∪ (graph fun _ => ConsList.wrap ()))
 
 /-- **`prefix = ⦇[nil, cons ∪ ⊸ nil]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; `cons`
     keeps going, the second branch (`⊸nil`, discard then `nil`) stops early. -/
 public theorem prefix_cata :
-    (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+    (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show prefixP r (ConsList.wrap D) ↔ r = ConsList.wrap D
@@ -1137,7 +1137,7 @@ public theorem prefix_cata :
 public theorem prefix_cancel :
     (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
       = (F Unit A).map (prefixR : dList A ⟶ dList A)
-        ≫ (prefAlg : (F Unit A).obj (dList A) ⟶ dList A) := by
+        ≫ (prefAlg : Alg (F Unit A) (dList A)) := by
   rw [prefix_cata]
   exact relCata_cancel (initial Unit A) _
 
@@ -1182,7 +1182,7 @@ public theorem segment_eq : (segment : dList A ⟶ dList A) = suffixR ≫ prefix
 public theorem perm_cata :
     (perm : dList A ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) τ (consR ≫ perm)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+          : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show Perm (ConsList.wrap ()) r ↔ r = ConsList.wrap D
@@ -1223,7 +1223,7 @@ public theorem partition_concat :
 public theorem concat_cata :
     (concatR : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
       = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) τ cat
-          : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈ := by
+          : Alg (F Unit (ConsList Unit A)) (dList A))⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
   · exact Iff.rfl
@@ -1453,7 +1453,7 @@ public theorem concat_glue :
 public theorem sum_cata [Add A] [OfNat A 0] :
     (sumR : dList A ⟶ (⟨A⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨A × A⟩) zero plus
-            : (F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)⦈ := by
+            : Alg (F Unit A) (⟨A⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
@@ -1464,14 +1464,14 @@ public theorem sum_cata [Add A] [OfNat A 0] :
 public theorem sum_cata_nat :
     (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨Nat × Nat⟩) zero plus
-            : (F Unit Nat).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := sum_cata
+            : Alg (F Unit Nat) (⟨Nat⟩ : RelSet.{0}))⦈ := sum_cata
 
 /-- **`length =⦇[zero, π₂ succ]⦈`** (note `cata-examples`): fold the list, the head dropped by
     `π₂` and one added by `succ` for it, `nil` contributing `zero`. -/
 public theorem length_cata :
     (lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨A × Nat⟩) zero ((graph fun q : A × Nat => q.2) ≫ succ)
-            : (F Unit A).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := by
+            : Alg (F Unit A) (⟨Nat⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
   show r = clen x + 1 ↔ ∃ y, y = clen x ∧ ∃ n, n = y ∧ r = n + 1
@@ -1486,7 +1486,7 @@ public theorem length_cata :
 public theorem pair_sum_length_cata :
     rpair (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0})) lengthR
       = ⦇(junc (sumCop (dL Unit) ⟨Nat × (Nat × Nat)⟩) zeros pluss
-            : (F Unit Nat).obj (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat × Nat⟩)⦈ := by
+            : Alg (F Unit Nat) (⟨Nat × Nat⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit Nat) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show (r.1 = 0 ∧ r.2 = 0) ↔ r = (0, 0)
@@ -1689,7 +1689,7 @@ public theorem cplist_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit (ConsList Unit A)⟩)
           ((τ : dL Unit ⟶ dList A) ≫ τₗ ())
           (cpp ≫ list (consR (L := Unit) (E := A)))
-          : (F Unit (ConsList Unit A)).obj (dList (ConsList Unit A)) ⟶ dList (ConsList Unit A))⦈ := by
+          : Alg (F Unit (ConsList Unit A)) (dList (ConsList Unit A)))⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun x xs r => ?_⟩)
   · cases D

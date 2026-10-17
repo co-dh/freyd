@@ -257,7 +257,7 @@ partial def interp (e : Expr) (atoms : Array Expr := #[]) (whole : Bool := true)
   -- square's two sides are its component — the type says so, where the term's shape says only how
   -- the component was built.  The composite inside it is the LABEL's business, not the path's.
   if e.getAppFn.isLambda then
-    if (StrDiag.homObjs? (← Meta.inferType e)).isSome then return ← Path.arrow e.headBeta
+    if (← StrDiag.homObjs? (← Meta.inferType e)).isSome then return ← Path.arrow e.headBeta
   let e := e.headBeta
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>

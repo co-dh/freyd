@@ -438,7 +438,7 @@ public theorem mct_mono_recip (hassoc : Assoc sb) :
     (`AOP.A6_TreeTip.cataR_con`). -/
 public theorem mct_laws (hassoc : Assoc sb) :
     mu (fun X : dNE A ⟶ dTree A =>
-        Λ (Allegory.recip (graph wrapCatFn : (TT.F A).obj (dNE A) ⟶ dNE A))
+        Λ (Allegory.recip (graph wrapCatFn : Alg (TT.F A) (dNE A)))
           ≫ powerRel ((TT.F A).map X ≫ graph (con (A := A))) ≫ est (R st sb cb))
       ⊑ Λ (Allegory.recip (graph flatten : dTree A ⟶ dNE A)) ≫ est (R st sb cb) := by
   have hH : (relCata (F := TT.F A) (graph (wrapCatFn (A := A))))°
@@ -471,7 +471,7 @@ public theorem mct_branch (X : dNE A ⟶ dTree A) :
           : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)°)
         ≫ powerRel (rprodMap X X
             ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) ≫ est (R st sb cb)
-      ⊑ Λ (Allegory.recip (graph wrapCatFn : (TT.F A).obj (dNE A) ⟶ dNE A))
+      ⊑ Λ (Allegory.recip (graph wrapCatFn : Alg (TT.F A) (dNE A)))
           ≫ powerRel ((TT.F A).map X ≫ graph (con (A := A))) ≫ est (R st sb cb) := by
   -- The square relator's action IS the pointwise `X×X` (`prodMap_eq_rprodMap`), so the arm the
   -- note draws and the summand the law quantifies over are the same arrow.

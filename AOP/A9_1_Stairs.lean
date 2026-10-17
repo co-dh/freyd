@@ -38,7 +38,7 @@ public theorem F_obj (X : RelSet.{0}) :
 @[expose] public def ι : dE N2 ⟶ dE (ConsList Unit Nat) := graph Subtype.val
 
 /-- **`T : F([ℕ])⟶[ℕ]`**, `T ≜ [nil,(ι×𝟙)cat]`: put the segment in front of the rest. -/
-@[expose] public def T : (F Unit N2).obj dCost ⟶ dCost :=
+@[expose] public def T : Alg (F Unit N2) dCost :=
   junc (sumCop (dL Unit) ⟨N2 × ConsList Unit Nat⟩) τ (rprodMap ι (𝟙 dCost) ≫ cat)
 
 /-- **`⦇T⦈ = ι′ concat`**: a climb flattened is the concatenation of its segments. -/

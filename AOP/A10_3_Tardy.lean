@@ -36,7 +36,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     by `T` only ever needs `Q` on `T`'s own domain of definition, `T ≫ T°`.  The `est` twin of
     `AOP.A9_1`'s `thin_unfold_context_le`; both halves come from the `min` universal property
     (`inter_lb_left` for membership, `recip_eps_comp_est_le` for the lower bound). -/
-public theorem est_unfold_context_le (T : F.obj B ⟶ B) (Q : F.obj B ⟶ F.obj B) :
+public theorem est_unfold_context_le (T : Alg F B) (Q : F.obj B ⟶ F.obj B) :
     T ≫ Λ (T°) ≫ est Q ⊑ (Q ∩ (T ≫ T°))° := by
   have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj B))° := by
     have h0 := recip_comp_Λ_le_recip_eps (T°)
@@ -60,8 +60,8 @@ public theorem est_unfold_context_le (T : F.obj B ⟶ B) (Q : F.obj B ⟶ F.obj 
     on `Q ∩ (T·T°)` — the two hypotheses `AOP.A9_1`'s `dp_thin_prefixed_context` uses.  Same
     skeleton as `AOP.A10_1`'s `greedy_dp_prefixed`, with `est_unfold_context_le` in place of the
     unrestricted tail bound and `hctx1` in place of `MonotonicAlg h R`. -/
-public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
-    {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h)
+public theorem greedy_dp_prefixed_context {h : Alg F A}
+    {T : Alg F B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h)
     (hctx1 : F.map («≤»° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ «≤»°) (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ «≤») :
@@ -146,7 +146,7 @@ public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
     form §10.3 needs, where only schedules of the SAME BAG are ever compared.  By Knaster-Tarski
     via `greedy_dp_prefixed_context`. -/
 public theorem greedy_dp_context (I : InitialAlgebra F)
-    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
+    {h : Alg F A} {T : Alg F B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
     (hctx1 : F.map («≤»° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
         ⊑ h ≫ «≤»°)
     (htrans : «≤» ≫ «≤» ⊑ «≤»)
@@ -197,7 +197,7 @@ notation:max "bag(" J ")" => Bag J
   | Sum.inr p => snag p
 
 /-- **tardy-defn**: `β≜[nil,snag]`, a map. -/
-@[expose] public def bagAlg : (F Unit Job).obj (Bag Job) ⟶ Bag Job := graph bagAlgFn
+@[expose] public def bagAlg : Alg (F Unit Job) (Bag Job) := graph bagAlgFn
 
 /-- The jobs of a schedule, as a plain list — a representative of its bag. -/
 @[expose] public def blist : SnocList Unit Job → List Job
@@ -813,7 +813,7 @@ public theorem alg_cost_self :
 
 /-- The modular law, on both sides: `(Q F(bagify°)α)∩(F(bagify°)M)⊑F(bagify°)((F(bagify) Q F(bagify°))∩(Mα°))α`
     — the two schedules share the decomposition `F(bagify°)` picks, so the meet moves inside it. -/
-public theorem tardy_modular {M : (F Unit Job).obj (dSL Unit Job) ⟶ dSL Unit Job} :
+public theorem tardy_modular {M : Alg (F Unit Job) (dSL Unit Job)} :
     (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ M)
       ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ) ∩ (M ≫ αJ°)) ≫ αJ := by
   refine le_iff.mpr fun u w h => ?_

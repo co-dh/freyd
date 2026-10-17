@@ -1009,7 +1009,7 @@ def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
   let e := (← namedProj? e₀).getD e₀
   let .const c _ := e.getAppFn | return none
   unless (← Lean.labelled `diag_indexed).contains c do return none
-  let some (src, _) := homObjs? (← Meta.inferType e) | return none
+  let some (src, _) ← homObjs? (← Meta.inferType e) | return none
   -- THE CATEGORY'S OBJECT TYPE, taken from the hom the component IS: its endpoints are objects of
   -- the very category the index is drawn from, so nothing else has to say which category that is.
   let obj ← Meta.inferType src
@@ -2096,7 +2096,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- AN INDEX THAT IS NO OBJECT OF THE CATEGORY THE COMPONENT IS AN ARROW IN — `i : Nat` in
       -- `R i : [i] ⟶ [i]` — is no wire, so nothing else writes it and `bare` keeps it: `R`#sub[`i`].
       let ix ← e.getAppArgs.toList.mapM (labelTree 0)
-      let wire ← match homObjs? (← Meta.inferType e) with
+      let wire ← match ← homObjs? (← Meta.inferType e) with
         | some (src, _) => do
           let obj ← Meta.inferType src
           e.getAppArgs.allM fun a => do
@@ -2222,7 +2222,7 @@ partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
   if e' != e then return ← labelPartsT e'
   match e.getAppFnArgs with
   | (``Freyd.Alg.Λ, args) => do
-    let arrows ← args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
+    let arrows ← args.filterM fun a => return (← homObjs? (← Meta.inferType a)).isSome
     match arrows.back? with
     | some r => return #[(← labelTree 0 r).norm, .text "∋"]
     | none => return #[← labelT e]

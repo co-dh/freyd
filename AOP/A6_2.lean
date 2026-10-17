@@ -153,12 +153,12 @@ section CataFix
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- The recursion body `φX = R·FX·α°` (mirrored: `α° ≫ F.map X ≫ R`) is monotonic. -/
-public theorem cataBody_monotonic (I : InitialAlgebra F) {C : 𝒜} (R : F.obj C ⟶ C) :
+public theorem cataBody_monotonic (I : InitialAlgebra F) {C : 𝒜} (R : Alg F C) :
     Monotonic (fun X : I.t ⟶ C => I.α° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
 /-- The catamorphism UP (5.12), fixed-point form: `X = α° ≫ F.map X ≫ R ↔ X = ⦇R⦈`. -/
-public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {C : 𝒜} (R : F.obj C ⟶ C)
+public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {C : 𝒜} (R : Alg F C)
     (X : I.t ⟶ C) : X = I.α° ≫ F.map X ≫ R ↔ X = relCata R := by
   rw [← relCata_UP]
   constructor
@@ -169,24 +169,24 @@ public theorem eq_relCata_iff_fixed (I : InitialAlgebra F) {C : 𝒜} (R : F.obj
     rw [← h, ← Cat.assoc, I.recip_alpha_alpha, Cat.id_comp]
 
 /-- `⦇R⦈ = (μX : R·FX·α°)`, mirrored. -/
-public theorem relCata_eq_mu (I : InitialAlgebra F) {C : 𝒜} (R : F.obj C ⟶ C) :
+public theorem relCata_eq_mu (I : InitialAlgebra F) {C : 𝒜} (R : Alg F C) :
     relCata R = mu (fun X : I.t ⟶ C => I.α° ≫ F.map X ≫ R) := by
   have hfix := mu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- `⦇R⦈ = (νX : R·FX·α°)`, mirrored. -/
-public theorem relCata_eq_nu (I : InitialAlgebra F) {C : 𝒜} (R : F.obj C ⟶ C) :
+public theorem relCata_eq_nu (I : InitialAlgebra F) {C : 𝒜} (R : Alg F C) :
     relCata R = nu (fun X : I.t ⟶ C => I.α° ≫ F.map X ≫ R) := by
   have hfix := nu_fixed (cataBody_monotonic I R)
   exact ((eq_relCata_iff_fixed I R _).mp hfix.symm).symm
 
 /-- **(6.2)**: `⦇R⦈ ⊑ X ⟸ R·FX·α° ⊑ X`, mirrored. -/
-public theorem relCata_le_of_prefixed (I : InitialAlgebra F) {C : 𝒜} {R : F.obj C ⟶ C}
+public theorem relCata_le_of_prefixed (I : InitialAlgebra F) {C : 𝒜} {R : Alg F C}
     {X : I.t ⟶ C} (h : I.α° ≫ F.map X ≫ R ⊑ X) : relCata R ⊑ X := by
   rw [relCata_eq_mu]; exact Sup_le (fun _S hS => hS _ h)
 
 /-- **(6.3)**: `X ⊑ ⦇R⦈ ⟸ X ⊑ R·FX·α°`, mirrored. -/
-public theorem le_relCata_of_postfixed (I : InitialAlgebra F) {C : 𝒜} {R : F.obj C ⟶ C}
+public theorem le_relCata_of_postfixed (I : InitialAlgebra F) {C : 𝒜} {R : Alg F C}
     {X : I.t ⟶ C} (h : X ⊑ I.α° ≫ F.map X ≫ R) : X ⊑ relCata R := by
   rw [relCata_eq_nu]; exact le_Sup h
 
@@ -202,8 +202,8 @@ section Fusion
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- (6.4)'s prefix-point condition: `⦇R⦈S` is a prefix point of `α°F(−)T` when `F(S)T ⊑ RS`. -/
-public theorem relCata_comp_prefixed (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
-    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) :
+public theorem relCata_comp_prefixed (I : InitialAlgebra F) {C D : 𝒜} {R : Alg F C}
+    {T : Alg F D} {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) :
     I.α° ≫ F.map (relCata R ≫ S) ≫ T ⊑ relCata R ≫ S :=
   calc I.α° ≫ F.map (relCata R ≫ S) ≫ T = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := by
         rw [F.map_comp, Cat.assoc]
@@ -215,7 +215,7 @@ public theorem relCata_comp_prefixed (I : InitialAlgebra F) {C D : 𝒜} {R : F.
 calc_steps relCata_comp_prefixed
 
 /-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion — (6.2) at `X≜⦇R⦈S`. -/
-public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
+public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : Alg F C} {T : Alg F D}
     {S : C ⟶ D} : F.map S ≫ T ⊑ R ≫ S → relCata T ⊑ relCata R ≫ S :=
   calc Imp (F.map S ≫ T ⊑ R ≫ S) (I.α° ≫ F.map (relCata R ≫ S) ≫ T ⊑ relCata R ≫ S) :=
         relCata_comp_prefixed I
@@ -224,8 +224,8 @@ public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C 
 calc_steps relCata_le_comp
 
 /-- (6.5)'s postfix-point condition: `⦇R⦈S` is a postfix point of `α°F(−)T` when `RS ⊑ F(S)T`. -/
-public theorem relCata_comp_postfixed (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
-    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) :
+public theorem relCata_comp_postfixed (I : InitialAlgebra F) {C D : 𝒜} {R : Alg F C}
+    {T : Alg F D} {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) :
     relCata R ≫ S ⊑ I.α° ≫ F.map (relCata R ≫ S) ≫ T :=
   calc relCata R ≫ S = 𝟙 I.t ≫ relCata R ≫ S := by rw [Cat.id_comp]
     _ = I.α° ≫ I.α ≫ relCata R ≫ S := by rw [← Cat.assoc I.α°, I.recip_alpha_alpha]
@@ -237,7 +237,7 @@ calc_steps relCata_comp_postfixed
 
 /-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion — (6.3) at `X≜⦇R⦈S`,
     the chain of (6.4) run backwards with the hypothesis reversed. -/
-public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
+public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : Alg F C} {T : Alg F D}
     {S : C ⟶ D} : R ≫ S ⊑ F.map S ≫ T → relCata R ≫ S ⊑ relCata T :=
   calc Imp (R ≫ S ⊑ F.map S ≫ T) (relCata R ≫ S ⊑ I.α° ≫ F.map (relCata R ≫ S) ≫ T) :=
         relCata_comp_postfixed I
@@ -246,7 +246,7 @@ public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C 
 calc_steps comp_le_relCata
 
 /-- **Ex 6.7**: `⦇R⦈ ⊑ ⦇S⦈` when the recursion bodies agree at `⦇S⦈` in the ⊑ direction. -/
-public theorem relCata_le_relCata (I : InitialAlgebra F) {C : 𝒜} {R S : F.obj C ⟶ C}
+public theorem relCata_le_relCata (I : InitialAlgebra F) {C : 𝒜} {R S : Alg F C}
     (h : F.map (relCata S) ≫ R ⊑ F.map (relCata S) ≫ S) : relCata R ⊑ relCata S := by
   apply relCata_le_of_prefixed
   calc I.α° ≫ F.map (relCata S) ≫ R
@@ -256,7 +256,7 @@ public theorem relCata_le_relCata (I : InitialAlgebra F) {C : 𝒜} {R S : F.obj
           Cat.id_comp]
 
 /-- **Corollary of Ex 6.7**: `⦇·⦈` is monotonic in the algebra. -/
-public theorem relCata_mono (I : InitialAlgebra F) {C : 𝒜} {R S : F.obj C ⟶ C} (h : R ⊑ S) :
+public theorem relCata_mono (I : InitialAlgebra F) {C : 𝒜} {R S : Alg F C} (h : R ⊑ S) :
     relCata R ⊑ relCata S :=
   relCata_le_relCata I (comp_mono_left _ h)
 

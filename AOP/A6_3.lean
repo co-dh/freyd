@@ -68,7 +68,7 @@ section Hylo
 
 /-- The hylomorphism recursion body `φX = S·FX·R` (mirrored: `S° ≫ F.map X ≫ R`) is
     monotonic (B&dM p.142), by the same argument as `cataBody_monotonic` (`AOP.A6_2`). -/
-public theorem hyloBody_monotonic {A B : 𝒜} (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+public theorem hyloBody_monotonic {A B : 𝒜} (R : Alg F A) (S : Alg F B) :
     Monotonic (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
@@ -76,7 +76,7 @@ public theorem hyloBody_monotonic {A B : 𝒜} (R : F.obj A ⟶ A) (S : F.obj B 
     the relator to preserve converse: `⦇R⦈°α° = R°F(⦇R⦈°)`.  Both hylomorphism chains carry a
     leading `⦇S⦈°α°` across the unfold with it. -/
 public theorem relCata_cancel_recip (I : InitialAlgebra F) {A : 𝒜}
-    (R : F.obj A ⟶ A) : (relCata R)° ≫ I.α° = R° ≫ F.map ((relCata R)°) := by
+    (R : Alg F A) : (relCata R)° ≫ I.α° = R° ≫ F.map ((relCata R)°) := by
   have hcancel_recip : (I.α ≫ relCata R)° = (F.map (relCata R) ≫ R)° := by
     rw [relCata_cancel I R]
   rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F (relCata R)] at hcancel_recip
@@ -85,7 +85,7 @@ public theorem relCata_cancel_recip (I : InitialAlgebra F) {A : 𝒜}
 /-- **`H≜⦇T⦈°⦇h⦈ : A⟶B`** (B&dM p.220): decompose through the coalgebra `T°` and reassemble
     through the algebra `h`.  It is the arrow the optimisation problem `H%∋ est(R)` is taken of,
     and a name of its own is what lets a picture draw it as one bead. -/
-@[expose] public def H {A B : 𝒜} [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
+@[expose] public def H {A B : 𝒜} [InitialAlgebra F] (T : Alg F A) (h : Alg F B) : A ⟶ B :=
   (relCata T)° ≫ relCata h
 
 /-! ### The fixed-point chain (note §11.6.4a)
@@ -98,7 +98,7 @@ public theorem relCata_cancel_recip (I : InitialAlgebra F) {A : 𝒜}
     which ch. 9's dynamic-programming theorems consume the hylomorphism theorem (B&dM p.220,
     "definition of `H` and hylomorphism theorem"). -/
 public theorem hylo_fixed (I : InitialAlgebra F) {A B : 𝒜}
-    (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
+    (T : Alg F A) (h : Alg F B) : T° ≫ F.map (H T h) ≫ h = H T h :=
   calc T° ≫ F.map (H T h) ≫ h
       = T° ≫ F.map ((relCata T)° ≫ relCata h) ≫ h := by rw [H]
     _ = T° ≫ F.map ((relCata T)°) ≫ I.α ≫ relCata h := by rw [F.map_comp, Cat.assoc, relCata_cancel I h]
@@ -117,7 +117,7 @@ calc_steps hylo_fixed
 
 /-- The term chain at `Y ≜ ⦇S⦈°\X`, ending in the hypothesis `h`. -/
 public theorem hylo_le_of_prefixed_chain (I : InitialAlgebra F) {A B : 𝒜}
-    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
+    {R : Alg F A} {S : Alg F B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
     (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X :=
   calc (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
       = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R := by
@@ -133,7 +133,7 @@ calc_steps hylo_le_of_prefixed_chain
     leastness half): the term chain, the adjunction `⦇S⦈°· ⊣ ⦇S⦈°\·`, the fold's leastness at the
     prefixed point `Y`, and the adjunction once more. -/
 public theorem hylo_le_of_prefixed (I : InitialAlgebra F) {A B : 𝒜}
-    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} :
+    {R : Alg F A} {S : Alg F B} {X : B ⟶ A} :
     S° ≫ F.map X ≫ R ⊑ X → (relCata S)° ≫ relCata R ⊑ X :=
   calc Imp (S° ≫ F.map X ≫ R ⊑ X) ((relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X) :=
         hylo_le_of_prefixed_chain I
@@ -148,7 +148,7 @@ calc_steps hylo_le_of_prefixed
     `(|S|)° ≫ (|R|)`) equals the least fixed point of the body `S° ≫ F.map X ≫ R`: `⊑` is
     `hylo_le_of_prefixed` at the prefixed point `μ`, `⊒` is `μ` below the fixed point `hylo_fixed`. -/
 public theorem hylo_eq_mu (I : InitialAlgebra F) {A B : 𝒜}
-    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    (R : Alg F A) (S : Alg F B) :
     (relCata S)° ≫ relCata R = mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
   le_antisymm (hylo_le_of_prefixed I (mu_prefixed (hyloBody_monotonic R S)))
     (mu_le_of_fixed (hylo_fixed I S R))
@@ -164,7 +164,7 @@ section ExSimple
 
 /-- **Ex 6.10**: the least fixed point of `φX = S·FX·R` (mirrored: `S ≫ F.map X ≫ R`, with `S`
     a COALGEBRA `b ⟶ F b`) is `Simple` whenever the algebra `R` and coalgebra `S` both are. -/
-theorem mu_simple {A B : 𝒜} {R : F.obj A ⟶ A} {S : B ⟶ F.obj B}
+theorem mu_simple {A B : 𝒜} {R : Alg F A} {S : B ⟶ F.obj B}
     (hR : Simple R) (hS : Simple S) :
     Simple (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)) := by
   let T : B ⟶ A := mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)
@@ -213,7 +213,7 @@ theorem mu_simple {A B : 𝒜} {R : F.obj A ⟶ A} {S : B ⟶ F.obj B}
     `mu_simple`'s body with coalgebra `S°`, giving simplicity of the hylomorphism from
     simplicity of `R` and of `S°`. -/
 theorem hylo_simple (I : InitialAlgebra F) {A B : 𝒜}
-    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} (hR : Simple R) (hS : Simple (S°)) :
+    {R : Alg F A} {S : Alg F B} (hR : Simple R) (hS : Simple (S°)) :
     Simple ((relCata S)° ≫ relCata R) := by
   rw [hylo_eq_mu I R S]
   exact mu_simple hR hS
@@ -233,7 +233,7 @@ section Corollary61
     the two branch bodies, one law per step. -/
 public theorem hylo_body_coprod {G H : Relator 𝒜 𝒜} {T : 𝒜 → 𝒜}
     (C : ∀ x : 𝒜, Coproduct (T x) (G.obj x) (H.obj x))
-    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
+    {A B : 𝒜} {R₁ : Alg G A} {R₂ : Alg H A} {S₁ : Alg G B} {S₂ : Alg H B}
     (X : B ⟶ A) :
     (junc (C B) S₁ S₂)° ≫ sumMap (C B) (C A) (G.map X) (H.map X) ≫ junc (C A) R₁ R₂
       = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂) :=
@@ -249,7 +249,7 @@ calc_steps hylo_body_coprod
     union of the two branch bodies. -/
 public theorem hylo_eq_mu_coprod {G H : Relator 𝒜 𝒜} {T : 𝒜 → 𝒜}
     (C : ∀ x : 𝒜, Coproduct (T x) (G.obj x) (H.obj x)) (I : InitialAlgebra (Relator.sumOn C))
-    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B} :
+    {A B : 𝒜} {R₁ : Alg G A} {R₂ : Alg H A} {S₁ : Alg G B} {S₂ : Alg H B} :
     (relCata (I := I) (junc (C B) S₁ S₂))° ≫ relCata (I := I) (junc (C A) R₁ R₂)
       = mu (fun X : B ⟶ A => (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)) := by
   rw [hylo_eq_mu I (junc (C A) R₁ R₂) (junc (C B) S₁ S₂)]

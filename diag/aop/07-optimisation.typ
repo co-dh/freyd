@@ -252,7 +252,7 @@ directly.
   mon-hm,
  [`F(R)φ⊑φR` #src[]],
 )
-// lean:AOP.A7_2_Pres.Pres@26944450
+// lean:AOP.A7_2_Pres.Pres@0816b1b2
 ]<mon-str>
 
 === `f` monotonic on `≤`, read at points <sec-mon-points>
@@ -307,7 +307,7 @@ directly.
     ),
   ))
 })
-// lean:AOP.A7_2.Distributes@311e8198
+// lean:AOP.A7_2.Distributes@6dbe2b7b
 // lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
 ]<dist-str>
 
@@ -323,12 +323,12 @@ directly.
 #disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_iff_distributes") \
-    // lean:AOP.A7_2.pres_iff_distributes@0c8d6289
+    // lean:AOP.A7_2.pres_iff_distributes@d81c3491
     #src[`f` carries `R`-related parts to `R`-related wholes (`f°F(R)f⊑R`) if and only if applying `f` to the
      `R`-best parts (`F(est(R))f`) is included in applying `f` to all parts, then taking an `R`-best (`F(∋)f` then `est(R)`)
-      // lean:AOP.A7_2.distributes_of_pres@eb40cbfc
+      // lean:AOP.A7_2.distributes_of_pres@cb8afa37
  ]],
-      // lean:AOP.A7_2.pres_of_distributes@d24a71e6
+      // lean:AOP.A7_2.pres_of_distributes@623f1a0c
 
   [#vstep([], lean("Freyd.Alg.Distributes.lhs", "Freyd.Alg.Distributes.rhs"), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
@@ -349,9 +349,9 @@ directly.
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
     (IFF, lean("Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws:3
-     // lean:AOP.A7_2.pres_iff_conj@48299b93
+     // lean:AOP.A7_2.pres_iff_conj@b484ba0c
     ]),
-    // lean:AOP.A7_2.pres_recip_iff@63e12dd5
+    // lean:AOP.A7_2.pres_recip_iff@ecac7810
   )],
 )]<mon-thm71>
 
@@ -378,7 +378,7 @@ directly.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@a6b26d38
+     // lean:AOP.A7_2.greedy@89f3aee8
   [],
 
   [#vstep(IFF, [],
@@ -463,7 +463,7 @@ directly.
   [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, keep the head or stop],
 
   [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
-  // lean:AOP.A7_7_TakeWhile.Salg@7e873b1f
+  // lean:AOP.A7_7_TakeWhile.Salg@d1d46471
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only — `prefix`'s algebra with one extra `p` — keep a
    head that passes `p`, or stop],
 
@@ -842,7 +842,7 @@ directly.
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
-     // lean:AOP.A7_7_MSS.k@206c4ecd lean:AOP.A7_7_MSS.scanStep_union@051f2b01
+     // lean:AOP.A7_7_MSS.k@005479e5 lean:AOP.A7_7_MSS.scanStep_union@051f2b01
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -915,7 +915,7 @@ directly.
    the head or drop it],
 
   [#leanf("Freyd.Alg.RelSet.Filter.Salg")], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
-  // lean:AOP.A7_7_Filter.Salg@aca23b55
+  // lean:AOP.A7_7_Filter.Salg@548012fb
   [`(4,[2]) S [4,2]` #h(4pt) and #h(4pt) `(4,[2]) S [2]`, #h(4pt) but `(3,[2]) S [2]` only — `subseq`'s
    algebra with one extra `p` — keep a head that passes `p`, or drop the head],
 
@@ -1400,7 +1400,7 @@ directly.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   // Two rows, cut where the fold is opened — inside the `⦇ ⦈` in the first, outside it in the
   // second; the display breaks across the page between them.
-  // lean:AOP.A7_2.greedy@a6b26d38 lean:AOP.A7_3_Party.pair_est_le@44802697
+  // lean:AOP.A7_2.greedy@89f3aee8 lean:AOP.A7_3_Party.pair_est_le@44802697
   // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@ba4fa6b3
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree

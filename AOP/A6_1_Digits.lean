@@ -291,7 +291,7 @@ notation:max "⁅" g ", " h "⁆" => junc (sumCop _ _) g h
 /-- The constructor `wrap` as a relation (the book's `wrap : Digit⁺ → Decimal`). -/
 public def wrap : dDigitP ⟶ dDec := graph Decimal.wrap
 /-- The constructor `snoc` as a relation (the book's `snoc : Decimal × Digit → Decimal`). -/
-public def snoc : timesDigit.obj dDec ⟶ dDec := graph (fun p => Decimal.snoc p.1 p.2)
+public def snoc : Alg timesDigit dDec := graph (fun p => Decimal.snoc p.1 p.2)
 
 /-! Supporting laws for the derivation, each a single ingredient of one p.138 step. -/
 
@@ -333,7 +333,7 @@ public theorem con_eq_junc : graph con = ⁅wrap, snoc⁆ := by
 /-- Every algebra on `F` is a junc `⁅g, h⁆` of its two restrictions — so stating the
     derivation below for `⦇⁅g, h⁆⦈` loses no generality. -/
 theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
-    ∃ (g : dDigitP ⟶ C) (h : timesDigit.obj C ⟶ C), φ = ⁅g, h⁆ := by
+    ∃ (g : dDigitP ⟶ C) (h : Alg timesDigit C), φ = ⁅g, h⁆ := by
   refine ⟨fun d r => φ (Sum.inl d) r, fun p r => φ (Sum.inr p) r, ?_⟩
   apply hom_ext; intro u r
   constructor
@@ -362,7 +362,7 @@ public theorem timesDigit_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
 
     The proof is the book's derivation, one law per step. -/
 public theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
-    (h : timesDigit.obj C ⟶ C) :
+    (h : Alg timesDigit C) :
     (cataR ⁅g, h⁆)° = g° ≫ wrap
       ∪ h° ≫ timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc :=
   calc (cataR ⁅g, h⁆)°
@@ -398,7 +398,7 @@ calc_steps cata_converse_eq
 /-- The book's `embed : Digit⁺ → ℕ` — include a nonzero digit as a number. -/
 public def embed : dDigitP ⟶ dNat := graph fun d => d.1.val
 /-- The book's `op (n, d) = 10·n + d` — append a digit to a number. -/
-public def op : timesDigit.obj dNat ⟶ dNat := graph fun p => 10 * p.1 + p.2.val
+public def op : Alg timesDigit dNat := graph fun p => 10 * p.1 + p.2.val
 
 /-- `val = ⦇⁅embed, op⁆⦈ : Decimal → ℕ`, the reading catamorphism. -/
 public def val : dDec ⟶ dNat := cataR ⁅embed, op⁆

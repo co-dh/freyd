@@ -78,8 +78,8 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
     both f "F(cost)"
     -- `F.obj A`, the source of `h`
     let some h ← xs.findM? fun x => return (← x.fvarId!.getUserName) == `h | throwError "no binder `h`"
-    let ends := (← Lean.Meta.inferType h).getAppArgs
-    both ends[ends.size - 2]! "FA"
+    let some (src, _) ← Freyd.StrDiag.homObjs? (← Lean.Meta.inferType h) | throwError "`h` is no arrow"
+    both src "FA"
   let ci ← Lean.getConstInfo `Freyd.Alg.RelSet.Digits.op_recip_iff
   Lean.Meta.forallTelescope ci.type fun _ body =>
     -- `(op°) m p` with its two points taken off

@@ -431,7 +431,7 @@ public theorem old_eq :
 /-- **van-defn**: `S ≜ [nil,new∪old]`, the algebra whose fold is every splitting of the
     transactions into secure segments. -/
 @[expose] public def Salg (amount : A → Int) (N : Int) :
-    (F Unit A).obj (dSched A) ⟶ dSched A :=
+    Alg (F Unit A) (dSched A) :=
   junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
     (newR A ∪ oldR amount N)
 
@@ -476,7 +476,7 @@ public theorem progFn_wrap {a : A} {D : Unit} :
     progFn amount N (a, ConsList.wrap D) = newFn (a, ConsList.wrap D) := rfl
 
 @[expose] public def progAlg (amount : A → Int) (N : Int) :
-    (F Unit A).obj (dSched A) ⟶ dSched A :=
+    Alg (F Unit A) (dSched A) :=
   junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
     (graph (progFn amount N))
 
@@ -535,7 +535,7 @@ public theorem eq_nil_of_cconcat_nil : ∀ r : Sched A,
 public theorem partition_cata :
     (partition : dList A ⟶ dSched A)
       = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
-            (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈ := by
+            (newR A ∪ glueR A) : Alg (F Unit A) (dSched A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp ((cata_square_junc_iff _ _ _).mpr ⟨?_, ?_⟩)
   · intro D r
     show (cconcat r = ConsList.wrap D ∧ allNonempty r) ↔ r = ConsList.wrap D
@@ -592,7 +592,7 @@ public theorem partition_cata :
 public theorem van_fusion_cond
     (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
     (junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
-          (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)
+          (newR A ∪ glueR A) : Alg (F Unit A) (dSched A))
         ≫ list (secure amount N)
       = (F Unit A).map (list (secure amount N)) ≫ Salg amount N := by
   have hnil : (τ : dL Unit ⟶ dSched A) ≫ list (secure amount N) = τ := by
@@ -646,7 +646,7 @@ public theorem van_fusion_cond
 public theorem van_spec_step1 :
     partition ≫ list (secure amount N)
       = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
-            (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
+            (newR A ∪ glueR A) : Alg (F Unit A) (dSched A))⦈
           ≫ list (secure amount N) := by
   rw [partition_cata]
 
@@ -655,7 +655,7 @@ public theorem van_spec_step1 :
 public theorem van_spec_step2
     (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
     ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
-          (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
+          (newR A ∪ glueR A) : Alg (F Unit A) (dSched A))⦈
         ≫ list (secure amount N)
       = ⦇Salg amount N⦈ :=
   relCata_fusion (initial Unit A) (van_fusion_cond hsingle)

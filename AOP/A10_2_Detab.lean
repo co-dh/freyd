@@ -490,7 +490,7 @@ public theorem con_recip_con :
     `detab=α°F(detab)[nil,expand]`. -/
 public theorem detab_unfold (n : Nat) (tb nl blank : Char) :
     detabR n tb nl blank
-      = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+      = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank) ≫ junc (sumCop _ _) nil (expand n tb nl blank) := by
   have hc : detabR n tb nl blank = cataR (graph (expandAlgFn n tb nl blank)) :=
     (detab_cata n tb nl blank).symm
@@ -503,7 +503,7 @@ public theorem detab_unfold (n : Nat) (tb nl blank : Char) :
 /-- Distributing `∪`; the fold again, and the definition of `F`:
     `α°F(detab)[nil,expand∪X]=detab∪snoc°(detab×𝟙)X`. -/
 public theorem detab_unfold_union (n : Nat) (tb nl blank : Char) {X : _ ⟶ dSL Unit Char} :
-    (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank)
         ≫ junc (sumCop _ _) nil (expand n tb nl blank ∪ X)
       = detabR n tb nl blank
@@ -570,19 +570,19 @@ public theorem detab_V_induction (n : Nat) (hn : 0 < n) :
 public theorem detab_V_R (n : Nat) (hn : 0 < n) :
     detabR n tb nl blank ≫ (V n nl blank)° ⊑ R° ≫ detabR n tb nl blank :=
   calc detabR n tb nl blank ≫ (V n nl blank)°
-      = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+      = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank)
         ≫ junc (sumCop _ _) nil (expand n tb nl blank) ≫ (V n nl blank)° := by
         simpa only [Cat.assoc] using congrArg (· ≫ (V n nl blank)°) (detab_unfold n tb nl blank)
-    _ = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank)
         ≫ junc (sumCop _ _) (nil ≫ (V n nl blank)°) (expand n tb nl blank ≫ (V n nl blank)°) := by
         rw [junc_comp]
-    _ = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank)
         ≫ junc (sumCop _ _) nil (expand n tb nl blank ≫ (V n nl blank)°) := by
         rw [nil_V]
-    _ ⊑ (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ ⊑ (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map (detabR n tb nl blank)
         ≫ junc (sumCop _ _) nil (expand n tb nl blank ∪ outl ≫ (V n nl blank)°) :=
         comp_mono_left _ (comp_mono_left _
@@ -674,7 +674,7 @@ public theorem entab_laws_prefixed (n : Nat) (hn : 0 < n)
     {X : dSL Unit Char ⟶ dSL Unit Char}
     (hX : X = Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R) :
     Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
-        : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
+        : Alg (F Unit Char) (dSL Unit Char))°)
       ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
   subst hX
@@ -693,7 +693,7 @@ public theorem entab_laws_prefixed (n : Nat) (hn : 0 < n)
 public theorem entab_laws (n : Nat) (hn : 0 < n) :
     mu (fun X : dSL Unit Char ⟶ dSL Unit Char =>
         Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
-            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
+            : Alg (F Unit Char) (dSL Unit Char))°)
           ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR)
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R :=
   mu_le (entab_laws_prefixed n hn rfl)
@@ -722,7 +722,7 @@ public theorem entab_branch (n : Nat) (hn : 0 < n)
     Λ ((expand n tb nl blank)°) ≫ est (rprodMap (V n nl blank) (U tb))
         ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ snocR
       ⊑ Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
-            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°) ≫ est (Q n tb nl blank)
+            : Alg (F Unit Char) (dSL Unit Char))°) ≫ est (Q n tb nl blank)
           ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR := by
   rw [← expandAlg_eq_junc, ← con_eq_junc]
   exact est_arm₂_le (X := X) (Q := Q n tb nl blank)

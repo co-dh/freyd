@@ -133,7 +133,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F 
     (the catamorphism's own defining equation) and functoriality (`F.map_comp`), each `calc`
     line justified by exactly ONE law; then closed by the universal property `relCata_UP`. -/
 public theorem cata_fusion (I : InitialAlgebra F) {C D : 𝒜}
-    (φ : F.obj C ⟶ C) (h : C ⟶ D) (ψ : F.obj D ⟶ D)
+    (φ : Alg F C) (h : C ⟶ D) (ψ : Alg F D)
     (hcond : φ ≫ h = F.map h ≫ ψ) :
     relCata φ ≫ h = relCata ψ :=
   (relCata_UP I ψ (relCata φ ≫ h)).mp <| by

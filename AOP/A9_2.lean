@@ -70,7 +70,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
     `τ`, whenever the fallback is an `R°`-lower bound of the candidates (which, `τ` being
     top-valued, happens exactly when every candidate is itself a fallback value; in
     particular when the candidate set is empty, i.e. on a dead branch). -/
-@[expose] public def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (h : F.obj A ⟶ A) («≤» : A ⟶ A)
+@[expose] public def dpBodyInf (F : Relator 𝒜 𝒜) (T : Alg F B) (h : Alg F A) («≤» : A ⟶ A)
     (τ : B ⟶ A) (X : B ⟶ A) : B ⟶ A :=
   (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est «≤»)
     ∪ (τ ∩ (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ leftDiv ((∋ A)°) «≤»°))
@@ -78,7 +78,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
 /-- The ∞-DP body is monotonic in the recursion variable — so `μ(dpBodyInf)` is an honest
     least FIXED point (`mu_fixed`), which the executable-side bridge of an instantiation
     consumes (`leet.L322_dp`). -/
-public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (h : F.obj A ⟶ A)
+public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : Alg F B) (h : Alg F A)
     («≤» : A ⟶ A) (τ : B ⟶ A) : Monotonic (dpBodyInf F T h «≤» τ) := by
   intro X Y hXY
   have hp : powerRel (F.map X ≫ h) ⊑ powerRel (F.map Y ≫ h) :=
@@ -93,8 +93,8 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (
     `dp_prefixed` (`AOP.A9_1`): the two obligations are the components of `min`'s universal
     property `le_Λ_comp_est_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` (`hτ`) in the lower-bound half. -/
-public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
-    {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
+public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : Alg F A}
+    {T : Alg F B} {«≤» : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
     (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°)
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hstrict : T° ≫ F.map (H ∪ τ) ≫ h ⊑ H ∪ τ)
@@ -224,7 +224,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_inf_prefixed` and the hylomorphism
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
 public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜}
-    (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {τ : B ⟶ A}
+    (I : InitialAlgebra F) {h : Alg F A} {T : Alg F B} {«≤» : A ⟶ A} {τ : B ⟶ A}
     (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°)
     (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
         ⊑ ((relCata T)° ≫ relCata h) ∪ τ)

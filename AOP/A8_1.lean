@@ -442,14 +442,14 @@ variable {F : Relator 𝒜 𝒜}
 
 /-- An algebra monotonic on `Q` is monotonic on `Q°` from the other side: `S°F(Q°) ⊑ Q°S°`, the
     converse of `F(Q)S ⊑ SQ` with `F(Q)° = F(Q°)`. -/
-public theorem pres_recip_le {Q : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem pres_recip_le {Q : A ⟶ A} {S : Alg F A}
     (hmono : Freyd.Alg.Pres S Q) : S° ≫ F.map Q° ⊑ Q° ≫ S° := by
   have h := recip_mono hmono
   rwa [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F Q] at h
 
 /-- `S°F(∈)·Λ(F(∋)S) ⊑ ∈`: the transpose swallowed by its own converse, `recip_comp_Λ_le_recip_eps`
     at `W ≜ F(∋)S` with `F(∋)° = F(∈)`. -/
-public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
+public theorem recip_comp_map_recip_eps_comp_Λ_le {S : Alg F A} :
     S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ⊑ (∋ A)° := by
   rw [Relator.preservesRecip_of_tabular F (∋ A), ← Cat.assoc, ← Allegory.recip_comp]
   exact recip_comp_Λ_le_recip_eps (F.map (∋ A) ≫ S)
@@ -457,7 +457,7 @@ public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
 /-- The prefixed-point premise of `thinning`'s second half: `Q°` walks out of the `F` handle by
     monotonicity, the transpose is swallowed by its own converse (`W ≜ F(∋)S`), `thin`'s second
     half, and `Q` transitive. -/
-public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : preorder Q)
+public theorem thinning_prefixed {Q : A ⟶ A} {S : Alg F A} (hQ : preorder Q)
     (hmono : Freyd.Alg.Pres S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   calc S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
@@ -480,7 +480,7 @@ calc_steps thinning_prefixed
 
 /-- The fusion premise of `thinning`'s first half: a thinning keeps only members of the set, and
     the transpose cancels against `∋`. -/
-public theorem thinning_fusion {Q : A ⟶ A} {S : F.obj A ⟶ A} :
+public theorem thinning_fusion {Q : A ⟶ A} {S : Alg F A} :
     (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A ⊑ F.map (∋ A) ≫ S :=
   calc (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A
         = Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ≫ ∋ A := Cat.assoc _ _ _
@@ -491,13 +491,13 @@ calc_steps thinning_fusion
 
 /-- `thinning`'s first condition: everything the thinning fold keeps is a value of `⦇S⦈` — the
     fusion law (6.5) at `thinning_fusion`. -/
-public theorem thinning_cond1 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A ⟶ A} :
+public theorem thinning_cond1 (I : InitialAlgebra F) {Q : A ⟶ A} {S : Alg F A} :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A ⊑ relCata S :=
   comp_le_relCata I thinning_fusion
 
 /-- `thinning`'s second condition: every value of `⦇S⦈` is `Q`-above one the thinning fold keeps —
     the hylomorphism theorem at the prefixed point `thinning_prefixed`. -/
-public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : Alg F A}
     (hQ : preorder Q) (hmono : Freyd.Alg.Pres S Q) :
     (relCata S)° ≫ relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Q° ≫ (∋ A)° :=
   hylo_le_of_prefixed I (thinning_prefixed hQ hmono)
@@ -511,7 +511,7 @@ public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A 
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQ : preorder Q) (hmono : Freyd.Alg.Pres S Q) :
+    {S : Alg F A} (hQ : preorder Q) (hmono : Freyd.Alg.Pres S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q :=
   le_Λ_comp_thinRel_iff.mpr ⟨thinning_cond1 I, thinning_cond2 I hQ hmono⟩
 
@@ -521,7 +521,7 @@ public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (I : InitialAlgebra F) {Q R : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
+    {S : Alg F A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hmono : Freyd.Alg.Pres S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   calc relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R

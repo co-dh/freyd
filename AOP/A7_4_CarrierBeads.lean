@@ -96,7 +96,7 @@ public theorem sum_not_lax_natural : ¬ (list succI ≫ sumR ⊑ sumR ≫ succI)
     settle either way.  It follows from the instance because a law holding of every algebra would
     hold of `[zero,plus]`, whose fold is `sum` (`sum_cata`). -/
 public theorem relCata_not_lax_natural :
-    ¬ ∀ (A : Type) (R : (CL.F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)
+    ¬ ∀ (A : Type) (R : Alg (CL.F Unit A) (⟨A⟩ : RelSet.{0}))
         (f : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩), list f ≫ relCata R ⊑ relCata R ≫ f := by
   intro h
   refine sum_not_lax_natural ?_

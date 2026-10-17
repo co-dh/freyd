@@ -57,7 +57,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     the plain non-deterministic catamorphism `⦇S⦈`.  Transitivity and monotonicity are
     transposed to `R°` by `recip_mono`/`monotonicAlg_recip_iff` (the latter needs `f` a map). -/
 public theorem greedy_of_refinement_mono (I : InitialAlgebra F) {R : A ⟶ A}
-    {S f : F.obj A ⟶ A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres f R)
+    {S f : Alg F A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.Pres f R)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
