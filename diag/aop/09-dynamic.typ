@@ -257,7 +257,7 @@
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_of_cost") \
-    #src[an F-algebra homomorphism `cost : h ⟶ k` carries preservation back from `k` to `h`: if `k`
+    #src[an F-algebra homomorphism `cost : h ⟶ k` reflects preservation from `k` to `h`: if `k`
      preserves `≼`, then `h` preserves `≤`, the order `≼` pulled back along `cost`]],
      // lean:AOP.A9_1.pres_of_cost@42e4340c
   lean-calc(calc-cost),
