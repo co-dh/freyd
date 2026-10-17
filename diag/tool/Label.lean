@@ -1402,12 +1402,17 @@ def converseSymbols : List (String × String) := [("≤", "≥"), ("≼", "≽")
 def converseSymbol? (s : String) : Option String :=
   (converseSymbols.find? (·.1 == s)).map (·.2) <|> (converseSymbols.find? (·.2 == s)).map (·.1)
 
-/-- A LOCAL NAMED BY AN ORDER SYMBOL (`«≤»`) has no `diag_opposite` theorem behind it, so its
-    converse's name is the paired symbol: `«≤»°` is written `≥`.  Only a spelling exists, no arrow. -/
+/-- A RELATION PRINTED BY AN ORDER SYMBOL — a local `«≤»`, or a term whose printer writes `≤`
+    (`leRel`, `Edit.R A`) — has no `diag_opposite` theorem behind it, so its converse's name is the
+    paired symbol: `≤°` is written `≥`.  Only a spelling exists, no arrow. -/
 def localConverse? (r : Expr) : MetaM (Option String) := do
-  let .fvar f := r | return none
-  let .str .anonymous s ← f.getUserName | return none
-  return converseSymbol? s
+  if let .fvar f := r then
+    let .str .anonymous s ← f.getUserName | return none
+    return converseSymbol? s
+  match stxPeel (← delabP r).raw with
+  | .ident _ _ n _ => return converseSymbol? (← identText n)
+  | .atom _ t => return converseSymbol? t
+  | _ => return none
 
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the arrow `r°` IS, read off a `diag_opposite`
     theorem `Q = P°` in EITHER direction — `r` matching `P` gives `Q`, `r` matching `Q` gives `P` —
