@@ -60,27 +60,6 @@ public theorem T_cata :
   junc (sumCop (dL Unit) ⟨ConsList Unit Nat × Nat⟩) zeroRel
     (rprodMap head (𝟙 (⟨Nat⟩ : RelSet.{0})) ≫ (plusRel : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ _))
 
-/-- `paid : [[ℕ]]⟶ℕ`, the total paid on a climb. -/
-@[expose] public def paid : ConsList Unit (ConsList Unit Nat) → Nat
-  | ConsList.wrap _ => 0
-  | ConsList.cons xs xss => headFn xs + paid xss
-
-/-- **`paid = ⦇h⦈`**. -/
-public theorem paid_cata : (graph paid : dClimb ⟶ (⟨Nat⟩ : RelSet.{0})) = cataR h := by
-  rw [cataR_eq_relCata]
-  refine (relCata_UP (initial Unit (ConsList Unit Nat)) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun m ms r => ?_⟩)
-  constructor
-  · intro hr; exact ⟨paid ms, rfl, (headFn m, paid ms), ⟨rfl, rfl⟩, hr.symm⟩
-  · rintro ⟨y, rfl, ⟨q1, q2⟩, ⟨rfl, rfl⟩, rfl⟩; rfl
-
-/-- **`H = ⦇T⦈°⦇h⦈ = (1or2′ concat)° paid`**: the total paid on some climb over a cost list. -/
-public theorem H_eq :
-    H T h = (list (corefl «1or2» : dE (ConsList Unit Nat) ⟶ _) ≫ concatR : dClimb ⟶ dCost)°
-      ≫ (graph paid : dClimb ⟶ (⟨Nat⟩ : RelSet.{0})) := by
-  show (relCata T)° ≫ relCata h = _
-  rw [← cataR_eq_relCata, ← cataR_eq_relCata, T_cata, paid_cata]
-
 end Freyd.Alg.RelSet.Stairs
 
 -- printing-only: the constant arrow is written by its value, as `plusRel` is by its operator `+`.

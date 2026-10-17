@@ -42,17 +42,16 @@
   (sym: [`⦇T⦈`], decl: "Freyd.Alg.RelSet.Stairs.T_cata", meaning: [`⦇T⦈([[10],[15,20],[30]]) = [10,15,20,30]`; `[[10,15,20],[30]]` has no image: `[10,15,20]` has three stairs (q's `raze` `,/` on a legal climb only)]),
   (sym: [`⦇T⦈°`], type: [`[ℕ] ⟶ [[ℕ]]`], meaning: [`⦇T⦈°([10,15,20,30])` is `[[10],[15],[20],[30]]`, `[[10,15],[20],[30]]`, `[[10],[15,20],[30]]`, `[[10],[15],[20,30]]` or `[[10,15],[20,30]]`]),
   (sym: [`h`], decl: "Freyd.Alg.RelSet.Stairs.h", meaning: [`h(()) = 0`: the empty climb pays nothing. `h([10,15], 20) = 10 + 20 = 30`: pay the stair stood on (`10`), not the `15` stepped over, plus the `20` already paid for the rest]),
-  (sym: [`⦇h⦈`], decl: "Freyd.Alg.RelSet.Stairs.paid_cata", type: leant("Freyd.Alg.RelSet.Stairs.paid"), meaning: [`⦇h⦈([[10],[15,20],[30]]) = 10 + 15 + 30 = 55`; `⦇h⦈([[10,15],[20,30]]) = 10 + 20 = 30`]),
-  (sym: [`H`], decl: "Freyd.Alg.RelSet.Stairs.H_eq", meaning: [`H` relates `[10,15,20,30]` to `30` (climb `[[10,15],[20,30]]`) and to `55` (climb `[[10],[15,20],[30]]`), ...]),
+  (sym: [`⦇h⦈`], type: [`[[ℕ]] ⟶ ℕ`], meaning: [the total paid on a climb: `⦇h⦈([[10],[15,20],[30]]) = 10 + 15 + 30 = 55`; `⦇h⦈([[10,15],[20,30]]) = 10 + 20 = 30`]),
+  (sym: [`H`], type: [`[ℕ] ⟶ ℕ`], value: [`H ≜ ⦇T⦈° ⦇h⦈`], meaning: [`H` relates `[10,15,20,30]` to `30` (climb `[[10,15],[20,30]]`) and to `55` (climb `[[10],[15,20],[30]]`), ...]),
   (sym: [`≤`], type: [`ℕ ⟶ ℕ`], value: [`≤` on `ℕ`], meaning: [cheapest wins: `30 ≤ 55`]),
+  (sym: [`M`], type: [`[ℕ] ⟶ ℕ`], value: [`M ≜ Λ(H) est(≤)`], meaning: [the 5 cuts of `[10,15,20,30]` pay `75`, `60`, `55`, `45`, `30`, so `M([10,15,20,30]) = 30`]),
 )<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@f692c664
 // lean:AOP.A9_1_Stairs.T@4fbd1673
 // lean:AOP.A9_1_Stairs.T_cata@50f1c339
 // lean:AOP.A9_1_Stairs.h@de1ff917
-// lean:AOP.A9_1_Stairs.paid_cata@eae6c993
-// lean:AOP.A9_1_Stairs.paid@948ef303
-// lean:AOP.A9_1_Stairs.H_eq@dfa35dae
+// lean:AOP.A9_1.M@374f3050
 
 === The dynamic programming theorem
 
