@@ -43,6 +43,17 @@ def relBreak : String := "#sym.zws"
     show rule sets the conclusion on its own row while every other cell keeps it inline. -/
 def implBreak : String := "#[#sym.zws]<impl-break>"
 
+/-- THE BREAK BETWEEN TWO EQUATIONS OF A DEFINITION BY CASES: `, ` labelled `<case-break>`, so a
+    definition table's show rule sets each equation on its own line while running text keeps the list. -/
+def caseBreak : String := "#[, ]<case-break>"
+
+/-- The gap BEFORE a part of a printed statement: after a relation, before a conditional law's `⟹`,
+    or between two equations of a definition by cases. -/
+inductive Gap | rel | impl | case
+
+def Gap.typst : Gap → String
+  | .rel => relBreak | .impl => implBreak | .case => caseBreak
+
 /-- Chase `.lhs`/`.rhs` down through statements built from statements (`↔`, `∧`), the same walk
     `StrDiag.drawString`'s `reqParts` does: a step lands on a CONNECTIVE and keeps chasing, or on a
     RELATION and picks a side there, after which nothing may follow — a side has no sides of its
@@ -135,14 +146,14 @@ def hypRow (tys : Array Expr) : MetaM (Option Lbl) := do
     equation's left side is `R` at the def's own arguments and then the two points, each the case's
     pattern (`(a, x) ok q`).  A catch-all case's equation holds only off the earlier cases, and
     those hypotheses print before `⟹`, as any conditional law's do: dropped, the case would claim all. -/
-def pointwiseEqn (sp : Bool) (declName : Name) (arity : Nat) (eqn : Name) : MetaM (Array (Lbl × Bool)) := do
+def pointwiseEqn (sp : Bool) (declName : Name) (arity : Nat) (eqn : Name) : MetaM (Array (Lbl × Gap)) := do
   let ty := primeBinders [] (← getConstInfo eqn).type
   Meta.forallTelescope ty fun xs st => do
     let hyps ← xs.filterM fun x => do
       return (← x.fvarId!.getDecl).binderInfo.isExplicit && (← Meta.isProp (← Meta.inferType x))
     let tys ← hyps.mapM Meta.inferType
     let (pre, ante, br) ← match ← hypRow tys with
-      | some c => pure (#[(c ++ Lbl.text " ", false)], Lbl.text implArrow.trimLeft, true)
+      | some c => pure (#[(c ++ Lbl.text " ", Gap.rel)], Lbl.text implArrow.trimLeft, true)
       | none => pure (#[], Lbl.text "", false)
     let some (_, lhs, rhs) := st.eq? |
       throwError "{eqn}: an equation of {declName} states {← Meta.ppExpr st}, which is no `=`"
@@ -152,7 +163,7 @@ def pointwiseEqn (sp : Bool) (declName : Name) (arity : Nat) (eqn : Name) : Meta
         arguments and two points"
     let eq ← relAt sp (mkAppN lhs.getAppFn (args.extract 0 arity)) args[arity]! args[arity + 1]! rhs
     -- nothing ranks `⟹` against `⟺`, so under hypotheses the equation is bracketed
-    return pre ++ #[(ante ++ (if br then Lbl.text "(" ++ eq ++ Lbl.text ")" else eq), br)]
+    return pre ++ #[(ante ++ (if br then Lbl.text "(" ++ eq ++ Lbl.text ")" else eq), if br then .impl else .rel)]
 
 /-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
     elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none
@@ -249,11 +260,11 @@ def specialize (c step : Name) (ty : Expr) : MetaM Expr := do
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
     from.  `sp` IS THE PRINT MODE (`StrDiag.withSpaced`), the caller's: a formula set as text has the
-    room and is SPACED, and the same statement inside a drawn panel is not.  A part's `Bool` says
-    the gap BEFORE it is a conditional law's `⟹` (`implBreak`), not a relation's (`relBreak`). -/
+    room and is SPACED, and the same statement inside a drawn panel is not.  A part's `Gap` says
+    the gap BEFORE it is a conditional law's `⟹` (`implBreak`), a relation's (`relBreak`) or the next case's (`caseBreak`). -/
 partial def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) (defines : Option Name := none) (step : Option Name := none) :
-    MetaM (Array (Lbl × Bool)) :=
+    MetaM (Array (Lbl × Gap)) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- `step`: the law as that calc step applies it, in the step's own letters (`specialize`).
@@ -290,12 +301,12 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
                   | return none
                 return some (Lbl.text "{" ++ (← labelT x) ++ spaced ":" sp ++ (← labelT d)
                   ++ spaced "∣" sp ++ (← labelT c) ++ Lbl.text "}")
-            if let some s := set? then return #[(head ++ spaced "≜" sp ++ s, false)]
+            if let some s := set? then return #[(head ++ spaced "≜" sp ++ s, .rel)]
         return ← Meta.forallTelescope cty fun fs _ => do
           let tys ← fs.mapM Meta.inferType
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
             | throwError "{declName}: a structure with no fields states nothing"
-          return #[(head ++ spaced "≜" sp ++ (← labelT c), false)]
+          return #[(head ++ spaced "≜" sp ++ (← labelT c), .rel)]
       -- A DATATYPE has no value but its CONSTRUCTORS: `tree A ::= tip(A) ∣ bin(tree A,tree A)`, each
       -- constructor at these parameters beside the types of its fields, read off its own type.
       -- `::=` and not `≜`: it is the book's sign for a datatype declaration (B&dM p.225, `Op::=…`).
@@ -310,7 +321,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
             return (← labelT k) ++ Lbl.text "(" ++ args ++ Lbl.text ")"
         let some (a₀ : Lbl) := alts[0]? | throwError "{declName}: a datatype with no constructors"
         let body := alts[1:].foldl (fun (acc : Lbl) (a : Lbl) => acc ++ spaced "∣" sp ++ a) a₀
-        return #[(head ++ spaced "::=" sp ++ body, false)]
+        return #[(head ++ spaced "::=" sp ++ body, .rel)]
       -- A CONSTRUCTOR has no value either: what defines it is the datatype it is one alternative of.
       if let .ctorInfo cv := ci then return ← render sp cv.induct none [] branch defines
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
@@ -332,16 +343,16 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         let rs ← eqs.mapM fun q => Meta.withLCtx {} {} do
           if rel then pointwiseEqn sp declName xs.size q else render sp q none [] []
         return rs.foldl (init := #[]) fun acc r =>
-          if acc.isEmpty then r else acc ++ r.modify 0 fun (l, b) => (Lbl.text ", " ++ l, b)
+          if acc.isEmpty then r else acc ++ r.modify 0 fun (l, _) => (l, .case)
       -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.
       if branch.isEmpty && (← homObjs? body).isSome && (val.beta xs).isLambda then
-        return #[(← pointwise sp declName, false)]
+        return #[(← pointwise sp declName, .rel)]
       return ← withBody declName branch (val.beta xs) fun v => do
         let b ← labelT v
         -- `x ≜ x` says nothing: the body is a wrapper (`graph f`, `corefl p`) whose argument prints
         -- under the same name.  No line: `file` marks it, a citation skips it, a `leanf` refuses it.
         if b.flat == head.flat then return #[]
-        return #[(head ++ spaced "≜" sp ++ b, false)]
+        return #[(head ++ spaced "≜" sp ++ b, .rel)]
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -349,7 +360,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         -- type alone would leave the reader to guess which binder the cell is about.
         | some x => do
           let t ← Meta.inferType x
-          if !(← Meta.isProp t) then return #[((← labelT x) ++ spaced ":" sp ++ (← labelT t), false)]
+          if !(← Meta.isProp t) then return #[((← labelT x) ++ spaced ":" sp ++ (← labelT t), .rel)]
           pure t
         | none =>
           let names ← xs.mapM fun x => return (← x.fvarId!.getUserName).toString
@@ -380,9 +391,9 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     -- THE HYPOTHESES ARE A PART OF THEIR OWN, cut before `⟹` like the relation: a conditional law
     -- in a narrow reason cell breaks there (7.4.4a), not inside a hypothesis; a `Thm` header always.
     let (pre, ante) ← match ← hypRow cond with
-      | some c => pure (#[(c ++ Lbl.text " ", false)], Lbl.text implArrow.trimLeft)
+      | some c => pure (#[(c ++ Lbl.text " ", Gap.rel)], Lbl.text implArrow.trimLeft)
       | none => pure (#[], Lbl.text "")
-    let impl := !pre.isEmpty
+    let impl : Gap := if pre.isEmpty then .rel else .impl
     let target ← descend declName path body
     withBody declName branch target fun target' => do
       -- A PREDICATE THE NOTE WRITES BY NAME IS NOT UNFOLDED HERE.  `splitM`'s delta step is there so
@@ -411,7 +422,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         let (lt, rt) := (← labelT l (some r), ← labelT r (some l))
         -- A row's `x ≜ x` says nothing, as a definition's does above: `file` marks it, `leanf` refuses it.
         if sym == "≜" && lt.flat == rt.flat then return #[]
-        return pre ++ #[(ante ++ lt ++ spaced sym sp, impl), (rt, false)]
+        return pre ++ #[(ante ++ lt ++ spaced sym sp, impl), (rt, .rel)]
       | none => return pre ++ #[(ante ++ (← labelT target'), impl)]
 
 /-- The selector step `.mapsto`: an arrow on a point, `x ↦ e`, read off a statement `R x r ↔ r = e`
@@ -448,7 +459,7 @@ def file (declName : Name) (binder : Option String) (path : List String)
   -- A definition whose body prints as its own name (`render`): the note reads the mark, not a formula.
   if ls.isEmpty then return s!"#metadata(\"{declName}\")<formula-says-nothing>\n"
   return String.join (ls.toList.mapIdx fun i (l, b) =>
-    (if i == 0 then "" else if b then implBreak else relBreak) ++ "#" ++ l.bare.typst) ++ "\n"
+    (if i == 0 then "" else b.typst) ++ "#" ++ l.bare.typst) ++ "\n"
 
 /-- The side `path` names of `declName`'s statement, its binders opened with METAVARIABLES, so two
     panels read off two declarations meet in one theorem by unification rather than by binder name.

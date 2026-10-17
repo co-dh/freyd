@@ -156,7 +156,9 @@
     // A row whose formula IS its key's declaration has no `=` to read as the key's definition, and a
     // second selector for it would print it twice wherever the row is cited.
     let f(s) = leanf(s, defines: if s == k { none } else { k })
-    if type(d) == str { f(d) } else if type(d) == array { d.map(f).join([, ]) }
+    // One equation per line: a def by cases breaks at each `<case-break>`, and so do two selectors.
+    show <case-break>: linebreak()
+    if type(d) == str { f(d) } else if type(d) == array { d.map(f).join(linebreak()) }
     else if lean-keys(d, labels: (<lean-formula>,)).len() > 0 { panic("deftab: the definition cell of " + repr(k) + " holds a formula as content; give its selector, so the row's def reaches the printer") }
     else { d } }
   let rows = cells.pos().chunks(4)

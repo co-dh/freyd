@@ -337,6 +337,9 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
   "Freyd.Alg.RelSet.Edit.edit_cata",
   [the two strings an edit sequence turns one into the other],
+  [#rowkey("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
+  ("Freyd.Alg.RelSet.Edit.baseFn", "Freyd.Alg.RelSet.Edit.stepFn"),
+  [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
   [], [],
   "Freyd.Alg.RelSet.Edit.length_cata",
   [the number of operations in a sequence],
@@ -355,9 +358,6 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.α")], [#leant("Freyd.Alg.RelSet.Edit.α")],
   "Freyd.Alg.RelSet.Edit.α",
   [the empty edit sequence, or one operation in front of a sequence],
-  [#rowkey("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
-  ("Freyd.Alg.RelSet.Edit.base_nil", "Freyd.Alg.RelSet.Edit.step_cpy", "Freyd.Alg.RelSet.Edit.step_del", "Freyd.Alg.RelSet.Edit.step_ins"),
-  [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
 // lean:AOP.A9_2_Edit.Op@5aeb2081
 // lean:AOP.A9_2_Edit.F_obj@c75acbc8
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
@@ -365,10 +365,8 @@
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
-// lean:AOP.A9_2_Edit.base_nil@da59d83b
-// lean:AOP.A9_2_Edit.step_cpy@8a9cb310
-// lean:AOP.A9_2_Edit.step_del@4871c629
-// lean:AOP.A9_2_Edit.step_ins@78a5ae08
+// lean:AOP.A9_2_Edit.baseFn@69cf0cc4
+// lean:AOP.A9_2_Edit.stepFn@427367e6
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the

@@ -144,9 +144,9 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
     `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
 @[expose] public def stepFn :
     Op Char × (ConsList Unit Char × ConsList Unit Char) → ConsList Unit Char × ConsList Unit Char
-  | (Op.cpy a, p) => (ConsList.cons a p.1, ConsList.cons a p.2)
-  | (Op.del a, p) => (ConsList.cons a p.1, p.2)
-  | (Op.ins a, p) => (p.1, ConsList.cons a p.2)
+  | (Op.cpy a, (xs, ys)) => (ConsList.cons a xs, ConsList.cons a ys)
+  | (Op.del a, (xs, ys)) => (ConsList.cons a xs, ys)
+  | (Op.ins a, (xs, ys)) => (xs, ConsList.cons a ys)
 
 /-- **edit-defn**: the junction `[base,step]` of the two arms, B&dM's algebra of `edit`. -/
 @[expose] public def baseStepFn :
@@ -805,18 +805,6 @@ public theorem con_eq_junc :
       exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
     | inr p => simp [junc, graph, sumCop, consR, con]
 
-/-- **edit-defn**: `base` returns `([],[])`. -/
-public theorem base_nil (u : Unit) :
-    baseFn (Char := Char) u = (ConsList.wrap (), ConsList.wrap ()) := rfl
-/-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`. -/
-public theorem step_cpy (a : Char) (xs ys : ConsList Unit Char) :
-    stepFn (Op.cpy a, (xs, ys)) = (ConsList.cons a xs, ConsList.cons a ys) := rfl
-/-- **edit-defn**: `step (del a,(xs,ys))=([a]⧺xs,ys)`. -/
-public theorem step_del (a : Char) (xs ys : ConsList Unit Char) :
-    stepFn (Op.del a, (xs, ys)) = (ConsList.cons a xs, ys) := rfl
-/-- **edit-defn**: `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
-public theorem step_ins (a : Char) (xs ys : ConsList Unit Char) :
-    stepFn (Op.ins a, (xs, ys)) = (xs, ConsList.cons a ys) := rfl
 
 /-- **edit-defn**: `V≜suffix°×suffix°`. -/
 public theorem V_eq : V Char = rprodMap (suffixR (A := Char))° (suffixR (A := Char))° := rfl
