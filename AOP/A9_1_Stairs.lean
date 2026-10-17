@@ -38,39 +38,6 @@ public theorem F_obj (X : RelSet.{0}) :
 /-- `ι : Move ↪ [ℕ]`, a move as the segment of stairs it covers. -/
 @[expose] public def ι : dE Move ⟶ dE (ConsList Unit Nat) := graph Subtype.val
 
-/-- **`F(R,𝟙)[g,k] = [g,(R×𝟙)k]`**: the bifunctor's action on the element is absorbed by the
-    junction's second arm, the leaf arm untouched. -/
-public theorem Fbimap_junc {L E E' : Type} {C D : RelSet.{0}} (R : dE E ⟶ dE E')
-    (g : dL L ⟶ D) (k : (⟨E' × C.carrier⟩ : RelSet.{0}) ⟶ D) :
-    Fbimap L R (𝟙 C) ≫ junc (sumCop (dL L) ⟨E' × C.carrier⟩) g k
-      = junc (sumCop (dL L) ⟨E × C.carrier⟩) g (rprodMap R (𝟙 C) ≫ k) := by
-  apply hom_ext; intro u w
-  cases u with
-  | inl d =>
-    refine Iff.trans ?_ (junc_sum_inl _ _ _ _).symm
-    constructor
-    · rintro ⟨v, hv, hw⟩
-      cases v with
-      | inl d' => obtain rfl : d = d' := hv; exact (junc_sum_inl _ _ _ _).mp hw
-      | inr _ => exact hv.elim
-    · intro hw; exact ⟨Sum.inl d, rfl, (junc_sum_inl _ _ _ _).mpr hw⟩
-  | inr p =>
-    refine Iff.trans ?_ (junc_sum_inr _ _ _ _).symm
-    constructor
-    · rintro ⟨v, hv, hw⟩
-      cases v with
-      | inl _ => exact hv.elim
-      | inr q => exact ⟨q, hv, (junc_sum_inr _ _ _ _).mp hw⟩
-    · rintro ⟨q, hq, hw⟩; exact ⟨Sum.inr q, hq, (junc_sum_inr _ _ _ _).mpr hw⟩
-
-/-- **`list(R) = T(R)`**: the list relator is the type functor of `F(A,X) = 1 + A×X`. -/
-public theorem list_typeMap {A B : Type} (R : dE A ⟶ dE B) :
-    list R = typeMap (F := FB Unit) (fun X => initial Unit X.carrier) R := by
-  rw [list_cata, typeMap_defn]
-  show relCata (I := initial Unit A) _
-    = relCata (I := initial Unit A) (Fbimap Unit R (𝟙 (dList B)) ≫ alphaR)
-  rw [alphaR_eq_junc, Fbimap_junc]
-
 /-- **`T : F([ℕ])⟶[ℕ]`**, `T ≜ [nil,(ι×𝟙)cat]`: put the segment in front of the rest. -/
 @[expose] public def T : (F Unit Move).obj dCost ⟶ dCost :=
   junc (sumCop (dL Unit) ⟨Move × ConsList Unit Nat⟩) τ (rprodMap ι (𝟙 dCost) ≫ cat)
