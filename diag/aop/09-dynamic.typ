@@ -144,6 +144,25 @@
   lean-calc(calc-dput),
 )]<dp-upper-tail>
 
+// The tail at the Stair example (strings by `concat` give no `H`): `b` an answer of `H`, `b'` of the step.
+#disp[#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*symbol*], [*value*], [*meaning*]),
+  [`h`], [#leanf("Freyd.Alg.RelSet.Stairs.h")], [`h(s,n) = head(s)+n`: pay the stair segment `s` stands on, then the rest's total `n`; `h(()) = 0`],
+  [`h°`], [`b ↦ (s, b−head(s))`, `0 ↦ ()`], [every way to cut a total `b` into the stair paid first and the rest's total `n`],
+  [`H°`], [#kq("(+/*')° ,/")], [from a total `n` to every cost list `xs` some climb over which pays `n`: #kq("(+/*')°") every climb paying `n`, #kq(",/") its cost list],
+  [`F(H°)`], [`𝟙 + 𝟙 × H°`], [keeps `s`, replaces the rest's total `n` by such an `xs`],
+  [`∈`], [`∈ : FA ⟶ PFA`], [a pair `(s,xs)` to any set `ps` holding it],
+  [`M`], [`M : [ℕ] ⟶ ℕ`], [the recursion; on `xs` it returns only the cheapest total of a climb over `xs`],
+  [`F(M) h`], [`(s,xs) ↦ head(s) + M(xs)`], [pay the stair `s` stands on, then solve the rest by the recursion],
+  [`≥`], [`≥` on `ℕ`], [`c ≥ b'` iff `b' ≤ c`],
+  [`∈ \ (F(M) h ≥)`], [`PFA ⟶ ℕ`], [`ps` to every `b'` with `b' ≤ head(s)+M(xs)` for each `(s,xs)` in `ps`],
+  [`⊑ ≥`], [`b ─h°→ (s,n) ─F(H°)→ (s,xs) ─∈→ ps ─∈\(F(M)h≥)→ b'`], [`b' ≤ head(s)+M(xs) ≤ head(s)+n = b`: `M(xs)` is cheapest and some climb over `xs` pays `n`],
+)]<dp-upper-tail-746>
+// lean:AOP.A9_1_Stairs.h@d23abf16
+
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
