@@ -27,6 +27,9 @@ public inductive ConsList (L E : Type) where
   | wrap : L → ConsList L E
   | cons : E → ConsList L E → ConsList L E
 
+/-- The book's `list A`, a string over the alphabet `A`. -/
+@[expose] public abbrev Str (A : Type) : Type := ConsList Unit A
+
 /-- Reshape a raw Lean `List E` onto the initial algebra as a `ConsList Unit E`
     (`[] ↦ wrap ()`, `x :: xs ↦ cons x (ofList xs)`).  The book's `list A` is `ConsList Unit A`,
     so this is the canonical bridge for deriving folds over raw input lists; use it instead of
@@ -509,6 +512,12 @@ public theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
 open Lean PrettyPrinter in
 @[app_unexpander ConsList] public meta def unexpandConsListObj : Unexpander
   | `($_ Unit $E) => `([$E])
+  | _ => throw ()
+
+-- `Str A` is written by name, not unfolded to `[A]`: it is the strings over the alphabet `A`.
+open Lean PrettyPrinter in
+@[app_unexpander Str] public meta def unexpandStr : Unexpander
+  | `($_ $A) => `($(mkIdent `Str) $A)
   | _ => throw ()
 
 open Lean PrettyPrinter in

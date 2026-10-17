@@ -369,23 +369,23 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
-// lean:AOP.A9_2_Edit.Op@5aeb2081
+// lean:AOP.A9_2_Edit.Op@088ec9af
 // lean:AOP.A9_2_Edit.F_obj@ec51a642
-// lean:AOP.A9_2_Edit.edit_cata@2dc97e76
+// lean:AOP.A9_2_Edit.edit_cata@1952f0c0
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
-// lean:AOP.A9_2_Edit.empty_iff@0a966621
-// lean:AOP.A9_2_Edit.baseFn@69cf0cc4
-// lean:AOP.A9_2_Edit.stepFn@427367e6
+// lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
+// lean:AOP.A9_2_Edit.baseFn@450d4154
+// lean:AOP.A9_2_Edit.stepFn@e8719088
 // lean:AOP.A9_2_Edit.mleSpec@ba2551c8
-// lean:AOP.A9_2_Edit.FeditR@ce7c2463
+// lean:AOP.A9_2_Edit.FeditR@0cad6892
 // lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
-// chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
-// `Char` — sugar undone at the ends too.
+// chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
+// `A` — sugar undone at the ends too.
 #disp[#calc-table(
   Thm[`mle=(empty→nil,unstep ((𝟙×mle)cons)′ minL(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
@@ -409,18 +409,18 @@
       // lean:AOP.A9_2_Edit.edit_mono@e083dbea
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
- #src[] over `F(Op,[Char]×[Char])` is
+ #src[] over `F(Op,[A]×[A])` is
       // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
       Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
  #src[,
       // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
  ] —
-      // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+      // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
  `edit (𝟙×suffix)⊑R° edit` #src[],
-      // lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+      // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
  `edit (suffix×𝟙)⊑R° edit` #src[]. `suffix=tail*`
-      // lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
+      // lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
@@ -497,7 +497,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_thin_condition") \
     #grid(columns: 5, align: center + horizon, column-gutter: 6pt, row-gutter: 4pt,
-      [`F(Op,[Char]×[Char])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
+      [`F(Op,[A]×[A])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
       [$stretch(->, size: #2em)^alpha$], [`[Op]`],
       [`Q` compares here], [], [], [], [`R` compares here])],
      // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
@@ -517,13 +517,13 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
     [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step3@896bfb56
+     // lean:AOP.A9_2_Edit.edit_thin_step3@3276aa63
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
       adds one to both lengths whatever the two operations are]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step4@7e7d3079
+     // lean:AOP.A9_2_Edit.edit_thin_step4@46e2e6a4
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
 )]<edit-thin>
 
@@ -532,7 +532,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
     #src[cutting a front off either string an edit sequence produces (`edit V°`) leaves a pair that
      a sequence no longer produces (`R° edit`)]],
-     // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+     // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs"), [])],
@@ -540,24 +540,24 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs"),
     [#src[`V≜suffix°×suffix°`, and `×` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@0604c8cb
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@93b78f1f
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
     [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
       `cpy` to an `ins`. Proved by induction at `suffix` directly, not through `suffix=tail*` and
       `BA⊑CB⟹BA*⊑C*B` as the book does]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@5adf6ffd lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@1cc1f51a lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs"),
     [#src[`edit (𝟙×suffix)⊑R° edit`, the mirror image: `cpy` weakens to a `del`]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@9062388e lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@57addf8e lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs"),
     [#src[`R°` is transitive, `≤` being so]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@12b537e9
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@0b83e93d
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
 )]<edit-V>
 
@@ -565,7 +565,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@d83b12c4
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@54c2fc03
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
@@ -597,15 +597,15 @@
 
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.mle_head_column"), #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
-     // lean:AOP.A9_2_Edit.mle@9c01e9fc lean:AOP.A9_2_Edit.mle_head_column@c8a15220 lean:AOP.A9_2_Edit.column@87907e0c
+     // lean:AOP.A9_2_Edit.mle@58d2b679 lean:AOP.A9_2_Edit.mle_head_column@8970f6bf lean:AOP.A9_2_Edit.column@c718c599
      `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=del′ tails` \
-     // lean:AOP.A9_2_Edit.column_cata@06a76bd9 lean:AOP.A9_2_Edit.fstcol@e72647f8 lean:AOP.A9_2_Edit.column_nil@63c24991
+     // lean:AOP.A9_2_Edit.column_cata@5daa35d1 lean:AOP.A9_2_Edit.fstcol@980d0d9a lean:AOP.A9_2_Edit.column_nil@508f2638
      #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
 
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.column_cons") \
-     // lean:AOP.A9_2_Edit.column_cons@bc563c5b lean:AOP.A9_2_Edit.nextcol@170c07d3
+     // lean:AOP.A9_2_Edit.column_cons@e47bc355 lean:AOP.A9_2_Edit.nextcol@b9871d24
      `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`, #h(4pt)
      `xus=zip(xs,zip(init(us),tail(us)))` \
      #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the
