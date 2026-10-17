@@ -70,16 +70,16 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
     `τ`, whenever the fallback is an `R°`-lower bound of the candidates (which, `τ` being
     top-valued, happens exactly when every candidate is itself a fallback value; in
     particular when the candidate set is empty, i.e. on a dead branch). -/
-@[expose] public def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (h : F.obj A ⟶ A) (R : A ⟶ A)
+@[expose] public def dpBodyInf (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (h : F.obj A ⟶ A) («≤» : A ⟶ A)
     (τ : B ⟶ A) (X : B ⟶ A) : B ⟶ A :=
-  (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-    ∪ (τ ∩ (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ leftDiv ((∋ A)°) R°))
+  (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est «≤»)
+    ∪ (τ ∩ (Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ leftDiv ((∋ A)°) «≤»°))
 
 /-- The ∞-DP body is monotonic in the recursion variable — so `μ(dpBodyInf)` is an honest
     least FIXED point (`mu_fixed`), which the executable-side bridge of an instantiation
     consumes (`leet.L322_dp`). -/
 public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (h : F.obj A ⟶ A)
-    (R : A ⟶ A) (τ : B ⟶ A) : Monotonic (dpBodyInf F T h R τ) := by
+    («≤» : A ⟶ A) (τ : B ⟶ A) : Monotonic (dpBodyInf F T h «≤» τ) := by
   intro X Y hXY
   have hp : powerRel (F.map X ≫ h) ⊑ powerRel (F.map Y ≫ h) :=
     powerRel_mono (comp_mono_right (F.map_mono hXY) h)
@@ -94,27 +94,27 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (
     property `le_Λ_comp_est_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` (`hτ`) in the lower-bound half. -/
 public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
-    {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
-    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
+    {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
+    (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°)
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hstrict : T° ≫ F.map (H ∪ τ) ≫ h ⊑ H ∪ τ)
-    (hτ : τ° ≫ topHom B A ⊑ R°) :
-    dpBodyInf F T h R τ (Λ (H ∪ τ) ≫ est R) ⊑ Λ (H ∪ τ) ≫ est R := by
+    (hτ : τ° ≫ topHom B A ⊑ «≤»°) :
+    dpBodyInf F T h «≤» τ (Λ (H ∪ τ) ≫ est «≤») ⊑ Λ (H ∪ τ) ≫ est «≤» := by
   -- the two min-UP components of `M ⊑ min R° · Λ(H ∪ τ)`: `M ⊑ H ∪ τ` and `(H ∪ τ)° ≫ M ⊑ R°`
-  obtain ⟨hMS, hSMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ (H ∪ τ) ≫ est R))
+  obtain ⟨hMS, hSMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ (H ∪ τ) ≫ est «≤»))
   apply le_Λ_comp_est_iff.mpr
   constructor
   · -- membership: `body ⊑ H ∪ τ`
     apply union_lub
     · -- min disjunct, as (9.2) of `dp_prefixed`, ending in `hstrict` instead of `hHfix`
-      have h94 := powerRel_comp_est_le (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) R
-      have s1 : Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ est R
-          ⊑ Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h :=
+      have h94 := powerRel_comp_est_le (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) «≤»
+      have s1 : Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ est «≤»
+          ⊑ Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h :=
         comp_mono_left _ (le_trans h94 (inter_lb_left _ _))
-      have s2 : Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h
-          = T° ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h := by
+      have s2 : Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h
+          = T° ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h := by
         rw [← Cat.assoc (Λ (T°)) (∋ (F.obj B)) _, Λ_eps_eq']
-      have s3 : T° ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h ⊑ T° ≫ F.map (H ∪ τ) ≫ h :=
+      have s3 : T° ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h ⊑ T° ≫ F.map (H ∪ τ) ≫ h :=
         comp_mono_left _ (comp_mono_right (F.map_mono hMS) h)
       rw [s2] at s1
       exact le_trans s1 (le_trans s3 hstrict)
@@ -122,11 +122,11 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
       exact le_trans (inter_lb_left _ _) (le_union_right _ _)
   · -- lower bound: `(H ∪ τ)° ≫ body ⊑ R°`
     -- both disjuncts are below the uniform lower-bound relation `W = (R°/∋)·P(h·FM)·ΛT°`
-    have hbW : dpBodyInf F T h R τ (Λ (H ∪ τ) ≫ est R)
-        ⊑ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ leftDiv ((∋ A)°) R° := by
+    have hbW : dpBodyInf F T h «≤» τ (Λ (H ∪ τ) ≫ est «≤»)
+        ⊑ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ leftDiv ((∋ A)°) «≤»° := by
       apply union_lub
       · exact comp_mono_left _ (comp_mono_left _
-          (show est R ⊑ leftDiv ((∋ A)°) R° from inter_lb_right _ _))
+          (show est «≤» ⊑ leftDiv ((∋ A)°) «≤»° from inter_lb_right _ _))
       · exact inter_lb_right _ _
     -- `H°` kills `W` by the (9.3)-style chain of `dp_prefixed`
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
@@ -136,79 +136,79 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj B))° := by
       have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
-    have htail : T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-          ≫ leftDiv ((∋ A)°) R°
-        ⊑ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R° := by
-      have t1 : T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°
-          ⊑ (∋ (F.obj B))° ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R° := by
+    have htail : T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+          ≫ leftDiv ((∋ A)°) «≤»°
+        ⊑ (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»° := by
+      have t1 : T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°
+          ⊑ (∋ (F.obj B))° ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»° := by
         rw [← Cat.assoc T (Λ (T°)) _]
         exact comp_mono_right hTA _
-      have t2 : (∋ (F.obj B))° ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°
-          ⊑ ((F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ (∋ A)°) ≫ leftDiv ((∋ A)°) R° := by
-        rw [← Cat.assoc ((∋ (F.obj B))°) (powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h))
-          (leftDiv ((∋ A)°) R°)]
+      have t2 : (∋ (F.obj B))° ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°
+          ⊑ ((F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ (∋ A)°) ≫ leftDiv ((∋ A)°) «≤»° := by
+        rw [← Cat.assoc ((∋ (F.obj B))°) (powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h))
+          (leftDiv ((∋ A)°) «≤»°)]
         exact comp_mono_right (powerRel_term1_cancel _) _
-      have t3 : ((F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ (∋ A)°) ≫ leftDiv ((∋ A)°) R°
-          ⊑ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R° := by
+      have t3 : ((F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ (∋ A)°) ≫ leftDiv ((∋ A)°) «≤»°
+          ⊑ (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»° := by
         rw [Cat.assoc]
         exact comp_mono_left _ (leftDiv_comp_le _ _)
       exact le_trans t1 (le_trans t2 t3)
-    have hHW : H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-          ≫ leftDiv ((∋ A)°) R° ⊑ R° := by
+    have hHW : H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+          ≫ leftDiv ((∋ A)°) «≤»° ⊑ «≤»° := by
       -- split `H°` in front and reassociate (backward-rewrite trick, cf. `dp_prefixed`)
-      have c1 : H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°
+      have c1 : H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°
           = (h° ≫ F.map (H°) ≫ T)
-              ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-              ≫ leftDiv ((∋ A)°) R° := by
+              ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+              ≫ leftDiv ((∋ A)°) «≤»° := by
         rw [← hHrec]
       have c2 : (h° ≫ F.map (H°) ≫ T)
-            ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ leftDiv ((∋ A)°) R°
+            ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ leftDiv ((∋ A)°) «≤»°
           = (h° ≫ F.map (H°))
-              ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-              ≫ leftDiv ((∋ A)°) R° := by
+              ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+              ≫ leftDiv ((∋ A)°) «≤»° := by
         simp only [Cat.assoc]
       have hbound : (h° ≫ F.map (H°))
-            ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°
-          ⊑ (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R° :=
+            ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°
+          ⊑ (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»° :=
         comp_mono_left _ htail
       -- collapse: `F(M·H°) ⊑ FR` then conjugated monotonicity and transitivity
-      have hHMR : H° ≫ (Λ (H ∪ τ) ≫ est R) ⊑ R° :=
+      have hHMR : H° ≫ (Λ (H ∪ τ) ≫ est «≤») ⊑ «≤»° :=
         le_trans (comp_mono_right (recip_mono (le_union_left H τ)) _) hSMR
-      have hcollapse : (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R°
-          ⊑ R° ≫ R° := by
-        have hFRM : F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est R) ⊑ F.map R° := by
+      have hcollapse : (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»°
+          ⊑ «≤»° ≫ «≤»° := by
+        have hFRM : F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ⊑ F.map «≤»° := by
           rw [← F.map_comp]
           exact F.map_mono hHMR
-        have hinner : h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h ⊑ R° := by
-          have hx : h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h
-              ⊑ h° ≫ F.map R° ≫ h := by
-            rw [← Cat.assoc (F.map (H°)) (F.map (Λ (H ∪ τ) ≫ est R)) h]
+        have hinner : h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h ⊑ «≤»° := by
+          have hx : h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h
+              ⊑ h° ≫ F.map «≤»° ≫ h := by
+            rw [← Cat.assoc (F.map (H°)) (F.map (Λ (H ∪ τ) ≫ est «≤»)) h]
             exact comp_mono_left _ (comp_mono_right hFRM h)
           exact le_trans hx ((Freyd.Alg.pres_iff_conj hh).mp hmono)
-        have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R°
-            = (h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R° := by
+        have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»°
+            = (h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h) ≫ «≤»° := by
           simp only [Cat.assoc]
         rw [hre]
-        exact comp_mono_right hinner R°
+        exact comp_mono_right hinner «≤»°
       rw [c1, c2]
       exact le_trans (le_trans hbound hcollapse) htrans
     -- `τ°` kills anything: `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` since the fallback is top-valued
-    have hτW : τ° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-          ≫ leftDiv ((∋ A)°) R° ⊑ R° :=
+    have hτW : τ° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+          ≫ leftDiv ((∋ A)°) «≤»° ⊑ «≤»° :=
       le_trans (comp_mono_left τ° (LocallyCompleteDistributiveAllegory.le_Sup trivial)) hτ
     -- assemble: distribute `(H ∪ τ)° = τ° ∪ H°` over the composite
     have hsplit := comp_mono_left ((H ∪ τ)°) hbW
-    have hexp : (H ∪ τ)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-          ≫ leftDiv ((∋ A)°) R°
-        = (τ° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°)
-          ∪ (H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est R) ≫ h)
-            ≫ leftDiv ((∋ A)°) R°) := by
+    have hexp : (H ∪ τ)° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+          ≫ leftDiv ((∋ A)°) «≤»°
+        = (τ° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°)
+          ∪ (H° ≫ Λ (T°) ≫ powerRel (F.map (Λ (H ∪ τ) ≫ est «≤») ≫ h)
+            ≫ leftDiv ((∋ A)°) «≤»°) := by
       rw [recip_union, union_comp_distrib]
     rw [hexp] at hsplit
     exact le_trans hsplit (union_lub hτW hHW)
@@ -224,13 +224,13 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_inf_prefixed` and the hylomorphism
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
 public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜}
-    (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A}
-    (hh : Map h) (hmono : Pres h R°) (htrans : R° ≫ R° ⊑ R°)
+    (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {τ : B ⟶ A}
+    (hh : Map h) (hmono : Pres h «≤»°) (htrans : «≤»° ≫ «≤»° ⊑ «≤»°)
     (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
         ⊑ ((relCata T)° ≫ relCata h) ∪ τ)
-    (hτ : τ° ≫ topHom B A ⊑ R°) :
-    mu (dpBodyInf F T h R τ)
-      ⊑ Λ (((relCata T)° ≫ relCata h) ∪ τ) ≫ est R :=
+    (hτ : τ° ≫ topHom B A ⊑ «≤»°) :
+    mu (dpBodyInf F T h «≤» τ)
+      ⊑ Λ (((relCata T)° ≫ relCata h) ∪ τ) ≫ est «≤» :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS =>
     hS _ (dp_inf_prefixed hh hmono htrans (hylo_fixed I T h) hstrict hτ))
 

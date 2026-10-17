@@ -325,7 +325,7 @@ theorem greedy_refine (P : GreedyDP L E S W) :
   have htrans' : P.Rp° ≫ P.Rp° ⊑ P.Rp° := by
     have h0 := recip_mono P.htrans
     rwa [Allegory.recip_comp] at h0
-  exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
+  exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) («≤» := P.Rp°)
     (CL.initial L E) (graph_map P.hFn)
     ((Freyd.Alg.pres_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 

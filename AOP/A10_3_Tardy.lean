@@ -61,25 +61,25 @@ public theorem est_unfold_context_le (T : F.obj B ⟶ B) (Q : F.obj B ⟶ F.obj 
     skeleton as `AOP.A10_1`'s `greedy_dp_prefixed`, with `est_unfold_context_le` in place of the
     unrestricted tail bound and `hctx1` in place of `MonotonicAlg h R`. -/
 public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
-    {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h)
-    (hctx1 : F.map (R° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R°) (htrans : R ≫ R ⊑ R)
+    {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h)
+    (hctx1 : F.map («≤»° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ «≤»°) (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hHfix : T° ≫ F.map H ≫ h = H)
-    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
-    Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
-  have htrans' : R° ≫ R° ⊑ R° := by
+    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ «≤») :
+    Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est «≤») ≫ h ⊑ Λ H ≫ est «≤» := by
+  have htrans' : «≤»° ≫ «≤»° ⊑ «≤»° := by
     have h0 := recip_mono htrans
     rwa [Allegory.recip_comp] at h0
-  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
+  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est «≤»))
   apply le_Λ_comp_est_iff.mpr
   constructor
   · -- component (i): greedy body ⊑ H, via `min Q° ⊆ ∈` and the fixed-point equation
-    have s1 : Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est R) ≫ h :=
+    have s1 : Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est «≤») ≫ h
+        ⊑ Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est «≤») ≫ h :=
       comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj B) from inter_lb_left _ _) _)
-    have s2 : Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est R) ≫ h
-        = T° ≫ F.map (Λ H ≫ est R) ≫ h := by
+    have s2 : Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est «≤») ≫ h
+        = T° ≫ F.map (Λ H ≫ est «≤») ≫ h := by
       rw [← Cat.assoc (Λ (T°)) (∋ (F.obj B)) _, Λ_eps_eq']
-    have s3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
+    have s3 : T° ≫ F.map (Λ H ≫ est «≤») ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
     rw [s2] at s1
     rw [hHfix] at s3
@@ -90,50 +90,50 @@ public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
         rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       rw [← h1, hHfix]
     have htail : T ≫ Λ (T°) ≫ est Q ⊑ (Q ∩ (T ≫ T°))° := est_unfold_context_le T Q
-    have c1 : H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
+    have c1 : H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est «≤») ≫ h
+        = (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est «≤») ≫ h := by
       rw [← hHrec]
-    have c2 : (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est R) ≫ h := by
+    have c2 : (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est «≤») ≫ h
+        = (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est «≤») ≫ h := by
       simp only [Cat.assoc]
-    have hbound : (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ F.map (Λ H ≫ est R) ≫ h :=
+    have hbound : (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est «≤») ≫ h
+        ⊑ (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ F.map (Λ H ≫ est «≤») ≫ h :=
       comp_mono_left _ (comp_mono_right htail _)
-    have hctx2rec : h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° ⊑ R° ≫ h° ≫ F.map (H°) := by
+    have hctx2rec : h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° ⊑ «≤»° ≫ h° ≫ F.map (H°) := by
       have hrm := recip_mono hctx2
       have eL : ((Q ∩ (T ≫ T°)) ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° := by
         rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+      have eR : (F.map H ≫ h ≫ «≤»)° = «≤»° ≫ h° ≫ F.map (H°) := by
         rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ F.map (Λ H ≫ est R) ≫ h := by
+    have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ F.map (Λ H ≫ est «≤») ≫ h
+        = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ F.map (Λ H ≫ est «≤») ≫ h := by
       simp only [Cat.assoc]
-    have step6 : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est R) ≫ h :=
+    have step6 : (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ F.map (Λ H ≫ est «≤») ≫ h
+        ⊑ («≤»° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est «≤») ≫ h :=
       comp_mono_right hctx2rec _
-    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est R) ≫ h
-        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) := by
+    have hre2 : («≤»° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est «≤») ≫ h
+        = «≤»° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est «≤») ≫ h) := by
       simp only [Cat.assoc]
     -- the context collapse: `F(H°·M) ⊆ F(R° ∩ H°·H)`, then `hctx1` and simplicity of `h`
-    have hHM_ctx : H° ≫ (Λ H ≫ est R) ⊑ R° ∩ (H° ≫ H) :=
+    have hHM_ctx : H° ≫ (Λ H ≫ est «≤») ⊑ «≤»° ∩ (H° ≫ H) :=
       le_inter hHMR (comp_mono_left H° hMH)
-    have hFRM_ctx : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map (R° ∩ (H° ≫ H)) := by
+    have hFRM_ctx : F.map (H°) ≫ F.map (Λ H ≫ est «≤») ⊑ F.map («≤»° ∩ (H° ≫ H)) := by
       rw [← F.map_comp]; exact F.map_mono hHM_ctx
-    have hx_ctx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ h° ≫ F.map (R° ∩ (H° ≫ H)) ≫ h := by
-      rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
+    have hx_ctx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est «≤») ≫ h
+        ⊑ h° ≫ F.map («≤»° ∩ (H° ≫ H)) ≫ h := by
+      rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est «≤»)) h]
       exact comp_mono_left _ (comp_mono_right hFRM_ctx h)
-    have hshunt : h° ≫ (F.map (R° ∩ (H° ≫ H)) ≫ h) ⊑ h° ≫ (h ≫ R°) := comp_mono_left h° hctx1
-    have hcollapse : h° ≫ (h ≫ R°) ⊑ R° := by
-      have e : h° ≫ (h ≫ R°) = (h° ≫ h) ≫ R° := by rw [Cat.assoc]
+    have hshunt : h° ≫ (F.map («≤»° ∩ (H° ≫ H)) ≫ h) ⊑ h° ≫ (h ≫ «≤»°) := comp_mono_left h° hctx1
+    have hcollapse : h° ≫ (h ≫ «≤»°) ⊑ «≤»° := by
+      have e : h° ≫ (h ≫ «≤»°) = (h° ≫ h) ≫ «≤»° := by rw [Cat.assoc]
       rw [e]
-      have e2 := comp_mono_right hh.2 R°
+      have e2 := comp_mono_right hh.2 «≤»°
       rwa [Cat.id_comp] at e2
-    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° :=
+    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est «≤») ≫ h ⊑ «≤»° :=
       le_trans hx_ctx (le_trans hshunt hcollapse)
-    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ⊑ R° ≫ R° :=
-      comp_mono_left R° hinner
+    have step7 : «≤»° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est «≤») ≫ h) ⊑ «≤»° ≫ «≤»° :=
+      comp_mono_left «≤»° hinner
     rw [c1, c2]
     refine le_trans hbound ?_
     rw [hre1]
@@ -146,14 +146,14 @@ public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
     form §10.3 needs, where only schedules of the SAME BAG are ever compared.  By Knaster-Tarski
     via `greedy_dp_prefixed_context`. -/
 public theorem greedy_dp_context (I : InitialAlgebra F)
-    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
-    (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
-        ⊑ h ≫ R°)
-    (htrans : R ≫ R ⊑ R)
+    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {«≤» : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
+    (hctx1 : F.map («≤»° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
+        ⊑ h ≫ «≤»°)
+    (htrans : «≤» ≫ «≤» ⊑ «≤»)
     (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
-        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
+        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ «≤») :
     mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est «≤» :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
     (greedy_dp_prefixed_context hh hctx1 htrans (hylo_fixed I T h) hctx2))
 

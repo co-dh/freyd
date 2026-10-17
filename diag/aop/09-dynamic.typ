@@ -27,7 +27,7 @@
   [take the input apart by the `T`-decompositions, and put it together by `h`],
   [#rowkey("Freyd.Alg.M")], [#leant("Freyd.Alg.M")],
   "Freyd.Alg.M",
-  [the problem to be solved: an answer of `H` that is best under `R`],
+  [the problem to be solved: an answer of `H` that is best under `≤`],
 // lean:AOP.A6_3.H@71852cf7
 )]<dp-defn>
 
@@ -56,7 +56,7 @@
   [#leanf("Freyd.Alg.RelSet.Stairs.paid_cata") \ `paid :` #leant("Freyd.Alg.RelSet.Stairs.paid")],
   [the total paid on a climb],
   [`H`], [#leanf("Freyd.Alg.RelSet.Stairs.H_eq")], [the total paid on some climb over a cost list],
-  [`R`], [`≤`], [cheapest wins],
+  [`≤`], [`≤` on `ℕ`], [cheapest wins],
 )]<dp-h-746>
 // lean:AOP.A9_1_Stairs.F_obj@97e1f4df
 // lean:AOP.A9_1_Stairs.Move@3c8df82f
@@ -83,9 +83,9 @@
     // lean:AOP.A9_1.dynamic_programming@8d0df985
   pad(left: -9pt)[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
-      each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
+      each part by the recursion `X`; `h` assembles each candidate; `est(≤)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
-    - `h Pres R°`: the principle of optimality — a better part never makes the whole worse
+    - `h Pres ≥`: the principle of optimality — a better part never makes the whole worse
     - `⊑`, not `=`: some optima may not be returned; that the recursion returns anything at all
       needs `T°` to stop taking apart — @dp-laws
   ],
@@ -108,7 +108,7 @@
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
-     keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
+     keeping an optimum (`P(F(M)h) est(≤)`) returns only what `H` returns]],
      // lean:AOP.A9_1.dynamic_programming_lower@6f86895e
   lean-calc(calc-dpl),
 )]<dp-lower>
@@ -125,8 +125,8 @@
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
 #disp(num: "(9.3)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
-    #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
-     from that input only `b'` with `R` relating `b'` to `b`]],
+    #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(≤)` returns
+     from that input only `b'` with `b' ≤ b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@ccbc1193
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (4,)),
@@ -147,18 +147,18 @@
     // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
     // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
     // it draws the same panel; the regions are named only in the first.
-    // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
+    // (9.3) concludes `⊑≥` where B&dM prints `⊑R` (p. 220): his `R` is `≥`.
     (RQ, "Freyd.Alg.dynamic_programming_thin_prefixed.lhs",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-      src[@Freyd.Alg.ThinCondition, `h` monotonic on `R` — @Freyd.Alg.thinRel_comp_est, @est-up]),
+      src[@Freyd.Alg.ThinCondition, `h` monotonic on `≤` — @Freyd.Alg.thinRel_comp_est, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : PFA⟶PFA` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
   // The two squares the chain rests on: the hypothesis `hQ` and the fixed point `H` satisfies.
   grid(columns: 2, column-gutter: 24pt, align: center + top,
     [#leancd("Freyd.Alg.dynamic_programming_thin#hQ") \
-      #src[`QF(H)h⊑F(H)hR`: every result of thinning by `Q`, solving the parts by `F(H)` and
-      assembling by `h` is reached by `R` from a result of solving by `F(H)` and assembling by `h`
+      #src[`QF(H)h ⊑ F(H)h ≤`: every result of thinning by `Q`, solving the parts by `F(H)` and
+      assembling by `h` is reached by `≤` from a result of solving by `F(H)` and assembling by `h`
       without `Q`]],
     [#leancd("Freyd.Alg.hylo_fixed") \
       #src[`T°F(H)h=H`: taking the input apart once by `T°`, solving the parts by `F(H)` and
@@ -178,7 +178,7 @@
 // (9.3), the second half of the same proof; its rows run on across the page.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
-    #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
+    #src[`H°` followed by the body at `M` is `⊑≥`: an answer of the body is never worse than an
      answer of `H` to the same input]],
   lean-calc(calc-dptu, breaks: (4, 7)),
 )]<dp-laws-93>
@@ -212,14 +212,14 @@
   [#rowkey("Freyd.Alg.H")#leanf("Freyd.Alg.H")],
   [take the input apart by the `T`-decompositions, and put it together by `h`],
   [#rowkey("Freyd.Alg.ThinCondition")#leanf("Freyd.Alg.ThinCondition")],
-  [thinning the decompositions by `Q` before solving them only moves the answer up `R`],
+  [thinning the decompositions by `Q` before solving them only moves the answer up `≤`],
 ) #v(-1.2em) #table(
   columns: (1fr, 1fr),
   align: (left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*2 conditions of DP*], [*what it says*]),
   [#leanf("Freyd.Alg.dynamic_programming_thin#hmono")],
-  [#pt[xs][F(R°)][ys][h][Y] ⟹ #pt[xs][h][X][R°][Y] for some `X` (`h` brings the parts to the whole)],
+  [#pt[xs][F(≥)][ys][h][Y] ⟹ #pt[xs][h][X][≥][Y] for some `X` (`h` brings the parts to the whole)],
   [#leanf("Freyd.Alg.dynamic_programming_thin#hQ")],
   [thinning the decompositions by `Q` loses no optimal answer],
 )]<dp-conds>
@@ -229,7 +229,7 @@
 
 #disp[#align(center)[#leancd("Freyd.Alg.ThinCondition") \
   #src[every result of thinning by `Q`, solving the parts by `F(H)` and assembling by `h` is reached
-   by `R` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
+   by `≤` from a result of solving by `F(H)` and assembling by `h` without `Q`: dropping
    decompositions never loses an answer that is not matched by a kept one at least as good]]]<dp-thin-cd>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
