@@ -241,6 +241,22 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
     obtain ⟨fs, h1, h2⟩ := h
     exact Nat.le_trans (h2 : clen gs ≤ clen fs) (h1 : clen fs ≤ clen es)
 
+/-- **edit-defn** (B&dM p.226, exercise): `α` preserves `R` whatever the two operations are —
+    `[e]⧺xs` has length `1+length(xs)` for every `e`, so Proposition 9.4 may take `U≜⊤`. -/
+public theorem α_pres_R :
+    (FB Unit).map (relTop (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char ⊑ α Char ≫ R Char :=
+  le_iff.mpr fun u es h => by
+    obtain ⟨v, hv, hcon⟩ := h
+    obtain rfl : es = con v := hcon
+    refine ⟨con u, rfl, ?_⟩
+    cases u with
+    | inl _ => cases v with
+      | inl _ => exact Nat.le_refl _
+      | inr _ => exact hv.elim
+    | inr p => cases v with
+      | inl _ => exact hv.elim
+      | inr q => exact Nat.succ_le_succ hv.2
+
 /-- **edit-defn**: `V≜suffix°×suffix°` — `V (xs,ys) (xs',ys')` iff `xs` is a suffix of `xs'`
     and `ys` a suffix of `ys'`. -/
 @[expose] public def V (Char : Type) : dPair Char ⟶ dPair Char :=
@@ -686,17 +702,8 @@ public theorem edit_thin_step4 :
     (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
         ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ α Char
       ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ α Char ≫ R Char :=
-  comp_mono_left _ (le_iff.mpr fun u es h => by
-    obtain ⟨v, hv, hcon⟩ := h
-    obtain rfl : es = con v := hcon
-    refine ⟨con u, rfl, ?_⟩
-    cases u with
-    | inl _ => cases v with
-      | inl _ => exact Nat.le_refl _
-      | inr _ => exact hv.elim
-    | inr p => cases v with
-      | inl _ => exact hv.elim
-      | inr q => exact Nat.succ_le_succ hv.2)
+  comp_mono_left _ (le_trans
+    (comp_mono_right ((FB Unit).map_mono (le_relTop _) (le_refl (R Char))) _) α_pres_R)
 
 /-- **edit-laws**, second row: Theorem 9.2's thinning condition, Proposition 9.4 at `U≜⊤` and
     `V≜suffix°×suffix°`.  The `base` summand needs only reflexivity of `R`; on the `step`
