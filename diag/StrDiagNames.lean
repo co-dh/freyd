@@ -148,6 +148,8 @@ open Lean PrettyPrinter Delaborator SubExpr in
 attribute [diag_unfold] RelSet.Edit.editAlg RelSet.Paragraph.partAlg RelSet.Tour.tourAlg
   RelSet.Knapsack.dropFn RelSet.Tour.droplAlgFn RelSet.Tour.droprAlgFn RelSet.Edit.baseStepFn
   RelSet.Stairs.stairsFn RelSet.Stairs.costFn
+-- the climb and cost-list objects print as their body `dCL Unit _`, i.e. `[Move]` and `[ℕ]`
+attribute [diag_unfold] RelSet.Stairs.dClimb RelSet.Stairs.dCost
 -- §9.1.2's climb: `T`, `h` and the two folds are the note's own names for them.
 attribute [diag_noted] RelSet.Stairs.Move RelSet.Stairs.Move.one RelSet.Stairs.Move.two
   RelSet.Stairs.T RelSet.Stairs.h RelSet.Stairs.walk RelSet.Stairs.paid

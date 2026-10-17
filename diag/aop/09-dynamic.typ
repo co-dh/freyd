@@ -31,6 +31,47 @@
 // lean:AOP.A9_1.H@71852cf7
 )]<dp-defn>
 
+// `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
+#disp[#table(
+  columns: (auto, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*symbol*], [*value*], [*meaning*]),
+  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [a climb is a list of moves: `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
+  [`T`],
+  [`T :` #leant("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.nil_nil") \
+   #leanf("Freyd.Alg.RelSet.Stairs.put_one") \ #leanf("Freyd.Alg.RelSet.Stairs.put_two")],
+  [put the stairs of one move in front of the rest],
+  [`⦇T⦈`],
+  [#leanf("Freyd.Alg.RelSet.Stairs.walk_cata") \ `walk :` #leant("Freyd.Alg.RelSet.Stairs.walk")],
+  [the cost list a climb walks over],
+  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [any climb over a cost list],
+  [`h`],
+  [#leanf("Freyd.Alg.RelSet.Stairs.h") \ #leanf("Freyd.Alg.RelSet.Stairs.zero_zero") \
+   #leanf("Freyd.Alg.RelSet.Stairs.pay_one") \ #leanf("Freyd.Alg.RelSet.Stairs.pay_two")],
+  [pay the stair stood on, not the `d` stepped over],
+  [`⦇h⦈`],
+  [#leanf("Freyd.Alg.RelSet.Stairs.paid_cata") \ `paid :` #leant("Freyd.Alg.RelSet.Stairs.paid")],
+  [the total paid on a climb],
+  [`H`], [#leanf("Freyd.Alg.RelSet.Stairs.H_eq")], [the total paid on some climb over a cost list],
+  [`R`], [`≤`], [cheapest wins],
+)]<dp-h-746>
+// lean:AOP.A9_1_Stairs.F_obj@97e1f4df
+// lean:AOP.A9_1_Stairs.Move@3c8df82f
+// lean:AOP.A9_1_Stairs.T@14d9dd31
+// lean:AOP.A9_1_Stairs.nil_nil@ee1932bc
+// lean:AOP.A9_1_Stairs.put_one@c3ef114e
+// lean:AOP.A9_1_Stairs.put_two@99274240
+// lean:AOP.A9_1_Stairs.walk_cata@e30098bd
+// lean:AOP.A9_1_Stairs.walk@ea7ea63c
+// lean:AOP.A9_1_Stairs.h@ff2d45c9
+// lean:AOP.A9_1_Stairs.zero_zero@41ad2985
+// lean:AOP.A9_1_Stairs.pay_one@998bb213
+// lean:AOP.A9_1_Stairs.pay_two@159152cb
+// lean:AOP.A9_1_Stairs.paid_cata@ba693939
+// lean:AOP.A9_1_Stairs.paid@4e5ed213
+// lean:AOP.A9_1_Stairs.H_eq@341557ce
+
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
@@ -247,49 +288,6 @@
      // lean:AOP.A9_1.birelator_thin_condition@178e7cca
   lean-calc(calc-bithin),
 )]<dp-bifunctor-thin>
-
-=== Example: Min cost climbing stairs
-
-// `H` at one instance: LeetCode 746, with a 0-cost stair in front for the start.
-#disp[#table(
-  columns: (auto, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*symbol*], [*value*], [*meaning*]),
-  [`F`], [#leanf("Freyd.Alg.RelSet.Stairs.F_obj") \ #leanf("Freyd.Alg.RelSet.Stairs.Move")], [a climb is a list of moves: `one c` stands on a stair of cost `c` and climbs 1; `two c d` stands on `c` and climbs 2, over the stair of cost `d`],
-  [`T`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.T") \ #leanf("Freyd.Alg.RelSet.Stairs.nil_nil") \
-   #leanf("Freyd.Alg.RelSet.Stairs.put_one") \ #leanf("Freyd.Alg.RelSet.Stairs.put_two")],
-  [put the stairs of one move in front of the rest],
-  [`⦇T⦈`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.walk_cata") \ `walk :` #leant("Freyd.Alg.RelSet.Stairs.walk")],
-  [the cost list a climb walks over],
-  [`⦇T⦈°`], [`[ℕ] ⟶ [Move]`], [any climb over a cost list],
-  [`h`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.h") \ #leanf("Freyd.Alg.RelSet.Stairs.zero_zero") \
-   #leanf("Freyd.Alg.RelSet.Stairs.pay_one") \ #leanf("Freyd.Alg.RelSet.Stairs.pay_two")],
-  [pay the stair stood on, not the `d` stepped over],
-  [`⦇h⦈`],
-  [#leanf("Freyd.Alg.RelSet.Stairs.paid_cata") \ `paid :` #leant("Freyd.Alg.RelSet.Stairs.paid")],
-  [the total paid on a climb],
-  [`H`], [#leanf("Freyd.Alg.RelSet.Stairs.H_eq")], [the total paid on some climb over a cost list],
-  [`R`], [`≤`], [cheapest wins],
-)]<dp-h-746>
-// lean:AOP.A9_1_Stairs.F_obj@97e1f4df
-// lean:AOP.A9_1_Stairs.Move@3c8df82f
-// lean:AOP.A9_1_Stairs.T@14d9dd31
-// lean:AOP.A9_1_Stairs.nil_nil@ee1932bc
-// lean:AOP.A9_1_Stairs.put_one@c3ef114e
-// lean:AOP.A9_1_Stairs.put_two@99274240
-// lean:AOP.A9_1_Stairs.walk_cata@e30098bd
-// lean:AOP.A9_1_Stairs.walk@ea7ea63c
-// lean:AOP.A9_1_Stairs.h@ff2d45c9
-// lean:AOP.A9_1_Stairs.zero_zero@41ad2985
-// lean:AOP.A9_1_Stairs.pay_one@998bb213
-// lean:AOP.A9_1_Stairs.pay_two@159152cb
-// lean:AOP.A9_1_Stairs.paid_cata@ba693939
-// lean:AOP.A9_1_Stairs.paid@4e5ed213
-// lean:AOP.A9_1_Stairs.H_eq@341557ce
 
 == The string edit problem
 
