@@ -13,6 +13,7 @@
 import diag.tool.StringDiagram
 import AOP.A5_5_AlgCat
 import AOP.A10_4_Tex
+import AOP.A9_1
 
 namespace Freyd.StrDiag.PassMarkTest
 
@@ -83,6 +84,12 @@ def cites (step thm : Name) : MetaM Bool := do
 /-- info: [("k", "down")] -/
 #guard_msgs in #eval do
   let steps := [1, 2, 3, 4, 5].map fun k => Name.str `Freyd.Alg.pres_of_cost s!"step_{k}"
+  panel steps[2]! true steps
+-- 9.1.2c (3) `h°F(≥)h ≥ ⊑ ≥ ≥`: the proof uses `hmono`, the square of `h` at `≥`, but the step
+-- drops `h` outright, so nothing crosses it in the next panel — no mark.
+/-- info: [] -/
+#guard_msgs in #eval do
+  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg.dynamic_programming_upper_tail s!"step_{k}"
   panel steps[2]! true steps
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false, false] -/
