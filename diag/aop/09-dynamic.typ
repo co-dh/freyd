@@ -363,6 +363,9 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.α")], [#leant("Freyd.Alg.RelSet.Edit.α")],
   "Freyd.Alg.RelSet.Edit.α",
   [`inl(()) ↦ []` #linebreak() `inr(cpy(a),es) ↦ [cpy(a)]⧺es`],
+  [#rowkey("Freyd.Alg.RelSet.Edit.α_pres_R")], [#leant("Freyd.Alg.RelSet.Edit.α_pres_R")],
+  "Freyd.Alg.RelSet.Edit.α_pres_R",
+  [`xs ≤ ys ⟹ [cpy(a)]⧺xs ≤ [del(b)]⧺ys`],
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
@@ -377,6 +380,7 @@
 // lean:AOP.A9_2_Edit.stepFn@427367e6
 // lean:AOP.A9_2_Edit.mleSpec@ba2551c8
 // lean:AOP.A9_2_Edit.FeditR@ce7c2463
+// lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
