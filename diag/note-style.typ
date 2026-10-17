@@ -122,11 +122,11 @@
 /// `row`: the number is generated, so the formula stands alone.  `keys`: the Lean selectors the cited
 /// row or display states; with none the number is all there is.  Under `list`, where no formula file
 /// need exist yet, each key is requested instead, so a chapter compiled alone draws what it only cites.
-/// A cited row prints EVERY formula it states, except one the exporter marks as saying nothing — a
-/// definition whose body prints as its own name, `x ≜ x` (`FormulaRender.file`); `none` when all are.
-#let says-nothing(c) = lean-keys(c, labels: (<formula-says-nothing>,)).len() > 0
+/// A cited row prints EVERY formula it states, except a definition's that is its own name, which the
+/// citation already writes (`FormulaRender.file`'s mark); `none` when all are.
+#let is-name(c) = lean-keys(c, labels: (<formula-is-name>,)).len() > 0
 #let law-formula(keys) = if "list" in sys.inputs { for k in keys [#metadata(k)<lean-cited>] } else {
-  let fs = keys.map(k => include "generated/formula/" + k + ".typ").filter(c => not says-nothing(c))
+  let fs = keys.map(k => include "generated/formula/" + k + ".typ").filter(c => not is-name(c))
   if fs.len() > 0 { fs.map(impl-split).join([, ]) } }
 #let cite(id, keys, row: false) = { let f = if keys.len() > 0 { law-formula(keys) }
   if f == none { id } else if row { f } else [#id #f] }

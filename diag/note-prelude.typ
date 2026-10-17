@@ -96,10 +96,7 @@
 // (a formula fitted above a panel), and it names the exporter's `.compact` step of the selector.
 // `defines`: the `def` a definition table's row defines (`deftab`), so the printer writes that row's
 // `=` as `≜` when the `def` heads its left side (`FormulaRender.render`).
-#let leanf(sel, compact: false, defines: none) = {
-  let c = lean-text("generated/formula/", <lean-formula>, sel + (if compact { ".compact" } else { "" }) + if defines != none { "≜" + defines } else { "" })
-  if says-nothing(c) { panic(sel + " prints `x ≜ x`, which says nothing: set the formula of the declaration its body applies") }
-  c }
+#let leanf(sel, compact: false, defines: none) = lean-text("generated/formula/", <lean-formula>, sel + (if compact { ".compact" } else { "" }) + if defines != none { "≜" + defines } else { "" })
 // A KEY WITH NO PRINT: the row or display is cited as `sel`'s formula, though its own cell is a picture or
 // a hand-typed worked run that states `sel` in no form `leanf` could replace.
 #let leank(sel) = [#metadata(sel)<lean-formula>]

@@ -2413,12 +2413,13 @@ def cutAsDrawn (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (d : 
     if ← same flat then return (flat, ob)
   return free
 
-/-- The operand of a converse `r°`, or `none`.  A converse with a NAME of its own (`∈`, `⊆`) is an
-    arrow in its own right and stays one bead. -/
+/-- The operand of a converse `r°`, or `none`.  A converse with a NAME of its own (`∈`, `⊆`, or the
+    paired order symbol `≥` of `≤°`, `localConverse?`) is an arrow in its own right and stays one
+    bead, labelled by that name as the formula and the circuit write it. -/
 def recipArg? (r : Expr) : MetaM (Option Expr) := do
   match r.getAppFnArgs with
   | (``Freyd.Alg.Allegory.recip, args) => match args.back? with
-    | some z => return if (← namedRecip? z).isSome then none else some z
+    | some z => return if (← namedRecip? z).isSome || (← localConverse? z).isSome then none else some z
     | none => return none
   | _ => return none
 

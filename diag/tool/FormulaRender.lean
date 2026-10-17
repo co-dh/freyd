@@ -271,14 +271,12 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
   let ty ← match step with
     | some s => do noteRead (.decl s); specialize declName s ci.type
     | none => pure ci.type
-  -- A `def` THE NOTE WRITES BY ITS BODY (`diag_unfold`) has no name of its own to define, so its
-  -- formula is the body alone; a `Prop` def's body is a statement, so it is rendered as one.
-  let opened := binder.isNone && step.isNone && (← Lean.labelled `diag_unfold).contains declName
+  -- A CLOSED PROPOSITION (`def p : Prop`, no explicit argument) defines no predicate, it names one
+  -- claim, so its formula is that claim; `Pres(S,Q)` has arguments and is defined, `≜`.
+  let claim := binder.isNone && step.isNone && (← Meta.forallTelescope ty fun ys b => do
+    pure (b.isProp && (← ys.allM fun y => return !(← y.fvarId!.getBinderInfo).isExplicit)))
   let ty ← match ci.value? with
-    | some v => do
-      if opened && (← Meta.forallTelescope ty fun _ b => pure b.isProp) then
-        Meta.lambdaTelescope v fun ys b => Meta.mkForallFVars ys b
-      else pure ty
+    | some v => if claim then Meta.lambdaTelescope v fun ys b => Meta.mkForallFVars ys b else pure ty
     | none => pure ty
   -- An equation Lean derives binds a pattern's `_` as `a✝` or `a_1` — at every depth, since a
   -- catch-all case binds them inside its hypotheses too — so the binders are the note's.
@@ -358,10 +356,9 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
         return #[(← pointwise sp declName, .rel)]
       return ← withBody declName branch (val.beta xs) fun v => do
         let b ← labelT v
-        if opened then return #[(b, .rel)]
-        -- `x ≜ x` says nothing: the body is a wrapper (`graph f`, `corefl p`) whose argument prints
-        -- under the same name.  No line: `file` marks it, a citation skips it, a `leanf` refuses it.
-        if b.flat == head.flat then return #[]
+        -- NAME AND BODY PRINTING THE SAME (`F(𝟙,edit°)`, a wrapper `graph f` whose argument prints
+        -- under the name): `x ≜ x` would say it twice, so the body stands alone.
+        if b.flat == head.flat then return #[(b, .rel)]
         return #[(head ++ spaced "≜" sp ++ b, .rel)]
     let body ← match binder with
       | some h =>
@@ -430,8 +427,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       match sides with
       | some (sym, l, r) =>
         let (lt, rt) := (← labelT l (some r), ← labelT r (some l))
-        -- A row's `x ≜ x` says nothing, as a definition's does above: `file` marks it, `leanf` refuses it.
-        if sym == "≜" && lt.flat == rt.flat then return #[]
+        -- A row's `x ≜ x`, as a definition's above: the body stands alone.
+        if sym == "≜" && lt.flat == rt.flat then return pre ++ #[(ante ++ rt, impl)]
         return pre ++ #[(ante ++ lt ++ spaced sym sp, impl), (rt, .rel)]
       | none => return pre ++ #[(ante ++ (← labelT target'), impl)]
 
@@ -466,9 +463,17 @@ def file (declName : Name) (binder : Option String) (path : List String)
   let step := path.findSome? fun s => (s.dropPrefix? "@").map (·.toString.toName)
   let ls ← render (!path.contains "compact") declName binder
     (path.filter fun s => s != "compact" && !s.startsWith "≜" && !s.startsWith "@") branch defines step
-  -- A definition whose body prints as its own name (`render`): the note reads the mark, not a formula.
-  if ls.isEmpty then return s!"#metadata(\"{declName}\")<formula-says-nothing>\n"
-  return String.join (ls.toList.mapIdx fun i (l, b) =>
+  if ls.isEmpty then throwError "{declName}: the formula printer wrote no line"
+  -- A DEFINITION WHOSE FORMULA IS ITS OWN NAME (`render`'s body alone, `bagify` for `graph(bagifyFn)`)
+  -- is marked: its cell prints it, and a citation, which already names it, skips it.
+  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
+  let own ← if !ci.isDefinition || ls.size != 1 then pure none else
+    withDeclScope declName do withSpaced (!path.contains "compact") do
+    Meta.forallTelescope (← nameSelf declName ci.type) fun xs _ => some <$>
+      withOptions (·.set `diag.keepClosed declName)
+        (labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs))
+  let mark := if own.map (·.flat) == ls[0]?.map (·.1.flat) then s!"#metadata(\"{declName}\")<formula-is-name>" else ""
+  return mark ++ String.join (ls.toList.mapIdx fun i (l, b) =>
     (if i == 0 then "" else b.typst) ++ "#" ++ l.bare.typst) ++ "\n"
 
 /-- The side `path` names of `declName`'s statement, its binders opened with METAVARIABLES, so two
