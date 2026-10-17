@@ -392,44 +392,48 @@ theorem thin_condition_of_optimum {h : F.obj A ⟶ A}
 /-! ## Proposition 9.3 (B&dM p.223) — monotonicity in context
 
   A different ambient setting from the rest of the file: `TabularUnitaryDivisionAllegory`
-  (`AOP.A5_2`), which supplies relational products `RelProd` and pairing.  `S : a ⟶ b`
-  plays B&dM's extra "context" relation (his `H°`) — SIMPLE, not necessarily a map — and
-  `P : RelProd c b` is the chosen product used to bundle `cost` with `S`. -/
+  (`AOP.A5_2`), which supplies relational products `RelProd` and pairing.  `H : B ⟶ A`
+  is B&dM's own letter, sending a problem to its solutions; the context relation is `H°` —
+  SIMPLE, not necessarily a map — and `P : RelProd C B` is the chosen product used to bundle
+  `cost` with `H°`. -/
 
 section Prop9_3
 
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
-    bundled with a simple context relation `S` via a chosen product `P`, and an algebra `k`
+    bundled with a simple context relation `H°` via a chosen product `P`, and an algebra `k`
     (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
-    on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
-    chain, one `calc` step per hint: `cost` entire, products, the assumption on `cost`, `⟨cost,S⟩`
-    simple, products and functors, the assumption on `k`, the assumption on `cost` read backwards. -/
+    on `R := cost·leq·cost°` RESTRICTED to solutions of one problem (`R ∩ H°·H`).  The book's
+    chain, one `calc` step per hint: `cost` entire, converse an involution, products, the
+    assumption on `cost`, `⟨cost,H°⟩` simple, products and functors, the assumption on `k`, the
+    assumption on `cost` read backwards. -/
 public theorem pres_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hcost : Map cost) (hS : Simple S)
-    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
+    {H : B ⟶ A} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hcost : Map cost) (hH : Simple H°)
+    (hch : h ≫ cost = F.map (P.pair cost H°) ≫ k)
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
-    F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ⊑ h ≫ cost ≫ «≤» ≫ cost° :=
-  calc F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h
-        = F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
-    _ ⊑ F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° :=
+    F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H)) ≫ h ⊑ h ≫ cost ≫ «≤» ≫ cost° :=
+  calc F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H)) ≫ h
+        = F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
+    _ ⊑ F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H)) ≫ h ≫ cost ≫ cost° :=
         comp_mono_left _ (comp_mono_left h (map_entire_le hcost))
-    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
+    _ = F.map ((cost ≫ «≤» ≫ cost°) ∩ (H° ≫ H°°)) ≫ h ≫ cost ≫ cost° := by
+        rw [Allegory.recip_recip]
+    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)°) ≫ h ≫ cost ≫ cost° := by
         rw [P.pair_recip_pair, Cat.assoc cost «≤» cost°]
-    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
+    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)°) ≫ F.map (P.pair cost H°) ≫ k ≫ cost° := by
         rw [← Cat.assoc h cost, hch, Cat.assoc]
-    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)° ≫ P.pair cost S) ≫ k ≫ cost° := by
+    _ = F.map (P.pair (cost ≫ «≤») H° ≫ (P.pair cost H°)° ≫ P.pair cost H°) ≫ k ≫ cost° := by
         rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, Cat.assoc]
-    _ ⊑ F.map (P.pair (cost ≫ «≤») S ≫ 𝟙 P.p) ≫ k ≫ cost° :=
-        comp_mono_right (F.map_mono (comp_mono_left _ (tabulation_simple_of_simple P.tab hcost.2 hS))) _
-    _ = F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := by rw [Cat.comp_id]
-    _ = F.map (P.pair cost S ≫ prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
-        rw [RelProd.pair_prodMap_fst (P := P) (Q := P) cost S «≤»]
-    _ = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
+    _ ⊑ F.map (P.pair (cost ≫ «≤») H° ≫ 𝟙 P.p) ≫ k ≫ cost° :=
+        comp_mono_right (F.map_mono (comp_mono_left _ (tabulation_simple_of_simple P.tab hcost.2 hH))) _
+    _ = F.map (P.pair (cost ≫ «≤») H°) ≫ k ≫ cost° := by rw [Cat.comp_id]
+    _ = F.map (P.pair cost H° ≫ prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
+        rw [RelProd.pair_prodMap_fst (P := P) (Q := P) cost H° «≤»]
+    _ = F.map (P.pair cost H°) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
         rw [F.map_comp, Cat.assoc]
-    _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° :=
+    _ ⊑ F.map (P.pair cost H°) ≫ k ≫ «≤» ≫ cost° :=
         comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
     _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
 

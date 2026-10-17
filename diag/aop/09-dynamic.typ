@@ -213,14 +213,26 @@
 // lean:AOP.A9_1.RelSet.ListRel.sum_mono@8e77e6ae
 // lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@10919b1e
 
-// B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
+// B&dM Proposition 9.3, p. 223: the book's hints, one row each.
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.pres_in_context") \
-    #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
-     // lean:AOP.A9_1.pres_in_context@3ce8e2d0
+    #src[improving each part by `R` within its `H°`-context, then assembling by `h`, is below `hR`]],
+     // lean:AOP.A9_1.pres_in_context@4173ef20
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>
+#disp[#table(
+  columns: (auto, auto, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*symbol*], [*type*], [*meaning*]),
+  [`h`], [`F(A) ⟶ A`], [assembles a solution from its parts],
+  [`cost`], [`A ⟶ C`], [the cost of a solution],
+  [`H`], [`B ⟶ A`], [sends a problem to its solutions; in Theorem 9.1 `H ≜ ⦇T⦈°⦇h⦈`],
+  [`H°`], [`A ⟶ B`], [sends a solution back to the problem it solves; simple: each solution solves one problem],
+  [`⟨cost, H°⟩`], [`A ⟶ C×B`], [tags a solution with its cost and its problem],
+  [`k`], [`F(C×B) ⟶ C`], [the cost of the whole, from the parts' costs and their problems only],
+)]<dp-context-types>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
 // the book's hints one row each, without the converse B&dM takes (the note's `R` is his `R°`).
