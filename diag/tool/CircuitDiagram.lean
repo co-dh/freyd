@@ -866,10 +866,14 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
       throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame \
         that `cpanel` has no node for"
     -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
-    -- is a primitive of its own, so mirroring `∋` would chamfer it the wrong way.
+    -- is a primitive of its own, so mirroring `∋` would chamfer it the wrong way.  The labeller's
+    -- two sources, in its order: a `diag_opposite` partner, else an order local's paired symbol.
     let named ← StrDiag.namedRecip? r
-    let lbl ← StrDiag.labelT (named.getD r)
-    let flip := if named.isSome then p.val.flag "flip" else !(p.val.flag "flip")
+    let sym ← if named.isSome then pure none else StrDiag.localConverse? r
+    let lbl ← match sym with
+      | some s => pure (StrDiag.Lbl.text s)
+      | none => StrDiag.labelT (named.getD r)
+    let flip := if named.isSome || sym.isSome then p.val.flag "flip" else !(p.val.flag "flip")
     return boxPic lbl p.outs p.ins src tgt false (frac := p.val.flag "frac") (flip := flip)
 
 /-- §3 rows 1-2: an atom.  A relation's chamfer says which way it runs; a map is a rectangle.
