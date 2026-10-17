@@ -81,7 +81,7 @@
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
-    - `Pres(h,R°)`: the principle of optimality — a better part never makes the whole worse
+    - `h Pres R°`: the principle of optimality — a better part never makes the whole worse
     - `⊑`, not `=`: some optima may not be returned; that the recursion returns anything at all
       needs `T°` to stop taking apart — @dp-laws
   ],
