@@ -365,7 +365,7 @@
   [`inl(()) ↦ []` #linebreak() `inr(cpy(a),es) ↦ [cpy(a)]⧺es`],
   [#rowkey("Freyd.Alg.RelSet.Edit.α_pres_R")], [#leant("Freyd.Alg.RelSet.Edit.α_pres_R")],
   "Freyd.Alg.RelSet.Edit.α_pres_R",
-  [`xs ≤ ys ⟹ [cpy(a)]⧺xs ≤ [del(b)]⧺ys`],
+  [α preserves ≤ #linebreak() `xs ≤ ys ⟹ [cpy(a)]⧺xs ≤ [del(b)]⧺ys`],
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
