@@ -432,8 +432,10 @@
 
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_suffix_right.calc.typ" as calc-edit-suffix
-#import "../generated/Freyd.Alg.comp_star_prefixed.calc.typ" as calc-star-prefixed
-#import "../generated/Freyd.Alg.comp_star_le_star_comp.calc.typ" as calc-comp-star
+#import "../generated/Freyd.Alg.comp_leftDiv_mu_le.calc.typ" as calc-mu-fusion-step
+#import "../generated/Freyd.Alg.mu_fusion_le.calc.typ" as calc-mu-fusion
+#import "../generated/Freyd.Alg.comp_star_body_le.calc.typ" as calc-star-step
+#import "../generated/Freyd.Alg.star_simulation.calc.typ" as calc-comp-star
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
@@ -443,18 +445,36 @@
 )]<edit-tail-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_prefixed") \
-    #src[if `B` then `A` is contained in `C` then `B`, then `B`, and also `C*` then `B` then `A`, are contained in `C*` then `B`]],
-     // lean:AOP.A6_7.comp_star_prefixed@e4c2d398
-  lean-calc(calc-star-prefixed, breaks: (4,)),
-)]<star-prefixed-calc>
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_leftDiv_mu_le") \
+    #src[if putting B in front of one step of f lands below one step of g with B in front, then B in front of one step of f at `B\μg` lands below the least fixed point of g]],
+     // lean:AOP.A6_7.comp_leftDiv_mu_le@aa672aa1
+  lean-calc(calc-mu-fusion-step),
+)]<mu-fusion-step-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_le_star_comp") \
-    #src[if `B` then `A` is contained in `C` then `B`, then `B` then any number of `A` is contained in any number of `C` then `B`]],
-     // lean:AOP.A6_7.comp_star_le_star_comp@2b3e60fc
+  Thm(cols: 1)[#leanf("Freyd.Alg.mu_fusion_le") \
+    #src[if putting B in front of one step of f lands below one step of g with B in front, B in front of the least fixed point of f lands below that of g]],
+     // lean:AOP.A6_7.mu_fusion_le@2e1accb1
+  lean-calc(calc-mu-fusion),
+)]<mu-fusion-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_body_le") \
+    #src[putting B in front of one step of the A* recursion lands below one step of the C*·B recursion]],
+     // lean:AOP.A6_7.comp_star_body_le@283c5e96
+  lean-calc(calc-star-step),
+)]<star-step-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_simulation") \
+    #src[`B` then any number of `A` is contained in any number of `C` then `B`: `C*` simulates `A*` when `C` simulates `A`]],
+     // lean:AOP.A6_7.star_simulation@2b3e60fc
   lean-calc(calc-comp-star),
 )]<comp-star-calc>
+
+- `B A ⊑ C B` says `C` simulates `A`, with `B` as the simulation relation: whenever `x B y` and `y A y'`, there is `x'` with `x C x'` and `x' B y'` — each `A` step is followed by a `C` step, and the two sides stay related
+- the theorem: then `C*` simulates `A*`, with the same `B`
+- in the next table, `B = edit`, `A = 𝟙×tail`, and `C` replaces `es` by an `fs` with `|fs| ≤ |es|`
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_suffix_right") \

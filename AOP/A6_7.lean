@@ -35,17 +35,22 @@ variable {𝒜 : Type u} [DivisionLCDA 𝒜] {A B : 𝒜}
 
 /-! ## §6.7  Definition and basic laws: (6.7) -/
 
-/-- `R* := (μX : id ∪ X·R)` (6.7), mirrored: `mu (fun X => id ∪ R≫X)`. -/
-@[expose] public def star {A : 𝒜} (R : A ⟶ A) : A ⟶ A := mu (fun X => Cat.id A ∪ (R ≫ X))
+/-- The recursion body `X ↦ S ∪ R·X` of `R*·S` (B&dM p.160), mirrored `X ↦ S ∪ R≫X`; `R*` is
+    the case `S = id`. -/
+@[expose] public def starBody {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) : (A ⟶ B) → (A ⟶ B) :=
+  fun X => S ∪ (R ≫ X)
 
-/-- The recursion body of (6.7) is monotonic. -/
-public theorem star_body_monotonic {A : 𝒜} (R : A ⟶ A) :
-    Monotonic (fun X : A ⟶ A => Cat.id A ∪ (R ≫ X)) :=
+/-- `R* := (μX : id ∪ X·R)` (6.7), mirrored: `mu (fun X => id ∪ R≫X)`. -/
+@[expose] public def star {A : 𝒜} (R : A ⟶ A) : A ⟶ A := mu (starBody (Cat.id A) R)
+
+/-- The recursion body `starBody S R` is monotonic. -/
+public theorem starBody_monotonic {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) :
+    Monotonic (starBody S R) :=
   fun h => union_mono (le_refl _) (comp_mono_left R h)
 
 /-- `R*` unfolds: `id ∪ R·R* = R*` (Knaster-Tarski applied to (6.7)). -/
 public theorem star_unfold {A : 𝒜} (R : A ⟶ A) : Cat.id A ∪ (R ≫ star R) = star R :=
-  mu_fixed (star_body_monotonic R)
+  mu_fixed (starBody_monotonic (Cat.id A) R)
 
 /-- `id ⊑ R*`: `R*` is reflexive (p.158, union then the fixed point). -/
 public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ star R :=
@@ -216,7 +221,7 @@ public theorem star_unique {A : 𝒜} {R X : A ⟶ A} (hR : Inductive R) (hX : X
   have hM : star R ⊑ star R / X := le_trans (le_inter (le_refl _) (le_refl _))
     ((le_impl_iff _ _ _).mp (le_trans (show star R ⊑ topHom A A from le_Sup trivial)
       (hR _ (star_unique_step hX))))
-  refine le_antisymm ?_ (mu_le (by rw [← hX]; exact le_refl X))
+  refine le_antisymm ?_ (mu_le (by unfold starBody; rw [← hX]; exact le_refl X))
   calc X = 𝟙 A ≫ X := (Cat.id_comp X).symm
     _ ⊑ star R ≫ X := comp_mono_right (id_le_star R) X
     _ ⊑ star R := (le_div_iff _ _ _).mp hM
@@ -279,43 +284,43 @@ public theorem comp_star_eq_mu {A B : 𝒜} (S : B ⟶ A) (R : A ⟶ A) :
     le_trans (comp_mono_left S hstep) (leftDiv_comp_le S (closureFrom S R))
   exact le_antisymm hleM hMle
 
-/-- `B A ⊑ C B ⟹ B ∪ (C* B) A ⊑ C* B`: `C* B` is a prefixed point of `X ↦ B ∪ X A`, the body
-    whose least fixed point is `B A*` (`comp_star_eq_mu`). -/
-public theorem comp_star_prefixed {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
-    (h : B ≫ A ⊑ C ≫ B) : B ∪ ((star C ≫ B) ≫ A) ⊑ star C ≫ B :=
-  calc B ∪ ((star C ≫ B) ≫ A)
-      _ = B ∪ (star C ≫ (B ≫ A)) := congrArg (B ∪ ·) (Cat.assoc _ _ _)
-      _ ⊑ B ∪ (star C ≫ (C ≫ B)) := union_mono (le_refl _) (comp_mono_left _ h)
-      _ = B ∪ ((star C ≫ C) ≫ B) := congrArg (B ∪ ·) (Cat.assoc _ _ _).symm
-      _ ⊑ B ∪ (star C ≫ B) := union_mono (le_refl _) (comp_mono_right (star_comp_le C) B)
-      _ = (𝟙 X ≫ B) ∪ (star C ≫ B) := congrArg (· ∪ (star C ≫ B)) (Cat.id_comp B).symm
-      _ ⊑ (star C ≫ B) ∪ (star C ≫ B) := union_mono (comp_mono_right (id_le_star C) B) (le_refl _)
-      _ = star C ≫ B := DistributiveAllegory.union_idem _
+/-- The step of `mu_fusion_le`: `B f(B\μg) ⊑ μg`, so `B\μg` is a prefixed point of `f`.
+    Here and not in `AOP.A6_2`, whose setting has no division. -/
+public theorem comp_leftDiv_mu_le {X Y Y' : 𝒜} {f : (Y ⟶ Y') → (Y ⟶ Y')}
+    {g : (X ⟶ Y') → (X ⟶ Y')} (B : X ⟶ Y) (hg : Monotonic g)
+    (hyp : ∀ Z, B ≫ f Z ⊑ g (B ≫ Z)) : B ≫ f (B \ mu g) ⊑ mu g :=
+  calc B ≫ f (B \ mu g)
+      _ ⊑ g (B ≫ (B \ mu g)) := hyp (B \ mu g)
+      _ ⊑ g (mu g) := hg (leftDiv_comp_le B (mu g))
+      _ ⊑ mu g := mu_prefixed hg
 
-calc_steps comp_star_prefixed
+calc_steps comp_leftDiv_mu_le
 
-/-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`.
-    `B A*` is the least `X` with `B ∪ X A ⊑ X` (`comp_star_eq_mu`), and `C* B` is such an `X`. -/
-public theorem comp_star_le_star_comp {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
-    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B :=
-  calc B ≫ star A
-      _ = mu (fun Z : X ⟶ Y => B ∪ (Z ≫ A)) := comp_star_eq_mu B A
-      _ ⊑ star C ≫ B := mu_le (comp_star_prefixed h)
+/-- `μf ⊑ B\μg`: leastness of `μf` at the prefixed point `B\μg` (`comp_leftDiv_mu_le`). -/
+public theorem mu_le_leftDiv {X Y Y' : 𝒜} {f : (Y ⟶ Y') → (Y ⟶ Y')}
+    {g : (X ⟶ Y') → (X ⟶ Y')} (B : X ⟶ Y) (hg : Monotonic g)
+    (hyp : ∀ Z, B ≫ f Z ⊑ g (B ≫ Z)) : mu f ⊑ B \ mu g :=
+  mu_le ((le_leftDiv_iff _ _ _).mpr (comp_leftDiv_mu_le B hg hyp))
 
-calc_steps comp_star_le_star_comp
+/-- **Fusion for `μ`** with `B ≫ −` as the fused map (B&dM p.143, by left division):
+    `B f(Z) ⊑ g(B Z)` for all `Z` gives `B μf ⊑ μg`. -/
+public theorem mu_fusion_le {X Y Y' : 𝒜} {f : (Y ⟶ Y') → (Y ⟶ Y')}
+    {g : (X ⟶ Y') → (X ⟶ Y')} (B : X ⟶ Y) (hg : Monotonic g)
+    (hyp : ∀ Z, B ≫ f Z ⊑ g (B ≫ Z)) : B ≫ mu f ⊑ mu g :=
+  calc B ≫ mu f
+      _ ⊑ B ≫ (B \ mu g) := comp_mono_left B (mu_le_leftDiv B hg hyp)
+      _ ⊑ mu g := leftDiv_comp_le B (mu g)
+
+calc_steps mu_fusion_le
 
 /-- PRIVATE closure-from-`S` body (recursion on the right) `S ∪ R·X` ↦ `S ∪ (R≫X)`; used only
     to prove `star_comp_eq_mu` below. -/
 private def closureFromR {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) : A ⟶ B :=
-  mu (fun X : A ⟶ B => S ∪ (R ≫ X))
-
-private theorem closureFromR_body_monotonic {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) :
-    Monotonic (fun X : A ⟶ B => S ∪ (R ≫ X)) :=
-  fun h => union_mono (le_refl _) (comp_mono_left R h)
+  mu (starBody S R)
 
 private theorem closureFromR_unfold {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) :
     S ∪ (R ≫ closureFromR S R) = closureFromR S R :=
-  mu_fixed (closureFromR_body_monotonic S R)
+  mu_fixed (starBody_monotonic S R)
 
 private theorem le_closureFromR {A B : 𝒜} (S : A ⟶ B) (R : A ⟶ A) : S ⊑ closureFromR S R := by
   have h : S ⊑ S ∪ (R ≫ closureFromR S R) := le_union_left S (R ≫ closureFromR S R)
@@ -334,7 +339,7 @@ private theorem closureFromR_le {A B : 𝒜} {S : A ⟶ B} {R : A ⟶ A} {T : A 
 /-- The symmetric form (B&dM p.160, "S*·R = (μX : R ∪ S·X)" with roles renamed):
     `R*·S = (μX : S ∪ R·X)`, mirrored: `star R ≫ S = μX. S∪(R≫X)`. -/
 public theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
-    star R ≫ S = mu (fun X : A ⟶ B => S ∪ (R ≫ X)) := by
+    star R ≫ S = mu (starBody S R) := by
   have hMle : closureFromR S R ⊑ star R ≫ S := by
     apply closureFromR_le
     · have h : Cat.id A ≫ S ⊑ star R ≫ S := comp_mono_right (id_le_star R) S
@@ -344,7 +349,7 @@ public theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
   have hstep : star R ⊑ closureFromR S R / S := by
     refine Sup_le (fun _S hS => hS _ ?_)
     apply (le_div_iff _ _ _).mpr
-    rw [union_comp_distrib]
+    unfold starBody; rw [union_comp_distrib]
     apply union_lub
     · rw [Cat.id_comp]; exact le_closureFromR S R
     · rw [Cat.assoc R (closureFromR S R / S) S]
@@ -354,6 +359,33 @@ public theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
   have hleM : star R ≫ S ⊑ closureFromR S R :=
     le_trans (comp_mono_right hstep S) (DivisionAllegory.div_comp_le (closureFromR S R) S)
   exact le_antisymm hleM hMle
+
+/-- `B A ⊑ C B ⟹ B (𝟙 ∪ A Z) ⊑ B ∪ C (B Z)`: `B` in front of one step of the `A*` recursion
+    lands below one step of the `C* B` recursion (the premise of `mu_fusion_le`). -/
+public theorem comp_star_body_le {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) (Z : Y ⟶ Y) : B ≫ starBody (𝟙 Y) A Z ⊑ starBody B C (B ≫ Z) :=
+  calc B ≫ starBody (𝟙 Y) A Z
+      _ = B ∪ ((B ≫ A) ≫ Z) := by
+          unfold starBody; rw [DistributiveAllegory.comp_union_distrib, Cat.comp_id, Cat.assoc]
+      _ ⊑ starBody B C (B ≫ Z) := by
+          unfold starBody; rw [← Cat.assoc C]; exact union_mono (le_refl _) (comp_mono_right h Z)
+
+calc_steps comp_star_body_le
+
+/-- `B A ⊑ C B ⟹ B A* ⊑ μ(starBody B C)`: `mu_fusion_le` at the bodies of `A*` and `C* B`. -/
+public theorem comp_star_le_mu_starBody {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ mu (starBody B C) :=
+  mu_fusion_le B (starBody_monotonic B C) (comp_star_body_le h)
+
+/-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`,
+    by fusion (`mu_fusion_le`) of `B ≫ −` into the recursion of `A*`. -/
+public theorem star_simulation {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B :=
+  calc B ≫ star A
+      _ ⊑ mu (starBody B C) := comp_star_le_mu_starBody h
+      _ = star C ≫ B := (star_comp_eq_mu C B).symm
+
+calc_steps star_simulation
 
 /-! ## §6.7  Ex 6.36 (partial): `(R∪S)* = R*·(S·R*)*`, mirrored `star(star R≫S)≫star R`
 
