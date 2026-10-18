@@ -279,18 +279,30 @@ public theorem comp_star_eq_mu {A B : 𝒜} (S : B ⟶ A) (R : A ⟶ A) :
     le_trans (comp_mono_left S hstep) (leftDiv_comp_le S (closureFrom S R))
   exact le_antisymm hleM hMle
 
+/-- `B A ⊑ C B ⟹ B ∪ (C* B) A ⊑ C* B`: `C* B` is a prefixed point of `X ↦ B ∪ X A`, the body
+    whose least fixed point is `B A*` (`comp_star_eq_mu`). -/
+public theorem comp_star_prefixed {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ∪ ((star C ≫ B) ≫ A) ⊑ star C ≫ B :=
+  calc B ∪ ((star C ≫ B) ≫ A)
+      _ = B ∪ (star C ≫ (B ≫ A)) := congrArg (B ∪ ·) (Cat.assoc _ _ _)
+      _ ⊑ B ∪ (star C ≫ (C ≫ B)) := union_mono (le_refl _) (comp_mono_left _ h)
+      _ = B ∪ ((star C ≫ C) ≫ B) := congrArg (B ∪ ·) (Cat.assoc _ _ _).symm
+      _ ⊑ B ∪ (star C ≫ B) := union_mono (le_refl _) (comp_mono_right (star_comp_le C) B)
+      _ = (𝟙 X ≫ B) ∪ (star C ≫ B) := congrArg (· ∪ (star C ≫ B)) (Cat.id_comp B).symm
+      _ ⊑ (star C ≫ B) ∪ (star C ≫ B) := union_mono (comp_mono_right (id_le_star C) B) (le_refl _)
+      _ = star C ≫ B := DistributiveAllegory.union_idem _
+
+calc_steps comp_star_prefixed
+
 /-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`.
     `B A*` is the least `X` with `B ∪ X A ⊑ X` (`comp_star_eq_mu`), and `C* B` is such an `X`. -/
 public theorem comp_star_le_star_comp {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
-    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B := by
-  rw [comp_star_eq_mu]
-  refine closureFrom_le (T := star C ≫ B) ?_ ?_
-  · calc B = 𝟙 X ≫ B := (Cat.id_comp B).symm
-      _ ⊑ star C ≫ B := comp_mono_right (id_le_star C) B
-  · calc (star C ≫ B) ≫ A = star C ≫ (B ≫ A) := Cat.assoc _ _ _
-      _ ⊑ star C ≫ (C ≫ B) := comp_mono_left _ h
-      _ = (star C ≫ C) ≫ B := (Cat.assoc _ _ _).symm
-      _ ⊑ star C ≫ B := comp_mono_right (star_comp_le C) B
+    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B :=
+  calc B ≫ star A
+      _ = mu (fun Z : X ⟶ Y => B ∪ (Z ≫ A)) := comp_star_eq_mu B A
+      _ ⊑ star C ≫ B := mu_le (comp_star_prefixed h)
+
+calc_steps comp_star_le_star_comp
 
 /-- PRIVATE closure-from-`S` body (recursion on the right) `S ∪ R·X` ↦ `S ∪ (R≫X)`; used only
     to prove `star_comp_eq_mu` below. -/

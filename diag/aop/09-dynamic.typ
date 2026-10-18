@@ -432,6 +432,8 @@
 
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_suffix_right.calc.typ" as calc-edit-suffix
+#import "../generated/Freyd.Alg.comp_star_prefixed.calc.typ" as calc-star-prefixed
+#import "../generated/Freyd.Alg.comp_star_le_star_comp.calc.typ" as calc-comp-star
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
@@ -439,6 +441,20 @@
      // lean:AOP.A9_2_Edit.edit_tail_snd@50716d48
   lean-calc(calc-edit-tail),
 )]<edit-tail-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_prefixed") \
+    #src[if `B` then `A` is contained in `C` then `B`, then `B`, and also `C*` then `B` then `A`, are contained in `C*` then `B`]],
+     // lean:AOP.A6_7.comp_star_prefixed@e4c2d398
+  lean-calc(calc-star-prefixed, breaks: (4,)),
+)]<star-prefixed-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_le_star_comp") \
+    #src[if `B` then `A` is contained in `C` then `B`, then `B` then any number of `A` is contained in any number of `C` then `B`]],
+     // lean:AOP.A6_7.comp_star_le_star_comp@2b3e60fc
+  lean-calc(calc-comp-star),
+)]<comp-star-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_suffix_right") \
