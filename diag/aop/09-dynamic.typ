@@ -400,7 +400,7 @@
   [`[del(a),cpy(b)] ↦ [del(a),del(b)]` #linebreak() `[ins(c),cpy(b)] ↦ [cpy(b)]` #linebreak()
    builds from `es` an `fs`, shorter or equal, that keeps `x` and drops the head of `y`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.editFn_dropTgt")],
-  "Freyd.Alg.RelSet.Edit.editFn_dropTgt",
+  ("Freyd.Alg.RelSet.Edit.editFn_dropTgt", "Freyd.Alg.RelSet.Edit.editFn_dropTgt_of_eq"),
   [`edit[del(a),cpy(b)]=([a,b],[b])`, `edit[del(a),del(b)]=([a,b],[])` #linebreak()
    `edit[ins(c),cpy(b)]=([b],[c,b])`, `edit[cpy(b)]=([b],[b])` #linebreak()
    the source string is kept, the target loses its first character],
@@ -410,6 +410,7 @@
    an `ins` removed shortens by one, a `cpy` turned into `del` keeps the length],
 // lean:AOP.A9_2_Edit.dropTgt@d3028b70
 // lean:AOP.A9_2_Edit.editFn_dropTgt@f89ee985
+// lean:AOP.A9_2_Edit.editFn_dropTgt_of_eq@7cb8face
 // lean:AOP.A9_2_Edit.clen_dropTgt@a0d529aa
 )]<drop2-defn>
 

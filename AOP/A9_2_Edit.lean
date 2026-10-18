@@ -555,6 +555,11 @@ public theorem editFn_dropTgt : ∀ es : ConsList Unit (Op A),
   | ConsList.cons (Op.del _) es => by simp only [dropTgt, editFn_del, editFn_dropTgt es]
   | ConsList.cons (Op.ins _) _ => rfl
 
+/-- `editFn_dropTgt` with the pair named: `edit(es) = (x,y)` gives `edit(drop₂(es)) = (x,tail(y))`. -/
+public theorem editFn_dropTgt_of_eq (es : ConsList Unit (Op A)) (x y : Str A)
+    (h : editFn es = (x, y)) : editFn (dropTgt es) = (x, tail y) := by
+  rw [editFn_dropTgt es, h]
+
 /-- `dropSrc` drops the head of the source and leaves the target. -/
 public theorem editFn_dropSrc : ∀ es : ConsList Unit (Op A),
     editFn (dropSrc es) = (tail (editFn es).1, (editFn es).2)
