@@ -399,12 +399,12 @@
   "Freyd.Alg.RelSet.Edit.dropTgt",
   [`[del(a),cpy(b)] ↦ [del(a),del(b)]` #linebreak() `[ins(c),cpy(b)] ↦ [cpy(b)]` #linebreak()
    drop the first operation that writes to the target string],
-  [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [],
+  [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.editFn_dropTgt")],
   "Freyd.Alg.RelSet.Edit.editFn_dropTgt",
   [`edit[del(a),cpy(b)]=([a,b],[b])`, `edit[del(a),del(b)]=([a,b],[])` #linebreak()
    `edit[ins(c),cpy(b)]=([b],[c,b])`, `edit[cpy(b)]=([b],[b])` #linebreak()
    the source string is kept, the target loses its first character],
-  [#rowkey("Freyd.Alg.RelSet.Edit.clen_dropTgt")], [],
+  [#rowkey("Freyd.Alg.RelSet.Edit.clen_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.clen_dropTgt")],
   "Freyd.Alg.RelSet.Edit.clen_dropTgt",
   [`2 ≥ 2` #linebreak() `2 ≥ 1` #linebreak()
    an `ins` removed shortens by one, a `cpy` turned into `del` keeps the length],
