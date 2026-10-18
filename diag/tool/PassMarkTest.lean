@@ -32,8 +32,10 @@ def beads (side : Expr) : MetaM Diagram := do
 
 /-- The marks on one panel — `decl`'s left side or its right — in a call naming `peers` beside it:
     every marked bead with its shape.  Read as `drawWith` reads it: under the declaration's binders
-    (a predicate's own claim among them), the panel's own step only for its LEFT side. -/
-def panel (decl : Name) (left : Bool) (peers : List Name := []) : MetaM (List (String × String)) := do
+    (a predicate's own claim among them), the panel's own step only for its LEFT side.  `part` picks
+    the operand of the side the panel draws, as `drawWith` draws each operand of a `∪` on its own. -/
+def panel (decl : Name) (left : Bool) (peers : List Name := []) (part : Expr → Expr := id) :
+    MetaM (List (String × String)) := do
   let ci ← getConstInfo decl
   let lv := ci.levelParams.map mkLevelParam
   forallTelescope ci.type fun xs body => do
@@ -45,7 +47,7 @@ def panel (decl : Name) (left : Bool) (peers : List Name := []) : MetaM (List (S
       let own ← Step.new decl (rel.isAppOfArity ``Eq 3) proof #[] (some ty)
       let steps := (if left then #[own] else #[])
         ++ (← (peers.toArray.filter (· != decl)).filterMapM (peerStep · side))
-      let d ← settlePass (← beads side) steps (some side)
+      let d ← settlePass (← beads (part side)) steps (some (part side))
       return d.rows.toList.filterMap fun r =>
         r.tri.map fun up => (r.label, if r.eq then "circle" else if up then "up" else "down")
     if body.isProp then withLocalDeclD decl claim fun h => run h claim
@@ -91,6 +93,19 @@ def cites (step thm : Name) : MetaM Bool := do
 #guard_msgs in #eval do
   let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg.dynamic_programming_upper_tail s!"step_{k}"
   panel steps[2]! true steps
+section
+open Freyd Freyd.Alg
+universe u
+/-- 9.2.1f's step: `h : BA ⊑ CB` applied inside the right operand of a `∪`. -/
+theorem union_branch {𝒜 : Type u} [DivisionLCDA 𝒜] {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C D : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ∪ (D ≫ (B ≫ A)) ⊑ B ∪ (D ≫ (C ≫ B)) :=
+  Freyd.Alg.union_mono (le_refl _) (comp_mono_left _ h)
+end
+-- 9.2.1f: each operand of a `∪` is its own panel, and the step on it is the statement cut to that
+-- operand — the up triangle on `B`, `A` below it.  The left operand `B` stands unchanged: no mark.
+/-- info: [[], [("B", "up")]] -/
+#guard_msgs in #eval
+  return [← panel ``union_branch true [] (·.appFn!.appArg!), ← panel ``union_branch true [] (·.appArg!)]
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false, false] -/
 #guard_msgs in #eval [1, 2, 3, 4, 5, 6, 7, 8].mapM fun k =>
