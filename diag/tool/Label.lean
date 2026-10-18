@@ -2008,12 +2008,18 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- where they are coming the operand is respelled at the TOP of its own precedence:
     -- `thin(prefix°×(⊤+⊤))`, not a second pair inside.  SOMETHING ALREADY DELIMITS IT in two ways,
     -- and both count: the brackets `appShow` is about to write, and a head whose OWN NOTATION
-    -- delimits its operand — which is exactly a syntax with no identifier head, `stxHead`'s test,
-    -- since a notation opens with an atom.  THE HEAD'S OWN PRINTER TAKES A NAME, so each operand
+    -- delimits its operand — `delims` below.  THE HEAD'S OWN PRINTER TAKES A NAME, so each operand
     -- goes in as a HOLE (`holeName`) and comes back as its own tree (`Lbl.fill`): a division inside
     -- the operand of a head nobody here wrote is still the fraction.
     let stx ← delabP e
-    let paren := (appParts stx).isSome || (stxHead stx).isNone
+    -- A NOTATION DELIMITS ITS OPERANDS only when its own node OPENS AND CLOSES with an atom (`⦇S⦈`):
+    -- a postfix or infix leaves an operand at its edge, so `(𝟙×tail)*` keeps the operand's brackets.
+    -- A quotation's `(` is a `hygienicLParen` node, the same token (`stxPeel`'s note).
+    let tok (s : Syntax) := s.isAtom || s.isOfKind ``Lean.Parser.Term.hygienicLParen
+    let delims := match stxPeel stx with
+      | .node _ _ as => (as[0]?.any tok) && (as.back?.any tok)
+      | _ => false
+    let paren := (appParts stx).isSome || delims
     -- EVERY OPERAND IS REPLACED IN ONE PASS, outermost first: replacing them one at a time rewrote
     -- `R` inside `QR−P−Q` before that operand's own turn, which then matched nothing and printed
     -- raw — `θ(P ∪ Q,Q ≫ R − P − Q)`.  An operand nested in another is that operand's business.
