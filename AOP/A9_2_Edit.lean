@@ -615,15 +615,15 @@ public theorem rprodMap_graph_outr {A a' B b' : RelSet.{0}} (f : A.carrier → a
     drops itself, `del(a)` goes in front of both. -/
 @[expose] public def dropTgtStep :
     Op A → ConsList Unit (Op A) × ConsList Unit (Op A) → ConsList Unit (Op A) × ConsList Unit (Op A)
-  | Op.cpy b, (es, _) => (ConsList.cons (Op.cpy b) es, ConsList.cons (Op.del b) es)
+  | Op.cpy b, (es, ds) => (ConsList.cons (Op.cpy b) es, ConsList.cons (Op.del b) es)
   | Op.del a, (es, ds) => (ConsList.cons (Op.del a) es, ConsList.cons (Op.del a) ds)
-  | Op.ins b, (es, _) => (ConsList.cons (Op.ins b) es, es)
+  | Op.ins b, (es, ds) => (ConsList.cons (Op.ins b) es, es)
 
 /-- The step of `⟨𝟙,dropSrc⟩`, mirrored. -/
 @[expose] public def dropSrcStep :
     Op A → ConsList Unit (Op A) × ConsList Unit (Op A) → ConsList Unit (Op A) × ConsList Unit (Op A)
-  | Op.cpy a, (es, _) => (ConsList.cons (Op.cpy a) es, ConsList.cons (Op.ins a) es)
-  | Op.del a, (es, _) => (ConsList.cons (Op.del a) es, es)
+  | Op.cpy a, (es, ds) => (ConsList.cons (Op.cpy a) es, ConsList.cons (Op.ins a) es)
+  | Op.del a, (es, ds) => (ConsList.cons (Op.del a) es, es)
   | Op.ins b, (es, ds) => (ConsList.cons (Op.ins b) es, ConsList.cons (Op.ins b) ds)
 
 /-- The algebra of `⟨𝟙,dropTgt⟩`: `nil ↦ ([],[])`, then `dropTgtStep`. -/
@@ -639,15 +639,15 @@ public theorem rprodMap_graph_outr {A a' B b' : RelSet.{0}} (f : A.carrier → a
 /-- The step of `⟨edit, edit(𝟙×tail)⟩`, read off `step` with the target's head dropped. -/
 @[expose] public def editTgtStep :
     Op A → (Str A × Str A) × (Str A × Str A) → (Str A × Str A) × (Str A × Str A)
-  | Op.cpy b, ((x, y), _) => ((ConsList.cons b x, ConsList.cons b y), (ConsList.cons b x, y))
+  | Op.cpy b, ((x, y), (x', y')) => ((ConsList.cons b x, ConsList.cons b y), (ConsList.cons b x, y))
   | Op.del a, ((x, y), (x', y')) => ((ConsList.cons a x, y), (ConsList.cons a x', y'))
-  | Op.ins b, ((x, y), _) => ((x, ConsList.cons b y), (x, y))
+  | Op.ins b, ((x, y), (x', y')) => ((x, ConsList.cons b y), (x, y))
 
 /-- The step of `⟨edit, edit(tail×𝟙)⟩`, mirrored. -/
 @[expose] public def editSrcStep :
     Op A → (Str A × Str A) × (Str A × Str A) → (Str A × Str A) × (Str A × Str A)
-  | Op.cpy a, ((x, y), _) => ((ConsList.cons a x, ConsList.cons a y), (x, ConsList.cons a y))
-  | Op.del a, ((x, y), _) => ((ConsList.cons a x, y), (x, y))
+  | Op.cpy a, ((x, y), (x', y')) => ((ConsList.cons a x, ConsList.cons a y), (x, ConsList.cons a y))
+  | Op.del a, ((x, y), (x', y')) => ((ConsList.cons a x, y), (x, y))
   | Op.ins b, ((x, y), (x', y')) => ((x, ConsList.cons b y), (x', ConsList.cons b y'))
 
 /-- The algebra of `⟨edit, edit(𝟙×tail)⟩`. -/
@@ -2165,8 +2165,21 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.editSrcAlg] public meta def Freyd.Alg.RelSet.Edit.unexpandEditSrcAlg : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "k₁")))
+-- A step function prints under its algebra's letter, so a def cell reads as the algebra's cases.
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Edit.FeditR] public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropTgtStep] public meta def Freyd.Alg.RelSet.Edit.unexpandDropTgtStep : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "h₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropSrcStep] public meta def Freyd.Alg.RelSet.Edit.unexpandDropSrcStep : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "h₁")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.editTgtStep] public meta def Freyd.Alg.RelSet.Edit.unexpandEditTgtStep : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "k₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.editSrcStep] public meta def Freyd.Alg.RelSet.Edit.unexpandEditSrcStep : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "k₁")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.FeditR]public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "F(𝟙,edit°)")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.unstepFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditUnstepFn : Unexpander

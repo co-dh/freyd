@@ -401,17 +401,29 @@
    builds from `es` an `fs`, shorter or equal, that keeps `x` and drops the head of `y`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.editFn_dropTgt")],
   ("Freyd.Alg.RelSet.Edit.editFn_dropTgt", "Freyd.Alg.RelSet.Edit.editFn_dropTgt_of_eq"),
-  [`edit[del(a),cpy(b)]=([a,b],[b])`, `edit[del(a),del(b)]=([a,b],[])` #linebreak()
-   `edit[ins(c),cpy(b)]=([b],[c,b])`, `edit[cpy(b)]=([b],[b])` #linebreak()
+  [`edit[del(a),cpy(b)]=([a,b],[b])` #linebreak() `edit[del(a),del(b)]=([a,b],[])` #linebreak()
+   `edit[ins(c),cpy(b)]=([b],[c,b])` #linebreak() `edit[cpy(b)]=([b],[b])` #linebreak()
    the source string is kept, the target loses its first character],
   [#rowkey("Freyd.Alg.RelSet.Edit.clen_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.clen_dropTgt")],
   "Freyd.Alg.RelSet.Edit.clen_dropTgt",
   [`2 ≥ 2` #linebreak() `2 ≥ 1` #linebreak()
    an `ins` removed shortens by one, a `cpy` turned into `del` keeps the length],
+  [#rowkey("Freyd.Alg.RelSet.Edit.dropTgtAlg")], [#leant("Freyd.Alg.RelSet.Edit.dropTgtAlg")],
+  "Freyd.Alg.RelSet.Edit.dropTgtStep",
+  [`⦇h₂⦈ = ⟨𝟙,drop₂⟩` #linebreak()
+   `[del(a),cpy(b)] ↦ ([del(a),cpy(b)],[del(a),del(b)])`],
+  [#rowkey("Freyd.Alg.RelSet.Edit.editTgtAlg")], [#leant("Freyd.Alg.RelSet.Edit.editTgtAlg")],
+  "Freyd.Alg.RelSet.Edit.editTgtStep",
+  [`⦇k₂⦈ = ⟨edit, edit(𝟙×tail)⟩` #linebreak()
+   `[del(a),cpy(b)] ↦ (([a,b],[b]),([a,b],[]))`],
 // lean:AOP.A9_2_Edit.dropTgt@d3028b70
 // lean:AOP.A9_2_Edit.editFn_dropTgt@f89ee985
 // lean:AOP.A9_2_Edit.editFn_dropTgt_of_eq@7cb8face
 // lean:AOP.A9_2_Edit.clen_dropTgt@a0d529aa
+// lean:AOP.A9_2_Edit.dropTgtAlg@a1f8e85e
+// lean:AOP.A9_2_Edit.dropTgtStep@2e8289fc
+// lean:AOP.A9_2_Edit.editTgtAlg@61c4c3bb
+// lean:AOP.A9_2_Edit.editTgtStep@6bdaa211
 )]<drop2-defn>
 
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_dropTgt.calc.typ" as calc-edit-drop2
