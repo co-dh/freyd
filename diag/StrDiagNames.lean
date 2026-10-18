@@ -112,7 +112,7 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
 attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
 -- B&dM p.267 Appendix: `wrap = cons . pair (id, nil)`.
 attribute [diag_noted] Knap207.wrap Knap207.cons Knap207.nil Knap207.pair
-attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails
+attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails RelSet.Edit.tail
   RelSet.Bracket.flatten
 
 open Lean PrettyPrinter Delaborator SubExpr in

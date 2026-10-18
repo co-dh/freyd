@@ -1896,6 +1896,12 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.editFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditFn : Unexpander
   | _ => `($(mkIdent `edit))
 open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropTgt] public meta def Freyd.Alg.RelSet.Edit.unexpandDropTgt : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "drop₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropSrc] public meta def Freyd.Alg.RelSet.Edit.unexpandDropSrc : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "drop₁")))
+open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.FeditR] public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "F(𝟙,edit°)")))
 open Lean PrettyPrinter in
