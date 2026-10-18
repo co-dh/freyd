@@ -389,14 +389,11 @@
 
 === The second thinning condition
 
-#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip")
+#disp[#align(center)[#leancd("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
+  #leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip")]]<edit-V-cd>
 
-- `edit V°`: from `es`, compute `edit(es) = (x,y)`, then take a pair of suffixes `(x',y')`; `V°` is the book's `suffix×suffix`.
-- `≥ edit`: from `es`, pass to some `fs` no longer than `es`, then compute `edit(fs)`.
-- `⊑`: every `(x',y')` the left side reaches, the right side reaches — some `fs` has `length(fs) ≤ length(es)` and `edit(fs) = (x',y')`.
-- `R` is `≥` here: the book's `R = length°·leq·length` reads right to left; in diagram order `es` steps to `fs` when `length(es) ≥ length(fs)`.
-- `es = [del(a),cpy(b)] ↦ ([a,b],[b])`, suffixes `([b],[b])`, `fs = [cpy(b)]`, `length(fs) = 1 ≤ 2`.
-- a shortest edit of a pair of suffixes is never longer, so thinning keeps one shortest edit per pair of suffixes and loses no optimum.
+- given the right step `edit(es) V° (x',y')`, a pair of suffixes, there is a left step `es ≥ fs` with `edit(fs) = (x',y')`
+- `[del(a),cpy(b)] ↦ ([a,b],[b])`, `V°` to `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,

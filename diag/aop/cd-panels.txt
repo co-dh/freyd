@@ -59,6 +59,7 @@ party-absorb#2            | cdref-absorb-r.typ
 dp-laws#1                   | -  # the ASSUMPTION `hQ` of Theorem 9.2, read in the theorem that assumes it; the note never drew it by hand, so the panel is held to its own geometry
 dp-laws#2                   | -
 dp-thin-cd#1                | -  # the definition ThinCondition, drawn from its own body
+edit-V-cd#1                 | -  # the theorem edit_Vrecip, drawn from its own statement
 - | Freyd.Alg.alpha_natural                          | -
 - | Freyd.Alg.RelSet.ListRel.list_id                 | -
 - | Freyd.Alg.RelSet.ListRel.prefix_lax_natural      | -
