@@ -418,14 +418,14 @@
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
-    #src[dropping the head of the target string is matched by an edit sequence no longer than `es`]],
+    #src[dropping the head of the target string is matched by an edit sequence `fs` with `|fs| ≤ |es|`]],
      // lean:AOP.A9_2_Edit.edit_tail_snd@50716d48
   lean-calc(calc-edit-tail),
 )]<edit-tail-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_suffix_right") \
-    #src[replacing the target string by any suffix of it is matched by an edit sequence no longer than `es`]],
+    #src[replacing the target string by any suffix of it is matched by an edit sequence `fs` with `|fs| ≤ |es|`]],
      // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
   lean-calc(calc-edit-suffix),
 )]<edit-suffix-calc>
