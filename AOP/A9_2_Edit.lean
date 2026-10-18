@@ -846,7 +846,7 @@ public theorem suffix_eq_star_tail : (suffixR : dList A ⟶ dList A) = star (gra
       · exact le_iff.mp (comp_star_le _) _ _ ⟨x, rfl, ih y h⟩
   · show mu _ ⊑ _
     refine mu_le (le_iff.mpr fun x z h => ?_)
-    rw [union_apply, id_apply] at h
+    unfold starBody at h; rw [union_apply, id_apply] at h
     rcases h with rfl | ⟨y, hy, hz⟩
     · exact suffixP.refl x
     · obtain rfl : y = tail x := hy
@@ -864,7 +864,7 @@ public theorem rprodMap_id_star {X Y : RelSet.{0}} (T : Y ⟶ Y) :
     have key : star T ⊑ (fun b b' => ∀ a, star (rprodMap (𝟙 X) T) (a, b) (a, b') : Y ⟶ Y) := by
       show mu _ ⊑ _
       refine mu_le (le_iff.mpr fun b b' h => ?_)
-      rw [union_apply, id_apply] at h
+      unfold starBody at h; rw [union_apply, id_apply] at h
       rcases h with rfl | ⟨c, hT, hY⟩
       · exact fun a => le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
       · exact fun a => le_iff.mp (comp_star_le _) _ _
@@ -883,7 +883,7 @@ public theorem rprodMap_star_id {X Y : RelSet.{0}} (T : Y ⟶ Y) :
     have key : star T ⊑ (fun b b' => ∀ a, star (rprodMap T (𝟙 X)) (b, a) (b', a) : Y ⟶ Y) := by
       show mu _ ⊑ _
       refine mu_le (le_iff.mpr fun b b' h => ?_)
-      rw [union_apply, id_apply] at h
+      unfold starBody at h; rw [union_apply, id_apply] at h
       rcases h with rfl | ⟨c, hT, hY⟩
       · exact fun a => le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
       · exact fun a => le_iff.mp (comp_star_le _) _ _
@@ -907,7 +907,7 @@ public theorem edit_suffix_right :
   calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
       _ = graph editFn ≫ rprodMap (𝟙 (dList A)) (star (graph tail)) := by rw [suffix_eq_star_tail]
       _ = graph editFn ≫ star (rprodMap (𝟙 (dList A)) (graph tail)) := by rw [rprodMap_id_star]
-      _ ⊑ star (R A)° ≫ graph editFn := comp_star_le_star_comp edit_tail_snd
+      _ ⊑ star (R A)° ≫ graph editFn := star_simulation edit_tail_snd
       _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
 
 calc_steps edit_suffix_right
@@ -919,7 +919,7 @@ public theorem edit_suffix_left :
   calc graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
       _ = graph editFn ≫ rprodMap (star (graph tail)) (𝟙 (dList A)) := by rw [suffix_eq_star_tail]
       _ = graph editFn ≫ star (rprodMap (graph tail) (𝟙 (dList A))) := by rw [rprodMap_star_id]
-      _ ⊑ star (R A)° ≫ graph editFn := comp_star_le_star_comp edit_tail_fst
+      _ ⊑ star (R A)° ≫ graph editFn := star_simulation edit_tail_fst
       _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
 
 calc_steps edit_suffix_left
@@ -1803,7 +1803,7 @@ public theorem tail_snd_laxNatural :
 public theorem tail_snd_star_laxNatural :
     LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
       (fun a : RelSet.{0} => star (rprodMap (𝟙 (dList a.carrier)) (graph tail))) :=
-  fun S => comp_star_le_star_comp (tail_snd_laxNatural S)
+  fun S => star_simulation (tail_snd_laxNatural S)
 
 /-- **`𝟙×tail*` is LAX natural**: it is `(𝟙×tail)*` (`rprodMap_id_star`). -/
 public theorem id_tail_star_laxNatural :

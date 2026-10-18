@@ -110,6 +110,8 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
   RelSet.Sort.base RelSet.ISort.add
 -- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §6.4 `Bin`, §7.3 `exclude`).
 attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
+-- The recursion body of `R*·S` (B&dM p.160); the book writes it as a lambda and gives it no name.
+attribute [diag_noted] starBody
 -- B&dM p.267 Appendix: `wrap = cons . pair (id, nil)`.
 attribute [diag_noted] Knap207.wrap Knap207.cons Knap207.nil Knap207.pair
 attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails RelSet.Edit.tail

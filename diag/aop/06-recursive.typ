@@ -486,7 +486,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.star_eq_mu'") \
     #src[closing `R` by composing it on the left and closing it by composing on the right give the
      same relation `R*`]],
-     // lean:AOP.A6_7.star_eq_mu'@42cc4c0c lean:AOP.A6_7.star@a8a6944f
+     // lean:AOP.A6_7.star_eq_mu'@42cc4c0c lean:AOP.A6_7.star@b116b7dd
 )]<closure-star>
 
 // B&dM §6.7, p.157: the universal property, a statement with no chain of its own — it is the
@@ -585,7 +585,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.star_comp_eq_mu") \
     #src[any number of `R` steps followed by `S` is the least `X` containing `S` and closed under an
      `R` step in front]],
-     // lean:AOP.A6_7.star_comp_eq_mu@537dc253
+     // lean:AOP.A6_7.star_comp_eq_mu@600b441b
 )]<closure-comp>
 
 // B&dM (6.9), p.160: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`, mirrored; `θ(𝟘,S)=SR*` is why it is defined.
