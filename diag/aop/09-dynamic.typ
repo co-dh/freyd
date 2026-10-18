@@ -387,12 +387,11 @@
 // lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
 
-=== The second thinning condition
+=== #leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip")
 
-#disp[#align(center)[#leancd("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
-  #leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip")]]<edit-V-cd>
+#disp[#align(center)[#leancd("Freyd.Alg.RelSet.Edit.edit_Vrecip")]]<edit-V-cd>
 
-- given the right step `edit(es) V° (x',y')`, a pair of suffixes, there is a left step `es ≥ fs` with `edit(fs) = (x',y')`
+- `es` top left, `(x,y) = edit(es)` top right; for every `(x,y) V° (x',y')` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
 - `[del(a),cpy(b)] ↦ ([a,b],[b])`, `V°` to `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
