@@ -394,6 +394,25 @@
 - `es` top left, `(x,y) = edit(es)` top right; for every `(x,y) V° (x',y')` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
 - `[del(a),cpy(b)] ↦ ([a,b],[b])`, `V°` to `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
+#disp[#deftab(
+  [#rowkey("Freyd.Alg.RelSet.Edit.dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.dropTgt")],
+  "Freyd.Alg.RelSet.Edit.dropTgt",
+  [`[del(a),cpy(b)] ↦ [del(a),del(b)]` #linebreak() `[ins(c),cpy(b)] ↦ [cpy(b)]` #linebreak()
+   drop the first operation that writes to the target string],
+  [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [],
+  "Freyd.Alg.RelSet.Edit.editFn_dropTgt",
+  [`edit[del(a),cpy(b)]=([a,b],[b])`, `edit[del(a),del(b)]=([a,b],[])` #linebreak()
+   `edit[ins(c),cpy(b)]=([b],[c,b])`, `edit[cpy(b)]=([b],[b])` #linebreak()
+   the source string is kept, the target loses its first character],
+  [#rowkey("Freyd.Alg.RelSet.Edit.clen_dropTgt")], [],
+  "Freyd.Alg.RelSet.Edit.clen_dropTgt",
+  [`2 ≥ 2` #linebreak() `2 ≥ 1` #linebreak()
+   an `ins` removed shortens by one, a `cpy` turned into `del` keeps the length],
+// lean:AOP.A9_2_Edit.dropTgt@d3028b70
+// lean:AOP.A9_2_Edit.editFn_dropTgt@f89ee985
+// lean:AOP.A9_2_Edit.clen_dropTgt@a0d529aa
+)]<drop2-defn>
+
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_suffix_right.calc.typ" as calc-edit-suffix
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
