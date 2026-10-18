@@ -387,6 +387,17 @@
 // lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
 
+=== The second thinning condition
+
+#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip")
+
+- `edit V°`: from `es`, compute `edit(es) = (x,y)`, then take a pair of suffixes `(x',y')`; `V°` is the book's `suffix×suffix`.
+- `≥ edit`: from `es`, pass to some `fs` no longer than `es`, then compute `edit(fs)`.
+- `⊑`: every `(x',y')` the left side reaches, the right side reaches — some `fs` has `length(fs) ≤ length(es)` and `edit(fs) = (x',y')`.
+- `R` is `≥` here: the book's `R = length°·leq·length` reads right to left; in diagram order `es` steps to `fs` when `length(es) ≥ length(fs)`.
+- `es = [del(a),cpy(b)] ↦ ([a,b],[b])`, suffixes `([b],[b])`, `fs = [cpy(b)]`, `length(fs) = 1 ≤ 2`.
+- a shortest edit of a pair of suffixes is never longer, so thinning keeps one shortest edit per pair of suffixes and loses no optimum.
+
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
 // `A` — sugar undone at the ends too.
