@@ -353,7 +353,10 @@
   [`[cpy(a)] ≤ [del(a),ins(a)]`],
   [#rowkey("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
   "Freyd.Alg.RelSet.Edit.V_eq",
-  [`([],[b]) V ([a],[a,b])`],
+  [`([b],[c]) V ([a,b],[c])` #linebreak() `([b],[c]) V ([b],[d,c])`],
+  [#rowkey("Freyd.Alg.RelSet.Edit.edit_Vrecip")], [#leant("Freyd.Alg.RelSet.Edit.edit_Vrecip")],
+  "Freyd.Alg.RelSet.Edit.edit_Vrecip",
+  [`[del(a),cpy(b)] ↦ ([a,b],[b])` #linebreak() `([b],[b]) by [cpy(b)]`],
   [#rowkey("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
   "Freyd.Alg.RelSet.Edit.Q",
   [`inl(()) Q inl(())` #linebreak() `inr(cpy(a),([],[])) Q inr(del(b),([a],[]))`],
@@ -375,6 +378,7 @@
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
+// lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
 // lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
 // lean:AOP.A9_2_Edit.baseFn@450d4154
 // lean:AOP.A9_2_Edit.stepFn@e8719088
