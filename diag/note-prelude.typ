@@ -146,6 +146,8 @@
 // (or empty), which joins the definition cell; the row number is the table rule's, in the margin.
 // The definition cell is a SELECTOR (or an array of them), printed here with the row's key as the
 // `def` it defines; a cell of content holding a formula is refused, since it would print without it.
+// The `raw` words of a cell: each is unbreakable, so the column holding it can be no narrower than the widest.
+#let raw-atoms(c) = if type(c) != content { () } else if c.func() == raw { c.text.split(" ").filter(s => s != "") } else if c.has("children") { c.children.map(raw-atoms).flatten() } else if c.has("body") { raw-atoms(c.body) } else if c.has("child") { raw-atoms(c.child) } else { () }
 #let deftab(..cells) = context {
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
   let def(r) = { let k = lean-keys(r.at(0), labels: (<lean-row-key>,)).at(0, default: none)
@@ -161,7 +163,9 @@
   let rows = cells.pos().chunks(4)
   layout(size => {
     let d = calc.max(..rows.map(r => measure([#r.at(0)#def(r)]).width)) + 10pt
-    table(columns: (calc.min(d, (size.width - w - 10.5pt) * 3 / 4), w + 10.5pt, 1fr), align: left + horizon,
+    // The meaning column keeps room for its widest unbreakable word (plus the cell's 2×5pt inset).
+    let m = calc.max(0pt, ..rows.map(r => raw-atoms(r.at(3))).flatten().map(t => measure(box(raw(t))).width)) + 10pt
+    table(columns: (calc.min(d, (size.width - w - 10.5pt) * 3 / 4, size.width - w - 10.5pt - m), w + 10.5pt, 1fr), align: left + horizon,
       inset: 5pt, stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
       ..rows.map(r => ([#r.at(0)#def(r)], r.at(1), r.at(3))).flatten())
   })
