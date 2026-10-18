@@ -596,6 +596,21 @@ public theorem pair_outr_of_entire {a b c : RelSet.{0}} {P : RelProd a b} {R : c
 public theorem entire_id {a : RelSet.{0}} : Entire (𝟙 a) := by
   rw [← graph_id]; exact graph_entire _
 
+/-- `⟨𝟙,S⟩π₂ = S`. -/
+public theorem pair_id_outr {a b : RelSet.{0}} {P : RelProd a b} (S : a ⟶ b) :
+    P.pair (𝟙 a) S ≫ P.outr = S :=
+  pair_outr_of_entire entire_id S
+
+/-- `⟨f,S⟩π₂ = S` for a function `f`. -/
+public theorem pair_graph_outr {a b c : RelSet.{0}} {P : RelProd a b} (f : c.carrier → a.carrier)
+    (S : c ⟶ b) : P.pair (graph f) S ≫ P.outr = S :=
+  pair_outr_of_entire (graph_entire f) S
+
+/-- `(f×S)π₂ = π₂S` for a function `f`. -/
+public theorem rprodMap_graph_outr {A a' B b' : RelSet.{0}} (f : A.carrier → a'.carrier) (S : B ⟶ b') :
+    rprodMap (graph f) S ≫ (relProd a' b').outr = (relProd A B).outr ≫ S := by
+  rw [← prodMap_eq_rprodMap]; exact prodMap_outr_eq_of_entire _ _ _ (graph_entire f)
+
 /-- The step of `⟨𝟙,dropTgt⟩`: `cpy(b)` rebuilds and drops to `del(b)`, `ins(b)` rebuilds and
     drops itself, `del(a)` goes in front of both. -/
 @[expose] public def dropTgtStep :
@@ -674,18 +689,18 @@ public theorem edit_tail_fst_fold :
 /-- Fusion: `⦇dropTgtAlg⦈ (edit×edit) = ⦇editTgtAlg⦈`. -/
 public theorem dropTgt_edit_fusion :
     cataR (dropTgtAlg (A := A))
-        ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A)) (graph editFn) (graph editFn)
+        ≫ rprodMap (graph (editFn (A := A))) (graph editFn)
       = cataR (editTgtAlg (A := A)) := by
-  rw [← dropTgt_fold, prodMap_eq_rprodMap, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
+  rw [← dropTgt_fold, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
     graph_comp]
   exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
 
 /-- Fusion: `⦇dropSrcAlg⦈ (edit×edit) = ⦇editSrcAlg⦈`. -/
 public theorem dropSrc_edit_fusion :
     cataR (dropSrcAlg (A := A))
-        ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A)) (graph editFn) (graph editFn)
+        ≫ rprodMap (graph (editFn (A := A))) (graph editFn)
       = cataR (editSrcAlg (A := A)) := by
-  rw [← dropSrc_fold, prodMap_eq_rprodMap, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
+  rw [← dropSrc_fold, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
     graph_comp]
   exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
 
@@ -733,11 +748,11 @@ public theorem dropSrc_fold_le :
 public theorem dropTgt_le : (graph dropTgt : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
   calc (graph dropTgt : dEdit A ⟶ dEdit A)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt)
-            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_outr_of_entire entire_id _).symm
+            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_id_outr _).symm
       _ = cataR dropTgtAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropTgt_fold
       _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
             ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropTgt_fold_le _
-      _ = (R A)° := pair_outr_of_entire entire_id _
+      _ = (R A)° := pair_id_outr _
 
 calc_steps dropTgt_le
 
@@ -745,11 +760,11 @@ calc_steps dropTgt_le
 public theorem dropSrc_le : (graph dropSrc : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
   calc (graph dropSrc : dEdit A ⟶ dEdit A)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc)
-            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_outr_of_entire entire_id _).symm
+            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_id_outr _).symm
       _ = cataR dropSrcAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropSrc_fold
       _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
             ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropSrc_fold_le _
-      _ = (R A)° := pair_outr_of_entire entire_id _
+      _ = (R A)° := pair_id_outr _
 
 calc_steps dropSrc_le
 
@@ -760,19 +775,18 @@ public theorem edit_dropTgt :
   calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
       _ = (relProd (dPair A) (dPair A)).pair (graph editFn)
               (graph editFn ≫ rprodMap (𝟙 (dList A)) (graph tail))
-            ≫ (relProd (dPair A) (dPair A)).outr := (pair_outr_of_entire (graph_entire _) _).symm
+            ≫ (relProd (dPair A) (dPair A)).outr := (pair_graph_outr _ _).symm
       _ = cataR editTgtAlg ≫ (relProd (dPair A) (dPair A)).outr :=
             congrArg (· ≫ _) edit_tail_snd_fold
       _ = cataR dropTgtAlg
-            ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A))
-                (graph editFn) (graph editFn)
+            ≫ rprodMap (graph editFn) (graph editFn)
             ≫ (relProd (dPair A) (dPair A)).outr := by rw [← Cat.assoc, dropTgt_edit_fusion]
       _ = cataR dropTgtAlg ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
-            congrArg (cataR dropTgtAlg ≫ ·) (prodMap_outr_eq_of_entire _ _ _ (graph_entire _))
+            congrArg (cataR dropTgtAlg ≫ ·) (rprodMap_graph_outr _ _)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt)
             ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
             congrArg (· ≫ _) dropTgt_fold.symm
-      _ = graph dropTgt ≫ graph editFn := by rw [← Cat.assoc, pair_outr_of_entire entire_id]
+      _ = graph dropTgt ≫ graph editFn := by rw [← Cat.assoc, pair_id_outr]
 
 calc_steps edit_dropTgt
 
@@ -783,19 +797,18 @@ public theorem edit_dropSrc :
   calc graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
       _ = (relProd (dPair A) (dPair A)).pair (graph editFn)
               (graph editFn ≫ rprodMap (graph tail) (𝟙 (dList A)))
-            ≫ (relProd (dPair A) (dPair A)).outr := (pair_outr_of_entire (graph_entire _) _).symm
+            ≫ (relProd (dPair A) (dPair A)).outr := (pair_graph_outr _ _).symm
       _ = cataR editSrcAlg ≫ (relProd (dPair A) (dPair A)).outr :=
             congrArg (· ≫ _) edit_tail_fst_fold
       _ = cataR dropSrcAlg
-            ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A))
-                (graph editFn) (graph editFn)
+            ≫ rprodMap (graph editFn) (graph editFn)
             ≫ (relProd (dPair A) (dPair A)).outr := by rw [← Cat.assoc, dropSrc_edit_fusion]
       _ = cataR dropSrcAlg ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
-            congrArg (cataR dropSrcAlg ≫ ·) (prodMap_outr_eq_of_entire _ _ _ (graph_entire _))
+            congrArg (cataR dropSrcAlg ≫ ·) (rprodMap_graph_outr _ _)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc)
             ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
             congrArg (· ≫ _) dropSrc_fold.symm
-      _ = graph dropSrc ≫ graph editFn := by rw [← Cat.assoc, pair_outr_of_entire entire_id]
+      _ = graph dropSrc ≫ graph editFn := by rw [← Cat.assoc, pair_id_outr]
 
 calc_steps edit_dropSrc
 
@@ -1826,6 +1839,65 @@ public theorem dropTgt_laxNatural :
   obtain rfl : zs = dropTgt ys := hz
   exact ⟨dropTgt xs, rfl, listP_dropTgt S xs ys h⟩
 
+/-- Lax natural transformations compose: `ψ` then `φ`. -/
+public theorem laxNatural_vcomp {F G H : Relator RelSet.{0} RelSet.{0}}
+    {φ : ∀ x : RelSet.{0}, G.obj x ⟶ F.obj x} {ψ : ∀ x : RelSet.{0}, H.obj x ⟶ G.obj x}
+    (hψ : LaxNatural G H ψ) (hφ : LaxNatural F G φ) : LaxNatural F H (fun x => ψ x ≫ φ x) := by
+  intro x y S
+  calc H.map S ≫ ψ y ≫ φ y = (H.map S ≫ ψ y) ≫ φ y := (Cat.assoc _ _ _).symm
+    _ ⊑ (ψ x ≫ G.map S) ≫ φ y := comp_mono_right (hψ S) _
+    _ = ψ x ≫ G.map S ≫ φ y := Cat.assoc _ _ _
+    _ ⊑ ψ x ≫ φ x ≫ F.map S := comp_mono_left _ (hφ S)
+    _ = (ψ x ≫ φ x) ≫ F.map S := (Cat.assoc _ _ _).symm
+
+/-- `𝟙` is lax natural. -/
+public theorem id_laxNatural {F : Relator RelSet.{0} RelSet.{0}} :
+    LaxNatural F F (fun x : RelSet.{0} => 𝟙 (F.obj x)) := by
+  intro x y S
+  rw [Cat.comp_id, Cat.id_comp]
+  exact le_iff.mpr fun _ _ h => h
+
+/-- **`⦇h₂⦈ = ⟨𝟙,drop₂⟩` is LAX natural**: a pair of lax natural transformations. -/
+public theorem dropTgt_fold_laxNatural :
+    LaxNatural (Relator.prod (op.comp listRelator) (op.comp listRelator)) (op.comp listRelator)
+      (fun a : RelSet.{0} => cataR (dropTgtAlg (A := a.carrier))) := by
+  intro x y S
+  dsimp only
+  rw [← dropTgt_fold, ← dropTgt_fold]
+  exact laxNatural_pair id_laxNatural dropTgt_laxNatural S
+
+/-- **`⟨edit, edit(𝟙×tail)⟩` is LAX natural**: a pair of lax natural transformations. -/
+public theorem edit_tail_snd_pair_laxNatural :
+    LaxNatural (Relator.prod (Relator.prod listRelator listRelator)
+        (Relator.prod listRelator listRelator)) (op.comp listRelator)
+      (fun a : RelSet.{0} => (relProd (dPair a.carrier) (dPair a.carrier)).pair (graph editFn)
+        (graph editFn ≫ rprodMap (𝟙 (dList a.carrier)) (graph tail))) :=
+  laxNatural_pair edit_laxNatural (laxNatural_vcomp edit_laxNatural tail_snd_laxNatural)
+
+/-- **`⦇k₂⦈ = ⟨edit, edit(𝟙×tail)⟩` is LAX natural**. -/
+public theorem editTgt_fold_laxNatural :
+    LaxNatural (Relator.prod (Relator.prod listRelator listRelator)
+        (Relator.prod listRelator listRelator)) (op.comp listRelator)
+      (fun a : RelSet.{0} => cataR (editTgtAlg (A := a.carrier))) := by
+  intro x y S
+  dsimp only
+  rw [← edit_tail_snd_fold, ← edit_tail_snd_fold]
+  exact edit_tail_snd_pair_laxNatural S
+
+/-- **`⟨𝟙,R°⟩` is not lax natural**: followed by `outr`, which is, it is `R°`, which is not. -/
+public theorem pair_id_R_recip_not_lax_natural :
+    ¬ LaxNatural (Relator.prod (op.comp listRelator) (op.comp listRelator)) (op.comp listRelator)
+      (fun a : RelSet.{0} =>
+        (relProd (dEdit a.carrier) (dEdit a.carrier)).pair (𝟙 (dEdit a.carrier)) (R a.carrier)°) :=
+  fun h => R_recip_not_lax_natural fun S => by
+    have e : ∀ a : RelSet.{0}, (relProd (dEdit a.carrier) (dEdit a.carrier)).pair (𝟙 (dEdit a.carrier))
+        (R a.carrier)° ≫ (relProd ((op.comp listRelator).obj a) ((op.comp listRelator).obj a)).outr
+          = (R a.carrier)° := fun _ => pair_id_outr _
+    have h2 := laxNatural_vcomp h (outr_laxNatural (op.comp listRelator) (op.comp listRelator)) S
+    dsimp only at h2 ⊢
+    rw [e, e] at h2
+    exact h2
+
 /-- **`(R°)*` is not lax natural**: it is `R°` (`R_recip_star`), which is not. -/
 public theorem R_recip_star_not_lax_natural :
     ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
@@ -2079,6 +2151,20 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.dropSrc] public meta def Freyd.Alg.RelSet.Edit.unexpandDropSrc : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "drop₁")))
+-- The algebras of the tupled folds `⟨𝟙,drop₂⟩ = ⦇h₂⦈`, `⟨edit,edit(𝟙×tail)⟩ = ⦇k₂⦈` and their
+-- source-side mirrors: local letters indexed like `drop₂`/`drop₁`, as B&dM name a fold's algebra.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropTgtAlg] public meta def Freyd.Alg.RelSet.Edit.unexpandDropTgtAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "h₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropSrcAlg] public meta def Freyd.Alg.RelSet.Edit.unexpandDropSrcAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "h₁")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.editTgtAlg] public meta def Freyd.Alg.RelSet.Edit.unexpandEditTgtAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "k₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.editSrcAlg] public meta def Freyd.Alg.RelSet.Edit.unexpandEditSrcAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "k₁")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.FeditR] public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "F(𝟙,edit°)")))
