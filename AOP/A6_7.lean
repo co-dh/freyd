@@ -377,13 +377,46 @@ public theorem comp_star_le_mu_starBody {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y}
     (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ mu (starBody B C) :=
   mu_fusion_le B (starBody_monotonic B C) (comp_star_body_le h)
 
-/-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`,
-    by fusion (`mu_fusion_le`) of `B ≫ −` into the recursion of `A*`. -/
-public theorem star_simulation {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+/-- `star_simulation` by fusion (`mu_fusion_le`) of `B ≫ −` into the recursion of `A*`; the
+    note's appendix alternative to the prefixed-point proof. -/
+public theorem star_simulation_by_fusion {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
     (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B :=
   calc B ≫ star A
       _ ⊑ mu (starBody B C) := comp_star_le_mu_starBody h
       _ = star C ≫ B := (star_comp_eq_mu C B).symm
+
+calc_steps star_simulation_by_fusion
+
+/-- `B ⊑ C* B`: the base of the prefixed point `C* B` of `Z ↦ B ∪ Z A`, taking zero `C`. -/
+public theorem star_simulation_unit {X Y : 𝒜} {B : X ⟶ Y} {C : X ⟶ X} : B ⊑ star C ≫ B :=
+  calc B
+      _ = 𝟙 X ≫ B := (Cat.id_comp B).symm
+      _ ⊑ star C ≫ B := comp_mono_right (id_le_star C) B
+
+calc_steps star_simulation_unit
+
+/-- `B A ⊑ C B ⟹ (C* B) A ⊑ C* B`: the step of the prefixed point `C* B` of `Z ↦ B ∪ Z A`. -/
+public theorem star_simulation_step {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : (star C ≫ B) ≫ A ⊑ star C ≫ B :=
+  calc (star C ≫ B) ≫ A
+      _ ⊑ star C ≫ (C ≫ B) := by rw [Cat.assoc]; exact comp_mono_left (star C) h
+      _ ⊑ star C ≫ B := by rw [← Cat.assoc]; exact comp_mono_right (star_comp_le C) B
+
+calc_steps star_simulation_step
+
+/-- `C* B` is a prefixed point of `Z ↦ B ∪ Z A`: `star_simulation_unit` and `star_simulation_step`
+    joined, so that `star_simulation` cites one law per step. -/
+public theorem star_simulation_prefixed {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ∪ ((star C ≫ B) ≫ A) ⊑ star C ≫ B :=
+  union_lub star_simulation_unit (star_simulation_step h)
+
+/-- **B&dM p.226**: `A·B ⊑ B·C ⟹ A*·B ⊑ B·C*`, mirrored: `B A ⊑ C B ⟹ B A* ⊑ C* B`:
+    `B A*` is the least fixed point of `Z ↦ B ∪ Z A`, and `C* B` is a prefixed point of it. -/
+public theorem star_simulation {X Y : 𝒜} {A : Y ⟶ Y} {B : X ⟶ Y} {C : X ⟶ X}
+    (h : B ≫ A ⊑ C ≫ B) : B ≫ star A ⊑ star C ≫ B :=
+  calc B ≫ star A
+      _ = mu (fun Z : X ⟶ Y => B ∪ (Z ≫ A)) := comp_star_eq_mu B A
+      _ ⊑ star C ≫ B := mu_le (star_simulation_prefixed h)
 
 calc_steps star_simulation
 

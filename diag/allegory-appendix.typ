@@ -2,7 +2,7 @@
 #import "note-style.typ": appendix-heading, definition, disp, P, d, src, Thm, calc-table, EQ, vstep
 #import "draw.typ": zline, zpair, zsqc, zstep, SQ, RQ
 #import "dpanel.typ": dpanel, hm-meta
-#import "note-prelude.typ": lean, leanc, leant, leanf, leank
+#import "note-prelude.typ": lean, leanc, leant, leanf, leank, lean-calc
 
 #appendix-heading[Appendix] <sec-appendix>
 
@@ -462,6 +462,41 @@ N(α)(that)
  ]])
   // lean:AOP.A7_4_Cylinder.cyl_7_13@8f4d0ada
 ]<cyl-fusion>
+
+== Fixed-point fusion
+
+#import "generated/Freyd.Alg.comp_leftDiv_mu_le.calc.typ" as calc-mu-fusion-step
+#import "generated/Freyd.Alg.mu_fusion_le.calc.typ" as calc-mu-fusion
+#import "generated/Freyd.Alg.comp_star_body_le.calc.typ" as calc-star-body
+#import "generated/Freyd.Alg.star_simulation_by_fusion.calc.typ" as calc-star-fusion
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_leftDiv_mu_le") \
+    #src[if putting B in front of one step of f lands below one step of g with B in front, then B in front of one step of f at `B\μg` lands below the least fixed point of g]],
+     // lean:AOP.A6_7.comp_leftDiv_mu_le@aa672aa1
+  lean-calc(calc-mu-fusion-step),
+)]<mu-fusion-step-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.mu_fusion_le") \
+    #src[if putting B in front of one step of f lands below one step of g with B in front, B in front of the least fixed point of f lands below that of g]],
+     // lean:AOP.A6_7.mu_fusion_le@2e1accb1
+  lean-calc(calc-mu-fusion),
+)]<mu-fusion-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_body_le") \
+    #src[putting B in front of one step of the A* recursion lands below one step of the C*·B recursion]],
+     // lean:AOP.A6_7.comp_star_body_le@283c5e96
+  lean-calc(calc-star-body),
+)]<star-body-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_simulation_by_fusion") \
+    #src[the same `B A* ⊑ C* B` as @comp-star-calc, by fusion: `A*` and `C* B` are least fixed points of `starBody(𝟙,A)` and `starBody(B,C)`]],
+     // lean:AOP.A6_7.star_simulation_by_fusion@2b3e60fc
+  lean-calc(calc-star-fusion),
+)]<star-fusion-calc>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
