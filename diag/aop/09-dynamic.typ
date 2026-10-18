@@ -414,6 +414,22 @@
 // lean:AOP.A9_2_Edit.clen_dropTgt@a0d529aa
 )]<drop2-defn>
 
+#import "../generated/Freyd.Alg.RelSet.Edit.edit_dropTgt.calc.typ" as calc-edit-drop2
+#import "../generated/Freyd.Alg.RelSet.Edit.dropTgt_le.calc.typ" as calc-drop2-le
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_dropTgt") \
+    #src[editing with `es` then dropping the head of the target string equals editing with `drop₂(es)`]],
+     // lean:AOP.A9_2_Edit.edit_dropTgt@ee5733fc
+  lean-calc(calc-edit-drop2),
+)]<edit-drop2-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.dropTgt_le") \
+    #src[`drop₂(es)` is shorter than or equal to `es`]],
+     // lean:AOP.A9_2_Edit.dropTgt_le@bac72099
+  lean-calc(calc-drop2-le),
+)]<drop2-le-calc>
+
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_suffix_right.calc.typ" as calc-edit-suffix
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.

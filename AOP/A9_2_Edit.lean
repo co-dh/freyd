@@ -580,51 +580,224 @@ public theorem clen_dropSrc : ∀ es : ConsList Unit (Op A), clen (dropSrc es) �
   | ConsList.cons (Op.del _) _ => Nat.le_succ _
   | ConsList.cons (Op.ins _) es => Nat.succ_le_succ (clen_dropSrc es)
 
+/-! ### `⟨𝟙,drop⟩` is a fold
+
+  `dropTgt` is no fold — at `cpy(b)` it keeps the tail as it is, which the dropped tail has lost —
+  but the pair `⟨𝟙,dropTgt⟩` is: each step rebuilds the sequence and drops from it.  The two leaf
+  lemmas behind `edit-tail` are then calculations with fold laws: the universal property, an
+  invariant of the fold (`relCata_le_of_prefixed`), and `⟨R,S⟩π₂ = S` for an entire `R`. -/
+
+/-- `⟨R,S⟩π₂ = S` when `R` is entire: the `dom R` of `pair_outr` is then `𝟙`. -/
+public theorem pair_outr_of_entire {a b c : RelSet.{0}} {P : RelProd a b} {R : c ⟶ a}
+    (hR : Entire R) (S : c ⟶ b) : P.pair R S ≫ P.outr = S := by
+  rw [RelProd.pair_outr, hR, Cat.id_comp]
+
+/-- `𝟙` is entire. -/
+public theorem entire_id {a : RelSet.{0}} : Entire (𝟙 a) := by
+  rw [← graph_id]; exact graph_entire _
+
+/-- The step of `⟨𝟙,dropTgt⟩`: `cpy(b)` rebuilds and drops to `del(b)`, `ins(b)` rebuilds and
+    drops itself, `del(a)` goes in front of both. -/
+@[expose] public def dropTgtStep :
+    Op A → ConsList Unit (Op A) × ConsList Unit (Op A) → ConsList Unit (Op A) × ConsList Unit (Op A)
+  | Op.cpy b, (es, _) => (ConsList.cons (Op.cpy b) es, ConsList.cons (Op.del b) es)
+  | Op.del a, (es, ds) => (ConsList.cons (Op.del a) es, ConsList.cons (Op.del a) ds)
+  | Op.ins b, (es, _) => (ConsList.cons (Op.ins b) es, es)
+
+/-- The step of `⟨𝟙,dropSrc⟩`, mirrored. -/
+@[expose] public def dropSrcStep :
+    Op A → ConsList Unit (Op A) × ConsList Unit (Op A) → ConsList Unit (Op A) × ConsList Unit (Op A)
+  | Op.cpy a, (es, _) => (ConsList.cons (Op.cpy a) es, ConsList.cons (Op.ins a) es)
+  | Op.del a, (es, _) => (ConsList.cons (Op.del a) es, es)
+  | Op.ins b, (es, ds) => (ConsList.cons (Op.ins b) es, ConsList.cons (Op.ins b) ds)
+
+/-- The algebra of `⟨𝟙,dropTgt⟩`: `nil ↦ ([],[])`, then `dropTgtStep`. -/
+@[expose] public def dropTgtAlg :
+    Alg (F Unit (Op A)) (⟨ConsList Unit (Op A) × ConsList Unit (Op A)⟩ : RelSet.{0}) :=
+  consScalarAlg (fun _ => (ConsList.wrap (), ConsList.wrap ())) dropTgtStep
+
+/-- The algebra of `⟨𝟙,dropSrc⟩`. -/
+@[expose] public def dropSrcAlg :
+    Alg (F Unit (Op A)) (⟨ConsList Unit (Op A) × ConsList Unit (Op A)⟩ : RelSet.{0}) :=
+  consScalarAlg (fun _ => (ConsList.wrap (), ConsList.wrap ())) dropSrcStep
+
+/-- The step of `⟨edit, edit(𝟙×tail)⟩`, read off `step` with the target's head dropped. -/
+@[expose] public def editTgtStep :
+    Op A → (Str A × Str A) × (Str A × Str A) → (Str A × Str A) × (Str A × Str A)
+  | Op.cpy b, ((x, y), _) => ((ConsList.cons b x, ConsList.cons b y), (ConsList.cons b x, y))
+  | Op.del a, ((x, y), (x', y')) => ((ConsList.cons a x, y), (ConsList.cons a x', y'))
+  | Op.ins b, ((x, y), _) => ((x, ConsList.cons b y), (x, y))
+
+/-- The step of `⟨edit, edit(tail×𝟙)⟩`, mirrored. -/
+@[expose] public def editSrcStep :
+    Op A → (Str A × Str A) × (Str A × Str A) → (Str A × Str A) × (Str A × Str A)
+  | Op.cpy a, ((x, y), _) => ((ConsList.cons a x, ConsList.cons a y), (x, ConsList.cons a y))
+  | Op.del a, ((x, y), _) => ((ConsList.cons a x, y), (x, y))
+  | Op.ins b, ((x, y), (x', y')) => ((x, ConsList.cons b y), (x', ConsList.cons b y'))
+
+/-- The algebra of `⟨edit, edit(𝟙×tail)⟩`. -/
+@[expose] public def editTgtAlg : Alg (F Unit (Op A)) (⟨(Str A × Str A) × (Str A × Str A)⟩ : RelSet.{0}) :=
+  consScalarAlg (fun _ => ((ConsList.wrap (), ConsList.wrap ()), (ConsList.wrap (), ConsList.wrap ())))
+    editTgtStep
+
+/-- The algebra of `⟨edit, edit(tail×𝟙)⟩`. -/
+@[expose] public def editSrcAlg : Alg (F Unit (Op A)) (⟨(Str A × Str A) × (Str A × Str A)⟩ : RelSet.{0}) :=
+  consScalarAlg (fun _ => ((ConsList.wrap (), ConsList.wrap ()), (ConsList.wrap (), ConsList.wrap ())))
+    editSrcStep
+
+/-- Universal property: `⟨𝟙,dropTgt⟩ = ⦇dropTgtAlg⦈`. -/
+public theorem dropTgt_fold :
+    (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt) = cataR (dropTgtAlg (A := A)) := by
+  rw [pair_eq_rpair, ← graph_id, rpair_graph]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Universal property: `⟨𝟙,dropSrc⟩ = ⦇dropSrcAlg⦈`. -/
+public theorem dropSrc_fold :
+    (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc) = cataR (dropSrcAlg (A := A)) := by
+  rw [pair_eq_rpair, ← graph_id, rpair_graph]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Universal property: `⟨edit, edit(𝟙×tail)⟩ = ⦇editTgtAlg⦈`. -/
+public theorem edit_tail_snd_fold :
+    (relProd (dPair A) (dPair A)).pair (graph editFn)
+        (graph editFn ≫ rprodMap (𝟙 (dList A)) (graph tail)) = cataR (editTgtAlg (A := A)) := by
+  rw [pair_eq_rpair, ← graph_id, rprodMap_graph_eq, graph_comp, rpair_graph]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Universal property: `⟨edit, edit(tail×𝟙)⟩ = ⦇editSrcAlg⦈`. -/
+public theorem edit_tail_fst_fold :
+    (relProd (dPair A) (dPair A)).pair (graph editFn)
+        (graph editFn ≫ rprodMap (graph tail) (𝟙 (dList A))) = cataR (editSrcAlg (A := A)) := by
+  rw [pair_eq_rpair, ← graph_id, rprodMap_graph_eq, graph_comp, rpair_graph]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Fusion: `⦇dropTgtAlg⦈ (edit×edit) = ⦇editTgtAlg⦈`. -/
+public theorem dropTgt_edit_fusion :
+    cataR (dropTgtAlg (A := A))
+        ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A)) (graph editFn) (graph editFn)
+      = cataR (editTgtAlg (A := A)) := by
+  rw [← dropTgt_fold, prodMap_eq_rprodMap, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
+    graph_comp]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Fusion: `⦇dropSrcAlg⦈ (edit×edit) = ⦇editSrcAlg⦈`. -/
+public theorem dropSrc_edit_fusion :
+    cataR (dropSrcAlg (A := A))
+        ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A)) (graph editFn) (graph editFn)
+      = cataR (editSrcAlg (A := A)) := by
+  rw [← dropSrc_fold, prodMap_eq_rprodMap, pair_eq_rpair, ← graph_id, rpair_graph, rprodMap_graph_eq,
+    graph_comp]
+  exact consFold_unique _ _ _ (fun _ => rfl) fun o _ => by cases o <;> rfl
+
+/-- Invariant of the fold: `⦇dropTgtAlg⦈ ⊑ ⟨𝟙,R°⟩` — the dropped sequence is never longer. -/
+public theorem dropTgt_fold_le :
+    cataR (dropTgtAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)° := by
+  rw [cataR_eq_relCata, pair_eq_rpair]
+  refine relCata_le_of_prefixed (initial Unit (Op A)) (le_iff.mpr ?_)
+  rintro es q ⟨u, hu, v, hv, hq⟩
+  obtain rfl : es = con u := hu
+  obtain rfl : q = consScalarFn (fun _ => (ConsList.wrap (), ConsList.wrap ())) dropTgtStep v := hq
+  rcases u with _ | ⟨o, es⟩ <;> rcases v with _ | ⟨o', es', ds'⟩
+  · exact ⟨(id_apply _ _).mpr rfl, Nat.le_refl _⟩
+  · exact hv.elim
+  · exact hv.elim
+  · obtain ⟨ho, hes, hds⟩ := hv
+    obtain rfl : o = o' := ho
+    obtain rfl : es = es' := (id_apply _ _).mp hes
+    cases o
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.le_refl _⟩
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.succ_le_succ hds⟩
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.le_succ _⟩
+
+/-- Invariant of the fold: `⦇dropSrcAlg⦈ ⊑ ⟨𝟙,R°⟩`. -/
+public theorem dropSrc_fold_le :
+    cataR (dropSrcAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)° := by
+  rw [cataR_eq_relCata, pair_eq_rpair]
+  refine relCata_le_of_prefixed (initial Unit (Op A)) (le_iff.mpr ?_)
+  rintro es q ⟨u, hu, v, hv, hq⟩
+  obtain rfl : es = con u := hu
+  obtain rfl : q = consScalarFn (fun _ => (ConsList.wrap (), ConsList.wrap ())) dropSrcStep v := hq
+  rcases u with _ | ⟨o, es⟩ <;> rcases v with _ | ⟨o', es', ds'⟩
+  · exact ⟨(id_apply _ _).mpr rfl, Nat.le_refl _⟩
+  · exact hv.elim
+  · exact hv.elim
+  · obtain ⟨ho, hes, hds⟩ := hv
+    obtain rfl : o = o' := ho
+    obtain rfl : es = es' := (id_apply _ _).mp hes
+    cases o
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.le_refl _⟩
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.le_succ _⟩
+    · exact ⟨(id_apply _ _).mpr rfl, Nat.succ_le_succ hds⟩
+
 /-- `dropTgt` never lengthens: `dropTgt ⊑ R°`. -/
 public theorem dropTgt_le : (graph dropTgt : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
-  le_iff.mpr fun es fs h => by
-    obtain rfl : fs = dropTgt es := h
-    exact clen_dropTgt es
+  calc (graph dropTgt : dEdit A ⟶ dEdit A)
+      _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt)
+            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_outr_of_entire entire_id _).symm
+      _ = cataR dropTgtAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropTgt_fold
+      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
+            ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropTgt_fold_le _
+      _ = (R A)° := pair_outr_of_entire entire_id _
+
+calc_steps dropTgt_le
 
 /-- `dropSrc` never lengthens: `dropSrc ⊑ R°`. -/
 public theorem dropSrc_le : (graph dropSrc : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
-  le_iff.mpr fun es fs h => by
-    obtain rfl : fs = dropSrc es := h
-    exact clen_dropSrc es
+  calc (graph dropSrc : dEdit A ⟶ dEdit A)
+      _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc)
+            ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_outr_of_entire entire_id _).symm
+      _ = cataR dropSrcAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropSrc_fold
+      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
+            ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropSrc_fold_le _
+      _ = (R A)° := pair_outr_of_entire entire_id _
+
+calc_steps dropSrc_le
 
 /-- `edit (𝟙×tail) = dropTgt edit`. -/
 public theorem edit_dropTgt :
     graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
-      = graph dropTgt ≫ graph editFn := by
-  apply hom_ext; intro es q
-  constructor
-  · rintro ⟨p, hp, hx, hy⟩
-    obtain rfl : p = editFn es := hp
-    refine ⟨dropTgt es, rfl, ?_⟩
-    show q = editFn (dropTgt es)
-    rw [editFn_dropTgt, (hx : (editFn es).1 = q.1), ← (hy : q.2 = tail (editFn es).2)]
-  · rintro ⟨fs, hfs, hq⟩
-    obtain rfl : fs = dropTgt es := hfs
-    obtain rfl : q = editFn (dropTgt es) := hq
-    rw [editFn_dropTgt]
-    exact ⟨editFn es, rfl, ⟨(id_apply _ _).mpr rfl, rfl⟩⟩
+      = graph dropTgt ≫ graph editFn :=
+  calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
+      _ = (relProd (dPair A) (dPair A)).pair (graph editFn)
+              (graph editFn ≫ rprodMap (𝟙 (dList A)) (graph tail))
+            ≫ (relProd (dPair A) (dPair A)).outr := (pair_outr_of_entire (graph_entire _) _).symm
+      _ = cataR editTgtAlg ≫ (relProd (dPair A) (dPair A)).outr :=
+            congrArg (· ≫ _) edit_tail_snd_fold
+      _ = cataR dropTgtAlg
+            ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A))
+                (graph editFn) (graph editFn)
+            ≫ (relProd (dPair A) (dPair A)).outr := by rw [← Cat.assoc, dropTgt_edit_fusion]
+      _ = cataR dropTgtAlg ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
+            congrArg (cataR dropTgtAlg ≫ ·) (prodMap_outr_eq_of_entire _ _ _ (graph_entire _))
+      _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt)
+            ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
+            congrArg (· ≫ _) dropTgt_fold.symm
+      _ = graph dropTgt ≫ graph editFn := by rw [← Cat.assoc, pair_outr_of_entire entire_id]
+
+calc_steps edit_dropTgt
 
 /-- `edit (tail×𝟙) = dropSrc edit`. -/
 public theorem edit_dropSrc :
     graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
-      = graph dropSrc ≫ graph editFn := by
-  apply hom_ext; intro es q
-  constructor
-  · rintro ⟨p, hp, hx, hy⟩
-    obtain rfl : p = editFn es := hp
-    refine ⟨dropSrc es, rfl, ?_⟩
-    show q = editFn (dropSrc es)
-    rw [editFn_dropSrc, (hy : (editFn es).2 = q.2), ← (hx : q.1 = tail (editFn es).1)]
-  · rintro ⟨fs, hfs, hq⟩
-    obtain rfl : fs = dropSrc es := hfs
-    obtain rfl : q = editFn (dropSrc es) := hq
-    rw [editFn_dropSrc]
-    exact ⟨editFn es, rfl, ⟨rfl, (id_apply _ _).mpr rfl⟩⟩
+      = graph dropSrc ≫ graph editFn :=
+  calc graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
+      _ = (relProd (dPair A) (dPair A)).pair (graph editFn)
+              (graph editFn ≫ rprodMap (graph tail) (𝟙 (dList A)))
+            ≫ (relProd (dPair A) (dPair A)).outr := (pair_outr_of_entire (graph_entire _) _).symm
+      _ = cataR editSrcAlg ≫ (relProd (dPair A) (dPair A)).outr :=
+            congrArg (· ≫ _) edit_tail_fst_fold
+      _ = cataR dropSrcAlg
+            ≫ prodMap (relProd (dEdit A) (dEdit A)) (relProd (dPair A) (dPair A))
+                (graph editFn) (graph editFn)
+            ≫ (relProd (dPair A) (dPair A)).outr := by rw [← Cat.assoc, dropSrc_edit_fusion]
+      _ = cataR dropSrcAlg ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
+            congrArg (cataR dropSrcAlg ≫ ·) (prodMap_outr_eq_of_entire _ _ _ (graph_entire _))
+      _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc)
+            ≫ (relProd (dEdit A) (dEdit A)).outr ≫ graph editFn :=
+            congrArg (· ≫ _) dropSrc_fold.symm
+      _ = graph dropSrc ≫ graph editFn := by rw [← Cat.assoc, pair_outr_of_entire entire_id]
+
+calc_steps edit_dropSrc
 
 /-- **edit-tail** (B&dM p.226): `edit (𝟙×tail)⊑R° edit` — dropping the head of the target
     string leaves a pair that an edit sequence no longer reaches. -/
