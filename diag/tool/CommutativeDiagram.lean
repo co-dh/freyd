@@ -1030,9 +1030,13 @@ def isVertical (first second : Nat) (mirror : Bool) (i : Nat) : Bool :=
 
     A PASTE IS NOT FREE TO TURN: its chord runs from the shared source to the shared target with the
     `lhs` face above it and the `rhs` below, and the chord's own label is set inside the `lhs` face,
-    so swapping the two sides would put each face on the other side of the arrow they induce. -/
+    so swapping the two sides would put each face on the other side of the arrow they induce.
+
+    AN INEQUATION IS NOT FREE TO TURN EITHER: the note reads the mark as `(down, then right) ⊑
+    (right, then down)`, so the `lhs` — the smaller side, struck or not — runs counter-clockwise. -/
 def Face.transposed (fc : Face) : MetaM Bool := do
   if fc.chord.isSome then return false
+  if ((struckSyms.find? (·.2 == fc.sym)).map (·.1)).getD fc.sym != "=" then return true
   let moved (es : Array (String × String × Expr)) : MetaM (Array Bool) :=
     es.mapM fun (_, _, f) => return (← imageOf f).isSome
   let (ml, mr) := (← moved fc.lhs.edges, ← moved fc.rhs.edges)
