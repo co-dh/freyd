@@ -17,6 +17,12 @@ namespace Freyd.Alg.CalcSteps
 public def spineHeads : List Name :=
   [``Trans.trans, ``Eq.trans, `Freyd.Alg.le_trans, `Freyd.Diag.OrderedCat.«≤_trans»]
 
+/-- `calc a` opens the chain with the step `a = a := rfl` (Lean's `calcFirstStep`): it carries only
+    the first term, which the next step's left side carries already, so it is no step of the chain. -/
+def reflStart : Expr × Expr → Bool
+  | (l, t) => (l.consumeMData.isAppOf ``rfl || l.consumeMData.isAppOf ``Eq.refl) &&
+      match t.eq? with | some (_, a, b) => a == b | none => false
+
 /-- The leaves of a trans spine, left to right, each with the type THE SPINE states for it — the
     binder type of its head at that argument — never the leaf's inferred type: a `rfl` step infers
     `X = X` where the `calc` line it closes reads `X = Y`.  `t` is the type `e` proves. -/
@@ -29,7 +35,8 @@ public partial def leaves (e t : Expr) : MetaM (Array (Expr × Expr)) := do
   match ← whnf (← inferType (mkAppN e.getAppFn (args.extract 0 (args.size - 2)))) with
   | .forallE _ tf b _ =>
     match ← whnf (b.instantiate1 f) with
-    | .forallE _ tg _ _ => return (← leaves f tf.headBeta) ++ (← leaves g tg.headBeta)
+    | .forallE _ tg _ _ =>
+      return ((← leaves f tf.headBeta) ++ (← leaves g tg.headBeta)).filter (!reflStart ·)
     | _ => return #[(e, t)]
   | _ => return #[(e, t)]
 
