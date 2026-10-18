@@ -234,6 +234,8 @@ directly.
 #disp[#definition[
 #leanf("Freyd.Alg.Pres") #h(4pt) — `φ` *preserves* `R`; B&dM call `φ` *monotonic on* `R`.
 
+- if `xs F(R) ys` and `φ` merges `ys` to `y`, then `φ` merges `xs` to some `x` with `x R y`
+
 `(≤×≤)+⊑+≤` — addition, #leant("Freyd.Alg.RelSet.plusRel"), preserves `≤`: #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
