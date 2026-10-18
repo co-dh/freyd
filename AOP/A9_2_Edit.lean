@@ -1711,7 +1711,7 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.dPair] public meta def unexpandDPair : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[A]×[A]")))
+  | _ => `($(mkIdent (Name.mkSimple "Str(A)×Str(A)")))
 
 end Freyd.Alg.RelSet.Edit
 
