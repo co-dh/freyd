@@ -9,7 +9,8 @@
   that moves under the note fails `cite-check` here too.
 
   WHAT "THE TYPE" IS, read off the ELABORATED statement and nothing else: an arrow-valued `def` has
-  its hom, an (in)equation between arrows has the hom its two sides share, a relator-valued `def`
+  its hom, an (in)equation between arrows has the hom its two sides share, a pointwise one
+  `∀ x : X, l(x) = r(x)` between points of `Y` has the map type `X⟶Y` of its two sides, a relator-valued `def`
   runs between two categories, and any other non-theorem — a plain function, a `Type`, a `Prop`
   predicate — has the Lean type of the name cell's term, except a predicate made a coreflexive by
   `corefl`, which has that coreflexive's hom (`coreflHom?`).  A theorem that is no (in)equation gets an
@@ -242,10 +243,16 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
       -- An equation states its type as `Eq`'s first argument, which an ascription in the statement
       -- sets; the left side's inferred type forgets it.
       let t ← match body.eq? with | some (ty, _, _) => pure ty | none => Meta.inferType l
-      let some s ← hom? t piece brk |
-        throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
+      if let some s ← hom? t piece brk then return ← name l s
+      -- A POINTWISE (in)equation `∀ x : X, l(x) ≤ r(x)` with sides in `Y` compares the two maps
+      -- `x ↦ l(x)`, `x ↦ r(x)`: its type is theirs, `X⟶Y`, over the explicit binders the sides use.
+      let pts ← xs.filterM fun x => do
+        pure ((← x.fvarId!.getBinderInfo).isExplicit && (l.containsFVar x.fvarId! || r.containsFVar x.fvarId!))
+      unless pts.isEmpty do
+        if !(← Meta.isProp t) && !t.isSort then
+          return ← name l (← funPieces (← Meta.mkForallFVars pts t) piece brk)
+      throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
           {← Meta.ppExpr t} and not arrows of a category — it has no hom type to render"
-      name l s
     | none =>
       let self := mkAppN (.const declName (ci.levelParams.map .param)) xs
       if let some s ← hom? body piece brk then name self s else
