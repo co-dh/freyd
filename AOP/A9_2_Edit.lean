@@ -1586,6 +1586,74 @@ public theorem V_recip_laxNatural :
   obtain ⟨z2, hz2, hl2⟩ := suffixP_listP S p.2 p'.2 q.2 h2 hV.2
   exact ⟨(z1, z2), ⟨hz1, hz2⟩, hl1, hl2⟩
 
+/-- **`tail` is LAX natural**: the tail of an image list is the image of the tail. -/
+public theorem tail_laxNatural {x y : RelSet.{0}} (S : x ⟶ y) :
+    list S ≫ (graph tail : dList y.carrier ⟶ dList y.carrier) ⊑ graph tail ≫ list S :=
+  le_iff.mpr fun xs zs ⟨ys, h, hz⟩ => by
+    obtain rfl : zs = tail ys := hz
+    refine ⟨tail xs, rfl, ?_⟩
+    match xs, ys, h with
+    | ConsList.wrap _, ConsList.wrap _, _ => exact rfl
+    | ConsList.cons _ _, ConsList.cons _ _, h => exact h.2
+    | ConsList.wrap _, ConsList.cons _ _, h => exact h.elim
+    | ConsList.cons _ _, ConsList.wrap _, h => exact h.elim
+
+/-- **`𝟙×tail` is LAX natural** (`tail_laxNatural` on the second lane). -/
+public theorem tail_snd_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => rprodMap (𝟙 (dList a.carrier)) (graph tail)) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _, rprodMap_comp, rprodMap_comp]
+  exact rprodMap_mono (le_iff.mpr fun a c ⟨b, hab, hbc⟩ =>
+    ⟨a, (id_apply _ _).mpr rfl, ((id_apply _ _).mp hbc) ▸ hab⟩) (tail_laxNatural S)
+
+/-- **`(𝟙×tail)*` is LAX natural**: `B A ⊑ C B ⟹ B A* ⊑ C* B` on `tail_snd_laxNatural`. -/
+public theorem tail_snd_star_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => star (rprodMap (𝟙 (dList a.carrier)) (graph tail))) :=
+  fun S => comp_star_le_star_comp (tail_snd_laxNatural S)
+
+/-- **`𝟙×tail*` is LAX natural**: it is `(𝟙×tail)*` (`rprodMap_id_star`). -/
+public theorem id_tail_star_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => rprodMap (𝟙 (dList a.carrier)) (star (graph tail))) := by
+  intro x y S
+  show _ ≫ rprodMap (𝟙 _) (star (graph tail)) ⊑ rprodMap (𝟙 _) (star (graph tail)) ≫ _
+  rw [rprodMap_id_star, rprodMap_id_star]
+  exact tail_snd_star_laxNatural S
+
+/-- `list(Op(S))` carries `dropTgt` across: the same position writes to the target. -/
+public theorem listP_dropTgt {x y : RelSet.{0}} (S : x ⟶ y) :
+    ∀ (xs : ConsList Unit (Op x.carrier)) (ys : ConsList Unit (Op y.carrier)),
+      listP (opRel S) xs ys → listP (opRel S) (dropTgt xs) (dropTgt ys)
+  | ConsList.wrap _, ConsList.wrap _, h => h
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.cpy _) _, h => h
+  | ConsList.cons (Op.del _) xs, ConsList.cons (Op.del _) ys, h => ⟨h.1, listP_dropTgt S xs ys h.2⟩
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.ins _) _, h => h.2
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.del _) _, h
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.ins _) _, h
+  | ConsList.cons (Op.del _) _, ConsList.cons (Op.cpy _) _, h
+  | ConsList.cons (Op.del _) _, ConsList.cons (Op.ins _) _, h
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.cpy _) _, h
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.del _) _, h => h.1.elim
+  | ConsList.wrap _, ConsList.cons _ _, h | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+
+/-- **`dropTgt` is LAX natural** in the alphabet (`listP_dropTgt`). -/
+public theorem dropTgt_laxNatural :
+    LaxNatural (op.comp listRelator) (op.comp listRelator)
+      (fun a : RelSet.{0} => (graph dropTgt : dEdit a.carrier ⟶ dEdit a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun xs zs ⟨ys, h, hz⟩ => ?_
+  obtain rfl : zs = dropTgt ys := hz
+  exact ⟨dropTgt xs, rfl, listP_dropTgt S xs ys h⟩
+
+/-- **`(R°)*` is not lax natural**: it is `R°` (`R_recip_star`), which is not. -/
+public theorem R_recip_star_not_lax_natural :
+    ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
+      (fun a : RelSet.{0} => star (R a.carrier)°) := by
+  simpa only [R_recip_star] using R_recip_not_lax_natural
+
 /-- **`base°` is LAX natural**: only `([],[])` is related to `([],[])` by `list(S)×list(S)`. -/
 public theorem base_recip_laxNatural :
     LaxNatural (Relator.const (dL Unit)) (Relator.prod listRelator listRelator)
