@@ -1519,6 +1519,16 @@ def peerStep (n : Name) (side : Expr) : MetaM (Option Step) := do
   return some (← Step.new n (rel.isAppOfArity ``Eq 3) (ci.value?.getD (mkConst n)) hyps
     (some (← instantiateMVars body)))
 
+/-- THE OPERANDS AT ONE PLACE OF BOTH SIDES `l` and `r` of a step, where `l` holds the drawn side
+    `s`: both sides are walked down the same applications in step, so `B ∪ C(BA) ⊑ B ∪ C(CB)` drawn
+    at its right operand is `C(BA) ⊑ C(CB)`.  `none` when `l` does not hold `s` at a place `r` shares. -/
+partial def operandPair? (s l r : Expr) : MetaM (Option (Expr × Expr)) := do
+  if ← Meta.withNewMCtxDepth <| Meta.withTransparency .instances <| Meta.isDefEq l s then return some (l, r)
+  unless l.isApp && l.getAppFn == r.getAppFn && l.getAppNumArgs == r.getAppNumArgs do return none
+  for (a, b) in l.getAppArgs.zip r.getAppArgs do
+    if let some p ← operandPair? s a b then return some p
+  return none
+
 /-- THE MARK IS A PROPERTY OF A BEAD, ITS NEIGHBOUR AND THE STEP THAT LEAVES THE PANEL (`Step`),
     settled once the panel's order is: the bead whose partner — directly above it or directly below —
     a binder of the step (`passCands`), a hypothesis a peer's step brings (`Step.hyps`) or a theorem
@@ -1530,6 +1540,15 @@ def peerStep (n : Name) (side : Expr) : MetaM (Option Step) := do
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
 def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
+  -- THE PANEL MAY DRAW ONE OPERAND of the step's sides — `∪` is a sign between its operands' panels —
+  -- and then the step on THIS panel is its statement cut to that operand on both sides (`operandPair?`).
+  let steps ← steps.mapM fun st => do
+    let (some s, some ty) := (side?, st.stmt) | return st
+    let some rel ← stmtRel? ty | return st
+    let args := rel.getAppArgs
+    let (a, b) := (← instantiateMVars args[args.size - 2]!, ← instantiateMVars args[args.size - 1]!)
+    let some (a', b') ← operandPair? (← instantiateMVars s) a b | return st
+    return { st with stmt := some (mkAppN rel.getAppFn ((args.extract 0 (args.size - 2)).push a' |>.push b')) }
   -- A MARK SAYS THE STEP CARRIES THE PARTNER ACROSS THE BEAD, so the step's other side must show it:
   -- the bead is still a factor there, and what stands on the partner's side of it changed.  A proof
   -- that only USES the bead's square (`h°F(≥)h ≥ ⊑ ≥ ≥` drops `h` outright) crosses nothing.
