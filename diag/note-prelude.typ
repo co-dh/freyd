@@ -772,11 +772,11 @@
 // `(sym:, meaning:)` plus `decl:`, whose type and value cells are `leant`/`leanf` of that ONE name, so
 // nothing is typed twice; a `type:`/`value:` entry is the cell for what no declaration states.
 // `head`: a first row spanning all four columns.
-#let ex-table(head: none, ..rows) = disp(table(
+#let ex-table(head: none, col: [*symbol*], ..rows) = disp(table(
   columns: (auto, auto, 1fr, 1fr),
   align: left + horizon,
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header(..if head != none { (table.cell(colspan: 4, head),) }, [*symbol*], [*type*], [*value*], [*meaning*]),
+  table.header(..if head != none { (table.cell(colspan: 4, head),) }, col, [*type*], [*value*], [*meaning*]),
   ..rows.pos().map(r => (
     r.sym,
     if "type" in r { r.type } else if "decl" in r { leant(r.decl) } else { [] },

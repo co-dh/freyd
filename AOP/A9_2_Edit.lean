@@ -2115,6 +2115,88 @@ public theorem column_cata (xs : Str A) :
       = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
   consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
 
+/-! ### `mle-step`: one run of `mle` on `([a,b],[b])`, `a≠b`, one theorem per row of the note's table -/
+
+section MleRun
+
+variable {a b : A}
+
+omit [DecidableEq A] in
+/-- **mle-step**, `Λ(step°)`: the decompositions of `([a,b],[b])` are a `del` and an `ins`, no `cpy`
+    since the heads differ. -/
+public theorem run_step_recip (hab : a ≠ b) (q : Op A × (Str A × Str A)) :
+    stepFn q = (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ()))
+      ↔ q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+        ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
+  obtain ⟨o, xs, ys⟩ := q
+  constructor
+  · intro h
+    cases o with
+    | cpy c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
+               exact absurd (h.1.1.symm.trans h.2.1) hab
+    | del c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
+               obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h; exact Or.inl rfl
+    | ins c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
+               obtain ⟨rfl, rfl, rfl⟩ := h; exact Or.inr rfl
+  · rintro (h | h) <;> rw [h] <;> rfl
+
+/-- **mle-step**, `unstep`: both decompositions survive the thinning, as a list. -/
+public theorem run_unstep (hab : a ≠ b) :
+    unstepFn (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ()))
+      = ConsList.cons (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+          (ConsList.cons (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ()))
+            (ConsList.wrap ())) := by
+  rw [unstep_cons, if_neg hab]
+
+/-- **mle-step**, the recursive `mle` on the `del` rest: `mle([b],[b])=[cpy b]`. -/
+public theorem run_rest_cpy :
+    mle (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ()))
+      = ConsList.cons (Op.cpy b) (ConsList.wrap ()) := by
+  rw [mle, if_pos rfl, mle]
+
+/-- **mle-step**, the recursive `mle` on the `ins` rest: `mle([a,b],[])=[del a,del b]`. -/
+public theorem run_rest_del :
+    mle (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())
+      = ConsList.cons (Op.del a) (ConsList.cons (Op.del b) (ConsList.wrap ())) := by
+  rw [mle, mle, mle]
+
+/-- **mle-step**, `((𝟙×mle)cons)′`: each operation put in front of its rest's sequence. -/
+public theorem run_cons (hab : a ≠ b) :
+    cmap (fun q => ConsList.cons q.1 (mle q.2))
+        (unstepFn (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ())))
+      = ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
+          (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
+            (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ())) := by
+  rw [run_unstep hab]; simp only [cmap, run_rest_cpy, run_rest_del]
+
+omit [DecidableEq A] in
+/-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one. -/
+public theorem run_minL (w : ConsList Unit (Op A)) :
+    minL(R A) (ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
+          (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
+            (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ()))) w
+      ↔ w = ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())) := by
+  rw [minL_apply]
+  constructor
+  · rintro ⟨h | h | h, hmin⟩
+    · exact h
+    · subst h; have h2 := hmin _ (Or.inl rfl); simp [R, clen] at h2
+    · exact h.elim
+  · rintro rfl
+    refine ⟨Or.inl rfl, fun z hz => ?_⟩
+    rcases hz with rfl | rfl | h
+    · exact Nat.le_refl _
+    · simp [R, clen]
+    · exact h.elim
+
+/-- **mle-step**, the whole run: `mle([a,b],[b])=[del a,cpy b]`. -/
+public theorem run_mle (hab : a ≠ b) :
+    mle (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ()))
+      = ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())) := by
+  rw [mle, if_neg hab, run_rest_cpy, run_rest_del (a := a)]; simp [bmin, R, clen]
+
+end MleRun
+
 -- printing-only unexpanders: the edit sequences and the string pairs under the note's names.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.dEdit] public meta def unexpandDEdit : Unexpander

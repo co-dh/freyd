@@ -542,6 +542,38 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_prog.lhs")],
 )]<edit-laws>
 
+// One run of `mle` on `([a,b],[b])`, `a≠b`, one row per operator of @edit-laws in the order it
+// acts; each value is a theorem of the `mle-step` section of A9_2_Edit, cited beside its row.
+#ex-table(col: [*step*],
+  (sym: [`empty→nil, …`], type: leant("Freyd.Alg.RelSet.Edit.empty"), value: [`([a,b],[b])`],
+   meaning: [not both empty: the `step` branch]),
+  (sym: frc([`step°`]), type: [`Str(A)×Str(A)⟶P(Op×Str(A)×Str(A))`],
+   value: [`{(del a,([b],[b])), (ins b,([a,b],[]))}`],
+   meaning: [`step(del a,([b],[b]))=([a,b],[b])` \ `step(ins b,([a,b],[]))=([a,b],[b])` \
+     no `cpy`: the heads `a≠b`]),
+  // lean:AOP.A9_2_Edit.run_step_recip@ec6cbdcc
+  (sym: [`thin(Q)`], type: [`P(Op×Str(A)×Str(A))⟶P(Op×Str(A)×Str(A))`],
+   value: [`{(del a,([b],[b])), (ins b,([a,b],[]))}`],
+   meaning: [`[b]` is a suffix of `[a,b]`, but `[b]` not of `[]`: both survive]),
+  // lean:AOP.A9_2_Edit.unstep_thins@13b55cba
+  (sym: [`unstep`], type: leant("Freyd.Alg.RelSet.Edit.unstep"),
+   value: [`[(del a,([b],[b])), (ins b,([a,b],[]))]`],
+   meaning: [the thinned set, as a list]),
+  // lean:AOP.A9_2_Edit.run_unstep@8ca6cbe0
+  (sym: [`(𝟙×mle)′`], type: [`[Op×Str(A)×Str(A)]⟶[Op×[Op]]`],
+   value: [`[(del a,[cpy b]), (ins b,[del a,del b])]`],
+   meaning: [from the entries already computed: \ `mle([b],[b])=[cpy b]` \
+     `mle([a,b],[])=[del a,del b]`]),
+  // lean:AOP.A9_2_Edit.run_rest_cpy@5e5cd3a6 lean:AOP.A9_2_Edit.run_rest_del@7b5a84a1
+  (sym: [`cons′`], type: [`[Op×[Op]]⟶[[Op]]`],
+   value: [`[[del a,cpy b], [ins b,del a,del b]]`],
+   meaning: [each operation in front of its rest's sequence: lengths 2 and 3]),
+  // lean:AOP.A9_2_Edit.run_cons@28ced010
+  (sym: [`minL(R)`], type: [`[[Op]]⟶[Op]`], value: [`[del a,cpy b]`],
+   meaning: [the shorter one: `mle([a,b],[b])=[del a,cpy b]`]),
+  // lean:AOP.A9_2_Edit.run_minL@a4fef380 lean:AOP.A9_2_Edit.run_mle@51a16810
+)<mle-step>
+
 // B&dM p.226, "immediate from Proposition 9.2": the proposition's argument at `length`, one row
 // per fact.
 #disp[#calc-table(
