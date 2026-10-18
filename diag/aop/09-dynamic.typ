@@ -391,8 +391,8 @@
 
 #disp[#align(center)[#leancd("Freyd.Alg.RelSet.Edit.edit_Vrecip")]]<edit-V-cd>
 
-- `es` top left, `(x,y) = edit(es)` top right; for every `(x,y) V° (x',y')` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
-- `[del(a),cpy(b)] ↦ ([a,b],[b])`, `V°` to `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
+- `es` top left, `(x,y) = edit(es)` top right; for every pair of suffixes `(x',y')` of `(x,y)` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
+- `[del(a),cpy(b)] ↦ ([a,b],[b])`, suffixes `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
 #disp[#deftab(
   [#rowkey("Freyd.Alg.RelSet.Edit.dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.dropTgt")],
