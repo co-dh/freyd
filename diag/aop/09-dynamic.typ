@@ -398,7 +398,8 @@
   [#rowkey("Freyd.Alg.RelSet.Edit.dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.dropTgt")],
   "Freyd.Alg.RelSet.Edit.dropTgt",
   [`[del(a),cpy(b)] ↦ [del(a),del(b)]` #linebreak() `[ins(c),cpy(b)] ↦ [cpy(b)]` #linebreak()
-   drop the first operation that writes to the target string],
+   drop the first operation that writes to the target string #linebreak()
+   builds the `fs` of 9.2.1 from `es`: `|fs| ≤ |es|`, and `edit(fs)` keeps the source `x` and drops the first character of the target `y`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.editFn_dropTgt")],
   "Freyd.Alg.RelSet.Edit.editFn_dropTgt",
   [`edit[del(a),cpy(b)]=([a,b],[b])`, `edit[del(a),del(b)]=([a,b],[])` #linebreak()
