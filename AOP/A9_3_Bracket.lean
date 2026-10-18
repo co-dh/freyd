@@ -1824,36 +1824,10 @@ public theorem col_cons :
 
 /-! ### `addcol`: `array` as a fold over `cons` -/
 
-/-- `tail` on lists, `[]` its own `tail`.  Irreducible, as `tailFn` is. -/
-@[expose, irreducible] public def listTailFn {X : Type} : CL.ConsList Unit X → CL.ConsList Unit X
-  | CL.ConsList.wrap u => CL.ConsList.wrap u
-  | CL.ConsList.cons _ xs => xs
-
-public theorem listTailFn_cons {X : Type} (x : X) (xs : CL.ConsList Unit X) :
-    listTailFn (CL.ConsList.cons x xs) = xs := by unfold listTailFn; rfl
-
-public theorem listTailFn_wrap {X : Type} (u : Unit) :
-    listTailFn (CL.ConsList.wrap u : CL.ConsList Unit X) = CL.ConsList.wrap u := by unfold listTailFn; rfl
-
 /-- `tail list(f)=list(f) tail`, pointwise. -/
 public theorem cmap_listTail {X Y : Type} (f : X → Y) (xs : CL.ConsList Unit X) :
-    cmap f (listTailFn xs) = listTailFn (cmap f xs) := by
-  cases xs with
-  | wrap u =>
-    show cmap f (listTailFn (CL.ConsList.wrap u)) = listTailFn (CL.ConsList.wrap u)
-    rw [listTailFn_wrap, listTailFn_wrap]; rfl
-  | cons x xs =>
-    show cmap f (listTailFn (CL.ConsList.cons x xs)) = listTailFn (CL.ConsList.cons (f x) (cmap f xs))
-    rw [listTailFn_cons, listTailFn_cons]
-
-/-- The `tail` bead on lists is lax natural. -/
-public theorem listTail_lax_natural {X Y : Type} (S : CL.dE X ⟶ CL.dE Y) :
-    list S ≫ (graph listTailFn : dList Y ⟶ dList Y) ⊑ (graph listTailFn : dList X ⟶ dList X) ≫ list S :=
-  graph_lax _ _ _ _ fun xs ys h => match xs, ys, h with
-    | CL.ConsList.wrap _, CL.ConsList.wrap _, h => by rw [listTailFn_wrap, listTailFn_wrap]; exact h
-    | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
-    | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
-    | CL.ConsList.cons _ _, CL.ConsList.cons _ _, h => by rw [listTailFn_cons, listTailFn_cons]; exact h.2
+    cmap f (Edit.tail xs) = Edit.tail (cmap f xs) := by
+  cases xs <;> rfl
 
 /-- `⟨list f,list g⟩ zip=list⟨f,g⟩`, pointwise. -/
 public theorem zipFn_cmap_pair {X Y Z : Type} (f : X → Y) (g : X → Z) :
@@ -1866,7 +1840,7 @@ omit [Inhabited A] in
 /-- `tic≜cons inits tail`, the book's abbreviation (B&dM p. 235). -/
 @[expose] public def tic : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dList (NEList A) :=
   (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ (graph inits : dNE A ⟶ dList (NEList A))
-    ≫ (graph listTailFn : dList (NEList A) ⟶ dList (NEList A))
+    ≫ (graph Edit.tail : dList (NEList A) ⟶ dList (NEList A))
 
 omit [Inhabited A] in
 /-- The `tic` bead is lax natural. -/
@@ -1874,7 +1848,7 @@ public theorem tic_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     rprodMap R (nelist R) ≫ tic (A := B) ⊑ tic (A := A) ≫ list (nelist R) := by
   simp only [tic, CL.consR, graph_comp]
   exact graph_lax _ _ _ _ fun p q h => by
-    simp only [inits, listTailFn_cons]
+    simp only [inits, Edit.tail]
     exact (listP_inits R (CL.ConsList.cons p.1 p.2) (CL.ConsList.cons q.1 q.2) ⟨h.1, h.2⟩).2
 
 omit [Inhabited A] in
@@ -1888,7 +1862,7 @@ public theorem outlτ_consInitsTail_lax_natural {B : Type} (R : CL.dE A ⟶ CL.d
         ≫ rprodMap (nelist R) (list (nelist R)) := by
   simp only [tic, CL.consR, CL.τ, graph_comp, rpair_graph]
   exact graph_lax _ _ _ _ fun p q h => ⟨h.1, by
-    simp only [inits, listTailFn_cons]
+    simp only [inits, Edit.tail]
     exact (listP_inits R (CL.ConsList.cons p.1 p.2) (CL.ConsList.cons q.1 q.2) ⟨h.1, h.2⟩).2⟩
 
 set_option hygiene false in
@@ -1896,9 +1870,9 @@ local notation "consNE" => (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dN
 set_option hygiene false in
 local notation "initsG" => (graph inits : dNE A ⟶ dList (NEList A))
 set_option hygiene false in
-local notation "tailNG" => (graph listTailFn : dList (NEList A) ⟶ dList (NEList A))
+local notation "tailNG" => (graph Edit.tail : dList (NEList A) ⟶ dList (NEList A))
 set_option hygiene false in
-local notation "tailTG" => (graph listTailFn : dList (Tree A) ⟶ dList (Tree A))
+local notation "tailTG" => (graph Edit.tail : dList (Tree A) ⟶ dList (Tree A))
 set_option hygiene false in
 local notation "outlN" => (graph Prod.fst : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dA A)
 set_option hygiene false in
@@ -1953,7 +1927,7 @@ public theorem array_cons_step2 :
   simp only [tic, row, CL.consR, CL.τ, cons, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
-  simp only [inits, listTailFn_cons]
+  simp only [inits, Edit.tail]
 
 /-- `array` as one map. -/
 public theorem array_graph :
@@ -2054,7 +2028,7 @@ public theorem rests_step2 :
   simp only [tic, array, row, CL.consR, list_graph, graph_comp]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
-  simp only [inits, listTailFn_cons, cmap_cmap, tailFn_cons]
+  simp only [inits, Edit.tail, cmap_cmap, tailFn_cons]
 
 /-- `rests=π₂ array`. -/
 public theorem rests_eq : rests st sb cb = outrN ≫ array st sb cb :=
@@ -2075,7 +2049,7 @@ public theorem newrows_step2 :
   simp only [tic, row, CL.consR, cons, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
-  simp only [inits, tails, listTailFn_cons, cmap_cmap, cmap, tailFn_cons] <;> rfl
+  simp only [inits, tails, Edit.tail, cmap_cmap, cmap, tailFn_cons] <;> rfl
 
 /-- `newrows`, third step: `list⟨f,g⟩=⟨list(f),list(g)⟩ zip`; products; definitions of `tops` and
     `rests`. -/
@@ -2191,17 +2165,13 @@ open Lean PrettyPrinter in
 @[app_unexpander gArmFn] public meta def unexpandGArmFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "(𝟙×sz)² opb π₁")))
 
--- `inits⁺`/`tails⁺` carry a superscript no identifier can; `listTailFn` is `tail` on a possibly
--- empty list, a second `tail` beside `NEList`'s; `minL(R)` in `CL.minL`'s own spelling.
+-- `inits⁺`/`tails⁺` carry a superscript no identifier can; `minL(R)` in `CL.minL`'s own spelling.
 open Lean PrettyPrinter in
 @[app_unexpander initsPFn] public meta def unexpandInitsPFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "inits⁺")))
 open Lean PrettyPrinter in
 @[app_unexpander tailsPFn] public meta def unexpandTailsPFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "tails⁺")))
-open Lean PrettyPrinter in
-@[app_unexpander listTailFn] public meta def unexpandListTailFn : Unexpander
-  | _ => `($(mkIdent `tail))
 -- `zip` and `snoc` take their two arguments as one pair, which the note writes as two arguments
 -- or, eta-reduced inside `list bin zip`, not at all.
 open Lean PrettyPrinter in

@@ -908,7 +908,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.tops_rec") \
     #src[the trees at the top of the new rows are what `process` makes of `a` and the array of `x`,
      less its first]],
-     // lean:AOP.A9_3_Bracket.tops_rec@56489cc3
+     // lean:AOP.A9_3_Bracket.tops_rec@a3fe95e7
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.tops_step1.lhs"), [])],
@@ -921,12 +921,12 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step2.rhs"),
     [#src[`tail f′=f′ tail`; definition of `col`]])],
-     // lean:AOP.A9_3_Bracket.tops_step2@331c9a78
+     // lean:AOP.A9_3_Bracket.tops_step2@9efb823a
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step3.rhs"),
     [#src[(9.9) — @col-cons]])],
-     // lean:AOP.A9_3_Bracket.tops_step3@887fab92
+     // lean:AOP.A9_3_Bracket.tops_step3@66fd7405
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step3.rhs")],
 )]<tops-rec>
 
