@@ -17,10 +17,10 @@
 
   NO IN-CONTEXT TRAP HERE.  Unlike `AOP.A8_6_Tour`'s `tour-mono`, whose positive rows are
   false as printed because the book argues them only for tours of the SAME input, `V`'s two
-  rows are unconditional: `shrink_left`/`shrink_right` prove them for EVERY edit sequence, by
-  the `cpy`/`del`/`ins` induction the book sketches on p.226 ("if `e = ins b`, remove it; if
-  `e = cpy b`, replace it by `del b`").  Both constructions leave the other output alone and
-  never lengthen the sequence, which is exactly `R°`.
+  rows are unconditional, by the book's route on p.226: the `tail` rows `edit_tail_snd`/
+  `edit_tail_fst` for EVERY edit sequence ("if `e = ins b`, remove it; if `e = cpy b`, replace it
+  by `del b`" — `dropTgt`/`dropSrc`), then the `suffix` rows from them by `suffix = tail*` and
+  `B A ⊑ C B ⟹ B A* ⊑ C* B`.
 
   Proposition 9.4 is used through its concrete instance rather than
   `AOP.A9_1.birelator_thin_condition`: the `Birelator` `G(Y,X) = L + Y×X` that instance needs
@@ -47,7 +47,7 @@ public import AOP.A9_1
 public import AOP.A8_3
 public import AOP.A7_2_RelSet
 import AOP.A5_7_PowerBeads
-import AOP.A6_7
+public import AOP.A6_7
 import AOP.A7_5_VanBeads
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
@@ -523,90 +523,215 @@ public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R A
 
 /-! ## `edit-laws` — the `V` condition, B&dM p.226
 
-  The book's argument, on points: to shorten one output by a head, find the element of the
-  edit sequence that produced that head and either delete it (an `ins`) or weaken it to a
-  `del` (a `cpy`).  The other output is untouched and the sequence never grows. -/
+  The book's route: the `tail` rows first, from the book's informal argument (in `es`, take the
+  first operation that writes to the shortened string: an `ins` goes, a `cpy` weakens to a `del`),
+  then the `suffix` rows from them by `suffix = tail*` and `B A ⊑ C B ⟹ B A* ⊑ C* B`. -/
 
-/-- Dropping heads off the RIGHT output: every suffix `y` of `(edit es).2` is reached by an
-    edit sequence `fs` no longer than `es`, with the left output unchanged. -/
-public theorem shrink_right : ∀ (es : ConsList Unit (Op A)) {y : Str A},
-    suffixP y (editFn es).2 → ∃ fs, editFn fs = ((editFn es).1, y) ∧ clen fs ≤ clen es := by
-  intro es
-  induction es with
-  | wrap _ =>
-    intro y hy
-    obtain rfl : y = ConsList.wrap () := hy
-    exact ⟨ConsList.wrap (), rfl, Nat.le_refl _⟩
-  | cons op es ih =>
-    intro y hy
-    cases op with
-    | cpy a =>
-      rcases (hy : y = ConsList.cons a (editFn es).2 ∨ suffixP y (editFn es).2) with rfl | h
-      · exact ⟨ConsList.cons (Op.cpy a) es, rfl, Nat.le_refl _⟩
-      · obtain ⟨fs, hfs, hlen⟩ := ih h
-        exact ⟨ConsList.cons (Op.del a) fs, by simp only [editFn_del, editFn_cpy, hfs],
-          Nat.succ_le_succ hlen⟩
-    | del a =>
-      obtain ⟨fs, hfs, hlen⟩ := ih (hy : suffixP y (editFn es).2)
-      exact ⟨ConsList.cons (Op.del a) fs, by simp only [editFn_del, hfs],
-        Nat.succ_le_succ hlen⟩
-    | ins a =>
-      rcases (hy : y = ConsList.cons a (editFn es).2 ∨ suffixP y (editFn es).2) with rfl | h
-      · exact ⟨ConsList.cons (Op.ins a) es, rfl, Nat.le_refl _⟩
-      · obtain ⟨fs, hfs, hlen⟩ := ih h
-        exact ⟨fs, by simp only [editFn_ins, hfs], Nat.le_trans hlen (Nat.le_succ _)⟩
+/-- `tail : [A] → [A]`. -/
+@[expose] public def tail : Str A → Str A
+  | ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons _ x => x
 
-/-- Dropping heads off the LEFT output — the mirror of `shrink_right`, `ins` for `del`. -/
-public theorem shrink_left : ∀ (es : ConsList Unit (Op A)) {x : Str A},
-    suffixP x (editFn es).1 → ∃ fs, editFn fs = (x, (editFn es).2) ∧ clen fs ≤ clen es := by
-  intro es
-  induction es with
-  | wrap _ =>
-    intro x hx
-    obtain rfl : x = ConsList.wrap () := hx
-    exact ⟨ConsList.wrap (), rfl, Nat.le_refl _⟩
-  | cons op es ih =>
-    intro x hx
-    cases op with
-    | cpy a =>
-      rcases (hx : x = ConsList.cons a (editFn es).1 ∨ suffixP x (editFn es).1) with rfl | h
-      · exact ⟨ConsList.cons (Op.cpy a) es, rfl, Nat.le_refl _⟩
-      · obtain ⟨fs, hfs, hlen⟩ := ih h
-        exact ⟨ConsList.cons (Op.ins a) fs, by simp only [editFn_ins, editFn_cpy, hfs],
-          Nat.succ_le_succ hlen⟩
-    | del a =>
-      rcases (hx : x = ConsList.cons a (editFn es).1 ∨ suffixP x (editFn es).1) with rfl | h
-      · exact ⟨ConsList.cons (Op.del a) es, rfl, Nat.le_refl _⟩
-      · obtain ⟨fs, hfs, hlen⟩ := ih h
-        exact ⟨fs, by simp only [editFn_del, hfs], Nat.le_trans hlen (Nat.le_succ _)⟩
-    | ins a =>
-      obtain ⟨fs, hfs, hlen⟩ := ih (hx : suffixP x (editFn es).1)
-      exact ⟨ConsList.cons (Op.ins a) fs, by simp only [editFn_ins, hfs],
-        Nat.succ_le_succ hlen⟩
+/-- B&dM p.226, target side: drop the first operation that writes to the target — an `ins(b)`
+    goes, a `cpy(b)` becomes `del(b)`. -/
+@[expose] public def dropTgt : ConsList Unit (Op A) → ConsList Unit (Op A)
+  | ConsList.wrap u => ConsList.wrap u
+  | ConsList.cons (Op.cpy a) es => ConsList.cons (Op.del a) es
+  | ConsList.cons (Op.del a) es => ConsList.cons (Op.del a) (dropTgt es)
+  | ConsList.cons (Op.ins _) es => es
 
-/-- **edit-laws**, second row: `edit (𝟙×suffix)⊑R° edit`. -/
+/-- The source side, mirrored: a `del(a)` goes, a `cpy(a)` becomes `ins(a)`. -/
+@[expose] public def dropSrc : ConsList Unit (Op A) → ConsList Unit (Op A)
+  | ConsList.wrap u => ConsList.wrap u
+  | ConsList.cons (Op.cpy a) es => ConsList.cons (Op.ins a) es
+  | ConsList.cons (Op.del _) es => es
+  | ConsList.cons (Op.ins a) es => ConsList.cons (Op.ins a) (dropSrc es)
+
+/-- `dropTgt` leaves the source and drops the head of the target. -/
+public theorem editFn_dropTgt : ∀ es : ConsList Unit (Op A),
+    editFn (dropTgt es) = ((editFn es).1, tail (editFn es).2)
+  | ConsList.wrap _ => rfl
+  | ConsList.cons (Op.cpy _) _ => rfl
+  | ConsList.cons (Op.del _) es => by simp only [dropTgt, editFn_del, editFn_dropTgt es]
+  | ConsList.cons (Op.ins _) _ => rfl
+
+/-- `dropSrc` drops the head of the source and leaves the target. -/
+public theorem editFn_dropSrc : ∀ es : ConsList Unit (Op A),
+    editFn (dropSrc es) = (tail (editFn es).1, (editFn es).2)
+  | ConsList.wrap _ => rfl
+  | ConsList.cons (Op.cpy _) _ => rfl
+  | ConsList.cons (Op.del _) _ => rfl
+  | ConsList.cons (Op.ins _) es => by simp only [dropSrc, editFn_ins, editFn_dropSrc es]
+
+public theorem clen_dropTgt : ∀ es : ConsList Unit (Op A), clen (dropTgt es) ≤ clen es
+  | ConsList.wrap _ => Nat.le_refl _
+  | ConsList.cons (Op.cpy _) _ => Nat.le_refl _
+  | ConsList.cons (Op.del _) es => Nat.succ_le_succ (clen_dropTgt es)
+  | ConsList.cons (Op.ins _) _ => Nat.le_succ _
+
+public theorem clen_dropSrc : ∀ es : ConsList Unit (Op A), clen (dropSrc es) ≤ clen es
+  | ConsList.wrap _ => Nat.le_refl _
+  | ConsList.cons (Op.cpy _) _ => Nat.le_refl _
+  | ConsList.cons (Op.del _) _ => Nat.le_succ _
+  | ConsList.cons (Op.ins _) es => Nat.succ_le_succ (clen_dropSrc es)
+
+/-- `dropTgt` never lengthens: `dropTgt ⊑ R°`. -/
+public theorem dropTgt_le : (graph dropTgt : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
+  le_iff.mpr fun es fs h => by
+    obtain rfl : fs = dropTgt es := h
+    exact clen_dropTgt es
+
+/-- `dropSrc` never lengthens: `dropSrc ⊑ R°`. -/
+public theorem dropSrc_le : (graph dropSrc : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
+  le_iff.mpr fun es fs h => by
+    obtain rfl : fs = dropSrc es := h
+    exact clen_dropSrc es
+
+/-- `edit (𝟙×tail) = dropTgt edit`. -/
+public theorem edit_dropTgt :
+    graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
+      = graph dropTgt ≫ graph editFn := by
+  apply hom_ext; intro es q
+  constructor
+  · rintro ⟨p, hp, hx, hy⟩
+    obtain rfl : p = editFn es := hp
+    refine ⟨dropTgt es, rfl, ?_⟩
+    show q = editFn (dropTgt es)
+    rw [editFn_dropTgt, (hx : (editFn es).1 = q.1), ← (hy : q.2 = tail (editFn es).2)]
+  · rintro ⟨fs, hfs, hq⟩
+    obtain rfl : fs = dropTgt es := hfs
+    obtain rfl : q = editFn (dropTgt es) := hq
+    rw [editFn_dropTgt]
+    exact ⟨editFn es, rfl, ⟨(id_apply _ _).mpr rfl, rfl⟩⟩
+
+/-- `edit (tail×𝟙) = dropSrc edit`. -/
+public theorem edit_dropSrc :
+    graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
+      = graph dropSrc ≫ graph editFn := by
+  apply hom_ext; intro es q
+  constructor
+  · rintro ⟨p, hp, hx, hy⟩
+    obtain rfl : p = editFn es := hp
+    refine ⟨dropSrc es, rfl, ?_⟩
+    show q = editFn (dropSrc es)
+    rw [editFn_dropSrc, (hy : (editFn es).2 = q.2), ← (hx : q.1 = tail (editFn es).1)]
+  · rintro ⟨fs, hfs, hq⟩
+    obtain rfl : fs = dropSrc es := hfs
+    obtain rfl : q = editFn (dropSrc es) := hq
+    rw [editFn_dropSrc]
+    exact ⟨editFn es, rfl, ⟨rfl, (id_apply _ _).mpr rfl⟩⟩
+
+/-- **edit-tail** (B&dM p.226): `edit (𝟙×tail)⊑R° edit` — dropping the head of the target
+    string leaves a pair that an edit sequence no longer reaches. -/
+public theorem edit_tail_snd :
+    graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
+      ⊑ (R A)° ≫ graph editFn :=
+  calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
+      _ = graph dropTgt ≫ graph editFn := edit_dropTgt
+      _ ⊑ (R A)° ≫ graph editFn := comp_mono_right dropTgt_le _
+
+calc_steps edit_tail_snd
+
+/-- **edit-tail** (B&dM p.226): `edit (tail×𝟙)⊑R° edit`, the same for the source string. -/
+public theorem edit_tail_fst :
+    graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
+      ⊑ (R A)° ≫ graph editFn :=
+  calc graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
+      _ = graph dropSrc ≫ graph editFn := edit_dropSrc
+      _ ⊑ (R A)° ≫ graph editFn := comp_mono_right dropSrc_le _
+
+calc_steps edit_tail_fst
+
+/-- `suffix = tail*`: a suffix is what some number of `tail`s leaves. -/
+public theorem suffix_eq_star_tail : (suffixR : dList A ⟶ dList A) = star (graph tail) := by
+  refine le_antisymm (le_iff.mpr fun x y h => ?_) ?_
+  · induction x generalizing y with
+    | wrap _ =>
+      obtain rfl : y = ConsList.wrap () := h
+      exact le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
+    | cons a x ih =>
+      rcases (h : y = ConsList.cons a x ∨ suffixP y x) with rfl | h
+      · exact le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
+      · exact le_iff.mp (comp_star_le _) _ _ ⟨x, rfl, ih y h⟩
+  · show mu _ ⊑ _
+    refine mu_le (le_iff.mpr fun x z h => ?_)
+    rw [union_apply, id_apply] at h
+    rcases h with rfl | ⟨y, hy, hz⟩
+    · exact suffixP.refl x
+    · obtain rfl : y = tail x := hy
+      cases x with
+      | wrap _ => exact hz
+      | cons _ _ => exact Or.inr hz
+
+/-- `𝟙×T* = (𝟙×T)*`: closing the second component is closing the pair. -/
+public theorem rprodMap_id_star {X Y : RelSet.{0}} (T : Y ⟶ Y) :
+    rprodMap (𝟙 X) (star T) = star (rprodMap (𝟙 X) T) := by
+  refine le_antisymm (le_iff.mpr fun ⟨a, b⟩ ⟨a', b'⟩ h => ?_)
+    (star_le_of_preorder ?_ ?_ (rprodMap_mono (le_refl _) (le_star T)))
+  · obtain ⟨hx, hy⟩ := h
+    obtain rfl : a = a' := (id_apply _ _).mp hx
+    have key : star T ⊑ (fun b b' => ∀ a, star (rprodMap (𝟙 X) T) (a, b) (a, b') : Y ⟶ Y) := by
+      show mu _ ⊑ _
+      refine mu_le (le_iff.mpr fun b b' h => ?_)
+      rw [union_apply, id_apply] at h
+      rcases h with rfl | ⟨c, hT, hY⟩
+      · exact fun a => le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
+      · exact fun a => le_iff.mp (comp_star_le _) _ _
+          ⟨(a, c), ⟨(id_apply _ _).mpr rfl, hT⟩, hY a⟩
+    exact le_iff.mp key b b' hy a
+  · rw [← rprodMap_id]; exact rprodMap_mono (le_refl _) (id_le_star T)
+  · rw [rprodMap_comp, Cat.id_comp]; exact rprodMap_mono (le_refl _) (star_trans T)
+
+/-- `T*×𝟙 = (T×𝟙)*`: closing the first component is closing the pair. -/
+public theorem rprodMap_star_id {X Y : RelSet.{0}} (T : Y ⟶ Y) :
+    rprodMap (star T) (𝟙 X) = star (rprodMap T (𝟙 X)) := by
+  refine le_antisymm (le_iff.mpr fun ⟨b, a⟩ ⟨b', a'⟩ h => ?_)
+    (star_le_of_preorder ?_ ?_ (rprodMap_mono (le_star T) (le_refl _)))
+  · obtain ⟨hy, hx⟩ := h
+    obtain rfl : a = a' := (id_apply _ _).mp hx
+    have key : star T ⊑ (fun b b' => ∀ a, star (rprodMap T (𝟙 X)) (b, a) (b', a) : Y ⟶ Y) := by
+      show mu _ ⊑ _
+      refine mu_le (le_iff.mpr fun b b' h => ?_)
+      rw [union_apply, id_apply] at h
+      rcases h with rfl | ⟨c, hT, hY⟩
+      · exact fun a => le_iff.mp (id_le_star _) _ _ ((id_apply _ _).mpr rfl)
+      · exact fun a => le_iff.mp (comp_star_le _) _ _
+          ⟨(c, a), ⟨hT, (id_apply _ _).mpr rfl⟩, hY a⟩
+    exact le_iff.mp key b b' hy a
+  · rw [← rprodMap_id]; exact rprodMap_mono (id_le_star T) (le_refl _)
+  · rw [rprodMap_comp, Cat.id_comp]; exact rprodMap_mono (star_trans T) (le_refl _)
+
+/-- `R°` is a preorder, hence its own closure: `(R°)* = R°`. -/
+public theorem R_recip_star : star (R A)° = (R A)° :=
+  le_antisymm
+    (star_le_of_preorder (le_iff.mpr fun x y h => by
+        obtain rfl : x = y := (id_apply _ _).mp h
+        exact Nat.le_refl _) R_recip_trans (le_refl _))
+    (le_star _)
+
+/-- **edit-laws**, second row: `edit (𝟙×suffix)⊑R° edit`, from the `tail` row by `suffix = tail*`. -/
 public theorem edit_suffix_right :
     graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
       ⊑ (R A)° ≫ graph editFn :=
-  le_iff.mpr fun es q h => by
-    obtain ⟨p, hp, hx, hy⟩ := h
-    obtain rfl : p = editFn es := hp
-    obtain ⟨fs, hfs, hlen⟩ := shrink_right es (hy : suffixP q.2 (editFn es).2)
-    refine ⟨fs, hlen, ?_⟩
-    show q = editFn fs
-    rw [hfs, (hx : (editFn es).1 = q.1)]
+  calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
+      _ = graph editFn ≫ rprodMap (𝟙 (dList A)) (star (graph tail)) := by rw [suffix_eq_star_tail]
+      _ = graph editFn ≫ star (rprodMap (𝟙 (dList A)) (graph tail)) := by rw [rprodMap_id_star]
+      _ ⊑ star (R A)° ≫ graph editFn := comp_star_le_star_comp edit_tail_snd
+      _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
 
-/-- **edit-laws**, second row: `edit (suffix×𝟙)⊑R° edit`. -/
+calc_steps edit_suffix_right
+
+/-- **edit-laws**, second row: `edit (suffix×𝟙)⊑R° edit`, the same for the source string. -/
 public theorem edit_suffix_left :
     graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
       ⊑ (R A)° ≫ graph editFn :=
-  le_iff.mpr fun es q h => by
-    obtain ⟨p, hp, hx, hy⟩ := h
-    obtain rfl : p = editFn es := hp
-    obtain ⟨fs, hfs, hlen⟩ := shrink_left es (hx : suffixP q.1 (editFn es).1)
-    refine ⟨fs, hlen, ?_⟩
-    show q = editFn fs
-    rw [hfs, (hy : (editFn es).2 = q.2)]
+  calc graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
+      _ = graph editFn ≫ rprodMap (star (graph tail)) (𝟙 (dList A)) := by rw [suffix_eq_star_tail]
+      _ = graph editFn ≫ star (rprodMap (graph tail) (𝟙 (dList A))) := by rw [rprodMap_star_id]
+      _ ⊑ star (R A)° ≫ graph editFn := comp_star_le_star_comp edit_tail_fst
+      _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
+
+calc_steps edit_suffix_left
 
 /-- `edit-V`, first step: `V°=suffix×suffix` splits into `(suffix×𝟙)(𝟙×suffix)`. -/
 public theorem edit_Vrecip_step1 :
@@ -1461,6 +1586,74 @@ public theorem V_recip_laxNatural :
   obtain ⟨z2, hz2, hl2⟩ := suffixP_listP S p.2 p'.2 q.2 h2 hV.2
   exact ⟨(z1, z2), ⟨hz1, hz2⟩, hl1, hl2⟩
 
+/-- **`tail` is LAX natural**: the tail of an image list is the image of the tail. -/
+public theorem tail_laxNatural {x y : RelSet.{0}} (S : x ⟶ y) :
+    list S ≫ (graph tail : dList y.carrier ⟶ dList y.carrier) ⊑ graph tail ≫ list S :=
+  le_iff.mpr fun xs zs ⟨ys, h, hz⟩ => by
+    obtain rfl : zs = tail ys := hz
+    refine ⟨tail xs, rfl, ?_⟩
+    match xs, ys, h with
+    | ConsList.wrap _, ConsList.wrap _, _ => exact rfl
+    | ConsList.cons _ _, ConsList.cons _ _, h => exact h.2
+    | ConsList.wrap _, ConsList.cons _ _, h => exact h.elim
+    | ConsList.cons _ _, ConsList.wrap _, h => exact h.elim
+
+/-- **`𝟙×tail` is LAX natural** (`tail_laxNatural` on the second lane). -/
+public theorem tail_snd_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => rprodMap (𝟙 (dList a.carrier)) (graph tail)) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _, rprodMap_comp, rprodMap_comp]
+  exact rprodMap_mono (le_iff.mpr fun a c ⟨b, hab, hbc⟩ =>
+    ⟨a, (id_apply _ _).mpr rfl, ((id_apply _ _).mp hbc) ▸ hab⟩) (tail_laxNatural S)
+
+/-- **`(𝟙×tail)*` is LAX natural**: `B A ⊑ C B ⟹ B A* ⊑ C* B` on `tail_snd_laxNatural`. -/
+public theorem tail_snd_star_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => star (rprodMap (𝟙 (dList a.carrier)) (graph tail))) :=
+  fun S => comp_star_le_star_comp (tail_snd_laxNatural S)
+
+/-- **`𝟙×tail*` is LAX natural**: it is `(𝟙×tail)*` (`rprodMap_id_star`). -/
+public theorem id_tail_star_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => rprodMap (𝟙 (dList a.carrier)) (star (graph tail))) := by
+  intro x y S
+  show _ ≫ rprodMap (𝟙 _) (star (graph tail)) ⊑ rprodMap (𝟙 _) (star (graph tail)) ≫ _
+  rw [rprodMap_id_star, rprodMap_id_star]
+  exact tail_snd_star_laxNatural S
+
+/-- `list(Op(S))` carries `dropTgt` across: the same position writes to the target. -/
+public theorem listP_dropTgt {x y : RelSet.{0}} (S : x ⟶ y) :
+    ∀ (xs : ConsList Unit (Op x.carrier)) (ys : ConsList Unit (Op y.carrier)),
+      listP (opRel S) xs ys → listP (opRel S) (dropTgt xs) (dropTgt ys)
+  | ConsList.wrap _, ConsList.wrap _, h => h
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.cpy _) _, h => h
+  | ConsList.cons (Op.del _) xs, ConsList.cons (Op.del _) ys, h => ⟨h.1, listP_dropTgt S xs ys h.2⟩
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.ins _) _, h => h.2
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.del _) _, h
+  | ConsList.cons (Op.cpy _) _, ConsList.cons (Op.ins _) _, h
+  | ConsList.cons (Op.del _) _, ConsList.cons (Op.cpy _) _, h
+  | ConsList.cons (Op.del _) _, ConsList.cons (Op.ins _) _, h
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.cpy _) _, h
+  | ConsList.cons (Op.ins _) _, ConsList.cons (Op.del _) _, h => h.1.elim
+  | ConsList.wrap _, ConsList.cons _ _, h | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+
+/-- **`dropTgt` is LAX natural** in the alphabet (`listP_dropTgt`). -/
+public theorem dropTgt_laxNatural :
+    LaxNatural (op.comp listRelator) (op.comp listRelator)
+      (fun a : RelSet.{0} => (graph dropTgt : dEdit a.carrier ⟶ dEdit a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun xs zs ⟨ys, h, hz⟩ => ?_
+  obtain rfl : zs = dropTgt ys := hz
+  exact ⟨dropTgt xs, rfl, listP_dropTgt S xs ys h⟩
+
+/-- **`(R°)*` is not lax natural**: it is `R°` (`R_recip_star`), which is not. -/
+public theorem R_recip_star_not_lax_natural :
+    ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
+      (fun a : RelSet.{0} => star (R a.carrier)°) := by
+  simpa only [R_recip_star] using R_recip_not_lax_natural
+
 /-- **`base°` is LAX natural**: only `([],[])` is related to `([],[])` by `list(S)×list(S)`. -/
 public theorem base_recip_laxNatural :
     LaxNatural (Relator.const (dL Unit)) (Relator.prod listRelator listRelator)
@@ -1523,11 +1716,6 @@ public instance instInhabitedCL : Inhabited (Str A) := ⟨ConsList.wrap ()⟩
   | ConsList.wrap _ => default
   | ConsList.cons a _ => a
 
-/-- `tail : [A] → [A]`. -/
-@[expose] public def tail : Str A → Str A
-  | ConsList.wrap _ => ConsList.wrap ()
-  | ConsList.cons _ x => x
-
 /-- `init : [A] → [A]`, the list without its last element. -/
 @[expose] public def init : Str A → Str A
   | ConsList.wrap _ => ConsList.wrap ()
@@ -1557,33 +1745,6 @@ public instance instDecR (es fs : (dEdit A).carrier) : Decidable (R A es fs) :=
   inferInstanceAs (Decidable (clen es ≤ clen fs))
 
 end Tabulation
-
-/-- `tail` picks one of the suffixes: `tail⊑suffix`. -/
-public theorem tail_le_suffix : graph (tail (A := A)) ⊑ suffixR :=
-  le_iff.mpr fun x y h => by
-    obtain rfl : y = tail x := h
-    cases x with
-    | wrap _ => exact (rfl : ConsList.wrap () = ConsList.wrap ())
-    | cons _ x => exact Or.inr (suffixP.refl x)
-
-/-- **edit-tail** (B&dM p.226): `edit (𝟙×tail)⊑R° edit` — dropping the head of the target
-    string leaves a pair that an edit sequence no longer reaches. -/
-public theorem edit_tail_snd :
-    graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
-      ⊑ (R A)° ≫ graph editFn :=
-  calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
-      _ ⊑ graph editFn ≫ rprodMap (𝟙 (dList A)) suffixR :=
-          comp_mono_left _ (rprodMap_mono (le_refl _) tail_le_suffix)
-      _ ⊑ (R A)° ≫ graph editFn := edit_suffix_right
-
-/-- **edit-tail** (B&dM p.226): `edit (tail×𝟙)⊑R° edit`, the same for the source string. -/
-public theorem edit_tail_fst :
-    graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
-      ⊑ (R A)° ≫ graph editFn :=
-  calc graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
-      _ ⊑ graph editFn ≫ rprodMap suffixR (𝟙 (dList A)) :=
-          comp_mono_left _ (rprodMap_mono tail_le_suffix (le_refl _))
-      _ ⊑ (R A)° ≫ graph editFn := edit_suffix_left
 
 variable [DecidableEq A]
 
@@ -1734,6 +1895,12 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.editFn] public meta def Freyd.Alg.RelSet.Edit.unexpandEditFn : Unexpander
   | _ => `($(mkIdent `edit))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropTgt] public meta def Freyd.Alg.RelSet.Edit.unexpandDropTgt : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "drop₂")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dropSrc] public meta def Freyd.Alg.RelSet.Edit.unexpandDropSrc : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "drop₁")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.FeditR] public meta def Freyd.Alg.RelSet.Edit.unexpandFeditR : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "F(𝟙,edit°)")))

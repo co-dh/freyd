@@ -394,6 +394,23 @@
 - `es` top left, `(x,y) = edit(es)` top right; for every `(x,y) V° (x',y')` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
 - `[del(a),cpy(b)] ↦ ([a,b],[b])`, `V°` to `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
+#import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
+#import "../generated/Freyd.Alg.RelSet.Edit.edit_suffix_right.calc.typ" as calc-edit-suffix
+// B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
+    #src[dropping the head of the target string is matched by an edit sequence no longer than `es`]],
+     // lean:AOP.A9_2_Edit.edit_tail_snd@50716d48
+  lean-calc(calc-edit-tail),
+)]<edit-tail-calc>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_suffix_right") \
+    #src[replacing the target string by any suffix of it is matched by an edit sequence no longer than `es`]],
+     // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
+  lean-calc(calc-edit-suffix),
+)]<edit-suffix-calc>
+
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
 // `A` — sugar undone at the ends too.
