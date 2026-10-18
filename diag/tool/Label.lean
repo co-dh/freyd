@@ -272,6 +272,14 @@ def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
   unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
   return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
 
+/-- The members `t₁ … tₙ` of a predicate body `#0 = t₁ ∨ … ∨ #0 = tₙ` under one binder, no `tᵢ`
+    mentioning `#0`; `none` for any other body. -/
+partial def setMembers? (b : Expr) : Option (Array Expr) :=
+  if b.isAppOfArity ``Or 2 then return (← setMembers? b.appFn!.appArg!) ++ (← setMembers? b.appArg!)
+  else if b.isAppOfArity ``Eq 3 && b.appFn!.appArg! == .bvar 0 && !b.appArg!.hasLooseBVars then
+    some #[b.appArg!]
+  else none
+
 /-- The closed applications inside `e`, outermost first: what a juxtaposition the printer wrote
     can be the spelling of. -/
 partial def appSubs (e : Expr) : Array Expr :=
@@ -1622,6 +1630,10 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- the object `E[A]`, and a projection Lean wrote only because `×` is a type former is not a step
   -- of the algebra.  Each peel strictly shrinks the term, so the two cannot loop through each other.
   if let some x ← unprojNoted? e then return ← labelTree prec x
+  -- A FINITE SET is written by its members, `fun q => q = x ∨ q = y` is `{x,y}`: each member spelled
+  -- by this printer, so a pair and an operation in it read as they do in a list (`(del(a),([b],[b]))`).
+  if let .lam _ _ b _ := e then
+    if let some ms := setMembers? b then return commaL "{" "}" (← ms.mapM (labelTree 0))
   -- A FIELD LEAN LEFT AS A POSITION is written through the field's own name, or the notation keyed
   -- on it — `RelProd.p`'s `a×b` — never fires and the label prints `inst✝.1`.
   if let some x ← namedProj? e then return ← labelTree prec x

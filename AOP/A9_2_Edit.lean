@@ -2124,11 +2124,13 @@ variable {a b : A}
 omit [DecidableEq A] in
 /-- **mle-step**, `Λ(step°)`: the decompositions of `([a,b],[b])` are a `del` and an `ins`, no `cpy`
     since the heads differ. -/
-public theorem run_step_recip (hab : a ≠ b) (q : Op A × (Str A × Str A)) :
-    stepFn q = (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ()))
-      ↔ q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+public theorem run_step_recip (hab : a ≠ b) :
+    (fun q : Op A × (Str A × Str A) =>
+        stepFn q = (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ())))
+      = fun q => q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
         ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
-  obtain ⟨o, xs, ys⟩ := q
+  funext ⟨o, xs, ys⟩
+  apply propext
   constructor
   · intro h
     cases o with
@@ -2139,6 +2141,33 @@ public theorem run_step_recip (hab : a ≠ b) (q : Op A × (Str A × Str A)) :
     | ins c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
                obtain ⟨rfl, rfl, rfl⟩ := h; exact Or.inr rfl
   · rintro (h | h) <;> rw [h] <;> rfl
+
+omit [DecidableEq A] in
+/-- **mle-step**, `thin(Q)`: neither decomposition has its strings `V`-below the other's, so the
+    thinning keeps both — the only thinning of that set is the set itself. -/
+public theorem run_thin (Y : Op A × (Str A × Str A) → Prop) :
+    thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+        (fun q : Op A × (Str A × Str A) =>
+          q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+          ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ()))) Y
+      ↔ Y = fun q => q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+        ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
+  constructor
+  · intro h
+    obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp h
+    funext q
+    apply propext
+    refine ⟨hsub q, fun hq => ?_⟩
+    obtain ⟨w, hw, hY⟩ := hdom q hq
+    obtain ⟨_, h1, h2⟩ := hw
+    rcases hsub w hY with rfl | rfl <;> rcases hq with rfl | rfl
+    · exact hY
+    · exact absurd (suffixP_clen_le h2) (by simp [clen])
+    · exact absurd (suffixP_clen_le h1) (by simp [clen])
+    · exact hY
+  · rintro rfl
+    refine (thinRel_pt _ _ _).mpr ⟨fun _ h => h, fun z hz => ⟨z, ?_, hz⟩⟩
+    exact ⟨topMor_apply _ _, suffixP.refl _, suffixP.refl _⟩
 
 /-- **mle-step**, `unstep`: both decompositions survive the thinning, as a list. -/
 public theorem run_unstep (hab : a ≠ b) :
@@ -2160,14 +2189,17 @@ public theorem run_rest_del :
       = ConsList.cons (Op.del a) (ConsList.cons (Op.del b) (ConsList.wrap ())) := by
   rw [mle, mle, mle]
 
-/-- **mle-step**, `((𝟙×mle)cons)′`: each operation put in front of its rest's sequence. -/
-public theorem run_cons (hab : a ≠ b) :
-    cmap (fun q => ConsList.cons q.1 (mle q.2))
-        (unstepFn (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ())))
+/-- **mle-step**, `list((𝟙×mle)cons)` on `unstep`'s list: each operation put in front of its rest's
+    sequence. -/
+public theorem run_list_cons :
+    cmap (fun q : Op A × (Str A × Str A) => ConsList.cons q.1 (mle q.2))
+        (ConsList.cons (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
+          (ConsList.cons (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ()))
+            (ConsList.wrap ())))
       = ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ())) := by
-  rw [run_unstep hab]; simp only [cmap, run_rest_cpy, run_rest_del]
+  simp only [cmap, run_rest_cpy, run_rest_del]
 
 omit [DecidableEq A] in
 /-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one. -/

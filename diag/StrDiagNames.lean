@@ -399,8 +399,12 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let args := e.getAppArgs
   -- AS AN ARROW (no value yet) at a leaf of the element type it is `CL.τ`, the unit of `list⁺`,
   -- and prints as that one name; the `Unit` leaf's arrow is `nil`, named by `Label.lean` from its source.
-  if e.getAppNumArgs == 2 && (← Meta.isDefEq args[0]! args[1]!) then return ← `($(mkIdent `τ))
-  unless e.getAppNumArgs == 3 do failure
+  -- Size first, in its own `if`: do-notation hoists a `←` above the `&&` beside it, so a guard
+  -- `size == 2 && (← … args[1]!)` still indexed a bare `wrap` (a key `app.` fires on) and panicked.
+  if args.size < 2 then failure
+  if args.size == 2 then
+    if ← Meta.isDefEq args[0]! args[1]! then return ← `($(mkIdent `τ))
+  unless args.size == 3 do failure
   if (← Meta.isDefEq args[0]! args[1]!) then
     let x ← withAppArg delab
     `([$x])
