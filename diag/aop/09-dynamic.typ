@@ -420,7 +420,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_dropTgt") \
     #src[editing with `es` then dropping the head of the target string equals editing with `drop₂(es)`]],
      // lean:AOP.A9_2_Edit.edit_dropTgt@ee5733fc
-  lean-calc(calc-edit-drop2),
+  lean-calc(calc-edit-drop2, breaks: (4,)),
 )]<edit-drop2-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
