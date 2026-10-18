@@ -3270,7 +3270,10 @@ def drawsSame (l r : Expr) : MetaM Bool :=
   let objVars ← (← getLCtx).getFVars.filterM fun x => do
     let t ← Meta.inferType x
     return (← Meta.isDefEq t regionTy) || (← idxTy.elim (pure false) (Meta.isDefEq t ·))
-  let code (e : Expr) : MetaM String := do panelCode (← panelOf regionTy cat e objVars (pure #[])) none none
+  -- A side is drawn as the note draws it: a join is its operands' panels with the sign between.
+  let code (e : Expr) : MetaM (List String) := do
+    (← joinParts "" e).toList.flatMapM fun (s, e) => do
+      return [s, ← panelCode (← panelOf regionTy cat e objVars (pure #[])) none none]
   return (← code l) == (← code r)
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.

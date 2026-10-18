@@ -582,6 +582,35 @@ def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
   -- several bodies opened at once must be one term, and may hold lambdas no label writes.
   if ds.size == 1 then drawnAlike a b else sameDrawn a b
 
+/-- THE RELATION BETWEEN TWO TERMS OF ONE `calc` that are more than one step apart: the `step_i`
+    theorems `calc_steps` wrote for the steps between them, composed — `=` with `⊑` is `⊑` — and the
+    step that is not `=` as the reason.  `none` when `a` and `b` are no two such terms. -/
+def calcSpan? (a b : Side) : MetaM (Option (Name × String)) := do
+  let env ← getEnv
+  let p := a.1.getPrefix
+  unless p == b.1.getPrefix do return none
+  let step (i : Nat) := p ++ Name.mkSimple s!"step_{i + 1}"
+  let n := (List.range 1000).find? (fun i => !env.contains (step i)) |>.getD 1000
+  -- A side's index among the calc's terms: `step_i.lhs` is term `i - 1`, `step_i.rhs` term `i`.
+  let term (s : Side) : Option Nat := match s.2.2.1 with
+    | ["lhs"] => (List.range n).find? (step · == s.1)
+    | ["rhs"] => ((List.range n).find? (step · == s.1)).map (· + 1)
+    | _ => none
+  let (some i, some j) := (term a, term b) | return none
+  if j ≤ i + 1 then return none
+  let mut rel := "="
+  let mut by_ := step i
+  for m in [i:j] do
+    let some ci := env.find? (step m) | throwError "{step m}: no such declaration"
+    noteRead (.stmt (step m))
+    let some (s, _, _) ← Meta.forallTelescope ci.type fun _ t => pure (split t)
+      | throwError "{step m}: its statement relates no two sides"
+    if s == "=" then continue
+    if rel != "=" && rel != s then
+      throwError "{p}: the steps from term {i} to term {j} relate by {rel} and by {s}; no one relation composes them"
+    rel := s; by_ := step m
+  return some (by_, rel)
+
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
     head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
     which side each panel unifies with.  The candidates are `rfl`, the panels' own declarations, then
@@ -682,6 +711,9 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
       if best.all (·.1 < k) then best := some (k, c, s)
     | .ok none => pure ()
     | .error _ => cut := cut.push c
+  -- Two terms of one calc further apart than a step (`mergeSameDrawn` joined the steps between,
+  -- whose sides draw alike): the step theorems between them, composed.
+  if best.isNone then if let some r ← calcSpan? a b then return r
   -- A candidate cut short might have outranked what was found: that is not the answer.
   unless cut.isEmpty do
     throwError "the step from {a.1}.{".".intercalate a.2.2.1} to {b.1}.{".".intercalate b.2.2.1}: the \
@@ -860,6 +892,31 @@ partial def lawsIn (drawsSame : Expr → Expr → MetaM Bool) (coerced : MetaM B
       return if shown then inner.push (.thm c) else inner
   | _ => return #[]
 
+/-- A CALC STEP WHOSE TWO SIDES DRAW ONE PICTURE (bracketing, identities) is no row: the reader
+    sees the same panel twice.  It joins the next step — keeping the panel that step's law is stated
+    on — unless that one unfolds a definition (`≜` stays its own row), then the previous.  The
+    joined row keeps its law, and its relation is the composite; a calc left with no step that
+    changes the picture is refused.  Rows: (selector, relation, law, inst, sides draw alike). -/
+partial def mergeSameDrawn (declName : Name) (rows : Array (String × String × String × String × Bool)) :
+    MetaM (Array (String × String × String × String × Bool)) := do
+  -- The joined step's relation: the law's, unless the regrouping is the stronger.
+  let comp (law same : String) : MetaM String :=
+    if same == "=" || same == "≜" || same == law then pure law
+    else if law == "=" || law == "≜" then pure same
+    else throwError "{declName}: a step whose sides draw alike ({same}) joins a {law} step; no one relation composes them"
+  let some j := (List.range rows.size).find? (fun j => j ≥ 1 && rows[j]!.2.2.2.2) | return rows
+  if rows.size ≤ 2 then
+    throwError "{declName}: every step of the calc draws its two sides as one picture — no row would show a change"
+  let (s, r, _, _, _) := rows[j]!
+  let rows ← if j + 1 < rows.size && (rows[j + 1]!.2.1 != "≜" || j == 1) then do
+      let (s1, r1, l1, i1, a1) := rows[j + 1]!
+      let (_, r0, l0, i0, a0) := rows[j - 1]!
+      pure ((rows.set! (j - 1) (s, r0, l0, i0, a0)).set! (j + 1) (s1, ← comp r1 r, l1, i1, a1))
+    else do
+      let (s0, r0, l0, i0, a0) := rows[j - 1]!
+      pure (rows.set! (j - 1) (s0, ← comp r0 r, l0, i0, a0))
+  mergeSameDrawn declName (rows.eraseIdx! j)
+
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
     selector, the relation into it and the law of the step that reaches it.  The steps are
     `calc_steps`' `<decl>.step_i` theorems, so every panel is a side of a statement like any other;
@@ -885,7 +942,8 @@ def calcFile (drawsSame : Expr → Expr → MetaM Bool) (declName : Name) : Meta
   let first ← match spine[0]? with
     | some (_, ty) => pure (if ← Meta.isProp (← lhsOf (← instantiateMVars ty)) then s!"({first.quote},)" else first.quote)
     | none => pure first.quote
-  let mut rows := #[s!"(sel: {first}, rel: none, law: none)"]
+  -- (selector, relation, law, inst, whether the step's two sides draw one picture)
+  let mut rows : Array (String × String × String × String × Bool) := #[(first, "none", "none", "none", false)]
   for i in List.range n do
     let some v := (env.find? (step i)).bind (·.value?) | throwError "{step i} has no proof to read"
     noteRead (.decl (step i))
@@ -927,8 +985,18 @@ def calcFile (drawsSame : Expr → Expr → MetaM Bool) (declName : Name) : Meta
     let inst ← match laws[0]? with
       | some (Law.thm c) => do pure (if (← stepInsts c (step i)).isSome then s!"{c}@{step i}".quote else "none")
       | _ => pure "none"
-    rows := rows.push s!"(sel: {sel}, rel: {rel.quote}, law: {law}, inst: {inst})"
-  return "#let steps = (\n  " ++ ",\n  ".intercalate rows.toList ++ ",\n)\n"
+    -- Whether the step's two sides DRAW one panel: bracketing and identities no picture shows.
+    let same ← if c?.isNone then pure false else do
+      let some ci := env.find? (step i) | throwError "{step i}: no such declaration"
+      Meta.forallTelescope ci.type fun _ st => do
+        let some (_, l, r) := split st | throwError "{step i}: its statement relates no two sides"
+        drawsSame l r
+    rows := rows.push (sel, rel, law, inst, same)
+  rows ← mergeSameDrawn declName rows
+  let row := fun ((s, r, l, i, _) : String × String × String × String × Bool) =>
+    s!"(sel: {s}, rel: {r.quote}, law: {l}, inst: {i})"
+  return "#let steps = (\n  " ++ ",\n  ".intercalate (s!"(sel: {rows[0]!.1}, rel: none, law: none)" ::
+    (rows.toList.drop 1).map row) ++ ",\n)\n"
 
 /-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
 def relFile (a b : Side) : MetaM String := do
