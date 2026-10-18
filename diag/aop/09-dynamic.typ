@@ -645,10 +645,9 @@
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.mle_head_column"), #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
      // lean:AOP.A9_2_Edit.mle@58d2b679 lean:AOP.A9_2_Edit.mle_head_column@8970f6bf lean:AOP.A9_2_Edit.column@c718c599
-     `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=del′ tails` \
+     `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=list(del) tails` \
      // lean:AOP.A9_2_Edit.column_cata@5daa35d1 lean:AOP.A9_2_Edit.fstcol@980d0d9a lean:AOP.A9_2_Edit.column_nil@508f2638
-     #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
-      `ys`, so the columns are built right to left]])],
+     #src[`mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of `ys`; arranged in columns, the rightmost is `column(xs,[])`, the leftmost `column(xs,ys)` with `mle(xs,ys)` on top, and each column is built from the one to its right]])],
 
   [#vstep(EQ, [],
     [#leanf("Freyd.Alg.RelSet.Edit.column_cons") \
@@ -662,9 +661,7 @@
     [`base(b,u)=[[ins(b)]⧺u]` \ `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,`
      // lean:AOP.A9_2_Edit.Tab.base@5520a210 lean:AOP.A9_2_Edit.Tab.step@ace9b1b6
      `[bmin(R)([del(a)]⧺w,[ins(b)]⧺u)]⧺ws)` \
-     #src[`w=head(ws)`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
-      (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
-      the two lengths]])],
+     #src[`w=head(ws)`. An entry depends on the one below it (if a delete is best), the one to its right (if an insert is best), and the one below that (if a copy is best)]])],
 )]<edit-tabulation>
 
 == Optimal bracketing
