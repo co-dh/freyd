@@ -446,7 +446,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_prefixed") \
     #src[if `B` then `A` is contained in `C` then `B`, then `B`, and also `C*` then `B` then `A`, are contained in `C*` then `B`]],
      // lean:AOP.A6_7.comp_star_prefixed@e4c2d398
-  lean-calc(calc-star-prefixed, breaks: (4,)),
+  lean-calc(calc-star-prefixed, breaks: (3,)),
 )]<star-prefixed-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -903,7 +903,7 @@
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.mct_rec@0b3fb980
-  lean-calc(calc-mct, breaks: (3, 5, 8, 11)),
+  lean-calc(calc-mct, breaks: (3, 6, 9)),
 )]<mct-rec>
 
 // B&dM (9.8), p. 234: the book's five hints split into one law per step.
