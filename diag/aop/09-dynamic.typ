@@ -391,7 +391,7 @@
 
 #disp[#align(center)[#leancd("Freyd.Alg.RelSet.Edit.edit_Vrecip")]]<edit-V-cd>
 
-- `es` top left, `(x,y) = edit(es)` top right; for every pair of suffixes `(x',y')` of `(x,y)` there is `fs` bottom left with `es ≥ fs` and `edit(fs) = (x',y')`
+- for every `es` and every pair of suffixes `(x',y')` of `edit(es)`, there is `fs` with `|fs| ≤ |es|` and `edit(fs) = (x',y')`
 - `[del(a),cpy(b)] ↦ ([a,b],[b])`, suffixes `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
 #disp[#deftab(
