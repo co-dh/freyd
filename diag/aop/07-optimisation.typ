@@ -1688,11 +1688,11 @@ zip(that)                                         each row: its square, and the 
   [`[[a,b,c]]` to `[[a],[b,c]]`, and not back: `1≤2`.],
 
   [`ceiling≜` $frac(#[`prefix sum`], ∋)$ `est(≥)`],
-  [#leant("Freyd.Alg.RelSet.Van.ceilingR")],
+  [#leant("Freyd.Alg.RelSet.Van.ceiling")],
   [`ceiling[a,b]` is the largest of `0`, `a`, `a+b`.],
 
   [`floor≜` $frac(#[`prefix sum`], ∋)$ `est(≤)`],
-  [#leant("Freyd.Alg.RelSet.Van.floorR")],
+  [#leant("Freyd.Alg.RelSet.Van.floor")],
   [`floor[a,b]` is the smallest of `0`, `a`, `a+b`, so `[a,b]` carries `ceiling−floor` cash.],
 
   [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`
@@ -1705,51 +1705,51 @@ zip(that)                                         each row: its square, and the 
   [`ok` keeps `(a,[[b],[c]])` exactly when `[a,b]` is secure.],
 
   [`new≜(τ×𝟙) cons` #leank("Freyd.Alg.RelSet.Van.newFn")],
-  [#leant("Freyd.Alg.RelSet.Van.newR")],
+  [#leant("Freyd.Alg.RelSet.Van.new")],
   [`new(a,[[b],[c]])=[[a],[b],[c]]`.],
 
   [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons`],
-  [#leant("Freyd.Alg.RelSet.Van.glueR")],
+  [#leant("Freyd.Alg.RelSet.Van.glue")],
   [`glue(a,[[b],[c]])=[[a,b],[c]]`.],
 
   [`old≜(𝟙×cons°) assocl` \
    `((cons secure)×𝟙) cons`],
-  [#leant("Freyd.Alg.RelSet.Van.oldR")],
+  [#leant("Freyd.Alg.RelSet.Van.old")],
   [`old(a,[[b],[c]])=[[a,b],[c]]` when `[a,b]` is secure, and nothing otherwise.],
 
  [#leanf("Freyd.Alg.RelSet.Van.partition_cata") \
    #src[cutting the transactions into non-empty segments is one pass along them that either opens
     a segment for the transaction in hand or puts it on the front of the segment already open]],
-  // lean:AOP.A7_5_Van.partition_cata@77b2367f
+  // lean:AOP.A7_5_Van.partition_cata@d5d6f1d8
   [#leant("Freyd.Alg.RelSet.ListRel.partition")],
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
   [`S≜[nil,new ∪ old]`],
-  [#leant("Freyd.Alg.RelSet.Van.Salg")],
+  [#leant("Freyd.Alg.RelSet.Van.S")],
   [`S(a,[[b],[c]])` gives `[[a],[b],[c]]`, and `[[a,b],[c]]` when `[a,b]` is secure.],
 
  [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
     every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
-  // lean:AOP.A7_5_Van.van_spec@104cf5ec
+  // lean:AOP.A7_5_Van.van_spec@594a0b7d
   [#leant("Freyd.Alg.RelSet.Van.van_spec")],
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
-  // lean:AOP.A7_5_Van.Hrel@bb078385
-  [#leant("Freyd.Alg.RelSet.Van.Hrel")],
+  // lean:AOP.A7_5_Van.H@e0cc9e02
+  [#leant("Freyd.Alg.RelSet.Van.H")],
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
  [`R;H≜R∩(R°⇒H)` #src[]],
-  // lean:AOP.A7_5_Van.RH_eq@ddc8b9dc
+  // lean:AOP.A7_5_Van.RH_eq@b44c0810
   [#leant("Freyd.Alg.RelSet.Van.RH_eq")],
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`, and `[[a],[b,c]]` to `[[a,b],[c]]` by `R∩H`.],
 
  [#leanf("Freyd.Alg.RelSet.Van.RH_eq_strict") \
    #src[`|R|` is the strict part of `R`, strictly fewer segments; `R;H` splits into it and `R∩H`]],
-  // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
-  [#leant("Freyd.Alg.RelSet.Van.strictR")],
-  // lean:AOP.A7_5_Van.strictR@9f4d506f
+  // lean:AOP.A7_5_Van.RH_eq_strict@ff8cc20d
+  [#leant("Freyd.Alg.RelSet.Van.«|R|»")],
+  // lean:AOP.A7_5_Van.«|R|»@9f4d506f
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`: `1<2`.],
 
   [the specification \ $frac(#[`partition secure′`], ∋)$ `est(R)`],
@@ -1772,7 +1772,7 @@ zip(that)                                         each row: its square, and the 
    #src[a stretch passes `secure` before the test exactly where the test's own value passes `≤N`
     after it, which is @van-defn:4's `bmax(ceiling x,ceiling x−floor x)≤N`]],
 )
-// lean:AOP.A7_5_Van.secure_bmax@ddf3c4a7
+// lean:AOP.A7_5_Van.secure_bmax@0fd6df48
 ]<van-secure>
 
 // The two panels differ only in the ORDER of the two beads, so they share `prefix`'s height and
@@ -1787,7 +1787,7 @@ zip(that)                                         each row: its square, and the 
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
 )
-// lean:AOP.A7_5_Van.secure_prefix@572206f0
+// lean:AOP.A7_5_Van.secure_prefix@aba487ef
 ]<van-prefix>
 
 === #leanf("Freyd.Alg.RelSet.Van.van_spec") — partitioning into secure segments is one fold <sec-van-fusion>
@@ -1814,9 +1814,9 @@ zip(that)                                         each row: its square, and the 
     only where the longer segment still passes]],
   [#lean("Freyd.Alg.RelSet.Van.old_eq.rhs")],
 )
-// lean:AOP.A7_5_Van.new_eq@e0c8c2f8
-// lean:AOP.A7_5_Van.glue_eq@f4301628
-// lean:AOP.A7_5_Van.old_eq@b9c3949e
+// lean:AOP.A7_5_Van.new_eq@4e0441af
+// lean:AOP.A7_5_Van.glue_eq@3e132bb2
+// lean:AOP.A7_5_Van.old_eq@002a78aa
 ]<van-algebras>
 
 // B&dM p.185's "appeal to fusion" needs the fold law's side condition `R S=(F S)Q`, and this is
@@ -1827,7 +1827,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   lean(van-cond-l, van-cond-r, op: [=]),
-  // lean:AOP.A7_5_Van.van_fusion_cond@ff5bfaef
+  // lean:AOP.A7_5_Van.van_fusion_cond@c826cc46
  [#leanf("Freyd.Alg.RelSet.Van.van_fusion_cond") \
    #src[testing every segment for security after the algebra has run is testing it before it ran:
     a segment `glue` has extended is secure exactly where `old` would have let it be, and the one
@@ -1840,7 +1840,7 @@ zip(that)                                         each row: its square, and the 
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_spec") \
     #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
      every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
-     // lean:AOP.A7_5_Van.van_spec@104cf5ec
+     // lean:AOP.A7_5_Van.van_spec@594a0b7d
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`partition secure′` \ #src[the specification: cut the transactions every way, then keep
@@ -1849,12 +1849,12 @@ zip(that)                                         each row: its square, and the 
 
   [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ secure′` \ #src[`partition` is the fold that either opens a
    segment for the transaction in hand or puts it on the front of the segment already open]],
-     // lean:AOP.A7_5_Van.partition_cata@77b2367f
+     // lean:AOP.A7_5_Van.partition_cata@d5d6f1d8
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs", step: true)],
 
   [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `secure′` inside
    that fold, which is what turns `glue` into `old`]],
-     // lean:AOP.A7_5_Van.van_fusion_cond@ff5bfaef
+     // lean:AOP.A7_5_Van.van_fusion_cond@c826cc46
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step2.rhs")],
 )]<van-fusion-steps>
 
@@ -1865,7 +1865,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   lean(van-fus-l, van-fus-r, op: [=]),
-  // lean:AOP.A7_5_Van.van_spec@104cf5ec
+  // lean:AOP.A7_5_Van.van_spec@594a0b7d
  [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions every way and then keeping the cuts whose every segment is secure
     is one pass along them that either calls the van or extends the open segment while it stays
@@ -1881,7 +1881,7 @@ zip(that)                                         each row: its square, and the 
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_7_14") \
     #src[calling the van for the transaction on a no-longer schedule gets no further than calling
      it on this one and shortening the schedule afterwards]],
-     // lean:AOP.A7_5_Van.van_7_14@31454849
+     // lean:AOP.A7_5_Van.van_7_14@dcae9923
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`(𝟙×R)new` \ #src[the left side of (7.14) — @van-defn:1, @van-defn:6]],
@@ -1896,7 +1896,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_7_14_step2.rhs")],
 )]<van-714>
 
-=== #leanf("Freyd.Alg.RelSet.Van.Hrel") — the right first segment is a prefix of the left one, or both are empty <sec-van-h>
+=== #leanf("Freyd.Alg.RelSet.Van.H") — the right first segment is a prefix of the left one, or both are empty <sec-van-h>
 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
@@ -1904,11 +1904,11 @@ zip(that)                                         each row: its square, and the 
 #disp[#capbox(
   // `union` gives the formula's own left-to-right order, `.inl` (`head prefix° head°`) then `.inr`
   // (`nil° nil`).
-  lean(..union("Freyd.Alg.RelSet.Van.Hrel").sels, op: [∪]),
- [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
+  lean(..union("Freyd.Alg.RelSet.Van.H").sels, op: [∪]),
+ [#leanf("Freyd.Alg.RelSet.Van.H") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
-// lean:AOP.A7_5_Van.Hrel@bb078385
+// lean:AOP.A7_5_Van.H@e0cc9e02
 ]<van-h>
 
 === #leanf("Freyd.Alg.RelSet.Van.van_mono_new") — `new` on an `R;H`-related schedule is matched by `new` or `old` <sec-van-716>
@@ -1924,21 +1924,21 @@ zip(that)                                         each row: its square, and the 
    #src[whatever schedule the van is called on, the result's first segment is the one transaction
     `[a]`, so any two results of `new` on that transaction stand in `H`]],
 )
-// lean:AOP.A7_5_Van.van_7_18@767da25f
+// lean:AOP.A7_5_Van.van_7_18@7c2443d9
 ]<van-718>
 
 #disp(num: "(7.16)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono_new") \
     #src[calling the van for the transaction on a `R;H`-better schedule gets no further than calling
      it on this one and bettering the whole schedule afterwards]],
-     // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
+     // lean:AOP.A7_5_Van.van_mono_new@33b862ab
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`(𝟙×(R;H))new` \ #src[the left side of (7.16)]],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.lhs", step: true)],
 
   [#SQ #h(5pt) `(𝟙×R)new` \ #src[`R;H⊑R` — @van-defn:13]],
-     // lean:AOP.A7_5_Van.RH_le_R@84a882e3
+     // lean:AOP.A7_5_Van.RH_le_R@c6d44e1a
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.rhs", step: true)],
 
   [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
@@ -1948,7 +1948,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step3.rhs")],
 
   [#SQ #h(5pt) `new (R;H)` \ #src[`X∩Y⊑X;Y`, and `new⊑new ∪ old`]],
-     // lean:AOP.A7_5_Van.inter_le_RH@a000aeda
+     // lean:AOP.A7_5_Van.inter_le_RH@9ca4a5de
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step4.rhs")],
 )]<van-716>
 
@@ -1969,7 +1969,7 @@ zip(that)                                         each row: its square, and the 
     `new` makes that segment, so the two first segments are `prefix`-related whatever the schedules
     were]],
 )
-// lean:AOP.A7_5_Van.van_7_19@78e3274f
+// lean:AOP.A7_5_Van.van_7_19@13bdfafe
 ]<van-719>
 
 #disp(num: "(7.20)")[#capbox(
@@ -1978,7 +1978,7 @@ zip(that)                                         each row: its square, and the 
    #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
     the one the van's own segment lengthens]],
 )
-// lean:AOP.A7_5_Van.van_7_20@b29be38c
+// lean:AOP.A7_5_Van.van_7_20@c9d2cc89
 ]<van-720>
 
 #disp(num: "(7.21)")[#capbox(
@@ -1987,7 +1987,7 @@ zip(that)                                         each row: its square, and the 
    #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
     @van-prefix — lets `old` fire on this side too, and it keeps both the length and the prefix]],
 )
-// lean:AOP.A7_5_Van.van_7_21@302aa148
+// lean:AOP.A7_5_Van.van_7_21@2a0d803d
 ]<van-721>
 
 #disp(num: "(7.17)")[#calc-table(
@@ -1995,7 +1995,7 @@ zip(that)                                         each row: its square, and the 
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
      on, or calling the van, and bettering the whole schedule after,
  ]],
-     // lean:AOP.A7_5_Van.van_mono@5f456bbf
+     // lean:AOP.A7_5_Van.van_mono@28b30d2a
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Van.van_mono_step1.lhs"),
@@ -2005,13 +2005,13 @@ zip(that)                                         each row: its square, and the 
   [#vstep(EQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step1.rhs")],
     [#leanf("Freyd.Alg.RelSet.Van.van_mono_step1.rhs") \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn:14, `∪` distributes,
  ]])],
-     // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
+     // lean:AOP.A7_5_Van.RH_eq_strict@ff8cc20d
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.rhs", branch: "inl")],
 
   [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step2.rhs")],
     [#leanf("Freyd.Alg.RelSet.Van.van_mono_step2.rhs") \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
  on `R∩H` — @van-721]])],
-     // lean:AOP.A7_5_Van.van_strict_old@80a35936 lean:AOP.A7_5_Van.van_7_21@302aa148
+     // lean:AOP.A7_5_Van.van_strict_old@ac95dbb5 lean:AOP.A7_5_Van.van_7_21@2a0d803d
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step2.rhs", branch: "inr")],
 
   [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step4.rhs")],
@@ -2036,10 +2036,10 @@ zip(that)                                         each row: its square, and the 
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
-     // lean:AOP.A7_5_Van.van_laws@d9b2bf01
-  // lean:AOP.A7_5_Van.van_spec@104cf5ec lean:AOP.A7_5_Van.van_7_15_false@1b163187
-  // lean:AOP.A7_5_Van.van_7_14@31454849 lean:AOP.A7_5_Van.van_mono_new@ca4101c9
-  // lean:AOP.A7_5_Van.prog_le_greedy@8cc86313
+     // lean:AOP.A7_5_Van.van_laws@127240a2
+  // lean:AOP.A7_5_Van.van_spec@594a0b7d lean:AOP.A7_5_Van.van_7_15_false@b95e7068
+  // lean:AOP.A7_5_Van.van_7_14@dcae9923 lean:AOP.A7_5_Van.van_mono_new@33b862ab
+  // lean:AOP.A7_5_Van.prog_le_greedy@79aa6e7b
   lean-calc(calc-van),
 )]<van-laws>
 

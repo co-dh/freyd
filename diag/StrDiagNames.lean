@@ -86,7 +86,7 @@ attribute [diag_noted] RelSet.Poly.cpL RelSet.Poly.linear RelSet.Poly.hasArg₂ 
   RelSet.CL.bumpFold RelSet.ListRel.thinL
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Knapsack.h₁ RelSet.Knapsack.h₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Paragraph.h₁ RelSet.Paragraph.h₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.cpL
 -- The case studies' own words, every explicit argument printed as Lean has it.
-attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add
+attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.Van.H
   RelSet.Tour.Tour RelSet.MSS.zero RelSet.MSS.plus RelSet.Digits.wrap RelSet.Digits.snoc
   RelSet.Digits.val RelSet.Digits.embed RelSet.Digits.op RelSet.Digits.Digit
   RelSet.FastExp.Bit RelSet.FastExp.zero RelSet.FastExp.one RelSet.FastExp.shift RelSet.FastExp.convert
@@ -740,7 +740,7 @@ attribute [diag_indexed] alphaT InitialAlgebra.α
 -- brackets runs between two ends the peel reads as the ONE stack and there is no bead for it.
 -- Tagged and never matched, like the join above: an arrow between two equal stacks is a bead like
 -- any other, and only the constant says which arrows are the coherence of `×`.
-attribute [diag_coherence] RelSet.Van.assoclR
+attribute [diag_coherence] RelSet.Van.assocl
 
 -- EVERY CONSTANT A LABEL MAY BE MADE OF IS REGISTERED HERE, spelling included.  `checkSpelled`
 -- (`diag/tool/ExprReader.lean`) refuses a label carrying a constant no printing rule rewrote, so
