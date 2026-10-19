@@ -551,12 +551,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
  #leanf("Freyd.Alg.RelSet.ListRel.prefix_cat")`=init*` #src[]],
-   // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0 lean:AOP.A5_6_ListCombinators.prefix_cat@b43b39aa
+   // lean:AOP.A5_6_ListCombinators.prefix_cata@c4d7bd04 lean:AOP.A5_6_ListCombinators.prefix_cat@f40412ec
   [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.suffix_cat")`=tail*` #src[]],
-  // lean:AOP.A5_6_ListCombinators.suffix_cat@40a13c1b
+  // lean:AOP.A5_6_ListCombinators.suffix_cat@04ef0217
   [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 

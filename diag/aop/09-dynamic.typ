@@ -282,9 +282,9 @@
      #src[if two lists have the same length and `nᵢ ≤ mᵢ` at every position, then `sum(ns) ≤ sum(ms)`]],
    meaning: [#kq("2 1") `≤` #kq("2 2") elementwise, so `sum(`#kq("2 1")`) = 3 ≤ 4 = sum(`#kq("2 2")`)`]),
 )<dp-conditions>
-// lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@0f26eadc
-// lean:AOP.A9_1.RelSet.ListRel.sum_mono@8e77e6ae
-// lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@10919b1e
+// lean:AOP.A9_1.RelSet.ListRel.concat_length_hom@2f3fb19e
+// lean:AOP.A9_1.RelSet.ListRel.sum_mono@78dc13f4
+// lean:AOP.A9_1.RelSet.ListRel.pres_concat_length@6ee0b654
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each.
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -377,7 +377,7 @@
 // lean:AOP.A9_2_Edit.edit_cata@8d22f5a4
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
-// lean:AOP.A9_2_Edit.V_eq@dca965f7
+// lean:AOP.A9_2_Edit.V_eq@87f0ada8
 // lean:AOP.A9_2_Edit.edit_Vrecip@9b2b2a7c
 // lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
 // lean:AOP.A9_2_Edit.baseFn@450d4154
@@ -514,9 +514,9 @@
  ] —
       // lean:AOP.A9_2_Edit.edit_Vrecip@9b2b2a7c
  `edit (𝟙×suffix)⊑≼° edit` #src[],
-      // lean:AOP.A9_2_Edit.edit_suffix_right@87177f12
+      // lean:AOP.A9_2_Edit.edit_suffix_right@6a17624d
  `edit (suffix×𝟙)⊑≼° edit` #src[]. `suffix=tail*`
-      // lean:AOP.A9_2_Edit.edit_suffix_left@88484231
+      // lean:AOP.A9_2_Edit.edit_suffix_left@7b8cb991
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra

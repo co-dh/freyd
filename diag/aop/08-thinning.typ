@@ -638,13 +638,13 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A6_ConsList.F@61b71616
 // lean:AOP.A6_ConsList.F_obj@6e42d8c2
 // lean:AOP.A5_6_ListCombinators.total@374f995b
-// lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
+// lean:AOP.A5_6_ListCombinators.total_eq@4c4997dc
 // lean:AOP.A5_6_ListCombinators.subseq@9db1a985
 // lean:AOP.A5_6_ListCombinators.subseq_cata@399d49b3
 // lean:AOP.A8_4_Knapsack.value@37f1f8ed
-// lean:AOP.A8_4_Knapsack.value_eq@f814ce68
+// lean:AOP.A8_4_Knapsack.value_eq@7b69047e
 // lean:AOP.A8_4_Knapsack.weight@37f1f8ed
-// lean:AOP.A8_4_Knapsack.weight_eq@267afa15
+// lean:AOP.A8_4_Knapsack.weight_eq@2d4b51a7
 // lean:AOP.A8_4_Knapsack.con_eq_junc@f9b6dc6b
 // lean:AOP.A8_4_Knapsack.dropFn@08a216bd
 // lean:AOP.A8_4_Knapsack.within@945da576

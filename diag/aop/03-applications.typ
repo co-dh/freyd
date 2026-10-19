@@ -19,18 +19,18 @@
   [The cons-lists over `A`, the datatype every row below folds.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_cata_nat")],
-  // lean:AOP.A5_6_ListCombinators.sum_cata_nat@42a45bfa
+  // lean:AOP.A5_6_ListCombinators.sum_cata_nat@6f41c3cc
   [#leant("Freyd.Alg.RelSet.ListRel.sum_cata_nat")],
   [`plus(a,b)=a+b`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.length_cata")],
-  // lean:AOP.A5_6_ListCombinators.length_cata@12cd98d0
+  // lean:AOP.A5_6_ListCombinators.length_cata@cab92a5a
   [#leant("Freyd.Alg.RelSet.ListRel.length_cata")],
   [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
-  [#leanf("Freyd.Alg.RelSet.ListRel.averageR")],
-  // lean:AOP.A5_6_ListCombinators.averageR@1af775cf
-  [#leant("Freyd.Alg.RelSet.ListRel.averageR")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.average")],
+  // lean:AOP.A5_6_ListCombinators.average@5be16d2c
+  [#leant("Freyd.Alg.RelSet.ListRel.average")],
   [`div(m,n)=m/n`, with `div(0,0)=0` so `average` is total. Traverses the list twice.],
 
   [banana-split law \
@@ -47,13 +47,13 @@
 
   [the instance \
    #leanf("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
-  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@a2e3fa5f
+  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@a38a311f
   [#leant("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
   // preds row: B&dM Ex 3.6 (p. 57); uses Ex 3.4
   [`preds n=[n,n−1,…,1]`],
-  [#leant("Freyd.Alg.RelSet.ListRel.predsR")],
+  [#leant("Freyd.Alg.RelSet.ListRel.preds")],
   [apply the earlier special case to write `preds` as `⦇k⦈π₁`.],
 )]<cata-examples>
 

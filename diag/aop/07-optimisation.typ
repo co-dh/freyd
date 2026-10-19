@@ -461,7 +461,7 @@ directly.
   [`(⊸ nil)(3,[1,2])=nil` — drop the pair, return `nil`],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata")],
-  [#leant("Freyd.Alg.RelSet.ListRel.prefixR")],
+  [#leant("Freyd.Alg.RelSet.ListRel.«prefix»")],
   [`[3,1,2] prefix [3,1]` — `xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, keep the head or stop],
 
   [#leanf("Freyd.Alg.RelSet.GCTakeWhile.Salg")], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
@@ -491,7 +491,7 @@ directly.
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
     #src[the fold whose algebra, at each `cons`, keeps the head or stops with `nil`:
       `xs prefix ys⟺∃zs. xs=ys⧺zs`]
-    // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0
+    // lean:AOP.A5_6_ListCombinators.prefix_cata@c4d7bd04
     // lean:AOP.A5_6_ListCombinators.prefixP_iff_append@1c6dd07f
     ],
   table.header([*the defining square* `α prefix=F(prefix)[nil,cons ∪ ⊸ nil]` — build the list and then
@@ -515,8 +515,8 @@ directly.
    #src[lax natural only, `R′ prefix⊑prefix R′`: `R′` first needs an `R`-image of every
      element, `prefix` first may have dropped the ones without]
    // lean:AOP.A5_6_ListCombinators.prefixP@6b59adf4
-   // lean:AOP.A5_7_ListBeads.prefix_lax_natural@b07fb2c5
-   // lean:AOP.A5_7_ListBeads.prefix_not_strict@e360d358
+   // lean:AOP.A5_7_ListBeads.prefix_lax_natural@de04bc59
+   // lean:AOP.A5_7_ListBeads.prefix_not_strict@db733c6f
    ],
 )]<prefix-defn>
 
@@ -570,9 +570,9 @@ directly.
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix p′=⦇S⦈`.
   @cata-fusion cannot: `p′` is not entire, `(𝟙×p′)⊸ nil⊏⊸ nil`, and no algebra meets
  the side condition. ,
-  // lean:AOP.A7_7_TakeWhile.takewhile_alg@a2e1ff8a
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg@782f0697
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@21496035
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@ea7a3699
 ]<takewhile-alg>
 
 // One law to a step: `R°` starts on the tail strand, is copied into both operands of the `∪`,
@@ -702,7 +702,7 @@ directly.
   Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
-    // lean:AOP.A7_7_MSS.mss_shape@cd789bb8
+    // lean:AOP.A7_7_MSS.mss_shape@3696f150
   table.header([*formula* — one wire from `[Int]` to `Int`, its type written along it], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
@@ -782,7 +782,7 @@ directly.
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
  ]])
-  // lean:AOP.A7_7_MSS.mss_prefix_sum@ef95d32c
+  // lean:AOP.A7_7_MSS.mss_prefix_sum@b2c20dfd
 ]<mss-prefix-sum>
 
 #disp[#calc-table(cols: (1fr,), al: left + horizon, 
@@ -1034,7 +1034,7 @@ directly.
   table.header([*definition*], [*type*], [*note*]),
 
  [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
-  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
+  // lean:AOP.A5_6_ListCombinators.segment_eq@b3d2c937
   [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
@@ -1736,7 +1736,7 @@ zip(that)                                         each row: its square, and the 
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
-  // lean:AOP.A7_5_Van.H@e0cc9e02
+  // lean:AOP.A7_5_Van.H@4f49091a
   [#leant("Freyd.Alg.RelSet.Van.H")],
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
@@ -1787,7 +1787,7 @@ zip(that)                                         each row: its square, and the 
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
 )
-// lean:AOP.A7_5_Van.secure_prefix@aba487ef
+// lean:AOP.A7_5_Van.secure_prefix@f7660f77
 ]<van-prefix>
 
 === #leanf("Freyd.Alg.RelSet.Van.van_spec") — partitioning into secure segments is one fold <sec-van-fusion>
@@ -1908,7 +1908,7 @@ zip(that)                                         each row: its square, and the 
  [#leanf("Freyd.Alg.RelSet.Van.H") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
-// lean:AOP.A7_5_Van.H@e0cc9e02
+// lean:AOP.A7_5_Van.H@4f49091a
 ]<van-h>
 
 === #leanf("Freyd.Alg.RelSet.Van.van_mono_new") — `new` on an `R;H`-related schedule is matched by `new` or `old` <sec-van-716>
