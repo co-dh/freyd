@@ -510,7 +510,7 @@
       Proposition 9.4 at `U≜⊤` — `F(⊤,≼)α⊑α≼`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
  #src[,
-      // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
+      // lean:Freyd.Alg.RelSet.Edit.edit_V@fd6f0c13
  ] —
       // lean:AOP.A9_2_Edit.edit_Vrecip@9b2b2a7c
  `edit (𝟙×suffix)⊑≼° edit` #src[],
