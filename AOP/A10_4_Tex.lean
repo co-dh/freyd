@@ -1120,6 +1120,13 @@ open Lean PrettyPrinter in
   | `($_ $d $r) => `($(mkIdent `shift) ($d, $r))
   | _ => `($(mkIdent `shift))
 
+-- printing-only: the book writes the relation on intervals and its arrow with one letter, `f`; two
+-- Lean constants cannot share a name, so the relation's is `Fn.f`.
+open Lean PrettyPrinter in
+@[app_unexpander Fn.f] public meta def unexpandFnF : Unexpander
+  | `($_ $args*) => `($(mkIdent `f) $args*)
+  | _ => `($(mkIdent `f))
+
 end Freyd.Alg.RelSet.Tex
 
 -- printing-only (B&dM p.263): `Real`'s constants wear the book's arithmetic, and a digit pair

@@ -181,23 +181,23 @@ variable {Job : Type}
   a bag to every ordering of it. -/
 
 /-- Permutation, the equivalence a bag quotients by. -/
-public instance perm (Job : Type) : Setoid (List Job) where
+public instance perm {Job : Type} : Setoid (List Job) where
   r := List.Perm
   iseqv := ⟨List.Perm.refl, fun h => h.symm, fun h₁ h₂ => h₁.trans h₂⟩
 
 /-- **tardy-defn**: the object `Bag Job`. -/
-@[expose] public abbrev Bag (Job : Type) : RelSet.{0} := ⟨Quotient (perm Job)⟩
+@[expose] public abbrev Bag (Job : Type) : RelSet.{0} := ⟨Quotient (perm (Job := Job))⟩
 
 -- The note's object language spells a datatype's object lower case and bracketed where the argument
 -- is applied (`bag(Job)`); a NOTATION for the reason `thin(` is one: no term prints its own brackets.
 notation:max "bag(" J ")" => Bag J
 
 /-- **tardy-defn**: `nil`, the empty bag. -/
-@[expose] public def Bag.nil : (Bag Job).carrier := Quotient.mk (perm Job) []
+@[expose] public def Bag.nil : (Bag Job).carrier := Quotient.mk (perm (Job := Job)) []
 
 /-- **tardy-defn**: `snag (u,j)` places the job `j` in the bag `u`. -/
 @[expose] public def snag (p : (Bag Job).carrier × Job) : (Bag Job).carrier :=
-  Quotient.liftOn p.1 (fun xs => Quotient.mk (perm Job) (p.2 :: xs))
+  Quotient.liftOn p.1 (fun xs => Quotient.mk (perm (Job := Job)) (p.2 :: xs))
     fun _ _ h => Quotient.sound (h.cons p.2)
 
 /-- **tardy-defn**: the algebra `β≜[nil,snag] : F(Bag Job)⟶Bag Job` as a function. -/
@@ -215,7 +215,7 @@ notation:max "bag(" J ")" => Bag J
 
 /-- **tardy-defn**: `bagify≜⦇β⦈ : [Job]⟶Bag Job`, read as the function it is. -/
 @[expose] public def Fn.bagify (s : SnocList Unit Job) : (Bag Job).carrier :=
-  Quotient.mk (perm Job) (blist s)
+  Quotient.mk (perm (Job := Job)) (blist s)
 
 /-- **tardy-defn**, pointwise: the empty schedule has the empty bag. -/
 public theorem bagifyFn_wrap (u : Unit) : Fn.bagify (SnocList.wrap u : SnocList Unit Job) = Bag.nil := rfl
@@ -244,7 +244,7 @@ public theorem bagify_cata : cataR (bagAlg (Job := Job)) = bagify := by
 /-- Every bag is the bag of some list — bags have representatives, which is how the greedy step
     gets a schedule to delete a job from. -/
 public theorem exists_rep (b : (Bag Job).carrier) :
-    ∃ xs : List Job, Quotient.mk (perm Job) xs = b :=
+    ∃ xs : List Job, Quotient.mk (perm (Job := Job)) xs = b :=
   Quotient.inductionOn b fun xs => ⟨xs, rfl⟩
 
 /-- **Proposition 10.1**: `nil` and `snag` have disjoint ranges — a snagged bag is not empty. -/
@@ -327,13 +327,13 @@ public theorem R_trans [Tardy Job] : R ≫ R ⊑ R :=
     exact Int.le_trans (h1 : Fn.cost u ≤ Fn.cost v) h2
 
 /-- **tardy-defn**: `f≜[zero,(bagify°×𝟙) penalty]`. -/
-@[expose] public def Fn.f [Tardy Job] : ((F Unit Job).obj (Bag Job)).carrier → Int
+@[expose] public def f [Tardy Job] : ((F Unit Job).obj (Bag Job)).carrier → Int
   | Sum.inl _ => 0
   | Sum.inr p => bagPenalty p
 
 /-- **tardy-defn**: `Q≜f≤f°` — a minimum under `Q` identifies a job of least penalty. -/
 @[expose] public def Q [Tardy Job] : (F Unit Job).obj (Bag Job) ⟶ (F Unit Job).obj (Bag Job) :=
-  fun u v => Fn.f u ≤ Fn.f v
+  fun u v => f u ≤ f v
 
 /-- **tardy-defn**: `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`, `Q` on the `snag` branch alone —
     what B&dM's Proposition 10.1 step leaves, and what `pick` refines. -/
@@ -742,7 +742,7 @@ public theorem Fb_apply (v : (Fobj Unit Job (Bag Job)).carrier)
     | inr _ => exact ⟨fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩, fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩⟩
 
 public theorem fFn_FbFn [Tardy Job] (s : (Fobj Unit Job (dSL Unit Job)).carrier) :
-    Fn.f (FbFn s) = Fn.g s := by
+    f (FbFn s) = Fn.g s := by
   cases s <;> rfl
 
 public theorem bmax_absorb (a b : Int) : bmax b (bmax a b) = bmax a b := by
@@ -788,7 +788,7 @@ public theorem Q_choice [Tardy Job] :
     obtain rfl : v = FbFn s' := (Fb_apply v s').mp hv
     refine ⟨Fn.g s, (g_apply s _).mpr rfl, Fn.g s', ?_,
       (g_apply s' _).mpr rfl⟩
-    have hQ' : Fn.f (FbFn s) ≤ Fn.f (FbFn s') := hQ
+    have hQ' : f (FbFn s) ≤ f (FbFn s') := hQ
     have e1 := fFn_FbFn s; have e2 := fFn_FbFn s'
     show Fn.g s ≤ Fn.g s'
     omega
@@ -798,7 +798,7 @@ public theorem Q_choice [Tardy Job] :
     refine ⟨FbFn s, (Fbag_apply s _).mpr rfl, FbFn s', ?_, (Fb_apply _ _).mpr rfl⟩
     have hd' : Fn.g s ≤ Fn.g s' := hd
     have e1 := fFn_FbFn s; have e2 := fFn_FbFn s'
-    show Fn.f (FbFn s) ≤ Fn.f (FbFn s')
+    show f (FbFn s) ≤ f (FbFn s')
     omega
 
 /-- B&dM p.257: `α cost=⟨g,α cost⟩ bmax`, since the last penalty is below the cost. -/
@@ -1190,7 +1190,7 @@ public theorem elemsP_perm {A B : Type} (R : dE A ⟶ dE B) :
 /-- **tardy-defn**: `bag(R)` relates two bags that have representatives related element by element. -/
 @[expose] public def bagP {A B : Type} (R : dE A ⟶ dE B)
     (u : (Bag A).carrier) (v : (Bag B).carrier) : Prop :=
-  ∃ xs ys, Quotient.mk (perm A) xs = u ∧ Quotient.mk (perm B) ys = v ∧ elemsP R xs ys
+  ∃ xs ys, Quotient.mk (perm (Job := A)) xs = u ∧ Quotient.mk (perm (Job := B)) ys = v ∧ elemsP R xs ys
 
 /-- The relator's action `bag(R) : bag(A)⟶bag(B)`. -/
 @[expose] public def bagRel {A B : Type} (R : dE A ⟶ dE B) : Bag A ⟶ Bag B := bagP R
@@ -1201,7 +1201,7 @@ public theorem bag_id {A : Type} : bagRel (𝟙 (dE A)) = 𝟙 (Bag A) := by
   intro u v
   constructor
   · rintro ⟨xs, ys, rfl, rfl, h⟩
-    exact congrArg (Quotient.mk (perm A)) ((elemsP_id xs ys).mp h)
+    exact congrArg (Quotient.mk (perm (Job := A))) ((elemsP_id xs ys).mp h)
   · intro (h : u = v)
     cases h
     induction u using Quotient.ind with
@@ -1216,7 +1216,7 @@ public theorem bag_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
   constructor
   · rintro ⟨xs, zs, rfl, rfl, h⟩
     obtain ⟨ys, h1, h2⟩ := (elemsP_comp R S xs zs).mp h
-    exact ⟨Quotient.mk (perm B) ys, ⟨xs, ys, rfl, rfl, h1⟩, ⟨ys, zs, rfl, rfl, h2⟩⟩
+    exact ⟨Quotient.mk (perm (Job := B)) ys, ⟨xs, ys, rfl, rfl, h1⟩, ⟨ys, zs, rfl, rfl, h2⟩⟩
   · rintro ⟨v, ⟨xs, ys, rfl, hv, h1⟩, ⟨ys', zs, hv', rfl, h2⟩⟩
     obtain ⟨zs', h3, h4⟩ := elemsP_perm S (Quotient.exact (hv.trans hv'.symm)) h2
     exact ⟨xs, zs', rfl, Quotient.sound h4, (elemsP_comp R S xs zs').mpr ⟨ys, h1, h3⟩⟩
@@ -1247,7 +1247,7 @@ public theorem bagP_snag {A B : Type} (R : dE A ⟶ dE B) (u : (Bag A).carrier) 
     cases ys' with
     | nil => exact hel'.elim
     | cons k vs =>
-      exact ⟨Quotient.mk (perm B) vs, k, ⟨ps, vs, rfl, rfl, hel'.2⟩, hel'.1,
+      exact ⟨Quotient.mk (perm (Job := B)) vs, k, ⟨ps, vs, rfl, rfl, hel'.2⟩, hel'.1,
         Quotient.sound hp⟩
   · rintro ⟨v, k, ⟨ps', vs, hps, hvs, hel⟩, hjk, rfl⟩
     obtain ⟨vs', hel', hp⟩ := elemsP_perm R (Quotient.exact hps.symm) hel
@@ -1488,6 +1488,13 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.ctsum] public meta def unexpandCtsum : Unexpander
   | `($_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(ct′)")) $x $args*)
   | _ => `($(mkIdent (Name.mkSimple "sum(ct′)")))
+
+-- printing-only: the book writes the function and its graph with one letter, `bagify`; two Lean
+-- constants cannot share a name, so the function's is `Fn.bagify`.
+open Lean PrettyPrinter in
+@[app_unexpander Fn.bagify] public meta def unexpandBagifyFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `bagify) $args*)
+  | _ => `($(mkIdent `bagify))
 end Freyd.Alg.RelSet.Tardy
 
 -- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
