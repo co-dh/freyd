@@ -222,10 +222,13 @@ public theorem length_cata :
   graph con
 
 /-- **edit-defn**: `R≜length≤length°`. -/
-@[expose] public def R (A : Type) : dEdit A ⟶ dEdit A := fun es fs => clen es ≤ clen fs
+@[expose] public def R {A : Type} : dEdit A ⟶ dEdit A := fun es fs => clen es ≤ clen fs
+
+/-- The note writes the section's ordering `≼`, the numeric order on lengths keeping `≤`. -/
+notation "≼" => R
 
 public theorem R_eq :
-    R A = (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+    (R (A := A)) = (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
       ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   apply hom_ext; intro es fs
   constructor
@@ -236,10 +239,10 @@ public theorem R_eq :
     exact hmn
 
 /-- **edit-defn**, pointwise: `es R fs` iff `es` is no longer than `fs`. -/
-public theorem R_apply (es fs : ConsList Unit (Op A)) : R A es fs ↔ clen es ≤ clen fs :=
+public theorem R_apply (es fs : ConsList Unit (Op A)) : (R (A := A)) es fs ↔ clen es ≤ clen fs :=
   Iff.rfl
 
-public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
+public theorem R_recip_trans : (R (A := A))° ≫ (R (A := A))° ⊑ (R (A := A))° :=
   le_iff.mpr fun es gs h => by
     obtain ⟨fs, h1, h2⟩ := h
     exact Nat.le_trans (h2 : clen gs ≤ clen fs) (h1 : clen fs ≤ clen es)
@@ -247,7 +250,7 @@ public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
 /-- **edit-defn** (B&dM p.226, exercise): `α` preserves `R` whatever the two operations are —
     `[e]⧺xs` has length `1+length(xs)` for every `e`, so Proposition 9.4 may take `U≜⊤`. -/
 public theorem α_pres_R :
-    (FB Unit).map (relTop (dE (Op A)) (dE (Op A))) (R A) ≫ α A ⊑ α A ≫ R A :=
+    (FB Unit).map (relTop (dE (Op A)) (dE (Op A))) (R (A := A)) ≫ α A ⊑ α A ≫ (R (A := A)) :=
   le_iff.mpr fun u es h => by
     obtain ⟨v, hv, hcon⟩ := h
     obtain rfl : es = con v := hcon
@@ -432,8 +435,8 @@ public theorem map_length_simple :
     per fact: expand `R`, `length` entire, `length` a fold, `F(length)` simple, `succ` monotonic,
     the fold back, `R` back. -/
 public theorem edit_mono :
-    (F Unit (Op A)).map (R A) ≫ α A ⊑ α A ≫ R A :=
-  calc (F Unit (Op A)).map (R A) ≫ α A
+    (F Unit (Op A)).map (R (A := A)) ≫ α A ⊑ α A ≫ R (A := A) :=
+  calc (F Unit (Op A)).map (R (A := A)) ≫ α A
       _ = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
           ≫ (F Unit (Op A)).map leRel
           ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
@@ -481,12 +484,12 @@ public theorem edit_mono :
           (lenAlg_comm (A := A))).symm
         rw [Cat.assoc, Cat.assoc] at h
         exact h
-      _ = α A ≫ R A := by rw [R_eq]
+      _ = α A ≫ R (A := A) := by rw [R_eq]
 
 calc_steps edit_mono
 
 /-- Theorem 9.2 asks for monotonicity at the mirrored `R°`, which `cons` also has. -/
-public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R A)° :=
+public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R (A := A))° :=
   (Freyd.Alg.pres_recip_iff (graph_map con) (F_preservesRecip Unit (Op A))).mp edit_mono
 
 /-! ## `edit-laws` — the `V` condition, B&dM p.226
@@ -674,7 +677,7 @@ public theorem dropSrc_edit_fusion :
 
 /-- Invariant of the fold: `⦇dropTgtAlg⦈ ⊑ ⟨𝟙,R°⟩` — the dropped sequence is never longer. -/
 public theorem dropTgt_fold_le :
-    cataR (dropTgtAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)° := by
+    cataR (dropTgtAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R (A := A))° := by
   rw [cataR_eq_relCata, pair_eq_rpair]
   refine relCata_le_of_prefixed (initial Unit (Op A)) (le_iff.mpr ?_)
   rintro es q ⟨u, hu, v, hv, hq⟩
@@ -694,7 +697,7 @@ public theorem dropTgt_fold_le :
 
 /-- Invariant of the fold: `⦇dropSrcAlg⦈ ⊑ ⟨𝟙,R°⟩`. -/
 public theorem dropSrc_fold_le :
-    cataR (dropSrcAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)° := by
+    cataR (dropSrcAlg (A := A)) ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R (A := A))° := by
   rw [cataR_eq_relCata, pair_eq_rpair]
   refine relCata_le_of_prefixed (initial Unit (Op A)) (le_iff.mpr ?_)
   rintro es q ⟨u, hu, v, hv, hq⟩
@@ -713,26 +716,26 @@ public theorem dropSrc_fold_le :
     · exact ⟨(id_apply _ _).mpr rfl, Nat.succ_le_succ hds⟩
 
 /-- `dropTgt` never lengthens: `dropTgt ⊑ R°`. -/
-public theorem dropTgt_le : (graph dropTgt : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
+public theorem dropTgt_le : (graph dropTgt : dEdit A ⟶ dEdit A) ⊑ (R (A := A))° :=
   calc (graph dropTgt : dEdit A ⟶ dEdit A)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropTgt)
             ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_id_outr _).symm
       _ = cataR dropTgtAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropTgt_fold
-      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
+      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R (A := A))°
             ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropTgt_fold_le _
-      _ = (R A)° := pair_id_outr _
+      _ = (R (A := A))° := pair_id_outr _
 
 calc_steps dropTgt_le
 
 /-- `dropSrc` never lengthens: `dropSrc ⊑ R°`. -/
-public theorem dropSrc_le : (graph dropSrc : dEdit A ⟶ dEdit A) ⊑ (R A)° :=
+public theorem dropSrc_le : (graph dropSrc : dEdit A ⟶ dEdit A) ⊑ (R (A := A))° :=
   calc (graph dropSrc : dEdit A ⟶ dEdit A)
       _ = (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (graph dropSrc)
             ≫ (relProd (dEdit A) (dEdit A)).outr := (pair_id_outr _).symm
       _ = cataR dropSrcAlg ≫ (relProd (dEdit A) (dEdit A)).outr := congrArg (· ≫ _) dropSrc_fold
-      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R A)°
+      _ ⊑ (relProd (dEdit A) (dEdit A)).pair (𝟙 (dEdit A)) (R (A := A))°
             ≫ (relProd (dEdit A) (dEdit A)).outr := comp_mono_right dropSrc_fold_le _
-      _ = (R A)° := pair_id_outr _
+      _ = (R (A := A))° := pair_id_outr _
 
 calc_steps dropSrc_le
 
@@ -784,20 +787,20 @@ calc_steps edit_dropSrc
     string leaves a pair that an edit sequence no longer reaches. -/
 public theorem edit_tail_snd :
     graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
-      ⊑ (R A)° ≫ graph editFn :=
+      ⊑ (R (A := A))° ≫ graph editFn :=
   calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) (graph tail)
       _ = graph dropTgt ≫ graph editFn := edit_dropTgt
-      _ ⊑ (R A)° ≫ graph editFn := comp_mono_right dropTgt_le _
+      _ ⊑ (R (A := A))° ≫ graph editFn := comp_mono_right dropTgt_le _
 
 calc_steps edit_tail_snd
 
 /-- **edit-tail** (B&dM p.226): `edit (tail×𝟙)⊑R° edit`, the same for the source string. -/
 public theorem edit_tail_fst :
     graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
-      ⊑ (R A)° ≫ graph editFn :=
+      ⊑ (R (A := A))° ≫ graph editFn :=
   calc graph (editFn (A := A)) ≫ rprodMap (graph tail) (𝟙 (dList A))
       _ = graph dropSrc ≫ graph editFn := edit_dropSrc
-      _ ⊑ (R A)° ≫ graph editFn := comp_mono_right dropSrc_le _
+      _ ⊑ (R (A := A))° ≫ graph editFn := comp_mono_right dropSrc_le _
 
 calc_steps edit_tail_fst
 
@@ -861,7 +864,7 @@ public theorem rprodMap_star_id {X Y : RelSet.{0}} (T : Y ⟶ Y) :
   · rw [rprodMap_comp, Cat.id_comp]; exact rprodMap_mono (star_trans T) (le_refl _)
 
 /-- `R°` is a preorder, hence its own closure: `(R°)* = R°`. -/
-public theorem R_recip_star : star (R A)° = (R A)° :=
+public theorem R_recip_star : star (R (A := A))° = (R (A := A))° :=
   le_antisymm
     (star_le_of_preorder (le_iff.mpr fun x y h => by
         obtain rfl : x = y := (id_apply _ _).mp h
@@ -871,24 +874,24 @@ public theorem R_recip_star : star (R A)° = (R A)° :=
 /-- **edit-laws**, second row: `edit (𝟙×suffix)⊑R° edit`, from the `tail` row by `suffix = tail*`. -/
 public theorem edit_suffix_right :
     graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
-      ⊑ (R A)° ≫ graph editFn :=
+      ⊑ (R (A := A))° ≫ graph editFn :=
   calc graph (editFn (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
       _ = graph editFn ≫ rprodMap (𝟙 (dList A)) (star (graph tail)) := by rw [suffix_eq_star_tail]
       _ = graph editFn ≫ star (rprodMap (𝟙 (dList A)) (graph tail)) := by rw [rprodMap_id_star]
-      _ ⊑ star (R A)° ≫ graph editFn := star_simulation edit_tail_snd
-      _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
+      _ ⊑ star (R (A := A))° ≫ graph editFn := star_simulation edit_tail_snd
+      _ = (R (A := A))° ≫ graph editFn := by rw [R_recip_star]
 
 calc_steps edit_suffix_right
 
 /-- **edit-laws**, second row: `edit (suffix×𝟙)⊑R° edit`, the same for the source string. -/
 public theorem edit_suffix_left :
     graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
-      ⊑ (R A)° ≫ graph editFn :=
+      ⊑ (R (A := A))° ≫ graph editFn :=
   calc graph (editFn (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
       _ = graph editFn ≫ rprodMap (star (graph tail)) (𝟙 (dList A)) := by rw [suffix_eq_star_tail]
       _ = graph editFn ≫ star (rprodMap (graph tail) (𝟙 (dList A))) := by rw [rprodMap_star_id]
-      _ ⊑ star (R A)° ≫ graph editFn := star_simulation edit_tail_fst
-      _ = (R A)° ≫ graph editFn := by rw [R_recip_star]
+      _ ⊑ star (R (A := A))° ≫ graph editFn := star_simulation edit_tail_fst
+      _ = (R (A := A))° ≫ graph editFn := by rw [R_recip_star]
 
 calc_steps edit_suffix_left
 
@@ -904,27 +907,27 @@ public theorem edit_Vrecip_step1 :
 public theorem edit_Vrecip_step2 :
     graph (editFn (A := A)) ≫ rprodMap (suffixR (A := A)) (𝟙 (dList A))
         ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
-      ⊑ (R A)° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
+      ⊑ (R (A := A))° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
   have h := comp_mono_right (edit_suffix_left (A := A))
     (rprodMap (𝟙 (dList A)) (suffixR (A := A)))
   simpa only [Cat.assoc] using h
 
 /-- `edit-V`, third step: `edit (𝟙×suffix)⊑R° edit` (`edit_suffix_right`). -/
 public theorem edit_Vrecip_step3 :
-    (R A)° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
-      ⊑ (R A)° ≫ (R A)° ≫ graph editFn :=
+    (R (A := A))° ≫ graph editFn ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
+      ⊑ (R (A := A))° ≫ (R (A := A))° ≫ graph editFn :=
   comp_mono_left _ edit_suffix_right
 
 /-- `edit-V`, fourth step: `R°` is transitive (`R_recip_trans`). -/
 public theorem edit_Vrecip_step4 :
-    (R A)° ≫ (R A)° ≫ graph (editFn (A := A)) ⊑ (R A)° ≫ graph editFn := by
+    (R (A := A))° ≫ (R (A := A))° ≫ graph (editFn (A := A)) ⊑ (R (A := A))° ≫ graph editFn := by
   have h := comp_mono_right (R_recip_trans (A := A)) (graph (editFn (A := A)))
   simpa only [Cat.assoc] using h
 
 /-- **edit-V**: `edit V°⊑R° edit` at `V≜suffix°×suffix°` — shorten one output, then the other,
     never lengthening. -/
 public theorem edit_Vrecip :
-    graph (editFn (A := A)) ≫ (V A)° ⊑ (R A)° ≫ graph editFn :=
+    graph (editFn (A := A)) ≫ (V A)° ⊑ (R (A := A))° ≫ graph editFn :=
   calc graph (editFn (A := A)) ≫ (V A)°
       _ = _ := edit_Vrecip_step1
       _ ⊑ _ := edit_Vrecip_step2
@@ -933,7 +936,7 @@ public theorem edit_Vrecip :
 
 /-- **edit-laws**, second row: Proposition 9.4's `hV`, `V edit°⊑edit° R`. -/
 public theorem edit_V :
-    V A ≫ (graph (editFn (A := A)))° ⊑ (graph editFn)° ≫ R A := by
+    V A ≫ (graph (editFn (A := A)))° ⊑ (graph editFn)° ≫ (R (A := A)) := by
   have h := recip_mono (edit_Vrecip (A := A))
   rw [Allegory.recip_comp, Allegory.recip_comp] at h
   exact h
@@ -960,7 +963,7 @@ public theorem edit_thin_step1 :
 public theorem edit_thin_step2 :
     Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (V A ≫ (graph (editFn (A := A)))°)
         ≫ α A
-      ⊑ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph editFn)° ≫ R A)
+      ⊑ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph editFn)° ≫ (R (A := A)))
           ≫ α A :=
   comp_mono_right (le_iff.mpr fun u w h => by
     cases u with
@@ -973,10 +976,10 @@ public theorem edit_thin_step2 :
 
 /-- `edit-thin`, third step: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`. -/
 public theorem edit_thin_step3 :
-    Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph (editFn (A := A)))° ≫ R A)
+    Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph (editFn (A := A)))° ≫ (R (A := A)))
         ≫ α A
       = (F Unit (Op A)).map ((graph (editFn (A := A)))°)
-          ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A := by
+          ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R (A := A)) ≫ α A := by
   rw [← Cat.assoc]
   congr 1
   exact ((Fbimap_comp _ _ _ _).trans (by rw [Cat.id_comp])).symm
@@ -985,10 +988,10 @@ public theorem edit_thin_step3 :
     lengths whatever the two operations are. -/
 public theorem edit_thin_step4 :
     (F Unit (Op A)).map ((graph (editFn (A := A)))°)
-        ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A
-      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
+        ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R (A := A)) ≫ α A
+      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ (R (A := A)) :=
   comp_mono_left _ (le_trans
-    (comp_mono_right ((FB Unit).map_mono (le_relTop _) (le_refl (R A))) _) α_pres_R)
+    (comp_mono_right ((FB Unit).map_mono (le_relTop _) (le_refl (R (A := A)))) _) α_pres_R)
 
 /-- **edit-laws**, second row: Theorem 9.2's thinning condition, Proposition 9.4 at `U≜⊤` and
     `V≜suffix°×suffix°`.  The `base` summand needs only reflexivity of `R`; on the `step`
@@ -996,7 +999,7 @@ public theorem edit_thin_step4 :
     `V`-smaller pair of strings, which `cons` then lengthens by one on both sides. -/
 public theorem edit_thin_condition :
     Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
-      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
+      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ (R (A := A)) :=
   calc Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
       _ = _ := edit_thin_step1
       _ ⊑ _ := edit_thin_step2
@@ -1010,14 +1013,14 @@ public theorem edit_thin_condition :
 public theorem edit_laws :
     mu (fun X : dPair A ⟶ dEdit A =>
         Λ ((editAlg (A := A))°) ≫ thinRel (Q A)
-          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A))
-      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R A) := by
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R (A := A)))
+      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R (A := A)) := by
   have hH : (relCata (editAlg (A := A)))° ≫ relCata (α A)
       = (graph (editFn (A := A)))° := by
     unfold α; rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit (Op A))
-    (initial Unit (Op A)) (h := α A) (T := editAlg (A := A)) («≤» := R A)
+    (initial Unit (Op A)) (h := α A) (T := editAlg (A := A)) («≤» := (R (A := A)))
     (Q := Q A) (graph_map con) edit_mono_recip R_recip_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H, M] at key; rwa [hH] at key
@@ -1173,16 +1176,16 @@ public theorem arm_Fmap_con (X : dPair A ⟶ dEdit A)
 public theorem edit_branch (X : dPair A ⟶ dEdit A) :
     Λ ((step (A := A))°)
         ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-        ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)
+        ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))
       ⊑ Λ ((editAlg (A := A))°) ≫ thinRel (Q A)
-          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R (A := A)) := by
   have hmap : (Relator.prod (Relator.const (dE (Op A)))
       (Relator.idRelator RelSet.{0})).map X = rprodMap (𝟙 (dE (Op A))) X :=
     prodMap_eq_rprodMap _ _
   have key := RelSet.thin_summand_le
     (Fᵢ := Relator.prod (Relator.const (dE (Op A))) (Relator.idRelator RelSet.{0}))
     (F := F Unit (Op A)) (T := editAlg (A := A)) (Q := Q A) (X := X)
-    (h := α A) (R := R A) (Vᵢ := step) (Uᵢ := consR)
+    (h := α A) (R := (R (A := A))) (Vᵢ := step) (Uᵢ := consR)
     (Qᵢ := rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
     Sum.inr (graph_map _) (fun _ _ => Iff.rfl) (fun _ _ h => h)
     (fun p z => by rw [hmap]; exact arm_Fmap_con X p z)
@@ -1241,13 +1244,13 @@ public theorem Fα_junc (X : dPair A ⟶ dEdit A) :
     raw sum would not be one picture. -/
 public theorem edit_body_junc (X : dPair A ⟶ dEdit A) :
     Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
-        ≫ est (R A)
+        ≫ est (R (A := A))
       = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
           ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
               (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
               (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
           ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
-              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := by
+              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R (A := A)) := by
   rw [editAlg_junc, Q_eq_sumMap, Fα_junc]
 
 /-- **Proposition 9.1** at `[base,step]`: their ranges are disjoint (`edit_disj`), so the body
@@ -1259,18 +1262,18 @@ public theorem edit_disjoint_ranges (X : dPair A ⟶ dEdit A) :
             (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
             (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
         ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
-            (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A)
+            (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R (A := A))
       = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ thinRel (𝟙 (dL Unit))
-            ≫ powerRel τ ≫ est (R A))
+            ≫ powerRel τ ≫ est (R (A := A)))
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))) :=
   RelSet.dp_disjoint_ranges edit_disj edit_disj'
 
 /-- The `base` branch of Proposition 9.1 is `nil` on the empty pair: `base°` decomposes `([],[])`
     one way, so the set is a singleton and `est(R)` returns its one member. -/
 public theorem edit_base_branch :
-    Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R A)
+    Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R (A := A))
       = empty ≫ (base (A := A))° ≫ τ := by
   apply hom_ext; intro p e
   rw [Λ_eq_classifier]
@@ -1336,34 +1339,34 @@ public theorem ran_step_strictNatural :
     `Rel(Set)` is only classically. -/
 public theorem edit_body_split (X : dPair A ⟶ dEdit A) :
     Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
-        ≫ est (R A)
+        ≫ est (R (A := A))
       = (empty ≫ (base (A := A))° ≫ τ)
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))) :=
   calc Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
-        ≫ est (R A)
+        ≫ est (R (A := A))
       = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
           ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
               (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
               (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
           ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
-              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := edit_body_junc X
+              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R (A := A)) := edit_body_junc X
     _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ thinRel (𝟙 (dL Unit))
-            ≫ powerRel τ ≫ est (R A))
+            ≫ powerRel τ ≫ est (R (A := A)))
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))) :=
         edit_disjoint_ranges X
-    _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R A))
+    _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R (A := A)))
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) := by
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))) := by
         rw [RelSet.thinRel_id, Cat.id_comp]
     _ = (empty ≫ (base (A := A))° ≫ τ)
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) := by
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))) := by
         rw [edit_base_branch]
 
 calc_steps Freyd.Alg.RelSet.Edit.edit_body_split
@@ -1376,8 +1379,8 @@ public theorem edit_X :
         (empty ≫ (base (A := A))° ≫ τ)
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)))
-      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R A) := by
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R (A := A))))
+      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R (A := A)) := by
   have h := edit_laws (A := A)
   simp only [edit_body_split] at h
   exact h
@@ -1407,24 +1410,24 @@ public theorem unstep_thins [DecidableEq A] :
     (`unstep_thins`) and `minL(R)` implements `est(R)`, the list standing in for the set it
     `setify`s to (`CL.list_comp_minL_le`, `setify`'s lax naturality). -/
 public theorem edit_prog [DecidableEq A] (mle : dPair A ⟶ dEdit A) :
-    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL(R A)
+    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL((R (A := A)))
       ⊑ Λ ((step (A := A))°)
           ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
-  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL(R A)
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R (A := A)) :=
+  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ minL((R (A := A)))
       ⊑ unstep ≫ ListRel.setify
-          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R (A := A)) :=
         comp_mono_left unstep (CL.list_comp_minL_le _ _)
     _ = (unstep ≫ ListRel.setify)
-          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) := by
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R (A := A)) := by
         rw [← Cat.assoc]
     _ ⊑ (Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) :=
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R (A := A)) :=
         comp_mono_right unstep_thins _
     _ = Λ ((step (A := A))°)
           ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
-          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R A) := by
+          ≫ powerRel (rprodMap (𝟙 (dE (Op A))) mle ≫ consR) ≫ est (R (A := A)) := by
         rw [Cat.assoc]
 
 /-! ## The beads of the `edit` panels, and what the environment says about them -/
@@ -1436,7 +1439,7 @@ public theorem edit_prog [DecidableEq A] (mle : dPair A ⟶ dEdit A) :
     member of the set for an image, which a relation that is not entire need not give. -/
 public theorem est_R_laxNatural :
     LaxNatural (op.comp listRelator) ((op.comp listRelator).comp powerRelator)
-      (fun a => est (R a.carrier)) := by
+      (fun a => est (R (A := a.carrier))) := by
   intro x y S
   refine le_iff.mpr fun es r => ?_
   rintro ⟨fs, hxy, hest⟩
@@ -1561,7 +1564,7 @@ public theorem edit_laxNatural :
     other member of the original has an image of its own length. -/
 public theorem minL_R_laxNatural :
     LaxNatural (op.comp listRelator) ((op.comp listRelator).comp listRelator)
-      (fun a => CL.minL (R a.carrier)) := by
+      (fun a => CL.minL (R (A := a.carrier))) := by
   intro x y S
   refine le_iff.mpr fun ess r => ?_
   rintro ⟨fss, hff, hmin⟩
@@ -1716,7 +1719,7 @@ public theorem thin_UV_not_lax_natural :
     reaches through `list(Op(𝟘))`. -/
 public theorem R_not_lax_natural :
     ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
-      (fun a : RelSet.{0} => R a.carrier) := by
+      (fun a : RelSet.{0} => (R (A := a.carrier))) := by
   intro hlax
   obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (fun _ _ => False : dE Bool ⟶ dE Bool))
     (ConsList.wrap () : ConsList Unit (Op Bool)) (ConsList.cons (Op.cpy true) (ConsList.wrap ()))
@@ -1863,10 +1866,10 @@ public theorem Fbimap_top_editR_not_laxNatural :
           (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
             (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
       (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier)))
-        ((graph (editFn (A := a.carrier)))° ≫ R a.carrier)) :=
+        ((graph (editFn (A := a.carrier)))° ≫ (R (A := a.carrier)))) :=
   by
   refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
-    (fun a => (graph (editFn (A := a.carrier)))° ≫ R a.carrier)
+    (fun a => (graph (editFn (A := a.carrier)))° ≫ (R (A := a.carrier)))
     (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap ())
     (listLanes_nil _) ?_
   exact ⟨ConsList.wrap (), rfl, Nat.le_refl _⟩
@@ -1880,9 +1883,9 @@ public theorem Fbimap_top_R_not_laxNatural :
       (Relator.sum (Relator.const (dL Unit))
         (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op)
           (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator)))
-      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (R a.carrier)) :=
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (R (A := a.carrier))) :=
   by
-  refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (fun a => R a.carrier)
+  refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (G₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator) (fun a => (R (A := a.carrier)))
     (ConsList.wrap ()) (ConsList.wrap ())
     (ConsList.wrap ()) rfl ?_
   exact Nat.le_refl _
@@ -1891,7 +1894,7 @@ public theorem Fbimap_top_R_not_laxNatural :
     than the image `[cpy true]` of `[cpy ()]`, and has no preimage. -/
 public theorem R_recip_not_lax_natural :
     ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
-      (fun a : RelSet.{0} => (R a.carrier)°) := by
+      (fun a : RelSet.{0} => (R (A := a.carrier))°) := by
   intro hlax
   obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
     (ConsList.cons (Op.cpy ()) (ConsList.wrap ())) (ConsList.cons (Op.cpy false) (ConsList.wrap ()))
@@ -2042,11 +2045,11 @@ public theorem editTgt_fold_laxNatural :
 public theorem pair_id_R_recip_not_lax_natural :
     ¬ LaxNatural (Relator.prod (op.comp listRelator) (op.comp listRelator)) (op.comp listRelator)
       (fun a : RelSet.{0} =>
-        (relProd (dEdit a.carrier) (dEdit a.carrier)).pair (𝟙 (dEdit a.carrier)) (R a.carrier)°) :=
+        (relProd (dEdit a.carrier) (dEdit a.carrier)).pair (𝟙 (dEdit a.carrier)) (R (A := a.carrier))°) :=
   fun h => R_recip_not_lax_natural fun S => by
     have e : ∀ a : RelSet.{0}, (relProd (dEdit a.carrier) (dEdit a.carrier)).pair (𝟙 (dEdit a.carrier))
-        (R a.carrier)° ≫ (relProd ((op.comp listRelator).obj a) ((op.comp listRelator).obj a)).outr
-          = (R a.carrier)° := fun _ => pair_id_outr _
+        (R (A := a.carrier))° ≫ (relProd ((op.comp listRelator).obj a) ((op.comp listRelator).obj a)).outr
+          = (R (A := a.carrier))° := fun _ => pair_id_outr _
     have h2 := laxNatural_vcomp h (outr_laxNatural (op.comp listRelator) (op.comp listRelator)) S
     dsimp only at h2 ⊢
     rw [e, e] at h2
@@ -2055,7 +2058,7 @@ public theorem pair_id_R_recip_not_lax_natural :
 /-- **`(R°)*` is not lax natural**: it is `R°` (`R_recip_star`), which is not. -/
 public theorem R_recip_star_not_lax_natural :
     ¬ LaxNatural (op.comp listRelator) (op.comp listRelator)
-      (fun a : RelSet.{0} => star (R a.carrier)°) := by
+      (fun a : RelSet.{0} => star (R (A := a.carrier))°) := by
   simpa only [R_recip_star] using R_recip_not_lax_natural
 
 /-- **`base°` is LAX natural**: only `([],[])` is related to `([],[])` by `list(S)×list(S)`. -/
@@ -2145,7 +2148,7 @@ public instance instInhabitedCL : Inhabited (Str A) := ⟨ConsList.wrap ()⟩
     (p : X.carrier × X.carrier) : X.carrier :=
   if Q p.1 p.2 then p.1 else p.2
 
-public instance instDecR (es fs : (dEdit A).carrier) : Decidable (R A es fs) :=
+public instance instDecR (es fs : (dEdit A).carrier) : Decidable ((R (A := A)) es fs) :=
   inferInstanceAs (Decidable (clen es ≤ clen fs))
 
 end Tabulation
@@ -2161,7 +2164,7 @@ variable [DecidableEq A]
   | (ConsList.wrap _, ConsList.cons b ys) => ConsList.cons (Op.ins b) (mle (ConsList.wrap (), ys))
   | (ConsList.cons a xs, ConsList.cons b ys) =>
       if a = b then ConsList.cons (Op.cpy a) (mle (xs, ys))
-      else bmin (R A) (ConsList.cons (Op.del a) (mle (xs, ConsList.cons b ys)),
+      else bmin (R (A := A)) (ConsList.cons (Op.del a) (mle (xs, ConsList.cons b ys)),
                           ConsList.cons (Op.ins b) (mle (ConsList.cons a xs, ys)))
 termination_by p => clen p.1 + clen p.2
 decreasing_by all_goals (simp only [clen]; omega)
@@ -2187,7 +2190,7 @@ namespace Tab
     (q : A × (ConsList Unit (Op A) × ConsList Unit (Op A)))
     (ws : ConsList Unit (ConsList Unit (Op A))) : ConsList Unit (ConsList Unit (Op A)) :=
   if q.1 = b then ConsList.cons (ConsList.cons (Op.cpy q.1) q.2.2) ws
-  else ConsList.cons (bmin (R A) (ConsList.cons (Op.del q.1) (head ws),
+  else ConsList.cons (bmin (R (A := A)) (ConsList.cons (Op.del q.1) (head ws),
                                      ConsList.cons (Op.ins b) q.2.1)) ws
 
 end Tab
@@ -2226,7 +2229,7 @@ theorem mle_nil_right (u : Unit) : ∀ xs : Str A,
 /-- **edit-laws**, the specification `mle` is derived from: `mle ⊑ Λ(edit°) est(≤)`, a shortest
     edit sequence among those that edit back to the given pair.  Stated, not yet proved. -/
 @[expose] public def mleSpec : Prop :=
-  (graph mle : dPair A ⟶ dEdit A) ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R A)
+  (graph mle : dPair A ⟶ dEdit A) ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R (A := A))
 
 theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : Str A,
     tailsFn (cmap f xs) = cmap (cmap f) (tailsFn xs)
@@ -2358,7 +2361,7 @@ public theorem run_list_cons :
 omit [DecidableEq A] in
 /-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one. -/
 public theorem run_minL (w : ConsList Unit (Op A)) :
-    minL(R A) (ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
+    minL((R (A := A))) (ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ()))) w
       ↔ w = ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())) := by
@@ -2394,13 +2397,10 @@ open Lean PrettyPrinter in
 
 end Freyd.Alg.RelSet.Edit
 
--- printing-only: the section's ordering `R`, thinning preorder `Q` and order `V` wear the note's
+-- printing-only: the section's thinning preorder `Q` and order `V` wear the note's
 -- letters; the map the section is named after is `edit`, and the algebra's arms are `base`/`step`
 -- (B&dM p.225).  `Op.del` shares its last component with another `del`, so the printer would
 -- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `A`).
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≤")))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
   | _ => `($(mkIdent `Q))

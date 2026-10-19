@@ -350,7 +350,7 @@
   [`[] ↦ 0` #linebreak() `[cpy(a)] ↦ 1`],
   [#rowkey("Freyd.Alg.RelSet.Edit.R")], [#leant("Freyd.Alg.RelSet.Edit.R")],
   "Freyd.Alg.RelSet.Edit.R_eq",
-  [`[cpy(a)] ≤ [del(a),ins(a)]`],
+  [`[cpy(a)] ≼ [del(a),ins(a)]`],
   [#rowkey("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
   "Freyd.Alg.RelSet.Edit.V_eq",
   [`([b],[c]) V ([a,b],[c])` #linebreak() `([b],[c]) V ([b],[d,c])`],
@@ -368,7 +368,7 @@
   [`inl(()) ↦ []` #linebreak() `inr(cpy(a),es) ↦ [cpy(a)]⧺es`],
   [#rowkey("Freyd.Alg.RelSet.Edit.α_pres_R")], [#leant("Freyd.Alg.RelSet.Edit.α_pres_R")],
   "Freyd.Alg.RelSet.Edit.α_pres_R",
-  [α preserves ≤ #linebreak() `cpy(a) ⊤ del(b), xs ≤ ys ⟹ [cpy(a)]⧺xs ≤ [del(b)]⧺ys`],
+  [α preserves ≼ #linebreak() `cpy(a) ⊤ del(b), xs ≼ ys ⟹ [cpy(a)]⧺xs ≼ [del(b)]⧺ys`],
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
@@ -472,7 +472,7 @@
 - iterating from `∅`: `X₁ = B`, `X₂ = B ∪ B A`, `X₃ = B ∪ B A ∪ B A A`, …; their union is `B A*`
 - it is the least: any `X` with `B ∪ X A ⊑ X` contains `B`, hence `B A`, hence `B A A`, …, so it contains `B A*`; step 2 takes `X = C* B`
 - step 1 is a theorem, not the definition: `A*` is defined as `μY. 𝟙 ∪ A Y`, which adds `A` on the left
-- applied at `B = edit`, `A = 𝟙×tail`, and `C` replacing `es` by an `fs` with `|fs| ≤ |es|`, it gives `edit (𝟙×suffix) ⊑ R° edit` (`suffix = tail*`), which the `mle` table below uses
+- applied at `B = edit`, `A = 𝟙×tail`, and `C` replacing `es` by an `fs` with `|fs| ≤ |es|`, it gives `edit (𝟙×suffix) ⊑ ≼° edit` (`suffix = tail*`), which the `mle` table below uses
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
@@ -496,22 +496,22 @@
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body"),
     [
      // edit_mono row: Theorem 9.2
-     #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
+     #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(≼)α⊑α≼`
  #src[] is Proposition 9.2 at
       // lean:AOP.A9_2_Edit.edit_mono@e083dbea
-      `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
-      thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
+      `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `≼`. The
+      thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)α≼`
  #src[] over `F(Op,[A]×[A])` is
       // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
-      Proposition 9.4 at `U≜⊤` — `F(⊤,R)α⊑αR`, left as an exercise, so any two operations may be
+      Proposition 9.4 at `U≜⊤` — `F(⊤,≼)α⊑α≼`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
  #src[,
       // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
  ] —
       // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
- `edit (𝟙×suffix)⊑R° edit` #src[],
+ `edit (𝟙×suffix)⊑≼° edit` #src[],
       // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
- `edit (suffix×𝟙)⊑R° edit` #src[]. `suffix=tail*`
+ `edit (suffix×𝟙)⊑≼° edit` #src[]. `suffix=tail*`
       // lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
@@ -570,8 +570,8 @@
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_mono.calc.typ" as calc-edit-mono
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
-    #src[comparing the tails by `R` and then putting an operation in front (`F(R)α`) relates only
-     sequences that `R` also relates once the operation is in front (`αR`)]],
+    #src[comparing the tails by `≼` and then putting an operation in front (`F(≼)α`) relates only
+     sequences that `≼` also relates once the operation is in front (`α≼`)]],
      // lean:AOP.A9_2_Edit.edit_mono@e083dbea
   lean-calc(calc-edit-mono),
 )]<edit-mono>
