@@ -911,4 +911,9 @@ attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union
     importing `AOP.A6_7` would lose its `$args*`. -/
 postfix:max "*" => star
 
+-- Not an identity rule: another `R` is in the label's scope, so without it the label prints the qualified name.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.MeetCounterex.R, delab const.Freyd.Alg.MeetCounterex.R]
+meta def delabMeetCounterexR : Delab := `($(mkIdent `R))
+
 end Freyd.Alg
