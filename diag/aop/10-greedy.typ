@@ -128,7 +128,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
-     // lean:AOP.A10_2_Detab.expand_V@5930d9f4
+     // lean:AOP.A10_2_Detab.expand_V@baae274b
   lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
@@ -164,7 +164,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       // lean:AOP.A10_2_Detab.entab_mono@d08087a2
       `detab prefix⊑R° detab` is
  FALSE #src[,
-      // lean:AOP.A10_2_Detab.detab_prefix_false@373b3b35
+      // lean:AOP.A10_2_Detab.detab_prefix_false@00d5fb1d
  ] — at `n=8`,
       // lean:AOP.A10_2_Detab.detab_len_of_short@912f357f
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
@@ -173,7 +173,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       // lean:Freyd.Alg.RelSet.Detab.detab_V@844fdafe lean:AOP.A10_2_Detab.entab_V@0324bd01
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
-      // lean:AOP.A10_2_Detab.expand_V@5930d9f4
+      // lean:AOP.A10_2_Detab.expand_V@baae274b
       last step alone or discards it]]),
     (RQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
@@ -199,7 +199,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   - #leanf("Freyd.Alg.RelSet.Detab.detab_loop") \
     #src[the fold of `[base,step]` over the input converted to a snoc-list is the left loop of
      `step` from `base`]
-    // lean:AOP.A10_2_Detab.detab_loop@aa8e5d8d
+    // lean:AOP.A10_2_Detab.detab_loop@ba7b67b5
   - #leanf("Freyd.Alg.RelSet.Detab.outl_loop") \
     #src[Exercise 10.1: when `step` only appends `f(c,a)` to the output and moves the state by
      `g`, the output of the loop is `loop'(f,g)`, which never carries the output]
@@ -258,7 +258,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_triple") \
     #src[`entab` is `triple` with the held blanks appended to its output]],
-    // lean:AOP.A10_2_Detab.entab_triple@31bc2b82
+    // lean:AOP.A10_2_Detab.entab_triple@72985c13
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.entab_triple.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.entab_triple.rhs", src[(10.1) — @entab-tbc]),
