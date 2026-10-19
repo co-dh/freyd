@@ -420,104 +420,70 @@ public theorem lenAlg_mono :
 
 /-! ### `edit-mono` — Proposition 9.2 at `length`, one step per fact (B&dM p.226) -/
 
-/-- `edit-mono`, first step: `R≜length≤length°`, and `F` preserves composition. -/
-public theorem edit_mono_step1 :
-    (F Unit (Op A)).map (R A) ≫ α A
-      = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-          ≫ (F Unit (Op A)).map leRel
-          ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-          ≫ α A := by
-  rw [R_eq, (F Unit (Op A)).map_comp, (F Unit (Op A)).map_comp]; simp only [Cat.assoc]
-
-/-- `edit-mono`, second step: `length` is entire, `𝟙⊑length length°`. -/
-public theorem edit_mono_step2 :
-    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α A
-      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_left (α A : Alg (F Unit (Op A)) (dEdit A))
-    (map_entire_le (graph_map (A := dEdit A) (B := (⟨Nat⟩ : RelSet.{0})) clen))
-  rw [Cat.comp_id] at h
-  exact comp_mono_left _ (comp_mono_left _ (comp_mono_left _ h))
-
-/-- `edit-mono`, third step: `α length=F(length)[zero,π₂ succ]` (`lenAlg_comm`). -/
-public theorem edit_mono_step3 :
-    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := congrArg (fun Z => (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-    ≫ (F Unit (Op A)).map leRel
-    ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-    ≫ Z ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°) (lenAlg_comm (A := A))
-  simpa only [Cat.assoc] using h
-
-/-- `edit-mono`, fourth step: `F(length)` is simple, `F(length°)F(length)⊑F(𝟙)=𝟙`. -/
-public theorem edit_mono_step4 :
-    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-        ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have hs : (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-      ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-      ⊑ 𝟙 _ := by
-    rw [← (F Unit (Op A)).map_comp, ← (F Unit (Op A)).map_id]
-    exact (F Unit (Op A)).map_mono (graph_map clen).2
-  have h := comp_mono_right hs
-    (graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-  rw [Cat.id_comp, Cat.assoc] at h
-  exact comp_mono_left _ (comp_mono_left _ h)
-
-/-- `edit-mono`, fifth step: `succ` is monotonic on `≤`, `F(≤)[zero,π₂ succ]⊑[zero,π₂ succ]≤`
-    (`lenAlg_mono`). -/
-public theorem edit_mono_step5 :
-    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op A)).map leRel
-        ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := comp_mono_right (lenAlg_mono (A := A))
-    (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
-  simp only [Cat.assoc] at h
-  exact comp_mono_left _ h
-
-/-- `edit-mono`, sixth step: `lenAlg_comm` read backwards. -/
-public theorem edit_mono_step6 :
-    (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
-        ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := congrArg (fun Z => Z ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
-    (lenAlg_comm (A := A))
-  simpa only [Cat.assoc] using h.symm
+/-- `F(length)` is simple: `F(length°)F(length)⊑F(𝟙)=𝟙`, `length` a map and `F` monotonic. -/
+public theorem map_length_simple :
+    (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+      ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ⊑ 𝟙 _ := by
+  rw [← (F Unit (Op A)).map_comp, ← (F Unit (Op A)).map_id]
+  exact (F Unit (Op A)).map_mono (graph_map clen).2
 
 /-- **edit-laws**, second row's monotonicity `F(R)α⊑αR`: Proposition 9.2 at
-    `length≜⦇[zero,π₂ succ]⦈`, `succ` monotonic on `≤`, so `cons` is monotonic on `R`. -/
+    `length≜⦇[zero,π₂ succ]⦈`, `succ` monotonic on `≤`, so `cons` is monotonic on `R`.  One step
+    per fact: expand `R`, `length` entire, `length` a fold, `F(length)` simple, `succ` monotonic,
+    the fold back, `R` back. -/
 public theorem edit_mono :
     (F Unit (Op A)).map (R A) ≫ α A ⊑ α A ≫ R A :=
   calc (F Unit (Op A)).map (R A) ≫ α A
-      _ = _ := edit_mono_step1
-      _ ⊑ _ := edit_mono_step2
-      _ = _ := edit_mono_step3
-      _ ⊑ _ := edit_mono_step4
-      _ ⊑ _ := edit_mono_step5
-      _ = _ := edit_mono_step6
+      _ = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (F Unit (Op A)).map leRel
+          ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+          ≫ α A := by
+        rw [R_eq, (F Unit (Op A)).map_comp, (F Unit (Op A)).map_comp, Cat.assoc, Cat.assoc]
+      _ ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (F Unit (Op A)).map leRel
+          ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+          ≫ α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° :=
+        comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (by
+          have h := comp_mono_left (α A)
+            (map_entire_le (graph_map (A := dEdit A) (B := (⟨Nat⟩ : RelSet.{0})) clen))
+          rw [Cat.comp_id] at h
+          exact h)))
+      _ = (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (F Unit (Op A)).map leRel
+          ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+          ≫ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+        have h := congrArg (fun Z =>
+          (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+            ≫ (F Unit (Op A)).map leRel
+            ≫ (F Unit (Op A)).map ((graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+            ≫ Z ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°) (lenAlg_comm (A := A))
+        dsimp only at h; rw [Cat.assoc, Cat.assoc] at h
+        exact h
+      _ ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ (F Unit (Op A)).map leRel
+          ≫ graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+        have h := comp_mono_right (map_length_simple (A := A))
+          (graph lenAlgFn ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+        rw [Cat.id_comp, Cat.assoc] at h
+        exact comp_mono_left _ (comp_mono_left _ h)
+      _ ⊑ (F Unit (Op A)).map (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))
+          ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+        have h := comp_mono_right (lenAlg_mono (A := A))
+          (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°
+        rw [Cat.assoc, Cat.assoc] at h
+        exact comp_mono_left _ h
+      _ = α A ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+          ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+        have h := (congrArg
+          (fun Z => Z ≫ leRel ≫ (graph clen : dEdit A ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+          (lenAlg_comm (A := A))).symm
+        rw [Cat.assoc, Cat.assoc] at h
+        exact h
       _ = α A ≫ R A := by rw [R_eq]
+
+calc_steps edit_mono
 
 /-- Theorem 9.2 asks for monotonicity at the mirrored `R°`, which `cons` also has. -/
 public theorem edit_mono_recip : Freyd.Alg.Pres (F := F Unit (Op A)) (α A) (R A)° :=
