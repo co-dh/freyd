@@ -1044,11 +1044,11 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   (sym: [input], type: leant("Freyd.Alg.RelSet.Tour.run_tour.lhs.arg"), value: leanf("Freyd.Alg.RelSet.Tour.run_tour.lhs.arg"),
    meaning: [the cities, left to right]),
   // lean:AOP.A8_6_Tour.run_tour@4bdb0790
-  (sym: [`kept`], type: leant("Freyd.Alg.RelSet.Tour.run_kept.rhs"),
+  (sym: leann("Freyd.Alg.RelSet.Tour.kept"), type: leant("Freyd.Alg.RelSet.Tour.run_kept.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tour.run_kept.rhs"),
    meaning: [the fold keeps six tours: the thinning drops the rest at each city]),
   // lean:AOP.A8_6_Tour.run_kept@840621b7
-  (sym: [`bitonic`], type: leant("Freyd.Alg.RelSet.Tour.run_tour.rhs"),
+  (sym: leann("Freyd.Alg.RelSet.Tour.bitonic"), type: leant("Freyd.Alg.RelSet.Tour.run_tour.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tour.run_tour.rhs"),
    meaning: [the two of cost `16`, `est(R)` of the kept tours]),
   // lean:AOP.A8_6_Tour.run_tour@4bdb0790

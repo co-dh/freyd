@@ -60,6 +60,8 @@ variable {City : Type}
 @[expose] public abbrev Journey (City : Type) : Type := ConsList (City × City) City
 /-- A bitonic tour: the outward journey and the return. -/
 @[expose] public abbrev Tour (City : Type) : Type := Journey City × Journey City
+/-- Named, so a declaration comparing tours holds this constant and not the product instance's inline binders. -/
+public instance decEqTour [DecidableEq City] : DecidableEq (Tour City) := inferInstanceAs (DecidableEq (Journey City × Journey City))
 /-- The object carrying `Tour`. -/
 @[expose] public abbrev dTour (City : Type) : RelSet.{0} := ⟨Tour City⟩
 
@@ -798,7 +800,7 @@ public theorem keep_eq (a : City) :
 @[expose] public def kept : Journey City → List (Tour City) := cfold (fun p => [start p]) keep
 
 /-- The program: the least-cost tours among those kept. -/
-@[expose] public def bitonic (x : Journey City) : List (Tour City) := RelRep.estList Rt.mem (kept x)
+@[expose] public def bitonic (xs : Journey City) : List (Tour City) := RelRep.estList Rt.mem (kept xs)
 
 /-- `bitonic` is `RelRep.est R` of `kept`. -/
 public theorem bitonic_eq : RelRep.est Rt (.enum (kept (City := City))) = some (.enum bitonic) := rfl
