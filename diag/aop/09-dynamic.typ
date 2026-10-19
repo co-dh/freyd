@@ -611,39 +611,6 @@
 )]<edit-mono>
 
 
-// B&dM p.226: the second condition of Proposition 9.4, split at `V°=(suffix×𝟙)(𝟙×suffix)`.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
-    #src[cutting a front off either string an edit sequence produces (`edit V°`) leaves a pair that
-     a sequence no longer produces (`R° edit`)]],
-     // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs", step: true)],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs"),
-    [#src[`V≜suffix°×suffix°`, and `×` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@93b78f1f
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs", step: true)],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
-    [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
-      `cpy` to an `ins`. Proved by induction at `suffix` directly, not through `suffix=tail*` and
-      `BA⊑CB⟹BA*⊑C*B` as the book does]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@1cc1f51a lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs"),
-    [#src[`edit (𝟙×suffix)⊑R° edit`, the mirror image: `cpy` weakens to a `del`]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@57addf8e lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs"),
-    [#src[`R°` is transitive, `≤` being so]])],
-     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@0b83e93d
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
-)]<edit-V>
 
 
 === Tabulation
