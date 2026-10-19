@@ -871,6 +871,18 @@ public theorem bitonic_le : (RelRep.enum (bitonic (City := City))).rel ⊑ Λ to
 @[expose] public def tcSq : RelSet.Tour Int := ⟨fun p => (p.1 - p.2) * (p.1 - p.2)⟩
 
 attribute [local instance] tcSq in
+/-- **kept-run**: on the cities `[0,3,1,4,2]` the fold keeps six tours, the mirror pairs of three. -/
+public theorem run_kept :
+    kept (ConsList.cons (0 : Int) (ConsList.cons 3 (ConsList.cons 1 (ConsList.wrap (4, 2)))))
+      = [(ConsList.wrap (0, 2), ConsList.cons 0 (ConsList.cons 3 (ConsList.cons 1 (ConsList.wrap (4, 2))))),
+         (ConsList.cons 0 (ConsList.wrap (1, 2)), ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (4, 2)))),
+         (ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (1, 2))), ConsList.cons 0 (ConsList.wrap (4, 2))),
+         (ConsList.cons 0 (ConsList.wrap (4, 2)), ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (1, 2)))),
+         (ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (4, 2))), ConsList.cons 0 (ConsList.wrap (1, 2))),
+         (ConsList.cons 0 (ConsList.cons 3 (ConsList.cons 1 (ConsList.wrap (4, 2)))), ConsList.wrap (0, 2))] := by
+  rfl
+
+attribute [local instance] tcSq in
 /-- **tour-run**: on the cities `[0,3,1,4,2]` the program keeps six tours and returns the two of
     least cost `16`, `([0,1,2],[0,3,4,2])` and its mirror. -/
 public theorem run_tour :
