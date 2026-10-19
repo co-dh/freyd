@@ -673,8 +673,8 @@ open Lean PrettyPrinter Delaborator SubExpr in
 
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
--- `Salg` says nothing; `diag_unfold` is `diag/tool/Tags.lean`'s, as for `tour` above.
-attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
+-- `S` says nothing; `diag_unfold` is `diag/tool/Tags.lean`'s, as for `tour` above.
+attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.S
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
 -- The take-while section's algebras the same way: the note draws what each arm DOES — `prefix`,

@@ -21,9 +21,9 @@
 
   SIDE CONDITIONS THE NOTE DOES NOT STATE.  Two hypotheses on word lengths are needed and are
   carried explicitly:
-  - `hfit : ∀ a, len a ≤ w` — the note's "every word fits on a line by itself", which the
+  - `hfit : ∀ a : Word, len a ≤ w` — the note's "every word fits on a line by itself", which the
     fusion step needs;
-  - `hlen : ∀ a, 0 ≤ len a` — words are not of negative length.  The fusion needs it (a line
+  - `hlen : ∀ a : Word, 0 ≤ len a` — words are not of negative length.  The fusion needs it (a line
     that fits after gluing already fitted before), and so does `para_mono_glue`: without it a
     one-line paragraph of waste `0` can be glued into a two-line one of positive waste while
     passing `ok w`, and monotonicity on `Q` fails.
@@ -38,12 +38,19 @@ module
 public import AOP.A8_3
 import AOP.A8_2
 
+/-- B&dM p.208: the section's fixed data, the length `len` of a word.  Every definition below reads
+    it from the one instance in scope, so the printer, which hides instance arguments, shows the
+    book's `width`, not `width len`.  Named after the section's namespace, so the field prints as
+    the bare `len`. -/
+public class Freyd.Alg.RelSet.Paragraph (Word : Type) where
+  len : Word → Int
+
 namespace Freyd.Alg.RelSet.Paragraph
 open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
-variable {Word : Type} {len : Word → Int} {w : Int}
+variable {Word : Type} {w : Int}
 
 /-! ## `para-defn` -/
 
@@ -72,9 +79,9 @@ open Lean PrettyPrinter in
 
 /-- **para-defn**: `width ≜ ⦇[length,(length×𝟙) plus succ]⦈` — the words' lengths plus one
     space between neighbours. -/
-@[expose] public def widthFn (len : Word → Int) : Line Word → Int
+@[expose] public def width [Paragraph Word] : Line Word → Int
   | ConsList.wrap a => len a
-  | ConsList.cons a xs => len a + widthFn len xs + 1
+  | ConsList.cons a xs => len a + width xs + 1
 
 /-- `head : Line ⟵ Para` — the first line of a paragraph. -/
 @[expose] public def head : Para Word → Line Word
@@ -105,62 +112,60 @@ public theorem sqr_eq_zero {n : Int} (h : sqr n = 0) : n = 0 := by
 
 /-- **para-defn**: `waste w ≜ init list(white w) collect` with `white w x = w − width x` —
     the last line's white space is not wasted, so it is the base case that is `0`. -/
-@[expose] public def wasteFn (len : Word → Int) (w : Int) : Para Word → Int
+@[expose] public def waste [Paragraph Word] (w : Int) : Para Word → Int
   | ConsList.wrap _ => 0
-  | ConsList.cons xs xss => sqr (w - widthFn len xs) + wasteFn len w xss
+  | ConsList.cons xs xss => sqr (w - width xs) + waste w xss
 
-public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
+public theorem waste_nonneg [Paragraph Word] : ∀ p : Para Word, 0 ≤ waste w p
   | ConsList.wrap _ => Int.le_refl _
-  | ConsList.cons _ p => Int.add_nonneg (sqr_nonneg _) (wasteFn_nonneg p)
+  | ConsList.cons _ p => Int.add_nonneg (sqr_nonneg _) (waste_nonneg p)
 
 /-- `list⁺(fits w)`: every line of the paragraph fits. -/
-@[expose] public def allFitP (len : Word → Int) (w : Int) : Para Word → Prop
-  | ConsList.wrap xs => widthFn len xs ≤ w
-  | ConsList.cons xs xss => widthFn len xs ≤ w ∧ allFitP len w xss
+@[expose] public def allFitP [Paragraph Word] (w : Int) : Para Word → Prop
+  | ConsList.wrap xs => width xs ≤ w
+  | ConsList.cons xs xss => width xs ≤ w ∧ allFitP w xss
 
--- The line-length function is the SECTION'S data, not part of the names the note writes
--- (`fits(w)`, `ok(w)`), so it is an implicit binder supplied by name where a use site pins it.
 /-- **para-defn**: `list⁺(fits w)`, the coreflexive on paragraphs all of whose lines fit. -/
-@[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word := corefl (allFitP len w)
+@[expose] public def fits [Paragraph Word] (w : Int) : dPara Word ⟶ dPara Word := corefl (allFitP w)
 
 /-- **para-defn**: `ok w`, the predicate on `[x]⧺xs` with `width x ≤ w` — only the FIRST line is
     tested. -/
-@[expose] public def okP (w : Int) (xss : Para Word) : Prop := widthFn len (head xss) ≤ w
+@[expose] public def okP [Paragraph Word] (w : Int) (xss : Para Word) : Prop := width (head xss) ≤ w
 
 /-- `ok w` as an arrow: the coreflexive of `okP`. -/
-@[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word := corefl (okP (len := len) w)
+@[expose] public def ok [Paragraph Word] (w : Int) : dPara Word ⟶ dPara Word := corefl (okP w)
 
-public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
+public theorem fits_coreflexive [Paragraph Word] : Coreflexive (fits (Word := Word) w) :=
   le_iff.mpr fun _ _ h => h.1
 
-public theorem ok_coreflexive : Coreflexive (ok (len := len) w) :=
+public theorem ok_coreflexive [Paragraph Word] : Coreflexive (ok (Word := Word) w) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **para-defn**: `R ≜ (waste w) ≤ (waste w)°`. -/
-@[expose] public def R (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss
+@[expose] public def R [Paragraph Word] {w : Int} : dPara Word ⟶ dPara Word :=
+  fun xss yss => waste w xss ≤ waste w yss
 
 /-- `R = waste ≤ waste°`, point-free. -/
-public theorem R_eq :
-    R len w
-      = graph (wasteFn len w) ≫ leq
-        ≫ (graph (wasteFn len w) : dPara Word ⟶ (⟨Int⟩ : RelSet.{0}))° := by
+public theorem R_eq [Paragraph Word] :
+    R (w := w)
+      = graph (waste w) ≫ leq
+        ≫ (graph (waste w) : dPara Word ⟶ (⟨Int⟩ : RelSet.{0}))° := by
   apply hom_ext; intro p q
   constructor
-  · intro h; exact ⟨wasteFn len w p, rfl, wasteFn len w q, h, rfl⟩
+  · intro h; exact ⟨waste w p, rfl, waste w q, h, rfl⟩
   · rintro ⟨m, hm, n, hmn, hn⟩
-    show wasteFn len w p ≤ wasteFn len w q
-    rw [← (show m = wasteFn len w p from hm), ← (show n = wasteFn len w q from hn)]
+    show waste w p ≤ waste w q
+    rw [← (show m = waste w p from hm), ← (show n = waste w q from hn)]
     exact hmn
 
 /-- **para-defn**: `Q ≜ R ∩ (head head°)` — no more wasteful, and with the same first line. -/
-@[expose] public def Q (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
-  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss ∧ head xss = head yss
+@[expose] public def Q [Paragraph Word] (w : Int) : dPara Word ⟶ dPara Word :=
+  fun xss yss => waste w xss ≤ waste w yss ∧ head xss = head yss
 
 /-- `Q = R ∩ (head head°)`, point-free. -/
-public theorem Q_eq :
-    Q len w
-      = R len w ∩ (graph head ≫ (graph head : dPara Word ⟶ ⟨Line Word⟩)°) := by
+public theorem Q_eq [Paragraph Word] :
+    Q w
+      = R (w := w) ∩ (graph head ≫ (graph head : dPara Word ⟶ ⟨Line Word⟩)°) := by
   apply hom_ext; intro p q
   constructor
   · rintro ⟨hr, hh⟩; exact ⟨hr, head p, rfl, hh⟩
@@ -170,36 +175,36 @@ public theorem Q_eq :
     exact hm'
 
 /-- `xss R yss` iff `xss` wastes no more than `yss`: the pointwise reading of `R_eq`. -/
-public theorem R_apply (xss yss : Para Word) :
-    R len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss := Iff.rfl
+public theorem R_apply [Paragraph Word] (xss yss : Para Word) :
+    R (w := w) xss yss ↔ waste w xss ≤ waste w yss := Iff.rfl
 
 /-- `xss Q yss` iff `xss` wastes no more than `yss` and has the same first line. -/
-public theorem Q_apply (xss yss : Para Word) :
-    Q len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss ∧ head xss = head yss := Iff.rfl
+public theorem Q_apply [Paragraph Word] (xss yss : Para Word) :
+    Q w xss yss ↔ waste w xss ≤ waste w yss ∧ head xss = head yss := Iff.rfl
 
 /-- `xss (fits w) yss` iff `xss = yss` and every line of `xss` is at most `w` wide. -/
-public theorem fits_apply (xss yss : Para Word) :
-    fits (len := len) w xss yss ↔ xss = yss ∧ allFitP len w xss := Iff.rfl
+public theorem fits_apply [Paragraph Word] (xss yss : Para Word) :
+    fits w xss yss ↔ xss = yss ∧ allFitP w xss := Iff.rfl
 
 /-- `xss (ok w) yss` iff `xss = yss` and the first line of `xss` is at most `w` wide. -/
-public theorem ok_apply (xss yss : Para Word) :
-    ok (len := len) w xss yss ↔ xss = yss ∧ widthFn len (head xss) ≤ w := Iff.rfl
+public theorem ok_apply [Paragraph Word] (xss yss : Para Word) :
+    ok w xss yss ↔ xss = yss ∧ width (head xss) ≤ w := Iff.rfl
 
-public theorem Q_le_R : Q len w ⊑ R len w := le_iff.mpr fun _ _ h => h.1
+public theorem Q_le_R [Paragraph Word] : Q (Word := Word) w ⊑ R (w := w) := le_iff.mpr fun _ _ h => h.1
 
-public theorem Q_refl : 𝟙 (dPara Word) ⊑ Q len w :=
+public theorem Q_refl [Paragraph Word] : 𝟙 (dPara Word) ⊑ Q w :=
   le_iff.mpr fun p q h => by obtain rfl : p = q := h; exact ⟨Int.le_refl _, rfl⟩
 
-public theorem Q_trans : Q len w ≫ Q len w ⊑ Q len w :=
+public theorem Q_trans [Paragraph Word] : Q (Word := Word) w ≫ Q w ⊑ Q w :=
   le_iff.mpr fun _ _ h => by
     obtain ⟨_, ⟨hr1, hh1⟩, ⟨hr2, hh2⟩⟩ := h
     exact ⟨Int.le_trans hr1 hr2, hh1.trans hh2⟩
 
-public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
+public theorem R_recip_trans [Paragraph Word] : (R (Word := Word) (w := w))° ≫ (R (w := w))° ⊑ (R (w := w))° :=
   le_iff.mpr fun p r h => by
     obtain ⟨q, h1, h2⟩ := h
-    exact Int.le_trans (h2 : wasteFn len w r ≤ wasteFn len w q)
-      (h1 : wasteFn len w q ≤ wasteFn len w p)
+    exact Int.le_trans (h2 : waste w r ≤ waste w q)
+      (h1 : waste w q ≤ waste w p)
 
 /-! ## The two algebras `[wrap wrap,new]` and `[wrap wrap,glue]` -/
 
@@ -351,24 +356,24 @@ end Natural
 
 /-- **para-defn**: the specification's algebra `S ≜ [wrap wrap,new] ∪ ([wrap wrap,glue](ok w))`,
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
-@[expose] public def Salg (len : Word → Int) (w : Int) :
+@[expose] public def S [Paragraph Word] {w : Int} :
     Alg (F Word Word) (dPara Word) :=
   graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
     ∪ (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
-      ≫ ok (len := len) w)
+      ≫ ok w)
 
 /-! ## `para-mono` -/
 
 /-- Gluing a word onto a paragraph that fits leaves a paragraph that fits, and conversely —
     the step that lets the fusion below test only the FIRST line.  Needs `0 ≤ len a`: a glued
     line is wider than the line it was glued to. -/
-public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para Word) :
-    allFitP len w (glue a p)
-      ↔ allFitP len w p ∧ widthFn len (head (glue a p)) ≤ w := by
-  have hgrow : ∀ l : Line Word, widthFn len l ≤ widthFn len (ConsList.cons a l) := by
+public theorem allFitP_glue_iff [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) (a : Word) (p : Para Word) :
+    allFitP w (glue a p)
+      ↔ allFitP w p ∧ width (head (glue a p)) ≤ w := by
+  have hgrow : ∀ l : Line Word, width l ≤ width (ConsList.cons a l) := by
     intro l
     have := hlen a
-    show widthFn len l ≤ len a + widthFn len l + 1
+    show width l ≤ len a + width l + 1
     omega
   cases p with
   | wrap l =>
@@ -384,10 +389,10 @@ public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para
 
 /-- **para-mono**, first row: `(𝟙×Q) new ⊑ new Q` — opening a new line adds the same waste to
     both paragraphs and gives them the same first line. -/
-public theorem para_mono_new :
+public theorem para_mono_new [Paragraph Word] :
     Freyd.Alg.Pres (F := F Word Word)
       (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2)))
-      (Q len w) :=
+      (Q w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = _ := hr
@@ -406,17 +411,17 @@ public theorem para_mono_new :
         obtain ⟨b, y⟩ := q
         obtain ⟨hab, hQ⟩ := hFv
         obtain rfl : a = b := hab
-        have hxy : wasteFn len w x ≤ wasteFn len w y := hQ.1
+        have hxy : waste w x ≤ waste w y := hQ.1
         refine ⟨ConsList.cons (ConsList.wrap a) x, rfl, ?_, rfl⟩
-        show sqr (w - len a) + wasteFn len w x ≤ sqr (w - len a) + wasteFn len w y
+        show sqr (w - len a) + waste w x ≤ sqr (w - len a) + waste w y
         omega
 
 /-- **para-mono**, second row: `(𝟙×Q)(glue (ok w)) ⊑ glue (ok w)Q` — `Q` pins the first line,
     which is the only thing `glue` changes and the only thing `waste` reads about it. -/
-public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
+public theorem para_mono_glue [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) :
     Freyd.Alg.Pres (F := F Word Word)
       (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2))
-        ≫ ok (len := len) w) (Q len w) :=
+        ≫ ok w) (Q w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, s, hs, hsr, hok⟩ := h
     obtain rfl : s = _ := hs
@@ -437,32 +442,32 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
         obtain ⟨b, y⟩ := q
         obtain ⟨hab, hQ⟩ := hFv
         obtain rfl : a = b := hab
-        have hwaste : wasteFn len w x ≤ wasteFn len w y := hQ.1
+        have hwaste : waste w x ≤ waste w y := hQ.1
         have hhead : head x = head y := hQ.2
         -- the two glued paragraphs have the same first line, so `ok w` transfers
-        have hokx : widthFn len (head (glue a x)) ≤ w := by
+        have hokx : width (head (glue a x)) ≤ w := by
           rw [headLine_glue, hhead, ← headLine_glue a y]
           exact hok
         refine ⟨glue a x, ⟨glue a x, rfl, rfl, hokx⟩, ?_, ?_⟩
         · -- the waste of a glued paragraph is that of its tail plus one term fixed by the head
           cases x with
           | wrap lx =>
-            show (0 : Int) ≤ wasteFn len w (glue a y)
-            exact wasteFn_nonneg _
+            show (0 : Int) ≤ waste w (glue a y)
+            exact waste_nonneg _
           | cons lx x' =>
             cases y with
             | wrap ly =>
               -- vacuous: `waste x ≤ 0` forces `width lx = w`, and then the glued line overflows
               exfalso
-              have hx0 : sqr (w - widthFn len lx) + wasteFn len w x' ≤ 0 := hwaste
-              have h1 : 0 ≤ sqr (w - widthFn len lx) := sqr_nonneg _
-              have h2 : 0 ≤ wasteFn len w x' := wasteFn_nonneg _
-              have hz : sqr (w - widthFn len lx) = 0 := by omega
-              have hlx : widthFn len lx = w := by
+              have hx0 : sqr (w - width lx) + waste w x' ≤ 0 := hwaste
+              have h1 : 0 ≤ sqr (w - width lx) := sqr_nonneg _
+              have h2 : 0 ≤ waste w x' := waste_nonneg _
+              have hz : sqr (w - width lx) = 0 := by omega
+              have hlx : width lx = w := by
                 have := sqr_eq_zero hz; omega
               have hly : ly = lx := (show head (ConsList.cons lx x') = head
                 (ConsList.wrap ly) from hhead).symm
-              have hokw : len a + widthFn len ly + 1 ≤ w := hok
+              have hokw : len a + width ly + 1 ≤ w := hok
               have := hlen a
               rw [hly, hlx] at hokw
               omega
@@ -470,13 +475,19 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
               have hly : ly = lx := (show head (ConsList.cons lx x')
                 = head (ConsList.cons ly y') from hhead).symm
               subst hly
-              show sqr (w - widthFn len (ConsList.cons a ly)) + wasteFn len w x'
-                ≤ sqr (w - widthFn len (ConsList.cons a ly)) + wasteFn len w y'
-              have hx : sqr (w - widthFn len ly) + wasteFn len w x'
-                ≤ sqr (w - widthFn len ly) + wasteFn len w y' := hwaste
+              show sqr (w - width (ConsList.cons a ly)) + waste w x'
+                ≤ sqr (w - width (ConsList.cons a ly)) + waste w y'
+              have hx : sqr (w - width ly) + waste w x'
+                ≤ sqr (w - width ly) + waste w y' := hwaste
               omega
         · show head (glue a x) = head (glue a y)
           rw [headLine_glue, headLine_glue, hhead]
+
+section Counterexample
+
+/-- The refutation's words are their own lengths. -/
+@[expose] public def lenId : Paragraph Int := ⟨fun i => i⟩
+attribute [local instance] lenId
 
 /-- **para-mono**, the FALSE row (B&dM p.209, "the obvious greedy algorithm does not solve this
     specification"): `(𝟙×R) glue ⊑ glue R` fails.  Words are their own lengths, `w = 10`: the
@@ -485,11 +496,11 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
 public theorem para_mono_glue_false :
     ¬ Freyd.Alg.Pres (F := F Int Int)
       (graph (Sum.elim (fun a : Int => ConsList.wrap (ConsList.wrap a)) (fun q : Int × Para Int => glue q.1 q.2)))
-      (R (fun i : Int => i) 10) := by
+      (R (w := 10)) := by
   intro h
-  have hRxy : wasteFn (fun i : Int => i) 10
+  have hRxy : waste 10
         (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))
-      ≤ wasteFn (fun i : Int => i) 10
+      ≤ waste 10
         (ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))) := by
     decide
   have hstep := le_iff.mp h
@@ -500,12 +511,14 @@ public theorem para_mono_glue_false :
   obtain ⟨s, hs, hR⟩ := hstep
   obtain rfl : s = glue 0
     (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))) := hs
-  have hbad : wasteFn (fun i : Int => i) 10
+  have hbad : waste 10
         (glue 0 (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int)))))
-      ≤ wasteFn (fun i : Int => i) 10
+      ≤ waste 10
         (glue 0 (ConsList.cons (ConsList.wrap (9 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))) := hR
   revert hbad
   decide
+
+end Counterexample
 
 /-- **para-defn**, `P ≜ ⊤`: nothing is asked of the sorting order, so both algebras are
     monotonic on it. -/
@@ -528,8 +541,8 @@ public theorem para_sort_glue :
     `relCata_fusion`, so only the algebra equation below is ever unfolded: testing every line
     of the result is the same as testing the first line at every step, given that every word
     fits on a line by itself and that gluing only widens a line. -/
-public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partAlg ≫ fits (len := len) w = (F Word Word).map (fits (len := len) w) ≫ Salg len w := by
+public theorem para_alg_fusion [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
+    partAlg ≫ fits w = (F Word Word).map (fits w) ≫ S (w := w) := by
   apply hom_ext; intro u r
   cases u with
   | inl a =>
@@ -582,8 +595,8 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
           obtain rfl : glue a x = r := hsr
           exact ⟨glue a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
 
-public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partition ≫ fits (len := len) w = ⦇Salg len w⦈ :=
+public theorem para_spec [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
+    partition ≫ fits w = ⦇S (Word := Word) (w := w)⦈ :=
   relCata_fusion (initial Word Word) (para_alg_fusion hlen hfit)
 
 /-- B&dM's `g₁ ≜ list(new)` (§8.5, p.210): start a new line with the word. -/
@@ -591,22 +604,22 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   list (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2)))
 
 /-- B&dM's `g₂ ≜ list(glue) filter(ok w)`: glue the word onto the last line, keep the layouts that fit. -/
-@[expose] public def g₂ :=
+@[expose] public def g₂ [Paragraph Word] :=
   list (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)))
-    ≫ Filter.filter (ok (len := len) w)
+    ≫ Filter.filter (ok w)
 
 /-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
-public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a) :
+public theorem para_laws_step1 [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) :
     ⦇cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-        (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)⦈ ≫ minL (R len w)
-      ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
+        (g₁ (Word := Word)) (g₂ (w := w))
+        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)⦈ ≫ minL (R (w := w))
+      ⊑ Λ ⦇S (Word := Word) (w := w)⦈ ≫ est (R (w := w)) := by
   have key := thinningList
     (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => new q.1 q.2))
-    (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)) (𝟙 _) (ok (len := len) w) (le_refl _) ok_coreflexive
-    («≼» := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
+    (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a)) (fun q : Word × Para Word => glue q.1 q.2)) (𝟙 _) (ok w) (le_refl _) ok_coreflexive
+    («≼» := topMor (dPara Word) (dPara Word)) (Q := Q w) (R := R (w := w))
     Q_le_R ⟨Q_refl, Q_trans⟩ ⟨le_trans Q_refl Q_le_R, trans_of_recip_trans R_recip_trans⟩
     (by rw [Cat.comp_id]; exact para_mono_new) (para_mono_glue hlen)
     preorder_topMor connected_topMor para_sort_new para_sort_glue
@@ -614,19 +627,19 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a) :
   exact key
 
 /-- **para-laws**, the specification step: `para_spec` under `Λ(−) est(R)`. -/
-public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    Λ ⦇Salg len w⦈ ≫ est (R len w) = Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
+public theorem para_laws_step2 [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
+    Λ ⦇S (Word := Word) (w := w)⦈ ≫ est (R (w := w)) = Λ (partition ≫ fits w) ≫ est (R (w := w)) := by
   rw [para_spec hlen hfit]
 
 /-- **para-laws**, the algebra read as `(f₁p₁) ∪ (f₂p₂)` at `p₁ ≜ 𝟙` — the shape Theorem 8.2
     takes it in. -/
-public theorem para_laws_split :
-    Λ ⦇Salg len w⦈ ≫ est (R len w)
+public theorem para_laws_split [Paragraph Word] :
+    Λ ⦇S (Word := Word) (w := w)⦈ ≫ est (R (w := w))
       = Λ ⦇(graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
               (fun q : Word × Para Word => new q.1 q.2)) ≫ 𝟙 (dPara Word))
           ∪ (graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
-              (fun q : Word × Para Word => glue q.1 q.2)) ≫ ok (len := len) w)⦈
-          ≫ est (R len w) := by
+              (fun q : Word × Para Word => glue q.1 q.2)) ≫ ok w)⦈
+          ≫ est (R (w := w)) := by
   rw [Cat.comp_id]; rfl
 
 /-- **para-laws** (B&dM §8.5, p.210): a paragraph laid out as a fold that thins the layouts
@@ -635,11 +648,11 @@ public theorem para_laws_split :
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`, `p₁ ≜ 𝟙`,
     `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`, with `para-mono` discharging the
     monotonicity conditions and `para_spec` the specification. -/
-public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
+public theorem para_laws [Paragraph Word] (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
     ⦇cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-        (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)⦈ ≫ minL (R len w)
-      ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
+        (g₁ (Word := Word)) (g₂ (w := w))
+        ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)⦈ ≫ minL (R (w := w))
+      ⊑ Λ (partition ≫ fits w) ≫ est (R (w := w)) := by
   rw [← para_laws_step2 hlen hfit]
   exact para_laws_step1 hlen
 
@@ -650,8 +663,8 @@ public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   list (graph (fun q : Word × Para Word => new q.1 q.2))
 
 /-- B&dM's `h₂ ≜ list(glue) filter(ok w)` (p.211): `g₂` on the pair summand. -/
-@[expose] public def h₂ : dList (Word × Para Word) ⟶ dList (Para Word) :=
-  list (graph (fun q : Word × Para Word => glue q.1 q.2)) ≫ Filter.filter (ok (len := len) w)
+@[expose] public def h₂ [Paragraph Word] : dList (Word × Para Word) ⟶ dList (Para Word) :=
+  list (graph (fun q : Word × Para Word => glue q.1 q.2)) ≫ Filter.filter (ok w)
 
 /-- Two wraps are the map to the one-word paragraph: `wrap wrap = [[·]]`. -/
 public theorem τ_τ :
@@ -663,8 +676,8 @@ public theorem τ_τ :
   · intro h; exact ⟨_, rfl, h⟩
 
 /-- A word that fits makes a one-word paragraph that passes `ok w`: `[[·]] ok(w) = [[·]]`. -/
-public theorem τ_τ_ok (hfit : ∀ a, len a ≤ w) :
-    graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) ≫ ok (len := len) w
+public theorem τ_τ_ok [Paragraph Word] (hfit : ∀ a : Word, len a ≤ w) :
+    graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) ≫ ok w
       = (graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word) := by
   apply hom_ext; intro a r
   constructor
@@ -742,44 +755,44 @@ public theorem start_pair_laxNatural :
 /-- **The fold's body split** (B&dM pp.210–211): on a single word the body keeps the one-word
     paragraph `start ≜ wrap wrap wrap`, and on a word and a list of layouts it is
     `cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q)`.  `⊑`, not `=`: on `[s,s]` `thinL(Q)` may keep both copies. -/
-public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
+public theorem para_body_split [Paragraph Word] (hfit : ∀ a : Word, len a ≤ w) :
     junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((τ : dL Word ⟶ dCL Word Word) ≫ (τ : dL (Line Word) ⟶ dPara Word)
           ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
       ⊑ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w) :=
+          (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w) :=
   calc junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((τ : dL Word ⟶ dCL Word Word) ≫ (τ : dL (Line Word) ⟶ dPara Word)
           ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
       = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
           ≫ τₗ ())
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc τ τ, τ_τ]
     _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
           ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (τₗ ()) (τₗ ())
-          ≫ cat ≫ thinL (Q len w))
+          ≫ cat ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) :=
         junc_mono _ (comp_mono_left _ (τ_le_dup_cat_thinL Q_refl)) (le_refl _)
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
           ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair (τₗ ()) (τₗ ())
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [merge_top]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
@@ -787,32 +800,32 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
               ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
               ≫ τₗ ())
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc (graph _), RelProd.map_comp_pair (graph_map _)]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
               ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ ok (len := len) w ≫ τₗ ())
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+              ≫ ok w ≫ τₗ ())
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc (graph _) (ok _), τ_τ_ok hfit]
     _ ⊑ junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
               ≫ τₗ ())
             ((graph (fun a : Word => ConsList.wrap (ConsList.wrap a)) : dL Word ⟶ dPara Word)
-              ≫ τₗ () ≫ Filter.filter (ok (len := len) w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+              ≫ τₗ () ≫ Filter.filter (ok w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) :=
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) :=
         junc_mono _ (comp_mono_right (RelProd.pair_mono (le_refl _)
           (comp_mono_left _ (corefl_τ_le_filter ok_coreflexive))) _) (le_refl _)
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
@@ -824,11 +837,11 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
             ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word))
               ≫ graph (Sum.elim (fun a : Word => ConsList.wrap (ConsList.wrap a))
                   (fun q : Word × Para Word => glue q.1 q.2))
-              ≫ τₗ () ≫ Filter.filter (ok (len := len) w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+              ≫ τₗ () ≫ Filter.filter (ok w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc (graph Sum.inl) (graph (Sum.elim _ (fun q : Word × Para Word => new q.1 q.2))),
           ← Cat.assoc (graph Sum.inl) (graph (Sum.elim _ (fun q : Word × Para Word => glue q.1 q.2))),
           inl_elim, inl_elim]
@@ -837,11 +850,11 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
             ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ τₗ ()
               ≫ g₁ (Word := Word))
             ((graph Sum.inl : dL Word ⟶ (F Word Word).obj (dPara Word)) ≫ τₗ ()
-              ≫ g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+              ≫ g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         unfold g₁ g₂
         rw [← Cat.assoc (τₗ ()) (list _) (Filter.filter _), τ_natural, τ_natural,
           Cat.assoc]
@@ -849,21 +862,21 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁ ≫ cpL ≫ g₁ (Word := Word))
             ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁ ≫ cpL
-              ≫ g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+              ≫ g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc _ cpL g₁, ← Cat.assoc _ cpL g₂, inl_cpL, Cat.assoc _ _ g₁,
           Cat.assoc _ _ g₂]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (h₁ (Word := Word)) (h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+          (h₁ (Word := Word)) (h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← RelProd.map_comp_pair (show Map (sumCop (dL Word)
             (⟨Word × ConsList Unit (Para Word)⟩ : RelSet.{0})).u₁ from graph_map _),
           ← RelProd.map_comp_pair (show Map (cpL (L := Word) (E := Word) (X := Para Word))
@@ -871,85 +884,66 @@ public theorem para_body_split (hfit : ∀ a, len a ≤ w) :
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
-            (cpr ≫ h₁ (Word := Word)) (cpr ≫ h₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+            (cpr ≫ h₁ (Word := Word)) (cpr ≫ h₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc cpr, RelProd.map_comp_pair
           (show Map (cpr (A := Word) (B := Para Word)) from graph_map _)]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         ((relProd (dList (Para Word)) (dList (Para Word))).pair
             (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
               ≫ g₁ (Word := Word))
             (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
-              ≫ g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+              ≫ g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         unfold g₁ g₂ h₁ h₂
         rw [list_inr_elim, ← Cat.assoc (list (graph Sum.inr)) (list _) (Filter.filter _),
           list_inr_elim]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         (cpr ≫ list (graph Sum.inr : dE (Word × Para Word) ⟶ dE (Word ⊕ Word × Para Word))
           ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← RelProd.map_comp_pair (show Map (cpr (A := Word) (B := Para Word)) from graph_map _),
           ← RelProd.map_comp_pair (map_list_graph (Sum.inr : Word × Para Word → Word ⊕ Word × Para Word)),
           Cat.assoc, Cat.assoc]
     _ = junc (sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩)
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₁
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w))
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w))
         ((sumCop (dL Word) ⟨Word × ConsList Unit (Para Word)⟩).u₂
           ≫ cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-            (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w)) := by
+            (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w)) := by
         rw [← Cat.assoc (sumCop (dL Word) (⟨Word × ConsList Unit (Para Word)⟩ : RelSet.{0})).u₂ cpL,
           inr_cpL, Cat.assoc]
     _ = cpL ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-          (g₁ (Word := Word)) (g₂ (len := len) (w := w))
-          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q len w) :=
+          (g₁ (Word := Word)) (g₂ (w := w))
+          ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinL (Q w) :=
         (junc_unique _ rfl rfl).symm
 
 calc_steps para_body_split
 
 end Freyd.Alg.RelSet.Paragraph
 
--- printing-only (B&dM pp.207–210): the ordering is the note's `R` and the step algebra `S` (drawn
--- opened, so the letter shows only where a label names it whole); the length function `len` is the
--- section's context and is dropped, while `w` and the paragraph stay as the book writes them.
--- The predicate under the coreflexive `fits(w)` is written `fits`.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Paragraph.R] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParagraphR : Unexpander
-  | _ => `($(mkIdent `R))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Paragraph.Salg] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParagraphSalg : Unexpander
-  | _ => `($(mkIdent `S))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Paragraph.widthFn] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaWidth : Unexpander
-  | `($_ $_ $x) => `($(mkIdent `width) $x)
-  | _ => `($(mkIdent `width))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Paragraph.wasteFn] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaWaste : Unexpander
-  | `($_ $_ $w $p) => `($(mkIdent `waste) $w $p)
-  | `($_ $_ $w) => `($(mkIdent `waste) $w)
-  | _ => `($(mkIdent `waste))
+-- printing-only: B&dM p.208 writes `fits w` and `ok w` both for the predicate on a paragraph and for
+-- its coreflexive; Lean needs two constants, and the coreflexives own the names `fits` and `ok`.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Paragraph.allFitP] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaAllFitP : Unexpander
-  | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
-  | `($_ $_ $w) => `($(mkIdent `fits) $w)
+  | `($_ $args*) => `($(mkIdent `fits) $args*)
   | _ => `($(mkIdent `fits))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Paragraph.okP] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaOkP : Unexpander
-  | `($_ $w $xss) => `($(mkIdent `ok) $w $xss)
-  | `($_ $w) => `($(mkIdent `ok) $w)
+  | `($_ $args*) => `($(mkIdent `ok) $args*)
   | _ => `($(mkIdent `ok))

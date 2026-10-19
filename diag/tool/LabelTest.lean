@@ -108,7 +108,7 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 
 -- n EQUAL NEIGHBOURING FACTORS ARE A POWER: the two `CL.τ`s are `τ²`; the third `τ` is
 -- `CL.τₗ ()`, a different arrow the printer also calls `τ`, so it stays a factor of its own.
-/-- info: (∀a. len(a) ≤ w) ⟹ [τ² τ,cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q(len)(w))] ⊑ cpL ⟨g₁,g₂⟩ merge(⊤) thinL(Q(len)(w)) -/
+/-- info: (∀a. len(a) ≤ w) ⟹ [τ² τ,cpr ⟨h₁,h₂⟩ merge(⊤) thinL(Q(w))] ⊑ cpL ⟨g₁,g₂⟩ merge(⊤) thinL(Q(w)) -/
 #guard_msgs in
 #eval show Lean.Meta.MetaM Unit from do
   Lean.logInfo (← formula ``Freyd.Alg.RelSet.Paragraph.para_body_split)
