@@ -440,7 +440,7 @@ public theorem cost_del_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct 
 /-- **(10.7)** (B&dM p.256, Exercise 10.7): `add⊑π₁R` — adding a job to a schedule never lowers
     its cost. -/
 public theorem add_le [Tardy Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    add (Job := Job) ⊑ (relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R :=
+    add (Job := Job) ⊑ (relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ R :=
   le_iff.mpr fun p _ h => ⟨p.1, rfl, cost_add_le hct hwt h⟩
 
 /-- **(10.8)** (B&dM p.256, Exercise 10.8): `β bagify°=F(bagify°)[nil,add]` — `bagify°` is a fold
@@ -503,7 +503,7 @@ public theorem bagify_recip_cata [DecidableEq Job] :
 /-- **(10.6)**: `m≜[zero,π₁ cost]`, the cost of the schedule before the last job (B&dM's `h`). -/
 @[expose] public def m [Tardy Job] : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
   junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-    ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
+    ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ cost)
 
 /-- **(10.4)** (B&dM p.256, Exercise 10.6): `α cost=⟨g,m⟩ bmax` — the cost of a schedule is the
     larger of its last penalty and the cost of the rest. -/
@@ -521,7 +521,7 @@ public theorem cost_alg_bmax [Tardy Job] :
       exact ⟨(0, 0), ⟨(ListRel.junc_sum_inl _ _ _ _).mpr rfl, (ListRel.junc_sum_inl _ _ _ _).mpr rfl⟩, rfl⟩
     · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
       have e1 : q1 = 0 := (ListRel.junc_sum_inl ListRel.zero (penalty) d q1).mp h1
-      have e2 : q2 = 0 := (ListRel.junc_sum_inl ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost) d q2).mp h2
+      have e2 : q2 = 0 := (ListRel.junc_sum_inl ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ cost) d q2).mp h2
       subst e1; subst e2
       exact ⟨_, rfl, show bmax 0 0 = 0 by unfold bmax; split <;> rfl⟩
   | inr p =>
@@ -535,7 +535,7 @@ public theorem cost_alg_bmax [Tardy Job] :
     · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
       have e1 : q1 = Fn.penalty p.1 p.2 := (ListRel.junc_sum_inr ListRel.zero (penalty) p q1).mp h1
       subst e1
-      obtain ⟨_, rfl, rfl⟩ := (ListRel.junc_sum_inr ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost) p q2).mp h2
+      obtain ⟨_, rfl, rfl⟩ := (ListRel.junc_sum_inr ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ cost) p q2).mp h2
       refine ⟨_, rfl, ?_⟩
       show bmax (Fn.penalty p.1 p.2) (Fn.cost p.1)
         = bmax (Fn.cost p.1) (Fn.penalty p.1 p.2)
@@ -544,9 +544,9 @@ public theorem cost_alg_bmax [Tardy Job] :
 /-- `[nil,outl R]⊑[zero,outl cost]≤cost°`: the definition of `R`, and `nil⊑zero≤cost°`. -/
 public theorem nil_R_le_cost [Tardy Job] :
     junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
-        ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R)
+        ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ R)
       ⊑ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-          ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
+          ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ cost)
         ≫ ListRel.leq ≫ (cost)° :=
   le_iff.mpr fun v w hj => by
     cases v with
@@ -571,11 +571,11 @@ public theorem bagify_recip_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil add := bagify_recip_cata
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R) :=
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ R) :=
         comp_mono_left _ (junc_mono _ (le_refl nil) (add_le hct hwt))
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).π₁ ≫ cost)
         ≫ ListRel.leq ≫ (cost)° := comp_mono_left _ (nil_R_le_cost)
     _ = (F Unit Job).map (bagify (Job := Job))° ≫ m ≫ ListRel.leq ≫ (cost)° :=
         rfl
@@ -1399,7 +1399,7 @@ public theorem bagify_recip_strictNatural :
 /-- **`π₁` IS LAX NATURAL** from `F×G` to `F`: relating both components then dropping the second
     is at most dropping it then relating the first — the second component may have no partner. -/
 public theorem outl_laxNatural (F G : Relator RelSet.{0} RelSet.{0}) :
-    LaxNatural F (Relator.prod F G) (fun A => (relProd (F.obj A) (G.obj A)).outl) := by
+    LaxNatural F (Relator.prod F G) (fun A => (relProd (F.obj A) (G.obj A)).π₁) := by
   intro A B S
   rw [show (Relator.prod F G).map S = rprodMap (F.map S) (G.map S) from prodMap_eq_rprodMap _ _]
   exact le_iff.mpr fun p _ ⟨q, ⟨h1, _⟩, hq⟩ => ⟨p.1, rfl, by cases hq; exact h1⟩

@@ -385,10 +385,10 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜]
     component. -/
 @[expose] public def prodMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) :
     LaxMembership (Relator.prod F G) where
-  mem A := (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A
+  mem A := (relProd (F.obj A) (G.obj A)).π₁ ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).π₂ ≫ MG.mem A
   lax {A B} R := by
-    show prodMap _ _ (F.map R) (G.map R) ≫ ((relProd _ _).outl ≫ MF.mem B ∪ (relProd _ _).outr ≫ MG.mem B)
-      ⊑ ((relProd _ _).outl ≫ MF.mem A ∪ (relProd _ _).outr ≫ MG.mem A) ≫ R
+    show prodMap _ _ (F.map R) (G.map R) ≫ ((relProd _ _).π₁ ≫ MF.mem B ∪ (relProd _ _).π₂ ≫ MG.mem B)
+      ⊑ ((relProd _ _).π₁ ≫ MF.mem A ∪ (relProd _ _).π₂ ≫ MG.mem A) ≫ R
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
     refine union_mono ?_ ?_
     · have := comp_mono_right (outl_laxNatural F G R) (MF.mem B)
@@ -401,7 +401,7 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜]
 /-- The p.148 row `member(F×G) = outl member(F) ∪ outr member(G)`, mirrored. -/
 public theorem member_prod {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G)
     (A : 𝒜) : (prodMembership MF MG).mem A
-      = (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A :=
+      = (relProd (F.obj A) (G.obj A)).π₁ ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).π₂ ≫ MG.mem A :=
   rfl
 
 end ProdMembership

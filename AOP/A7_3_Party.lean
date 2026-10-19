@@ -36,7 +36,7 @@ section Choose
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A : 𝒜}
 
 /-- **B&dM p.176**: `choose = outl ∪ outr` — pick either component of a pair (either party). -/
-@[expose] public def choose (P : RelProd A A) : P.p ⟶ A := P.outl ∪ P.outr
+@[expose] public def choose (P : RelProd A A) : P.p ⟶ A := P.π₁ ∪ P.π₂
 
 /-- **§7.3 (B&dM p.177), first monotonicity claim** ("left as a simple exercise"): `choose` is
     monotonic on `R`, i.e. `choose·(R×R) ⊆ R·choose` (mirrored `(R×R) ≫ choose ⊑ choose ≫ R`).
@@ -44,7 +44,7 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A : 𝒜}
     distributivity of composition over `∪`. -/
 public theorem choose_monotonic (P : RelProd A A) (R : A ⟶ A) :
     prodMap P P R R ≫ choose P ⊑ choose P ≫ R := by
-  show prodMap P P R R ≫ (P.outl ∪ P.outr) ⊑ (P.outl ∪ P.outr) ≫ R
+  show prodMap P P R R ≫ (P.π₁ ∪ P.π₂) ⊑ (P.π₁ ∪ P.π₂) ≫ R
   rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
   exact union_mono (prodMap_outl_le P P R R) (prodMap_outr_le P P R R)
 

@@ -124,18 +124,18 @@ public theorem inter_not_laxNatural_square
     {bb : Fin 2 × Fin 2} (_at_bb : bb = (0, 0))
     (_step_aa_bb : (Δ RelSet.{0}).map MeetCounterex.R aa bb)
     {b₁ : RelSet.Sub (Fin 2)} (_at_b₁ : b₁ = {(0 : Fin 2)})
-    (_step_bb_b₁ : b₁ = RelSet.img ((relProd MeetCounterex.B MeetCounterex.B).outl
-      ∩ (relProd MeetCounterex.B MeetCounterex.B).outr) {bb})
+    (_step_bb_b₁ : b₁ = RelSet.img ((relProd MeetCounterex.B MeetCounterex.B).π₁
+      ∩ (relProd MeetCounterex.B MeetCounterex.B).π₂) {bb})
     {a₁ : RelSet.Sub (Fin 2)} (_at_a₁ : a₁ = ∅)
-    (_step_aa_a₁ : a₁ = RelSet.img ((relProd MeetCounterex.A MeetCounterex.A).outl
-      ∩ (relProd MeetCounterex.A MeetCounterex.A).outr) {aa})
+    (_step_aa_a₁ : a₁ = RelSet.img ((relProd MeetCounterex.A MeetCounterex.A).π₁
+      ∩ (relProd MeetCounterex.A MeetCounterex.A).π₂) {aa})
     {b₂ : RelSet.Sub (Fin 2)} (_at_b₂ : b₂ = ∅)
     (_step_a₁_b₂ : b₂ = RelSet.img MeetCounterex.R a₁) :
     ¬ ((Δ RelSet.{0}).map MeetCounterex.R
-          ≫ ((relProd MeetCounterex.B MeetCounterex.B).outl
-              ∩ (relProd MeetCounterex.B MeetCounterex.B).outr)
-        ⊑ ((relProd MeetCounterex.A MeetCounterex.A).outl
-              ∩ (relProd MeetCounterex.A MeetCounterex.A).outr) ≫ MeetCounterex.R) := by
+          ≫ ((relProd MeetCounterex.B MeetCounterex.B).π₁
+              ∩ (relProd MeetCounterex.B MeetCounterex.B).π₂)
+        ⊑ ((relProd MeetCounterex.A MeetCounterex.A).π₁
+              ∩ (relProd MeetCounterex.A MeetCounterex.A).π₂) ≫ MeetCounterex.R) := by
   unfold MeetCounterex.R MeetCounterex.A MeetCounterex.B
   intro h
   obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
@@ -156,8 +156,8 @@ open MeetCounterex in
 public theorem laxNatural_inter_false :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ A, G.obj A ⟶ F.obj A),
       LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) :=
-  ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
-    fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural,
+  ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).π₁,
+    fun A => (relProd A A).π₂, outl_lax_natural, outr_lax_natural,
     fun h => inter_not_laxNatural_square rfl rfl
       ((delta_map_apply MeetCounterex.R _ _).mpr ⟨rfl, rfl⟩)
       rfl (funext fun _ => propext (by
@@ -182,7 +182,7 @@ public theorem laxNatural_inter_false :
 public theorem recip_not_laxNatural :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A),
       LaxNatural F G φ ∧ ¬ LaxNatural G F (fun A => (φ A)°) := by
-  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outr,
+  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).π₂,
     outr_lax_natural, ?_⟩
   intro h
   let R : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ y => y = false
@@ -230,15 +230,15 @@ public theorem hcomp_inner_first_ne_outer_first :
       (fun A => L.map (φ A) ≫ χ (F.obj A)) ≠ (fun A => χ (G.obj A) ≫ K.map (φ A)) := by
   refine ⟨Relator.const (⟨Bool⟩ : RelSet.{0}), Relator.const (⟨Bool⟩ : RelSet.{0}),
     Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun _ x _ => x = true,
-    fun B => (relProd B B).outr,
+    fun B => (relProd B B).π₂,
     fun _ => by show 𝟙 _ ≫ _ ⊑ _ ≫ 𝟙 _; rw [Cat.id_comp, Cat.comp_id]; exact le_refl _,
     outr_lax_natural, ?_⟩
   intro h
   have h' : (Δ RelSet.{0}).map (fun (x _ : Bool) => x = true) ≫
-        (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).outr
-      = (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).outr ≫ fun (x _ : Bool) => x = true :=
+        (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).π₂
+      = (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).π₂ ≫ fun (x _ : Bool) => x = true :=
     congrFun h (⟨Bool⟩ : RelSet.{0})
-  have hmem : ((relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).outr ≫ fun (x _ : Bool) => x = true)
+  have hmem : ((relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).π₂ ≫ fun (x _ : Bool) => x = true)
       (false, true) true := ⟨true, rfl, rfl⟩
   rw [← h'] at hmem
   obtain ⟨q, hq, -⟩ := hmem
@@ -253,7 +253,7 @@ public theorem prod_not_categorical_product :
     ∃ (F F' G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ x, G.obj x ⟶ F.obj x)
       (ψ : ∀ x, G.obj x ⟶ F'.obj x) (x : RelSet.{0}), LaxNatural F G φ ∧ LaxNatural F' G ψ ∧
       (relProd (F.obj x) (F'.obj x)).pair (φ x) (ψ x)
-        ≫ (relProd (F.obj x) (F'.obj x)).outl ≠ φ x := by
+        ≫ (relProd (F.obj x) (F'.obj x)).π₁ ≠ φ x := by
   refine ⟨Relator.const (⟨Bool⟩ : RelSet.{0}), Relator.const (⟨Bool⟩ : RelSet.{0}),
     Relator.const (⟨Bool⟩ : RelSet.{0}), fun _ => 𝟙 (⟨Bool⟩ : RelSet.{0}), fun _ x _ => x = true,
     ⟨Bool⟩,
@@ -274,17 +274,17 @@ public theorem prod_not_categorical_product :
     exactly what fails, so that hypothesis is forced. -/
 public theorem outr_not_strictNatural :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}),
-      LaxNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outr) ∧
-      ¬ StrictNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outr) := by
+      LaxNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).π₂) ∧
+      ¬ StrictNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).π₂) := by
   refine ⟨Relator.idRelator RelSet.{0}, Relator.const (⟨Unit⟩ : RelSet.{0}),
     outr_laxNatural _ _, ?_⟩
   intro hstrict
   have heq : prodMap (relProd (⟨Unit⟩ : RelSet.{0}) ⟨Unit⟩) (relProd (⟨Unit⟩ : RelSet.{0}) ⟨Unit⟩)
         (fun _ _ => False) (𝟙 (⟨Unit⟩ : RelSet.{0}))
-      ≫ (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
-      = (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr ≫ 𝟙 (⟨Unit⟩ : RelSet.{0}) :=
+      ≫ (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).π₂
+      = (relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).π₂ ≫ 𝟙 (⟨Unit⟩ : RelSet.{0}) :=
     hstrict (A := ⟨Unit⟩) (B := ⟨Unit⟩) (fun _ _ => False)
-  have hne : ((relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).outr
+  have hne : ((relProd (⟨Unit⟩ : RelSet.{0}) (⟨Unit⟩ : RelSet.{0})).π₂
       ≫ 𝟙 (⟨Unit⟩ : RelSet.{0})) ((), ()) () := ⟨(), rfl, rfl⟩
   rw [← heq] at hne
   obtain ⟨q, hq, -⟩ := hne

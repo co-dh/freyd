@@ -120,11 +120,11 @@ public theorem conditional_comp {X : Type} {Y Z : RelSet.{0}} (q : dE X ⟶ dE B
     (p → 𝟙 wrap, nil)` — the test reads `p`, the kept branch reads the element. -/
 public theorem pair_conditional (p : dE A ⟶ dE Bool) :
     rpair (𝟙 (dE A)) p
-        ≫ conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil
+        ≫ conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil
       = conditional p (𝟙 (dE A) ≫ τₗ ()) (nil : dE A ⟶ dList A) := by
-  have e1 : (relProd (dE A) (dE Bool)).outl = graph (fun q : A × Bool => q.1) := rfl
-  have e2 : (relProd (dE A) (dE Bool)).outr = graph (fun q : A × Bool => q.2) := rfl
+  have e1 : (relProd (dE A) (dE Bool)).π₁ = graph (fun q : A × Bool => q.1) := rfl
+  have e2 : (relProd (dE A) (dE Bool)).π₂ = graph (fun q : A × Bool => q.2) := rfl
   rw [e1, e2]
   apply hom_ext; intro a y; rw [comp_apply]
   constructor
@@ -196,7 +196,7 @@ public theorem conditional_τ_laxNatural :
       (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
         listRelator)
       (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
-      (fun a => conditional (relProd a (dE Bool)).outr (τₗ ()) nil) := by
+      (fun a => conditional (relProd a (dE Bool)).π₂ (τₗ ()) nil) := by
   intro a b R
   show prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)) ≫ _
     ⊑ _ ≫ list (prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)))
@@ -213,7 +213,7 @@ public theorem conditional_τ_laxNatural :
 public theorem conditional_outl_τ_laxNatural :
     LaxNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
       (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
-      (fun a => conditional (relProd a (dE Bool)).outr ((relProd a (dE Bool)).outl ≫ τₗ ())
+      (fun a => conditional (relProd a (dE Bool)).π₂ ((relProd a (dE Bool)).π₁ ≫ τₗ ())
         nil) := by
   intro a b R
   show prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)) ≫ _ ⊑ _ ≫ list R
@@ -236,7 +236,7 @@ public theorem filter_outr_laxNatural :
         listRelator)
       (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
         listRelator)
-      (fun a => filter (relProd a (dE Bool)).outr) := by
+      (fun a => filter (relProd a (dE Bool)).π₂) := by
   intro a b R
   have hel := conditional_τ_laxNatural R
   show list ((Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool))).map R)
@@ -252,78 +252,78 @@ variable (p : dE A ⟶ dE Bool)
 
 /-- p.21 {definition of filter}. -/
 public theorem filter_pointfree_step1 :
-    rpair (𝟙 (dList A)) (list p) ≫ zip ≫ filter (relProd (dE A) (dE Bool)).outr
-        ≫ list (relProd (dE A) (dE Bool)).outl
+    rpair (𝟙 (dList A)) (list p) ≫ zip ≫ filter (relProd (dE A) (dE Bool)).π₂
+        ≫ list (relProd (dE A) (dE Bool)).π₁
       = rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil)
-          ≫ concatR ≫ list (relProd (dE A) (dE Bool)).outl := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil)
+          ≫ concatR ≫ list (relProd (dE A) (dE Bool)).π₁ := by
   rw [filter, Cat.assoc]
 
 /-- p.21 {equation (1.6)}: `listr f · concat = concat · listr (listr f)`. -/
 public theorem filter_pointfree_step2 :
     rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil)
-          ≫ concatR ≫ list (relProd (dE A) (dE Bool)).outl
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil)
+          ≫ concatR ≫ list (relProd (dE A) (dE Bool)).π₁
       = rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil)
-          ≫ list (list (relProd (dE A) (dE Bool)).outl) ≫ concatR := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil)
+          ≫ list (list (relProd (dE A) (dE Bool)).π₁) ≫ concatR := by
   rw [concat_natural]
 
 /-- p.21 {equation (1.8) (backwards)}: `listr f · listr g = listr (f · g)`. -/
 public theorem filter_pointfree_step3 :
     rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil)
-          ≫ list (list (relProd (dE A) (dE Bool)).outl) ≫ concatR
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil)
+          ≫ list (list (relProd (dE A) (dE Bool)).π₁) ≫ concatR
       = rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil
-            ≫ list (relProd (dE A) (dE Bool)).outl) ≫ concatR := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil
+            ≫ list (relProd (dE A) (dE Bool)).π₁) ≫ concatR := by
   rw [list_comp, Cat.assoc]
 
 /-- p.21 {equations (1.11), (1.5), and (1.4)}. -/
 public theorem filter_pointfree_step4 :
     rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr (τₗ ()) nil
-            ≫ list (relProd (dE A) (dE Bool)).outl) ≫ concatR
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂ (τₗ ()) nil
+            ≫ list (relProd (dE A) (dE Bool)).π₁) ≫ concatR
       = rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR := by
   rw [conditional_comp, τ_natural, nil_list]
 
 /-- p.21 {equation (1.9) (backwards)}: `listr id = id`. -/
 public theorem filter_pointfree_step5 :
     rpair (𝟙 (dList A)) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR
       = rpair (list (𝟙 (dE A))) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR := by
   rw [list_id]
 
 /-- p.21 {equation (1.7)}: `zip · pair (listr f, listr g) = listr (pair (f, g))`. -/
 public theorem filter_pointfree_step6 :
     rpair (list (𝟙 (dE A))) (list p) ≫ zip
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR
       = list (rpair (𝟙 (dE A)) p)
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR := by
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR := by
   rw [← Cat.assoc, zip_natural]
 
 /-- p.22 {equation (1.8) (backwards)}. -/
 public theorem filter_pointfree_step7 :
     list (rpair (𝟙 (dE A)) p)
-          ≫ list (conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR
+          ≫ list (conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR
       = list (rpair (𝟙 (dE A)) p
-          ≫ conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR := by
+          ≫ conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR := by
   rw [list_comp, Cat.assoc]
 
 /-- p.22 {equations (1.10), (1.1), and (1.3)}. -/
 public theorem filter_pointfree_step8 :
     list (rpair (𝟙 (dE A)) p
-          ≫ conditional (relProd (dE A) (dE Bool)).outr
-            ((relProd (dE A) (dE Bool)).outl ≫ τₗ ()) nil) ≫ concatR
+          ≫ conditional (relProd (dE A) (dE Bool)).π₂
+            ((relProd (dE A) (dE Bool)).π₁ ≫ τₗ ()) nil) ≫ concatR
       = list (conditional p (𝟙 (dE A) ≫ τₗ ()) nil) ≫ concatR := by
   rw [pair_conditional]
 
@@ -341,8 +341,8 @@ public theorem filter_pointfree_step10 :
     mirrored: `⟨𝟙, list(p)⟩ zip filter(π₂) list(π₁) = filter(p)` — pair each element with its
     answer under `p`, keep the pairs answered `true`, drop the answers. -/
 public theorem filter_pointfree :
-    rpair (𝟙 (dList A)) (list p) ≫ zip ≫ filter (relProd (dE A) (dE Bool)).outr
-        ≫ list (relProd (dE A) (dE Bool)).outl
+    rpair (𝟙 (dList A)) (list p) ≫ zip ≫ filter (relProd (dE A) (dE Bool)).π₂
+        ≫ list (relProd (dE A) (dE Bool)).π₁
       = filter p :=
   (filter_pointfree_step1 p).trans <| (filter_pointfree_step2 p).trans <|
     (filter_pointfree_step3 p).trans <| (filter_pointfree_step4 p).trans <|

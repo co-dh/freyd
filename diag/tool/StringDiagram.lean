@@ -388,7 +388,7 @@ def spreadEdge (ls : Array Lane) (xo : Float) (edge : Array Nat) (ol : String) :
     copy and the discards ARE the wiring, so such a bead is drawn with no mark and no name. -/
 partial def isWiring (e : Expr) : MetaM Bool := do
   match e.getAppFnArgs with
-  | (``Cat.id, _) | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) => return true
+  | (``Cat.id, _) | (``Freyd.Alg.RelProd.π₁, _) | (``Freyd.Alg.RelProd.π₂, _) => return true
   | (``Cat.comp, _) => (factors e).allM isWiring
   | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
     let some (f, g) := lastTwo args | return false
@@ -403,7 +403,7 @@ partial def isWiring (e : Expr) : MetaM Bool := do
     one survives, so it is drawn as the wiring with its printed name beside it; a copy or `𝟙` is not. -/
 partial def projects (e : Expr) : MetaM Bool := do
   match e.getAppFnArgs with
-  | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) | (``Freyd.Alg.RelSet.graph, _) =>
+  | (``Freyd.Alg.RelProd.π₁, _) | (``Freyd.Alg.RelProd.π₂, _) | (``Freyd.Alg.RelSet.graph, _) =>
     return true
   | (``Cat.comp, _) => (factors e).anyM projects
   | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>

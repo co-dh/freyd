@@ -1740,7 +1740,10 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
     let t ← Meta.inferType x
     let ps := pins.filter fun p => (t.find? (· == p)).isSome
     if ps.size == 2 then
-      let mentioned ← allEdges.filterM (mentionsArrow t ·)
+      -- An edge the hypothesis WRITES wins over one it only matches: `isDefEq` compares implicit
+      -- arguments at default transparency, so `(relProd B B).π₁` matches `(relProd A A).π₁`.
+      let written := allEdges.filter fun e => (t.find? (· == e)).isSome
+      let mentioned ← if written.isEmpty then allEdges.filterM (mentionsArrow t ·) else pure written
       let mut maximal : Array Expr := #[]
       for e in mentioned do
         unless mentioned.any fun e' => e' != e && (e'.find? (· == e)).isSome do

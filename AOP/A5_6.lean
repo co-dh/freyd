@@ -54,7 +54,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 /-- **Ex 5.20** (B&dM p.124): `cup pr = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
 @[expose] public noncomputable def cup {A : 𝒜} (pr : RelProd (P A) (P A)) :
     pr.p ⟶ P A :=
-  Λ ((pr.outl ≫ ∋ A) ∪ (pr.outr ≫ ∋ A))
+  Λ ((pr.π₁ ≫ ∋ A) ∪ (pr.π₂ ≫ ∋ A))
 
 /-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∪S) = pair(Λ R)(Λ S) ≫ cup pr`. -/
 public theorem Λ_union {A C : 𝒜} (R S : C ⟶ A)
@@ -63,7 +63,7 @@ public theorem Λ_union {A C : 𝒜} (R S : C ⟶ A)
   have hpair : Map (pr.pair (Λ R) (Λ S)) := pr.pair_map (Λ_is_map' R) (Λ_is_map' S)
   have hmap : Map (pr.pair (Λ R) (Λ S) ≫ cup pr) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
-  rw [Cat.assoc, show cup pr ≫ ∋ A = (pr.outl ≫ ∋ A) ∪ (pr.outr ≫ ∋ A) from Λ_eps_eq' _,
+  rw [Cat.assoc, show cup pr ≫ ∋ A = (pr.π₁ ≫ ∋ A) ∪ (pr.π₂ ≫ ∋ A) from Λ_eps_eq' _,
     DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
     RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
     Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
@@ -77,7 +77,7 @@ public theorem Λ_union {A C : 𝒜} (R S : C ⟶ A)
 /-- **Ex 5.20**: `cap pr = Λ((∈·outl) ∩ (∈·outr))`, mirrored. -/
 noncomputable def cap {A : 𝒜} (pr : RelProd (P A) (P A)) :
     pr.p ⟶ P A :=
-  Λ ((pr.outl ≫ ∋ A) ∩ (pr.outr ≫ ∋ A))
+  Λ ((pr.π₁ ≫ ∋ A) ∩ (pr.π₂ ≫ ∋ A))
 
 /-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∩S) = pair(Λ R)(Λ S) ≫ cap pr`. -/
 theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
@@ -86,7 +86,7 @@ theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
   have hpair : Map (pr.pair (Λ R) (Λ S)) := pr.pair_map (Λ_is_map' R) (Λ_is_map' S)
   have hmap : Map (pr.pair (Λ R) (Λ S) ≫ cap pr) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
-  rw [Cat.assoc, show cap pr ≫ ∋ A = (pr.outl ≫ ∋ A) ∩ (pr.outr ≫ ∋ A) from Λ_eps_eq' _,
+  rw [Cat.assoc, show cap pr ≫ ∋ A = (pr.π₁ ≫ ∋ A) ∩ (pr.π₂ ≫ ∋ A) from Λ_eps_eq' _,
     simple_dist_inter hpair.2, ← Cat.assoc, ← Cat.assoc,
     RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
     Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
