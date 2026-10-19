@@ -609,7 +609,7 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
 # label `<tex-fusion>` is the display's identity: each revision's own source maps it to that revision's
 # number (the `kind: "disp"` metadata `conf` emits), and only then is the number looked for on a page.
 
-NUMCOL = "#828282"   # `numtext`'s luma(130) in diag/note-style.typ: a display's OWN number, never a reference to it
+NUMCOL = "#b03a2e"   # `numtext`'s brick-red fill in diag/note-style.typ: a display's OWN number, never a reference to it
 
 
 def _note_files(flag, typ):
@@ -675,7 +675,7 @@ def rev_tree(rev, tmp):
 
 
 def own_anchor(pdf, did, tmp, page=None):
-    """The word `(did)` set in `numtext`'s grey — the display's own number — as a `words()` tuple.  A
+    """The word `(did)` set in `numtext`'s colour — the display's own number — as a `words()` tuple.  A
     reference prints the same word in the text colour, so colour, not position, tells them apart."""
     import importlib.util
     from importlib.machinery import SourceFileLoader
