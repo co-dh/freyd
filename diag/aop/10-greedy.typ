@@ -281,11 +281,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#rowkey("Freyd.Alg.RelSet.Tardy.bagify")], [#leant("Freyd.Alg.RelSet.Tardy.bagify")],
   "Freyd.Alg.RelSet.Tardy.bagify_cata",
   [forget the order of a schedule; `H=bagify°` lists every schedule of a bag],
-  [#rowkey("Freyd.Alg.RelSet.Tardy.penalty")], [#leant("Freyd.Alg.RelSet.Tardy.penalty")],
-  "Freyd.Alg.RelSet.Tardy.penalty",
+  [#rowkey("Freyd.Alg.RelSet.Tardy.Fn.penalty")], [#leant("Freyd.Alg.RelSet.Tardy.Fn.penalty")],
+  "Freyd.Alg.RelSet.Tardy.Fn.penalty",
   [how late job `j` finishes after the schedule `xs`, times its weight],
-  [#rowkey("Freyd.Alg.RelSet.Tardy.cost")], [#leant("Freyd.Alg.RelSet.Tardy.cost")],
-  "Freyd.Alg.RelSet.Tardy.cost",
+  [#rowkey("Freyd.Alg.RelSet.Tardy.Fn.cost")], [#leant("Freyd.Alg.RelSet.Tardy.Fn.cost")],
+  "Freyd.Alg.RelSet.Tardy.Fn.cost",
   [the largest penalty of any job in the schedule],
   [#rowkey("Freyd.Alg.RelSet.Tardy.bmax")], [#leant("Freyd.Alg.RelSet.Tardy.bmax")],
   "Freyd.Alg.RelSet.Tardy.bmax",
@@ -299,8 +299,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#rowkey("Freyd.Alg.RelSet.Tardy.k")], [#leant("Freyd.Alg.RelSet.Tardy.k")],
   "Freyd.Alg.RelSet.Tardy.k",
   [the cost of a schedule from the cost of its front and the penalty of its last job],
-  [#rowkey("Freyd.Alg.RelSet.Tardy.fFn")], [#leant("Freyd.Alg.RelSet.Tardy.fFn")],
-  "Freyd.Alg.RelSet.Tardy.fFn",
+  [#rowkey("Freyd.Alg.RelSet.Tardy.Fn.f")], [#leant("Freyd.Alg.RelSet.Tardy.Fn.f")],
+  "Freyd.Alg.RelSet.Tardy.Fn.f",
   [the penalty of the last job, read off the bag before it],
   [#rowkey("Freyd.Alg.RelSet.Tardy.Q")], [#leant("Freyd.Alg.RelSet.Tardy.Q")],
   "Freyd.Alg.RelSet.Tardy.Q",
@@ -310,14 +310,14 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [`Q` on the `snag` summand: compare the penalties of the two last jobs],
 // lean:AOP.A10_3_Tardy.bagifyFn_wrap@bf98bd9a lean:AOP.A10_3_Tardy.bagifyFn_snoc@e893608e lean:AOP.A10_3_Tardy.kFn_inl@bdad6597 lean:AOP.A10_3_Tardy.kFn_inr@7ad10e44
 // lean:AOP.A10_3_Tardy.gFn_inl@5bc3cee0 lean:AOP.A10_3_Tardy.gFn_inr@76eab831
-// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@e7aab730 lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
+// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@e7aab730 lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.Bag.nil@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
   [#rowkey("Freyd.Alg.RelSet.Tardy.g")], [#leant("Freyd.Alg.RelSet.Tardy.g")],
   "Freyd.Alg.RelSet.Tardy.g",
   [(10.5): the penalty of the last job, zero for the empty schedule],
   [#rowkey("Freyd.Alg.RelSet.Tardy.m")], [#leant("Freyd.Alg.RelSet.Tardy.m")],
   "Freyd.Alg.RelSet.Tardy.m",
   [(10.6), B&dM's `h` renamed as in @tardy-laws: the cost of the schedule before the last job],
-// lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A7_5_Van.bmax@6afe4642 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
+// lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.cost@42c139cf lean:AOP.A10_3_Tardy.penalty@89469572 lean:AOP.A7_5_Van.bmax@6afe4642 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
 )]<tardy-defn>
 
 // B&dM p.255: `cost` restated over the bag of the schedule, the form Proposition 9.3 asks for.
@@ -330,7 +330,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_k.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_k.rhs",
       src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, and `penalty(xs,j)` reads only the
-       bag of `xs` — @Freyd.Alg.RelSet.Tardy.penalty]),
+       bag of `xs` — @Freyd.Alg.RelSet.Tardy.Fn.penalty]),
     // lean:AOP.A10_3_Tardy.penalty_eq_bagPenalty@437884a3
   ),
 )]<tardy-cost-k>
@@ -371,7 +371,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",
-      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))` and `bmax` commutes — @Freyd.Alg.RelSet.Tardy.cost]),
+      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))` and `bmax` commutes — @Freyd.Alg.RelSet.Tardy.Fn.cost]),
   ),
 )]<tardy-cost-bmax>
 
@@ -475,7 +475,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   "Freyd.Alg.RelSet.Tex.round_recip",
   [the nearest integer to `2¹⁶r`: `round r=n` iff `2n−1<2¹⁷r<2n+1`],
   [#rowkey("Freyd.Alg.RelSet.Tex.interval")], [#leant("Freyd.Alg.RelSet.Tex.interval")],
-  "Freyd.Alg.RelSet.Tex.intervalFn",
+  "Freyd.Alg.RelSet.Tex.Fn.interval",
   [the open interval `((2n−1)/2¹⁷,(2n+1)/2¹⁷)` of the reals that round to `n`],
   [#rowkey("Freyd.Alg.RelSet.Tex.inrange")], [#leant("Freyd.Alg.RelSet.Tex.inrange")],
   "Freyd.Alg.RelSet.Tex.inrange",
@@ -487,7 +487,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   "Freyd.Alg.RelSet.Tex.arb",
   [any legal interval],
   [#rowkey("Freyd.Alg.RelSet.Tex.step")], [#leant("Freyd.Alg.RelSet.Tex.step")],
-  "Freyd.Alg.RelSet.Tex.stepFn",
+  "Freyd.Alg.RelSet.Tex.Fn.step",
   [put digit `d` in front of both ends: `((d+a)/10,(d+b)/10)`],
   [#rowkey("Freyd.Alg.RelSet.Tex.H")], [#leant("Freyd.Alg.RelSet.Tex.H")],
   "Freyd.Alg.RelSet.Tex.H",
