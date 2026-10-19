@@ -151,7 +151,7 @@ public theorem eq_Λ_comp_est {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet
 /-! ## §7.2's instance: `+` distributes over `≤` -/
 
 /-- Addition as an arrow `Nat×Nat ⟶ Nat` of `Rel(Set)`, the algebra of the relator `Δ`. -/
-@[expose] public def plusRel : Alg (Δ RelSet.{0}) (⟨Nat⟩ : RelSet.{0}) :=
+@[expose] public def plusRel : Alg Δ (⟨Nat⟩ : RelSet.{0}) :=
   -- `Nat.add`/`Nat.le` and not `+`/`≤`: the `binop%` elaborator reads the OPERANDS' types, and a
   -- component of the relator's object is one only up to unfolding, where the instance search stops.
   fun p n => Nat.add p.1 p.2 = n
@@ -194,13 +194,13 @@ open Lean PrettyPrinter in
 public theorem plus_distributes_le
     {xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
     (mx : {a // est leRel xs a}) (my : {a // est leRel ys a})
-    {fea : ((Δ RelSet.{0}).obj (pow (⟨Nat⟩ : RelSet.{0}))).carrier} (_hfea : fea = (xs, ys))
+    {fea : (Δ.obj (pow (⟨Nat⟩ : RelSet.{0}))).carrier} (_hfea : fea = (xs, ys))
     {zs : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
     (_hzs : zs = sums xs ys)
-    {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier}
+    {fa : (Δ.obj (⟨Nat⟩ : RelSet.{0})).carrier}
     (_hfa : fa = (minOf xs mx, minOf ys my))
     {c : Nat} (_hc : c = minOf xs mx + minOf ys my) :
-    Distributes (F := Δ RelSet.{0}) plusRel leRel := by
+    Distributes (F := Δ) plusRel leRel := by
   refine RelSet.le_iff.mpr ?_
   rintro p w ⟨q, hq, hw⟩
   obtain ⟨hq1, hq2⟩ := (delta_map_apply (est leRel) p q).mp hq
