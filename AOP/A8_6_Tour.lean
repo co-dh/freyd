@@ -36,7 +36,9 @@
 module
 
 public import AOP.A8_3
+public import AOP.A6_FinRel
 import AOP.A8_2
+import AOP.A7_2_RelSet
 
 /-- B&dM p.212: the section's fixed data, the travelling cost `tc` between two cities.  Every
     definition below reads it from the one instance in scope, so the printer, which hides instance
@@ -743,5 +745,140 @@ public theorem tour_laws [RelSet.Tour City] :
     preorder_topMor connected_topMor tour_sort_dropl tour_sort_dropr
   rw [filter_id, Cat.comp_id, Cat.comp_id, Cat.comp_id, Cat.comp_id, merge_top] at key
   exact key
+
+/-! ## `TourRun`: the bitonic-tour program on `RelRep`
+
+The fold keeps a list of tours per city: `stepE` extends each kept tour by `dropl` and `dropr`
+(an `enum`, two candidates per tour), `RelRep.thin Q` cuts the candidates, and `RelRep.est R`
+reads the least-cost tours off the last list. -/
+
+section TourRun
+
+variable [DecidableEq City] [RelSet.Tour City]
+
+public instance decQ : ∀ t t' : Tour City, Decidable (Q t t') := fun t t' => decidable_of_iff _ (Q_apply t t').symm
+
+public instance decR : ∀ t t' : Tour City, Decidable (R t t') := fun t t' => decidable_of_iff _ (R_apply t t').symm
+
+/-- The thinning order `Q` as a `RelRep` test. -/
+@[expose] public def Qt : RelRep (Tour City) (Tour City) := .test fun t t' => decide (Q t t')
+
+public theorem rel_Qt : (Qt (City := City)).rel = Q := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The cost order `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (Tour City) (Tour City) := .test fun t t' => decide (R t t')
+
+public theorem rel_Rt : (Rt (City := City)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The step's `Λ` form: a tour extended at city `a` by `dropl` and by `dropr`. -/
+@[expose] public def stepE : RelRep (City × Tour City) (Tour City) := .enum fun q => [dropl q.1 q.2, dropr q.1 q.2]
+
+omit [DecidableEq City] [RelSet.Tour City] in
+/-- `stepE` is the `cons` half of the algebra `[start,dropl∪dropr]`. -/
+public theorem rel_stepE :
+    (stepE (City := City)).rel
+      = (graph Sum.inr : (⟨City × Tour City⟩ : RelSet.{0}) ⟶ (F (City × City) City).obj (dTour City)) ≫ tourAlg :=
+  hom_ext fun q t => by
+    show t ∈ [dropl q.1 q.2, dropr q.1 q.2] ↔ ∃ u, _ ∧ _
+    simp only [List.mem_cons, List.mem_nil_iff, or_false]
+    exact ⟨fun h => ⟨Sum.inr q, rfl, by rw [tourAlg_apply]; exact h⟩, fun ⟨u, hu, ht⟩ => by
+      obtain rfl : u = Sum.inr q := hu
+      rw [tourAlg_apply] at ht; exact ht⟩
+
+/-- One city of the fold: the kept tours paired with city `a`, extended by `stepE`, thinned by `Q`. -/
+@[expose] public def keep (a : City) (ts : List (Tour City)) : List (Tour City) :=
+  RelRep.thinList Qt.mem ((ts.map (a, ·)).flatMap fun q => [dropl q.1 q.2, dropr q.1 q.2])
+
+/-- `keep a` is `RelRep.thin Q` of the composite `enum`: pair with `a`, then `stepE`. -/
+public theorem keep_eq (a : City) :
+    (RelRep.comp (.enum fun ts : List (Tour City) => ts.map (a, ·)) stepE).bind (RelRep.thin Qt)
+      = some (.enum (keep a)) := rfl
+
+/-- The tours kept after the whole input: `⦇[start, keep]⦈` as a function. -/
+@[expose] public def kept : Journey City → List (Tour City) := cfold (fun p => [start p]) keep
+
+/-- The program: the least-cost tours among those kept. -/
+@[expose] public def bitonic (x : Journey City) : List (Tour City) := RelRep.estList Rt.mem (kept x)
+
+/-- `bitonic` is `RelRep.est R` of `kept`. -/
+public theorem bitonic_eq : RelRep.est Rt (.enum (kept (City := City))) = some (.enum bitonic) := rfl
+
+/-- The kept list is a `thin(Q)` choice of the tours of the input. -/
+public theorem kept_spec : ∀ x : Journey City,
+    (∀ y ∈ kept x, cataFold tourAlg x y) ∧ ∀ z, cataFold tourAlg x z → ∃ w ∈ kept x, Q w z
+  | ConsList.wrap p => by
+    refine ⟨fun y hy => ?_, fun z hz => ?_⟩
+    · obtain rfl : y = start p := List.mem_singleton.1 hy
+      rw [cataFold_wrap, tourAlg_apply]; exact Or.inl rfl
+    · rw [cataFold_wrap, tourAlg_apply] at hz
+      obtain rfl : z = start p := hz.elim id id
+      exact ⟨start p, List.mem_singleton.2 rfl, le_iff.mp Q_refl _ _ (by rw [id_apply])⟩
+  | ConsList.cons a x => by
+    obtain ⟨hsub, hdom⟩ := kept_spec x
+    have hQt : ∀ w z : Tour City, Qt.mem w z = true ↔ Q w z := fun w z =>
+      (RelRep.mem_iff_rel Qt w z).trans (by rw [rel_Qt])
+    have hs := RelRep.thinList_spec (q := Qt.mem)
+      (fun v => (hQt v v).2 (le_iff.mp Q_refl v v (by rw [id_apply])))
+      (fun u v w h1 h2 => (hQt u w).2 (le_iff.mp Q_trans u w ⟨v, (hQt u v).1 h1, (hQt v w).1 h2⟩))
+      ((kept x |>.map (a, ·)).flatMap fun q => [dropl q.1 q.2, dropr q.1 q.2])
+    have hq : ∀ w z, Qt.mem w z = true → Q w z := fun w z => (hQt w z).1
+    refine ⟨fun y hy => ?_, fun z hz => ?_⟩
+    · obtain ⟨_, hq', hy⟩ := List.mem_flatMap.1 (hs.1 y hy)
+      obtain ⟨t, ht, rfl⟩ := List.mem_map.1 hq'
+      rw [cataFold_cons]
+      refine ⟨t, hsub t ht, ?_⟩
+      rw [tourAlg_apply]
+      simpa only [List.mem_cons, List.mem_nil_iff, or_false] using hy
+    · rw [cataFold_cons] at hz
+      obtain ⟨r, hr, hz⟩ := hz
+      rw [tourAlg_apply] at hz
+      obtain ⟨w, hw, hwr⟩ := hdom r hr
+      have hmono : ∃ c ∈ [dropl a w, dropr a w], Q c z := by
+        rcases hz with rfl | rfl
+        · obtain ⟨s, hs', hQ⟩ := le_iff.mp tour_mono_dropl (Sum.inr (a, w)) (droplAlgFn (Sum.inr (a, r)))
+            ⟨Sum.inr (a, r), ⟨rfl, hwr⟩, rfl⟩
+          obtain rfl : s = dropl a w := hs'
+          exact ⟨_, List.mem_cons.2 (Or.inl rfl), hQ⟩
+        · obtain ⟨s, hs', hQ⟩ := le_iff.mp tour_mono_dropr (Sum.inr (a, w)) (droprAlgFn (Sum.inr (a, r)))
+            ⟨Sum.inr (a, r), ⟨rfl, hwr⟩, rfl⟩
+          obtain rfl : s = dropr a w := hs'
+          exact ⟨_, List.mem_cons.2 (Or.inr (List.mem_singleton.2 rfl)), hQ⟩
+      obtain ⟨c, hc, hcz⟩ := hmono
+      obtain ⟨w', hw', hw'c⟩ := hs.2 c (List.mem_flatMap.2 ⟨(a, w), List.mem_map.2 ⟨w, hw, rfl⟩, hc⟩)
+      exact ⟨w', hw', le_iff.mp Q_trans _ _ ⟨c, hq _ _ hw'c, hcz⟩⟩
+
+/-- `Λ(kept) ⊑ Λ(tour) thin(Q)`. -/
+public theorem kept_thin : Λ (RelRep.enum (kept (City := City))).rel ⊑ Λ tour ≫ thinRel Q := by
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  refine le_iff.mpr fun x G hG => ⟨fun v => tour x v, rfl, ?_⟩
+  have hG' : G = fun v => v ∈ kept x := hG
+  subst hG'
+  have ht : ∀ v, tour x v ↔ cataFold tourAlg x v := fun v => by rw [tour, ← cataR_eq_relCata]; exact Iff.rfl
+  exact (thinRel_pt _ _ _).2 ⟨fun y hy => (ht y).2 ((kept_spec x).1 y hy),
+    fun z hz => ((kept_spec x).2 z ((ht z).1 hz)).imp fun w ⟨hw, hq⟩ => ⟨hq, hw⟩⟩
+
+/-- **The program meets its specification**: every tour `bitonic` returns is a least-cost bitonic
+    tour, `bitonic ⊑ Λ(tour) est(R)`. -/
+public theorem bitonic_le : (RelRep.enum (bitonic (City := City))).rel ⊑ Λ tour ≫ est R :=
+  calc (RelRep.enum bitonic).rel
+      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := RelRep.rel_est bitonic_eq
+    _ = Λ (RelRep.enum kept).rel ≫ est R := by rw [rel_Rt]
+    _ ⊑ (Λ tour ≫ thinRel Q) ≫ est R := comp_mono_right kept_thin _
+    _ = Λ tour ≫ (thinRel Q ≫ est R) := Cat.assoc _ _ _
+    _ ⊑ Λ tour ≫ est R := comp_mono_left _ (thinRel_comp_est_le Q_le_R (trans_of_recip_trans R_recip_trans))
+
+/-- The run's cost, `tc (a,b) = (a-b)²`. -/
+@[expose] public def tcSq : RelSet.Tour Int := ⟨fun p => (p.1 - p.2) * (p.1 - p.2)⟩
+
+attribute [local instance] tcSq in
+/-- **tour-run**: on the cities `[0,3,1,4,2]` the program keeps six tours and returns the two of
+    least cost `16`, `([0,1,2],[0,3,4,2])` and its mirror. -/
+public theorem run_tour :
+    bitonic (ConsList.cons (0 : Int) (ConsList.cons 3 (ConsList.cons 1 (ConsList.wrap (4, 2)))))
+      = [(ConsList.cons 0 (ConsList.wrap (1, 2)), ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (4, 2)))),
+         (ConsList.cons 0 (ConsList.cons 3 (ConsList.wrap (4, 2))), ConsList.cons 0 (ConsList.wrap (1, 2)))] := by
+  rfl
+
+end TourRun
 
 end Freyd.Alg.RelSet.Tour

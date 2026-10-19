@@ -13,6 +13,8 @@ module
 
 public import AOP.A6_1_RelSet
 public import AOP.A6_BinSearch
+public import AOP.A8_1
+import AOP.A7_2_RelSet
 
 @[expose] public section
 
@@ -530,6 +532,99 @@ theorem rel_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K
           fun ⟨b, hp, hc⟩ => ⟨(a, b), hp, c, hc, rfl, rfl⟩⟩
     | exact hom_ext fun k c => by
         simp only [RelRep.rel, List.mem_flatMap, List.any_eq_true, FinRel.mem_scanLookup, comp_apply]
+
+/-! ### `est` and `thin` on an enumerated fibre -/
+
+/-- Each fibre of `R` as a list, when `R` can enumerate it: a `FinRel` is scanned, a fibre list is
+    itself; a `test` enumerates nothing. -/
+def fibre? : RelRep K V → Option (K → List V)
+  | pairs r => some r.scanLookup
+  | enum f => some f
+  | test _ => none
+
+omit [DecidableEq V] in
+theorem mem_fibre? {R : RelRep K V} {f : K → List V} (h : R.fibre? = some f) (k : K) (v : V) :
+    v ∈ f k ↔ R.rel k v := by
+  cases R <;> simp only [fibre?, Option.some.injEq, reduceCtorEq] at h <;> subst h
+  · exact FinRel.mem_scanLookup _ k v
+  · exact Iff.rfl
+
+/-- `est(le)` on one list: the members `le`-below every member. -/
+def estList (le : V → V → Bool) (xs : List V) : List V := xs.filter fun v => xs.all (le v ·)
+
+/-- `thin(Q)` on one list: a member is dropped when a kept member is `q`-below it, and otherwise
+    kept in place of the kept members it is `q`-below. -/
+def thinList (q : V → V → Bool) : List V → List V
+  | [] => []
+  | z :: zs => if (thinList q zs).any (q · z) then thinList q zs else z :: (thinList q zs).filter (!q z ·)
+
+omit [DecidableEq K] [DecidableEq V] in
+/-- For a preorder `q`, `thinList q xs` is a `thin(q)` choice: it lies in `xs`, and every member of
+    `xs` has a `q`-lower bound in it. -/
+theorem thinList_spec {q : V → V → Bool} (hr : ∀ v, q v v) (ht : ∀ u v w, q u v → q v w → q u w) :
+    ∀ xs : List V, (∀ y ∈ thinList q xs, y ∈ xs) ∧ ∀ z ∈ xs, ∃ w ∈ thinList q xs, q w z
+  | [] => ⟨fun _ h => h, fun _ h => absurd h List.not_mem_nil⟩
+  | z :: zs => by
+    obtain ⟨hsub, hdom⟩ := thinList_spec hr ht zs
+    simp only [thinList]
+    split
+    · rename_i hz
+      obtain ⟨w, hw, hwz⟩ := List.any_eq_true.1 hz
+      refine ⟨fun y hy => List.mem_cons_of_mem _ (hsub y hy), fun x hx => ?_⟩
+      rcases List.mem_cons.1 hx with rfl | hx
+      · exact ⟨w, hw, hwz⟩
+      · exact hdom x hx
+    · refine ⟨fun y hy => ?_, fun x hx => ?_⟩
+      · rcases List.mem_cons.1 hy with rfl | hy
+        · exact List.mem_cons.2 (Or.inl rfl)
+        · exact List.mem_cons_of_mem _ (hsub y (List.mem_filter.1 hy).1)
+      · rcases List.mem_cons.1 hx with rfl | hx
+        · exact ⟨x, List.mem_cons.2 (Or.inl rfl), hr x⟩
+        · obtain ⟨w, hw, hwx⟩ := hdom x hx
+          cases hzw : q z w
+          · exact ⟨w, List.mem_cons_of_mem _ (List.mem_filter.2 ⟨hw, by simp [hzw]⟩), hwx⟩
+          · exact ⟨z, List.mem_cons.2 (Or.inl rfl), ht z w x hzw hwx⟩
+
+open PowerAllegory
+
+/-- `Λ(R) est(L)`: each fibre cut to its `L`-least members; `none` on a `test`. -/
+def est (L : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
+  R.fibre?.map fun f => enum fun k => estList L.mem (f k)
+
+theorem rel_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) :
+    T.rel = Λ R.rel ≫ Freyd.Alg.est L.rel := by
+  cases hf : R.fibre? with
+  | none => simp [est, hf] at h
+  | some f =>
+    simp only [est, hf, Option.map_some, Option.some.injEq] at h
+    subst h
+    exact hom_ext fun k v => by
+      rw [Λ_comp_est_apply]
+      simp only [RelRep.rel, estList, List.mem_filter, List.all_eq_true, mem_iff_rel, mem_fibre? hf]
+
+/-- `Λ(R) thin(Q)`: each fibre cut by `thinList`; `none` on a `test`. -/
+def thin (Q : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
+  R.fibre?.map fun f => enum fun k => thinList Q.mem (f k)
+
+/-- For a preorder `Q`, each computed fibre is a `thin(Q)` choice of `R`'s fibre. -/
+theorem rel_thin {Q : RelRep V V} {R T : RelRep K V} (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel ≫ Q.rel ⊑ Q.rel)
+    (h : thin Q R = some T) : Λ T.rel ⊑ Λ R.rel ≫ thinRel Q.rel := by
+  cases hf : R.fibre? with
+  | none => simp [thin, hf] at h
+  | some f =>
+    simp only [thin, hf, Option.map_some, Option.some.injEq] at h
+    subst h
+    have hs := thinList_spec (q := Q.mem)
+      (fun v => (mem_iff_rel Q v v).2 (le_iff.mp hr v v (by rw [id_apply])))
+      (fun u v w h1 h2 => (mem_iff_rel Q u w).2
+        (le_iff.mp ht u w ⟨v, (mem_iff_rel Q u v).1 h1, (mem_iff_rel Q v w).1 h2⟩))
+    rw [Λ_eq_classifier, Λ_eq_classifier]
+    refine le_iff.mpr fun k G hG => ⟨fun v => R.rel k v, rfl, ?_⟩
+    have hG' : G = fun v => v ∈ thinList Q.mem (f k) := hG
+    subst hG'
+    exact (thinRel_pt _ _ _).2 ⟨fun y hy => (mem_fibre? hf k y).1 ((hs (f k)).1 y hy),
+      fun z hz => ((hs (f k)).2 z ((mem_fibre? hf k z).2 hz)).imp
+        fun w ⟨hw, hq⟩ => ⟨(mem_iff_rel Q w z).1 hq, hw⟩⟩
 
 end RelRep
 
