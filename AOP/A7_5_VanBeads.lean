@@ -404,7 +404,11 @@ public theorem greedyFold_cons [Van X] (a : X) (x : Seg X) (r : Sched X) :
 
 /-- Two kinds of transaction, priced so that one of each fits a van visit and two of the dear
     kind do not: `false` costs 1 and `true` costs 6, against the note's `N = 10`. -/
-@[expose] public def vanAmount : Bool → Int := fun b => if b then 6 else 1
+@[expose] public def vanBool : Van Bool := ⟨fun b => if b then 6 else 1, 10⟩
+
+section
+
+attribute [local instance] vanBool
 
 /-- The greedy fold on a one-transaction stretch: `new` is the only extension of the empty
     schedule, so the least of them is `[[a]]`. -/
@@ -467,5 +471,7 @@ public theorem greedyFold_not_lax_natural :
     | cons s' t' =>
       have h2 : clen t' + 1 + 1 ≤ 1 := hlen
       omega
+
+end
 
 end Freyd.Alg.RelSet.Van

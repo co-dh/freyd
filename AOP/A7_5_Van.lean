@@ -46,6 +46,14 @@ public import AOP.A7_1
 public import AOP.A7_2_Pres
 import AOP.A7_2
 
+/-- B&dM p.184: the section's fixed data — each transaction's `amount` and the van's capacity `N`.
+    Every arrow below reads them from the one instance in scope, so the printer, which hides
+    instance arguments, shows the book's `old`, not `old amount N`.  The class is named after the
+    section's namespace, so its fields are the bare names `amount` and `N`. -/
+public class Freyd.Alg.RelSet.Van (A : Type) where
+  amount : A → Int
+  N : Int
+
 namespace Freyd.Alg.RelSet.Van
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
@@ -100,7 +108,7 @@ public theorem floorFn_nonpos [Van A] : ∀ x : Seg A, floorFn x ≤ 0
     `bmax(ceiling x, ceiling x − floor x) ≤ N`, which says some starting reserve keeps the cash
     between `0` and `N` throughout. -/
 @[expose] public def secureP [Van A] (xs : Seg A) : Prop :=
-  max (ceilingFn xs) (ceilingFn xs - floorFn xs) ≤ N
+  max (ceilingFn xs) (ceilingFn xs - floorFn xs) ≤ N A
 
 public instance decSecureP [Van A] (x : Seg A) :
     Decidable (secureP x) := Int.decLe _ _
@@ -109,27 +117,27 @@ public instance decSecureP [Van A] (x : Seg A) :
 @[expose] public def secure [Van A] : dList A ⟶ dList A :=
   corefl (secureP)
 
-public theorem secure_coreflexive [Van A] : Coreflexive (secure) :=
+public theorem secure_coreflexive [Van A] : Coreflexive (secure (A := A)) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-! ### `secure` is the coreflexive of the book's p.185 test -/
 
 /-- **van-secure**: `⟨ceiling,ceiling−floor⟩`, the pair the p.185 predicate compares. -/
 @[expose] public def «⟨ceiling,ceiling−floor⟩» [Van A] : dList A ⟶ (⟨Int × Int⟩ : RelSet.{0}) :=
-  graph fun x => (ceilingFn x, ceilingFn x - floorFn x)
+  graph fun (x : Seg A) => (ceilingFn x, ceilingFn x - floorFn x)
 
 /-- **van-secure**: `bmax`, the larger of the two. -/
 @[expose] public def bmax : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph fun p => max p.1 p.2
 
 /-- **van-secure**: `≤N`, the coreflexive on `Int` the test has to land in. -/
-@[expose] public def «≤N» [Van A] : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => a = b ∧ a ≤ N (A := A)
+@[expose] public def «≤N» [Van A] : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => a = b ∧ a ≤ N A
 
 /-- **van-secure**: `secure⟨ceiling,ceiling−floor⟩bmax=⟨ceiling,ceiling−floor⟩bmax(≤N)` (book p.185).
     The test is a map, so sliding the coreflexive across it says exactly that `secure` holds at the
     stretches whose test value is at most `N` — which is what "the coreflexive corresponding to this
     predicate" means. -/
 public theorem secure_bmax [Van A] :
-    secure ≫ «⟨ceiling,ceiling−floor⟩» ≫ bmax = «⟨ceiling,ceiling−floor⟩» ≫ bmax ≫ «≤N» (A := A) := by
+    secure (A := A) ≫ «⟨ceiling,ceiling−floor⟩» ≫ bmax = «⟨ceiling,ceiling−floor⟩» ≫ bmax ≫ «≤N» (A := A) := by
   apply hom_ext; intro x n
   constructor
   · rintro ⟨y, ⟨rfl, hs⟩, p, rfl, rfl⟩
@@ -343,7 +351,7 @@ public theorem old_eq_ok_glue [Van A] : old = okR ≫ glue (A := A) := by
     transaction onto a FIRST SEGMENT, and there is none — so it is not entire.  `old_eq_ok_glue`
     says where it does return: on `ok`.  The note must therefore draw `old` chamfered, not as a
     rectangle. -/
-public theorem old_not_map [Van A] (a : A) : ¬ Map (old) := by
+public theorem old_not_map [Van A] (a : A) : ¬ Map (old (A := A)) := by
   intro h
   obtain ⟨_, s, t, hx, _⟩ := entire_total h.1 (a, ConsList.wrap ())
   cases hx
@@ -493,12 +501,12 @@ public theorem progFn_wrap [Van A] {a : A} {D : Unit} :
   | ConsList.cons s p => secureP s ∧ allSecureP p
 
 public theorem listP_secure_iff [Van A] : ∀ ps r : Sched A,
-    listP (secure) ps r ↔ (ps = r ∧ allSecureP ps)
+    listP secure ps r ↔ (ps = r ∧ allSecureP ps)
   | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨rfl, trivial⟩, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨fun h => False.elim h, fun h => nomatch h.1⟩
   | ConsList.cons _ _, ConsList.wrap _ => ⟨fun h => False.elim h, fun h => nomatch h.1⟩
   | ConsList.cons s p, ConsList.cons s' r => by
-    show (secure s s' ∧ listP (secure) p r) ↔ _
+    show (secure s s' ∧ listP secure p r) ↔ _
     rw [listP_secure_iff p r]
     constructor
     · rintro ⟨⟨rfl, hs⟩, rfl, hall⟩
@@ -510,7 +518,7 @@ public theorem listP_secure_iff [Van A] : ∀ ps r : Sched A,
       exact ⟨⟨rfl, hs⟩, rfl, hall⟩
 
 public theorem partSecure_apply [Van A] (x : Seg A) (r : Sched A) :
-    (partition ≫ list (secure)) x r
+    (partition ≫ list secure) x r
       ↔ (cconcat r = x ∧ allNonempty r ∧ allSecureP r) := by
   constructor
   · rintro ⟨ps, ⟨hcat, hne⟩, hlist⟩
@@ -593,9 +601,9 @@ public theorem van_fusion_cond [Van A]
     (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.wrap ()))) :
     (junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
           (new (A := A) ∪ glue (A := A)) : Alg (F Unit A) (dSched A))
-        ≫ list (secure)
-      = (F Unit A).map (list (secure)) ≫ S := by
-  have hnil : (τ : dL Unit ⟶ dSched A) ≫ list (secure) = τ := by
+        ≫ list secure
+      = (F Unit A).map (list secure) ≫ S := by
+  have hnil : (τ : dL Unit ⟶ dSched A) ≫ list secure = τ := by
     apply hom_ext; intro d r
     constructor
     · rintro ⟨s, hs, hlist⟩
@@ -605,8 +613,8 @@ public theorem van_fusion_cond [Van A]
     · intro h
       obtain rfl : r = ConsList.wrap d := h
       exact ⟨ConsList.wrap d, rfl, (listP_secure_iff _ _).mpr ⟨rfl, trivial⟩⟩
-  have hstep : (new (A := A) ∪ glue (A := A)) ≫ list (secure)
-      = rprodMap (𝟙 (dE A)) (list (secure)) ≫ (new (A := A) ∪ old) := by
+  have hstep : (new (A := A) ∪ glue (A := A)) ≫ list secure
+      = rprodMap (𝟙 (dE A)) (list secure) ≫ (new (A := A) ∪ old) := by
     apply hom_ext; rintro ⟨a, y⟩ r
     constructor
     · rintro ⟨z, hz, hlist⟩
@@ -644,10 +652,10 @@ public theorem van_fusion_cond [Van A]
 
 /-- **van-laws**, the fusion row's first step: `partition` replaced by the fold it is. -/
 public theorem van_spec_step1 [Van A] :
-    partition ≫ list (secure)
+    partition ≫ list secure
       = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
             (new (A := A) ∪ glue (A := A)) : Alg (F Unit A) (dSched A))⦈
-          ≫ list (secure) := by
+          ≫ list secure := by
   rw [partition_cata]
 
 /-- **van-laws**, the fusion row's second step: the fold law `(|R|) S = (|Q|) ⟸ R S = (F S) Q`
@@ -656,7 +664,7 @@ public theorem van_spec_step2 [Van A]
     (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.wrap ()))) :
     ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (τ : dL Unit ⟶ dSched A)
           (new (A := A) ∪ glue (A := A)) : Alg (F Unit A) (dSched A))⦈
-        ≫ list (secure)
+        ≫ list secure
       = ⦇S⦈ :=
   relCata_fusion (initial Unit A) (van_fusion_cond hsingle)
 
@@ -667,7 +675,7 @@ public theorem van_spec_step2 [Van A]
     standing assumption that a single transaction is never larger than `N` (`hsingle`). -/
 public theorem van_spec [Van A]
     (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.wrap ()))) :
-    partition ≫ list (secure) = ⦇S⦈ :=
+    partition ≫ list (secure (A := A)) = ⦇S⦈ :=
   van_spec_step1.trans (van_spec_step2 hsingle)
 
 /-! ## `van-mono`: (7.14) holds, (7.15) is FALSE, (7.16) and (7.17) hold on `R;H` -/
@@ -734,6 +742,13 @@ public theorem van_7_14 [Van A] :
   rw [new_eq_cons]
   exact le_trans van_7_14_step2 (comp_mono_right (le_union_left _ _) _)
 
+section
+
+/-- The setting of the book's (7.15) witness: each transaction is its own amount, `N = 10`. -/
+@[expose] public def book10 : Van Int := ⟨fun i => i, 10⟩
+
+attribute [local instance] book10
+
 /-- **(7.15) IS FALSE** (book p.186, and the note's `van-laws` says so): gluing the
     transaction onto a shorter schedule need not be beaten by gluing it onto this one, because
     the shorter schedule's first segment need not stay secure.
@@ -743,15 +758,15 @@ public theorem van_7_14 [Van A] :
     fires on the left and neither `new` (which lengthens the schedule) nor `old` (which the
     security test blocks) can answer on the right. -/
 public theorem van_7_15_false :
-    ¬ (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) (R (A := Int)) ≫ old (fun i : Int => i) 10
-      ⊑ (new (A := Int) ∪ old (fun i : Int => i) 10) ≫ R (A := Int)) := by
+    ¬ (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) (R (A := Int)) ≫ old (A := Int)
+      ⊑ (new (A := Int) ∪ old (A := Int)) ≫ R (A := Int)) := by
   intro h
-  have hsec : secureP (fun i : Int => i) 10
+  have hsec : secureP (A := Int)
       (ConsList.cons (0 : Int) (ConsList.cons (0 : Int) (ConsList.wrap ()))) := by
-    simp only [secureP, ceilingFn, floorFn]; omega
-  have hbad : ¬ secureP (fun i : Int => i) 10
+    simp only [secureP, ceilingFn, floorFn, book10]; omega
+  have hbad : ¬ secureP (A := Int)
       (ConsList.cons (0 : Int) (ConsList.cons (20 : Int) (ConsList.wrap ()))) := by
-    simp only [secureP, ceilingFn, floorFn]; omega
+    simp only [secureP, ceilingFn, floorFn, book10]; omega
   have hstep := le_iff.mp h
     ((0 : Int), ConsList.cons (ConsList.cons (20 : Int) (ConsList.wrap ())) (ConsList.wrap ()))
     (ConsList.cons (ConsList.cons (0 : Int) (ConsList.cons (0 : Int) (ConsList.wrap ())))
@@ -771,6 +786,8 @@ public theorem van_7_15_false :
     injection hy with hs ht
     subst hs
     exact hbad hsec'
+
+end
 
 /-- **(7.18)** (book p.187): `(𝟙×⊤)new ⊑ new H` — whatever the two second components are,
     both sides open the segment `[a]` of their own, so the two first segments are equal and
@@ -986,7 +1003,7 @@ public theorem van_mono [Van A] :
 /-- **van-laws**, the greedy theorem's hypothesis: `MonotonicAlg S (R;H)`, the two halves
     `van_mono_new` (7.16) and `van_mono` (7.17) together with the `nil` case. -/
 public theorem van_mono_alg [Van A] :
-    Freyd.Alg.Pres (F := F Unit A) (S) («R;H» (A := A)) :=
+    Freyd.Alg.Pres (F := F Unit A) S («R;H» (A := A)) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hS⟩ := h
     cases u with
@@ -1018,7 +1035,7 @@ public theorem van_mono_alg [Van A] :
 /-! ## `van-laws` -/
 
 /-- **van-laws**, the last row: the program refines the greedy choice —
-    `⦇[nil,(ok→glue,new)]⦈ ⊑ ⦇Λ(S) est(R;H)⦈`, because `old ⊑ new (R;H)°`: `old` returns the
+    `⦇[nil,(ok→glue,new)]⦈ ⊑ ⦇ΛS est(R;H)⦈`, because `old ⊑ new (R;H)°`: `old` returns the
     shorter result wherever it returns one, and `ok` is where it does. -/
 public theorem prog_le_greedy [Van A] :
     progAlg ⊑ Λ S ≫ est («R;H» (A := A)) := by
@@ -1120,35 +1137,44 @@ public theorem van_greedy [Van A] :
     the program refining the greedy choice (`prog_le_greedy`). -/
 public theorem van_laws [Van A]
     (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.wrap ()))) :
-    ⦇progAlg⦈ ⊑ Λ (partition ≫ list (secure)) ≫ est (R (A := A)) :=
+    ⦇progAlg⦈ ⊑ Λ (partition ≫ list secure) ≫ est (R (A := A)) :=
   calc (⦇progAlg⦈ : dList A ⟶ dSched A)
       ⊑ ⦇Λ S ≫ est («R;H» (A := A))⦈ := relCata_mono (initial Unit A) prog_le_greedy
     _ ⊑ Λ ⦇S⦈ ≫ est («R;H» (A := A)) := van_greedy
     _ ⊑ Λ ⦇S⦈ ≫ est (R (A := A)) := comp_mono_left _ (est_mono RH_le_R)
-    _ = Λ (partition ≫ list (secure)) ≫ est (R (A := A)) := by rw [van_spec hsingle]
+    _ = Λ (partition ≫ list secure) ≫ est (R (A := A)) := by rw [van_spec hsingle]
 
 calc_steps van_laws
+
+section
+
+/-- The setting of the refutation below: each transaction is its own amount, `N = 0`. -/
+@[expose] public def book0 : Van Int := ⟨fun i => i, 0⟩
+
+attribute [local instance] book0
 
 /-- **`van_spec` needs `hsingle`**: without the book's "N is at least as large as any single
     transaction", `partition list(secure)` and `⦇S⦈` differ.  At `N = 0` the one transaction
     `5` has no secure splitting at all, yet `new` carries no security test, so `⦇S⦈` still
     answers `[[5]]`. -/
 public theorem van_spec_false_without_hsingle :
-    partition ≫ list (secure (fun i : Int => i) 0) ≠ ⦇S (fun i : Int => i) 0⦈ := by
+    partition ≫ list (secure (A := Int)) ≠ ⦇S (A := Int)⦈ := by
   intro hEq
   have hsq := (cata_square_junc_iff (τ : dL Unit ⟶ dSched Int)
-    (new (A := Int) ∪ old (fun i : Int => i) 0) ⦇S (fun i : Int => i) 0⦈).mp
-    (relCata_cancel (initial Unit Int) (S (fun i : Int => i) 0))
-  have hcata : ⦇S (fun i : Int => i) 0⦈
+    (new (A := Int) ∪ old (A := Int)) ⦇S (A := Int)⦈).mp
+    (relCata_cancel (initial Unit Int) (S (A := Int)))
+  have hcata : ⦇S (A := Int)⦈
       (ConsList.cons (5 : Int) (ConsList.wrap ()))
       (ConsList.cons (ConsList.cons (5 : Int) (ConsList.wrap ())) (ConsList.wrap ())) :=
     (hsq.2 (5 : Int) (ConsList.wrap ()) _).mpr
       ⟨ConsList.wrap (), (hsq.1 () (ConsList.wrap ())).mpr rfl, Or.inl rfl⟩
   rw [← hEq] at hcata
-  obtain ⟨-, -, hall⟩ := (partSecure_apply (amount := fun i : Int => i) (N := 0) _ _).mp hcata
-  have hbad : ¬ secureP (fun i : Int => i) 0 (ConsList.cons (5 : Int) (ConsList.wrap ())) := by
-    simp only [secureP, ceilingFn, floorFn]; omega
+  obtain ⟨-, -, hall⟩ := (partSecure_apply (A := Int) _ _).mp hcata
+  have hbad : ¬ secureP (A := Int) (ConsList.cons (5 : Int) (ConsList.wrap ())) := by
+    simp only [secureP, ceilingFn, floorFn, book0]; omega
   exact hbad hall.1
+
+end
 
 -- printing-only unexpanders: the note's spelling.  §7.5 writes a segment `[Int]` and a schedule
 -- `[[Int]]` — the brackets ARE the names, `Seg`/`Sched` being what the Lean side calls them — and
@@ -1173,19 +1199,18 @@ end Freyd.Alg.RelSet.Van
 
 namespace Freyd.Alg.RelSet.Van
 
--- The two measures under the book's names, with the cost left to the section's context, as on the
--- arrows above: p.185's `bmax(ceiling x,ceiling x−floor x)≤N`.
+-- KEPT: each pointwise function below prints the name of the arrow it is the graph of (`ceiling`,
+-- `floor`, `glue`, `new`, and `secure` for the predicate under the coreflexive), and both live in
+-- this namespace, so one bare identifier cannot resolve to both: only a rule can print the second.
 open Lean PrettyPrinter in
 @[app_unexpander ceilingFn] public meta def unexpandCeilingFn : Unexpander
   | `($_ $x) => `($(mkIdent `ceiling) $x)
-  | `($_ $_) => `($(mkIdent `ceiling))
-  | _ => throw ()
+  | _ => `($(mkIdent `ceiling))
 
 open Lean PrettyPrinter in
 @[app_unexpander floorFn] public meta def unexpandFloorFn : Unexpander
-  | `($_ $_ $x) => `($(mkIdent `floor) $x)
-  | `($_ $_) => `($(mkIdent `floor))
-  | _ => throw ()
+  | `($_ $x) => `($(mkIdent `floor) $x)
+  | _ => `($(mkIdent `floor))
 
 open Lean PrettyPrinter in
 @[app_unexpander glueFn] public meta def unexpandGlueFn : Unexpander
@@ -1197,10 +1222,8 @@ open Lean PrettyPrinter in
 
 end Freyd.Alg.RelSet.Van
 
--- printing-only: the note's names for this section's declarations.
--- "`x` is secure" is the note's word for the predicate under the coreflexive `secure`; `amount` and
--- `N` are the section's context, dropped as `R` drops its own.
+-- "`x` is secure" is the note's word for the predicate under the coreflexive `secure` (kept, as above).
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Van.secureP] public meta def Freyd.Alg.RelSet.Van.unexpandSecureP : Unexpander
-  | `($_ $_ $_ $x) => `($(mkIdent `secure) $x)
+  | `($_ $x) => `($(mkIdent `secure) $x)
   | _ => `($(mkIdent `secure))
