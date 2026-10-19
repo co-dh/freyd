@@ -281,9 +281,13 @@ theorem rep_union (r s : FinRel K V) : (union r s).rep = r.rep ∪ s.rep := by
 /-- `R graph(f)`: map the values. -/
 def map (f : V → V') (r : FinRel K V) : FinRel K V' := ⟨r.keys, r.vals.map f, by rw [Array.size_map]; exact r.len⟩
 
+theorem toList_map (f : V → V') (r : FinRel K V) : (map f r).toList = r.toList.map (Prod.map id f) := by
+  show r.keys.toList.zip (r.vals.map f).toList = _
+  rw [Array.toList_map, List.zip_map_right]; rfl
+
 theorem rep_map (f : V → V') (r : FinRel K V) : (map f r).rep = r.rep ≫ graph f := by
-  show rel (r.keys.toList.zip (r.vals.map f).toList) = _
-  rw [Array.toList_map, List.zip_map_right, rel_map]
+  show rel (map f r).toList = _
+  rw [toList_map, rel_map]
   show (graph fun x : K => x)° ≫ r.rep ≫ graph f = _
   rw [graph_id, recip_id, Cat.id_comp]
 

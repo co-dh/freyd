@@ -818,6 +818,12 @@ public theorem concat_natural {B : Type} (R : dE A ⟶ dE B) :
   | ConsList.wrap _ => ConsList.wrap ()
   | ConsList.cons a x => ConsList.cons (f a) (cmap f x)
 
+/-- `cmap(f)` is core `List.map f`, carried across `toList` and `ofList`. -/
+public theorem cmap_eq_ofList_map {B : Type} (f : A → B) :
+    ∀ xs : ConsList Unit A, cmap f xs = CL.ofList ((CL.toList xs).map f)
+  | ConsList.wrap _ => rfl
+  | ConsList.cons a x => congrArg (ConsList.cons (f a)) (cmap_eq_ofList_map f x)
+
 public theorem listP_graph {B : Type} (f : A → B) :
     ∀ (x : ConsList Unit A) (y : ConsList Unit B), listP (graph f) x y ↔ y = cmap f x
   | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => rfl⟩
