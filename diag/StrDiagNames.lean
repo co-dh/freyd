@@ -196,11 +196,8 @@ open Lean PrettyPrinter Delaborator SubExpr in
   `($a × $b)
 
 
-open Lean PrettyPrinter in
-/-- Binary max is B&dM's `bmax` (p.185), applied to the pair it takes. -/
-@[app_unexpander Max.max] meta def unexpandMax : Unexpander
-  | `($_ $a $b) => `($(mkIdent `bmax) $a $b)
-  | _ => throw ()
+/-- Binary max is B&dM's `bmax` (p.185); core's `Max.max` cannot be renamed. -/
+notation "bmax" => Max.max
 
 
 
@@ -468,18 +465,18 @@ open Lean PrettyPrinter in
 
 -- AN ARITHMETIC RELATION IS WRITTEN BY ITS OWN OPERATOR, the way the note writes it: `+` for the
 -- addition's graph, `≤` for the ordering, so `est(leRel)` reads `est(≤)`.  The `Rel` the Lean name
--- carries tells the relation from the function and is no part of what the note spells.
+-- carries tells the relation from the function and is no part of what the note spells.  Rules,
+-- not notations: these are core INFIX tokens, and a notation that leads a term with one is taken
+-- as one more argument of an application, so `a ≤ b` stops parsing (`Freyd.S2_40`'s `∈`).
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.plusRel] meta def unexpandPlusRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "+")))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.leRel] meta def unexpandLeRel : Unexpander
+@[app_unexpander RelSet.leRel, app_unexpander RelSet.ListRel.leq] meta def unexpandLeRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
-
--- The section's own integer ordering is written by its operator, as `leRel` is.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Party.leq] meta def unexpandPartyLeq : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≤")))
+@[app_unexpander RelSet.ListRel.geq] meta def unexpandListRelGeq : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≥")))
 -- KEPT: it builds `noteCat`, the note-arithmetic syntax declared in this file, which no `AOP`
 -- module can import (`diag` imports `AOP`).
 open Lean PrettyPrinter in
@@ -508,12 +505,6 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `list))
 
 
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.leq] meta def unexpandListRelLeq : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≤")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.geq] meta def unexpandListRelGeq : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≥")))
 
 -- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): each theorem `Q = P°` names `P°` as `Q` and `Q°`
 -- as `P` (`diag/tool/Label.lean`, `namedRecip?`), both spelled by their unexpanders (`Freyd.S2_40`, above).
@@ -849,14 +840,9 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `false))
   | _ => throw ()
 -- A projection applied to a point is the note's `π₁`/`π₂` applied to it: `V(π₂(p),π₂(q))`.
-open Lean PrettyPrinter in
-@[app_unexpander Prod.fst] meta def unexpandProdFst : Unexpander
-  | `($_ $x) => `($(mkIdent `π₁) $x)
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander Prod.snd] meta def unexpandProdSnd : Unexpander
-  | `($_ $x) => `($(mkIdent `π₂) $x)
-  | _ => throw ()
+-- Core's `Prod.fst`/`Prod.snd` cannot be renamed.
+notation "π₁" => Prod.fst
+notation "π₂" => Prod.snd
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- A COMBINATOR RELATOR'S ACTION ON AN OBJECT IS THE OBJECT IT REDUCES TO: `(const V).obj X` is
     `V` and `(V×𝟙).obj X` is `V×X`, so the label is that object and the wire is `E(V×list⁺(V))`.

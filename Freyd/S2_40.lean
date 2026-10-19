@@ -1534,18 +1534,23 @@ theorem pre_positive_well_joined_equiv {𝒜 : Type u} [PrePositivePowerAllegory
 notation:max "𝟙%∋" => singletonMap
 
 -- Printing-only: `∋` is taken at the object its target already names, so a label repeats nothing by
--- dropping the argument; `P` is the power object's own letter (`E` is the letter of an arrow).  No statement changes.
+-- dropping the argument.  A rule, not the `∋` notation alone: the object is an explicit argument of
+-- the class field, which the notation would print.  No statement changes.
 open Lean PrettyPrinter in
 @[app_unexpander PowerAllegory.eps] public meta def unexpandEps : Unexpander
   | _ => `(∋)
 
+-- `P` is the power object's own letter.  A rule, though it prints the field's own name: without
+-- one the label writes the class field `PowerAllegory.P`, which the diag-export name gate refuses.
 open Lean PrettyPrinter in
 @[app_unexpander P] public meta def unexpandPowerObj : Unexpander
   | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 
 -- Rules, not renames: `⊆`, `⊇` and `∈` are core tokens (`Init/Core.lean`'s `Subset`/`Superset`,
--- `Init/Notation.lean`'s `Membership.mem`), so no declaration can be named by them.
+-- `Init/Notation.lean`'s `Membership.mem`), so no declaration can be named by them.  Nor a
+-- `notation "∈"`: a token that leads a term is taken as one more argument of an application, so
+-- core's infix `clen xs ∈ l` stops parsing.
 open Lean PrettyPrinter in
 @[app_unexpander subset] public meta def unexpandSubset : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⊆")))

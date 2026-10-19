@@ -1092,7 +1092,7 @@ directly.
   [What a guest list is worth.],
 
  [#leanf("Freyd.Alg.RelSet.Party.R_eq") #src[]],
-  // lean:AOP.A7_3_Party.R_eq@9fa61324
+  // lean:AOP.A7_3_Party.R_eq@bf7122ef
   [#leant("Freyd.Alg.RelSet.Party.R_eq")],
   [The preorder the guest list is maximised over.],
 
