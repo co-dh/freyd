@@ -429,12 +429,13 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
 
 /-! ## A relation as a sum of representations -/
 
-/-- A relation `K ⟶ V` held as the pairs of a `FinRel`, the graph of a function, or a decidable test
-    such as `(· > ·)`.  Only `pairs` can be enumerated, so an operation returns `pairs` whenever one
-    argument is `pairs`, and a composite that would have to enumerate a `test` is not formed. -/
+/-- A relation `K ⟶ V` held as the pairs of a `FinRel`, as its `Λ` form `k ↦` the list of values `k` is
+    related to (a fiber enumerated, the keys possibly infinite), or as a decidable test such as `(· > ·)`.
+    An operation enumerates whatever one argument can; a composite whose first factor is a `test` would
+    have to enumerate the middle type, and is not formed. -/
 inductive RelRep (K V : Type) where
   | pairs (r : FinRel K V)
-  | fn (f : K → V)
+  | enum (f : K → List V)
   | test (t : K → V → Bool)
 
 namespace RelRep
@@ -442,49 +443,62 @@ namespace RelRep
 /-- The relation a representation denotes. -/
 def rel : RelRep K V → ((⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩)
   | pairs r => r.rep
-  | fn f => graph f
+  | enum f => fun k v => v ∈ f k
   | test t => fun k v => t k v = true
+
+/-- The graph of `g`: one value in each fiber. -/
+def ofFn (g : K → V) : RelRep K V := enum fun k => [g k]
+
+theorem rel_ofFn (g : K → V) : (ofFn g).rel = (graph g : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) :=
+  hom_ext fun k v => List.mem_singleton.trans (Iff.of_eq (graph_apply g k v).symm)
 
 variable [DecidableEq K] [DecidableEq V]
 
 /-- The membership test of `rel`. -/
 def mem : RelRep K V → K → V → Bool
   | pairs r => fun k v => decide ((k, v) ∈ r.toList)
-  | fn f => fun k v => decide (v = f k)
+  | enum f => fun k v => decide (v ∈ f k)
   | test t => t
 
 theorem mem_iff_rel : (R : RelRep K V) → (k : K) → (v : V) → (R.mem k v = true ↔ R.rel k v)
   | pairs _, _, _ => decide_eq_true_iff
-  | fn _, _, _ => decide_eq_true_iff
+  | enum _, _, _ => decide_eq_true_iff
   | test _, _, _ => Iff.rfl
 
-/-- `R°`: a `FinRel` swaps its arrays, a graph becomes the test `v = f(k)`, a test flips. -/
+/-- `R°`: a `FinRel` swaps its arrays, a fiber list becomes the test `v ∈ f(k)`, a test flips. -/
 def conv : RelRep K V → RelRep V K
   | pairs r => pairs r.conv
-  | fn f => test fun v k => decide (v = f k)
+  | enum f => test fun v k => decide (v ∈ f k)
   | test t => test fun v k => t k v
 
 omit [DecidableEq K] in
 theorem rel_conv (R : RelRep K V) : R.conv.rel = R.rel° := by
   cases R with
   | pairs r => exact FinRel.rep_conv r
-  | fn f => exact hom_ext fun v k => (decide_eq_true_iff).trans (Iff.of_eq (graph_apply f k v).symm)
+  | enum f => exact hom_ext fun _ _ => decide_eq_true_iff
   | test t => exact hom_ext fun _ _ => Iff.rfl
 
-/-- `R ∩ S`: a `FinRel` side is filtered by the other side's test; two others conjoin their tests. -/
+/-- `R ∩ S`: an enumerating side is filtered by the other side's test; two tests conjoin. -/
 def inter : RelRep K V → RelRep K V → RelRep K V
   | pairs r, S => pairs (FinRel.filter (fun k v => S.mem k v = true) r)
   | R, pairs s => pairs (FinRel.filter (fun k v => R.mem k v = true) s)
+  | enum f, S => enum fun k => (f k).filter (S.mem k ·)
+  | R, enum g => enum fun k => (g k).filter (R.mem k ·)
   | R, S => test fun k v => R.mem k v && S.mem k v
 
 theorem rel_inter (R S : RelRep K V) : (inter R S).rel = R.rel ∩ S.rel := by
   cases R <;> cases S <;>
     simp only [inter, RelRep.rel, FinRel.rep_filter] <;>
-    exact hom_ext fun k v => by simp only [inter_apply, mem_iff_rel, Bool.and_eq_true, RelRep.rel, and_comm]
+    exact hom_ext fun k v => by
+      simp only [inter_apply, List.mem_filter, mem_iff_rel, Bool.and_eq_true, RelRep.rel, and_comm]
 
-/-- `R ∪ S`: two `FinRel`s append their arrays; otherwise the tests disjoin. -/
+/-- `R ∪ S`: two `FinRel`s append their arrays, two enumerating sides append their fibers; a test on
+    either side makes the union a test. -/
 def union : RelRep K V → RelRep K V → RelRep K V
   | pairs r, pairs s => pairs (FinRel.union r s)
+  | pairs r, enum g => enum fun k => r.scanLookup k ++ g k
+  | enum f, pairs s => enum fun k => f k ++ s.scanLookup k
+  | enum f, enum g => enum fun k => f k ++ g k
   | R, S => test fun k v => R.mem k v || S.mem k v
 
 theorem rel_union (R S : RelRep K V) : (union R S).rel = R.rel ∪ S.rel := by
@@ -492,30 +506,30 @@ theorem rel_union (R S : RelRep K V) : (union R S).rel = R.rel ∪ S.rel := by
     | exact FinRel.rep_union _ _
     | exact hom_ext fun k v => (Iff.of_eq (Bool.or_eq_true _ _)).trans ((or_congr (mem_iff_rel _ k v) (mem_iff_rel _ k v)).trans
         (Iff.of_eq (union_apply _ _ k v).symm))
+    | exact hom_ext fun k v => by simp only [union, RelRep.rel, List.mem_append, FinRel.mem_scanLookup, union_apply]
 
-/-- `R S`, first `R` then `S`.  A `FinRel` first looks each value up in a `FinRel` second, or maps it
-    through a function; a function first feeds its value to any second test.  A `test` first, or a
-    `FinRel` followed by a `test`, would have to enumerate the middle type, so it gives `none`. -/
+/-- `R S`, first `R` then `S`.  An enumerating `R` hands each of its values to `S`: a `FinRel` or a fiber
+    list second is looked up, a test second is tried on each.  A `test` first would have to enumerate
+    the middle type, so it gives `none`. -/
 def comp [DecidableEq C] : RelRep K V → RelRep V C → Option (RelRep K C)
   | pairs r, pairs s => some (pairs (FinRel.ofList (r.toList.flatMap fun p => (s.scanLookup p.2).map (p.1, ·))))
-  | pairs r, fn g => some (pairs (FinRel.map g r))
-  | fn f, fn g => some (fn fun k => g (f k))
-  | fn f, S => some (test fun k c => S.mem (f k) c)
-  | _, _ => none
+  | pairs r, enum h => some (pairs (FinRel.ofList (r.toList.flatMap fun p => (h p.2).map (p.1, ·))))
+  | pairs r, test t => some (test fun k c => (r.scanLookup k).any (t · c))
+  | enum f, pairs s => some (enum fun k => (f k).flatMap s.scanLookup)
+  | enum f, enum h => some (enum fun k => (f k).flatMap h)
+  | enum f, test t => some (test fun k c => (f k).any (t · c))
+  | test _, _ => none
 
-omit [DecidableEq K] in
 theorem rel_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K C} (h : comp R S = some T) :
     T.rel = R.rel ≫ S.rel := by
-  cases R <;> cases S <;> simp only [comp, Option.some.injEq, reduceCtorEq] at h <;> subst h
-  · exact (FinRel.rep_ofList _).trans <| hom_ext fun a c => by
-      simp only [RelSet.rel, RelRep.rel, List.mem_flatMap, List.mem_map, Prod.mk.injEq, FinRel.mem_scanLookup, comp_apply]
-      exact ⟨fun ⟨⟨_, b⟩, hp, _, hc, e1, e2⟩ => e1 ▸ e2 ▸ ⟨b, hp, hc⟩,
-        fun ⟨b, hp, hc⟩ => ⟨(a, b), hp, c, hc, rfl, rfl⟩⟩
-  · exact FinRel.rep_map _ _
-  all_goals first
-    | exact (graph_comp _ _).symm
+  cases R <;> cases S <;> simp only [comp, Option.some.injEq, reduceCtorEq] at h <;> subst h <;> first
+    | exact (FinRel.rep_ofList _).trans <| hom_ext fun a c => by
+        simp only [RelSet.rel, RelRep.rel, List.mem_flatMap, List.mem_map, Prod.mk.injEq, FinRel.mem_scanLookup,
+          comp_apply]
+        exact ⟨fun ⟨⟨_, b⟩, hp, _, hc, e1, e2⟩ => e1 ▸ e2 ▸ ⟨b, hp, hc⟩,
+          fun ⟨b, hp, hc⟩ => ⟨(a, b), hp, c, hc, rfl, rfl⟩⟩
     | exact hom_ext fun k c => by
-        simp only [RelRep.rel, mem_iff_rel, comp_apply, graph_apply, exists_eq_left]
+        simp only [RelRep.rel, List.mem_flatMap, List.any_eq_true, FinRel.mem_scanLookup, comp_apply]
 
 end RelRep
 

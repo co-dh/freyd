@@ -2302,80 +2302,41 @@ theorem rel_topV : (topV (A := A)).rel = rprodMap (topMor (dE (Op A)) (dE (Op A)
     exact ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
 
 omit [DecidableEq A] in
-theorem self_mem_tails : ∀ x : Str A, x ∈ CL.toList (tailsFn x)
-  | ConsList.wrap () => by simp [tailsFn, CL.toList]
-  | ConsList.cons _ _ => by simp [tailsFn, CL.toList]
-
-omit [DecidableEq A] in
 theorem inlistP_iff_mem {α : Type} : ∀ (xs : ConsList Unit α) (w : α), inlistP xs w ↔ w ∈ CL.toList xs
   | ConsList.wrap _, _ => by simp [inlistP, CL.toList]
   | ConsList.cons b x, w => by simp [inlistP, CL.toList, inlistP_iff_mem x w]
-
-omit [DecidableEq A] in
-/-- The candidate decompositions of `p`: an operation on a letter of `p` beside a suffix of each
-    string — the finite domain `step°` is restricted to. -/
-def stepDom (p : Str A × Str A) : List (Op A × (Str A × Str A)) :=
-  ((CL.toList p.1).flatMap (fun c => [Op.cpy c, Op.del c]) ++ (CL.toList p.2).map Op.ins).flatMap fun o =>
-    (CL.toList (tailsFn p.1)).flatMap fun x => (CL.toList (tailsFn p.2)).map fun y => (o, (x, y))
-
-omit [DecidableEq A] in
-/-- The restriction loses nothing: every decomposition of `p` is a candidate. -/
-theorem stepDom_complete {q : Op A × (Str A × Str A)} {p : Str A × Str A} (h : stepFn q = p) :
-    q ∈ stepDom p := by
-  obtain ⟨o, x, y⟩ := q
-  subst h
-  have hx := self_mem_tails x
-  have hy := self_mem_tails y
-  cases o with
-  | cpy c =>
-    show _ ∈ stepDom (ConsList.cons c x, ConsList.cons c y)
-    refine List.mem_flatMap.2 ⟨Op.cpy c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
-      simp [CL.toList, tailsFn, hx, hy]
-  | del c =>
-    show _ ∈ stepDom (ConsList.cons c x, y)
-    refine List.mem_flatMap.2 ⟨Op.del c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
-      simp [CL.toList, tailsFn, hx, hy]
-  | ins c =>
-    show _ ∈ stepDom (x, ConsList.cons c y)
-    refine List.mem_flatMap.2 ⟨Op.ins c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
-      simp [CL.toList, tailsFn, hx, hy]
-
-omit [DecidableEq A] in
-/-- `step` on the candidate domain of `p`, a finite graph. -/
-def stepFin (p : Str A × Str A) : FinRel (Op A × (Str A × Str A)) (Str A × Str A) :=
-  FinRel.ofList ((stepDom p).map fun q => (q, stepFn q))
-
-/-- `step°` at `p` is the lookup of `p` in the converse of the finite graph. -/
-theorem step_recip_lookup (p : Str A × Str A) (q : Op A × (Str A × Str A)) :
-    stepFn q = p ↔ q ∈ (stepFin p).conv.scanLookup p := by
-  constructor
-  · intro h
-    refine List.mem_filterMap.2 ⟨(p, q), ?_, by simp [FinRel.sel]⟩
-    rw [FinRel.toList_conv, stepFin, FinRel.toList_ofList, List.map_map]
-    exact List.mem_map.2 ⟨q, stepDom_complete h, by simp [h]⟩
-  · intro hq
-    obtain ⟨⟨k, q'⟩, hm, hs⟩ := List.mem_filterMap.1 hq
-    rw [FinRel.toList_conv, stepFin, FinRel.toList_ofList, List.map_map] at hm
-    obtain ⟨q'', _, he⟩ := List.mem_map.1 hm
-    simp only [Function.comp, Prod.swap, Prod.mk.injEq] at he
-    obtain ⟨rfl, rfl⟩ := he
-    unfold FinRel.sel at hs
-    split at hs
-    · rename_i hc; cases hs; simpa using hc
-    · cases hs
 
 omit [DecidableEq A] in
 /-- `cmap(g)` run on `RelRep`: the list held as the pairs `((),x)`, composed with the graph of `g`,
     and looked up at `()`. -/
 theorem cmap_of_comp {α β : Type} [DecidableEq α] [DecidableEq β] (g : α → β) (xs : ConsList Unit α)
     (T : FinRel Unit β)
-    (hT : RelRep.comp (.pairs (FinRel.ofList ((CL.toList xs).map ((), ·)))) (.fn g) = some (.pairs T)) :
+    (hT : RelRep.comp (.pairs (FinRel.ofList ((CL.toList xs).map ((), ·)))) (.ofFn g) = some (.pairs T)) :
     cmap g xs = CL.ofList (T.scanLookup ()) := by
-  simp only [RelRep.comp, Option.some.injEq, RelRep.pairs.injEq] at hT
+  simp only [RelRep.comp, RelRep.ofFn, Option.some.injEq, RelRep.pairs.injEq] at hT
   subst hT
-  rw [cmap_eq_ofList_map, FinRel.scanLookup, FinRel.toList_map, FinRel.toList_ofList]
+  rw [cmap_eq_ofList_map, FinRel.scanLookup, FinRel.toList_ofList, FinRel.toList_ofList]
   congr 1
   induction CL.toList xs <;> simp_all [FinRel.sel]
+
+/-- `step°` as its `Λ` form: the decompositions of `(xs,ys)` — a `cpy` when the heads agree, a `del` of
+    the head of `xs`, an `ins` of the head of `ys`. -/
+def stepConv : RelRep (Str A × Str A) (Op A × (Str A × Str A)) := .enum fun
+  | (ConsList.cons a xs, ConsList.cons b ys) => (if a = b then [(Op.cpy a, (xs, ys))] else []) ++
+      [(Op.del a, (xs, ConsList.cons b ys)), (Op.ins b, (ConsList.cons a xs, ys))]
+  | (ConsList.cons a xs, ys) => [(Op.del a, (xs, ys))]
+  | (xs, ConsList.cons b ys) => [(Op.ins b, (xs, ys))]
+  | _ => []
+
+theorem rel_stepConv :
+    (stepConv (A := A)).rel = (graph stepFn : (⟨Op A × (Str A × Str A)⟩ : RelSet.{0}) ⟶ ⟨Str A × Str A⟩)° :=
+  hom_ext fun p q => by
+    obtain ⟨xs, ys⟩ := p
+    obtain ⟨o, x, y⟩ := q
+    show _ ↔ graph stepFn _ _
+    rw [graph_apply]
+    rcases xs with ⟨⟨⟩⟩ | ⟨a, xs⟩ <;> rcases ys with ⟨⟨⟩⟩ | ⟨b, ys⟩ <;> cases o <;>
+      simp [stepConv, RelRep.rel, stepFn] <;> constructor <;> intro h <;> simp_all
 
 /-- `thin(Q)` keeps the whole of a finite set on which `Q`, held as the `RelRep` `T` and met with the
     set's square, is the diagonal. -/
@@ -2416,7 +2377,7 @@ theorem minL_of_square {α : Type} (Q : dE α ⟶ dE α) [∀ a b, Decidable (Q 
 variable {a b : A}
 
 /-- **mle-step**, `Λ(step°)`: the decompositions of `([a,b],[b])` are a `del` and an `ins`, no `cpy`
-    since the heads differ — `step` on the candidate domain, conversed and looked up. -/
+    since the heads differ — `step°`'s fiber list at the pair. -/
 public theorem run_step_recip (hab : a ≠ b) :
     (fun q : Op A × (Str A × Str A) =>
         stepFn q = (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ())))
@@ -2424,9 +2385,9 @@ public theorem run_step_recip (hab : a ≠ b) :
         ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
   funext q
   apply propext
-  rw [step_recip_lookup]
-  simp [FinRel.scanLookup, FinRel.toList_conv, stepFin, FinRel.toList_ofList, stepDom, CL.toList, tailsFn,
-    FinRel.sel, stepFn, hab, Ne.symm hab]
+  rw [eq_comm, ← graph_apply (A := ⟨Op A × (Str A × Str A)⟩) (B := ⟨Str A × Str A⟩) stepFn q,
+    ← recip_apply (graph stepFn : (⟨Op A × (Str A × Str A)⟩ : RelSet.{0}) ⟶ ⟨Str A × Str A⟩), ← rel_stepConv]
+  simp [stepConv, RelRep.rel, hab]
 
 /-- **mle-step**, `thin(Q)`: neither decomposition has its strings `V`-below the other's — `⊤×V`
     filtered to the set's square is its diagonal — so the thinning keeps both. -/
@@ -2474,7 +2435,7 @@ public theorem run_list_cons :
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ())) := by
   rw [cmap_of_comp _ _ _ rfl]
-  simp [FinRel.scanLookup, FinRel.toList, FinRel.map, FinRel.ofList, FinRel.sel, CL.toList, CL.ofList,
+  simp [FinRel.scanLookup, FinRel.toList, FinRel.ofList, FinRel.sel, CL.toList, CL.ofList,
     run_rest_cpy, run_rest_del]
 
 omit [DecidableEq A] in
