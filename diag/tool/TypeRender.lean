@@ -232,10 +232,13 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
       let ty ← match ← homObjs? ty with
         | some (a, b) => pure (mkApp2 ty.appFn!.appFn! (← o a) (← o b))
         | none => pure ty
-      let some s ← hom? ty piece brk |
+      if let some s ← hom? ty piece brk then return ← name t s
+      -- An ELEMENT (`mle(x)`'s `.arg`, the pair `([a,b],[b])`) has the type Lean gave it,
+      -- `Str(A)×Str(A)`, as a declaration that is no arrow does; a proof or a type has none.
+      if ty.isSort || (← Meta.isProp ty) then
         throwError "{declName}: the selected subterm {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, \
-          not an arrow of a category"
-      return ← name t s
+          neither an arrow of a category nor the type of an element"
+      return ← name t (← funPieces ty piece brk)
     -- An (in)equation is a statement ABOUT arrows, and its two sides share one hom: read it off the
     -- left, which is the side the note's `definition` column spells.
     match ← splitM body with
