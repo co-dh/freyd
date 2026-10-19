@@ -610,39 +610,6 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
 )]<edit-mono>
 
-// B&dM p.226, "it is sufficient to show that": Proposition 9.4's argument at `Q≜F(⊤,V)`.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_thin_condition") \
-    #grid(columns: 5, align: center + horizon, column-gutter: 6pt, row-gutter: 4pt,
-      [`F(Op,[A]×[A])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
-      [$stretch(->, size: #2em)^alpha$], [`[Op]`],
-      [`Q` compares here], [], [], [], [`R` compares here])],
-     // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"), [])],
-     // lean:AOP.A9_2_Edit.edit_thin_step1@a9117843 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
-    [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step2@ff0479d5
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
-    [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step3@3276aa63
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
-    [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
-      adds one to both lengths whatever the two operations are]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step4@46e2e6a4
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
-)]<edit-thin>
 
 // B&dM p.226: the second condition of Proposition 9.4, split at `V°=(suffix×𝟙)(𝟙×suffix)`.
 #disp[#calc-table(
