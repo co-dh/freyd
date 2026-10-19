@@ -128,7 +128,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
-     // lean:AOP.A10_2_Detab.expand_V@8ed5e10a
+     // lean:AOP.A10_2_Detab.expand_V@4f8319e7
   lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
@@ -173,7 +173,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
       // lean:Freyd.Alg.RelSet.Detab.detab_V@d64fef36 lean:AOP.A10_2_Detab.entab_V@0f631a23
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
-      // lean:AOP.A10_2_Detab.expand_V@8ed5e10a
+      // lean:AOP.A10_2_Detab.expand_V@4f8319e7
       last step alone or discards it]]),
     (RQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
@@ -258,7 +258,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_triple") \
     #src[`entab` is `triple` with the held blanks appended to its output]],
-    // lean:AOP.A10_2_Detab.entab_triple@fa6f374c
+    // lean:AOP.A10_2_Detab.entab_triple@a24b536d
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.entab_triple.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.entab_triple.rhs", src[(10.1) — @entab-tbc]),
