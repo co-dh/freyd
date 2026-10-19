@@ -1075,7 +1075,7 @@ partial def indexArgs (regionTy e : Expr) (out : Array Expr) : MetaM (Array Expr
   -- happened to carry — `fun a => moves (E a)`, a family nothing states anything about.
   if e.getAppFn.isConst || e.getAppFn.isFVar then
     -- LAST ARGUMENT FIRST: a declaration's earlier object arguments are the parameters its later
-    -- ones are taken over — `@snocR L E` is a family in the alphabet `E`, `L` being fixed before it
+    -- ones are taken over — `@SL.snoc L E` is a family in the alphabet `E`, `L` being fixed before it
     -- — so the innermost argument is the index the picture varies.
     for a in args.reverse do
       unless out.contains a || a.hasLooseBVars do

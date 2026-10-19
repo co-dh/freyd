@@ -311,7 +311,7 @@ def algSnoc {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
 /-- The constructor `wrap` as a relation. -/
 def wrapR : dL L ⟶ dSL L E := graph SnocList.wrap
 /-- The constructor `snoc` as a relation. -/
-@[expose] public def snocR : (⟨SnocList L E × E⟩ : RelSet.{0}) ⟶ dSL L E :=
+@[expose] public def snoc : (⟨SnocList L E × E⟩ : RelSet.{0}) ⟶ dSL L E :=
   graph (fun p => SnocList.snoc p.1 p.2)
 
 /-- The empty list `nil : 𝟏⟼[E]` — `wrap` at the ONE label, written as the constant map it is
@@ -323,7 +323,7 @@ def wrapR : dL L ⟶ dSL L E := graph SnocList.wrap
     order), for any algebra `φ = [g, h]`. -/
 theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
     (cataR φ)° = (algWrap φ)° ≫ wrapR
-      ∪ (algSnoc φ)° ≫ rprodMap (cataR φ)° (Cat.id (dE E)) ≫ snocR := by
+      ∪ (algSnoc φ)° ≫ rprodMap (cataR φ)° (Cat.id (dE E)) ≫ snoc := by
   apply hom_ext; intro r dec
   cases dec with
   | wrap d =>
@@ -525,11 +525,6 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-@[app_unexpander dSL] public meta def unexpandDSL : Unexpander
-  | `($_ $_ $E) => `([$E])
-  | _ => throw ()
-
-open Lean PrettyPrinter in
 @[app_unexpander F] public meta def unexpandF : Unexpander
   | `($_ $_ $_) => `($(mkIdent `F))
   | _ => throw ()
@@ -542,11 +537,6 @@ open Lean PrettyPrinter in
   | `($_ $x) => `($(mkIdent `wrap) $x)
   | _ => throw ()
 
--- The constructor as an arrow wears the note's own word, as the cons list's `cons` does.
-open Lean PrettyPrinter in
-@[app_unexpander snocR] public meta def unexpandSnocR : Unexpander
-  | _ => `($(mkIdent `snoc))
-
 -- The structural fold wears the note's banana, for the reason `AOP.A6_ConsList.cataR`'s does: a
 -- picture says which arrow it draws by the algebra in the brackets.
 open Lean PrettyPrinter in
@@ -558,8 +548,8 @@ end Freyd.Alg.RelSet.SL
 
 -- printing-only: the note's names for this section's declarations.
 open Lean PrettyPrinter in
-/-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `unexpandDSL` already
-    writes every snoc list `[E]`, and this is that object's wire. -/
+/-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `dSL L E` already
+    prints as the snoc list `[E]`, and this is that object's wire. -/
 @[app_unexpander Freyd.Alg.RelSet.SL.snocRelator] public meta def Freyd.Alg.RelSet.SL.unexpandSnocRelator : Unexpander
   | `($_ $_) => `($(mkIdent `list))
   | _ => throw ()

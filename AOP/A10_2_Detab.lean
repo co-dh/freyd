@@ -404,7 +404,7 @@ public theorem fill_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
     a prefix of `xs`; in the second case the two fills agree only when `a` is a blank and `xs` is
     the prefix padded with blanks inside one tab period. -/
 public theorem snoc_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
-    snocR ≫ V° ⊑ snocR ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
+    snoc ≫ V° ⊑ snoc ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
   le_iff.mpr fun ⟨z, c⟩ x ⟨y, hy, hpre, hfill⟩ => by
     obtain rfl : y = SnocList.snoc z c := hy
     rcases (hpre : x = SnocList.snoc z c ∨ prefixS x z) with rfl | hpz
@@ -413,7 +413,7 @@ public theorem snoc_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
 
 /-- `expand` is the conditional `(istab outr→fill outl,snoc)`, written as its two guarded arms. -/
 public theorem expand_eq_cond [Detab] :
-    expand = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR :=
+    expand = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snoc :=
   hom_ext fun ⟨z, c⟩ y => by
     by_cases hc : c = tb
     · have e : expandFn z c = fillFn z := if_pos hc
@@ -430,7 +430,7 @@ public theorem expand_eq_cond [Detab] :
 /-- The definition of `expand`, with the guard on the second arm dropped:
     `istab outl fill∪nottab(snoc∪X)⊑expand∪X`. -/
 public theorem expand_guard_drop [Detab] {X : _ ⟶ dSL Unit Char} :
-    istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snocR ∪ X) ⊑ expand ∪ X := by
+    istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snoc ∪ X) ⊑ expand ∪ X := by
   rw [expand_eq_cond]
   refine le_iff.mpr fun p y h => ?_
   rcases h with h | ⟨_, ⟨rfl, hq⟩, hs | hw⟩
@@ -445,14 +445,14 @@ public theorem expand_guard_drop [Detab] {X : _ ⟶ dSL Unit Char} :
 public theorem expand_V [Detab] (hn : 0 < n) :
     expand ≫ V° ⊑ expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
   calc expand ≫ V°
-      = (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR) ≫ V° := by
+      = (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snoc) ≫ V° := by
         rw [expand_eq_cond]
-    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ≫ V° ∪ nottab ≫ snocR ≫ V° := by
+    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ≫ V° ∪ nottab ≫ snoc ≫ V° := by
         simpa only [Cat.assoc] using (union_comp_distrib _ _ _ :
-          (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR) ≫ V° = _)
-    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR ≫ V° := by
+          (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snoc) ≫ V° = _)
+    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snoc ≫ V° := by
         rw [fill_V hn blank_ne_nl]
-    _ ⊑ istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snocR ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V°) :=
+    _ ⊑ istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snoc ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V°) :=
         union_mono (le_refl _) (comp_mono_left _ (snoc_V hn blank_ne_nl))
     _ ⊑ expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° := expand_guard_drop
 
@@ -486,7 +486,7 @@ public theorem con_recip_con :
     `detab=α°F(detab)[nil,expand]`. -/
 public theorem detab_unfold [Detab] :
     detab
-      = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+      = (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab ≫ junc (sumCop _ _) nil expand := by
   have hc : detab = cataR (graph expandAlgFn) := detab_cata.symm
   have hcomm : (F Unit Char).map (cataR (graph expandAlgFn)) ≫ graph expandAlgFn
@@ -497,10 +497,10 @@ public theorem detab_unfold [Detab] :
 /-- Distributing `∪`; the fold again, and the definition of `F`:
     `α°F(detab)[nil,expand∪X]=detab∪snoc°(detab×𝟙)X`. -/
 public theorem detab_unfold_union [Detab] {X : _ ⟶ dSL Unit Char} :
-    (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+    (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
         ≫ junc (sumCop _ _) nil (expand ∪ X)
-      = detab ∪ snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ X :=
+      = detab ∪ snoc° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ X :=
   hom_ext fun t x => by
     constructor
     · rintro ⟨u, hα, v, hF, hj⟩
@@ -537,8 +537,8 @@ public theorem detab_unfold_union [Detab] {X : _ ⟶ dSL Unit Char} :
 
 /-- Naturality of `π₁`, `(detab×𝟙)π₁=π₁ detab`, after `snoc°`. -/
 public theorem detab_init_natural [Detab] {Y : dSL Unit Char ⟶ dSL Unit Char} :
-    snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ Y
-      = snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ Y :=
+    snoc° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ Y
+      = snoc° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ Y :=
   hom_ext fun _ _ =>
     ⟨fun ⟨p, hs, _, ⟨h1, _⟩, w, hw, hV⟩ => ⟨p, hs, p.1, rfl, w, hw.trans h1, hV⟩,
      fun ⟨p, hs, w, hw, y, hy, hV⟩ =>
@@ -548,7 +548,7 @@ public theorem detab_init_natural [Detab] {Y : dSL Unit Char ⟶ dSL Unit Char} 
     greatest, `prefix detab` — induction on the input, `detab_V` — and a prefix is no longer:
     `prefix⊑R°`. -/
 public theorem detab_V_induction [Detab] (hn : 0 < n) :
-    detab ∪ snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° ⊑ R° ≫ detab :=
+    detab ∪ snoc° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° ⊑ R° ≫ detab :=
   le_iff.mpr fun t x h => by
     rcases h with h | ⟨p, hs, _, rfl, _, rfl, hV⟩
     · exact ⟨t, Nat.le_refl _, h⟩
@@ -561,26 +561,26 @@ public theorem detab_V_induction [Detab] (hn : 0 < n) :
 public theorem detab_V_R [Detab] (hn : 0 < n) :
     detab ≫ V° ⊑ R° ≫ detab :=
   calc detab ≫ V°
-      = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+      = (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
         ≫ junc (sumCop _ _) nil expand ≫ V° := by
         simpa only [Cat.assoc] using congrArg (· ≫ V°) detab_unfold
-    _ = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+    _ = (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
         ≫ junc (sumCop _ _) (nil ≫ V°) (expand ≫ V°) := by
         rw [junc_comp]
-    _ = (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+    _ = (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
         ≫ junc (sumCop _ _) nil (expand ≫ V°) := by
         rw [nil_V]
-    _ ⊑ (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
+    _ ⊑ (junc (sumCop _ _) nil snoc : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
         ≫ junc (sumCop _ _) nil (expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V°) :=
         comp_mono_left _ (comp_mono_left _
           (union_mono (le_refl _) (comp_mono_left _ (expand_V hn))))
-    _ = detab ∪ snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
+    _ = detab ∪ snoc° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
         detab_unfold_union
-    _ = detab ∪ snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° := by
+    _ = detab ∪ snoc° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° := by
         rw [detab_init_natural]
     _ ⊑ R° ≫ detab := detab_V_induction hn
 
@@ -665,7 +665,7 @@ public theorem entab_laws_prefixed [Detab] (hn : 0 < n)
     (hX : X = Λ (Allegory.recip detab) ≫ est R) :
     Λ ((junc (sumCop _ _) nil expand
         : Alg (F Unit Char) (dSL Unit Char))°)
-      ≫ est Q ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR
+      ≫ est Q ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snoc
       ⊑ Λ (Allegory.recip detab) ≫ est R := by
   subst hX
   rw [← expandAlg_eq_junc, ← con_eq_junc]
@@ -684,7 +684,7 @@ public theorem entab_laws [Detab] (hn : 0 < n) :
     mu (fun X : dSL Unit Char ⟶ dSL Unit Char =>
         Λ ((junc (sumCop _ _) nil expand
             : Alg (F Unit Char) (dSL Unit Char))°)
-          ≫ est Q ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR)
+          ≫ est Q ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snoc)
       ⊑ Λ (Allegory.recip detab) ≫ est R :=
   mu_le (entab_laws_prefixed hn rfl)
 
@@ -710,10 +710,10 @@ public theorem expand_ne_nil [Detab] (hn : 0 < n) (x : Str) (a : Char) :
 public theorem entab_branch [Detab] (hn : 0 < n)
     (X : dSL Unit Char ⟶ dSL Unit Char) :
     Λ (expand°) ≫ est (rprodMap V U)
-        ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ snocR
+        ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ snoc
       ⊑ Λ ((junc (sumCop _ _) nil expand
             : Alg (F Unit Char) (dSL Unit Char))°) ≫ est Q
-          ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR := by
+          ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snoc := by
   rw [← expandAlg_eq_junc, ← con_eq_junc]
   exact est_arm₂_le (X := X) (Q := Q)
     (T := graph expandAlgFn) (U := graph (con (L := Unit) (E := Char)))
@@ -1283,7 +1283,7 @@ public theorem alpha_recip_strictNatural :
       (Relator.sum (Relator.const (dL Unit))
         (Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0})))
       (snocRelator Unit)
-      (fun A => (junc (sumCop _ _) nil snocR
+      (fun A => (junc (sumCop _ _) nil snoc
         : Fobj Unit A.carrier (dSL Unit A.carrier) ⟶ dSL Unit A.carrier)°) := by
   intro A B R
   have h := snocAlg_recip_strictNatural (L := Unit) R
