@@ -14,6 +14,7 @@ module
 public import AOP.A6_1_RelSet
 public import AOP.A6_BinSearch
 public import AOP.A8_1
+public import AOP.A6_ConsList
 import AOP.A7_2_RelSet
 
 @[expose] public section
@@ -606,6 +607,27 @@ theorem rel_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) :
 def thin (Q : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
   R.fibre?.map fun f => enum fun k => thinList Q.mem (f k)
 
+omit [DecidableEq K] in
+/-- `thinList_spec` at a preorder `Q` held as a `RelRep`. -/
+theorem thinList_rel_spec {Q : RelRep V V} (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel ≫ Q.rel ⊑ Q.rel) (xs : List V) :
+    (∀ y ∈ thinList Q.mem xs, y ∈ xs) ∧ ∀ z ∈ xs, ∃ w ∈ thinList Q.mem xs, Q.rel w z :=
+  have hs := thinList_spec (q := Q.mem)
+    (fun v => (mem_iff_rel Q v v).2 (le_iff.mp hr v v (by rw [id_apply])))
+    (fun u v w h1 h2 => (mem_iff_rel Q u w).2
+      (le_iff.mp ht u w ⟨v, (mem_iff_rel Q u v).1 h1, (mem_iff_rel Q v w).1 h2⟩)) xs
+  ⟨hs.1, fun z hz => (hs.2 z hz).imp fun w ⟨hw, hq⟩ => ⟨hw, (mem_iff_rel Q w z).1 hq⟩⟩
+
+omit [DecidableEq K] [DecidableEq V] in
+/-- `Λ X ⊑ Λ Y thin(Q)` pointwise: each `X`-fibre lies in the `Y`-fibre and holds a `Q`-lower bound of
+    every member of it. -/
+theorem Λ_le_thin {X Y : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩} {Q : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩}
+    (h : ∀ k, (∀ y, X k y → Y k y) ∧ ∀ z, Y k z → ∃ w, X k w ∧ Q w z) : Λ X ⊑ Λ Y ≫ thinRel Q := by
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  refine le_iff.mpr fun k G hG => ⟨fun v => Y k v, rfl, ?_⟩
+  have hG' : G = fun v => X k v := hG
+  subst hG'
+  exact (thinRel_pt _ _ _).2 ⟨(h k).1, fun z hz => ((h k).2 z hz).imp fun w ⟨hw, hq⟩ => ⟨hq, hw⟩⟩
+
 /-- For a preorder `Q`, each computed fibre is a `thin(Q)` choice of `R`'s fibre. -/
 theorem rel_thin {Q : RelRep V V} {R T : RelRep K V} (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel ≫ Q.rel ⊑ Q.rel)
     (h : thin Q R = some T) : Λ T.rel ⊑ Λ R.rel ≫ thinRel Q.rel := by
@@ -614,17 +636,110 @@ theorem rel_thin {Q : RelRep V V} {R T : RelRep K V} (hr : 𝟙 _ ⊑ Q.rel) (ht
   | some f =>
     simp only [thin, hf, Option.map_some, Option.some.injEq] at h
     subst h
-    have hs := thinList_spec (q := Q.mem)
-      (fun v => (mem_iff_rel Q v v).2 (le_iff.mp hr v v (by rw [id_apply])))
-      (fun u v w h1 h2 => (mem_iff_rel Q u w).2
-        (le_iff.mp ht u w ⟨v, (mem_iff_rel Q u v).1 h1, (mem_iff_rel Q v w).1 h2⟩))
-    rw [Λ_eq_classifier, Λ_eq_classifier]
-    refine le_iff.mpr fun k G hG => ⟨fun v => R.rel k v, rfl, ?_⟩
-    have hG' : G = fun v => v ∈ thinList Q.mem (f k) := hG
-    subst hG'
-    exact (thinRel_pt _ _ _).2 ⟨fun y hy => (mem_fibre? hf k y).1 ((hs (f k)).1 y hy),
-      fun z hz => ((hs (f k)).2 z ((mem_fibre? hf k z).2 hz)).imp
-        fun w ⟨hw, hq⟩ => ⟨(mem_iff_rel Q w z).1 hq, hw⟩⟩
+    exact Λ_le_thin fun k => have hs := thinList_rel_spec hr ht (f k)
+      ⟨fun y hy => (mem_fibre? hf k y).1 (hs.1 y hy), fun z hz => hs.2 z ((mem_fibre? hf k z).2 hz)⟩
+
+/-! ### The fold over cons-lists -/
+
+section Fold
+
+open CL
+
+variable {L E : Type} [DecidableEq L] [DecidableEq E]
+
+omit [DecidableEq V] [DecidableEq L] [DecidableEq E] in
+/-- The junction `[B,S]` pointwise: `B` on a `wrap`, `S` on a `cons`. -/
+theorem junc_sum_apply (B : (⟨L⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨E × V⟩ : RelSet.{0}) ⟶ ⟨V⟩) :
+    (∀ l v, junc (sumCop (dL L) ⟨E × V⟩) B S (Sum.inl l) v ↔ B l v)
+      ∧ ∀ q v, junc (sumCop (dL L) ⟨E × V⟩) B S (Sum.inr q) v ↔ S q v :=
+  ⟨fun l v => by
+    rw [← congrFun (congrFun (u₁_junc (sumCop (dL L) ⟨E × V⟩) B S) l) v]
+    exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => e ▸ h⟩,
+   fun q v => by
+    rw [← congrFun (congrFun (u₂_junc (sumCop (dL L) ⟨E × V⟩) B S) q) v]
+    exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => e ▸ h⟩⟩
+
+omit [DecidableEq V] [DecidableEq L] [DecidableEq E] in
+/-- `⦇[b,s]⦈` on fibres: the base's fibre at `wrap`, the step's fibre over each value at `cons`, each
+    fibre then cut by `post`. -/
+def foldList (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
+  cfold (fun l => post (b l)) fun e vs => post (vs.flatMap fun v => s (e, v))
+
+/-- `⦇[B,S]⦈` with every fibre cut by `post`; `none` when `B` or `S` is a `test`. -/
+def foldWith (post : List V → List V) (B : RelRep L V) (S : RelRep (E × V) V) :
+    Option (RelRep (ConsList L E) V) :=
+  B.fibre?.bind fun b => S.fibre?.map fun s => enum (foldList post b s)
+
+/-- `⦇[B,S]⦈`, each fibre enumerated. -/
+def fold (B : RelRep L V) (S : RelRep (E × V) V) : Option (RelRep (ConsList L E) V) := foldWith id B S
+
+/-- `⦇thin(Q)·Λ[B,S]⦈`: the fold with every fibre thinned by `Q`. -/
+def foldThin (Q : RelRep V V) (B : RelRep L V) (S : RelRep (E × V) V) : Option (RelRep (ConsList L E) V) :=
+  foldWith (thinList Q.mem) B S
+
+/-- The induction behind `rel_fold` and `rel_foldThin`: when `post` keeps a `P`-lower bound of every
+    member and the step preserves `P`, the computed fibre lies in the fold's and bounds it. -/
+theorem foldWith_spec {post : List V → List V} {B : RelRep L V} {S : RelRep (E × V) V}
+    {T : RelRep (ConsList L E) V} {P : V → V → Prop}
+    (hpost : ∀ xs, (∀ y ∈ post xs, y ∈ xs) ∧ ∀ z ∈ xs, ∃ w ∈ post xs, P w z)
+    (htrans : ∀ u v w, P u v → P v w → P u w)
+    (hmono : ∀ e w r z, P w r → S.rel (e, r) z → ∃ c, S.rel (e, w) c ∧ P c z)
+    (h : foldWith post B S = some T) (x : ConsList L E) :
+    (∀ y, T.rel x y → cataFold (C := ⟨V⟩) (junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel) x y)
+      ∧ ∀ z, cataFold (C := ⟨V⟩) (junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel) x z → ∃ w, T.rel x w ∧ P w z := by
+  cases hb : B.fibre? with
+  | none => simp [foldWith, hb] at h
+  | some b =>
+    cases hs : S.fibre? with
+    | none => simp [foldWith, hb, hs] at h
+    | some s =>
+      simp only [foldWith, hb, hs, Option.bind_some, Option.map_some, Option.some.injEq] at h
+      subst h
+      have hj := junc_sum_apply B.rel S.rel
+      induction x with
+      | wrap l =>
+        obtain ⟨hsub, hdom⟩ := hpost (b l)
+        refine ⟨fun y hy => ?_, fun z hz => ?_⟩
+        · rw [cataFold_wrap]; exact (hj.1 l y).2 ((mem_fibre? hb l y).1 (hsub y hy))
+        · rw [cataFold_wrap] at hz; exact hdom z ((mem_fibre? hb l z).2 ((hj.1 l z).1 hz))
+      | cons e x ih =>
+        obtain ⟨hsub, hdom⟩ := ih
+        obtain ⟨psub, pdom⟩ := hpost ((foldList post b s x).flatMap fun v => s (e, v))
+        refine ⟨fun y hy => ?_, fun z hz => ?_⟩
+        · obtain ⟨r, hr, hy⟩ := List.mem_flatMap.1 (psub y hy)
+          rw [cataFold_cons]
+          exact ⟨r, hsub r hr, (hj.2 (e, r) y).2 ((mem_fibre? hs _ y).1 hy)⟩
+        · rw [cataFold_cons] at hz
+          obtain ⟨r, hr, hz⟩ := hz
+          obtain ⟨w, hw, hwr⟩ := hdom r hr
+          obtain ⟨c, hc, hcz⟩ := hmono e w r z hwr ((hj.2 (e, r) z).1 hz)
+          obtain ⟨w', hw', hw'c⟩ := pdom c (List.mem_flatMap.2 ⟨w, hw, (mem_fibre? hs _ c).2 hc⟩)
+          exact ⟨w', hw', htrans _ _ _ hw'c hcz⟩
+
+/-- The computed fold denotes the relational fold `⦇[B,S]⦈`. -/
+theorem rel_fold {B : RelRep L V} {S : RelRep (E × V) V} {T : RelRep (ConsList L E) V}
+    (h : fold B S = some T) : T.rel = ⦇(junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel : Alg (F L E) ⟨V⟩)⦈ := by
+  have hf := foldWith_spec (P := Eq) (fun _ => ⟨fun _ h => h, fun z hz => ⟨z, hz, rfl⟩⟩)
+    (fun _ _ _ => Eq.trans) (fun _ _ _ _ e h => ⟨_, by subst e; exact h, rfl⟩) h
+  rw [← cataR_eq_relCata]
+  exact hom_ext fun x v => ⟨(hf x).1 v, fun hv => let ⟨_, hw, e⟩ := (hf x).2 v hv; e ▸ hw⟩
+
+/-- **The thinning fold**: for a preorder `Q` that the algebra `[B,S]` preserves, every computed fibre
+    is a `thin(Q)` choice of the fold's, `Λ T ⊑ Λ⦇[B,S]⦈ thin(Q)`. -/
+theorem rel_foldThin {Q : RelRep V V} {B : RelRep L V} {S : RelRep (E × V) V} {T : RelRep (ConsList L E) V}
+    (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel ≫ Q.rel ⊑ Q.rel)
+    (hmono : Pres (F := F L E) (junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel) Q.rel)
+    (h : foldThin Q B S = some T) :
+    Λ T.rel ⊑ Λ ⦇(junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel : Alg (F L E) ⟨V⟩)⦈ ≫ thinRel Q.rel := by
+  have hj := junc_sum_apply B.rel S.rel
+  have hf := foldWith_spec (P := Q.rel) (thinList_rel_spec hr ht) (fun u v w h1 h2 => le_iff.mp ht u w ⟨v, h1, h2⟩)
+    (fun e w r z hwr hz =>
+      let ⟨c, hc, hcz⟩ := le_iff.mp hmono (Sum.inr (e, w)) z ⟨Sum.inr (e, r), ⟨rfl, hwr⟩, (hj.2 _ z).2 hz⟩
+      ⟨c, (hj.2 _ c).1 hc, hcz⟩) h
+  rw [← cataR_eq_relCata]
+  exact Λ_le_thin hf
+
+end Fold
 
 end RelRep
 
