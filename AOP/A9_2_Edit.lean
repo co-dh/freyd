@@ -2284,9 +2284,6 @@ value is that `FinRel` evaluated. -/
 
 section MleRun
 
--- Strings are compared when a `FinRel` keyed by them is looked up or filtered.
-deriving instance DecidableEq for ConsList
-
 /-- `suffixP x y`, decided by walking `y`. -/
 instance decSuffixP : ∀ x y : Str A, Decidable (suffixP x y)
   | x, ConsList.wrap _ => inferInstanceAs (Decidable (x = ConsList.wrap ()))

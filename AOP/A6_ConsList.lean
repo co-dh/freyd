@@ -26,6 +26,7 @@ variable {L E : Type}
 public inductive ConsList (L E : Type) where
   | wrap : L → ConsList L E
   | cons : E → ConsList L E → ConsList L E
+  deriving DecidableEq
 
 /-- The book's `list A`, a string over the alphabet `A`. -/
 @[expose] public abbrev Str (A : Type) : Type := ConsList Unit A
