@@ -54,9 +54,9 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 
 #disp[#block(inset: (y: 6pt))[
  #leanf("Freyd.Alg.RelProd.pair_outl") #src[(5.6)] #h(1.4cm)
-  // lean:AOP.A5_2.pair_outl@18c8ddee
+  // lean:AOP.A5_2.pair_outl@647ce458
  #leanf("Freyd.Alg.RelProd.pair_outr") #src[(5.7)]
-  // lean:AOP.A5_2.pair_outr@ce99887d
+  // lean:AOP.A5_2.pair_outr@f18d60f6
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt),
@@ -72,7 +72,7 @@ the two dots with no left end, and the crossing they force — are merged agains
 the monoid's unit law:
 
 #disp[#leanc("Freyd.Alg.RelProd.pair") #src[`⟜▷=𝟙` on each half]]<fork-collapse>
-// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
+// lean:AOP.A5_2.Freyd.Alg.RelProd.pair@d901a2fa
 
 
 === Relational product `R×S`
@@ -85,7 +85,7 @@ the monoid's unit law:
 // become two squares, and the copy dot goes away — `R × S` is the two strands side by side.
 #disp[#row((box(inset: (right: 18pt),
   leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), leanc("Freyd.Alg.prodMap")))#leank("Freyd.Alg.prodMap_out_le")]<relprod-pic>
-// lean:AOP.A5_2.prodMap_out_le@35d07374
+// lean:AOP.A5_2.prodMap_out_le@e15b4f81
 
 Right-then-up is `(R×S)π₁`, up-then-right is `π₁R`, and `(R×S)π₁⊑π₁R`, equality when `S` is
 entire. In `Rel`, `(c,d) (R×S) (a,b)` iff `c R a` and `d S b` — two strands side by side, no copy
@@ -862,7 +862,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
    // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
 )#leank("Freyd.Alg.inter_not_laxNatural_square")]]<meet-counterex>
-// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@f59748e6
+// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@7f4975f8
 
 === Two stacked towers
 

@@ -495,14 +495,14 @@ public theorem prodMap_slides {A B a' b' C D c' d' : 𝒜} (P : RelProd A B) (Q 
 /-- The SWAP `a×b ⟶ b×a`: the two projections paired in the other order.  A MAP, being a `pair`
     of two maps (`RelProd.pair_map`), so it is exempt from (5.6)'s `dom` — see `swap_swap`. -/
 @[expose] public def RelProd.swap {A B : 𝒜} (P : RelProd A B) (Q : RelProd B A) : P.p ⟶ Q.p :=
-  Q.pair P.outr P.outl
+  Q.pair P.π₂ P.π₁
 
 /-- The swap is SELF-INVERSE.  Running it twice re-pairs `outl` with `outr` — the `dom`s that
     (5.6)/(5.7) leave behind are identities because the projections are maps — and
     `⟨outl,outr⟩ = 1` is the tabulation's joint-monic equation. -/
 public theorem RelProd.swap_swap {A B : 𝒜} (P : RelProd A B) (Q : RelProd B A) :
     P.swap Q ≫ Q.swap P = Cat.id P.p := by
-  show Q.pair P.outr P.outl ≫ P.pair Q.outr Q.outl = Cat.id P.p
+  show Q.pair P.π₂ P.π₁ ≫ P.pair Q.π₂ Q.π₁ = Cat.id P.p
   rw [RelProd.map_comp_pair (Q.pair_map P.outr_map P.outl_map), RelProd.pair_outl,
     RelProd.pair_outr, P.outl_map.1, P.outr_map.1, Cat.id_comp, Cat.id_comp]
   exact P.joint_id
@@ -532,10 +532,10 @@ public theorem laxNatural_pair {F F' G : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, 
     the universal property fails on EXISTENCE, not merely on uniqueness. -/
 public theorem laxNatural_pair_outl {F F' G : Relator 𝒮 𝒜} (φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x)
     (ψ : ∀ x : 𝒮, G.obj x ⟶ F'.obj x) (x : 𝒮) :
-    ((relProd (F.obj x) (F'.obj x)).pair (φ x) (ψ x) ≫ (relProd (F.obj x) (F'.obj x)).outl
+    ((relProd (F.obj x) (F'.obj x)).pair (φ x) (ψ x) ≫ (relProd (F.obj x) (F'.obj x)).π₁
         ⊑ φ x) ∧
       (Entire (ψ x) → (relProd (F.obj x) (F'.obj x)).pair (φ x) (ψ x)
-        ≫ (relProd (F.obj x) (F'.obj x)).outl = φ x) := by
+        ≫ (relProd (F.obj x) (F'.obj x)).π₁ = φ x) := by
   constructor
   · rw [RelProd.pair_outl]
     exact le_trans (comp_mono_right (dom_coreflexive (ψ x)) (φ x)) (le_of_eq (Cat.id_comp (φ x)))
@@ -792,7 +792,7 @@ variable {𝒜 : Type u₁} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd �
     `outr_lax_natural` (B&dM p.133) uses `prodMap_outr_le`.  The two together are the smallest
     pair of lax natural transformations whose MEET is not one (`laxNatural_inter_false`). -/
 public theorem outl_lax_natural :
-    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).π₁) :=
   fun R => prodMap_outl_le _ _ R R
 
 end ProjLax

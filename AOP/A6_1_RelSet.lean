@@ -436,8 +436,8 @@ public theorem topMor_apply {A B : RelSet.{u}} (x : A.carrier) (y : B.carrier) :
 @[expose] public instance : HasRelProd RelSet.{u} where
   relProd A B :=
     { p := ⟨A.carrier × B.carrier⟩
-      outl := graph (fun p : A.carrier × B.carrier => p.1)
-      outr := graph (fun p : A.carrier × B.carrier => p.2)
+      π₁ := graph (fun p : A.carrier × B.carrier => p.1)
+      π₂ := graph (fun p : A.carrier × B.carrier => p.2)
       tab := ⟨graph_map _, graph_map _,
         le_antisymm (le_iff.mpr fun x y _ => ⟨(x, y), rfl, rfl⟩) (topMor_max _),
         hom_ext fun p q =>

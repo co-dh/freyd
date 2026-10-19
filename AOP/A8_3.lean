@@ -293,8 +293,8 @@ public theorem prodMap_sortRel_comp_merge_le
       ⊑ cup Pr' ≫ sortRel L setify ordered ≼ := by
   have hfun : prodMap Pr' Pr (setify° ≫ ordered ≼) (setify° ≫ ordered ≼)
       = prodMap Pr' Pr (setify°) (setify°) ≫ prodMap Pr Pr (ordered ≼) (ordered ≼) := by
-    show Pr.pair (Pr'.outl ≫ setify° ≫ ordered ≼) (Pr'.outr ≫ setify° ≫ ordered ≼)
-      = Pr.pair (Pr'.outl ≫ setify°) (Pr'.outr ≫ setify°) ≫ prodMap Pr Pr (ordered ≼) (ordered ≼)
+    show Pr.pair (Pr'.π₁ ≫ setify° ≫ ordered ≼) (Pr'.π₂ ≫ setify° ≫ ordered ≼)
+      = Pr.pair (Pr'.π₁ ≫ setify°) (Pr'.π₂ ≫ setify°) ≫ prodMap Pr Pr (ordered ≼) (ordered ≼)
     rw [RelProd.pair_prodMap, Cat.assoc, Cat.assoc]
   show prodMap Pr' Pr (setify° ≫ ordered ≼) (setify° ≫ ordered ≼) ≫ merge ≼
     ⊑ cup Pr' ≫ (setify° ≫ ordered ≼)
@@ -1486,7 +1486,7 @@ public theorem cup_apply {a : RelSet.{0}} (q : (relProd (P a) (P a)).p.carrier) 
     cup (relProd (P a) (P a)) q Z ↔ Z = fun v => q.1 v ∨ q.2 v := by
   unfold cup
   rw [Λ_eq_classifier]
-  have : (fun v => (((relProd (P a) (P a)).outl ≫ ∋ a) ∪ ((relProd (P a) (P a)).outr ≫ ∋ a)) q v)
+  have : (fun v => (((relProd (P a) (P a)).π₁ ≫ ∋ a) ∪ ((relProd (P a) (P a)).π₂ ≫ ∋ a)) q v)
       = fun v => q.1 v ∨ q.2 v := by
     funext v
     simp only [union_apply, comp_apply]

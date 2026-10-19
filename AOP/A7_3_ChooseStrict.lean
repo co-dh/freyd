@@ -63,16 +63,16 @@ public theorem RelSet.graph_fst_snd_joint (A B : RelSet.{u}) :
     legs are the graphs of `Prod.fst`, `Prod.snd`. -/
 @[expose] public def RelSet.prod (A B : RelSet.{u}) : RelProd A B :=
   { p := RelSet.mk (A.carrier × B.carrier)
-    outl := graph (Prod.fst : A.carrier × B.carrier → A.carrier)
-    outr := graph (Prod.snd : A.carrier × B.carrier → B.carrier)
+    π₁ := graph (Prod.fst : A.carrier × B.carrier → A.carrier)
+    π₂ := graph (Prod.snd : A.carrier × B.carrier → B.carrier)
     tab := ⟨graph_map (Prod.fst), graph_map (Prod.snd), graph_fst_snd_topMor A B,
       graph_fst_snd_joint A B⟩ }
 
 theorem RelSet.prod_outl_apply (A B : RelSet.{u}) (p : (A.carrier × B.carrier)) (x : A.carrier) :
-    (RelSet.prod A B).outl p x = (x = p.1) := rfl
+    (RelSet.prod A B).π₁ p x = (x = p.1) := rfl
 
 theorem RelSet.prod_outr_apply (A B : RelSet.{u}) (p : (A.carrier × B.carrier)) (y : B.carrier) :
-    (RelSet.prod A B).outr p y = (y = p.2) := rfl
+    (RelSet.prod A B).π₂ p y = (y = p.2) := rfl
 
 /-- Pointwise computation of `pair` in `Rel(Set)`: `⟨R,S⟩ x p = R x p.1 ∧ S x p.2`. -/
 theorem RelSet.prod_pair_apply {A B C : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B)
@@ -118,7 +118,7 @@ public theorem choose_monotonic_strict :
   have hR : (choose P ≫ chooseWitness) (false, true) false := by
     rw [choose, RelSet.comp_apply]
     refine ⟨false, ?_, ?_⟩
-    · change P.outl (false, true) false ∨ P.outr (false, true) false
+    · change P.π₁ (false, true) false ∨ P.π₂ (false, true) false
       left
       rfl
     · rw [chooseWitness]
@@ -142,17 +142,17 @@ public theorem choose_monotonic_eq_of_entire {𝒜 : Type u} [TabularUnitaryDivi
     prodMap P P R R ≫ choose P = choose P ≫ R := by
   calc
     prodMap P P R R ≫ choose P
-        = (P.pair (P.outl ≫ R) (P.outr ≫ R)) ≫ (P.outl ∪ P.outr) := rfl
-    _ = (P.pair (P.outl ≫ R) (P.outr ≫ R) ≫ P.outl) ∪
-        (P.pair (P.outl ≫ R) (P.outr ≫ R) ≫ P.outr) := by
+        = (P.pair (P.π₁ ≫ R) (P.π₂ ≫ R)) ≫ (P.π₁ ∪ P.π₂) := rfl
+    _ = (P.pair (P.π₁ ≫ R) (P.π₂ ≫ R) ≫ P.π₁) ∪
+        (P.pair (P.π₁ ≫ R) (P.π₂ ≫ R) ≫ P.π₂) := by
           rw [DistributiveAllegory.comp_union_distrib]
-    _ = (dom (P.outr ≫ R) ≫ (P.outl ≫ R)) ∪ (dom (P.outl ≫ R) ≫ (P.outr ≫ R)) := by
+    _ = (dom (P.π₂ ≫ R) ≫ (P.π₁ ≫ R)) ∪ (dom (P.π₁ ≫ R) ≫ (P.π₂ ≫ R)) := by
           rw [RelProd.pair_outl, RelProd.pair_outr]
-    _ = (Cat.id P.p ≫ (P.outl ≫ R)) ∪ (Cat.id P.p ≫ (P.outr ≫ R)) := by
+    _ = (Cat.id P.p ≫ (P.π₁ ≫ R)) ∪ (Cat.id P.p ≫ (P.π₂ ≫ R)) := by
           rw [entire_comp P.tab.2.1.1 hR, entire_comp P.tab.1.1 hR]
-    _ = (P.outl ≫ R) ∪ (P.outr ≫ R) := by
+    _ = (P.π₁ ≫ R) ∪ (P.π₂ ≫ R) := by
           rw [Cat.id_comp, Cat.id_comp]
-    _ = (P.outl ∪ P.outr) ≫ R := by
+    _ = (P.π₁ ∪ P.π₂) ≫ R := by
           rw [← union_comp_distrib]
     _ = choose P ≫ R := rfl
 

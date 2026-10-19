@@ -122,8 +122,8 @@ public inductive PE {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] : TyE 𝒜 → TyE
 @[expose] public def PE.eval : {σ τ : TyE 𝒜} → PE σ τ → (∀ A : 𝒜, σ.rel.obj A ⟶ τ.rel.obj A)
   | σ, _, .id _, A => 𝟙 (σ.rel.obj A)
   | _, _, .comp s t, A => s.eval A ≫ t.eval A
-  | .prod σ τ, _, .outl, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).outl
-  | .prod σ τ, _, .outr, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).outr
+  | .prod σ τ, _, .outl, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).π₁
+  | .prod σ τ, _, .outr, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).π₂
   | _, .prod τ υ, .pair s t, A =>
       (relProd (τ.rel.obj A) (υ.rel.obj A)).pair (s.eval A) (t.eval A)
   | _, _, .map F t, A => F.map (t.eval A)
@@ -220,10 +220,10 @@ public theorem PE.free_strict {A B : 𝒜} {R : A ⟶ B} : ∀ {σ τ : TyE 𝒜
             ≫ prodMap (relProd (τ.rel.obj A) (υ.rel.obj A)) (relProd (τ.rel.obj B) (υ.rel.obj B))
                 (τ.rel.map R) (υ.rel.map R)
       rw [RelProd.pair_prodMap, ← ihs, ← iht]
-      show σ.rel.map R ≫ (s.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outl°
-            ∩ t.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outr°)
-          = (σ.rel.map R ≫ s.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outl°
-            ∩ (σ.rel.map R ≫ t.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outr°
+      show σ.rel.map R ≫ (s.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).π₁°
+            ∩ t.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).π₂°)
+          = (σ.rel.map R ≫ s.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).π₁°
+            ∩ (σ.rel.map R ≫ t.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).π₂°
       rw [simple_dist_inter (Relator.simple_map σ.rel hR), Cat.assoc, Cat.assoc]
   | .app _ σ, .app _ τ, _, .map F (t := u) hu => by
       have ih := PE.free_strict hu
@@ -244,12 +244,12 @@ example {A B : 𝒜} {R : A ⟶ B} (hR : Simple R) (σ : TyE 𝒜) :
     `outr : var × var ⟶ var`, whose interpretation is `(relProd a a).outr` and whose source
     type expression interprets as `Δ 𝒜 = Relator.prod (idRelator) (idRelator)`. -/
 public theorem outr_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outr) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).π₂) :=
   PE.free (PE.outr (σ := TyE.var) (τ := TyE.var))
 
 /-- `outl` likewise (`outl_lax_natural`, A5_7). -/
 public theorem outl_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).π₁) :=
   PE.free (PE.outl (σ := TyE.var) (τ := TyE.var))
 
 /-- **B&dM p.149**, `compMembership`'s `lax` field (A6_5) DERIVED: `member(F·G)` is
@@ -267,7 +267,7 @@ public theorem comp_mem_lax_free {F G : Relator 𝒜 𝒜} {mF : ∀ A : 𝒜, F
     than reapplied by hand. -/
 public theorem map_outr_lax_natural_free (F : Relator 𝒜 𝒜) :
     LaxNatural (Relator.comp (Relator.idRelator 𝒜) F) (Relator.comp Δ F)
-      (fun A => F.map ((relProd A A).outr)) :=
+      (fun A => F.map ((relProd A A).π₂)) :=
   PE.free (PE.map F (PE.outr (σ := TyE.var) (τ := TyE.var)))
 
 -- The corollaries are the hand proofs, not merely something like them: proof irrelevance makes
