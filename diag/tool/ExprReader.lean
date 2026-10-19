@@ -1754,11 +1754,15 @@ partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr))
     `@[diag_unfold]`'s answer — set beside the declaration, or in `diag/StrDiagNames.lean` where the
     declaration is not the diagram's to edit — so no picture functor carries a list of names.  The
     mirror of `diag_induced`: that one says a name is KEPT and dashed, this one that it is opened. -/
-def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) : MetaM Expr := do
+def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) (field := false) :
+    MetaM Expr := do
   let .const n _ := e.getAppFn | return e
   -- The name a definition's formula DEFINES stays closed on its left: opened, `x ≜ body` reads `body ≜ body`.
   if (← getOptions).get `diag.keepClosed Name.anonymous == n then return e
   unless (← tags.anyM fun t => return (← Lean.labelled t).contains n) do return e
+  -- A LANE IS NAMED BY ITSELF (`relatorName?`), whatever arguments it is written with: the tag opens
+  -- a lane only where one of its FIELDS is taken (`field`), so `Δ` is the lane `Δ` and `Alg(Δ,ℕ)`.
+  if !field && (← isLaneBundle e) then return e
   match ← Meta.unfoldDefinition? e with
   -- A DEFINITION LEAN ELABORATED FOR ITSELF IS NOT A BODY THE NOTE WRITES.  `cons` opens to
   -- `cons.match_1 …`, an auxiliary `casesOn` or an internal name — Lean's own compilation of the
@@ -1773,6 +1777,14 @@ def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) 
     name nested, and a name left standing there is the same defect as one left standing on top. -/
 def openNotedAll (e : Expr) : MetaM Expr :=
   Meta.transform e (pre := fun x => do
+    -- A FIELD OF A TAGGED LANE is that field of the lane's body: `Δ`'s corner is `A×A`, its side `R×R`.
+    if let .const p _ := x.getAppFn then
+      if let some pi := (← getEnv).getProjectionFnInfo? p then
+        if let some s := x.getAppArgs[pi.numParams]? then
+          let b ← bundleCore s
+          let b' ← openNoted b [`diag_unfold] (field := true)
+          if b' != b then
+            return .visit (x.replace fun y => if y == b then some b' else none)
     let x' ← openNoted x [`diag_unfold]   -- a `diag_drawn_open` name is opened in pictures, written in text
     return if x' == x then .continue else .visit x')
 

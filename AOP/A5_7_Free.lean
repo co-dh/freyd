@@ -244,12 +244,12 @@ example {A B : 𝒜} {R : A ⟶ B} (hR : Simple R) (σ : TyE 𝒜) :
     `outr : var × var ⟶ var`, whose interpretation is `(relProd a a).outr` and whose source
     type expression interprets as `Δ 𝒜 = Relator.prod (idRelator) (idRelator)`. -/
 public theorem outr_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outr) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outr) :=
   PE.free (PE.outr (σ := TyE.var) (τ := TyE.var))
 
 /-- `outl` likewise (`outl_lax_natural`, A5_7). -/
 public theorem outl_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outl) :=
   PE.free (PE.outl (σ := TyE.var) (τ := TyE.var))
 
 /-- **B&dM p.149**, `compMembership`'s `lax` field (A6_5) DERIVED: `member(F·G)` is
@@ -266,7 +266,7 @@ public theorem comp_mem_lax_free {F G : Relator 𝒜 𝒜} {mF : ∀ A : 𝒜, F
     `F(R×R) ≫ F(outr) ⊑ F(outr) ≫ F(R)`.  `Relator.map_slides` read off the language rather
     than reapplied by hand. -/
 public theorem map_outr_lax_natural_free (F : Relator 𝒜 𝒜) :
-    LaxNatural (Relator.comp (Relator.idRelator 𝒜) F) (Relator.comp (Δ 𝒜) F)
+    LaxNatural (Relator.comp (Relator.idRelator 𝒜) F) (Relator.comp Δ F)
       (fun A => F.map ((relProd A A).outr)) :=
   PE.free (PE.map F (PE.outr (σ := TyE.var) (τ := TyE.var)))
 
