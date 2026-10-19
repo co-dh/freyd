@@ -593,7 +593,7 @@ public theorem paths_lax_natural (R : dE A ⟶ dE B) :
 /-- **cyl-defn**: `R ≜ sum ≤ sum°`, the cost preorder on paths — `xs R ys ⟺ sum(xs) ≤ sum(ys)`.
     Written as the note writes it, `sum` either side of the order on the costs. -/
 @[expose] public def costLE : dList Nat ⟶ dList Nat :=
-  sumR ≫ (fun m k => m ≤ k : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) ≫ sumR°
+  sum ≫ (fun m k => m ≤ k : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩) ≫ sum°
 
 /-- **cyl-defn**: the specification `paths est(R)` — a cheapest path across the cylinder. -/
 @[expose] public noncomputable def cheapest : dList (Fin n → Nat) ⟶ dList Nat :=

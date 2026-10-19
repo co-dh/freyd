@@ -39,12 +39,12 @@ public theorem fold_T_recip :
 /-- **`h = [nil, cons(sum×𝟙)] : FB⟶B`**, `B = [ℕ]`: `inl(()) ↦ []`, `inr(xs,ys) ↦ sum(xs):ys`. -/
 @[expose] public def h : Alg (F Unit (ConsList Unit Nat)) (dList Nat) :=
   junc (sumCop (dL Unit) ⟨ConsList Unit Nat × ConsList Unit Nat⟩) τ
-    (rprodMap sumR (𝟙 (dList Nat)) ≫ consR)
+    (rprodMap sum (𝟙 (dList Nat)) ≫ consR)
 
 /-- **`⦇h⦈ = list(sum)`**: folding with `h` sends a list of segments to the list of their sums. -/
 public theorem fold_h :
-    (⦇h⦈ : (⟨ConsList Unit (ConsList Unit Nat)⟩ : RelSet.{0}) ⟶ dList Nat) = list sumR := by
-  rw [sumR, list_graph]
+    (⦇h⦈ : (⟨ConsList Unit (ConsList Unit Nat)⟩ : RelSet.{0}) ⟶ dList Nat) = list sum := by
+  rw [sum, list_graph]
   refine ((relCata_UP (initial Unit (ConsList Unit Nat)) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)).symm
   · exact Iff.rfl
@@ -55,7 +55,7 @@ public theorem fold_h :
       fun ⟨y, hy, q, ⟨h1, h2⟩, h3⟩ => by rw [h3, h1, ← h2, hy]⟩
 
 /-- **`H = ⦇T⦈°⦇h⦈ = partition list(sum)`**: segment the list every way, then sum each segment. -/
-public theorem H_eq : H T h = partition ≫ list sumR := by
+public theorem H_eq : H T h = partition ≫ list sum := by
   show (⦇(T : Alg (F Unit (ConsList Unit Nat)) (dList Nat))⦈)° ≫ ⦇h⦈ = _
   rw [fold_T_recip, fold_h]
 
@@ -135,7 +135,7 @@ public theorem H_abc (a b c : Nat) (ys : ConsList Unit Nat) :
     H T h (.cons a (.cons b (.cons c (.wrap ())))) ys
       ↔ ys = .cons (a + b + c) (.wrap ()) ∨ ys = .cons a (.cons (b + c) (.wrap ()))
         ∨ ys = .cons (a + b) (.cons c (.wrap ())) ∨ ys = .cons a (.cons b (.cons c (.wrap ()))) := by
-  rw [H_eq, sumR, list_graph]
+  rw [H_eq, sum, list_graph]
   show (∃ ps, partition _ ps ∧ ys = cmap csum ps) ↔ _
   have hp : ∀ ps : ConsList Unit (ConsList Unit Nat), cconcat ps = .cons a (.cons b (.cons c (.wrap ())))
       → allNonempty ps → partition (.cons a (.cons b (.cons c (.wrap ())))) ps := fun _ h1 h2 => ⟨h1, h2⟩

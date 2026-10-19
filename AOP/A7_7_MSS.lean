@@ -104,20 +104,20 @@ theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b
 
 /-- Ex 7.40's specification `mss ≜ Λ(segment sum) est(≥)` — the greatest of the segment sums. -/
 @[expose] public def mss : dCL Unit Int ⟶ (⟨Int⟩ : RelSet.{0}) :=
-  (segment ≫ sumR)%∋ ≫ est(geq)
+  (segment ≫ sum)%∋ ≫ est(geq)
 
 /-- The inner specification `Λ(prefix sum) est(≥)` — the greatest of the prefix sums, which is
     what the greedy theorem turns into a fold. -/
 @[expose] public def mssPre : dCL Unit Int ⟶ (⟨Int⟩ : RelSet.{0}) :=
-  (prefixR ≫ sumR)%∋ ≫ est(geq)
+  («prefix» ≫ sum)%∋ ≫ est(geq)
 
 /-! ## The note's `mss-prefix-sum`: `prefix sum` is a catamorphism -/
 
 /-- The `mss-prefix-sum` row: `prefix sum = ⦇[zero, ⊸ zero ∪ plus]⦈` — `prefix` is the reduce and
     `sum` the map fused into it, so the intermediate list is gone. -/
-public theorem mss_prefix_sum : prefixR ≫ sumR = cataR (Salg) := by
+public theorem mss_prefix_sum : «prefix» ≫ sum = cataR (Salg) := by
   rw [cataR_eq_relCata]
-  refine (relCata_UP (initial Unit Int) Salg (prefixR ≫ sumR)).mp
+  refine (relCata_UP (initial Unit Int) Salg («prefix» ≫ sum)).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · constructor
     · rintro ⟨ys, hs, hl⟩
@@ -267,11 +267,11 @@ theorem Salg_eq_plusAlg :
 
 /-- **`sum` is entire** — every list has a sum.  This is the display's own side condition, the one
     that lets `(𝟙×sum)` come off the `⊸ zero` arm. -/
-public theorem sumR_entire : Entire (sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0})) := by
-  unfold sumR; exact graph_entire _
+public theorem sumR_entire : Entire (sum : dList Int ⟶ (⟨Int⟩ : RelSet.{0})) := by
+  unfold sum; exact graph_entire _
 
 /-- **`nil sum = zero`** — the empty list sums to `zero`. -/
-public theorem nil_comp_sum : (τ : dL Unit ⟶ dList Int) ≫ sumR = zero := by
+public theorem nil_comp_sum : (τ : dL Unit ⟶ dList Int) ≫ sum = zero := by
   refine hom_ext fun u w => ⟨?_, ?_⟩
   · rintro ⟨_, rfl, hw⟩; exact hw
   · rintro rfl; exact ⟨ConsList.wrap u, rfl, rfl⟩
@@ -280,7 +280,7 @@ public theorem nil_comp_sum : (τ : dL Unit ⟶ dList Int) ≫ sumR = zero := by
     throws it away and stops at `zero`. -/
 public theorem discNil_comp_sum :
     ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ())
-        : (⟨Int × ConsList Unit Int⟩ : RelSet.{0}) ⟶ dList Int) ≫ sumR
+        : (⟨Int × ConsList Unit Int⟩ : RelSet.{0}) ⟶ dList Int) ≫ sum
       = (graph fun _ : Int × ConsList Unit Int => zeroVal
         : (⟨Int × ConsList Unit Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) := by
   refine hom_ext fun _ w => ⟨?_, ?_⟩
@@ -290,8 +290,8 @@ public theorem discNil_comp_sum :
 /-- **`cons sum = (𝟙×sum) plus`** — `sum` of a `cons` adds the head to `sum` of the tail, which
     is `sum`'s defining equation read in diagram order. -/
 public theorem cons_comp_sum :
-    (consR : (⟨Int × ConsList Unit Int⟩ : RelSet.{0}) ⟶ dList Int) ≫ sumR
-      = rprodMap (𝟙 (dE Int)) sumR ≫ plus := by
+    (consR : (⟨Int × ConsList Unit Int⟩ : RelSet.{0}) ⟶ dList Int) ≫ sum
+      = rprodMap (𝟙 (dE Int)) sum ≫ plus := by
   refine hom_ext fun q w => ⟨?_, ?_⟩
   · rintro ⟨_, rfl, hw⟩
     exact ⟨(q.1, csum q.2), ⟨rfl, rfl⟩, hw⟩
@@ -306,20 +306,20 @@ public theorem cons_comp_sum :
 /-- **`mss-prefix-sum`, step 1**: `[nil,cons ∪ ⊸ nil] sum = [nil sum,⊸ nil sum ∪ cons sum]` — a
     bracket composed is the bracket of the composites, and composition distributes over the `∪`. -/
 public theorem mss_prefix_sum_step1 :
-    prefAlg ≫ sumR
-      = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sumR)
-          ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR) := by
+    prefAlg ≫ sum
+      = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sum)
+          ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sum ∪ consR ≫ sum) := by
   unfold prefAlg
   rw [junc_comp, union_comp_distrib, DistributiveAllegory.union_comm]
 
 /-- **`mss-prefix-sum`, step 2**: `[nil sum,⊸ nil sum ∪ cons sum] = [zero,⊸ zero ∪ (𝟙×sum) plus]`
     — `sum`'s three defining equations, one per branch. -/
 public theorem mss_prefix_sum_step2 :
-    junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sumR)
-        ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR)
+    junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) ((τ : dL Unit ⟶ dList Int) ≫ sum)
+        ((graph fun _ : Int × ConsList Unit Int => ConsList.wrap ()) ≫ sum ∪ consR ≫ sum)
       = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) zero
           ((graph fun _ : Int × ConsList Unit Int => zeroVal)
-            ∪ rprodMap (𝟙 (dE Int)) sumR ≫ plus) := by
+            ∪ rprodMap (𝟙 (dE Int)) sum ≫ plus) := by
   rw [nil_comp_sum, discNil_comp_sum, cons_comp_sum]
 
 /-- **`mss-prefix-sum`, step 3**: `[zero,⊸ zero ∪ (𝟙×sum) plus] = [zero,(𝟙×sum)(⊸ zero ∪ plus)]`
@@ -327,9 +327,9 @@ public theorem mss_prefix_sum_step2 :
 public theorem mss_prefix_sum_step3 :
     junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))
         ((graph fun _ : Int × ConsList Unit Int => zeroVal)
-          ∪ rprodMap (𝟙 (dE Int)) sumR ≫ plus)
+          ∪ rprodMap (𝟙 (dE Int)) sum ≫ plus)
       = junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) zero
-          (rprodMap (𝟙 (dE Int)) sumR ≫ zeroPlus) := by
+          (rprodMap (𝟙 (dE Int)) sum ≫ zeroPlus) := by
   refine congrArg (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) zero) ?_
   unfold zeroPlus
   rw [← discZero_zero (X := Int × ConsList Unit Int), ← discZero_zero (X := Int × Int)]
@@ -339,14 +339,14 @@ public theorem mss_prefix_sum_step3 :
     the relator's action on `sum` slides out of the bracket. -/
 public theorem mss_prefix_sum_step4 :
     junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))
-        (rprodMap (𝟙 (dE Int)) sumR ≫ zeroPlus)
-      = (F Unit Int).map sumR ≫ junc (sumCop (dL Unit) ⟨Int × Int⟩) zero zeroPlus :=
-  (Fmap_comp_junc Unit Int sumR zero zeroPlus).symm
+        (rprodMap (𝟙 (dE Int)) sum ≫ zeroPlus)
+      = (F Unit Int).map sum ≫ junc (sumCop (dL Unit) ⟨Int × Int⟩) zero zeroPlus :=
+  (Fmap_comp_junc Unit Int sum zero zeroPlus).symm
 
 /-- What the `mss-prefix-sum` display proves: **`[nil,cons ∪ ⊸ nil] sum = F(sum) S`** — `sum` is a
     homomorphism from `prefix`'s algebra to `S`, which is why the fold absorbs it. -/
 public theorem prefAlg_comp_sum :
-    prefAlg ≫ sumR = (F Unit Int).map sumR ≫ Salg := by
+    prefAlg ≫ sum = (F Unit Int).map sum ≫ Salg := by
   unfold Salg
   rw [mss_prefix_sum_step1, mss_prefix_sum_step2, mss_prefix_sum_step3, mss_prefix_sum_step4]
 
@@ -505,8 +505,8 @@ public theorem mssPre_simple : Simple (mssPre) := by
   apply le_iff.mpr
   intro w z h
   obtain ⟨u, h1, h2⟩ := h
-  have h1' := (Λ_comp_est_apply (prefixR ≫ sumR) geq u w).mp h1
-  have h2' := (Λ_comp_est_apply (prefixR ≫ sumR) geq u z).mp h2
+  have h1' := (Λ_comp_est_apply («prefix» ≫ sum) geq u w).mp h1
+  have h2' := (Λ_comp_est_apply («prefix» ≫ sum) geq u z).mp h2
   exact Int.le_antisymm (h2'.2 w h1'.1) (h1'.2 z h2'.1)
 
 /-- **Ex 7.40's inner headline**: `Λ(prefix sum) est(≥) = ⦇[zero,⊕]⦈`.  B&dM ask only for the
@@ -516,7 +516,7 @@ public theorem mssPre_eq_cata :
     mssPre = cataR (consScalarAlg (fun _ : Unit => (0 : Int)) oplusFn) := by
   have hle : cataR (consScalarAlg (fun _ : Unit => (0 : Int)) oplusFn) ⊑ mssPre := by
     rw [← zero_oplus_eq_prog, ← mss_step]
-    show cataR (Salg%∋ ≫ est(geq)) ⊑ (prefixR ≫ sumR)%∋ ≫ est(geq)
+    show cataR (Salg%∋ ≫ est(geq)) ⊑ («prefix» ≫ sum)%∋ ≫ est(geq)
     rw [mss_prefix_sum]
     exact mss_greedy
   have hentire : Entire (cataR (consScalarAlg (fun _ : Unit => (0 : Int)) oplusFn)) := by
@@ -536,15 +536,15 @@ theorem mssPre_apply (s : ConsList Unit Int) (v : Int) : mssPre s v ↔ v = mssP
 /-- `mssPreFn s` is a prefix sum of `s`, and it dominates every prefix sum of `s` — the two
     halves `est(≥)` asks for, read off the inner headline. -/
 theorem mssPreFn_spec (s : ConsList Unit Int) :
-    (prefixR ≫ sumR) s (mssPreFn s) ∧ ∀ z, (prefixR ≫ sumR) s z → z ≤ mssPreFn s :=
-  (Λ_comp_est_apply (prefixR ≫ sumR) geq s (mssPreFn s)).mp ((mssPre_apply s _).mpr rfl)
+    («prefix» ≫ sum) s (mssPreFn s) ∧ ∀ z, («prefix» ≫ sum) s z → z ≤ mssPreFn s :=
+  (Λ_comp_est_apply («prefix» ≫ sum) geq s (mssPreFn s)).mp ((mssPre_apply s _).mpr rfl)
 
 /-- The `mss-shape` rows that move `est(≥)` inside the `E`: maximising over all prefix sums of
     all the suffixes is maximising over the per-suffix maxima.  (The note gets this from
     absorption, `union = E(∋)` and the `E`/`est` distribution; here it is one pointwise
     argument, and the per-suffix maximum exists because `Λ(prefix sum) est(≥)` is entire.) -/
 public theorem mss_shape_union :
-    existsImage (prefixR ≫ sumR) ≫ est(geq) = existsImage (mssPre) ≫ est(geq) := by
+    existsImage («prefix» ≫ sum) ≫ est(geq) = existsImage (mssPre) ≫ est(geq) := by
   apply hom_ext; intro P w
   rw [existsImage_comp_est_apply, existsImage_comp_est_apply]
   constructor
@@ -564,8 +564,8 @@ public theorem mss_shape_union :
 
 /-- **The `mss-shape` display**: `Λ(segment sum) est(≥) = Λ(suffix) E(Λ(prefix sum) est(≥)) est(≥)`
     — the greatest segment sum is the greatest of the per-suffix greatest prefix sums. -/
-public theorem mss_shape : mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := by
-  show (segment ≫ sumR)%∋ ≫ est(geq) = _
+public theorem mss_shape : mss = suffix%∋ ≫ existsImage mssPre ≫ est(geq) := by
+  show (segment ≫ sum)%∋ ≫ est(geq) = _
   rw [segment_eq, Cat.assoc, ← Λ_absorption, Cat.assoc, mss_shape_union]
 
 /-! The `mss-shape` chain, one theorem per row of the note's table, so each row's circuit is drawn
@@ -573,39 +573,39 @@ public theorem mss_shape : mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq)
 
 /-- `segment=suffix prefix`. -/
 public theorem mss_shape_step1 :
-    ((segment : dList Int ⟶ dList Int) ≫ sumR)%∋ ≫ est(geq)
-      = (suffixR ≫ (prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋ ≫ est(geq) := by
+    ((segment : dList Int ⟶ dList Int) ≫ sum)%∋ ≫ est(geq)
+      = (suffix ≫ («prefix» : dList Int ⟶ dList Int) ≫ sum)%∋ ≫ est(geq) := by
   rw [segment_eq, Cat.assoc]
 
 /-- absorption: `Λ(S) E(R)=Λ(SR)` at `S:=suffix`, `R:=prefix sum`. -/
 public theorem mss_shape_step2 :
-    (suffixR ≫ (prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋ ≫ est(geq)
-      = suffixR%∋ ≫ existsImage ((prefixR : dList Int ⟶ dList Int) ≫ sumR) ≫ est(geq) := by
+    (suffix ≫ («prefix» : dList Int ⟶ dList Int) ≫ sum)%∋ ≫ est(geq)
+      = suffix%∋ ≫ existsImage ((«prefix» : dList Int ⟶ dList Int) ≫ sum) ≫ est(geq) := by
   rw [← Λ_absorption, Cat.assoc]
 
 /-- `E(R)=E(Λ(R)) union` at `R:=prefix sum`. -/
 public theorem mss_shape_step3 :
-    suffixR%∋ ≫ existsImage ((prefixR : dList Int ⟶ dList Int) ≫ sumR) ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ union
+    suffix%∋ ≫ existsImage ((«prefix» : dList Int ⟶ dList Int) ≫ sum) ≫ est(geq)
+      = suffix%∋ ≫ existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋) ≫ union
           ≫ est(geq) := by
-  rw [existsImage_eq_Λ_bigUnion ((prefixR : dList Int ⟶ dList Int) ≫ sumR), Cat.assoc]
+  rw [existsImage_eq_Λ_bigUnion ((«prefix» : dList Int ⟶ dList Int) ≫ sum), Cat.assoc]
 
 /-- `union est(≥)=E(est(≥)) est(≥)` on the sets `E(Λ(prefix sum))` yields, which are non-empty. -/
 public theorem mss_shape_step4 :
-    suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ union ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋)
+    suffix%∋ ≫ existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋) ≫ union ≫ est(geq)
+      = suffix%∋ ≫ existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋)
           ≫ existsImage est(geq) ≫ est(geq) := by
-  have h : existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋)
+  have h : existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋)
         ≫ existsImage est(geq) ≫ est(geq)
-      = existsImage ((prefixR : dList Int ⟶ dList Int) ≫ sumR) ≫ est(geq) := by
+      = existsImage ((«prefix» : dList Int ⟶ dList Int) ≫ sum) ≫ est(geq) := by
     rw [← Cat.assoc, ← existsImage_comp, mss_shape_union]; rfl
   rw [h]; exact mss_shape_step3.symm
 
 /-- `E` is a relator: `E(R)E(S)=E(RS)`. -/
 public theorem mss_shape_step5 :
-    suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋)
+    suffix%∋ ≫ existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋)
         ≫ existsImage est(geq) ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋ ≫ est(geq))
+      = suffix%∋ ≫ existsImage (((«prefix» : dList Int ⟶ dList Int) ≫ sum)%∋ ≫ est(geq))
           ≫ est(geq) := by
   rw [existsImage_comp, Cat.assoc]
 
@@ -623,7 +623,7 @@ end
 /-- **`est(suffix)` is the power object's `head`**: the longest suffix of `x` is `x` itself, so
     `Λ(suffix) est(suffix) = 𝟙`.  The recovery `mss-scan` uses `head` for IS available here — what
     the power object loses is the recovered list's `g`-value, which is where `E(g)` bites. -/
-public theorem Λ_suffix_comp_est {X : Type} : suffixR%∋ ≫ est(suffixR) = 𝟙 (dList X) := by
+public theorem Λ_suffix_comp_est {X : Type} : suffix%∋ ≫ est(suffix) = 𝟙 (dList X) := by
   apply hom_ext; intro x w
   rw [Λ_comp_est_apply]
   exact ⟨fun ⟨hw, hall⟩ => (suffixP_antisymm hw (hall x (suffixP.refl x))).symm,
@@ -636,12 +636,12 @@ private def ys : ConsList Unit Int := ConsList.cons (-1) (ConsList.cons 1 (ConsL
 
 /-- `suffix g` pointwise: `v` is `g` at some suffix of `s`. -/
 private theorem suffix_mssPre_apply (s : ConsList Unit Int) (v : Int) :
-    (suffixR ≫ mssPre) s v ↔ ∃ y, suffixP y s ∧ v = mssPreFn y :=
+    (suffix ≫ mssPre) s v ↔ ∃ y, suffixP y s ∧ v = mssPreFn y :=
   ⟨fun ⟨y, hy, hv⟩ => ⟨y, hy, (mssPre_apply y v).mp hv⟩,
    fun ⟨y, hy, hv⟩ => ⟨y, hy, (mssPre_apply y v).mpr hv⟩⟩
 
 /-- The suffix maxima of `[1,-1]`: `g[1,-1] = 1`, `g[-1] = 0`, `g[] = 0`. -/
-private theorem suffix_mssPre_xs (v : Int) : (suffixR ≫ mssPre) xs v ↔ (v = 1 ∨ v = 0) := by
+private theorem suffix_mssPre_xs (v : Int) : (suffix ≫ mssPre) xs v ↔ (v = 1 ∨ v = 0) := by
   rw [suffix_mssPre_apply]
   constructor
   · rintro ⟨y, hy, rfl⟩
@@ -656,7 +656,7 @@ private theorem suffix_mssPre_xs (v : Int) : (suffixR ≫ mssPre) xs v ↔ (v = 
         by decide⟩
 
 /-- The suffix maxima of `[-1,1]`: `g[-1,1] = 0`, `g[1] = 1`, `g[] = 0` — the same set. -/
-private theorem suffix_mssPre_ys (v : Int) : (suffixR ≫ mssPre) ys v ↔ (v = 1 ∨ v = 0) := by
+private theorem suffix_mssPre_ys (v : Int) : (suffix ≫ mssPre) ys v ↔ (v = 1 ∨ v = 0) := by
   rw [suffix_mssPre_apply]
   constructor
   · rintro ⟨y, hy, rfl⟩
@@ -677,19 +677,19 @@ private theorem suffix_mssPre_ys (v : Int) : (suffixR ≫ mssPre) ys v ↔ (v = 
     `xs`, `ys` are two lists where the set is the same and the value is not. -/
 public theorem suffixMax_not_relCata :
     ¬ ∃ h : Alg (F Unit Int) (P (⟨Int⟩ : RelSet.{0})),
-        suffixR%∋ ≫ existsImage mssPre = ⦇h⦈ := by
+        suffix%∋ ≫ existsImage mssPre = ⦇h⦈ := by
   rintro ⟨h, hh⟩
   have hcomm := (relCata_UP (initial Unit Int) h _).mpr hh
   rw [Λ_absorption, Λ_eq_classifier] at hcomm
   -- The fold's step at `cons a s` sees only `a` and the SET at `s`.
   have hstep : ∀ (a : Int) (s : ConsList Unit Int) (P : Int → Prop),
-      classifier (suffixR ≫ mssPre) (ConsList.cons a s) P
-        ↔ h (Sum.inr (a, fun v => (suffixR ≫ mssPre) s v)) P := by
+      classifier (suffix ≫ mssPre) (ConsList.cons a s) P
+        ↔ h (Sum.inr (a, fun v => (suffix ≫ mssPre) s v)) P := by
     intro a s P
     have e := congrFun (congrFun hcomm (Sum.inr (a, s))) P
     constructor
     · intro hP
-      have hl : ((initial Unit Int).α ≫ classifier (suffixR ≫ mssPre)) (Sum.inr (a, s)) P :=
+      have hl : ((initial Unit Int).α ≫ classifier (suffix ≫ mssPre)) (Sum.inr (a, s)) P :=
         ⟨ConsList.cons a s, rfl, hP⟩
       rw [e] at hl
       obtain ⟨u, hu, hhu⟩ := hl
@@ -699,27 +699,27 @@ public theorem suffixMax_not_relCata :
         obtain ⟨b, T⟩ := q
         obtain ⟨hab, hT⟩ := hu
         cases (hab : a = b)
-        have hTeq : T = fun v => (suffixR ≫ mssPre) s v := hT
+        have hTeq : T = fun v => (suffix ≫ mssPre) s v := hT
         rw [hTeq] at hhu
         exact hhu
     · intro hP
-      have hr : ((F Unit Int).map (classifier (suffixR ≫ mssPre)) ≫ h) (Sum.inr (a, s)) P :=
-        ⟨Sum.inr (a, fun v => (suffixR ≫ mssPre) s v), ⟨rfl, rfl⟩, hP⟩
+      have hr : ((F Unit Int).map (classifier (suffix ≫ mssPre)) ≫ h) (Sum.inr (a, s)) P :=
+        ⟨Sum.inr (a, fun v => (suffix ≫ mssPre) s v), ⟨rfl, rfl⟩, hP⟩
       rw [← e] at hr
       obtain ⟨w, hw, hPw⟩ := hr
       have hweq : w = ConsList.cons a s := hw
       rw [hweq] at hPw
       exact hPw
   -- `xs` and `ys` carry the same set, so `cons 3` must give them the same set too.
-  have hsame : (fun v => (suffixR ≫ mssPre) xs v) = fun v => (suffixR ≫ mssPre) ys v :=
+  have hsame : (fun v => (suffix ≫ mssPre) xs v) = fun v => (suffix ≫ mssPre) ys v :=
     funext fun v => propext ((suffix_mssPre_xs v).trans (suffix_mssPre_ys v).symm)
-  have hxs := (hstep 3 xs (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)).mp rfl
+  have hxs := (hstep 3 xs (fun v => (suffix ≫ mssPre) (ConsList.cons 3 xs) v)).mp rfl
   rw [hsame] at hxs
-  have hboth : (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)
-      = fun v => (suffixR ≫ mssPre) (ConsList.cons 3 ys) v :=
-    (hstep 3 ys (fun v => (suffixR ≫ mssPre) (ConsList.cons 3 xs) v)).mpr hxs
+  have hboth : (fun v => (suffix ≫ mssPre) (ConsList.cons 3 xs) v)
+      = fun v => (suffix ≫ mssPre) (ConsList.cons 3 ys) v :=
+    (hstep 3 ys (fun v => (suffix ≫ mssPre) (ConsList.cons 3 xs) v)).mpr hxs
   -- But `4` is the maximum prefix sum of `[3,1,-1]`, and of no suffix of `[3,-1,1]`.
-  have h4 : (suffixR ≫ mssPre) (ConsList.cons 3 xs) 4 :=
+  have h4 : (suffix ≫ mssPre) (ConsList.cons 3 xs) 4 :=
     (suffix_mssPre_apply _ 4).mpr
       ⟨ConsList.cons 3 xs, show suffixP (ConsList.cons 3 xs) (ConsList.cons 3 xs) from Or.inl rfl,
         by decide⟩
@@ -869,7 +869,7 @@ theorem scanFn_fst : ∀ s : ConsList Unit Int, (scanFn s).1 = mssPreFn s
 /-- `π₂` of the scan is the note's `Λ(suffix) E(⦇[zero,⊕]⦈)`: the greatest prefix sums of all the
     suffixes. -/
 theorem scanFn_snd : ∀ (s : ConsList Unit Int) (v : Int),
-    (scanFn s).2 v ↔ (suffixR ≫ mssPre) s v
+    (scanFn s).2 v ↔ (suffix ≫ mssPre) s v
   | ConsList.wrap _, v => by
       rw [suffix_mssPre_apply]
       exact ⟨fun hv => ⟨ConsList.wrap (), rfl, hv⟩,
@@ -912,7 +912,7 @@ public theorem scan_snd_eq :
     (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩)
       ≫ (graph (fun p : Int × (Int → Prop) => p.2)
           : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩)
-      = suffixR%∋ ≫ existsImage mssPre := by
+      = suffix%∋ ≫ existsImage mssPre := by
   rw [Λ_absorption, Λ_eq_classifier]
   apply hom_ext; intro s P
   constructor
@@ -923,7 +923,7 @@ public theorem scan_snd_eq :
   · intro hP
     refine ⟨scanFn s, rfl, ?_⟩
     show P = (scanFn s).2
-    rw [show P = fun v => (suffixR ≫ mssPre) s v from hP]
+    rw [show P = fun v => (suffix ≫ mssPre) s v from hP]
     exact funext fun v => propext (scanFn_snd s v).symm
 
 /-- **The fold `⦇k⦈` IS the pair `⟨g,Λ(suffix)E(g)⟩`**, `g ≜ ⦇[zero,⊕]⦈`: `π₁` carries the value at
@@ -931,7 +931,7 @@ public theorem scan_snd_eq :
 public theorem scan_pair_eq_cata :
     rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
-        (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+        (suffix%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))
       = ⦇k⦈ := by
   rw [← mssPre_eq_oplus_cata, cata_Kalg_eq_graph]
@@ -964,11 +964,11 @@ public theorem scan_pair_comm :
         : Alg (F Unit Int) (dCL Unit Int))
       ≫ rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
-          (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          (suffix%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))
       = (F Unit Int).map (rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
-          (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          (suffix%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))) ≫ k := by
   have hcon : (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) τ consR
       : Alg (F Unit Int) (dCL Unit Int)) = graph con := by
@@ -984,7 +984,7 @@ public theorem scan_pair_comm :
 public theorem Kalg_snd_eq :
     ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
         : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩)
-      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+      = suffix%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
         (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) := by
   rw [cata_Kalg_eq_graph, scan_snd_eq, mssPre_eq_oplus_cata]
 
@@ -993,8 +993,8 @@ public theorem Kalg_snd_eq :
 public theorem mss_eq_scan :
     mss = ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
       : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩) ≫ est(geq) :=
-  calc mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := mss_shape
-    _ = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+  calc mss = suffix%∋ ≫ existsImage mssPre ≫ est(geq) := mss_shape
+    _ = suffix%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) ≫ est(geq) := by
       rw [mssPre_eq_oplus_cata]
     _ = ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)

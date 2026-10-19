@@ -180,7 +180,7 @@ public theorem secureP_prefix [Amount A] [Van] {p x : Seg A} (h : prefixP p x) (
 
 /-- **van-laws**, the fusion row's stated side condition: `secure prefix ⊑ prefix secure`. -/
 public theorem secure_prefix [Amount A] [Van] :
-    secure ≫ prefixR ⊑ (prefixR : dList A ⟶ dList A) ≫ secure :=
+    secure ≫ «prefix» ⊑ («prefix» : dList A ⟶ dList A) ≫ secure :=
   le_iff.mpr fun x p h => by
     obtain ⟨y, ⟨rfl, hs⟩, hp⟩ := h
     exact ⟨p, hp, rfl, secureP_prefix hp hs⟩
@@ -226,7 +226,7 @@ notation:max "𝟏" => Freyd.Alg.RelSet.CL.dL Unit
 /-- **van-defn**: `H ≜ (head prefix° head°)∪(nil° nil)` — `nil` being `wrapR` out of the one
     point `𝟏`, so `nil° nil` is the coreflexive on the empty schedule. -/
 @[expose] public def H {A : Type} : dSched A ⟶ dSched A :=
-  (head (A := A) ≫ (prefixR : dList A ⟶ dList A)° ≫ (head (A := A))°) ∪ ((τ : 𝟏 ⟶ dSched A)° ≫ τ)
+  (head (A := A) ≫ («prefix» : dList A ⟶ dList A)° ≫ (head (A := A))°) ∪ ((τ : 𝟏 ⟶ dSched A)° ≫ τ)
 
 /-- `H` pointwise: one schedule's first segment is a prefix of the other's, or both are empty. -/
 public theorem Hrel_apply {p q : Sched A} :

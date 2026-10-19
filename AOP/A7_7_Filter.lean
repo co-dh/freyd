@@ -39,7 +39,7 @@ namespace Freyd.Alg.RelSet.Filter
 open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.GCTakeWhile
-open Freyd.Alg.RelSet.ListRel hiding listP prefixR
+open Freyd.Alg.RelSet.ListRel hiding listP «prefix»
 
 variable {A : Type}
 

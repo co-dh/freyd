@@ -94,7 +94,7 @@ theorem perm_transitive : (perm : dList A ⟶ dList A) ≫ perm ⊑ perm :=
 
 /-- The prefix relation `prefix : list A ⟶ list A`, mirrored to diagram order:
     `prefixR xs ys` iff `ys` is an initial segment of `xs`. -/
-@[expose] public def prefixR : dList A ⟶ dList A := fun xs ys => prefixP ys xs
+@[expose] public def «prefix» : dList A ⟶ dList A := fun xs ys => prefixP ys xs
 
 public theorem prefixP.refl : ∀ x : ConsList Unit A, prefixP x x
   | ConsList.wrap _ => trivial
@@ -111,7 +111,7 @@ public theorem prefixP.trans : ∀ {x y z : ConsList Unit A}, prefixP x y → pr
       ⟨hab.trans hbc, prefixP.trans hxy hyz⟩
 
 /-- **`prefix` is transitive**. -/
-theorem prefix_transitive : (prefixR : dList A ⟶ dList A) ≫ prefixR ⊑ prefixR :=
+theorem prefix_transitive : («prefix» : dList A ⟶ dList A) ≫ «prefix» ⊑ «prefix» :=
   le_iff.mpr fun x z h => by obtain ⟨y, hxy, hyz⟩ := h; exact prefixP.trans hyz hxy
 
 /-! ## Subsequence `subseq : list A ← list A` -/
@@ -218,7 +218,7 @@ public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.i
 
 /-- The suffix relation `suffix : list A ⟶ list A`, mirrored to diagram order:
     `suffixR x ys` iff `ys` is a final segment of `x`. -/
-@[expose] public def suffixR : dList A ⟶ dList A := fun x ys => suffixP ys x
+@[expose] public def suffix : dList A ⟶ dList A := fun x ys => suffixP ys x
 
 /-- B&dM's `cat` (append) as a relation: the graph of `cappend`. -/
 @[expose] public def cat : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
@@ -320,12 +320,12 @@ public theorem suffixP_iff_append :
   | ConsList.cons n x => n + csum x
 
 /-- The sum as a morphism `sum : list A ⟶ A`. -/
-@[expose] public def sumR [Add A] [OfNat A 0] : dList A ⟶ (⟨A⟩ : RelSet.{0}) := graph csum
+@[expose] public def sum [Add A] [OfNat A 0] : dList A ⟶ (⟨A⟩ : RelSet.{0}) := graph csum
 
 /-! ## Length, average and `preds` (the note's `cata-examples` rows) -/
 
 /-- The length as a morphism `length : list A ⟶ Nat`. -/
-@[expose] public def lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}) := graph clen
+@[expose] public def length : dList A ⟶ (⟨Nat⟩ : RelSet.{0}) := graph clen
 
 /-! ### The algebras the folds below are taken over, each under the book's own word for it.  An
     anonymous `fun` is a name the note cannot write and a port nobody can check — `⦇[nil,fst]⦈` is
@@ -357,7 +357,7 @@ public theorem suffixP_iff_append :
 /-- **`average ≜ ⟨sum,length⟩ div`**: fork the total with the count, then divide.  The codomain is
     `Nat`, not the book's `Real`: the repo is Mathlib-free, and Lean's `Nat` division already has
     the book's `div(0,0) = 0`, which is what makes `average` total on the empty list. -/
-@[expose] public def averageR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}) := rpair sumR lengthR ≫ div
+@[expose] public def average : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}) := rpair sum length ≫ div
 
 /-- `preds n = [n, n−1, …, 1]`, and `preds 0 = nil`. -/
 @[expose] public def predsFn : Nat → ConsList Unit Nat
@@ -365,7 +365,7 @@ public theorem suffixP_iff_append :
   | n + 1 => ConsList.cons (n + 1) (predsFn n)
 
 /-- `preds` as a morphism `preds : Nat ⟶ list Nat`. -/
-@[expose] public def predsR : (⟨Nat⟩ : RelSet.{0}) ⟶ dList Nat := graph predsFn
+@[expose] public def preds : (⟨Nat⟩ : RelSet.{0}) ⟶ dList Nat := graph predsFn
 
 /-! ## The two orders on `Int` the optimisation case studies compare costs by -/
 
@@ -864,7 +864,7 @@ public theorem list_graph {B : Type} (f : A → B) :
 
 /-- `total f = list(f) sum`, point-free. -/
 public theorem total_eq (f : A → Int) :
-    (graph (total f) : dList A ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph f) ≫ sumR := by
+    (graph (total f) : dList A ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph f) ≫ sum := by
   apply hom_ext; intro x n
   constructor
   · intro h
@@ -1112,7 +1112,7 @@ public theorem Λ_subseq :
 /-- **`prefix = ⦇[nil, cons ∪ ⊸ nil]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; `cons`
     keeps going, the second branch (`⊸nil`, discard then `nil`) stops early. -/
 public theorem prefix_cata :
-    (prefixR : dList A ⟶ dList A) = ⦇(prefAlg : Alg (F Unit A) (dList A))⦈ := by
+    («prefix» : dList A ⟶ dList A) = ⦇(prefAlg : Alg (F Unit A) (dList A))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · show prefixP r (ConsList.wrap D) ↔ r = ConsList.wrap D
@@ -1135,8 +1135,8 @@ public theorem prefix_cata :
     either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
     picture of the two sides is drawn from. -/
 public theorem prefix_cancel :
-    (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
-      = (F Unit A).map (prefixR : dList A ⟶ dList A)
+    (initial Unit A).α ≫ («prefix» : dList A ⟶ dList A)
+      = (F Unit A).map («prefix» : dList A ⟶ dList A)
         ≫ (prefAlg : Alg (F Unit A) (dList A)) := by
   rw [prefix_cata]
   exact relCata_cancel (initial Unit A) _
@@ -1144,7 +1144,7 @@ public theorem prefix_cancel :
 /-- **`prefix = cat° π₁`** (note `comb-fns`): split `x` as `ys ++ v` and keep the left part.
     `π₁ = graph (·.1)`, as in `subseq_cata`. -/
 public theorem prefix_cat :
-    (prefixR : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.1) := by
+    («prefix» : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.1) := by
   apply hom_ext; intro x ys
   constructor
   · intro h
@@ -1156,7 +1156,7 @@ public theorem prefix_cat :
 /-- **`suffix = cat° π₂`** (note `comb-fns`; B&dM §5.6): split `x` as `u ++ ys` and keep the
     right part.  `π₂ = graph (·.2)`, as in `subseq_cata`. -/
 public theorem suffix_cat :
-    (suffixR : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.2) := by
+    (suffix : dList A ⟶ dList A) = cat° ≫ graph (fun p => p.2) := by
   apply hom_ext; intro x ys
   constructor
   · intro h
@@ -1166,7 +1166,7 @@ public theorem suffix_cat :
     exact (suffixP_iff_append _ _).mpr ⟨p.1, hp.symm⟩
 
 /-- **`segment = suffix prefix`** (note `comb-fns`; B&dM §7.5): a suffix, then a prefix of it. -/
-public theorem segment_eq : (segment : dList A ⟶ dList A) = suffixR ≫ prefixR := by
+public theorem segment_eq : (segment : dList A ⟶ dList A) = suffix ≫ «prefix» := by
   apply hom_ext; intro x ys
   constructor
   · rintro ⟨u, v, rfl⟩
@@ -1451,7 +1451,7 @@ public theorem concat_glue :
 /-- **`sum = ⦇[zero, plus]⦈`** (note `cata-examples`; B&dM §5.x): fold the list, adding each head
     onto the total of the tail, `nil` contributing `zero`. -/
 public theorem sum_cata [Add A] [OfNat A 0] :
-    (sumR : dList A ⟶ (⟨A⟩ : RelSet.{0}))
+    (sum : dList A ⟶ (⟨A⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨A × A⟩) zero plus
             : Alg (F Unit A) (⟨A⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
@@ -1462,14 +1462,14 @@ public theorem sum_cata [Add A] [OfNat A 0] :
 /-- **`sum = ⦇[zero, plus]⦈` over numbers** (B&dM §3.1, p. 55): the `sum` that `average` divides,
     at `Nat` where `averageR` is taken; `sum_cata` stays generic for the MSS chapter's `A`. -/
 public theorem sum_cata_nat :
-    (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}))
+    (sum : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨Nat × Nat⟩) zero plus
             : Alg (F Unit Nat) (⟨Nat⟩ : RelSet.{0}))⦈ := sum_cata
 
 /-- **`length =⦇[zero, π₂ succ]⦈`** (note `cata-examples`): fold the list, the head dropped by
     `π₂` and one added by `succ` for it, `nil` contributing `zero`. -/
 public theorem length_cata :
-    (lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
+    (length : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
       = ⦇(junc (sumCop (dL Unit) ⟨A × Nat⟩) zero ((graph fun q : A × Nat => q.2) ≫ succ)
             : Alg (F Unit A) (⟨Nat⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
@@ -1484,7 +1484,7 @@ public theorem length_cata :
     universal property, since `Rel(Set)`'s product is the pointwise `⟨-,-⟩` and not the abstract
     `HasBinaryProducts` one the general law is stated over. -/
 public theorem pair_sum_length_cata :
-    rpair (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0})) lengthR
+    rpair (sum : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0})) length
       = ⦇(junc (sumCop (dL Unit) ⟨Nat × (Nat × Nat)⟩) zeros pluss
             : Alg (F Unit Nat) (⟨Nat × Nat⟩ : RelSet.{0}))⦈ := by
   refine (relCata_UP (initial Unit Nat) _ _).mp
@@ -1731,18 +1731,12 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent (Name.mkSimple "L")))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+@[app_unexpander «prefix»] public meta def unexpandPrefix : Unexpander
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
--- `suffix` is a name of its own, so the def carries the `R` only because `prefix` is a keyword.
-open Lean PrettyPrinter in
-@[app_unexpander suffixR] public meta def unexpandSuffixR : Unexpander
-  | `($_:ident) => `($(mkIdent `suffix))
-  | _ => throw ()
 
--- `partition`, `concat` and `sum` are what the note calls these arrows.  The namespace is the only
--- reason the printer keeps `ListRel.` in front of them, and a picture of the repo's own algebra has
--- no second `partition` to tell this one from.
+-- Each short name below is declared again in another namespace the exporter opens (`Paragraph`,
+-- `Van`, `Detab`, `Tex`, `Paths`, `Tuple`, `Relator`), so without the rule the label keeps `ListRel.`.
 open Lean PrettyPrinter in
 @[app_unexpander partition] public meta def unexpandPartition : Unexpander
   | `($_:ident) => `($(mkIdent `partition))
@@ -1760,32 +1754,16 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `assocl))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander assocr] public meta def unexpandAssocr : Unexpander
-  | `($_:ident) => `($(mkIdent `assocr))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander sumR] public meta def unexpandSumR : Unexpander
+@[app_unexpander sum] public meta def unexpandSum : Unexpander
   | `($_:ident) => `($(mkIdent `sum))
   | _ => throw ()
 open Lean PrettyPrinter in
-@[app_unexpander lengthR] public meta def unexpandLengthR : Unexpander
+@[app_unexpander length] public meta def unexpandLength : Unexpander
   | `($_:ident) => `($(mkIdent `length))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander averageR] public meta def unexpandAverageR : Unexpander
-  | `($_:ident) => `($(mkIdent `average))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander predsR] public meta def unexpandPredsR : Unexpander
-  | `($_:ident) => `($(mkIdent `preds))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander setify] public meta def unexpandSetify : Unexpander
   | `($_:ident) => `($(mkIdent `setify))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander cpp] public meta def unexpandCpp : Unexpander
-  | `($_:ident) => `($(mkIdent `cpp))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander cpl] public meta def unexpandCpl : Unexpander
@@ -1794,10 +1772,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander cpr] public meta def unexpandCpr : Unexpander
   | `($_:ident) => `($(mkIdent `cpr))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander cplist] public meta def unexpandCplist : Unexpander
-  | `($_:ident) => `($(mkIdent `cplist))
   | _ => throw ()
 
 

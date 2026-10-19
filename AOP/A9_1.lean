@@ -1379,20 +1379,20 @@ theorem csum_le : ∀ u v : ConsList Unit Nat, listP leRel u v → csum u ≤ cs
     — the joined string is as long as its pieces together. -/
 public theorem concat_length_hom :
     IsFHom (F := listRelator) (concatR : Alg listRelator (dList α))
-      (sumR : Alg listRelator ⟨Nat⟩) (lengthR : dList α ⟶ ⟨Nat⟩) := by
+      (sum : Alg listRelator ⟨Nat⟩) (length : dList α ⟶ ⟨Nat⟩) := by
   show graph cconcat ≫ graph clen = list (graph clen) ≫ graph csum
   rw [list_graph, graph_comp, graph_comp]
   exact congrArg graph (funext clen_cconcat)
 
 /-- **`sum Pres ≤`**: `sum` is monotonic on `≤`. -/
-public theorem sum_mono : Pres (F := listRelator) (sumR : Alg listRelator ⟨Nat⟩) leRel :=
+public theorem sum_mono : Pres (F := listRelator) (sum : Alg listRelator ⟨Nat⟩) leRel :=
   (graph_pres_iff_monotone (F := listRelator) (csum : ConsList Unit Nat → Nat) leRel).mpr csum_le
 
 /-- **Proposition 9.2** at `h = concat`, `cost = length`, `k = sum`: `concat` is monotonic on
     `R = length ≤ length°`. -/
 public theorem pres_concat_length :
     Pres (F := listRelator) (concatR : Alg listRelator (dList α))
-      (lengthR ≫ leRel ≫ lengthR°) :=
+      (length ≫ leRel ≫ length°) :=
   pres_of_cost (graph_map clen) rfl concat_length_hom sum_mono
 
 end Freyd.Alg.RelSet.ListRel

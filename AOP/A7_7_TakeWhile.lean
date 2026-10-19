@@ -57,7 +57,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.CL
 -- `prefix` is ListRel's arrow, not a second copy: the note's bead finds its naturality by the
 -- head constant.  Opened by name because this section's `listP p` clashes with ListRel's `listP`.
 open Freyd.Alg.RelSet.ListRel
-  (dList prefixR prefAlg prefixP prefix_cata clen junc_sum_inl junc_sum_inr listRelator)
+  (dList «prefix» prefAlg prefixP prefix_cata clen junc_sum_inl junc_sum_inr listRelator)
 
 variable {A : Type}
 
@@ -182,8 +182,8 @@ theorem tw_best (p : dE A ⟶ dE A) [DecidablePred (holds p)] (x : ConsList Unit
     relation (not merely pointwise).  Via `RelSet.eq_Λ_comp_est`, fed the two halves above and
     prefix antisymmetry. -/
 theorem takeWhile_eq_Λ_est (p : dE A ⟶ dE A) [DecidablePred (holds p)] :
-    (graph (twCL p) : dList A ⟶ dList A) = Λ (twSpec p) ≫ est (prefixR (A := A)) :=
-  eq_Λ_comp_est (prefixR (A := A))
+    (graph (twCL p) : dList A ⟶ dList A) = Λ (twSpec p) ≫ est (ListRel.prefix (A := A)) :=
+  eq_Λ_comp_est (ListRel.prefix (A := A))
     (fun x y h1 h2 => prefixP_antisym h2 h1)             -- antisymmetry of prefix
     (twCL p) (twSpec p)
     (tw_sound p)                                        -- achievability
@@ -194,7 +194,7 @@ theorem takeWhile_eq_Λ_est (p : dE A ⟶ dE A) [DecidablePred (holds p)] :
     equals `takeWhile`.  Immediate from the max form by `shrink_eq_Λ_comp_est`
     (`est R = est R°`). -/
 theorem takeWhile_eq_shrink (p : dE A ⟶ dE A) [DecidablePred (holds p)] :
-    (graph (twCL p) : dList A ⟶ dList A) = twSpec p ↾ (prefixR (A := A))° := by
+    (graph (twCL p) : dList A ⟶ dList A) = twSpec p ↾ (ListRel.prefix (A := A))° := by
   rw [shrink_eq_Λ_comp_est]
   exact takeWhile_eq_Λ_est p
 
@@ -281,7 +281,7 @@ public theorem discNil_apply (a : A) (xs ys : ConsList Unit A) :
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix
     all of whose elements pass `p`. -/
 @[expose] public def takewhile (p : dE A ⟶ dE A) : dList A ⟶ dList A :=
-  (prefixR ≫ listP p)%∋ ≫ est(R°)
+  (ListRel.prefix ≫ listP p)%∋ ≫ est(R°)
 
 /-! ### Pointwise unfolds of the three `junc` algebras -/
 
@@ -345,7 +345,7 @@ theorem prefixP_eq_of_clen : ∀ {x y v : ConsList Unit A},
 /-- The two routes' specifications agree pointwise: `x (prefix list(p)) ws` iff `ws` is a
     `p`-passing prefix of `x`. -/
 theorem spec_iff {p : dE A ⟶ dE A} (hC : Coreflexive p) (u : ConsList Unit A) (ws : ConsList Unit A) :
-    (prefixR ≫ listP p) u ws ↔ prefixP ws u ∧ AllP p ws := by
+    (ListRel.prefix ≫ listP p) u ws ↔ prefixP ws u ∧ AllP p ws := by
   rw [listP_cata]
   induction u generalizing ws with
   | wrap D =>
@@ -443,10 +443,10 @@ public theorem prefConsAlg_inr {p : dE A ⟶ dE A} (hC : Coreflexive p) {C : Rel
 /-- Row 2 of `takewhile-alg`: `α prefix list(p) = F(prefix)[nil,cons ∪ ⊸ nil] list(p)` — the fold's
     computation rule at `prefix ≜ ⦇[nil,cons ∪ ⊸ nil]⦈`, with `list(p)` carried along. -/
 public theorem takewhile_alg_step1 (p : dE A ⟶ dE A) :
-    (initial Unit A).α ≫ (prefixR ≫ listP p)
-      = (F Unit A).map prefixR ≫ prefAlg ≫ listP p := by
-  have h : (initial Unit A).α ≫ prefixR = (F Unit A).map prefixR ≫ prefAlg :=
-    (relCata_UP (initial Unit A) prefAlg prefixR).mpr prefix_cata
+    (initial Unit A).α ≫ (ListRel.prefix ≫ listP p)
+      = (F Unit A).map ListRel.prefix ≫ prefAlg ≫ listP p := by
+  have h : (initial Unit A).α ≫ ListRel.prefix = (F Unit A).map ListRel.prefix ≫ prefAlg :=
+    (relCata_UP (initial Unit A) prefAlg ListRel.prefix).mpr prefix_cata
   rw [← Cat.assoc, h, Cat.assoc]
 
 /-- `[nil,cons ∪ ⊸ nil] list(p) = [nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` after `prefix`'s
@@ -480,8 +480,8 @@ public theorem prefAlg_comp_listP {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- Row 3 of `takewhile-alg`: `F(prefix)[nil,cons ∪ ⊸ nil] list(p)
     = F(prefix)[nil,(p×list(p)) cons ∪ ⊸ nil]` — `list(p)` moves through the algebra. -/
 public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    (F Unit A).map prefixR ≫ prefAlg ≫ listP p
-      = (F Unit A).map prefixR ≫ prefConsAlg p (listP p) := by
+    (F Unit A).map ListRel.prefix ≫ prefAlg ≫ listP p
+      = (F Unit A).map ListRel.prefix ≫ prefConsAlg p (listP p) := by
   rw [prefAlg_comp_listP hC]
 
 /-- Row 4 of `takewhile-alg`: `F(prefix)[nil,(p×list(p)) cons ∪ ⊸ nil]
@@ -489,8 +489,8 @@ public theorem takewhile_alg_step2 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     alongside, `prefix` landing on the tail `list(p)` already holds.  `⊸ nil` swallows it because
     `nil` prefixes every list. -/
 public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    (F Unit A).map prefixR ≫ prefConsAlg p (listP p)
-      = prefConsAlg p (prefixR ≫ listP p) := by
+    (F Unit A).map ListRel.prefix ≫ prefConsAlg p (listP p)
+      = prefConsAlg p (ListRel.prefix ≫ listP p) := by
   apply hom_ext; intro u ws
   cases u with
   | inl D =>
@@ -525,8 +525,8 @@ public theorem takewhile_alg_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
 /-- Row 5 of `takewhile-alg`: `[nil,(p×(prefix list(p))) cons ∪ ⊸ nil] = F(prefix list(p)) S` —
     `prefix list(p)` leaves the algebra for the relator's tape, and `S` is what is left. -/
 public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    prefConsAlg p (prefixR ≫ listP p)
-      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
+    prefConsAlg p (ListRel.prefix ≫ listP p)
+      = (F Unit A).map (ListRel.prefix ≫ listP p) ≫ Salg p := by
   rw [listP_cata]
   apply hom_ext; intro u ws
   cases u with
@@ -563,16 +563,16 @@ public theorem takewhile_alg_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     meets the side condition — so the display's four steps are proved pointwise and composed
     here, and the result is fed to @cata-defining below.) -/
 public theorem takewhile_alg_comm {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    (initial Unit A).α ≫ (prefixR ≫ listP p)
-      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p :=
+    (initial Unit A).α ≫ (ListRel.prefix ≫ listP p)
+      = (F Unit A).map (ListRel.prefix ≫ listP p) ≫ Salg p :=
   (takewhile_alg_step1 p).trans ((takewhile_alg_step2 hC).trans
     ((takewhile_alg_step3 hC).trans (takewhile_alg_step4 hC)))
 
 /-- The `takewhile-alg` row: `prefix list(p) = ⦇S⦈`, read off the defining equation above by
     @cata-defining (the Eilenberg–Wright universal property). -/
-public theorem takewhile_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : prefixR ≫ listP p = cataR (Salg p) := by
+public theorem takewhile_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : ListRel.prefix ≫ listP p = cataR (Salg p) := by
   rw [cataR_eq_relCata]
-  exact (relCata_UP (initial Unit A) (Salg p) (prefixR ≫ listP p)).mp (takewhile_alg_comm hC)
+  exact (relCata_UP (initial Unit A) (Salg p) (ListRel.prefix ≫ listP p)).mp (takewhile_alg_comm hC)
 
 /-! ### `takewhile-mono`, a law to a step
 
@@ -818,7 +818,7 @@ public theorem takewhile_cata_le {p : dE A ⟶ dE A} (hC : Coreflexive p)
   calc cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))
         = cataR ((Salg p)%∋ ≫ est(R°)) := by rw [takewhile_step hC]
     _ ⊑ (cataR (Salg p))%∋ ≫ est(R°) := takewhile_greedy hC
-    _ = (prefixR ≫ listP p)%∋ ≫ est(R°) := by rw [takewhile_alg hC]
+    _ = (ListRel.prefix ≫ listP p)%∋ ≫ est(R°) := by rw [takewhile_alg hC]
     _ = takewhile p := rfl
 
 calc_steps takewhile_cata_le
@@ -830,8 +830,8 @@ public theorem takewhile_simple {p : dE A ⟶ dE A} (hC : Coreflexive p) : Simpl
   apply le_iff.mpr
   intro ws zs h
   obtain ⟨u, h1, h2⟩ := h
-  have h1' := (Λ_comp_est_apply (prefixR ≫ listP p) ((R (A := A))°) u ws).mp h1
-  have h2' := (Λ_comp_est_apply (prefixR ≫ listP p) ((R (A := A))°) u zs).mp h2
+  have h1' := (Λ_comp_est_apply (ListRel.prefix ≫ listP p) ((R (A := A))°) u ws).mp h1
+  have h2' := (Λ_comp_est_apply (ListRel.prefix ≫ listP p) ((R (A := A))°) u zs).mp h2
   exact prefixP_eq_of_clen ((spec_iff hC u ws).mp h1'.1).1 ((spec_iff hC u zs).mp h2'.1).1
     (Nat.le_antisymm (h2'.2 ws h1'.1) (h1'.2 zs h2'.1))
 

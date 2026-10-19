@@ -269,7 +269,7 @@ public theorem α_pres_R :
 /-- **edit-defn**: `V≜suffix°×suffix°` — `V (xs,ys) (xs',ys')` iff `xs` is a suffix of `xs'`
     and `ys` a suffix of `ys'`. -/
 @[expose] public def V : dPair A ⟶ dPair A :=
-  rprodMap (suffixR (A := A))° (suffixR (A := A))°
+  rprodMap (suffix (A := A))° (suffix (A := A))°
 
 /-- **edit-defn** (B&dM p.226): `Q≜F(U,V)` at `U≜⊤` — any two operations, and the two remaining
     pairs of strings compared by `V`. -/
@@ -808,7 +808,7 @@ public theorem edit_tail_fst :
 calc_steps edit_tail_fst
 
 /-- `suffix = tail*`: a suffix is what some number of `tail`s leaves. -/
-public theorem suffix_eq_star_tail : (suffixR : dList A ⟶ dList A) = star (graph tail) := by
+public theorem suffix_eq_star_tail : (suffix : dList A ⟶ dList A) = star (graph tail) := by
   refine le_antisymm (le_iff.mpr fun x y h => ?_) ?_
   · induction x generalizing y with
     | wrap _ =>
@@ -876,9 +876,9 @@ public theorem R_recip_star : star (R (A := A))° = (R (A := A))° :=
 
 /-- **edit-laws**, second row: `edit (𝟙×suffix)⊑R° edit`, from the `tail` row by `suffix = tail*`. -/
 public theorem edit_suffix_right :
-    graph (edit (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
+    graph (edit (A := A)) ≫ rprodMap (𝟙 (dList A)) suffix
       ⊑ (R (A := A))° ≫ graph edit :=
-  calc graph (edit (A := A)) ≫ rprodMap (𝟙 (dList A)) suffixR
+  calc graph (edit (A := A)) ≫ rprodMap (𝟙 (dList A)) suffix
       _ = graph edit ≫ rprodMap (𝟙 (dList A)) (star (graph tail)) := by rw [suffix_eq_star_tail]
       _ = graph edit ≫ star (rprodMap (𝟙 (dList A)) (graph tail)) := by rw [rprodMap_id_star]
       _ ⊑ star (R (A := A))° ≫ graph edit := star_simulation edit_tail_snd
@@ -888,9 +888,9 @@ calc_steps edit_suffix_right
 
 /-- **edit-laws**, second row: `edit (suffix×𝟙)⊑R° edit`, the same for the source string. -/
 public theorem edit_suffix_left :
-    graph (edit (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
+    graph (edit (A := A)) ≫ rprodMap suffix (𝟙 (dList A))
       ⊑ (R (A := A))° ≫ graph edit :=
-  calc graph (edit (A := A)) ≫ rprodMap suffixR (𝟙 (dList A))
+  calc graph (edit (A := A)) ≫ rprodMap suffix (𝟙 (dList A))
       _ = graph edit ≫ rprodMap (star (graph tail)) (𝟙 (dList A)) := by rw [suffix_eq_star_tail]
       _ = graph edit ≫ star (rprodMap (graph tail) (𝟙 (dList A))) := by rw [rprodMap_star_id]
       _ ⊑ star (R (A := A))° ≫ graph edit := star_simulation edit_tail_fst
@@ -901,23 +901,23 @@ calc_steps edit_suffix_left
 /-- `edit-V`, first step: `V°=suffix×suffix` splits into `(suffix×𝟙)(𝟙×suffix)`. -/
 public theorem edit_Vrecip_step1 :
     graph (edit (A := A)) ≫ (V)°
-      = graph edit ≫ rprodMap (suffixR (A := A)) (𝟙 (dList A))
-          ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
+      = graph edit ≫ rprodMap (suffix (A := A)) (𝟙 (dList A))
+          ≫ rprodMap (𝟙 (dList A)) (suffix (A := A)) := by
   rw [rprodMap_comp, Cat.comp_id, Cat.id_comp, V, rprodMap_recip]
   simp only [Allegory.recip_recip]
 
 /-- `edit-V`, second step: `edit (suffix×𝟙)⊑R° edit` (`edit_suffix_left`). -/
 public theorem edit_Vrecip_step2 :
-    graph (edit (A := A)) ≫ rprodMap (suffixR (A := A)) (𝟙 (dList A))
-        ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
-      ⊑ (R (A := A))° ≫ graph edit ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A)) := by
+    graph (edit (A := A)) ≫ rprodMap (suffix (A := A)) (𝟙 (dList A))
+        ≫ rprodMap (𝟙 (dList A)) (suffix (A := A))
+      ⊑ (R (A := A))° ≫ graph edit ≫ rprodMap (𝟙 (dList A)) (suffix (A := A)) := by
   have h := comp_mono_right (edit_suffix_left (A := A))
-    (rprodMap (𝟙 (dList A)) (suffixR (A := A)))
+    (rprodMap (𝟙 (dList A)) (suffix (A := A)))
   simpa only [Cat.assoc] using h
 
 /-- `edit-V`, third step: `edit (𝟙×suffix)⊑R° edit` (`edit_suffix_right`). -/
 public theorem edit_Vrecip_step3 :
-    (R (A := A))° ≫ graph edit ≫ rprodMap (𝟙 (dList A)) (suffixR (A := A))
+    (R (A := A))° ≫ graph edit ≫ rprodMap (𝟙 (dList A)) (suffix (A := A))
       ⊑ (R (A := A))° ≫ (R (A := A))° ≫ graph edit :=
   comp_mono_left _ edit_suffix_right
 
@@ -1110,7 +1110,7 @@ public theorem con_eq_junc :
 
 
 /-- **edit-defn**: `V≜suffix°×suffix°`. -/
-public theorem V_eq : V = rprodMap (suffixR (A := A))° (suffixR (A := A))° := rfl
+public theorem V_eq : V = rprodMap (suffix (A := A))° (suffix (A := A))° := rfl
 
 /-- **edit-defn**: `empty` holds exactly at `(([],[]),([],[]))`. -/
 public theorem empty_iff (p q : Str A × Str A) :

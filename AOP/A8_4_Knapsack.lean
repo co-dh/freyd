@@ -48,11 +48,11 @@ variable {Item : Type} {val wt : Item → Int} {w : Int}
 
 /-- `value = list(val) sum`, point-free. -/
 public theorem value_eq :
-    (graph (value val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph val) ≫ sumR := total_eq val
+    (graph (value val) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph val) ≫ sum := total_eq val
 
 /-- `weight = list(wt) sum`, point-free. -/
 public theorem weight_eq :
-    (graph (weight wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph wt) ≫ sumR := total_eq wt
+    (graph (weight wt) : dList Item ⟶ (⟨Int⟩ : RelSet.{0})) = list (graph wt) ≫ sum := total_eq wt
 
 /-- **knap-defn**: `within(w)(x) ⟺ weight(x) ≤ w` (B&dM p.205), a predicate on ONE packing; as an
     arrow it is its coreflexive `corefl(within(w))`, the book's `within w` in `Λ(subseq within w)`. -/

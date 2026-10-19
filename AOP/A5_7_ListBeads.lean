@@ -108,14 +108,14 @@ public theorem listP_inlistP_split (R : dE A ⟶ dE B) :
 
 /-- **`prefix` is lax natural**: `list(R) prefix ⊑ prefix list(R)`. -/
 public theorem prefix_lax_natural (R : dE A ⟶ dE B) :
-    list R ≫ prefixR ⊑ prefixR ≫ list R :=
+    list R ≫ «prefix» ⊑ «prefix» ≫ list R :=
   le_iff.mpr fun x w h => by
     obtain ⟨y, hxy, hw⟩ := h
     exact listP_prefix_split R x y w hxy hw
 
 /-- **`suffix` is lax natural**: `list(R) suffix ⊑ suffix list(R)`. -/
 public theorem suffix_lax_natural (R : dE A ⟶ dE B) :
-    list R ≫ suffixR ⊑ suffixR ≫ list R :=
+    list R ≫ suffix ⊑ suffix ≫ list R :=
   le_iff.mpr fun x w h => by
     obtain ⟨y, hxy, hw⟩ := h
     exact listP_suffix_split R x y w hxy hw
@@ -183,7 +183,7 @@ public theorem trueOnly_no_image : ∀ y : ConsList Unit Bool, ¬ listP trueOnly
 
 /-- **`prefix` is not strictly natural**: `prefix list(R) ⋢ list(R) prefix`. -/
 public theorem prefix_not_strict :
-    ∃ R : dE Bool ⟶ dE Bool, ¬ (prefixR ≫ list R ⊑ list R ≫ prefixR) := by
+    ∃ R : dE Bool ⟶ dE Bool, ¬ («prefix» ≫ list R ⊑ list R ≫ «prefix») := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
     le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), trivial, rfl⟩
@@ -191,7 +191,7 @@ public theorem prefix_not_strict :
 
 /-- **`suffix` is not strictly natural**: `suffix list(R) ⋢ list(R) suffix`. -/
 public theorem suffix_not_strict :
-    ∃ R : dE Bool ⟶ dE Bool, ¬ (suffixR ≫ list R ⊑ list R ≫ suffixR) := by
+    ∃ R : dE Bool ⟶ dE Bool, ¬ (suffix ≫ list R ⊑ list R ≫ suffix) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨y, hy, -⟩ :=
     le_iff.mp h falseOne (ConsList.wrap ()) ⟨ConsList.wrap (), Or.inr rfl, rfl⟩

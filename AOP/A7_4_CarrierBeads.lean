@@ -81,7 +81,7 @@ public theorem listAlg_not_lax_natural :
 /-- **`sum : [x]⟶x`, the fold `⦇[zero,plus]⦈`, is not even lax natural**: `list(f) sum ⊑ sum f`
     fails at `f = (+1)` and the empty list — `sum []` is `0`, and `0+1` is not `0`.  A fold lands
     on the carrier its algebra names, so this is `listAlg_not_lax_natural` read through the fold. -/
-public theorem sum_not_lax_natural : ¬ (list succI ≫ sumR ⊑ sumR ≫ succI) := by
+public theorem sum_not_lax_natural : ¬ (list succI ≫ sum ⊑ sum ≫ succI) := by
   intro h
   obtain ⟨c, hc, hf⟩ :=
     RelSet.le_iff.mp h (ConsList.wrap ()) 0 ⟨ConsList.wrap (), rfl, rfl⟩
