@@ -565,49 +565,13 @@
 
 // B&dM p.226, "immediate from Proposition 9.2": the proposition's argument at `length`, one row
 // per fact.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
+#import "../generated/Freyd.Alg.RelSet.Edit.edit_mono.calc.typ" as calc-edit-mono
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
     #src[comparing the tails by `R` and then putting an operation in front (`F(R)α`) relates only
      sequences that `R` also relates once the operation is in front (`αR`)]],
      // lean:AOP.A9_2_Edit.edit_mono@e083dbea
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs", step: true)],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
-    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step1@29c07433
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs"),
-    [#src[`length` is a map, so entire: `𝟙⊑length length°`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step2@128390f9
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
-    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @Freyd.Alg.RelSet.Edit.R]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step3@69fd8dc4
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs"),
-    [#src[`length` is a map, so simple, and `F` is monotonic: `F(length°)F(length)⊑F(𝟙)=𝟙`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step4@1ee01952
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs"),
-    [#src[`succ` is monotonic on `≤`: `F(≤)[zero,π₂ succ]⊑[zero,π₂ succ]≤`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step5@de5e293d
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs"),
-    [#src[`F(length)[zero,π₂ succ]=α length` again]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step6@d40f4b4e
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
-    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R]])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
+  lean-calc(calc-edit-mono),
 )]<edit-mono>
 
 // B&dM p.226, "it is sufficient to show that": Proposition 9.4's argument at `Q≜F(⊤,V)`.
