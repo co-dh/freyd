@@ -1228,6 +1228,124 @@ public theorem edit_branch (X : dPair A ⟶ dEdit A) :
       | inr q => exact ⟨q, rfl⟩)
   rwa [hmap] at key
 
+/-! ## edit-laws, third row: Proposition 9.1 splits the body into the book's `X` (p.227) -/
+
+/-- `base` and `step` have disjoint ranges, seen from `base`'s end: `base step°=𝟘`. -/
+public theorem edit_disj' : base (A := A) ≫ (step (A := A))° = 𝟘 :=
+  hom_ext fun _ q => ⟨fun ⟨_, h1, h2⟩ => step_ne_base q (h2.symm.trans h1), fun h => h.elim⟩
+
+/-- `Q≜F(⊤,V)` is the sum `𝟙+(⊤×V)` of its two summands. -/
+public theorem Q_eq_sumMap :
+    Q A = sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
+      (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
+      (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)) :=
+  hom_ext fun u w => by
+    cases u <;> cases w <;>
+      simp [Q, Fbimap, Poly.bimapR, clF, sumMap, junc, sumCop, rprodMap, graph, instHasRelProd]
+
+/-- `F(X)[nil,cons]=[nil,(𝟙×X)cons]`: `F(X)` leaves the leaf alone and recurses in the pair. -/
+public theorem Fα_junc (X : dPair A ⟶ dEdit A) :
+    (F Unit (Op A)).map X ≫ α A
+      = junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
+          (rprodMap (𝟙 (dE (Op A))) X ≫ consR) :=
+  hom_ext fun u z => by
+    cases u with
+    | inl d =>
+      cases d
+      simp [Fbimap, Poly.bimapR, clF, junc, sumCop, τ, α, graph, con, F, Fmap]
+      constructor
+      · rintro ⟨y | y, hy, hz⟩
+        · exact ⟨_, hz⟩
+        · exact hy.elim
+      · rintro ⟨y, hz⟩
+        exact ⟨Sum.inl y, trivial, hz⟩
+    | inr p =>
+      refine (arm_Fmap_con X p z).symm.trans ⟨fun h => Or.inr ⟨p, by simp [sumCop, graph], h⟩, ?_⟩
+      rintro (⟨y, hy, _⟩ | ⟨q, hq, h⟩)
+      · simp [sumCop, graph] at hy
+      · obtain rfl : q = p := by
+          simp [sumCop, graph] at hq
+          first | exact hq | exact hq.symm
+        exact h
+
+/-- The `base` branch of Proposition 9.1 is `nil` on the empty pair: `base°` decomposes `([],[])`
+    one way, so the set is a singleton and `est(R)` returns its one member. -/
+public theorem edit_base_branch :
+    Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R A)
+      = empty ≫ (base (A := A))° ≫ τ := by
+  apply hom_ext; intro p e
+  rw [Λ_eq_classifier]
+  constructor
+  · rintro ⟨p₁, ⟨hid, u, hu1, hu2⟩, S, hS, T, hT, hest⟩
+    obtain ⟨hTe, _⟩ := (est_apply _ _ _).mp hest
+    obtain ⟨x, hx, hxe⟩ := ((powerRel_apply _ _ _).mp hT).2 e hTe
+    obtain rfl : S = _ := hS
+    exact ⟨p, ⟨rfl, hu1⟩, x, hu1, hxe⟩
+  · rintro ⟨p₂, ⟨rfl, hp⟩, u, hu, he⟩
+    refine ⟨p, ⟨rfl, u, hu, hu⟩, fun x => base x p, rfl, fun y => y = e, ?_, ?_⟩
+    · refine (powerRel_apply _ _ _).mpr ⟨fun x hx => ⟨e, ?_, rfl⟩, fun y hy => ⟨u, hu, hy ▸ he⟩⟩
+      cases x; cases u; exact he
+    · exact (est_apply _ _ _).mpr ⟨rfl, fun z hz => hz ▸ Nat.le_refl _⟩
+
+/-- **edit-laws**, third row (B&dM p.227): Proposition 9.1 at `[base,step]` turns the body of
+    `edit_laws` into the book's `X=(empty→nil,(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R))`.  The
+    conditional is the union of its two guarded arms: `cond` needs a Boolean allegory, which
+    `Rel(Set)` is only classically. -/
+public theorem edit_body_split (X : dPair A ⟶ dEdit A) :
+    Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
+        ≫ est (R A)
+      = (empty ≫ (base (A := A))° ≫ τ)
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+  calc Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
+        ≫ est (R A)
+      = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°) ≫ thinRel (Q A)
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by rw [editAlg_junc]
+    _ = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
+          ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
+              (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
+              (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
+          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by rw [Q_eq_sumMap]
+    _ = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
+          ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
+              (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
+              (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
+          ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
+              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := by rw [Fα_junc]
+    _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ thinRel (𝟙 (dL Unit))
+            ≫ powerRel τ ≫ est (R A))
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+        RelSet.dp_disjoint_ranges edit_disj edit_disj'
+    _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R A))
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) := by
+        rw [RelSet.thinRel_id, Cat.id_comp]
+    _ = (empty ≫ (base (A := A))° ≫ τ)
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) := by
+        rw [edit_base_branch]
+
+calc_steps Freyd.Alg.RelSet.Edit.edit_body_split
+
+/-- **edit-laws** (B&dM p.227): `edit_laws` with its body split by Proposition 9.1 — the least
+    fixed point of the book's `X=(empty→nil,(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R))` is a
+    shortest edit sequence. -/
+public theorem edit_X :
+    mu (fun X : dPair A ⟶ dEdit A =>
+        (empty ≫ (base (A := A))° ≫ τ)
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)))
+      ⊑ Λ ((graph (editFn (A := A)))°) ≫ est (R A) := by
+  have h := edit_laws (A := A)
+  simp only [edit_body_split] at h
+  exact h
+
 /-! ## edit-laws, fourth row: `unstep` IS the thinned decomposition -/
 
 /-- **edit-laws**, fourth row: `unstep` implements `frac(step°,∋) thin(U×V)` — the note's own
