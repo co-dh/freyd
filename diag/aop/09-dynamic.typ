@@ -443,7 +443,6 @@
 )]<drop2-le-calc>
 
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
-#import "../generated/Freyd.Alg.star_simulation_unit.calc.typ" as calc-star-unit
 #import "../generated/Freyd.Alg.star_simulation_step.calc.typ" as calc-star-step
 #import "../generated/Freyd.Alg.star_simulation.calc.typ" as calc-comp-star
 // B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
@@ -453,13 +452,6 @@
      // lean:AOP.A9_2_Edit.edit_tail_snd@50716d48
   lean-calc(calc-edit-tail),
 )]<edit-tail-calc>
-
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_simulation_unit") \
-    #src[`B` is contained in any number of `C` then `B`, taking zero `C`]],
-     // lean:AOP.A6_7.star_simulation_unit@32af6c8f
-  lean-calc(calc-star-unit),
-)]<star-unit-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.star_simulation_step") \
