@@ -148,6 +148,11 @@
 // `def` it defines; a cell of content holding a formula is refused, since it would print without it.
 // The `raw` words of a cell: each is unbreakable, so the column holding it can be no narrower than the widest.
 #let raw-atoms(c) = if type(c) != content { () } else if c.func() == raw { c.text.split(" ").filter(s => s != "") } else if c.has("children") { c.children.map(raw-atoms).flatten() } else if c.has("body") { raw-atoms(c.body) } else if c.has("child") { raw-atoms(c.child) } else { () }
+// The TEXT a printed formula reads as, one equation per line: its `raw` pieces in order, a
+// `<case-break>` (and a linebreak between selectors) a newline, the `zws` break points nothing.
+#let plain(c) = if type(c) != content { "" } else if c.at("label", default: none) == <case-break> { "\n" } else if c.func() == raw { c.text } else if c.func() == text { c.text.replace(str(sym.zws), "") } else if c.func() == linebreak { "\n" } else if c.func() == [ ].func() { " " } else if c.has("children") { c.children.map(plain).fold("", (a, b) => a + b) } else if c.has("body") { plain(c.body) } else if c.has("child") { plain(c.child) } else { "" }
+// The `metadata` of a cell, without what it draws.
+#let metas(c) = if type(c) != content { () } else if c.func() == metadata { (c,) } else if c.has("children") { c.children.map(metas).flatten() } else if c.has("body") { metas(c.body) } else if c.has("child") { metas(c.child) } else { () }
 #let deftab(..cells) = context {
   let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
   let def(r) = { let k = lean-keys(r.at(0), labels: (<lean-row-key>,)).at(0, default: none)
@@ -162,12 +167,28 @@
     else { d } }
   let rows = cells.pos().chunks(4)
   layout(size => {
-    let d = calc.max(..rows.map(r => measure([#r.at(0)#def(r)]).width)) + 10pt
     // The meaning column keeps room for its widest unbreakable word (plus the cell's 2×5pt inset).
     let m = calc.max(0pt, ..rows.map(r => raw-atoms(r.at(3))).flatten().map(t => measure(box(raw(t))).width)) + 10pt
-    table(columns: (calc.min(d, (size.width - w - 10.5pt) * 3 / 4, size.width - w - 10.5pt - m), w + 10.5pt, 1fr), align: left + horizon,
-      inset: 5pt, stroke: 0.4pt + luma(190), table.header([*definition*], [*type*], [*meaning*]),
-      ..rows.map(r => ([#r.at(0)#def(r)], r.at(1), r.at(3))).flatten())
+    let cap = calc.min((size.width - w - 10.5pt) * 3 / 4, size.width - w - 10.5pt - m)
+    // A definition fits when each equation stays on one line in the capped column; one that would wrap
+    // mid-equation leaves the table for a code block after it, so the column is as wide as the rest.
+    let nat = rows.map(r => measure([#r.at(0)#def(r)]).width + 10pt)
+    let fit = nat.map(x => x <= cap)
+    let kept = range(rows.len()).filter(i => fit.at(i))
+    // A moved row keeps its cell's metadata (row key, formula key), so it is still cited and regenerated.
+    let cell(i) = { let r = rows.at(i); if fit.at(i) { [#r.at(0)#def(r)] } else { [#r.at(0)#metas(def(r)).join()] } }
+    let style = (align: left + horizon, inset: 5pt, stroke: 0.4pt + luma(190))
+    if kept.len() == 0 {
+      table(columns: (w + 10.5pt, 1fr), ..style, table.header([*type*], [*meaning*]),
+        ..range(rows.len()).map(i => ([#cell(i)#rows.at(i).at(1)], rows.at(i).at(3))).flatten())
+    } else {
+      table(columns: (calc.max(..kept.map(i => nat.at(i))), w + 10.5pt, 1fr), ..style,
+        table.header([*definition*], [*type*], [*meaning*]),
+        ..range(rows.len()).map(i => (cell(i), rows.at(i).at(1), rows.at(i).at(3))).flatten())
+    }
+    let moved = range(rows.len()).filter(i => not fit.at(i))
+    // Trimmed: the space an `include`d file's markup puts around its formula is no part of the print.
+    if moved.len() > 0 { raw(moved.map(i => plain(def(rows.at(i))).split("\n").map(str.trim).join("\n")).join("\n\n"), lang: "haskell", block: true) }
   })
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
