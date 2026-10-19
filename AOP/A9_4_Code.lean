@@ -39,6 +39,14 @@ public import AOP.A7_2_RelSet
 public import AOP.A8_3
 public import AOP.A9_1
 
+/-- B&dM §9.4's fixed data: `c` and `p`, the constant costs of a symbol and a pointer.  Every
+    definition below reads them from the one instance in scope, so the printer, which hides
+    instance arguments, shows the book's `size`, not `size c p`.  The class is named after the
+    section's namespace, so its fields are the bare names `c`, `p`. -/
+public class Freyd.Alg.RelSet.Code where
+  c : Nat
+  p : Nat
+
 namespace Freyd.Alg.RelSet.Code
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.SL
@@ -55,7 +63,7 @@ macro:max "dStr" : term => `(dSL Unit Char)
 
 /-- **code-defn**: `list⁺ A::=wrap A∣snoc (list⁺ A,A)`, the non-empty snoc-lists — a `SnocList`
     whose base is itself one `A`, so `String⁺` is `SnocNE Char`. -/
-@[expose] public def SnocNE (A : Type) : Type := SnocList A A
+@[expose] public def L (A : Type) : Type := SnocList A A
 
 /-- **code-defn**: `Code::=sym Char∣ptr (String,String⁺)`.  `String⁺` is the guard `zs≠nil`
     inside `extend`, not a second datatype. -/
@@ -237,32 +245,32 @@ public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nil extend := b
 @[expose] public def decode : dCodes ⟶ dStr := cataR extendAlg
 
 /-- **code-defn**: `c`, `p` the constant costs of a symbol and a pointer. -/
-@[expose] public def bytes (c p : Nat) : Code → Nat
+@[expose] public def bytes [RelSet.Code] : Code → Nat
   | Code.sym _ => c
   | Code.ptr _ _ => p
 
 /-- **code-defn**: `distr [𝟙×c,𝟙×p] plus`, the step arm of the size algebra — a def of its own, so
     the junction below is written by its arms' names and no arm is a lambda. -/
-@[expose] public def sizeArmFn (c p : Nat) (q : Nat × Code) : Nat := q.1 + bytes c p q.2
+@[expose] public def sizeArmFn [RelSet.Code] (q : Nat × Code) : Nat := q.1 + bytes q.2
 
 /-- **code-defn**: the algebra `[zero,distr [𝟙×c,𝟙×p] plus]` whose fold is `size`. -/
-@[expose] public def sizeAlgFn (c p : Nat) :
+@[expose] public def sizeAlgFn [RelSet.Code] :
     (Fobj Unit Code (⟨Nat⟩ : RelSet.{0})).carrier → Nat
   | Sum.inl _ => 0
-  | Sum.inr q => sizeArmFn c p q
+  | Sum.inr q => sizeArmFn q
 
 /-- **code-defn**: `size`, read as the function it is. -/
-@[expose] public def sizeFn (c p : Nat) : SnocList Unit Code → Nat
+@[expose] public def size [RelSet.Code] : SnocList Unit Code → Nat
   | SnocList.wrap _ => 0
-  | SnocList.snoc cs e => sizeFn c p cs + bytes c p e
+  | SnocList.snoc cs e => size cs + bytes e
 
-variable (c p : Nat)
+
 
 /-- **code-defn**: `size≜⦇[zero,distr [𝟙×c,𝟙×p] plus]⦈` — the fold of `sizeAlgFn` IS `sizeFn`. -/
-public theorem size_cata :
-    cataR (graph (sizeAlgFn c p) :
+public theorem size_cata [RelSet.Code] :
+    cataR (graph (sizeAlgFn) :
         Fobj Unit Code (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}))
-      = (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) := by
+      = (graph (size) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) := by
   apply hom_ext; intro cs
   induction cs with
   | wrap _ => exact fun _ => Iff.rfl
@@ -270,36 +278,36 @@ public theorem size_cata :
     intro n
     constructor
     · rintro ⟨m, hm, hn⟩
-      have hm' : m = sizeFn c p cs' := (ih m).mp hm
+      have hm' : m = size cs' := (ih m).mp hm
       subst hm'
       exact hn
     · intro h
-      exact ⟨sizeFn c p cs', (ih _).mpr rfl, h⟩
+      exact ⟨size cs', (ih _).mpr rfl, h⟩
 
 /-- **code-defn**: `R≜size≤size°`. -/
-@[expose] public def R (c p : Nat) : dCodes ⟶ dCodes := fun xs ys => sizeFn c p xs ≤ sizeFn c p ys
+@[expose] public def R [RelSet.Code] : dCodes ⟶ dCodes := fun xs ys => size xs ≤ size ys
 
 /-- `R = size≤size°`, point-free. -/
-public theorem R_eq :
-    R c p = (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
-      ≫ (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+public theorem R_eq [RelSet.Code] :
+    R = (graph (size) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+      ≫ (graph (size) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   apply hom_ext; intro u v
   constructor
-  · intro h; exact ⟨sizeFn c p u, rfl, sizeFn c p v, h, rfl⟩
+  · intro h; exact ⟨size u, rfl, size v, h, rfl⟩
   · rintro ⟨m, hm, n, hmn, hn⟩
-    obtain rfl : m = sizeFn c p u := hm
-    obtain rfl : n = sizeFn c p v := hn
+    obtain rfl : m = size u := hm
+    obtain rfl : n = size v := hn
     exact hmn
 
 /-- **code-defn**, pointwise: `xs R ys` iff `xs` costs no more than `ys`. -/
-public theorem R_apply (xs ys : SnocList Unit Code) : R c p xs ys ↔ sizeFn c p xs ≤ sizeFn c p ys :=
+public theorem R_apply [RelSet.Code] (xs ys : SnocList Unit Code) : R xs ys ↔ size xs ≤ size ys :=
   Iff.rfl
 
 /-- `R°` is transitive — Theorem 9.2's `htrans`. -/
-public theorem R_recip_trans : (R c p)° ≫ (R c p)° ⊑ (R c p)° :=
+public theorem R_recip_trans [RelSet.Code] : (R)° ≫ (R)° ⊑ (R)° :=
   le_iff.mpr fun u w h => by
     obtain ⟨v, h1, h2⟩ := h
-    exact Nat.le_trans (h2 : sizeFn c p w ≤ sizeFn c p v) (h1 : sizeFn c p v ≤ sizeFn c p u)
+    exact Nat.le_trans (h2 : size w ≤ size v) (h1 : size v ≤ size u)
 
 /-! ## `code-defn`: `U`, `V`, `Q` -/
 
@@ -336,7 +344,7 @@ public theorem U_eq :
         | rcases hst with ⟨_, h₁, _, _, h₂⟩ | ⟨_, h₁, _, _, h₂⟩ <;> first | (cases h₁ <;> done) | (cases h₂ <;> done)
 
 /-- The book's "the sizes of symbols and pointers are constants", `[c,p](⊤+⊤)=[c,p]`. -/
-public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
+public theorem bytes_U [RelSet.Code] : ∀ {e f : Code}, U e f → bytes e = bytes f
   | Code.sym _, Code.sym _, _ => rfl
   | Code.ptr _ _, Code.ptr _ _, _ => rfl
   | Code.sym _, Code.ptr _ _, h => h.elim
@@ -354,7 +362,7 @@ public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
 /-- **code-laws**, second row: `F(⊤+⊤,R)α⊑αR`, the book's "routine" monotonicity condition —
     `snoc` adds one code element to both sides and its cost is a constant, so it never reverses
     `≤` on sizes. -/
-public theorem code_mono : Freyd.Alg.Pres (F := F Unit Code) (graph con) ((R c p)°) :=
+public theorem code_mono [RelSet.Code] : Freyd.Alg.Pres (F := F Unit Code) (graph con) ((R)°) :=
   le_iff.mpr fun u out h => by
     obtain ⟨v, hFv, hout⟩ := h
     obtain rfl : out = con v := hout
@@ -368,9 +376,9 @@ public theorem code_mono : Freyd.Alg.Pres (F := F Unit Code) (graph con) ((R c p
       | inl _ => exact hFv.elim
       | inr r =>
         refine ⟨SnocList.snoc q.1 q.2, rfl, ?_⟩
-        show sizeFn c p r.1 + bytes c p r.2 ≤ sizeFn c p q.1 + bytes c p q.2
+        show size r.1 + bytes r.2 ≤ size q.1 + bytes q.2
         rw [← (hFv.2 : q.2 = r.2)]
-        exact Nat.add_le_add_right (hFv.1 : sizeFn c p r.1 ≤ sizeFn c p q.1) _
+        exact Nat.add_le_add_right (hFv.1 : size r.1 ≤ size q.1) _
 
 /-- **code-laws**, third row (Proposition 9.1, B&dM p.241): the decompositions of a non-empty
     string — take the last character as a symbol, or end with a pointer. -/
@@ -409,9 +417,9 @@ public theorem code_decomp (ws : Str) (a : Char) (xs : Str) (e : Code) :
     directly.  Dropping the last character drops the last `sym` (cheaper), shortens the last
     pointer's target (same cost), or drops that pointer (cheaper); everything earlier is the
     induction hypothesis. -/
-public theorem decode_prefix :
+public theorem decode_prefix [RelSet.Code] :
     ∀ (cs : SnocList Unit Code) (w : Str), decode cs w → ∀ x : Str, prefixS x w →
-      ∃ cs₀, decode cs₀ x ∧ sizeFn c p cs₀ ≤ sizeFn c p cs := by
+      ∃ cs₀, decode cs₀ x ∧ size cs₀ ≤ size cs := by
   intro cs
   induction cs with
   | wrap _ =>
@@ -429,32 +437,32 @@ public theorem decode_prefix :
       · exact ⟨SnocList.snoc cs (Code.sym a), ⟨w', hw', rfl⟩, Nat.le_refl _⟩
       · obtain ⟨cs₀, hcs₀, hle⟩ := ih w' hw' x hx
         refine ⟨cs₀, hcs₀, ?_⟩
-        show sizeFn c p cs₀ ≤ sizeFn c p cs + c
+        show size cs₀ ≤ size cs + c
         omega
     | ptr ys zs =>
       obtain ⟨rfl, hzs, hpp⟩ := hstep
       rcases prefixS_sappend_split x w' zs hx with hxu | ⟨zs', hzs', rfl⟩
       · obtain ⟨cs₀, hcs₀, hle⟩ := ih w' hw' x hxu
         refine ⟨cs₀, hcs₀, ?_⟩
-        show sizeFn c p cs₀ ≤ sizeFn c p cs + p
+        show size cs₀ ≤ size cs + p
         omega
       · cases zs' with
         | wrap _ =>
           refine ⟨cs, hw', ?_⟩
-          show sizeFn c p cs ≤ sizeFn c p cs + p
+          show size cs ≤ size cs + p
           omega
         | snoc zs₀ b =>
           refine ⟨SnocList.snoc cs (Code.ptr ys (SnocList.snoc zs₀ b)), ⟨w', hw', ?_⟩, ?_⟩
           · exact ⟨rfl, snoc_ne_wrap zs₀ b, properPrefixS_shorten hpp hzs'⟩
-          · show sizeFn c p cs + p ≤ sizeFn c p cs + p
+          · show size cs + p ≤ size cs + p
             exact Nat.le_refl _
 
 /-- **code-laws**, third row: Proposition 9.4's `hV`, `prefix° decode°⊑decode° R`. -/
-public theorem code_V :
-    (prefixR)° ≫ decode° ⊑ decode° ≫ R c p :=
+public theorem code_V [RelSet.Code] :
+    (prefixR)° ≫ decode° ⊑ decode° ≫ R :=
   le_iff.mpr fun x cs h => by
     obtain ⟨w, hV, hw⟩ := h
-    exact decode_prefix c p cs w hw x hV
+    exact decode_prefix cs w hw x hV
 
 /-! ### `code-thin` — Proposition 9.4 at `Q≜F(⊤+⊤,prefix°)`, one step per fact (B&dM p.240) -/
 
@@ -541,8 +549,8 @@ public theorem code_thin_step2 :
   rw [← Cat.assoc, Fbimap_Fmap]
 
 /-- `code-thin`, third step: Proposition 9.4's `prefix° decode°⊑decode° R` (`code_V`). -/
-public theorem code_thin_step3 :
-    Fbimap U (prefixR° ≫ decode°) ≫ graph con ⊑ Fbimap U (decode° ≫ R c p) ≫ graph con :=
+public theorem code_thin_step3 [RelSet.Code] :
+    Fbimap U (prefixR° ≫ decode°) ≫ graph con ⊑ Fbimap U (decode° ≫ R) ≫ graph con :=
   comp_mono_right (le_iff.mpr fun u w h => by
     cases u with
     | inl _ => cases w with
@@ -550,19 +558,19 @@ public theorem code_thin_step3 :
       | inr _ => exact h.elim
     | inr _ => cases w with
       | inl _ => exact h.elim
-      | inr _ => exact ⟨le_iff.mp (code_V c p) _ _ h.1, h.2⟩) _
+      | inr _ => exact ⟨le_iff.mp (code_V) _ _ h.1, h.2⟩) _
 
 /-- `code-thin`, fourth step: `F(U,decode° R)=F(decode°)F(U,R)`. -/
-public theorem code_thin_step4 :
-    Fbimap U (decode° ≫ R c p) ≫ graph con
-      = (F Unit Code).map (decode°) ≫ Fbimap U (R c p) ≫ graph con := by
+public theorem code_thin_step4 [RelSet.Code] :
+    Fbimap U (decode° ≫ R) ≫ graph con
+      = (F Unit Code).map (decode°) ≫ Fbimap U (R) ≫ graph con := by
   rw [← Cat.assoc, Fmap_Fbimap]
 
 /-- `code-thin`, fifth step: Proposition 9.4's `F(⊤+⊤,R)α⊑αR` — `snoc` adds the cost of the last
     code element to both sides, and `[c,p](⊤+⊤)=[c,p]` (`bytes_U`) makes it the same cost. -/
-public theorem code_thin_step5 :
-    (F Unit Code).map (decode°) ≫ Fbimap U (R c p) ≫ graph con
-      ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R c p :=
+public theorem code_thin_step5 [RelSet.Code] :
+    (F Unit Code).map (decode°) ≫ Fbimap U (R) ≫ graph con
+      ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R :=
   comp_mono_left _ (le_iff.mpr fun u out h => by
     obtain ⟨v, hv, hout⟩ := h
     obtain rfl : out = con v := hout
@@ -574,22 +582,22 @@ public theorem code_thin_step5 :
     | inr a => cases v with
       | inl _ => exact hv.elim
       | inr b =>
-        show sizeFn c p a.1 + bytes c p a.2 ≤ sizeFn c p b.1 + bytes c p b.2
-        rw [bytes_U c p hv.2]
+        show size a.1 + bytes a.2 ≤ size b.1 + bytes b.2
+        rw [bytes_U hv.2]
         exact Nat.add_le_add_right hv.1 _)
 
 /-- **code-laws**, second row: Theorem 9.2's thinning condition, Proposition 9.4 at `U≜⊤+⊤` and
     `V≜prefix°`.  `U` leaves the code element free but pins its cost, `code_V` supplies the
     cheaper code sequence for the shorter output, and `snoc` adds the same constant to both. -/
-public theorem code_thin_condition :
+public theorem code_thin_condition [RelSet.Code] :
     Q ≫ (F Unit Code).map (decode°) ≫ graph con
-      ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R c p :=
+      ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R :=
   calc Q ≫ (F Unit Code).map (decode°) ≫ graph con
       _ = _ := code_thin_step1
       _ = _ := code_thin_step2
-      _ ⊑ _ := code_thin_step3 c p
-      _ = _ := code_thin_step4 c p
-      _ ⊑ _ := code_thin_step5 c p
+      _ ⊑ _ := code_thin_step3
+      _ = _ := code_thin_step4
+      _ ⊑ _ := code_thin_step5
 
 /-- **code-laws** (B&dM §9.4, p.240): a smallest code sequence decoding to the given string is
     the least fixed point of `(μX : Λ([nil,extend]°) thin(Q) P([nil,(X×𝟙)snoc]) est(R))` —
@@ -597,12 +605,12 @@ public theorem code_thin_condition :
     `R`-smallest.  Theorem 9.2 at `Q≜𝟙+(prefix°×(⊤+⊤))`, with `code_mono` the monotonicity
     condition and `code_thin_condition` the thinning one.  `H = ⦇α⦈·⦇[nil,extend]⦈°` collapses to
     `decode°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
-public theorem code_laws :
+public theorem code_laws [RelSet.Code] :
     mu (fun X : dStr ⟶ dCodes =>
         Λ ((junc (sumCop _ _) nil extend
               : Alg (F Unit Code) dStr)°) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR) ≫ est (R c p))
-      ⊑ Λ (Allegory.recip decode) ≫ est (R c p) := by
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR) ≫ est (R))
+      ⊑ Λ (Allegory.recip decode) ≫ est (R) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   have hH : (relCata (F := F Unit Code) extendAlg)°
         ≫ relCata (F := F Unit Code) (I := initial Unit Code)
@@ -612,8 +620,8 @@ public theorem code_laws :
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit Code)
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
-    («≤» := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
-    (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p)
+    («≤» := R) (Q := Q) (graph_map con) (code_mono) (R_recip_trans)
+    (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition)
   simp only [H, M] at key; rwa [hH] at key
 
 /-- `extend` never returns the empty string: the symbol case snocs, and the pointer case appends
@@ -673,17 +681,17 @@ public theorem code_disj : extend ≫ (nil : dL Unit ⟶ dStr)° = 𝟘 :=
     branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)` refines `code_laws`' body
     `([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)` — `AOP.A9_1.thin_arm₂_le` at
     `[nil,extend]`, whose `Q₂` at `Q≜𝟙+(prefix°×(⊤+⊤))` is `prefix°×(⊤+⊤)`. -/
-public theorem code_branch (X : dStr ⟶ dCodes) :
+public theorem code_branch [RelSet.Code] (X : dStr ⟶ dCodes) :
     Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R c p)
+        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R)
       ⊑ Λ ((junc (sumCop _ _) nil extend
               : Alg (F Unit Code) dStr)°) ≫ thinRel Q
           ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR)
-          ≫ est (R c p) := by
+          ≫ est (R) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   -- `T` and `U` are named because `arm₂ ?T = extend` is a higher-order unification the elaborator
   -- will not solve; `arm₂_extendAlg` and `arm₂_con` say the two arms are these, definitionally.
-  exact thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R c p)
+  exact thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R)
     (U := graph (con (L := Unit) (E := Code)))
     fun _d q w h1 h2 => extend_ne_nil q w h2 (h1 : w = SnocList.wrap ())
 
@@ -981,10 +989,10 @@ public theorem mem_reduce (ws : Str) (q : Str × Code) :
     is free on the way in — `prefix°×(⊤+⊤)` is
     reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`
     would exploit. -/
-public theorem code_prog (encode : dStr ⟶ dCodes) :
-    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R c p)
+public theorem code_prog [RelSet.Code] (encode : dStr ⟶ dCodes) :
+    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R)
       ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
   have hmem : ∀ w : Str, (fun q => ListRel.inlistP (reduceFn w) q) = fun q => extendP q w :=
     fun w => funext fun q => propext (mem_reduce w q)
   have hred : reduce ≫ ListRel.setify = Λ (extend°) := by
@@ -1003,17 +1011,17 @@ public theorem code_prog (encode : dStr ⟶ dCodes) :
       cases e with
       | sym _ => exact trivial
       | ptr _ _ => exact trivial
-  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R c p)
+  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R)
       ⊑ reduce ≫ ListRel.setify
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) :=
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) :=
         comp_mono_left reduce (CL.list_comp_minL_le _ _)
-    _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+    _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
         rw [← Cat.assoc, hred]
     _ ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
         refine comp_mono_left _ ?_
         have h := comp_mono_right (id_le_thinRel hrefl)
-          (powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p))
+          (powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R))
         rwa [Cat.id_comp] at h
 
 -- `extend` keeps its namespace where `decode` does not, `Freyd.UF.Filter.extend` sharing the name;
@@ -1064,21 +1072,6 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `String))
 
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Code.SnocNE] public meta def unexpandSnocNE : Unexpander
-  | `($_ $a) => `($(mkIdent (Name.mkSimple "L")) $a)
-  | _ => `($(mkIdent (Name.mkSimple "L")))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Code.sizeFn] public meta def unexpandSizeFn : Unexpander
-  | `($_ $_ $_ $x $args*) => `($(mkIdent `size) $x $args*)
-  | _ => `($(mkIdent `size))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Code.bytes] public meta def unexpandBytes : Unexpander
-  | `($_ $_ $_ $x $args*) => `($(mkIdent `bytes) $x $args*)
-  | _ => `($(mkIdent `bytes))
-
-open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.extendP] public meta def unexpandExtendP : Unexpander
   | `($_ $args*) => `($(mkIdent `extend) $args*)
   | _ => `($(mkIdent `extend))
@@ -1093,9 +1086,6 @@ end Freyd.Alg.RelSet.Code
 -- `y`", the note's `prefix°` (`Q≜F(⊤+⊤,prefix°)`), its proper part the book's `init⁺`, and the
 -- string append the book's `cat`.  The size algebra's node arm is written by its body
 -- `distr [𝟙×c,𝟙×p] plus`: it computes on points, so its body prints no arrow.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Code.R] public meta def Freyd.Alg.RelSet.Code.unexpandCodeR : Unexpander
-  | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.prefixS] public meta def Freyd.Alg.RelSet.Code.unexpandCodePrefixS : Unexpander
   | `($_ $args*) => `($(mkIdent (Name.mkSimple "prefix°")) $args*)

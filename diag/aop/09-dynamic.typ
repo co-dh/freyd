@@ -625,20 +625,20 @@
   [#rowkey("Freyd.Alg.RelSet.Bracket.flatten")], [#leant("Freyd.Alg.RelSet.Bracket.flatten")],
   "Freyd.Alg.RelSet.Bracket.flatten_cata",
   [the tips of a tree, left to right; `H=flatten°` builds every tree over a list],
-  [#rowkey("Freyd.Alg.RelSet.Bracket.opbFn")], [#leant("Freyd.Alg.RelSet.Bracket.opbFn")],
-  "Freyd.Alg.RelSet.Bracket.opbFn",
+  [#rowkey("Freyd.Alg.RelSet.Bracket.opb")], [#leant("Freyd.Alg.RelSet.Bracket.opb")],
+  "Freyd.Alg.RelSet.Bracket.opb",
   [joining two subtrees costs `cb` of their sizes plus the cost of each],
   [#rowkey("Freyd.Alg.RelSet.Bracket.costSizeFn")], [#leant("Freyd.Alg.RelSet.Bracket.costSizeFn")],
   "Freyd.Alg.RelSet.Bracket.costSizeFn",
   [the cost of evaluating a bracketing, paired with the size of its result],
-  [#rowkey("Freyd.Alg.RelSet.Bracket.szFn")], [#leant("Freyd.Alg.RelSet.Bracket.szFn")],
-  ("Freyd.Alg.RelSet.Bracket.szFn", "Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten"),
+  [#rowkey("Freyd.Alg.RelSet.Bracket.sz")], [#leant("Freyd.Alg.RelSet.Bracket.sz")],
+  ("Freyd.Alg.RelSet.Bracket.sz", "Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten"),
   [`sb` associative, so the size depends only on the flattened list],
   [#rowkey("Freyd.Alg.RelSet.Bracket.R")], [#leant("Freyd.Alg.RelSet.Bracket.R")],
   "Freyd.Alg.RelSet.Bracket.R_eq",
   [`t` costs no more than `t'`],
-  [#rowkey("Freyd.Alg.RelSet.Bracket.gR")], [#leant("Freyd.Alg.RelSet.Bracket.gR")],
-  "Freyd.Alg.RelSet.Bracket.gR",
+  [#rowkey("Freyd.Alg.RelSet.Bracket.g")], [#leant("Freyd.Alg.RelSet.Bracket.g")],
+  "Freyd.Alg.RelSet.Bracket.g",
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#rowkey("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
   "Freyd.Alg.RelSet.Bracket.nonsingleP",
@@ -665,12 +665,12 @@
   [#rowkey("Freyd.Alg.RelSet.Bracket.process")], [#leant("Freyd.Alg.RelSet.Bracket.process")],
   "Freyd.Alg.RelSet.Bracket.process",
   [start the column at a tip and run `next` over the rows],
-// lean:AOP.A9_3_Bracket.gFn_inl@8e7dad0f lean:AOP.A9_3_Bracket.gFn_inr@2e7bf01a
-// lean:AOP.A9_3_Bracket.array_apply@afffb79a lean:AOP.A9_3_Bracket.row_apply@a1d6b91f lean:AOP.A9_3_Bracket.col_apply@df9fde94
-// lean:AOP.A9_3_Bracket.mix_apply@21bdbc9b lean:AOP.A9_3_Bracket.next_apply@6ab79196 lean:AOP.A9_3_Bracket.process_apply@a365e25c
+// lean:AOP.A9_3_Bracket.gFn_inl@b706247d lean:AOP.A9_3_Bracket.gFn_inr@76fc894d
+// lean:AOP.A9_3_Bracket.array_apply@f4c47555 lean:AOP.A9_3_Bracket.row_apply@eee856bc lean:AOP.A9_3_Bracket.col_apply@62712637
+// lean:AOP.A9_3_Bracket.mix_apply@296e22c0 lean:AOP.A9_3_Bracket.next_apply@9e083a90 lean:AOP.A9_3_Bracket.process_apply@42bd7a9a
 // lean:AOP.A9_3_Bracket.flatten_cata@60392b59
-// lean:AOP.A9_3_Bracket.size_eq_sz_flatten@bc971c19
-// lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
+// lean:AOP.A9_3_Bracket.size_eq_sz_flatten@4ae25bad
+// lean:AOP.A9_3_Bracket.R_eq@a0195153
 )]<mct-defn>
 
 // B&dM (9.5), p. 232: the book's five hints, one row each.
@@ -678,35 +678,35 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_cost_alg") \
     #src[pairing each subtree with its cost and its flattening and then applying `g` gives what
      building the tree by `[tip,bin]` and taking its `cost` gives]],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg@8136caaf
+     // lean:AOP.A9_3_Bracket.mct_cost_alg@3383882b
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs"), [])],
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
-    [#src[definition of `g`; coproducts and products — @Freyd.Alg.RelSet.Bracket.gR]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@bd41663a
+    [#src[definition of `g`; coproducts and products — @Freyd.Alg.RelSet.Bracket.g]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@547e865e
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
-    [#src[`flatten sz=size`, since `sb` is associative — @Freyd.Alg.RelSet.Bracket.szFn]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@bda5c00f
+    [#src[`flatten sz=size`, since `sb` is associative — @Freyd.Alg.RelSet.Bracket.sz]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@8f1b9928
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs"),
     [#src[`⟨cost,size⟩≜⦇[opt,opb]⦈`, at a node `bin⟨cost,size⟩=⟨cost,size⟩² opb`]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step3@7809a574
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step3@e9dd6144
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs"),
     [#src[`tip cost=zero`; products, `⟨cost,size⟩π₁=cost`]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step4@a9886b38
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step4@cd364f2f
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs"),
     [#src[coproducts, `[tip cost,bin cost]=[tip,bin] cost`]])],
-     // lean:AOP.A9_3_Bracket.mct_cost_alg_step5@43028133
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step5@5194b724
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs")],
 )]<mct-cost>
 
@@ -715,30 +715,30 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_g_mono") \
     #src[raising the cost of either subtree (`≤×𝟙` in both slots) and then applying `g` returns a
      value at least what `g` returns on the costs before raising (`g≤`)]],
-     // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
+     // lean:AOP.A9_3_Bracket.mct_g_mono@f15a579d
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs"), [])],
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
-    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
-     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bfddbbdc
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.g]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@1476b33f
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs"),
     [#src[definition of `opb`, and `+` monotonic]])],
-     // lean:AOP.A9_3_Bracket.mct_g_mono_step2@43f63ff6
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step2@2ab3ae4b
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs"),
     [#src[`≤` reflexive, so `zero⊑zero ≤`; coproducts]])],
-     // lean:AOP.A9_3_Bracket.mct_g_mono_step3@5fae54f1
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step3@2c173402
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs"),
-    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
-     // lean:AOP.A9_3_Bracket.mct_g_mono_step4@cb9454b8
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.g]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step4@6ad8717d
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
 )]<mct-g-mono>
 
@@ -764,14 +764,14 @@
      #src[split the list in every way, bracket both halves, join. The condition is
       monotonicity *in context*, `F(R∩(flatten flatten°))h⊑hR`
  #src[] — only trees with the same flattening
-      // lean:AOP.A9_3_Bracket.mct_mono@4ac5e312
+      // lean:AOP.A9_3_Bracket.mct_mono@7974a37e
       are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
  `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[]
-      // lean:AOP.A9_3_Bracket.mct_cost_alg@8136caaf
+      // lean:AOP.A9_3_Bracket.mct_cost_alg@3383882b
       (the cost of a node reads only the cost and the
       flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤`
  #src[] (`g` monotonic on `≤` in its two
-      // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
+      // lean:AOP.A9_3_Bracket.mct_g_mono@f15a579d
       cost arguments)]])],
   // `[τ,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `L` dies and is remade at both, so it runs as a loop between them.
@@ -818,7 +818,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.mct_rec") \
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
-     // lean:AOP.A9_3_Bracket.mct_rec@0b3fb980
+     // lean:AOP.A9_3_Bracket.mct_rec@a5f19fbc
   lean-calc(calc-mct, breaks: (3, 6, 9)),
 )]<mct-rec>
 
@@ -827,7 +827,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.col_rec") \
     #src[on a list of two or more elements, the column is what `next` makes of the column of its
      `init` and the row of its `tail`]],
-     // lean:AOP.A9_3_Bracket.col_rec@458df9db
+     // lean:AOP.A9_3_Bracket.col_rec@52e069f7
   lean-calc(calc-col, breaks: (3, 6, 9)),
 )]<col-rec>
 
@@ -836,7 +836,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.row_rec") \
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
-     // lean:AOP.A9_3_Bracket.row_rec@ac60c20d
+     // lean:AOP.A9_3_Bracket.row_rec@5fa19994
   lean-calc(calc-row, breaks: (3,)),
 )]<row-rec>
 
@@ -844,7 +844,7 @@
 #disp(num: "(9.9)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.col_cons") \
     #src[the column of `a` consed onto `x` is what `process` makes of `a` and the array of `x`]],
-     // lean:AOP.A9_3_Bracket.col_cons@c6b5beca
+     // lean:AOP.A9_3_Bracket.col_cons@06a74a7d
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs"), [])],
@@ -853,17 +853,17 @@
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs"),
     [#src[Exercise 9.13 with `k≜cons col`, `g≜tip τ`, `h≜row`, `f≜next`: its two equations are
      (9.8) — @col-rec — at `a:[b]` and at `a:(u++[b])`, with `[a] col=[tip(a)]`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step1@267e6a07
+     // lean:AOP.A9_3_Bracket.col_cons_step1@ab9a865b
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs"),
     [#src[products]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step2@fb9fd2d4
+     // lean:AOP.A9_3_Bracket.col_cons_step2@b24ac36a
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs"),
     [#src[definition of `process`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step3@2219293b
+     // lean:AOP.A9_3_Bracket.col_cons_step3@5e8c7208
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs")],
 )]<col-cons>
 
@@ -873,7 +873,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.tops_rec") \
     #src[the trees at the top of the new rows are what `process` makes of `a` and the array of `x`,
      less its first]],
-     // lean:AOP.A9_3_Bracket.tops_rec@a3fe95e7
+     // lean:AOP.A9_3_Bracket.tops_rec@c81a6d3b
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.tops_step1.lhs"), [])],
@@ -881,24 +881,24 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step1.rhs"),
     [#src[definition of `tops≜tic mct′`, our name]])],
-     // lean:AOP.A9_3_Bracket.tops_step1@59fe41e2
+     // lean:AOP.A9_3_Bracket.tops_step1@d417731b
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step2.rhs"),
     [#src[`tail f′=f′ tail`; definition of `col`]])],
-     // lean:AOP.A9_3_Bracket.tops_step2@9efb823a
+     // lean:AOP.A9_3_Bracket.tops_step2@d1ff7714
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step3.rhs"),
     [#src[(9.9) — @col-cons]])],
-     // lean:AOP.A9_3_Bracket.tops_step3@66fd7405
+     // lean:AOP.A9_3_Bracket.tops_step3@a91cb527
   [#lean("Freyd.Alg.RelSet.Bracket.tops_step3.rhs")],
 )]<tops-rec>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.rests_eq") \
     #src[the rest of each new row is the array of `x`]],
-     // lean:AOP.A9_3_Bracket.rests_eq@5c50e0a4
+     // lean:AOP.A9_3_Bracket.rests_eq@2646b6c5
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.rests_step1.lhs"), [])],
@@ -906,12 +906,12 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step1.rhs"),
     [#src[definition of `rests≜tic (tail row)′`, our name]])],
-     // lean:AOP.A9_3_Bracket.rests_step1@f4799061
+     // lean:AOP.A9_3_Bracket.rests_step1@f95b9e1e
   [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step2.rhs"),
     [#src[`tic tail′=π₂ inits`; definition of `array`]])],
-     // lean:AOP.A9_3_Bracket.rests_step2@81975272
+     // lean:AOP.A9_3_Bracket.rests_step2@30450892
   [#lean("Freyd.Alg.RelSet.Bracket.rests_step2.rhs")],
 )]<rests-eq>
 
@@ -919,7 +919,7 @@
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.newrows_rec") \
     #src[the rows of the array of `a:x` below its first are what `step` makes of `a` and the array
      of `x`]],
-     // lean:AOP.A9_3_Bracket.newrows_rec@0453777f
+     // lean:AOP.A9_3_Bracket.newrows_rec@dce0bfb9
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.newrows_step1.lhs"), [])],
@@ -927,29 +927,29 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs"),
     [#src[definition of `newrows≜tic row′`, our name]])],
-     // lean:AOP.A9_3_Bracket.newrows_step1@74ecf218
+     // lean:AOP.A9_3_Bracket.newrows_step1@832ce213
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs"),
     [#src[(9.10) — @row-rec — on the non-singleton `tic` lists]])],
-     // lean:AOP.A9_3_Bracket.newrows_step2@eaeb99ff
+     // lean:AOP.A9_3_Bracket.newrows_step2@870508e2
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs"),
     [#src[`⟨f,g⟩′=⟨f′,g′⟩ zip`; products; definitions of `tops` and `rests`]])],
-     // lean:AOP.A9_3_Bracket.newrows_step3@1cfc3a93
+     // lean:AOP.A9_3_Bracket.newrows_step3@f90cbb71
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step4.rhs"),
     [#src[@tops-rec and @rests-eq; products; definition of `step`]])],
-     // lean:AOP.A9_3_Bracket.newrows_step4@52928f12
+     // lean:AOP.A9_3_Bracket.newrows_step4@0f2a00ae
   [#lean("Freyd.Alg.RelSet.Bracket.newrows_step4.rhs")],
 )]<newrows-rec>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.array_cons") \
     #src[the array of `a` consed onto `x` is what `addcol` makes of `a` and the array of `x`]],
-     // lean:AOP.A9_3_Bracket.array_cons@f952f1b1
+     // lean:AOP.A9_3_Bracket.array_cons@3a576db5
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.lhs"), [])],
@@ -957,27 +957,27 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs"),
     [#src[definition of `array`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step1@e1800151
+     // lean:AOP.A9_3_Bracket.array_cons_step1@fb70fd79
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs"),
     [#src[`cons inits=⟨π₁ τ,tic⟩ cons`, abbreviating `cons inits tail` by `tic`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step2@a505d5a0
+     // lean:AOP.A9_3_Bracket.array_cons_step2@3074a601
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs"),
     [#src[`cons f′=(f×f′) cons`; definition of `newrows`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step3@beead9eb
+     // lean:AOP.A9_3_Bracket.array_cons_step3@4e0c69ff
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs"),
     [#src[`τ row=tip τ`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step4@19fec047
+     // lean:AOP.A9_3_Bracket.array_cons_step4@e8e7a206
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs"),
     [#src[@newrows-rec; products; definition of `addcol`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step5@292d6d2c
+     // lean:AOP.A9_3_Bracket.array_cons_step5@58318537
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs")],
 )]<array-cons>
 
@@ -990,8 +990,8 @@
   [#rowkey("Freyd.Alg.RelSet.Code.Str")], [#leant("Freyd.Alg.RelSet.Code.Str")],
   "Freyd.Alg.RelSet.Code.Str",
   [a string is a snoc-list of characters],
-  [#rowkey("Freyd.Alg.RelSet.Code.SnocNE")], [#leant("Freyd.Alg.RelSet.Code.SnocNE")],
-  "Freyd.Alg.RelSet.Code.SnocNE",
+  [#rowkey("Freyd.Alg.RelSet.Code.L")], [#leant("Freyd.Alg.RelSet.Code.L")],
+  "Freyd.Alg.RelSet.Code.L",
   [a non-empty snoc-list: one value, then any number more appended],
   [#rowkey("Freyd.Alg.RelSet.Code.Code")], [#leant("Freyd.Alg.RelSet.Code.Code")],
   "Freyd.Alg.RelSet.Code.Code",
@@ -1006,7 +1006,7 @@
   [#rowkey("Freyd.Alg.RelSet.Code.bytes")], [#leant("Freyd.Alg.RelSet.Code.bytes")],
   "Freyd.Alg.RelSet.Code.bytes",
   [a symbol costs `c`, a pointer costs `p`],
-  [#rowkey("Freyd.Alg.RelSet.Code.sizeFn")], [#leant("Freyd.Alg.RelSet.Code.sizeFn")],
+  [#rowkey("Freyd.Alg.RelSet.Code.size")], [#leant("Freyd.Alg.RelSet.Code.size")],
   "Freyd.Alg.RelSet.Code.size_cata",
   [the total cost of a code sequence],
   [#rowkey("Freyd.Alg.RelSet.Code.R")], [#leant("Freyd.Alg.RelSet.Code.R")],
@@ -1025,7 +1025,7 @@
   "Freyd.Alg.RelSet.Code.mem_reduce",
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
-// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@fa14f6ce lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
+// lean:AOP.A9_4_Code.Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@fa14f6ce lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.size@7aee2338 lean:AOP.A9_4_Code.size_cata@be711c4e lean:AOP.A9_4_Code.R@5c0b8251 lean:AOP.A9_4_Code.R_eq@bda84b7d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb lean:AOP.A9_4_Code.prefixR_eq@8fe3017c lean:AOP.A9_4_Code.cat@ad0f5eab
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
@@ -1036,7 +1036,7 @@
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
-  // lean:AOP.A9_4_Code.code_laws@33fe6c93
+  // lean:AOP.A9_4_Code.code_laws@78b9e906
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -1079,7 +1079,7 @@
     #src[every code sequence built from a decomposition `Q` puts above a given one — a code element
      of the same kind, a longer front string — costs at least as much as one built from the given
      one]],
-     // lean:AOP.A9_4_Code.code_thin_condition@9713e3ac
+     // lean:AOP.A9_4_Code.code_thin_condition@9d05a09f
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_thin_step1.lhs"), [])],
@@ -1099,18 +1099,18 @@
     [#src[Proposition 9.4's second condition `prefix° decode°⊑decode° R`: dropping the last
       character drops the last `sym`, or shortens or drops the last pointer. Proved at `prefix`
       directly by induction, not through `init`]])],
-     // lean:AOP.A9_4_Code.code_thin_step3@ad5dd78c lean:AOP.A9_4_Code.code_V@379f605b
+     // lean:AOP.A9_4_Code.code_thin_step3@932cec95 lean:AOP.A9_4_Code.code_V@479b8cb4
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step4.rhs"),
     [#src[`F` preserves composition: `F(U,decode° R)=F(𝟙,decode°)F(U,R)`]])],
-     // lean:AOP.A9_4_Code.code_thin_step4@4ff1cf98 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
+     // lean:AOP.A9_4_Code.code_thin_step4@befef5f7 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step4.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step5.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤+⊤,R)α⊑αR`, left as an exercise in the book: `snoc`
       adds the cost of the last element to both sides, and `[c,p](⊤+⊤)=[c,p]`]])],
-     // lean:AOP.A9_4_Code.code_thin_step5@77287aac lean:AOP.A9_4_Code.bytes_U@5cdd8403
+     // lean:AOP.A9_4_Code.code_thin_step5@b6d47a41 lean:AOP.A9_4_Code.bytes_U@8f59a167
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step5.rhs")],
 )]<code-thin>
 

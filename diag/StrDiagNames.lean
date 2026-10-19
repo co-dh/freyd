@@ -80,12 +80,16 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition IsFHom Pres
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
-  RelSet.Bracket.gR RelSet.Edit.head RelSet.Edit.base
+  RelSet.Bracket.g RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
 attribute [diag_noted] RelSet.Poly.cpL RelSet.Poly.linear RelSet.Poly.hasArg₂ RelSet.Poly.PolyF
   RelSet.CL.bumpFold RelSet.ListRel.thinL
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Knapsack.h₁ RelSet.Knapsack.h₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Paragraph.h₁ RelSet.Paragraph.h₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.cpL
 -- The case studies' own words, every explicit argument printed as Lean has it.
+attribute [diag_noted] RelSet.Bracket.row RelSet.Bracket.col RelSet.Bracket.mct RelSet.Bracket.mix
+  RelSet.Bracket.next RelSet.Bracket.array RelSet.Bracket.process RelSet.Bracket.addcol
+  RelSet.Bracket.step RelSet.Bracket.graft RelSet.Bracket.tops RelSet.Bracket.rests
+  RelSet.Bracket.newrows
 attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.Van.H
   RelSet.Tour.Tour RelSet.MSS.zero RelSet.MSS.plus RelSet.Digits.wrap RelSet.Digits.snoc
   RelSet.Digits.val RelSet.Digits.embed RelSet.Digits.op RelSet.Digits.Digit
