@@ -317,9 +317,6 @@ public theorem mod_add_of_lt (n a j : Nat) (h : a % n + j < n) : (a + j) % n = a
 @[expose] public def fill [Detab] : dSL Unit Char ⟶ dSL Unit Char :=
   graph fillFn
 
-/-- `π₁ : String×Char⟶String`, B&dM's `outl`. -/
-@[expose] public def π₁ : (⟨Str × Char⟩ : RelSet.{0}) ⟶ dSL Unit Char := graph Prod.fst
-
 /-- The coreflexive `istab outr`: the pairs whose character is `TB` — the guard of `expand`'s
     conditional, written as the union of its two guarded arms. -/
 @[expose] public def istab [Detab] : (⟨Str × Char⟩ : RelSet.{0}) ⟶ ⟨Str × Char⟩ :=
@@ -407,7 +404,7 @@ public theorem fill_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
     a prefix of `xs`; in the second case the two fills agree only when `a` is a blank and `xs` is
     the prefix padded with blanks inside one tab period. -/
 public theorem snoc_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
-    snocR ≫ V° ⊑ snocR ∪ π₁ ≫ V° :=
+    snocR ≫ V° ⊑ snocR ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
   le_iff.mpr fun ⟨z, c⟩ x ⟨y, hy, hpre, hfill⟩ => by
     obtain rfl : y = SnocList.snoc z c := hy
     rcases (hpre : x = SnocList.snoc z c ∨ prefixS x z) with rfl | hpz
@@ -416,7 +413,7 @@ public theorem snoc_V [Detab] (hn : 0 < n) (hb : blank ≠ nl) :
 
 /-- `expand` is the conditional `(istab outr→fill outl,snoc)`, written as its two guarded arms. -/
 public theorem expand_eq_cond [Detab] :
-    expand = istab ≫ π₁ ≫ fill ∪ nottab ≫ snocR :=
+    expand = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR :=
   hom_ext fun ⟨z, c⟩ y => by
     by_cases hc : c = tb
     · have e : expandFn z c = fillFn z := if_pos hc
@@ -433,7 +430,7 @@ public theorem expand_eq_cond [Detab] :
 /-- The definition of `expand`, with the guard on the second arm dropped:
     `istab outl fill∪nottab(snoc∪X)⊑expand∪X`. -/
 public theorem expand_guard_drop [Detab] {X : _ ⟶ dSL Unit Char} :
-    istab ≫ π₁ ≫ fill ∪ nottab ≫ (snocR ∪ X) ⊑ expand ∪ X := by
+    istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snocR ∪ X) ⊑ expand ∪ X := by
   rw [expand_eq_cond]
   refine le_iff.mpr fun p y h => ?_
   rcases h with h | ⟨_, ⟨rfl, hq⟩, hs | hw⟩
@@ -446,18 +443,18 @@ public theorem expand_guard_drop [Detab] {X : _ ⟶ dSL Unit Char} :
     step per hint: the definition of `expand`, conditionals distribute, `fill V°=fill` and
     `snoc V°⊑snoc∪(π₁V°)` (Exercise 10.4), the guard dropped. -/
 public theorem expand_V [Detab] (hn : 0 < n) :
-    expand ≫ V° ⊑ expand ∪ π₁ ≫ V° :=
+    expand ≫ V° ⊑ expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
   calc expand ≫ V°
-      = (istab ≫ π₁ ≫ fill ∪ nottab ≫ snocR) ≫ V° := by
+      = (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR) ≫ V° := by
         rw [expand_eq_cond]
-    _ = istab ≫ π₁ ≫ fill ≫ V° ∪ nottab ≫ snocR ≫ V° := by
+    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ≫ V° ∪ nottab ≫ snocR ≫ V° := by
         simpa only [Cat.assoc] using (union_comp_distrib _ _ _ :
-          (istab ≫ π₁ ≫ fill ∪ nottab ≫ snocR) ≫ V° = _)
-    _ = istab ≫ π₁ ≫ fill ∪ nottab ≫ snocR ≫ V° := by
+          (istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR) ≫ V° = _)
+    _ = istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ snocR ≫ V° := by
         rw [fill_V hn blank_ne_nl]
-    _ ⊑ istab ≫ π₁ ≫ fill ∪ nottab ≫ (snocR ∪ π₁ ≫ V°) :=
+    _ ⊑ istab ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ fill ∪ nottab ≫ (snocR ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V°) :=
         union_mono (le_refl _) (comp_mono_left _ (snoc_V hn blank_ne_nl))
-    _ ⊑ expand ∪ π₁ ≫ V° := expand_guard_drop
+    _ ⊑ expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° := expand_guard_drop
 
 calc_steps expand_V
 
@@ -540,8 +537,8 @@ public theorem detab_unfold_union [Detab] {X : _ ⟶ dSL Unit Char} :
 
 /-- Naturality of `π₁`, `(detab×𝟙)π₁=π₁ detab`, after `snoc°`. -/
 public theorem detab_init_natural [Detab] {Y : dSL Unit Char ⟶ dSL Unit Char} :
-    snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ π₁ ≫ Y
-      = snocR° ≫ π₁ ≫ detab ≫ Y :=
+    snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ Y
+      = snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ Y :=
   hom_ext fun _ _ =>
     ⟨fun ⟨p, hs, _, ⟨h1, _⟩, w, hw, hV⟩ => ⟨p, hs, p.1, rfl, w, hw.trans h1, hV⟩,
      fun ⟨p, hs, w, hw, y, hy, hV⟩ =>
@@ -551,7 +548,7 @@ public theorem detab_init_natural [Detab] {Y : dSL Unit Char ⟶ dSL Unit Char} 
     greatest, `prefix detab` — induction on the input, `detab_V` — and a prefix is no longer:
     `prefix⊑R°`. -/
 public theorem detab_V_induction [Detab] (hn : 0 < n) :
-    detab ∪ snocR° ≫ π₁ ≫ detab ≫ V° ⊑ R° ≫ detab :=
+    detab ∪ snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° ⊑ R° ≫ detab :=
   le_iff.mpr fun t x h => by
     rcases h with h | ⟨p, hs, _, rfl, _, rfl, hV⟩
     · exact ⟨t, Nat.le_refl _, h⟩
@@ -578,12 +575,12 @@ public theorem detab_V_R [Detab] (hn : 0 < n) :
         rw [nil_V]
     _ ⊑ (junc (sumCop _ _) nil snocR : Alg (F Unit Char) (dSL Unit Char))°
         ≫ (F Unit Char).map detab
-        ≫ junc (sumCop _ _) nil (expand ∪ π₁ ≫ V°) :=
+        ≫ junc (sumCop _ _) nil (expand ∪ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V°) :=
         comp_mono_left _ (comp_mono_left _
           (union_mono (le_refl _) (comp_mono_left _ (expand_V hn))))
-    _ = detab ∪ snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ π₁ ≫ V° :=
+    _ = detab ∪ snocR° ≫ rprodMap detab (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ V° :=
         detab_unfold_union
-    _ = detab ∪ snocR° ≫ π₁ ≫ detab ≫ V° := by
+    _ = detab ∪ snocR° ≫ (relProd (dSL Unit Char) ⟨Char⟩).outl ≫ detab ≫ V° := by
         rw [detab_init_natural]
     _ ⊑ R° ≫ detab := detab_V_induction hn
 
@@ -1194,7 +1191,6 @@ public theorem triple_fold [Detab] :
   graph (pad (SnocList.wrap ()))
 @[expose] public def assocl : (⟨Str × (Nat × Nat)⟩ : RelSet.{0}) ⟶ (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) :=
   graph fun p => ((p.1, p.2.1), p.2.2)
-@[expose] public def outlR : (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) ⟶ (⟨Str × Nat⟩ : RelSet.{0}) := graph Prod.fst
 
 public theorem cat_blanks [Detab] (x : Str) :
     ∀ k, catFn x (pad (SnocList.wrap ()) k) = pad x k
@@ -1203,8 +1199,8 @@ public theorem cat_blanks [Detab] (x : Str) :
 
 /-- **B&dM p.252**: `entab=triple assocl π₁ (𝟙×blanks) cat`, from (10.1). -/
 public theorem entab_triple [Detab] :
-    entab = triple ≫ assocl ≫ outlR ≫ rprodMap (𝟙 (dSL Unit Char)) blanks ≫ cat := by
-  rw [triple_graph, assocl, outlR, blanks, rprodMap_id_graph, cat, graph_comp,
+    entab = triple ≫ assocl ≫ (relProd (⟨Str × Nat⟩ : RelSet.{0}) ⟨Nat⟩).outl ≫ rprodMap (𝟙 (dSL Unit Char)) blanks ≫ cat := by
+  rw [triple_graph, assocl, show (relProd (⟨Str × Nat⟩ : RelSet.{0}) ⟨Nat⟩).outl = graph Prod.fst from rfl, blanks, rprodMap_id_graph, cat, graph_comp,
     graph_comp, graph_comp, graph_comp, entab]
   exact congrArg graph (funext fun x => (entab_unfill x).trans (cat_blanks _ _).symm)
 
@@ -1222,13 +1218,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander tripleAlg] public meta def unexpandTripleAlg : Unexpander
   | `($_:ident) => `($(mkIdent (Name.mkSimple "[base,op]")))
-  | _ => throw ()
-
--- `outlR` is a second `π₁` (on `(String×Nat)×Nat`), which cannot share the monomorphic `π₁`'s name;
--- a generic `π₁` would give every `π₁` bead a lax-naturality verdict the panels do not show today.
-open Lean PrettyPrinter in
-@[app_unexpander outlR] public meta def unexpandOutlR : Unexpander
-  | `($_:ident) => `($(mkIdent `π₁))
   | _ => throw ()
 
 -- The pointwise functions print under the book's names: the arrow of the same book name (`col`,

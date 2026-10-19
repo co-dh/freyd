@@ -411,7 +411,10 @@
   // west at that birth (`nmd`) gives way: the name-placement fold below drops it under the label.
   let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
   let west-at = x => lx != none and calc.abs(x - lx) < 1e-6
-  let west = b => b.at(4, default: none) != none and west-at(b.at(4))
+  // A PROJECTION's name (`wirename`, no mark) goes west of the leftmost strand it touches, so no strand
+  // meeting there runs through it; `wsh` is how far that strand lies west of the meeting point.
+  let wsh = b => if b.at(5, default: "strict") == "wirename" and b.at(3, default: none) != none { b.at(4) - b.at(3) } else { 0 }
+  let west = b => b.at(4, default: none) != none and (west-at(b.at(4)) or b.at(5, default: "strict") == "wirename")
   // THE FRAME HOLDS EVERY BEAD LABEL: `hm-bead` sets it 0.32 east of the dot, and the generator's
   // width is a fixed pad east of the object wire, which a long label (a `∪` of two terms) runs out of.
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
@@ -435,7 +438,7 @@
     xo - 0.3, ..lanes.map(l => l.at(0) - 0.3),
     ..(beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
         .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict"))))
-      .map(b => b.at(4) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12 - wd(b.at(1)) - 0.1),
+      .map(b => b.at(4) - wsh(b) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12 - wd(b.at(1)) - 0.1),
     ..nmd.map(k => lanes.at(k).at(0) - 0.12 - 0.3 - wd(text(9pt)[#dnm(lanes.at(k), top, bot)]) - 0.1),
     ..(top + bot).map(p => p.at(0) - wd(p.at(1)) / 2 - 0.15),
     ..convs.map(c => c.at(0) - 0.12 - wd(text(10pt)[`°`]) - 0.1),
@@ -504,7 +507,7 @@
       let lab = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
         .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).map(b => {
         let m = sz(text[#b.at(1)])
-        let br = b.at(4) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12
+        let br = b.at(4) - wsh(b) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12
         (b.at(0), br - m.width / 0.8cm, br, m.height / 0.8cm / 2) })
       let oth = nmd.filter(k => k != i).map(k => {
         let o = lanes.at(k)
@@ -541,7 +544,7 @@
   for b in beads {
     let nat = b.at(5, default: "strict")
     hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black), bg: fb-ALLC, nat: nat,
-            ..(if west(b) { (dx: -(hm-mark-half(nat) + 0.12), anchor: "east") } else { (:) })) }
+            ..(if west(b) { (dx: -(hm-mark-half(nat) + 0.12 + wsh(b)), anchor: "east") } else { (:) })) }
   for (x, l) in top {
     if not dcovers(defn, h, x) {
       hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { palf(pal, l) }) } }

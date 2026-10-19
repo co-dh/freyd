@@ -399,6 +399,18 @@ partial def isWiring (e : Expr) : MetaM Bool := do
     return (StrDiag.projIndex (.bvar 0) body).isSome
   | _ => return false
 
+/-- A wiring that PROJECTS — holds a projection anywhere in it.  Its strands merging do not say which
+    one survives, so it is drawn as the wiring with its printed name beside it; a copy or `𝟙` is not. -/
+partial def projects (e : Expr) : MetaM Bool := do
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.RelProd.outl, _) | (``Freyd.Alg.RelProd.outr, _) | (``Freyd.Alg.RelSet.graph, _) =>
+    return true
+  | (``Cat.comp, _) => (factors e).anyM projects
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    let some (f, g) := lastTwo args | return false
+    return (← projects f) || (← projects g)
+  | _ => return false
+
 /-- The `dpanel(...)` call this panel is.  `frame` and `levels` are ROW COUNTS, the two halves of
     lining a short panel up with a tall one: the frame gives them one box, `levels` each bead's
     row in it (`placement`).  Left off, the frame is one row deeper than the panel and the beads
@@ -513,9 +525,11 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    -- A WIRING (copy, discard, `⟨,⟩` of projections) is drawn as the strands meeting, no mark, no name.
+    -- A WIRING (copy, discard, `⟨,⟩` of projections) is drawn as the strands meeting, no mark; one
+    -- that `projects` keeps its printed name beside it (`"wirename"`), since the merge hides which survives.
     let wire ← match r.term with | some t => isWiring t | none => pure false
-    let mark := if wire then ", \"wire\"" else match r.tri, r.nat with
+    let named ← match r.term with | some t => if wire then projects t else pure false | none => pure false
+    let mark := if named then ", \"wirename\"" else if wire then ", \"wire\"" else match r.tri, r.nat with
       -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
       -- A JUMP is the chain's own mark, filled, so it is never read as a lax bead's hollow triangle.
       | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"jumpup\"" else ", \"jump\""
