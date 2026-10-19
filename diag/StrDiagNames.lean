@@ -80,7 +80,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition IsFHom Pres
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
-  RelSet.Bracket.gR RelSet.Edit.head RelSet.Edit.base
+  RelSet.Bracket.g RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
 attribute [diag_noted] RelSet.Poly.cpL RelSet.Poly.linear RelSet.Poly.hasArg₂ RelSet.Poly.PolyF
   RelSet.CL.bumpFold RelSet.ListRel.thinL
