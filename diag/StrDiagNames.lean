@@ -903,7 +903,7 @@ open Lean PrettyPrinter in
 -- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
 -- A SHORT NAME ANOTHER CASE STUDY ALSO DECLARES (`tail`, `length`, `F`, `cons`) prints qualified
 -- where the label's scope resolves it to the other one, so the printer's own test cannot admit it.
-attribute [diag_noted] RelSet.CL.ConsList.cons RelSet.SL.snoc RelSet.Tour.start RelSet.Paragraph.start
+attribute [diag_noted] RelSet.CL.ConsList.cons RelSet.SL.snoc RelSet.CL.Str RelSet.Tour.start RelSet.Paragraph.start
   RelSet.Poly.PolyC.one RelSet.Poly.PolyC.const RelSet.Paragraph.glue RelSet.Code.Code.sym
   RelSet.Bracket.cat Knap207.wrap Knap207.cons Knap207.nil Knap207.pair RelSet.Bracket.init
   RelSet.Bracket.tail RelSet.Edit.tail RelSet.Bracket.flatten RelSet.Detab.length RelSet.Tex.length
