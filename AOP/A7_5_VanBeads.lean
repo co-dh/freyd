@@ -362,7 +362,7 @@ variable {X : Type}
 
 /-- The fold `⦇S%∋ est(R;H)⦈` read one transaction at a time: the empty stretch has only the
     empty schedule to answer with. -/
-public theorem greedyFold_wrap [Van X] (r : Sched X) :
+public theorem greedyFold_wrap [Amount X] [Van] (r : Sched X) :
     greedyFold (ConsList.wrap ()) r ↔ r = ConsList.wrap () := by
   rw [greedyFold, ← cataR_eq_relCata]
   refine Iff.trans (Λ_comp_est_apply (S) («R;H» (A := X)) (Sum.inl ()) r) ?_
@@ -379,7 +379,7 @@ public theorem greedyFold_wrap [Van X] (r : Sched X) :
 
 /-- The fold `⦇S%∋ est(R;H)⦈` at a `cons`: the tail's answer `y` is extended by `new∪old`, and
     the answer kept is one of those extensions that is `R;H`-below every one of them. -/
-public theorem greedyFold_cons [Van X] (a : X) (x : Seg X) (r : Sched X) :
+public theorem greedyFold_cons [Amount X] [Van] (a : X) (x : Seg X) (r : Sched X) :
     greedyFold (ConsList.cons a x) r
       ↔ ∃ y, greedyFold x y ∧ (new (A := X) ∪ old) (a, y) r
           ∧ ∀ z, (new (A := X) ∪ old) (a, y) z → «R;H» (A := X) r z := by
@@ -404,11 +404,11 @@ public theorem greedyFold_cons [Van X] (a : X) (x : Seg X) (r : Sched X) :
 
 /-- Two kinds of transaction, priced so that one of each fits a van visit and two of the dear
     kind do not: `false` costs 1 and `true` costs 6, against the note's `N = 10`. -/
-@[expose] public def vanBool : Van Bool := ⟨fun b => if b then 6 else 1, 10⟩
+@[expose] public def vanBool : Amount Bool := ⟨fun b => if b then 6 else 1⟩
 
 section
 
-attribute [local instance] vanBool
+attribute [local instance] vanBool book10
 
 /-- The greedy fold on a one-transaction stretch: `new` is the only extension of the empty
     schedule, so the least of them is `[[a]]`. -/
