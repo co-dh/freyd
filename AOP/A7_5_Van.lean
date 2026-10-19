@@ -799,7 +799,7 @@ end
     both sides open the segment `[a]` of their own, so the two first segments are equal and
     `H` holds outright. -/
 public theorem van_7_18 :
-    rprodMap (𝟙 (⟨A⟩ : RelSet.{0})) (relTop (dSched A) (dSched A)) ≫ new (A := A)
+    rprodMap (𝟙 (⟨A⟩ : RelSet.{0})) (relTop : dSched A ⟶ dSched A) ≫ new (A := A)
       ⊑ new (A := A) ≫ H (A := A) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, ⟨hab, -⟩, hnew⟩ := h
@@ -815,7 +815,7 @@ public theorem van_7_18 :
     segment it lengthens, and `[a]` is what `new` makes that segment, so `[a]` is a prefix of
     it whatever the two second components are. -/
 public theorem van_7_19 [Amount A] [Van] :
-    rprodMap (𝟙 (⟨A⟩ : RelSet.{0})) (relTop (dSched A) (dSched A)) ≫ old
+    rprodMap (𝟙 (⟨A⟩ : RelSet.{0})) (relTop : dSched A ⟶ dSched A) ≫ old
       ⊑ new (A := A) ≫ H (A := A) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, ⟨hab, -⟩, s, t, -, hr, -⟩ := h

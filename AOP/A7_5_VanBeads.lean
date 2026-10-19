@@ -246,9 +246,9 @@ public theorem RinterH_not_lax_natural :
     the right. -/
 public theorem top_not_lax_natural :
     ¬ LaxNatural (Relator.idRelator RelSet.{0}) (Relator.idRelator RelSet.{0})
-      (fun a => relTop a a) := by
+      (fun a => (relTop : a ⟶ a)) := by
   intro hlax
-  have h : trueOnly ≫ relTop (dE Bool) (dE Bool) ⊑ relTop (dE Bool) (dE Bool) ≫ trueOnly :=
+  have h : trueOnly ≫ (relTop : dE Bool ⟶ dE Bool) ⊑ (relTop : dE Bool ⟶ dE Bool) ≫ trueOnly :=
     hlax trueOnly
   obtain ⟨z, -, hz⟩ := le_iff.mp h true false ⟨true, ⟨rfl, rfl⟩, trivial⟩
   exact Bool.noConfusion hz.2
@@ -316,10 +316,10 @@ public theorem est_RH_not_lax_natural :
       (fun a => (est («R;H» (A := a.carrier)) :
         P (dSched a.carrier) ⟶ dSched a.carrier)) := by
   intro hlax
-  have h : powerRel (list (list (relTop (dE Bool) (dE Bool)))) ≫ est («R;H» (A := Bool))
-      ⊑ est («R;H» (A := Bool)) ≫ list (list (relTop (dE Bool) (dE Bool))) :=
-    hlax (relTop (dE Bool) (dE Bool))
-  have himg : ∀ a b : Bool, list (list (relTop (dE Bool) (dE Bool))) (schedOne a) (schedOne b) :=
+  have h : powerRel (list (list (relTop : dE Bool ⟶ dE Bool))) ≫ est («R;H» (A := Bool))
+      ⊑ est («R;H» (A := Bool)) ≫ list (list (relTop : dE Bool ⟶ dE Bool)) :=
+    hlax (relTop : dE Bool ⟶ dE Bool)
+  have himg : ∀ a b : Bool, list (list (relTop : dE Bool ⟶ dE Bool)) (schedOne a) (schedOne b) :=
     fun _ _ => ⟨⟨trivial, rfl⟩, rfl⟩
   obtain ⟨w, hw, -⟩ :=
     le_iff.mp h (fun p => p = schedOne false ∨ p = schedOne true) (schedOne true)

@@ -412,10 +412,14 @@ theorem rprodMap_graph {A a' B b' : RelSet.{u}} (f : A.carrier → a'.carrier)
     is the predicate that holds everywhere.  The abstract `topMor` of a unitary allegory picks
     the two unit projections with `Exists.choose` and is therefore noncomputable; this one costs
     no choice, so a statement that names `⊤` stays axiom-clean. -/
-@[expose] public def relTop (A B : RelSet.{u}) : A ⟶ B := fun _ _ => True
+@[expose] public def relTop {A B : RelSet.{u}} : A ⟶ B := fun _ _ => True
+
+/-- The note's `⊤`.  Between which two objects is what the picture's wires already say, so the
+    objects are implicit and the sign names the arrow alone. -/
+notation "⊤" => relTop
 
 /-- `relTop` is the greatest relation: every `R : a ⟶ b` is below it. -/
-public theorem le_relTop {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ relTop A B :=
+public theorem le_relTop {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ (relTop : A ⟶ B) :=
   le_iff.mpr fun _ _ _ => trivial
 
 /-- `⊤` in `Rel(Set)` relates everything to everything: it is above the full relation, hence
@@ -506,11 +510,11 @@ public theorem rpair_zero_left {C A B : RelSet.{u}} (S : C ⟶ B) : ⟪(𝟘 : C
 
 /-- `⟪R ⊤, S⟫ ⊑ ⟪R, S⟫ ⊤`: forgetting the first component's value keeps the pair defined. -/
 public theorem rpair_top {C A A' B : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B) :
-    ⟪R ≫ relTop A A', S⟫ ⊑ ⟪R, S⟫ ≫ relTop ⟨A.carrier × B.carrier⟩ ⟨A'.carrier × B.carrier⟩ :=
+    ⟪R ≫ (relTop : A ⟶ A'), S⟫ ⊑ ⟪R, S⟫ ≫ (relTop : (⟨A.carrier × B.carrier⟩ : RelSet.{u}) ⟶ ⟨A'.carrier × B.carrier⟩) :=
   le_iff.mpr fun _ p ⟨⟨y, hy, _⟩, hs⟩ => ⟨(y, p.2), ⟨hy, hs⟩, trivial⟩
 
 /-- `R ⊑ R ⊤`. -/
-public theorem le_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ R ≫ relTop B B :=
+public theorem le_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ R ≫ (relTop : B ⟶ B) :=
   le_iff.mpr fun _ y h => ⟨y, h, trivial⟩
 
 /-- A map followed by a pair is the pair of the map followed by each component. -/
@@ -533,12 +537,12 @@ public theorem orNone_zero {A B : RelSet.{u}} : orNone (𝟘 : A ⟶ B) = graph 
     fun h => Or.inr ⟨_, ⟨rfl, fun _ h => h⟩, h⟩⟩
 
 /-- `orNone(R') ⊑ orNone(R)` when `R' ⊑ R` and `R` is defined only where `R'` is. -/
-public theorem orNone_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' ⊑ R) (h2 : R ⊑ R' ≫ relTop B B) :
+public theorem orNone_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' ⊑ R) (h2 : R ⊑ R' ≫ (relTop : B ⟶ B)) :
     orNone R' ⊑ orNone R :=
   have hd : (𝟘 : A ⟶ B) / R' ⊑ 𝟘 / R := (le_div_iff _ _ _).mpr <|
-    calc ((𝟘 : A ⟶ B) / R') ≫ R ⊑ ((𝟘 : A ⟶ B) / R') ≫ R' ≫ relTop B B := comp_mono_left _ h2
-      _ = (((𝟘 : A ⟶ B) / R') ≫ R') ≫ relTop B B := (Cat.assoc _ _ _).symm
-      _ ⊑ 𝟘 ≫ relTop B B := comp_mono_right ((le_div_iff _ _ _).mp (le_refl _)) _
+    calc ((𝟘 : A ⟶ B) / R') ≫ R ⊑ ((𝟘 : A ⟶ B) / R') ≫ R' ≫ (relTop : B ⟶ B) := comp_mono_left _ h2
+      _ = (((𝟘 : A ⟶ B) / R') ≫ R') ≫ (relTop : B ⟶ B) := (Cat.assoc _ _ _).symm
+      _ ⊑ 𝟘 ≫ (relTop : B ⟶ B) := comp_mono_right ((le_div_iff _ _ _).mp (le_refl _)) _
       _ = 𝟘 := DistributiveAllegory.zero_comp _
   union_lub (le_trans (comp_mono_right h1 _) (le_union_left _ _))
     (le_trans (comp_mono_right (le_iff.mpr fun x y ⟨h, hn⟩ => ⟨h, le_iff.mp hd x y hn⟩) _) (le_union_right _ _))
@@ -557,7 +561,7 @@ public theorem graph_orNone {A B C : RelSet.{u}} (f : A.carrier → B.carrier) (
       · exact Or.inr ⟨_, ⟨rfl, fun b hb => hn b ⟨_, rfl, hb⟩⟩, rfl⟩⟩⟩
 
 /-- `R ⊑ ⊤ R ⊤`. -/
-public theorem le_top_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ relTop A A ≫ R ≫ relTop B B :=
+public theorem le_top_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ (relTop : A ⟶ A) ≫ R ≫ (relTop : B ⟶ B) :=
   le_iff.mpr fun x y h => ⟨x, trivial, y, h, trivial⟩
 
 /-- `∋ : ⟨A ⟶ B⟩ ⟶ A×B`, a relation as the set of its pairs. -/
@@ -566,7 +570,7 @@ public theorem le_top_comp_top {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ relTop A
 
 /-- `orNone(∋)` at `R'` gives an answer allowed at `R` when `R' ⊑ R` and `R` is nonempty only where `R'` is. -/
 public theorem orNone_relMem_mono {A B : RelSet.{u}} {R R' : A ⟶ B} (h1 : R' ⊑ R)
-    (h2 : R ⊑ relTop A A ≫ R' ≫ relTop B B) (o : Option (A.carrier × B.carrier))
+    (h2 : R ⊑ (relTop : A ⟶ A) ≫ R' ≫ (relTop : B ⟶ B)) (o : Option (A.carrier × B.carrier))
     (h : orNone (relMem A B) R' o) : orNone (relMem A B) R o :=
   Or.elim h (fun ⟨p, hp, ho⟩ => Or.inl ⟨p, le_iff.mp h1 _ _ hp, ho⟩) fun ⟨_, ⟨rfl, hn⟩, ho⟩ =>
     Or.inr ⟨_, ⟨rfl, fun _ hp => let ⟨_, _, _, h, _⟩ := le_iff.mp h2 _ _ hp; hn (_, _) h⟩, ho⟩
@@ -608,21 +612,17 @@ open Lean PrettyPrinter in
   | `($_ $R $S) => `($R × $S)
   | _ => throw ()
 
--- A CONSTANT map is the note's `⊸ c`: discard whatever came in, then `c`.  The test is the one the
--- reading rests on — the bound variable does not occur in the body — so a map that DOES use its
--- argument keeps its own spelling.  Changes no statement and no `stmt_key`.
+-- A map's GRAPH is written by the map's own name — the note's `edit`, `cons`, `nil` are all
+-- `graph f` — and a CONSTANT map is the note's `⊸ c`: discard whatever came in, then `c`.  The
+-- constant test is the one the reading rests on — the bound variable does not occur in the body —
+-- so a map that DOES use its argument keeps its own spelling.  Changes no statement and no `stmt_key`.
 open Lean PrettyPrinter in
-@[app_unexpander graph] public meta def unexpandGraphConst : Unexpander
+@[app_unexpander graph] public meta def unexpandGraph : Unexpander
+  | `($_ $f:ident) => `($f)
   | `($_ fun $x:ident => $c) =>
     if (c.raw.find? fun s => s.isIdent && s.getId == x.getId).isSome then throw ()
     else `($(mkIdent (Name.mkSimple "⊸")) $c)
   | _ => throw ()
-
--- printing-only: the top arrow is the note's `⊤`.  BETWEEN WHICH two objects it is taken is what
--- the picture's own wires already say, so the label names the arrow alone.
-open Lean PrettyPrinter in
-@[app_unexpander relTop] public meta def unexpandRelTop : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "⊤")))
 
 end RelSet
 
@@ -641,14 +641,6 @@ end RelSet
 end Freyd.Alg
 
 -- printing-only: the note's names for this section's declarations.
-open Lean PrettyPrinter in
-/-- A map's GRAPH is written by the map's own name — the note's `edit`, `cons`, `nil` are all
-    `graph f` — and the two projections have names of their own, B&dM's `π₁`/`π₂`. -/
-@[app_unexpander Freyd.Alg.RelSet.graph] public meta def Freyd.Alg.RelSet.unexpandGraph : Unexpander
-  -- Only a map with a NAME: `graph (fun _ => 0)` keeps `AOP.A6_1_RelSet`'s own `⊸ 0`, which this
-  -- clause would otherwise shadow with the lambda.
-  | `($_ $f:ident) => `($f)
-  | _ => throw ()
 open Lean PrettyPrinter in
 /-- The subset `R` reaches from `s` is B&dM's `(ER)x` (p.32): the existential image `E(R)` at `s`. -/
 @[app_unexpander Freyd.Alg.RelSet.img] public meta def Freyd.Alg.RelSet.unexpandImg : Unexpander

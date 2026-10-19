@@ -253,7 +253,7 @@ public theorem R_recip_trans : (R (A := A))° ≫ (R (A := A))° ⊑ (R (A := A)
 /-- **edit-defn** (B&dM p.226, exercise): `α` preserves `R` whatever the two operations are —
     `[e]⧺xs` has length `1+length(xs)` for every `e`, so Proposition 9.4 may take `U≜⊤`. -/
 public theorem α_pres_R :
-    (FB Unit).map (relTop (dE (Op A)) (dE (Op A))) (R (A := A)) ≫ α ⊑ α ≫ (R (A := A)) :=
+    (FB Unit).map (relTop : dE (Op A) ⟶ dE (Op A)) (R (A := A)) ≫ α ⊑ α ≫ (R (A := A)) :=
   le_iff.mpr fun u es h => by
     obtain ⟨v, hv, hcon⟩ := h
     obtain rfl : es = con v := hcon
