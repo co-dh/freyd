@@ -981,7 +981,7 @@ public theorem Fbimap_comp {L E E' E'' : Type} {C C' C'' : RelSet.{0}} (U : dE E
 /-- `edit-thin`, first step: `Q≜F(⊤,V)`, and `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`.
     One step and not two: the exporter cannot cut `F(⊤,V)F(𝟙,edit°)` between its two beads. -/
 public theorem edit_thin_step1 :
-    Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
+    Q A ≫ Fbimap Unit (𝟙 (dE (Op A))) ((graph (editFn (A := A)))°) ≫ α A
       = Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (V A ≫ (graph editFn)°)
           ≫ α A := by
   rw [Q, ← Cat.assoc]
@@ -1007,7 +1007,7 @@ public theorem edit_thin_step2 :
 public theorem edit_thin_step3 :
     Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) ((graph (editFn (A := A)))° ≫ R A)
         ≫ α A
-      = (F Unit (Op A)).map ((graph (editFn (A := A)))°)
+      = Fbimap Unit (𝟙 (dE (Op A))) ((graph (editFn (A := A)))°)
           ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A := by
   rw [← Cat.assoc]
   congr 1
@@ -1016,9 +1016,9 @@ public theorem edit_thin_step3 :
 /-- `edit-thin`, fourth step: Proposition 9.4's `F(U,R)α⊑αR` at `U≜⊤` — `cons` adds one to both
     lengths whatever the two operations are. -/
 public theorem edit_thin_step4 :
-    (F Unit (Op A)).map ((graph (editFn (A := A)))°)
+    Fbimap Unit (𝟙 (dE (Op A))) ((graph (editFn (A := A)))°)
         ≫ Fbimap Unit (topMor (dE (Op A)) (dE (Op A))) (R A) ≫ α A
-      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
+      ⊑ Fbimap Unit (𝟙 (dE (Op A))) ((graph editFn)°) ≫ α A ≫ R A :=
   comp_mono_left _ (le_trans
     (comp_mono_right ((FB Unit).map_mono (le_relTop _) (le_refl (R A))) _) α_pres_R)
 
@@ -1027,9 +1027,9 @@ public theorem edit_thin_step4 :
     summand `U≜⊤` leaves the operation free and `edit_V` supplies the shorter sequence for the
     `V`-smaller pair of strings, which `cons` then lengthens by one on both sides. -/
 public theorem edit_thin_condition :
-    Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
-      ⊑ (F Unit (Op A)).map ((graph editFn)°) ≫ α A ≫ R A :=
-  calc Q A ≫ (F Unit (Op A)).map ((graph (editFn (A := A)))°) ≫ α A
+    Q A ≫ Fbimap Unit (𝟙 (dE (Op A))) ((graph (editFn (A := A)))°) ≫ α A
+      ⊑ Fbimap Unit (𝟙 (dE (Op A))) ((graph editFn)°) ≫ α A ≫ R A :=
+  calc Q A ≫ Fbimap Unit (𝟙 (dE (Op A))) ((graph (editFn (A := A)))°) ≫ α A
       _ = _ := edit_thin_step1
       _ ⊑ _ := edit_thin_step2
       _ = _ := edit_thin_step3
@@ -2246,7 +2246,7 @@ end Freyd.Alg.RelSet.Edit
 -- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `A`).
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≤")))
+  | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
   | _ => `($(mkIdent `Q))
