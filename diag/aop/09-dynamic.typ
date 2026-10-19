@@ -426,6 +426,10 @@
 // lean:AOP.A9_2_Edit.editTgtStep@6bdaa211
 )]<drop2-defn>
 
+- `drop₂` is not a fold: at `cpy(b)` it returns `[del(b)]⧺es` with the rest `es` unchanged, and a fold sees only `drop₂(es)`; paired with `𝟙` it is one: `⦇h₂⦈ = ⟨𝟙,drop₂⟩`, so `h₂` gets both the tail `es` and `drop₂(es)`
+- `k₂` is the same pairing after `edit`: it carries `(edit(es), edit(drop₂(es)))` and, as `h₂` does, builds the second from the first at `cpy(b)` and `ins(b)` (`([b]⧺x, y)` and `(x, y)` for `edit(es) = (x,y)`), so `⦇h₂⦈ (edit×edit) = ⦇k₂⦈` by fusion
+- `⟨edit, edit(𝟙×tail)⟩` is also `⦇k₂⦈`; the second components give `drop₂ edit = edit (𝟙×tail)`: dropping `drop₂`'s operation removes exactly the target's first character
+
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_dropTgt.calc.typ" as calc-edit-drop2
 #import "../generated/Freyd.Alg.RelSet.Edit.dropTgt_le.calc.typ" as calc-drop2-le
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
