@@ -334,7 +334,7 @@
   [], [],
   "Freyd.Alg.RelSet.Edit.F_obj",
   [`inl(())` #linebreak() `inr(a,b)`],
-  [#rowkey("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
+  [#rowkey("Freyd.Alg.RelSet.Edit.edit")], [#leant("Freyd.Alg.RelSet.Edit.edit")],
   "Freyd.Alg.RelSet.Edit.edit_cata",
   [`[] ↦ ([],[])` #linebreak() `[cpy(a)] ↦ ([a],[a])` #linebreak() `[del(a)] ↦ ([a],[])` #linebreak()
    `[ins(a)] ↦ ([],[a])`],
@@ -374,16 +374,16 @@
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
 // lean:AOP.A9_2_Edit.Op@088ec9af
 // lean:AOP.A9_2_Edit.F_obj@ec51a642
-// lean:AOP.A9_2_Edit.edit_cata@1952f0c0
+// lean:AOP.A9_2_Edit.edit_cata@8d22f5a4
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
 // lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
-// lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
+// lean:AOP.A9_2_Edit.edit_Vrecip@9b2b2a7c
 // lean:AOP.A9_2_Edit.empty_iff@4bee3a1f
 // lean:AOP.A9_2_Edit.baseFn@450d4154
 // lean:AOP.A9_2_Edit.stepFn@e8719088
-// lean:AOP.A9_2_Edit.mleSpec@ba2551c8
-// lean:AOP.A9_2_Edit.FeditR@0cad6892
+// lean:AOP.A9_2_Edit.mleSpec@a6efb0e6
+// lean:AOP.A9_2_Edit.FeditR@ec2a5698
 // lean:AOP.A9_2_Edit.α_pres_R@bd6b5083
 )]<edit-defn>
 
@@ -395,8 +395,8 @@
 - `[del(a),cpy(b)] ↦ ([a,b],[b])`, suffixes `([b],[b])`, `fs = [cpy(b)]`, `2 ≥ 1`
 
 #disp[#deftab(
-  [#rowkey("Freyd.Alg.RelSet.Edit.dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.dropTgt")],
-  "Freyd.Alg.RelSet.Edit.dropTgt",
+  [#rowkey("Freyd.Alg.RelSet.Edit.drop₂")], [#leant("Freyd.Alg.RelSet.Edit.drop₂")],
+  "Freyd.Alg.RelSet.Edit.drop₂",
   [`[del(a),cpy(b)] ↦ [del(a),del(b)]` #linebreak() `[ins(c),cpy(b)] ↦ [cpy(b)]` #linebreak()
    builds from `es` an `fs`, shorter or equal, that keeps `x` and drops the head of `y`],
   [#rowkey("Freyd.Alg.RelSet.Edit.editFn_dropTgt")], [#leant("Freyd.Alg.RelSet.Edit.editFn_dropTgt")],
@@ -408,21 +408,21 @@
   "Freyd.Alg.RelSet.Edit.clen_dropTgt",
   [`2 ≥ 2` #linebreak() `2 ≥ 1` #linebreak()
    an `ins` removed shortens by one, a `cpy` turned into `del` keeps the length],
-  [#rowkey("Freyd.Alg.RelSet.Edit.dropTgtAlg")], [#leant("Freyd.Alg.RelSet.Edit.dropTgtAlg")],
+  [#rowkey("Freyd.Alg.RelSet.Edit.h₂")], [#leant("Freyd.Alg.RelSet.Edit.h₂")],
   "Freyd.Alg.RelSet.Edit.dropTgtStep",
   [`⦇h₂⦈ = ⟨𝟙,drop₂⟩` #linebreak()
    `[del(a),cpy(b)] ↦ ([del(a),cpy(b)],[del(a),del(b)])`],
-  [#rowkey("Freyd.Alg.RelSet.Edit.editTgtAlg")], [#leant("Freyd.Alg.RelSet.Edit.editTgtAlg")],
+  [#rowkey("Freyd.Alg.RelSet.Edit.k₂")], [#leant("Freyd.Alg.RelSet.Edit.k₂")],
   "Freyd.Alg.RelSet.Edit.editTgtStep",
   [`⦇k₂⦈ = ⟨edit, edit(𝟙×tail)⟩` #linebreak()
    `[del(a),cpy(b)] ↦ (([a,b],[b]),([a,b],[]))`],
-// lean:AOP.A9_2_Edit.dropTgt@d3028b70
-// lean:AOP.A9_2_Edit.editFn_dropTgt@f89ee985
-// lean:AOP.A9_2_Edit.editFn_dropTgt_of_eq@7cb8face
-// lean:AOP.A9_2_Edit.clen_dropTgt@a0d529aa
-// lean:AOP.A9_2_Edit.dropTgtAlg@a1f8e85e
+// lean:AOP.A9_2_Edit.drop₂@823392f1
+// lean:AOP.A9_2_Edit.editFn_dropTgt@9d332382
+// lean:AOP.A9_2_Edit.editFn_dropTgt_of_eq@b3466bbf
+// lean:AOP.A9_2_Edit.clen_dropTgt@86e2aa73
+// lean:AOP.A9_2_Edit.h₂@a1f8e85e
 // lean:AOP.A9_2_Edit.dropTgtStep@2e8289fc
-// lean:AOP.A9_2_Edit.editTgtAlg@61c4c3bb
+// lean:AOP.A9_2_Edit.k₂@61c4c3bb
 // lean:AOP.A9_2_Edit.editTgtStep@6bdaa211
 )]<drop2-defn>
 
@@ -435,14 +435,14 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_dropTgt") \
     #src[editing with `es` then dropping the head of the target string equals editing with `drop₂(es)`]],
-     // lean:AOP.A9_2_Edit.edit_dropTgt@ee5733fc
+     // lean:AOP.A9_2_Edit.edit_dropTgt@778958ea
   lean-calc(calc-edit-drop2, breaks: (4,)),
 )]<edit-drop2-calc>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.dropTgt_le") \
     #src[`drop₂(es)` is shorter than or equal to `es`]],
-     // lean:AOP.A9_2_Edit.dropTgt_le@bac72099
+     // lean:AOP.A9_2_Edit.dropTgt_le@bfd4b54a
   lean-calc(calc-drop2-le),
 )]<drop2-le-calc>
 
@@ -452,7 +452,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
     #src[dropping the head of the target string is matched by an edit sequence `fs` with `|fs| ≤ |es|`]],
-     // lean:AOP.A9_2_Edit.edit_tail_snd@50716d48
+     // lean:AOP.A9_2_Edit.edit_tail_snd@07b34c46
   lean-calc(calc-edit-tail),
 )]<edit-tail-calc>
 
@@ -483,7 +483,7 @@
 // `A` — sugar undone at the ends too.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_X") \
-     // lean:AOP.A9_2_Edit.edit_X@cf2634b2
+     // lean:AOP.A9_2_Edit.edit_X@d05db363
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -492,7 +492,7 @@
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_laws.rhs"),
-    [#src[the specification — @Freyd.Alg.RelSet.Edit.editFn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Edit.edit]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
   // `est(R) : P([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.rhs")],
@@ -506,17 +506,17 @@
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `≼`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)α≼`
  #src[] over `F(Op,[A]×[A])` is
-      // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
+      // lean:AOP.A9_2_Edit.edit_thin_condition@2fd6f9de
       Proposition 9.4 at `U≜⊤` — `F(⊤,≼)α⊑α≼`, left as an exercise, so any two operations may be
       compared — and `V≜suffix°×suffix°`
  #src[,
       // lean:Freyd.Alg.RelSet.Edit.edit_V@274d4558
  ] —
-      // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
+      // lean:AOP.A9_2_Edit.edit_Vrecip@9b2b2a7c
  `edit (𝟙×suffix)⊑≼° edit` #src[],
-      // lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
+      // lean:AOP.A9_2_Edit.edit_suffix_right@87177f12
  `edit (suffix×𝟙)⊑≼° edit` #src[]. `suffix=tail*`
-      // lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
+      // lean:AOP.A9_2_Edit.edit_suffix_left@88484231
       and `BA⊑CB⟹BA*⊑C*B` cut those to one step each: drop the operation that produced the head, or
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
