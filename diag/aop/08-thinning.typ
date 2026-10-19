@@ -251,38 +251,38 @@ row((
 // with a nearer first vertex can still win.
 #disp[#deftab(
 
-  [#rowkey("Freyd.Alg.pathF")], [#leant("Freyd.Alg.pathF")],
-  "Freyd.Alg.pathF_obj",
+  [#rowkey("Freyd.Alg.Paths.F")], [#leant("Freyd.Alg.Paths.F")],
+  "Freyd.Alg.Paths.F_obj",
   [a path is either one vertex a, or a vertex a followed by a path xs],
-  [#rowkey("Freyd.Alg.alphaR_pathF")], [#leant("Freyd.Alg.alphaR_pathF")],
-  "Freyd.Alg.alphaR_pathF",
+  [#rowkey("Freyd.Alg.Paths.alphaR_F")], [#leant("Freyd.Alg.Paths.alphaR_F")],
+  "Freyd.Alg.Paths.alphaR_F",
   [build a path: wrap one vertex as [a], or put a in front of xs],
-  [#rowkey("Freyd.Alg.wrapz")], [#leant("Freyd.Alg.wrapz")],
-  "Freyd.Alg.wrapz",
+  [#rowkey("Freyd.Alg.Paths.wrapz")], [#leant("Freyd.Alg.Paths.wrapz")],
+  "Freyd.Alg.Paths.wrapz",
   [a path of one vertex, no edge, cost 0],
-  [#rowkey("Freyd.Alg.consw")], [#leant("Freyd.Alg.consw")],
-  "Freyd.Alg.consw_apply.mapsto",
+  [#rowkey("Freyd.Alg.Paths.consw")], [#leant("Freyd.Alg.Paths.consw")],
+  "Freyd.Alg.Paths.consw_apply.mapsto",
   [put a in front of the path; the cost adds the weight of the new edge a→head(xs)],
-  [#rowkey("Freyd.Alg.pathCost")], [#leant("Freyd.Alg.pathCost")],
-  "Freyd.Alg.pathCost",
+  [#rowkey("Freyd.Alg.Paths.cost")], [#leant("Freyd.Alg.Paths.cost")],
+  "Freyd.Alg.Paths.cost",
   [the cost of [a₀,…,aₙ] is wt(a₀,a₁)+…+wt(aₙ₋₁,aₙ)],
-  [#rowkey("Freyd.Alg.pathR")], [#leant("Freyd.Alg.pathR")],
-  "Freyd.Alg.pathR",
+  [#rowkey("Freyd.Alg.Paths.R")], [#leant("Freyd.Alg.Paths.R")],
+  "Freyd.Alg.Paths.R",
   [xs is cheaper than ys],
   [#rowkey("Freyd.Alg.RelSet.ListRel.nelist")], [#leant("Freyd.Alg.RelSet.ListRel.nelist")],
-  "Freyd.Alg.relCata_pathF_eps_eq_nelist",
+  "Freyd.Alg.Paths.relCata_F_eps_eq_nelist",
   [L(∋) relates a list of layers to every path that chooses one vertex from each layer],
-  [#rowkey("Freyd.Alg.minpath")], [#leant("Freyd.Alg.minpath")],
-  "Freyd.Alg.minpath_spec",
+  [#rowkey("Freyd.Alg.Paths.minpath")], [#leant("Freyd.Alg.Paths.minpath")],
+  "Freyd.Alg.Paths.minpath_spec",
   [the input [x₀,…,xₙ] : L(PA) is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and minpath returns a cheapest one],
-  [#rowkey("Freyd.Alg.pathQ")], [#leant("Freyd.Alg.pathQ")],
-  "Freyd.Alg.pathQ",
+  [#rowkey("Freyd.Alg.Paths.Q")], [#leant("Freyd.Alg.Paths.Q")],
+  "Freyd.Alg.Paths.Q",
   [like R, and the two paths also start at the same vertex: head(xs) = head(ys)],
-  [#rowkey("Freyd.Alg.sumCop_u₁_eq")], [#leant("Freyd.Alg.sumCop_u₁_eq")],
-  "Freyd.Alg.sumCop_u₁_apply.mapsto",
+  [#rowkey("Freyd.Alg.Paths.sumCop_u₁_eq")], [#leant("Freyd.Alg.Paths.sumCop_u₁_eq")],
+  "Freyd.Alg.Paths.sumCop_u₁_apply.mapsto",
   [mark a value as the left alternative],
-  [#rowkey("Freyd.Alg.sumCop_u₂_eq")], [#leant("Freyd.Alg.sumCop_u₂_eq")],
-  "Freyd.Alg.sumCop_u₂_apply.mapsto",
+  [#rowkey("Freyd.Alg.Paths.sumCop_u₂_eq")], [#leant("Freyd.Alg.Paths.sumCop_u₂_eq")],
+  "Freyd.Alg.Paths.sumCop_u₂_apply.mapsto",
   [mark a value as the right alternative],
   [#rowkey("Freyd.Alg.cplMap")], [#leant("Freyd.Alg.cplMap")],
   "Freyd.Alg.cplMap",
@@ -290,26 +290,26 @@ row((
   [#rowkey("Freyd.Alg.cprMap")], [#leant("Freyd.Alg.cprMap")],
   "Freyd.Alg.cprMap",
   [pair the value beside the set with every element of the set],
-  [#rowkey("Freyd.Alg.Λ_pathF_map_eps_id")], [#leant("Freyd.Alg.Λ_pathF_map_eps_id")],
-  "Freyd.Alg.Λ_pathF_map_eps_id",
+  [#rowkey("Freyd.Alg.Paths.Λ_F_map_eps_id")], [#leant("Freyd.Alg.Paths.Λ_F_map_eps_id")],
+  "Freyd.Alg.Paths.Λ_F_map_eps_id",
   [cpl transpose: from layer x and a set of paths ps, choose a vertex a ∈ x],
-  [#rowkey("Freyd.Alg.Λ_pathF_map_id_eps")], [#leant("Freyd.Alg.Λ_pathF_map_id_eps")],
-  "Freyd.Alg.Λ_pathF_map_id_eps",
+  [#rowkey("Freyd.Alg.Paths.Λ_F_map_id_eps")], [#leant("Freyd.Alg.Paths.Λ_F_map_id_eps")],
+  "Freyd.Alg.Paths.Λ_F_map_id_eps",
   [cpr transpose: from a vertex a and a set of paths ps, choose a tail xs ∈ ps],
-  [#rowkey("Freyd.Alg.pathStep")], [#leant("Freyd.Alg.pathStep")],
-  "Freyd.Alg.pathStep",
+  [#rowkey("Freyd.Alg.Paths.step")], [#leant("Freyd.Alg.Paths.step")],
+  "Freyd.Alg.Paths.step",
   [put a in front of every path in ps and keep a cheapest one],
-// lean:AOP.A8_2_Exec.pathF_obj@55c448b1
-// lean:AOP.A8_2.pathF@2dcf37fa
-// lean:AOP.A8_2_Exec.alphaR_pathF@6536d8fa
+// lean:AOP.A8_2_Exec.F_obj@55c448b1
+// lean:AOP.A8_2.F@2dcf37fa
+// lean:AOP.A8_2_Exec.alphaR_F@6536d8fa
 // lean:AOP.A8_2.wrapz@940e3786
 // lean:AOP.A8_2.wrapz_apply@e7256951
 // lean:AOP.A8_2.consw@53d456cc
 // lean:AOP.A8_2.consw_apply@e512412c
-// lean:AOP.A8_2.pathCost@2d18e3c4
+// lean:AOP.A8_2.cost@2d18e3c4
 // lean:AOP.A8_2.costOf@dfe994f6
-// lean:AOP.A8_2.pathR@6d0be9c8
-// lean:AOP.A8_2_Exec.relCata_pathF_eps_eq_nelist@c0422a4d
+// lean:AOP.A8_2.R@6d0be9c8
+// lean:AOP.A8_2_Exec.relCata_F_eps_eq_nelist@c0422a4d
 // lean:AOP.A8_2_Exec.minpath_spec@99bd6e5b
 // lean:AOP.A8_2_Exec.minpath@6e6b277d
 // lean:AOP.A5_6_ListCombinators.RelSet.ListRel.nelist@6ec46793
@@ -319,11 +319,11 @@ row((
 // lean:AOP.A8_2.sumCop_u₂_apply@774edfff
 // lean:AOP.A5_6.cplMap@a82b3919
 // lean:AOP.A5_6.cprMap@379d6c37
-// lean:AOP.A8_2.pathQ@9626226f
+// lean:AOP.A8_2.Q@9626226f
 // lean:AOP.A8_2.head@32b2507f
-// lean:AOP.A8_2.pathStep@f546a21f
-// lean:AOP.A8_2.Λ_pathF_map_eps_id@59cd9f69
-// lean:AOP.A8_2.Λ_pathF_map_id_eps@b7473cec
+// lean:AOP.A8_2.step@f546a21f
+// lean:AOP.A8_2.Λ_F_map_eps_id@59cd9f69
+// lean:AOP.A8_2.Λ_F_map_id_eps@b7473cec
 )]<path-defn>
 
 #disp[#table(
@@ -337,7 +337,7 @@ row((
   [`S head⊑[𝟙,π₁]` #h(4pt) #src[`S≜F(𝟙,∋)α`]],
   [`S head` is simple, which gives `R∩(S°S)⊑Q`: between two paths `S` builds from one argument,
    equal cost and equal head already means `Q`],
-  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@1e7c3c78 lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
+  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@1e7c3c78 lean:AOP.A8_2.R_inter_recip_le_Q@2e1f5c5d
 )]<path-mono>
 
 === Derivation
@@ -345,9 +345,9 @@ row((
 // and INSIDE it from the thinning theorem on; that is what rows 1 and 2 differ by.
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
-#import "../generated/Freyd.Alg.thinning_paths.calc.typ" as calc-82c
+#import "../generated/Freyd.Alg.Paths.thinning_paths.calc.typ" as calc-82c
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.Paths.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2_Exec.thinning_paths@a206827d
@@ -370,12 +370,12 @@ row((
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
-  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[τ,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[τ,step]` — @Freyd.Alg.pathStep]],
+  [#EQ #leanf("Freyd.Alg.Paths.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[τ,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[τ,step]` — @Freyd.Alg.Paths.step]],
     // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@1fd47700
-    // lean:AOP.A8_2.pathStep@f546a21f
+    // lean:AOP.A8_2.step@f546a21f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
-  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Λ_pathF_map_eps_id]],
+  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Paths.Λ_F_map_eps_id]],
       // lean:AOP.A5_6.cpMap_sum_eq_junc@01828e3f
 )]<path-alg>
 // What `F(R,S)` does at 8.2d's `F(A,X)=A+A×X`: each part moves by its own relation, the summand stays.
@@ -388,7 +388,7 @@ row((
   F(A',X') =  A'  +   A' ×  X'
   ```
 ]
-// lean:AOP.A8_2.pathF@2dcf37fa
+// lean:AOP.A8_2.F@2dcf37fa
 `u F(R,S) v` holds iff one of:
 - `u`, `v` are both `inl` and `d R d'`: the leaf moves by `R`;
 - `u`, `v` are both `inr` and `p₁ R q₁ ∧ p₂ S q₂`: the vertex moves by `R`, the rest by `S`.

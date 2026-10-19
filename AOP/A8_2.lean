@@ -176,7 +176,14 @@ end Generic
   and the input functor is `X ↦ (V→Prop) + (V→Prop)×X`, i.e. `AOP.A6_ConsList`'s relator at
   leaf and element type `V→Prop` — the layers. -/
 
-section Paths
+/-- B&dM p.196: the section's fixed data, the weight `wt` of stepping from one vertex to the next.
+    Every definition below reads it from the one instance in scope, so the printer, which hides
+    instance arguments, shows the book's `cost`, not `cost wt`.  Named after the section's
+    namespace, so the field prints as the bare `wt`. -/
+public class Paths (A : Type) where
+  wt : A → A → Nat
+
+namespace Paths
 
 open RelSet RelSet.CL
 
@@ -189,38 +196,38 @@ variable {A : Type}
 
 /-- `cost [a₀,…,aₙ] = (+j : 0 ≤ j < n : wt(aⱼ,aⱼ₊₁))` (book p.196), as the `consw` recursion
     `cost(cons(a,x)) = wt(a,head x) + cost x`. -/
-@[expose] public def costOf (wt : A → A → Nat) : ConsList A A → Nat
+@[expose] public def costOf [Paths A] : ConsList A A → Nat
   | ConsList.wrap _ => 0
-  | ConsList.cons v q => wt v (headOf q) + costOf wt q
+  | ConsList.cons v q => wt v (headOf q) + costOf q
 
 /-- `R ≜ cost≤cost°` (book p.196), written as the book composes it so the note's definition line
     is printed from this value. -/
-@[expose] public def pathR (wt : A → A → Nat) : dCL A A ⟶ dCL A A :=
-  RelSet.graph (costOf wt) ≫ leRel ≫ (RelSet.graph (costOf wt))°
+@[expose] public def R [Paths A] : dCL A A ⟶ dCL A A :=
+  RelSet.graph costOf ≫ leRel ≫ (RelSet.graph costOf)°
 
 /-- `p R q` iff `p` costs no more than `q`. -/
-public theorem pathR_apply (wt : A → A → Nat) (p q : ConsList A A) :
-    pathR wt p q ↔ costOf wt p ≤ costOf wt q :=
+public theorem R_apply [Paths A] (p q : ConsList A A) :
+    R p q ↔ costOf p ≤ costOf q :=
   ⟨fun ⟨_, h1, _, h2, h3⟩ => by subst h1 h3; exact h2, fun h => ⟨_, rfl, _, h, rfl⟩⟩
 
 /-- `zero`, a one-vertex path's cost. -/
-@[expose] public def zeroCost : dL A ⟶ (⟨Nat⟩ : RelSet.{0}) := RelSet.graph fun _ => 0
+@[expose] public def zero : dL A ⟶ (⟨Nat⟩ : RelSet.{0}) := RelSet.graph fun _ => 0
 
 /-- `wrapz ≜ ⟨wrap,zero⟩` (book p.196). -/
-@[expose] public def wrapz : dL A ⟶ (⟨ConsList A A × Nat⟩ : RelSet.{0}) := rpair τ zeroCost
+@[expose] public def wrapz : dL A ⟶ (⟨ConsList A A × Nat⟩ : RelSet.{0}) := rpair τ zero
 
 /-- `consw` (book p.196) as a function on points. -/
-@[expose] public def conswFn (wt : A → A → Nat) (a : A) (q : ConsList A A × Nat) : ConsList A A × Nat :=
+@[expose] public def conswFn [Paths A] (a : A) (q : ConsList A A × Nat) : ConsList A A × Nat :=
   (ConsList.cons a q.1, wt a (headOf q.1) + q.2)
 
 /-- `consw(a,(xs,n)) = (cons(a,xs),wt(a,head(xs))+n)`. -/
-public theorem conswFn_apply (wt : A → A → Nat) (a : A) (xs : ConsList A A) (n : Nat) :
-    conswFn wt a (xs, n) = (ConsList.cons a xs, wt a (headOf xs) + n) := rfl
+public theorem conswFn_apply [Paths A] (a : A) (xs : ConsList A A) (n : Nat) :
+    conswFn a (xs, n) = (ConsList.cons a xs, wt a (headOf xs) + n) := rfl
 
 /-- `consw` as an arrow, the algebra's right summand. -/
-@[expose] public def consw (wt : A → A → Nat) :
+@[expose] public def consw [Paths A] :
     (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0}) ⟶ (⟨ConsList A A × Nat⟩ : RelSet.{0}) :=
-  RelSet.graph fun q => conswFn wt q.1 q.2
+  RelSet.graph fun q => conswFn q.1 q.2
 
 /-- `wrapz` on a point: `a ↦ ([a],0)`. -/
 public theorem wrapz_apply (a : A) (r : ConsList A A × Nat) :
@@ -228,21 +235,21 @@ public theorem wrapz_apply (a : A) (r : ConsList A A × Nat) :
   ⟨fun ⟨h1, h2⟩ => Prod.ext h1 h2, fun h => by subst h; exact ⟨rfl, rfl⟩⟩
 
 /-- `consw` on a point: `(a,(xs,n)) ↦ ([a]⧺xs, wt(a,head(xs))+n)`. -/
-public theorem consw_apply (wt : A → A → Nat) (a : A) (xs : ConsList A A) (n : Nat)
+public theorem consw_apply [Paths A] (a : A) (xs : ConsList A A) (n : Nat)
     (r : ConsList A A × Nat) :
-    consw wt (a, (xs, n)) r ↔ r = (ConsList.cons a xs, wt a (headOf xs) + n) := Iff.rfl
+    consw (a, (xs, n)) r ↔ r = (ConsList.cons a xs, wt a (headOf xs) + n) := Iff.rfl
 
 /-- `cost ≜ ⦇[wrapz,consw]⦈π₂` (book p.196): the fold builds the path beside its cost, and the
     cost is read off. -/
-@[expose] public def pathCost (wt : A → A → Nat) : dCL A A ⟶ (⟨Nat⟩ : RelSet.{0}) :=
-  cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw wt))
+@[expose] public def cost [Paths A] : dCL A A ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+  cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw))
     ≫ RelSet.graph Prod.snd
 
 /-- The fold `⦇[wrapz,consw]⦈` relates a path to itself beside `costOf` of it. -/
-public theorem cataR_wrapz_consw_apply (wt : A → A → Nat) : ∀ (xs : ConsList A A)
+public theorem cataR_wrapz_consw_apply [Paths A] : ∀ (xs : ConsList A A)
     (r : ConsList A A × Nat),
-    cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw wt)) xs r
-      ↔ r = (xs, costOf wt xs)
+    cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw)) xs r
+      ↔ r = (xs, costOf xs)
   | .wrap v, r => by
     constructor
     · rintro (⟨x, hx, h1, h2⟩ | ⟨y, hy, -⟩)
@@ -257,33 +264,33 @@ public theorem cataR_wrapz_consw_apply (wt : A → A → Nat) : ∀ (xs : ConsLi
     · rintro ⟨r', h1, (⟨x, hx, -⟩ | ⟨y, hy, h2⟩)⟩
       · cases hx
       · cases hy
-        have h1 := (cataR_wrapz_consw_apply wt xs r').mp h1
+        have h1 := (cataR_wrapz_consw_apply xs r').mp h1
         subst h1
         first | exact h2 | exact h2.symm
     · intro h
       subst h
-      exact ⟨_, (cataR_wrapz_consw_apply wt xs _).mpr rfl, Or.inr ⟨_, rfl, rfl⟩⟩
+      exact ⟨_, (cataR_wrapz_consw_apply xs _).mpr rfl, Or.inr ⟨_, rfl, rfl⟩⟩
 
 /-- `cost` is the structural `costOf`, as an arrow. -/
-public theorem pathCost_eq (wt : A → A → Nat) :
-    pathCost wt = (RelSet.graph (costOf wt) : dCL A A ⟶ (⟨Nat⟩ : RelSet.{0})) := by
+public theorem cost_eq [Paths A] :
+    cost = (RelSet.graph costOf : dCL A A ⟶ (⟨Nat⟩ : RelSet.{0})) := by
   apply hom_ext
   intro xs n
   constructor
   · rintro ⟨r, h1, h2⟩
-    have h1 := (cataR_wrapz_consw_apply wt xs r).mp h1
+    have h1 := (cataR_wrapz_consw_apply xs r).mp h1
     subst h1
     exact h2
   · intro h
-    exact ⟨_, (cataR_wrapz_consw_apply wt xs _).mpr rfl, h⟩
+    exact ⟨_, (cataR_wrapz_consw_apply xs _).mpr rfl, h⟩
 
 /-- `⦇[wrapz,consw]⦈ = ⟨𝟙,cost⟩` (book p.196). -/
-public theorem cataR_wrapz_consw (wt : A → A → Nat) :
-    cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw wt))
-      = rpair (𝟙 (dCL A A)) (pathCost wt) := by
+public theorem cataR_wrapz_consw [Paths A] :
+    cataR (junc (sumCop (dL A) (⟨A × (ConsList A A × Nat)⟩ : RelSet.{0})) wrapz (consw))
+      = rpair (𝟙 (dCL A A)) cost := by
   apply hom_ext
   intro xs r
-  rw [cataR_wrapz_consw_apply, pathCost_eq]
+  rw [cataR_wrapz_consw_apply, cost_eq]
   constructor
   · intro h
     subst h
@@ -300,7 +307,7 @@ public theorem cataR_wrapz_consw (wt : A → A → Nat) :
 
 /-- 8.2d's `F(A,X) = A + A×X` as a binary relator on `Rel(Set)` (book p.196): unlike `CL.FB`,
     the layer `A` moves in the leaf too, because a layer is what both summands draw from. -/
-@[expose] public def pathF : BiRelator RelSet.{0} where
+@[expose] public def F : BiRelator RelSet.{0} where
   obj a x := ⟨a.carrier ⊕ a.carrier × x.carrier⟩
   map R S := fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => R d d'
@@ -345,20 +352,20 @@ public theorem cataR_wrapz_consw (wt : A → A → Nat) :
 
 /-- 8.2d's `F(𝟙,S)` is §6.1's cons-list relator at the layer type: with the layer held still the
     bifunctor's leaf arm is an identity, which is all `CL.F` does there (book p.196). -/
-public theorem pathF_map_id (D : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
-    pathF.map (𝟙 D) S = (CL.F D.carrier D.carrier).map S :=
+public theorem F_map_id (D : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
+    F.map (𝟙 D) S = (CL.F D.carrier D.carrier).map S :=
   hom_ext fun u v => by cases u <;> cases v <;> exact Iff.rfl
 
 /-- `F(R,S) = [R inl, (R×S) inr]`: the network's bifunctor is the sum of its two arms, each
     followed by its injection — the form the two transposes below are read off. -/
-public theorem pathF_map_eq_junc {B B' X X' : RelSet.{0}} (R : B ⟶ B') (S : X ⟶ X') :
-    pathF.map R S = junc (sumCop B ⟨B.carrier × X.carrier⟩)
+public theorem F_map_eq_junc {B B' X X' : RelSet.{0}} (R : B ⟶ B') (S : X ⟶ X') :
+    F.map R S = junc (sumCop B ⟨B.carrier × X.carrier⟩)
       (R ≫ (sumCop B' ⟨B'.carrier × X'.carrier⟩).u₁)
       (rprodMap R S ≫ (sumCop B' ⟨B'.carrier × X'.carrier⟩).u₂) :=
   hom_ext fun u v => by
     show _ ↔ (∃ x', u = Sum.inl x' ∧ ∃ m, R x' m ∧ v = Sum.inl m)
       ∨ (∃ y', u = Sum.inr y' ∧ ∃ m, rprodMap R S y' m ∧ v = Sum.inr m)
-    cases u <;> cases v <;> simp only [pathF, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq, false_and,
+    cases u <;> cases v <;> simp only [F, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq, false_and,
       and_false, exists_false, or_false, false_or, exists_eq_left', exists_eq_right']
       <;> exact Iff.rfl
 
@@ -378,14 +385,14 @@ public theorem sumCop_u₂_apply (B C : RelSet.{0}) (b : C.carrier) (s : B.carri
 
 /-- `F(∋,𝟙)%∋ = [𝟙 P(inl), cpl P(inr)]` (book p.198's `ΛF(∈,id) = id + cpl`): a set of layer
     vertices injects whole, and beside a partial path `cpl` pairs the path with each vertex. -/
-public theorem Λ_pathF_map_eps_id (B X : RelSet.{0}) :
-    Λ (pathF.map (∋ B) (𝟙 X))
+public theorem Λ_F_map_eps_id (B X : RelSet.{0}) :
+    Λ (F.map (∋ B) (𝟙 X))
       = junc (sumCop (P B) ⟨(P B).carrier × X.carrier⟩)
           (𝟙 (P B) ≫ powerRel (sumCop B ⟨B.carrier × X.carrier⟩).u₁)
           (cplMap X B ≫ powerRel (sumCop B ⟨B.carrier × X.carrier⟩).u₂) := by
   have hu₁ : Map (sumCop B ⟨B.carrier × X.carrier⟩).u₁ := graph_map _
   have hu₂ : Map (sumCop B ⟨B.carrier × X.carrier⟩).u₂ := graph_map _
-  rw [pathF_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
+  rw [F_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
     ← Λ_absorption, ← Λ_absorption, Λ_eps_reflection]
   simp only [cplMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
   rw [prodMap_eq_rprodMap]
@@ -393,14 +400,14 @@ public theorem Λ_pathF_map_eps_id (B X : RelSet.{0}) :
 
 /-- `F(𝟙,∋)%∋ = [τ P(inl), cpr P(inr)]` (book p.198's `id + cpr`): a leaf vertex becomes the
     singleton of its injection, and `cpr` pairs a vertex with each tail of the set beside it. -/
-public theorem Λ_pathF_map_id_eps (B X : RelSet.{0}) :
-    Λ (pathF.map (𝟙 B) (∋ X))
+public theorem Λ_F_map_id_eps (B X : RelSet.{0}) :
+    Λ (F.map (𝟙 B) (∋ X))
       = junc (sumCop B ⟨B.carrier × (P X).carrier⟩)
           (singletonMap ≫ powerRel (sumCop B ⟨B.carrier × X.carrier⟩).u₁)
           (cprMap B X ≫ powerRel (sumCop B ⟨B.carrier × X.carrier⟩).u₂) := by
   have hu₁ : Map (sumCop B ⟨B.carrier × X.carrier⟩).u₁ := graph_map _
   have hu₂ : Map (sumCop B ⟨B.carrier × X.carrier⟩).u₂ := graph_map _
-  rw [pathF_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
+  rw [F_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
     ← Λ_absorption, ← Λ_absorption]
   simp only [cprMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
   rw [prodMap_eq_rprodMap]
@@ -408,7 +415,7 @@ public theorem Λ_pathF_map_id_eps (B X : RelSet.{0}) :
 
 /-- `F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
 @[expose] public def pathSplit : Fobj A A (pow (dCL A A)) ⟶ dCL A A :=
-  pathF.map (𝟙 _) (∋ _) ≫ alphaR
+  F.map (𝟙 _) (∋ _) ≫ alphaR
 
 /-- `S`'s pointwise reading: `wrap` the leaf vertex, or `cons` the vertex onto some tail of the
     set. -/
@@ -453,30 +460,30 @@ public theorem pathSplit_apply (u : (Fobj A A (pow (dCL A A))).carrier) (p : Con
 public theorem headRel_map : Map (head (A := A)) := RelSet.graph_map _
 
 /-- `Q ≜ R∩(head head°)` (book p.197): no dearer, and starting at the same vertex. -/
-@[expose] public def pathQ (wt : A → A → Nat) : dCL A A ⟶ dCL A A :=
-  pathR wt ∩ (head ≫ head°)
+@[expose] public def Q [Paths A] : dCL A A ⟶ dCL A A :=
+  R ∩ (head ≫ head°)
 
-public theorem pathQ_apply (wt : A → A → Nat) (p q : ConsList A A) :
-    pathQ wt p q ↔ costOf wt p ≤ costOf wt q ∧ headOf p = headOf q :=
-  ⟨fun ⟨h, _, h1, h2⟩ => ⟨(pathR_apply wt p q).mp h, by subst h1; exact h2⟩,
-    fun ⟨h, e⟩ => ⟨(pathR_apply wt p q).mpr h, _, rfl, e⟩⟩
+public theorem Q_apply [Paths A] (p q : ConsList A A) :
+    Q p q ↔ costOf p ≤ costOf q ∧ headOf p = headOf q :=
+  ⟨fun ⟨h, _, h1, h2⟩ => ⟨(R_apply p q).mp h, by subst h1; exact h2⟩,
+    fun ⟨h, e⟩ => ⟨(R_apply p q).mpr h, _, rfl, e⟩⟩
 
 /-- `Q ⊑ R` (book p.197): `Q` is `R` with the head recorded. -/
-public theorem pathQ_le_pathR (wt : A → A → Nat) : pathQ wt ⊑ pathR wt :=
+public theorem Q_le_R [Paths A] : Q (A := A) ⊑ R :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- `R ≜ cost≤cost°` is a preorder (book p.197), because `≤` on costs is. -/
-public theorem pathR_preorder (wt : A → A → Nat) : preorder (pathR wt) :=
-  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathR_apply wt p p).mpr (Nat.le_refl _),
+public theorem R_preorder [Paths A] : preorder (R (A := A)) :=
+  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (R_apply p p).mpr (Nat.le_refl _),
    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
-     (pathR_apply wt _ _).mpr (Nat.le_trans ((pathR_apply wt _ _).mp h1) ((pathR_apply wt _ _).mp h2))⟩
+     (R_apply _ _).mpr (Nat.le_trans ((R_apply _ _).mp h1) ((R_apply _ _).mp h2))⟩
 
 /-- `Q ≜ R∩(head head°)` is a preorder (book p.197): both `≤` on costs and `=` on heads are. -/
-public theorem pathQ_preorder (wt : A → A → Nat) : preorder (pathQ wt) :=
-  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩,
+public theorem Q_preorder [Paths A] : preorder (Q (A := A)) :=
+  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (Q_apply p p).mpr ⟨Nat.le_refl _, rfl⟩,
    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
-     have h1 := (pathQ_apply wt _ _).mp h1; have h2 := (pathQ_apply wt _ _).mp h2
-     (pathQ_apply wt _ _).mpr ⟨Nat.le_trans h1.1 h2.1, h1.2.trans h2.2⟩⟩
+     have h1 := (Q_apply _ _).mp h1; have h2 := (Q_apply _ _).mp h2
+     (Q_apply _ _).mpr ⟨Nat.le_trans h1.1 h2.1, h1.2.trans h2.2⟩⟩
 
 public theorem headAlg_map : Map (headAlg (A := A)) := RelSet.graph_map _
 
@@ -484,8 +491,8 @@ public theorem headAlg_map : Map (headAlg (A := A)) := RelSet.graph_map _
     `MonotonicAlg Sspec Q`.  Consing the same vertex onto a `Q`-better path gives a `Q`-better
     path: equal heads make the new edge cost the same, and the rest is the assumption.  On `R`
     alone it fails — `wt(a,head q)` can be arbitrarily large — which is why `Q` records the head. -/
-public theorem pathAlg_monotonic (wt : A → A → Nat) :
-    Freyd.Alg.Pres (F := CL.F (A → Prop) (A → Prop)) (pathAlg (A := A)) (pathQ wt) := by
+public theorem pathAlg_monotonic [Paths A] :
+    Freyd.Alg.Pres (F := CL.F (A → Prop) (A → Prop)) (pathAlg (A := A)) Q := by
   refine le_iff.mpr ?_
   rintro u p ⟨u', hu, hp⟩
   cases u with
@@ -494,7 +501,7 @@ public theorem pathAlg_monotonic (wt : A → A → Nat) :
     | inl S' =>
       have hS : S = S' := hu
       subst hS
-      exact ⟨p, hp, (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩⟩
+      exact ⟨p, hp, (Q_apply p p).mpr ⟨Nat.le_refl _, rfl⟩⟩
     | inr q' => exact hu.elim
   | inr q =>
     cases u' with
@@ -502,9 +509,9 @@ public theorem pathAlg_monotonic (wt : A → A → Nat) :
     | inr q' =>
       obtain ⟨hSS, hq⟩ := hu
       obtain ⟨v, hv, rfl⟩ := hp
-      refine ⟨ConsList.cons v q.2, ⟨v, by rw [hSS]; exact hv, rfl⟩, (pathQ_apply wt _ _).mpr ⟨?_, rfl⟩⟩
-      obtain ⟨hq1, hq2⟩ := (pathQ_apply wt _ _).mp hq
-      show wt v (headOf q.2) + costOf wt q.2 ≤ wt v (headOf q'.2) + costOf wt q'.2
+      refine ⟨ConsList.cons v q.2, ⟨v, by rw [hSS]; exact hv, rfl⟩, (Q_apply _ _).mpr ⟨?_, rfl⟩⟩
+      obtain ⟨hq1, hq2⟩ := (Q_apply _ _).mp hq
+      show wt v (headOf q.2) + costOf q.2 ≤ wt v (headOf q'.2) + costOf q'.2
       rw [hq2]
       exact Nat.add_le_add_left hq1 _
 
@@ -522,12 +529,12 @@ public theorem pathSplit_comp_headRel_le : pathSplit (A := A) ≫ head ⊑ headA
 /-- `thinning_paths`'s `hQ` for the network (book p.198): `R∩((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q` at `Q ≜ R∩(head head°)`.
     `S head ⊑ [𝟙,π₁]` makes `S head` simple, and the shunting step turns that into
     `S°S ⊑ head head°`. -/
-public theorem pathR_inter_recip_le_pathQ (wt : A → A → Nat) :
-    pathR wt ∩ ((pathSplit (A := A))° ≫ pathSplit) ⊑ pathQ wt := by
+public theorem R_inter_recip_le_Q [Paths A] :
+    R ∩ ((pathSplit (A := A))° ≫ pathSplit) ⊑ Q := by
   have hsimple : Simple (pathSplit (A := A) ≫ head) :=
     le_trans (le_trans (comp_mono_right (recip_mono pathSplit_comp_headRel_le) _)
       (comp_mono_left _ pathSplit_comp_headRel_le)) headAlg_map.2
-  exact inter_mono (le_refl (pathR wt)) (recip_comp_le_of_simple_comp headRel_map hsimple)
+  exact inter_mono (le_refl R) (recip_comp_le_of_simple_comp headRel_map hsimple)
 
 /-! ### The note's `path-defn`: the transposes computed on the coproduct
 
@@ -537,34 +544,34 @@ public theorem pathR_inter_recip_le_pathQ (wt : A → A → Nat) :
 
 /-- `step ≜ cpr P(cons) est(R)` (book p.198): the vertex distributes over the SET of tails, `cons`
     goes on each of them, and `est R` keeps a cheapest one. -/
-@[expose] public def pathStep (wt : A → A → Nat) :
+@[expose] public def step [Paths A] :
     (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0}) ⟶ dCL A A :=
-  cprMap (dE A) (dCL A A) ≫ powerRel consR ≫ est (pathR wt)
+  cprMap (dE A) (dCL A A) ≫ powerRel consR ≫ est R
 
 /-- `F(𝟙,∋)α` (book p.198): what `pathSplit`'s definition says in words — the bifunctor at
     `∋` in the recursion argument, followed by the constructor. -/
 public theorem pathSplit_eq_Fmap_comp_alphaR :
     (pathSplit (A := A)) = (CL.F A A).map (∋ (dCL A A)) ≫ alphaR := by
   unfold pathSplit
-  rw [pathF_map_id]
+  rw [F_map_id]
 
 /-- **`F(𝟙,∋) P(α) est(R) = [wrap,step]`** (book p.198, the note's `path-defn`): the second
     transpose, computed on the same coproduct.  On the leaf summand there is no set to distribute,
     so the transpose is the singleton and `est R` gives `wrap` back; on the `A×X` summand it is
     `cpr`, and consing onto each tail and keeping a cheapest one is `step`. -/
-public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat) :
+public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc [Paths A] :
     cpMap (CL.F A A) (dCL A A)
-        ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) ≫ est (pathR wt)
-      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ (pathStep wt) := by
+        ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) ≫ est R
+      = junc (sumCop (dL A) (⟨A × (pow (dCL A A)).carrier⟩ : RelSet.{0})) τ step := by
   have hα : Map (alphaR : Alg (CL.F A A) (dCL A A)) := graph_map _
   have hc : Map (consR : (⟨A × ConsList A A⟩ : RelSet.{0}) ⟶ dCL A A) := graph_map _
   have hL : cpMap (CL.F A A) (dCL A A)
       ≫ powerRel (alphaR : Alg (CL.F A A) (dCL A A)) = Λ (pathSplit (A := A)) := by
     simp only [cpMap]
     rw [powerRel_map hα, Λ_absorption, ← pathSplit_eq_Fmap_comp_alphaR]
-  have hS : pathStep wt
-      = Λ (rprodMap (𝟙 (dE A)) (∋ (dCL A A)) ≫ consR) ≫ est (pathR wt) := by
-    simp only [pathStep, cprMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
+  have hS : step
+      = Λ (rprodMap (𝟙 (dE A)) (∋ (dCL A A)) ≫ consR) ≫ est R := by
+    simp only [step, cprMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
     rw [prodMap_eq_rprodMap, ← Cat.assoc, powerRel_map hc, Λ_absorption]
     rfl
   have hstep : ∀ (q : A × (pow (dCL A A)).carrier) (z : ConsList A A),
@@ -598,7 +605,7 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat
         intro z hz
         have hz' : z = ConsList.wrap v := (pathSplit_apply _ _).mp hz
         subst hz'
-        exact (pathR_apply wt _ _).mpr (Nat.le_refl _)
+        exact (R_apply _ _).mpr (Nat.le_refl _)
       · exact (nomatch hy)
   | inr q =>
     constructor
@@ -617,49 +624,19 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : A → A → Nat
 
 end Paths
 
--- printing-only: B&dM p.196 names the cost order `R` and p.197 its refinement `Q`, and p.198 the
--- step `step`; `path` is only Lean's prefix, kept apart from `Edit`'s `step`.  Each drops `wt`.
+-- printing-only: B&dM p.196's `head`, `cost` and `consw` each name both a function on points and
+-- its graph; Lean needs two names, the note prints the book's one.
 open Lean PrettyPrinter in
-@[app_unexpander pathR] public meta def unexpandPathR : Unexpander
-  | `($_ $_) => `($(mkIdent `R))
-  | `($_ $_ $args*) => `($(mkIdent `R) $args*)
-  | _ => `($(mkIdent `R))
-open Lean PrettyPrinter in
-@[app_unexpander pathQ] public meta def unexpandPathQ : Unexpander
-  | `($_ $_) => `($(mkIdent `Q))
-  | `($_ $_ $args*) => `($(mkIdent `Q) $args*)
-  | _ => `($(mkIdent `Q))
-open Lean PrettyPrinter in
-@[app_unexpander pathStep] public meta def unexpandPathStep : Unexpander
-  | `($_ $_) => `($(mkIdent `step))
-  | `($_ $_ $args*) => `($(mkIdent `step) $args*)
-  | _ => `($(mkIdent `step))
-open Lean PrettyPrinter in
-@[app_unexpander headOf] public meta def unexpandHeadOf : Unexpander
+@[app_unexpander Paths.headOf] public meta def unexpandHeadOf : Unexpander
   | `($_ $args*) => `($(mkIdent `head) $args*)
   | _ => `($(mkIdent `head))
-
--- printing-only: B&dM p.196's `cost` and `consw`; the weight `wt` is the section's one parameter
--- and no argument the note writes.
 open Lean PrettyPrinter in
-@[app_unexpander costOf] public meta def unexpandCostOf : Unexpander
-  | `($_ $_) => `($(mkIdent `cost))
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+@[app_unexpander Paths.costOf] public meta def unexpandCostOf : Unexpander
+  | `($_ $args*) => `($(mkIdent `cost) $args*)
   | _ => `($(mkIdent `cost))
 open Lean PrettyPrinter in
-@[app_unexpander pathCost] public meta def unexpandPathCost : Unexpander
-  | `($_ $_) => `($(mkIdent `cost))
-  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
-  | _ => `($(mkIdent `cost))
-open Lean PrettyPrinter in
-@[app_unexpander conswFn] public meta def unexpandConswFn : Unexpander
-  | `($_ $_) => `($(mkIdent `consw))
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
-  | _ => `($(mkIdent `consw))
-open Lean PrettyPrinter in
-@[app_unexpander consw] public meta def unexpandConsw : Unexpander
-  | `($_ $_) => `($(mkIdent `consw))
-  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+@[app_unexpander Paths.conswFn] public meta def unexpandConswFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `consw) $args*)
   | _ => `($(mkIdent `consw))
 
 -- printing-only: `S ≜ F(𝟙,∋)α`, the letter of the 8.2d side condition `R∩(S°S)⊑Q` only.
@@ -668,13 +645,3 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `S))
 
 end Freyd.Alg
-
--- printing-only: the note's names for this section's declarations.
--- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.pathF] public meta def Freyd.Alg.unexpandPathF : Unexpander
-  | _ => `($(mkIdent `F))
--- B&dM p.196's `zero`; the weight `wt` is the section's parameter.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.zeroCost] public meta def Freyd.Alg.unexpandZeroCost : Unexpander
-  | _ => `($(mkIdent `zero))
