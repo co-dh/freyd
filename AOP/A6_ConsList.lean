@@ -514,22 +514,6 @@ open Lean PrettyPrinter in
   | `($_ Unit $E) => `([$E])
   | _ => throw ()
 
--- `Str A` is written by name, not unfolded to `[A]`: it is the strings over the alphabet `A`.
-open Lean PrettyPrinter in
-@[app_unexpander Str] public meta def unexpandStr : Unexpander
-  | `($_ $A) => `($(mkIdent `Str) $A)
-  | _ => throw ()
-
-open Lean PrettyPrinter in
-@[app_unexpander dCL] public meta def unexpandDCL : Unexpander
-  | `($_ Unit $E) => `([$E])
-  | _ => throw ()
-
-open Lean PrettyPrinter in
-@[app_unexpander dE] public meta def unexpandDE : Unexpander
-  | `($_ $E) => `($E)
-  | _ => throw ()
-
 open Lean PrettyPrinter in
 @[app_unexpander F] public meta def unexpandF : Unexpander
   | `($_ $_ $_) => `($(mkIdent `F))

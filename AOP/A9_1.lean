@@ -715,7 +715,7 @@ private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = class
 /-- **`α = [nil,snoc]`** — the initial algebra as the JUNCTION the note writes, at the one label
     where `wrap` carries nothing.  Every §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this
     equation and then the relator sliding into the bracket. -/
-public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _) nil snocR := by
+public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _) nil snoc := by
   apply hom_ext; intro u r
   constructor
   · intro h
@@ -737,7 +737,7 @@ public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _
 
 /-- The second arm of the constructor algebra is `snoc` — what `[nil,snoc]` does on its `X×W`
     summand.  The note writes the arm by that name, never as the algebra restricted. -/
-public theorem arm₂_con : arm₂ (graph (con (L := L) (E := W))) = snocR := rfl
+public theorem arm₂_con : arm₂ (graph (con (L := L) (E := W))) = snoc := rfl
 
 /-- THE ARM OF A MAP IS A MAP — `arm₂` of a graph is the graph of the function restricted to the
     summand — so the note's name for the arm is read off that function, exactly as every other

@@ -609,7 +609,7 @@ public theorem code_laws [RelSet.Code] :
     mu (fun X : dStr ⟶ dCodes =>
         Λ ((junc (sumCop _ _) nil extend
               : Alg (F Unit Code) dStr)°) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR) ≫ est (R))
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snoc) ≫ est (R))
       ⊑ Λ (Allegory.recip decode) ≫ est (R) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   have hH : (relCata (F := F Unit Code) extendAlg)°
@@ -683,10 +683,10 @@ public theorem code_disj : extend ≫ (nil : dL Unit ⟶ dStr)° = 𝟘 :=
     `[nil,extend]`, whose `Q₂` at `Q≜𝟙+(prefix°×(⊤+⊤))` is `prefix°×(⊤+⊤)`. -/
 public theorem code_branch [RelSet.Code] (X : dStr ⟶ dCodes) :
     Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R)
+        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snoc) ≫ est (R)
       ⊑ Λ ((junc (sumCop _ _) nil extend
               : Alg (F Unit Code) dStr)°) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR)
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snoc)
           ≫ est (R) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   -- `T` and `U` are named because `arm₂ ?T = extend` is a higher-order unification the elaborator
@@ -990,9 +990,9 @@ public theorem mem_reduce (ws : Str) (q : Str × Code) :
     reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`
     would exploit. -/
 public theorem code_prog [RelSet.Code] (encode : dStr ⟶ dCodes) :
-    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R)
+    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ minL(R)
       ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R) := by
   have hmem : ∀ w : Str, (fun q => ListRel.inlistP (reduceFn w) q) = fun q => extendP q w :=
     fun w => funext fun q => propext (mem_reduce w q)
   have hred : reduce ≫ ListRel.setify = Λ (extend°) := by
@@ -1011,17 +1011,17 @@ public theorem code_prog [RelSet.Code] (encode : dStr ⟶ dCodes) :
       cases e with
       | sym _ => exact trivial
       | ptr _ _ => exact trivial
-  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minL(R)
+  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ minL(R)
       ⊑ reduce ≫ ListRel.setify
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) :=
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R) :=
         comp_mono_left reduce (CL.list_comp_minL_le _ _)
-    _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
+    _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R) := by
         rw [← Cat.assoc, hred]
     _ ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
-          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R) := by
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R) := by
         refine comp_mono_left _ ?_
         have h := comp_mono_right (id_le_thinRel hrefl)
-          (powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R))
+          (powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R))
         rwa [Cat.id_comp] at h
 
 -- `extend` keeps its namespace where `decode` does not, `Freyd.UF.Filter.extend` sharing the name;
