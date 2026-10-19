@@ -159,6 +159,15 @@ public theorem greedy_dp_context (I : InitialAlgebra F)
 
 end Freyd.Alg
 
+/-- B&dM p.254: the section's fixed data — a job's completion, due and weighting quantities `ct`,
+    `dt`, `wt`; `Real` is `Int` here.  Every definition below reads them from the one instance in
+    scope, so the printer, which hides instance arguments, shows the book's `cost`, not
+    `cost ct dt wt`.  `Job` is an `outParam`: the instance in scope fixes the job type. -/
+public class Freyd.Alg.RelSet.Tardy (Job : outParam Type) where
+  ct : Job → Int
+  dt : Job → Int
+  wt : Job → Int
+
 namespace Freyd.Alg.RelSet.Tardy
 
 open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.SL
@@ -172,28 +181,28 @@ variable {Job : Type}
   a bag to every ordering of it. -/
 
 /-- Permutation, the equivalence a bag quotients by. -/
-public instance permSetoid (Job : Type) : Setoid (List Job) where
+public instance perm (Job : Type) : Setoid (List Job) where
   r := List.Perm
   iseqv := ⟨List.Perm.refl, fun h => h.symm, fun h₁ h₂ => h₁.trans h₂⟩
 
 /-- **tardy-defn**: the object `Bag Job`. -/
-@[expose] public abbrev Bag (Job : Type) : RelSet.{0} := ⟨Quotient (permSetoid Job)⟩
+@[expose] public abbrev Bag (Job : Type) : RelSet.{0} := ⟨Quotient (perm Job)⟩
 
 -- The note's object language spells a datatype's object lower case and bracketed where the argument
 -- is applied (`bag(Job)`); a NOTATION for the reason `thin(` is one: no term prints its own brackets.
 notation:max "bag(" J ")" => Bag J
 
 /-- **tardy-defn**: `nil`, the empty bag. -/
-@[expose] public def nilBag : (Bag Job).carrier := Quotient.mk (permSetoid Job) []
+@[expose] public def Bag.nil : (Bag Job).carrier := Quotient.mk (perm Job) []
 
 /-- **tardy-defn**: `snag (u,j)` places the job `j` in the bag `u`. -/
 @[expose] public def snag (p : (Bag Job).carrier × Job) : (Bag Job).carrier :=
-  Quotient.liftOn p.1 (fun xs => Quotient.mk (permSetoid Job) (p.2 :: xs))
+  Quotient.liftOn p.1 (fun xs => Quotient.mk (perm Job) (p.2 :: xs))
     fun _ _ h => Quotient.sound (h.cons p.2)
 
 /-- **tardy-defn**: the algebra `β≜[nil,snag] : F(Bag Job)⟶Bag Job` as a function. -/
 @[expose] public def bagAlgFn : (Fobj Unit Job (Bag Job)).carrier → (Bag Job).carrier
-  | Sum.inl _ => nilBag
+  | Sum.inl _ => Bag.nil
   | Sum.inr p => snag p
 
 /-- **tardy-defn**: `β≜[nil,snag]`, a map. -/
@@ -205,18 +214,18 @@ notation:max "bag(" J ")" => Bag J
   | SnocList.snoc x a => a :: blist x
 
 /-- **tardy-defn**: `bagify≜⦇β⦈ : [Job]⟶Bag Job`, read as the function it is. -/
-@[expose] public def bagifyFn (s : SnocList Unit Job) : (Bag Job).carrier :=
-  Quotient.mk (permSetoid Job) (blist s)
+@[expose] public def Fn.bagify (s : SnocList Unit Job) : (Bag Job).carrier :=
+  Quotient.mk (perm Job) (blist s)
 
 /-- **tardy-defn**, pointwise: the empty schedule has the empty bag. -/
-public theorem bagifyFn_wrap (u : Unit) : bagifyFn (SnocList.wrap u : SnocList Unit Job) = nilBag := rfl
+public theorem bagifyFn_wrap (u : Unit) : Fn.bagify (SnocList.wrap u : SnocList Unit Job) = Bag.nil := rfl
 
 /-- **tardy-defn**, pointwise: the last job of a schedule joins the bag of its front. -/
 public theorem bagifyFn_snoc (xs : SnocList Unit Job) (a : Job) :
-    bagifyFn (SnocList.snoc xs a) = snag (bagifyFn xs, a) := rfl
+    Fn.bagify (SnocList.snoc xs a) = snag (Fn.bagify xs, a) := rfl
 
 /-- **tardy-defn**: `bagify` as a morphism; `H = bagify°`. -/
-@[expose] public def bagify : dSL Unit Job ⟶ Bag Job := graph bagifyFn
+@[expose] public def bagify : dSL Unit Job ⟶ Bag Job := graph Fn.bagify
 
 /-- **tardy-defn**: the catamorphism of `β` IS `bagify`. -/
 public theorem bagify_cata : cataR (bagAlg (Job := Job)) = bagify := by
@@ -227,19 +236,19 @@ public theorem bagify_cata : cataR (bagAlg (Job := Job)) = bagify := by
     intro u
     constructor
     · rintro ⟨u', hu', hstep⟩
-      obtain rfl : u' = bagifyFn x := (ih u').mp hu'
+      obtain rfl : u' = Fn.bagify x := (ih u').mp hu'
       exact hstep
-    · intro (h : u = bagAlgFn (Sum.inr (bagifyFn x, a)))
-      exact ⟨bagifyFn x, (ih _).mpr rfl, h⟩
+    · intro (h : u = bagAlgFn (Sum.inr (Fn.bagify x, a)))
+      exact ⟨Fn.bagify x, (ih _).mpr rfl, h⟩
 
 /-- Every bag is the bag of some list — bags have representatives, which is how the greedy step
     gets a schedule to delete a job from. -/
 public theorem exists_rep (b : (Bag Job).carrier) :
-    ∃ xs : List Job, Quotient.mk (permSetoid Job) xs = b :=
+    ∃ xs : List Job, Quotient.mk (perm Job) xs = b :=
   Quotient.inductionOn b fun xs => ⟨xs, rfl⟩
 
 /-- **Proposition 10.1**: `nil` and `snag` have disjoint ranges — a snagged bag is not empty. -/
-public theorem nil_ne_snag (u : (Bag Job).carrier) (j : Job) : nilBag ≠ snag (u, j) := by
+public theorem nil_ne_snag (u : (Bag Job).carrier) (j : Job) : Bag.nil ≠ snag (u, j) := by
   refine Quotient.inductionOn u ?_
   intro xs hEq
   have hl := (Quotient.exact hEq : ([] : List Job).Perm (j :: xs)).length_eq
@@ -253,15 +262,14 @@ public theorem nil_ne_snag (u : (Bag Job).carrier) (j : Job) : nilBag ≠ snag (
   `bagify` — that is `penalty_eq_bagPenalty`, and it is what makes the context hypotheses true
   where the unrestricted ones are false. -/
 
-variable (ct dt wt : Job → Int)
 
 /-- `sum·list ct` on a plain list of jobs. -/
-@[expose] public def ctsumL : List Job → Int
+@[expose] public def ctsumL [Tardy Job] : List Job → Int
   | [] => 0
   | a :: as => ct a + ctsumL as
 
 /-- Reordering jobs does not change their total completion time. -/
-public theorem ctsumL_perm {xs ys : List Job} (h : xs.Perm ys) : ctsumL ct xs = ctsumL ct ys := by
+public theorem ctsumL_perm [Tardy Job] {xs ys : List Job} (h : xs.Perm ys) : ctsumL xs = ctsumL ys := by
   induction h with
   | nil => rfl
   | cons a _ ih => show ct a + _ = ct a + _; rw [ih]
@@ -269,25 +277,25 @@ public theorem ctsumL_perm {xs ys : List Job} (h : xs.Perm ys) : ctsumL ct xs = 
   | trans _ _ ih₁ ih₂ => exact ih₁.trans ih₂
 
 /-- **tardy-defn**: `sum(list(ct)(xs))`, the completion time of the schedule `xs`. -/
-@[expose] public def ctsum (s : SnocList Unit Job) : Int := ctsumL ct (blist s)
+@[expose] public def ctsum [Tardy Job] (s : SnocList Unit Job) : Int := ctsumL (blist s)
 
 /-- The completion time of a BAG: `sum·list ct` factors through `bagify`. -/
-@[expose] public def bagCt (u : (Bag Job).carrier) : Int :=
-  Quotient.liftOn u (ctsumL ct) fun _ _ h => ctsumL_perm ct h
+@[expose] public def bagCt [Tardy Job] (u : (Bag Job).carrier) : Int :=
+  Quotient.liftOn u (ctsumL) fun _ _ h => ctsumL_perm h
 
 /-- **tardy-defn**: `(bagify°×𝟙) penalty`, the penalty of putting `j` last after ANY ordering of
     the bag `u`. -/
-@[expose] public def bagPenalty (p : (Bag Job).carrier × Job) : Int :=
-  (bagCt ct p.1 + ct p.2 - dt p.2) * wt p.2
+@[expose] public def bagPenalty [Tardy Job] (p : (Bag Job).carrier × Job) : Int :=
+  (bagCt p.1 + ct p.2 - dt p.2) * wt p.2
 
 /-- **tardy-defn**: `penalty(xs,j)=(sum(list(ct)(xs))+ct(j)−dt(j))×wt(j)`. -/
-@[expose] public def penalty (xs : SnocList Unit Job) (j : Job) : Int :=
-  (ctsum ct xs + ct j - dt j) * wt j
+@[expose] public def Fn.penalty [Tardy Job] (xs : SnocList Unit Job) (j : Job) : Int :=
+  (ctsum xs + ct j - dt j) * wt j
 
 /-- **B&dM p.255**: `penalty (x,j)` depends only on the JOBS in `x`, not on their order — the
     fact the whole context argument rests on. -/
-public theorem penalty_eq_bagPenalty (s : SnocList Unit Job) (j : Job) :
-    penalty ct dt wt s j = bagPenalty ct dt wt (bagifyFn s, j) := rfl
+public theorem penalty_eq_bagPenalty [Tardy Job] (s : SnocList Unit Job) (j : Job) :
+    Fn.penalty s j = bagPenalty (Fn.bagify s, j) := rfl
 
 /-- `bmax`, the binary maximum. -/
 @[expose] public def bmax (a b : Int) : Int := if a ≤ b then b else a
@@ -305,32 +313,32 @@ public theorem bmax_le {a b c : Int} (ha : a ≤ c) (hb : b ≤ c) : bmax a b �
   split <;> omega
 
 /-- **tardy-defn**: `cost []=0`, `cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`. -/
-@[expose] public def cost : SnocList Unit Job → Int
+@[expose] public def Fn.cost [Tardy Job] : SnocList Unit Job → Int
   | SnocList.wrap _ => 0
-  | SnocList.snoc xs a => bmax (cost xs) (penalty ct dt wt xs a)
+  | SnocList.snoc xs a => bmax (Fn.cost xs) (Fn.penalty xs a)
 
 /-- **tardy-defn**: `R≜cost≤cost°`. -/
-@[expose] public def R : dSL Unit Job ⟶ dSL Unit Job :=
-  fun xs ys => cost ct dt wt xs ≤ cost ct dt wt ys
+@[expose] public def R [Tardy Job] : dSL Unit Job ⟶ dSL Unit Job :=
+  fun xs ys => Fn.cost xs ≤ Fn.cost ys
 
-public theorem R_trans : R ct dt wt ≫ R ct dt wt ⊑ R ct dt wt :=
+public theorem R_trans [Tardy Job] : R ≫ R ⊑ R :=
   le_iff.mpr fun u w h => by
     obtain ⟨v, h1, h2⟩ := h
-    exact Int.le_trans (h1 : cost ct dt wt u ≤ cost ct dt wt v) h2
+    exact Int.le_trans (h1 : Fn.cost u ≤ Fn.cost v) h2
 
 /-- **tardy-defn**: `f≜[zero,(bagify°×𝟙) penalty]`. -/
-@[expose] public def fFn : ((F Unit Job).obj (Bag Job)).carrier → Int
+@[expose] public def Fn.f [Tardy Job] : ((F Unit Job).obj (Bag Job)).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr p => bagPenalty ct dt wt p
+  | Sum.inr p => bagPenalty p
 
 /-- **tardy-defn**: `Q≜f≤f°` — a minimum under `Q` identifies a job of least penalty. -/
-@[expose] public def Q : (F Unit Job).obj (Bag Job) ⟶ (F Unit Job).obj (Bag Job) :=
-  fun u v => fFn ct dt wt u ≤ fFn ct dt wt v
+@[expose] public def Q [Tardy Job] : (F Unit Job).obj (Bag Job) ⟶ (F Unit Job).obj (Bag Job) :=
+  fun u v => Fn.f u ≤ Fn.f v
 
 /-- **tardy-defn**: `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`, `Q` on the `snag` branch alone —
     what B&dM's Proposition 10.1 step leaves, and what `pick` refines. -/
-@[expose] public def Q' : (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨(Bag Job).carrier × Job⟩ :=
-  fun p q => bagPenalty ct dt wt p ≤ bagPenalty ct dt wt q
+@[expose] public def Q' [Tardy Job] : (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨(Bag Job).carrier × Job⟩ :=
+  fun p q => bagPenalty p ≤ bagPenalty q
 
 /-! ## (10.7): the cost of a schedule only increases when jobs are added
 
@@ -403,37 +411,37 @@ public theorem del_of_not_mem [DecidableEq Job] (j : Job) :
     · next h => rw [del_of_not_mem j x fun h' => hm (List.mem_cons.mpr (Or.inr h'))]
 
 /-- Adding a job lengthens the completion time (the jobs' `ct` are positive). -/
-public theorem ctsum_add_le (hct : ∀ j, 0 ≤ ct j) {x w : SnocList Unit Job} {j : Job} :
-    AddP x j w → ctsum ct x ≤ ctsum ct w
-  | .last _ _ => by show ctsum ct _ ≤ ct j + ctsum ct _; have := hct j; omega
+public theorem ctsum_add_le [Tardy Job] (hct : ∀ j, 0 ≤ ct j) {x w : SnocList Unit Job} {j : Job} :
+    AddP x j w → ctsum x ≤ ctsum w
+  | .last _ _ => by show ctsum _ ≤ ct j + ctsum _; have := hct j; omega
   | .skip a h => by
-    show ct a + ctsum ct _ ≤ ct a + ctsum ct _; have := ctsum_add_le hct h; omega
+    show ct a + ctsum _ ≤ ct a + ctsum _; have := ctsum_add_le hct h; omega
 
 /-- Adding a job never lowers the cost of a schedule — every job it passes starts later, so no
     penalty falls, and one penalty is added. -/
-public theorem cost_add_le (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
-    {x w : SnocList Unit Job} {j : Job} : AddP x j w → cost ct dt wt x ≤ cost ct dt wt w
+public theorem cost_add_le [Tardy Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
+    {x w : SnocList Unit Job} {j : Job} : AddP x j w → Fn.cost x ≤ Fn.cost w
   | .last _ _ => le_bmax_left _ _
   | .skip a h => by
     refine bmax_le (Int.le_trans (cost_add_le hct hwt h) (le_bmax_left _ _))
       (Int.le_trans ?_ (le_bmax_right _ _))
-    show (ctsum ct _ + ct a - dt a) * wt a ≤ (ctsum ct _ + ct a - dt a) * wt a
+    show (ctsum _ + ct a - dt a) * wt a ≤ (ctsum _ + ct a - dt a) * wt a
     refine Int.mul_le_mul_of_nonneg_right ?_ (hwt a)
-    have := ctsum_add_le ct hct h
+    have := ctsum_add_le hct h
     omega
 
 /-- Deleting a job never increases the cost of a schedule: `cost_add_le` read backwards. -/
-public theorem cost_del_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
-    (j : Job) (s : SnocList Unit Job) : cost ct dt wt (del j s) ≤ cost ct dt wt s := by
+public theorem cost_del_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
+    (j : Job) (s : SnocList Unit Job) : Fn.cost (del j s) ≤ Fn.cost s := by
   by_cases hm : j ∈ blist s
-  · exact cost_add_le ct dt wt hct hwt (add_del j s hm)
+  · exact cost_add_le hct hwt (add_del j s hm)
   · rw [del_of_not_mem j s hm]; exact Int.le_refl _
 
 /-- **(10.7)** (B&dM p.256, Exercise 10.7): `add⊑π₁R` — adding a job to a schedule never lowers
     its cost. -/
-public theorem add_le (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    add (Job := Job) ⊑ (relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt :=
-  le_iff.mpr fun p _ h => ⟨p.1, rfl, cost_add_le ct dt wt hct hwt h⟩
+public theorem add_le [Tardy Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    add (Job := Job) ⊑ (relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R :=
+  le_iff.mpr fun p _ h => ⟨p.1, rfl, cost_add_le hct hwt h⟩
 
 /-- **(10.8)** (B&dM p.256, Exercise 10.8): `β bagify°=F(bagify°)[nil,add]` — `bagify°` is a fold
     on bags. -/
@@ -447,26 +455,26 @@ public theorem bagify_recip_cata [DecidableEq Job] :
   | inl d =>
     constructor
     · rintro ⟨b, hb, hw⟩
-      obtain rfl : b = nilBag := hb
+      obtain rfl : b = Bag.nil := hb
       refine ⟨Sum.inl d, rfl, (ListRel.junc_sum_inl _ _ _ _).mpr ?_⟩
       show w = SnocList.wrap ()
       cases w with
       | wrap _ => rfl
-      | snoc x a => exact absurd hw (nil_ne_snag (bagifyFn x) a)
+      | snoc x a => exact absurd hw (nil_ne_snag (Fn.bagify x) a)
     · rintro ⟨v, hv, hj⟩
       cases v with
       | inr _ => exact hv.elim
       | inl d' =>
         have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nil add d' w).mp hj
         subst hw
-        exact ⟨nilBag, rfl, rfl⟩
+        exact ⟨Bag.nil, rfl, rfl⟩
   | inr p =>
     obtain ⟨b, j⟩ := p
     constructor
     · rintro ⟨b', hb', hw⟩
       obtain rfl : b' = snag (b, j) := hb'
       obtain ⟨xs, rfl⟩ := exists_rep b
-      have hperm : (blist w).Perm (j :: xs) := Quotient.exact (hw.symm : bagifyFn w = _)
+      have hperm : (blist w).Perm (j :: xs) := Quotient.exact (hw.symm : Fn.bagify w = _)
       have hmem : j ∈ blist w := hperm.symm.mem_iff.mp List.mem_cons_self
       refine ⟨Sum.inr (del j w, j), ⟨?_, rfl⟩, (ListRel.junc_sum_inr _ _ _ _).mpr (add_del j w hmem)⟩
       exact Quotient.sound ((blist_del j w hmem).trans hperm).cons_inv.symm
@@ -476,32 +484,32 @@ public theorem bagify_recip_cata [DecidableEq Job] :
       | inr q =>
         obtain ⟨x, j'⟩ := q
         obtain ⟨hb, rfl⟩ := hv
-        obtain rfl : b = bagifyFn x := hb
+        obtain rfl : b = Fn.bagify x := hb
         exact ⟨_, rfl, Quotient.sound (blist_add ((ListRel.junc_sum_inr nil add _ w).mp hj)).symm⟩
 
 /-! ## `cost` as an arrow, and the calculation of (10.3)'s tail bound (B&dM p.256) -/
 
 /-- **tardy-defn**: `cost : [Job]⟶Int`, the arrow the calculations compose. -/
-@[expose] public def costR : dSL Unit Job ⟶ (⟨Int⟩ : RelSet.{0}) := graph (cost ct dt wt)
+@[expose] public def cost [Tardy Job] : dSL Unit Job ⟶ (⟨Int⟩ : RelSet.{0}) := graph (Fn.cost)
 
 /-- **tardy-defn**: `penalty : [Job]×Job⟶Int` as an arrow. -/
-@[expose] public def penaltyR : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
-  graph fun p => penalty ct dt wt p.1 p.2
+@[expose] public def penalty [Tardy Job] : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
+  graph fun p => Fn.penalty p.1 p.2
 
 /-- **(10.5)**: `g≜[zero,penalty]`, the penalty of the last job. -/
-@[expose] public def g : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
-  junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero (penaltyR ct dt wt)
+@[expose] public def g [Tardy Job] : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
+  junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero (penalty)
 
 /-- **(10.6)**: `m≜[zero,π₁ cost]`, the cost of the schedule before the last job (B&dM's `h`). -/
-@[expose] public def m : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
+@[expose] public def m [Tardy Job] : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
   junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-    ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+    ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
 
 /-- **(10.4)** (B&dM p.256, Exercise 10.6): `α cost=⟨g,m⟩ bmax` — the cost of a schedule is the
     larger of its last penalty and the cost of the rest. -/
-public theorem cost_alg_bmax :
-    graph (con (L := Unit) (E := Job)) ≫ costR ct dt wt
-      = (relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})).pair (g ct dt wt) (m ct dt wt)
+public theorem cost_alg_bmax [Tardy Job] :
+    graph (con (L := Unit) (E := Job)) ≫ cost
+      = (relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})).pair (g) (m)
           ≫ Van.bmax := by
   rw [pair_eq_rpair]
   apply hom_ext; intro u c
@@ -512,34 +520,34 @@ public theorem cost_alg_bmax :
     · rintro ⟨_, rfl, rfl⟩
       exact ⟨(0, 0), ⟨(ListRel.junc_sum_inl _ _ _ _).mpr rfl, (ListRel.junc_sum_inl _ _ _ _).mpr rfl⟩, rfl⟩
     · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
-      have e1 : q1 = 0 := (ListRel.junc_sum_inl ListRel.zero (penaltyR ct dt wt) d q1).mp h1
-      have e2 : q2 = 0 := (ListRel.junc_sum_inl ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt) d q2).mp h2
+      have e1 : q1 = 0 := (ListRel.junc_sum_inl ListRel.zero (penalty) d q1).mp h1
+      have e2 : q2 = 0 := (ListRel.junc_sum_inl ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost) d q2).mp h2
       subst e1; subst e2
       exact ⟨_, rfl, show bmax 0 0 = 0 by unfold bmax; split <;> rfl⟩
   | inr p =>
     constructor
     · rintro ⟨_, rfl, rfl⟩
-      refine ⟨(penalty ct dt wt p.1 p.2, cost ct dt wt p.1),
+      refine ⟨(Fn.penalty p.1 p.2, Fn.cost p.1),
         ⟨(ListRel.junc_sum_inr _ _ _ _).mpr rfl, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨p.1, rfl, rfl⟩⟩, ?_⟩
-      show bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
-        = bmax (penalty ct dt wt p.1 p.2) (cost ct dt wt p.1)
+      show bmax (Fn.cost p.1) (Fn.penalty p.1 p.2)
+        = bmax (Fn.penalty p.1 p.2) (Fn.cost p.1)
       unfold bmax; split <;> split <;> omega
     · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
-      have e1 : q1 = penalty ct dt wt p.1 p.2 := (ListRel.junc_sum_inr ListRel.zero (penaltyR ct dt wt) p q1).mp h1
+      have e1 : q1 = Fn.penalty p.1 p.2 := (ListRel.junc_sum_inr ListRel.zero (penalty) p q1).mp h1
       subst e1
-      obtain ⟨_, rfl, rfl⟩ := (ListRel.junc_sum_inr ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt) p q2).mp h2
+      obtain ⟨_, rfl, rfl⟩ := (ListRel.junc_sum_inr ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost) p q2).mp h2
       refine ⟨_, rfl, ?_⟩
-      show bmax (penalty ct dt wt p.1 p.2) (cost ct dt wt p.1)
-        = bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
+      show bmax (Fn.penalty p.1 p.2) (Fn.cost p.1)
+        = bmax (Fn.cost p.1) (Fn.penalty p.1 p.2)
       unfold bmax; split <;> split <;> omega
 
 /-- `[nil,outl R]⊑[zero,outl cost]≤cost°`: the definition of `R`, and `nil⊑zero≤cost°`. -/
-public theorem nil_R_le_cost :
+public theorem nil_R_le_cost [Tardy Job] :
     junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
-        ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt)
+        ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R)
       ⊑ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-          ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
-        ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+          ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
+        ≫ ListRel.leq ≫ (cost)° :=
   le_iff.mpr fun v w hj => by
     cases v with
     | inl d =>
@@ -548,28 +556,28 @@ public theorem nil_R_le_cost :
       exact ⟨0, (ListRel.junc_sum_inl _ _ _ _).mpr rfl, 0, Int.le_refl 0, rfl⟩
     | inr q =>
       obtain ⟨_, rfl, hR⟩ := (ListRel.junc_sum_inr _ _ _ _).mp hj
-      exact ⟨cost ct dt wt q.1, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨q.1, rfl, rfl⟩,
-        cost ct dt wt w, hR, rfl⟩
+      exact ⟨Fn.cost q.1, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨q.1, rfl, rfl⟩,
+        Fn.cost w, hR, rfl⟩
 
 /-- B&dM p.256, "putting (10.7) and (10.8) together": `β bagify°⊑F(bagify°) m≤cost°` — a schedule
     of a bag costs at least the cost of the rest after its last job.  One `calc` step per hint:
     (10.8), (10.7) under `[nil,−]`, the definition of `R` with `nil⊑zero≤cost°`, the definition of
     `m`. -/
-public theorem bagify_recip_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+public theorem bagify_recip_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     bagAlg ≫ (bagify (Job := Job))°
-      ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+      ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ≫ ListRel.leq ≫ (cost)° :=
   calc bagAlg ≫ (bagify (Job := Job))°
       = (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil add := bagify_recip_cata
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nil
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt) :=
-        comp_mono_left _ (junc_mono _ (le_refl nil) (add_le ct dt wt hct hwt))
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R) :=
+        comp_mono_left _ (junc_mono _ (le_refl nil) (add_le hct hwt))
     _ ⊑ (F Unit Job).map (bagify (Job := Job))°
         ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
-        ≫ ListRel.leq ≫ (costR ct dt wt)° := comp_mono_left _ (nil_R_le_cost ct dt wt)
-    _ = (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ cost)
+        ≫ ListRel.leq ≫ (cost)° := comp_mono_left _ (nil_R_le_cost)
+    _ = (F Unit Job).map (bagify (Job := Job))° ≫ m ≫ ListRel.leq ≫ (cost)° :=
         rfl
 
 calc_steps bagify_recip_le
@@ -578,35 +586,35 @@ calc_steps bagify_recip_le
 
 /-- **tardy-defn**: `assocr (𝟙×((bagify°×𝟙) penalty)) bmax`, `k`'s arm on a front's cost, its bag
     and the last job: a `def` of its own because its pointwise body is no label the note can write. -/
-@[expose] public def kStep (p : (Int × (Bag Job).carrier) × Job) : Int :=
-  bmax p.1.1 (bagPenalty ct dt wt (p.1.2, p.2))
+@[expose] public def kStep [Tardy Job] (p : (Int × (Bag Job).carrier) × Job) : Int :=
+  bmax p.1.1 (bagPenalty (p.1.2, p.2))
 
 /-- **tardy-defn**: `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, the step `cost` is a fold of
     once the schedule carries its bag. -/
-@[expose] public def kFn : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier → Int
+@[expose] public def Fn.k [Tardy Job] : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr p => kStep ct dt wt p
+  | Sum.inr p => kStep p
 
 /-- **tardy-defn**, pointwise: the empty schedule costs nothing. -/
-public theorem kFn_inl (u : Unit) :
-    kFn ct dt wt (Sum.inl u : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier) = 0 := rfl
+public theorem kFn_inl [Tardy Job] (u : Unit) :
+    Fn.k (Sum.inl u : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier) = 0 := rfl
 
 /-- **tardy-defn**, pointwise: the larger of the front's cost and the last job's penalty on the bag. -/
-public theorem kFn_inr (c : Int) (xs : (Bag Job).carrier) (j : Job) :
-    kFn ct dt wt (Sum.inr ((c, xs), j) : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier)
-      = bmax c (bagPenalty ct dt wt (xs, j)) := rfl
+public theorem kFn_inr [Tardy Job] (c : Int) (xs : (Bag Job).carrier) (j : Job) :
+    Fn.k (Sum.inr ((c, xs), j) : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier)
+      = bmax c (bagPenalty (xs, j)) := rfl
 
 /-- **tardy-defn**: `k` as an arrow. -/
-@[expose] public def k :
+@[expose] public def k [Tardy Job] :
     (F Unit Job).obj (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).p ⟶ (⟨Int⟩ : RelSet.{0}) :=
-  graph (kFn ct dt wt)
+  graph (Fn.k)
 
 /-- B&dM p.256: `α cost=F(⟨cost,bagify⟩) k` — `cost` restated so that `penalty` reads the bag of
     the schedule, not the schedule (`penalty_eq_bagPenalty`). -/
-public theorem cost_alg_k :
-    graph (con (L := Unit) (E := Job)) ≫ costR ct dt wt
+public theorem cost_alg_k [Tardy Job] :
+    graph (con (L := Unit) (E := Job)) ≫ cost
       = (F Unit Job).map
-          ((relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).pair (costR ct dt wt) bagify) ≫ k ct dt wt := by
+          ((relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).pair (cost) bagify) ≫ k := by
   rw [pair_eq_rpair]
   apply hom_ext; intro u c
   rw [comp_apply, comp_apply]
@@ -621,26 +629,26 @@ public theorem cost_alg_k :
   | inr p =>
     constructor
     · rintro ⟨_, rfl, rfl⟩
-      exact ⟨Sum.inr ((cost ct dt wt p.1, bagifyFn p.1), p.2), ⟨⟨rfl, rfl⟩, rfl⟩, rfl⟩
+      exact ⟨Sum.inr ((Fn.cost p.1, Fn.bagify p.1), p.2), ⟨⟨rfl, rfl⟩, rfl⟩, rfl⟩
     · rintro ⟨v, hv, rfl⟩
       cases v with
       | inl _ => exact hv.elim
       | inr q =>
         obtain ⟨⟨c, b⟩, j⟩ := q
         obtain ⟨⟨hc, hb⟩, hj⟩ := hv
-        obtain rfl : c = cost ct dt wt p.1 := hc
-        obtain rfl : b = bagifyFn p.1 := hb
+        obtain rfl : c = Fn.cost p.1 := hc
+        obtain rfl : b = Fn.bagify p.1 := hb
         obtain rfl : p.2 = j := hj
         exact ⟨_, rfl, rfl⟩
 
 /-- B&dM p.256, Exercise 10.5: `F(≥×𝟙)k⊑k≥` — `bmax` is monotone in its first argument. -/
-public theorem k_mono :
+public theorem k_mono [Tardy Job] :
     (F Unit Job).map (prodMap (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job))
-        (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)) ListRel.geq (𝟙 (Bag Job))) ≫ k ct dt wt
-      ⊑ k ct dt wt ≫ ListRel.geq := by
+        (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)) ListRel.geq (𝟙 (Bag Job))) ≫ k
+      ⊑ k ≫ ListRel.geq := by
   rw [prodMap_eq_rprodMap]
-  refine le_iff.mpr fun u c ⟨v, hv, hc⟩ => ⟨kFn ct dt wt u, rfl, ?_⟩
-  obtain rfl : c = kFn ct dt wt v := hc
+  refine le_iff.mpr fun u c ⟨v, hv, hc⟩ => ⟨Fn.k u, rfl, ?_⟩
+  obtain rfl : c = Fn.k v := hc
   cases u with
   | inl _ =>
     cases v with
@@ -664,15 +672,15 @@ public theorem k_mono :
     same bag have the same completion time, so `snoc`ing the same job gives the same penalty and
     `bmax` is monotone.  Without the context this is FALSE: `cost x ≤ cost y` bounds no
     completion time. -/
-public theorem tardy_mono :
-    (F Unit Job).map ((R ct dt wt)° ∩ (bagify ≫ (bagify (Job := Job))°))
+public theorem tardy_mono [Tardy Job] :
+    (F Unit Job).map ((R)° ∩ (bagify ≫ (bagify (Job := Job))°))
         ≫ graph (con (L := Unit) (E := Job))
-      ⊑ graph (con (L := Unit) (E := Job)) ≫ (R ct dt wt)° := by
-  have e : (R ct dt wt)° = costR ct dt wt ≫ ListRel.geq ≫ (costR ct dt wt)° :=
+      ⊑ graph (con (L := Unit) (E := Job)) ≫ (R)° := by
+  have e : (R)° = cost ≫ ListRel.geq ≫ (cost)° :=
     hom_ext fun u v => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
       subst h1; subst h3; exact h2⟩
-  exact pres_in_context (cost := costR ct dt wt) (H := bagify°) («≼» := ListRel.geq)
-    (k := k ct dt wt) (graph_map _) e (graph_simple _) (cost_alg_k ct dt wt) (k_mono ct dt wt)
+  exact pres_in_context (H := bagify°) («≼» := ListRel.geq)
+    (k := k) (graph_map _) e (graph_simple _) (cost_alg_k) (k_mono)
 
 /-! ## The greedy condition (10.3), B&dM p.257 — the book's calculation, one theorem per hint -/
 
@@ -684,27 +692,27 @@ local notation "FbJ" => (F Unit Job).map (bagify (Job := Job))°
 local notation "P2" => relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})
 
 /-- `g` read as the function it is. -/
-@[expose] public def gFn : (Fobj Unit Job (dSL Unit Job)).carrier → Int
+@[expose] public def Fn.g [Tardy Job] : (Fobj Unit Job (dSL Unit Job)).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr p => penalty ct dt wt p.1 p.2
+  | Sum.inr p => Fn.penalty p.1 p.2
 
-public theorem g_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier) (c : Int) :
-    g ct dt wt s c ↔ c = gFn ct dt wt s := by
+public theorem g_apply [Tardy Job] (s : (Fobj Unit Job (dSL Unit Job)).carrier) (c : Int) :
+    g s c ↔ c = Fn.g s := by
   cases s with
-  | inl d => exact ListRel.junc_sum_inl ListRel.zero (penaltyR ct dt wt) d c
-  | inr p => exact ListRel.junc_sum_inr ListRel.zero (penaltyR ct dt wt) p c
+  | inl d => exact ListRel.junc_sum_inl ListRel.zero (penalty) d c
+  | inr p => exact ListRel.junc_sum_inr ListRel.zero (penalty) p c
 
 /-- `g`, pointwise: zero on the empty schedule. -/
-public theorem gFn_inl (u : Unit) : gFn ct dt wt (Sum.inl u : (Fobj Unit Job (dSL Unit Job)).carrier) = 0 := rfl
+public theorem gFn_inl [Tardy Job] (u : Unit) : Fn.g (Sum.inl u : (Fobj Unit Job (dSL Unit Job)).carrier) = 0 := rfl
 
 /-- `g`, pointwise: the penalty of the last job after its front. -/
-public theorem gFn_inr (xs : SnocList Unit Job) (j : Job) :
-    gFn ct dt wt (Sum.inr (xs, j) : (Fobj Unit Job (dSL Unit Job)).carrier) = penalty ct dt wt xs j := rfl
+public theorem gFn_inr [Tardy Job] (xs : SnocList Unit Job) (j : Job) :
+    Fn.g (Sum.inr (xs, j) : (Fobj Unit Job (dSL Unit Job)).carrier) = Fn.penalty xs j := rfl
 
 /-- `F(bagify)` read as the function it is. -/
 @[expose] public def FbFn : (Fobj Unit Job (dSL Unit Job)).carrier → (Fobj Unit Job (Bag Job)).carrier
   | Sum.inl d => Sum.inl d
-  | Sum.inr p => Sum.inr (bagifyFn p.1, p.2)
+  | Sum.inr p => Sum.inr (Fn.bagify p.1, p.2)
 
 public theorem Fbag_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier)
     (v : (Fobj Unit Job (Bag Job)).carrier) :
@@ -719,7 +727,7 @@ public theorem Fbag_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier)
     | inl _ => exact ⟨False.elim, fun h => nomatch h⟩
     | inr q =>
       obtain ⟨b, j⟩ := q
-      show b = bagifyFn p.1 ∧ p.2 = j ↔ Sum.inr (b, j) = Sum.inr (bagifyFn p.1, p.2)
+      show b = Fn.bagify p.1 ∧ p.2 = j ↔ Sum.inr (b, j) = Sum.inr (Fn.bagify p.1, p.2)
       exact ⟨fun ⟨h1, h2⟩ => by subst h1; subst h2; rfl, fun h => by cases h; exact ⟨rfl, rfl⟩⟩
 
 public theorem Fb_apply (v : (Fobj Unit Job (Bag Job)).carrier)
@@ -733,8 +741,8 @@ public theorem Fb_apply (v : (Fobj Unit Job (Bag Job)).carrier)
     | inl _ => exact Iff.rfl
     | inr _ => exact ⟨fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩, fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩⟩
 
-public theorem fFn_FbFn (s : (Fobj Unit Job (dSL Unit Job)).carrier) :
-    fFn ct dt wt (FbFn s) = gFn ct dt wt s := by
+public theorem fFn_FbFn [Tardy Job] (s : (Fobj Unit Job (dSL Unit Job)).carrier) :
+    Fn.f (FbFn s) = Fn.g s := by
   cases s <;> rfl
 
 public theorem bmax_absorb (a b : Int) : bmax b (bmax a b) = bmax a b := by
@@ -744,13 +752,13 @@ public theorem bmax_absorb (a b : Int) : bmax b (bmax a b) = bmax a b := by
   · rw [if_neg h, if_pos (by omega)]
 
 /-- `R = cost≤cost°`, the definition read as an equation of arrows. -/
-public theorem R_eq : R ct dt wt = costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+public theorem R_eq [Tardy Job] : R = cost ≫ ListRel.leq ≫ (cost)° :=
   hom_ext fun _ _ => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
     subst h1; subst h3; exact h2⟩
 
 /-- **tardy-defn**, pointwise: `xs R ys` iff `xs` costs no more than `ys`. -/
-public theorem R_apply (xs ys : SnocList Unit Job) :
-    R ct dt wt xs ys ↔ cost ct dt wt xs ≤ cost ct dt wt ys :=
+public theorem R_apply [Tardy Job] (xs ys : SnocList Unit Job) :
+    R xs ys ↔ Fn.cost xs ≤ Fn.cost ys :=
   Iff.rfl
 
 /-- `β°F(bagify°)α=bagify°`: the step of the fold `bagify=⦇β⦈`, read backwards. -/
@@ -763,59 +771,59 @@ public theorem bagify_recip_alg : (bagAlg (Job := Job))° ≫ FbJ ≫ αJ = (bag
     obtain rfl : w = con s := hw
     cases s <;> rfl
   · intro hw
-    obtain rfl : b = bagifyFn w := hw
+    obtain rfl : b = Fn.bagify w := hw
     cases w with
     | wrap d => exact ⟨Sum.inl d, rfl, Sum.inl d, (Fb_apply _ _).mpr rfl, rfl⟩
-    | snoc x j => exact ⟨Sum.inr (bagifyFn x, j), rfl, Sum.inr (x, j), (Fb_apply _ _).mpr rfl, rfl⟩
+    | snoc x j => exact ⟨Sum.inr (Fn.bagify x, j), rfl, Sum.inr (x, j), (Fb_apply _ _).mpr rfl, rfl⟩
 
 /-- B&dM p.257, the choice of `Q`: `F(bagify) Q F(bagify°)=g≤g°` — under `Q` a job of least
     penalty is chosen. -/
-public theorem Q_choice :
-    (F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ
-      = g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)° := by
+public theorem Q_choice [Tardy Job] :
+    (F Unit Job).map (bagify (Job := Job)) ≫ Q ≫ FbJ
+      = g ≫ ListRel.leq ≫ (g)° := by
   apply hom_ext; intro s s'
   constructor
   · rintro ⟨u, hu, v, hQ, hv⟩
     obtain rfl : u = FbFn s := (Fbag_apply s u).mp hu
     obtain rfl : v = FbFn s' := (Fb_apply v s').mp hv
-    refine ⟨gFn ct dt wt s, (g_apply ct dt wt s _).mpr rfl, gFn ct dt wt s', ?_,
-      (g_apply ct dt wt s' _).mpr rfl⟩
-    have hQ' : fFn ct dt wt (FbFn s) ≤ fFn ct dt wt (FbFn s') := hQ
-    have e1 := fFn_FbFn ct dt wt s; have e2 := fFn_FbFn ct dt wt s'
-    show gFn ct dt wt s ≤ gFn ct dt wt s'
+    refine ⟨Fn.g s, (g_apply s _).mpr rfl, Fn.g s', ?_,
+      (g_apply s' _).mpr rfl⟩
+    have hQ' : Fn.f (FbFn s) ≤ Fn.f (FbFn s') := hQ
+    have e1 := fFn_FbFn s; have e2 := fFn_FbFn s'
+    show Fn.g s ≤ Fn.g s'
     omega
   · rintro ⟨c, hc, d, hd, hd'⟩
-    obtain rfl : c = gFn ct dt wt s := (g_apply ct dt wt s c).mp hc
-    obtain rfl : d = gFn ct dt wt s' := (g_apply ct dt wt s' d).mp hd'
+    obtain rfl : c = Fn.g s := (g_apply s c).mp hc
+    obtain rfl : d = Fn.g s' := (g_apply s' d).mp hd'
     refine ⟨FbFn s, (Fbag_apply s _).mpr rfl, FbFn s', ?_, (Fb_apply _ _).mpr rfl⟩
-    have hd' : gFn ct dt wt s ≤ gFn ct dt wt s' := hd
-    have e1 := fFn_FbFn ct dt wt s; have e2 := fFn_FbFn ct dt wt s'
-    show fFn ct dt wt (FbFn s) ≤ fFn ct dt wt (FbFn s')
+    have hd' : Fn.g s ≤ Fn.g s' := hd
+    have e1 := fFn_FbFn s; have e2 := fFn_FbFn s'
+    show Fn.f (FbFn s) ≤ Fn.f (FbFn s')
     omega
 
 /-- B&dM p.257: `α cost=⟨g,α cost⟩ bmax`, since the last penalty is below the cost. -/
-public theorem alg_cost_self :
-    αJ ≫ costR ct dt wt = (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ Van.bmax := by
+public theorem alg_cost_self [Tardy Job] :
+    αJ ≫ cost = (P2).pair (g) (αJ ≫ cost) ≫ Van.bmax := by
   rw [pair_eq_rpair]; apply hom_ext; intro s c
-  have key : cost ct dt wt (con s) = bmax (gFn ct dt wt s) (cost ct dt wt (con s)) := by
+  have key : Fn.cost (con s) = bmax (Fn.g s) (Fn.cost (con s)) := by
     cases s with
     | inl _ => show (0 : Int) = bmax 0 0; unfold bmax; rw [if_pos (Int.le_refl 0)]
     | inr p => exact (bmax_absorb _ _).symm
   constructor
   · rintro ⟨_, rfl, rfl⟩
-    exact ⟨(gFn ct dt wt s, cost ct dt wt (con s)), ⟨(g_apply ct dt wt s _).mpr rfl, _, rfl, rfl⟩,
+    exact ⟨(Fn.g s, Fn.cost (con s)), ⟨(g_apply s _).mpr rfl, _, rfl, rfl⟩,
       key⟩
   · rintro ⟨⟨q1, q2⟩, ⟨h1, s', hs', hq2⟩, hb⟩
-    obtain rfl : q1 = gFn ct dt wt s := (g_apply ct dt wt s q1).mp h1
+    obtain rfl : q1 = Fn.g s := (g_apply s q1).mp h1
     obtain rfl : s' = con s := hs'
-    obtain rfl : q2 = cost ct dt wt (con s) := hq2
+    obtain rfl : q2 = Fn.cost (con s) := hq2
     exact ⟨_, rfl, (hb : c = _).trans key.symm⟩
 
 /-- The modular law, on both sides: `(Q F(bagify°)α)∩(F(bagify°)M)⊑F(bagify°)((F(bagify) Q F(bagify°))∩(Mα°))α`
     — the two schedules share the decomposition `F(bagify°)` picks, so the meet moves inside it. -/
-public theorem tardy_modular {M : Alg (F Unit Job) (dSL Unit Job)} :
-    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ M)
-      ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ) ∩ (M ≫ αJ°)) ≫ αJ := by
+public theorem tardy_modular [Tardy Job] {M : Alg (F Unit Job) (dSL Unit Job)} :
+    (Q ≫ FbJ ≫ αJ) ∩ (FbJ ≫ M)
+      ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ≫ FbJ) ∩ (M ≫ αJ°)) ≫ αJ := by
   refine le_iff.mpr fun u w h => ?_
   rw [inter_apply] at h
   obtain ⟨⟨v, hQ, s, hs, hα⟩, ⟨s', hs', hM⟩⟩ := h
@@ -824,25 +832,25 @@ public theorem tardy_modular {M : Alg (F Unit Job) (dSL Unit Job)} :
   exact ⟨⟨u, (Fbag_apply s' u).mpr ((Fb_apply u s').mp hs'), v, hQ, hs⟩, ⟨w, hM, hα⟩⟩
 
 /-- `cost` is a map, so entire: `𝟙⊑cost cost°`. -/
-public theorem costR_entire : 𝟙 _ ⊑ costR ct dt wt ≫ (costR ct dt wt)° := (graph_map _).1
+public theorem costR_entire [Tardy Job] : 𝟙 _ ⊑ cost ≫ (cost)° := (graph_map _).1
 
 /-- `⟨g,α cost⟩` is simple: both components are maps, so a pair they relate one schedule to is
     the only one. -/
-public theorem pair_g_alg_cost_simple :
-    ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt)
+public theorem pair_g_alg_cost_simple [Tardy Job] :
+    ((P2).pair (g) (αJ ≫ cost))° ≫ (P2).pair (g) (αJ ≫ cost)
       ⊑ 𝟙 _ := by
   rw [pair_eq_rpair]
   refine le_iff.mpr fun q q' h => ?_
   obtain ⟨s', ⟨h1, x1, hx1, hc1⟩, ⟨h1', x2, hx2, hc2⟩⟩ := h
   obtain rfl : x1 = con s' := hx1
   obtain rfl : x2 = con s' := hx2
-  exact (Prod.ext (((g_apply ct dt wt s' _).mp h1).trans ((g_apply ct dt wt s' _).mp h1').symm)
+  exact (Prod.ext (((g_apply s' _).mp h1).trans ((g_apply s' _).mp h1').symm)
     ((hc1 : q.2 = _).trans (hc2 : q'.2 = _).symm) : q = q')
 
 /-- `bmax` is monotone: `⟨g≤,m≤⟩ bmax⊑⟨g,m⟩ bmax≤`. -/
-public theorem pair_leq_bmax_le :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ Van.bmax
-      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ Van.bmax ≫ ListRel.leq := by
+public theorem pair_leq_bmax_le [Tardy Job] :
+    (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq) ≫ Van.bmax
+      ⊑ (P2).pair (g) (m) ≫ Van.bmax ≫ ListRel.leq := by
   rw [pair_eq_rpair, pair_eq_rpair]
   refine le_iff.mpr fun s c h => ?_
   obtain ⟨⟨q1, q2⟩, ⟨⟨c1, hc1, h1⟩, ⟨c2, hc2, h2⟩⟩, hb⟩ := h
@@ -855,67 +863,67 @@ public theorem pair_leq_bmax_le :
     the last job's, put last after a schedule costing at most the rest, costs at most the whole.
     One `calc` step per hint: `cost` a map, `α cost=⟨g,α cost⟩ bmax`, `⟨g,α cost⟩` simple, `bmax`
     monotone, (10.4), the definition of `R`. -/
-public theorem tardy_tail :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
-      ⊑ αJ ≫ R ct dt wt :=
-  calc (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
-        ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
-        ≫ (costR ct dt wt)° := by
+public theorem tardy_tail [Tardy Job] :
+    (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+        ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ αJ
+      ⊑ αJ ≫ R :=
+  calc (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+        ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ αJ
+        ⊑ (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+        ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ αJ ≫ cost
+        ≫ (cost)° := by
         simpa only [Cat.comp_id, Cat.assoc] using
-          comp_mono_left ((P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-            ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ) (costR_entire ct dt wt)
-      _ = (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
-        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ Van.bmax ≫ (costR ct dt wt)° := by
-        simpa only [Cat.assoc] using congrArg (fun Z => (P2).pair (g ct dt wt ≫ ListRel.leq)
-          (m ct dt wt ≫ ListRel.leq) ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ Z
-          ≫ (costR ct dt wt)°) (alg_cost_self ct dt wt)
-      _ ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ Van.bmax
-        ≫ (costR ct dt wt)° := by
+          comp_mono_left ((P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+            ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ αJ) (costR_entire)
+      _ = (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+        ≫ ((P2).pair (g) (αJ ≫ cost))°
+        ≫ (P2).pair (g) (αJ ≫ cost) ≫ Van.bmax ≫ (cost)° := by
+        simpa only [Cat.assoc] using congrArg (fun Z => (P2).pair (g ≫ ListRel.leq)
+          (m ≫ ListRel.leq) ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ Z
+          ≫ (cost)°) (alg_cost_self)
+      _ ⊑ (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq) ≫ Van.bmax
+        ≫ (cost)° := by
         simpa only [Cat.id_comp, Cat.assoc] using
-          comp_mono_left _ (comp_mono_right (pair_g_alg_cost_simple ct dt wt) (Van.bmax ≫ (costR ct dt wt)°))
-      _ ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ Van.bmax ≫ ListRel.leq ≫ (costR ct dt wt)° := by
-        simpa only [Cat.assoc] using comp_mono_right (pair_leq_bmax_le ct dt wt) (costR ct dt wt)°
-      _ = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+          comp_mono_left _ (comp_mono_right (pair_g_alg_cost_simple) (Van.bmax ≫ (cost)°))
+      _ ⊑ (P2).pair (g) (m) ≫ Van.bmax ≫ ListRel.leq ≫ (cost)° := by
+        simpa only [Cat.assoc] using comp_mono_right (pair_leq_bmax_le) (cost)°
+      _ = αJ ≫ cost ≫ ListRel.leq ≫ (cost)° := by
         rw [← Cat.assoc ((P2).pair _ _) Van.bmax, ← cost_alg_bmax, Cat.assoc]
-      _ = αJ ≫ R ct dt wt := by rw [R_eq]
+      _ = αJ ≫ R := by rw [R_eq]
 
 calc_steps tardy_tail
 
 /-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`, by the
     book's calculation (B&dM p.257), one `calc` step per hint. -/
-public theorem tardy_greedy [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°))
+public theorem tardy_greedy [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    (Q ∩ (bagAlg ≫ (bagAlg (Job := Job))°))
         ≫ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
       ⊑ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
-          ≫ R ct dt wt :=
-  calc (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°)) ≫ FbJ ≫ αJ
-      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ) := by
+          ≫ R :=
+  calc (Q ∩ (bagAlg ≫ (bagAlg (Job := Job))°)) ≫ FbJ ≫ αJ
+      ⊑ (Q ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ) := by
         simpa only [Cat.assoc] using
-          inter_comp_le (Q ct dt wt) (bagAlg ≫ (bagAlg (Job := Job))°) (FbJ ≫ αJ)
-    _ = (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°) := by
+          inter_comp_le (Q) (bagAlg ≫ (bagAlg (Job := Job))°) (FbJ ≫ αJ)
+    _ = (Q ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°) := by
         rw [bagify_recip_alg]
-    _ ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°) :=
-        inter_mono (le_refl _) (bagify_recip_le ct dt wt hct hwt)
-    _ ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ :=
+    _ ⊑ (Q ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ≫ ListRel.leq ≫ (cost)°) :=
+        inter_mono (le_refl _) (bagify_recip_le hct hwt)
+    _ ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ≫ FbJ)
+          ∩ (m ≫ ListRel.leq ≫ (cost)° ≫ αJ°)) ≫ αJ :=
         by simpa only [Cat.assoc] using
-          tardy_modular ct dt wt (M := m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°)
-    _ = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
+          tardy_modular (M := m ≫ ListRel.leq ≫ (cost)°)
+    _ = FbJ ≫ ((g ≫ ListRel.leq ≫ (g)°)
+          ∩ (m ≫ ListRel.leq ≫ (cost)° ≫ αJ°)) ≫ αJ := by
         rw [Q_choice]
-    _ = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (αJ ≫ costR ct dt wt)°)) ≫ αJ := by
+    _ = FbJ ≫ ((g ≫ ListRel.leq ≫ (g)°)
+          ∩ (m ≫ ListRel.leq ≫ (αJ ≫ cost)°)) ≫ αJ := by
         rw [Allegory.recip_comp]
-    _ = FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-          ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ := by
+    _ = FbJ ≫ (P2).pair (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+          ≫ ((P2).pair (g) (αJ ≫ cost))° ≫ αJ := by
         simpa only [Cat.assoc] using congrArg (fun Z => FbJ ≫ Z ≫ αJ)
-          (RelProd.pair_recip_pair (P := P2) (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-            (g ct dt wt) (αJ ≫ costR ct dt wt)).symm
-    _ ⊑ FbJ ≫ αJ ≫ R ct dt wt := comp_mono_left _ (tardy_tail ct dt wt)
+          (RelProd.pair_recip_pair (P := P2) (g ≫ ListRel.leq) (m ≫ ListRel.leq)
+            (g) (αJ ≫ cost)).symm
+    _ ⊑ FbJ ≫ αJ ≫ R := comp_mono_left _ (tardy_tail)
 
 calc_steps tardy_greedy
 
@@ -933,18 +941,18 @@ public theorem tardy_H :
 /-- **tardy-laws**, the prefixed point (Theorem 10.1 in context at `Q≜f≤f°`): at
     `X≜Λ(bagify°) est(R)` the greedy body is below `X`, so the least fixed point `tardy_laws` is
     too. -/
-public theorem tardy_laws_prefixed [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
-    {X : Bag Job ⟶ dSL Unit Job} (hX : X = Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt)) :
-    Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
+public theorem tardy_laws_prefixed [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
+    {X : Bag Job ⟶ dSL Unit Job} (hX : X = Λ ((bagify (Job := Job))°) ≫ est (R)) :
+    Λ ((bagAlg (Job := Job))°) ≫ est (Q) ≫ (F Unit Job).map X
         ≫ graph (con (L := Unit) (E := Job))
-      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) := by
+      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R) := by
   subst hX
   have hfix := hylo_fixed (F := F Unit Job) (initial Unit Job)
     bagAlg (graph (con (L := Unit) (E := Job)))
   rw [H, tardy_H] at hfix
   exact greedy_dp_prefixed_context (graph_map con)
-    (by rw [Allegory.recip_recip]; exact tardy_mono ct dt wt) (R_trans ct dt wt) hfix
-    (tardy_greedy ct dt wt hct hwt)
+    (by rw [Allegory.recip_recip]; exact tardy_mono) (R_trans) hfix
+    (tardy_greedy hct hwt)
 
 /-- **tardy-laws** (B&dM p.257): the schedule of least maximum penalty is the least fixed point
     of `(μX : [nil,snoc](𝟙+(X×𝟙)) est(Q) Λ[nil,snag]°)` — Theorem 10.1 IN CONTEXT at
@@ -952,12 +960,12 @@ public theorem tardy_laws_prefixed [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (
     `snag` having disjoint ranges (`nil_ne_snag`, Proposition 10.1) is what lets the `nil` branch
     be read off; refining `est(Q')Λsnag°` further to the partial function `pick` gives the
     quadratic program of B&dM p.258 — `schedule` below. -/
-public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+public theorem tardy_laws [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     mu (fun X : Bag Job ⟶ dSL Unit Job =>
-        Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
+        Λ ((bagAlg (Job := Job))°) ≫ est (Q) ≫ (F Unit Job).map X
           ≫ graph (con (L := Unit) (E := Job)))
-      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) :=
-  mu_le (tardy_laws_prefixed ct dt wt hct hwt rfl)
+      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R) :=
+  mu_le (tardy_laws_prefixed hct hwt rfl)
 
 /-- **Proposition 10.1** in the shape both arm laws ask for: no bag is built by `nil` and by
     `snag` alike, so a branch of `[nil,snag]°` can be read off on its own. -/
@@ -970,12 +978,12 @@ private theorem nil_snag_disjoint (d : Unit) (p : (Bag Job).carrier × Job)
     (`nil_ne_snag`), so the branch `(snag°)%∋ est(Q')(X×𝟙)snoc` refines `tardy_laws`' body
     `([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]` — `AOP.A9_1.est_arm₂_le` at `[nil,snag]`, whose
     `Q₂` at `Q≜f≤f°` is `Q'`. -/
-public theorem tardy_branch (X : Bag Job ⟶ dSL Unit Job) :
-    Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt)
+public theorem tardy_branch [Tardy Job] (X : Bag Job ⟶ dSL Unit Job) :
+    Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q')
         ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job)))
-      ⊑ Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt)
+      ⊑ Λ ((bagAlg (Job := Job))°) ≫ est (Q)
           ≫ (F Unit Job).map X ≫ graph (con (L := Unit) (E := Job)) :=
-  est_arm₂_le (X := X) (Q := Q ct dt wt) nil_snag_disjoint
+  est_arm₂_le (X := X) (Q := Q) nil_snag_disjoint
 
 /-! ## The program (B&dM p.258): `pick`, and `schedule` as its least fixed point
 
@@ -988,14 +996,13 @@ section Pick
 
 variable (pick : Bag Job ⟶ (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}))
   (hpickS : Simple pick)
-  (hpick : pick ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt))
 
 /-- **tardy-laws**, last row: `null`, the guard the base case is taken on — the empty bag. -/
-@[expose] public def null : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b = nilBag
+@[expose] public def null : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b = Bag.nil
 
 /-- The other branch's guard, `null`'s complement among the coreflexives: `RelSet` is no
     `BooleanAllegory`, so `corNeg` — hence `cond` — is unavailable and it is written out. -/
-@[expose] public def notNull : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b ≠ nilBag
+@[expose] public def notNull : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b ≠ Bag.nil
 
 /-- A guard only ever shrinks what it precedes. -/
 private theorem notNull_comp_le {c : RelSet.{0}} (S : Bag Job ⟶ c) :
@@ -1036,13 +1043,12 @@ public theorem schedule_unfold :
             ≫ arm₂ (graph (con (L := Unit) (E := Job)))) :=
   (mu_fixed (scheduleBody_monotonic pick)).symm
 
-include hpick in
 /-- **tardy-laws**, last row: the step the panel draws — `pick` in place of the search
     `est(Q')Λsnag°` refines the branch `tardy_branch` starts from. -/
-public theorem pick_branch_le (X : Bag Job ⟶ dSL Unit Job) :
+public theorem pick_branch_le [Tardy Job] (hpick : pick ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est Q') (X : Bag Job ⟶ dSL Unit Job) :
     pick ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
         ≫ arm₂ (graph (con (L := Unit) (E := Job)))
-      ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt)
+      ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q')
           ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
           ≫ arm₂ (graph (con (L := Unit) (E := Job))) := by
   have h := comp_mono_right hpick
@@ -1068,11 +1074,11 @@ public theorem pick_branch_simple {X : Bag Job ⟶ dSL Unit Job} (hX : Simple X)
 
 /-- The base case: on the empty bag the search `est(Q)Λ[nil,snag]°` leaves `nil` itself, so the
     guarded constant `null≫nil` is below the `nil` arm of the specification's body. -/
-private theorem null_nil_le :
+private theorem null_nil_le [Tardy Job] :
     null ≫ bangBag ≫ nil
-      ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt))
+      ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q))
           ≫ arm₁ (graph (con (L := Unit) (E := Job))) := by
-  have haux : null ≫ bangBag ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt)) :=
+  have haux : null ≫ bangBag ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q)) :=
     le_iff.mpr fun b u h => by
       obtain ⟨_b', ⟨_, hb0⟩, _⟩ := h
       exact (Λ_comp_est_apply _ _ b u).mpr ⟨hb0, fun _z _ => Int.le_refl _⟩
@@ -1080,19 +1086,18 @@ private theorem null_nil_le :
   rw [Cat.assoc, Cat.assoc] at h
   exact h
 
-include hpick in
 /-- **tardy-laws**: the cell's first claim — the program refines the specification.  Both branches
     of the step are below `tardy_laws`' body: the base case by `est_arm₁_le`, the greedy step by
     `pick_branch_le` and then `tardy_branch`. -/
-public theorem schedule_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    schedule pick ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) :=
+public theorem schedule_le [Tardy Job] (hpick : pick ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est Q') [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    schedule pick ⊑ Λ ((bagify (Job := Job))°) ≫ est (R) :=
   le_trans
     (mu_le_mu fun X =>
       union_le
-        (le_trans (null_nil_le ct dt wt) (est_arm₁_le (X := X) nil_snag_disjoint))
+        (le_trans (null_nil_le) (est_arm₁_le (X := X) nil_snag_disjoint))
         (le_trans (notNull_comp_le _)
-          (le_trans (pick_branch_le ct dt wt pick hpick X) (tardy_branch ct dt wt X))))
-    (tardy_laws ct dt wt hct hwt)
+          (le_trans (pick_branch_le pick hpick X) (tardy_branch X))))
+    (tardy_laws hct hwt)
 
 end Pick
 
@@ -1185,7 +1190,7 @@ public theorem elemsP_perm {A B : Type} (R : dE A ⟶ dE B) :
 /-- **tardy-defn**: `bag(R)` relates two bags that have representatives related element by element. -/
 @[expose] public def bagP {A B : Type} (R : dE A ⟶ dE B)
     (u : (Bag A).carrier) (v : (Bag B).carrier) : Prop :=
-  ∃ xs ys, Quotient.mk (permSetoid A) xs = u ∧ Quotient.mk (permSetoid B) ys = v ∧ elemsP R xs ys
+  ∃ xs ys, Quotient.mk (perm A) xs = u ∧ Quotient.mk (perm B) ys = v ∧ elemsP R xs ys
 
 /-- The relator's action `bag(R) : bag(A)⟶bag(B)`. -/
 @[expose] public def bagRel {A B : Type} (R : dE A ⟶ dE B) : Bag A ⟶ Bag B := bagP R
@@ -1196,7 +1201,7 @@ public theorem bag_id {A : Type} : bagRel (𝟙 (dE A)) = 𝟙 (Bag A) := by
   intro u v
   constructor
   · rintro ⟨xs, ys, rfl, rfl, h⟩
-    exact congrArg (Quotient.mk (permSetoid A)) ((elemsP_id xs ys).mp h)
+    exact congrArg (Quotient.mk (perm A)) ((elemsP_id xs ys).mp h)
   · intro (h : u = v)
     cases h
     induction u using Quotient.ind with
@@ -1211,7 +1216,7 @@ public theorem bag_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
   constructor
   · rintro ⟨xs, zs, rfl, rfl, h⟩
     obtain ⟨ys, h1, h2⟩ := (elemsP_comp R S xs zs).mp h
-    exact ⟨Quotient.mk (permSetoid B) ys, ⟨xs, ys, rfl, rfl, h1⟩, ⟨ys, zs, rfl, rfl, h2⟩⟩
+    exact ⟨Quotient.mk (perm B) ys, ⟨xs, ys, rfl, rfl, h1⟩, ⟨ys, zs, rfl, rfl, h2⟩⟩
   · rintro ⟨v, ⟨xs, ys, rfl, hv, h1⟩, ⟨ys', zs, hv', rfl, h2⟩⟩
     obtain ⟨zs', h3, h4⟩ := elemsP_perm S (Quotient.exact (hv.trans hv'.symm)) h2
     exact ⟨xs, zs', rfl, Quotient.sound h4, (elemsP_comp R S xs zs').mpr ⟨ys, h1, h3⟩⟩
@@ -1242,7 +1247,7 @@ public theorem bagP_snag {A B : Type} (R : dE A ⟶ dE B) (u : (Bag A).carrier) 
     cases ys' with
     | nil => exact hel'.elim
     | cons k vs =>
-      exact ⟨Quotient.mk (permSetoid B) vs, k, ⟨ps, vs, rfl, rfl, hel'.2⟩, hel'.1,
+      exact ⟨Quotient.mk (perm B) vs, k, ⟨ps, vs, rfl, rfl, hel'.2⟩, hel'.1,
         Quotient.sound hp⟩
   · rintro ⟨v, k, ⟨ps', vs, hps, hvs, hel⟩, hjk, rfl⟩
     obtain ⟨vs', hel', hp⟩ := elemsP_perm R (Quotient.exact hps.symm) hel
@@ -1276,7 +1281,7 @@ public theorem snag_recip_strictNatural :
 /-- `bag(R)` relates the empty bag to the empty bag and to nothing else: a representative of `nil`
     is a permutation of `[]`, hence `[]`, and `[]` lifts only to `[]`. -/
 public theorem bagP_nil {A B : Type} (R : dE A ⟶ dE B) (w : (Bag B).carrier) :
-    bagP R nilBag w ↔ w = nilBag := by
+    bagP R Bag.nil w ↔ w = Bag.nil := by
   constructor
   · rintro ⟨xs, ys, h1, rfl, hel⟩
     obtain ⟨zs', hel', hp⟩ := elemsP_perm R (Quotient.exact h1).symm hel
@@ -1308,7 +1313,7 @@ public theorem bagAlg_strictNatural :
     cases hw with
     | inl h =>
       obtain ⟨d, rfl, d', _, rfl⟩ := h
-      exact (bagP_nil R nilBag).mpr rfl
+      exact (bagP_nil R Bag.nil).mpr rfl
     | inr h =>
       obtain ⟨p, rfl, q, hq, rfl⟩ := h
       exact (bagP_snag R p.1 p.2 _).mpr ⟨q.1, q.2, hq.1, hq.2, rfl⟩
@@ -1359,7 +1364,7 @@ public theorem blist_elemsP {A B : Type} (R : dE A ⟶ dE B) :
 /-- `bag(R)` out of a schedule's bag is `list(R)` out of the schedule, the order forgotten after. -/
 public theorem bagP_bagify {A B : Type} (R : dE A ⟶ dE B) (s : SnocList Unit A)
     (w : (Bag B).carrier) :
-    bagP R (bagifyFn s) w ↔ ∃ t : SnocList Unit B, slistP R s t ∧ bagifyFn t = w := by
+    bagP R (Fn.bagify s) w ↔ ∃ t : SnocList Unit B, slistP R s t ∧ Fn.bagify t = w := by
   constructor
   · rintro ⟨xs, ys, hxs, rfl, hel⟩
     obtain ⟨ys', hel', hp⟩ := elemsP_perm R (Quotient.exact hxs.symm) hel
@@ -1377,7 +1382,7 @@ public theorem bagify_strictNatural :
   intro s w
   constructor
   · rintro ⟨t, ht, rfl⟩
-    exact ⟨bagifyFn s, rfl, (bagP_bagify R s _).mpr ⟨t, ht, rfl⟩⟩
+    exact ⟨Fn.bagify s, rfl, (bagP_bagify R s _).mpr ⟨t, ht, rfl⟩⟩
   · rintro ⟨y, rfl, hb⟩
     obtain ⟨t, ht, rfl⟩ := (bagP_bagify R s w).mp hb
     exact ⟨t, ht, rfl⟩
@@ -1478,93 +1483,26 @@ public theorem bagAdd_laxNatural :
       (strictNatural_id _) R)
   · exact le_of_eq (add_strictNatural R)
 
--- printing-only unexpanders: §10.3's arrows under the book's names, the job data `ct`, `dt`, `wt`
--- dropped.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.cost] public meta def unexpandTardyCost : Unexpander
-  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `cost) $x $args*)
-  | _ => `($(mkIdent `cost))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.penalty] public meta def unexpandTardyPenalty : Unexpander
-  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `penalty) $x $args*)
-  | _ => `($(mkIdent `penalty))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.fFn] public meta def unexpandTardyF : Unexpander
-  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `f) $x $args*)
-  | _ => `($(mkIdent `f))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.gFn] public meta def unexpandTardyG : Unexpander
-  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `g) $x $args*)
-  | _ => `($(mkIdent `g))
-
+-- printing-only: `ctsum` is the book's `sum(ct′)`, an application no `notation` can print.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.ctsum] public meta def unexpandCtsum : Unexpander
-  | `($_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(ct′)")) $x $args*)
+  | `($_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(ct′)")) $x $args*)
   | _ => `($(mkIdent (Name.mkSimple "sum(ct′)")))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.bagifyFn] public meta def unexpandBagifyFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `bagify) $args*)
-  | _ => `($(mkIdent `bagify))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.kFn] public meta def unexpandTardyK : Unexpander
-  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `k) $x $args*)
-  | _ => `($(mkIdent `k))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.nilBag] public meta def unexpandNilBag : Unexpander
-  | _ => `($(mkIdent `nil))
-
 end Freyd.Alg.RelSet.Tardy
 
--- printing-only: the note's names for this section's declarations.
--- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
--- the line width, the due dates — is the section's context and not part of the name, exactly as
--- `AOP.A9_3_Bracket.R`'s own unexpander already has it.  One per constant: the attribute keys on one.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.R] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyR : Unexpander | _ => `($(mkIdent `R))
--- §10.3's arrows drop the job quantities `ct dt wt` as `R` does; `costR`/`penaltyR` only
--- tell the arrow from the Int function of the same name.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.costR] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyCostR : Unexpander | _ => `($(mkIdent `cost))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.penaltyR] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyPenaltyR : Unexpander
-  | _ => `($(mkIdent `penalty))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.g] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyGRel : Unexpander | _ => `($(mkIdent `g))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.m] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyM : Unexpander | _ => `($(mkIdent `m))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.k] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyKRel : Unexpander | _ => `($(mkIdent `k))
--- A section's thinning preorder is the note's `Q`, for the reason its ordering is `R`: which
--- relation it is, is the `code-defn` line above the table, not what the box is labelled with.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.Q] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyQ : Unexpander | _ => `($(mkIdent `Q))
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.Q'] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyQ' : Unexpander | _ => `($(mkIdent `Q'))
--- The bag's quotient is taken of the note's `perm`, the permutation relation `16-greedy` defines
--- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.  The job type is the section's
--- context, dropped as `R` drops its own.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tardy.permSetoid] public meta def Freyd.Alg.RelSet.Tardy.unexpandPermSetoid : Unexpander
-  | _ => `($(mkIdent `perm))
 -- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
 -- `(bagify°×𝟙) penalty`, the penalty of putting the job last after any ordering of the bag; both
--- drop the job quantities `ct dt wt`, as the section's arrows do.
+-- are applications no `notation` can print.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.AddP] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyAddP : Unexpander
   | `($_ $x $j $w) => `($(mkIdent `add) ($x, $j) $w)
   | _ => `($(mkIdent `add))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.bagPenalty] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyBagPenalty : Unexpander
-  | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")) $p)
+  | `($_ $p) => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")) $p)
   | _ => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")))
 -- `k`'s second arm as B&dM p.256 write it, in diagram order; costs and due dates are context.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.kStep] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyKStep : Unexpander
-  | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")) $p)
+  | `($_ $p) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")) $p)
   | _ => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")))
