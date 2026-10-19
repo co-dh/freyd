@@ -562,7 +562,7 @@ variable [HasRelProd 𝒜]
 
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
     relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
-@[expose] public def Δ {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
+@[expose] public def Δ (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
     Relator 𝒜 𝒜 :=
   Relator.prod (Relator.idRelator 𝒜) (Relator.idRelator 𝒜)
 
@@ -582,7 +582,7 @@ public theorem outl_laxNatural {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : 
 /-- **B&dM p.133**: the right projection `outr` is lax natural from the duplication relator to the
     identity relator — `(R×R) ≫ outr ⊑ outr ≫ R`, the `F = G = 1` case of `outr_laxNatural`. -/
 public theorem outr_lax_natural :
-    LaxNatural (Relator.idRelator 𝒜) Δ (fun a => (relProd a a).outr) :=
+    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun a => (relProd a a).outr) :=
   outr_laxNatural (Relator.idRelator 𝒜) (Relator.idRelator 𝒜)
 
 /-- The free theorem of `π₂` is an EQUALITY when the LEFT relator is ENTIRE at `R` — the
@@ -691,3 +691,8 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.Relator.prod] public meta def Freyd.Alg.Relator.unexpandRelatorProd : Unexpander
   | `($_ $F $G) => `($F × $G)
   | _ => throw ()
+-- printing-only: the diagonal relator's lane is `Δ`.  Kept: with `𝒜` implicit and no rule, the
+-- exporter's `Δ` lane (`peelCuts`, `diag_unfold`) printed as `𝟙×𝟙` in ch5 and ch7.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Δ] public meta def Freyd.Alg.unexpandDiagonalRelator : Unexpander
+  | _ => `($(mkIdent `Δ))

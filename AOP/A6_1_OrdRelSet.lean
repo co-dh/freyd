@@ -80,8 +80,8 @@ public theorem merge_not_monotonic :
 /-- `Δ`'s action is the pointwise `R×R` — `prodMap_eq_rprodMap` read at a pair of points. -/
 public theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
     (p : A.carrier × A.carrier) (q : B.carrier × B.carrier) :
-    (Δ (𝒜 := RelSet.{0})).map R p q ↔ (R p.1 q.1 ∧ R p.2 q.2) := by
-  rw [show (Δ (𝒜 := RelSet.{0})).map R = RelSet.rprodMap R R from RelSet.prodMap_eq_rprodMap R R]
+    (Δ RelSet.{0}).map R p q ↔ (R p.1 q.1 ∧ R p.2 q.2) := by
+  rw [show (Δ RelSet.{0}).map R = RelSet.rprodMap R R from RelSet.prodMap_eq_rprodMap R R]
   exact Iff.rfl
 
 -- Same shape as `inter_not_monotonic`: two DISTINCT elements improve to the SAME one, and the
@@ -122,7 +122,7 @@ open MeetCounterex
 public theorem inter_not_laxNatural_square
     {aa : Fin 2 × Fin 2} (_at_aa : aa = (0, 1))
     {bb : Fin 2 × Fin 2} (_at_bb : bb = (0, 0))
-    (_step_aa_bb : (Δ (𝒜 := RelSet.{0})).map MeetCounterex.R aa bb)
+    (_step_aa_bb : (Δ RelSet.{0}).map MeetCounterex.R aa bb)
     {b₁ : RelSet.Sub (Fin 2)} (_at_b₁ : b₁ = {(0 : Fin 2)})
     (_step_bb_b₁ : b₁ = RelSet.img ((relProd MeetCounterex.B MeetCounterex.B).outl
       ∩ (relProd MeetCounterex.B MeetCounterex.B).outr) {bb})
@@ -131,7 +131,7 @@ public theorem inter_not_laxNatural_square
       ∩ (relProd MeetCounterex.A MeetCounterex.A).outr) {aa})
     {b₂ : RelSet.Sub (Fin 2)} (_at_b₂ : b₂ = ∅)
     (_step_a₁_b₂ : b₂ = RelSet.img MeetCounterex.R a₁) :
-    ¬ ((Δ (𝒜 := RelSet.{0})).map MeetCounterex.R
+    ¬ ((Δ RelSet.{0}).map MeetCounterex.R
           ≫ ((relProd MeetCounterex.B MeetCounterex.B).outl
               ∩ (relProd MeetCounterex.B MeetCounterex.B).outr)
         ⊑ ((relProd MeetCounterex.A MeetCounterex.A).outl
@@ -156,7 +156,7 @@ open MeetCounterex in
 public theorem laxNatural_inter_false :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ A, G.obj A ⟶ F.obj A),
       LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) :=
-  ⟨Relator.idRelator RelSet.{0}, Δ (𝒜 := RelSet.{0}), fun A => (relProd A A).outl,
+  ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
     fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural,
     fun h => inter_not_laxNatural_square rfl rfl
       ((delta_map_apply MeetCounterex.R _ _).mpr ⟨rfl, rfl⟩)
@@ -182,7 +182,7 @@ public theorem laxNatural_inter_false :
 public theorem recip_not_laxNatural :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A),
       LaxNatural F G φ ∧ ¬ LaxNatural G F (fun A => (φ A)°) := by
-  refine ⟨Relator.idRelator RelSet.{0}, Δ (𝒜 := RelSet.{0}), fun A => (relProd A A).outr,
+  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outr,
     outr_lax_natural, ?_⟩
   intro h
   let R : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ y => y = false
@@ -197,7 +197,7 @@ public theorem recip_not_laxNatural :
 public theorem laxOnMaps_not_laxNatural :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ : ∀ A, G.obj A ⟶ F.obj A),
       LaxOnMaps F G φ ∧ ¬ LaxNatural F G φ := by
-  refine ⟨Relator.const (⟨Unit⟩ : RelSet.{0}), Δ (𝒜 := RelSet.{0}), fun _ p _ => p.1 ≠ p.2, ?_, ?_⟩
+  refine ⟨Relator.const (⟨Unit⟩ : RelSet.{0}), Δ RelSet.{0}, fun _ p _ => p.1 ≠ p.2, ?_, ?_⟩
   · intro A B f hf
     refine RelSet.le_iff.mpr ?_
     rintro p u ⟨q, hq, hne⟩
@@ -229,12 +229,12 @@ public theorem hcomp_inner_first_ne_outer_first :
       (χ : ∀ B, L.obj B ⟶ K.obj B), LaxNatural F G φ ∧ LaxNatural K L χ ∧
       (fun A => L.map (φ A) ≫ χ (F.obj A)) ≠ (fun A => χ (G.obj A) ≫ K.map (φ A)) := by
   refine ⟨Relator.const (⟨Bool⟩ : RelSet.{0}), Relator.const (⟨Bool⟩ : RelSet.{0}),
-    Relator.idRelator RelSet.{0}, Δ (𝒜 := RelSet.{0}), fun _ x _ => x = true,
+    Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun _ x _ => x = true,
     fun B => (relProd B B).outr,
     fun _ => by show 𝟙 _ ≫ _ ⊑ _ ≫ 𝟙 _; rw [Cat.id_comp, Cat.comp_id]; exact le_refl _,
     outr_lax_natural, ?_⟩
   intro h
-  have h' : (Δ (𝒜 := RelSet.{0})).map (fun (x _ : Bool) => x = true) ≫
+  have h' : (Δ RelSet.{0}).map (fun (x _ : Bool) => x = true) ≫
         (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).outr
       = (relProd (⟨Bool⟩ : RelSet.{0}) ⟨Bool⟩).outr ≫ fun (x _ : Bool) => x = true :=
     congrFun h (⟨Bool⟩ : RelSet.{0})
