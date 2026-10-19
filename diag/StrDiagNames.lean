@@ -25,6 +25,7 @@ public import AOP.A8_5_Paragraph
 public import AOP.A9_4_Code
 -- The constants the unexpanders below key on, formerly in scope only through re-exports.
 public import AOP.A6_TreeTip
+public import AOP.A6_1_OrdRelSet
 public import AOP.A9_2_Edit
 public import AOP.A9_3_Bracket
 -- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
@@ -102,6 +103,8 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.Van.H
   RelSet.Sort.base RelSet.ISort.add
 -- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §7.3 `exclude`).
 attribute [diag_noted] preorder monotonic RelSet.Party.exclude
+-- The note's `A=B≜{0,1}`: two names for one set, kept so the square's corners say which end of `R` they are.
+attribute [diag_noted] Freyd.Alg.MeetCounterex.A Freyd.Alg.MeetCounterex.B
 -- The recursion body of `R*·S` (B&dM p.160); the book writes it as a lambda and gives it no name.
 attribute [diag_noted] starBody
 
