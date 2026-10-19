@@ -261,12 +261,8 @@ transitive closure. A cost model built on the closure sent several rounds of mod
 import narrowing after modules that were never the cost, while the `Built` list of the first probe
 already showed the rebuild was the legacy `diag/` files.
 
-## An exporter change is gated on the whole note before it is merged
-A dispatch that changes a drawing or printing RULE in `diag/tool/*`, `diag/StrDiagNames.lean` or `diag/*.typ`
-drawing code — not one that only drops a deleted declaration's name from a list, which changes no panel — writes
-`regen: approved` and requires, in the worktree and before the hand-back: `cp -a <main>/diag/generated
-<worktree>/diag/` (seed), a full `./scripts/diag-regen` with zero `red stub`, and `make c NOTE=aop CH=<n>` for
-every chapter, each exit 0 — because the drawing rules are shared by every panel, a check of only the panels
-the change was for passes in the worktree and leaves the red stubs to be found in `master` after the merge,
-which cost two rounds of merge, stub, re-dispatch. Give each probe a fresh name, because lake's
-artifact cache replays a build it has seen.
+## A full regen runs only when it is required
+A worktree agent compiles only the chapters it edited, even when it changes a drawing or printing rule; a full
+`./scripts/diag-regen` and `make c` over every chapter run only when he asks, or when a merged change leaves a
+red stub in `master` — because several agents running the whole-note gate at once slowed every chapter compile
+about three times. Give each probe a fresh name, because lake's artifact cache replays a build it has seen.
