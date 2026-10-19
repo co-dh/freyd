@@ -299,19 +299,19 @@ row((
   [#rowkey("Freyd.Alg.Paths.step")], [#leant("Freyd.Alg.Paths.step")],
   "Freyd.Alg.Paths.step",
   [put a in front of every path in ps and keep a cheapest one],
-// lean:AOP.A8_2_Exec.F_obj@55c448b1
-// lean:AOP.A8_2.F@2dcf37fa
-// lean:AOP.A8_2_Exec.alphaR_F@6536d8fa
-// lean:AOP.A8_2.wrapz@940e3786
-// lean:AOP.A8_2.wrapz_apply@e7256951
-// lean:AOP.A8_2.consw@53d456cc
-// lean:AOP.A8_2.consw_apply@e512412c
-// lean:AOP.A8_2.cost@2d18e3c4
-// lean:AOP.A8_2.costOf@dfe994f6
-// lean:AOP.A8_2.R@6d0be9c8
-// lean:AOP.A8_2_Exec.relCata_F_eps_eq_nelist@c0422a4d
-// lean:AOP.A8_2_Exec.minpath_spec@99bd6e5b
-// lean:AOP.A8_2_Exec.minpath@6e6b277d
+// lean:AOP.A8_2_Exec.F_obj@fdf5f439
+// lean:AOP.A8_2.F@1173cf88
+// lean:AOP.A8_2_Exec.alphaR_F@aa40a1d4
+// lean:AOP.A8_2.wrapz@be461a6f
+// lean:AOP.A8_2.wrapz_apply@fdd03ce0
+// lean:AOP.A8_2.consw@6dc76693
+// lean:AOP.A8_2.consw_apply@e9d77869
+// lean:AOP.A8_2.cost@9727fbcf
+// lean:AOP.A8_2.costOf@5cd1d8d3
+// lean:AOP.A8_2.R@b8411391
+// lean:AOP.A8_2_Exec.relCata_F_eps_eq_nelist@a5626ada
+// lean:AOP.A8_2_Exec.minpath_spec@b3a1b035
+// lean:AOP.A8_2_Exec.minpath@f3dbb473
 // lean:AOP.A5_6_ListCombinators.RelSet.ListRel.nelist@6ec46793
 // lean:AOP.A8_2.sumCop_u₁_eq@77ceb1de
 // lean:AOP.A8_2.sumCop_u₂_eq@345d6352
@@ -319,11 +319,11 @@ row((
 // lean:AOP.A8_2.sumCop_u₂_apply@774edfff
 // lean:AOP.A5_6.cplMap@a82b3919
 // lean:AOP.A5_6.cprMap@379d6c37
-// lean:AOP.A8_2.Q@9626226f
-// lean:AOP.A8_2.head@32b2507f
-// lean:AOP.A8_2.step@f546a21f
-// lean:AOP.A8_2.Λ_F_map_eps_id@59cd9f69
-// lean:AOP.A8_2.Λ_F_map_id_eps@b7473cec
+// lean:AOP.A8_2.Q@7f3d1e91
+// lean:AOP.A8_2.head@017ceb2b
+// lean:AOP.A8_2.step@3d796bd0
+// lean:AOP.A8_2.Λ_F_map_eps_id@92f0e4cb
+// lean:AOP.A8_2.Λ_F_map_id_eps@56952273
 )]<path-defn>
 
 #disp[#table(
@@ -337,7 +337,7 @@ row((
   [`S head⊑[𝟙,π₁]` #h(4pt) #src[`S≜F(𝟙,∋)α`]],
   [`S head` is simple, which gives `R∩(S°S)⊑Q`: between two paths `S` builds from one argument,
    equal cost and equal head already means `Q`],
-  // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@1e7c3c78 lean:AOP.A8_2.R_inter_recip_le_Q@2e1f5c5d
+  // lean:AOP.A8_2.pathAlg_monotonic@3ab67a76 lean:AOP.A8_2.pathSplit_comp_headRel_le@859d0deb lean:AOP.A8_2.R_inter_recip_le_Q@b01170ba
 )]<path-mono>
 
 === Derivation
@@ -350,7 +350,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.Paths.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2_Exec.thinning_paths@a206827d
+     // lean:AOP.A8_2_Exec.thinning_paths@604898b9
   [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
      dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
      every `z` in `Λ(S)(x)`.
@@ -371,8 +371,8 @@ row((
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
   [#EQ #leanf("Freyd.Alg.Paths.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[τ,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[τ,step]` — @Freyd.Alg.Paths.step]],
-    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@1fd47700
-    // lean:AOP.A8_2.step@f546a21f
+    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@70989486
+    // lean:AOP.A8_2.step@3d796bd0
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
   [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Paths.Λ_F_map_eps_id]],
@@ -388,7 +388,7 @@ row((
   F(A',X') =  A'  +   A' ×  X'
   ```
 ]
-// lean:AOP.A8_2.F@2dcf37fa
+// lean:AOP.A8_2.F@1173cf88
 `u F(R,S) v` holds iff one of:
 - `u`, `v` are both `inl` and `d R d'`: the leaf moves by `R`;
 - `u`, `v` are both `inr` and `p₁ R q₁ ∧ p₂ S q₂`: the vertex moves by `R`, the rest by `S`.
