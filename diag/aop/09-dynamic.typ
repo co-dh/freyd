@@ -469,6 +469,10 @@
 
 - `B A ⊑ C B` says `C` simulates `A`, with `B` as the simulation relation: whenever `x B y` and `y A y'`, there is `x'` with `x C x'` and `x' B y'` — each `A` step is followed by a `C` step, and the two sides stay related
 - the theorem: then `C*` simulates `A*`, with the same `B`
+- step 1, `B A* = μX. B ∪ X A`: `X` is `B` then some number of `A`; `B ∪ X A` is either `B` alone (no `A`), or a path already in `X` then one more `A`
+- iterating from `∅`: `X₁ = B`, `X₂ = B ∪ B A`, `X₃ = B ∪ B A ∪ B A A`, …; their union is `B A*`
+- it is the least: any `X` with `B ∪ X A ⊑ X` contains `B`, hence `B A`, hence `B A A`, …, so it contains `B A*`; step 2 takes `X = C* B`
+- step 1 is a theorem, not the definition: `A*` is defined as `μY. 𝟙 ∪ A Y`, which adds `A` on the left
 - applied at `B = edit`, `A = 𝟙×tail`, and `C` replacing `es` by an `fs` with `|fs| ≤ |es|`, it gives `edit (𝟙×suffix) ⊑ R° edit` (`suffix = tail*`), which the `mle` table below uses
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
