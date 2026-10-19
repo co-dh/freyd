@@ -754,8 +754,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Paragraph.partition")], [#leant("Freyd.Alg.RelSet.Paragraph.partition")],
   "Freyd.Alg.RelSet.Paragraph.partition",
   [every way of breaking the words into lines],
-  [#rowkey("Freyd.Alg.RelSet.Paragraph.widthFn")], [#leant("Freyd.Alg.RelSet.Paragraph.widthFn")],
-  "Freyd.Alg.RelSet.Paragraph.widthFn",
+  [#rowkey("Freyd.Alg.RelSet.Paragraph.width")], [#leant("Freyd.Alg.RelSet.Paragraph.width")],
+  "Freyd.Alg.RelSet.Paragraph.width",
   [the lengths of the words plus one space between neighbours],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.head")], [#leant("Freyd.Alg.RelSet.Paragraph.head")],
   "Freyd.Alg.RelSet.Paragraph.head",
@@ -769,8 +769,8 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Paragraph.sqr")], [#leant("Freyd.Alg.RelSet.Paragraph.sqr")],
   "Freyd.Alg.RelSet.Paragraph.sqr",
   [n squared],
-  [#rowkey("Freyd.Alg.RelSet.Paragraph.wasteFn")], [#leant("Freyd.Alg.RelSet.Paragraph.wasteFn")],
-  "Freyd.Alg.RelSet.Paragraph.wasteFn",
+  [#rowkey("Freyd.Alg.RelSet.Paragraph.waste")], [#leant("Freyd.Alg.RelSet.Paragraph.waste")],
+  "Freyd.Alg.RelSet.Paragraph.waste",
   [the squared white space left on every line but the last, added up],
   [#rowkey("Freyd.Alg.RelSet.Paragraph.R")], [#leant("Freyd.Alg.RelSet.Paragraph.R")],
   "Freyd.Alg.RelSet.Paragraph.R_eq",
@@ -789,20 +789,20 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
 // lean:AOP.A8_5_Paragraph.new@bda7247b
 // lean:AOP.A8_5_Paragraph.glue@f4a46e72
 // lean:AOP.A8_5_Paragraph.partition@913aa4cf
-// lean:AOP.A8_5_Paragraph.widthFn@925793a1
+// lean:AOP.A8_5_Paragraph.width@daf432e5
 // lean:AOP.A8_5_Paragraph.head@d781968f
-// lean:AOP.A8_5_Paragraph.allFitP@1d59ef2e
-// lean:AOP.A8_5_Paragraph.ok@6a24d4f2 lean:AOP.A8_5_Paragraph.okP@5ebaf3a1
+// lean:AOP.A8_5_Paragraph.allFitP@f2adf0a8
+// lean:AOP.A8_5_Paragraph.ok@5049c593 lean:AOP.A8_5_Paragraph.okP@9234d5bd
 // lean:AOP.A8_5_Paragraph.sqr@0bb9fcb4
-// lean:AOP.A8_5_Paragraph.wasteFn@598047f9
-// lean:AOP.A8_5_Paragraph.R@1aaea13f
-// lean:AOP.A8_5_Paragraph.R_eq@cf0ea074
-// lean:AOP.A8_5_Paragraph.Q@546d086e
-// lean:AOP.A8_5_Paragraph.Q_eq@72a43c20
-// lean:AOP.A8_5_Paragraph.fits_apply@42c87fb1
-// lean:AOP.A8_5_Paragraph.ok_apply@b7eeed25
-// lean:AOP.A8_5_Paragraph.R_apply@358f7c84
-// lean:AOP.A8_5_Paragraph.Q_apply@57c91c80
+// lean:AOP.A8_5_Paragraph.waste@d2aa76dd
+// lean:AOP.A8_5_Paragraph.R@ff7bc219
+// lean:AOP.A8_5_Paragraph.R_eq@00de62b0
+// lean:AOP.A8_5_Paragraph.Q@c785d513
+// lean:AOP.A8_5_Paragraph.Q_eq@920146a2
+// lean:AOP.A8_5_Paragraph.fits_apply@a9a960b7
+// lean:AOP.A8_5_Paragraph.ok_apply@5aa0830a
+// lean:AOP.A8_5_Paragraph.R_apply@9afaab8f
+// lean:AOP.A8_5_Paragraph.Q_apply@a45cba23
 // lean:AOP.A8_5_Paragraph.start@056fc54e
 )]<para-defn>
 
@@ -817,9 +817,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
    greedy algorithm solves this],
   [#leanf("Freyd.Alg.RelSet.Paragraph.para_mono_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_mono_glue") \ #src[`cons` monotonic on
  `collect≤collect°`. ,
-   // lean:AOP.A8_5_Paragraph.para_mono_new@3ae7ff0e
+   // lean:AOP.A8_5_Paragraph.para_mono_new@b234d312
  ]],
-   // lean:AOP.A8_5_Paragraph.para_mono_glue@6ac35920
+   // lean:AOP.A8_5_Paragraph.para_mono_glue@d5fe916f
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
   // lean:AOP.A8_3.merge_top@9e31b76a
@@ -839,7 +839,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@41291903
+     // lean:AOP.A8_5_Paragraph.para_laws@63c1d929
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -852,14 +852,14 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs") \
      #src[@cata-fusion, every word fits on a line by itself.
  ]])],
-     // lean:AOP.A8_5_Paragraph.para_alg_fusion@9ba5f9f5
+     // lean:AOP.A8_5_Paragraph.para_alg_fusion@8347e8d4
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
     [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs") \
      #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinL-thm82.
  ]])],
-     // lean:AOP.A8_5_Paragraph.para_spec@0ec1a795
+     // lean:AOP.A8_5_Paragraph.para_spec@c9b120dd
   // Empty: the step renames the algebra and the panel above already draws the reduce.
   [],
 
@@ -883,7 +883,7 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
     // para-body-split row: B&dM pp. 210–211
     #src[the fold's body splits into a base case `start` for a single word and a step that extends
  each kept layout by `new` and by `glue`]],
-     // lean:AOP.A8_5_Paragraph.para_body_split@ba8838a1
+     // lean:AOP.A8_5_Paragraph.para_body_split@74469824
   lean-calc(calc-pbs),
 )]<para-body-split>
 
@@ -929,11 +929,11 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Tour.start")], [#leant("Freyd.Alg.RelSet.Tour.start")],
   "Freyd.Alg.RelSet.Tour.start",
   [the tour of the last two cities, both journeys being that one edge],
-  [#rowkey("Freyd.Alg.RelSet.Tour.droplFn")], [#leant("Freyd.Alg.RelSet.Tour.droplFn")],
-  "Freyd.Alg.RelSet.Tour.droplFn",
+  [#rowkey("Freyd.Alg.RelSet.Tour.dropl")], [#leant("Freyd.Alg.RelSet.Tour.dropl")],
+  "Freyd.Alg.RelSet.Tour.dropl",
   [a replaces the first city of the outward journey and is put in front of the return],
-  [#rowkey("Freyd.Alg.RelSet.Tour.droprFn")], [#leant("Freyd.Alg.RelSet.Tour.droprFn")],
-  "Freyd.Alg.RelSet.Tour.droprFn",
+  [#rowkey("Freyd.Alg.RelSet.Tour.dropr")], [#leant("Freyd.Alg.RelSet.Tour.dropr")],
+  "Freyd.Alg.RelSet.Tour.dropr",
   [a is put in front of the outward journey and replaces the first city of the return],
   [#rowkey("Freyd.Alg.RelSet.Tour.droplAlgFn")], [#leant("Freyd.Alg.RelSet.Tour.droplAlgFn")],
   "Freyd.Alg.RelSet.Tour.droplAlgFn",
@@ -953,36 +953,36 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   [#rowkey("Freyd.Alg.RelSet.Tour.head₂")], [#leant("Freyd.Alg.RelSet.Tour.head₂")],
   "Freyd.Alg.RelSet.Tour.head₂",
   [the first cities of both journeys],
-  [#rowkey("Freyd.Alg.RelSet.Tour.Qc")], [#leant("Freyd.Alg.RelSet.Tour.Qc")],
-  "Freyd.Alg.RelSet.Tour.Qc_eq",
+  [#rowkey("Freyd.Alg.RelSet.Tour.Q")], [#leant("Freyd.Alg.RelSet.Tour.Q")],
+  "Freyd.Alg.RelSet.Tour.Q_eq",
   [t costs no more than t′, and both journeys of t and t′ share their first two cities],
 // lean:AOP.A6_ConsList.F@61b71616
 // lean:AOP.A6_ConsList.F_obj@6e42d8c2
 // lean:AOP.A8_6_Tour.Journey@43d30e10
-// lean:AOP.A8_6_Tour.Tour@5351625c
+// lean:AOP.A8_6_Tour.Freyd.Alg.RelSet.Tour.Tour@5351625c
 // lean:AOP.A8_6_Tour.head@03f58dbc
 // lean:AOP.A8_6_Tour.next@461ac890
 // lean:AOP.A8_6_Tour.tail@7addf003
 // lean:AOP.A8_6_Tour.prepend@b4d4f758
 // lean:AOP.A8_6_Tour.replaceHead@e9d516c0
 // lean:AOP.A8_6_Tour.replaceHead_eq@b1f91c3c
-// lean:AOP.A8_6_Tour.outcost@1a419787
-// lean:AOP.A8_6_Tour.incost@8cd0d498
-// lean:AOP.A8_6_Tour.cost@06de8db1
+// lean:AOP.A8_6_Tour.outcost@0a75e469
+// lean:AOP.A8_6_Tour.incost@b80088a4
+// lean:AOP.A8_6_Tour.cost@486ec7c7
 // lean:AOP.A8_6_Tour.start@313c866c
-// lean:AOP.A8_6_Tour.droplFn@fbc7f8e7
-// lean:AOP.A8_6_Tour.droprFn@f1f2bddf
-// lean:AOP.A8_6_Tour.droplAlgFn@b62e1231
-// lean:AOP.A8_6_Tour.droprAlgFn@1ee00147
+// lean:AOP.A8_6_Tour.dropl@fbc7f8e7
+// lean:AOP.A8_6_Tour.dropr@f1f2bddf
+// lean:AOP.A8_6_Tour.droplAlgFn@992e6fab
+// lean:AOP.A8_6_Tour.droprAlgFn@ee3eeb49
 // lean:AOP.A8_6_Tour.tour@e98fe8cb
-// lean:AOP.A8_6_Tour.R@99271c4e
-// lean:AOP.A8_6_Tour.R_eq@15ad4adc
-// lean:AOP.A8_6_Tour.Qc@dc87d553
-// lean:AOP.A8_6_Tour.R_apply@f30bcc6e
+// lean:AOP.A8_6_Tour.R@4259db75
+// lean:AOP.A8_6_Tour.R_eq@c069870c
+// lean:AOP.A8_6_Tour.Q@30f26dd3
+// lean:AOP.A8_6_Tour.R_apply@ec2d78fb
 // lean:AOP.A8_6_Tour.next₂@dc51681a
 // lean:AOP.A8_6_Tour.head₂@593fe366
-// lean:AOP.A8_6_Tour.Qc_eq@3246db55
-// lean:AOP.A8_6_Tour.Qc_apply@cbc2eb9b
+// lean:AOP.A8_6_Tour.Q_eq@d2984d03
+// lean:AOP.A8_6_Tour.Q_apply@6ec6b3d1
 )]<tour-defn>
 
 #disp[#table(
@@ -996,9 +996,9 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
    of both lists],
   [#leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropr")
  #src[,
-   // lean:AOP.A8_6_Tour.tour_mono_dropl@3401aca0
+   // lean:AOP.A8_6_Tour.tour_mono_dropl@7fed630b
  ]],
-   // lean:AOP.A8_6_Tour.tour_mono_dropr@2e2401d3
+   // lean:AOP.A8_6_Tour.tour_mono_dropr@8076bf63
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
   [#leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropr")],
