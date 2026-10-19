@@ -596,15 +596,15 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
 
 /-- **B&dM Ex 5.10**: `unzip(F) ≜ ⟨F(π₁),F(π₂)⟩ : F(C×D) ⟶ FC×FD`, where a relator's image of a
     product becomes the product of the images. -/
-@[expose] public def unzip (F : Relator 𝒜 𝒜) (C D : 𝒜) :
+@[expose] public def unzip (F : Relator 𝒜 𝒜) {C D : 𝒜} :
     F.obj (relProd C D).p ⟶ (relProd (F.obj C) (F.obj D)).p :=
   (relProd (F.obj C) (F.obj D)).pair (F.map (relProd C D).outl) (F.map (relProd C D).outr)
 
 /-- **B&dM Ex 5.10**: `F(R×S)unzip(F) ⊑ unzip(F)(F(R)×F(S))`.  Only lax: composing `F(R×S)` into
     the pairing is `comp_pair_le`, and `(R×S)π₁ ⊑ π₁R` is `prodMap_outl_le`, both inclusions. -/
 public theorem unzip_lax (F : Relator 𝒜 𝒜) {C D A B : 𝒜} (R : C ⟶ A) (S : D ⟶ B) :
-    F.map (prodMap (relProd C D) (relProd A B) R S) ≫ unzip F A B
-      ⊑ unzip F C D ≫ prodMap (relProd _ _) (relProd _ _) (F.map R) (F.map S) := by
+    F.map (prodMap (relProd C D) (relProd A B) R S) ≫ unzip F
+      ⊑ unzip F ≫ prodMap (relProd _ _) (relProd _ _) (F.map R) (F.map S) := by
   unfold unzip
   rw [RelProd.pair_prodMap, ← F.map_comp, ← F.map_comp]
   refine le_trans (RelProd.comp_pair_le _ _ _) ?_
@@ -685,17 +685,14 @@ public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X
 
 end Freyd.Alg
 
--- printing-only: the product of two relators is the note's `F×G`; Ex 5.10's `unzip(F)` names only
--- the relator, the two objects being the wires' own; the diagonal relator's lane is `Δ`, the
--- category it is taken over being the panel's region the lane already sits in.
+-- printing-only: the product of two relators is the note's `F×G`.  Kept as a rule because the
+-- infix `×` is already the type product `Prod`, so a second `×` notation would overload parsing.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.Relator.prod] public meta def Freyd.Alg.Relator.unexpandRelatorProd : Unexpander
   | `($_ $F $G) => `($F × $G)
   | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.unzip] public meta def Freyd.Alg.unexpandUnzip : Unexpander
-  | `($_ $F $_ $_) => `($(mkIdent `unzip) $F)
-  | _ => throw ()
+-- printing-only: the diagonal relator's lane is `Δ`.  Kept: with `𝒜` implicit and no rule, the
+-- exporter's `Δ` lane (`peelCuts`, `diag_unfold`) printed as `𝟙×𝟙` in ch5 and ch7.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.Δ] public meta def Freyd.Alg.unexpandDiagonalRelator : Unexpander
   | _ => `($(mkIdent `Δ))

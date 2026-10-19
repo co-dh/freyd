@@ -284,8 +284,9 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
   comp_id S := AlgHom.ext (Cat.comp_id S.hom)
   assoc S T U := AlgHom.ext (Cat.assoc S.hom T.hom U.hom)
 
-/-- `U`, the FORGETFUL functor: an algebra to its carrier, a homomorphism to its arrow. -/
-@[expose] public def algU {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
+/-- `U`, the FORGETFUL functor: an algebra to its carrier, a homomorphism to its arrow.  `F` is
+    implicit: which algebra category is the region the lane sits in, not part of the name. -/
+@[expose] public def U {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F : Relator 𝒜 𝒜} :
     Freyd.Functor (Algebra F) 𝒜 where
   obj A := A.carrier
   map S := S.hom
@@ -315,15 +316,6 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
 
 /-- The note's name for the constant functor at the initial carrier. -/
 notation:max "Δᴛ" => algDelta
-
-open Lean PrettyPrinter in
-/-- THE LANE IS THE FUNCTOR, NOT ITS PARAMETER: `F` is which algebra category the panel is in —
-    the region — so the wire's name is the letter `U` alone. -/
-@[app_unexpander algU] public meta def unexpandAlgU : Unexpander
-  -- `mkIdent`, not a quoted `U`: a quotation's identifier carries macro scopes and the lane's
-  -- label comes out `U✝`.
-  | `($_ $_F) => `($(mkIdent `U))
-  | _ => throw ()
 
 /-- THE BARE FOLD IS A BARE BANANA: `⦇·⦈`, the rule beside the constant that lets a picture drop
     the index, since the object wire under the bead already says which algebra it is taken at. -/
