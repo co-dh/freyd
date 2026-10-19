@@ -71,51 +71,35 @@ attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pai
 -- it by unifying its `⦇R⦈` with the fold in hand, never by this name.
 attribute [diag_defines] relCata_cancel
 
--- WHICH NAMES THE NOTE WRITES AS LEAN DECLARES THEM.  A predicate the note names in its own tables
--- (`R` entire, `R` a map, `R` symmetric), the domain and range operators, and a case study's own
--- relation are already the note's words, so there is nothing for a printing rule to rewrite — the
--- tag says so once per name, where an identity unexpander would say it in five lines each.  A
--- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
+-- WHICH NAMES THE NOTE WRITES AS LEAN DECLARES THEM, AND SO NEVER OPENS.  A constant the printer
+-- writes under its own short name already passes the label gate; the tag is for the readers that
+-- would otherwise open a `def` — a formula's predicate (`Entire(R)`, not its body), a circuit's
+-- arrow (`g₁`, a box), a one-field object (`dRose A`) — and says the name IS the note's word.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
   RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition IsFHom Pres
-  RelSet.CL.ConsList.cons RelSet.Tour.start
-  -- 8.6's definition table names it (`replaceHead ≜ (𝟙×tail)⧺`), so dropl/dropr print the name.
-  RelSet.Tour.replaceHead
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
-  RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
-  RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
+  RelSet.Bracket.gR RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
-attribute [diag_noted] RelSet.Poly.cpL RelSet.Poly.cpLFn RelSet.Poly.linear RelSet.Poly.hasArg₂
-  RelSet.Poly.relator RelSet.Poly.PolyF RelSet.Poly.PolyC RelSet.Poly.PolyC.zer RelSet.Poly.PolyC.one
-  RelSet.Poly.PolyC.const RelSet.Poly.PolyC.arg₁ RelSet.Poly.PolyC.arg₂ RelSet.CL.clF RelSet.ListRel.cppFn RelSet.ListRel.cprFn RelSet.ListRel.cplFn
+attribute [diag_noted] RelSet.Poly.cpL RelSet.Poly.linear RelSet.Poly.hasArg₂ RelSet.Poly.PolyF
   RelSet.CL.bumpFold RelSet.ListRel.thinL
--- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
-attribute [diag_noted] _root_.Int
-attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Knapsack.h₁ RelSet.Knapsack.h₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Paragraph.h₁ RelSet.Paragraph.h₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.cpL
+attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Knapsack.h₁ RelSet.Knapsack.h₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Paragraph.h₁ RelSet.Paragraph.h₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.cpL
 -- The case studies' own words, every explicit argument printed as Lean has it.
-attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelSet.Tour.next₂
-  RelSet.Tour.head₂ RelSet.Tour.Tour RelSet.Paragraph.glue RelSet.Paragraph.new RelSet.Paragraph.sqr
-  RelSet.Paragraph.start RelSet.MSS.zero RelSet.MSS.plus RelSet.Digits.wrap RelSet.Digits.snoc
-  RelSet.Digits.val RelSet.Digits.embed RelSet.Digits.op RelSet.Digits.Digit RelSet.Digits.Decimal
+attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add
+  RelSet.Tour.Tour RelSet.MSS.zero RelSet.MSS.plus RelSet.Digits.wrap RelSet.Digits.snoc
+  RelSet.Digits.val RelSet.Digits.embed RelSet.Digits.op RelSet.Digits.Digit
   RelSet.FastExp.Bit RelSet.FastExp.zero RelSet.FastExp.one RelSet.FastExp.shift RelSet.FastExp.convert
   RelSet.FastExp.exp RelSet.FastExp.mod RelSet.FastExp.Exp.op RelSet.FastExp.Modulus.op RelSet.Code.Q
-  RelSet.Detab.tb RelSet.Detab.nl RelSet.Detab.blank RelSet.Van.bmax RelSet.Party.S wrapz
+  RelSet.Van.bmax RelSet.Party.S wrapz
   RelSet.Tex.R RelSet.Tex.H RelSet.Tex.Q RelSet.Tex.l RelSet.Tex.r RelSet.Tex.zero RelSet.Tex.shift
-  RelSet.Tex.w RelSet.Tex.extern RelSet.Bracket.nonsingle RelSet.Bracket.loop RelSet.TT.Tree.tip
-  RelSet.TT.Tree.bin RelSet.Code.Code.sym RelSet.Code.Code.ptr RelSet.Bracket.cat RelSet.SL.arm₂
-  _root_.Fin RelSet.Edit.Op.cpy RelSet.Edit.Op.ins RelSet.ListRel.perm
+  RelSet.Tex.extern RelSet.Bracket.nonsingle RelSet.Bracket.loop RelSet.SL.arm₂ RelSet.ListRel.perm
   RelSet.Sort.flatten RelSet.Sort.join RelSet.Sort.fork RelSet.Sort.null RelSet.Sort.embed
   RelSet.Sort.base RelSet.ISort.add
--- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §6.4 `Bin`, §7.3 `exclude`).
-attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
+-- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §7.3 `exclude`).
+attribute [diag_noted] preorder monotonic RelSet.Party.exclude
 -- The recursion body of `R*·S` (B&dM p.160); the book writes it as a lambda and gives it no name.
 attribute [diag_noted] starBody
--- B&dM p.267 Appendix: `wrap = cons . pair (id, nil)`.
-attribute [diag_noted] Knap207.wrap Knap207.cons Knap207.nil Knap207.pair
-attribute [diag_noted] RelSet.Bracket.init RelSet.Bracket.tail RelSet.Bracket.inits RelSet.Bracket.tails RelSet.Edit.tail
-  RelSet.Bracket.flatten
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- AN OBJECT THE NOTE HAS NO WORD FOR IS THE SET IT WRAPS: a `def` whose body is a one-field record
@@ -417,12 +401,6 @@ open Lean PrettyPrinter Delaborator SubExpr in
     `([$b, $c])
   else failure
 
--- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
-meta def delabSegmentT : Delab := `($(mkIdent `T))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Segment.h, delab const.Freyd.Alg.RelSet.Segment.h] meta def delabSegmentH : Delab := `($(mkIdent `h))
 
 -- The coproduct injections applied to a point are applications, so they take parentheses.
 notation:max "l(" x ")" => Sum.inl x
@@ -618,14 +596,8 @@ open Lean PrettyPrinter in
 -- unexpanders because `gen` and `paths` take only implicit arguments and so print as bare
 -- constants, which `app_unexpander` cannot fire on.
 open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.gen, delab const.Freyd.Alg.Vec.gen]
-meta def delabVecGen : Delab := `($(mkIdent `gen))
-open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.genFold, delab const.Freyd.Alg.Vec.genFold]
 meta def delabVecGenFold : Delab := `(⦇$(mkIdent `gen)⦈)
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.paths, delab const.Freyd.Alg.Vec.paths]
-meta def delabVecPaths : Delab := `($(mkIdent `paths))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.Rel.Q, delab const.Freyd.Alg.Vec.Rel.Q]
 meta def delabVecRelQ : Delab := `($(mkIdent `Q))
@@ -785,26 +757,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] meta def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
--- B&dM p.201's `cpL(F)`; the functor is the wire's, as for `cp`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.ListRel.cpL] meta def unexpandCpL : Unexpander
-  | _ => `($(mkIdent `cpL))
--- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
--- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
--- fires on.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.moves, delab const.Freyd.Alg.Vec.moves]
-meta def delabVecMoves : Delab := `($(mkIdent `moves))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.cons, delab const.Freyd.Alg.Vec.cons]
-meta def delabVecCons : Delab := `($(mkIdent `cons))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.concat, delab const.Freyd.Alg.Vec.concat]
-meta def delabVecConcat : Delab := `($(mkIdent `concat))
--- The concrete cylinder's transition, beside its `moves` and `cons`.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.trans, delab const.Freyd.Alg.Vec.trans]
-meta def delabVecTrans : Delab := `($(mkIdent `trans))
 
 -- A SECTION'S RELATION, ORDER AND HELPER wear the note's letters, as `Party.R`, `Detab.V` and
 -- `Van.Hrel` above do: which relation it is, is the definition line over the table.
@@ -841,12 +793,6 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let a ← withNaryArg 0 delab
   let b ← withNaryArg 1 delab
   pure ⟨.node .none ``noteTuple #[mkAtom "(", a, mkAtom ",", b, mkAtom ")"]⟩
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.zip, delab const.Freyd.Alg.Vec.zip]
-meta def delabVecZip : Delab := `($(mkIdent `zip))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.cp, delab const.Freyd.Alg.Vec.cp]
-meta def delabVecCp : Delab := `($(mkIdent `cp))
 -- THE PRODUCT OF TWO MAPS IS THE NOTE'S `f×g`, the same spelling the allegory's own `prodMap`
 -- wears; `Prod.map` is the underlying function's Lean name.  No fallback: a shape this clause does
 -- not match is one nobody has written a spelling for, and the label gate says so.
@@ -881,10 +827,6 @@ meta def delabCLτ : Delab := do
   if let some l := args[0]? then
     if ← Meta.isDefEq l (mkConst ``Unit) then return ← `([])
   `($(mkIdent `τ))
--- The book's `tic≜cons inits tail` (p. 235), implicit-only like `τ`.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
-meta def delabBracketTic : Delab := `($(mkIdent `tic))
 -- A relation given by cases holds outright on a case as `true`, the Boolean spelling beside it.
 open Lean PrettyPrinter in
 @[app_unexpander True] meta def unexpandTrue : Unexpander
@@ -925,29 +867,6 @@ open Lean PrettyPrinter Delaborator in
   let h ← SubExpr.withNaryArg (n - 3) delab
   `($g + $h)
 
--- THE CORE TYPES THE NOTE WRITES AS LEAN DOES — `[[Int]]⟶[[Int]]` is a type cell, not a Lean
--- spelling that leaked.  They are registered here for the same reason every other name is: the
--- vocabulary is this file, and a type nobody wrote down draws nothing.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Int, delab const.Int] meta def delabIntName : Delab := `($(mkIdent `Int))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Char, delab const.Char] meta def delabCharName : Delab := `($(mkIdent `Char))
--- B&dM's own name for the booleans (§1.7, the answers of `p` in `filter`).
-open Lean PrettyPrinter Delaborator in
-@[delab app.Bool, delab const.Bool] meta def delabBoolName : Delab := `($(mkIdent `Bool))
--- The counterexample's objects and relation are the note's `A`, `B`, `R`; which sets they are, is
--- the paragraph above the panel.  Delaborators, because they take no explicit argument.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.MeetCounterex.A, delab const.Freyd.Alg.MeetCounterex.A]
-meta def delabMeetCounterexA : Delab := `($(mkIdent `A))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.MeetCounterex.B, delab const.Freyd.Alg.MeetCounterex.B]
-meta def delabMeetCounterexB : Delab := `($(mkIdent `B))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.MeetCounterex.R, delab const.Freyd.Alg.MeetCounterex.R]
-meta def delabMeetCounterexR : Delab := `($(mkIdent `R))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Unit, delab const.Unit] meta def delabUnitName : Delab := `($(mkIdent `Unit))
 -- B&dM p.148 writes `member(F)`; the bead's `F` and object are the wires it joins, so the label is bare.
 open Lean PrettyPrinter in
 @[app_unexpander LaxMembership.mem] meta def unexpandMember : Unexpander
@@ -956,15 +875,6 @@ open Lean PrettyPrinter in
 -- `Fin` KEEPS ITS ARGUMENT — `Fin n` is the object, where `Int` and `Char` are whole names; an
 -- unexpander and not a delaborator, so the index the printer already wrote stands.
 
--- The Boolean test `leb` of a sort's comparison states its hypotheses with `true`/`false`.
-open Lean PrettyPrinter in
-@[app_unexpander Bool.true] meta def unexpandBoolTrue : Unexpander
-  | `($_:ident) => `($(mkIdent `true))
-  | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander Bool.false] meta def unexpandBoolFalse : Unexpander
-  | `($_:ident) => `($(mkIdent `false))
-  | _ => throw ()
 -- A QUOTIENT IS WRITTEN BY ITS REPRESENTATIVES, as a coercion is by what it coerces: the class of `x`
 -- is `x` — a bag is its list — and the label reads a lift as the function it lifts (`labelTreeCore`).
 open Lean PrettyPrinter Delaborator SubExpr in
@@ -979,10 +889,9 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 -- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
-attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
+attribute [diag_noted] connected head Nat.zero Nat.succ union
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
-  RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next RelSet.Edit.Pair.F
-  RelSet.Tardy.snag RelSet.Tardy.bmax RelSet.Digits.«Digit⁺»
+  RelSet.MSS.k RelSet.Tour.head RelSet.Tour.next RelSet.Digits.«Digit⁺»
 
 /-- The book's closure `R*` (6.7), postfix like `°`.  LAST IN THE FILE: below it every quotation's
     splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing.  KEPT here, not

@@ -247,18 +247,30 @@ def hasPrintRule (env : Environment) (c : Name) : Bool :=
     || !(delabAttribute.getEntries env (`app ++ c)).isEmpty
     || !(delabAttribute.getEntries env (`const ++ c)).isEmpty
 
-/-- Whether the note has a WORD for the constant `c`: a printing rule of its own, or a `diag_noted`
-    tag saying its Lean name already is the book's word. -/
-def noteNames (c : Name) : MetaM Bool :=
-  return hasPrintRule (← getEnv) c || (← Lean.labelled `diag_noted).contains c
+/-- Whether the printer, left to its default, writes the bare constant `c` as its own SHORT name:
+    the one identifier it wrote is `c`'s last component alone — no namespace, no macro scope, no
+    `_private`/auxiliary component.  Read off the printed SYNTAX in the caller's scope, so a name
+    that resolves only qualified there prints qualified and is refused. -/
+def printsShort (c : Name) : MetaM Bool := do
+  let .str _ s := c | return false
+  if c.isInternal then return false
+  let ci ← getConstInfo c
+  return stxIdents (← PrettyPrinter.delab (.const c (ci.levelParams.map mkLevelParam))).raw
+    == #[.str .anonymous s]
 
-/-- A LABEL IS THE NOTE'S VOCABULARY, SO A RAW LEAN NAME IN IT IS REFUSED.  A head no printing rule
-    rewrote comes out as the constant Lean declared — `appl(F,NA)` for `BiRelator.appl` — and the
-    page then makes a claim in a vocabulary the note's tables never use, which no gate downstream
-    can tell from a label that is right.  The test is the ENVIRONMENT's and never the spelling:
-    every identifier the printer wrote is resolved back to the constant it names — `delabConst`
-    shortens a name only when the short form resolves back, and avoids the locals — and refused
-    when that constant has no rule.  A LOCAL AND A BOUND VARIABLE resolve to no constant and pass,
+/-- Whether the note has a WORD for the constant `c`: its short name, as the printer writes it with
+    no rule; a printing rule of its own; or a `diag_noted` tag. -/
+def noteNames (c : Name) : MetaM Bool := do
+  if hasPrintRule (← getEnv) c || (← Lean.labelled `diag_noted).contains c then return true
+  printsShort c
+
+/-- A LABEL IS THE NOTE'S VOCABULARY, SO A QUALIFIED LEAN NAME IN IT IS REFUSED.  A head the
+    printer could not shorten comes out as `Freyd.Alg.RelSet.Tour.head`, and the page then carries
+    Lean's namespaces where the note writes a word.  A constant printed under its own short name
+    needs no rule: the name IS the word, and an identity rule or a `diag_noted` tag beside it would
+    only say so again.  Every identifier the printer wrote is resolved back to the constant it
+    names — `delabConst` shortens a name only when the short form resolves back, and avoids the
+    locals — and refused when it is not that constant's short name and the constant has no rule.  A LOCAL AND A BOUND VARIABLE resolve to no constant and pass,
     which is what `moves`, `zip`, `N` and `F` are.  A constant WITH a rule that wrote its own name
     back is that rule's business, not this one's. -/
 def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
