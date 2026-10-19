@@ -1650,6 +1650,33 @@ public theorem Fbimap_top_not_laxNatural {F₂ G₂ : Relator RelSet.{0} RelSet.
   · exact hv
   · rcases o with a | a | a <;> simp [Fbimap, clF, Poly.bimapR, opRel, opP, graph] at hv
 
+/-- **`F(𝟙,W)` is oplax natural whenever `W` is**: the bifunctor with the identity in the
+    alphabet slot carries the oplax square of `W`, `opRel S` passing through on both sides. -/
+public theorem Fbimap_id_opLaxNatural {F₂ G₂ : Relator RelSet.{0} RelSet.{0}}
+    {W : ∀ a : RelSet.{0}, G₂.obj a ⟶ F₂.obj a} (hW : OpLaxNatural F₂ G₂ W) :
+    OpLaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op) F₂))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op) G₂))
+      (fun a => Fbimap Unit (𝟙 (dE (Op a.carrier))) (W a)) := fun S => by
+  simp only [sumOp_map, Fbimap_comp, Cat.comp_id]
+  exact Poly.bimapR_monotonic (clF Unit) (by erw [Cat.id_comp]; exact le_refl _) (hW S)
+
+/-- `F(𝟙,edit°)` is oplax natural: `edit°` is (`recip_oplax` of `edit_laxNatural`). -/
+public theorem Fbimap_id_edit_recip_opLaxNatural :
+    OpLaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op)
+          (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) op) listRelator)))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) op)
+          (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
+      (fun a => Fbimap Unit (𝟙 (dE (Op a.carrier))) (graph (editFn (A := a.carrier)))°) :=
+  Fbimap_id_opLaxNatural (recip_oplax (Relator.preservesRecip_of_tabular _)
+    (Relator.preservesRecip_of_tabular _) edit_laxNatural)
+
 /-- `([],[])` is related to `([],[])` by the pair lanes, whatever `S`. -/
 public theorem listLanes_nil {x y : RelSet.{0}} (S : x ⟶ y) :
     (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
@@ -2244,9 +2271,6 @@ end Freyd.Alg.RelSet.Edit
 -- letters; the map the section is named after is `edit`, and the algebra's arms are `base`/`step`
 -- (B&dM p.225).  `Op.del` shares its last component with another `del`, so the printer would
 -- qualify it; the book writes the bare `del a`, and the type `Op` alone (one alphabet, `A`).
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Edit.R] public meta def Freyd.Alg.RelSet.Edit.unexpandEditR : Unexpander
-  | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Edit.Q] public meta def Freyd.Alg.RelSet.Edit.unexpandEditQ : Unexpander
   | _ => `($(mkIdent `Q))
