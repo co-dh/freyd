@@ -214,7 +214,7 @@
     // lean:AOP.A6_5.member_sum@33a3eccf
   Thm(cols: 1)[#leanf("Freyd.Alg.member_prod") \
     #src[a member of `F×G` is a member of either component]],
-    // lean:AOP.A6_5.member_prod@8c3a6c88
+    // lean:AOP.A6_5.member_prod@8f61ce58
 )]<member-sum-prod>
 // TODO p.148 lax: `F(R)member ⊑ member R`, the largest lax natural `F ⟶ id`, hence unique — Lean
 //   LaxMembership.laxNatural, largestLax_unique.

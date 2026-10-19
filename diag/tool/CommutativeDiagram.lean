@@ -1674,9 +1674,24 @@ partial def headApps (hd : Expr) (t : Expr) : Array Expr :=
     two ends are told apart by the NAMES the statement gives them (`A` and `B`, one set between
     them) and unfolding those makes every corner the same corner.  Only the subterms built from the
     arrow's own head are compared, so nothing else is unfolded. -/
-def mentionsArrow (t e : Expr) : MetaM Bool :=
-  (headApps e.getAppFn t).anyM fun s =>
-    Meta.withNewMCtxDepth (Meta.withReducible (Meta.isDefEq s e))
+partial def mentionsArrow (t e : Expr) : MetaM Bool :=
+  (headApps e.getAppFn t).anyM fun s => Meta.withNewMCtxDepth (Meta.withReducible (eqR s e))
+where
+  /-- Reducible defeq that compares an INSTANCE argument at `instances`, not at the default
+      transparency `isDefEq` uses for every implicit one: an instance can carry data — the product
+      `relProd B B` of `(relProd B B).π₁` — and at default it matched `(relProd A A).π₁` through
+      `A = B`.  The other implicit arguments, objects fixed by the explicit ones, stay at default:
+      `Δ B` and `(relProd B B).p` are one object. -/
+  eqR (a b : Expr) : MetaM Bool := do
+    let (fa, fb) := (a.getAppFn, b.getAppFn)
+    if fa.isConst && fa == fb && a.getAppNumArgs == b.getAppNumArgs then
+      let ps := (← Meta.getFunInfoNArgs fa a.getAppNumArgs).paramInfo
+      (a.getAppArgs.zip b.getAppArgs).size.allM fun i _ => do
+        let (x, y) := (a.getAppArgs[i]!, b.getAppArgs[i]!)
+        if ps[i]!.isInstImplicit then Meta.withTransparency .instances (Meta.isDefEq x y)
+        else if ps[i]!.isExplicit then eqR x y
+        else Meta.withTransparency .default (Meta.isDefEq x y)
+    else Meta.isDefEq a b
 
 /-- What a hypothesis contributes to the picture: a FACE it hands the conclusion, or a NAMING of one
     of the statement's own arrows. -/
@@ -1740,10 +1755,7 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
     let t ← Meta.inferType x
     let ps := pins.filter fun p => (t.find? (· == p)).isSome
     if ps.size == 2 then
-      -- An edge the hypothesis WRITES wins over one it only matches: `isDefEq` compares implicit
-      -- arguments at default transparency, so `(relProd B B).π₁` matches `(relProd A A).π₁`.
-      let written := allEdges.filter fun e => (t.find? (· == e)).isSome
-      let mentioned ← if written.isEmpty then allEdges.filterM (mentionsArrow t ·) else pure written
+      let mentioned ← allEdges.filterM (mentionsArrow t ·)
       let mut maximal : Array Expr := #[]
       for e in mentioned do
         unless mentioned.any fun e' => e' != e && (e'.find? (· == e)).isSome do
