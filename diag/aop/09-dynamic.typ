@@ -350,7 +350,7 @@
   [`[] ↦ 0` #linebreak() `[cpy(a)] ↦ 1`],
   [#rowkey("Freyd.Alg.RelSet.Edit.R")], [#leant("Freyd.Alg.RelSet.Edit.R")],
   "Freyd.Alg.RelSet.Edit.R_eq",
-  [`[cpy(a)] R [del(a),ins(a)]`],
+  [`[cpy(a)] ≼ [del(a),ins(a)]`],
   [#rowkey("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
   "Freyd.Alg.RelSet.Edit.V_eq",
   [`([b],[c]) V ([a,b],[c])` #linebreak() `([b],[c]) V ([b],[d,c])`],
@@ -368,7 +368,7 @@
   [`inl(()) ↦ []` #linebreak() `inr(cpy(a),es) ↦ [cpy(a)]⧺es`],
   [#rowkey("Freyd.Alg.RelSet.Edit.α_pres_R")], [#leant("Freyd.Alg.RelSet.Edit.α_pres_R")],
   "Freyd.Alg.RelSet.Edit.α_pres_R",
-  [α preserves R #linebreak() `cpy(a) ⊤ del(b), xs R ys ⟹ [cpy(a)]⧺xs R [del(b)]⧺ys`],
+  [α preserves ≼ #linebreak() `cpy(a) ⊤ del(b), xs ≼ ys ⟹ [cpy(a)]⧺xs ≼ [del(b)]⧺ys`],
   [#rowkey("Freyd.Alg.RelSet.Edit.mleSpec")], [#leant("Freyd.Alg.RelSet.Edit.mle")],
   "Freyd.Alg.RelSet.Edit.mleSpec",
   [`([a],[a]) ↦ [cpy(a)]` #linebreak() not `[del(a),ins(a)]` — the shortest],
@@ -570,8 +570,8 @@
 // per fact.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
-    #src[comparing the tails by `R` and then putting an operation in front (`F(R)α`) relates only
-     sequences that `R` also relates once the operation is in front (`αR`)]],
+    #src[comparing the tails by `≼` and then putting an operation in front (`F(≼)α`) relates only
+     sequences that `≼` also relates once the operation is in front (`α≼`)]],
      // lean:AOP.A9_2_Edit.edit_mono@e083dbea
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -579,7 +579,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
-    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
+    [#src[`≼≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
      // lean:AOP.A9_2_Edit.edit_mono_step1@29c07433
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
@@ -609,7 +609,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
-    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R]])],
+    [#src[`≼≜length≤length°` — @Freyd.Alg.RelSet.Edit.R]])],
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
 )]<edit-mono>
 
@@ -619,7 +619,7 @@
     #grid(columns: 5, align: center + horizon, column-gutter: 6pt, row-gutter: 4pt,
       [`F(Op,[A]×[A])`], [$stretch(->, size: #4em)^(#raw("F(𝟙,edit°)"))$], [`F(Op,[Op])`],
       [$stretch(->, size: #2em)^alpha$], [`[Op]`],
-      [`Q` compares here], [], [], [], [`R` compares here])],
+      [`Q` compares here], [], [], [], [`≼` compares here])],
      // lean:AOP.A9_2_Edit.edit_thin_condition@f8eeb0f3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -651,7 +651,7 @@
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
     #src[cutting a front off either string an edit sequence produces (`edit V°`) leaves a pair that
-     a sequence no longer produces (`R° edit`)]],
+     a sequence no longer produces (`≼° edit`)]],
      // lean:AOP.A9_2_Edit.edit_Vrecip@b5cb421c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -664,19 +664,19 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
-    [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
+    [#src[`edit (suffix×𝟙)⊑≼° edit`: drop the operation that produced the head, or weaken its
       `cpy` to an `ins`. Proved by induction at `suffix` directly, not through `suffix=tail*` and
       `BA⊑CB⟹BA*⊑C*B` as the book does]])],
      // lean:AOP.A9_2_Edit.edit_Vrecip_step2@1cc1f51a lean:AOP.A9_2_Edit.edit_suffix_left@e12be68f
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs"),
-    [#src[`edit (𝟙×suffix)⊑R° edit`, the mirror image: `cpy` weakens to a `del`]])],
+    [#src[`edit (𝟙×suffix)⊑≼° edit`, the mirror image: `cpy` weakens to a `del`]])],
      // lean:AOP.A9_2_Edit.edit_Vrecip_step3@57addf8e lean:AOP.A9_2_Edit.edit_suffix_right@8bb8069b
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs"),
-    [#src[`R°` is transitive, `≤` being so]])],
+    [#src[`≼°` is transitive, `≤` being so]])],
      // lean:AOP.A9_2_Edit.edit_Vrecip_step4@0b83e93d
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
 )]<edit-V>
