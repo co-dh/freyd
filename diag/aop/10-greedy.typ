@@ -113,8 +113,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#rowkey("Freyd.Alg.RelSet.Detab.tbcFn")], [#leant("Freyd.Alg.RelSet.Detab.tbcFn")],
   "Freyd.Alg.RelSet.Detab.tbcFn",
   [the number of trailing blanks],
-  [#rowkey("Freyd.Alg.RelSet.Detab.tripleR")], [#leant("Freyd.Alg.RelSet.Detab.tripleR")],
-  "Freyd.Alg.RelSet.Detab.tripleR",
+  [#rowkey("Freyd.Alg.RelSet.Detab.triple")], [#leant("Freyd.Alg.RelSet.Detab.triple")],
+  "Freyd.Alg.RelSet.Detab.triple",
   [what `entab` keeps: the unfilled output, its trailing blank count and its column],
 // lean:AOP.A10_2_Detab.detab_cata@37355797
 // lean:AOP.A10_2_Detab.R@2b264e9a
