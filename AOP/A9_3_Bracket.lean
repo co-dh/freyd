@@ -1019,7 +1019,7 @@ public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X
     fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
 
 /-- `bin`, uncurried: the join of a pair of trees, the map `list(bin)` applies in `mix`. -/
-@[expose] public def bin (q : Tree A × Tree A) : Tree A := Tree.bin q.1 q.2
+@[expose] public def binFn (q : Tree A × Tree A) : Tree A := Tree.bin q.1 q.2
 
 /-- `row` read as the function it is: `mct` of every non-empty suffix. -/
 @[expose] public def rowFn [Bracket A S] [Inhabited A] (x : NEList A) : CL.ConsList Unit (Tree A) :=
@@ -1975,8 +1975,8 @@ public theorem array_apply [Bracket A S] (xs : NEList A) (xss : CL.ConsList Unit
 
 /-- `mix`, pointwise: a cheapest of the trees joining matching prefix and suffix trees. -/
 public theorem mix_apply [Bracket A S] (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)) (xs : Tree A) :
-    mix p xs ↔ xs = minLFn (R) (cmap bin (zip p)) := by
-  have h : mix = (graph (fun p => minLFn (R) (cmap bin (zip p))) : _ ⟶ dTree A) := by
+    mix p xs ↔ xs = minLFn (R) (cmap binFn (zip p)) := by
+  have h : mix = (graph (fun p => minLFn (R) (cmap binFn (zip p))) : _ ⟶ dTree A) := by
     simp only [mix, list_graph, graph_comp]; try rfl
   rw [h]; exact Iff.rfl
 
@@ -1984,7 +1984,7 @@ public theorem mix_apply [Bracket A S] (p : CL.ConsList Unit (Tree A) × CL.Cons
 public theorem next_apply [Bracket A S] (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A))
     (xss : CL.ConsList Unit (Tree A)) :
     next p xss
-      ↔ xss = snoc (p.1, minLFn (R) (cmap bin (zip p))) := by
+      ↔ xss = snoc (p.1, minLFn (R) (cmap binFn (zip p))) := by
   constructor
   · rintro ⟨⟨u, t⟩, ⟨hu, hm⟩, rfl⟩
     rw [mix_apply] at hm
@@ -2131,6 +2131,12 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Bracket.rowFn] public meta def unexpandRowFn : Unexpander
   | `($_ $args*) => `($(mkIdent `row) $args*)
   | _ => `($(mkIdent `row))
+
+-- `bin` is `TT.Tree.bin` too: a constant named `bin` here makes the constructor print `Tree.bin`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.binFn] public meta def unexpandBinFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `bin) $args*)
+  | _ => `($(mkIdent `bin))
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.TT.cataR] public meta def unexpandTTCataR : Unexpander
