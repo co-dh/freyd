@@ -792,7 +792,7 @@ variable {𝒜 : Type u₁} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd �
     `outr_lax_natural` (B&dM p.133) uses `prodMap_outr_le`.  The two together are the smallest
     pair of lax natural transformations whose MEET is not one (`laxNatural_inter_false`). -/
 public theorem outl_lax_natural :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) Δ (fun A => (relProd A A).outl) :=
   fun R => prodMap_outl_le _ _ R R
 
 end ProjLax
