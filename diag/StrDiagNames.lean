@@ -95,7 +95,7 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.Van.H
   RelSet.Digits.val RelSet.Digits.embed RelSet.Digits.op RelSet.Digits.Digit
   RelSet.FastExp.Bit RelSet.FastExp.zero RelSet.FastExp.one RelSet.FastExp.shift RelSet.FastExp.convert
   RelSet.FastExp.exp RelSet.FastExp.mod RelSet.FastExp.Exp.op RelSet.FastExp.Modulus.op RelSet.Code.Q
-  RelSet.Van.bmax RelSet.Party.S wrapz
+  RelSet.Van.bmax RelSet.Party.S Paths.wrapz
   RelSet.Tex.R RelSet.Tex.H RelSet.Tex.Q RelSet.Tex.l RelSet.Tex.r RelSet.Tex.zero RelSet.Tex.shift
   RelSet.Tex.extern RelSet.Bracket.nonsingle RelSet.Bracket.loop RelSet.SL.arm₂ RelSet.ListRel.perm
   RelSet.Sort.flatten RelSet.Sort.join RelSet.Sort.fork RelSet.Sort.null RelSet.Sort.embed
@@ -905,7 +905,7 @@ attribute [diag_noted] RelSet.CL.ConsList.cons RelSet.Tour.start RelSet.Paragrap
   RelSet.Bracket.cat Knap207.wrap Knap207.cons Knap207.nil Knap207.pair RelSet.Bracket.init
   RelSet.Bracket.tail RelSet.Edit.tail RelSet.Bracket.flatten RelSet.Detab.length RelSet.Tex.length
   RelSet.Edit.op RelSet.Paragraph.head RelSet.Edit.Pair.F RelSet.TT.F RelSet.Tardy.bmax
-attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union
+attribute [diag_noted] connected Paths.head Nat.F Nat.zero Nat.succ union
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
   RelSet.MSS.k RelSet.Tour.head RelSet.Tour.next RelSet.Digits.«Digit⁺»
 
