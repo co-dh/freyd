@@ -862,7 +862,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
    // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
 )#leank("Freyd.Alg.inter_not_laxNatural_square")]]<meet-counterex>
-// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@7f4975f8
+// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@7a6cbfea
 
 === Two stacked towers
 
