@@ -538,11 +538,12 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_prog.lhs")],
 )]<edit-laws>
 
-// One run of `mle` on `([a,b],[b])`, `a≠b`, one row per operator of @edit-laws in the order it
+// One run of `mle` on `([a,b],[b])`, `a≠b`: its input, then one row per operator of @edit-laws in the order it
 // acts; each value is a theorem of the `mle-step` section of A9_2_Edit, cited beside its row.
 #ex-table(col: [*step*],
-  (sym: [`empty→nil, …`], type: leant("Freyd.Alg.RelSet.Edit.empty"), value: [`([a,b],[b])`],
-   meaning: [not both empty: the `step` branch]),
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Edit.run_mle.lhs.arg"), value: leanf("Freyd.Alg.RelSet.Edit.run_mle.lhs.arg"),
+   meaning: [`a≠b`]),
+  // lean:AOP.A9_2_Edit.run_mle@51a16810
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f1"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f1"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_step_recip.rhs"),
    meaning: [`step(del a,([b],[b]))=([a,b],[b])` \ `step(ins b,([a,b],[]))=([a,b],[b])` \
@@ -552,10 +553,6 @@
    value: leanf("Freyd.Alg.RelSet.Edit.run_thin.rhs.rhs"),
    meaning: [`[b]` is a suffix of `[a,b]`, but `[b]` not of `[]`: both survive]),
   // lean:AOP.A9_2_Edit.run_thin@229d2559
-  (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f1"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f1"),
-   value: leanf("Freyd.Alg.RelSet.Edit.run_unstep.rhs"),
-   meaning: [the thinned set, as a list]),
-  // lean:AOP.A9_2_Edit.run_unstep@8ca6cbe0
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_list_cons.rhs"),
    meaning: [from the entries already computed: \ `mle([b],[b])=[cpy b]` \
