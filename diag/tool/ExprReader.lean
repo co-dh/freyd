@@ -120,11 +120,14 @@ partial def stxHead : Syntax → Option Name
 /-- Whether a bundle is a LANE THE PICTURE NAMES — a functor between the categories it draws.  The
     rule below is about lanes and nothing else: a CLASS INSTANCE is a bundle assembled from bundles
     too, and its fields are drawn by the notation each carries of its own (`∋`, `EA`), never by
-    opening the instance it was assembled from. -/
-def isLaneBundle (s : Expr) : MetaM Bool := do
-  let t ← Meta.whnfD (← Meta.inferType s)
-  return t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor
-      || t.isAppOf ``Freyd.Alg.BiRelator
+    opening the instance it was assembled from.  `family` takes a lane FAMILY too, the bare head `Δ`
+    of `Δ (𝒜 := A)`, whose type is a lane's under the family's parameters. -/
+def isLaneBundle (s : Expr) (family := false) : MetaM Bool := do
+  let lane (t : Expr) : MetaM Bool := do
+    let t ← Meta.whnfD t
+    return t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor || t.isAppOf ``Freyd.Alg.BiRelator
+  let ty ← Meta.inferType s
+  if family then Meta.forallTelescopeReducing ty fun _ t => lane t else lane ty
 
 /-- A BUNDLE ASSEMBLED FROM BUNDLES THAT CARRY THE FIELD HAS NO NAME OF ITS OWN.  `relatorName?`
     writes a relator's printed head and drops its arguments, because they are the TYPES the picture
@@ -1762,7 +1765,8 @@ def openNoted (e : Expr) (tags : List Name := [`diag_unfold, `diag_drawn_open]) 
   unless (← tags.anyM fun t => return (← Lean.labelled t).contains n) do return e
   -- A LANE IS NAMED BY ITSELF (`relatorName?`), whatever arguments it is written with: the tag opens
   -- a lane only where one of its FIELDS is taken (`field`), so `Δ` is the lane `Δ` and `Alg(Δ,ℕ)`.
-  if !field && (← isLaneBundle e) then return e
+  -- A FAMILY too: `Meta.transform` visits the bare head of `@Δ A _ _` after the application.
+  if !field && (← isLaneBundle e (family := true)) then return e
   match ← Meta.unfoldDefinition? e with
   -- A DEFINITION LEAN ELABORATED FOR ITSELF IS NOT A BODY THE NOTE WRITES.  `cons` opens to
   -- `cons.match_1 …`, an auxiliary `casesOn` or an internal name — Lean's own compilation of the
