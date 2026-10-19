@@ -290,6 +290,22 @@ theorem rep_filter (p : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) [∀ k v, Decidable 
     (filter p r).rep = r.rep ∩ p :=
   ((rep_ofList _).trans (rel_filter _ _)).trans (congrArg (r.rep ∩ ·) (hom_ext fun _ _ => decide_eq_true_iff))
 
+theorem toList_conv (r : FinRel K V) : r.conv.toList = r.toList.map Prod.swap := by
+  show r.vals.toList.zip r.keys.toList = (r.keys.toList.zip r.vals.toList).map Prod.swap
+  generalize r.keys.toList = ks; generalize r.vals.toList = vs
+  induction ks generalizing vs with
+  | nil => cases vs <;> rfl
+  | cons k ks ih => cases vs with
+    | nil => rfl
+    | cons v vs => simp [ih]
+
+/-- `xs × xs`, every pair of members: a relation filtered on it is that relation restricted to `xs`. -/
+def square (xs : List K) : FinRel K K := ofList (xs.flatMap fun w => xs.map (w, ·))
+
+theorem mem_filter_square (p : (⟨K⟩ : RelSet.{0}) ⟶ ⟨K⟩) [∀ k v, Decidable (p k v)] (xs : List K) (w z : K) :
+    (w, z) ∈ (filter p (square xs)).toList ↔ w ∈ xs ∧ z ∈ xs ∧ p w z := by
+  simp [filter, square, toList_ofList, List.mem_filter, List.mem_flatMap, and_assoc]
+
 variable [Ord K] [Std.TransOrd K] [Std.LawfulEqOrd K]
 
 attribute [local instance] lexOrd

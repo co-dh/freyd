@@ -51,6 +51,7 @@ public import AOP.A7_2_RelSet
 import AOP.A5_7_PowerBeads
 public import AOP.A6_7
 import AOP.A7_5_VanBeads
+import AOP.A6_FinRel
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
 
@@ -2275,36 +2276,142 @@ public theorem column_cata (xs : Str A) :
       = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
   consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
 
-/-! ### `mle-step`: one run of `mle` on `([a,b],[b])`, `a≠b`, one theorem per row of the note's table -/
+/-! ### `mle-step`: one run of `mle` on `([a,b],[b])`, `a≠b`, one theorem per row of the note's table
+
+The relational rows are RUN on the two-array relations of `A6_FinRel`: each spec relation is cut
+down to a finite domain that holds every pair it relates there, built as a `FinRel`, and the row's
+value is that `FinRel` evaluated. -/
 
 section MleRun
 
-variable {a b : A}
+-- Strings are compared when a `FinRel` keyed by them is looked up or filtered.
+deriving instance DecidableEq for ConsList
+
+/-- `suffixP x y`, decided by walking `y`. -/
+instance decSuffixP : ∀ x y : Str A, Decidable (suffixP x y)
+  | x, ConsList.wrap _ => inferInstanceAs (Decidable (x = ConsList.wrap ()))
+  | x, ConsList.cons b y =>
+      have := decSuffixP x y
+      inferInstanceAs (Decidable (x = ConsList.cons b y ∨ suffixP x y))
+
+/-- `thin(Q)`'s order `⊤×V`, decided by its two suffix tests. -/
+instance decTopV (w z : Op A × (Str A × Str A)) :
+    Decidable (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V) w z) :=
+  decidable_of_iff (suffixP w.2.1 z.2.1 ∧ suffixP w.2.2 z.2.2) ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
 
 omit [DecidableEq A] in
+theorem self_mem_tails : ∀ x : Str A, x ∈ CL.toList (tailsFn x)
+  | ConsList.wrap () => by simp [tailsFn, CL.toList]
+  | ConsList.cons _ _ => by simp [tailsFn, CL.toList]
+
+omit [DecidableEq A] in
+theorem inlistP_iff_mem {α : Type} : ∀ (xs : ConsList Unit α) (w : α), inlistP xs w ↔ w ∈ CL.toList xs
+  | ConsList.wrap _, _ => by simp [inlistP, CL.toList]
+  | ConsList.cons b x, w => by simp [inlistP, CL.toList, inlistP_iff_mem x w]
+
+omit [DecidableEq A] in
+/-- The candidate decompositions of `p`: an operation on a letter of `p` beside a suffix of each
+    string — the finite domain `step°` is restricted to. -/
+def stepDom (p : Str A × Str A) : List (Op A × (Str A × Str A)) :=
+  ((CL.toList p.1).flatMap (fun c => [Op.cpy c, Op.del c]) ++ (CL.toList p.2).map Op.ins).flatMap fun o =>
+    (CL.toList (tailsFn p.1)).flatMap fun x => (CL.toList (tailsFn p.2)).map fun y => (o, (x, y))
+
+omit [DecidableEq A] in
+/-- The restriction loses nothing: every decomposition of `p` is a candidate. -/
+theorem stepDom_complete {q : Op A × (Str A × Str A)} {p : Str A × Str A} (h : stepFn q = p) :
+    q ∈ stepDom p := by
+  obtain ⟨o, x, y⟩ := q
+  subst h
+  have hx := self_mem_tails x
+  have hy := self_mem_tails y
+  cases o with
+  | cpy c =>
+    show _ ∈ stepDom (ConsList.cons c x, ConsList.cons c y)
+    refine List.mem_flatMap.2 ⟨Op.cpy c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
+      simp [CL.toList, tailsFn, hx, hy]
+  | del c =>
+    show _ ∈ stepDom (ConsList.cons c x, y)
+    refine List.mem_flatMap.2 ⟨Op.del c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
+      simp [CL.toList, tailsFn, hx, hy]
+  | ins c =>
+    show _ ∈ stepDom (x, ConsList.cons c y)
+    refine List.mem_flatMap.2 ⟨Op.ins c, ?_, List.mem_flatMap.2 ⟨x, ?_, List.mem_map.2 ⟨y, ?_, rfl⟩⟩⟩ <;>
+      simp [CL.toList, tailsFn, hx, hy]
+
+omit [DecidableEq A] in
+/-- `step` on the candidate domain of `p`, a finite graph. -/
+def stepFin (p : Str A × Str A) : FinRel (Op A × (Str A × Str A)) (Str A × Str A) :=
+  FinRel.ofList ((stepDom p).map fun q => (q, stepFn q))
+
+/-- `step°` at `p` is the lookup of `p` in the converse of the finite graph. -/
+theorem step_recip_lookup (p : Str A × Str A) (q : Op A × (Str A × Str A)) :
+    stepFn q = p ↔ q ∈ (stepFin p).conv.scanLookup p := by
+  constructor
+  · intro h
+    refine List.mem_filterMap.2 ⟨(p, q), ?_, by simp [FinRel.sel]⟩
+    rw [FinRel.toList_conv, stepFin, FinRel.toList_ofList, List.map_map]
+    exact List.mem_map.2 ⟨q, stepDom_complete h, by simp [h]⟩
+  · intro hq
+    obtain ⟨⟨k, q'⟩, hm, hs⟩ := List.mem_filterMap.1 hq
+    rw [FinRel.toList_conv, stepFin, FinRel.toList_ofList, List.map_map] at hm
+    obtain ⟨q'', _, he⟩ := List.mem_map.1 hm
+    simp only [Function.comp, Prod.swap, Prod.mk.injEq] at he
+    obtain ⟨rfl, rfl⟩ := he
+    unfold FinRel.sel at hs
+    split at hs
+    · rename_i hc; cases hs; simpa using hc
+    · cases hs
+
+/-- `thin(Q)` keeps the whole of a finite set on which `Q`, filtered by `FinRel` to the set's
+    square, is the diagonal. -/
+theorem thin_of_square {α : RelSet.{0}} (Q : α ⟶ α) [∀ a b, Decidable (Q a b)] (xs : List α.carrier)
+    (hc : (FinRel.filter Q (FinRel.square xs)).toList = xs.map fun x => (x, x)) (Y : (RelSet.pow α).carrier) :
+    thinRel Q (fun q => q ∈ xs) Y ↔ Y = fun q => q ∈ xs := by
+  have hQ : ∀ w z, w ∈ xs → z ∈ xs → (Q w z ↔ w = z) := fun w z hw hz => by
+    have h := FinRel.mem_filter_square Q xs w z
+    rw [hc, List.mem_map] at h
+    exact ⟨fun hq => by
+      obtain ⟨x, _, e⟩ := h.2 ⟨hw, hz, hq⟩
+      simp only [Prod.mk.injEq] at e
+      exact e.1.symm.trans e.2, fun e => (h.1 ⟨w, hw, by rw [e]⟩).2.2⟩
+  rw [thinRel_pt]
+  constructor
+  · rintro ⟨hsub, hdom⟩
+    funext q
+    apply propext
+    refine ⟨hsub q, fun hq => ?_⟩
+    obtain ⟨w, hw, hY⟩ := hdom q hq
+    exact ((hQ w q (hsub w hY) hq).1 hw) ▸ hY
+  · rintro rfl
+    exact ⟨fun _ h => h, fun z hz => ⟨z, (hQ z z hz hz).2 rfl, hz⟩⟩
+
+omit [DecidableEq A] in
+/-- `minL(Q)` reads the least members off `Q` filtered by `FinRel` to the list's square. -/
+theorem minL_of_square {α : Type} (Q : dE α ⟶ dE α) [∀ a b, Decidable (Q a b)] (xs : ConsList Unit α)
+    (w : α) : minL(Q) xs w ↔ w ∈ CL.toList xs ∧
+      ∀ z ∈ CL.toList xs, (w, z) ∈ (FinRel.filter Q (FinRel.square (CL.toList xs))).toList := by
+  rw [minL_apply, inlistP_iff_mem]
+  exact and_congr_right fun hw => forall_congr' fun z => by
+    rw [inlistP_iff_mem, FinRel.mem_filter_square]
+    exact ⟨fun h hz => ⟨hw, hz, h hz⟩, fun h hz => (h hz).2.2⟩
+
+variable {a b : A}
+
 /-- **mle-step**, `Λ(step°)`: the decompositions of `([a,b],[b])` are a `del` and an `ins`, no `cpy`
-    since the heads differ. -/
+    since the heads differ — `step` on the candidate domain, conversed and looked up. -/
 public theorem run_step_recip (hab : a ≠ b) :
     (fun q : Op A × (Str A × Str A) =>
         stepFn q = (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.cons b (ConsList.wrap ())))
       = fun q => q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
         ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
-  funext ⟨o, xs, ys⟩
+  funext q
   apply propext
-  constructor
-  · intro h
-    cases o with
-    | cpy c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
-               exact absurd (h.1.1.symm.trans h.2.1) hab
-    | del c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
-               obtain ⟨⟨rfl, rfl⟩, rfl⟩ := h; exact Or.inl rfl
-    | ins c => simp only [stepFn, Prod.mk.injEq, ConsList.cons.injEq] at h
-               obtain ⟨rfl, rfl, rfl⟩ := h; exact Or.inr rfl
-  · rintro (h | h) <;> rw [h] <;> rfl
+  rw [step_recip_lookup]
+  simp [FinRel.scanLookup, FinRel.toList_conv, stepFin, FinRel.toList_ofList, stepDom, CL.toList, tailsFn,
+    FinRel.sel, stepFn, hab, Ne.symm hab]
 
-omit [DecidableEq A] in
-/-- **mle-step**, `thin(Q)`: neither decomposition has its strings `V`-below the other's, so the
-    thinning keeps both — the only thinning of that set is the set itself. -/
+/-- **mle-step**, `thin(Q)`: neither decomposition has its strings `V`-below the other's — `⊤×V`
+    filtered to the set's square is its diagonal — so the thinning keeps both. -/
 public theorem run_thin (Y : Op A × (Str A × Str A) → Prop) :
     thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V))
         (fun q : Op A × (Str A × Str A) =>
@@ -2312,22 +2419,11 @@ public theorem run_thin (Y : Op A × (Str A × Str A) → Prop) :
           ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ()))) Y
       ↔ Y = fun q => q = (Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ())))
         ∨ q = (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ())) := by
-  constructor
-  · intro h
-    obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp h
-    funext q
-    apply propext
-    refine ⟨hsub q, fun hq => ?_⟩
-    obtain ⟨w, hw, hY⟩ := hdom q hq
-    obtain ⟨_, h1, h2⟩ := hw
-    rcases hsub w hY with rfl | rfl <;> rcases hq with rfl | rfl
-    · exact hY
-    · exact absurd (suffixP_clen_le h2) (by simp [clen])
-    · exact absurd (suffixP_clen_le h1) (by simp [clen])
-    · exact hY
-  · rintro rfl
-    refine (thinRel_pt _ _ _).mpr ⟨fun _ h => h, fun z hz => ⟨z, ?_, hz⟩⟩
-    exact ⟨topMor_apply _ _, suffixP.refl _, suffixP.refl _⟩
+  have h := thin_of_square (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V))
+    [(Op.del a, (ConsList.cons b (ConsList.wrap ()), ConsList.cons b (ConsList.wrap ()))),
+     (Op.ins b, (ConsList.cons a (ConsList.cons b (ConsList.wrap ())), ConsList.wrap ()))]
+    (by simp [FinRel.filter, FinRel.square, FinRel.toList_ofList, rprodMap, V, suffix, suffixP, topMor_apply]) Y
+  simpa only [List.mem_cons, List.mem_nil_iff, or_false] using h
 
 /-- **mle-step**, `unstep`: both decompositions survive the thinning, as a list. -/
 public theorem run_unstep (hab : a ≠ b) :
@@ -2362,24 +2458,16 @@ public theorem run_list_cons :
   simp only [cmap, run_rest_cpy, run_rest_del]
 
 omit [DecidableEq A] in
-/-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one. -/
+/-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one — `R` filtered to the
+    list's square relates the longer one to nothing shorter-or-equal but itself. -/
 public theorem run_minL (w : ConsList Unit (Op A)) :
     minL((R (A := A))) (ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ()))) w
       ↔ w = ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())) := by
-  rw [minL_apply]
-  constructor
-  · rintro ⟨h | h | h, hmin⟩
-    · exact h
-    · subst h; have h2 := hmin _ (Or.inl rfl); simp [R, clen] at h2
-    · exact h.elim
-  · rintro rfl
-    refine ⟨Or.inl rfl, fun z hz => ?_⟩
-    rcases hz with rfl | rfl | h
-    · exact Nat.le_refl _
-    · simp [R, clen]
-    · exact h.elim
+  rw [minL_of_square]
+  simp [FinRel.filter, FinRel.square, FinRel.toList_ofList, CL.toList, R, clen]
+  exact ⟨fun h => h.2.1, fun h => ⟨Or.inl h, h, Or.inl h⟩⟩
 
 /-- **mle-step**, the whole run: `mle([a,b],[b])=[del a,cpy b]`. -/
 public theorem run_mle (hab : a ≠ b) :

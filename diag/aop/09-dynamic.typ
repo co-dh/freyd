@@ -545,7 +545,8 @@
 )]<edit-laws>
 
 // One run of `mle` on `([a,b],[b])`, `a≠b`: its input, then one row per operator of @edit-laws in the order it
-// acts; each value is a theorem of the `mle-step` section of A9_2_Edit, cited beside its row.
+// acts; each value is a theorem of the `mle-step` section of A9_2_Edit, cited beside its row. The
+// relational rows (step°, thin, minL) are proved by running A6_FinRel's two-array relations.
 #ex-table(col: [*step*],
   (sym: [input], type: leant("Freyd.Alg.RelSet.Edit.run_mle.lhs.arg"), value: leanf("Freyd.Alg.RelSet.Edit.run_mle.lhs.arg"),
    meaning: [`a≠b`]),
@@ -554,11 +555,11 @@
    value: leanf("Freyd.Alg.RelSet.Edit.run_step_recip.rhs"),
    meaning: [`step(del a,([b],[b]))=([a,b],[b])` \ `step(ins b,([a,b],[]))=([a,b],[b])` \
      no `cpy`: the heads `a≠b`]),
-  // lean:AOP.A9_2_Edit.run_step_recip@ce52d532
+  // lean:AOP.A9_2_Edit.run_step_recip@1464a59c
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f2"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.rhs.f2"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_thin.rhs.rhs"),
    meaning: [`[b]` is a suffix of `[a,b]`, but `[b]` not of `[]`: both survive]),
-  // lean:AOP.A9_2_Edit.run_thin@229d2559
+  // lean:AOP.A9_2_Edit.run_thin@18033c68
   (sym: leann("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"), type: leant("Freyd.Alg.RelSet.Edit.edit_prog.lhs.f2"),
    value: leanf("Freyd.Alg.RelSet.Edit.run_list_cons.rhs"),
    meaning: [from the entries already computed: \ `mle([b],[b])=[cpy b]` \
