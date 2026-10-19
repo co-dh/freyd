@@ -444,9 +444,7 @@
 
 #import "../generated/Freyd.Alg.RelSet.Edit.edit_tail_snd.calc.typ" as calc-edit-tail
 #import "../generated/Freyd.Alg.star_simulation_step.calc.typ" as calc-star-step
-#import "../generated/Freyd.Alg.star_simulation.calc.typ" as calc-comp-star
-#import "../generated/Freyd.Alg.RelSet.Edit.edit_body_split.calc.typ" as calc-edit-split
-// B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
+#import "../generated/Freyd.Alg.star_simulation.calc.typ" as calc-comp-star// B&dM p.226: the `tail` row from the book's informal argument, then the `suffix` row from it.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_tail_snd") \
     #src[dropping the head of the target string is matched by an edit sequence `fs` with `|fs| ≤ |es|`]],
@@ -475,16 +473,6 @@
 - it is the least: any `X` with `B ∪ X A ⊑ X` contains `B`, hence `B A`, hence `B A A`, …, so it contains `B A*`; step 2 takes `X = C* B`
 - step 1 is a theorem, not the definition: `A*` is defined as `μY. 𝟙 ∪ A Y`, which adds `A` on the left
 - applied at `B = edit`, `A = 𝟙×tail`, and `C` replacing `es` by an `fs` with `|fs| ≤ |es|`, it gives `edit (𝟙×suffix) ⊑ R° edit` (`suffix = tail*`), which the `mle` table below uses
-
-// B&dM p.227: Proposition 9.1 at `[base,step]` turns the body of @edit-laws into the book's `X`.
-// The conditional is the union of its two guarded arms: `cond` needs a Boolean allegory.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Edit.edit_body_split") \
-    #src[on the empty pair the body returns `nil`; on any other pair it takes the pair apart by
-     `step` alone]],
-     // lean:AOP.A9_2_Edit.edit_body_split@d61ac91d
-  lean-calc(calc-edit-split),
-)]<edit-split>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[A]×[A]` is `Δ`, `list`,
@@ -533,9 +521,10 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_body_split.rhs"),
-    [#src[Proposition 9.1 (@edit-split): `base` and `step` have disjoint ranges, so the body splits
-      into one branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is
-      where `base` returns]])],
+    [#src[Proposition 9.1: `base` and `step` have disjoint ranges, so the body splits into one
+      branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
+      `base` returns, and on it the body returns `nil`; the conditional is the union of its two
+      guarded branches]])],
      // lean:AOP.A9_2_Edit.edit_body_split@d61ac91d
   [#lean("Freyd.Alg.RelSet.Edit.edit_body_split.rhs")],
 

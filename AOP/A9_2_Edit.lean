@@ -29,10 +29,12 @@
   avoid.  `Q ≜ 𝟙+(⊤×V)` is written out and `edit_thin_condition` derives Theorem 9.2's `hQ`
   from `edit_V` — the same calculation, at one relator.
 
+  `edit-laws` row 3 (the `empty→nil` split, B&dM p.227) is Proposition 9.1 in `Rel(Set)`
+  (`RelSet.dp_disjoint_ranges`): `edit_body_split`, and `edit_X` its least fixed point.  The book's
+  conditional `(empty→nil,…)` is stated as the union of its two guarded branches, because `cond`
+  (`AOP.A5_3`) needs a Boolean allegory, which `Rel(Set)` is only classically.
+
   NOT DONE, and why:
-  * `edit-laws` row 3 (the `empty→nil` split) is **Proposition 9.1**, dropped for the whole
-    repo by the setting-mismatch note at the end of `AOP.A9_1` (coreflexive negation lives in
-    `DistributiveAllegory`, thinning in `UnguardedPowerLCDA`, and no `𝒜` instantiates both).
   * `edit-tabulation` (`column`/`nextcol`) is curried functions on lists, outside the relational
     picture, so it is proved as function equations at the end of the file, `mle` taken as the
     recursive characterisation B&dM derive from the program on p.228.
@@ -1268,6 +1270,37 @@ public theorem Fα_junc (X : dPair A ⟶ dEdit A) :
           first | exact hq | exact hq.symm
         exact h
 
+/-- The body of `edit_laws` read at the junction `[base,step]`: the algebra, `Q` and `F(X)α` each
+    written as the two arms Proposition 9.1 takes.  One law: a term mixing `F`'s object with the
+    raw sum would not be one picture. -/
+public theorem edit_body_junc (X : dPair A ⟶ dEdit A) :
+    Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
+        ≫ est (R A)
+      = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
+          ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
+              (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
+              (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
+          ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
+              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := by
+  rw [editAlg_junc, Q_eq_sumMap, Fα_junc]
+
+/-- **Proposition 9.1** at `[base,step]`: their ranges are disjoint (`edit_disj`), so the body
+    runs the `base` problem on `ran(base)` and the `step` problem on `ran(step)`.  A law of its own
+    because a `calc` step applies one law, and the disjointness proofs would be two more. -/
+public theorem edit_disjoint_ranges (X : dPair A ⟶ dEdit A) :
+    Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
+        ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
+            (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
+            (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
+        ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
+            (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A)
+      = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ thinRel (𝟙 (dL Unit))
+            ≫ powerRel τ ≫ est (R A))
+        ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
+            ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
+  RelSet.dp_disjoint_ranges edit_disj edit_disj'
+
 /-- The `base` branch of Proposition 9.1 is `nil` on the empty pair: `base°` decomposes `([],[])`
     one way, so the set is a singleton and `est(R)` returns its one member. -/
 public theorem edit_base_branch :
@@ -1287,6 +1320,50 @@ public theorem edit_base_branch :
       cases x; cases u; exact he
     · exact (est_apply _ _ _).mpr ⟨rfl, fun z hz => hz ▸ Nat.le_refl _⟩
 
+/-- `ran(step)` holds exactly off the empty pair: any other pair is `step` of a `del` or an `ins`. -/
+public theorem ran_step_iff (p q : Str A × Str A) :
+    Freyd.Alg.ran (step (A := A)) p q ↔ p = q ∧ ¬ emptyP p := by
+  constructor
+  · rintro ⟨hpq, s, hs, _⟩
+    exact ⟨hpq, fun he => step_ne_base s (hs.symm.trans he)⟩
+  · rintro ⟨rfl, hne⟩
+    refine ⟨rfl, ?_⟩
+    obtain ⟨xs, ys⟩ := p
+    cases xs with
+    | wrap u =>
+      cases u
+      cases ys with
+      | wrap v => cases v; exact absurd rfl hne
+      | cons b ys => exact ⟨(Op.ins b, (ConsList.wrap (), ys)), rfl, rfl⟩
+    | cons a xs => exact ⟨(Op.del a, (xs, ys)), rfl, rfl⟩
+
+/-- `list(S)×list(S)` relates pairs of the same lengths, so it keeps `empty` both ways. -/
+public theorem emptyP_listP {x y : RelSet.{0}} (S : x ⟶ y) (p : Str x.carrier × Str x.carrier)
+    (m : Str y.carrier × Str y.carrier) (h1 : listP S p.1 m.1) (h2 : listP S p.2 m.2) :
+    emptyP p ↔ emptyP m := by
+  obtain ⟨xs, ys⟩ := p
+  obtain ⟨xs', ys'⟩ := m
+  cases xs <;> cases xs' <;> cases ys <;> cases ys' <;> simp_all [emptyP, listP, clP]
+
+/-- **`ran(step)` is STRICTLY natural** in the alphabet: `list(S)×list(S)` relates an empty pair
+    only to an empty pair, so it commutes with the coreflexive on the non-empty ones. -/
+public theorem ran_step_strictNatural :
+    StrictNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a => Freyd.Alg.ran (step (A := a.carrier))) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _]
+  apply hom_ext; intro p q
+  constructor
+  · rintro ⟨m, hm, hr⟩
+    obtain ⟨rfl, hne⟩ := (ran_step_iff _ _).mp hr
+    exact ⟨p, (ran_step_iff _ _).mpr
+      ⟨rfl, fun he => hne ((emptyP_listP S p m hm.1 hm.2).mp he)⟩, hm⟩
+  · rintro ⟨m, hr, hm⟩
+    obtain ⟨rfl, hne⟩ := (ran_step_iff _ _).mp hr
+    exact ⟨q, hm, (ran_step_iff _ _).mpr
+      ⟨rfl, fun he => hne ((emptyP_listP S p q hm.1 hm.2).mpr he)⟩⟩
+
 /-- **edit-laws**, third row (B&dM p.227): Proposition 9.1 at `[base,step]` turns the body of
     `edit_laws` into the book's `X=(empty→nil,(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R))`.  The
     conditional is the union of its two guarded arms: `cond` needs a Boolean allegory, which
@@ -1300,25 +1377,18 @@ public theorem edit_body_split (X : dPair A ⟶ dEdit A) :
             ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
   calc Λ ((editAlg (A := A))°) ≫ thinRel (Q A) ≫ powerRel ((F Unit (Op A)).map X ≫ α A)
         ≫ est (R A)
-      = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°) ≫ thinRel (Q A)
-          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by rw [editAlg_junc]
-    _ = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
-          ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
-              (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
-              (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
-          ≫ powerRel ((F Unit (Op A)).map X ≫ α A) ≫ est (R A) := by rw [Q_eq_sumMap]
-    _ = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
+      = Λ ((junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) base step)°)
           ≫ thinRel (sumMap (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩)
               (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) (𝟙 (dL Unit))
               (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A)))
           ≫ powerRel (junc (sumCop (dL Unit) ⟨Op A × (dPair A).carrier⟩) τ
-              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := by rw [Fα_junc]
+              (rprodMap (𝟙 (dE (Op A))) X ≫ consR)) ≫ est (R A) := edit_body_junc X
     _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ thinRel (𝟙 (dL Unit))
             ≫ powerRel τ ≫ est (R A))
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
             ≫ powerRel (rprodMap (𝟙 (dE (Op A))) X ≫ consR) ≫ est (R A)) :=
-        RelSet.dp_disjoint_ranges edit_disj edit_disj'
+        edit_disjoint_ranges X
     _ = (Freyd.Alg.ran (base (A := A)) ≫ Λ ((base (A := A))°) ≫ powerRel τ ≫ est (R A))
         ∪ (Freyd.Alg.ran (step (A := A)) ≫ Λ ((step (A := A))°)
             ≫ thinRel (rprodMap (topMor (dE (Op A)) (dE (Op A))) (V A))
