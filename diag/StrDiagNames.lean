@@ -740,7 +740,7 @@ attribute [diag_indexed] alphaT InitialAlgebra.α
 -- brackets runs between two ends the peel reads as the ONE stack and there is no bead for it.
 -- Tagged and never matched, like the join above: an arrow between two equal stacks is a bead like
 -- any other, and only the constant says which arrows are the coherence of `×`.
-attribute [diag_coherence] RelSet.Van.assoclR
+attribute [diag_coherence] RelSet.Van.assocl
 
 -- EVERY CONSTANT A LABEL MAY BE MADE OF IS REGISTERED HERE, spelling included.  `checkSpelled`
 -- (`diag/tool/ExprReader.lean`) refuses a label carrying a constant no printing rule rewrote, so
