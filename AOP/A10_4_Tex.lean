@@ -351,13 +351,13 @@ public theorem interval_legal (n : Fin 65536) :
     rw [sc_zero]; omega
 
 /-- **tex-defn**: `interval n=((2n−1)/2¹⁷,(2n+1)/2¹⁷)`. -/
-@[expose] public def intervalFn (n : Fin 65536) : Interval.carrier :=
+@[expose] public def Fn.interval (n : Fin 65536) : Interval.carrier :=
   ⟨⟨mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0)⟩, interval_legal n⟩
 
 /-- **tex-defn**: `interval`, a map. -/
-@[expose] public def interval : Ix ⟶ Interval := graph intervalFn
+@[expose] public def interval : Ix ⟶ Interval := graph Fn.interval
 
-public theorem interval_map : Map interval := graph_map intervalFn
+public theorem interval_map : Map interval := graph_map Fn.interval
 
 /-- **tex-defn**: `r inrange (a,b)⟺a<r<b`. -/
 @[expose] public def inrange : Interval ⟶ Real := fun p r => rlt p.1.lo r ∧ rlt r p.1.hi
@@ -371,7 +371,7 @@ public theorem interval_map : Map interval := graph_map intervalFn
 public theorem round_recip : (round)° = interval ≫ inrange := by
   apply hom_ext
   intro n r
-  exact ⟨fun h => ⟨intervalFn n, rfl, h⟩, fun h => by obtain ⟨p, hp, hq⟩ := h; subst hp; exact hq⟩
+  exact ⟨fun h => ⟨Fn.interval n, rfl, h⟩, fun h => by obtain ⟨p, hp, hq⟩ := h; subst hp; exact hq⟩
 
 /-- **tex-defn**: `zero : 𝟏⟶Real`, the value of the empty decimal. -/
 @[expose] public def zero : dL Unit ⟶ Real := graph fun _ => zeroR
@@ -432,7 +432,7 @@ public theorem step_legal (d : Digit) (q : Iv) (h : Legal q) :
     omega
 
 /-- **tex-defn**: `step(d,(a,b))=((d+a)/10,(d+b)/10)`, legal by `step_legal`. -/
-@[expose] public def stepFn (p : Digit × Interval.carrier) : Interval.carrier :=
+@[expose] public def Fn.step (p : Digit × Interval.carrier) : Interval.carrier :=
   ⟨⟨shiftFn (p.1.val : Int) p.2.1.lo, shiftFn (p.1.val : Int) p.2.1.hi⟩, step_legal p.1 p.2.1 p.2.2⟩
 
 /-- **tex-defn**: `arb : 𝟏⟶Interval` — B&dM p.260's first fusion condition `arb=zero inrange°`, so
@@ -440,7 +440,7 @@ public theorem step_legal (d : Digit) (q : Iv) (h : Legal q) :
 @[expose] public def arb : dL Unit ⟶ Interval := fun _ p => rlt p.1.lo zeroR ∧ rlt zeroR p.1.hi
 
 /-- **tex-defn**: `step : Digit×Interval⟶Interval`, the map `stepFn` is the graph of. -/
-@[expose] public def step : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ Interval := graph stepFn
+@[expose] public def step : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ Interval := graph Fn.step
 
 /-- The coproduct `1+(Digit×Interval)` the algebra `[arb,step]` is the case analysis over: the
     pattern functor's object action IS that sum, and `sumCop`'s injections are this file's `l`
@@ -541,7 +541,7 @@ public theorem tex_fusion_shift :
     obtain ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩ := h
     rw [id_apply] at hd
     subst hd
-    have hp' : p = stepFn (d, q2) := hp
+    have hp' : p = Fn.step (d, q2) := hp
     subst hp'
     exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
       (shift_lt_shift _ _ _).mpr hin.2⟩
@@ -701,7 +701,7 @@ public theorem tex_short (y : Dec) : ∀ (r : Real.carrier) (p : Interval.carrie
       | wrap u => exact absurd ((ListRel.junc_sum_inl arb step u p).mp hx).1 ha
       | cons d x' =>
         obtain ⟨p1, hx', hst⟩ := hx
-        have hp : p = stepFn (d, p1) := (ListRel.junc_sum_inr arb step (d, p1) p).mp hst
+        have hp : p = Fn.step (d, p1) := (ListRel.junc_sum_inr arb step (d, p1) p).mp hst
         subst hp
         by_cases hed : e = d
         · subst hed
@@ -778,19 +778,19 @@ calc_steps tex_laws
 /-- **tex-extern**: `f(a,b)=[]` if `a<0`, else `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋` — the least
     relation satisfying the book's two clauses.  The base case is `a<0`, not `a≤0`: at `a=0` the
     empty decimal's value `0` is not strictly inside `(a,b)`. -/
-public inductive fR : Iv → Dec → Prop
-  | nil {a b : Real.carrier} : rlt a zeroR → fR ⟨a, b⟩ (ConsList.wrap ())
+public inductive Fn.f : Iv → Dec → Prop
+  | nil {a b : Real.carrier} : rlt a zeroR → Fn.f ⟨a, b⟩ (ConsList.wrap ())
   | cons {a b : Real.carrier} {x : Dec} (d : Digit) : ¬ rlt a zeroR → IsDigit d b →
-      fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ x → fR ⟨a, b⟩ (ConsList.cons d x)
+      Fn.f ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ x → Fn.f ⟨a, b⟩ (ConsList.cons d x)
 
-/-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `fR` is on the pairs (10.9) admits. -/
-@[expose] public def f : Interval ⟶ Decimal := fun p x => fR p.1 x
+/-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `Fn.f` is on the pairs (10.9) admits. -/
+@[expose] public def f : Interval ⟶ Decimal := fun p x => Fn.f p.1 x
 
 /-- **tex-extern** (B&dM p.263): `f(a,b)=[]` if `a<0`, and `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋`
-    otherwise — the two clauses `fR` is the least relation satisfying. -/
+    otherwise — the two clauses `Fn.f` is the least relation satisfying. -/
 public theorem f_eq (a b : Real.carrier) (xs : Dec) :
-    fR ⟨a, b⟩ xs ↔ (rlt a zeroR ∧ xs = ConsList.wrap ()) ∨
-      (¬ rlt a zeroR ∧ ∃ d ys, IsDigit d b ∧ fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ ys
+    Fn.f ⟨a, b⟩ xs ↔ (rlt a zeroR ∧ xs = ConsList.wrap ()) ∨
+      (¬ rlt a zeroR ∧ ∃ d ys, IsDigit d b ∧ Fn.f ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ ys
         ∧ xs = ConsList.cons d ys) := by
   constructor
   · intro h
@@ -798,8 +798,8 @@ public theorem f_eq (a b : Real.carrier) (xs : Dec) :
     | nil ha => exact Or.inl ⟨ha, rfl⟩
     | cons d ha hd hy => exact Or.inr ⟨ha, d, _, hd, hy, rfl⟩
   · rintro (⟨ha, rfl⟩ | ⟨ha, d, ys, hd, hy, rfl⟩)
-    · exact fR.nil ha
-    · exact fR.cons d ha hd hy
+    · exact Fn.f.nil ha
+    · exact Fn.f.cons d ha hd hy
 
 /-- **Exercise 10.12**: `0≤10b−d₁<1` and `0≤10b−d₂<1` imply `d₁=d₂`. -/
 public theorem digit_unique {d e : Digit} {b : Real.carrier} (hd : IsDigit d b)
@@ -828,7 +828,7 @@ public theorem digit_unique {d e : Digit} {b : Real.carrier} (hd : IsDigit d b)
   exact Fin.ext (by omega)
 
 /-- `f` is simple: the two clauses never both apply, and Exercise 10.12 fixes the digit. -/
-public theorem f_simple {p : Iv} {x y : Dec} (hx : fR p x) (hy : fR p y) : x = y := by
+public theorem f_simple {p : Iv} {x y : Dec} (hx : Fn.f p x) (hy : Fn.f p y) : x = y := by
   induction hx generalizing y with
   | nil ha =>
     cases hy with
@@ -883,11 +883,11 @@ public theorem tex_f :
       | inl t =>
         have ha := ((ListRel.junc_sum_inl arb step t p).mp hT).1
         cases v with
-        | inl t' => cases t'; exact fR.nil (b := p.1.hi) ha
+        | inl t' => cases t'; exact Fn.f.nil (b := p.1.hi) ha
         | inr _ => exact (hF : False).elim
       | inr s =>
         obtain ⟨d, q⟩ := s
-        have hp : p = stepFn (d, q) := (ListRel.junc_sum_inr arb step (d, q) p).mp hT
+        have hp : p = Fn.step (d, q) := (ListRel.junc_sum_inr arb step (d, q) p).mp hT
         have ha : ¬ rlt p.1.lo zeroR := fun ha => by
           have h := hmin (Sum.inl ()) ((ListRel.junc_sum_inl arb step () p).mpr ⟨ha, p.2.1⟩)
           rw [Q_apply] at h
@@ -901,10 +901,10 @@ public theorem tex_f :
           subst hd' hp
           have e1 := unshift_shift (d.val : Int) q.1.lo
           have e2 := unshift_shift (d.val : Int) q.1.hi
-          refine fR.cons (a := shiftFn (d.val : Int) q.1.lo) (b := shiftFn (d.val : Int) q.1.hi) d ha
+          refine Fn.f.cons (a := shiftFn (d.val : Int) q.1.lo) (b := shiftFn (d.val : Int) q.1.hi) d ha
             ⟨by rw [e2]; exact q.2.1, by rw [e2]; exact q.2.2.1⟩ ?_
           rw [e1, e2]; exact hy
-  have key : ∀ (pp : Iv) (x : Dec), fR pp x → ∀ h : Legal pp,
+  have key : ∀ (pp : Iv) (x : Dec), Fn.f pp x → ∀ h : Legal pp,
       mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) ⟨pp, h⟩ x := by
     intro pp x hf
@@ -923,7 +923,7 @@ public theorem tex_f :
       intro h
       have hq : Legal ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ :=
         ⟨hd.1, hd.2, unshift_lt _ h.2.2⟩
-      have hp : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = stepFn (d, ⟨_, hq⟩) := by
+      have hp : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = Fn.step (d, ⟨_, hq⟩) := by
         apply Subtype.ext
         show (⟨a, b⟩ : Iv) = ⟨shiftFn _ (unshift _ a), shiftFn _ (unshift _ b)⟩
         rw [shift_unshift, shift_unshift]
@@ -934,7 +934,7 @@ public theorem tex_f :
       · rw [Q_apply]; right
         rcases z with t | ⟨e, q2⟩
         · exact absurd ((ListRel.junc_sum_inl arb step t _).mp hz).1 ha
-        · have h2 : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = stepFn (e, q2) :=
+        · have h2 : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = Fn.step (e, q2) :=
             (ListRel.junc_sum_inr arb step (e, q2) _).mp hz
           have ha' : a = shiftFn (e.val : Int) q2.1.lo :=
             congrArg (fun p : Interval.carrier => p.1.lo) h2
@@ -1069,17 +1069,17 @@ public theorem unshift_mkR (d p : Int) : unshift d (mkR (p, 0)) = mkR (10 * p - 
 /-- **tex-extern**: on the pairs it reaches, the integer `f` computes the rational one under
     `(p,q)↦(p/w,q/w)`. -/
 public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) (hr : Prog.Reach p q) :
-    fR ⟨mkR (p, 0), mkR (q, 0)⟩ (Prog.f ⟨(p, q), h⟩) := by
+    Fn.f ⟨mkR (p, 0), mkR (q, 0)⟩ (Prog.f ⟨(p, q), h⟩) := by
   by_cases hp : p < 0
   · rw [Prog.f_nil p q h hp]
-    refine fR.nil ?_
+    refine Fn.f.nil ?_
     show p * sc 0 < 0 * sc 0
     rw [sc_zero]; omega
   · rw [Prog.f_cons p q h hp]
     have hv := Prog.dig_val (10 * q / w) (Prog.dig_ok p q _ hp h rfl)
     have ih := f_agree (10 * p - w * (10 * q / w)) (10 * q - w * (10 * q / w))
       (Prog.next_ok p q _ h rfl) (Prog.reach_next p q hp h hr)
-    refine fR.cons _ ?_ ⟨?_, ?_⟩ ?_
+    refine Fn.f.cons _ ?_ ⟨?_, ?_⟩ ?_
     · show ¬ p * sc 0 < 0 * sc 0
       rw [sc_zero]; omega
     · rw [hv, unshift_mkR]
@@ -1101,55 +1101,36 @@ decreasing_by exact Prog.measure_lt _ _ _ hp h
 public theorem tex_extern : interval ≫ f = extern := by
   apply hom_ext
   intro n x
-  have hn : f (intervalFn n) (Prog.extern n) :=
+  have hn : f (Fn.interval n) (Prog.extern n) :=
     f_agree (2 * (n.val : Int) - 1) (2 * (n.val : Int) + 1) (Prog.interval n).2
       ⟨n.val, Or.inl ⟨by omega, rfl⟩⟩
   constructor
   · rintro ⟨p, hp, hf⟩
-    have hp' : p = intervalFn n := hp
+    have hp' : p = Fn.interval n := hp
     subst hp'
     exact f_simple hf hn
   · intro hx
     have hx' : x = Prog.extern n := hx
     subst hx'
-    exact ⟨intervalFn n, rfl, hn⟩
+    exact ⟨Fn.interval n, rfl, hn⟩
 
--- printing-only unexpanders: §10.4's names as the book writes them.
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.Legal] public meta def unexpandLegal : Unexpander
-  | `($_ $args*) => `($(mkIdent `Legal) $args*)
-  | _ => `($(mkIdent `Legal))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.round] public meta def unexpandRound : Unexpander
-  | `($_ $args*) => `($(mkIdent `round) $args*)
-  | _ => `($(mkIdent `round))
-
+-- printing-only: `shiftFn d r` is the book's `shift (d,r)`, its two arguments printed as one pair.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tex.shiftFn] public meta def unexpandShiftFn : Unexpander
   | `($_ $d $r) => `($(mkIdent `shift) ($d, $r))
   | _ => `($(mkIdent `shift))
 
+-- printing-only: the book writes the relation on intervals and its arrow with one letter, `f`; two
+-- Lean constants cannot share a name, so the relation's is `Fn.f`.
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.Iv.lo] public meta def unexpandIvLo : Unexpander
-  | `($_ $args*) => `($(mkIdent `lo) $args*)
-  | _ => `($(mkIdent `lo))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.Iv.hi] public meta def unexpandIvHi : Unexpander
-  | `($_ $args*) => `($(mkIdent `hi) $args*)
-  | _ => `($(mkIdent `hi))
-
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.stepFn] public meta def unexpandStepFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `step) $args*)
-  | _ => `($(mkIdent `step))
+@[app_unexpander Fn.f] public meta def unexpandFnF : Unexpander
+  | `($_ $args*) => `($(mkIdent `f) $args*)
+  | _ => `($(mkIdent `f))
 
 end Freyd.Alg.RelSet.Tex
 
--- printing-only (B&dM p.263): `Real`'s constants wear the book's arithmetic, the rational `f` and
--- the program's `f` share the book's letter, a digit pair prints as its digit, and the graph of
--- `intervalFn` is `interval`.
+-- printing-only (B&dM p.263): `Real`'s constants wear the book's arithmetic, and a digit pair
+-- prints as its digit.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tex.zeroR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexZeroR : Unexpander
   | _ => `(0)
@@ -1157,17 +1138,9 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tex.oneR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexOneR : Unexpander
   | _ => `(1)
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.fR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexFR : Unexpander
-  | `($_ $args*) => `($(mkIdent `f) $args*)
-  | _ => `($(mkIdent `f))
-open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tex.Prog.dig] public meta def Freyd.Alg.RelSet.Tex.unexpandTexProgDig : Unexpander
   | `($_ $d $_) => `($d)
   | _ => throw ()
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Tex.intervalFn] public meta def Freyd.Alg.RelSet.Tex.unexpandTexIntervalFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `interval) $args*)
-  | _ => `($(mkIdent `interval))
 
 -- printing-only: the note's names for this section's declarations.
 -- B&dM p.263 on points: `Real`'s order and `10a−d` wear the book's arithmetic, a representative
