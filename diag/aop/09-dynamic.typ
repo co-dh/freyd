@@ -678,31 +678,6 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
 )]<edit-V>
 
-// B&dM p.227, "base and step have disjoint ranges": Proposition 9.1's hypothesis.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
-    #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@d57da341 lean:AOP.A9_2_Edit.empty@9b6de2c8 lean:AOP.A9_2_Edit.emptyP@54c2fc03
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs", step: true)],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs"),
-    [#src[`base` returns only `([],[])`, so `base°=empty base°`]])],
-     // lean:AOP.A9_2_Edit.edit_disj_step1@3739ccad
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs", step: true)],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step2.rhs"),
-    [#src[`step empty=𝟘`: `cpy` and `del` put a character on the left string, `ins` one on the
-      right]])],
-     // lean:AOP.A9_2_Edit.edit_disj_step2@642314c2
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj.rhs"),
-    [#src[`𝟘` composed with anything is `𝟘`]])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj.rhs")],
-)]<edit-disj>
 
 === Tabulation
 // No picture: a curried function on lists is not a relation between the objects the panels carry.
