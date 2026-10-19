@@ -757,6 +757,11 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] meta def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
+-- B&dM p.201's `cpL(F)`; the functor is the wire's, as for `cp`.  Not an identity rule: outside the
+-- label's scope `cpL` prints qualified, and a statement's `cert:` key hashes that print.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cpL] meta def unexpandCpL : Unexpander
+  | _ => `($(mkIdent `cpL))
 
 -- A SECTION'S RELATION, ORDER AND HELPER wear the note's letters, as `Party.R`, `Detab.V` and
 -- `Van.Hrel` above do: which relation it is, is the definition line over the table.
@@ -889,7 +894,14 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 -- THE LEAN NAME IS THE BOOK'S WORD, so the printer needs no rule: a namespace tells two `head`s apart.
-attribute [diag_noted] connected head Nat.zero Nat.succ union
+-- A SHORT NAME ANOTHER CASE STUDY ALSO DECLARES (`tail`, `length`, `F`, `cons`) prints qualified
+-- where the label's scope resolves it to the other one, so the printer's own test cannot admit it.
+attribute [diag_noted] RelSet.CL.ConsList.cons RelSet.Tour.start RelSet.Paragraph.start
+  RelSet.Poly.PolyC.one RelSet.Poly.PolyC.const RelSet.Paragraph.glue RelSet.Code.Code.sym
+  RelSet.Bracket.cat Knap207.wrap Knap207.cons Knap207.nil Knap207.pair RelSet.Bracket.init
+  RelSet.Bracket.tail RelSet.Edit.tail RelSet.Bracket.flatten RelSet.Detab.length RelSet.Tex.length
+  RelSet.Edit.op RelSet.Paragraph.head RelSet.Edit.Pair.F RelSet.TT.F RelSet.Tardy.bmax
+attribute [diag_noted] connected head Nat.F Nat.zero Nat.succ union
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
   RelSet.MSS.k RelSet.Tour.head RelSet.Tour.next RelSet.Digits.«Digit⁺»
 

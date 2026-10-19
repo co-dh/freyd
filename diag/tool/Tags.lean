@@ -23,12 +23,10 @@ register_label_attr diag_unfold
     abbreviates.  Registered here and tagged in `diag/StrDiagNames.lean`, like `diag_unfold`. -/
 register_label_attr diag_drawn_open
 
-/-- WHICH CONSTANTS THE NOTE WRITES BY THEIR OWN NAME.  `checkSpelled` refuses a label that carries
-    a constant no printing rule rewrote, because a page would then make its claim in Lean's
-    vocabulary; but a name the note writes UNCHANGED — `dom`, `Entire`, `Map`, a case study's own
-    `secureP` — has nothing to rewrite, and an identity unexpander per constant is that fact written
-    fifteen times.  The tag is the declaration that this name IS the note's, one word per name, and
-    an untagged constant is refused exactly as before.  Registered here, tagged in
+/-- WHICH CONSTANTS THE NOTE WRITES BY THEIR OWN NAME AND NEVER OPENS.  A `def` the note names —
+    `Entire`, a circuit's arm `g₁`, a one-field object — is kept closed by the formula, circuit and
+    object readers, which would otherwise draw its body.  The label gate (`checkSpelled`) accepts a
+    tagged constant too, for a name the label's scope prints qualified.  Registered here, tagged in
     `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
 register_label_attr diag_noted
 
