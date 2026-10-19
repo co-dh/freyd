@@ -143,8 +143,7 @@
 // A ROW KEY, `leann` without its visible name: the definition cell already begins with the name.
 #let rowkey(sel) = [#metadata(sel)<lean-row-key>]
 // Cells come four to a row as name | type | definition | meaning; the name cell is only a `rowkey`
-// (or empty), which joins the definition cell; the row number is the table rule's, in the margin.
-// The definition cell is a SELECTOR (or an array of them), printed here with the row's key as the
+// (or empty), which joins the definition cell; the row number is the table rule's, in the margin.// The definition cell is a SELECTOR (or an array of them), printed here with the row's key as the
 // `def` it defines; a cell of content holding a formula is refused, since it would print without it.
 // The `raw` words of a cell: each is unbreakable, so the column holding it can be no narrower than the widest.
 #let raw-atoms(c) = if type(c) != content { () } else if c.func() == raw { c.text.split(" ").filter(s => s != "") } else if c.has("children") { c.children.map(raw-atoms).flatten() } else if c.has("body") { raw-atoms(c.body) } else if c.has("child") { raw-atoms(c.child) } else { () }
@@ -175,8 +174,10 @@
     let nat = rows.map(r => measure([#r.at(0)#def(r)]).width + 10pt)
     let fit = nat.map(x => x <= cap)
     let kept = range(rows.len()).filter(i => fit.at(i))
-    // A moved row keeps its cell's metadata (row key, formula key), so it is still cited and regenerated.
-    let cell(i) = { let r = rows.at(i); if fit.at(i) { [#r.at(0)#def(r)] } else { [#r.at(0)#metas(def(r)).join()] } }
+    // A moved row keeps its cell's metadata (row key, formula key), so it is still cited and regenerated,
+    // and shows its key's NAME (`leant`'s `.name` step). Under `list` nothing is measured, so every row asks for it.
+    let name(r) = { let k = lean-keys(r.at(0), labels: (<lean-row-key>,)).at(0, default: none); if k != none { leant(k + ".name") } }
+    let cell(i) = { let r = rows.at(i); if "list" in sys.inputs { [#r.at(0)#def(r)#name(r)] } else if fit.at(i) { [#r.at(0)#def(r)] } else { [#r.at(0)#metas(def(r)).join()#name(r)] } }
     let style = (align: left + horizon, inset: 5pt, stroke: 0.4pt + luma(190))
     if kept.len() == 0 {
       table(columns: (w + 10.5pt, 1fr), ..style, table.header([*type*], [*meaning*]),
