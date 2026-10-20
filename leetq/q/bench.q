@@ -27,6 +27,7 @@ bwj:{[n] w::-100 0+\:tr`tm; out["wj";n;"wj[w;`s`tm;tr;(qr;(sum;`p))]";exec sum p
 look:{[k;v;xs] lo:k binr xs; v raze lo+til each 0|1+(k bin xs)-lo}
 blookup:{[op;n] k0:gen[n;17] mod n; v0:gen[n;18] mod 1000000; ix:iasc k0; k::k0 ix; v::v0 ix;
   xs::gen[n;19] mod n; out[op;n;"look[k;v;xs]";sum look[k;v;xs]]}
+baIdx:{[n] a::gen[n;24] mod 1000000; ks::gen[n;25] mod n; out["aIdx";n;"a@ks";sum a@ks]}
 
 / Compute on compressed columns (LeetQ.Compressed): `sum v`, `sum v where b`, `select sum v by k from t`
 / on the columns Bench/Main.lean builds for them (columns 21, 23, 22). `/h` is the same with v and k cast to
@@ -42,5 +43,5 @@ bcomp:{[sfx;f;n] v::f gen[n;21] mod 1000; k::f gen[n;22] mod 1000; b::1=gen[n;23
 
 ns:$[`ns in key a:.Q.opt .z.x; "J"$a`ns; 100000 1000000 10000000]
 $[`comp in key a; {bcomp["";"j"$;x]; bcomp["/h";"h"$;x]} each ns;
-  {bgetAll x; bzipD x; bselby x; bij x; baj x; bwj x; blookup["lookupDense";x]; blookup["lookupFoR";x]} each ns];
+  {bgetAll x; bzipD x; bselby x; bij x; baj x; bwj x; blookup["lookupDense";x]; blookup["lookupFoR";x]; baIdx x} each ns];
 \\
