@@ -1609,19 +1609,22 @@ omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- A `filterMap` that drops nothing is the pointwise map. -/
 theorem filterMap_full (g : V → Option C) : (l : List V) → (l.filterMap g).length = l.length →
     ∀ i : Nat, ((l.filterMap g)[i]?).toList = (l[i]?).toList.flatMap fun v => (g v).toList
-  | [], _, i => by simp
+  | [], _, i => by simp only [List.filterMap_nil, List.getElem?_nil, Option.toList_none, List.flatMap_nil]
   | x :: l, h, i => by
+    -- no `omega`: its proof here reached `Classical.choice`
     cases hx : g x with
     | none =>
       rw [List.filterMap_cons, hx] at h
-      have := List.length_filterMap_le g l; simp only [List.length_cons] at h; omega
+      exact absurd (h ▸ List.length_filterMap_le g l) (Nat.not_succ_le_self _)
     | some c =>
       rw [List.filterMap_cons, hx] at h ⊢
       cases i with
-      | zero => simp [hx]
+      | zero =>
+        simp only [List.getElem?_cons_zero, Option.toList_some, List.flatMap_cons, List.flatMap_nil,
+          List.append_nil, hx]
       | succ i =>
         simp only [List.getElem?_cons_succ]
-        exact filterMap_full g l (by simpa using h) i
+        exact filterMap_full g l (Nat.succ.inj h) i
 
 /-- `R S`, first `R` then `S`: each value of `R`'s fibre hands on `S`'s fibre.  A `FinRel` first stays a
     `FinRel`, its pairs pushed onto two arrays (`compP`); a `vec` then a `vec` indexes the second by the
