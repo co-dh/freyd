@@ -768,6 +768,9 @@ omit [DecidableEq V] [FibreIndex V] in
 theorem app_pairs (r : FinRel K V) : (pairs r).app = r.scanLookup := FibreIndex.get_build r
 
 omit [DecidableEq V] [FibreIndex V] in
+@[simp] theorem app_enum (f : K → List V) : (enum f).app = f := rfl
+
+omit [DecidableEq V] [FibreIndex V] in
 /-- `rel` is membership in the fibre list. -/
 theorem mem_app (R : RelRep K V) (k : K) (v : V) : v ∈ R.app k ↔ R.rel k v := by
   cases R with
