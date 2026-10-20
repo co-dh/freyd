@@ -588,5 +588,39 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // lean:AOP.A10_4_Tex.tex_extern@5e874693
 ]<tex-extern>
 
+// One run of the program on `n=8192`: its input, then one row per stage; each value is a theorem
+// of the `TexRun` section of A10_4_Tex, cited beside its row.  A digit candidate prints as
+// `(d,p,q)`: the digit and the pair it leaves.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Tex.run_input.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_input.rhs"),
+   meaning: [`interval 8192`, the pair `(2n−1,2n+1)` around `8192/2¹⁶=0.125`]),
+  // lean:AOP.A10_4_Tex.run_input@0fb9161f
+  (sym: leann("Freyd.Alg.RelSet.Tex.pickL"), type: leant("Freyd.Alg.RelSet.Tex.run_pick0.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_pick0.rhs"),
+   meaning: [at `(16383,16385)` the one legal digit is `1`]),
+  // lean:AOP.A10_4_Tex.run_pick0@0bd034d7
+  (sym: leann("Freyd.Alg.RelSet.Tex.pickL"), type: leant("Freyd.Alg.RelSet.Tex.run_pick1.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_pick1.rhs"),
+   meaning: [at `(32758,32778)` the one legal digit is `2`]),
+  // lean:AOP.A10_4_Tex.run_pick1@da1b6d3b
+  (sym: leann("Freyd.Alg.RelSet.Tex.pickL"), type: leant("Freyd.Alg.RelSet.Tex.run_pick2.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_pick2.rhs"),
+   meaning: [at `(65436,65636)` the one legal digit is `5`]),
+  // lean:AOP.A10_4_Tex.run_pick2@b93b8cd2
+  (sym: leann("Freyd.Alg.RelSet.Tex.cands"), type: leant("Freyd.Alg.RelSet.Tex.run_cands3.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_cands3.rhs"),
+   meaning: [at `(−1000,1000)`, `p<0`: the stop and the digit `0` are both offered]),
+  // lean:AOP.A10_4_Tex.run_cands3@dce42184
+  (sym: leann("Freyd.Alg.RelSet.Tex.pickL"), type: leant("Freyd.Alg.RelSet.Tex.run_pick3.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_pick3.rhs"),
+   meaning: [`Q` keeps the stop]),
+  // lean:AOP.A10_4_Tex.run_pick3@f5afab6b
+  (sym: leann("Freyd.Alg.RelSet.Tex.run"), type: leant("Freyd.Alg.RelSet.Tex.run_out.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tex.run_out.rhs"),
+   meaning: [`0.125`: the digits `1`, `2`, `5`]),
+  // lean:AOP.A10_4_Tex.run_out@93c35862
+)<tex-run>
+
 #pagebreak(weak: true)
 #include "../allegory-appendix.typ"

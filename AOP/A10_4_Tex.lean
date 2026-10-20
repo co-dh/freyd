@@ -27,6 +27,7 @@ module
 
 public import AOP.A5_6_ListCombinators
 public import AOP.A9_1
+public import AOP.A6_FinRel
 import AOP.A10_1
 import AOP.A7_2_RelSet
 
@@ -1113,6 +1114,216 @@ public theorem tex_extern : interval ≫ f = extern := by
     have hx' : x = Prog.extern n := hx
     subst hx'
     exact ⟨Fn.interval n, rfl, hn⟩
+
+/-! ## `TexRun`: the greedy TeX program on `RelRep`
+
+A state is the program's integer pair `(p,q)`.  Its candidates are what `[arb,step]°` offers there —
+stop when `p<0`, and every digit `d` whose `(10p−w·d,10q−w·d)` is legal — as an `enum`; `pickL` is
+`RelRep.est Q` of them, and `run` follows the one candidate `pickL` keeps. -/
+
+section TexRun
+
+open PowerAllegory
+
+public instance : DecidableEq Prog.Rep :=
+  inferInstanceAs (DecidableEq {x : Int × Int // 0 < x.2 - x.1 ∧ x.2 < w})
+
+/-- A candidate at a state: stop, or a digit and the state `step°` leaves. -/
+@[expose] public abbrev Out : Type := Unit ⊕ (Digit × Prog.Rep)
+
+/-- `step°` at `(p,q)` and digit `d`: the pair `(10p−w·d,10q−w·d)`, when it is legal. -/
+@[expose] public def back (x : Prog.Rep) (d : Digit) : Option Prog.Rep :=
+  if h : 0 < 10 * x.1.2 - w * (d.val : Int) ∧ 10 * x.1.2 - w * (d.val : Int) < w then
+    some ⟨(10 * x.1.1 - w * (d.val : Int), 10 * x.1.2 - w * (d.val : Int)), by have := x.2.1; omega, h.2⟩
+  else none
+
+/-- **tex-run**: the candidates `[arb,step]°` offers at `(p,q)`: stop when `p<0`, and each digit
+    whose `step°` is legal. -/
+@[expose] public def cands (x : Prog.Rep) : List Out :=
+  (if x.1.1 < 0 then [Sum.inl ()] else []) ++
+    ((List.finRange 10).filterMap fun d => (back x d).map (d, ·)).map Sum.inr
+
+/-- `Q`, stopping preferred to any digit, as a `RelRep` test. -/
+@[expose] public def Qt : RelRep Out Out := .test fun u z => match u, z with
+  | .inl _, .inr _ => true
+  | u, z => decide (u = z)
+
+/-- `Qt` is `Q` on the program's states: `u` stops and `z` takes a digit, or `u=z`. -/
+public theorem Qt_apply (u z : Out) :
+    Qt.rel u z ↔ (∃ t, u = Sum.inl t ∧ ∃ s, z = Sum.inr s) ∨ u = z := by
+  cases u <;> cases z <;> simp [Qt, RelRep.rel]
+
+/-- The `Q`-least candidates of a state. -/
+@[expose] public def pickL (x : Prog.Rep) : List Out := RelRep.estList Qt.mem (cands x)
+
+/-- `pickL` is `RelRep.est Q` of the candidates. -/
+public theorem pickL_eq : RelRep.est Qt (.enum cands) = some (.enum pickL) := rfl
+
+/-- `pickL` computes `Λ([arb,step]°) est(Q)` on the program's states. -/
+public theorem rel_pickL :
+    (RelRep.enum pickL).rel = Λ (RelRep.enum cands).rel ≫ Freyd.Alg.est Qt.rel :=
+  RelRep.rel_est pickL_eq
+
+/-- **The greedy program**: follow the one candidate `pickL` keeps; `none` when it keeps none or
+    two, or the fuel runs out. -/
+@[expose] public def run : Nat → Prog.Rep → Option Dec
+  | 0, _ => none
+  | k + 1, x => match pickL x with
+    | [Sum.inl _] => some (ConsList.wrap ())
+    | [Sum.inr (d, y)] => (run k y).map (ConsList.cons d)
+    | _ => none
+
+/-- A `filterMap` that keeps exactly one member of a duplicate-free list is that member's image. -/
+public theorem filterMap_one {α β : Type} [DecidableEq α] {G : α → Option β} {a0 : α} {b : β} :
+    ∀ {l : List α}, l.Nodup → a0 ∈ l → G a0 = some b → (∀ a ∈ l, a ≠ a0 → G a = none) →
+      l.filterMap G = [b]
+  | [], _, h, _, _ => absurd h List.not_mem_nil
+  | a :: l, hn, hm, hb, hz => by
+    rw [List.nodup_cons] at hn
+    by_cases ha : a = a0
+    · subst ha
+      have hl : l.filterMap G = [] := List.filterMap_eq_nil_iff.mpr fun x hx =>
+        hz x (List.mem_cons_of_mem _ hx) fun e => hn.1 (e ▸ hx)
+      rw [List.filterMap_cons_some hb, hl]
+    · have hl := filterMap_one hn.2 ((List.mem_cons.mp hm).resolve_left (Ne.symm ha)) hb
+        fun x hx => hz x (List.mem_cons_of_mem _ hx)
+      rw [List.filterMap_cons_none (hz a List.mem_cons_self ha), hl]
+
+/-- Exercise 10.12 on the integers: two digits that both leave `0<10q−w·d<w` are equal. -/
+public theorem digit_eq (q D e : Int) (h1 : 0 ≤ 10 * q - w * D) (h2 : 10 * q - w * D < w)
+    (h3 : 0 < 10 * q - w * e) (h4 : 10 * q - w * e < w) : e = D := by
+  simp only [w] at *; omega
+
+/-- The width `q−p` grows tenfold at a digit. -/
+public theorem width_next (p q D : Int) : (10 * q - w * D) - (10 * p - w * D) = 10 * (q - p) := by omega
+
+/-- A test that fails on every digit candidate keeps none of them. -/
+public theorem filter_inr_nil {P : Out → Bool} (hP : ∀ e, P (Sum.inr e) = false) :
+    ∀ l : List (Digit × Prog.Rep), (l.map Sum.inr).filter P = []
+  | [] => rfl
+  | e :: l => by
+    rw [List.map_cons, List.filter_cons_of_neg (by rw [hP]; exact Bool.false_ne_true)]
+    exact filter_inr_nil hP l
+
+/-- At a stop, `Q` keeps the stop alone. -/
+public theorem estList_stop (ds : List (Digit × Prog.Rep)) :
+    RelRep.estList Qt.mem (Sum.inl () :: ds.map Sum.inr) = [Sum.inl ()] := by
+  unfold RelRep.estList
+  rw [List.filter_cons_of_pos, filter_inr_nil (fun e => rfl)]
+  · rw [List.all_cons, List.all_map]
+    exact (Bool.and_eq_true _ _).mpr ⟨rfl, List.all_eq_true.mpr fun _ _ => rfl⟩
+
+/-- `p<0`: `pickL` stops. -/
+public theorem pickL_stop (x : Prog.Rep) (hp : x.1.1 < 0) : pickL x = [Sum.inl ()] := by
+  unfold pickL cands
+  rw [if_pos hp]
+  exact estList_stop _
+
+/-- On a reached pair with `p≥0`, `pickL` keeps the program's digit `d=(10q) div w` alone. -/
+public theorem pickL_digit (p q : Int) (h : 0 < q - p ∧ q < w) (hp : ¬ p < 0) (hr : Prog.Reach p q) :
+    pickL ⟨(p, q), h⟩ = [Sum.inr (Prog.dig (10 * q / w) (Prog.dig_ok p q _ hp h rfl),
+      ⟨(10 * p - w * (10 * q / w), 10 * q - w * (10 * q / w)), Prog.next_ok p q _ h rfl⟩)] := by
+  have hv := Prog.dig_val (10 * q / w) (Prog.dig_ok p q _ hp h rfl)
+  have hb := Prog.div_bounds q
+  have hs := Prog.digit_strict p q hp h hr
+  have hf : ((List.finRange 10).filterMap fun d => (back ⟨(p, q), h⟩ d).map (d, ·)) =
+      [(Prog.dig (10 * q / w) (Prog.dig_ok p q _ hp h rfl),
+        ⟨(10 * p - w * (10 * q / w), 10 * q - w * (10 * q / w)), Prog.next_ok p q _ h rfl⟩)] := by
+    refine filterMap_one (a0 := Prog.dig (10 * q / w) (Prog.dig_ok p q _ hp h rfl)) (by decide)
+      (List.mem_finRange _) ?_ fun d _ hd => ?_
+    · unfold back
+      simp only [hv]
+      rw [dif_pos ⟨hs, hb.2⟩]
+      rfl
+    · unfold back
+      rw [dif_neg]
+      · rfl
+      · intro hc
+        exact hd (Fin.ext (by have := digit_eq q _ _ hb.1 hb.2 hc.1 hc.2; omega))
+  unfold pickL cands
+  rw [if_neg hp, List.nil_append, hf]
+  unfold RelRep.estList
+  rw [List.map_cons, List.map_nil, List.filter_cons_of_pos]
+  · rfl
+  · exact (Bool.and_eq_true _ _).mpr ⟨decide_eq_true rfl, rfl⟩
+
+public theorem run_stop (k : Nat) (p q : Int) (h : 0 < q - p ∧ q < w) (hp : p < 0) :
+    run (k + 1) ⟨(p, q), h⟩ = some (Prog.f ⟨(p, q), h⟩) := by
+  rw [Prog.f_nil p q h hp]
+  simp only [run, pickL_stop ⟨(p, q), h⟩ hp]
+
+/-- **`run` is the program `f`** on the pairs it reaches, given fuel for the width to pass `w`. -/
+public theorem run_f : ∀ (k : Nat) (p q : Int) (h : 0 < q - p ∧ q < w), Prog.Reach p q →
+    w ≤ (q - p) * 10 ^ k → run (k + 1) ⟨(p, q), h⟩ = some (Prog.f ⟨(p, q), h⟩)
+  | 0, p, q, h, _, hw => by
+    by_cases hp : p < 0
+    · exact run_stop 0 p q h hp
+    · exfalso; rw [Int.pow_zero, Int.mul_one] at hw; omega
+  | k + 1, p, q, h, hr, hw => by
+    by_cases hp : p < 0
+    · exact run_stop (k + 1) p q h hp
+    · have hw' : w ≤ ((10 * q - w * (10 * q / w)) - (10 * p - w * (10 * q / w))) * 10 ^ k := by
+        rw [width_next]; rw [Int.pow_succ] at hw
+        exact Int.le_trans hw (Int.le_of_eq (by simp only [Int.mul_comm, Int.mul_assoc]))
+      rw [Prog.f_cons p q h hp]
+      rw [run.eq_2, pickL_digit p q h hp hr]; dsimp only
+      rw [run_f k _ _ _ (Prog.reach_next p q hp h hr) hw']
+      rfl
+
+/-- `run` from `interval n` with six steps of fuel is `extern n`. -/
+public theorem run_extern (n : Fin 65536) : run 6 (Prog.interval n) = some (Prog.extern n) :=
+  run_f 5 (2 * (n.val : Int) - 1) (2 * (n.val : Int) + 1) (Prog.interval n).2
+    ⟨n.val, Or.inl ⟨by omega, rfl⟩⟩
+    (by rw [show (2 * (n.val : Int) + 1) - (2 * (n.val : Int) - 1) = 2 by omega]; decide)
+
+/-- **The program as an arrow** `[0,2¹⁶)⟶Decimal`: what `run` returns from `interval n`. -/
+@[expose] public def texRun : Ix ⟶ Decimal := fun n x => run 6 (Prog.interval n) = some x
+
+/-- **The program meets its specification**: every decimal `run` returns from `interval n` is a
+    shortest one whose internal representation is `n`. -/
+public theorem texRun_le : texRun ⊑ Λ ((intern)°) ≫ est R :=
+  calc texRun
+      = extern := hom_ext fun n x => by
+        show run 6 (Prog.interval n) = some x ↔ x = Prog.extern n
+        rw [run_extern]
+        exact ⟨fun h => (Option.some.inj h).symm, fun h => h ▸ rfl⟩
+    _ = interval ≫ f := tex_extern.symm
+    _ = interval ≫ mu (fun X : Interval ⟶ Decimal =>
+          Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) := by rw [tex_f]
+    _ ⊑ Λ ((intern)°) ≫ est R := tex_laws
+
+/-- `Out` with each state as its pair, for reading a run. -/
+@[expose] public def view : Out → Unit ⊕ (Digit × Int × Int) := Sum.map id fun e => (e.1, e.2.1)
+
+/-- **tex-run input**: `interval 8192`, the pair `(2n−1,2n+1)` for `8192/2¹⁶=0.125`. -/
+public theorem run_input : (Prog.interval 8192).1 = (16383, 16385) := rfl
+
+/-- **tex-run**: from `(16383,16385)` the one legal digit is `1`. -/
+public theorem run_pick0 : (pickL (Prog.interval 8192)).map view = [Sum.inr (1, 32758, 32778)] := by
+  decide
+
+/-- **tex-run**: from `(32758,32778)` the one legal digit is `2`. -/
+public theorem run_pick1 : (pickL ⟨(32758, 32778), by decide⟩).map view = [Sum.inr (2, 65436, 65636)] := by
+  decide
+
+/-- **tex-run**: from `(65436,65636)` the one legal digit is `5`. -/
+public theorem run_pick2 : (pickL ⟨(65436, 65636), by decide⟩).map view = [Sum.inr (5, -1000, 1000)] := by
+  decide
+
+/-- **tex-run**: at `(−1000,1000)` both stopping and the digit `0` are offered. -/
+public theorem run_cands3 :
+    (cands ⟨(-1000, 1000), by decide⟩).map view = [Sum.inl (), Sum.inr (0, -10000, 10000)] := by
+  decide
+
+/-- **tex-run**: `Q` keeps the stop. -/
+public theorem run_pick3 : (pickL ⟨(-1000, 1000), by decide⟩).map view = [Sum.inl ()] := by
+  decide
+
+/-- **tex-run**: the program's answer, `0.125`. -/
+public theorem run_out : (run 6 (Prog.interval 8192)).map toList = some [1, 2, 5] := by
+  decide
+
+end TexRun
 
 -- printing-only: `shiftFn d r` is the book's `shift (d,r)`, its two arguments printed as one pair.
 open Lean PrettyPrinter in
