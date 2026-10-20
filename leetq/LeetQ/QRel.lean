@@ -45,6 +45,14 @@ theorem sorted_of_pairwise (f : Nat → Int64) (n : Nat)
     exact this
   · exact Int64.le_iff_toInt_le.2 (Int.le_refl _)
 
+/-- A bound every platform's `USize` meets, for the kernel runs: `USize.size` is
+`2 ^ System.Platform.numBits`, opaque to the kernel. -/
+theorem lt_usize {n : Nat} (h : n < 2 ^ 32) : n < USize.size := by
+  cases System.Platform.numBits_eq <;> simp [USize.size, *] <;> omega
+
+theorem toNat_toUSize {n : Nat} (h : n < 2 ^ 32) : (Nat.toUSize n).toNat = n :=
+  USize.toNat_ofNat_of_lt' (lt_usize h)
+
 /-! ## A key column, dense or encoded -/
 
 /-- A `long` key column: a dense payload, or `n` elements Frame-of-Reference encoded as

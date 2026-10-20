@@ -155,9 +155,11 @@ theorem mem_lastLE {q : QSortedRel} {t : Int64} {x : Int64 × Int64} :
       simp only [List.mem_map, QSortedRel.mem_lookup, QSortedRel.mem_rep]
       constructor
       · rintro ⟨v, ⟨i, hi, hk, rfl⟩, rfl⟩
-        refine ⟨⟨⟨i, hi, hk, rfl⟩, ?_⟩, fun y ⟨⟨j, hj, hjk, _⟩, hy⟩ => ?_⟩
-        · exact lo (r - 1) (by omega)
-        · have := below j hj (hjk ▸ hy); have := mono j (r - 1) (by omega) (by omega); rw [← hjk]; exact this
+        refine ⟨⟨⟨i, hi, hk, rfl⟩, lo (r - 1) (by omega)⟩, fun y hy => ?_⟩
+        obtain ⟨⟨j, hj, hjk, -⟩, hyt⟩ := hy
+        rw [← hjk] at hyt ⊢
+        have := below j hj hyt
+        exact mono j (r - 1) (by omega) (by omega)
       · rintro ⟨⟨⟨i, hi, hk, hv⟩, ht⟩, hmax⟩
         have hir := below i hi (hk ▸ ht)
         have h1 := hmax (q.keys.get (r - 1), at8 q.vals (r - 1)) ⟨⟨r - 1, by omega, rfl, rfl⟩, lo (r - 1) (by omega)⟩
@@ -222,11 +224,12 @@ theorem rel_aj (R : AjRight) : (aj R).rel = Λ (cand R) ≫ est geT := hom_ext f
 
 /-! ## Runs -/
 
-/-- A right table from `(key, group pairs)`, the keys checked strictly ascending, encoded when `foR`. -/
+/-- A right table from `(key, group pairs)`, the keys checked strictly ascending and encoded when `foR`; the
+time columns stay dense. -/
 def AjRight.ofList? (gs : List (Int64 × List (Int64 × Int64))) (foR : Bool := false) : Option AjRight :=
   if h : (gs.map Prod.fst).Pairwise (· < ·) then some {
     keys := Keys.ofList foR (gs.map Prod.fst)
-    grp := (gs.map fun g => QSortedRel.ofList g.2 foR).toArray
+    grp := (gs.map fun g => QSortedRel.ofList g.2).toArray
     len := by simp [Keys.count_ofList]
     strict := fun i j hij hj => by
       rw [Keys.count_ofList] at hj
@@ -238,14 +241,64 @@ def AjRight.ofList? (gs : List (Int64 × List (Int64 × Int64))) (foR : Bool := 
 #print axioms rel_ij
 #print axioms rel_aj
 
+/-! The kernel's runs, as in `L1`: `List.mergeSort` is well-founded recursion, so `simp` evaluates the
+sorts and the kernel the rest. -/
+
+theorem sortS : ([(1, 100), (3, 300), (1, 101)] : List (Int64 × Int64)).mergeSort QSortedRel.keyLE =
+    [(1, 100), (1, 101), (3, 300)] := by
+  simp [List.mergeSort, QSortedRel.keyLE]
+theorem sortG : ([(2, 20), (5, 50)] : List (Int64 × Int64)).mergeSort QSortedRel.keyLE = [(2, 20), (5, 50)] := by
+  simp [List.mergeSort, QSortedRel.keyLE]
+theorem sortH : ([(4, 40)] : List (Int64 × Int64)).mergeSort QSortedRel.keyLE = [(4, 40)] := by
+  simp
+
+/-- The right table's keys are strictly ascending, so `AjRight.ofList?` answers `some`. -/
+theorem keysOK : ([1, 3] : List Int64).Pairwise (· < ·) := by decide
+
+example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)]) =
+    [(10, 100), (10, 101), (30, 100), (30, 101)] := by
+  simp only [ijL, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat,
+    QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
+    Bool.false_eq_true, false_and, ↓reduceIte, at8, sortS]
+  decide +kernel
+example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] true) =
+    [(10, 100), (10, 101), (30, 100), (30, 101)] := by
+  simp only [ijL, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
+    QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems, QLean.Kernel.binBytes, QSortedRel.ofList,
+    QSortedRel.count, Keys.ofList, Keys.bin, Keys.count, sortS, List.length_map, List.length_cons,
+    List.length_nil, USize.reduceToNat, Nat.reduceAdd, Nat.reducePow, Nat.reduceLT, toNat_toUSize, lt_usize,
+    and_self, ↓reduceIte]
+  decide +kernel
+
+example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])]).map
+    (fun R => [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) = some [[(5, 50)], [(2, 20)], [], [(4, 40)], []] := by
+  simp only [AjRight.ofList?, keysOK, ↓reduceDIte, Option.map_some, ajL, AjRight.grpOf, lastLE, List.map_cons,
+    List.map_nil, QSortedRel.lookup,
+    QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, QSortedRel.ofList, QSortedRel.count, Keys.ofList,
+    Keys.bin, Keys.get, Keys.count, Bool.false_eq_true, false_and, ↓reduceIte, at8, sortG, sortH]
+  decide +kernel
+-- The encoded run exceeds the default recursion depth.
+set_option maxRecDepth 10000 in
+example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map
+    (fun R => [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) = some [[(5, 50)], [(2, 20)], [], [(4, 40)], []] := by
+  simp only [AjRight.ofList?, keysOK, ↓reduceDIte, Option.map_some, ajL, AjRight.grpOf, lastLE, List.map_cons,
+    List.map_nil, QSortedRel.lookup,
+    QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode, QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems,
+    QLean.Kernel.binBytes, QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.count, sortG, sortH,
+    List.length_map, List.length_cons, List.length_nil, USize.reduceToNat, Nat.reduceAdd, Nat.reducePow,
+    Nat.reduceLT, toNat_toUSize, lt_usize, and_self, ↓reduceIte]
+  decide +kernel
+
 -- The compiled runs: `binBytes`/`foRBin` are the C `bin` and `coc_bin` here.
 #guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)]) ==
   [(10, 100), (10, 101), (30, 100), (30, 101)]
 #guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] true) ==
   [(10, 100), (10, 101), (30, 100), (30, 101)]
-#guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])]).map (fun R => [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==
+#guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])]).map (fun R => 
+    [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==
   some [[(5, 50)], [(2, 20)], [], [(4, 40)], []]
-#guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map (fun R => [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==
+#guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map (fun R => 
+    [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==
   some [[(5, 50)], [(2, 20)], [], [(4, 40)], []]
 
 end LeetQ.Join
