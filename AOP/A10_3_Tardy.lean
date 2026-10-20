@@ -1557,14 +1557,18 @@ where
         exact List.mem_cons_of_mem _
           (List.mem_map.2 ⟨_, erase_mem_cands ((List.mem_cons.1 h).resolve_left (Ne.symm hx)), rfl⟩)
 
-/-- **tardy-run**: the order `Q'` on candidates as a `RelRep` test — the penalty of the job put
-    last after the bag of the rest. -/
+/-- The order `Q'` on candidates as a Boolean: the penalty of the job put last after the bag of
+    the rest.  `chosen` filters by it directly, since `Qt.mem` would unfold through `DecidableEq`. -/
+@[expose] public def penLe [Tardy Job] (p q : List Job × Job) : Bool :=
+  decide (bagPenalty (Quotient.mk _ p.1, p.2) ≤ bagPenalty (Quotient.mk _ q.1, q.2))
+
+/-- **tardy-run**: the order `Q'` on candidates as a `RelRep` test. -/
 @[expose] public def Qt [Tardy Job] : RelRep (List Job × Job) (List Job × Job) :=
-  .test fun p q => decide (bagPenalty (Quotient.mk _ p.1, p.2) ≤ bagPenalty (Quotient.mk _ q.1, q.2))
+  .test penLe
 
 /-- **tardy-run**: the candidates of least penalty. -/
 @[expose] public def chosen [Tardy Job] [DecidableEq Job] (xs : List Job) : List (List Job × Job) :=
-  RelRep.estList (Qt (Job := Job)).mem (cands xs)
+  RelRep.estList penLe (cands xs)
 
 public theorem chosen_eq [Tardy Job] [DecidableEq Job] :
     RelRep.est (Qt (Job := Job)) (.enum cands) = some (.enum chosen) := rfl
@@ -1656,7 +1660,7 @@ theorem schedF_mem [Tardy Job] [DecidableEq Job] : ∀ (n : Nat) (xs : List Job)
 
 /-- **tardy-run**: the program meets the specification — the greedy schedule of a list of jobs is
     an ordering of its bag of least cost. -/
-public theorem sched_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+public theorem tardy_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     (graph sched : (⟨List Job⟩ : RelSet.{0}) ⟶ dSL Unit Job)
       ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ Λ ((bagify (Job := Job))°) ≫ est (R) :=
   calc (graph sched : (⟨List Job⟩ : RelSet.{0}) ⟶ dSL Unit Job)
@@ -1670,6 +1674,9 @@ public theorem sched_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) 
   ⟨fun j => ([2, 3, 1] : List Int).getD j 0, fun j => ([3, 4, 6] : List Int).getD j 0, fun _ => 1⟩
 
 attribute [local instance] jobs3
+
+/-- **tardy-run**: the jobs `2 0 1`, each as its completion time and due date. -/
+public theorem run_input : ([2, 0, 1] : List Nat).map (fun j => (ct j, dt j)) = [(1, 6), (2, 3), (3, 4)] := rfl
 
 /-- **tardy-run**: the three ways of putting one of the jobs `2 0 1` last. -/
 public theorem run_cands : cands [2, 0, 1] = [([0, 1], 2), ([2, 1], 0), ([2, 0], 1)] := rfl
