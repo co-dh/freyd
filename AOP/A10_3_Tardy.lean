@@ -23,6 +23,7 @@ public import AOP.A9_1
 import AOP.A10_1
 import AOP.A6_3
 import AOP.A7_2_RelSet
+public import AOP.A6_FinRel
 
 universe u
 
@@ -1495,6 +1496,199 @@ open Lean PrettyPrinter in
 @[app_unexpander Fn.bagify] public meta def unexpandBagifyFn : Unexpander
   | `($_ $args*) => `($(mkIdent `bagify) $args*)
   | _ => `($(mkIdent `bagify))
+
+/-! ## A run of the greedy program (`tardy-run`)
+
+  A bag is held by a list of its jobs; `Quotient.mk perm` relates the list to the bag it stands
+  for.  Each step enumerates the ways of putting one job last (`cands`, the converse of `snag`
+  read through a representative), keeps the ones of least penalty with `RelRep.est` at the order
+  `Q'`, and recurses on the rest, the fuel being the number of jobs. -/
+
+section TardyRun
+
+open PowerAllegory
+
+/-- Each way of taking one job out of a list of jobs to go last: the rest, and the job. -/
+@[expose] public def cands : List Job → List (List Job × Job)
+  | [] => []
+  | x :: xs => (xs, x) :: (cands xs).map fun p => (x :: p.1, p.2)
+
+/-- A candidate, put back together, is a reordering of the jobs it was taken from. -/
+public theorem cands_perm : ∀ {xs : List Job} {p : List Job × Job}, p ∈ cands xs → (p.2 :: p.1).Perm xs
+  | [], _, h => absurd h List.not_mem_nil
+  | x :: _, _, h => by
+    rcases List.mem_cons.1 h with rfl | h
+    · exact List.Perm.refl _
+    · obtain ⟨q, hq, rfl⟩ := List.mem_map.1 h
+      exact (List.Perm.swap x q.2 q.1).trans ((cands_perm hq).cons x)
+
+/-- **tardy-run**: `cands`, read through representatives, IS `snag°` — every candidate forgets to
+    the bag, and every way of un-snagging the bag has a candidate. -/
+public theorem rel_cands [DecidableEq Job] :
+    (RelRep.enum cands).rel ≫ rprodMap (graph (Quotient.mk (perm (Job := Job)))) (𝟙 (⟨Job⟩ : RelSet.{0}))
+      = graph (Quotient.mk (perm (Job := Job))) ≫ (arm₂ (bagAlg (Job := Job)))° :=
+  hom_ext fun xs q => by
+    constructor
+    · rintro ⟨p, hp, hq1, hq2⟩
+      refine ⟨_, rfl, ?_⟩
+      show _ = snag q
+      have e1 : q.1 = Quotient.mk perm p.1 := hq1
+      have e2 : p.2 = q.2 := hq2
+      have e : q = (Quotient.mk perm p.1, p.2) := Prod.ext e1 e2.symm
+      rw [e]
+      exact Quotient.sound (cands_perm hp).symm
+    · rintro ⟨_, rfl, hz⟩
+      obtain ⟨u, j⟩ := q
+      obtain ⟨ys, rfl⟩ := exists_rep u
+      have hz' : Quotient.mk perm xs = snag (Quotient.mk perm ys, j) := hz
+      have hperm : xs.Perm (j :: ys) := Quotient.exact hz'
+      have hj : j ∈ xs := hperm.symm.subset List.mem_cons_self
+      exact ⟨(xs.erase j, j), erase_mem_cands hj,
+        Quotient.sound (((cands_perm (erase_mem_cands hj)).trans hperm).cons_inv.symm), rfl⟩
+where
+  /-- Deleting one occurrence of `j` is a candidate. -/
+  erase_mem_cands {j : Job} : ∀ {xs : List Job}, j ∈ xs → (xs.erase j, j) ∈ cands xs
+    | [], h => absurd h List.not_mem_nil
+    | x :: xs, h => by
+      if hx : x = j then
+        subst hx; rw [List.erase_cons_head]; exact List.mem_cons_self
+      else
+        rw [List.erase_cons_tail (by rw [beq_iff_eq]; exact hx)]
+        exact List.mem_cons_of_mem _
+          (List.mem_map.2 ⟨_, erase_mem_cands ((List.mem_cons.1 h).resolve_left (Ne.symm hx)), rfl⟩)
+
+/-- **tardy-run**: the order `Q'` on candidates as a `RelRep` test — the penalty of the job put
+    last after the bag of the rest. -/
+@[expose] public def Qt [Tardy Job] : RelRep (List Job × Job) (List Job × Job) :=
+  .test fun p q => decide (bagPenalty (Quotient.mk _ p.1, p.2) ≤ bagPenalty (Quotient.mk _ q.1, q.2))
+
+/-- **tardy-run**: the candidates of least penalty. -/
+@[expose] public def chosen [Tardy Job] [DecidableEq Job] (xs : List Job) : List (List Job × Job) :=
+  RelRep.estList (Qt (Job := Job)).mem (cands xs)
+
+public theorem chosen_eq [Tardy Job] [DecidableEq Job] :
+    RelRep.est (Qt (Job := Job)) (.enum cands) = some (.enum chosen) := rfl
+
+/-- **tardy-run**: `chosen` computes `Λ(cands) est(Qt)`. -/
+public theorem rel_chosen [Tardy Job] [DecidableEq Job] :
+    (RelRep.enum (chosen (Job := Job))).rel = Λ (RelRep.enum cands).rel ≫ est (Qt (Job := Job)).rel :=
+  RelRep.rel_est chosen_eq
+
+/-- A nonempty list has a member of least `pen`. -/
+theorem exists_least {α : Type} (pen : α → Int) : ∀ l : List α, l ≠ [] → ∃ p ∈ l, ∀ q ∈ l, pen p ≤ pen q
+  | [], h => absurd rfl h
+  | [a], _ => ⟨a, List.mem_cons_self, fun q hq => by rw [List.mem_singleton.1 hq]; exact Int.le_refl _⟩
+  | a :: b :: l, _ => by
+    obtain ⟨m, hm, hmin⟩ := exists_least pen (b :: l) (List.cons_ne_nil _ _)
+    rcases Int.le_total (pen a) (pen m) with h | h
+    · exact ⟨a, List.mem_cons_self, fun q hq =>
+        (List.mem_cons.1 hq).elim (fun e => e ▸ Int.le_refl _) fun hq => Int.le_trans h (hmin q hq)⟩
+    · exact ⟨m, List.mem_cons_of_mem _ hm, fun q hq => (List.mem_cons.1 hq).elim (fun e => e ▸ h) (hmin q)⟩
+
+/-- A nonempty bag has a candidate of least penalty, so the greedy step never gets stuck. -/
+theorem chosen_head [Tardy Job] [DecidableEq Job] (x : Job) (xs : List Job) :
+    ∃ p, (chosen (x :: xs)).head? = some p := by
+  obtain ⟨m, hm, hmin⟩ := exists_least (fun p : List Job × Job => bagPenalty (Quotient.mk _ p.1, p.2))
+    (cands (x :: xs)) (List.cons_ne_nil _ _)
+  have h : (RelRep.enum (chosen (Job := Job))).rel (x :: xs) m := by
+    rw [rel_chosen, Λ_comp_est_apply]
+    exact ⟨hm, fun z hz => decide_eq_true (hmin z hz)⟩
+  have h' : m ∈ chosen (x :: xs) := h
+  cases hc : chosen (x :: xs) with
+  | nil => rw [hc] at h'; exact absurd h' List.not_mem_nil
+  | cons a _ => exact ⟨a, rfl⟩
+
+/-- **tardy-run**: the program, one job put last per step; the fuel is the number of jobs. -/
+@[expose] public def schedF [Tardy Job] [DecidableEq Job] : Nat → List Job → SnocList Unit Job
+  | 0, _ => SnocList.wrap ()
+  | n + 1, xs => match (chosen xs).head? with
+    | none => SnocList.wrap ()
+    | some p => SnocList.snoc (schedF n p.1) p.2
+
+/-- **tardy-run**: the greedy schedule of a list of jobs. -/
+@[expose] public def sched [Tardy Job] [DecidableEq Job] (xs : List Job) : SnocList Unit Job :=
+  schedF xs.length xs
+
+/-- **tardy-run**: the `pick` of `schedule`, read through representatives — the first chosen
+    candidate of some list holding the bag. -/
+@[expose] public def pickB [Tardy Job] [DecidableEq Job] : Bag Job ⟶ (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}) :=
+  fun b q => ∃ xs p, Quotient.mk _ xs = b ∧ (chosen xs).head? = some p ∧ q = (Quotient.mk _ p.1, p.2)
+
+/-- **tardy-run**: `pickB` meets `schedule_le`'s hypothesis, `pick ⊑ Λ(snag°) est(Q')`. -/
+public theorem pickB_le [Tardy Job] [DecidableEq Job] :
+    pickB (Job := Job) ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q') :=
+  le_iff.mpr fun b q ⟨xs, p, hb, hp, hq⟩ => by
+    subst hb hq
+    have h : (RelRep.enum (chosen (Job := Job))).rel xs p := List.mem_of_mem_head? hp
+    rw [rel_chosen, Λ_comp_est_apply] at h
+    obtain ⟨hmem, hleast⟩ := h
+    have hrel := le_iff.mp (le_of_eq rel_cands) xs (Quotient.mk _ p.1, p.2) ⟨p, hmem, rfl, rfl⟩
+    obtain ⟨_, rfl, hsnag⟩ := hrel
+    refine (Λ_comp_est_apply _ _ _ _).mpr ⟨hsnag, fun z hz => ?_⟩
+    obtain ⟨r, hr, hr1, hr2⟩ := le_iff.mp (le_of_eq rel_cands.symm) xs z ⟨_, rfl, hz⟩
+    have e1 : z.1 = Quotient.mk perm r.1 := hr1
+    have e2 : r.2 = z.2 := hr2
+    have hz' : z = (Quotient.mk perm r.1, r.2) := Prod.ext e1 e2.symm
+    subst hz'
+    show bagPenalty _ ≤ bagPenalty _
+    exact of_decide_eq_true (hleast r hr)
+
+/-- `schedF` with enough fuel is an outcome of `schedule pickB`. -/
+theorem schedF_mem [Tardy Job] [DecidableEq Job] : ∀ (n : Nat) (xs : List Job), xs.length = n →
+    schedule pickB (Quotient.mk _ xs) (schedF n xs)
+  | 0, [], _ => by
+    rw [schedule_unfold]
+    exact Or.inl ⟨_, ⟨rfl, rfl⟩, (), rfl, rfl⟩
+  | 0, _ :: _, h => absurd h (Nat.succ_ne_zero _)
+  | _ + 1, [], h => absurd h.symm (Nat.succ_ne_zero _)
+  | n + 1, x :: xs, h => by
+    obtain ⟨p, hp⟩ := chosen_head x xs
+    have hmem : p ∈ cands (x :: xs) := (List.mem_filter.1 (List.mem_of_mem_head? hp)).1
+    have hlen : p.1.length = n := by
+      have := (cands_perm hmem).length_eq
+      simp only [List.length_cons] at this h
+      omega
+    rw [schedule_unfold]
+    refine Or.inr ⟨_, ⟨rfl, fun e => nil_ne_snag (Quotient.mk perm xs) x e.symm⟩, _, ⟨x :: xs, p, rfl, hp, rfl⟩,
+      (schedF n p.1, p.2), ⟨schedF_mem n p.1 hlen, rfl⟩, ?_⟩
+    show schedF (n + 1) (x :: xs) = SnocList.snoc (schedF n p.1) p.2
+    simp only [schedF, hp]
+
+/-- **tardy-run**: the program meets the specification — the greedy schedule of a list of jobs is
+    an ordering of its bag of least cost. -/
+public theorem sched_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    (graph sched : (⟨List Job⟩ : RelSet.{0}) ⟶ dSL Unit Job)
+      ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ Λ ((bagify (Job := Job))°) ≫ est (R) :=
+  calc (graph sched : (⟨List Job⟩ : RelSet.{0}) ⟶ dSL Unit Job)
+      ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ schedule pickB :=
+        le_iff.mpr fun xs s h => ⟨_, rfl, (h : s = sched xs) ▸ schedF_mem _ xs rfl⟩
+    _ ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ Λ ((bagify (Job := Job))°) ≫ est (R) :=
+        comp_mono_left _ (schedule_le pickB pickB_le hct hwt)
+
+/-- The note's three jobs `0 1 2`: completion times `2 3 1`, due dates `3 4 6`, unit weights. -/
+@[expose] public def jobs3 : Tardy Nat :=
+  ⟨fun j => ([2, 3, 1] : List Int).getD j 0, fun j => ([3, 4, 6] : List Int).getD j 0, fun _ => 1⟩
+
+attribute [local instance] jobs3
+
+/-- **tardy-run**: the three ways of putting one of the jobs `2 0 1` last. -/
+public theorem run_cands : cands [2, 0, 1] = [([0, 1], 2), ([2, 1], 0), ([2, 0], 1)] := rfl
+
+/-- **tardy-run**: their penalties — all six time units are spent before the last job ends. -/
+public theorem run_pen :
+    (cands [2, 0, 1]).map (fun p => bagPenalty (Quotient.mk _ p.1, p.2)) = [0, 3, 2] := by decide
+
+/-- **tardy-run**: `est(Q')` keeps job `2` last. -/
+public theorem run_chosen : chosen [2, 0, 1] = [([0, 1], 2)] := by decide
+
+/-- **tardy-run**: the greedy schedule, first job first. -/
+public theorem run_sched : (blist (sched [2, 0, 1])).reverse = [0, 1, 2] := by decide
+
+/-- **tardy-run**: its cost, the largest penalty: job `1` ends at `5`, one past its due date. -/
+public theorem run_cost : Fn.cost (sched [2, 0, 1]) = 1 := by decide
+
+end TardyRun
+
 end Freyd.Alg.RelSet.Tardy
 
 -- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
