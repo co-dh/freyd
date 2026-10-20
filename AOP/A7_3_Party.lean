@@ -23,6 +23,7 @@ module
 
 public import AOP.A6_RoseTree
 public import AOP.A7_1
+public import AOP.A6_FinRel
 import AOP.A7_2_RelSet
 
 universe u
@@ -533,33 +534,161 @@ public theorem party_list_choose_example :
   · exact ⟨ofList [ofList [], ofList [1]], ⟨Or.inr rfl, Or.inl rfl, rfl⟩, rfl⟩
   · exact ⟨ofList [ofList [], ofList []], ⟨Or.inr rfl, Or.inr rfl, rfl⟩, rfl⟩
 
-/-- **party-example**: the fold's run on the example tree — `b` hands up `([7],[5,1])`, `c`
-    hands up `([2],[8])`, and the root's `include = [a,d,e,f]` (cost 17) is a legal `party`
-    answer. -/
-public theorem party_example_run : party exTree (ofList [3, 5, 1, 8]) := by
-  have hd : RT.cataFold S (Rose.node (5 : Int) (ofList [])) (ofList [5], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
-  have he : RT.cataFold S (Rose.node (1 : Int) (ofList [])) (ofList [1], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
-  have hf : RT.cataFold S (Rose.node (8 : Int) (ofList [])) (ofList [8], ofList []) :=
-    ⟨ConsList.wrap (), rfl, rfl, ConsList.wrap (), rfl, rfl⟩
-  have hb : RT.cataFold S
-      (Rose.node (7 : Int) (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]))
-      (ofList [7], ofList [5, 1]) :=
-    ⟨ofList [(ofList [5], ofList []), (ofList [1], ofList [])],
-     ⟨(ofList [5], ofList []), ofList [(ofList [1], ofList [])], hd,
-       ⟨(ofList [1], ofList []), ofList [], he, rfl, rfl⟩, rfl⟩,
-     rfl, ofList [ofList [5], ofList [1]], ⟨Or.inl rfl, Or.inl rfl, rfl⟩, rfl⟩
-  have hc : RT.cataFold S (Rose.node (2 : Int) (ofList [Rose.node 8 (ofList [])]))
-      (ofList [2], ofList [8]) :=
-    ⟨ofList [(ofList [8], ofList [])],
-     ⟨(ofList [8], ofList []), ofList [], hf, rfl, rfl⟩,
-     rfl, ofList [ofList [8]], ⟨Or.inl rfl, rfl⟩, rfl⟩
-  refine ⟨(ofList [3, 5, 1, 8], ofList [7, 8]), ?_, Or.inl rfl⟩
-  refine ⟨ofList [(ofList [7], ofList [5, 1]), (ofList [2], ofList [8])],
-    ⟨(ofList [7], ofList [5, 1]), ofList [(ofList [2], ofList [8])], hb,
-      ⟨(ofList [2], ofList [8]), ofList [], hc, rfl, rfl⟩, rfl⟩,
-    rfl, ofList [ofList [7], ofList [8]], ⟨Or.inl rfl, Or.inr rfl, rfl⟩, rfl⟩
+/-! ### The program as `RelRep` (the note's `<party-example>` run table)
+
+Each node's choice is `RelRep.est` at the order `R°` as a `test`, read back by `rel_est`; the tree
+recursion is the existing fold, `RT.cataFold`, which `kept` computes as lists. -/
+
+section PartyRun
+
+variable [DecidableEq A]
+
+/-- The order `R°` as a `RelRep` test: `x` before `y` when `x` is worth at least `y`. -/
+@[expose] public def Rt : RelRep (ConsList Unit A) (ConsList Unit A) :=
+  .test fun x y => decide (costFn rating y ≤ costFn rating x)
+
+omit [DecidableEq A] in
+public theorem rel_Rt : (Rt rating).rel = (R rating)° := hom_ext fun _ _ => decide_eq_true_iff
+
+omit [DecidableEq A] in
+/-- `choose` as a `RelRep`: both parties of a pair. -/
+public theorem rel_chooseE :
+    (RelRep.enum fun p : ConsList Unit A × ConsList Unit A => [p.1, p.2]).rel = choose :=
+  hom_ext fun p x => by
+    simp only [RelRep.rel, List.mem_cons, List.mem_nil_iff, or_false, choose, union_apply, graph_apply]
+
+/-- Each subtree's better party, `Λ(choose) est(R°)` on one pair. -/
+@[expose] public def pick (p : ConsList Unit A × ConsList Unit A) : List (ConsList Unit A) :=
+  RelRep.estList (Rt rating).mem [p.1, p.2]
+
+/-- `pick` is `RelRep.est R°` of `choose`. -/
+public theorem pick_eq : RelRep.est (Rt rating) (.enum fun p => [p.1, p.2]) = some (.enum (pick rating)) := rfl
+
+public theorem rel_pick : (RelRep.enum (pick rating)).rel = Λ choose ≫ est((R rating)°) := by
+  rw [RelRep.rel_est (pick_eq rating), rel_chooseE, rel_Rt]
+
+omit [DecidableEq A] in
+/-- Every way to take one value of `f` per element of a list. -/
+@[expose] public def choices {P V : Type} (f : P → List V) : ConsList Unit P → List (ConsList Unit V)
+  | .wrap u => [.wrap u]
+  | .cons p ps => (f p).flatMap fun x => (choices f ps).map (.cons x)
+
+omit [DecidableEq A] in
+public theorem mem_choices {P V : Type} (f : P → List V) :
+    ∀ ps qs, qs ∈ choices f ps ↔ listP (RelRep.enum f).rel ps qs
+  | .wrap _, .wrap _ => ⟨fun _ => rfl, fun _ => List.mem_singleton.2 rfl⟩
+  | .wrap _, .cons _ _ => ⟨fun h => (nomatch List.mem_singleton.1 h), fun h => h.elim⟩
+  | .cons _ _, .wrap _ => ⟨fun h => (by simp [choices] at h), fun h => h.elim⟩
+  | .cons p ps, .cons q qs => by
+      rw [show listP (RelRep.enum f).rel (.cons p ps) (.cons q qs)
+          ↔ (q ∈ f p ∧ listP (RelRep.enum f).rel ps qs) from Iff.rfl, ← mem_choices f ps qs]
+      simp only [choices, List.mem_flatMap, List.mem_map, ConsList.cons.injEq]
+      exact ⟨fun ⟨_, hx, _, hys, e1, e2⟩ => e1 ▸ e2 ▸ ⟨hx, hys⟩, fun ⟨hx, hys⟩ => ⟨q, hx, qs, hys, rfl, rfl⟩⟩
+
+/-- The greedy algebra's `Λ` at one node: `include`, beside every `exclude` its subtrees' picks allow. -/
+@[expose] public def step (u : A × ConsList Unit (ConsList Unit A × ConsList Unit A)) :
+    List (ConsList Unit A × ConsList Unit A) :=
+  (choices (pick rating) u.2).map fun xss => («include» u, cconcat xss)
+
+/-- `step` is the greedy algebra `⟨include, π₂ list(Λ(choose) est(R°)) concat⟩`. -/
+public theorem rel_step :
+    (RelRep.enum (step rating)).rel
+      = rpair (graph «include»)
+        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+            ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
+          ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR) := by
+  rw [← rel_pick]
+  apply hom_ext; intro u p
+  constructor
+  · intro h
+    obtain ⟨xss, hxss, rfl⟩ := List.mem_map.1 (show p ∈ (choices (pick rating) u.2).map _ from h)
+    exact ⟨rfl, u.2, rfl, xss, (mem_choices _ _ _).1 hxss, rfl⟩
+  · rintro ⟨h1, m, hm, ys, hys, h2⟩
+    obtain rfl : m = u.2 := hm
+    obtain ⟨p1, p2⟩ := p
+    obtain rfl : p1 = «include» u := h1
+    obtain rfl : p2 = cconcat ys := h2
+    exact List.mem_map.2 ⟨ys, (mem_choices _ _ _).2 hys, rfl⟩
+
+mutual
+/-- The pairs the greedy fold hands up from a subtree. -/
+@[expose] public def kept : Rose A → List (ConsList Unit A × ConsList Unit A)
+  | .node a xss => (keptList xss).flatMap fun rs => step rating (a, rs)
+/-- `choices kept`, unrolled so the nested recursion is structural. -/
+@[expose] public def keptList : ConsList Unit (Rose A) → List (ConsList Unit (ConsList Unit A × ConsList Unit A))
+  | .wrap u => [.wrap u]
+  | .cons xs xss => (kept xs).flatMap fun r => (keptList xss).map (.cons r)
+end
+
+theorem keptList_eq : ∀ ts, keptList rating ts = choices (kept rating) ts
+  | .wrap _ => rfl
+  | .cons xs xss => by rw [keptList, choices, keptList_eq xss]
+
+/-- `kept` is the greedy fold `⦇⟨include, π₂ list(Λ(choose) est(R°)) concat⟩⦈`. -/
+public theorem kept_eq :
+    (RelRep.enum (kept rating)).rel
+      = ⦇(rpair (graph «include»)
+        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+            ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
+          ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
+      : Alg (RT.F A) (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈ := by
+  rw [← rel_step, ← RT.cataR_eq_relCata]
+  refine hom_ext fun t r => RT.cataFold_unique_tree (RelRep.enum (step rating)).rel
+    (RelRep.enum (kept rating)).rel (hom_ext fun u r => ?_) t r
+  constructor
+  · rintro ⟨t, ht, hr⟩
+    obtain rfl : t = RT.con u := ht
+    obtain ⟨rs, hrs, hstep⟩ :=
+      List.mem_flatMap.1 (show r ∈ (keptList rating u.2).flatMap fun rs => step rating (u.1, rs) from hr)
+    rw [keptList_eq] at hrs
+    exact ⟨(u.1, rs), ⟨rfl, (mem_choices _ _ _).1 hrs⟩, hstep⟩
+  · rintro ⟨⟨a, rs⟩, ⟨hv1, hv2⟩, hstep⟩
+    obtain rfl : u.1 = a := hv1
+    refine ⟨RT.con u, rfl, ?_⟩
+    show r ∈ (keptList rating u.2).flatMap fun rs => step rating (u.1, rs)
+    rw [keptList_eq]
+    exact List.mem_flatMap.2 ⟨rs, (mem_choices _ _ _).2 hv2, hstep⟩
+
+/-- The program: the better party of each pair the fold hands up from the root. -/
+@[expose] public def best (xs : Rose A) : List (ConsList Unit A) := (kept rating xs).flatMap (pick rating)
+
+public theorem rel_best :
+    (RelRep.enum (best rating)).rel = (RelRep.enum (kept rating)).rel ≫ (RelRep.enum (pick rating)).rel :=
+  hom_ext fun _ _ => List.mem_flatMap
+
+/-- **The program meets its specification**: every guest list `best` returns is a party of greatest
+    total rating, `best ⊑ Λ(party) est(R°)`. -/
+public theorem best_le : (RelRep.enum (best rating)).rel ⊑ Λ party ≫ est((R rating)°) :=
+  calc (RelRep.enum (best rating)).rel
+      = (RelRep.enum (kept rating)).rel ≫ (RelRep.enum (pick rating)).rel := rel_best rating
+    _ ⊑ Λ party ≫ est((R rating)°) := by rw [kept_eq, rel_pick]; exact party_laws rating
+
+/-- **party-example**, at `b`: the fold hands up `([b],[d,e])`. -/
+public theorem run_kept_b :
+    kept id (Rose.node (7 : Int) (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]))
+      = [(ConsList.cons 7 (ConsList.wrap ()), ConsList.cons 5 (ConsList.cons 1 (ConsList.wrap ())))] := by rfl
+
+/-- **party-example**, at `c`: the fold hands up `([c],[f])`. -/
+public theorem run_kept_c :
+    kept id (Rose.node (2 : Int) (ofList [Rose.node 8 (ofList [])]))
+      = [(ConsList.cons 2 (ConsList.wrap ()), ConsList.cons 8 (ConsList.wrap ()))] := by rfl
+
+/-- **party-example**, at the root: `([a,d,e,f],[b,f])`. -/
+public theorem run_kept : kept id exTree
+    = [(ConsList.cons 3 (ConsList.cons 5 (ConsList.cons 1 (ConsList.cons 8 (ConsList.wrap ())))),
+       ConsList.cons 7 (ConsList.cons 8 (ConsList.wrap ())))] := by rfl
+
+/-- **party-example**: the program returns `[a,d,e,f]`, cost 17 over 15. -/
+public theorem run_best : best id exTree
+    = [ConsList.cons 3 (ConsList.cons 5 (ConsList.cons 1 (ConsList.cons 8 (ConsList.wrap ()))))] := by rfl
+
+end PartyRun
+
+/-- **party-example**: `[a,d,e,f]` is a legal `party` answer — what `best` returns, through
+    `best ⊑ Λ(party) est(R°) ⊑ party`. -/
+public theorem party_example_run : party exTree (ofList [3, 5, 1, 8]) :=
+  le_iff.mp (le_trans (best_le id) (Λ_comp_est_le _ _)) exTree _
+    (show ofList [3, 5, 1, 8] ∈ best id exTree by rw [run_best]; exact List.mem_singleton_self _)
 
 end Party
 
@@ -567,11 +696,19 @@ end RelSet
 
 end Freyd.Alg
 
--- printing-only: the party's ordering `R` and its `cost` drop the `rating`, which is the section's
--- context and not part of the name.
+-- printing-only: the party's ordering `R`, its `cost` and the program's `kept`/`best` drop the `rating`,
+-- which is the section's context and not part of the name.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Party.R] public meta def Freyd.Alg.RelSet.Party.unexpandPartyR : Unexpander
   | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Party.costFn] public meta def Freyd.Alg.RelSet.Party.unexpandPartyCostFn : Unexpander
   | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.kept] public meta def Freyd.Alg.RelSet.Party.unexpandPartyKept : Unexpander
+  | `($_ $_) => `($(mkIdent `kept))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.best] public meta def Freyd.Alg.RelSet.Party.unexpandPartyBest : Unexpander
+  | `($_ $_) => `($(mkIdent `best))
+  | _ => throw ()

@@ -1128,41 +1128,32 @@ directly.
 // lean:AOP.A7_3_Party.exStaff_ratings@85a7f8dd
 #align(center, src[the small grey number is the employee's rating])]]<party-example-tree>
 
-// The fold on that tree, bottom-up; the last row reads its two cells off the rows for `b` and `c`.
-// The `#src` block is 16.5cm, not the text width: at 22cm the wrap falls inside `[a,d,e,f]=17`.
-#disp[
-#table(
-  columns: (2.0cm, 6.3cm, 7.3cm, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*node*], [*the algebra's input* \ `A×[[A]×[A]]`], [*`include`*], [*`exclude`*]),
-
-  [`d`, `e`, `f`],
-  [`(d,[])`],
-  [`[d]`],
-  [`[]`],
-
-  [`b`],
-  [`(b,[([d],[]),([e],[])])`],
-  [`[b]`],
-  [`[d,e]`, #h(4pt) `[d]`, #h(4pt) `[e]`, #h(4pt) `[]`],
-
-  [`c`],
-  [`(c,[([f],[])])`],
-  [`[c]`],
-  [`[f]`, #h(4pt) `[]`],
-
-  [`a`],
-  [`(a,[([b],…),([c],…)])`],
-  [`[a]⧺exclude(b)⧺exclude(c)`],
-  [`choose(b)⧺choose(c)`],
-)
-#align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[with those ratings,
-  `est(R°)` keeps `([b]=7,[d,e]=6)` at `b`, where `include` wins, and `([c]=2,[f]=8)` at `c`, where
-  `exclude` wins, so at the root `include=[a,d,e,f]=17` beats `exclude=[b,f]=15`, and `choose`
-  takes 17.]]])
-// lean:AOP.A7_3_Party.party_example_costs@5c33e66d
-]<party-example>
+// One run of the greedy program on that tree, `rating := id`: its input, the pair the fold hands up at
+// `b`, at `c` and at the root, and what `best` returns; each value is a theorem of the `PartyRun`
+// section of A7_3_Party, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Party.run_kept.lhs.arg"),
+   value: leanf("Freyd.Alg.RelSet.Party.run_kept.lhs.arg"),
+   meaning: [the ratings of the tree above]),
+  // lean:AOP.A7_3_Party.run_kept@a2499d36
+  (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `b`], type: leant("Freyd.Alg.RelSet.Party.run_kept_b.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Party.run_kept_b.rhs"),
+   meaning: [`include=[b]=7`, `exclude=[d,e]=6`]),
+  // lean:AOP.A7_3_Party.run_kept_b@2008f745
+  (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `c`], type: leant("Freyd.Alg.RelSet.Party.run_kept_c.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Party.run_kept_c.rhs"),
+   meaning: [`include=[c]=2`, `exclude=[f]=8`]),
+  // lean:AOP.A7_3_Party.run_kept_c@80715eb0
+  (sym: [#leann("Freyd.Alg.RelSet.Party.kept") at `a`], type: leant("Freyd.Alg.RelSet.Party.run_kept.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Party.run_kept.rhs"),
+   meaning: [`include=[a]⧺[d,e]⧺[f]=17`, `exclude=[b]⧺[f]=15`]),
+  // lean:AOP.A7_3_Party.run_kept@a2499d36
+  (sym: leann("Freyd.Alg.RelSet.Party.best"), type: leant("Freyd.Alg.RelSet.Party.run_best.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Party.run_best.rhs"),
+   meaning: [`est(R°)` takes `17` over `15`]),
+  // lean:AOP.A7_3_Party.run_best@4f99b543
+  // lean:AOP.A7_3_Party.party_example_costs@5c33e66d
+)<party-example>
 
 #disp[#leanc("Freyd.Alg.RelSet.Party.include_eq.rhs")
 #align(center, src[])
