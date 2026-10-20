@@ -1502,7 +1502,7 @@ open Lean PrettyPrinter in
   A bag is held by a list of its jobs; `Quotient.mk perm` relates the list to the bag it stands
   for.  Each step enumerates the ways of putting one job last (`cands`, the converse of `snag`
   read through a representative), keeps the ones of least penalty with `RelRep.est` at the order
-  `Q'`, and recurses on the rest, the fuel being the number of jobs. -/
+  `Q'`, and recurses on the rest through `RelRep.hylo`, measured by the number of jobs. -/
 
 section TardyRun
 
@@ -1602,16 +1602,18 @@ theorem chosen_head [Tardy Job] [DecidableEq Job] (x : Job) (xs : List Job) :
   | nil => rw [hc] at h'; exact absurd h' List.not_mem_nil
   | cons a _ => exact ⟨a, rfl⟩
 
-/-- **tardy-run**: the program, one job put last per step; the fuel is the number of jobs. -/
-@[expose] public def schedF [Tardy Job] [DecidableEq Job] : Nat → List Job → SnocList Unit Job
-  | 0, _ => SnocList.wrap ()
-  | n + 1, xs => match (chosen xs).head? with
-    | none => SnocList.wrap ()
-    | some p => SnocList.snoc (schedF n p.1) p.2
+/-- **tardy-run**: one step of the program — put the first chosen candidate's job last, after `X`
+    of the rest. -/
+@[expose] public def schedStep [Tardy Job] [DecidableEq Job] (X : List Job → SnocList Unit Job)
+    (xs : List Job) : SnocList Unit Job :=
+  match (chosen xs).head? with
+  | none => SnocList.wrap ()
+  | some p => SnocList.snoc (X p.1) p.2
 
-/-- **tardy-run**: the greedy schedule of a list of jobs. -/
+/-- **tardy-run**: the greedy schedule of a list of jobs; every step drops one job, so
+    `schedStep` recurses on the length. -/
 @[expose] public def sched [Tardy Job] [DecidableEq Job] (xs : List Job) : SnocList Unit Job :=
-  schedF xs.length xs
+  RelRep.hylo List.length (fun _ => SnocList.wrap ()) schedStep xs
 
 /-- **tardy-run**: the `pick` of `schedule`, read through representatives — the first chosen
     candidate of some list holding the bag. -/
@@ -1637,26 +1639,27 @@ public theorem pickB_le [Tardy Job] [DecidableEq Job] :
     show bagPenalty _ ≤ bagPenalty _
     exact of_decide_eq_true (hleast r hr)
 
-/-- `schedF` with enough fuel is an outcome of `schedule pickB`. -/
-theorem schedF_mem [Tardy Job] [DecidableEq Job] : ∀ (n : Nat) (xs : List Job), xs.length = n →
-    schedule pickB (Quotient.mk _ xs) (schedF n xs)
-  | 0, [], _ => by
+/-- `sched` is an outcome of `schedule pickB`: every step keeps this given it at the rest of the
+    chosen candidate, which is one job shorter (`RelRep.hylo_ind`). -/
+theorem sched_mem [Tardy Job] [DecidableEq Job] (xs : List Job) :
+    schedule pickB (Quotient.mk _ xs) (sched xs) := by
+  refine RelRep.hylo_ind (I := fun xs s => schedule pickB (Quotient.mk _ xs) s) (fun X xs ih => ?_) xs
+  cases xs with
+  | nil =>
     rw [schedule_unfold]
     exact Or.inl ⟨_, ⟨rfl, rfl⟩, (), rfl, rfl⟩
-  | 0, _ :: _, h => absurd h (Nat.succ_ne_zero _)
-  | _ + 1, [], h => absurd h.symm (Nat.succ_ne_zero _)
-  | n + 1, x :: xs, h => by
+  | cons x xs =>
     obtain ⟨p, hp⟩ := chosen_head x xs
     have hmem : p ∈ cands (x :: xs) := (List.mem_filter.1 (List.mem_of_mem_head? hp)).1
-    have hlen : p.1.length = n := by
+    have hlen : p.1.length < (x :: xs).length := by
       have := (cands_perm hmem).length_eq
-      simp only [List.length_cons] at this h
+      simp only [List.length_cons] at this ⊢
       omega
     rw [schedule_unfold]
     refine Or.inr ⟨_, ⟨rfl, fun e => nil_ne_snag (Quotient.mk perm xs) x e.symm⟩, _, ⟨x :: xs, p, rfl, hp, rfl⟩,
-      (schedF n p.1, p.2), ⟨schedF_mem n p.1 hlen, rfl⟩, ?_⟩
-    show schedF (n + 1) (x :: xs) = SnocList.snoc (schedF n p.1) p.2
-    simp only [schedF, hp]
+      (X p.1, p.2), ⟨ih p.1 hlen, rfl⟩, ?_⟩
+    show schedStep X (x :: xs) = SnocList.snoc (X p.1) p.2
+    simp only [schedStep, hp]
 
 /-- **tardy-run**: the program meets the specification — the greedy schedule of a list of jobs is
     an ordering of its bag of least cost. -/
@@ -1665,7 +1668,7 @@ public theorem tardy_le [Tardy Job] [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) 
       ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ Λ ((bagify (Job := Job))°) ≫ est (R) :=
   calc (graph sched : (⟨List Job⟩ : RelSet.{0}) ⟶ dSL Unit Job)
       ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ schedule pickB :=
-        le_iff.mpr fun xs s h => ⟨_, rfl, (h : s = sched xs) ▸ schedF_mem _ xs rfl⟩
+        le_iff.mpr fun xs s h => ⟨_, rfl, (h : s = sched xs) ▸ sched_mem xs⟩
     _ ⊑ graph (Quotient.mk (perm (Job := Job))) ≫ Λ ((bagify (Job := Job))°) ≫ est (R) :=
         comp_mono_left _ (schedule_le pickB pickB_le hct hwt)
 
