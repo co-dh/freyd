@@ -212,8 +212,8 @@ theorem filterMap_sel_filter [DecidableEq K] (p : K → V → Bool) (k : K) : (l
   | [] => rfl
   | (a, b) :: l => by
     by_cases h : a = k
-    · subst h; cases hp : p a b <;> simp [sel, hp, List.filter_cons, filterMap_sel_filter p a l]
-    · cases hp : p a b <;> simp [sel, h, hp, List.filter_cons, filterMap_sel_filter p k l]
+    · subst h; cases hp : p a b <;> simp [sel, hp, filterMap_sel_filter p a l]
+    · cases hp : p a b <;> simp [sel, h, hp, filterMap_sel_filter p k l]
 
 end FinRel
 
@@ -864,7 +864,7 @@ theorem app?_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep 
     {f : K → List V} {g : V → List C} (hR : R.app? = some f) (hS : S.app? = some g) :
     T.app? = some fun a => (f a).flatMap g := by
   cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;>
-    simp only [comp, Option.some.injEq, reduceCtorEq] at h <;> subst hR hS h <;> first | rfl | skip
+    simp only [comp, Option.some.injEq] at h <;> subst hR hS h <;> first | rfl | skip
   all_goals simp only [app?, FinRel.scanLookup_ofList, Option.some.injEq]
   · rename_i r s; exact funext fun a => FinRel.filterMap_sel_flatMap (fun _ b => s.scanLookup b) a r.toList
   · rename_i r g; exact funext fun a => FinRel.filterMap_sel_flatMap (fun _ b => g b) a r.toList
