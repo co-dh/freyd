@@ -5,7 +5,10 @@
   same input (q 4.x, `tmp/agg.q`).
   * `f'` (each) and atom extension are `R ; f`, `comp` with `ofFn`; a dyadic `x f' y` is `⟨R,S⟩ ; f`.
   * `/` (over) and every aggregate are `⦇[B,S]⦈`, `RelRep.fold`, run on the values in REVERSE: q's
-    iterators fold from the left, the cons-list fold from the right.
+    iterators fold from the left, the cons-list fold from the right. `over_pairs` states the result as
+    `foldl` over the value list; `sum`/`count`/`avg` follow (`sum_pairs`, `count_pairs`, `sumCount_pairs`),
+    every repeat counted because a `RelRep` means a list, not a set. The grouped form is `app?_selby`
+    (`Q/Table.lean`).
   * `\` (scan) is the same fold into the list of partial results.
   * `':` (each-prior) and the moving windows `m*` compose with an index relation (`pred`, `win n`).
   `RelRep` needs `DecidableEq` on every carrier; `Float` has none, so a float is held as its IEEE bits
@@ -173,6 +176,48 @@ def var (R : RelRep Nat Int) : Option (List QF) :=
     .of (Float.ofInt a.2.1 / n - m * m))
 
 def dev (R : RelRep Nat Int) : Option (List QF) := (var R).map (·.map fun v => .of v.f.sqrt)
+
+/-! ## The aggregates are left folds over the list, repeats kept
+
+`RelRep`'s meaning is a list per key, so `over` is stated on the values themselves: every value, in index
+order, each repeat counted. The Set reading of `ix(xs)` keeps the pairs `(i, xs[i])` and can say this only
+through the indices; `count` and `sum` of the values' set would merge the two `1`s of `3 1 4 1 5`. -/
+
+omit [DecidableEq U] in
+/-- **`a f/ xs = foldl f a xs`**: the reversed cons-list fold is q's left fold over every value. -/
+theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
+    over f a (.pairs r) = some [r.vals.toList.foldl f a] := by
+  have h : ∀ ys : List V, foldList id (fun _ => [a]) (fun p : V × W => [f p.2 p.1]) (CL.ofList ys) =
+      [ys.foldr (fun y w => f w y) a] := fun ys => by
+    induction ys with
+    | nil => rfl
+    | cons y ys ih => simp only [foldList, CL.ofList_cons, CL.cfold, id] at ih ⊢; rw [ih]; rfl
+  simp [over, foldl, vals?, RelRep.fold, RelRep.foldWith, RelRep.app?, ofFn, h, List.foldr_reverse]
+
+omit [DecidableEq U] in
+/-- `count R` is the length of the value list. -/
+theorem count_pairs (r : FinRel Nat V) : count (.pairs r) = some [r.vals.toList.length] := by
+  have h : ∀ (l : List V) n, l.foldl (fun n _ => n + 1) n = n + l.length := fun l => by
+    induction l <;> simp_all [Nat.add_assoc, Nat.add_comm 1]
+  rw [count, over_pairs, h, Nat.zero_add]
+
+/-- `sum R` is the sum of the value list. -/
+theorem sum_pairs (r : FinRel Nat Int) : sum (.pairs r) = some [r.vals.toList.sum] := by
+  have h : ∀ (l : List Int) n, l.foldl (· + ·) n = n + l.sum := fun l => by
+    induction l <;> simp_all [Int.add_assoc]
+  rw [sum, over_pairs, h, Int.zero_add]
+
+/-- `avg R`'s fold is the value list's sum and length; `avg` divides them. Stated before the division,
+    since a `Float` equation drags in `Classical.choice`. -/
+theorem sumCount_pairs (r : FinRel Nat Int) : sumCount (.pairs r) = some [(r.vals.toList.sum, r.vals.toList.length)] := by
+  have h : ∀ (l : List Int) (a : Int × Nat), l.foldl (fun a x => (a.1 + x, a.2 + 1)) a = (a.1 + l.sum, a.2 + l.length) :=
+    fun l => by induction l <;> simp_all [Int.add_assoc, Nat.add_assoc, Nat.add_comm 1]
+  rw [sumCount, over_pairs, h, Int.zero_add, Nat.zero_add]
+
+#print axioms over_pairs
+#print axioms sum_pairs
+#print axioms count_pairs
+#print axioms sumCount_pairs
 
 /-- `med`: the keys of `R°` sorted are the values sorted; the middle one, or the mean of the two. -/
 def med : RelRep Nat Int → Option QF
