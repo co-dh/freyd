@@ -1264,6 +1264,10 @@ theorem withFib_eq {α : Type} (R : RelRep K V) (h : (K → Array V) → α) : R
   cases R <;> rfl
 
 omit [DecidableEq V] [FibreIndex V] in
+/-- An `arr`'s fibre function, unapplied, for a `flatMap` over it. -/
+@[simp] theorem app_arr_fun (f : K → Array V) : (arr f).app = fun k => (f k).toList := rfl
+
+omit [DecidableEq V] [FibreIndex V] in
 /-- **The array fibre is the list one.** -/
 @[simp] theorem toList_fib (R : RelRep K V) (k : K) : (R.fib k).toList = R.app k := by
   cases R with

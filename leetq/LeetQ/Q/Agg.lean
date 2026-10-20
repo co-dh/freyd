@@ -37,20 +37,22 @@ variable {V W U : Type} [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreInd
 /-! ## A q list -/
 
 /-- `ix(xs)` as pairs, `i ↦ xs[i]`. -/
-def ql (xs : List V) : RelRep Nat V := .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))
+def ql (xs : Array V) : RelRep Nat V := .vec xs rfl
 
 omit [DecidableEq V] [FibreIndex V] in
-theorem rel_ql (xs : List V) : (ql xs).rel = ix xs := (FinRel.rep_ofList _).trans (rel_zipIdx xs)
+theorem rel_ql (xs : Array V) : (ql xs).rel = ix xs.toList := rel_vec xs
 
-/-- The values in index order; only `pairs` is finite. -/
+/-- The values in index order; only `pairs` and `vec` are finite. -/
 def vals? : RelRep Nat V → Option (List V)
   | .pairs r => some r.vals.toList
+  | .vec a _ => some a.toList
   | _ => none
 
 /-- The index coreflexive `dom(R)` kept finite: `RelRep.dom` answers an `enum`, whose keys are all of
 `Nat`, and a composite through it is never `pairs` again. -/
 def idx : RelRep Nat V → Option (RelRep Nat Nat)
   | .pairs r => some (.pairs r.dom)
+  | .vec a e => some (.pairs (vecFin a e).dom)
   | _ => none
 
 /-! ## Each, and atom extension -/
@@ -185,7 +187,9 @@ theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     induction ys with
     | nil => rfl
     | cons y ys ih => simp only [foldList, CL.ofList_cons, CL.cfold, id] at ih ⊢; rw [ih]; rfl
-  simp [over, foldl, vals?, RelRep.fold, RelRep.foldWith_eq, ofFn, h, List.foldr_reverse]
+  simp only [over, foldl, vals?, RelRep.fold, RelRep.foldWith_eq, Option.map_some, ofFn, RelRep.app_arr_fun,
+    List.toList_toArray]
+  exact congrArg some ((h _).trans (by rw [List.foldr_reverse, Array.foldl_toList]))
 
 omit [DecidableEq U] [FibreIndex U] in
 /-- `count R` is the length of the value list. -/
@@ -213,11 +217,14 @@ theorem sumCount_pairs (r : FinRel Nat Int) : sumCount (.pairs r) = some [(r.val
 #print axioms sumCount_pairs
 
 /-- `med`: the keys of `R°` sorted are the values sorted; the middle one, or the mean of the two. -/
+def medFin (r : FinRel Nat Int) : QF :=
+  let ks := (SortedRel.sortByKey r.conv).keys; let n := ks.size
+  if n % 2 = 1 then .ofInt (ks.getD (n / 2) 0)
+    else .of ((Float.ofInt (ks.getD (n / 2 - 1) 0) + Float.ofInt (ks.getD (n / 2) 0)) / 2)
+
 def med : RelRep Nat Int → Option QF
-  | .pairs r =>
-    let ks := (SortedRel.sortByKey r.conv).keys.toList; let n := ks.length
-    some (if n % 2 = 1 then .ofInt (ks.getD (n / 2) 0)
-      else .of ((Float.ofInt (ks.getD (n / 2 - 1) 0) + Float.ofInt (ks.getD (n / 2) 0)) / 2))
+  | .pairs r => some (medFin r)
+  | .vec a e => some (medFin (vecFin a e))
   | _ => none
 
 /-- `w wsum x`: `⦇+⦈(⟨W,X⟩ ; ×)`. -/
@@ -253,71 +260,71 @@ def ceiling (q : QF) : Int := q.f.ceil.toInt64.toInt
 
 /-! ## q's output on the same inputs -/
 
-def xs := ql ([3, 1, 4, 1, 5] : List Int)
+def xs := ql (#[3, 1, 4, 1, 5] : Array Int)
 
 #guard count xs = some [5]
 #guard sum xs = some [14]
 #guard prd xs = some [60]
 #guard qmin xs = some [some 1]
 #guard qmax xs = some [some 5]
-#guard fl (avg (ql [1, 2, 3, 4])) == some [2.5]
-#guard (med (ql [1, 3, 2, 4])).map QF.f == some 2.5
+#guard fl (avg (ql #[1, 2, 3, 4])) == some [2.5]
+#guard (med (ql #[1, 3, 2, 4])).map QF.f == some 2.5
 #guard (med xs).map QF.f == some 3
-#guard fl (var (ql [1, 2, 3, 4])) == some [1.25]
-#guard fl (dev (ql [2, 4, 4, 4, 5, 5, 7, 9])) == some [2]
-#guard fl (wavg (ql [1, 3]) (ql [2, 6])) == some [5]
-#guard wsum (ql [1, 2, 3]) (ql [4, 5, 6]) = some [32]
+#guard fl (var (ql #[1, 2, 3, 4])) == some [1.25]
+#guard fl (dev (ql #[2, 4, 4, 4, 5, 5, 7, 9])) == some [2]
+#guard fl (wavg (ql #[1, 3]) (ql #[2, 6])) == some [5]
+#guard wsum (ql #[1, 2, 3]) (ql #[4, 5, 6]) = some [32]
 #guard sums xs = some [[3, 4, 8, 9, 14]]
 #guard prds xs = some [[3, 3, 12, 12, 60]]
 #guard mins xs = some [[3, 1, 1, 1, 1]]
 #guard maxs xs = some [[3, 3, 4, 4, 5]]
 #guard (deltas xs).bind vals? = some [3, -2, 3, -3, 4]
-#guard fl ((ratios (ql [1, 2, 8, 4])).bind vals?) == some [1, 2, 4, 0.5]
+#guard fl ((ratios (ql #[1, 2, 8, 4])).bind vals?) == some [1, 2, 4, 0.5]
 #guard msum 2 xs = some [3, 4, 5, 5, 6]
 #guard fl (mavg 2 xs) == some [3, 2, 2.5, 2.5, 3]
 #guard mmin 3 xs = some [3, 1, 1, 1, 1]
 #guard mmax 3 xs = some [3, 3, 4, 4, 5]
 #guard mcount 3 xs = some [1, 2, 3, 3, 3]
-#guard ((ema 0.5 (ql ([1, 2, 3].map QF.ofInt))).map (·.map (·.map QF.f))) == some [[1, 1.5, 2.25]]
+#guard ((ema 0.5 (ql (#[1, 2, 3].map QF.ofInt))).map (·.map (·.map QF.f))) == some [[1, 1.5, 2.25]]
 -- q prints `1f`; `√1.25·√5` rounds a few ulps off `2.5`
-#guard ((cor (ql [1, 2, 3, 4]) (ql [2, 4, 6, 8])).map (·.map fun c => decide ((c.f - 1).abs < 1e-12))) == some [true]
-#guard fl (cov (ql [1, 2, 3, 4]) (ql [2, 4, 6, 8])) == some [2.5]
-#guard all (ql [true, false, true]) = some [false]
-#guard any (ql [true, false, true]) = some [true]
-#guard all (ql [true, true, true]) = some [true]
+#guard ((cor (ql #[1, 2, 3, 4]) (ql #[2, 4, 6, 8])).map (·.map fun c => decide ((c.f - 1).abs < 1e-12))) == some [true]
+#guard fl (cov (ql #[1, 2, 3, 4]) (ql #[2, 4, 6, 8])) == some [2.5]
+#guard all (ql #[true, false, true]) = some [false]
+#guard any (ql #[true, false, true]) = some [true]
+#guard all (ql #[true, true, true]) = some [true]
 -- iterators with a binary function
-#guard over1 (· - ·) (ql ([1, 2, 3] : List Int)) = some [some (-4)]
-#guard scan1 (· - ·) (ql ([1, 2, 3] : List Int)) = some [[1, -1, -4]]
-#guard over (· - ·) (10 : Int) (ql [1, 2, 3]) = some [4]
-#guard scan (· - ·) (10 : Int) (ql [1, 2, 3]) = some [[9, 7, 4]]
-#guard vals? (each (fun x : Int => -x) (ql [1, -2, 3])) = some [-1, 2, -3]
-#guard vals? (each2 (· + ·) (ql ([1, 2, 3] : List Int)) (ql [10, 20, 30])) = some [11, 22, 33]
-#guard (eachPrior (fun x p => x - p.getD 0) (ql ([3, 1, 4] : List Int))).bind vals? = some [3, -2, 3]
-#guard (eachPrior (fun x p => x - p.getD 10) (ql ([3, 1, 4] : List Int))).bind vals? = some [-7, -2, 3]
-#guard eachRight (· + ·) (ql ([1, 2] : List Int)) (ql [10, 20]) = some [[11, 12], [21, 22]]
-#guard eachLeft (· + ·) (ql ([1, 2] : List Int)) (ql [10, 20]) = some [[11, 21], [12, 22]]
+#guard over1 (· - ·) (ql (#[1, 2, 3] : Array Int)) = some [some (-4)]
+#guard scan1 (· - ·) (ql (#[1, 2, 3] : Array Int)) = some [[1, -1, -4]]
+#guard over (· - ·) (10 : Int) (ql #[1, 2, 3]) = some [4]
+#guard scan (· - ·) (10 : Int) (ql #[1, 2, 3]) = some [[9, 7, 4]]
+#guard vals? (each (fun x : Int => -x) (ql #[1, -2, 3])) = some [-1, 2, -3]
+#guard vals? (each2 (· + ·) (ql (#[1, 2, 3] : Array Int)) (ql #[10, 20, 30])) = some [11, 22, 33]
+#guard (eachPrior (fun x p => x - p.getD 0) (ql (#[3, 1, 4] : Array Int))).bind vals? = some [3, -2, 3]
+#guard (eachPrior (fun x p => x - p.getD 10) (ql (#[3, 1, 4] : Array Int))).bind vals? = some [-7, -2, 3]
+#guard eachRight (· + ·) (ql (#[1, 2] : Array Int)) (ql #[10, 20]) = some [[11, 12], [21, 22]]
+#guard eachLeft (· + ·) (ql (#[1, 2] : Array Int)) (ql #[10, 20]) = some [[11, 21], [12, 22]]
 -- atom extension: `R ; (a f ·)`
-#guard vals? (each ((1 : Int) + ·) (ql [10, 20, 30])) = some [11, 21, 31]
-#guard vals? (each (· - (10 : Int)) (ql [1, 2, 3])) = some [-9, -8, -7]
-#guard vals? (each ((2 : Int) * ·) (ql [1, 2, 3])) = some [2, 4, 6]
-#guard fl (vals? (each (qfdiv · 2) (ql [1, 2, 3]))) == some [0.5, 1, 1.5]
-#guard vals? (each2 qdiv (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [-4, 3, 3, -4]
-#guard vals? (each2 qmod (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [1, 1, -1, -1]
+#guard vals? (each ((1 : Int) + ·) (ql #[10, 20, 30])) = some [11, 21, 31]
+#guard vals? (each (· - (10 : Int)) (ql #[1, 2, 3])) = some [-9, -8, -7]
+#guard vals? (each ((2 : Int) * ·) (ql #[1, 2, 3])) = some [2, 4, 6]
+#guard fl (vals? (each (qfdiv · 2) (ql #[1, 2, 3]))) == some [0.5, 1, 1.5]
+#guard vals? (each2 qdiv (ql #[-7, 7, -7, 7]) (ql #[2, 2, -2, -2])) = some [-4, 3, 3, -4]
+#guard vals? (each2 qmod (ql #[-7, 7, -7, 7]) (ql #[2, 2, -2, -2])) = some [1, 1, -1, -1]
 -- comparison: bool lists
-def cmp (f : Int → Int → Bool) : Option (List Bool) := vals? (each2 f (ql [1, 2, 3]) (ql [2, 2, 2]))
+def cmp (f : Int → Int → Bool) : Option (List Bool) := vals? (each2 f (ql #[1, 2, 3]) (ql #[2, 2, 2]))
 #guard cmp (· == ·) = some [false, true, false]
 #guard cmp (· < ·) = some [true, false, false]
 #guard cmp (· > ·) = some [false, false, true]
 #guard cmp (· != ·) = some [true, false, true]
 #guard cmp (· ≤ ·) = some [true, true, false]
 #guard cmp (· ≥ ·) = some [false, true, true]
-#guard vals? (each2 min (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [1, 2, 3]
-#guard vals? (each2 max (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [4, 5, 6]
+#guard vals? (each2 min (ql (#[1, 5, 3] : Array Int)) (ql #[4, 2, 6])) = some [1, 2, 3]
+#guard vals? (each2 max (ql (#[1, 5, 3] : Array Int)) (ql #[4, 2, 6])) = some [4, 5, 6]
 -- monadic maps
-#guard vals? (each Int.natAbs (ql ([1, -2, 3] : List Int))) = some [1, 2, 3]
-#guard vals? (each Int.sign (ql ([-5, 0, 7] : List Int))) = some [-1, 0, 1]
-#guard vals? (each floor (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-2, 2, 3]
-#guard vals? (each ceiling (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-1, 3, 3]
+#guard vals? (each Int.natAbs (ql (#[1, -2, 3] : Array Int))) = some [1, 2, 3]
+#guard vals? (each Int.sign (ql (#[-5, 0, 7] : Array Int))) = some [-1, 0, 1]
+#guard vals? (each floor (ql (#[-1.5, 2.5, 3.0].map QF.of))) = some [-2, 2, 3]
+#guard vals? (each ceiling (ql (#[-1.5, 2.5, 3.0].map QF.of))) = some [-1, 3, 3]
 
 -- the kernel reduces the folds; not `deltas`, `msum`: `idx` goes through `FinRel.dom`, whose `dedup` is a
 -- `mergeSort`, well-founded recursion the kernel does not unfold

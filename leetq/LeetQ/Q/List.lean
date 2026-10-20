@@ -19,7 +19,19 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 open scoped Freyd.Alg.RelSet.RelRep
 
 /-- The `FinRel` an answer holds, `none` when it is held as a fibre function. -/
-def fin? {K V : Type} : RelRep K V → Option (FinRel K V) | .pairs r => some r | _ => none
+def fin? {K V : Type} : RelRep K V → Option (FinRel K V)
+  | .pairs r => some r
+  | .vec a e => some (RelRep.vecFin a e)
+  | _ => none
+
+/-- What `fin?` reads back has the answer's fibres. -/
+theorem app_of_fin? {K V : Type} [DecidableEq K] [FibreIndex K] {T : RelRep K V} {t : FinRel K V}
+    (h : fin? T = some t) : T.app = t.scanLookup := by
+  cases T with
+  | pairs r => cases h; exact RelRep.app_pairs _
+  | vec a e => cases h; exact (RelRep.app_vecFin a e).symm.trans (RelRep.app_pairs _)
+  | enum f => cases h
+  | arr f => cases h
 
 /-- A q list: `n` indices and the relation index ↦ value; an index with an empty fibre is null. -/
 structure QL (A : Type) where
@@ -39,10 +51,10 @@ variable {A B : Type} [DecidableEq A] [FibreIndex A] [DecidableEq B] [FibreIndex
 /-! ## A list as `ix(xs)`, and read back -/
 
 /-- `ix(xs)` as a `FinRel`, whose converse is again enumerable. -/
-def ofList (xs : List A) : QL A := ⟨xs.length, .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))⟩
+def ofList (xs : List A) : QL A := ⟨xs.length, .vec xs.toArray rfl⟩
 
 omit [DecidableEq A] [FibreIndex A] in
-theorem rel_ofList (xs : List A) : (ofList xs).r.rel = ix xs := (FinRel.rep_ofList _).trans (rel_zipIdx xs)
+theorem rel_ofList (xs : List A) : (ofList xs).r.rel = ix xs := RelRep.rel_vec xs.toArray
 
 /-- A list with nulls: a null is an index with no pair. -/
 def ofListN (xs : List (Option A)) : QL A :=
