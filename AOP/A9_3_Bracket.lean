@@ -2226,14 +2226,6 @@ public theorem mem_cands {X : NEList A → List (Tree A)} {xs : NEList A} {t : T
   · rintro ⟨p, hp, d, hd, e, he, rfl⟩; exact ⟨p, hp, d, hd, e, he, rfl⟩
   · rintro ⟨p, hp, d, hd, e, he, rfl⟩; exact ⟨p, hp, d, hd, e, he, rfl⟩
 
-/-- Both halves of a split are shorter than the list. -/
-public theorem neLen_halves {xs us vs : NEList A} {n : Nat} (h : xs = cat us vs)
-    (hn : neLen xs ≤ n + 1) : neLen us ≤ n ∧ neLen vs ≤ n := by
-  have hl := congrArg neLen h
-  rw [neLen_cat] at hl
-  have := neLen_pos us; have := neLen_pos vs
-  exact ⟨by omega, by omega⟩
-
 variable [Bracket A S]
 
 /-- The cost order `R` as a `RelRep` test. -/
@@ -2256,14 +2248,14 @@ public theorem rel_stepFn (X : NEList A → List (Tree A)) :
             : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)° ≫ (Xb X).rel) ≫ est R := by
   rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepS, rel_Rt]
 
-/-- The program on a fuel: no trees from no fuel, a singleton its tip, a longer list by one step. -/
-@[expose] public def mctRunN : Nat → NEList A → List (Tree A)
-  | 0, _ => []
-  | _ + 1, CL.ConsList.wrap a => [Tree.tip a]
-  | n + 1, xs@(CL.ConsList.cons _ _) => stepFn (mctRunN n) xs
+/-- One step of the program: a singleton is its tip, a longer list takes `stepFn`. -/
+@[expose] public def mctStep (X : NEList A → List (Tree A)) : NEList A → List (Tree A)
+  | CL.ConsList.wrap a => [Tree.tip a]
+  | xs@(CL.ConsList.cons _ _) => stepFn X xs
 
-/-- The program: every split shortens the list, so `neLen xs` steps reach the singletons. -/
-@[expose] public def mctRun (xs : NEList A) : List (Tree A) := mctRunN (neLen xs) xs
+/-- The program: every split shortens the list, so `mctStep` recurses on the length. -/
+@[expose] public def mctRun (xs : NEList A) : List (Tree A) :=
+  RelRep.hylo neLen (fun _ => []) mctStep xs
 
 /-- A node costs `cb` of its two halves' sizes plus their two costs. -/
 public theorem cost_bin (d e : Tree A) : cost (Tree.bin d e) = cb (size d, size e) + cost d + cost e :=
@@ -2293,31 +2285,39 @@ public theorem mem_estList_Rt {t : Tree A} {ts : List (Tree A)} :
   show (_ ∧ ∀ y ∈ ts, decide (cost t ≤ cost y) = true) ↔ _
   simp only [decide_eq_true_iff]
 
-/-- At a fuel no shorter than the list, `mctRunN` returns least-cost trees flattening to it, and
-    at least one. -/
-public theorem mctRunN_spec (hassoc : Assoc (sb (A := A))) : ∀ (n : Nat) (xs : NEList A),
-    neLen xs ≤ n →
-    (∀ t ∈ mctRunN n xs, xs = flatten t ∧ ∀ t', xs = flatten t' → cost t ≤ cost t')
-      ∧ ∃ t, t ∈ mctRunN n xs
-  | 0, xs, h => (Nat.not_succ_le_zero 0 (Nat.le_trans (neLen_pos xs) h)).elim
-  | _ + 1, CL.ConsList.wrap a, _ => by
+/-- `mctRun` returns least-cost trees flattening to the list, and at least one: one step keeps
+    this given it at the shorter halves of the splits (`RelRep.hylo_ind`). -/
+public theorem mctRun_spec (hassoc : Assoc (sb (A := A))) (xs : NEList A) :
+    (∀ t ∈ mctRun xs, xs = flatten t ∧ ∀ t', xs = flatten t' → cost t ≤ cost t')
+      ∧ ∃ t, t ∈ mctRun xs := by
+  refine RelRep.hylo_ind (I := fun xs l =>
+    (∀ t ∈ l, xs = flatten t ∧ ∀ t', xs = flatten t' → cost t ≤ cost t') ∧ ∃ t, t ∈ l)
+    (fun X xs ih => ?_) xs
+  cases xs with
+  | wrap a =>
     refine ⟨fun t ht => ?_, ⟨Tree.tip a, List.mem_singleton_self _⟩⟩
     obtain rfl := List.mem_singleton.1 ht
     refine ⟨rfl, fun t' h' => ?_⟩
     cases t' with
     | tip b => exact Int.le_refl 0
     | bin l r => exact absurd h'.symm (cat_ne_wrap _ _ a)
-  | n + 1, CL.ConsList.cons a zs, hn => by
-    have ih := fun ys (h : neLen ys ≤ n) => mctRunN_spec hassoc n ys h
+  | cons a zs =>
+    have hlt : ∀ {us vs : NEList A}, CL.ConsList.cons a zs = cat us vs →
+        neLen us < neLen (CL.ConsList.cons a zs) ∧ neLen vs < neLen (CL.ConsList.cons a zs) := by
+      intro us vs h
+      have hl := congrArg neLen h
+      rw [neLen_cat] at hl
+      have := neLen_pos us; have := neLen_pos vs
+      exact ⟨by omega, by omega⟩
     have hs : ∀ t : Tree A, size t = sz (flatten t) := size_eq_sz_flatten hassoc
     have hbest : ∀ t', CL.ConsList.cons a zs = flatten t' →
-        ∃ y ∈ cands (mctRunN n) (CL.ConsList.cons a zs), cost y ≤ cost t' := by
+        ∃ y ∈ cands X (CL.ConsList.cons a zs), cost y ≤ cost t' := by
       intro t' h
       cases t' with
       | tip b => exact (nomatch (h : CL.ConsList.cons a zs = CL.ConsList.wrap b))
       | bin l r =>
         have h : CL.ConsList.cons a zs = cat (flatten l) (flatten r) := h
-        obtain ⟨b1, b2⟩ := neLen_halves h hn
+        obtain ⟨b1, b2⟩ := hlt h
         obtain ⟨hall1, d, hd⟩ := ih _ b1
         obtain ⟨hall2, e, he⟩ := ih _ b2
         refine ⟨Tree.bin d e, mem_cands.2 ⟨(flatten l, flatten r), h, d, hd, e, he, rfl⟩, ?_⟩
@@ -2325,12 +2325,12 @@ public theorem mctRunN_spec (hassoc : Assoc (sb (A := A))) : ∀ (n : Nat) (xs :
         have c2 := (hall2 e he).2 r rfl
         rw [cost_bin, cost_bin, hs d, hs e, hs l, hs r, ← (hall1 d hd).1, ← (hall2 e he).1]
         omega
-    show (∀ t ∈ stepFn (mctRunN n) (CL.ConsList.cons a zs), _)
-      ∧ ∃ t, t ∈ stepFn (mctRunN n) (CL.ConsList.cons a zs)
+    show (∀ t ∈ stepFn X (CL.ConsList.cons a zs), _)
+      ∧ ∃ t, t ∈ stepFn X (CL.ConsList.cons a zs)
     refine ⟨fun t ht => ?_, ?_⟩
     · obtain ⟨hc, hmin⟩ := mem_estList_Rt.1 ht
       obtain ⟨p, hp, d, hd, e, he, rfl⟩ := mem_cands.1 hc
-      obtain ⟨b1, b2⟩ := neLen_halves hp hn
+      obtain ⟨b1, b2⟩ := hlt hp
       have h1 := ((ih _ b1).1 d hd).1
       have h2 := ((ih _ b2).1 e he).1
       refine ⟨?_, fun t' ht' => ?_⟩
@@ -2338,10 +2338,10 @@ public theorem mctRunN_spec (hassoc : Assoc (sb (A := A))) : ∀ (n : Nat) (xs :
         rw [← h1, ← h2]; exact hp
       · obtain ⟨y, hy, hle⟩ := hbest t' ht'
         exact Int.le_trans (hmin y hy) hle
-    · obtain ⟨b1, b2⟩ := neLen_halves (us := CL.ConsList.wrap a) (vs := zs) rfl hn
+    · obtain ⟨b1, b2⟩ := hlt (us := CL.ConsList.wrap a) (vs := zs) rfl
       obtain ⟨_, d, hd⟩ := ih _ b1
       obtain ⟨_, e, he⟩ := ih _ b2
-      obtain ⟨v, hv, hvmin⟩ := exists_min_cost (cands (mctRunN n) (CL.ConsList.cons a zs))
+      obtain ⟨v, hv, hvmin⟩ := exists_min_cost (cands X (CL.ConsList.cons a zs))
         (List.ne_nil_of_mem (mem_cands.2 ⟨(CL.ConsList.wrap a, zs), rfl, d, hd, e, he, rfl⟩))
       exact ⟨v, mem_estList_Rt.2 ⟨hv, hvmin⟩⟩
 
@@ -2351,7 +2351,7 @@ public theorem mctRun_le (hassoc : Assoc (sb (A := A))) :
     (RelRep.enum (mctRun (A := A))).rel
       ⊑ Λ (Allegory.recip (graph flatten : dTree A ⟶ dNE A)) ≫ est (R) :=
   le_iff.mpr fun xs t h => (Λ_comp_est_apply _ _ xs t).2 <| by
-    obtain ⟨hd, hmin⟩ := (mctRunN_spec hassoc (neLen xs) xs (Nat.le_refl _)).1 t h
+    obtain ⟨hd, hmin⟩ := (mctRun_spec hassoc xs).1 t h
     exact ⟨hd, fun z hz => (R_apply t z).2 (hmin z hz)⟩
 
 end MctRun
@@ -2374,14 +2374,14 @@ public theorem run_splits :
 
 /-- **mct-run**, the candidates: each half bracketed by the program, the two joined. -/
 public theorem run_cands :
-    cands (mctRunN 2) (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+    cands mctRun (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
       (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat))
       = [Tree.bin (Tree.tip (10, 30)) (Tree.bin (Tree.tip (30, 5)) (Tree.tip (5, 60))),
          Tree.bin (Tree.bin (Tree.tip (10, 30)) (Tree.tip (30, 5))) (Tree.tip (5, 60))] := rfl
 
 /-- **mct-run**, the candidates' costs. -/
 public theorem run_costs :
-    (cands (mctRunN 2) (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+    (cands mctRun (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
       (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat))).map cost = [27000, 4500] := rfl
 
 /-- **mct-run**: the one least bracketing of `10×30`, `30×5`, `5×60` multiplies the first two
@@ -2394,3 +2394,4 @@ public theorem run_mct :
 end MctRunEx
 
 end Freyd.Alg.RelSet.Bracket
+

@@ -996,11 +996,11 @@
   (sym: leann("Freyd.Alg.RelSet.Bracket.Xb"), type: leant("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
    meaning: [each half bracketed by the program, the two joined: `A(BC)` and `(AB)C`]),
-  // lean:AOP.A9_3_Bracket.run_cands@d6aec72b
+  // lean:AOP.A9_3_Bracket.run_cands@541cadf4
   (sym: leann("Freyd.Alg.RelSet.Bracket.cost"), type: leant("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
    meaning: [`A(BC)`: `30·5·60+10·30·60` \ `(AB)C`: `10·30·5+10·5·60`]),
-  // lean:AOP.A9_3_Bracket.run_costs@9ad80f15
+  // lean:AOP.A9_3_Bracket.run_costs@d06999b3
   (sym: leann("Freyd.Alg.RelSet.Bracket.mctRun"), type: leant("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
    value: leanf("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
    meaning: [`(AB)C`, cost `4500`, the least]),
