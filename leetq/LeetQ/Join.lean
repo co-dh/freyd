@@ -21,14 +21,14 @@ def ge : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩ := fun a b => b.toInt ≤ a.
 /-! ## `ij`: composition -/
 
 /-- The pairs of `ij`: each left pair `(a, k)` with every value the right column holds at `k`. -/
-def ijL (l : List (Int64 × Int64)) (s : QSortedRel) : List (Int64 × Int64) :=
+def ijL (l : List (Int64 × Int64)) (s : QSortedRel Int64) : List (Int64 × Int64) :=
   l.flatMap fun p => (s.lookup p.2).map (p.1, ·)
 
 /-- q's `ij` of the left pairs `l : a ↦ k` and the right column `s : k ↦ v`. -/
-def ij (l : List (Int64 × Int64)) (s : QSortedRel) : RelRep Int64 Int64 := .pairs (FinRel.ofList (ijL l s))
+def ij (l : List (Int64 × Int64)) (s : QSortedRel Int64) : RelRep Int64 Int64 := .pairs (FinRel.ofList (ijL l s))
 
 /-- **`ij(l, s) = rel(l) rep(s)`**. -/
-theorem rel_ij (l : List (Int64 × Int64)) (s : QSortedRel) : (ij l s).rel = rel l ≫ s.rep := by
+theorem rel_ij (l : List (Int64 × Int64)) (s : QSortedRel Int64) : (ij l s).rel = rel l ≫ s.rep := by
   show (FinRel.ofList _).rep = _
   rw [FinRel.rep_ofList]
   refine hom_ext fun a v => ?_
@@ -47,7 +47,7 @@ theorem rel_ij (l : List (Int64 × Int64)) (s : QSortedRel) : (ij l s).rel = rel
 value, its times ascending. -/
 structure AjRight where
   keys : Keys
-  grp : Array QSortedRel
+  grp : Array (QSortedRel Int64)
   len : grp.size = keys.count
   strict : ∀ i j, i < j → j < keys.count → keys.get i < keys.get j
   fits : keys.fits
@@ -72,13 +72,13 @@ theorem uniq (R : AjRight) {i j : Nat} (hi : i < R.keys.count) (hj : j < R.keys.
 
 /-- The group of key `k`: `bin` (right = true) answers the least index whose key is `≥ k`. An answer is
 an `Int64`, so at or above `2^63` keys the column is scanned, which no `ByteArray` in memory reaches. -/
-def grpOf (R : AjRight) (k : Int64) : Option QSortedRel :=
+def grpOf (R : AjRight) (k : Int64) : Option (QSortedRel Int64) :=
   if R.keys.count < 2 ^ 63 then
     let r := (bitsAt (R.keys.bin true k) 0 8).toInt64.toInt.toNat
     if R.keys.get r = k then R.grp[r]? else none
   else ((List.range R.keys.count).find? fun i => decide (R.keys.get i = k)).bind (R.grp[·]?)
 
-theorem grpOf_eq_some (R : AjRight) (k : Int64) (q : QSortedRel) :
+theorem grpOf_eq_some (R : AjRight) (k : Int64) (q : QSortedRel Int64) :
     R.grpOf k = some q ↔ ∃ i, ∃ h : i < R.grp.size, R.keys.get i = k ∧ R.grp[i] = q := by
   unfold grpOf
   split
@@ -128,13 +128,13 @@ end AjRight
 
 /-- In one group, the pairs whose time is the greatest `≤ t`: `bin` (right = false) answers one less
 than the partition point of `time ≤ t`, the index of that time, whose run `lookup` gathers. -/
-def lastLE (q : QSortedRel) (t : Int64) : List (Int64 × Int64) :=
+def lastLE (q : QSortedRel Int64) (t : Int64) : List (Int64 × Int64) :=
   if q.count < 2 ^ 63 then
     let p := q.probe false t
     if 0 ≤ p then (q.lookup (q.keys.get p.toNat)).map (q.keys.get p.toNat, ·) else []
   else RelRep.estList (fun a b => decide (b.1.toInt ≤ a.1.toInt)) (q.toList.filter fun x => decide (x.1.toInt ≤ t.toInt))
 
-theorem mem_lastLE {q : QSortedRel} {t : Int64} {x : Int64 × Int64} :
+theorem mem_lastLE {q : QSortedRel Int64} {t : Int64} {x : Int64 × Int64} :
     x ∈ lastLE q t ↔ (q.rep x.1 x.2 ∧ x.1.toInt ≤ t.toInt) ∧
       ∀ y : Int64 × Int64, q.rep y.1 y.2 ∧ y.1.toInt ≤ t.toInt → y.1.toInt ≤ x.1.toInt := by
   unfold lastLE
@@ -162,7 +162,7 @@ theorem mem_lastLE {q : QSortedRel} {t : Int64} {x : Int64 × Int64} :
         exact mono j (r - 1) (by omega) (by omega)
       · rintro ⟨⟨⟨i, hi, hk, hv⟩, ht⟩, hmax⟩
         have hir := below i hi (hk ▸ ht)
-        have h1 := hmax (q.keys.get (r - 1), at8 q.vals (r - 1)) ⟨⟨r - 1, by omega, rfl, rfl⟩, lo (r - 1) (by omega)⟩
+        have h1 := hmax (q.keys.get (r - 1), q.val (r - 1)) ⟨⟨r - 1, by omega, rfl, rfl⟩, lo (r - 1) (by omega)⟩
         have h2 := mono i (r - 1) (by omega) (by omega)
         simp only at h1
         rw [hk] at h2
@@ -229,7 +229,7 @@ time columns stay dense. -/
 def AjRight.ofList? (gs : List (Int64 × List (Int64 × Int64))) (foR : Bool := false) : Option AjRight :=
   if h : (gs.map Prod.fst).Pairwise (· < ·) then some {
     keys := Keys.ofList foR (gs.map Prod.fst)
-    grp := (gs.map fun g => QSortedRel.ofList g.2).toArray
+    grp := (gs.map fun g => QSortedRel.ofList g.2 dense).toArray
     len := by simp [Keys.count_ofList]
     strict := fun i j hij hj => by
       rw [Keys.count_ofList] at hj
@@ -255,13 +255,13 @@ theorem sortH : ([(4, 40)] : List (Int64 × Int64)).mergeSort QSortedRel.keyLE =
 /-- The right table's keys are strictly ascending, so `AjRight.ofList?` answers `some`. -/
 theorem keysOK : ([1, 3] : List Int64).Pairwise (· < ·) := by decide
 
-example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)]) =
+example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] dense) =
     [(10, 100), (10, 101), (30, 100), (30, 101)] := by
-  simp only [ijL, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat,
+  simp only [ijL, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
-    Bool.false_eq_true, false_and, ↓reduceIte, at8, sortS]
+    Bool.false_eq_true, false_and, ↓reduceIte, sortS]
   decide +kernel
-example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] true) =
+example : ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] dense true) =
     [(10, 100), (10, 101), (30, 100), (30, 101)] := by
   simp only [ijL, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
     QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems, QLean.Kernel.binBytes, QSortedRel.ofList,
@@ -274,8 +274,8 @@ example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])]).map
     (fun R => [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) = some [[(5, 50)], [(2, 20)], [], [(4, 40)], []] := by
   simp only [AjRight.ofList?, keysOK, ↓reduceDIte, Option.map_some, ajL, AjRight.grpOf, lastLE, List.map_cons,
     List.map_nil, QSortedRel.lookup,
-    QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, QSortedRel.ofList, QSortedRel.count, Keys.ofList,
-    Keys.bin, Keys.get, Keys.count, Bool.false_eq_true, false_and, ↓reduceIte, at8, sortG, sortH]
+    QSortedRel.probe, QLean.Kernel.binBytes, QSortedRel.ofList, QSortedRel.count, Keys.ofList,
+    Keys.bin, Keys.get, Keys.count, Bool.false_eq_true, false_and, ↓reduceIte, sortG, sortH]
   decide +kernel
 -- The encoded run exceeds the default recursion depth.
 set_option maxRecDepth 10000 in
@@ -290,9 +290,9 @@ example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map
   decide +kernel
 
 -- The compiled runs: `binBytes`/`foRBin` are the C `bin` and `coc_bin` here.
-#guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)]) ==
+#guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] dense) ==
   [(10, 100), (10, 101), (30, 100), (30, 101)]
-#guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] true) ==
+#guard ijL [(10, 1), (20, 2), (30, 1)] (QSortedRel.ofList [(1, 100), (3, 300), (1, 101)] dense true) ==
   [(10, 100), (10, 101), (30, 100), (30, 101)]
 #guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])]).map (fun R => 
     [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==

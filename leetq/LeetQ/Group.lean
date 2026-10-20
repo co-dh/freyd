@@ -2,7 +2,8 @@
   q's `where`, `distinct` and `group` over qlean's `long` columns, each specified by a relation and
   implemented by the qlean kernel (`whereBits`, `Order.distinct`/`distinctFoR`, `Order.group`/`groupFoR`),
   whose Lean body is what every theorem here reads. With `f = ix(xs) : Idx ⟶ Int64` the column:
-  * `where(b)` is the coreflexive `p?` of the bit predicate, in ascending order;
+  * a `bits` column is the coreflexive `p?` of the bit predicate, `RelRep.test` on the indices, and
+    `where(b)` lists the same coreflexive, in ascending order;
   * `distinct(xs)` is `ran(f)`, without repeats, in first-occurrence order;
   * `group(xs)`, read as the relation `value ↦ index`, is `f°`, so its kernel `D°D` is `ff°`; its keys
     are `distinct(xs)` and each bucket ascends.
@@ -19,17 +20,17 @@ open QLean.Kernel.Scan (Kind)
 /-! ## A dense `long` payload read back -/
 
 /-- A dense `long` payload as its elements. -/
-def dec (b : ByteArray) : List Int64 := (List.range (b.size / 8)).map (at8 b)
+def dec (b : ByteArray) : List Int64 := (List.range (b.size / 8)).map (atW 8 b)
 
-theorem dec_enc (xs : List Int64) : dec (enc xs) = xs :=
-  List.ext_getElem (by simp [dec, enc_size]) fun i _ h => by
-    simp only [dec, List.getElem_map, List.getElem_range]; exact at8_enc xs i h
+theorem dec_enc (xs : List Int64) : dec (enc 8 xs) = xs :=
+  List.ext_getElem (by simp [dec, enc_size (show 8 ≤ 8 by decide)]) fun i _ h => by
+    simp only [dec, List.getElem_map, List.getElem_range]; exact atW_enc (by decide) xs i h (fits_eight _)
 
 /-- An index answer as the numbers it holds. -/
 def idx (b : ByteArray) : List Nat := (dec b).map fun v => v.toInt.toNat
 
 theorem idx_indices {is : List Nat} (h : ∀ i ∈ is, i < 2 ^ 63) : idx (Order.indices is) = is := by
-  rw [idx, show Order.indices is = enc (is.map Int64.ofNat) by rw [Order.indices, enc, List.foldl_map],
+  rw [idx, show Order.indices is = enc 8 (is.map Int64.ofNat) by rw [Order.indices, enc, List.foldl_map],
     dec_enc, List.map_map]
   conv => rhs; rw [← List.map_id is]
   exact List.map_congr_left fun i hi => by
@@ -39,18 +40,19 @@ theorem idx_indices {is : List Nat} (h : ∀ i ∈ is, i < 2 ^ 63) : idx (Order.
 def cnt (n : USize) (b : ByteArray) : Nat := min n.toNat (b.size / 8)
 
 /-- The column those kernels see. -/
-def col (n : USize) (b : ByteArray) : List Int64 := (List.range (cnt n b)).map (at8 b)
+def col (n : USize) (b : ByteArray) : List Int64 := (List.range (cnt n b)).map (atW 8 b)
 
 /-- At `long`, `Order.keyAt` is the element's bits with the sign bit flipped, so two keys are equal
 exactly when the elements are. -/
 theorem keyAt_beq (b : ByteArray) (i j : Nat) :
-    (Order.keyAt .i64 b j == Order.keyAt .i64 b i) = decide (at8 b j = at8 b i) := by
-  have e : ∀ k, Kind.bitsAt .i64 b k = (at8 b k).toUInt64 := fun k => by rw [at8, UInt64.toUInt64_toInt64]; rfl
+    (Order.keyAt .i64 b j == Order.keyAt .i64 b i) = decide (atW 8 b j = atW 8 b i) := by
+  have e : ∀ k, Kind.bitsAt .i64 b k = (atW 8 b k).toUInt64 := fun k => by
+    rw [atW_eight, UInt64.toUInt64_toInt64]; rfl
   show (Kind.bitsAt .i64 b j ^^^ 0x8000000000000000 == Kind.bitsAt .i64 b i ^^^ 0x8000000000000000) = _
   rw [e, e]
   apply Bool.eq_iff_iff.2
   rw [beq_iff_eq, decide_eq_true_iff, UInt64.xor_left_inj]
-  exact ⟨fun x => by rw [← Int64.toInt64_toUInt64 (at8 b j), x, Int64.toInt64_toUInt64], congrArg _⟩
+  exact ⟨fun x => by rw [← Int64.toInt64_toUInt64 (atW 8 b j), x, Int64.toInt64_toUInt64], congrArg _⟩
 
 /-! ## First occurrences and buckets, over any column `g` -/
 
@@ -168,29 +170,36 @@ theorem dict_sorted : ∀ p ∈ dictOf g m, p.2.Pairwise (· < ·) := fun _ hp =
 
 end Firsts
 
-theorem firsts_i64 (m : Nat) (b : ByteArray) : Order.firsts .i64 m b = firstsOf (at8 b) m := by
+theorem firsts_i64 (m : Nat) (b : ByteArray) : Order.firsts .i64 m b = firstsOf (atW 8 b) m := by
   simp only [Order.firsts, firstsOf, bne, keyAt_beq]
 
-/-! ## `where` -/
+/-! ## `where`: a `bits` column is a coreflexive on the indices -/
+
+/-- `n` booleans packed a bit each as the coreflexive on the indices whose bit is set. -/
+def bitsRel (n : Nat) (b : ByteArray) : RelRep Nat Nat := .test fun i j => i == j && decide (i < n) && bitAt b i
+
+/-- **The bit column denotes `p?`, `p(i) ⟺ i < n ∧ bit i`.** -/
+theorem rel_bitsRel (n : Nat) (b : ByteArray) :
+    (bitsRel n b).rel = Freyd.Alg.RelSet.corefl (A := ⟨Nat⟩) fun i => i < n ∧ bitAt b i = true :=
+  hom_ext fun i j => by
+    simp only [bitsRel, RelRep.rel, Freyd.Alg.RelSet.corefl, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
+    constructor
+    · rintro ⟨⟨rfl, h⟩, hb⟩; exact ⟨rfl, h, hb⟩
+    · rintro ⟨rfl, h, hb⟩; exact ⟨⟨rfl, h⟩, hb⟩
 
 /-- `where`'s answer as indices. -/
 def whereQ (n : USize) (bits : ByteArray) : List Nat := idx (whereBits n bits)
 
-/-- **`whereBits` answers the set bits ascending.** -/
+/-- **`whereBits` answers the set bits ascending**: below `2 ^ 63` bits its `Int64`s read back exactly. -/
 theorem whereQ_eq (n : USize) (bits : ByteArray) (h : n.toNat < 2 ^ 63) :
     whereQ n bits = (List.range n.toNat).filter (bitAt bits) :=
   idx_indices fun i hi => by have := List.mem_range.1 (List.mem_filter.1 hi).1; omega
 
-/-- **`where(b)` is the coreflexive of the bit predicate.** -/
+/-- **`where(b)`, as `RelRep.corefl`, is the same coreflexive as the bit test.** -/
 theorem where_spec (n : USize) (bits : ByteArray) (h : n.toNat < 2 ^ 63) :
-    rel ((whereQ n bits).map fun i => (i, i)) = (RelRep.corefl fun i => decide (i < n.toNat) && bitAt bits i).rel := by
-  rw [RelRep.rel_corefl, whereQ_eq n bits h]
-  refine hom_ext fun i j => ?_
-  show (i, j) ∈ _ ↔ i = j ∧ _
-  simp only [List.mem_map, List.mem_filter, List.mem_range, Prod.mk.injEq, Bool.and_eq_true, decide_eq_true_eq]
-  constructor
-  · rintro ⟨a, ⟨ha, hb⟩, rfl, rfl⟩; exact ⟨rfl, ha, hb⟩
-  · rintro ⟨rfl, ha, hb⟩; exact ⟨i, ⟨ha, hb⟩, rfl, rfl⟩
+    (RelRep.corefl fun i => decide (i ∈ whereQ n bits)).rel = (bitsRel n.toNat bits).rel := by
+  rw [rel_bitsRel, RelRep.rel_corefl, whereQ_eq n bits h]
+  congr; funext i; simp only [decide_eq_true_eq, List.mem_filter, List.mem_range]
 
 /-! ## `distinct` -/
 
@@ -198,9 +207,9 @@ theorem where_spec (n : USize) (bits : ByteArray) (h : n.toNat < 2 ^ 63) :
 def distinctQ (n : USize) (b : ByteArray) : List Int64 := dec (Order.distinct .i64 n b)
 
 /-- **`Order.distinct` answers the first occurrences, in order.** -/
-theorem distinctQ_eq (n : USize) (b : ByteArray) : distinctQ n b = (firstsOf (at8 b) (cnt n b)).map (at8 b) := by
-  have : Order.distinct .i64 n b = enc ((Order.firsts .i64 (cnt n b) b).map (at8 b)) := by
-    simp only [Order.distinct, enc, List.foldl_map, at8, UInt64.toUInt64_toInt64]; rfl
+theorem distinctQ_eq (n : USize) (b : ByteArray) : distinctQ n b = (firstsOf (atW 8 b) (cnt n b)).map (atW 8 b) := by
+  have : Order.distinct .i64 n b = enc 8 ((Order.firsts .i64 (cnt n b) b).map (atW 8 b)) := by
+    simp only [Order.distinct, enc, List.foldl_map, funext (atW_eight b), UInt64.toUInt64_toInt64]; rfl
   rw [distinctQ, this, dec_enc, firsts_i64]
 
 /-- **`distinct = ran(f)`** over a dense payload, without repeats. -/
@@ -247,12 +256,12 @@ theorem cutAt_flatten (bs : List (List Nat)) (pre : List Nat) :
       List.drop_left, List.take_left]
 
 /-- **`Order.group` answers each first value with its bucket**, below `2^63` elements. -/
-theorem groupQ_eq (n : USize) (b : ByteArray) (h : cnt n b < 2 ^ 63) : groupQ n b = dictOf (at8 b) (cnt n b) := by
-  have hb : Order.bucket .i64 (cnt n b) b = bucketOf (at8 b) (cnt n b) := funext fun f => by
+theorem groupQ_eq (n : USize) (b : ByteArray) (h : cnt n b < 2 ^ 63) : groupQ n b = dictOf (atW 8 b) (cnt n b) := by
+  have hb : Order.bucket .i64 (cnt n b) b = bucketOf (atW 8 b) (cnt n b) := funext fun f => by
     simp only [Order.bucket, bucketOf, keyAt_beq]
-  have hg : Order.group .i64 n b = (Order.distinct .i64 n b, Order.indices ((firstsOf (at8 b) (cnt n b)).map
-      (bucketOf (at8 b) (cnt n b))).flatten, Order.bounds (((firstsOf (at8 b) (cnt n b)).map
-      (bucketOf (at8 b) (cnt n b))).map List.length)) := by
+  have hg : Order.group .i64 n b = (Order.distinct .i64 n b, Order.indices ((firstsOf (atW 8 b) (cnt n b)).map
+      (bucketOf (atW 8 b) (cnt n b))).flatten, Order.bounds (((firstsOf (atW 8 b) (cnt n b)).map
+      (bucketOf (atW 8 b) (cnt n b))).map List.length)) := by
     simp only [Order.group, show min n.toNat (Kind.i64.avail b) = cnt n b from rfl, firsts_i64, hb]
   rw [groupQ, hg, readGroup, ← distinctQ, distinctQ_eq, idx_indices, bounds_toList,
     show (0 :: offs 0 _) = 8 * ([] : List Nat).length :: offs ([] : List Nat).length _ from rfl,
@@ -294,7 +303,7 @@ theorem decoded_spec (n : USize) (md pk : ByteArray) :
     show min n.toNat ((decoded n md pk).size / 8) = n.toNat; rw [hs]; omega
   refine ⟨hc, by rw [hs]; omega, ?_⟩
   rw [col, hc, colFoR]
-  exact List.map_congr_left fun i hi => by rw [at8, hg i (List.mem_range.1 hi)]; rfl
+  exact List.map_congr_left fun i hi => by rw [atW_eight, hg i (List.mem_range.1 hi)]; rfl
 
 /-- `distinctFoR`'s encoded answer, read back through `foRBits`. -/
 def distinctFoRQ (n : USize) (md pk : ByteArray) : List Int64 :=
@@ -311,7 +320,7 @@ theorem distinctFoRQ_eq (n : USize) (md pk : ByteArray) : distinctFoRQ n md pk =
     List.map_congr_left fun i hi => by
       have e := foRBits_encode_bits 8 (by decide) (by decide) d i (List.mem_range.1 hi)
       rw [Nat.mod_eq_of_lt (UInt64.toNat_lt _)] at e
-      show (foRBits _ _ _ i).toInt64 = (bitsAt d (i * 8) 8).toInt64
+      show (foRBits _ _ _ i).toInt64 = atW 8 d i; rw [atW_eight]
       rw [UInt64.toNat_inj.1 e]
   refine (key (Order.distinct .i64 ((decoded n md pk).size / 8).toUSize (decoded n md pk))).trans ?_
   rw [hn]; rfl
@@ -340,17 +349,25 @@ theorem groupFoR_spec (n : USize) (md pk : ByteArray) (h : n.toNat < 2 ^ 63) :
 /-- `where 101b`, the bits LSB first. -/
 example : whereQ 3 ⟨#[5]⟩ = [0, 2] := by
   simp only [whereQ, whereBits, USize.reduceToNat]; decide +kernel
-example : distinctQ 5 (enc [3, 1, 3, 2, 1]) = [3, 1, 2] := by
+example : distinctQ 5 (enc 8 [3, 1, 3, 2, 1]) = [3, 1, 2] := by
   simp only [distinctQ, Order.distinct, USize.reduceToNat]; decide +kernel
-example : groupQ 5 (enc [3, 1, 3, 2, 1]) = [(3, [0, 2]), (1, [1, 4]), (2, [3])] := by
+example : groupQ 5 (enc 8 [3, 1, 3, 2, 1]) = [(3, [0, 2]), (1, [1, 4]), (2, [3])] := by
   simp only [groupQ, Order.group, Order.distinct, USize.reduceToNat]; decide +kernel
 
 #guard whereQ 3 ⟨#[5]⟩ == [0, 2]
-#guard distinctQ 5 (enc [3, 1, 3, 2, 1]) == [3, 1, 2]
-#guard groupQ 5 (enc [3, 1, 3, 2, 1]) == [(3, [0, 2]), (1, [1, 4]), (2, [3])]
+
+/-- 45 is `0b101101`: bits 0, 2, 3 and 5 of six. -/
+def six : USize := USize.ofNatLT 6 (lt_usize (by decide))
+
+example : whereQ six ⟨#[45]⟩ = [0, 2, 3, 5] := by decide +kernel
+example : (bitsRel 6 ⟨#[45]⟩).mem 3 3 = true ∧ (bitsRel 6 ⟨#[45]⟩).mem 4 4 = false := by decide +kernel
+#guard whereQ six ⟨#[45]⟩ == [0, 2, 3, 5]
+#guard (bitsRel 6 ⟨#[45]⟩).mem 5 5 && !(bitsRel 6 ⟨#[45]⟩).mem 5 4 && !(bitsRel 5 ⟨#[45]⟩).mem 5 5
+#guard distinctQ 5 (enc 8 [3, 1, 3, 2, 1]) == [3, 1, 2]
+#guard groupQ 5 (enc 8 [3, 1, 3, 2, 1]) == [(3, [0, 2]), (1, [1, 4]), (2, [3])]
 
 /-- `3 1 3 2 1` Frame-of-Reference encoded. -/
-def foR5 : ByteArray × ByteArray := Coc.encode (Nat.toUSize 8) (enc [3, 1, 3, 2, 1])
+def foR5 : ByteArray × ByteArray := Coc.encode (Nat.toUSize 8) (enc 8 [3, 1, 3, 2, 1])
 
 -- `distinctFoR` decodes, runs `distinct` and encodes the answer again; the kernel runs the first two.
 example : distinctFoRQ 5 foR5.1 foR5.2 = [3, 1, 2] := by
@@ -366,6 +383,8 @@ example : groupFoRQ 5 foR5.1 foR5.2 = [(3, [0, 2]), (1, [1, 4]), (2, [3])] := by
 #guard distinctFoRQ 5 foR5.1 foR5.2 == [3, 1, 2]
 #guard groupFoRQ 5 foR5.1 foR5.2 == [(3, [0, 2]), (1, [1, 4]), (2, [3])]
 
+#print axioms rel_bitsRel
+#print axioms whereQ_eq
 #print axioms where_spec
 #print axioms distinct_spec
 #print axioms group_spec
