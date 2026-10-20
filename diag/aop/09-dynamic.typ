@@ -982,6 +982,31 @@
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs")],
 )]<array-cons>
 
+// One run of the recursive program on three matrices, each its `(rows,columns)`: its input, then one
+// row per stage; each value is a theorem of the `MctRun` section of A9_3_Bracket, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Bracket.run_mct.lhs.arg"),
+   value: leanf("Freyd.Alg.RelSet.Bracket.run_mct.lhs.arg"),
+   meaning: [`10×30`, `30×5`, `5×60`; a product costs rows × shared × columns]),
+  // lean:AOP.A9_3_Bracket.run_mct@d1db3b7d lean:AOP.A9_3_Bracket.chain@e4267e24
+  (sym: leann("Freyd.Alg.RelSet.Bracket.stepS"), type: leant("Freyd.Alg.RelSet.Bracket.run_splits.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Bracket.run_splits.rhs"),
+   meaning: [cut after the first matrix, or after the second]),
+  // lean:AOP.A9_3_Bracket.run_splits@c65286cf lean:AOP.A9_3_Bracket.rel_stepS@9ca43557
+  (sym: leann("Freyd.Alg.RelSet.Bracket.Xb"), type: leant("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Bracket.run_cands.rhs"),
+   meaning: [each half bracketed by the program, the two joined: `A(BC)` and `(AB)C`]),
+  // lean:AOP.A9_3_Bracket.run_cands@d6aec72b
+  (sym: leann("Freyd.Alg.RelSet.Bracket.cost"), type: leant("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Bracket.run_costs.rhs"),
+   meaning: [`A(BC)`: `30·5·60+10·30·60` \ `(AB)C`: `10·30·5+10·5·60`]),
+  // lean:AOP.A9_3_Bracket.run_costs@9ad80f15
+  (sym: leann("Freyd.Alg.RelSet.Bracket.mctRun"), type: leant("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Bracket.run_mct.rhs"),
+   meaning: [`(AB)C`, cost `4500`, the least]),
+  // lean:AOP.A9_3_Bracket.run_mct@d1db3b7d lean:AOP.A9_3_Bracket.rel_stepFn@870ccb78 lean:AOP.A9_3_Bracket.mctRun_le@5cbbc2f5
+)<mct-run>
+
 == Data compression
 
 // B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
