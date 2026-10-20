@@ -16,7 +16,10 @@
   order of first appearance (`domP`):
   * `d k = k̂ look(d)`, `d@ks = ix(ks) look(d)`, `look(d) ≜ first(d) some ⊕ ˆnone`;
     `ks#d = (∈ks)? d`, `ks _ d = (∉ks)? d`.
-  * `d,e = dom(d ∪ e) (e ⊕ d)`, `⊕` RelRep's `override`; `d+e = dom(d ∪ e) ⟨d ⊕ 0̂, e ⊕ 0̂⟩ (+)`.
+  * `d,e = dom(d ∪ e) (e ⊕ d)`, `⊕` RelRep's `override`.
+  * `d op e = dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋` for `+ - * | &`, the missing side read as `z` = `0 0 1 -0W 0W`:
+    `d`'s first row of a key meets `e`'s first value, `d`'s later rows stay, a key only `e` has keeps every
+    row (`app?_zipD`).
   * `flip(a!xs; b!ys) = ⟨ix(xs), ix(ys)⟩`; back is `T outl`, `T outr`.
   * `k xkey T = (T k)° (T v)`.
   * `select where p = T p?`, `delete where p = T (¬p)?`, `exec f where p = T p? f`,
@@ -33,7 +36,8 @@
   |---------------------|------------------------------------------|--------------------------------------|
   | `d k`, `d@ks`       | missing key: no value, q: `0N`           | q: `0N`; repeated key: the first     |
   | `d,e`, keyed upsert | local `comma`; moved `b to the end       | q: the key keeps its position        |
-  | `d+e`, `lj`, `pj`   | local `over` for `⊕`                     | RelRep `override`                    |
+  | `lj`, `pj`          | local `over` for `⊕`                     | RelRep `override`                    |
+  | `d+e` … `d&e`       | `+` only, all rows of a key added        | `zipD op z`; q: the first row only   |
   | `ij`, `lj`, `pj`    | every match of a repeated key; q's first | q: `first`                           |
   | `aj`, `asof`, `wj`  | local `lastOf`                           | RelRep `last`                        |
   | `xgroup`            | groups sorted by key                     | q: groups by first appearance        |
@@ -138,14 +142,85 @@ def upsert (r s : FinRel K V) : Option (RelRep K V) := do
 -- d,e: `a`b`c`d!1 10 20 30
 #guard ps (upsert dF eF) == some [("a", 1), ("b", 10), ("c", 20), ("d", 30)]
 
-/-- `d+e = dom(d ∪ e) ⟨d ⊕ 0̂, e ⊕ 0̂⟩ (+)`. -/
-def plus [Add V] [Zero V] (r s : FinRel K V) : Option (RelRep K V) := do
-  let z : RelRep K V := RelRep.ofFn fun _ => 0
-  (domP (r.union s)).comp (← ((← RelRep.override (.pairs r) z).pair (← RelRep.override (.pairs s) z)).comp
-    (RelRep.ofFn fun p => p.1 + p.2))
+omit [DecidableEq V] [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+/-- `eraseDups` keeps one copy of each key: the fibre of `k` in `(a,a)` over it is `[k]` when `k` occurs. -/
+theorem sel_eraseDups (k : K) : (xs : List K) →
+    ((xs.eraseDups.map fun a => (a, a)).filterMap (FinRel.sel k)) = if k ∈ xs then [k] else []
+  | [] => rfl
+  | a :: as => by
+    have ih := sel_eraseDups k (as.filter fun b => !b == a)
+    rw [List.eraseDups_cons, List.map_cons, List.filterMap_cons, ih]
+    by_cases e : a = k
+    · subst e; simp [FinRel.sel]
+    · simp [FinRel.sel, e, List.mem_filter, Ne.symm e]
+termination_by xs => xs.length
+decreasing_by exact Nat.lt_succ_of_le (List.length_filter_le _ _)
 
--- d+e: `a`b`c`d!1 12 23 30
-#guard ps (plus dF eF) == some [("a", 1), ("b", 12), ("c", 23), ("d", 30)]
+omit [DecidableEq V] [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+/-- `dom r` answers `k` itself exactly when `k` is a key of `r`. -/
+theorem app?_domP (r : FinRel K V) :
+    (domP r).app? = some fun k => if k ∈ r.toList.map Prod.fst then [k] else [] := by
+  simp only [domP, RelRep.app?, FinRel.scanLookup_ofList]
+  exact congrArg some (funext fun k => by simpa [List.map_map, Function.comp_def] using sel_eraseDups k _)
+
+/-- One key's answer from its two fibres, as q's dict arithmetic gives it: `d`'s first row meets `e`'s first
+    value (`z` when `e` has none) and `d`'s later rows stay; a key only `e` has keeps every row, each `z op v`. -/
+def zipFib (op : V → V → V) (z : V) : List V × List V → List V
+  | (a :: t, m) => op a (m.headD z) :: t
+  | ([], m) => m.map (op z)
+
+/-- q's `d op e` on dicts, `dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋`: `z` stands for the side a key is missing from. -/
+def zipD (op : V → V → V) (z : V) (r s : FinRel K V) : Option (RelRep K V) := do
+  (domP (r.union s)).comp
+    (← ((← (RelRep.pairs r).transpose).pair (← (RelRep.pairs s).transpose)).comp (.enum (zipFib op z)))
+
+omit [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+/-- **`d op e`** on fibre lists: each key of `d ∪ e`, once, answered by `zipFib` of its two fibres. -/
+theorem app?_zipD {op : V → V → V} {z : V} {r s : FinRel K V} {D : RelRep K V} (h : zipD op z r s = some D) :
+    D.app? = some fun k =>
+      if k ∈ (r.union s).toList.map Prod.fst then zipFib op z (r.scanLookup k, s.scanLookup k) else [] := by
+  simp only [zipD, RelRep.transpose_of_app? (R := .pairs r) rfl, RelRep.transpose_of_app? (R := .pairs s) rfl,
+    Option.bind_eq_bind, Option.bind_some] at h
+  obtain ⟨X, hX, hD⟩ := Option.bind_eq_some_iff.1 h
+  rw [RelRep.app?_comp hD (app?_domP _) (RelRep.app?_comp hX (RelRep.app?_pair rfl rfl) rfl)]
+  exact congrArg some (funext fun k => by split <;> simp [RelRep.cross])
+
+omit [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+/-- The Set reading: `D` relates `k` to `v` iff `k` is a key and `v` is in `zipFib` of its fibres. -/
+theorem rel_zipD {op : V → V → V} {z : V} {r s : FinRel K V} {D : RelRep K V} (h : zipD op z r s = some D)
+    (k : K) (v : V) : D.rel k v ↔
+      k ∈ (r.union s).toList.map Prod.fst ∧ v ∈ zipFib op z (r.scanLookup k, s.scanLookup k) := by
+  rw [← RelRep.mem_app? (app?_zipD h)]; split <;> simp_all
+
+/-- q's long infinities `-0W`, `0W`: the units of `|` and `&` on every non-null long. -/
+def negInf : Int := -9223372036854775807
+def posInf : Int := 9223372036854775807
+
+-- d+e: `a`b`c`d!1 12 23 30 ; d-e: 1 -8 -17 -30 ; d*e: 1 20 60 30 ; d|e: 1 10 20 30 ; d&e: 1 2 3 30
+#guard ps (zipD (· + ·) 0 dF eF) == some [("a", 1), ("b", 12), ("c", 23), ("d", 30)]
+#guard ps (zipD (· - ·) 0 dF eF) == some [("a", 1), ("b", -8), ("c", -17), ("d", -30)]
+#guard ps (zipD (· * ·) 1 dF eF) == some [("a", 1), ("b", 20), ("c", 60), ("d", 30)]
+#guard ps (zipD max negInf dF eF) == some [("a", 1), ("b", 10), ("c", 20), ("d", 30)]
+#guard ps (zipD min posInf dF eF) == some [("a", 1), ("b", 2), ("c", 3), ("d", 30)]
+-- Repeated keys. (`a`a`b!1 2 3)+`a`c!10 20: `a`a`b`c!11 2 3 20 ; (`a`c!10 20)+`a`a`b!1 2 3: `a`c`b!11 20 3 ;
+-- d+`b`b!10 20: `a`b`c!1 12 3 ; (`a`b!1 2)+`c`c!10 20: `a`b`c`c!1 2 10 20 ; minus: 1 2 -10 -20
+def aabF : FinRel Sym Int := ⟨#["a", "a", "b"], #[1, 2, 3], rfl⟩
+def acF : FinRel Sym Int := ⟨#["a", "c"], #[10, 20], rfl⟩
+def bbF : FinRel Sym Int := ⟨#["b", "b"], #[10, 20], rfl⟩
+def abF : FinRel Sym Int := ⟨#["a", "b"], #[1, 2], rfl⟩
+def ccF : FinRel Sym Int := ⟨#["c", "c"], #[10, 20], rfl⟩
+def abaF : FinRel Sym Int := ⟨#["a", "b", "a"], #[1, 2, 3], rfl⟩
+#guard ps (zipD (· + ·) 0 aabF acF) == some [("a", 11), ("a", 2), ("b", 3), ("c", 20)]
+#guard ps (zipD (· + ·) 0 acF aabF) == some [("a", 11), ("c", 20), ("b", 3)]
+#guard ps (zipD (· + ·) 0 dF bbF) == some [("a", 1), ("b", 12), ("c", 3)]
+#guard ps (zipD (· + ·) 0 abF ccF) == some [("a", 1), ("b", 2), ("c", 10), ("c", 20)]
+#guard ps (zipD (· - ·) 0 abF ccF) == some [("a", 1), ("b", 2), ("c", -10), ("c", -20)]
+-- (`a`b`a!1 2 3)+`a`c!10 20: `a`b`a`c!11 2 3 20 — the same fibres, a:11 3, b:2, c:20; the pairs come grouped
+-- by key, not in q's positions.
+#guard ((zipD (· + ·) 0 abaF acF).bind RelRep.app?).map (["a", "b", "c"].map ·) == some [[11, 3], [2], [20]]
+
+#print axioms app?_zipD
+#print axioms rel_zipD
 
 /-! ## Tables and qSQL -/
 
