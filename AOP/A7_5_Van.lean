@@ -44,6 +44,7 @@ module
 public import AOP.A5_6_ListCombinators
 public import AOP.A7_1
 public import AOP.A7_2_Pres
+public import AOP.A6_FinRel
 import AOP.A7_2
 
 /-- B&dM p.184: the section's fixed data, the van's capacity `N`.  Every arrow below reads it from
@@ -1233,3 +1234,125 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Van.secureP] public meta def Freyd.Alg.RelSet.Van.unexpandSecureP : Unexpander
   | `($_ $x) => `($(mkIdent `secure) $x)
   | _ => `($(mkIdent `secure))
+
+namespace Freyd.Alg.RelSet.Van
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel PowerAllegory
+
+section VanRun
+
+variable {A : Type} [Amount A] [Van]
+
+/-- The order `R`, fewer segments, as a Boolean. -/
+@[expose] public def rlen (xss yss : Sched A) : Bool := decide (clen xss ≤ clen yss)
+
+/-- `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (Sched A) (Sched A) := .test rlen
+
+omit [Amount A] [Van] in
+public theorem rel_Rt : (Rt (A := A)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- `S`'s offers at one transaction: `new`, and `glue` where `ok` holds. -/
+@[expose] public def offers (p : A × Sched A) : List (Sched A) := newFn p :: if ok p then [glueFn p] else []
+
+/-- The step's `Λ` form: `offers` as an `enum`. -/
+@[expose] public def stepE : RelRep (A × Sched A) (Sched A) := .enum offers
+
+/-- `stepE` is the `cons` half of `S≜[nil,new ∪ old]`. -/
+public theorem rel_stepE : (stepE (A := A)).rel = new ∪ old := hom_ext fun p v => by
+  obtain ⟨a, t⟩ := p
+  rw [union_apply]
+  show v ∈ newFn (a, t) :: (if ok (a, t) then [glueFn (a, t)] else []) ↔ graph newFn (a, t) v ∨ old (a, t) v
+  rw [graph_apply]
+  cases t with
+  | wrap d =>
+    simp only [ok, Bool.false_eq_true, if_false, List.mem_singleton, old, reduceCtorEq, false_and, exists_false,
+      or_false]
+  | cons s t =>
+    by_cases hs : secureP (ConsList.cons a s)
+    · simp only [okP_cons, hs, decide_true, if_true, glueFn, List.mem_cons, List.not_mem_nil,
+        or_false, old, ConsList.cons.injEq]
+      exact or_congr_right ⟨fun h => ⟨s, t, ⟨rfl, rfl⟩, h, hs⟩, fun ⟨_, _, ⟨e1, e2⟩, h, _⟩ => e1 ▸ e2 ▸ h⟩
+    · simp only [okP_cons, decide_eq_false hs, Bool.false_eq_true, if_false, List.mem_singleton, old,
+        ConsList.cons.injEq]
+      exact ⟨Or.inl, fun h => h.elim id fun ⟨_, _, ⟨e1, e2⟩, _, h⟩ => absurd (e1 ▸ h) hs⟩
+
+/-- The greedy step: the `R`-least of `S`'s offers. -/
+@[expose] public def stepG (p : A × Sched A) : List (Sched A) := RelRep.estList rlen (offers p)
+
+/-- At each transaction the one `R`-least offer is the program's `[nil,(ok→glue,new)]`: `glue` keeps
+    the count of segments where `new` adds one. -/
+public theorem stepG_prog (p : A × Sched A) : stepG p = [progFn p] := by
+  obtain ⟨a, t⟩ := p
+  cases t with
+  | wrap d => simp [stepG, offers, RelRep.estList, rlen, ok, progFn]
+  | cons s t =>
+    by_cases hs : secureP (ConsList.cons a s) <;>
+      simp [stepG, offers, RelRep.estList, rlen, ok, progFn, glueFn, newFn, clen, hs]
+
+/-- **The program as a function**: the greedy fold, `nil` at the end and `stepG` at each transaction. -/
+@[expose] public def van : Seg A → List (Sched A) := RelRep.foldList id (fun d => [ConsList.wrap d]) stepG
+
+variable [DecidableEq A]
+
+/-- `stepG` is `RelRep.est R` of `stepE`. -/
+public theorem stepG_eq : RelRep.est Rt (stepE (A := A)) = some (.enum stepG) := rfl
+
+/-- `stepG` computes `Λ(new ∪ old) est(R)`. -/
+public theorem rel_stepG : (RelRep.enum (stepG (A := A))).rel = Λ (new ∪ old) ≫ est R := by
+  rw [RelRep.rel_est stepG_eq, rel_stepE, rel_Rt]
+
+/-- `van` is `RelRep.fold` of `nil` and the greedy step. -/
+public theorem van_eq : RelRep.fold (.ofFn ConsList.wrap) (.enum stepG) = some (.enum (van (A := A))) := rfl
+
+/-- **The program meets its specification**: every schedule `van` returns is a fewest-segment cut of
+    the transactions into secure segments. -/
+public theorem van_le (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.wrap ()))) :
+    (RelRep.enum (van (A := A))).rel ⊑ Λ (partition ≫ list secure) ≫ est (R (A := A)) :=
+  calc (RelRep.enum (van (A := A))).rel
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (RelRep.ofFn ConsList.wrap).rel (RelRep.enum stepG).rel
+          : Alg (F Unit A) (dSched A))⦈ := RelRep.rel_fold van_eq
+    _ = ⦇progAlg⦈ := by
+        rw [RelRep.rel_ofFn, show (RelRep.enum (stepG (A := A))).rel = graph progFn from
+          (congrArg (fun f => (RelRep.enum f).rel) (funext stepG_prog)).trans (RelRep.rel_ofFn progFn)]
+        rfl
+    _ ⊑ Λ (partition ≫ list secure) ≫ est R := van_laws hsingle
+
+end VanRun
+
+section
+
+attribute [local instance] book10 bookAmount
+
+/-- **offers-run**: at `3` over `[[5,-2]]`, `S` offers a new segment and the glued one. -/
+public theorem run_offers :
+    offers ((3 : Int), ConsList.cons (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ()))) (ConsList.wrap ()))
+      = [ConsList.cons (ConsList.cons 3 (ConsList.wrap ()))
+            (ConsList.cons (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ()))) (ConsList.wrap ())),
+         ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))) (ConsList.wrap ())] := by
+  rfl
+
+/-- **glue-run**: `[3,5,-2]` is secure, so `est(R)` keeps the one-segment offer. -/
+public theorem run_glue :
+    stepG ((3 : Int), ConsList.cons (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ()))) (ConsList.wrap ()))
+      = [ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))) (ConsList.wrap ())] := by
+  rfl
+
+/-- **new-run**: `[4,3,5,-2]` reaches `12 > 10`, so `S` offers only the new segment. -/
+public theorem run_new :
+    stepG ((4 : Int), ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ()))))
+        (ConsList.wrap ()))
+      = [ConsList.cons (ConsList.cons 4 (ConsList.wrap ()))
+          (ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))) (ConsList.wrap ()))] := by
+  rfl
+
+/-- **van-run**: two van visits, `[4]` and `[3,5,-2]`. -/
+public theorem run_van :
+    van (ConsList.cons (4 : Int) (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))))
+      = [ConsList.cons (ConsList.cons 4 (ConsList.wrap ()))
+          (ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))) (ConsList.wrap ()))] := by
+  rfl
+
+end
+
+end Freyd.Alg.RelSet.Van
