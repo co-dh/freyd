@@ -390,38 +390,9 @@ theorem dictOf_congr {g g' : Nat → α} {m : Nat} (h : ∀ i < m, g i = g' i) :
   exact List.map_congr_left fun f hm => by
     have := List.mem_range.1 (List.mem_filter.1 hm).1; rw [h f this, hb f this]
 
-/-! ### One pass: a hash table from key to slot, the slots in first-appearance order
-
-Std's `HashMap` laws carry `Classical.choice`, so the table is a chained one of its own: an array of
-buckets, a bucket a list of `(key, slot)`, and its one law `look_ins`. -/
+/-! ### One pass: an `HTab` from key to slot, the slots in first-appearance order -/
 
 variable {β : Type}
-
-/-- The slot a bucket lists for `a`. -/
-def find (a : α) : List (α × Nat) → Option Nat
-  | [] => none
-  | (k, v) :: l => if k = a then some v else find a l
-
-/-- The slot `t` holds for `a`, `h` the hash. -/
-def look (h : α → UInt64) (t : Array (List (α × Nat))) (a : α) : Option Nat :=
-  find a (t[(h a).toNat % t.size]?.getD [])
-
-def ins (h : α → UInt64) (t : Array (List (α × Nat))) (k : α) (v : Nat) : Array (List (α × Nat)) :=
-  t.modify ((h k).toNat % t.size) ((k, v) :: ·)
-
-theorem look_ins (h : α → UInt64) (t : Array (List (α × Nat))) (k : α) (v : Nat) (a : α) (ht : 0 < t.size) :
-    look h (ins h t k v) a = if k = a then some v else look h t a := by
-  simp only [look, ins, Array.size_modify]
-  rw [Array.getElem?_modify]
-  by_cases hk : k = a
-  · subst hk
-    rw [if_pos rfl, if_pos rfl, Array.getElem?_eq_getElem (Nat.mod_lt _ ht)]
-    simp only [Option.map_some, Option.getD_some, find, if_pos]
-  · rw [if_neg hk]
-    split
-    · cases t[(h a).toNat % t.size]? <;> simp only [Option.map_none, Option.map_some, Option.getD_none,
-        Option.getD_some, find, if_neg hk]
-    · rfl
 
 /-- The first position of `a` in `ks`. -/
 def pos (a : α) : List α → Option Nat
@@ -482,70 +453,69 @@ theorem nodup_idx : ∀ {l : List α} {i j : Nat} {a : α}, l.Nodup → l[i]? = 
       | zero => cases hj; exact absurd (List.mem_iff_getElem?.2 ⟨i, hi⟩) hx
       | succ j => rw [nodup_idx hl hi hj]
 
-/-- `t` answers each key of `ks` with its first position, and nothing else. -/
-def Inv (h : α → UInt64) (t : Array (List (α × Nat))) (ks : List α) : Prop :=
-  0 < t.size ∧ ∀ a, look h t a = pos a ks
+section Hash
 
-theorem inv_ins {h : α → UInt64} {t : Array (List (α × Nat))} {ks : List α} {k : α} (hi : Inv h t ks)
-    (hk : pos k ks = none) : Inv h (ins h t k ks.length) (ks ++ [k]) := by
-  refine ⟨by rw [ins, Array.size_modify]; exact hi.1, fun a => ?_⟩
-  rw [look_ins h t k _ a hi.1, pos_snoc, hi.2 a]
+variable [Hashable α]
+
+/-- `t` answers each key of `ks` with its first position, and nothing else. -/
+def Inv (t : HTab α Nat) (ks : List α) : Prop := ∀ a, t.find? a = pos a ks
+
+theorem inv_ins {t : HTab α Nat} {ks : List α} {k : α} (hi : Inv t ks) (hk : pos k ks = none) :
+    Inv (t.alter k fun _ => ks.length) (ks ++ [k]) := fun a => by
+  rw [HTab.find?_alter, pos_snoc, hi a]
   by_cases e : k = a
   · subst e; rw [if_pos rfl, if_pos rfl, hk]; rfl
   · rw [if_neg e, if_neg e]; cases pos a ks <;> rfl
 
-theorem inv_empty (h : α → UInt64) {c : Nat} (hc : 0 < c) : Inv h (Array.replicate c []) [] := by
-  refine ⟨by rw [Array.size_replicate]; exact hc, fun a => ?_⟩
-  simp only [look, Array.getElem?_replicate]
-  split <;> rfl
+theorem inv_empty (n : Nat) : Inv (HTab.empty n : HTab α Nat) [] := fun a => HTab.find?_empty n a
 
 /-- One key into a table being rebuilt, at the next position, unless it is there already. -/
-def addKey (h : α → UInt64) (s : Array (List (α × Nat)) × Nat) (k : α) : Array (List (α × Nat)) × Nat :=
-  ((match look h s.1 k with | some _ => s.1 | none => ins h s.1 k s.2), s.2 + 1)
+def addKey (s : HTab α Nat × Nat) (k : α) : HTab α Nat × Nat :=
+  ((match s.1.find? k with | some _ => s.1 | none => s.1.alter k fun _ => s.2), s.2 + 1)
 
-/-- The table of `ks` over `c` buckets. -/
-def rehash (h : α → UInt64) (c : Nat) (ks : List α) : Array (List (α × Nat)) :=
-  (ks.foldl (addKey h) (Array.replicate c [], 0)).1
+/-- The table of `ks` over `n + 1` buckets. -/
+def rehash (n : Nat) (ks : List α) : HTab α Nat := (ks.foldl addKey (HTab.empty n, 0)).1
 
-theorem inv_foldl (h : α → UInt64) : ∀ (ks pre : List α) (s : Array (List (α × Nat)) × Nat),
-    Inv h s.1 pre → s.2 = pre.length → Inv h (ks.foldl (addKey h) s).1 (pre ++ ks)
+theorem inv_foldl : ∀ (ks pre : List α) (s : HTab α Nat × Nat),
+    Inv s.1 pre → s.2 = pre.length → Inv (ks.foldl addKey s).1 (pre ++ ks)
   | [], pre, s, hi, _ => by rw [List.append_nil]; exact hi
   | k :: ks, pre, s, hi, hl => by
     rw [List.foldl_cons, show pre ++ k :: ks = (pre ++ [k]) ++ ks by simp]
-    refine inv_foldl h ks _ _ ?_ (by simp [addKey, hl])
+    refine inv_foldl ks _ _ ?_ (by simp [addKey, hl])
     simp only [addKey]
-    cases e : look h s.1 k with
-    | none => rw [hl]; exact inv_ins hi (by rw [← hi.2 k, e])
+    cases e : s.1.find? k with
+    | none => rw [hl]; exact inv_ins hi (by rw [← hi k, e])
     | some j =>
-      refine ⟨hi.1, fun a => ?_⟩
-      rw [hi.2 a, pos_snoc]
+      intro a
+      rw [hi a, pos_snoc]
       by_cases ek : k = a
-      · subst ek; rw [← hi.2 k, e]; rfl
+      · subst ek; rw [← hi k, e]; rfl
       · rw [if_neg ek]; cases pos a pre <;> rfl
 
-theorem inv_rehash (h : α → UInt64) {c : Nat} (hc : 0 < c) (ks : List α) : Inv h (rehash h c ks) ks :=
-  inv_foldl h ks [] _ (inv_empty h hc) rfl
+theorem inv_rehash (n : Nat) (ks : List α) : Inv (rehash n ks) ks := inv_foldl ks [] _ (inv_empty n) rfl
 
 /-- Row `i` into the groups: its key's slot accumulates `i`, or a new slot opens after the others,
-the table doubling first when it is as full as it has buckets. -/
-@[specialize] def grpStep (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β)
-    (s : Array (List (α × Nat)) × Array (α × β)) (i : Nat) : Array (List (α × Nat)) × Array (α × β) :=
+the table doubling first when it holds as many keys as it has buckets. -/
+@[specialize] def grpStep (g : Nat → α) (z : β) (upd : β → Nat → β)
+    (s : HTab α Nat × Array (α × β)) (i : Nat) : HTab α Nat × Array (α × β) :=
   let x := g i
-  match look h s.1 x with
+  match s.1.find? x with
   | some j => (s.1, s.2.modify j fun p => (p.1, upd p.2 i))
   | none =>
-    let t := if s.1.size ≤ s.2.size then rehash h (2 * s.1.size) (s.2.toList.map Prod.fst) else s.1
-    (ins h t x s.2.size, s.2.push (x, upd z i))
+    let t := if s.1.buckets.size ≤ s.2.size then rehash (2 * s.1.buckets.size) (s.2.toList.map Prod.fst) else s.1
+    (t.alter x fun _ => s.2.size, s.2.push (x, upd z i))
 
-@[specialize] def grpGo (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) :
-    Nat → Nat → Array (List (α × Nat)) × Array (α × β) → Array (List (α × Nat)) × Array (α × β)
+@[specialize] def grpGo (g : Nat → α) (z : β) (upd : β → Nat → β) :
+    Nat → Nat → HTab α Nat × Array (α × β) → HTab α Nat × Array (α × β)
   | 0, _, s => s
-  | k + 1, i, s => grpGo h g z upd k (i + 1) (grpStep h g z upd s i)
+  | k + 1, i, s => grpGo g z upd k (i + 1) (grpStep g z upd s i)
 
 /-- **`group` in one pass**: each key of `g` below `m`, in first appearance, with `upd` folded over
 its rows from `z`. -/
-@[specialize] def grp (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) : Array (α × β) :=
-  (grpGo h g z upd m 0 (Array.replicate 16 [], #[])).2
+@[specialize] def grp (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) : Array (α × β) :=
+  (grpGo g z upd m 0 (HTab.empty 15, #[])).2
+
+end Hash
 
 /-- What `grp` answers below `m`. -/
 abbrev grpS (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) : List (α × β) :=
@@ -609,19 +579,23 @@ theorem grpS_new (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) (
     simp only [h0, List.nil_append, List.filter_cons, List.filter_nil, decide_true, ↓reduceIte, List.foldl_cons,
       List.foldl_nil]
 
-/-- `grpGo`'s state after `m` rows: the table answers the keys so far, the slots are `grpS`. -/
-def J (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat)
-    (s : Array (List (α × Nat)) × Array (α × β)) : Prop :=
-  Inv h s.1 ((firstsOf g m).map g) ∧ s.2.toList = grpS g z upd m
+section Hash
 
-theorem J_step (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat)
-    (s : Array (List (α × Nat)) × Array (α × β)) (hs : J h g z upd m s) : J h g z upd (m + 1) (grpStep h g z upd s m) := by
+variable [Hashable α]
+
+/-- `grpGo`'s state after `m` rows: the table answers the keys so far, the slots are `grpS`. -/
+def J (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat)
+    (s : HTab α Nat × Array (α × β)) : Prop :=
+  Inv s.1 ((firstsOf g m).map g) ∧ s.2.toList = grpS g z upd m
+
+theorem J_step (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat)
+    (s : HTab α Nat × Array (α × β)) (hs : J g z upd m s) : J g z upd (m + 1) (grpStep g z upd s m) := by
   obtain ⟨hi, hl⟩ := hs
   have hn := nodup_firsts g m
   simp only [grpStep]
-  cases e : look h s.1 (g m) with
+  cases e : s.1.find? (g m) with
   | some j =>
-    have hj := pos_some _ _ _ ((hi.2 (g m)).symm.trans e)
+    have hj := pos_some _ _ _ ((hi (g m)).symm.trans e)
     obtain ⟨hf, hS⟩ := grpS_old g z upd m (by
       obtain ⟨i, hi', e'⟩ := (mem_firsts g m (g m)).1 (List.mem_iff_getElem?.2 ⟨j, hj⟩); exact ⟨i, hi', e'⟩)
     refine ⟨by rw [hf]; exact hi, ?_⟩
@@ -645,37 +619,39 @@ theorem J_step (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat �
         have : p.1 ≠ g m := fun ep => hij (nodup_idx hn hj (by rw [hk p hp, ep]))
         simp only [Option.map_some, if_neg this]
   | none =>
-    have hp : pos (g m) ((firstsOf g m).map g) = none := (hi.2 (g m)).symm.trans e
+    have hp : pos (g m) ((firstsOf g m).map g) = none := (hi (g m)).symm.trans e
     obtain ⟨hf, hS⟩ := grpS_new g z upd m fun i him eq =>
       pos_none _ _ hp ((mem_firsts g m (g m)).2 ⟨i, him, eq⟩)
     have hks : s.2.toList.map Prod.fst = (firstsOf g m).map g := by rw [hl, keys_grpS]
     have hsz : s.2.size = ((firstsOf g m).map g).length := by
       rw [← hks, List.length_map, Array.length_toList]
-    have ht : Inv h (if s.1.size ≤ s.2.size then rehash h (2 * s.1.size) (s.2.toList.map Prod.fst) else s.1)
+    have ht : Inv (if s.1.buckets.size ≤ s.2.size then rehash (2 * s.1.buckets.size) (s.2.toList.map Prod.fst) else s.1)
         ((firstsOf g m).map g) := by
       split
-      · rw [hks]; exact inv_rehash h (by have := hi.1; omega) _
+      · rw [hks]; exact inv_rehash _ _
       · exact hi
     refine ⟨?_, ?_⟩
-    · show Inv h (ins h _ (g m) s.2.size) _
+    · show Inv (HTab.alter _ (g m) fun _ => s.2.size) _
       rw [hf, List.map_append]; have := inv_ins ht hp; rwa [← hsz] at this
     · show (s.2.push _).toList = _
       rw [Array.toList_push, hl, hS]
 
-theorem J_go (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) :
-    ∀ k i s, J h g z upd i s → J h g z upd (i + k) (grpGo h g z upd k i s)
+theorem J_go (g : Nat → α) (z : β) (upd : β → Nat → β) :
+    ∀ k i s, J g z upd i s → J g z upd (i + k) (grpGo g z upd k i s)
   | 0, _, _, hs => hs
   | k + 1, i, s, hs => by
     rw [grpGo, show i + (k + 1) = i + 1 + k by omega]
-    exact J_go h g z upd k (i + 1) _ (J_step h g z upd i s hs)
+    exact J_go g z upd k (i + 1) _ (J_step g z upd i s hs)
 
 /-- **`grp` is `group` with each bucket folded**: the keys in first appearance, `upd` over each
 bucket's rows in order. -/
-theorem grp_eq (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) :
-    (grp h g z upd m).toList = (dictOf g m).map fun p => (p.1, p.2.foldl upd z) := by
-  have := J_go h g z upd m 0 (Array.replicate 16 [], #[]) ⟨inv_empty h (c := 16) (by decide), by rfl⟩
+theorem grp_eq (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) :
+    (grp g z upd m).toList = (dictOf g m).map fun p => (p.1, p.2.foldl upd z) := by
+  have := J_go g z upd m 0 (HTab.empty 15, #[]) ⟨inv_empty 15, by rfl⟩
   rw [Nat.zero_add] at this
   exact this.2
+
+end Hash
 
 theorem foldl_push (l : List Nat) : ∀ acc : Array Nat, (l.foldl Array.push acc).toList = acc.toList ++ l := by
   induction l with
@@ -684,15 +660,12 @@ theorem foldl_push (l : List Nat) : ∀ acc : Array Nat, (l.foldl Array.push acc
 
 end Dict
 
-/-- The hash `grp` keys an `Int64` by: Fibonacci hashing, the top 32 bits of the product. -/
-def hI (x : Int64) : UInt64 := (x.toUInt64 * 0x9E3779B97F4A7C15) >>> 32
-
 /-- `group` on a key column, read compressed: `Order.group` on a dense `long` payload,
 `Order.groupFoR` on a pack, and `grp` in one pass at the other widths. -/
 def groupK : Keys → List (Int64 × List Nat)
   | .dense w b => if w = 8 then groupQ (b.size / 8).toUSize b else
     let r := Col.rdOf (.dense w b)
-    (grp hI r.get #[] Array.push (b.size / w)).toList.map fun p => (p.1, p.2.toList)
+    (grp r.get #[] Array.push (b.size / w)).toList.map fun p => (p.1, p.2.toList)
   | .foR n md pk => groupFoRQ n.toUSize md pk
 
 /-- **`groupK` answers each first key with its bucket.** -/
@@ -743,7 +716,7 @@ theorem rdK_get (k : Keys) (h : k.count < 2 ^ 32) : ∀ i < k.count, (rdK k).get
 /-- `select sum v by k`: one pass over the rows, each key's slot summing `v` in place. -/
 def selbySum (nul : Int64) (k v : Keys) : List (Int64 × Int64) :=
   let rk := rdK k; let rv := Col.rdOf v
-  (grp hI rk.get (0 : Int64) (Col.stepR nul rv) k.count).toList
+  (grp rk.get (0 : Int64) (Col.stepR nul rv) k.count).toList
 
 theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) :
     selbySum nul k v = (dictOf k.get k.count).map fun p => (p.1, p.2.foldl (Col.step nul v) 0) := by

@@ -471,73 +471,99 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
 
 /-! ## Fibres and keys by hashing -/
 
-/-- The fibres of a `FinRel`, made in one pass: a key's hash picks its bucket, and a bucket lists each
-    key it holds with that key's values in array order.  A structure and not a function `K → List V`,
-    because the compiler eta-expands a function-valued definition, which would rebuild the table at
-    every key.  Hand-rolled rather than `Std.HashMap`, whose lemmas use `Classical.choice`. -/
-structure Fibres (K V : Type) where
-  buckets : Array (List (K × Array V))
+/-- A chained hash table from `K` to `B`: a key's hash picks its bucket, and a bucket lists each key it
+    holds once, with its entry.  A structure and not a function `K → Option B`, because the compiler
+    eta-expands a function-valued definition, which would rebuild the table at every key.  Hand-rolled
+    rather than `Std.HashMap`, whose lemmas use `Classical.choice`. -/
+structure HTab (K B : Type) where
+  buckets : Array (List (K × B))
   size_pos : 0 < buckets.size
 
-namespace Fibres
+namespace HTab
 
-/-- The values a bucket holds for `a`. -/
-def look [DecidableEq K] : List (K × Array V) → K → List V
-  | [], _ => []
-  | (k', vs) :: t, a => if k' = a then vs.toList else look t a
+variable {B : Type}
 
-/-- Append `v` to `k`'s values in a bucket; a key the bucket lacks goes at its end. -/
-def bump [DecidableEq K] : List (K × Array V) → K → V → List (K × Array V)
-  | [], k, v => [(k, #[v])]
-  | (k', vs) :: t, k, v => if k' = k then (k', vs.push v) :: t else (k', vs) :: bump t k v
+/-- The entry a bucket holds for `a`. -/
+def look [DecidableEq K] : List (K × B) → K → Option B
+  | [], _ => none
+  | (k', b) :: t, a => if k' = a then some b else look t a
 
-theorem look_bump [DecidableEq K] (b : List (K × Array V)) (k : K) (v : V) (a : K) :
-    look (bump b k v) a = look b a ++ if k = a then [v] else [] := by
-  induction b with
-  | nil => by_cases h : k = a <;> simp [look, bump, h]
+/-- Set `k`'s entry in a bucket to `f` of its old one; a key the bucket lacks goes at its end. -/
+def alt [DecidableEq K] (f : Option B → B) : List (K × B) → K → List (K × B)
+  | [], k => [(k, f none)]
+  | (k', b) :: t, k => if k' = k then (k', f (some b)) :: t else (k', b) :: alt f t k
+
+theorem look_alt [DecidableEq K] (f : Option B → B) (l : List (K × B)) (k a : K) :
+    look (alt f l k) a = if k = a then some (f (look l k)) else look l a := by
+  induction l with
+  | nil => by_cases h : k = a <;> simp [look, alt, h]
   | cons p t ih =>
-    obtain ⟨k', vs⟩ := p
+    obtain ⟨k', b⟩ := p
     by_cases h1 : k' = k
-    · subst h1; by_cases h2 : k' = a <;> simp [look, bump, h2]
+    · subst h1; by_cases h2 : k' = a <;> simp [look, alt, h2]
     · by_cases h2 : k' = a
-      · subst h2; simp [look, bump, h1, Ne.symm h1]
-      · simp [look, bump, h1, h2, ih]
+      · subst h2; simp [look, alt, h1, Ne.symm h1]
+      · simp [look, alt, h1, h2, ih]
 
 variable [DecidableEq K] [Hashable K]
 
-/-- No fibres, in `n + 1` buckets. -/
-def empty (n : Nat) : Fibres K V := ⟨Array.replicate (n + 1) [], by simp⟩
+/-- No entries, in `n + 1` buckets. -/
+def empty (n : Nat) : HTab K B := ⟨Array.replicate (n + 1) [], by simp⟩
 
-def slot (x : Fibres K V) (k : K) : Nat := (hash k).toNat % x.buckets.size
+def slot (x : HTab K B) (k : K) : Nat := (hash k).toNat % x.buckets.size
 
 omit [DecidableEq K] in
-theorem slot_lt (x : Fibres K V) (k : K) : x.slot k < x.buckets.size := Nat.mod_lt _ x.size_pos
+theorem slot_lt (x : HTab K B) (k : K) : x.slot k < x.buckets.size := Nat.mod_lt _ x.size_pos
 
-/-- The fibre of `k`, from its bucket. -/
-def get (x : Fibres K V) (k : K) : List V := look (x.buckets[x.slot k]'(x.slot_lt k)) k
+/-- The entry of `k`, from its bucket. -/
+def find? (x : HTab K B) (k : K) : Option B := look (x.buckets[x.slot k]'(x.slot_lt k)) k
+
+/-- Set the entry of `k` to `f` of its old one, in place when the table is unshared. -/
+def alter (x : HTab K B) (k : K) (f : Option B → B) : HTab K B :=
+  ⟨x.buckets.modify (x.slot k) (alt f · k), by simpa using x.size_pos⟩
+
+theorem find?_empty (n : Nat) (a : K) : (empty n : HTab K B).find? a = none := by
+  simp [find?, empty, look]
+
+theorem find?_alter (x : HTab K B) (k : K) (f : Option B → B) (a : K) :
+    (x.alter k f).find? a = if k = a then some (f (x.find? k)) else x.find? a := by
+  by_cases h : k = a
+  · subst h; simp [find?, alter, slot, Array.getElem_modify, look_alt]
+  · simp only [find?, alter, slot, Array.size_modify, Array.getElem_modify, if_neg h]
+    split
+    · rw [look_alt, if_neg h]
+    · rfl
+
+end HTab
+
+/-- The fibres of a `FinRel`: each key's values in array order. -/
+abbrev Fibres (K V : Type) := HTab K (Array V)
+
+namespace Fibres
+
+variable [DecidableEq K] [Hashable K]
+
+/-- The fibre of `k`. -/
+def get (x : Fibres K V) (k : K) : List V := ((x.find? k).getD #[]).toList
 
 /-- Append `v` to the fibre of `k`. -/
-def push (x : Fibres K V) (k : K) (v : V) : Fibres K V :=
-  ⟨x.buckets.modify (x.slot k) (bump · k v), by simpa using x.size_pos⟩
+def push (x : Fibres K V) (k : K) (v : V) : Fibres K V := x.alter k fun o => (o.getD #[]).push v
 
-theorem get_empty (n : Nat) (a : K) : (empty n : Fibres K V).get a = [] := by
-  simp [get, empty, look]
+theorem get_empty (n : Nat) (a : K) : Fibres.get (HTab.empty n : Fibres K V) a = [] := by
+  simp [get, HTab.find?_empty]
 
 theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
     (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
-  simp only [get, push, Array.getElem_modify]
-  by_cases e : x.slot k = x.slot a
-  · simp only [slot, Array.size_modify] at e ⊢
-    rw [if_pos e, look_bump]
-  · have : k ≠ a := fun h => e (h ▸ rfl)
-    simp only [slot, Array.size_modify] at e ⊢
-    rw [if_neg e]; simp [this]
+  simp only [get, push, HTab.find?_alter]
+  by_cases h : k = a
+  · subst h; simp
+  · simp [h]
 
 end Fibres
 
 /-- The fibres of `r`, made in one pass over its pairs, one bucket per pair. -/
 def FinRel.fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : Fibres K V :=
-  r.toList.foldl (fun x p => x.push p.1 p.2) (Fibres.empty r.keys.size)
+  r.toList.foldl (fun x p => x.push p.1 p.2) (HTab.empty r.keys.size)
 
 /-- **The hashed fibre is the scanned one**, order and repeats kept. -/
 theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibres.get = r.scanLookup :=
@@ -560,7 +586,7 @@ def dedupStep [DecidableEq K] [Hashable K] (s : Fibres K Unit × Array K) (k : K
 
 /-- `eraseDups` in one pass: each key once, in order of first appearance, the keys seen kept as fibres. -/
 def hashDedup [DecidableEq K] [Hashable K] (l : List K) : List K :=
-  (l.foldl dedupStep (Fibres.empty l.length, #[])).2.toList
+  (l.foldl dedupStep (HTab.empty l.length, #[])).2.toList
 
 theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l.eraseDups := by
   have go : ∀ (l : List K) (s : Fibres K Unit) (acc : Array K), (∀ k, (s.get k).isEmpty = false ↔ k ∈ acc.toList) →
