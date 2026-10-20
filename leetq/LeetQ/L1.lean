@@ -108,17 +108,17 @@ theorem sort7 : (ixL [1, 2, 3]).mergeSort QSortedRel.keyLE = [(1, 0), (2, 1), (3
   simp [ixL, List.mergeSort, QSortedRel.keyLE]; decide
 
 example : qprog 9 [2, 7, 11, 15] = some (0, 1) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
     Bool.false_eq_true, false_and, ↓reduceIte, sort9]
   decide +kernel
 example : qprog 6 [3, 2, 4] = some (1, 2) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
     Bool.false_eq_true, false_and, ↓reduceIte, sort6]
   decide +kernel
 example : qprog 7 [1, 2, 3] = none := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
     Bool.false_eq_true, false_and, ↓reduceIte, sort7]
   decide +kernel

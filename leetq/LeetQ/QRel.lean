@@ -49,7 +49,8 @@ def sx (w : Nat) (v : UInt64) : Int := twos (half w) (v.toNat % (2 * half w))
 theorem sx_bounds {w : Nat} (v : UInt64) : -(half w : Int) ≤ sx w v ∧ sx w v < half w := by
   have : 0 < half w := Nat.two_pow_pos _
   have := Nat.mod_lt v.toNat (show 0 < 2 * half w by omega)
-  unfold sx twos; split <;> omega
+  -- one `omega` per conjunct: `omega` on a conjunction negates it through `Classical.choice`
+  refine ⟨?_, ?_⟩ <;> unfold sx twos <;> split <;> omega
 
 /-- The `i`th element of a dense payload of `w`-byte signed integers, widened to `Int64`. -/
 def atW (w : Nat) (b : ByteArray) (i : Nat) : Int64 := (sx w (bitsAt b (i * w) w)).toInt64
@@ -176,7 +177,7 @@ theorem ordKey_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (v : UInt64) :
     · rw [hk i hi, Bool.and_comm]
     · have := v.toNat_lt
       rw [Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) (by omega)))]
-      simp
+      rw [Bool.false_and, Bool.and_false]
   simp only [ordKey, Bool.false_eq_true, ↓reduceIte, UInt64.toNat_xor, UInt64.toNat_and, hm, ht, hand]
   have hx := xor_top (8 * w - 1) (v.toNat % 2 ^ (8 * w)) (by rw [show 8 * w - 1 + 1 = 8 * w by omega]; exact Nat.mod_lt _ hpos)
   rw [show 2 ^ (8 * w - 1) = half w from rfl] at hx
@@ -186,11 +187,13 @@ theorem ordKey_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (v : UInt64) :
 
 theorem ordKey_le {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (a b : UInt64) :
     ordKey w false true a ≤ ordKey w false true b ↔ sx w a ≤ sx w b := by
-  rw [UInt64.le_iff_toNat_le]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b; omega
+  rw [UInt64.le_iff_toNat_le]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b
+  constructor <;> intro <;> omega
 
 theorem ordKey_lt {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (a b : UInt64) :
     ordKey w false true a < ordKey w false true b ↔ sx w a < sx w b := by
-  rw [UInt64.lt_iff_toNat_lt]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b; omega
+  rw [UInt64.lt_iff_toNat_lt]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b
+  constructor <;> intro <;> omega
 
 /-- **`binBytes_long` at every width up to eight**: over a sorted payload of `w`-byte signed
 integers and a needle that fits `w` bytes, the answer read back is the partition point. -/
