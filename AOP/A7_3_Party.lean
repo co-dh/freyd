@@ -696,11 +696,19 @@ end RelSet
 
 end Freyd.Alg
 
--- printing-only: the party's ordering `R` and its `cost` drop the `rating`, which is the section's
--- context and not part of the name.
+-- printing-only: the party's ordering `R`, its `cost` and the program's `kept`/`best` drop the `rating`,
+-- which is the section's context and not part of the name.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Party.R] public meta def Freyd.Alg.RelSet.Party.unexpandPartyR : Unexpander
   | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Party.costFn] public meta def Freyd.Alg.RelSet.Party.unexpandPartyCostFn : Unexpander
   | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.kept] public meta def Freyd.Alg.RelSet.Party.unexpandPartyKept : Unexpander
+  | `($_ $_) => `($(mkIdent `kept))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.best] public meta def Freyd.Alg.RelSet.Party.unexpandPartyBest : Unexpander
+  | `($_ $_) => `($(mkIdent `best))
+  | _ => throw ()
