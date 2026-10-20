@@ -378,6 +378,14 @@ open Lean PrettyPrinter in
   | `($_ $x $xs) => do pure (.node .none ``noteCat #[← `([$x]), mkAtom "⧺", xs])
   | _ => throw ()
 
+-- A snoc-list VALUE is the same list read from the other end: `snoc (snoc [] a) b` is `[a,b]`.  Only
+-- a closed literal: a variable front keeps §10's own `snoc x a` (`AOP.A10_2_Detab.unexpandSnoc`).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.SnocList.snoc] meta def unexpandSnocLit : Unexpander
+  | `($_ [] $x) => `([$x])
+  | `($_ [$xs,*] $x) => `([$xs,*, $x])
+  | _ => throw ()
+
 -- A cons-list's LEAF prints by what the leaf is, read off the type arguments `L E`: a leaf of the
 -- element type is the one-element list `[x]`, a `Unit` leaf the empty list `[]`; any other leaf
 -- keeps the constructor's own name.
