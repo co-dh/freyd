@@ -15,6 +15,8 @@ public import AOP.A6_1_RelSet
 public import AOP.A6_BinSearch
 public import AOP.A8_1
 public import AOP.A6_ConsList
+public import Std.Data.HashMap.Lemmas
+public import Std.Data.HashSet.Lemmas
 import AOP.A7_2_RelSet
 
 @[expose] public section
@@ -152,10 +154,12 @@ def toList (r : FinRel K V) : List (K × V) := r.keys.toList.zip r.vals.toList
 
 def rep (r : FinRel K V) : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩ := rel r.toList
 
-def ofList (l : List (K × V)) : FinRel K V := ⟨l.unzip.1.toArray, l.unzip.2.toArray, by simp⟩
+/-- Through one array, not `unzip`: the compiled `unzip` is a `foldr`, one stack frame per pair. -/
+def ofList (l : List (K × V)) : FinRel K V := ⟨l.toArray.map Prod.fst, l.toArray.map Prod.snd, by simp⟩
 
 theorem toList_ofList (l : List (K × V)) : (ofList l).toList = l := by
-  simp only [toList, ofList, List.toList_toArray, List.zip_unzip]
+  simp only [toList, ofList, Array.toList_map, ← List.unzip_fst, ← List.unzip_snd,
+    List.zip_unzip]
 
 theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := congrArg rel (toList_ofList l)
 
@@ -233,7 +237,7 @@ def sortByKey [Ord K] [Std.TransOrd K] (r : FinRel K V) : SortedRel K V :=
   let m := (r.keys.toList.zip r.vals.toList).mergeSort fun a b => (compare a.1 b.1).isLE
   { ofList m with
     sorted := by
-      simp only [ofList, List.toList_toArray, List.unzip_fst, List.pairwise_map]
+      simp only [ofList, Array.toList_map, List.toList_toArray, List.pairwise_map]
       exact pairwise_mergeSort_on Prod.fst _ }
 
 theorem rep_sortByKey [Ord K] [Std.TransOrd K] (r : FinRel K V) : (sortByKey r).rep = r.rep :=
@@ -467,6 +471,151 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
           fun ⟨_, (hR : _ = _), h⟩ => ⟨_, rfl, by subst hR; exact h⟩⟩)
     _ = graph (fun x => (F x).rep) ≫ orNone (relMem ⟨K⟩ ⟨V⟩) := (graph_orNone _ _).symm
 
+/-! ## Fibres and keys by hashing -/
+
+/-- The fibres of a `FinRel`, made in one pass: `slot` sends a key to its bucket, and a bucket holds
+    the key it was made for and that key's values in array order.  A structure and not a function
+    `K → List V`, because the compiler eta-expands a function-valued definition, which would rebuild
+    the table at every key. -/
+structure Fibres (K V : Type) [DecidableEq K] [Hashable K] where
+  slot : Std.HashMap K Nat
+  buckets : Array (K × Array V)
+
+namespace Fibres
+
+variable [DecidableEq K] [Hashable K]
+
+/-- The fibre of `k`: its bucket's values, when the bucket `slot` names was made for `k`. -/
+def get (x : Fibres K V) (k : K) : List V :=
+  match x.slot[k]?.bind (x.buckets[·]?) with
+  | some p => if p.1 = k then p.2.toList else []
+  | none => []
+
+/-- Append `v` to the fibre of `k`; a key with no bucket gets one at the end. -/
+def push (x : Fibres K V) (k : K) (v : V) : Fibres K V :=
+  match x.slot[k]?.bind fun i => (x.buckets[i]?).bind fun p => if p.1 = k then some i else none with
+  | some i => ⟨x.slot, x.buckets.modify i fun p => (p.1, p.2.push v)⟩
+  | none => ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩
+
+theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
+    (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
+  unfold push
+  split
+  · rename_i i h
+    simp only [Option.bind_eq_some_iff] at h
+    obtain ⟨i', hi, p, hp, h⟩ := h
+    split at h
+    · rename_i e
+      cases Option.some.inj h
+      simp only [get, Array.getElem?_modify]
+      by_cases ka : k = a
+      · subst ka; simp [hi, hp, e]
+      · cases hs : x.slot[a]? with
+        | none => simp [ka]
+        | some j =>
+          have : i ≠ j := fun ij => ka (by
+            subst ij; have := hi.symm.trans hs; exact absurd this (by simp_all))
+          simp [this, ka]
+    · cases h
+  · rename_i h
+    have h0 : x.get k = [] := by
+      simp only [get]
+      cases hs : x.slot[k]? with
+      | none => rfl
+      | some i =>
+        cases hb : x.buckets[i]? with
+        | none => rfl
+        | some p =>
+          simp only [hs, hb, Option.bind_some] at h
+          by_cases e : p.1 = k
+          · simp [e] at h
+          · simp [e]
+    by_cases ka : k = a
+    · subst ka; simp [get, Std.HashMap.getElem?_insert, h0]
+    · simp only [get, Std.HashMap.getElem?_insert, beq_iff_eq, ka, if_false, List.append_nil]
+      cases hs : x.slot[a]? with
+      | none => rfl
+      | some j =>
+        simp only [Option.bind_some, Array.getElem?_push]
+        split
+        · rename_i e; subst e; simp [ka]
+        · rfl
+
+end Fibres
+
+/-- The fibres of `r`, made in one pass over its pairs. -/
+def FinRel.fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : Fibres K V :=
+  r.toList.foldl (fun x p => x.push p.1 p.2) ⟨∅, #[]⟩
+
+/-- **The hashed fibre is the scanned one**, order and repeats kept. -/
+theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibres.get = r.scanLookup :=
+  funext fun a => by
+    have go : ∀ (l : List (K × V)) (x : Fibres K V),
+        (l.foldl (fun x p => x.push p.1 p.2) x).get a = x.get a ++ l.filterMap (sel a) := by
+      intro l
+      induction l with
+      | nil => intro x; simp
+      | cons p l ih =>
+        intro x
+        rw [List.foldl_cons, ih, Fibres.get_push]
+        by_cases h : p.1 = a <;> simp [sel, h]
+    rw [fibres, go]
+    simp [Fibres.get, scanLookup]
+
+/-- One step of `hashDedup`: a key not yet seen is recorded and listed. -/
+def dedupStep [DecidableEq K] [Hashable K] (s : Std.HashSet K × Array K) (k : K) : Std.HashSet K × Array K :=
+  if s.1.contains k then s else (s.1.insert k, s.2.push k)
+
+/-- `eraseDups` in one pass: each key once, in order of first appearance, a hash set of those seen. -/
+def hashDedup [DecidableEq K] [Hashable K] (l : List K) : List K := (l.foldl dedupStep (∅, #[])).2.toList
+
+theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l.eraseDups := by
+  have go : ∀ (l : List K) (s : Std.HashSet K) (acc : Array K), (∀ k, s.contains k = true ↔ k ∈ acc.toList) →
+      (l.foldl dedupStep (s, acc)).2.toList = acc.toList ++ (l.filter fun k => !decide (k ∈ acc.toList)).eraseDups := by
+    intro l
+    induction l with
+    | nil => intro s acc _; simp [List.eraseDups]
+    | cons a l ih =>
+      intro s acc hs
+      rw [List.foldl_cons, dedupStep]
+      by_cases ha : a ∈ acc.toList
+      · rw [if_pos ((hs a).2 ha), ih s acc hs]
+        simp [List.filter_cons, ha]
+      · rw [if_neg (fun h => ha ((hs a).1 h)),
+          ih _ _ fun k => by
+            rw [Std.HashSet.contains_insert, Bool.or_eq_true, hs k, beq_iff_eq, Array.toList_push,
+              List.mem_append, List.mem_singleton]
+            exact ⟨fun h => h.elim (fun e => .inr e.symm) .inl, fun h => h.elim .inr (fun e => .inl e.symm)⟩]
+        simp only [List.filter_cons, ha, decide_false, Bool.not_false, if_true, List.eraseDups_cons,
+          Array.toList_push, List.append_assoc, List.singleton_append, List.filter_filter]
+        congr 3
+        apply List.filter_congr
+        intro x _
+        by_cases h1 : x = a <;> by_cases h2 : x ∈ acc.toList <;> simp [h1, h2]
+  simpa using go l ∅ #[] (by simp)
+
+/-- How the fibres of a `FinRel` keyed by `K` are looked up, and a list of keys listed once: by
+    hashing when `K` has a `Hashable`, else by the scans `scanLookup` and `eraseDups`.  Each answer
+    equals the scan's (`get_build`, `dedup_eq`), so a law proved of the scan holds of either; `build`
+    makes the index once, and `get` answers each key from it. -/
+class FibreIndex (K : Type) [DecidableEq K] where
+  Index : Type → Type
+  build {V : Type} : FinRel K V → Index V
+  get {V : Type} : Index V → K → List V
+  get_build {V : Type} (r : FinRel K V) : get (build r) = r.scanLookup
+  dedup : List K → List K
+  dedup_eq (l : List K) : dedup l = l.eraseDups
+
+attribute [simp] FibreIndex.get_build FibreIndex.dedup_eq
+
+/-- No hash: the scans themselves. -/
+instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
+  ⟨FinRel K, id, FinRel.scanLookup, fun _ => rfl, List.eraseDups, fun _ => rfl⟩
+
+/-- A hashable key: the table `FinRel.fibres` and the hash set of `hashDedup`. -/
+instance FibreIndex.hash [DecidableEq K] [Hashable K] : FibreIndex K :=
+  ⟨Fibres K, FinRel.fibres, Fibres.get, FinRel.get_fibres, hashDedup, hashDedup_eq⟩
+
 /-! ## A relation as a sum of representations -/
 
 /-- A relation `K ⟶ V` held as the pairs of a `FinRel`, as its `Λ` form `k ↦` the list of values `k` is
@@ -498,7 +647,7 @@ def ofFn (g : K → V) : RelRep K V := enum fun k => [g k]
 theorem rel_ofFn (g : K → V) : (ofFn g).rel = (graph g : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) :=
   hom_ext fun k v => List.mem_singleton.trans (Iff.of_eq (graph_apply g k v).symm)
 
-variable [DecidableEq K] [DecidableEq V]
+variable [DecidableEq K] [DecidableEq V] [FibreIndex K] [FibreIndex V]
 
 /-- The membership test of `rel`. -/
 def mem : RelRep K V → K → V → Bool
@@ -514,15 +663,15 @@ theorem mem_iff_rel : (R : RelRep K V) → (k : K) → (v : V) → (R.mem k v = 
 /-- The list denotation: each key's fibre in representation order, with repeats — a `FinRel` in array
     order; `none` on a `test`, which enumerates nothing. -/
 def app? : RelRep K V → Option (K → List V)
-  | pairs r => some r.scanLookup
+  | pairs r => some (FibreIndex.get (FibreIndex.build r))
   | enum f => some f
   | test _ => none
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- `rel` is membership in the fibre list. -/
 theorem mem_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) (k : K) (v : V) :
     v ∈ f k ↔ R.rel k v := by
-  cases R <;> simp only [app?, Option.some.injEq, reduceCtorEq] at h <;> subst h
+  cases R <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at h <;> subst h
   · exact FinRel.mem_scanLookup _ k v
   · exact Iff.rfl
 
@@ -530,7 +679,7 @@ theorem mem_eq_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f)
     R.mem k v = decide (v ∈ f k) :=
   Bool.eq_iff_iff.2 ((mem_iff_rel R k v).trans ((mem_app? h k v).symm.trans decide_eq_true_iff.symm))
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- A representation enumerates, or is a `test`. -/
 theorem app?_cases (R : RelRep K V) : (∃ f, R.app? = some f) ∨ ∃ t, R = test t := by
   cases R with
@@ -544,7 +693,7 @@ def conv : RelRep K V → RelRep V K
   | enum f => test fun v k => decide (v ∈ f k)
   | test t => test fun v k => t k v
 
-omit [DecidableEq K] in
+omit [DecidableEq K] [FibreIndex K] in
 theorem rel_conv (R : RelRep K V) : R.conv.rel = R.rel° := by
   cases R with
   | pairs r => exact FinRel.rep_conv r
@@ -563,15 +712,15 @@ def inter : RelRep K V → RelRep K V → RelRep K V
 /-- `R ∩ S` on an enumerating `R`: `R`'s fibre, in order, filtered by `S`. -/
 theorem app?_inter_left {R : RelRep K V} (S : RelRep K V) {f : K → List V} (h : R.app? = some f) :
     (inter R S).app? = some fun k => (f k).filter (S.mem k ·) := by
-  cases R <;> simp only [app?, Option.some.injEq, reduceCtorEq] at h <;> subst h
-  · simp only [inter, app?, FinRel.scanLookup_filter, Bool.decide_eq_true]
+  cases R <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at h <;> subst h
+  · simp only [inter, app?, FibreIndex.get_build, FinRel.scanLookup_filter, Bool.decide_eq_true]
   · cases S <;> rfl
 
 /-- `R ∩ S` on a `test` `R`: `S`'s fibre, in order, filtered by `R`. -/
 theorem app?_inter_right (t : K → V → Bool) {S : RelRep K V} {g : K → List V} (h : S.app? = some g) :
     (inter (test t) S).app? = some fun k => (g k).filter (t k ·) := by
-  cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at h <;> subst h
-  · simp only [inter, app?, FinRel.scanLookup_filter, Bool.decide_eq_true, mem]
+  cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at h <;> subst h
+  · simp only [inter, app?, FibreIndex.get_build, FinRel.scanLookup_filter, Bool.decide_eq_true, mem]
   · rfl
 
 theorem mem_inter (R S : RelRep K V) (k : K) (v : V) : (inter R S).mem k v = (R.mem k v && S.mem k v) := by
@@ -589,8 +738,8 @@ theorem rel_inter (R S : RelRep K V) : (inter R S).rel = R.rel ∩ S.rel :=
     either side makes the union a test. -/
 def union : RelRep K V → RelRep K V → RelRep K V
   | pairs r, pairs s => pairs (FinRel.union r s)
-  | pairs r, enum g => enum fun k => r.scanLookup k ++ g k
-  | enum f, pairs s => enum fun k => f k ++ s.scanLookup k
+  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => FibreIndex.get i k ++ g k
+  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => f k ++ FibreIndex.get i k
   | enum f, enum g => enum fun k => f k ++ g k
   | R, S => test fun k v => R.mem k v || S.mem k v
 
@@ -598,8 +747,8 @@ def union : RelRep K V → RelRep K V → RelRep K V
     only of `rel` (`rel_union`). -/
 theorem app?_union {R S : RelRep K V} {f g : K → List V} (hR : R.app? = some f) (hS : S.app? = some g) :
     (union R S).app? = some fun k => f k ++ g k := by
-  cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
-    first | rfl | simp only [union, app?, FinRel.scanLookup_union]
+  cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
+    first | rfl | simp only [union, app?, FibreIndex.get_build, FinRel.scanLookup_union]
 
 theorem mem_union (R S : RelRep K V) (k : K) (v : V) : (union R S).mem k v = (R.mem k v || S.mem k v) := by
   rcases app?_cases R with ⟨f, hR⟩ | ⟨t, rfl⟩
@@ -617,13 +766,13 @@ section Tabulate
 
 open PowerAllegory
 
-variable {L W : Type} [DecidableEq L] [DecidableEq W]
+variable {L W : Type} [DecidableEq L] [DecidableEq W] [FibreIndex L] [FibreIndex W]
 
-omit [DecidableEq K] [DecidableEq V] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- The coreflexive `p?` of a decidable predicate: the fibre of `k` is `[k]` when `p(k)`, else empty. -/
 def corefl (p : K → Bool) : RelRep K K := enum fun k => if p k then [k] else []
 
-omit [DecidableEq K] [DecidableEq V] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 theorem rel_corefl (p : K → Bool) : (corefl p).rel = Freyd.Alg.RelSet.corefl (A := ⟨K⟩) fun k => p k = true :=
   hom_ext fun k k' => by
     simp only [corefl, RelRep.rel, Freyd.Alg.RelSet.corefl]
@@ -633,13 +782,13 @@ theorem rel_corefl (p : K → Bool) : (corefl p).rel = Freyd.Alg.RelSet.corefl (
 def dom (R : RelRep K V) : Option (RelRep K K) :=
   R.app?.map fun f => enum fun k => if (f k).isEmpty then [] else [k]
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- `dom R` lists each key with a nonempty fibre, once. -/
 theorem dom_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
     dom R = some (enum fun k => if (f k).isEmpty then [] else [k]) := by
   simp only [dom, h, Option.map_some]
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem rel_dom {R : RelRep K V} {T : RelRep K K} (h : dom R = some T) : T.rel = Alg.dom R.rel := by
   cases hf : R.app? with
   | none => simp [dom, hf] at h
@@ -666,41 +815,42 @@ theorem rel_dom {R : RelRep K V} {T : RelRep K K} (h : dom R = some T) : T.rel =
 /-- `ran R = dom R°`: computed when `R°` enumerates, i.e. on a `FinRel`; `none` otherwise. -/
 def ran (R : RelRep K V) : Option (RelRep V V) := R.conv.dom
 
-omit [DecidableEq K] in
+omit [DecidableEq K] [FibreIndex K] in
 theorem rel_ran {R : RelRep K V} {T : RelRep V V} (h : ran R = some T) : T.rel = Alg.ran R.rel := by
   rw [rel_dom h, rel_conv]; rfl
 
-omit [DecidableEq K] [DecidableEq V] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- Every pair of a member of `xs` and a member of `ys`. -/
 def cross (xs : List V) (ys : List W) : List (V × W) := xs.flatMap fun v => ys.map (v, ·)
 
-omit [DecidableEq K] [DecidableEq V] [DecidableEq L] [DecidableEq W] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq W] [FibreIndex W] in
 theorem mem_cross (xs : List V) (ys : List W) (q : V × W) : q ∈ cross xs ys ↔ q.1 ∈ xs ∧ q.2 ∈ ys := by
   obtain ⟨v, w⟩ := q; simp [cross]
 
 /-- `⟨R,S⟩`: two `FinRel`s pair the pairs sharing a key, two enumerating sides pair their fibres; a
     `test` on either side makes the split a test. -/
 def pair : RelRep K V → RelRep K W → RelRep K (V × W)
-  | pairs r, pairs s => pairs (FinRel.ofList (r.toList.flatMap fun p => (s.scanLookup p.1).map fun w => (p.1, (p.2, w))))
-  | pairs r, enum g => enum fun k => cross (r.scanLookup k) (g k)
-  | enum f, pairs s => enum fun k => cross (f k) (s.scanLookup k)
+  | pairs r, pairs s => let i := FibreIndex.build s
+    pairs (FinRel.ofList (r.toList.flatMap fun p => (FibreIndex.get i p.1).map fun w => (p.1, (p.2, w))))
+  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => cross (FibreIndex.get i k) (g k)
+  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => cross (f k) (FibreIndex.get i k)
   | enum f, enum g => enum fun k => cross (f k) (g k)
   | R, S => test fun k q => R.mem k q.1 && S.mem k q.2
 
-omit [DecidableEq L] in
+omit [DecidableEq L] [FibreIndex L] in
 /-- `⟨R,S⟩` pairs each value of `R`'s fibre, in order, with each of `S`'s. -/
 theorem app?_pair {R : RelRep K V} {S : RelRep K W} {f : K → List V} {g : K → List W} (hR : R.app? = some f)
     (hS : S.app? = some g) : (pair R S).app? = some fun k => cross (f k) (g k) := by
-  cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
+  cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
     first | rfl | skip
   rename_i r s
-  simp only [pair, app?, FinRel.scanLookup_ofList, Option.some.injEq]
+  simp only [pair, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   funext k
   have := FinRel.filterMap_sel_flatMap (fun k v => (s.scanLookup k).map (v, ·)) k r.toList
   simp only [List.map_map, Function.comp_def] at this
   exact this
 
-omit [DecidableEq L] in
+omit [DecidableEq L] [FibreIndex L] in
 theorem mem_pair (R : RelRep K V) (S : RelRep K W) (k : K) (q : V × W) :
     (pair R S).mem k q = (R.mem k q.1 && S.mem k q.2) := by
   rcases app?_cases R with ⟨f, hR⟩ | ⟨t, rfl⟩
@@ -709,7 +859,7 @@ theorem mem_pair (R : RelRep K V) (S : RelRep K W) (k : K) (q : V × W) :
     · cases R <;> first | rfl | simp [app?] at hR
   · cases S <;> rfl
 
-omit [DecidableEq L] in
+omit [DecidableEq L] [FibreIndex L] in
 theorem rel_pair (R : RelRep K V) (S : RelRep K W) : (pair R S).rel = rpair R.rel S.rel :=
   hom_ext fun k q => by simp only [rpair, ← mem_iff_rel, mem_pair, Bool.and_eq_true]
 
@@ -717,12 +867,12 @@ theorem rel_pair (R : RelRep K V) (S : RelRep K W) : (pair R S).rel = rpair R.re
     either side makes the product a test. -/
 def prod : RelRep K V → RelRep L W → RelRep (K × L) (V × W)
   | pairs r, pairs s => pairs (FinRel.ofList ((cross r.toList s.toList).map fun q => ((q.1.1, q.2.1), (q.1.2, q.2.2))))
-  | pairs r, enum g => enum fun k => cross (r.scanLookup k.1) (g k.2)
-  | enum f, pairs s => enum fun k => cross (f k.1) (s.scanLookup k.2)
+  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => cross (FibreIndex.get i k.1) (g k.2)
+  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => cross (f k.1) (FibreIndex.get i k.2)
   | enum f, enum g => enum fun k => cross (f k.1) (g k.2)
   | R, S => test fun k q => R.mem k.1 q.1 && S.mem k.2 q.2
 
-omit [DecidableEq V] [DecidableEq W] in
+omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] in
 /-- The fibre of `(k,j)` in the product of two lists of pairs crosses the fibre of `k` with that of `j`. -/
 theorem filterMap_sel_cross (k : K) (j : L) (m : List (L × W)) : (l : List (K × V)) →
     ((cross l m).map fun q => ((q.1.1, q.2.1), (q.1.2, q.2.2))).filterMap (FinRel.sel (k, j))
@@ -746,9 +896,9 @@ where
 /-- `R × S` crosses the two fibres, in order. -/
 theorem app?_prod {R : RelRep K V} {S : RelRep L W} {f : K → List V} {g : L → List W} (hR : R.app? = some f)
     (hS : S.app? = some g) : (prod R S).app? = some fun k => cross (f k.1) (g k.2) := by
-  cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
+  cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
     first | rfl | skip
-  simp only [prod, app?, FinRel.scanLookup_ofList, Option.some.injEq]
+  simp only [prod, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   exact funext fun k => filterMap_sel_cross k.1 k.2 _ _
 
 theorem mem_prod (R : RelRep K V) (S : RelRep L W) (k : K × L) (q : V × W) :
@@ -762,7 +912,7 @@ theorem mem_prod (R : RelRep K V) (S : RelRep L W) (k : K × L) (q : V × W) :
 theorem rel_prod (R : RelRep K V) (S : RelRep L W) : (prod R S).rel = rprodMap R.rel S.rel :=
   hom_ext fun k q => by simp only [rprodMap, ← mem_iff_rel, mem_prod, Bool.and_eq_true]
 
-omit [DecidableEq K] [DecidableEq V] [DecidableEq L] [DecidableEq W] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq W] [FibreIndex W] in
 /-- The junction `[R,S]` pointwise: `R` on a left summand, `S` on a right one. -/
 theorem junc_apply (R : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨L⟩ : RelSet.{0}) ⟶ ⟨V⟩) :
     (∀ k v, junc (sumCop ⟨K⟩ ⟨L⟩) R S (Sum.inl k) v ↔ R k v) ∧ ∀ l v, junc (sumCop ⟨K⟩ ⟨L⟩) R S (Sum.inr l) v ↔ S l v :=
@@ -777,25 +927,25 @@ theorem junc_apply (R : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨L⟩ : RelS
     from its summand's fibre; a `test` on either side makes the junction a test. -/
 def junction : RelRep K V → RelRep L V → RelRep (K ⊕ L) V
   | pairs r, pairs s => pairs (FinRel.ofList (r.toList.map (fun p => (Sum.inl p.1, p.2)) ++ s.toList.map fun p => (Sum.inr p.1, p.2)))
-  | pairs r, enum g => enum (Sum.elim r.scanLookup g)
-  | enum f, pairs s => enum (Sum.elim f s.scanLookup)
+  | pairs r, enum g => let i := FibreIndex.build r; enum (Sum.elim (FibreIndex.get i) g)
+  | enum f, pairs s => let i := FibreIndex.build s; enum (Sum.elim f (FibreIndex.get i))
   | enum f, enum g => enum (Sum.elim f g)
   | R, S => test (Sum.elim R.mem S.mem)
 
-omit [DecidableEq W] in
+omit [DecidableEq W] [FibreIndex W] in
 /-- `[R,S]` answers a key from its summand's fibre. -/
 theorem app?_junction {R : RelRep K V} {S : RelRep L V} {f : K → List V} {g : L → List V} (hR : R.app? = some f)
     (hS : S.app? = some g) : (junction R S).app? = some (Sum.elim f g) := by
-  cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
+  cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
     first | rfl | skip
-  simp only [junction, app?, FinRel.scanLookup_ofList, Option.some.injEq]
+  simp only [junction, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   have hn : ∀ {X Y : Type} (l : List X), l.filterMap (fun _ => (none : Option Y)) = [] := fun l => by
     induction l <;> simp_all
   funext x
   cases x <;> simp [List.filterMap_append, List.filterMap_map, Function.comp_def, FinRel.sel, FinRel.scanLookup, hn] <;>
     rfl
 
-omit [DecidableEq W] in
+omit [DecidableEq W] [FibreIndex W] in
 theorem mem_junction (R : RelRep K V) (S : RelRep L V) (x : K ⊕ L) (v : V) :
     (junction R S).mem x v = Sum.elim R.mem S.mem x v := by
   rcases app?_cases R with ⟨f, hR⟩ | ⟨t, rfl⟩
@@ -807,7 +957,7 @@ theorem mem_junction (R : RelRep K V) (S : RelRep L V) (x : K ⊕ L) (v : V) :
     · cases R <;> first | rfl | simp [app?] at hR
   · cases S <;> rfl
 
-omit [DecidableEq W] in
+omit [DecidableEq W] [FibreIndex W] in
 theorem rel_junction (R : RelRep K V) (S : RelRep L V) :
     (junction R S).rel = junc (sumCop ⟨K⟩ ⟨L⟩) R.rel S.rel :=
   hom_ext fun x v => by
@@ -820,12 +970,12 @@ theorem rel_junction (R : RelRep K V) (S : RelRep L V) :
 /-- `Λ(R)`: each key's fibre list, read as a set through `Λ(∋ₗ)`; `none` on a `test`. -/
 def transpose (R : RelRep K V) : Option (RelRep K (List V)) := R.app?.map ofFn
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- `Λ(R)` sends `k` to its whole fibre list, order and repeats kept. -/
 theorem transpose_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) : transpose R = some (ofFn f) := by
   simp only [transpose, h, Option.map_some]
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem rel_transpose {R : RelRep K V} {T : RelRep K (List V)} (h : transpose R = some T) :
     T.rel ≫ Λ (lmem V) = Λ R.rel := by
   cases hf : R.app? with
@@ -844,10 +994,11 @@ end Tabulate
     list second is looked up, a test second is tried on each.  A `test` first would have to enumerate
     the middle type, so it gives `none`. -/
 def comp [DecidableEq C] : RelRep K V → RelRep V C → Option (RelRep K C)
-  | pairs r, pairs s => some (pairs (FinRel.ofList (r.toList.flatMap fun p => (s.scanLookup p.2).map (p.1, ·))))
+  | pairs r, pairs s => let i := FibreIndex.build s
+    some (pairs (FinRel.ofList (r.toList.flatMap fun p => (FibreIndex.get i p.2).map (p.1, ·))))
   | pairs r, enum h => some (pairs (FinRel.ofList (r.toList.flatMap fun p => (h p.2).map (p.1, ·))))
-  | pairs r, test t => some (test fun k c => (r.scanLookup k).any (t · c))
-  | enum f, pairs s => some (enum fun k => (f k).flatMap s.scanLookup)
+  | pairs r, test t => let i := FibreIndex.build r; some (test fun k c => (FibreIndex.get i k).any (t · c))
+  | enum f, pairs s => let i := FibreIndex.build s; some (enum fun k => (f k).flatMap (FibreIndex.get i))
   | enum f, enum h => some (enum fun k => (f k).flatMap h)
   | enum f, test t => some (test fun k c => (f k).any (t · c))
   | test _, _ => none
@@ -863,9 +1014,9 @@ theorem app?_of_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelR
 theorem app?_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K C} (h : comp R S = some T)
     {f : K → List V} {g : V → List C} (hR : R.app? = some f) (hS : S.app? = some g) :
     T.app? = some fun a => (f a).flatMap g := by
-  cases R <;> cases S <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR hS <;>
+  cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;>
     simp only [comp, Option.some.injEq] at h <;> subst hR hS h <;> first | rfl | skip
-  all_goals simp only [app?, FinRel.scanLookup_ofList, Option.some.injEq]
+  all_goals simp only [app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   · rename_i r s; exact funext fun a => FinRel.filterMap_sel_flatMap (fun _ b => s.scanLookup b) a r.toList
   · rename_i r g; exact funext fun a => FinRel.filterMap_sel_flatMap (fun _ b => g b) a r.toList
 
@@ -876,7 +1027,7 @@ theorem mem_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K
   · rw [mem_eq_of_app? (app?_comp h hR hS)]
     refine Bool.eq_iff_iff.2 ((decide_eq_true_iff).trans ?_)
     simp only [List.mem_flatMap, List.any_eq_true, mem_eq_of_app? hS, decide_eq_true_eq]
-  · cases R <;> simp only [app?, Option.some.injEq, reduceCtorEq] at hR <;>
+  · cases R <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR <;>
       simp only [comp, Option.some.injEq] at h <;> subst hR h <;> rfl
 
 theorem rel_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K C} (h : comp R S = some T) :
@@ -905,7 +1056,7 @@ theorem app?_comp_id {R : RelRep K V} {f : K → List V} (hR : R.app? = some f) 
 
 section Division
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- `X / Y`: `k (X/Y) v` iff `X k c` for every `c` with `Y v c`.  The divisor's fibre is enumerated
     and the result is a test; a `test` divisor gives `none`. -/
 def div [DecidableEq C] (X : RelRep K C) (Y : RelRep V C) : Option (RelRep K V) :=
@@ -921,7 +1072,7 @@ theorem rel_div [DecidableEq C] {X : RelRep K C} {Y : RelRep V C} {Z : RelRep K 
     exact hom_ext fun k v => List.all_eq_true.trans
       (forall_congr' fun c => imp_congr (mem_app? hf v c) (mem_iff_rel X k c))
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- `S \ R ≜ (R°/S°)°`: the divisor's converse fibre is enumerated, so only a `FinRel` `S` divides. -/
 def leftDiv [DecidableEq C] (S : RelRep K V) (R : RelRep K C) : Option (RelRep V C) :=
   (div R.conv S.conv).map conv
@@ -964,7 +1115,7 @@ def thinList (q : V → V → Bool) : List V → List V
   | [] => []
   | z :: zs => if (thinList q zs).any (q · z) then thinList q zs else z :: (thinList q zs).filter (!q z ·)
 
-omit [DecidableEq K] [DecidableEq V] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- For a preorder `q`, `thinList q xs` is a `thin(q)` choice: it lies in `xs`, and every member of
     `xs` has a `q`-lower bound in it. -/
 theorem thinList_spec {q : V → V → Bool} (hr : ∀ v, q v v) (ht : ∀ u v w, q u v → q v w → q u w) :
@@ -1058,25 +1209,25 @@ theorem rel_override {R S T : RelRep K V} (h : override R S = some T) (k : K) (v
     simp only [e, if_false, mem_iff_rel]
     exact ⟨.inl, fun | .inl h => h | .inr ⟨hn, _⟩ => absurd ((mem_app? hR k w).1 hw) (hn w)⟩
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- The first value of each fibre, in representation order; `none` on a `test`. -/
 def first (R : RelRep K V) : Option (RelRep K V) := R.app?.map fun f => enum fun k => (f k).head?.toList
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- The last value of each fibre, in representation order; `none` on a `test`. -/
 def last (R : RelRep K V) : Option (RelRep K V) := R.app?.map fun f => enum fun k => (f k).getLast?.toList
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem first_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
     first R = some (enum fun k => (f k).head?.toList) := by
   simp only [first, h, Option.map_some]
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem last_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
     last R = some (enum fun k => (f k).getLast?.toList) := by
   simp only [last, h, Option.map_some]
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 /-- A fibre selector keeps one value of each nonempty fibre: `T ⊑ R`, and `T` relates every key `R` does. -/
 theorem rel_select {R T : RelRep K V} {sel : List V → Option V} (hs : ∀ l v, sel l = some v → v ∈ l)
     (hn : ∀ l, l ≠ [] → ∃ v, sel l = some v) {f : K → List V} (hR : R.app? = some f)
@@ -1087,7 +1238,7 @@ theorem rel_select {R T : RelRep K V} {sel : List V → Option V} (hs : ∀ l v,
   obtain ⟨w, hw⟩ := hn (f k) fun e => by rw [← mem_app? hR, e] at hv; exact List.not_mem_nil hv
   exact ⟨w, Option.mem_toList.2 hw⟩
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem rel_first {R T : RelRep K V} (h : first R = some T) :
     (∀ k v, T.rel k v → R.rel k v) ∧ ∀ k v, R.rel k v → ∃ w, T.rel k w := by
   obtain ⟨f, hR⟩ : ∃ f, R.app? = some f := by
@@ -1097,7 +1248,7 @@ theorem rel_first {R T : RelRep K V} (h : first R = some T) :
   rw [first_of_app? hR, Option.some.injEq] at h
   exact rel_select (fun _ _ => List.mem_of_mem_head?) (fun l e => ⟨_, (List.head?_eq_some_head e)⟩) hR h.symm
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem rel_last {R T : RelRep K V} (h : last R = some T) :
     (∀ k v, T.rel k v → R.rel k v) ∧ ∀ k v, R.rel k v → ∃ w, T.rel k w := by
   obtain ⟨f, hR⟩ : ∃ f, R.app? = some f := by
@@ -1107,7 +1258,7 @@ theorem rel_last {R T : RelRep K V} (h : last R = some T) :
   rw [last_of_app? hR, Option.some.injEq] at h
   exact rel_select (fun _ _ => List.mem_of_getLast?) (fun l e => ⟨_, List.getLast?_eq_some_getLast e⟩) hR h.symm
 
-omit [DecidableEq K] in
+omit [DecidableEq K] [FibreIndex K] in
 /-- `thinList_spec` at a preorder `Q` held as a `RelRep`. -/
 theorem thinList_rel_spec {Q : RelRep V V} (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel ≫ Q.rel ⊑ Q.rel) (xs : List V) :
     (∀ y ∈ thinList Q.mem xs, y ∈ xs) ∧ ∀ z ∈ xs, ∃ w ∈ thinList Q.mem xs, Q.rel w z :=
@@ -1117,7 +1268,7 @@ theorem thinList_rel_spec {Q : RelRep V V} (hr : 𝟙 _ ⊑ Q.rel) (ht : Q.rel �
       (le_iff.mp ht u w ⟨v, (mem_iff_rel Q u v).1 h1, (mem_iff_rel Q v w).1 h2⟩)) xs
   ⟨hs.1, fun z hz => (hs.2 z hz).imp fun w ⟨hw, hq⟩ => ⟨hw, (mem_iff_rel Q w z).1 hq⟩⟩
 
-omit [DecidableEq K] [DecidableEq V] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- `Λ X ⊑ Λ Y thin(Q)` pointwise: each `X`-fibre lies in the `Y`-fibre and holds a `Q`-lower bound of
     every member of it. -/
 theorem Λ_le_thin {X Y : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩} {Q : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩}
@@ -1145,9 +1296,9 @@ section Fold
 
 open CL
 
-variable {L E : Type} [DecidableEq L] [DecidableEq E]
+variable {L E : Type} [DecidableEq L] [DecidableEq E] [FibreIndex L] [FibreIndex E]
 
-omit [DecidableEq V] [DecidableEq L] [DecidableEq E] in
+omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
 /-- `⦇[b,s]⦈` on fibres: the base's fibre at `wrap`, the step's fibre over each value at `cons`, each
     fibre then cut by `post`. -/
 def foldList (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
