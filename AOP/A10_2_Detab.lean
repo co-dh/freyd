@@ -1390,18 +1390,17 @@ public theorem estC_snoc [Detab] (hn : 0 < n) (x : Str) (a : Char) (ha : a ≠ t
       ↔ (Λ (expand°) ≫ est (rprodMap V U)) (SnocList.snoc x a) p := by rw [rel_estC hn]
   exact h.trans (entab_step hn x a ha p)
 
-/-- The greedy program run on `RelRep`: the first `V×U`-least decomposition, then recurse on its
-    string; `k` bounds the recursion. -/
-@[expose] public def entabG [Detab] : Nat → Str → Str
-  | 0, x => x
-  | _ + 1, SnocList.wrap _ => SnocList.wrap ()
-  | k + 1, SnocList.snoc x a =>
+/-- The greedy step: the first `V×U`-least decomposition, then `X` on its string. -/
+@[expose] public def entabStep [Detab] (X : Str → Str) : Str → Str
+  | SnocList.wrap _ => SnocList.wrap ()
+  | SnocList.snoc x a =>
       match estC (SnocList.snoc x a) with
-      | p :: _ => SnocList.snoc (entabG k p.1) p.2
+      | p :: _ => SnocList.snoc (X p.1) p.2
       | [] => SnocList.snoc x a
 
-/-- **The program**: `entabG` with the length as its bound. -/
-@[expose] public def entabR [Detab] (xs : Str) : Str := entabG (length xs) xs
+/-- **The program**: every decomposition shortens the string, so `entabStep` recurses on the
+    length. -/
+@[expose] public def entabR [Detab] (xs : Str) : Str := RelRep.hylo length id entabStep xs
 
 /-- B&dM's characters at tab width `4`. -/
 @[expose] public def book4 : Detab := ⟨4, '\t', '\n', ' ', by decide, by decide⟩
