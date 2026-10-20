@@ -1151,7 +1151,7 @@ public instance : DecidableEq Prog.Rep :=
 /-- `Qt` is `Q` on the program's states: `u` stops and `z` takes a digit, or `u=z`. -/
 public theorem Qt_apply (u z : Out) :
     Qt.rel u z ↔ (∃ t, u = Sum.inl t ∧ ∃ s, z = Sum.inr s) ∨ u = z := by
-  cases u <;> cases z <;> simp [Qt, RelRep.rel]
+  cases u <;> cases z <;> simp [Qt, RelTest.rel]
 
 /-- The `Q`-least candidates of a state. -/
 @[expose] public def pickL (x : Prog.Rep) : List Out := RelRep.estList Qt.mem (cands x)
