@@ -815,12 +815,12 @@ public instance decR : ∀ xs ys : ConsList A A, Decidable (R xs ys) :=
   fun xs ys => decidable_of_iff _ (R_apply xs ys).symm
 
 /-- The thinning order `Q` as a `RelRep` test. -/
-@[expose] public def Qt : RelRep (ConsList A A) (ConsList A A) := .test fun xs ys => decide (Q xs ys)
+@[expose] public def Qt : RelTest (ConsList A A) (ConsList A A) := .test fun xs ys => decide (Q xs ys)
 
 public theorem rel_Qt : (Qt (A := A)).rel = Q := hom_ext fun _ _ => decide_eq_true_iff
 
 /-- The cost order `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (ConsList A A) (ConsList A A) := .test fun xs ys => decide (R xs ys)
+@[expose] public def Rt : RelTest (ConsList A A) (ConsList A A) := .test fun xs ys => decide (R xs ys)
 
 omit [DecidableEq A] in
 public theorem rel_Rt : (Rt (A := A)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
@@ -891,20 +891,21 @@ public theorem layerAlg_pres : Pres (F := CL.F (List A) (List A)) (layerAlg (A :
   RelRep.foldList (RelRep.thinList fun xs ys => decide (Q xs ys)) wrapE stepE
 
 /-- `kept` is `RelRep.foldThin Q` of `wrapE` and `stepE`. -/
-public theorem kept_eq : RelRep.foldThin Qt (.enum wrapE) (.enum stepE) = some (.enum (kept (A := A))) := rfl
+public theorem kept_eq : RelRep.foldThin Qt (.enum wrapE) (.enum stepE) = .enum (kept (A := A)) := rfl
 
 /-- The program: the cheapest paths among those kept. -/
 @[expose] public def cheapest (xss : ConsList (List A) (List A)) : List (ConsList A A) :=
   RelRep.estList (fun xs ys => decide (R xs ys)) (kept xss)
 
 /-- `cheapest` is `RelRep.est R` of `kept`. -/
-public theorem cheapest_eq : RelRep.est Rt (.enum (kept (A := A))) = some (.enum cheapest) := rfl
+public theorem cheapest_eq : RelRep.est Rt (.enum (kept (A := A))) = .enum cheapest := rfl
 
 /-- `Λ(kept) ⊑ Λ⦇[wrapE, stepE]⦈ thin(Q)`. -/
 public theorem kept_thin :
     Λ (RelRep.enum (kept (A := A))).rel
       ⊑ Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ thinRel Q := by
-  have h := RelRep.rel_foldThin (h := kept_eq (A := A)) (by rw [rel_Qt]; exact Q_preorder.1)
+  have h := kept_eq (A := A) ▸ RelRep.rel_foldThin (Q := Qt) (B := .enum wrapE) (S := .enum stepE)
+    (by rw [rel_Qt]; exact Q_preorder.1)
     (by rw [rel_Qt]; exact Q_preorder.2) (by rw [rel_Qt]; exact layerAlg_pres)
   rw [rel_Qt] at h
   exact h
@@ -916,7 +917,7 @@ public theorem cheapest_le :
       ⊑ (RelSet.graph netSet : dCL (List A) (List A) ⟶ dCL (A → Prop) (A → Prop))
         ≫ Λ (ListRel.nelistRelator.map (∋ (dE A))) ≫ est (R (A := A)) :=
   calc (RelRep.enum cheapest).rel
-      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := RelRep.rel_est cheapest_eq
+      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := by rw [← cheapest_eq]; exact RelRep.rel_est _ _
     _ = Λ (RelRep.enum kept).rel ≫ est R := by rw [rel_Rt]
     _ ⊑ (Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ thinRel Q) ≫ est R :=
         comp_mono_right kept_thin _

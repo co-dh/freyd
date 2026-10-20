@@ -544,7 +544,7 @@ section PartyRun
 variable [DecidableEq A]
 
 /-- The order `R°` as a `RelRep` test: `x` before `y` when `x` is worth at least `y`. -/
-@[expose] public def Rt : RelRep (ConsList Unit A) (ConsList Unit A) :=
+@[expose] public def Rt : RelTest (ConsList Unit A) (ConsList Unit A) :=
   .test fun x y => decide (costFn rating y ≤ costFn rating x)
 
 omit [DecidableEq A] in

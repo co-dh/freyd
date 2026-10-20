@@ -1144,7 +1144,7 @@ public instance : DecidableEq Prog.Rep :=
     ((List.finRange 10).filterMap fun d => (back x d).map (d, ·)).map Sum.inr
 
 /-- `Q`, stopping preferred to any digit, as a `RelRep` test. -/
-@[expose] public def Qt : RelRep Out Out := .test fun u z => match u, z with
+@[expose] public def Qt : RelTest Out Out := .test fun u z => match u, z with
   | .inl _, .inr _ => true
   | u, z => decide (u = z)
 
@@ -1157,12 +1157,12 @@ public theorem Qt_apply (u z : Out) :
 @[expose] public def pickL (x : Prog.Rep) : List Out := RelRep.estList Qt.mem (cands x)
 
 /-- `pickL` is `RelRep.est Q` of the candidates. -/
-public theorem pickL_eq : RelRep.est Qt (.enum cands) = some (.enum pickL) := rfl
+public theorem pickL_eq : RelRep.est Qt (.enum cands) = .enum pickL := rfl
 
 /-- `pickL` computes `Λ([arb,step]°) est(Q)` on the program's states. -/
 public theorem rel_pickL :
     (RelRep.enum pickL).rel = Λ (RelRep.enum cands).rel ≫ Freyd.Alg.est Qt.rel :=
-  RelRep.rel_est pickL_eq
+  by rw [← pickL_eq]; exact RelRep.rel_est _ _
 
 /-- One step of the greedy program: follow the one candidate `pickL` keeps, answering the rest by
     `X`; `none` when it keeps none or two. -/
