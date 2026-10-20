@@ -972,19 +972,39 @@ class FibreIndex (K : Type) [DecidableEq K] where
   foldFibre_eq {V α : Type} (i : Index V) (k : K) (g : α → V → α) (a : α) : foldFibre i k g a = (get i k).foldl g a
   dedup : List K → List K
   dedup_eq (l : List K) : dedup l = l.eraseDups
+  /-- `get` onto an array, what a compiled program reads: no list is made. -/
+  getA {V : Type} : Index V → K → Array V
+  toList_getA {V : Type} (i : Index V) (k : K) : (getA i k).toList = get i k
+  /-- `dedup` of an array. -/
+  dedupA : Array K → Array K
+  toList_dedupA (a : Array K) : (dedupA a).toList = a.toList.eraseDups
 
-attribute [simp] FibreIndex.get_build FibreIndex.dedup_eq
+attribute [simp] FibreIndex.get_build FibreIndex.dedup_eq FibreIndex.toList_getA FibreIndex.toList_dedupA
 
-/-- No hash: the scans themselves. -/
+theorem toList_foldl_push {α : Type} (l : List α) (a : Array α) : (l.foldl Array.push a).toList = a.toList ++ l := by
+  induction l generalizing a with
+  | nil => simp
+  | cons x l ih => simp [ih]
+
+/-- No hash: the scans themselves.  `dedupA` goes through the list: the scan is the fallback of a key
+    with no hash, never a compiled program's path. -/
 instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
   ⟨FinRel K, id, FinRel.scanLookup, fun _ => rfl, fun r k => (r.scanLookup k).head?, fun _ _ => rfl,
-    fun r k g a => (r.scanLookup k).foldl g a, fun _ _ _ _ => rfl, List.eraseDups, fun _ => rfl⟩
+    fun r k g a => (r.scanLookup k).foldl g a, fun _ _ _ _ => rfl, List.eraseDups, fun _ => rfl,
+    fun r k => (r.keys.zip r.vals).filterMap (FinRel.sel k),
+    fun r k => by simp only [Array.toList_filterMap, Array.toList_zip]; rfl,
+    fun a => a.toList.eraseDups.toArray, fun _ => List.toList_toArray⟩
 
 /-- A hashable key: the rows chained by slot (`FinRel.chains`), and the hash set of `hashDedup`.  Chains and
     not the table `FinRel.fibres`, which allocates a bucket cell and an array per key. -/
 instance FibreIndex.hash [DecidableEq K] [Hashable K] : FibreIndex K :=
   ⟨fun V => FinRel K V × Array Nat × Array Nat, FinRel.chains, chainGet, FinRel.get_chains, chainFirst, chainFirst_eq,
-    chainFold, chainFold_eq, hashDedup, hashDedup_eq⟩
+    chainFold, chainFold_eq, hashDedup, hashDedup_eq, fun x k => chainFold x k Array.push #[],
+    fun x k => by show (chainFold x k Array.push #[]).toList = chainGet x k; rw [chainFold_eq, toList_foldl_push]; rfl,
+    fun a => (a.foldl dedupStep (HTab.empty a.size, #[])).2,
+    fun a => by
+      show (Array.foldl dedupStep (HTab.empty a.size, #[]) a).2.toList = _
+      rw [← hashDedup_eq, hashDedup, Array.length_toList, Array.foldl_toList]⟩
 
 /-! ## Composites pushed onto arrays -/
 
@@ -1013,12 +1033,12 @@ theorem foldl_pushPair (k : K) (cs : List C) (a : Array K × Array C) :
   | some k, some v => fo k v a
   | _, _ => a
 
-theorem bindStep_spec (r : FinRel K V) (h : V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
-    (hfo : ∀ k v a, fo k v a = (h v).foldl (pushPair k) a) : ∀ n, n ≤ r.keys.size →
+theorem bindStep_spec (r : FinRel K V) (h : K → V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
+    (hfo : ∀ k v a, fo k v a = (h k v).foldl (pushPair k) a) : ∀ n, n ≤ r.keys.size →
     ((List.range' 0 n).foldl (bindStep r fo) (#[], #[])).1.toList =
-        ((r.toList.take n).flatMap fun p => (h p.2).map (p.1, ·)).map Prod.fst ∧
+        ((r.toList.take n).flatMap fun p => (h p.1 p.2).map (p.1, ·)).map Prod.fst ∧
       ((List.range' 0 n).foldl (bindStep r fo) (#[], #[])).2.toList =
-        ((r.toList.take n).flatMap fun p => (h p.2).map (p.1, ·)).map Prod.snd
+        ((r.toList.take n).flatMap fun p => (h p.1 p.2).map (p.1, ·)).map Prod.snd
   | 0, _ => by simp
   | n + 1, hn => by
     obtain ⟨h1, h2⟩ := bindStep_spec r h fo hfo n (by omega)
@@ -1029,34 +1049,47 @@ theorem bindStep_spec (r : FinRel K V) (h : V → List C) (fo : K → V → Arra
     rw [List.range'_concat, List.foldl_append, List.foldl_cons, List.foldl_nil, ht, List.flatMap_append]
     simp only [Nat.zero_add, Nat.one_mul, bindStep, Array.getElem?_eq_getElem (by omega : n < r.keys.size),
       Array.getElem?_eq_getElem hv, hfo]
-    obtain ⟨g1, g2⟩ := foldl_pushPair r.keys[n] (h r.vals[n]) (List.foldl (bindStep r fo) (#[], #[]) (List.range' 0 n))
+    obtain ⟨g1, g2⟩ := foldl_pushPair r.keys[n] (h r.keys[n] r.vals[n])
+      (List.foldl (bindStep r fo) (#[], #[]) (List.range' 0 n))
     rw [g1, g2, h1, h2]
     simp
 
-/-- `bindVals` with each fibre handed to `fo`, which pushes it straight onto the two arrays. -/
-def bindArr (r : FinRel K V) (h : V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
-    (hfo : ∀ k v a, fo k v a = (h v).foldl (pushPair k) a) : FinRel K C :=
+/-- `bindVals` with each fibre handed to `fo`, which pushes it straight onto the two arrays; the fibre
+    `h(k)(v)` may read the key. -/
+def bindArr (r : FinRel K V) (h : K → V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
+    (hfo : ∀ k v a, fo k v a = (h k v).foldl (pushPair k) a) : FinRel K C :=
   let a := rangeFold (bindStep r fo) r.keys.size 0 (#[], #[])
   ⟨a.1, a.2, by
     have e := bindStep_spec r h fo hfo r.keys.size (Nat.le_refl _)
     rw [← rangeFold_eq] at e
     rw [← Array.length_toList, ← Array.length_toList, e.1, e.2, List.length_map, List.length_map]⟩
 
-theorem bindArr_eq (r : FinRel K V) (h : V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
-    (hfo : ∀ k v a, fo k v a = (h v).foldl (pushPair k) a) : bindArr r h fo hfo = r.bindVals h := by
+theorem bindArr_eq (r : FinRel K V) (h : K → V → List C) (fo : K → V → Array K × Array C → Array K × Array C)
+    (hfo : ∀ k v a, fo k v a = (h k v).foldl (pushPair k) a) :
+    bindArr r h fo hfo = FinRel.ofList (r.toList.flatMap fun p => (h p.1 p.2).map (p.1, ·)) := by
   have e := bindStep_spec r h fo hfo r.keys.size (Nat.le_refl _)
   rw [← rangeFold_eq] at e
   have ht : r.toList.take r.keys.size = r.toList := List.take_of_length_le (by simp [FinRel.toList, r.len])
   rw [ht] at e
-  simp only [bindArr, FinRel.bindVals, FinRel.ofList, FinRel.mk.injEq]
+  simp only [bindArr, FinRel.ofList, FinRel.mk.injEq]
   exact ⟨Array.ext' (by rw [e.1, List.toList_toArray]), Array.ext' (by rw [e.2, List.toList_toArray])⟩
 
 /-- `bindVals` over the arrays; each fibre `h(b)` is still walked as the list it is. -/
 def FinRel.bindValsTR (r : FinRel K V) (h : V → List C) : FinRel K C :=
-  bindArr r h (fun k v a => (h v).foldl (pushPair k) a) fun _ _ _ => rfl
+  bindArr r (fun _ v => h v) (fun k v a => (h v).foldl (pushPair k) a) fun _ _ _ => rfl
 
 @[csimp] theorem FinRel.bindVals_eq_bindValsTR : @FinRel.bindVals = @FinRel.bindValsTR := by
-  funext K V C r h; exact (bindArr_eq ..).symm
+  funext K V C r h; exact (bindArr_eq r (fun _ v => h v) _ _).symm
+
+/-- `bindVals` at an array-valued fibre: each array pushed in a loop. -/
+def FinRel.bindValsA (r : FinRel K V) (h : V → Array C) : FinRel K C :=
+  bindArr r (fun _ v => (h v).toList) (fun k v a => (h v).foldl (pushPair k) a)
+    fun _ _ _ => (Array.foldl_toList ..).symm
+
+/-- `bindVals` at a partial map: the one value, if any, pushed; no fibre is made. -/
+def FinRel.bindOpt (r : FinRel K V) (h : V → Option C) : FinRel K C :=
+  bindArr r (fun _ v => (h v).toList) (fun k v a => match h v with | some c => pushPair k a c | none => a)
+    fun k v a => by dsimp only; cases h v <;> rfl
 
 /-- `r` then the fibres of an index: `bindVals` at `get`. -/
 def FinRel.bindIdx [DecidableEq V] [FibreIndex V] (r : FinRel K V) (i : FibreIndex.Index V C) : FinRel K C :=
@@ -1064,11 +1097,11 @@ def FinRel.bindIdx [DecidableEq V] [FibreIndex V] (r : FinRel K V) (i : FibreInd
 
 /-- `bindIdx` with each fibre folded straight out of the index: no fibre list is made. -/
 def FinRel.bindIdxTR [DecidableEq V] [FibreIndex V] (r : FinRel K V) (i : FibreIndex.Index V C) : FinRel K C :=
-  bindArr r (FibreIndex.get i) (fun k v a => FibreIndex.foldFibre i v (pushPair k) a)
+  bindArr r (fun _ v => FibreIndex.get i v) (fun k v a => FibreIndex.foldFibre i v (pushPair k) a)
     fun _ _ _ => FibreIndex.foldFibre_eq ..
 
 @[csimp] theorem FinRel.bindIdx_eq_bindIdxTR : @FinRel.bindIdx = @FinRel.bindIdxTR := by
-  funext K V C _ _ r i; exact (bindArr_eq ..).symm
+  funext K V C _ _ r i; exact (bindArr_eq r (fun _ v => FibreIndex.get i v) _ _).symm
 
 end Bind
 
@@ -1081,10 +1114,21 @@ end Bind
     and multiplicity are part of it and the operations are those of the Kleisli category of `List`
     (`app_comp`).  Each operation states its law on these lists; the relation `rel` is read off them by
     membership (`mem_app`), a monad map from `List` to sets, and each `rel_*` law follows.  Both factors
-    of `R ≫ S` enumerate, so every composite is formed. -/
+    of `R ≫ S` enumerate, so every composite is formed.
+
+    The list is the meaning, never the program: a compiled operation reads and builds arrays — the
+    `FinRel`'s two, an `arr` fibre, a `vec` — through `fib`, with `(fib R k).toList = app R k`.  `enum`
+    holds a fibre already written as a list program: the derivations of the AOP chapters state their
+    programs on lists and prove them `= enum …` by `rfl`. -/
 inductive RelRep (K V : Type) where
   | pairs (r : FinRel K V)
   | enum (f : K → List V)
+  /-- Each key's fibre an array. -/
+  | arr (f : K → Array V)
+  /-- `ix(a) : i ↦ a[i]`, a q list or a table's rows: the index is the position, so a lookup is an array
+      read and no index is built.  `K = Nat` is a field and not an index of the type, which keeps
+      `RelRep` in `Type`. -/
+  | vec (a : Array V) (h : K = Nat)
 
 /-- A relation `K ⟶ V` known only by its membership test: an order such as `(· ≤ ·)`, a quotient `X / Y`,
     the converse of an `enum`.  It lists nothing, so it follows a `RelRep` (`RelRep.compT`) or cuts one
@@ -1118,12 +1162,47 @@ namespace RelRep
 def rel : RelRep K V → ((⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩)
   | pairs r => r.rep
   | enum f => fun k v => v ∈ f k
+  | arr f => fun k v => v ∈ (f k).toList
+  | vec a h => fun k v => a[cast h k]? = some v
 
 /-- The graph of `g`: one value in each fiber. -/
-def ofFn (g : K → V) : RelRep K V := enum fun k => [g k]
+def ofFn (g : K → V) : RelRep K V := arr fun k => #[g k]
 
 theorem rel_ofFn (g : K → V) : (ofFn g).rel = (graph g : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) :=
   hom_ext fun k v => List.mem_singleton.trans (Iff.of_eq (graph_apply g k v).symm)
+
+/-- **A `vec` denotes `ix`**: index `i` to the `i`-th value. -/
+theorem rel_vec (a : Array V) : (vec a rfl).rel = ix a.toList :=
+  hom_ext fun j v => by show a[j]? = some v ↔ a.toList[j]? = some v; rw [Array.getElem?_toList]
+
+/-- A `vec` as a `FinRel`: the positions `0 … n-1` beside the values, for an operation that needs the
+    pairs listed. -/
+def vecFin (a : Array V) (h : K = Nat) : FinRel K V :=
+  ⟨(rangeArr a.size).map (cast h.symm), a, by rw [Array.size_map, ← Array.length_toList, toList_rangeArr]; simp⟩
+
+/-- The fibre of `j` among the positions `s …` beside `l`. -/
+theorem filterMap_sel_range' (j : Nat) : (l : List V) → (s : Nat) →
+    ((List.range' s l.length).zip l).filterMap (FinRel.sel j) = if s ≤ j then l[j - s]?.toList else []
+  | [], s => by split <;> simp
+  | x :: l, s => by
+    have ih := filterMap_sel_range' j l (s + 1)
+    rw [List.length_cons, List.range'_succ, List.zip_cons_cons, List.filterMap_cons, ih]
+    by_cases e : s = j
+    · subst e; simp [FinRel.sel]; exact fun h => absurd h (by omega)
+    · have hs : FinRel.sel j (s, x) = none := by simp [FinRel.sel, e]
+      rw [hs]
+      by_cases hj : s + 1 ≤ j
+      · rw [if_pos hj, if_pos (by omega), show j - s = (j - (s + 1)) + 1 by omega]; simp
+      · rw [if_neg hj, if_neg (by omega)]
+
+theorem scanLookup_vecFin [DecidableEq K] (a : Array V) (h : K = Nat) (k : K) :
+    (vecFin a h).scanLookup k = (a[cast h k]?).toList := by
+  subst h
+  have e := filterMap_sel_range' (cast rfl k) a.toList 0
+  simp only [Array.length_toList, Nat.zero_le, if_true, Nat.sub_zero, Array.getElem?_toList] at e
+  rw [← e, FinRel.scanLookup, FinRel.toList, vecFin, Array.toList_map, toList_rangeArr]
+  show List.filterMap (FinRel.sel k) ((List.map id (List.range' 0 a.size)).zip a.toList) = _
+  rw [List.map_id]
 
 variable [DecidableEq K] [DecidableEq V] [FibreIndex K] [FibreIndex V]
 
@@ -1131,10 +1210,15 @@ variable [DecidableEq K] [DecidableEq V] [FibreIndex K] [FibreIndex V]
 def mem : RelRep K V → K → V → Bool
   | pairs r => fun k v => decide ((k, v) ∈ r.toList)
   | enum f => fun k v => decide (v ∈ f k)
+  | arr f => fun k v => (f k).any (decide <| · = v)
+  | vec a h => fun k v => decide (a[cast h k]? = some v)
 
 theorem mem_iff_rel : (R : RelRep K V) → (k : K) → (v : V) → (R.mem k v = true ↔ R.rel k v)
   | pairs _, _, _ => decide_eq_true_iff
   | enum _, _, _ => decide_eq_true_iff
+  | arr f, k, v => by
+    simp only [mem, rel, ← Array.any_toList, List.any_eq_true, decide_eq_true_eq, exists_eq_right]
+  | vec _ _, _, _ => decide_eq_true_iff
 
 /-- `R` read by its membership test only, its enumeration forgotten. -/
 def toTest (R : RelRep K V) : RelTest K V := .test R.mem
@@ -1150,6 +1234,8 @@ omit [DecidableEq V] [FibreIndex V] in
   match R with
   | pairs r => let i := FibreIndex.build r; h (FibreIndex.get i)
   | enum f => h f
+  | arr f => h fun k => (f k).toList
+  | vec a e => h fun k => (a[cast e k]?).toList
 
 omit [DecidableEq V] [FibreIndex V] in
 /-- The list denotation: each key's fibre in representation order, with repeats — a `FinRel` in array
@@ -1159,6 +1245,52 @@ def app (R : RelRep K V) : K → List V := R.withApp id
 omit [DecidableEq V] [FibreIndex V] in
 theorem withApp_eq {α : Type} (R : RelRep K V) (h : (K → List V) → α) : R.withApp h = h R.app := by
   cases R <;> rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+/-- `withApp` onto arrays, what a compiled operation reads: a `FinRel`'s index built once. -/
+@[inline] def withFib {α : Type} (R : RelRep K V) (h : (K → Array V) → α) : α :=
+  match R with
+  | pairs r => let i := FibreIndex.build r; h (FibreIndex.getA i)
+  | enum f => h fun k => (f k).toArray
+  | arr f => h f
+  | vec a e => h fun k => (a[cast e k]?).toArray
+
+omit [DecidableEq V] [FibreIndex V] in
+/-- Each key's fibre as an array. -/
+def fib (R : RelRep K V) : K → Array V := R.withFib id
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem withFib_eq {α : Type} (R : RelRep K V) (h : (K → Array V) → α) : R.withFib h = h R.fib := by
+  cases R <;> rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+/-- **The array fibre is the list one.** -/
+@[simp] theorem toList_fib (R : RelRep K V) (k : K) : (R.fib k).toList = R.app k := by
+  cases R with
+  | pairs r => exact FibreIndex.toList_getA _ k
+  | enum f => exact List.toList_toArray
+  | arr f => rfl
+  | vec a e => show (a[cast e k]?).toArray.toList = (a[cast e k]?).toList; cases a[cast e k]? <;> rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem app_arr (f : K → Array V) : (arr f).app = fun k => (f k).toList := rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem app_vec (a : Array V) (e : K = Nat) : (vec a e).app = fun k => (a[cast e k]?).toList := rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem app_ofFn (g : K → V) (k : K) : (ofFn g).app k = [g k] := rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+/-- An operation that answers each key from `R`'s array fibre, written once for the array-held forms. -/
+theorem app_withFib_arr {C : Type} (R : RelRep K V) (F : K → Array V → Array C) (k : K) :
+    (R.withFib fun f => arr fun k => F k (f k)).app k = (F k (R.fib k)).toList := by
+  rw [withFib_eq]; rfl
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem app_vecFin (a : Array V) (e : K = Nat) : (pairs (vecFin a e)).app = (vec a e).app :=
+  funext fun k => by
+    show FibreIndex.get (FibreIndex.build (vecFin a e)) k = _; rw [FibreIndex.get_build]; exact scanLookup_vecFin a e k
 
 omit [DecidableEq V] [FibreIndex V] in
 theorem app_pairs (r : FinRel K V) : (pairs r).app = r.scanLookup := FibreIndex.get_build r
@@ -1172,6 +1304,8 @@ theorem mem_app (R : RelRep K V) (k : K) (v : V) : v ∈ R.app k ↔ R.rel k v :
   cases R with
   | pairs r => rw [app_pairs]; exact FinRel.mem_scanLookup r k v
   | enum f => exact Iff.rfl
+  | arr f => exact Iff.rfl
+  | vec a e => exact Option.mem_toList
 
 theorem mem_eq_app (R : RelRep K V) (k : K) (v : V) : R.mem k v = decide (v ∈ R.app k) :=
   Bool.eq_iff_iff.2 ((mem_iff_rel R k v).trans ((mem_app R k v).symm.trans decide_eq_true_iff.symm))
@@ -1186,6 +1320,7 @@ theorem rel_conv (R : RelRep K V) : R.conv.rel = R.rel° := hom_ext fun v k => m
 def inter : RelRep K V → RelTest K V → RelRep K V
   | pairs r, S => pairs (FinRel.filter (fun k v => S.mem k v = true) r)
   | enum f, S => enum fun k => (f k).filter (S.mem k ·)
+  | R, S => R.withFib fun f => arr fun k => (f k).filter (S.mem k ·)
 
 /-- `R ∩ S`: `R`'s fibre, in order, filtered by `S`. -/
 theorem app_inter (R : RelRep K V) (S : RelTest K V) (k : K) :
@@ -1193,6 +1328,8 @@ theorem app_inter (R : RelRep K V) (S : RelTest K V) (k : K) :
   cases R with
   | pairs r => simp only [inter, app_pairs, FinRel.scanLookup_filter, Bool.decide_eq_true]
   | enum f => rfl
+  | arr f => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib _ k))
+  | vec a e => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib _ k))
 
 theorem mem_inter (R : RelRep K V) (S : RelTest K V) (k : K) (v : V) :
     (inter R S).mem k v = (R.mem k v && S.mem k v) := by
@@ -1204,14 +1341,15 @@ theorem rel_inter (R : RelRep K V) (S : RelTest K V) : (inter R S).rel = R.rel �
 /-- `R ∪ S`: two `FinRel`s append their arrays, otherwise the fibres are appended. -/
 def union : RelRep K V → RelRep K V → RelRep K V
   | pairs r, pairs s => pairs (FinRel.union r s)
-  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => FibreIndex.get i k ++ g k
-  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => f k ++ FibreIndex.get i k
   | enum f, enum g => enum fun k => f k ++ g k
+  | R, S => R.withFib fun f => S.withFib fun g => arr fun k => f k ++ g k
 
 /-- `R ∪ S` appends the fibres: a monoid, neither idempotent nor commutative on lists — those two hold
     only of `rel` (`rel_union`). -/
 theorem app_union (R S : RelRep K V) (k : K) : (union R S).app k = R.app k ++ S.app k := by
-  cases R <;> cases S <;> first | rfl | simp only [union, app_pairs, FinRel.scanLookup_union]
+  have hA : (R.withFib fun f => S.withFib fun g => arr fun k => f k ++ g k).app k = R.app k ++ S.app k := by
+    rw [withFib_eq, withFib_eq]; exact (Array.toList_append ..).trans (by rw [toList_fib, toList_fib])
+  cases R <;> cases S <;> first | rfl | (simp only [union, app_pairs, FinRel.scanLookup_union]; done) | exact hA
 
 theorem mem_union (R S : RelRep K V) (k : K) (v : V) : (union R S).mem k v = (R.mem k v || S.mem k v) := by
   rw [mem_eq_app, app_union, mem_eq_app, mem_eq_app]; simp [List.mem_append]
