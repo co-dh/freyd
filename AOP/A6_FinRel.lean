@@ -15,8 +15,6 @@ public import AOP.A6_1_RelSet
 public import AOP.A6_BinSearch
 public import AOP.A8_1
 public import AOP.A6_ConsList
-public import Std.Data.HashMap.Lemmas
-public import Std.Data.HashSet.Lemmas
 import AOP.A7_2_RelSet
 
 @[expose] public section
@@ -154,11 +152,11 @@ def toList (r : FinRel K V) : List (K × V) := r.keys.toList.zip r.vals.toList
 
 def rep (r : FinRel K V) : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩ := rel r.toList
 
-/-- Through one array, not `unzip`: the compiled `unzip` is a `foldr`, one stack frame per pair. -/
-def ofList (l : List (K × V)) : FinRel K V := ⟨l.toArray.map Prod.fst, l.toArray.map Prod.snd, by simp⟩
+/-- Two `map`s, not `unzip`: the compiled `unzip` is a `foldr`, one stack frame per pair. -/
+def ofList (l : List (K × V)) : FinRel K V := ⟨(l.map Prod.fst).toArray, (l.map Prod.snd).toArray, by simp⟩
 
 theorem toList_ofList (l : List (K × V)) : (ofList l).toList = l := by
-  simp only [toList, ofList, Array.toList_map, ← List.unzip_fst, ← List.unzip_snd,
+  simp only [toList, ofList, List.toList_toArray, ← List.unzip_fst, ← List.unzip_snd,
     List.zip_unzip]
 
 theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := congrArg rel (toList_ofList l)
@@ -473,91 +471,73 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
 
 /-! ## Fibres and keys by hashing -/
 
-/-- The fibres of a `FinRel`, made in one pass: `slot` sends a key to its bucket, and a bucket holds
-    the key it was made for and that key's values in array order.  A structure and not a function
-    `K → List V`, because the compiler eta-expands a function-valued definition, which would rebuild
-    the table at every key. -/
-structure Fibres (K V : Type) [DecidableEq K] [Hashable K] where
-  slot : Std.HashMap K Nat
-  buckets : Array (K × Array V)
+/-- The fibres of a `FinRel`, made in one pass: a key's hash picks its bucket, and a bucket lists each
+    key it holds with that key's values in array order.  A structure and not a function `K → List V`,
+    because the compiler eta-expands a function-valued definition, which would rebuild the table at
+    every key.  Hand-rolled rather than `Std.HashMap`, whose lemmas use `Classical.choice`. -/
+structure Fibres (K V : Type) where
+  buckets : Array (List (K × Array V))
+  size_pos : 0 < buckets.size
 
 namespace Fibres
 
+/-- The values a bucket holds for `a`. -/
+def look [DecidableEq K] : List (K × Array V) → K → List V
+  | [], _ => []
+  | (k', vs) :: t, a => if k' = a then vs.toList else look t a
+
+/-- Append `v` to `k`'s values in a bucket; a key the bucket lacks goes at its end. -/
+def bump [DecidableEq K] : List (K × Array V) → K → V → List (K × Array V)
+  | [], k, v => [(k, #[v])]
+  | (k', vs) :: t, k, v => if k' = k then (k', vs.push v) :: t else (k', vs) :: bump t k v
+
+theorem look_bump [DecidableEq K] (b : List (K × Array V)) (k : K) (v : V) (a : K) :
+    look (bump b k v) a = look b a ++ if k = a then [v] else [] := by
+  induction b with
+  | nil => by_cases h : k = a <;> simp [look, bump, h]
+  | cons p t ih =>
+    obtain ⟨k', vs⟩ := p
+    by_cases h1 : k' = k
+    · subst h1; by_cases h2 : k' = a <;> simp [look, bump, h2]
+    · by_cases h2 : k' = a
+      · subst h2; simp [look, bump, h1, Ne.symm h1]
+      · simp [look, bump, h1, h2, ih]
+
 variable [DecidableEq K] [Hashable K]
 
-/-- The bucket of `k`: the one `slot` names, when it was made for `k`. -/
-def find? (x : Fibres K V) (k : K) : Option (Array V) :=
-  (x.slot[k]?.bind (x.buckets[·]?)).bind fun p => if p.1 = k then some p.2 else none
+/-- No fibres, in `n + 1` buckets. -/
+def empty (n : Nat) : Fibres K V := ⟨Array.replicate (n + 1) [], by simp⟩
 
-/-- The fibre of `k`: its bucket's values, in array order. -/
-def get (x : Fibres K V) (k : K) : List V := ((x.find? k).map Array.toList).getD []
+def slot (x : Fibres K V) (k : K) : Nat := (hash k).toNat % x.buckets.size
 
-/-- Append `v` to the fibre of `k`; a key with no bucket gets one at the end. -/
+omit [DecidableEq K] in
+theorem slot_lt (x : Fibres K V) (k : K) : x.slot k < x.buckets.size := Nat.mod_lt _ x.size_pos
+
+/-- The fibre of `k`, from its bucket. -/
+def get (x : Fibres K V) (k : K) : List V := look (x.buckets[x.slot k]'(x.slot_lt k)) k
+
+/-- Append `v` to the fibre of `k`. -/
 def push (x : Fibres K V) (k : K) (v : V) : Fibres K V :=
-  match x.slot[k]? with
-  | some i => if (x.buckets[i]?.map (·.1)) = some k then ⟨x.slot, x.buckets.modify i fun p => (p.1, p.2.push v)⟩
-      else ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩
-  | none => ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩
+  ⟨x.buckets.modify (x.slot k) (bump · k v), by simpa using x.size_pos⟩
 
-theorem find?_fresh (x : Fibres K V) (k : K) (v : V) (a : K) :
-    find? ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩ a = if k = a then some #[v] else x.find? a := by
-  by_cases ka : k = a
-  · subst ka; simp [find?, Std.HashMap.getElem?_insert]
-  · simp only [find?, Std.HashMap.getElem?_insert, beq_iff_eq, ka, if_false]
-    cases hs : x.slot[a]? with
-    | none => rfl
-    | some j =>
-      simp only [Option.bind_some, Array.getElem?_push]
-      split
-      · rename_i e; subst e; simp [ka, Array.getElem?_eq_none]
-      · rfl
-
-theorem find?_push (x : Fibres K V) (k : K) (v : V) (a : K) :
-    (x.push k v).find? a = if k = a then some (((x.find? a).getD #[]).push v) else x.find? a := by
-  unfold push
-  split
-  · rename_i i hi
-    split
-    · rename_i hb
-      obtain ⟨⟨k', vs⟩, hp, e⟩ := Option.map_eq_some_iff.1 hb
-      rw [show k' = k from e] at hp
-      cases hs : x.slot[a]? with
-      | none =>
-        have : k ≠ a := fun e => by subst e; simp [hi] at hs
-        simp [find?, hs, this]
-      | some j =>
-        by_cases ij : i = j
-        · subst ij
-          by_cases ka : k = a
-          · subst ka; simp [find?, hs, hp, Array.getElem?_modify]
-          · simp [find?, hs, hp, Array.getElem?_modify, ka]
-        · have : k ≠ a := fun e => by subst e; rw [hi] at hs; exact ij (Option.some.inj hs)
-          simp [find?, hs, Array.getElem?_modify, ij, this]
-    · rename_i hb
-      have h0 : x.find? k = none := by
-        simp only [find?, hi, Option.bind_some]
-        cases hbi : x.buckets[i]? with
-        | none => rfl
-        | some p =>
-          simp only [Option.bind_some]
-          rw [if_neg]
-          intro e; apply hb; simp [hbi, e]
-      rw [find?_fresh x k v a]
-      split <;> simp_all
-  · rename_i hi
-    rw [find?_fresh x k v a]
-    split <;> simp_all [find?]
+theorem get_empty (n : Nat) (a : K) : (empty n : Fibres K V).get a = [] := by
+  simp [get, empty, look]
 
 theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
     (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
-  simp only [get, find?_push]
-  split <;> cases x.find? a <;> simp
+  simp only [get, push, Array.getElem_modify]
+  by_cases e : x.slot k = x.slot a
+  · simp only [slot, Array.size_modify] at e ⊢
+    rw [if_pos e, look_bump]
+  · have : k ≠ a := fun h => e (h ▸ rfl)
+    simp only [slot, Array.size_modify] at e ⊢
+    rw [if_neg e]; simp [this]
 
 end Fibres
 
-/-- The fibres of `r`, made in one pass over its pairs. -/
+/-- The fibres of `r`, made in one pass over its pairs, one bucket per pair. -/
 def FinRel.fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : Fibres K V :=
-  r.toList.foldl (fun x p => x.push p.1 p.2) ⟨∅, #[]⟩
+  r.toList.foldl (fun x p => x.push p.1 p.2) (Fibres.empty r.keys.size)
 
 /-- **The hashed fibre is the scanned one**, order and repeats kept. -/
 theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibres.get = r.scanLookup :=
@@ -571,18 +551,19 @@ theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibr
         intro x
         rw [List.foldl_cons, ih, Fibres.get_push]
         by_cases h : p.1 = a <;> simp [sel, h]
-    rw [fibres, go]
-    simp [Fibres.get, Fibres.find?, scanLookup]
+    rw [fibres, go, Fibres.get_empty]
+    rfl
 
-/-- One step of `hashDedup`: a key not yet seen is recorded and listed. -/
-def dedupStep [DecidableEq K] [Hashable K] (s : Std.HashSet K × Array K) (k : K) : Std.HashSet K × Array K :=
-  if s.1.contains k then s else (s.1.insert k, s.2.push k)
+/-- One step of `hashDedup`: a key with no fibre yet gets one and is listed. -/
+def dedupStep [DecidableEq K] [Hashable K] (s : Fibres K Unit × Array K) (k : K) : Fibres K Unit × Array K :=
+  if (s.1.get k).isEmpty then (s.1.push k (), s.2.push k) else s
 
-/-- `eraseDups` in one pass: each key once, in order of first appearance, a hash set of those seen. -/
-def hashDedup [DecidableEq K] [Hashable K] (l : List K) : List K := (l.foldl dedupStep (∅, #[])).2.toList
+/-- `eraseDups` in one pass: each key once, in order of first appearance, the keys seen kept as fibres. -/
+def hashDedup [DecidableEq K] [Hashable K] (l : List K) : List K :=
+  (l.foldl dedupStep (Fibres.empty l.length, #[])).2.toList
 
 theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l.eraseDups := by
-  have go : ∀ (l : List K) (s : Std.HashSet K) (acc : Array K), (∀ k, s.contains k = true ↔ k ∈ acc.toList) →
+  have go : ∀ (l : List K) (s : Fibres K Unit) (acc : Array K), (∀ k, (s.get k).isEmpty = false ↔ k ∈ acc.toList) →
       (l.foldl dedupStep (s, acc)).2.toList = acc.toList ++ (l.filter fun k => !decide (k ∈ acc.toList)).eraseDups := by
     intro l
     induction l with
@@ -591,14 +572,15 @@ theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l
       intro s acc hs
       rw [List.foldl_cons, dedupStep]
       by_cases ha : a ∈ acc.toList
-      · rw [if_pos ((hs a).2 ha), ih s acc hs]
+      · rw [if_neg (by rw [(hs a).2 ha]; simp), ih s acc hs]
         have ha' : a ∈ acc := by simpa using ha
         simp [List.filter_cons, ha']
-      · rw [if_neg (fun h => ha ((hs a).1 h)),
+      · rw [if_pos (by cases h : (s.get a).isEmpty <;> simp_all),
           ih _ _ fun k => by
-            rw [Std.HashSet.contains_insert, Bool.or_eq_true, hs k, beq_iff_eq, Array.toList_push,
-              List.mem_append, List.mem_singleton]
-            exact ⟨fun h => h.elim (fun e => .inr e.symm) .inl, fun h => h.elim .inr (fun e => .inl e.symm)⟩]
+            rw [Fibres.get_push, Array.toList_push, List.mem_append, List.mem_singleton, ← hs k]
+            by_cases e : a = k
+            · simp [e]
+            · simp [e, show k ≠ a from fun h => e h.symm]]
         simp only [List.filter_cons, ha, decide_false, Bool.not_false, if_true, List.eraseDups_cons,
           Array.toList_push, List.append_assoc, List.singleton_append, List.filter_filter]
         congr 3
@@ -606,7 +588,7 @@ theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l
         intro x _
         by_cases h1 : x = a <;> by_cases h2 : x ∈ acc.toList <;> simp [h1, h2]
   have e : l.filter (fun _ => true) = l := List.filter_eq_self.2 fun _ _ => rfl
-  simpa [hashDedup, e] using go l ∅ #[] (by simp)
+  simpa [hashDedup, e] using go l _ #[] (by simp [Fibres.get_empty])
 
 /-- How the fibres of a `FinRel` keyed by `K` are looked up, and a list of keys listed once: by
     hashing when `K` has a `Hashable`, else by the scans `scanLookup` and `eraseDups`.  Each answer
