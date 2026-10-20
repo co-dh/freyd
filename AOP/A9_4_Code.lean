@@ -37,6 +37,7 @@ module
 
 public import AOP.A7_2_RelSet
 public import AOP.A8_3
+public import AOP.A6_FinRel
 public import AOP.A9_1
 
 /-- B&dM §9.4's fixed data: `c` and `p`, the constant costs of a symbol and a pointer.  Every
@@ -1023,6 +1024,202 @@ public theorem code_prog [RelSet.Code] (encode : dStr ⟶ dCodes) :
         have h := comp_mono_right (id_le_thinRel hrefl)
           (powerRel (rprodMap encode (𝟙 dCode) ≫ snoc) ≫ est (R))
         rwa [Cat.id_comp] at h
+
+/-! ## `code-run`: the program computed by `RelRep`
+
+One step lists the cuts `extend°` as a `RelRep.enum`, appends each cut's code to the sequences
+already found for its front string, and keeps the `R`-least with `RelRep.est`.  Every cut shortens
+the string, so the recursion runs on a fuel of the string's length. -/
+
+section CodeRun
+
+deriving instance DecidableEq for SnocList
+deriving instance DecidableEq for Code
+
+/-- A cons-list's members, in order. -/
+@[expose] public def clList {B : Type} : CL.ConsList Unit B → List B
+  | CL.ConsList.wrap _ => []
+  | CL.ConsList.cons b bs => b :: clList bs
+
+public theorem mem_clList {B : Type} (b : B) :
+    ∀ bs : CL.ConsList Unit B, b ∈ clList bs ↔ ListRel.inlistP bs b
+  | CL.ConsList.wrap _ => by simp [clList, ListRel.inlistP]
+  | CL.ConsList.cons c cs => by simp [clList, ListRel.inlistP, mem_clList b cs]
+
+/-- `extend°` as a `RelRep`: the cuts `reduce` lists. -/
+@[expose] public def stepE : RelRep Str (Str × Code) := .enum fun ws => clList (reduceFn ws)
+
+public theorem rel_stepE : stepE.rel = extend° :=
+  hom_ext fun w q => (mem_clList q (reduceFn w)).trans (mem_reduce w q)
+
+variable [RelSet.Code]
+
+/-- The cost order `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (SnocList Unit Code) (SnocList Unit Code) :=
+  .test fun x y => decide (size x ≤ size y)
+
+public theorem rel_Rt : Rt.rel = R := hom_ext fun x y => decide_eq_true_iff.trans (R_apply x y).symm
+
+/-- `(X×𝟙)snoc` as a `RelRep`: a cut `(xs,e)` to each sequence `X` gives for `xs`, `e` appended. -/
+@[expose] public def Xs (X : Str → List (SnocList Unit Code)) : RelRep (Str × Code) (SnocList Unit Code) :=
+  .enum fun q => (X q.1).map fun cs => SnocList.snoc cs q.2
+
+/-- The candidates of one step: `extend°` then `(X×𝟙)snoc`. -/
+@[expose] public def cands (X : Str → List (SnocList Unit Code)) (ws : Str) : List (SnocList Unit Code) :=
+  (clList (reduceFn ws)).flatMap fun q => (X q.1).map fun cs => SnocList.snoc cs q.2
+
+omit [RelSet.Code] in
+public theorem cands_eq (X : Str → List (SnocList Unit Code)) :
+    RelRep.comp stepE (Xs X) = some (.enum (cands X)) := rfl
+
+/-- One step: the `R`-least candidates. -/
+@[expose] public def stepFn (X : Str → List (SnocList Unit Code)) (ws : Str) : List (SnocList Unit Code) :=
+  RelRep.estList Rt.mem (cands X ws)
+
+public theorem stepFn_eq (X : Str → List (SnocList Unit Code)) :
+    RelRep.est Rt (.enum (cands X)) = some (.enum (stepFn X)) := rfl
+
+/-- One step is `Λ(extend° (X×𝟙)snoc) est(R)`. -/
+public theorem rel_stepFn (X : Str → List (SnocList Unit Code)) :
+    (RelRep.enum (stepFn X)).rel = Λ (extend° ≫ (Xs X).rel) ≫ est R := by
+  rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepE, rel_Rt]
+
+/-- The program on a fuel: `[]` from no codes, a non-empty string by one step. -/
+@[expose] public def compressN : Nat → Str → List (SnocList Unit Code)
+  | 0, _ => []
+  | _ + 1, SnocList.wrap _ => [SnocList.wrap ()]
+  | n + 1, w@(SnocList.snoc _ _) => stepFn (compressN n) w
+
+/-- The program: every cut shortens the string, so `slen w+1` steps reach `[]`. -/
+@[expose] public def compress (ws : Str) : List (SnocList Unit Code) := compressN (slen ws + 1) ws
+
+omit [RelSet.Code] in
+/-- A cut shortens the string: a symbol by one, a pointer by its non-empty `zs`. -/
+public theorem slen_lt_of_extendP : ∀ {q : Str × Code} {w : Str}, extendP q w → slen q.1 < slen w
+  | (xs, Code.sym a), w, h => by
+    obtain rfl : w = SnocList.snoc xs a := h
+    exact Nat.lt_succ_self _
+  | (xs, Code.ptr ys zs), w, h => by
+    obtain ⟨rfl, hz, -⟩ := h
+    rw [slen_sappend]
+    cases zs with
+    | wrap _ => exact absurd rfl hz
+    | snoc zs b => show slen xs < slen xs + (slen zs + 1); omega
+
+/-- A non-empty list of sequences has one of least cost. -/
+public theorem exists_min_size :
+    ∀ l : List (SnocList Unit Code), l ≠ [] → ∃ v ∈ l, ∀ y ∈ l, size v ≤ size y
+  | [], h => absurd rfl h
+  | [v], _ => ⟨v, List.mem_singleton_self v, fun y hy => by rw [List.mem_singleton.1 hy]; exact Nat.le_refl _⟩
+  | v :: u :: l, _ => by
+    obtain ⟨m, hm, hmin⟩ := exists_min_size (u :: l) (List.cons_ne_nil _ _)
+    rcases Nat.le_total (size v) (size m) with hvm | hmv
+    · exact ⟨v, List.mem_cons_self, fun y hy => by
+        rcases List.mem_cons.1 hy with rfl | hy
+        · exact Nat.le_refl _
+        · exact Nat.le_trans hvm (hmin y hy)⟩
+    · exact ⟨m, List.mem_cons_of_mem _ hm, fun y hy => by
+        rcases List.mem_cons.1 hy with rfl | hy
+        · exact hmv
+        · exact hmin y hy⟩
+
+public theorem mem_estList_Rt {cs : SnocList Unit Code} {l : List (SnocList Unit Code)} :
+    cs ∈ RelRep.estList Rt.mem l ↔ cs ∈ l ∧ ∀ y ∈ l, size cs ≤ size y := by
+  simp only [RelRep.estList, List.mem_filter, List.all_eq_true]
+  show (_ ∧ ∀ y ∈ l, decide (size cs ≤ size y) = true) ↔ _
+  simp only [decide_eq_true_iff]
+
+omit [RelSet.Code] in
+public theorem mem_cands {X : Str → List (SnocList Unit Code)} {w : Str} {cs : SnocList Unit Code} :
+    cs ∈ cands X w ↔ ∃ q, extendP q w ∧ ∃ d ∈ X q.1, cs = SnocList.snoc d q.2 := by
+  simp only [cands, List.mem_flatMap, List.mem_map, mem_clList, mem_reduce]
+  constructor
+  · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
+  · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
+
+/-- At a fuel above the length, `compressN` returns least-cost sequences decoding to `w`, and at
+    least one. -/
+public theorem compressN_spec : ∀ (n : Nat) (w : Str), slen w < n →
+    (∀ cs ∈ compressN n w, decode cs w ∧ ∀ cs', decode cs' w → size cs ≤ size cs')
+      ∧ ∃ cs, cs ∈ compressN n w
+  | 0, _, h => absurd h (Nat.not_lt_zero _)
+  | _ + 1, SnocList.wrap _, _ => by
+    refine ⟨fun cs hcs => ?_, ⟨SnocList.wrap (), List.mem_singleton_self _⟩⟩
+    obtain rfl := List.mem_singleton.1 hcs
+    exact ⟨rfl, fun _ _ => Nat.zero_le _⟩
+  | n + 1, SnocList.snoc w₀ a, hn => by
+    have ih : ∀ q : Str × Code, extendP q (SnocList.snoc w₀ a) →
+        (∀ cs ∈ compressN n q.1, decode cs q.1 ∧ ∀ cs', decode cs' q.1 → size cs ≤ size cs')
+          ∧ ∃ cs, cs ∈ compressN n q.1 := fun q hq =>
+      compressN_spec n q.1 (Nat.lt_of_lt_of_le (slen_lt_of_extendP hq) (Nat.le_of_lt_succ hn))
+    have hbest : ∀ cs', decode cs' (SnocList.snoc w₀ a) →
+        ∃ y ∈ cands (compressN n) (SnocList.snoc w₀ a), size y ≤ size cs' := by
+      intro cs' hd
+      cases cs' with
+      | wrap _ => exact absurd (hd : SnocList.snoc w₀ a = SnocList.wrap ()) (snoc_ne_wrap w₀ a)
+      | snoc cs₀ e =>
+        obtain ⟨xs, hxs, hext⟩ := hd
+        obtain ⟨hall, d, hdm⟩ := ih (xs, e) hext
+        refine ⟨SnocList.snoc d e, mem_cands.2 ⟨(xs, e), hext, d, hdm, rfl⟩, ?_⟩
+        have := (hall d hdm).2 cs₀ hxs
+        show size d + bytes e ≤ size cs₀ + bytes e
+        omega
+    show (∀ cs ∈ stepFn (compressN n) (SnocList.snoc w₀ a), _) ∧ ∃ cs, cs ∈ stepFn (compressN n) (SnocList.snoc w₀ a)
+    refine ⟨fun cs hcs => ?_, ?_⟩
+    · obtain ⟨hc, hmin⟩ := mem_estList_Rt.1 hcs
+      obtain ⟨q, hq, d, hd, rfl⟩ := mem_cands.1 hc
+      refine ⟨⟨q.1, ((ih q hq).1 d hd).1, hq⟩, fun cs' hd' => ?_⟩
+      obtain ⟨y, hy, hle⟩ := hbest cs' hd'
+      exact Nat.le_trans (hmin y hy) hle
+    · obtain ⟨_, d, hd⟩ := ih (w₀, Code.sym a) rfl
+      obtain ⟨v, hv, hvmin⟩ := exists_min_size (cands (compressN n) (SnocList.snoc w₀ a))
+        (List.ne_nil_of_mem (mem_cands.2 ⟨(w₀, Code.sym a), rfl, d, hd, rfl⟩))
+      exact ⟨v, mem_estList_Rt.2 ⟨hv, hvmin⟩⟩
+
+/-- **The program meets its specification**: every sequence `compress` returns decodes to the
+    string and costs least, `compress ⊑ Λ(decode°) est(R)`. -/
+public theorem compress_le : (RelRep.enum compress).rel ⊑ Λ (decode°) ≫ est R :=
+  le_iff.mpr fun w cs h => (Λ_comp_est_apply _ _ w cs).2 <| by
+    obtain ⟨hd, hmin⟩ := (compressN_spec (slen w + 1) w (Nat.lt_succ_self _)).1 cs h
+    exact ⟨hd, fun z hz => (R_apply cs z).2 (hmin z hz)⟩
+
+end CodeRun
+
+section CodeRunEx
+
+/-- The run's costs: a symbol `1`, a pointer `2`. -/
+@[expose] public def c1p2 : RelSet.Code := ⟨1, 2⟩
+
+attribute [local instance] c1p2
+
+/-- **code-run**, the cuts: `ababa` ends in a symbol `a`, or in a pointer — `a` back to either
+    earlier `a`, `ba` back to the first, `aba` back to the start. -/
+public theorem run_cuts :
+    clList (reduceFn (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
+      (SnocList.wrap ()) 'a') 'b') 'a') 'b') 'a'))
+      = [(SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a') 'b',
+            Code.sym 'a'),
+         (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a') 'b',
+            Code.ptr (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') (SnocList.snoc (SnocList.wrap ()) 'a')),
+         (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a') 'b',
+            Code.ptr (SnocList.wrap ()) (SnocList.snoc (SnocList.wrap ()) 'a')),
+         (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a',
+            Code.ptr (SnocList.snoc (SnocList.wrap ()) 'a') (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'b') 'a')),
+         (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b',
+            Code.ptr (SnocList.wrap ())
+              (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a'))] := by
+  rfl
+
+/-- **code-run**: at a symbol `1` and a pointer `2`, the one least code of `ababa` is `a`, `b`,
+    then a pointer copying `aba` from the start, overlapping itself; cost `4`. -/
+public theorem run_compress :
+    compress (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
+      (SnocList.wrap ()) 'a') 'b') 'a') 'b') 'a')
+      = [SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) (Code.sym 'a')) (Code.sym 'b'))
+          (Code.ptr (SnocList.wrap ()) (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a'))] := by
+  rfl
+
+end CodeRunEx
 
 -- `extend` keeps its namespace where `decode` does not, `Freyd.UF.Filter.extend` sharing the name;
 -- a picture of §9.4's algebra has no second `extend` to tell this one from.

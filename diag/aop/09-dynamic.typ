@@ -1141,4 +1141,21 @@
   [#lean("Freyd.Alg.RelSet.Code.code_disj.rhs")],
 )]<code-disj>
 
+// One run of the program on `ababa` with a symbol costing `1` and a pointer `2`: its input, then one
+// row per stage; each value is a theorem of the `CodeRun` section of A9_4_Code, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Code.run_compress.lhs.arg"),
+   value: leanf("Freyd.Alg.RelSet.Code.run_compress.lhs.arg"),
+   meaning: [the string `ababa`, left to right]),
+  // lean:AOP.A9_4_Code.run_compress@fb3327f4
+  (sym: leann("Freyd.Alg.RelSet.Code.stepE"), type: leant("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
+   meaning: [the five cuts: `abab` then the symbol `a`, or a pointer back to `a`, `ba` or `aba`]),
+  // lean:AOP.A9_4_Code.run_cuts@f30e7d40 lean:AOP.A9_4_Code.rel_stepE@63e0183f
+  (sym: leann("Freyd.Alg.RelSet.Code.compress"), type: leant("Freyd.Alg.RelSet.Code.run_compress.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Code.run_compress.rhs"),
+   meaning: [`a`, `b`, then a pointer copying `aba` from the start: cost `4`, the least]),
+  // lean:AOP.A9_4_Code.run_compress@fb3327f4 lean:AOP.A9_4_Code.compress_le@5cda4659
+)<code-run>
+
 #pagebreak(weak: true)
