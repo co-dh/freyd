@@ -169,9 +169,14 @@ def vals (c : Keys) : List Int64 := (List.range c.count).map c.get
 def step (nul : Int64) (c : Keys) (acc : Int64) (i : Nat) : Int64 :=
   let x := c.get i; if x == nul then acc else acc + x
 
-/-- `step` over a reader `g` of the column. -/
-def stepR (nul : Int64) (g : Nat → Int64) (acc : Int64) (i : Nat) : Int64 :=
-  let x := g i; if x == nul then acc else acc + x
+/-- `bitsAt` as a recursion of its own: qlean runs `bitsAt` as a `Nat.fold`, a closure call per byte. -/
+def ld (b : ByteArray) (o : Nat) : Nat → UInt64
+  | 0 => 0
+  | w + 1 => ld b o w ||| ((if h : o + w < b.size then b[o + w] else 0).toUInt64 <<< (8 * w).toUInt64)
+
+theorem ld_eq (b : ByteArray) (o : Nat) : ∀ w, ld b o w = bitsAt b o w
+  | 0 => rfl
+  | w + 1 => by rw [ld, ld_eq b o w]; rfl
 
 /-- A column with its per-column work done once, before the first element: a pack's block starts.
 A structure and not a closure `Nat → Int64`, because the compiler eta-expands a closure-returning
@@ -182,9 +187,9 @@ structure Rd where
 
 /-- `c.get` off an `Rd`: a dense payload of a signed class reads through `Ew.signed`, fixed-width `UInt`
 casts in place of `sx`'s `Nat` powers; a pack reads its block start from `st`. -/
-def Rd.get (r : Rd) (i : Nat) : Int64 :=
+@[inline] def Rd.get (r : Rd) (i : Nat) : Int64 :=
   match r.c with
-  | .dense w b => if Signed w then Ew.signed (clsW w) (bitsAt b (i * w) w) else atW w b i
+  | .dense w b => if Signed w then Ew.signed (clsW w) (ld b (i * w) w) else atW w b i
   | .foR _ md pk => (foRBits md pk r.st i).toInt64
 
 def rdOf (c : Keys) : Rd := ⟨c, match c with | .foR _ md _ => blockStarts md | .dense .. => #[]⟩
@@ -194,11 +199,16 @@ theorem rdOf_get (c : Keys) : (rdOf c).get = c.get := by
   cases c with
   | dense w b =>
     simp only [rdOf, Rd.get]; split
-    · rename_i hw; rw [signed_clsW hw]; rfl
+    · rename_i hw; rw [ld_eq, signed_clsW hw]; rfl
     · rfl
   | foR n md pk => rfl
 
-theorem step_rd (nul : Int64) (c : Keys) : stepR nul (rdOf c).get = step nul c := by rw [rdOf_get]; rfl
+/-- `step` over an `Rd`, which the loops below take whole so the read inlines into them. -/
+def stepR (nul : Int64) (r : Rd) (acc : Int64) (i : Nat) : Int64 :=
+  let x := r.get i; if x == nul then acc else acc + x
+
+theorem step_rd (nul : Int64) (c : Keys) : stepR nul (rdOf c) = step nul c := by
+  funext acc i; simp only [stepR, rdOf_get]; rfl
 
 /-- **q's `sum` of a compressed column**: `overBytes .add` over a dense payload of a signed class,
 `Coc.over .add` over a pack (the C sums a block as `1024 * base + Σ residuals` from its metadata),
@@ -315,7 +325,7 @@ end Bits
 
 /-- `sum v where b`: one pass over `b`'s bytes, `v` read at each set bit in place. -/
 def sumWhere (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) : Int64 :=
-  let r := Col.rdOf v; whereFold (Col.stepR nul r.get) bits n.toNat 0
+  let r := Col.rdOf v; whereFold (Col.stepR nul r) bits n.toNat 0
 
 theorem sumWhere_fold (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) :
     sumWhere nul n bits v = ((List.range n.toNat).filter (bitAt bits)).foldl (Col.step nul v) 0 := by
@@ -733,7 +743,7 @@ theorem rdK_get (k : Keys) (h : k.count < 2 ^ 32) : ∀ i < k.count, (rdK k).get
 /-- `select sum v by k`: one pass over the rows, each key's slot summing `v` in place. -/
 def selbySum (nul : Int64) (k v : Keys) : List (Int64 × Int64) :=
   let rk := rdK k; let rv := Col.rdOf v
-  (grp hI rk.get (0 : Int64) (Col.stepR nul rv.get) k.count).toList
+  (grp hI rk.get (0 : Int64) (Col.stepR nul rv) k.count).toList
 
 theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) :
     selbySum nul k v = (dictOf k.get k.count).map fun p => (p.1, p.2.foldl (Col.step nul v) 0) := by
