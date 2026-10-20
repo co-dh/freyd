@@ -1176,7 +1176,7 @@
   (sym: leann("Freyd.Alg.RelSet.Code.stepE"), type: leant("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
    value: leanf("Freyd.Alg.RelSet.Code.run_cuts.rhs"),
    meaning: [the five cuts: `abab` then the symbol `a`, or a pointer back to `a`, `ba` or `aba`]),
-  // lean:AOP.A9_4_Code.run_cuts@f30e7d40 lean:AOP.A9_4_Code.rel_stepE@63e0183f
+  // lean:AOP.A9_4_Code.run_cuts@9945dbae lean:AOP.A9_4_Code.rel_stepE@63e0183f
   (sym: leann("Freyd.Alg.RelSet.Code.compress"), type: leant("Freyd.Alg.RelSet.Code.run_compress.rhs"),
    value: leanf("Freyd.Alg.RelSet.Code.run_compress.rhs"),
    meaning: [`a`, `b`, then a pointer copying `aba` from the start: cost `4`, the least]),
