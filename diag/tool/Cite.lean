@@ -103,6 +103,10 @@ def keyHex (k : Int) : String :=
 
 def sqlLit (s : String) : String := "'" ++ s.replace "'" "''" ++ "'"
 
+/-- A name as a `like` pattern matching only itself; pair it with `escape '\'`. -/
+def likeEsc (s : String) : String :=
+  ((s.replace "\\" "\\\\").replace "%" "\\%").replace "_" "\\_"
+
 def Q : String :=
   "select i.user_name, i.module, m.source, r.sl1, i.stmt_key from decl_info i"
   ++ " join module m on m.name = i.module"
@@ -133,15 +137,9 @@ def toRow (j : Json) : IO Row := do
 def rowsOf (sql : String) : IO (Array Row) := do
   (← indexRows sql).mapM toRow
 
-/-- SQL `like '%.<rest>'`, as sqlite means it: `%` eats any prefix and `_` any ONE character, so the
-    match is pinned at `user_name`'s tail with a `.` in front of it. -/
-def likeSuffix (rest user : String) : Bool :=
-  let r := rest.toList.toArray
-  let u := user.toList.toArray
-  if u.size < r.size + 1 then false
-  else
-    let off := u.size - r.size
-    u[off - 1]! == '.' && (List.range r.size).all fun i => r[i]! == '_' || r[i]! == u[off + i]!
+/-- `user` ends in `.<rest>`, compared character for character: sqlite's `like` would let a `_` in
+    `rest` match any one character, so `sched_le` also found `schedule`. -/
+def dotSuffix (rest user : String) : Bool := user.endsWith ("." ++ rest)
 
 def lastComp (s : String) : String := (s.splitOn ".").getLast!
 
@@ -153,7 +151,7 @@ def resolve (rows : Array Row) (mark : String) : Array Row := Id.run do
   for k in (List.range (parts.length - 1)).reverse.map (· + 1) do
     let md := ".".intercalate (parts.take k)
     let rest := ".".intercalate (parts.drop k)
-    hits := hits ++ rows.filter fun r => r.mod == md && (r.user == rest || likeSuffix rest r.user)
+    hits := hits ++ rows.filter fun r => r.mod == md && (r.user == rest || dotSuffix rest r.user)
   let mut out : Array Row := #[]
   for r in hits do
     unless out.any (fun s => s.user == r.user && s.mod == r.mod) do out := out.push r
@@ -189,7 +187,7 @@ def near (mark : String) : IO (Array String) := do
   let last := parts.getLast!
   let moved ← indexRows <|
     s!"select module, user_name from decl_info where internal = 0 and (user_name = {sqlLit last}"
-    ++ s!" or user_name like {sqlLit ("%." ++ last)}) limit 4"
+    ++ s!" or user_name like {sqlLit ("%." ++ likeEsc last)} escape '\\') limit 4"
   let mut hits : Array (String × String) := #[]
   for j in moved do hits := hits.push (← cell j "module", ← cell j "user_name")
   if hits.isEmpty then
