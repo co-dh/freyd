@@ -83,17 +83,17 @@ def d : RelRep Sym Int := bang dF.keys dF.vals dF.len
 -- key d: `a`b`c ; value d: 1 2 3
 #guard dF.keys == #["a", "b", "c"] && dF.vals == #[1, 2, 3]
 
-variable [DecidableEq K] [DecidableEq V] [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X]
-  [DecidableEq κ]
+variable [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X]
+  [DecidableEq κ] [FibreIndex κ]
 
 /-- `dom r` held as pairs, each key once, in order of first appearance: q's key order. -/
-def domP (r : FinRel K V) : RelRep K K := .pairs (FinRel.ofList ((r.toList.map Prod.fst).eraseDups.map fun k => (k, k)))
+def domP (r : FinRel K V) : RelRep K K := .pairs (FinRel.ofList ((FibreIndex.dedup (r.toList.map Prod.fst)).map fun k => (k, k)))
 
 /-- q's keyed lookup `look(D) ≜ first(D) some ⊕ ˆnone`: the first value of the fibre, `0N` when empty. -/
 def look (D : RelRep K V) : Option (RelRep K (Option V)) := do
   RelRep.override (← (← D.first).comp (RelRep.ofFn some)) (RelRep.ofFn fun _ => none)
 
-omit [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- `look` reads the fibre list: its head, or `0N` when it is empty. -/
 theorem app?_look {D : RelRep K V} {f : K → List V} (h : D.app? = some f) {L : RelRep K (Option V)}
     (hL : look D = some L) : L.app? = some fun k => [(f k).head?] := by
@@ -142,7 +142,7 @@ def upsert (r s : FinRel K V) : Option (RelRep K V) := do
 -- d,e: `a`b`c`d!1 10 20 30
 #guard ps (upsert dF eF) == some [("a", 1), ("b", 10), ("c", 20), ("d", 30)]
 
-omit [DecidableEq V] [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- `eraseDups` keeps one copy of each key: the fibre of `k` in `(a,a)` over it is `[k]` when `k` occurs. -/
 theorem sel_eraseDups (k : K) : (xs : List K) →
     ((xs.eraseDups.map fun a => (a, a)).filterMap (FinRel.sel k)) = if k ∈ xs then [k] else []
@@ -156,11 +156,11 @@ theorem sel_eraseDups (k : K) : (xs : List K) →
 termination_by xs => xs.length
 decreasing_by exact Nat.lt_succ_of_le (List.length_filter_le _ _)
 
-omit [DecidableEq V] [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- `dom r` answers `k` itself exactly when `k` is a key of `r`. -/
 theorem app?_domP (r : FinRel K V) :
     (domP r).app? = some fun k => if k ∈ r.toList.map Prod.fst then [k] else [] := by
-  simp only [domP, RelRep.app?, FinRel.scanLookup_ofList]
+  simp only [domP, RelRep.app?, FibreIndex.get_build, FibreIndex.dedup_eq, FinRel.scanLookup_ofList]
   exact congrArg some (funext fun k => by simpa [List.map_map, Function.comp_def] using sel_eraseDups k _)
 
 /-- One key's answer from its two fibres, as q's dict arithmetic gives it: `d`'s first row meets `e`'s first
@@ -174,7 +174,7 @@ def zipD (op : V → V → V) (z : V) (r s : FinRel K V) : Option (RelRep K V) :
   (domP (r.union s)).comp
     (← ((← (RelRep.pairs r).transpose).pair (← (RelRep.pairs s).transpose)).comp (.enum (zipFib op z)))
 
-omit [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- **`d op e`** on fibre lists: each key of `d ∪ e`, once, answered by `zipFib` of its two fibres. -/
 theorem app?_zipD {op : V → V → V} {z : V} {r s : FinRel K V} {D : RelRep K V} (h : zipD op z r s = some D) :
     D.app? = some fun k =>
@@ -185,7 +185,7 @@ theorem app?_zipD {op : V → V → V} {z : V} {r s : FinRel K V} {D : RelRep K 
   rw [RelRep.app?_comp hD (app?_domP _) (RelRep.app?_comp hX (RelRep.app?_pair rfl rfl) rfl)]
   exact congrArg some (funext fun k => by split <;> simp [RelRep.cross])
 
-omit [DecidableEq W] [DecidableEq R] [DecidableEq S] [DecidableEq X] [DecidableEq κ] in
+omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- The Set reading: `D` relates `k` to `v` iff `k` is a key and `v` is in `zipFib` of its fibres. -/
 theorem rel_zipD {op : V → V → V} {z : V} {r s : FinRel K V} {D : RelRep K V} (h : zipD op z r s = some D)
     (k : K) (v : V) : D.rel k v ↔
@@ -277,14 +277,14 @@ def xgroup (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (
   grp (domP (← fin? (← T.comp (RelRep.ofFn k)).conv)) k v T
 
 /-- `select agg v by k from T = ran(T k) Λ((T k)° (T v)) agg`: q sorts the keys (`s#`). -/
-def selby [Ord κ] [Std.TransOrd κ] [Std.LawfulEqOrd κ] (agg : List V → W) (k : R → κ) (v : R → V)
+def selby [Ord κ] [Std.TransOrd κ] [Std.LawfulEqOrd κ] [FibreIndex (List V)] (agg : List V → W) (k : R → κ) (v : R → V)
     (T : RelRep Nat R) : Option (RelRep κ W) := do
   (← grp (.pairs (← fin? (← T.comp (RelRep.ofFn k))).ran) k v T).comp (RelRep.ofFn agg)
 
-omit [DecidableEq S] [DecidableEq X] in
+omit [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] in
 /-- **`select agg v by k`**: at each key `ks` lists, `agg` of the group's whole fibre `g c` — in row order
     and with its repeats, which `sum`/`count`/`avg` need and the Set reading of `Λ` drops. -/
-theorem app?_selby {agg : List V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R} {ks : RelRep κ κ}
+theorem app?_selby [FibreIndex (List V)] {agg : List V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R} {ks : RelRep κ κ}
     {e : κ → List κ} (he : ks.app? = some e) {X : RelRep κ V} {g : κ → List V} (hX : xkey k v T = some X)
     (hg : X.app? = some g) {G : RelRep κ (List V)} (hG : grp ks k v T = some G) {A : RelRep κ W}
     (hA : G.comp (RelRep.ofFn agg) = some A) : A.app? = some fun c => (e c).map fun c' => agg (g c') := by

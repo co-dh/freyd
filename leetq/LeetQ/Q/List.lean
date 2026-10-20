@@ -29,14 +29,14 @@ structure QL2 (A : Type) where
 
 namespace QL
 
-variable {A B : Type} [DecidableEq A] [DecidableEq B]
+variable {A B : Type} [DecidableEq A] [FibreIndex A] [DecidableEq B] [FibreIndex B]
 
 /-! ## A list as `ix(xs)`, and read back -/
 
 /-- `ix(xs)` as a `FinRel`, whose converse is again enumerable. -/
 def ofList (xs : List A) : QL A := ⟨xs.length, .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))⟩
 
-omit [DecidableEq A] in
+omit [DecidableEq A] [FibreIndex A] in
 theorem rel_ofList (xs : List A) : (ofList xs).r.rel = ix xs := (FinRel.rep_ofList _).trans (rel_zipIdx xs)
 
 /-- A list with nulls: a null is an index with no pair. -/
@@ -221,7 +221,7 @@ namespace QL2
 
 open QL
 
-variable {A : Type} [DecidableEq A]
+variable {A : Type} [DecidableEq A] [FibreIndex A]
 
 def ofLists (xss : List (List A)) : QL2 A :=
   ⟨xss.length, (xss.head?.map List.length).getD 0,

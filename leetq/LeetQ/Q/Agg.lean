@@ -32,14 +32,14 @@ def QF.ofInt (x : Int) : QF := .of (Float.ofInt x)
 /-- Floats read back, for comparing with q's printed output. -/
 def fl (r : Option (List QF)) : Option (List Float) := r.map (·.map QF.f)
 
-variable {V W U : Type} [DecidableEq V] [DecidableEq W] [DecidableEq U]
+variable {V W U : Type} [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq U] [FibreIndex U]
 
 /-! ## A q list -/
 
 /-- `ix(xs)` as pairs, `i ↦ xs[i]`. -/
 def ql (xs : List V) : RelRep Nat V := .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [FibreIndex V] in
 theorem rel_ql (xs : List V) : (ql xs).rel = ix xs := (FinRel.rep_ofList _).trans (rel_zipIdx xs)
 
 /-- The values in index order; only `pairs` is finite. -/
@@ -183,7 +183,7 @@ def dev (R : RelRep Nat Int) : Option (List QF) := (var R).map (·.map fun v => 
 order, each repeat counted. The Set reading of `ix(xs)` keeps the pairs `(i, xs[i])` and can say this only
 through the indices; `count` and `sum` of the values' set would merge the two `1`s of `3 1 4 1 5`. -/
 
-omit [DecidableEq U] in
+omit [DecidableEq U] [FibreIndex U] in
 /-- **`a f/ xs = foldl f a xs`**: the reversed cons-list fold is q's left fold over every value. -/
 theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     over f a (.pairs r) = some [r.vals.toList.foldl f a] := by
@@ -194,7 +194,7 @@ theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     | cons y ys ih => simp only [foldList, CL.ofList_cons, CL.cfold, id] at ih ⊢; rw [ih]; rfl
   simp [over, foldl, vals?, RelRep.fold, RelRep.foldWith, RelRep.app?, ofFn, h, List.foldr_reverse]
 
-omit [DecidableEq U] in
+omit [DecidableEq U] [FibreIndex U] in
 /-- `count R` is the length of the value list. -/
 theorem count_pairs (r : FinRel Nat V) : count (.pairs r) = some [r.vals.toList.length] := by
   have h : ∀ (l : List V) n, l.foldl (fun n _ => n + 1) n = n + l.length := fun l => by
