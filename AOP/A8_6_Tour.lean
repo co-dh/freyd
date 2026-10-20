@@ -763,12 +763,12 @@ public instance decQ : ∀ t t' : Tour City, Decidable (Q t t') := fun t t' => d
 public instance decR : ∀ t t' : Tour City, Decidable (R t t') := fun t t' => decidable_of_iff _ (R_apply t t').symm
 
 /-- The thinning order `Q` as a `RelRep` test. -/
-@[expose] public def Qt : RelRep (Tour City) (Tour City) := .test fun t t' => decide (Q t t')
+@[expose] public def Qt : RelTest (Tour City) (Tour City) := .test fun t t' => decide (Q t t')
 
 public theorem rel_Qt : (Qt (City := City)).rel = Q := hom_ext fun _ _ => decide_eq_true_iff
 
 /-- The cost order `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (Tour City) (Tour City) := .test fun t t' => decide (R t t')
+@[expose] public def Rt : RelTest (Tour City) (Tour City) := .test fun t t' => decide (R t t')
 
 public theorem rel_Rt : (Rt (City := City)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
 
@@ -804,17 +804,18 @@ public theorem tourAlg_eq_junc :
   RelRep.foldList (RelRep.thinList Qt.mem) (fun p => [start p]) fun q => [dropl q.1 q.2, dropr q.1 q.2]
 
 /-- `kept` is `RelRep.foldThin Q` of `start` and `stepE`. -/
-public theorem kept_eq : RelRep.foldThin Qt (.ofFn start) stepE = some (.enum (kept (City := City))) := rfl
+public theorem kept_eq : RelRep.foldThin Qt (.ofFn start) stepE = .enum (kept (City := City)) := rfl
 
 /-- The program: the least-cost tours among those kept. -/
 @[expose] public def bitonic (xs : Journey City) : List (Tour City) := RelRep.estList Rt.mem (kept xs)
 
 /-- `bitonic` is `RelRep.est R` of `kept`. -/
-public theorem bitonic_eq : RelRep.est Rt (.enum (kept (City := City))) = some (.enum bitonic) := rfl
+public theorem bitonic_eq : RelRep.est Rt (.enum (kept (City := City))) = .enum bitonic := rfl
 
 /-- `Λ(kept) ⊑ Λ(tour) thin(Q)`. -/
 public theorem kept_thin : Λ (RelRep.enum (kept (City := City))).rel ⊑ Λ tour ≫ thinRel Q := by
-  have h := RelRep.rel_foldThin (h := kept_eq (City := City)) (by rw [rel_Qt]; exact Q_refl)
+  have h := kept_eq (City := City) ▸ RelRep.rel_foldThin (Q := Qt) (B := .ofFn start) (S := stepE)
+    (by rw [rel_Qt]; exact Q_refl)
     (by rw [rel_Qt]; exact Q_trans)
     (by rw [rel_Qt, ← tourAlg_eq_junc]; exact pres_union tour_mono_dropl tour_mono_dropr)
   rw [← tourAlg_eq_junc, rel_Qt] at h
@@ -824,7 +825,7 @@ public theorem kept_thin : Λ (RelRep.enum (kept (City := City))).rel ⊑ Λ tou
     tour, `bitonic ⊑ Λ(tour) est(R)`. -/
 public theorem bitonic_le : (RelRep.enum (bitonic (City := City))).rel ⊑ Λ tour ≫ est R :=
   calc (RelRep.enum bitonic).rel
-      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := RelRep.rel_est bitonic_eq
+      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := by rw [← bitonic_eq]; exact RelRep.rel_est _ _
     _ = Λ (RelRep.enum kept).rel ≫ est R := by rw [rel_Rt]
     _ ⊑ (Λ tour ≫ thinRel Q) ≫ est R := comp_mono_right kept_thin _
     _ = Λ tour ≫ (thinRel Q ≫ est R) := Cat.assoc _ _ _

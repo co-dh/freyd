@@ -225,15 +225,15 @@ theorem rel_aj (R : AjRight) : (aj R).rel = Λ (cand R) ≫ est geT := hom_ext f
     exact mem_lastLE
 
 /-- q's `aj`: of the rows of greatest time `aj` answers, in group order, the last — `aj(R) last`. -/
-def ajq (R : AjRight) : Option (RelRep (Int64 × Int64) (Int64 × Int64)) := (aj R).last
+def ajq (R : AjRight) : RelRep (Int64 × Int64) (Int64 × Int64) := (aj R).last
 
 /-- **`aj(R) last`** on fibre lists: at each left row, the last of `aj`'s fibre. -/
-theorem ajq_eq (R : AjRight) : ajq R = some (.enum fun x => (ajL R x).getLast?.toList) := RelRep.last_of_app? rfl
+theorem ajq_eq (R : AjRight) : ajq R = .enum fun x => (ajL R x).getLast?.toList := RelRep.last_eq _
 
 /-- The Set corollary: `ajq(R) ⊑ Λ(cand R) est(geT)`, and `ajq` answers every left row that does. -/
-theorem rel_ajq {R : AjRight} {T : RelRep (Int64 × Int64) (Int64 × Int64)} (h : ajq R = some T) :
-    (∀ x w, T.rel x w → (Λ (cand R) ≫ est geT) x w) ∧ ∀ x w, (Λ (cand R) ≫ est geT) x w → ∃ w', T.rel x w' := by
-  rw [← rel_aj]; exact RelRep.rel_last h
+theorem rel_ajq (R : AjRight) :
+    (∀ x w, (ajq R).rel x w → (Λ (cand R) ≫ est geT) x w) ∧ ∀ x w, (Λ (cand R) ≫ est geT) x w → ∃ w', (ajq R).rel x w' := by
+  rw [← rel_aj]; exact RelRep.rel_last (aj R)
 
 /-! ## Runs -/
 
@@ -318,7 +318,7 @@ example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map
 -- two right rows at time 2: `aj` answers both, q's `aj` (`ajq`) the last, as `aj[`k`t;([]k:1 1;t:4 4);
 -- ([]k:1 1 1;t:2 2 5;v:20 21 50)]` answers `21`
 #guard (AjRight.ofList? [(1, [(2, 20), (2, 21), (5, 50)])]).map (ajL · (1, 4)) == some [(2, 20), (2, 21)]
-#guard (((AjRight.ofList? [(1, [(2, 20), (2, 21), (5, 50)])]).bind ajq).bind RelRep.app?).map (· (1, 4)) ==
+#guard (AjRight.ofList? [(1, [(2, 20), (2, 21), (5, 50)])]).map (fun R => (ajq R).app (1, 4)) ==
   some [(2, 21)]
 
 end LeetQ.Join

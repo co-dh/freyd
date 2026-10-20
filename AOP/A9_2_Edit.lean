@@ -2293,12 +2293,12 @@ instance decSuffixP : ∀ x y : Str A, Decidable (suffixP x y)
       inferInstanceAs (Decidable (x = ConsList.cons b y ∨ suffixP x y))
 
 /-- `thin(Q)`'s order `⊤×V` as a `RelRep` test: its two suffix tests. -/
-def topV : RelRep (Op A × (Str A × Str A)) (Op A × (Str A × Str A)) :=
+def topV : RelTest (Op A × (Str A × Str A)) (Op A × (Str A × Str A)) :=
   .test fun w z => decide (suffixP w.2.1 z.2.1) && decide (suffixP w.2.2 z.2.2)
 
 theorem rel_topV : (topV (A := A)).rel = rprodMap (topMor (dE (Op A)) (dE (Op A))) (V) :=
   hom_ext fun w z => by
-    simp only [topV, RelRep.rel, Bool.and_eq_true, decide_eq_true_eq]
+    simp only [topV, RelTest.rel, Bool.and_eq_true, decide_eq_true_eq]
     exact ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
 
 omit [DecidableEq A] in
@@ -2311,9 +2311,9 @@ omit [DecidableEq A] in
     and looked up at `()`. -/
 theorem cmap_of_comp {α β : Type} [DecidableEq α] [DecidableEq β] (g : α → β) (xs : ConsList Unit α)
     (T : FinRel Unit β)
-    (hT : RelRep.comp (.pairs (FinRel.ofList ((CL.toList xs).map ((), ·)))) (.ofFn g) = some (.pairs T)) :
+    (hT : RelRep.comp (.pairs (FinRel.ofList ((CL.toList xs).map ((), ·)))) (.ofFn g) = .pairs T) :
     cmap g xs = CL.ofList (T.scanLookup ()) := by
-  simp only [RelRep.comp, RelRep.ofFn, Option.some.injEq, RelRep.pairs.injEq] at hT
+  simp only [RelRep.comp, FinRel.bindVals, RelRep.ofFn, RelRep.pairs.injEq] at hT
   subst hT
   rw [cmap_eq_ofList_map, FinRel.scanLookup, FinRel.toList_ofList, FinRel.toList_ofList]
   congr 1
@@ -2340,7 +2340,7 @@ theorem rel_stepConv :
 
 /-- `thin(Q)` keeps the whole of a finite set on which `Q`, held as the `RelRep` `T` and met with the
     set's square, is the diagonal. -/
-theorem thin_of_square {α : RelSet.{0}} [DecidableEq α.carrier] (Q : α ⟶ α) (T : RelRep α.carrier α.carrier)
+theorem thin_of_square {α : RelSet.{0}} [DecidableEq α.carrier] (Q : α ⟶ α) (T : RelTest α.carrier α.carrier)
     (hT : T.rel = Q) (xs : List α.carrier) (r : FinRel α.carrier α.carrier)
     (hr : RelRep.inter (.pairs (FinRel.square xs)) T = .pairs r) (hc : r.toList = xs.map fun x => (x, x))
     (Y : (RelSet.pow α).carrier) :
@@ -2348,7 +2348,7 @@ theorem thin_of_square {α : RelSet.{0}} [DecidableEq α.carrier] (Q : α ⟶ α
   cases hr
   have hQ : ∀ w z, w ∈ xs → z ∈ xs → (Q w z ↔ w = z) := fun w z hw hz => by
     have h := FinRel.mem_filter_square (fun k v => T.mem k v = true) xs w z
-    rw [hc, List.mem_map, RelRep.mem_iff_rel, hT] at h
+    rw [hc, List.mem_map] at h; rw [← hT]
     exact ⟨fun hq => by
       obtain ⟨x, _, e⟩ := h.2 ⟨hw, hz, hq⟩
       simp only [Prod.mk.injEq] at e
@@ -2435,7 +2435,7 @@ public theorem run_list_cons :
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ())) := by
   rw [cmap_of_comp _ _ _ rfl]
-  simp [FinRel.scanLookup, FinRel.toList, FinRel.ofList, FinRel.sel, CL.toList, CL.ofList,
+  simp [FinRel.bindVals, FinRel.scanLookup, FinRel.toList, FinRel.ofList, FinRel.sel, CL.toList, CL.ofList,
     run_rest_cpy, run_rest_del]
 
 omit [DecidableEq A] in

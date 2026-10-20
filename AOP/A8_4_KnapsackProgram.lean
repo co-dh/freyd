@@ -93,13 +93,13 @@ instance decR : ∀ xs ys : ConsList Unit Item, Decidable (R val xs ys) :=
   fun xs ys => decidable_of_iff _ (R_apply xs ys).symm
 
 /-- The thinning order `Q` as a `RelRep` test. -/
-def Qt : RelRep (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (Q val wt xs ys)
+def Qt : RelTest (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (Q val wt xs ys)
 
 omit [DecidableEq Item] in
 theorem rel_Qt : (Qt val wt).rel = Q val wt := hom_ext fun _ _ => decide_eq_true_iff
 
 /-- The value order `R` as a `RelRep` test. -/
-def Rt : RelRep (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (R val xs ys)
+def Rt : RelTest (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (R val xs ys)
 
 omit [DecidableEq Item] in
 theorem rel_Rt : (Rt val).rel = R val := hom_ext fun _ _ => decide_eq_true_iff
@@ -149,17 +149,18 @@ def kept : ConsList Unit Item → List (ConsList Unit Item) :=
 
 /-- `kept` is `RelRep.foldThin Q` of `wrap` and `step`. -/
 theorem kept_eq :
-    RelRep.foldThin (Qt val wt) (.ofFn ConsList.wrap) (.enum (step wt w)) = some (.enum (kept val wt w)) := rfl
+    RelRep.foldThin (Qt val wt) (.ofFn ConsList.wrap) (.enum (step wt w)) = .enum (kept val wt w) := rfl
 
 /-- The program: the most valuable packings among those kept. -/
 def knap (xs : ConsList Unit Item) : List (ConsList Unit Item) := RelRep.estList (fun ys zs => decide (R val ys zs)) (kept val wt w xs)
 
 /-- `knap` is `RelRep.est R` of `kept`. -/
-theorem knap_eq : RelRep.est (Rt val) (.enum (kept val wt w)) = some (.enum (knap val wt w)) := rfl
+theorem knap_eq : RelRep.est (Rt val) (.enum (kept val wt w)) = .enum (knap val wt w) := rfl
 
 /-- `Λ(kept) ⊑ Λ⦇S⦈ thin(Q)`. -/
 theorem kept_thin : Λ (RelRep.enum (kept val wt w)).rel ⊑ Λ ⦇Salg wt w⦈ ≫ thinRel (Q val wt) := by
-  have h := RelRep.rel_foldThin (h := kept_eq val wt w) (by rw [rel_Qt]; exact Q_refl)
+  have h := kept_eq val wt w ▸ RelRep.rel_foldThin (Q := Qt val wt) (B := .ofFn ConsList.wrap) (S := .enum (step wt w))
+    (by rw [rel_Qt]; exact Q_refl)
     (by rw [rel_Qt]; exact Q_trans)
     (by rw [rel_Qt, ← Salg_eq_junc]; exact pres_union knap_mono_cons knap_mono_drop)
   rw [← Salg_eq_junc, rel_Qt] at h
@@ -170,7 +171,7 @@ theorem kept_thin : Λ (RelRep.enum (kept val wt w)).rel ⊑ Λ ⦇Salg wt w⦈ 
 theorem knap_le (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     (RelRep.enum (knap val wt w)).rel ⊑ Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) :=
   calc (RelRep.enum (knap val wt w)).rel
-      = Λ (RelRep.enum (kept val wt w)).rel ≫ est (Rt val).rel := RelRep.rel_est (knap_eq val wt w)
+      = Λ (RelRep.enum (kept val wt w)).rel ≫ est (Rt val).rel := by rw [← (knap_eq val wt w)]; exact RelRep.rel_est _ _
     _ = Λ (RelRep.enum (kept val wt w)).rel ≫ est (R val) := by rw [rel_Rt]
     _ ⊑ (Λ ⦇Salg wt w⦈ ≫ thinRel (Q val wt)) ≫ est (R val) := comp_mono_right (kept_thin val wt w) _
     _ = Λ ⦇Salg wt w⦈ ≫ (thinRel (Q val wt) ≫ est (R val)) := Cat.assoc _ _ _

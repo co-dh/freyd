@@ -1247,7 +1247,7 @@ variable {A : Type} [Amount A] [Van]
 @[expose] public def rlen (xss yss : Sched A) : Bool := decide (clen xss ≤ clen yss)
 
 /-- `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (Sched A) (Sched A) := .test rlen
+@[expose] public def Rt : RelTest (Sched A) (Sched A) := .test rlen
 
 omit [Amount A] [Van] in
 public theorem rel_Rt : (Rt (A := A)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
@@ -1296,14 +1296,14 @@ public theorem stepG_prog (p : A × Sched A) : stepG p = [progFn p] := by
 variable [DecidableEq A]
 
 /-- `stepG` is `RelRep.est R` of `stepE`. -/
-public theorem stepG_eq : RelRep.est Rt (stepE (A := A)) = some (.enum stepG) := rfl
+public theorem stepG_eq : RelRep.est Rt (stepE (A := A)) = .enum stepG := rfl
 
 /-- `stepG` computes `Λ(new ∪ old) est(R)`. -/
 public theorem rel_stepG : (RelRep.enum (stepG (A := A))).rel = Λ (new ∪ old) ≫ est R := by
-  rw [RelRep.rel_est stepG_eq, rel_stepE, rel_Rt]
+  rw [← stepG_eq, RelRep.rel_est, rel_stepE, rel_Rt]
 
 /-- `van` is `RelRep.fold` of `nil` and the greedy step. -/
-public theorem van_eq : RelRep.fold (.ofFn ConsList.wrap) (.enum stepG) = some (.enum (van (A := A))) := rfl
+public theorem van_eq : RelRep.fold (.ofFn ConsList.wrap) (.enum stepG) = .enum (van (A := A)) := rfl
 
 /-- **The program meets its specification**: every schedule `van` returns is a fewest-segment cut of
     the transactions into secure segments. -/
@@ -1311,7 +1311,7 @@ public theorem van_le (hsingle : ∀ a : A, secureP (ConsList.cons a (ConsList.w
     (RelRep.enum (van (A := A))).rel ⊑ Λ (partition ≫ list secure) ≫ est (R (A := A)) :=
   calc (RelRep.enum (van (A := A))).rel
       = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (RelRep.ofFn ConsList.wrap).rel (RelRep.enum stepG).rel
-          : Alg (F Unit A) (dSched A))⦈ := RelRep.rel_fold van_eq
+          : Alg (F Unit A) (dSched A))⦈ := by rw [← van_eq]; exact RelRep.rel_fold _ _
     _ = ⦇progAlg⦈ := by
         rw [RelRep.rel_ofFn, show (RelRep.enum (stepG (A := A))).rel = graph progFn from
           (congrArg (fun f => (RelRep.enum f).rel) (funext stepG_prog)).trans (RelRep.rel_ofFn progFn)]

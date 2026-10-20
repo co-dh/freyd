@@ -488,7 +488,7 @@ public instance decEqTuple {k : Nat} {X : Type} [DecidableEq X] : DecidableEq (F
   fun v w => decidable_of_iff (∀ i, v i = w i) ⟨funext, fun h _ => h ▸ rfl⟩
 
 /-- The cost order `R` at length `m` as a `RelRep` test. -/
-@[expose] public def Rt (m : Nat) : RelRep (Fin m → Nat) (Fin m → Nat) :=
+@[expose] public def Rt (m : Nat) : RelTest (Fin m → Nat) (Fin m → Nat) :=
   .test fun v w => decide ((List.ofFn v).sum ≤ (List.ofFn w).sum)
 
 public theorem rel_Rt (m : Nat) : ((Rt m).rel : dTuple m (⟨Nat⟩ : RelSet.{0}) ⟶ _) = costLE m :=
@@ -502,14 +502,14 @@ public theorem rel_Rt (m : Nat) : ((Rt m).rel : dTuple m (⟨Nat⟩ : RelSet.{0}
   RelRep.estList (Rt m).mem (List.ofFn v)
 
 /-- `estL` is `RelRep.est R` of the tuple's membership. -/
-public theorem estL_eq {m k : Nat} : RelRep.est (Rt m) (memE (k := k)) = some (.enum (estL m)) := rfl
+public theorem estL_eq {m k : Nat} : RelRep.est (Rt m) (memE (k := k)) = .enum (estL m) := rfl
 
 /-- `estL` computes the tuple's `est(R)`. -/
 public theorem rel_estL {m k : Nat} :
     ((RelRep.enum (estL m (k := k))).rel : dTuple k (dTuple m (⟨Nat⟩ : RelSet.{0})) ⟶ _)
       = est (costLE m) :=
   calc ((RelRep.enum (estL m (k := k))).rel : dTuple k (dTuple m (⟨Nat⟩ : RelSet.{0})) ⟶ _)
-      = Λ (memE (k := k)).rel ≫ Freyd.Alg.est (Rt m).rel := RelRep.rel_est estL_eq
+      = Λ (memE (k := k)).rel ≫ Freyd.Alg.est (Rt m).rel := by rw [← estL_eq]; exact RelRep.rel_est _ _
     _ = Λ (memE (k := k)).rel ≫ Freyd.Alg.est (costLE m) := by rw [rel_Rt]
     _ = est (costLE m) := hom_ext fun v x => by
         rw [Λ_comp_est_apply]

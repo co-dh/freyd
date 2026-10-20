@@ -1563,7 +1563,7 @@ where
   decide (bagPenalty (Quotient.mk _ p.1, p.2) ≤ bagPenalty (Quotient.mk _ q.1, q.2))
 
 /-- **tardy-run**: the order `Q'` on candidates as a `RelRep` test. -/
-@[expose] public def Qt [Tardy Job] : RelRep (List Job × Job) (List Job × Job) :=
+@[expose] public def Qt [Tardy Job] : RelTest (List Job × Job) (List Job × Job) :=
   .test penLe
 
 /-- **tardy-run**: the candidates of least penalty. -/
@@ -1571,12 +1571,12 @@ where
   RelRep.estList penLe (cands xs)
 
 public theorem chosen_eq [Tardy Job] [DecidableEq Job] :
-    RelRep.est (Qt (Job := Job)) (.enum cands) = some (.enum chosen) := rfl
+    RelRep.est (Qt (Job := Job)) (.enum cands) = .enum chosen := rfl
 
 /-- **tardy-run**: `chosen` computes `Λ(cands) est(Qt)`. -/
 public theorem rel_chosen [Tardy Job] [DecidableEq Job] :
     (RelRep.enum (chosen (Job := Job))).rel = Λ (RelRep.enum cands).rel ≫ est (Qt (Job := Job)).rel :=
-  RelRep.rel_est chosen_eq
+  by rw [← chosen_eq]; exact RelRep.rel_est _ _
 
 /-- A nonempty list has a member of least `pen`. -/
 theorem exists_least {α : Type} (pen : α → Int) : ∀ l : List α, l ≠ [] → ∃ p ∈ l, ∀ q ∈ l, pen p ≤ pen q

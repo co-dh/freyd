@@ -126,13 +126,13 @@ theorem firsts_i64 (m : Nat) (b : ByteArray) : Order.firsts .i64 m b = firstsOf 
 /-! ## `where`: a `bits` column is a coreflexive on the indices -/
 
 /-- `n` booleans packed a bit each as the coreflexive on the indices whose bit is set. -/
-def bitsRel (n : Nat) (b : ByteArray) : RelRep Nat Nat := .test fun i j => i == j && decide (i < n) && bitAt b i
+def bitsRel (n : Nat) (b : ByteArray) : RelTest Nat Nat := .test fun i j => i == j && decide (i < n) && bitAt b i
 
 /-- **The bit column denotes `p?`, `p(i) ⟺ i < n ∧ bit i`.** -/
 theorem rel_bitsRel (n : Nat) (b : ByteArray) :
     (bitsRel n b).rel = Freyd.Alg.RelSet.corefl (A := ⟨Nat⟩) fun i => i < n ∧ bitAt b i = true :=
   hom_ext fun i j => by
-    simp only [bitsRel, RelRep.rel, Freyd.Alg.RelSet.corefl, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
+    simp only [bitsRel, RelTest.rel, Freyd.Alg.RelSet.corefl, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq]
     constructor
     · rintro ⟨⟨rfl, h⟩, hb⟩; exact ⟨rfl, h, hb⟩
     · rintro ⟨rfl, h, hb⟩; exact ⟨⟨rfl, h⟩, hb⟩

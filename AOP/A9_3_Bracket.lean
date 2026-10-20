@@ -2205,7 +2205,7 @@ public theorem rel_stepS : (stepS : RelRep (NEList A) (NEList A × NEList A)).re
   (CL.toList (splitsFn xs)).flatMap fun p => (X p.1).flatMap fun xs => (X p.2).map fun ys => Tree.bin xs ys
 
 public theorem cands_eq (X : NEList A → List (Tree A)) :
-    RelRep.comp stepS (Xb X) = some (.enum (cands X)) := rfl
+    RelRep.comp stepS (Xb X) = .enum (cands X) := rfl
 
 public theorem mem_cands {X : NEList A → List (Tree A)} {xs : NEList A} {t : Tree A} :
     t ∈ cands X xs ↔ ∃ p : NEList A × NEList A, xs = cat p.1 p.2 ∧
@@ -2218,9 +2218,9 @@ public theorem mem_cands {X : NEList A → List (Tree A)} {xs : NEList A} {t : T
 variable [Bracket A S]
 
 /-- The cost order `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (Tree A) (Tree A) := .test fun t u => decide (cost t ≤ cost u)
+@[expose] public def Rt : RelTest (Tree A) (Tree A) := .test fun t u => decide (cost t ≤ cost u)
 
-public theorem rel_Rt : (Rt : RelRep (Tree A) (Tree A)).rel = R :=
+public theorem rel_Rt : (Rt : RelTest (Tree A) (Tree A)).rel = R :=
   hom_ext fun t u => decide_eq_true_iff.trans (R_apply t u).symm
 
 /-- One step: the `R`-least candidates. -/
@@ -2228,14 +2228,14 @@ public theorem rel_Rt : (Rt : RelRep (Tree A) (Tree A)).rel = R :=
   RelRep.estList Rt.mem (cands X xs)
 
 public theorem stepFn_eq (X : NEList A → List (Tree A)) :
-    RelRep.est Rt (.enum (cands X)) = some (.enum (stepFn X)) := rfl
+    RelRep.est Rt (.enum (cands X)) = .enum (stepFn X) := rfl
 
 /-- One step is `Λ(cat° (X×X)bin) est(R)`. -/
 public theorem rel_stepFn (X : NEList A → List (Tree A)) :
     (RelRep.enum (stepFn X)).rel
       = Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
             : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)° ≫ (Xb X).rel) ≫ est R := by
-  rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepS, rel_Rt]
+  rw [← stepFn_eq X, RelRep.rel_est, ← cands_eq X, RelRep.rel_comp, rel_stepS, rel_Rt]
 
 /-- One step of the program: a singleton is its tip, a longer list takes `stepFn`. -/
 @[expose] public def mctStep (X : NEList A → List (Tree A)) : NEList A → List (Tree A)

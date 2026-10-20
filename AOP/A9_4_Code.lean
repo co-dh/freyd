@@ -1046,7 +1046,7 @@ public theorem rel_stepE : stepE.rel = extend° :=
 variable [RelSet.Code]
 
 /-- The cost order `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (SnocList Unit Code) (SnocList Unit Code) :=
+@[expose] public def Rt : RelTest (SnocList Unit Code) (SnocList Unit Code) :=
   .test fun x y => decide (size x ≤ size y)
 
 public theorem rel_Rt : Rt.rel = R := hom_ext fun x y => decide_eq_true_iff.trans (R_apply x y).symm
@@ -1061,19 +1061,19 @@ public theorem rel_Rt : Rt.rel = R := hom_ext fun x y => decide_eq_true_iff.tran
 
 omit [RelSet.Code] in
 public theorem cands_eq (X : Str → List (SnocList Unit Code)) :
-    RelRep.comp stepE (Xs X) = some (.enum (cands X)) := rfl
+    RelRep.comp stepE (Xs X) = .enum (cands X) := rfl
 
 /-- One step: the `R`-least candidates. -/
 @[expose] public def stepFn (X : Str → List (SnocList Unit Code)) (ws : Str) : List (SnocList Unit Code) :=
   RelRep.estList Rt.mem (cands X ws)
 
 public theorem stepFn_eq (X : Str → List (SnocList Unit Code)) :
-    RelRep.est Rt (.enum (cands X)) = some (.enum (stepFn X)) := rfl
+    RelRep.est Rt (.enum (cands X)) = .enum (stepFn X) := rfl
 
 /-- One step is `Λ(extend° (X×𝟙)snoc) est(R)`. -/
 public theorem rel_stepFn (X : Str → List (SnocList Unit Code)) :
     (RelRep.enum (stepFn X)).rel = Λ (extend° ≫ (Xs X).rel) ≫ est R := by
-  rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepE, rel_Rt]
+  rw [← stepFn_eq X, RelRep.rel_est, ← cands_eq X, RelRep.rel_comp, rel_stepE, rel_Rt]
 
 /-- One step of the program: the empty string has the empty code, a non-empty one takes `stepFn`. -/
 @[expose] public def compressStep (X : Str → List (SnocList Unit Code)) : Str → List (SnocList Unit Code)
