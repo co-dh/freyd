@@ -114,7 +114,7 @@ theorem rep_comma (r s : FinRel K V) :
 
 /-- `R ⊕ D ≜ R ∪ (¬dom R)? D` on any `R` whose fibres enumerate: the default `D` where `R` is empty. -/
 def over (R D : RelRep K V) : Option (RelRep K V) := do
-  let f ← R.fibre?
+  let f ← R.app?
   pure (R.union (← (RelRep.corefl fun k => (f k).isEmpty).comp D))
 
 /-- `d+e = dom(d,e) ⟨d ⊕ 0̂, e ⊕ 0̂⟩ (+)`. -/
@@ -214,7 +214,7 @@ def ij (k : R → κ) (T : RelRep Nat R) (KT : RelRep κ W) : Option (RelRep Nat
 def first (r : FinRel κ W) : RelRep κ W := .enum fun x => (r.scanLookup x).take 1
 
 /-- The last value of each fibre, when the fibres enumerate. -/
-def lastOf (D : RelRep K V) : Option (RelRep K V) := D.fibre?.map fun f => .enum fun x => (f x).getLast?.toList
+def lastOf (D : RelRep K V) : Option (RelRep K V) := D.app?.map fun f => .enum fun x => (f x).getLast?.toList
 
 /-- `ej[k; T; U] = ij` against `k xkey U`: all matches, as q's `ej`. -/
 def ej (k : R → κ) (k' : S → κ) (w : S → W) (T : RelRep Nat R) (U : RelRep Nat S) :

@@ -44,11 +44,11 @@ def ofListN (xs : List (Option A)) : QL A :=
   ⟨xs.length, .pairs (FinRel.ofList (xs.zipIdx.filterMap fun (a, i) => a.map (i, ·)))⟩
 
 /-- The positions of a result: `Λ(f)` flattened over `0..n-1`; `none` on a `test`. -/
-def out (x : QL A) : Option (List A) := x.r.fibre?.map fun f => (List.range x.n).flatMap f
+def out (x : QL A) : Option (List A) := x.r.app?.map fun f => (List.range x.n).flatMap f
 
 /-- The same with nulls: an empty fibre is `none`. -/
 def outN (x : QL A) : Option (List (Option A)) :=
-  x.r.fibre?.map fun f => (List.range x.n).map fun i => (f i).head?
+  x.r.app?.map fun f => (List.range x.n).map fun i => (f i).head?
 
 /-- `G f` read on `0..m-1`: every verb that only moves indices. -/
 def pull (m : Nat) (G : RelRep Nat Nat) (x : QL A) : Option (QL A) := (G.comp x.r).map (⟨m, ·⟩)
@@ -228,7 +228,7 @@ def ofLists (xss : List (List A)) : QL2 A :=
     .pairs (FinRel.ofList (xss.zipIdx.flatMap fun (xs, i) => xs.zipIdx.map fun (a, j) => ((i, j), a)))⟩
 
 def out (x : QL2 A) : Option (List (List A)) :=
-  x.r.fibre?.map fun f => (List.range x.n).map fun i => (List.range x.m).flatMap fun j => f (i, j)
+  x.r.app?.map fun f => (List.range x.n).map fun i => (List.range x.m).flatMap fun j => f (i, j)
 
 /-- `flip x`: `swap ≫ f`. -/
 def flip (x : QL2 A) : Option (QL2 A) := ((RelRep.ofFn Prod.swap).comp x.r).map (⟨x.m, x.n, ·⟩)
@@ -300,7 +300,7 @@ example : (take (-7) (til 5)).bind out = some [3, 4, 0, 1, 2, 3, 4] := by decide
 
 /-- `til n` reads off as `0..n-1`. -/
 theorem out_til (n : Nat) : (til n).out = some (List.range n) := by
-  simp only [out, til, RelRep.fibre?, RelRep.corefl, Option.map_some, Option.some.injEq]
+  simp only [out, til, RelRep.app?, RelRep.corefl, Option.map_some, Option.some.injEq]
   calc (List.range n).flatMap (fun k => if decide (k < n) = true then [k] else [])
       = ((List.range n).map fun k => [k]).flatten :=
         congrArg List.flatten (List.map_congr_left fun k hk => by simp [List.mem_range.1 hk])

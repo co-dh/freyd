@@ -82,7 +82,7 @@ def eachLeft (f : V → W → U) (X : RelRep Nat V) (Y : RelRep Nat W) : Option 
 /-- `⦇[B,S]⦈` over `R`'s values, left to right: the cons-list fold is a right fold, so the values go in
 reversed. The answer is the fold's fibre; a functional `B`, `S` make it one value. -/
 def foldl (B : RelRep Unit W) (S : RelRep (V × W) W) (R : RelRep Nat V) : Option (List W) := do
-  let xs ← vals? R; let T ← fold B S; let f ← T.fibre?; pure (f (CL.ofList xs.reverse))
+  let xs ← vals? R; let T ← fold B S; let f ← T.app?; pure (f (CL.ofList xs.reverse))
 
 /-- `a f/ xs`: `⦇[a, f]⦈`. -/
 def over (f : W → V → W) (a : W) : RelRep Nat V → Option (List W) :=
