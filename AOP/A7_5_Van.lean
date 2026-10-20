@@ -1243,8 +1243,11 @@ section VanRun
 
 variable {A : Type} [Amount A] [Van]
 
-/-- The order `R`, fewer segments, as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (Sched A) (Sched A) := .test fun xss yss => decide (clen xss ≤ clen yss)
+/-- The order `R`, fewer segments, as a Boolean. -/
+@[expose] public def rlen (xss yss : Sched A) : Bool := decide (clen xss ≤ clen yss)
+
+/-- `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (Sched A) (Sched A) := .test rlen
 
 omit [Amount A] [Van] in
 public theorem rel_Rt : (Rt (A := A)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
@@ -1274,11 +1277,23 @@ public theorem rel_stepE : (stepE (A := A)).rel = new ∪ old := hom_ext fun p v
         ConsList.cons.injEq]
       exact ⟨Or.inl, fun h => h.elim id fun ⟨_, _, ⟨e1, e2⟩, _, h⟩ => absurd (e1 ▸ h) hs⟩
 
-variable [DecidableEq A]
-
 /-- The greedy step: the `R`-least of `S`'s offers. -/
-@[expose] public def stepG (p : A × Sched A) : List (Sched A) :=
-  RelRep.estList (Rt (A := A)).mem (offers p)
+@[expose] public def stepG (p : A × Sched A) : List (Sched A) := RelRep.estList rlen (offers p)
+
+/-- At each transaction the one `R`-least offer is the program's `[nil,(ok→glue,new)]`: `glue` keeps
+    the count of segments where `new` adds one. -/
+public theorem stepG_prog (p : A × Sched A) : stepG p = [progFn p] := by
+  obtain ⟨a, t⟩ := p
+  cases t with
+  | wrap d => simp [stepG, offers, RelRep.estList, rlen, ok, progFn]
+  | cons s t =>
+    by_cases hs : secureP (ConsList.cons a s) <;>
+      simp [stepG, offers, RelRep.estList, rlen, ok, progFn, glueFn, newFn, clen, hs]
+
+/-- **The program as a function**: the greedy fold, `nil` at the end and `stepG` at each transaction. -/
+@[expose] public def van : Seg A → List (Sched A) := RelRep.foldList id (fun d => [ConsList.wrap d]) stepG
+
+variable [DecidableEq A]
 
 /-- `stepG` is `RelRep.est R` of `stepE`. -/
 public theorem stepG_eq : RelRep.est Rt (stepE (A := A)) = some (.enum stepG) := rfl
@@ -1286,19 +1301,6 @@ public theorem stepG_eq : RelRep.est Rt (stepE (A := A)) = some (.enum stepG) :=
 /-- `stepG` computes `Λ(new ∪ old) est(R)`. -/
 public theorem rel_stepG : (RelRep.enum (stepG (A := A))).rel = Λ (new ∪ old) ≫ est R := by
   rw [RelRep.rel_est stepG_eq, rel_stepE, rel_Rt]
-
-/-- At each transaction the one `R`-least offer is the program's `[nil,(ok→glue,new)]`: `glue` keeps
-    the count of segments where `new` adds one. -/
-public theorem stepG_prog (p : A × Sched A) : stepG p = [progFn p] := by
-  obtain ⟨a, t⟩ := p
-  cases t with
-  | wrap d => simp [stepG, offers, RelRep.estList, Rt, RelRep.mem, ok, progFn]
-  | cons s t =>
-    by_cases hs : secureP (ConsList.cons a s) <;>
-      simp [stepG, offers, RelRep.estList, Rt, RelRep.mem, ok, progFn, glueFn, newFn, clen, hs]
-
-/-- **The program as a function**: the greedy fold, `nil` at the end and `stepG` at each transaction. -/
-@[expose] public def van : Seg A → List (Sched A) := RelRep.foldList id (fun d => [ConsList.wrap d]) stepG
 
 /-- `van` is `RelRep.fold` of `nil` and the greedy step. -/
 public theorem van_eq : RelRep.fold (.ofFn ConsList.wrap) (.enum stepG) = some (.enum (van (A := A))) := rfl
@@ -1321,10 +1323,6 @@ end VanRun
 section
 
 attribute [local instance] book10 bookAmount
-
-/-- The run's transactions, `N = 10`. -/
-@[expose] public def vanXs : Seg Int :=
-  ConsList.cons 4 (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ()))))
 
 /-- **offers-run**: at `3` over `[[5,-2]]`, `S` offers a new segment and the glued one. -/
 public theorem run_offers :
@@ -1350,7 +1348,7 @@ public theorem run_new :
 
 /-- **van-run**: two van visits, `[4]` and `[3,5,-2]`. -/
 public theorem run_van :
-    van vanXs
+    van (ConsList.cons (4 : Int) (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))))
       = [ConsList.cons (ConsList.cons 4 (ConsList.wrap ()))
           (ConsList.cons (ConsList.cons 3 (ConsList.cons 5 (ConsList.cons (-2) (ConsList.wrap ())))) (ConsList.wrap ()))] := by
   rfl

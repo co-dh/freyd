@@ -2050,4 +2050,28 @@ zip(that)                                         each row: its square, and the 
   lean-calc(calc-van),
 )]<van-laws>
 
+// One run of the program on the transactions `4,3,5,-2` with `N=10`: its input, then one row per
+// stage; each value is a theorem of the `VanRun` section of A7_5_Van, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Van.run_van.lhs.arg"), value: leanf("Freyd.Alg.RelSet.Van.run_van.lhs.arg"),
+   meaning: [the transactions; the fold reads them from the right]),
+  // lean:AOP.A7_5_Van.run_van@c50b90d9
+  (sym: leann("Freyd.Alg.RelSet.Van.offers"), type: leant("Freyd.Alg.RelSet.Van.run_offers.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Van.run_offers.rhs"),
+   meaning: [at `3` over `[[5,-2]]`: `new`, and `glue` because `[3,5,-2]` is secure]),
+  // lean:AOP.A7_5_Van.run_offers@3466bb5e
+  (sym: leann("Freyd.Alg.RelSet.Van.stepG"), type: leant("Freyd.Alg.RelSet.Van.run_glue.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Van.run_glue.rhs"),
+   meaning: [`est(R)` of the two offers at `3`: one segment, not two]),
+  // lean:AOP.A7_5_Van.run_glue@2b22a308
+  (sym: leann("Freyd.Alg.RelSet.Van.stepG"), type: leant("Freyd.Alg.RelSet.Van.run_new.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Van.run_new.rhs"),
+   meaning: [at `4` over `[[3,5,-2]]`: `ceiling[4,3,5,-2]=12>10`, so only `new` is offered]),
+  // lean:AOP.A7_5_Van.run_new@e16c35ce
+  (sym: leann("Freyd.Alg.RelSet.Van.van"), type: leant("Freyd.Alg.RelSet.Van.run_van.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Van.run_van.rhs"),
+   meaning: [two van visits, `[4]` and `[3,5,-2]`]),
+  // lean:AOP.A7_5_Van.run_van@c50b90d9
+)<van-run>
+
 #pagebreak(weak: true)
