@@ -946,23 +946,8 @@ section ParaRun
 
 variable [DecidableEq Word] [Paragraph Word] (w)
 
-omit [Paragraph Word] in
--- Structural, so a run reduces by `rfl`: the derived `DecidableEq (ConsList …)` does not.
-@[expose] public def decLine : ∀ xs ys : Line Word, Decidable (xs = ys)
-  | ConsList.wrap a, ConsList.wrap b =>
-    if h : a = b then isTrue (h ▸ rfl) else isFalse fun e => h (by cases e; rfl)
-  | ConsList.cons a xs, ConsList.cons b ys =>
-    if h : a = b then
-      match decLine xs ys with
-      | isTrue e => isTrue (h ▸ e ▸ rfl)
-      | isFalse n => isFalse fun e => n (by cases e; rfl)
-    else isFalse fun e => h (by cases e; rfl)
-  | ConsList.wrap _, ConsList.cons _ _ => isFalse fun e => by cases e
-  | ConsList.cons _ _, ConsList.wrap _ => isFalse fun e => by cases e
-
 public instance decQ : ∀ xss yss : Para Word, Decidable (Q w xss yss) :=
-  fun xss yss => @decidable_of_iff _ _ (Q_apply (w := w) xss yss).symm
-    (@instDecidableAnd _ _ (Int.decLe _ _) (decLine (head xss) (head yss)))
+  fun xss yss => decidable_of_iff _ (Q_apply (w := w) xss yss).symm
 
 public instance decR : ∀ xss yss : Para Word, Decidable (R (w := w) xss yss) :=
   fun xss yss => decidable_of_iff _ (R_apply (w := w) xss yss).symm
