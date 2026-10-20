@@ -843,7 +843,7 @@ public theorem cataFold_layerAlg : ∀ (net : ConsList (List A) (List A)) (p : C
     rw [cataFold_wrap]
     show _ ↔ cataFold (C := dCL A A) pathAlg (ConsList.wrap (memS vs)) p
     rw [cataFold_wrap]
-    refine ((RelRep.junc_sum_apply _ _).1 vs p).trans ?_
+    refine ((RelRep.junc_apply _ _).1 vs p).trans ?_
     show p ∈ vs.map ConsList.wrap ↔ ∃ v, v ∈ vs ∧ p = ConsList.wrap v
     rw [List.mem_map]
     exact ⟨fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩, fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩⟩
@@ -852,7 +852,7 @@ public theorem cataFold_layerAlg : ∀ (net : ConsList (List A) (List A)) (p : C
     show _ ↔ cataFold (C := dCL A A) pathAlg (ConsList.cons (memS vs) (netSet net)) p
     rw [cataFold_cons]
     refine exists_congr fun r => and_congr (cataFold_layerAlg net r) ?_
-    refine ((RelRep.junc_sum_apply _ _).2 (vs, r) p).trans ?_
+    refine ((RelRep.junc_apply _ _).2 (vs, r) p).trans ?_
     show p ∈ vs.map (ConsList.cons · r) ↔ ∃ v, v ∈ vs ∧ p = ConsList.cons v r
     rw [List.mem_map]
     exact ⟨fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩, fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩⟩
@@ -871,7 +871,7 @@ omit [DecidableEq A] in
 /-- `layerAlg` preserves `Q`: a cheaper path with the same first vertex stays cheaper, and keeps
     its first vertex, when the same vertex is put in front of both. -/
 public theorem layerAlg_pres : Pres (F := CL.F (List A) (List A)) (layerAlg (A := A)) Q := by
-  have hj := RelRep.junc_sum_apply (RelRep.enum (wrapE (A := A))).rel (RelRep.enum stepE).rel
+  have hj := RelRep.junc_apply (RelRep.enum (wrapE (A := A))).rel (RelRep.enum stepE).rel
   refine le_iff.mpr fun u z ⟨u', hu, hz⟩ => ?_
   rcases u with vs | ⟨vs, xs⟩ <;> rcases u' with vs' | ⟨vs', ys⟩
   · obtain rfl : vs = vs' := hu

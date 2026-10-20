@@ -854,18 +854,6 @@ open CL
 variable {L E : Type} [DecidableEq L] [DecidableEq E]
 
 omit [DecidableEq V] [DecidableEq L] [DecidableEq E] in
-/-- The junction `[B,S]` pointwise: `B` on a `wrap`, `S` on a `cons`. -/
-theorem junc_sum_apply (B : (⟨L⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨E × V⟩ : RelSet.{0}) ⟶ ⟨V⟩) :
-    (∀ l v, junc (sumCop (dL L) ⟨E × V⟩) B S (Sum.inl l) v ↔ B l v)
-      ∧ ∀ q v, junc (sumCop (dL L) ⟨E × V⟩) B S (Sum.inr q) v ↔ S q v :=
-  ⟨fun l v => by
-    rw [← congrFun (congrFun (u₁_junc (sumCop (dL L) ⟨E × V⟩) B S) l) v]
-    exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => e ▸ h⟩,
-   fun q v => by
-    rw [← congrFun (congrFun (u₂_junc (sumCop (dL L) ⟨E × V⟩) B S) q) v]
-    exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => e ▸ h⟩⟩
-
-omit [DecidableEq V] [DecidableEq L] [DecidableEq E] in
 /-- `⦇[b,s]⦈` on fibres: the base's fibre at `wrap`, the step's fibre over each value at `cons`, each
     fibre then cut by `post`. -/
 def foldList (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
@@ -901,7 +889,7 @@ theorem foldWith_spec {post : List V → List V} {B : RelRep L V} {S : RelRep (E
     | some s =>
       simp only [foldWith, hb, hs, Option.bind_some, Option.map_some, Option.some.injEq] at h
       subst h
-      have hj := junc_sum_apply B.rel S.rel
+      have hj := junc_apply B.rel S.rel
       induction x with
       | wrap l =>
         obtain ⟨hsub, hdom⟩ := hpost (b l)
@@ -937,7 +925,7 @@ theorem rel_foldThin {Q : RelRep V V} {B : RelRep L V} {S : RelRep (E × V) V} {
     (hmono : Pres (F := F L E) (junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel) Q.rel)
     (h : foldThin Q B S = some T) :
     Λ T.rel ⊑ Λ ⦇(junc (sumCop (dL L) ⟨E × V⟩) B.rel S.rel : Alg (F L E) ⟨V⟩)⦈ ≫ thinRel Q.rel := by
-  have hj := junc_sum_apply B.rel S.rel
+  have hj := junc_apply B.rel S.rel
   have hf := foldWith_spec (P := Q.rel) (thinList_rel_spec hr ht) (fun u v w h1 h2 => le_iff.mp ht u w ⟨v, h1, h2⟩)
     (fun e w r z hwr hz =>
       let ⟨c, hc, hcz⟩ := le_iff.mp hmono (Sum.inr (e, w)) z ⟨Sum.inr (e, r), ⟨rfl, hwr⟩, (hj.2 _ z).2 hz⟩
