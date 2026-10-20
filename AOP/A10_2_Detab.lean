@@ -1360,7 +1360,7 @@ public theorem rel_cands [Detab] (hn : 0 < n) :
   decide (p.1 ∈ prefixes q.1 ∧ fillFn p.1 = fillFn q.1 ∧ (p.2 = tb ∨ p.2 = q.2))
 
 /-- `V×U` as a `RelRep` test. -/
-@[expose] public def VUt [Detab] : RelRep (Str × Char) (Str × Char) := .test vu
+@[expose] public def VUt [Detab] : RelTest (Str × Char) (Str × Char) := .test vu
 
 public theorem rel_VUt [Detab] :
     (VUt.rel : (⟨Str × Char⟩ : RelSet.{0}) ⟶ ⟨Str × Char⟩) = rprodMap V U :=
@@ -1373,14 +1373,14 @@ public theorem rel_VUt [Detab] :
 @[expose] public def estC [Detab] (xs : Str) : List (Str × Char) := RelRep.estList vu (cands xs)
 
 /-- `estC` is `RelRep.est (V×U)` of `cands`. -/
-public theorem estC_eq [Detab] : RelRep.est VUt (.enum cands) = some (.enum estC) := rfl
+public theorem estC_eq [Detab] : RelRep.est VUt (.enum cands) = .enum estC := rfl
 
 /-- `estC` computes `Λ(expand°) est(V×U)`, the step of `entab_branch`. -/
 public theorem rel_estC [Detab] (hn : 0 < n) :
     ((RelRep.enum estC).rel : dSL Unit Char ⟶ ⟨Str × Char⟩) = Λ (expand°) ≫ est (rprodMap V U) :=
   calc ((RelRep.enum estC).rel : dSL Unit Char ⟶ ⟨Str × Char⟩)
       = Λ ((RelRep.enum cands).rel : dSL Unit Char ⟶ ⟨Str × Char⟩) ≫ est VUt.rel :=
-        RelRep.rel_est estC_eq
+        by rw [← estC_eq]; exact RelRep.rel_est _ _
     _ = Λ (expand°) ≫ est (rprodMap V U) := by rw [rel_cands hn, rel_VUt]
 
 /-- On `x⧺[a]` with `a≠TB` the greedy step returns `contract x a` and nothing else (`entab_step`). -/

@@ -953,12 +953,12 @@ public instance decR : ∀ xss yss : Para Word, Decidable (R (w := w) xss yss) :
   fun xss yss => decidable_of_iff _ (R_apply (w := w) xss yss).symm
 
 /-- The thinning order `Q` as a `RelRep` test. -/
-@[expose] public def Qt : RelRep (Para Word) (Para Word) := .test fun xss yss => decide (Q w xss yss)
+@[expose] public def Qt : RelTest (Para Word) (Para Word) := .test fun xss yss => decide (Q w xss yss)
 
 public theorem rel_Qt : (Qt (Word := Word) w).rel = Q w := hom_ext fun _ _ => decide_eq_true_iff
 
 /-- The waste order `R` as a `RelRep` test. -/
-@[expose] public def Rt : RelRep (Para Word) (Para Word) := .test fun xss yss => decide (R (w := w) xss yss)
+@[expose] public def Rt : RelTest (Para Word) (Para Word) := .test fun xss yss => decide (R (w := w) xss yss)
 
 public theorem rel_Rt : (Rt (Word := Word) w).rel = R (w := w) := hom_ext fun _ _ => decide_eq_true_iff
 
@@ -1022,7 +1022,7 @@ public theorem S_eq_junc :
 /-- `kept` is `RelRep.foldThin Q` of the one-word paragraph and `step`. -/
 public theorem kept_eq :
     RelRep.foldThin (Qt (Word := Word) w) (.ofFn fun a : Word => (ConsList.wrap (ConsList.wrap a) : Para Word))
-      (.enum (step w)) = some (.enum (kept w)) := rfl
+      (.enum (step w)) = .enum (kept w) := rfl
 
 /-- The program: the least wasteful layouts among those kept. -/
 @[expose] public def paragraph (xs : ConsList Word Word) : List (Para Word) :=
@@ -1030,12 +1030,14 @@ public theorem kept_eq :
 
 /-- `paragraph` is `RelRep.est R` of `kept`. -/
 public theorem paragraph_eq :
-    RelRep.est (Rt (Word := Word) w) (.enum (kept w)) = some (.enum (paragraph w)) := rfl
+    RelRep.est (Rt (Word := Word) w) (.enum (kept w)) = .enum (paragraph w) := rfl
 
 /-- `Λ(kept) ⊑ Λ⦇S⦈ thin(Q)`. -/
 public theorem kept_thin (hlen : ∀ a : Word, 0 ≤ len a) :
     Λ (RelRep.enum (kept (Word := Word) w)).rel ⊑ Λ ⦇S (Word := Word) (w := w)⦈ ≫ thinRel (Q w) := by
-  have h := RelRep.rel_foldThin (h := kept_eq (Word := Word) w) (by rw [rel_Qt (Word := Word) w]; exact Q_refl (Word := Word))
+  have h := kept_eq (Word := Word) w ▸ RelRep.rel_foldThin (Q := Qt w)
+    (B := .ofFn fun a : Word => (ConsList.wrap (ConsList.wrap a) : Para Word)) (S := .enum (step w))
+    (by rw [rel_Qt (Word := Word) w]; exact Q_refl (Word := Word))
     (by rw [rel_Qt (Word := Word) w]; exact Q_trans (Word := Word))
     (by rw [rel_Qt (Word := Word) w, ← S_eq_junc]; exact pres_union para_mono_new (para_mono_glue hlen))
   rw [← S_eq_junc, rel_Qt (Word := Word) w] at h
@@ -1046,7 +1048,7 @@ public theorem kept_thin (hlen : ∀ a : Word, 0 ≤ len a) :
 public theorem paragraph_le (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
     (RelRep.enum (paragraph (Word := Word) w)).rel ⊑ Λ (partition ≫ fits w) ≫ est (R (w := w)) :=
   calc (RelRep.enum (paragraph w)).rel
-      = Λ (RelRep.enum (kept w)).rel ≫ est (Rt w).rel := RelRep.rel_est (paragraph_eq w)
+      = Λ (RelRep.enum (kept w)).rel ≫ est (Rt w).rel := by rw [← (paragraph_eq w)]; exact RelRep.rel_est _ _
     _ = Λ (RelRep.enum (kept w)).rel ≫ est (R (w := w)) := by rw [rel_Rt]
     _ ⊑ (Λ ⦇S (w := w)⦈ ≫ thinRel (Q w)) ≫ est (R (w := w)) := comp_mono_right (kept_thin w hlen) _
     _ = Λ ⦇S (w := w)⦈ ≫ (thinRel (Q w) ≫ est (R (w := w))) := Cat.assoc _ _ _

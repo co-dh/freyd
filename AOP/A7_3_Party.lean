@@ -544,7 +544,7 @@ section PartyRun
 variable [DecidableEq A]
 
 /-- The order `R°` as a `RelRep` test: `x` before `y` when `x` is worth at least `y`. -/
-@[expose] public def Rt : RelRep (ConsList Unit A) (ConsList Unit A) :=
+@[expose] public def Rt : RelTest (ConsList Unit A) (ConsList Unit A) :=
   .test fun x y => decide (costFn rating y ≤ costFn rating x)
 
 omit [DecidableEq A] in
@@ -562,10 +562,10 @@ public theorem rel_chooseE :
   RelRep.estList (Rt rating).mem [p.1, p.2]
 
 /-- `pick` is `RelRep.est R°` of `choose`. -/
-public theorem pick_eq : RelRep.est (Rt rating) (.enum fun p => [p.1, p.2]) = some (.enum (pick rating)) := rfl
+public theorem pick_eq : RelRep.est (Rt rating) (.enum fun p => [p.1, p.2]) = .enum (pick rating) := rfl
 
 public theorem rel_pick : (RelRep.enum (pick rating)).rel = Λ choose ≫ est((R rating)°) := by
-  rw [RelRep.rel_est (pick_eq rating), rel_chooseE, rel_Rt]
+  rw [← pick_eq rating, RelRep.rel_est, rel_chooseE, rel_Rt]
 
 omit [DecidableEq A] in
 /-- Every way to take one value of `f` per element of a list. -/
