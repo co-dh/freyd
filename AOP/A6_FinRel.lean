@@ -821,6 +821,11 @@ theorem rel_junction (R : RelRep K V) (S : RelRep L V) :
 def transpose (R : RelRep K V) : Option (RelRep K (List V)) := R.app?.map ofFn
 
 omit [DecidableEq V] in
+/-- `Λ(R)` sends `k` to its whole fibre list, order and repeats kept. -/
+theorem transpose_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) : transpose R = some (ofFn f) := by
+  simp only [transpose, h, Option.map_some]
+
+omit [DecidableEq V] in
 theorem rel_transpose {R : RelRep K V} {T : RelRep K (List V)} (h : transpose R = some T) :
     T.rel ≫ Λ (lmem V) = Λ R.rel := by
   cases hf : R.app? with
@@ -1003,9 +1008,103 @@ theorem rel_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) :
     rw [rel_inter, rel_conv, rel_div hD]
     exact hom_ext fun k v => (Λ_comp_est_apply _ _ k v).symm
 
+/-- `est(L)` on the fibre list: keep, in order, the members `L`-below every member. -/
+theorem app?_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) {f : K → List V} (hR : R.app? = some f) :
+    T.app? = some fun k => estList L.mem (f k) := by
+  simp only [est, div, hR, Option.map_some, Option.some.injEq] at h
+  subst h
+  exact app?_inter_left _ hR
+
 /-- `Λ(R) thin(Q)`: each fibre cut by `thinList`; `none` on a `test`. -/
 def thin (Q : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
   R.app?.map fun f => enum fun k => thinList Q.mem (f k)
+
+omit [DecidableEq K] in
+    thin Q R = some (enum fun k => thinList Q.mem (f k)) := by
+  simp only [thin, h, Option.map_some]
+
+/-- `R ⊕ S`, `R` overridden where it is empty: `R`'s fibre where nonempty, else `S`'s; `none` when `R`
+    is a `test`, whose emptiness is not searched. -/
+def override (R S : RelRep K V) : Option (RelRep K V) :=
+  R.app?.map fun f => match S.app? with
+    | some g => enum fun k => if f k = [] then g k else f k
+    | none => test fun k v => if f k = [] then S.mem k v else decide (v ∈ f k)
+
+theorem override_of_app? {R S : RelRep K V} {f g : K → List V} (hR : R.app? = some f) (hS : S.app? = some g) :
+    override R S = some (enum fun k => if f k = [] then g k else f k) := by
+  simp only [override, hR, hS, Option.map_some]
+
+theorem mem_override {R S T : RelRep K V} (h : override R S = some T) {f : K → List V} (hR : R.app? = some f)
+    (k : K) (v : V) : T.mem k v = if f k = [] then S.mem k v else R.mem k v := by
+  rw [mem_eq_of_app? hR]
+  rcases app?_cases S with ⟨g, hS⟩ | ⟨t, rfl⟩
+  · rw [override_of_app? hR hS, Option.some.injEq] at h; subst h
+    rw [mem_eq_of_app? (R := enum _) rfl, mem_eq_of_app? hS]; split <;> rfl
+  · simp only [override, hR, app?.eq_3, Option.map_some, Option.some.injEq] at h; subst h; rfl
+
+/-- `R ⊕ S` relates `k` as `R` does, or as `S` does where `R` relates `k` to nothing. -/
+theorem rel_override {R S T : RelRep K V} (h : override R S = some T) (k : K) (v : V) :
+    T.rel k v ↔ R.rel k v ∨ (∀ w, ¬ R.rel k w) ∧ S.rel k v := by
+  obtain ⟨f, hR⟩ : ∃ f, R.app? = some f := by
+    rcases app?_cases R with hR | ⟨t, rfl⟩
+    · exact hR
+    · simp [override, app?] at h
+  rw [← mem_iff_rel, mem_override h hR]
+  by_cases e : f k = []
+  · simp only [e, if_pos, mem_iff_rel, ← mem_app? hR, List.not_mem_nil, false_or, not_false_eq_true, implies_true,
+      true_and]
+  · obtain ⟨w, hw⟩ := List.exists_mem_of_ne_nil _ e
+    simp only [e, if_false, mem_iff_rel]
+    exact ⟨.inl, fun | .inl h => h | .inr ⟨hn, _⟩ => absurd ((mem_app? hR k w).1 hw) (hn w)⟩
+
+omit [DecidableEq V] in
+/-- The first value of each fibre, in representation order; `none` on a `test`. -/
+def first (R : RelRep K V) : Option (RelRep K V) := R.app?.map fun f => enum fun k => (f k).head?.toList
+
+omit [DecidableEq V] in
+/-- The last value of each fibre, in representation order; `none` on a `test`. -/
+def last (R : RelRep K V) : Option (RelRep K V) := R.app?.map fun f => enum fun k => (f k).getLast?.toList
+
+omit [DecidableEq V] in
+theorem first_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
+    first R = some (enum fun k => (f k).head?.toList) := by
+  simp only [first, h, Option.map_some]
+
+omit [DecidableEq V] in
+theorem last_of_app? {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
+    last R = some (enum fun k => (f k).getLast?.toList) := by
+  simp only [last, h, Option.map_some]
+
+omit [DecidableEq V] in
+/-- A fibre selector keeps one value of each nonempty fibre: `T ⊑ R`, and `T` relates every key `R` does. -/
+theorem rel_select {R T : RelRep K V} {sel : List V → Option V} (hs : ∀ l v, sel l = some v → v ∈ l)
+    (hn : ∀ l, l ≠ [] → ∃ v, sel l = some v) {f : K → List V} (hR : R.app? = some f)
+    (h : T = enum fun k => (sel (f k)).toList) :
+    (∀ k v, T.rel k v → R.rel k v) ∧ ∀ k v, R.rel k v → ∃ w, T.rel k w := by
+  subst h
+  refine ⟨fun k v hv => (mem_app? hR k v).1 (hs _ _ (Option.mem_toList.1 hv)), fun k v hv => ?_⟩
+  obtain ⟨w, hw⟩ := hn (f k) fun e => by rw [← mem_app? hR, e] at hv; exact List.not_mem_nil hv
+  exact ⟨w, Option.mem_toList.2 hw⟩
+
+omit [DecidableEq V] in
+theorem rel_first {R T : RelRep K V} (h : first R = some T) :
+    (∀ k v, T.rel k v → R.rel k v) ∧ ∀ k v, R.rel k v → ∃ w, T.rel k w := by
+  obtain ⟨f, hR⟩ : ∃ f, R.app? = some f := by
+    rcases app?_cases R with hR | ⟨t, rfl⟩
+    · exact hR
+    · simp [first, app?] at h
+  rw [first_of_app? hR, Option.some.injEq] at h
+  exact rel_select (fun _ _ => List.mem_of_mem_head?) (fun l e => ⟨_, (List.head?_eq_some_head e)⟩) hR h.symm
+
+omit [DecidableEq V] in
+theorem rel_last {R T : RelRep K V} (h : last R = some T) :
+    (∀ k v, T.rel k v → R.rel k v) ∧ ∀ k v, R.rel k v → ∃ w, T.rel k w := by
+  obtain ⟨f, hR⟩ : ∃ f, R.app? = some f := by
+    rcases app?_cases R with hR | ⟨t, rfl⟩
+    · exact hR
+    · simp [last, app?] at h
+  rw [last_of_app? hR, Option.some.injEq] at h
+  exact rel_select (fun _ _ => List.mem_of_getLast?) (fun l e => ⟨_, List.getLast?_eq_some_getLast e⟩) hR h.symm
 
 omit [DecidableEq K] in
 /-- `thinList_spec` at a preorder `Q` held as a `RelRep`. -/
@@ -1060,6 +1159,13 @@ def foldWith (post : List V → List V) (B : RelRep L V) (S : RelRep (E × V) V)
 
 /-- `⦇[B,S]⦈`, each fibre enumerated. -/
 def fold (B : RelRep L V) (S : RelRep (E × V) V) : Option (RelRep (ConsList L E) V) := foldWith id B S
+
+omit [DecidableEq V] in
+    by `post`. -/
+theorem foldWith_of_app? {post : List V → List V} {B : RelRep L V} {S : RelRep (E × V) V} {b : L → List V}
+    {s : E × V → List V} (hB : B.app? = some b) (hS : S.app? = some s) :
+    foldWith post B S = some (enum (foldList post b s)) := by
+  simp only [foldWith, hB, hS, Option.bind_some, Option.map_some]
 
 /-- `⦇thin(Q)·Λ[B,S]⦈`: the fold with every fibre thinned by `Q`. -/
 def foldThin (Q : RelRep V V) (B : RelRep L V) (S : RelRep (E × V) V) : Option (RelRep (ConsList L E) V) :=
