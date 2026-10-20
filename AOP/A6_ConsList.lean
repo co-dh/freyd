@@ -26,7 +26,22 @@ variable {L E : Type}
 public inductive ConsList (L E : Type) where
   | wrap : L → ConsList L E
   | cons : E → ConsList L E → ConsList L E
-  deriving DecidableEq
+
+/-- Equality of cons-lists, by structural recursion so `rfl`/`decide` reduce it: the derived
+    instance does not. -/
+@[expose] public def ConsList.decEq [DecidableEq L] [DecidableEq E] :
+    ∀ xs ys : ConsList L E, Decidable (xs = ys)
+  | wrap a, wrap b => if h : a = b then isTrue (h ▸ rfl) else isFalse fun e => h (by cases e; rfl)
+  | cons a xs, cons b ys =>
+    if h : a = b then
+      match decEq xs ys with
+      | isTrue e => isTrue (h ▸ e ▸ rfl)
+      | isFalse n => isFalse fun e => n (by cases e; rfl)
+    else isFalse fun e => h (by cases e; rfl)
+  | wrap _, cons _ _ => isFalse fun e => by cases e
+  | cons _ _, wrap _ => isFalse fun e => by cases e
+
+public instance [DecidableEq L] [DecidableEq E] : DecidableEq (ConsList L E) := ConsList.decEq
 
 /-- The book's `list A`, a string over the alphabet `A`. -/
 @[expose] public abbrev Str (A : Type) : Type := ConsList Unit A
