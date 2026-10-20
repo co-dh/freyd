@@ -487,7 +487,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // the first step, then the schedule; each value is a theorem of the `TardyRun` section of A10_3_Tardy.
 #ex-table(col: [*stage*],
   (sym: [input], type: leant("Freyd.Alg.RelSet.Tardy.run_input.rhs"), value: leanf("Freyd.Alg.RelSet.Tardy.run_input.rhs"),
-   meaning: [job `0` takes `2` and is due at `3`]),
+   meaning: [`(1,6)`: job `2` takes `1` and is due at `6`]),
   // lean:AOP.A10_3_Tardy.run_input@02433857
   (sym: leann("Freyd.Alg.RelSet.Tardy.cands"), type: leant("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
