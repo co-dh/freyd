@@ -22,6 +22,7 @@ baj:{[n] tr::([] s:gen[n;12] mod 100; tm:gen[n;13] mod 1000000);
   / q's fast aj path: grouped by `s` (`p#`), time ascending within it; the stable sort keeps tie order
   qr::update `p#s from `s`tm xasc ([] s:gen[n;14] mod 100; tm:gen[n;15] mod 1000000; p:gen[n;16] mod 1000000);
   out["aj";n;"aj[`s`tm;tr;qr]";exec sum p from aj[`s`tm;tr;qr]]}
+bwj:{[n] w::-100 0+\:tr`tm; out["wj";n;"wj[w;`s`tm;tr;(qr;(sum;`p))]";exec sum p from wj[w;`s`tm;tr;(qr;(sum;`p))]]}
 / Every needle's run of a sorted key column: `binr` the first index, `bin` the last.
 look:{[k;v;xs] lo:k binr xs; v raze lo+til each 0|1+(k bin xs)-lo}
 blookup:{[op;n] k0:gen[n;17] mod n; v0:gen[n;18] mod 1000000; ix:iasc k0; k::k0 ix; v::v0 ix;
@@ -39,7 +40,7 @@ bcomp:{[sfx;f;n] v::f gen[n;21] mod 1000; k::f gen[n;22] mod 1000; b::1=gen[n;23
   out2["sumWhereDense",sfx;n;"sum v where b";sum v where b];
   out2["selbySumDense",sfx;n;"select sum v by k from t";(sum "j"$exec k from r)+sum "j"$exec v from r:0!select sum v by k from t]}
 
-ns:$[`ns in key a:.Q.opt .z.x; "J"$a`ns; 1000 10000 100000]
+ns:$[`ns in key a:.Q.opt .z.x; "J"$a`ns; 100000 1000000 10000000]
 $[`comp in key a; {bcomp["";"j"$;x]; bcomp["/h";"h"$;x]} each ns;
-  {bgetAll x; bzipD x; bselby x; bij x; baj x; blookup["lookupDense";x]; blookup["lookupFoR";x]} each ns];
+  {bgetAll x; bzipD x; bselby x; bij x; baj x; bwj x; blookup["lookupDense";x]; blookup["lookupFoR";x]} each ns];
 \\

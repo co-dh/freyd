@@ -81,6 +81,13 @@ def ajOp (n : Nat) : IO (IO (Nat × Int)) :=
   timed "aj" (tab (zipL (ints n 12 100) (ints n 13 1000000)), tab qr)
     fun (T, U) => (rows (aj Prod.fst Prod.snd Prod.fst Prod.snd T U)).map (sumBy (·.2.getD 0))
 
+/-- `wj` over `aj`'s tables, the window `(tm-100, tm]` and the row prevailing at `tm-100`. -/
+def wjOp (n : Nat) : IO (IO (Nat × Int)) :=
+  let qr := (zipL (ints n 14 100) ((ints n 15 1000000).zip (ints n 16 1000000))).mergeSort
+    fun a b => decide (a.2.1 ≤ b.2.1)
+  timed "wj" (tab (zipL (ints n 12 100) (ints n 13 1000000)), tab qr)
+    fun (T, U) => (rows (wj (-100) 0 Prod.fst Prod.snd Prod.fst Prod.snd T U)).map (sumBy (·.2))
+
 /-- Key `gen 17 mod n`, value `gen 18 mod 1e6`, sorted by key stably (q's `iasc`). -/
 def sortedPairs (n : Nat) : List (Int64 × Int64) :=
   (((gen n 17).zip (gen n 18)).toList.map fun (a, b) => (Int64.ofNat (a % n), Int64.ofNat (b % 1000000))).mergeSort
@@ -147,7 +154,7 @@ def selbySumDenseOp := selbySumColOp "selbySumDense" false
 def selbySumFoROp := selbySumColOp "selbySumFoR" true
 
 def ops : List (String × (Nat → IO (IO (Nat × Int)))) :=
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp)]

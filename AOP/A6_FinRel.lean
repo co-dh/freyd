@@ -658,13 +658,28 @@ theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l
 
 namespace Chain
 
-/-- The rows of one chain, last first: `p` is `0` or one more than a row `i`, and `nx[i]` the chain's
-    previous row the same way.  A chain that does not descend stops. -/
-def rows (nx : Array Nat) (p : Nat) : List Nat :=
-  if h : 0 < p ∧ p ≤ nx.size then
-    (p - 1) :: (if nx[p - 1] < p then rows nx nx[p - 1] else [])
-  else []
-termination_by p
+/-- The rows of one chain, last first, in at most `f` links: `p` is `0` or one more than a row `i`, and
+    `nx[i]` the chain's previous row the same way.  A link that does not descend stops the chain.  Fuel and
+    not well-founded recursion, so that `decide` evaluates it. -/
+def rowsF : Nat → Array Nat → Nat → List Nat
+  | 0, _, _ => []
+  | f + 1, nx, p =>
+    if h : 0 < p ∧ p ≤ nx.size then (p - 1) :: (if nx[p - 1] < p then rowsF f nx nx[p - 1] else []) else []
+
+/-- The rows of chain `p`: `p` links are enough, since every link descends. -/
+def rows (nx : Array Nat) (p : Nat) : List Nat := rowsF p nx p
+
+theorem rowsF_fuel {nx : Array Nat} : ∀ (f g p : Nat), p ≤ f → p ≤ g → rowsF f nx p = rowsF g nx p
+  | 0, 0, _, _, _ => rfl
+  | 0, _ + 1, p, hf, _ => by rw [Nat.le_zero.1 hf]; simp [rowsF]
+  | _ + 1, 0, p, _, hg => by rw [Nat.le_zero.1 hg]; simp [rowsF]
+  | f + 1, g + 1, p, hf, hg => by
+    simp only [rowsF]
+    split
+    · split
+      · rw [rowsF_fuel f g _ (by omega) (by omega)]
+      · rfl
+    · rfl
 
 /-- Row `j`'s value when its key is `k`. -/
 def at? [DecidableEq K] (ks : Array K) (vs : Array V) (k : K) (j : Nat) : Option V :=
@@ -672,36 +687,35 @@ def at? [DecidableEq K] (ks : Array K) (vs : Array V) (k : K) (j : Nat) : Option
   | some a, some v => if a = k then some v else none
   | _, _ => none
 
-/-- The values of the rows of chain `p` whose key is `k`, consed onto `acc` last row first, so they come out
-    in row order; tail-recursive, and no list of rows is made. -/
-def walk [DecidableEq K] (ks : Array K) (vs : Array V) (nx : Array Nat) (k : K) (p : Nat) (acc : List V) : List V :=
-  if h : 0 < p ∧ p ≤ nx.size then
-    let acc := match at? ks vs k (p - 1) with
-      | some v => v :: acc
-      | none => acc
-    if nx[p - 1] < p then walk ks vs nx k nx[p - 1] acc else acc
-  else acc
-termination_by p
+/-- The values of the rows of chain `p` whose key is `k`, in at most `f` links, consed onto `acc` last row
+    first, so they come out in row order; tail-recursive, and no list of rows is made. -/
+def walkF [DecidableEq K] (ks : Array K) (vs : Array V) (nx : Array Nat) (k : K) : Nat → Nat → List V → List V
+  | 0, _, acc => acc
+  | f + 1, p, acc =>
+    if h : 0 < p ∧ p ≤ nx.size then
+      let acc := match at? ks vs k (p - 1) with
+        | some v => v :: acc
+        | none => acc
+      if nx[p - 1] < p then walkF ks vs nx k f nx[p - 1] acc else acc
+    else acc
 
-theorem walk_eq [DecidableEq K] (ks : Array K) (vs : Array V) (nx : Array Nat) (k : K) (p : Nat) (acc : List V) :
-    walk ks vs nx k p acc = (rows nx p).reverse.filterMap (at? ks vs k) ++ acc := by
-  induction p using Nat.strongRecOn generalizing acc with
-  | _ p ih =>
-    rw [walk, rows]
+theorem walkF_eq [DecidableEq K] (ks : Array K) (vs : Array V) (nx : Array Nat) (k : K) :
+    ∀ f p acc, walkF ks vs nx k f p acc = (rowsF f nx p).reverse.filterMap (at? ks vs k) ++ acc
+  | 0, _, _ => rfl
+  | f + 1, p, acc => by
+    simp only [walkF, rowsF]
     by_cases h : 0 < p ∧ p ≤ nx.size
     · rw [dif_pos h, dif_pos h]
-      cases hx : at? ks vs k (p - 1) <;> simp only [hx] <;> split <;> (try rw [ih _ (by omega)]) <;>
+      cases hx : at? ks vs k (p - 1) <;> simp only [hx] <;> split <;> (try rw [walkF_eq ks vs nx k f]) <;>
         simp [hx, List.reverse_cons]
     · rw [dif_neg h, dif_neg h]; rfl
 
-/-- `rows` reads `nx` only below `p`. -/
-theorem rows_congr {nx nx' : Array Nat} (h : ∀ j, j + 1 < nx.size + 1 → nx'[j]? = nx[j]?) (hs : nx.size ≤ nx'.size) :
-    ∀ p, p ≤ nx.size → rows nx' p = rows nx p := by
-  intro p
-  induction p using Nat.strongRecOn with
-  | _ p ih =>
-    intro hp
-    rw [rows, rows]
+/-- `rowsF` reads `nx` only below `p`. -/
+theorem rowsF_congr {nx nx' : Array Nat} (h : ∀ j, j < nx.size → nx'[j]? = nx[j]?) (hs : nx.size ≤ nx'.size) :
+    ∀ f p, p ≤ nx.size → rowsF f nx' p = rowsF f nx p
+  | 0, _, _ => rfl
+  | f + 1, p, hp => by
+    simp only [rowsF]
     by_cases h0 : 0 < p
     · have e : nx'[p - 1]? = nx[p - 1]? := h _ (by omega)
       have hl : p - 1 < nx.size := by omega
@@ -710,30 +724,33 @@ theorem rows_congr {nx nx' : Array Nat} (h : ∀ j, j + 1 < nx.size + 1 → nx'[
         rw [Array.getElem?_eq_getElem hl, Array.getElem?_eq_getElem hl'] at e; exact Option.some.inj e
       rw [dif_pos ⟨h0, by omega⟩, dif_pos ⟨h0, hp⟩, e']
       split
-      · rw [ih _ (by omega) (by omega)]
+      · rw [rowsF_congr h hs f _ (by omega)]
       · rfl
     · rw [dif_neg (by omega), dif_neg (by omega)]
 
-/-- Append row `i = nx.size`, of slot `s`, to its chain. -/
-def add (slot : Nat → Nat) (hn : Array Nat × Array Nat) (i : Nat) : Array Nat × Array Nat :=
-  let s := slot i
-  (hn.1.setIfInBounds s (i + 1), hn.2.push (hn.1[s]?.getD 0))
+/-- Append row `i = nx.size`, of slot `s`, to its chain.  Matched, not projected, so that both arrays are
+    unshared and updated in place. -/
+@[inline] def add (slot : Nat → Nat) : Array Nat × Array Nat → Nat → Array Nat × Array Nat
+  | (hd, nx), i =>
+    let s := slot i
+    let v := hd[s]?.getD 0
+    (hd.setIfInBounds s (i + 1), nx.push v)
 
 /-- The chains of rows `0 … n-1` by slot, over `cap` heads. -/
-def build (slot : Nat → Nat) (cap n : Nat) : Array Nat × Array Nat :=
+@[specialize] def build (slot : Nat → Nat) (cap n : Nat) : Array Nat × Array Nat :=
   (List.range n).foldl (add slot) (Array.replicate cap 0, Array.mkEmpty n)
 
-/-- What `build` holds after rows `0 … i-1`: each slot's chain lists its rows, last first, and every link
-    descends. -/
+/-- What `build` holds after rows `0 … i-1`: each slot's chain lists its rows, last first. -/
 def Inv (slot : Nat → Nat) (cap i : Nat) (hn : Array Nat × Array Nat) : Prop :=
   hn.1.size = cap ∧ hn.2.size = i ∧ ∀ s < cap, hn.1[s]?.getD 0 ≤ i ∧
     rows hn.2 (hn.1[s]?.getD 0) = ((List.range i).filter fun j => slot j = s).reverse
 
-theorem inv_add {slot : Nat → Nat} {cap i : Nat} (hs : ∀ j, slot j < cap) {hn : Array Nat × Array Nat}
-    (h : Inv slot cap i hn) : Inv slot cap (i + 1) (add slot hn i) := by
+theorem inv_add {slot : Nat → Nat} {cap i : Nat} {hd nx : Array Nat} (h : Inv slot cap i (hd, nx)) :
+    Inv slot cap (i + 1) (add slot (hd, nx) i) := by
   obtain ⟨h1, h2, h3⟩ := h
-  have hc : ∀ p, p ≤ i → rows (hn.2.push (hn.1[slot i]?.getD 0)) p = rows hn.2 p := fun p hp =>
-    rows_congr (nx := hn.2) (fun j (hj : j + 1 < hn.2.size + 1) => by rw [Array.getElem?_push_lt (Nat.lt_of_succ_lt_succ hj), Array.getElem?_eq_getElem]) (by simp) p (by omega)
+  dsimp only at h1 h2 h3
+  have hc : ∀ f p, p ≤ i → rowsF f (nx.push (hd[slot i]?.getD 0)) p = rowsF f nx p := fun f p hp =>
+    rowsF_congr (fun j hj => by rw [Array.getElem?_push_lt hj, Array.getElem?_eq_getElem hj]) (by simp) f p (by omega)
   refine ⟨by simp [add, h1], by simp [add, h2], fun s hsc => ?_⟩
   simp only [add, Array.getElem?_setIfInBounds]
   by_cases e : slot i = s
@@ -741,26 +758,34 @@ theorem inv_add {slot : Nat → Nat} {cap i : Nat} (hs : ∀ j, slot j < cap) {h
     rw [if_pos rfl, if_pos (by rw [h1]; exact hsc), Option.getD_some]
     refine ⟨Nat.le_refl _, ?_⟩
     obtain ⟨hle, hr⟩ := h3 _ hsc
-    rw [rows, dif_pos ⟨by omega, by simp [h2]⟩]
+    rw [rows, rowsF, dif_pos ⟨by omega, by simp [h2]⟩]
     simp only [Nat.add_sub_cancel, Array.getElem_push, h2, Nat.lt_irrefl, dite_false]
-    rw [if_pos (by omega), hc _ hle, hr, List.range_succ, List.filter_append]
+    rw [if_pos (by omega), hc _ _ hle, rowsF_fuel _ _ _ hle (Nat.le_refl _)]
+    show i :: rows nx _ = _
+    rw [hr, List.range_succ, List.filter_append]
     simp
   · rw [if_neg e]
     obtain ⟨hle, hr⟩ := h3 _ hsc
     refine ⟨by omega, ?_⟩
-    rw [hc _ hle, hr, List.range_succ, List.filter_append]
+    rw [rows, hc _ _ hle]
+    show rows nx _ = _
+    rw [hr, List.range_succ, List.filter_append]
     simp [e]
 
-theorem inv_build {slot : Nat → Nat} {cap : Nat} (hs : ∀ j, slot j < cap) (n : Nat) :
-    Inv slot cap n (build slot cap n) := by
+theorem inv_build {slot : Nat → Nat} {cap : Nat} (n : Nat) : Inv slot cap n (build slot cap n) := by
   have go : ∀ m, Inv slot cap m ((List.range m).foldl (add slot) (Array.replicate cap 0, Array.mkEmpty n)) := by
     intro m
     induction m with
     | zero =>
       refine ⟨by simp, by simp, fun s hsc => ?_⟩
-      simp [hsc, rows]
-    | succ m ih => rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]; exact inv_add hs ih
+      simp [hsc, rows, rowsF]
+    | succ m ih =>
+      rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+      generalize List.foldl (add slot) (Array.replicate cap 0, Array.mkEmpty n) (List.range m) = x at ih ⊢
+      obtain ⟨hd, nx⟩ := x
+      exact inv_add ih
   exact go n
+
 
 /-- The pairs of two lists are read off by index. -/
 theorem filterMap_at? [DecidableEq K] (k : K) : (a : List K) → (b : List V) → a.length = b.length →
@@ -787,7 +812,8 @@ def FinRel.chains [DecidableEq K] [Hashable K] (r : FinRel K V) : FinRel K V × 
 
 /-- The fibre of `k` from the chains. -/
 def chainGet [DecidableEq K] [Hashable K] (x : FinRel K V × Array Nat × Array Nat) (k : K) : List V :=
-  Chain.walk x.1.keys x.1.vals x.2.2 k (x.2.1[(hash k).toNat % chainCap x.1.keys.size]?.getD 0) []
+  let p := x.2.1[(hash k).toNat % chainCap x.1.keys.size]?.getD 0
+  Chain.walkF x.1.keys x.1.vals x.2.2 k p p []
 
 /-- **The chained fibre is the scanned one**, order and repeats kept. -/
 theorem FinRel.get_chains [DecidableEq K] [Hashable K] (r : FinRel K V) : chainGet r.chains = r.scanLookup :=
@@ -795,9 +821,9 @@ theorem FinRel.get_chains [DecidableEq K] [Hashable K] (r : FinRel K V) : chainG
     let cap := chainCap r.keys.size
     let slot := fun (j : Nat) => (r.keys[j]?.elim (0 : UInt64) hash).toNat % cap
     have hs : ∀ j, slot j < cap := fun j => Nat.mod_lt _ (by simp [cap, chainCap])
-    obtain ⟨-, -, h3⟩ := Chain.inv_build hs r.keys.size
+    obtain ⟨-, -, h3⟩ := Chain.inv_build (slot := slot) (cap := cap) r.keys.size
     obtain ⟨-, hr⟩ := h3 _ (Nat.mod_lt _ (by simp [cap, chainCap]) : (hash k).toNat % cap < cap)
-    simp only [chainGet, FinRel.chains, Chain.walk_eq, List.append_nil]
+    simp only [chainGet, FinRel.chains, Chain.walkF_eq, List.append_nil]
     show List.filterMap _ (List.reverse (Chain.rows _ _)) = _
     rw [hr, List.reverse_reverse]
     have hf : ∀ l : List Nat, (∀ j ∈ l, ¬ slot j = (hash k).toNat % cap → Chain.at? r.keys r.vals k j = none) →
