@@ -109,17 +109,18 @@ def abcab : ByteArray × Array Nat := symCol ["a", "bc", "", "a", "bc"]
 
 /-- A list of IEEE bit patterns as an ALP value column: laid out dense, then `Coc.alpEncode64`, the
 Lean body of `qlean_alp_encode_f64`; element `i` read back by `Column.alpBits`. -/
-def alpBitsCol (vs : List UInt64) : Nat → UInt64 :=
+def alpBitsCol (vs : List UInt64) : ValCol UInt64 :=
   let e := Coc.alpEncode64 (enc 8 (vs.map UInt64.toInt64))
-  alpBits e.1 e.2.1 e.2.2 (blockStarts e.1)
+  ⟨alpBits e.1 e.2.1 e.2.2 (blockStarts e.1)⟩
 
 /-- A list of floats as an ALP value column: `alpBitsCol` of their bits, read as `Float`s. -/
-def alpCol (vs : List Float) (i : Nat) : Float := Float.ofBits (alpBitsCol (vs.map Float.toBits) i)
+def alpCol (vs : List Float) : ValCol Float :=
+  let c := alpBitsCol (vs.map Float.toBits); ⟨fun i => Float.ofBits (c.get i)⟩
 
 /-- **The ALP column reads back its bits**, from qlean's `alpBits_alpEncode64`. The bound is the
 encoder's: a block start is a 32-bit offset. -/
 theorem alpBitsCol_get (vs : List UInt64) (hn : vs.length < 2 ^ 32) (i : Nat) (hi : i < vs.length) :
-    alpBitsCol vs i = vs[i] := by
+    (alpBitsCol vs).get i = vs[i] := by
   have hs : (enc 8 (vs.map UInt64.toInt64)).size / 8 = vs.length := by
     rw [enc_size (by decide), List.length_map, Nat.mul_div_cancel_left _ (by decide)]
   have e := alpBits_alpEncode64 (enc 8 (vs.map UInt64.toInt64)) (hs ▸ hn) i (hs ▸ hi)
@@ -134,8 +135,8 @@ no `Float` law is asked for. -/
 theorem rep_ofList_alp (l : List (Int64 × UInt64)) (hn : l.length < 2 ^ 32) (foR : Bool) :
     (QSortedRel.ofList l alpBitsCol foR).rep = rel l := by
   -- `rep_ofList` asks the read-back of every list; past the bound any reader will do, `getElem!`
-  let col (vs : List UInt64) (i : Nat) : UInt64 := if vs.length < 2 ^ 32 then alpBitsCol vs i else vs[i]!
-  have hcol : ∀ vs i (h : i < vs.length), col vs i = vs[i] := fun vs i h => by
+  let col (vs : List UInt64) : ValCol UInt64 := if vs.length < 2 ^ 32 then alpBitsCol vs else ⟨fun i => vs[i]!⟩
+  have hcol : ∀ vs i (h : i < vs.length), (col vs).get i = vs[i] := fun vs i h => by
     by_cases hv : vs.length < 2 ^ 32
     · simp only [col, if_pos hv]; exact alpBitsCol_get vs hv i h
     · simp only [col, if_neg hv, getElem!_pos vs i h]

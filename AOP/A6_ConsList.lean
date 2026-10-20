@@ -58,6 +58,16 @@ public instance [DecidableEq L] [DecidableEq E] : DecidableEq (ConsList L E) := 
 @[simp] public theorem ofList_cons (x : E) (xs : List E) :
     ofList (x :: xs) = ConsList.cons x (ofList xs) := rfl
 
+/-- `ofList` as the compiler runs it: one loop over the reversed list, where `ofList` takes a stack
+    frame per element. -/
+public def ofListTR (l : List E) : ConsList Unit E := l.reverse.foldl (fun x e => ConsList.cons e x) (ConsList.wrap ())
+
+@[csimp] public theorem ofList_eq_ofListTR : @ofList = @ofListTR := by
+  funext E l
+  induction l with
+  | nil => rfl
+  | cons x xs ih => simp only [ofListTR, ofList_cons, List.reverse_cons, List.foldl_append] at ih ⊢; rw [ih]; rfl
+
 /-- The object carrying `ConsList L E`. -/
 @[expose] public abbrev dCL (L E : Type) : RelSet.{0} := ⟨ConsList L E⟩
 /-- The object carrying the leaf type `L`. -/
@@ -680,6 +690,25 @@ public theorem cl_mono {L' E' : Type} {Rl Sl : dL L ⟶ dL L'} {Re Se : dE E ⟶
 @[expose] public def cfold {L E C : Type} (g : L → C) (st : E → C → C) : ConsList L E → C
   | ConsList.wrap d => g d
   | ConsList.cons e x => st e (cfold g st x)
+
+/-- The elements of `x` from the top, pushed onto `acc`, and its base. -/
+public def spine {L E : Type} : ConsList L E → Array E → Array E × L
+  | ConsList.wrap d, acc => (acc, d)
+  | ConsList.cons e x, acc => spine x (acc.push e)
+
+/-- `cfold` as the compiler runs it: `spine` down the list, then `st` from the bottom up over the
+    array, where `cfold` takes a stack frame per element. -/
+public def cfoldTR {L E C : Type} (g : L → C) (st : E → C → C) (x : ConsList L E) : C :=
+  let p := spine x #[]; p.1.foldr st (g p.2)
+
+theorem foldr_spine {L E C : Type} (g : L → C) (st : E → C → C) (x : ConsList L E) (acc : Array E) :
+    (spine x acc).1.foldr st (g (spine x acc).2) = acc.foldr st (cfold g st x) := by
+  induction x generalizing acc with
+  | wrap d => rfl
+  | cons e x ih => simp only [spine, cfold, ih, Array.foldr_push]
+
+@[csimp] public theorem cfold_eq_cfoldTR : @cfold = @cfoldTR := by
+  funext L E C g st x; simp only [cfoldTR, foldr_spine]; rfl
 
 end Freyd.Alg.RelSet.CL
 

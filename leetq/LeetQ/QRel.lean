@@ -110,10 +110,15 @@ theorem fits_narrow {xs : List Int64} {x : Int64} (h : x ∈ xs) : Fits (narrow 
     · rename_i ha; exact of_decide_eq_true (List.all_eq_true.1 ha x h)
     · exact fits_eight x
 
-/-- A list of `Int64`s as a dense value column at its narrowest width. -/
-def dense (vs : List Int64) : Nat → Int64 := atW (narrow vs) (enc (narrow vs) vs)
+/-- A value column: element `i` read by `get`. A structure and not a function `Nat → V`, because the
+compiler eta-expands a function-valued definition, which would rebuild the column at every read. -/
+structure ValCol (V : Type) where
+  get : Nat → V
 
-theorem dense_get (vs : List Int64) (i : Nat) (hi : i < vs.length) : dense vs i = vs[i] :=
+/-- A list of `Int64`s as a dense value column at its narrowest width. -/
+def dense (vs : List Int64) : ValCol Int64 := ⟨atW (narrow vs) (enc (narrow vs) vs)⟩
+
+theorem dense_get (vs : List Int64) (i : Nat) (hi : i < vs.length) : (dense vs).get i = vs[i] :=
   atW_enc (narrow_pos vs).1 vs i hi (fits_narrow (List.getElem_mem hi))
 
 /-- What both `ascending` kernels answer, `ascending_i64_iff` and `ascendingFoR_i64_iff`, in the
@@ -320,9 +325,9 @@ def keyLE (a b : Int64 × V) : Bool := decide (a.1.toInt ≤ b.1.toInt)
 
 /-- Sort the pairs by key, then lay them out as two columns: the keys encoded when `foR`, the values
 by `col`, whose read-back law is what `rep_ofList` asks of it. -/
-def ofList (l : List (Int64 × V)) (col : List V → Nat → V) (foR : Bool := false) : QSortedRel V where
+def ofList (l : List (Int64 × V)) (col : List V → ValCol V) (foR : Bool := false) : QSortedRel V where
   keys := Keys.ofList foR ((l.mergeSort keyLE).map Prod.fst)
-  val := col ((l.mergeSort keyLE).map Prod.snd)
+  val := (col ((l.mergeSort keyLE).map Prod.snd)).get
   sorted := fun i j hij hj => by
     have hm := List.pairwise_mergeSort (le := keyLE)
       (fun a b c h1 h2 => by simp only [keyLE, decide_eq_true_eq] at *; omega)
@@ -337,8 +342,8 @@ def ofList (l : List (Int64 × V)) (col : List V → Nat → V) (foR : Bool := f
     · exact Int64.le_iff_toInt_le.2 (Int.le_refl _)
   fits := Keys.fits_ofList _ _
 
-theorem toList_ofList (l : List (Int64 × V)) (col : List V → Nat → V)
-    (hcol : ∀ vs i (h : i < vs.length), col vs i = vs[i]) (foR : Bool) :
+theorem toList_ofList (l : List (Int64 × V)) (col : List V → ValCol V)
+    (hcol : ∀ vs i (h : i < vs.length), (col vs).get i = vs[i]) (foR : Bool) :
     (ofList l col foR).toList = l.mergeSort keyLE := by
   apply List.ext_getElem
   · simp [toList, count, ofList, Keys.count_ofList]
@@ -349,8 +354,8 @@ theorem toList_ofList (l : List (Int64 × V)) (col : List V → Nat → V)
 
 /-- **`rep(ofList(l)) = rel(l)`**, as `FinRel.rep_ofList`, dense or encoded, for any value column
 that reads back what it was built from. -/
-theorem rep_ofList (l : List (Int64 × V)) (col : List V → Nat → V)
-    (hcol : ∀ vs i (h : i < vs.length), col vs i = vs[i]) (foR : Bool) : (ofList l col foR).rep = rel l := by
+theorem rep_ofList (l : List (Int64 × V)) (col : List V → ValCol V)
+    (hcol : ∀ vs i (h : i < vs.length), (col vs).get i = vs[i]) (foR : Bool) : (ofList l col foR).rep = rel l := by
   show rel _ = _
   rw [toList_ofList _ _ hcol]
   exact rel_perm (List.mergeSort_perm _ _)
