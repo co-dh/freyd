@@ -935,6 +935,59 @@ theorem rel_foldThin {Q : RelRep V V} {B : RelRep L V} {S : RelRep (E × V) V} {
 
 end Fold
 
+/-! ### General recursion: the terminating hylomorphism
+
+`fold` recurses on the structure of its argument.  `hylo` recurses on any subproblems `step` asks
+for, total because a measure `μ` bounds the depth: it runs `step` on a fuel of `μ x + 1`, and a step
+that asks only for subproblems of smaller measure never sees the fuel run out.  `step X x` is one
+unfold-then-fold step, `X` standing for the recursive calls; `d` answers when the fuel is out, and
+is never reached under that hypothesis. -/
+
+section Hylo
+
+/-- `step` iterated `n` times from `d`. -/
+def hyloN (d : A → B) (step : (A → B) → A → B) : Nat → A → B
+  | 0 => d
+  | n + 1 => step (hyloN d step n)
+
+/-- **The terminating hylomorphism**: `step` iterated on a fuel of `μ x + 1`. -/
+def hylo (μ : A → Nat) (d : A → B) (step : (A → B) → A → B) (x : A) : B := hyloN d step (μ x + 1) x
+
+/-- `step X x` reads `X` only at subproblems of smaller measure than `x`. -/
+def Guarded (μ : A → Nat) (step : (A → B) → A → B) : Prop :=
+  ∀ X Y x, (∀ y, μ y < μ x → X y = Y y) → step X x = step Y x
+
+variable {μ : A → Nat} {d : A → B} {step : (A → B) → A → B}
+
+/-- **Measure induction through `hylo`**: an invariant `I` that every step keeps, given it at all
+    smaller subproblems, holds of every answer — the fuel induction each program would repeat. -/
+theorem hylo_ind {I : A → B → Prop} (hs : ∀ X x, (∀ y, μ y < μ x → I y (X y)) → I x (step X x))
+    (x : A) : I x (hylo μ d step x) :=
+  go (μ x + 1) x (Nat.lt_succ_self _)
+where go : ∀ n x, μ x < n → I x (hyloN d step n x)
+  | 0, _, h => absurd h (Nat.not_lt_zero _)
+  | n + 1, x, h => hs _ x fun y hy => go n y (Nat.lt_of_lt_of_le hy (Nat.le_of_lt_succ h))
+
+/-- Under a guarded step, any fuel above the measure gives the same answer. -/
+theorem hyloN_stable (hg : Guarded μ step) :
+    ∀ n m x, μ x < n → μ x < m → hyloN d step n x = hyloN d step m x
+  | 0, _, _, h, _ => absurd h (Nat.not_lt_zero _)
+  | _, 0, _, _, h => absurd h (Nat.not_lt_zero _)
+  | n + 1, m + 1, x, hn, hm => hg _ _ x fun y hy => hyloN_stable hg n m y (by omega) (by omega)
+
+/-- **`hylo` solves its recursion**: under a guarded step, `step(hylo) = hylo`. -/
+theorem hylo_fixed (hg : Guarded μ step) : step (hylo μ d step) = hylo μ d step :=
+  funext fun x => hg _ _ x fun y hy => hyloN_stable hg (μ y + 1) (μ x) y (Nat.lt_succ_self _) hy
+
+/-- **The hylomorphism law**: if `step` computes `φ` under a reading `ρ` of programs as relations,
+    `ρ(hylo)` is a fixed point of `φ`, so `μφ ⊑ ρ(hylo)` (`mu_le_of_fixed`). -/
+theorem rel_hylo (ρ : (A → B) → ((⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩))
+    {φ : ((⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩) → ((⟨A⟩ : RelSet.{0}) ⟶ ⟨C⟩)} (hρ : ∀ X, ρ (step X) = φ (ρ X))
+    (hg : Guarded μ step) : φ (ρ (hylo μ d step)) = ρ (hylo μ d step) := by
+  rw [← hρ, hylo_fixed hg]
+
+end Hylo
+
 end RelRep
 
 end Freyd.Alg.RelSet

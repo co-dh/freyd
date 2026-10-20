@@ -1075,14 +1075,14 @@ public theorem rel_stepFn (X : Str → List (SnocList Unit Code)) :
     (RelRep.enum (stepFn X)).rel = Λ (extend° ≫ (Xs X).rel) ≫ est R := by
   rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepE, rel_Rt]
 
-/-- The program on a fuel: `[]` from no codes, a non-empty string by one step. -/
-@[expose] public def compressN : Nat → Str → List (SnocList Unit Code)
-  | 0, _ => []
-  | _ + 1, SnocList.wrap _ => [SnocList.wrap ()]
-  | n + 1, w@(SnocList.snoc _ _) => stepFn (compressN n) w
+/-- One step of the program: the empty string has the empty code, a non-empty one takes `stepFn`. -/
+@[expose] public def compressStep (X : Str → List (SnocList Unit Code)) : Str → List (SnocList Unit Code)
+  | SnocList.wrap _ => [SnocList.wrap ()]
+  | w@(SnocList.snoc _ _) => stepFn X w
 
-/-- The program: every cut shortens the string, so `slen w+1` steps reach `[]`. -/
-@[expose] public def compress (ws : Str) : List (SnocList Unit Code) := compressN (slen ws + 1) ws
+/-- The program: every cut shortens the string, so `compressStep` recurses on the length. -/
+@[expose] public def compress (ws : Str) : List (SnocList Unit Code) :=
+  RelRep.hylo slen (fun _ => []) compressStep ws
 
 omit [RelSet.Code] in
 /-- A cut shortens the string: a symbol by one, a pointer by its non-empty `zs`. -/
@@ -1128,23 +1128,24 @@ public theorem mem_cands {X : Str → List (SnocList Unit Code)} {w : Str} {cs :
   · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
   · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
 
-/-- At a fuel above the length, `compressN` returns least-cost sequences decoding to `w`, and at
-    least one. -/
-public theorem compressN_spec : ∀ (n : Nat) (w : Str), slen w < n →
-    (∀ cs ∈ compressN n w, decode cs w ∧ ∀ cs', decode cs' w → size cs ≤ size cs')
-      ∧ ∃ cs, cs ∈ compressN n w
-  | 0, _, h => absurd h (Nat.not_lt_zero _)
-  | _ + 1, SnocList.wrap _, _ => by
+/-- `compress` returns least-cost sequences decoding to the string, and at least one: one step
+    keeps this given it at the shorter strings of the cuts (`RelRep.hylo_ind`). -/
+public theorem compress_spec (w : Str) :
+    (∀ cs ∈ compress w, decode cs w ∧ ∀ cs', decode cs' w → size cs ≤ size cs')
+      ∧ ∃ cs, cs ∈ compress w := by
+  refine RelRep.hylo_ind (I := fun w l =>
+    (∀ cs ∈ l, decode cs w ∧ ∀ cs', decode cs' w → size cs ≤ size cs') ∧ ∃ cs, cs ∈ l) (fun X w ih => ?_) w
+  cases w with
+  | wrap _ =>
     refine ⟨fun cs hcs => ?_, ⟨SnocList.wrap (), List.mem_singleton_self _⟩⟩
     obtain rfl := List.mem_singleton.1 hcs
     exact ⟨rfl, fun _ _ => Nat.zero_le _⟩
-  | n + 1, SnocList.snoc w₀ a, hn => by
+  | snoc w₀ a =>
     have ih : ∀ q : Str × Code, extendP q (SnocList.snoc w₀ a) →
-        (∀ cs ∈ compressN n q.1, decode cs q.1 ∧ ∀ cs', decode cs' q.1 → size cs ≤ size cs')
-          ∧ ∃ cs, cs ∈ compressN n q.1 := fun q hq =>
-      compressN_spec n q.1 (Nat.lt_of_lt_of_le (slen_lt_of_extendP hq) (Nat.le_of_lt_succ hn))
+        (∀ cs ∈ X q.1, decode cs q.1 ∧ ∀ cs', decode cs' q.1 → size cs ≤ size cs')
+          ∧ ∃ cs, cs ∈ X q.1 := fun q hq => ih q.1 (slen_lt_of_extendP hq)
     have hbest : ∀ cs', decode cs' (SnocList.snoc w₀ a) →
-        ∃ y ∈ cands (compressN n) (SnocList.snoc w₀ a), size y ≤ size cs' := by
+        ∃ y ∈ cands X (SnocList.snoc w₀ a), size y ≤ size cs' := by
       intro cs' hd
       cases cs' with
       | wrap _ => exact absurd (hd : SnocList.snoc w₀ a = SnocList.wrap ()) (snoc_ne_wrap w₀ a)
@@ -1155,7 +1156,7 @@ public theorem compressN_spec : ∀ (n : Nat) (w : Str), slen w < n →
         have := (hall d hdm).2 cs₀ hxs
         show size d + bytes e ≤ size cs₀ + bytes e
         omega
-    show (∀ cs ∈ stepFn (compressN n) (SnocList.snoc w₀ a), _) ∧ ∃ cs, cs ∈ stepFn (compressN n) (SnocList.snoc w₀ a)
+    show (∀ cs ∈ stepFn X (SnocList.snoc w₀ a), _) ∧ ∃ cs, cs ∈ stepFn X (SnocList.snoc w₀ a)
     refine ⟨fun cs hcs => ?_, ?_⟩
     · obtain ⟨hc, hmin⟩ := mem_estList_Rt.1 hcs
       obtain ⟨q, hq, d, hd, rfl⟩ := mem_cands.1 hc
@@ -1163,7 +1164,7 @@ public theorem compressN_spec : ∀ (n : Nat) (w : Str), slen w < n →
       obtain ⟨y, hy, hle⟩ := hbest cs' hd'
       exact Nat.le_trans (hmin y hy) hle
     · obtain ⟨_, d, hd⟩ := ih (w₀, Code.sym a) rfl
-      obtain ⟨v, hv, hvmin⟩ := exists_min_size (cands (compressN n) (SnocList.snoc w₀ a))
+      obtain ⟨v, hv, hvmin⟩ := exists_min_size (cands X (SnocList.snoc w₀ a))
         (List.ne_nil_of_mem (mem_cands.2 ⟨(w₀, Code.sym a), rfl, d, hd, rfl⟩))
       exact ⟨v, mem_estList_Rt.2 ⟨hv, hvmin⟩⟩
 
@@ -1171,7 +1172,7 @@ public theorem compressN_spec : ∀ (n : Nat) (w : Str), slen w < n →
     string and costs least, `compress ⊑ Λ(decode°) est(R)`. -/
 public theorem compress_le : (RelRep.enum compress).rel ⊑ Λ (decode°) ≫ est R :=
   le_iff.mpr fun w cs h => (Λ_comp_est_apply _ _ w cs).2 <| by
-    obtain ⟨hd, hmin⟩ := (compressN_spec (slen w + 1) w (Nat.lt_succ_self _)).1 cs h
+    obtain ⟨hd, hmin⟩ := (compress_spec w).1 cs h
     exact ⟨hd, fun z hz => (R_apply cs z).2 (hmin z hz)⟩
 
 end CodeRun
