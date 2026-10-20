@@ -727,6 +727,24 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   lean-calc(calc-kbs),
 )]<knap-body-split>
 
+// One run of the program on the items `(value, weight)` `(6,5),(5,4),(4,6),(3,3)` with capacity `10`: its
+// input, then one row per stage; each value is a theorem of the `KnapRun` section of A8_4_KnapsackProgram,
+// cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Knapsack.run_knap.lhs.arg"),
+   value: leanf("Freyd.Alg.RelSet.Knapsack.run_knap.lhs.arg"),
+   meaning: [the items `(value, weight)`, left to right]),
+  // lean:AOP.A8_4_KnapsackProgram.run_knap@c90ab193
+  (sym: leann("Freyd.Alg.RelSet.Knapsack.kept"), type: leant("Freyd.Alg.RelSet.Knapsack.run_kept.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Knapsack.run_kept.rhs"),
+   meaning: [the fold keeps seven packings: the thinning drops one less valuable and heavier than another]),
+  // lean:AOP.A8_4_KnapsackProgram.run_kept@a28bc181
+  (sym: leann("Freyd.Alg.RelSet.Knapsack.knap"), type: leant("Freyd.Alg.RelSet.Knapsack.run_knap.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Knapsack.run_knap.rhs"),
+   meaning: [the one of value `11` and weight `9`, `est(R)` of the kept packings]),
+  // lean:AOP.A8_4_KnapsackProgram.run_knap@c90ab193
+)<knap-run>
+
 == The paragraph problem
 
 // B&dM §8.5, p. 207.  `P ≜ ⊤` works because `merge ⊤ = cat`, which already brings equal first lines

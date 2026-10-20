@@ -5,6 +5,9 @@
 -/
 module
 
+public import AOP.A6_FinRel
+public import AOP.A8_4_Knapsack
+
 @[expose] public section
 
 namespace Knap207
@@ -67,3 +70,136 @@ def knapsack (w : Int) : List Item → Rep Item :=
 #guard knapsack (fun i : Int × Int => i.1) (fun i => i.2) 10 [(6, 5), (5, 4), (4, 6), (3, 3)] = ([(6, 5), (5, 4)], (11, 9))
 
 end Knap207
+
+namespace Freyd.Alg.RelSet.Knapsack
+open PowerAllegory
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
+
+/-! ## `KnapRun`: the knapsack program on `RelRep`
+
+The fold keeps a list of packings: `step` extends each kept packing by the item when it still
+fits and also leaves the item out, `RelRep.thin Q` cuts the candidates, and `RelRep.est R` reads
+the most valuable packings off the last list. -/
+
+section KnapRun
+
+variable {Item : Type} [DecidableEq Item] (val wt : Item → Int) (w : Int)
+
+instance decQ : ∀ xs ys : ConsList Unit Item, Decidable (Q val wt xs ys) :=
+  fun xs ys => decidable_of_iff _ (Q_apply xs ys).symm
+
+instance decR : ∀ xs ys : ConsList Unit Item, Decidable (R val xs ys) :=
+  fun xs ys => decidable_of_iff _ (R_apply xs ys).symm
+
+/-- The thinning order `Q` as a `RelRep` test. -/
+def Qt : RelRep (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (Q val wt xs ys)
+
+omit [DecidableEq Item] in
+theorem rel_Qt : (Qt val wt).rel = Q val wt := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The value order `R` as a `RelRep` test. -/
+def Rt : RelRep (ConsList Unit Item) (ConsList Unit Item) := .test fun xs ys => decide (R val xs ys)
+
+omit [DecidableEq Item] in
+theorem rel_Rt : (Rt val).rel = R val := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The step's `Λ` form: the packing with item `a` added when it still fits, and the packing without it. -/
+def step (q : Item × ConsList Unit Item) : List (ConsList Unit Item) :=
+  if weight wt (ConsList.cons q.1 q.2) ≤ w then [ConsList.cons q.1 q.2, q.2] else [q.2]
+
+omit [DecidableEq Item] in
+/-- `step` is the `cons` half of `S`: `cons (within w) ∪ π₂`. -/
+theorem rel_step :
+    (RelRep.enum (step wt w)).rel
+      = (consR ≫ corefl (within (wt := wt) w)) ∪ graph fun p : Item × ConsList Unit Item => p.2 :=
+  hom_ext fun q r => by
+    show r ∈ step wt w q ↔ _
+    unfold step
+    by_cases h : weight wt (ConsList.cons q.1 q.2) ≤ w
+    · rw [if_pos h]
+      simp only [List.mem_cons, List.mem_nil_iff, or_false]
+      constructor
+      · rintro (rfl | rfl)
+        · exact Or.inl ⟨_, rfl, rfl, h⟩
+        · exact Or.inr rfl
+      · rintro (⟨c, hc, hcr, -⟩ | hd)
+        · obtain rfl : c = ConsList.cons q.1 q.2 := hc
+          exact Or.inl (hcr : ConsList.cons q.1 q.2 = r).symm
+        · exact Or.inr hd
+    · rw [if_neg h]
+      simp only [List.mem_cons, List.mem_nil_iff, or_false]
+      constructor
+      · rintro rfl; exact Or.inr rfl
+      · rintro (⟨c, hc, -, hw⟩ | hd)
+        · obtain rfl : c = ConsList.cons q.1 q.2 := hc
+          exact absurd hw h
+        · exact hd
+
+omit [DecidableEq Item] in
+/-- `S` is the junction of `wrap` and `step`. -/
+theorem Salg_eq_junc :
+    Salg wt w = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩)
+      (RelRep.ofFn (ConsList.wrap : Unit → ConsList Unit Item)).rel (RelRep.enum (step wt w)).rel := by
+  rw [Salg_junc, RelRep.rel_ofFn, rel_step]; rfl
+
+/-- The packings kept after the whole input: `⦇thin(Q)·Λ(S)⦈` as a function. -/
+def kept : ConsList Unit Item → List (ConsList Unit Item) :=
+  RelRep.foldList (RelRep.thinList fun xs ys => decide (Q val wt xs ys)) (fun u => [ConsList.wrap u]) (step wt w)
+
+/-- `kept` is `RelRep.foldThin Q` of `wrap` and `step`. -/
+theorem kept_eq :
+    RelRep.foldThin (Qt val wt) (.ofFn ConsList.wrap) (.enum (step wt w)) = some (.enum (kept val wt w)) := rfl
+
+/-- The program: the most valuable packings among those kept. -/
+def knap (xs : ConsList Unit Item) : List (ConsList Unit Item) := RelRep.estList (fun ys zs => decide (R val ys zs)) (kept val wt w xs)
+
+/-- `knap` is `RelRep.est R` of `kept`. -/
+theorem knap_eq : RelRep.est (Rt val) (.enum (kept val wt w)) = some (.enum (knap val wt w)) := rfl
+
+/-- `Λ(kept) ⊑ Λ⦇S⦈ thin(Q)`. -/
+theorem kept_thin : Λ (RelRep.enum (kept val wt w)).rel ⊑ Λ ⦇Salg wt w⦈ ≫ thinRel (Q val wt) := by
+  have h := RelRep.rel_foldThin (h := kept_eq val wt w) (by rw [rel_Qt]; exact Q_refl)
+    (by rw [rel_Qt]; exact Q_trans)
+    (by rw [rel_Qt, ← Salg_eq_junc]; exact pres_union knap_mono_cons knap_mono_drop)
+  rw [← Salg_eq_junc, rel_Qt] at h
+  exact h
+
+/-- **The program meets its specification**: every packing `knap` returns is a most valuable
+    packing within the capacity, `knap ⊑ Λ(subseq (within w)) est(R)`. -/
+theorem knap_le (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
+    (RelRep.enum (knap val wt w)).rel ⊑ Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) :=
+  calc (RelRep.enum (knap val wt w)).rel
+      = Λ (RelRep.enum (kept val wt w)).rel ≫ est (Rt val).rel := RelRep.rel_est (knap_eq val wt w)
+    _ = Λ (RelRep.enum (kept val wt w)).rel ≫ est (R val) := by rw [rel_Rt]
+    _ ⊑ (Λ ⦇Salg wt w⦈ ≫ thinRel (Q val wt)) ≫ est (R val) := comp_mono_right (kept_thin val wt w) _
+    _ = Λ ⦇Salg wt w⦈ ≫ (thinRel (Q val wt) ≫ est (R val)) := Cat.assoc _ _ _
+    _ ⊑ Λ ⦇Salg wt w⦈ ≫ est (R val) :=
+      comp_mono_left _ (thinRel_comp_est_le Q_le_R (trans_of_recip_trans R_recip_trans))
+    _ = Λ (subseq ≫ corefl (within (wt := wt) w)) ≫ est (R val) := knap_laws_step2 hw hwt
+
+/-- **kept-run**: items `(value, weight)` `(6,5),(5,4),(4,6),(3,3)`, capacity `10`: the fold keeps
+    seven packings, none both less valuable and heavier than another. -/
+theorem run_kept :
+    kept (Item := Int × Int) Prod.fst Prod.snd 10
+        (ConsList.cons (6, 5) (ConsList.cons (5, 4) (ConsList.cons (4, 6) (ConsList.cons (3, 3) (ConsList.wrap ())))))
+      = [ConsList.cons (5, 4) (ConsList.cons (3, 3) (ConsList.wrap ())),
+         ConsList.cons (6, 5) (ConsList.cons (3, 3) (ConsList.wrap ())),
+         ConsList.cons (3, 3) (ConsList.wrap ()),
+         ConsList.cons (6, 5) (ConsList.cons (5, 4) (ConsList.wrap ())),
+         ConsList.cons (5, 4) (ConsList.wrap ()),
+         ConsList.cons (6, 5) (ConsList.wrap ()),
+         ConsList.wrap ()] := by
+  rfl
+
+/-- **knap-run**: on the same items the program returns the one packing of value `11`,
+    `(6,5),(5,4)` of weight `9`. -/
+theorem run_knap :
+    knap (Item := Int × Int) Prod.fst Prod.snd 10
+        (ConsList.cons (6, 5) (ConsList.cons (5, 4) (ConsList.cons (4, 6) (ConsList.cons (3, 3) (ConsList.wrap ())))))
+      = [ConsList.cons (6, 5) (ConsList.cons (5, 4) (ConsList.wrap ()))] := by
+  rfl
+
+end KnapRun
+
+end Freyd.Alg.RelSet.Knapsack
