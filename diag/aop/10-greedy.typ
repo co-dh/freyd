@@ -590,7 +590,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // One run of the program on `n=8192`: its input, then one row per stage; each value is a theorem
 // of the `TexRun` section of A10_4_Tex, cited beside its row.  A digit candidate prints as
-// `(d,p,q)`: the digit and the pair it leaves.
+// `r((d,(p,q)))`: the digit and the pair it leaves; the stop prints as `l(())`.
 #ex-table(col: [*stage*],
   (sym: [input], type: leant("Freyd.Alg.RelSet.Tex.run_input.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tex.run_input.rhs"),
