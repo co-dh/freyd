@@ -905,6 +905,25 @@ At `F(A,X)=1+A×X`, `f₁(l())=f₂(l())=0`, `f₁(r(a,x))=x`, `f₂(r(a,x))=a+x
   lean-calc(calc-pbs),
 )]<para-body-split>
 
+// One run of the program on words of lengths `1,2,1,3` (each word is its own length) with line width `5`:
+// its input, then one row per stage; each value is a theorem of the `ParaRun` section of A8_5_Paragraph,
+// cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Paragraph.run_paragraph.lhs.arg"),
+   value: leanf("Freyd.Alg.RelSet.Paragraph.run_paragraph.lhs.arg"),
+   meaning: [the words' lengths, left to right]),
+  // lean:AOP.A8_5_Paragraph.run_paragraph@269e00d7
+  (sym: leann("Freyd.Alg.RelSet.Paragraph.kept"), type: leant("Freyd.Alg.RelSet.Paragraph.run_kept.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Paragraph.run_kept.rhs"),
+   meaning: [the fold keeps two layouts: the thinning drops `[[2],[1],[3]]` for `[[2],[1,3]]` and
+    `[[1],[2],[1,3]]` for `[[1],[2,1],[3]]`, each with the same first line and less waste]),
+  // lean:AOP.A8_5_Paragraph.run_kept@597decc2
+  (sym: leann("Freyd.Alg.RelSet.Paragraph.paragraph"), type: leant("Freyd.Alg.RelSet.Paragraph.run_paragraph.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Paragraph.run_paragraph.rhs"),
+   meaning: [the one of waste `1`, `est(R)` of the kept layouts]),
+  // lean:AOP.A8_5_Paragraph.run_paragraph@269e00d7
+)<para-run>
+
 == Bitonic tours
 
 // B&dM §8.6, p. 212.  `Q` keeps the `head₂` conjunct p.215 derives and then drops on the grounds
