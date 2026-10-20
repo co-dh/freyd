@@ -7,7 +7,7 @@
   * `/` (over) and every aggregate are `⦇[B,S]⦈`, `RelRep.fold`, run on the values in REVERSE: q's
     iterators fold from the left, the cons-list fold from the right. `over_pairs` states the result as
     `foldl` over the value list; `sum`/`count`/`avg` follow (`sum_pairs`, `count_pairs`, `sumCount_pairs`),
-    every repeat counted because a `RelRep` means a list, not a set. The grouped form is `app?_selby`
+    every repeat counted because a `RelRep` means a list, not a set. The grouped form is `app_selby`
     (`Q/Table.lean`).
   * `\` (scan) is the same fold into the list of partial results.
   * `':` (each-prior) and the moving windows `m*` compose with an index relation (`pred`, `win n`).
@@ -56,36 +56,33 @@ def idx : RelRep Nat V → Option (RelRep Nat Nat)
 /-! ## Each, and atom extension -/
 
 /-- `f'R`, `f each R`: `R ; f`. -/
-def each (f : V → W) (R : RelRep Nat V) : Option (RelRep Nat W) := comp R (ofFn f)
+def each (f : V → W) (R : RelRep Nat V) : RelRep Nat W := R ≫ ofFn f
 
 /-- `x f' y`, two lists matched by index: `⟨R,S⟩ ; f`. -/
-def each2 (f : V → W → U) (R : RelRep Nat V) (S : RelRep Nat W) : Option (RelRep Nat U) :=
-  comp (pair R S) (ofFn fun p => f p.1 p.2)
+def each2 (f : V → W → U) (R : RelRep Nat V) (S : RelRep Nat W) : RelRep Nat U := pair R S ≫ ofFn fun p => f p.1 p.2
 
-theorem rel_each {f : V → W} {R : RelRep Nat V} {T : RelRep Nat W} (h : each f R = some T) :
-    T.rel = R.rel ≫ graph f := (rel_comp h).trans (by rw [rel_ofFn])
+theorem rel_each (f : V → W) (R : RelRep Nat V) : (each f R).rel = R.rel ≫ graph f := by
+  rw [each, rel_comp, rel_ofFn]
 
-theorem rel_each2 {f : V → W → U} {R : RelRep Nat V} {S : RelRep Nat W} {T : RelRep Nat U}
-    (h : each2 f R S = some T) : T.rel = rpair R.rel S.rel ≫ graph fun p => f p.1 p.2 :=
-  (rel_comp h).trans (by rw [rel_ofFn, rel_pair])
+theorem rel_each2 (f : V → W → U) (R : RelRep Nat V) (S : RelRep Nat W) :
+    (each2 f R S).rel = rpair R.rel S.rel ≫ graph fun p => f p.1 p.2 := by
+  rw [each2, rel_comp, rel_ofFn, rel_pair]
 
-def run (e : Option (RelRep Nat V)) : Option (List V) := e.bind vals?
-
-/-- `x f/: y`: each `y_j` against the whole of `x`. The inner row is a plain `List.map`: an `ofFn`
-body must be total, and `each` answers an `Option`. -/
+/-- `x f/: y`: each `y_j` against the whole of `x`. The inner row is a plain `List.map`: `x` is read back
+first, which only `pairs` allows. -/
 def eachRight (f : V → W → U) (X : RelRep Nat V) (Y : RelRep Nat W) : Option (List (List U)) := do
-  let xs ← vals? X; run (comp Y (ofFn fun b => xs.map (f · b)))
+  let xs ← vals? X; vals? (Y ≫ ofFn fun b => xs.map (f · b))
 
 /-- `x f\: y`: each `x_i` against the whole of `y`. -/
 def eachLeft (f : V → W → U) (X : RelRep Nat V) (Y : RelRep Nat W) : Option (List (List U)) := do
-  let ys ← vals? Y; run (comp X (ofFn fun a => ys.map (f a ·)))
+  let ys ← vals? Y; vals? (X ≫ ofFn fun a => ys.map (f a ·))
 
 /-! ## Over: the fold, left to right -/
 
 /-- `⦇[B,S]⦈` over `R`'s values, left to right: the cons-list fold is a right fold, so the values go in
 reversed. The answer is the fold's fibre; a functional `B`, `S` make it one value. -/
-def foldl (B : RelRep Unit W) (S : RelRep (V × W) W) (R : RelRep Nat V) : Option (List W) := do
-  let xs ← vals? R; let T ← fold B S; let f ← T.app?; pure (f (CL.ofList xs.reverse))
+def foldl (B : RelRep Unit W) (S : RelRep (V × W) W) (R : RelRep Nat V) : Option (List W) :=
+  (vals? R).map fun xs => (fold B S).app (CL.ofList xs.reverse)
 
 /-- `a f/ xs`: `⦇[a, f]⦈`. -/
 def over (f : W → V → W) (a : W) : RelRep Nat V → Option (List W) :=
@@ -131,9 +128,8 @@ def pred : RelRep Nat Nat := .enum fun i => if i = 0 then [] else [i - 1]
 
 /-- `f': xs`: `⟨R, (dom R ; pred ; R ; some) ∪ {0 ↦ none}⟩ ; g`. The seed pair goes first so the union,
 which appends, stays in index order. -/
-def eachPrior (g : V → Option V → W) (R : RelRep Nat V) : Option (RelRep Nat W) := do
-  let P ← (idx R).bind (comp · pred) |>.bind (comp · R) |>.bind (comp · (ofFn some))
-  each2 g R (union (.pairs (FinRel.ofList [(0, none)])) P)
+def eachPrior (g : V → Option V → W) (R : RelRep Nat V) : Option (RelRep Nat W) :=
+  (idx R).map fun D => each2 g R (union (.pairs (FinRel.ofList [(0, none)])) (((D ≫ pred) ≫ R) ≫ ofFn some))
 
 def deltas : RelRep Nat Int → Option (RelRep Nat Int) := eachPrior fun x p => x - p.getD 0
 def ratios : RelRep Nat Int → Option (RelRep Nat QF) :=
@@ -146,20 +142,17 @@ def win (n : Nat) : RelRep Nat Nat := .enum fun i => (List.range (min n (i + 1))
 
 /-- Each index's window of values: `Λ(dom R ; win n ; R)`, restricted to `dom R` again, since `Λ`
 answers an `enum` over all of `Nat`. -/
-def mwin (n : Nat) (R : RelRep Nat V) : Option (RelRep Nat (List V)) := do
-  let D ← idx R
-  let T ← (comp D (win n)).bind (comp · R)
-  let L ← transpose T
-  comp D L
+def mwin (n : Nat) (R : RelRep Nat V) : Option (RelRep Nat (List V)) :=
+  (idx R).map fun D => D ≫ transpose ((D ≫ win n) ≫ R)
 
-def msum (n : Nat) (R : RelRep Nat Int) : Option (List Int) := run ((mwin n R).bind (each List.sum))
+def msum (n : Nat) (R : RelRep Nat Int) : Option (List Int) := (mwin n R).bind (vals? ∘ each List.sum)
 def mavg (n : Nat) (R : RelRep Nat Int) : Option (List QF) :=
-  run ((mwin n R).bind (each fun w => QF.of (Float.ofInt w.sum / Float.ofNat w.length)))
+  (mwin n R).bind (vals? ∘ each fun w => QF.of (Float.ofInt w.sum / Float.ofNat w.length))
 def mmin (n : Nat) (R : RelRep Nat Int) : Option (List Int) :=
-  run ((mwin n R).bind (each fun w => w.foldl min (w.headD 0)))
+  (mwin n R).bind (vals? ∘ each fun w => w.foldl min (w.headD 0))
 def mmax (n : Nat) (R : RelRep Nat Int) : Option (List Int) :=
-  run ((mwin n R).bind (each fun w => w.foldl max (w.headD 0)))
-def mcount (n : Nat) (R : RelRep Nat V) : Option (List Nat) := run ((mwin n R).bind (each List.length))
+  (mwin n R).bind (vals? ∘ each fun w => w.foldl max (w.headD 0))
+def mcount (n : Nat) (R : RelRep Nat V) : Option (List Nat) := (mwin n R).bind (vals? ∘ each List.length)
 
 /-! ## Statistics -/
 
@@ -192,7 +185,7 @@ theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     induction ys with
     | nil => rfl
     | cons y ys ih => simp only [foldList, CL.ofList_cons, CL.cfold, id] at ih ⊢; rw [ih]; rfl
-  simp [over, foldl, vals?, RelRep.fold, RelRep.foldWith, RelRep.app?, ofFn, h, List.foldr_reverse]
+  simp [over, foldl, vals?, RelRep.fold, RelRep.foldWith_eq, ofFn, h, List.foldr_reverse]
 
 omit [DecidableEq U] [FibreIndex U] in
 /-- `count R` is the length of the value list. -/
@@ -228,7 +221,7 @@ def med : RelRep Nat Int → Option QF
   | _ => none
 
 /-- `w wsum x`: `⦇+⦈(⟨W,X⟩ ; ×)`. -/
-def wsum (W X : RelRep Nat Int) : Option (List Int) := (each2 (· * ·) W X).bind sum
+def wsum (W X : RelRep Nat Int) : Option (List Int) := sum (each2 (· * ·) W X)
 
 def wavg (W X : RelRep Nat Int) : Option (List QF) := do
   let [s] ← wsum W X | none
@@ -237,7 +230,7 @@ def wavg (W X : RelRep Nat Int) : Option (List QF) := do
 
 /-- `(Σx, Σy, Σxy, n)` over `⟨X,Y⟩`; `cov = Σxy/n - (Σx/n)(Σy/n)`. -/
 def cov (X Y : RelRep Nat Int) : Option (List QF) := do
-  let P ← comp (pair X Y) (ofFn id)
+  let P := pair X Y ≫ ofFn id
   let r ← over (fun a (p : Int × Int) => (a.1 + p.1, a.2.1 + p.2, a.2.2.1 + p.1 * p.2, a.2.2.2 + 1))
     ((0, 0, 0, 0) : Int × Int × Int × Nat) P
   pure (r.map fun a => let n := Float.ofNat a.2.2.2
@@ -278,8 +271,8 @@ def xs := ql ([3, 1, 4, 1, 5] : List Int)
 #guard prds xs = some [[3, 3, 12, 12, 60]]
 #guard mins xs = some [[3, 1, 1, 1, 1]]
 #guard maxs xs = some [[3, 3, 4, 4, 5]]
-#guard run (deltas xs) = some [3, -2, 3, -3, 4]
-#guard fl (run (ratios (ql [1, 2, 8, 4]))) == some [1, 2, 4, 0.5]
+#guard (deltas xs).bind vals? = some [3, -2, 3, -3, 4]
+#guard fl ((ratios (ql [1, 2, 8, 4])).bind vals?) == some [1, 2, 4, 0.5]
 #guard msum 2 xs = some [3, 4, 5, 5, 6]
 #guard fl (mavg 2 xs) == some [3, 2, 2.5, 2.5, 3]
 #guard mmin 3 xs = some [3, 1, 1, 1, 1]
@@ -297,34 +290,34 @@ def xs := ql ([3, 1, 4, 1, 5] : List Int)
 #guard scan1 (· - ·) (ql ([1, 2, 3] : List Int)) = some [[1, -1, -4]]
 #guard over (· - ·) (10 : Int) (ql [1, 2, 3]) = some [4]
 #guard scan (· - ·) (10 : Int) (ql [1, 2, 3]) = some [[9, 7, 4]]
-#guard run (each (fun x : Int => -x) (ql [1, -2, 3])) = some [-1, 2, -3]
-#guard run (each2 (· + ·) (ql ([1, 2, 3] : List Int)) (ql [10, 20, 30])) = some [11, 22, 33]
-#guard run (eachPrior (fun x p => x - p.getD 0) (ql ([3, 1, 4] : List Int))) = some [3, -2, 3]
-#guard run (eachPrior (fun x p => x - p.getD 10) (ql ([3, 1, 4] : List Int))) = some [-7, -2, 3]
+#guard vals? (each (fun x : Int => -x) (ql [1, -2, 3])) = some [-1, 2, -3]
+#guard vals? (each2 (· + ·) (ql ([1, 2, 3] : List Int)) (ql [10, 20, 30])) = some [11, 22, 33]
+#guard (eachPrior (fun x p => x - p.getD 0) (ql ([3, 1, 4] : List Int))).bind vals? = some [3, -2, 3]
+#guard (eachPrior (fun x p => x - p.getD 10) (ql ([3, 1, 4] : List Int))).bind vals? = some [-7, -2, 3]
 #guard eachRight (· + ·) (ql ([1, 2] : List Int)) (ql [10, 20]) = some [[11, 12], [21, 22]]
 #guard eachLeft (· + ·) (ql ([1, 2] : List Int)) (ql [10, 20]) = some [[11, 21], [12, 22]]
 -- atom extension: `R ; (a f ·)`
-#guard run (each ((1 : Int) + ·) (ql [10, 20, 30])) = some [11, 21, 31]
-#guard run (each (· - (10 : Int)) (ql [1, 2, 3])) = some [-9, -8, -7]
-#guard run (each ((2 : Int) * ·) (ql [1, 2, 3])) = some [2, 4, 6]
-#guard fl (run (each (qfdiv · 2) (ql [1, 2, 3]))) == some [0.5, 1, 1.5]
-#guard run (each2 qdiv (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [-4, 3, 3, -4]
-#guard run (each2 qmod (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [1, 1, -1, -1]
+#guard vals? (each ((1 : Int) + ·) (ql [10, 20, 30])) = some [11, 21, 31]
+#guard vals? (each (· - (10 : Int)) (ql [1, 2, 3])) = some [-9, -8, -7]
+#guard vals? (each ((2 : Int) * ·) (ql [1, 2, 3])) = some [2, 4, 6]
+#guard fl (vals? (each (qfdiv · 2) (ql [1, 2, 3]))) == some [0.5, 1, 1.5]
+#guard vals? (each2 qdiv (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [-4, 3, 3, -4]
+#guard vals? (each2 qmod (ql [-7, 7, -7, 7]) (ql [2, 2, -2, -2])) = some [1, 1, -1, -1]
 -- comparison: bool lists
-def cmp (f : Int → Int → Bool) : Option (List Bool) := run (each2 f (ql [1, 2, 3]) (ql [2, 2, 2]))
+def cmp (f : Int → Int → Bool) : Option (List Bool) := vals? (each2 f (ql [1, 2, 3]) (ql [2, 2, 2]))
 #guard cmp (· == ·) = some [false, true, false]
 #guard cmp (· < ·) = some [true, false, false]
 #guard cmp (· > ·) = some [false, false, true]
 #guard cmp (· != ·) = some [true, false, true]
 #guard cmp (· ≤ ·) = some [true, true, false]
 #guard cmp (· ≥ ·) = some [false, true, true]
-#guard run (each2 min (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [1, 2, 3]
-#guard run (each2 max (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [4, 5, 6]
+#guard vals? (each2 min (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [1, 2, 3]
+#guard vals? (each2 max (ql ([1, 5, 3] : List Int)) (ql [4, 2, 6])) = some [4, 5, 6]
 -- monadic maps
-#guard run (each Int.natAbs (ql ([1, -2, 3] : List Int))) = some [1, 2, 3]
-#guard run (each Int.sign (ql ([-5, 0, 7] : List Int))) = some [-1, 0, 1]
-#guard run (each floor (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-2, 2, 3]
-#guard run (each ceiling (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-1, 3, 3]
+#guard vals? (each Int.natAbs (ql ([1, -2, 3] : List Int))) = some [1, 2, 3]
+#guard vals? (each Int.sign (ql ([-5, 0, 7] : List Int))) = some [-1, 0, 1]
+#guard vals? (each floor (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-2, 2, 3]
+#guard vals? (each ceiling (ql ([-1.5, 2.5, 3.0].map QF.of))) = some [-1, 3, 3]
 
 -- the kernel reduces the folds; not `deltas`, `msum`: `idx` goes through `FinRel.dom`, whose `dedup` is a
 -- `mergeSort`, well-founded recursion the kernel does not unfold
