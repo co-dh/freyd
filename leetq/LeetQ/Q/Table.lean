@@ -188,9 +188,12 @@ omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq 
     (zipFibA op z (a, m)).toList = zipFib op z (a.toList, m.toList) := by
   rcases a with ⟨_ | ⟨x, t⟩⟩ <;> rcases m with ⟨_ | ⟨y, u⟩⟩ <;> first | rfl | simp [zipFibA, zipFib]
 
-/-- q's `d op e` on dicts, `dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋`: `z` stands for the side a key is missing from. -/
+/-- q's `d op e` on dicts, `dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋`: `z` stands for the side a key is missing from.
+    `⟨Λd, Λe⟩ zipFib ∋` is read off the two array fibres at once: a key of `d ∪ e` mostly occurs once, so
+    `transposeA`'s one group per key would cost more than `withFib`'s chain walk per key asked. -/
 def zipD (op : V → V → V) (z : V) (r s : FinRel K V) : RelRep K V :=
-  domP (r.union s) ≫ ((RelRep.pairs r).transposeA.pair (RelRep.pairs s).transposeA ≫ .arr (zipFibA op z))
+  domP (r.union s) ≫ (RelRep.pairs r).withFib fun f => (RelRep.pairs s).withFib fun g =>
+    .arr fun k => zipFibA op z (f k, g k)
 
 omit [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- **`d op e`** on fibre lists: each key of `d ∪ e`, once, answered by `zipFib` of its two fibres. -/
@@ -198,8 +201,7 @@ theorem app_zipD (op : V → V → V) (z : V) (r s : FinRel K V) (k : K) :
     (zipD op z r s).app k =
       if k ∈ (r.union s).toList.map Prod.fst then zipFib op z (r.scanLookup k, s.scanLookup k) else [] := by
   rw [zipD, RelRep.app_comp, app_domP]
-  split <;> simp [RelRep.app_comp, RelRep.app_pair, RelRep.app_transposeA, RelRep.app_pairs,
-    RelRep.app_arr_fun, RelRep.cross]
+  split <;> simp [RelRep.app_comp, RelRep.withFib_eq, RelRep.app_pairs]
 
 omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- The Set reading: `d op e` relates `k` to `v` iff `k` is a key and `v` is in `zipFib` of its fibres. -/

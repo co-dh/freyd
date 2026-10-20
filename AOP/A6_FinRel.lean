@@ -618,6 +618,14 @@ theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibr
     rw [fibres, go, Fibres.get_empty]
     rfl
 
+/-- `fibres` folded over the two arrays, what a compiled program runs: no list of pairs is made. -/
+def FinRel.fibresTR [DecidableEq K] [Hashable K] (r : FinRel K V) : Fibres K V :=
+  (r.keys.zip r.vals).foldl (fun x p => x.push p.1 p.2) (HTab.empty r.keys.size)
+
+@[csimp] theorem FinRel.fibres_eq_fibresTR : @FinRel.fibres = @FinRel.fibresTR := by
+  funext _ _ _ _ r
+  rw [FinRel.fibres, FinRel.fibresTR, ← Array.foldl_toList, Array.toList_zip]; rfl
+
 /-- One step of `hashDedup`: a key with no fibre yet gets one and is listed. -/
 def dedupStep [DecidableEq K] [Hashable K] (s : Fibres K Unit × Array K) (k : K) : Fibres K Unit × Array K :=
   if (s.1.get k).isEmpty then (s.1.push k (), s.2.push k) else s
@@ -978,6 +986,12 @@ class FibreIndex (K : Type) [DecidableEq K] where
   /-- `dedup` of an array. -/
   dedupA : Array K → Array K
   toList_dedupA (a : Array K) : (dedupA a).toList = a.toList.eraseDups
+  /-- Every fibre at once, for an operation that reads each key's whole group (`transposeA`): a hashed key's
+      groups are pushed in one pass over the pairs, where `getA` walks one chain per key. -/
+  Groups : Type → Type
+  group {V : Type} : FinRel K V → Groups V
+  getG {V : Type} : Groups V → K → Array V
+  toList_getG {V : Type} (r : FinRel K V) (k : K) : (getG (group r) k).toList = r.scanLookup k
 
 attribute [simp] FibreIndex.get_build FibreIndex.dedup_eq FibreIndex.toList_getA FibreIndex.toList_dedupA
 
@@ -993,7 +1007,9 @@ instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
     fun r k g a => (r.scanLookup k).foldl g a, fun _ _ _ _ => rfl, List.eraseDups, fun _ => rfl,
     fun r k => (r.keys.zip r.vals).filterMap (FinRel.sel k),
     fun r k => by simp only [Array.toList_filterMap, Array.toList_zip]; rfl,
-    fun a => a.toList.eraseDups.toArray, fun _ => List.toList_toArray⟩
+    fun a => a.toList.eraseDups.toArray, fun _ => List.toList_toArray,
+    FinRel K, id, fun r k => (r.keys.zip r.vals).filterMap (FinRel.sel k),
+    fun r k => by simp only [Array.toList_filterMap, Array.toList_zip]; rfl⟩
 
 /-- A hashable key: the rows chained by slot (`FinRel.chains`), and the hash set of `hashDedup`.  Chains and
     not the table `FinRel.fibres`, which allocates a bucket cell and an array per key. -/
@@ -1004,7 +1020,9 @@ instance FibreIndex.hash [DecidableEq K] [Hashable K] : FibreIndex K :=
     fun a => (a.foldl dedupStep (HTab.empty a.size, #[])).2,
     fun a => by
       show (Array.foldl dedupStep (HTab.empty a.size, #[]) a).2.toList = _
-      rw [← hashDedup_eq, hashDedup, Array.length_toList, Array.foldl_toList]⟩
+      rw [← hashDedup_eq, hashDedup, Array.length_toList, Array.foldl_toList],
+    Fibres K, FinRel.fibres, fun x k => (x.find? k).getD #[],
+    fun r k => (congrFun (FinRel.get_fibres r) k : Fibres.get r.fibres k = _)⟩
 
 /-! ## Composites pushed onto arrays -/
 
@@ -1583,11 +1601,21 @@ theorem rel_transpose (R : RelRep K V) : (transpose R).rel ≫ Λ (lmem V) = Λ 
 omit [DecidableEq V] [FibreIndex V] in
 /-- `Λ(R)` onto arrays, what a compiled program reads: each key's fibre pushed onto one array, a `FinRel`'s
     index built once; `transpose` is its list reading (`app_transposeA`). -/
-def transposeA (R : RelRep K V) : RelRep K (Array V) := R.withFib ofFn
+def transposeA : RelRep K V → RelRep K (Array V)
+  | pairs r => let g := FibreIndex.group r; ofFn (FibreIndex.getG g)
+  | R => R.withFib ofFn
 
 omit [DecidableEq V] [FibreIndex V] in
 theorem app_transposeA (R : RelRep K V) (k : K) : (transposeA R).app k = [(R.app k).toArray] := by
-  rw [transposeA, withFib_eq, app_ofFn, ← toList_fib, Array.toArray_toList]
+  have h : ∀ R : RelRep K V, (R.withFib ofFn).app k = [(R.app k).toArray] := fun R => by
+    rw [withFib_eq, app_ofFn, ← toList_fib, Array.toArray_toList]
+  cases R with
+  | pairs r =>
+    show [FibreIndex.getG (FibreIndex.group r) k] = _
+    rw [app_pairs, ← FibreIndex.toList_getG, Array.toArray_toList]
+  | enum f => exact h (enum f)
+  | arr f => exact h (arr f)
+  | vec a e => exact h (vec a e)
 
 end Tabulate
 

@@ -138,10 +138,10 @@ def firstIx (x : QL A) : Option (FinRel A Nat) := (fin? x.r).bind fun r => fin? 
 def distinct (x : QL A) : Option (QL A) := (firstIx x).map fun d => ofList (out ⟨x.n, .pairs d.conv⟩)
 
 /-- `group x`: keys `distinct x`, values `distinct x ≫ Λ(f°)`. -/
-def group (x : QL A) : Option (QL A × QL (List Nat)) := do
+def group (x : QL A) : Option (QL A × QL (Array Nat)) := do
   let r ← fin? x.r
   let d ← distinct x
-  pure (d, ⟨d.n, d.r ≫ (RelRep.pairs r.conv).transpose⟩)
+  pure (d, ⟨d.n, d.r ≫ (RelRep.pairs r.conv).transposeA⟩)
 
 /-- `x union y`: `distinct(x,y)`; the join is re-tabulated, because `enum` first in a composite gives
     an `enum`, whose converse is only a test, which `est` cannot enumerate. -/
@@ -254,7 +254,7 @@ def ints (xs : List Int) : QL Int := ofList xs
 #guard (whereB (ofList [false, true, true, false, true])).out == [1, 2, 4]
 #guard (whereN (ofList [2, 0, 1])).out == [0, 0, 2]
 #guard (distinct (ints [3, 1, 3, 2, 1])).map out == some [3, 1, 2]
-#guard (group (ints [3, 1, 3, 2, 1])).map (fun (k, v) => (k.out, v.out)) == some ([3, 1, 2], [[0, 2], [1, 4], [3]])
+#guard (group (ints [3, 1, 3, 2, 1])).map (fun (k, v) => (k.out, v.out)) == some ([3, 1, 2], [#[0, 2], #[1, 4], #[3]])
 #guard (union (ints [1, 2, 3, 2]) (ints [2, 4, 1, 5])).map out == some [1, 2, 3, 4, 5]
 #guard (inter (ints [1, 2, 3, 2]) (ints [2, 3, 4])).map out == some [2, 3, 2]
 #guard (except (ints [1, 2, 3, 2]) (ints [2])).map out == some [1, 3]
