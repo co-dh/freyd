@@ -5,6 +5,8 @@
   * `aj` (asof join): `aj(R) ≜ Λ((outl R) ∩ (outr ≥ outl°)) est(outl ≥ outl°)` — a left row `(k, t)` to
     the right rows `(t', v)` of key `k` with `t ≥ t'`, then the ones of greatest time. The key is found by
     `bin` on the strictly ascending key column, the time by `bin` (right = false) on the group's time column.
+    `est` answers every row at that time; q answers the last, `ajq ≜ aj last` (`ajq_eq` on fibre lists,
+    `rel_ajq` its Set corollary).
 -/
 import LeetQ.QRel
 import AOP.A7_2_RelSet
@@ -222,6 +224,17 @@ theorem rel_aj (R : AjRight) : (aj R).rel = Λ (cand R) ≫ est geT := hom_ext f
     simp only [one]
     exact mem_lastLE
 
+/-- q's `aj`: of the rows of greatest time `aj` answers, in group order, the last — `aj(R) last`. -/
+def ajq (R : AjRight) : Option (RelRep (Int64 × Int64) (Int64 × Int64)) := (aj R).last
+
+/-- **`aj(R) last`** on fibre lists: at each left row, the last of `aj`'s fibre. -/
+theorem ajq_eq (R : AjRight) : ajq R = some (.enum fun x => (ajL R x).getLast?.toList) := RelRep.last_of_app? rfl
+
+/-- The Set corollary: `ajq(R) ⊑ Λ(cand R) est(geT)`, and `ajq` answers every left row that does. -/
+theorem rel_ajq {R : AjRight} {T : RelRep (Int64 × Int64) (Int64 × Int64)} (h : ajq R = some T) :
+    (∀ x w, T.rel x w → (Λ (cand R) ≫ est geT) x w) ∧ ∀ x w, (Λ (cand R) ≫ est geT) x w → ∃ w', T.rel x w' := by
+  rw [← rel_aj]; exact RelRep.rel_last h
+
 /-! ## Runs -/
 
 /-- A right table from `(key, group pairs)`, the keys checked strictly ascending and encoded when `foR`; the
@@ -240,6 +253,8 @@ def AjRight.ofList? (gs : List (Int64 × List (Int64 × Int64))) (foR : Bool := 
 
 #print axioms rel_ij
 #print axioms rel_aj
+#print axioms ajq_eq
+#print axioms rel_ajq
 
 /-! The kernel's runs, as in `L1`: `List.mergeSort` is well-founded recursion, so `simp` evaluates the
 sorts and the kernel the rest. -/
@@ -300,5 +315,10 @@ example : (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map
 #guard (AjRight.ofList? [(1, [(2, 20), (5, 50)]), (3, [(4, 40)])] true).map (fun R => 
     [(1, 6), (1, 4), (1, 1), (3, 9), (2, 9)].map (ajL R)) ==
   some [[(5, 50)], [(2, 20)], [], [(4, 40)], []]
+-- two right rows at time 2: `aj` answers both, q's `aj` (`ajq`) the last, as `aj[`k`t;([]k:1 1;t:4 4);
+-- ([]k:1 1 1;t:2 2 5;v:20 21 50)]` answers `21`
+#guard (AjRight.ofList? [(1, [(2, 20), (2, 21), (5, 50)])]).map (ajL · (1, 4)) == some [(2, 20), (2, 21)]
+#guard (((AjRight.ofList? [(1, [(2, 20), (2, 21), (5, 50)])]).bind ajq).bind RelRep.app?).map (· (1, 4)) ==
+  some [(2, 21)]
 
 end LeetQ.Join
