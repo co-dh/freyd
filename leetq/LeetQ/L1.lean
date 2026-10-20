@@ -123,6 +123,35 @@ example : qprog 7 [1, 2, 3] = none := by
     Bool.false_eq_true, false_and, ↓reduceIte, at8, sort7]
   decide +kernel
 
+/-! The same over encoded keys: `Coc.encode` and `foRBin`'s Lean bodies, by reduction. `USize.size` is
+`2 ^ System.Platform.numBits`, opaque to the kernel, so a count's `toUSize` round trip and its
+`Keys.ofList` bound are rewritten from a bound every platform meets. -/
+
+theorem lt_usize {n : Nat} (h : n < 2 ^ 32) : n < USize.size := by
+  cases System.Platform.numBits_eq <;> simp [USize.size, *] <;> omega
+
+theorem toNat_toUSize {n : Nat} (h : n < 2 ^ 32) : (Nat.toUSize n).toNat = n :=
+  USize.toNat_ofNat_of_lt' (lt_usize h)
+
+example : qprog 9 [2, 7, 11, 15] true = some (0, 1) := by
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
+    QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems, QLean.Kernel.binBytes, ixQ, QSortedRel.ofList,
+    QSortedRel.count, Keys.ofList, Keys.bin, Keys.count, sort9, List.length_map, List.length_cons,
+    List.length_nil, USize.reduceToNat, Nat.reduceAdd, Nat.reducePow, Nat.reduceLT, toNat_toUSize, lt_usize, and_self, ↓reduceIte]
+  decide +kernel
+example : qprog 6 [3, 2, 4] true = some (1, 2) := by
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
+    QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems, QLean.Kernel.binBytes, ixQ, QSortedRel.ofList,
+    QSortedRel.count, Keys.ofList, Keys.bin, Keys.count, sort6, List.length_map, List.length_cons,
+    List.length_nil, USize.reduceToNat, Nat.reduceAdd, Nat.reducePow, Nat.reduceLT, toNat_toUSize, lt_usize, and_self, ↓reduceIte]
+  decide +kernel
+example : qprog 7 [1, 2, 3] true = none := by
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
+    QLean.Kernel.Coc.decode, QLean.Kernel.Coc.elems, QLean.Kernel.binBytes, ixQ, QSortedRel.ofList,
+    QSortedRel.count, Keys.ofList, Keys.bin, Keys.count, sort7, List.length_map, List.length_cons,
+    List.length_nil, USize.reduceToNat, Nat.reduceAdd, Nat.reducePow, Nat.reduceLT, toNat_toUSize, lt_usize, and_self, ↓reduceIte]
+  decide +kernel
+
 -- The compiled run: `binBytes` is the C `bin` here.
 #guard qprog 9 [2, 7, 11, 15] == some (0, 1)
 #guard qprog 6 [3, 2, 4] == some (1, 2)
