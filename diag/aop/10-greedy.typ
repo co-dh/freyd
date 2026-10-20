@@ -483,6 +483,34 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   // lean:AOP.A10_3_Tardy.tardy_laws@3389e8bd lean:AOP.A10_3_Tardy.greedy_dp_context@da8a63ce lean:AOP.A10_3_Tardy.tardy_mono@cc03f5c8 lean:AOP.A10_3_Tardy.tardy_greedy@98404d8f
 )]<tardy-laws>
 
+// One run of the program on the jobs `2 0 1` (unit weights): its input, then one row per stage of
+// the first step, then the schedule; each value is a theorem of the `TardyRun` section of A10_3_Tardy.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Tardy.run_input.rhs"), value: leanf("Freyd.Alg.RelSet.Tardy.run_input.rhs"),
+   meaning: [job `0` takes `2` and is due at `3`]),
+  // lean:AOP.A10_3_Tardy.run_input@02433857
+  (sym: leann("Freyd.Alg.RelSet.Tardy.cands"), type: leant("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tardy.run_cands.rhs"),
+   meaning: [`([2,1],0)`: job `0` last, after `2` and `1`]),
+  // lean:AOP.A10_3_Tardy.run_cands@8ee01301 lean:AOP.A10_3_Tardy.rel_cands@c618f427
+  (sym: leann("Freyd.Alg.RelSet.Tardy.bagPenalty"), type: leant("Freyd.Alg.RelSet.Tardy.run_pen.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tardy.run_pen.rhs"),
+   meaning: [job `0` last ends at `6`, `3` past its due date `3`]),
+  // lean:AOP.A10_3_Tardy.run_pen@570e2b4e
+  (sym: leann("Freyd.Alg.RelSet.Tardy.chosen"), type: leant("Freyd.Alg.RelSet.Tardy.run_chosen.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tardy.run_chosen.rhs"),
+   meaning: [penalty `0`, the least of `0`, `3`, `2`]),
+  // lean:AOP.A10_3_Tardy.run_chosen@039abb17 lean:AOP.A10_3_Tardy.rel_chosen@058e37be
+  (sym: leann("Freyd.Alg.RelSet.Tardy.sched"), type: leant("Freyd.Alg.RelSet.Tardy.run_sched.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tardy.run_sched.rhs"),
+   meaning: [of `[0,1]`, job `1` goes last: penalty `5−4=1` against `5−3=2`]),
+  // lean:AOP.A10_3_Tardy.run_sched@e121d0dd lean:AOP.A10_3_Tardy.tardy_le@547312ca lean:AOP.A10_3_Tardy.pickB_le@bafac3f7
+  (sym: leann("Freyd.Alg.RelSet.Tardy.Fn.cost"), type: leant("Freyd.Alg.RelSet.Tardy.run_cost.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Tardy.run_cost.rhs"),
+   meaning: [job `1` ends at `5`, one past its due date `4`]),
+  // lean:AOP.A10_3_Tardy.run_cost@347ed45a
+)<tardy-run>
+
 == The TeX problem
 
 // B&dM §10.4, p. 259.  The book's local `h` for `⦇[arb,step]⦈` is @dp-defn's algebra letter, so it
