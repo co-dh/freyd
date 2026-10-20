@@ -48,7 +48,7 @@ def timed {α : Type} (name : String) (d : α) (f : α → Option Int) : IO (IO 
     let x ← r.get
     out.set (f x)
     let t1 ← IO.monoNanosNow
-    let some c ← out.get | throw (IO.userError s!"{name}: the operator answered none (a test where pairs were expected)")
+    let some c ← out.get | throw (IO.userError s!"{name}: the answer is not held as pairs (fin? answered none)")
     pure (t1 - t0, c)
 
 /-! ## The operators, each with q's expression and checksum -/
@@ -66,7 +66,7 @@ def zipDOp (n : Nat) : IO (IO (Nat × Int)) :=
 /-- `select sum v by k from t`; `exec sum k+v`. -/
 def selbyOp (n : Nat) : IO (IO (Nat × Int)) :=
   timed "selby" (tab (zipL (ints n 6 1000) (ints n 7 1000000)))
-    fun T => (ps (selby List.sum Prod.fst Prod.snd T)).map (sumBy fun p => p.1 + p.2)
+    fun T => ((selby List.sum Prod.fst Prod.snd T).bind ps).map (sumBy fun p => p.1 + p.2)
 
 /-- `t ij kt`, `kt` of `n/10` keys; `exec sum v+w`. -/
 def ijOp (n : Nat) : IO (IO (Nat × Int)) :=
@@ -79,14 +79,14 @@ def ajOp (n : Nat) : IO (IO (Nat × Int)) :=
   let qr := (zipL (ints n 14 100) ((ints n 15 1000000).zip (ints n 16 1000000))).mergeSort
     fun a b => decide (a.2.1 ≤ b.2.1)
   timed "aj" (tab (zipL (ints n 12 100) (ints n 13 1000000)), tab qr)
-    fun (T, U) => (rows (aj Prod.fst Prod.snd Prod.fst Prod.snd T U)).map (sumBy (·.2.getD 0))
+    fun (T, U) => ((aj Prod.fst Prod.snd Prod.fst Prod.snd T U).bind rows).map (sumBy (·.2.getD 0))
 
 /-- `wj` over `aj`'s tables, the window `(tm-100, tm]` and the row prevailing at `tm-100`. -/
 def wjOp (n : Nat) : IO (IO (Nat × Int)) :=
   let qr := (zipL (ints n 14 100) ((ints n 15 1000000).zip (ints n 16 1000000))).mergeSort
     fun a b => decide (a.2.1 ≤ b.2.1)
   timed "wj" (tab (zipL (ints n 12 100) (ints n 13 1000000)), tab qr)
-    fun (T, U) => (rows (wj (-100) 0 Prod.fst Prod.snd Prod.fst Prod.snd T U)).map (sumBy (·.2))
+    fun (T, U) => ((wj (-100) 0 Prod.fst Prod.snd Prod.fst Prod.snd T U).bind rows).map (sumBy (·.2))
 
 /-- Key `gen 17 mod n`, value `gen 18 mod 1e6`, sorted by key stably (q's `iasc`). -/
 def sortedPairs (n : Nat) : List (Int64 × Int64) :=

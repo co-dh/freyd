@@ -46,7 +46,7 @@
 
   Still missing from RelRep, named here and not added to AOP: the descending sort.
 -/
-import AOP.A6_FinRel
+import LeetQ.Q.List
 
 namespace LeetQ.Q
 
@@ -58,9 +58,6 @@ variable {K V W R S X κ : Type}
 abbrev Sym := String
 
 /-! ## Reading an answer back -/
-
-/-- The `FinRel` an answer holds, `none` when it is held as a fibre function. -/
-def fin? : RelRep K V → Option (FinRel K V) | .pairs r => some r | _ => none
 
 /-- An answer's pairs. -/
 def ps (R : RelRep K V) : Option (List (K × V)) := (fin? R).map FinRel.toList
