@@ -48,11 +48,9 @@ theorem keyAt_beq (b : ByteArray) (i j : Nat) :
   have e : ∀ k, Kind.bitsAt .i64 b k = (at8 b k).toUInt64 := fun k => by rw [at8, UInt64.toUInt64_toInt64]; rfl
   show (Kind.bitsAt .i64 b j ^^^ 0x8000000000000000 == Kind.bitsAt .i64 b i ^^^ 0x8000000000000000) = _
   rw [e, e]
-  by_cases h : at8 b j = at8 b i
-  · simp [h]
-  · have : (at8 b j).toUInt64 ^^^ 0x8000000000000000 ≠ (at8 b i).toUInt64 ^^^ 0x8000000000000000 := fun x =>
-      h (by rw [← Int64.toInt64_toUInt64 (at8 b j), (UInt64.xor_left_inj _).mp x, Int64.toInt64_toUInt64])
-    simp [h, this]
+  apply Bool.eq_iff_iff.2
+  rw [beq_iff_eq, decide_eq_true_iff, UInt64.xor_left_inj]
+  exact ⟨fun x => by rw [← Int64.toInt64_toUInt64 (at8 b j), x, Int64.toInt64_toUInt64], congrArg _⟩
 
 /-! ## First occurrences and buckets, over any column `g` -/
 
@@ -78,6 +76,27 @@ theorem ix_range {i : Nat} {v : α} : ix ((List.range m).map g) i v ↔ i < m �
   · rw [List.getElem?_eq_none (by simp; omega)]
     exact ⟨nofun, fun h' => absurd h'.1 h⟩
 
+-- core's `List.all_eq_false` and `List.pairwise_lt_range` carry `Classical.choice`; these two do not.
+omit [DecidableEq α] in
+theorem exists_of_all_false {l : List Nat} {p : Nat → Bool} (h : l.all p = false) : ∃ j ∈ l, p j = false := by
+  induction l with
+  | nil => cases h
+  | cons a l ih =>
+    cases ha : p a
+    · exact ⟨a, List.mem_cons.2 (Or.inl rfl), ha⟩
+    · rw [List.all_cons, ha, Bool.true_and] at h
+      obtain ⟨j, hj, e⟩ := ih h
+      exact ⟨j, List.mem_cons.2 (Or.inr hj), e⟩
+
+omit [DecidableEq α] in
+theorem pairwise_range (n : Nat) : (List.range n).Pairwise (· < ·) := by
+  induction n with
+  | zero => exact List.Pairwise.nil
+  | succ n ih =>
+    rw [List.range_succ, List.pairwise_append]
+    exact ⟨ih, List.pairwise_singleton _ _, fun a ha b hb => by
+      rw [List.mem_singleton.1 hb]; exact List.mem_range.1 ha⟩
+
 variable {g m} in
 theorem exists_first {i : Nat} (hi : i < m) : ∃ f ∈ firstsOf g m, g f = g i := by
   induction i using Nat.strongRecOn with
@@ -85,10 +104,13 @@ theorem exists_first {i : Nat} (hi : i < m) : ∃ f ∈ firstsOf g m, g f = g i 
     cases hb : (List.range i).all fun j => !decide (g j = g i) with
     | true => exact ⟨i, List.mem_filter.2 ⟨List.mem_range.2 hi, hb⟩, rfl⟩
     | false =>
-      obtain ⟨j, hj, e⟩ := List.all_eq_false.1 hb
+      obtain ⟨j, hj, e⟩ := exists_of_all_false hb
       have hj := List.mem_range.1 hj
       obtain ⟨f, hf, e'⟩ := ih j hj (by omega)
-      exact ⟨f, hf, e'.trans (by simpa using e)⟩
+      refine ⟨f, hf, e'.trans ?_⟩
+      cases hd : decide (g j = g i)
+      · rw [hd] at e; cases e
+      · exact of_decide_eq_true hd
 
 theorem mem_firsts (v : α) : v ∈ (firstsOf g m).map g ↔ ∃ i, i < m ∧ g i = v :=
   ⟨fun h => let ⟨i, hi, e⟩ := List.mem_map.1 h; ⟨i, List.mem_range.1 (List.mem_filter.1 hi).1, e⟩,
@@ -96,9 +118,10 @@ theorem mem_firsts (v : α) : v ∈ (firstsOf g m).map g ↔ ∃ i, i < m ∧ g 
 
 /-- **No value twice**: a first occurrence differs from every earlier one. -/
 theorem nodup_firsts : ((firstsOf g m).map g).Nodup := by
-  refine List.pairwise_map.2 ((List.pairwise_lt_range.filter _).imp_of_mem fun {i j} _ hj hij e => ?_)
+  refine List.pairwise_map.2 (((pairwise_range m).filter _).imp_of_mem fun {i j} _ hj hij e => ?_)
   have := List.all_eq_true.1 (List.mem_filter.1 hj).2 i (List.mem_range.2 hij)
-  simp [e] at this
+  rw [decide_eq_true e] at this
+  exact Bool.false_ne_true this
 
 /-- **`distinct = ran(f)`**: the first values, as a coreflexive, are the range of the column. -/
 theorem firsts_ran : rel (((firstsOf g m).map g).map fun v => (v, v)) = Alg.ran (ix ((List.range m).map g)) :=
@@ -141,7 +164,7 @@ theorem dict_keys : (dictOf g m).map Prod.fst = (firstsOf g m).map g := by
 /-- Each bucket ascends. -/
 theorem dict_sorted : ∀ p ∈ dictOf g m, p.2.Pairwise (· < ·) := fun _ hp => by
   obtain ⟨f, -, rfl⟩ := List.mem_map.1 hp
-  exact List.pairwise_lt_range.filter _
+  exact (pairwise_range m).filter _
 
 end Firsts
 
@@ -325,6 +348,23 @@ example : groupQ 5 (enc [3, 1, 3, 2, 1]) = [(3, [0, 2]), (1, [1, 4]), (2, [3])] 
 #guard whereQ 3 ⟨#[5]⟩ == [0, 2]
 #guard distinctQ 5 (enc [3, 1, 3, 2, 1]) == [3, 1, 2]
 #guard groupQ 5 (enc [3, 1, 3, 2, 1]) == [(3, [0, 2]), (1, [1, 4]), (2, [3])]
+
+/-- `3 1 3 2 1` Frame-of-Reference encoded. -/
+def foR5 : ByteArray × ByteArray := Coc.encode (Nat.toUSize 8) (enc [3, 1, 3, 2, 1])
+
+-- `distinctFoR` decodes, runs `distinct` and encodes the answer again; the kernel runs the first two.
+example : distinctFoRQ 5 foR5.1 foR5.2 = [3, 1, 2] := by
+  rw [distinctFoRQ_eq]
+  simp only [distinctQ, Order.distinct, foR5, Coc.encode, Coc.decode, Coc.elems, USize.reduceToNat, Kind.width,
+    toNat_toUSize, Nat.reducePow, Nat.reduceLT]
+  decide +kernel
+example : groupFoRQ 5 foR5.1 foR5.2 = [(3, [0, 2]), (1, [1, 4]), (2, [3])] := by
+  simp only [groupFoRQ, Order.groupFoR, Order.group, Order.distinct, foR5, Coc.encode, Coc.decode, Coc.elems,
+    USize.reduceToNat, Kind.width, toNat_toUSize, Nat.reducePow, Nat.reduceLT]
+  decide +kernel
+
+#guard distinctFoRQ 5 foR5.1 foR5.2 == [3, 1, 2]
+#guard groupFoRQ 5 foR5.1 foR5.2 == [(3, [0, 2]), (1, [1, 4]), (2, [3])]
 
 #print axioms where_spec
 #print axioms distinct_spec
