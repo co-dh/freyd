@@ -56,7 +56,7 @@ def timed {α : Type} (name : String) (d : α) (f : α → Option Int) : IO (IO 
 /-- `d@ks`; `sum d@ks` (q's `sum` skips `0N`). -/
 def getAllOp (n : Nat) : IO (IO (Nat × Int)) :=
   timed "getAll" (RelRep.pairs (fin (ints n 1 n) (ints n 2 1000000)), (ints n 3 (2 * n)).toList)
-    fun (D, ks) => (rows (getAll D ks)).map (sumBy (·.getD 0))
+    fun (D, ks) => ((getAll D ks).bind fin?).map fun r => r.vals.foldl (fun s x => s + x.getD 0) 0
 
 /-- `d+e`; `(sum key r)+sum value r`. -/
 def zipDOp (n : Nat) : IO (IO (Nat × Int)) :=

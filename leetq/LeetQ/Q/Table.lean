@@ -69,6 +69,15 @@ def rows (o : Option (RelRep K V)) : Option (List V) := (ps o).map (·.map Prod.
 /-- A table: `ix(xs) : Idx ⟶ Row`. -/
 def tab (xs : List R) : RelRep Nat R := .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))
 
+/-- `tab` straight onto the two arrays: no list of index pairs. -/
+def tabTR (xs : List R) : RelRep Nat R := .pairs ⟨Array.range xs.length, xs.toArray, by simp⟩
+
+@[csimp] theorem tab_eq_tabTR : @tab = @tabTR := by
+  funext R xs
+  simp only [tab, tabTR, FinRel.ofList, RelRep.pairs.injEq, FinRel.mk.injEq, List.map_map]
+  refine ⟨Array.ext' ?_, Array.ext' ?_⟩ <;>
+    simp [Function.comp_def, List.zipIdx_map_snd, List.zipIdx_map_fst, Array.toList_range, List.range_eq_range']
+
 /-! ## Dictionaries -/
 
 /-- `ks!vs`. -/
@@ -90,18 +99,25 @@ variable [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [Decidabl
 def domP (r : FinRel K V) : RelRep K K := .pairs (FinRel.ofList ((FibreIndex.dedup (r.toList.map Prod.fst)).map fun k => (k, k)))
 
 /-- q's keyed lookup `look(D) ≜ first(D) some ⊕ ˆnone`: the first value of the fibre, `0N` when empty. -/
-def look (D : RelRep K V) : Option (RelRep K (Option V)) := do
-  RelRep.override (← (← D.first).comp (RelRep.ofFn some)) (RelRep.ofFn fun _ => none)
+def look : RelRep K V → Option (RelRep K (Option V))
+  | .pairs r => let i := FibreIndex.build r; some (.enum fun k => [FibreIndex.first? i k])
+  | D => do RelRep.override (← (← D.first).comp (RelRep.ofFn some)) (RelRep.ofFn fun _ => none)
 
 omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- `look` reads the fibre list: its head, or `0N` when it is empty. -/
 theorem app?_look {D : RelRep K V} {f : K → List V} (h : D.app? = some f) {L : RelRep K (Option V)}
     (hL : look D = some L) : L.app? = some fun k => [(f k).head?] := by
-  simp only [look, RelRep.first_of_app? h, RelRep.ofFn, RelRep.comp, RelRep.override, RelRep.app?,
-    Option.bind_eq_bind, Option.bind_some, Option.map_some, Option.some.injEq] at hL
-  subst hL
-  simp only [RelRep.app?, Option.some.injEq]
-  funext k; cases f k <;> simp
+  cases D with
+  | pairs r =>
+    simp only [look, Option.some.injEq, RelRep.app?] at hL h; subst hL h
+    simp [RelRep.app?, FibreIndex.first?_eq]
+  | enum g =>
+    simp only [look, RelRep.first_of_app? h, RelRep.ofFn, RelRep.comp, RelRep.override, RelRep.app?,
+      Option.bind_eq_bind, Option.bind_some, Option.map_some, Option.some.injEq] at hL
+    subst hL
+    simp only [RelRep.app?, Option.some.injEq]
+    funext k; cases f k <;> simp
+  | test t => simp [RelRep.app?] at h
 
 /-- `d k = k̂ look(d)`: the constant `k̂ : 1 → K`, then the lookup. -/
 def get (D : RelRep K V) (k : K) : Option (RelRep Unit (Option V)) := do

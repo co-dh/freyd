@@ -690,11 +690,12 @@ theorem rowsF_fuel {nx : Array Nat} : ∀ (f g p : Nat), p ≤ f → p ≤ g →
       · rfl
     · rfl
 
-/-- Row `j`'s value when its key is `k`. -/
+/-- Row `j`'s value when its key is `k`.  The key first: a link of another key never reads `vs`, a cache
+    miss saved per collision. -/
 def at? [DecidableEq K] (ks : Array K) (vs : Array V) (k : K) (j : Nat) : Option V :=
-  match ks[j]?, vs[j]? with
-  | some a, some v => if a = k then some v else none
-  | _, _ => none
+  match ks[j]? with
+  | some a => if a = k then vs[j]? else none
+  | none => none
 
 /-- The values of the rows of chain `p` whose key is `k`, in at most `f` links, consed onto `acc` last row
     first, so they come out in row order; tail-recursive, and no list of rows is made. -/
@@ -928,7 +929,7 @@ theorem FinRel.get_chains [DecidableEq K] [Hashable K] (r : FinRel K V) : chainG
       rw [this]; rfl
     · unfold Chain.at?
       split
-      · rename_i a v ha _
+      · rename_i a ha
         split
         · rename_i e; subst e; exact absurd (by simp [slot, ha]) hne
         · rfl
