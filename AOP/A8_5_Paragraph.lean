@@ -36,6 +36,7 @@
 module
 
 public import AOP.A8_3
+public import AOP.A6_FinRel
 import AOP.A8_2
 
 /-- B&dM p.208: the section's fixed data, the length `len` of a word.  Every definition below reads
@@ -934,6 +935,158 @@ public theorem para_body_split [Paragraph Word] (hfit : ∀ a : Word, len a ≤ 
         (junc_unique _ rfl rfl).symm
 
 calc_steps para_body_split
+
+/-! ## `ParaRun`: the paragraph program on `RelRep`
+
+The fold keeps a list of layouts: `step` puts each word on a new line of every kept layout and,
+when the first line still fits, also glues it on; `RelRep.thin Q` cuts the candidates, and
+`RelRep.est R` reads the least wasteful layouts off the last list. -/
+
+section ParaRun
+
+variable [DecidableEq Word] [Paragraph Word] (w)
+
+omit [Paragraph Word] in
+-- Structural, so a run reduces by `rfl`: the derived `DecidableEq (ConsList …)` does not.
+@[expose] public def decLine : ∀ xs ys : Line Word, Decidable (xs = ys)
+  | ConsList.wrap a, ConsList.wrap b =>
+    if h : a = b then isTrue (h ▸ rfl) else isFalse fun e => h (by cases e; rfl)
+  | ConsList.cons a xs, ConsList.cons b ys =>
+    if h : a = b then
+      match decLine xs ys with
+      | isTrue e => isTrue (h ▸ e ▸ rfl)
+      | isFalse n => isFalse fun e => n (by cases e; rfl)
+    else isFalse fun e => h (by cases e; rfl)
+  | ConsList.wrap _, ConsList.cons _ _ => isFalse fun e => by cases e
+  | ConsList.cons _ _, ConsList.wrap _ => isFalse fun e => by cases e
+
+public instance decQ : ∀ xss yss : Para Word, Decidable (Q w xss yss) :=
+  fun xss yss => @decidable_of_iff _ _ (Q_apply (w := w) xss yss).symm
+    (@instDecidableAnd _ _ (Int.decLe _ _) (decLine (head xss) (head yss)))
+
+public instance decR : ∀ xss yss : Para Word, Decidable (R (w := w) xss yss) :=
+  fun xss yss => decidable_of_iff _ (R_apply (w := w) xss yss).symm
+
+/-- The thinning order `Q` as a `RelRep` test. -/
+@[expose] public def Qt : RelRep (Para Word) (Para Word) := .test fun xss yss => decide (Q w xss yss)
+
+public theorem rel_Qt : (Qt (Word := Word) w).rel = Q w := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The waste order `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (Para Word) (Para Word) := .test fun xss yss => decide (R (w := w) xss yss)
+
+public theorem rel_Rt : (Rt (Word := Word) w).rel = R (w := w) := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The step's `Λ` form: the word on a new line, and glued onto the first line when that still fits. -/
+@[expose] public def step (q : Word × Para Word) : List (Para Word) :=
+  if width (head (glue q.1 q.2)) ≤ w then [new q.1 q.2, glue q.1 q.2] else [new q.1 q.2]
+
+omit [DecidableEq Word] in
+/-- `step` is the pair half of `S`: `new ∪ glue (ok w)`. -/
+public theorem rel_step :
+    (RelRep.enum (step (Word := Word) w)).rel
+      = (graph Sum.inr : (⟨Word × Para Word⟩ : RelSet.{0}) ⟶ (F Word Word).obj (dPara Word)) ≫ S (w := w) :=
+  hom_ext fun q r => by
+    show r ∈ step w q ↔ ∃ u, _ ∧ _
+    unfold step
+    constructor
+    · intro h
+      refine ⟨Sum.inr q, rfl, ?_⟩
+      by_cases hok : width (head (glue q.1 q.2)) ≤ w
+      · rw [if_pos hok] at h
+        simp only [List.mem_cons, List.mem_nil_iff, or_false] at h
+        rcases h with rfl | rfl
+        · exact Or.inl rfl
+        · exact Or.inr ⟨_, rfl, rfl, hok⟩
+      · rw [if_neg hok] at h
+        simp only [List.mem_cons, List.mem_nil_iff, or_false] at h
+        subst h; exact Or.inl rfl
+    · rintro ⟨u, hu, hS⟩
+      obtain rfl : u = Sum.inr q := hu
+      rcases hS with h | ⟨s, hs, hsr, hok⟩
+      · obtain rfl : r = new q.1 q.2 := h
+        split <;> simp
+      · obtain rfl : s = glue q.1 q.2 := hs
+        obtain rfl : glue q.1 q.2 = r := hsr
+        rw [if_pos (show width (head (glue q.1 q.2)) ≤ w from hok)]
+        simp
+
+omit [DecidableEq Word] in
+/-- `S` is the junction of the one-word paragraph and `step`. -/
+public theorem S_eq_junc :
+    S (w := w) = junc (sumCop (dL Word) ⟨Word × Para Word⟩)
+      (RelRep.ofFn fun a : Word => (ConsList.wrap (ConsList.wrap a) : Para Word)).rel
+      (RelRep.enum (step (Word := Word) w)).rel :=
+  junc_unique _ (hom_ext fun a r => by
+    show (∃ u, _ ∧ _) ↔ r ∈ [ConsList.wrap (ConsList.wrap a)]
+    rw [List.mem_singleton]
+    constructor
+    · rintro ⟨u, hu, hS⟩
+      obtain rfl : u = Sum.inl a := hu
+      rcases hS with h | ⟨s, hs, hsr, -⟩
+      · exact h
+      · obtain rfl : s = _ := hs
+        exact (hsr : _ = r).symm
+    · intro h; exact ⟨Sum.inl a, rfl, Or.inl h⟩) (rel_step w).symm
+
+/-- The layouts kept after the whole text: `⦇thin(Q)·Λ(S)⦈` as a function. -/
+@[expose] public def kept : ConsList Word Word → List (Para Word) :=
+  RelRep.foldList (RelRep.thinList fun xss yss => decide (Q w xss yss))
+    (fun a => [ConsList.wrap (ConsList.wrap a)]) (step w)
+
+/-- `kept` is `RelRep.foldThin Q` of the one-word paragraph and `step`. -/
+public theorem kept_eq :
+    RelRep.foldThin (Qt (Word := Word) w) (.ofFn fun a : Word => (ConsList.wrap (ConsList.wrap a) : Para Word))
+      (.enum (step w)) = some (.enum (kept w)) := rfl
+
+/-- The program: the least wasteful layouts among those kept. -/
+@[expose] public def paragraph (xs : ConsList Word Word) : List (Para Word) :=
+  RelRep.estList (fun xss yss => decide (R (w := w) xss yss)) (kept w xs)
+
+/-- `paragraph` is `RelRep.est R` of `kept`. -/
+public theorem paragraph_eq :
+    RelRep.est (Rt (Word := Word) w) (.enum (kept w)) = some (.enum (paragraph w)) := rfl
+
+/-- `Λ(kept) ⊑ Λ⦇S⦈ thin(Q)`. -/
+public theorem kept_thin (hlen : ∀ a : Word, 0 ≤ len a) :
+    Λ (RelRep.enum (kept (Word := Word) w)).rel ⊑ Λ ⦇S (Word := Word) (w := w)⦈ ≫ thinRel (Q w) := by
+  have h := RelRep.rel_foldThin (h := kept_eq (Word := Word) w) (by rw [rel_Qt (Word := Word) w]; exact Q_refl (Word := Word))
+    (by rw [rel_Qt (Word := Word) w]; exact Q_trans (Word := Word))
+    (by rw [rel_Qt (Word := Word) w, ← S_eq_junc]; exact pres_union para_mono_new (para_mono_glue hlen))
+  rw [← S_eq_junc, rel_Qt (Word := Word) w] at h
+  exact h
+
+/-- **The program meets its specification**: every layout `paragraph` returns is a least wasteful
+    layout all of whose lines fit, `paragraph ⊑ Λ(partition list⁺(fits w)) est(R)`. -/
+public theorem paragraph_le (hlen : ∀ a : Word, 0 ≤ len a) (hfit : ∀ a : Word, len a ≤ w) :
+    (RelRep.enum (paragraph (Word := Word) w)).rel ⊑ Λ (partition ≫ fits w) ≫ est (R (w := w)) :=
+  calc (RelRep.enum (paragraph w)).rel
+      = Λ (RelRep.enum (kept w)).rel ≫ est (Rt w).rel := RelRep.rel_est (paragraph_eq w)
+    _ = Λ (RelRep.enum (kept w)).rel ≫ est (R (w := w)) := by rw [rel_Rt]
+    _ ⊑ (Λ ⦇S (w := w)⦈ ≫ thinRel (Q w)) ≫ est (R (w := w)) := comp_mono_right (kept_thin w hlen) _
+    _ = Λ ⦇S (w := w)⦈ ≫ (thinRel (Q w) ≫ est (R (w := w))) := Cat.assoc _ _ _
+    _ ⊑ Λ ⦇S (w := w)⦈ ≫ est (R (w := w)) :=
+      comp_mono_left _ (thinRel_comp_est_le Q_le_R (trans_of_recip_trans R_recip_trans))
+    _ = Λ (partition ≫ fits w) ≫ est (R (w := w)) := para_laws_step2 hlen hfit
+
+attribute [local instance] lenId in
+/-- **kept-run**: the words of lengths `1,2,1,3`, line width `5`: the fold keeps two layouts, the
+    thinning having dropped one with the same first line and more waste at each of two words. -/
+public theorem run_kept :
+    kept (Word := Int) 5 (ConsList.cons 1 (ConsList.cons 2 (ConsList.cons 1 (ConsList.wrap 3))))
+      = [ConsList.cons (ConsList.wrap 1) (ConsList.cons (ConsList.cons 2 (ConsList.wrap 1)) (ConsList.wrap (ConsList.wrap 3))),
+         ConsList.cons (ConsList.cons 1 (ConsList.wrap 2)) (ConsList.wrap (ConsList.cons 1 (ConsList.wrap 3)))] := by
+  rfl
+
+attribute [local instance] lenId in
+/-- **para-run**: on the same words the program returns the one layout of waste `1`,
+    `[[1,2],[1,3]]`. -/
+public theorem run_paragraph :
+    paragraph (Word := Int) 5 (ConsList.cons 1 (ConsList.cons 2 (ConsList.cons 1 (ConsList.wrap 3))))
+      = [ConsList.cons (ConsList.cons 1 (ConsList.wrap 2)) (ConsList.wrap (ConsList.cons 1 (ConsList.wrap 3)))] := by
+  rfl
+
+end ParaRun
 
 end Freyd.Alg.RelSet.Paragraph
 
