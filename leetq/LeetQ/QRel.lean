@@ -194,18 +194,17 @@ theorem ordKey_lt {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (a b : UInt64) :
 
 /-- **`binBytes_long` at every width up to eight**: over a sorted payload of `w`-byte signed
 integers and a needle that fits `w` bytes, the answer read back is the partition point. -/
-theorem binBytes_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (right : Bool) (hay : ByteArray) (k : Int64)
-    (hk : Fits w k) (hn : hay.size / w < 2 ^ 63)
+theorem binBytes_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (wU : USize) (hwU : wU.toNat = w) (right : Bool)
+    (hay : ByteArray) (k : Int64) (hk : Fits w k) (hn : hay.size / w < 2 ^ 63)
     (hsort : ∀ i j, i ≤ j → j < hay.size / w → atW w hay i ≤ atW w hay j) :
     ∃ r, r ≤ hay.size / w ∧
-      (bitsAt (binBytes w.toUSize false true right hay (pushBits ByteArray.empty k.toUInt64 w)) 0 8).toInt64.toInt
+      (bitsAt (binBytes wU false true right hay (pushBits ByteArray.empty k.toUInt64 w)) 0 8).toInt64.toInt
         = (if right then (r : Int) else (r : Int) - 1) ∧
       (∀ j, j < r → if right then atW w hay j < k else atW w hay j ≤ k) ∧
       (r < hay.size / w → if right then k ≤ atW w hay r else k < atW w hay r) := by
-  have hwU : w.toUSize.toNat = w := toNat_toUSize (by omega)
   have hks : (pushBits ByteArray.empty k.toUInt64 w).size / w = 1 := by
     rw [pushBits_size, show ByteArray.empty.size = 0 from rfl, Nat.zero_add]; exact Nat.div_self (by omega)
-  have hout := bitsAt_binBytes w.toUSize false true right hay (pushBits ByteArray.empty k.toUInt64 w) 0
+  have hout := bitsAt_binBytes wU false true right hay (pushBits ByteArray.empty k.toUInt64 w) 0
     (by rw [hwU, hks]; omega)
   have hpb := bitsAt_pushBits ByteArray.empty k.toUInt64 w h8
   rw [show ByteArray.empty.size = 0 from rfl] at hpb
@@ -270,10 +269,12 @@ def get : Keys → Nat → Int64
   | .foR _ md pk, i => (foRBits md pk (blockStarts md) i).toInt64
 
 /-- The search kernel's 8-byte answer for needle `k`. A needle no `w`-byte key can equal sits below
-every key or above every one, so the dense column answers it without a search. -/
+every key or above every one, so the dense column answers it without a search. The width is passed
+as `USize.ofNatLT`, whose `toNat` the kernel reduces, where `Nat.toUSize`'s stops at `numBits`. -/
 def bin (right : Bool) (k : Int64) : Keys → ByteArray
   | .dense w b =>
-    if Fits w k then binBytes w.toUSize false true right b (pushBits ByteArray.empty k.toUInt64 w)
+    if h : Fits w k then
+      binBytes (USize.ofNatLT w (lt_usize (by have := h.1; omega))) false true right b (pushBits ByteArray.empty k.toUInt64 w)
     else ans right (if k.toInt < 0 then 0 else b.size / w)
   | .foR n md pk => foRBin 8 right md pk n.toUSize (pushBits ByteArray.empty k.toUInt64 8)
 
@@ -293,7 +294,7 @@ theorem bin_spec (c : Keys) (right : Bool) (k : Int64) (hf : c.fits) (hn : c.cou
   | dense w b =>
     simp only [bin]
     split
-    · exact binBytes_signed hf.1 hf.2 right b k (by assumption) hn hs
+    · exact binBytes_signed hf.1 hf.2 _ USize.toNat_ofNatLT right b k (by assumption) hn hs
     · rename_i hk
       have hh : 0 < half w := Nat.two_pow_pos _
       have hb : ∀ j, -(half w : Int) ≤ (atW w b j).toInt ∧ (atW w b j).toInt < half w := fun j => by

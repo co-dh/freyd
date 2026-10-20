@@ -14,7 +14,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.LC1 LeetQ
 def ixL (xs : List Int64) : List (Int64 × Int64) := xs.zipIdx.map fun p => (p.1, (p.2 : Int).toInt64)
 
 /-- `ix(xs)°` as two columns. -/
-def ixQ (xs : List Int64) (foR : Bool := false) : QSortedRel := QSortedRel.ofList (ixL xs) foR
+def ixQ (xs : List Int64) (foR : Bool := false) : QSortedRel Int64 := QSortedRel.ofList (ixL xs) dense foR
 
 /-- The index pairs `j < k` with `xs[j] + xs[k] = t`: probe the column at `t − xs[j]`, which no
 element can equal when it falls outside the `Int64` range. -/
@@ -32,7 +32,7 @@ def qprog (t : Int) (xs : List Int64) (foR : Bool := false) : Option (Nat × Nat
 
 theorem mem_ixQ {xs : List Int64} (h : xs.length < 2 ^ 63) {foR : Bool} {k v : Int64} :
     v ∈ (ixQ xs foR).lookup k ↔ ∃ i : Nat, xs[i]? = some k ∧ v.toInt = i := by
-  rw [QSortedRel.mem_lookup, ← QSortedRel.mem_rep, ixQ, QSortedRel.rep_ofList, ixL]
+  rw [QSortedRel.mem_lookup, ← QSortedRel.mem_rep, ixQ, QSortedRel.rep_ofList _ _ dense_get, ixL]
   show (k, v) ∈ _ ↔ _
   simp only [List.mem_map, Prod.mk.injEq, Prod.exists, List.mem_zipIdx_iff_getElem?]
   constructor
@@ -110,28 +110,22 @@ theorem sort7 : (ixL [1, 2, 3]).mergeSort QSortedRel.keyLE = [(1, 0), (2, 1), (3
 example : qprog 9 [2, 7, 11, 15] = some (0, 1) := by
   simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
-    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort9]
+    Bool.false_eq_true, false_and, ↓reduceIte, sort9]
   decide +kernel
 example : qprog 6 [3, 2, 4] = some (1, 2) := by
   simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
-    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort6]
+    Bool.false_eq_true, false_and, ↓reduceIte, sort6]
   decide +kernel
 example : qprog 7 [1, 2, 3] = none := by
   simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
     QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
-    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort7]
+    Bool.false_eq_true, false_and, ↓reduceIte, sort7]
   decide +kernel
 
 /-! The same over encoded keys: `Coc.encode` and `foRBin`'s Lean bodies, by reduction. `USize.size` is
 `2 ^ System.Platform.numBits`, opaque to the kernel, so a count's `toUSize` round trip and its
-`Keys.ofList` bound are rewritten from a bound every platform meets. -/
-
-theorem lt_usize {n : Nat} (h : n < 2 ^ 32) : n < USize.size := by
-  cases System.Platform.numBits_eq <;> simp [USize.size, *] <;> omega
-
-theorem toNat_toUSize {n : Nat} (h : n < 2 ^ 32) : (Nat.toUSize n).toNat = n :=
-  USize.toNat_ofNat_of_lt' (lt_usize h)
+`Keys.ofList` bound are rewritten by `toNat_toUSize` and `lt_usize`. -/
 
 example : qprog 9 [2, 7, 11, 15] true = some (0, 1) := by
   simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
