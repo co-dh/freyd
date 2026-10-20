@@ -173,22 +173,32 @@ def step (nul : Int64) (c : Keys) (acc : Int64) (i : Nat) : Int64 :=
 def stepR (nul : Int64) (g : Nat → Int64) (acc : Int64) (i : Nat) : Int64 :=
   let x := g i; if x == nul then acc else acc + x
 
-/-- `c.get` with its per-column work done once, before the first element: a dense payload of a signed
-class reads through `Ew.signed`, fixed-width `UInt` casts in place of `sx`'s `Nat` powers, and a pack's
-block starts are summed once rather than at every element. -/
-def rd : Keys → Nat → Int64
-  | .dense w b => if Signed w then let c := clsW w; fun i => Ew.signed c (bitsAt b (i * w) w) else atW w b
-  | .foR _ md pk => let st := blockStarts md; fun i => (foRBits md pk st i).toInt64
+/-- A column with its per-column work done once, before the first element: a pack's block starts.
+A structure and not a closure `Nat → Int64`, because the compiler eta-expands a closure-returning
+definition and so recomputes whatever it bound before the `fun` at every element. -/
+structure Rd where
+  c : Keys
+  st : Array Nat
 
-theorem rd_eq (c : Keys) : rd c = c.get := by
+/-- `c.get` off an `Rd`: a dense payload of a signed class reads through `Ew.signed`, fixed-width `UInt`
+casts in place of `sx`'s `Nat` powers; a pack reads its block start from `st`. -/
+def Rd.get (r : Rd) (i : Nat) : Int64 :=
+  match r.c with
+  | .dense w b => if Signed w then Ew.signed (clsW w) (bitsAt b (i * w) w) else atW w b i
+  | .foR _ md pk => (foRBits md pk r.st i).toInt64
+
+def rdOf (c : Keys) : Rd := ⟨c, match c with | .foR _ md _ => blockStarts md | .dense .. => #[]⟩
+
+theorem rdOf_get (c : Keys) : (rdOf c).get = c.get := by
+  funext i
   cases c with
   | dense w b =>
-    simp only [rd]; split
-    · rename_i hw; funext i; rw [signed_clsW hw]; rfl
+    simp only [rdOf, Rd.get]; split
+    · rename_i hw; rw [signed_clsW hw]; rfl
     · rfl
   | foR n md pk => rfl
 
-theorem step_rd (nul : Int64) (c : Keys) : stepR nul (rd c) = step nul c := by rw [rd_eq]; rfl
+theorem step_rd (nul : Int64) (c : Keys) : stepR nul (rdOf c).get = step nul c := by rw [rdOf_get]; rfl
 
 /-- **q's `sum` of a compressed column**: `overBytes .add` over a dense payload of a signed class,
 `Coc.over .add` over a pack (the C sums a block as `1024 * base + Σ residuals` from its metadata),
@@ -251,18 +261,18 @@ theorem bitAt_byte (bits : ByteArray) (j t : Nat) (ht : t < 8) :
 def inW (bits : ByteArray) (n i : Nat) : Bool := decide (i < n) && bitAt bits i
 
 /-- `f` over the set bits `base + t` of `byte`, `t` from `t` on, `k` of them, below `n`. -/
-def bitLoop (f : β → Nat → β) (n : Nat) (byte : UInt8) (base : Nat) : Nat → Nat → β → β
+@[specialize] def bitLoop (f : β → Nat → β) (n : Nat) (byte : UInt8) (base : Nat) : Nat → Nat → β → β
   | 0, _, acc => acc
   | k + 1, t, acc => bitLoop f n byte base k (t + 1)
     (if decide (base + t < n) && ((byte >>> t.toUInt8) &&& 1 == 1) then f acc (base + t) else acc)
 
 /-- `bitLoop` over `k` bytes from byte `j` on. -/
-def byteLoop (f : β → Nat → β) (bits : ByteArray) (n : Nat) : Nat → Nat → β → β
+@[specialize] def byteLoop (f : β → Nat → β) (bits : ByteArray) (n : Nat) : Nat → Nat → β → β
   | 0, _, acc => acc
   | k + 1, j, acc => byteLoop f bits n k (j + 1) (bitLoop f n (byteAt bits j) (8 * j) 8 0 acc)
 
 /-- **`f` folded over `where`'s answers in one pass over the bytes**, with no index list between. -/
-def whereFold (f : β → Nat → β) (bits : ByteArray) (n : Nat) (acc : β) : β :=
+@[specialize] def whereFold (f : β → Nat → β) (bits : ByteArray) (n : Nat) (acc : β) : β :=
   byteLoop f bits n ((n + 7) / 8) 0 acc
 
 theorem range'_add (s a b : Nat) : List.range' s (a + b) = List.range' s a ++ List.range' (s + a) b := by
@@ -305,11 +315,11 @@ end Bits
 
 /-- `sum v where b`: one pass over `b`'s bytes, `v` read at each set bit in place. -/
 def sumWhere (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) : Int64 :=
-  whereFold (Col.stepR nul (Col.rd v)) bits n.toNat 0
+  let r := Col.rdOf v; whereFold (Col.stepR nul r.get) bits n.toNat 0
 
 theorem sumWhere_fold (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) :
     sumWhere nul n bits v = ((List.range n.toNat).filter (bitAt bits)).foldl (Col.step nul v) 0 := by
-  rw [sumWhere, whereFold_eq, Col.step_rd]
+  simp only [sumWhere]; rw [whereFold_eq, Col.step_rd]
 
 theorem sumWhere_eq (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) (h : n.toNat < 2 ^ 63) :
     sumWhere nul n bits v = qsum nul (((List.range n.toNat).filter (bitAt bits)).map v.get) := by
@@ -508,7 +518,7 @@ theorem inv_rehash (h : α → UInt64) {c : Nat} (hc : 0 < c) (ks : List α) : I
 
 /-- Row `i` into the groups: its key's slot accumulates `i`, or a new slot opens after the others,
 the table doubling first when it is as full as it has buckets. -/
-def grpStep (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β)
+@[specialize] def grpStep (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β)
     (s : Array (List (α × Nat)) × Array (α × β)) (i : Nat) : Array (List (α × Nat)) × Array (α × β) :=
   let x := g i
   match look h s.1 x with
@@ -517,14 +527,14 @@ def grpStep (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → 
     let t := if s.1.size ≤ s.2.size then rehash h (2 * s.1.size) (s.2.toList.map Prod.fst) else s.1
     (ins h t x s.2.size, s.2.push (x, upd z i))
 
-def grpGo (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) :
+@[specialize] def grpGo (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) :
     Nat → Nat → Array (List (α × Nat)) × Array (α × β) → Array (List (α × Nat)) × Array (α × β)
   | 0, _, s => s
   | k + 1, i, s => grpGo h g z upd k (i + 1) (grpStep h g z upd s i)
 
 /-- **`group` in one pass**: each key of `g` below `m`, in first appearance, with `upd` folded over
 its rows from `z`. -/
-def grp (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) : Array (α × β) :=
+@[specialize] def grp (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) : Array (α × β) :=
   (grpGo h g z upd m 0 (Array.replicate 16 [], #[])).2
 
 /-- What `grp` answers below `m`. -/
@@ -582,8 +592,12 @@ theorem grpS_new (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat) (
   · simp only [Function.comp_def, List.map_cons, List.map_nil, bucket_succ]
     have h0 : bucketOf g m m = [] := by
       rw [bucketOf, List.filter_congr (q := fun _ => false) fun i hi => decide_eq_false (hx i (List.mem_range.1 hi))]
-      exact List.filter_false _
-    rw [h0, List.filter_cons_of_pos (decide_eq_true rfl), List.filter_nil]; rfl
+      -- core's `filter_eq_nil_iff` carries `Classical.choice`
+      induction List.range m with
+      | nil => rfl
+      | cons _ _ ih => exact ih
+    simp only [h0, List.nil_append, List.filter_cons, List.filter_nil, decide_true, ↓reduceIte, List.foldl_cons,
+      List.foldl_nil]
 
 /-- `grpGo`'s state after `m` rows: the table answers the keys so far, the slots are `grpS`. -/
 def J (h : α → UInt64) (g : Nat → α) (z : β) (upd : β → Nat → β) (m : Nat)
@@ -667,7 +681,8 @@ def hI (x : Int64) : UInt64 := (x.toUInt64 * 0x9E3779B97F4A7C15) >>> 32
 `Order.groupFoR` on a pack, and `grp` in one pass at the other widths. -/
 def groupK : Keys → List (Int64 × List Nat)
   | .dense w b => if w = 8 then groupQ (b.size / 8).toUSize b else
-    (grp hI (Col.rd (.dense w b)) #[] Array.push (b.size / w)).toList.map fun p => (p.1, p.2.toList)
+    let r := Col.rdOf (.dense w b)
+    (grp hI r.get #[] Array.push (b.size / w)).toList.map fun p => (p.1, p.2.toList)
   | .foR n md pk => groupFoRQ n.toUSize md pk
 
 /-- **`groupK` answers each first key with its bucket.** -/
@@ -680,7 +695,7 @@ theorem groupK_eq (k : Keys) (h : k.count < 2 ^ 32) : groupK k = dictOf k.get k.
       have hc : cnt (b.size / 8).toUSize b = b.size / 8 := by
         simp only [cnt, toNat_toUSize h, Nat.min_self]
       rw [groupQ_eq _ b (by rw [hc]; omega), hc]; rfl
-    · rw [grp_eq, List.map_map, Col.rd_eq]
+    · rw [grp_eq, List.map_map, Col.rdOf_get]
       conv => rhs; rw [← List.map_id (dictOf _ _)]
       exact List.map_congr_left fun p _ => by
         simp only [Function.comp_def, foldl_push, List.nil_append]; rfl
@@ -698,30 +713,31 @@ theorem groupK_eq (k : Keys) (h : k.count < 2 ^ 32) : groupK k = dictOf k.get k.
     exact this
 
 /-- The key reader `select … by` groups on: a pack decoded once by the C, a dense payload read in place. -/
-def rdK : Keys → Nat → Int64
-  | .dense w b => Col.rd (.dense w b)
-  | .foR n md pk => Col.rd (.dense 8 (decoded n.toUSize md pk))
+def rdK : Keys → Col.Rd
+  | .dense w b => Col.rdOf (.dense w b)
+  | .foR n md pk => Col.rdOf (.dense 8 (decoded n.toUSize md pk))
 
-theorem rdK_get (k : Keys) (h : k.count < 2 ^ 32) : ∀ i < k.count, rdK k i = k.get i := by
+theorem rdK_get (k : Keys) (h : k.count < 2 ^ 32) : ∀ i < k.count, (rdK k).get i = k.get i := by
   cases k with
-  | dense w b => intro i _; show Col.rd _ i = _; rw [Col.rd_eq]
+  | dense w b => intro i _; simp only [rdK, Col.rdOf_get]
   | foR n md pk =>
     simp only [Keys.count] at h
     obtain ⟨hc, -, hcol⟩ := decoded_spec n.toUSize md pk
     rw [toNat_toUSize h] at hc
     intro i hi
     have := congrArg (·[i]?) hcol
-    simp only [col, colFoR, hc, toNat_toUSize h, List.getElem?_map, List.getElem?_range hi, Option.map_some,
-      Option.some.injEq] at this
-    show Col.rd _ i = _; rw [Col.rd_eq]; exact this
+    simp only [col, colFoR, hc, toNat_toUSize h, List.getElem?_map, List.getElem?_range (show i < n from hi),
+      Option.map_some, Option.some.injEq] at this
+    simp only [rdK, Col.rdOf_get]; exact this
 
 /-- `select sum v by k`: one pass over the rows, each key's slot summing `v` in place. -/
 def selbySum (nul : Int64) (k v : Keys) : List (Int64 × Int64) :=
-  (grp hI (rdK k) (0 : Int64) (Col.stepR nul (Col.rd v)) k.count).toList
+  let rk := rdK k; let rv := Col.rdOf v
+  (grp hI rk.get (0 : Int64) (Col.stepR nul rv.get) k.count).toList
 
 theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) :
     selbySum nul k v = (dictOf k.get k.count).map fun p => (p.1, p.2.foldl (Col.step nul v) 0) := by
-  rw [selbySum, grp_eq, Col.step_rd, dictOf_congr (rdK_get k h)]
+  simp only [selbySum]; rw [grp_eq, Col.step_rd, dictOf_congr (rdK_get k h)]
 
 /-- The table `select … by` reads: row `i` is `(k[i], v[i])`. -/
 def rows (k v : Keys) : List (Int64 × Int64) := (List.range k.count).map fun i => (k.get i, v.get i)
@@ -835,5 +851,7 @@ def vN : Keys := Keys.ofList false vsN
 #print axioms xkey_rows
 #print axioms selbySum_spec
 #print axioms selbySum_selby
+#print axioms whereFold_eq
+#print axioms grp_eq
 
 end LeetQ.Compressed
