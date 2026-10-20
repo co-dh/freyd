@@ -32,25 +32,17 @@ theorem toNat_toUSize {n : Nat} (h : n < 2 ^ 32) : (Nat.toUSize n).toNat = n :=
 /-- Half the range of a `w`-byte integer: it holds `[-half w, half w)`. -/
 def half (w : Nat) : Nat := 2 ^ (8 * w - 1)
 
-theorem pow_eq_half {w : Nat} (hw : 1 ≤ w) : 2 ^ (8 * w) = 2 * half w := by
-  rw [half, ← Nat.pow_succ']; congr 1; omega
-
 /-- `x` fits `w` bytes as a two's-complement number. -/
 def Fits (w : Nat) (x : Int64) : Prop := w ≤ 8 ∧ -(half w : Int) ≤ x.toInt ∧ x.toInt < half w
 
 instance (w : Nat) (x : Int64) : Decidable (Fits w x) := inferInstanceAs (Decidable (_ ∧ _))
 
-/-- `n < 2h` as a two's-complement number of range `[-h, h)`. -/
-def twos (h n : Nat) : Int := if n < h then (n : Int) else (n : Int) - 2 * (h : Int)
-
-/-- The low `w` bytes of `v` as a two's-complement number. -/
-def sx (w : Nat) (v : UInt64) : Int := twos (half w) (v.toNat % (2 * half w))
-
 theorem sx_bounds {w : Nat} (v : UInt64) : -(half w : Int) ≤ sx w v ∧ sx w v < half w := by
-  have : 0 < half w := Nat.two_pow_pos _
-  have := Nat.mod_lt v.toNat (show 0 < 2 * half w by omega)
+  have : 2 ^ (8 * w) ≤ 2 * 2 ^ (8 * w - 1) := by
+    rw [← Nat.pow_succ']; exact Nat.pow_le_pow_right (by omega) (by omega)
+  have := Nat.mod_lt v.toNat (Nat.two_pow_pos (8 * w))
   -- one `omega` per conjunct: `omega` on a conjunction negates it through `Classical.choice`
-  refine ⟨?_, ?_⟩ <;> unfold sx twos <;> split <;> omega
+  unfold half; refine ⟨?_, ?_⟩ <;> unfold sx <;> split <;> omega
 
 /-- The `i`th element of a dense payload of `w`-byte signed integers, widened to `Int64`. -/
 def atW (w : Nat) (b : ByteArray) (i : Nat) : Int64 := (sx w (bitsAt b (i * w) w)).toInt64
@@ -61,51 +53,27 @@ theorem toInt_atW {w : Nat} (h : w ≤ 8) (b : ByteArray) (i : Nat) : (atW w b i
   have := sx_bounds (w := w) (bitsAt b (i * w) w); have := half_le h
   exact Int64.toInt_ofInt_of_le (by omega) (by omega)
 
-/-- At eight bytes the widening is `UInt64.toInt64`, what qlean's `long` theorems read. -/
-theorem atW_eight (b : ByteArray) (i : Nat) : atW 8 b i = (bitsAt b (i * 8) 8).toInt64 := by
-  apply Int64.toInt_inj.1
-  rw [toInt_atW (by decide), toInt_toInt64]
-  have := (bitsAt b (i * 8) 8).toNat_lt
-  simp only [sx, twos, half, Nat.reduceMul, Nat.reduceSub, Nat.reducePow, Nat.mod_eq_of_lt this]
+/-- At eight bytes `sx` is `UInt64.toInt64`, what qlean's `long` theorems read. -/
+theorem sx_eight (v : UInt64) : sx 8 v = v.toInt64.toInt := by
+  rw [toInt_toInt64]
+  have := v.toNat_lt
+  simp only [sx, Nat.reduceMul, Nat.reduceSub]
+  rw [Nat.mod_eq_of_lt this]
   split <;> omega
 
-/-- A `w`-byte read of a pushed `x` that fits is `x`. -/
-theorem sx_pushed {w : Nat} (h1 : 1 ≤ w) {x : Int64} (h : Fits w x) :
-    sx w (UInt64.ofNat (x.toUInt64.toNat % 2 ^ (8 * w))) = x.toInt := by
+theorem atW_eight (b : ByteArray) (i : Nat) : atW 8 b i = (bitsAt b (i * 8) 8).toInt64 :=
+  Int64.toInt_inj.1 (by rw [toInt_atW (by decide), sx_eight])
+
+/-- A `w`-byte read of an `x` that fits is `x`. -/
+theorem sx_fits {w : Nat} (h1 : 1 ≤ w) {x : Int64} (h : Fits w x) : sx w x.toUInt64 = x.toInt := by
   have e := toInt_toInt64 x.toUInt64
   rw [Int64.toInt64_toUInt64] at e
   have := x.toUInt64.toNat_lt
   obtain ⟨h8, hl, hh⟩ := h
   have hw : w = 1 ∨ w = 2 ∨ w = 3 ∨ w = 4 ∨ w = 5 ∨ w = 6 ∨ w = 7 ∨ w = 8 := by omega
   rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
-    simp only [sx, twos, half, UInt64.toNat_ofNat', Nat.reduceMul, Nat.reduceSub, Nat.reducePow] at hl hh ⊢ <;>
+    simp only [sx, half, Nat.reduceMul, Nat.reduceSub, Nat.reducePow] at hl hh e ⊢ <;>
     split at e <;> split <;> omega
-
-/-- `l` pushed `w` bytes an element after `a`: the size, the prefix kept, and each element read back
-modulo `2 ^ (8 * w)`. `foldl_pushBits8` at every width up to eight. -/
-theorem foldl_pushBits {E : Type} (g : E → UInt64) (w : Nat) (hw : w ≤ 8) (l : List E) (a : ByteArray) :
-    (l.foldl (fun acc e => pushBits acc (g e) w) a).size = a.size + w * l.length ∧
-    (∀ i, i < a.size → (l.foldl (fun acc e => pushBits acc (g e) w) a)[i]? = a[i]?) ∧
-    ∀ i (h : i < l.length), bitsAt (l.foldl (fun acc e => pushBits acc (g e) w) a) (a.size + w * i) w =
-      UInt64.ofNat ((g l[i]).toNat % 2 ^ (8 * w)) := by
-  induction l generalizing a with
-  | nil => exact ⟨by simp, fun _ _ => rfl, fun _ h => absurd h (Nat.not_lt_zero _)⟩
-  | cons x l ih =>
-    obtain ⟨hs, hp, hg⟩ := ih (pushBits a (g x) w)
-    rw [pushBits_size] at hs hg
-    refine ⟨by simp only [List.foldl_cons, hs, List.length_cons]; rw [Nat.mul_succ]; omega,
-      fun i hi => by simp only [List.foldl_cons]; rw [hp i (by rw [pushBits_size]; omega)]; exact pushBits_getElem?_lt _ _ _ _ hi,
-      fun i hi => ?_⟩
-    simp only [List.foldl_cons]
-    cases i with
-    | zero =>
-      rw [Nat.mul_zero, Nat.add_zero, bitsAt_congr (pushBits a (g x) w) _ a.size w
-        (fun k hk => hp _ (by rw [pushBits_size]; omega)), bitsAt_pushBits _ _ _ hw]
-      rfl
-    | succ j =>
-      have := hg j (by simp at hi; omega)
-      rw [show a.size + w * (j + 1) = a.size + w + w * j by rw [Nat.mul_succ]; omega, this]
-      rfl
 
 /-- `xs` laid out as a dense payload of `w`-byte integers. -/
 def enc (w : Nat) (xs : List Int64) : ByteArray := xs.foldl (fun b x => pushBits b x.toUInt64 w) ByteArray.empty
@@ -119,7 +87,7 @@ theorem atW_enc {w : Nat} (h1 : 1 ≤ w) (xs : List Int64) (i : Nat) (hi : i < x
   have := (foldl_pushBits Int64.toUInt64 w hf.1 xs ByteArray.empty).2.2 i hi
   rw [show ByteArray.empty.size = 0 from rfl, Nat.zero_add, Nat.mul_comm] at this
   apply Int64.toInt_inj.1
-  rw [toInt_atW hf.1, enc, this, sx_pushed h1 hf]
+  rw [toInt_atW hf.1, enc, this, sx_mod hf.1, sx_fits h1 hf]
 
 /-- Every `Int64` fits eight bytes. -/
 theorem fits_eight (x : Int64) : Fits 8 x := by
@@ -158,91 +126,6 @@ theorem sorted_of_pairwise (f : Nat → Int64) (n : Nat)
     simp only [List.getElem_map, List.getElem_range] at this
     exact this
   · exact Int64.le_iff_toInt_le.2 (Int.le_refl _)
-
-/-! ## `bin` over a `w`-byte signed payload -/
-
-theorem ordKey_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (v : UInt64) :
-    ((ordKey w false true v).toNat : Int) = sx w v + half w := by
-  have hk : ∀ i, i < 64 → (2 ^ (8 * w) - 1).testBit i = decide (i < 8 * w) := by
-    have hw : w = 1 ∨ w = 2 ∨ w = 3 ∨ w = 4 ∨ w = 5 ∨ w = 6 ∨ w = 7 ∨ w = 8 := by omega
-    rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-  have hp : 2 ^ (8 * w) ≤ 2 ^ 64 := Nat.pow_le_pow_right (by omega) (by omega)
-  have hpos := Nat.two_pow_pos (8 * w)
-  have hm : (if w == 8 then (0xffffffffffffffff : UInt64) else (2 ^ (8 * w) - 1).toUInt64).toNat = 2 ^ (8 * w) - 1 := by
-    split
-    · rename_i h; rw [beq_iff_eq.1 h]; rfl
-    · rw [Nat.toUInt64_eq, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
-  have ht : (2 ^ (8 * w - 1) : Nat).toUInt64.toNat = half w := by
-    rw [Nat.toUInt64_eq, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by have := half_le h8; simp only [half] at this; omega)]; rfl
-  have hand : v.toNat &&& (2 ^ (8 * w) - 1) = v.toNat % 2 ^ (8 * w) := by
-    apply Nat.eq_of_testBit_eq; intro i
-    rw [Nat.testBit_and, Nat.testBit_mod_two_pow]
-    by_cases hi : i < 64
-    · rw [hk i hi, Bool.and_comm]
-    · have := v.toNat_lt
-      rw [Nat.testBit_lt_two_pow (Nat.lt_of_lt_of_le this (Nat.pow_le_pow_right (by omega) (by omega)))]
-      rw [Bool.false_and, Bool.and_false]
-  simp only [ordKey, Bool.false_eq_true, ↓reduceIte, UInt64.toNat_xor, UInt64.toNat_and, hm, ht, hand]
-  have hx := xor_top (8 * w - 1) (v.toNat % 2 ^ (8 * w)) (by rw [show 8 * w - 1 + 1 = 8 * w by omega]; exact Nat.mod_lt _ hpos)
-  rw [show 2 ^ (8 * w - 1) = half w from rfl] at hx
-  rw [pow_eq_half h1] at hx ⊢
-  rw [hx]
-  unfold sx twos; split <;> omega
-
-theorem ordKey_le {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (a b : UInt64) :
-    ordKey w false true a ≤ ordKey w false true b ↔ sx w a ≤ sx w b := by
-  rw [UInt64.le_iff_toNat_le]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b
-  constructor <;> intro <;> omega
-
-theorem ordKey_lt {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (a b : UInt64) :
-    ordKey w false true a < ordKey w false true b ↔ sx w a < sx w b := by
-  rw [UInt64.lt_iff_toNat_lt]; have := ordKey_signed h1 h8 a; have := ordKey_signed h1 h8 b
-  constructor <;> intro <;> omega
-
-/-- **`binBytes_long` at every width up to eight**: over a sorted payload of `w`-byte signed
-integers and a needle that fits `w` bytes, the answer read back is the partition point. -/
-theorem binBytes_signed {w : Nat} (h1 : 1 ≤ w) (h8 : w ≤ 8) (wU : USize) (hwU : wU.toNat = w) (right : Bool)
-    (hay : ByteArray) (k : Int64) (hk : Fits w k) (hn : hay.size / w < 2 ^ 63)
-    (hsort : ∀ i j, i ≤ j → j < hay.size / w → atW w hay i ≤ atW w hay j) :
-    ∃ r, r ≤ hay.size / w ∧
-      (bitsAt (binBytes wU false true right hay (pushBits ByteArray.empty k.toUInt64 w)) 0 8).toInt64.toInt
-        = (if right then (r : Int) else (r : Int) - 1) ∧
-      (∀ j, j < r → if right then atW w hay j < k else atW w hay j ≤ k) ∧
-      (r < hay.size / w → if right then k ≤ atW w hay r else k < atW w hay r) := by
-  have hks : (pushBits ByteArray.empty k.toUInt64 w).size / w = 1 := by
-    rw [pushBits_size, show ByteArray.empty.size = 0 from rfl, Nat.zero_add]; exact Nat.div_self (by omega)
-  have hout := bitsAt_binBytes wU false true right hay (pushBits ByteArray.empty k.toUInt64 w) 0
-    (by rw [hwU, hks]; omega)
-  have hpb := bitsAt_pushBits ByteArray.empty k.toUInt64 w h8
-  rw [show ByteArray.empty.size = 0 from rfl] at hpb
-  rw [hwU, Nat.zero_mul, Nat.mul_zero, hpb] at hout
-  have hne := sx_pushed h1 hk
-  have ha : ∀ j, (atW w hay j).toInt = sx w (bitsAt hay (j * w) w) := toInt_atW h8 hay
-  have hs := binStep_spec w false true right hay
-    (ordKey w false true (UInt64.ofNat (k.toUInt64.toNat % 2 ^ (8 * w)))) (hay.size / w)
-    (fun i j hij hjn => (ordKey_le h1 h8 _ _).2 (by
-      have := Int64.le_iff_toInt_le.1 (hsort i j hij hjn); rwa [ha, ha] at this))
-  refine ⟨_, hs.1, ?_, fun j hj => ?_, fun hr => ?_⟩
-  · have := hs.1
-    rw [hout, Int64.toInt64_toUInt64]
-    cases right <;> simp only [Bool.false_eq_true, ↓reduceIte] <;>
-      exact Int64.toInt_ofInt_of_le (by omega) (by omega)
-  · have := hs.2.1 j hj
-    cases right with
-    | true =>
-      simp only [↓reduceIte, ordKey_lt h1 h8, hne] at this ⊢
-      exact Int64.lt_iff_toInt_lt.2 (by rw [ha]; exact this)
-    | false =>
-      simp only [Bool.false_eq_true, ↓reduceIte, ordKey_le h1 h8, hne] at this ⊢
-      exact Int64.le_iff_toInt_le.2 (by rw [ha]; exact this)
-  · have := hs.2.2 _ (Nat.le_refl _) hr
-    cases right with
-    | true =>
-      simp only [↓reduceIte, ordKey_lt h1 h8, hne] at this ⊢
-      exact Int64.le_iff_toInt_le.2 (by rw [ha]; omega)
-    | false =>
-      simp only [Bool.false_eq_true, ↓reduceIte, ordKey_le h1 h8, hne] at this ⊢
-      exact Int64.lt_iff_toInt_lt.2 (by rw [ha]; omega)
 
 /-! ## A key column, dense or encoded -/
 
@@ -291,7 +174,7 @@ def fits : Keys → Prop
   | .dense w _ => 1 ≤ w ∧ w ≤ 8
   | .foR n _ _ => n < USize.size
 
-/-- `binBytes_signed` and `foRBin_long`, one statement over the key reader. -/
+/-- `binBytes_signed` and `foRBin_signed`, one statement over the key reader. -/
 theorem bin_spec (c : Keys) (right : Bool) (k : Int64) (hf : c.fits) (hn : c.count < 2 ^ 63)
     (hs : ∀ i j, i ≤ j → j < c.count → c.get i ≤ c.get j) :
     ∃ r, r ≤ c.count ∧ (bitsAt (c.bin right k) 0 8).toInt64.toInt = (if right then (r : Int) else (r : Int) - 1) ∧
@@ -301,7 +184,17 @@ theorem bin_spec (c : Keys) (right : Bool) (k : Int64) (hf : c.fits) (hn : c.cou
   | dense w b =>
     simp only [bin]
     split
-    · exact binBytes_signed hf.1 hf.2 _ USize.toNat_ofNatLT right b k (by assumption) hn hs
+    · rename_i hk
+      have tr : ∀ j, sx w (bitsAt b (j * w) w) = (get (.dense w b) j).toInt := fun j => (toInt_atW hf.2 b j).symm
+      obtain ⟨r, hr, hout, hlo, hhi⟩ := binBytes_signed hf.1 hf.2 _ USize.toNat_ofNatLT right b k.toUInt64 hn
+        fun i j hij hj => by rw [tr, tr]; exact Int64.le_iff_toInt_le.1 (hs i j hij hj)
+      refine ⟨r, hr, hout, fun j hj => ?_, fun h => ?_⟩
+      · have := hlo j hj
+        cases right <;> simp only [tr, sx_fits hf.1 hk, Bool.false_eq_true, ↓reduceIte, Int64.lt_iff_toInt_lt,
+          Int64.le_iff_toInt_le] at this ⊢ <;> exact this
+      · have := hhi h
+        cases right <;> simp only [tr, sx_fits hf.1 hk, Bool.false_eq_true, ↓reduceIte, Int64.lt_iff_toInt_lt,
+          Int64.le_iff_toInt_le] at this ⊢ <;> exact this
     · rename_i hk
       have hh : 0 < half w := Nat.two_pow_pos _
       have hb : ∀ j, -(half w : Int) ≤ (atW w b j).toInt ∧ (atW w b j).toInt < half w := fun j => by
@@ -322,7 +215,18 @@ theorem bin_spec (c : Keys) (right : Bool) (k : Int64) (hf : c.fits) (hn : c.cou
         · rw [if_neg hneg]; exact ans_spec right _ hn'
         · have := hb j
           cases right <;> simp only [get, Bool.false_eq_true, ↓reduceIte, Int64.lt_iff_toInt_lt, Int64.le_iff_toInt_le] <;> omega
-  | foR n md pk => have := foRBin_long right n md pk k.toUInt64 hf hn hs; rwa [Int64.toInt64_toUInt64] at this
+  | foR n md pk =>
+    have tr : ∀ v, sx 8 v = v.toInt64.toInt := sx_eight
+    obtain ⟨r, hr, hout, hlo, hhi⟩ := foRBin_signed (by decide) (by decide) 8
+      (USize.toNat_ofNat_of_lt' (lt_usize (by decide))) right n md pk k.toUInt64 hf hn
+      fun i j hij hj => by rw [tr, tr]; exact Int64.le_iff_toInt_le.1 (hs i j hij hj)
+    refine ⟨r, hr, hout, fun j hj => ?_, fun h => ?_⟩
+    · have := hlo j hj
+      cases right <;> simp only [tr, Int64.toInt64_toUInt64, Bool.false_eq_true, ↓reduceIte,
+        Int64.lt_iff_toInt_lt, Int64.le_iff_toInt_le] at this ⊢ <;> exact this
+    · have := hhi h
+      cases right <;> simp only [tr, Int64.toInt64_toUInt64, Bool.false_eq_true, ↓reduceIte,
+        Int64.lt_iff_toInt_lt, Int64.le_iff_toInt_le] at this ⊢ <;> exact this
 
 /-- `ks` as a key column, encoded when `foR` asks and the count fits a `USize`, which every list in
 memory does; otherwise dense at its narrowest width. -/
