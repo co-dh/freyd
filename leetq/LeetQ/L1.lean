@@ -14,12 +14,12 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.LC1 LeetQ
 def ixL (xs : List Int64) : List (Int64 × Int64) := xs.zipIdx.map fun p => (p.1, (p.2 : Int).toInt64)
 
 /-- `ix(xs)°` as two columns. -/
-def ixQ (xs : List Int64) : QSortedRel := QSortedRel.ofList (ixL xs)
+def ixQ (xs : List Int64) (foR : Bool := false) : QSortedRel := QSortedRel.ofList (ixL xs) foR
 
 /-- The index pairs `j < k` with `xs[j] + xs[k] = t`: probe the column at `t − xs[j]`, which no
 element can equal when it falls outside the `Int64` range. -/
-def qpairs (t : Int) (xs : List Int64) : List (Nat × Nat) :=
-  let s := ixQ xs
+def qpairs (t : Int) (xs : List Int64) (foR : Bool := false) : List (Nat × Nat) :=
+  let s := ixQ xs foR
   xs.zipIdx.flatMap fun p =>
     let d := t - p.1.toInt
     if -2 ^ 63 ≤ d ∧ d < 2 ^ 63 then
@@ -28,10 +28,10 @@ def qpairs (t : Int) (xs : List Int64) : List (Nat × Nat) :=
     else []
 
 /-- The program: the first pair. -/
-def qprog (t : Int) (xs : List Int64) : Option (Nat × Nat) := (qpairs t xs).head?
+def qprog (t : Int) (xs : List Int64) (foR : Bool := false) : Option (Nat × Nat) := (qpairs t xs foR).head?
 
-theorem mem_ixQ {xs : List Int64} (h : xs.length < 2 ^ 63) {k v : Int64} :
-    v ∈ (ixQ xs).lookup k ↔ ∃ i : Nat, xs[i]? = some k ∧ v.toInt = i := by
+theorem mem_ixQ {xs : List Int64} (h : xs.length < 2 ^ 63) {foR : Bool} {k v : Int64} :
+    v ∈ (ixQ xs foR).lookup k ↔ ∃ i : Nat, xs[i]? = some k ∧ v.toInt = i := by
   rw [QSortedRel.mem_lookup, ← QSortedRel.mem_rep, ixQ, QSortedRel.rep_ofList, ixL]
   show (k, v) ∈ _ ↔ _
   simp only [List.mem_map, Prod.mk.injEq, Prod.exists, List.mem_zipIdx_iff_getElem?]
@@ -44,8 +44,8 @@ theorem mem_ixQ {xs : List Int64} (h : xs.length < 2 ^ 63) {k v : Int64} :
     exact ⟨k, i, hi, rfl, Int64.toInt_inj.1 (by rw [hv]; exact Int64.toInt_ofInt_of_le (by omega) (by omega))⟩
 
 /-- **The pairs are exactly `twoSum`'s**, for any list an `Int64` can index. -/
-theorem mem_qpairs (t : Int) {xs : List Int64} (h : xs.length < 2 ^ 63) (j k : Nat) :
-    (j, k) ∈ qpairs t xs ↔ twoSum t (xs.map Int64.toInt) j k := by
+theorem mem_qpairs (t : Int) {xs : List Int64} (h : xs.length < 2 ^ 63) (foR : Bool) (j k : Nat) :
+    (j, k) ∈ qpairs t xs foR ↔ twoSum t (xs.map Int64.toInt) j k := by
   show _ ↔ (∃ z, (xs.map Int64.toInt)[j]? = some z ∧ ∃ y, y = t - z ∧ (xs.map Int64.toInt)[k]? = some y) ∧ j < k
   simp only [qpairs, List.mem_flatMap, Prod.exists, List.mem_zipIdx_iff_getElem?, List.getElem?_map,
     Option.map_eq_some_iff]
@@ -64,7 +64,7 @@ theorem mem_qpairs (t : Int) {xs : List Int64} (h : xs.length < 2 ^ 63) (j k : N
     · cases hm
   · rintro ⟨⟨_, ⟨a, hj, rfl⟩, _, rfl, b, hk, hb⟩, hlt⟩
     have hd : -2 ^ 63 ≤ t - a.toInt ∧ t - a.toInt < 2 ^ 63 := by
-      have := toInt_bounds b; constructor <;> omega
+      have := QLean.Verify.toInt_bounds b; constructor <;> omega
     refine ⟨a, j, hj, ?_⟩
     rw [if_pos hd]
     refine List.mem_filterMap.2 ⟨(k : Int).toInt64, (mem_ixQ h).2 ⟨k, ?_, ?_⟩, ?_⟩
@@ -90,17 +90,14 @@ theorem orNone_congr {A A' B : RelSet.{0}} {R : A ⟶ B} {S : A' ⟶ B} {a : A.c
 
 /-- **The program answers what freyd's spec allows**: `qprog(t)(xs)` is a pair of
 `twoSum(t)(xs)`, or `none` when it has none — `twoSumO` of `leet/L1.lean` at the numbers `xs` denotes. -/
-theorem qprog_spec (t : Int) (xs : List Int64) (h : xs.length < 2 ^ 63) :
-    twoSumO t (xs.map Int64.toInt) (qprog t xs) :=
-  ⟨_, rfl, orNone_congr (fun (p : Nat × Nat) => mem_qpairs t h p.1 p.2)
-    (le_iff.mp head?_le_orNone (qpairs t xs) (qprog t xs) rfl)⟩
+theorem qprog_spec (t : Int) (xs : List Int64) (h : xs.length < 2 ^ 63) (foR : Bool) :
+    twoSumO t (xs.map Int64.toInt) (qprog t xs foR) :=
+  ⟨_, rfl, orNone_congr (fun (p : Nat × Nat) => mem_qpairs t h foR p.1 p.2)
+    (le_iff.mp head?_le_orNone (qpairs t xs foR) (qprog t xs foR) rfl)⟩
 
-/-- `binBytes` reads its width as `USize.toNat`, which the kernel cannot reduce: `System.Platform.numBits`
-is opaque. Rewriting the one literal leaves the rest to reduction. -/
-theorem usize8 : (8 : USize).toNat = 8 := by simp
 
 /-! The kernel's run: `binBytes`' Lean body, by reduction. Two things stop the kernel and are
-rewritten first: the width literal (`usize8`) and core's `List.mergeSort`, which is well-founded
+rewritten first: the width literal (`USize.reduceToNat`: `USize.toNat` goes through the opaque `System.Platform.numBits`) and core's `List.mergeSort`, which is well-founded
 recursion, so `simp` evaluates the sort and the kernel the rest. -/
 
 theorem sort9 : (ixL [2, 7, 11, 15]).mergeSort QSortedRel.keyLE = [(2, 0), (7, 1), (11, 2), (15, 3)] := by
@@ -111,21 +108,28 @@ theorem sort7 : (ixL [1, 2, 3]).mergeSort QSortedRel.keyLE = [(1, 0), (2, 1), (3
   simp [ixL, List.mergeSort, QSortedRel.keyLE]; decide
 
 example : qprog 9 [2, 7, 11, 15] = some (0, 1) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
-    QSortedRel.ofList, QSortedRel.count, at8, sort9]
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+    QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
+    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort9]
   decide +kernel
 example : qprog 6 [3, 2, 4] = some (1, 2) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
-    QSortedRel.ofList, QSortedRel.count, at8, sort6]
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+    QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
+    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort6]
   decide +kernel
 example : qprog 7 [1, 2, 3] = none := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
-    QSortedRel.ofList, QSortedRel.count, at8, sort7]
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, USize.reduceToNat, ixQ,
+    QSortedRel.ofList, QSortedRel.count, Keys.ofList, Keys.bin, Keys.get, Keys.count,
+    Bool.false_eq_true, false_and, ↓reduceIte, at8, sort7]
   decide +kernel
 
 -- The compiled run: `binBytes` is the C `bin` here.
 #guard qprog 9 [2, 7, 11, 15] == some (0, 1)
 #guard qprog 6 [3, 2, 4] == some (1, 2)
 #guard qprog 7 [1, 2, 3] == none
+-- The same over encoded keys: `Coc.encode` and `foRBin` are the C `qlean_coc_encode` and `coc_bin`.
+#guard qprog 9 [2, 7, 11, 15] true == some (0, 1)
+#guard qprog 6 [3, 2, 4] true == some (1, 2)
+#guard qprog 7 [1, 2, 3] true == none
 
 end LeetQ.L1
