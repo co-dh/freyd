@@ -265,6 +265,33 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ),
 )]<entab-entab>
 
+// One run at tab width `4` on `ab`, a tab, `c d`; each value is a theorem of the `EntabRun` section
+// of A10_2_Detab, cited beside its row.  `estC` is `Λ(expand°) est(V×U)` (`rel_estC`).
+// lean:AOP.A10_2_Detab.rel_cands@6bd1930a lean:AOP.A10_2_Detab.rel_VUt@f740754c
+// lean:AOP.A10_2_Detab.rel_estC@40c6f6dd lean:AOP.A10_2_Detab.estC_snoc@025ca9ee
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.RelSet.Detab.run_input.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Detab.run_input.rhs"),
+   meaning: [`ab`, a tab, `c d`]),
+  // lean:AOP.A10_2_Detab.run_input@40eb8c2e
+  (sym: leann("Freyd.Alg.RelSet.Detab.detabFn"), type: leant("Freyd.Alg.RelSet.Detab.run_detab.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Detab.run_detab.rhs"),
+   meaning: [the tab becomes the two blanks that reach column `4`]),
+  // lean:AOP.A10_2_Detab.run_detab@6313b759
+  (sym: leann("Freyd.Alg.RelSet.Detab.cands"), type: leant("Freyd.Alg.RelSet.Detab.run_cands.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Detab.run_cands.rhs"),
+   meaning: [the three decompositions of `ab` and two blanks, which ends on the tab stop]),
+  // lean:AOP.A10_2_Detab.run_cands@bcf38d8e
+  (sym: leann("Freyd.Alg.RelSet.Detab.estC"), type: leant("Freyd.Alg.RelSet.Detab.run_estC.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Detab.run_estC.rhs"),
+   meaning: [`ab` is a prefix of `ab` and a blank with the same `fill`, and `TB` is below every character]),
+  // lean:AOP.A10_2_Detab.run_estC@bb34a48d
+  (sym: leann("Freyd.Alg.RelSet.Detab.entabR"), type: leant("Freyd.Alg.RelSet.Detab.run_entab.rhs"),
+   value: leanf("Freyd.Alg.RelSet.Detab.run_entab.rhs"),
+   meaning: [the input again: the tab restored, the blank before `d` kept]),
+  // lean:AOP.A10_2_Detab.run_entab@17e77707
+)<entab-run>
+
 
 == The minimum tardiness problem
 
