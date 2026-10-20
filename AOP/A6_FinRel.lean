@@ -553,7 +553,9 @@ variable [DecidableEq K] [Hashable K]
 def get (x : Fibres K V) (k : K) : List V := ((x.find? k).getD #[]).toList
 
 /-- Append `v` to the fibre of `k`. -/
-def push (x : Fibres K V) (k : K) (v : V) : Fibres K V := x.alter k fun o => (o.getD #[]).push v
+def push (x : Fibres K V) (k : K) (v : V) : Fibres K V := x.alter k fun
+  | some a => a.push v
+  | none => #[v]
 
 theorem get_empty (n : Nat) (a : K) : Fibres.get (HTab.empty n : Fibres K V) a = [] := by
   simp [get, HTab.find?_empty]
@@ -562,7 +564,7 @@ theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
     (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
   simp only [get, push, HTab.find?_alter]
   by_cases h : k = a
-  · subst h; simp
+  · subst h; cases x.find? k <;> simp
   · simp [h]
 
 end Fibres
@@ -1331,6 +1333,22 @@ omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq 
     fibre then cut by `post`. -/
 def foldList (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
   cfold (fun l => post (b l)) fun e vs => post (vs.flatMap fun v => s (e, v))
+
+omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
+/-- `foldList` with a one-value fibre handed to the step directly: a functional fold's fibres are all one
+    value, and the compiled `flatMap` builds an array per step. -/
+def foldListOne (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
+  cfold (fun l => post (b l)) fun e vs => post (match vs with
+    | [v] => s (e, v)
+    | vs => vs.flatMap fun v => s (e, v))
+
+omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
+@[csimp] theorem foldList_eq_foldListOne : @foldList = @foldListOne := by
+  funext _ _ _ post b s
+  unfold foldList foldListOne
+  congr
+  funext e vs
+  split <;> simp
 
 /-- `⦇[B,S]⦈` with every fibre cut by `post`; `none` when `B` or `S` is a `test`. -/
 def foldWith (post : List V → List V) (B : RelRep L V) (S : RelRep (E × V) V) :

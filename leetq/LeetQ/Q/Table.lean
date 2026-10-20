@@ -279,7 +279,9 @@ def xgroup (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (
 /-- `select agg v by k from T = ran(T k) Λ((T k)° (T v)) agg`: q sorts the keys (`s#`). -/
 def selby [Ord κ] [Std.TransOrd κ] [Std.LawfulEqOrd κ] [FibreIndex (List V)] (agg : List V → W) (k : R → κ) (v : R → V)
     (T : RelRep Nat R) : Option (RelRep κ W) := do
-  (← grp (.pairs (← fin? (← T.comp (RelRep.ofFn k))).ran) k v T).comp (RelRep.ofFn agg)
+  -- the keys listed once by `FibreIndex.dedup` before `ran` sorts them: the sort sees each key once
+  let ks := FibreIndex.dedup (← fin? (← T.comp (RelRep.ofFn k))).vals.toList
+  (← grp (.pairs (FinRel.ofList (ks.map fun c => (c, c))).ran) k v T).comp (RelRep.ofFn agg)
 
 omit [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] in
 /-- **`select agg v by k`**: at each key `ks` lists, `agg` of the group's whole fibre `g c` — in row order
