@@ -485,61 +485,73 @@ namespace Fibres
 
 variable [DecidableEq K] [Hashable K]
 
-/-- The fibre of `k`: its bucket's values, when the bucket `slot` names was made for `k`. -/
-def get (x : Fibres K V) (k : K) : List V :=
-  match x.slot[k]?.bind (x.buckets[·]?) with
-  | some p => if p.1 = k then p.2.toList else []
-  | none => []
+/-- The bucket of `k`: the one `slot` names, when it was made for `k`. -/
+def find? (x : Fibres K V) (k : K) : Option (Array V) :=
+  (x.slot[k]?.bind (x.buckets[·]?)).bind fun p => if p.1 = k then some p.2 else none
+
+/-- The fibre of `k`: its bucket's values, in array order. -/
+def get (x : Fibres K V) (k : K) : List V := ((x.find? k).map Array.toList).getD []
 
 /-- Append `v` to the fibre of `k`; a key with no bucket gets one at the end. -/
 def push (x : Fibres K V) (k : K) (v : V) : Fibres K V :=
-  match x.slot[k]?.bind fun i => (x.buckets[i]?).bind fun p => if p.1 = k then some i else none with
-  | some i => ⟨x.slot, x.buckets.modify i fun p => (p.1, p.2.push v)⟩
+  match x.slot[k]? with
+  | some i => if (x.buckets[i]?.map (·.1)) = some k then ⟨x.slot, x.buckets.modify i fun p => (p.1, p.2.push v)⟩
+      else ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩
   | none => ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩
+
+theorem find?_fresh (x : Fibres K V) (k : K) (v : V) (a : K) :
+    find? ⟨x.slot.insert k x.buckets.size, x.buckets.push (k, #[v])⟩ a = if k = a then some #[v] else x.find? a := by
+  by_cases ka : k = a
+  · subst ka; simp [find?, Std.HashMap.getElem?_insert]
+  · simp only [find?, Std.HashMap.getElem?_insert, beq_iff_eq, ka, if_false]
+    cases hs : x.slot[a]? with
+    | none => rfl
+    | some j =>
+      simp only [Option.bind_some, Array.getElem?_push]
+      split
+      · rename_i e; subst e; simp [ka, Array.getElem?_eq_none]
+      · rfl
+
+theorem find?_push (x : Fibres K V) (k : K) (v : V) (a : K) :
+    (x.push k v).find? a = if k = a then some (((x.find? a).getD #[]).push v) else x.find? a := by
+  unfold push
+  split
+  · rename_i i hi
+    split
+    · rename_i hb
+      obtain ⟨⟨k', vs⟩, hp, e⟩ := Option.map_eq_some_iff.1 hb
+      rw [show k' = k from e] at hp
+      cases hs : x.slot[a]? with
+      | none =>
+        have : k ≠ a := fun e => by subst e; simp [hi] at hs
+        simp [find?, hs, this]
+      | some j =>
+        by_cases ij : i = j
+        · subst ij
+          by_cases ka : k = a
+          · subst ka; simp [find?, hs, hp, Array.getElem?_modify]
+          · simp [find?, hs, hp, Array.getElem?_modify, ka]
+        · have : k ≠ a := fun e => by subst e; rw [hi] at hs; exact ij (Option.some.inj hs)
+          simp [find?, hs, Array.getElem?_modify, ij, this]
+    · rename_i hb
+      have h0 : x.find? k = none := by
+        simp only [find?, hi, Option.bind_some]
+        cases hbi : x.buckets[i]? with
+        | none => rfl
+        | some p =>
+          simp only [Option.bind_some]
+          rw [if_neg]
+          intro e; apply hb; simp [hbi, e]
+      rw [find?_fresh x k v a]
+      split <;> simp_all
+  · rename_i hi
+    rw [find?_fresh x k v a]
+    split <;> simp_all [find?]
 
 theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
     (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
-  unfold push
-  split
-  · rename_i i h
-    simp only [Option.bind_eq_some_iff] at h
-    obtain ⟨i', hi, p, hp, h⟩ := h
-    split at h
-    · rename_i e
-      cases Option.some.inj h
-      simp only [get, Array.getElem?_modify]
-      by_cases ka : k = a
-      · subst ka; simp [hi, hp, e]
-      · cases hs : x.slot[a]? with
-        | none => simp [ka]
-        | some j =>
-          have : i ≠ j := fun ij => ka (by
-            subst ij; have := hi.symm.trans hs; exact absurd this (by simp_all))
-          simp [this, ka]
-    · cases h
-  · rename_i h
-    have h0 : x.get k = [] := by
-      simp only [get]
-      cases hs : x.slot[k]? with
-      | none => rfl
-      | some i =>
-        cases hb : x.buckets[i]? with
-        | none => rfl
-        | some p =>
-          simp only [hs, hb, Option.bind_some] at h
-          by_cases e : p.1 = k
-          · simp [e] at h
-          · simp [e]
-    by_cases ka : k = a
-    · subst ka; simp [get, Std.HashMap.getElem?_insert, h0]
-    · simp only [get, Std.HashMap.getElem?_insert, beq_iff_eq, ka, if_false, List.append_nil]
-      cases hs : x.slot[a]? with
-      | none => rfl
-      | some j =>
-        simp only [Option.bind_some, Array.getElem?_push]
-        split
-        · rename_i e; subst e; simp [ka]
-        · rfl
+  simp only [get, find?_push]
+  split <;> cases x.find? a <;> simp
 
 end Fibres
 
@@ -560,7 +572,7 @@ theorem FinRel.get_fibres [DecidableEq K] [Hashable K] (r : FinRel K V) : r.fibr
         rw [List.foldl_cons, ih, Fibres.get_push]
         by_cases h : p.1 = a <;> simp [sel, h]
     rw [fibres, go]
-    simp [Fibres.get, scanLookup]
+    simp [Fibres.get, Fibres.find?, scanLookup]
 
 /-- One step of `hashDedup`: a key not yet seen is recorded and listed. -/
 def dedupStep [DecidableEq K] [Hashable K] (s : Std.HashSet K × Array K) (k : K) : Std.HashSet K × Array K :=
@@ -580,7 +592,8 @@ theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l
       rw [List.foldl_cons, dedupStep]
       by_cases ha : a ∈ acc.toList
       · rw [if_pos ((hs a).2 ha), ih s acc hs]
-        simp [List.filter_cons, ha]
+        have ha' : a ∈ acc := by simpa using ha
+        simp [List.filter_cons, ha']
       · rw [if_neg (fun h => ha ((hs a).1 h)),
           ih _ _ fun k => by
             rw [Std.HashSet.contains_insert, Bool.or_eq_true, hs k, beq_iff_eq, Array.toList_push,
@@ -592,7 +605,8 @@ theorem hashDedup_eq [DecidableEq K] [Hashable K] (l : List K) : hashDedup l = l
         apply List.filter_congr
         intro x _
         by_cases h1 : x = a <;> by_cases h2 : x ∈ acc.toList <;> simp [h1, h2]
-  simpa using go l ∅ #[] (by simp)
+  have e : l.filter (fun _ => true) = l := List.filter_eq_self.2 fun _ _ => rfl
+  simpa [hashDedup, e] using go l ∅ #[] (by simp)
 
 /-- How the fibres of a `FinRel` keyed by `K` are looked up, and a list of keys listed once: by
     hashing when `K` has a `Hashable`, else by the scans `scanLookup` and `eraseDups`.  Each answer
@@ -614,7 +628,7 @@ instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
 
 /-- A hashable key: the table `FinRel.fibres` and the hash set of `hashDedup`. -/
 instance FibreIndex.hash [DecidableEq K] [Hashable K] : FibreIndex K :=
-  ⟨Fibres K, FinRel.fibres, Fibres.get, FinRel.get_fibres, hashDedup, hashDedup_eq⟩
+  ⟨fun V => Fibres K V, FinRel.fibres, Fibres.get, FinRel.get_fibres, hashDedup, hashDedup_eq⟩
 
 /-! ## A relation as a sum of representations -/
 
@@ -842,7 +856,7 @@ omit [DecidableEq L] [FibreIndex L] in
 theorem app?_pair {R : RelRep K V} {S : RelRep K W} {f : K → List V} {g : K → List W} (hR : R.app? = some f)
     (hS : S.app? = some g) : (pair R S).app? = some fun k => cross (f k) (g k) := by
   cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
-    first | rfl | skip
+    first | rfl | (simp only [pair, app?, FibreIndex.get_build]; done) | skip
   rename_i r s
   simp only [pair, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   funext k
@@ -897,7 +911,7 @@ where
 theorem app?_prod {R : RelRep K V} {S : RelRep L W} {f : K → List V} {g : L → List W} (hR : R.app? = some f)
     (hS : S.app? = some g) : (prod R S).app? = some fun k => cross (f k.1) (g k.2) := by
   cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
-    first | rfl | skip
+    first | rfl | (simp only [prod, app?, FibreIndex.get_build]; done) | skip
   simp only [prod, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   exact funext fun k => filterMap_sel_cross k.1 k.2 _ _
 
@@ -937,7 +951,7 @@ omit [DecidableEq W] [FibreIndex W] in
 theorem app?_junction {R : RelRep K V} {S : RelRep L V} {f : K → List V} {g : L → List V} (hR : R.app? = some f)
     (hS : S.app? = some g) : (junction R S).app? = some (Sum.elim f g) := by
   cases R <;> cases S <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR hS <;> subst hR hS <;>
-    first | rfl | skip
+    first | rfl | (simp only [junction, app?, FibreIndex.get_build]; done) | skip
   simp only [junction, app?, FibreIndex.get_build, FinRel.scanLookup_ofList, Option.some.injEq]
   have hn : ∀ {X Y : Type} (l : List X), l.filterMap (fun _ => (none : Option Y)) = [] := fun l => by
     induction l <;> simp_all
@@ -1028,7 +1042,7 @@ theorem mem_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K
     refine Bool.eq_iff_iff.2 ((decide_eq_true_iff).trans ?_)
     simp only [List.mem_flatMap, List.any_eq_true, mem_eq_of_app? hS, decide_eq_true_eq]
   · cases R <;> simp only [app?, FibreIndex.get_build, Option.some.injEq, reduceCtorEq] at hR <;>
-      simp only [comp, Option.some.injEq] at h <;> subst hR h <;> rfl
+      simp only [comp, Option.some.injEq] at h <;> subst hR h <;> first | rfl | simp [mem, FibreIndex.get_build]
 
 theorem rel_comp [DecidableEq C] {R : RelRep K V} {S : RelRep V C} {T : RelRep K C} (h : comp R S = some T) :
     T.rel = R.rel ≫ S.rel := by
