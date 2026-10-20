@@ -15,6 +15,7 @@ module -- shake: keep-all
 
 public import AOP.A5_7_PowerBeads
 public import AOP.A5_6_ListCombinators
+public import AOP.A6_FinRel
 meta import AOP.A8_2
 public import AOP.A8_2
 
@@ -796,6 +797,162 @@ public theorem mcp_isSome [Paths A] (net : ConsList (List A) (List A))
   minPath_isSome (pathsExec_ne_nil net h)
 
 end Exec
+
+/-! ## `LayerRun`: the layered-network program on `RelRep`
+
+The fold keeps a list of paths per layer: `stepE` puts each vertex of the layer in front of each
+kept path (an `enum`), `RelRep.thin Q` keeps a cheapest path per first vertex, and `RelRep.est R`
+reads the cheapest paths off the last list. -/
+
+section LayerRun
+
+variable {A : Type} [DecidableEq A] [Paths A]
+
+public instance decQ : ∀ xs ys : ConsList A A, Decidable (Q xs ys) :=
+  fun xs ys => decidable_of_iff _ (Q_apply xs ys).symm
+
+public instance decR : ∀ xs ys : ConsList A A, Decidable (R xs ys) :=
+  fun xs ys => decidable_of_iff _ (R_apply xs ys).symm
+
+/-- The thinning order `Q` as a `RelRep` test. -/
+@[expose] public def Qt : RelRep (ConsList A A) (ConsList A A) := .test fun xs ys => decide (Q xs ys)
+
+public theorem rel_Qt : (Qt (A := A)).rel = Q := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The cost order `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (ConsList A A) (ConsList A A) := .test fun xs ys => decide (R xs ys)
+
+omit [DecidableEq A] in
+public theorem rel_Rt : (Rt (A := A)).rel = R := hom_ext fun _ _ => decide_eq_true_iff
+
+/-- The base's `Λ` form: each vertex of the last layer as a one-vertex path. -/
+@[expose] public def wrapE (vs : List A) : List (ConsList A A) := vs.map ConsList.wrap
+
+/-- The step's `Λ` form: each vertex of the layer put in front of the path. -/
+@[expose] public def stepE (q : List A × ConsList A A) : List (ConsList A A) := q.1.map (ConsList.cons · q.2)
+
+/-- The algebra `F(∋,𝟙)α` with every layer a list: `[wrapE, stepE]`. -/
+@[expose] public def layerAlg : Alg (CL.F (List A) (List A)) (dCL A A) :=
+  junc (sumCop (dL (List A)) ⟨List A × ConsList A A⟩) (RelRep.enum (wrapE (A := A))).rel (RelRep.enum stepE).rel
+
+omit [DecidableEq A] [Paths A] in
+/-- The list-layer fold is the specification's fold after reading every layer as a set. -/
+public theorem cataFold_layerAlg : ∀ (net : ConsList (List A) (List A)) (p : ConsList A A),
+    cataFold (C := dCL A A) layerAlg net p ↔ cataFold (C := dCL A A) pathAlg (netSet net) p
+  | .wrap vs, p => by
+    rw [cataFold_wrap]
+    show _ ↔ cataFold (C := dCL A A) pathAlg (ConsList.wrap (memS vs)) p
+    rw [cataFold_wrap]
+    refine ((RelRep.junc_sum_apply _ _).1 vs p).trans ?_
+    show p ∈ vs.map ConsList.wrap ↔ ∃ v, v ∈ vs ∧ p = ConsList.wrap v
+    rw [List.mem_map]
+    exact ⟨fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩, fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩⟩
+  | .cons vs net, p => by
+    rw [cataFold_cons]
+    show _ ↔ cataFold (C := dCL A A) pathAlg (ConsList.cons (memS vs) (netSet net)) p
+    rw [cataFold_cons]
+    refine exists_congr fun r => and_congr (cataFold_layerAlg net r) ?_
+    refine ((RelRep.junc_sum_apply _ _).2 (vs, r) p).trans ?_
+    show p ∈ vs.map (ConsList.cons · r) ↔ ∃ v, v ∈ vs ∧ p = ConsList.cons v r
+    rw [List.mem_map]
+    exact ⟨fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩, fun ⟨v, hv, e⟩ => ⟨v, hv, e.symm⟩⟩
+
+omit [DecidableEq A] [Paths A] in
+/-- `⦇[wrapE, stepE]⦈ = netSet ⦇F(∋,𝟙)α⦈`. -/
+public theorem cata_layerAlg :
+    relCata (I := CL.initial (List A) (List A)) (layerAlg (A := A))
+      = (RelSet.graph netSet : dCL (List A) (List A) ⟶ dCL (A → Prop) (A → Prop))
+        ≫ relCata (I := CL.initial (A → Prop) (A → Prop)) (pathAlg (A := A)) := by
+  rw [← cataR_eq_relCata, ← cataR_eq_relCata]
+  exact hom_ext fun net p => (cataFold_layerAlg net p).trans
+    ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => by rw [graph_apply] at e; exact e ▸ h⟩
+
+omit [DecidableEq A] in
+/-- `layerAlg` preserves `Q`: a cheaper path with the same first vertex stays cheaper, and keeps
+    its first vertex, when the same vertex is put in front of both. -/
+public theorem layerAlg_pres : Pres (F := CL.F (List A) (List A)) (layerAlg (A := A)) Q := by
+  have hj := RelRep.junc_sum_apply (RelRep.enum (wrapE (A := A))).rel (RelRep.enum stepE).rel
+  refine le_iff.mpr fun u z ⟨u', hu, hz⟩ => ?_
+  rcases u with vs | ⟨vs, xs⟩ <;> rcases u' with vs' | ⟨vs', ys⟩
+  · obtain rfl : vs = vs' := hu
+    exact ⟨z, hz, (Q_apply z z).2 ⟨Nat.le_refl _, rfl⟩⟩
+  · exact hu.elim
+  · exact hu.elim
+  · obtain ⟨rfl, hq⟩ := hu
+    obtain ⟨hc, hh⟩ := (Q_apply xs ys).1 hq
+    have hz' : z ∈ vs.map (ConsList.cons · ys) := ((hj.2 (vs, ys) z).1 hz)
+    obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hz'
+    refine ⟨ConsList.cons a xs, (hj.2 (vs, xs) _).2 (List.mem_map.2 ⟨a, ha, rfl⟩), (Q_apply _ _).2 ⟨?_, rfl⟩⟩
+    show wt a (headOf xs) + costOf xs ≤ wt a (headOf ys) + costOf ys
+    rw [hh]; exact Nat.add_le_add_left hc _
+
+/-- The paths kept after the whole network: `⦇thin(Q)·Λ[wrapE, stepE]⦈` as a function. -/
+@[expose] public def kept : ConsList (List A) (List A) → List (ConsList A A) :=
+  RelRep.foldList (RelRep.thinList fun xs ys => decide (Q xs ys)) wrapE stepE
+
+/-- `kept` is `RelRep.foldThin Q` of `wrapE` and `stepE`. -/
+public theorem kept_eq : RelRep.foldThin Qt (.enum wrapE) (.enum stepE) = some (.enum (kept (A := A))) := rfl
+
+/-- The program: the cheapest paths among those kept. -/
+@[expose] public def cheapest (xss : ConsList (List A) (List A)) : List (ConsList A A) :=
+  RelRep.estList (fun xs ys => decide (R xs ys)) (kept xss)
+
+/-- `cheapest` is `RelRep.est R` of `kept`. -/
+public theorem cheapest_eq : RelRep.est Rt (.enum (kept (A := A))) = some (.enum cheapest) := rfl
+
+/-- `Λ(kept) ⊑ Λ⦇[wrapE, stepE]⦈ thin(Q)`. -/
+public theorem kept_thin :
+    Λ (RelRep.enum (kept (A := A))).rel
+      ⊑ Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ thinRel Q := by
+  have h := RelRep.rel_foldThin (h := kept_eq (A := A)) (by rw [rel_Qt]; exact Q_preorder.1)
+    (by rw [rel_Qt]; exact Q_preorder.2) (by rw [rel_Qt]; exact layerAlg_pres)
+  rw [rel_Qt] at h
+  exact h
+
+/-- **The program meets its specification**: every path `cheapest` returns is a least-cost path
+    through the network read as sets, `cheapest ⊑ netSet Λ(L(∋)) est(R)`. -/
+public theorem cheapest_le :
+    (RelRep.enum (cheapest (A := A))).rel
+      ⊑ (RelSet.graph netSet : dCL (List A) (List A) ⟶ dCL (A → Prop) (A → Prop))
+        ≫ Λ (ListRel.nelistRelator.map (∋ (dE A))) ≫ est (R (A := A)) :=
+  calc (RelRep.enum cheapest).rel
+      = Λ (RelRep.enum kept).rel ≫ est Rt.rel := RelRep.rel_est cheapest_eq
+    _ = Λ (RelRep.enum kept).rel ≫ est R := by rw [rel_Rt]
+    _ ⊑ (Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ thinRel Q) ≫ est R :=
+        comp_mono_right kept_thin _
+    _ = Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ (thinRel Q ≫ est R) := Cat.assoc _ _ _
+    _ ⊑ Λ (relCata (I := CL.initial (List A) (List A)) layerAlg) ≫ est R :=
+        comp_mono_left _ (thinRel_comp_est_le Q_le_R R_preorder.2)
+    _ = Λ (RelSet.graph netSet ≫ relCata (I := CL.initial (A → Prop) (A → Prop)) pathAlg) ≫ est R := by
+        rw [cata_layerAlg]
+    _ = (RelSet.graph netSet ≫ Λ (relCata (I := CL.initial (A → Prop) (A → Prop)) pathAlg)) ≫ est R := by
+        rw [Λ_fusion (graph_map _)]
+    _ = RelSet.graph netSet
+          ≫ Λ (relCata (I := pathInit A) (F.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR)) ≫ est R := by
+        rw [Cat.assoc, F_map_comp_alphaR_eq_pathAlg, relCata_pathInit]
+    _ = RelSet.graph netSet ≫ Λ (ListRel.nelistRelator.map (∋ (dE A))) ≫ est (R (A := A)) := by
+        rw [relCata_F_eps_eq_nelist]
+
+/-- The run's weight, `wt(a,b) = (a+b) mod 3`. -/
+@[expose] public def wtMod3 : Paths Nat := ⟨fun a b => (a + b) % 3⟩
+
+attribute [local instance] wtMod3 in
+/-- **kept-run**: on the layers `[1,2],[3,4],[5,6]` the fold keeps one cheapest path per first
+    vertex. -/
+public theorem run_kept :
+    kept (ConsList.cons [1, 2] (ConsList.cons [3, 4] (ConsList.wrap [5, 6])))
+      = [ConsList.cons 2 (ConsList.cons 4 (ConsList.wrap 5)),
+         ConsList.cons 1 (ConsList.cons 3 (ConsList.wrap 6))] := by
+  rfl
+
+attribute [local instance] wtMod3 in
+/-- **layer-run**: on the same layers the program returns the one path of cost `0`. -/
+public theorem run_cheapest :
+    cheapest (ConsList.cons [1, 2] (ConsList.cons [3, 4] (ConsList.wrap [5, 6])))
+      = [ConsList.cons 2 (ConsList.cons 4 (ConsList.wrap 5))] := by
+  rfl
+
+end LayerRun
 
 -- 8.2d sanity check (book p.196): on a three-layer network every row program, fed the top
 -- layer and the fold of the two below, has the least cost `mcp` finds.

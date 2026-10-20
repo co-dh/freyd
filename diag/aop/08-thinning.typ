@@ -395,6 +395,22 @@ row((
 - An `inl` never relates to an `inr`: `R+S≜[R inl, S inr]` returns to the summand it came from, and `F(𝟙)=𝟙` allows no crossing.
 - `F(∋,∋)` relates `inr({a,b},{p,q})` to `inr(a,p)`, `inr(a,q)`, `inr(b,p)`, `inr(b,q)`, and `inl({a,b})` to `inl(a)`, `inl(b)`.
 
+// One run of the program on three layers of two vertices with weight `wt(a,b)=(a+b) mod 3`: its input, then
+// one row per stage; each value is a theorem of the `LayerRun` section of A8_2_Exec, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.Paths.run_cheapest.lhs.arg"), value: leanf("Freyd.Alg.Paths.run_cheapest.lhs.arg"),
+   meaning: [the layers, top first; `wt(a,b)=(a+b) mod 3`]),
+  // lean:AOP.A8_2_Exec.run_cheapest@87437d28
+  (sym: leann("Freyd.Alg.Paths.kept"), type: leant("Freyd.Alg.Paths.run_kept.rhs"),
+   value: leanf("Freyd.Alg.Paths.run_kept.rhs"),
+   meaning: [one cheapest path per first vertex: `[1,3,6]` of cost `1` beats `[1,4,5]` of cost `2`]),
+  // lean:AOP.A8_2_Exec.run_kept@da474429
+  (sym: leann("Freyd.Alg.Paths.cheapest"), type: leant("Freyd.Alg.Paths.run_cheapest.rhs"),
+   value: leanf("Freyd.Alg.Paths.run_cheapest.rhs"),
+   meaning: [the one of cost `0`, `est(R)` of the kept paths]),
+  // lean:AOP.A8_2_Exec.run_cheapest@87437d28
+)<layer-run>
+
 == Implementing thin
 
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
