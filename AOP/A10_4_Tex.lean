@@ -1164,14 +1164,18 @@ public theorem rel_pickL :
     (RelRep.enum pickL).rel = Λ (RelRep.enum cands).rel ≫ Freyd.Alg.est Qt.rel :=
   RelRep.rel_est pickL_eq
 
-/-- **The greedy program**: follow the one candidate `pickL` keeps; `none` when it keeps none or
-    two, or the fuel runs out. -/
-@[expose] public def run : Nat → Prog.Rep → Option Dec
-  | 0, _ => none
-  | k + 1, x => match pickL x with
-    | [Sum.inl _] => some (ConsList.wrap ())
-    | [Sum.inr (d, y)] => (run k y).map (ConsList.cons d)
-    | _ => none
+/-- One step of the greedy program: follow the one candidate `pickL` keeps, answering the rest by
+    `X`; `none` when it keeps none or two. -/
+@[expose] public def runStep (X : Prog.Rep → Option Dec) (x : Prog.Rep) : Option Dec :=
+  match pickL x with
+  | [Sum.inl _] => some (ConsList.wrap ())
+  | [Sum.inr (d, y)] => (X y).map (ConsList.cons d)
+  | _ => none
+
+/-- **The greedy program**: `runStep` recursing on `w−(q−p)`, which drops at each digit since the
+    width `q−p` grows tenfold (`Prog.measure_lt`, the termination measure of `Prog.f`). -/
+@[expose] public def run (x : Prog.Rep) : Option Dec :=
+  RelRep.hylo (fun x : Prog.Rep => (w - (x.1.2 - x.1.1)).toNat) (fun _ => none) runStep x
 
 /-- A `filterMap` that keeps exactly one member of a duplicate-free list is that member's image. -/
 public theorem filterMap_one {α β : Type} [DecidableEq α] {G : α → Option β} {a0 : α} {b : β} :
@@ -1247,45 +1251,36 @@ public theorem pickL_digit (p q : Int) (h : 0 < q - p ∧ q < w) (hp : ¬ p < 0)
   · rfl
   · exact (Bool.and_eq_true _ _).mpr ⟨decide_eq_true rfl, rfl⟩
 
-public theorem run_stop (k : Nat) (p q : Int) (h : 0 < q - p ∧ q < w) (hp : p < 0) :
-    run (k + 1) ⟨(p, q), h⟩ = some (Prog.f ⟨(p, q), h⟩) := by
-  rw [Prog.f_nil p q h hp]
-  simp only [run, pickL_stop ⟨(p, q), h⟩ hp]
-
-/-- **`run` is the program `f`** on the pairs it reaches, given fuel for the width to pass `w`. -/
-public theorem run_f : ∀ (k : Nat) (p q : Int) (h : 0 < q - p ∧ q < w), Prog.Reach p q →
-    w ≤ (q - p) * 10 ^ k → run (k + 1) ⟨(p, q), h⟩ = some (Prog.f ⟨(p, q), h⟩)
-  | 0, p, q, h, _, hw => by
-    by_cases hp : p < 0
-    · exact run_stop 0 p q h hp
-    · exfalso; rw [Int.pow_zero, Int.mul_one] at hw; omega
-  | k + 1, p, q, h, hr, hw => by
-    by_cases hp : p < 0
-    · exact run_stop (k + 1) p q h hp
-    · have hw' : w ≤ ((10 * q - w * (10 * q / w)) - (10 * p - w * (10 * q / w))) * 10 ^ k := by
-        rw [width_next]; rw [Int.pow_succ] at hw
-        exact Int.le_trans hw (Int.le_of_eq (by simp only [Int.mul_comm, Int.mul_assoc]))
-      rw [Prog.f_cons p q h hp]
-      rw [run.eq_2, pickL_digit p q h hp hr]; dsimp only
-      rw [run_f k _ _ _ (Prog.reach_next p q hp h hr) hw']
-      rfl
-
-/-- `run` from `interval n` with six steps of fuel is `extern n`. -/
-public theorem run_extern (n : Fin 65536) : run 6 (Prog.interval n) = some (Prog.extern n) :=
-  run_f 5 (2 * (n.val : Int) - 1) (2 * (n.val : Int) + 1) (Prog.interval n).2
-    ⟨n.val, Or.inl ⟨by omega, rfl⟩⟩
-    (by rw [show (2 * (n.val : Int) + 1) - (2 * (n.val : Int) - 1) = 2 by omega]; decide)
+/-- **`run` is the program `f`** on the pairs it reaches: one step keeps this given it at the
+    next pair, whose measure is smaller (`RelRep.hylo_ind`). -/
+public theorem run_f (p q : Int) (h : 0 < q - p ∧ q < w) (hr : Prog.Reach p q) :
+    run ⟨(p, q), h⟩ = some (Prog.f ⟨(p, q), h⟩) := by
+  refine RelRep.hylo_ind (I := fun x r => Prog.Reach x.1.1 x.1.2 → r = some (Prog.f x))
+    (fun X x ih => ?_) _ hr
+  obtain ⟨⟨p, q⟩, h⟩ := x
+  intro hr
+  by_cases hp : p < 0
+  · rw [Prog.f_nil p q h hp]
+    simp only [runStep, pickL_stop ⟨(p, q), h⟩ hp]
+  · rw [Prog.f_cons p q h hp]
+    unfold runStep
+    rw [pickL_digit p q h hp hr]; dsimp only
+    rw [ih ⟨(10 * p - w * (10 * q / w), 10 * q - w * (10 * q / w)), Prog.next_ok p q _ h rfl⟩
+      (Prog.measure_lt p q _ hp h) (Prog.reach_next p q hp h hr)]
+    rfl
 
 /-- **The program as an arrow** `[0,2¹⁶)⟶Decimal`: what `run` returns from `interval n`. -/
-@[expose] public def texRun : Ix ⟶ Decimal := fun n x => run 6 (Prog.interval n) = some x
+@[expose] public def texRun : Ix ⟶ Decimal := fun n x => run (Prog.interval n) = some x
 
 /-- **The program meets its specification**: every decimal `run` returns from `interval n` is a
     shortest one whose internal representation is `n`. -/
 public theorem texRun_le : texRun ⊑ Λ ((intern)°) ≫ est R :=
   calc texRun
       = extern := hom_ext fun n x => by
-        show run 6 (Prog.interval n) = some x ↔ x = Prog.extern n
-        rw [run_extern]
+        show run (Prog.interval n) = some x ↔ x = Prog.extern n
+        rw [show run (Prog.interval n) = some (Prog.extern n) from
+          run_f (2 * (n.val : Int) - 1) (2 * (n.val : Int) + 1) (Prog.interval n).2
+            ⟨n.val, Or.inl ⟨by omega, rfl⟩⟩]
         exact ⟨fun h => (Option.some.inj h).symm, fun h => h ▸ rfl⟩
     _ = interval ≫ f := tex_extern.symm
     _ = interval ≫ mu (fun X : Interval ⟶ Decimal =>
@@ -1320,7 +1315,7 @@ public theorem run_pick3 : (pickL ⟨(-1000, 1000), by decide⟩).map view = [Su
   decide
 
 /-- **tex-run**: the program's answer, `0.125`. -/
-public theorem run_out : (run 6 (Prog.interval 8192)).map toList = some [1, 2, 5] := by
+public theorem run_out : (run (Prog.interval 8192)).map toList = some [1, 2, 5] := by
   decide
 
 end TexRun
