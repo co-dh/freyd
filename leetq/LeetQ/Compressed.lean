@@ -39,7 +39,7 @@ theorem map_snd_toList (r : FinRel K V) : r.toList.map Prod.snd = r.vals.toList 
 theorem vals_comp_enum [DecidableEq K] [DecidableEq V] [DecidableEq C] [FibreIndex K] [FibreIndex V] (r : FinRel K V) (h : V → List C) :
     ∃ r', RelRep.comp (.pairs r) (.enum h) = some (.pairs r') ∧ r'.vals.toList = r.vals.toList.flatMap h := by
   refine ⟨_, rfl, ?_⟩
-  rw [vals_ofList, List.map_flatMap, ← map_snd_toList, List.flatMap_map]
+  rw [FinRel.bindVals, vals_ofList, List.map_flatMap, ← map_snd_toList, List.flatMap_map]
   simp [Function.comp_def]
 
 /-- The fibre of `j` in `ix(xs)` from `k` on: `xs[j-k]`, or nothing. -/
@@ -325,7 +325,7 @@ theorem sumWhere_eq (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) (h :
 theorem comp_ql (is : List Nat) (xs : List Int64) :
     ∃ r, (Q.Agg.ql is).comp (Q.Agg.ql xs) = some (.pairs r) ∧ r.vals.toList = is.flatMap fun i => xs[i]?.toList := by
   refine ⟨_, rfl, ?_⟩
-  rw [vals_ofList, List.map_flatMap, FinRel.toList_ofList]
+  rw [FinRel.bindIdx, FinRel.bindVals, vals_ofList, List.map_flatMap, FinRel.toList_ofList]
   simp only [FibreIndex.get_build, scan_ql, List.map_map, Function.comp_def, List.map_id']
   rw [← List.flatMap_map (f := Prod.snd) (g := fun i => xs[i]?.toList)]
   congr 1
@@ -529,12 +529,12 @@ theorem xkey_rows (kg vg : Nat → Int64) (m : Nat) :
       (List.range m).map fun i => (i, (kg i, vg i)) := by rw [zipIdx_range, List.map_map]; rfl
   have e1 : (Q.tab ((List.range m).map fun i => (kg i, vg i))).comp (RelRep.ofFn Prod.fst) =
       some (.pairs (FinRel.ofList ((List.range m).map fun i => (i, kg i)))) := by
-    simp only [Q.tab, RelRep.ofFn, RelRep.comp, FinRel.toList_ofList, ht, List.flatMap_map, List.map_cons,
+    simp only [Q.tab, RelRep.ofFn, RelRep.comp, FinRel.bindVals, FinRel.toList_ofList, ht, List.flatMap_map, List.map_cons,
       List.map_nil]
     rw [flatMap_single (fun a => (a, kg a))]
   have e2 : (Q.tab ((List.range m).map fun i => (kg i, vg i))).comp (RelRep.ofFn Prod.snd) =
       some (.pairs (FinRel.ofList (((List.range m).map vg).zipIdx.map Prod.swap))) := by
-    simp only [Q.tab, RelRep.ofFn, RelRep.comp, FinRel.toList_ofList, ht, List.flatMap_map, List.map_cons,
+    simp only [Q.tab, RelRep.ofFn, RelRep.comp, FinRel.bindVals, FinRel.toList_ofList, ht, List.flatMap_map, List.map_cons,
       List.map_nil]
     rw [flatMap_single (fun a => (a, vg a)), zipIdx_range, List.map_map]; rfl
   have hc : (FinRel.ofList ((List.range m).map fun i => (i, kg i))).conv.toList =
