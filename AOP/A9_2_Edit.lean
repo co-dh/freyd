@@ -2313,11 +2313,11 @@ theorem cmap_of_comp {α β : Type} [DecidableEq α] [DecidableEq β] (g : α �
     (T : FinRel Unit β)
     (hT : RelRep.comp (.pairs (FinRel.ofList ((CL.toList xs).map ((), ·)))) (.ofFn g) = .pairs T) :
     cmap g xs = CL.ofList (T.scanLookup ()) := by
-  simp only [RelRep.comp, FinRel.bindVals, RelRep.ofFn, RelRep.pairs.injEq] at hT
-  subst hT
-  rw [cmap_eq_ofList_map, FinRel.scanLookup, FinRel.toList_ofList, FinRel.toList_ofList]
+  have e := congrArg (RelRep.app · ()) hT
+  simp only [RelRep.app_comp, RelRep.app_pairs] at e
+  rw [cmap_eq_ofList_map, ← e, FinRel.scanLookup, FinRel.toList_ofList]
   congr 1
-  induction CL.toList xs <;> simp_all [FinRel.sel]
+  induction CL.toList xs <;> simp_all [FinRel.sel, RelRep.app_ofFn]
 
 /-- `step°` as its `Λ` form: the decompositions of `(xs,ys)` — a `cpy` when the heads agree, a `del` of
     the head of `xs`, an `ins` of the head of `ys`. -/
@@ -2434,9 +2434,8 @@ public theorem run_list_cons :
       = ConsList.cons (ConsList.cons (Op.del a) (ConsList.cons (Op.cpy b) (ConsList.wrap ())))
           (ConsList.cons (ConsList.cons (Op.ins b) (ConsList.cons (Op.del a)
             (ConsList.cons (Op.del b) (ConsList.wrap ())))) (ConsList.wrap ())) := by
-  rw [cmap_of_comp _ _ _ rfl]
-  simp [FinRel.bindVals, FinRel.scanLookup, FinRel.toList, FinRel.ofList, FinRel.sel, CL.toList, CL.ofList,
-    run_rest_cpy, run_rest_del]
+  rw [cmap_eq_ofList_map]
+  simp [CL.toList, CL.ofList, run_rest_cpy, run_rest_del]
 
 omit [DecidableEq A] in
 /-- **mle-step**, `minL(R)`: the shorter sequence is the only `R`-least one — `R` filtered to the
