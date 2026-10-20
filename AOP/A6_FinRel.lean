@@ -665,6 +665,26 @@ theorem rangeFold_eq {α : Type} (f : α → Nat → α) : ∀ m i a, rangeFold 
   | 0, _, _ => rfl
   | m + 1, i, a => by rw [rangeFold, rangeFold_eq f m]; rfl
 
+/-- `(List.range' i m).foldr f a` as a loop from the top index down: tail-recursive, no list made. -/
+@[specialize] def rangeFoldDown {α : Type} (f : Nat → α → α) : Nat → Nat → α → α
+  | 0, _, a => a
+  | m + 1, i, a => rangeFoldDown f m i (f (i + m) a)
+
+theorem rangeFoldDown_eq {α : Type} (f : Nat → α → α) : ∀ m i a, rangeFoldDown f m i a = (List.range' i m).foldr f a
+  | 0, _, _ => rfl
+  | m + 1, i, a => by
+    rw [rangeFoldDown, rangeFoldDown_eq f m, List.range'_concat, List.foldr_append]; simp
+
+/-- `0 … n-1` as an array, pushed in a loop. -/
+def rangeArr (n : Nat) : Array Nat := rangeFold (fun a i => a.push i) n 0 (Array.mkEmpty n)
+
+theorem toList_rangeArr (n : Nat) : (rangeArr n).toList = List.range' 0 n := by
+  have go : ∀ (l : List Nat) (a : Array Nat), (l.foldl (fun a i => a.push i) a).toList = a.toList ++ l := by
+    intro l; induction l with
+    | nil => intro a; simp
+    | cons i l ih => intro a; simp [ih]
+  rw [rangeArr, rangeFold_eq, go]; rfl
+
 namespace Chain
 
 /-- The rows of one chain, last first, in at most `f` links: `p` is `0` or one more than a row `i`, and

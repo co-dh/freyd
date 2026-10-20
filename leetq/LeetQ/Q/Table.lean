@@ -70,13 +70,15 @@ def rows (o : Option (RelRep K V)) : Option (List V) := (ps o).map (·.map Prod.
 def tab (xs : List R) : RelRep Nat R := .pairs (FinRel.ofList (xs.zipIdx.map Prod.swap))
 
 /-- `tab` straight onto the two arrays: no list of index pairs. -/
-def tabTR (xs : List R) : RelRep Nat R := .pairs ⟨Array.range xs.length, xs.toArray, by simp⟩
+def tabTR (xs : List R) : RelRep Nat R :=
+  .pairs ⟨rangeArr xs.length, xs.toArray, by rw [← Array.length_toList, toList_rangeArr]; simp⟩
 
 @[csimp] theorem tab_eq_tabTR : @tab = @tabTR := by
   funext R xs
   simp only [tab, tabTR, FinRel.ofList, RelRep.pairs.injEq, FinRel.mk.injEq, List.map_map]
-  refine ⟨Array.ext' ?_, Array.ext' ?_⟩ <;>
-    simp [Function.comp_def, List.zipIdx_map_snd, List.zipIdx_map_fst, Array.toList_range, List.range_eq_range']
+  refine ⟨Array.ext' ?_, Array.ext' ?_⟩
+  · rw [toList_rangeArr, List.toList_toArray, ← List.zipIdx_map_snd]; rfl
+  · rw [List.toList_toArray, List.toList_toArray, ← List.zipIdx_map_fst 0 xs]; rfl
 
 /-! ## Dictionaries -/
 
@@ -750,11 +752,33 @@ theorem prev_eq {a : Array (Int × W)} {t o : Int} (hs : a.toList.Pairwise fun x
     | some z => simp [Array.getElem?_toList, e]
 
 omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+/-- Rows `p … p+m-1` read by index are the slice `drop p (take (p+m))`; core's `List.drop_take` uses
+    `Classical.choice`, this induction does not. -/
+theorem range'_filterMap {α : Type} : ∀ (l : List α) (p m : Nat),
+    (List.range' p m).filterMap (l[·]?) = (l.take (p + m)).drop p
+  | [], p, m => by
+    have hn : ∀ (js : List Nat), js.filterMap (fun j => ([] : List α)[j]?) = [] := fun js => by
+      induction js with
+      | nil => rfl
+      | cons j js ih => simp only [List.filterMap_cons, List.getElem?_nil, ih]
+    simp only [hn, List.take_nil, List.drop_nil]
+  | x :: l, 0, 0 => rfl
+  | x :: l, 0, m + 1 => by
+    have ih := range'_filterMap l 0 m
+    simp only [Nat.zero_add] at ih ⊢
+    rw [List.range'_succ_left, List.filterMap_cons, List.filterMap_map]
+    show x :: List.filterMap (fun j => l[j]?) _ = _
+    rw [← List.range'_succ_left, ih]; rfl
+  | x :: l, p + 1, m => by
+    rw [List.range'_succ_left, List.filterMap_map, Nat.add_right_comm]
+    exact range'_filterMap l p m
+
 /-- The rows in the window `(t+lo, t+hi]`: rows `p₁ … p₂ - 1`. -/
 theorem window_eq {a : Array (Int × W)} {t lo hi : Int} (hs : a.toList.Pairwise fun x y => x.1 ≤ y.1) {p₁ p₂ : Nat}
     (h12 : p₁ ≤ p₂) (c₁ : chk a (t + lo) p₁ = true) (c₂ : chk a (t + hi) p₂ = true) :
     ((RelRep.cross [t] a.toList).filter fun x => decide (x.1 + lo < x.2.1 ∧ x.2.1 ≤ x.1 + hi)).map (·.2.2) =
-      (a.extract p₁ p₂).toList.map (·.2) := by
+      ((List.range' p₁ (p₂ - p₁)).filterMap (a.toList[·]?)).map (·.2) := by
   obtain ⟨c1, d1⟩ := chk_spec c₁
   obtain ⟨c2, d2⟩ := chk_spec c₂
   have e : (RelRep.cross [t] a.toList).filter (fun x => decide (x.1 + lo < x.2.1 ∧ x.2.1 ≤ x.1 + hi)) =
@@ -764,7 +788,7 @@ theorem window_eq {a : Array (Int × W)} {t lo hi : Int} (hs : a.toList.Pairwise
     exact List.filter_congr fun y _ => by
       by_cases h : y.1 ≤ t + lo <;> by_cases h' : y.1 ≤ t + hi <;> simp [h, h'] <;> omega
   rw [e, filter_eq_take _ hs p₂ c2 d2, filter_not_eq_drop _ (hs.sublist (List.take_sublist _ _)) p₁ ?_ ?_]
-  · simp [Function.comp_def, Array.toList_extract, List.extract, List.drop_take]
+  · rw [range'_filterMap, Nat.add_sub_cancel' h12, List.map_map]; rfl
   · by_cases hp : p₁ = 0
     · exact .inl hp
     · rcases c1 with h | h
@@ -781,8 +805,38 @@ def wjOne [Add W] [Zero W] (lo hi : Int) (a : Array (Int × W)) (t : Int) : Opti
   let p₁ := bsearch a (t + lo) 0 a.size
   let p₂ := bsearch a (t + hi) 0 a.size
   if p₁ ≤ p₂ ∧ chk a (t + lo) p₁ = true ∧ chk a (t + hi) p₂ = true then
-    some [((if p₁ = 0 then [] else a[p₁ - 1]?.toList.map (·.2)) ++ (a.extract p₁ p₂).toList.map (·.2)).sum]
+    some [((if p₁ = 0 then [] else a[p₁ - 1]?.toList.map (·.2)) ++
+      ((List.range' p₁ (p₂ - p₁)).filterMap (a.toList[·]?)).map (·.2)).sum]
   else none
+
+omit [DecidableEq W] [FibreIndex W] in
+/-- `wjOne` summed on the array: the window right to left, so the sum nests as `List.sum`'s `foldr` does,
+    and the prevailing row added last; no list but the one-value fibre. -/
+def wjOneTR [Add W] [Zero W] (lo hi : Int) (a : Array (Int × W)) (t : Int) : Option (List W) :=
+  let p₁ := bsearch a (t + lo) 0 a.size
+  let p₂ := bsearch a (t + hi) 0 a.size
+  if p₁ ≤ p₂ ∧ chk a (t + lo) p₁ = true ∧ chk a (t + hi) p₂ = true then
+    let s := rangeFoldDown (fun j s => match a[j]? with | some x => x.2 + s | none => s) (p₂ - p₁) p₁ 0
+    some [if p₁ = 0 then s else match a[p₁ - 1]? with | some x => x.2 + s | none => s]
+  else none
+
+omit [DecidableEq W] [FibreIndex W] in
+@[csimp] theorem wjOne_eq_wjOneTR : @wjOne = @wjOneTR := by
+  funext W _ _ lo hi a t
+  simp only [wjOne, wjOneTR]
+  split
+  · have e : ∀ (m p : Nat), ((List.range' p m).filterMap (a.toList[·]?)).map (·.2) |>.sum =
+        rangeFoldDown (fun j s => match a[j]? with | some x => x.2 + s | none => s) m p 0 := by
+      intro m p
+      rw [rangeFoldDown_eq]
+      induction List.range' p m with
+      | nil => rfl
+      | cons j js ih => cases h : a[j]? <;> simp_all [List.filterMap_cons]
+    rw [← e]
+    split
+    · simp
+    · cases a[_]? <;> simp [List.sum_cons]
+  · rfl
 
 /-- `wjSpec`'s fibre at left row `i`, over `T`'s fibres `fT` and the right rows `gG` of a key. -/
 def wjFib [Add W] [Zero W] {I : Type} (lo hi : Int) (k : R → κ) (tm : R → Int) (fT : I → List R)
