@@ -502,12 +502,18 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
 
 /-! ## Fibres and keys by hashing -/
 
+/-- A bucket of `HTab`: one cell per key holding the key and its entry, where a `List (K × B)` takes a
+    cons and a pair — one allocation and one pointer less per key. -/
+inductive Bucket (K B : Type) where
+  | nil
+  | cons (k : K) (b : B) (t : Bucket K B)
+
 /-- A chained hash table from `K` to `B`: a key's hash picks its bucket, and a bucket lists each key it
     holds once, with its entry.  A structure and not a function `K → Option B`, because the compiler
     eta-expands a function-valued definition, which would rebuild the table at every key.  Hand-rolled
     rather than `Std.HashMap`, whose lemmas use `Classical.choice`. -/
 structure HTab (K B : Type) where
-  buckets : Array (List (K × B))
+  buckets : Array (Bucket K B)
   size_pos : 0 < buckets.size
 
 namespace HTab
@@ -515,21 +521,20 @@ namespace HTab
 variable {B : Type}
 
 /-- The entry a bucket holds for `a`. -/
-def look [DecidableEq K] : List (K × B) → K → Option B
-  | [], _ => none
-  | (k', b) :: t, a => if k' = a then some b else look t a
+def look [DecidableEq K] : Bucket K B → K → Option B
+  | .nil, _ => none
+  | .cons k' b t, a => if k' = a then some b else look t a
 
 /-- Set `k`'s entry in a bucket to `f` of its old one; a key the bucket lacks goes at its end. -/
-def alt [DecidableEq K] (f : Option B → B) : List (K × B) → K → List (K × B)
-  | [], k => [(k, f none)]
-  | (k', b) :: t, k => if k' = k then (k', f (some b)) :: t else (k', b) :: alt f t k
+def alt [DecidableEq K] (f : Option B → B) : Bucket K B → K → Bucket K B
+  | .nil, k => .cons k (f none) .nil
+  | .cons k' b t, k => if k' = k then .cons k' (f (some b)) t else .cons k' b (alt f t k)
 
-theorem look_alt [DecidableEq K] (f : Option B → B) (l : List (K × B)) (k a : K) :
+theorem look_alt [DecidableEq K] (f : Option B → B) (l : Bucket K B) (k a : K) :
     look (alt f l k) a = if k = a then some (f (look l k)) else look l a := by
   induction l with
   | nil => by_cases h : k = a <;> simp [look, alt, h]
-  | cons p t ih =>
-    obtain ⟨k', b⟩ := p
+  | cons k' b t ih =>
     by_cases h1 : k' = k
     · subst h1; by_cases h2 : k' = a <;> simp [look, alt, h2]
     · by_cases h2 : k' = a
@@ -539,7 +544,7 @@ theorem look_alt [DecidableEq K] (f : Option B → B) (l : List (K × B)) (k a :
 variable [DecidableEq K] [Hashable K]
 
 /-- No entries, in `n + 1` buckets. -/
-def empty (n : Nat) : HTab K B := ⟨Array.replicate (n + 1) [], by simp⟩
+def empty (n : Nat) : HTab K B := ⟨Array.replicate (n + 1) .nil, by simp⟩
 
 def slot (x : HTab K B) (k : K) : Nat := (hash k).toNat % x.buckets.size
 
