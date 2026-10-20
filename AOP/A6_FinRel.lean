@@ -150,6 +150,12 @@ namespace FinRel
 /-- The pairs in array order. -/
 def toList (r : FinRel K V) : List (K × V) := r.keys.toList.zip r.vals.toList
 
+/-- `toList` zipping the arrays: the compiled `List.zip` is not tail-recursive, one frame per pair. -/
+def toListTR (r : FinRel K V) : List (K × V) := (r.keys.zip r.vals).toList
+
+@[csimp] theorem toList_eq_toListTR : @toList = @toListTR :=
+  funext fun _ => funext fun _ => funext fun r => (Array.toList_zip ..).symm
+
 def rep (r : FinRel K V) : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩ := rel r.toList
 
 /-- Two `map`s, not `unzip`: the compiled `unzip` is a `foldr`, one stack frame per pair. -/
