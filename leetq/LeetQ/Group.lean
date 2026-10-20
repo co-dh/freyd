@@ -10,6 +10,8 @@
   Every statement is over the bits, never `Column.atoms`, which carries `Classical.choice`.
 -/
 import LeetQ.QRel
+import QLean.Verify.Group
+import QLean.Verify.Where
 
 namespace LeetQ.Group
 
@@ -60,15 +62,6 @@ section Firsts
 
 variable {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat)
 
-/-- The indices below `m` where `g` takes a value for the first time, ascending. -/
-def firstsOf : List Nat := (List.range m).filter fun i => (List.range i).all fun j => !decide (g j = g i)
-
-/-- The indices below `m` where `g` takes `g(f)`, ascending. -/
-def bucketOf (f : Nat) : List Nat := (List.range m).filter fun i => decide (g i = g f)
-
-/-- `group`'s answer as pairs: each first value with its bucket. -/
-def dictOf : List (α × List Nat) := (firstsOf g m).map fun f => (g f, bucketOf g m f)
-
 omit [DecidableEq α] in
 theorem ix_range {i : Nat} {v : α} : ix ((List.range m).map g) i v ↔ i < m ∧ g i = v := by
   show ((List.range m).map g)[i]? = some v ↔ _
@@ -78,52 +71,9 @@ theorem ix_range {i : Nat} {v : α} : ix ((List.range m).map g) i v ↔ i < m �
   · rw [List.getElem?_eq_none (by simp; omega)]
     exact ⟨nofun, fun h' => absurd h'.1 h⟩
 
--- core's `List.all_eq_false` and `List.pairwise_lt_range` carry `Classical.choice`; these two do not.
-omit [DecidableEq α] in
-theorem exists_of_all_false {l : List Nat} {p : Nat → Bool} (h : l.all p = false) : ∃ j ∈ l, p j = false := by
-  induction l with
-  | nil => cases h
-  | cons a l ih =>
-    cases ha : p a
-    · exact ⟨a, List.mem_cons.2 (Or.inl rfl), ha⟩
-    · rw [List.all_cons, ha, Bool.true_and] at h
-      obtain ⟨j, hj, e⟩ := ih h
-      exact ⟨j, List.mem_cons.2 (Or.inr hj), e⟩
-
-omit [DecidableEq α] in
-theorem pairwise_range (n : Nat) : (List.range n).Pairwise (· < ·) := by
-  induction n with
-  | zero => exact List.Pairwise.nil
-  | succ n ih =>
-    rw [List.range_succ, List.pairwise_append]
-    exact ⟨ih, List.pairwise_singleton _ _, fun a ha b hb => by
-      rw [List.mem_singleton.1 hb]; exact List.mem_range.1 ha⟩
-
-variable {g m} in
-theorem exists_first {i : Nat} (hi : i < m) : ∃ f ∈ firstsOf g m, g f = g i := by
-  induction i using Nat.strongRecOn with
-  | _ i ih =>
-    cases hb : (List.range i).all fun j => !decide (g j = g i) with
-    | true => exact ⟨i, List.mem_filter.2 ⟨List.mem_range.2 hi, hb⟩, rfl⟩
-    | false =>
-      obtain ⟨j, hj, e⟩ := exists_of_all_false hb
-      have hj := List.mem_range.1 hj
-      obtain ⟨f, hf, e'⟩ := ih j hj (by omega)
-      refine ⟨f, hf, e'.trans ?_⟩
-      cases hd : decide (g j = g i)
-      · rw [hd] at e; cases e
-      · exact of_decide_eq_true hd
-
 theorem mem_firsts (v : α) : v ∈ (firstsOf g m).map g ↔ ∃ i, i < m ∧ g i = v :=
   ⟨fun h => let ⟨i, hi, e⟩ := List.mem_map.1 h; ⟨i, List.mem_range.1 (List.mem_filter.1 hi).1, e⟩,
    fun ⟨_, hi, e⟩ => let ⟨f, hf, e'⟩ := exists_first hi; List.mem_map.2 ⟨f, hf, e'.trans e⟩⟩
-
-/-- **No value twice**: a first occurrence differs from every earlier one. -/
-theorem nodup_firsts : ((firstsOf g m).map g).Nodup := by
-  refine List.pairwise_map.2 (((pairwise_range m).filter _).imp_of_mem fun {i j} _ hj hij e => ?_)
-  have := List.all_eq_true.1 (List.mem_filter.1 hj).2 i (List.mem_range.2 hij)
-  rw [decide_eq_true e] at this
-  exact Bool.false_ne_true this
 
 /-- **`distinct = ran(f)`**: the first values, as a coreflexive, are the range of the column. -/
 theorem firsts_ran : rel (((firstsOf g m).map g).map fun v => (v, v)) = Alg.ran (ix ((List.range m).map g)) :=
