@@ -150,6 +150,12 @@ namespace FinRel
 /-- The pairs in array order. -/
 def toList (r : FinRel K V) : List (K × V) := r.keys.toList.zip r.vals.toList
 
+/-- `toList` zipping the arrays: the compiled `List.zip` is not tail-recursive, one frame per pair. -/
+def toListTR (r : FinRel K V) : List (K × V) := (r.keys.zip r.vals).toList
+
+@[csimp] theorem toList_eq_toListTR : @toList = @toListTR :=
+  funext fun _ => funext fun _ => funext fun r => (Array.toList_zip ..).symm
+
 def rep (r : FinRel K V) : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩ := rel r.toList
 
 /-- Two `map`s, not `unzip`: the compiled `unzip` is a `foldr`, one stack frame per pair. -/
@@ -160,6 +166,31 @@ theorem toList_ofList (l : List (K × V)) : (ofList l).toList = l := by
     List.zip_unzip]
 
 theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := congrArg rel (toList_ofList l)
+
+/-- `ofList` in one pass, each pair pushed onto the two arrays: the two `map`s build and reverse two lists. -/
+def ofListGo : List (K × V) → FinRel K V → FinRel K V
+  | [], r => r
+  | (k, v) :: l, r => ofListGo l ⟨r.keys.push k, r.vals.push v, by simp [r.len]⟩
+
+def ofListTR (l : List (K × V)) : FinRel K V := ofListGo l ⟨#[], #[], rfl⟩
+
+theorem ofListGo_toList : (l : List (K × V)) → (r : FinRel K V) →
+    (ofListGo l r).keys.toList = r.keys.toList ++ l.map Prod.fst ∧
+      (ofListGo l r).vals.toList = r.vals.toList ++ l.map Prod.snd
+  | [], _ => by simp [ofListGo]
+  | (k, v) :: l, r => by
+    obtain ⟨h1, h2⟩ := ofListGo_toList l ⟨r.keys.push k, r.vals.push v, by simp [r.len]⟩
+    simp [ofListGo, h1, h2]
+
+@[csimp] theorem ofList_eq_ofListTR : @ofList = @ofListTR := by
+  funext K V l
+  have h := ofListGo_toList l ⟨#[], #[], rfl⟩
+  unfold ofListTR ofList
+  generalize ofListGo l ⟨#[], #[], rfl⟩ = r at h ⊢
+  obtain ⟨ks, vs, _⟩ := r
+  simp only [List.nil_append] at h
+  simp only [mk.injEq]
+  exact ⟨by rw [← h.1], by rw [← h.2]⟩
 
 /-- The converse swaps the two arrays: no copy, no sort. -/
 def conv (r : FinRel K V) : FinRel V K := ⟨r.vals, r.keys, r.len.symm⟩
@@ -471,12 +502,18 @@ theorem head?_toList_le {X : Type} (F : X → FinRel K V) :
 
 /-! ## Fibres and keys by hashing -/
 
+/-- A bucket of `HTab`: one cell per key holding the key and its entry, where a `List (K × B)` takes a
+    cons and a pair — one allocation and one pointer less per key. -/
+inductive Bucket (K B : Type) where
+  | nil
+  | cons (k : K) (b : B) (t : Bucket K B)
+
 /-- A chained hash table from `K` to `B`: a key's hash picks its bucket, and a bucket lists each key it
     holds once, with its entry.  A structure and not a function `K → Option B`, because the compiler
     eta-expands a function-valued definition, which would rebuild the table at every key.  Hand-rolled
     rather than `Std.HashMap`, whose lemmas use `Classical.choice`. -/
 structure HTab (K B : Type) where
-  buckets : Array (List (K × B))
+  buckets : Array (Bucket K B)
   size_pos : 0 < buckets.size
 
 namespace HTab
@@ -484,21 +521,20 @@ namespace HTab
 variable {B : Type}
 
 /-- The entry a bucket holds for `a`. -/
-def look [DecidableEq K] : List (K × B) → K → Option B
-  | [], _ => none
-  | (k', b) :: t, a => if k' = a then some b else look t a
+def look [DecidableEq K] : Bucket K B → K → Option B
+  | .nil, _ => none
+  | .cons k' b t, a => if k' = a then some b else look t a
 
 /-- Set `k`'s entry in a bucket to `f` of its old one; a key the bucket lacks goes at its end. -/
-def alt [DecidableEq K] (f : Option B → B) : List (K × B) → K → List (K × B)
-  | [], k => [(k, f none)]
-  | (k', b) :: t, k => if k' = k then (k', f (some b)) :: t else (k', b) :: alt f t k
+def alt [DecidableEq K] (f : Option B → B) : Bucket K B → K → Bucket K B
+  | .nil, k => .cons k (f none) .nil
+  | .cons k' b t, k => if k' = k then .cons k' (f (some b)) t else .cons k' b (alt f t k)
 
-theorem look_alt [DecidableEq K] (f : Option B → B) (l : List (K × B)) (k a : K) :
+theorem look_alt [DecidableEq K] (f : Option B → B) (l : Bucket K B) (k a : K) :
     look (alt f l k) a = if k = a then some (f (look l k)) else look l a := by
   induction l with
   | nil => by_cases h : k = a <;> simp [look, alt, h]
-  | cons p t ih =>
-    obtain ⟨k', b⟩ := p
+  | cons k' b t ih =>
     by_cases h1 : k' = k
     · subst h1; by_cases h2 : k' = a <;> simp [look, alt, h2]
     · by_cases h2 : k' = a
@@ -508,7 +544,7 @@ theorem look_alt [DecidableEq K] (f : Option B → B) (l : List (K × B)) (k a :
 variable [DecidableEq K] [Hashable K]
 
 /-- No entries, in `n + 1` buckets. -/
-def empty (n : Nat) : HTab K B := ⟨Array.replicate (n + 1) [], by simp⟩
+def empty (n : Nat) : HTab K B := ⟨Array.replicate (n + 1) .nil, by simp⟩
 
 def slot (x : HTab K B) (k : K) : Nat := (hash k).toNat % x.buckets.size
 
@@ -547,7 +583,9 @@ variable [DecidableEq K] [Hashable K]
 def get (x : Fibres K V) (k : K) : List V := ((x.find? k).getD #[]).toList
 
 /-- Append `v` to the fibre of `k`. -/
-def push (x : Fibres K V) (k : K) (v : V) : Fibres K V := x.alter k fun o => (o.getD #[]).push v
+def push (x : Fibres K V) (k : K) (v : V) : Fibres K V := x.alter k fun
+  | some a => a.push v
+  | none => #[v]
 
 theorem get_empty (n : Nat) (a : K) : Fibres.get (HTab.empty n : Fibres K V) a = [] := by
   simp [get, HTab.find?_empty]
@@ -556,7 +594,7 @@ theorem get_push (x : Fibres K V) (k : K) (v : V) (a : K) :
     (x.push k v).get a = x.get a ++ if k = a then [v] else [] := by
   simp only [get, push, HTab.find?_alter]
   by_cases h : k = a
-  · subst h; simp
+  · subst h; cases x.find? k <;> simp
   · simp [h]
 
 end Fibres
@@ -1325,6 +1363,22 @@ omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq 
     fibre then cut by `post`. -/
 def foldList (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
   cfold (fun l => post (b l)) fun e vs => post (vs.flatMap fun v => s (e, v))
+
+omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
+/-- `foldList` with a one-value fibre handed to the step directly: a functional fold's fibres are all one
+    value, and the compiled `flatMap` builds an array per step. -/
+def foldListOne (post : List V → List V) (b : L → List V) (s : E × V → List V) : ConsList L E → List V :=
+  cfold (fun l => post (b l)) fun e vs => post (match vs with
+    | [v] => s (e, v)
+    | vs => vs.flatMap fun v => s (e, v))
+
+omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
+@[csimp] theorem foldList_eq_foldListOne : @foldList = @foldListOne := by
+  funext _ _ _ post b s
+  unfold foldList foldListOne
+  congr
+  funext e vs
+  split <;> simp
 
 /-- `⦇[B,S]⦈` with every fibre cut by `post`; `none` when `B` or `S` is a `test`. -/
 def foldWith (post : List V → List V) (B : RelRep L V) (S : RelRep (E × V) V) :

@@ -31,7 +31,8 @@ def gen (cnt seed : Nat) : Array Nat := Id.run do
 /-- q's `gen[cnt;seed] mod m`. -/
 def ints (cnt seed m : Nat) : Array Int := (gen cnt seed).map fun x => ((x % m : Nat) : Int)
 
-def zipL {β : Type} (a : Array Int) (b : Array β) : List (Int × β) := a.toList.zip b.toList
+/-- Through `Array.zip`: the compiled `List.zip` takes one stack frame per pair. -/
+def zipL {β : Type} (a : Array Int) (b : Array β) : List (Int × β) := (a.zip b).toList
 
 /-- q's `a!b`. -/
 def fin (a b : Array Int) : FinRel Int Int := FinRel.ofList (zipL a b)
@@ -82,7 +83,7 @@ def ajOp (n : Nat) : IO (IO (Nat × Int)) :=
 
 /-- Key `gen 17 mod n`, value `gen 18 mod 1e6`, sorted by key stably (q's `iasc`). -/
 def sortedPairs (n : Nat) : List (Int64 × Int64) :=
-  ((gen n 17).toList.zip (gen n 18).toList |>.map fun (a, b) => (Int64.ofNat (a % n), Int64.ofNat (b % 1000000))).mergeSort
+  (((gen n 17).zip (gen n 18)).toList.map fun (a, b) => (Int64.ofNat (a % n), Int64.ofNat (b % 1000000))).mergeSort
     QSortedRel.keyLE
 
 def needles (n : Nat) : Array Int64 := (gen n 19).map fun x => Int64.ofNat (x % n)
