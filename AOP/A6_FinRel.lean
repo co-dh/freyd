@@ -550,6 +550,58 @@ theorem mem_fibre? {R : RelRep K V} {f : K → List V} (h : R.fibre? = some f) (
   · exact FinRel.mem_scanLookup _ k v
   · exact Iff.rfl
 
+section Division
+
+omit [DecidableEq V] in
+/-- `X / Y`: `k (X/Y) v` iff `X k c` for every `c` with `Y v c`.  The divisor's fibre is enumerated
+    and the result is a test; a `test` divisor gives `none`. -/
+def div [DecidableEq C] (X : RelRep K C) (Y : RelRep V C) : Option (RelRep K V) :=
+  Y.fibre?.map fun g => test fun k v => (g v).all (X.mem k ·)
+
+theorem rel_div [DecidableEq C] {X : RelRep K C} {Y : RelRep V C} {Z : RelRep K V} (h : div X Y = some Z) :
+    Z.rel = X.rel / Y.rel := by
+  cases hf : Y.fibre? with
+  | none => simp [div, hf] at h
+  | some g =>
+    simp only [div, hf, Option.map_some, Option.some.injEq] at h
+    subst h
+    exact hom_ext fun k v => List.all_eq_true.trans
+      (forall_congr' fun c => imp_congr (mem_fibre? hf v c) (mem_iff_rel X k c))
+
+omit [DecidableEq V] in
+/-- `S \ R ≜ (R°/S°)°`: the divisor's converse fibre is enumerated, so only a `FinRel` `S` divides. -/
+def leftDiv [DecidableEq C] (S : RelRep K V) (R : RelRep K C) : Option (RelRep V C) :=
+  (div R.conv S.conv).map conv
+
+theorem rel_leftDiv [DecidableEq C] {S : RelRep K V} {R : RelRep K C} {Z : RelRep V C}
+    (h : leftDiv S R = some Z) : Z.rel = S.rel \ R.rel := by
+  cases hD : div R.conv S.conv with
+  | none => simp [leftDiv, hD] at h
+  | some D =>
+    simp only [leftDiv, hD, Option.map_some, Option.some.injEq] at h
+    subst h
+    rw [rel_conv, rel_div hD, rel_conv, rel_conv]
+    rfl
+
+/-- `R /ₛ S ≜ (R/S) ∩ (S/R)°`: both fibres are enumerated, so neither side may be a `test`. -/
+def symmDiv [DecidableEq C] (R : RelRep K C) (S : RelRep V C) : Option (RelRep K V) :=
+  (div R S).bind fun D => (div S R).map fun E => inter D E.conv
+
+theorem rel_symmDiv [DecidableEq C] {R : RelRep K C} {S : RelRep V C} {Z : RelRep K V}
+    (h : symmDiv R S = some Z) : Z.rel = R.rel /ₛ S.rel := by
+  cases h1 : div R S with
+  | none => simp [symmDiv, h1] at h
+  | some D =>
+    cases h2 : div S R with
+    | none => simp [symmDiv, h1, h2] at h
+    | some E =>
+      simp only [symmDiv, h1, h2, Option.bind_some, Option.map_some, Option.some.injEq] at h
+      subst h
+      rw [rel_inter, rel_conv, rel_div h1, rel_div h2]
+      rfl
+
+end Division
+
 /-- `est(le)` on one list: the members `le`-below every member. -/
 def estList (le : V → V → Bool) (xs : List V) : List V := xs.filter fun v => xs.all (le v ·)
 
@@ -588,20 +640,20 @@ theorem thinList_spec {q : V → V → Bool} (hr : ∀ v, q v v) (ht : ∀ u v w
 
 open PowerAllegory
 
-/-- `Λ(R) est(L)`: each fibre cut to its `L`-least members; `none` on a `test`. -/
+/-- `Λ(R) est(L) = R ∩ (L/R)°`, from `est(L) ≜ ∋ ∩ (∈\L°)`: on a fibre list this is `estList`;
+    `none` on a `test`. -/
 def est (L : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
-  R.fibre?.map fun f => enum fun k => estList L.mem (f k)
+  (div L R).map fun D => inter R D.conv
 
 theorem rel_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) :
     T.rel = Λ R.rel ≫ Freyd.Alg.est L.rel := by
-  cases hf : R.fibre? with
-  | none => simp [est, hf] at h
-  | some f =>
-    simp only [est, hf, Option.map_some, Option.some.injEq] at h
+  cases hD : div L R with
+  | none => simp [est, hD] at h
+  | some D =>
+    simp only [est, hD, Option.map_some, Option.some.injEq] at h
     subst h
-    exact hom_ext fun k v => by
-      rw [Λ_comp_est_apply]
-      simp only [RelRep.rel, estList, List.mem_filter, List.all_eq_true, mem_iff_rel, mem_fibre? hf]
+    rw [rel_inter, rel_conv, rel_div hD]
+    exact hom_ext fun k v => (Λ_comp_est_apply _ _ k v).symm
 
 /-- `Λ(R) thin(Q)`: each fibre cut by `thinList`; `none` on a `test`. -/
 def thin (Q : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
