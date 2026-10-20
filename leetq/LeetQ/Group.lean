@@ -298,7 +298,8 @@ theorem decoded_spec (n : USize) (md pk : ByteArray) :
   have hw : (Kind.width .i64).toUSize.toNat = 8 := by
     simp only [Kind.width, Nat.toUSize, USize.toNat_ofNat']
     rcases System.Platform.numBits_eq with h | h <;> simp [h]
-  obtain ⟨hs, hg⟩ := decode8 _ hw md pk n
+  obtain ⟨hs, hg⟩ := decodeW _ (by rw [hw]; decide) md pk n
+  simp only [hw, show 8 * 8 = 64 from rfl, ofNat_toNat_mod64] at hs hg
   have hc : cnt n (decoded n md pk) = n.toNat := by
     show min n.toNat ((decoded n md pk).size / 8) = n.toNat; rw [hs]; omega
   refine ⟨hc, by rw [hs]; omega, ?_⟩

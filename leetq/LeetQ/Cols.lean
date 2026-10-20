@@ -125,7 +125,6 @@ def prices : List (Int64 × Float) := [(3, 1.25), (1, 0.5), (3, 2.75), (2, 10.0)
 
 /-! ## Axioms -/
 
-#print axioms LeetQ.binBytes_signed
 #print axioms LeetQ.Keys.bin_spec
 #print axioms LeetQ.QSortedRel.rep_ofList
 #print axioms LeetQ.QSortedRel.lookup_rep
