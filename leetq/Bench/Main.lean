@@ -37,7 +37,7 @@ def zipL {β : Type} (a : Array Int) (b : Array β) : List (Int × β) := (a.zip
 /-- q's `a!b`. -/
 def fin (a b : Array Int) : FinRel Int Int := FinRel.ofList (zipL a b)
 
-def sumBy {α : Type} (f : α → Int) (xs : List α) : Int := xs.foldl (fun s x => s + f x) 0
+def sumBy {α : Type} (f : α → Int) (xs : Array α) : Int := xs.foldl (fun s x => s + f x) 0
 
 /-- One timed run of `f` on `d`: nanoseconds and the checksum; `none` from `f` is an error. -/
 def timed {α : Type} (name : String) (d : α) (f : α → Option Int) : IO (IO (Nat × Int)) := do
