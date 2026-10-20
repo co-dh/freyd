@@ -24,6 +24,7 @@ module
   * `merge_toList_perm`  — `merge` preserves the multiset (a `List.Perm` from Lean core).
   * `popMin?_perm`       — `popMin?` removes exactly the returned element.
   * `popMin?_is_min`     — in a heap, the popped element is the minimum.
+  * `drain_perm`         — draining the heap emits exactly its multiset.
 
   Mathlib-free: imports nothing outside Lean 4 core `Init`.  `List.Perm` (the `~` notation) and all
   the permutation lemmas used live in core `Init.Data.List.{Basic,Perm}`.
@@ -241,19 +242,46 @@ the compiler (`#eval`) instead, which runs the extracted code.  The outputs shou
 /-- Build a heap from a list by repeated `insert`. -/
 @[expose] public def ofList (xs : List Int) : LHeap := xs.foldr insert empty
 
-/-- Pop `n` minima (fuel-bounded so it is structurally recursive). -/
-@[expose] public def popN : Nat → LHeap → List Int
-  | 0, _ => []
-  | n + 1, h =>
-      match popMin? h with
-      | none => []
-      | some (m, h') => m :: popN n h'
+/-- Pop minima until the heap is empty: well-founded on the element count, which `popMin?` drops by
+    one (`popMin?_perm`). -/
+@[expose] public def drain (h : LHeap) : List Int :=
+  match _hp : popMin? h with
+  | none => []
+  | some (m, h') => m :: drain h'
+termination_by (toList h).length
+decreasing_by
+  have hlen := (popMin?_perm _hp).length_eq
+  simp only [List.length_cons] at hlen
+  omega
+
+/-- `drain` on the empty heap emits nothing (`popMin?` returns `none`). -/
+public theorem drain_empty : drain LHeap.empty = [] := by
+  rw [drain]; rfl
+
+/-- `drain` on a node pops the root minimum and recurses on the merge of its children. -/
+public theorem drain_node (k : Nat) (v : Int) (l r : LHeap) :
+    drain (LHeap.node k v l r) = v :: drain (merge l r) := by
+  rw [drain]; rfl
+
+/-- The drain is a permutation of the heap: every element comes out exactly once. -/
+public theorem drain_perm (h : LHeap) : toList h ~ drain h := by
+  cases h with
+  | empty => rw [drain_empty]; exact Perm.refl _
+  | node k v l r =>
+      have hperm := popMin?_perm (rfl : popMin? (LHeap.node k v l r) = some (v, merge l r))
+      rw [drain_node]
+      exact hperm.trans (Perm.cons v (drain_perm (merge l r)))
+termination_by (toList h).length
+decreasing_by
+  have hlen := hperm.length_eq
+  simp only [List.length_cons] at hlen
+  omega
 
 -- expect [1, 2, 3, 5, 7, 8, 9]
-#eval popN 10 (ofList [5, 3, 8, 1, 9, 2, 7])
+#eval drain (ofList [5, 3, 8, 1, 9, 2, 7])
 -- expect [1, 2, 2, 4, 4] (duplicates preserved)
-#eval popN 10 (ofList [4, 4, 1, 2, 2])
+#eval drain (ofList [4, 4, 1, 2, 2])
 -- expect [-3, -1, 0, 2, 6] (negatives)
-#eval popN 10 (ofList [2, -1, 6, -3, 0])
+#eval drain (ofList [2, -1, 6, -3, 0])
 
 end Freyd.Heap

@@ -8,10 +8,10 @@
   This file replaces the PROGRAM with a min-heap heapsort of the flattened input and proves it
   correct Sorry-free, reusing `AOP/A6_Heap.lean` (leftist min-heap over `Int`) UNMODIFIED:
 
-    * `heapMerge lists := popN N (ofList (lists.flatten))`, `N = (lists.flatten).length`
+    * `heapMerge lists := drain (ofList (lists.flatten))`
 
     pour every element of every list into the heap (`ofList` = `N` inserts), then drain all `N`
-    minima (`popN`).  With a leftist heap each `insert`/`popMin?` is O(log N), so the whole merge is
+    minima (`drain`).  With a leftist heap each `insert`/`popMin?` is O(log N), so the whole merge is
     O(N log N) — a genuine asymptotic win over O(k·N) once `k` is large.  (The complexity is
     INFORMAL, as in `A6_Heap`; only functional correctness is machine-checked.)
 
@@ -24,8 +24,7 @@
   **The drain is certified as a HYLOMORPHISM.**  The heap drain is a divide-and-conquer UNFOLD, the
   dual of a catamorphism, so it is captured not by a fold law but by the RECURSIVE-COALGEBRA
   hylomorphism uniqueness law `Hylo.hyloFold_unique` (`AOP/A6_GenHylo.lean`).  We recast the drain
-  as a `Nat`-measured recursive coalgebra and let the law EMIT it (rather than the ad-hoc `popN` fuel
-  loop):
+  as a `Nat`-measured recursive coalgebra and let the law EMIT it:
 
     * coalgebra `drainCo h` reads `popMin?` — empty ↦ `Sum.inl ()` leaf, non-empty ↦ `Sum.inr (min,rest)`;
     * measure `drainμ h := (toList h).length`, strictly dropped on every `Sum.inr` step (`drain_dec`,
@@ -190,9 +189,8 @@ theorem sorted_count_ext : ∀ xs ys : List Int,
 
 /-! ## Draining the heap: sorted + permutation, straight from `A6_Heap`'s API
 
-  All three drain lemmas induct on the fuel and reduce `popN (n+1) (node …)` DEFINITIONALLY to
-  `v :: popN n (merge l r)` (`popN` is fuel-structural, not well-founded), so no unfolding lemma is
-  needed — a `show` exposes the cons and the exported `popMin?_*` lemmas do the rest. -/
+  `drain` and `drain_perm` live in `A6_Heap`; sortedness needs `LC21.Sorted`, so it is proved here,
+  recursing on the element count through `A6_Heap.drain_node`. -/
 
 /-- Building a heap by repeated `insert` preserves the heap order. -/
 theorem ofList_isHeap : ∀ xs : List Int, IsHeap (ofList xs)
@@ -208,97 +206,43 @@ theorem ofList_perm : ∀ xs : List Int, List.Perm (toList (ofList xs)) xs
       show List.Perm (toList (insert x (ofList xs))) (x :: xs)
       exact (insert_perm x (ofList xs)).trans (List.Perm.cons x (ofList_perm xs))
 
-/-- Every element drained by `popN` came from the heap. -/
-theorem popN_subset : ∀ (fuel : Nat) (h : LHeap) (x : Int), x ∈ popN fuel h → x ∈ toList h := by
-  intro fuel
-  induction fuel with
-  | zero => intro h x hx; exact absurd hx List.not_mem_nil
-  | succ n ih =>
-      intro h x hx
-      cases h with
-      | empty => exact absurd hx List.not_mem_nil
-      | node k v l r =>
-          have hpop : popMin? (LHeap.node k v l r) = some (v, merge l r) := rfl
-          have hperm : List.Perm (toList (LHeap.node k v l r)) (v :: toList (merge l r)) :=
-            popMin?_perm hpop
-          have hx' : x ∈ v :: popN n (merge l r) := hx
-          rcases List.mem_cons.mp hx' with rfl | hx''
-          · exact hperm.mem_iff.mpr List.mem_cons_self
-          · exact hperm.mem_iff.mpr (List.mem_cons_of_mem v (ih (merge l r) x hx''))
-
 /-- **The drain is sorted.**  Each popped minimum `v` is `≤` everything still in the heap
     (`popMin?_is_min`), hence `≤` the head of the rest of the drain (which came from the heap by
-    `popN_subset`); with the tail sorted by induction, `sorted_cons` assembles `Sorted (v :: rest)`. -/
-theorem popN_sorted : ∀ (fuel : Nat) (h : LHeap), IsHeap h → LC21.Sorted (popN fuel h) := by
-  intro fuel
-  induction fuel with
-  | zero => intro h _; exact trivial
-  | succ n ih =>
-      intro h hh
-      cases h with
-      | empty => exact trivial
-      | node k v l r =>
-          have hpop : popMin? (LHeap.node k v l r) = some (v, merge l r) := rfl
-          have hh' : IsHeap (merge l r) := popMin?_isHeap hh hpop
-          have hmin : ∀ x ∈ toList (LHeap.node k v l r), v ≤ x := popMin?_is_min hh hpop
-          have hperm : List.Perm (toList (LHeap.node k v l r)) (v :: toList (merge l r)) :=
-            popMin?_perm hpop
-          have hleHead : LC21.LeHead v (popN n (merge l r)) := by
-            cases hpn : popN n (merge l r) with
-            | nil => exact trivial
-            | cons z t =>
-                show v ≤ z
-                have hz_rest : z ∈ popN n (merge l r) := by rw [hpn]; exact List.mem_cons_self
-                have hz_mlr : z ∈ toList (merge l r) := popN_subset n (merge l r) z hz_rest
-                exact hmin z (hperm.mem_iff.mpr (List.mem_cons_of_mem v hz_mlr))
-          have hSrest : LC21.Sorted (popN n (merge l r)) := ih (merge l r) hh'
-          show LC21.Sorted (v :: popN n (merge l r))
-          exact (LC21.sorted_cons v _).mpr ⟨hleHead, hSrest⟩
-
-/-- **The drain is a permutation of the heap**, when the fuel covers every element. -/
-theorem popN_perm : ∀ (fuel : Nat) (h : LHeap),
-    (toList h).length ≤ fuel → List.Perm (toList h) (popN fuel h) := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      intro h hlen
-      have hz : toList h = [] := by
-        cases hE : toList h with
-        | nil => rfl
-        | cons a t => exfalso; rw [hE] at hlen; simp only [List.length_cons] at hlen; omega
-      show List.Perm (toList h) (popN 0 h)
-      rw [hz]; exact List.Perm.refl _
-  | succ n ih =>
-      intro h hlen
-      cases h with
-      | empty => exact List.Perm.refl _
-      | node k v l r =>
-          have hpop : popMin? (LHeap.node k v l r) = some (v, merge l r) := rfl
-          have hperm : List.Perm (toList (LHeap.node k v l r)) (v :: toList (merge l r)) :=
-            popMin?_perm hpop
-          have hlen' : (toList (merge l r)).length ≤ n := by
-            have hL := hperm.length_eq
-            simp only [List.length_cons] at hL
-            omega
-          show List.Perm (toList (LHeap.node k v l r)) (v :: popN n (merge l r))
-          exact hperm.trans (List.Perm.cons v (ih (merge l r) hlen'))
+    `drain_perm`); with the tail sorted by recursion, `sorted_cons` assembles `Sorted (v :: rest)`. -/
+theorem drain_sorted : ∀ h : LHeap, IsHeap h → LC21.Sorted (drain h)
+  | .empty, _ => by rw [drain_empty]; exact trivial
+  | .node k v l r, hh => by
+      have hpop : popMin? (LHeap.node k v l r) = some (v, merge l r) := rfl
+      have hperm := popMin?_perm hpop
+      rw [drain_node]
+      refine (LC21.sorted_cons v _).mpr ⟨?_, drain_sorted (merge l r) (popMin?_isHeap hh hpop)⟩
+      cases hd : drain (merge l r) with
+      | nil => exact trivial
+      | cons z t =>
+          show v ≤ z
+          have hz : z ∈ toList (merge l r) :=
+            (drain_perm (merge l r)).mem_iff.mpr (by rw [hd]; exact List.mem_cons_self)
+          exact popMin?_is_min hh hpop z (hperm.mem_iff.mpr (List.mem_cons_of_mem v hz))
+termination_by h => (toList h).length
+decreasing_by
+  have hlen := hperm.length_eq
+  simp only [List.length_cons] at hlen
+  omega
 
 /-! ## The efficient program and its correctness -/
 
 /-- **The O(N log N) program**: heapsort of the flattened input.  Pour every element of every list
-    into a leftist min-heap (`ofList`), then drain all `N` minima (`popN`). -/
+    into a leftist min-heap (`ofList`), then drain it (`drain`). -/
 def heapMerge (lists : List (List Int)) : List Int :=
-  popN lists.flatten.length (ofList lists.flatten)
+  drain (ofList lists.flatten)
 
 /-- The heap merge is sorted — UNCONDITIONALLY (heapsort needs no assumption on the inputs). -/
 theorem heapMerge_sorted (lists : List (List Int)) : LC21.Sorted (heapMerge lists) :=
-  popN_sorted _ _ (ofList_isHeap lists.flatten)
+  drain_sorted _ (ofList_isHeap lists.flatten)
 
 /-- The heap merge is a permutation of the flattened input (exact multiset preservation). -/
-theorem heapMerge_perm (lists : List (List Int)) : List.Perm (heapMerge lists) lists.flatten := by
-  have hofl : List.Perm (toList (ofList lists.flatten)) lists.flatten := ofList_perm lists.flatten
-  have hlen : (toList (ofList lists.flatten)).length ≤ lists.flatten.length := Nat.le_of_eq hofl.length_eq
-  exact (popN_perm _ _ hlen).symm.trans hofl
+theorem heapMerge_perm (lists : List (List Int)) : List.Perm (heapMerge lists) lists.flatten :=
+  (drain_perm _).symm.trans (ofList_perm lists.flatten)
 
 /-- Consequently the heap merge realises the exact SUMMED multiplicity across all input lists. -/
 theorem heapMerge_count (v : Int) (lists : List (List Int)) :
@@ -335,7 +279,7 @@ theorem derivedSolve_refines_spec : derivedSolve ⊑ LC23.spec := by
 
 /-! ## The heap drain, certified as a HYLOMORPHISM (`A6_GenHylo`)
 
-  The heap `popN`-drain is fuel-structural, which hides its true recursion.  Its actual shape — pop the
+  The heap drain (`A6_Heap.drain`) is well-founded on the element count.  Its shape — pop the
   minimum, emit it, recurse on the remaining heap, stop at the empty heap — is exactly the recurrence
   of a `Nat`-measured RECURSIVE COALGEBRA (`Hylo.hyloFold`).  We recast the drain as a proper heap-hylo:
 
@@ -346,7 +290,7 @@ theorem derivedSolve_refines_spec : derivedSolve ⊑ LC23.spec := by
       one element (`A6_Heap.popMin?_perm`);
     * algebra `[g := fun _ => [], st := (· :: ·)]` re-folds the finite call tree into the sorted output.
 
-  `drain` is that recursion written directly (well-founded on `drainμ`), and `drain_emerges` proves — via
+  `drain` is that recursion written directly (well-founded on `drainμ`'s count), and `drain_emerges` proves — via
   `Hylo.hyloFold_unique`, the recursive-coalgebra dual of the fold-uniqueness laws — that it IS the
   relational hylomorphism `hyloR drainCo drainμ drain_dec (fun _ => []) (· :: ·)`.  The efficient PROGRAM
   is thereby PRODUCED by the law, not hand-written and inductively verified. -/
@@ -375,28 +319,6 @@ theorem drain_dec : ∀ h e h', drainCo h = Sum.inr (e, h') → drainμ h' < dra
       simp only [drainμ, List.length_cons] at hlen ⊢
       omega
 
-/-- The drain, written directly as its own well-founded recursion on `drainμ`: pop the minimum, cons it
-    onto the drain of the rest, stopping at the empty heap. -/
-def drain (h : LHeap) : List Int :=
-  match hp : popMin? h with
-  | none => []
-  | some (m, h') => m :: drain h'
-termination_by (toList h).length
-decreasing_by
-  have hlen := (popMin?_perm hp).length_eq
-  simp only [List.length_cons] at hlen
-  omega
-
-/-- `drain` on the empty heap emits nothing (`popMin?` returns `none`). -/
-theorem drain_empty : drain LHeap.empty = [] := by
-  rw [drain]; rfl
-
-/-- `drain` on a node pops the root minimum and recurses on the merge of its children (`popMin?` on a
-    concrete node computes to `some (v, merge l r)`, so the well-founded `drain` reduces one layer). -/
-theorem drain_node (k : Nat) (v : Int) (l r : LHeap) :
-    drain (LHeap.node k v l r) = v :: drain (merge l r) := by
-  rw [drain]; rfl
-
 /-- **The drain IS the hylomorphism.**  `drain` obeys the hylomorphism recurrence for the coalgebra
     `drainCo`, measure `drainμ`, algebra `[fun _ => [], (· :: ·)]`, so by `hyloFold_unique` its graph
     equals the relational hylomorphism.  The remaining `?_` is exactly that recurrence, discharged in
@@ -411,40 +333,9 @@ theorem drain_emerges :
   | empty => rw [drain_empty]; rfl
   | node k v l r => rw [drain_node]; rfl
 
-/-- **Bridge to `heapMerge`.**  A full `popN`-drain (fuel ≥ the element count) equals the well-founded
-    `drain`: both pop minima until the heap empties.  Proved by induction on the fuel, using `drain`'s
-    equation and `popMin?_perm` to feed the induction hypothesis at the shrunk heap. -/
-theorem popN_eq_drain : ∀ (fuel : Nat) (h : LHeap), (toList h).length ≤ fuel → popN fuel h = drain h := by
-  intro fuel
-  induction fuel with
-  | zero =>
-      intro h hlen
-      have hz : toList h = [] := by
-        cases hE : toList h with
-        | nil => rfl
-        | cons a t => exfalso; rw [hE] at hlen; simp only [List.length_cons] at hlen; omega
-      cases h with
-      | empty => rw [drain_empty]; rfl
-      | node k v l r => simp only [toList] at hz; nomatch hz
-  | succ n ih =>
-      intro h hlen
-      cases h with
-      | empty => rw [drain_empty]; rfl
-      | node k v l r =>
-          have hpop : popMin? (LHeap.node k v l r) = some (v, merge l r) := rfl
-          have hlen' : (toList (merge l r)).length ≤ n := by
-            have hL := (popMin?_perm hpop).length_eq
-            simp only [List.length_cons] at hL
-            omega
-          show v :: popN n (merge l r) = drain (LHeap.node k v l r)
-          rw [drain_node, ih (merge l r) hlen']
-
 /-- The heap merge is the drain hylomorphism applied to the heap of the flattened input. -/
 theorem heapMerge_eq_drain (lists : List (List Int)) :
-    heapMerge lists = drain (ofList lists.flatten) := by
-  have hlen : (toList (ofList lists.flatten)).length ≤ lists.flatten.length :=
-    Nat.le_of_eq (ofList_perm lists.flatten).length_eq
-  exact popN_eq_drain _ _ hlen
+    heapMerge lists = drain (ofList lists.flatten) := rfl
 
 /-! ## Correctness headline -/
 
