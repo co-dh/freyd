@@ -27,9 +27,19 @@ look:{[k;v;xs] lo:k binr xs; v raze lo+til each 0|1+(k bin xs)-lo}
 blookup:{[op;n] k0:gen[n;17] mod n; v0:gen[n;18] mod 1000000; ix:iasc k0; k::k0 ix; v::v0 ix;
   xs::gen[n;19] mod n; out[op;n;"look[k;v;xs]";sum look[k;v;xs]]}
 
-/ Compute on compressed columns (LeetQ.Compressed), added once that module is merged, as `sum v`,
-/ `sum v where b`, `select sum v by k from t` on the columns Bench/Main.lean builds for them.
+/ Compute on compressed columns (LeetQ.Compressed): `sum v`, `sum v where b`, `select sum v by k from t`
+/ on the columns Bench/Main.lean builds for them (columns 21, 23, 22). `/h` is the same with v and k cast to
+/ short, the width Lean's dense column has. Few repetitions of a fast op are noise, so `tm` reruns with 20x
+/ more until the total passes 100 ms (5 -> 100 -> 2000 ...).
+tm:{[e] r:5; t:(system "t:",string[r]," ",e)%r; while[(100>t*r)&50000>r; r*:20; t:(system "t:",string[r]," ",e)%r]; t}
+out2:{[op;n;e;c] -1 " " sv (op;string n;string tm e;string c);}
+/ chk: `sum` of the keys and the sums, order free; v is the sum column of the grouped table
+bcomp:{[sfx;f;n] v::f gen[n;21] mod 1000; k::f gen[n;22] mod 1000; b::1=gen[n;23] mod 2; t::([] k:k; v:v);
+  out2["sumDense",sfx;n;"sum v";sum v];
+  out2["sumWhereDense",sfx;n;"sum v where b";sum v where b];
+  out2["selbySumDense",sfx;n;"select sum v by k from t";(sum "j"$exec k from r)+sum "j"$exec v from r:0!select sum v by k from t]}
 
 ns:$[`ns in key a:.Q.opt .z.x; "J"$a`ns; 1000 10000 100000]
-{bgetAll x; bzipD x; bselby x; bij x; baj x; blookup["lookupDense";x]; blookup["lookupFoR";x]} each ns;
+$[`comp in key a; {bcomp["";"j"$;x]; bcomp["/h";"h"$;x]} each ns;
+  {bgetAll x; bzipD x; bselby x; bij x; baj x; blookup["lookupDense";x]; blookup["lookupFoR";x]} each ns];
 \\

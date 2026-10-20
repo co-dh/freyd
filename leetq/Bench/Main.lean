@@ -11,6 +11,7 @@
 -/
 import LeetQ.Q.Table
 import LeetQ.QRel
+import LeetQ.Compressed
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -104,13 +105,51 @@ def lookupFoROp (n : Nat) : IO (IO (Nat × Int)) :=
 
 /-! ## Compute on compressed columns
 
-Placeholder for `LeetQ.Compressed` (sum on dense/FoR columns, `where` on bits, sum-where, select sum by),
-added once that module is merged. Each op goes into `ops` below with the same shape, and its q side into
-`q/bench.q`'s matching section: `sum v`, `sum v where b`, `select sum v by k from t`. -/
+`LeetQ.Compressed` on a value column `v` (column 21, `mod 1000`: dense at 2 bytes, or FoR with small
+residuals), a bit column `b` (column 23, `mod 2`) and a key column `k` (column 22, `mod 1000`); q's side
+is `sum v`, `sum v where b`, `select sum v by k from t` in `q/bench.q`. -/
+
+def nul : Int64 := Int64.minValue
+
+def vcol (n : Nat) (seed : Nat) : List Int64 := (gen n seed).toList.map fun x => Int64.ofNat (x % 1000)
+
+/-- q's `1=gen[n;23] mod 2`, one bit per row, least significant bit first. -/
+def bitsOf (n : Nat) : ByteArray := Id.run do
+  let g := gen n 23
+  let mut b := ByteArray.emptyWithCapacity ((n + 7) / 8)
+  for j in [0:(n + 7) / 8] do
+    let mut byte : UInt8 := 0
+    for t in [0:8] do
+      if 8 * j + t < n && g[8 * j + t]! % 2 == 1 then byte := byte ||| (1 <<< t.toUInt8)
+    b := b.push byte
+  return b
+
+def sumColOp (name : String) (foR : Bool) (n : Nat) : IO (IO (Nat × Int)) :=
+  timed name (Keys.ofList foR (vcol n 21)) fun v => some (Compressed.Col.sum nul v).toInt
+
+def sumDenseOp := sumColOp "sumDense" false
+def sumFoROp := sumColOp "sumFoR" true
+
+/-- The `.pairs` path: `Q.Agg.sum` of `ql(vs)`. -/
+def sumPairsOp (n : Nat) : IO (IO (Nat × Int)) :=
+  timed "sumPairs" (Q.Agg.ql ((vcol n 21).map Int64.toInt)) fun D => (Q.Agg.sum D).bind (·.head?)
+
+def sumWhereDenseOp (n : Nat) : IO (IO (Nat × Int)) :=
+  timed "sumWhereDense" (bitsOf n, Keys.ofList false (vcol n 21))
+    fun (b, v) => some (Compressed.sumWhere nul n.toUSize b v).toInt
+
+def selbySumColOp (name : String) (foR : Bool) (n : Nat) : IO (IO (Nat × Int)) :=
+  timed name (Keys.ofList foR (vcol n 22), Keys.ofList foR (vcol n 21))
+    fun (k, v) => some (sumBy (fun p => p.1.toInt + p.2.toInt) (Compressed.selbySum nul k v))
+
+def selbySumDenseOp := selbySumColOp "selbySumDense" false
+def selbySumFoROp := selbySumColOp "selbySumFoR" true
 
 def ops : List (String × (Nat → IO (IO (Nat × Int)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp),
-   ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp)]
+   ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
+   ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
+   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=
