@@ -35,7 +35,7 @@ theorem map_snd_toList (r : FinRel K V) : r.toList.map Prod.snd = r.vals.toList 
   List.map_snd_zip (by simp [r.len])
 
 /-- `R ; h` for an enumerating `h`: each value's fibre, in order. -/
-theorem vals_comp_enum [DecidableEq K] [DecidableEq V] [DecidableEq C] (r : FinRel K V) (h : V → List C) :
+theorem vals_comp_enum [DecidableEq K] [DecidableEq V] [DecidableEq C] [FibreIndex K] [FibreIndex V] (r : FinRel K V) (h : V → List C) :
     ∃ r', RelRep.comp (.pairs r) (.enum h) = some (.pairs r') ∧ r'.vals.toList = r.vals.toList.flatMap h := by
   refine ⟨_, rfl, ?_⟩
   rw [vals_ofList, List.map_flatMap, ← map_snd_toList, List.flatMap_map]
@@ -340,7 +340,7 @@ theorem comp_ql (is : List Nat) (xs : List Int64) :
     ∃ r, (Q.Agg.ql is).comp (Q.Agg.ql xs) = some (.pairs r) ∧ r.vals.toList = is.flatMap fun i => xs[i]?.toList := by
   refine ⟨_, rfl, ?_⟩
   rw [vals_ofList, List.map_flatMap, FinRel.toList_ofList]
-  simp only [scan_ql, List.map_map, Function.comp_def, List.map_id']
+  simp only [FibreIndex.get_build, scan_ql, List.map_map, Function.comp_def, List.map_id']
   rw [← List.flatMap_map (f := Prod.snd) (g := fun i => xs[i]?.toList)]
   congr 1
   rw [List.map_map]
@@ -786,10 +786,10 @@ theorem xkey_rows (kg vg : Nat → Int64) (m : Nat) :
   have hA : (RelRep.pairs (FinRel.ofList ((List.range m).map fun i => (i, kg i)))).conv.app? =
       some fun c => (List.range m).filter fun i => kg i = c := by
     simp only [RelRep.conv, RelRep.app?, Option.some.injEq]
-    funext c; rw [FinRel.scanLookup, hc, hs]
+    funext c; rw [FibreIndex.get_build, FinRel.scanLookup, hc, hs]
   have hB : (RelRep.pairs (FinRel.ofList (((List.range m).map vg).zipIdx.map Prod.swap))).app? =
       some fun j => ((List.range m).map vg)[j]?.toList := by
-    simp only [RelRep.app?, Option.some.injEq]; funext j; exact scan_ql _ j
+    simp only [RelRep.app?, FibreIndex.get_build, Option.some.injEq]; funext j; exact scan_ql _ j
   obtain ⟨X, hX⟩ : ∃ X, (RelRep.pairs (FinRel.ofList ((List.range m).map fun i => (i, kg i)))).conv.comp
       (.pairs (FinRel.ofList (((List.range m).map vg).zipIdx.map Prod.swap))) = some X := ⟨_, rfl⟩
   refine ⟨X, by simp only [Q.xkey, e1, e2, Option.bind_eq_bind, Option.bind_some, hX], ?_⟩
