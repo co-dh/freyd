@@ -1672,6 +1672,22 @@ zip(that)                                         each row: its square, and the 
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_7_13@e6a0e255
 )]<vec-cyl-fusion>
 
+// One run of the program on the columns `1 2 3 4` and `5 6 7 8`: its input, then one row per stage;
+// each value is a theorem of the `CylRun` section of A7_4_CylinderVecRel, cited beside its row.
+#ex-table(col: [*stage*],
+  (sym: [input], type: leant("Freyd.Alg.Vec.Rel.run_input.rhs"), value: leanf("Freyd.Alg.Vec.Rel.run_input.rhs"),
+   meaning: [the two columns, square by square]),
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.run_input@3db85a30
+  (sym: leann("Freyd.Alg.Vec.Rel.kept"), type: leant("Freyd.Alg.Vec.Rel.run_kept.rhs"),
+   value: leanf("Freyd.Alg.Vec.Rel.run_kept.rhs"),
+   meaning: [square `3` keeps `[3,6]`: `6` is the cheapest of `8`, `7`, `6`]),
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.run_kept@63fab0e4
+  (sym: leann("Freyd.Alg.Vec.Rel.cyl"), type: leant("Freyd.Alg.Vec.Rel.run_cyl.rhs"),
+   value: leanf("Freyd.Alg.Vec.Rel.run_cyl.rhs"),
+   meaning: [the one of cost `6`, `est(R)` of the four kept paths]),
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.run_cyl@4239229a
+)<cyl-run>
+
 == The security van problem
 
 // B&dM §7.5, p. 184.  `Π`, the universal relation, is this note's `⊤`; the p. 187 printing of the

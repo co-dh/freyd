@@ -11,6 +11,8 @@ module
 public import AOP.A7_4_CylinderVec
 public import AOP.A7_4_CylinderBeads
 import AOP.A7_1
+public import AOP.A6_FinRel
+import AOP.A7_2_RelSet
 
 namespace Freyd.Alg.Vec.Rel
 
@@ -469,6 +471,136 @@ public theorem Q_run :
     zip _, rfl, fun _ => rfl⟩
   obtain ⟨k, hk⟩ := (h i).1
   exact ⟨k, funext fun j => match j with | ⟨0, _⟩ => hk⟩
+
+/-! ## `CylRun`: the greedy cylinder program on `RelRep`
+
+Each square's `est(R)` among the three paths its neighbours keep is `RelRep.est R` of the tuple's
+membership (`estL`); the fold puts the square in front of the head of that list, and the answer is
+`estL` over the `n` kept paths. -/
+
+section CylRun
+
+open PowerAllegory
+open Freyd.Alg.RelSet (RelRep RelRep.est RelRep.rel_est RelRep.estList Λ_comp_est_apply)
+
+/-- Tuples over a type with decidable equality compare through their lists. -/
+public instance decEqTuple {k : Nat} {X : Type} [DecidableEq X] : DecidableEq (Fin k → X) :=
+  fun v w => decidable_of_iff (∀ i, v i = w i) ⟨funext, fun h _ => h ▸ rfl⟩
+
+/-- The cost order `R` at length `m` as a `RelRep` test. -/
+@[expose] public def Rt (m : Nat) : RelRep (Fin m → Nat) (Fin m → Nat) :=
+  .test fun v w => decide ((List.ofFn v).sum ≤ (List.ofFn w).sum)
+
+public theorem rel_Rt (m : Nat) : ((Rt m).rel : dTuple m (⟨Nat⟩ : RelSet.{0}) ⟶ _) = costLE m :=
+  hom_ext fun v w => decide_eq_true_iff.trans (costLE_iff v w).symm
+
+/-- The tuple's entries, `∋ : X[k]⟶X`, as an `enum`. -/
+@[expose] public def memE {k : Nat} {X : Type} : RelRep (Fin k → X) X := .enum List.ofFn
+
+/-- The least-cost entries of a tuple of paths. -/
+@[expose] public def estL (m : Nat) {k : Nat} (v : Fin k → Fin m → Nat) : List (Fin m → Nat) :=
+  RelRep.estList (Rt m).mem (List.ofFn v)
+
+/-- `estL` is `RelRep.est R` of the tuple's membership. -/
+public theorem estL_eq {m k : Nat} : RelRep.est (Rt m) (memE (k := k)) = some (.enum (estL m)) := rfl
+
+/-- `estL` computes the tuple's `est(R)`. -/
+public theorem rel_estL {m k : Nat} :
+    ((RelRep.enum (estL m (k := k))).rel : dTuple k (dTuple m (⟨Nat⟩ : RelSet.{0})) ⟶ _)
+      = est (costLE m) :=
+  calc ((RelRep.enum (estL m (k := k))).rel : dTuple k (dTuple m (⟨Nat⟩ : RelSet.{0})) ⟶ _)
+      = Λ (memE (k := k)).rel ≫ Freyd.Alg.est (Rt m).rel := RelRep.rel_est estL_eq
+    _ = Λ (memE (k := k)).rel ≫ Freyd.Alg.est (costLE m) := by rw [rel_Rt]
+    _ = est (costLE m) := hom_ext fun v x => by
+        rw [Λ_comp_est_apply]
+        show (x ∈ List.ofFn v ∧ ∀ z, z ∈ List.ofFn v → costLE m x z) ↔ _
+        simp only [List.mem_ofFn]
+        exact ⟨fun ⟨hx, hall⟩ => ⟨hx, fun i => hall _ ⟨i, rfl⟩⟩,
+          fun ⟨hx, hall⟩ => ⟨hx, fun z ⟨i, hi⟩ => hi ▸ hall i⟩⟩
+
+/-- Three costs have a least. -/
+theorem exists_least3 (s : Fin 3 → Nat) : ∃ j, ∀ k, s j ≤ s k := by
+  have h : ∀ k : Fin 3, k = 0 ∨ k = 1 ∨ k = 2 := by decide
+  rcases Nat.le_total (s 0) (s 1) with a | a <;> rcases Nat.le_total (s 0) (s 2) with b | b <;>
+    rcases Nat.le_total (s 1) (s 2) with c | c <;>
+    first
+    | (refine ⟨0, fun k => ?_⟩; rcases h k with rfl | rfl | rfl <;> omega)
+    | (refine ⟨1, fun k => ?_⟩; rcases h k with rfl | rfl | rfl <;> omega)
+    | (refine ⟨2, fun k => ?_⟩; rcases h k with rfl | rfl | rfl <;> omega)
+
+/-- One least-cost path of the three a square is offered: the head of `estL`. -/
+@[expose] public def pick {m : Nat} (v : Fin 3 → Fin m → Nat) : Fin m → Nat := (estL m v).headD (v 0)
+
+/-- `pick` is an `est(R)` choice. -/
+public theorem pick_est {m : Nat} (v : Fin 3 → Fin m → Nat) : est (costLE m) v (pick v) := by
+  obtain ⟨j, hj⟩ := exists_least3 fun k => (List.ofFn (v k)).sum
+  have hmem : est (costLE m) v (v j) := ⟨⟨j, rfl⟩, fun k => (costLE_iff _ _).mpr (hj k)⟩
+  rw [← rel_estL] at hmem ⊢
+  show pick v ∈ estL m v
+  replace hmem : v j ∈ estL m v := hmem
+  unfold pick
+  cases h : estL m v with
+  | nil => rw [h] at hmem; exact absurd hmem List.not_mem_nil
+  | cons a l => exact List.mem_cons_self
+
+/-- One step of the greedy fold: each square in front of `pick` of its neighbours' kept paths. -/
+@[expose] public def qstep {n m : Nat} (q : (Fin n → Nat) × (Fin n → Fin m → Nat)) :
+    Fin n → Fin (m + 1) → Nat :=
+  fun i => cons (q.1 i, pick (trans (moves q.2) i))
+
+/-- **The greedy fold as a function**: one kept path per square. -/
+@[expose] public def kept {n : Nat} : (m : Nat) → (Fin (m + 1) → Fin n → Nat) → Fin n → Fin (m + 1) → Nat
+  | 0 => fun v i _ => v 0 i
+  | m + 1 => fun v => qstep (v 0, kept m fun l => v l.succ)
+
+/-- `kept` is one outcome of the greedy fold, `kept ⊑ ⦇Q⦈`. -/
+public theorem kept_le_Qfold {n : Nat} : ∀ m : Nat,
+    (RelSet.graph (kept (n := n) m) : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ _)
+      ⊑ Qfold costLE m
+  | 0 => le_refl _
+  | m + 1 => by
+      refine le_iff.mpr fun v z h => ?_
+      have hz : z = kept (m + 1) v := h
+      subst hz
+      exact ⟨uncons v, rfl, (v 0, kept m fun l => v l.succ),
+        ⟨rfl, le_iff.mp (kept_le_Qfold m) _ _ rfl⟩,
+        (v 0, fun i => pick (trans (moves (kept m fun l => v l.succ)) i)),
+        ⟨rfl, moves _, rfl, trans (moves _), rfl, fun i => pick_est _⟩, zip _, rfl, fun _ => rfl⟩
+
+/-- **The program**: the least-cost paths among the `n` kept ones. -/
+@[expose] public def cyl {n : Nat} (m : Nat) (v : Fin (m + 1) → Fin n → Nat) : List (Fin (m + 1) → Nat) :=
+  estL (m + 1) (kept m v)
+
+/-- **The program meets its specification**: every path `cyl` returns is a least-cost path of the
+    cylinder, `cyl ⊑ paths est(R)`. -/
+public theorem cyl_le {n m : Nat} :
+    ((RelRep.enum (cyl (n := n) m)).rel : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ _)
+      ⊑ RelSet.graph paths ≫ est (costLE (m + 1)) :=
+  calc ((RelRep.enum (cyl (n := n) m)).rel : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ _)
+      = RelSet.graph (kept m) ≫ (RelRep.enum (estL (m + 1))).rel :=
+        hom_ext fun _ _ => ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, hw, h⟩ => by subst hw; exact h⟩
+    _ = RelSet.graph (kept m) ≫ est (costLE (m + 1)) := by rw [rel_estL]
+    _ ⊑ Qfold costLE m ≫ est (costLE (m + 1)) := comp_mono_right (kept_le_Qfold m) _
+    _ ⊑ RelSet.graph paths ≫ est (costLE (m + 1)) := cyl_laws
+
+/-- The note's cylinder: the columns `1 2 3 4` and `5 6 7 8`. -/
+@[expose] public def cylXs : Fin 2 → Fin 4 → Nat := fun r i => r.val * 4 + i.val + 1
+
+/-- **cyl-input**: the two columns, square by square. -/
+public theorem run_input : List.ofFn (fun r => List.ofFn (cylXs r)) = [[1, 2, 3, 4], [5, 6, 7, 8]] := by
+  decide
+
+/-- **kept-run**: square `k` keeps itself in front of the cheapest of squares `k+1`, `k`, `k-1` of
+    the next column. -/
+public theorem run_kept :
+    List.ofFn (fun i => List.ofFn (kept 1 cylXs i)) = [[1, 5], [2, 5], [3, 6], [4, 5]] := by
+  decide
+
+/-- **cyl-run**: of the four kept paths, `[1,5]` is the one of least cost `6`. -/
+public theorem run_cyl : (cyl 1 cylXs).map List.ofFn = [[1, 5]] := by
+  decide
+
+end CylRun
 
 end Freyd.Alg.Vec.Rel
 
