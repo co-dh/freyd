@@ -125,13 +125,7 @@ example : qprog 7 [1, 2, 3] = none := by
 
 /-! The same over encoded keys: `Coc.encode` and `foRBin`'s Lean bodies, by reduction. `USize.size` is
 `2 ^ System.Platform.numBits`, opaque to the kernel, so a count's `toUSize` round trip and its
-`Keys.ofList` bound are rewritten from a bound every platform meets. -/
-
-theorem lt_usize {n : Nat} (h : n < 2 ^ 32) : n < USize.size := by
-  cases System.Platform.numBits_eq <;> simp [USize.size, *] <;> omega
-
-theorem toNat_toUSize {n : Nat} (h : n < 2 ^ 32) : (Nat.toUSize n).toNat = n :=
-  USize.toNat_ofNat_of_lt' (lt_usize h)
+`Keys.ofList` bound are rewritten from a bound every platform meets (`lt_usize`, `toNat_toUSize`). -/
 
 example : qprog 9 [2, 7, 11, 15] true = some (0, 1) := by
   simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.foRBin, QLean.Kernel.Coc.encode,
