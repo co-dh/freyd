@@ -13,6 +13,18 @@ namespace LeetQ
 open QLean QLean.Column QLean.Kernel QLean.Verify
 open Freyd Freyd.Alg Freyd.Alg.RelSet
 
+/-- An `Int64` denotes a number in `[-2^63, 2^63)`. Core's `Int64.le_toInt`/`Int64.toInt_lt` say it
+through `BitVec.le_toInt`, which carries `Classical.choice`; this reads `BitVec.toInt`'s definition.
+`by_cases` rather than `split`, whose `ite` case split brings `Classical.choice` too. -/
+theorem toInt_bounds (b : Int64) : -2 ^ 63 ≤ b.toInt ∧ b.toInt < 2 ^ 63 := by
+  have h : b.toBitVec.toNat < 2 ^ 64 := b.toBitVec.toFin.isLt
+  show -2 ^ 63 ≤ (if 2 * b.toBitVec.toNat < 2 ^ 64 then (b.toBitVec.toNat : Int)
+      else (b.toBitVec.toNat : Int) - 2 ^ 64) ∧ (if 2 * b.toBitVec.toNat < 2 ^ 64
+      then (b.toBitVec.toNat : Int) else (b.toBitVec.toNat : Int) - 2 ^ 64) < 2 ^ 63
+  by_cases hc : 2 * b.toBitVec.toNat < 2 ^ 64
+  · rw [if_pos hc]; exact ⟨by omega, by omega⟩
+  · rw [if_neg hc]; exact ⟨by omega, by omega⟩
+
 /-! ## A dense `long` payload -/
 
 /-- The `i`th `Int64` of a dense payload. -/

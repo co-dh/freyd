@@ -10,9 +10,11 @@ namespace LeetQ.L1
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.LC1 LeetQ
 
-/-- `ix(xs)°` as two columns: key `xs[k]`, value `k`. -/
-def ixQ (xs : List Int64) : QSortedRel :=
-  QSortedRel.ofList (xs.zipIdx.map fun p => (p.1, (p.2 : Int).toInt64))
+/-- `ix(xs)°` as pairs: key `xs[k]`, value `k`. -/
+def ixL (xs : List Int64) : List (Int64 × Int64) := xs.zipIdx.map fun p => (p.1, (p.2 : Int).toInt64)
+
+/-- `ix(xs)°` as two columns. -/
+def ixQ (xs : List Int64) : QSortedRel := QSortedRel.ofList (ixL xs)
 
 /-- The index pairs `j < k` with `xs[j] + xs[k] = t`: probe the column at `t − xs[j]`, which no
 element can equal when it falls outside the `Int64` range. -/
@@ -30,7 +32,7 @@ def qprog (t : Int) (xs : List Int64) : Option (Nat × Nat) := (qpairs t xs).hea
 
 theorem mem_ixQ {xs : List Int64} (h : xs.length < 2 ^ 63) {k v : Int64} :
     v ∈ (ixQ xs).lookup k ↔ ∃ i : Nat, xs[i]? = some k ∧ v.toInt = i := by
-  rw [QSortedRel.mem_lookup, ← QSortedRel.mem_rep, ixQ, QSortedRel.rep_ofList]
+  rw [QSortedRel.mem_lookup, ← QSortedRel.mem_rep, ixQ, QSortedRel.rep_ofList, ixL]
   show (k, v) ∈ _ ↔ _
   simp only [List.mem_map, Prod.mk.injEq, Prod.exists, List.mem_zipIdx_iff_getElem?]
   constructor
@@ -62,11 +64,11 @@ theorem mem_qpairs (t : Int) {xs : List Int64} (h : xs.length < 2 ^ 63) (j k : N
     · cases hm
   · rintro ⟨⟨_, ⟨a, hj, rfl⟩, _, rfl, b, hk, hb⟩, hlt⟩
     have hd : -2 ^ 63 ≤ t - a.toInt ∧ t - a.toInt < 2 ^ 63 := by
-      have := b.le_toInt; have := b.toInt_lt; constructor <;> omega
+      have := toInt_bounds b; constructor <;> omega
     refine ⟨a, j, hj, ?_⟩
     rw [if_pos hd]
     refine List.mem_filterMap.2 ⟨(k : Int).toInt64, (mem_ixQ h).2 ⟨k, ?_, ?_⟩, ?_⟩
-    · rw [hk, ← hb]; exact congrArg some (Int64.toInt_inj.1 (by rw [Int64.toInt_ofInt_of_le hd.1 hd.2]))
+    · rw [hk]; exact congrArg some (Int64.toInt_inj.1 (by rw [Int64.toInt_ofInt_of_le hd.1 hd.2, hb]))
     · have := (List.getElem?_eq_some_iff.1 hk).1
       exact Int64.toInt_ofInt_of_le (by omega) (by omega)
     · have := (List.getElem?_eq_some_iff.1 hk).1
@@ -76,12 +78,15 @@ theorem mem_qpairs (t : Int) {xs : List Int64} (h : xs.length < 2 ^ 63) (j k : N
 theorem orNone_congr {A A' B : RelSet.{0}} {R : A ⟶ B} {S : A' ⟶ B} {a : A.carrier} {b : A'.carrier}
     (h : ∀ y, R a y ↔ S b y) {o : Option B.carrier} (ho : orNone R a o) : orNone S b o := by
   have e : (graph (fun _ => a) : (⟨Unit⟩ : RelSet.{0}) ⟶ A) ≫ R = graph (fun _ => b) ≫ S :=
-    hom_ext fun _ y => ⟨fun ⟨_, (hy : _ = _), hr⟩ => ⟨b, rfl, (h y).1 (hy ▸ hr)⟩,
-      fun ⟨_, (hy : _ = _), hs⟩ => ⟨a, rfl, (h y).2 (hy ▸ hs)⟩⟩
+    hom_ext fun _ y => by
+      constructor
+      · rintro ⟨_, hy, hr⟩; cases hy; exact ⟨b, rfl, (h y).1 hr⟩
+      · rintro ⟨_, hy, hs⟩; cases hy; exact ⟨a, rfl, (h y).2 hs⟩
   have : (graph (fun _ => a) ≫ orNone R : (⟨Unit⟩ : RelSet.{0}) ⟶ _) () o := ⟨a, rfl, ho⟩
   rw [graph_orNone, e, ← graph_orNone] at this
-  obtain ⟨_, (hy : _ = _), hs⟩ := this
-  exact hy ▸ hs
+  obtain ⟨_, hy, hs⟩ := this
+  cases hy
+  exact hs
 
 /-- **The program answers what freyd's spec allows**: `qprog(t)(xs)` is a pair of
 `twoSum(t)(xs)`, or `none` when it has none — `twoSumO` of `leet/L1.lean` at the numbers `xs` denotes. -/
@@ -94,13 +99,29 @@ theorem qprog_spec (t : Int) (xs : List Int64) (h : xs.length < 2 ^ 63) :
 is opaque. Rewriting the one literal leaves the rest to reduction. -/
 theorem usize8 : (8 : USize).toNat = 8 := by simp
 
--- The kernel's run: `binBytes`' Lean body, by reduction.
+/-! The kernel's run: `binBytes`' Lean body, by reduction. Two things stop the kernel and are
+rewritten first: the width literal (`usize8`) and core's `List.mergeSort`, which is well-founded
+recursion, so `simp` evaluates the sort and the kernel the rest. -/
+
+theorem sort9 : (ixL [2, 7, 11, 15]).mergeSort QSortedRel.keyLE = [(2, 0), (7, 1), (11, 2), (15, 3)] := by
+  simp [ixL, List.mergeSort, QSortedRel.keyLE]; decide
+theorem sort6 : (ixL [3, 2, 4]).mergeSort QSortedRel.keyLE = [(2, 1), (3, 0), (4, 2)] := by
+  simp [ixL, List.mergeSort, QSortedRel.keyLE]; decide
+theorem sort7 : (ixL [1, 2, 3]).mergeSort QSortedRel.keyLE = [(1, 0), (2, 1), (3, 2)] := by
+  simp [ixL, List.mergeSort, QSortedRel.keyLE]; decide
+
 example : qprog 9 [2, 7, 11, 15] = some (0, 1) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8]; decide +kernel
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
+    QSortedRel.ofList, QSortedRel.count, at8, sort9]
+  decide +kernel
 example : qprog 6 [3, 2, 4] = some (1, 2) := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8]; decide +kernel
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
+    QSortedRel.ofList, QSortedRel.count, at8, sort6]
+  decide +kernel
 example : qprog 7 [1, 2, 3] = none := by
-  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8]; decide +kernel
+  simp only [qprog, qpairs, QSortedRel.lookup, QSortedRel.probe, QLean.Kernel.binBytes, usize8, ixQ,
+    QSortedRel.ofList, QSortedRel.count, at8, sort7]
+  decide +kernel
 
 -- The compiled run: `binBytes` is the C `bin` here.
 #guard qprog 9 [2, 7, 11, 15] == some (0, 1)
