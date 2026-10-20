@@ -1580,6 +1580,15 @@ theorem rel_transpose (R : RelRep K V) : (transpose R).rel ≫ Λ (lmem V) = Λ 
   exact hom_ext fun k G => ⟨fun ⟨_, (e : _ = R.app k), (hG : G = _)⟩ => by subst e; exact hG.trans (hs k),
     fun (hG : G = _) => ⟨R.app k, rfl, hG.trans (hs k).symm⟩⟩
 
+omit [DecidableEq V] [FibreIndex V] in
+/-- `Λ(R)` onto arrays, what a compiled program reads: each key's fibre pushed onto one array, a `FinRel`'s
+    index built once; `transpose` is its list reading (`app_transposeA`). -/
+def transposeA (R : RelRep K V) : RelRep K (Array V) := R.withFib ofFn
+
+omit [DecidableEq V] [FibreIndex V] in
+theorem app_transposeA (R : RelRep K V) (k : K) : (transposeA R).app k = [(R.app k).toArray] := by
+  rw [transposeA, withFib_eq, app_ofFn, ← toList_fib, Array.toArray_toList]
+
 end Tabulate
 
 /-- `R S`, first `R` then `S`: each value of `R`'s fibre hands on `S`'s fibre.  A `FinRel` first stays a

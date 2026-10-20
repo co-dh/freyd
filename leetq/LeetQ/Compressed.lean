@@ -556,12 +556,12 @@ theorem selbySum_spec (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.
 /-- **The per-key entry of `app_selby`**: `select agg v by k` over `rows`, with `agg` q's sum, answers
 at `c` the sums of the keys `ks` lists, each `selbySum`'s entry for that key. -/
 theorem selbySum_selby (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count)
-    (ks : RelRep Int64 Int64) {G : RelRep Int64 (List Int64)}
+    (ks : RelRep Int64 Int64) {G : RelRep Int64 (Array Int64)}
     (hG : Q.grp ks Prod.fst Prod.snd (Q.tabL (rows k v)) = some G) :
-    ∃ X, (∀ c, (G ≫ RelRep.ofFn (qsum nul)).app c = (ks.app c).map fun c' => qsum nul (X.app c')) ∧
+    ∃ X, (∀ c, (G ≫ RelRep.ofFn (qsum nul ·.toList)).app c = (ks.app c).map fun c' => qsum nul (X.app c')) ∧
       ∀ p ∈ selbySum nul k v, p.2 = ((X ≫ RelRep.corefl (· != nul)).app p.1).foldl (· + ·) 0 := by
   obtain ⟨X, hX, -, hs⟩ := selbySum_spec nul k v h hv
-  exact ⟨X, Q.app_selby hX hG, hs⟩
+  exact ⟨X, fun c => by rw [Q.app_selby hX hG], hs⟩
 
 /-! ## Runs: compressed against `.pairs` -/
 
@@ -593,8 +593,8 @@ def vN : Keys := Keys.ofList false vsN
 #guard selbySum nul kF vF == [(3, 40), (1, 70), (2, 40)]
 #guard selbySum nul kF vN == [(3, 40), (1, 20), (2, 40)]
 -- the `.pairs` `select sum v by k` over the decoded table, keys sorted as q's `s#`
-#guard (Q.selby (qsum nul) (fun r => r.1.toInt) Prod.snd (Q.tabL (rows kD vD))).bind Q.ps == some #[(1, 70), (2, 40), (3, 40)]
-#guard (Q.selby (qsum nul) (fun r => r.1.toInt) Prod.snd (Q.tabL (rows kF vN))).bind Q.ps == some #[(1, 20), (2, 40), (3, 40)]
+#guard (Q.selby (qsum nul ·.toList) (fun r => r.1.toInt) Prod.snd (Q.tabL (rows kD vD))).bind Q.ps == some #[(1, 70), (2, 40), (3, 40)]
+#guard (Q.selby (qsum nul ·.toList) (fun r => r.1.toInt) Prod.snd (Q.tabL (rows kF vN))).bind Q.ps == some #[(1, 20), (2, 40), (3, 40)]
 
 #print axioms Col.sum_eq
 #print axioms Col.sum_spec

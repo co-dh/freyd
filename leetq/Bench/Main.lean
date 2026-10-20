@@ -67,7 +67,7 @@ def zipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
 /-- `select sum v by k from t`; `exec sum k+v`. -/
 def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "selby" (tab ((ints n 6 1000).zip (ints n 7 1000000)))
-    fun T => ((selby List.sum Prod.fst Prod.snd T).bind ps).map (sumBy fun p => Int64.ofInt p.1 + Int64.ofInt p.2)
+    fun T => ((selby (·.foldl (· + ·) 0) Prod.fst Prod.snd T).bind ps).map (sumBy fun p => Int64.ofInt p.1 + Int64.ofInt p.2)
 
 /-- `t ij kt`, `kt` of `n/10` keys; `exec sum v+w`. -/
 def ijOp (n : Nat) : IO (IO (Nat × Int64)) :=

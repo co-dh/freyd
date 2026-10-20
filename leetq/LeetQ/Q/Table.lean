@@ -89,7 +89,7 @@ variable [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [Decidabl
   [DecidableEq κ] [FibreIndex κ]
 
 /-- `dom r` held as pairs, each key once, in order of first appearance: q's key order. -/
-def domP (r : FinRel K V) : RelRep K K := .pairs (FinRel.ofList ((FibreIndex.dedup (r.toList.map Prod.fst)).map fun k => (k, k)))
+def domP (r : FinRel K V) : RelRep K K := let d := FibreIndex.dedupA r.keys; .pairs ⟨d, d, rfl⟩
 
 /-- q's keyed lookup `look(D) ≜ first(D) some ⊕ ˆnone`: the first value of the fibre, `0N` when empty.
     A `FinRel`'s is read by one `first?` probe per key: no fibre, and no composite of three enumerations. -/
@@ -167,8 +167,11 @@ omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq 
 /-- `dom r` answers `k` itself exactly when `k` is a key of `r`. -/
 theorem app_domP (r : FinRel K V) (k : K) :
     (domP r).app k = if k ∈ r.toList.map Prod.fst then [k] else [] := by
-  simp only [domP, RelRep.app_pairs, FibreIndex.dedup_eq, FinRel.scanLookup_ofList]
-  simpa [List.map_map, Function.comp_def] using sel_eraseDups k _
+  have zs : ∀ l : List K, l.zip l = l.map fun a => (a, a) := fun l => by induction l <;> simp_all
+  have hk : r.toList.map Prod.fst = r.keys.toList :=
+    List.map_fst_zip (Nat.le_of_eq (by rw [Array.length_toList, Array.length_toList, r.len]))
+  rw [domP, RelRep.app_pairs, FinRel.scanLookup, FinRel.toList, zs, FibreIndex.toList_dedupA, hk]
+  exact sel_eraseDups k _
 
 /-- One key's answer from its two fibres, as q's dict arithmetic gives it: `d`'s first row meets `e`'s first
     value (`z` when `e` has none) and `d`'s later rows stay; a key only `e` has keeps every row, each `z op v`. -/
@@ -176,17 +179,26 @@ def zipFib (op : V → V → V) (z : V) : List V × List V → List V
   | (a :: t, m) => op a (m.headD z) :: t
   | ([], m) => m.map (op z)
 
+/-- `zipFib` on the array fibres a compiled program reads. -/
+def zipFibA (op : V → V → V) (z : V) (p : Array V × Array V) : Array V :=
+  if h : 0 < p.1.size then p.1.set 0 (op p.1[0] (p.2[0]?.getD z)) else p.2.map (op z)
+
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+@[simp] theorem toList_zipFibA (op : V → V → V) (z : V) (a m : Array V) :
+    (zipFibA op z (a, m)).toList = zipFib op z (a.toList, m.toList) := by
+  rcases a with ⟨_ | ⟨x, t⟩⟩ <;> rcases m with ⟨_ | ⟨y, u⟩⟩ <;> first | rfl | simp [zipFibA, zipFib]
+
 /-- q's `d op e` on dicts, `dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋`: `z` stands for the side a key is missing from. -/
 def zipD (op : V → V → V) (z : V) (r s : FinRel K V) : RelRep K V :=
-  domP (r.union s) ≫ ((RelRep.pairs r).transpose.pair (RelRep.pairs s).transpose ≫ .enum (zipFib op z))
+  domP (r.union s) ≫ ((RelRep.pairs r).transposeA.pair (RelRep.pairs s).transposeA ≫ .arr (zipFibA op z))
 
-omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
 /-- **`d op e`** on fibre lists: each key of `d ∪ e`, once, answered by `zipFib` of its two fibres. -/
 theorem app_zipD (op : V → V → V) (z : V) (r s : FinRel K V) (k : K) :
     (zipD op z r s).app k =
       if k ∈ (r.union s).toList.map Prod.fst then zipFib op z (r.scanLookup k, s.scanLookup k) else [] := by
   rw [zipD, RelRep.app_comp, app_domP]
-  split <;> simp [RelRep.app_comp, RelRep.app_pair, RelRep.transpose_eq, RelRep.app_pairs, RelRep.ofFn,
+  split <;> simp [RelRep.app_comp, RelRep.app_pair, RelRep.app_transposeA, RelRep.app_pairs,
     RelRep.app_arr_fun, RelRep.cross]
 
 omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
@@ -272,47 +284,50 @@ def upd (p : R → Bool) (f : R → R) (T : RelRep Nat R) : RelRep Nat R :=
 #guard rows (del (·.1 == "a") t) == some #[("b", 2), ("c", 4)]
 
 /-- `ks Λ((T k)° (T v))`: each key `ks` lists, with its group's fibre. -/
-def grp (ks : RelRep κ κ) (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (List V)) :=
-  (xkey k v T).map fun X => ks ≫ X.transpose
+def grp (ks : RelRep κ κ) (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (Array V)) :=
+  (xkey k v T).map fun X => ks ≫ X.transposeA
 
-/-- `k xgroup T = dom((T k)°) Λ((T k)° (T v))`: the keys in first appearance, as q's `group`. -/
-def xgroup (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (List V)) := do
-  grp (domP (← fin? (T ≫ RelRep.ofFn k)).conv) k v T
+/-- `k xgroup T = dom((T k)°) Λ((T k)° (T v))`: the keys in first appearance, as q's `group`.  `grp` with
+    the keys read off `X` itself, so `xkey` runs once. -/
+def xgroup (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (Array V)) := do
+  let X ← xkey k v T
+  pure (domP (← fin? X) ≫ X.transposeA)
 
-/-- `select agg v by k from T = ran(T k) Λ((T k)° (T v)) agg`: q sorts the keys (`s#`). -/
-def selby [Ord κ] [Std.TransOrd κ] [Std.LawfulEqOrd κ] [FibreIndex (List V)] (agg : List V → W) (k : R → κ) (v : R → V)
+/-- `select agg v by k from T = ran(T k) Λ((T k)° (T v)) agg`: q sorts the keys (`s#`).  `grp` with the keys
+    of `X` listed once by `dedupA`, then sorted, so the sort sees each key once and `xkey` runs once. -/
+def selby [Ord κ] [FibreIndex (Array V)] (agg : Array V → W) (k : R → κ) (v : R → V)
     (T : RelRep Nat R) : Option (RelRep κ W) := do
-  -- the keys listed once by `FibreIndex.dedup` before `ran` sorts them: the sort sees each key once
-  let ks := FibreIndex.dedup (← fin? (T ≫ RelRep.ofFn k)).vals.toList
-  pure ((← grp (.pairs (FinRel.ofList (ks.map fun c => (c, c))).ran) k v T) ≫ RelRep.ofFn agg)
+  let X ← xkey k v T
+  let ks := (FibreIndex.dedupA (← fin? X).keys).qsort (compare · · == .lt)
+  pure ((.pairs ⟨ks, ks, rfl⟩ ≫ X.transposeA) ≫ RelRep.ofFn agg)
 
-omit [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] in
+omit [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] in
 /-- **`select agg v by k`**: at each key `ks` lists, `agg` of the group's whole fibre — in row order and with
     its repeats, which `sum`/`count`/`avg` need and the Set reading of `Λ` drops. -/
-theorem app_selby [FibreIndex (List V)] {agg : List V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R}
-    {ks : RelRep κ κ} {X : RelRep κ V} (hX : xkey k v T = some X) {G : RelRep κ (List V)}
-    (hG : grp ks k v T = some G) (c : κ) : (G ≫ RelRep.ofFn agg).app c = (ks.app c).map fun c' => agg (X.app c') := by
+theorem app_selby [FibreIndex (Array V)] {agg : Array V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R}
+    {ks : RelRep κ κ} {X : RelRep κ V} (hX : xkey k v T = some X) {G : RelRep κ (Array V)}
+    (hG : grp ks k v T = some G) (c : κ) :
+    (G ≫ RelRep.ofFn agg).app c = (ks.app c).map fun c' => agg (X.app c').toArray := by
   simp only [grp, hX, Option.map_some, Option.some.injEq] at hG
   subst hG
-  simp [RelRep.app_comp, RelRep.transpose_eq, RelRep.ofFn, RelRep.app_arr_fun, List.flatMap_assoc,
-    List.map_eq_flatMap]
+  simp [RelRep.app_comp, RelRep.app_transposeA, RelRep.app_ofFn, List.flatMap_assoc, List.map_eq_flatMap]
 
 /-- `ungroup G = G ∋`. -/
-def ungroup (G : RelRep κ (List V)) : RelRep κ V := G ≫ .enum id
+def ungroup (G : RelRep κ (Array V)) : RelRep κ V := G ≫ .arr id
 
 -- `k xgroup t: (+(,`k)!,`a`b`c)!+(,`v)!,(1 3;,2;,4)
-#guard (xgroup Prod.fst Prod.snd t).bind ps == some #[("a", [1, 3]), ("b", [2]), ("c", [4])]
+#guard (xgroup Prod.fst Prod.snd t).bind ps == some #[("a", #[1, 3]), ("b", #[2]), ("c", #[4])]
 -- select sum v by k from t: (`s#+(,`k)!,`s#`a`b`c)!+(,`v)!,4 2 4
-#guard (selby List.sum Prod.fst Prod.snd t).bind ps == some #[("a", 4), ("b", 2), ("c", 4)]
+#guard (selby (·.foldl (· + ·) 0) Prod.fst Prod.snd t).bind ps == some #[("a", 4), ("b", 2), ("c", 4)]
 -- ungroup `k xgroup t: +`k`v!(`a`a`b`c;1 3 2 4)
 #guard (xgroup Prod.fst Prod.snd t).bind (ps ∘ ungroup) == some #[("a", 1), ("a", 3), ("b", 2), ("c", 4)]
 
 def t2 : RelRep Nat (Sym × Int) := tab #[("b", 1), ("a", 2), ("b", 3)]
 -- `k xgroup t2: (+(,`k)!,`b`a)!+(,`v)!,(1 3;,2) — first appearance
-#guard (xgroup Prod.fst Prod.snd t2).bind ps == some #[("b", [1, 3]), ("a", [2])]
+#guard (xgroup Prod.fst Prod.snd t2).bind ps == some #[("b", #[1, 3]), ("a", #[2])]
 -- select sum v by k from t2: (`s#+(,`k)!,`s#`a`b)!+(,`v)!,2 4 ; count: 1 2 — sorted, repeats counted
-#guard (selby List.sum Prod.fst Prod.snd t2).bind ps == some #[("a", 2), ("b", 4)]
-#guard (selby List.length Prod.fst Prod.snd t2).bind ps == some #[("a", 1), ("b", 2)]
+#guard (selby (·.foldl (· + ·) 0) Prod.fst Prod.snd t2).bind ps == some #[("a", 2), ("b", 4)]
+#guard (selby Array.size Prod.fst Prod.snd t2).bind ps == some #[("a", 1), ("b", 2)]
 
 /-- `k xasc T`: `(T k)° T` sorted by key, stably. Order is not a relation property: `sortByKey`. -/
 def xasc [Ord κ] [Std.TransOrd κ] (k : R → κ) (T : RelRep Nat R) : Option (Array R) := do
