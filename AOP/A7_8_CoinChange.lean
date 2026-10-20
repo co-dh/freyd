@@ -38,6 +38,7 @@
 module
 
 import AOP.A6_1_RelSet
+import AOP.A6_FinRel
 
 set_option linter.unusedVariables false
 
@@ -86,38 +87,32 @@ theorem largestCoin_le {n : Nat} (h : 1 ≤ n) : val (largestCoin n) ≤ n := by
     · rw [if_pos h5]; exact h5                  -- val .p5 = 5 ≤ n
   · rw [if_pos h10]; exact h10                  -- val .p10 = 10 ≤ n
 
-/-- Greedy with an explicit fuel bound (structural, so it reduces under `decide`).  `fuel = amount`
-    always suffices because each coin removes at least `1`. -/
-def greedyF : Nat → Nat → List Coin
-  | 0,      _ => []
-  | (f+1),  n => if n = 0 then [] else largestCoin n :: greedyF f (n - val (largestCoin n))
+/-- One greedy step: `0` needs no coin; otherwise take the largest coin worth at most `n` and let
+    `X` change the rest. -/
+def greedyStep (X : Nat → List Coin) (n : Nat) : List Coin :=
+  if n = 0 then [] else largestCoin n :: X (n - val (largestCoin n))
 
 /-- **The greedy program** (AoPA `hylo In pick-max wf ∘ ten`): repeatedly take the largest coin
-    worth at most the remaining amount. -/
-def greedy (n : Nat) : List Coin := greedyF n n
+    worth at most the remaining amount; every coin is worth at least `1`, so it recurses on `n`. -/
+def greedy (n : Nat) : List Coin := RelRep.hylo id (fun _ => []) greedyStep n
 
 /-! ## Achievability (the `hsound` half of the headline) -/
 
-/-- Greedy makes exact change, given enough fuel.  Induction on fuel; each step removes a coin worth
-    `≥ 1` and `≤ n`, so the remainder both shrinks (fuel stays sufficient) and closes the sum. -/
-theorem greedy_sound_fuel : ∀ (f n : Nat), n ≤ f → sumVal (greedyF f n) = n
-  | 0,     n, hn => by rw [Nat.le_zero.mp hn]; rfl
-  | (f+1), n, hn => by
-      rcases Nat.eq_zero_or_pos n with h0 | hpos
-      · subst h0; rfl
-      · have hle : val (largestCoin n) ≤ n := largestCoin_le hpos
-        have hp  : 1 ≤ val (largestCoin n) := val_pos _
-        have hrec : n - val (largestCoin n) ≤ f := by omega
-        have IH := greedy_sound_fuel f (n - val (largestCoin n)) hrec
-        show sumVal (greedyF (f+1) n) = n
-        unfold greedyF
-        rw [if_neg (by omega : ¬ n = 0)]
-        show val (largestCoin n) + sumVal (greedyF f (n - val (largestCoin n))) = n
-        rw [IH]; omega
-
-/-- **Achievability.**  `sumVal (greedy n) = n` — the greedy list is a valid change for `n`. -/
+/-- **Achievability.**  `sumVal (greedy n) = n` — the greedy list is a valid change for `n`: each
+    step removes a coin worth `≥ 1` and `≤ n`, so the remainder shrinks and closes the sum. -/
 theorem greedy_sound (n : Nat) : sumVal (greedy n) = n :=
-  greedy_sound_fuel n n (Nat.le_refl n)
+  RelRep.hylo_ind (μ := id) (d := fun _ => []) (step := greedyStep)
+    (I := fun n out => sumVal out = n) (fun X n ih => by
+      show sumVal (greedyStep X n) = n
+      by_cases h0 : n = 0
+      · subst h0; rfl
+      · have hle := largestCoin_le (Nat.pos_of_ne_zero h0)
+        have h : sumVal (X (n - val (largestCoin n))) = n - val (largestCoin n) :=
+          ih _ (Nat.sub_lt (Nat.pos_of_ne_zero h0) (val_pos _))
+        show sumVal (if n = 0 then [] else _) = n
+        rw [if_neg h0]
+        show val (largestCoin n) + sumVal (X _) = n
+        rw [h]; omega) n
 
 /-! ## The spec and the achievability morphism inequality -/
 

@@ -949,17 +949,15 @@ public instance [Inhabited A] : Inhabited (Tree A) := ⟨Tree.tip default⟩
   | CL.ConsList.wrap _ => 1
   | CL.ConsList.cons _ x => neLen x + 1
 
-/-- `mct` unfolded `n` times: the recursion `(single→tip head,minL(R) list(bin(X×X)) splits)`
-    by structural recursion on the depth, since a split's halves are shorter but not sub-terms. -/
-@[expose] public def mctN [Bracket A S] [Inhabited A] : Nat → NEList A → Tree A
-  | _, CL.ConsList.wrap a => Tree.tip a
-  | 0, CL.ConsList.cons a _ => Tree.tip a
-  | n + 1, x@(CL.ConsList.cons _ _) =>
-      minLFn (R) (cmap (fun p => Tree.bin (mctN n p.1) (mctN n p.2)) (splitsFn x))
+/-- One step of `mct`: `(single→tip head,minL(R) list(bin(X×X)) splits)`, `X` the recursive call. -/
+@[expose] public def mctTreeStep [Bracket A S] [Inhabited A] (X : NEList A → Tree A) : NEList A → Tree A
+  | CL.ConsList.wrap a => Tree.tip a
+  | x@(CL.ConsList.cons _ _) => minLFn (R) (cmap (fun p => Tree.bin (X p.1) (X p.2)) (splitsFn x))
 
-/-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minL(R) list(bin(mct×mct)) splits)`,
-    unfolded as deep as the list is long. -/
-@[expose] public def mct [Bracket A S] [Inhabited A] (x : NEList A) : Tree A := mctN (neLen x) x
+/-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minL(R) list(bin(mct×mct)) splits)`; a
+    split's halves are shorter but not sub-terms, so it recurses on the length. -/
+@[expose] public def mct [Bracket A S] [Inhabited A] (x : NEList A) : Tree A :=
+  RelRep.hylo neLen (fun _ => Tree.tip default) mctTreeStep x
 
 public theorem neLen_pos : ∀ x : NEList A, 1 ≤ neLen x
   | CL.ConsList.wrap _ => Nat.le_refl 1
@@ -986,30 +984,21 @@ public theorem neLen_splits {x : NEList A} {p : NEList A × NEList A} (hp : inli
   -- one `omega` per conjunct: on the `∧` goal it negates by `Classical.byContradiction`
   exact ⟨by omega, by omega⟩
 
-/-- Any depth past the length gives the same tree. -/
-public theorem mctN_stable [Bracket A S] [Inhabited A] : ∀ (n m : Nat) (x : NEList A),
-    neLen x ≤ n + 1 → neLen x ≤ m + 1 → mctN n x = mctN m x
-  | n, m, CL.ConsList.wrap _, _, _ => by cases n <;> cases m <;> rfl
-  | 0, _, CL.ConsList.cons _ z, h, _ => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
-  | _ + 1, 0, CL.ConsList.cons _ z, _, h => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
-  | n + 1, m + 1, CL.ConsList.cons a z, hn, hm => by
-      show minLFn _ (cmap _ _) = minLFn _ (cmap _ _)
-      refine congrArg _ (cmap_congr _ fun p hp => ?_)
-      have hs := neLen_splits hp
-      rw [mctN_stable n m p.1 (by omega) (by omega), mctN_stable n m p.2 (by omega) (by omega)]
-
-/-- `mct`'s recursive case, pointwise. -/
+/-- `mct`'s recursive case, pointwise: a split's halves are shorter, so `mctTreeStep` is guarded. -/
 public theorem mct_cons [Bracket A S] [Inhabited A] (a : A) (z : NEList A) :
     mct (CL.ConsList.cons a z) = minLFn (R)
       (cmap (fun p => Tree.bin (mct p.1) (mct p.2))
-        (splitsFn (CL.ConsList.cons a z))) := by
-  show minLFn _ (cmap _ _) = minLFn _ (cmap _ _)
-  refine congrArg _ (cmap_congr _ fun p hp => ?_)
-  have hs := neLen_splits hp
-  simp only [neLen] at hs
-  show Tree.bin _ _ = Tree.bin (mctN _ p.1) (mctN _ p.2)
-  rw [mctN_stable (neLen z) (neLen p.1) p.1 (by omega) (by omega),
-    mctN_stable (neLen z) (neLen p.2) p.2 (by omega) (by omega)]
+        (splitsFn (CL.ConsList.cons a z))) :=
+  (congrFun (RelRep.hylo_fixed (μ := neLen) (d := fun _ => Tree.tip default) (step := mctTreeStep)
+    fun X Y x h => by
+      cases x with
+      | wrap _ => rfl
+      | cons _ _ =>
+        show minLFn _ (cmap _ _) = minLFn _ (cmap _ _)
+        refine congrArg _ (cmap_congr _ fun p hp => ?_)
+        have hs := neLen_splits hp
+        show Tree.bin _ _ = Tree.bin _ _
+        rw [h p.1 (by omega), h p.2 (by omega)]) (CL.ConsList.cons a z)).symm
 
 /-- `f×g` of two maps is the map of the pair. -/
 public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X'.carrier)
