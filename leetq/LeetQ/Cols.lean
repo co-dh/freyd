@@ -2,10 +2,12 @@
   qlean's other column constructors as freyd relations. A dense integer column of any width is a
   `QSortedRel` already (`QRel.lean`'s `atW`, `narrow`); here are runs of it at `short` and `int`. A
   boolean `bits` column and its `where` kernel are in `Group.lean`. A `syms` column is `RelRep.enum` from a symbol to the indices
-  holding it, and the `?` kernel answers its least one. An `alp` float column is a value reader of a
-  `QSortedRel Float`, so `lookup_rep` holds of it as of every other.
+  holding it, and the `?` kernel answers its least one. An `alp` float column is a value reader whose
+  read-back is qlean's ALP round trip, on the IEEE bits: `Float.ofBits`/`Float.toBits` are opaque, so
+  `rep_ofList` holds of the bits column `alpBitsCol`, and the `Float` column `alpCol` runs only.
 -/
 import LeetQ.QRel
+import QLean.Verify.Alp
 
 namespace LeetQ.Cols
 
@@ -105,14 +107,41 @@ def abcab : ByteArray × Array Nat := symCol ["a", "bc", "", "a", "bc"]
 
 /-! ## An `alp` float column as the values -/
 
-/-- Element `i` of an ALP column, `Column.alpBits`, as the `Float` it denotes. -/
-def alpVal (md pk a : ByteArray) (i : Nat) : Float := Float.ofBits (alpBits md pk a (blockStarts md) i)
+/-- A list of IEEE bit patterns as an ALP value column: laid out dense, then `Coc.alpEncode64`, the
+Lean body of `qlean_alp_encode_f64`; element `i` read back by `Column.alpBits`. -/
+def alpBitsCol (vs : List UInt64) : Nat → UInt64 :=
+  let e := Coc.alpEncode64 (enc 8 (vs.map UInt64.toInt64))
+  alpBits e.1 e.2.1 e.2.2 (blockStarts e.1)
 
-/-- A list of floats as an ALP value column: their bits laid out dense, then `Coc.alpEncode64`, the
-Lean body of `qlean_alp_encode_f64`. -/
-def alpCol (vs : List Float) : Nat → Float :=
-  let e := Coc.alpEncode64 (enc 8 (vs.map fun x => x.toBits.toInt64))
-  alpVal e.1 e.2.1 e.2.2
+/-- A list of floats as an ALP value column: `alpBitsCol` of their bits, read as `Float`s. -/
+def alpCol (vs : List Float) (i : Nat) : Float := Float.ofBits (alpBitsCol (vs.map Float.toBits) i)
+
+/-- **The ALP column reads back its bits**, from qlean's `alpBits_alpEncode64`. The bound is the
+encoder's: a block start is a 32-bit offset. -/
+theorem alpBitsCol_get (vs : List UInt64) (hn : vs.length < 2 ^ 32) (i : Nat) (hi : i < vs.length) :
+    alpBitsCol vs i = vs[i] := by
+  have hs : (enc 8 (vs.map UInt64.toInt64)).size / 8 = vs.length := by
+    rw [enc_size (by decide), List.length_map, Nat.mul_div_cancel_left _ (by decide)]
+  have e := alpBits_alpEncode64 (enc 8 (vs.map UInt64.toInt64)) (hs ▸ hn) i (hs ▸ hi)
+  have d := atW_enc (by decide) (vs.map UInt64.toInt64) i (by simpa using hi) (fits_eight _)
+  rw [atW_eight, List.getElem_map] at d
+  show alpBits _ _ _ _ i = _
+  rw [e]
+  simpa using congrArg Int64.toUInt64 d
+
+/-- **`rep(ofList(l)) = rel(l)` for an ALP value column**, the values carried as their IEEE bits, so
+no `Float` law is asked for. -/
+theorem rep_ofList_alp (l : List (Int64 × UInt64)) (hn : l.length < 2 ^ 32) (foR : Bool) :
+    (QSortedRel.ofList l alpBitsCol foR).rep = rel l := by
+  -- `rep_ofList` asks the read-back of every list; past the bound any reader will do, `getElem!`
+  let col (vs : List UInt64) (i : Nat) : UInt64 := if vs.length < 2 ^ 32 then alpBitsCol vs i else vs[i]!
+  have hcol : ∀ vs i (h : i < vs.length), col vs i = vs[i] := fun vs i h => by
+    by_cases hv : vs.length < 2 ^ 32
+    · simp only [col, if_pos hv]; exact alpBitsCol_get vs hv i h
+    · simp only [col, if_neg hv, getElem!_pos vs i h]
+  have he : QSortedRel.ofList l alpBitsCol foR = QSortedRel.ofList l col foR := by
+    simp only [QSortedRel.ofList, col, List.length_map, List.length_mergeSort, if_pos hn]
+  rw [he]; exact QSortedRel.rep_ofList l col hcol foR
 
 /-- Prices by id. -/
 def prices : List (Int64 × Float) := [(3, 1.25), (1, 0.5), (3, 2.75), (2, 10.0)]
@@ -122,6 +151,8 @@ def prices : List (Int64 × Float) := [(3, 1.25), (1, 0.5), (3, 2.75), (2, 10.0)
 #guard (QSortedRel.ofList prices alpCol).lookup 2 == [10.0]
 #guard (QSortedRel.ofList prices alpCol).lookup 4 == []
 #guard (QSortedRel.ofList prices alpCol true).lookup 3 == [1.25, 2.75]
+#guard (QSortedRel.ofList (prices.map fun p => (p.1, p.2.toBits)) alpBitsCol).lookup 3 ==
+  [(1.25 : Float).toBits, (2.75 : Float).toBits]
 
 /-! ## Axioms -/
 
@@ -132,5 +163,7 @@ def prices : List (Int64 × Float) := [(3, 1.25), (1, 0.5), (3, 2.75), (2, 10.0)
 #print axioms rel_symRel
 #print axioms findSymScalar_spec
 #print axioms alpCol
+#print axioms alpBitsCol_get
+#print axioms rep_ofList_alp
 
 end LeetQ.Cols
