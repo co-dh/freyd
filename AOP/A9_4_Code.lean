@@ -39,6 +39,7 @@ public import AOP.A7_2_RelSet
 public import AOP.A8_3
 public import AOP.A6_FinRel
 public import AOP.A9_1
+public import AOP.A9_2_Edit
 
 /-- B&dM §9.4's fixed data: `c` and `p`, the constant costs of a symbol and a pointer.  Every
     definition below reads them from the one instance in scope, so the printer, which hides
@@ -1036,21 +1037,11 @@ section CodeRun
 deriving instance DecidableEq for SnocList
 deriving instance DecidableEq for Code
 
-/-- A cons-list's members, in order. -/
-@[expose] public def clList {B : Type} : CL.ConsList Unit B → List B
-  | CL.ConsList.wrap _ => []
-  | CL.ConsList.cons b bs => b :: clList bs
-
-public theorem mem_clList {B : Type} (b : B) :
-    ∀ bs : CL.ConsList Unit B, b ∈ clList bs ↔ ListRel.inlistP bs b
-  | CL.ConsList.wrap _ => by simp [clList, ListRel.inlistP]
-  | CL.ConsList.cons c cs => by simp [clList, ListRel.inlistP, mem_clList b cs]
-
 /-- `extend°` as a `RelRep`: the cuts `reduce` lists. -/
-@[expose] public def stepE : RelRep Str (Str × Code) := .enum fun ws => clList (reduceFn ws)
+@[expose] public def stepE : RelRep Str (Str × Code) := .enum fun ws => CL.toList (reduceFn ws)
 
 public theorem rel_stepE : stepE.rel = extend° :=
-  hom_ext fun w q => (mem_clList q (reduceFn w)).trans (mem_reduce w q)
+  hom_ext fun w q => (Edit.inlistP_iff_mem (reduceFn w) q).symm.trans (mem_reduce w q)
 
 variable [RelSet.Code]
 
@@ -1066,7 +1057,7 @@ public theorem rel_Rt : Rt.rel = R := hom_ext fun x y => decide_eq_true_iff.tran
 
 /-- The candidates of one step: `extend°` then `(X×𝟙)snoc`. -/
 @[expose] public def cands (X : Str → List (SnocList Unit Code)) (ws : Str) : List (SnocList Unit Code) :=
-  (clList (reduceFn ws)).flatMap fun q => (X q.1).map fun cs => SnocList.snoc cs q.2
+  (CL.toList (reduceFn ws)).flatMap fun q => (X q.1).map fun cs => SnocList.snoc cs q.2
 
 omit [RelSet.Code] in
 public theorem cands_eq (X : Str → List (SnocList Unit Code)) :
@@ -1132,7 +1123,7 @@ public theorem mem_estList_Rt {cs : SnocList Unit Code} {l : List (SnocList Unit
 omit [RelSet.Code] in
 public theorem mem_cands {X : Str → List (SnocList Unit Code)} {w : Str} {cs : SnocList Unit Code} :
     cs ∈ cands X w ↔ ∃ q, extendP q w ∧ ∃ d ∈ X q.1, cs = SnocList.snoc d q.2 := by
-  simp only [cands, List.mem_flatMap, List.mem_map, mem_clList, mem_reduce]
+  simp only [cands, List.mem_flatMap, List.mem_map, ← Edit.inlistP_iff_mem, mem_reduce]
   constructor
   · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
   · rintro ⟨q, hq, d, hd, rfl⟩; exact ⟨q, hq, d, hd, rfl⟩
@@ -1195,7 +1186,7 @@ attribute [local instance] c1p2
 /-- **code-run**, the cuts: `ababa` ends in a symbol `a`, or in a pointer — `a` back to either
     earlier `a`, `ba` back to the first, `aba` back to the start. -/
 public theorem run_cuts :
-    clList (reduceFn (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
+    CL.toList (reduceFn (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
       (SnocList.wrap ()) 'a') 'b') 'a') 'b') 'a'))
       = [(SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') 'a') 'b',
             Code.sym 'a'),
