@@ -13,6 +13,7 @@ module
 public import AOP.A6_SnocList
 public import AOP.A7_1
 public import AOP.A7_2_Pres
+public import AOP.A6_FinRel
 import AOP.A10_1
 import AOP.A7_2_RelSet
 
@@ -1295,6 +1296,156 @@ public theorem alpha_recip_strictNatural :
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Detab.Str] public meta def unexpandDetabStr : Unexpander
   | _ => `($(mkIdent `String))
+
+/-! ## `EntabRun`: the greedy step of `entab` on `RelRep`, and one run at tab width `4` -/
+
+section EntabRun
+
+deriving instance DecidableEq for SnocList
+
+/-- Every prefix of a string, the string itself first. -/
+@[expose] public def prefixes : Str → List Str
+  | SnocList.wrap _ => [SnocList.wrap ()]
+  | SnocList.snoc y c => SnocList.snoc y c :: prefixes y
+
+public theorem mem_prefixes : ∀ {x y : Str}, x ∈ prefixes y ↔ prefixS x y
+  | _, SnocList.wrap () => List.mem_singleton
+  | _, SnocList.snoc _ _ => List.mem_cons.trans (or_congr Iff.rfl mem_prefixes)
+
+/-- The decompositions `Λ(expand°)(y⧺[a])`: each prefix of `y` that fills to `y⧺[a]`, with `TB`,
+    then `(y,a)` unless `a=TB`; `nil` has none. -/
+@[expose] public def cands [Detab] : Str → List (Str × Char)
+  | SnocList.wrap _ => []
+  | SnocList.snoc ys a =>
+      ((prefixes ys).filter fun zs => decide (fillFn zs = SnocList.snoc ys a)).map (·, tb)
+        ++ if a = tb then [] else [(ys, a)]
+
+/-- `cands` enumerates `expand°`. -/
+public theorem rel_cands [Detab] (hn : 0 < n) :
+    ((RelRep.enum cands).rel : dSL Unit Char ⟶ ⟨Str × Char⟩) = expand° :=
+  hom_ext fun x ⟨y, b⟩ => by
+    show (y, b) ∈ cands x ↔ x = expandFn y b
+    cases x with
+    | wrap u =>
+      exact ⟨fun h => absurd h List.not_mem_nil, fun h => absurd h.symm (expand_ne_nil hn y b)⟩
+    | snoc x a =>
+      simp only [cands, List.mem_append, List.mem_map, List.mem_filter, mem_prefixes,
+        decide_eq_true_eq, Prod.mk.injEq, expandFn]
+      by_cases hb : b = tb
+      · rw [if_pos hb]
+        constructor
+        · rintro (⟨z, ⟨_, hz⟩, rfl, _⟩ | h)
+          · exact hz.symm
+          · by_cases ha : a = tb
+            · rw [if_pos ha] at h; exact absurd h List.not_mem_nil
+            · rw [if_neg ha, List.mem_singleton, Prod.mk.injEq] at h
+              exact absurd (h.2.symm.trans hb).symm (fun e => ha e.symm)
+        · intro h
+          exact Or.inl ⟨y, ⟨(fill_eq_snoc hn h.symm).2, h.symm⟩, rfl, hb.symm⟩
+      · rw [if_neg hb]
+        constructor
+        · rintro (⟨_, _, _, e⟩ | h)
+          · exact absurd e.symm hb
+          · by_cases ha : a = tb
+            · rw [if_pos ha] at h; exact absurd h List.not_mem_nil
+            · rw [if_neg ha, List.mem_singleton, Prod.mk.injEq] at h
+              rw [h.1, h.2]
+        · intro h
+          injection h with h1 h2
+          subst h1; subst h2
+          exact Or.inr (by rw [if_neg hb, List.mem_singleton])
+
+/-- `V×U` decided on two decompositions. -/
+@[expose] public def vu [Detab] (p q : Str × Char) : Bool :=
+  decide (p.1 ∈ prefixes q.1 ∧ fillFn p.1 = fillFn q.1 ∧ (p.2 = tb ∨ p.2 = q.2))
+
+/-- `V×U` as a `RelRep` test. -/
+@[expose] public def VUt [Detab] : RelRep (Str × Char) (Str × Char) := .test vu
+
+public theorem rel_VUt [Detab] :
+    (VUt.rel : (⟨Str × Char⟩ : RelSet.{0}) ⟶ ⟨Str × Char⟩) = rprodMap V U :=
+  hom_ext fun p q => by
+    show decide _ = true ↔ (prefixS p.1 q.1 ∧ fillFn p.1 = fillFn q.1) ∧ (p.2 = tb ∨ p.2 = q.2)
+    rw [decide_eq_true_iff, mem_prefixes]
+    exact and_assoc.symm
+
+/-- The greedy step: the `V×U`-least decompositions. -/
+@[expose] public def estC [Detab] (xs : Str) : List (Str × Char) := RelRep.estList vu (cands xs)
+
+/-- `estC` is `RelRep.est (V×U)` of `cands`. -/
+public theorem estC_eq [Detab] : RelRep.est VUt (.enum cands) = some (.enum estC) := rfl
+
+/-- `estC` computes `Λ(expand°) est(V×U)`, the step of `entab_branch`. -/
+public theorem rel_estC [Detab] (hn : 0 < n) :
+    ((RelRep.enum estC).rel : dSL Unit Char ⟶ ⟨Str × Char⟩) = Λ (expand°) ≫ est (rprodMap V U) :=
+  calc ((RelRep.enum estC).rel : dSL Unit Char ⟶ ⟨Str × Char⟩)
+      = Λ ((RelRep.enum cands).rel : dSL Unit Char ⟶ ⟨Str × Char⟩) ≫ est VUt.rel :=
+        RelRep.rel_est estC_eq
+    _ = Λ (expand°) ≫ est (rprodMap V U) := by rw [rel_cands hn, rel_VUt]
+
+/-- On `x⧺[a]` with `a≠TB` the greedy step returns `contract x a` and nothing else (`entab_step`). -/
+public theorem estC_snoc [Detab] (hn : 0 < n) (x : Str) (a : Char) (ha : a ≠ tb)
+    (p : Str × Char) : p ∈ estC (SnocList.snoc x a) ↔ p = contract x a := by
+  have h : (RelRep.enum estC).rel (SnocList.snoc x a) p
+      ↔ (Λ (expand°) ≫ est (rprodMap V U)) (SnocList.snoc x a) p := by rw [rel_estC hn]
+  exact h.trans (entab_step hn x a ha p)
+
+/-- The greedy program run on `RelRep`: the first `V×U`-least decomposition, then recurse on its
+    string; `k` bounds the recursion. -/
+@[expose] public def entabG [Detab] : Nat → Str → Str
+  | 0, x => x
+  | _ + 1, SnocList.wrap _ => SnocList.wrap ()
+  | k + 1, SnocList.snoc x a =>
+      match estC (SnocList.snoc x a) with
+      | p :: _ => SnocList.snoc (entabG k p.1) p.2
+      | [] => SnocList.snoc x a
+
+/-- **The program**: `entabG` with the length as its bound. -/
+@[expose] public def entabR [Detab] (xs : Str) : Str := entabG (length xs) xs
+
+/-- B&dM's characters at tab width `4`. -/
+@[expose] public def book4 : Detab := ⟨4, '\t', '\n', ' ', by decide, by decide⟩
+
+/-- The note's line: `ab`, a tab, `c d`. -/
+@[expose] public def entabXs : Str := convert ['a', 'b', '\t', 'c', ' ', 'd']
+
+section
+attribute [local instance] book4
+
+/-- **entab-run**, the input. -/
+public theorem run_input : entabXs = convert ['a', 'b', '\t', 'c', ' ', 'd'] := rfl
+
+/-- **entab-run**: the tab after `ab` becomes the two blanks that reach column `4`. -/
+public theorem run_detab :
+    detabFn entabXs = SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
+      (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') ' ') ' ') 'c') ' ') 'd' := by
+  decide
+
+/-- **entab-run**: the decompositions of `ab` and two blanks, which ends on the tab stop. -/
+public theorem run_cands :
+    cands (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b')
+      ' ') ' ')
+      = [(SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') ' ', '\t'),
+         (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b', '\t'),
+         (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') ' ', ' ')] := by
+  decide
+
+/-- **entab-run**: the `V×U`-least of them: `ab` and a tab. -/
+public theorem run_estC :
+    estC (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b')
+      ' ') ' ')
+      = [(SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b', '\t')] := by
+  decide
+
+/-- **entab-run**: `entab` gives the input back, the tab restored and the lone blank kept. -/
+public theorem run_entab :
+    entabR (detabFn entabXs) = SnocList.snoc (SnocList.snoc (SnocList.snoc (SnocList.snoc
+      (SnocList.snoc (SnocList.snoc (SnocList.wrap ()) 'a') 'b') '\t') 'c') ' ') 'd' := by
+  decide
+
+end
+
+end EntabRun
 
 end Freyd.Alg.RelSet.Detab
 
