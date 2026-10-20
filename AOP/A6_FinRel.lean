@@ -167,6 +167,31 @@ theorem toList_ofList (l : List (K × V)) : (ofList l).toList = l := by
 
 theorem rep_ofList (l : List (K × V)) : (ofList l).rep = rel l := congrArg rel (toList_ofList l)
 
+/-- `ofList` in one pass, each pair pushed onto the two arrays: the two `map`s build and reverse two lists. -/
+def ofListGo : List (K × V) → FinRel K V → FinRel K V
+  | [], r => r
+  | (k, v) :: l, r => ofListGo l ⟨r.keys.push k, r.vals.push v, by simp [r.len]⟩
+
+def ofListTR (l : List (K × V)) : FinRel K V := ofListGo l ⟨#[], #[], rfl⟩
+
+theorem ofListGo_toList : (l : List (K × V)) → (r : FinRel K V) →
+    (ofListGo l r).keys.toList = r.keys.toList ++ l.map Prod.fst ∧
+      (ofListGo l r).vals.toList = r.vals.toList ++ l.map Prod.snd
+  | [], _ => by simp [ofListGo]
+  | (k, v) :: l, r => by
+    obtain ⟨h1, h2⟩ := ofListGo_toList l ⟨r.keys.push k, r.vals.push v, by simp [r.len]⟩
+    simp [ofListGo, h1, h2]
+
+@[csimp] theorem ofList_eq_ofListTR : @ofList = @ofListTR := by
+  funext K V l
+  have h := ofListGo_toList l ⟨#[], #[], rfl⟩
+  unfold ofListTR ofList
+  generalize ofListGo l ⟨#[], #[], rfl⟩ = r at h ⊢
+  obtain ⟨ks, vs, _⟩ := r
+  simp only [List.nil_append] at h
+  simp only [mk.injEq]
+  exact ⟨by rw [← h.1], by rw [← h.2]⟩
+
 /-- The converse swaps the two arrays: no copy, no sort. -/
 def conv (r : FinRel K V) : FinRel V K := ⟨r.vals, r.keys, r.len.symm⟩
 
