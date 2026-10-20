@@ -81,20 +81,29 @@ end Pairs
 /-- q's `sum`: every element but the null `nul`, added with 64-bit wrap — `Coc.Over.step .add`. -/
 def qsum (nul : Int64) (xs : List Int64) : Int64 := xs.foldl (fun acc x => if x == nul then acc else acc + x) 0
 
+/-- `Int64.ofInt_toInt` without core's `Classical.choice`: `toInt_bounds` and the in-range read-back. -/
+theorem ofInt_toInt (x : Int64) : Int64.ofInt x.toInt = x :=
+  Int64.toInt_inj.1 (by have := toInt_bounds x; exact Int64.toInt_ofInt_of_le (by omega) (by omega))
+
 theorem foldl_qsum (nul : Int64) : (xs : List Int64) → (a : Int64) →
     xs.foldl (fun acc x => if x == nul then acc else acc + x) a =
       a + Int64.ofInt ((xs.filter (· != nul)).map Int64.toInt).sum
-  | [], a => by simp
+  | [], a => by show a = a + Int64.ofInt 0; rw [show Int64.ofInt 0 = 0 from rfl, Int64.add_zero]
   | x :: xs, a => by
     rw [List.foldl_cons, foldl_qsum nul xs]
-    by_cases h : x = nul
-    · subst h; simp
-    · simp [h, Int64.ofInt_add, Int64.ofInt_toInt, Int64.add_assoc]
+    -- a `Bool` case split: `by_cases` and `simp` reach `Classical.choice` here
+    cases hb : x == nul with
+    | true =>
+      cases eq_of_beq hb
+      rw [if_pos rfl, List.filter_cons_of_neg (by rw [bne_self_eq_false]; exact Bool.false_ne_true)]
+    | false =>
+      rw [if_neg Bool.false_ne_true, List.filter_cons_of_pos (by rw [bne, hb]; rfl), List.map_cons, List.sum_cons,
+        Int64.ofInt_add, ofInt_toInt, Int64.add_assoc]
 
 /-- **q's `sum` is the integer sum of the non-null values, wrapped to 64 bits.** -/
 theorem qsum_eq (nul : Int64) (xs : List Int64) :
     qsum nul xs = Int64.ofInt ((xs.filter (· != nul)).map Int64.toInt).sum := by
-  rw [qsum, foldl_qsum]; simp
+  rw [qsum, foldl_qsum, Int64.zero_add]
 
 /-- q's `sum` as a `RelRep` pipeline: drop the null by the coreflexive `(≠ nul)?`, read each value
 as an integer, then `Q.Agg.sum`. -/
@@ -135,13 +144,18 @@ theorem signed_clsW {w : Nat} (h : Signed w) (v : UInt64) : Ew.signed (clsW w) v
   have hh : half w ≤ 2 ^ 63 := half_le (by rcases h with rfl | rfl | rfl <;> decide)
   rw [Int64.toInt_ofInt_of_le (by omega) (by omega)]
   rcases h with rfl | rfl | rfl
-  · show (v.toUInt16.toInt16.toInt64).toInt = _
-    rw [Int16.toInt_toInt64, Int16.toInt, show v.toUInt16.toInt16.toBitVec = v.toUInt16.toBitVec from rfl,
-      BitVec.toInt_eq_toNat_cond, UInt16.toNat_toBitVec, UInt64.toNat_toUInt16]
+  -- `signExtend` is `ofInt ∘ toInt`, read back in range; core's `toInt_signExtend` carries choice
+  · show (Int64.ofInt v.toUInt16.toBitVec.toInt).toInt = _
+    have hc := BitVec.toInt_eq_toNat_cond v.toUInt16.toBitVec
+    rw [UInt16.toNat_toBitVec, UInt64.toNat_toUInt16] at hc
+    have := Nat.mod_lt v.toNat (show 0 < 2 ^ 16 by decide)
+    rw [Int64.toInt_ofInt_of_le (by split at hc <;> omega) (by split at hc <;> omega), hc]
     simp only [sx]; split <;> split <;> omega
-  · show (v.toUInt32.toInt32.toInt64).toInt = _
-    rw [Int32.toInt_toInt64, Int32.toInt, show v.toUInt32.toInt32.toBitVec = v.toUInt32.toBitVec from rfl,
-      BitVec.toInt_eq_toNat_cond, UInt32.toNat_toBitVec, UInt64.toNat_toUInt32]
+  · show (Int64.ofInt v.toUInt32.toBitVec.toInt).toInt = _
+    have hc := BitVec.toInt_eq_toNat_cond v.toUInt32.toBitVec
+    rw [UInt32.toNat_toBitVec, UInt64.toNat_toUInt32] at hc
+    have := Nat.mod_lt v.toNat (show 0 < 2 ^ 32 by decide)
+    rw [Int64.toInt_ofInt_of_le (by split at hc <;> omega) (by split at hc <;> omega), hc]
     simp only [sx]; split <;> split <;> omega
   · show v.toInt64.toInt = _
     rw [sx_eight]
@@ -343,5 +357,70 @@ theorem xkey_rows (kg vg : Nat → Int64) (m : Nat) :
   rw [RelRep.app?_comp hX hA hB]
   congr 1; funext c
   exact flatMap_get vg m _ fun i hi => List.mem_range.1 (List.mem_filter.1 hi).1
+
+/-- **`select sum v by k`, read compressed**: the keys are `distinct`'s, in first appearance, and each
+key's sum is q's sum of the fibre `xkey` gives that key on the table `rows` — order and repeats kept. -/
+theorem selbySum_spec (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) :
+    ∃ X, Q.xkey Prod.fst Prod.snd (Q.tab (rows k v)) = some X ∧ ∃ g, X.app? = some g ∧
+      (selbySum nul k v).map Prod.fst = (firstsOf k.get k.count).map k.get ∧
+      ∀ p ∈ selbySum nul k v, p.2 = qsum nul (g p.1) := by
+  obtain ⟨X, hX, hg⟩ := xkey_rows k.get v.get k.count
+  refine ⟨X, hX, _, hg, ?_, fun p hp => ?_⟩
+  · simp only [selbySum, groupK_eq k h, List.map_map, Function.comp_def]; exact dict_keys _ _
+  · rw [selbySum, groupK_eq k h, dictOf, List.map_map] at hp
+    obtain ⟨f, -, rfl⟩ := List.mem_map.1 hp
+    exact Col.foldl_step nul v _
+
+/-- **The per-key entry of `app?_selby`**: `select agg v by k` over `rows`, with `agg` q's sum,
+answers at `c` the sums of the keys `ks` lists, each `selbySum`'s entry for that key. -/
+theorem selbySum_selby (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) {ks : RelRep Int64 Int64}
+    {e : Int64 → List Int64} (he : ks.app? = some e) {G : RelRep Int64 (List Int64)}
+    (hG : Q.grp ks Prod.fst Prod.snd (Q.tab (rows k v)) = some G) {A : RelRep Int64 Int64}
+    (hA : G.comp (RelRep.ofFn (qsum nul)) = some A) :
+    ∃ g : Int64 → List Int64, A.app? = some (fun c => (e c).map fun c' => qsum nul (g c')) ∧
+      ∀ p ∈ selbySum nul k v, p.2 = qsum nul (g p.1) := by
+  obtain ⟨X, hX, g, hg, -, hs⟩ := selbySum_spec nul k v h
+  exact ⟨g, Q.app?_selby he hX hg hG hA, hs⟩
+
+/-! ## Runs: compressed against `.pairs` -/
+
+def nul : Int64 := Int64.minValue
+def ks : List Int64 := [3, 1, 3, 2, 1]
+def vs : List Int64 := [10, 20, 30, 40, 50]
+/-- One null: `sum` skips it. -/
+def vsN : List Int64 := [10, 20, 30, 40, Int64.minValue]
+
+/-- Keys dense `long` (`Order.group`) and packed (`Order.groupFoR`); values dense `short` (`overBytes`
+at `i16`), packed (`Coc.over`), and dense `long` with a null. -/
+def kD : Keys := .dense 8 (enc 8 ks)
+def kF : Keys := Keys.ofList true ks
+def vD : Keys := Keys.ofList false vs
+def vF : Keys := Keys.ofList true vs
+def vN : Keys := Keys.ofList false vsN
+
+#guard Col.sum nul vD == 150 && Col.sum nul vF == 150 && Col.sum nul vN == 100
+#guard Q.Agg.sum (Q.Agg.ql (vs.map Int64.toInt)) == some [150]
+#guard qsumR nul (Q.Agg.ql (Col.vals vN)) == some [100]
+#guard qsumR nul (Q.Agg.ql (Col.vals vF)) == some [150]
+-- `where 10110b` (LSB first: 13): rows 0, 2, 3
+#guard whereQ 5 ⟨#[13]⟩ == [0, 2, 3]
+#guard sumWhere nul 5 ⟨#[13]⟩ vD == 80 && sumWhere nul 5 ⟨#[13]⟩ vF == 80 && sumWhere nul 5 ⟨#[13]⟩ vN == 80
+#guard ((Q.Agg.ql (whereQ 5 ⟨#[13]⟩)).comp (Q.Agg.ql (Col.vals vD))).bind (qsumR nul) == some [80]
+#guard ((Q.Agg.ql (whereQ 5 ⟨#[13]⟩)).comp (Q.Agg.ql (Col.vals vN))).bind (qsumR nul) == some [80]
+#guard selbySum nul kD vD == [(3, 40), (1, 70), (2, 40)]
+#guard selbySum nul kF vF == [(3, 40), (1, 70), (2, 40)]
+#guard selbySum nul kF vN == [(3, 40), (1, 20), (2, 40)]
+-- the `.pairs` `select sum v by k` over the decoded table, keys sorted as q's `s#`
+#guard Q.ps (Q.selby (qsum nul) (fun r => r.1.toInt) Prod.snd (Q.tab (rows kD vD))) == some [(1, 70), (2, 40), (3, 40)]
+#guard Q.ps (Q.selby (qsum nul) (fun r => r.1.toInt) Prod.snd (Q.tab (rows kF vN))) == some [(1, 20), (2, 40), (3, 40)]
+
+#print axioms qsum_ql
+#print axioms Col.sum_eq
+#print axioms Col.sum_spec
+#print axioms sumWhere_spec
+#print axioms groupK_eq
+#print axioms xkey_rows
+#print axioms selbySum_spec
+#print axioms selbySum_selby
 
 end LeetQ.Compressed
