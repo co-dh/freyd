@@ -438,20 +438,38 @@ theorem filter_eq_take {t : Int} : (l : List (Int × W)) → l.Pairwise (fun x y
     l.filter (fun y => decide (y.1 ≤ t)) = l.take p
   | [], _, _, _, _ => by simp
   | x :: r, hs, 0, _, h2 => by
-    have hx : ¬ x.1 ≤ t := by simpa using h2
+    have hx : ¬ x.1 ≤ t := fun h => by
+      have e : (!decide (x.1 ≤ t)) = true := h2
+      rw [decide_eq_true h] at e; exact Bool.noConfusion e
     rw [List.pairwise_cons] at hs
-    simp only [List.filter_cons, decide_eq_true_eq, hx, ↓reduceIte, List.take_zero, List.filter_eq_nil_iff,
-      decide_eq_true_eq]
-    exact fun y hy hyt => hx (Int.le_trans (hs.1 y hy) hyt)
+    rw [List.filter_cons, if_neg (fun e => hx (of_decide_eq_true e)), List.take_zero]
+    -- by hand: `List.filter_eq_nil_iff` uses `Classical.choice`
+    have hnil : ∀ l : List (Int × W), (∀ y ∈ l, ¬ y.1 ≤ t) → l.filter (fun y => decide (y.1 ≤ t)) = [] := by
+      intro l
+      induction l with
+      | nil => intro _; rfl
+      | cons y l ih =>
+        intro h
+        rw [List.filter_cons, if_neg (fun e => h y (List.mem_cons_self ..) (of_decide_eq_true e)),
+          ih fun z hz => h z (List.mem_cons_of_mem _ hz)]
+    exact hnil r fun y hy hyt => hx (Int.le_trans (hs.1 y hy) hyt)
   | x :: r, hs, p + 1, h1, h2 => by
     rw [List.pairwise_cons] at hs
+    have h1' : (x :: r)[p]?.any (·.1 ≤ t) = true := h1.resolve_left (Nat.succ_ne_zero p)
     have hx : x.1 ≤ t := by
-      rcases p with _ | p
-      · simpa using h1
-      · obtain ⟨y, hy, hyt⟩ : ∃ y, r[p]? = some y ∧ y.1 ≤ t := by simpa [Option.any_eq_true] using h1
-        exact Int.le_trans (hs.1 y (List.mem_of_getElem? hy)) hyt
-    rw [List.filter_cons, if_pos (decide_eq_true hx), List.take_succ_cons,
-      filter_eq_take r hs.2 p (by rcases p with _ | p <;> simp_all) (by simpa using h2)]
+      cases p with
+      | zero => exact of_decide_eq_true h1'
+      | succ q =>
+        rw [List.getElem?_cons_succ] at h1'
+        cases hq : r[q]? with
+        | none => rw [hq] at h1'; exact Bool.noConfusion h1'
+        | some y => rw [hq] at h1'; exact Int.le_trans (hs.1 y (List.mem_of_getElem? hq)) (of_decide_eq_true h1')
+    have h1r : p = 0 ∨ r[p - 1]?.any (·.1 ≤ t) = true := by
+      cases p with
+      | zero => exact .inl rfl
+      | succ q => rw [List.getElem?_cons_succ] at h1'; exact .inr h1'
+    rw [List.getElem?_cons_succ] at h2
+    rw [List.filter_cons, if_pos (decide_eq_true hx), List.take_succ_cons, filter_eq_take r hs.2 p h1r h2]
 
 omit [DecidableEq W] [FibreIndex W] in
 /-- On ascending rows, `est(≥)` keeps the last row, so its last is the last row. -/
