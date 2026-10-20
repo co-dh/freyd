@@ -1019,7 +1019,8 @@ theorem app?_est {L : RelRep V V} {R T : RelRep K V} (h : est L R = some T) {f :
 def thin (Q : RelRep V V) (R : RelRep K V) : Option (RelRep K V) :=
   R.app?.map fun f => enum fun k => thinList Q.mem (f k)
 
-omit [DecidableEq K] in
+/-- `Λ(R) thin(Q)` cuts each fibre list by `thinList`. -/
+theorem thin_of_app? {Q : RelRep V V} {R : RelRep K V} {f : K → List V} (h : R.app? = some f) :
     thin Q R = some (enum fun k => thinList Q.mem (f k)) := by
   simp only [thin, h, Option.map_some]
 
@@ -1160,7 +1161,7 @@ def foldWith (post : List V → List V) (B : RelRep L V) (S : RelRep (E × V) V)
 /-- `⦇[B,S]⦈`, each fibre enumerated. -/
 def fold (B : RelRep L V) (S : RelRep (E × V) V) : Option (RelRep (ConsList L E) V) := foldWith id B S
 
-omit [DecidableEq V] in
+/-- The fold's fibre lists: at `wrap` the base's, at `cons` the step's over each value in order, each cut
     by `post`. -/
 theorem foldWith_of_app? {post : List V → List V} {B : RelRep L V} {S : RelRep (E × V) V} {b : L → List V}
     {s : E × V → List V} (hB : B.app? = some b) (hS : S.app? = some s) :
