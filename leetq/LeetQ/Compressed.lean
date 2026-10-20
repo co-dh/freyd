@@ -279,15 +279,6 @@ theorem vpay_spec (m : USize) (v : Keys) (hm : m.toNat ≤ v.count) :
       Option.some.injEq] at this
     simp only [vpay, Ew.elem, h8, s8]; rw [← atW_eight, this]; rfl
 
-/-- **`overBytes .add` is q's `sum` of the elements it reads.** -/
-theorem overBytes_qsum (nul : Int64) (cls : UInt8) (b : ByteArray) :
-    overBytes .add cls nul b = qsum nul (denseElems cls b) := by
-  have hs : Coc.Over.denseSeed .add cls nul = 0 := by simp [Coc.Over.denseSeed, Coc.Over.seed]
-  rw [overBytes_eq, foldl_filter, qsum, hs]
-  congr 1; funext acc x
-  cases h : x == nul <;> simp only [bne, h, Coc.Over.boolCast, Bool.not_true, Bool.not_false, Bool.or_false,
-    Bool.or_true, Bool.false_eq_true, ↓reduceIte] <;> rfl
-
 /-! ## `where`, and `sum v where b` -/
 
 /-- `sum v where b`: `whereBits` answers the indices, `gatherBytes` reads `v` at them, `overBytes .add`
@@ -306,21 +297,28 @@ theorem sumWhere_eq (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) (h :
   dsimp only at hm hg ⊢
   obtain ⟨w1, w8⟩ := width_bounds c
   have hw : (Ew.width c).toUSize.toNat = Ew.width c := toNat_toUSize (by omega)
-  obtain ⟨hs, hj⟩ := whereBits_spec n bits
-  obtain ⟨gs, gj⟩ := gatherBytes_spec _ (by rw [hw]; exact w8) 0 b (whereBits n bits)
+  have hL' : ∀ x ∈ (List.range n.toNat).filter (bitAt bits), x < n.toNat := fun x hx =>
+    List.mem_range.1 (List.mem_filter.1 hx).1
+  obtain ⟨gs, gj⟩ := gatherBytes_whereBits _ (by rw [hw]; exact w8) 0 b n bits
+    fun i hi => by rw [hw]; have := hL' i hi; omega
   rw [hw] at gs gj
-  obtain ⟨L, hL⟩ : ∃ L, L = (List.range n.toNat).filter (bitAt bits) := ⟨_, rfl⟩
-  rw [← hL] at hs hj ⊢
-  rw [overBytes_qsum]; congr 1
+  have hs : Coc.Over.denseSeed .add c nul = 0 := by simp [Coc.Over.denseSeed, Coc.Over.seed]
+  rw [overBytes_eq, foldl_filter, hs]
+  have hq : ∀ l : List Int64, l.foldl (fun acc x => if (Coc.Over.add.boolCast || x != nul) = true then
+      Coc.Over.add.step acc x else acc) 0 = qsum nul l := fun l => by
+    rw [qsum]; congr 1; funext acc x
+    cases h : x == nul <;> simp only [bne, h, Coc.Over.boolCast, Bool.not_true, Bool.not_false, Bool.or_false,
+      Bool.or_true, Bool.false_eq_true, ↓reduceIte] <;> rfl
+  rw [hq]
+  congr 1
   apply List.ext_getElem
-  · rw [denseElems, List.length_map, List.length_range, gs, hs, List.length_map,
-      Nat.mul_div_cancel_left _ (by omega : 0 < Ew.width c), Nat.mul_div_cancel_left _ (by decide : 0 < 8)]
+  · rw [denseElems, List.length_map, List.length_range, gs, List.length_map,
+      Nat.mul_div_cancel_left _ (by omega : 0 < Ew.width c)]
   · intro j _ h2
-    have hj' : j < L.length := by rw [List.length_map] at h2; exact h2
-    have hL' : ∀ x ∈ L, x < n.toNat := by rw [hL]; exact fun x hx => List.mem_range.1 (List.mem_filter.1 hx).1
+    have hj' : j < ((List.range n.toNat).filter (bitAt bits)).length := by rw [List.length_map] at h2; exact h2
     have hl := hL' _ (List.getElem_mem hj')
     simp only [denseElems, List.getElem_map, List.getElem_range]
-    rw [Ew.elem, gj j (by rw [hs]; omega), hj j hj', if_pos (by omega)]
+    rw [Ew.elem, gj j hj']
     exact hg _ hl
 
 /-- `ql(is) ; ql(xs)`: `xs` read at each of `is`, in `is`'s order. -/
@@ -357,29 +355,13 @@ theorem sumWhere_spec (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) (h
 
 /-! ## `group` and `select sum v by k` -/
 
-/-- The kind `groupIds` reads a dense `w`-byte key at: one of width `w`, where keys agree as bits do. -/
-def kindW : Nat → Option Kind
-  | 1 => some .u8
-  | 2 => some .i16
-  | 4 => some .i32
-  | 8 => some .i64
-  | _ => none
-
-theorem kindW_spec {w : Nat} {kd : Kind} (h : kindW w = some kd) :
-    (kd = .u8 ∨ kd = .c8 ∨ kd = .i16 ∨ kd = .i32 ∨ kd = .i64) ∧ kd.width = w ∧ ∀ b, kd.avail b = b.size / w := by
-  unfold kindW at h
-  split at h <;> cases h <;> exact ⟨by decide, rfl, fun _ => rfl⟩
-
 /-- Two `w`-byte elements are equal exactly when their bits are. -/
 theorem atW_inj {w : Nat} (hw : w ≤ 8) (b : ByteArray) (i j : Nat) :
     atW w b i = atW w b j ↔ bitsAt b (i * w) w = bitsAt b (j * w) w := by
   refine ⟨fun e => ?_, fun e => by rw [atW, atW, e]⟩
   have e' := congrArg Int64.toInt e
   rw [toInt_atW hw, toInt_atW hw] at e'
-  have h1 := bitsAt_lt b (i * w) w hw; have h2 := bitsAt_lt b (j * w) w hw
-  apply UInt64.toNat_inj.1
-  simp only [sx, Nat.mod_eq_of_lt h1, Nat.mod_eq_of_lt h2] at e'
-  split at e' <;> split at e' <;> omega
+  exact (sx_inj (bitsAt_lt b (i * w) w hw) (bitsAt_lt b (j * w) w hw)).1 e'
 
 /-- The group ids of a key column: `groupIds` at the kind of the key's width, `groupIdsFoR` on a pack,
 and `groupIds` on the key re-encoded at eight bytes at a width no kind has. -/
@@ -436,23 +418,6 @@ theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
     rw [UInt64.xor_left_inj]
     exact ⟨congrArg _, fun e => by
       rw [← UInt64.toUInt64_toInt64 (foRBits md pk (blockStarts md) i), e, UInt64.toUInt64_toInt64]⟩
-
-/-- Long `j` of an id payload is entry `j` of the ids it reads back as. -/
-theorem ids_get {b : ByteArray} {l : List Nat} (h : ids b = l) {j : Nat} (hj : j < l.length) :
-    (bitsAt b (j * 8) 8).toNat = l[j] := by
-  have hl : j < b.size / 8 := by
-    have := congrArg List.length h; rw [ids, List.length_map, List.length_range] at this; omega
-  have := congrArg (·[j]?) h
-  simp only [ids, List.getElem?_map, List.getElem?_range hl, Option.map_some, List.getElem?_eq_getElem hj,
-    Option.some.injEq] at this
-  exact this
-
-theorem foldl_congr_mem {α β : Type} {f g : β → α → β} : ∀ (l : List α) (a : β),
-    (∀ x ∈ l, ∀ a, f a x = g a x) → l.foldl f a = l.foldl g a
-  | [], _, _ => rfl
-  | x :: l, a, h => by
-    rw [List.foldl_cons, List.foldl_cons, h x List.mem_cons_self a]
-    exact foldl_congr_mem l _ fun y hy => h y (List.mem_cons_of_mem _ hy)
 
 /-- The rows of `l` pushed onto their groups' buckets, the group read off `gid`. -/
 def buckets (gid : ByteArray) (l : List Nat) (a : Array (Array Nat)) : Array (Array Nat) :=
@@ -533,22 +498,19 @@ theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.co
   have hfl : (firstsOf k.get k.count).length ≤ k.count := by
     rw [firstsOf]; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
   have hnu : (r.2.size / 8).toUSize.toNat = r.2.size / 8 := toNat_toUSize (by omega)
-  obtain ⟨-, ho⟩ := overGroups_spec .add c nul (r.2.size / 8).toUSize r.1 b
-  rw [hnu] at ho
   have hs : Coc.Over.denseSeed .add c nul = 0 := by simp [Coc.Over.denseSeed, Coc.Over.seed]
   apply List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, length_dictOf, hng])
   intro j hj1 hj2
   have hjf : j < (firstsOf k.get k.count).length := by rw [List.length_map, length_dictOf] at hj2; exact hj2
   simp only [dictOf, List.getElem_map, List.getElem_range]
-  rw [ids_get h2 hjf, (ho j (by omega)).1, ← rows_groupOf _ _ hjf, rowsOf, foldl_filter, foldl_filter, hl1,
-    Nat.min_eq_right pm, hs]
+  rw [ids_get h2 hjf, (overGroups_buckets (op := .add) (cls := c) (nul := nul) (r.2.size / 8).toUSize r.1 b h1 pm (by omega) hjf).1, foldl_filter,
+    hs]
   congr 1
-  refine foldl_congr_mem _ _ fun i hi a => ?_
-  have hi := List.mem_range.1 hi
-  rw [gidAt, ids_get h1 (by simp only [List.length_map, List.length_range]; exact hi), List.getElem_map,
-    List.getElem_range, valAt, pg i hi]
+  refine List.foldl_rel (r := Eq) rfl fun i hi a _ e => e ▸ ?_
+  have hi := List.mem_range.1 (List.mem_filter.1 hi).1
+  rw [valAt, pg i hi]
   simp only [Col.step]
-  cases groupOf k.get k.count i == j <;> cases hn : v.get i == nul <;>
+  cases hn : v.get i == nul <;>
     simp only [bne, hn, Coc.Over.boolCast, Bool.not_true, Bool.not_false, Bool.or_false, Bool.and_false,
       Bool.and_true, Bool.false_eq_true, ↓reduceIte] <;> rfl
 
