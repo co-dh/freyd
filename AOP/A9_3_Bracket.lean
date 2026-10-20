@@ -39,6 +39,8 @@ public import AOP.A6_TreeTip
 -- `est(R)`, and `setify`'s lax naturality (`AOP.A5_7_ListBeads`) shunting `list(f)` to `P(f)`.
 -- `bmin`, B&dM's binary minimum, from which `minL(R)` is folded.
 public import AOP.A9_2_Edit
+-- `RelRep`, the run of `mct-run` at the end.
+public import AOP.A6_FinRel
 
 /-- B&dM §9.3's fixed data: the leaf size `st`, the size combiner `sb` and the combine cost `cb`.
     B&dM fix them for the whole section and never write them; every definition below reads them
@@ -111,8 +113,8 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
   | Tree.bin xs ys => opb (costSizeFn xs, costSizeFn ys)
 
 /-- **mct-defn**: `cost`, the first component of the tupled fold. -/
-@[expose] public def cost [Bracket A S] (t : Tree A) : Int :=
-  (costSizeFn t).1
+@[expose] public def cost [Bracket A S] (xs : Tree A) : Int :=
+  (costSizeFn xs).1
 
 /-- **mct-defn**: `sb` associative — the hypothesis behind `size=flatten sz`. -/
 @[expose] public def Assoc (sb : S × S → S) : Prop :=
@@ -2176,3 +2178,219 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Bracket.splitsFn] public meta def Freyd.Alg.RelSet.Bracket.unexpandBracketSplitsFn : Unexpander
   | `($_ $args*) => `($(mkIdent `splits) $args*)
   | _ => `($(mkIdent `splits))
+
+/-! ## `mct-run`: the recursive program run by `RelRep`
+
+  Its own namespace block, so the `[Inhabited A]` in force above (for `minLFn`'s answer at `[]`)
+  does not reach it: `estList` keeps every least tree and needs no default. -/
+
+namespace Freyd.Alg.RelSet.Bracket
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet.TT Freyd.Alg.RelSet.ListRel
+
+section MctRun
+
+variable {A S : Type}
+
+deriving instance DecidableEq for Tree
+
+-- `RelRep`'s composite and `est` test membership, so both sides carry decidable equality.
+variable [DecidableEq A]
+
+/-- `cat°` as a `RelRep`: the splits `splits` lists. -/
+@[expose] public def stepS : RelRep (NEList A) (NEList A × NEList A) :=
+  .enum fun xs => CL.toList (splitsFn xs)
+
+public theorem rel_stepS : (stepS : RelRep (NEList A) (NEList A × NEList A)).rel
+    = (graph (fun p : NEList A × NEList A => cat p.1 p.2)
+        : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)° :=
+  hom_ext fun xs p => (Edit.inlistP_iff_mem (splitsFn xs) p).symm.trans (mem_splits xs p)
+
+/-- `(X×X)bin` as a `RelRep`: a split `(us,vs)` to every tree `X` gives for `us` joined to every
+    tree `X` gives for `vs`. -/
+@[expose] public def Xb (X : NEList A → List (Tree A)) : RelRep (NEList A × NEList A) (Tree A) :=
+  .enum fun p => (X p.1).flatMap fun xs => (X p.2).map fun ys => Tree.bin xs ys
+
+/-- The candidates of one step: `cat°` then `(X×X)bin`. -/
+@[expose] public def cands (X : NEList A → List (Tree A)) (xs : NEList A) : List (Tree A) :=
+  (CL.toList (splitsFn xs)).flatMap fun p => (X p.1).flatMap fun xs => (X p.2).map fun ys => Tree.bin xs ys
+
+public theorem cands_eq (X : NEList A → List (Tree A)) :
+    RelRep.comp stepS (Xb X) = some (.enum (cands X)) := rfl
+
+public theorem mem_cands {X : NEList A → List (Tree A)} {xs : NEList A} {t : Tree A} :
+    t ∈ cands X xs ↔ ∃ p : NEList A × NEList A, xs = cat p.1 p.2 ∧
+      ∃ d ∈ X p.1, ∃ e ∈ X p.2, t = Tree.bin d e := by
+  simp only [cands, List.mem_flatMap, List.mem_map, ← Edit.inlistP_iff_mem, mem_splits]
+  constructor
+  · rintro ⟨p, hp, d, hd, e, he, rfl⟩; exact ⟨p, hp, d, hd, e, he, rfl⟩
+  · rintro ⟨p, hp, d, hd, e, he, rfl⟩; exact ⟨p, hp, d, hd, e, he, rfl⟩
+
+/-- Both halves of a split are shorter than the list. -/
+public theorem neLen_halves {xs us vs : NEList A} {n : Nat} (h : xs = cat us vs)
+    (hn : neLen xs ≤ n + 1) : neLen us ≤ n ∧ neLen vs ≤ n := by
+  have hl := congrArg neLen h
+  rw [neLen_cat] at hl
+  have := neLen_pos us; have := neLen_pos vs
+  exact ⟨by omega, by omega⟩
+
+variable [Bracket A S]
+
+/-- The cost order `R` as a `RelRep` test. -/
+@[expose] public def Rt : RelRep (Tree A) (Tree A) := .test fun t u => decide (cost t ≤ cost u)
+
+public theorem rel_Rt : (Rt : RelRep (Tree A) (Tree A)).rel = R :=
+  hom_ext fun t u => decide_eq_true_iff.trans (R_apply t u).symm
+
+/-- One step: the `R`-least candidates. -/
+@[expose] public def stepFn (X : NEList A → List (Tree A)) (xs : NEList A) : List (Tree A) :=
+  RelRep.estList Rt.mem (cands X xs)
+
+public theorem stepFn_eq (X : NEList A → List (Tree A)) :
+    RelRep.est Rt (.enum (cands X)) = some (.enum (stepFn X)) := rfl
+
+/-- One step is `Λ(cat° (X×X)bin) est(R)`. -/
+public theorem rel_stepFn (X : NEList A → List (Tree A)) :
+    (RelRep.enum (stepFn X)).rel
+      = Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
+            : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)° ≫ (Xb X).rel) ≫ est R := by
+  rw [RelRep.rel_est (stepFn_eq X), RelRep.rel_comp (cands_eq X), rel_stepS, rel_Rt]
+
+/-- The program on a fuel: no trees from no fuel, a singleton its tip, a longer list by one step. -/
+@[expose] public def mctRunN : Nat → NEList A → List (Tree A)
+  | 0, _ => []
+  | _ + 1, CL.ConsList.wrap a => [Tree.tip a]
+  | n + 1, xs@(CL.ConsList.cons _ _) => stepFn (mctRunN n) xs
+
+/-- The program: every split shortens the list, so `neLen xs` steps reach the singletons. -/
+@[expose] public def mctRun (xs : NEList A) : List (Tree A) := mctRunN (neLen xs) xs
+
+/-- A node costs `cb` of its two halves' sizes plus their two costs. -/
+public theorem cost_bin (d e : Tree A) : cost (Tree.bin d e) = cb (size d, size e) + cost d + cost e :=
+  rfl
+
+/-- A non-empty list of trees has one of least cost. -/
+public theorem exists_min_cost :
+    ∀ ts : List (Tree A), ts ≠ [] → ∃ v ∈ ts, ∀ y ∈ ts, cost v ≤ cost y
+  | [], h => absurd rfl h
+  | [v], _ => ⟨v, List.mem_singleton_self v, fun y hy => by
+      rw [List.mem_singleton.1 hy]; exact Int.le_refl _⟩
+  | v :: u :: ts, _ => by
+    obtain ⟨m, hm, hmin⟩ := exists_min_cost (u :: ts) (List.cons_ne_nil _ _)
+    rcases Int.le_total (cost v) (cost m) with hvm | hmv
+    · exact ⟨v, List.mem_cons_self, fun y hy => by
+        rcases List.mem_cons.1 hy with rfl | hy
+        · exact Int.le_refl _
+        · exact Int.le_trans hvm (hmin y hy)⟩
+    · exact ⟨m, List.mem_cons_of_mem _ hm, fun y hy => by
+        rcases List.mem_cons.1 hy with rfl | hy
+        · exact hmv
+        · exact hmin y hy⟩
+
+public theorem mem_estList_Rt {t : Tree A} {ts : List (Tree A)} :
+    t ∈ RelRep.estList Rt.mem ts ↔ t ∈ ts ∧ ∀ y ∈ ts, cost t ≤ cost y := by
+  simp only [RelRep.estList, List.mem_filter, List.all_eq_true]
+  show (_ ∧ ∀ y ∈ ts, decide (cost t ≤ cost y) = true) ↔ _
+  simp only [decide_eq_true_iff]
+
+/-- At a fuel no shorter than the list, `mctRunN` returns least-cost trees flattening to it, and
+    at least one. -/
+public theorem mctRunN_spec (hassoc : Assoc (sb (A := A))) : ∀ (n : Nat) (xs : NEList A),
+    neLen xs ≤ n →
+    (∀ t ∈ mctRunN n xs, xs = flatten t ∧ ∀ t', xs = flatten t' → cost t ≤ cost t')
+      ∧ ∃ t, t ∈ mctRunN n xs
+  | 0, xs, h => (Nat.not_succ_le_zero 0 (Nat.le_trans (neLen_pos xs) h)).elim
+  | _ + 1, CL.ConsList.wrap a, _ => by
+    refine ⟨fun t ht => ?_, ⟨Tree.tip a, List.mem_singleton_self _⟩⟩
+    obtain rfl := List.mem_singleton.1 ht
+    refine ⟨rfl, fun t' h' => ?_⟩
+    cases t' with
+    | tip b => exact Int.le_refl 0
+    | bin l r => exact absurd h'.symm (cat_ne_wrap _ _ a)
+  | n + 1, CL.ConsList.cons a zs, hn => by
+    have ih := fun ys (h : neLen ys ≤ n) => mctRunN_spec hassoc n ys h
+    have hs : ∀ t : Tree A, size t = sz (flatten t) := size_eq_sz_flatten hassoc
+    have hbest : ∀ t', CL.ConsList.cons a zs = flatten t' →
+        ∃ y ∈ cands (mctRunN n) (CL.ConsList.cons a zs), cost y ≤ cost t' := by
+      intro t' h
+      cases t' with
+      | tip b => exact (nomatch (h : CL.ConsList.cons a zs = CL.ConsList.wrap b))
+      | bin l r =>
+        have h : CL.ConsList.cons a zs = cat (flatten l) (flatten r) := h
+        obtain ⟨b1, b2⟩ := neLen_halves h hn
+        obtain ⟨hall1, d, hd⟩ := ih _ b1
+        obtain ⟨hall2, e, he⟩ := ih _ b2
+        refine ⟨Tree.bin d e, mem_cands.2 ⟨(flatten l, flatten r), h, d, hd, e, he, rfl⟩, ?_⟩
+        have c1 := (hall1 d hd).2 l rfl
+        have c2 := (hall2 e he).2 r rfl
+        rw [cost_bin, cost_bin, hs d, hs e, hs l, hs r, ← (hall1 d hd).1, ← (hall2 e he).1]
+        omega
+    show (∀ t ∈ stepFn (mctRunN n) (CL.ConsList.cons a zs), _)
+      ∧ ∃ t, t ∈ stepFn (mctRunN n) (CL.ConsList.cons a zs)
+    refine ⟨fun t ht => ?_, ?_⟩
+    · obtain ⟨hc, hmin⟩ := mem_estList_Rt.1 ht
+      obtain ⟨p, hp, d, hd, e, he, rfl⟩ := mem_cands.1 hc
+      obtain ⟨b1, b2⟩ := neLen_halves hp hn
+      have h1 := ((ih _ b1).1 d hd).1
+      have h2 := ((ih _ b2).1 e he).1
+      refine ⟨?_, fun t' ht' => ?_⟩
+      · show _ = cat (flatten d) (flatten e)
+        rw [← h1, ← h2]; exact hp
+      · obtain ⟨y, hy, hle⟩ := hbest t' ht'
+        exact Int.le_trans (hmin y hy) hle
+    · obtain ⟨b1, b2⟩ := neLen_halves (us := CL.ConsList.wrap a) (vs := zs) rfl hn
+      obtain ⟨_, d, hd⟩ := ih _ b1
+      obtain ⟨_, e, he⟩ := ih _ b2
+      obtain ⟨v, hv, hvmin⟩ := exists_min_cost (cands (mctRunN n) (CL.ConsList.cons a zs))
+        (List.ne_nil_of_mem (mem_cands.2 ⟨(CL.ConsList.wrap a, zs), rfl, d, hd, e, he, rfl⟩))
+      exact ⟨v, mem_estList_Rt.2 ⟨hv, hvmin⟩⟩
+
+/-- **The program meets its specification** (`mct_laws`'s right side): every tree `mctRun`
+    returns flattens to the list and costs least, `mctRun ⊑ Λ(flatten°) est(R)`. -/
+public theorem mctRun_le (hassoc : Assoc (sb (A := A))) :
+    (RelRep.enum (mctRun (A := A))).rel
+      ⊑ Λ (Allegory.recip (graph flatten : dTree A ⟶ dNE A)) ≫ est (R) :=
+  le_iff.mpr fun xs t h => (Λ_comp_est_apply _ _ xs t).2 <| by
+    obtain ⟨hd, hmin⟩ := (mctRunN_spec hassoc (neLen xs) xs (Nat.le_refl _)).1 t h
+    exact ⟨hd, fun z hz => (R_apply t z).2 (hmin z hz)⟩
+
+end MctRun
+
+section MctRunEx
+
+/-- The run's matrices: a matrix is its dimensions `(rows,columns)`; a product keeps the outer
+    two and costs the product of the three. -/
+@[expose] public def chain : Bracket (Nat × Nat) (Nat × Nat) :=
+  ⟨id, fun p => (p.1.1, p.2.2), fun p => ((p.1.1 * p.1.2 * p.2.2 : Nat) : Int)⟩
+
+attribute [local instance] chain
+
+/-- **mct-run**, the splits: three matrices cut after the first or after the second. -/
+public theorem run_splits :
+    CL.toList (splitsFn (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+      (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat)))
+      = [(CL.ConsList.wrap (10, 30), CL.ConsList.cons (30, 5) (CL.ConsList.wrap (5, 60))),
+         (CL.ConsList.cons (10, 30) (CL.ConsList.wrap (30, 5)), CL.ConsList.wrap (5, 60))] := rfl
+
+/-- **mct-run**, the candidates: each half bracketed by the program, the two joined. -/
+public theorem run_cands :
+    cands (mctRunN 2) (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+      (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat))
+      = [Tree.bin (Tree.tip (10, 30)) (Tree.bin (Tree.tip (30, 5)) (Tree.tip (5, 60))),
+         Tree.bin (Tree.bin (Tree.tip (10, 30)) (Tree.tip (30, 5))) (Tree.tip (5, 60))] := rfl
+
+/-- **mct-run**, the candidates' costs. -/
+public theorem run_costs :
+    (cands (mctRunN 2) (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+      (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat))).map cost = [27000, 4500] := rfl
+
+/-- **mct-run**: the one least bracketing of `10×30`, `30×5`, `5×60` multiplies the first two
+    first; cost `4500`. -/
+public theorem run_mct :
+    mctRun (CL.ConsList.cons (10, 30) (CL.ConsList.cons (30, 5)
+      (CL.ConsList.wrap (5, 60))) : NEList (Nat × Nat))
+      = [Tree.bin (Tree.bin (Tree.tip (10, 30)) (Tree.tip (30, 5))) (Tree.tip (5, 60))] := rfl
+
+end MctRunEx
+
+end Freyd.Alg.RelSet.Bracket

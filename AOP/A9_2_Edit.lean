@@ -2302,7 +2302,7 @@ theorem rel_topV : (topV (A := A)).rel = rprodMap (topMor (dE (Op A)) (dE (Op A)
     exact ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
 
 omit [DecidableEq A] in
-theorem inlistP_iff_mem {α : Type} : ∀ (xs : ConsList Unit α) (w : α), inlistP xs w ↔ w ∈ CL.toList xs
+public theorem inlistP_iff_mem {α : Type} : ∀ (xs : ConsList Unit α) (w : α), inlistP xs w ↔ w ∈ CL.toList xs
   | ConsList.wrap _, _ => by simp [inlistP, CL.toList]
   | ConsList.cons b x, w => by simp [inlistP, CL.toList, inlistP_iff_mem x w]
 
