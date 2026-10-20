@@ -1202,7 +1202,7 @@ theorem scanLookup_vecFin [DecidableEq K] (a : Array V) (h : K = Nat) (k : K) :
   simp only [Array.length_toList, Nat.zero_le, if_true, Nat.sub_zero, Array.getElem?_toList] at e
   rw [← e, FinRel.scanLookup, FinRel.toList, vecFin, Array.toList_map, toList_rangeArr]
   show List.filterMap (FinRel.sel k) ((List.map id (List.range' 0 a.size)).zip a.toList) = _
-  rw [List.map_id]
+  rw [List.map_id]; congr; exact Subsingleton.elim _ _
 
 variable [DecidableEq K] [DecidableEq V] [FibreIndex K] [FibreIndex V]
 
@@ -1328,8 +1328,8 @@ theorem app_inter (R : RelRep K V) (S : RelTest K V) (k : K) :
   cases R with
   | pairs r => simp only [inter, app_pairs, FinRel.scanLookup_filter, Bool.decide_eq_true]
   | enum f => rfl
-  | arr f => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib _ k))
-  | vec a e => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib _ k))
+  | arr f => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib (arr f) k))
+  | vec a e => exact (Array.toList_filter ..).trans (congrArg _ (toList_fib (vec a e) k))
 
 theorem mem_inter (R : RelRep K V) (S : RelTest K V) (k : K) (v : V) :
     (inter R S).mem k v = (R.mem k v && S.mem k v) := by
@@ -1418,23 +1418,47 @@ omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq 
 theorem mem_cross (xs : List V) (ys : List W) (q : V × W) : q ∈ cross xs ys ↔ q.1 ∈ xs ∧ q.2 ∈ ys := by
   obtain ⟨v, w⟩ := q; simp [cross]
 
-/-- `⟨R,S⟩`: two `FinRel`s pair the pairs sharing a key, otherwise the fibres are paired. -/
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
+/-- `cross` on arrays. -/
+def crossA (xs : Array V) (ys : Array W) : Array (V × W) := xs.flatMap fun v => ys.map (v, ·)
+
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq W] [FibreIndex W] in
+@[simp] theorem toList_crossA (xs : Array V) (ys : Array W) : (crossA xs ys).toList = cross xs.toList ys.toList := by
+  simp only [crossA, cross, Array.toList_flatMap, Array.toList_map]
+
+omit [DecidableEq L] [FibreIndex L] in
+/-- `⟨r,S⟩` for a `FinRel` `r`: each pair of `r` pushed with each value of `S`'s array fibre. -/
+def pairPairs (r : FinRel K V) (S : RelRep K W) : RelRep K (V × W) :=
+  S.withFib fun g => pairs (bindArr r (fun k v => (g k).toList.map (v, ·))
+    (fun k v a => (g k).foldl (fun a w => pushPair k a (v, w)) a) fun _ _ _ => by
+      simp only [List.foldl_map, Array.foldl_toList])
+
+omit [DecidableEq L] [FibreIndex L] in
+theorem app_pairPairs (r : FinRel K V) (S : RelRep K W) (k : K) :
+    (pairPairs r S).app k = cross (r.scanLookup k) (S.app k) := by
+  rw [pairPairs, withFib_eq, bindArr_eq, app_pairs, FinRel.scanLookup_ofList]
+  have := FinRel.filterMap_sel_flatMap (fun k v => (S.app k).map (v, ·)) k r.toList
+  simp only [List.map_map, Function.comp_def, toList_fib] at this ⊢
+  exact this
+
+/-- `⟨R,S⟩`: a `FinRel` (or a `vec`, as its pairs) on the left stays a `FinRel`, otherwise the fibres are
+    paired. -/
 def pair : RelRep K V → RelRep K W → RelRep K (V × W)
-  | pairs r, pairs s => let i := FibreIndex.build s
-    pairs (FinRel.ofList (r.toList.flatMap fun p => (FibreIndex.get i p.1).map fun w => (p.1, (p.2, w))))
-  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => cross (FibreIndex.get i k) (g k)
-  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => cross (f k) (FibreIndex.get i k)
+  | pairs r, S => pairPairs r S
+  | vec a e, S => pairPairs (vecFin a e) S
   | enum f, enum g => enum fun k => cross (f k) (g k)
+  | R, S => R.withFib fun f => S.withFib fun g => arr fun k => crossA (f k) (g k)
 
 omit [DecidableEq L] [FibreIndex L] in
 /-- `⟨R,S⟩` pairs each value of `R`'s fibre, in order, with each of `S`'s. -/
 theorem app_pair (R : RelRep K V) (S : RelRep K W) (k : K) : (pair R S).app k = cross (R.app k) (S.app k) := by
-  cases R <;> cases S <;> first | rfl | skip
-  rename_i r s
-  simp only [pair, app_pairs, FibreIndex.get_build, FinRel.scanLookup_ofList]
-  have := FinRel.filterMap_sel_flatMap (fun k v => (s.scanLookup k).map (v, ·)) k r.toList
-  simp only [List.map_map, Function.comp_def] at this
-  exact this
+  have hA : (R.withFib fun f => S.withFib fun g => arr fun k => crossA (f k) (g k)).app k = cross (R.app k) (S.app k) := by
+    rw [withFib_eq, withFib_eq]; exact (toList_crossA ..).trans (by rw [toList_fib, toList_fib])
+  cases R with
+  | pairs r => rw [pair, app_pairPairs, app_pairs]
+  | vec a e => rw [pair, app_pairPairs, ← app_vecFin, app_pairs]
+  | enum f => cases S <;> first | rfl | exact hA
+  | arr f => exact hA
 
 omit [DecidableEq L] [FibreIndex L] in
 theorem mem_pair (R : RelRep K V) (S : RelRep K W) (k : K) (q : V × W) :
@@ -1448,9 +1472,8 @@ theorem rel_pair (R : RelRep K V) (S : RelRep K W) : (pair R S).rel = rpair R.re
 /-- `R × S`: two `FinRel`s pair their pairs, otherwise the fibres are paired. -/
 def prod : RelRep K V → RelRep L W → RelRep (K × L) (V × W)
   | pairs r, pairs s => pairs (FinRel.ofList ((cross r.toList s.toList).map fun q => ((q.1.1, q.2.1), (q.1.2, q.2.2))))
-  | pairs r, enum g => let i := FibreIndex.build r; enum fun k => cross (FibreIndex.get i k.1) (g k.2)
-  | enum f, pairs s => let i := FibreIndex.build s; enum fun k => cross (f k.1) (FibreIndex.get i k.2)
   | enum f, enum g => enum fun k => cross (f k.1) (g k.2)
+  | R, S => R.withFib fun f => S.withFib fun g => arr fun k => crossA (f k.1) (g k.2)
 
 omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] in
 /-- The fibre of `(k,j)` in the product of two lists of pairs crosses the fibre of `k` with that of `j`. -/
@@ -1476,7 +1499,10 @@ where
 /-- `R × S` crosses the two fibres, in order. -/
 theorem app_prod (R : RelRep K V) (S : RelRep L W) (k : K × L) :
     (prod R S).app k = cross (R.app k.1) (S.app k.2) := by
-  cases R <;> cases S <;> first | rfl | skip
+  have hA : (R.withFib fun f => S.withFib fun g => arr fun k => crossA (f k.1) (g k.2)).app k
+      = cross (R.app k.1) (S.app k.2) := by
+    rw [withFib_eq, withFib_eq]; exact (toList_crossA ..).trans (by rw [toList_fib, toList_fib])
+  cases R <;> cases S <;> first | rfl | exact hA | skip
   simp only [prod, app_pairs, FinRel.scanLookup_ofList]
   exact filterMap_sel_cross k.1 k.2 _ _
 
@@ -1502,15 +1528,16 @@ theorem junc_apply (R : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨L⟩ : RelS
     summand's fibre. -/
 def junction : RelRep K V → RelRep L V → RelRep (K ⊕ L) V
   | pairs r, pairs s => pairs (FinRel.ofList (r.toList.map (fun p => (Sum.inl p.1, p.2)) ++ s.toList.map fun p => (Sum.inr p.1, p.2)))
-  | pairs r, enum g => let i := FibreIndex.build r; enum (Sum.elim (FibreIndex.get i) g)
-  | enum f, pairs s => let i := FibreIndex.build s; enum (Sum.elim f (FibreIndex.get i))
   | enum f, enum g => enum (Sum.elim f g)
+  | R, S => R.withFib fun f => S.withFib fun g => arr (Sum.elim f g)
 
 omit [DecidableEq W] [FibreIndex W] in
 /-- `[R,S]` answers a key from its summand's fibre. -/
 theorem app_junction (R : RelRep K V) (S : RelRep L V) (x : K ⊕ L) :
     (junction R S).app x = Sum.elim R.app S.app x := by
-  cases R <;> cases S <;> first | rfl | skip
+  have hA : (R.withFib fun f => S.withFib fun g => arr (Sum.elim f g)).app x = Sum.elim R.app S.app x := by
+    rw [withFib_eq, withFib_eq]; cases x <;> exact toList_fib _ _
+  cases R <;> cases S <;> first | rfl | exact hA | skip
   simp only [junction, app_pairs, FinRel.scanLookup_ofList]
   have hn : ∀ {X Y : Type} (l : List X), l.filterMap (fun _ => (none : Option Y)) = [] := fun l => by
     induction l <;> simp_all
@@ -1553,25 +1580,83 @@ end Tabulate
 
 /-- `R S`, first `R` then `S`: each value of `R`'s fibre hands on `S`'s fibre.  A `FinRel` first stays a
     `FinRel`, its pairs pushed onto two arrays (`bindIdx`, `bindVals`). -/
+def compP (r : FinRel K V) : RelRep V C → RelRep K C
+  | pairs s => pairs (r.bindIdx (FibreIndex.build s))
+  | enum h => pairs (r.bindVals h)
+  | arr h => pairs (r.bindValsA h)
+  | vec b e => pairs (r.bindOpt fun v => b[cast e v]?)
+
+theorem app_compP (r : FinRel K V) (S : RelRep V C) (a : K) :
+    (compP r S).app a = (r.scanLookup a).flatMap S.app := by
+  have e : ∀ g : V → List C, (pairs (r.bindVals g)).app a = (r.scanLookup a).flatMap g := fun g => by
+    simp only [FinRel.bindVals, app_pairs, FinRel.scanLookup_ofList]
+    exact FinRel.filterMap_sel_flatMap (fun _ b => g b) a r.toList
+  have e' : ∀ (g : V → List C) fo hfo, (pairs (bindArr r (fun _ v => g v) fo hfo)).app a
+      = (r.scanLookup a).flatMap g := fun g fo hfo => by
+    rw [bindArr_eq, app_pairs, FinRel.scanLookup_ofList]
+    exact FinRel.filterMap_sel_flatMap (fun _ b => g b) a r.toList
+  cases S with
+  | pairs s => rw [compP, FinRel.bindIdx, e, app_pairs, FibreIndex.get_build]
+  | enum h => exact e h
+  | arr h => exact e' (fun v => (h v).toList) _ _
+  | vec b e => exact e' (fun v => (b[cast e v]?).toList) _ _
+
+omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
+/-- A `filterMap` that drops nothing is the pointwise map. -/
+theorem filterMap_full (g : V → Option C) : (l : List V) → (l.filterMap g).length = l.length →
+    ∀ i : Nat, ((l.filterMap g)[i]?).toList = (l[i]?).toList.flatMap fun v => (g v).toList
+  | [], _, i => by simp
+  | x :: l, h, i => by
+    cases hx : g x with
+    | none =>
+      rw [List.filterMap_cons, hx] at h
+      have := List.length_filterMap_le g l; simp only [List.length_cons] at h; omega
+    | some c =>
+      rw [List.filterMap_cons, hx] at h ⊢
+      cases i with
+      | zero => simp [hx]
+      | succ i =>
+        simp only [List.getElem?_cons_succ]
+        exact filterMap_full g l (by simpa using h) i
+
+/-- `R S`, first `R` then `S`: each value of `R`'s fibre hands on `S`'s fibre.  A `FinRel` first stays a
+    `FinRel`, its pairs pushed onto two arrays (`compP`); a `vec` then a `vec` indexes the second by the
+    first, `vec` again when every index is in range. -/
 def comp (R : RelRep K V) (S : RelRep V C) : RelRep K C :=
   match R, S with
-  | pairs r, pairs s => pairs (r.bindIdx (FibreIndex.build s))
-  | pairs r, enum h => pairs (r.bindVals h)
+  | pairs r, S => compP r S
+  | vec a e, vec b e' =>
+    let c := a.filterMap fun v => b[cast e' v]?
+    if c.size = a.size then vec c e else compP (vecFin a e) (vec b e')
+  | vec a e, S => compP (vecFin a e) S
   | enum f, S => S.withApp fun g => enum fun k => (f k).flatMap g
+  | arr f, S => S.withFib fun g => arr fun k => (f k).flatMap g
 
 @[inherit_doc] scoped infixr:80 " ≫ " => comp
 
 /-- `R S` is Kleisli composition in `List`: each value of `R`'s fibre, in order, hands on `S`'s fibre. -/
 theorem app_comp (R : RelRep K V) (S : RelRep V C) (a : K) : (R ≫ S).app a = (R.app a).flatMap S.app := by
+  have hv : ∀ (a' : Array V) (e : K = Nat), (compP (vecFin a' e) S).app a = ((vec a' e).app a).flatMap S.app :=
+    fun a' e => by rw [app_compP, ← app_pairs, app_vecFin]
   cases R with
-  | pairs r =>
-    have e : ∀ g : V → List C, (pairs (r.bindVals g)).app a = (r.scanLookup a).flatMap g := fun g => by
-      simp only [FinRel.bindVals, app_pairs, FinRel.scanLookup_ofList]
-      exact FinRel.filterMap_sel_flatMap (fun _ b => g b) a r.toList
+  | pairs r => rw [comp, app_compP, app_pairs]
+  | vec a' e =>
     cases S with
-    | pairs s => rw [comp, FinRel.bindIdx, e, app_pairs, app_pairs, FibreIndex.get_build]
-    | enum h => rw [comp, e, app_pairs]; rfl
+    | vec b e' =>
+      show (if _ then _ else _ : RelRep K C).app a = _
+      split
+      · rename_i h
+        have := filterMap_full (fun v => b[cast e' v]?) a'.toList
+          (by rw [← Array.toList_filterMap, Array.length_toList, Array.length_toList]; exact h) (cast e a)
+        rw [← Array.toList_filterMap, Array.getElem?_toList, Array.getElem?_toList] at this
+        exact this
+      · exact hv a' e
+    | _ => exact hv a' e
   | enum f => simp only [comp, withApp_eq]; rfl
+  | arr f =>
+    show ((S.withFib fun g => arr fun k => (f k).flatMap g)).app a = _
+    rw [withFib_eq]
+    exact (Array.toList_flatMap ..).trans (by simp only [toList_fib]; rfl)
 
 theorem mem_comp [DecidableEq C] (R : RelRep K V) (S : RelRep V C) (a : K) (c : C) :
     (R ≫ S).mem a c = (R.app a).any (S.mem · c) := by
@@ -1722,6 +1807,8 @@ omit [DecidableEq V] [FibreIndex V] in
 def first : RelRep K V → RelRep K V
   | pairs r => let i := FibreIndex.build r; enum fun k => (FibreIndex.first? i k).toList
   | enum f => enum fun k => (f k).head?.toList
+  | arr f => enum fun k => (f k)[0]?.toList
+  | vec a e => enum fun k => (a[cast e k]?).toList
 
 omit [DecidableEq V] [FibreIndex V] in
 /-- The last value of each fibre, in representation order. -/
@@ -1732,6 +1819,10 @@ theorem first_eq (R : RelRep K V) : first R = enum fun k => (R.app k).head?.toLi
   cases R with
   | pairs r => simp only [first, FibreIndex.first?_eq]; rfl
   | enum f => rfl
+  | arr f => exact congrArg enum (funext fun k => by
+      show _ = (f k).toList.head?.toList; generalize f k = a; rcases a with ⟨l⟩; cases l <;> rfl)
+  | vec a e => exact congrArg enum (funext fun k => by
+      show _ = (a[cast e k]?).toList.head?.toList; cases a[cast e k]? <;> rfl)
 
 omit [DecidableEq V] [FibreIndex V] in
 theorem last_eq (R : RelRep K V) : last R = enum fun k => (R.app k).getLast?.toList := withApp_eq _ _
