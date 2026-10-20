@@ -674,7 +674,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   (sym: leann("Freyd.Alg.RelSet.Tex.run"), type: leant("Freyd.Alg.RelSet.Tex.run_out.rhs"),
    value: leanf("Freyd.Alg.RelSet.Tex.run_out.rhs"),
    meaning: [`0.125`: the digits `1`, `2`, `5`]),
-  // lean:AOP.A10_4_Tex.run_out@93c35862
+  // lean:AOP.A10_4_Tex.run_out@bbe8cf00
 )<tex-run>
 
 #pagebreak(weak: true)
