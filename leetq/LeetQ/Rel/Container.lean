@@ -55,14 +55,15 @@ namespace Q
 /-- `κ : ℕ ⇸ K`. -/
 abbrev κ (C : Q K V) : RelRep Nat K := C.keys.κ
 
-/-- The values, in position order. -/
-def vals (C : Q K V) : List V := (List.range C.n).flatMap C.ν.app
+/-- The values, in position order.  Read through `withApp`, so a `pairs` leg's fibre index is built once: passed
+    as `C.ν.app`, the compiled `flatMap` calls `app` at each position and rebuilds it there. -/
+def vals (C : Q K V) : List V := C.ν.withApp fun f => (List.range C.n).flatMap f
 
 /-- The values with nulls. -/
-def valsN (C : Q K V) : List (Option V) := (List.range C.n).map fun i => (C.ν.app i).head?
+def valsN (C : Q K V) : List (Option V) := C.ν.withApp fun f => (List.range C.n).map fun i => (f i).head?
 
 /-- The keys, in position order. -/
-def keyList (C : Q K V) : List K := (List.range C.n).flatMap C.κ.app
+def keyList (C : Q K V) : List K := C.κ.withApp fun f => (List.range C.n).flatMap f
 
 /-- The same keys, a new value leg. -/
 def put (C : Q K V) (R : RelRep Nat W) : Q K W := ⟨C.n, C.keys, R⟩

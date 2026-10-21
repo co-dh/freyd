@@ -132,13 +132,19 @@ def syms (xs : List Sym) : Q Nat Sym := list xs
 #guard (prds x).vals == [3, 3, 12, 12, 60]
 #guard (mins x).vals == [3, 1, 1, 1, 1] && (maxs x).vals == [3, 3, 4, 4, 5]
 #guard kv (maxs d) == [("a", 3), ("b", 3), ("c", 3), ("d", 3)]
+#guard kv (mins d) == [("a", 3), ("b", 1), ("c", 1), ("d", 1)]
 #guard (scan1 (· - ·) (ints [1, 2, 3])).vals == [1, -1, -4] && (scan (· - ·) 10 (ints [1, 2, 3])).vals == [9, 7, 4]
 #guard (deltas x).vals == [3, -2, 3, -3, 4] && kv (deltas d) == [("a", 3), ("b", -2), ("c", 2), ("d", -1)]
 #guard (ratios (ints [1, 2, 8, 4])).vals.map QF.f == [1, 2, 4, 0.5]
 #guard (msum 2 x).vals == [3, 4, 5, 5, 6] && kv (msum 2 d) == [("a", 3), ("b", 4), ("c", 4), ("d", 5)]
+#guard (msum 2 (listN [some (1 : Int), none, some 3])).vals == [1, 1, 3]
 #guard (mavg 2 x).vals.map QF.f == [3, 2, 2.5, 2.5, 3]
+#guard (kv (mavg 2 d)).map (fun p => (p.1, p.2.f)) == [("a", 3), ("b", 2), ("c", 2), ("d", 2.5)]
 #guard (mmin 3 x).vals == [3, 1, 1, 1, 1] && (mmax 3 x).vals == [3, 3, 4, 4, 5]
+#guard kv (mmin 3 d) == [("a", 3), ("b", 1), ("c", 1), ("d", 1)]
+#guard kv (mmax 3 d) == [("a", 3), ("b", 3), ("c", 3), ("d", 3)]
 #guard (mcount 3 x).vals == [1, 2, 3, 3, 3]
+#guard (mcount 2 (listN [some (1 : Int), none, some 3])).vals == [1, 1, 1]
 #guard (ema 0.5 (list ([1, 2, 3].map QF.ofInt))).vals.map QF.f == [1, 1.5, 2.25]
 
 /-! ## Dicts and keyed tables -/
@@ -231,5 +237,11 @@ theorem sublist2_list {A : Type} [DecidableEq A] (s l : Nat) (xs : List A) :
 #print axioms Float.sqrt
 #print axioms LeetQ.Rel.Q.mcount
 #print axioms LeetQ.Rel.Q.msum
+#print axioms LeetQ.Rel.est_first
+#print axioms LeetQ.Rel.Q.minsBy_spec
+#print axioms LeetQ.Rel.Q.mminBy_spec
+#print axioms LeetQ.Rel.Q.msum_spec
+#print axioms LeetQ.Rel.Q.mcount_spec
+#print axioms LeetQ.Rel.Q.mavg_spec
 
 end LeetQ.Rel.Test

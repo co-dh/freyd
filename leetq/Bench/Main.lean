@@ -177,11 +177,22 @@ def sumsOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "sums" (LeetQ.Rel.list (ints n 26 1000).toList)
     fun c => some (Int64.ofInt ((LeetQ.Rel.Q.sums c).vals.foldl (· + ·) 0))
 
+/-- `mins x` by `LeetQ.Rel.Q.mins`, one pass of `minBy` (`minsBy_spec`); `sum mins x`. -/
+def minsOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "mins" (LeetQ.Rel.list (ints n 26 1000).toList)
+    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mins c).vals.foldl (· + ·) 0))
+
+/-- `10 msum x` by `LeetQ.Rel.Q.msum`, the running sum less itself 10 before (`msum_spec`); `sum 10 msum x`. -/
+def msumOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "msum" (LeetQ.Rel.list (ints n 26 1000).toList)
+    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.msum 10 c).vals.foldl (· + ·) 0))
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
-   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp)]
+   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
+   ("mins", minsOp), ("msum", msumOp)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=

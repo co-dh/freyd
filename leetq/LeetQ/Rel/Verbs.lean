@@ -198,28 +198,114 @@ theorem scan1_spec (f : V → V → V) (C : Q K V) (i : Nat) (h : i < C.n) :
 def sums [Add V] [Zero V] (C : Q K V) : Q K V := scan (· + ·) 0 C
 /-- `prds = *\`. -/
 def prds [Mul V] [OfNat V 1] (C : Q K V) : Q K V := scan (· * ·) 1 C
-/-- `mins C = first(est(≤)(≥ ≫ ν))`. -/
-def mins [LE V] [DecidableLE V] (C : Q K V) : Q K V := C.put ((ge ≫ C.ν).est (.test (decide <| · ≤ ·))).first
-/-- `maxs C = first(est(≥)(≥ ≫ ν))`. -/
-def maxs [LE V] [DecidableLE V] (C : Q K V) : Q K V := C.put ((ge ≫ C.ν).est (.test (decide <| · ≥ ·))).first
+/-- The running least in the order `le`: `⦇min⦈\`, one pass by `scan1` (`minsBy_spec`). -/
+def minsBy (le : V → V → Bool) (C : Q K V) : Q K V := scan1 (minBy le) C
+
+/-- **`minsBy` is `first(est(le)(≥ ≫ ν))`** for `le` total and transitive. -/
+theorem minsBy_spec (le : V → V → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
+    (C : Q K V) (i : Nat) (h : i < C.n) : (minsBy le C).ν.app i = ((ge ≫ C.ν).est (.test le)).first.app i := by
+  rw [minsBy, scan1_spec _ _ _ h, app_Λ, RelRep.first_eq, RelRep.app_enum, RelRep.app_est]
+  exact (est_first le total trans _).symm
+/-- `mins C = first(est(≤)(≥ ≫ ν))`, run as `minsBy (≤)`. -/
+def mins [LE V] [DecidableLE V] (C : Q K V) : Q K V := minsBy (decide <| · ≤ ·) C
+/-- `maxs C = first(est(≥)(≥ ≫ ν))`, run as `minsBy (≥)`. -/
+def maxs [LE V] [DecidableLE V] (C : Q K V) : Q K V := minsBy (decide <| · ≥ ·) C
 /-- `a ema C = Λ(≥ ≫ ν) ≫ ⦇(1-a)e + ax⦈`. -/
 def ema (a : Float) (C : Q K QF) : Q K QF := scan1 (fun e x => .of (a * x.f + (1 - a) * e.f)) C
-/-- `deltas C = ⟨ν, (pred ≫ ν) else 0⟩ ≫ (-)`. -/
-def deltas [Sub V] [Zero V] (C : Q K V) : Q K V :=
-  C.put (C.ν.pair ((shift (-1) ≫ C.ν).override (.ofFn fun _ => 0)) ≫ .ofFn fun p => p.1 - p.2)
+/-- `k xdeltas C = ⟨ν, (shift(-k) ≫ ν) else 0⟩ ≫ (-)`: each value less the one `k` before it. -/
+def xdeltas [Sub V] [Zero V] (k : Nat) (C : Q K V) : Q K V :=
+  C.put (C.ν.pair ((shift (-k) ≫ C.ν).override (.ofFn fun _ => 0)) ≫ .ofFn fun p => p.1 - p.2)
+/-- `deltas = 1 xdeltas`. -/
+def deltas [Sub V] [Zero V] (C : Q K V) : Q K V := xdeltas 1 C
 /-- `ratios C = ⟨ν, (pred ≫ ν) else 1⟩ ≫ (%)`. -/
 def ratios (C : Q K Int) : Q K QF :=
   C.put (C.ν.pair ((shift (-1) ≫ C.ν).override (.ofFn fun _ => 1)) ≫ .ofFn fun p => qfdiv p.1 p.2)
-/-- `n msum C = Λ(W(n) ≫ ν) ≫ ⦇0,+⦈`. -/
-def msum [Add V] [Zero V] (n : Nat) (C : Q K V) : Q K V := C.put (Λ(win n ≫ C.ν) ≫ fold 0 (· + ·))
-/-- `n mcount C = Λ(W(n) ≫ ν) ≫ #`. -/
-def mcount (n : Nat) (C : Q K V) : Q K Nat := C.put (Λ(win n ≫ C.ν) ≫ len)
+/-- `n msum C = n xdeltas sums C`, q's `y-(-x)_(x#0),y:+\y`: the running sum less the running sum `n` before, so
+    one pass (`msum_spec`); a null adds nothing. -/
+def msum [Add V] [Sub V] [Zero V] (n : Nat) (C : Q K V) : Q K V := xdeltas n (sums C)
+
+/-- `+` folded from `w` is `w +` the sum, by associativity alone. -/
+theorem foldl_add [Add V] [Zero V] (assoc : ∀ a b c : V, a + b + c = a + (b + c)) (add0 : ∀ a : V, a + 0 = a)
+    (l : List V) (w : V) : l.foldl (· + ·) w = w + l.foldl (· + ·) 0 := by
+  have go : ∀ (l : List V) (u : V), l.foldl (· + ·) (w + u) = w + l.foldl (· + ·) u := by
+    intro l; induction l with
+    | nil => intro u; rfl
+    | cons a l ih => intro u; simp only [List.foldl_cons]; rw [assoc, ih]
+  rw [← go, add0]
+
+/-- **`msum` is the window sum** `Λ(W(n) ≫ ν) ≫ ⦇0,+⦈`, where `+` is associative with unit `0` and `-` cancels it. -/
+theorem msum_spec [Add V] [Sub V] [Zero V] (assoc : ∀ a b c : V, a + b + c = a + (b + c)) (add0 : ∀ a : V, a + 0 = a)
+    (cancel : ∀ a b : V, a + b - a = b) (sub0 : ∀ a : V, a - 0 = a) (n : Nat) (C : Q K V) (i : Nat) (h : i < C.n) :
+    (msum n C).ν.app i = (Λ(win n ≫ C.ν) ≫ fold 0 (· + ·)).app i := by
+  let P := fun m => ((List.range m).flatMap C.ν.app).foldl (· + ·) 0
+  have hS : ∀ j, j < C.n → (sums C).ν.app j = [P (j + 1)] := fun j hj => by
+    show (scan (· + ·) 0 C).ν.app j = _
+    rw [scan_spec _ _ _ _ hj, app_Λ, RelRep.app_comp]; rfl
+  show ((sums C).ν.pair ((shift (-n) ≫ (sums C).ν).override (.ofFn fun _ => 0)) ≫ .ofFn fun p => p.1 - p.2).app i = _
+  rw [app_Λ, RelRep.app_comp, RelRep.app_pair, RelRep.override_eq, RelRep.app_enum, RelRep.app_comp, RelRep.app_comp,
+    hS i h]
+  show _ = [((List.range' (i + 1 - n) (min n (i + 1))).flatMap C.ν.app).foldl (· + ·) 0]
+  by_cases hn : n ≤ i
+  · have e : (shift (-n)).app i = [i - n] := by
+      show (if 0 ≤ (i : Int) + -(n : Int) then [((i : Int) + -(n : Int)).toNat] else []) = _
+      rw [if_pos (by omega)]; congr 1; omega
+    have r : List.range (i + 1) = List.range (i + 1 - n) ++ List.range' (i + 1 - n) n := by
+      rw [List.range_eq_range', List.range_eq_range', show List.range' (i + 1 - n) n = List.range' (0 + 1 * (i + 1 - n)) n
+        by simp, List.range'_append]; congr 1; omega
+    rw [e, List.flatMap_cons, List.flatMap_nil, List.append_nil, hS _ (by omega), if_neg (by simp),
+      Nat.min_eq_left (by omega)]
+    simp only [RelRep.cross, List.flatMap_cons, List.flatMap_nil, List.map_cons, List.map_nil, List.append_nil,
+      RelRep.app_ofFn, P, r, List.flatMap_append, List.foldl_append]
+    rw [foldl_add assoc add0 (List.flatMap _ (List.range' _ _)), show i - n + 1 = i + 1 - n by omega, cancel]
+  · have e : (shift (-n)).app i = [] := by
+      show (if 0 ≤ (i : Int) + -(n : Int) then [((i : Int) + -(n : Int)).toNat] else []) = _
+      rw [if_neg (by omega)]
+    rw [e, List.flatMap_nil, if_pos rfl, Nat.min_eq_right (by omega), show i + 1 - n = 0 by omega]
+    simp only [RelRep.cross, List.flatMap_cons, List.flatMap_nil, List.map_cons, List.map_nil, List.append_nil,
+      RelRep.app_ofFn, P, sub0, List.range_eq_range']
+
+/-- `n mcount C = n msum (1 each C)`, q's `msum[x;~^y]`: a null counts nothing. -/
+def mcount (n : Nat) (C : Q K V) : Q K Nat := msum n (each (fun _ => 1) C)
+
+/-- **`mcount` is the window count** `Λ(W(n) ≫ ν) ≫ #`. -/
+theorem mcount_spec (n : Nat) (C : Q K V) (i : Nat) (h : i < C.n) :
+    (mcount n C).ν.app i = (Λ(win n ≫ C.ν) ≫ len).app i := by
+  have one : ∀ (l : List V) (w : Nat), (l.flatMap fun _ => [1]).foldl (· + ·) w = l.foldl (fun n _ => n + 1) w := by
+    intro l; induction l with
+    | nil => intro w; rfl
+    | cons a l ih => intro w; exact ih (w + 1)
+  rw [mcount, msum_spec Nat.add_assoc Nat.add_zero Nat.add_sub_cancel_left Nat.sub_zero n _ i h, app_Λ, app_Λ]
+  show [((win n ≫ (C.ν ≫ .ofFn fun _ => 1)).app i).foldl (· + ·) 0] = [((win n ≫ C.ν).app i).foldl (fun n _ => n + 1) 0]
+  have e : (C.ν ≫ RelRep.ofFn fun _ => (1 : Nat)).app = fun j => (C.ν.app j).flatMap fun _ => [1] :=
+    funext fun j => RelRep.app_comp _ _ j
+  rw [RelRep.app_comp, RelRep.app_comp, e, ← List.flatMap_assoc, one]
+
 /-- `n mavg C = msum % mcount`. -/
 def mavg (n : Nat) (C : Q K Int) : Q K QF := C.put ((msum n C).ν.pair (mcount n C).ν ≫ .ofFn fun p => qfdiv p.1 p.2)
-/-- `n mmin C = first(est(≤)(W(n) ≫ ν))`. -/
-def mmin [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := C.put ((win n ≫ C.ν).est (.test (decide <| · ≤ ·))).first
-/-- `n mmax C = first(est(≥)(W(n) ≫ ν))`. -/
-def mmax [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := C.put ((win n ≫ C.ν).est (.test (decide <| · ≥ ·))).first
+
+/-- **`mavg` is the window sum over the window count**. -/
+theorem mavg_spec (n : Nat) (C : Q K Int) (i : Nat) (h : i < C.n) : (mavg n C).ν.app i =
+    ((Λ(win n ≫ C.ν) ≫ fold 0 (· + ·)).pair (Λ(win n ≫ C.ν) ≫ len) ≫ .ofFn fun p => qfdiv p.1 p.2).app i := by
+  show ((msum n C).ν.pair (mcount n C).ν ≫ _).app i = _
+  rw [RelRep.app_comp, RelRep.app_comp, RelRep.app_pair, RelRep.app_pair,
+    msum_spec Int.add_assoc Int.add_zero (fun a b => by omega) Int.sub_zero n C i h, mcount_spec n C i h]
+  simp only [RelRep.app_comp, RelRep.transpose_eq, RelRep.app_ofFn]
+  rfl
+
+/-- The moving least in the order `le`: `Λ(W(n) ≫ ν) ≫ ⦇min⦈`, the window being the `n` copies of `ν` shifted by
+    `0 … n-1`; `n` steps per position, as q's `n-1` passes of `&':` (`mminBy_spec`). -/
+def mminBy (le : V → V → Bool) (n : Nat) (C : Q K V) : Q K V := C.put (Λ(win n ≫ C.ν) ≫ fold1 (minBy le))
+
+/-- **`mminBy` is `first(est(le)(W(n) ≫ ν))`** for `le` total and transitive. -/
+theorem mminBy_spec (le : V → V → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
+    (n : Nat) (C : Q K V) (i : Nat) : (mminBy le n C).ν.app i = ((win n ≫ C.ν).est (.test le)).first.app i := by
+  show (Λ(win n ≫ C.ν) ≫ fold1 (minBy le)).app i = _
+  rw [app_Λ, RelRep.first_eq, RelRep.app_enum, RelRep.app_est]
+  exact (est_first le total trans _).symm
+/-- `n mmin C = first(est(≤)(W(n) ≫ ν))`, run as `mminBy (≤)`. -/
+def mmin [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := mminBy (decide <| · ≤ ·) n C
+/-- `n mmax C = first(est(≥)(W(n) ≫ ν))`, run as `mminBy (≥)`. -/
+def mmax [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := mminBy (decide <| · ≥ ·) n C
 
 /-! ## Dicts and keyed tables -/
 

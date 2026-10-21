@@ -127,4 +127,50 @@ theorem foldl_some (l : List A) (o : Option A) : l.foldl (fun _ a => some a) o =
   | nil => rfl
   | cons x xs ih => rw [List.foldl_cons, ih, List.getLast?_cons]; cases xs.getLast? <;> rfl
 
+/-! ## The least of a fibre as a left fold -/
+
+/-- `min` in the order `le`: the first unless it is not below the second, so a tie keeps the earlier. -/
+def minBy (le : A → A → Bool) (a b : A) : A := if le a b then a else b
+
+/-- **`first(est(le)) = ⦇min⦈`** on a fibre, `le` total and transitive: the first member `le`-below every member is
+    the fold of `minBy le`, which replaces the least so far only by one strictly below it. -/
+theorem est_first (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
+    (l : List A) : (RelRep.estList le l).head?.toList = (fold1 (minBy le)).app l := by
+  have refl : ∀ a, le a a := fun a => (total a a).elim id id
+  cases l with
+  | nil => rfl
+  | cons x xs =>
+    -- `m` is the least of `l`, and the first member of `l` below it
+    let inv : List A → A → Prop := fun l m => m ∈ l ∧ (∀ v ∈ l, le m v) ∧ l.find? (le · m) = some m
+    have step : ∀ l m y, inv l m → inv (l ++ [y]) (minBy le m y) := by
+      intro l m y ⟨hm, hmin, hfind⟩
+      unfold minBy
+      by_cases h : le m y
+      · rw [if_pos h]
+        refine ⟨List.mem_append_left _ hm, fun v hv => ?_, by rw [List.find?_append, hfind]; rfl⟩
+        rcases List.mem_append.1 hv with hv | hv
+        · exact hmin v hv
+        · rw [List.mem_singleton.1 hv]; exact h
+      · rw [if_neg h]
+        have hy : le y m := (total m y).resolve_left h
+        refine ⟨List.mem_append_right _ (List.mem_singleton_self _), fun v hv => ?_, ?_⟩
+        · rcases List.mem_append.1 hv with hv | hv
+          · exact trans _ _ _ hy (hmin v hv)
+          · rw [List.mem_singleton.1 hv]; exact refl y
+        · rw [List.find?_append, List.find?_eq_none.2 fun v hv hvy => h (trans _ _ _ (hmin v hv) hvy)]
+          simp [refl]
+    have go : ∀ (ys l : List A) m, inv l m → inv (l ++ ys) (ys.foldl (minBy le) m) := by
+      intro ys
+      induction ys with
+      | nil => intro l m h; simpa using h
+      | cons y ys ih => intro l m h; rw [← List.singleton_append, ← List.append_assoc]; exact ih _ _ (step l m y h)
+    obtain ⟨hm, hmin, hfind⟩ := go xs [x] x ⟨by simp, fun v hv => by rw [List.mem_singleton.1 hv]; exact refl x,
+      by simp [refl]⟩
+    rw [List.singleton_append] at hm hmin hfind
+    have hf : RelRep.estList le (x :: xs) = (x :: xs).filter (le · (xs.foldl (minBy le) x)) := by
+      rw [RelRep.estList]
+      exact List.filter_congr fun v _ => Bool.eq_iff_iff.2 ⟨fun hv => List.all_eq_true.1 hv _ hm,
+        fun hv => List.all_eq_true.2 fun y hy => trans _ _ _ hv (hmin y hy)⟩
+    rw [hf, List.head?_filter, hfind]; rfl
+
 end LeetQ.Rel
