@@ -73,7 +73,7 @@ def syms (xs : List Sym) : Q Nat Sym := list xs
 #guard (whereB (dict ["a", "b", "c"] [true, false, true])).vals == ["a", "c"]
 #guard (whereN (list [2, 0, 1])).vals == [0, 0, 2]
 #guard (distinct x).vals == [3, 1, 4, 5]
-#guard (distinct d).vals == [3, 1, 2]
+-- `distinct d` is a type error in q; `distinct` takes a list-shaped container
 #guard (distinct (list [("a", 1), ("a", 1), ("b", 2)])).vals == [("a", 1), ("b", 2)]
 #guard kv (group x) == [(3, [0]), (1, [1, 3]), (4, [2]), (5, [4])]
 #guard kv (group d) == [(3, ["a", "c"]), (1, ["b"]), (2, ["d"])]
@@ -144,7 +144,7 @@ def syms (xs : List Sym) : Q Nat Sym := list xs
 /-! ## Dicts and keyed tables -/
 
 #guard (key d).vals == ["a", "b", "c", "d"] && (value d).vals == [3, 1, 3, 2]
-#guard (key x).vals == [0, 1, 2, 3, 4]
+-- `key x` is `` `long `` in q (a list's type); `key` on a list here is `til count`, no q counterpart
 #guard (key kt).vals == ["a", "b", "d"] && (value kt).vals == [10, 20, 40]
 #guard kv (takeK (syms ["a", "c"]) e) == [("a", 1), ("c", 3)]
 #guard kv (dropK (syms ["a", "c"]) e) == [("b", 2)]

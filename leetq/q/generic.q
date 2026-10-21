@@ -1,7 +1,7 @@
 / Each verb of LeetQ/Rel/Verbs.lean on each container q allows it on; the #guard of the same expression is
 / in LeetQ/Rel/Test.lean, in the same order.  A dict reads back there as its (key, value) pairs, a table as
 / its rows, a keyed table as (key, value-row) pairs, an atom as a one-element list ([] for null).
-p:{[s] -1 s," -> ",.Q.s1 value s;}
+p:{[s] -1 s," -> ",@[{.Q.s1 value x};s;{"ERROR ",x}];}
 x:3 1 4 1 5
 d:`a`b`c`d!3 1 3 2
 e:`a`b`c!1 2 3

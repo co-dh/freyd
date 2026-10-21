@@ -54,6 +54,12 @@ def flip (x : Q Nat V) (y : Q Nat W) : Q Nat (V × W) := ⟨x.n, .pos rfl, x.ν.
 
 /-! ## Search -/
 
+/-- `key C`: a dict's keys, a keyed table's key rows.  On a list q answers its type (`key 3 1 -> `long`), so
+    there this is not q's `key` but `til count`. -/
+def key (C : Q K V) : Q Nat K := ⟨C.n, .pos rfl, C.κ⟩
+/-- `value C`. -/
+def value (C : Q K V) : Q Nat V := ⟨C.n, .pos rfl, C.ν⟩
+
 /-- The container as a relation key ↦ value: `first(κ°) ≫ ν`. -/
 def get (C : Q K V) : RelRep K V := (cv C.n C.κ).first ≫ C.ν
 /-- `C@ys`, `C ys`: `ys ≫ first(κ°) ≫ ν`. -/
@@ -65,9 +71,10 @@ def whereB (C : Q K Bool) : Q Nat K := ofPt (top C.n ≫ (C.ν ≫ RelRep.corefl
 /-- `where C` of counts: each key `ν` times, `⟨id, ν ≫ >⟩ ≫ π₁ ≫ κ`. -/
 def whereN (C : Q K Nat) : Q Nat K := ofPt (top C.n ≫ (idn C.n).pair (C.ν ≫ gt) ≫ .ofFn Prod.fst ≫ C.κ)
 /-- `distinct C`: the values at the positions `first(ν°)` picks. -/
-def distinct (C : Q K V) : Q Nat V := ofPt (top C.n ≫ (C.ν ≫ (cv C.n C.ν).first).inter (idn C.n) ≫ C.ν)
+def distinct (C : Q Nat V) : Q Nat V := ofPt (top C.n ≫ (C.ν ≫ (cv C.n C.ν).first).inter (idn C.n) ≫ C.ν)
 /-- `group C = Λ(ν° ≫ κ)` on the distinct values. -/
-def group (C : Q K V) : Q V (List K) := ⟨(distinct C).n, .rel (distinct C).ν, (distinct C).ν ≫ Λ(cv C.n C.ν ≫ C.κ)⟩
+def group (C : Q K V) : Q V (List K) :=
+  let vs := distinct (value C); ⟨vs.n, .rel vs.ν, vs.ν ≫ Λ(cv C.n C.ν ≫ C.κ)⟩
 /-- `x union y = distinct(x,y)`. -/
 def union (x y : Q Nat V) : Q Nat V := distinct (join x y)
 /-- `x inter y = ν ≫ (∈ ran y)?`. -/
@@ -201,10 +208,6 @@ def mmax [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := C.put ((win n �
 
 /-! ## Dicts and keyed tables -/
 
-/-- `key C`: a list's positions, a dict's keys, a keyed table's key rows. -/
-def key (C : Q K V) : Q Nat K := ⟨C.n, .pos rfl, C.κ⟩
-/-- `value C`. -/
-def value (C : Q K V) : Q Nat V := ⟨C.n, .pos rfl, C.ν⟩
 /-- `ks#C`: `ks!C@ks`. -/
 def takeK (ks : Q J K) (C : Q K V) : Q K V := ⟨ks.n, .rel ks.ν, ks.ν ≫ get C⟩
 /-- `ks _ C`: the positions with `κ ≫ (∉ ks)?`. -/
@@ -232,10 +235,10 @@ def update (p : V → Bool) (f : V → V) (T : Q K V) : Q K V :=
   T.put (T.ν ≫ (RelRep.corefl p ≫ .ofFn f).union (RelRep.corefl (!p ·)))
 /-- `` `k xgroup T ``: `Λ((ν ≫ k)° ≫ ν ≫ v)` on the distinct keys. -/
 def xgroup (k : V → κ') (v : V → W) (T : Q J V) : Q κ' (List W) :=
-  let ks := distinct (each k T); ⟨ks.n, .rel ks.ν, ks.ν ≫ Λ(cv T.n (T.ν ≫ .ofFn k) ≫ T.ν ≫ .ofFn v)⟩
+  let ks := distinct (value (each k T)); ⟨ks.n, .rel ks.ν, ks.ν ≫ Λ(cv T.n (T.ν ≫ .ofFn k) ≫ T.ν ≫ .ofFn v)⟩
 /-- `select agg v by k from T`: the groups at the sorted keys, each folded by `agg`. -/
 def selby [LT κ'] [DecidableLT κ'] (agg : RelRep (List W) R) (k : V → κ') (v : V → W) (T : Q J V) : Q κ' R :=
-  let ks := asc (distinct (each k T)); ⟨ks.n, .rel ks.ν, ks.ν ≫ Λ(cv T.n (T.ν ≫ .ofFn k) ≫ T.ν ≫ .ofFn v) ≫ agg⟩
+  let ks := asc (distinct (value (each k T))); ⟨ks.n, .rel ks.ν, ks.ν ≫ Λ(cv T.n (T.ν ≫ .ofFn k) ≫ T.ν ≫ .ofFn v) ≫ agg⟩
 /-- `ungroup G = ⟨κ, ν ≫ ∋⟩`. -/
 def ungroup (G : Q K (List V)) : Q Nat (K × V) := ofPt (top G.n ≫ G.κ.pair (G.ν ≫ mem))
 
