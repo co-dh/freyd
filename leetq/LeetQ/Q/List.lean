@@ -166,17 +166,17 @@ def within (x : QL Int) (lo hi : Int) : QL Bool := ⟨x.n, x.r ≫ .ofFn fun a =
 def find (x y : QL A) : Option (QL Nat) :=
   (firstIx x).map fun e => ofList ((outN ⟨y.n, y.r ≫ .pairs e⟩).map (·.getD x.n))
 
-/-- `{i ∣ i < n}`: the top relation onto the indices, which makes a test enumerable. -/
-def top (n : Nat) : RelRep A Nat := .enum fun _ => List.range n
+/-- `{i ∣ i < n}`: the total relation onto the indices, which makes a test enumerable. -/
+def tot (n : Nat) : RelRep A Nat := .enum fun _ => List.range n
 
 /-- `x bin y`: `g ≫ est(≥)(⊤ ∩ (f ≫ ≤)°)`, `-1` on an empty fibre. -/
 def bin (x y : QL Int) : QL Int :=
-  let e := RelRep.est geR ((top x.n).inter (x.r.compT (.test fun c a => decide (c ≤ a))).conv)
+  let e := RelRep.est geR ((tot x.n).inter (x.r.compT (.test fun c a => decide (c ≤ a))).conv)
   ofList ((outN ⟨y.n, y.r ≫ e⟩).map fun o => (o.map Int.ofNat).getD (-1))
 
 /-- `x binr y`: `g ≫ est(≤)(⊤ ∩ (f ≫ ≥)°)`, `|x|` on an empty fibre. -/
 def binr (x y : QL Int) : QL Nat :=
-  let e := RelRep.est leR ((top x.n).inter (x.r.compT (.test fun c a => decide (c ≥ a))).conv)
+  let e := RelRep.est leR ((tot x.n).inter (x.r.compT (.test fun c a => decide (c ≥ a))).conv)
   ofList ((outN ⟨y.n, y.r ≫ e⟩).map (·.getD x.n))
 
 /-! ## Sorts -/
