@@ -38,7 +38,7 @@ def zipL {β : Type} (a : Array Int) (b : Array β) : List (Int × β) := (a.zip
 def fin (a b : Array Int) : FinRel Int Int := FinRel.ofList (zipL a b)
 
 /-- Wrapping 64-bit sum, like q's long `sum`: a bignum `Int` accumulator would allocate once past 2^31. -/
-def sumBy {α : Type} (f : α → Int64) (xs : Array α) : Int64 := xs.foldl (fun s x => s + f x) 0
+@[inline] def sumBy {α : Type} (f : α → Int64) (xs : Array α) : Int64 := xs.foldl (fun s x => s + f x) 0
 
 /-- One timed run of `f` on `d`: nanoseconds and the checksum; `none` from `f` is an error. -/
 def timed {α : Type} (name : String) (d : α) (f : α → Option Int64) : IO (IO (Nat × Int64)) := do

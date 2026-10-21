@@ -1195,7 +1195,7 @@ theorem rel_vec (a : Array V) : (vec a rfl).rel = ix a.toList :=
 
 /-- A `vec` as a `FinRel`: the positions `0 … n-1` beside the values, for an operation that needs the
     pairs listed. -/
-def vecFin (a : Array V) (h : K = Nat) : FinRel K V :=
+@[inline] def vecFin (a : Array V) (h : K = Nat) : FinRel K V :=
   ⟨(rangeArr a.size).map (cast h.symm), a, by rw [Array.size_map, ← Array.length_toList, toList_rangeArr]; simp⟩
 
 /-- The fibre of `j` among the positions `s …` beside `l`. -/
@@ -1663,6 +1663,39 @@ theorem filterMap_full (g : V → Option C) : (l : List V) → (l.filterMap g).l
         simp only [List.getElem?_cons_succ]
         exact filterMap_full g l (Nat.succ.inj h) i
 
+/-- `b` indexed by each entry of `a`, read as an index by `e`; an index out of range drops out. -/
+def vecIdx {V C : Type} (a : Array V) (e : V = Nat) (b : Array C) : Array C := a.filterMap fun v => b[cast e v]?
+
+/-- `vecIdx` as one loop: the output sized up front, each index tested in place, so no closure call and no
+    `Option` per entry, which the generic `Array.filterMapM` pays. -/
+def vecIdxLoop {V C : Type} (a : Array V) (e : V = Nat) (b : Array C) : Array C :=
+  rangeFold (fun c i => if h : i < a.size then
+      (if h' : cast e a[i] < b.size then c.push b[cast e a[i]] else c) else c) a.size 0 (Array.mkEmpty a.size)
+
+@[csimp] theorem vecIdx_eq_loop : @vecIdx = @vecIdxLoop := by
+  funext V C a e b
+  have go : ∀ (m i : Nat) (c : Array C), i + m = a.size →
+      ((List.range' i m).foldl (fun c i => if h : i < a.size then
+        (if h' : cast e a[i] < b.size then c.push b[cast e a[i]] else c) else c) c).toList =
+        c.toList ++ (a.toList.drop i).filterMap fun v => b[cast e v]? := by
+    intro m; induction m with
+    | zero =>
+      intro i c h
+      rw [List.drop_eq_nil_of_le (by rw [Array.length_toList, ← h, Nat.add_zero]; exact Nat.le_refl i)]
+      simp
+    | succ m ih =>
+      intro i c h
+      have hi : i < a.size := h ▸ Nat.lt_add_of_pos_right (Nat.succ_pos m)
+      rw [List.range'_succ, List.foldl_cons, ih (i + 1) _ (by rw [Nat.add_assoc, Nat.add_comm 1 m]; exact h),
+        List.drop_eq_getElem_cons (i := i) (l := a.toList) (by rw [Array.length_toList]; exact hi),
+        List.filterMap_cons, dif_pos hi]
+      by_cases hb : cast e a[i] < b.size
+      · simp [hb, getElem?_def]
+      · simp [hb, getElem?_def]
+  apply Array.toList_inj.1
+  rw [vecIdx, vecIdxLoop, rangeFold_eq, go a.size 0 _ (Nat.zero_add _), Array.toList_filterMap]
+  rfl
+
 /-- `R S`, first `R` then `S`: each value of `R`'s fibre hands on `S`'s fibre.  A `FinRel` first stays a
     `FinRel`, its pairs pushed onto two arrays (`compP`); a `vec` then a `vec` indexes the second by the
     first, `vec` again when every index is in range. -/
@@ -1670,7 +1703,7 @@ def comp (R : RelRep K V) (S : RelRep V C) : RelRep K C :=
   match R, S with
   | pairs r, S => compP r S
   | vec a e, vec b e' =>
-    let c := a.filterMap fun v => b[cast e' v]?
+    let c := vecIdx a e' b
     if c.size = a.size then vec c e else compP (vecFin a e) (vec b e')
   | vec a e, S => compP (vecFin a e) S
   | enum f, S => S.withApp fun g => enum fun k => (f k).flatMap g
@@ -1688,6 +1721,7 @@ theorem app_comp (R : RelRep K V) (S : RelRep V C) (a : K) : (R ≫ S).app a = (
     cases S with
     | vec b e' =>
       show (if _ then _ else _ : RelRep K C).app a = _
+      unfold vecIdx
       split
       · rename_i h
         have := filterMap_full (fun v => b[cast e' v]?) a'.toList
