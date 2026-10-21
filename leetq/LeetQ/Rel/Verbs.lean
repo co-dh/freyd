@@ -292,15 +292,17 @@ theorem mavg_spec (n : Nat) (C : Q K Int) (i : Nat) (h : i < C.n) : (mavg n C).�
   simp only [RelRep.app_comp, RelRep.transpose_eq, RelRep.app_ofFn]
   rfl
 
-/-- The moving least in the order `le`: `Λ(W(n) ≫ ν) ≫ ⦇min⦈`, the window being the `n` copies of `ν` shifted by
-    `0 … n-1`; `n` steps per position, as q's `n-1` passes of `&':` (`mminBy_spec`). -/
-def mminBy (le : V → V → Bool) (n : Nat) (C : Q K V) : Q K V := C.put (Λ(win n ≫ C.ν) ≫ fold1 (minBy le))
+/-- The moving least in the order `le`: `Λ(W(n) ≫ ν) ≫ ⦇min⦈` in two passes whatever `n`, the suffix least within
+    blocks of width `n` at the window's start merged with the prefix least within blocks at its end (`mminBy_spec`). -/
+def mminBy (le : V → V → Bool) (n : Nat) (C : Q K V) : Q K V := C.put (mwin (minBy le) n C.n C.ν)
 
 /-- **`mminBy` is `first(est(le)(W(n) ≫ ν))`** for `le` total and transitive. -/
 theorem mminBy_spec (le : V → V → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
-    (n : Nat) (C : Q K V) (i : Nat) : (mminBy le n C).ν.app i = ((win n ≫ C.ν).est (.test le)).first.app i := by
-  show (Λ(win n ≫ C.ν) ≫ fold1 (minBy le)).app i = _
-  rw [app_Λ, RelRep.first_eq, RelRep.app_enum, RelRep.app_est]
+    (n : Nat) (C : Q K V) (i : Nat) (h : i < C.n) :
+    (mminBy le n C).ν.app i = ((win n ≫ C.ν).est (.test le)).first.app i := by
+  show (mwin (minBy le) n C.n C.ν).app i = _
+  rw [app_mwin _ (minBy_assoc le total trans) (minBy_idem le) n C.n C.ν i h, app_Λ, RelRep.first_eq, RelRep.app_enum,
+    RelRep.app_est]
   exact (est_first le total trans _).symm
 /-- `n mmin C = first(est(≤)(W(n) ≫ ν))`, run as `mminBy (≤)`. -/
 def mmin [LE V] [DecidableLE V] (n : Nat) (C : Q K V) : Q K V := mminBy (decide <| · ≤ ·) n C

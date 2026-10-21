@@ -173,4 +173,178 @@ theorem est_first (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a) (
         fun hv => List.all_eq_true.2 fun y hy => trans _ _ _ hv (hmin y hy)⟩
     rw [hf, List.head?_filter, hfind]; rfl
 
+omit [DecidableEq A] in
+/-- `minBy` is associative for `le` total and transitive. -/
+theorem minBy_assoc (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
+    (a b c : A) : minBy le (minBy le a b) c = minBy le a (minBy le b c) := by
+  unfold minBy
+  cases hab : le a b <;> cases hbc : le b c <;> cases hac : le a c <;>
+    simp only [hab, hbc, hac, if_true, if_false, Bool.false_eq_true]
+  all_goals first | rfl | simp [trans _ _ _ hab hbc] at hac | simp [trans _ _ _ hac ((total b c).resolve_left (by simp [hbc]))] at hab
+
+omit [DecidableEq A] in
+theorem minBy_idem (le : A → A → Bool) (a : A) : minBy le a a = a := by unfold minBy; split <;> rfl
+
+/-! ## A moving fold in two passes
+
+The window `W(n)` at `i` is a suffix of the block of width `n` before `i`'s and a prefix of `i`'s block, so its fold
+is the suffix fold within blocks merged with the prefix fold within blocks: two passes, whatever `n`. -/
+
+/-- The fold of `step1 op` over the fibres of the positions `s … s+m-1`. -/
+def wfold (op : A → A → A) (R : RelRep Nat A) (s m : Nat) : Option A :=
+  ((List.range' s m).flatMap R.app).foldl (step1 op) none
+
+omit [DecidableEq A] in
+/-- A fold of `step1 op` from `o` is `o` merged with the fold from nothing, `op` associative. -/
+theorem foldl_step1 (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) (l : List A) (o : Option A) :
+    l.foldl (step1 op) o = Option.merge op o (l.foldl (step1 op) none) := by
+  induction l generalizing o with
+  | nil => cases o <;> rfl
+  | cons x xs ih =>
+    rw [List.foldl_cons, List.foldl_cons, ih (step1 op o x), ih (step1 op none x)]
+    generalize xs.foldl (step1 op) none = w
+    cases o <;> cases w <;> simp [step1, Option.merge, assoc]
+
+omit [DecidableEq A] in
+/-- **The fold of a concatenation is the merge of the folds.** -/
+theorem wfold_add (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) (R : RelRep Nat A)
+    (s m k : Nat) : wfold op R s (m + k) = Option.merge op (wfold op R s m) (wfold op R (s + m) k) := by
+  rw [wfold, wfold, wfold, ← List.range'_append_1, List.flatMap_append, List.foldl_append, foldl_step1 op assoc]
+
+theorem succ_mod {i n : Nat} (hn : 0 < n) : (i + 1) % n = if i % n + 1 = n then 0 else i % n + 1 := by
+  have h1 := Nat.mod_add_div i n; have h2 := Nat.mod_lt i hn
+  split
+  · rw [show i + 1 = 0 + n * (i / n + 1) by rw [Nat.mul_add, Nat.mul_one]; omega, Nat.add_mul_mod_self_left,
+      Nat.zero_mod]
+  · rw [show i + 1 = (i % n + 1) + n * (i / n) by omega, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+
+/-- A scan over one value per position is the fold of the prefix of those values. -/
+theorem app_scanR_one {C : Type} [DecidableEq C] (N : Nat) (z : B) (op : B → C → B) (X : RelRep Nat C) (g : Nat → C)
+    (hX : ∀ t, X.app t = [g t]) (i : Nat) (h : i < N) :
+    (scanR N z op X).app i = [((List.range (i + 1)).map g).foldl op z] := by
+  have e : ∀ l : List Nat, l.flatMap X.app = l.map g := fun l => by
+    induction l with
+    | nil => rfl
+    | cons t l ih => rw [List.flatMap_cons, List.map_cons, hX, ih]; rfl
+  rw [app_scanR _ _ _ _ _ h, app_Λ, RelRep.app_comp]
+  show [((List.range (i + 1)).flatMap X.app).foldl op z] = _
+  rw [e]
+
+/-- Each position with the fold of its fibre. -/
+def pos (op : A → A → A) (R : RelRep Nat A) : RelRep Nat (Nat × Option A) :=
+  (RelRep.ofFn id).pair (Λ(R) ≫ fold none (step1 op))
+
+theorem app_pos (op : A → A → A) (R : RelRep Nat A) (t : Nat) : (pos op R).app t = [(t, wfold op R t 1)] := by
+  rw [pos, RelRep.app_pair, RelRep.app_ofFn, app_Λ]
+  simp [fold, RelRep.app_ofFn, RelRep.cross, wfold, List.range'_one]
+
+/-- The prefix fold within blocks of width `n`: one pass from the left, restarting at each block. -/
+def bpre (op : A → A → A) (n N : Nat) (R : RelRep Nat A) : RelRep Nat (Option A) :=
+  scanR N none (fun o p => if p.1 % n = 0 then p.2 else Option.merge op o p.2) (pos op R)
+
+theorem app_bpre (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) {n : Nat} (hn : 0 < n) (N : Nat)
+    (R : RelRep Nat A) (i : Nat) (h : i < N) : (bpre op n N R).app i = [wfold op R (i - i % n) (i % n + 1)] := by
+  rw [bpre, app_scanR_one N _ _ _ _ (app_pos op R) i h]
+  congr 1
+  induction i with
+  | zero => simp [wfold, Option.merge]
+  | succ i ih =>
+    rw [List.range_succ, List.map_append, List.foldl_append, ih (by omega)]
+    simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+    rw [succ_mod hn]
+    by_cases hc : i % n + 1 = n
+    · simp [hc]
+    · have := Nat.mod_le i n
+      simp only [hc, if_false, Nat.add_one_ne_zero]
+      rw [show i + 1 - (i % n + 1) = i - i % n by omega, wfold_add op assoc R (i - i % n) (i % n + 1) 1,
+        show i - i % n + (i % n + 1) = i + 1 by omega]
+
+/-- The suffix fold within blocks of width `n`: the same pass on the positions reversed. -/
+def bsuf (op : A → A → A) (n N : Nat) (R : RelRep Nat A) : RelRep Nat (Option A) :=
+  .ofFn (N - 1 - ·) ≫ scanR N none (fun o p => if (p.1 + 1) % n = 0 then p.2 else Option.merge op p.2 o)
+    (.ofFn (N - 1 - ·) ≫ pos op R)
+
+theorem app_bsuf (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) {n : Nat} (hn : 0 < n) (N : Nat)
+    (R : RelRep Nat A) (j : Nat) (h : j < N) : (bsuf op n N R).app j = [wfold op R j (min (N - j) (n - j % n))] := by
+  have hr : ∀ t, (RelRep.ofFn (N - 1 - ·) ≫ pos op R).app t = [(N - 1 - t, wfold op R (N - 1 - t) 1)] := fun t => by
+    rw [RelRep.app_comp, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil, app_pos]
+  have go : ∀ r, r < N → ((List.range (r + 1)).map fun t => (N - 1 - t, wfold op R (N - 1 - t) 1)).foldl
+      (fun o p => if (p.1 + 1) % n = 0 then p.2 else Option.merge op p.2 o) none
+      = wfold op R (N - 1 - r) (min (r + 1) (n - (N - 1 - r) % n)) := by
+    intro r
+    induction r with
+    | zero =>
+      intro _
+      have := Nat.mod_lt (N - 1 - 0) hn
+      rw [show min (0 + 1) (n - (N - 1 - 0) % n) = 1 by omega]
+      simp only [Nat.zero_add, List.range_one, List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+      split
+      · rfl
+      · cases wfold op R (N - 1 - 0) 1 <;> rfl
+    | succ r ih =>
+      intro hr1
+      rw [List.range_succ, List.map_append, List.foldl_append, ih (by omega)]
+      simp only [List.map_cons, List.map_nil, List.foldl_cons, List.foldl_nil]
+      rw [show N - 1 - r = N - 1 - (r + 1) + 1 by omega]
+      generalize N - 1 - (r + 1) = j
+      rw [succ_mod hn]
+      have := Nat.mod_lt j hn
+      by_cases hc : j % n + 1 = n
+      · simp only [hc, if_true]
+        rw [show min (r + 1 + 1) (n - j % n) = 1 by omega]
+      · simp only [hc, if_false, Nat.add_one_ne_zero]
+        rw [show min (r + 1 + 1) (n - j % n) = 1 + min (r + 1) (n - (j % n + 1)) by omega, wfold_add op assoc R]
+  rw [bsuf, RelRep.app_comp, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil,
+    app_scanR_one N _ _ _ _ hr _ (by omega), go _ (by omega), show N - 1 - (N - 1 - j) = j by omega,
+    show N - 1 - j + 1 = N - j by omega]
+
+/-- `Λ(W(n) ≫ R) ≫ ⦇op⦈` on the positions `0 … N-1` in two passes: the suffix fold within blocks at the window's
+    start, `n` before, merged with the prefix fold within blocks at its end (`app_mwin`). -/
+def mwin (op : A → A → A) (n N : Nat) (R : RelRep Nat A) : RelRep Nat A :=
+  RelRep.corefl (fun _ => decide (0 < n)) ≫ (bpre op n N R).pair ((shift (1 - n) ≫ bsuf op n N R).override
+    (.ofFn fun _ => none)) ≫ .enum fun q => (Option.merge op q.2 q.1).toList
+
+/-- **`mwin` is the window fold** at every position `i < N`, `op` associative and idempotent. -/
+theorem app_mwin (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) (idem : ∀ a, op a a = a)
+    (n N : Nat) (R : RelRep Nat A) (i : Nat) (h : i < N) : (mwin op n N R).app i = (Λ(win n ≫ R) ≫ fold1 op).app i := by
+  rw [app_Λ, fold1_eq, RelRep.app_comp]
+  show _ = (wfold op R (i + 1 - n) (min n (i + 1))).toList
+  rw [mwin, RelRep.app_comp]
+  by_cases hn : 0 < n
+  · simp only [RelRep.corefl, RelRep.app_enum, hn, decide_true, if_true, List.flatMap_cons, List.flatMap_nil,
+      List.append_nil, RelRep.app_comp, RelRep.app_pair, app_bpre op assoc hn N R i h, RelRep.override_eq]
+    have h1 := Nat.mod_add_div (i + 1 - n) n
+    have h2 := Nat.mod_lt (i + 1 - n) hn
+    by_cases hle : n ≤ i + 1
+    · have e : (shift (1 - n)).app i = [i + 1 - n] := by
+        show (if 0 ≤ (i : Int) + (1 - (n : Int)) then [((i : Int) + (1 - (n : Int))).toNat] else []) = _
+        rw [if_pos (by omega)]; congr 1; omega
+      rw [e, List.flatMap_cons, List.flatMap_nil, List.append_nil, app_bsuf op assoc hn N R _ (by omega)]
+      simp only [List.cons_ne_nil, if_false, RelRep.cross, List.flatMap_cons, List.flatMap_nil, List.map_cons,
+        List.map_nil, List.append_nil]
+      rw [show min (N - (i + 1 - n)) (n - (i + 1 - n) % n) = n - (i + 1 - n) % n by omega,
+        Nat.min_eq_left hle]
+      by_cases hr : (i + 1 - n) % n = 0
+      · have hi := Nat.add_mul_mod_self_left (n - 1) n ((i + 1 - n) / n)
+        rw [show n - 1 + n * ((i + 1 - n) / n) = i by omega, Nat.mod_eq_of_lt (a := n - 1) (by omega)] at hi
+        rw [hr, hi, show i - (n - 1) = i + 1 - n by omega, show n - 1 + 1 = n by omega, Nat.sub_zero]
+        cases wfold op R (i + 1 - n) n <;> simp [Option.merge, idem]
+      · have hi := Nat.add_mul_mod_self_left ((i + 1 - n) % n - 1) n ((i + 1 - n) / n + 1)
+        rw [show (i + 1 - n) % n - 1 + n * ((i + 1 - n) / n + 1) = i by rw [Nat.mul_add, Nat.mul_one]; omega,
+          Nat.mod_eq_of_lt (a := (i + 1 - n) % n - 1) (by omega)] at hi
+        rw [hi, show i - ((i + 1 - n) % n - 1) = i + 1 - n + (n - (i + 1 - n) % n) by omega,
+          show (i + 1 - n) % n - 1 + 1 = (i + 1 - n) % n by omega,
+          show wfold op R (i + 1 - n) n = wfold op R (i + 1 - n) ((n - (i + 1 - n) % n) + (i + 1 - n) % n) by
+            congr 1; omega, wfold_add op assoc R]
+    · have e : (shift (1 - n)).app i = [] := by
+        show (if 0 ≤ (i : Int) + (1 - (n : Int)) then [((i : Int) + (1 - (n : Int))).toNat] else []) = _
+        rw [if_neg (by omega)]
+      rw [e, List.flatMap_nil, Nat.mod_eq_of_lt (by omega), Nat.sub_self, show i + 1 - n = 0 by omega,
+        Nat.min_eq_right (by omega)]
+      simp only [if_true, RelRep.app_ofFn, RelRep.cross, List.flatMap_cons, List.flatMap_nil, List.map_cons,
+        List.map_nil, List.append_nil]
+      cases wfold op R 0 (i + 1) <;> rfl
+  · simp only [RelRep.corefl, RelRep.app_enum, hn, decide_false]
+    rw [show n = 0 by omega, Nat.min_eq_left (Nat.zero_le _)]; rfl
+
 end LeetQ.Rel

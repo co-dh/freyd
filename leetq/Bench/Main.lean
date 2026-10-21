@@ -187,12 +187,18 @@ def msumOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "msum" (LeetQ.Rel.list (ints n 26 1000).toList)
     fun c => some (Int64.ofInt ((LeetQ.Rel.Q.msum 10 c).vals.foldl (· + ·) 0))
 
+/-- `w mmin x` by `LeetQ.Rel.Q.mmin`, two passes of `minBy` within blocks of width `w` (`mminBy_spec`);
+    `sum w mmin x`. -/
+def mminOp (w n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "mmin" (LeetQ.Rel.list (ints n 26 1000).toList)
+    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mmin w c).vals.foldl (· + ·) 0))
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
-   ("mins", minsOp), ("msum", msumOp)]
+   ("mins", minsOp), ("msum", msumOp), ("mmin", mminOp 10), ("mmin1000", mminOp 1000)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=
