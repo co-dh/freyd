@@ -37,9 +37,9 @@ def prev (C : Q K V) : Q K V := C.pull C.n (shift (-1))
 /-- `k xprev C`. -/
 def xprev (k : Nat) (C : Q K V) : Q K V := C.pull C.n (shift (-k))
 /-- `first C = est(<)(⊤) ≫ ν`, an atom. -/
-def first (C : Q K V) : RelRep Nat V := (top C.n).first ≫ C.ν
+def first (C : Q K V) : RelRep Nat V := (tot C.n).first ≫ C.ν
 /-- `last C = est(>)(⊤) ≫ ν`, an atom. -/
-def last (C : Q K V) : RelRep Nat V := (top C.n).last ≫ C.ν
+def last (C : Q K V) : RelRep Nat V := (tot C.n).last ≫ C.ν
 /-- `til n`. -/
 def til (n : Nat) : Q Nat Nat := ⟨n, .pos rfl, idn n⟩
 /-- `x,y` for lists and tables: `idn ≫ x ∪ shift(-n) ≫ y`. -/
@@ -67,24 +67,24 @@ def index (C : Q K V) (ys : Q J K) : Q J V := ys.put (ys.ν ≫ get C)
 /-- `C?ys`, the key: `ys ≫ (first(ν°) else n) ≫ κ` — a list's index or its count, a dict's key or null. -/
 def find (C : Q K V) (ys : Q J V) : Q J K := ys.put ((ys.ν ≫ (cv C.n C.ν).first).override (.ofFn fun _ => C.n) ≫ C.κ)
 /-- `where C` of booleans: the keys at `(ν ≫ true?)`. -/
-def whereB (C : Q K Bool) : Q Nat K := ofPt (top C.n ≫ (C.ν ≫ RelRep.corefl id).dom ≫ C.κ)
+def whereB (C : Q K Bool) : Q Nat K := ofPt (tot C.n ≫ (C.ν ≫ RelRep.corefl id).dom ≫ C.κ)
 /-- `where C` of counts: each key `ν` times, `⟨id, ν ≫ >⟩ ≫ π₁ ≫ κ`. -/
-def whereN (C : Q K Nat) : Q Nat K := ofPt (top C.n ≫ (idn C.n).pair (C.ν ≫ gt) ≫ .ofFn Prod.fst ≫ C.κ)
+def whereN (C : Q K Nat) : Q Nat K := ofPt (tot C.n ≫ (idn C.n).pair (C.ν ≫ gt) ≫ .ofFn Prod.fst ≫ C.κ)
 /-- `distinct C`: the values at the positions `first(ν°)` picks. -/
-def distinct (C : Q K V) : Q Nat V := ofPt (top C.n ≫ (C.ν ≫ (cv C.n C.ν).first).inter (idn C.n) ≫ C.ν)
+def distinct (C : Q K V) : Q Nat V := ofPt (tot C.n ≫ (C.ν ≫ (cv C.n C.ν).first).inter (idn C.n) ≫ C.ν)
 /-- `group C = Λ(ν° ≫ κ)` on the distinct values. -/
 def group (C : Q K V) : Q V (List K) := ⟨(distinct C).n, .rel (distinct C).ν, (distinct C).ν ≫ Λ(cv C.n C.ν ≫ C.κ)⟩
 /-- `x union y = distinct(x,y)`. -/
 def union (x y : Q Nat V) : Q Nat V := distinct (join x y)
 /-- `x inter y = ν ≫ (∈ ran y)?`. -/
-def inter (x : Q K V) (y : Q J V) : Q Nat V := ofPt (top x.n ≫ x.ν ≫ (cv y.n y.ν).dom)
+def inter (x : Q K V) (y : Q J V) : Q Nat V := ofPt (tot x.n ≫ x.ν ≫ (cv y.n y.ν).dom)
 /-- `x except y = ν ≫ (∉ ran y)?`. -/
-def except (x : Q K V) (y : Q J V) : Q Nat V := ofPt (top x.n ≫ x.ν ≫ ndom (cv y.n y.ν))
+def except (x : Q K V) (y : Q J V) : Q Nat V := ofPt (tot x.n ≫ x.ν ≫ ndom (cv y.n y.ν))
 /-- `x in y`. -/
 def in_ (x : Q K V) (y : Q J V) : Q K Bool :=
   x.put (x.ν ≫ ((cv y.n y.ν).dom ≫ .ofFn fun _ => true).override (.ofFn fun _ => false))
 /-- The positions of `C` holding a value `L`-related to `v`: `⊤ ∩ (ν ≫ L)°`. -/
-def below (L : RelTest V V) (C : Q K V) : RelRep V Nat := (top C.n).inter (C.ν.compT L).conv
+def below (L : RelTest V V) (C : Q K V) : RelRep V Nat := (tot C.n).inter (C.ν.compT L).conv
 /-- `x bin y`: the last position at or below, else `-1`. -/
 def bin [LE V] [DecidableLE V] (x : Q K V) (y : Q J V) : Q J Int :=
   y.put ((y.ν ≫ (below (.test (decide <| · ≤ ·)) x).last ≫ .ofFn Int.ofNat).override (.ofFn fun _ => -1))
@@ -101,7 +101,7 @@ def within [LE V] [DecidableLE V] (lo hi : V) (C : Q K V) : Q K Bool := C.put (C
 
 /-- `rank` in the order `lt`: `Λ(⊤ ∩ (⟨ν,id⟩ ≫ lex ≫ ⟨ν,id⟩°)) ≫ #`. -/
 def rankBy (lt : V → V → Bool) (C : Q K V) : Q K Nat :=
-  C.put (Λ((top C.n).inter (via (C.ν.pair (idn C.n)) (lex lt) (C.ν.pair (idn C.n)))) ≫ len)
+  C.put (Λ((tot C.n).inter (via (C.ν.pair (idn C.n)) (lex lt) (C.ν.pair (idn C.n)))) ≫ len)
 /-- `rank`. -/
 def rank [LT V] [DecidableLT V] (C : Q K V) : Q K Nat := rankBy (decide <| · < ·) C
 /-- `iasc C = rank° ≫ κ`. -/
@@ -141,19 +141,19 @@ theorem fills_spec (C : Q K V) (i : Nat) (h : i < C.n) : (fills C).ν.app i = (g
 /-! ## Aggregates: an atom at the point -/
 
 /-- `f/ C` seeded: `Λ(⊤ ≫ ν) ≫ ⦇z, f⦈`. -/
-def over (f : W → V → W) (z : W) (C : Q K V) : RelRep Nat W := Λ(top C.n ≫ C.ν) ≫ fold z f
+def over (f : W → V → W) (z : W) (C : Q K V) : RelRep Nat W := Λ(tot C.n ≫ C.ν) ≫ fold z f
 /-- `f/ C`: `Λ(⊤ ≫ ν) ≫ ⦇f⦈`. -/
-def over1 (f : V → V → V) (C : Q K V) : RelRep Nat V := Λ(top C.n ≫ C.ν) ≫ fold1 f
+def over1 (f : V → V → V) (C : Q K V) : RelRep Nat V := Λ(tot C.n ≫ C.ν) ≫ fold1 f
 /-- `count C = Λ(⊤) ≫ #`. -/
-def count (C : Q K V) : RelRep Nat Nat := Λ(top C.n) ≫ len
+def count (C : Q K V) : RelRep Nat Nat := Λ(tot C.n) ≫ len
 /-- `sum = +/`. -/
 def sum [Add V] [Zero V] (C : Q K V) : RelRep Nat V := over (· + ·) 0 C
 /-- `prd = */`. -/
 def prd [Mul V] [OfNat V 1] (C : Q K V) : RelRep Nat V := over (· * ·) 1 C
 /-- `min C = first(est(≤)(⊤ ≫ ν))`. -/
-def qmin [LE V] [DecidableLE V] (C : Q K V) : RelRep Nat V := ((top C.n ≫ C.ν).est (.test (decide <| · ≤ ·))).first
+def qmin [LE V] [DecidableLE V] (C : Q K V) : RelRep Nat V := ((tot C.n ≫ C.ν).est (.test (decide <| · ≤ ·))).first
 /-- `max C = first(est(≥)(⊤ ≫ ν))`. -/
-def qmax [LE V] [DecidableLE V] (C : Q K V) : RelRep Nat V := ((top C.n ≫ C.ν).est (.test (decide <| · ≥ ·))).first
+def qmax [LE V] [DecidableLE V] (C : Q K V) : RelRep Nat V := ((tot C.n ≫ C.ν).est (.test (decide <| · ≥ ·))).first
 /-- `all = &/`. -/
 def all (C : Q K Bool) : RelRep Nat Bool := over (· && ·) true C
 /-- `any = |/`. -/
@@ -341,7 +341,7 @@ def xgroup (k : V → κ') (v : V → W) (T : Q J V) : Q κ' (List W) :=
 def selby [LT κ'] [DecidableLT κ'] (agg : RelRep (List W) R) (k : V → κ') (v : V → W) (T : Q J V) : Q κ' R :=
   let ks := asc (distinct (each k T)); ⟨ks.n, .rel ks.ν, ks.ν ≫ Λ(cv T.n (T.ν ≫ .ofFn k) ≫ T.ν ≫ .ofFn v) ≫ agg⟩
 /-- `ungroup G = ⟨κ, ν ≫ ∋⟩`. -/
-def ungroup (G : Q K (List V)) : Q Nat (K × V) := ofPt (top G.n ≫ G.κ.pair (G.ν ≫ mem))
+def ungroup (G : Q K (List V)) : Q Nat (K × V) := ofPt (tot G.n ≫ G.κ.pair (G.ν ≫ mem))
 
 /-! ## Joins -/
 
@@ -353,7 +353,7 @@ def lj (k : V → K) (T : Q J V) (KT : Q K W) : Q J (V × Option W) :=
   T.put (T.ν.pair ((T.ν ≫ .ofFn k ≫ get KT ≫ .ofFn some).override (.ofFn fun _ => none)))
 /-- `ej[k;T;U]`: every match, `⟨ν, ν ≫ k ≫ (ν' ≫ k')° ≫ ν'⟩`. -/
 def ej (k : V → K) (k' : S → K) (w : S → W) (T : Q J V) (U : Q J S) : Q Nat (V × W) :=
-  ofPt (top T.n ≫ T.ν.pair (T.ν ≫ .ofFn k ≫ cv U.n (U.ν ≫ .ofFn k') ≫ U.ν ≫ .ofFn w))
+  ofPt (tot T.n ≫ T.ν.pair (T.ν ≫ .ofFn k ≫ cv U.n (U.ν ≫ .ofFn k') ≫ U.ν ≫ .ofFn w))
 /-- `T pj KT`: `f` of the row and the match, else `0`. -/
 def pj [Zero W] (k : V → K) (f : V → W → V) (T : Q J V) (KT : Q K W) : Q J V :=
   T.put (T.ν.pair ((T.ν ≫ .ofFn k ≫ get KT).override (.ofFn fun _ => 0)) ≫ .ofFn fun p => f p.1 p.2)

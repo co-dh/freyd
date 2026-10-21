@@ -25,8 +25,8 @@ def ix (xs : List A) : RelRep Nat A := .vec xs.toArray rfl
 /-- The identity on the positions `0 … n-1`. -/
 def idn (n : Nat) : RelRep Nat Nat := RelRep.corefl (decide <| · < n)
 
-/-- `⊤ : X ⇸ ℕ` onto the positions `0 … n-1`, in order: what `Λ`, `first` and `#` range over. -/
-def top {X : Type} (n : Nat) : RelRep X Nat := .enum fun _ => List.range n
+/-- The total relation `⊤ : X ⇸ ℕ` onto the positions `0 … n-1`, in order: what `Λ`, `first` and `#` range over. -/
+def tot {X : Type} (n : Nat) : RelRep X Nat := .enum fun _ => List.range n
 
 /-- `≥` on positions, `i ↦ j ≤ i` in order: the prefix a running aggregate folds. -/
 def ge : RelRep Nat Nat := .enum fun i => List.range (i + 1)

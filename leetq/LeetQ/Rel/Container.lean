@@ -72,7 +72,7 @@ def put (C : Q K V) (R : RelRep Nat W) : Q K W := ⟨C.n, C.keys, R⟩
 def pull (m : Nat) (G : RelRep Nat Nat) (C : Q K V) : Q K V := ⟨m, C.keys.pull G, G ≫ C.ν⟩
 
 /-- The positions in `dom P`, renumbered: `C[where P]`. -/
-def sel (C : Q K V) (P : RelRep Nat X) : Q K V := let ps := (top C.n ≫ P.dom).app 0; C.pull ps.length (ix ps)
+def sel (C : Q K V) (P : RelRep Nat X) : Q K V := let ps := (tot C.n ≫ P.dom).app 0; C.pull ps.length (ix ps)
 
 end Q
 
