@@ -77,11 +77,12 @@ def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
       Keys.ofList false ((ints n 7 1000000).toList.map Int64.ofInt))
     fun (k, v) => some ((Compressed.selbySum Compressed.nul k v).foldl (fun s p => s + p.1 + p.2) 0)
 
-/-- `t ij kt`, `kt` of `n/10` keys; `exec sum v+w`. -/
+/-- `t ij kt` by `Long.ij`, `memberVec`, `whereBits`, `findVec`, `gatherBytes`; `kt` of `n/10` keys;
+`exec sum v+w`, `v` read at the kept rows by `Long.aIdx`. -/
 def ijOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let m := max 1 (n / 10)
-  timed "ij" (tab ((ints n 8 m).zip (ints n 11 1000000)), RelRep.pairs (fin (ints m 9 m) (ints m 10 1000000)))
-    fun (T, KT) => (rows (ij Prod.fst T KT)).map (sumBy fun p => Int64.ofInt p.1.2 + Int64.ofInt p.2)
+  timed "ij" (col (ints n 8 m), col (ints n 11 1000000), col (ints m 9 m), col (ints m 10 1000000))
+    fun (tk, tv, kk, kv) => let p := Long.ij tk kk kv; some (colSum (Long.aIdx tv p.1) + colSum p.2)
 
 /-- ``aj[`s`tm;tr;qr]``, `qr` sorted by time (stably, as `` `tm xasc``); `exec sum p` (`0N` skipped). -/
 def ajOp (n : Nat) : IO (IO (Nat × Int64)) :=
