@@ -135,7 +135,8 @@ theorem head_sel (f g : Nat → Int64) (x : Int64) : (l : List Nat) →
       rw [e]; rfl
     | false =>
       have e : FinRel.sel x (f i, g i) = none := by
-        unfold FinRel.sel; exact if_neg fun (e : f i = x) => by rw [e, beq_self_eq_true] at h; exact Bool.noConfusion h
+        unfold FinRel.sel; -- `beq_self_eq_true` at `Int64` reaches `Classical.choice`; `==` there is `decide`
+        exact if_neg fun (e : f i = x) => of_decide_eq_false (h : decide (f i = x) = false) e
       rw [e]; exact head_sel f g x l
 
 /-- Two `long`s' bits are equal exactly when the `long`s are. -/
@@ -182,6 +183,10 @@ theorem getAll_spec (k v ks : ByteArray) (hkv : k.size / 8 = v.size / 8) (hn : k
     rw [Q.getAll, RelRep.app_comp, Q.tab, RelRep.app_vec]
     simp only [cast_eq, List.getElem?_toArray, dec, List.getElem?_map, List.getElem?_range hj, Option.map_some,
       Option.toList_some, List.flatMap_cons, List.flatMap_nil, List.append_nil, Q.app_look]
+
+-- (10 20 30)@2 0 0 5: 30 10 10 0N ; (1 2 1!10 20 30)@1 5 2: 10 0N 20
+#guard dec (aIdx (enc 8 [10, 20, 30]) (enc 8 [2, 0, 0, 5])) == [30, 10, 10, Compressed.nul]
+#guard dec (getAll (enc 8 [1, 2, 1]) (enc 8 [10, 20, 30]) (enc 8 [1, 5, 2])) == [10, Compressed.nul, 20]
 
 #print axioms aIdx_spec
 #print axioms getAll_spec

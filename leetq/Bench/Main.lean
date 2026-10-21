@@ -12,6 +12,7 @@
 import LeetQ.Q.Table
 import LeetQ.QRel
 import LeetQ.Compressed
+import LeetQ.Long
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -54,20 +55,27 @@ def timed {α : Type} (name : String) (d : α) (f : α → Option Int64) : IO (I
 
 /-! ## The operators, each with q's expression and checksum -/
 
-/-- `d@ks`; `sum d@ks` (q's `sum` skips `0N`). -/
+/-- A dense `long` column, built before the clock starts. -/
+def col (a : Array Int) : ByteArray := enc 8 (a.toList.map Int64.ofInt)
+
+/-- q's `sum` of a dense `long` column, `0N` skipped: `overBytes .add`. -/
+def colSum (b : ByteArray) : Int64 := Compressed.Col.sum Compressed.nul (.dense 8 b)
+
+/-- `d@ks` by `Long.getAll`, `findVec` then `gatherBytes`; `sum d@ks` (q's `sum` skips `0N`). -/
 def getAllOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "getAll" (RelRep.pairs (fin (ints n 1 n) (ints n 2 1000000)), ints n 3 (2 * n))
-    fun (D, ks) => (fin? (getAll D ks)).map fun r => r.vals.foldl (fun s x => s + Int64.ofInt (x.getD 0)) 0
+  timed "getAll" (col (ints n 1 n), col (ints n 2 1000000), col (ints n 3 (2 * n)))
+    fun (k, v, ks) => some (colSum (Long.getAll k v ks))
 
 /-- `d+e`; `(sum key r)+sum value r`. -/
 def zipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "zipD" (fin (ints n 1 n) (ints n 2 1000000), fin (ints n 4 n) (ints n 5 1000000))
     fun (r, s) => (ps (zipD (· + ·) 0 r s)).map (sumBy fun p => Int64.ofInt p.1 + Int64.ofInt p.2)
 
-/-- `select sum v by k from t`; `exec sum k+v`. -/
+/-- `select sum v by k from t` by `Compressed.selbySum`, `groupIds` then `overGroups`; `exec sum k+v`. -/
 def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "selby" (tab ((ints n 6 1000).zip (ints n 7 1000000)))
-    fun T => ((selby (·.foldl (· + ·) 0) Prod.fst Prod.snd T).bind ps).map (sumBy fun p => Int64.ofInt p.1 + Int64.ofInt p.2)
+  timed "selby" (Keys.ofList false ((ints n 6 1000).toList.map Int64.ofInt),
+      Keys.ofList false ((ints n 7 1000000).toList.map Int64.ofInt))
+    fun (k, v) => some ((Compressed.selbySum Compressed.nul k v).foldl (fun s p => s + p.1 + p.2) 0)
 
 /-- `t ij kt`, `kt` of `n/10` keys; `exec sum v+w`. -/
 def ijOp (n : Nat) : IO (IO (Nat × Int64)) :=
@@ -154,10 +162,10 @@ def selbySumColOp (name : String) (foR : Bool) (n : Nat) : IO (IO (Nat × Int64)
 def selbySumDenseOp := selbySumColOp "selbySumDense" false
 def selbySumFoROp := selbySumColOp "selbySumFoR" true
 
-/-- `a@ks`, a `vec` then a `vec`: every index in range, so the composite is a `vec`; `sum a@ks`. -/
+/-- `a@ks` by `Long.aIdx`, `gatherBytes`; `sum a@ks`. -/
 def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "aIdx" (ints n 24 1000000, (gen n 25).map (· % n))
-    fun (a, ks) => (rows (RelRep.comp (RelRep.vec ks rfl) (RelRep.vec a rfl))).map (sumBy Int64.ofInt)
+  timed "aIdx" (col (ints n 24 1000000), col ((gen n 25).map fun x => ((x % n : Nat) : Int)))
+    fun (a, ks) => some (colSum (Long.aIdx a ks))
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
