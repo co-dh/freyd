@@ -13,6 +13,7 @@ import LeetQ.Q.Table
 import LeetQ.QRel
 import LeetQ.Compressed
 import LeetQ.Long
+import LeetQ.Rel.Verbs
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -170,11 +171,17 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "aIdx" (col (ints n 24 1000000), col ((gen n 25).map fun x => ((x % n : Nat) : Int)))
     fun (a, ks) => some (colSum (Long.aIdx a ks))
 
+/-- `sums x` by `LeetQ.Rel.Q.sums`, one pass by the scan law (`scan_spec`); `sum sums x`.  Before the scan
+    law it listed each prefix again: 0.1 s at 1e3, 9.8 s at 1e4. -/
+def sumsOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "sums" (LeetQ.Rel.list (ints n 26 1000).toList)
+    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.sums c).vals.foldl (· + ·) 0))
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
-   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp)]
+   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=

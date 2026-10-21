@@ -67,4 +67,64 @@ def fold1 (op : A → A → A) : RelRep (List A) A := .enum fun | [] => [] | x :
 /-- The length of a collected fibre. -/
 def len : RelRep (List A) Nat := fold 0 fun n _ => n + 1
 
+/-! ## Running folds in one pass -/
+
+open Freyd.Alg.RelSet (rangeFold rangeFold_eq)
+
+/-- `Λ(S) ≫ G` at `i` is `G` of `S`'s fibre at `i`, collected. -/
+theorem app_Λ {C : Type} [DecidableEq C] (S : RelRep Nat A) (G : RelRep (List A) C) (i : Nat) :
+    (Λ(S) ≫ G).app i = G.app (S.app i) := by
+  rw [RelRep.app_comp, RelRep.transpose_eq, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil]
+
+/-- **The scan law**: the prefix at `i+1` is the prefix at `i` with `i+1`'s fibre appended, so its fold is the
+    fold at `i` folded on by that fibre alone. -/
+theorem scan_succ (z : B) (op : B → A → B) (R : RelRep Nat A) (i : Nat) :
+    (Λ(ge ≫ R) ≫ fold z op).app (i + 1) = ((Λ(ge ≫ R) ≫ fold z op).app i).map fun w => (R.app (i + 1)).foldl op w := by
+  rw [app_Λ, app_Λ, RelRep.app_comp, RelRep.app_comp]
+  show [((List.range (i + 1 + 1)).flatMap R.app).foldl op z] = [((List.range (i + 1)).flatMap R.app).foldl op z].map
+    fun w => (R.app (i + 1)).foldl op w
+  rw [List.range_succ (n := i + 1), List.flatMap_append, List.foldl_append, List.flatMap_singleton]; rfl
+
+/-- `Λ(≥ ≫ R) ≫ ⦇z, op⦈` on the positions `0 … n-1`, by the scan law in one pass from the left, as a `vec`:
+    no prefix is listed again (`app_scanR`). -/
+def scanR (n : Nat) (z : B) (op : B → A → B) (R : RelRep Nat A) : RelRep Nat B :=
+  R.withFib fun g => .vec (rangeFold (fun (p : B × Array B) i => let w := (g i).foldl op p.1; (w, p.2.push w))
+    n 0 (z, Array.mkEmpty n)).2 rfl
+
+/-- **`scanR` is the running fold** at every position `i < n`. -/
+theorem app_scanR (n : Nat) (z : B) (op : B → A → B) (R : RelRep Nat A) (i : Nat) (h : i < n) :
+    (scanR n z op R).app i = (Λ(ge ≫ R) ≫ fold z op).app i := by
+  let pf := fun m => ((List.range m).flatMap R.app).foldl op z
+  have go : ∀ m, ((List.range m).foldl (fun (p : B × Array B) i => let w := (R.fib i).foldl op p.1; (w, p.2.push w))
+      (z, Array.mkEmpty n)) = (pf m, ((List.range m).map fun j => pf (j + 1)).toArray) := by
+    intro m
+    induction m with
+    | zero => rfl
+    | succ m ih =>
+      rw [List.range_succ, List.foldl_append, ih]
+      simp [pf, List.range_succ, ← Array.foldl_toList, List.flatMap_append, List.foldl_append]
+  rw [scanR, RelRep.withFib_eq, RelRep.app_vec, rangeFold_eq, ← List.range_eq_range']
+  dsimp only
+  rw [go n, cast_eq, List.getElem?_toArray, List.getElem?_map, List.getElem?_range h, app_Λ, RelRep.app_comp]
+  rfl
+
+/-- `⦇op⦈`'s state: nothing before the first member, which then seeds the fold. -/
+def step1 (op : A → A → A) (o : Option A) (a : A) : Option A := some (o.elim a (op · a))
+
+/-- `⦇op⦈` is the fold of `step1` from nothing. -/
+theorem fold1_eq (op : A → A → A) (l : List A) : (fold1 op).app l = (l.foldl (step1 op) none).toList := by
+  have go : ∀ (xs : List A) w, xs.foldl (step1 op) (some w) = some (xs.foldl op w) := by
+    intro xs; induction xs with
+    | nil => intro w; rfl
+    | cons x xs ih => intro w; exact ih (op w x)
+  cases l with
+  | nil => rfl
+  | cons x xs => exact (congrArg Option.toList (go xs x)).symm
+
+/-- Keeping each member in turn ends at the last. -/
+theorem foldl_some (l : List A) (o : Option A) : l.foldl (fun _ a => some a) o = l.getLast?.or o := by
+  induction l generalizing o with
+  | nil => rfl
+  | cons x xs ih => rw [List.foldl_cons, ih, List.getLast?_cons]; cases xs.getLast? <;> rfl
+
 end LeetQ.Rel

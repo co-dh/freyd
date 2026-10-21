@@ -129,8 +129,14 @@ def differ (C : Q K V) : Q K Bool :=
   C.put ((C.ν.pair (shift (-1) ≫ C.ν) ≫ .ofFn fun p => p.1 != p.2).override (.ofFn fun _ => true))
 /-- `null C`. -/
 def null (C : Q K V) : Q K Bool := C.put ((C.ν ≫ .ofFn fun _ => false).override (.ofFn fun _ => true))
-/-- `fills C = last(≥ ≫ ν)`. -/
-def fills (C : Q K V) : Q K V := C.put (ge ≫ C.ν).last
+/-- `fills C = last(≥ ≫ ν)`, run as one pass keeping the last value (`fills_spec`). -/
+def fills (C : Q K V) : Q K V := C.put (scanR C.n none (fun _ a => some a) C.ν ≫ .enum Option.toList)
+
+theorem fills_spec (C : Q K V) (i : Nat) (h : i < C.n) : (fills C).ν.app i = (ge ≫ C.ν).last.app i := by
+  show (scanR C.n none (fun _ a => some a) C.ν ≫ .enum Option.toList).app i = _
+  rw [RelRep.app_comp, app_scanR _ _ _ _ _ h, app_Λ, RelRep.last_eq, RelRep.app_enum]
+  simp only [fold, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil, RelRep.app_enum,
+    foldl_some, Option.or_none]
 
 /-! ## Aggregates: an atom at the point -/
 
@@ -174,10 +180,20 @@ def cor (x : Q K Int) (y : Q J Int) : RelRep Nat QF :=
 
 /-! ## Running and moving aggregates: one per position -/
 
-/-- `f\ C` seeded: `Λ(≥ ≫ ν) ≫ ⦇z, f⦈`. -/
-def scan (f : W → V → W) (z : W) (C : Q K V) : Q K W := C.put (Λ(ge ≫ C.ν) ≫ fold z f)
-/-- `f\ C`: `Λ(≥ ≫ ν) ≫ ⦇f⦈`. -/
-def scan1 (f : V → V → V) (C : Q K V) : Q K V := C.put (Λ(ge ≫ C.ν) ≫ fold1 f)
+/-- `f\ C` seeded: `Λ(≥ ≫ ν) ≫ ⦇z, f⦈`, run as one pass by the scan law (`scan_spec`). -/
+def scan (f : W → V → W) (z : W) (C : Q K V) : Q K W := C.put (scanR C.n z f C.ν)
+
+theorem scan_spec (f : W → V → W) (z : W) (C : Q K V) (i : Nat) (h : i < C.n) :
+    (scan f z C).ν.app i = (Λ(ge ≫ C.ν) ≫ fold z f).app i := app_scanR _ _ _ _ _ h
+
+/-- `f\ C`: `Λ(≥ ≫ ν) ≫ ⦇f⦈`, run as `scan` of `step1` from nothing (`scan1_spec`). -/
+def scan1 (f : V → V → V) (C : Q K V) : Q K V := C.put (scanR C.n none (step1 f) C.ν ≫ .enum Option.toList)
+
+theorem scan1_spec (f : V → V → V) (C : Q K V) (i : Nat) (h : i < C.n) :
+    (scan1 f C).ν.app i = (Λ(ge ≫ C.ν) ≫ fold1 f).app i := by
+  show (scanR C.n none (step1 f) C.ν ≫ .enum Option.toList).app i = _
+  rw [RelRep.app_comp, app_scanR _ _ _ _ _ h, app_Λ, app_Λ, fold1_eq]
+  simp only [fold, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil, RelRep.app_enum]
 /-- `sums = +\`. -/
 def sums [Add V] [Zero V] (C : Q K V) : Q K V := scan (· + ·) 0 C
 /-- `prds = *\`. -/
