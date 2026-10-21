@@ -1366,20 +1366,27 @@ theorem rel_inter (R : RelRep K V) (S : RelTest K V) : (inter R S).rel = R.rel �
   | vec a e => pairs (vecFin a e)
   | R => R
 
-/-- `R ∪ S`: two `FinRel`s (a `vec` as its pairs) append their arrays, otherwise the fibres are appended. -/
-def union (R S : RelRep K V) : RelRep K V :=
-  match toPairs R, toPairs S with
+theorem app_toPairs (R : RelRep K V) : (toPairs R).app = R.app := by
+  cases R <;> first | rfl | exact app_vecFin _ _
+
+/-- `unionP` on representations as given: two `FinRel`s append their arrays, otherwise the fibres are
+    appended. -/
+def unionP : RelRep K V → RelRep K V → RelRep K V
   | pairs r, pairs s => pairs (FinRel.union r s)
   | enum f, enum g => enum fun k => f k ++ g k
   | R, S => R.withFib fun f => S.withFib fun g => arr fun k => f k ++ g k
 
+/-- `R ∪ S`: a `vec` taken as its pairs (`toPairs`), so two `FinRel`s or `vec`s stay a `FinRel`. -/
+def union (R S : RelRep K V) : RelRep K V := unionP (toPairs R) (toPairs S)
+
 /-- `R ∪ S` appends the fibres: a monoid, neither idempotent nor commutative on lists — those two hold
     only of `rel` (`rel_union`). -/
 theorem app_union (R S : RelRep K V) (k : K) : (union R S).app k = R.app k ++ S.app k := by
-  have hA : (R.withFib fun f => S.withFib fun g => arr fun k => f k ++ g k).app k = R.app k ++ S.app k := by
-    rw [withFib_eq, withFib_eq]; exact (Array.toList_append ..).trans (by rw [toList_fib, toList_fib])
-  cases R <;> cases S <;> first | rfl | exact hA
-    | (simp only [union, toPairs, app_pairs, FinRel.scanLookup_union, scanLookup_vecFin]; done)
+  have h : ∀ R S : RelRep K V, (unionP R S).app k = R.app k ++ S.app k := fun R S => by
+    have hA : (R.withFib fun f => S.withFib fun g => arr fun k => f k ++ g k).app k = R.app k ++ S.app k := by
+      rw [withFib_eq, withFib_eq]; exact (Array.toList_append ..).trans (by rw [toList_fib, toList_fib])
+    cases R <;> cases S <;> first | rfl | (simp only [unionP, app_pairs, FinRel.scanLookup_union]; done) | exact hA
+  rw [union, h, app_toPairs, app_toPairs]
 
 theorem mem_union (R S : RelRep K V) (k : K) (v : V) : (union R S).mem k v = (R.mem k v || S.mem k v) := by
   rw [mem_eq_app, app_union, mem_eq_app, mem_eq_app]; simp [List.mem_append]
@@ -1475,11 +1482,12 @@ theorem oneEach_spec {α β γ : Type} (a : Array α) (g : Nat → α → Array 
     c.size = a.size ∧ ∀ i (hi : i < a.size), ∃ w, (g i a[i]).toList = [w] ∧ c[i]? = some (f a[i] w) := by
   have one : ∀ (x : Array β) (h : x.size = 1), x.toList = [x[0]'(by rw [h]; exact Nat.one_pos)] := by
     intro ⟨l⟩ h
+    -- no `simp`: its arithmetic here reached `Classical.choice`
     cases l with
-    | nil => simp at h
+    | nil => exact absurd h Nat.zero_ne_one
     | cons y t => cases t with
       | nil => rfl
-      | cons => simp at h
+      | cons => exact absurd (Nat.succ.inj h) (Nat.succ_ne_zero _)
   have go : ∀ m c, m ≤ a.size → (List.range' 0 m).foldl (oneStep a g f) (some #[]) = some c →
       c.size = m ∧ ∀ i (hi : i < m) (hia : i < a.size), ∃ w, (g i a[i]).toList = [w] ∧ c[i]? = some (f a[i] w) := by
     intro m
@@ -1505,10 +1513,11 @@ theorem oneEach_spec {α β γ : Type} (a : Array α) (g : Nat → α → Array 
           refine ⟨by rw [Array.size_push, hs], fun i hi hia => ?_⟩
           by_cases hlt : i < m
           · obtain ⟨w, hw, hcw⟩ := hc i hlt hia
-            exact ⟨w, hw, by rw [Array.getElem?_push, if_neg (Nat.ne_of_lt (hs ▸ hlt)), hcw]⟩
+            -- `getElem?_push_lt`/`_size`, not `getElem?_push`: that one reaches `Classical.choice`
+            exact ⟨w, hw, by rw [Array.getElem?_push_lt (hs ▸ hlt), ← Array.getElem?_eq_getElem, hcw]⟩
           · have hie : i = m := Nat.le_antisymm (Nat.le_of_lt_succ hi) (Nat.not_lt.1 hlt)
             subst hie
-            exact ⟨_, one _ h1, by rw [Array.getElem?_push, if_pos hs.symm]⟩
+            exact ⟨_, one _ h1, by subst hs; exact Array.getElem?_push_size⟩
         · rw [dif_neg h1] at h; cases h
   obtain ⟨hs, hc⟩ := go a.size c (Nat.le_refl _) (by rw [← rangeFold_eq]; exact h)
   exact ⟨hs, fun i hi => hc i hi hi⟩
@@ -1625,26 +1634,30 @@ theorem junc_apply (R : (⟨K⟩ : RelSet.{0}) ⟶ ⟨V⟩) (S : (⟨L⟩ : RelS
     rw [← congrFun (congrFun (u₂_junc (sumCop ⟨K⟩ ⟨L⟩) R S) l) v]
     exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, e, h⟩ => e ▸ h⟩⟩
 
-/-- `[R,S]` on `K ⊕ L`: two `FinRel`s tag and append their pairs, otherwise a key is answered from its
-    summand's fibre. -/
-def junction (R : RelRep K V) (S : RelRep L V) : RelRep (K ⊕ L) V :=
-  match toPairs R, toPairs S with
+/-- `junctionP` on representations as given: two `FinRel`s tag and append their pairs, otherwise a key is
+    answered from its summand's fibre. -/
+def junctionP : RelRep K V → RelRep L V → RelRep (K ⊕ L) V
   | pairs r, pairs s => pairs (FinRel.ofList (r.toList.map (fun p => (Sum.inl p.1, p.2)) ++ s.toList.map fun p => (Sum.inr p.1, p.2)))
   | enum f, enum g => enum (Sum.elim f g)
   | R, S => R.withFib fun f => S.withFib fun g => arr (Sum.elim f g)
+
+/-- `[R,S]` on `K ⊕ L`: a `vec` taken as its pairs (`toPairs`), so two `FinRel`s or `vec`s stay a `FinRel`. -/
+def junction (R : RelRep K V) (S : RelRep L V) : RelRep (K ⊕ L) V := junctionP (toPairs R) (toPairs S)
 
 omit [DecidableEq W] [FibreIndex W] in
 /-- `[R,S]` answers a key from its summand's fibre. -/
 theorem app_junction (R : RelRep K V) (S : RelRep L V) (x : K ⊕ L) :
     (junction R S).app x = Sum.elim R.app S.app x := by
-  have hA : (R.withFib fun f => S.withFib fun g => arr (Sum.elim f g)).app x = Sum.elim R.app S.app x := by
-    rw [withFib_eq, withFib_eq]; cases x <;> exact toList_fib _ _
-  cases R <;> cases S <;> first | rfl | exact hA | skip
-  simp only [junction, app_pairs, FinRel.scanLookup_ofList]
-  have hn : ∀ {X Y : Type} (l : List X), l.filterMap (fun _ => (none : Option Y)) = [] := fun l => by
-    induction l <;> simp_all
-  cases x <;> simp [List.filterMap_append, List.filterMap_map, Function.comp_def, FinRel.sel, FinRel.scanLookup, hn] <;>
-    rfl
+  have h : ∀ (R : RelRep K V) (S : RelRep L V), (junctionP R S).app x = Sum.elim R.app S.app x := fun R S => by
+    have hA : (R.withFib fun f => S.withFib fun g => arr (Sum.elim f g)).app x = Sum.elim R.app S.app x := by
+      rw [withFib_eq, withFib_eq]; cases x <;> exact toList_fib _ _
+    cases R <;> cases S <;> first | rfl | exact hA | skip
+    simp only [junctionP, app_pairs, FinRel.scanLookup_ofList]
+    have hn : ∀ {X Y : Type} (l : List X), l.filterMap (fun _ => (none : Option Y)) = [] := fun l => by
+      induction l <;> simp_all
+    cases x <;> simp [List.filterMap_append, List.filterMap_map, Function.comp_def, FinRel.sel, FinRel.scanLookup, hn] <;>
+      rfl
+  rw [junction, h, app_toPairs, app_toPairs]
 
 omit [DecidableEq W] [FibreIndex W] in
 theorem mem_junction (R : RelRep K V) (S : RelRep L V) (x : K ⊕ L) (v : V) :

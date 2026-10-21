@@ -16,7 +16,6 @@ import LeetQ.Long
 import LeetQ.Rel.Verbs
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
-open scoped Freyd.Alg.RelSet.RelRep
 
 namespace Bench
 
@@ -194,33 +193,7 @@ def mminOp (w n : Nat) : IO (IO (Nat × Int64)) :=
   timed "mmin" (LeetQ.Rel.list (ints n 26 1000).toList)
     fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mmin w c).vals.foldl (· + ·) 0))
 
-/-! ## Temporary: the stages of `mwin` at window 10, each forced over `0 … n-1` -/
-
-def force {α : Type} (n : Nat) (R : RelRep Nat α) (f : α → Int64) : Option Int64 :=
-  some (R.withApp fun g => rangeFold (fun s i => (g i).foldl (fun s x => s + f x) s) n 0 0)
-
-def og (o : Option Int) : Int64 := Int64.ofInt (o.getD 0)
-
-def stageOp (name : String) (k : Nat → RelRep Nat Int → Option Int64) (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed name (LeetQ.Rel.ix (ints n 26 1000).toList) (k n)
-
-def mle : Int → Int → Int := LeetQ.Rel.minBy (decide <| · ≤ ·)
-def sPos := stageOp "sPos" fun n R => force n (LeetQ.Rel.pos mle R) fun p => og p.2
-def sBpre := stageOp "sBpre" fun n R => force n (LeetQ.Rel.bpre mle 10 n R) og
-def sBsuf := stageOp "sBsuf" fun n R => force n (LeetQ.Rel.bsuf mle 10 n R) og
-def sOver := stageOp "sOver" fun n R =>
-  force n ((LeetQ.Rel.shift (1 - 10) ≫ LeetQ.Rel.bsuf mle 10 n R).override (.ofFn fun _ => none)) og
-def sPair := stageOp "sPair" fun n R =>
-  force n ((LeetQ.Rel.bpre mle 10 n R).pair ((LeetQ.Rel.shift (1 - 10) ≫ LeetQ.Rel.bsuf mle 10 n R).override
-    (.ofFn fun _ => none))) fun q => og q.1 + og q.2
-def sPairE := stageOp "sPairE" fun n R =>
-  force n ((LeetQ.Rel.bpre mle 10 n R).pair ((LeetQ.Rel.shift (1 - 10) ≫ LeetQ.Rel.bsuf mle 10 n R).override
-    (.ofFn fun _ => none)) ≫ .enum fun q => (Option.merge mle q.2 q.1).toList) Int64.ofInt
-def sMwin := stageOp "sMwin" fun n R => force n (LeetQ.Rel.mwin mle 10 n R) Int64.ofInt
-
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
-  [("sPos", sPos), ("sBpre", sBpre), ("sBsuf", sBsuf), ("sOver", sOver), ("sPair", sPair), ("sPairE", sPairE),
-   ("sMwin", sMwin)] ++
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
