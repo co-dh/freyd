@@ -1177,7 +1177,7 @@ theorem rel_vec (a : Array V) : (vec a rfl).rel = ix a.toList :=
 
 /-- A `vec` as a `FinRel`: the positions `0 … n-1` beside the values, for an operation that needs the
     pairs listed. -/
-def vecFin (a : Array V) (h : K = Nat) : FinRel K V :=
+@[inline] def vecFin (a : Array V) (h : K = Nat) : FinRel K V :=
   ⟨(rangeArr a.size).map (cast h.symm), a, by rw [Array.size_map, ← Array.length_toList, toList_rangeArr]; simp⟩
 
 /-- The fibre of `j` among the positions `s …` beside `l`. -/

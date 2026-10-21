@@ -63,7 +63,7 @@ abbrev Sym := String
 def ps (R : RelRep K V) : Option (Array (K × V)) := (fin? R).map fun r => r.keys.zip r.vals
 
 /-- An answer's values: a table's rows. -/
-def rows (R : RelRep K V) : Option (Array V) := (fin? R).map FinRel.vals
+@[inline] def rows (R : RelRep K V) : Option (Array V) := (fin? R).map FinRel.vals
 
 /-- A table: `ix(xs) : Idx ⟶ Row`, the row array itself. -/
 def tab (xs : Array R) : RelRep Nat R := .vec xs rfl

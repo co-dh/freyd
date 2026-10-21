@@ -19,7 +19,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 open scoped Freyd.Alg.RelSet.RelRep
 
 /-- The `FinRel` an answer holds, `none` when it is held as a fibre function. -/
-def fin? {K V : Type} : RelRep K V → Option (FinRel K V)
+@[inline] def fin? {K V : Type} : RelRep K V → Option (FinRel K V)
   | .pairs r => some r
   | .vec a e => some (RelRep.vecFin a e)
   | _ => none
