@@ -69,6 +69,7 @@ p "where 01101b"
 p "where `a`b`c!101b"
 p "where 2 0 1"
 p "distinct x"
+/ q: type error; Lean extends distinct to dicts
 p "distinct d"
 p "distinct ([] k:`a`a`b; v:1 1 2)"
 p "group x"
@@ -152,6 +153,7 @@ p "0.5 ema 1 2 3"
 / dicts and keyed tables
 p "key d"
 p "value d"
+/ q: `long, the type of a list; Lean's key on a list is til count
 p "key x"
 p "key kt"
 p "value kt"
