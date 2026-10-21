@@ -5,9 +5,14 @@
   * `a@ks` is `gatherBytes`: `aIdx_spec`, `Λ(ix(ks) ix(a))`.
   * `d@ks` is `findVec` (q's `?`: each needle's first index, the count when absent), then `gatherBytes`,
     whose fill is `0N` at the count: `getAll_spec`, `ix(ks) look(d)` with `0N` read as `nul`.
-  The kernel facts `findScalar_eq` and `findVec_spec` are stated here because qlean states none for `?`.
+  * `d+e` is `findVec`, `gatherBytes`, `Ew.val`, `memberVec` and `whereBits`: `zipD_spec`, at every key
+    `Q.zipD`'s answer with q's own `+`.
+  The kernel facts `findScalar_eq` and `findVec_spec` are stated here because qlean states none for `?`;
+  `val_add` likewise for `Ew.val`.
 -/
 import LeetQ.Compressed
+import QLean.Kernel.Structural
+import QLean.Kernel.Elementwise
 
 namespace LeetQ.Long
 
@@ -38,24 +43,33 @@ theorem flatMap_single_of {β : Type} (f : Nat → List β) (g : Nat → β) :
 theorem fill_nul : (UInt64.ofNat (Compressed.nul.toUInt64.toNat % 2 ^ (8 * 8))).toInt64 = Compressed.nul := by
   decide
 
-/-- **A gather at eight bytes, read back**: element `j` is `src`'s element `idx[j]`, or `fill` past the end. -/
-theorem dec_gather (fill : UInt64) (src idx : ByteArray) :
-    dec (gatherBytes w8 fill src idx) = (List.range (idx.size / 8)).map fun j =>
-      if ixAt idx j < src.size / 8 then atW 8 src (ixAt idx j)
+/-- **A gather at eight bytes, at one index**: `src`'s element `idx[j]`, or `fill` past the end. -/
+theorem gather_at (fill : UInt64) (src idx : ByteArray) (j : Nat) (hj : j < idx.size / 8) :
+    atW 8 (gatherBytes w8 fill src idx) j = if ixAt idx j < src.size / 8 then atW 8 src (ixAt idx j)
       else (UInt64.ofNat (fill.toNat % 2 ^ (8 * 8))).toInt64 := by
-  obtain ⟨hs, hg⟩ := gatherBytes_spec w8 (by rw [w8_toNat]; decide) fill src idx
-  rw [w8_toNat] at hs hg
-  have hm : (gatherBytes w8 fill src idx).size / 8 = idx.size / 8 := by
-    rw [hs, Nat.mul_div_cancel_left _ (by decide)]
-  apply List.ext_getElem (by rw [dec, List.length_map, List.length_range, List.length_map, List.length_range, hm])
-  intro j h1 _
-  have hj : j < idx.size / 8 := by rw [dec, List.length_map, List.length_range, hm] at h1; exact h1
-  simp only [dec, List.getElem_map, List.getElem_range]
+  obtain ⟨-, hg⟩ := gatherBytes_spec w8 (by rw [w8_toNat]; decide) fill src idx
+  rw [w8_toNat] at hg
   rw [atW_eight, hg j hj]
   unfold ixAt
   split
   · rw [atW_eight]
   · rfl
+
+/-- `gatherBytes` at eight bytes holds one `long` per index. -/
+theorem gather_size (fill : UInt64) (src idx : ByteArray) : (gatherBytes w8 fill src idx).size / 8 = idx.size / 8 := by
+  rw [(gatherBytes_spec w8 (by rw [w8_toNat]; decide) fill src idx).1, w8_toNat, Nat.mul_div_cancel_left _ (by decide)]
+
+/-- **A gather at eight bytes, read back**: element `j` is `src`'s element `idx[j]`, or `fill` past the end. -/
+theorem dec_gather (fill : UInt64) (src idx : ByteArray) :
+    dec (gatherBytes w8 fill src idx) = (List.range (idx.size / 8)).map fun j =>
+      if ixAt idx j < src.size / 8 then atW 8 src (ixAt idx j)
+      else (UInt64.ofNat (fill.toNat % 2 ^ (8 * 8))).toInt64 := by
+  have hm := gather_size fill src idx
+  apply List.ext_getElem (by rw [dec, List.length_map, List.length_range, List.length_map, List.length_range, hm])
+  intro j h1 _
+  have hj : j < idx.size / 8 := by rw [dec, List.length_map, List.length_range, hm] at h1; exact h1
+  simp only [dec, List.getElem_map, List.getElem_range]
+  exact gather_at fill src idx j hj
 
 /-- q's `a@ks`: `gatherBytes`, `0N` at an index out of range. -/
 def aIdx (a ks : ByteArray) : ByteArray := gatherBytes w8 Compressed.nul.toUInt64 a ks
@@ -326,6 +340,401 @@ theorem ij_spec (tk kk kv : ByteArray) (hkv : kk.size / 8 = kv.size / 8) (hm : k
   rw [hix, hw, zip_map_self]
   simp only [RelRep.first_eq, RelRep.app_enum, RelRep.app_pairs, FinRel.scanLookup_ofList, rows, head_sel]
   exact (flatMap_opt F (atW 8 kv) _).symm
+
+/-! ## q's `d+e`
+
+`d`'s rows keep their place, and a row that is its key's first in `d` adds `e`'s first value of the key
+(`findVec`, `findVec` against `til`, two gathers, `Ew.val`); `e`'s rows whose key `d` lacks follow, every one
+(`findVec`, `memberVec` against the count, `whereBits`, two gathers). The addition is q's own, `Ew.intStep`,
+so `0N` stays `0N`. -/
+
+/-- One `long` pushed as `Int64.ofNat i` and read back unsigned is `i`. -/
+theorem ofNat_bits {i : Nat} (h : i < 2 ^ 32) : (UInt64.ofNat ((Int64.ofNat i).toUInt64.toNat % 2 ^ (8 * 8))).toNat = i := by
+  rw [show 8 * 8 = 64 from rfl, ofNat_toNat_mod64]
+  exact Nat.mod_eq_of_lt (Nat.lt_trans h (by decide))
+
+/-- q's `til n` at eight bytes: `n` `long`s, element `i` read unsigned is `i`. -/
+theorem til_spec {n : Nat} (hn : n < 2 ^ 32) :
+    (tilLongs n.toUSize).size / 8 = n ∧ ∀ i < n, ixAt (tilLongs n.toUSize) i = i := by
+  obtain ⟨hs, -, hg⟩ := foldl_pushBits (fun i : Nat => (Int64.ofNat i).toUInt64) 8 (Nat.le_refl 8) (List.range n)
+    ByteArray.empty
+  have ht : tilLongs n.toUSize =
+      (List.range n).foldl (fun acc i => pushBits acc (Int64.ofNat i).toUInt64 8) ByteArray.empty := by
+    unfold tilLongs; rw [toNat_toUSize hn]
+  rw [ht]
+  refine ⟨by rw [hs, List.length_range, show ByteArray.empty.size = 0 from rfl, Nat.zero_add,
+    Nat.mul_div_cancel_left _ (by decide)], fun i hi => ?_⟩
+  have h := hg i (by rw [List.length_range]; exact hi)
+  rw [show ByteArray.empty.size = 0 from rfl, Nat.zero_add, List.getElem_range] at h
+  rw [ixAt, Nat.mul_comm i, h]
+  exact ofNat_bits (Nat.lt_trans hi hn)
+
+/-- The one-`long` column `[m]`: one element, read unsigned `m`. -/
+theorem enc_ix {m : Nat} (h : m < 2 ^ 32) : (enc 8 [Int64.ofNat m]).size / 8 = 1 ∧ ixAt (enc 8 [Int64.ofNat m]) 0 = m := by
+  obtain ⟨hs, -, hg⟩ := foldl_pushBits Int64.toUInt64 8 (Nat.le_refl 8) [Int64.ofNat m] ByteArray.empty
+  exact ⟨by rw [enc, hs, List.length_singleton]; rfl, (congrArg UInt64.toNat (hg 0 Nat.zero_lt_one)).trans (ofNat_bits h)⟩
+
+/-- q's `b?k`: the first row of `b` whose `long` is `k`, the count when there is none. -/
+def first (b : ByteArray) (k : Int64) : Nat :=
+  ((List.range (b.size / 8)).find? fun p => atW 8 b p == k).getD (b.size / 8)
+
+/-- `find?` over `range n` answers `q` exactly when `q` is the least index below `n` that `P` holds at. -/
+theorem find_range_some (P : Nat → Bool) (n q : Nat) :
+    (List.range n).find? P = some q ↔ q < n ∧ P q = true ∧ ∀ j < q, P j = false := by
+  rw [List.find?_eq_some_iff_getElem]
+  constructor
+  · rintro ⟨hq, i, h, he, hall⟩
+    rw [List.getElem_range] at he
+    subst he
+    exact ⟨by rw [List.length_range] at h; exact h, hq, fun j hj => by
+      have := hall j hj; rw [List.getElem_range] at this; simpa using this⟩
+  · rintro ⟨hn, hq, hall⟩
+    exact ⟨hq, q, by rw [List.length_range]; exact hn, List.getElem_range _, fun j hj => by
+      rw [List.getElem_range, hall j hj]; rfl⟩
+
+theorem find?_congr {P Q : Nat → Bool} : (l : List Nat) → (∀ p ∈ l, P p = Q p) → l.find? P = l.find? Q
+  | [], _ => rfl
+  | p :: l, h => by
+    rw [List.find?_cons, List.find?_cons, h p List.mem_cons_self,
+      find?_congr l fun q hq => h q (List.mem_cons_of_mem _ hq)]
+
+/-- `first b k` below the count is a row whose `long` is `k`. -/
+theorem atW_first {b : ByteArray} {k : Int64} (h : first b k < b.size / 8) : atW 8 b (first b k) = k := by
+  unfold first at *
+  cases e : (List.range (b.size / 8)).find? fun p => atW 8 b p == k with
+  | none => rw [e, Option.getD_none] at h; exact absurd h (Nat.lt_irrefl _)
+  | some q =>
+    rw [Option.getD_some]
+    exact of_decide_eq_true (((find_range_some _ _ _).1 e).2.1 : decide (atW 8 b q = k) = true)
+
+/-- A row's key first occurs no later than the row. -/
+theorem first_le {b : ByteArray} {p : Nat} (hp : p < b.size / 8) : first b (atW 8 b p) ≤ p := by
+  unfold first
+  cases e : (List.range (b.size / 8)).find? fun i => atW 8 b i == atW 8 b p with
+  | none => exact absurd (decide_eq_true rfl) (List.find?_eq_none.1 e p (List.mem_range.2 hp))
+  | some q =>
+    rw [Option.getD_some]
+    exact Nat.le_of_not_lt fun h =>
+      Bool.false_ne_true ((((find_range_some _ _ _).1 e).2.2 p h).symm.trans (decide_eq_true rfl))
+
+/-- Row `i` is its key's first exactly when no earlier row has the key. -/
+theorem first_self {b : ByteArray} {i : Nat} (hi : i < b.size / 8) :
+    first b (atW 8 b i) = i ↔ ((List.range i).find? fun p => atW 8 b p == atW 8 b i) = none := by
+  have hs : first b (atW 8 b i) = i ↔ ((List.range (b.size / 8)).find? fun p => atW 8 b p == atW 8 b i) = some i := by
+    unfold first
+    cases e : (List.range (b.size / 8)).find? fun p => atW 8 b p == atW 8 b i with
+    | none => exact ⟨fun h => by rw [Option.getD_none] at h; omega, fun h => nomatch h⟩
+    | some q => exact ⟨fun h => by rw [Option.getD_some] at h; rw [h], fun h => by rw [Option.some.inj h]; rfl⟩
+  rw [hs, find_range_some, List.find?_eq_none]
+  constructor
+  · rintro ⟨-, -, h⟩ j hj hc
+    exact Bool.false_ne_true ((h j (List.mem_range.1 hj)).symm.trans hc)
+  · intro h
+    exact ⟨hi, decide_eq_true rfl, fun j hj => Bool.eq_false_iff.2 (h j (List.mem_range.2 hj))⟩
+
+/-- Two `long`s are equal exactly when they are read unsigned as equal. -/
+theorem atW_beq (b c : ByteArray) (i j : Nat) : (atW 8 b i == atW 8 c j) = (ixAt b i == ixAt c j) := by
+  rw [← bits_beq]
+  apply Bool.eq_iff_iff.2
+  rw [beq_iff_eq, beq_iff_eq, ixAt, ixAt]
+  exact UInt64.toNat_inj.symm
+
+/-- **`findVec` at eight bytes, read back**: one `long` a needle, each its `first` in `hay`. -/
+theorem findVec_ix (hay ndl : ByteArray) (hn : hay.size / 8 < 2 ^ 32) :
+    (findVec w8 false hay ndl).size / 8 = ndl.size / 8 ∧
+      ∀ j < ndl.size / 8, ixAt (findVec w8 false hay ndl) j = first hay (atW 8 ndl j) := by
+  have hn' : hay.size / w8.toNat < USize.size := by rw [w8_toNat]; exact lt_usize hn
+  obtain ⟨hs, hg⟩ := findVec_spec w8 (by rw [w8_toNat]; decide) hay ndl
+  rw [w8_toNat] at hs hg
+  refine ⟨by rw [hs, Nat.mul_div_cancel_left _ (by decide)], fun j hj => ?_⟩
+  rw [ixAt, hg j hj, findScalar_eq _ _ _ hn', w8_toNat]
+  simp only [bits_beq, first]
+
+/-- The indices `p < n` whose `F p` is `i`, where `F` picks an index no later than its argument and the
+same one for every index it maps onto `i`: `i` alone when `F i = i`, none otherwise. -/
+theorem find_firsts (F : Nat → Nat) {n i : Nat} (hi : i < n) (hle : ∀ p < n, F p ≤ p)
+    (hkey : ∀ p < n, F p = i → F i = i) :
+    (List.range n).find? (fun p => F p == i) = if F i = i then some i else none := by
+  split
+  · rename_i h
+    exact (find_range_some _ _ _).2 ⟨hi, beq_iff_eq.2 h, fun j hj =>
+      Bool.eq_false_iff.2 fun e => by have := hle j (Nat.lt_trans hj hi); rw [beq_iff_eq.1 e] at this; omega⟩
+  · rename_i h
+    exact List.find?_eq_none.2 fun p hp e => h (hkey p (List.mem_range.1 hp) (beq_iff_eq.1 e))
+
+/-- **`findVec s (til n)`, `s` each row's `first`**: row `i` where it is its key's first row, `n` elsewhere. -/
+theorem firstRows_ix (k : ByteArray) (hn : k.size / 8 < 2 ^ 32) (i : Nat) (hi : i < k.size / 8) :
+    ixAt (findVec w8 false (findVec w8 false k k) (tilLongs (k.size / 8).toUSize)) i =
+      if first k (atW 8 k i) = i then i else k.size / 8 := by
+  obtain ⟨ss, sx⟩ := findVec_ix k k hn
+  obtain ⟨ts, tx⟩ := til_spec hn
+  obtain ⟨-, wx⟩ := findVec_ix (findVec w8 false k k) (tilLongs (k.size / 8).toUSize) (by rw [ss]; exact hn)
+  rw [wx i (by rw [ts]; exact hi)]
+  show ((List.range ((findVec w8 false k k).size / 8)).find? fun p =>
+    atW 8 (findVec w8 false k k) p == atW 8 (tilLongs (k.size / 8).toUSize) i).getD ((findVec w8 false k k).size / 8) = _
+  rw [ss, find?_congr (Q := fun p => first k (atW 8 k p) == i) _ fun p hp => by
+      rw [atW_beq, sx p (List.mem_range.1 hp), tx i hi],
+    find_firsts _ hi (fun p hp => first_le hp) fun p hp e => ?_]
+  · split <;> rfl
+  · have := atW_first (b := k) (k := atW 8 k p) (by rw [e]; exact hi)
+    rw [e] at this
+    rw [this, e]
+
+/-- The first value of `k`'s fibre in `ek!ev`, `0` when it has none. -/
+theorem headD_fib (ek ev : ByteArray) (hev : ek.size / 8 = ev.size / 8) (k : Int64) :
+    ((rows ek ev).filterMap (FinRel.sel k)).headD 0 =
+      if first ek k < ev.size / 8 then atW 8 ev (first ek k) else 0 := by
+  rw [List.headD_eq_head?_getD, rows, head_sel]
+  unfold first
+  rw [← hev]
+  cases e : (List.range (ek.size / 8)).find? fun i => atW 8 ek i == k with
+  | none => rw [Option.map_none, Option.getD_none, Option.getD_none, if_neg (Nat.lt_irrefl _)]
+  | some q => rw [Option.map_some, Option.getD_some, Option.getD_some,
+      if_pos (List.mem_range.1 (List.mem_of_find?_eq_some e))]
+
+/-- The fill `0` read back through `gatherBytes`' eight low bytes. -/
+theorem fill_zero : (UInt64.ofNat ((0 : UInt64).toNat % 2 ^ (8 * 8))).toInt64 = 0 := by decide
+
+/-- `d`'s right operand of `+`: row `i` gets `e`'s first value of its key where `i` is the key's first row
+in `d`, `0` elsewhere and where `e` lacks the key. -/
+def firstVals (dk ek ev : ByteArray) : ByteArray :=
+  let w := findVec w8 false (findVec w8 false dk dk) (tilLongs (dk.size / 8).toUSize)
+  gatherBytes w8 0 ev (gatherBytes w8 (ek.size / 8).toUInt64 (findVec w8 false ek dk) w)
+
+theorem firstVals_at (dk ek ev : ByteArray) (hev : ek.size / 8 = ev.size / 8) (hd : dk.size / 8 < 2 ^ 32)
+    (he : ek.size / 8 < 2 ^ 32) (i : Nat) (hi : i < dk.size / 8) :
+    atW 8 (firstVals dk ek ev) i = if first dk (atW 8 dk i) = i then
+      ((rows ek ev).filterMap (FinRel.sel (atW 8 dk i))).headD 0 else 0 := by
+  obtain ⟨gs, gx⟩ := findVec_ix ek dk he
+  have hw : (findVec w8 false (findVec w8 false dk dk) (tilLongs (dk.size / 8).toUSize)).size / 8 = dk.size / 8 := by
+    rw [(findVec_ix _ _ (by rw [(findVec_ix dk dk hd).1]; exact hd)).1, (til_spec hd).1]
+  obtain ⟨-, hg⟩ := gatherBytes_spec w8 (by rw [w8_toNat]; decide) (ek.size / 8).toUInt64 (findVec w8 false ek dk)
+    (findVec w8 false (findVec w8 false dk dk) (tilLongs (dk.size / 8).toUSize))
+  rw [w8_toNat] at hg
+  have ht : ixAt (gatherBytes w8 (ek.size / 8).toUInt64 (findVec w8 false ek dk)
+      (findVec w8 false (findVec w8 false dk dk) (tilLongs (dk.size / 8).toUSize))) i =
+      if first dk (atW 8 dk i) = i then first ek (atW 8 dk i) else ek.size / 8 := by
+    rw [ixAt, hg i (by rw [hw]; exact hi), show ∀ b : ByteArray, (bitsAt b (i * 8) 8).toNat = ixAt b i from fun _ => rfl,
+      firstRows_ix dk hd i hi, gs]
+    by_cases hf : first dk (atW 8 dk i) = i
+    · rw [if_pos hf, if_pos hf, if_pos hi]; exact gx i hi
+    · rw [if_neg hf, if_neg hf, if_neg (Nat.lt_irrefl _)]; exact toNat_ofNat_mod (Nat.lt_trans he (by decide))
+  show atW 8 (gatherBytes w8 0 ev _) i = _
+  rw [gather_at _ _ _ i (by rw [gather_size, hw]; exact hi), ht, fill_zero]
+  by_cases hf : first dk (atW 8 dk i) = i
+  · rw [if_pos hf, if_pos hf, headD_fib ek ev hev]
+  · rw [if_neg hf, if_neg hf, if_neg (by rw [← hev]; exact Nat.lt_irrefl _)]
+
+/-- q's `0 + v` is `v`, `0N` included. -/
+theorem add_zero_left (v : Int64) : Ew.intStep Ew.add Compressed.nul 0 v = v := by
+  unfold Ew.intStep
+  rw [if_pos (by decide : (Ew.add == Ew.add) = true)]
+  cases h : (v == Compressed.nul)
+  · rw [if_neg (by decide), Int64.zero_add]
+  · rw [if_pos (by decide)]
+    exact (of_decide_eq_true (h : decide (v = Compressed.nul) = true)).symm
+
+/-- q's `v + 0` is `v`, `0N` included. -/
+theorem add_zero_right (v : Int64) : Ew.intStep Ew.add Compressed.nul v 0 = v := by
+  unfold Ew.intStep
+  rw [if_pos (by decide : (Ew.add == Ew.add) = true)]
+  cases h : (v == Compressed.nul)
+  · rw [if_neg (by decide), Int64.add_zero]
+  · rw [if_pos (by decide)]
+    exact (of_decide_eq_true (h : decide (v = Compressed.nul) = true)).symm
+
+theorem map_add_zero : (l : List Int64) → l.map (Ew.intStep Ew.add Compressed.nul 0) = l
+  | [] => rfl
+  | v :: l => by rw [List.map_cons, add_zero_left, map_add_zero l]
+
+/-- **q's `a+b` on two `long` columns**, `Ew.val`, read back: `n` elements, each `Ew.intStep`'s sum.
+To upstream to qlean, which states no reading of `Ew.val`. -/
+theorem val_add (a b : ByteArray) {n : Nat} (hn : n < 2 ^ 32) :
+    (Ew.val Ew.add Ew.i64 Ew.vv Compressed.nul a b n.toUSize).size / 8 = n ∧ ∀ i < n,
+      atW 8 (Ew.val Ew.add Ew.i64 Ew.vv Compressed.nul a b n.toUSize) i =
+        Ew.intStep Ew.add Compressed.nul (atW 8 a i) (atW 8 b i) := by
+  let G : Nat → UInt64 := fun i =>
+    Ew.valStep Ew.add Ew.i64 Compressed.nul.toUInt64 (Ew.elem Ew.i64 a i) (Ew.elem Ew.i64 b i)
+  have hv : Ew.val Ew.add Ew.i64 Ew.vv Compressed.nul a b n.toUSize =
+      (List.range n).foldl (fun acc i => pushBits acc (G i) 8) ByteArray.empty := by
+    unfold Ew.val; rw [toNat_toUSize hn]; rfl
+  obtain ⟨hs, -, hg⟩ := foldl_pushBits G 8 (Nat.le_refl 8) (List.range n) ByteArray.empty
+  rw [hv]
+  refine ⟨by rw [hs, List.length_range, show ByteArray.empty.size = 0 from rfl, Nat.zero_add,
+    Nat.mul_div_cancel_left _ (by decide)], fun i hi => ?_⟩
+  have h := hg i (by rw [List.length_range]; exact hi)
+  rw [show ByteArray.empty.size = 0 from rfl, Nat.zero_add, List.getElem_range, show 8 * 8 = 64 from rfl,
+    ofNat_toNat_mod64] at h
+  rw [atW_eight, Nat.mul_comm i 8, h, atW_eight, atW_eight]
+  rfl
+
+/-- `e`'s rows whose key `d` lacks: `whereBits` of `memberVec` of their `first` in `d` against `d`'s count. -/
+def absent (dk ek : ByteArray) : ByteArray :=
+  whereBits (ek.size / 8).toUSize (memberVec w8 false (findVec w8 false dk ek) (enc 8 [Int64.ofNat (dk.size / 8)]))
+
+/-- q's `d+e` on two dicts held as `long` columns `dk!dv` and `ek!ev`: `d`'s new values (its keys stay
+`dk`), then the keys and values of `e`'s rows whose key `d` lacks. -/
+def zipD (dk dv ek ev : ByteArray) : ByteArray × ByteArray × ByteArray :=
+  let r := absent dk ek
+  (Ew.val Ew.add Ew.i64 Ew.vv Compressed.nul dv (firstVals dk ek ev) (dk.size / 8).toUSize, aIdx ek r, aIdx ev r)
+
+/-- `aIdx` at an index in range. -/
+theorem aIdx_at (a ks : ByteArray) (j : Nat) (hj : j < ks.size / 8) (h : ixAt ks j < a.size / 8) :
+    atW 8 (aIdx a ks) j = atW 8 a (ixAt ks j) := by
+  rw [aIdx, gather_at _ _ _ j hj, if_pos h]
+
+/-- `e`'s rows that `zipD` appends are those whose key has no `first` in `d`, in order. -/
+theorem absent_rows (dk ek ev : ByteArray) (hev : ek.size / 8 = ev.size / 8) (hd : dk.size / 8 < 2 ^ 32)
+    (he : ek.size / 8 < 2 ^ 32) :
+    rows (aIdx ek (absent dk ek)) (aIdx ev (absent dk ek)) =
+      ((List.range (ek.size / 8)).filter fun j => dk.size / 8 == first dk (atW 8 ek j)).map
+        fun j => (atW 8 ek j, atW 8 ev j) := by
+  obtain ⟨qs, qx⟩ := findVec_ix dk ek hd
+  obtain ⟨hs1, hix⟩ := enc_ix hd
+  obtain ⟨ws, wj⟩ := whereBits_spec (Nat.toUSize (ek.size / 8))
+    (memberVec w8 false (findVec w8 false dk ek) (enc 8 [Int64.ofNat (dk.size / 8)]))
+  rw [toNat_toUSize he] at ws wj
+  have hL : (List.range (ek.size / 8)).filter
+      (bitAt (memberVec w8 false (findVec w8 false dk ek) (enc 8 [Int64.ofNat (dk.size / 8)]))) =
+      (List.range (ek.size / 8)).filter fun j => dk.size / 8 == first dk (atW 8 ek j) :=
+    List.filter_congr fun j hj => by
+      have hj := List.mem_range.1 hj
+      rw [memberVec_bit _ _ (by rw [hs1]; decide) j (by rw [qs]; exact hj), hs1, List.range_one,
+        List.find?_singleton, atW_beq, hix, qx j hj]
+      cases dk.size / 8 == first dk (atW 8 ek j) <;> rfl
+  rw [hL] at ws wj
+  have hrs : (absent dk ek).size / 8 =
+      ((List.range (ek.size / 8)).filter fun j => dk.size / 8 == first dk (atW 8 ek j)).length := by
+    rw [absent, ws, Nat.mul_div_cancel_left _ (by decide)]
+  rw [rows]
+  apply List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, aIdx, gather_size, hrs])
+  intro j h1 _
+  rw [List.length_map, List.length_range, aIdx, gather_size, hrs] at h1
+  have hlt := List.mem_range.1 (List.mem_filter.1 (List.getElem_mem h1)).1
+  have hr : ixAt (absent dk ek) j = _ := wj j h1
+  have hjr : j < (absent dk ek).size / 8 := by rw [hrs]; exact h1
+  rw [List.getElem_map, List.getElem_range, List.getElem_map, aIdx_at _ _ j hjr (by rw [hr]; exact hlt),
+    aIdx_at _ _ j hjr (by rw [hr, ← hev]; exact hlt), hr]
+
+/-- `d`'s fibre of `x` after the bump: its first value plus `c x`, the rest as they were. -/
+theorem fib_first (f g : Nat → Int64) (c : Int64 → Int64) (x : Int64) : ∀ n : Nat,
+    ((List.range n).map fun i => (f i, Ew.intStep Ew.add Compressed.nul (g i)
+        (if ((List.range i).find? fun p => f p == f i) = none then c (f i) else 0))).filterMap (FinRel.sel x) =
+      (((List.range n).map fun i => (f i, g i)).filterMap (FinRel.sel x)).modifyHead
+        fun a => Ew.intStep Ew.add Compressed.nul a (c x)
+  | 0 => rfl
+  | n + 1 => by
+    rw [List.range_succ, List.map_append, List.map_append, List.filterMap_append, List.filterMap_append,
+      fib_first f g c x n, List.map_cons, List.map_cons, List.map_nil, List.map_nil]
+    by_cases h : f n = x
+    · subst h
+      have hs : ∀ v : Int64, FinRel.sel (f n) (f n, v) = some v := fun _ => if_pos rfl
+      rw [List.filterMap_cons_some (hs _), List.filterMap_cons_some (hs _), List.filterMap_nil]
+      have hh := head_sel f g (f n) (List.range n)
+      cases hB : ((List.range n).map fun i => (f i, g i)).filterMap (FinRel.sel (f n)) with
+      | nil =>
+        rw [hB] at hh
+        rw [if_pos (Option.map_eq_none_iff.1 hh.symm)]
+        rfl
+      | cons a t =>
+        rw [hB] at hh
+        rw [if_neg fun e => by rw [e] at hh; exact nomatch hh]
+        exact congrArg (fun y => List.modifyHead (fun a => Ew.intStep Ew.add Compressed.nul a (c (f n))) (a :: t) ++ [y])
+          (add_zero_right (g n))
+    · have hs : ∀ v : Int64, FinRel.sel x (f n, v) = none := fun _ => if_neg h
+      rw [List.filterMap_cons_none (hs _), List.filterMap_cons_none (hs _), List.filterMap_nil,
+        List.append_nil, List.append_nil]
+
+/-- The rows over `l` that `A` keeps by key, at `x`: `x`'s whole fibre when `A x`, nothing otherwise. -/
+theorem fib_filter (f g : Nat → Int64) (A : Int64 → Bool) (x : Int64) : (l : List Nat) →
+    ((l.filter fun j => A (f j)).map fun j => (f j, g j)).filterMap (FinRel.sel x) =
+      if A x then (l.map fun j => (f j, g j)).filterMap (FinRel.sel x) else []
+  | [] => by cases A x <;> rfl
+  | j :: l => by
+    have ih := fib_filter f g A x l
+    by_cases h : f j = x
+    · subst h
+      have hs : FinRel.sel (f j) (f j, g j) = some (g j) := if_pos rfl
+      cases hA : A (f j)
+      · rw [List.filter_cons_of_neg (p := fun j => A (f j)) (by simp [hA]), ih, hA]; rfl
+      · rw [List.filter_cons_of_pos (p := fun j => A (f j)) hA, List.map_cons, List.map_cons, List.filterMap_cons_some hs,
+          List.filterMap_cons_some hs, ih, hA]; rfl
+    · have hs : FinRel.sel x (f j, g j) = none := if_neg h
+      rw [List.map_cons, List.filterMap_cons_none hs, ← ih]
+      cases hA : A (f j)
+      · rw [List.filter_cons_of_neg (p := fun j => A (f j)) (by simp [hA])]
+      · rw [List.filter_cons_of_pos (p := fun j => A (f j)) hA, List.map_cons, List.filterMap_cons_none hs]
+
+/-- `d` lacks `x` exactly when `x`'s fibre in `d` is empty. -/
+theorem absent_iff (dk dv : ByteArray) (x : Int64) :
+    (dk.size / 8 == first dk x) = ((rows dk dv).filterMap (FinRel.sel x)).isEmpty := by
+  have hh := head_sel (atW 8 dk) (atW 8 dv) x (List.range (dk.size / 8))
+  unfold first
+  rw [rows]
+  cases e : (List.range (dk.size / 8)).find? fun i => atW 8 dk i == x with
+  | none =>
+    rw [e, Option.map_none] at hh
+    rw [Option.getD_none, List.head?_eq_none_iff.1 hh]
+    exact beq_self_eq_true _
+  | some q =>
+    rw [e, Option.map_some] at hh
+    have hq := List.mem_range.1 (List.mem_of_find?_eq_some e)
+    rw [Option.getD_some]
+    cases hl : ((List.range (dk.size / 8)).map fun i => (atW 8 dk i, atW 8 dv i)).filterMap (FinRel.sel x) with
+    | nil => rw [hl] at hh; exact nomatch hh
+    | cons a t => exact beq_false_of_ne (by omega)
+
+/-- **q's `d+e` is `dom(d ∪ e) ⟨Λd, Λe⟩ zipFib ∋`** with q's `+`: at every key `x`, the rows `zipD` answers
+with key `x`, in order, are `Q.zipD`'s answer at `x`. -/
+theorem zipD_spec (dk dv ek ev : ByteArray) (hev : ek.size / 8 = ev.size / 8)
+    (hd : dk.size / 8 < 2 ^ 32) (he : ek.size / 8 < 2 ^ 32) (x : Int64) :
+    (rows dk (zipD dk dv ek ev).1 ++ rows (zipD dk dv ek ev).2.1 (zipD dk dv ek ev).2.2).filterMap (FinRel.sel x) =
+      (Q.zipD (Ew.intStep Ew.add Compressed.nul) 0 (FinRel.ofList (rows dk dv)) (FinRel.ofList (rows ek ev))).app x := by
+  have hdp : rows dk (zipD dk dv ek ev).1 = (List.range (dk.size / 8)).map fun i =>
+      (atW 8 dk i, Ew.intStep Ew.add Compressed.nul (atW 8 dv i)
+        (if ((List.range i).find? fun p => atW 8 dk p == atW 8 dk i) = none then
+          ((rows ek ev).filterMap (FinRel.sel (atW 8 dk i))).headD 0 else 0)) := by
+    rw [rows]
+    refine List.map_congr_left fun i hi => ?_
+    have hi := List.mem_range.1 hi
+    rw [show (zipD dk dv ek ev).1 = Ew.val Ew.add Ew.i64 Ew.vv Compressed.nul dv (firstVals dk ek ev)
+      (dk.size / 8).toUSize from rfl, (val_add dv (firstVals dk ek ev) hd).2 i hi, firstVals_at dk ek ev hev hd he i hi]
+    by_cases hf : first dk (atW 8 dk i) = i
+    · rw [if_pos hf, if_pos ((first_self hi).1 hf)]
+    · rw [if_neg hf, if_neg (mt (first_self hi).2 hf)]
+  have hz : (rows dk (zipD dk dv ek ev).1 ++ rows (zipD dk dv ek ev).2.1 (zipD dk dv ek ev).2.2).filterMap
+      (FinRel.sel x) = Q.zipFib (Ew.intStep Ew.add Compressed.nul) 0
+        ((rows dk dv).filterMap (FinRel.sel x), (rows ek ev).filterMap (FinRel.sel x)) := by
+    rw [List.filterMap_append, hdp, fib_first (atW 8 dk) (atW 8 dv) (fun k => ((rows ek ev).filterMap (FinRel.sel k)).headD 0) x,
+      show (zipD dk dv ek ev).2 = (aIdx ek (absent dk ek), aIdx ev (absent dk ek))
+      from rfl, absent_rows dk ek ev hev hd he, fib_filter (atW 8 ek) (atW 8 ev) (fun k => dk.size / 8 == first dk k) x,
+      absent_iff dk dv x]
+    show List.modifyHead _ ((rows dk dv).filterMap (FinRel.sel x)) ++
+      (if ((rows dk dv).filterMap (FinRel.sel x)).isEmpty then (rows ek ev).filterMap (FinRel.sel x) else []) = _
+    cases (rows dk dv).filterMap (FinRel.sel x) with
+    | nil => exact (map_add_zero _).symm
+    | cons a t => exact List.append_nil _
+  rw [hz, Q.app_zipD, FinRel.scanLookup_ofList, FinRel.scanLookup_ofList]
+  split
+  · rfl
+  · rename_i hk
+    rw [FinRel.toList_union, FinRel.toList_ofList, FinRel.toList_ofList, List.map_append] at hk
+    have h1 : ∀ l : List (Int64 × Int64), x ∉ l.map Prod.fst → l.filterMap (FinRel.sel x) = [] := fun l hl =>
+      List.filterMap_eq_nil_iff.2 fun p hp => if_neg fun e => hl (List.mem_map.2 ⟨p, hp, e⟩)
+    rw [h1 _ fun h => hk (List.mem_append_left _ h), h1 _ fun h => hk (List.mem_append_right _ h)]
+    rfl
+
+-- (`a`b`c!1 2 3)+`b`c`d!10 20 30 with keys 1 2 3, 2 3 4: 1 12 23, then 4:30
+-- (1 1 2!1 2 3)+1 3!10 20: 11 2 3, then 3:20 ; (1 2 3!1 2 3)+2 2!10 20: 1 12 3, nothing appended
+#guard (let z := zipD (enc 8 [1, 2, 3]) (enc 8 [1, 2, 3]) (enc 8 [2, 3, 4]) (enc 8 [10, 20, 30]);
+  (dec z.1, dec z.2.1, dec z.2.2)) == ([1, 12, 23], [4], [30])
+#guard (let z := zipD (enc 8 [1, 1, 2]) (enc 8 [1, 2, 3]) (enc 8 [1, 3]) (enc 8 [10, 20]);
+  (dec z.1, dec z.2.1, dec z.2.2)) == ([11, 2, 3], [3], [20])
+#guard (let z := zipD (enc 8 [1, 2, 3]) (enc 8 [1, 2, 3]) (enc 8 [2, 2]) (enc 8 [10, 20]);
+  (dec z.1, dec z.2.1, dec z.2.2)) == ([1, 12, 3], [], [])
+
+#print axioms zipD_spec
+#print axioms val_add
 
 -- (10 20 30)@2 0 0 5: 30 10 10 0N ; (1 2 1!10 20 30)@1 5 2: 10 0N 20
 #guard dec (aIdx (enc 8 [10, 20, 30]) (enc 8 [2, 0, 0, 5])) == [30, 10, 10, Compressed.nul]

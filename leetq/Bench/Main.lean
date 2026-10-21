@@ -66,10 +66,12 @@ def getAllOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "getAll" (col (ints n 1 n), col (ints n 2 1000000), col (ints n 3 (2 * n)))
     fun (k, v, ks) => some (colSum (Long.getAll k v ks))
 
-/-- `d+e`; `(sum key r)+sum value r`. -/
+/-- `d+e` by `Long.zipD`, `findVec`, `gatherBytes`, `Ew.val`, `memberVec`, `whereBits`; `(sum key r)+sum value r`,
+`d`'s keys being `r`'s first rows. -/
 def zipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "zipD" (fin (ints n 1 n) (ints n 2 1000000), fin (ints n 4 n) (ints n 5 1000000))
-    fun (r, s) => (ps (zipD (· + ·) 0 r s)).map (sumBy fun p => Int64.ofInt p.1 + Int64.ofInt p.2)
+  timed "zipD" (col (ints n 1 n), col (ints n 2 1000000), col (ints n 4 n), col (ints n 5 1000000))
+    fun (dk, dv, ek, ev) => let z := Long.zipD dk dv ek ev
+      some (colSum dk + colSum z.1 + colSum z.2.1 + colSum z.2.2)
 
 /-- `select sum v by k from t` by `Compressed.selbySum`, `groupIds` then `overGroups`; `exec sum k+v`. -/
 def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
