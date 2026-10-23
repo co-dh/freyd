@@ -17,6 +17,7 @@ import QLean.Verify.Where
 import QLean.Verify.Group
 import QLean.Verify.Structural
 import QLean.Verify.BinWin
+import QLean.Verify.Dyad
 
 namespace LeetQ.Rel
 
@@ -184,8 +185,52 @@ def sort (desc : Bool) (xs : List Int64) : List Int64 :=
   xs.mergeSort fun a b => if desc then decide (b ≤ a) else decide (a ≤ b)
 
 /-- The rows of each group of `o`, in group order. -/
-def groups (o : List Nat) (xs : List Int64) : List (List Int64) :=
+def groups {α : Type} (o : List Nat) (xs : List α) : List (List α) :=
   (o.zip o.tail).map fun (a, b) => (xs.drop a).take (b - a)
+
+/-- `count each` of the groups of `o`. -/
+def countBy {α : Type} (o : List Nat) (xs : List α) : List Int64 := (groups o xs).map fun g => Int64.ofNat g.length
+
+/-- `last each` of the groups of `o`, `0N` for an empty one. -/
+def lastBy (o : List Nat) (xs : List Int64) : List Int64 := (groups o xs).map fun g => g.getLastD nul
+
+/-- Group `j` of `o` is the rows `[o[j], o[j+1])`. -/
+theorem groups_range {α : Type} (o : List Nat) (xs : List α) :
+    groups o xs = (List.range (o.length - 1)).map fun j => (xs.drop o[j]!).take (o[j+1]! - o[j]!) := by
+  apply List.ext_getElem (by simp [groups])
+  intro j h1 h2
+  simp only [groups, List.getElem_map, List.getElem_zip, List.getElem_tail, List.getElem_range]
+  simp at h2
+  rw [getElem!_pos o j (by omega), getElem!_pos o (j+1) (by omega)]
+
+/-- `f/` at `min` lies at or below its seed and every element that is not `0N`. -/
+theorem over_lesser_le (l : List Int64) (acc : Int64) :
+    over (Coc.Over.step .lesser) acc l ≤ acc ∧
+      ∀ y ∈ l, y ≠ nul → over (Coc.Over.step .lesser) acc l ≤ y := by
+  induction l generalizing acc with
+  | nil => exact ⟨Int64.le_refl _, by simp⟩
+  | cons x l ih =>
+    simp only [over, List.foldl_cons] at ih ⊢
+    obtain ⟨h1, h2⟩ := ih (if x == nul then acc else Coc.Over.step .lesser acc x)
+    have hs : (if x == nul then acc else Coc.Over.step .lesser acc x) ≤ acc ∧
+        (x ≠ nul → (if x == nul then acc else Coc.Over.step .lesser acc x) ≤ x) := by
+      by_cases hx : x = nul
+      · simp [hx, Int64.le_refl]
+      · simp only [hx, beq_iff_eq, if_false, Coc.Over.step, ne_eq, not_false_eq_true, forall_const]
+        split <;> simp_all [Int64.le_iff_toInt_le, Int64.lt_iff_toInt_lt] <;> omega
+    refine ⟨Int64.le_trans h1 hs.1, fun y hy hn => ?_⟩
+    rcases List.mem_cons.1 hy with rfl | hy
+    · exact Int64.le_trans h1 (hs.2 hn)
+    · exact h2 y hy hn
+
+/-- The last of the rows `[a, b)` of `xs`, `a < b ≤ |xs|`, is row `b − 1`. -/
+theorem getLastD_take_drop (xs : List Int64) (d : Int64) {a b : Nat} (h : a < b) (hb : b ≤ xs.length) :
+    ((xs.drop a).take (b - a)).getLastD d = xs[b-1]! := by
+  rw [List.getLastD_eq_getLast?, List.getLast?_eq_getElem?]
+  simp only [List.length_take, List.length_drop, List.getElem?_take, List.getElem?_drop]
+  rw [if_pos (by omega), show a + (min (b - a) (xs.length - a) - 1) = b - 1 by omega,
+    getElem!_pos xs (b-1) (by omega), List.getElem?_eq_getElem (by omega)]
+  rfl
 
 /-- The last element of a scan is the fold: `scan_succ` read at the end. -/
 theorem scanl_getLast? {α β : Type} (f : β → α → β) (a : β) (xs : List α) :
@@ -510,6 +555,193 @@ theorem mmax_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {w
       show (Scan.MOp.mmax == Scan.MOp.mmin) = false from rfl] <;> omega)
     (fun a b => by simp [Int64.lt_iff_toInt_lt] <;> omega) rfl hw hx hn h
 
+/-- Two longs `0 ≤ a ≤ b`: `b − a` is the difference of their naturals, no wrap. -/
+theorem sub_ofNat {a b : Int64} (h0 : 0 ≤ a.toInt) (h1 : a.toInt ≤ b.toInt) :
+    b - a = Int64.ofNat (b.toNatClampNeg - a.toNatClampNeg) := by
+  apply Int64.toInt_inj.1
+  have := Int64.toInt_lt b
+  have ea : (a.toNatClampNeg : Int) = a.toInt := by rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg h0
+  have eb : (b.toNatClampNeg : Int) = b.toInt := by rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (by omega)
+  rw [Int64.toInt_sub, Int.bmod_eq_of_le_mul_two (by omega) (by omega),
+    Int64.toInt_ofNat_of_lt (by omega)]
+  omega
+
+/-- A long at or above `0` is not `0N`. -/
+theorem ne_nul {a : Int64} (h : 0 ≤ a.toInt) : (a == Spec.nul) = false := by
+  simp only [beq_eq_false_iff_ne, ne_eq]; intro e; rw [e] at h; exact absurd h (by decide)
+
+/-- Under `Cuts o n`, offsets `i ≤ j` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
+theorem cuts_get {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
+    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
+  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
+    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+  obtain ⟨hm, h0, hl⟩ := co
+  rw [e i (by omega), e j hj]
+  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
+  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
+  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
+  rw [h0] at a; rw [hl] at c
+  exact ⟨by simpa using a, b, c⟩
+
+/-- A long at or above `0` is its natural, cast back. -/
+theorem toNat_cast {a : Int64} (h : 0 ≤ a.toInt) : (a.toNatClampNeg : Int) = a.toInt := by
+  rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg h
+
+/-- Offset `m` of `o` read as a natural, through the `map` the specs take the offsets by. -/
+theorem map_get! {g : Nat} (o : Arr (.atom .long) (g+1)) {m : Nat} (hm : m ≤ g) :
+    (o.toList.map Int64.toNatClampNeg)[m]! = (o.toList[m]!).toNatClampNeg := by
+  rw [getElem!_pos _ m (by rw [List.length_map, Arr.length_toList]; omega),
+    getElem!_pos o.toList m (by rw [Arr.length_toList]; omega), List.getElem_map]
+
+/-- Word `m` of the dense offsets `B` is offset `m`. -/
+theorem offs_word {g : Nat} {o : Arr (.atom .long) (g+1)} {B : ByteArray}
+    (hB : o.toList = (List.range (g+1)).map fun i => (Column.bitsAt B (i*8) 8).toInt64) {m : Nat} (hm : m < g + 1) :
+    (Column.bitsAt B (m*8) 8).toInt64 = o.toList[m]! := by
+  rw [hB, getElem!_pos _ m (by simpa using hm)]; simp
+
+/-- Under `Cuts`, `sizes` lists each group's size `o[j+1] − o[j]`: no offset is `0N`, so `Ew.sub`'s null
+    test never fires, and both lie in `[0, n]`, so the difference does not wrap. -/
+theorem sizes_words {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {B : ByteArray}
+    (hB : o.toList = (List.range (g+1)).map fun i => (Column.bitsAt B (i*8) 8).toInt64) (hg : g < USize.size) :
+    Verify.elemsW 8 (sizes g B) = (List.range g).map fun j =>
+      (Int64.ofNat ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg)).toUInt64 := by
+  rw [sizes, Verify.val_i64_vv _ _ _ _ _ hg]
+  refine List.map_congr_left fun j hj => ?_
+  have hj := List.mem_range.1 hj
+  rw [ends, Verify.bitsAt_extract _ (by omega), Verify.bitsAt_extract _ (by omega),
+    show 8 + j * 8 = (j+1) * 8 by omega, Nat.zero_add, offs_word hB (by omega), offs_word hB (by omega)]
+  obtain ⟨a0, a1, -⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+  have e0 := ne_nul a0
+  have e1 := ne_nul (Int.le_trans a0 a1)
+  rw [← sub_ofNat a0 a1]
+  simp only [Ew.intStep, e0, e1, Bool.or_false, show (Ew.sub == Ew.add) = false by decide,
+    show (Ew.sub == Ew.sub) = true by decide, if_true, Bool.false_eq_true, if_false]
+
+/-- **`count each` by group**: `1_deltas o`, each group's size, at any value type and any offsets that list
+    `longWords`. `Cuts` keeps every offset in `[0, n]`, so no `0N` reaches `Ew.sub` and no difference wraps. -/
+theorem countBy_toList {v : Ty} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
+    {x : Arr v n} {wo : List UInt64} (ho : longWords o.c = some wo) (hg : g + 1 < USize.size)
+    {S : Rel k (.atom .long)} (h : countBy ⟨n, .grp d o co, x⟩ = some S) :
+    S.val.toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
+  obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
+  have hof : offs o = some B := hb
+  simp only [countBy, hof, bind, Option.bind] at h
+  by_cases hw : (Ty.atom .long).WF g (.bytes (sizes g B))
+  · rw [Arr.of, dif_pos hw] at h
+    have hS : S.val.c = .bytes (sizes g B) := by cases h; rfl
+    rw [Arr.toList_long S.val (show longWords S.val.c = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
+      sizes_words co (toList_words o ho hBw hBs) (by omega), Spec.countBy, Spec.groups_range,
+      List.length_map, Arr.length_toList, Nat.add_sub_cancel, List.map_map, List.map_map]
+    refine List.map_congr_left fun j hj => ?_
+    have hj := List.mem_range.1 hj
+    obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+    have c0 := toNat_cast a0
+    have c1 := toNat_cast (Int.le_trans a0 a1)
+    simp only [Function.comp_apply, map_get! o (show j ≤ g by omega), map_get! o (show j + 1 ≤ g by omega),
+      List.length_take, List.length_drop, Arr.length_toList, Int64.toInt64_toUInt64]
+    congr 1
+    omega
+  · rw [Arr.of, dif_neg hw] at h
+    cases h
+
+/-- **`last each` by group over a dense long column**: the last row of each group. An answer means no group
+    is empty — `lastBy` reads that off `min` of the sizes, here `over_bytes` and `over_lesser_le` — so
+    `o[j+1] − 1` names a row of group `j`. A `foR` value column reaches `gatherFoR`, which has no law yet. -/
+theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
+    {x : Arr (.atom .long) n} {wo : List UInt64} {b : ByteArray} (ho : longWords o.c = some wo)
+    (hc : x.c = .bytes b) (hg : g + 1 < USize.size) {S : Rel k (.atom .long)}
+    (h : lastBy ⟨n, .grp d o co, x⟩ = some S) :
+    S.val.toList = Spec.lastBy (o.toList.map Int64.toNatClampNeg) x.toList := by
+  obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
+  have hof : offs o = some B := hb
+  have hB := toList_words o ho hBw hBs
+  have hsw := sizes_words co hB (by omega)
+  have hsz : (sizes g B).size / 8 = g := by simpa [Verify.elemsW] using congrArg List.length hsw
+  -- `min` of the sizes, read off `over_bytes` at the sizes as a column
+  let Z : Rel (.atom .long) (.atom .long) := ⟨g, .til g, { c := .bytes (sizes g B), wf := ⟨rfl, hsz⟩ }⟩
+  have hZ := over_bytes (op := .lesser) rfl (R := Z) rfl
+  have hZl : Z.val.toList = (List.range g).map fun j =>
+      Int64.ofNat ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg) := by
+    rw [Arr.toList_long Z.val (ws := Verify.elemsW 8 (sizes g B)) rfl, hsw, List.map_map]
+    simp [Function.comp_def]
+  simp only [lastBy, hof, bind, Option.bind] at h
+  rw [show overColumn .lesser .long (.bytes (sizes g B)) = over .lesser Z from rfl, hZ] at h
+  simp only at h
+  split at h
+  · cases h
+  rename_i hne
+  -- every group holds a row: `min` of the sizes is above `0`
+  have hpos : ∀ j, j < g → (o.toList[j]!).toNatClampNeg < (o.toList[j+1]!).toNatClampNeg := by
+    intro j hj
+    obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+    have c0 := toNat_cast a0
+    have c1 := toNat_cast (Int.le_trans a0 a1)
+    have hlt := Int64.toInt_lt (o.toList[j+1]!)
+    have e : (Int64.ofNat ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg)).toInt =
+        (((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg : Nat) : Int) :=
+      Int64.toInt_ofNat_of_lt (by omega)
+    have hm := (Spec.over_lesser_le Z.val.toList (Coc.Over.lesser.denseSeed Ew.i64 Spec.nul)).2 _
+      (by rw [hZl]; exact List.mem_map.2 ⟨j, List.mem_range.2 hj, rfl⟩)
+      (fun h' => by have := congrArg Int64.toInt h'; rw [e] at this; exact absurd this (by simp))
+    have h0 := fun h' => hne ⟨by omega, h'⟩
+    rw [Int64.le_iff_toInt_le, e] at hm
+    rw [Int64.le_iff_toInt_le] at h0
+    simp at h0
+    omega
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hlw := Verify.val_i64_va Ew.add Int64.minValue (ends g B) ((-1 : Int64).toUInt64) g (by omega)
+  have hlz : (Ew.val Ew.add Ew.i64 Ew.va Int64.minValue (ends g B) (atomBytes Ew.i64 (-1 : Int64).toUInt64)
+      g.toUSize).size / 8 = g := by simpa [Verify.elemsW] using congrArg List.length hlw
+  generalize Ew.val Ew.add Ew.i64 Ew.va Int64.minValue (ends g B) (atomBytes Ew.i64 (-1 : Int64).toUInt64)
+    g.toUSize = L at h hlw hlz
+  rw [hc, show gatherColumn .long (.bytes b) (.bytes L) =
+    some (.vector .long (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L))) from rfl] at h
+  simp only [vecCol] at h
+  obtain ⟨-, hgj⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) 0x8000000000000000 b L
+  rw [h8] at hgj
+  generalize gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L = G at h hgj
+  by_cases hw : (Ty.atom .long).WF g (.bytes G)
+  · rw [Arr.of, dif_pos hw] at h
+    have hS : S.val.c = .bytes G := by cases h; rfl
+    have hSn : S.n = g := by cases h; rfl
+    have hbn := Arr.n_long_bytes x hc
+    rw [Arr.toList_long_bytes S.val hS, hSn, Spec.lastBy, Spec.groups_range, List.length_map, Arr.length_toList,
+      Nat.add_sub_cancel, List.map_map, List.map_map]
+    refine List.map_congr_left fun j hj => ?_
+    have hj := List.mem_range.1 hj
+    obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+    have c0 := toNat_cast a0
+    have c1 := toNat_cast (Int.le_trans a0 a1)
+    have hp := hpos j hj
+    -- index `j` of the gather is `o[j+1] − 1`
+    have hidx : Column.bitsAt L (j*8) 8 = (Ew.intStep Ew.add Int64.minValue (o.toList[j+1]!) (-1)).toUInt64 := by
+      have := congrArg (·[j]?) hlw
+      simp only [Verify.elemsW, hlz, List.getElem?_map, List.getElem?_range hj, Option.map_some,
+        Option.some.injEq] at this
+      rw [this, ends, Verify.bitsAt_extract _ (by omega), show 8 + j * 8 = (j+1) * 8 by omega,
+        offs_word hB (by omega)]
+      simp
+    have e1 := ne_nul (Int.le_trans a0 a1)
+    have hstep : Ew.intStep Ew.add Int64.minValue (o.toList[j+1]!) (-1) =
+        Int64.ofNat ((o.toList[j+1]!).toNatClampNeg - 1) := by
+      simp only [Ew.intStep, e1, show ((-1 : Int64) == Int64.minValue) = false by decide, Bool.or_false,
+        show (Ew.add == Ew.add) = true by decide, if_true, Bool.false_eq_true, if_false]
+      rw [← Int64.sub_eq_add_neg, sub_ofNat (a := 1) (by decide) (by rw [show (1 : Int64).toInt = 1 from rfl]; omega)]
+      rfl
+    have hto : (Int64.ofNat ((o.toList[j+1]!).toNatClampNeg - 1)).toUInt64.toNat =
+        (o.toList[j+1]!).toNatClampNeg - 1 := by
+      have hlt := Int64.toInt_lt (o.toList[j+1]!)
+      rw [Int64.toNat_toUInt64_of_le (by rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega)]; simp),
+        Int64.toNatClampNeg_ofNat_of_lt (by omega)]
+    rw [Function.comp_apply, Function.comp_apply, hgj j (by omega), hidx, hstep, hto, if_pos (by omega),
+      map_get! o (show j ≤ g by omega), map_get! o (show j + 1 ≤ g by omega),
+      Spec.getLastD_take_drop _ _ hp (by rw [Arr.length_toList]; omega), Arr.toList_long_bytes x hc,
+      List.map_map, getElem!_pos _ ((o.toList[j+1]!).toNatClampNeg - 1)
+        (by rw [List.length_map, List.length_range]; omega), List.getElem_map, List.getElem_range]
+    rfl
+  · rw [Arr.of, dif_neg hw] at h
+    cases h
+
 end Ops
 
 /-! ## Checks on small literal Rels -/
@@ -595,10 +827,10 @@ private def GI : Rel (.atom .long) (.atom .int) :=
       wf := by decide }⟩
 #guard vals (at? .int (overBy .add GI)) == [30, 30, 90]
 #guard vals (at? .int (overBy .greater GI)) == [20, 30, 50]
-#guard vals (countBy G) == ((Spec.groups [0, 2, 3, 6] gv).map fun g => Int64.ofNat g.length)
-#guard vals (countBy E) == [1, 0, 2]
+#guard vals (countBy G) == Spec.countBy [0, 2, 3, 6] gv
+#guard vals (countBy E) == [1, 0, 2] ∧ vals (countBy E) == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
 #guard ((countBy G).map (·.key.toList)) == some [0, 1, 2]
-#guard vals (lastBy G) == ((Spec.groups [0, 2, 3, 6] gv).map fun g => g.getLastD 0)
+#guard vals (lastBy G) == Spec.lastBy [0, 2, 3, 6] gv
 #guard (lastBy E).isNone
 #guard vals (at? .long (overBy .add G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))
 #guard vals (at? .long (overBy .greater G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over max (Int64.minValue + 1)))
