@@ -526,7 +526,8 @@ theorem firstTable_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int6
     rw [← List.length_map (f := UInt64.toNat), htil, List.length_range]
   simp only [List.length_reverse, hofn, htl] at hix hsx
   have hs := Verify.scatterPacked_spec 8 (by decide) 64 (USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)) (expandBytes 8 0 (one n.toUInt64) (one r.toUInt64))
-    (reverseBytes 8 of) (reverseBytes 8 (tilLongs n.toUSize)) 0 false (by simp only [hix.1, USize.toNat_zero]; omega)
+    (reverseBytes 8 of) (reverseBytes 8 (tilLongs n.toUSize)) 0 false
+    (by simp only [hix.1, hsx.1, USize.toNat_zero, Bool.false_eq_true, if_false]; omega)
   simp only [List.length_replicate] at hd
   refine ⟨by rw [hs.1, hd.1], fun i hi => ?_⟩
   rw [hs.2 i (by rw [hd.1]; exact hi), hix.1]
