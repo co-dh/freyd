@@ -338,6 +338,99 @@ theorem Ew.not_spec {x R : Rel k (.atom .boolean)} (hn : x.n < USize.size) (h : 
   · cases h
 
 
+/-! ## The element step at `long`: q's interpreter against the kernel's step
+
+What `Ew.ValSpec` needs once a column law reaches `valStep`/`cmpStep`: `Dep.elem` (q's `dyadAtom`) on two
+longs is the kernel's `intStep` at q's null for the value verbs and `cmpStep` at `i64` for the six
+comparisons. -/
+
+section Step
+open QLean.Eval
+
+theorem Ew.compare_toInt (a b : Int64) : compare a b = compare a.toInt b.toInt := by
+  simp only [compare, compareOfLessAndEq, Int64.lt_iff_toInt_lt, ← Int64.toInt_inj]
+
+/-- q's null `0N` is the least long, strictly below every other. -/
+theorem Ew.min_lt {y : Int64} (hy : ¬y = Int64.minValue) : Int64.minValue.toInt < y.toInt := by
+  have h1 := Int64.le_iff_toInt_le.1 (Int64.minValue_le y)
+  have h2 : Int64.minValue.toInt ≠ y.toInt := fun e => hy (Int64.toInt_inj.1 e).symm
+  omega
+
+/-- q's order on two longs (nulls equal and least) is `Int64`'s. -/
+theorem Ew.cmpAtoms_long (x y : Int64) : cmpAtoms (.long x) (.long y) = some (compare x y) := by
+  by_cases hx : x = Int64.minValue <;> by_cases hy : y = Int64.minValue <;>
+    simp [cmpAtoms, hx, hy, missing, QAtom.isNull, QAtom.type, intPayload]
+  all_goals rw [Ew.compare_toInt]
+  · have := Ew.min_lt hy; simp only [compare, compareOfLessAndEq]; repeat' split
+    all_goals first | rfl | (exfalso; omega)
+  · have := Ew.min_lt hx; simp only [compare, compareOfLessAndEq]; repeat' split
+    all_goals first | rfl | (exfalso; omega)
+
+/-- The tolerance changes nothing at `long`: two longs are tolerantly equal only when equal. -/
+theorem Ew.cmpTolerant_long (x y : Int64) : cmpTolerant (.long x) (.long y) = some (compare x y) := by
+  simp only [cmpTolerant, Ew.cmpAtoms_long, Option.map_some]
+  by_cases e : x = y
+  · subst e; simp [QAtom.eqTol, QAtom.identical]
+  · simp [QAtom.eqTol, QAtom.identical, e]
+
+/-- **A value verb on two longs** is `intStep` at q's null: `+ - *` answer `0N` on a null operand and wrap
+    otherwise, `& |` pick by order, `^` fills a null right operand from the left. -/
+theorem Ew.dyadAtom_long_val {v : Prim.Dyadic} {op : UInt8} (hop : valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) (x y : Int64) :
+    dyadAtom v (.long x) (.long y) = .ok (.long (Ew.intStep op Int64.minValue x y)) := by
+  cases v <;> simp only [valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  case div => exact absurd h (by decide)
+  case add | sub | mul =>
+    all_goals (
+      show arithAtoms _ .long (.long x) (.long y) = _
+      by_cases hx : x = Int64.minValue <;> by_cases hy : y = Int64.minValue <;>
+        simp [arithAtoms, hx, hy, missing, QAtom.isNull, QAtom.type, carried, isFloatPayload, nullAtom,
+          Prim.clockIntoDays, intIn, temporalIn, roundedPayload, intPayload, atomOfInt, Ew.intStep, Ew.add,
+          Ew.sub, Ew.mul])
+  all_goals (
+    simp (config := { decide := true }) [dyadAtom, toCommon, QAtom.type, Ew.cmpAtoms_long, Ew.intStep,
+      QAtom.isNull]
+    first
+      | (split <;> rfl)
+      | (rw [Ew.compare_toInt]; simp only [Int64.lt_iff_toInt_lt]
+         rcases Int.lt_trichotomy x.toInt y.toInt with hl | he | hg
+         · simp [compare, compareOfLessAndEq, hl, Int.not_lt.2 (Int.le_of_lt hl)]
+         · obtain rfl := Int64.toInt_inj.1 he; simp
+         · simp [compare, compareOfLessAndEq, hg, Int.not_lt.2 (Int.le_of_lt hg), Int.ne_of_gt hg]))
+
+/-- **A comparison on two longs** is `cmpStep` at `i64` on their bits. -/
+theorem Ew.dyadAtom_long_cmp {v : Prim.Dyadic} {op : UInt8} (hop : cmpOp v = some op) (x y : Int64) :
+    dyadAtom v (.long x) (.long y) = .ok (.boolean (Ew.cmpStep op Ew.i64 x.toUInt64 y.toUInt64)) := by
+  cases v <;> simp only [cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals simp (config := { decide := true }) [dyadAtom, toCommon, QAtom.type, Ew.cmpTolerant_long, Ew.cmpStep,
+    Ew.signed]
+
+/-- `Dep.elem` (`ValSpec`'s step) of a value verb on two longs is `intStep` at q's null. -/
+theorem Ew.elem_long_val {v : Prim.Dyadic} {op : UInt8} (hop : valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) (x y : Int64) :
+    elem v h x y = .ok (Ew.intStep op Int64.minValue x y) := by
+  have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_val hop h x y
+  unfold elem
+  split
+  · rename_i hz; rw [hd] at hz; cases hz
+  · rename_i hz; rw [hd] at hz; cases hz; rfl
+
+/-- `Dep.elem` of a comparison on two longs is `cmpStep` at `i64`. -/
+theorem Ew.elem_long_cmp {v : Prim.Dyadic} {op : UInt8} (hop : cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) (x y : Int64) :
+    elem v h x y = .ok (Ew.cmpStep op Ew.i64 x.toUInt64 y.toUInt64) := by
+  have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_cmp hop x y
+  unfold elem
+  split
+  · rename_i hz; rw [hd] at hz; cases hz
+  · rename_i hz; rw [hd] at hz; cases hz; rfl
+
+end Step
+
+#print axioms Ew.not_spec
+#print axioms Ew.elem_long_val
+#print axioms Ew.elem_long_cmp
+
 /-! ## Checks on small literal columns -/
 
 section Checks
