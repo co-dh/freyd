@@ -21,6 +21,7 @@ import QLean.Verify.Search
 import QLean.Verify.Structural
 import QLean.Verify.Elementwise
 import QLean.Verify.Encoding
+import QLean.Verify.Ids
 
 namespace LeetQ.Rel.Find
 
@@ -273,12 +274,26 @@ theorem usize_eight : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_
 
 /-! ## The kernels' view of a long column -/
 
-/-- The payloads the kernel laws read a long operand from: `bytes`, or `foR` with non-empty block
-    metadata, which is what marks an operand encoded to `operandBytes`; `alp`'s decode has no law. -/
-def Readable : Column → Prop
-  | .bytes _ => True
-  | .foR _ md _ => md.isEmpty = false
+/-- The payloads at type `a` whose search path has a kernel law: at `long`, `bytes`, or `foR` with
+    non-empty block metadata, which is what marks an operand encoded to `operandBytes` (`alp`'s decode
+    has no law); at `boolean`, `bits` (`findBitVec`, `memberBits_mem`). A symbol's path
+    (`findSymColumn`, `findSymKeys`, `maskByIds`, `distinctIds`) has none, so `syms`/`enum` are out. -/
+def Readable (a : QAtomicType) (c : Column) : Prop :=
+  match a with
+  | .long => match c with
+    | .bytes _ => True
+    | .foR _ md _ => md.isEmpty = false
+    | _ => False
+  | .boolean => match c with
+    | .bits .. => True
+    | _ => False
   | _ => False
+
+/-- q's `s#` contract where a search reads it: a column marked `s` ascends. Only the `long` search
+    halves on the mark; the boolean one never reads it, so it asks nothing there. -/
+def Ascends {n : Nat} : {a : QAtomicType} → Arr (.atom a) n → Prop
+  | .long, x => x.attr = 1 → ∀ i j : Fin n, i ≤ j → x.get i ≤ x.get j
+  | _, _ => True
 
 /-- `elemsW 8 B = ws` word by word: `B` holds `|ws|` eight-byte words, word `i` being `ws[i]`. -/
 theorem elemsW8_get {B : ByteArray} {ws : List UInt64} (h : Verify.elemsW 8 B = ws) :
@@ -287,7 +302,7 @@ theorem elemsW8_get {B : ByteArray} {ws : List UInt64} (h : Verify.elemsW 8 B = 
 
 /-- The kernels' view of a readable long column is its words: `operand` hands `bytes` over with empty
     metadata and `foR` as it is, and `operandBytes` decodes either to `longWords` (`elemsW_operandBytes`). -/
-theorem operand_long {m : Nat} (x : Arr (.atom .long) m) (h : Readable x.c) (hm : m < USize.size) :
+theorem operand_long {m : Nat} (x : Arr (.atom .long) m) (h : Readable .long x.c) (hm : m < USize.size) :
     ∃ k md pk ws, operand .long x.c = some (k, md, pk) ∧ longWords x.c = some ws ∧
       Verify.elemsW 8 (operandBytes 8 md pk k.toUSize) = ws ∧ ws.length = m := by
   cases hc : x.c with
@@ -589,7 +604,7 @@ theorem probe_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int64) (r
       rw [idxOf_map_of_inj (fun _ _ => off_inj)]
     · rw [if_neg hv, hmiss _ fun x hx e => hv (by rw [← e]; exact (hin x hx).2)]; exact congrArg UInt64.ofNat (by simp; omega)
 
-theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+theorem bytesOf_long {c : Column} (h : Readable .long c) {k : Nat} {md pk : ByteArray}
     (ho : operand .long c = some (k, md, pk)) : Column.bytesOf .long c = some (operandBytes 8 md pk k.toUSize) := by
   have he : Column.encodes QAtomicType.long = true := rfl
   cases c with
@@ -673,7 +688,7 @@ theorem direct_table {m : Nat} {x : Arr (.atom .long) m} {t hb : ByteArray} {lo 
       lo ≠ Int64.minValue ∧ (∀ w ∈ xs, lo ≤ w.toInt64 ∧ off lo w.toInt64 < r) ∧ t = firstTable hb m lo r := by
   have hS := USize.size_le
   obtain ⟨k, md, pk, hi, hc, he, hR, hr4, hbx, ht⟩ := direct_some hd
-  have hx : Readable x.c := by rw [hc]; exact he
+  have hx : Readable .long x.c := by rw [hc]; exact he
   obtain ⟨k', md', pk', xs, hox, hwx, hbx', hlx⟩ := operand_long x hx (by omega)
   rw [bytesOf_long hx hox] at hbx; obtain rfl := Option.some.inj hbx
   have hkm : k = m := by have := x.wf.2; rw [hc] at this; exact this
@@ -686,7 +701,7 @@ theorem direct_table {m : Nat} {x : Arr (.atom .long) m} {t hb : ByteArray} {lo 
     have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
 
 theorem find_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hy : Readable y.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb))
+    (hy : Readable .long y.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb))
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hS := USize.size_le
@@ -734,7 +749,7 @@ theorem toInt_ofNat_lt {I : Nat} (h : I < 2 ^ 63) : (UInt64.ofNat I).toInt64.toI
 
 /-- `x in y` on the direct path: the probe's first positions compared below `count y`. -/
 theorem in_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
-    (hx : Readable x.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long y.val.c y.n = some (t, lo, hb))
+    (hx : Readable .long x.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long y.val.c y.n = some (t, lo, hb))
     (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
   have hS := USize.size_le
@@ -864,7 +879,7 @@ theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
 /-! ## The halving over a haystack marked `s` -/
 
 /-- `findSorted` over a readable long haystack is `findSortedBytes` over its `operandBytes`. -/
-theorem findSorted_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+theorem findSorted_long {c : Column} (h : Readable .long c) {k : Nat} {md pk : ByteArray}
     (ho : operand .long c = some (k, md, pk)) (ks : ByteArray) :
     findSorted .long 8 c ks = some (findSortedBytes 8 false true (operandBytes 8 md pk k.toUSize) ks) := by
   have he : Column.encodes QAtomicType.long = true := rfl
@@ -877,7 +892,7 @@ theorem findSorted_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArr
   | _ => exact False.elim h
 
 /-- `memberSorted` over a readable long haystack is `memberSortedBytes` over its `operandBytes`. -/
-theorem memberSorted_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+theorem memberSorted_long {c : Column} (h : Readable .long c) {k : Nat} {md pk : ByteArray}
     (ho : operand .long c = some (k, md, pk)) (ks : ByteArray) :
     memberSorted .long 8 c ks = some (memberSortedBytes 8 false true ks (operandBytes 8 md pk k.toUSize)) := by
   have he : Column.encodes QAtomicType.long = true := rfl
@@ -1034,8 +1049,8 @@ theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
     `s`, `findSortedBytes_idxOf`. Restrictions: `Readable` payloads; q's `s#` contract, that a column marked
     `s` ascends — `Arr.attr` carries no proof, and an amend that breaks the order drops the mark; both counts
     below `USize.size`, which the kernel indexes by, and `8 · x.n` too, which keeps the range below `2^63`. -/
-theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c)
+theorem find_long {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
+    (hx : Readable .long x.val.c) (hy : Readable .long y.val.c)
     (hs : x.val.attr = 1 → ∀ i j : Fin x.n, i ≤ j → x.val.get i ≤ x.val.get j)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
@@ -1084,8 +1099,8 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
     marked `s`, `memberSortedBytes_mem`. Restrictions: `Readable` payloads; q's `s#` contract on `y`, as in
     `find_toList`; both counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which
     keeps the range below `2^63`. -/
-theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c)
+theorem in_long {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
+    (hx : Readable .long x.val.c) (hy : Readable .long y.val.c)
     (hs : y.val.attr = 1 → ∀ i j : Fin y.n, i ≤ j → y.val.get i ≤ y.val.get j)
     (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
@@ -1142,6 +1157,119 @@ theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long
   apply Bool.eq_iff_iff.2
   rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj)]
 
+/-! ## Boolean columns -/
+
+/-- A readable boolean column is `bits`. -/
+theorem readable_bits {c : Column} (h : Readable .boolean c) : ∃ m b, c = .bits m b := by
+  cases c <;> first | exact ⟨_, _, rfl⟩ | exact False.elim h
+
+/-- A boolean `bits` column lists its first `m` bits. -/
+theorem Arr.toList_bits {m : Nat} (x : Arr (.atom .boolean) m) {n : Nat} {b : ByteArray} (hc : x.c = .bits n b) :
+    x.toList = (List.range m).map (Column.bitAt b) :=
+  List.ext_getElem (by rw [Arr.length_toList]; simp) fun i h1 _ => by
+    rw [Arr.getElem_toList, Arr.get_bool_bits x hc]; simp
+
+/-- `findBit` is the first index of the needle among the first `n` bits, `n` at a miss. -/
+theorem findBit_idxOf (b : ByteArray) {n : Nat} (hn : n < USize.size) (v : Bool) :
+    (findBit n.toUSize b v).toNat = ((List.range n).map (Column.bitAt b)).idxOf v := by
+  have hl := Verify.idxOf_le_length v ((List.range n).map (Column.bitAt b))
+  rw [List.length_map, List.length_range] at hl
+  unfold findBit
+  rw [USize.toNat_ofNat_of_lt' hn, Verify.find?_range_getD, USize.toNat_ofNat_of_lt' (by omega)]
+
+/-- `x?y` on boolean columns is `findSpec`: `findBitVec` writes `findBit_idxOf` per needle. -/
+theorem find_bits {k k' : Ty} {x : Rel k (.atom .boolean)} {y : Rel k' (.atom .boolean)} {r : Rel k' (.atom .long)}
+    {m n : Nat} {xb yb : ByteArray} (hxc : x.val.c = .bits m xb) (hyc : y.val.c = .bits n yb)
+    (hn : x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
+    r.val.toList = findSpec x.val.toList y.val.toList := by
+  have hmx : m = x.n := by have := x.val.wf.2; rw [hxc] at this; exact this
+  have hny : n = y.n := by have := y.val.wf.2; rw [hyc] at this; exact this
+  subst hmx hny
+  have hc : findColumn .boolean (x.val.attr == 1) x.val.c (.vector .boolean y.val.c) =
+      some (.vector .long (.bytes (findBitVec x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
+  have hd : direct .boolean x.val.c x.n = none := rfl
+  simp only [find, hd, hc, vec, bind, Except.bind] at h
+  have hw : Verify.elemsW 8 (findBitVec x.n.toUSize xb y.n.toUSize yb) =
+      (List.range y.n).map fun j => (findBit x.n.toUSize xb (Column.bitAt yb j)).toUInt64 := by
+    unfold findBitVec
+    rw [Verify.elemsW_foldl _ 8 (by decide) (by decide) _ (fun _ _ => UInt64.toNat_lt _), USize.toNat_ofNat_of_lt' hm]
+  rw [Arr.toList_long r.val (show longWords r.val.c = some _ by rw [onKey_c h]; rfl), hw,
+    Arr.toList_bits x.val hxc, Arr.toList_bits y.val hyc, findSpec, List.map_map, List.map_map]
+  refine List.map_congr_left fun j _ => toInt64_of_toNat ?_
+  rw [USize.toNat_toUInt64, findBit_idxOf xb hn]
+
+/-- `x in y` on boolean columns is `inSpec`, from `memberBits_mem`. -/
+theorem in_bits {k k' : Ty} {x : Rel k (.atom .boolean)} {y : Rel k' (.atom .boolean)} {r : Rel k (.atom .boolean)}
+    {m n : Nat} {xb yb : ByteArray} (hxc : x.val.c = .bits m xb) (hyc : y.val.c = .bits n yb)
+    (hn : y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
+    r.val.toList = inSpec x.val.toList y.val.toList := by
+  have hmx : m = x.n := by have := x.val.wf.2; rw [hxc] at this; exact this
+  have hny : n = y.n := by have := y.val.wf.2; rw [hyc] at this; exact this
+  subst hmx hny
+  have hc : memberColumn .boolean (y.val.attr == 1) (.vector .boolean x.val.c) y.val.c =
+      some (.vector .boolean (.bits x.n (memberBits x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
+  have hd : direct .boolean y.val.c y.n = none := rfl
+  simp only [«in», hd, hc, vec, bind, Except.bind] at h
+  obtain ⟨e, -⟩ := onKey_key h
+  obtain ⟨-, hg⟩ := Verify.memberBits_mem x.n.toUSize y.n.toUSize xb yb
+  rw [USize.toNat_ofNat_of_lt' hm, USize.toNat_ofNat_of_lt' hn] at hg
+  unfold inSpec
+  rw [Arr.toList_bits x.val hxc, Arr.toList_bits y.val hyc]
+  apply List.ext_getElem (by rw [Arr.length_toList, e]; simp)
+  intro i h1 _
+  have hi : i < x.n := by rw [Arr.length_toList, e] at h1; exact h1
+  rw [Arr.getElem_toList, Arr.get_bool_bits r.val (onKey_c h), hg i (by omega)]
+  simp only [List.getElem_map, List.getElem_range, hi, decide_true, Bool.true_and]
+  apply Bool.eq_iff_iff.2
+  rw [decide_eq_true_iff, List.contains_iff_mem]
+
+/-- Two lawful `==` on one type are one instance: each answers `true` exactly at equal arguments. -/
+theorem beq_inst_eq {α : Type} (i₁ i₂ : BEq α) (h₁ : @LawfulBEq α i₁) (h₂ : @LawfulBEq α i₂) : i₁ = i₂ := by
+  have e : ∀ a b : α, @BEq.beq α i₁ a b = @BEq.beq α i₂ a b := fun a b =>
+    Bool.eq_iff_iff.2 ((@beq_iff_eq α i₁ h₁ a b).trans (@beq_iff_eq α i₂ h₂ a b).symm)
+  cases i₁; cases i₂; congr; funext a b; exact e a b
+
+/-- Under a lawful `==` the spec does not depend on which instance supplied it. -/
+theorem findSpec_inst {α : Type} (i₁ i₂ : BEq α) [h₁ : @LawfulBEq α i₁] [h₂ : @LawfulBEq α i₂] (xs ys : List α) :
+    @findSpec α i₁ xs ys = @findSpec α i₂ xs ys := by cases beq_inst_eq i₁ i₂ h₁ h₂; rfl
+
+theorem inSpec_inst {α : Type} (i₁ i₂ : BEq α) [h₁ : @LawfulBEq α i₁] [h₂ : @LawfulBEq α i₂] (xs ys : List α) :
+    @inSpec α i₁ xs ys = @inSpec α i₂ xs ys := by cases beq_inst_eq i₁ i₂ h₁ h₂; rfl
+
+/-! ## The laws, over every readable type -/
+
+/-- `x?y` is `findSpec` wherever both operands are `Readable` at their type: `find_long` (the probe, the
+    direct table or the halving) at `long`, `find_bits` at `boolean`. Restrictions: `Ascends x` (q's
+    `s#` contract, read at `long` only); both counts below `USize.size`, which the kernels index by, and
+    `8 · x.n` too, which keeps the direct range below `2^63`. -/
+theorem find_toList {k k' : Ty} {a : QAtomicType} [BEq (El (.atom a))] [LawfulBEq (El (.atom a))]
+    {x : Rel k (.atom a)} {y : Rel k' (.atom a)} {r : Rel k' (.atom .long)}
+    (hx : Readable a x.val.c) (hy : Readable a y.val.c) (hs : Ascends x.val)
+    (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
+    r.val.toList = findSpec x.val.toList y.val.toList := by
+  cases a
+  case long => exact (find_long hx hy hs hn8 hm h).trans (findSpec_inst _ _ _ _)
+  case boolean =>
+    obtain ⟨_, _, hxc⟩ := readable_bits hx
+    obtain ⟨_, _, hyc⟩ := readable_bits hy
+    exact (find_bits hxc hyc (by have := USize.size_le; omega) hm h).trans (findSpec_inst _ _ _ _)
+  all_goals exact False.elim hx
+
+/-- `x in y` is `inSpec` wherever both operands are `Readable` at their type: `in_long` at `long`,
+    `in_bits` at `boolean`. Restrictions as `find_toList`'s, with `y` the haystack. -/
+theorem in_toList {k k' : Ty} {a : QAtomicType} [BEq (El (.atom a))] [LawfulBEq (El (.atom a))]
+    {x : Rel k (.atom a)} {y : Rel k' (.atom a)} {r : Rel k (.atom .boolean)}
+    (hx : Readable a x.val.c) (hy : Readable a y.val.c) (hs : Ascends y.val)
+    (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
+    r.val.toList = inSpec x.val.toList y.val.toList := by
+  cases a
+  case long => exact (in_long hx hy hs hn8 hm h).trans (inSpec_inst _ _ _ _)
+  case boolean =>
+    obtain ⟨_, _, hxc⟩ := readable_bits hx
+    obtain ⟨_, _, hyc⟩ := readable_bits hy
+    exact (in_bits hxc hyc (by have := USize.size_le; omega) hm h).trans (inSpec_inst _ _ _ _)
+  all_goals exact False.elim hx
+
 /-- A test that holds exactly below `p ≤ n` holds at `p` of the first `n` indices. -/
 theorem countP_range_lt (q : Nat → Bool) {p n : Nat} (hp : p ≤ n) (hq : ∀ i < n, q i = decide (i < p)) :
     (List.range n).countP q = p := by
@@ -1159,7 +1287,7 @@ theorem countP_range_lt (q : Nat → Bool) {p n : Nat} (hp : p ≤ n) (hq : ∀ 
     below `USize.size`, which the kernel takes; `x` ascending, which is what `binSpec` assumes — on an
     unsorted `x` the answer is whatever the halving visits. -/
 theorem bin_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) (hn : x.n < USize.size) (hm : y.n < USize.size)
+    (hx : Readable .long x.val.c) (hy : Readable .long y.val.c) (hn : x.n < USize.size) (hm : y.n < USize.size)
     (hsort : ∀ i j : Fin x.n, i ≤ j → x.val.get i ≤ x.val.get j) (h : bin x y = .ok r) :
     r.val.toList = binSpec x.val.toList y.val.toList := by
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hn
@@ -1279,6 +1407,12 @@ private def uf : Rel (.atom .long) (.atom .long) :=
   ⟨3, .til 3, { c := .foR 3 (Coc.encode 8 (packLongs [5, 3, 9])).1 (Coc.encode 8 (packLongs [5, 3, 9])).2, wf := ⟨rfl, rfl⟩, attr := 2 }⟩
 #guard [ub, uf].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
 #guard ans (·.val.toList) (distinct uf) == some [5, 3, 9]
+-- booleans: `findBitVec`, `memberBits`, a haystack with no `1b` and one with no `0b`
+private def b1 : Rel (.atom .long) (.atom .boolean) := ⟨3, .til 3, { c := .bits 3 (ByteArray.mk #[0b000]), wf := by decide }⟩
+#guard [bs, b1].all fun h => [bs, b1].all fun n =>
+  ans (·.val.toList) (find h n) == some (findSpec h.val.toList n.val.toList) &&
+  ans (·.val.toList) («in» n h) == some (inSpec n.val.toList h.val.toList)
+#guard ans (·.val.toList) (find b1 bs) == some [0, 3, 3, 0, 3]
 
 end Checks
 
@@ -1298,6 +1432,10 @@ end Checks
 #print axioms where_toList
 #print axioms firstsOf_map_eraseDups
 #print axioms distinct_toList
+#print axioms find_long
+#print axioms in_long
+#print axioms find_bits
+#print axioms in_bits
 #print axioms find_toList
 #print axioms in_toList
 #print axioms bin_toList
