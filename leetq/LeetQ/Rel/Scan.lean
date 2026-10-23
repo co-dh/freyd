@@ -16,6 +16,7 @@ import QLean.Kernel.Structural
 import QLean.Verify.Where
 import QLean.Verify.Group
 import QLean.Verify.Structural
+import QLean.Verify.BinWin
 
 namespace LeetQ.Rel
 
@@ -168,17 +169,19 @@ def mext (better : Int64 → Int64 → Bool) (seed : Int64) (w : Nat) (xs : List
     | e :: es => es.foldl (fun e u => if better u e then u else e) e
     | [] => seed
 
-/-- `<x`: the stable ascending grade. -/
-def iasc (xs : List Int64) : List Int64 :=
-  ((List.range xs.length).mergeSort fun i j => decide (xs[i]! ≤ xs[j]!)).map Int64.ofNat
+/-- `<x` (`desc = false`) / `>x`: the stable grade, ties in index order both ways round. -/
+def grade (desc : Bool) (xs : List Int64) : List Int64 :=
+  ((List.range xs.length).mergeSort fun i j => if desc then decide (xs[j]! ≤ xs[i]!) else decide (xs[i]! ≤ xs[j]!)).map
+    Int64.ofNat
 
 /-- `rank x`: position `i` holds where `i` stands in `<x`. -/
 def rank (xs : List Int64) : List Int64 :=
-  let p := (iasc xs).map Int64.toNatClampNeg
+  let p := (grade false xs).map Int64.toNatClampNeg
   (List.range xs.length).map fun i => Int64.ofNat (p.idxOf i)
 
-/-- `asc x`. -/
-def asc (xs : List Int64) : List Int64 := xs.mergeSort fun a b => decide (a ≤ b)
+/-- `asc x` (`desc = false`) / `desc x`: the stable sort, ties in the order they came both ways round. -/
+def sort (desc : Bool) (xs : List Int64) : List Int64 :=
+  xs.mergeSort fun a b => if desc then decide (b ≤ a) else decide (a ≤ b)
 
 /-- The rows of each group of `o`, in group order. -/
 def groups (o : List Nat) (xs : List Int64) : List (List Int64) :=
@@ -320,6 +323,193 @@ theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d :
   · rw [Arr.of, dif_neg hw] at h
     cases h
 
+/-! ### Value laws over a long column that lists `longWords` (`bytes` or `foR`; not `alp`) -/
+
+/-- A long column's elements, element `i` its word `i` read as a long. -/
+theorem toList_words {m : Nat} (x : Arr (.atom .long) m) {B : ByteArray} {ws : List UInt64}
+    (hx : longWords x.c = some ws) (hB : Verify.elemsW 8 B = ws) (hs : B.size / 8 = m) :
+    x.toList = (List.range m).map fun i => (Column.bitsAt B (i * 8) 8).toInt64 := by
+  rw [Arr.toList_long x hx, ← hB, Verify.elemsW, hs, List.map_map]; rfl
+
+/-- **`<x` / `>x` over a long column**: q's stable grade, from `Order.grade`'s merge sort of `til n`
+    (`ids_indices`) under `rank_i64_le_iff`. -/
+theorem grade_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
+    (hn : R.n < USize.size) {S : Rel (.atom .long) (.atom .long)} (h : grade desc R = some S) :
+    S.val.toList = Spec.grade desc R.val.toList := by
+  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R.val hx hn
+  have hg : gradeColumn .long desc R.val.c = some (.vector .long (.bytes (Order.grade .i64 desc R.n.toUSize B))) := by
+    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
+    · rw [← hBs]; rfl
+    · rfl
+  simp only [grade, hg, vecCol, bind, Option.bind] at h
+  generalize hP : Order.grade .i64 desc R.n.toUSize B = P at h
+  by_cases hw : (Ty.atom .long).WF R.n (.bytes P)
+  · rw [Arr.of, dif_pos hw] at h
+    have hS : S.val.c = .bytes P := by cases h; rfl
+    have hm : min R.n.toUSize.toNat (Scan.Kind.i64.avail B) = R.n := by
+      rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
+    have hids : Verify.ids P = (List.range R.n).mergeSort fun i j =>
+        if desc then Order.keyAt .i64 B j ≤ Order.keyAt .i64 B i else Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j := by
+      rw [← hP, Order.grade, hm]
+      exact Verify.ids_indices _ fun i hi =>
+        Nat.lt_of_lt_of_le (Nat.lt_trans (List.mem_range.1 ((List.mergeSort_perm _ _).mem_iff.1 hi)) hn)
+          (by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e])
+    have e1 : S.val.toList = (Verify.ids P).map Int64.ofNat := by
+      rw [Arr.toList_long_bytes _ hS, Verify.ids, Arr.n_long_bytes _ hS, List.map_map, List.map_map]
+      exact List.map_congr_left fun i _ => toInt64_of_toNat rfl
+    have hxs := toList_words R.val hx hBw hBs
+    rw [e1, hids, Spec.grade, Arr.length_toList]
+    congr 1
+    have := List.map_mergeSort (f := id) (l := List.range R.n) (r := fun i j =>
+        if desc then Order.keyAt .i64 B j ≤ Order.keyAt .i64 B i else Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j)
+      (s := fun i j => if desc then decide (R.val.toList[j]! ≤ R.val.toList[i]!)
+        else decide (R.val.toList[i]! ≤ R.val.toList[j]!)) fun i hi j hj => by
+      have hi' := List.mem_range.1 hi
+      have hj' := List.mem_range.1 hj
+      simp only [id, hxs]
+      cases desc <;> simp [Order.keyAt, Scan.Kind.bitsAt, Scan.Kind.width, rank_i64_le_iff, List.getElem?_range hi',
+        List.getElem?_range hj']
+    simpa using this
+  · rw [Arr.of, dif_neg hw] at h
+    cases h
+
+/-- **`asc x` / `desc x` over a long column**: q's stable sort, from `sortValues_spec` under
+    `rank_i64_le_iff`. -/
+theorem sort_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
+    (hn : R.n < USize.size) {S : Rel (.atom .long) (.atom .long)} (h : sort desc R = some S) :
+    S.val.toList = Spec.sort desc R.val.toList := by
+  obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long R.val hx hn
+  have hsv : sortedValues .long desc R.val.c =
+      some (.vector .long (.bytes (Order.sortValues .i64 desc (B.size / 8).toUSize B))) := by
+    simp only [sortedValues, hb]; rfl
+  simp only [sort, hsv, Option.orElse, vecCol, bind, Option.bind] at h
+  generalize hP : Order.sortValues .i64 desc (B.size / 8).toUSize B = P at h
+  by_cases hw : (Ty.atom .long).WF R.n (.bytes P)
+  · rw [Arr.of, dif_pos hw] at h
+    have hS : S.val.c = .bytes P := by cases h; rfl
+    have hs := Verify.sortValues_spec .i64 desc (B.size / 8).toUSize B
+    rw [hP, USize.toNat_ofNat_of_lt' (by rw [hBs]; exact hn), show Scan.Kind.i64.avail B = B.size / 8 from rfl,
+      Nat.min_self, show (List.range (B.size / 8)).map (Scan.Kind.i64.bitsAt B) = Verify.elemsW 8 B from rfl, hBw,
+      show Scan.Kind.i64.width = 8 from rfl] at hs
+    rw [Arr.toList_long _ (show longWords S.val.c = some (Verify.elemsW 8 P) by rw [hS]; rfl), hs,
+      Arr.toList_long R.val hx, Spec.sort]
+    exact List.map_mergeSort fun a _ b _ => by cases desc <;> simp [rank_i64_le_iff]
+  · rw [Arr.of, dif_neg hw] at h
+    cases h
+
+/-- Two first-of-the-smallest of one list under `f` are one element. -/
+theorem first_min_unique (f : UInt64 → Int) (L : List UInt64) {p q : Nat} {r s : UInt64}
+    (hp : L[p]? = some r) (hq : L[q]? = some s) (hr : ∀ x ∈ L, f r ≤ f x) (hs : ∀ x ∈ L, f s ≤ f x)
+    (hr' : ∀ (j : Nat) x, j < p → L[j]? = some x → f r < f x)
+    (hs' : ∀ (j : Nat) x, j < q → L[j]? = some x → f s < f x) : r = s := by
+  have h1 := hr s (List.mem_of_getElem? hq)
+  have h2 := hs r (List.mem_of_getElem? hp)
+  rcases Nat.lt_trichotomy p q with h | rfl | h
+  · have := hs' p r h hp; omega
+  · rw [hp] at hq; exact Option.some.inj hq
+  · have := hr' q s h hq; omega
+
+/-- `Spec.mext` over the words `rd` reads is `mwinExt` read back, at any order `f` the kernel's strict
+    preference is and `sp` agrees with on the longs: `mwinExt_spec` and `foldl_keep_first` name the same
+    first-of-the-smallest in each window. -/
+theorem mext_words (f : UInt64 → Int) (sp : Int64 → Int64 → Bool)
+    (hsp : ∀ a b : UInt64, sp a.toInt64 b.toInt64 = decide (f a < f b)) (seed : UInt64) (rd : Nat → UInt64)
+    (w m : Nat) (hw : 0 < w) :
+    Spec.mext sp seed.toInt64 w ((List.range m).map fun j => (rd j).toInt64) =
+      (List.range m).map fun i =>
+        (Column.bitsAt (Scan.mwinExt (fun u e => decide (f u < f e)) seed rd w m 8) (i * 8) 8).toInt64 := by
+  unfold Spec.mext
+  rw [List.length_map, List.length_range]
+  refine List.map_congr_left fun i hi => ?_
+  have hi := List.mem_range.1 hi
+  obtain ⟨p, r, hp, hbits, hmin, hfirst⟩ := Verify.mwinExt_spec f seed rd w m 8 hw (Nat.le_refl 8) i hi
+  rw [hbits, Nat.mod_eq_of_lt (by simpa using r.toNat_lt), UInt64.ofNat_toNat]
+  have htd : (((List.range m).map fun j => (rd j).toInt64).take (i + 1)).drop (i + 1 - w) =
+      (List.range' (i + 1 - w) (min w (i + 1))).map fun j => (rd j).toInt64 :=
+    List.ext_getElem (by simp; omega) fun j h1 h2 => by simp [List.getElem_range']; try omega
+  have hW : (if i + 1 < w then seed.toInt64 :: (List.range' (i + 1 - w) (min w (i + 1))).map (fun j => (rd j).toInt64)
+      else (List.range' (i + 1 - w) (min w (i + 1))).map fun j => (rd j).toInt64) =
+      (Verify.mwinWindow seed rd w i).map UInt64.toInt64 := by
+    unfold Verify.mwinWindow; split <;> simp
+  dsimp only
+  rw [htd, hW]
+  generalize hU : Verify.mwinWindow seed rd w i = U at hp hmin hfirst
+  cases U with
+  | nil => simp at hp
+  | cons u0 us =>
+    simp only [List.map_cons, List.foldl_map]
+    obtain ⟨p', hp', hmin', hfirst'⟩ := Verify.foldl_keep_first f us u0
+    rw [List.foldl_hom (f := UInt64.toInt64) (g₁ := fun e u => if decide (f u < f e) then u else e) fun x y => by
+      dsimp only; rw [hsp]; split <;> rfl]
+    exact congrArg _ (first_min_unique f _ hp' hp hmin' hmin hfirst' hfirst)
+
+/-- `w mmin x` / `w mmax x` over a long column, at the order `f` the kernel's `better` is strictness of,
+    `sp` its reading on longs and `seed` the each-prior seed read as a long. -/
+theorem mext_toList {op : Scan.MOp} (hop : op = .mmin ∨ op = .mmax) (f : UInt64 → Int) (sp : Int64 → Int64 → Bool)
+    (seed : Int64) (hk : op.better .i64 = fun u e => decide (f u < f e))
+    (hsp : ∀ a b : UInt64, sp a.toInt64 b.toInt64 = decide (f a < f b)) (hs : (op.seed .i64).toInt64 = seed)
+    {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
+    (hn : R.n < USize.size) {S : Rel k (.atom .long)} (h : mwin op w .long R = some S) :
+    S.val.toList = Spec.mext sp seed w R.val.toList := by
+  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R.val hx hn
+  have hd : ∀ v, v < USize.size → mwinColumn op .long v R.n R.val.c =
+      if v < 1 then none else some (.long, Column.answer .long (.bytes (Scan.mwinBits op .i64 v R.n B))) := by
+    intro v hv
+    have hn' : R.n % 2 ^ System.Platform.numBits = R.n := Nat.mod_eq_of_lt hn
+    have hv' : v % 2 ^ System.Platform.numBits = v := Nat.mod_eq_of_lt hv
+    rcases hop with rfl | rfl <;> rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc] <;>
+      by_cases h1 : v < 1 <;>
+      simp [mwinColumn, h1, show mwinType .mmin .long = some .long from rfl,
+        show mwinType .mmax .long = some .long from rfl, show scanKind .long = some .i64 from rfl,
+        show Scan.MOp.readKind .mmin .i64 = .i64 from rfl, show Scan.MOp.readKind .mmax .i64 = .i64 from rfl,
+        show QAtomicType.width .long = some 8 from rfl, show Scan.MOp.width .mmin .i64 = 8 from rfl,
+        show Scan.MOp.width .mmax .i64 = 8 from rfl, show Scan.Kind.width .i64 = 8 from rfl, Column.bytesOf,
+        Scan.mwinFoR, Scan.mwin, hBs, hn', hv', USize.toNat_ofNat_of_lt' hv, USize.toNat_ofNat_of_lt' hn] <;> rfl
+  have hw1 : 0 < w := by
+    rcases Nat.eq_zero_or_pos w with rfl | h0
+    · simp [mwin, hd 0 (by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e])] at h
+    · exact h0
+  have hE : Scan.mwinBits op .i64 w R.n B =
+      Scan.mwinExt (fun u e => decide (f u < f e)) (op.seed .i64) (fun j => Column.bitsAt B (j * 8) 8) w R.n 8 := by
+    have e : Scan.mwinBits op .i64 w R.n B = Scan.mwinExt (op.better .i64) (op.seed .i64) (Scan.Kind.i64.bitsAt B) w
+        (min R.n (Scan.Kind.i64.avail B)) 8 := by rcases hop with rfl | rfl <;> rfl
+    rw [e, hk, show Scan.Kind.i64.avail B = R.n from hBs, Nat.min_self]; rfl
+  simp only [mwin, hd w hw, show ¬ w < 1 by omega, if_false, Option.bind, if_true, Option.map] at h
+  generalize hA : Column.answer .long (.bytes (Scan.mwinBits op .i64 w R.n B)) = A at h
+  by_cases hwf : (Ty.atom .long).WF R.n A
+  · rw [Arr.of, dif_pos hwf] at h
+    have hS : S.val.c = A := by cases h; rfl
+    have hSn : S.n = R.n := by cases h; rfl
+    have hL : longWords S.val.c = some (Verify.elemsW 8 (Scan.mwinBits op .i64 w R.n B)) := by
+      rw [hS, ← hA]; exact longWords_answer _
+    have hlen : (Scan.mwinBits op .i64 w R.n B).size / 8 = R.n := by
+      have := congrArg List.length (Arr.toList_long S.val hL)
+      rw [Arr.length_toList, hSn] at this; simpa [Verify.elemsW] using this.symm
+    rw [Arr.toList_long S.val hL, Verify.elemsW, hlen, List.map_map, toList_words R.val hx hBw hBs, ← hs, hE,
+      mext_words f sp hsp _ _ w R.n hw1]
+    rfl
+  · rw [Arr.of, dif_neg hwf] at h
+    cases h
+
+/-- **`w mmin x` over a long column**: q's `(w-1)&':/x`, a tie keeping the older, the first `w-1` windows
+    holding the seed `0W`. -/
+theorem mmin_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64}
+    (hx : longWords R.val.c = some ws) (hn : R.n < USize.size) {S : Rel k (.atom .long)}
+    (h : mwin .mmin w .long R = some S) : S.val.toList = Spec.mext (· < ·) Int64.maxValue w R.val.toList :=
+  mext_toList (.inl rfl) (fun u => u.toInt64.toInt) _ _
+    (by funext u e; simp [Scan.MOp.better, Scan.Kind.signed, Int64.lt_iff_toInt_lt])
+    (fun a b => by simp [Int64.lt_iff_toInt_lt]) rfl hw hx hn h
+
+/-- **`w mmax x` over a long column**: q's `(w-1)|':/x`, a tie keeping the older, the first `w-1` windows
+    holding the seed `-0W`. -/
+theorem mmax_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64}
+    (hx : longWords R.val.c = some ws) (hn : R.n < USize.size) {S : Rel k (.atom .long)}
+    (h : mwin .mmax w .long R = some S) : S.val.toList = Spec.mext (· > ·) (-Int64.maxValue) w R.val.toList :=
+  mext_toList (.inr rfl) (fun u => -u.toInt64.toInt) _ _
+    (by funext u e; simp [Scan.MOp.better, Scan.Kind.signed, Int64.lt_iff_toInt_lt,
+      show (Scan.MOp.mmax == Scan.MOp.mmin) = false from rfl] <;> omega)
+    (fun a b => by simp [Int64.lt_iff_toInt_lt] <;> omega) rfl hw hx hn h
+
 end Ops
 
 /-! ## Checks on small literal Rels -/
@@ -381,13 +571,13 @@ private def b101 : Arr (.atom .boolean) 3 := { c := .bits 3 (ByteArray.mk #[0b10
 #guard vals (mwin .mcount 2 .int (LB b101)) == [1, 2, 2]
 #guard (mwin .msum 3 .int (L xsA)).isNone
 
-#guard vals (iasc (L xsA)) == Spec.iasc xs
-#guard vals (idesc (L zsA)) == [1, 2, 3, 0]
+#guard vals (iasc (L xsA)) == Spec.grade false xs
+#guard vals (idesc (L zsA)) == [1, 2, 3, 0] ∧ vals (idesc (L zsA)) == Spec.grade true zsA.toList
 #guard vals (rank (L xsA)) == Spec.rank xs
-#guard vals (asc (L xsA)) == Spec.asc xs
+#guard vals (asc (L xsA)) == Spec.sort false xs
 #guard ((asc (L xsA)).map (·.val.attr)) == some 1
-#guard vals (desc (L xsA)) == (Spec.asc xs).reverse
-#guard ((xasc sA xsA).map Arr.toList) == some ((Spec.iasc sA.toList).map fun i => xs[i.toNatClampNeg]!)
+#guard vals (desc (L xsA)) == Spec.sort true xs
+#guard ((xasc sA xsA).map Arr.toList) == some ((Spec.grade false sA.toList).map fun i => xs[i.toNatClampNeg]!)
 
 -- the parted list `(10 20; 30; 40 50 60)` and the groups `[0,1) [1,1) [1,3)` with an empty middle one
 private def og : Arr (.atom .long) 4 := { c := .bytes <| packLongs [0, 2, 3, 6], wf := by decide }
@@ -422,5 +612,12 @@ end Checks
 #print axioms Spec.scan_getLast?
 #print axioms Ops.over_bytes
 #print axioms Ops.overBy_bytes
+#print axioms Ops.grade_toList
+#print axioms Ops.sort_toList
+#print axioms Ops.mext_words
+#print axioms Ops.mmin_toList
+#print axioms Ops.mmax_toList
+#print axioms longWords_answer
+#print axioms Arr.dense_long
 
 end LeetQ.Rel
