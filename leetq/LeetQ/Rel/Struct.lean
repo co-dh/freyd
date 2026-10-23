@@ -486,27 +486,6 @@ theorem elemsW_cycleBytes (w : Nat) (hw : 0 < w) (b : ByteArray) (off m : Nat)
     rw [elemsW_extract w hw b (Nat.le_refl _), ← Nat.zero_mul w, elemsW_extract w hw b (Nat.le_of_lt hr),
       List.drop_zero, Nat.sub_zero, List.take_of_length_le (by simp [hE])]
 
-/-- A dense long answer handed back through `Column.answer` lists the same words: kept dense, or encoded
-    by `Coc.encode`, whose round trip is `foRBits_encode_bits`. -/
-theorem longWords_answer (C : ByteArray) : longWords (Column.answer .long (.bytes C)) = some (Verify.elemsW 8 C) := by
-  by_cases hs : C.size < 8 * Column.encodeMin
-  · simp [Column.answer, QAtomicType.width, hs, longWords]
-  · cases he : Coc.encodeBelow (8 : Nat).toUSize C with
-    | none => simp [Column.answer, QAtomicType.width, hs, he, longWords, Column.alpEncodes, Column.encodes]
-    | some mp =>
-      obtain ⟨md, pk⟩ := mp
-      have hmp : (md, pk) = Coc.encode (8 : Nat).toUSize C := by
-        revert he; unfold Coc.encodeBelow; split; intro he; split at he <;> simp_all
-      simp only [Column.answer, QAtomicType.width, hs, he, longWords, Column.alpEncodes, Column.encodes]
-      simp only [Prod.ext_iff] at hmp
-      obtain ⟨rfl, rfl⟩ := hmp
-      simp only [Bool.false_eq_true, ↓reduceIte, Option.some.injEq, Verify.elemsW]
-      apply List.map_congr_left
-      intro i hi
-      apply UInt64.toNat_inj.1
-      rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _),
-        Verify.foRBits_encode_bits 8 (by decide) (by decide) C i (List.mem_range.1 hi)]
-
 /-- `sliceColumn` at a long `bytes` column: the dense arm, over the column or, empty, over its null. -/
 theorem sliceColumn_long (b : ByteArray) (off m : Nat) :
     sliceColumn .long (.bytes b) off m = some (.vector .long (Column.answer .long (.bytes
