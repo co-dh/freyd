@@ -206,15 +206,21 @@ def empty : (t : Ty) → Except String (Pay t)
   | .gen => pure #[]
 
 
-/-- `foR` parts of a long type as offsets from their joint least element, at the width of the joint
-    range: `overFoR` reads the bounds off the block metadata, `foRShift` rebases each part and
-    `enumIdsFoR` packs its offsets — no element decoded. Order-preserving. `none` where a part is not
-    `foR`, holds a null, or the range is wider than a grouping pass's ids over `total` rows would be. -/
-def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except String (Option (Array Code)) := do
+/-- `foR` and dense parts of a long type as offsets from their joint least element, at the width of the
+    joint range: `overFoR` reads a `foR` part's bounds off the block metadata, `overBytes` a dense
+    part's in one pass; `foRShift`/`Ew.val add` rebase a part and `enumIdsFoR`/`enumIds` pack its
+    offsets, a null to the last code — no hashing, no `foR` element decoded. Order-preserving. `none`
+    where a part is neither, or the range is wider than a grouping pass's ids over `total` rows would be.
+    A dense part is here because its first-appearance ids (`groupIdsColumn`) cost a table probe a row
+    (measured: `ej` of two million-wide dense key columns, 1e6 rows, the codes 16.7 ms). -/
+def rangeOffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except String (Option (Array Code)) := do
   unless orderKind a == some .i64 && Column.encodes a do return none
-  let some ps := cs.mapM (fun c => match c with | .foR n m p => some (n, m, p) | _ => none) | return none
-  let some los := cs.mapM (overFoR .lesser a) | return none
-  let some his := cs.mapM (overFoR .greater a) | return none
+  let bound (op : Coc.Over) : Column → Option Int64
+    | .bytes b => some (overBytes op Ew.i64 nul b)
+    | c@(.foR ..) => overFoR op a c
+    | _ => none
+  let some los := cs.mapM (bound .lesser) | return none
+  let some his := cs.mapM (bound .greater) | return none
   let lo := los.foldl min Int64.maxValue
   let hi := his.foldl max (Int64.minValue + 1)
   if lo == nul || hi < lo then return none
@@ -225,16 +231,24 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
   -- values already at `0` and up that fit the same width are their own offsets: no `foRShift` pass
   let base := if 0 ≤ lo && (codeKind (span 0)).width == k.width then 0 else lo
   let card := span base
-  let some sh := if base == 0 then some ps
-    else ps.mapM (fun (n, m, p) => (Ew.foRShift false (-base) m p n.toUSize).map (n, ·)) | return none
-  some <$> sh.mapM fun (n, m, p) => do
-    let (ids, bad) := enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize (8 * k.width).toUSize m p
-    if bad.toNat != n then throw s!"enumIdsFoR: the offset at {bad} lies outside 0..{card}"
-    pure ⟨8 * k.width, n, card, ids⟩
+  let w := 8 * k.width
+  let packed (kernel : String) (n : Nat) : ByteArray × USize → Except String Code
+    | (ids, bad) => if bad.toNat != n then throw s!"{kernel}: the offset at {bad} lies outside 0..{card}"
+      else pure ⟨w, n, card, ids⟩
+  let part : Column → Option (Except String Code)
+    | .foR n m p => (if base == 0 then some (m, p) else Ew.foRShift false (-base) m p n.toUSize).map fun (m, p) =>
+        packed "enumIdsFoR" n (enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize w.toUSize m p)
+    | .bytes b =>
+      let n := b.size / 8
+      let b := if base == 0 then b else Kernel.Ew.val Ew.add Ew.i64 Ew.va nul b (one (-base).toUInt64) n.toUSize
+      some (packed "enumIds" n (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b))
+    | _ => none
+  let some rs := cs.mapM part | return none
+  some <$> rs.mapM id
 
 /-- Joint codes of the parts `cs`, one `Code` per part, in one code space:
     - `bits`: each part is its own code, a bit wide, order-preserving;
-    - `foR` of a long type: the offsets from the joint least element (`foROffsets`), order-preserving;
+    - `foR` or dense of a long type: the offsets from the joint least element (`rangeOffsets`), order-preserving;
     - `enum`, and `syms` interned by `razeColumn`/`Column.intern`: the joint dictionary's ids at their lane;
     - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
       encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
@@ -245,7 +259,7 @@ def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
       return bs
     let ns := cs.map (Column.count a)
     let total := ns.foldl (· + ·) 0
-    if let some os ← foROffsets a cs total then return os
+    if let some os ← rangeOffsets a cs total then return os
     let all := Column.intern (← raze (.atom a) cs)
     if let .enum n _ dof ids := all then return (Code.ofLane (Column.idWidth dof) n (dof.size - 1) ids).cut ns
     let some (gid, fs) := groupIdsColumn a all
@@ -931,11 +945,12 @@ private def enumC : Column :=
 #guard ok (do top (← Arr.of Sy 4 enumC "U") (← Arr.of Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) fun X => X.key matches .grp .. && X.n == 4
 
--- the lane each encoding codes at: bits a bit; a three-symbol enum or three distinct longs (a grouping
--- pass's ids) a 2-bit lane, foR offsets a byte
+-- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
+-- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
 private def laneOf (t : Ty) (c : Pay t) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
 #guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
-#guard laneOf L Lf.val.c == some 8 && laneOf L (.bytes (packLongs [5, 3, 5, 9])) == some 2
+#guard laneOf L Lf.val.c == some 8 && laneOf L (.bytes (packLongs [5, 3, 5, 9])) == some 8 &&
+  laneOf L (.bytes (packLongs [5, 3, 5, 1099511627776])) == some 2
 -- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b`, the domain widened to 9·2, no grouping pass
 #guard match pairCode false ⟨8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
   | (c, none) => c.w == 8 && c.card == 18 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
