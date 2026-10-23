@@ -14,6 +14,7 @@ import QLean.Kernel.Structural
 import QLean.Kernel.Elementwise
 import QLean.Kernel.Scan
 import QLean.Kernel.Reduce
+import QLean.Verify.Where
 
 namespace LeetQ.Rel.Find
 
@@ -186,6 +187,45 @@ theorem onKey_toList {k : Ty} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c 
   · cases h
   · cases h; apply List.ext_getElem <;> simp [Rel.toList, KeyCol.toList]
 
+/-- A list answer's column is the kernel's column. -/
+theorem list_c {a : QAtomicType} {c : Column} {u : UInt8} {r : Rel (.atom .long) (.atom a)}
+    (h : list a c u = .ok r) : r.val.c = c := by
+  simp only [list, bind, Except.bind, pure, Except.pure, Arr.of] at h; split at h
+  · cases h
+  · rename_i hw; split at hw
+    · cases hw; cases h; rfl
+    · cases hw
+
+/-- `&x` on booleans is `whereSpec`, from `whereBits_spec`. `x.n < USize.size` because `whereBits` takes
+    its count as a `USize`. -/
+theorem where_toList {k : Ty} {x : Rel k (.atom .boolean)} {r : Rel (.atom .long) (.atom .long)}
+    (hn : x.n < USize.size) (h : «where» x = .ok r) : r.val.toList = whereSpec x.val.toList := by
+  have hw := x.val.wf
+  cases hc : x.val.c with
+  | bits m bs =>
+    rw [hc] at hw
+    obtain rfl : m = x.n := hw.2
+    simp only [«where», hc, whereColumn, vec, bind, Except.bind] at h
+    have hr := list_c h
+    obtain ⟨hs, hj⟩ := QLean.Verify.whereBits_spec x.n.toUSize bs
+    rw [USize.toNat_ofNat_of_lt' hn] at hs hj
+    have hl : r.n = ((List.range x.n).filter (Column.bitAt bs)).length := by
+      have := r.val.wf.2; rw [hr] at this; simp only [Column.count, QAtomicType.width] at this; omega
+    have hf : (List.range x.n).filter (x.val.toList.getD · false) = (List.range x.n).filter (Column.bitAt bs) :=
+      List.filter_congr fun i hi => by
+        have hi := List.mem_range.1 hi
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hi),
+          Option.getD_some, Arr.getElem_toList, Arr.get_bool_bits x.val hc]
+    have hspec : whereSpec x.val.toList = ((List.range x.n).filter (Column.bitAt bs)).map Int64.ofNat := by
+      unfold whereSpec; rw [Arr.length_toList, hf]
+    rw [hspec]
+    apply List.ext_getElem
+    · rw [List.length_map, Arr.length_toList, hl]
+    · intro j h1 _
+      rw [List.getElem_map, Arr.getElem_toList, Arr.get_long_bytes r.val hr]
+      exact toInt64_of_toNat (hj j (by rw [Arr.length_toList] at h1; omega))
+  | _ => all_goals (rw [hc] at hw; simp [Ty.WF, Column.admits] at hw)
+
 /-! ## Checks against the spec on small literal Rels -/
 
 section Checks
@@ -240,5 +280,6 @@ end Checks
 #print axioms list_key
 #print axioms onKey_key
 #print axioms onKey_toList
+#print axioms where_toList
 
 end LeetQ.Rel.Find

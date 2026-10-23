@@ -104,6 +104,17 @@ theorem Arr.get_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (
   show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
 
+/-- Under `wf`, a boolean `bits` column's element `i` is its bit `i`. -/
+theorem Arr.get_bool_bits {m : Nat} (x : Arr (.atom .boolean) m) {n : Nat} {b : ByteArray} (hc : x.c = .bits n b)
+    (i : Fin m) : x.get i = Column.bitAt b i.1 := by
+  have hn : i.1 < Column.count .boolean (.bits n b) := by have := x.wf.2; rw [hc] at this; omega
+  show ((Column.get .boolean x.c i.1).bind (Carrier.of? .boolean)).getD _ = _
+  rw [hc]; simp only [Column.get, if_pos hn]; rfl
+
+/-- A word whose natural value is `m` reads as the long `Int64.ofNat m`. -/
+theorem toInt64_of_toNat {x : UInt64} {m : Nat} (h : x.toNat = m) : x.toInt64 = Int64.ofNat m := by
+  subst h; cases x; simp [Int64.ofNat, UInt64.toInt64]
+
 /-- Below `2^i`, xor with `2^i` sets that bit: it adds `2^i`. -/
 theorem xor_two_pow_of_lt {r i : Nat} (h : r < 2 ^ i) : r ^^^ 2 ^ i = 2 ^ i + r := by
   apply Nat.eq_of_testBit_eq; intro j
