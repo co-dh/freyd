@@ -138,18 +138,21 @@ end Lift
 
 namespace Ew
 
-/-- A key column materialised: `arr` as it is, `til` written by `tilColumn`. -/
+/-- A `.vector`'s column out of a kernel's `QValue`. -/
+def vec (what : String) : Option QValue → Except String Column
+  | some (.vector _ c) => .ok c
+  | _ => .error s!"align: {what} answered no vector"
+
+/-- A key column materialised: `arr` as it is, `til` written by `tilColumn`, `grp d o` as `d`'s keys
+    gathered at each position's group (`groupOf`, one `binBytes`) — `KeyCol.get`'s `d.get (group o i)`. -/
 def keyCol (s : QAtomicType) : {n : Nat} → KeyCol (.atom s) n → Except String Column
   | _, .arr a => .ok a.c
   | n, .til _ => match tilColumn n with
     | some (.vector _ c) => .ok c
     | _ => .error "align: tilColumn refused"
-  | _, .grp .. => .error "align: a grp key is not materialised here (step 4 writes `expandBytes` of `o`)"
-
-/-- A `.vector`'s column out of a kernel's `QValue`. -/
-def vec (what : String) : Option QValue → Except String Column
-  | some (.vector _ c) => .ok c
-  | _ => .error s!"align: {what} answered no vector"
+  | n, .grp d o _ => do
+    let some ob := KeyCol.longBytes o.c | .error "align: the group offsets have no long payload"
+    vec "gatherColumn" (gatherColumn s (← keyCol s d) (.bytes (groupOf ob n)))
 
 /-- `src@idx` with misses (`idx ≥ n`) filled by `fill`: `gatherBytes` on `bytes`, `gatherFoR` on `foR`. -/
 def gatherFill (t : QAtomicType) (fill : UInt64) (src idx : Column) : Except String Column := do
@@ -165,11 +168,16 @@ end Ew
 /-- `x f y` on different keys, over the key list `x.key ++ (y.key \ x.key)`: `findColumn` of `x`'s
     keys in `y`'s, `gatherFill` at `eᵣ`, one `dyadColumn` (the rows of `x`); `memberColumn`, `~`,
     `whereColumn`, `gatherColumn`, one `dyadColumn` against `eₗ` (the rows only `y` has);
-    `razeColumn` of keys and of values. No `Option` is written; the spec is `alignList`. -/
+    `razeColumn` of keys and of values. No `Option` is written; the spec is `alignList`. Keys equal as
+    columns (`matchColumn`, whatever form each key takes) are one key: one `Ew.val`, `x.key` kept, as q
+    does when the two dicts' keys match. -/
 def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) (.atom t)) (y : Rel (.atom s) (.atom u)) :
     Except String (Rel (.atom s) (.atom rt)) := do
   let kx ← Ew.keyCol s x.key
   let ky ← Ew.keyCol s y.key
+  -- `matchColumn` answers `none` only where no kernel compares the two encodings: the general path is right there
+  if h : y.n = x.n then
+    if matchColumn s kx ky == some true then return ← Ew.val L.v rt x (h ▸ y.val)
   let ix ← Ew.vec "findColumn" (findColumn s false ky (.vector s kx))
   let yx ← Ew.gatherFill u L.er y.val.c ix
   let l ← Ew.dyad L.v Ew.vv t u rt x.val.c yx x.n
@@ -183,8 +191,8 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) 
   let vals ← Ew.vec "razeColumn" (razeColumn rt #[l.c, ry.c])
   return ⟨x.n + r, .arr (← Arr.of (.atom s) (x.n + r) keys "align keys"), ← Arr.of (.atom rt) (x.n + r) vals "align vals"⟩
 
-/-- The dyadic rule: case 0 (both keys `til` of one length) is ONE `Ew.val`, keys untouched;
-    any other pair goes through `align`. -/
+/-- The dyadic rule: case 0 (both keys `til` of one length) is ONE `Ew.val`, keys untouched, with no key
+    materialised; any other pair goes through `align`, which takes the same path when the keys match. -/
 def Ew.dyadic (v : Prim.Dyadic) (rt : QAtomicType) (x : Rel (.atom .long) (.atom t)) (y : Rel (.atom .long) (.atom u)) :
     Except String (Rel (.atom .long) (.atom rt)) :=
   match x.key, y.key with
@@ -296,6 +304,30 @@ private def tilFoR (n : Nat) : Except String (Rel (.atom .long) (.atom .long)) :
 -- the spec side of the first row
 #guard alignList [((1 : Int64), (10 : Int64)), (2, 20), (3, 30)] [((2 : Int64), (5 : Int64)), (4, 7)] ==
   [(1, some 10, none), (2, some 20, some 5), (3, some 30, none), (4, none, some 7)]
+-- a `grp` key: `d`'s keys over the cuts `o` (through `KeyCol.grp?`), `d` a `til` (`GT`) or an `arr` (`G`)
+private def grpRel {g : Nat} (d : KeyCol (.atom .long) g) (o vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) := do
+  let some key := KeyCol.grp? d (← Arr.of (.atom .long) (g + 1) (.bytes (packLongs o)) "G") vs.length | throw "G: not cuts"
+  return ⟨vs.length, key, ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "G"⟩
+private def G (ds o vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) := do
+  grpRel (.arr (← Arr.of (.atom .long) ds.length (.bytes (packLongs ds)) "G")) o vs
+private def GT (g : Nat) (o vs : List Int64) := grpRel (.til g) o vs
+/-- `x+y` read off `alignList`: `+`'s unit `0` on the missing side. -/
+private def addSpec (x y : Except String (Rel (.atom .long) (.atom .long))) : Option (List (Int64 × Int64)) := do
+  pure ((alignList (← x.toOption).toList (← y.toOption).toList).map fun (k, a, b) => (k, a.getD 0 + b.getD 0))
+-- every key form against every key form, different keys: `x` keys `0 1 2`, `1 3 3` (`7`'s group empty), `1 2 3`;
+-- `y` keys `0 1 2`, `0 0 1`, `2 4`
+#guard [L [10, 20, 30], G [1, 7, 3] [0, 1, 1, 3] [10, 20, 30], D [1, 2, 3] [10, 20, 30]].all fun x =>
+  [L [5, 7, 9], GT 2 [0, 2, 3] [5, 7, 9], D [2, 4] [5, 7]].all fun y => pairs (do Ew.dyadic .add .long (← x) (← y)) == addSpec x y
+#guard pairs (do Ew.dyadic .add .long (← G [1, 7, 3] [0, 1, 1, 3] [10, 20, 30]) (← GT 2 [0, 2, 3] [5, 7, 9])) ==
+  some [(1, 19), (3, 20), (3, 30), (0, 5), (0, 7)]
+-- equal keys, every pair of forms: one `Ew.val` position by position, `x`'s key kept. With the repeated key
+-- `0 0 1` the general path would add `y`'s first `0` to both: only the equal-key path answers `11 22 33`
+#guard [L [10, 20, 30], G [0, 1, 2] [0, 1, 2, 3] [10, 20, 30], D [0, 1, 2] [10, 20, 30]].all fun x =>
+  [L [1, 2, 3], G [0, 1, 2] [0, 1, 2, 3] [1, 2, 3], D [0, 1, 2] [1, 2, 3]].all fun y =>
+    pairs (do Ew.dyadic .add .long (← x) (← y)) == some [(0, 11), (1, 22), (2, 33)]
+#guard [GT 2 [0, 2, 3] [10, 20, 30], G [0, 1] [0, 2, 3] [10, 20, 30], D [0, 0, 1] [10, 20, 30]].all fun x =>
+  [GT 2 [0, 2, 3] [1, 2, 3], G [0, 1] [0, 2, 3] [1, 2, 3], D [0, 0, 1] [1, 2, 3]].all fun y =>
+    pairs (do Ew.dyadic .add .long (← x) (← y)) == some [(0, 11), (0, 22), (1, 33)]
 
 end Checks
 

@@ -48,34 +48,46 @@ def index {k k' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (y : Rel k' (.atom
     Except String (Rel k' (.atom a)) := do
   onKey y.key a (← vec "x@y" a (gatherColumn a x.val.c y.val.c)) "x@y"
 
-/-- `@[x;i;f;y]`, `f` an `Ew` op, or `:` at `none`; on `x`'s key. `amendRounds` checks every index
-    against `count x` and, for an op, splits the indices into rounds holding each index at most once,
-    so a round is one gather, one `Ew.val` and one `scatterPacked` (q's index-by-index application).
-    Under `:` the scatter keeps the last write, so one round is q's answer. -/
-def amend {k k' k'' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' (.atom .long))
-    (op : Option UInt8) (y : Rel k'' (.atom a)) : Except String (Rel k (.atom a)) := do
-  if i.n ≠ y.n then throw s!"@[x;i;f;y]: {i.n} indices against {y.n} values (q's 'length)"
-  let some w := a.width | throw "@[x;i;f;y]: the type has no fixed element width"
-  let (xb, ib, yb) := (← dense "@[x;i;f;y]" a x.val.c, ← dense "@[x;i;f;y]" .long i.val.c, ← dense "@[x;i;f;y]" a y.val.c)
+/-- A column as `scatterPacked` writes it, with its element width in bits: `bits` as it is at `1`, any
+    other fixed-width encoding dense (`Find.dense`) at `8·width`. A symbol column has no such payload. -/
+def packed (verb : String) (a : QAtomicType) : Column → Except String (ByteArray × Nat)
+  | .bits _ b => pure (b, 1)
+  | c => do
+    let some w := a.width | throw s!"{verb}: a {repr a} column has no fixed-width payload to scatter into"
+    pure (← dense verb a c, 8 * w)
+
+/-- `@[x;i;f;y]`, `f` a dyadic verb, or `:` at `none`; on `x`'s key. `amendRounds` checks every index
+    against `count x` and, for a verb, splits the indices into rounds holding each index at most once,
+    so a round is one `gatherColumn` of the current `x`, one `Ew.dyad` and one `scatterPacked` (q's
+    index-by-index application). `Ew.dyad` is `dyadColumn`, so the verb runs at every type pair it is
+    defined on whose answer is `x`'s type, nulls by its own rule. Under `:` the scatter keeps the last
+    write, so one round is q's answer, and `y` must have `x`'s type (q's 'type otherwise). -/
+def amend {k k' k'' : Ty} {a u : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' (.atom .long))
+    (op : Option Prim.Dyadic) (y : Rel k'' (.atom u)) : Except String (Rel k (.atom a)) := do
+  let verb := "@[x;i;f;y]"
+  if i.n ≠ y.n then throw s!"{verb}: {i.n} indices against {y.n} values (q's 'length)"
+  let (xb, wb) ← packed verb a x.val.c
+  -- the payload back as a column of `x`'s form: `packed` answers width `1` exactly on `bits`
+  let col (b : ByteArray) : Column := if wb = 1 then .bits x.n b else .bytes b
+  let ib ← dense verb .long i.val.c
   let r := amendRounds x.n.toUSize 8 op.isSome ib
   let word (j : Nat) := Column.bitsAt r (j * 8) 8
-  if word 0 == ~~~0 then throw s!"@[x;i;f;y]: index {(word 1).toInt64} outside 0..{x.n} (q's 'length)"
-  let step (acc ix yv : ByteArray) : Except String ByteArray := do
+  if word 0 == ~~~0 then throw s!"{verb}: index {(word 1).toInt64} outside 0..{x.n} (q's 'length)"
+  let step (acc ix : ByteArray) (yv : Column) : Except String ByteArray := do
     let v ← match op with
-      | none => pure yv
-      -- only the long class: `Ew.val`'s null argument at the narrower classes is not settled here
-      | some o => do
-        if clsOf a != some Ew.i64 then throw "@[x;i;f;y]: an op amend is wired for the long class only"
-        pure (Kernel.Ew.val o Ew.i64 Ew.vv Int64.minValue (gatherBytes w.toUSize 0 acc ix) yv (ix.size / 8).toUSize)
-    pure (scatterPacked (8 * w).toUSize acc ix v 0 false)
+      | none => if u = a then pure (← packed verb u yv).1 else throw s!"{verb}: `:` of a {repr u} into a {repr a} list (q's 'type)"
+      | some v => do
+        let cur ← vec verb a (gatherColumn a (col acc) (.bytes ix))
+        pure (← packed verb a (← Ew.dyad v Ew.vv a u a cur yv (ix.size / 8)).c).1
+    pure (scatterPacked wb.toUSize acc ix v 0 false)
   let rounds := (word 0).toNat
   -- words `2 … 2+rounds-1` count the indices up to each round; the grouped positions follow
-  let out ← if rounds ≤ 1 then step xb ib yb else
-    (List.range rounds).foldlM (init := xb) fun acc rr => do
+  let out ← if rounds ≤ 1 then step xb ib y.val.c else
+    rounds.foldM (fun rr _ acc => do
       let lo := if rr == 0 then 0 else (word (1 + rr)).toNat
       let ks := r.extract ((2 + rounds + lo) * 8) ((2 + rounds + (word (2 + rr)).toNat) * 8)
-      step acc (gatherBytes 8 0 ib ks) (gatherBytes w.toUSize 0 yb ks)
-  onKey x.key a (Column.answer a (.bytes out)) "@[x;i;f;y]"
+      step acc (gatherBytes 8 0 ib ks) (← vec verb u (gatherColumn u y.val.c (.bytes ks)))) xb
+  onKey x.key a (Column.answer a (col out)) verb
 
 /-! ## Parted lists: a key `grp (til g) o` -/
 
@@ -350,9 +362,32 @@ private def pl : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by d
 #guard ans (·.val.toList) (amend xs (lv [1, 3, 1]) none (lv [0, 7, 2])) == some (amendSpec (fun _ y => y) xs.val.toList [1, 3, 1] [0, 7, 2])
 #guard ans (·.val.toList) (amend xs (lv [1, 3, 1]) none (lv [0, 7, 2])) == some [5, 2, 5, 7, 3]
 #guard [xs, xf].all fun x =>
-  ans (·.val.toList) (amend x (lv [0, 0, 4, 0]) (some Ew.add) (lv [1, 2, 3, 4])) == some (amendSpec (· + ·) x.val.toList [0, 0, 4, 0] [1, 2, 3, 4])
-#guard ans (·.val.toList) (amend xs (lv [0, 0, 4, 0]) (some Ew.add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
+  ans (·.val.toList) (amend x (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some (amendSpec (· + ·) x.val.toList [0, 0, 4, 0] [1, 2, 3, 4])
+#guard ans (·.val.toList) (amend xs (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
 #guard (amend xs (lv [5]) none (lv [0])).toOption.isNone
+-- the other value types: `bits` (width 1), `float` with a `float` or a `long` `y`, `int` (width 4)
+private def bs3 : Rel (.atom .long) (.atom .boolean) := ⟨3, .til 3, { c := .bits 3 (ByteArray.mk #[0b101]), wf := by decide }⟩
+private def fv (xs : List Float) : Rel (.atom .long) (.atom .float) :=
+  match Arr.of (.atom .float) xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toBits 8) .empty)) "fv" with
+  | .ok a => ⟨xs.length, .til _, a⟩ | .error _ => ⟨0, .til 0, { c := .bytes .empty, wf := by decide }⟩
+private def iv (xs : List Int32) : Rel (.atom .long) (.atom .int) :=
+  match Arr.of (.atom .int) xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty)) "iv" with
+  | .ok a => ⟨xs.length, .til _, a⟩ | .error _ => ⟨0, .til 0, { c := .bytes .empty, wf := by decide }⟩
+#guard [(Prim.Dyadic.greater, (· || ·)), (.lesser, (· && ·)), (.eq, (· == ·))].all fun (v, f) =>
+  ans (·.val.toList) (amend bs (lv [0, 0, 4]) (some v) bs3) == some (amendSpec f bs.val.toList [0, 0, 4] bs3.val.toList)
+#guard ans (·.val.toList) (amend bs (lv [0, 0, 4]) (some .greater) bs3) == some [true, true, true, false, true]
+#guard ans (·.val.toList) (amend bs (lv [3, 0, 3]) none bs3) == some [false, true, true, true, true]
+-- a float element is its IEEE bits (`Carrier .float`), read as a `Float` by `Float.ofBits`
+private def fl {k : Ty} (r : Rel k (.atom .float)) : List Float := r.val.toList.map Float.ofBits
+#guard ans fl (amend (fv [1.5, 2.5, 4]) (lv [0, 2, 0]) (some .add) (fv [1, 2, 3])) == some (amendSpec (· + ·) [1.5, 2.5, 4] [0, 2, 0] [1, 2, 3])
+#guard ans fl (amend (fv [1.5, 2.5, 4]) (lv [0, 2, 0]) (some .add) (fv [1, 2, 3])) == some [5.5, 2.5, 6]
+#guard ans fl (amend (fv [1.5, 2.5, 4]) (lv [0, 2]) (some .add) (lv [1, 2])) == some [2.5, 2.5, 6]
+#guard ans fl (amend (fv [1.5, 2.5, 4]) (lv [1, 1]) (some .lesser) (fv [2, 0.5])) == some [1.5, 0.5, 4]
+#guard ans (·.val.toList) (amend (iv [1, 2, 3]) (lv [1, 1, 2]) (some .add) (iv [10, 20, 5])) ==
+  some (amendSpec (· + ·) [1, 2, 3] [1, 1, 2] [10, 20, 5])
+#guard ans (·.val.toList) (amend (iv [1, 2, 3]) (lv [1, 1, 2]) (some .add) (iv [10, 20, 5])) == some [1, 32, 8]
+-- `:` keeps `x`'s type: a `long` `y` into a `float` list is q's 'type
+#guard (amend (fv [1.5]) (lv [0]) none (lv [1])).toOption.isNone
 #guard (raze pl).toList == [(0, 10), (1, 20), (2, 30)]
 #guard (raze pl).val.toList == pl.val.toList
 #guard [sy, se].all fun x => ans (·.val.toList) (like x "b*") == some [true, false, true]
