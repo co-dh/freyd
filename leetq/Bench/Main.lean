@@ -85,9 +85,10 @@ def getAllOp (n : Nat) : IO (IO (Nat × Int64)) :=
 /-- `d+e` by `Long.zipD`, `findVec`, `gatherBytes`, `Ew.val`, `memberVec`, `whereBits`; `(sum key r)+sum value r`,
 `d`'s keys being `r`'s first rows. -/
 def zipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "zipD" (col (ints n 1 n), col (ints n 2 1000000), col (ints n 4 n), col (ints n 5 1000000))
-    fun (dk, dv, ek, ev) => let z := Long.zipD dk dv ek ev
-      some (colSum dk + colSum z.1 + colSum z.2.1 + colSum z.2.2)
+  let dk := col (ints n 1 n)
+  timed "zipD" (dk, col (ints n 2 1000000), col (ints n 4 n), col (ints n 5 1000000), colSum dk)
+    fun (dk, dv, ek, ev, sk) => let z := Long.zipD dk dv ek ev
+      some (sk + colSum z.1 + colSum z.2.1 + colSum z.2.2)
 
 /-- `select sum v by k from t` by `Compressed.selbySum`, `groupIds` then `overGroups`; `exec sum k+v`. -/
 def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
