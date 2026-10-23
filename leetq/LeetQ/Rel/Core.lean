@@ -165,6 +165,21 @@ theorem rank_i64_le {x y : UInt64} (h : Kernel.Order.rank .i64 x ≤ Kernel.Orde
   have := x.toNat_lt; have := y.toNat_lt
   split <;> split <;> split at h <;> split at h <;> simp_all <;> omega
 
+/-- `rank_i64_le` both ways: `Order.rank .i64` is an order embedding of longs into words. -/
+theorem rank_i64_le_iff {x y : UInt64} :
+    Kernel.Order.rank .i64 x ≤ Kernel.Order.rank .i64 y ↔ x.toInt64 ≤ y.toInt64 :=
+  ⟨rank_i64_le, fun h => Classical.byContradiction fun hn => by
+    have hl := UInt64.not_le.1 hn
+    have e := toInt64_inj (Int64.le_antisymm h (rank_i64_le (UInt64.le_of_lt hl)))
+    rw [e] at hl; exact UInt64.lt_irrefl _ hl⟩
+
+/-- The signed key `bin` halves a long payload by is `Order.rank .i64`. -/
+theorem ordKey_long (v : UInt64) : Kernel.ordKey 8 false true v = Kernel.Order.rank .i64 v := by
+  simp [Kernel.ordKey, Kernel.Order.rank]
+  apply UInt64.toNat_inj.1
+  rw [UInt64.toNat_and, show (18446744073709551615 : UInt64).toNat = 2 ^ 64 - 1 from rfl,
+    Nat.and_two_pow_sub_one_eq_mod, Nat.mod_eq_of_lt v.toNat_lt]
+
 /-- `Cuts` from `Order.ascending`'s Lean body on the dense payload, and the two end reads. -/
 theorem cuts_of_ascending {g n : Nat} (o : Arr (.atom .long) (g+1)) {b : ByteArray} (hc : o.c = .bytes b)
     (hu : g + 1 < USize.size) (ha : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true)

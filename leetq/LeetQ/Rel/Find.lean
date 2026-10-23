@@ -349,7 +349,59 @@ theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long
   apply Bool.eq_iff_iff.2
   rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj), Verify.denseBits, hyn]
 
-/-! ## Checks against the spec on small literal Rels -/
+/-- A test that holds exactly below `p ≤ n` holds at `p` of the first `n` indices. -/
+theorem countP_range_lt (q : Nat → Bool) {p n : Nat} (hp : p ≤ n) (hq : ∀ i < n, q i = decide (i < p)) :
+    (List.range n).countP q = p := by
+  suffices ∀ m ≤ n, (List.range m).countP q = min m p by rw [this n (Nat.le_refl n)]; omega
+  intro m
+  induction m with
+  | zero => intro _; simp
+  | succ m ih =>
+    intro hm
+    rw [List.range_succ, List.countP_append, ih (by omega), List.countP_singleton, hq m (by omega)]
+    by_cases h : m < p <;> simp [h] <;> omega
+
+/-- `x bin y` on dense long columns is `binSpec` over a sorted `x`, from `bitsAt_binBytes` and
+    `binStep_spec` at each needle. Restrictions: `bytes` payloads (the encoded haystack is `foRBin` and
+    the encoded needles `binOperands`' decode, both outside this statement); `x` ascending, which is
+    what `binSpec` assumes — on an unsorted `x` the answer is whatever the halving visits. -/
+theorem bin_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
+    {hb kb : ByteArray} (hx : x.val.c = .bytes hb) (hy : y.val.c = .bytes kb)
+    (hsort : ∀ i j : Fin x.n, i ≤ j → x.val.get i ≤ x.val.get j) (h : bin x y = .ok r) :
+    r.val.toList = binSpec x.val.toList y.val.toList := by
+  unfold bin at h
+  rw [hx, hy] at h
+  change onKey y.key .long (.bytes (binBytes 8 false true false hb kb)) "x bin y" = .ok r at h
+  obtain ⟨e, -⟩ := onKey_key h
+  have hxn := Arr.n_long_bytes x.val hx
+  have hyn := Arr.n_long_bytes y.val hy
+  have hle : ∀ i j (hi : i < x.n) (hj : j < x.n), (ordKey 8 false true (Column.bitsAt hb (i * 8) 8) ≤
+      ordKey 8 false true (Column.bitsAt hb (j * 8) 8) ↔ x.val.get ⟨i, hi⟩ ≤ x.val.get ⟨j, hj⟩) :=
+    fun i j _ _ => by rw [ordKey_long, ordKey_long, rank_i64_le_iff, Arr.get_long_bytes x.val hx, Arr.get_long_bytes x.val hx]
+  unfold binSpec
+  rw [Arr.toList_long_bytes r.val (onKey_c h), Arr.toList_long_bytes x.val hx, Arr.toList_long_bytes y.val hy, e]
+  simp only [List.map_map, List.countP_map]
+  apply List.map_congr_left
+  intro j hj'
+  have hj := List.mem_range.1 hj'
+  have hk := Verify.bitsAt_binBytes 8 false true false hb kb j (by rw [usize_eight, hyn]; exact hj)
+  simp only [usize_eight, Bool.false_eq_true, ↓reduceIte, Nat.mul_comm 8 j, hxn] at hk
+  obtain ⟨hp, hlo, hhi⟩ := Verify.binStep_spec 8 false true false hb
+    (ordKey 8 false true (Column.bitsAt kb (j * 8) 8)) x.n
+    (fun i j hij hjn => (hle i j (by omega) hjn).2 (hsort ⟨i, by omega⟩ ⟨j, hjn⟩ hij))
+  simp only [Bool.false_eq_true, ↓reduceIte] at hlo hhi
+  have hcmp : ∀ i, i < x.n → (ordKey 8 false true (Column.bitsAt hb (i * 8) 8) ≤
+      ordKey 8 false true (Column.bitsAt kb (j * 8) 8) ↔ (Column.bitsAt hb (i * 8) 8).toInt64 ≤
+        (Column.bitsAt kb (j * 8) 8).toInt64) := fun i _ => by rw [ordKey_long, ordKey_long, rank_i64_le_iff]
+  simp only [Function.comp_apply]
+  rw [countP_range_lt _ hp fun i hi => by
+    apply Bool.eq_iff_iff.2
+    simp only [Function.comp_apply, decide_eq_true_iff]
+    exact ⟨fun hc => Classical.byContradiction fun hn => hhi i (by omega) hi ((hcmp i hi).2 hc),
+      fun hl => (hcmp i hi).1 (hlo i hl)⟩]
+  rw [hk, Int64.toInt64_toUInt64, Int.toInt64, Int64.ofInt_sub]
+  rfl
+
 
 section Checks
 
@@ -408,5 +460,6 @@ end Checks
 #print axioms distinct_toList
 #print axioms find_toList
 #print axioms in_toList
+#print axioms bin_toList
 
 end LeetQ.Rel.Find
