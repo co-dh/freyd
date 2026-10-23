@@ -2,8 +2,8 @@
   where, distinct, find, in and bin on the RelRep core. Each verb hands its operand columns to the
   qlean kernel that owns the encoding (`whereColumn`, `distinctColumn`, `findColumn`, `memberColumn`,
   `binColumn`, which dispatch over `bits`/`syms`/`enum`/`bytes`/`foR` and the `s` attribute), after
-  the small-range test: a long-class `foR` haystack whose block metadata puts it in a range of at most
-  `4·max(2¹⁶, n)` is answered by direct address, no hash. A position answer is a new `Rel` keyed
+  the small-range test: a long-class `foR` haystack with no null whose `Coc.range` is at most
+  `4·max(2¹⁶, n)` wide is answered by direct address, no hash. A position answer is a new `Rel` keyed
   `til m`, nothing stored for the key; an answer per needle keeps the needles' key.
   The specs are List-level, on `toList`.
 -/
@@ -20,6 +20,7 @@ import QLean.Verify.FindMember
 import QLean.Verify.Search
 import QLean.Verify.Structural
 import QLean.Verify.Elementwise
+import QLean.Verify.Encoding
 
 namespace LeetQ.Rel.Find
 
@@ -51,16 +52,6 @@ def dense (verb : String) (a : QAtomicType) (c : Column) : Except String ByteArr
 
 /-! ## The small-range test and direct address -/
 
-/-- `[min, max]` of a non-empty `foR` column read off its block metadata, O(blocks); `none` on any
-    other encoding, which has no range without a pass over its elements. -/
-def foRRange : Column → Option (Int64 × Int64)
-  | .foR n md _ =>
-    if n = 0 then none else
-    let bs := List.range (Column.nblk md)
-    some (bs.foldl (fun lo b => min lo (Column.baseAt md b).toInt64) Int64.maxValue,
-          bs.foldl (fun hi b => max hi (Column.maxvAt md b).toInt64) Int64.minValue)
-  | _ => none
-
 /-- One long as an eight-byte payload: the atom operand of an `av`/`va` kernel call. -/
 def one (v : UInt64) : ByteArray := Column.pushBits .empty v 8
 
@@ -77,15 +68,15 @@ def probe (t : ByteArray) (n : Nat) (lo : Int64) (ndl : ByteArray) : ByteArray :
   gatherBytes 8 n.toUInt64 t (Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue ndl (one lo.toUInt64) (ndl.size / 8).toUSize)
 
 /-- The direct-address table of a haystack, when the small-range test admits it: a long-class `foR`
-    column whose minimum is not `0N` (`sub` maps the null to itself, so every offset from a `0N`
-    minimum is `0N` and the table would miss every probe) with `max − min ≤ 4·max(2¹⁶, n)`.
-    Answers the table, `lo` and the dense haystack. A `0N` among other values is not caught: the
-    block metadata leaves the null out of `[base, maxv]` (`xn` below), which is why the laws assume
-    every element inside the range. -/
+    column with block metadata (empty metadata marks an unencoded payload, which the `Coc` kernels do
+    not read) that `Coc.range` bounds — non-empty and holding no null — with `max − min ≤ 4·max(2¹⁶, n)`.
+    Answers the table, `lo` and the dense haystack. `lo` is then a non-null element (`range_lo_ne`),
+    so `sub`, which maps the null to itself, offsets every element from it. -/
 def direct (a : QAtomicType) (c : Column) (n : Nat) : Option (ByteArray × Int64 × ByteArray) := do
   guard (clsOf a == some Ew.i64)
-  let (lo, hi) ← foRRange c
-  guard (lo != Int64.minValue)
+  let .foR k md pk := c | none
+  guard (!md.isEmpty)
+  let (lo, hi) ← Coc.range (← Coc.nullOf a) md pk k.toUSize
   let r := (hi.toInt - lo.toInt).toNat + 1
   guard (r ≤ 4 * max 65536 n)
   let hb ← Column.bytesOf a c
@@ -589,25 +580,6 @@ theorem probe_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int64) (r
       rw [idxOf_map_of_inj (fun _ _ => off_inj)]
     · rw [if_neg hv, hmiss _ fun x hx e => hv (by rw [← e]; exact (hin x hx).2)]; exact congrArg UInt64.ofNat (by simp; omega)
 
-theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : direct .long c n = some (t, lo, hb)) :
-    ∃ hi, foRRange c = some (lo, hi) ∧ lo ≠ Int64.minValue ∧ (hi.toInt - lo.toInt).toNat + 1 ≤ 4 * max 65536 n ∧
-      Column.bytesOf .long c = some hb ∧ t = firstTable hb n lo ((hi.toInt - lo.toInt).toNat + 1) := by
-  unfold direct at h
-  have hcls : clsOf QAtomicType.long = some Ew.i64 := rfl
-  cases hR : foRRange c with
-  | none => simp [hR, hcls, guard, failure, bind, Option.bind] at h
-  | some p =>
-    obtain ⟨l, hi⟩ := p
-    by_cases hl : l = Int64.minValue
-    · simp [hR, hcls, hl, guard, failure, bind, Option.bind] at h
-    by_cases hg : (hi.toInt - l.toInt).toNat + 1 ≤ 4 * max 65536 n
-    · cases hb' : Column.bytesOf .long c with
-      | none => simp [hR, hcls, hl, hg, hb', guard, failure, bind, Option.bind] at h
-      | some b =>
-        simp [hR, hcls, hl, hg, hb', guard, failure, bind, Option.bind] at h
-        rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨hi, rfl, hl, hg, rfl, rfl⟩
-    · simp [hR, hcls, hl, hg, guard, failure, bind, Option.bind] at h
-
 theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
     (ho : operand .long c = some (k, md, pk)) : Column.bytesOf .long c = some (operandBytes 8 md pk k.toUSize) := by
   have he : Column.encodes QAtomicType.long = true := rfl
@@ -619,55 +591,96 @@ theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
     simp [operandBytes, h]; rfl
   | _ => exact False.elim h
 
-/-- A `foR` column with empty block metadata reads its range as `[maxValue, minValue]`, which holds no
-    element; so a range holding every element marks a `Readable` column. -/
-theorem readable_of_range {m : Nat} (x : Arr (.atom .long) m) {lo hi : Int64} (h : foRRange x.c = some (lo, hi))
-    (hin : ∀ v ∈ x.toList, lo ≤ v ∧ v ≤ hi) : Readable x.c := by
-  cases hc : x.c with
-  | foR n md pk =>
-    rw [hc] at h
-    show md.isEmpty = false
-    cases he : md.isEmpty
-    · rfl
-    · exfalso
-      have hm : md.size = 0 := by simpa [ByteArray.isEmpty] using he
-      have hn : n ≠ 0 := by intro e; simp [foRRange, e] at h
-      simp [foRRange, hn, Column.nblk, hm] at h
-      obtain ⟨rfl, rfl⟩ := h
-      have hnm : n = m := by have := x.wf.2; rw [hc] at this; exact this
-      have h0 : 0 < x.toList.length := by rw [Arr.length_toList]; omega
-      obtain ⟨a, b⟩ := hin _ (List.getElem_mem h0)
-      exact absurd (Int64.le_trans a b) (by decide)
-  | _ => all_goals (rw [hc] at h; simp [foRRange] at h)
+/-- A `foR` long column lists `Coc.elems`, the decode `range_bounds` speaks of. -/
+theorem longWords_foR {n : Nat} {md pk : ByteArray} (h : n < USize.size) :
+    longWords (.foR n md pk) = some (Coc.elems md pk n.toUSize) := by
+  simp only [longWords, Coc.elems, USize.toNat_ofNat_of_lt' h]
+
+/-- A fold whose every step keeps the accumulator or takes the element lands at the seed or an element. -/
+theorem foldl_seed_or_mem (f : Int64 → UInt64 → Int64) (hf : ∀ b v, f b v = b ∨ f b v = v.toInt64) :
+    ∀ (l : List UInt64) (a : Int64), l.foldl f a = a ∨ ∃ v ∈ l, l.foldl f a = v.toInt64
+  | [], _ => .inl rfl
+  | x :: xs, a => by
+    simp only [List.foldl_cons, List.mem_cons, exists_eq_or_imp]
+    rcases foldl_seed_or_mem f hf xs (f a x) with h | ⟨v, hv, h⟩
+    · rcases hf a x with e | e
+      · exact .inl (h.trans e)
+      · exact .inr (.inl (h.trans e))
+    · exact .inr (.inr ⟨v, hv, h⟩)
+
+/-- The least end of a `Coc.range` at `long` is not `0N`: it is `min`'s seed `0W` or an element,
+    and `range_bounds` keeps every element off the null. -/
+theorem range_lo_ne {md pk : ByteArray} {n : USize} {lo hi : Int64}
+    (h : Coc.range Int64.minValue md pk n = some (lo, hi)) : lo ≠ Int64.minValue := by
+  have hb := Verify.range_bounds _ md pk n lo hi h
+  unfold Coc.range at h
+  split at h
+  · simp at h
+  simp only [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨rfl, -⟩ := h
+  unfold Coc.over
+  rcases foldl_seed_or_mem _ (fun b v => by
+      simp only [Coc.Over.boolCast, Coc.Over.step]
+      split
+      · exact .inl rfl
+      · split
+        · exact .inl rfl
+        · exact .inr rfl) _ _ with e | ⟨v, hv, e⟩
+  · rw [e]; decide
+  · rw [e]; exact (hb v hv).1
+
+theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : direct .long c n = some (t, lo, hb)) :
+    ∃ k md pk hi, c = .foR k md pk ∧ md.isEmpty = false ∧ Coc.range Int64.minValue md pk k.toUSize = some (lo, hi) ∧
+      (hi.toInt - lo.toInt).toNat + 1 ≤ 4 * max 65536 n ∧
+      Column.bytesOf .long c = some hb ∧ t = firstTable hb n lo ((hi.toInt - lo.toInt).toNat + 1) := by
+  have hcls : clsOf QAtomicType.long = some Ew.i64 := rfl
+  have hnul : Coc.nullOf QAtomicType.long = some Int64.minValue := rfl
+  cases c with
+  | foR k md pk =>
+    unfold direct at h
+    cases he : md.isEmpty with
+    | true => simp [hcls, he, guard, failure, bind, Option.bind] at h
+    | false =>
+      cases hR : Coc.range Int64.minValue md pk k.toUSize with
+      | none => simp [hcls, hnul, he, hR, guard, failure, bind, Option.bind] at h
+      | some p =>
+        obtain ⟨l, hi⟩ := p
+        by_cases hg : (hi.toInt - l.toInt).toNat + 1 ≤ 4 * max 65536 n
+        · cases hb' : Column.bytesOf .long (.foR k md pk) with
+          | none => simp [hcls, hnul, he, hR, hg, hb', guard, failure, bind, Option.bind] at h
+          | some b =>
+            simp [hcls, hnul, he, hR, hg, hb', guard, failure, bind, Option.bind] at h
+            rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨k, md, pk, hi, rfl, he, hR, hg, hb', rfl⟩
+        · simp [hcls, hnul, he, hR, hg, guard, failure, bind, Option.bind] at h
+  | _ => all_goals (unfold direct at h; simp [hcls, guard, failure, bind, Option.bind] at h)
 
 /-- What `direct` answering hands the direct path: the haystack's words `xs`, dense in `hb`; a range `r`
-    below `2^63` holding every offset from `lo`, which is not `0N`; and `t` the `firstTable`. The
-    in-range hypothesis is not implied by a well-formed `foR`, whose block metadata nothing checks. -/
+    below `2^63` holding every offset from `lo`, which is not `0N`; and `t` the `firstTable`. Every
+    element lies in the range because `Coc.range` answered it (`range_bounds`), not by assumption. -/
 theorem direct_table {m : Nat} {x : Arr (.atom .long) m} {t hb : ByteArray} {lo : Int64}
-    (hd : direct .long x.c m = some (t, lo, hb))
-    (hR : ∀ lo hi, foRRange x.c = some (lo, hi) → ∀ v ∈ x.toList, lo ≤ v ∧ v ≤ hi) (hn8 : 8 * m < USize.size) :
+    (hd : direct .long x.c m = some (t, lo, hb)) (hn8 : 8 * m < USize.size) :
     ∃ xs r, longWords x.c = some xs ∧ Verify.elemsW 8 hb = xs ∧ xs.length = m ∧ r < 2 ^ 63 ∧
       lo ≠ Int64.minValue ∧ (∀ w ∈ xs, lo ≤ w.toInt64 ∧ off lo w.toInt64 < r) ∧ t = firstTable hb m lo r := by
   have hS := USize.size_le
-  obtain ⟨hi, hR', hlo, hr4, hbx, ht⟩ := direct_some hd
-  have hrg := hR lo hi hR'
-  have hx := readable_of_range x hR' hrg
-  obtain ⟨k, md, pk, xs, hox, hwx, hbx', hlx⟩ := operand_long x hx (by omega)
+  obtain ⟨k, md, pk, hi, hc, he, hR, hr4, hbx, ht⟩ := direct_some hd
+  have hx : Readable x.c := by rw [hc]; exact he
+  obtain ⟨k', md', pk', xs, hox, hwx, hbx', hlx⟩ := operand_long x hx (by omega)
   rw [bytesOf_long hx hox] at hbx; obtain rfl := Option.some.inj hbx
-  have hxl := Arr.toList_long x hwx
-  refine ⟨xs, _, hwx, hbx', hlx, ?_, hlo, fun w hw => ?_, ht⟩
+  have hkm : k = m := by have := x.wf.2; rw [hc] at this; exact this
+  have hxs : xs = Coc.elems md pk k.toUSize := by
+    rw [hc, longWords_foR (by omega)] at hwx; exact (Option.some.inj hwx).symm
+  refine ⟨xs, _, hwx, hbx', hlx, ?_, range_lo_ne hR, fun w hw => ?_, ht⟩
   · rw [Nat.max_def] at hr4; split at hr4 <;> omega
-  · obtain ⟨a, b⟩ := hrg w.toInt64 (by rw [hxl]; exact List.mem_map_of_mem hw)
+  · obtain ⟨-, a, b⟩ := Verify.range_bounds _ md pk _ lo hi hR w (hxs ▸ hw)
     refine ⟨a, ?_⟩
     have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
 
 theorem find_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
     (hy : Readable y.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb))
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hS := USize.size_le
-  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
+  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
   unfold find at h
   rw [hd] at h
@@ -712,11 +725,10 @@ theorem toInt_ofNat_lt {I : Nat} (h : I < 2 ^ 63) : (UInt64.ofNat I).toInt64.toI
 /-- `x in y` on the direct path: the probe's first positions compared below `count y`. -/
 theorem in_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
     (hx : Readable x.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long y.val.c y.n = some (t, lo, hb))
-    (hR : ∀ lo hi, foRRange y.val.c = some (lo, hi) → ∀ v ∈ y.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
   have hS := USize.size_le
-  obtain ⟨ys, R, hwy, hby, hly, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
+  obtain ⟨ys, R, hwy, hby, hly, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hm
   unfold «in» at h
   rw [hd] at h
@@ -768,11 +780,10 @@ theorem idxOf_self_iff {α : Type} [BEq α] [LawfulBEq α] : ∀ (l : List α) (
     occurrences, and the gather at them lists `eraseDups`. -/
 theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)}
     {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb)) (hu : x.val.attr ≠ 2)
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
   have hS := USize.size_le
   have hn : x.n < USize.size := by omega
-  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
+  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   unfold distinct at h
   rw [show (x.val.attr == 2) = false by simp [hu], hd] at h
   dsimp only at h
@@ -845,18 +856,16 @@ theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
 
 /-- `?x` on a long column is `distinctSpec`, from `distinct_words`. Restrictions: `attr ≠ 2`, the `u`
     shortcut, whose `Arr.attr` carries no proof of uniqueness; `longWords` defined, which excludes `alp`;
-    on the direct path every element inside the block range (`direct_table`); `8 · x.n < USize.size`,
-    which keeps the range below `2^63`. -/
+    `8 · x.n < USize.size`, which keeps the range below `2^63`. -/
 theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {xs : List UInt64}
     (hx : longWords x.val.c = some xs) (hu : x.val.attr ≠ 2)
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
   have hn : x.n < USize.size := by have := USize.size_le; omega
   obtain ⟨⟨t, lo, hb⟩, hd⟩ | hd : (∃ p, direct .long x.val.c x.n = some p) ∨ direct .long x.val.c x.n = none := by
     cases e : direct .long x.val.c x.n with
     | none => exact Or.inr rfl
     | some p => exact Or.inl ⟨p, rfl⟩
-  · exact distinct_direct hd hu hR hn8 h
+  · exact distinct_direct hd hu hn8 h
   obtain ⟨e, c, hxe, hv, hw⟩ := distinct_words x.val hx hn
   unfold distinct at h
   rw [show (x.val.attr == 2) = false by simp [hu], hd, hv] at h
@@ -870,12 +879,10 @@ theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
     rw [toInt64_inj (x := e i) (y := e j) h']
 
 /-- `x?y` on long columns is `findSpec`, from `findVec_idxOf` over the decoded operands. Restrictions:
-    `Readable` payloads; on the direct path every element inside the block range (`direct_table`);
-    `x.val.attr ≠ 1`, since the `s` halving (`findSortedBytes`) has no law yet; both counts below
+    `Readable` payloads; `x.val.attr ≠ 1`, since the `s` halving (`findSortedBytes`) has no law yet; both counts below
     `USize.size`, which the kernel indexes by, and `8 · x.n` too, which keeps the range below `2^63`. -/
 theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
     (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : x.val.attr ≠ 1)
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hn : x.n < USize.size := by have := USize.size_le; omega
@@ -883,7 +890,7 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
     cases e : direct .long x.val.c x.n with
     | none => exact Or.inr rfl
     | some p => exact Or.inl ⟨p, rfl⟩
-  · exact find_direct hy hd hR hn8 hm h
+  · exact find_direct hy hd hn8 hm h
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hn
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
   unfold find at h
@@ -906,13 +913,11 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
   exact toInt64_of_toNat (by rw [hj j (by rw [hsy]; exact hj'), gy j hj'])
 
 /-- `x in y` on long columns is `inSpec`, from `memberVec_mem` over the decoded operands. Restrictions:
-    `Readable` payloads; on the direct path every element of `y` inside the block range
-    (`direct_table`); `y.val.attr ≠ 1`, since the `s` halving (`memberSortedBytes`) has no law yet; both
-    counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which keeps the range
+    `Readable` payloads; `y.val.attr ≠ 1`, since the `s` halving (`memberSortedBytes`) has no law yet;
+    both counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which keeps the range
     below `2^63`. -/
 theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
     (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : y.val.attr ≠ 1)
-    (hR : ∀ lo hi, foRRange y.val.c = some (lo, hi) → ∀ v ∈ y.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
   have hn : y.n < USize.size := by have := USize.size_le; omega
@@ -920,7 +925,7 @@ theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long
     cases e : direct .long y.val.c y.n with
     | none => exact Or.inr rfl
     | some p => exact Or.inl ⟨p, rfl⟩
-  · exact in_direct hx hd hR hn8 hm h
+  · exact in_direct hx hd hn8 hm h
   obtain ⟨hk, hmd, hp, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hn
   obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hm
   unfold «in» at h
@@ -1038,18 +1043,28 @@ private def csf : Rel (.atom .long) (.atom .long) :=
 #guard ans (·.val.toList) (whereCounts csf) == some (whereCountsSpec [2, 0, 3, 1])
 #guard (whereCounts ys).toOption.isNone
 #guard (direct .long xf.val.c 5).isSome && (direct .long xs.val.c 5).isNone
--- `(0N; -0W)` encoded: the block metadata leaves the null out of `[base, maxv]`, so the range does not
--- hold `0N`; the laws' in-range hypothesis fails here, and `direct` takes the path anyway (open)
-private def xnc := Coc.encode 8 (packLongs [0x8000000000000000, -0x7fffffffffffffff])
-private def xn : Rel (.atom .long) (.atom .long) := ⟨2, .til 2, { c := .foR 2 xnc.1 xnc.2, wf := ⟨rfl, rfl⟩ }⟩
-#guard foRRange xn.val.c == some (-0x7fffffffffffffff, -0x7fffffffffffffff) && (direct .long xn.val.c 2).isSome
-#guard [xs, xf].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
+-- `foR` columns holding `0N`: the encoder keeps it out of `[base, maxv]` as a patch exception, so
+-- block metadata alone would size a table with no slot for it; `Coc.range` declines, `direct` too
+private def foRL (vs : List Int64) : Rel (.atom .long) (.atom .long) :=
+  ⟨vs.length, .til vs.length,
+    { c := .foR vs.length (Coc.encode 8 (packLongs vs)).1 (Coc.encode 8 (packLongs vs)).2, wf := ⟨rfl, rfl⟩ }⟩
+private def xn := foRL [0x8000000000000000, -0x7fffffffffffffff]
+private def xn3 := foRL [0x8000000000000000, -0x7fffffffffffffff, 0x8000000000000000]
+private def xa := foRL [0x8000000000000000, 0x8000000000000000, 0x8000000000000000]
+private def nn : Rel (.atom .long) (.atom .long) := ⟨1, .til 1, { c := .bytes (packLongs [0x8000000000000000]), wf := by decide }⟩
+#guard [xn, xn3, xa].all fun x => (direct .long x.val.c x.n).isNone
+#guard ans (·.val.toList) (find xn nn) == some [0]
+#guard ans (·.val.toList) («in» nn xn) == some [true]
+#guard ans (·.val.toList) (distinct xn3) == some [0x8000000000000000, -0x7fffffffffffffff]
+#guard ans (·.val.toList) (find xa ys) == some [3, 3, 3, 0]
+#guard ans (·.val.toList) (distinct xa) == some [0x8000000000000000]
+#guard [xs, xf, xn, xn3, xa].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
 #guard ans (·.val.toList) (distinct xf) == some [5, 3, 9]
 #guard ans (·.val.toList) (distinct sy) == some (distinctSpec sy.val.toList)
-#guard [xs, xf].all fun x => ans (·.val.toList) (find x ys) == some (findSpec x.val.toList ys.val.toList)
+#guard [xs, xf, xn, xn3, xa].all fun x => ans (·.val.toList) (find x ys) == some (findSpec x.val.toList ys.val.toList)
 #guard ans (·.val.toList) (find xf ys) == some [1, 3, 5, 5]
 #guard ans (·.val.toList) (find sy sn) == some (findSpec sy.val.toList sn.val.toList)
-#guard [xs, xf].all fun x => ans (·.val.toList) («in» ys x) == some (inSpec ys.val.toList x.val.toList)
+#guard [xs, xf, xn, xn3, xa].all fun x => ans (·.val.toList) («in» ys x) == some (inSpec ys.val.toList x.val.toList)
 #guard ans (·.val.toList) («in» ys xf) == some [true, true, false, false]
 #guard ans (·.val.toList) («in» sn sy) == some (inSpec sn.val.toList sy.val.toList)
 #guard ans (·.val.toList) (bin ss ks) == some (binSpec ss.val.toList ks.val.toList)

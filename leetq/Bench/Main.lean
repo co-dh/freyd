@@ -15,6 +15,7 @@ import LeetQ.Compressed
 import LeetQ.Long
 import LeetQ.Rel.Scan
 import LeetQ.Rel.Struct
+import LeetQ.Rel.Find
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -194,7 +195,7 @@ def listR (n : Nat) (a : Array Int) : Except String LR := do
   return ⟨n, .til n, ← LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"⟩
 
 /-- `sum` of a relation's values: `Ops.over .add`. -/
-def sumR (what : String) {k : LeetQ.Rel.Ty} (r : LeetQ.Rel.Rel k (.atom .long)) : Except String Int64 :=
+def sumR (what : String) {k : LeetQ.Rel.Ty} {t : QLean.QAtomicType} (r : LeetQ.Rel.Rel k (.atom t)) : Except String Int64 :=
   match LeetQ.Rel.Ops.over .add r with
   | some c => .ok c
   | none => .error s!"{what}: Ops.over .add answered none"
@@ -238,6 +239,28 @@ def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
   let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
     (.bytes <| col (ints n 27 1000)))
   timedE "relZipD" (d, e) fun (d, e) => do sumR "relZipD" (← LeetQ.Rel.Ew.dyadic .add .long d e)
+
+/-- The list `x` of longs `foR`-encoded, key `til n`: the haystack `Find.direct` admits. -/
+def foRR (n : Nat) (a : Array Int) : Except String LR := do
+  let (md, pk) := QLean.Kernel.Coc.encode 8 (col a)
+  return ⟨n, .til n, ← LeetQ.Rel.Arr.of (.atom .long) n (.foR n md pk) "foRR"⟩
+
+/-- `x?y`, `x` a `foR` haystack and `y` dense needles, both below 1000; `sum x?y`. -/
+def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io "findFoR" (foRR n (ints n 26 1000))
+  let y ← io "findFoR" (listR n (ints n 27 1000))
+  timedE "findFoR" (x, y) fun (x, y) => do sumR "findFoR" (← LeetQ.Rel.Find.find x y)
+
+/-- `y in x`, the same operands; `sum y in x`. -/
+def inFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io "inFoR" (foRR n (ints n 26 1000))
+  let y ← io "inFoR" (listR n (ints n 27 1000))
+  timedE "inFoR" (x, y) fun (x, y) => do sumR "inFoR" (← LeetQ.Rel.Find.«in» y x)
+
+/-- `?x`, `x` a `foR` column below 1000; `sum ?x`. -/
+def distinctFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io "distinctFoR" (foRR n (ints n 26 1000))
+  timedE "distinctFoR" x fun x => do sumR "distinctFoR" (← LeetQ.Rel.Find.distinct x)
 
 /-! ## The relation algebra's codes: `|R|` and `ej` on keys of each encoding -/
 
@@ -308,7 +331,8 @@ def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
    ("mins", minsOp), ("msum", msumOp), ("mmin", mminOp 10), ("mmin1000", mminOp 1000),
-   ("relEach2", relEach2Op), ("relZipD", relZipDOp)]
+   ("relEach2", relEach2Op), ("relZipD", relZipDOp),
+   ("findFoR", findFoROp), ("inFoR", inFoROp), ("distinctFoR", distinctFoROp)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=
