@@ -89,21 +89,10 @@ def dense {k v : Ty} (R : Rel k v) : Except String Dense := do
 def Dense.rows (d : Dense) (i : ByteArray) : Dense :=
   { d with key := gather d.kk.width d.key i, val := gather d.vk.width d.val i }
 
-/-- A dense payload as an `Arr`, its length checked once against the type's count. -/
-def Arr.ofDense (a : QAtomicType) (n : Nat) (b : ByteArray) : Except String (Arr (.atom a) n) :=
-  let c : Pay (.atom a) := .bytes b
-  if h : (Ty.atom a).WF n c then pure ⟨c, h, 0, none⟩
-  else throw s!"a payload of {b.size} bytes is not {n} elements of its type"
-
-/-- A boolean column of `n` bits. -/
-def Arr.ofBits (n : Nat) (b : ByteArray) : Except String (Arr (.atom .boolean) n) :=
-  let c : Pay (.atom .boolean) := .bits n b
-  if h : (Ty.atom .boolean).WF n c then pure ⟨c, h, 0, none⟩ else throw s!"{b.size} bytes do not hold {n} bits"
-
 /-- Two dense payloads as a relation keyed by an explicit column. -/
 def ofDense (a b : QAtomicType) (kb vb : ByteArray) : Except String (Rel (.atom a) (.atom b)) := do
   let n := Column.count a (.bytes kb)
-  pure ⟨n, .arr (← Arr.ofDense a n kb), ← Arr.ofDense b n vb⟩
+  pure ⟨n, .arr (← Arr.of (.atom a) n (.bytes kb) "ofDense"), ← Arr.of (.atom b) n (.bytes vb) "ofDense"⟩
 
 /-! ## The composite steps, named once -/
 
@@ -303,7 +292,7 @@ def symDiv {ma mb : Nat} (R : Rel (.atom a) (.atom c)) (S : Rel (.atom b) (.atom
     which ends with the count), the cuts decided by `KeyCol.grp?`. -/
 def grouped {v : Ty} {n : Nat} (a : QAtomicType) (ds o : ByteArray) (val : Arr v n) : Except String (Rel (.atom a) v) := do
   let g := Column.count a (.bytes ds)
-  let some key := KeyCol.grp? (.arr (← Arr.ofDense a g ds)) (← Arr.ofDense .long (g + 1) o) n
+  let some key := KeyCol.grp? (.arr (← Arr.of (.atom a) g (.bytes ds) "grouped")) (← Arr.of (.atom .long) (g + 1) (.bytes o) "grouped") n
     | throw s!"grp: the offsets are not ascending cuts of {n} rows"
   pure ⟨n, key, val⟩
 
@@ -320,7 +309,7 @@ def family (d : Dense) (a b : QAtomicType) : Except String (Rel (.atom a) (.atom
   let d := d.nub
   let vc := codes d.vk #[d.val]
   let s := d.rows (Order.grade .i64 false d.n.toUSize (add (mulc (codes d.kk #[d.key]) (len vc)) vc))
-  runs a s.kk s.key (← Arr.ofDense b s.n s.val)
+  runs a s.kk s.key (← Arr.of (.atom b) s.n (.bytes s.val) "family")
 
 /-- `Λ(R)`: `x Λ(R) X ↔ X = {z | x R z}` — the family of `R`'s fibres, one segment per `x ∈ dom R`. -/
 def transpose (R : Rel (.atom a) (.atom b)) : Except String (Rel (.atom a) (.atom b)) := do
@@ -331,7 +320,7 @@ def transpose (R : Rel (.atom a) (.atom b)) : Except String (Rel (.atom a) (.ato
 def group (R : Rel (.atom .long) (.atom b)) : Except String (Rel (.atom b) (.atom .long)) := do
   let r ← dense R
   let (_, idx, _) := Order.group r.vk r.n.toUSize r.val
-  runs b r.vk (gather r.vk.width r.val idx) (← Arr.ofDense .long (len idx) (gather 8 r.key idx))
+  runs b r.vk (gather r.vk.width r.val idx) (← Arr.of (.atom .long) (len idx) (.bytes (gather 8 r.key idx)) "group")
 
 /-- `∋` of a `grp`-keyed family: the pairs `(set id, element)`, the key's offsets reused, no kernel. -/
 def mem {k v : Ty} (G : Rel k v) : Except String (Rel (.atom .long) v) :=
@@ -362,7 +351,7 @@ def pair (R : Rel (.atom a) (.atom b)) (S : Rel (.atom a) (.atom c)) : Except St
   let (rk, sk) := split (codes r.kk #[r.key, s.key]) r.n
   let (i, j) := join rk sk
   let t ← ofDense a b (gather r.kk.width r.key i) (gather r.vk.width r.val i)
-  pure ⟨t.n, t.key, t.val, ← Arr.ofDense c t.n (gather s.vk.width s.val j)⟩
+  pure ⟨t.n, t.key, t.val, ← Arr.of (.atom c) t.n (.bytes (gather s.vk.width s.val j)) "pair"⟩
 
 /-- `outl`: the first component column, nothing runs. -/
 def outl {k v w : Ty} (T : Tab k v w) : Rel k v := ⟨T.n, T.key, T.fst⟩
@@ -392,8 +381,8 @@ def prod {d e : QAtomicType} (R : Rel (.atom a) (.atom b)) (S : Rel (.atom d) (.
   let r ← dense R; let s ← dense S
   let (i, j) := cross r.n s.n
   let m := r.n * s.n
-  pure ⟨m, ← Arr.ofDense a m (gather r.kk.width r.key i), ← Arr.ofDense d m (gather s.kk.width s.key j),
-    ← Arr.ofDense b m (gather r.vk.width r.val i), ← Arr.ofDense e m (gather s.vk.width s.val j)⟩
+  pure ⟨m, ← Arr.of (.atom a) m (.bytes (gather r.kk.width r.key i)) "prod", ← Arr.of (.atom d) m (.bytes (gather s.kk.width s.key j)) "prod",
+    ← Arr.of (.atom b) m (.bytes (gather r.vk.width r.val i)) "prod", ← Arr.of (.atom e) m (.bytes (gather s.vk.width s.val j)) "prod"⟩
 
 /-- A relation out of a sum `a + a`: a tag bit beside each key, `false` for `inl`. Read with the
     value tagged by the key's own tag it is `R + S` as well as `[R, S]`. -/
@@ -414,18 +403,18 @@ def bitsOf (x : Bool) (n : Nat) : ByteArray :=
 def junc (R : Rel (.atom a) (.atom c)) (S : Rel (.atom a) (.atom c)) : Except String (SumRel (.atom a) (.atom c)) := do
   let r ← dense R; let s ← dense S
   let m := r.n + s.n
-  pure ⟨m, ← Arr.ofBits m (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n]),
-    ← Arr.ofDense a m (concatBytes #[r.key, s.key]), ← Arr.ofDense c m (concatBytes #[r.val, s.val])⟩
+  pure ⟨m, ← Arr.of (.atom .boolean) m (.bits m (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n])) "junc",
+    ← Arr.of (.atom a) m (.bytes (concatBytes #[r.key, s.key])) "junc", ← Arr.of (.atom c) m (.bytes (concatBytes #[r.val, s.val])) "junc"⟩
 
 /-- `inl°` on `U`: `inl x ↦ x`, the tag set to `false`; `inr°` with `true`. -/
 def injConv {m : Nat} (tag : Bool) (U : Arr (.atom a) m) : Except String (SumRel (.atom a) (.atom a)) := do
-  pure ⟨m, ← Arr.ofBits m (bitsOf tag m), U, U⟩
+  pure ⟨m, ← Arr.of (.atom .boolean) m (.bits m (bitsOf tag m)) "injConv", U, U⟩
 
 /-- `F(f)` on a map `f` given as an `Ew` monad: the functor on values, key kept (a `grp` key too). -/
 def mapVal {k : Ty} (op : UInt8) (R : Rel k (.atom a)) : Except String (Rel k (.atom a)) := do
   let (vk, v) ← arrDense R.val
   let some nb := nullBits a | throw "a type with no null"
-  pure ⟨R.n, R.key, ← Arr.ofDense a R.n (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize)⟩
+  pure ⟨R.n, R.key, ← Arr.of (.atom a) R.n (.bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize)) "mapVal"⟩
 
 /-- `⦇e, f⦈` of a list when `f` is one of `Coc.Over`'s reductions: `overBytes`. -/
 def foldOver {k : Ty} (op : Coc.Over) (R : Rel k (.atom .long)) : Except String Int64 := do
@@ -445,7 +434,7 @@ def uncons (R : Rel (.atom .long) (.atom a)) : Except String (Rel (.atom .long) 
   if r.n = 0 then throw "uncons of an empty list"
   let w := r.vk.width
   let m := r.n - 1
-  pure (⟨1, .til 1, ← Arr.ofDense a 1 (r.val.extract 0 w)⟩, ⟨m, .til m, ← Arr.ofDense a m (r.val.extract w r.val.size)⟩)
+  pure (⟨1, .til 1, ← Arr.of (.atom a) 1 (.bytes (r.val.extract 0 w)) "uncons"⟩, ⟨m, .til m, ← Arr.of (.atom a) m (.bytes (r.val.extract w r.val.size)) "uncons"⟩)
 
 /-- An unfold then a fold: Lean's loop, at most `fuel` rounds of `step` until `done`, each round kernels. -/
 def hylo {α : Type} (done : α → Except String Bool) (step : α → Except String α) : Nat → α → Except String α
@@ -487,8 +476,8 @@ def thinPareto (T : Tab (.atom a) (.atom .long) (.atom .long)) : Except String (
   let prior := concatBytes #[one nul.toUInt64, (Scan.scan .maxs .i64 n.toUSize c).extract 0 (8 * (n - 1))]
   let keep := gather 8 p (whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.vv c prior n.toUSize))
   let m := len keep
-  pure ⟨m, .arr (← Arr.ofDense a m (gather kk.width key keep)), ← Arr.ofDense .long m (gather 8 k₁ keep),
-    ← Arr.ofDense .long m (gather 8 k₂ keep)⟩
+  pure ⟨m, .arr (← Arr.of (.atom a) m (.bytes (gather kk.width key keep)) "thinPareto"), ← Arr.of (.atom .long) m (.bytes (gather 8 k₁ keep)) "thinPareto",
+    ← Arr.of (.atom .long) m (.bytes (gather 8 k₂ keep)) "thinPareto"⟩
 
 /-- `Entire R` on the universe `U`: `memberVec` of `U` in the keys, all set. -/
 def entire {m : Nat} (R : Rel (.atom a) (.atom b)) (U : Arr (.atom a) m) : Except String Bool := do
