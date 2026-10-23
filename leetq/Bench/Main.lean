@@ -335,14 +335,14 @@ def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.atom .long, .bytes (c
 /-- ``aj[`s`tm;t;q]`` by `Struct.aj` over `asofData`, 1e3 key groups; the sum of the matched right rows. -/
 def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
-  timedE "relAj" (lk, lt, rk, rt) fun (lk, lt, rk, rt) => do
-    sumR "relAj" (← LeetQ.Rel.Struct.aj #[longKey lk] #[longKey rk] (longKey lt) (longKey rt))
+  timedE "relAj" (longKey lk, longKey lt, longKey rk, longKey rt) fun (lk, lt, rk, rt) => do
+    sumR "relAj" (← LeetQ.Rel.Struct.aj #[lk] #[rk] lt rt)
 
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
-  timedE "relWj" (lk, lt, rk, rt) fun (lk, lt, rk, rt) => do
-    sumR "relWj" (← LeetQ.Rel.Struct.wj true (longKey (lt.map (· - 100))) (longKey lt) #[longKey lk] #[longKey rk] (longKey rt))
+  timedE "relWj" (longKey (lt.map (· - 100)), longKey lt, longKey lk, longKey rk, longKey rt) fun (w, lt, lk, rk, rt) => do
+    sumR "relWj" (← LeetQ.Rel.Struct.wj true w lt #[lk] #[rk] rt)
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
