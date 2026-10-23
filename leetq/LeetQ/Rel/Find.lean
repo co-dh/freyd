@@ -307,14 +307,23 @@ theorem operand_long {m : Nat} (x : Arr (.atom .long) m) (h : Readable x.c) (hm 
     exact List.map_congr_left fun i _ => Verify.ofNat_toNat_mod64 _
   | _ => all_goals (rw [hc] at h; exact False.elim h)
 
-/-- `x?y` at long operands, unsorted, is `probeColumns`. -/
-theorem findColumn_long (x c : Column) :
-    findColumn .long false x (.vector .long c) = (probeColumns .long 8 false x c).map fun out => .vector .long (.bytes out) := by
+/-- `x?y` at long operands: the halving over the dense needles where `x` is marked `s` and `worthHalving`
+    claims it, `probeColumns` otherwise. -/
+theorem findColumn_long (s : Bool) (x c : Column) : findColumn .long s x (.vector .long c) =
+    if s && worthHalving (Column.count .long x) (Column.count .long c) then
+      match Column.bytesOf .long c with
+      | some ks => (findSorted .long 8 x ks).map fun out => .vector .long (.bytes out)
+      | none => none
+    else (probeColumns .long 8 false x c).map fun out => .vector .long (.bytes out) := by
   cases x <;> rfl
 
-/-- `x in y` at long operands, unsorted, is `probeColumns`. -/
-theorem memberColumn_long (c y : Column) : memberColumn .long false (.vector .long c) y =
-    (probeColumns .long 8 true y c).map fun out => .vector .boolean (.bits (Column.count .long c) out) := by
+/-- `x in y` at long operands: `findColumn_long`'s choice, answering a bit per needle. -/
+theorem memberColumn_long (s : Bool) (c y : Column) : memberColumn .long s (.vector .long c) y =
+    if s && worthHalving (Column.count .long y) (Column.count .long c) then
+      match Column.bytesOf .long c with
+      | some ks => (memberSorted .long 8 y ks).map fun out => .vector .boolean (.bits (ks.size / 8) out)
+      | none => none
+    else (probeColumns .long 8 true y c).map fun out => .vector .boolean (.bits (Column.count .long c) out) := by
   cases y <;> rfl
 
 /-- `x bin y` at long operands is `binOperands` over the two `operand`s. -/
@@ -852,15 +861,157 @@ theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
     Arr.toList_long x.val hwx, hxe, List.map_map, List.map_map]
   exact firstsOf_map_eraseDups e (UInt64.toInt64 ∘ e) (fun i j => ⟨congrArg UInt64.toInt64, toInt64_inj⟩) x.n
 
+/-! ## The halving over a haystack marked `s` -/
+
+/-- `findSorted` over a readable long haystack is `findSortedBytes` over its `operandBytes`. -/
+theorem findSorted_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+    (ho : operand .long c = some (k, md, pk)) (ks : ByteArray) :
+    findSorted .long 8 c ks = some (findSortedBytes 8 false true (operandBytes 8 md pk k.toUSize) ks) := by
+  have he : Column.encodes QAtomicType.long = true := rfl
+  cases c with
+  | bytes b => simp [operand, foRColumn, Column.bytesOf] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho; rfl
+  | foR n m p =>
+    have h : m.isEmpty = false := h
+    simp [operand, foRColumn, he] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho
+    simp [findSorted, foRColumn, he, operandBytes, h]; rfl
+  | _ => exact False.elim h
+
+/-- `memberSorted` over a readable long haystack is `memberSortedBytes` over its `operandBytes`. -/
+theorem memberSorted_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+    (ho : operand .long c = some (k, md, pk)) (ks : ByteArray) :
+    memberSorted .long 8 c ks = some (memberSortedBytes 8 false true ks (operandBytes 8 md pk k.toUSize)) := by
+  have he : Column.encodes QAtomicType.long = true := rfl
+  cases c with
+  | bytes b => simp [operand, foRColumn, Column.bytesOf] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho; rfl
+  | foR n m p =>
+    have h : m.isEmpty = false := h
+    simp [operand, foRColumn, he] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho
+    simp [memberSorted, foRColumn, he, operandBytes, h]; rfl
+  | _ => exact False.elim h
+
+/-- **The halving at a needle is its first index** over ascending words: `binStep`'s `binr` partition
+    point `p` (`binStep_spec`) has every word below it under the needle and none from it on, so the
+    needle is held iff word `p` equals it, and then at `p` first. -/
+theorem findSortedAt_idxOf {H : ByteArray} {ws : List UInt64} (hw : Verify.elemsW 8 H = ws)
+    (hsort : ∀ i j (hi : i < ws.length) (hj : j < ws.length), i ≤ j → ws[i].toInt64 ≤ ws[j].toInt64) (y : UInt64) :
+    findSortedAt 8 false true H ws.length (ordKey 8 false true y) = ws.idxOf y := by
+  obtain ⟨-, gw⟩ := elemsW8_get hw
+  have inj : ∀ a b : UInt64, Order.rank .i64 a = Order.rank .i64 b → a = b := fun a b e =>
+    toInt64_inj (Int64.le_antisymm (rank_i64_le (UInt64.le_of_eq e)) (rank_i64_le (UInt64.le_of_eq e.symm)))
+  obtain ⟨hp, hlo, hhi⟩ := Verify.binStep_spec 8 false true true H (ordKey 8 false true y) ws.length
+    fun i j hij hj => by
+      rw [gw i (by omega), gw j hj, ordKey_long, ordKey_long, rank_i64_le_iff]; exact hsort i j (by omega) hj hij
+  simp only [↓reduceIte, ordKey_long] at hp hlo hhi
+  simp only [findSortedAt, ordKey_long]
+  generalize binStep 8 false true true H ByteArray.empty (Order.rank .i64 y) (ws.length + 1) 0 ws.length = p at hp hlo hhi ⊢
+  have hlt : ∀ j (hj : j < ws.length), j < p → ws[j] ≠ y := fun j hj hjp e => by
+    have := hlo j hjp; rw [gw j hj, e] at this; exact UInt64.lt_irrefl _ this
+  by_cases hc : ∃ hpn : p < ws.length, ws[p] = y
+  · obtain ⟨hpn, rfl⟩ := hc
+    rw [gw p hpn]
+    simp only [hpn, decide_true, beq_self_eq_true, Bool.true_and, ↓reduceIte]
+    exact ((idxOf_self_iff ws p hpn).2 fun j hj => hlt j _ hj).symm
+  · have hny : y ∉ ws := fun hm => by
+      obtain ⟨j, hj, e⟩ := List.getElem_of_mem hm
+      by_cases hjp : j < p
+      · exact hlt j hj hjp e
+      · have hpn : p < ws.length := by omega
+        refine hc ⟨hpn, inj _ _ (UInt64.le_antisymm ?_ ?_)⟩
+        · rw [← e]; exact rank_i64_le_iff.2 (hsort p j hpn hj (by omega))
+        · have := hhi p (Nat.le_refl _) hpn; rw [gw p hpn] at this; exact UInt64.not_lt.1 this
+    rw [List.idxOf_eq_length hny]
+    split
+    · rename_i hcond
+      simp only [Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq] at hcond
+      obtain ⟨hpn, e⟩ := hcond
+      rw [gw p hpn] at e; exact absurd ⟨hpn, inj _ _ e⟩ hc
+    · rfl
+
+/-- **`findSortedBytes` over ascending words is the first index of each needle**, `findSortedAt_idxOf`
+    per needle, read back by `elemsW_foldl`. -/
+theorem findSortedBytes_idxOf {H K : ByteArray} {ws ks : List UInt64} (hw : Verify.elemsW 8 H = ws)
+    (hk : Verify.elemsW 8 K = ks)
+    (hsort : ∀ i j (hi : i < ws.length) (hj : j < ws.length), i ≤ j → ws[i].toInt64 ≤ ws[j].toInt64) :
+    Verify.elemsW 8 (findSortedBytes 8 false true H K) =
+      ks.map fun y => UInt64.ofNat ((ws.map UInt64.toInt64).idxOf y.toInt64) := by
+  obtain ⟨hsk, gk⟩ := elemsW8_get hk
+  obtain ⟨hsw, -⟩ := elemsW8_get hw
+  rw [show findSortedBytes 8 false true H K = (List.range (K.size / 8)).foldl (fun acc j => Column.pushBits acc
+      ((findSortedAt 8 false true H (H.size / 8) (ordKey 8 false true (Column.bitsAt K (j * 8) 8)) : Int)).toInt64.toUInt64 8)
+      ByteArray.empty by simp only [findSortedBytes, usize_eight],
+    Verify.elemsW_foldl _ 8 (by decide) (by decide) _ (fun _ _ => UInt64.toNat_lt _)]
+  apply List.ext_getElem (by simp [hsk])
+  intro j h1 _
+  have hj : j < ks.length := by simpa [hsk] using h1
+  simp only [List.getElem_map, List.getElem_range]
+  rw [gk j hj, hsw, findSortedAt_idxOf hw hsort, idxOf_map_of_inj (fun _ _ => toInt64_inj)]
+  exact UInt64.toBitVec_inj.1 (BitVec.ofInt_natCast _ _)
+
+/-- Bit `i` of a byte-at-a-time bitmap whose bit `b·8 + t` is `C (b·8 + t)`, below `m`: `C i`. -/
+theorem bitAt_packed (C : Nat → Bool) (m i : Nat) (hi : i < m) :
+    Column.bitAt ((List.range ((m + 7) / 8)).foldl (fun acc b => acc.push ((List.range 8).foldl
+      (fun byte t => if C (b * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0)) ByteArray.empty) i = C i := by
+  let B : Nat → UInt8 := fun b =>
+    (List.range 8).foldl (fun byte t => if C (b * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0
+  show Column.bitAt ((List.range ((m + 7) / 8)).foldl (fun acc b => acc.push (B b)) ByteArray.empty) i = C i
+  obtain ⟨-, -, hg⟩ := Verify.foldl_push8 B (List.range ((m + 7) / 8)) ByteArray.empty
+  have hb : i / 8 < (m + 7) / 8 := by omega
+  have h := hg (i / 8) (by simpa using hb)
+  simp only [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
+  have hm8 : i % 8 < 8 := Nat.mod_lt _ (by decide)
+  simp only [Column.bitAt, h, Option.getD_some]
+  rw [Verify.bit_eq_testBit _ _ hm8, Verify.foldl_setBit _ _ (fun t ht => List.mem_range.1 ht), UInt8.toNat_zero,
+    Nat.zero_testBit, Bool.false_or]
+  apply Bool.eq_iff_iff.mpr
+  rw [List.any_eq_true]
+  constructor
+  · rintro ⟨t, -, ht⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq] at ht
+    obtain ⟨e, hc⟩ := ht
+    subst e
+    rwa [Nat.mul_comm, Nat.div_add_mod] at hc
+  · intro hc
+    refine ⟨i % 8, List.mem_range.2 hm8, ?_⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq, Nat.mul_comm, Nat.div_add_mod]
+    exact ⟨rfl, hc⟩
+
+/-- **`memberSortedBytes` over ascending words is membership**: bit `i` is `findSortedAt_idxOf`'s index
+    below the count. -/
+theorem memberSortedBytes_mem {H K : ByteArray} {ws ks : List UInt64} (hw : Verify.elemsW 8 H = ws)
+    (hk : Verify.elemsW 8 K = ks)
+    (hsort : ∀ i j (hi : i < ws.length) (hj : j < ws.length), i ≤ j → ws[i].toInt64 ≤ ws[j].toInt64)
+    (i : Nat) (hi : i < ks.length) : Column.bitAt (memberSortedBytes 8 false true K H) i = decide (ks[i] ∈ ws) := by
+  obtain ⟨hsk, gk⟩ := elemsW8_get hk
+  obtain ⟨hsw, -⟩ := elemsW8_get hw
+  let C : Nat → Bool := fun i => decide (i < K.size / 8) &&
+    decide (findSortedAt 8 false true H (H.size / 8) (ordKey 8 false true (Column.bitsAt K (i * 8) 8)) < H.size / 8)
+  have e : memberSortedBytes 8 false true K H = (List.range ((K.size / 8 + 7) / 8)).foldl (fun acc b => acc.push
+      ((List.range 8).foldl (fun byte t => if C (b * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0))
+      ByteArray.empty := by
+    simp only [memberSortedBytes, usize_eight]; rfl
+  rw [e, bitAt_packed C _ i (by rw [hsk]; exact hi)]
+  simp only [C, hsw, gk i hi, findSortedAt_idxOf hw hsort, hsk, hi, decide_true, Bool.true_and, List.idxOf_lt_length_iff]
+
+/-- `eraseDups` keeps a list with no repeats. -/
+theorem eraseDups_of_nodup {α : Type} [BEq α] [LawfulBEq α] : ∀ l : List α, l.Nodup → l.eraseDups = l
+  | [], _ => rfl
+  | a :: l, h => by
+    rw [List.eraseDups_cons, List.filter_eq_self.2 fun b hb => by
+      simpa using fun e : b = a => (List.nodup_cons.1 h).1 (e ▸ hb), eraseDups_of_nodup l (List.nodup_cons.1 h).2]
 
 /-! ## The laws, on `bytes` and on `foR` alike -/
 
-/-- `?x` on a long column is `distinctSpec`, from `distinct_words`. Restrictions: `attr ≠ 2`, the `u`
-    shortcut, whose `Arr.attr` carries no proof of uniqueness; `longWords` defined, which excludes `alp`;
-    `8 · x.n < USize.size`, which keeps the range below `2^63`. -/
+/-- `?x` on a long column is `distinctSpec`, from `distinct_words`. Restrictions: q's `u#` contract, that
+    a column marked `u` has no repeats — `Arr.attr` is a byte any producer sets and carries no proof, and
+    under it `?x` answers `x` itself; `longWords` defined, which excludes `alp`; `8 · x.n < USize.size`,
+    which keeps the range below `2^63`. -/
 theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {xs : List UInt64}
-    (hx : longWords x.val.c = some xs) (hu : x.val.attr ≠ 2)
+    (hx : longWords x.val.c = some xs) (hu : x.val.attr = 2 → x.val.toList.Nodup)
     (hn8 : 8 * x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
+  by_cases ha : x.val.attr = 2
+  · simp only [distinct, ha, beq_self_eq_true, ↓reduceIte, Except.ok.injEq] at h
+    subst h; exact (eraseDups_of_nodup _ (hu ha)).symm
+  replace hu := ha
   have hn : x.n < USize.size := by have := USize.size_le; omega
   obtain ⟨⟨t, lo, hb⟩, hd⟩ | hd : (∃ p, direct .long x.val.c x.n = some p) ∨ direct .long x.val.c x.n = none := by
     cases e : direct .long x.val.c x.n with
@@ -879,11 +1030,13 @@ theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
   · show Order.rank .i64 (e i) = Order.rank .i64 (e j)
     rw [toInt64_inj (x := e i) (y := e j) h']
 
-/-- `x?y` on long columns is `findSpec`, from `findVec_idxOf` over the decoded operands. Restrictions:
-    `Readable` payloads; `x.val.attr ≠ 1`, since the `s` halving (`findSortedBytes`) has no law yet; both counts below
-    `USize.size`, which the kernel indexes by, and `8 · x.n` too, which keeps the range below `2^63`. -/
+/-- `x?y` on long columns is `findSpec`: `findVec_idxOf` over the decoded operands, or, where `x` is marked
+    `s`, `findSortedBytes_idxOf`. Restrictions: `Readable` payloads; q's `s#` contract, that a column marked
+    `s` ascends — `Arr.attr` carries no proof, and an amend that breaks the order drops the mark; both counts
+    below `USize.size`, which the kernel indexes by, and `8 · x.n` too, which keeps the range below `2^63`. -/
 theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : x.val.attr ≠ 1)
+    (hx : Readable x.val.c) (hy : Readable y.val.c)
+    (hs : x.val.attr = 1 → ∀ i j : Fin x.n, i ≤ j → x.val.get i ≤ x.val.get j)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hn : x.n < USize.size := by have := USize.size_le; omega
@@ -895,7 +1048,21 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hn
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
   unfold find at h
-  rw [hd, show (x.val.attr == 1) = false by simp [hs], findColumn_long, probeColumns_long false hox hoy] at h
+  rw [hd, findColumn_long] at h
+  by_cases hw : (x.val.attr == 1 && worthHalving (Column.count .long x.val.c) (Column.count .long y.val.c)) = true
+  · have ha : x.val.attr = 1 := by simp only [Bool.and_eq_true, beq_iff_eq] at hw; exact hw.1
+    have hsx : ∀ i j (hi : i < xs.length) (hj : j < xs.length), i ≤ j → xs[i].toInt64 ≤ xs[j].toInt64 :=
+      fun i j hi hj hij => by
+        have := hs ha ⟨i, by omega⟩ ⟨j, by omega⟩ hij
+        rwa [Arr.get_long x.val hwx i (by omega) hi, Arr.get_long x.val hwx j (by omega) hj] at this
+    rw [if_pos hw, bytesOf_long hy hoy] at h; simp only [findSorted_long hx hox] at h
+    change onKey y.key .long (.bytes (findSortedBytes 8 false true (operandBytes 8 hmd hp hk.toUSize)
+      (operandBytes 8 nmd np nk.toUSize))) "x?y" = .ok r at h
+    rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (findSortedBytes 8 false true
+      (operandBytes 8 hmd hp hk.toUSize) (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_c h]; rfl),
+      Arr.toList_long x.val hwx, Arr.toList_long y.val hwy, findSpec, findSortedBytes_idxOf hbx hby hsx]
+    simp only [List.map_map]; rfl
+  rw [if_neg hw, probeColumns_long false hox hoy] at h
   generalize operandBytes 8 hmd hp hk.toUSize = Bx at h hbx
   generalize operandBytes 8 nmd np nk.toUSize = By at h hby
   change onKey y.key .long (.bytes (findVec 8 false Bx By)) "x?y" = .ok r at h
@@ -913,12 +1080,13 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
   rw [idxOf_map_of_inj (fun _ _ => toInt64_inj)]
   exact toInt64_of_toNat (by rw [hj j (by rw [hsy]; exact hj'), gy j hj'])
 
-/-- `x in y` on long columns is `inSpec`, from `memberVec_mem` over the decoded operands. Restrictions:
-    `Readable` payloads; `y.val.attr ≠ 1`, since the `s` halving (`memberSortedBytes`) has no law yet;
-    both counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which keeps the range
-    below `2^63`. -/
+/-- `x in y` on long columns is `inSpec`: `memberVec_mem` over the decoded operands, or, where `y` is
+    marked `s`, `memberSortedBytes_mem`. Restrictions: `Readable` payloads; q's `s#` contract on `y`, as in
+    `find_toList`; both counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which
+    keeps the range below `2^63`. -/
 theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : y.val.attr ≠ 1)
+    (hx : Readable x.val.c) (hy : Readable y.val.c)
+    (hs : y.val.attr = 1 → ∀ i j : Fin y.n, i ≤ j → y.val.get i ≤ y.val.get j)
     (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
   have hn : y.n < USize.size := by have := USize.size_le; omega
@@ -930,7 +1098,29 @@ theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long
   obtain ⟨hk, hmd, hp, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hn
   obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hm
   unfold «in» at h
-  rw [hd, show (y.val.attr == 1) = false by simp [hs], memberColumn_long, probeColumns_long true hoy hox] at h
+  rw [hd, memberColumn_long] at h
+  by_cases hw : (y.val.attr == 1 && worthHalving (Column.count .long y.val.c) (Column.count .long x.val.c)) = true
+  · have ha : y.val.attr = 1 := by simp only [Bool.and_eq_true, beq_iff_eq] at hw; exact hw.1
+    have hsy : ∀ i j (hi : i < ys.length) (hj : j < ys.length), i ≤ j → ys[i].toInt64 ≤ ys[j].toInt64 :=
+      fun i j hi hj hij => by
+        have := hs ha ⟨i, by omega⟩ ⟨j, by omega⟩ hij
+        rwa [Arr.get_long y.val hwy i (by omega) hi, Arr.get_long y.val hwy j (by omega) hj] at this
+    rw [if_pos hw, bytesOf_long hx hox] at h; simp only [memberSorted_long hy hoy] at h
+    change onKey x.key .boolean (.bits ((operandBytes 8 nmd np nk.toUSize).size / 8) (memberSortedBytes 8 false true
+      (operandBytes 8 nmd np nk.toUSize) (operandBytes 8 hmd hp hk.toUSize))) "x in y" = .ok r at h
+    generalize operandBytes 8 hmd hp hk.toUSize = By at h hby
+    generalize operandBytes 8 nmd np nk.toUSize = Bx at h hbx
+    obtain ⟨e, -⟩ := onKey_key h
+    unfold inSpec
+    rw [Arr.toList_long x.val hwx, Arr.toList_long y.val hwy]
+    apply List.ext_getElem (by rw [Arr.length_toList, e]; simp [hlx])
+    intro i h1 _
+    have hi : i < x.n := by rw [Arr.length_toList, e] at h1; exact h1
+    rw [Arr.getElem_toList, Arr.get_bool_bits r.val (onKey_c h), memberSortedBytes_mem hby hbx hsy i (by omega)]
+    simp only [List.getElem_map]
+    apply Bool.eq_iff_iff.2
+    rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj)]
+  rw [if_neg hw, probeColumns_long true hoy hox] at h
   generalize operandBytes 8 hmd hp hk.toUSize = By at h hby
   generalize operandBytes 8 nmd np nk.toUSize = Bx at h hbx
   change onKey x.key .boolean (.bits (Column.count .long x.val.c) (memberVec 8 false Bx By)) "x in y" = .ok r at h
@@ -1071,6 +1261,24 @@ private def nn : Rel (.atom .long) (.atom .long) := ⟨1, .til 1, { c := .bytes 
 #guard ans (·.val.toList) (bin ss ks) == some (binSpec ss.val.toList ks.val.toList)
 #guard ans (·.val.toList) (bin ss ks) == some [-1, 2, 2, 3, -1]
 #guard ans (·.toList.map Prod.fst) (find xf ys) == some ys.key.toList
+-- marked `s`: dense, and `foR` too wide for `direct`, so both take the halving (`worthHalving 4 1`)
+private def sb : Rel (.atom .long) (.atom .long) :=
+  ⟨4, .til 4, { c := .bytes (packLongs [1, 3, 3, 7]), wf := by decide, attr := 1 }⟩
+private def sf : Rel (.atom .long) (.atom .long) := let vs : List Int64 := [1, 3000000, 3000000, 7000000]
+  ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs vs)).1 (Coc.encode 8 (packLongs vs)).2, wf := ⟨rfl, rfl⟩, attr := 1 }⟩
+private def n1 (v : Int64) := foRL [v]
+#guard worthHalving 4 1 && (direct .long sf.val.c 4).isNone
+#guard [3, 5, 1, 7, 0x8000000000000000, 3000000].all fun v => [sb, sf].all fun x =>
+  ans (·.val.toList) (find x (n1 v)) == some (findSpec x.val.toList [v]) &&
+  ans (·.val.toList) («in» (n1 v) x) == some (inSpec [v] x.val.toList)
+#guard ans (·.val.toList) (find sb (n1 3)) == some [1] && ans (·.val.toList) (find sf (n1 3000000)) == some [1]
+#guard ans (·.val.toList) («in» (n1 5) sb) == some [false]
+-- marked `u`: `?x` answers the column itself
+private def ub : Rel (.atom .long) (.atom .long) := ⟨3, .til 3, { c := .bytes (packLongs [5, 3, 9]), wf := by decide, attr := 2 }⟩
+private def uf : Rel (.atom .long) (.atom .long) :=
+  ⟨3, .til 3, { c := .foR 3 (Coc.encode 8 (packLongs [5, 3, 9])).1 (Coc.encode 8 (packLongs [5, 3, 9])).2, wf := ⟨rfl, rfl⟩, attr := 2 }⟩
+#guard [ub, uf].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
+#guard ans (·.val.toList) (distinct uf) == some [5, 3, 9]
 
 end Checks
 
