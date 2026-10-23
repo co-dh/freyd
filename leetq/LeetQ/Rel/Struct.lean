@@ -979,7 +979,7 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
   generalize ho₀ : (if o.n = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = o₀ at h
   dsimp only at h
   split at h
-  · simp [throw, throwThe, MonadExcept.throw, bind, Except.bind] at h
+  · simp [bind, Except.bind] at h
   rename_i hd
   simp only [Bool.or_eq_true, decide_eq_true_eq, not_or, Int64.not_lt] at hd
   simp only [pure_bind] at h
@@ -991,11 +991,11 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
     obtain ⟨h0, cg, -⟩ := cuts_nat co
     have hg : g = o.n := by
       have := congrArg List.length hW
-      simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hE] at this; omega
+      simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hE] at this; have := Arr.length_toList oa; omega
     subst hg
     have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
         0 + (oa.toList[r]!).toNatClampNeg := fun r hr => by
-      rw [getElem!_concat _ _ (by simpa using hr)]
+      rw [getElem!_concat _ _ (by simpa [hol] using hr)]
       simp only [List.length_map, hol]
       split
       · rename_i h1
@@ -1036,11 +1036,11 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
         have hg : g = o.n := by
           have := congrArg List.length hW
           simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hPw,
-            List.length_range] at this; omega
+            List.length_range] at this; have := Arr.length_toList oa; omega
         subst hg
         have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
             o₀.toNatClampNeg + (oa.toList[r]!).toNatClampNeg := fun r hr => by
-          rw [getElem!_concat _ _ (by simpa using hr)]
+          rw [getElem!_concat _ _ (by simpa [hol] using hr)]
           simp only [List.length_map, hol]
           split
           · rename_i h1
