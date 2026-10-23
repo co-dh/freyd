@@ -14,6 +14,7 @@ import QLean.Kernel.Reduce
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
 import QLean.Verify.Where
+import QLean.Verify.Group
 
 namespace LeetQ.Rel
 
@@ -232,6 +233,79 @@ theorem over_bytes {op : Coc.Over} (hb : op.boolCast = false) {R : Rel k (.atom 
   simp only [over, overColumn, hc, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
   rw [he]; simp
 
+/-- Filtering `range n` by a test that fails from `L` on is filtering `range (min n L)`. -/
+theorem filter_range_min {p : Nat → Bool} {L : Nat} (hp : ∀ i, L ≤ i → p i = false) (n : Nat) :
+    (List.range n).filter p = (List.range (min n L)).filter p := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    by_cases h : n < L
+    · rw [Nat.min_eq_left (show n + 1 ≤ L by omega)]
+    · rw [List.range_succ, List.filter_append, ih, Nat.min_eq_right (show L ≤ n by omega),
+        Nat.min_eq_right (show L ≤ n + 1 by omega), List.filter_cons_of_neg (by rw [hp n (by omega)]; exact Bool.false_ne_true),
+        List.filter_nil, List.append_nil]
+
+/-- The first `m` bytes read as the whole array wherever the read ends by `m`. -/
+theorem bitsAt_extract (s : ByteArray) {m o w : Nat} (h : o + w ≤ m) :
+    Column.bitsAt (s.extract 0 m) o w = Column.bitsAt s o w := by
+  induction w with
+  | zero => rfl
+  | succ w ih =>
+    have e : (if h : o + w < (s.extract 0 m).size then (s.extract 0 m)[o + w] else 0) =
+        (if h : o + w < s.size then s[o + w] else 0) := by
+      by_cases hs : o + w < s.size
+      · rw [dif_pos (by rw [ByteArray.size_extract]; omega), dif_pos hs, ByteArray.getElem_extract]
+        simp only [Nat.zero_add]
+      · rw [dif_neg (by rw [ByteArray.size_extract]; omega), dif_neg hs]
+    simp only [Column.bitsAt] at ih ⊢
+    rw [ih (by omega), e]
+
+/-- `select f x by k` over a dense long column, at a verb that skips the null: group `j`'s answer is
+    `Spec.over` of the values of the rows the kernel's ids put in group `j`, from `overGroups_spec`. -/
+theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d : KeyCol k g}
+    {o : Arr (.atom .long) (g+1)} {co : Cuts o n} {x : Arr (.atom .long) n} {b ids : ByteArray}
+    {S : Rel k (.atom .long)} (hg : g < USize.size) (hc : x.c = .bytes b) (hi : groupIds o n = some ids)
+    (h : overBy op ⟨n, .grp d o co, x⟩ = some S) :
+    S.val.toList = (List.range g).map fun j => Spec.over op.step (op.denseSeed Ew.i64 Spec.nul)
+      (((List.range n).filter fun i => (QLean.Verify.ids ids)[i]? == some j).map fun i => x.toList[i]!) := by
+  have hn : b.size / 8 = n := by have := x.wf.2; rw [hc] at this; exact this
+  have hgu : g.toUSize.toNat = g := USize.toNat_ofNat_of_lt hg
+  simp only [overBy, hi, overGroupsColumn, hc, clsOf, Coc.denseNul, Coc.nullOf, Column.bytesOf, bind, Option.bind] at h
+  obtain ⟨hsz, hv⟩ := QLean.Verify.overGroups_spec op Ew.i64 Spec.nul g.toUSize ids b
+  generalize overGroups op Ew.i64 Int64.minValue g.toUSize ids b = s at h hsz hv
+  rw [hgu] at hsz hv
+  by_cases hw : (Ty.atom .long).WF g (.bytes (s.extract 0 (8 * g)))
+  · rw [Arr.of, dif_pos hw] at h
+    cases h
+    have hw8 : Ew.width Ew.i64 = 8 := rfl
+    have e : QLean.Verify.denseElems Ew.i64 b = x.toList := denseElems_long (R := ⟨n, .grp d o co, x⟩) hc
+    have hx : ∀ i, i < n → x.toList[i]! = QLean.Verify.valAt Ew.i64 b i := fun i hi => by
+      rw [← e, QLean.Verify.denseElems, getElem!_pos _ i (by rw [List.length_map, List.length_range, hw8, hn]; exact hi),
+        List.getElem_map, List.getElem_range]; rfl
+    apply List.ext_getElem
+    · rw [Arr.length_toList, List.length_map, List.length_range]
+    · intro j h1 _
+      have hj : j < g := by rwa [Arr.length_toList] at h1
+      rw [Arr.getElem_toList, Arr.get_long_bytes _ rfl, List.getElem_map, List.getElem_range,
+        bitsAt_extract s (m := 8 * g) (o := j * 8) (w := 8) (by omega), (hv j hj).1]
+      have hr : QLean.Verify.rowsOf op Ew.i64 Spec.nul ids b j =
+          ((List.range n).filter fun i => (QLean.Verify.ids ids)[i]? == some j).filter
+            fun i => QLean.Verify.valAt Ew.i64 b i != Spec.nul := by
+        rw [List.filter_filter, filter_range_min (L := ids.size / 8) ?hp n, QLean.Verify.rowsOf, hw8, hn]
+        · refine List.filter_congr fun i hi => ?_
+          have hi := List.mem_range.1 hi
+          rw [hb, Bool.false_or, Bool.and_comm, QLean.Verify.ids, List.getElem?_map,
+            List.getElem?_range (by omega), Option.map_some]
+          rfl
+        · intro i hi
+          rw [QLean.Verify.ids, List.getElem?_map, List.getElem?_eq_none (by rw [List.length_range]; exact hi)]
+          rw [Option.map_none, show ((none : Option Nat) == some j) = false from rfl, Bool.and_false]
+      rw [hr, QLean.Verify.foldl_filter, Spec.over,
+        List.map_congr_left (fun i hi => hx i (List.mem_range.1 (List.mem_filter.1 hi).1)), List.foldl_map]
+      congr 1; funext a i; by_cases hx : QLean.Verify.valAt Ew.i64 b i = Spec.nul <;> simp [hx]
+  · rw [Arr.of, dif_neg hw] at h
+    cases h
+
 end Ops
 
 /-! ## Checks on small literal Rels -/
@@ -306,5 +380,6 @@ end Checks
 #print axioms Ops.rank_keys
 #print axioms Spec.scan_getLast?
 #print axioms Ops.over_bytes
+#print axioms Ops.overBy_bytes
 
 end LeetQ.Rel
