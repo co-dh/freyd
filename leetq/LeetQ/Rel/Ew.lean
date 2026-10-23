@@ -8,6 +8,7 @@
 import LeetQ.Rel.Core
 import QLean.Kernel.Structural
 import QLean.Dep.Dyadic
+import QLean.Verify.Elementwise
 
 namespace LeetQ.Rel
 
@@ -262,6 +263,79 @@ theorem Ew.prior_key {v rt} {seed : Carrier t} {x : Rel k (.atom t)} {R : Rel k 
 theorem alignList_keys {K A B : Type} [BEq K] (xs : List (K × A)) (ys : List (K × B)) :
     (alignList xs ys).map (·.1) = xs.map (·.1) ++ (ys.filter fun q => !xs.any (·.1 == q.1)).map (·.1) := by
   simp [alignList, Function.comp_def]
+
+/-! ## Value laws -/
+
+/-- **`Ew.bit`'s bitmap**: bit `i` is set exactly when `i < n` and `bitStep` holds of the two bits the
+    shape reads at `i`. `Verify.cmp_bitAt`'s byte fold, at the bit engine; qlean has it for `Ew.cmp` only. -/
+theorem Ew.bit_bitAt (op shape : UInt8) (a b : ByteArray) (n : USize) :
+    (Ew.bit op shape a b n).size = (n.toNat + 7) / 8 ∧
+    ∀ i < 8 * ((n.toNat + 7) / 8), Column.bitAt (Ew.bit op shape a b n) i =
+      (decide (i < n.toNat) && Ew.bitStep op (Column.bitAt a (Ew.shapeIdx shape i).1)
+        (Column.bitAt b (Ew.shapeIdx shape i).2)) := by
+  let C : Nat → Bool := fun i => decide (i < n.toNat) &&
+    Ew.bitStep op (Column.bitAt a (Ew.shapeIdx shape i).1) (Column.bitAt b (Ew.shapeIdx shape i).2)
+  let B : Nat → UInt8 := fun k =>
+    (List.range 8).foldl (fun byte t => if C (k * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0
+  have hf : Ew.bit op shape a b n =
+      (List.range ((n.toNat + 7) / 8)).foldl (fun acc k => acc.push (B k)) ByteArray.empty := rfl
+  obtain ⟨hs, -, hg⟩ := Verify.foldl_push8 B (List.range ((n.toNat + 7) / 8)) ByteArray.empty
+  rw [hf]
+  refine ⟨by simpa using hs, fun i hi => ?_⟩
+  have h := hg (i / 8) (by simp; omega)
+  simp only [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
+  have hm8 : i % 8 < 8 := Nat.mod_lt _ (by decide)
+  show Column.bitAt _ i = C i
+  simp only [Column.bitAt, h, Option.getD_some]
+  rw [Verify.bit_eq_testBit _ _ hm8, Verify.foldl_setBit _ _ (fun t ht => List.mem_range.1 ht), UInt8.toNat_zero,
+    Nat.zero_testBit, Bool.false_or]
+  apply Bool.eq_iff_iff.mpr
+  rw [List.any_eq_true]
+  constructor
+  · rintro ⟨t, -, ht⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq] at ht
+    obtain ⟨e, hc⟩ := ht
+    subst e
+    rwa [Nat.mul_comm, Nat.div_add_mod] at hc
+  · intro hc
+    refine ⟨i % 8, List.mem_range.2 hm8, ?_⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq, Nat.mul_comm, Nat.div_add_mod]
+    exact ⟨rfl, hc⟩
+
+/-- `Ew.notBits m b` below `m` is `b` negated bit by bit: `≠` against the one-bit mask. -/
+theorem Ew.notBits_bitAt {m : Nat} (hm : m < USize.size) (b : ByteArray) {i : Nat} (hi : i < m) :
+    Column.bitAt (Ew.notBits m b) i = !Column.bitAt b i := by
+  have hmu : m.toUSize.toNat = m := USize.toNat_ofNat_of_lt' hm
+  have h := (Ew.bit_bitAt (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize).2 i (by rw [hmu]; omega)
+  rw [Ew.notBits, h, hmu, decide_eq_true hi, Bool.true_and, show Ew.shapeIdx Ew.av i = (0, i) from rfl]
+  dsimp only
+  cases Column.bitAt b i <;> decide
+
+/-- **`~x`** is `x` with `not` on every boolean. `x.n < USize.size`: the kernel takes the count as a `USize`. -/
+theorem Ew.not_spec {x R : Rel k (.atom .boolean)} (hn : x.n < USize.size) (h : Ew.not x = .ok R) :
+    Ew.MapSpec (fun b => !b) x R := by
+  have hk := Ew.not_key h
+  refine ⟨hk.2, ?_⟩
+  unfold Ew.not at h
+  split at h
+  · rename_i m b hc
+    have hm : m = x.n := by have := x.val.wf.2; rw [hc] at this; exact this
+    simp only [bind, Except.bind, pure, Except.pure] at h
+    split at h
+    · cases h
+    · rename_i a ha
+      cases h
+      apply List.ext_getElem (by rw [List.length_map]; exact (Arr.length_toList a).trans (Arr.length_toList x.val).symm)
+      intro i h1 h2
+      have hac : a.c = .bits m (Ew.notBits m b) := by
+        unfold Arr.of at ha; split at ha
+        · cases ha; rfl
+        · cases ha
+      rw [Arr.getElem_toList, List.getElem_map, Arr.getElem_toList, Arr.get_bool_bits _ hac,
+        Arr.get_bool_bits _ hc]
+      rw [Arr.length_toList] at h1
+      exact Ew.notBits_bitAt (hm ▸ hn) b (by simp at h1; omega)
+  · cases h
 
 
 /-! ## Checks on small literal columns -/
