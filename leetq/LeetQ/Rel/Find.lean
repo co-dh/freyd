@@ -76,11 +76,15 @@ def probe (t : ByteArray) (n : Nat) (lo : Int64) (ndl : ByteArray) : ByteArray :
   gatherBytes 8 n.toUInt64 t (Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue ndl (one lo.toUInt64) (ndl.size / 8).toUSize)
 
 /-- The direct-address table of a haystack, when the small-range test admits it: a long-class `foR`
-    column (no null: a block holding `0N` has base `0N` and fails the test) with
-    `max − min ≤ 4·max(2¹⁶, n)`. Answers the table, `lo` and the dense haystack. -/
+    column whose minimum is not `0N` (`sub` maps the null to itself, so every offset from a `0N`
+    minimum is `0N` and the table would miss every probe) with `max − min ≤ 4·max(2¹⁶, n)`.
+    Answers the table, `lo` and the dense haystack. A `0N` among other values is not caught: the
+    block metadata leaves the null out of `[base, maxv]` (`xn` below), which is why the laws assume
+    every element inside the range. -/
 def direct (a : QAtomicType) (c : Column) (n : Nat) : Option (ByteArray × Int64 × ByteArray) := do
   guard (clsOf a == some Ew.i64)
   let (lo, hi) ← foRRange c
+  guard (lo != Int64.minValue)
   let r := (hi.toInt - lo.toInt).toNat + 1
   guard (r ≤ 4 * max 65536 n)
   let hb ← Column.bytesOf a c
@@ -585,7 +589,7 @@ theorem probe_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int64) (r
     · rw [if_neg hv, hmiss _ fun x hx e => hv (by rw [← e]; exact (hin x hx).2)]; exact congrArg UInt64.ofNat (by simp; omega)
 
 theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : direct .long c n = some (t, lo, hb)) :
-    ∃ hi, foRRange c = some (lo, hi) ∧ (hi.toInt - lo.toInt).toNat + 1 ≤ 4 * max 65536 n ∧
+    ∃ hi, foRRange c = some (lo, hi) ∧ lo ≠ Int64.minValue ∧ (hi.toInt - lo.toInt).toNat + 1 ≤ 4 * max 65536 n ∧
       Column.bytesOf .long c = some hb ∧ t = firstTable hb n lo ((hi.toInt - lo.toInt).toNat + 1) := by
   unfold direct at h
   have hcls : clsOf QAtomicType.long = some Ew.i64 := rfl
@@ -593,13 +597,15 @@ theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : 
   | none => simp [hR, hcls, guard, failure, bind, Option.bind] at h
   | some p =>
     obtain ⟨l, hi⟩ := p
+    by_cases hl : l = Int64.minValue
+    · simp [hR, hcls, hl, guard, failure, bind, Option.bind] at h
     by_cases hg : (hi.toInt - l.toInt).toNat + 1 ≤ 4 * max 65536 n
     · cases hb' : Column.bytesOf .long c with
-      | none => simp [hR, hcls, hg, hb', guard, failure, bind, Option.bind] at h
+      | none => simp [hR, hcls, hl, hg, hb', guard, failure, bind, Option.bind] at h
       | some b =>
-        simp [hR, hcls, hg, hb', guard, failure, bind, Option.bind] at h
-        rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨hi, rfl, hg, rfl, rfl⟩
-    · simp [hR, hcls, hg, guard, failure, bind, Option.bind] at h
+        simp [hR, hcls, hl, hg, hb', guard, failure, bind, Option.bind] at h
+        rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨hi, rfl, hl, hg, rfl, rfl⟩
+    · simp [hR, hcls, hl, hg, guard, failure, bind, Option.bind] at h
 
 theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
     (ho : operand .long c = some (k, md, pk)) : Column.bytesOf .long c = some (operandBytes 8 md pk k.toUSize) := by
@@ -612,48 +618,282 @@ theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
     simp [operandBytes, h]; rfl
   | _ => exact False.elim h
 
+/-- A `foR` column with empty block metadata reads its range as `[maxValue, minValue]`, which holds no
+    element; so a range holding every element marks a `Readable` column. -/
+theorem readable_of_range {m : Nat} (x : Arr (.atom .long) m) {lo hi : Int64} (h : foRRange x.c = some (lo, hi))
+    (hin : ∀ v ∈ x.toList, lo ≤ v ∧ v ≤ hi) : Readable x.c := by
+  cases hc : x.c with
+  | foR n md pk =>
+    rw [hc] at h
+    show md.isEmpty = false
+    cases he : md.isEmpty
+    · rfl
+    · exfalso
+      have hm : md.size = 0 := by simpa [ByteArray.isEmpty] using he
+      have hn : n ≠ 0 := by intro e; simp [foRRange, e] at h
+      simp [foRRange, hn, Column.nblk, hm] at h
+      obtain ⟨rfl, rfl⟩ := h
+      have hnm : n = m := by have := x.wf.2; rw [hc] at this; exact this
+      have h0 : 0 < x.toList.length := by rw [Arr.length_toList]; omega
+      obtain ⟨a, b⟩ := hin _ (List.getElem_mem h0)
+      exact absurd (Int64.le_trans a b) (by decide)
+  | _ => all_goals (rw [hc] at h; simp [foRRange] at h)
+
+/-- What `direct` answering hands the direct path: the haystack's words `xs`, dense in `hb`; a range `r`
+    below `2^63` holding every offset from `lo`, which is not `0N`; and `t` the `firstTable`. The
+    in-range hypothesis is not implied by a well-formed `foR`, whose block metadata nothing checks. -/
+theorem direct_table {m : Nat} {x : Arr (.atom .long) m} {t hb : ByteArray} {lo : Int64}
+    (hd : direct .long x.c m = some (t, lo, hb))
+    (hR : ∀ lo hi, foRRange x.c = some (lo, hi) → ∀ v ∈ x.toList, lo ≤ v ∧ v ≤ hi) (hn8 : 8 * m < USize.size) :
+    ∃ xs r, longWords x.c = some xs ∧ Verify.elemsW 8 hb = xs ∧ xs.length = m ∧ r < 2 ^ 63 ∧
+      lo ≠ Int64.minValue ∧ (∀ w ∈ xs, lo ≤ w.toInt64 ∧ off lo w.toInt64 < r) ∧ t = firstTable hb m lo r := by
+  have hS := USize.size_le
+  obtain ⟨hi, hR', hlo, hr4, hbx, ht⟩ := direct_some hd
+  have hrg := hR lo hi hR'
+  have hx := readable_of_range x hR' hrg
+  obtain ⟨k, md, pk, xs, hox, hwx, hbx', hlx⟩ := operand_long x hx (by omega)
+  rw [bytesOf_long hx hox] at hbx; obtain rfl := Option.some.inj hbx
+  have hxl := Arr.toList_long x hwx
+  refine ⟨xs, _, hwx, hbx', hlx, ?_, hlo, fun w hw => ?_, ht⟩
+  · rw [Nat.max_def] at hr4; split at hr4 <;> omega
+  · obtain ⟨a, b⟩ := hrg w.toInt64 (by rw [hxl]; exact List.mem_map_of_mem hw)
+    refine ⟨a, ?_⟩
+    have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
+
 theorem find_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) {t hb : ByteArray} {lo : Int64}
-    (hd : direct .long x.val.c x.n = some (t, lo, hb))
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → lo ≠ Int64.minValue ∧ ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hy : Readable y.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb))
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hS := USize.size_le
-  have hn : x.n < USize.size := by omega
-  obtain ⟨hi, hR', hr4, hbx, ht⟩ := direct_some hd
-  obtain ⟨hlo, hrg⟩ := hR lo hi hR'
-  obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx', hlx⟩ := operand_long x.val hx hn
+  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
-  rw [bytesOf_long hx hox] at hbx; obtain rfl := Option.some.inj hbx
-  subst ht
   unfold find at h
   rw [hd] at h
   simp only [dense, bytesOf_long hy hoy, bind, Except.bind, pure, Except.pure] at h
-  have hr : (hi.toInt - lo.toInt).toNat + 1 < 2 ^ 63 := by
-    rw [Nat.max_def] at hr4; split at hr4
-    · omega
-    · omega
-  have hxl := Arr.toList_long x.val hwx
-  have hin : ∀ w ∈ xs, lo ≤ w.toInt64 ∧ off lo w.toInt64 < (hi.toInt - lo.toInt).toNat + 1 := by
-    intro w hw
-    obtain ⟨a, b⟩ := hrg w.toInt64 (by rw [hxl]; exact List.mem_map_of_mem hw)
-    refine ⟨a, ?_⟩
-    have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
-  rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (probe (firstTable _ x.n lo
-    ((hi.toInt - lo.toInt).toNat + 1)) x.n lo (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_c h]; rfl),
-    hxl, Arr.toList_long y.val hwy, findSpec,
-    probe_spec _ xs x.n lo _ hbx' hlx hn hr hlo hin _ ys hby (by rw [hly]; exact hm)]
+  rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (probe (firstTable hb x.n lo R) x.n lo
+    (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_c h]; rfl),
+    Arr.toList_long x.val hwx, Arr.toList_long y.val hwy, findSpec,
+    probe_spec _ xs x.n lo _ hbx hlx (by omega) hr hlo hin _ ys hby (by rw [hly]; exact hm)]
   simp only [List.map_map]; rfl
+
+/-! ## The comparison bitmap -/
+
+/-- **`Ew.cmp`'s bitmap**: bit `i` is set exactly when `i < n` and `cmpStep` holds of the two elements
+    the shape reads at `i`, so the last byte's tail is zero. The byte fold is `memberVec_mem`'s. -/
+theorem cmp_bitAt (op cls shape : UInt8) (a b : ByteArray) (n : USize) :
+    (Ew.cmp op cls shape a b n).size = (n.toNat + 7) / 8 ∧
+    ∀ i < 8 * ((n.toNat + 7) / 8), Column.bitAt (Ew.cmp op cls shape a b n) i =
+      (decide (i < n.toNat) && Ew.cmpStep op cls (Ew.elem cls a (Ew.shapeIdx shape i).1)
+        (Ew.elem cls b (Ew.shapeIdx shape i).2)) := by
+  let C : Nat → Bool := fun i => decide (i < n.toNat) &&
+    Ew.cmpStep op cls (Ew.elem cls a (Ew.shapeIdx shape i).1) (Ew.elem cls b (Ew.shapeIdx shape i).2)
+  let B : Nat → UInt8 := fun k =>
+    (List.range 8).foldl (fun byte t => if C (k * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0
+  have hf : Ew.cmp op cls shape a b n =
+      (List.range ((n.toNat + 7) / 8)).foldl (fun acc k => acc.push (B k)) ByteArray.empty := rfl
+  obtain ⟨hs, -, hg⟩ := Verify.foldl_push8 B (List.range ((n.toNat + 7) / 8)) ByteArray.empty
+  rw [hf]
+  refine ⟨by simpa using hs, fun i hi => ?_⟩
+  have h := hg (i / 8) (by simp; omega)
+  simp only [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
+  have hm8 : i % 8 < 8 := Nat.mod_lt _ (by decide)
+  show Column.bitAt _ i = C i
+  simp only [Column.bitAt, h, Option.getD_some]
+  rw [Verify.bit_eq_testBit _ _ hm8, Verify.foldl_setBit _ _ (fun t ht => List.mem_range.1 ht), UInt8.toNat_zero,
+    Nat.zero_testBit, Bool.false_or]
+  apply Bool.eq_iff_iff.mpr
+  rw [List.any_eq_true]
+  constructor
+  · rintro ⟨t, -, ht⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq] at ht
+    obtain ⟨e, hc⟩ := ht
+    subst e
+    rwa [Nat.mul_comm, Nat.div_add_mod] at hc
+  · intro hc
+    refine ⟨i % 8, List.mem_range.2 hm8, ?_⟩
+    rw [Bool.and_eq_true, decide_eq_true_eq, Nat.mul_comm, Nat.div_add_mod]
+    exact ⟨rfl, hc⟩
+
+theorem cmpStep_i64 (op : UInt8) (x y : UInt64) :
+    Ew.cmpStep op Ew.i64 x y = (let o := compare x.toInt64 y.toInt64
+      if op == Ew.eq then o == .eq else if op == Ew.ne then o != .eq
+      else if op == Ew.lt then o == .lt else if op == Ew.le then o != .gt
+      else if op == Ew.gt then o == .gt else o != .lt) := rfl
+
+theorem cmpStep_lt (x y : UInt64) : Ew.cmpStep Ew.lt Ew.i64 x y = decide (x.toInt64 < y.toInt64) := by
+  rw [cmpStep_i64]
+  simp only [show (Ew.lt == Ew.eq) = false from rfl, show (Ew.lt == Ew.ne) = false from rfl,
+    show (Ew.lt == Ew.lt) = true from rfl, Bool.false_eq_true, ↓reduceIte]
+  simp [compare, compareOfLessAndEq]
+  split <;> simp_all
+  split <;> simp_all
+
+theorem cmpStep_eq (x y : UInt64) : Ew.cmpStep Ew.eq Ew.i64 x y = decide (x = y) := by
+  rw [cmpStep_i64]
+  simp only [show (Ew.eq == Ew.eq) = true from rfl, ↓reduceIte, compare, compareOfLessAndEq]
+  by_cases hl : x.toInt64 < y.toInt64
+  · have hne : x ≠ y := fun e => by subst e; exact absurd (Int64.lt_iff_toInt_lt.mp hl) (Int.lt_irrefl _)
+    rw [if_pos hl]; simp [hne]
+  · rw [if_neg hl]
+    by_cases he : x.toInt64 = y.toInt64
+    · rw [if_pos he]; simp [toInt64_inj he]
+    · have hne : x ≠ y := fun e => he (e ▸ rfl)
+      rw [if_neg he]; simp [hne]
+
+/-- A word below `2^63` reads as the same long. -/
+theorem toInt_ofNat_lt {I : Nat} (h : I < 2 ^ 63) : (UInt64.ofNat I).toInt64.toInt = I := by
+  have hu : (UInt64.ofNat I).toInt64.toUInt64.toNat = I := by simp; omega
+  rw [toInt_bmod, hu, Int.bmod]; split <;> omega
+
+/-- `x in y` on the direct path: the probe's first positions compared below `count y`. -/
+theorem in_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
+    (hx : Readable x.val.c) {t hb : ByteArray} {lo : Int64} (hd : direct .long y.val.c y.n = some (t, lo, hb))
+    (hR : ∀ lo hi, foRRange y.val.c = some (lo, hi) → ∀ v ∈ y.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
+    r.val.toList = inSpec x.val.toList y.val.toList := by
+  have hS := USize.size_le
+  obtain ⟨ys, R, hwy, hby, hly, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
+  obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hm
+  unfold «in» at h
+  rw [hd] at h
+  simp only [dense, bytesOf_long hx hox, bind, Except.bind, pure, Except.pure] at h
+  have hG := probe_spec hb ys y.n lo R hby hly (by omega) hr hlo hin _ xs hbx (by rw [hlx]; exact hm)
+  generalize probe (firstTable hb y.n lo R) y.n lo (operandBytes 8 nmd np nk.toUSize) = g at h hG
+  obtain ⟨e, -⟩ := onKey_key h
+  obtain ⟨-, hc⟩ := cmp_bitAt Ew.lt Ew.i64 Ew.va g (one y.n.toUInt64) x.n.toUSize
+  rw [USize.toNat_ofNat_of_lt' hm] at hc
+  obtain ⟨-, gg⟩ := elemsW8_get hG
+  unfold inSpec
+  rw [Arr.toList_long x.val hwx, Arr.toList_long y.val hwy]
+  apply List.ext_getElem (by rw [Arr.length_toList, e]; simp [hlx])
+  intro i h1 _
+  have hi : i < x.n := by rw [Arr.length_toList, e] at h1; exact h1
+  rw [Arr.getElem_toList, Arr.get_bool_bits r.val (onKey_c h), hc i (by omega)]
+  rw [show Ew.shapeIdx Ew.va i = (i, 0) from rfl, show Ew.elem Ew.i64 g i = Column.bitsAt g (i * 8) 8 from rfl,
+    show Ew.elem Ew.i64 (one y.n.toUInt64) 0 = Column.bitsAt (one y.n.toUInt64) 0 8 from rfl, bitsAt_one,
+    gg i (by simp [hlx, hi]), cmpStep_lt]
+  simp only [List.getElem_map, hi, decide_true, Bool.true_and]
+  have hI := List.idxOf_le_length (a := xs[i].toInt64) (l := ys.map UInt64.toInt64)
+  rw [List.length_map, hly] at hI
+  apply Bool.eq_iff_iff.2
+  have hyn : y.n.toUInt64.toInt64.toInt = y.n := toInt_ofNat_lt (by omega)
+  have hl : (ys.map UInt64.toInt64).length = y.n := by simp [hly]
+  rw [decide_eq_true_iff, Int64.lt_iff_toInt_lt, toInt_ofNat_lt (by omega), hyn, Int.ofNat_lt, List.contains_iff_mem, ← List.idxOf_lt_length_iff, hl]
+
+/-- A list element is at its own first index exactly when no earlier element equals it. -/
+theorem idxOf_self_iff {α : Type} [BEq α] [LawfulBEq α] : ∀ (l : List α) (i : Nat) (hi : i < l.length),
+    l.idxOf l[i] = i ↔ ∀ j (hj : j < i), l[j]'(by omega) ≠ l[i]
+  | [], _, hi => absurd hi (by simp)
+  | a :: l, 0, _ => by simp
+  | a :: l, i + 1, hi => by
+    have ih := idxOf_self_iff l i (by simpa using hi)
+    have hi' : i < l.length := by simpa using hi
+    rw [List.getElem_cons_succ, List.idxOf_cons]
+    by_cases ha : a = l[i]'hi'
+    · rw [show (a == l[i]'hi') = true by simp [ha], cond_true]
+      exact ⟨fun h => by omega, fun h => absurd ha (h 0 (by omega))⟩
+    · rw [show (a == l[i]'hi') = false by simp [ha], cond_false, Nat.add_right_cancel_iff, ih]
+      constructor
+      · intro h j hj
+        cases j with
+        | zero => exact ha
+        | succ j => exact h j (by omega)
+      · intro h j hj; exact h (j + 1) (by omega)
+
+/-- `?x` on the direct path: the positions whose probe answers the position itself are the first
+    occurrences, and the gather at them lists `eraseDups`. -/
+theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)}
+    {t hb : ByteArray} {lo : Int64} (hd : direct .long x.val.c x.n = some (t, lo, hb)) (hu : x.val.attr ≠ 2)
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
+  have hS := USize.size_le
+  have hn : x.n < USize.size := by omega
+  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hR hn8
+  unfold distinct at h
+  rw [show (x.val.attr == 2) = false by simp [hu], hd] at h
+  dsimp only at h
+  have hP := probe_spec hb xs x.n lo R hbx hlx hn hr hlo hin hb xs hbx (by rw [hlx]; exact hn)
+  generalize probe (firstTable hb x.n lo R) x.n lo hb = P at h hP
+  obtain ⟨-, hc⟩ := cmp_bitAt Ew.eq Ew.i64 Ew.vv P (tilLongs x.n.toUSize) x.n.toUSize
+  rw [USize.toNat_ofNat_of_lt' hn] at hc
+  generalize Ew.cmp Ew.eq Ew.i64 Ew.vv P (tilLongs x.n.toUSize) x.n.toUSize = bits at h hc
+  change list .long (.bytes (gatherBytes 8 0 hb (whereBits x.n.toUSize bits))) 2 = .ok r at h
+  -- the words as a function of the position
+  let e : Nat → UInt64 := fun i => xs.getD i 0
+  have hxe : xs = (List.range x.n).map e :=
+    List.ext_getElem (by simp [hlx]) fun i h1 _ => by simp [e, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem h1]
+  obtain ⟨-, gP⟩ := elemsW8_get hP
+  obtain ⟨-, gx⟩ := elemsW8_get hbx
+  have htil := Verify.tilLongs_spec x.n.toUSize
+  rw [USize.toNat_ofNat_of_lt' hn] at htil
+  have htl : (Verify.elemsW 8 (tilLongs x.n.toUSize)).length = x.n := by
+    rw [← List.length_map (f := UInt64.toNat), htil, List.length_range]
+  have gT : ∀ i < x.n, (Column.bitsAt (tilLongs x.n.toUSize) (i * 8) 8).toNat = i := fun i hi => by
+    have hv := List.getElem_of_eq htil (i := i) (by simp [htl]; omega)
+    simpa [Verify.elemsW] using hv
+  -- bit `i` marks a first occurrence
+  have hF : (List.range x.n).filter (Column.bitAt bits) = Verify.firstsOf e x.n := by
+    unfold Verify.firstsOf
+    apply List.filter_congr
+    intro i hi'
+    have hi := List.mem_range.1 hi'
+    have hil : i < xs.length := by omega
+    rw [hc i (by omega), show Ew.shapeIdx Ew.vv i = (i, i) from rfl,
+      show Ew.elem Ew.i64 P i = Column.bitsAt P (i * 8) 8 from rfl,
+      show Ew.elem Ew.i64 (tilLongs x.n.toUSize) i = Column.bitsAt (tilLongs x.n.toUSize) (i * 8) 8 from rfl,
+      gP i (by simp [hil]), cmpStep_eq]
+    simp only [List.getElem_map, hi, decide_true, Bool.true_and]
+    rw [idxOf_map_of_inj (fun _ _ => toInt64_inj)]
+    have hI := List.idxOf_le_length (a := xs[i]) (l := xs)
+    apply Bool.eq_iff_iff.2
+    rw [decide_eq_true_iff, List.all_eq_true, ← UInt64.toNat_inj, gT i hi, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega),
+      idxOf_self_iff xs i hil]
+    constructor
+    · intro hne j hj; have hj := List.mem_range.1 hj
+      simpa [e, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hil, List.getElem?_eq_getElem (show j < xs.length by omega)] using hne j hj
+    · intro hall j hj
+      have := hall j (List.mem_range.2 (by omega))
+      simpa [e, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hil, List.getElem?_eq_getElem (show j < xs.length by omega)] using this
+  have hL : ∀ i ∈ (List.range x.n.toUSize.toNat).filter (Column.bitAt bits), i < hb.size / (8 : USize).toNat := by
+    intro i hi
+    have := List.mem_range.1 (List.mem_filter.1 hi).1
+    rw [USize.toNat_ofNat_of_lt' hn] at this
+    rw [usize_eight, (elemsW8_get hbx).1, hlx]; exact this
+  obtain ⟨gs, gj⟩ := Verify.gatherBytes_whereBits 8 (by rw [usize_eight]; decide) 0 hb x.n.toUSize bits hL
+  rw [usize_eight, USize.toNat_ofNat_of_lt' hn, hF] at gs gj
+  have hw : Verify.elemsW 8 (gatherBytes 8 0 hb (whereBits x.n.toUSize bits)) = (Verify.firstsOf e x.n).map e := by
+    apply List.ext_getElem (by
+      rw [List.length_map, Verify.elemsW, List.length_map, List.length_range, gs, Nat.mul_div_cancel_left _ (by decide)])
+    intro j h1 h2
+    have hj : j < (Verify.firstsOf e x.n).length := by simpa using h2
+    have hlt : (Verify.firstsOf e x.n)[j] < xs.length := by
+      have := (List.mem_filter.1 (List.getElem_mem hj)).1; rw [hlx]; exact List.mem_range.1 this
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [gj j hj, gx _ hlt]
+    show _ = xs.getD _ 0
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some]
+  rw [Arr.toList_long r.val (show longWords r.val.c = _ by rw [list_c h]; exact congrArg some hw), distinctSpec,
+    Arr.toList_long x.val hwx, hxe, List.map_map, List.map_map]
+  exact firstsOf_map_eraseDups e (UInt64.toInt64 ∘ e) (fun i j => ⟨congrArg UInt64.toInt64, toInt64_inj⟩) x.n
 
 
 /-! ## The laws, on `bytes` and on `foR` alike -/
 
 /-- `?x` on a long column is `distinctSpec`, from `distinct_words`. Restrictions: `attr ≠ 2`, the `u`
     shortcut, whose `Arr.attr` carries no proof of uniqueness; `longWords` defined, which excludes `alp`;
-    `direct` declining (TODO below); `x.n < USize.size`, the count `distinct` takes. -/
+    on the direct path every element inside the block range (`direct_table`); `8 · x.n < USize.size`,
+    which keeps the range below `2^63`. -/
 theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {xs : List UInt64}
-    (hx : longWords x.val.c = some xs) (hd : direct .long x.val.c x.n = none) (hu : x.val.attr ≠ 2)
-    (hn : x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
+    (hx : longWords x.val.c = some xs) (hu : x.val.attr ≠ 2)
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * x.n < USize.size) (h : distinct x = .ok r) : r.val.toList = distinctSpec x.val.toList := by
+  have hn : x.n < USize.size := by have := USize.size_le; omega
+  obtain ⟨⟨t, lo, hb⟩, hd⟩ | hd : (∃ p, direct .long x.val.c x.n = some p) ∨ direct .long x.val.c x.n = none := by
+    cases e : direct .long x.val.c x.n with
+    | none => exact Or.inr rfl
+    | some p => exact Or.inl ⟨p, rfl⟩
+  · exact distinct_direct hd hu hR hn8 h
   obtain ⟨e, c, hxe, hv, hw⟩ := distinct_words x.val hx hn
   unfold distinct at h
   rw [show (x.val.attr == 2) = false by simp [hu], hd, hv] at h
@@ -667,11 +907,12 @@ theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
     rw [toInt64_inj (x := e i) (y := e j) h']
 
 /-- `x?y` on long columns is `findSpec`, from `findVec_idxOf` over the decoded operands. Restrictions:
-    `Readable` payloads; `direct` declining (TODO below); `x.val.attr ≠ 1`, since the `s` halving
-    (`findSortedBytes`) has no law yet; both counts below `USize.size`, which the kernel indexes by. -/
+    `Readable` payloads; on the direct path every element inside the block range (`direct_table`);
+    `x.val.attr ≠ 1`, since the `s` halving (`findSortedBytes`) has no law yet; both counts below
+    `USize.size`, which the kernel indexes by, and `8 · x.n` too, which keeps the range below `2^63`. -/
 theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
     (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : x.val.attr ≠ 1)
-    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → lo ≠ Int64.minValue ∧ ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
     (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
   have hn : x.n < USize.size := by have := USize.size_le; omega
@@ -679,7 +920,7 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
     cases e : direct .long x.val.c x.n with
     | none => exact Or.inr rfl
     | some p => exact Or.inl ⟨p, rfl⟩
-  · exact find_direct hx hy hd hR hn8 hm h
+  · exact find_direct hy hd hR hn8 hm h
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hn
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
   unfold find at h
@@ -702,12 +943,21 @@ theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
   exact toInt64_of_toNat (by rw [hj j (by rw [hsy]; exact hj'), gy j hj'])
 
 /-- `x in y` on long columns is `inSpec`, from `memberVec_mem` over the decoded operands. Restrictions:
-    `Readable` payloads; `direct` declining (TODO below); `y.val.attr ≠ 1`, since the `s` halving
-    (`memberSortedBytes`) has no law yet; both counts below `USize.size`, which the kernel indexes by. -/
+    `Readable` payloads; on the direct path every element of `y` inside the block range
+    (`direct_table`); `y.val.attr ≠ 1`, since the `s` halving (`memberSortedBytes`) has no law yet; both
+    counts below `USize.size`, which the kernel indexes by, and `8 · y.n` too, which keeps the range
+    below `2^63`. -/
 theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) (hd : direct .long y.val.c y.n = none) (hs : y.val.attr ≠ 1)
-    (hn : y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
+    (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : y.val.attr ≠ 1)
+    (hR : ∀ lo hi, foRRange y.val.c = some (lo, hi) → ∀ v ∈ y.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * y.n < USize.size) (hm : x.n < USize.size) (h : «in» x y = .ok r) :
     r.val.toList = inSpec x.val.toList y.val.toList := by
+  have hn : y.n < USize.size := by have := USize.size_le; omega
+  obtain ⟨⟨t, lo, hb⟩, hd⟩ | hd : (∃ p, direct .long y.val.c y.n = some p) ∨ direct .long y.val.c y.n = none := by
+    cases e : direct .long y.val.c y.n with
+    | none => exact Or.inr rfl
+    | some p => exact Or.inl ⟨p, rfl⟩
+  · exact in_direct hx hd hR hn8 hm h
   obtain ⟨hk, hmd, hp, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hn
   obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hm
   unfold «in» at h
@@ -825,6 +1075,11 @@ private def csf : Rel (.atom .long) (.atom .long) :=
 #guard ans (·.val.toList) (whereCounts csf) == some (whereCountsSpec [2, 0, 3, 1])
 #guard (whereCounts ys).toOption.isNone
 #guard (direct .long xf.val.c 5).isSome && (direct .long xs.val.c 5).isNone
+-- `(0N; -0W)` encoded: the block metadata leaves the null out of `[base, maxv]`, so the range does not
+-- hold `0N`; the laws' in-range hypothesis fails here, and `direct` takes the path anyway (open)
+private def xnc := Coc.encode 8 (packLongs [0x8000000000000000, -0x7fffffffffffffff])
+private def xn : Rel (.atom .long) (.atom .long) := ⟨2, .til 2, { c := .foR 2 xnc.1 xnc.2, wf := ⟨rfl, rfl⟩ }⟩
+#guard foRRange xn.val.c == some (-0x7fffffffffffffff, -0x7fffffffffffffff) && (direct .long xn.val.c 2).isSome
 #guard [xs, xf].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
 #guard ans (·.val.toList) (distinct xf) == some [5, 3, 9]
 #guard ans (·.val.toList) (distinct sy) == some (distinctSpec sy.val.toList)
@@ -851,6 +1106,9 @@ end Checks
 #print axioms firstTable_spec
 #print axioms probe_spec
 #print axioms find_direct
+#print axioms cmp_bitAt
+#print axioms in_direct
+#print axioms distinct_direct
 #print axioms where_toList
 #print axioms firstsOf_map_eraseDups
 #print axioms distinct_toList
