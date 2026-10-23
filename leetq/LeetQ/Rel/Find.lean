@@ -90,15 +90,15 @@ def «where» {k : Ty} (x : Rel k (.atom .boolean)) : Except String (Rel (.atom 
   list .long (← vec "&x" .long (whereColumn .boolean x.val.c)) 1
 
 /-- q's `where` on a dense count column `cnt` (none negative): row `i` repeated `cnt[i]` times, and each
-    copy's rank in its run — `Scan.scan sums`, `overBytes add`, `tilLongs`, `binBytes` of the outputs into
-    the run starts (a zero count repeats a start; `bin` takes the last, the row that owns it). -/
+    copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less its
+    run's start (`Scan.scan sums` less the count). One linear pass, where bisecting the outputs into the
+    run starts (`binBytes`) was `O(m log n)`. -/
 def expand (cnt : ByteArray) : ByteArray × ByteArray :=
   let n := cnt.size / 8
   let rs := Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (Scan.scan .sums .i64 n.toUSize cnt) cnt n.toUSize
-  let m := (overBytes .add Ew.i64 Int64.minValue cnt).toInt.toNat
-  let p := tilLongs m.toUSize
-  let i := binBytes 8 false true false rs p
-  (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue p (gatherBytes 8 0 rs i) m.toUSize)
+  let i := expandBytes 8 0 (tilLongs n.toUSize) cnt
+  let m := i.size / 8
+  (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (tilLongs m.toUSize) (gatherBytes 8 0 rs i) m.toUSize)
 
 /-- `&x` on counts: `expand`, after one `Ew.cmp lt 0` (`0N` included) refuses a negative count. -/
 def whereCounts {k : Ty} (x : Rel k (.atom .long)) : Except String (Rel (.atom .long) (.atom .long)) := do
