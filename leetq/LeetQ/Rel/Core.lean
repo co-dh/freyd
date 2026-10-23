@@ -161,6 +161,43 @@ theorem Arr.get_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h :
   rw [← Arr.getElem_toList x i (by rw [Arr.length_toList]; exact hi)]
   simp [Arr.toList_long x h]
 
+/-- The dense payload a kernel reads off a long column that lists `longWords`: a `bytes` payload is
+    itself, a `foR` one is handed over or decoded (`decodeW`) to the same words. -/
+theorem Arr.dense_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h : longWords x.c = some ws)
+    (hm : m < USize.size) : ∃ B, (x.c = .bytes B ∨ ∃ md pk, x.c = .foR m md pk ∧
+      B = Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ∧ Column.bytesOf .long x.c = some B ∧
+      Verify.elemsW 8 B = ws ∧ B.size / 8 = m := by
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  cases hc : x.c with
+  | bytes b => rw [hc] at h; cases h; exact ⟨b, .inl rfl, rfl, rfl, Arr.n_long_bytes x hc⟩
+  | foR n md pk =>
+    rw [hc] at h; cases h
+    have hn : n = m := by have := x.wf.2; rw [hc] at this; exact this
+    subst hn
+    obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk n.toUSize
+    rw [h8, USize.toNat_ofNat_of_lt' hm] at hsz hg
+    refine ⟨_, .inr ⟨md, pk, rfl, rfl⟩, rfl, List.ext_getElem (by simp [Verify.elemsW, hsz]) fun i h1 _ => ?_,
+      by rw [hsz]; omega⟩
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [hg i (by simpa [Verify.elemsW, hsz] using h1), Verify.ofNat_toNat_mod64]
+  | _ => all_goals (rw [hc] at h; cases h)
+
+/-- A dense long answer lists its words whichever form `Column.answer` leaves it in: dense, or encoded
+    (`foRBits_encode_bits`). -/
+theorem longWords_answer (b : ByteArray) : longWords (Column.answer .long (.bytes b)) = some (Verify.elemsW 8 b) := by
+  have ha : Column.answer .long (.bytes b) = .bytes b ∨ Column.answer .long (.bytes b) =
+      .foR (b.size / 8) (Kernel.Coc.encode (8 : Nat).toUSize b).1 (Kernel.Coc.encode (8 : Nat).toUSize b).2 := by
+    simp only [Column.answer, QAtomicType.width, show Column.alpEncodes .long = false from rfl,
+      show Column.encodes .long = true from rfl, Kernel.Coc.encodeBelow]
+    repeat' split
+    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+  rcases ha with e | e <;> rw [e]
+  · rfl
+  · simp only [longWords, Verify.elemsW]
+    refine congrArg some (List.map_congr_left fun i hi => UInt64.toNat_inj.1 ?_)
+    rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
+    exact Verify.foRBits_encode_bits 8 (by decide) (by decide) b i (List.mem_range.1 hi)
+
 /-- Reading a word as a long loses nothing. -/
 theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
   simpa using congrArg Int64.toUInt64 h
