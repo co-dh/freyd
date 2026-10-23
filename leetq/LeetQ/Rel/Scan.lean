@@ -405,32 +405,6 @@ theorem toList_answer_long {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (
     rw [Arr.length_toList] at this; simpa [Verify.elemsW] using this.symm
   exact toList_words x hL rfl hlen
 
-/-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
-    width four, the `foR` form read back by `foRBits_encode_bits`. -/
-theorem toList_answer_int {m : Nat} (x : Arr (.atom .int) m) {b : ByteArray} (hc : x.c = Column.answer .int (.bytes b)) :
-    x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 4) 4).toUInt32.toInt32 := by
-  have ha : Column.answer .int (.bytes b) = .bytes b ∨ Column.answer .int (.bytes b) =
-      .foR (b.size / 4) (Kernel.Coc.encode (4 : Nat).toUSize b).1 (Kernel.Coc.encode (4 : Nat).toUSize b).2 := by
-    simp only [Column.answer, QAtomicType.width, show Column.alpEncodes .int = false from rfl,
-      show Column.encodes .int = true from rfl, Kernel.Coc.encodeBelow]
-    repeat' split
-    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
-  have hm : Column.count .int x.c = m := x.wf.2
-  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
-  intro i h1 _
-  have hn : i < Column.count .int x.c := by rw [Arr.length_toList] at h1; omega
-  rw [Arr.getElem_toList, List.getElem_map, List.getElem_range]
-  show ((Column.get .int x.c i).bind (Carrier.of? .int)).getD _ = _
-  rcases ha with e | e <;> rw [hc, e] at hn ⊢ <;> simp only [Column.get, if_pos hn]
-  · rfl
-  · have hi : i < b.size / 4 := hn
-    show (Column.foRBits _ _ #[] i).toUInt32.toInt32 = _
-    rw [foRBits_starts]
-    congr 1
-    apply UInt32.toNat_inj.1
-    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Verify.foRBits_encode_bits 4 (by decide) (by decide) b i hi,
-      Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ (by decide))]
-
 /-- A count below `2^32` read back at four bytes is q's `int` of it. -/
 theorem int32_count (L : Nat) : (UInt64.ofNat (L % 2 ^ 32)).toUInt32.toInt32 = Int32.ofNat L := by
   have : (UInt64.ofNat (L % 2 ^ 32)).toUInt32 = UInt32.ofNat L := by
@@ -686,19 +660,6 @@ theorem sub_ofNat {a b : Int64} (h0 : 0 ≤ a.toInt) (h1 : a.toInt ≤ b.toInt) 
 /-- A long at or above `0` is not `0N`. -/
 theorem ne_nul {a : Int64} (h : 0 ≤ a.toInt) : (a == Spec.nul) = false := by
   simp only [beq_eq_false_iff_ne, ne_eq]; intro e; rw [e] at h; exact absurd h (by decide)
-
-/-- Under `Cuts o n`, offsets `i ≤ j` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
-theorem cuts_get {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
-    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
-  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
-    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
-  obtain ⟨hm, h0, hl⟩ := co
-  rw [e i (by omega), e j hj]
-  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
-  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
-  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
-  rw [h0] at a; rw [hl] at c
-  exact ⟨by simpa using a, b, c⟩
 
 /-- A long at or above `0` is its natural, cast back. -/
 theorem toNat_cast {a : Int64} (h : 0 ≤ a.toInt) : (a.toNatClampNeg : Int) = a.toInt := by
