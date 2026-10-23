@@ -52,41 +52,41 @@ def isFloat : Scan.Kind → Bool | .f32 | .f64 => true | _ => false
 
 /-! ## Codes: equal elements equal codes, at the layout that already is one -/
 
-/-- `n` codes at the layout `k` (`bit`, `u8`, `i16`, `i32` or `i64`): equal elements equal codes, every
-    code below `card` (`2⁶⁴` where only the layout bounds it). -/
+/-- `n` codes at `w` bits: a bitmap at `1`, packed ids at `2`/`4` (`Column.idAt`'s lanes, which a bitmap is
+    at `1` too), dense bytes at `8`/`16`/`32`/`64`. Equal elements equal codes, every code below `card`
+    (`2⁶⁴` where only the layout bounds it); at `2`/`4` bits `w = Column.idWidthOf card`. -/
 structure Code where
-  k : Scan.Kind
+  w : Nat
   n : Nat
   card : Nat
   b : ByteArray
   deriving Inhabited
 
-/-- The narrowest byte layout holding the codes `0 … card-1`. A `bit` is never chosen here: it is the
-    layout of a code that already is a bit, and a packed result must cut at any row (`Code.cut`). -/
+/-- The narrowest byte layout holding the codes `0 … card-1`, for a pass (`enumIds`, `enumIdsFoR`) that
+    writes a byte lane at least. -/
 def codeKind (card : Nat) : Scan.Kind :=
   if card ≤ 2 ^ 8 then .u8 else if card ≤ 2 ^ 16 then .i16 else if card ≤ 2 ^ 32 then .i32 else .i64
 
 /-- The long ids `gid`, each below `card`, packed at `codeKind card` by `enumIds`. -/
 def pack (card : Nat) (gid : ByteArray) : Code :=
   let k := codeKind card
-  ⟨k, len gid, card, if k == .i64 then gid else (enumIds (len gid).toUSize card.toUSize 0 (8 * k.width).toUSize gid).1⟩
+  ⟨8 * k.width, len gid, card, if k == .i64 then gid else (enumIds (len gid).toUSize card.toUSize 0 (8 * k.width).toUSize gid).1⟩
 
 /-- A long payload as codes bounded by its layout alone. -/
-def Code.ofLongs (b : ByteArray) : Code := ⟨.i64, len b, 2 ^ 64, b⟩
+def Code.ofLongs (b : ByteArray) : Code := ⟨64, len b, 2 ^ 64, b⟩
 
-/-- The layout of an enum's id lane, where it is one a kernel reads. -/
+/-- The sort layout of a lane, where it has one: every lane but `2`/`4` bits. -/
 def laneKind : Nat → Option Scan.Kind
   | 1 => some .bit | 8 => some .u8 | 16 => some .i16 | 32 => some .i32 | 64 => some .i64 | _ => none
 
-/-- `n` ids in `ng` classes packed at `Column.idWidthOf ng`, as `groupIds` answers them, as a code: read
-    where they lie at a byte lane; below a byte (`ng ≤ 16`) `remapIds` through the identity widens them to
-    `u8`: `find`/`member` have id kernels (`findIdsVec`, `memberIdsVec`) but `gatherBytes`, `grade`, `groupIds`
-    and `Code.cut` read byte lanes only. -/
-def Code.ofIds (ng n : Nat) (gid : ByteArray) : Code :=
-  let w := Column.idWidthOf ng
-  match laneKind w with
-  | some .bit | none => ⟨.u8, n, ng, remapIds (Column.packIds 8 ng id) n.toUSize w.toUSize 8 gid⟩
-  | some k => ⟨k, n, ng, gid⟩
+/-- `n` ids below `card` packed at `w = Column.idWidthOf card` bits — an enum's ids, `groupIds`' — as a
+    code where they lie. A lane of no bits (`card ≤ 1`, every id `0`) is a bitmap of zeros: the
+    narrowest lane every code kernel reads. -/
+def Code.ofLane (w n card : Nat) (ids : ByteArray) : Code :=
+  if w == 0 then ⟨1, n, card, ByteArray.mk (Array.replicate ((n + 7) / 8) 0)⟩ else ⟨w, n, card, ids⟩
+
+/-- `n` ids in `ng` classes as `groupIds` answers them, packed at `Column.idWidthOf ng`. -/
+def Code.ofIds (ng n : Nat) (gid : ByteArray) : Code := Code.ofLane (Column.idWidthOf ng) n ng gid
 
 /-- How many rows of `n` each class of a `groupIds` answer `(gid, firsts)` holds: `groupSizes` reading
     the ids at their width. -/
@@ -95,61 +95,85 @@ def classSizes (n : Nat) (r : ByteArray × ByteArray) : ByteArray :=
 
 namespace Code
 
-def w (c : Code) : USize := c.k.width.toUSize
+/-- The lane's sort layout, `none` at `2`/`4` bits, where the id kernels read. -/
+def kind (c : Code) : Option Scan.Kind := laneKind c.w
 
-/-- `c@i` for an in-range long index column: `gatherBits` on bits, `gatherBytes` at the code's width. -/
+/-- `c@i` for an in-range long index column: `gatherBits`, `gatherBytes`, `gatherPacked` at the lane. -/
 def gather (c : Code) (i : ByteArray) : Code :=
-  ⟨c.k, len i, c.card, if c.k == .bit then gatherBits c.n.toUSize c.b i else gatherBytes c.w 0 c.b i⟩
+  ⟨c.w, len i, c.card, match c.kind with
+    | some .bit => gatherBits c.n.toUSize c.b i
+    | some k => gatherBytes k.width.toUSize 0 c.b i
+    | none => gatherPacked c.n.toUSize c.w.toUSize c.w.toUSize 0 c.b i⟩
 
-/-- The first position in `c` of each of `x`'s codes, `c.n` at a miss: `findBitVec`, `findVec`. -/
+/-- The first position in `c` of each of `x`'s codes, `c.n` at a miss: `findBitVec`, `findVec`, and
+    `findIdsVec` at `2`/`4` bits or two lanes of different widths. -/
 def find (c x : Code) : ByteArray :=
-  if c.k == .bit then findBitVec c.n.toUSize c.b x.n.toUSize x.b else findVec c.w false c.b x.b
+  match c.kind, x.kind with
+  | some .bit, some .bit => findBitVec c.n.toUSize c.b x.n.toUSize x.b
+  | some k, some k' => if k == k' then findVec k.width.toUSize false c.b x.b
+    else findIdsVec c.w.toUSize c.b c.n.toUSize x.w.toUSize x.b x.n.toUSize
+  | _, _ => findIdsVec c.w.toUSize c.b c.n.toUSize x.w.toUSize x.b x.n.toUSize
 
-/-- Whether each of `x`'s codes occurs in `c`, as bits: `memberBits`, `memberVec`. -/
+/-- Whether each of `x`'s codes occurs in `c`, as bits: `memberBits`, `memberVec`, `memberIdsVec`. -/
 def member (x c : Code) : ByteArray :=
-  if c.k == .bit then memberBits x.n.toUSize x.b c.n.toUSize c.b else memberVec c.w false x.b c.b
+  match x.kind, c.kind with
+  | some .bit, some .bit => memberBits x.n.toUSize x.b c.n.toUSize c.b
+  | some k, some k' => if k == k' then memberVec k.width.toUSize false x.b c.b
+    else memberIdsVec x.w.toUSize x.b x.n.toUSize c.w.toUSize c.b c.n.toUSize
+  | _, _ => memberIdsVec x.w.toUSize x.b x.n.toUSize c.w.toUSize c.b c.n.toUSize
 
-/-- The positions where `a` and `b` hold one code: `Ew.cmp` at the codes' class. -/
-def eqAt (a b : Code) : ByteArray := whereBits a.n.toUSize (Ew.cmp Ew.eq (cls a.k) Ew.vv a.b b.b a.n.toUSize)
+/-- The positions where `a` and `b` (one lane) hold one code: `Ew.cmp` at the codes' class, `eqIds` at
+    `2`/`4` bits. -/
+def eqAt (a b : Code) : ByteArray := whereBits a.n.toUSize <| match a.kind with
+  | some k => Ew.cmp Ew.eq (cls k) Ew.vv a.b b.b a.n.toUSize
+  | none => Kernel.Ew.eqIds Ew.eq Ew.vv a.b b.b a.w.toUSize a.n.toUSize
 
-/-- Each row's class, numbered by first occurrence, and each class's first row: `groupIds` at the layout. -/
-def groupIds (c : Code) : ByteArray × ByteArray := Order.groupIds c.k c.n.toUSize c.b
+/-- Each row's class, numbered by first occurrence, and each class's first row: `groupIds` at the layout,
+    `idGroups` (a direct table of `card` entries) at `2`/`4` bits. -/
+def groupIds (c : Code) : ByteArray × ByteArray := match c.kind with
+  | some k => Order.groupIds k c.n.toUSize c.b
+  | none => Order.idGroups c.card.toUSize c.n.toUSize c.w.toUSize c.b
 
-/-- The codes as long ids — `groupIds`' own answer, equal exactly where the codes are — for a step whose
-    kernel reads longs only; each use names the kernel. -/
-def longs (c : Code) : ByteArray := if c.k == .i64 then c.b else groupLongs c.n c.groupIds
+/-- The rows in ascending code order, stable: `grade` at the layout, `gradeLane` at `2`/`4` bits and
+    where `grade` would read an `i16`/`i32` code past the sign bit as negative (`gradeLane` is unsigned). -/
+def grade (c : Code) : ByteArray := match c.kind with
+  | some k => if (k == .i16 || k == .i32) && 2 ^ (c.w - 1) < c.card
+    then Order.gradeLane false c.n.toUSize c.w.toUSize c.b else Order.grade k false c.n.toUSize c.b
+  | none => Order.gradeLane false c.n.toUSize c.w.toUSize c.b
 
-/-- The rows in ascending code order: `grade` at the layout, except that `grade` reads `i16`/`i32`
-    signed, so a code past the sign bit is graded over its long ids (`grade` has no unsigned lane). -/
-def grade (c : Code) : ByteArray :=
-  if (c.k == .i16 || c.k == .i32) && 2 ^ (8 * c.k.width - 1) < c.card then
-    Order.grade .i64 false c.n.toUSize (Order.idLongs c.n.toUSize (8 * c.k.width).toUSize c.b)
-  else Order.grade c.k false c.n.toUSize c.b
-
-/-- Codes of one space end to end: `concatBits`, `concatBytes`. -/
+/-- Codes of one space end to end, at the first part's lane: `concatBits`, `concatBytes`, and
+    `concatIds` through each part's identity map at `2`/`4` bits, where a part starts inside a byte. -/
 def cat (cs : Array Code) : Code :=
-  let k := if h : 0 < cs.size then cs[0].k else .u8
-  ⟨k, cs.foldl (· + ·.n) 0, cs.foldl (max · ·.card) 0,
-    if k == .bit then concatBits (cs.map (·.n)) (cs.map (·.b)) else concatBytes (cs.map (·.b))⟩
+  let w := if h : 0 < cs.size then cs[0].w else 8
+  ⟨w, cs.foldl (· + ·.n) 0, cs.foldl (max · ·.card) 0, match laneKind w with
+    | some .bit => concatBits (cs.map (·.n)) (cs.map (·.b))
+    | some _ => concatBytes (cs.map (·.b))
+    | none => concatIds w.toUSize (cs.map (·.n)) (cs.map (·.w)) (cs.map fun c => Column.packIds w c.card id) (cs.map (·.b))⟩
 
-/-- `c` cut into parts of the counts `ns`, byte extracts. A `bit` code of several parts is never cut:
-    `codes` answers bits per part, and `pack` never chooses a bit. -/
-def cut (c : Code) (ns : Array Nat) : Except String (Array Code) := do
-  if ns.size == 1 then return #[c]
-  if c.k == .bit then throw "Code.cut: a bit code of several parts is cut at no byte"
-  let w := c.k.width
-  pure (ns.foldl (init := (#[], 0)) fun (acc, o) m => (acc.push ⟨c.k, m, c.card, c.b.extract (w * o) (w * (o + m))⟩, o + m)).1
+/-- `c` cut into parts of the counts `ns` (summing to `c.n`): byte extracts at a byte lane, `cycleBits`
+    and `cycleIds` below one, where a part can start inside a byte. -/
+def cut (c : Code) (ns : Array Nat) : Array Code :=
+  if ns.size == 1 then #[c] else
+  let part (o m : Nat) : ByteArray :=
+    if m == 0 then .empty
+    else if c.w % 8 == 0 then c.b.extract (c.w / 8 * o) (c.w / 8 * (o + m))
+    else if c.w == 1 then cycleBits c.n.toUSize o.toUSize m.toUSize c.b
+    else cycleIds c.n.toUSize o.toUSize m.toUSize c.w.toUSize c.b
+  (ns.foldl (init := (#[], 0)) fun (acc, o) m => (acc.push ⟨c.w, m, c.card, part o m⟩, o + m)).1
 
-/-- The run starts of `c` and its count: `runStartsBits` on bits, `runStarts` at the code's width. -/
-def runStarts (c : Code) : ByteArray :=
-  if c.k == .bit then Kernel.runStartsBits c.n.toUSize c.b else Kernel.runStarts c.w false c.b
+/-- The run starts of `c` and its count: `runStartsBits`, `runStarts` at a byte lane, `runStartsIds` at
+    `2`/`4` bits. -/
+def runStarts (c : Code) : ByteArray := match c.kind with
+  | some .bit => Kernel.runStartsBits c.n.toUSize c.b
+  | some k => Kernel.runStarts k.width.toUSize false c.b
+  | none => Kernel.runStartsIds c.n.toUSize c.w.toUSize c.b
 
 end Code
 
 /-- The rows in the order of each of `ks` in turn, ascending, by stable grades from the last key to the
-    first at each code's own layout; answers the permutation of `n` rows. -/
+    first at each code's own lane; answers the permutation of `n` rows. -/
 def gradeBy (n : Nat) (ks : Array Code) : ByteArray :=
-  ks.foldr (init := tilLongs n.toUSize) fun c p => gather 8 p (Order.grade c.k false n.toUSize (c.gather p).b)
+  ks.foldr (init := tilLongs n.toUSize) fun c p => gather 8 p (c.gather p).grade
 
 /-! ## Payloads of any encoding: count, pick, join, code -/
 
@@ -206,7 +230,7 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
   some <$> sh.mapM fun (n, m, p) => do
     let (ids, bad) := enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize (8 * k.width).toUSize m p
     if bad.toNat != n then throw s!"enumIdsFoR: the offset at {bad} lies outside 0..{card}"
-    pure ⟨k, n, card, ids⟩
+    pure ⟨8 * k.width, n, card, ids⟩
 
 /-- Joint codes of the parts `cs`, one `Code` per part, in one code space:
     - `bits`: each part is its own code, a bit wide, order-preserving;
@@ -217,21 +241,19 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
       the join against itself, its positions packed. -/
 def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
   | .atom a, cs => do
-    if let some bs := cs.mapM (fun c => match c with | .bits n b => some (⟨.bit, n, 2, b⟩ : Code) | _ => none) then
+    if let some bs := cs.mapM (fun c => match c with | .bits n b => some (⟨1, n, 2, b⟩ : Code) | _ => none) then
       return bs
     let ns := cs.map (Column.count a)
     let total := ns.foldl (· + ·) 0
     if let some os ← foROffsets a cs total then return os
     let all := Column.intern (← raze (.atom a) cs)
-    if let .enum n _ dof ids := all then
-      if let some k := laneKind (Column.idWidth dof) then
-        if k != .bit || cs.size == 1 then return ← Code.cut ⟨k, n, dof.size - 1, ids⟩ ns
+    if let .enum n _ dof ids := all then return (Code.ofLane (Column.idWidth dof) n (dof.size - 1) ids).cut ns
     let some (gid, fs) := groupIdsColumn a all
       | throw s!"groupIdsColumn declines a column of type {a.code} in this encoding"
-    (Code.ofIds (len fs) total gid).cut ns
+    pure ((Code.ofIds (len fs) total gid).cut ns)
   | .gen, cs => do
     let all ← raze .gen cs
-    (pack all.size (findList all all)).cut (cs.map (·.size))
+    pure ((pack all.size (findList all all)).cut (cs.map (·.size)))
 
 /-- The one code of a single part. -/
 def single (cs : Array Code) : Except String Code :=
@@ -276,35 +298,44 @@ def ofCols (k v : Ty) (kc : Pay k) (vc : Pay v) : Except String (Rel k v) := do
 /-! ## The composite steps, named once -/
 
 /-- A code's payload as the column `composeKey` reads: a bit a boolean bitmap, a byte layout the
-    dense column of that width. -/
+    dense column of that width, a `2`/`4`-bit lane an interned column of `card` ids, read by `eIds`
+    where they lie; `composeKey` reads no dictionary, so it holds `card` empty symbols. -/
 def Code.column (c : Code) : Option (QAtomicType × Column) :=
-  match c.k with
-  | .bit => some (.boolean, .bits c.n c.b) | .u8 => some (.byte, .bytes c.b)
-  | .i16 => some (.short, .bytes c.b) | .i32 => some (.int, .bytes c.b) | .i64 => some (.long, .bytes c.b)
-  | _ => none
+  match c.kind with
+  | some .bit => some (.boolean, .bits c.n c.b) | some .u8 => some (.byte, .bytes c.b)
+  | some .i16 => some (.short, .bytes c.b) | some .i32 => some (.int, .bytes c.b)
+  | some .i64 => some (.long, .bytes c.b)
+  | some _ => none
+  | none => if Column.idWidthOf c.card == c.w then some (.symbol, .enum c.n .empty (Array.replicate (c.card + 1) 0) c.b)
+    else none
 
 /-- The code of each row's pair `(a, b)`: `composeKey`'s `a·|b| + b` at the width of the product of
-    the bounds, no grouping pass; the classes are answered too when the step grouped. `classes`: the
-    caller groups the answer next. -/
+    the bounds, packed below a byte, no grouping pass; the classes are answered too when the step
+    grouped. `classes`: the caller groups the answer next. -/
 def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteArray) :=
-  -- the domain is declared ≥ 17 so the lane is a byte at least, the narrowest a code kernel reads
-  let d₂ := max b.card 1
+  -- a bitmap is read as codes `0 … 1` whatever its `card`. The domain is declared ≥ 17 so the lane is a
+  -- byte at least: `composeKey` computes a byte lane and packs it below one by a `remapIds` pass, which
+  -- the next consumer does not win back (measured: `|R|` of two bit columns 5.4 → 15.5 ms at 1e7, 2-bit)
+  let d₂ := max b.card 2
   let d₁ := max a.card (16 / d₂ + 1)
   let composed : Option Code := do
     guard (d₁ * d₂ < 2 ^ 63)
-    let k ← laneKind (Column.laneWidth (Column.widthFor (d₁ * d₂ - 1)))
+    let w := Column.idWidthOf (d₁ * d₂)
     -- grouping a composite past 16 bits hashes it, as `groupIdsPair` hashes the pair: the compose would
     -- be a pass for nothing (measured: `|R|` of 1000-wide `foR` pairs 11% slower composed)
-    guard (!classes || k.width ≤ 2)
+    guard (!classes || w ≤ 16)
     let (t₁, c₁) ← a.column
     let (t₂, c₂) ← b.column
-    (⟨k, a.n, d₁ * d₂, ·⟩) <$> composeKey t₁ c₁ d₁ d₂ t₂ c₂
+    (⟨w, a.n, d₁ * d₂, ·⟩) <$> composeKey t₁ c₁ d₁ d₂ t₂ c₂
   match composed with
   | some c => (c, none)
   -- `composeKey` declines a bound past 2⁶³ or a code outside it (a 16-bit lane past 2¹⁵ reads signed):
-  -- `groupIdsPair` numbers the pairs densely instead, whatever the codes are
+  -- `groupIdsPair` numbers the pairs densely instead, whatever the codes are, `groupIdsPairIds` at a lane
+  -- below a byte
   | none =>
-    let r := Order.groupIdsPair a.k b.k a.n.toUSize a.b b.b
+    let r := match a.kind, b.kind with
+      | some ka, some kb => Order.groupIdsPair ka kb a.n.toUSize a.b b.b
+      | _, _ => Order.groupIdsPairIds a.w.toUSize b.w.toUSize a.n.toUSize a.b b.b
     (Code.ofIds (len r.2) a.n r.1, some r)
 
 /-- `|R|` of tuples: `cols[j]` is column `j`'s codes per part (`codes`); the columns are folded left by
@@ -312,7 +343,7 @@ def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteAr
 def tuples (cols : Array (Array Code)) : Except String (Array Code) := do
   let some c0 := cols[0]? | throw "tuples: no column"
   if cols.size == 1 then return c0
-  (← tupleCode false (cols.map Code.cat)).1.cut (c0.map (·.n))
+  pure ((← tupleCode false (cols.map Code.cat)).1.cut (c0.map (·.n)))
 where
   /-- The fold of the columns `all` by `pairCode`, the last step told whether its answer is grouped
       next (`classes`), and the classes when that step grouped. -/
@@ -393,8 +424,10 @@ def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
   if o.size < 8 then throw "setIds: the offsets hold no terminator"
   let seg := groupOf o n
   let p := gradeBy n #[Code.ofLongs seg, vc]
-  let (q, fs) := Order.groupIdsPair .i64 vc.k n.toUSize (gather 8 seg p) (vc.gather p).b
-  let ids := Order.rankSlices (if vc.k == .bit then 1 else 8 * vc.k.width).toUSize (vc.gather (gather 8 p fs)).b
+  let (q, fs) := match vc.kind with
+    | some k => Order.groupIdsPair .i64 k n.toUSize (gather 8 seg p) (vc.gather p).b
+    | none => Order.groupIdsPairIds 64 vc.w.toUSize n.toUSize (gather 8 seg p) (vc.gather p).b
+  let ids := Order.rankSlices vc.w.toUSize (vc.gather (gather 8 p fs)).b
     (gather 8 (concatBytes #[groupLongs n (q, fs), one (len fs).toUInt64]) o)
   if len ids == len o - 1 then pure ids
   else throw s!"rankSlices declines the {len o - 1} normalised segments of {len fs} codes"
@@ -580,7 +613,10 @@ def transpose (R : Rel A B) : Except String (Rel A B) := do family (← cols R)
 def group (R : Rel (.atom .long) B) : Except String (Rel B (.atom .long)) := do
   let r ← cols R
   let c ← single (← codes B #[r.val])
-  let (_, idx, _) := Order.group c.k c.n.toUSize c.b
+  -- below a byte `group` has no lane: its indices are the stable grade of the classes by first occurrence
+  let idx := match c.kind with
+    | some k => (Order.group k c.n.toUSize c.b).2.1
+    | none => let (gid, fs) := c.groupIds; (Code.ofIds (len fs) c.n gid).grade
   runs B (← pick B r.val idx) (← Arr.of (.atom .long) (len idx) (← pick (.atom .long) r.key idx) "group")
 
 /-- `∋` of a `grp`-keyed family: the pairs `(set id, element)`, the key's offsets reused, no kernel. -/
@@ -895,14 +931,26 @@ private def enumC : Column :=
 #guard ok (do top (← Arr.of Sy 4 enumC "U") (← Arr.of Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) fun X => X.key matches .grp .. && X.n == 4
 
--- the layout each encoding codes at: bits a bit; a three-symbol enum (2-bit lane), foR offsets and a
--- small dense column a byte
-private def kindOf (t : Ty) (c : Pay t) : Option Scan.Kind := match codes t #[c] with | .ok #[x] => some x.k | _ => none
-#guard kindOf Bo bitsC == some .bit && kindOf Sy enumC == some .u8 && kindOf Sy symsC == some .u8
-#guard kindOf L Lf.val.c == some .u8 && kindOf L (.bytes (packLongs [5, 3, 5, 9])) == some .u8
+-- the lane each encoding codes at: bits a bit; a three-symbol enum or three distinct longs (a grouping
+-- pass's ids) a 2-bit lane, foR offsets a byte
+private def laneOf (t : Ty) (c : Pay t) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
+#guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
+#guard laneOf L Lf.val.c == some 8 && laneOf L (.bytes (packLongs [5, 3, 5, 9])) == some 2
 -- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b`, the domain widened to 9·2, no grouping pass
-#guard match pairCode false ⟨.u8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨.bit, 4, 2, ByteArray.mk #[0b0101]⟩ with
-  | (c, none) => c.k == .u8 && c.card == 18 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
+#guard match pairCode false ⟨8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
+  | (c, none) => c.w == 8 && c.card == 18 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
+-- the same pair at 2 and 1 bits: the 2-bit lane read by `eIds` where it lies
+#guard match pairCode false ⟨2, 4, 3, Column.packIds 2 4 ([0, 1, 2, 1][·]!)⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
+  | (c, none) => c.w == 8 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
+-- a 2-bit code cut inside a byte, gathered, graded, grouped, run-started where it lies
+private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!)⟩
+#guard (c2.cut #[3, 3]).map (fun p => (List.range p.n).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
+#guard (Code.cat (c2.cut #[1, 5])).b == c2.b
+#guard let g := c2.gather (packLongs [5, 1]); (List.range 2).map (Column.idAt g.b 2) == [2, 0]
+#guard c2.grade == packLongs [1, 4, 2, 0, 3, 5]
+#guard c2.groupIds.2 == packLongs [0, 1, 2]
+#guard c2.find ⟨2, 2, 3, Column.packIds 2 2 ([1, 2][·]!)⟩ == packLongs [2, 0]
+#guard c2.eqAt ⟨2, 6, 3, Column.packIds 2 6 ([2, 1, 1, 0, 0, 2][·]!)⟩ == packLongs [0, 2, 4, 5]
 -- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
 private def Lneg : LL := ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2, wf := ⟨rfl, rfl⟩ }⟩
 #guard ok (do comp Lneg (← conv Lf)) fun X => seteq X.toList
