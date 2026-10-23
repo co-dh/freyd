@@ -251,146 +251,6 @@ theorem over_bytes {op : Coc.Over} (hb : op.boolCast = false) {R : Rel k (.atom 
   simp only [over, overColumn, hc, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
   rw [he]; simp
 
-/-! ### Byte reads, for `overBy_bytes` -/
-
-theorem getElem!_dite (b : ByteArray) (i : Nat) : (if h : i < b.size then b[i] else 0) = b[i]! := by
-  split
-  · rw [getElem!_pos b i ‹_›]
-  · rw [getElem!_neg b i ‹_›]; rfl
-
-theorem get!_eq (b : ByteArray) (k : Nat) : b.get! k = b[k]! := by
-  rcases b with ⟨a⟩
-  by_cases h : k < a.size
-  · rw [getElem!_pos (ByteArray.mk a) k h]; simp [ByteArray.get!, h] <;> rfl
-  · rw [getElem!_neg (ByteArray.mk a) k (by simpa [ByteArray.size] using h)]
-    simp [ByteArray.get!, h] <;> rfl
-
-/-- `bitsAt` reads only the `w` bytes from `o`. -/
-theorem bitsAt_congr {b b' : ByteArray} {o o' w : Nat} (h : ∀ k < w, b[o + k]! = b'[o' + k]!) :
-    Column.bitsAt b o w = Column.bitsAt b' o' w := by
-  induction w with
-  | zero => rfl
-  | succ w ih => simp only [Column.bitsAt, getElem!_dite]; rw [ih (fun k hk => h k (by omega)), h w (by omega)]
-
-theorem bitsAt_succ (b : ByteArray) (o w : Nat) :
-    Column.bitsAt b o (w + 1) = Column.bitsAt b o w ||| b[o + w]!.toUInt64 <<< (8 * w).toUInt64 := by
-  simp only [Column.bitsAt, getElem!_dite]
-
-/-- `atI64` reads the eight bytes `bitsAt` does. -/
-theorem atI64_eq (b : ByteArray) (i : Nat) : atI64 b i = (Column.bitsAt b (i * 8) 8).toInt64 := by
-  rw [bitsAt_succ, bitsAt_succ, bitsAt_succ, bitsAt_succ, bitsAt_succ, bitsAt_succ, bitsAt_succ, bitsAt_succ,
-    show Column.bitsAt b (i * 8) 0 = 0 from rfl, Nat.add_zero, show (8 * 0 : Nat).toUInt64 = 0 from rfl,
-    UInt64.shiftLeft_zero, UInt64.zero_or]
-  simp only [atI64, get!_eq]
-  rfl
-
-/-- The bytes `[a, m)` of `s`, read at `o`, are `s` read at `a + o`, wherever the read ends by `m`. -/
-theorem bitsAt_extract (s : ByteArray) {a m o w : Nat} (h : a + o + w ≤ m) :
-    Column.bitsAt (s.extract a m) o w = Column.bitsAt s (a + o) w := by
-  refine bitsAt_congr fun k hk => ?_
-  by_cases hs : a + o + k < s.size
-  · rw [getElem!_pos _ _ (by rw [ByteArray.size_extract]; omega), getElem!_pos s _ (by omega),
-      ByteArray.getElem_extract]
-    congr 1; omega
-  · rw [getElem!_neg _ _ (by rw [ByteArray.size_extract]; omega), getElem!_neg s _ (by omega)]
-
-theorem bitsAt_zeros (k o w : Nat) : Column.bitsAt ⟨Array.replicate k 0⟩ o w = 0 := by
-  induction w with
-  | zero => rfl
-  | succ w ih =>
-    simp only [Column.bitsAt, ih, UInt64.zero_or]
-    split
-    · simp [ByteArray.getElem_eq_getElem_data]
-    · simp
-
-/-- Appending after `c` keeps `c`'s bytes. -/
-theorem foldl_append (L : List ByteArray) (c : ByteArray) :
-    (L.foldl (· ++ ·) c).size = c.size + (L.map (·.size)).sum ∧ ∀ i < c.size, (L.foldl (· ++ ·) c)[i]! = c[i]! := by
-  induction L generalizing c with
-  | nil => exact ⟨by simp, fun _ _ => rfl⟩
-  | cons x L ih =>
-    obtain ⟨h1, h2⟩ := ih (c ++ x)
-    refine ⟨by rw [List.foldl_cons, h1, ByteArray.size_append, List.map_cons, List.sum_cons]; omega, fun i hi => ?_⟩
-    rw [List.foldl_cons, h2 i (by rw [ByteArray.size_append]; omega), getElem!_pos _ _ (by rw [ByteArray.size_append]; omega),
-      getElem!_pos c i hi, ByteArray.getElem_append_left hi]
-
-/-- Over parts of eight bytes each, the eight bytes at part `j`'s place are part `j`. -/
-theorem bitsAt_foldl_append (L : List ByteArray) (hL : ∀ x ∈ L, x.size = 8) (c : ByteArray) (j : Nat)
-    (hj : j < L.length) : Column.bitsAt (L.foldl (· ++ ·) c) (c.size + j * 8) 8 = Column.bitsAt L[j] 0 8 := by
-  induction L generalizing c j with
-  | nil => cases hj
-  | cons x L ih =>
-    rw [List.foldl_cons]
-    have hx := hL x (List.mem_cons_self ..)
-    cases j with
-    | zero =>
-      rw [List.getElem_cons_zero]
-      refine bitsAt_congr fun k hk => ?_
-      rw [(foldl_append L (c ++ x)).2 _ (by rw [ByteArray.size_append]; omega),
-        getElem!_pos _ _ (by rw [ByteArray.size_append]; omega), getElem!_pos x _ (by omega),
-        ByteArray.getElem_append_right (by omega)]
-      congr 1; omega
-    | succ j =>
-      have := ih (fun y hy => hL y (List.mem_cons_of_mem _ hy)) (c ++ x) j (by simp at hj; omega)
-      rw [ByteArray.size_append, hx] at this
-      rw [show c.size + (j + 1) * 8 = c.size + 8 + j * 8 by omega, this]; rfl
-
-/-- `groupCells .wrap 8` in the order `til G`: cell `j` is slot `j`'s eight bytes. -/
-theorem groupCells_til (ng G : USize) (hG : G.toNat < 2 ^ 63) (m : ByteArray) :
-    (groupCells .wrap 8 ng m (tilLongs G)).size = 8 * G.toNat ∧ ∀ j < G.toNat, j < ng.toNat →
-      Column.bitsAt (groupCells .wrap 8 ng m (tilLongs G)) (j * 8) 8 = (atI64 m j).toUInt64 := by
-  have Q := QLean.Verify.tilLongs_spec G
-  have ts : (tilLongs G).size / 8 = G.toNat := by
-    simpa [QLean.Verify.elemsW] using congrArg List.length Q
-  have tg : ∀ i < G.toNat, atI64 (tilLongs G) i = Int64.ofNat i := fun i hi => by
-    have hv : (Column.bitsAt (tilLongs G) (i * 8) 8).toNat = i := by
-      simpa [QLean.Verify.elemsW, ts, hi] using congrArg (·[i]?) Q
-    rw [atI64_eq, show Int64.ofNat i = (UInt64.ofNat i).toInt64 from rfl]
-    conv => rhs; rw [← hv, UInt64.ofNat_toNat]
-  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  let F : Nat → UInt64 := fun i =>
-    if (atI64 (tilLongs G) i).toNatClampNeg < ng.toNat then (atI64 m (atI64 (tilLongs G) i).toNatClampNeg).toUInt64 else 0
-  have e : groupCells .wrap 8 ng m (tilLongs G) =
-      (List.range G.toNat).foldl (init := ByteArray.empty) fun acc i => Column.pushBits acc (F i) 8 := by
-    rw [groupCells, ts]
-    congr 1; funext acc i; simp only [F, h8]; split <;> rfl
-  obtain ⟨hs, -, hg⟩ := QLean.Verify.foldl_pushBits F 8 (by decide) (List.range G.toNat) ByteArray.empty
-  refine ⟨by rw [e, hs]; simp, fun j hj hn => ?_⟩
-  have := hg j (by rw [List.length_range]; exact hj)
-  rw [show ByteArray.empty.size + 8 * j = j * 8 by simp [Nat.mul_comm], List.getElem_range] at this
-  have hc : (Int64.ofNat j).toNatClampNeg = j := Int64.toNatClampNeg_ofNat_of_lt (by omega)
-  rw [e, this, show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
-  simp only [F, tg j hj, hc, if_pos hn]
-
-/-- The rows below `n` from `lo` to `hi`: `til` of the clamped length, shifted by the clamped `lo`. -/
-theorem filter_range_seg (n lo hi : Nat) :
-    (List.range n).filter (fun i => decide (lo ≤ i ∧ i < hi)) =
-      (List.range (max (min lo n) (min hi n) - min lo n)).map (min lo n + ·) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [List.range_succ, List.filter_append, ih]
-    by_cases h : lo ≤ n ∧ n < hi
-    · rw [List.filter_cons_of_pos (by simp [h]), List.filter_nil,
-        show max (min lo (n+1)) (min hi (n+1)) - min lo (n+1) = (max (min lo n) (min hi n) - min lo n) + 1 by omega,
-        List.range_succ, List.map_append, show min lo (n+1) = min lo n by omega]
-      simp; omega
-    · rw [List.filter_cons_of_neg (by simp [h]), List.filter_nil, List.append_nil]
-      by_cases hl : lo ≤ n
-      · rw [show min lo (n+1) = min lo n by omega,
-          show max (min lo n) (min hi (n+1)) = max (min lo n) (min hi n) by omega]
-      · rw [show max (min lo (n+1)) (min hi (n+1)) - min lo (n+1) = 0 by omega,
-          show max (min lo n) (min hi n) - min lo n = 0 by omega]
-        rfl
-
-/-- Two folds that step alike on every member of the list agree. -/
-theorem foldl_congr_mem {α β : Type} {f g : β → α → β} (l : List α) (h : ∀ x ∈ l, ∀ a, f a x = g a x) (a : β) :
-    l.foldl f a = l.foldl g a := by
-  induction l generalizing a with
-  | nil => rfl
-  | cons x l ih =>
-    rw [List.foldl_cons, List.foldl_cons, h x (List.mem_cons_self ..), ih (fun y hy => h y (List.mem_cons_of_mem _ hy))]
-
 /-- A `long` fold that is not `all`/`any` answers at `long`. -/
 theorem resultType_long {op : Coc.Over} (hb : op.boolCast = false) : op.resultType false .long = some .long := by
   cases op <;> first | rfl | cases hb
@@ -402,65 +262,10 @@ theorem groupedOver_long {op : Coc.Over} (hb : op.boolCast = false) (gs : Groups
   have hr := resultType_long hb
   cases h : overGroupsColumn op .long gs c <;> cases op <;> simp_all [groupedOver, bind, Option.bind] <;> rfl
 
-/-- **Slot `r` of `overSegments` at `long`** is `Over.step` folded from the seed over the non-null rows
-    of segment `r`, `segRange`'s `[lo, hi)`: the one-group `overGroups` of `overGroups_spec` over that
-    slice. -/
-theorem overSegments_slot (op : Coc.Over) (nul : Int64) (ob b : ByteArray) (r : Nat) (hr : r < ob.size / 8 - 1) :
-    (Column.bitsAt (overSegments op Ew.i64 nul ob b) (r * 8) 8).toInt64 =
-      (((List.range ((segRange ob (b.size / 8) r).2 - (segRange ob (b.size / 8) r).1)).map
-        ((segRange ob (b.size / 8) r).1 + ·)).filter fun i => op.boolCast || QLean.Verify.valAt Ew.i64 b i != nul).foldl
-        (fun acc i => op.step acc (QLean.Verify.valAt Ew.i64 b i)) (op.denseSeed Ew.i64 nul) := by
-  have h1 : (1 : USize).toNat = 1 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  let one := fun s : ByteArray => overGroups op Ew.i64 nul 1 ⟨Array.replicate (s.size / 8 * 8) 0⟩ s
-  let ms := (List.range (ob.size / 8 - 1)).map fun r =>
-    one (b.extract ((segRange ob (b.size / 8) r).1 * 8) ((segRange ob (b.size / 8) r).2 * 8))
-  have e : overSegments op Ew.i64 nul ob b = (ms.map (·.extract 0 8) ++ ms.map (·.extract 8 16)).foldl (init := .empty) (· ++ ·) := rfl
-  have hsz : ∀ s, (one s).size = 16 := fun s => by
-    have := (QLean.Verify.overGroups_spec op Ew.i64 nul 1 ⟨Array.replicate (s.size / 8 * 8) 0⟩ s).1
-    rw [h1] at this; exact this
-  have h8 : ∀ x ∈ ms.map (·.extract 0 8) ++ ms.map (·.extract 8 16), x.size = 8 := by
-    intro x hx
-    rcases List.mem_append.1 hx with hx | hx <;> obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hx <;>
-      obtain ⟨r', -, rfl⟩ := List.mem_map.1 ha <;> simp [ByteArray.size_extract, hsz]
-  have hms : ms.length = ob.size / 8 - 1 := by simp [ms]
-  have := bitsAt_foldl_append _ h8 .empty r (by rw [List.length_append, List.length_map]; omega)
-  rw [show ByteArray.empty.size + r * 8 = r * 8 by simp] at this
-  rw [e, this, List.getElem_append_left (by rw [List.length_map]; omega), List.getElem_map,
-    bitsAt_extract _ (by omega : 0 + 0 + 8 ≤ 8)]
-  simp only [ms, List.getElem_map, List.getElem_range]
-  -- segment `r` is rows `[lo, hi)` of `b`, inside it since `segRange` clamps both ends to the count
-  generalize hlh : segRange ob (b.size / 8) r = lh
-  obtain ⟨lo, hi⟩ := lh
-  have hlo : lo ≤ hi ∧ hi ≤ b.size / 8 := by
-    simp only [segRange, Prod.mk.injEq] at hlh; omega
-  let s := b.extract (lo * 8) (hi * 8)
-  have hs : s.size / 8 = hi - lo := by
-    simp only [s, ByteArray.size_extract]; omega
-  obtain ⟨-, hv⟩ := QLean.Verify.overGroups_spec op Ew.i64 nul 1 ⟨Array.replicate (s.size / 8 * 8) 0⟩ s
-  have hv0 := (hv 0 (by rw [h1]; decide)).1
-  rw [Nat.zero_mul] at hv0
-  show (Column.bitsAt (one s) (0 + 0) 8).toInt64 = _
-  rw [Nat.zero_add, hv0, QLean.Verify.rowsOf]
-  have hval : ∀ i < hi - lo, QLean.Verify.valAt Ew.i64 s i = QLean.Verify.valAt Ew.i64 b (lo + i) := fun i hi' => by
-    simp only [QLean.Verify.valAt, Ew.elem, show Ew.width Ew.i64 = 8 from rfl, s]
-    rw [bitsAt_extract _ (by omega), show lo * 8 + i * 8 = (lo + i) * 8 by omega]
-  have hgid : (⟨Array.replicate ((hi - lo) * 8) 0⟩ : ByteArray).size / 8 = hi - lo := by
-    show (Array.replicate ((hi - lo) * 8) (0 : UInt8)).size / 8 = _
-    rw [Array.size_replicate, Nat.mul_div_cancel _ (by decide)]
-  dsimp only
-  rw [show Ew.width Ew.i64 = 8 from rfl, hs, hgid, Nat.min_self, List.filter_map, List.foldl_map]
-  have hf : ((List.range (hi - lo)).filter fun i => QLean.Verify.gidAt ⟨Array.replicate ((hi - lo) * 8) 0⟩ i == 0 &&
-      (op.boolCast || QLean.Verify.valAt Ew.i64 s i != nul)) =
-      (List.range (hi - lo)).filter ((fun i => op.boolCast || QLean.Verify.valAt Ew.i64 b i != nul) ∘ (lo + ·)) :=
-    List.filter_congr fun i hi' => by
-      rw [QLean.Verify.gidAt, bitsAt_zeros, hval i (List.mem_range.1 hi')]; rfl
-  rw [hf]
-  exact foldl_congr_mem _ (fun i hi' a => by rw [hval i (List.mem_range.1 (List.mem_filter.1 hi').1)]) _
-
 /-- Offset `j` of `o` is the long `atI64` reads at `j` of its dense payload. -/
 theorem offs_get {g : Nat} {o : Arr (.atom .long) (g+1)} {ob : ByteArray} (ho : o.c = .bytes ob) {j : Nat}
     (hj : j < g + 1) : o.toList[j]! = atI64 ob j := by
-  rw [getElem!_pos _ j (by rw [Arr.length_toList]; exact hj), Arr.getElem_toList, Arr.get_long_bytes o ho, atI64_eq]
+  rw [getElem!_pos _ j (by rw [Arr.length_toList]; exact hj), Arr.getElem_toList, Arr.get_long_bytes o ho, QLean.Verify.atI64_eq]
 
 /-- **`select f x by k` over a dense long column**, at a verb that skips the null: group `j`'s answer
     is `Spec.over` of the rows of the segment of `o` that holds them, `o[j] ≤ i < o[j+1]`. No `Cuts`
@@ -488,20 +293,30 @@ theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d :
     have hx : ∀ i, i < n → x.toList[i]! = QLean.Verify.valAt Ew.i64 b i := fun i hi => by
       rw [← e, QLean.Verify.denseElems, getElem!_pos _ i (by rw [List.length_map, List.length_range]; show i < b.size / 8; omega),
         List.getElem_map, List.getElem_range]; rfl
+    obtain ⟨hsz, hel⟩ := QLean.Verify.groupCells_til (Groups.segs ob).count g.toUSize (by rw [hgu]; exact h63)
+      (overSegments op Ew.i64 Spec.nul ob b)
+    rw [hgu, hcnt] at hel
+    rw [hgu] at hsz
     apply List.ext_getElem
     · rw [Arr.length_toList, List.length_map, List.length_range]
     · intro j h1 _
       have hj : j < g := by rwa [Arr.length_toList] at h1
+      -- cell `j` of `groupCells` is slot `j` of `overSegments`: `groupCells_til` read at `j`
+      have hcell := congrArg (·[j]?) hel
+      simp only [QLean.Verify.elemsW, hsz, Nat.mul_div_cancel_left _ (by decide : 0 < 8), List.getElem?_map,
+        List.getElem?_range hj, if_pos hj, Option.map_some, Option.some.injEq] at hcell
+      -- the segment's rows, its bounds tested first and the null after
+      have hf : QLean.Verify.segRowsOf op Ew.i64 Spec.nul ob b j =
+          ((List.range n).filter fun i => decide ((atI64 ob j).toNatClampNeg ≤ i ∧ i < (atI64 ob (j + 1)).toNatClampNeg)).filter
+            fun i => QLean.Verify.valAt Ew.i64 b i != Spec.nul := by
+        rw [QLean.Verify.segRowsOf, List.filter_filter, show Ew.width Ew.i64 = 8 from rfl, hn, hb]
+        exact List.filter_congr fun i _ => by simp only [Bool.and_comm, Bool.false_or]
       rw [Arr.getElem_toList, Arr.get_long_bytes _ rfl, List.getElem_map, List.getElem_range,
-        (groupCells_til _ _ (by rw [hgu]; exact h63) _).2 j (by rw [hgu]; exact hj) (by rw [hcnt]; exact hj),
-        Int64.toInt64_toUInt64, atI64_eq, overSegments_slot op _ ob b j (by omega), offs_get ho (by omega),
-        offs_get ho (by omega), filter_range_seg, hb]
-      simp only [segRange, hn, Bool.false_or]
-      rw [QLean.Verify.foldl_filter, Spec.over, List.map_map, List.foldl_map, List.foldl_map]
-      refine foldl_congr_mem _ (fun i hi a => ?_) _
-      have hi := List.mem_range.1 hi
-      simp only [Function.comp, hx _ (by omega : min (atI64 ob j).toNatClampNeg n + i < n)]
-      by_cases hv : QLean.Verify.valAt Ew.i64 b (min (atI64 ob j).toNatClampNeg n + i) = Spec.nul <;> simp [hv]
+        hcell, (QLean.Verify.overSegments_slot op Ew.i64 Spec.nul ob b (by omega)).1, offs_get ho (by omega),
+        offs_get ho (by omega), hf, QLean.Verify.foldl_filter, Spec.over, List.foldl_map]
+      refine QLean.Verify.foldl_congr_mem _ (fun i hi a => ?_) _
+      rw [hx i (List.mem_range.1 (List.mem_filter.1 hi).1)]
+      by_cases hv : QLean.Verify.valAt Ew.i64 b i = Spec.nul <;> simp [hv]
   · rw [Arr.of, dif_neg hw] at h
     cases h
 
