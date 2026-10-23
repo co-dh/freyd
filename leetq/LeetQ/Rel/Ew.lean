@@ -15,11 +15,6 @@ open QLean QLean.Dep QLean.Kernel
 
 namespace Ew
 
-/-- A kernel's column as an `Arr`: `wf` is two O(1) reads (the constructor, the count). -/
-def arr (t : QAtomicType) (n : Nat) (c : Column) (what : String) : Except String (Arr (.atom t) n) :=
-  if h : (Ty.atom t).WF n c then .ok ⟨c, h, 0, none⟩
-  else .error s!"{what}: the kernel answered a column that is not {n} elements of {repr t}"
-
 /-- One `dyadColumn` call — qlean's per-encoding dispatch (`bytes`, `foR`, ALP, `bits`, `syms`) —
     checked against the result type `rt` the caller asked for. -/
 def dyad (v : Prim.Dyadic) (shape : UInt8) (t u rt : QAtomicType) (a b : Column) (n : Nat) :
@@ -27,7 +22,7 @@ def dyad (v : Prim.Dyadic) (shape : UInt8) (t u rt : QAtomicType) (a b : Column)
   match dyadColumn v shape t u a b with
   | none => .error s!"Ew: no qlean kernel claims {repr v} at {repr t}, {repr u} (shape {shape})"
   | some (rt', c) =>
-    if rt' = rt then arr rt n c s!"Ew {repr v}" else .error s!"Ew {repr v}: answers {repr rt'}, not {repr rt}"
+    if rt' = rt then Arr.of (.atom rt) n c s!"Ew {repr v}" else .error s!"Ew {repr v}: answers {repr rt'}, not {repr rt}"
 
 /-- A one-element column holding `a`: how an atom reaches a kernel, once per call. -/
 def atomCol (t : QAtomicType) (a : QAtom) : Except String Column :=
@@ -70,7 +65,7 @@ def Ew.mon (name : String) (rt : QAtomicType) (x : Rel k (.atom t)) : Except Str
   match monColumn name t x.val.c with
   | none => .error s!"Ew.mon: no qlean kernel claims {name} at {repr t}"
   | some (rt', c) =>
-    if rt' = rt then return ⟨x.n, x.key, ← Ew.arr rt x.n c s!"Ew.mon {name}"⟩
+    if rt' = rt then return ⟨x.n, x.key, ← Arr.of (.atom rt) x.n c s!"Ew.mon {name}"⟩
     else .error s!"Ew.mon {name}: answers {repr rt'}, not {repr rt}"
 
 /-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
@@ -80,7 +75,7 @@ def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.n
 def Ew.not (x : Rel k (.atom .boolean)) : Except String (Rel k (.atom .boolean)) :=
   match x.val.c with
   | .bits m b =>
-    return ⟨x.n, x.key, ← Ew.arr .boolean x.n (.bits m (Ew.notBits m b)) "Ew.not"⟩
+    return ⟨x.n, x.key, ← Arr.of (.atom .boolean) x.n (.bits m (Ew.notBits m b)) "Ew.not"⟩
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
 /-- The raw bits of a one-element column, as `shiftColumn`'s `fill` takes them. -/
@@ -186,7 +181,7 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) 
     (← Ew.vec "gatherColumn" (gatherColumn u y.val.c iy)) r
   let keys ← Ew.vec "razeColumn" (razeColumn s #[kx, ← Ew.vec "gatherColumn" (gatherColumn s ky iy)])
   let vals ← Ew.vec "razeColumn" (razeColumn rt #[l.c, ry.c])
-  return ⟨x.n + r, .arr (← Ew.arr s (x.n + r) keys "align keys"), ← Ew.arr rt (x.n + r) vals "align vals"⟩
+  return ⟨x.n + r, .arr (← Arr.of (.atom s) (x.n + r) keys "align keys"), ← Arr.of (.atom rt) (x.n + r) vals "align vals"⟩
 
 /-- The dyadic rule: case 0 (both keys `til` of one length) is ONE `Ew.val`, keys untouched;
     any other pair goes through `align`. -/
@@ -264,11 +259,11 @@ theorem alignList_keys {K A B : Type} [BEq K] (xs : List (K × A)) (ys : List (K
 
 section Checks
 
-/-- A list of longs, or a dict of longs; built through `Ew.arr`'s run-time `wf`. -/
+/-- A list of longs, or a dict of longs; built through `Arr.of`'s run-time `wf`. -/
 private def L (vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
-  return ⟨vs.length, .til _, ← Ew.arr .long _ (.bytes (packLongs vs)) "L"⟩
+  return ⟨vs.length, .til _, ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "L"⟩
 private def D (ks vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
-  return ⟨vs.length, .arr (← Ew.arr .long _ (.bytes (packLongs ks)) "D"), ← Ew.arr .long _ (.bytes (packLongs vs)) "D"⟩
+  return ⟨vs.length, .arr (← Arr.of (.atom .long) _ (.bytes (packLongs ks)) "D"), ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "D"⟩
 private def vals {k v} (r : Except String (Rel k v)) : Option (List (El v)) := r.toOption.map (·.val.toList)
 private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
 
@@ -287,7 +282,7 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El
 private def tilFoR (n : Nat) : Except String (Rel (.atom .long) (.atom .long)) := do
   let some (.vector _ c) := tilColumn n | throw "tilColumn refused"
   unless c matches .foR .. do throw "tilColumn answered no foR"
-  return ⟨n, .til n, ← Ew.arr .long n c "til"⟩
+  return ⟨n, .til n, ← Arr.of (.atom .long) n c "til"⟩
 #guard vals (do Ew.dyadic .add .long (← tilFoR 4096) (← tilFoR 4096)) == some ((List.range 4096).map (Int64.ofNat <| 2 * ·))
 #guard vals (do Ew.prior (t := .long) .sub .long 0 (← tilFoR 4096)) == some (0 :: List.replicate 4095 1)
 #guard vals (do Ew.valAtom (u := .long) .lt .boolean (← tilFoR 4096) 3) == some ((List.range 4096).map (decide <| · < 3))

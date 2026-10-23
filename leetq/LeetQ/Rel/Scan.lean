@@ -4,7 +4,7 @@
   `overColumn` (`overBytes`/`Coc.over`), `overGroupsColumn` (`overGroups`), `Order.groupSizes`/
   `groupLasts`, `mwinColumn` (`Scan.mwin`/`mwinFoR`), `gradeColumn` (`grade`/`ranks`) and
   `sortedValues` (`sortValues`). No element is read at run time; a kernel's answer becomes an `Arr`
-  only through `Arr.of?`, which checks its type and count instead of assuming them.
+  only through `Arr.of`, which checks its type and count instead of assuming them.
   The specs are List functions on `toList`; `#guard` runs each op against its spec.
 -/
 import LeetQ.Rel.Core
@@ -17,10 +17,6 @@ import QLean.Kernel.Structural
 namespace LeetQ.Rel
 
 open QLean QLean.Dep QLean.Kernel
-
-/-- A kernel's answer as an `Arr`: `none` when it is not `n` well-formed elements at `t`. -/
-def Arr.of? (t : Ty) (n : Nat) (c : Pay t) (attr : UInt8 := 0) : Option (Arr t n) :=
-  if h : t.WF n c then some { c, wf := h, attr } else none
 
 /-- `R` with its values replaced, key kept. -/
 def Rel.withVal {k v w : Ty} (R : Rel k v) (a : Arr w R.n) : Rel k w := ⟨R.n, R.key, a⟩
@@ -38,7 +34,7 @@ variable {k : Ty} {t : QAtomicType}
 
 /-- `f\x` at the q dyad `f` (`+ * & | ^`), answered at `rt` (q's accumulator type). -/
 def scan (f : Prim.Dyadic) (rt : QAtomicType) (R : Rel k (.atom t)) : Option (Rel k (.atom rt)) :=
-  ((scanColumn f rt t R.val.c).bind (Arr.of? (.atom rt) R.n)).map R.withVal
+  ((scanColumn f rt t R.val.c).bind fun c => (Arr.of (.atom rt) R.n c "f\\x").toOption).map R.withVal
 
 /-! ## Folds: `f/x` -/
 
@@ -60,7 +56,7 @@ def groupIds {g : Nat} (o : Arr (.atom .long) (g+1)) (n : Nat) : Option ByteArra
 def countBy {v : Ty} : Rel k v → Option (Rel k (.atom .long))
   | ⟨n, .grp (g := g) d o _, _⟩ => do
     let ids ← groupIds o n
-    pure ⟨g, d, ← Arr.of? (.atom .long) g (.bytes (Order.groupSizes g.toUSize ids))⟩
+    pure ⟨g, d, ← (Arr.of (.atom .long) g (.bytes (Order.groupSizes g.toUSize ids)) "count each").toOption⟩
   | _ => none
 
 /-- `last each` by group: `val[o[r+1]−1]`. `none` when a group is empty, which has no last row. -/
@@ -69,7 +65,7 @@ def lastBy : Rel k (.atom t) → Option (Rel k (.atom t))
     let ids ← groupIds o n
     let least ← overColumn .lesser .long (.bytes (Order.groupSizes g.toUSize ids))
     if 0 < g ∧ least ≤ 0 then none else
-      pure ⟨g, d, ← Arr.of? (.atom t) g (← vecCol (← gatherColumn t x.c (.bytes (Order.groupLasts g.toUSize ids))))⟩
+      pure ⟨g, d, ← (Arr.of (.atom t) g (← vecCol (← gatherColumn t x.c (.bytes (Order.groupLasts g.toUSize ids)))) "last each").toOption⟩
   | _ => none
 
 /-- `select f x by k` at a `long` column: `f/` over each group's rows, the `Int64` accumulator. -/
@@ -78,7 +74,7 @@ def overBy (op : Coc.Over) : Rel k (.atom .long) → Option (Rel k (.atom .long)
     let ids ← groupIds o n
     -- `overGroups` answers each group's fold, then each group's live count; the folds are the answer
     let s ← overGroupsColumn op .long g.toUSize ids x.c
-    pure ⟨g, d, ← Arr.of? (.atom .long) g (.bytes (s.extract 0 (8 * g)))⟩
+    pure ⟨g, d, ← (Arr.of (.atom .long) g (.bytes (s.extract 0 (8 * g))) "f/ by").toOption⟩
   | _ => none
 
 /-! ## Moving windows: `w mop x`, key kept -/
@@ -86,32 +82,32 @@ def overBy (op : Coc.Over) : Rel k (.atom .long) → Option (Rel k (.atom .long)
 /-- `w msum/mcount/mavg/mdev/mmin/mmax x`, answered at `rt`; `none` where q answers another type. -/
 def mwin (op : Scan.MOp) (w : Nat) (rt : QAtomicType) (R : Rel k (.atom t)) : Option (Rel k (.atom rt)) :=
   ((mwinColumn op t w R.n R.val.c).bind fun (rt', c) =>
-    if rt' = rt then Arr.of? (.atom rt) R.n c else none).map R.withVal
+    if rt' = rt then (Arr.of (.atom rt) R.n c "w mop x").toOption else none).map R.withVal
 
 /-! ## Order: `iasc idesc rank asc desc xasc` -/
 
 /-- `<x` / `>x`: the stable grade, keyed by position. -/
 def grade (desc : Bool) (R : Rel k (.atom t)) : Option (Rel (.atom .long) (.atom .long)) := do
   let p ← vecCol (← gradeColumn t desc R.val.c)
-  pure ⟨R.n, .til R.n, ← Arr.of? (.atom .long) R.n p⟩
+  pure ⟨R.n, .til R.n, ← (Arr.of (.atom .long) R.n p "<x").toOption⟩
 
 def iasc := @grade k t false
 def idesc := @grade k t true
 
 /-- `rank x` = `<<x`, key kept: the place of each element in the ascending order. -/
 def rank (R : Rel k (.atom t)) : Option (Rel k (.atom .long)) :=
-  (((gradeColumn t false R.val.c (rank := true)).bind vecCol).bind (Arr.of? (.atom .long) R.n)).map R.withVal
+  (((gradeColumn t false R.val.c (rank := true)).bind vecCol).bind fun c => (Arr.of (.atom .long) R.n c "rank x").toOption).map R.withVal
 
 /-- `x` reordered by the permutation column `p`: one gather. -/
 def permute {n : Nat} (p : Column) (x : Arr (.atom t) n) (attr : UInt8 := 0) : Option (Arr (.atom t) n) := do
-  Arr.of? (.atom t) n (← vecCol (← gatherColumn t x.c p)) attr
+  (Arr.of (.atom t) n (← vecCol (← gatherColumn t x.c p)) "x@p" attr).toOption
 
 /-- `asc x` / `desc x` = `(<x);x`, keyed by position. `sortValues` where the key is a bijection of
     the bits, the bitmap sort at `boolean`, the grade and a gather elsewhere. `asc` sets `s`. -/
 def sort (desc : Bool) (R : Rel k (.atom t)) : Option (Rel (.atom .long) (.atom t)) := do
   let attr : UInt8 := if desc then 0 else 1
   let a ← match (sortedValues t desc R.val.c).orElse fun _ => sortedBitsColumn t desc R.val.c with
-    | some v => Arr.of? (.atom t) R.n (← vecCol v) attr
+    | some v => (Arr.of (.atom t) R.n (← vecCol v) "asc x" attr).toOption
     | none => permute (← vecCol (← gradeColumn t desc R.val.c)) R.val attr
   pure ⟨R.n, .til R.n, a⟩
 

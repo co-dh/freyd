@@ -10,7 +10,6 @@ import QLean.Dep.Val
 import QLean.Kernel.Sort
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
-import Std.Tactic.BVDecide
 
 namespace LeetQ.Rel
 
@@ -76,6 +75,12 @@ theorem length_toList (x : Arr t n) : x.toList.length = n := List.length_ofFn
 theorem getElem_toList (x : Arr t n) (i : Nat) (h : i < x.toList.length) :
     x.toList[i] = x.get ⟨i, by rw [length_toList] at h; exact h⟩ := List.getElem_ofFn ..
 
+/-- A kernel's answer as an `Arr`, the one way in: `wf` is decided (two O(1) reads at an atomic type, the
+    constructor and the count), never assumed; `what` names the producer in the error. -/
+def of (t : Ty) (n : Nat) (c : Pay t) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
+  if h : t.WF n c then .ok ⟨c, h, attr, none⟩
+  else .error s!"{what}: the kernel answered a payload that is not {n} well-formed elements of its type"
+
 end Arr
 
 /-- Ascending offsets from `0` to `n`: `g+1` cut points of `n` positions into `g` groups. -/
@@ -99,9 +104,38 @@ theorem Arr.get_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (
   show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
 
-/-- `Order.rank .i64` flips the sign bit: unsigned order on ranks is signed order on longs. -/
+/-- Below `2^i`, xor with `2^i` sets that bit: it adds `2^i`. -/
+theorem xor_two_pow_of_lt {r i : Nat} (h : r < 2 ^ i) : r ^^^ 2 ^ i = 2 ^ i + r := by
+  apply Nat.eq_of_testBit_eq; intro j
+  rw [Nat.testBit_xor, Nat.testBit_two_pow]
+  rcases Nat.lt_trichotomy j i with hj | rfl | hj
+  · rw [Nat.testBit_two_pow_add_gt hj]; simp [Nat.ne_of_gt hj]
+  · rw [Nat.testBit_two_pow_add_eq, Nat.testBit_lt_two_pow h]; simp
+  · have hp : 2 ^ (i + 1) ≤ 2 ^ j := Nat.pow_le_pow_right (by omega) hj
+    rw [Nat.pow_succ] at hp
+    rw [Nat.testBit_lt_two_pow (show 2 ^ i + r < 2 ^ j by omega), Nat.testBit_lt_two_pow (show r < 2 ^ j by omega)]
+    simp [Nat.ne_of_lt hj]
+
+/-- Flipping bit 63 of a 64-bit number moves it by `2^63`: up below `2^63`, down at or above. -/
+theorem xor_two_pow_63 (n : Nat) (h : n < 2 ^ 64) : n ^^^ 2 ^ 63 = if n < 2 ^ 63 then n + 2 ^ 63 else n - 2 ^ 63 := by
+  split
+  · rw [xor_two_pow_of_lt ‹_›]; omega
+  · have e : n = (n - 2 ^ 63) ^^^ 2 ^ 63 := by rw [xor_two_pow_of_lt (show n - 2 ^ 63 < 2 ^ 63 by omega)]; omega
+    conv => lhs; rw [e]
+    rw [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
+
+/-- `Order.rank .i64` flips the sign bit: unsigned order on ranks is signed order on longs. Both sides are
+    read as naturals — the rank by `xor_two_pow_63`, the long by `toInt_eq_msb_cond` — and compared by `omega`. -/
 theorem rank_i64_le {x y : UInt64} (h : Kernel.Order.rank .i64 x ≤ Kernel.Order.rank .i64 y) : x.toInt64 ≤ y.toInt64 := by
-  simp only [Kernel.Order.rank] at h; bv_decide
+  simp only [Kernel.Order.rank] at h
+  rw [UInt64.le_iff_toNat_le, UInt64.toNat_xor, UInt64.toNat_xor, show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl,
+    xor_two_pow_63 _ x.toNat_lt, xor_two_pow_63 _ y.toNat_lt] at h
+  rw [Int64.le_iff_toInt_le, Int64.toInt, Int64.toInt, BitVec.toInt_eq_msb_cond, BitVec.toInt_eq_msb_cond,
+    BitVec.msb_eq_decide, BitVec.msb_eq_decide]
+  show (if decide (2 ^ 63 ≤ x.toNat) = true then (x.toNat : Int) - (2 ^ 64 : Nat) else x.toNat) ≤
+    (if decide (2 ^ 63 ≤ y.toNat) = true then (y.toNat : Int) - (2 ^ 64 : Nat) else y.toNat)
+  have := x.toNat_lt; have := y.toNat_lt
+  split <;> split <;> split at h <;> split at h <;> simp_all <;> omega
 
 /-- `Cuts` from `Order.ascending`'s Lean body on the dense payload, and the two end reads. -/
 theorem cuts_of_ascending {g n : Nat} (o : Arr (.atom .long) (g+1)) {b : ByteArray} (hc : o.c = .bytes b)

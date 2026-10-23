@@ -113,7 +113,7 @@ def flip {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) : Except String (Re
       throw "+x: the runs differ in length (q's 'length)"
     let (q, r) := Alg.cross m g
     let c ← vec "+x" a (gatherColumn a xv.c (.bytes (Alg.add (Alg.mulc r m) q)))
-    parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Ew.arr a (m * g) c "+x")
+    parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of (.atom a) (m * g) c "+x")
   | _ => throw "+x: the operand is not a parted list (q's 'type)"
 
 /-- `x@y` on a parted `x`: the runs `y` selects, a parted list — the run lengths `o[1..] − o[..g]` gathered at
@@ -128,7 +128,7 @@ def indexParted {k' : Ty} {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) (y
     let (i, w) := expand lens
     let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
     let c ← vec "x@y" a (gatherColumn a xv.c (.bytes src))
-    parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Ew.arr a (Alg.len src) c "x@y")
+    parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom a) (Alg.len src) c "x@y")
   | _ => throw "x@y: the operand is not parted; `index` reads a list"
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tupleCodes`), then gathers -/
@@ -186,7 +186,7 @@ def aj (l r : List Col) (lt rt : Col) : Except String (Rel (.atom .long) (.atom 
   let bin := binBytes 8 false true false srt
   let pos := bin (Alg.add base lr)
   let ri := writeWhere (expandBytes 8 0 (one Alg.nul.toUInt64) #[nl]) (bin (plus base (-1))) pos (Alg.gather 8 p pos)
-  pure ⟨nl, .til nl, ← Ew.arr .long nl (.bytes ri) "aj"⟩
+  pure ⟨nl, .til nl, ← Arr.of (.atom .long) nl (.bytes ri) "aj"⟩
 
 /-- `wj`: each left row ↦ the right rows of its key tuple with a time in `[w₀, w₁]`, in time order, a parted
     list — `timeGrade`, `binBytes` of each window's ends, `Find.expand` of the lengths. `prevailing` (q's
@@ -208,7 +208,7 @@ def wj (prevailing : Bool) (w₀ w₁ : Col) (l r : List Col) (rt : Col) : Excep
   if neg.size > 0 then throw "wj: a window ends before it starts (q's 'domain)"
   let (i, w) := expand lens
   let rows := Alg.gather 8 p (Alg.add (Alg.gather 8 start i) w)
-  parted "wj" (concatBytes #[one 0, Alg.sums lens]) (← Ew.arr .long (Alg.len rows) (.bytes rows) "wj")
+  parted "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom .long) (Alg.len rows) (.bytes rows) "wj")
 
 /-! ## Raze -/
 
