@@ -777,31 +777,18 @@ theorem runs_countP {α : Type} (f : Nat → α) (c : Nat → Nat) (h0 : c 0 = 0
       have : ¬ c (g + 1) ≤ c g + j := by omega
       simp [this]
 
-/-- Under `Cuts o n`, offsets `i ≤ j ≤ g` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
-theorem cuts_le {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
-    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
-  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
-    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
-  obtain ⟨hm, h0, hl⟩ := co
-  rw [e i (by omega), e j hj]
-  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
-  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
-  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
-  rw [h0] at a; rw [hl] at c
-  exact ⟨by simpa using a, b, c⟩
-
 /-- Under `Cuts o n`, the offsets read as naturals start at `0`, end at `n` and ascend. -/
 theorem cuts_nat {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) :
     (o.toList[0]!).toNatClampNeg = 0 ∧ (o.toList[g]!).toNatClampNeg = n ∧
       ∀ r, r < g → (o.toList[r]!).toNatClampNeg ≤ (o.toList[r+1]!).toNatClampNeg := by
   have hc : ∀ r, r ≤ g → ((o.toList[r]!).toNatClampNeg : Int) = (o.toList[r]!).toInt := fun r hr => by
-    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_le co (Nat.le_refl r) hr).1
+    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_get co (Nat.le_refl r) hr).1
   have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
     rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
   refine ⟨by rw [e 0 (by omega)]; exact congrArg Int64.toNatClampNeg co.2.1, ?_, fun r hr => ?_⟩
   · have := hc g (Nat.le_refl g); rw [e g (Nat.le_refl g)] at this
     have h2 := co.2.2; simp only [Fin.last] at h2; rw [e g (Nat.le_refl g)]; omega
-  · have := (cuts_le co (i := r) (j := r + 1) (by omega) hr).2.1; have := hc r (by omega); have := hc (r+1) hr; omega
+  · have := (cuts_get co (i := r) (j := r + 1) (by omega) hr).2.1; have := hc r (by omega); have := hc (r+1) hr; omega
 
 /-- **A `grp` key over `til g` lists its runs**: under `Cuts o n`, key `i` is the run `r` with
     `o[r] ≤ i < o[r+1]` (`KeyCol.group`), so the keys are `o[r+1] − o[r]` copies of each `r` in turn. -/
@@ -809,7 +796,7 @@ theorem grp_til_toList {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n)
     (KeyCol.grp (.til g) o co).toList = (List.range g).flatMap fun r =>
       List.replicate ((o.toList[r+1]!).toNatClampNeg - (o.toList[r]!).toNatClampNeg) (Int64.ofNat r) := by
   have hc : ∀ r, r ≤ g → ((o.toList[r]!).toNatClampNeg : Int) = (o.toList[r]!).toInt := fun r hr => by
-    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_le co (Nat.le_refl r) hr).1
+    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_get co (Nat.le_refl r) hr).1
   have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
     rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
   obtain ⟨h0, cg, mono⟩ := cuts_nat co
@@ -991,7 +978,7 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
     obtain ⟨h0, cg, -⟩ := cuts_nat co
     have hg : g = o.n := by
       have := congrArg List.length hW
-      simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hE] at this; have := Arr.length_toList oa; omega
+      simp only [List.length_append, List.length_map, List.length_singleton, hE] at this; have := Arr.length_toList oa; omega
     subst hg
     have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
         0 + (oa.toList[r]!).toNatClampNeg := fun r hr => by
@@ -1035,7 +1022,7 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
         obtain ⟨h0, cg, -⟩ := cuts_nat co
         have hg : g = o.n := by
           have := congrArg List.length hW
-          simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hPw,
+          simp only [List.length_append, List.length_map, List.length_singleton, hPw,
             List.length_range] at this; have := Arr.length_toList oa; omega
         subst hg
         have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
@@ -1044,7 +1031,7 @@ theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .lon
           simp only [List.length_map, hol]
           split
           · rename_i h1
-            obtain ⟨a0, -, am⟩ := cuts_le co (Nat.le_refl r) (Nat.le_of_lt h1)
+            obtain ⟨a0, -, am⟩ := cuts_get co (Nat.le_refl r) (Nat.le_of_lt h1)
             have hlenP : (Verify.elemsW 8 (plus ob (-o₀))).length = o.n := by simp [hPw]
             have hWr : oa.toList[r]! = Ew.intStep Ew.add Int64.minValue (Column.bitsAt ob (r * 8) 8).toInt64 (-o₀) := by
               rw [hW, getElem!_concat _ _ (by simp [hlenP]; omega), if_pos (by simp [hlenP]; omega),

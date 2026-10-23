@@ -198,6 +198,32 @@ theorem longWords_answer (b : ByteArray) : longWords (Column.answer .long (.byte
     rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
     exact Verify.foRBits_encode_bits 8 (by decide) (by decide) b i (List.mem_range.1 hi)
 
+/-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
+    width four, the `foR` form read back by `foRBits_encode_bits`. -/
+theorem toList_answer_int {m : Nat} (x : Arr (.atom .int) m) {b : ByteArray} (hc : x.c = Column.answer .int (.bytes b)) :
+    x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 4) 4).toUInt32.toInt32 := by
+  have ha : Column.answer .int (.bytes b) = .bytes b ∨ Column.answer .int (.bytes b) =
+      .foR (b.size / 4) (Kernel.Coc.encode (4 : Nat).toUSize b).1 (Kernel.Coc.encode (4 : Nat).toUSize b).2 := by
+    simp only [Column.answer, QAtomicType.width, show Column.alpEncodes .int = false from rfl,
+      show Column.encodes .int = true from rfl, Kernel.Coc.encodeBelow]
+    repeat' split
+    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+  have hm : Column.count .int x.c = m := x.wf.2
+  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+  intro i h1 _
+  have hn : i < Column.count .int x.c := by rw [Arr.length_toList] at h1; omega
+  rw [Arr.getElem_toList, List.getElem_map, List.getElem_range]
+  show ((Column.get .int x.c i).bind (Carrier.of? .int)).getD _ = _
+  rcases ha with e | e <;> rw [hc, e] at hn ⊢ <;> simp only [Column.get, if_pos hn]
+  · rfl
+  · have hi : i < b.size / 4 := hn
+    show (Column.foRBits _ _ #[] i).toUInt32.toInt32 = _
+    rw [foRBits_starts]
+    congr 1
+    apply UInt32.toNat_inj.1
+    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Verify.foRBits_encode_bits 4 (by decide) (by decide) b i hi,
+      Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ (by decide))]
+
 /-- Reading a word as a long loses nothing. -/
 theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
   simpa using congrArg Int64.toUInt64 h
@@ -282,6 +308,19 @@ theorem cuts_of_ascending {g n : Nat} (o : Arr (.atom .long) (g+1)) {b : ByteArr
   induction d with
   | zero => exact Int64.le_refl _
   | succ d ih => exact Int64.le_trans (ih (by omega) (by omega)) (adj (i + d) hj)
+
+/-- Under `Cuts o n`, offsets `i ≤ j ≤ g` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
+theorem cuts_get {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
+    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
+  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
+    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+  obtain ⟨hm, h0, hl⟩ := co
+  rw [e i (by omega), e j hj]
+  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
+  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
+  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
+  rw [h0] at a; rw [hl] at c
+  exact ⟨by simpa using a, b, c⟩
 
 /-- A key column of `n` keys of type `k`, storing only what q stores. -/
 inductive KeyCol : Ty → Nat → Type
