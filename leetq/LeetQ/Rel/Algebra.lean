@@ -5,7 +5,7 @@
   a general list — because the three steps that touch one take every encoding: `razeColumn` joins
   them, `findColumn`'s `x?x` codes them, `gatherColumn` picks rows of them. Elements are compared
   through joint CODES — each element's first position in the join of every payload taking part — so
-  two columns of one type become comparable longs, and a pair of codes is one long by `rankPair`.
+  two columns of one type become comparable longs, and a pair of codes is one long by `groupIdsPair`.
   The spec of each operator is the List-level relation on `toList`; `#guard`s below hold each one
   on small literal relations, and the laws that the kernels' Lean bodies make reachable are proved.
 -/
@@ -39,9 +39,6 @@ def gather (w : Nat) (src idx : ByteArray) : ByteArray := gatherBytes w.toUSize 
 /-- The positions where `a` equals `b` elementwise. -/
 def whereEqV (a b : ByteArray) : ByteArray :=
   whereBits (len a).toUSize (Ew.cmp Ew.eq Ew.i64 Ew.vv a b (len a).toUSize)
-/-- The positions where `a` equals the long `x`. -/
-def whereEq (a : ByteArray) (x : Int64) : ByteArray :=
-  whereBits (len a).toUSize (Ew.cmp Ew.eq Ew.i64 Ew.va a (one x.toUInt64) (len a).toUSize)
 /-- The first `n` longs and the rest. -/
 def split (b : ByteArray) (n : Nat) : ByteArray × ByteArray := (b.extract 0 (8 * n), b.extract (8 * n) b.size)
 
@@ -84,7 +81,7 @@ def empty : (t : Ty) → Except String (Pay t)
 
 /-- Joint codes: equal elements of any of `cols` get one long, below the total length — each
     element's first position in the join, `x?x` (`findColumn`) of the `raze`. A general list is
-    matched by identity, `Eval.itemPos`, qlean's own `?` on one. -/
+    matched by identity: `findList` of the join against itself, one hashed pass. -/
 def codes : (t : Ty) → Array (Pay t) → Except String ByteArray
   | .atom a, cs => do
     let all ← raze (.atom a) cs
@@ -95,7 +92,7 @@ def codes : (t : Ty) → Array (Pay t) → Except String ByteArray
     | _ => throw s!"findColumn declines x?x on a column of type {a.code} in this encoding"
   | .gen, cs => do
     let all ← raze .gen cs
-    pure (all.foldl (init := .empty) fun b y => Column.pushBits b (Eval.itemPos all y).toUInt64 8)
+    pure (findList all all)
 
 /-- The dense payload an ARITHMETIC kernel (`Ew`, `overGroups`, `grade` by value) reads, at its sort
     layout: a boolean's bits, any other ordered type's `Column.bytesOf` (an encoded one decoded once).
@@ -135,15 +132,12 @@ def ofCols (k v : Ty) (kc : Pay k) (vc : Pay v) : Except String (Rel k v) := do
 
 /-! ## The composite steps, named once -/
 
-/-- `rankPair`: two code columns of one length as one code column, `p·N + q` regrouped, where
-    every code of `q` is below `N` (so `p·N + q` is injective while `N² < 2⁶³`). qlean's
-    `Ew.rankPair` is the rank of two SYMBOL dictionaries, not this; this is `Ew.val` + `groupIds`. -/
-def rankPair (p q : ByteArray) (N : Nat) : ByteArray :=
-  (Order.groupIds .i64 (len q).toUSize (add (mulc p N) q)).1
-
-/-- `|R|` of tuples: the codes of each column (`codes`, any encoding), folded left by `rankPair`. -/
+/-- `|R|` of tuples: the codes of each column (`codes`, any encoding), folded left by
+    `groupIdsPair`, the joint code of two long columns. -/
 def tupleCodes (cs : Array ByteArray) : ByteArray :=
-  if h : 0 < cs.size then cs.foldl (init := cs[0]) (start := 1) fun acc c => rankPair acc c (len c) else .empty
+  if h : 0 < cs.size then
+    cs.foldl (init := cs[0]) (start := 1) fun acc c => (Order.groupIdsPair .i64 .i64 (len c).toUSize acc c).1
+  else .empty
 
 /-- `|R|` of several relations of one type in one code space, concatenated in order. -/
 def pairs {k v : Ty} (ds : Array (Cols k v)) : Except String ByteArray := do
@@ -187,6 +181,62 @@ def drank (k : Scan.Kind) (b : ByteArray) : ByteArray :=
   let n := (b.size / k.width).toUSize
   let d := Order.distinct k n b
   binBytes k.width.toUSize (isFloat k) true false (Order.sortValues k false (d.size / k.width).toUSize d) b
+
+/-- `a + x` for the long `x`. -/
+def addc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
+
+/-- The rows in the order `gid` ascending, then each of `ks` in turn (`desc`), by stable grades
+    from the last key to the first; answers the permutation. -/
+def gradeBy (gid : ByteArray) (ks : Array (Scan.Kind × Bool × ByteArray)) : ByteArray :=
+  let n := (len gid).toUSize
+  let p := ks.foldr (init := tilLongs n) fun (k, desc, b) p =>
+    gather 8 p (Order.grade k desc n (gather k.width b p))
+  gather 8 p (Order.grade .i64 false n (gather 8 gid p))
+
+/-- The rows of a code column `c` cut into one segment per distinct code: the permutation `p` that
+    makes each code's rows contiguous (`grade` of its `groupIds`), the `g + 1` offsets of the
+    segments in that order (`runStarts`), and each segment's first row in `c`. -/
+def segments (c : ByteArray) : ByteArray × ByteArray × ByteArray :=
+  let (gid, firsts) := Order.groupIds .i64 (len c).toUSize c
+  let p := Order.grade .i64 false (len c).toUSize gid
+  (p, runStarts 8 false (gather 8 gid p), firsts)
+
+/-- Set ids: segment `j` of the codes `vc` is `vc[o[j] .. o[j+1])`, and segments holding equal SETS
+    get equal ids, numbered by first occurrence. Each segment is sorted and its repeats dropped —
+    `grade` on (segment, code), `groupIdsPair` of the sorted pairs, whose ids rise by one at each
+    new pair, so the id at a segment's first row is the kept rows before it — then `rankSlices`,
+    which compares the normalised segments as sequences. -/
+def setIds (vc o : ByteArray) : Except String ByteArray := do
+  let n := len vc
+  if o.size < 8 then throw "setIds: the offsets hold no terminator"
+  let seg := groupOf o n
+  let p := gradeBy seg #[(.i64, false, vc)]
+  let (q, fs) := Order.groupIdsPair .i64 .i64 n.toUSize (gather 8 seg p) (gather 8 vc p)
+  let ids := Order.rankSlices (gather 8 vc (gather 8 p fs)) (gather 8 (concatBytes #[q, one (len fs).toUInt64]) o)
+  if len ids == len o - 1 then pure ids
+  else throw s!"rankSlices declines the {len o - 1} normalised segments of {len fs} codes"
+
+/-- `setIds` of a `grp`-keyed family: one id per set, equal sets one id. -/
+def setId {k v : Ty} (G : Rel k v) : Except String ByteArray :=
+  match G with
+  | ⟨_, .grp _ o _, val⟩ => do
+    let some ob := Column.bytesOf .long o.c | throw "a grp key's offsets have no dense payload"
+    setIds (← codes v #[val.c]) ob
+  | _ => throw "setId reads a grp-keyed family; Λ (`transpose`) makes one"
+
+/-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, larger
+    better on column `c` exactly when `big[c]`: per set, the rows no row of the set strictly
+    dominates (`thinSweep` over the `segments` of the key codes). A column not of longs is
+    compared by its dense rank (`drank`). Equal rows of one set are one element: the first is kept.
+    Answers the kept rows' indices. -/
+def thin {k : Ty} (key : Pay k) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
+  if cs.size != big.size then throw s!"thin: {cs.size} columns but {big.size} directions"
+  let kc ← codes k #[key]
+  let (p, o, _) := segments kc
+  let ls := cs.map fun (kd, b) => gather 8 (match kd with | .i64 => b | kd => drank kd b) p
+  let s := whereBits (len kc).toUSize (thinSweep ls big o)
+  let t := tupleCodes (#[gather 8 (gather 8 kc p) s] ++ ls.map (gather 8 · s))
+  pure (gather 8 p (gather 8 s (Order.groupIds .i64 (len s).toUSize t).2))
 
 /-! ## The operators -/
 
@@ -282,8 +332,7 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Arr B mb) (Uc : Arr 
   let y ← pick B r.val i; let z ← pick C s.val j
   let (yc, rest) := split (← codes B #[y, r.val, Ub.c]) (len i)
   let (rvc, ubc) := split rest r.n
-  let zc ← codes C #[z]
-  let (gid, firsts) := Order.groupIds .i64 (len i).toUSize (rankPair yc zc (len zc))
+  let (gid, firsts) := Order.groupIdsPair .i64 .i64 (len i).toUSize yc (← codes C #[z])
   let got := Order.groupSizes (len firsts).toUSize gid
   let keep := gather 8 firsts (whereEqV got (atCnt (cnt rvc) (gather 8 yc firsts)))
   let miss := anti ubc rvc
@@ -295,25 +344,21 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Arr B mb) (Uc : Arr 
 def rightDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) := do
   conv (← leftDiv (← conv S) (← conv R) Ub Ua)
 
-/-- `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres by counting: `join` on `z` → `(x, y)`;
-    `cnt(x, y)` equal to both `cnt(R.key)` `at` `x` and `cnt(S.key)` `at` `y`; the vacuous term
-    `cross(anti(Ua, dom R), anti(Ub, dom S))`, the empty fibres. -/
+/-- `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres: the fibres of `R` and of `S` as `segments`
+    of one value code space, their `setIds` in one call, `join` on the ids → `(x, y)`; the vacuous
+    term `cross(anti(Ua, dom R), anti(Ub, dom S))`, the empty fibres. -/
 def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) := do
-  let r ← (← cols R).nub; let s ← (← cols S).nub
+  let r ← cols R; let s ← cols S
   let (rv, sv) := split (← codes C #[r.val, s.val]) r.n
-  let (i, j) := join rv sv
-  let x ← pick A r.key i; let y ← pick B s.key j
-  let xa ← codes A #[x, r.key, Ua.c]; let ya ← codes B #[y, s.key, Ub.c]
-  let (xc, xr) := split xa (len i); let (rkc, uac) := split xr r.n
-  let (yc, yr) := split ya (len j); let (skc, ubc) := split yr s.n
-  let (gid, firsts) := Order.groupIds .i64 (len i).toUSize (rankPair xc yc (len ya))
-  let got := Order.groupSizes (len firsts).toUSize gid
-  let nx := atCnt (cnt rkc) (gather 8 xc firsts); let ny := atCnt (cnt skc) (gather 8 yc firsts)
-  let keep := gather 8 firsts (whereEq (add (sub nx got) (sub ny got)) 0)
-  let ex := anti uac rkc; let ey := anti ubc skc
+  let (rk, uac) := split (← codes A #[r.key, Ua.c]) r.n
+  let (sk, ubc) := split (← codes B #[s.key, Ub.c]) s.n
+  let (pr, orr, fr) := segments rk; let (ps, os, fs) := segments sk
+  let ids ← setIds (concatBytes #[gather 8 rv pr, gather 8 sv ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc os r.n])
+  let (i, j) := join (ids.extract 0 (8 * len fr)) (ids.extract (8 * len fr) ids.size)
+  let ex := anti uac rk; let ey := anti ubc sk
   let (p, q) := cross (len ex) (len ey)
-  ofCols A B (← raze A #[← pick A x keep, ← pick A Ua.c (gather 8 ex p)])
-    (← raze B #[← pick B y keep, ← pick B Ub.c (gather 8 ey q)])
+  ofCols A B (← raze A #[← pick A r.key (gather 8 fr i), ← pick A Ua.c (gather 8 ex p)])
+    (← raze B #[← pick B s.key (gather 8 fs j), ← pick B Ub.c (gather 8 ey q)])
 
 /-- `grp (arr ds) o` over `val`: the keys `ds` of the groups and the offsets `o` a kernel wrote (`runStarts`,
     which ends with the count), the cuts decided by `KeyCol.grp?`. -/
@@ -335,7 +380,7 @@ def runs {v : Ty} {n : Nat} (t : Ty) (key : Pay t) (val : Arr v n) : Except Stri
 def family (d : Cols A B) : Except String (Rel A B) := do
   let d ← d.nub
   let vc ← codes B #[d.val]
-  let s ← d.rows (Order.grade .i64 false d.n.toUSize (add (mulc (← codes A #[d.key]) (len vc)) vc))
+  let s ← d.rows (gradeBy (← codes A #[d.key]) #[(.i64, false, vc)])
   runs A s.key (← Arr.of B s.n s.val "family")
 
 /-- `Λ(R)`: `x Λ(R) X ↔ X = {z | x R z}` — the family of `R`'s fibres, one segment per `x ∈ dom R`. -/
@@ -470,40 +515,6 @@ def hylo {α : Type} (done : α → Except String Bool) (step : α → Except St
 def est (desc : Bool) (G : Rel A (.atom .long)) : Except String (Rel A (.atom .long)) :=
   foldGroups (if desc then .greater else .lesser) G
 
-/-- The rows of `G` in the order key ascending, then each of `ks` in turn (`desc`), by stable grades
-    from the last key to the first; answers the permutation. -/
-def gradeBy (gid : ByteArray) (ks : List (Scan.Kind × Bool × ByteArray)) : ByteArray :=
-  let n := (len gid).toUSize
-  let p := ks.foldr (init := tilLongs n) fun (k, desc, b) p =>
-    gather 8 p (Order.grade k desc n (gather k.width b p))
-  gather 8 p (Order.grade .i64 false n (gather 8 gid p))
-
-/-- `thin(Q)` for `Q` the key order "`f y ≥ f x`", `f` the value itself: per set its maximal
-    elements — `Order.grade` on `(group, f)`, `groupLasts` = the max per group, `Ew.cmp eq`, `whereBits`. -/
-def thinMax (G : Rel A (.atom .long)) : Except String (Rel A (.atom .long)) := do
-  let r ← cols G; let (_, v) ← arrDense G.val
-  let (gid, firsts) := Order.groupIds .i64 r.n.toUSize (← codes A #[r.key])
-  let p := gradeBy gid [(.i64, false, v)]
-  let top := gather 8 v (gather 8 p (Order.groupLasts (len firsts).toUSize (gather 8 gid p)))
-  let t ← r.rows (whereEqV v (gather 8 top gid))
-  ofCols A (.atom .long) t.key t.val
-
-/-- `thin(Q)` for the two-key Pareto order `(k₁ ≤, k₂ ≤)` on a family with two value columns: the
-    rows in key order with `k₁` then `k₂` descending, `Scan.scan maxs` of the group-major rank
-    `group·N + rank(k₂)`, a row kept where it beats the prior running max (`Ew.cmp gt`). -/
-def thinPareto (T : Tab A (.atom .long) (.atom .long)) : Except String (Tab A (.atom .long) (.atom .long)) := do
-  let key ← keyPay T.key
-  let (_, k₁) ← arrDense T.fst; let (_, k₂) ← arrDense T.snd
-  let n := T.n
-  let gid := (Order.groupIds .i64 n.toUSize (← codes A #[key])).1
-  let p := gradeBy gid [(.i64, true, k₁), (.i64, true, k₂)]
-  let c := add (mulc (gather 8 gid p) n) (gather 8 (drank .i64 k₂) p)
-  let prior := concatBytes #[one nul.toUInt64, (Scan.scan .maxs .i64 n.toUSize c).extract 0 (8 * (n - 1))]
-  let keep := gather 8 p (whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.vv c prior n.toUSize))
-  let m := len keep
-  pure ⟨m, .arr (← Arr.of A m (← pick A key keep) "thinPareto"), ← Arr.of (.atom .long) m (.bytes (gather 8 k₁ keep)) "thinPareto",
-    ← Arr.of (.atom .long) m (.bytes (gather 8 k₂ keep)) "thinPareto"⟩
-
 /-- `Entire R` on the universe `U`: `memberVec` of `U`'s codes in the keys', all set. -/
 def entire {m : Nat} (R : Rel A B) (U : Arr A m) : Except String Bool := do
   let r ← cols R
@@ -620,11 +631,31 @@ private def G : LL := ⟨3, .arr { c := .bytes <| packLongs [1, 1, 2], wf := by 
   fun (_, s) => s == 22
 #guard ok (est false R) fun X => X.toList == [(1, 10), (2, 10), (3, 30)]
 #guard ok (est true R) fun X => X.toList == [(1, 20), (2, 10), (3, 30)]
-#guard ok (thinMax R) fun X => seteq X.toList [(1, 20), (2, 10), (3, 30)]
--- Pareto: set 1 holds (1,5) (3,2) (2,2) (3,1) (1,5): keep (1,5) and (3,2), one copy each
-private def P : Tab L L L := ⟨5, .arr { c := .bytes <| packLongs [1, 1, 1, 1, 1], wf := by decide },
-  { c := .bytes <| packLongs [1, 3, 2, 3, 1], wf := by decide }, { c := .bytes <| packLongs [5, 2, 2, 1, 5], wf := by decide }⟩
-#guard ok (thinPareto P) fun X => seteq X.toList [(1, 3, 2), (1, 1, 5)] && X.n == 2
+-- thin, k = 1: per key of `R` the largest value, then the smallest
+private def lc (xs : List Int64) : Scan.Kind × ByteArray := (.i64, packLongs xs)
+#guard ok (thin (k := L) (Column.bytes (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30]] #[true]) (· == packLongs [1, 2, 3])
+#guard ok (thin (k := L) (Column.bytes (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30]] #[false]) (· == packLongs [0, 2, 3])
+-- k = 2, one set (1,5) (3,2) (2,2) (3,1) (1,5): both larger → (1,5) and (3,2), one copy each;
+-- the second smaller → (3,1) alone
+private def k5 : Column := .bytes (packLongs [1, 1, 1, 1, 1])
+#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, true]) (· == packLongs [0, 1])
+#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, false]) (· == packLongs [3])
+-- k = 3, two sets: {(1,1,1) (2,2,2) (2,2,2) (3,0,0)} keeps (2,2,2) once and (3,0,0);
+-- {(0,5,0) (0,4,1) (0,4,0)} drops (0,4,0); a key interleaved: set 2's rows come first
+#guard ok (thin (k := L) (Column.bytes (packLongs [1, 1, 1, 1, 2, 2, 2])) #[lc [1, 2, 2, 3, 0, 0, 0], lc [1, 2, 2, 0, 5, 4, 4],
+    lc [1, 2, 2, 0, 0, 1, 0]] #[true, true, true]) (· == packLongs [1, 3, 4, 5])
+#guard ok (thin (k := L) (Column.bytes (packLongs [2, 1, 2, 1, 1, 2, 1])) #[lc [0, 1, 0, 2, 2, 0, 3], lc [5, 1, 4, 2, 2, 4, 0],
+    lc [0, 1, 1, 2, 2, 0, 0]] #[true, true, true]) (· == packLongs [0, 2, 3, 6])
+-- setId: segments {3 1 1} {1 3} {2} {} {} {1 3 3}: the three spellings of {1, 3} one id, `{}` one id
+private def o6 : Arr L 7 := { c := .bytes <| packLongs [0, 3, 5, 6, 6, 6, 9], wf := by decide }
+private def sets : LL := ⟨9, .grp (.til 6) o6 (by decide), { c := .bytes <| packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3], wf := by decide }⟩
+#guard ok (setId sets) (· == packLongs [0, 0, 1, 2, 2, 0])
+-- Λ(R ∪ S): fibres {10 20} {10 20} {30} {40}
+#guard ok (do setId (← transpose (← union R S))) (· == packLongs [0, 0, 1, 2])
+-- Λ of {1↦10, 2↦20, 1↦20, 2↦10, 2↦10}: both fibres {10, 20}, in another order and with a repeat
+private def D : LL := ⟨5, .arr { c := .bytes <| packLongs [1, 2, 1, 2, 2], wf := by decide }, { c := .bytes <| packLongs [10, 20, 20, 10, 10], wf := by decide }⟩
+#guard ok (do setId (← transpose D)) (· == packLongs [0, 0])
+#guard setId R matches .error _
 
 private def Ua3 : Arr L 3 := { c := .bytes <| packLongs [3, 1, 2], wf := by decide }
 #guard ok (entire R Ua) (· == false) && ok (entire R Ua3) id
@@ -729,8 +760,11 @@ end Checks
 #print axioms mapVal
 #print axioms foldGroups
 #print axioms uncons
-#print axioms thinMax
-#print axioms thinPareto
+#print axioms thin
+#print axioms setIds
+#print axioms setId
+#print axioms tupleCodes
+#print axioms codes
 #print axioms entire
 #print axioms simple
 #print axioms injective
