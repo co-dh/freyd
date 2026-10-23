@@ -10,6 +10,7 @@ import QLean.Dep.Val
 import QLean.Kernel.Sort
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
+import QLean.Verify.Encoding
 
 namespace LeetQ.Rel
 
@@ -116,6 +117,49 @@ theorem Arr.toList_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray
   apply List.ext_getElem (by rw [Arr.length_toList]; simp)
   intro i h1 h2
   rw [Arr.getElem_toList, Arr.get_long_bytes x hc]; simp
+
+/-- `foRBits` with no hoisted table reads the start `blockStarts` holds (`blockStarts_get`), so
+    `Column.get`'s `#[]` and the kernels' table are one decode. -/
+theorem foRBits_starts (md pk : ByteArray) (i : Nat) :
+    Column.foRBits md pk #[] i = Column.foRBits md pk (Column.blockStarts md) i := by
+  have hs : (Column.blockStarts md).size = Column.nblk md + 1 := (Verify.blockStarts_fold md (Column.nblk md)).2.1
+  unfold Column.foRBits
+  by_cases h : i / Column.blk ≤ Column.nblk md
+  · simp [Verify.blockStarts_get md h]
+  · simp [Array.getElem?_eq_none (show (Column.blockStarts md).size ≤ i / Column.blk by omega)]
+
+/-- Under `wf`, a long `foR` column's element `i` is its `foRBits` decode, read as a long. -/
+theorem Arr.get_long_foR {m : Nat} (x : Arr (.atom .long) m) {n : Nat} {md pk : ByteArray} (hc : x.c = .foR n md pk)
+    (i : Fin m) : x.get i = (Column.foRBits md pk (Column.blockStarts md) i.1).toInt64 := by
+  have hn : i.1 < Column.count .long (.foR n md pk) := by have := x.wf.2; rw [hc] at this; omega
+  show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
+  rw [hc, ← foRBits_starts]; simp only [Column.get, if_pos hn]; rfl
+
+/-- A long column's words in position order: a `bytes` payload's eight-byte elements, a `foR` payload's
+    `foRBits` decode. `none` at `alp`, whose decode has no law yet, and at the non-long constructors. -/
+def longWords : Column → Option (List UInt64)
+  | .bytes b => some (Verify.elemsW 8 b)
+  | .foR n md pk => some ((List.range n).map (Column.foRBits md pk (Column.blockStarts md)))
+  | _ => none
+
+/-- Under `wf`, a long column lists its words, each read as a long: `toList_long_bytes` and the `foR` decode. -/
+theorem Arr.toList_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h : longWords x.c = some ws) :
+    x.toList = ws.map UInt64.toInt64 := by
+  cases hc : x.c with
+  | bytes b => rw [hc] at h; cases h; rw [Arr.toList_long_bytes x hc, Verify.elemsW, Arr.n_long_bytes x hc]
+  | foR n md pk =>
+    rw [hc] at h; cases h
+    have hn : n = m := by have := x.wf.2; rw [hc] at this; exact this
+    subst hn
+    apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+    intro i h1 h2; rw [Arr.getElem_toList, Arr.get_long_foR x hc]; simp
+  | _ => all_goals (rw [hc] at h; cases h)
+
+/-- Element `i` of a long column is word `i`, read as a long. -/
+theorem Arr.get_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h : longWords x.c = some ws)
+    (i : Nat) (hi : i < m) (hw : i < ws.length) : x.get ⟨i, hi⟩ = ws[i].toInt64 := by
+  rw [← Arr.getElem_toList x i (by rw [Arr.length_toList]; exact hi)]
+  simp [Arr.toList_long x h]
 
 /-- Reading a word as a long loses nothing. -/
 theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
