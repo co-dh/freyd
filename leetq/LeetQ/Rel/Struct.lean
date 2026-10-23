@@ -206,8 +206,8 @@ def colRows : KCol → Nat
   | ⟨.gen, xs⟩ => xs.size
 
 /-- `Eval.keyMatch`, q's `?` of the key tuples (`q.k` line 42): the right's `nr` rows grouped by key tuple
-    **as they lie**, and each of the left's `nl` rows' group, `none` at a miss. -/
-def keyGroups (verb : String) (l r : Array KCol) (nl nr : Nat) : Except String (Eval.Groups × Array (Option Nat)) := do
+    **as they lie**, and each of the left's `nl` rows' group as a `long` column, the group count at a miss. -/
+def keyGroups (verb : String) (l r : Array KCol) (nl nr : Nat) : Except String (Eval.Groups × Column) := do
   if l.size == 0 then throw s!"{verb}: no key column"
   unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
   unless (l.zip r).all fun (p, q) => p.1 == q.1 do throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
@@ -217,13 +217,14 @@ def keyGroups (verb : String) (l r : Array KCol) (nl nr : Nat) : Except String (
 /-- `aj`: each left row ↦ the right row q's `bin` names inside its key tuple's group, `0N` at none —
     `keyGroups`, then `Eval.groupEdge` (`q.k` line 46's `(x#z) bin x#y`): one C bisection per left row over
     the right's time column at its own encoding. q sorts nothing: an unsorted group is bisected as its rows lie.
-    A miss is `nr`, which the gather from `til nr` reads as `0N`. -/
+    A miss is `nr`: one `^` pass reading `nr` as its null fills it with `0N`. -/
 def aj (l r : Array KCol) (lt rt : KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
   unless lt.1 == rt.1 do throw "aj: the two time columns differ in type (q's 'type)"
   let (nl, nr) := (colRows lt, colRows rt)
-  let (gs, at?) ← keyGroups "aj" l r nl nr
-  let hit := Kernel.longColumn (Eval.groupEdge gs at? (colValue rt) (colValue lt) nr)
-  pure ⟨nl, .til nl, ← Arr.of (.atom .long) nl (← vec "aj" .long (gatherColumn .long (.bytes (tilLongs nr.toUSize)) hit)) "aj"⟩
+  let (gs, ids) ← keyGroups "aj" l r nl nr
+  let e ← dense "aj" .long (Eval.groupEdge gs ids (colValue rt) (colValue lt) nr)
+  let hit := Kernel.Ew.val Ew.fill Ew.i64 Ew.av (Int64.ofNat nr) (one Int64.minValue.toUInt64) e nl.toUSize
+  pure ⟨nl, .til nl, ← Arr.of (.atom .long) nl (.bytes hit) "aj"⟩
 
 /-- `wj` (`prevailing`) and `wj1`: each left row ↦ the right rows `[lo, hi)`, a parted list — q's `ww`
     (`q.k` line 54) as qlean's `windowJoin` runs it: `wj` is `ww[0 1;w]`, `lo` the row `bin` names at `w₀`
@@ -233,22 +234,30 @@ def aj (l r : Array KCol) (lt rt : KCol) : Except String (Rel (.atom .long) (.at
 def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
   unless w₀.1 == rt.1 && w₁.1 == rt.1 do throw "wj: the window and time columns differ in type (q's 'type)"
   let (nl, nr) := (colRows w₀, colRows rt)
-  let (gs, at?) ← keyGroups "wj" l r nl nr
+  let (gs, ids) ← keyGroups "wj" l r nl nr
   -- `wj1`'s `w-1` at q's own type rule for `-`, as qlean's interpreter subtracts it
   let lo ← if prevailing then pure (colValue w₀) else match w₀ with
     | ⟨.atom t, c⟩ => match dyadColumn .sub Ew.va t .long c (.bytes (one 1)) with
       | some (u, d) => pure (QValue.vector u d)
       | none => throw s!"wj1: no kernel subtracts 1 from a {repr t} window"
     | ⟨.gen, _⟩ => throw "wj1: a general list window (q's 'type)"
-  let firsts := gs.firsts
-  let edges (bound : QValue) (off : Nat) : Array Nat :=
-    (Eval.groupEdge gs at? (colValue rt) bound nr).mapIdx fun i e => match at?[i]! with
-      | none => 0
-      | some g => let s := firsts[g]!; if e == nr then s else min nr (max s (e + off))
-  let los := edges lo (if prevailing then 0 else 1)
-  let lens ← dense "wj" .long (Kernel.longColumn ((los.zip (edges (colValue w₁) 1)).map fun (a, b) => b - a))
+  -- each left row's group start, `0` at a key miss: `firsts` gathered at the ids, whose miss is `firsts`' size
+  let starts := Alg.gather 8 (← dense "wj" .long (Kernel.longColumn (gs.firsts.push 0))) (← dense "wj" .long ids)
+  let n := nl.toUSize
+  let mn := Int64.minValue
+  -- an edge `max s (e + off)`, `s` where `bin` misses: the miss `nr` (read as the `^` pass's null) becomes
+  -- `-1`, whose `+ off` is at most `0 ≤ s`; a hit is `e < nr`, so `e + 1 ≤ nr` needs no clamp
+  let edges (bound : QValue) (off : Nat) : Except String ByteArray := do
+    let e := Kernel.Ew.val Ew.fill Ew.i64 Ew.av (Int64.ofNat nr) (one (-1 : Int64).toUInt64)
+      (← dense "wj" .long (Eval.groupEdge gs ids (colValue rt) bound nr)) n
+    let e := if off == 0 then e else Kernel.Ew.val Ew.add Ew.i64 Ew.va mn e (one off.toUInt64) n
+    pure (Kernel.Ew.val Ew.greater Ew.i64 Ew.vv mn starts e n)
+  let los ← edges lo (if prevailing then 0 else 1)
+  -- an inverted run is empty: `0 | hi - lo`
+  let lens := Kernel.Ew.val Ew.greater Ew.i64 Ew.av mn (one 0)
+    (Kernel.Ew.val Ew.sub Ew.i64 Ew.vv mn (← edges (colValue w₁) 1) los n) n
   let (i, w) := expand lens
-  let rows := Alg.add (Alg.gather 8 (← dense "wj" .long (Kernel.longColumn los)) i) w
+  let rows := Alg.add (Alg.gather 8 los i) w
   parted "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom .long) (Alg.len rows) (.bytes rows) "wj")
 
 /-! ## Raze -/
