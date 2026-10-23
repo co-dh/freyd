@@ -49,16 +49,32 @@ def index {k k' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (y : Rel k' (.atom
   onKey y.key a (← vec "x@y" a (gatherColumn a x.val.c y.val.c)) "x@y"
 
 /-- A column as `scatterPacked` writes it, with its element width in bits: `bits` as it is at `1`, any
-    other fixed-width encoding dense (`Find.dense`) at `8·width`. A symbol column has no such payload. -/
+    other fixed-width encoding dense (`Find.dense`) at `8·width`. A symbol column has no such payload;
+    `scatter` writes it by `assignSyms`. -/
 def packed (verb : String) (a : QAtomicType) : Column → Except String (ByteArray × Nat)
   | .bits _ b => pure (b, 1)
   | c => do
     let some w := a.width | throw s!"{verb}: a {repr a} column has no fixed-width payload to scatter into"
     pure (← dense verb a c, 8 * w)
 
+/-- The `n`-element column `acc` with `v`'s elements written at the long positions `ix`, in order, so the
+    last write to a repeated position stays. A symbol column has no fixed-width payload: `assignSyms`
+    writes it in the encodings it holds (`scatterSyms` on two blobs, `scatterIds` into an interned
+    column, `,`'s policy where the two differ). Every other type is `packed` and `scatterPacked`. -/
+def scatter (verb : String) (a : QAtomicType) (n : Nat) (acc v : Column) (ix : ByteArray) : Except String Column :=
+  match a with
+  | .symbol => match assignSyms n acc v ix false with
+    | some c => pure c
+    | none => throw s!"{verb}: assignSyms refused a payload that is no symbol column"
+  | _ => do
+    let (xb, wb) ← packed verb a acc
+    let out := scatterPacked wb.toUSize xb ix (← packed verb a v).1 0 false
+    -- the payload back as a column of `acc`'s form: `packed` answers width `1` exactly on `bits`
+    pure (if wb = 1 then .bits n out else .bytes out)
+
 /-- `@[x;i;f;y]`, `f` a dyadic verb, or `:` at `none`; on `x`'s key. `amendRounds` checks every index
     against `count x` and, for a verb, splits the indices into rounds holding each index at most once,
-    so a round is one `gatherColumn` of the current `x`, one `Ew.dyad` and one `scatterPacked` (q's
+    so a round is one `gatherColumn` of the current `x`, one `Ew.dyad` and one `scatter` (q's
     index-by-index application). `Ew.dyad` is `dyadColumn`, so the verb runs at every type pair it is
     defined on whose answer is `x`'s type, nulls by its own rule. Under `:` the scatter keeps the last
     write, so one round is q's answer, and `y` must have `x`'s type (q's 'type otherwise). -/
@@ -66,28 +82,25 @@ def amend {k k' k'' : Ty} {a u : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' 
     (op : Option Prim.Dyadic) (y : Rel k'' (.atom u)) : Except String (Rel k (.atom a)) := do
   let verb := "@[x;i;f;y]"
   if i.n ≠ y.n then throw s!"{verb}: {i.n} indices against {y.n} values (q's 'length)"
-  let (xb, wb) ← packed verb a x.val.c
-  -- the payload back as a column of `x`'s form: `packed` answers width `1` exactly on `bits`
-  let col (b : ByteArray) : Column := if wb = 1 then .bits x.n b else .bytes b
   let ib ← dense verb .long i.val.c
   let r := amendRounds x.n.toUSize 8 op.isSome ib
   let word (j : Nat) := Column.bitsAt r (j * 8) 8
   if word 0 == ~~~0 then throw s!"{verb}: index {(word 1).toInt64} outside 0..{x.n} (q's 'length)"
-  let step (acc ix : ByteArray) (yv : Column) : Except String ByteArray := do
+  let step (acc : Column) (ix : ByteArray) (yv : Column) : Except String Column := do
     let v ← match op with
-      | none => if u = a then pure (← packed verb u yv).1 else throw s!"{verb}: `:` of a {repr u} into a {repr a} list (q's 'type)"
+      | none => if u = a then pure yv else throw s!"{verb}: `:` of a {repr u} into a {repr a} list (q's 'type)"
       | some v => do
-        let cur ← vec verb a (gatherColumn a (col acc) (.bytes ix))
-        pure (← packed verb a (← Ew.dyad v Ew.vv a u a cur yv (ix.size / 8)).c).1
-    pure (scatterPacked wb.toUSize acc ix v 0 false)
+        let cur ← vec verb a (gatherColumn a acc (.bytes ix))
+        pure (← Ew.dyad v Ew.vv a u a cur yv (ix.size / 8)).c
+    scatter verb a x.n acc v ix
   let rounds := (word 0).toNat
   -- words `2 … 2+rounds-1` count the indices up to each round; the grouped positions follow
-  let out ← if rounds ≤ 1 then step xb ib y.val.c else
+  let out ← if rounds ≤ 1 then step x.val.c ib y.val.c else
     rounds.foldM (fun rr _ acc => do
       let lo := if rr == 0 then 0 else (word (1 + rr)).toNat
       let ks := r.extract ((2 + rounds + lo) * 8) ((2 + rounds + (word (2 + rr)).toNat) * 8)
-      step acc (gatherBytes 8 0 ib ks) (← vec verb u (gatherColumn u y.val.c (.bytes ks)))) xb
-  onKey x.key a (Column.answer a (col out)) verb
+      step acc (gatherBytes 8 0 ib ks) (← vec verb u (gatherColumn u y.val.c (.bytes ks)))) x.val.c
+  onKey x.key a (Column.answer a out) verb
 
 /-! ## Parted lists: a key `grp (til g) o` -/
 
@@ -395,6 +408,18 @@ private def fl {k : Ty} (r : Rel k (.atom .float)) : List Float := r.val.toList.
 #guard ans (·.val.toList) (amend (iv [1, 2, 3]) (lv [1, 1, 2]) (some .add) (iv [10, 20, 5])) == some [1, 32, 8]
 -- `:` keeps `x`'s type: a `long` `y` into a `float` list is q's 'type
 #guard (amend (fv [1.5]) (lv [0]) none (lv [1])).toOption.isNone
+-- `:` on symbols, every pair of encodings: `y` is `d a e` (`d`, `e` in neither `x` dictionary), the index
+-- `2` repeated so the last write stays
+private def sy3 : Rel (.atom .long) (.atom .symbol) :=
+  ⟨3, .til 3, { c := .syms (ByteArray.mk #[100, 0, 97, 0, 101, 0]) #[0, 2, 4, 6], wf := by decide }⟩
+private def se3 : Rel (.atom .long) (.atom .symbol) :=
+  ⟨3, .til 3, { c := .enum 3 (ByteArray.mk #[97, 0, 100, 0, 101, 0]) #[0, 2, 4, 6] (packIds (idWidth #[0, 2, 4, 6]) 3 fun i => [1, 0, 2][i]!), wf := by decide }⟩
+#guard [sy, se].all fun x => [sy3, se3].all fun y =>
+  ans (·.val.toList) (amend x (lv [2, 0, 2]) none y) == some (amendSpec (fun _ y => y) x.val.toList [2, 0, 2] y.val.toList)
+#guard [sy, se].all fun x => [sy3, se3].all fun y => ans (·.val.toList) (amend x (lv [2, 0, 2]) none y) == some ["a", "a", "e"]
+-- the encoding kept: a blob stays a blob only against a blob, an interned `x` stays interned
+#guard ans (fun (r : Rel (.atom .long) (.atom .symbol)) => r.val.c matches Column.syms ..) (amend sy (lv [0, 1, 2]) none sy3) == some true
+#guard [sy3, se3].all fun y => ans (fun (r : Rel (.atom .long) (.atom .symbol)) => r.val.c matches Column.enum ..) (amend se (lv [0, 1, 2]) none y) == some true
 #guard (raze pl).toList == [(0, 10), (1, 20), (2, 30)]
 #guard (raze pl).val.toList == pl.val.toList
 #guard [sy, se].all fun x => ans (·.val.toList) (like x "b*") == some [true, false, true]

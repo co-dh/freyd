@@ -175,7 +175,8 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) 
     Except String (Rel (.atom s) (.atom rt)) := do
   let kx ← Ew.keyCol s x.key
   let ky ← Ew.keyCol s y.key
-  -- `matchColumn` answers `none` only where no kernel compares the two encodings: the general path is right there
+  -- `matchColumn` answers `none` only where no kernel compares the two encodings: the general path is right there.
+  -- Symbol keys always have one: `matchSyms`, `matchIds`, and `matchSymsIds` for a blob against an interned column
   if h : y.n = x.n then
     if matchColumn s kx ky == some true then return ← Ew.val L.v rt x (h ▸ y.val)
   let ix ← Ew.vec "findColumn" (findColumn s false ky (.vector s kx))
@@ -328,6 +329,21 @@ private def addSpec (x y : Except String (Rel (.atom .long) (.atom .long))) : Op
 #guard [GT 2 [0, 2, 3] [10, 20, 30], G [0, 1] [0, 2, 3] [10, 20, 30], D [0, 0, 1] [10, 20, 30]].all fun x =>
   [GT 2 [0, 2, 3] [1, 2, 3], G [0, 1] [0, 2, 3] [1, 2, 3], D [0, 0, 1] [1, 2, 3]].all fun y =>
     pairs (do Ew.dyadic .add .long (← x) (← y)) == some [(0, 11), (0, 22), (1, 33)]
+-- symbol keys `a a b`, as a blob (`SS`) and interned over `a, b` (`SE`): equal keys in every pair of encodings
+-- take the one-key path, which alone adds position by position across the repeated `a`
+private def SK (c : Column) (vs : List Int64) : Except String (Rel (.atom .symbol) (.atom .long)) :=
+  return ⟨vs.length, .arr (← Arr.of (.atom .symbol) _ c "SK"), ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "SK"⟩
+private def SS (vs : List Int64) := SK (.syms (ByteArray.mk #[97, 0, 97, 0, 98, 0]) #[0, 2, 4, 6]) vs
+private def SE (vs : List Int64) :=
+  SK (.enum 3 (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 3 fun i => [0, 0, 1][i]!)) vs
+private def addL := Lift.ofVerb .add .long .long
+#guard [SS, SE].all fun x => [SS, SE].all fun y =>
+  pairs (do Ew.align (← addL) .long (← x [10, 20, 30]) (← y [1, 2, 3])) == some [("a", 11), ("a", 22), ("b", 33)]
+-- different symbol keys `a b` against `b c` in every pair of encodings: the general path
+private def S2 (b : ByteArray) (vs : List Int64) : List (Except String (Rel (.atom .symbol) (.atom .long))) :=
+  [SK (.syms b #[0, 2, 4]) vs, SK (.enum 2 b #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 2 id)) vs]
+#guard (S2 (ByteArray.mk #[97, 0, 98, 0]) [10, 20]).all fun x => (S2 (ByteArray.mk #[98, 0, 99, 0]) [1, 2]).all fun y =>
+  pairs (do Ew.align (← addL) .long (← x) (← y)) == some [("a", 10), ("b", 21), ("c", 2)]
 
 end Checks
 
