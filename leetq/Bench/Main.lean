@@ -323,10 +323,31 @@ def relJoin2Op (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   timedE s!"relJoin2 {enc}" (l₁, l₂, r₁, r₂) fun (l₁, l₂, r₁, r₂) => do
     sumR "relJoin2" (← LeetQ.Rel.Struct.ej #[l₁, l₂] #[r₁, r₂])
 
+/-- `aj`/`wj` input: `n` left rows (key below 1000, time below 1e6) and `n` right rows sorted by key then time
+    (q's `` `p#s `` quote layout, which `wj` requires): left keys, left times, right keys, right times. -/
+def asofData (n : Nat) : Array Int × Array Int × Array Int × Array Int :=
+  let r := ((ints n 14 1000).zip (ints n 15 1000000)).toList.mergeSort fun a b => decide (a.1 < b.1 ∨ a.1 = b.1 ∧ a.2 ≤ b.2)
+  (ints n 12 1000, ints n 13 1000000, (r.map (·.1)).toArray, (r.map (·.2)).toArray)
+
+/-- A dense `long` key column. -/
+def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.atom .long, .bytes (col a)⟩
+
+/-- ``aj[`s`tm;t;q]`` by `Struct.aj` over `asofData`, 1e3 key groups; the sum of the matched right rows. -/
+def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  let (lk, lt, rk, rt) := asofData n
+  timedE "relAj" (lk, lt, rk, rt) fun (lk, lt, rk, rt) => do
+    sumR "relAj" (← LeetQ.Rel.Struct.aj #[longKey lk] #[longKey rk] (longKey lt) (longKey rt))
+
+/-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
+def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  let (lk, lt, rk, rt) := asofData n
+  timedE "relWj" (lk, lt, rk, rt) fun (lk, lt, rk, rt) => do
+    sumR "relWj" (← LeetQ.Rel.Struct.wj true (longKey (lt.map (· - 100))) (longKey lt) #[longKey lk] #[longKey rk] (longKey rt))
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("relWj", relWjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
