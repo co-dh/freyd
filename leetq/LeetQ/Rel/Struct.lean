@@ -9,6 +9,7 @@
 -/
 import LeetQ.Rel.Algebra
 import QLean.Verify.Group
+import QLean.Verify.Gather
 
 namespace LeetQ.Rel.Struct
 
@@ -644,6 +645,174 @@ theorem concat_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .
     show concatBytes #[b, c] = (ByteArray.empty ++ b) ++ c from rfl,
     elemsW_append 8 (by decide) _ _ (by rw [ByteArray.size_append]; simpa using hb),
     elemsW_append 8 (by decide) _ _ (by rfl), elemsW_empty, List.nil_append, List.map_append]
+
+/-- A long column's words are its fixed-width reads, `Column.raw`. -/
+theorem raw_long {c : Column} {ws : List UInt64} (h : longWords c = some ws) : (Column.raw .long c).toList = ws := by
+  cases c with
+  | bytes b =>
+    simp only [longWords, Option.some.injEq] at h; subst h
+    rw [Verify.raw_bytes .long 8 rfl (by decide) (by decide), Array.toList_map, Array.toList_range]; rfl
+  | foR n md pk =>
+    simp only [longWords, Option.some.injEq] at h; subst h
+    rw [Verify.raw_foR .long 8 rfl (by decide) (by decide), Array.toList_map, Array.toList_range]
+  | _ => cases h
+
+/-- A long column's encoded count is its row count, which the kernels take as a `USize`. -/
+theorem countFits_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h : longWords x.c = some ws)
+    (hm : m < USize.size) : Verify.countFits x.c := by
+  obtain ⟨B, hc, -⟩ := Arr.dense_long x h hm
+  rcases hc with hc | ⟨md, pk, hc, -⟩ <;> rw [hc]
+  · trivial
+  · exact hm
+
+/-- `vec` answers a payload only from a vector of its own type. -/
+theorem vec_ok {verb : String} {a : QAtomicType} {o : Option QValue} {c : Column} (h : vec verb a o = .ok c) :
+    o = some (.vector a c) := by
+  match o, h with
+  | some (.vector b c'), h =>
+    simp only [vec] at h
+    split at h
+    · rename_i hb; cases h; rw [show b = a from (beq_iff_eq.1 hb).symm]
+    · cases h
+
+/-- A word read as a long: itself below `2^63`, wrapped past it. -/
+theorem toInt_toInt64 (u : UInt64) :
+    u.toInt64.toInt = if u.toNat < 2 ^ 63 then (u.toNat : Int) else u.toNat - 2 ^ 64 := by
+  have : u.toInt64.toInt = u.toBitVec.toInt := rfl
+  rw [this, BitVec.toInt_eq_toNat_cond]
+  change (if 2 * u.toNat < 2 ^ 64 then (u.toNat : Int) else (u.toNat : Int) - 2 ^ 64) = _
+  split <;> split <;> omega
+
+/-- q's `x@i` at one index word `u`, read unsigned as `gatherAt` does with `0N` the fill, is `indexSpec`'s
+    signed read while `|E| < 2^63`: a word at or past `2^63` is a negative long or `0N`, and misses as it
+    misses `E`. -/
+theorem index_word (E : List UInt64) (u : UInt64) (hn : E.length < 2 ^ 63) :
+    (E.getD u.toNat 0x8000000000000000).toInt64 =
+      if 0 ≤ u.toInt64 then (E.map UInt64.toInt64).getD u.toInt64.toInt.toNat Int64.minValue
+      else Int64.minValue := by
+  have hu := toInt_toInt64 u
+  have hle : (0 : Int64) ≤ u.toInt64 ↔ 0 ≤ u.toInt64.toInt := by simp [Int64.le_iff_toInt_le]
+  have hlt := UInt64.toNat_lt u
+  by_cases h63 : u.toNat < 2 ^ 63
+  · rw [if_pos h63] at hu
+    rw [if_pos (hle.2 (by omega)), hu, Int.toNat_natCast, List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD,
+      List.getElem?_map]
+    cases E[u.toNat]? <;> rfl
+  · rw [if_neg h63] at hu
+    rw [if_neg (fun h => by have := hle.1 h; omega), List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)]; rfl
+
+/-- **`x@y` is `indexSpec 0N`** on long columns, each `bytes` or `foR` (`longWords`), from
+    `gatherColumn_raw`: the kernel reads an index unsigned (`gatherAt`), q signed, and the two agree
+    while `x.n < 2^63`; the `USize` bounds are `countFits`, the kernels counting in `USize`. -/
+theorem index_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
+    {xs ws : List UInt64} (hx : longWords x.val.c = some xs) (hy : longWords y.val.c = some ws)
+    (hxU : x.n < USize.size) (hyU : y.n < USize.size) (hn : x.n < 2 ^ 63) (h : index x y = .ok r) :
+    r.val.toList = indexSpec Int64.minValue x.val.toList y.val.toList := by
+  unfold index at h
+  cases hv : vec "x@y" .long (gatherColumn .long x.val.c y.val.c) with
+  | error e => rw [hv] at h; cases h
+  | ok c =>
+    rw [hv] at h
+    simp only [bind, Except.bind] at h
+    have rc : r.val.c = c := Find.onKey_c h
+    have hg := vec_ok hv
+    have hA : ∀ n M P a, x.val.c = .alp n M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ _ he => by
+      rw [he] at hx; cases hx
+    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ c hA hg
+    have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl _ _ c (countFits_long x.val hx hxU)
+      (countFits_long y.val hy hyU) hA hg
+    have hw : longWords c = some (Column.raw .long c).toList := by
+      rw [hcB]; exact congrArg some (raw_long (c := .bytes _) rfl).symm
+    have hlen : xs.length < 2 ^ 63 := by
+      have := Arr.length_toList x.val; rw [Arr.toList_long x.val hx, List.length_map] at this; omega
+    rw [Arr.toList_long r.val (show longWords r.val.c = _ by rw [rc]; exact hw), hraw, raw_long hx, raw_long hy, Arr.toList_long x.val hx,
+      Arr.toList_long y.val hy, indexSpec, List.map_map, List.map_map]
+    refine List.map_congr_left fun u _ => ?_
+    exact (congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)).trans (index_word xs u hlen)
+
+/-- Positions `[0, c g)`, each labelled `f` of how many of the cuts `c 1 … c g` lie at or below it, are `g`
+    runs, run `r` being `c (r+1) − c r` copies of `f r`, for cuts ascending from `c 0 = 0`. -/
+theorem runs_countP {α : Type} (f : Nat → α) (c : Nat → Nat) (h0 : c 0 = 0) :
+    ∀ g, (∀ r, r < g → c r ≤ c (r+1)) →
+      (List.range (c g)).map (fun i => f ((List.range g).countP fun r => decide (c (r+1) ≤ i))) =
+        (List.range g).flatMap fun r => List.replicate (c (r+1) - c r) (f r)
+  | 0, _ => by simp [h0]
+  | g + 1, hm => by
+    have mono : ∀ d r, r + d = g → c r ≤ c g := by
+      intro d; induction d with
+      | zero => intro r h; rw [← h, Nat.add_zero]; exact Nat.le_refl _
+      | succ d ih => intro r h; exact Nat.le_trans (hm r (by omega)) (ih (r+1) (by omega))
+    obtain ⟨d, hd⟩ : ∃ d, c (g+1) = c g + d := ⟨_, (Nat.add_sub_cancel' (hm g (by omega))).symm⟩
+    rw [List.range_succ, List.flatMap_append, ← runs_countP f c h0 g (fun r hr => hm r (by omega)),
+      List.flatMap_cons, List.flatMap_nil, List.append_nil, hd, Nat.add_sub_cancel_left, List.range_add,
+      List.map_append, List.map_map]
+    congr 1
+    · refine List.map_congr_left fun i hi => ?_
+      have hi := List.mem_range.1 hi
+      have : ¬ c (g + 1) ≤ i := by omega
+      simp [List.countP_append, this]
+    · rw [List.eq_replicate_iff]
+      refine ⟨by simp, fun a ha => ?_⟩
+      obtain ⟨j, hj, rfl⟩ := List.mem_map.1 ha
+      have hj := List.mem_range.1 hj
+      simp only [Function.comp]
+      rw [List.countP_append, List.countP_eq_length.2 (fun r hr => decide_eq_true (by
+        have := mono (g - (r+1)) (r+1) (by have := List.mem_range.1 hr; omega); omega))]
+      have : ¬ c (g + 1) ≤ c g + j := by omega
+      simp [this]
+
+/-- Under `Cuts o n`, offsets `i ≤ j ≤ g` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
+theorem cuts_le {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
+    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
+  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
+    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+  obtain ⟨hm, h0, hl⟩ := co
+  rw [e i (by omega), e j hj]
+  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
+  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
+  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
+  rw [h0] at a; rw [hl] at c
+  exact ⟨by simpa using a, b, c⟩
+
+/-- **A `grp` key over `til g` lists its runs**: under `Cuts o n`, key `i` is the run `r` with
+    `o[r] ≤ i < o[r+1]` (`KeyCol.group`), so the keys are `o[r+1] − o[r]` copies of each `r` in turn. -/
+theorem grp_til_toList {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n) :
+    (KeyCol.grp (.til g) o co).toList = (List.range g).flatMap fun r =>
+      List.replicate ((o.toList[r+1]!).toNatClampNeg - (o.toList[r]!).toNatClampNeg) (Int64.ofNat r) := by
+  have hc : ∀ r, r ≤ g → ((o.toList[r]!).toNatClampNeg : Int) = (o.toList[r]!).toInt := fun r hr => by
+    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_le co (Nat.le_refl r) hr).1
+  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
+    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+  have h0 : (o.toList[0]!).toNatClampNeg = 0 := by rw [e 0 (by omega)]; exact congrArg Int64.toNatClampNeg co.2.1
+  have cg : (o.toList[g]!).toNatClampNeg = n := by
+    have := hc g (Nat.le_refl g); rw [e g (Nat.le_refl g)] at this
+    have h2 := co.2.2; simp only [Fin.last] at h2; rw [e g (Nat.le_refl g)]; omega
+  have mono : ∀ r, r < g → (o.toList[r]!).toNatClampNeg ≤ (o.toList[r+1]!).toNatClampNeg := fun r hr => by
+    have := (cuts_le co (i := r) (j := r + 1) (by omega) hr).2.1; have := hc r (by omega); have := hc (r+1) hr; omega
+  rw [← runs_countP Int64.ofNat (fun r => (o.toList[r]!).toNatClampNeg) h0 g mono]
+  apply List.ext_getElem (by simp only [KeyCol.toList, List.length_ofFn, List.length_map, List.length_range, cg])
+  intro i h1 h2
+  have hi : i < n := by simpa [KeyCol.toList] using h1
+  have hg : 0 < g := by
+    rcases Nat.eq_zero_or_pos g with rfl | h
+    · rw [h0] at cg; omega
+    · exact h
+  have hgrp : KeyCol.group o i = (List.range g).countP fun r => decide ((o.toList[r+1]!).toNatClampNeg ≤ i) := by
+    unfold KeyCol.group
+    rw [show List.range g = (List.finRange g).map Fin.val from List.ext_getElem (by simp) (fun j _ _ => by simp),
+      List.countP_map]
+    congr 1; funext r
+    have := hc (r.val+1) (by omega)
+    have e' : o.get r.succ = o.toList[r.val+1]! := (e (r.val+1) (by omega)).symm
+    simp only [Function.comp, e']
+    exact decide_eq_decide.2 (by omega)
+  have hlt : ((List.range g).countP fun r => decide ((o.toList[r+1]!).toNatClampNeg ≤ i)) < g := by
+    have := (List.length_filter_lt_length_iff_exists (l := List.range g)
+      (p := fun r => decide ((o.toList[r+1]!).toNatClampNeg ≤ i))).2 ⟨g-1, List.mem_range.2 (by omega),
+      by simp only [Nat.sub_add_cancel hg, decide_eq_true_eq, cg]; omega⟩
+    rw [List.countP_eq_length_filter]; simpa using this
+  simp only [KeyCol.toList, List.getElem_ofFn, List.getElem_map, List.getElem_range, KeyCol.get, dif_pos hg]
+  rw [hgrp, Nat.min_eq_left (by omega)]
 
 end MoveLaws
 
