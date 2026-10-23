@@ -234,9 +234,9 @@ def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `d + e` on keys by `Ew.dyadic .add` over explicit key columns, the key sets overlapping by half: `Ew.align`;
     `sum d + e`. -/
 def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
-  let d ← io "relZipD" (LeetQ.Rel.Alg.ofDense .long .long (col ((Array.range n).map Int.ofNat)) (col (ints n 26 1000)))
-  let e ← io "relZipD" (LeetQ.Rel.Alg.ofDense .long .long (col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
-    (col (ints n 27 1000)))
+  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map Int.ofNat)) (.bytes <| col (ints n 26 1000)))
+  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
+    (.bytes <| col (ints n 27 1000)))
   timedE "relZipD" (d, e) fun (d, e) => do sumR "relZipD" (← LeetQ.Rel.Ew.dyadic .add .long d e)
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=

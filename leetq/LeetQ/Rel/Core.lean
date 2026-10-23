@@ -19,6 +19,7 @@ open QLean QLean.Dep
 inductive Ty
   | atom (a : QAtomicType)
   | gen
+  deriving DecidableEq
 
 /-- The element at `t`: qlean's `Carrier` at an atomic type, a boxed `QValue` at `gen`. -/
 @[reducible] def El : Ty → Type
