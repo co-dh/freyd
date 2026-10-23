@@ -345,20 +345,76 @@ def gids : Keys → ByteArray × ByteArray
     | none => Order.groupIds .i64 (b.size / w).toUSize (enc 8 ((List.range (b.size / w)).map (atW w b)))
   | .foR n md pk => Order.groupIdsFoR .i64 n.toUSize md pk
 
-/-- Group ids over a key `g'` are group ids over any `g` that agrees where `g'` does. -/
-theorem ids_congr {β : Type} [DecidableEq β] {g' : Nat → β} {g : Nat → Int64} {m : Nat} (r : ByteArray × ByteArray)
-    (hr : ids r.1 = (List.range m).map (groupOf g' m) ∧ ids r.2 = firstsOf g' m)
-    (h : ∀ i < m, ∀ j < m, (g' i = g' j ↔ g i = g j)) :
-    ids r.1 = (List.range m).map (groupOf g m) ∧ ids r.2 = firstsOf g m := by
-  obtain ⟨hf, -, hg⟩ := groups_congr g' m h
-  exact ⟨hr.1.trans (List.map_congr_left fun i hi => hg i (List.mem_range.1 hi)), hr.2.trans hf⟩
+/-- The ids of `nd` classes take a whole-byte lane exactly when it is 8, 16, 32 or 64 bits. -/
+theorem idWidthOf_bytes {nd : Nat} (h : 8 ≤ idWidthOf nd) :
+    idWidthOf nd = 8 ∨ idWidthOf nd = 16 ∨ idWidthOf nd = 32 ∨ idWidthOf nd = 64 := by
+  unfold idWidthOf at *
+  generalize widthFor (nd - 1) = x at *
+  unfold laneWidth at *
+  repeat' split
+  all_goals (repeat' split at h)
+  all_goals omega
 
-/-- **`gids` answers each row's group and the first occurrences of the key column.** -/
-theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
-    ids (gids k).1 = (List.range k.count).map (groupOf k.get k.count) ∧ ids (gids k).2 = firstsOf k.get k.count := by
+/-- A class number below `nd` fits the lane `nd` classes are packed at. -/
+theorem lt_two_pow_idWidthOf {x nd : Nat} (hx : x < nd) (hn : nd ≤ 2 ^ 64) : x < 2 ^ idWidthOf nd := by
+  have h1 := lt_widthFor (nd - 1)
+  have h2 := widthFor_le (nd - 1) (by omega)
+  have h3 : widthFor (nd - 1) ≤ laneWidth (widthFor (nd - 1)) := by
+    unfold laneWidth; repeat' split
+    all_goals omega
+  exact Nat.lt_of_lt_of_le (by omega) (Nat.pow_le_pow_right (by decide) h3)
+
+/-- **At a whole-byte lane `packIds` holds exactly its `n` ids**: `idsW` over any `N ≥ n` rows reads `f`
+back (`idAt_packIds`). -/
+theorem idsW_packIds {w n N : Nat} {f : Nat → Nat} (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hN : n ≤ N)
+    (hf : ∀ i < n, f i < 2 ^ w) : idsW w N (packIds w n f) = (List.range n).map f := by
+  have hs : (packIds w n f).size = n * (w / 8) := by
+    unfold packIds
+    rw [if_pos (by omega), fold_eq_foldl_range (g := fun i acc => pushBits acc (f i).toUInt64 (w / 8)),
+      (foldl_pushBits (fun i => (f i).toUInt64) (w / 8) (by omega) (List.range n) _).1,
+      show (ByteArray.emptyWithCapacity (n * (w / 8))).size = 0 from rfl, List.length_range, Nat.zero_add,
+      Nat.mul_comm]
+  have hc : idsCap (packIds w n f) w N = n := by
+    unfold idsCap; rw [if_neg (by omega), hs]
+    rcases hw with rfl | rfl | rfl | rfl <;> simp only [Nat.reduceDiv] <;> omega
+  rw [idsW, hc]
+  exact List.map_congr_left fun i hi =>
+    idAt_packIds (Or.inr hw) (List.mem_range.1 hi) (hf i (List.mem_range.1 hi))
+
+/-- Id `i` of a payload whose ids read back as `l` is `l[i]`. -/
+theorem idAt_of_idsW {w N : Nat} {gid : ByteArray} {l : List Nat} (h : idsW w N gid = l) {i : Nat}
+    (hi : i < l.length) : idAt gid w i = l[i] := by
+  have hl : i < idsCap gid w N := by
+    have := congrArg List.length h; rw [idsW, List.length_map, List.length_range] at this; omega
+  have := congrArg (·[i]?) h
+  simp only [idsW, List.getElem?_map, List.getElem?_range hl, Option.map_some, List.getElem?_eq_getElem hi,
+    Option.some.injEq] at this
+  exact this
+
+/-- Group ids over a key `g'` are group ids over any `g` that agrees where `g'` does, read at the lane
+the classes are packed at; the proof covers the whole-byte lanes (`idAt_packIds`). -/
+theorem ids_congr {β : Type} [DecidableEq β] {g' : Nat → β} {g : Nat → Int64} {m N : Nat} (r : ByteArray × ByteArray)
+    (hr : r.1 = packIds (idWidthOf (firstsOf g' m).length) m (groupOf g' m) ∧ ids r.2 = firstsOf g' m)
+    (h : ∀ i < m, ∀ j < m, (g' i = g' j ↔ g i = g j)) (hN : m ≤ N) (hm : m < 2 ^ 64)
+    (hw : 8 ≤ idWidthOf (firstsOf g m).length) :
+    idsW (idWidthOf (firstsOf g m).length) N r.1 = (List.range m).map (groupOf g m) ∧ ids r.2 = firstsOf g m := by
+  obtain ⟨hf, -, hg⟩ := groups_congr g' m h
+  have hl : (firstsOf g' m).length ≤ m := by
+    unfold firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+  refine ⟨?_, hr.2.trans hf⟩
+  rw [hr.1, hf, idsW_packIds (idWidthOf_bytes hw) hN fun i hi =>
+    lt_two_pow_idWidthOf (by rw [← hf]; exact groupOf_lt (g := g') hi) (by rw [← hf]; omega)]
+  exact List.map_congr_left fun i hi => hg i (List.mem_range.1 hi)
+
+/-- **`gids` answers each row's group and the first occurrences of the key column**, the groups read at
+the width they are packed at over any `N ≥` the key's rows; whole-byte widths (`ids_congr`). -/
+theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) {N : Nat} (hN : k.count ≤ N)
+    (hW : 8 ≤ idWidthOf (firstsOf k.get k.count).length) :
+    idsW (idWidthOf (firstsOf k.get k.count).length) N (gids k).1 = (List.range k.count).map (groupOf k.get k.count) ∧
+      ids (gids k).2 = firstsOf k.get k.count := by
   cases k with
   | dense w b =>
-    simp only [Keys.count] at h ⊢
+    simp only [Keys.count] at h hN hW ⊢
     simp only [gids]
     split
     · rename_i kd hkd
@@ -366,7 +422,7 @@ theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
       have w8 : w ≤ 8 := by rw [← hw]; rcases hk with rfl | rfl | rfl | rfl | rfl <;> decide
       have := groupIds_spec kd (b.size / w).toUSize b
       rw [toNat_toUSize h, hav, Nat.min_self] at this
-      refine ids_congr _ this fun i _ j _ => ?_
+      refine ids_congr _ this (fun i _ j _ => ?_) hN (by omega) hW
       show _ ↔ atW w b i = atW w b j
       rw [keyAt_eq_iff hk, hw, atW_inj w8]
     · have e : ∀ i < b.size / w, atW 8 (enc 8 ((List.range (b.size / w)).map (atW w b))) i = atW w b i :=
@@ -378,15 +434,15 @@ theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
         show (enc 8 _).size / 8 = _
         rw [enc_size (by decide), List.length_map, List.length_range]; omega
       rw [toNat_toUSize h, hav, Nat.min_self] at this
-      refine ids_congr _ this fun i hi j hj => ?_
+      refine ids_congr _ this (fun i hi j hj => ?_) hN (by omega) hW
       show _ ↔ atW w b i = atW w b j
       rw [keyAt_eq_iff (by decide), ← e i hi, ← e j hj]
       exact (atW_inj (by decide) _ i j).symm
   | foR n md pk =>
-    simp only [Keys.count] at h ⊢
+    simp only [Keys.count] at h hN hW ⊢
     have := groupIdsFoR_spec .i64 (by decide) n.toUSize md pk
     rw [toNat_toUSize h] at this
-    refine ids_congr _ this fun i _ j _ => ?_
+    refine ids_congr _ this (fun i _ j _ => ?_) hN (by omega) hW
     show _ ↔ (foRBits md pk (blockStarts md) i).toInt64 = (foRBits md pk (blockStarts md) j).toInt64
     simp only [foRKey, show 8 * Kind.width .i64 = 64 from rfl, ofNat_toNat_mod64, Order.rank]
     rw [UInt64.xor_left_inj]
@@ -394,27 +450,27 @@ theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
       rw [← UInt64.toUInt64_toInt64 (foRBits md pk (blockStarts md) i), e, UInt64.toUInt64_toInt64]⟩
 
 /-- The rows of `l` pushed onto their groups' buckets, the group read off `gid`. -/
-def buckets (gid : ByteArray) (l : List Nat) (a : Array (Array Nat)) : Array (Array Nat) :=
-  l.foldl (fun a i => a.modify (gidAt gid i) (·.push i)) a
+def buckets (gid : ByteArray) (w : Nat) (l : List Nat) (a : Array (Array Nat)) : Array (Array Nat) :=
+  l.foldl (fun a i => a.modify (idAt gid w i) (·.push i)) a
 
-theorem buckets_get (gid : ByteArray) : ∀ (l : List Nat) (a : Array (Array Nat)) (j : Nat),
-    ((buckets gid l a)[j]?).map Array.toList = (a[j]?).map fun x => x.toList ++ l.filter fun i => gidAt gid i == j
+theorem buckets_get (gid : ByteArray) (w : Nat) : ∀ (l : List Nat) (a : Array (Array Nat)) (j : Nat),
+    ((buckets gid w l a)[j]?).map Array.toList = (a[j]?).map fun x => x.toList ++ l.filter fun i => idAt gid w i == j
   | [], a, j => by simp only [buckets, List.foldl_nil, List.filter_nil, List.append_nil]
   | i :: l, a, j => by
-    rw [buckets, List.foldl_cons, ← buckets, buckets_get gid l, Array.getElem?_modify]
+    rw [buckets, List.foldl_cons, ← buckets, buckets_get gid w l, Array.getElem?_modify]
     split
     · rename_i e
-      rw [List.filter_cons_of_pos (p := fun i => gidAt gid i == j) (beq_iff_eq.2 (by omega))]
+      rw [List.filter_cons_of_pos (p := fun i => idAt gid w i == j) (beq_iff_eq.2 (by omega))]
       cases a[j]? with
       | none => rfl
       | some x => simp only [Option.map_some, Array.toList_push, List.append_assoc, List.singleton_append]
     · rename_i e
-      rw [List.filter_cons_of_neg (p := fun i => gidAt gid i == j) (fun h => e (by have := beq_iff_eq.1 h; omega))]
+      rw [List.filter_cons_of_neg (p := fun i => idAt gid w i == j) (fun h => e (by have := beq_iff_eq.1 h; omega))]
 
 /-- `group` on a key column: `gids`' ids, each row pushed onto its group's bucket in one pass. -/
 def groupK (k : Keys) : List (Int64 × List Nat) :=
   let r := gids k; let ng := r.2.size / 8; let rk := Col.rdOf k
-  let bk := buckets r.1 (List.range (r.1.size / 8)) (Array.replicate ng #[])
+  let bk := buckets r.1 (idWidthOf ng) (List.range k.count) (Array.replicate ng #[])
   (List.range ng).map fun j => (rk.get (bitsAt r.2 (j * 8) 8).toNat, (bk[j]?.getD #[]).toList)
 
 theorem ng_eq {k : Keys} {r : ByteArray × ByteArray} (h2 : ids r.2 = firstsOf k.get k.count) :
@@ -422,53 +478,55 @@ theorem ng_eq {k : Keys} {r : ByteArray × ByteArray} (h2 : ids r.2 = firstsOf k
   have := congrArg List.length h2; rw [ids, List.length_map, List.length_range] at this; exact this
 
 /-- **`groupK` answers each first key with its bucket.** -/
-theorem groupK_eq (k : Keys) (h : k.count < 2 ^ 32) : groupK k = dictOf k.get k.count := by
-  obtain ⟨h1, h2⟩ := gids_spec k h
+theorem groupK_eq (k : Keys) (h : k.count < 2 ^ 32) (hw : 8 ≤ idWidthOf (firstsOf k.get k.count).length) :
+    groupK k = dictOf k.get k.count := by
+  obtain ⟨h1, h2⟩ := gids_spec k h (Nat.le_refl _) hw
   simp only [groupK, Col.rdOf_get]
   generalize gids k = r at h1 h2
-  have hl1 : r.1.size / 8 = k.count := by
-    have := congrArg List.length h1; rw [ids, List.length_map, List.length_range, List.length_map,
-      List.length_range] at this; exact this
   have hng := ng_eq h2
   apply List.ext_getElem (by rw [List.length_map, List.length_range, length_dictOf, hng])
   intro j hj1 hj2
   have hjf : j < (firstsOf k.get k.count).length := by rw [length_dictOf] at hj2; exact hj2
-  have hb := buckets_get r.1 (List.range (r.1.size / 8)) (Array.replicate (r.2.size / 8) #[]) j
+  have hb := buckets_get r.1 (idWidthOf (r.2.size / 8)) (List.range k.count) (Array.replicate (r.2.size / 8) #[]) j
   rw [Array.getElem?_replicate, if_pos (by omega), Option.map_some] at hb
-  have hb' : ((buckets r.1 (List.range (r.1.size / 8)) (Array.replicate (r.2.size / 8) #[]))[j]?.getD #[]).toList =
-      (List.range (r.1.size / 8)).filter fun i => gidAt r.1 i == j := by
+  have hb' : ((buckets r.1 (idWidthOf (r.2.size / 8)) (List.range k.count)
+      (Array.replicate (r.2.size / 8) #[]))[j]?.getD #[]).toList =
+      (List.range k.count).filter fun i => idAt r.1 (idWidthOf (r.2.size / 8)) i == j := by
     -- `simp` here brings `Classical.choice`
-    cases e : (buckets r.1 (List.range (r.1.size / 8)) (Array.replicate (r.2.size / 8) #[]))[j]? with
+    cases e : (buckets r.1 (idWidthOf (r.2.size / 8)) (List.range k.count)
+      (Array.replicate (r.2.size / 8) #[]))[j]? with
     | none => rw [e] at hb; cases hb
     | some x => rw [e, Option.map_some] at hb; rw [Option.getD_some]; exact Option.some.inj hb
   simp only [dictOf, List.getElem_map, List.getElem_range]
-  rw [ids_get h2 hjf, ← rows_groupOf _ _ hjf, hb', hl1]
+  rw [ids_get h2 hjf, ← rows_groupOf _ _ hjf, hb']
   congr 1
   exact List.filter_congr fun i hi => by
-    rw [gidAt, ids_get h1 (by simp only [List.length_map, List.length_range]; exact List.mem_range.1 hi),
+    rw [hng, idAt_of_idsW h1 (by simp only [List.length_map, List.length_range]; exact List.mem_range.1 hi),
       List.getElem_map, List.getElem_range]
 
-/-- `select sum v by k`: the key's group ids, then `overGroups .add` sums `v` per group in one pass. -/
+/-- `select sum v by k`: the key's group ids, then `overGroups .add` sums `v` per group in one pass,
+reading the ids at the width they are packed at. -/
 def selbySum (nul : Int64) (k v : Keys) : List (Int64 × Int64) :=
   let r := gids k; let p := vpay k.count.toUSize v; let ng := r.2.size / 8; let rk := Col.rdOf k
-  let o := overGroups .add p.1 nul ng.toUSize r.1 p.2
+  let o := overGroups .add p.1 nul ng.toUSize (idWidthOf ng).toUSize r.1 p.2
   (List.range ng).map fun j => (rk.get (bitsAt r.2 (j * 8) 8).toNat, (bitsAt o (j * 8) 8).toInt64)
 
-theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count) :
+theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count)
+    (hw : 8 ≤ idWidthOf (firstsOf k.get k.count).length) :
     selbySum nul k v = (dictOf k.get k.count).map fun p => (p.1, p.2.foldl (Col.step nul v) 0) := by
-  obtain ⟨h1, h2⟩ := gids_spec k h
   have hm := toNat_toUSize h
   obtain ⟨pm, pg⟩ := vpay_spec k.count.toUSize v (by rw [hm]; exact hv)
   rw [hm] at pm pg
+  obtain ⟨h1, h2⟩ := gids_spec k h pm hw
   simp only [selbySum, Col.rdOf_get]
   generalize gids k = r at h1 h2
-  generalize vpay k.count.toUSize v = p at pm pg ⊢
+  generalize vpay k.count.toUSize v = p at pm pg h1 ⊢
   obtain ⟨c, b⟩ := p
-  dsimp only at pm pg ⊢
-  have hl1 : r.1.size / 8 = k.count := by
-    have := congrArg List.length h1; rw [ids, List.length_map, List.length_range, List.length_map,
-      List.length_range] at this; exact this
+  dsimp only at pm pg h1 ⊢
   have hng := ng_eq h2
+  have hg : idsW (idWidthOf (r.2.size / 8)).toUSize.toNat (b.size / Ew.width c) r.1 =
+      (List.range k.count).map (groupOf k.get k.count) := by
+    rw [hng, toNat_toUSize (by have := idWidthOf_bytes hw; omega)]; exact h1
   have hfl : (firstsOf k.get k.count).length ≤ k.count := by
     rw [firstsOf]; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
   have hnu : (r.2.size / 8).toUSize.toNat = r.2.size / 8 := toNat_toUSize (by omega)
@@ -477,7 +535,8 @@ theorem selbySum_eq (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.co
   intro j hj1 hj2
   have hjf : j < (firstsOf k.get k.count).length := by rw [List.length_map, length_dictOf] at hj2; exact hj2
   simp only [dictOf, List.getElem_map, List.getElem_range]
-  rw [ids_get h2 hjf, (overGroups_buckets (op := .add) (cls := c) (nul := nul) (r.2.size / 8).toUSize r.1 b h1 pm (by omega) hjf).1, foldl_filter,
+  rw [ids_get h2 hjf, (overGroups_buckets .add c nul (r.2.size / 8).toUSize (idWidthOf (r.2.size / 8)).toUSize r.1 b
+    hg (by omega) hjf).1, foldl_filter,
     hs]
   congr 1
   refine List.foldl_rel (r := Eq) rfl fun i hi a _ e => e ▸ ?_
@@ -540,27 +599,29 @@ theorem xkey_rows (kg vg : Nat → Int64) (m : Nat) :
 
 /-- **`select sum v by k`, read compressed**: the keys are `distinct`'s, in first appearance, and each
 key's sum is `Λ(X (≠ nul)?) ⦇0,+⦈` on the fibre `X` that `xkey` gives on the table `rows`. -/
-theorem selbySum_spec (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count) :
+theorem selbySum_spec (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count)
+    (hw : 8 ≤ idWidthOf (firstsOf k.get k.count).length) :
     ∃ X, Q.xkey Prod.fst Prod.snd (Q.tabL (rows k v)) = some X ∧
       (selbySum nul k v).map Prod.fst = (firstsOf k.get k.count).map k.get ∧
       ∀ p ∈ selbySum nul k v, p.2 = ((X ≫ RelRep.corefl (· != nul)).app p.1).foldl (· + ·) 0 := by
   obtain ⟨X, hX, hg⟩ := xkey_rows k.get v.get k.count
   refine ⟨X, hX, ?_, fun p hp => ?_⟩
-  · rw [selbySum_eq nul k v h hv, List.map_map]; exact dict_keys _ _
+  · rw [selbySum_eq nul k v h hv hw, List.map_map]; exact dict_keys _ _
   · simp only [RelRep.app_comp, hg, RelRep.corefl, RelRep.app_enum, flatMap_test]
     rw [← qsum_eq]
-    rw [selbySum_eq nul k v h hv, dictOf, List.map_map] at hp
+    rw [selbySum_eq nul k v h hv hw, dictOf, List.map_map] at hp
     obtain ⟨f, -, rfl⟩ := List.mem_map.1 hp
     exact Col.foldl_step nul v _
 
 /-- **The per-key entry of `app_selby`**: `select agg v by k` over `rows`, with `agg` q's sum, answers
 at `c` the sums of the keys `ks` lists, each `selbySum`'s entry for that key. -/
 theorem selbySum_selby (nul : Int64) (k v : Keys) (h : k.count < 2 ^ 32) (hv : k.count ≤ v.count)
+    (hw : 8 ≤ idWidthOf (firstsOf k.get k.count).length)
     (ks : RelRep Int64 Int64) {G : RelRep Int64 (Array Int64)}
     (hG : Q.grp ks Prod.fst Prod.snd (Q.tabL (rows k v)) = some G) :
     ∃ X, (∀ c, (G ≫ RelRep.ofFn (qsum nul ·.toList)).app c = (ks.app c).map fun c' => qsum nul (X.app c')) ∧
       ∀ p ∈ selbySum nul k v, p.2 = ((X ≫ RelRep.corefl (· != nul)).app p.1).foldl (· + ·) 0 := by
-  obtain ⟨X, hX, -, hs⟩ := selbySum_spec nul k v h hv
+  obtain ⟨X, hX, -, hs⟩ := selbySum_spec nul k v h hv hw
   exact ⟨X, fun c => by rw [Q.app_selby hX hG], hs⟩
 
 /-! ## Runs: compressed against `.pairs` -/

@@ -19,6 +19,7 @@ import QLean.Verify.Distinct
 import QLean.Verify.FindMember
 import QLean.Verify.Search
 import QLean.Verify.Structural
+import QLean.Verify.Elementwise
 
 namespace LeetQ.Rel.Find
 
@@ -677,44 +678,6 @@ theorem find_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .lo
     probe_spec _ xs x.n lo _ hbx hlx (by omega) hr hlo hin _ ys hby (by rw [hly]; exact hm)]
   simp only [List.map_map]; rfl
 
-/-! ## The comparison bitmap -/
-
-/-- **`Ew.cmp`'s bitmap**: bit `i` is set exactly when `i < n` and `cmpStep` holds of the two elements
-    the shape reads at `i`, so the last byte's tail is zero. The byte fold is `memberVec_mem`'s. -/
-theorem cmp_bitAt (op cls shape : UInt8) (a b : ByteArray) (n : USize) :
-    (Ew.cmp op cls shape a b n).size = (n.toNat + 7) / 8 ∧
-    ∀ i < 8 * ((n.toNat + 7) / 8), Column.bitAt (Ew.cmp op cls shape a b n) i =
-      (decide (i < n.toNat) && Ew.cmpStep op cls (Ew.elem cls a (Ew.shapeIdx shape i).1)
-        (Ew.elem cls b (Ew.shapeIdx shape i).2)) := by
-  let C : Nat → Bool := fun i => decide (i < n.toNat) &&
-    Ew.cmpStep op cls (Ew.elem cls a (Ew.shapeIdx shape i).1) (Ew.elem cls b (Ew.shapeIdx shape i).2)
-  let B : Nat → UInt8 := fun k =>
-    (List.range 8).foldl (fun byte t => if C (k * 8 + t) then byte ||| (1 <<< t.toUInt8) else byte) 0
-  have hf : Ew.cmp op cls shape a b n =
-      (List.range ((n.toNat + 7) / 8)).foldl (fun acc k => acc.push (B k)) ByteArray.empty := rfl
-  obtain ⟨hs, -, hg⟩ := Verify.foldl_push8 B (List.range ((n.toNat + 7) / 8)) ByteArray.empty
-  rw [hf]
-  refine ⟨by simpa using hs, fun i hi => ?_⟩
-  have h := hg (i / 8) (by simp; omega)
-  simp only [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
-  have hm8 : i % 8 < 8 := Nat.mod_lt _ (by decide)
-  show Column.bitAt _ i = C i
-  simp only [Column.bitAt, h, Option.getD_some]
-  rw [Verify.bit_eq_testBit _ _ hm8, Verify.foldl_setBit _ _ (fun t ht => List.mem_range.1 ht), UInt8.toNat_zero,
-    Nat.zero_testBit, Bool.false_or]
-  apply Bool.eq_iff_iff.mpr
-  rw [List.any_eq_true]
-  constructor
-  · rintro ⟨t, -, ht⟩
-    rw [Bool.and_eq_true, decide_eq_true_eq] at ht
-    obtain ⟨e, hc⟩ := ht
-    subst e
-    rwa [Nat.mul_comm, Nat.div_add_mod] at hc
-  · intro hc
-    refine ⟨i % 8, List.mem_range.2 hm8, ?_⟩
-    rw [Bool.and_eq_true, decide_eq_true_eq, Nat.mul_comm, Nat.div_add_mod]
-    exact ⟨rfl, hc⟩
-
 theorem cmpStep_i64 (op : UInt8) (x y : UInt64) :
     Ew.cmpStep op Ew.i64 x y = (let o := compare x.toInt64 y.toInt64
       if op == Ew.eq then o == .eq else if op == Ew.ne then o != .eq
@@ -761,7 +724,7 @@ theorem in_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long
   have hG := probe_spec hb ys y.n lo R hby hly (by omega) hr hlo hin _ xs hbx (by rw [hlx]; exact hm)
   generalize probe (firstTable hb y.n lo R) y.n lo (operandBytes 8 nmd np nk.toUSize) = g at h hG
   obtain ⟨e, -⟩ := onKey_key h
-  obtain ⟨-, hc⟩ := cmp_bitAt Ew.lt Ew.i64 Ew.va g (one y.n.toUInt64) x.n.toUSize
+  obtain ⟨-, hc⟩ := Verify.cmp_bitAt Ew.lt Ew.i64 Ew.va g (one y.n.toUInt64) x.n.toUSize
   rw [USize.toNat_ofNat_of_lt' hm] at hc
   obtain ⟨-, gg⟩ := elemsW8_get hG
   unfold inSpec
@@ -815,7 +778,7 @@ theorem distinct_direct {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
   dsimp only at h
   have hP := probe_spec hb xs x.n lo R hbx hlx hn hr hlo hin hb xs hbx (by rw [hlx]; exact hn)
   generalize probe (firstTable hb x.n lo R) x.n lo hb = P at h hP
-  obtain ⟨-, hc⟩ := cmp_bitAt Ew.eq Ew.i64 Ew.vv P (tilLongs x.n.toUSize) x.n.toUSize
+  obtain ⟨-, hc⟩ := Verify.cmp_bitAt Ew.eq Ew.i64 Ew.vv P (tilLongs x.n.toUSize) x.n.toUSize
   rw [USize.toNat_ofNat_of_lt' hn] at hc
   generalize Ew.cmp Ew.eq Ew.i64 Ew.vv P (tilLongs x.n.toUSize) x.n.toUSize = bits at h hc
   change list .long (.bytes (gatherBytes 8 0 hb (whereBits x.n.toUSize bits))) 2 = .ok r at h
@@ -1106,7 +1069,6 @@ end Checks
 #print axioms firstTable_spec
 #print axioms probe_spec
 #print axioms find_direct
-#print axioms cmp_bitAt
 #print axioms in_direct
 #print axioms distinct_direct
 #print axioms where_toList
