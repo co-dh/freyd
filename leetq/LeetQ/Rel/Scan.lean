@@ -156,9 +156,19 @@ def scan (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) : L
 def over (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) : Int64 :=
   xs.foldl (fun a x => if x == nul then a else step a x) seed
 
-/-- `w msum x` over no nulls: the sum of the last `w` elements up to each position. -/
+/-- `w msum x` as q runs it, `q.k`'s `{y-(-x)_(0i*x#y),y:+\y}`: the total of the last `w` elements up to
+    each position, a null counting `0`, and `0N` where the running total `+\` at either end of the window
+    is `0N` (q's `-` carries the null). Every total wraps at `Int64`, as q's `long` `+` does. -/
 def msum (w : Nat) (xs : List Int64) : List Int64 :=
-  (List.range xs.length).map fun i => ((xs.take (i+1)).drop (i+1-w)).foldl (· + ·) 0
+  let v := xs.map fun x => if x == nul then 0 else x
+  let tot (j : Nat) : Int64 := (v.take j).foldl (· + ·) 0
+  (List.range xs.length).map fun i =>
+    if tot (i+1) == nul || tot (i+1-w) == nul then nul else ((v.take (i+1)).drop (i+1-w)).foldl (· + ·) 0
+
+/-- `w mcount x`, `q.k`'s `msum[x;~^y]`: how many of the last `w` elements up to each position are not
+    `0N`, as q's `int`. -/
+def mcount (w : Nat) (xs : List Int64) : List Int32 :=
+  (List.range xs.length).map fun i => Int32.ofNat (((xs.take (i+1)).drop (i+1-w)).filter (· != nul)).length
 
 /-- `w mmin x` / `w mmax x` as q runs them, `(w-1)&':/x`: the extreme of the last `w` elements, the
     each-prior `seed` standing as the oldest element of each of the first `w-1` windows, and a tie
@@ -376,6 +386,98 @@ theorem toList_words {m : Nat} (x : Arr (.atom .long) m) {B : ByteArray} {ws : L
     x.toList = (List.range m).map fun i => (Column.bitsAt B (i * 8) 8).toInt64 := by
   rw [Arr.toList_long x hx, ← hB, Verify.elemsW, hs, List.map_map]; rfl
 
+/-- The first `j ≤ m` of `til m` mapped are `til j` mapped. -/
+theorem take_range_map {α : Type} (g : Nat → α) {j m : Nat} (h : j ≤ m) :
+    ((List.range m).map g).take j = (List.range j).map g :=
+  List.ext_getElem (by simp; omega) fun _ _ _ => by simp
+
+/-- The window `[i+1-w, i]` of `til m` mapped, `i < m`. -/
+theorem window_range_map {α : Type} (g : Nat → α) (w : Nat) {i m : Nat} (hi : i < m) :
+    (((List.range m).map g).take (i + 1)).drop (i + 1 - w) = (List.range' (i + 1 - w) (min w (i + 1))).map g :=
+  List.ext_getElem (by simp; omega) fun j h1 h2 => by simp [List.getElem_range']; try omega
+
+/-- A long answer column, dense or encoded, lists its payload's eight-byte words: `longWords_answer`. -/
+theorem toList_answer_long {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = Column.answer .long (.bytes b)) :
+    x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 8) 8).toInt64 := by
+  have hL : longWords x.c = some (Verify.elemsW 8 b) := by rw [hc]; exact longWords_answer _
+  have hlen : b.size / 8 = m := by
+    have := congrArg List.length (Arr.toList_long x hL)
+    rw [Arr.length_toList] at this; simpa [Verify.elemsW] using this.symm
+  exact toList_words x hL rfl hlen
+
+/-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
+    width four, the `foR` form read back by `foRBits_encode_bits`. -/
+theorem toList_answer_int {m : Nat} (x : Arr (.atom .int) m) {b : ByteArray} (hc : x.c = Column.answer .int (.bytes b)) :
+    x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 4) 4).toUInt32.toInt32 := by
+  have ha : Column.answer .int (.bytes b) = .bytes b ∨ Column.answer .int (.bytes b) =
+      .foR (b.size / 4) (Kernel.Coc.encode (4 : Nat).toUSize b).1 (Kernel.Coc.encode (4 : Nat).toUSize b).2 := by
+    simp only [Column.answer, QAtomicType.width, show Column.alpEncodes .int = false from rfl,
+      show Column.encodes .int = true from rfl, Kernel.Coc.encodeBelow]
+    repeat' split
+    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+  have hm : Column.count .int x.c = m := x.wf.2
+  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+  intro i h1 _
+  have hn : i < Column.count .int x.c := by rw [Arr.length_toList] at h1; omega
+  rw [Arr.getElem_toList, List.getElem_map, List.getElem_range]
+  show ((Column.get .int x.c i).bind (Carrier.of? .int)).getD _ = _
+  rcases ha with e | e <;> rw [hc, e] at hn ⊢ <;> simp only [Column.get, if_pos hn]
+  · rfl
+  · have hi : i < b.size / 4 := hn
+    show (Column.foRBits _ _ #[] i).toUInt32.toInt32 = _
+    rw [foRBits_starts]
+    congr 1
+    apply UInt32.toNat_inj.1
+    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Verify.foRBits_encode_bits 4 (by decide) (by decide) b i hi,
+      Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ (by decide))]
+
+/-- A count below `2^32` read back at four bytes is q's `int` of it. -/
+theorem int32_count (L : Nat) : (UInt64.ofNat (L % 2 ^ 32)).toUInt32.toInt32 = Int32.ofNat L := by
+  have : (UInt64.ofNat (L % 2 ^ 32)).toUInt32 = UInt32.ofNat L := by
+    apply UInt32.toNat_inj.1
+    rw [UInt64.toNat_toUInt32, UInt64.toNat_ofNat', UInt32.toNat_ofNat']
+    omega
+  rw [this]; rfl
+
+/-- `mwinColumn` over a long column that lists `longWords`, at a verb that reads it as `i64` and writes
+    `rt`'s width: `mwinBits` over the dense payload `Arr.dense_long` names, whichever form the column is in. -/
+theorem mwin_long {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mwinType op .long = some rt)
+    (hk : op.readKind .i64 = .i64) (hr : scanKind rt = some rk) (hwd : op.width .i64 = rk.width)
+    {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws) (hn : R.n < USize.size) :
+    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = R.n ∧ ∀ v, v < USize.size → mwinColumn op .long v R.n R.val.c =
+      if v < 1 then none else some (rt, Column.answer rt (.bytes (Scan.mwinBits op .i64 v R.n B))) := by
+  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R.val hx hn
+  refine ⟨B, hBw, hBs, fun v hv => ?_⟩
+  have hn' : R.n % 2 ^ System.Platform.numBits = R.n := Nat.mod_eq_of_lt hn
+  have hv' : v % 2 ^ System.Platform.numBits = v := Nat.mod_eq_of_lt hv
+  rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc] <;> by_cases h1 : v < 1 <;>
+    simp [mwinColumn, h1, hT, hk, hr, hwd, show scanKind .long = some .i64 from rfl,
+      show QAtomicType.width .long = some 8 from rfl, show Scan.Kind.width .i64 = 8 from rfl, Column.bytesOf,
+      Scan.mwinFoR, Scan.mwin, hBs, hn', USize.toNat_ofNat_of_lt' hv, USize.toNat_ofNat_of_lt' hn] <;> rfl
+
+/-- An answer of `w mop x` over a long column, at such a verb: `w ≥ 1`, the key's count, and `Column.answer`
+    of `mwinBits` over the dense payload. -/
+theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mwinType op .long = some rt)
+    (hk : op.readKind .i64 = .i64) (hr : scanKind rt = some rk) (hwd : op.width .i64 = rk.width)
+    {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
+    (hn : R.n < USize.size) {S : Rel k (.atom rt)} (h : mwin op w rt R = some S) :
+    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = R.n ∧ 0 < w ∧ S.n = R.n ∧
+      S.val.c = Column.answer rt (.bytes (Scan.mwinBits op .i64 w R.n B)) := by
+  obtain ⟨B, hBw, hBs, hd⟩ := mwin_long hT hk hr hwd hx hn
+  have hw1 : 0 < w := by
+    rcases Nat.eq_zero_or_pos w with rfl | h0
+    · simp [mwin, hd 0 (by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e])] at h
+    · exact h0
+  refine ⟨B, hBw, hBs, hw1, ?_⟩
+  simp only [mwin, hd w hw, show ¬ w < 1 by omega, if_false, Option.bind, if_true, Option.map] at h
+  generalize Column.answer rt (.bytes (Scan.mwinBits op .i64 w R.n B)) = A at h ⊢
+  by_cases hwf : (Ty.atom rt).WF R.n A
+  · rw [Arr.of, dif_pos hwf] at h
+    cases h
+    exact ⟨rfl, rfl⟩
+  · rw [Arr.of, dif_neg hwf] at h
+    cases h
+
 /-- **`<x` / `>x` over a long column**: q's stable grade, from `Order.grade`'s merge sort of `til n`
     (`ids_indices`) under `rank_i64_le_iff`. -/
 theorem grade_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
@@ -470,8 +572,7 @@ theorem mext_words (f : UInt64 → Int) (sp : Int64 → Int64 → Bool)
   obtain ⟨p, r, hp, hbits, hmin, hfirst⟩ := Verify.mwinExt_spec f seed rd w m 8 hw (Nat.le_refl 8) i hi
   rw [hbits, Nat.mod_eq_of_lt (by simpa using r.toNat_lt), UInt64.ofNat_toNat]
   have htd : (((List.range m).map fun j => (rd j).toInt64).take (i + 1)).drop (i + 1 - w) =
-      (List.range' (i + 1 - w) (min w (i + 1))).map fun j => (rd j).toInt64 :=
-    List.ext_getElem (by simp; omega) fun j h1 h2 => by simp [List.getElem_range']; try omega
+      (List.range' (i + 1 - w) (min w (i + 1))).map fun j => (rd j).toInt64 := window_range_map _ w hi
   have hW : (if i + 1 < w then seed.toInt64 :: (List.range' (i + 1 - w) (min w (i + 1))).map (fun j => (rd j).toInt64)
       else (List.range' (i + 1 - w) (min w (i + 1))).map fun j => (rd j).toInt64) =
       (Verify.mwinWindow seed rd w i).map UInt64.toInt64 := by
@@ -496,45 +597,14 @@ theorem mext_toList {op : Scan.MOp} (hop : op = .mmin ∨ op = .mmax) (f : UInt6
     {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64} (hx : longWords R.val.c = some ws)
     (hn : R.n < USize.size) {S : Rel k (.atom .long)} (h : mwin op w .long R = some S) :
     S.val.toList = Spec.mext sp seed w R.val.toList := by
-  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R.val hx hn
-  have hd : ∀ v, v < USize.size → mwinColumn op .long v R.n R.val.c =
-      if v < 1 then none else some (.long, Column.answer .long (.bytes (Scan.mwinBits op .i64 v R.n B))) := by
-    intro v hv
-    have hn' : R.n % 2 ^ System.Platform.numBits = R.n := Nat.mod_eq_of_lt hn
-    have hv' : v % 2 ^ System.Platform.numBits = v := Nat.mod_eq_of_lt hv
-    rcases hop with rfl | rfl <;> rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc] <;>
-      by_cases h1 : v < 1 <;>
-      simp [mwinColumn, h1, show mwinType .mmin .long = some .long from rfl,
-        show mwinType .mmax .long = some .long from rfl, show scanKind .long = some .i64 from rfl,
-        show Scan.MOp.readKind .mmin .i64 = .i64 from rfl, show Scan.MOp.readKind .mmax .i64 = .i64 from rfl,
-        show QAtomicType.width .long = some 8 from rfl, show Scan.MOp.width .mmin .i64 = 8 from rfl,
-        show Scan.MOp.width .mmax .i64 = 8 from rfl, show Scan.Kind.width .i64 = 8 from rfl, Column.bytesOf,
-        Scan.mwinFoR, Scan.mwin, hBs, hn', hv', USize.toNat_ofNat_of_lt' hv, USize.toNat_ofNat_of_lt' hn] <;> rfl
-  have hw1 : 0 < w := by
-    rcases Nat.eq_zero_or_pos w with rfl | h0
-    · simp [mwin, hd 0 (by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e])] at h
-    · exact h0
+  obtain ⟨B, hBw, hBs, hw1, hSn, hS⟩ := mwin_answer (rk := .i64) (by rcases hop with rfl | rfl <;> rfl)
+    (by rcases hop with rfl | rfl <;> rfl) rfl (by rcases hop with rfl | rfl <;> rfl) hw hx hn h
   have hE : Scan.mwinBits op .i64 w R.n B =
       Scan.mwinExt (fun u e => decide (f u < f e)) (op.seed .i64) (fun j => Column.bitsAt B (j * 8) 8) w R.n 8 := by
     have e : Scan.mwinBits op .i64 w R.n B = Scan.mwinExt (op.better .i64) (op.seed .i64) (Scan.Kind.i64.bitsAt B) w
         (min R.n (Scan.Kind.i64.avail B)) 8 := by rcases hop with rfl | rfl <;> rfl
     rw [e, hk, show Scan.Kind.i64.avail B = R.n from hBs, Nat.min_self]; rfl
-  simp only [mwin, hd w hw, show ¬ w < 1 by omega, if_false, Option.bind, if_true, Option.map] at h
-  generalize hA : Column.answer .long (.bytes (Scan.mwinBits op .i64 w R.n B)) = A at h
-  by_cases hwf : (Ty.atom .long).WF R.n A
-  · rw [Arr.of, dif_pos hwf] at h
-    have hS : S.val.c = A := by cases h; rfl
-    have hSn : S.n = R.n := by cases h; rfl
-    have hL : longWords S.val.c = some (Verify.elemsW 8 (Scan.mwinBits op .i64 w R.n B)) := by
-      rw [hS, ← hA]; exact longWords_answer _
-    have hlen : (Scan.mwinBits op .i64 w R.n B).size / 8 = R.n := by
-      have := congrArg List.length (Arr.toList_long S.val hL)
-      rw [Arr.length_toList, hSn] at this; simpa [Verify.elemsW] using this.symm
-    rw [Arr.toList_long S.val hL, Verify.elemsW, hlen, List.map_map, toList_words R.val hx hBw hBs, ← hs, hE,
-      mext_words f sp hsp _ _ w R.n hw1]
-    rfl
-  · rw [Arr.of, dif_neg hwf] at h
-    cases h
+  rw [toList_answer_long S.val hS, hSn, toList_words R.val hx hBw hBs, ← hs, hE, mext_words f sp hsp _ _ w R.n hw1]
 
 /-- **`w mmin x` over a long column**: q's `(w-1)&':/x`, a tie keeping the older, the first `w-1` windows
     holding the seed `0W`. -/
@@ -554,6 +624,53 @@ theorem mmax_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {w
     (by funext u e; simp [Scan.MOp.better, Scan.Kind.signed, Int64.lt_iff_toInt_lt,
       show (Scan.MOp.mmax == Scan.MOp.mmin) = false from rfl] <;> omega)
     (fun a b => by simp [Int64.lt_iff_toInt_lt] <;> omega) rfl hw hx hn h
+
+/-- **`w msum x` over a long column**: q's `{y-(-x)_(0i*x#y),y:+\y}`, from `msum_i64_spec` over `mwinSum`,
+    the integral engine `mwinBits` runs `msum` at `long` on. -/
+theorem msum_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64}
+    (hx : longWords R.val.c = some ws) (hn : R.n < USize.size) {S : Rel k (.atom .long)}
+    (h : mwin .msum w .long R = some S) : S.val.toList = Spec.msum w R.val.toList := by
+  obtain ⟨B, hBw, hBs, -, hSn, hS⟩ := mwin_answer (rk := .i64) rfl rfl rfl rfl hw hx hn h
+  have hM : Scan.mwinBits .msum .i64 w R.n B = Scan.mwinSum (some Int64.minValue) (fun s => (Scan.narrow 8 s).toInt64)
+      (fun j => if Scan.Kind.i64.isNull (Scan.Kind.i64.bitsAt B j) then 0 else Scan.Kind.i64.signed (Scan.Kind.i64.bitsAt B j))
+      w R.n 8 := by
+    have e : Scan.mwinBits .msum .i64 w R.n B = Scan.mwinSum (some Int64.minValue) (fun s => (Scan.narrow 8 s).toInt64)
+        (fun j => if Scan.Kind.i64.isNull (Scan.Kind.i64.bitsAt B j) then 0 else Scan.Kind.i64.signed (Scan.Kind.i64.bitsAt B j))
+        w (min R.n (Scan.Kind.i64.avail B)) 8 := rfl
+    rw [e, show Scan.Kind.i64.avail B = R.n from hBs, Nat.min_self]
+  have hL : S.val.toList = (Verify.elemsW 8 (Scan.mwinBits .msum .i64 w R.n B)).map UInt64.toInt64 :=
+    Arr.toList_long S.val (by rw [hS]; exact longWords_answer _)
+  apply List.ext_getElem?
+  intro i
+  by_cases hi : i < R.n
+  · rw [hL, List.getElem?_map, hM, Verify.msum_i64_spec B w R.n i hi, toList_words R.val hx hBw hBs]
+    simp only [Spec.msum, List.length_map, List.length_range, List.getElem?_map, List.getElem?_range hi, Option.map_some,
+      List.map_map]
+    rw [window_range_map _ w hi]
+    simp only [take_range_map _ (show i + 1 ≤ R.n by omega), take_range_map _ (show i + 1 - w ≤ R.n by omega),
+      List.foldl_map, Function.comp_def, beq_iff_eq, Bool.or_eq_true, Option.some.injEq]
+    split <;> simp [Spec.nul]
+  · have hl : (Spec.msum w R.val.toList).length = R.n := by
+      simp only [Spec.msum, List.length_map, List.length_range]; exact Arr.length_toList _
+    rw [List.getElem?_eq_none (by rw [Arr.length_toList, hSn]; omega), List.getElem?_eq_none (by omega)]
+
+/-- **`w mcount x` over a long column**: how many of each window are not `0N`, at `int`, from `mcount_spec`
+    over `mwinSum`. -/
+theorem mcount_toList {w : Nat} (hw : w < USize.size) {R : Rel k (.atom .long)} {ws : List UInt64}
+    (hx : longWords R.val.c = some ws) (hn : R.n < USize.size) {S : Rel k (.atom .int)}
+    (h : mwin .mcount w .int R = some S) : S.val.toList = Spec.mcount w R.val.toList := by
+  obtain ⟨B, hBw, hBs, -, hSn, hS⟩ := mwin_answer (rk := .i32) rfl rfl rfl rfl hw hx hn h
+  have hM : Scan.mwinBits .mcount .i64 w R.n B =
+      Scan.mwinSum none id (fun j => if Scan.Kind.i64.isNull (Scan.Kind.i64.bitsAt B j) then 0 else 1) w R.n 4 := by
+    have e : Scan.mwinBits .mcount .i64 w R.n B = Scan.mwinSum none id
+        (fun j => if Scan.Kind.i64.isNull (Scan.Kind.i64.bitsAt B j) then 0 else 1) w (min R.n (Scan.Kind.i64.avail B)) 4 := rfl
+    rw [e, show Scan.Kind.i64.avail B = R.n from hBs, Nat.min_self]
+  rw [toList_answer_int S.val hS, hSn, hM, toList_words R.val hx hBw hBs, Spec.mcount, List.length_map, List.length_range]
+  refine List.map_congr_left fun i hi => ?_
+  have hi := List.mem_range.1 hi
+  rw [show i * 4 = 4 * i from Nat.mul_comm _ _, Verify.mcount_spec .i64 B w R.n i hi, window_range_map _ w hi,
+    List.filter_map, List.length_map, int32_count]
+  congr 2
 
 /-- Two longs `0 ≤ a ≤ b`: `b − a` is the difference of their naturals, no wrap. -/
 theorem sub_ofNat {a b : Int64} (h0 : 0 ≤ a.toInt) (h1 : a.toInt ≤ b.toInt) :
@@ -644,12 +761,13 @@ theorem countBy_toList {v : Ty} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .lo
   · rw [Arr.of, dif_neg hw] at h
     cases h
 
-/-- **`last each` by group over a dense long column**: the last row of each group. An answer means no group
+/-- **`last each` by group over a long column**: the last row of each group. An answer means no group
     is empty — `lastBy` reads that off `min` of the sizes, here `over_bytes` and `over_lesser_le` — so
-    `o[j+1] − 1` names a row of group `j`. A `foR` value column reaches `gatherFoR`, which has no law yet. -/
+    `o[j+1] − 1` names a row of group `j`. A `foR` value column reaches `gatherFoR`, which is `gatherBytes`
+    over the decode `Arr.dense_long` names. -/
 theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
-    {x : Arr (.atom .long) n} {wo : List UInt64} {b : ByteArray} (ho : longWords o.c = some wo)
-    (hc : x.c = .bytes b) (hg : g + 1 < USize.size) {S : Rel k (.atom .long)}
+    {x : Arr (.atom .long) n} {wo wx : List UInt64} (ho : longWords o.c = some wo)
+    (hx : longWords x.c = some wx) (hg : g + 1 < USize.size) (hn : n < USize.size) {S : Rel k (.atom .long)}
     (h : lastBy ⟨n, .grp d o co, x⟩ = some S) :
     S.val.toList = Spec.lastBy (o.toList.map Int64.toNatClampNeg) x.toList := by
   obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
@@ -694,8 +812,11 @@ theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)}
       g.toUSize).size / 8 = g := by simpa [Verify.elemsW] using congrArg List.length hlw
   generalize Ew.val Ew.add Ew.i64 Ew.va Int64.minValue (ends g B) (atomBytes Ew.i64 (-1 : Int64).toUInt64)
     g.toUSize = L at h hlw hlz
-  rw [hc, show gatherColumn .long (.bytes b) (.bytes L) =
-    some (.vector .long (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L))) from rfl] at h
+  obtain ⟨b, hxc, -, hbw, hbn⟩ := Arr.dense_long x hx hn
+  have hgc : gatherColumn .long x.c (.bytes L) =
+      some (.vector .long (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L))) := by
+    rcases hxc with hxc | ⟨md, pk, hxc, rfl⟩ <;> rw [hxc] <;> rfl
+  rw [hgc] at h
   simp only [vecCol] at h
   obtain ⟨-, hgj⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) 0x8000000000000000 b L
   rw [h8] at hgj
@@ -704,7 +825,6 @@ theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)}
   · rw [Arr.of, dif_pos hw] at h
     have hS : S.val.c = .bytes G := by cases h; rfl
     have hSn : S.n = g := by cases h; rfl
-    have hbn := Arr.n_long_bytes x hc
     rw [Arr.toList_long_bytes S.val hS, hSn, Spec.lastBy, Spec.groups_range, List.length_map, Arr.length_toList,
       Nat.add_sub_cancel, List.map_map, List.map_map]
     refine List.map_congr_left fun j hj => ?_
@@ -735,10 +855,8 @@ theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)}
         Int64.toNatClampNeg_ofNat_of_lt (by omega)]
     rw [Function.comp_apply, Function.comp_apply, hgj j (by omega), hidx, hstep, hto, if_pos (by omega),
       map_get! o (show j ≤ g by omega), map_get! o (show j + 1 ≤ g by omega),
-      Spec.getLastD_take_drop _ _ hp (by rw [Arr.length_toList]; omega), Arr.toList_long_bytes x hc,
-      List.map_map, getElem!_pos _ ((o.toList[j+1]!).toNatClampNeg - 1)
+      Spec.getLastD_take_drop _ _ hp (by rw [Arr.length_toList]; omega), toList_words x hx hbw hbn, getElem!_pos _ ((o.toList[j+1]!).toNatClampNeg - 1)
         (by rw [List.length_map, List.length_range]; omega), List.getElem_map, List.getElem_range]
-    rfl
   · rw [Arr.of, dif_neg hw] at h
     cases h
 
@@ -794,6 +912,10 @@ private def xsF : Arr (.atom .long) 8 :=
   { c := .foR 8 (Kernel.Coc.encode 8 (packLongs xs)).1 (Kernel.Coc.encode 8 (packLongs xs)).2, wf := ⟨rfl, rfl⟩ }
 #guard vals (mwin .mmin 3 .long (L xsF)) == Spec.mext (· < ·) Int64.maxValue 3 xs
 #guard vals (mwin .msum 3 .long (L xsF)) == Spec.msum 3 xs
+-- q 4.1: `3 msum 2 0N 7 1` is `2 2 9 8`, `2 mcount 2 0N 7 1` is `1 1 1 2i`
+#guard vals (mwin .msum 3 .long (L xnA)) == Spec.msum 3 xn ∧ Spec.msum 3 xn == [2, 2, 9, 8]
+#guard vals (mwin .mcount 2 .int (L xnA)) == Spec.mcount 2 xn ∧ Spec.mcount 2 xn == [1, 1, 1, 2]
+#guard vals (mwin .mcount 3 .int (L xsF)) == Spec.mcount 3 xs
 -- a boolean window is `mwinBitmap`'s bitmap: q's `2 mmax 010b` is `011b`, `2 mmin 101b` is `100b`
 private def LB {n : Nat} (a : Arr (.atom .boolean) n) : Rel (.atom .long) (.atom .boolean) := ⟨n, .til n, a⟩
 private def b010 : Arr (.atom .boolean) 3 := { c := .bits 3 (ByteArray.mk #[0b010]), wf := by decide }
@@ -849,6 +971,9 @@ end Checks
 #print axioms Ops.mext_words
 #print axioms Ops.mmin_toList
 #print axioms Ops.mmax_toList
+#print axioms Ops.msum_toList
+#print axioms Ops.mcount_toList
+#print axioms Ops.lastBy_toList
 #print axioms longWords_answer
 #print axioms Arr.dense_long
 
