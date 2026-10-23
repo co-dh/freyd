@@ -105,6 +105,22 @@ theorem Arr.get_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (
   show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
 
+/-- Under `wf`, a long `bytes` column holds `b.size / 8` elements. -/
+theorem Arr.n_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) :
+    b.size / 8 = m := by
+  have := x.wf.2; rw [hc] at this; exact this
+
+/-- Under `wf`, a long `bytes` column lists its eight-byte words, each read as a long. -/
+theorem Arr.toList_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) :
+    x.toList = ((List.range m).map fun i => Column.bitsAt b (i * 8) 8).map UInt64.toInt64 := by
+  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+  intro i h1 h2
+  rw [Arr.getElem_toList, Arr.get_long_bytes x hc]; simp
+
+/-- Reading a word as a long loses nothing. -/
+theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
+  simpa using congrArg Int64.toUInt64 h
+
 /-- Under `wf`, a boolean `bits` column's element `i` is its bit `i`. -/
 theorem Arr.get_bool_bits {m : Nat} (x : Arr (.atom .boolean) m) {n : Nat} {b : ByteArray} (hc : x.c = .bits n b)
     (i : Fin m) : x.get i = Column.bitAt b i.1 := by

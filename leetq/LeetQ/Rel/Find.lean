@@ -15,6 +15,9 @@ import QLean.Kernel.Elementwise
 import QLean.Kernel.Scan
 import QLean.Kernel.Reduce
 import QLean.Verify.Where
+import QLean.Verify.Distinct
+import QLean.Verify.FindMember
+import QLean.Verify.Search
 
 namespace LeetQ.Rel.Find
 
@@ -226,6 +229,126 @@ theorem where_toList {k : Ty} {x : Rel k (.atom .boolean)} {r : Rel (.atom .long
       exact toInt64_of_toNat (hj j (by rw [Arr.length_toList] at h1; omega))
   | _ => all_goals (rw [hc] at hw; simp [Ty.WF, Column.admits] at hw)
 
+/-- An answer per operand element has the kernel's column. -/
+theorem onKey_c {k : Ty} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c : Column} {s : String}
+    {r : Rel k (.atom a)} (h : onKey key a c s = .ok r) : r.val.c = c := by
+  simp only [onKey, bind, Except.bind, pure, Except.pure, Arr.of] at h; split at h
+  · cases h
+  · rename_i hw; split at hw
+    · cases hw; cases h; rfl
+    · cases hw
+
+/-- An injective map keeps every first index. -/
+theorem idxOf_map_of_inj {α β : Type} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq β] {f : α → β}
+    (hf : ∀ a b, f a = f b → a = b) (l : List α) (v : α) : (l.map f).idxOf (f v) = l.idxOf v := by
+  induction l with
+  | nil => rfl
+  | cons a l ih =>
+    rw [List.map_cons, List.idxOf_cons, List.idxOf_cons, ih,
+      show (f a == f v) = (a == v) from Bool.eq_iff_iff.2 (by simp only [beq_iff_eq]; exact ⟨hf a v, congrArg f⟩)]
+
+/-- An injective map keeps membership. -/
+theorem mem_map_of_inj {α β : Type} {f : α → β} (hf : ∀ a b, f a = f b → a = b) {l : List α} {v : α} :
+    f v ∈ l.map f ↔ v ∈ l :=
+  ⟨fun h => by obtain ⟨a, ha, e⟩ := List.mem_map.1 h; exact hf _ _ e ▸ ha, fun h => List.mem_map.2 ⟨v, h, rfl⟩⟩
+
+/-- The first occurrences under a key that identifies exactly what `f` does are `eraseDups` of `f`. -/
+theorem firstsOf_map_eraseDups {α β : Type} [DecidableEq α] [BEq β] [LawfulBEq β] (g : Nat → α) (f : Nat → β)
+    (hg : ∀ i j, g i = g j ↔ f i = f j) (m : Nat) :
+    (Verify.firstsOf g m).map f = ((List.range m).map f).eraseDups := by
+  induction m with
+  | zero => rfl
+  | succ m ih =>
+    unfold Verify.firstsOf at ih ⊢
+    rw [List.range_succ, List.filter_append, List.map_append, ih, List.map_append, List.eraseDups_append]
+    congr 1
+    by_cases hm : f m ∈ (List.range m).map f
+    · obtain ⟨j, hj, e⟩ := List.mem_map.1 hm
+      have hp : ((List.range m).all fun j => !decide (g j = g m)) = false := Bool.eq_false_iff.2 fun hall => by
+        have := List.all_eq_true.1 hall j hj; simp [(hg j m).2 e] at this
+      simp [List.filter_cons, hp, List.removeAll, hm]
+    · have hp : ((List.range m).all fun j => !decide (g j = g m)) = true := List.all_eq_true.2 fun j hj => by
+        simpa using fun e => hm (List.mem_map.2 ⟨j, hj, ((hg j m).1 e)⟩)
+      simp [List.filter_cons, hp, List.removeAll, hm, List.eraseDups_cons]
+
+/-- `?x` on a dense long column is `distinctSpec`, from `distinct_spec`. Restrictions: `attr ≠ 2`, the
+    `u` shortcut, whose `Arr.attr` carries no proof of uniqueness; a `bytes` payload, which is the kernel
+    path (`direct` needs a `foR` one); `x.n < USize.size`, the count `distinct` takes. -/
+theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {hb : ByteArray}
+    (hx : x.val.c = .bytes hb) (hu : x.val.attr ≠ 2) (hn : x.n < USize.size) (h : distinct x = .ok r) :
+    r.val.toList = distinctSpec x.val.toList := by
+  unfold distinct at h
+  rw [show (x.val.attr == 2) = false by simp [hu], hx] at h
+  change list .long (.bytes (Order.distinct .i64 (hb.size / 8).toUSize hb)) 2 = .ok r at h
+  have hc := list_c h
+  have hxn := Arr.n_long_bytes x.val hx
+  have hs := Verify.distinct_spec .i64 (hb.size / 8).toUSize hb
+  generalize Order.distinct .i64 (hb.size / 8).toUSize hb = d at hs hc
+  rw [USize.toNat_ofNat_of_lt' (by rw [hxn]; exact hn), show Scan.Kind.i64.avail hb = hb.size / 8 from rfl,
+    Nat.min_self, hxn] at hs
+  rw [show Scan.Kind.i64.bitsAt hb = fun i => Column.bitsAt hb (i * 8) 8 from rfl, Verify.elemsW,
+    show Scan.Kind.i64.width = 8 from rfl] at hs
+  rw [Arr.toList_long_bytes r.val hc, ← Arr.n_long_bytes r.val hc, distinctSpec, Arr.toList_long_bytes x.val hx,
+    hs, List.map_map, List.map_map]
+  refine firstsOf_map_eraseDups _ _ (fun i j => ⟨fun e => ?_, fun e => ?_⟩) x.n
+  · have e' : Order.rank .i64 (Column.bitsAt hb (i * 8) 8) = Order.rank .i64 (Column.bitsAt hb (j * 8) 8) := e
+    exact Int64.le_antisymm (rank_i64_le (UInt64.le_of_eq e')) (rank_i64_le (UInt64.le_of_eq e'.symm))
+  · show Order.rank .i64 (Column.bitsAt hb (i * 8) 8) = Order.rank .i64 (Column.bitsAt hb (j * 8) 8)
+    have e' : (Column.bitsAt hb (i * 8) 8).toInt64 = (Column.bitsAt hb (j * 8) 8).toInt64 := e
+    rw [toInt64_inj e']
+
+/-- `(8 : USize)` is eight, at either platform width. -/
+theorem usize_eight : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+
+/-- `x?y` on dense long columns is `findSpec`, from `findVec_idxOf`. Restrictions: `bytes` payloads, the
+    kernel path (`direct` needs a `foR` haystack); `x.val.attr ≠ 1`, since the `s` halving
+    (`findSortedBytes`) has no law yet; `x.n < USize.size`, the count `findVec` indexes by. -/
+theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
+    {hb nb : ByteArray} (hx : x.val.c = .bytes hb) (hy : y.val.c = .bytes nb) (hs : x.val.attr ≠ 1)
+    (hn : x.n < USize.size) (h : find x y = .ok r) : r.val.toList = findSpec x.val.toList y.val.toList := by
+  unfold find at h
+  rw [hx, hy, show (x.val.attr == 1) = false by simp [hs]] at h
+  change onKey y.key .long (.bytes (findVec 8 false hb nb)) "x?y" = .ok r at h
+  obtain ⟨e, -⟩ := onKey_key h
+  have hxn := Arr.n_long_bytes x.val hx
+  have hyn := Arr.n_long_bytes y.val hy
+  obtain ⟨-, hj⟩ := Verify.findVec_idxOf 8 false hb nb (by rw [usize_eight, hxn]; exact hn)
+  rw [Arr.toList_long_bytes r.val (onKey_c h), findSpec, Arr.toList_long_bytes x.val hx,
+    Arr.toList_long_bytes y.val hy, e]
+  simp only [List.map_map]
+  apply List.map_congr_left
+  intro j hj'
+  have := hj j (by rw [usize_eight, hyn]; exact List.mem_range.1 hj')
+  rw [usize_eight, if_pos (Nat.le_refl 8), show normalise 8 false = id from rfl, List.map_id] at this
+  simp only [Function.comp_apply]
+  exact toInt64_of_toNat (by
+    rw [this, Verify.denseBits, hxn, ← List.map_map, idxOf_map_of_inj (fun _ _ => toInt64_inj)]; rfl)
+
+/-- `x in y` on dense long columns is `inSpec`, from `memberVec_mem`. Restrictions: `bytes` payloads, the
+    kernel path (`direct` needs a `foR` haystack); `y.val.attr ≠ 1`, since the `s` halving
+    (`memberSortedBytes`) has no law yet; `y.n < USize.size`, the count `memberVec` indexes by. -/
+theorem in_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k (.atom .boolean)}
+    {xb hb : ByteArray} (hx : x.val.c = .bytes xb) (hy : y.val.c = .bytes hb) (hs : y.val.attr ≠ 1)
+    (hn : y.n < USize.size) (h : «in» x y = .ok r) : r.val.toList = inSpec x.val.toList y.val.toList := by
+  unfold «in» at h
+  rw [hx, hy, show (y.val.attr == 1) = false by simp [hs]] at h
+  change onKey x.key .boolean (.bits (xb.size / 8) (memberVec 8 false xb hb)) "x in y" = .ok r at h
+  obtain ⟨e, -⟩ := onKey_key h
+  have hxn := Arr.n_long_bytes x.val hx
+  have hyn := Arr.n_long_bytes y.val hy
+  obtain ⟨-, hj⟩ := Verify.memberVec_mem 8 false xb hb (by rw [usize_eight, hyn]; exact hn)
+  unfold inSpec
+  rw [Arr.toList_long_bytes x.val hx, Arr.toList_long_bytes y.val hy]
+  apply List.ext_getElem (by rw [Arr.length_toList, e]; simp)
+  intro i h1 _
+  have hi : i < x.n := by rw [Arr.length_toList, e] at h1; exact h1
+  rw [Arr.getElem_toList, Arr.get_bool_bits r.val (onKey_c h)]
+  simp only [List.getElem_map, List.getElem_range]
+  rw [hj i (by rw [usize_eight]; omega), usize_eight, if_pos (Nat.le_refl 8), show normalise 8 false = id from rfl,
+    List.map_id, id, hxn, decide_eq_true hi, Bool.true_and]
+  apply Bool.eq_iff_iff.2
+  rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj), Verify.denseBits, hyn]
+
 /-! ## Checks against the spec on small literal Rels -/
 
 section Checks
@@ -281,5 +404,9 @@ end Checks
 #print axioms onKey_key
 #print axioms onKey_toList
 #print axioms where_toList
+#print axioms firstsOf_map_eraseDups
+#print axioms distinct_toList
+#print axioms find_toList
+#print axioms in_toList
 
 end LeetQ.Rel.Find
