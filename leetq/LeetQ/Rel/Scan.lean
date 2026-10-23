@@ -1,8 +1,8 @@
 /-
   Scans, folds, moving windows, grouped folds and the order verbs on the RelRep core (§3): each op is
   one qlean kernel dispatch over `val`'s column — `scanColumn` (`Scan.scan`/`scanFoR`/`scanAlp`),
-  `overColumn` (`overBytes`/`Coc.over`), `overGroupsColumn` (`overGroups`), `Order.groupSizes`/
-  `groupLasts`, `mwinColumn` (`Scan.mwin`/`mwinFoR`), `gradeColumn` (`grade`/`ranks`) and
+  `overColumn` (`overBytes`/`Coc.over`), `groupedOver` over `Groups.segs` (`overSegments`), `Ew.val`
+  over a `grp` key's offsets, `mwinColumn` (`Scan.mwin`/`mwinFoR`/`mwinAlp`/`mwinBitmap`), `gradeColumn` (`grade`/`ranks`) and
   `sortedValues` (`sortValues`). No element is read at run time; a kernel's answer becomes an `Arr`
   only through `Arr.of`, which checks its type and count instead of assuming them.
   The specs are List functions on `toList`; `#guard` runs each op against its spec.
@@ -384,6 +384,14 @@ theorem filter_range_seg (n lo hi : Nat) :
           show max (min lo n) (min hi n) - min lo n = 0 by omega]
         rfl
 
+/-- Two folds that step alike on every member of the list agree. -/
+theorem foldl_congr_mem {α β : Type} {f g : β → α → β} (l : List α) (h : ∀ x ∈ l, ∀ a, f a x = g a x) (a : β) :
+    l.foldl f a = l.foldl g a := by
+  induction l generalizing a with
+  | nil => rfl
+  | cons x l ih =>
+    rw [List.foldl_cons, List.foldl_cons, h x (List.mem_cons_self ..), ih (fun y hy => h y (List.mem_cons_of_mem _ hy))]
+
 /-- `groupedOver` at `long`: the integral fold, each cell its slot's eight bytes. -/
 theorem groupedOver_long (op : Coc.Over) (gs : Groups) (c : Column) (ord : ByteArray) :
     groupedOver op false false .long .long gs c ord =
@@ -442,18 +450,8 @@ theorem overSegments_slot (op : Coc.Over) (nul : Int64) (ob b : ByteArray) (r : 
       (List.range (hi - lo)).filter ((fun i => op.boolCast || QLean.Verify.valAt Ew.i64 b i != nul) ∘ (lo + ·)) :=
     List.filter_congr fun i hi' => by
       rw [QLean.Verify.gidAt, bitsAt_zeros, hval i (List.mem_range.1 hi')]; rfl
-  have hfold : ∀ l : List Nat, (∀ i ∈ l, i < hi - lo) → ∀ a,
-      l.foldl (fun acc i => op.step acc (QLean.Verify.valAt Ew.i64 s i)) a =
-        l.foldl (fun acc i => op.step acc (QLean.Verify.valAt Ew.i64 b (lo + i))) a := by
-    intro l
-    induction l with
-    | nil => intros; rfl
-    | cons i l ih =>
-      intro hl a
-      simp only [List.foldl_cons]
-      rw [hval i (hl i (List.mem_cons_self ..)), ih (fun j hj => hl j (List.mem_cons_of_mem _ hj))]
   rw [hf]
-  exact hfold _ (fun i hi' => List.mem_range.1 (List.mem_filter.1 hi').1) _
+  exact foldl_congr_mem _ (fun i hi' a => by rw [hval i (List.mem_range.1 (List.mem_filter.1 hi').1)]) _
 
 /-- Offset `j` of `o` is the long `atI64` reads at `j` of its dense payload. -/
 theorem offs_get {g : Nat} {o : Arr (.atom .long) (g+1)} {ob : ByteArray} (ho : o.c = .bytes ob) {j : Nat}
@@ -495,11 +493,11 @@ theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d :
         Int64.toInt64_toUInt64, atI64_eq, overSegments_slot op _ ob b j (by omega), offs_get ho (by omega),
         offs_get ho (by omega), filter_range_seg, hb]
       simp only [segRange, hn, Bool.false_or]
-      rw [QLean.Verify.foldl_filter, Spec.over, List.map_map,
-        List.map_congr_left (fun i hi => hx _ (by
-          obtain ⟨k, hk, rfl⟩ := List.mem_map.1 hi; have := List.mem_range.1 hk; simp only [Function.comp]; omega)),
-        ← List.map_map, List.foldl_map, List.foldl_map]
-      congr 1; funext a i; by_cases hx : QLean.Verify.valAt Ew.i64 b i = Spec.nul <;> simp [hx]
+      rw [QLean.Verify.foldl_filter, Spec.over, List.map_map, List.foldl_map, List.foldl_map]
+      refine foldl_congr_mem _ (fun i hi a => ?_) _
+      have hi := List.mem_range.1 hi
+      simp only [Function.comp, hx _ (by omega : min (atI64 ob j).toNatClampNeg n + i < n)]
+      by_cases hv : QLean.Verify.valAt Ew.i64 b (min (atI64 ob j).toNatClampNeg n + i) = Spec.nul <;> simp [hv]
   · rw [Arr.of, dif_neg hw] at h
     cases h
 
