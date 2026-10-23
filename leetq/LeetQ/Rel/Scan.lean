@@ -75,7 +75,7 @@ def overBy (op : Coc.Over) : Rel k (.atom .long) → Option (Rel k (.atom .long)
   | ⟨n, .grp (g := g) d o _, x⟩ => do
     let ids ← groupIds o n
     -- `overGroups` answers each group's fold, then each group's live count; the folds are the answer
-    let s ← overGroupsColumn op .long g.toUSize ids x.c
+    let s ← overGroupsColumn op .long (.ids g.toUSize ids) x.c
     pure ⟨g, d, ← (Arr.of (.atom .long) g (.bytes (s.extract 0 (8 * g))) "f/ by").toOption⟩
   | _ => none
 
@@ -228,7 +228,7 @@ theorem denseElems_long {R : Rel k (.atom .long)} {b : ByteArray} (hc : R.val.c 
 theorem over_bytes {op : Coc.Over} (hb : op.boolCast = false) {R : Rel k (.atom .long)} {b : ByteArray}
     (hc : R.val.c = .bytes b) : over op R = some (Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.val.toList) := by
   have he : overBytes op Ew.i64 Spec.nul b = Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.val.toList := by
-    rw [QLean.Verify.overBytes_eq, hb, QLean.Verify.foldl_filter, denseElems_long hc, Spec.over]
+    rw [QLean.Verify.overBytes_eq, QLean.Verify.overList, hb, QLean.Verify.foldl_filter, denseElems_long hc, Spec.over]
     congr 1; funext a x; by_cases hx : x = Spec.nul <;> simp [hx]
   simp only [over, overColumn, hc, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
   rw [he]; simp

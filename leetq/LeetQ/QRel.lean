@@ -124,7 +124,7 @@ theorem dense_get (vs : List Int64) (i : Nat) (hi : i < vs.length) : (dense vs).
 /-- What both `ascending` kernels answer, `ascending_i64_iff` and `ascendingFoR_i64_iff`, in the
 index form the searches take. -/
 theorem sorted_of_pairwise (f : Nat → Int64) (n : Nat)
-    (h : ((List.range n).map f).Pairwise (i64Rel false false)) : ∀ i j, i ≤ j → j < n → f i ≤ f j := by
+    (h : ((List.range n).map f).Pairwise (ordRel false false)) : ∀ i j, i ≤ j → j < n → f i ≤ f j := by
   intro i j hij hj
   rcases Nat.lt_or_eq_of_le hij with hlt | rfl
   · have := List.pairwise_iff_getElem.1 h i j (by simp; omega) (by simp; omega) hlt

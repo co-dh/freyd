@@ -292,7 +292,7 @@ theorem sumWhere_eq (nul : Int64) (n : USize) (bits : ByteArray) (v : Keys) (h :
     fun i hi => by rw [hw]; have := hL' i hi; omega
   rw [hw] at gs gj
   have hs : Coc.Over.denseSeed .add c nul = 0 := by simp [Coc.Over.denseSeed, Coc.Over.seed]
-  rw [overBytes_eq, foldl_filter, hs]
+  rw [overBytes_eq, overList, foldl_filter, hs]
   have hq : ∀ l : List Int64, l.foldl (fun acc x => if (Coc.Over.add.boolCast || x != nul) = true then
       Coc.Over.add.step acc x else acc) 0 = qsum nul l := fun l => by
     rw [qsum]; congr 1; funext acc x
@@ -388,7 +388,7 @@ theorem gids_spec (k : Keys) (h : k.count < 2 ^ 32) :
     rw [toNat_toUSize h] at this
     refine ids_congr _ this fun i _ j _ => ?_
     show _ ↔ (foRBits md pk (blockStarts md) i).toInt64 = (foRBits md pk (blockStarts md) j).toInt64
-    simp only [show 8 * Kind.width .i64 = 64 from rfl, ofNat_toNat_mod64, Order.rank]
+    simp only [foRKey, show 8 * Kind.width .i64 = 64 from rfl, ofNat_toNat_mod64, Order.rank]
     rw [UInt64.xor_left_inj]
     exact ⟨congrArg _, fun e => by
       rw [← UInt64.toUInt64_toInt64 (foRBits md pk (blockStarts md) i), e, UInt64.toUInt64_toInt64]⟩

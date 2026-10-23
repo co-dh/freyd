@@ -241,7 +241,8 @@ theorem memberVec_bit (xs hay : ByteArray) (hn : hay.size / 8 < 2 ^ 32) (i : Nat
   let c : Nat → Nat → Bool := fun b t => decide (b * 8 + t < xs.size / w8.toNat) &&
     decide (findScalar w8 false hay (bitsAt xs ((b * 8 + t) * w8.toNat) w8.toNat) < (hay.size / w8.toNat).toUSize)
   have hm : memberVec w8 false xs hay =
-      (List.range ((xs.size / w8.toNat + 7) / 8)).foldl (fun acc b => acc.push (byteOf (c b))) ByteArray.empty := rfl
+      (List.range ((xs.size / w8.toNat + 7) / 8)).foldl (fun acc b => acc.push (byteOf (c b))) ByteArray.empty := by
+    simp only [memberVec, show w8.toNat ≤ 8 by rw [w8_toNat]; decide, ↓reduceIte]; rfl
   have hq : i / 8 < (xs.size / w8.toNat + 7) / 8 := by rw [w8_toNat]; omega
   have hd : (memberVec w8 false xs hay)[i / 8]? = some (byteOf (c (i / 8))) := by
     rw [hm]

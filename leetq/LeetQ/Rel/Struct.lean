@@ -211,7 +211,7 @@ def aj (l r : Array KCol) (lt rt : Col) : Except String (Rel (.atom .long) (.ato
   let (p, srt, base) := timeGrade rc lc rr (Alg.len (concatBytes #[lc, rc]))
   let bin := binBytes 8 false true false srt
   let pos := bin (Alg.add base lr)
-  let ri := writeWhere (expandBytes 8 0 (one Alg.nul.toUInt64) #[nl]) (bin (plus base (-1))) pos (Alg.gather 8 p pos)
+  let ri := writeWhere (expandBytes 8 0 (one Alg.nul.toUInt64) (one nl.toUInt64)) (bin (plus base (-1))) pos (Alg.gather 8 p pos)
   pure ⟨nl, .til nl, ← Arr.of (.atom .long) nl (.bytes ri) "aj"⟩
 
 /-- `wj`: each left row ↦ the right rows of its key tuple with a time in `[w₀, w₁]`, in time order, a parted

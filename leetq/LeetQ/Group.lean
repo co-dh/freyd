@@ -121,7 +121,7 @@ theorem dict_sorted : ∀ p ∈ dictOf g m, p.2.Pairwise (· < ·) := fun _ hp =
 end Firsts
 
 theorem firsts_i64 (m : Nat) (b : ByteArray) : Order.firsts .i64 m b = firstsOf (atW 8 b) m := by
-  simp only [Order.firsts, firstsOf, bne, keyAt_beq]
+  simp only [Order.firsts, Order.firstsBy, firstsOf, bne, keyAt_beq]
 
 /-! ## `where`: a `bits` column is a coreflexive on the indices -/
 

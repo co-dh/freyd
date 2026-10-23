@@ -63,7 +63,7 @@ def one (v : UInt64) : ByteArray := Column.pushBits .empty v 8
     value it does not hold. `scatterPacked` keeps the last write, so the positions go in reversed. -/
 def firstTable (hay : ByteArray) (n : Nat) (lo : Int64) (r : Nat) : ByteArray :=
   let off := Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue hay (one lo.toUInt64) n.toUSize
-  scatterPacked 64 (expandBytes 8 0 (one n.toUInt64) #[r]) (reverseBytes 8 off)
+  scatterPacked 64 (expandBytes 8 0 (one n.toUInt64) (one r.toUInt64)) (reverseBytes 8 off)
     (reverseBytes 8 (tilLongs n.toUSize)) 0 false
 
 /-- Each needle's first position in the haystack `firstTable` was built from, `n` at a miss. A needle
