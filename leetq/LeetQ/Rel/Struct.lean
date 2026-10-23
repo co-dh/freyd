@@ -8,6 +8,7 @@
   The specs are List-level, on `toList`.
 -/
 import LeetQ.Rel.Algebra
+import QLean.Verify.Group
 
 namespace LeetQ.Rel.Struct
 
@@ -310,6 +311,340 @@ def amendSpec {α : Type} [Inhabited α] (f : α → α → α) (xs : List α) (
 def cutSpec {α : Type} (os : List Int64) (xs : List α) : List (Int64 × α) :=
   let o := os.map (·.toInt.toNat) ++ [xs.length]
   (List.range os.length).flatMap fun i => ((xs.drop o[i]!).take (o[i+1]! - o[i]!)).map (Int64.ofNat i, ·)
+
+/-! ## Value laws of the moves on long columns
+
+  Each law reads the answer through `Arr.toList_long` and the operand through `longWords`. The payload
+  lemmas are width-generic (`w`-byte words, `Verify.elemsW w`); the laws are stated at `long` because
+  `longWords`/`toList_long` is the only bridge from `Arr.toList` to payload words. The operand `x` is a
+  `bytes` payload: at `foR` the kernels move encoded blocks (`cycleFoR`, `reverseFoR`, `gatherFoR`,
+  `concatFoR`), none of which has a law. -/
+
+section MoveLaws
+
+/-- A `bytes` payload of whole eight-byte words: what `cycleBytes` and `concatBytes` need wherever a
+    whole payload is copied after another (a lap of `n#x`, `rotate`, the left part of `x,y`); a ragged
+    tail would be copied into the middle of the answer. -/
+def Words : Column → Prop
+  | .bytes b => b.size % 8 = 0
+  | _ => False
+
+theorem words_bytes {c : Column} (h : Words c) : ∃ b, c = .bytes b ∧ b.size % 8 = 0 := by
+  cases c with
+  | bytes b => exact ⟨b, rfl, h⟩
+  | _ => exact h.elim
+
+theorem elemsW_empty (w : Nat) : Verify.elemsW w ByteArray.empty = [] := by simp [Verify.elemsW]
+
+/-- Reading `w`-byte words is local: past `a`'s whole words, `a ++ b` reads `b`'s. -/
+theorem elemsW_append (w : Nat) (hw : 0 < w) (a b : ByteArray) (ha : a.size % w = 0) :
+    Verify.elemsW w (a ++ b) = Verify.elemsW w a ++ Verify.elemsW w b := by
+  obtain ⟨q, hq⟩ : ∃ q, a.size = w * q := ⟨a.size / w, by have := Nat.div_add_mod a.size w; omega⟩
+  have hqa : a.size / w = q := by rw [hq, Nat.mul_div_cancel_left q hw]
+  have hs : (a ++ b).size / w = q + b.size / w := by rw [ByteArray.size_append, hq, Nat.mul_add_div hw]
+  apply List.ext_getElem (by simp [Verify.elemsW, hs, hqa])
+  intro i h1 h2
+  simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.getElem_append, List.length_map,
+    List.length_range, hqa]
+  split
+  · rename_i hi
+    have : (i + 1) * w ≤ q * w := Nat.mul_le_mul_right w hi
+    rw [Nat.succ_mul] at this
+    exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left a b _ (by rw [hq, Nat.mul_comm w q]; omega)
+  · rename_i hi
+    refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
+    have e : i * w + k = a.size + ((i - q) * w + k) := by
+      rw [hq, Nat.mul_comm w q, Nat.sub_mul]; have := Nat.mul_le_mul_right w (Nat.le_of_not_lt hi); omega
+    rw [e, Verify.ba_append_right]
+
+/-- A fold of `++` over parts of whole words reads the parts' words in order. -/
+theorem elemsW_foldl_append (w : Nat) (hw : 0 < w) :
+    ∀ (ps : List ByteArray) (acc : ByteArray), acc.size % w = 0 → (∀ p ∈ ps, p.size % w = 0) →
+      Verify.elemsW w (ps.foldl (· ++ ·) acc) = Verify.elemsW w acc ++ ps.flatMap (Verify.elemsW w)
+  | [], _, _, _ => by simp
+  | p :: ps, acc, ha, hp => by
+    rw [List.foldl_cons, elemsW_foldl_append w hw ps _ (by rw [ByteArray.size_append]; have := hp p (by simp); omega)
+      (fun q hq => hp q (by simp [hq])), elemsW_append w hw _ _ ha]
+    simp
+
+/-- `concatBytes` over parts of whole words reads the parts' words in order. -/
+theorem elemsW_concatBytes (w : Nat) (hw : 0 < w) (ps : Array ByteArray) (hp : ∀ p ∈ ps.toList, p.size % w = 0) :
+    Verify.elemsW w (concatBytes ps) = ps.toList.flatMap (Verify.elemsW w) := by
+  rw [concatBytes, ← Array.foldl_toList, elemsW_foldl_append w hw _ _ (by rfl) hp, elemsW_empty, List.nil_append]
+
+/-- A whole-word range of a payload reads the range of its words. -/
+theorem elemsW_extract (w : Nat) (hw : 0 < w) (b : ByteArray) {s e : Nat} (he : e ≤ b.size / w) :
+    Verify.elemsW w (b.extract (s * w) (e * w)) = ((Verify.elemsW w b).drop s).take (e - s) := by
+  have hle : e * w ≤ b.size := by have := Nat.mul_le_mul_right w he; have := Nat.div_mul_le_self b.size w; omega
+  have hsz : (b.extract (s * w) (e * w)).size / w = e - s := by
+    rw [ByteArray.size_extract, Nat.min_eq_left hle, ← Nat.sub_mul, Nat.mul_div_cancel _ hw]
+  apply List.ext_getElem (by simp [Verify.elemsW, hsz]; omega)
+  intro i h1 h2
+  simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.getElem_take, List.getElem_drop]
+  have hi : i < e - s := by simpa [Verify.elemsW, hsz] using h1
+  rw [Verify.bitsAt_extract b (by have := Nat.mul_le_mul_right w (show s + i + 1 ≤ e by omega)
+    rw [Nat.add_mul, Nat.add_mul, Nat.one_mul] at this; omega), Nat.add_mul]
+
+/-- The flattened laps of `E` at position `i` read `E` at `i mod |E|`. -/
+theorem getElem_flatten_replicate {α : Type} (E : List α) :
+    ∀ (q i : Nat) (h : i < ((List.replicate q E).flatten).length),
+      ((List.replicate q E).flatten)[i] = E[i % E.length]'(Nat.mod_lt _ (by
+        cases E with
+        | nil => simp at h
+        | cons _ _ => simp))
+  | 0, i, h => by simp at h
+  | q + 1, i, h => by
+    simp only [List.replicate_succ, List.flatten_cons, List.getElem_append]
+    split
+    · rename_i hi; simp only [Nat.mod_eq_of_lt hi]
+    · rename_i hi
+      rw [getElem_flatten_replicate E q]
+      congr 1
+      rw [Nat.mod_eq_sub_mod (Nat.le_of_not_lt hi)]
+
+/-- `cycleBytes`' three pieces, read as words: `m` words of `E` from `off`, cycling. -/
+theorem cycle_list {α : Type} [Inhabited α] (E : List α) (off m : Nat) (h : off < E.length ∨ m = 0) :
+    (if off + m ≤ E.length then (E.drop off).take (off + m - off) else
+      E.drop off ++ (List.replicate ((m - (E.length - off)) / E.length) E).flatten ++
+        E.take ((m - (E.length - off)) % E.length)) =
+    (List.range m).map fun j => E[(off + j) % E.length]! := by
+  split
+  · rename_i hle
+    apply List.ext_getElem (by simp; omega)
+    intro j h1 h2
+    have hj : j < m := by simpa using h2
+    simp only [List.getElem_take, List.getElem_drop, List.getElem_map, List.getElem_range]
+    rw [Nat.mod_eq_of_lt (by omega), getElem!_pos E _ (by omega)]
+  · rename_i hlt
+    have hoff : off < E.length := by omega
+    have hL : 0 < E.length := by omega
+    have hq := Nat.div_add_mod (m - (E.length - off)) E.length
+    apply List.ext_getElem (by
+      simp [List.length_flatten, List.sum_replicate]
+      rw [Nat.mul_comm]; have := Nat.mod_lt (m - (E.length - off)) hL; omega)
+    intro j h1 h2
+    have hj : j < m := by simpa using h2
+    simp only [List.getElem_map, List.getElem_range, List.getElem_append]
+    split
+    · rename_i ha
+      split
+      · rename_i hb
+        simp only [List.length_drop] at hb
+        rw [List.getElem_drop, Nat.mod_eq_of_lt (by omega), getElem!_pos E _ (by omega)]
+      · rename_i hb
+        simp only [List.length_drop] at hb
+        rw [getElem_flatten_replicate, getElem!_pos E _ (Nat.mod_lt _ hL)]
+        congr 1
+        rw [show off + j = (j - (E.length - off)) + E.length by omega, Nat.add_mod_right]
+    · rename_i ha
+      simp only [List.length_append, List.length_drop, List.length_flatten, List.map_replicate,
+        List.sum_replicate, smul_eq_mul] at ha
+      rw [List.getElem_take, getElem!_pos E _ (Nat.mod_lt _ hL)]
+      simp only [List.length_append, List.length_drop, List.length_flatten, List.map_replicate,
+        List.sum_replicate, smul_eq_mul]
+      congr 1
+      have hr := Nat.mod_lt (m - (E.length - off)) hL
+      rw [show off + j = (j - (E.length - off + (m - (E.length - off)) / E.length * E.length)) +
+          E.length * ((m - (E.length - off)) / E.length + 1) by rw [Nat.mul_succ, Nat.mul_comm]; omega,
+        Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by rw [Nat.mul_comm] at hq; omega)]
+
+/-- **`cycleBytes` at a dense payload of `w`-byte words** reads `m` words from `off`, cycling: word `j` is
+    word `(off + j) mod n`. A lap copies the whole payload, so it holds whole words unless no lap is run. -/
+theorem elemsW_cycleBytes (w : Nat) (hw : 0 < w) (b : ByteArray) (off m : Nat)
+    (h : off < b.size / w ∨ m = 0) (hb : off + m ≤ b.size / w ∨ b.size % w = 0) :
+    Verify.elemsW w (cycleBytes (· * w) (b.size / w) off m b) =
+      (List.range m).map fun j => (Verify.elemsW w b)[(off + j) % (b.size / w)]! := by
+  have hE : (Verify.elemsW w b).length = b.size / w := by simp [Verify.elemsW]
+  rw [← hE, ← cycle_list _ off m (by rw [hE]; exact h), hE]
+  unfold cycleBytes
+  split
+  · rename_i hle; rw [if_pos hle, elemsW_extract w hw b hle]
+  · rename_i hlt
+    rw [if_neg hlt]
+    have hoff : off < b.size / w := by omega
+    have hbw : b.size % w = 0 := by omega
+    have hsz : b.size = b.size / w * w := by have := Nat.div_add_mod b.size w; rw [Nat.mul_comm] at this; omega
+    have hr := Nat.mod_lt (m - (b.size / w - off)) (show 0 < b.size / w by omega)
+    have whole : ∀ s e, e ≤ b.size / w → (b.extract (s * w) (e * w)).size % w = 0 := fun s e he => by
+      rw [ByteArray.size_extract, Nat.min_eq_left (by rw [hsz]; exact Nat.mul_le_mul_right w he), ← Nat.sub_mul,
+        Nat.mul_mod_left]
+    rw [elemsW_concatBytes w hw _ (by
+      intro p hp
+      simp only [Array.toList_append, List.mem_append, Array.toList_replicate, List.mem_replicate] at hp
+      rcases hp with (hp | ⟨-, rfl⟩) | hp
+      · simp at hp; subst hp; exact whole _ _ (Nat.le_refl _)
+      · exact hbw
+      · simp at hp; subst hp; rw [← Nat.zero_mul w]; exact whole _ _ (Nat.le_of_lt hr))]
+    simp only [Array.toList_append, Array.toList_replicate, List.flatMap_append, List.flatMap_cons,
+      List.flatMap_nil, List.append_nil, List.flatMap_replicate]
+    rw [elemsW_extract w hw b (Nat.le_refl _), ← Nat.zero_mul w, elemsW_extract w hw b (Nat.le_of_lt hr),
+      List.drop_zero, Nat.sub_zero, hE]
+    rw [Nat.min_eq_left (by omega : b.size / w - off ≤ b.size / w - off)] at *
+    simp [hE, List.take_of_length_le]
+
+/-- A dense long answer handed back through `Column.answer` lists the same words: kept dense, or encoded
+    by `Coc.encode`, whose round trip is `foRBits_encode_bits`. -/
+theorem longWords_answer (C : ByteArray) : longWords (Column.answer .long (.bytes C)) = some (Verify.elemsW 8 C) := by
+  by_cases hs : C.size < 8 * Column.encodeMin
+  · simp [Column.answer, QAtomicType.width, hs, longWords]
+  · cases he : Coc.encodeBelow (8 : Nat).toUSize C with
+    | none => simp [Column.answer, QAtomicType.width, hs, he, longWords, Column.alpEncodes, Column.encodes]
+    | some mp =>
+      obtain ⟨md, pk⟩ := mp
+      have hmp : (md, pk) = Coc.encode (8 : Nat).toUSize C := by
+        revert he; unfold Coc.encodeBelow; split; intro he; split at he <;> simp_all
+      simp only [Column.answer, QAtomicType.width, hs, he, longWords, Column.alpEncodes, Column.encodes]
+      simp only [Prod.ext_iff] at hmp
+      obtain ⟨rfl, rfl⟩ := hmp
+      simp only [Bool.false_eq_true, ↓reduceIte, Option.some.injEq, Verify.elemsW]
+      apply List.map_congr_left
+      intro i hi
+      apply UInt64.toNat_inj.1
+      rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _),
+        Verify.foRBits_encode_bits 8 (by decide) (by decide) C i (List.mem_range.1 hi)]
+
+/-- `sliceColumn` at a long `bytes` column: the dense arm, over the column or, empty, over its null. -/
+theorem sliceColumn_long (b : ByteArray) (off m : Nat) :
+    sliceColumn .long (.bytes b) off m = some (.vector .long (Column.answer .long (.bytes
+      (if b.size / 8 = 0 then cycleBytes (· * 8) 1 off m (Column.pushBits .empty 0x8000000000000000 8)
+       else cycleBytes (· * 8) (b.size / 8) off m b)))) := by
+  by_cases h : b.size / 8 = 0 <;>
+    simp [sliceColumn, Column.count, QAtomicType.width, h, nullColumn, foRColumn, Column.bytesOf, nullBits,
+      Column.pushBits_size]
+
+/-- The words of a long `bytes` column, read as longs, are its `toList`. -/
+theorem toList_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) :
+    x.toList = (Verify.elemsW 8 b).map UInt64.toInt64 := Arr.toList_long x (by rw [hc]; rfl)
+
+/-- A word list's `!` read under `toInt64` at an index in range. -/
+theorem getElem!_map_toInt64 (E : List UInt64) (i : Nat) (h : i < E.length) :
+    (E.map UInt64.toInt64)[i]! = E[i]!.toInt64 := by
+  rw [getElem!_pos _ _ (by simpa using h), getElem!_pos _ _ h, List.getElem_map]
+
+/-- A slice of a long `bytes` column, as `list` wraps it: `m` words from `off`, cycling. The column holds
+    whole words unless no lap is run; `off < n` unless nothing is read. -/
+theorem slice_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {b : ByteArray}
+    {verb : String} {off m : Nat} (hc : x.val.c = .bytes b) (h0 : 0 < x.n)
+    (h : off < x.n ∨ m = 0) (hb : off + m ≤ x.n ∨ b.size % 8 = 0)
+    (hr : (do list .long (← vec verb .long (sliceColumn .long x.val.c off m))) = .ok r) :
+    r.val.toList = (List.range m).map fun j => x.val.toList[(off + j) % x.n]! := by
+  have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
+  rw [hc, sliceColumn_long, if_neg (by omega)] at hr
+  simp only [vec, bind, Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at hr
+  rw [Arr.toList_long r.val (by rw [Find.list_c hr]; exact longWords_answer _),
+    elemsW_cycleBytes 8 (by decide) b off m (by omega) (by omega), toList_bytes x.val hc, List.map_map, hn]
+  refine List.map_congr_left fun j _ => ?_
+  rw [Function.comp, getElem!_map_toInt64 _ _ (by simp [Verify.elemsW, hn]; exact Nat.mod_lt _ h0)]
+
+/-- **`n#x` is `takeSpec`** on a non-empty long column of whole words: `takeSpec`'s default element
+    reads an empty `xs`, where q pads with nulls, so `x.n ≠ 0`; a lap copies the payload, so `Words`. -/
+theorem take_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {n : Int}
+    (hx : Words x.val.c) (h0 : 0 < x.n) (h : take n x = .ok r) : r.val.toList = takeSpec n x.val.toList := by
+  obtain ⟨b, hc, hb⟩ := words_bytes hx
+  have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
+  have hl : x.val.toList.length = x.n := Arr.length_toList _
+  unfold take takeColumn at h
+  rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
+  rw [slice_toList hc h0 (.inl (by unfold takeFrom; split <;> [omega; exact Nat.mod_lt _ h0])) (.inr hb) h,
+    takeSpec, hl]
+
+/-- **`n_x` is `dropSpec`** on a long `bytes` column: no lap is run, so any `bytes` payload. -/
+theorem drop_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {n : Int} {b : ByteArray}
+    (hc : x.val.c = .bytes b) (h : drop n x = .ok r) : r.val.toList = dropSpec n x.val.toList := by
+  have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
+  have hl : x.val.toList.length = x.n := Arr.length_toList _
+  unfold drop dropColumn at h
+  rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
+  by_cases h0 : x.n = 0
+  · rw [hc, sliceColumn_long, if_pos (by omega)] at h
+    simp only [vec, bind, Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at h
+    rw [Arr.toList_long r.val (by rw [Find.list_c h]; exact longWords_answer _), h0, Nat.min_eq_right (Nat.zero_le _),
+      Nat.sub_zero, show (Column.pushBits .empty 0x8000000000000000 8).size / 8 = 1 by simp [Column.pushBits_size]]
+    rw [← show (Column.pushBits .empty 0x8000000000000000 8).size / 8 = 1 by simp [Column.pushBits_size],
+      elemsW_cycleBytes 8 (by decide) _ _ 0 (.inr rfl) (.inl (by simp [Column.pushBits_size]; split <;> omega))]
+    rw [List.eq_nil_of_length_eq_zero (hl.trans h0)]; simp [dropSpec]
+  rw [slice_toList hc (by omega) (by split <;> omega) (.inl (by split <;> omega)) h]
+  apply List.ext_getElem
+  · simp only [List.length_map, List.length_range, dropSpec]; split <;> simp [hl] <;> omega
+  · intro j h1 h2
+    simp only [List.getElem_map, List.getElem_range]
+    simp only [List.length_map, List.length_range] at h1
+    rw [getElem!_pos _ _ (by rw [hl]; exact Nat.mod_lt _ (by omega))]
+    unfold dropSpec
+    split
+    · rename_i hp
+      rw [if_pos hp]; simp only [List.getElem_drop]
+      congr 1; rw [Nat.mod_eq_of_lt (by omega)]; omega
+    · rename_i hp
+      rw [if_neg hp]; simp only [List.getElem_take]
+      congr 1; rw [Nat.mod_eq_of_lt (by omega)]; omega
+
+/-- `rotateLeft` by `i < |xs|` reads `xs` at `(i + j) mod |xs|`. -/
+theorem rotateLeft_eq {α : Type} [Inhabited α] (xs : List α) (i : Nat) (hi : i < xs.length) :
+    xs.rotateLeft i = (List.range xs.length).map fun j => xs[(i + j) % xs.length]! := by
+  unfold List.rotateLeft
+  split
+  · rename_i h1
+    apply List.ext_getElem (by simp)
+    intro j h1' h2
+    have : j = 0 ∧ i = 0 := by simp at h2; omega
+    obtain ⟨rfl, rfl⟩ := this
+    simp [getElem!_pos xs 0 (by omega)]
+  · rw [Nat.mod_eq_of_lt hi]
+    have := cycle_list xs i xs.length (.inl hi)
+    rw [if_neg (by omega), Nat.sub_sub_self (Nat.le_of_lt hi), show (xs.length - (xs.length - i)) = i by omega,
+      Nat.div_eq_of_lt hi, Nat.mod_eq_of_lt hi] at this
+    simpa using this
+
+/-- **`n rotate x` is `rotateSpec`** on a long column of whole words (a rotation by a non-zero count runs
+    a lap). -/
+theorem rotate_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {n : Int}
+    (hx : Words x.val.c) (h : rotate n x = .ok r) : r.val.toList = rotateSpec n x.val.toList := by
+  obtain ⟨b, hc, hb⟩ := words_bytes hx
+  have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
+  have hl : x.val.toList.length = x.n := Arr.length_toList _
+  unfold rotate rotateColumn at h
+  rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
+  by_cases h0 : x.n = 0
+  · rw [hc, sliceColumn_long, if_pos (by omega)] at h
+    simp only [vec, bind, Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at h
+    rw [Arr.toList_long r.val (by rw [Find.list_c h]; exact longWords_answer _), h0]
+    rw [← show (Column.pushBits .empty 0x8000000000000000 8).size / 8 = 1 by simp [Column.pushBits_size],
+      elemsW_cycleBytes 8 (by decide) _ _ 0 (.inr rfl) (.inl (by simp [Column.pushBits_size]))]
+    rw [List.eq_nil_of_length_eq_zero (hl.trans h0)]; simp [rotateSpec]
+  have hlt : (n.emod x.n).toNat < x.n := by
+    have := Int.emod_lt_of_pos n (show (0 : Int) < x.n by omega); have := Int.emod_nonneg n (show (x.n : Int) ≠ 0 by omega); omega
+  rw [show (x.n == 0) = false by simpa using h0] at h
+  rw [slice_toList hc (by omega) (.inl hlt) (.inr hb) h, rotateSpec, if_neg (by simp [← List.length_eq_zero_iff, hl, h0]),
+    rotateLeft_eq _ _ (by rw [hl]; exact hlt), hl]
+
+/-- **`|x` is `List.reverse`** on a long `bytes` column, from `reverseBytes_spec`. -/
+theorem reverse_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {b : ByteArray}
+    (hc : x.val.c = .bytes b) (h : reverse x = .ok r) : r.val.toList = x.val.toList.reverse := by
+  unfold reverse at h
+  simp only [hc, reverseColumn, foRColumn, rowWidth, denseWidth, QAtomicType.width, Column.bytesOf, vec, bind,
+    Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at h
+  rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (reverseBytes (8 : Nat).toUSize b)) by
+    rw [Find.list_c h]; rfl), toList_bytes x.val hc]
+  have := Verify.reverseBytes_spec (8 : Nat).toUSize (by decide) (by decide) b
+  rw [show (8 : Nat).toUSize.toNat = 8 from rfl] at this
+  rw [this, List.map_reverse]
+
+/-- **`x,y` is `++`** on long `bytes` columns, `x` of whole words: `concatBytes` copies `x`'s payload whole. -/
+theorem concat_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel (.atom .long) (.atom .long)}
+    {c : ByteArray} (hx : Words x.val.c) (hc' : y.val.c = .bytes c) (h : concat x y = .ok r) :
+    r.val.toList = x.val.toList ++ y.val.toList := by
+  obtain ⟨b, hc, hb⟩ := words_bytes hx
+  unfold concat at h
+  simp only [hc, hc', razeColumn, encodedParts, Column.alpEncodes, Column.encodes, Column.bytesOf, vec, bind,
+    Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at h
+  rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (concatBytes #[b, c])) by
+    rw [Find.list_c h]; rfl), toList_bytes x.val hc, toList_bytes y.val hc',
+    show concatBytes #[b, c] = (ByteArray.empty ++ b) ++ c from rfl,
+    elemsW_append 8 (by decide) _ _ (by rw [ByteArray.size_append]; simpa using hb),
+    elemsW_append 8 (by decide) _ _ (by rfl), elemsW_empty, List.nil_append, List.map_append]
+
+end MoveLaws
 
 /-- A parted list's pairs from its runs. -/
 def runsSpec {α : Type} (rs : List (List α)) : List (Int64 × α) :=
