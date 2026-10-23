@@ -15,6 +15,7 @@ import QLean.Kernel.Search
 import QLean.Kernel.Structural
 import QLean.Verify.Where
 import QLean.Verify.Group
+import QLean.Verify.Structural
 
 namespace LeetQ.Rel
 
@@ -80,12 +81,14 @@ def lastBy : Rel k (.atom t) → Option (Rel k (.atom t))
   | _ => none
 
 /-- `select f x by k`: `f/` over each segment's rows at every type q's grouped fold has an engine for
-    (`groupedOver`: integral and float, not boolean), answered at `rt`, q's type for `f/` of a `t`. -/
-def overBy (op : Coc.Over) (R : Rel k (.atom t)) (rt : QAtomicType := .long) : Option (Rel k (.atom rt)) :=
+    (`groupedOver`: integral and float, not boolean), answered at `Coc.Over.resultType`'s type, q's
+    type for `f/` of a `t`, which comes with the answer. -/
+def overBy (op : Coc.Over) (R : Rel k (.atom t)) : Option ((rt : QAtomicType) × Rel k (.atom rt)) :=
   match R with
   | ⟨_, .grp (g := g) d o _, x⟩ => do
-    let s ← groupedOver op false false t rt (.segs (← offs o)) x.c (tilLongs g.toUSize)
-    pure ⟨g, d, ← (Arr.of (.atom rt) g (.bytes s) "f/ by").toOption⟩
+    let rt ← op.resultType false t
+    let s ← groupedOver op false false t (.segs (← offs o)) x.c (tilLongs g.toUSize)
+    pure ⟨rt, g, d, ← (Arr.of (.atom rt) g (.bytes s) "f/ by").toOption⟩
   | _ => none
 
 /-! ## Moving windows: `w mop x`, key kept -/
@@ -332,28 +335,24 @@ theorem bitsAt_foldl_append (L : List ByteArray) (hL : ∀ x ∈ L, x.size = 8) 
       rw [ByteArray.size_append, hx] at this
       rw [show c.size + (j + 1) * 8 = c.size + 8 + j * 8 by omega, this]; rfl
 
-/-- `til G` as longs: `8 G` bytes, long `i` being `i`. -/
-theorem tilLongs_spec (G : USize) : (tilLongs G).size = 8 * G.toNat ∧
-    ∀ i < G.toNat, atI64 (tilLongs G) i = Int64.ofNat i := by
-  obtain ⟨hs, -, hg⟩ := QLean.Verify.foldl_pushBits (fun i : Nat => (Int64.ofNat i).toUInt64) 8 (by decide)
-    (List.range G.toNat) ByteArray.empty
-  refine ⟨by rw [tilLongs, hs]; simp, fun i hi => ?_⟩
-  have e := hg i (by rw [List.length_range]; exact hi)
-  rw [show ByteArray.empty.size + 8 * i = i * 8 by simp [Nat.mul_comm], List.getElem_range] at e
-  rw [atI64_eq, tilLongs, e, show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat,
-    Int64.toInt64_toUInt64]
-
 /-- `groupCells .wrap 8` in the order `til G`: cell `j` is slot `j`'s eight bytes. -/
 theorem groupCells_til (ng G : USize) (hG : G.toNat < 2 ^ 63) (m : ByteArray) :
     (groupCells .wrap 8 ng m (tilLongs G)).size = 8 * G.toNat ∧ ∀ j < G.toNat, j < ng.toNat →
       Column.bitsAt (groupCells .wrap 8 ng m (tilLongs G)) (j * 8) 8 = (atI64 m j).toUInt64 := by
-  obtain ⟨ts, tg⟩ := tilLongs_spec G
+  have Q := QLean.Verify.tilLongs_spec G
+  have ts : (tilLongs G).size / 8 = G.toNat := by
+    simpa [QLean.Verify.elemsW] using congrArg List.length Q
+  have tg : ∀ i < G.toNat, atI64 (tilLongs G) i = Int64.ofNat i := fun i hi => by
+    have hv : (Column.bitsAt (tilLongs G) (i * 8) 8).toNat = i := by
+      simpa [QLean.Verify.elemsW, ts, hi] using congrArg (·[i]?) Q
+    rw [atI64_eq, show Int64.ofNat i = (UInt64.ofNat i).toInt64 from rfl]
+    conv => rhs; rw [← hv, UInt64.ofNat_toNat]
   have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   let F : Nat → UInt64 := fun i =>
     if (atI64 (tilLongs G) i).toNatClampNeg < ng.toNat then (atI64 m (atI64 (tilLongs G) i).toNatClampNeg).toUInt64 else 0
   have e : groupCells .wrap 8 ng m (tilLongs G) =
       (List.range G.toNat).foldl (init := ByteArray.empty) fun acc i => Column.pushBits acc (F i) 8 := by
-    rw [groupCells, ts, Nat.mul_div_cancel_left _ (by decide)]
+    rw [groupCells, ts]
     congr 1; funext acc i; simp only [F, h8]; split <;> rfl
   obtain ⟨hs, -, hg⟩ := QLean.Verify.foldl_pushBits F 8 (by decide) (List.range G.toNat) ByteArray.empty
   refine ⟨by rw [e, hs]; simp, fun j hj hn => ?_⟩
@@ -392,11 +391,16 @@ theorem foldl_congr_mem {α β : Type} {f g : β → α → β} (l : List α) (h
   | cons x l ih =>
     rw [List.foldl_cons, List.foldl_cons, h x (List.mem_cons_self ..), ih (fun y hy => h y (List.mem_cons_of_mem _ hy))]
 
+/-- A `long` fold that is not `all`/`any` answers at `long`. -/
+theorem resultType_long {op : Coc.Over} (hb : op.boolCast = false) : op.resultType false .long = some .long := by
+  cases op <;> first | rfl | cases hb
+
 /-- `groupedOver` at `long`: the integral fold, each cell its slot's eight bytes. -/
-theorem groupedOver_long (op : Coc.Over) (gs : Groups) (c : Column) (ord : ByteArray) :
-    groupedOver op false false .long .long gs c ord =
+theorem groupedOver_long {op : Coc.Over} (hb : op.boolCast = false) (gs : Groups) (c : Column) (ord : ByteArray) :
+    groupedOver op false false .long gs c ord =
       (overGroupsColumn op .long gs c).map fun m => groupCells .wrap 8 gs.count m ord := by
-  cases h : overGroupsColumn op .long gs c <;> cases op <;> simp [groupedOver, h, bind, Option.bind, guard] <;> rfl
+  have hr := resultType_long hb
+  cases h : overGroupsColumn op .long gs c <;> cases op <;> simp_all [groupedOver, bind, Option.bind] <;> rfl
 
 /-- **Slot `r` of `overSegments` at `long`** is `Over.step` folded from the seed over the non-null rows
     of segment `r`, `segRange`'s `[lo, hi)`: the one-group `overGroups` of `overGroups_spec` over that
@@ -464,7 +468,7 @@ theorem offs_get {g : Nat} {o : Arr (.atom .long) (g+1)} {ob : ByteArray} (ho : 
 theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d : KeyCol k g}
     {o : Arr (.atom .long) (g+1)} {co : Cuts o n} {x : Arr (.atom .long) n} {b ob : ByteArray}
     {S : Rel k (.atom .long)} (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.c = .bytes b) (ho : o.c = .bytes ob)
-    (h : overBy op ⟨n, .grp d o co, x⟩ = some S) :
+    (h : overBy op ⟨n, .grp d o co, x⟩ = some ⟨.long, S⟩) :
     S.val.toList = (List.range g).map fun j => Spec.over op.step (op.denseSeed Ew.i64 Spec.nul)
       (((List.range n).filter fun i => decide ((o.toList[j]!).toNatClampNeg ≤ i ∧ i < (o.toList[j+1]!).toNatClampNeg)).map
         fun i => x.toList[i]!) := by
@@ -475,7 +479,7 @@ theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d :
   have hm : overGroupsColumn op .long (.segs ob) x.c = some (overSegments op Ew.i64 Spec.nul ob b) := by
     simp only [overGroupsColumn, hc, clsOf, Coc.denseNul, Coc.nullOf, Column.bytesOf, bind, Option.bind]
   have hof : offs o = some ob := by simp only [offs, ho, Column.bytesOf]
-  simp only [overBy, hof, groupedOver_long, hm, bind, Option.bind, Option.map] at h
+  simp only [overBy, hof, resultType_long hb, groupedOver_long hb, hm, bind, Option.bind, Option.map] at h
   by_cases hw : (Ty.atom .long).WF g
       (.bytes (groupCells .wrap 8 (Groups.segs ob).count (overSegments op Ew.i64 Spec.nul ob b) (tilLongs g.toUSize)))
   · rw [Arr.of, dif_pos hw] at h
@@ -511,6 +515,10 @@ open QLean.Column Ops
 
 private def L {n : Nat} (a : Arr (.atom .long) n) : Rel (.atom .long) (.atom .long) := ⟨n, .til n, a⟩
 private def vals {k v : Ty} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
+/-- An answer whose type comes with it, kept where that type is `rt`. -/
+private def at? {k : Ty} (rt : QAtomicType) : Option ((r : QAtomicType) × Rel k (.atom r)) → Option (Rel k (.atom rt))
+  | some ⟨r, S⟩ => if h : r = rt then some (h ▸ S) else none
+  | none => none
 
 private def xs : List Int64 := [3, -1, 4, 1, -5, 9, 2, 6]
 private def xn : List Int64 := [2, Int64.minValue, 7, 1]
@@ -580,16 +588,16 @@ private def GI : Rel (.atom .long) (.atom .int) :=
   ⟨6, .grp (.til 3) og (by decide),
     { c := .bytes <| [10, 20, 30, 40, 50, Int32.minValue].foldl (fun b (x : Int32) => Column.pushBits b x.toUInt32.toUInt64 4) .empty,
       wf := by decide }⟩
-#guard vals (overBy .add GI .int) == [30, 30, 90]
-#guard vals (overBy .greater GI .int) == [20, 30, 50]
+#guard vals (at? .int (overBy .add GI)) == [30, 30, 90]
+#guard vals (at? .int (overBy .greater GI)) == [20, 30, 50]
 #guard vals (countBy G) == ((Spec.groups [0, 2, 3, 6] gv).map fun g => Int64.ofNat g.length)
 #guard vals (countBy E) == [1, 0, 2]
 #guard ((countBy G).map (·.key.toList)) == some [0, 1, 2]
 #guard vals (lastBy G) == ((Spec.groups [0, 2, 3, 6] gv).map fun g => g.getLastD 0)
 #guard (lastBy E).isNone
-#guard vals (overBy .add G) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))
-#guard vals (overBy .greater G) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over max (Int64.minValue + 1)))
-#guard vals (overBy .add E) == [7, 0, 17]
+#guard vals (at? .long (overBy .add G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))
+#guard vals (at? .long (overBy .greater G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over max (Int64.minValue + 1)))
+#guard vals (at? .long (overBy .add E)) == [7, 0, 17]
 
 end Checks
 
