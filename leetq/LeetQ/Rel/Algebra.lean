@@ -169,26 +169,28 @@ def selfFind (a : QAtomicType) (c : Column) : Except String ByteArray :=
     | none => throw "findColumn answered positions whose payload does not decode"
   | _ => throw s!"findColumn declines x?x on a column of type {a.code} in this encoding"
 
-/-- One grouping pass over a column of any encoding, at the layout it is stored in: each element's class
-    as a long, numbered by first occurrence, and the number of classes. `groupIds` at the sort layout of a
-    dense or `bits` payload, `groupIdsFoR` on the encoded form, `idGroups` on an enum's ids (a `syms`
-    column interned first); elsewhere (ALP, guid) `x?x`, then `groupIds` of the positions. -/
+/-- One coding pass over a column of any encoding, at the layout it is stored in: each element's code as a
+    long and a bound on the codes. The class numbered by first occurrence, bounded by the number of
+    classes — `groupIds` at a `bits` or narrow (≤ 4-byte) dense layout, `groupIdsFoR` on the encoded form,
+    `idGroups` on an enum's ids (a `syms` column interned first); a wide or undecodable one (8-byte, ALP,
+    guid) is hash-coded by `x?x`, its first positions, bounded by the count. -/
 def groupsOf (a : QAtomicType) (c : Column) : Except String (ByteArray × Nat) := do
-  let byIds (n : Nat) (dof : Array Nat) (xs : ByteArray) : ByteArray × ByteArray :=
-    Order.idGroups (dof.size - 1).toUSize n.toUSize (Column.idWidth dof).toUSize xs
-  let hashed : Except String (ByteArray × ByteArray) := do
-    pure (Order.groupIds .i64 (Column.count a c).toUSize (← selfFind a c))
-  let (gid, fs) ← match c, orderKind a with
-    | .bits n b, _ => pure (Order.groupIds .bit n.toUSize b)
+  let classes (r : ByteArray × ByteArray) : ByteArray × Nat := (r.1, len r.2)
+  let byIds (n : Nat) (dof : Array Nat) (xs : ByteArray) : ByteArray × Nat :=
+    classes (Order.idGroups (dof.size - 1).toUSize n.toUSize (Column.idWidth dof).toUSize xs)
+  -- `x?x`'s positions are below the count; numbering them densely is a `groupIds` (`dedup`) pass, measured
+  -- slower than the hash find itself at 8-byte keys (missing kernel: `x?x` answering first-occurrence ids)
+  let hashed : Except String (ByteArray × Nat) := do pure (← selfFind a c, Column.count a c)
+  match c, orderKind a with
+    | .bits n b, _ => pure (classes (Order.groupIds .bit n.toUSize b))
     | .enum n _ dof xs, _ => pure (byIds n dof xs)
     | .syms .., _ =>
       match Column.intern c with
       | .enum n _ dof xs => pure (byIds n dof xs)
       | _ => throw "Column.intern answered no enum for a syms column"
-    | .foR n m p, some k => if Column.encodes a then pure (Order.groupIdsFoR k n.toUSize m p) else hashed
-    | .bytes b, some k => pure (Order.groupIds k (Column.count a c).toUSize b)
+    | .foR n m p, some k => if Column.encodes a then pure (classes (Order.groupIdsFoR k n.toUSize m p)) else hashed
+    | .bytes b, some k => if k.width ≤ 4 then pure (classes (Order.groupIds k (Column.count a c).toUSize b)) else hashed
     | _, _ => hashed
-  pure (gid, len fs)
 
 /-- The layout of an enum's id lane, where it is one a kernel reads. -/
 def laneKind : Nat → Option Scan.Kind
@@ -206,12 +208,17 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
   let lo := los.foldl min Int64.maxValue
   let hi := his.foldl max (Int64.minValue + 1)
   if lo == nul || hi < lo then return none
-  let card := (hi.toInt - lo.toInt + 1).toNat
-  let k := codeKind card
+  -- the codes `0 … hi-base`, then one for a null (`enumIdsFoR`'s `nullId`)
+  let span (base : Int64) : Nat := (hi.toInt - base.toInt + 2).toNat
+  let k := codeKind (span lo)
   unless k.width ≤ (codeKind total).width do return none
-  let some sh := ps.mapM (fun (n, m, p) => (Ew.foRShift false (-lo) m p n.toUSize).map (n, ·)) | return none
+  -- values already at `0` and up that fit the same width are their own offsets: no `foRShift` pass
+  let base := if 0 ≤ lo && (codeKind (span 0)).width == k.width then 0 else lo
+  let card := span base
+  let some sh := if base == 0 then some ps
+    else ps.mapM (fun (n, m, p) => (Ew.foRShift false (-base) m p n.toUSize).map (n, ·)) | return none
   some <$> sh.mapM fun (n, m, p) => do
-    let (ids, bad) := enumIdsFoR n.toUSize card.toUSize 0 (8 * k.width).toUSize m p
+    let (ids, bad) := enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize (8 * k.width).toUSize m p
     if bad.toNat != n then throw s!"enumIdsFoR: the offset at {bad} lies outside 0..{card}"
     pure ⟨k, n, card, ids⟩
 
@@ -219,8 +226,8 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
     - `bits`: each part is its own code, a bit wide, order-preserving;
     - `foR` of a long type: the offsets from the joint least element (`foROffsets`), order-preserving;
     - `enum`, and `syms` interned by `razeColumn`/`Column.intern`: the joint dictionary's ids at their lane;
-    - anything else: one grouping pass over the `raze` (`groupsOf`), its ids packed at the width of their
-      count (`packParts`). A general list is `findList` of the join against itself, then `groupIds`. -/
+    - anything else: one coding pass over the `raze` (`groupsOf`), its codes packed at the width of their
+      bound (`packParts`). A general list is `findList` of the join against itself, its positions packed. -/
 def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
   | .atom a, cs => do
     if let some bs := cs.mapM (fun c => match c with | .bits n b => some (⟨.bit, n, 2, b⟩ : Code) | _ => none) then
@@ -236,8 +243,7 @@ def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
     pure (packParts ng gid ns)
   | .gen, cs => do
     let all ← raze .gen cs
-    let (gid, fs) := Order.groupIds .i64 all.size.toUSize (findList all all)
-    pure (packParts (len fs) gid (cs.map (·.size)))
+    pure (packParts all.size (findList all all) (cs.map (·.size)))
 
 /-- The one code of a single part. -/
 def single (cs : Array Code) : Except String Code :=
@@ -288,11 +294,17 @@ def ofCols (k v : Ty) (kc : Pay k) (vc : Pay v) : Except String (Rel k v) := do
 def tuples (cols : Array (Array Code)) : Except String (Array Code) := do
   let some c0 := cols[0]? | throw "tuples: no column"
   if cols.size == 1 then return c0
-  let all := cols.map Code.cat
-  let acc := (all.extract 1 all.size).foldl (init := all[0]!) fun acc c =>
-    let (gid, fs) := Order.groupIdsPair acc.k c.k acc.n.toUSize acc.b c.b
-    ⟨.i64, len gid, len fs, gid⟩
-  (pack acc.card acc.b).cut (c0.map (·.n))
+  let (gid, fs) ← tupleIds (cols.map Code.cat)
+  (pack (len fs) gid).cut (c0.map (·.n))
+where
+  /-- The classes of the tuples of the columns `all`, as `groupIds` answers them: the last fold step's
+      own answer, so a caller wanting the classes groups nothing twice. -/
+  tupleIds (all : Array Code) : Except String (ByteArray × ByteArray) := do
+    let some c0 := all[0]? | throw "tuples: no column"
+    if all.size == 1 then return c0.groupIds
+    pure ((all.extract 1 all.size).foldl (init := (c0, (ByteArray.empty, ByteArray.empty))) fun (acc, _) c =>
+      let r := Order.groupIdsPair acc.k c.k acc.n.toUSize acc.b c.b
+      (⟨.i64, len r.1, len r.2, r.1⟩, r)).2
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Ty} (ds : Array (Cols k v)) : Except String (Array Code) := do
@@ -300,7 +312,7 @@ def pairs {k v : Ty} (ds : Array (Cols k v)) : Except String (Array Code) := do
 
 /-- `R` with each pair once: the first row of each class of `|R|`. -/
 def Cols.nub {k v : Ty} (d : Cols k v) : Except String (Cols k v) := do
-  d.rows (← single (← pairs #[d])).groupIds.2
+  d.rows (← tuples.tupleIds #[← single (← codes k #[d.key]), ← single (← codes v #[d.val])]).2
 
 /-- `join(l, r)`: every pair of a left and a right row with equal codes, as two index columns —
     `groupIds`/`groupSizes`/`grade` of the right, `find` of the left in its distinct codes,
@@ -383,8 +395,8 @@ def thin {k : Ty} (key : Pay k) (cs : Array (Scan.Kind × ByteArray)) (big : Arr
   let (p, o, _) := segments kc
   let ls := cs.map fun (kd, b) => gather 8 (match kd with | .i64 => b | kd => drank kd b) p
   let s := whereBits kc.n.toUSize (thinSweep ls big o)
-  let t ← single (← tuples (#[#[kc.gather (gather 8 p s)]] ++ ls.map fun l => #[Code.ofLongs (gather 8 l s)]))
-  pure (gather 8 p (gather 8 s t.groupIds.2))
+  let t ← tuples.tupleIds (#[kc.gather (gather 8 p s)] ++ ls.map fun l => Code.ofLongs (gather 8 l s))
+  pure (gather 8 p (gather 8 s t.2))
 
 /-! ## The operators -/
 
@@ -859,6 +871,16 @@ private def enumC : Column :=
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
 #guard ok (do top (← Arr.of Sy 4 enumC "U") (← Arr.of Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) fun X => X.key matches .grp .. && X.n == 4
+
+-- the layout each encoding codes at: bits a bit; a three-symbol enum (2-bit lane), foR offsets and a
+-- small dense column a byte
+private def kindOf (t : Ty) (c : Pay t) : Option Scan.Kind := match codes t #[c] with | .ok #[x] => some x.k | _ => none
+#guard kindOf Bo bitsC == some .bit && kindOf Sy enumC == some .u8 && kindOf Sy symsC == some .u8
+#guard kindOf L Lf.val.c == some .u8 && kindOf L (.bytes (packLongs [5, 3, 5, 9])) == some .u8
+-- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
+private def Lneg : LL := ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2, wf := ⟨rfl, rfl⟩ }⟩
+#guard ok (do comp Lneg (← conv Lf)) fun X => seteq X.toList
+  (Lneg.toList.flatMap fun (i, x) => Lf.toList.filterMap fun (j, y) => if x == y then some (i, j) else none)
 
 -- float through ALP: `1.5 2.25 1.5 0.1`, and the same as dense bytes
 private abbrev Fl := Ty.atom .float

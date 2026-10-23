@@ -166,7 +166,7 @@ def indexParted {k' : Ty} {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) (y
     parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom a) (Alg.len src) c "x@y")
   | _ => throw "x@y: the operand is not parted; `index` reads a list"
 
-/-! ## Joins on columns: `|R|` of the key tuples (`Alg.tupleCodes`), then gathers -/
+/-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
 /-- A dense column and the layout it is compared at, as `Alg.arrDense` answers it. -/
 abbrev Col := Scan.Kind × ByteArray
