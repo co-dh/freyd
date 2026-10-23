@@ -13,6 +13,7 @@ import QLean.Kernel.Sort
 import QLean.Kernel.Reduce
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
+import QLean.Verify.Where
 
 namespace LeetQ.Rel
 
@@ -211,6 +212,26 @@ theorem mwin_keys {op : Scan.MOp} {w : Nat} {rt : QAtomicType} {R : Rel k (.atom
 theorem rank_keys {R : Rel k (.atom t)} {S : Rel k (.atom .long)} (h : rank R = some S) :
     S.toList.map Prod.fst = R.toList.map Prod.fst := withVal_keys h
 
+/-- The longs `overBytes` folds over a dense long payload are the column's elements. -/
+theorem denseElems_long {R : Rel k (.atom .long)} {b : ByteArray} (hc : R.val.c = .bytes b) :
+    QLean.Verify.denseElems Ew.i64 b = R.val.toList := by
+  have hn : R.n = b.size / 8 := by have := R.val.wf.2; rw [hc] at this; simp only [Column.count] at this; exact this.symm
+  apply List.ext_getElem
+  · rw [QLean.Verify.denseElems, List.length_map, List.length_range, Arr.length_toList, hn]; rfl
+  · intro j _ _
+    simp only [QLean.Verify.denseElems, List.getElem_map, List.getElem_range]
+    rw [Arr.getElem_toList, Arr.get_long_bytes R.val hc]; rfl
+
+/-- `f/x` over a dense long column, at a verb that skips the null (not `all`/`any`): `Spec.over` at the
+    kernel's step and seed, from `overBytes_eq`. -/
+theorem over_bytes {op : Coc.Over} (hb : op.boolCast = false) {R : Rel k (.atom .long)} {b : ByteArray}
+    (hc : R.val.c = .bytes b) : over op R = some (Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.val.toList) := by
+  have he : overBytes op Ew.i64 Spec.nul b = Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.val.toList := by
+    rw [QLean.Verify.overBytes_eq, hb, QLean.Verify.foldl_filter, denseElems_long hc, Spec.over]
+    congr 1; funext a x; by_cases hx : x = Spec.nul <;> simp [hx]
+  simp only [over, overColumn, hc, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
+  rw [he]; simp
+
 end Ops
 
 /-! ## Checks on small literal Rels -/
@@ -284,5 +305,6 @@ end Checks
 #print axioms Ops.mwin_keys
 #print axioms Ops.rank_keys
 #print axioms Spec.scan_getLast?
+#print axioms Ops.over_bytes
 
 end LeetQ.Rel
