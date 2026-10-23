@@ -19,6 +19,9 @@ public import AOP.A6_FinRel
 meta import AOP.A8_2
 public import AOP.A8_2
 
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 namespace Freyd.Alg.Paths
 open PowerAllegory
 

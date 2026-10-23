@@ -24,6 +24,9 @@ import AOP.A10_1
 import AOP.A6_3
 import AOP.A7_2_RelSet
 public import AOP.A6_FinRel
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 universe u
 

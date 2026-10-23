@@ -41,6 +41,9 @@ public import AOP.A6_TreeTip
 public import AOP.A9_2_Edit
 -- `RelRep`, the run of `mct-run` at the end.
 public import AOP.A6_FinRel
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 /-- B&dM §9.3's fixed data: the leaf size `st`, the size combiner `sb` and the combine cost `cb`.
     B&dM fix them for the whole section and never write them; every definition below reads them

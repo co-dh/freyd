@@ -52,6 +52,9 @@ import AOP.A5_7_PowerBeads
 public import AOP.A6_7
 import AOP.A7_5_VanBeads
 import AOP.A6_FinRel
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
 

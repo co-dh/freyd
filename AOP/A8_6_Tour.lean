@@ -39,6 +39,9 @@ public import AOP.A8_3
 public import AOP.A6_FinRel
 import AOP.A8_2
 import AOP.A7_2_RelSet
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 /-- B&dM p.212: the section's fixed data, the travelling cost `tc` between two cities.  Every
     definition below reads it from the one instance in scope, so the printer, which hides instance

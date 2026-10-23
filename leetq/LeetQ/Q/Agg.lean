@@ -23,7 +23,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.RelRep
 /-- A q float as its IEEE bits: `RelRep.comp`/`fold` need `DecidableEq`, which `Float` lacks. -/
 structure QF where
   bits : UInt64
-  deriving DecidableEq
+  deriving DecidableEq, Hashable
 
 def QF.of (x : Float) : QF := ⟨x.toBits⟩
 def QF.f (q : QF) : Float := Float.ofBits q.bits
@@ -32,14 +32,14 @@ def QF.ofInt (x : Int) : QF := .of (Float.ofInt x)
 /-- Floats read back, for comparing with q's printed output. -/
 def fl (r : Option (List QF)) : Option (List Float) := r.map (·.map QF.f)
 
-variable {V W U : Type} [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq U] [FibreIndex U]
+variable {V W U : Type} [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq U] [Hashable U]
 
 /-! ## A q list -/
 
 /-- `ix(xs)` as pairs, `i ↦ xs[i]`. -/
 def ql (xs : Array V) : RelRep Nat V := .vec xs rfl
 
-omit [DecidableEq V] [FibreIndex V] in
+omit [DecidableEq V] [Hashable V] in
 theorem rel_ql (xs : Array V) : (ql xs).rel = ix xs.toList := rel_vec xs
 
 /-- The values in index order; only `pairs` and `vec` are finite. -/
@@ -178,7 +178,7 @@ def dev (R : RelRep Nat Int) : Option (List QF) := (var R).map (·.map fun v => 
 order, each repeat counted. The Set reading of `ix(xs)` keeps the pairs `(i, xs[i])` and can say this only
 through the indices; `count` and `sum` of the values' set would merge the two `1`s of `3 1 4 1 5`. -/
 
-omit [DecidableEq U] [FibreIndex U] in
+omit [DecidableEq U] [Hashable U] in
 /-- **`a f/ xs = foldl f a xs`**: the reversed cons-list fold is q's left fold over every value. -/
 theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     over f a (.pairs r) = some [r.vals.toList.foldl f a] := by
@@ -191,7 +191,7 @@ theorem over_pairs (f : W → V → W) (a : W) (r : FinRel Nat V) :
     List.toList_toArray]
   exact congrArg some ((h _).trans (by rw [List.foldr_reverse, Array.foldl_toList]))
 
-omit [DecidableEq U] [FibreIndex U] in
+omit [DecidableEq U] [Hashable U] in
 /-- `count R` is the length of the value list. -/
 theorem count_pairs (r : FinRel Nat V) : count (.pairs r) = some [r.vals.toList.length] := by
   have h : ∀ (l : List V) n, l.foldl (fun n _ => n + 1) n = n + l.length := fun l => by

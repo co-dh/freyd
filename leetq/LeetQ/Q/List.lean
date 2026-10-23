@@ -25,7 +25,7 @@ open scoped Freyd.Alg.RelSet.RelRep
   | _ => none
 
 /-- What `fin?` reads back has the answer's fibres. -/
-theorem app_of_fin? {K V : Type} [DecidableEq K] [FibreIndex K] {T : RelRep K V} {t : FinRel K V}
+theorem app_of_fin? {K V : Type} [DecidableEq K] [Hashable K] {T : RelRep K V} {t : FinRel K V}
     (h : fin? T = some t) : T.app = t.scanLookup := by
   cases T with
   | pairs r => cases h; exact RelRep.app_pairs _
@@ -46,14 +46,14 @@ structure QL2 (A : Type) where
 
 namespace QL
 
-variable {A B : Type} [DecidableEq A] [FibreIndex A] [DecidableEq B] [FibreIndex B]
+variable {A B : Type} [DecidableEq A] [Hashable A] [DecidableEq B] [Hashable B]
 
 /-! ## A list as `ix(xs)`, and read back -/
 
 /-- `ix(xs)` as a `FinRel`, whose converse is again enumerable. -/
 def ofList (xs : List A) : QL A := ⟨xs.length, .vec xs.toArray rfl⟩
 
-omit [DecidableEq A] [FibreIndex A] in
+omit [DecidableEq A] [Hashable A] in
 theorem rel_ofList (xs : List A) : (ofList xs).r.rel = ix xs := RelRep.rel_vec xs.toArray
 
 /-- A list with nulls: a null is an index with no pair. -/
@@ -214,7 +214,7 @@ namespace QL2
 
 open QL
 
-variable {A : Type} [DecidableEq A] [FibreIndex A]
+variable {A : Type} [DecidableEq A] [Hashable A]
 
 def ofLists (xss : List (List A)) : QL2 A :=
   ⟨xss.length, (xss.head?.map List.length).getD 0,

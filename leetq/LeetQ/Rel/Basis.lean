@@ -14,10 +14,11 @@ namespace LeetQ.Rel
 open Freyd.Alg.RelSet (RelRep RelTest FinRel)
 open scoped Freyd.Alg.RelSet.RelRep
 
+
 /-- `Λ(R)`: each fibre collected, in position order. -/
 scoped prefix:max "Λ" => RelRep.transpose
 
-variable {A B : Type} [DecidableEq A] [DecidableEq B]
+variable {A B : Type} [DecidableEq A] [DecidableEq B] [Hashable A] [Hashable B]
 
 /-- `ix(xs) : ℕ ⇸ A`: position `i` to `xs[i]`. -/
 def ix (xs : List A) : RelRep Nat A := .vec xs.toArray rfl
@@ -72,7 +73,7 @@ def len : RelRep (List A) Nat := fold 0 fun n _ => n + 1
 open Freyd.Alg.RelSet (rangeFold rangeFold_eq)
 
 /-- `Λ(S) ≫ G` at `i` is `G` of `S`'s fibre at `i`, collected. -/
-theorem app_Λ {C : Type} [DecidableEq C] (S : RelRep Nat A) (G : RelRep (List A) C) (i : Nat) :
+theorem app_Λ {C : Type} [DecidableEq C] [Hashable C] (S : RelRep Nat A) (G : RelRep (List A) C) (i : Nat) :
     (Λ(S) ≫ G).app i = G.app (S.app i) := by
   rw [RelRep.app_comp, RelRep.transpose_eq, RelRep.app_ofFn, List.flatMap_cons, List.flatMap_nil, List.append_nil]
 
@@ -173,7 +174,7 @@ theorem est_first (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a) (
         fun hv => List.all_eq_true.2 fun y hy => trans _ _ _ hv (hmin y hy)⟩
     rw [hf, List.head?_filter, hfind]; rfl
 
-omit [DecidableEq A] in
+omit [DecidableEq A] [Hashable A] in
 /-- `minBy` is associative for `le` total and transitive. -/
 theorem minBy_assoc (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a) (trans : ∀ a b c, le a b → le b c → le a c)
     (a b c : A) : minBy le (minBy le a b) c = minBy le a (minBy le b c) := by
@@ -182,7 +183,7 @@ theorem minBy_assoc (le : A → A → Bool) (total : ∀ a b, le a b ∨ le b a)
     simp only [hab, hbc, hac, if_true, if_false, Bool.false_eq_true]
   all_goals first | rfl | simp [trans _ _ _ hab hbc] at hac | simp [trans _ _ _ hac ((total b c).resolve_left (by simp [hbc]))] at hab
 
-omit [DecidableEq A] in
+omit [DecidableEq A] [Hashable A] in
 theorem minBy_idem (le : A → A → Bool) (a : A) : minBy le a a = a := by unfold minBy; split <;> rfl
 
 /-! ## A moving fold in two passes
@@ -194,7 +195,7 @@ is the suffix fold within blocks merged with the prefix fold within blocks: two 
 def wfold (op : A → A → A) (R : RelRep Nat A) (s m : Nat) : Option A :=
   ((List.range' s m).flatMap R.app).foldl (step1 op) none
 
-omit [DecidableEq A] in
+omit [DecidableEq A] [Hashable A] in
 /-- A fold of `step1 op` from `o` is `o` merged with the fold from nothing, `op` associative. -/
 theorem foldl_step1 (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) (l : List A) (o : Option A) :
     l.foldl (step1 op) o = Option.merge op o (l.foldl (step1 op) none) := by
@@ -205,7 +206,7 @@ theorem foldl_step1 (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op 
     generalize xs.foldl (step1 op) none = w
     cases o <;> cases w <;> simp [step1, Option.merge, assoc]
 
-omit [DecidableEq A] in
+omit [DecidableEq A] [Hashable A] in
 /-- **The fold of a concatenation is the merge of the folds.** -/
 theorem wfold_add (op : A → A → A) (assoc : ∀ a b c, op (op a b) c = op a (op b c)) (R : RelRep Nat A)
     (s m k : Nat) : wfold op R s (m + k) = Option.merge op (wfold op R s m) (wfold op R (s + m) k) := by
@@ -219,7 +220,7 @@ theorem succ_mod {i n : Nat} (hn : 0 < n) : (i + 1) % n = if i % n + 1 = n then 
   · rw [show i + 1 = (i % n + 1) + n * (i / n) by omega, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
 
 /-- A scan over one value per position is the fold of the prefix of those values. -/
-theorem app_scanR_one {C : Type} [DecidableEq C] (N : Nat) (z : B) (op : B → C → B) (X : RelRep Nat C) (g : Nat → C)
+theorem app_scanR_one {C : Type} [DecidableEq C] [Hashable C] (N : Nat) (z : B) (op : B → C → B) (X : RelRep Nat C) (g : Nat → C)
     (hX : ∀ t, X.app t = [g t]) (i : Nat) (h : i < N) :
     (scanR N z op X).app i = [((List.range (i + 1)).map g).foldl op z] := by
   have e : ∀ l : List Nat, l.flatMap X.app = l.map g := fun l => by
