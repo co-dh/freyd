@@ -13,7 +13,8 @@ import LeetQ.Q.Table
 import LeetQ.QRel
 import LeetQ.Compressed
 import LeetQ.Long
-import LeetQ.Rel.Verbs
+import LeetQ.Rel.Scan
+import LeetQ.Rel.Struct
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -42,17 +43,30 @@ def fin (a b : Array Int) : FinRel Int Int := FinRel.ofList (zipL a b)
 /-- Wrapping 64-bit sum, like q's long `sum`: a bignum `Int` accumulator would allocate once past 2^31. -/
 @[inline] def sumBy {α : Type} (f : α → Int64) (xs : Array α) : Int64 := xs.foldl (fun s x => s + f x) 0
 
-/-- One timed run of `f` on `d`: nanoseconds and the checksum; `none` from `f` is an error. -/
-def timed {α : Type} (name : String) (d : α) (f : α → Option Int64) : IO (IO (Nat × Int64)) := do
+/-- One timed run of `f` on `d`: nanoseconds and the checksum; an `error` from `f` is thrown. -/
+def timedE {α : Type} (name : String) (d : α) (f : α → Except String Int64) : IO (IO (Nat × Int64)) := do
   let r ← IO.mkRef d
-  let out ← IO.mkRef (none : Option Int64)
+  let out ← IO.mkRef (none : Option (Except String Int64))
   pure do
     let t0 ← IO.monoNanosNow
     let x ← r.get
-    out.set (f x)
+    out.set (some (f x))
     let t1 ← IO.monoNanosNow
-    let some c ← out.get | throw (IO.userError s!"{name}: the answer is not held as pairs (fin? answered none)")
-    pure (t1 - t0, c)
+    match ← out.get with
+    | some (.ok c) => pure (t1 - t0, c)
+    | some (.error e) => throw (IO.userError s!"{name}: {e}")
+    | none => throw (IO.userError s!"{name}: no answer was stored")
+
+/-- `timedE` for an `f` that answers `none` when the result is not held as pairs. -/
+def timed {α : Type} (name : String) (d : α) (f : α → Option Int64) : IO (IO (Nat × Int64)) :=
+  timedE name d fun x => match f x with
+    | some c => .ok c
+    | none => .error "the answer is not held as pairs (fin? answered none)"
+
+/-- An `Except` input built before the clock starts, thrown as an `IO` error. -/
+def io {α : Type} (what : String) : Except String α → IO α
+  | .ok a => pure a
+  | .error e => throw (IO.userError s!"{what}: {e}")
 
 /-! ## The operators, each with q's expression and checksum -/
 
@@ -171,38 +185,59 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timed "aIdx" (col (ints n 24 1000000), col ((gen n 25).map fun x => ((x % n : Nat) : Int)))
     fun (a, ks) => some (colSum (Long.aIdx a ks))
 
-/-- `sums x` by `LeetQ.Rel.Q.sums`, one pass by the scan law (`scan_spec`); `sum sums x`.  Before the scan
-    law it listed each prefix again: 0.1 s at 1e3, 9.8 s at 1e4. -/
-def sumsOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "sums" (LeetQ.Rel.list (ints n 26 1000).toList)
-    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.sums c).vals.foldl (· + ·) 0))
+/-! ## The RelRep layer (`LeetQ.Rel`): a relation is a key and a value column -/
 
-/-- `mins x` by `LeetQ.Rel.Q.mins`, one pass of `minBy` (`minsBy_spec`); `sum mins x`. -/
-def minsOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "mins" (LeetQ.Rel.list (ints n 26 1000).toList)
-    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mins c).vals.foldl (· + ·) 0))
+abbrev LR := LeetQ.Rel.Rel (.atom .long) (.atom .long)
 
-/-- `10 msum x` by `LeetQ.Rel.Q.msum`, the running sum less itself 10 before (`msum_spec`); `sum 10 msum x`. -/
-def msumOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "msum" (LeetQ.Rel.list (ints n 26 1000).toList)
-    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.msum 10 c).vals.foldl (· + ·) 0))
+/-- The list `x` of longs, key `til n`. -/
+def listR (n : Nat) (a : Array Int) : Except String LR := do
+  return ⟨n, .til n, ← LeetQ.Rel.Alg.Arr.ofDense .long n (col a)⟩
 
-/-- `w mmin x` by `LeetQ.Rel.Q.mmin`, two passes of `minBy` within blocks of width `w` (`mminBy_spec`);
-    `sum w mmin x`. -/
-def mminOp (w n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "mmin" (LeetQ.Rel.list (ints n 26 1000).toList)
-    fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mmin w c).vals.foldl (· + ·) 0))
+/-- `sum` of a relation's values: `Ops.over .add`. -/
+def sumR (what : String) {k : LeetQ.Rel.Ty} (r : LeetQ.Rel.Rel k (.atom .long)) : Except String Int64 :=
+  match LeetQ.Rel.Ops.over .add r with
+  | some c => .ok c
+  | none => .error s!"{what}: Ops.over .add answered none"
 
-/-- `x + y` pointwise by `LeetQ.Rel.Q.each2`; `sum x + y`. -/
-def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "relEach2" (LeetQ.Rel.list (ints n 26 1000).toList, LeetQ.Rel.list (ints n 27 1000).toList)
-    fun (x, y) => some (Int64.ofInt ((LeetQ.Rel.Q.each2 (· + ·) x y).vals.foldl (· + ·) 0))
+/-- `scan` of `x`, then its sum. -/
+def scanOp (name : String) (f : QLean.Prim.Dyadic) (n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io name (listR n (ints n 26 1000))
+  timedE name x fun x => do
+    let some r := LeetQ.Rel.Ops.scan f .long x | .error s!"{name}: Ops.scan answered none"
+    sumR name r
 
-/-- `d + e` on keys by `LeetQ.Rel.Q.zipD`, the key sets overlapping by half; `sum d + e`. -/
-def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "relZipD" (LeetQ.Rel.dict (List.range n) (ints n 26 1000).toList,
-      LeetQ.Rel.dict ((List.range n).map (· + n / 2)) (ints n 27 1000).toList)
-    fun (d, e) => some (Int64.ofInt ((LeetQ.Rel.Q.zipD (· + ·) 0 d e).vals.foldl (· + ·) 0))
+/-- `sums x` by `Ops.scan .add`; `sum sums x`. -/
+def sumsOp := scanOp "sums" .add
+
+/-- `mins x` by `Ops.scan .lesser`; `sum mins x`. -/
+def minsOp := scanOp "mins" .lesser
+
+/-- `w mop x` by `Ops.mwin`; `sum w mop x`. -/
+def mwinOp (name : String) (op : QLean.Kernel.Scan.MOp) (w n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io name (listR n (ints n 26 1000))
+  timedE name x fun x => do
+    let some r := LeetQ.Rel.Ops.mwin op w .long x | .error s!"{name}: Ops.mwin answered none"
+    sumR name r
+
+/-- `10 msum x`; `sum 10 msum x`. -/
+def msumOp := mwinOp "msum" .msum 10
+
+/-- `w mmin x`; `sum w mmin x`. -/
+def mminOp (w : Nat) := mwinOp "mmin" .mmin w
+
+/-- `x + y` pointwise by `Ew.dyadic .add` on two `til` keys: one `Ew.val`; `sum x + y`. -/
+def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) := do
+  let x ← io "relEach2" (listR n (ints n 26 1000))
+  let y ← io "relEach2" (listR n (ints n 27 1000))
+  timedE "relEach2" (x, y) fun (x, y) => do sumR "relEach2" (← LeetQ.Rel.Ew.dyadic .add .long x y)
+
+/-- `d + e` on keys by `Ew.dyadic .add` over explicit key columns, the key sets overlapping by half: `Ew.align`;
+    `sum d + e`. -/
+def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let d ← io "relZipD" (LeetQ.Rel.Alg.ofDense .long .long (col ((Array.range n).map Int.ofNat)) (col (ints n 26 1000)))
+  let e ← io "relZipD" (LeetQ.Rel.Alg.ofDense .long .long (col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
+    (col (ints n 27 1000)))
+  timedE "relZipD" (d, e) fun (d, e) => do sumR "relZipD" (← LeetQ.Rel.Ew.dyadic .add .long d e)
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
