@@ -973,4 +973,161 @@ end Checks
 #print axioms injective
 #print axioms surjective
 
+/-! ## Laws: codes are faithful, and each operator means its relation -/
+
+section Laws
+
+open QLean.Verify (firstsOf)
+
+/-- An `Arr`'s element `i` depends on its payload and on `i`'s value alone. -/
+theorem Arr.get_congr {t : Ty} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) {i : Fin n} {j : Fin m}
+    (hij : i.1 = j.1) : a.get i = b.get j := by
+  obtain ⟨c, _, _, _⟩ := a; obtain ⟨c', _, _, _⟩ := b; obtain ⟨i, _⟩ := i; obtain ⟨j, _⟩ := j
+  simp only at hc hij; subst hc hij; cases t <;> rfl
+
+/-- Two `Arr`s over one payload have one length: `wf` counts it. -/
+theorem Arr.n_congr {t : Ty} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) : n = m := by
+  have ha := a.wf; have hb := b.wf; rw [hc] at ha
+  cases t
+  · exact ha.2.symm.trans hb.2
+  · exact ha.symm.trans hb
+
+theorem Arr.of_c {t : Ty} {n : Nat} {c : Pay t} {w : String} {a : Arr t n} (h : Arr.of t n c w = .ok a) : a.c = c := by
+  unfold Arr.of at h; split at h
+  · cases h; rfl
+  · cases h
+
+/-- `ofCols` keys the answer by an `arr` over `kc`, its values over `vc`. -/
+theorem ofCols_ok {k v : Ty} {kc : Pay k} {vc : Pay v} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
+    ∃ a : Arr k T.n, T.key = .arr a ∧ a.c = kc ∧ T.val.c = vc := by
+  unfold ofCols at h
+  cases ha : Arr.of k (count k kc) kc "ofCols" with
+  | error e => simp [ha, bind, Except.bind] at h
+  | ok a =>
+    cases hb : Arr.of v (count k kc) vc "ofCols" with
+    | error e => simp [ha, hb, bind, Except.bind] at h
+    | ok b =>
+      simp only [ha, hb, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
+      subst h; exact ⟨a, rfl, Arr.of_c ha, Arr.of_c hb⟩
+
+/-- `p`, when `keyPay` answers it, is `K`'s payload: every `Arr` over it reads `K`'s keys. -/
+def PayReads {k : Ty} {n : Nat} (K : KeyCol k n) : Prop :=
+  ∀ p, keyPay K = .ok p → ∀ a : Arr k n, a.c = p → ∀ i, a.get i = K.get i
+
+/-- An `arr` key's payload is its own column. -/
+theorem payReads_arr {k : Ty} {n : Nat} (x : Arr k n) : PayReads (KeyCol.arr x) := by
+  intro p hp a hc i
+  simp only [keyPay, pure, Except.pure, Except.ok.injEq] at hp
+  exact Arr.get_congr (hc.trans hp.symm) rfl
+
+/-- A `til` key's payload is `tilLongs`, whose word `i` is `i` (`tilLongs_spec`). -/
+theorem payReads_til (n : Nat) : PayReads (KeyCol.til n) := by
+  intro p hp a hc i
+  simp only [keyPay, pure, Except.pure, Except.ok.injEq] at hp
+  subst hp
+  rw [Arr.get_long_bytes a hc]
+  have hs := Arr.n_long_bytes a hc
+  have ht := Verify.tilLongs_spec n.toUSize
+  obtain ⟨hl, hg⟩ := Find.elemsW8_get (B := tilLongs n.toUSize) rfl
+  have hlen := congrArg List.length ht
+  simp only [List.length_map, List.length_range] at hlen
+  have hi : i.1 < (Verify.elemsW 8 (tilLongs n.toUSize)).length := by omega
+  rw [hg i.1 hi]
+  apply toInt64_of_toNat
+  have e := List.getElem_of_eq ht (i := i.1) (by simp only [List.length_map]; exact hi)
+  simpa only [List.getElem_map, List.getElem_range] using e
+
+/-- The generic `R°`: `ofCols` of the values and the key's payload. -/
+theorem conv_cols_holds {R : Rel A B} {S : Rel B A} (hk : PayReads R.key)
+    (h : (do let r ← cols R; ofCols B A r.val r.key) = .ok S) (x : El A) (y : El B) :
+    S.Holds y x ↔ R.Holds x y := by
+  obtain ⟨n, K, v⟩ := R
+  cases hp : keyPay K with
+  | error e => simp [cols, hp, bind, Except.bind] at h
+  | ok p =>
+    simp only [cols, hp, bind, Except.bind, pure, Except.pure] at h
+    obtain ⟨a, hka, hac, hvc⟩ := ofCols_ok h
+    obtain ⟨m, SK, SV⟩ := S
+    simp only at hka hac hvc a
+    have hn : m = n := Arr.n_congr (a := a) (b := v) hac
+    subst hn; subst hka
+    have hr := hk p hp SV hvc
+    constructor
+    · rintro ⟨i, h1, h2⟩
+      exact ⟨i, (hr i).symm.trans h2, (Arr.get_congr hac.symm rfl).trans h1⟩
+    · rintro ⟨i, h1, h2⟩
+      exact ⟨i, (Arr.get_congr hac rfl).trans h2, (hr i).trans h1⟩
+
+/-- **`R°` swaps the pairs**, for every key whose payload reads its keys: `arr` and `til` always
+    (`payReads_arr`, `payReads_til`); a `grp` key's payload is a `gatherColumn` pick, which has no
+    element law yet. -/
+theorem conv_holds {R : Rel A B} {S : Rel B A} (hk : PayReads R.key) (h : conv R = .ok S) (x : El A) (y : El B) :
+    S.Holds y x ↔ R.Holds x y := by
+  obtain ⟨n, K, v⟩ := R
+  cases K with
+  | arr k =>
+    simp only [conv, pure, Except.pure, Except.ok.injEq] at h
+    subst h; exact convArr_holds k v x y
+  | til m => exact conv_cols_holds hk h x y
+  | grp d o wf => exact conv_cols_holds hk h x y
+
+/-- `conv_holds` on a list. -/
+theorem conv_til_holds {n : Nat} {v : Arr B n} {S : Rel B (.atom .long)} (h : conv ⟨n, .til n, v⟩ = .ok S)
+    (x : Int64) (y : El B) : S.Holds y x ↔ (⟨n, .til n, v⟩ : Rel (.atom .long) B).Holds x y :=
+  conv_holds (payReads_til n) h x y
+
+/-- **`groupIds`' ids are faithful**: read at the width they are packed at, two rows' ids agree exactly
+    when their keys do — at every lane `idWidthOf` answers (`idAt_packIds`), sub-byte ones too. The base
+    of every code a grouping pass makes (`Code.ofIds`, `classSizes`, `codes`' last branch). -/
+theorem groupIds_faithful (k : Scan.Kind) (n : USize) (b : ByteArray) {i j : Nat}
+    (hi : i < min n.toNat (k.avail b)) (hj : j < min n.toNat (k.avail b)) :
+    Column.idAt (Order.groupIds k n b).1
+        (Column.idWidthOf (firstsOf (Order.keyAt k b) (min n.toNat (k.avail b))).length) i =
+      Column.idAt (Order.groupIds k n b).1
+        (Column.idWidthOf (firstsOf (Order.keyAt k b) (min n.toNat (k.avail b))).length) j ↔
+    Order.keyAt k b i = Order.keyAt k b j := by
+  have hm64 : min n.toNat (k.avail b) < 2 ^ 64 := Nat.lt_of_le_of_lt (Nat.min_le_left _ _) (Verify.usize_lt n)
+  rw [(Verify.groupIds_spec k n b).1]
+  generalize min n.toNat (k.avail b) = m at hi hj hm64 ⊢
+  have hL : (firstsOf (Order.keyAt k b) m).length ≤ m := by
+    simpa [firstsOf] using List.length_filter_le _ (List.range m)
+  have hw : (firstsOf (Order.keyAt k b) m).length - 1 <
+      2 ^ Column.idWidthOf (firstsOf (Order.keyAt k b) m).length := by
+    have h2 := Verify.lt_widthFor ((firstsOf (Order.keyAt k b) m).length - 1)
+    have h3 := Verify.widthFor_le ((firstsOf (Order.keyAt k b) m).length - 1) (by omega)
+    unfold Column.idWidthOf
+    generalize Column.widthFor ((firstsOf (Order.keyAt k b) m).length - 1) = w at h2 h3 ⊢
+    refine Nat.lt_of_lt_of_le h2 (Nat.pow_le_pow_right (by decide) ?_)
+    unfold Column.laneWidth; repeat' split
+    all_goals omega
+  have hb : ∀ l, l < m → Verify.groupOf (Order.keyAt k b) m l <
+      2 ^ Column.idWidthOf (firstsOf (Order.keyAt k b) m).length := fun l hl => by
+    have := Verify.groupOf_lt (g := Order.keyAt k b) hl; omega
+  rw [Verify.idAt_packIds (w := Column.idWidthOf (firstsOf (Order.keyAt k b) m).length) (Verify.laneWidth_cases _) hi (hb i hi),
+    Verify.idAt_packIds (w := Column.idWidthOf (firstsOf (Order.keyAt k b) m).length) (Verify.laneWidth_cases _) hj (hb j hj),
+    Verify.groupOf_eq_iff hi (Verify.groupOf_lt hj), Verify.groupOf_get (g := Order.keyAt k b) hj]
+
+/-- **A long column's grouping ids are faithful to its elements**: `groupIds .i64` over a dense long
+    payload, as `groupIdsColumn` runs it, gives two rows one id exactly when they hold one long. -/
+theorem groupIds_long_faithful {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b)
+    (hm : m < USize.size) (i j : Fin m) :
+    Column.idAt (Order.groupIds .i64 (b.size / 8).toUSize b).1
+        (Column.idWidthOf (firstsOf (Order.keyAt .i64 b) m).length) i =
+      Column.idAt (Order.groupIds .i64 (b.size / 8).toUSize b).1
+        (Column.idWidthOf (firstsOf (Order.keyAt .i64 b) m).length) j ↔ x.get i = x.get j := by
+  have hs := Arr.n_long_bytes x hc
+  have hmin : min (b.size / 8).toUSize.toNat (Scan.Kind.avail .i64 b) = m := by
+    have hu : m.toUSize.toNat = m := USize.toNat_ofNat_of_lt hm
+    rw [hs, hu]; simp [Scan.Kind.avail, Scan.Kind.width, hs]
+  have e := groupIds_faithful .i64 (b.size / 8).toUSize b (i := i.1) (j := j.1) (by omega) (by omega)
+  rw [hmin] at e
+  rw [e, Verify.keyAt_eq_iff (by simp) b i.1 j.1, Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
+  exact ⟨fun h => by simp only [Scan.Kind.width] at h; rw [h], fun h => toInt64_inj h⟩
+
+end Laws
+
+#print axioms conv_holds
+#print axioms groupIds_faithful
+#print axioms groupIds_long_faithful
+
 end LeetQ.Rel.Alg
