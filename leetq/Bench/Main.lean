@@ -239,7 +239,58 @@ def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
     (.bytes <| col (ints n 27 1000)))
   timedE "relZipD" (d, e) fun (d, e) => do sumR "relZipD" (← LeetQ.Rel.Ew.dyadic .add .long d e)
 
+/-! ## The relation algebra's codes: `|R|` and `ej` on keys of each encoding -/
+
+/-- One bit per element of `a`, `1` where it is odd, least significant bit first. -/
+def oddBits (a : Array Int) : ByteArray := Id.run do
+  let mut b := ByteArray.emptyWithCapacity ((a.size + 7) / 8)
+  for j in [0:(a.size + 7) / 8] do
+    let mut byte : UInt8 := 0
+    for t in [0:8] do
+      if 8 * j + t < a.size && a[8 * j + t]! % 2 == 1 then byte := byte ||| (1 <<< t.toUInt8)
+    b := b.push byte
+  return b
+
+/-- The values `a` (each below `m`) as a key column in the encoding `enc`: `bits` (their parity), `enum` over
+    the dictionary `s0 … s(m-1)`, `foR` and dense `long`. -/
+def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.Struct.KCol := do
+  match enc with
+  | "bits" => pure ⟨.atom .boolean, .bits a.size (oddBits a)⟩
+  | "enum" =>
+    let (blob, dof) := (Array.range m).foldl (init := (ByteArray.empty, #[0])) fun (b, o) i =>
+      let b := (b ++ s!"s{i}".toUTF8).push 0
+      (b, o.push b.size)
+    let w := QLean.Column.idWidth dof
+    let (ids, bad) := QLean.Kernel.enumIds a.size.toUSize m.toUSize 0 w.toUSize (col a)
+    if bad.toNat != a.size then throw s!"encCol enum: value at {bad} is outside 0..{m}"
+    pure ⟨.atom .symbol, .enum a.size blob dof ids⟩
+  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure ⟨.atom .long, .foR a.size md pk⟩
+  | "dense" => pure ⟨.atom .long, .bytes (col a)⟩
+  | e => throw s!"encCol: no encoding {e}"
+
+/-- The key range each encoding is benched at: two bits, a hundred symbols, a thousand-wide FoR range, a
+    million dense longs. -/
+def encRange : String → Nat | "bits" => 2 | "enum" => 100 | "foR" => 1000 | _ => 1000000
+
+/-- `|R|` of `R` whose key and value are both in `enc`: the distinct pairs (`Cols.nub`); their count. -/
+def relCardOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
+  let m := encRange enc
+  let ⟨t, k⟩ ← io "relCard" (encCol enc m (ints n 28 m))
+  let ⟨u, v⟩ ← io "relCard" (encCol enc m (ints n 29 m))
+  if h : u = t then
+    let R ← io "relCard" (LeetQ.Rel.Alg.ofCols t t k (h ▸ v))
+    timedE s!"relCard {enc}" R fun R => do pure (Int64.ofNat (← (← LeetQ.Rel.Alg.cols R).nub).n)
+  else throw (IO.userError "relCard: key and value differ in type")
+
+/-- `ej` of `n` left keys in `enc` against the `m` keys `til m`, each once: `n` matches; the sum of the right rows. -/
+def relJoinOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
+  let m := encRange enc
+  let l ← io "relJoin" (encCol enc m (ints n 30 m))
+  let r ← io "relJoin" (encCol enc m ((Array.range m).map Int.ofNat))
+  timedE s!"relJoin {enc}" (l, r) fun (l, r) => do sumR "relJoin" (← LeetQ.Rel.Struct.ej #[l] #[r])
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
+  ["bits", "enum", "foR", "dense"].flatMap (fun e => [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e)]) ++
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),

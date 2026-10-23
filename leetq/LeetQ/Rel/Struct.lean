@@ -166,7 +166,7 @@ def indexParted {k' : Ty} {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) (y
     parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom a) (Alg.len src) c "x@y")
   | _ => throw "x@y: the operand is not parted; `index` reads a list"
 
-/-! ## Joins on columns: `|R|` of the key tuples (`Alg.tupleCodes`), then gathers -/
+/-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
 /-- A dense column and the layout it is compared at, as `Alg.arrDense` answers it. -/
 abbrev Col := Scan.Kind × ByteArray
@@ -174,31 +174,35 @@ abbrev Col := Scan.Kind × ByteArray
 /-- A key column in any encoding: its element type and payload, compared only by `Alg.codes`. -/
 abbrev KCol := (t : Ty) × Pay t
 
-/-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tupleCodes`),
-    split at the left's count; both counts. -/
-def keyCodes (verb : String) (l r : Array KCol) : Except String (ByteArray × ByteArray × Nat × Nat) := do
-  match l[0]?, r[0]? with
-  | some (⟨t, a⟩ : KCol), some (⟨u, b⟩ : KCol) =>
-    unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
-    let cs ← (l.zip r).mapM fun ((p : KCol), (q : KCol)) =>
-      if h : q.1 = p.1 then Alg.codes p.1 #[p.2, h ▸ q.2] else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
-    let nl := Alg.count t a
-    let (lc, rc) := Alg.split (Alg.tupleCodes cs) nl
-    pure (lc, rc, nl, Alg.count u b)
-  | _, _ => throw s!"{verb}: no key column"
+/-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tuples`), left
+    then right, each at the narrowest layout its columns allow. -/
+def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg.Code) := do
+  if l.size == 0 then throw s!"{verb}: no key column"
+  unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
+  let cs ← (l.zip r).mapM fun ((p : KCol), (q : KCol)) =>
+    if h : q.1 = p.1 then Alg.codes p.1 #[p.2, h ▸ q.2] else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
+  Alg.two (← Alg.tuples cs)
+
+/-- `keyCodes` as long ids, split at the left's count, and that count. `timeGrade`'s `code·T + rank` is
+    long arithmetic (missing kernel: a grade and `binBytes` over the pair (code, rank) at the code's own
+    layout), so the joint codes go through their long ids (`Code.longs`). -/
+def longKeyCodes (verb : String) (l r : Array KCol) : Except String (ByteArray × ByteArray × Nat) := do
+  let (lc, rc) ← keyCodes verb l r
+  let (a, b) := Alg.split (Alg.Code.cat #[lc, rc]).longs lc.n
+  pure (a, b, lc.n)
 
 /-- `ej`: every pair of a left and a right row with equal key tuples, left row ↦ right row (`Alg.join`). -/
 def ej (l r : Array KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
-  let (lc, rc, _, _) ← keyCodes "ej" l r
+  let (lc, rc) ← keyCodes "ej" l r
   let (li, ri) := Alg.join lc rc
   Alg.ofCols (.atom .long) (.atom .long) (.bytes li) (.bytes ri)
 
 /-- `ij` against a keyed right side: each left row ↦ the first right row of its key tuple, unmatched rows
     dropped — `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
 def ij (l r : Array KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
-  let (lc, rc, nl, nr) ← keyCodes "ij" l r
-  let hit := findVec 8 false rc lc
-  let li := whereBits nl.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one nr.toUInt64) nl.toUSize)
+  let (lc, rc) ← keyCodes "ij" l r
+  let hit := rc.find lc
+  let li := whereBits lc.n.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one rc.n.toUInt64) lc.n.toUSize)
   Alg.ofCols (.atom .long) (.atom .long) (.bytes li) (.bytes (Alg.gather 8 hit li))
 
 /-- The right rows graded by `code·T + rank(time)` and the left's tuples' bases `code·T`: the `aj`/`wj` sort.
@@ -218,7 +222,7 @@ def writeWhere (acc lo hi vals : ByteArray) : ByteArray :=
     none — `timeGrade`, `binBytes` of the left's `code·T + rank(time)`, kept where it lies above the last
     right row of a lower code (a second `binBytes`), written over `0N` by `writeWhere`. -/
 def aj (l r : Array KCol) (lt rt : Col) : Except String (Rel (.atom .long) (.atom .long)) := do
-  let (lc, rc, nl, _) ← keyCodes "aj" l r
+  let (lc, rc, nl) ← longKeyCodes "aj" l r
   unless lt.1 == rt.1 do throw "aj: the two time columns differ in type (q's 'type)"
   let (lr, rr) := Alg.split (Alg.drank lt.1 (concatBytes #[lt.2, rt.2])) nl
   let (p, srt, base) := timeGrade rc lc rr (Alg.len (concatBytes #[lc, rc]))
@@ -232,7 +236,7 @@ def aj (l r : Array KCol) (lt rt : Col) : Except String (Rel (.atom .long) (.ato
     `wj`; `false` is `wj1`) also takes the last right row before `w₀` that has the key tuple: the start
     lowered by one where it stays above the last row of a lower code (`writeWhere`). -/
 def wj (prevailing : Bool) (w₀ w₁ : Col) (l r : Array KCol) (rt : Col) : Except String (Rel (.atom .long) (.atom .long)) := do
-  let (lc, rc, nl, _) ← keyCodes "wj" l r
+  let (lc, rc, nl) ← longKeyCodes "wj" l r
   unless w₀.1 == rt.1 && w₁.1 == rt.1 do throw "wj: the window and time columns differ in type (q's 'type)"
   let ranks := Alg.drank rt.1 (concatBytes #[w₀.2, w₁.2, rt.2])
   let (r₀, rest) := Alg.split ranks nl
