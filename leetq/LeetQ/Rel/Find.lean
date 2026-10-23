@@ -618,16 +618,17 @@ theorem range_lo_ne {md pk : ByteArray} {n : USize} {lo hi : Int64}
   · simp at h
   simp only [Option.some.injEq, Prod.mk.injEq] at h
   obtain ⟨rfl, -⟩ := h
-  unfold Coc.over
-  rcases foldl_seed_or_mem _ (fun b v => by
-      simp only [Coc.Over.boolCast, Coc.Over.step]
-      split
-      · exact .inl rfl
-      · split
+  intro hc
+  rcases foldl_seed_or_mem (fun acc v => if !Coc.Over.boolCast .lesser && v.toInt64 == Int64.minValue then acc
+      else Coc.Over.step .lesser acc v.toInt64) (fun b v => by
+        simp only [Coc.Over.boolCast, Coc.Over.step]
+        split
         · exact .inl rfl
-        · exact .inr rfl) _ _ with e | ⟨v, hv, e⟩
-  · rw [e]; decide
-  · rw [e]; exact (hb v hv).1
+        · split
+          · exact .inl rfl
+          · exact .inr rfl) (Coc.elems md pk n) (Coc.Over.seed .lesser Int64.minValue) with e | ⟨v, hv, e⟩
+  · exact absurd (e.symm.trans hc) (by decide)
+  · exact (hb v hv).1 (e.symm.trans hc)
 
 theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : direct .long c n = some (t, lo, hb)) :
     ∃ k md pk hi, c = .foR k md pk ∧ md.isEmpty = false ∧ Coc.range Int64.minValue md pk k.toUSize = some (lo, hi) ∧
@@ -650,9 +651,9 @@ theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : 
           | none => simp [hcls, hnul, he, hR, hg, hb', guard, failure, bind, Option.bind] at h
           | some b =>
             simp [hcls, hnul, he, hR, hg, hb', guard, failure, bind, Option.bind] at h
-            rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨k, md, pk, hi, rfl, he, hR, hg, hb', rfl⟩
+            rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨k, md, pk, hi, rfl, he, hR, hg, rfl, rfl⟩
         · simp [hcls, hnul, he, hR, hg, guard, failure, bind, Option.bind] at h
-  | _ => all_goals (unfold direct at h; simp [hcls, guard, failure, bind, Option.bind] at h)
+  | _ => all_goals (unfold direct at h; simp [hcls, guard, bind, Option.bind] at h)
 
 /-- What `direct` answering hands the direct path: the haystack's words `xs`, dense in `hb`; a range `r`
     below `2^63` holding every offset from `lo`, which is not `0N`; and `t` the `firstTable`. Every
