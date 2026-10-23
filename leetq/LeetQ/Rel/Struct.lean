@@ -10,6 +10,8 @@
 import LeetQ.Rel.Algebra
 import QLean.Verify.Group
 import QLean.Verify.Gather
+import QLean.Verify.Dyad
+import QLean.Verify.EwEnc
 
 namespace LeetQ.Rel.Struct
 
@@ -505,17 +507,24 @@ theorem getElem!_map_toInt64 (E : List UInt64) (i : Nat) (h : i < E.length) :
     (E.map UInt64.toInt64)[i]! = E[i]!.toInt64 := by
   rw [getElem!_pos (E.map UInt64.toInt64) i (by simpa using h), getElem!_pos E i h, List.getElem_map]
 
-/-- A slice of a long `bytes` column, as `list` wraps it: `m` words from `off`, cycling. The column holds
-    whole words and `off < n` unless no lap is run; an empty column is sliced only to nothing. -/
-theorem slice_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {b : ByteArray}
+/-- A `list` over a `vec` answer holds the `vec` payload. -/
+theorem list_vec {verb : String} {a : QAtomicType} {o : Option QValue} {r : Rel (.atom .long) (.atom a)}
+    (h : (do list a (← vec verb a o)) = .ok r) : vec verb a o = .ok r.val.c := by
+  cases hv : vec verb a o with
+  | error e => simp [hv, bind, Except.bind] at h
+  | ok c => simp only [hv, bind, Except.bind] at h; exact congrArg Except.ok (Find.list_c h).symm
+
+/-- A slice of a long `bytes` column, in any `Arr` holding `vec`'s payload: `m` words from `off`, cycling. The
+    column holds whole words and `off < n` unless no lap is run; an empty column is sliced only to nothing. -/
+theorem slice_toList {k : Ty} {x : Rel k (.atom .long)} {m' : Nat} {a : Arr (.atom .long) m'} {b : ByteArray}
     {verb : String} {off m : Nat} (hc : x.val.c = .bytes b) (h0 : 0 < x.n ∨ m = 0)
     (h : off < x.n ∨ off + m ≤ x.n) (hb : off + m ≤ x.n ∨ b.size % 8 = 0)
-    (hr : (do list .long (← vec verb .long (sliceColumn .long x.val.c off m))) = .ok r) :
-    r.val.toList = (List.range m).map fun j => x.val.toList[(off + j) % x.val.toList.length]! := by
+    (hv : vec verb .long (sliceColumn .long x.val.c off m) = .ok a.c) :
+    a.toList = (List.range m).map fun j => x.val.toList[(off + j) % x.val.toList.length]! := by
   have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
-  rw [hc, sliceColumn_long] at hr
-  simp only [vec, bind, Except.bind, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte] at hr
-  rw [Arr.toList_long r.val (by rw [Find.list_c hr]; exact longWords_answer _)]
+  rw [hc, sliceColumn_long] at hv
+  simp only [vec, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte, Except.ok.injEq] at hv
+  rw [Arr.toList_long a (by rw [← hv]; exact longWords_answer _)]
   by_cases hz : x.n = 0
   · obtain rfl : m = 0 := by omega
     obtain rfl : off = 0 := by omega
@@ -541,17 +550,19 @@ theorem take_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.
   have hl : x.val.toList.length = x.n := Arr.length_toList _
   unfold take takeColumn at h
   rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
-  rw [slice_toList hc (.inl h0) (.inl (by unfold takeFrom; split; omega; exact Nat.mod_lt _ h0)) (.inr hb) h,
+  rw [slice_toList hc (.inl h0) (.inl (by unfold takeFrom; split; omega; exact Nat.mod_lt _ h0)) (.inr hb) (list_vec h),
     takeSpec, hl]
 
-/-- **`n_x` is `dropSpec`** on a long `bytes` column: no lap is run, so any `bytes` payload. -/
-theorem drop_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {n : Int} {b : ByteArray}
-    (hc : x.val.c = .bytes b) (h : drop n x = .ok r) : r.val.toList = dropSpec n x.val.toList := by
+/-- `dropColumn` of a long `bytes` column, in any `Arr` holding `vec`'s payload, is `dropSpec`: no lap is run, so
+    any `bytes` payload. -/
+theorem dropColumn_toList {k : Ty} {x : Rel k (.atom .long)} {m' : Nat} {a : Arr (.atom .long) m'} {verb : String}
+    {n : Int} {b : ByteArray} (hc : x.val.c = .bytes b) (hv : vec verb .long (dropColumn .long x.val.c n) = .ok a.c) :
+    a.toList = dropSpec n x.val.toList := by
   have hn : b.size / 8 = x.n := Arr.n_long_bytes x.val hc
   have hl : x.val.toList.length = x.n := Arr.length_toList _
-  unfold drop dropColumn at h
-  rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
-  rw [slice_toList hc (by omega) (.inr (by split <;> omega)) (.inl (by split <;> omega)) h,
+  unfold dropColumn at hv
+  rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at hv
+  rw [slice_toList hc (by omega) (.inr (by split <;> omega)) (.inl (by split <;> omega)) hv,
     range_map_window _ _ _ (by rw [hl]; split <;> omega)]
   unfold dropSpec
   by_cases hp : 0 ≤ n
@@ -562,6 +573,11 @@ theorem drop_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.
     · rw [List.drop_eq_nil_of_le (by rw [hl]; omega), List.drop_eq_nil_of_le (by rw [hl]; omega)]
   · simp only [hp, ↓reduceIte, List.drop_zero]
     congr 1; omega
+
+/-- **`n_x` is `dropSpec`** on a long `bytes` column. -/
+theorem drop_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) (.atom .long)} {n : Int} {b : ByteArray}
+    (hc : x.val.c = .bytes b) (h : drop n x = .ok r) : r.val.toList = dropSpec n x.val.toList :=
+  dropColumn_toList hc (list_vec h)
 
 /-- `rotateLeft` by `i < |xs|` reads `xs` at `(i + j) mod |xs|`. -/
 theorem rotateLeft_eq {α : Type} [Inhabited α] (xs : List α) (i : Nat) (hi : i < xs.length) :
@@ -593,7 +609,7 @@ theorem rotate_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) 
   rw [hc, show Column.count .long (.bytes b) = x.n by simp [Column.count, QAtomicType.width, hn], ← hc] at h
   simp only [] at h
   by_cases h0 : x.n = 0
-  · rw [slice_toList hc (.inr h0) (.inr (by simp [h0])) (.inl (by simp [h0])) h,
+  · rw [slice_toList hc (.inr h0) (.inr (by simp [h0])) (.inl (by simp [h0])) (list_vec h),
       List.eq_nil_of_length_eq_zero (hl.trans h0)]
     simp [h0, rotateSpec]
   have hlt : (n.emod x.n).toNat < x.n := by
@@ -603,7 +619,7 @@ theorem rotate_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long) 
   simp only [show (x.n == 0) = false by simpa using h0, Bool.false_eq_true, ↓reduceIte] at h
   have hne : ¬ x.val.toList.isEmpty = true := by
     rw [List.isEmpty_iff]; intro he; rw [he] at hl; simp at hl; omega
-  rw [slice_toList hc (.inl (by omega)) (.inl hlt) (.inr hb) h, rotateSpec, if_neg hne,
+  rw [slice_toList hc (.inl (by omega)) (.inl hlt) (.inr hb) (list_vec h), rotateSpec, if_neg hne,
     rotateLeft_eq _ _ (by rw [hl]; exact hlt), hl]
 
 /-- **`|x` is `List.reverse`** on a long `bytes` column, from `reverseBytes_spec`. -/
@@ -774,6 +790,19 @@ theorem cuts_le {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j :
   rw [h0] at a; rw [hl] at c
   exact ⟨by simpa using a, b, c⟩
 
+/-- Under `Cuts o n`, the offsets read as naturals start at `0`, end at `n` and ascend. -/
+theorem cuts_nat {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) :
+    (o.toList[0]!).toNatClampNeg = 0 ∧ (o.toList[g]!).toNatClampNeg = n ∧
+      ∀ r, r < g → (o.toList[r]!).toNatClampNeg ≤ (o.toList[r+1]!).toNatClampNeg := by
+  have hc : ∀ r, r ≤ g → ((o.toList[r]!).toNatClampNeg : Int) = (o.toList[r]!).toInt := fun r hr => by
+    rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_le co (Nat.le_refl r) hr).1
+  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
+    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+  refine ⟨by rw [e 0 (by omega)]; exact congrArg Int64.toNatClampNeg co.2.1, ?_, fun r hr => ?_⟩
+  · have := hc g (Nat.le_refl g); rw [e g (Nat.le_refl g)] at this
+    have h2 := co.2.2; simp only [Fin.last] at h2; rw [e g (Nat.le_refl g)]; omega
+  · have := (cuts_le co (i := r) (j := r + 1) (by omega) hr).2.1; have := hc r (by omega); have := hc (r+1) hr; omega
+
 /-- **A `grp` key over `til g` lists its runs**: under `Cuts o n`, key `i` is the run `r` with
     `o[r] ≤ i < o[r+1]` (`KeyCol.group`), so the keys are `o[r+1] − o[r]` copies of each `r` in turn. -/
 theorem grp_til_toList {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n) :
@@ -783,12 +812,7 @@ theorem grp_til_toList {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n)
     rw [← Int64.toNat_toInt]; exact Int.toNat_of_nonneg (cuts_le co (Nat.le_refl r) hr).1
   have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
     rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
-  have h0 : (o.toList[0]!).toNatClampNeg = 0 := by rw [e 0 (by omega)]; exact congrArg Int64.toNatClampNeg co.2.1
-  have cg : (o.toList[g]!).toNatClampNeg = n := by
-    have := hc g (Nat.le_refl g); rw [e g (Nat.le_refl g)] at this
-    have h2 := co.2.2; simp only [Fin.last] at h2; rw [e g (Nat.le_refl g)]; omega
-  have mono : ∀ r, r < g → (o.toList[r]!).toNatClampNeg ≤ (o.toList[r+1]!).toNatClampNeg := fun r hr => by
-    have := (cuts_le co (i := r) (j := r + 1) (by omega) hr).2.1; have := hc r (by omega); have := hc (r+1) hr; omega
+  obtain ⟨h0, cg, mono⟩ := cuts_nat co
   rw [← runs_countP Int64.ofNat (fun r => (o.toList[r]!).toNatClampNeg) h0 g mono]
   apply List.ext_getElem (by simp only [KeyCol.toList, List.length_ofFn, List.length_map, List.length_range, cg])
   intro i h1 h2
@@ -813,6 +837,234 @@ theorem grp_til_toList {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n)
     rw [List.countP_eq_length_filter]; simpa using this
   simp only [KeyCol.toList, List.getElem_ofFn, List.getElem_map, List.getElem_range, KeyCol.get, dif_pos hg]
   rw [hgrp, Nat.min_eq_left (by omega)]
+
+/-- `d` copies of `a` zipped with `zs`: the first `d` of `zs`, each paired with `a`. -/
+theorem zip_replicate {α β : Type} (a : α) : ∀ (d : Nat) (zs : List β),
+    (List.replicate d a).zip zs = (zs.take d).map (a, ·)
+  | 0, _ => by simp
+  | _ + 1, [] => by simp
+  | d + 1, z :: zs => by simp [List.replicate_succ, zip_replicate a d zs]
+
+/-- Runs of keys zipped with a list at least as long: run `r`, `c (r+1) − c r` copies of `f r`, meets the
+    elements from `c r`, for cuts ascending from `c 0 = 0`. -/
+theorem zip_runs {α β : Type} (f : Nat → α) (c : Nat → Nat) (h0 : c 0 = 0) : ∀ g, (∀ r, r < g → c r ≤ c (r+1)) →
+    ∀ ys : List β, c g ≤ ys.length →
+      ((List.range g).flatMap fun r => List.replicate (c (r+1) - c r) (f r)).zip ys =
+        (List.range g).flatMap fun r => ((ys.drop (c r)).take (c (r+1) - c r)).map (f r, ·)
+  | 0, _, _, _ => by simp
+  | g + 1, hm, ys, hy => by
+    have hm' : ∀ r, r < g → c r ≤ c (r+1) := fun r hr => hm r (by omega)
+    have mono : ∀ d r, r + d = g → c r ≤ c g := by
+      intro d; induction d with
+      | zero => intro r h; rw [← h, Nat.add_zero]; exact Nat.le_refl _
+      | succ d ih => intro r h; exact Nat.le_trans (hm r (by omega)) (ih (r+1) (by omega))
+    have hg := hm g (by omega)
+    have hlen := congrArg List.length (runs_countP f c h0 g hm')
+    simp only [List.length_map, List.length_range] at hlen
+    conv => lhs; rw [← List.take_append_drop (c g) ys]
+    rw [List.range_succ, List.flatMap_append, List.flatMap_append,
+      List.zip_append (by rw [← hlen, List.length_take]; omega), zip_runs f c h0 g hm' _ (by rw [List.length_take]; omega)]
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, zip_replicate]
+    congr 1
+    exact congrArg List.flatten (List.map_congr_left fun r hr => by
+      have := mono (g - (r+1)) (r+1) (by have := List.mem_range.1 hr; omega)
+      rw [List.drop_take, List.take_take, Nat.min_eq_left (by omega)])
+
+/-- A `grp` key over `til g` zipped with a list at least `n` long: run `r` meets the elements `[o[r], o[r+1])`. -/
+theorem grp_til_zip {β : Type} {g n : Nat} (o : Arr (.atom .long) (g+1)) (co : Cuts o n) (ys : List β)
+    (hy : n ≤ ys.length) :
+    (KeyCol.grp (.til g) o co).toList.zip ys = (List.range g).flatMap fun r =>
+      ((ys.drop (o.toList[r]!).toNatClampNeg).take
+        ((o.toList[r+1]!).toNatClampNeg - (o.toList[r]!).toNatClampNeg)).map (Int64.ofNat r, ·) := by
+  obtain ⟨h0, cg, mono⟩ := cuts_nat co
+  rw [grp_til_toList o co]
+  exact zip_runs Int64.ofNat (fun r => (o.toList[r]!).toNatClampNeg) h0 g mono ys (by dsimp only; rw [cg]; exact hy)
+
+/-- A relation's pairs are its keys zipped with its values. -/
+theorem toList_mk {k v : Ty} {n : Nat} (key : KeyCol k n) (val : Arr v n) :
+    Rel.toList ⟨n, key, val⟩ = key.toList.zip val.toList :=
+  List.ext_getElem (by simp [Rel.toList, KeyCol.toList, Arr.toList]) fun i _ _ => by
+    simp [Rel.toList, KeyCol.toList, Arr.toList]
+
+/-- An `Arr.of` answer holds the payload it was given. -/
+theorem of_c {t : Ty} {n : Nat} {c : Pay t} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
+    a.c = c := by
+  unfold Arr.of at h; split at h
+  · cases h; rfl
+  · cases h
+
+/-- What `parted` answers: `val` keyed by `grp (til g)` over offsets whose payload is `B`, cuts of `n`. -/
+theorem parted_ok {v : Ty} {n : Nat} {verb : String} {B : ByteArray} {val : Arr v n} {r : Rel (.atom .long) v}
+    (h : parted verb B val = .ok r) : ∃ (g : Nat) (o : Arr (.atom .long) (g+1)) (co : Cuts o n),
+      o.c = .bytes B ∧ r = ⟨n, .grp (.til g) o co, val⟩ := by
+  unfold parted at h
+  cases ha : Arr.of (.atom .long) (B.size / 8 - 1 + 1) (.bytes B) verb with
+  | error e => simp [ha, bind, Except.bind] at h
+  | ok oa =>
+    have hoa := of_c ha
+    cases hk : KeyCol.grp? (.til (B.size / 8 - 1)) oa n with
+    | none => simp [ha, hk, bind, Except.bind] at h
+    | some key =>
+      simp only [ha, hk, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
+      subst h
+      unfold KeyCol.grp? at hk
+      rw [hoa] at hk
+      simp only [KeyCol.longBytes, bind, Option.bind] at hk
+      split at hk
+      · split at hk
+        · cases hk; exact ⟨_, _, _, rfl, rfl⟩
+        · cases hk
+      · cases hk
+
+/-- Element `r ≤ |xs|` of `xs` closed by `y`. -/
+theorem getElem!_concat {α : Type} [Inhabited α] (xs : List α) (y : α) {r : Nat} (hr : r ≤ xs.length) :
+    (xs ++ [y])[r]! = if r < xs.length then xs[r]! else y := by
+  rcases Nat.lt_or_eq_of_le hr with h | rfl
+  · rw [if_pos h, getElem!_pos _ r (by simp; omega), getElem!_pos xs r h, List.getElem_append_left h]
+  · simp
+
+/-- Runs read off offsets `s + c r` of `xs` are `cutSpec os xs`, for `os` and `|xs|` the offsets. -/
+theorem cutSpec_of {α : Type} {os : List Int64} {xs : List α} {g s : Nat} (c : Nat → Nat) (hg : os.length = g)
+    (hc : ∀ r, r ≤ g → (os.map (·.toInt.toNat) ++ [xs.length])[r]! = s + c r) :
+    ((List.range g).flatMap fun r => (((xs.drop s).drop (c r)).take (c (r+1) - c r)).map (Int64.ofNat r, ·)) =
+      cutSpec os xs := by
+  subst hg
+  exact congrArg List.flatten (List.map_congr_left fun r hr => by
+    have hr := List.mem_range.1 hr
+    rw [hc r (by omega), hc (r+1) (by omega), List.drop_drop, Nat.add_sub_add_left])
+
+/-- `a + −o₀` at `i64`, read back: for `0 < o₀`, a sum in `[0, 2^63 − o₀)` is the exact difference, since a `0N`
+    operand answers `0N < 0` and a wrapped difference lies at or above `2^63 − o₀`. -/
+theorem add_neg_toInt {a o₀ : Int64} (h0 : 0 < o₀.toInt) (hw0 : 0 ≤ (Ew.intStep Ew.add Int64.minValue a (-o₀)).toInt)
+    (hw : (Ew.intStep Ew.add Int64.minValue a (-o₀)).toInt + o₀.toInt < 2 ^ 63) :
+    a.toInt = (Ew.intStep Ew.add Int64.minValue a (-o₀)).toInt + o₀.toInt := by
+  have bm : ∀ t : Int, t.bmod (2^64) = t % 2^64 ∨ t.bmod (2^64) = t % 2^64 - 2^64 := fun t => by
+    dsimp only [Int.bmod]; split <;> simp
+  unfold Ew.intStep at hw0 hw ⊢
+  simp only [show (Ew.add == Ew.add) = true by decide, if_true] at hw0 hw ⊢
+  split at hw0
+  · exact absurd hw0 (by decide)
+  · rename_i hnul
+    simp only [hnul, Bool.false_eq_true, if_false] at hw ⊢
+    rw [Int64.toInt_add, Int64.toInt_neg] at hw0 hw ⊢
+    have := Int64.le_toInt a; have := Int64.toInt_lt a; have := Int64.toInt_lt o₀
+    rcases bm (-o₀.toInt) with e | e <;> rw [e] at hw0 hw ⊢ <;>
+      rcases bm (a.toInt + (-o₀.toInt % 2 ^ 64)) with f | f <;> try rcases bm (a.toInt + (-o₀.toInt % 2 ^ 64 - 2 ^ 64)) with f | f
+    all_goals omega
+
+/-- **`o cut x` is `cutSpec`** on long `bytes` columns, `o` of whole words. Above a first offset `o₀ > 0` the
+    offsets are lowered by `o₀` in 64 bits (`plus`), so `x.n < 2^63` keeps a wrapped difference from reading as
+    cuts, and the kernel counts `o` in a `USize`. -/
+theorem cut_toList {k k' : Ty} {o : Rel k (.atom .long)} {x : Rel k' (.atom .long)} {r : Rel (.atom .long) (.atom .long)}
+    {b : ByteArray} (hw : Words o.val.c) (hc : x.val.c = .bytes b) (hn : x.n < 2 ^ 63) (hoU : o.n < USize.size)
+    (h : cut o x = .ok r) : r.toList = cutSpec o.val.toList x.val.toList := by
+  obtain ⟨ob, ho, hob⟩ := words_bytes hw
+  have hl : x.val.toList.length = x.n := Arr.length_toList _
+  have hol : o.val.toList.length = o.n := Arr.length_toList _
+  have hos := toList_bytes o.val ho
+  have hE : (Verify.elemsW 8 ob).length = o.n := by simp [Verify.elemsW, Arr.n_long_bytes o.val ho]
+  have one8 : ∀ v, (one v).size = 8 := fun v => by simp [one, Column.pushBits_size]
+  have w1 : ∀ v, Verify.elemsW 8 (one v) = [v] := fun v => by
+    have := Verify.bitsAt_pushBits8 ByteArray.empty v
+    rw [show ByteArray.empty.size = 0 from rfl] at this
+    simp [Verify.elemsW, one8]; exact this
+  -- the offsets `P` closed by `N`, as `parted` reads them, and the run read at `os`
+  have words : ∀ {P : ByteArray} {N g : Nat} {oa : Arr (.atom .long) (g+1)}, P.size % 8 = 0 →
+      oa.c = .bytes (concatBytes #[P, one N.toUInt64]) →
+      oa.toList = (Verify.elemsW 8 P).map UInt64.toInt64 ++ [N.toUInt64.toInt64] := fun hP hoa => by
+    rw [toList_bytes _ hoa, elemsW_concatBytes 8 (by decide) _ (by simp [hP, one8])]
+    simp [w1]
+  unfold cut at h
+  rw [ho, show dense "o cut x" .long (.bytes ob) = pure ob from rfl, pure_bind] at h
+  generalize ho₀ : (if o.n = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = o₀ at h
+  dsimp only at h
+  split at h
+  · simp [throw, throwThe, MonadExcept.throw, bind, Except.bind] at h
+  rename_i hd
+  simp only [Bool.or_eq_true, decide_eq_true_eq, not_or, Int64.not_lt] at hd
+  simp only [pure_bind] at h
+  split at h
+  · -- `o₀ = 0`: `x` untouched, the offsets as they are
+    rw [bind_pure] at h
+    obtain ⟨g, oa, co, hoa, rfl⟩ := parted_ok h
+    have hW := words hob hoa
+    obtain ⟨h0, cg, -⟩ := cuts_nat co
+    have hg : g = o.n := by
+      have := congrArg List.length hW
+      simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hE] at this; omega
+    subst hg
+    have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
+        0 + (oa.toList[r]!).toNatClampNeg := fun r hr => by
+      rw [getElem!_concat _ _ (by simpa using hr)]
+      simp only [List.length_map, hol]
+      split
+      · rename_i h1
+        rw [hW, getElem!_concat _ _ (by simp [hE]; omega), if_pos (by simp [hE]; omega), hos, Nat.zero_add,
+          getElem!_pos _ r (by simp [hE]; omega), getElem!_pos _ r (by simp [hE]; omega), List.getElem_map,
+          List.getElem_map, Int64.toNat_toInt]
+      · rename_i h1
+        obtain rfl : r = o.n := by omega
+        rw [Nat.zero_add, hl, cg]
+    rw [toList_mk, grp_til_zip oa co _ (Nat.le_of_eq hl.symm),
+      ← cutSpec_of (fun r => (oa.toList[r]!).toNatClampNeg) hol hcr]
+    simp only [List.drop_zero]
+  · -- `o₀ > 0`: `x` dropped by `o₀`, the offsets lowered by it
+    rename_i hne
+    have h0₀ : 0 < o₀.toInt := by
+      have := Int64.le_iff_toInt_le.1 hd.1
+      have : o₀.toInt ≠ 0 := fun e => hne (Int64.toInt_inj.1 e)
+      simp at *; omega
+    cases hv : vec "o cut x" .long (dropColumn .long x.val.c o₀.toInt) with
+    | error e => simp [hv, bind, Except.bind] at h
+    | ok cv =>
+      cases ha : Arr.of (.atom .long) (x.n - o₀.toNatClampNeg) cv "o cut x" with
+      | error e => simp [hv, ha, bind, Except.bind] at h
+      | ok a =>
+        simp only [hv, ha, bind, Except.bind] at h
+        have hxs : a.toList = x.val.toList.drop o₀.toNatClampNeg := by
+          rw [dropColumn_toList hc (by rw [of_c ha]; exact hv), dropSpec, if_pos (by omega), Int64.toNat_toInt]
+        have hP : (plus ob (-o₀)).size = 8 * o.n := by
+          rw [plus, (Verify.val_spec _ _ _ _ _ _ _).1, show Ew.width Ew.i64 = 8 from rfl, show Alg.len ob = ob.size / 8 from rfl,
+            Arr.n_long_bytes o.val ho, USize.toNat_ofNat_of_lt' hoU]
+        have hPw : Verify.elemsW 8 (plus ob (-o₀)) = (List.range o.n).map fun i =>
+            (Ew.intStep Ew.add Int64.minValue (Column.bitsAt ob (i * 8) 8).toInt64 (-o₀)).toUInt64 := by
+          rw [plus, show Alg.len ob = o.n from Arr.n_long_bytes o.val ho, show one (-o₀).toUInt64 = atomBytes Ew.i64 (-o₀).toUInt64 from rfl,
+            Verify.val_i64_va _ _ _ _ _ hoU, Int64.toInt64_toUInt64]; rfl
+        obtain ⟨g, oa, co, hoa, rfl⟩ := parted_ok h
+        have hW := words (by omega) hoa
+        obtain ⟨h0, cg, -⟩ := cuts_nat co
+        have hg : g = o.n := by
+          have := congrArg List.length hW
+          simp only [Arr.length_toList, List.length_append, List.length_map, List.length_singleton, hPw,
+            List.length_range] at this; omega
+        subst hg
+        have hcr : ∀ r, r ≤ o.n → (o.val.toList.map (·.toInt.toNat) ++ [x.val.toList.length])[r]! =
+            o₀.toNatClampNeg + (oa.toList[r]!).toNatClampNeg := fun r hr => by
+          rw [getElem!_concat _ _ (by simpa using hr)]
+          simp only [List.length_map, hol]
+          split
+          · rename_i h1
+            obtain ⟨a0, -, am⟩ := cuts_le co (Nat.le_refl r) (Nat.le_of_lt h1)
+            have hlenP : (Verify.elemsW 8 (plus ob (-o₀))).length = o.n := by simp [hPw]
+            have hWr : oa.toList[r]! = Ew.intStep Ew.add Int64.minValue (Column.bitsAt ob (r * 8) 8).toInt64 (-o₀) := by
+              rw [hW, getElem!_concat _ _ (by simp [hlenP]; omega), if_pos (by simp [hlenP]; omega),
+                getElem!_map_toInt64 _ _ (by omega), hPw, getElem!_pos _ r (by simp; omega)]
+              simp [Int64.toInt64_toUInt64]
+            have hor : o.val.toList[r]! = (Column.bitsAt ob (r * 8) 8).toInt64 := by
+              rw [hos, getElem!_map_toInt64 _ _ (by omega), getElem!_pos _ r (by omega)]
+              simp [Verify.elemsW]
+            rw [hWr] at a0 am
+            have := Int64.toNat_toInt o₀
+            have := Int64.toNat_toInt (Ew.intStep Ew.add Int64.minValue (Column.bitsAt ob (r * 8) 8).toInt64 (-o₀))
+            have := add_neg_toInt h0₀ a0 (by omega)
+            rw [getElem!_pos _ r (by simp [hol]; omega), List.getElem_map,
+              show o.val.toList[r]'(by omega) = o.val.toList[r]! from (getElem!_pos _ r (by omega)).symm, hor, hWr]
+            omega
+          · rename_i h1
+            obtain rfl : r = o.n := by omega
+            rw [hl, cg]; omega
+        rw [toList_mk, grp_til_zip oa co _ (Nat.le_of_eq (Arr.length_toList _).symm), hxs,
+          ← cutSpec_of (fun r => (oa.toList[r]!).toNatClampNeg) hol hcr]
 
 end MoveLaws
 
