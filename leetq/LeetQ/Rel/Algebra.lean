@@ -139,10 +139,9 @@ def cut (c : Code) (ns : Array Nat) : Except String (Array Code) := do
   let w := c.k.width
   pure (ns.foldl (init := (#[], 0)) fun (acc, o) m => (acc.push ⟨c.k, m, c.card, c.b.extract (w * o) (w * (o + m))⟩, o + m)).1
 
-/-- The run starts of `c` and its count (`runStarts`, at the code's width). `runStarts` reads byte lanes,
-    so a bit code goes through its long ids (missing kernel: `runStarts` on bits). -/
+/-- The run starts of `c` and its count: `runStartsBits` on bits, `runStarts` at the code's width. -/
 def runStarts (c : Code) : ByteArray :=
-  if c.k == .bit then Kernel.runStarts 8 false c.longs else Kernel.runStarts c.w false c.b
+  if c.k == .bit then Kernel.runStartsBits c.n.toUSize c.b else Kernel.runStarts c.w false c.b
 
 end Code
 
