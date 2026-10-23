@@ -92,7 +92,7 @@ def ixN (n : Nat) : RelRep Unit Nat := .enum fun _ => List.range n
 
 section Pipe
 
-variable {β : Type} [DecidableEq β] [FibreIndex β]
+variable {β : Type} [DecidableEq β] [Hashable β]
 
 /-- `p? S` over a list of indices: the indices `p` keeps, each answered by `S`. -/
 theorem flatMap_corefl (p : Nat → Bool) (S : RelRep Nat β) : (l : List Nat) →

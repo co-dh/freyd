@@ -46,6 +46,9 @@ public import AOP.A7_1
 public import AOP.A7_2_Pres
 public import AOP.A6_FinRel
 import AOP.A7_2
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 /-- B&dM p.184: the section's fixed data, the van's capacity `N`.  Every arrow below reads it from
     the one instance in scope, so the printer, which hides instance arguments, shows the book's

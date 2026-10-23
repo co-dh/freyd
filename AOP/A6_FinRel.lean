@@ -967,7 +967,7 @@ theorem FinRel.get_chains [DecidableEq K] [Hashable K] (r : FinRel K V) : chainG
     hashing when `K` has a `Hashable`, else by the scans `scanLookup` and `eraseDups`.  Each answer
     equals the scan's (`get_build`, `dedup_eq`), so a law proved of the scan holds of either; `build`
     makes the index once, and `get` answers each key from it. -/
-class FibreIndex (K : Type) [DecidableEq K] where
+class FibreIndex (K : Type) [outParam (DecidableEq K)] where
   Index : Type → Type
   build {V : Type} : FinRel K V → Index V
   get {V : Type} : Index V → K → List V
@@ -1001,8 +1001,9 @@ theorem toList_foldl_push {α : Type} (l : List α) (a : Array α) : (l.foldl Ar
   | cons x l ih => simp [ih]
 
 /-- No hash: the scans themselves.  `dedupA` goes through the list: the scan is the fallback of a key
-    with no hash, never a compiled program's path. -/
-instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
+    with no hash, never a compiled program's path.  A `def` and not an instance: a missing `[Hashable K]` must
+    be a type error, not an O(n) scan per key chosen silently. -/
+def FibreIndex.scan [DecidableEq K] : FibreIndex K :=
   ⟨FinRel K, id, FinRel.scanLookup, fun _ => rfl, fun r k => (r.scanLookup k).head?, fun _ _ => rfl,
     fun r k g a => (r.scanLookup k).foldl g a, fun _ _ _ _ => rfl, List.eraseDups, fun _ => rfl,
     fun r k => (r.keys.zip r.vals).filterMap (FinRel.sel k),
@@ -1010,6 +1011,13 @@ instance (priority := low) FibreIndex.scan [DecidableEq K] : FibreIndex K :=
     fun a => a.toList.eraseDups.toArray, fun _ => List.toList_toArray,
     FinRel K, id, fun r k => (r.keys.zip r.vals).filterMap (FinRel.sel k),
     fun r k => by simp only [Array.toList_filterMap, Array.toList_zip]; rfl⟩
+
+/-- A sum key hashes its tag and its payload; the hashed index of a junction needs it. -/
+public instance {α β : Type} [Hashable α] [Hashable β] : Hashable (α ⊕ β) :=
+  ⟨Sum.elim (fun a => mixHash 0 (hash a)) fun b => mixHash 1 (hash b)⟩
+
+-- A cons-list key hashes by structure; the hashed index of a fold's input needs it.
+deriving instance Hashable for CL.ConsList
 
 /-- A hashable key: the rows chained by slot (`FinRel.chains`), and the hash set of `hashDedup`.  Chains and
     not the table `FinRel.fibres`, which allocates a bucket cell and an array per key. -/
@@ -1442,6 +1450,7 @@ section Tabulate
 open PowerAllegory
 
 variable {L W : Type} [DecidableEq L] [DecidableEq W] [FibreIndex L] [FibreIndex W]
+variable [FibreIndex (K × L)] [FibreIndex (V × W)] [FibreIndex (K ⊕ L)]
 
 omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] in
 /-- The coreflexive `p?` of a decidable predicate: the fibre of `k` is `[k]` when `p(k)`, else empty. -/
@@ -1898,7 +1907,7 @@ theorem app_comp (R : RelRep K V) (S : RelRep V C) (a : K) : (R ≫ S).app a = (
     rw [withFib_eq]
     exact (Array.toList_flatMap ..).trans (by simp only [toList_fib]; rfl)
 
-theorem mem_comp [DecidableEq C] (R : RelRep K V) (S : RelRep V C) (a : K) (c : C) :
+theorem mem_comp [DecidableEq C] [FibreIndex C] (R : RelRep K V) (S : RelRep V C) (a : K) (c : C) :
     (R ≫ S).mem a c = (R.app a).any (S.mem · c) := by
   rw [mem_eq_app, app_comp]
   refine Bool.eq_iff_iff.2 ((decide_eq_true_iff).trans ?_)
@@ -1956,9 +1965,9 @@ theorem rel_leftDiv (S : FinRel K V) (R : RelTest K C) : (leftDiv S R).rel = (pa
   rfl
 
 /-- `R /ₛ S ≜ (R/S) ∩ (S/R)°`: both fibres are enumerated. -/
-def symmDiv [DecidableEq C] (R : RelRep K C) (S : RelRep V C) : RelTest K V := (div R S).inter (div S R).conv
+def symmDiv [DecidableEq C] [FibreIndex C] (R : RelRep K C) (S : RelRep V C) : RelTest K V := (div R S).inter (div S R).conv
 
-theorem rel_symmDiv [DecidableEq C] (R : RelRep K C) (S : RelRep V C) : (symmDiv R S).rel = R.rel /ₛ S.rel := by
+theorem rel_symmDiv [DecidableEq C] [FibreIndex C] (R : RelRep K C) (S : RelRep V C) : (symmDiv R S).rel = R.rel /ₛ S.rel := by
   simp only [symmDiv, RelTest.rel_inter, RelTest.rel_conv, rel_div, rel_toTest]
   rfl
 
@@ -2122,6 +2131,7 @@ section Fold
 open CL
 
 variable {L E : Type} [DecidableEq L] [DecidableEq E] [FibreIndex L] [FibreIndex E]
+variable [FibreIndex (E × V)]
 
 omit [DecidableEq V] [FibreIndex V] [DecidableEq L] [FibreIndex L] [DecidableEq E] [FibreIndex E] in
 /-- `⦇[b,s]⦈` on fibres: the base's fibre at `wrap`, the step's fibre over each value at `cons`, each

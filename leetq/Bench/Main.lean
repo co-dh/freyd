@@ -193,12 +193,24 @@ def mminOp (w n : Nat) : IO (IO (Nat × Int64)) :=
   timed "mmin" (LeetQ.Rel.list (ints n 26 1000).toList)
     fun c => some (Int64.ofInt ((LeetQ.Rel.Q.mmin w c).vals.foldl (· + ·) 0))
 
+/-- `x + y` pointwise by `LeetQ.Rel.Q.each2`; `sum x + y`. -/
+def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "relEach2" (LeetQ.Rel.list (ints n 26 1000).toList, LeetQ.Rel.list (ints n 27 1000).toList)
+    fun (x, y) => some (Int64.ofInt ((LeetQ.Rel.Q.each2 (· + ·) x y).vals.foldl (· + ·) 0))
+
+/-- `d + e` on keys by `LeetQ.Rel.Q.zipD`, the key sets overlapping by half; `sum d + e`. -/
+def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
+  timed "relZipD" (LeetQ.Rel.dict (List.range n) (ints n 26 1000).toList,
+      LeetQ.Rel.dict ((List.range n).map (· + n / 2)) (ints n 27 1000).toList)
+    fun (d, e) => some (Int64.ofInt ((LeetQ.Rel.Q.zipD (· + ·) 0 d e).vals.foldl (· + ·) 0))
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
-   ("mins", minsOp), ("msum", msumOp), ("mmin", mminOp 10), ("mmin1000", mminOp 1000)]
+   ("mins", minsOp), ("msum", msumOp), ("mmin", mminOp 10), ("mmin1000", mminOp 1000),
+   ("relEach2", relEach2Op), ("relZipD", relZipDOp)]
 
 /-- Nanoseconds as milliseconds with three decimals. -/
 def ms (t : Nat) : String :=

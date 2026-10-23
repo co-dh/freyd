@@ -30,6 +30,9 @@ public import AOP.A9_1
 public import AOP.A6_FinRel
 import AOP.A10_1
 import AOP.A7_2_RelSet
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 namespace Freyd.Alg.RelSet.Tex
 

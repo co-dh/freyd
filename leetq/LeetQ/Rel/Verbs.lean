@@ -13,7 +13,7 @@ open scoped Freyd.Alg.RelSet.RelRep
 open LeetQ.Q.Agg (QF qfdiv)
 
 variable {K V W J R S κ' : Type} [DecidableEq K] [DecidableEq V] [DecidableEq W] [DecidableEq J]
-  [DecidableEq R] [DecidableEq S] [DecidableEq κ']
+  [DecidableEq R] [DecidableEq S] [DecidableEq κ'] [Hashable K] [Hashable V] [Hashable W] [Hashable J] [Hashable R] [Hashable S] [Hashable κ']
 
 /-! ## Reindexing the positions -/
 
@@ -289,8 +289,6 @@ theorem mavg_spec (n : Nat) (C : Q K Int) (i : Nat) (h : i < C.n) : (mavg n C).�
   show ((msum n C).ν.pair (mcount n C).ν ≫ _).app i = _
   rw [RelRep.app_comp, RelRep.app_comp, RelRep.app_pair, RelRep.app_pair,
     msum_spec Int.add_assoc Int.add_zero (fun a b => by omega) Int.sub_zero n C i h, mcount_spec n C i h]
-  simp only [RelRep.app_comp, RelRep.transpose_eq, RelRep.app_ofFn]
-  rfl
 
 /-- The moving least in the order `le`: `Λ(W(n) ≫ ν) ≫ ⦇min⦈` in two passes whatever `n`, the suffix least within
     blocks of width `n` at the window's start merged with the prefix least within blocks at its end (`mminBy_spec`). -/

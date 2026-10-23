@@ -16,6 +16,9 @@ public import AOP.A7_2_Pres
 public import AOP.A6_FinRel
 import AOP.A10_1
 import AOP.A7_2_RelSet
+-- Spec-only derivations on abstract types: the unhashed scan fallback is opted into here and in no executed code.
+attribute [local instance low] Freyd.Alg.RelSet.FibreIndex.scan
+
 
 /-- B&dM p.246: the section's fixed data — the tab width `n`, and `TB`, `NL`, `BL` the tab, newline
     and blank characters.  Every definition below reads them from the one instance in scope, so the

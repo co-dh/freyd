@@ -85,8 +85,8 @@ def d : RelRep Sym Int := bang dF.keys dF.vals dF.len
 -- key d: `a`b`c ; value d: 1 2 3
 #guard dF.keys == #["a", "b", "c"] && dF.vals == #[1, 2, 3]
 
-variable [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X]
-  [DecidableEq κ] [FibreIndex κ]
+variable [DecidableEq K] [Hashable K] [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X]
+  [DecidableEq κ] [Hashable κ]
 
 /-- `dom r` held as pairs, each key once, in order of first appearance: q's key order. -/
 def domP (r : FinRel K V) : RelRep K K := let d := FibreIndex.dedupA r.keys; .pairs ⟨d, d, rfl⟩
@@ -97,13 +97,13 @@ def look : RelRep K V → RelRep K (Option V)
   | .pairs r => let i := FibreIndex.build r; .arr fun k => #[FibreIndex.first? i k]
   | D => RelRep.override (D.first ≫ RelRep.ofFn some) (RelRep.ofFn fun _ => none)
 
-omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 theorem app_lookSpec (D : RelRep K V) (k : K) :
     (RelRep.override (D.first ≫ RelRep.ofFn some) (RelRep.ofFn fun _ => none)).app k = [(D.app k).head?] := by
   simp only [RelRep.override_eq, RelRep.app_enum, RelRep.app_comp, RelRep.first_eq]
   cases D.app k <;> rfl
 
-omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- `look` reads the fibre list: its head, or `0N` when it is empty. -/
 theorem app_look (D : RelRep K V) (k : K) : (look D).app k = [(D.app k).head?] := by
   cases D with
@@ -149,7 +149,7 @@ def upsert (r s : FinRel K V) : RelRep K V := domP (r.union s) ≫ RelRep.overri
 -- d,e: `a`b`c`d!1 10 20 30
 #guard ps (upsert dF eF) == some #[("a", 1), ("b", 10), ("c", 20), ("d", 30)]
 
-omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- `eraseDups` keeps one copy of each key: the fibre of `k` in `(a,a)` over it is `[k]` when `k` occurs. -/
 theorem sel_eraseDups (k : K) : (xs : List K) →
     ((xs.eraseDups.map fun a => (a, a)).filterMap (FinRel.sel k)) = if k ∈ xs then [k] else []
@@ -163,7 +163,7 @@ theorem sel_eraseDups (k : K) : (xs : List K) →
 termination_by xs => xs.length
 decreasing_by exact Nat.lt_succ_of_le (List.length_filter_le _ _)
 
-omit [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- `dom r` answers `k` itself exactly when `k` is a key of `r`. -/
 theorem app_domP (r : FinRel K V) (k : K) :
     (domP r).app k = if k ∈ r.toList.map Prod.fst then [k] else [] := by
@@ -183,7 +183,7 @@ def zipFib (op : V → V → V) (z : V) : List V × List V → List V
 def zipFibA (op : V → V → V) (z : V) (p : Array V × Array V) : Array V :=
   if h : 0 < p.1.size then p.1.set 0 (op p.1[0] (p.2[0]?.getD z)) else p.2.map (op z)
 
-omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq K] [Hashable K] [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 @[simp] theorem toList_zipFibA (op : V → V → V) (z : V) (a m : Array V) :
     (zipFibA op z (a, m)).toList = zipFib op z (a.toList, m.toList) := by
   rcases a with ⟨_ | ⟨x, t⟩⟩ <;> rcases m with ⟨_ | ⟨y, u⟩⟩ <;> first | rfl | simp [zipFibA, zipFib]
@@ -195,7 +195,7 @@ def zipD (op : V → V → V) (z : V) (r s : FinRel K V) : RelRep K V :=
   domP (r.union s) ≫ (RelRep.pairs r).withFib fun f => (RelRep.pairs s).withFib fun g =>
     .arr fun k => zipFibA op z (f k, g k)
 
-omit [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- **`d op e`** on fibre lists: each key of `d ∪ e`, once, answered by `zipFib` of its two fibres. -/
 theorem app_zipD (op : V → V → V) (z : V) (r s : FinRel K V) (k : K) :
     (zipD op z r s).app k =
@@ -203,7 +203,7 @@ theorem app_zipD (op : V → V → V) (z : V) (r s : FinRel K V) (k : K) :
   rw [zipD, RelRep.app_comp, app_domP]
   split <;> simp [RelRep.app_comp, RelRep.withFib_eq, RelRep.app_pairs]
 
-omit [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- The Set reading: `d op e` relates `k` to `v` iff `k` is a key and `v` is in `zipFib` of its fibres. -/
 theorem rel_zipD (op : V → V → V) (z : V) (r s : FinRel K V) (k : K) (v : V) : (zipD op z r s).rel k v ↔
       k ∈ (r.union s).toList.map Prod.fst ∧ v ∈ zipFib op z (r.scanLookup k, s.scanLookup k) := by
@@ -297,16 +297,16 @@ def xgroup (k : R → κ) (v : R → V) (T : RelRep Nat R) : Option (RelRep κ (
 
 /-- `select agg v by k from T = ran(T k) Λ((T k)° (T v)) agg`: q sorts the keys (`s#`).  `grp` with the keys
     of `X` listed once by `dedupA`, then sorted, so the sort sees each key once and `xkey` runs once. -/
-def selby [Ord κ] [FibreIndex (Array V)] (agg : Array V → W) (k : R → κ) (v : R → V)
+def selby [Ord κ] [Hashable (Array V)] (agg : Array V → W) (k : R → κ) (v : R → V)
     (T : RelRep Nat R) : Option (RelRep κ W) := do
   let X ← xkey k v T
   let ks := (FibreIndex.dedupA (← fin? X).keys).qsort (compare · · == .lt)
   pure ((.pairs ⟨ks, ks, rfl⟩ ≫ X.transposeA) ≫ RelRep.ofFn agg)
 
-omit [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] in
+omit [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] in
 /-- **`select agg v by k`**: at each key `ks` lists, `agg` of the group's whole fibre — in row order and with
     its repeats, which `sum`/`count`/`avg` need and the Set reading of `Λ` drops. -/
-theorem app_selby [FibreIndex (Array V)] {agg : Array V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R}
+theorem app_selby [Hashable (Array V)] {agg : Array V → W} {k : R → κ} {v : R → V} {T : RelRep Nat R}
     {ks : RelRep κ κ} {X : RelRep κ V} (hX : xkey k v T = some X) {G : RelRep κ (Array V)}
     (hG : grp ks k v T = some G) (c : κ) :
     (G ≫ RelRep.ofFn agg).app c = (ks.app c).map fun c' => agg (X.app c').toArray := by
@@ -437,13 +437,13 @@ q's `aj` searches each left row's time in its key's right rows, sorted by time. 
 row is restated over the fibre lists (`ajFib`); where the row is one and its key's right rows are ascending
 in time, `fastOne` answers it by a binary search whose answer is checked at its two neighbours. -/
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- The right rows `(time, value)` ascend in time, checked on neighbours. -/
 def ascT : List (Int × W) → Bool
   | x :: y :: t => decide (x.1 ≤ y.1) && ascT (y :: t)
   | _ => true
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 theorem ascT_iff : (l : List (Int × W)) → (ascT l = true ↔ l.Pairwise fun x y => x.1 ≤ y.1)
   | [] => by simp [ascT]
   | [_] => by simp [ascT]
@@ -454,7 +454,7 @@ theorem ascT_iff : (l : List (Int × W)) → (ascT l = true ↔ l.Pairwise fun x
     · exact h
     · exact Int.le_trans h (List.rel_of_pairwise_cons hp hz)
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- On ascending rows, the rows at time `≤ t` are the first `p`, when row `p - 1` is and row `p` is not. -/
 theorem filter_eq_take {t : Int} : (l : List (Int × W)) → l.Pairwise (fun x y => x.1 ≤ y.1) → (p : Nat) →
     (p = 0 ∨ l[p - 1]?.any (·.1 ≤ t)) → l[p]?.all (fun x => !decide (x.1 ≤ t)) →
@@ -494,7 +494,7 @@ theorem filter_eq_take {t : Int} : (l : List (Int × W)) → l.Pairwise (fun x y
     rw [List.getElem?_cons_succ] at h2
     rw [List.filter_cons, if_pos (decide_eq_true hx), List.take_succ_cons, filter_eq_take r hs.2 p h1r h2]
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- On ascending rows, `est(≥)` keeps the last row, so its last is the last row. -/
 theorem getLast?_estList (xs : List (Int × W)) (hs : xs.Pairwise fun x y => x.1 ≤ y.1) :
     (RelRep.estList (fun a b => decide (b.1 ≤ a.1)) xs).getLast? = xs.getLast? := by
@@ -510,7 +510,7 @@ theorem getLast?_estList (xs : List (Int × W)) (hs : xs.Pairwise fun x y => x.1
     simp only [List.filter_cons, List.filter_nil, List.all_eq_true, decide_eq_true_eq, if_pos hb]
     simp
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- The number of rows at time `≤ t`, by halving `[lo, hi)`: the search is not proved, its answer is
     checked by `fastOne`. -/
 def bsearch (a : Array (Int × W)) (t : Int) (lo hi : Nat) : Nat :=
@@ -522,7 +522,7 @@ def bsearch (a : Array (Int × W)) (t : Int) (lo hi : Nat) : Nat :=
 termination_by hi - lo
 decreasing_by all_goals omega
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- The value of the last row at the greatest time `≤ t`, when the search's answer `p` passes its check. -/
 def fastOne (a : Array (Int × W)) (t : Int) : Option (List (Option W)) :=
   let p := bsearch a t 0 a.size
@@ -565,7 +565,7 @@ def ajFib {I : Type} (k : R → κ) (tm : R → Int) (fT : I → List R) (gG : �
 
 /-- The fibres of `aj`: one left row whose key's rows ascend by `fastOne`, every other by `ajFib`.  The
     ascending groups are found once, each key's `(rows, ascending)` held in `h`. -/
-def ajFast {I : Type} [DecidableEq I] [FibreIndex I] (k : R → κ) (tm : R → Int) (t : FinRel I R)
+def ajFast {I : Type} [DecidableEq I] [Hashable I] (k : R → κ) (tm : R → Int) (t : FinRel I R)
     (g : FinRel κ (Int × W)) : RelRep I (Option W) :=
   let ti := FibreIndex.build t
   let gi := FibreIndex.build g
@@ -589,12 +589,12 @@ def aj (k : R → κ) (tm : R → Int) (k' : S → κ) (tv : S → Int × W) (T 
     | _ => ajSpec k tm k' tv T U
   | _, _ => ajSpec k tm k' tv T U
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 theorem onRows_congr (T : RelRep Nat R) {D D' : RelRep Nat V} (h : D.app = D'.app) (z : V) :
     onRows T D z = onRows T D' z := by
   simp only [onRows, RelRep.override_eq, h]
 
-omit [DecidableEq X] [FibreIndex X] in
+omit [DecidableEq X] [Hashable X] in
 /-- **`aj` is `ajSpec`**: the binary search answers what `Λ(C ∩ ≥) est(≥) last` does. -/
 theorem aj_eq (k : R → κ) (tm : R → Int) (k' : S → κ) (tv : S → Int × W) (T : RelRep Nat R) (U : RelRep Nat S) :
     aj k tm k' tv T U = ajSpec k tm k' tv T U := by
@@ -659,7 +659,7 @@ As `aj`: `wjSpec`'s fibre at a left row restated over the fibre lists (`wjFib`);
 right rows ascend in time is answered by two binary searches, `t+lo` and `t+hi`, each checked at its two
 neighbours (`wjOne`). -/
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- On ascending rows, the rows at time `> t` are those from `p` on, when row `p - 1` is at `≤ t` and row `p`
     is not. -/
 theorem filter_not_eq_drop {t : Int} (l : List (Int × W)) (hs : l.Pairwise fun x y => x.1 ≤ y.1) (p : Nat)
@@ -681,18 +681,18 @@ theorem filter_not_eq_drop {t : Int} (l : List (Int × W)) (hs : l.Pairwise fun 
       List.filter_congr (q := fun _ => true) (fun y hy => by rw [decide_eq_false fun h => hz (Int.le_trans (hd.1 y hy) h)]; rfl),
       List.filter_eq_self.2 (fun _ _ => rfl)]
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- The search's answer `p` for time `s` passes its check at both neighbours. -/
 def chk (a : Array (Int × W)) (s : Int) (p : Nat) : Bool :=
   (p == 0 || a[p - 1]?.any (·.1 ≤ s)) && a[p]?.all (fun x => !decide (x.1 ≤ s))
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 theorem chk_spec {a : Array (Int × W)} {s : Int} {p : Nat} (h : chk a s p = true) :
     (p = 0 ∨ a.toList[p - 1]?.any (·.1 ≤ s)) ∧ a.toList[p]?.all (fun x => !decide (x.1 ≤ s)) := by
   simp only [chk, Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq] at h
   simpa using h
 
-omit [FibreIndex W] in
+omit [Hashable W] in
 /-- The row prevailing at `t+o`, by `est(≥) last` over the rows at time `≤ t+o`: row `p - 1`. -/
 theorem prev_eq {a : Array (Int × W)} {t o : Int} (hs : a.toList.Pairwise fun x y => x.1 ≤ y.1) {p : Nat}
     (hc : chk a (t + o) p = true) :
@@ -716,8 +716,8 @@ theorem prev_eq {a : Array (Int × W)} {t o : Int} (hs : a.toList.Pairwise fun x
     | none => rw [e] at h1'; cases h1'
     | some z => simp [Array.getElem?_toList, e]
 
-omit [DecidableEq W] [FibreIndex W] in
-omit [DecidableEq K] [FibreIndex K] [DecidableEq V] [FibreIndex V] [DecidableEq W] [FibreIndex W] [DecidableEq R] [FibreIndex R] [DecidableEq S] [FibreIndex S] [DecidableEq X] [FibreIndex X] [DecidableEq κ] [FibreIndex κ] in
+omit [DecidableEq W] [Hashable W] in
+omit [DecidableEq K] [Hashable K] [DecidableEq V] [Hashable V] [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
 /-- Rows `p … p+m-1` read by index are the slice `drop p (take (p+m))`; core's `List.drop_take` uses
     `Classical.choice`, this induction does not. -/
 theorem range'_filterMap {α : Type} : ∀ (l : List α) (p m : Nat),
@@ -738,6 +738,7 @@ theorem range'_filterMap {α : Type} : ∀ (l : List α) (p m : Nat),
     rw [List.range'_succ_left, List.filterMap_map, Nat.add_right_comm]
     exact range'_filterMap l p m
 
+omit [Hashable W] in
 /-- The rows in the window `(t+lo, t+hi]`: rows `p₁ … p₂ - 1`. -/
 theorem window_eq {a : Array (Int × W)} {t lo hi : Int} (hs : a.toList.Pairwise fun x y => x.1 ≤ y.1) {p₁ p₂ : Nat}
     (h12 : p₁ ≤ p₂) (c₁ : chk a (t + lo) p₁ = true) (c₂ : chk a (t + hi) p₂ = true) :
@@ -762,7 +763,7 @@ theorem window_eq {a : Array (Int × W)} {t lo hi : Int} (hs : a.toList.Pairwise
     · exact d1
     · rfl
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 /-- `wj`'s sum at one left row at time `t` against its key's ascending rows, when both searches pass their
     checks. -/
 def wjOne [Add W] [Zero W] (lo hi : Int) (a : Array (Int × W)) (t : Int) : Option (List W) :=
@@ -783,7 +784,7 @@ def wjOneTR [Add W] [Zero W] (lo hi : Int) (a : Array (Int × W)) (t : Int) : Op
     some [if p₁ = 0 then s else match a[p₁ - 1]? with | some x => x.2 + s | none => s]
   else none
 
-omit [DecidableEq W] [FibreIndex W] in
+omit [DecidableEq W] [Hashable W] in
 @[csimp] theorem wjOne_eq_wjOneTR : @wjOne = @wjOneTR := by
   funext W _ _ lo hi a t
   simp only [wjOne, wjOneTR]
@@ -808,7 +809,7 @@ def wjFib [Add W] [Zero W] {I : Type} (lo hi : Int) (k : R → κ) (tm : R → I
   [(((RelRep.estList (geT (W := W)).mem (c.filter fun x => decide (x.2.1 ≤ x.1 + lo))).getLast?.toList ++
     c.filter fun x => decide (x.1 + lo < x.2.1 ∧ x.2.1 ≤ x.1 + hi)).map (·.2.2)).sum]
 
-omit [FibreIndex W] in
+omit [Hashable W] in
 /-- **`wjOne` is `wjFib` of one left row** against its key's ascending rows. -/
 theorem wjOne_eq [Add W] [Zero W] {lo hi : Int} {a : Array (Int × W)} {t : Int} (hs : ascT a.toList = true)
     {x : List W} (h : wjOne lo hi a t = some x) :
@@ -823,7 +824,7 @@ theorem wjOne_eq [Add W] [Zero W] {lo hi : Int} {a : Array (Int × W)} {t : Int}
   · cases h
 
 /-- The fibres of `wj`: one left row whose key's rows ascend by `wjOne`, every other by `wjFib`. -/
-def wjFast [Add W] [Zero W] {I : Type} [DecidableEq I] [FibreIndex I] (lo hi : Int) (k : R → κ) (tm : R → Int)
+def wjFast [Add W] [Zero W] {I : Type} [DecidableEq I] [Hashable I] (lo hi : Int) (k : R → κ) (tm : R → Int)
     (t : FinRel I R) (g : FinRel κ (Int × W)) : RelRep I W :=
   let ti := FibreIndex.build t
   let gi := FibreIndex.build g
@@ -847,7 +848,7 @@ def wj [Add W] [Zero W] (lo hi : Int) (k : R → κ) (tm : R → Int) (k' : S �
     | _ => wjSpec lo hi k tm k' tv T U
   | _, _ => wjSpec lo hi k tm k' tv T U
 
-omit [DecidableEq X] [FibreIndex X] in
+omit [DecidableEq X] [Hashable X] in
 /-- **`wj` is `wjSpec`**: the two binary searches answer what the prevailing row and the window of `C` do. -/
 theorem wj_eq [Add W] [Zero W] (lo hi : Int) (k : R → κ) (tm : R → Int) (k' : S → κ) (tv : S → Int × W)
     (T : RelRep Nat R) (U : RelRep Nat S) : wj lo hi k tm k' tv T U = wjSpec lo hi k tm k' tv T U := by

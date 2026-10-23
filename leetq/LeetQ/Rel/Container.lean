@@ -26,7 +26,7 @@ structure Q (K V : Type) where
   keys : Keys K
   ν : RelRep Nat V
 
-variable {K V W X : Type} [DecidableEq K] [DecidableEq V] [DecidableEq W] [DecidableEq X]
+variable {K V W X : Type} [DecidableEq K] [DecidableEq V] [DecidableEq W] [DecidableEq X] [Hashable K] [Hashable V] [Hashable W] [Hashable X]
 
 /-- The key relation `κ : ℕ ⇸ K`; a position key is the identity. -/
 def Keys.κ : Keys K → RelRep Nat K
