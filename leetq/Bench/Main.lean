@@ -289,8 +289,20 @@ def relJoinOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let r ← io "relJoin" (encCol enc m ((Array.range m).map Int.ofNat))
   timedE s!"relJoin {enc}" (l, r) fun (l, r) => do sumR "relJoin" (← LeetQ.Rel.Struct.ej #[l] #[r])
 
+/-- `ej` on a two-column key tuple in `enc`: `n` left tuples against `m` right ones, both drawn from the
+    range; the sum of the right rows. -/
+def relJoin2Op (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
+  let m := encRange enc
+  let l₁ ← io "relJoin2" (encCol enc m (ints n 30 m))
+  let l₂ ← io "relJoin2" (encCol enc m (ints n 31 m))
+  let r₁ ← io "relJoin2" (encCol enc m ((Array.range m).map Int.ofNat))
+  let r₂ ← io "relJoin2" (encCol enc m (ints m 32 m))
+  timedE s!"relJoin2 {enc}" (l₁, l₂, r₁, r₂) fun (l₁, l₂, r₁, r₂) => do
+    sumR "relJoin2" (← LeetQ.Rel.Struct.ej #[l₁, l₂] #[r₁, r₂])
+
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
-  ["bits", "enum", "foR", "dense"].flatMap (fun e => [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e)]) ++
+  ["bits", "enum", "foR", "dense"].flatMap (fun e =>
+    [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
   [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),

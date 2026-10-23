@@ -6,7 +6,7 @@
   them, `codes` codes them, `gatherColumn` picks rows of them. Elements are compared through joint
   CODES (`Code`): equal elements equal codes, held at the narrowest layout that already is a code — a
   bit, an enum's ids, a `foR` column's offsets, or a grouping pass's ids packed at the width of their
-  count — and every step reads them at that layout; a pair of codes is one code by `groupIdsPair`.
+  count — and every step reads them at that layout; a pair of codes is one code by `composeKey`.
   The spec of each operator is the List-level relation on `toList`; `#guard`s below hold each one
   on small literal relations, and the laws that the kernels' Lean bodies make reachable are proved.
 -/
@@ -160,38 +160,6 @@ def empty : (t : Ty) → Except String (Pay t)
 def packParts (ng : Nat) (gid : ByteArray) (ns : Array Nat) : Array Code :=
   (ns.foldl (init := (#[], 0)) fun (acc, o) m => (acc.push (pack ng (gid.extract (8 * o) (8 * (o + m)))), o + m)).1
 
-/-- `x?x` of a column (`findColumn`): each element's first position, the one equality kernel that reads
-    every encoding and type. -/
-def selfFind (a : QAtomicType) (c : Column) : Except String ByteArray :=
-  match findColumn a false c (.vector a c) with
-  | some (.vector .long p) => match Column.bytesOf .long p with
-    | some b => pure b
-    | none => throw "findColumn answered positions whose payload does not decode"
-  | _ => throw s!"findColumn declines x?x on a column of type {a.code} in this encoding"
-
-/-- One coding pass over a column of any encoding, at the layout it is stored in: each element's code as a
-    long and a bound on the codes. The class numbered by first occurrence, bounded by the number of
-    classes — `groupIds` at a `bits` or narrow (≤ 4-byte) dense layout, `groupIdsFoR` on the encoded form,
-    `idGroups` on an enum's ids (a `syms` column interned first); a wide or undecodable one (8-byte, ALP,
-    guid) is hash-coded by `x?x`, its first positions, bounded by the count. -/
-def groupsOf (a : QAtomicType) (c : Column) : Except String (ByteArray × Nat) := do
-  let classes (r : ByteArray × ByteArray) : ByteArray × Nat := (r.1, len r.2)
-  let byIds (n : Nat) (dof : Array Nat) (xs : ByteArray) : ByteArray × Nat :=
-    classes (Order.idGroups (dof.size - 1).toUSize n.toUSize (Column.idWidth dof).toUSize xs)
-  -- `x?x`'s positions are below the count; numbering them densely is a `groupIds` (`dedup`) pass, measured
-  -- slower than the hash find itself at 8-byte keys (missing kernel: `x?x` answering first-occurrence ids)
-  let hashed : Except String (ByteArray × Nat) := do pure (← selfFind a c, Column.count a c)
-  match c, orderKind a with
-    | .bits n b, _ => pure (classes (Order.groupIds .bit n.toUSize b))
-    | .enum n _ dof xs, _ => pure (byIds n dof xs)
-    | .syms .., _ =>
-      match Column.intern c with
-      | .enum n _ dof xs => pure (byIds n dof xs)
-      | _ => throw "Column.intern answered no enum for a syms column"
-    | .foR n m p, some k => if Column.encodes a then pure (classes (Order.groupIdsFoR k n.toUSize m p)) else hashed
-    | .bytes b, some k => if k.width ≤ 4 then pure (classes (Order.groupIds k (Column.count a c).toUSize b)) else hashed
-    | _, _ => hashed
-
 /-- The layout of an enum's id lane, where it is one a kernel reads. -/
 def laneKind : Nat → Option Scan.Kind
   | 1 => some .bit | 8 => some .u8 | 16 => some .i16 | 32 => some .i32 | 64 => some .i64 | _ => none
@@ -226,8 +194,9 @@ def foROffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except Stri
     - `bits`: each part is its own code, a bit wide, order-preserving;
     - `foR` of a long type: the offsets from the joint least element (`foROffsets`), order-preserving;
     - `enum`, and `syms` interned by `razeColumn`/`Column.intern`: the joint dictionary's ids at their lane;
-    - anything else: one coding pass over the `raze` (`groupsOf`), its codes packed at the width of their
-      bound (`packParts`). A general list is `findList` of the join against itself, its positions packed. -/
+    - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
+      encoding), packed at the width of their count (`packParts`). A general list is `findList` of the
+      join against itself, its positions packed. -/
 def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
   | .atom a, cs => do
     if let some bs := cs.mapM (fun c => match c with | .bits n b => some (⟨.bit, n, 2, b⟩ : Code) | _ => none) then
@@ -239,8 +208,9 @@ def codes : (t : Ty) → Array (Pay t) → Except String (Array Code)
     if let .enum n _ dof ids := all then
       if let some k := laneKind (Column.idWidth dof) then
         if k != .bit || cs.size == 1 then return ← Code.cut ⟨k, n, dof.size - 1, ids⟩ ns
-    let (gid, ng) ← groupsOf a all
-    pure (packParts ng gid ns)
+    let some (gid, fs) := groupIdsColumn a all
+      | throw s!"groupIdsColumn declines a column of type {a.code} in this encoding"
+    pure (packParts (len fs) gid ns)
   | .gen, cs => do
     let all ← raze .gen cs
     pure (packParts all.size (findList all all) (cs.map (·.size)))
@@ -287,24 +257,59 @@ def ofCols (k v : Ty) (kc : Pay k) (vc : Pay v) : Except String (Rel k v) := do
 
 /-! ## The composite steps, named once -/
 
+/-- A code's payload as the column `composeKey` reads: a bit a boolean bitmap, a byte layout the
+    dense column of that width. -/
+def Code.column (c : Code) : Option (QAtomicType × Column) :=
+  match c.k with
+  | .bit => some (.boolean, .bits c.n c.b) | .u8 => some (.byte, .bytes c.b)
+  | .i16 => some (.short, .bytes c.b) | .i32 => some (.int, .bytes c.b) | .i64 => some (.long, .bytes c.b)
+  | _ => none
+
+/-- The code of each row's pair `(a, b)`: `composeKey`'s `a·|b| + b` at the width of the product of
+    the bounds, no grouping pass; the classes are answered too when the step grouped. `classes`: the
+    caller groups the answer next. -/
+def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteArray) :=
+  -- the domain is declared ≥ 17 so the lane is a byte at least, the narrowest a code kernel reads
+  let d₂ := max b.card 1
+  let d₁ := max a.card (16 / d₂ + 1)
+  let composed : Option Code := do
+    guard (d₁ * d₂ < 2 ^ 63)
+    let k ← laneKind (Column.laneWidth (Column.widthFor (d₁ * d₂ - 1)))
+    -- grouping a composite past 16 bits hashes it, as `groupIdsPair` hashes the pair: the compose would
+    -- be a pass for nothing (measured: `|R|` of 1000-wide `foR` pairs 11% slower composed)
+    guard (!classes || k.width ≤ 2)
+    let (t₁, c₁) ← a.column
+    let (t₂, c₂) ← b.column
+    (⟨k, a.n, d₁ * d₂, ·⟩) <$> composeKey t₁ c₁ d₁ d₂ t₂ c₂
+  match composed with
+  | some c => (c, none)
+  -- `composeKey` declines a bound past 2⁶³ or a code outside it (a 16-bit lane past 2¹⁵ reads signed):
+  -- `groupIdsPair` numbers the pairs densely instead, whatever the codes are
+  -- (packed only when the code itself is read next: grouped, the classes are the answer)
+  | none =>
+    let r := Order.groupIdsPair a.k b.k a.n.toUSize a.b b.b
+    (if classes then ⟨.i64, len r.1, len r.2, r.1⟩ else pack (len r.2) r.1, some r)
+
 /-- `|R|` of tuples: `cols[j]` is column `j`'s codes per part (`codes`); the columns are folded left by
-    `groupIdsPair` at each pair's own layouts and the ids packed (`pack`); one code per part. One
-    column is its own codes. (Missing kernel: `groupIdsPair` answering its ids packed, so the fold's
-    long ids are never written; the composite `c₁·|D₂| + c₂` needs `Ew.val` over two layouts.) -/
+    `pairCode`; one code per part. One column is its own codes. -/
 def tuples (cols : Array (Array Code)) : Except String (Array Code) := do
   let some c0 := cols[0]? | throw "tuples: no column"
   if cols.size == 1 then return c0
-  let (gid, fs) ← tupleIds (cols.map Code.cat)
-  (pack (len fs) gid).cut (c0.map (·.n))
+  (← tupleCode false (cols.map Code.cat)).1.cut (c0.map (·.n))
 where
-  /-- The classes of the tuples of the columns `all`, as `groupIds` answers them: the last fold step's
-      own answer, so a caller wanting the classes groups nothing twice. -/
-  tupleIds (all : Array Code) : Except String (ByteArray × ByteArray) := do
+  /-- The fold of the columns `all` by `pairCode`, the last step told whether its answer is grouped
+      next (`classes`), and the classes when that step grouped. -/
+  tupleCode (classes : Bool) (all : Array Code) : Except String (Code × Option (ByteArray × ByteArray)) := do
     let some c0 := all[0]? | throw "tuples: no column"
-    if all.size == 1 then return c0.groupIds
-    pure ((all.extract 1 all.size).foldl (init := (c0, (ByteArray.empty, ByteArray.empty))) fun (acc, _) c =>
-      let r := Order.groupIdsPair acc.k c.k acc.n.toUSize acc.b c.b
-      (⟨.i64, len r.1, len r.2, r.1⟩, r)).2
+    let some cl := all.back? | throw "tuples: no column"
+    if all.size == 1 then return (c0, none)
+    pure (pairCode classes ((all.extract 1 (all.size - 1)).foldl (fun a c => (pairCode false a c).1) c0) cl)
+  /-- The classes of the tuples of the columns `all`, as `groupIds` answers them; the last fold step's
+      own when it grouped, so a caller wanting the classes groups nothing twice. -/
+  tupleIds (all : Array Code) : Except String (ByteArray × ByteArray) := do
+    match ← tupleCode true all with
+    | (_, some r) => pure r
+    | (c, none) => pure c.groupIds
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Ty} (ds : Array (Cols k v)) : Except String (Array Code) := do
@@ -499,7 +504,7 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Arr B mb) (Uc : Arr 
   let some rvc := ycs[1]? | throw "leftDiv: no code of R.val"
   let some ubc := ycs[2]? | throw "leftDiv: no code of Ub"
   let zc ← single (← codes C #[z])
-  let (gid, firsts) := Order.groupIdsPair yc.k zc.k (len i).toUSize yc.b zc.b
+  let (gid, firsts) ← tuples.tupleIds #[yc, zc]
   let got := Order.groupSizes (len firsts).toUSize gid
   let keep := gather 8 firsts (whereEqV got (atCnt (cnt rvc) (yc.gather firsts)))
   let miss := anti ubc rvc
@@ -877,6 +882,9 @@ private def enumC : Column :=
 private def kindOf (t : Ty) (c : Pay t) : Option Scan.Kind := match codes t #[c] with | .ok #[x] => some x.k | _ => none
 #guard kindOf Bo bitsC == some .bit && kindOf Sy enumC == some .u8 && kindOf Sy symsC == some .u8
 #guard kindOf L Lf.val.c == some .u8 && kindOf L (.bytes (packLongs [5, 3, 5, 9])) == some .u8
+-- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b`, the domain widened to 9·2, no grouping pass
+#guard match pairCode false ⟨.u8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨.bit, 4, 2, ByteArray.mk #[0b0101]⟩ with
+  | (c, none) => c.k == .u8 && c.card == 18 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
 -- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
 private def Lneg : LL := ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2, wf := ⟨rfl, rfl⟩ }⟩
 #guard ok (do comp Lneg (← conv Lf)) fun X => seteq X.toList
