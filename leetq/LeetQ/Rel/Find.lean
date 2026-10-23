@@ -18,6 +18,7 @@ import QLean.Verify.Where
 import QLean.Verify.Distinct
 import QLean.Verify.FindMember
 import QLean.Verify.Search
+import QLean.Verify.Structural
 
 namespace LeetQ.Rel.Find
 
@@ -396,6 +397,254 @@ theorem distinct_words {m : Nat} (x : Arr (.atom .long) m) {xs : List UInt64} (h
       simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
       exact hg i (by simpa [Verify.elemsW, hsz] using h1)
   | _ => all_goals (rw [hc] at hx; cases hx)
+/-! ## Direct address: the table and the probe -/
+
+
+theorem bitsAt_one (v : UInt64) : Column.bitsAt (one v) 0 8 = v := by
+  simpa using Verify.bitsAt_pushBits8 ByteArray.empty v
+
+theorem intStep_sub (nul x y : Int64) :
+    Ew.intStep Ew.sub nul x y = if x == nul || y == nul then nul else x - y := rfl
+
+/-- `Ew.val sub` of a long vector and one long, element by element. -/
+theorem val_sub_va (b : ByteArray) (c : UInt64) (n : Nat) (hn : n < USize.size) :
+    Verify.elemsW 8 (Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue b (one c) n.toUSize) =
+      (List.range n).map fun i =>
+        (Ew.intStep Ew.sub Int64.minValue (Column.bitsAt b (i * 8) 8).toInt64 c.toInt64).toUInt64 := by
+  have h := Verify.elemsW_foldl (fun i => (Ew.intStep Ew.sub Int64.minValue
+    (Column.bitsAt b (i * 8) 8).toInt64 c.toInt64).toUInt64) 8 (by decide) (by decide) (List.range n)
+    (fun _ _ => UInt64.toNat_lt _)
+  rw [← h]; unfold Ew.val
+  rw [USize.toNat_ofNat_of_lt' hn]
+  congr 2; funext acc i
+  show Column.pushBits acc (Ew.valStep Ew.sub Ew.i64 Int64.minValue.toUInt64 (Column.bitsAt b (i * 8) 8)
+    (Column.bitsAt (one c) (0 * 8) 8)) 8 = _
+  rw [Nat.zero_mul, bitsAt_one]; rfl
+
+/-- Writing positions reversed and keeping the last write leaves the first position: `idxOf`. -/
+theorem lastRev (i : Nat) : ∀ O : List Nat,
+    ((((List.range O.length).filter fun k => O.reverse.getD k 0 == i).getLast?).map (O.length - 1 - ·)).getD
+      O.length = O.idxOf i
+  | [] => rfl
+  | a :: O => by
+    have ih := lastRev i O
+    have hf : (List.range O.length).filter (fun k => (a :: O).reverse.getD k 0 == i) =
+        (List.range O.length).filter fun k => O.reverse.getD k 0 == i :=
+      List.filter_congr fun k hk => by
+        have hk : k < O.length := List.mem_range.mp hk
+        simp [List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hk : k < O.reverse.length)]
+    have ha : (a :: O).reverse.getD O.length 0 = a := by simp [List.getD_eq_getElem?_getD]
+    simp only [List.length_cons, List.range_succ, List.filter_append, hf, List.getLast?_append, List.idxOf_cons]
+    by_cases h : a = i
+    · subst h; simp
+    · have hai : (a == i) = false := by simpa using h
+      simp only [List.filter_cons, List.filter_nil, ha, hai, cond_false, Bool.false_eq_true, ↓reduceIte,
+        List.getLast?_nil]
+      rw [← ih]
+      rcases hl : ((List.range O.length).filter fun k => O.reverse.getD k 0 == i).getLast? with _ | k
+      · simp
+      · have hk : k < O.length := List.mem_range.mp ((List.mem_filter.mp (List.mem_of_getLast? hl)).1)
+        simp; omega
+
+/-- A long's offset from `lo` as the kernel's unsigned subtraction reads it. -/
+def off (lo x : Int64) : Nat := (x.toUInt64 - lo.toUInt64).toNat
+
+theorem toInt_bmod (x : Int64) : x.toInt = Int.bmod x.toUInt64.toNat (2 ^ 64) := BitVec.toInt_eq_toNat_bmod _
+
+theorem off_sub (lo x : Int64) : off lo x = (2 ^ 64 - lo.toUInt64.toNat + x.toUInt64.toNat) % 2 ^ 64 :=
+  BitVec.toNat_sub _ _
+
+theorem off_toInt {lo x : Int64} (h : lo ≤ x) : (off lo x : Int) = x.toInt - lo.toInt := by
+  have h := Int64.le_iff_toInt_le.mp h
+  have a := toInt_bmod x; have b := toInt_bmod lo; rw [off_sub]
+  have ax := x.toUInt64.toNat_lt; have al := lo.toUInt64.toNat_lt
+  simp only [Int.bmod] at a b; split at a <;> split at b <;> omega
+
+theorem off_inj {lo x y : Int64} (h : off lo x = off lo y) : x = y := by
+  rw [off_sub, off_sub] at h
+  have ax := x.toUInt64.toNat_lt; have ay := y.toUInt64.toNat_lt; have al := lo.toUInt64.toNat_lt
+  have : x.toUInt64.toNat = y.toUInt64.toNat := by omega
+  simpa using congrArg UInt64.toInt64 (UInt64.toNat_inj.mp this)
+
+theorem intStep_off {lo : Int64} (hlo : lo ≠ Int64.minValue) (y : Int64) :
+    (Ew.intStep Ew.sub Int64.minValue y lo).toUInt64.toNat = if y = Int64.minValue then 2 ^ 63 else off lo y := by
+  rw [intStep_sub]
+  by_cases hy : y = Int64.minValue
+  · subst hy; simp; rfl
+  · simp [hy, hlo, off, Int64.toUInt64_sub]
+
+theorem elemsW_one (v : UInt64) : Verify.elemsW 8 (one v) = [v] :=
+  Verify.elemsW_foldl (fun _ => v) 8 (by decide) (by decide) [()] (fun _ _ => UInt64.toNat_lt _)
+
+theorem lt_of_le_lo {lo x : Int64} (hlo : lo ≠ Int64.minValue) (h : lo ≤ x) : x ≠ Int64.minValue := by
+  rintro rfl; apply hlo; apply Int64.toInt_inj.mp
+  have := Int64.le_iff_toInt_le.mp h; have := lo.minValue_le_toInt; omega
+
+/-- **The direct-address table**: `r` slots, slot `i` the first position of offset `i`, `n` at none. -/
+theorem firstTable_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int64) (r : Nat)
+    (hw : Verify.elemsW 8 hb = ws) (hn : ws.length = n) (hN : n < USize.size) (hr : r < 2 ^ 63)
+    (hlo : lo ≠ Int64.minValue) (hin : ∀ x ∈ ws, lo ≤ x.toInt64) :
+    (firstTable hb n lo r).size / 8 = r ∧ ∀ i < r, Column.bitsAt (firstTable hb n lo r) (i * 8) 8 =
+      UInt64.ofNat ((ws.map fun x => off lo x.toInt64).idxOf i) := by
+  have hN64 : n < 2 ^ 64 := Nat.lt_of_lt_of_le hN USize.size_le
+  generalize hO : ws.map (fun x => off lo x.toInt64) = O
+  have hOn : O.length = n := by rw [← hO, List.length_map, hn]
+  simp only [firstTable]
+  generalize hoff : Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue hb (one lo.toUInt64) n.toUSize = of
+  have hofO : (Verify.elemsW 8 of).map UInt64.toNat = O := by
+    rw [← hoff, val_sub_va _ _ _ hN, List.map_map]
+    apply List.ext_getElem (by simp [← hO, hn])
+    intro i h1 h2
+    have hi : i < ws.length := by simp at h1; omega
+    simp only [List.getElem_map, List.getElem_range, Function.comp, ← hO]
+    rw [(elemsW8_get hw).2 i hi]; simp only [Int64.toInt64_toUInt64]; rw [intStep_off hlo,
+      if_neg (lt_of_le_lo hlo (hin _ (List.getElem_mem hi)))]
+  have hofn : (Verify.elemsW 8 of).length = n := by rw [← List.length_map (f := UInt64.toNat), hofO, hOn]
+  -- the destination: `r` copies of `n`
+  have hr1 := elemsW8_get (elemsW_one r.toUInt64)
+  have hn1 := elemsW8_get (elemsW_one n.toUInt64)
+  have hrr : (Column.bitsAt (one r.toUInt64) (0 * 8) 8).toInt64.toInt.toNat = r := by
+    rw [hr1.2 0 (by simp)]; simp only [List.getElem_singleton]
+    have hu : ((r.toUInt64.toInt64.toUInt64.toNat : Nat) : Int) = r := by simp; omega
+    rw [toInt_bmod, Int.bmod, hu]; split <;> omega
+  have hdst : Verify.elemsW 8 (expandBytes 8 0 (one n.toUInt64) (one r.toUInt64)) = List.replicate r n.toUInt64 := by
+    have he := Verify.expandBytes_spec 8 (by rw [usize_eight]; decide) (by rw [usize_eight]; decide) 0 (by rw [usize_eight]; simp) (one n.toUInt64) (one r.toUInt64)
+    rw [usize_eight] at he; rw [he, hr1.1]
+    simp only [List.length_singleton]
+    rw [show List.range 1 = [0] from rfl, List.flatMap_cons, List.flatMap_nil, List.append_nil, hrr, elemsW_one]; rfl
+  have hd := elemsW8_get hdst
+  have hix := elemsW8_get ((usize_eight ▸ Verify.reverseBytes_spec 8 (by rw [usize_eight]; decide) (by rw [usize_eight]; decide) of))
+  have hsx := elemsW8_get ((usize_eight ▸ Verify.reverseBytes_spec 8 (by rw [usize_eight]; decide) (by rw [usize_eight]; decide) (tilLongs n.toUSize)))
+  have htil := Verify.tilLongs_spec n.toUSize
+  rw [USize.toNat_ofNat_of_lt' hN] at htil
+  have htl : (Verify.elemsW 8 (tilLongs n.toUSize)).length = n := by
+    rw [← List.length_map (f := UInt64.toNat), htil, List.length_range]
+  simp only [List.length_reverse, hofn, htl] at hix hsx
+  have hs := Verify.scatterPacked_spec 8 (by decide) 64 (USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)) (expandBytes 8 0 (one n.toUInt64) (one r.toUInt64))
+    (reverseBytes 8 of) (reverseBytes 8 (tilLongs n.toUSize)) 0 false (by simp only [hix.1, USize.toNat_zero]; omega)
+  simp only [List.length_replicate] at hd
+  refine ⟨by rw [hs.1, hd.1], fun i hi => ?_⟩
+  rw [hs.2 i (by rw [hd.1]; exact hi), hix.1]
+  have hf : (List.range n).filter (fun k => (Column.bitsAt (reverseBytes 8 of) (k * 8) 8).toNat == i) =
+      (List.range O.length).filter fun k => O.reverse.getD k 0 == i := by
+    rw [hOn]; apply List.filter_congr; intro k hk
+    have hk : k < n := List.mem_range.mp hk
+    rw [hix.2 k (by simpa [hofn] using hk), ← hofO, List.getD_eq_getElem?_getD]
+    simp [hofn, hk, List.getElem_reverse]
+  have hl := lastRev i O
+  rw [hf]
+  rcases hk : ((List.range O.length).filter fun k => O.reverse.getD k 0 == i).getLast? with _ | k
+  · rw [hk] at hl; simp only [Option.map_none, Option.getD_none] at hl
+    simp only [hd.2 i (by simpa using hi), List.getElem_replicate, ← hl, hOn]
+  · rw [hk] at hl; simp only [Option.map_some, Option.getD_some] at hl
+    have hkn : k < n := by
+      have := List.mem_range.mp (List.mem_filter.mp (List.mem_of_getLast? hk)).1; omega
+    simp only [USize.toNat_zero, Nat.zero_add, Bool.false_eq_true, ↓reduceIte]
+    rw [hsx.2 k (by simpa [htl] using hkn), ← hl, hOn]
+    apply UInt64.toNat_inj.mp
+    have hv := List.getElem_of_eq htil (i := n - 1 - k) (by simp [htl]; omega)
+    simp only [List.getElem_map, List.getElem_range] at hv
+    simp [List.getElem_reverse, htl] at hv ⊢
+    omega
+
+
+/-- **`probe` against `firstTable`** answers each needle's first position in the haystack, `n` at a miss. -/
+theorem probe_spec (hb : ByteArray) (ws : List UInt64) (n : Nat) (lo : Int64) (r : Nat)
+    (hw : Verify.elemsW 8 hb = ws) (hn : ws.length = n) (hN : n < USize.size) (hr : r < 2 ^ 63)
+    (hlo : lo ≠ Int64.minValue) (hin : ∀ x ∈ ws, lo ≤ x.toInt64 ∧ off lo x.toInt64 < r)
+    (ndl : ByteArray) (ys : List UInt64) (hy : Verify.elemsW 8 ndl = ys) (hm : ys.length < USize.size) :
+    Verify.elemsW 8 (probe (firstTable hb n lo r) n lo ndl) =
+      ys.map fun y => UInt64.ofNat ((ws.map UInt64.toInt64).idxOf y.toInt64) := by
+  have hN64 : n < 2 ^ 64 := Nat.lt_of_lt_of_le hN USize.size_le
+  obtain ⟨hT, gT⟩ := firstTable_spec hb ws n lo r hw hn hN hr hlo fun x hx => (hin x hx).1
+  have hY := elemsW8_get hy
+  have hv := val_sub_va ndl lo.toUInt64 (ndl.size / 8) (by rw [hY.1]; exact hm)
+  simp only [probe]
+  generalize Ew.val Ew.sub Ew.i64 Ew.va Int64.minValue ndl (one lo.toUInt64) (ndl.size / 8).toUSize = g at hv
+  generalize firstTable hb n lo r = T at hT gT
+  have hG := elemsW8_get hv
+  obtain ⟨gs, gj⟩ := Verify.gatherBytes_spec 8 (by rw [usize_eight]; decide) n.toUInt64 T g
+  rw [usize_eight] at gs gj
+  have hmiss : ∀ y : Int64, (∀ x ∈ ws, x.toInt64 ≠ y) → (ws.map UInt64.toInt64).idxOf y = n := by
+    intro y hy; rw [List.idxOf_eq_length, List.length_map, hn]
+    simp only [List.mem_map, not_exists, not_and]; exact hy
+  apply List.ext_getElem (by simp [Verify.elemsW, gs, hG.1, hY.1])
+  intro j h1 h2
+  have hj : j < ys.length := by simpa using h2
+  have hj' : j < ndl.size / 8 := by rw [hY.1]; exact hj
+  simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+  rw [gj j (by rw [hG.1]; simpa using hj'), hG.2 j (by simpa using hj')]
+  simp only [List.getElem_map, List.getElem_range]
+  rw [hY.2 j hj]; simp only [Int64.toInt64_toUInt64]; rw [intStep_off hlo, hT]
+  by_cases h0 : ys[j].toInt64 = Int64.minValue
+  · rw [if_pos h0, if_neg (by omega), hmiss _ fun x hx e => lt_of_le_lo hlo (hin x hx).1 (e.trans h0)]; exact congrArg UInt64.ofNat (by simp; omega)
+  · rw [if_neg h0]
+    by_cases hv : off lo ys[j].toInt64 < r
+    · rw [if_pos hv, gT _ hv, show ws.map (fun x => off lo x.toInt64) = (ws.map UInt64.toInt64).map (off lo) by rw [List.map_map]; rfl]
+      rw [idxOf_map_of_inj (fun _ _ => off_inj)]
+    · rw [if_neg hv, hmiss _ fun x hx e => hv (by rw [← e]; exact (hin x hx).2)]; exact congrArg UInt64.ofNat (by simp; omega)
+
+theorem direct_some {c : Column} {n : Nat} {t hb : ByteArray} {lo : Int64} (h : direct .long c n = some (t, lo, hb)) :
+    ∃ hi, foRRange c = some (lo, hi) ∧ (hi.toInt - lo.toInt).toNat + 1 ≤ 4 * max 65536 n ∧
+      Column.bytesOf .long c = some hb ∧ t = firstTable hb n lo ((hi.toInt - lo.toInt).toNat + 1) := by
+  unfold direct at h
+  have hcls : clsOf QAtomicType.long = some Ew.i64 := rfl
+  cases hR : foRRange c with
+  | none => simp [hR, hcls, guard, failure, bind, Option.bind] at h
+  | some p =>
+    obtain ⟨l, hi⟩ := p
+    by_cases hg : (hi.toInt - l.toInt).toNat + 1 ≤ 4 * max 65536 n
+    · cases hb' : Column.bytesOf .long c with
+      | none => simp [hR, hcls, hg, hb', guard, failure, bind, Option.bind] at h
+      | some b =>
+        simp [hR, hcls, hg, hb', guard, failure, bind, Option.bind] at h
+        rcases h with ⟨h1, h2, h3⟩; subst_vars; exact ⟨hi, rfl, hg, rfl, rfl⟩
+    · simp [hR, hcls, hg, guard, failure, bind, Option.bind] at h
+
+theorem bytesOf_long {c : Column} (h : Readable c) {k : Nat} {md pk : ByteArray}
+    (ho : operand .long c = some (k, md, pk)) : Column.bytesOf .long c = some (operandBytes 8 md pk k.toUSize) := by
+  have he : Column.encodes QAtomicType.long = true := rfl
+  cases c with
+  | bytes b => simp [operand, foRColumn, Column.bytesOf] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho; rfl
+  | foR n m p =>
+    have h : m.isEmpty = false := h
+    simp [operand, foRColumn, he] at ho; obtain ⟨rfl, rfl, rfl⟩ := ho
+    simp [operandBytes, h]; rfl
+  | _ => exact False.elim h
+
+theorem find_direct {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
+    (hx : Readable x.val.c) (hy : Readable y.val.c) {t hb : ByteArray} {lo : Int64}
+    (hd : direct .long x.val.c x.n = some (t, lo, hb))
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → lo ≠ Int64.minValue ∧ ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
+    r.val.toList = findSpec x.val.toList y.val.toList := by
+  have hS := USize.size_le
+  have hn : x.n < USize.size := by omega
+  obtain ⟨hi, hR', hr4, hbx, ht⟩ := direct_some hd
+  obtain ⟨hlo, hrg⟩ := hR lo hi hR'
+  obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx', hlx⟩ := operand_long x.val hx hn
+  obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
+  rw [bytesOf_long hx hox] at hbx; obtain rfl := Option.some.inj hbx
+  subst ht
+  unfold find at h
+  rw [hd] at h
+  simp only [dense, bytesOf_long hy hoy, bind, Except.bind, pure, Except.pure] at h
+  have hr : (hi.toInt - lo.toInt).toNat + 1 < 2 ^ 63 := by
+    rw [Nat.max_def] at hr4; split at hr4
+    · omega
+    · omega
+  have hxl := Arr.toList_long x.val hwx
+  have hin : ∀ w ∈ xs, lo ≤ w.toInt64 ∧ off lo w.toInt64 < (hi.toInt - lo.toInt).toNat + 1 := by
+    intro w hw
+    obtain ⟨a, b⟩ := hrg w.toInt64 (by rw [hxl]; exact List.mem_map_of_mem hw)
+    refine ⟨a, ?_⟩
+    have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
+  rw [Arr.toList_long r.val (show longWords r.val.c = some (Verify.elemsW 8 (probe (firstTable _ x.n lo
+    ((hi.toInt - lo.toInt).toNat + 1)) x.n lo (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_c h]; rfl),
+    hxl, Arr.toList_long y.val hwy, findSpec,
+    probe_spec _ xs x.n lo _ hbx' hlx hn hr hlo hin _ ys hby (by rw [hly]; exact hm)]
+  simp only [List.map_map]; rfl
+
 
 /-! ## The laws, on `bytes` and on `foR` alike -/
 
@@ -421,9 +670,16 @@ theorem distinct_toList {k : Ty} {x : Rel k (.atom .long)} {r : Rel (.atom .long
     `Readable` payloads; `direct` declining (TODO below); `x.val.attr ≠ 1`, since the `s` halving
     (`findSortedBytes`) has no law yet; both counts below `USize.size`, which the kernel indexes by. -/
 theorem find_toList {k k' : Ty} {x : Rel k (.atom .long)} {y : Rel k' (.atom .long)} {r : Rel k' (.atom .long)}
-    (hx : Readable x.val.c) (hy : Readable y.val.c) (hd : direct .long x.val.c x.n = none) (hs : x.val.attr ≠ 1)
-    (hn : x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
+    (hx : Readable x.val.c) (hy : Readable y.val.c) (hs : x.val.attr ≠ 1)
+    (hR : ∀ lo hi, foRRange x.val.c = some (lo, hi) → lo ≠ Int64.minValue ∧ ∀ v ∈ x.val.toList, lo ≤ v ∧ v ≤ hi)
+    (hn8 : 8 * x.n < USize.size) (hm : y.n < USize.size) (h : find x y = .ok r) :
     r.val.toList = findSpec x.val.toList y.val.toList := by
+  have hn : x.n < USize.size := by have := USize.size_le; omega
+  obtain ⟨⟨t, lo, hb⟩, hd⟩ | hd : (∃ p, direct .long x.val.c x.n = some p) ∨ direct .long x.val.c x.n = none := by
+    cases e : direct .long x.val.c x.n with
+    | none => exact Or.inr rfl
+    | some p => exact Or.inl ⟨p, rfl⟩
+  · exact find_direct hx hy hd hR hn8 hm h
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x.val hx hn
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y.val hy hm
   unfold find at h
@@ -592,6 +848,9 @@ end Checks
 #print axioms list_key
 #print axioms onKey_key
 #print axioms onKey_toList
+#print axioms firstTable_spec
+#print axioms probe_spec
+#print axioms find_direct
 #print axioms where_toList
 #print axioms firstsOf_map_eraseDups
 #print axioms distinct_toList
