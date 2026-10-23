@@ -19,31 +19,27 @@ open Freyd DistributiveAllegory
 
 /-! ## The codes -/
 
-/-- An atomic code: qlean's `QAtomicType`, k's `xt`. -/
-inductive Atom | i64 | f64 | bool | sym | date | time
-  deriving DecidableEq, Repr, Inhabited
+/-- The atomic codes `A` of a host language and the Lean type `El a` that reads each; `idx` is the
+    integer code an interval relation and a list position are indexed by.  The atoms are a parameter, not
+    an enum here, so the host's own list of atomic types is the only copy.  Intended q instance (leetq,
+    `QAtomicType`): boolean ↦ Bool, guid ↦ 16 bytes, byte ↦ UInt8, short ↦ Int16, int ↦ Int32,
+    long ↦ Int64 (= `idx`), real ↦ Float32, float ↦ Float, char ↦ UInt8, symbol ↦ String,
+    timestamp/timespan ↦ Int64, month/date/minute/second/time ↦ Int32, datetime ↦ Float. -/
+class Atoms (A : Type) where
+  El : A → Type
+  idx : A
+  idx_el : El idx = Int64
 
-/-- The Lean type that reads an atom; a symbol reads as its string. -/
-def Atom.El : Atom → Type
-  | .i64 => Int64 | .f64 => Float | .bool => Bool | .sym => String | .date => Int32 | .time => Int64
-
-/-- A value code: an atom, a pair column, a segmented column (CSR), or a table row. -/
-inductive Ty | atom (a : Atom)
-  | prod (a b : Ty) | seg (a : Ty) | row (s : List (String × Ty))
+/-- A value code over atoms `A`: an atom, a pair column, a segmented column (CSR), or a table row. -/
+inductive Ty (A : Type) | atom (a : A)
+  | prod (a b : Ty A) | seg (a : Ty A) | row (s : List (String × Ty A))
   deriving Repr, Inhabited
 
-/-- The atomic codes under their own names: `.i64 : Ty`. -/
-abbrev Ty.i64 : Ty := .atom .i64
-abbrev Ty.f64 : Ty := .atom .f64
-abbrev Ty.bool : Ty := .atom .bool
-abbrev Ty.sym : Ty := .atom .sym
-abbrev Ty.date : Ty := .atom .date
-abbrev Ty.time : Ty := .atom .time
+variable {A : Type}
 
--- `deriving DecidableEq` has no handler for the nested `row`, so the two deciders recurse together; the
--- atoms are their own inductive because a wildcard mismatch arm is elaborated once, with no constructor known.
+-- `deriving DecidableEq` has no handler for the nested `row`, so the two deciders recurse together.
 mutual
-def Ty.decEq : (a b : Ty) → Decidable (a = b)
+def Ty.decEq [DecidableEq A] : (a b : Ty A) → Decidable (a = b)
   | .atom a, .atom b => if h : a = b then isTrue (h ▸ rfl) else isFalse fun e => h (Ty.atom.inj e)
   | .prod a b, .prod c d => match Ty.decEq a c, Ty.decEq b d with
     | isTrue h1, isTrue h2 => isTrue (h1 ▸ h2 ▸ rfl)
@@ -58,7 +54,7 @@ def Ty.decEq : (a b : Ty) → Decidable (a = b)
   | .atom _, .prod .. | .atom _, .seg _ | .atom _, .row _ | .prod .., .atom _ | .prod .., .seg _
   | .prod .., .row _ | .seg _, .atom _ | .seg _, .prod .. | .seg _, .row _ | .row _, .atom _
   | .row _, .prod .. | .row _, .seg _ => isFalse nofun
-def Ty.decEqRow : (s r : List (String × Ty)) → Decidable (s = r)
+def Ty.decEqRow [DecidableEq A] : (s r : List (String × Ty A)) → Decidable (s = r)
   | [], [] => isTrue rfl
   | (x, a) :: s, (y, b) :: r => if hx : x = y then match Ty.decEq a b, Ty.decEqRow s r with
       | isTrue h1, isTrue h2 => isTrue (hx ▸ h1 ▸ h2 ▸ rfl)
@@ -70,40 +66,49 @@ def Ty.decEqRow : (s r : List (String × Ty)) → Decidable (s = r)
 end
 
 /-- Codes are compared; `El` never is (it is not injective). -/
-instance : DecidableEq Ty := Ty.decEq
+instance [DecidableEq A] : DecidableEq (Ty A) := Ty.decEq
+
+variable [Atoms A]
+
+/-- The integer code: `Atoms.idx` as a value code. -/
+abbrev Ty.idx : Ty A := .atom Atoms.idx
 
 mutual
 /-- The Lean type that reads a value of code `t`. -/
-def El : Ty → Type
-  | .atom a => a.El
+def El : Ty A → Type
+  | .atom a => Atoms.El a
   | .prod a b => El a × El b | .seg a => List (El a) | .row s => Row s
 /-- A row of a table: one value per column, in column order. -/
-def Row : List (String × Ty) → Type
+def Row : List (String × Ty A) → Type
   | [] => Unit
   | (_, t) :: s => El t × Row s
 end
 
+/-- A value of the integer code read as an `Int64`, and back. -/
+def El.toIdx (i : El (Ty.idx : Ty A)) : Int64 := cast (Atoms.idx_el (A := A)) i
+def El.ofIdx (i : Int64) : El (Ty.idx : Ty A) := cast (Atoms.idx_el (A := A)).symm i
+
 /-- What a relation is defined on, indexed by the key's code: every value (`all`: a function, a test, an
     interval, an atom), the positions of a list, a key column with repeats, or a sorted key column stored
     as offsets of its `g` distinct keys over `n` rows. -/
-inductive Key : Ty → Type
-  | all {s : Ty} : Key s
-  | pos (n : Nat) : Key .i64
-  | col {s : Ty} (n : Nat) : Key s
-  | off {s : Ty} (g n : Nat) : Key s
+inductive Key : Ty A → Type
+  | all {s : Ty A} : Key s
+  | pos (n : Nat) : Key .idx
+  | col {s : Ty A} (n : Nat) : Key s
+  | off {s : Ty A} (g n : Nat) : Key s
 
 /-- The rows a key index stores; an intensional `all` stores none. -/
-def Key.rows {s : Ty} : Key s → Nat
+def Key.rows {s : Ty A} : Key s → Nat
   | .all => 0 | .pos n => n | .col n => n | .off _ n => n
 
 /-! ## The denotation -/
 
 /-- A relation from code `s` to code `t`: each key's values, in order, with repeats. -/
-def Fun (s t : Ty) := El s → List (El t)
+def Fun (s t : Ty A) := El s → List (El t)
 
 namespace Fun
 
-variable {s t u v l e : Ty}
+variable {s t u v l e : Ty A}
 
 /-- `f` as a relation: `x ↦ y` when `y ∈ f(x)`. -/
 def rel (f : Fun s t) : (⟨El s⟩ : RelSet.{0}) ⟶ ⟨El t⟩ := fun x y => y ∈ f x
@@ -112,7 +117,7 @@ theorem rel_ext {f g : Fun s t} (h : ∀ x, f x = g x) : f.rel = g.rel := by
   rw [show f = g from funext h]
 
 /-- `𝟙`: each value to itself. -/
-def idn (s : Ty) : Fun s s := fun x => [x]
+def idn (s : Ty A) : Fun s s := fun x => [x]
 
 /-- A total single-valued relation, the graph of `g`. -/
 def ofFn (g : El s → El t) : Fun s t := fun x => [g x]
@@ -192,21 +197,21 @@ end Fun
 
 /-! ## Interval relations -/
 
-/-- `Int64 ⇸ Int64` relations kept symbolic until composed after a column. -/
+/-- Relations on the integer code kept symbolic until composed after a column. -/
 inductive Ivl | idn | tot (n : Nat) | gt | ge | win (w : Nat) | shift (d : Int)
 
 /-- `[0 … n)` as `Int64`s. -/
 def upto (n : Nat) : List Int64 := (List.range n).map Int64.ofNat
 
 /-- `idn i = [i]`; `tot n _ = [0…n)`; `gt c = [0…c)`; `ge c = [0…c]`; `win w i = [i-w+1…i]`;
-    `shift d i = [i+d]`. -/
-def Ivl.den : Ivl → Fun .i64 .i64
-  | .idn => fun (i : Int64) => [i]
-  | .tot n => fun _ => upto n
-  | .gt => fun (c : Int64) => upto c.toInt.toNat
-  | .ge => fun (c : Int64) => upto (c.toInt + 1).toNat
-  | .win w => fun (i : Int64) => (List.range w).reverse.map fun j => i - Int64.ofNat j
-  | .shift d => fun (i : Int64) => [i + Int64.ofInt d]
+    `shift d i = [i+d]`; computed on `Int64` and read back into the integer code. -/
+def Ivl.den : Ivl → Fun (Ty.idx : Ty A) .idx
+  | .idn => fun i => [i]
+  | .tot n => fun _ => (upto n).map El.ofIdx
+  | .gt => fun c => (upto c.toIdx.toInt.toNat).map El.ofIdx
+  | .ge => fun c => (upto (c.toIdx.toInt + 1).toNat).map El.ofIdx
+  | .win w => fun i => (List.range w).reverse.map fun j => El.ofIdx (i.toIdx - Int64.ofNat j)
+  | .shift d => fun i => [El.ofIdx (i.toIdx + Int64.ofInt d)]
 
 end Freyd.Alg.RelSet
 
