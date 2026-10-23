@@ -23,16 +23,13 @@ open QLean QLean.Kernel
 
 /-- A list of `a`s from a column a kernel wrote: key `til m`, `m` the column's own count, `attr` the
     producer's attribute (§2.4). -/
-def list (a : QAtomicType) (c : Column) (attr : UInt8 := 0) : Except String (Rel (.atom .long) (.atom a)) :=
-  let m := Column.count a c
-  if h : Ty.WF (.atom a) m c then .ok ⟨m, .til m, { c, wf := h, attr }⟩
-  else .error s!"kernel answer is not a well-formed column of its type ({m} elements)"
+def list (a : QAtomicType) (c : Column) (attr : UInt8 := 0) : Except String (Rel (.atom .long) (.atom a)) := do
+  pure ⟨_, .til _, ← Arr.of (.atom a) (Column.count a c) c "a list answer" attr⟩
 
 /-- An answer per element of an operand, on that operand's key; the count is checked, not assumed. -/
 def onKey {k : Ty} {n : Nat} (key : KeyCol k n) (a : QAtomicType) (c : Column) (verb : String) :
-    Except String (Rel k (.atom a)) :=
-  if h : Ty.WF (.atom a) n c then .ok ⟨n, key, { c, wf := h }⟩
-  else .error s!"{verb}: the kernel answered {Column.count a c} elements for an operand of {n}"
+    Except String (Rel k (.atom a)) := do
+  pure ⟨n, key, ← Arr.of (.atom a) n c verb⟩
 
 /-- The vector payload of a dispatcher's answer at type `a`. -/
 def vec (verb : String) (a : QAtomicType) : Option QValue → Except String Column
@@ -171,23 +168,23 @@ def binSpec {α : Type} [LE α] [DecidableRel (α := α) (· ≤ ·)] (xs ys : L
 /-- A position answer is keyed by `til` over its own count. -/
 theorem list_key {a : QAtomicType} {c : Column} {u : UInt8} {r : Rel (.atom .long) (.atom a)}
     (h : list a c u = .ok r) : r.key = .til r.n := by
-  dsimp only [list] at h; split at h
-  · cases h; rfl
+  simp only [list, bind, Except.bind, pure, Except.pure] at h; split at h
   · cases h
+  · cases h; rfl
 
 /-- An answer per operand element keeps the operand's count and key. -/
 theorem onKey_key {k : Ty} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c : Column} {s : String}
     {r : Rel k (.atom a)} (h : onKey key a c s = .ok r) : ∃ e : r.n = n, e ▸ r.key = key := by
-  unfold onKey at h; split at h
-  · cases h; exact ⟨rfl, rfl⟩
+  simp only [onKey, bind, Except.bind, pure, Except.pure] at h; split at h
   · cases h
+  · cases h; exact ⟨rfl, rfl⟩
 
 /-- The pairs of an answer on an operand's key, listed: the operand's keys beside the answer's values. -/
 theorem onKey_toList {k : Ty} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c : Column} {s : String}
     {r : Rel k (.atom a)} (h : onKey key a c s = .ok r) : r.toList.map Prod.fst = key.toList := by
-  unfold onKey at h; split at h
-  · cases h; apply List.ext_getElem <;> simp [Rel.toList, KeyCol.toList]
+  simp only [onKey, bind, Except.bind, pure, Except.pure] at h; split at h
   · cases h
+  · cases h; apply List.ext_getElem <;> simp [Rel.toList, KeyCol.toList]
 
 /-! ## Checks against the spec on small literal Rels -/
 

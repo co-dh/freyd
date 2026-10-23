@@ -79,18 +79,28 @@ def amend {k k' k'' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' (.
 
 /-! ## Parted lists: a key `grp (til g) o` -/
 
+/-- `b + x` on longs. -/
+def plus (b : ByteArray) (x : Int64) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va Alg.nul b (one x.toUInt64) (Alg.len b).toUSize
+
 /-- A parted list over `val`: its `n` rows cut by the long payload `o` (`g+1` offsets) through `KeyCol.grp?`. -/
 def parted {v : Ty} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String (Rel (.atom .long) v) := do
   let g := o.size / 8 - 1
-  let some key := KeyCol.grp? (.til g) (← Alg.Arr.ofDense .long (g + 1) o) n
+  let some key := KeyCol.grp? (.til g) (← Arr.of (.atom .long) (g + 1) (.bytes o) verb) n
     | throw s!"{verb}: the offsets are not ascending cuts of {n} rows (q's 'domain)"
   pure ⟨n, key, val⟩
 
-/-- `o cut x`: `val` untouched (zero copy), the key `grp (til g) (o, n)`. Offsets that do not start at `0`
-    (q drops that prefix) or do not ascend within `n` are refused by `KeyCol.grp?`. -/
+/-- `o cut x`: the key `grp (til g) (o, n)` over `val`. A first offset `o₀ = 0` leaves `val` untouched (zero
+    copy); above `0`, q drops the rows before it: `dropColumn` of `x` and the offsets lowered by `o₀` (`plus`).
+    Offsets that are negative or do not ascend within `n` are refused (`KeyCol.grp?`). -/
 def cut {k k' : Ty} {a : QAtomicType} (o : Rel k (.atom .long)) (x : Rel k' (.atom a)) :
     Except String (Rel (.atom .long) (.atom a)) := do
-  parted "o cut x" (concatBytes #[← dense "o cut x" .long o.val.c, one x.n.toUInt64]) x.val
+  let ob ← dense "o cut x" .long o.val.c
+  let o₀ : Int64 := if o.n = 0 then 0 else (Column.bitsAt ob 0 8).toInt64
+  if o₀ < 0 || x.n < o₀.toNatClampNeg then throw s!"o cut x: the first offset {o₀} is outside 0..{x.n} (q's 'domain)"
+  if o₀ = 0 then return (← parted "o cut x" (concatBytes #[ob, one x.n.toUInt64]) x.val)
+  let m := x.n - o₀.toNatClampNeg
+  let c ← vec "o cut x" a (dropColumn a x.val.c o₀.toInt)
+  parted "o cut x" (concatBytes #[plus ob (-o₀), one m.toUInt64]) (← Arr.of (.atom a) m c "o cut x")
 
 /-- `x f/: y`: `m` runs of `n`, run `j` is `x f y[j]` — `Alg.cross` of the positions, two gathers and ONE
     `Ew.dyad` over all `m·n` pairs, no call per right element; `o := j·n` for `j ≤ m`. -/
@@ -165,9 +175,6 @@ def timeGrade (rc lc rr : ByteArray) (T : Nat) : ByteArray × ByteArray × ByteA
   let rk := Alg.add (Alg.mulc rc T) rr
   let p := Order.grade .i64 false (Alg.len rk).toUSize rk
   (p, Alg.gather 8 rk p, Alg.mulc lc T)
-
-/-- `b + x` on longs. -/
-def plus (b : ByteArray) (x : Int64) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va Alg.nul b (one x.toUInt64) (Alg.len b).toUSize
 
 /-- `acc` with `vals` written at the positions where `hi > lo` (`Ew.cmp gt`, `whereBits`, `scatterPacked`). -/
 def writeWhere (acc lo hi vals : ByteArray) : ByteArray :=
@@ -358,7 +365,12 @@ private def x6f : Rel (.atom .long) (.atom .long) :=
   ⟨6, .til 6, { c := .foR 6 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2, wf := ⟨rfl, rfl⟩ }⟩
 #guard [xs, xf].all fun x => ans (·.toList) (cut (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.val.toList)
 #guard ans (·.toList) (cut (lv [0, 2]) xf) == some [(0, 5), (0, 3), (1, 5), (1, 9), (1, 3)]
-#guard (cut (lv [1, 2]) xs).toOption.isNone && (cut (lv [0, 3, 2]) xs).toOption.isNone && (cut (lv [0, 9]) xs).toOption.isNone
+-- q: `2 4 _ til 6` is `(2 3;4 5)`; the rows before the first offset are dropped
+#guard [x6, x6f].all fun x => ans (·.toList) (cut (lv [2, 4]) x) == some (runsSpec [[3, 4], [5, 6]])
+#guard [x6, x6f].all fun x => ans (·.toList) (cut (lv [0, 2, 4]) x) == some (runsSpec [[1, 2], [3, 4], [5, 6]])
+#guard [xs, xf].all fun x => ans (·.toList) (cut (lv [1, 2]) x) == some (cutSpec [1, 2] x.val.toList) &&
+  ans (·.toList) (cut (lv [1, 1, 4]) x) == some (cutSpec [1, 1, 4] x.val.toList) && ans (·.toList) (cut (lv [5]) x) == some (cutSpec [5] x.val.toList)
+#guard [(cut (lv [-1, 2]) xs), (cut (lv [0, 3, 2]) xs), (cut (lv [0, 9]) xs), (cut (lv [6]) xs)].all (·.toOption.isNone)
 #guard [sy, se].all fun x => ans (·.toList) (cut (lv [0, 1]) x) == some (cutSpec [0, 1] x.val.toList)
 #guard [xs, xf].all fun x => ans (·.toList) (eachRight .add .long x ys) == some (eachRightSpec (· + ·) x.val.toList ys.val.toList)
 #guard ans (·.toList) (eachRight .lt .boolean xf (lv [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.val.toList [5, 4])
