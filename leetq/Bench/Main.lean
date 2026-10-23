@@ -191,7 +191,7 @@ abbrev LR := LeetQ.Rel.Rel (.atom .long) (.atom .long)
 
 /-- The list `x` of longs, key `til n`. -/
 def listR (n : Nat) (a : Array Int) : Except String LR := do
-  return ⟨n, .til n, ← LeetQ.Rel.Alg.Arr.ofDense .long n (col a)⟩
+  return ⟨n, .til n, ← LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"⟩
 
 /-- `sum` of a relation's values: `Ops.over .add`. -/
 def sumR (what : String) {k : LeetQ.Rel.Ty} (r : LeetQ.Rel.Rel k (.atom .long)) : Except String Int64 :=
