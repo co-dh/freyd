@@ -80,7 +80,8 @@ def laneKind : Nat → Option Scan.Kind
 
 /-- `n` ids in `ng` classes packed at `Column.idWidthOf ng`, as `groupIds` answers them, as a code: read
     where they lie at a byte lane; below a byte (`ng ≤ 16`) `remapIds` through the identity widens them to
-    `u8`, because `gatherBytes`, `find`, `grade` and `Code.cut` read byte lanes only. -/
+    `u8`: `find`/`member` have id kernels (`findIdsVec`, `memberIdsVec`) but `gatherBytes`, `grade`, `groupIds`
+    and `Code.cut` read byte lanes only. -/
 def Code.ofIds (ng n : Nat) (gid : ByteArray) : Code :=
   let w := Column.idWidthOf ng
   match laneKind w with
@@ -385,17 +386,15 @@ def segments (c : Code) : ByteArray × ByteArray × ByteArray :=
 /-- Set ids: segment `j` of the codes `vc` is `vc[o[j] .. o[j+1])`, and segments holding equal SETS
     get equal ids, numbered by first occurrence. Each segment is sorted and its repeats dropped —
     `grade` on (segment, code), `groupIdsPair` of the sorted pairs, whose ids rise by one at each
-    new pair, so the id at a segment's first row is the kept rows before it — then `rankSlices`,
-    which compares the normalised segments as sequences. `rankSlices` reads longs only, so it is handed
-    the codes' long ids (missing kernel: `rankSlices` at a narrow layout). -/
+    new pair, so the id at a segment's first row is the kept rows before it — then `rankSlices` at the
+    code's own width, which compares the normalised segments as sequences. -/
 def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
   let n := vc.n
   if o.size < 8 then throw "setIds: the offsets hold no terminator"
   let seg := groupOf o n
   let p := gradeBy n #[Code.ofLongs seg, vc]
   let (q, fs) := Order.groupIdsPair .i64 vc.k n.toUSize (gather 8 seg p) (vc.gather p).b
-  -- `q` as longs: the offsets `rankSlices` reads are longs
-  let ids := Order.rankSlices (gather 8 vc.longs (gather 8 p fs))
+  let ids := Order.rankSlices (if vc.k == .bit then 1 else 8 * vc.k.width).toUSize (vc.gather (gather 8 p fs)).b
     (gather 8 (concatBytes #[groupLongs n (q, fs), one (len fs).toUInt64]) o)
   if len ids == len o - 1 then pure ids
   else throw s!"rankSlices declines the {len o - 1} normalised segments of {len fs} codes"
@@ -687,7 +686,7 @@ def foldGroups (op : Coc.Over) (R : Rel A (.atom .long)) : Except String (Rel A 
   let r ← cols R; let (_, v) ← arrDense R.val
   let (gid, firsts) := (← single (← codes A #[r.key])).groupIds
   let ng := len firsts
-  ofCols A (.atom .long) (← pick A r.key firsts) (.bytes ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize gid v).extract 0 (8 * ng)))
+  ofCols A (.atom .long) (← pick A r.key firsts) (.bytes ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng)))
 
 /-- `α⁻¹` of a list, `uncons`: its first element and the rest, two picks (`gatherColumn`). -/
 def uncons (R : Rel (.atom .long) B) : Except String (Rel (.atom .long) B × Rel (.atom .long) B) := do
