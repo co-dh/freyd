@@ -12,6 +12,8 @@ import QLean.Kernel.Search
 import QLean.Kernel.Sort
 import QLean.Kernel.Structural
 import QLean.Kernel.Elementwise
+import QLean.Kernel.Scan
+import QLean.Kernel.Reduce
 
 namespace LeetQ.Rel.Find
 
@@ -88,15 +90,23 @@ def direct (a : QAtomicType) (c : Column) (n : Nat) : Option (ByteArray × Int64
 def «where» {k : Ty} (x : Rel k (.atom .boolean)) : Except String (Rel (.atom .long) (.atom .long)) := do
   list .long (← vec "&x" .long (whereColumn .boolean x.val.c)) 1
 
-/-- `&x` on counts: position `i` repeated `x[i]` times, `expandBytes` over `til n`. -/
+/-- q's `where` on a dense count column `cnt` (none negative): row `i` repeated `cnt[i]` times, and each
+    copy's rank in its run — `Scan.scan sums`, `overBytes add`, `tilLongs`, `binBytes` of the outputs into
+    the run starts (a zero count repeats a start; `bin` takes the last, the row that owns it). -/
+def expand (cnt : ByteArray) : ByteArray × ByteArray :=
+  let n := cnt.size / 8
+  let rs := Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (Scan.scan .sums .i64 n.toUSize cnt) cnt n.toUSize
+  let m := (overBytes .add Ew.i64 Int64.minValue cnt).toInt.toNat
+  let p := tilLongs m.toUSize
+  let i := binBytes 8 false true false rs p
+  (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue p (gatherBytes 8 0 rs i) m.toUSize)
+
+/-- `&x` on counts: `expand`, after one `Ew.cmp lt 0` (`0N` included) refuses a negative count. -/
 def whereCounts {k : Ty} (x : Rel k (.atom .long)) : Except String (Rel (.atom .long) (.atom .long)) := do
   let b ← dense "&x" .long x.val.c
-  -- `expandBytes` takes its widths as an `Array Nat`, so the counts are read out once here
-  let ws ← (List.range x.n).foldlM (init := #[]) fun (ws : Array Nat) i =>
-    let v := (Column.bitsAt b (i * 8) 8).toInt64
-    if v < 0 then throw s!"&x: count {v} at position {i} is negative or null (q's 'domain)"
-    else pure (ws.push v.toInt.toNat)
-  list .long (.bytes (expandBytes 8 0 (tilLongs x.n.toUSize) ws)) 1
+  let neg := whereBits x.n.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va b (one 0) x.n.toUSize)
+  if neg.size > 0 then throw s!"&x: count {(Column.bitsAt b ((Column.bitsAt neg 0 8).toNat * 8) 8).toInt64} at position {(Column.bitsAt neg 0 8).toNat} is negative or null (q's 'domain)"
+  list .long (.bytes (expand b).1) 1
 
 /-- `?x`: the first occurrences, in order (attribute `u`). Already unique: the operand itself. Small
     range: the positions where `T[x − lo]` is the position itself, then `x@` those. -/
@@ -183,20 +193,19 @@ theorem onKey_toList {k : Ty} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c 
 
 section Checks
 
-private def longs (xs : List Int64) : ByteArray := xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty
 private def ans {α : Type} {k v : Ty} (f : Rel k v → α) : Except String (Rel k v) → Option α
   | .ok r => some (f r)
   | .error _ => none
 
 private def bs : Rel (.atom .long) (.atom .boolean) := ⟨5, .til 5, { c := .bits 5 (ByteArray.mk #[0b10110]), wf := by decide }⟩
-private def cs : Rel (.atom .long) (.atom .long) := ⟨3, .til 3, { c := .bytes (longs [2, 0, 1]), wf := by decide }⟩
-private def xs : Rel (.atom .long) (.atom .long) := ⟨5, .til 5, { c := .bytes (longs [5, 3, 5, 9, 3]), wf := by decide }⟩
+private def cs : Rel (.atom .long) (.atom .long) := ⟨3, .til 3, { c := .bytes (packLongs [2, 0, 1]), wf := by decide }⟩
+private def xs : Rel (.atom .long) (.atom .long) := ⟨5, .til 5, { c := .bytes (packLongs [5, 3, 5, 9, 3]), wf := by decide }⟩
 -- the same five longs Frame-of-Reference encoded: the small-range path
 private def xf : Rel (.atom .long) (.atom .long) :=
-  ⟨5, .til 5, { c := .foR 5 (Coc.encode 8 (longs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (longs [5, 3, 5, 9, 3])).2, wf := ⟨rfl, rfl⟩ }⟩
-private def ys : Rel (.atom .long) (.atom .long) := ⟨4, .til 4, { c := .bytes (longs [3, 9, 7, 0x8000000000000000]), wf := by decide }⟩
-private def ss : Rel (.atom .long) (.atom .long) := ⟨4, .til 4, { c := .bytes (longs [1, 3, 3, 7]), wf := by decide }⟩
-private def ks : Rel (.atom .long) (.atom .long) := ⟨5, .til 5, { c := .bytes (longs [0, 3, 5, 9, -1]), wf := by decide }⟩
+  ⟨5, .til 5, { c := .foR 5 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2, wf := ⟨rfl, rfl⟩ }⟩
+private def ys : Rel (.atom .long) (.atom .long) := ⟨4, .til 4, { c := .bytes (packLongs [3, 9, 7, 0x8000000000000000]), wf := by decide }⟩
+private def ss : Rel (.atom .long) (.atom .long) := ⟨4, .til 4, { c := .bytes (packLongs [1, 3, 3, 7]), wf := by decide }⟩
+private def ks : Rel (.atom .long) (.atom .long) := ⟨5, .til 5, { c := .bytes (packLongs [0, 3, 5, 9, -1]), wf := by decide }⟩
 private def sy : Rel (.atom .long) (.atom .symbol) :=
   ⟨3, .til 3, { c := .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8], wf := by decide }⟩
 private def sn : Rel (.atom .long) (.atom .symbol) :=
@@ -206,6 +215,10 @@ private def sn : Rel (.atom .long) (.atom .symbol) :=
 #guard ans (·.val.toList) («where» bs) == some [1, 2, 4]
 #guard ans (·.val.toList) (whereCounts cs) == some (whereCountsSpec cs.val.toList)
 #guard ans (·.val.toList) (whereCounts cs) == some [0, 0, 2]
+private def csf : Rel (.atom .long) (.atom .long) :=
+  ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs [2, 0, 3, 1])).1 (Coc.encode 8 (packLongs [2, 0, 3, 1])).2, wf := ⟨rfl, rfl⟩ }⟩
+#guard ans (·.val.toList) (whereCounts csf) == some (whereCountsSpec [2, 0, 3, 1])
+#guard (whereCounts ys).toOption.isNone
 #guard (direct .long xf.val.c 5).isSome && (direct .long xs.val.c 5).isNone
 #guard [xs, xf].all fun x => ans (·.val.toList) (distinct x) == some (distinctSpec x.val.toList)
 #guard ans (·.val.toList) (distinct xf) == some [5, 3, 9]

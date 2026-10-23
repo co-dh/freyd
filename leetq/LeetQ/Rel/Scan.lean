@@ -54,7 +54,7 @@ def avg (R : Rel k (.atom t)) : Option UInt64 :=
 /-- The group of each of the `n` rows as `Int64`s: `o bin til n`, the largest `r` with `o[r] ≤ i`
     (`KeyCol.group`). -/
 def groupIds {g : Nat} (o : Arr (.atom .long) (g+1)) (n : Nat) : Option ByteArray :=
-  (Column.bytesOf .long o.c).map fun ob => binBytes 8 false true false ob (tilLongs n.toUSize)
+  (Column.bytesOf .long o.c).map (groupOf · n)
 
 /-- `count each` by group: `o[r+1] − o[r]`. -/
 def countBy {v : Ty} : Rel k v → Option (Rel k (.atom .long))
@@ -223,17 +223,16 @@ section Checks
 
 open QLean.Column Ops
 
-private def longs (xs : List Int64) : Column := .bytes (xs.foldl (fun b x => pushBits b x.toUInt64 8) .empty)
 private def L {n : Nat} (a : Arr (.atom .long) n) : Rel (.atom .long) (.atom .long) := ⟨n, .til n, a⟩
 private def vals {k v : Ty} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
 
 private def xs : List Int64 := [3, -1, 4, 1, -5, 9, 2, 6]
 private def xn : List Int64 := [2, Int64.minValue, 7, 1]
-private def xsA : Arr (.atom .long) 8 := { c := longs [3, -1, 4, 1, -5, 9, 2, 6], wf := by decide }
-private def xnA : Arr (.atom .long) 4 := { c := longs [2, Int64.minValue, 7, 1], wf := by decide }
-private def ysA : Arr (.atom .long) 4 := { c := longs [1, 2, 3, 6], wf := by decide }
-private def zsA : Arr (.atom .long) 4 := { c := longs [1, 3, 3, 2], wf := by decide }
-private def sA : Arr (.atom .long) 8 := { c := longs [2, 0, 1, 2, 0, 1, 2, 0], wf := by decide }
+private def xsA : Arr (.atom .long) 8 := { c := .bytes <| packLongs [3, -1, 4, 1, -5, 9, 2, 6], wf := by decide }
+private def xnA : Arr (.atom .long) 4 := { c := .bytes <| packLongs [2, Int64.minValue, 7, 1], wf := by decide }
+private def ysA : Arr (.atom .long) 4 := { c := .bytes <| packLongs [1, 2, 3, 6], wf := by decide }
+private def zsA : Arr (.atom .long) 4 := { c := .bytes <| packLongs [1, 3, 3, 2], wf := by decide }
+private def sA : Arr (.atom .long) 8 := { c := .bytes <| packLongs [2, 0, 1, 2, 0, 1, 2, 0], wf := by decide }
 #guard xsA.toList == xs ∧ xnA.toList == xn
 
 #guard vals (scan .add .long (L xsA)) == Spec.scan (· + ·) 0 xs
@@ -264,13 +263,13 @@ private def sA : Arr (.atom .long) 8 := { c := longs [2, 0, 1, 2, 0, 1, 2, 0], w
 #guard ((xasc sA xsA).map Arr.toList) == some ((Spec.iasc sA.toList).map fun i => xs[i.toNatClampNeg]!)
 
 -- the parted list `(10 20; 30; 40 50 60)` and the groups `[0,1) [1,1) [1,3)` with an empty middle one
-private def og : Arr (.atom .long) 4 := { c := longs [0, 2, 3, 6], wf := by decide }
+private def og : Arr (.atom .long) 4 := { c := .bytes <| packLongs [0, 2, 3, 6], wf := by decide }
 private def gv : List Int64 := [10, 20, 30, 40, 50, Int64.minValue]
 private def G : Rel (.atom .long) (.atom .long) :=
-  ⟨6, .grp (.til 3) og (by decide), { c := longs [10, 20, 30, 40, 50, Int64.minValue], wf := by decide }⟩
-private def oe : Arr (.atom .long) 4 := { c := longs [0, 1, 1, 3], wf := by decide }
+  ⟨6, .grp (.til 3) og (by decide), { c := .bytes <| packLongs [10, 20, 30, 40, 50, Int64.minValue], wf := by decide }⟩
+private def oe : Arr (.atom .long) 4 := { c := .bytes <| packLongs [0, 1, 1, 3], wf := by decide }
 private def E : Rel (.atom .long) (.atom .long) :=
-  ⟨3, .grp (.til 3) oe (by decide), { c := longs [7, 8, 9], wf := by decide }⟩
+  ⟨3, .grp (.til 3) oe (by decide), { c := .bytes <| packLongs [7, 8, 9], wf := by decide }⟩
 
 #guard groupIds og 6 == some (ByteArray.mk #[0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 1,0,0,0,0,0,0,0,
   2,0,0,0,0,0,0,0, 2,0,0,0,0,0,0,0, 2,0,0,0,0,0,0,0])

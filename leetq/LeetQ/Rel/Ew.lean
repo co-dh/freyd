@@ -73,11 +73,14 @@ def Ew.mon (name : String) (rt : QAtomicType) (x : Rel k (.atom t)) : Except Str
     if rt' = rt then return ⟨x.n, x.key, ← Ew.arr rt x.n c s!"Ew.mon {name}"⟩
     else .error s!"Ew.mon {name}: answers {repr rt'}, not {repr rt}"
 
-/-- `~x`: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
+/-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
+def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize
+
+/-- `~x`: `Ew.notBits` of the value column. -/
 def Ew.not (x : Rel k (.atom .boolean)) : Except String (Rel k (.atom .boolean)) :=
   match x.val.c with
   | .bits m b =>
-    return ⟨x.n, x.key, ← Ew.arr .boolean x.n (.bits m (Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize)) "Ew.not"⟩
+    return ⟨x.n, x.key, ← Ew.arr .boolean x.n (.bits m (Ew.notBits m b)) "Ew.not"⟩
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
 /-- The raw bits of a one-element column, as `shiftColumn`'s `fill` takes them. -/
@@ -176,7 +179,7 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) 
   let yx ← Ew.gatherFill u L.er y.val.c ix
   let l ← Ew.dyad L.v Ew.vv t u rt x.val.c yx x.n
   let some (.vector _ (.bits m b)) := memberColumn s false (.vector s ky) kx | .error "align: memberColumn"
-  let some (.vector _ iy) := whereColumn .boolean (.bits m (Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize))
+  let some (.vector _ iy) := whereColumn .boolean (.bits m (Ew.notBits m b))
     | .error "align: whereColumn"
   let r := Column.count .long iy
   let ry ← Ew.dyad L.vr Ew.av t u rt (← Ew.atomCol t (Column.atomOfBits t L.el))
@@ -261,12 +264,11 @@ theorem alignList_keys {K A B : Type} [BEq K] (xs : List (K × A)) (ys : List (K
 
 section Checks
 
-private def longs (xs : List Int64) : Column := .bytes (xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty)
 /-- A list of longs, or a dict of longs; built through `Ew.arr`'s run-time `wf`. -/
 private def L (vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
-  return ⟨vs.length, .til _, ← Ew.arr .long _ (longs vs) "L"⟩
+  return ⟨vs.length, .til _, ← Ew.arr .long _ (.bytes (packLongs vs)) "L"⟩
 private def D (ks vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
-  return ⟨vs.length, .arr (← Ew.arr .long _ (longs ks) "D"), ← Ew.arr .long _ (longs vs) "D"⟩
+  return ⟨vs.length, .arr (← Ew.arr .long _ (.bytes (packLongs ks)) "D"), ← Ew.arr .long _ (.bytes (packLongs vs)) "D"⟩
 private def vals {k v} (r : Except String (Rel k v)) : Option (List (El v)) := r.toOption.map (·.val.toList)
 private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
 

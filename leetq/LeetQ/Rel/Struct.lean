@@ -7,12 +7,12 @@
   A list answer is keyed `til m`; an answer per element of an operand keeps that operand's key.
   The specs are List-level, on `toList`.
 -/
-import LeetQ.Rel.Find
+import LeetQ.Rel.Algebra
 
 namespace LeetQ.Rel.Struct
 
 open QLean QLean.Kernel
-open LeetQ.Rel.Find (list onKey vec dense)
+open LeetQ.Rel.Find (list onKey vec dense one expand)
 
 /-! ## Concat, take, drop, reverse, rotate: a new list -/
 
@@ -66,7 +66,7 @@ def amend {k k' k'' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' (.
       -- only the long class: `Ew.val`'s null argument at the narrower classes is not settled here
       | some o => do
         if clsOf a != some Ew.i64 then throw "@[x;i;f;y]: an op amend is wired for the long class only"
-        pure (Ew.val o Ew.i64 Ew.vv Int64.minValue (gatherBytes w.toUSize 0 acc ix) yv (ix.size / 8).toUSize)
+        pure (Kernel.Ew.val o Ew.i64 Ew.vv Int64.minValue (gatherBytes w.toUSize 0 acc ix) yv (ix.size / 8).toUSize)
     pure (scatterPacked (8 * w).toUSize acc ix v 0 false)
   let rounds := (word 0).toNat
   -- words `2 … 2+rounds-1` count the indices up to each round; the grouped positions follow
@@ -76,6 +76,139 @@ def amend {k k' k'' : Ty} {a : QAtomicType} (x : Rel k (.atom a)) (i : Rel k' (.
       let ks := r.extract ((2 + rounds + lo) * 8) ((2 + rounds + (word (2 + rr)).toNat) * 8)
       step acc (gatherBytes 8 0 ib ks) (gatherBytes w.toUSize 0 yb ks)
   onKey x.key a (Column.answer a (.bytes out)) "@[x;i;f;y]"
+
+/-! ## Parted lists: a key `grp (til g) o` -/
+
+/-- A parted list over `val`: its `n` rows cut by the long payload `o` (`g+1` offsets) through `KeyCol.grp?`. -/
+def parted {v : Ty} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String (Rel (.atom .long) v) := do
+  let g := o.size / 8 - 1
+  let some key := KeyCol.grp? (.til g) (← Alg.Arr.ofDense .long (g + 1) o) n
+    | throw s!"{verb}: the offsets are not ascending cuts of {n} rows (q's 'domain)"
+  pure ⟨n, key, val⟩
+
+/-- `o cut x`: `val` untouched (zero copy), the key `grp (til g) (o, n)`. Offsets that do not start at `0`
+    (q drops that prefix) or do not ascend within `n` are refused by `KeyCol.grp?`. -/
+def cut {k k' : Ty} {a : QAtomicType} (o : Rel k (.atom .long)) (x : Rel k' (.atom a)) :
+    Except String (Rel (.atom .long) (.atom a)) := do
+  parted "o cut x" (concatBytes #[← dense "o cut x" .long o.val.c, one x.n.toUInt64]) x.val
+
+/-- `x f/: y`: `m` runs of `n`, run `j` is `x f y[j]` — `Alg.cross` of the positions, two gathers and ONE
+    `Ew.dyad` over all `m·n` pairs, no call per right element; `o := j·n` for `j ≤ m`. -/
+def eachRight {k k' : Ty} {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) (x : Rel k (.atom t))
+    (y : Rel k' (.atom u)) : Except String (Rel (.atom .long) (.atom rt)) := do
+  let (j, i) := Alg.cross y.n x.n
+  let xs ← vec "x f/:y" t (gatherColumn t x.val.c (.bytes i))
+  let ys ← vec "x f/:y" u (gatherColumn u y.val.c (.bytes j))
+  parted "x f/:y" (Alg.mulc (tilLongs (y.n + 1).toUSize) x.n) (← Ew.dyad v Ew.vv t u rt xs ys (y.n * x.n))
+
+/-- `+x` of a parted list of `g` runs of one length `m`: `m` runs of `g`. The equal lengths are one
+    `matchBytes` of `o` against `j·m`; position `p` of the answer reads `(p mod g)·m + p div g`
+    (`Alg.cross`, `Ew.val`, one gather); `o' := j·g`. -/
+def flip {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) : Except String (Rel (.atom .long) (.atom a)) :=
+  match x with
+  | ⟨n, .grp (g := g) _ o _, xv⟩ => do
+    let m := if g = 0 then 0 else n / g
+    let some ob := KeyCol.longBytes o.c | throw "+x: the offsets have no long payload"
+    unless matchBytes 8 false ob (Alg.mulc (tilLongs (g + 1).toUSize) m) do
+      throw "+x: the runs differ in length (q's 'length)"
+    let (q, r) := Alg.cross m g
+    let c ← vec "+x" a (gatherColumn a xv.c (.bytes (Alg.add (Alg.mulc r m) q)))
+    parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Ew.arr a (m * g) c "+x")
+  | _ => throw "+x: the operand is not a parted list (q's 'type)"
+
+/-- `x@y` on a parted `x`: the runs `y` selects, a parted list — the run lengths `o[1..] − o[..g]` gathered at
+    `y` (`0` outside `0 … g-1`), `Find.expand` of them, one gather of `val` at `o[y[i]] + w`; `o' := 0, sums`. -/
+def indexParted {k' : Ty} {a : QAtomicType} (x : Rel (.atom .long) (.atom a)) (y : Rel k' (.atom .long)) :
+    Except String (Rel (.atom .long) (.atom a)) :=
+  match x with
+  | ⟨_, .grp _ o _, xv⟩ => do
+    let some ob := KeyCol.longBytes o.c | throw "x@y: the offsets have no long payload"
+    let yb ← dense "x@y" .long y.val.c
+    let lens := Alg.gather 8 (Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8))) yb
+    let (i, w) := expand lens
+    let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
+    let c ← vec "x@y" a (gatherColumn a xv.c (.bytes src))
+    parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Ew.arr a (Alg.len src) c "x@y")
+  | _ => throw "x@y: the operand is not parted; `index` reads a list"
+
+/-! ## Joins on columns: `|R|` of the key tuples (`Alg.tupleCodes`), then gathers -/
+
+/-- A dense column and the layout it is compared at, as `Alg.arrDense` answers it. -/
+abbrev Col := Scan.Kind × ByteArray
+
+/-- The key tuples of both sides in one code space, split at the left's count; both counts. -/
+def keyCodes (verb : String) (l r : List Col) : Except String (ByteArray × ByteArray × Nat × Nat) := do
+  let ((k, lb) :: _, (_, rb) :: _) := (l, r) | throw s!"{verb}: no key column"
+  unless l.length == r.length && (l.zip r).all (fun (a, b) => a.1 == b.1) do
+    throw s!"{verb}: the key columns of the two sides differ in number or type (q's 'type)"
+  let (nl, nr) := (lb.size / k.width, rb.size / k.width)
+  let (lc, rc) := Alg.split (Alg.tupleCodes ((l.zip r).map fun ((k, a), (_, b)) => (k, #[a, b]))) nl
+  pure (lc, rc, nl, nr)
+
+/-- `ej`: every pair of a left and a right row with equal key tuples, left row ↦ right row (`Alg.join`). -/
+def ej (l r : List Col) : Except String (Rel (.atom .long) (.atom .long)) := do
+  let (lc, rc, _, _) ← keyCodes "ej" l r
+  let (li, ri) := Alg.join lc rc
+  Alg.ofDense .long .long li ri
+
+/-- `ij` against a keyed right side: each left row ↦ the first right row of its key tuple, unmatched rows
+    dropped — `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
+def ij (l r : List Col) : Except String (Rel (.atom .long) (.atom .long)) := do
+  let (lc, rc, nl, nr) ← keyCodes "ij" l r
+  let hit := findVec 8 false rc lc
+  let li := whereBits nl.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one nr.toUInt64) nl.toUSize)
+  Alg.ofDense .long .long li (Alg.gather 8 hit li)
+
+/-- The right rows graded by `code·T + rank(time)` and the left's tuples' bases `code·T`: the `aj`/`wj` sort.
+    `T` bounds both the codes and the joint ranks `rk` (`Alg.drank` of every time column, right's last). -/
+def timeGrade (rc lc rr : ByteArray) (T : Nat) : ByteArray × ByteArray × ByteArray :=
+  let rk := Alg.add (Alg.mulc rc T) rr
+  let p := Order.grade .i64 false (Alg.len rk).toUSize rk
+  (p, Alg.gather 8 rk p, Alg.mulc lc T)
+
+/-- `b + x` on longs. -/
+def plus (b : ByteArray) (x : Int64) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va Alg.nul b (one x.toUInt64) (Alg.len b).toUSize
+
+/-- `acc` with `vals` written at the positions where `hi > lo` (`Ew.cmp gt`, `whereBits`, `scatterPacked`). -/
+def writeWhere (acc lo hi vals : ByteArray) : ByteArray :=
+  let n := Alg.len acc
+  let ks := whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.vv hi lo n.toUSize)
+  scatterPacked 64 acc ks (Alg.gather 8 vals ks) 0 false
+
+/-- `aj`: each left row ↦ the right row of its key tuple with the last time at or before its own, `0N` at
+    none — `timeGrade`, `binBytes` of the left's `code·T + rank(time)`, kept where it lies above the last
+    right row of a lower code (a second `binBytes`), written over `0N` by `writeWhere`. -/
+def aj (l r : List Col) (lt rt : Col) : Except String (Rel (.atom .long) (.atom .long)) := do
+  let (lc, rc, nl, _) ← keyCodes "aj" l r
+  unless lt.1 == rt.1 do throw "aj: the two time columns differ in type (q's 'type)"
+  let (lr, rr) := Alg.split (Alg.drank lt.1 (concatBytes #[lt.2, rt.2])) nl
+  let (p, srt, base) := timeGrade rc lc rr (Alg.len (concatBytes #[lc, rc]))
+  let bin := binBytes 8 false true false srt
+  let pos := bin (Alg.add base lr)
+  let ri := writeWhere (expandBytes 8 0 (one Alg.nul.toUInt64) #[nl]) (bin (plus base (-1))) pos (Alg.gather 8 p pos)
+  pure ⟨nl, .til nl, ← Ew.arr .long nl (.bytes ri) "aj"⟩
+
+/-- `wj`: each left row ↦ the right rows of its key tuple with a time in `[w₀, w₁]`, in time order, a parted
+    list — `timeGrade`, `binBytes` of each window's ends, `Find.expand` of the lengths. `prevailing` (q's
+    `wj`; `false` is `wj1`) also takes the last right row before `w₀` that has the key tuple: the start
+    lowered by one where it stays above the last row of a lower code (`writeWhere`). -/
+def wj (prevailing : Bool) (w₀ w₁ : Col) (l r : List Col) (rt : Col) : Except String (Rel (.atom .long) (.atom .long)) := do
+  let (lc, rc, nl, _) ← keyCodes "wj" l r
+  unless w₀.1 == rt.1 && w₁.1 == rt.1 do throw "wj: the window and time columns differ in type (q's 'type)"
+  let ranks := Alg.drank rt.1 (concatBytes #[w₀.2, w₁.2, rt.2])
+  let (r₀, rest) := Alg.split ranks nl
+  let (r₁, rr) := Alg.split rest nl
+  let (p, srt, base) := timeGrade rc lc rr (Alg.len ranks)
+  let bin := binBytes 8 false true false srt
+  let before := bin (plus (Alg.add base r₀) (-1))
+  let last := bin (Alg.add base r₁)
+  let start := if prevailing then writeWhere (plus before 1) (bin (plus base (-1))) before before else plus before 1
+  let lens := Alg.sub (plus last 1) start
+  let neg := whereBits nl.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va lens (one 0) nl.toUSize)
+  if neg.size > 0 then throw "wj: a window ends before it starts (q's 'domain)"
+  let (i, w) := expand lens
+  let rows := Alg.gather 8 p (Alg.add (Alg.gather 8 start i) w)
+  parted "wj" (concatBytes #[one 0, Alg.sums lens]) (← Ew.arr .long (Alg.len rows) (.bytes rows) "wj")
 
 /-! ## Raze -/
 
@@ -130,24 +263,54 @@ def indexSpec {α : Type} (d : α) (xs : List α) (is : List Int64) : List α :=
 def amendSpec {α : Type} [Inhabited α] (f : α → α → α) (xs : List α) (is : List Int64) (ys : List α) : List α :=
   (is.zip ys).foldl (fun acc (i, y) => acc.set i.toInt.toNat (f acc[i.toInt.toNat]! y)) xs
 
+/-- `o cut xs`: run `i` is `xs[o[i] .. o[i+1])`, `o[g] = |xs|`. -/
+def cutSpec {α : Type} (os : List Int64) (xs : List α) : List (Int64 × α) :=
+  let o := os.map (·.toInt.toNat) ++ [xs.length]
+  (List.range os.length).flatMap fun i => ((xs.drop o[i]!).take (o[i+1]! - o[i]!)).map (Int64.ofNat i, ·)
+
+/-- A parted list's pairs from its runs. -/
+def runsSpec {α : Type} (rs : List (List α)) : List (Int64 × α) :=
+  (List.range rs.length).flatMap fun i => (rs.getD i []).map (Int64.ofNat i, ·)
+
+/-- `xs f/: ys`: run `j` is `xs f ys[j]`. -/
+def eachRightSpec {α β γ : Type} [Inhabited β] (f : α → β → γ) (xs : List α) (ys : List β) : List (Int64 × γ) :=
+  runsSpec (ys.map fun y => xs.map (f · y))
+
+/-- `ej` over key tuples: every `(i, j)` with equal tuples, `i` then `j` ascending. -/
+def ejSpec (l r : List (List Int64)) : List (Int64 × Int64) :=
+  (List.range l.length).flatMap fun i => ((List.range r.length).filter (r[·]! == l[i]!)).map fun j => (Int64.ofNat i, Int64.ofNat j)
+
+/-- The right rows of the key `k` with a time in `[a, b]`, in time order (stable: right order among ties). -/
+def window (rk rt : List Int64) (k a b : Int64) : List Nat :=
+  ((List.range rk.length).filter fun j => rk[j]! == k && a ≤ rt[j]! && rt[j]! ≤ b).mergeSort fun i j => decide (rt[i]! ≤ rt[j]!)
+
+/-- `aj`: the last row of `window` up to the left's time, `0N` at none. -/
+def ajSpec (lk lt rk rt : List Int64) : List Int64 :=
+  (lk.zip lt).map fun (k, t) => ((window rk rt k Int64.minValue t).getLast?.map Int64.ofNat).getD Int64.minValue
+
+/-- `wj1` / `wj`: the rows of `window` in `[w₀, w₁]`, and for `wj` the last one before `w₀` first. -/
+def wjSpec (prevailing : Bool) (lk w₀ w₁ rk rt : List Int64) : List (Int64 × Int64) :=
+  runsSpec ((List.range lk.length).map fun i =>
+    let pre := if prevailing then ((window rk rt lk[i]! Int64.minValue (w₀[i]! - 1)).getLast?).toList else []
+    (pre ++ window rk rt lk[i]! w₀[i]! w₁[i]!).map Int64.ofNat)
+
 /-! ## Checks against the spec on small literal Rels -/
 
 section Checks
 
 open QLean.Column
 
-private def longs (xs : List Int64) : ByteArray := xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty
 private def ans {α : Type} {k v : Ty} (f : Rel k v → α) : Except String (Rel k v) → Option α
   | .ok r => some (f r)
   | .error _ => none
-private def lv (xs : List Int64) (h : Ty.WF (.atom .long) xs.length (.bytes (longs xs)) := by decide) :
-    Rel (.atom .long) (.atom .long) := ⟨xs.length, .til _, { c := .bytes (longs xs), wf := h }⟩
+private def lv (xs : List Int64) (h : Ty.WF (.atom .long) xs.length (.bytes (packLongs xs)) := by decide) :
+    Rel (.atom .long) (.atom .long) := ⟨xs.length, .til _, { c := .bytes (packLongs xs), wf := h }⟩
 
 private def xs := lv [5, 3, 5, 9, 3]
 private def ys := lv [7, 8]
 -- the five longs Frame-of-Reference encoded
 private def xf : Rel (.atom .long) (.atom .long) :=
-  ⟨5, .til 5, { c := .foR 5 (Coc.encode 8 (longs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (longs [5, 3, 5, 9, 3])).2, wf := ⟨rfl, rfl⟩ }⟩
+  ⟨5, .til 5, { c := .foR 5 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2, wf := ⟨rfl, rfl⟩ }⟩
 private def bs : Rel (.atom .long) (.atom .boolean) := ⟨5, .til 5, { c := .bits 5 (ByteArray.mk #[0b10110]), wf := by decide }⟩
 -- one symbol column `bc a bc` as `syms` and as `enum` over the dictionary `a, bc`
 private def sy : Rel (.atom .long) (.atom .symbol) :=
@@ -156,8 +319,8 @@ private def se : Rel (.atom .long) (.atom .symbol) :=
   ⟨3, .til 3, { c := .enum 3 (ByteArray.mk #[97, 0, 98, 99, 0]) #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!), wf := by decide }⟩
 private def cs : Rel (.atom .long) (.atom .char) := ⟨6, .til 6, { c := .bytes "aaabaa".toUTF8, wf := by decide }⟩
 -- the parted list `(10 20; 30)`, keys `0 0 1`
-private def o2 : Arr (.atom .long) 3 := { c := .bytes (longs [0, 2, 3]), wf := by decide }
-private def parted : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by decide), (lv [10, 20, 30]).val⟩
+private def o2 : Arr (.atom .long) 3 := { c := .bytes (packLongs [0, 2, 3]), wf := by decide }
+private def pl : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by decide), (lv [10, 20, 30]).val⟩
 
 #guard [xs, xf].all fun x => ans (·.val.toList) (concat x ys) == some (x.val.toList ++ ys.val.toList)
 #guard ans (·.val.toList) (concat bs bs) == some (bs.val.toList ++ bs.val.toList)
@@ -183,11 +346,53 @@ private def parted : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (
   ans (·.val.toList) (amend x (lv [0, 0, 4, 0]) (some Ew.add) (lv [1, 2, 3, 4])) == some (amendSpec (· + ·) x.val.toList [0, 0, 4, 0] [1, 2, 3, 4])
 #guard ans (·.val.toList) (amend xs (lv [0, 0, 4, 0]) (some Ew.add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
 #guard (amend xs (lv [5]) none (lv [0])).toOption.isNone
-#guard (raze parted).toList == [(0, 10), (1, 20), (2, 30)]
-#guard (raze parted).val.toList == parted.val.toList
+#guard (raze pl).toList == [(0, 10), (1, 20), (2, 30)]
+#guard (raze pl).val.toList == pl.val.toList
 #guard [sy, se].all fun x => ans (·.val.toList) (like x "b*") == some [true, false, true]
 #guard [sy, se].all fun x => ans (·.val.toList) (like x "?") == some [false, true, false]
 #guard ans (·.val.toList) (ss cs "aa") == some [0, 4]
+
+-- parted lists, on `bytes` and on `foR` payloads
+private def x6 := lv [1, 2, 3, 4, 5, 6]
+private def x6f : Rel (.atom .long) (.atom .long) :=
+  ⟨6, .til 6, { c := .foR 6 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2, wf := ⟨rfl, rfl⟩ }⟩
+#guard [xs, xf].all fun x => ans (·.toList) (cut (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.val.toList)
+#guard ans (·.toList) (cut (lv [0, 2]) xf) == some [(0, 5), (0, 3), (1, 5), (1, 9), (1, 3)]
+#guard (cut (lv [1, 2]) xs).toOption.isNone && (cut (lv [0, 3, 2]) xs).toOption.isNone && (cut (lv [0, 9]) xs).toOption.isNone
+#guard [sy, se].all fun x => ans (·.toList) (cut (lv [0, 1]) x) == some (cutSpec [0, 1] x.val.toList)
+#guard [xs, xf].all fun x => ans (·.toList) (eachRight .add .long x ys) == some (eachRightSpec (· + ·) x.val.toList ys.val.toList)
+#guard ans (·.toList) (eachRight .lt .boolean xf (lv [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.val.toList [5, 4])
+#guard [x6, x6f].all fun x => ans (·.toList) (do flip (← cut (lv [0, 2, 4]) x)) == some (runsSpec [[1, 3, 5], [2, 4, 6]])
+#guard [x6, x6f].all fun x => ans (·.toList) (do flip (← flip (← cut (lv [0, 2, 4]) x))) == some (cutSpec [0, 2, 4] x6.val.toList)
+#guard (do flip (← cut (lv [0, 1, 4]) x6)).toOption.isNone
+#guard [xs, xf].all fun x => ans (·.toList) (do indexParted (← cut (lv [0, 2, 3]) x) (lv [2, 0, 5, -1, 3])) ==
+  some (runsSpec [[9, 3], [5, 3], [], [], []])
+#guard [sy, se].all fun x => ans (·.toList) (do indexParted (← cut (lv [0, 1]) x) (lv [1, 1])) ==
+  some (runsSpec [x.val.toList.drop 1, x.val.toList.drop 1])
+
+-- joins: left keys `lk` (and `lk₂`), times `lt`; right keys `rk` (and `rk₂`), times `rt`
+private def col (xs : List Int64) : Struct.Col := (.i64, packLongs xs)
+private def lk : List Int64 := [1, 1, 2, 3]
+private def lk₂ : List Int64 := [0, 1, 0, 0]
+private def lt : List Int64 := [5, 10, 3, 4]
+private def rk : List Int64 := [1, 2, 1, 2, 9]
+private def rk₂ : List Int64 := [0, 0, 1, 0, 0]
+private def rt : List Int64 := [3, 1, 7, 4, 0]
+-- the right times as a `foR` column, through `Alg.arrDense`
+private def rtf : Arr (.atom .long) 5 := { c := .foR 5 (Coc.encode 8 (packLongs rt)).1 (Coc.encode 8 (packLongs rt)).2, wf := ⟨rfl, rfl⟩ }
+private def rtc : Struct.Col := match Alg.arrDense rtf with | .ok c => c | .error _ => (.i64, .empty)
+#guard rtc.2 == packLongs rt
+#guard ans (·.toList) (ej [col lk] [col rk]) == some (ejSpec (lk.map ([·])) (rk.map ([·])))
+#guard ans (·.toList) (ej [col lk] [col rk]) == some [(0, 0), (0, 2), (1, 0), (1, 2), (2, 1), (2, 3)]
+#guard ans (·.toList) (ej [col lk, col lk₂] [col rk, col rk₂]) == some (ejSpec (lk.zipWith (fun a b => [a, b]) lk₂) (rk.zipWith (fun a b => [a, b]) rk₂))
+#guard ans (·.toList) (ij [col lk] [col rk]) == some [(0, 0), (1, 0), (2, 1)]
+#guard [col rt, rtc].all fun c => ans (·.val.toList) (aj [col lk] [col rk] (col lt) c) == some (ajSpec lk lt rk rt)
+#guard ans (·.val.toList) (aj [col lk] [col rk] (col lt) (col rt)) == some [0, 2, 1, Int64.minValue]
+private def w₀ : List Int64 := lt.map (· - 3)
+#guard [false, true].all fun p => [col rt, rtc].all fun c =>
+  ans (·.toList) (wj p (col w₀) (col lt) [col lk] [col rk] c) == some (wjSpec p lk w₀ lt rk rt)
+#guard ans (·.toList) (wj true (col w₀) (col lt) [col lk] [col rk] (col rt)) == some [(0, 0), (1, 0), (1, 2), (2, 1)]
+#guard (ej [col lk] []).toOption.isNone
 
 end Checks
 
@@ -201,5 +406,10 @@ end Checks
 #print axioms raze_holds
 #print axioms like
 #print axioms ss
+#print axioms cut
+#print axioms flip
+#print axioms indexParted
+#print axioms aj
+#print axioms wj
 
 end LeetQ.Rel.Struct

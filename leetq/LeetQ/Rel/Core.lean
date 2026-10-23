@@ -7,6 +7,10 @@
 -/
 import QLean.Value
 import QLean.Dep.Val
+import QLean.Kernel.Sort
+import QLean.Kernel.Search
+import QLean.Kernel.Structural
+import Std.Tactic.BVDecide
 
 namespace LeetQ.Rel
 
@@ -81,6 +85,46 @@ def Cuts {g : Nat} (o : Arr (.atom .long) (g+1)) (n : Nat) : Prop :=
 instance {g : Nat} (o : Arr (.atom .long) (g+1)) (n : Nat) : Decidable (Cuts o n) := by
   unfold Cuts; infer_instance
 
+/-- The group holding each of `n` positions under the offsets `o`: the last cut at or below it, `o bin til n`
+    (`KeyCol.group` read by `binBytes`). -/
+def groupOf (o : ByteArray) (n : Nat) : ByteArray := Kernel.binBytes 8 false true false o (Kernel.tilLongs n.toUSize)
+
+/-- `xs` as a dense long payload, eight bytes each: the literal columns of every module's checks. -/
+def packLongs (xs : List Int64) : ByteArray := xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty
+
+/-- Under `wf`, a long `bytes` column's element `i` is the eight bytes at `8i`, read as a long. -/
+theorem Arr.get_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) (i : Fin m) :
+    x.get i = (Column.bitsAt b (i.1 * 8) 8).toInt64 := by
+  have hn : i.1 < Column.count .long (.bytes b) := by have := x.wf.2; rw [hc] at this; omega
+  show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
+  rw [hc]; simp only [Column.get, if_pos hn]; rfl
+
+/-- `Order.rank .i64` flips the sign bit: unsigned order on ranks is signed order on longs. -/
+theorem rank_i64_le {x y : UInt64} (h : Kernel.Order.rank .i64 x ≤ Kernel.Order.rank .i64 y) : x.toInt64 ≤ y.toInt64 := by
+  simp only [Kernel.Order.rank] at h; bv_decide
+
+/-- `Cuts` from `Order.ascending`'s Lean body on the dense payload, and the two end reads. -/
+theorem cuts_of_ascending {g n : Nat} (o : Arr (.atom .long) (g+1)) {b : ByteArray} (hc : o.c = .bytes b)
+    (hu : g + 1 < USize.size) (ha : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true)
+    (h0 : o.get 0 = 0) (hl : (o.get (Fin.last g)).toInt = n) : Cuts o n := by
+  refine ⟨?_, h0, hl⟩
+  have hsz : b.size / 8 = g + 1 := by have := o.wf.2; rw [hc] at this; exact this
+  have adj : ∀ i (h : i + 1 < g + 1), o.get ⟨i, by omega⟩ ≤ o.get ⟨i + 1, h⟩ := by
+    intro i h
+    simp only [Kernel.Order.ascending, List.all_eq_true, List.mem_range] at ha
+    have hm : (g + 1).toUSize.toNat = g + 1 := USize.toNat_ofNat_of_lt hu
+    have := ha i (by simp only [Kernel.Scan.Kind.avail, Kernel.Scan.Kind.width, hm, hsz]; omega)
+    simp only [Bool.false_eq_true, if_false, decide_eq_true_eq, Kernel.Order.keyAt, Kernel.Scan.Kind.bitsAt,
+      Kernel.Scan.Kind.width] at this
+    rw [Arr.get_long_bytes o hc, Arr.get_long_bytes o hc]
+    exact rank_i64_le this
+  intro ⟨i, hi⟩ ⟨j, hj⟩ hij
+  change i ≤ j at hij
+  obtain ⟨d, rfl⟩ : ∃ d, j = i + d := ⟨j - i, by omega⟩
+  induction d with
+  | zero => exact Int64.le_refl _
+  | succ d ih => exact Int64.le_trans (ih (by omega) (by omega)) (adj (i + d) hj)
+
 /-- A key column of `n` keys of type `k`, storing only what q stores. -/
 inductive KeyCol : Ty → Nat → Type
   /-- A list: key `i` is `i`, nothing stored. -/
@@ -109,6 +153,23 @@ def get : {k : Ty} → {n : Nat} → KeyCol k n → Fin n → El k
 
 /-- The keys in position order, for proofs only. -/
 def toList {k : Ty} {n : Nat} (c : KeyCol k n) : List (El k) := List.ofFn c.get
+
+/-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
+def longBytes : Column → Option ByteArray
+  | .bytes b => some b
+  | .foR m md pk => some (Kernel.Coc.decode 8 md pk m.toUSize)
+  | _ => none
+
+/-- `grp d o` built at run time: `Cuts` decided by `Order.ascending` on `o`'s dense payload and one read of
+    each end, `cuts_of_ascending` turning the kernel's answer into the proof. `none` when `o` is not cuts of `n`. -/
+def grp? {k : Ty} {g : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (n : Nat) : Option (KeyCol k n) := do
+  let b ← longBytes o.c
+  if h : (Ty.atom .long).WF (g+1) (.bytes b) ∧ g + 1 < USize.size then
+    let ob : Arr (.atom .long) (g+1) := ⟨.bytes b, h.1, o.attr, none⟩
+    if hc : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true ∧ ob.get 0 = 0 ∧ (ob.get (Fin.last g)).toInt = n then
+      some (.grp d ob (cuts_of_ascending ob rfl h.2 hc.1 hc.2.1 hc.2.2))
+    else none
+  else none
 
 end KeyCol
 
@@ -139,10 +200,8 @@ section Checks
 
 open QLean.Column
 
-/-- `n` longs, dense, eight bytes each. -/
-private def longs (xs : List Int64) : Column := .bytes (xs.foldl (fun b x => pushBits b x.toUInt64 8) .empty)
 
-private def l3 : Arr (.atom .long) 3 := { c := longs [7, -1, 42], wf := by decide }
+private def l3 : Arr (.atom .long) 3 := { c := .bytes <| packLongs [7, -1, 42], wf := by decide }
 #guard l3.toList == [7, -1, 42]
 
 private def bs : Arr (.atom .boolean) 3 := { c := .bits 3 (ByteArray.mk #[0b101]), wf := by decide }
@@ -160,13 +219,22 @@ private def gs : Arr .gen 2 := { c := #[.atom (.long 1), .list #[]], wf := rfl }
 #guard match gs.get 0, gs.get 1 with | .atom (.long 1), .list #[] => true | _, _ => false
 
 -- groups `[0,1) [1,1) [1,3)` under the keys `a bc d`: the empty middle group owns no position
-private def o3 : Arr (.atom .long) 4 := { c := longs [0, 1, 1, 3], wf := by decide }
+private def o3 : Arr (.atom .long) 4 := { c := .bytes <| packLongs [0, 1, 1, 3], wf := by decide }
 private def ds : Arr (.atom .symbol) 3 := { c := .syms (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7], wf := by decide }
 private def grpKey : KeyCol (.atom .symbol) 3 := .grp (.arr ds) o3 (by decide)
 #guard grpKey.toList == ["a", "d", "d"]
 -- the parted list `(10 20; 30)`: positions `0 1 | 2`, keys `0 0 1`
-private def o2 : Arr (.atom .long) 3 := { c := longs [0, 2, 3], wf := by decide }
-private def parted : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by decide), { c := longs [10, 20, 30], wf := by decide }⟩
+private def o2 : Arr (.atom .long) 3 := { c := .bytes <| packLongs [0, 2, 3], wf := by decide }
+private def parted : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by decide), { c := .bytes <| packLongs [10, 20, 30], wf := by decide }⟩
+-- `grp?` decides the same `Cuts` at run time, on `bytes` and on `foR` offsets
+private def o3f : Arr (.atom .long) 4 :=
+  { c := .foR 4 (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).1
+      (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).2, wf := ⟨rfl, rfl⟩ }
+#guard [o3, o3f].all fun o => ((KeyCol.grp? (.arr ds) o 3).map KeyCol.toList) == some ["a", "d", "d"]
+#guard ((KeyCol.grp? (.til 2) o2 3).map KeyCol.toList) == some [0, 0, 1]
+#guard (KeyCol.grp? (.til 2) o2 4).isNone
+#guard (KeyCol.grp? (.til 2) ({ c := .bytes <| packLongs [0, 2, 1], wf := by decide } : Arr (.atom .long) 3) 1).isNone
+#guard (KeyCol.grp? (.til 2) ({ c := .bytes <| packLongs [1, 2, 3], wf := by decide } : Arr (.atom .long) 3) 3).isNone
 #guard parted.toList == [(0, 10), (0, 20), (1, 30)]
 example : parted.Holds 1 30 := (parted.holds_iff_mem_toList 1 30).2 (by decide)
 #guard (Rel.mk 3 (.til 3) ss).toList == [(0, "bc"), (1, "a"), (2, "bc")]
@@ -175,6 +243,8 @@ end Checks
 
 #print axioms Arr.get
 #print axioms KeyCol.get
+#print axioms KeyCol.grp?
+#print axioms cuts_of_ascending
 #print axioms Rel.holds_iff_mem_toList
 
 end LeetQ.Rel
