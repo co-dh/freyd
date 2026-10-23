@@ -967,7 +967,7 @@ theorem FinRel.get_chains [DecidableEq K] [Hashable K] (r : FinRel K V) : chainG
     hashing when `K` has a `Hashable`, else by the scans `scanLookup` and `eraseDups`.  Each answer
     equals the scan's (`get_build`, `dedup_eq`), so a law proved of the scan holds of either; `build`
     makes the index once, and `get` answers each key from it. -/
-class FibreIndex (K : Type) [DecidableEq K] where
+class FibreIndex (K : Type) [outParam (DecidableEq K)] where
   Index : Type → Type
   build {V : Type} : FinRel K V → Index V
   get {V : Type} : Index V → K → List V

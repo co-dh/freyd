@@ -89,12 +89,12 @@ variable [DecidableEq K] [Hashable K] [DecidableEq V] [Hashable V] [DecidableEq 
   [DecidableEq κ] [Hashable κ]
 
 /-- `dom r` held as pairs, each key once, in order of first appearance: q's key order. -/
-def domP (r : FinRel K V) : RelRep K K := let d := @FibreIndex.dedupA K inferInstance FibreIndex.hash r.keys; .pairs ⟨d, d, rfl⟩
+def domP (r : FinRel K V) : RelRep K K := let d := FibreIndex.dedupA r.keys; .pairs ⟨d, d, rfl⟩
 
 /-- q's keyed lookup `look(D) ≜ first(D) some ⊕ ˆnone`: the first value of the fibre, `0N` when empty.
     A `FinRel`'s is read by one `first?` probe per key: no fibre, and no composite of three enumerations. -/
 def look : RelRep K V → RelRep K (Option V)
-  | .pairs r => let i := @FibreIndex.build K inferInstance FibreIndex.hash V r; .arr fun k => #[@FibreIndex.first? K inferInstance FibreIndex.hash V i k]
+  | .pairs r => let i := FibreIndex.build r; .arr fun k => #[FibreIndex.first? i k]
   | D => RelRep.override (D.first ≫ RelRep.ofFn some) (RelRep.ofFn fun _ => none)
 
 omit [DecidableEq W] [Hashable W] [DecidableEq R] [Hashable R] [DecidableEq S] [Hashable S] [DecidableEq X] [Hashable X] [DecidableEq κ] [Hashable κ] in
@@ -738,6 +738,7 @@ theorem range'_filterMap {α : Type} : ∀ (l : List α) (p m : Nat),
     rw [List.range'_succ_left, List.filterMap_map, Nat.add_right_comm]
     exact range'_filterMap l p m
 
+omit [Hashable W] in
 /-- The rows in the window `(t+lo, t+hi]`: rows `p₁ … p₂ - 1`. -/
 theorem window_eq {a : Array (Int × W)} {t lo hi : Int} (hs : a.toList.Pairwise fun x y => x.1 ≤ y.1) {p₁ p₂ : Nat}
     (h12 : p₁ ≤ p₂) (c₁ : chk a (t + lo) p₁ = true) (c₂ : chk a (t + hi) p₂ = true) :
