@@ -22,35 +22,35 @@ open LeetQ.Rel.Find (list onKey vec dense one expand)
 /-! ## Concat, take, drop, reverse, rotate: a new list -/
 
 /-- `x,y`: `razeColumn` over the two payloads; a `syms` part meets an `enum` one by interning. -/
-def concat {a : QAtomicType} {nx ny : Nat} (x : Arr (.atom a) nx) (y : Arr (.atom a) ny) :
-    Except String (Arr (.atom a) (nx + ny)) := do
+def concat {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
+    Except String (Arr a (nx + ny)) := do
   onKey (nx + ny) a (← vec "x,y" a (razeColumn a #[x.c, y.c])) "x,y"
 
 /-- `n#x`: `|n|` elements cycling from `takeFrom n (count x)`. -/
-def take {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr (.atom a) nx) : Except String (Arr (.atom a) n.natAbs) := do
+def take {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr a nx) : Except String (Arr a n.natAbs) := do
   onKey n.natAbs a (← vec "n#x" a (takeColumn a x.c n)) "n#x"
 
 /-- `n_x`: `|n|` elements off the front (`n ≥ 0`) or the back, clamped. -/
-def drop {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr (.atom a) nx) : Except String (Arr (.atom a) (nx - n.natAbs)) := do
+def drop {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr a nx) : Except String (Arr a (nx - n.natAbs)) := do
   onKey (nx - n.natAbs) a (← vec "n_x" a (dropColumn a x.c n)) "n_x"
 
 /-- `|x`: `reverseColumn`; a `syms` blob, which it declines (reversing a blob rebuilds it), is
     `x@` the reversed `til n`, `gatherSyms`. -/
-def reverse {a : QAtomicType} {nx : Nat} (x : Arr (.atom a) nx) : Except String (Arr (.atom a) nx) := do
+def reverse {a : QAtomicType} {nx : Nat} (x : Arr a nx) : Except String (Arr a nx) := do
   let r := match a, x.c with
     | .symbol, .syms .. => gatherColumn a x.c (.bytes (reverseBytes 8 (tilLongs nx.toUSize)))
     | _, _ => reverseColumn a x.c
   onKey nx a (← vec "|x" a r) "|x"
 
 /-- `n rotate x`: a left rotation by `n mod count x`. -/
-def rotate {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr (.atom a) nx) : Except String (Arr (.atom a) nx) := do
+def rotate {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr a nx) : Except String (Arr a nx) := do
   onKey nx a (← vec "n rotate x" a (rotateColumn a n x.c)) "n rotate x"
 
 /-! ## Index and amend: an answer per element of an operand -/
 
 /-- `x@y` = `y ; x`: `gatherColumn`, the type's null at a miss; one element per `y`. -/
-def index {a : QAtomicType} {nx ny : Nat} (x : Arr (.atom a) nx) (y : Arr (.atom .long) ny) :
-    Except String (Arr (.atom a) ny) := do
+def index {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr .long ny) :
+    Except String (Arr a ny) := do
   onKey ny a (← vec "x@y" a (gatherColumn a x.c y.c)) "x@y"
 
 /-- A column as `scatterPacked` writes it, with its element width in bits: `bits` as it is at `1`, any
@@ -83,8 +83,8 @@ def scatter (verb : String) (a : QAtomicType) (n : Nat) (acc v : Column) (ix : B
     index-by-index application). `Ew.dyad` is `dyadColumn`, so the verb runs at every type pair it is
     defined on whose answer is `x`'s type, nulls by its own rule. Under `:` the scatter keeps the last
     write, so one round is q's answer, and `y` must have `x`'s type (q's 'type otherwise). -/
-def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr (.atom a) nx) (i : Arr (.atom .long) ni)
-    (op : Option Prim.Dyadic) (y : Arr (.atom u) ny) : Except String (Arr (.atom a) nx) := do
+def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr a nx) (i : Arr .long ni)
+    (op : Option Prim.Dyadic) (y : Arr u ny) : Except String (Arr a nx) := do
   let verb := "@[x;i;f;y]"
   if ni ≠ ny then throw s!"{verb}: {ni} indices against {ny} values (q's 'length)"
   let ib ← dense verb .long i.c
@@ -113,39 +113,39 @@ def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr (.atom a) nx) (i : Arr (
 def plus (b : ByteArray) (x : Int64) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va Alg.nul b (one x.toUInt64) (Alg.len b).toUSize
 
 /-- The flat form over `val`: its `n` rows cut by the long payload `o` (`g+1` offsets), decided by `Parted.of?`. -/
-def partedP {v : QVecType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String (Parted v) := do
+def partedP {v : QAtomicType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String (Parted v) := do
   let g := o.size / 8 - 1
-  let some P := Parted.of? (← Arr.of (.atom .long) (g + 1) (.bytes o) verb) val
+  let some P := Parted.of? (← Arr.of .long (g + 1) (.bytes o) verb) val
     | throw s!"{verb}: the offsets are not ascending cuts of {n} rows (q's 'domain)"
   pure P
 
 /-- q's nested list of a flat form: one boxed vector per run (`Parted.box`). -/
-def boxed {v : QVecType} (P : Parted v) : Except String ((g : Nat) × Arr .general g) := do pure ⟨P.g, ← P.box⟩
+def boxed {v : QAtomicType} (P : Parted v) : Except String ((g : Nat) × Arr .general g) := do pure ⟨P.g, ← P.box⟩
 
 /-- `partedP`, boxed. -/
-def parted {v : QVecType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String ((g : Nat) × Arr .general g) := do
+def parted {v : QAtomicType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String ((g : Nat) × Arr .general g) := do
   boxed (← partedP verb o val)
 
 /-- `o cut x` in its flat form: `x` cut at `(o, n)`. A first offset `o₀ = 0` leaves `val` untouched (zero
     copy); above `0`, q drops the rows before it: `dropColumn` of `x` and the offsets lowered by `o₀` (`plus`).
     Offsets that are negative or do not ascend within `n` are refused (`Parted.of?`). -/
-def cutP {a : QAtomicType} {no nx : Nat} (o : Arr (.atom .long) no) (x : Arr (.atom a) nx) : Except String (Parted (.atom a)) := do
+def cutP {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Except String (Parted a) := do
   let ob ← dense "o cut x" .long o.c
   let o₀ : Int64 := if no = 0 then 0 else (Column.bitsAt ob 0 8).toInt64
   if o₀ < 0 || nx < o₀.toNatClampNeg then throw s!"o cut x: the first offset {o₀} is outside 0..{nx} (q's 'domain)"
   if o₀ = 0 then return (← partedP "o cut x" (concatBytes #[ob, one nx.toUInt64]) x)
   let m := nx - o₀.toNatClampNeg
   let c ← vec "o cut x" a (dropColumn a x.c o₀.toInt)
-  partedP "o cut x" (concatBytes #[plus ob (-o₀), one m.toUInt64]) (← Arr.of (.atom a) m c "o cut x")
+  partedP "o cut x" (concatBytes #[plus ob (-o₀), one m.toUInt64]) (← Arr.of a m c "o cut x")
 
 /-- `o cut x`: `cutP`, boxed. -/
-def cut {a : QAtomicType} {no nx : Nat} (o : Arr (.atom .long) no) (x : Arr (.atom a) nx) : Except String ((g : Nat) × Arr .general g) := do
+def cut {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Except String ((g : Nat) × Arr .general g) := do
   boxed (← cutP o x)
 
 /-- `x f/: y`: `m` runs of `n`, run `j` is `x f y[j]` — `Alg.cross` of the positions, two gathers and ONE
     `Ew.dyad` over all `m·n` pairs, no call per right element; `o := j·n` for `j ≤ m`. -/
-def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr (.atom t) nx)
-    (y : Arr (.atom u) ny) : Except String ((g : Nat) × Arr .general g) := do
+def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) : Except String ((g : Nat) × Arr .general g) := do
   let (j, i) := Alg.cross ny nx
   let xs ← vec "x f/:y" t (gatherColumn t x.c (.bytes i))
   let ys ← vec "x f/:y" u (gatherColumn u y.c (.bytes j))
@@ -155,7 +155,7 @@ def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : 
     `matchBytes` of `o` against `j·m`; position `p` of the answer reads `(p mod g)·m + p div g`
     (`Alg.cross`, `Ew.val`, one gather); `o' := j·g`. -/
 def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g : Nat) × Arr .general g) := do
-  let P ← Parted.ofBoxes (.atom a) x
+  let P ← Parted.ofBoxes a x
   let g := P.g
   let m := if g = 0 then 0 else P.n / g
   let some ob := longBytes P.o.c | throw "+x: the offsets have no long payload"
@@ -163,24 +163,24 @@ def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g 
     throw "+x: the runs differ in length (q's 'length)"
   let (q, r) := Alg.cross m g
   let c ← vec "+x" a (gatherColumn a P.val.c (.bytes (Alg.add (Alg.mulc r m) q)))
-  parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of (.atom a) (m * g) c "+x")
+  parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of a (m * g) c "+x")
 
 /-- `x@y` on a nested list of `a`s: the runs `y` selects — the run lengths `o[1..] − o[..g]` gathered at
     `y` (`0` outside `0 … g-1`), `Find.expand` of them, one gather of `val` at `o[y[i]] + w`; `o' := 0, sums`. -/
-def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr (.atom .long) ny) : Except String ((g : Nat) × Arr .general g) := do
-  let P ← Parted.ofBoxes (.atom a) x
+def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .long ny) : Except String ((g : Nat) × Arr .general g) := do
+  let P ← Parted.ofBoxes a x
   let some ob := longBytes P.o.c | throw "x@y: the offsets have no long payload"
   let yb ← dense "x@y" .long y.c
   let lens := Alg.gather 8 (Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8))) yb
   let (i, w) := expand lens
   let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
   let c ← vec "x@y" a (gatherColumn a P.val.c (.bytes src))
-  parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom a) (Alg.len src) c "x@y")
+  parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of a (Alg.len src) c "x@y")
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
 /-- A key column in any encoding: its element type and payload, compared only by `Alg.codes`. -/
-abbrev KCol := (t : QVecType) × Column
+abbrev KCol := (t : QAtomicType) × Column
 
 /-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tuples`), left
     then right, each at the narrowest layout its columns allow. -/
@@ -192,18 +192,18 @@ def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg
   Alg.two (← Alg.tuples cs)
 
 /-- `ej`: every pair of a left and a right row with equal key tuples, left row ↦ right row (`Alg.join`). -/
-def ej (l r : Array KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
+def ej (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ej" l r
   let (li, ri) := Alg.join lc rc
-  Alg.ofCols (.atom .long) (.atom .long) (.bytes li) (.bytes ri)
+  Alg.ofCols .long .long (.bytes li) (.bytes ri)
 
 /-- `ij` against a keyed right side: each left row ↦ the first right row of its key tuple, unmatched rows
     dropped — `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
-def ij (l r : Array KCol) : Except String (Rel (.atom .long) (.atom .long)) := do
+def ij (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ij" l r
   let hit := rc.find lc
   let li := whereBits lc.n.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one rc.n.toUInt64) lc.n.toUSize)
-  Alg.ofCols (.atom .long) (.atom .long) (.bytes li) (.bytes (Alg.gather 8 hit li))
+  Alg.ofCols .long .long (.bytes li) (.bytes (Alg.gather 8 hit li))
 
 /-- A key or time column as the `QValue` qlean's join passes read: the payload where it lies, no copy. -/
 def colValue : KCol → QValue
@@ -226,20 +226,20 @@ def keyGroups (verb : String) (l r : Array KCol) (nl nr : Nat) : Except String (
     `keyGroups`, then `Eval.groupEdge` (`q.k` line 46's `(x#z) bin x#y`): one C bisection per left row over
     the right's time column at its own encoding. q sorts nothing: an unsorted group is bisected as its rows lie.
     A miss is `nr`: one `^` pass reading `nr` as its null fills it with `0N`. -/
-def aj (l r : Array KCol) (lt rt : KCol) : Except String ((m : Nat) × Arr (.atom .long) m) := do
+def aj (l r : Array KCol) (lt rt : KCol) : Except String ((m : Nat) × Arr .long m) := do
   unless lt.1 == rt.1 do throw "aj: the two time columns differ in type (q's 'type)"
   let (nl, nr) := (colRows lt, colRows rt)
   let (gs, ids) ← keyGroups "aj" l r nl nr
   let e ← dense "aj" .long (Eval.groupEdge gs ids (colValue rt) (colValue lt) nr)
   let hit := Kernel.Ew.val Ew.fill Ew.i64 Ew.av (Int64.ofNat nr) (one Int64.minValue.toUInt64) e nl.toUSize
-  pure ⟨nl, ← Arr.of (.atom .long) nl (.bytes hit) "aj"⟩
+  pure ⟨nl, ← Arr.of .long nl (.bytes hit) "aj"⟩
 
 /-- `wj` (`prevailing`) and `wj1`: each left row ↦ the right rows `[lo, hi)`, a parted list — q's `ww`
     (`q.k` line 54) as qlean's `windowJoin` runs it: `wj` is `ww[0 1;w]`, `lo` the row `bin` names at `w₀`
     (the prevailing row at or before it); `wj1` is `ww[1;w-1 0]`, one past the row at `w₀-1`; `hi` one past
     the row at `w₁`. A bound `bin` misses clamps to the group's first row, an inverted run is empty. The
     rows are a range of the right table, so a right side not laid out by key (q's `` `p# ``) mixes keys. -/
-def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Parted (.atom .long)) := do
+def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Parted .long) := do
   unless w₀.1 == rt.1 && w₁.1 == rt.1 do throw "wj: the window and time columns differ in type (q's 'type)"
   let (nl, nr) := (colRows w₀, colRows rt)
   let (gs, ids) ← keyGroups "wj" l r nl nr
@@ -266,7 +266,7 @@ def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : 
     (Kernel.Ew.val Ew.sub Ew.i64 Ew.vv mn (← edges (colValue w₁) 1) los n) n
   let (i, w) := expand lens
   let rows := Alg.add (Alg.gather 8 los i) w
-  partedP "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom .long) (Alg.len rows) (.bytes rows) "wj")
+  partedP "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of .long (Alg.len rows) (.bytes rows) "wj")
 
 /-- `wj` with the aggregate `::`: the windows `wjP` as q's nested list, one boxed row list per left row. -/
 def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String ((g : Nat) × Arr .general g) := do
@@ -276,19 +276,19 @@ def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : E
     left row, no window boxed — the right column `c` gathered at `wjP`'s flat rows, then `Ops.overBy` over
     `wjP`'s own offsets. Answered at `Coc.Over.resultType`'s type, which comes with the answer. -/
 def wjBy (op : Coc.Over) (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt c : KCol) :
-    Except String ((u : QAtomicType) × (m : Nat) × Arr (.atom u) m) := do
+    Except String ((u : QAtomicType) × (m : Nat) × Arr u m) := do
   let ⟨.atom a, cc⟩ := c | throw "wj: a general list aggregated column (q's 'type)"
   unless colRows c == colRows rt do throw s!"wj: {colRows c} values against {colRows rt} right rows (q's 'length)"
   let P ← wjP prevailing w₀ w₁ l r rt
   let x ← vec "wj" a (gatherColumn a cc (.bytes (← dense "wj" .long P.val.c)))
-  let Q : Parted (.atom a) := ⟨P.g, P.n, P.o, P.co, ← Arr.of (.atom a) P.n x "wj"⟩
+  let Q : Parted a := ⟨P.g, P.n, P.o, P.co, ← Arr.of a P.n x "wj"⟩
   let some ⟨u, s⟩ := Ops.overBy op Q | throw s!"wj: no grouped {repr op}/ over {repr a}"
   pure ⟨u, Q.g, s⟩
 
 /-! ## Raze -/
 
 /-- `raze` of a nested list of `v`s: the flat form's values (`Parted.ofBoxes`). -/
-def raze (v : QVecType) {nx : Nat} (x : Arr .general nx) : Except String ((m : Nat) × Arr v m) := do
+def raze (v : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((m : Nat) × Arr v m) := do
   let P ← Parted.ofBoxes v x
   pure ⟨P.n, P.val⟩
 
@@ -296,7 +296,7 @@ def raze (v : QVecType) {nx : Nat} (x : Arr .general nx) : Except String ((m : N
 
 /-- `x like p` on a symbol column: `likeSyms` over a `syms` blob; over an `enum` dictionary, then
     `maskByIds` carries the dictionary's bits to the elements. On `x`'s key. -/
-def like {nx : Nat} (x : Arr (.atom .symbol) nx) (p : String) : Except String (Arr (.atom .boolean) nx) := do
+def like {nx : Nat} (x : Arr .symbol nx) (p : String) : Except String (Arr .boolean nx) := do
   let pb := p.toUTF8
   let bits ← match x.c with
     | .syms b o => pure (likeSyms pb b o)
@@ -307,7 +307,7 @@ def like {nx : Nat} (x : Arr (.atom .symbol) nx) (p : String) : Except String (A
   onKey nx .boolean (.bits nx bs) "x like p"
 
 /-- `x ss p` on a char list: the starts of the non-overlapping matches, `fixedHits`. -/
-def ss {nx : Nat} (x : Arr (.atom .char) nx) (p : String) : Except String ((m : Nat) × Arr (.atom .long) m) := do
+def ss {nx : Nat} (x : Arr .char nx) (p : String) : Except String ((m : Nat) × Arr .long m) := do
   let some hs := fixedHits p.toUTF8 (← dense "x ss p" .char x.c)
     | throw s!"x ss p: the pattern {p} is not fixed-width (q's 'nyi)"
   list .long (.bytes hs)
@@ -518,7 +518,7 @@ theorem elemsW_cycleBytes (w : Nat) (hw : 0 < w) (b : ByteArray) (off m : Nat)
 
 /-- `sliceColumn` at a long `bytes` column: the dense arm, over the column or, empty, over its null. -/
 theorem sliceColumn_long (b : ByteArray) (off m : Nat) :
-    sliceColumn .long (.bytes b) off m = some (.vector (.atom .long) (Column.answer .long (.bytes
+    sliceColumn .long (.bytes b) off m = some (.vector .long (Column.answer .long (.bytes
       (if b.size / 8 = 0 then cycleBytes (· * 8) 1 off m (Column.pushBits .empty 0x8000000000000000 8)
        else cycleBytes (· * 8) (b.size / 8) off m b)))) := by
   by_cases h : b.size / 8 = 0 <;>
@@ -526,7 +526,7 @@ theorem sliceColumn_long (b : ByteArray) (off m : Nat) :
       Column.pushBits_size]
 
 /-- The words of a long `bytes` column, read as longs, are its `toList`. -/
-theorem toList_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) :
+theorem toList_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.c = .bytes b) :
     x.toList = (Verify.elemsW 8 b).map UInt64.toInt64 := Arr.toList_long x (by rw [hc]; rfl)
 
 /-- A word list's `!` read under `toInt64` at an index in range. -/
@@ -535,7 +535,7 @@ theorem getElem!_map_toInt64 (E : List UInt64) (i : Nat) (h : i < E.length) :
   rw [getElem!_pos (E.map UInt64.toInt64) i (by simpa using h), getElem!_pos E i h, List.getElem_map]
 
 /-- An `onKey` over a `vec` answer holds the `vec` payload. -/
-theorem onKey_vec {verb s : String} {a : QAtomicType} {o : Option QValue} {m : Nat} {r : Arr (.atom a) m}
+theorem onKey_vec {verb s : String} {a : QAtomicType} {o : Option QValue} {m : Nat} {r : Arr a m}
     (h : (do onKey m a (← vec verb a o) s) = .ok r) : vec verb a o = .ok r.c := by
   cases hv : vec verb a o with
   | error e => simp [hv, bind, Except.bind] at h
@@ -543,14 +543,14 @@ theorem onKey_vec {verb s : String} {a : QAtomicType} {o : Option QValue} {m : N
 
 /-- A slice of a long `bytes` column, in any `Arr` holding `vec`'s payload: `m` words from `off`, cycling. The
     column holds whole words and `off < n` unless no lap is run; an empty column is sliced only to nothing. -/
-theorem slice_toList {nx : Nat} {x : Arr (.atom .long) nx} {m' : Nat} {a : Arr (.atom .long) m'} {b : ByteArray}
+theorem slice_toList {nx : Nat} {x : Arr .long nx} {m' : Nat} {a : Arr .long m'} {b : ByteArray}
     {verb : String} {off m : Nat} (hc : x.c = .bytes b) (h0 : 0 < nx ∨ m = 0)
     (h : off < nx ∨ off + m ≤ nx) (hb : off + m ≤ nx ∨ b.size % 8 = 0)
     (hv : vec verb .long (sliceColumn .long x.c off m) = .ok a.c) :
     a.toList = (List.range m).map fun j => x.toList[(off + j) % x.toList.length]! := by
   have hn : b.size / 8 = nx := Arr.n_long_bytes x hc
   rw [hc, sliceColumn_long] at hv
-  simp only [vec, show (QVecType.atom .long == QVecType.atom .long) = true from rfl, ↓reduceIte, Except.ok.injEq] at hv
+  simp only [vec, show (QAtomicType.long == QAtomicType.long) = true from rfl, ↓reduceIte, Except.ok.injEq] at hv
   rw [Arr.toList_long a (by rw [← hv]; exact longWords_answer _)]
   by_cases hz : nx = 0
   · obtain rfl : m = 0 := by omega
@@ -570,25 +570,25 @@ theorem range_map_window {α : Type} [Inhabited α] (xs : List α) (off m : Nat)
 
 /-- **`n#x` is `takeSpec`** on a non-empty long column of whole words: `takeSpec`'s default element
     reads an empty `xs`, where q pads with nulls, so `nx ≠ 0`; a lap copies the payload, so `Words`. -/
-theorem take_toList {n : Int} {nx : Nat} {x : Arr (.atom .long) nx} {r : Arr (.atom .long) n.natAbs}
+theorem take_toList {n : Int} {nx : Nat} {x : Arr .long nx} {r : Arr .long n.natAbs}
     (hx : Words x.c) (h0 : 0 < nx) (h : take n x = .ok r) : r.toList = takeSpec n x.toList := by
   obtain ⟨b, hc, hb⟩ := words_bytes hx
   have hn : b.size / 8 = nx := Arr.n_long_bytes x hc
   have hl : x.toList.length = nx := Arr.length_toList _
   unfold take takeColumn at h
-  rw [hc, show Column.count (.atom .long) (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at h
+  rw [hc, show Column.count .long (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at h
   rw [slice_toList hc (.inl h0) (.inl (by unfold takeFrom; split; omega; exact Nat.mod_lt _ h0)) (.inr hb) (onKey_vec h),
     takeSpec, hl]
 
 /-- `dropColumn` of a long `bytes` column, in any `Arr` holding `vec`'s payload, is `dropSpec`: no lap is run, so
     any `bytes` payload. -/
-theorem dropColumn_toList {nx : Nat} {x : Arr (.atom .long) nx} {m' : Nat} {a : Arr (.atom .long) m'} {verb : String}
+theorem dropColumn_toList {nx : Nat} {x : Arr .long nx} {m' : Nat} {a : Arr .long m'} {verb : String}
     {n : Int} {b : ByteArray} (hc : x.c = .bytes b) (hv : vec verb .long (dropColumn .long x.c n) = .ok a.c) :
     a.toList = dropSpec n x.toList := by
   have hn : b.size / 8 = nx := Arr.n_long_bytes x hc
   have hl : x.toList.length = nx := Arr.length_toList _
   unfold dropColumn at hv
-  rw [hc, show Column.count (.atom .long) (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at hv
+  rw [hc, show Column.count .long (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at hv
   rw [slice_toList hc (by omega) (.inr (by split <;> omega)) (.inl (by split <;> omega)) hv,
     range_map_window _ _ _ (by rw [hl]; split <;> omega)]
   unfold dropSpec
@@ -602,7 +602,7 @@ theorem dropColumn_toList {nx : Nat} {x : Arr (.atom .long) nx} {m' : Nat} {a : 
     congr 1; omega
 
 /-- **`n_x` is `dropSpec`** on a long `bytes` column. -/
-theorem drop_toList {n : Int} {nx : Nat} {x : Arr (.atom .long) nx} {r : Arr (.atom .long) (nx - n.natAbs)} {b : ByteArray}
+theorem drop_toList {n : Int} {nx : Nat} {x : Arr .long nx} {r : Arr .long (nx - n.natAbs)} {b : ByteArray}
     (hc : x.c = .bytes b) (h : drop n x = .ok r) : r.toList = dropSpec n x.toList :=
   dropColumn_toList hc (onKey_vec h)
 
@@ -627,13 +627,13 @@ theorem rotateLeft_eq {α : Type} [Inhabited α] (xs : List α) (i : Nat) (hi : 
 
 /-- **`n rotate x` is `rotateSpec`** on a long column of whole words (a rotation by a non-zero count runs
     a lap). -/
-theorem rotate_toList {n : Int} {nx : Nat} {x r : Arr (.atom .long) nx}
+theorem rotate_toList {n : Int} {nx : Nat} {x r : Arr .long nx}
     (hx : Words x.c) (h : rotate n x = .ok r) : r.toList = rotateSpec n x.toList := by
   obtain ⟨b, hc, hb⟩ := words_bytes hx
   have hn : b.size / 8 = nx := Arr.n_long_bytes x hc
   have hl : x.toList.length = nx := Arr.length_toList _
   unfold rotate rotateColumn at h
-  rw [hc, show Column.count (.atom .long) (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at h
+  rw [hc, show Column.count .long (.bytes b) = nx by simp [Column.count, QAtomicType.width, hn], ← hc] at h
   simp only [] at h
   by_cases h0 : nx = 0
   · rw [slice_toList hc (.inr h0) (.inr (by simp [h0])) (.inl (by simp [h0])) (onKey_vec h),
@@ -650,7 +650,7 @@ theorem rotate_toList {n : Int} {nx : Nat} {x r : Arr (.atom .long) nx}
     rotateLeft_eq _ _ (by rw [hl]; exact hlt), hl]
 
 /-- **`|x` is `List.reverse`** on a long `bytes` column, from `reverseBytes_spec`. -/
-theorem reverse_toList {nx : Nat} {x r : Arr (.atom .long) nx} {b : ByteArray}
+theorem reverse_toList {nx : Nat} {x r : Arr .long nx} {b : ByteArray}
     (hc : x.c = .bytes b) (h : reverse x = .ok r) : r.toList = x.toList.reverse := by
   unfold reverse at h
   simp only [hc, reverseColumn, foRColumn, rowWidth, denseWidth, QAtomicType.width, Column.bytesOf, vec, bind,
@@ -664,7 +664,7 @@ theorem reverse_toList {nx : Nat} {x r : Arr (.atom .long) nx} {b : ByteArray}
 
 /-- Two dense long payloads meet densely: no part is encoded, so `encodedParts` has nothing to meet. -/
 theorem razeColumn_bytes (b c : ByteArray) :
-    razeColumn .long #[.bytes b, .bytes c] = some (.vector (.atom .long) (.bytes (concatBytes #[b, c]))) := by
+    razeColumn .long #[.bytes b, .bytes c] = some (.vector .long (.bytes (concatBytes #[b, c]))) := by
   have he : encodedParts .long #[.bytes b, .bytes c] = none := by
     first
     | rfl
@@ -676,7 +676,7 @@ theorem razeColumn_bytes (b c : ByteArray) :
   | (simp only [razeColumn, he]; rfl)
 
 /-- **`x,y` is `++`** on long `bytes` columns, `x` of whole words: `concatBytes` copies `x`'s payload whole. -/
-theorem concat_toList {nx ny : Nat} {x : Arr (.atom .long) nx} {y : Arr (.atom .long) ny} {r : Arr (.atom .long) (nx + ny)}
+theorem concat_toList {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {r : Arr .long (nx + ny)}
     {c : ByteArray} (hx : Words x.c) (hc' : y.c = .bytes c) (h : concat x y = .ok r) :
     r.toList = x.toList ++ y.toList := by
   obtain ⟨b, hc, hb⟩ := words_bytes hx
@@ -701,7 +701,7 @@ theorem raw_long {c : Column} {ws : List UInt64} (h : longWords c = some ws) : (
   | _ => cases h
 
 /-- A long column's encoded count is its row count, which the kernels take as a `USize`. -/
-theorem countFits_long {m : Nat} (x : Arr (.atom .long) m) {ws : List UInt64} (h : longWords x.c = some ws)
+theorem countFits_long {m : Nat} (x : Arr .long m) {ws : List UInt64} (h : longWords x.c = some ws)
     (hm : m < USize.size) : Verify.countFits x.c := by
   obtain ⟨B, hc, -⟩ := Arr.dense_long x h hm
   rcases hc with hc | ⟨md, pk, hc, -⟩ <;> rw [hc]
@@ -747,7 +747,7 @@ theorem index_word (E : List UInt64) (u : UInt64) (hn : E.length < 2 ^ 63) :
 /-- **`x@y` is `indexSpec 0N`** on long columns, each `bytes` or `foR` (`longWords`), from
     `gatherColumn_raw`: the kernel reads an index unsigned (`gatherAt`), q signed, and the two agree
     while `nx < 2^63`; the `USize` bounds are `countFits`, the kernels counting in `USize`. -/
-theorem index_toList {nx ny : Nat} {x : Arr (.atom .long) nx} {y r : Arr (.atom .long) ny}
+theorem index_toList {nx ny : Nat} {x : Arr .long nx} {y r : Arr .long ny}
     {xs ws : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ws)
     (hxU : nx < USize.size) (hyU : ny < USize.size) (hn : nx < 2 ^ 63) (h : index x y = .ok r) :
     r.toList = indexSpec Int64.minValue x.toList y.toList := by
@@ -805,7 +805,7 @@ theorem runs_countP {α : Type} (f : Nat → α) (c : Nat → Nat) (h0 : c 0 = 0
       simp [this]
 
 /-- Under `Cuts o n`, the offsets read as naturals start at `0`, end at `n` and ascend. -/
-theorem cuts_nat {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) :
+theorem cuts_nat {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) :
     (o.toList[0]!).toNatClampNeg = 0 ∧ (o.toList[g]!).toNatClampNeg = n ∧
       ∀ r, r < g → (o.toList[r]!).toNatClampNeg ≤ (o.toList[r+1]!).toNatClampNeg := by
   have hc : ∀ r, r ≤ g → ((o.toList[r]!).toNatClampNeg : Int) = (o.toList[r]!).toInt := fun r hr => by
@@ -819,7 +819,7 @@ theorem cuts_nat {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) :
 
 /-- **A flat form's groups are its runs**: under `Cuts o n`, the group of `i` is the run `r` with
     `o[r] ≤ i < o[r+1]` (`Parted.group`), so the groups are `o[r+1] − o[r]` copies of each `r` in turn. -/
-theorem keys_toList {v : QVecType} (P : Parted v) :
+theorem keys_toList {v : QAtomicType} (P : Parted v) :
     (List.ofFn fun i : Fin P.n => Int64.ofNat (P.key i)) = (List.range P.g).flatMap fun r =>
       List.replicate ((P.o.toList[r+1]!).toNatClampNeg - (P.o.toList[r]!).toNatClampNeg) (Int64.ofNat r) := by
   obtain ⟨g, n, o, co, val⟩ := P
@@ -887,7 +887,7 @@ theorem zip_runs {α β : Type} (f : Nat → α) (c : Nat → Nat) (h0 : c 0 = 0
       rw [List.drop_take, List.take_take, Nat.min_eq_left (by omega)])
 
 /-- **A flat form lists its runs**: run `r` is the values `[o[r], o[r+1])`, each beside `r`. -/
-theorem parted_toList {v : QVecType} (P : Parted v) :
+theorem parted_toList {v : QAtomicType} (P : Parted v) :
     P.toList = (List.range P.g).flatMap fun r =>
       ((P.val.toList.drop (P.o.toList[r]!).toNatClampNeg).take
         ((P.o.toList[r+1]!).toNatClampNeg - (P.o.toList[r]!).toNatClampNeg)).map (Int64.ofNat r, ·) := by
@@ -899,18 +899,18 @@ theorem parted_toList {v : QVecType} (P : Parted v) :
     (by dsimp only; rw [cg, Arr.length_toList]; exact Nat.le_refl _)
 
 /-- An `Arr.of` answer holds the payload it was given. -/
-theorem of_c {t : QVecType} {n : Nat} {c : Column} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
+theorem of_c {t : QAtomicType} {n : Nat} {c : Column} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
     a.c = c := by
   unfold Arr.of at h; split at h
   · cases h; rfl
   · cases h
 
 /-- What `partedP` answers: `val` cut by offsets whose payload is `B`, cuts of `n`. -/
-theorem parted_ok {v : QVecType} {n : Nat} {verb : String} {B : ByteArray} {val : Arr v n} {r : Parted v}
-    (h : partedP verb B val = .ok r) : ∃ (g : Nat) (o : Arr (.atom .long) (g+1)) (co : Cuts o n),
+theorem parted_ok {v : QAtomicType} {n : Nat} {verb : String} {B : ByteArray} {val : Arr v n} {r : Parted v}
+    (h : partedP verb B val = .ok r) : ∃ (g : Nat) (o : Arr .long (g+1)) (co : Cuts o n),
       o.c = .bytes B ∧ r = ⟨g, n, o, co, val⟩ := by
   unfold partedP at h
-  cases ha : Arr.of (.atom .long) (B.size / 8 - 1 + 1) (.bytes B) verb with
+  cases ha : Arr.of .long (B.size / 8 - 1 + 1) (.bytes B) verb with
   | error e => simp [ha, bind, Except.bind] at h
   | ok oa =>
     have hoa := of_c ha
@@ -967,7 +967,7 @@ theorem add_neg_toInt {a o₀ : Int64} (h0 : 0 < o₀.toInt) (hw0 : 0 ≤ (Ew.in
 /-- **`o cut x` is `cutSpec`** on long `bytes` columns, `o` of whole words. Above a first offset `o₀ > 0` the
     offsets are lowered by `o₀` in 64 bits (`plus`), so `nx < 2^63` keeps a wrapped difference from reading as
     cuts, and the kernel counts `o` in a `USize`. -/
-theorem cut_toList {no nx : Nat} {o : Arr (.atom .long) no} {x : Arr (.atom .long) nx} {r : Parted (.atom .long)}
+theorem cut_toList {no nx : Nat} {o : Arr .long no} {x : Arr .long nx} {r : Parted .long}
     {b : ByteArray} (hw : Words o.c) (hc : x.c = .bytes b) (hn : nx < 2 ^ 63) (hoU : no < USize.size)
     (h : cutP o x = .ok r) : r.toList = cutSpec o.toList x.toList := by
   obtain ⟨ob, ho, hob⟩ := words_bytes hw
@@ -981,7 +981,7 @@ theorem cut_toList {no nx : Nat} {o : Arr (.atom .long) no} {x : Arr (.atom .lon
     rw [show ByteArray.empty.size = 0 from rfl] at this
     simp [Verify.elemsW, one8]; exact this
   -- the offsets `P` closed by `N`, as `parted` reads them, and the run read at `os`
-  have words : ∀ {P : ByteArray} {N g : Nat} {oa : Arr (.atom .long) (g+1)}, P.size % 8 = 0 →
+  have words : ∀ {P : ByteArray} {N g : Nat} {oa : Arr .long (g+1)}, P.size % 8 = 0 →
       oa.c = .bytes (concatBytes #[P, one N.toUInt64]) →
       oa.toList = (Verify.elemsW 8 P).map UInt64.toInt64 ++ [N.toUInt64.toInt64] := fun hP hoa => by
     rw [toList_bytes _ hoa, elemsW_concatBytes 8 (by decide) _ (by simp [hP, one8])]
@@ -1029,7 +1029,7 @@ theorem cut_toList {no nx : Nat} {o : Arr (.atom .long) no} {x : Arr (.atom .lon
     cases hv : vec "o cut x" .long (dropColumn .long x.c o₀.toInt) with
     | error e => simp [hv, bind, Except.bind] at h
     | ok cv =>
-      cases ha : Arr.of (.atom .long) (nx - o₀.toNatClampNeg) cv "o cut x" with
+      cases ha : Arr.of .long (nx - o₀.toNatClampNeg) cv "o cut x" with
       | error e => simp [hv, ha, bind, Except.bind] at h
       | ok a =>
         simp only [hv, ha, bind, Except.bind] at h
@@ -1129,27 +1129,27 @@ private def ans {α β : Type} (f : β → α) : Except String β → Option α
   | .ok r => some (f r)
   | .error _ => none
 /-- A nested list of `v`s read through its flat form: the pairs `(run, element)`. -/
-private def ansP (v : QVecType) : Except String ((g : Nat) × Arr .general g) → Option (List (Int64 × El v))
+private def ansP (v : QAtomicType) : Except String ((g : Nat) × Arr .general g) → Option (List (Int64 × El v))
   | .ok r => (Parted.ofBoxes v r.2).toOption.map Parted.toList
   | .error _ => none
-private abbrev Lg := QVecType.atom .long
-private def lv (xs : List Int64) (h : Column.admits (.atom .long) (.bytes (packLongs xs)) = true ∧ Column.count (.atom .long) (.bytes (packLongs xs)) = xs.length := by decide) :
-    Arr (.atom .long) xs.length := { c := .bytes (packLongs xs), wf := h }
+private abbrev Lg := QAtomicType.long
+private def lv (xs : List Int64) (h : Column.admits .long (.bytes (packLongs xs)) = true ∧ Column.count .long (.bytes (packLongs xs)) = xs.length := by decide) :
+    Arr .long xs.length := { c := .bytes (packLongs xs), wf := h }
 
 private def xs := lv [5, 3, 5, 9, 3]
 private def ys := lv [7, 8]
 -- the five longs Frame-of-Reference encoded
-private def xf : Arr (.atom .long) 5 :=
+private def xf : Arr .long 5 :=
   { c := .foR 5 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2, wf := ⟨rfl, rfl⟩ }
-private def bs : Arr (.atom .boolean) 5 := { c := .bits 5 (ByteArray.mk #[0b10110]), wf := by decide }
+private def bs : Arr .boolean 5 := { c := .bits 5 (ByteArray.mk #[0b10110]), wf := by decide }
 -- one symbol column `bc a bc` as `syms` and as `enum` over the dictionary `a, bc`
-private def sy : Arr (.atom .symbol) 3 :=
+private def sy : Arr .symbol 3 :=
   { c := .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8], wf := by decide }
-private def se : Arr (.atom .symbol) 3 :=
+private def se : Arr .symbol 3 :=
   { c := .enum 3 (ByteArray.mk #[97, 0, 98, 99, 0]) #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!), wf := by decide }
-private def cs : Arr (.atom .char) 6 := { c := .bytes "aaabaa".toUTF8, wf := by decide }
+private def cs : Arr .char 6 := { c := .bytes "aaabaa".toUTF8, wf := by decide }
 -- the parted list `(10 20; 30)`, keys `0 0 1`
-private def o2 : Arr (.atom .long) 3 := { c := .bytes (packLongs [0, 2, 3]), wf := by decide }
+private def o2 : Arr .long 3 := { c := .bytes (packLongs [0, 2, 3]), wf := by decide }
 private def pl : Except String ((g : Nat) × Arr .general g) := do
   let some P := Parted.of? o2 (lv [10, 20, 30]) | throw "pl: not cuts"
   boxed P
@@ -1178,19 +1178,19 @@ private def pl : Except String ((g : Nat) × Arr .general g) := do
 #guard ans (·.toList) (amend xs (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
 #guard (amend xs (lv [5]) none (lv [0])).toOption.isNone
 -- the other value types: `bits` (width 1), `float` with a `float` or a `long` `y`, `int` (width 4)
-private def bs3 : Arr (.atom .boolean) 3 := { c := .bits 3 (ByteArray.mk #[0b101]), wf := by decide }
-private def fv (xs : List Float) : (m : Nat) × Arr (.atom .float) m :=
-  match Arr.of (.atom .float) xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toBits 8) .empty)) "fv" with
+private def bs3 : Arr .boolean 3 := { c := .bits 3 (ByteArray.mk #[0b101]), wf := by decide }
+private def fv (xs : List Float) : (m : Nat) × Arr .float m :=
+  match Arr.of .float xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toBits 8) .empty)) "fv" with
   | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := .bytes .empty, wf := by decide }⟩
-private def iv (xs : List Int32) : (m : Nat) × Arr (.atom .int) m :=
-  match Arr.of (.atom .int) xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty)) "iv" with
+private def iv (xs : List Int32) : (m : Nat) × Arr .int m :=
+  match Arr.of .int xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty)) "iv" with
   | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := .bytes .empty, wf := by decide }⟩
 #guard [(Prim.Dyadic.greater, (· || ·)), (.lesser, (· && ·)), (.eq, (· == ·))].all fun (v, f) =>
   ans (·.toList) (amend bs (lv [0, 0, 4]) (some v) bs3) == some (amendSpec f bs.toList [0, 0, 4] bs3.toList)
 #guard ans (·.toList) (amend bs (lv [0, 0, 4]) (some .greater) bs3) == some [true, true, true, false, true]
 #guard ans (·.toList) (amend bs (lv [3, 0, 3]) none bs3) == some [false, true, true, true, true]
 -- a float element is its IEEE bits (`Carrier .float`), read as a `Float` by `Float.ofBits`
-private def fl {m : Nat} (r : Arr (.atom .float) m) : List Float := r.toList.map Float.ofBits
+private def fl {m : Nat} (r : Arr .float m) : List Float := r.toList.map Float.ofBits
 #guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some (amendSpec (· + ·) [1.5, 2.5, 4] [0, 2, 0] [1, 2, 3])
 #guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some [5.5, 2.5, 6]
 #guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2]) (some .add) (lv [1, 2])) == some [2.5, 2.5, 6]
@@ -1202,16 +1202,16 @@ private def fl {m : Nat} (r : Arr (.atom .float) m) : List Float := r.toList.map
 #guard (amend (fv [1.5]).2 (lv [0]) none (lv [1])).toOption.isNone
 -- `:` on symbols, every pair of encodings: `y` is `d a e` (`d`, `e` in neither `x` dictionary), the index
 -- `2` repeated so the last write stays
-private def sy3 : Arr (.atom .symbol) 3 :=
+private def sy3 : Arr .symbol 3 :=
   { c := .syms (ByteArray.mk #[100, 0, 97, 0, 101, 0]) #[0, 2, 4, 6], wf := by decide }
-private def se3 : Arr (.atom .symbol) 3 :=
+private def se3 : Arr .symbol 3 :=
   { c := .enum 3 (ByteArray.mk #[97, 0, 100, 0, 101, 0]) #[0, 2, 4, 6] (packIds (idWidth #[0, 2, 4, 6]) 3 fun i => [1, 0, 2][i]!), wf := by decide }
 #guard [sy, se].all fun x => [sy3, se3].all fun y =>
   ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some (amendSpec (fun _ y => y) x.toList [2, 0, 2] y.toList)
 #guard [sy, se].all fun x => [sy3, se3].all fun y => ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some ["a", "a", "e"]
 -- the encoding kept: a blob stays a blob only against a blob, an interned `x` stays interned
-#guard ans (fun (r : Arr (.atom .symbol) 3) => r.c matches Column.syms ..) (amend sy (lv [0, 1, 2]) none sy3) == some true
-#guard [sy3, se3].all fun y => ans (fun (r : Arr (.atom .symbol) 3) => r.c matches Column.enum ..) (amend se (lv [0, 1, 2]) none y) == some true
+#guard ans (fun (r : Arr .symbol 3) => r.c matches Column.syms ..) (amend sy (lv [0, 1, 2]) none sy3) == some true
+#guard [sy3, se3].all fun y => ans (fun (r : Arr .symbol 3) => r.c matches Column.enum ..) (amend se (lv [0, 1, 2]) none y) == some true
 #guard ans (·.2.toList) (do raze Lg (← pl).2) == some [10, 20, 30]
 #guard ansP Lg pl == some [(0, 10), (0, 20), (1, 30)]
 #guard [sy, se].all fun x => ans (·.toList) (like x "b*") == some [true, false, true]
@@ -1220,7 +1220,7 @@ private def se3 : Arr (.atom .symbol) 3 :=
 
 -- parted lists, on `bytes` and on `foR` payloads
 private def x6 := lv [1, 2, 3, 4, 5, 6]
-private def x6f : Arr (.atom .long) 6 :=
+private def x6f : Arr .long 6 :=
   { c := .foR 6 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2, wf := ⟨rfl, rfl⟩ }
 #guard [xs, xf].all fun x => ansP Lg (cut (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
 #guard [xs, xf].all fun x => ans (·.toList) (cutP (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
@@ -1231,15 +1231,15 @@ private def x6f : Arr (.atom .long) 6 :=
 #guard [xs, xf].all fun x => ansP Lg (cut (lv [1, 2]) x) == some (cutSpec [1, 2] x.toList) &&
   ansP Lg (cut (lv [1, 1, 4]) x) == some (cutSpec [1, 1, 4] x.toList) && ansP Lg (cut (lv [5]) x) == some (cutSpec [5] x.toList)
 #guard [(cut (lv [-1, 2]) xs), (cut (lv [0, 3, 2]) xs), (cut (lv [0, 9]) xs), (cut (lv [6]) xs)].all (·.toOption.isNone)
-#guard [sy, se].all fun x => ansP (.atom .symbol) (cut (lv [0, 1]) x) == some (cutSpec [0, 1] x.toList)
+#guard [sy, se].all fun x => ansP .symbol (cut (lv [0, 1]) x) == some (cutSpec [0, 1] x.toList)
 #guard [xs, xf].all fun x => ansP Lg (eachRight .add .long x ys) == some (eachRightSpec (· + ·) x.toList ys.toList)
-#guard ansP (.atom .boolean) (eachRight .lt .boolean xf (lv [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.toList [5, 4])
+#guard ansP .boolean (eachRight .lt .boolean xf (lv [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.toList [5, 4])
 #guard [x6, x6f].all fun x => ansP Lg (do flip .long (← cut (lv [0, 2, 4]) x).2) == some (runsSpec [[1, 3, 5], [2, 4, 6]])
 #guard [x6, x6f].all fun x => ansP Lg (do flip .long (← flip .long (← cut (lv [0, 2, 4]) x).2).2) == some (cutSpec [0, 2, 4] x6.toList)
 #guard (do flip .long (← cut (lv [0, 1, 4]) x6).2).toOption.isNone
 #guard [xs, xf].all fun x => ansP Lg (do indexParted .long (← cut (lv [0, 2, 3]) x).2 (lv [2, 0, 5, -1, 3])) ==
   some (runsSpec [[9, 3], [5, 3], [], [], []])
-#guard [sy, se].all fun x => ansP (.atom .symbol) (do indexParted .symbol (← cut (lv [0, 1]) x).2 (lv [1, 1])) ==
+#guard [sy, se].all fun x => ansP .symbol (do indexParted .symbol (← cut (lv [0, 1]) x).2 (lv [1, 1])) ==
   some (runsSpec [x.toList.drop 1, x.toList.drop 1])
 
 -- joins: left keys `lk` (and `lk₂`), times `lt`; right keys `rk` (and `rk₂`), times `rt`
@@ -1289,7 +1289,7 @@ private def qt : List Int64 := [1, 3, 5, 2, 8]
 #guard ansP Lg (wj true (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt)) == some [(0, 1), (0, 2), (1, 3)]
 #guard ansP Lg (wj false (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt)) == some [(0, 2)]
 /-- A `long` answer of `wjBy`, `none` at any other type. -/
-private def ansL : Except String ((u : QAtomicType) × (m : Nat) × Arr (.atom u) m) → Option (List Int64)
+private def ansL : Except String ((u : QAtomicType) × (m : Nat) × Arr u m) → Option (List Int64)
   | .ok ⟨.long, _, v⟩ => some v.toList
   | _ => none
 /-- `wjBy`'s law on a value list `cv`: answer `i` is `f/` (here `+/`) of `cv` at window `i`'s rows, the runs

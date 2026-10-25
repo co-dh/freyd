@@ -190,11 +190,11 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
 /-! ## The RelRep layer (`LeetQ.Rel`): a relation is a key and a value column -/
 
 /-- The list `x` of longs. -/
-def listR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr (.atom .long) n) :=
-  LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"
+def listR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) :=
+  LeetQ.Rel.Arr.of .long n (.bytes (col a)) "listR"
 
 /-- `sum` of a list: `Ops.over .add`. -/
-def sumR (what : String) {t : QLean.QAtomicType} {m : Nat} (r : LeetQ.Rel.Arr (.atom t) m) : Except String Int64 :=
+def sumR (what : String) {t : QLean.QAtomicType} {m : Nat} (r : LeetQ.Rel.Arr t m) : Except String Int64 :=
   match LeetQ.Rel.Ops.over .add r with
   | some c => .ok c
   | none => .error s!"{what}: Ops.over .add answered none"
@@ -234,15 +234,15 @@ def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `d + e` on keys by `Ew.dyadic .add` over explicit key columns, the key sets overlapping by half: `Ew.align`;
     `sum d + e`. -/
 def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
-  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map Int.ofNat)) (.bytes <| col (ints n 26 1000)))
-  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
+  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (.bytes <| col ((Array.range n).map Int.ofNat)) (.bytes <| col (ints n 26 1000)))
+  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
     (.bytes <| col (ints n 27 1000)))
   timedE "relZipD" (d, e) fun (d, e) => do let r ← LeetQ.Rel.Ew.dyadic .add .long d e; sumR "relZipD" r.val
 
 /-- The list `x` of longs `foR`-encoded: the haystack `Find.direct` admits. -/
-def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr (.atom .long) n) := do
+def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) := do
   let (md, pk) := QLean.Kernel.Coc.encode 8 (col a)
-  LeetQ.Rel.Arr.of (.atom .long) n (.foR n md pk) "foRR"
+  LeetQ.Rel.Arr.of .long n (.foR n md pk) "foRR"
 
 /-- `x?y`, `x` a `foR` haystack and `y` dense needles, both below 1000; `sum x?y`. -/
 def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
