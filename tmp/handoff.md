@@ -35,8 +35,20 @@ Left
   `c.ty = t ∧ c.n = n ∧ c.WF`) at 317-318, 419, 438, 479, 678; checks 812-816.
 - Then Struct (also has `Column.admits`/`Column.count` at 1136 and old foR checks at 1143), Algebra,
   Compressed, QRel, Bench.
-- Scan (WIP, agent a87e30c5): definitions ported (`avg` via `.atom a`; answers `⟨.long, P.g, .bytes s⟩`);
-  laws in progress: `Arr.of` branches now `rw [Arr.of] at h; split at h`; mwin answers carry `n` in the
-  header, not `size/8`, so `toList_answer_long`/`longWords_answer` need `M.size / 8 = n` from
-  `Verify.foldl_pushBits` (mwinExt/mwinSum/Ew.val are pushBits folds).
+- Scan: DONE, builds, all `#guard`s pass, axioms within the set. Patterns:
+  - `Carrier.of? .float` takes a `QValue`: `fun a => Carrier.of? .float (.atom a)`;
+  - an `Arr.of` branch: `rw [Arr.of] at h; split at h` then `· rename_i hw …` / `· rename_i hw; cases h`
+    (no need to write the 3-part condition). Where `simp` left an outer `match` on `.toOption`
+    (sort, overBy): `split at h; · cases h; rename_i A hA; rw [show A = S by cases h; rfl] at hA; split at hA`;
+  - a kernel answer whose header is `m.toNat` or `min n cn`: state it as `∃ k, … ⟨.long, k, .bytes P⟩`,
+    proved by `exact ⟨_, rfl⟩` (grade, gather);
+  - mwin answers carry `n`, not `size / w`, in the header, while `longWords_answer`/`toList_answer_int`
+    want `size / w`: rewrite the header with `foldl_push_size` (Scan; any `List.range m` fold of
+    `pushBits … ow` is `m * ow` bytes, from `Verify.foldl_pushBits`) after unfolding `Scan.mwinExt`/
+    `Scan.mwinSum`; `sizes_size` does the same for `Ew.val … vv` (unfold `Ew.val`, `rfl`);
+  - a hand-built `Arr` needs `WF` = `size = n * w` now: `wf := ⟨rfl, rfl, hsize⟩`;
+  - a `let Z : Arr … := { c := …,` NEWLINE `wf := … }` fails to parse in a tactic block: keep it on one line.
+  Restated in Scan: `hc`/`ho` hypotheses `x.c = .bytes b` -> `x.c.enc = .bytes b` (`denseElems_long`,
+  `over_bytes`, `offs_get`, `overBy_bytes`); `toList_answer_long` takes `Column.answer ⟨.long, b.size/8,
+  .bytes b⟩`; `mwin_long`/`mwin_answer` answer `Column.answer ⟨rt, n, .bytes (mwinBits …)⟩`.
 - Bench results-identical check vs /data/tmp/ck/bench-4238 at n=100000, then timings.
