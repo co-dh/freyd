@@ -406,7 +406,7 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
     (hk : op.readKind .i64 = .i64) (hr : scanKind rt = some rk) (hwd : op.width .i64 = rk.width)
     {w : Nat} (hw : w < USize.size) {n : Nat} {R : Arr (.atom .long) n} {ws : List UInt64} (hx : longWords R.c = some ws)
     (hn : n < USize.size) {S : Arr (.atom rt) n} (h : mwin op w rt R = some S) :
-    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = n ∧ 0 < w ∧ n = n ∧
+    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = n ∧ 0 < w ∧
       S.c = Column.answer rt (.bytes (Scan.mwinBits op .i64 w n B)) := by
   obtain ⟨B, hBw, hBs, hd⟩ := mwin_long hT hk hr hwd hx hn
   have hw1 : 0 < w := by
@@ -419,7 +419,7 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
   by_cases hwf : (Column.admits (.atom rt) A = true ∧ Column.count (.atom rt) A = n)
   · rw [Arr.of, dif_pos hwf] at h
     cases h
-    exact ⟨rfl, rfl⟩
+    rfl
   · rw [Arr.of, dif_neg hwf] at h
     cases h
 
