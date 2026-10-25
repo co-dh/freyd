@@ -191,7 +191,7 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
 
 /-- The list `x` of longs. -/
 def listR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) :=
-  LeetQ.Rel.Arr.of .long n (.bytes (col a)) "listR"
+  LeetQ.Rel.Arr.of .long n (LeetQ.Rel.Alg.longs (col a)) "listR"
 
 /-- `sum` of a list: `Ops.over .add`. -/
 def sumR (what : String) {t : QLean.QAtomicType} {m : Nat} (r : LeetQ.Rel.Arr t m) : Except String Int64 :=
@@ -234,15 +234,15 @@ def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `d + e` on keys by `Ew.dyadic .add` over explicit key columns, the key sets overlapping by half: `Ew.align`;
     `sum d + e`. -/
 def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
-  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (.bytes <| col ((Array.range n).map Int.ofNat)) (.bytes <| col (ints n 26 1000)))
-  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
-    (.bytes <| col (ints n 27 1000)))
+  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (LeetQ.Rel.Alg.longs <| col ((Array.range n).map Int.ofNat)) (LeetQ.Rel.Alg.longs <| col (ints n 26 1000)))
+  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (LeetQ.Rel.Alg.longs <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
+    (LeetQ.Rel.Alg.longs <| col (ints n 27 1000)))
   timedE "relZipD" (d, e) fun (d, e) => do let r ← LeetQ.Rel.Ew.dyadic .add .long d e; sumR "relZipD" r.val
 
 /-- The list `x` of longs `foR`-encoded: the haystack `Find.direct` admits. -/
 def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) := do
   let (md, pk) := QLean.Kernel.Coc.encode 8 (col a)
-  LeetQ.Rel.Arr.of .long n (.foR n md pk) "foRR"
+  LeetQ.Rel.Arr.of .long n ⟨.long, n, .foR md pk⟩ "foRR"
 
 /-- `x?y`, `x` a `foR` haystack and `y` dense needles, both below 1000; `sum x?y`. -/
 def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
@@ -277,7 +277,7 @@ def oddBits (a : Array Int) : ByteArray := Id.run do
     the dictionary `s0 … s(m-1)`, `foR` and dense `long`. -/
 def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.Struct.KCol := do
   match enc with
-  | "bits" => pure ⟨.atom .boolean, .bits a.size (oddBits a)⟩
+  | "bits" => pure ⟨.boolean, ⟨.boolean, a.size, .bits (oddBits a)⟩⟩
   | "enum" =>
     let (blob, dof) := (Array.range m).foldl (init := (ByteArray.empty, #[0])) fun (b, o) i =>
       let b := (b ++ s!"s{i}".toUTF8).push 0
@@ -285,9 +285,9 @@ def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.St
     let w := QLean.Column.idWidth dof
     let (ids, bad) := QLean.Kernel.enumIds a.size.toUSize m.toUSize 0 w.toUSize (col a)
     if bad.toNat != a.size then throw s!"encCol enum: value at {bad} is outside 0..{m}"
-    pure ⟨.atom .symbol, .enum a.size blob dof ids⟩
-  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure ⟨.atom .long, .foR a.size md pk⟩
-  | "dense" => pure ⟨.atom .long, .bytes (col a)⟩
+    pure ⟨.symbol, ⟨.symbol, a.size, .enum blob dof ids⟩⟩
+  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure ⟨.long, ⟨.long, a.size, .foR md pk⟩⟩
+  | "dense" => pure ⟨.long, LeetQ.Rel.Alg.longs (col a)⟩
   | e => throw s!"encCol: no encoding {e}"
 
 /-- The key range each encoding is benched at: two bits, a hundred symbols, a thousand-wide FoR range, a
@@ -329,7 +329,7 @@ def asofData (n : Nat) : Array Int × Array Int × Array Int × Array Int :=
   (ints n 12 1000, ints n 13 1000000, (r.map (·.1)).toArray, (r.map (·.2)).toArray)
 
 /-- A dense `long` key column. -/
-def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.atom .long, .bytes (col a)⟩
+def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.long, LeetQ.Rel.Alg.longs (col a)⟩
 
 /-- ``aj[`s`tm;t;q]`` by `Struct.aj` over `asofData`, 1e3 key groups; the sum of the matched right rows. -/
 def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
