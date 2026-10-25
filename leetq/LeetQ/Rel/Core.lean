@@ -57,6 +57,16 @@ theorem length_toList (x : Arr t n) : x.toList.length = n := List.length_ofFn
 theorem getElem_toList (x : Arr t n) (i : Nat) (h : i < x.toList.length) :
     x.toList[i] = x.get ⟨i, by rw [length_toList] at h; exact h⟩ := List.getElem_ofFn ..
 
+/-- The list as a relation from its positions: `x i y ↔ x[j] = y` at the `j` with `Int64.ofNat j = i`. -/
+def Holds (x : Arr t n) (i : Int64) (y : El t) : Prop := ∃ j : Fin n, Int64.ofNat j = i ∧ x.get j = y
+
+theorem holds_iff_mem_zipIdx (x : Arr t n) (i : Int64) (y : El t) :
+    x.Holds i y ↔ ∃ j, Int64.ofNat j = i ∧ (y, j) ∈ x.toList.zipIdx := by
+  simp only [Holds, List.mem_zipIdx_iff_getElem?, List.getElem?_eq_some_iff, length_toList]
+  constructor
+  · rintro ⟨j, rfl, rfl⟩; exact ⟨j, rfl, j.2, by rw [getElem_toList]⟩
+  · rintro ⟨j, rfl, h, rfl⟩; exact ⟨⟨j, h⟩, rfl, by rw [getElem_toList]⟩
+
 /-- A kernel's answer as an `Arr`, the one way in: `wf` is decided (two O(1) reads at an atomic type, the
     constructor and the count), never assumed; `what` names the producer in the error. -/
 def of (t : QVecType) (n : Nat) (c : Column) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
@@ -313,26 +323,6 @@ def vecCol : QValue → Option Column
   | .vector _ c => some c
   | _ => none
 
-/-- A q list: `n` elements, its positions implicit — computed (`tilLongs`) where an op needs them,
-    never stored. -/
-structure Vec (t : QVecType) where
-  n : Nat
-  val : Arr t n
-
-namespace Vec
-
-variable {t : QVecType}
-
-/-- The list as a relation from its positions: `x i y ↔ val[i] = y`. -/
-def Holds (x : Vec t) (i : Int64) (y : El t) : Prop := ∃ j : Fin x.n, Int64.ofNat j = i ∧ x.val.get j = y
-
-/-- The pairs `(i, val[i])` in position order, for proofs only. -/
-def toList (x : Vec t) : List (Int64 × El t) := List.ofFn fun j => (Int64.ofNat j, x.val.get j)
-
-theorem holds_iff_mem_toList (x : Vec t) (i : Int64) (y : El t) : x.Holds i y ↔ (i, y) ∈ x.toList := by
-  simp [Holds, toList, List.mem_ofFn]
-
-end Vec
 
 /-- Under `Cuts o n`, a position exists only when there is a group to hold it. -/
 theorem Cuts.pos {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) (i : Fin n) : 0 < g := by
@@ -481,8 +471,8 @@ private def o3f : Arr (.atom .long) 4 :=
         match Parted.ofBoxes (.atom .long) b with | .ok Q => Q.toList == P.toList | .error _ => false
     | .error _ => false
   | none => false
-#guard (Vec.mk 3 ss).toList == [(0, "bc"), (1, "a"), (2, "bc")]
-example : (Vec.mk 3 ss).Holds 1 "a" := ((Vec.mk 3 ss).holds_iff_mem_toList 1 "a").2 (by decide)
+#guard ss.toList.zipIdx == [("bc", 0), ("a", 1), ("bc", 2)]
+example : ss.Holds 1 "a" := (ss.holds_iff_mem_zipIdx 1 "a").2 ⟨1, rfl, by decide⟩
 
 end Checks
 
