@@ -11,6 +11,7 @@ import QLean.Kernel.Sort
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
 import QLean.Verify.Encoding
+import QLean.Verify.SymFind
 
 namespace LeetQ.Rel
 
@@ -224,6 +225,53 @@ theorem Arr.get_bool_bits {m : Nat} (x : Arr (.atom .boolean) m) {n : Nat} {b : 
   have hn : i.1 < Column.count (.atom .boolean) (.bits n b) := by have := x.wf.2; rw [hc] at this; omega
   show ((Column.get .boolean x.c i.1).bind (Carrier.of? .boolean)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
+
+/-- A string is its UTF-8 bytes: two strings with one byte list are one string. -/
+theorem toUTF8_inj {s t : String} (h : s.toUTF8.data.toList = t.toUTF8.data.toList) : s = t :=
+  String.toByteArray_inj.1 (ByteArray.ext (Array.ext' h))
+
+/-- The `str` bridge: bytes that are some string's UTF-8, read as a string the way `Column.get` reads a
+    symbol (`fromUTF8?`, `""` at invalid bytes), write back out as themselves. -/
+theorem str_bytes {B : ByteArray} (h : ∃ s : String, s.toUTF8.data.toList = B.data.toList) :
+    ((String.fromUTF8? B).getD "").toUTF8.data.toList = B.data.toList := by
+  obtain ⟨s, hs⟩ := h
+  obtain rfl : s.toByteArray = B := ByteArray.ext (Array.ext' hs)
+  simp only [String.fromUTF8?, s.isValidUTF8, dite_true, Option.getD_some]
+  rfl
+
+/-- A symbol payload's element `i`, read as `Column.get` reads it, writes out as `symsOf`'s symbol `i`
+    wherever that symbol is UTF-8. -/
+theorem get_sym_bytes {c : Column} {i : Nat} (d : String) (ha : Column.admits (.atom .symbol) c = true)
+    (hi : i < Column.count (.atom .symbol) c) (h2 : i < (Verify.symsOf c).length)
+    (hk : ∃ s : String, s.toUTF8.data.toList = (Verify.symsOf c)[i]) :
+    (((Column.get .symbol c i).bind (Carrier.of? .symbol)).getD d).toUTF8.data.toList = (Verify.symsOf c)[i] := by
+  cases c with
+  | syms b o =>
+    rw [show Column.get .symbol (.syms b o) i = some (.symbol ((String.fromUTF8? (Column.symKey b o i)).getD ""))
+      by simp only [Column.get, if_pos hi]; rfl]
+    simp only [Option.bind_some, Carrier.of?, Option.getD_some, Verify.symsOf, List.getElem_map,
+      List.getElem_range, Verify.symAt] at hk ⊢
+    exact str_bytes hk
+  | enum n d o ids =>
+    rw [show Column.get .symbol (.enum n d o ids) i = some (.symbol ((String.fromUTF8?
+      (Column.symKey d o (Column.idAt ids (Column.idWidth o) i))).getD "")) by simp only [Column.get, if_pos hi]; rfl]
+    simp only [Option.bind_some, Carrier.of?, Option.getD_some, Verify.symsOf, List.getElem_map,
+      List.getElem_range, Verify.symAt] at hk ⊢
+    exact str_bytes hk
+  | _ => simp [Column.admits] at ha
+
+/-- Under `wf`, a symbol column whose symbols are UTF-8 lists them: each element's bytes are `symsOf`'s
+    symbol at its position, a blob's own or an interned column's dictionary entry. -/
+theorem Arr.toList_sym {m : Nat} (x : Arr (.atom .symbol) m)
+    (hu : ∀ k ∈ Verify.symsOf x.c, ∃ s : String, s.toUTF8.data.toList = k) :
+    x.toList.map (·.toUTF8.data.toList) = Verify.symsOf x.c := by
+  obtain ⟨ha, hn⟩ := x.wf
+  have hl : (Verify.symsOf x.c).length = m := Eq.trans (by
+    revert ha; cases x.c <;> simp [Column.admits, Column.count, Verify.symsOf]) hn
+  refine List.ext_getElem (by rw [List.length_map, Arr.length_toList, hl]) fun i h1 h2 => ?_
+  rw [List.length_map, Arr.length_toList] at h1
+  rw [List.getElem_map, Arr.getElem_toList]
+  exact get_sym_bytes _ ha (by rw [hn]; exact h1) h2 (hu _ (List.getElem_mem h2))
 
 /-- A word whose natural value is `m` reads as the long `Int64.ofNat m`. -/
 theorem toInt64_of_toNat {x : UInt64} {m : Nat} (h : x.toNat = m) : x.toInt64 = Int64.ofNat m := by

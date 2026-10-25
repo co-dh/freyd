@@ -252,8 +252,9 @@ theorem usize_eight : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_
 
 /-- The payloads at type `a` whose search path has a kernel law: at `long`, `bytes`, or `foR` with
     non-empty block metadata, which is what marks an operand encoded to `operandBytes` (`alp`'s decode
-    has no law); at `boolean`, `bits` (`findBitVec`, `memberBits_mem`). A symbol's path
-    (`findSymColumn`, `findSymKeys`, `maskByIds`, `distinctIds`) has none, so `syms`/`enum` are out. -/
+    has no law); at `boolean`, `bits` (`findBitVec`, `memberBits_mem`); at `symbol`, a `syms`/`enum`
+    payload the SymFind kernels' laws are stated for (`symsOk`) whose symbols are UTF-8, so that
+    `Column.get`'s `String` holds exactly their bytes (`Arr.toList_sym`). -/
 def Readable (a : QAtomicType) (c : Column) : Prop :=
   match a with
   | .long => match c with
@@ -263,6 +264,7 @@ def Readable (a : QAtomicType) (c : Column) : Prop :=
   | .boolean => match c with
     | .bits .. => True
     | _ => False
+  | .symbol => Verify.symsOk c ∧ ∀ k ∈ Verify.symsOf c, ∃ s : String, s.toUTF8.data.toList = k
   | _ => False
 
 /-- q's `s#` contract where a search reads it: a column marked `s` ascends. Only the `long` search
@@ -1196,6 +1198,123 @@ theorem in_bits {nx : Nat} {x : Arr (.atom .boolean) nx} {ny : Nat} {y : Arr (.a
   apply Bool.eq_iff_iff.2
   rw [decide_eq_true_iff, List.contains_iff_mem]
 
+/-- An injective map commutes with erasing repeats. -/
+theorem eraseDups_map_of_inj {α β : Type} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq β] {f : α → β}
+    (hf : ∀ a b, f a = f b → a = b) : ∀ l : List α, (l.map f).eraseDups = l.eraseDups.map f
+  | [] => rfl
+  | a :: l => by
+    have hp : ((fun b => !b == f a) ∘ f) = fun b => !b == a := funext fun b => by
+      simp only [Function.comp_apply]; congr 1; exact Bool.eq_iff_iff.2 (by simp only [beq_iff_eq]; exact ⟨hf b a, congrArg f⟩)
+    rw [List.map_cons, List.eraseDups_cons, List.eraseDups_cons, List.filter_map, hp,
+      eraseDups_map_of_inj hf (l.filter fun b => !b == a), List.map_cons]
+termination_by l => l.length
+decreasing_by simp only [List.length_cons]; have := List.length_filter_le (fun b => !b == a) l; omega
+
+/-- `x?y` on symbol columns is `findSpec`: `findSymColumn_idxOf` over the symbols' bytes (`Arr.toList_sym`),
+    which determine the strings (`toUTF8_inj`). -/
+theorem find_sym {nx : Nat} {x : Arr (.atom .symbol) nx} {ny : Nat} {y : Arr (.atom .symbol) ny} {r : Arr (.atom .long) ny}
+    (hx : Readable .symbol x.c) (hy : Readable .symbol y.c) (h : find x y = .ok r) :
+    r.toList = findSpec x.toList y.toList := by
+  have hd : direct .symbol x.c nx = none := rfl
+  have hc : findColumn .symbol (x.attr == 1) x.c (.vector (.atom .symbol) y.c) =
+      (findSymColumn x.c y.c).map fun out => .vector (.atom .long) (.bytes out) := rfl
+  have hX := Arr.toList_sym x hx.2
+  have hY := Arr.toList_sym y hy.2
+  cases hf : findSymColumn x.c y.c with
+  | none => simp [find, hd, hc, hf, vec, bind, Except.bind] at h
+  | some out =>
+    simp only [find, hd, hc, hf, Option.map_some, vec, beq_self_eq_true, ↓reduceIte, bind, Except.bind] at h
+    obtain ⟨hs, hv⟩ := Verify.findSymColumn_idxOf hx.1 hy.1 hf
+    have hl : (Verify.symsOf y.c).length = ny := by rw [← hY, List.length_map, Arr.length_toList]
+    rw [Arr.toList_long r (show longWords r.c = some _ by rw [onKey_c h]; rfl)]
+    apply List.ext_getElem (by
+      rw [List.length_map, Verify.elemsW, List.length_map, List.length_range, findSpec, List.length_map,
+        Arr.length_toList, hs, hl]; omega)
+    intro j h1 h2
+    have hj : j < (Verify.symsOf y.c).length := by
+      rw [hl]; rw [findSpec, List.length_map, Arr.length_toList] at h2; exact h2
+    simp only [List.getElem_map, Verify.elemsW, List.getElem_range, findSpec]
+    refine toInt64_of_toNat ?_
+    rw [hv j hj]
+    simp only [← hX, ← hY, List.getElem_map]
+    exact idxOf_map_of_inj (fun _ _ => toUTF8_inj) _ _
+
+/-- `x in y` on symbol columns is `inSpec`: `memberColumn_symbol` over the symbols' bytes. -/
+theorem in_sym {nx : Nat} {x : Arr (.atom .symbol) nx} {ny : Nat} {y : Arr (.atom .symbol) ny} {r : Arr (.atom .boolean) nx}
+    (hx : Readable .symbol x.c) (hy : Readable .symbol y.c) (h : «in» x y = .ok r) :
+    r.toList = inSpec x.toList y.toList := by
+  have hd : direct .symbol y.c ny = none := rfl
+  have hX := Arr.toList_sym x hx.2
+  have hY := Arr.toList_sym y hy.2
+  cases hm : memberColumn .symbol (y.attr == 1) (.vector (.atom .symbol) x.c) y.c with
+  | none => simp [«in», hd, hm, vec, bind, Except.bind] at h
+  | some v =>
+    obtain ⟨b, rfl, hb⟩ := Verify.memberColumn_symbol hx.1 hy.1 hm
+    simp only [«in», hd, hm, vec, beq_self_eq_true, ↓reduceIte, bind, Except.bind] at h
+    have hl : (Verify.symsOf x.c).length = nx := by rw [← hX, List.length_map, Arr.length_toList]
+    rw [Arr.toList_bits r (onKey_c h), inSpec]
+    apply List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
+    intro i h1 _
+    have hi : i < (Verify.symsOf x.c).length := by rw [hl]; simpa using h1
+    simp only [List.getElem_map, List.getElem_range]
+    rw [hb i hi]
+    simp only [← hX, ← hY, List.getElem_map]
+    apply Bool.eq_iff_iff.2
+    rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toUTF8_inj)]
+
+/-- `?x` on a symbol column is `distinctSpec`: `distinctSyms_eraseDups` on a blob, `distinctIds_eraseDups`
+    on an interned column, read back through the bytes (`Arr.toList_sym`). Restrictions: q's `u#` contract,
+    as `distinct_toList`'s. -/
+theorem distinct_sym {nx : Nat} {x : Arr (.atom .symbol) nx} {nr : Nat} {r : Arr (.atom .symbol) nr}
+    (hx : Readable .symbol x.c) (hu : x.attr = 2 → x.toList.Nodup) (h : distinct x = .ok ⟨nr, r⟩) :
+    r.toList = distinctSpec x.toList := by
+  by_cases ha : x.attr = 2
+  · simp only [distinct, ha, beq_self_eq_true, ↓reduceIte, Except.ok.injEq] at h
+    cases h; exact (eraseDups_of_nodup _ (hu ha)).symm
+  have hX := Arr.toList_sym x hx.2
+  obtain ⟨nb, no, hc, he⟩ : ∃ nb no, distinctColumn .symbol x.c = some (.vector (.atom .symbol) (.syms nb no)) ∧
+      Verify.symsOf (.syms nb no) = (Verify.symsOf x.c).eraseDups := by
+    have hk := hx.1
+    cases hxc : x.c with
+    | syms b o => exact ⟨_, _, rfl, Verify.distinctSyms_eraseDups b o⟩
+    | enum n d o ids => rw [hxc] at hk; exact ⟨_, _, rfl, Verify.distinctIds_eraseDups hk⟩
+    | _ => rw [hxc] at hk; exact hk.elim
+  unfold distinct at h
+  rw [show (x.attr == 2) = false by simp [ha], show direct .symbol x.c nx = none from rfl, hc] at h
+  change list .symbol (.syms nb no) 2 = .ok ⟨nr, r⟩ at h
+  have hR : r.toList.map (·.toUTF8.data.toList) = (x.toList.map (·.toUTF8.data.toList)).eraseDups := by
+    rw [hX, ← he, ← list_c h]
+    refine Arr.toList_sym r fun k hk => ?_
+    rw [list_c h, he, ← hX, eraseDups_map_of_inj (fun _ _ => toUTF8_inj)] at hk
+    obtain ⟨s, -, rfl⟩ := List.mem_map.1 hk
+    exact ⟨s, rfl⟩
+  rw [eraseDups_map_of_inj (fun _ _ => toUTF8_inj)] at hR
+  exact (List.map_inj_right (fun _ _ => toUTF8_inj)).1 hR
+
+/-- `?x` on a boolean column is `distinctSpec`, from `bitFirsts_eraseDups`. Restrictions: q's `u#`
+    contract, as `distinct_toList`'s; `nx < USize.size`, which `bitFirsts` counts by. -/
+theorem distinct_bits {nx : Nat} {x : Arr (.atom .boolean) nx} {nr : Nat} {r : Arr (.atom .boolean) nr}
+    {m : Nat} {xb : ByteArray} (hxc : x.c = .bits m xb) (hn : nx < USize.size)
+    (hu : x.attr = 2 → x.toList.Nodup) (h : distinct x = .ok ⟨nr, r⟩) : r.toList = distinctSpec x.toList := by
+  by_cases ha : x.attr = 2
+  · simp only [distinct, ha, beq_self_eq_true, ↓reduceIte, Except.ok.injEq] at h
+    cases h; exact (eraseDups_of_nodup _ (hu ha)).symm
+  have hmx : m = nx := by have := x.wf.2; rw [hxc] at this; exact this
+  subst hmx
+  unfold distinct at h
+  rw [show (x.attr == 2) = false by simp [ha], show direct .boolean x.c m = none from rfl,
+    show distinctColumn .boolean x.c = _ by rw [hxc]] at h
+  change list .boolean (.bits _ _) 2 = .ok ⟨nr, r⟩ at h
+  have hr := list_c h
+  have hnr : nr = (bitFirsts m xb).length := by have := r.wf.2; rw [hr] at this; exact this.symm
+  rw [Arr.toList_bits r hr, distinctSpec, Arr.toList_bits x hxc]
+  apply List.ext_getElem (by simp [hnr, Verify.bitFirsts_eraseDups m xb hn])
+  intro i h1 _
+  have hi : i < (bitFirsts m xb).length := by simpa [hnr] using h1
+  rw [List.getElem_map, List.getElem_range, Column.bitAt_packBits _ i (by simpa using hi),
+    getElem!_pos _ i (by simpa using hi)]
+  simp [Column.boolOf, Verify.bitFirsts_eraseDups m xb hn]
+
 /-- Two lawful `==` on one type are one instance: each answers `true` exactly at equal arguments. -/
 theorem beq_inst_eq {α : Type} (i₁ i₂ : BEq α) (h₁ : @LawfulBEq α i₁) (h₂ : @LawfulBEq α i₂) : i₁ = i₂ := by
   have e : ∀ a b : α, @BEq.beq α i₁ a b = @BEq.beq α i₂ a b := fun a b =>
@@ -1226,6 +1345,7 @@ theorem find_toList {a : QAtomicType} [BEq (El (.atom a))] [LawfulBEq (El (.atom
     obtain ⟨_, _, hxc⟩ := readable_bits hx
     obtain ⟨_, _, hyc⟩ := readable_bits hy
     exact (find_bits hxc hyc (by have := USize.size_le; omega) hm h).trans (findSpec_inst _ _ _ _)
+  case symbol => exact (find_sym hx hy h).trans (findSpec_inst _ _ _ _)
   all_goals exact False.elim hx
 
 /-- `x in y` is `inSpec` wherever both operands are `Readable` at their type: `in_long` at `long`,
@@ -1241,6 +1361,7 @@ theorem in_toList {a : QAtomicType} [BEq (El (.atom a))] [LawfulBEq (El (.atom a
     obtain ⟨_, _, hxc⟩ := readable_bits hx
     obtain ⟨_, _, hyc⟩ := readable_bits hy
     exact (in_bits hxc hyc (by have := USize.size_le; omega) hm h).trans (inSpec_inst _ _ _ _)
+  case symbol => exact (in_sym hx hy h).trans (inSpec_inst _ _ _ _)
   all_goals exact False.elim hx
 
 /-- A test that holds exactly below `p ≤ n` holds at `p` of the first `n` indices. -/
@@ -1407,6 +1528,10 @@ end Checks
 #print axioms in_long
 #print axioms find_bits
 #print axioms in_bits
+#print axioms find_sym
+#print axioms in_sym
+#print axioms distinct_sym
+#print axioms distinct_bits
 #print axioms find_toList
 #print axioms in_toList
 #print axioms bin_toList
