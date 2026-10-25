@@ -24,7 +24,7 @@ namespace LeetQ.Rel
 open QLean QLean.Dep QLean.Kernel
 
 /-- `R` with its values replaced, key kept. -/
-def Rel.withVal {k v w : QListType} (R : Rel k v) (a : Arr w R.n) : Rel k w := ⟨R.n, R.key, a⟩
+def Rel.withVal {k v w : QVecType} (R : Rel k v) (a : Arr w R.n) : Rel k w := ⟨R.n, R.key, a⟩
 
 /-- The column of a q vector answer. -/
 def vecCol : QValue → Option Column
@@ -33,7 +33,7 @@ def vecCol : QValue → Option Column
 
 namespace Ops
 
-variable {k : QListType} {t : QAtomicType}
+variable {k : QVecType} {t : QAtomicType}
 
 /-! ## Scans: `f\x`, key kept -/
 
@@ -67,7 +67,7 @@ def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
 
 /-- `count each` by group: `1_deltas o`. -/
-def countBy {v : QListType} : Rel k v → Option (Rel k (.atom .long))
+def countBy {v : QVecType} : Rel k v → Option (Rel k (.atom .long))
   | ⟨_, .grp (g := g) d o _, _⟩ => do
     pure ⟨g, d, ← (Arr.of (.atom .long) g (.bytes (sizes g (← offs o))) "count each").toOption⟩
   | _ => none
@@ -266,10 +266,10 @@ end Spec
 
 namespace Ops
 
-variable {k : QListType} {t : QAtomicType}
+variable {k : QVecType} {t : QAtomicType}
 
 /-- Replacing the values keeps the keys, whatever the new values are. -/
-theorem withVal_keys {v w : QListType} {R : Rel k v} {o : Option (Arr w R.n)} {S : Rel k w}
+theorem withVal_keys {v w : QVecType} {R : Rel k v} {o : Option (Arr w R.n)} {S : Rel k w}
     (h : o.map R.withVal = some S) : S.toList.map Prod.fst = R.toList.map Prod.fst := by
   cases o with
   | none => cases h
@@ -458,7 +458,7 @@ theorem grade_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} 
     (hn : R.n < USize.size) {S : Rel (.atom .long) (.atom .long)} (h : grade desc R = some S) :
     S.val.toList = Spec.grade desc R.val.toList := by
   obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R.val hx hn
-  have hg : gradeColumn .long desc R.val.c = some (.vector .long (.bytes (Order.grade .i64 desc R.n.toUSize B))) := by
+  have hg : gradeColumn .long desc R.val.c = some (.vector (.atom .long) (.bytes (Order.grade .i64 desc R.n.toUSize B))) := by
     rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
     · rw [← hBs]; rfl
     · rfl
@@ -501,7 +501,7 @@ theorem sort_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} (
     S.val.toList = Spec.sort desc R.val.toList := by
   obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long R.val hx hn
   have hsv : sortedValues .long desc R.val.c =
-      some (.vector .long (.bytes (Order.sortValues .i64 desc (B.size / 8).toUSize B))) := by
+      some (.vector (.atom .long) (.bytes (Order.sortValues .i64 desc (B.size / 8).toUSize B))) := by
     simp only [sortedValues, hb]; rfl
   simp only [sort, hsv, Option.orElse, vecCol, bind, Option.bind] at h
   generalize hP : Order.sortValues .i64 desc (B.size / 8).toUSize B = P at h
@@ -697,7 +697,7 @@ theorem sizes_words {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {B
 
 /-- **`count each` by group**: `1_deltas o`, each group's size, at any value type and any offsets that list
     `longWords`. `Cuts` keeps every offset in `[0, n]`, so no `0N` reaches `Ew.sub` and no difference wraps. -/
-theorem countBy_toList {v : QListType} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
+theorem countBy_toList {v : QVecType} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
     {x : Arr v n} {wo : List UInt64} (ho : longWords o.c = some wo) (hg : g + 1 < USize.size)
     {S : Rel k (.atom .long)} (h : countBy ⟨n, .grp d o co, x⟩ = some S) :
     S.val.toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
@@ -775,7 +775,7 @@ theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)}
     g.toUSize = L at h hlw hlz
   obtain ⟨b, hxc, -, hbw, hbn⟩ := Arr.dense_long x hx hn
   have hgc : gatherColumn .long x.c (.bytes L) =
-      some (.vector .long (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L))) := by
+      some (.vector (.atom .long) (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L))) := by
     rcases hxc with hxc | ⟨md, pk, hxc, rfl⟩ <;> rw [hxc] <;> rfl
   rw [hgc] at h
   simp only [vecCol] at h
@@ -830,9 +830,9 @@ section Checks
 open QLean.Column Ops
 
 private def L {n : Nat} (a : Arr (.atom .long) n) : Rel (.atom .long) (.atom .long) := ⟨n, .til n, a⟩
-private def vals {k v : QListType} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
+private def vals {k v : QVecType} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
 /-- An answer whose type comes with it, kept where that type is `rt`. -/
-private def at? {k : QListType} (rt : QAtomicType) : Option ((r : QAtomicType) × Rel k (.atom r)) → Option (Rel k (.atom rt))
+private def at? {k : QVecType} (rt : QAtomicType) : Option ((r : QAtomicType) × Rel k (.atom r)) → Option (Rel k (.atom rt))
   | some ⟨r, S⟩ => if h : r = rt then some (h ▸ S) else none
   | none => none
 

@@ -184,7 +184,7 @@ def gens : Column → Except String (Array QValue)
 
 /-- `x@i` for an in-range long payload `i`: `gatherColumn`, which answers every column encoding. A
     general list is picked by position, which is all qlean's own `@` does there (`pickAt`, private). -/
-def pick : (t : QListType) → Column → ByteArray → Except String Column
+def pick : (t : QVecType) → Column → ByteArray → Except String Column
   | .atom a, c, i => match gatherColumn a c (.bytes i) with
     | some (.vector _ out) => pure out
     | _ => throw s!"gatherColumn declines a column of type {a.code} in this encoding"
@@ -192,14 +192,14 @@ def pick : (t : QListType) → Column → ByteArray → Except String Column
 
 /-- `raze` of payloads of one type: `razeColumn`, which interns a symbol part to meet an interned one
     and decodes an encoded part to meet a dense one. A general list is `Array.append`. -/
-def raze : (t : QListType) → Array Column → Except String Column
+def raze : (t : QVecType) → Array Column → Except String Column
   | .atom a, cs => if h : cs.size = 1 then pure cs[0] else match razeColumn a cs with
     | some (.vector _ out) => pure out
     | _ => throw s!"razeColumn declines {cs.size} columns of type {a.code}"
   | .general, cs => do pure (.gen (← cs.foldlM (fun xs c => do pure (xs ++ (← gens c))) #[]))
 
 /-- No element of `t`: `Column.ofAtoms` of nothing, which picks the type's own constructor. -/
-def empty : (t : QListType) → Except String Column
+def empty : (t : QVecType) → Except String Column
   | .atom a => match Column.ofAtoms a #[] with
     | some c => pure c
     | none => throw s!"Column.ofAtoms has no empty column of type {a.code}"
@@ -253,7 +253,7 @@ def rangeOffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except St
     - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
       encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
       the join against itself, its positions packed. -/
-def codes : (t : QListType) → Array Column → Except String (Array Code)
+def codes : (t : QVecType) → Array Column → Except String (Array Code)
   | .atom a, cs => do
     if let some bs := cs.mapM (fun c => match c with | .bits n b => some (⟨1, n, 2, b⟩ : Code) | _ => none) then
       return bs
@@ -285,7 +285,7 @@ def arrDense {a : QAtomicType} {n : Nat} (x : Arr (.atom a) n) : Except String (
     | none => throw s!"type {a.code}: Column.bytesOf has no dense payload for this encoding"
 
 /-- A key column's payload: `til` is `tilLongs`, `grp d o` picks `d` at `groupOf o`. -/
-def keyPay : {k : QListType} → {n : Nat} → KeyCol k n → Except String Column
+def keyPay : {k : QVecType} → {n : Nat} → KeyCol k n → Except String Column
   | _, _, .til n => pure (.bytes (tilLongs n.toUSize))
   | k, n, .grp d o _ => do
     let some ob := Column.bytesOf .long o.c | throw "a grp key's offsets have no dense payload"
@@ -293,19 +293,19 @@ def keyPay : {k : QListType} → {n : Nat} → KeyCol k n → Except String Colu
   | _, _, .arr a => pure a.c
 
 /-- A relation's two payloads. -/
-structure Cols (k v : QListType) where
+structure Cols (k v : QVecType) where
   n : Nat
   key : Column
   val : Column
 
-def cols {k v : QListType} (R : Rel k v) : Except String (Cols k v) := do pure ⟨R.n, ← keyPay R.key, R.val.c⟩
+def cols {k v : QVecType} (R : Rel k v) : Except String (Cols k v) := do pure ⟨R.n, ← keyPay R.key, R.val.c⟩
 
 /-- The rows of `d` at the index column `i`. -/
-def Cols.rows {k v : QListType} (d : Cols k v) (i : ByteArray) : Except String (Cols k v) := do
+def Cols.rows {k v : QVecType} (d : Cols k v) (i : ByteArray) : Except String (Cols k v) := do
   pure ⟨len i, ← pick k d.key i, ← pick v d.val i⟩
 
 /-- Two payloads as a relation keyed by an explicit column. -/
-def ofCols (k v : QListType) (kc : Column) (vc : Column) : Except String (Rel k v) := do
+def ofCols (k v : QVecType) (kc : Column) (vc : Column) : Except String (Rel k v) := do
   let n := Column.count k kc
   pure ⟨n, .arr (← Arr.of k n kc "ofCols"), ← Arr.of v n vc "ofCols"⟩
 
@@ -374,11 +374,11 @@ where
     | (c, none) => pure c.groupIds
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
-def pairs {k v : QListType} (ds : Array (Cols k v)) : Except String (Array Code) := do
+def pairs {k v : QVecType} (ds : Array (Cols k v)) : Except String (Array Code) := do
   tuples #[← codes k (ds.map (·.key)), ← codes v (ds.map (·.val))]
 
 /-- `R` with each pair once: the first row of each class of `|R|`. -/
-def Cols.nub {k v : QListType} (d : Cols k v) : Except String (Cols k v) := do
+def Cols.nub {k v : QVecType} (d : Cols k v) : Except String (Cols k v) := do
   d.rows (← tuples.tupleIds #[← single (← codes k #[d.key]), ← single (← codes v #[d.val])]).2
 
 /-- `join(l, r)`: every pair of a left and a right row with equal codes, as two index columns —
@@ -447,7 +447,7 @@ def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
   else throw s!"rankSlices declines the {len o - 1} normalised segments of {len fs} codes"
 
 /-- `setIds` of a `grp`-keyed family: one id per set, equal sets one id. -/
-def setId {k v : QListType} (G : Rel k v) : Except String ByteArray :=
+def setId {k v : QVecType} (G : Rel k v) : Except String ByteArray :=
   match G with
   | ⟨_, .grp _ o _, val⟩ => do
     let some ob := Column.bytesOf .long o.c | throw "a grp key's offsets have no dense payload"
@@ -459,7 +459,7 @@ def setId {k v : QListType} (G : Rel k v) : Except String ByteArray :=
     dominates (`thinSweep` over the `segments` of the key codes). A column not of longs is
     compared by its dense rank (`drank`). Equal rows of one set are one element: the first is kept.
     Answers the kept rows' indices. -/
-def thin {k : QListType} (key : Column) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
+def thin {k : QVecType} (key : Column) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
   if cs.size != big.size then throw s!"thin: {cs.size} columns but {big.size} directions"
   let kc ← single (← codes k #[key])
   let (p, o, _) := segments kc
@@ -470,7 +470,7 @@ def thin {k : QListType} (key : Column) (cs : Array (Scan.Kind × ByteArray)) (b
 
 /-! ## The operators -/
 
-variable {A B C : QListType}
+variable {A B C : QVecType}
 
 /-- The two parts of a joint coding of two payloads. -/
 def two (cs : Array Code) : Except String (Code × Code) :=
@@ -504,17 +504,17 @@ def top {ma mb : Nat} (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) 
   ofCols A B (← pick A Ua.c i) (← pick B Ub.c j)
 
 /-- `𝟙` on `U`: key and val the one column, shared. -/
-def idU {t : QListType} {m : Nat} (U : Arr t m) : Rel t t := ⟨m, .arr U, U⟩
+def idU {t : QVecType} {m : Nat} (U : Arr t m) : Rel t t := ⟨m, .arr U, U⟩
 
-theorem idU_holds {t : QListType} {m : Nat} (U : Arr t m) (x y : El t) :
+theorem idU_holds {t : QVecType} {m : Nat} (U : Arr t m) (x y : El t) :
     (idU U).Holds x y ↔ x = y ∧ ∃ i, U.get i = x := by
   simp only [Rel.Holds, idU, KeyCol.get]
   exact ⟨fun ⟨i, h1, h2⟩ => ⟨h1 ▸ h2, i, h1⟩, fun ⟨h, i, h1⟩ => ⟨i, h1, h ▸ h1⟩⟩
 
 /-- `R°` of an `arr`-keyed relation: the two fields swap, nothing runs. -/
-def convArr {k v : QListType} {n : Nat} (key : Arr k n) (val : Arr v n) : Rel v k := ⟨n, .arr val, key⟩
+def convArr {k v : QVecType} {n : Nat} (key : Arr k n) (val : Arr v n) : Rel v k := ⟨n, .arr val, key⟩
 
-theorem convArr_holds {k v : QListType} {n : Nat} (key : Arr k n) (val : Arr v n) (x : El k) (y : El v) :
+theorem convArr_holds {k v : QVecType} {n : Nat} (key : Arr k n) (val : Arr v n) (x : El k) (y : El v) :
     (convArr key val).Holds y x ↔ (⟨n, .arr key, val⟩ : Rel k v).Holds x y := by
   simp only [Rel.Holds, convArr, KeyCol.get]
   exact ⟨fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩, fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩⟩
@@ -533,7 +533,7 @@ def comp (R : Rel A B) (S : Rel B C) : Except String (Rel A C) := do
   ofCols A C (← pick A r.key i) (← pick C s.val j)
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
-def distinctCorefl (t : QListType) (x : Column) : Except String (Rel t t) := do
+def distinctCorefl (t : QVecType) (x : Column) : Except String (Rel t t) := do
   let d ← pick t x (← single (← codes t #[x])).groupIds.2
   ofCols t t d d
 
@@ -599,7 +599,7 @@ def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B
 
 /-- `grp (arr ds) o` over `val`: the keys `ds` of the groups and the offsets `o` a kernel wrote (`runStarts`,
     which ends with the count), the cuts decided by `KeyCol.grp?`. -/
-def grouped {v : QListType} {n : Nat} (t : QListType) (ds : Column) (o : ByteArray) (val : Arr v n) : Except String (Rel t v) := do
+def grouped {v : QVecType} {n : Nat} (t : QVecType) (ds : Column) (o : ByteArray) (val : Arr v n) : Except String (Rel t v) := do
   let g := Column.count t ds
   let some key := KeyCol.grp? (.arr (← Arr.of t g ds "grouped")) (← Arr.of (.atom .long) (g + 1) (.bytes o) "grouped") n
     | throw s!"grp: the offsets are not ascending cuts of {n} rows"
@@ -607,7 +607,7 @@ def grouped {v : QListType} {n : Nat} (t : QListType) (ds : Column) (o : ByteArr
 
 /-- The groups of a column whose equal elements are contiguous: `grp (arr ds) o` with `o` the run starts
     of its codes and the count (`runStarts`) and `ds` the element at each start. -/
-def runs {v : QListType} {n : Nat} (t : QListType) (key : Column) (val : Arr v n) : Except String (Rel t v) := do
+def runs {v : QVecType} {n : Nat} (t : QVecType) (key : Column) (val : Arr v n) : Except String (Rel t v) := do
   let st := (← single (← codes t #[key])).runStarts
   grouped t (← pick t key (st.extract 0 (st.size - 8))) st val
 
@@ -634,7 +634,7 @@ def group (R : Rel (.atom .long) B) : Except String (Rel B (.atom .long)) := do
   runs B (← pick B r.val idx) (← Arr.of (.atom .long) (len idx) (← pick (.atom .long) r.key idx) "group")
 
 /-- `∋` of a `grp`-keyed family: the pairs `(set id, element)`, the key's offsets reused, no kernel. -/
-def mem {k v : QListType} (G : Rel k v) : Except String (Rel (.atom .long) v) :=
+def mem {k v : QVecType} (G : Rel k v) : Except String (Rel (.atom .long) v) :=
   match G with
   | ⟨n, .grp (g := g) _ o wf, val⟩ => pure ⟨n, .grp (.til g) o wf, val⟩
   | _ => throw "∋ reads a grp-keyed family; an arr-keyed family is its own ∋"
@@ -644,16 +644,16 @@ def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A C) := do
   family (← cols (← comp G R))
 
 /-- A table of one key and two value columns: the product `⟨R, S⟩`, `x ⟨R,S⟩ (y, z)`. -/
-structure Tab (k v w : QListType) where
+structure Tab (k v w : QVecType) where
   n : Nat
   key : KeyCol k n
   fst : Arr v n
   snd : Arr w n
 
-def Tab.Holds {k v w : QListType} (T : Tab k v w) (x : El k) (y : El v) (z : El w) : Prop :=
+def Tab.Holds {k v w : QVecType} (T : Tab k v w) (x : El k) (y : El v) (z : El w) : Prop :=
   ∃ i, T.key.get i = x ∧ T.fst.get i = y ∧ T.snd.get i = z
 
-def Tab.toList {k v w : QListType} (T : Tab k v w) : List (El k × El v × El w) :=
+def Tab.toList {k v w : QVecType} (T : Tab k v w) : List (El k × El v × El w) :=
   List.ofFn fun i => (T.key.get i, T.fst.get i, T.snd.get i)
 
 /-- `⟨R, S⟩`: `join` on the keys → rows `(x, y, z)`, both value columns kept under one `n`. -/
@@ -665,29 +665,29 @@ def pair (R : Rel A B) (S : Rel A C) : Except String (Tab A B C) := do
   pure ⟨t.n, t.key, t.val, ← Arr.of C t.n (← pick C s.val j) "pair"⟩
 
 /-- `outl`: the first component column, nothing runs. -/
-def outl {k v w : QListType} (T : Tab k v w) : Rel k v := ⟨T.n, T.key, T.fst⟩
+def outl {k v w : QVecType} (T : Tab k v w) : Rel k v := ⟨T.n, T.key, T.fst⟩
 /-- `outr`: the second component column. -/
-def outr {k v w : QListType} (T : Tab k v w) : Rel k w := ⟨T.n, T.key, T.snd⟩
+def outr {k v w : QVecType} (T : Tab k v w) : Rel k w := ⟨T.n, T.key, T.snd⟩
 
-theorem outl_holds {k v w : QListType} (T : Tab k v w) (x : El k) (y : El v) : (outl T).Holds x y ↔ ∃ z, T.Holds x y z :=
+theorem outl_holds {k v w : QVecType} (T : Tab k v w) (x : El k) (y : El v) : (outl T).Holds x y ↔ ∃ z, T.Holds x y z :=
   ⟨fun ⟨i, h1, h2⟩ => ⟨_, i, h1, h2, rfl⟩, fun ⟨_, i, h1, h2, _⟩ => ⟨i, h1, h2⟩⟩
 
-theorem outr_holds {k v w : QListType} (T : Tab k v w) (x : El k) (z : El w) : (outr T).Holds x z ↔ ∃ y, T.Holds x y z :=
+theorem outr_holds {k v w : QVecType} (T : Tab k v w) (x : El k) (z : El w) : (outr T).Holds x z ↔ ∃ y, T.Holds x y z :=
   ⟨fun ⟨i, h1, h2⟩ => ⟨_, i, h1, rfl, h2⟩, fun ⟨_, i, h1, _, h2⟩ => ⟨i, h1, h2⟩⟩
 
 /-- A relation between pairs, `(x, y) ⟶ (x', y')`, as four columns of one `n`. -/
-structure Rel2 (k₁ k₂ v₁ v₂ : QListType) where
+structure Rel2 (k₁ k₂ v₁ v₂ : QVecType) where
   n : Nat
   k₁ : Arr k₁ n
   k₂ : Arr k₂ n
   v₁ : Arr v₁ n
   v₂ : Arr v₂ n
 
-def Rel2.toList {k₁ k₂ v₁ v₂ : QListType} (T : Rel2 k₁ k₂ v₁ v₂) : List ((El k₁ × El k₂) × (El v₁ × El v₂)) :=
+def Rel2.toList {k₁ k₂ v₁ v₂ : QVecType} (T : Rel2 k₁ k₂ v₁ v₂) : List ((El k₁ × El k₂) × (El v₁ × El v₂)) :=
   List.ofFn fun i => ((T.k₁.get i, T.k₂.get i), (T.v₁.get i, T.v₂.get i))
 
 /-- `R × S` as a relation of its own: `cross` of the rows of `R` and of `S`. `Δ(R)` is `prod R R`. -/
-def prod {D E : QListType} (R : Rel A B) (S : Rel D E) : Except String (Rel2 A D B E) := do
+def prod {D E : QVecType} (R : Rel A B) (S : Rel D E) : Except String (Rel2 A D B E) := do
   let r ← cols R; let s ← cols S
   let (i, j) := cross r.n s.n
   let m := r.n * s.n
@@ -696,13 +696,13 @@ def prod {D E : QListType} (R : Rel A B) (S : Rel D E) : Except String (Rel2 A D
 
 /-- A relation out of a sum `a + a`: a tag bit beside each key, `false` for `inl`. Read with the
     value tagged by the key's own tag it is `R + S` as well as `[R, S]`. -/
-structure SumRel (k v : QListType) where
+structure SumRel (k v : QVecType) where
   n : Nat
   tag : Arr (.atom .boolean) n
   key : Arr k n
   val : Arr v n
 
-def SumRel.toList {k v : QListType} (T : SumRel k v) : List ((Bool × El k) × El v) :=
+def SumRel.toList {k v : QVecType} (T : SumRel k v) : List ((Bool × El k) × El v) :=
   List.ofFn fun i => ((T.tag.get i, T.key.get i), T.val.get i)
 
 /-- `n` bits, all `x`: `Ew.cmp` of `til n` against `0`. -/
@@ -721,13 +721,13 @@ def injConv {m : Nat} (tag : Bool) (U : Arr A m) : Except String (SumRel A A) :=
   pure ⟨m, ← Arr.of (.atom .boolean) m (.bits m (bitsOf tag m)) "injConv", U, U⟩
 
 /-- `F(f)` on a map `f` given as an `Ew` monad: the functor on values, key kept (a `grp` key too). -/
-def mapVal {k : QListType} {a : QAtomicType} (op : UInt8) (R : Rel k (.atom a)) : Except String (Rel k (.atom a)) := do
+def mapVal {k : QVecType} {a : QAtomicType} (op : UInt8) (R : Rel k (.atom a)) : Except String (Rel k (.atom a)) := do
   let (vk, v) ← arrDense R.val
   let some nb := nullBits a | throw "a type with no null"
   pure ⟨R.n, R.key, ← Arr.of (.atom a) R.n (.bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize)) "mapVal"⟩
 
 /-- `⦇e, f⦈` of a list when `f` is one of `Coc.Over`'s reductions: `overBytes`. -/
-def foldOver {k : QListType} (op : Coc.Over) (R : Rel k (.atom .long)) : Except String Int64 := do
+def foldOver {k : QVecType} (op : Coc.Over) (R : Rel k (.atom .long)) : Except String Int64 := do
   let (_, v) ← arrDense R.val
   pure (overBytes op Ew.i64 nul v)
 
@@ -780,7 +780,7 @@ def surjective {m : Nat} (R : Rel A B) (U : Arr B m) : Except String Bool := do
 
 section Checks
 
-private abbrev L := QListType.atom .long
+private abbrev L := QVecType.atom .long
 private abbrev LL := Rel (.atom .long) (.atom .long)
 
 private def seteq {α : Type} [BEq α] (xs ys : List α) : Bool := xs.all ys.contains && ys.all xs.contains
@@ -907,17 +907,17 @@ private def Ua3 : Arr L 3 := { c := .bytes <| packLongs [3, 1, 2], wf := by deci
 /-! ### Every other encoding: the list `i ↦ x i` of four elements in each, against its own spec -/
 
 /-- A list over the payload `c`: key `til`. -/
-private def lst (t : QListType) (c : Column) : Except String (Rel L t) := do
+private def lst (t : QVecType) (c : Column) : Except String (Rel L t) := do
   let n := Column.count t c
   pure ⟨n, .til n, ← Arr.of t n c "lst"⟩
 /-- `L ≫ L°`: the pairs of positions holding one element. -/
-private def same {t : QListType} (X Y : Rel L t) : Except String LL := do comp X (← conv Y)
+private def same {t : QVecType} (X Y : Rel L t) : Except String LL := do comp X (← conv Y)
 private def U4 : Arr L 4 := { c := .bytes <| packLongs [0, 1, 2, 3], wf := by decide }
 -- the positions of `(p q p r)` paired with equal elements: `(0 2)` share, `1` and `3` alone
 private def pqpr : List (Int64 × Int64) := [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (3, 3)]
 
 -- boolean, `bits`: `1010b`, whose positions pair `(0 2)` and `(1 3)`
-private abbrev Bo := QListType.atom .boolean
+private abbrev Bo := QVecType.atom .boolean
 private def bitsC : Column := .bits 4 (ByteArray.mk #[0b0101])
 #guard ok (do same (← lst Bo bitsC) (← lst Bo bitsC)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
@@ -928,7 +928,7 @@ private def bitsC : Column := .bits 4 (ByteArray.mk #[0b0101])
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)]
 
 -- symbol, `syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
-private abbrev Sy := QListType.atom .symbol
+private abbrev Sy := QVecType.atom .symbol
 private def symsC : Column := .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10]
 private def enumC : Column :=
   .enum 4 (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!)
@@ -947,7 +947,7 @@ private def enumC : Column :=
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
 -- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
-private def laneOf (t : QListType) (c : Column) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
+private def laneOf (t : QVecType) (c : Column) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
 #guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
 #guard laneOf L Lf.val.c == some 8 && laneOf L (.bytes (packLongs [5, 3, 5, 9])) == some 8 &&
   laneOf L (.bytes (packLongs [5, 3, 5, 1099511627776])) == some 2
@@ -972,7 +972,7 @@ private def Lneg : LL := ⟨4, .til 4, { c := .foR 4 (Coc.encode 8 (packLongs [9
   (Lneg.toList.flatMap fun (i, x) => Lf.toList.filterMap fun (j, y) => if x == y then some (i, j) else none)
 
 -- float through ALP: `1.5 2.25 1.5 0.1`, and the same as dense bytes
-private abbrev Fl := QListType.atom .float
+private abbrev Fl := QVecType.atom .float
 private def fs : List Float := [1.5, 2.25, 1.5, 0.1]
 private def fb : ByteArray := packLongs (fs.map (·.toBits.toInt64))
 -- `alpOf` and not `Column.answer`, which keeps a column this short dense
@@ -1043,22 +1043,22 @@ section Laws
 open QLean.Verify (firstsOf)
 
 /-- An `Arr`'s element `i` depends on its payload and on `i`'s value alone. -/
-theorem Arr.get_congr {t : QListType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) {i : Fin n} {j : Fin m}
+theorem Arr.get_congr {t : QVecType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) {i : Fin n} {j : Fin m}
     (hij : i.1 = j.1) : a.get i = b.get j := by
   obtain ⟨c, _, _, _⟩ := a; obtain ⟨c', _, _, _⟩ := b; obtain ⟨i, _⟩ := i; obtain ⟨j, _⟩ := j
   simp only at hc hij; subst hc hij; cases t <;> rfl
 
 /-- Two `Arr`s over one payload have one length: `wf` counts it. -/
-theorem Arr.n_congr {t : QListType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) : n = m := by
+theorem Arr.n_congr {t : QVecType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) : n = m := by
   have ha := a.wf; have hb := b.wf; rw [hc] at ha; exact ha.2.symm.trans hb.2
 
-theorem Arr.of_c {t : QListType} {n : Nat} {c : Column} {w : String} {a : Arr t n} (h : Arr.of t n c w = .ok a) : a.c = c := by
+theorem Arr.of_c {t : QVecType} {n : Nat} {c : Column} {w : String} {a : Arr t n} (h : Arr.of t n c w = .ok a) : a.c = c := by
   unfold Arr.of at h; split at h
   · cases h; rfl
   · cases h
 
 /-- `ofCols` keys the answer by an `arr` over `kc`, its values over `vc`. -/
-theorem ofCols_ok {k v : QListType} {kc : Column} {vc : Column} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
+theorem ofCols_ok {k v : QVecType} {kc : Column} {vc : Column} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
     ∃ a : Arr k T.n, T.key = .arr a ∧ a.c = kc ∧ T.val.c = vc := by
   unfold ofCols at h
   cases ha : Arr.of k (Column.count k kc) kc "ofCols" with
@@ -1071,11 +1071,11 @@ theorem ofCols_ok {k v : QListType} {kc : Column} {vc : Column} {T : Rel k v} (h
       subst h; exact ⟨a, rfl, Arr.of_c ha, Arr.of_c hb⟩
 
 /-- `p`, when `keyPay` answers it, is `K`'s payload: every `Arr` over it reads `K`'s keys. -/
-def PayReads {k : QListType} {n : Nat} (K : KeyCol k n) : Prop :=
+def PayReads {k : QVecType} {n : Nat} (K : KeyCol k n) : Prop :=
   ∀ p, keyPay K = .ok p → ∀ a : Arr k n, a.c = p → ∀ i, a.get i = K.get i
 
 /-- An `arr` key's payload is its own column. -/
-theorem payReads_arr {k : QListType} {n : Nat} (x : Arr k n) : PayReads (KeyCol.arr x) := by
+theorem payReads_arr {k : QVecType} {n : Nat} (x : Arr k n) : PayReads (KeyCol.arr x) := by
   intro p hp a hc i
   simp only [keyPay, pure, Except.pure, Except.ok.injEq] at hp
   exact Arr.get_congr (hc.trans hp.symm) rfl

@@ -40,7 +40,7 @@ def onKey (n : Nat) (a : QAtomicType) (c : Column) (verb : String) : Except Stri
 
 /-- The vector payload of a dispatcher's answer at type `a`. -/
 def vec (verb : String) (a : QAtomicType) : Option QValue → Except String Column
-  | some (.vector b c) => if a == b then .ok c else .error s!"{verb}: the kernel answered a vector of another type"
+  | some (.vector b c) => if b == .atom a then .ok c else .error s!"{verb}: the kernel answered a vector of another type"
   | some _ => .error s!"{verb}: the kernel answered a non-vector where a vector was due"
   | none => .error s!"{verb}: no qlean kernel claims this operand (q's 'type)"
 
@@ -122,7 +122,7 @@ def find {a : QAtomicType} (x : Vec (.atom a)) (y : Vec (.atom a)) :
     Except String (Vec (.atom .long)) := do
   let c ← match direct a x.val.c x.n with
     | some (t, lo, _) => do pure (.bytes (probe t x.n lo (← dense "x?y" a y.val.c)))
-    | none => vec "x?y" .long (findColumn a (x.val.attr == 1) x.val.c (.vector a y.val.c))
+    | none => vec "x?y" .long (findColumn a (x.val.attr == 1) x.val.c (.vector (.atom a) y.val.c))
   onKey y.n .long c "x?y"
 
 /-- `x in y`: whether each element of `x` is in `y`; on `x`'s key. -/
@@ -132,14 +132,14 @@ def «in» {a : QAtomicType} (x : Vec (.atom a)) (y : Vec (.atom a)) :
     | some (t, lo, _) => do
       let g := probe t y.n lo (← dense "x in y" a x.val.c)
       pure (.bits x.n (Ew.cmp Ew.lt Ew.i64 Ew.va g (one y.n.toUInt64) x.n.toUSize))
-    | none => vec "x in y" .boolean (memberColumn a (y.val.attr == 1) (.vector a x.val.c) y.val.c)
+    | none => vec "x in y" .boolean (memberColumn a (y.val.attr == 1) (.vector (.atom a) x.val.c) y.val.c)
   onKey x.n .boolean c "x in y"
 
 /-- `x bin y`: for each element of `y`, the last position of sorted `x` holding at most it, `-1`
     below all; `binBytes`/`foRBin`/`binBits`/`binSymColumn` by encoding. On `y`'s key. -/
 def bin {a : QAtomicType} (x : Vec (.atom a)) (y : Vec (.atom a)) :
     Except String (Vec (.atom .long)) := do
-  onKey y.n .long (← vec "x bin y" .long (binColumn a false x.val.c (.vector a y.val.c))) "x bin y"
+  onKey y.n .long (← vec "x bin y" .long (binColumn a false x.val.c (.vector (.atom a) y.val.c))) "x bin y"
 
 /-! ## The List-level spec -/
 
@@ -309,28 +309,28 @@ theorem operand_long {m : Nat} (x : Arr (.atom .long) m) (h : Readable .long x.c
 
 /-- `x?y` at long operands: the halving over the dense needles where `x` is marked `s` and `worthHalving`
     claims it, `probeColumns` otherwise. -/
-theorem findColumn_long (s : Bool) (x c : Column) : findColumn .long s x (.vector .long c) =
+theorem findColumn_long (s : Bool) (x c : Column) : findColumn .long s x (.vector (.atom .long) c) =
     if s && worthHalving (Column.count (.atom .long) x) (Column.count (.atom .long) c) then
       match Column.bytesOf .long c with
-      | some ks => (findSorted .long 8 x ks).map fun out => .vector .long (.bytes out)
+      | some ks => (findSorted .long 8 x ks).map fun out => .vector (.atom .long) (.bytes out)
       | none => none
-    else (probeColumns .long 8 false x c).map fun out => .vector .long (.bytes out) := by
+    else (probeColumns .long 8 false x c).map fun out => .vector (.atom .long) (.bytes out) := by
   cases x <;> rfl
 
 /-- `x in y` at long operands: `findColumn_long`'s choice, answering a bit per needle. -/
-theorem memberColumn_long (s : Bool) (c y : Column) : memberColumn .long s (.vector .long c) y =
+theorem memberColumn_long (s : Bool) (c y : Column) : memberColumn .long s (.vector (.atom .long) c) y =
     if s && worthHalving (Column.count (.atom .long) y) (Column.count (.atom .long) c) then
       match Column.bytesOf .long c with
-      | some ks => (memberSorted .long 8 y ks).map fun out => .vector .boolean (.bits (ks.size / 8) out)
+      | some ks => (memberSorted .long 8 y ks).map fun out => .vector (.atom .boolean) (.bits (ks.size / 8) out)
       | none => none
-    else (probeColumns .long 8 true y c).map fun out => .vector .boolean (.bits (Column.count (.atom .long) c) out) := by
+    else (probeColumns .long 8 true y c).map fun out => .vector (.atom .boolean) (.bits (Column.count (.atom .long) c) out) := by
   cases y <;> rfl
 
 /-- `x bin y` at long operands is `binOperands` over the two `operand`s. -/
-theorem binColumn_long (x c : Column) : binColumn .long false x (.vector .long c) = (do
+theorem binColumn_long (x c : Column) : binColumn .long false x (.vector (.atom .long) c) = (do
     let (hn, hm, hp) ← operand .long x
     let (kn, km, kp) ← operand .long c
-    some (QValue.vector .long (.bytes (binOperands 8 false true false hm hp hn.toUSize km kp kn.toUSize)))) := by
+    some (QValue.vector (.atom .long) (.bytes (binOperands 8 false true false hm hp hn.toUSize km kp kn.toUSize)))) := by
   cases x <;> rfl
 
 /-- `probeColumns` at long operands is the dense probe over the two decoded operands: with both
@@ -1171,8 +1171,8 @@ theorem find_bits {x : Vec (.atom .boolean)} {y : Vec (.atom .boolean)} {r : Vec
   have hmx : m = x.n := by have := x.val.wf.2; rw [hxc] at this; exact this
   have hny : n = y.n := by have := y.val.wf.2; rw [hyc] at this; exact this
   subst hmx hny
-  have hc : findColumn .boolean (x.val.attr == 1) x.val.c (.vector .boolean y.val.c) =
-      some (.vector .long (.bytes (findBitVec x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
+  have hc : findColumn .boolean (x.val.attr == 1) x.val.c (.vector (.atom .boolean) y.val.c) =
+      some (.vector (.atom .long) (.bytes (findBitVec x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
   have hd : direct .boolean x.val.c x.n = none := rfl
   simp only [find, hd, hc, vec, bind, Except.bind] at h
   have hw : Verify.elemsW 8 (findBitVec x.n.toUSize xb y.n.toUSize yb) =
@@ -1192,8 +1192,8 @@ theorem in_bits {x : Vec (.atom .boolean)} {y : Vec (.atom .boolean)} {r : Vec (
   have hmx : m = x.n := by have := x.val.wf.2; rw [hxc] at this; exact this
   have hny : n = y.n := by have := y.val.wf.2; rw [hyc] at this; exact this
   subst hmx hny
-  have hc : memberColumn .boolean (y.val.attr == 1) (.vector .boolean x.val.c) y.val.c =
-      some (.vector .boolean (.bits x.n (memberBits x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
+  have hc : memberColumn .boolean (y.val.attr == 1) (.vector (.atom .boolean) x.val.c) y.val.c =
+      some (.vector (.atom .boolean) (.bits x.n (memberBits x.n.toUSize xb y.n.toUSize yb))) := by rw [hxc, hyc]; rfl
   have hd : direct .boolean y.val.c y.n = none := rfl
   simp only [«in», hd, hc, vec, bind, Except.bind] at h
   have e := onKey_n h
@@ -1321,7 +1321,7 @@ theorem bin_toList {x : Vec (.atom .long)} {y : Vec (.atom .long)} {r : Vec (.at
 
 section Checks
 
-private def ans {α : Type} {v : QListType} (f : Vec v → α) : Except String (Vec v) → Option α
+private def ans {α : Type} {v : QVecType} (f : Vec v → α) : Except String (Vec v) → Option α
   | .ok r => some (f r)
   | .error _ => none
 

@@ -18,7 +18,7 @@ open QLean QLean.Dep
 
 /-- The constructors a column of type `t` may take: `gen` for the general list, `bits` for booleans,
     `syms` or `enum` for symbols, `bytes` for guids, `bytes`/`foR`/`alp` for the other fixed-width types. -/
-def Column.admits : QListType → Column → Bool
+def Column.admits : QVecType → Column → Bool
   | .general, .gen _ => true
   | .general, _ | .atom _, .gen _ => false
   | .atom .boolean, .bits .. => true
@@ -31,7 +31,7 @@ def Column.admits : QListType → Column → Bool
 /-- A column of `n` elements of type `t`; a general list is `.gen xs`. `attr` is q's attribute byte
     (`QValue.marked`'s codes, the `ctorIdx` of `Dep.Attributes.Attr`: 1 sorted, 2 unique, 3 parted, 4
     grouped), set by producers and read by consumers (§2.4); `ix` is the `IndexCell` the first lookup builds. -/
-structure Arr (t : QListType) (n : Nat) where
+structure Arr (t : QVecType) (n : Nat) where
   c : Column
   wf : Column.admits t c = true ∧ Column.count t c = n
   attr : UInt8 := 0
@@ -39,11 +39,11 @@ structure Arr (t : QListType) (n : Nat) where
 
 namespace Arr
 
-variable {t : QListType} {n : Nat}
+variable {t : QVecType} {n : Nat}
 
 /-- Element `i`. At an atomic type it is `Column.get`'s atom at `i` read back at the index; the
     fallback, the atom of zero bits, is unreachable under `wf`, as is the general list's non-`gen` one. -/
-def get : {t : QListType} → Arr t n → Fin n → El t
+def get : {t : QVecType} → Arr t n → Fin n → El t
   | .atom a, x, i => ((Column.get a x.c i).bind (Carrier.of? a)).getD (Carrier.ofAtom (Column.atomOfBits_type a 0))
   | .general, x, i => match hc : x.c with
     | .gen xs => xs[i.1]'(by have h := x.wf.2; rw [hc] at h; simp only [Column.count] at h; omega)
@@ -59,7 +59,7 @@ theorem getElem_toList (x : Arr t n) (i : Nat) (h : i < x.toList.length) :
 
 /-- A kernel's answer as an `Arr`, the one way in: `wf` is decided (two O(1) reads at an atomic type, the
     constructor and the count), never assumed; `what` names the producer in the error. -/
-def of (t : QListType) (n : Nat) (c : Column) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
+def of (t : QVecType) (n : Nat) (c : Column) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
   if h : Column.admits t c = true ∧ Column.count t c = n then .ok ⟨c, h, attr, none⟩
   else .error s!"{what}: the kernel answered a payload that is not {n} well-formed elements of its type"
 
@@ -315,13 +315,13 @@ def vecCol : QValue → Option Column
 
 /-- A q list: `n` elements, its positions implicit — computed (`tilLongs`) where an op needs them,
     never stored. -/
-structure Vec (t : QListType) where
+structure Vec (t : QVecType) where
   n : Nat
   val : Arr t n
 
 namespace Vec
 
-variable {t : QListType}
+variable {t : QVecType}
 
 /-- The list as a relation from its positions: `x i y ↔ val[i] = y`. -/
 def Holds (x : Vec t) (i : Int64) (y : El t) : Prop := ∃ j : Fin x.n, Int64.ofNat j = i ∧ x.val.get j = y
@@ -342,7 +342,7 @@ theorem Cuts.pos {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) (i : 
 
 /-- A parted list in its flat form: `n` values cut into `g` groups by the `g+1` offsets `o`. It is the
     kernels' working shape, never a value: `box` turns it into q's nested list, one vector per group. -/
-structure Parted (v : QListType) where
+structure Parted (v : QVecType) where
   g : Nat
   n : Nat
   o : Arr (.atom .long) (g+1)
@@ -351,7 +351,7 @@ structure Parted (v : QListType) where
 
 namespace Parted
 
-variable {v : QListType}
+variable {v : QVecType}
 
 /-- The number of cut points after the first at or below `i`: the largest `r` with `o[r] ≤ i`, which
     under `Cuts` is the group holding `i`. -/
@@ -392,9 +392,9 @@ def box (P : Parted v) : Except String (Arr .general P.g) := do
 
 /-- The parts of a nested list as each part's count and one flat column: `raze` of the vectors at an
     atomic type, the concatenated lists at `.general`; a part of another shape is declined. -/
-def razeParts : QListType → Array QValue → Except String (Array Nat × Column)
+def razeParts : QVecType → Array QValue → Except String (Array Nat × Column)
   | .atom t, xs => do
-    let cs ← xs.mapM fun | .vector t' c => if t' == t then pure c else throw "razeParts: a part of another type"
+    let cs ← xs.mapM fun | .vector t' c => if t' == .atom t then pure c else throw "razeParts: a part of another type"
                           | _ => throw "razeParts: a part that is not a vector"
     let some c := (if cs.isEmpty then Kernel.sliceColumn t (Kernel.nullColumn t) 0 0 else Kernel.razeColumn t cs).bind vecCol
       | throw "razeParts: razeColumn declines the parts"
@@ -404,7 +404,7 @@ def razeParts : QListType → Array QValue → Except String (Array Nat × Colum
     pure (ls.map (·.size), Column.gen (ls.foldl (· ++ ·) #[]))
 
 /-- The flat form of a nested list of `g` parts at `v`: `razeParts`, the offsets their running counts. -/
-def ofBoxes (v : QListType) {g : Nat} (b : Arr .general g) : Except String (Parted v) := do
+def ofBoxes (v : QVecType) {g : Nat} (b : Arr .general g) : Except String (Parted v) := do
   let .gen xs := b.c | throw "ofBoxes: a nested list's payload is not .gen"
   let (cnt, c) ← razeParts v xs
   let os := cnt.foldl (fun (s, b) m => (s + m, Column.pushBits b (Int64.ofNat (s + m)).toUInt64 8)) (0, Column.pushBits .empty 0 8)
@@ -416,14 +416,14 @@ def ofBoxes (v : QListType) {g : Nat} (b : Arr .general g) : Except String (Part
 end Parted
 
 /-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays. -/
-structure Rel (k v : QListType) where
+structure Rel (k v : QVecType) where
   n : Nat
   key : Arr k n
   val : Arr v n
 
 namespace Rel
 
-variable {k v : QListType}
+variable {k v : QVecType}
 
 /-- The relation `R` denotes: `R x y ↔ ∃ i, key.get i = x ∧ val.get i = y`. -/
 def Holds (R : Rel k v) (x : El k) (y : El v) : Prop := ∃ i, R.key.get i = x ∧ R.val.get i = y
@@ -477,7 +477,7 @@ private def o3f : Arr (.atom .long) 4 :=
 -- `box` then `ofBoxes` is the identity on the flat form, and each box is q's vector of its slice
 #guard match Parted.of? o3 v3 with
   | some P => match P.box with
-    | .ok b => (match (b.toList[1]? : Option QValue) with | some (.vector .long c) => Column.count (.atom .long) c == 0 | _ => false) &&
+    | .ok b => (match (b.toList[1]? : Option QValue) with | some (.vector (.atom .long) c) => Column.count (.atom .long) c == 0 | _ => false) &&
         match Parted.ofBoxes (.atom .long) b with | .ok Q => Q.toList == P.toList | .error _ => false
     | .error _ => false
   | none => false
