@@ -13,6 +13,7 @@ import QLean.Kernel.Search
 import QLean.Kernel.Structural
 import QLean.Verify.Encoding
 import QLean.Verify.SymFind
+import QLean.Verify.Alp
 
 namespace LeetQ.Rel
 
@@ -56,7 +57,7 @@ theorem get_ne (x : Arr t n) (i : Fin n) (h : t ≠ .general) :
 
 /-- Under `wf`, the column is its header and the payload `e`: what a kernel matching `⟨_, n, e⟩` sees. -/
 theorem c_eq (x : Arr t n) {e : Enc} (h : x.c.enc = e) : x.c = ⟨t, n, e⟩ := by
-  obtain ⟨⟨ty, m, enc⟩, ⟨h1, h2, -⟩, -, -⟩ := x; simp_all
+  revert h; obtain ⟨⟨ty, m, enc⟩, ⟨h1, h2, -⟩, -, -⟩ := x; intro h; simp only at h1 h2 h; subst h1 h2 h; rfl
 
 /-- The elements in position order, for proofs only. -/
 def toList (x : Arr t n) : List (El t) := List.ofFn x.get
@@ -97,6 +98,23 @@ def groupOf (o : ByteArray) (n : Nat) : ByteArray := Kernel.binBytes 8 false tru
 
 /-- `xs` as a dense long payload, eight bytes each: the literal columns of every module's checks. -/
 def packLongs (xs : List Int64) : ByteArray := xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty
+
+theorem packLongs_size (xs : List Int64) : (packLongs xs).size = 8 * xs.length := by
+  suffices ∀ b : ByteArray, (xs.foldl (fun b x => Column.pushBits b x.toUInt64 8) b).size = b.size + 8 * xs.length by
+    simpa [packLongs] using this .empty
+  induction xs with
+  | nil => simp
+  | cons x xs ih => intro b; rw [List.foldl_cons, ih, Column.pushBits_size, List.length_cons]; omega
+
+/-- `xs` Frame-of-Reference encoded is well formed: the checks' `foR` columns, which `decide` cannot
+    evaluate through `Coc.encode`. -/
+theorem foRLongs_wf (xs : List Int64) : (⟨.long, xs.length,
+    .foR (Kernel.Coc.encode 8 (packLongs xs)).1 (Kernel.Coc.encode 8 (packLongs xs)).2⟩ : Column).WF := by
+  have h := Verify.nblk_encode 8 (by decide) (by decide) (packLongs xs)
+  rw [packLongs_size] at h
+  refine ⟨rfl, by simp, by simp, ?_⟩
+  show xs.length ≤ Column.blk * Column.nblk (Kernel.Coc.encode (8 : Nat).toUSize (packLongs xs)).1
+  rw [h]; simp only [Column.blk]; omega
 
 /-- Under `wf`, a long `bytes` column holds `b.size / 8` elements. -/
 theorem Arr.n_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.c.enc = .bytes b) :
