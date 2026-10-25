@@ -301,8 +301,8 @@ def relCardOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let m := encRange enc
   let ⟨t, k⟩ ← io "relCard" (encCol enc m (ints n 28 m))
   let ⟨u, v⟩ ← io "relCard" (encCol enc m (ints n 29 m))
-  if h : u = t then
-    let R ← io "relCard" (LeetQ.Rel.Alg.ofCols t t k (h ▸ v))
+  if u = t then
+    let R ← io "relCard" (LeetQ.Rel.Alg.ofCols t t k v)
     timedE s!"relCard {enc}" R fun R => do pure (Int64.ofNat (← (← LeetQ.Rel.Alg.cols R).nub).n)
   else throw (IO.userError "relCard: key and value differ in type")
 
