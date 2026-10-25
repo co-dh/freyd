@@ -98,9 +98,9 @@ def Ew.prior (v : Prim.Dyadic) (rt : QAtomicType) (seed : Carrier t) (x : Arr (.
   | _ => .error s!"Ew.prior: shiftColumn refused a column at {repr t}"
 
 /-- `x f y` on two lists: one `Ew.val` when the lengths agree, q's `'length` otherwise. -/
-def Ew.zip (v : Prim.Dyadic) (rt : QAtomicType) (x : Vec (.atom t)) (y : Vec (.atom u)) :
-    Except String (Vec (.atom rt)) :=
-  if h : y.n = x.n then return ⟨x.n, ← Ew.val v rt x.val (h ▸ y.val)⟩ else .error "'length"
+def Ew.zip (v : Prim.Dyadic) (rt : QAtomicType) {m : Nat} (x : Arr (.atom t) n) (y : Arr (.atom u) m) :
+    Except String (Arr (.atom rt) n) :=
+  if h : m = n then Ew.val v rt x (h ▸ y) else .error "'length"
 
 /-! ## §4: different keys -/
 
@@ -381,19 +381,17 @@ section Checks
 /-- A column of longs, a list of them, or a dict of longs; built through `Arr.of`'s run-time `wf`. -/
 private def LA (vs : List Int64) : Except String (Arr (.atom .long) vs.length) :=
   Arr.of (.atom .long) _ (.bytes (packLongs vs)) "L"
-private def L (vs : List Int64) : Except String (Vec (.atom .long)) := return ⟨_, ← LA vs⟩
 private def D (ks vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
   return ⟨vs.length, ← Arr.of (.atom .long) _ (.bytes (packLongs ks)) "D", ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
-private def vals {v} (r : Except String (Vec v)) : Option (List (El v)) := r.toOption.map (·.val.toList)
 private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
 
-#guard vals (do Ew.zip .add .long (← L [1, 2, 3]) (← L [10, 20, -5])) == some [11, 22, -2]
-#guard vals (do Ew.zip .add .long (← L [1, 2, 3]) (← L [10, 20])) == none
+#guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20, -5])) == some [11, 22, -2]
+#guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20])) == none
 -- the spec's side: `Dep.elem` over the zipped lists answers the same
 #guard (([1, 2, 3].zip [10, 20, -5] : List (Int64 × Int64)).mapM fun p =>
   elem .add (a := .long) (b := .long) (c := .long) rfl p.1 p.2).toOption == some [11, 22, -2]
-#guard vals (do Ew.zip .lt .boolean (← L [1, 2, 3]) (← L [10, 2, -5])) == some [true, false, false]
+#guard av (do Ew.zip .lt .boolean (← LA [1, 2, 3]) (← LA [10, 2, -5])) == some [true, false, false]
 #guard av (do Ew.atomVal (t := .long) .sub .long 10 (← LA [1, 2, 3])) == some [9, 8, 7]
 #guard av (do Ew.valAtom (u := .long) .sub .long (← LA [1, 2, 3]) 1) == some [0, 1, 2]
 #guard av (do Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2) == some [true, false, false]
