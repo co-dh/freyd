@@ -16,58 +16,38 @@ namespace LeetQ.Rel
 
 open QLean QLean.Dep
 
-/-- An element type: a q atomic type, or `gen` — q type 0, elements boxed as `QValue`. -/
-inductive Ty
-  | atom (a : QAtomicType)
-  | gen
-  deriving DecidableEq
+/-- The constructors a column of type `t` may take: `gen` for the general list, `bits` for booleans,
+    `syms` or `enum` for symbols, `bytes` for guids, `bytes`/`foR`/`alp` for the other fixed-width types. -/
+def Column.admits : QListType → Column → Bool
+  | .general, .gen _ => true
+  | .general, _ | .atom _, .gen _ => false
+  | .atom .boolean, .bits .. => true
+  | .atom .symbol, .syms .. | .atom .symbol, .enum .. => true
+  | .atom .guid, .bytes _ => true
+  | .atom .boolean, _ | .atom .symbol, _ | .atom .guid, _ => false
+  | .atom _, .bytes _ | .atom _, .foR .. | .atom _, .alp .. => true
+  | .atom _, _ => false
 
-/-- The element at `t`: qlean's `Carrier` at an atomic type, a boxed `QValue` at `gen`. -/
-@[reducible] def El : Ty → Type
-  | .atom a => Carrier a
-  | .gen => QValue
-
-/-- The payload at `t`: a qlean column, or at `gen` the `Array QValue` of `QValue.list`. -/
-@[reducible] def Pay : Ty → Type
-  | .atom _ => Column
-  | .gen => Array QValue
-
-/-- The constructors a column of type `a` may take: `bits` for booleans, `syms` or `enum` for
-    symbols, `bytes` for guids, `bytes`/`foR`/`alp` for the other fixed-width types. -/
-def Column.admits : QAtomicType → Column → Bool
-  | .boolean, .bits .. => true
-  | .symbol, .syms .. | .symbol, .enum .. => true
-  | .guid, .bytes _ => true
-  | .boolean, _ | .symbol, _ | .guid, _ => false
-  | _, .bytes _ | _, .foR .. | _, .alp .. => true
-  | _, _ => false
-
-/-- `c` is well-formed at `t` and holds `n` elements. -/
-def Ty.WF : (t : Ty) → Nat → Pay t → Prop
-  | .atom a, n, c => Column.admits a c = true ∧ Column.count a c = n
-  | .gen, n, xs => xs.size = n
-
-instance (t : Ty) (n : Nat) (c : Pay t) : Decidable (t.WF n c) := by
-  cases t <;> unfold Ty.WF <;> infer_instance
-
-/-- A column of `n` elements of type `t`. `attr` is q's attribute byte (`QValue.marked`'s codes, the
-    `ctorIdx` of `Dep.Attributes.Attr`: 1 sorted, 2 unique, 3 parted, 4 grouped), set by producers and
-    read by consumers (§2.4); `ix` is the `IndexCell` the first lookup builds. -/
-structure Arr (t : Ty) (n : Nat) where
-  c : Pay t
-  wf : t.WF n c
+/-- A column of `n` elements of type `t`; a general list is `.gen xs`. `attr` is q's attribute byte
+    (`QValue.marked`'s codes, the `ctorIdx` of `Dep.Attributes.Attr`: 1 sorted, 2 unique, 3 parted, 4
+    grouped), set by producers and read by consumers (§2.4); `ix` is the `IndexCell` the first lookup builds. -/
+structure Arr (t : QListType) (n : Nat) where
+  c : Column
+  wf : Column.admits t c = true ∧ Column.count t c = n
   attr : UInt8 := 0
   ix : Option IndexCell := none
 
 namespace Arr
 
-variable {t : Ty} {n : Nat}
+variable {t : QListType} {n : Nat}
 
 /-- Element `i`. At an atomic type it is `Column.get`'s atom at `i` read back at the index; the
-    fallback, the atom of zero bits, is unreachable under `wf`. -/
-def get : {t : Ty} → Arr t n → Fin n → El t
+    fallback, the atom of zero bits, is unreachable under `wf`, as is the general list's non-`gen` one. -/
+def get : {t : QListType} → Arr t n → Fin n → El t
   | .atom a, x, i => ((Column.get a x.c i).bind (Carrier.of? a)).getD (Carrier.ofAtom (Column.atomOfBits_type a 0))
-  | .gen, x, i => x.c[i.1]'(by have h : x.c.size = n := x.wf; omega)
+  | .general, x, i => match hc : x.c with
+    | .gen xs => xs[i.1]'(by have h := x.wf.2; rw [hc] at h; simp only [Column.count] at h; omega)
+    | _ => .list #[]
 
 /-- The elements in position order, for proofs only. -/
 def toList (x : Arr t n) : List (El t) := List.ofFn x.get
@@ -79,8 +59,8 @@ theorem getElem_toList (x : Arr t n) (i : Nat) (h : i < x.toList.length) :
 
 /-- A kernel's answer as an `Arr`, the one way in: `wf` is decided (two O(1) reads at an atomic type, the
     constructor and the count), never assumed; `what` names the producer in the error. -/
-def of (t : Ty) (n : Nat) (c : Pay t) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
-  if h : t.WF n c then .ok ⟨c, h, attr, none⟩
+def of (t : QListType) (n : Nat) (c : Column) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
+  if h : Column.admits t c = true ∧ Column.count t c = n then .ok ⟨c, h, attr, none⟩
   else .error s!"{what}: the kernel answered a payload that is not {n} well-formed elements of its type"
 
 end Arr
@@ -102,7 +82,7 @@ def packLongs (xs : List Int64) : ByteArray := xs.foldl (fun b x => Column.pushB
 /-- Under `wf`, a long `bytes` column's element `i` is the eight bytes at `8i`, read as a long. -/
 theorem Arr.get_long_bytes {m : Nat} (x : Arr (.atom .long) m) {b : ByteArray} (hc : x.c = .bytes b) (i : Fin m) :
     x.get i = (Column.bitsAt b (i.1 * 8) 8).toInt64 := by
-  have hn : i.1 < Column.count .long (.bytes b) := by have := x.wf.2; rw [hc] at this; omega
+  have hn : i.1 < Column.count (.atom .long) (.bytes b) := by have := x.wf.2; rw [hc] at this; omega
   show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
 
@@ -131,7 +111,7 @@ theorem foRBits_starts (md pk : ByteArray) (i : Nat) :
 /-- Under `wf`, a long `foR` column's element `i` is its `foRBits` decode, read as a long. -/
 theorem Arr.get_long_foR {m : Nat} (x : Arr (.atom .long) m) {n : Nat} {md pk : ByteArray} (hc : x.c = .foR n md pk)
     (i : Fin m) : x.get i = (Column.foRBits md pk (Column.blockStarts md) i.1).toInt64 := by
-  have hn : i.1 < Column.count .long (.foR n md pk) := by have := x.wf.2; rw [hc] at this; omega
+  have hn : i.1 < Column.count (.atom .long) (.foR n md pk) := by have := x.wf.2; rw [hc] at this; omega
   show ((Column.get .long x.c i.1).bind (Carrier.of? .long)).getD _ = _
   rw [hc, ← foRBits_starts]; simp only [Column.get, if_pos hn]; rfl
 
@@ -208,10 +188,10 @@ theorem toList_answer_int {m : Nat} (x : Arr (.atom .int) m) {b : ByteArray} (hc
       show Column.encodes .int = true from rfl, Kernel.Coc.encodeBelow]
     repeat' split
     all_goals first | exact .inl rfl | exact .inr rfl | simp_all
-  have hm : Column.count .int x.c = m := x.wf.2
+  have hm : Column.count (.atom .int) x.c = m := x.wf.2
   apply List.ext_getElem (by rw [Arr.length_toList]; simp)
   intro i h1 _
-  have hn : i < Column.count .int x.c := by rw [Arr.length_toList] at h1; omega
+  have hn : i < Column.count (.atom .int) x.c := by rw [Arr.length_toList] at h1; omega
   rw [Arr.getElem_toList, List.getElem_map, List.getElem_range]
   show ((Column.get .int x.c i).bind (Carrier.of? .int)).getD _ = _
   rcases ha with e | e <;> rw [hc, e] at hn ⊢ <;> simp only [Column.get, if_pos hn]
@@ -231,7 +211,7 @@ theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
 /-- Under `wf`, a boolean `bits` column's element `i` is its bit `i`. -/
 theorem Arr.get_bool_bits {m : Nat} (x : Arr (.atom .boolean) m) {n : Nat} {b : ByteArray} (hc : x.c = .bits n b)
     (i : Fin m) : x.get i = Column.bitAt b i.1 := by
-  have hn : i.1 < Column.count .boolean (.bits n b) := by have := x.wf.2; rw [hc] at this; omega
+  have hn : i.1 < Column.count (.atom .boolean) (.bits n b) := by have := x.wf.2; rw [hc] at this; omega
   show ((Column.get .boolean x.c i.1).bind (Carrier.of? .boolean)).getD _ = _
   rw [hc]; simp only [Column.get, if_pos hn]; rfl
 
@@ -323,13 +303,13 @@ theorem cuts_get {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j 
   exact ⟨by simpa using a, b, c⟩
 
 /-- A key column of `n` keys of type `k`, storing only what q stores. -/
-inductive KeyCol : Ty → Nat → Type
+inductive KeyCol : QListType → Nat → Type
   /-- A list: key `i` is `i`, nothing stored. -/
   | til (n : Nat) : KeyCol (.atom .long) n
   /-- Grouped: key `i` is `d`'s key of the group holding `i`; `o` holds q's one offset per group. -/
-  | grp {k : Ty} {g n : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (wf : Cuts o n) : KeyCol k n
+  | grp {k : QListType} {g n : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (wf : Cuts o n) : KeyCol k n
   /-- A dict or a multi-valued relation: an explicit key column. -/
-  | arr {k : Ty} {n : Nat} (a : Arr k n) : KeyCol k n
+  | arr {k : QListType} {n : Nat} (a : Arr k n) : KeyCol k n
 
 namespace KeyCol
 
@@ -339,7 +319,7 @@ def group {g : Nat} (o : Arr (.atom .long) (g+1)) (i : Nat) : Nat :=
   (List.finRange g).countP fun r => (o.get r.succ).toInt ≤ i
 
 /-- Key `i`. -/
-def get : {k : Ty} → {n : Nat} → KeyCol k n → Fin n → El k
+def get : {k : QListType} → {n : Nat} → KeyCol k n → Fin n → El k
   | _, _, .til _, i => Int64.ofNat i
   | _, n, .grp (g := g) d o wf, i =>
     -- the `min` is unreachable under `Cuts`, which puts `i < o[g]` and so `group o i < g`
@@ -349,7 +329,7 @@ def get : {k : Ty} → {n : Nat} → KeyCol k n → Fin n → El k
   | _, _, .arr a, i => a.get i
 
 /-- The keys in position order, for proofs only. -/
-def toList {k : Ty} {n : Nat} (c : KeyCol k n) : List (El k) := List.ofFn c.get
+def toList {k : QListType} {n : Nat} (c : KeyCol k n) : List (El k) := List.ofFn c.get
 
 /-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
 def longBytes : Column → Option ByteArray
@@ -359,9 +339,10 @@ def longBytes : Column → Option ByteArray
 
 /-- `grp d o` built at run time: `Cuts` decided by `Order.ascending` on `o`'s dense payload and one read of
     each end, `cuts_of_ascending` turning the kernel's answer into the proof. `none` when `o` is not cuts of `n`. -/
-def grp? {k : Ty} {g : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (n : Nat) : Option (KeyCol k n) := do
+def grp? {k : QListType} {g : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (n : Nat) : Option (KeyCol k n) := do
   let b ← longBytes o.c
-  if h : (Ty.atom .long).WF (g+1) (.bytes b) ∧ g + 1 < USize.size then
+  if h : (Column.admits (.atom .long) (.bytes b) = true ∧ Column.count (.atom .long) (.bytes b) = g+1) ∧
+      g + 1 < USize.size then
     let ob : Arr (.atom .long) (g+1) := ⟨.bytes b, h.1, o.attr, none⟩
     if hc : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true ∧ ob.get 0 = 0 ∧ (ob.get (Fin.last g)).toInt = n then
       some (.grp d ob (cuts_of_ascending ob rfl h.2 hc.1 hc.2.1 hc.2.2))
@@ -371,14 +352,14 @@ def grp? {k : Ty} {g : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (n : 
 end KeyCol
 
 /-- A relation from `k` to `v`: `n` positions, a key and a value at each. -/
-structure Rel (k v : Ty) where
+structure Rel (k v : QListType) where
   n : Nat
   key : KeyCol k n
   val : Arr v n
 
 namespace Rel
 
-variable {k v : Ty}
+variable {k v : QListType}
 
 /-- The relation `R` denotes: `R x y ↔ ∃ i, key.get i = x ∧ val.get i = y`. -/
 def Holds (R : Rel k v) (x : El k) (y : El v) : Prop := ∃ i, R.key.get i = x ∧ R.val.get i = y
@@ -412,7 +393,7 @@ private def es : Arr (.atom .symbol) 3 :=
 #guard ss.toList == ["bc", "a", "bc"]
 #guard es.toList == ss.toList
 
-private def gs : Arr .gen 2 := { c := #[.atom (.long 1), .list #[]], wf := rfl }
+private def gs : Arr .general 2 := { c := .gen #[.atom (.long 1), .list #[]], wf := ⟨rfl, rfl⟩ }
 #guard match gs.get 0, gs.get 1 with | .atom (.long 1), .list #[] => true | _, _ => false
 
 -- groups `[0,1) [1,1) [1,3)` under the keys `a bc d`: the empty middle group owns no position

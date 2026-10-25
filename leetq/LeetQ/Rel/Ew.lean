@@ -33,7 +33,7 @@ def atomCol (t : QAtomicType) (a : QAtom) : Except String Column :=
 
 end Ew
 
-variable {k : Ty} {t u : QAtomicType}
+variable {k : QListType} {t u : QAtomicType}
 
 /-- `x f y` on one key: `yv` is a value column on `x`'s positions. Comparisons are this at
     `rt = boolean` (`Ew.cmp` in the design is the same `dyadColumn` call, `cmpPayload` inside). -/
@@ -186,7 +186,7 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) 
   let some (.vector _ (.bits m b)) := memberColumn s false (.vector s ky) kx | .error "align: memberColumn"
   let some (.vector _ iy) := whereColumn .boolean (.bits m (Ew.notBits m b))
     | .error "align: whereColumn"
-  let r := Column.count .long iy
+  let r := Column.count (.atom .long) iy
   let ry ← Ew.dyad L.vr Ew.av t u rt (← Ew.atomCol t (Column.atomOfBits t L.el))
     (← Ew.vec "gatherColumn" (gatherColumn u y.val.c iy)) r
   let keys ← Ew.vec "razeColumn" (razeColumn s #[kx, ← Ew.vec "gatherColumn" (gatherColumn s ky iy)])
@@ -219,7 +219,7 @@ def Ew.MapSpec {rt : QAtomicType} (f : Carrier t → Carrier rt) (x : Rel k (.at
   R.key.toList = x.key.toList ∧ R.val.toList = x.val.toList.map f
 
 /-- The key half of both specs, for every op on one key: the answer is `⟨x.n, x.key, _⟩`. -/
-def Ew.KeepsKey {v w : Ty} (x : Rel k v) (R : Rel k w) : Prop := R.n = x.n ∧ R.key.toList = x.key.toList
+def Ew.KeepsKey {v w : QListType} (x : Rel k v) (R : Rel k w) : Prop := R.n = x.n ∧ R.key.toList = x.key.toList
 
 theorem Ew.val_key {v rt} {x : Rel k (.atom t)} {yv : Arr (.atom u) x.n} {R : Rel k (.atom rt)}
     (h : Ew.val v rt x yv = .ok R) : Ew.KeepsKey x R := by

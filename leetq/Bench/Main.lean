@@ -196,7 +196,7 @@ def listR (n : Nat) (a : Array Int) : Except String LR := do
   return ⟨n, .til n, ← LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"⟩
 
 /-- `sum` of a relation's values: `Ops.over .add`. -/
-def sumR (what : String) {k : LeetQ.Rel.Ty} {t : QLean.QAtomicType} (r : LeetQ.Rel.Rel k (.atom t)) : Except String Int64 :=
+def sumR (what : String) {k : QLean.QListType} {t : QLean.QAtomicType} (r : LeetQ.Rel.Rel k (.atom t)) : Except String Int64 :=
   match LeetQ.Rel.Ops.over .add r with
   | some c => .ok c
   | none => .error s!"{what}: Ops.over .add answered none"

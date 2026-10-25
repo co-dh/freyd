@@ -24,7 +24,7 @@ namespace LeetQ.Rel
 open QLean QLean.Dep QLean.Kernel
 
 /-- `R` with its values replaced, key kept. -/
-def Rel.withVal {k v w : Ty} (R : Rel k v) (a : Arr w R.n) : Rel k w := ⟨R.n, R.key, a⟩
+def Rel.withVal {k v w : QListType} (R : Rel k v) (a : Arr w R.n) : Rel k w := ⟨R.n, R.key, a⟩
 
 /-- The column of a q vector answer. -/
 def vecCol : QValue → Option Column
@@ -33,7 +33,7 @@ def vecCol : QValue → Option Column
 
 namespace Ops
 
-variable {k : Ty} {t : QAtomicType}
+variable {k : QListType} {t : QAtomicType}
 
 /-! ## Scans: `f\x`, key kept -/
 
@@ -67,7 +67,7 @@ def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
 
 /-- `count each` by group: `1_deltas o`. -/
-def countBy {v : Ty} : Rel k v → Option (Rel k (.atom .long))
+def countBy {v : QListType} : Rel k v → Option (Rel k (.atom .long))
   | ⟨_, .grp (g := g) d o _, _⟩ => do
     pure ⟨g, d, ← (Arr.of (.atom .long) g (.bytes (sizes g (← offs o))) "count each").toOption⟩
   | _ => none
@@ -266,10 +266,10 @@ end Spec
 
 namespace Ops
 
-variable {k : Ty} {t : QAtomicType}
+variable {k : QListType} {t : QAtomicType}
 
 /-- Replacing the values keeps the keys, whatever the new values are. -/
-theorem withVal_keys {v w : Ty} {R : Rel k v} {o : Option (Arr w R.n)} {S : Rel k w}
+theorem withVal_keys {v w : QListType} {R : Rel k v} {o : Option (Arr w R.n)} {S : Rel k w}
     (h : o.map R.withVal = some S) : S.toList.map Prod.fst = R.toList.map Prod.fst := by
   cases o with
   | none => cases h
@@ -343,7 +343,7 @@ theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat} {d :
     simp only [overGroupsColumn, hc, clsOf, Coc.denseNul, Coc.nullOf, Column.bytesOf, bind, Option.bind]
   have hof : offs o = some ob := by simp only [offs, ho, Column.bytesOf]
   simp only [overBy, hof, resultType_long hb, groupedOver_long hb, hm, bind, Option.bind, Option.map] at h
-  by_cases hw : (Ty.atom .long).WF g
+  by_cases hw : (QListType.atom .long).WF g
       (.bytes (groupCells .wrap 8 (Groups.segs ob).count (overSegments op Ew.i64 Spec.nul ob b) (tilLongs g.toUSize)))
   · rw [Arr.of, dif_pos hw] at h
     cases h
@@ -445,7 +445,7 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
   refine ⟨B, hBw, hBs, hw1, ?_⟩
   simp only [mwin, hd w hw, show ¬ w < 1 by omega, if_false, Option.bind, if_true, Option.map] at h
   generalize Column.answer rt (.bytes (Scan.mwinBits op .i64 w R.n B)) = A at h ⊢
-  by_cases hwf : (Ty.atom rt).WF R.n A
+  by_cases hwf : (QListType.atom rt).WF R.n A
   · rw [Arr.of, dif_pos hwf] at h
     cases h
     exact ⟨rfl, rfl⟩
@@ -464,7 +464,7 @@ theorem grade_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} 
     · rfl
   simp only [grade, hg, vecCol, bind, Option.bind] at h
   generalize hP : Order.grade .i64 desc R.n.toUSize B = P at h
-  by_cases hw : (Ty.atom .long).WF R.n (.bytes P)
+  by_cases hw : (QListType.atom .long).WF R.n (.bytes P)
   · rw [Arr.of, dif_pos hw] at h
     have hS : S.val.c = .bytes P := by cases h; rfl
     have hm : min R.n.toUSize.toNat (Scan.Kind.i64.avail B) = R.n := by
@@ -505,7 +505,7 @@ theorem sort_toList {desc : Bool} {R : Rel k (.atom .long)} {ws : List UInt64} (
     simp only [sortedValues, hb]; rfl
   simp only [sort, hsv, Option.orElse, vecCol, bind, Option.bind] at h
   generalize hP : Order.sortValues .i64 desc (B.size / 8).toUSize B = P at h
-  by_cases hw : (Ty.atom .long).WF R.n (.bytes P)
+  by_cases hw : (QListType.atom .long).WF R.n (.bytes P)
   · rw [Arr.of, dif_pos hw] at h
     have hS : S.val.c = .bytes P := by cases h; rfl
     have hs := Verify.sortValues_spec .i64 desc (B.size / 8).toUSize B
@@ -697,14 +697,14 @@ theorem sizes_words {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {B
 
 /-- **`count each` by group**: `1_deltas o`, each group's size, at any value type and any offsets that list
     `longWords`. `Cuts` keeps every offset in `[0, n]`, so no `0N` reaches `Ew.sub` and no difference wraps. -/
-theorem countBy_toList {v : Ty} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
+theorem countBy_toList {v : QListType} {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)} {co : Cuts o n}
     {x : Arr v n} {wo : List UInt64} (ho : longWords o.c = some wo) (hg : g + 1 < USize.size)
     {S : Rel k (.atom .long)} (h : countBy ⟨n, .grp d o co, x⟩ = some S) :
     S.val.toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
   obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
   have hof : offs o = some B := hb
   simp only [countBy, hof, bind, Option.bind] at h
-  by_cases hw : (Ty.atom .long).WF g (.bytes (sizes g B))
+  by_cases hw : (QListType.atom .long).WF g (.bytes (sizes g B))
   · rw [Arr.of, dif_pos hw] at h
     have hS : S.val.c = .bytes (sizes g B) := by cases h; rfl
     rw [Arr.toList_long S.val (show longWords S.val.c = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
@@ -782,7 +782,7 @@ theorem lastBy_toList {n g : Nat} {d : KeyCol k g} {o : Arr (.atom .long) (g+1)}
   obtain ⟨-, hgj⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) 0x8000000000000000 b L
   rw [h8] at hgj
   generalize gatherBytes (8 : Nat).toUSize 0x8000000000000000 b L = G at h hgj
-  by_cases hw : (Ty.atom .long).WF g (.bytes G)
+  by_cases hw : (QListType.atom .long).WF g (.bytes G)
   · rw [Arr.of, dif_pos hw] at h
     have hS : S.val.c = .bytes G := by cases h; rfl
     have hSn : S.n = g := by cases h; rfl
@@ -830,9 +830,9 @@ section Checks
 open QLean.Column Ops
 
 private def L {n : Nat} (a : Arr (.atom .long) n) : Rel (.atom .long) (.atom .long) := ⟨n, .til n, a⟩
-private def vals {k v : Ty} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
+private def vals {k v : QListType} (R : Option (Rel k v)) : List (El v) := (R.map fun R => R.val.toList).getD []
 /-- An answer whose type comes with it, kept where that type is `rt`. -/
-private def at? {k : Ty} (rt : QAtomicType) : Option ((r : QAtomicType) × Rel k (.atom r)) → Option (Rel k (.atom rt))
+private def at? {k : QListType} (rt : QAtomicType) : Option ((r : QAtomicType) × Rel k (.atom r)) → Option (Rel k (.atom rt))
   | some ⟨r, S⟩ => if h : r = rt then some (h ▸ S) else none
   | none => none
 
