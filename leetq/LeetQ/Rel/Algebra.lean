@@ -319,11 +319,10 @@ def Code.column (c : Code) : Option (QAtomicType × Column) :=
     the bounds, packed below a byte, no grouping pass; the classes are answered too when the step
     grouped. `classes`: the caller groups the answer next. -/
 def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteArray) :=
-  -- a bitmap is read as codes `0 … 1` whatever its `card`. The domain is declared ≥ 17 so the lane is a
-  -- byte at least: `composeKey` computes a byte lane and packs it below one by a `remapIds` pass, which
-  -- the next consumer does not win back (measured: `|R|` of two bit columns 5.4 → 15.5 ms at 1e7, 2-bit)
+  -- a bitmap is read as codes `0 … 1` whatever its `card`; `composeKey` writes the pair's code at
+  -- the product's own width, below a byte too, so no floor on the domain
   let d₂ := max b.card 2
-  let d₁ := max a.card (16 / d₂ + 1)
+  let d₁ := max a.card 2
   let composed : Option Code := do
     guard (d₁ * d₂ < 2 ^ 63)
     let w := Column.idWidthOf (d₁ * d₂)
@@ -952,12 +951,12 @@ private def laneOf (t : QVecType) (c : Column) : Option Nat := match codes t #[c
 #guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
 #guard laneOf L Lf.val.c == some 8 && laneOf L (.bytes (packLongs [5, 3, 5, 9])) == some 8 &&
   laneOf L (.bytes (packLongs [5, 3, 5, 1099511627776])) == some 2
--- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b`, the domain widened to 9·2, no grouping pass
+-- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b` at domain `3·2`, no grouping pass
 #guard match pairCode false ⟨8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
-  | (c, none) => c.w == 8 && c.card == 18 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
+  | (c, none) => c.w == 4 && c.card == 6 && c.b == ByteArray.mk #[0x21, 0x25] | _ => false
 -- the same pair at 2 and 1 bits: the 2-bit lane read by `eIds` where it lies
 #guard match pairCode false ⟨2, 4, 3, Column.packIds 2 4 ([0, 1, 2, 1][·]!)⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
-  | (c, none) => c.w == 8 && c.b == ByteArray.mk #[1, 2, 5, 2] | _ => false
+  | (c, none) => c.w == 4 && c.b == ByteArray.mk #[0x21, 0x25] | _ => false
 -- a 2-bit code cut inside a byte, gathered, graded, grouped, run-started where it lies
 private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!)⟩
 #guard (c2.cut #[3, 3]).map (fun p => (List.range p.n).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
