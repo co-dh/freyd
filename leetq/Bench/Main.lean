@@ -342,8 +342,10 @@ def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
-  timedE "relWj" (longKey (lt.map (· - 100)), longKey lt, longKey lk, longKey rk, longKey rt) fun (w, lt, lk, rk, rt) => do
-    sumR "relWj" (← LeetQ.Rel.Struct.raze (.atom .long) (← LeetQ.Rel.Struct.wj true w lt #[lk] #[rk] rt))
+  timedE "relWj" (longKey (lt.map (· - 100)), longKey lt, longKey lk, longKey rk, longKey rt,
+      longKey ((Array.range rt.size).map Int.ofNat)) fun (w, lt, lk, rk, rt, c) => do
+    let ⟨_, s⟩ ← LeetQ.Rel.Struct.wjBy .add true w lt #[lk] #[rk] rt c
+    sumR "relWj" s
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>

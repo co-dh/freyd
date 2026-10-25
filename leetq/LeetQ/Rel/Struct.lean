@@ -8,6 +8,7 @@
   The specs are List-level, on `toList`.
 -/
 import LeetQ.Rel.Algebra
+import LeetQ.Rel.Scan
 import QLean.Verify.Group
 import QLean.Verify.Gather
 import QLean.Verify.Dyad
@@ -238,7 +239,7 @@ def aj (l r : Array KCol) (lt rt : KCol) : Except String (Vec (.atom .long)) := 
     (the prevailing row at or before it); `wj1` is `ww[1;w-1 0]`, one past the row at `w₀-1`; `hi` one past
     the row at `w₁`. A bound `bin` misses clamps to the group's first row, an inverted run is empty. The
     rows are a range of the right table, so a right side not laid out by key (q's `` `p# ``) mixes keys. -/
-def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Vec .general) := do
+def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Parted (.atom .long)) := do
   unless w₀.1 == rt.1 && w₁.1 == rt.1 do throw "wj: the window and time columns differ in type (q's 'type)"
   let (nl, nr) := (colRows w₀, colRows rt)
   let (gs, ids) ← keyGroups "wj" l r nl nr
@@ -265,7 +266,24 @@ def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : E
     (Kernel.Ew.val Ew.sub Ew.i64 Ew.vv mn (← edges (colValue w₁) 1) los n) n
   let (i, w) := expand lens
   let rows := Alg.add (Alg.gather 8 los i) w
-  parted "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom .long) (Alg.len rows) (.bytes rows) "wj")
+  partedP "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of (.atom .long) (Alg.len rows) (.bytes rows) "wj")
+
+/-- `wj` with the aggregate `::`: the windows `wjP` as q's nested list, one boxed row list per left row. -/
+def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String (Vec .general) := do
+  boxed (← wjP prevailing w₀ w₁ l r rt)
+
+/-- `wj[w;c;t;(q;(f;c))]` with `f` one of `Coc.Over`'s folds, as q runs it: one `f/` per window, one atom per
+    left row, no window boxed — the right column `c` gathered at `wjP`'s flat rows, then `Ops.overBy` over
+    `wjP`'s own offsets. Answered at `Coc.Over.resultType`'s type, which comes with the answer. -/
+def wjBy (op : Coc.Over) (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt c : KCol) :
+    Except String ((u : QAtomicType) × Vec (.atom u)) := do
+  let ⟨.atom a, cc⟩ := c | throw "wj: a general list aggregated column (q's 'type)"
+  unless colRows c == colRows rt do throw s!"wj: {colRows c} values against {colRows rt} right rows (q's 'length)"
+  let P ← wjP prevailing w₀ w₁ l r rt
+  let x ← vec "wj" a (gatherColumn a cc (.bytes (← dense "wj" .long P.val.c)))
+  let Q : Parted (.atom a) := ⟨P.g, P.n, P.o, P.co, ← Arr.of (.atom a) P.n x "wj"⟩
+  let some ⟨u, s⟩ := Ops.overBy op Q | throw s!"wj: no grouped {repr op}/ over {repr a}"
+  pure ⟨u, ⟨Q.g, s⟩⟩
 
 /-! ## Raze -/
 
@@ -1270,6 +1288,23 @@ private def qt : List Int64 := [1, 3, 5, 2, 8]
   ansP Lg (wj p (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt)) == some (wjSpec p [1, 2, 4] [4, 4, 4] [6, 6, 6] qk qt)
 #guard ansP Lg (wj true (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt)) == some [(0, 1), (0, 2), (1, 3)]
 #guard ansP Lg (wj false (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt)) == some [(0, 2)]
+/-- A `long` answer of `wjBy`, `none` at any other type. -/
+private def ansL : Except String ((u : QAtomicType) × Vec (.atom u)) → Option (List Int64)
+  | .ok ⟨.long, v⟩ => some v.val.toList
+  | _ => none
+/-- `wjBy`'s law on a value list `cv`: answer `i` is `f/` (here `+/`) of `cv` at window `i`'s rows, the runs
+    `wjSpec` lists — `0` at an empty window. -/
+private def wjSumSpec (p : Bool) (lk w₀ w₁ rk rt cv : List Int64) : List Int64 :=
+  (List.range lk.length).map fun i => ((wjSpec p lk w₀ w₁ rk rt).filter (·.1 == Int64.ofNat i)).foldl
+    (fun s (_, j) => s + cv[j.toNatClampNeg]!) 0
+private def cv : List Int64 := (List.range rk.length).map fun j => Int64.ofNat (10 * j + 1)
+#guard [false, true].all fun p => [key rt, rtf].all fun c =>
+  ansL (wjBy .add p (key w₀) (key lt) #[key lk] #[key rk] c (key cv)) == some (wjSumSpec p lk w₀ lt rk rt cv)
+#guard [false, true].all fun p =>
+  ansL (wjBy .add p (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt) (key [1, 10, 100, 1000, 10000])) ==
+    some (wjSumSpec p [1, 2, 4] [4, 4, 4] [6, 6, 6] qk qt [1, 10, 100, 1000, 10000])
+#guard ansL (wjBy .add true (key [4, 4, 4]) (key [6, 6, 6]) #[key [1, 2, 4]] #[key qk] (key qt) (key [1, 10, 100, 1000, 10000])) ==
+  some [110, 1000, 0]
 #guard (ej #[key lk] #[]).toOption.isNone
 
 end Checks
@@ -1291,5 +1326,6 @@ end Checks
 #print axioms indexParted
 #print axioms aj
 #print axioms wj
+#print axioms wjBy
 
 end LeetQ.Rel.Struct
