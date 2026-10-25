@@ -179,31 +179,29 @@ theorem list_c {a : QAtomicType} {c : Column} {u : UInt8} {nr : Nat} {r : Arr a 
     its count as a `USize`. -/
 theorem where_toList {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
     (hn : nx < USize.size) (h : «where» x = .ok ⟨nr, r⟩) : r.toList = whereSpec x.toList := by
-  have hw := x.wf
-  cases hc : x.c with
-  | bits m bs =>
-    rw [hc] at hw
-    obtain rfl : nx = m := hw.2.symm
+  cases he : x.c.enc with
+  | bits bs =>
+    have hc := x.c_eq he
     simp only [«where», hc, whereColumn, vec, bind, Except.bind] at h
     have hr := list_c h
     obtain ⟨hs, hj⟩ := QLean.Verify.whereBits_spec nx.toUSize bs
     rw [USize.toNat_ofNat_of_lt' hn] at hs hj
     have hl : nr = ((List.range nx).filter (Column.bitAt bs)).length := by
-      have := r.wf.2.1; rw [hr] at this; simp only [Column.count, QAtomicType.width] at this; omega
+      have := r.wf.2.1; rw [hr] at this; simp only at this; omega
     have hf : (List.range nx).filter (x.toList.getD · false) = (List.range nx).filter (Column.bitAt bs) :=
       List.filter_congr fun i hi => by
         have hi := List.mem_range.1 hi
         rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hi),
-          Option.getD_some, Arr.getElem_toList, Arr.get_bool_bits x hc]
+          Option.getD_some, Arr.getElem_toList, Arr.get_bool_bits x he]
     have hspec : whereSpec x.toList = ((List.range nx).filter (Column.bitAt bs)).map Int64.ofNat := by
       unfold whereSpec; rw [Arr.length_toList, hf]
     rw [hspec]
     apply List.ext_getElem
     · rw [List.length_map, Arr.length_toList, hl]
     · intro j h1 _
-      rw [List.getElem_map, Arr.getElem_toList, Arr.get_long_bytes r hr]
+      rw [List.getElem_map, Arr.getElem_toList, Arr.get_long_bytes r (by rw [hr])]
       exact toInt64_of_toNat (hj j (by rw [Arr.length_toList] at h1; omega))
-  | _ => all_goals (rw [hc] at hw; simp [Column.admits] at hw)
+  | _ => all_goals simp [«where», x.c_eq he, whereColumn, vec, bind, Except.bind] at h
 
 /-- An answer per operand element has the kernel's column. -/
 theorem onKey_c {n : Nat} {a : QAtomicType} {c : Column} {s : String}

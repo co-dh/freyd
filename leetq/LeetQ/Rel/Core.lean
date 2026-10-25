@@ -54,6 +54,10 @@ theorem get_ne (x : Arr t n) (i : Fin n) (h : t ≠ .general) :
     x.get i = ((Column.get x.c i).bind fun a => Carrier.of? t (.atom a)).getD default := by
   cases t <;> first | exact absurd rfl h | rfl
 
+/-- Under `wf`, the column is its header and the payload `e`: what a kernel matching `⟨_, n, e⟩` sees. -/
+theorem c_eq (x : Arr t n) {e : Enc} (h : x.c.enc = e) : x.c = ⟨t, n, e⟩ := by
+  obtain ⟨⟨ty, m, enc⟩, ⟨h1, h2, -⟩, -, -⟩ := x; simp_all
+
 /-- The elements in position order, for proofs only. -/
 def toList (x : Arr t n) : List (El t) := List.ofFn x.get
 
