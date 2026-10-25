@@ -1,5 +1,16 @@
 # leetq -> flat QAtomicType, stage 3 handoff
 
+## Stage 4 (agent a7affcd2): Scan + Algebra merged; Struct in progress
+- Struct definitions ported (lines 1-320): `.bytes x` index columns -> `Alg.longs x`; `packed`/`Words` match
+  `c.enc`; `colValue` matches `p.1` general-first; `colRows p = p.2.n`; `like` reads `x.c.enc`.
+- `words_bytes` restated: `∃ b, c.enc = .bytes b ∧ …`. Laws from line ~520 on still use `x.c = .bytes b`:
+  restate to `x.c.enc = .bytes b` (as Scan did) and rewrite with `x.c_eq hc`.
+- `sliceColumn` now picks `nullColumn` on `c.n == 0` (not `b.size / 8 = 0`): restate `sliceColumn_long`
+  over `⟨.long, n, .bytes b⟩` with `if n = 0`.
+- Seed cache: `cp -a /home/dh/repo/freyd/.claude/worktrees/agent-a6f2a7c0f81543905/leetq/.lake leetq/.lake`
+  (the Scan worktree is gone). Log of the last build: /data/tmp/flat2/rest-*.log.
+- Left: Struct laws + checks (1136-1280), Compressed, QRel, Bench, results-identical check, timings.
+
 qlean: /data/tmp/flat2/qlean at ca67f3f (built). Build (outside sandbox, from worktree root):
 `CAP_MEM_MB=28000 ./scripts/cap lake -R -d leetq -K qlean=/data/tmp/flat2/qlean build LeetQ.Rel.Scan ...`
 

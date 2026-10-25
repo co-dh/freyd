@@ -37,8 +37,8 @@ def drop {a : QAtomicType} {nx : Nat} (n : Int) (x : Arr a nx) : Except String (
 /-- `|x`: `reverseColumn`; a `syms` blob, which it declines (reversing a blob rebuilds it), is
     `x@` the reversed `til n`, `gatherSyms`. -/
 def reverse {a : QAtomicType} {nx : Nat} (x : Arr a nx) : Except String (Arr a nx) := do
-  let r := match a, x.c with
-    | .symbol, .syms .. => gatherColumn a x.c (.bytes (reverseBytes 8 (tilLongs nx.toUSize)))
+  let r := match a, x.c.enc with
+    | .symbol, .syms .. => gatherColumn a x.c (Alg.longs (reverseBytes 8 (tilLongs nx.toUSize)))
     | _, _ => reverseColumn a x.c
   onKey nx a (← vec "|x" a r) "|x"
 
@@ -56,9 +56,10 @@ def index {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr .long ny) :
 /-- A column as `scatterPacked` writes it, with its element width in bits: `bits` as it is at `1`, any
     other fixed-width encoding dense (`Find.dense`) at `8·width`. A symbol column has no such payload;
     `scatter` writes it by `assignSyms`. -/
-def packed (verb : String) (a : QAtomicType) : Column → Except String (ByteArray × Nat)
-  | .bits _ b => pure (b, 1)
-  | c => do
+def packed (verb : String) (a : QAtomicType) (c : Column) : Except String (ByteArray × Nat) :=
+  match c.enc with
+  | .bits b => pure (b, 1)
+  | _ => do
     let some w := a.width | throw s!"{verb}: a {repr a} column has no fixed-width payload to scatter into"
     pure (← dense verb a c, 8 * w)
 
@@ -75,7 +76,7 @@ def scatter (verb : String) (a : QAtomicType) (n : Nat) (acc v : Column) (ix : B
     let (xb, wb) ← packed verb a acc
     let out := scatterPacked wb.toUSize xb ix (← packed verb a v).1 0 false
     -- the payload back as a column of `acc`'s form: `packed` answers width `1` exactly on `bits`
-    pure (if wb = 1 then .bits n out else .bytes out)
+    pure (if wb = 1 then ⟨a, n, .bits out⟩ else ⟨a, n, .bytes out⟩)
 
 /-- `@[x;i;f;y]`, `f` a dyadic verb, or `:` at `none`; on `x`'s key. `amendRounds` checks every index
     against `count x` and, for a verb, splits the indices into rounds holding each index at most once,
@@ -95,7 +96,7 @@ def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr a nx) (i : Arr .long ni)
     let v ← match op with
       | none => if u = a then pure yv else throw s!"{verb}: `:` of a {repr u} into a {repr a} list (q's 'type)"
       | some v => do
-        let cur ← vec verb a (gatherColumn a acc (.bytes ix))
+        let cur ← vec verb a (gatherColumn a acc (Alg.longs ix))
         pure (← Ew.dyad v Ew.vv a u a cur yv (ix.size / 8)).c
     scatter verb a nx acc v ix
   let rounds := (word 0).toNat
@@ -104,8 +105,8 @@ def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr a nx) (i : Arr .long ni)
     rounds.foldM (fun rr _ acc => do
       let lo := if rr == 0 then 0 else (word (1 + rr)).toNat
       let ks := r.extract ((2 + rounds + lo) * 8) ((2 + rounds + (word (2 + rr)).toNat) * 8)
-      step acc (gatherBytes 8 0 ib ks) (← vec verb u (gatherColumn u y.c (.bytes ks)))) x.c
-  onKey nx a (Column.answer a out) verb
+      step acc (gatherBytes 8 0 ib ks) (← vec verb u (gatherColumn u y.c (Alg.longs ks)))) x.c
+  onKey nx a (Column.answer out) verb
 
 /-! ## Parted lists: q's nested list, one boxed vector per run; `Parted` its flat working form -/
 
@@ -115,7 +116,7 @@ def plus (b : ByteArray) (x : Int64) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 
 /-- The flat form over `val`: its `n` rows cut by the long payload `o` (`g+1` offsets), decided by `Parted.of?`. -/
 def partedP {v : QAtomicType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String (Parted v) := do
   let g := o.size / 8 - 1
-  let some P := Parted.of? (← Arr.of .long (g + 1) (.bytes o) verb) val
+  let some P := Parted.of? (← Arr.of .long (g + 1) (Alg.longs o) verb) val
     | throw s!"{verb}: the offsets are not ascending cuts of {n} rows (q's 'domain)"
   pure P
 
@@ -147,8 +148,8 @@ def cut {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Exce
 def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
     (y : Arr u ny) : Except String ((g : Nat) × Arr .general g) := do
   let (j, i) := Alg.cross ny nx
-  let xs ← vec "x f/:y" t (gatherColumn t x.c (.bytes i))
-  let ys ← vec "x f/:y" u (gatherColumn u y.c (.bytes j))
+  let xs ← vec "x f/:y" t (gatherColumn t x.c (Alg.longs i))
+  let ys ← vec "x f/:y" u (gatherColumn u y.c (Alg.longs j))
   parted "x f/:y" (Alg.mulc (tilLongs (ny + 1).toUSize) nx) (← Ew.dyad v Ew.vv t u rt xs ys (ny * nx))
 
 /-- `+x` of a nested list of `g` runs of `a`s of one length `m`: `m` runs of `g`. The equal lengths are one
@@ -162,7 +163,7 @@ def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g 
   unless matchBytes 8 false ob (Alg.mulc (tilLongs (g + 1).toUSize) m) do
     throw "+x: the runs differ in length (q's 'length)"
   let (q, r) := Alg.cross m g
-  let c ← vec "+x" a (gatherColumn a P.val.c (.bytes (Alg.add (Alg.mulc r m) q)))
+  let c ← vec "+x" a (gatherColumn a P.val.c (Alg.longs (Alg.add (Alg.mulc r m) q)))
   parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of a (m * g) c "+x")
 
 /-- `x@y` on a nested list of `a`s: the runs `y` selects — the run lengths `o[1..] − o[..g]` gathered at
@@ -174,7 +175,7 @@ def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .
   let lens := Alg.gather 8 (Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8))) yb
   let (i, w) := expand lens
   let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
-  let c ← vec "x@y" a (gatherColumn a P.val.c (.bytes src))
+  let c ← vec "x@y" a (gatherColumn a P.val.c (Alg.longs src))
   parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of a (Alg.len src) c "x@y")
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
@@ -195,7 +196,7 @@ def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg
 def ej (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ej" l r
   let (li, ri) := Alg.join lc rc
-  Alg.ofCols .long .long (.bytes li) (.bytes ri)
+  Alg.ofCols .long .long (Alg.longs li) (Alg.longs ri)
 
 /-- `ij` against a keyed right side: each left row ↦ the first right row of its key tuple, unmatched rows
     dropped — `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
@@ -203,15 +204,16 @@ def ij (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ij" l r
   let hit := rc.find lc
   let li := whereBits lc.n.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one rc.n.toUInt64) lc.n.toUSize)
-  Alg.ofCols .long .long (.bytes li) (.bytes (Alg.gather 8 hit li))
+  Alg.ofCols .long .long (Alg.longs li) (Alg.longs (Alg.gather 8 hit li))
 
 /-- A key or time column as the `QValue` qlean's join passes read: the payload where it lies, no copy. -/
-def colValue : KCol → QValue
-  | ⟨.atom a, c⟩ => .vector (.atom a) c
-  | ⟨.general, c⟩ => .list (match c with | .gen xs => xs | _ => #[])
+def colValue (p : KCol) : QValue :=
+  match p.1 with
+  | .general => QValue.general (match p.2.enc with | .gen xs => xs | _ => #[])
+  | _ => .vector p.2
 
 /-- The rows of a key or time column. -/
-def colRows (p : KCol) : Nat := Column.count p.1 p.2
+def colRows (p : KCol) : Nat := p.2.n
 
 /-- `Eval.keyMatch`, q's `?` of the key tuples (`q.k` line 42): the right's `nr` rows grouped by key tuple
     **as they lie**, and each of the left's `nl` rows' group as a `long` column, the group count at a miss. -/
@@ -232,7 +234,7 @@ def aj (l r : Array KCol) (lt rt : KCol) : Except String ((m : Nat) × Arr .long
   let (gs, ids) ← keyGroups "aj" l r nl nr
   let e ← dense "aj" .long (Eval.groupEdge gs ids (colValue rt) (colValue lt) nr)
   let hit := Kernel.Ew.val Ew.fill Ew.i64 Ew.av (Int64.ofNat nr) (one Int64.minValue.toUInt64) e nl.toUSize
-  pure ⟨nl, ← Arr.of .long nl (.bytes hit) "aj"⟩
+  pure ⟨nl, ← Arr.of .long nl (Alg.longs hit) "aj"⟩
 
 /-- `wj` (`prevailing`) and `wj1`: each left row ↦ the right rows `[lo, hi)`, a parted list — q's `ww`
     (`q.k` line 54) as qlean's `windowJoin` runs it: `wj` is `ww[0 1;w]`, `lo` the row `bin` names at `w₀`
@@ -244,11 +246,11 @@ def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : 
   let (nl, nr) := (colRows w₀, colRows rt)
   let (gs, ids) ← keyGroups "wj" l r nl nr
   -- `wj1`'s `w-1` at q's own type rule for `-`, as qlean's interpreter subtracts it
-  let lo ← if prevailing then pure (colValue w₀) else match w₀ with
-    | ⟨.atom t, c⟩ => match dyadColumn .sub Ew.va t .long c (.bytes (one 1)) with
-      | some (u, d) => pure (QValue.vector u d)
+  let lo ← if prevailing then pure (colValue w₀) else match w₀.1 with
+    | .general => throw "wj1: a general list window (q's 'type)"
+    | t => match dyadColumn .sub Ew.va t .long w₀.2 (Alg.longs (one 1)) with
+      | some (_, d) => pure (QValue.vector d)
       | none => throw s!"wj1: no kernel subtracts 1 from a {repr t} window"
-    | ⟨.general, _⟩ => throw "wj1: a general list window (q's 'type)"
   -- each left row's group start, `0` at a key miss: `firsts` gathered at the ids, whose miss is `firsts`' size
   let starts := Alg.gather 8 (← dense "wj" .long (Kernel.longColumn (gs.firsts.push 0))) (← dense "wj" .long ids)
   let n := nl.toUSize
@@ -266,7 +268,7 @@ def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : 
     (Kernel.Ew.val Ew.sub Ew.i64 Ew.vv mn (← edges (colValue w₁) 1) los n) n
   let (i, w) := expand lens
   let rows := Alg.add (Alg.gather 8 los i) w
-  partedP "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of .long (Alg.len rows) (.bytes rows) "wj")
+  partedP "wj" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of .long (Alg.len rows) (Alg.longs rows) "wj")
 
 /-- `wj` with the aggregate `::`: the windows `wjP` as q's nested list, one boxed row list per left row. -/
 def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : Except String ((g : Nat) × Arr .general g) := do
@@ -277,10 +279,11 @@ def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : E
     `wjP`'s own offsets. Answered at `Coc.Over.resultType`'s type, which comes with the answer. -/
 def wjBy (op : Coc.Over) (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt c : KCol) :
     Except String ((u : QAtomicType) × (m : Nat) × Arr u m) := do
-  let ⟨.atom a, cc⟩ := c | throw "wj: a general list aggregated column (q's 'type)"
+  let ⟨a, cc⟩ := c
+  if a = .general then throw "wj: a general list aggregated column (q's 'type)"
   unless colRows c == colRows rt do throw s!"wj: {colRows c} values against {colRows rt} right rows (q's 'length)"
   let P ← wjP prevailing w₀ w₁ l r rt
-  let x ← vec "wj" a (gatherColumn a cc (.bytes (← dense "wj" .long P.val.c)))
+  let x ← vec "wj" a (gatherColumn a cc (Alg.longs (← dense "wj" .long P.val.c)))
   let Q : Parted a := ⟨P.g, P.n, P.o, P.co, ← Arr.of a P.n x "wj"⟩
   let some ⟨u, s⟩ := Ops.overBy op Q | throw s!"wj: no grouped {repr op}/ over {repr a}"
   pure ⟨u, Q.g, s⟩
@@ -298,19 +301,19 @@ def raze (v : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((m 
     `maskByIds` carries the dictionary's bits to the elements. On `x`'s key. -/
 def like {nx : Nat} (x : Arr .symbol nx) (p : String) : Except String (Arr .boolean nx) := do
   let pb := p.toUTF8
-  let bits ← match x.c with
+  let bits ← match x.c.enc with
     | .syms b o => pure (likeSyms pb b o)
-    | .enum n d dof ids =>
-      pure ((likeSyms pb d dof).map fun m => maskByIds m (dof.size - 1).toUSize n.toUSize (Column.idWidth dof).toUSize ids)
+    | .enum d dof ids =>
+      pure ((likeSyms pb d dof).map fun m => maskByIds m (dof.size - 1).toUSize x.c.n.toUSize (Column.idWidth dof).toUSize ids)
     | _ => throw "x like p: the operand is neither a syms nor an enum column"
   let some bs := bits | throw s!"x like p: the pattern {p} does not parse (q's 'length or 'nyi)"
-  onKey nx .boolean (.bits nx bs) "x like p"
+  onKey nx .boolean ⟨.boolean, nx, .bits bs⟩ "x like p"
 
 /-- `x ss p` on a char list: the starts of the non-overlapping matches, `fixedHits`. -/
 def ss {nx : Nat} (x : Arr .char nx) (p : String) : Except String ((m : Nat) × Arr .long m) := do
   let some hs := fixedHits p.toUTF8 (← dense "x ss p" .char x.c)
     | throw s!"x ss p: the pattern {p} is not fixed-width (q's 'nyi)"
-  list .long (.bytes hs)
+  list .long (Alg.longs hs)
 
 /-! ## The List-level spec -/
 
@@ -352,14 +355,16 @@ section MoveLaws
 /-- A `bytes` payload of whole eight-byte words: what `cycleBytes` and `concatBytes` need wherever a
     whole payload is copied after another (a lap of `n#x`, `rotate`, the left part of `x,y`); a ragged
     tail would be copied into the middle of the answer. -/
-def Words : Column → Prop
+def Words (c : Column) : Prop :=
+  match c.enc with
   | .bytes b => b.size % 8 = 0
   | _ => False
 
-theorem words_bytes {c : Column} (h : Words c) : ∃ b, c = .bytes b ∧ b.size % 8 = 0 := by
-  cases c with
-  | bytes b => exact ⟨b, rfl, h⟩
-  | _ => exact h.elim
+theorem words_bytes {c : Column} (h : Words c) : ∃ b, c.enc = .bytes b ∧ b.size % 8 = 0 := by
+  unfold Words at h
+  split at h
+  · rename_i b hb; exact ⟨b, hb, h⟩
+  · exact h.elim
 
 theorem elemsW_empty (w : Nat) : Verify.elemsW w ByteArray.empty = [] := by simp [Verify.elemsW]
 
