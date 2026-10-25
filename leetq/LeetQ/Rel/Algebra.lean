@@ -30,7 +30,7 @@ open LeetQ.Rel.Find (expand one)
 def len (b : ByteArray) : Nat := b.size / 8
 
 /-- A dense long payload as a column, its header counting `len b` elements. -/
-def longs (b : ByteArray) : Column := ⟨.long, len b, .bytes b⟩
+def longs (b : ByteArray) : Column := ⟨.long, len b, .bytes b, none⟩
 
 def nul : Int64 := Int64.minValue
 
@@ -187,7 +187,7 @@ def gens (c : Column) : Except String (Array QValue) :=
   | _ => throw "a general list's payload is not a gen column"
 
 /-- A general list's column over `xs`. -/
-def genCol (xs : Array QValue) : Column := ⟨.general, xs.size, .gen xs⟩
+def genCol (xs : Array QValue) : Column := ⟨.general, xs.size, .gen xs, none⟩
 
 /-- `x@i` for an in-range long payload `i`: `gatherColumn`, which answers every column encoding. A
     general list is picked by position, which is all qlean's own `@` does there (`pickAt`, private). -/
@@ -317,11 +317,11 @@ def ofCols (k v : QAtomicType) (kc : Column) (vc : Column) : Except String (Rel 
     where they lie; `composeKey` reads no dictionary, so it holds `card` empty symbols. -/
 def Code.column (c : Code) : Option (QAtomicType × Column) :=
   match c.kind with
-  | some .bit => some (.boolean, ⟨.boolean, c.n, .bits c.b⟩) | some .u8 => some (.byte, ⟨.byte, c.n, .bytes c.b⟩)
-  | some .i16 => some (.short, ⟨.short, c.n, .bytes c.b⟩) | some .i32 => some (.int, ⟨.int, c.n, .bytes c.b⟩)
-  | some .i64 => some (.long, ⟨.long, c.n, .bytes c.b⟩)
+  | some .bit => some (.boolean, ⟨.boolean, c.n, .bits c.b, none⟩) | some .u8 => some (.byte, ⟨.byte, c.n, .bytes c.b, none⟩)
+  | some .i16 => some (.short, ⟨.short, c.n, .bytes c.b, none⟩) | some .i32 => some (.int, ⟨.int, c.n, .bytes c.b, none⟩)
+  | some .i64 => some (.long, ⟨.long, c.n, .bytes c.b, none⟩)
   | some _ => none
-  | none => if Column.idWidthOf c.card == c.w then some (.symbol, ⟨.symbol, c.n, .enum .empty (Array.replicate (c.card + 1) 0) c.b⟩)
+  | none => if Column.idWidthOf c.card == c.w then some (.symbol, ⟨.symbol, c.n, .enum .empty (Array.replicate (c.card + 1) 0) c.b, none⟩)
     else none
 
 /-- The code of each row's pair `(a, b)`: `composeKey`'s `a·|b| + b` at the width of the product of
@@ -707,18 +707,18 @@ def bitsOf (x : Bool) (n : Nat) : ByteArray :=
 def junc (R : Rel A C) (S : Rel A C) : Except String (SumRel A C) := do
   let r ← cols R; let s ← cols S
   let m := r.n + s.n
-  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n])⟩ "junc",
+  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n]), none⟩ "junc",
     ← Arr.of A m (← raze A #[r.key, s.key]) "junc", ← Arr.of C m (← raze C #[r.val, s.val]) "junc"⟩
 
 /-- `inl°` on `U`: `inl x ↦ x`, the tag set to `false`; `inr°` with `true`. -/
 def injConv {m : Nat} (tag : Bool) (U : Arr A m) : Except String (SumRel A A) := do
-  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (bitsOf tag m)⟩ "injConv", U, U⟩
+  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (bitsOf tag m), none⟩ "injConv", U, U⟩
 
 /-- `F(f)` on a map `f` given as an `Ew` monad: the functor on values, key kept (a `grp` key too). -/
 def mapVal {k : QAtomicType} {a : QAtomicType} (op : UInt8) (R : Rel k a) : Except String (Rel k a) := do
   let (vk, v) ← arrDense R.val
   let some nb := nullBits a | throw "a type with no null"
-  pure ⟨R.n, R.key, ← Arr.of a R.n ⟨a, R.n, .bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize)⟩ "mapVal"⟩
+  pure ⟨R.n, R.key, ← Arr.of a R.n ⟨a, R.n, .bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize), none⟩ "mapVal"⟩
 
 /-- `⦇e, f⦈` of a list when `f` is one of `Coc.Over`'s reductions: `overBytes`. -/
 def foldOver {n : Nat} (op : Coc.Over) (x : Arr .long n) : Except String Int64 := do
@@ -837,7 +837,7 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
   (l.map (·.1)) == [1, 1, 2, 3]
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
-private def LfV : Arr L 4 := { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2⟩, wf := ⟨rfl, rfl, foRLongs_wf [5, 3, 5, 9]⟩ }
+private def LfV : Arr L 4 := { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2, none⟩, wf := ⟨rfl, rfl, foRLongs_wf [5, 3, 5, 9]⟩ }
 private def Lf : LL := ⟨4, U4, LfV⟩
 #guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (do transpose (← union R R)) (·.n == 3)
@@ -927,7 +927,7 @@ private def pqpr : List (Int64 × Int64) := [(0, 0), (0, 2), (2, 0), (2, 2), (1,
 
 -- boolean, `bits`: `1010b`, whose positions pair `(0 2)` and `(1 3)`
 private abbrev Bo := QAtomicType.boolean
-private def bitsC : Column := ⟨.boolean, 4, .bits (ByteArray.mk #[0b0101])⟩
+private def bitsC : Column := ⟨.boolean, 4, .bits (ByteArray.mk #[0b0101]), none⟩
 #guard ok (do same (← lst Bo bitsC) (← lst Bo bitsC)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
 #guard okFlat L (do group (← lstV Bo bitsC).2) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
@@ -938,9 +938,9 @@ private def bitsC : Column := ⟨.boolean, 4, .bits (ByteArray.mk #[0b0101])⟩
 
 -- symbol, `syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
 private abbrev Sy := QAtomicType.symbol
-private def symsC : Column := ⟨.symbol, 4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10]⟩
+private def symsC : Column := ⟨.symbol, 4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10], none⟩
 private def enumC : Column :=
-  ⟨.symbol, 4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!)⟩
+  ⟨.symbol, 4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!), none⟩
 #guard ok (lst Sy enumC) fun X => X.toList == [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
 #guard ok (do same (← lst Sy symsC) (← lst Sy enumC)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do same (← lst Sy enumC) (← lst Sy enumC)) fun X => seteq X.toList pqpr && X.n == 6
@@ -976,7 +976,7 @@ private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!
 #guard c2.find ⟨2, 2, 3, Column.packIds 2 2 ([1, 2][·]!)⟩ == packLongs [2, 0]
 #guard c2.eqAt ⟨2, 6, 3, Column.packIds 2 6 ([2, 1, 1, 0, 0, 2][·]!)⟩ == packLongs [0, 2, 4, 5]
 -- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
-private def Lneg : LL := ⟨4, U4, { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2⟩, wf := ⟨rfl, rfl, foRLongs_wf [9, -3, 5, 5]⟩ }⟩
+private def Lneg : LL := ⟨4, U4, { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2, none⟩, wf := ⟨rfl, rfl, foRLongs_wf [9, -3, 5, 5]⟩ }⟩
 #guard ok (do comp Lneg (← conv Lf)) fun X => seteq X.toList
   (Lneg.toList.flatMap fun (i, x) => Lf.toList.filterMap fun (j, y) => if x == y then some (i, j) else none)
 
@@ -984,7 +984,7 @@ private def Lneg : LL := ⟨4, U4, { c := ⟨.long, 4, .foR (Coc.encode 8 (packL
 private abbrev Fl := QAtomicType.float
 private def fs : List Float := [1.5, 2.25, 1.5, 0.1]
 private def fb : ByteArray := packLongs (fs.map (·.toBits.toInt64))
-private def fd : Column := ⟨.float, fs.length, .bytes fb⟩
+private def fd : Column := ⟨.float, fs.length, .bytes fb, none⟩
 -- `alpOf` and not `Column.answer`, which keeps a column this short dense
 private def alpC : Column := (Column.alpOf fd).getD fd
 #guard alpC.enc matches .alp ..

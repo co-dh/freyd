@@ -77,7 +77,7 @@ def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.n
 /-- `~x`: `Ew.notBits` of the column. -/
 def Ew.not (x : Arr .boolean n) : Except String (Arr .boolean n) :=
   match x.c.enc with
-  | .bits b => Arr.of .boolean n ⟨.boolean, x.c.n, .bits (Ew.notBits x.c.n b)⟩ "Ew.not"
+  | .bits b => Arr.of .boolean n ⟨.boolean, x.c.n, .bits (Ew.notBits x.c.n b), none⟩ "Ew.not"
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
 /-- The raw bits of a one-element column, as `shiftColumn`'s `fill` takes them. -/
@@ -156,8 +156,8 @@ def gatherFill (t : QAtomicType) (fill : UInt64) (src idx : Column) : Except Str
   let some w := t.width | .error s!"align: {repr t} has no fixed width"
   let some ib := Column.bytesOf idx | .error "align: index column has no long payload"
   match src.enc with
-  | .bytes b => return ⟨t, idx.n, .bytes (gatherBytes w.toUSize fill b ib)⟩
-  | .foR m p => return ⟨t, idx.n, .bytes (gatherFoR w.toUSize fill m p src.n.toUSize ib)⟩
+  | .bytes b => return ⟨t, idx.n, .bytes (gatherBytes w.toUSize fill b ib), none⟩
+  | .foR m p => return ⟨t, idx.n, .bytes (gatherFoR w.toUSize fill m p src.n.toUSize ib), none⟩
   | _ => .error s!"align: no fill-gather for this encoding at {repr t}"
 
 end Ew
@@ -179,8 +179,8 @@ def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel s t) (y : 
   let ix ← Ew.vec "findColumn" (findColumn s false ky (.vector kx))
   let yx ← Ew.gatherFill u L.er y.val.c ix
   let l ← Ew.dyad L.v Ew.vv t u rt x.val.c yx x.n
-  let some (.vector ⟨_, m, .bits b⟩) := memberColumn s false (.vector ky) kx | .error "align: memberColumn"
-  let some (.vector iy) := whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b)⟩
+  let some (.vector ⟨_, m, .bits b, none⟩) := memberColumn s false (.vector ky) kx | .error "align: memberColumn"
+  let some (.vector iy) := whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b), none⟩
     | .error "align: whereColumn"
   let r := iy.n
   let ry ← Ew.dyad L.vr Ew.av t u rt (← Ew.atomCol t (Column.atomOfBits t L.el))
@@ -382,9 +382,9 @@ section Checks
 
 /-- A column of longs, a list of them, or a dict of longs; built through `Arr.of`'s run-time `wf`. -/
 private def LA (vs : List Int64) : Except String (Arr .long vs.length) :=
-  Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "L"
+  Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs), none⟩ "L"
 private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
-  return ⟨vs.length, ← Arr.of .long _ ⟨.long, ks.length, .bytes (packLongs ks)⟩ "D", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "D"⟩
+  return ⟨vs.length, ← Arr.of .long _ ⟨.long, ks.length, .bytes (packLongs ks), none⟩ "D", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs), none⟩ "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
 private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
 
@@ -436,16 +436,16 @@ private def addSpec (x y : Except String (Rel .long .long)) : Option (List (Int6
 -- symbol keys `a a b`, as a blob (`SS`) and interned over `a, b` (`SE`): equal keys in every pair of encodings
 -- take the one-key path, which alone adds position by position across the repeated `a`
 private def SK (c : Column) (vs : List Int64) : Except String (Rel .symbol .long) :=
-  return ⟨vs.length, ← Arr.of .symbol _ c "SK", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "SK"⟩
-private def SS (vs : List Int64) := SK ⟨.symbol, 3, .syms (ByteArray.mk #[97, 0, 97, 0, 98, 0]) #[0, 2, 4, 6]⟩ vs
+  return ⟨vs.length, ← Arr.of .symbol _ c "SK", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs), none⟩ "SK"⟩
+private def SS (vs : List Int64) := SK ⟨.symbol, 3, .syms (ByteArray.mk #[97, 0, 97, 0, 98, 0]) #[0, 2, 4, 6], none⟩ vs
 private def SE (vs : List Int64) :=
-  SK ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 3 fun i => [0, 0, 1][i]!)⟩ vs
+  SK ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 3 fun i => [0, 0, 1][i]!), none⟩ vs
 private def addL := Lift.ofVerb .add .long .long
 #guard [SS, SE].all fun x => [SS, SE].all fun y =>
   pairs (do Ew.align (← addL) .long (← x [10, 20, 30]) (← y [1, 2, 3])) == some [("a", 11), ("a", 22), ("b", 33)]
 -- different symbol keys `a b` against `b c` in every pair of encodings: the general path
 private def S2 (b : ByteArray) (vs : List Int64) : List (Except String (Rel .symbol .long)) :=
-  [SK ⟨.symbol, 2, .syms b #[0, 2, 4]⟩ vs, SK ⟨.symbol, 2, .enum b #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 2 id)⟩ vs]
+  [SK ⟨.symbol, 2, .syms b #[0, 2, 4], none⟩ vs, SK ⟨.symbol, 2, .enum b #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 2 id), none⟩ vs]
 #guard (S2 (ByteArray.mk #[97, 0, 98, 0]) [10, 20]).all fun x => (S2 (ByteArray.mk #[98, 0, 99, 0]) [1, 2]).all fun y =>
   pairs (do Ew.align (← addL) .long (← x) (← y)) == some [("a", 10), ("b", 21), ("c", 2)]
 

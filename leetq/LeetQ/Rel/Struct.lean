@@ -76,7 +76,7 @@ def scatter (verb : String) (a : QAtomicType) (n : Nat) (acc v : Column) (ix : B
     let (xb, wb) ← packed verb a acc
     let out := scatterPacked wb.toUSize xb ix (← packed verb a v).1 0 false
     -- the payload back as a column of `acc`'s form: `packed` answers width `1` exactly on `bits`
-    pure (if wb = 1 then ⟨a, n, .bits out⟩ else ⟨a, n, .bytes out⟩)
+    pure (if wb = 1 then ⟨a, n, .bits out, none⟩ else ⟨a, n, .bytes out, none⟩)
 
 /-- `@[x;i;f;y]`, `f` a dyadic verb, or `:` at `none`; on `x`'s key. `amendRounds` checks every index
     against `count x` and, for a verb, splits the indices into rounds holding each index at most once,
@@ -307,7 +307,7 @@ def like {nx : Nat} (x : Arr .symbol nx) (p : String) : Except String (Arr .bool
       pure ((likeSyms pb d dof).map fun m => maskByIds m (dof.size - 1).toUSize x.c.n.toUSize (Column.idWidth dof).toUSize ids)
     | _ => throw "x like p: the operand is neither a syms nor an enum column"
   let some bs := bits | throw s!"x like p: the pattern {p} does not parse (q's 'length or 'nyi)"
-  onKey nx .boolean ⟨.boolean, nx, .bits bs⟩ "x like p"
+  onKey nx .boolean ⟨.boolean, nx, .bits bs, none⟩ "x like p"
 
 /-- `x ss p` on a char list: the starts of the non-overlapping matches, `fixedHits`. -/
 def ss {nx : Nat} (x : Arr .char nx) (p : String) : Except String ((m : Nat) × Arr .long m) := do
@@ -522,10 +522,10 @@ theorem elemsW_cycleBytes (w : Nat) (hw : 0 < w) (b : ByteArray) (off m : Nat)
       List.drop_zero, Nat.sub_zero, List.take_of_length_le (by simp [hE])]
 
 /-- `sliceColumn` at a long `bytes` column: the dense arm, over the column or, empty, over its null. -/
-theorem sliceColumn_long (n : Nat) (b : ByteArray) (off m : Nat) :
-    sliceColumn .long ⟨.long, n, .bytes b⟩ off m = some (.vector (Column.answer ⟨.long, m, .bytes
+theorem sliceColumn_long (n : Nat) (b : ByteArray) (off m : Nat) {a : Option (UInt8 × IndexCell)} :
+    sliceColumn .long ⟨.long, n, .bytes b, a⟩ off m = some (.vector (Column.answer ⟨.long, m, .bytes
       (if n = 0 then cycleBytes (· * 8) 1 off m (Column.pushBits .empty 0x8000000000000000 8)
-       else cycleBytes (· * 8) (b.size / 8) off m b)⟩)) := by
+       else cycleBytes (· * 8) (b.size / 8) off m b), none⟩)) := by
   by_cases h : n = 0 <;>
     simp [sliceColumn, QAtomicType.width, h, nullColumn, foRColumn, Column.bytesOf, nullBits,
       Column.pushBits_size]
@@ -571,7 +571,7 @@ theorem slice_toList {nx : Nat} {x : Arr .long nx} {m' : Nat} {a : Arr .long m'}
   have hs : (cycleBytes (· * 8) (b.size / 8) off m b).size / 8 = m := by
     have := congrArg List.length hW; simpa [Verify.elemsW] using this
   have hv' : a.c = Column.answer ⟨.long, (cycleBytes (· * 8) (b.size / 8) off m b).size / 8,
-      .bytes (cycleBytes (· * 8) (b.size / 8) off m b)⟩ := by rw [hs, ← hv, if_neg hz]
+      .bytes (cycleBytes (· * 8) (b.size / 8) off m b), none⟩ := by rw [hs, ← hv, if_neg hz]
   rw [Arr.toList_long a (by rw [hv']; exact longWords_answer _), hW, toList_bytes x hc,
     List.map_map, List.length_map, hn]
   refine List.map_congr_left fun j _ => ?_
@@ -676,10 +676,10 @@ theorem reverse_toList {nx : Nat} {x r : Arr .long nx} {b : ByteArray}
   rw [this, List.map_reverse]
 
 /-- Two dense long payloads meet densely: no part is encoded, so `encodedParts` has nothing to meet. -/
-theorem razeColumn_bytes (n k : Nat) (b c : ByteArray) :
-    razeColumn .long #[⟨.long, n, .bytes b⟩, ⟨.long, k, .bytes c⟩] =
-      some (.vector ⟨.long, n + k, .bytes (concatBytes #[b, c])⟩) := by
-  have he : encodedParts .long #[⟨.long, n, .bytes b⟩, ⟨.long, k, .bytes c⟩] = none := by
+theorem razeColumn_bytes (n k : Nat) (b c : ByteArray) {a a' : Option (UInt8 × IndexCell)} :
+    razeColumn .long #[⟨.long, n, .bytes b, a⟩, ⟨.long, k, .bytes c, a'⟩] =
+      some (.vector ⟨.long, n + k, .bytes (concatBytes #[b, c]), none⟩) := by
+  have he : encodedParts .long #[⟨.long, n, .bytes b, a⟩, ⟨.long, k, .bytes c, a'⟩] = none := by
     first
     | rfl
     | (simp [encodedParts, Column.alpEncodes, Column.encodes]; done)
@@ -711,7 +711,7 @@ theorem raw_long {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hw : c.WF)
   cases e with
   | bytes b =>
     simp only [longWords, Option.some.injEq] at h; subst h
-    have hn : b.size / 8 = n := Arr.n_long_bytes (m := n) { c := ⟨.long, n, .bytes b⟩, wf := ⟨rfl, rfl, hw⟩ } rfl
+    have hn : b.size / 8 = n := Arr.n_long_bytes (m := n) { c := ⟨.long, n, .bytes b, none⟩, wf := ⟨rfl, rfl, hw⟩ } rfl
     rw [Verify.raw_bytes .long 8 rfl (by decide) (by decide), Array.toList_map, Array.toList_range]
     simp only [Verify.elemsW, hn]
   | foR md pk =>
@@ -923,7 +923,7 @@ theorem parted_toList {v : QAtomicType} (P : Parted v) :
     (by dsimp only; rw [cg, Arr.length_toList]; exact Nat.le_refl _)
 
 /-- An `Arr.of` answer holds the payload it was given. -/
-theorem of_c {t : QAtomicType} {n : Nat} {c : Column} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
+theorem of_c {t : QAtomicType} {n : Nat} {c : Column} {w : String} {a : Arr t n} (h : Arr.of t n c w = .ok a) :
     a.c = c := by
   unfold Arr.of at h; split at h
   · cases h; rfl
@@ -1008,7 +1008,7 @@ theorem cut_toList {no nx : Nat} {o : Arr .long no} {x : Arr .long nx} {r : Part
     rw [toList_bytes _ hoa, elemsW_concatBytes 8 (by decide) _ (by simp [hP, one8])]
     simp [w1]
   unfold cutP at h
-  rw [o.c_eq ho, show dense "o cut x" .long ⟨.long, no, .bytes ob⟩ = pure ob from rfl, pure_bind] at h
+  rw [o.c_eq ho, show dense "o cut x" .long ⟨.long, no, .bytes ob, o.attrCell⟩ = pure ob from rfl, pure_bind] at h
   generalize ho₀ : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = o₀ at h
   dsimp only at h
   split at h
@@ -1161,15 +1161,15 @@ private def xs := lv [5, 3, 5, 9, 3]
 private def ys := lv [7, 8]
 -- the five longs Frame-of-Reference encoded
 private def xf : Arr .long 5 :=
-  { c := ⟨.long, 5, .foR (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2⟩,
+  { c := ⟨.long, 5, .foR (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2, none⟩,
     wf := ⟨rfl, rfl, foRLongs_wf [5, 3, 5, 9, 3]⟩ }
-private def bs : Arr .boolean 5 := { c := ⟨.boolean, 5, .bits (ByteArray.mk #[0b10110])⟩, wf := by decide }
+private def bs : Arr .boolean 5 := { c := ⟨.boolean, 5, .bits (ByteArray.mk #[0b10110]), none⟩, wf := by decide }
 -- one symbol column `bc a bc` as `syms` and as `enum` over the dictionary `a, bc`
 private def sy : Arr .symbol 3 :=
-  { c := ⟨.symbol, 3, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8]⟩, wf := by decide }
+  { c := ⟨.symbol, 3, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8], none⟩, wf := by decide }
 private def se : Arr .symbol 3 :=
-  { c := ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 98, 99, 0]) #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!)⟩, wf := by decide }
-private def cs : Arr .char 6 := { c := ⟨.char, 6, .bytes "aaabaa".toUTF8⟩, wf := by decide }
+  { c := ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 98, 99, 0]) #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!), none⟩, wf := by decide }
+private def cs : Arr .char 6 := { c := ⟨.char, 6, .bytes "aaabaa".toUTF8, none⟩, wf := by decide }
 -- the parted list `(10 20; 30)`, keys `0 0 1`
 private def o2 : Arr .long 3 := { c := Alg.longs (packLongs [0, 2, 3]), wf := by decide }
 private def pl : Except String ((g : Nat) × Arr .general g) := do
@@ -1200,13 +1200,13 @@ private def pl : Except String ((g : Nat) × Arr .general g) := do
 #guard ans (·.toList) (amend xs (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
 #guard (amend xs (lv [5]) none (lv [0])).toOption.isNone
 -- the other value types: `bits` (width 1), `float` with a `float` or a `long` `y`, `int` (width 4)
-private def bs3 : Arr .boolean 3 := { c := ⟨.boolean, 3, .bits (ByteArray.mk #[0b101])⟩, wf := by decide }
+private def bs3 : Arr .boolean 3 := { c := ⟨.boolean, 3, .bits (ByteArray.mk #[0b101]), none⟩, wf := by decide }
 private def fv (xs : List Float) : (m : Nat) × Arr .float m :=
-  match Arr.of .float xs.length ⟨.float, xs.length, .bytes (xs.foldl (fun b x => pushBits b x.toBits 8) .empty)⟩ "fv" with
-  | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := ⟨.float, 0, .bytes .empty⟩, wf := by decide }⟩
+  match Arr.of .float xs.length ⟨.float, xs.length, .bytes (xs.foldl (fun b x => pushBits b x.toBits 8) .empty), none⟩ "fv" with
+  | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := ⟨.float, 0, .bytes .empty, none⟩, wf := by decide }⟩
 private def iv (xs : List Int32) : (m : Nat) × Arr .int m :=
-  match Arr.of .int xs.length ⟨.int, xs.length, .bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty)⟩ "iv" with
-  | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := ⟨.int, 0, .bytes .empty⟩, wf := by decide }⟩
+  match Arr.of .int xs.length ⟨.int, xs.length, .bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty), none⟩ "iv" with
+  | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, { c := ⟨.int, 0, .bytes .empty, none⟩, wf := by decide }⟩
 #guard [(Prim.Dyadic.greater, (· || ·)), (.lesser, (· && ·)), (.eq, (· == ·))].all fun (v, f) =>
   ans (·.toList) (amend bs (lv [0, 0, 4]) (some v) bs3) == some (amendSpec f bs.toList [0, 0, 4] bs3.toList)
 #guard ans (·.toList) (amend bs (lv [0, 0, 4]) (some .greater) bs3) == some [true, true, true, false, true]
@@ -1225,9 +1225,9 @@ private def fl {m : Nat} (r : Arr .float m) : List Float := r.toList.map Float.o
 -- `:` on symbols, every pair of encodings: `y` is `d a e` (`d`, `e` in neither `x` dictionary), the index
 -- `2` repeated so the last write stays
 private def sy3 : Arr .symbol 3 :=
-  { c := ⟨.symbol, 3, .syms (ByteArray.mk #[100, 0, 97, 0, 101, 0]) #[0, 2, 4, 6]⟩, wf := by decide }
+  { c := ⟨.symbol, 3, .syms (ByteArray.mk #[100, 0, 97, 0, 101, 0]) #[0, 2, 4, 6], none⟩, wf := by decide }
 private def se3 : Arr .symbol 3 :=
-  { c := ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 100, 0, 101, 0]) #[0, 2, 4, 6] (packIds (idWidth #[0, 2, 4, 6]) 3 fun i => [1, 0, 2][i]!)⟩, wf := by decide }
+  { c := ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 100, 0, 101, 0]) #[0, 2, 4, 6] (packIds (idWidth #[0, 2, 4, 6]) 3 fun i => [1, 0, 2][i]!), none⟩, wf := by decide }
 #guard [sy, se].all fun x => [sy3, se3].all fun y =>
   ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some (amendSpec (fun _ y => y) x.toList [2, 0, 2] y.toList)
 #guard [sy, se].all fun x => [sy3, se3].all fun y => ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some ["a", "a", "e"]
@@ -1243,7 +1243,7 @@ private def se3 : Arr .symbol 3 :=
 -- parted lists, on `bytes` and on `foR` payloads
 private def x6 := lv [1, 2, 3, 4, 5, 6]
 private def x6f : Arr .long 6 :=
-  { c := ⟨.long, 6, .foR (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2⟩,
+  { c := ⟨.long, 6, .foR (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2, none⟩,
     wf := ⟨rfl, rfl, foRLongs_wf [1, 2, 3, 4, 5, 6]⟩ }
 #guard [xs, xf].all fun x => ansP Lg (cut (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
 #guard [xs, xf].all fun x => ans (·.toList) (cutP (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
@@ -1268,9 +1268,9 @@ private def x6f : Arr .long 6 :=
 -- joins: left keys `lk` (and `lk₂`), times `lt`; right keys `rk` (and `rk₂`), times `rt`
 private def key (xs : List Int64) : Struct.KCol := ⟨.long, Alg.longs (packLongs xs)⟩
 -- keys of any encoding: `bits` `101b` against `01b`, and `syms` `` `a`b `` against its interned self
-#guard ans (·.toList) (ej #[⟨.boolean, ⟨.boolean, 3, .bits (ByteArray.mk #[0b101])⟩⟩] #[⟨.boolean, ⟨.boolean, 2, .bits (ByteArray.mk #[0b10])⟩⟩]) == some [(0, 1), (1, 0), (2, 1)]
-#guard ans (·.toList) (ej #[⟨.symbol, ⟨.symbol, 2, .syms (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4]⟩⟩] #[⟨.symbol, Column.intern ⟨.symbol, 2, .syms (ByteArray.mk #[98, 0, 97, 0]) #[0, 2, 4]⟩⟩]) == some [(0, 1), (1, 0)]
-#guard (ej #[key [1]] #[⟨.boolean, ⟨.boolean, 1, .bits (ByteArray.mk #[1])⟩⟩]).toOption.isNone
+#guard ans (·.toList) (ej #[⟨.boolean, ⟨.boolean, 3, .bits (ByteArray.mk #[0b101]), none⟩⟩] #[⟨.boolean, ⟨.boolean, 2, .bits (ByteArray.mk #[0b10]), none⟩⟩]) == some [(0, 1), (1, 0), (2, 1)]
+#guard ans (·.toList) (ej #[⟨.symbol, ⟨.symbol, 2, .syms (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4], none⟩⟩] #[⟨.symbol, Column.intern ⟨.symbol, 2, .syms (ByteArray.mk #[98, 0, 97, 0]) #[0, 2, 4], none⟩⟩]) == some [(0, 1), (1, 0)]
+#guard (ej #[key [1]] #[⟨.boolean, ⟨.boolean, 1, .bits (ByteArray.mk #[1]), none⟩⟩]).toOption.isNone
 private def lk : List Int64 := [1, 1, 2, 3]
 private def lk₂ : List Int64 := [0, 1, 0, 0]
 private def lt : List Int64 := [5, 10, 3, 4]
@@ -1278,7 +1278,7 @@ private def rk : List Int64 := [1, 2, 1, 2, 9]
 private def rk₂ : List Int64 := [0, 0, 1, 0, 0]
 private def rt : List Int64 := [3, 1, 7, 4, 0]
 -- the right times also as a `foR` column, which `groupEdge` bisects where it lies
-private def rtf : Struct.KCol := ⟨.long, ⟨.long, 5, .foR (Coc.encode 8 (packLongs rt)).1 (Coc.encode 8 (packLongs rt)).2⟩⟩
+private def rtf : Struct.KCol := ⟨.long, ⟨.long, 5, .foR (Coc.encode 8 (packLongs rt)).1 (Coc.encode 8 (packLongs rt)).2, none⟩⟩
 #guard ans (·.toList) (ej #[key lk] #[key rk]) == some (ejSpec (lk.map ([·])) (rk.map ([·])))
 #guard ans (·.toList) (ej #[key lk] #[key rk]) == some [(0, 0), (0, 2), (1, 0), (1, 2), (2, 1), (2, 3)]
 #guard ans (·.toList) (ej #[key lk, key lk₂] #[key rk, key rk₂]) == some (ejSpec (lk.zipWith (fun a b => [a, b]) lk₂) (rk.zipWith (fun a b => [a, b]) rk₂))
@@ -1296,7 +1296,7 @@ private def sk : List Int64 := [0, 0, 0, 0, 1, 1, 1, 1]
 #guard ans (·.2.toList) (aj #[key [0, 1]] #[key sk] (key [3, 8]) (key [5, 1, 9, 2, 5, 1, 9, 2])) == some [1, 5]
 #guard ajSpec [0, 1] [3, 8] sk [5, 1, 9, 2, 5, 1, 9, 2] == [1, 5]
 #guard ans (·.2.toList) (aj #[key [0, 1]] #[key sk] (key [3, 8]) (key [1, 2, 5, 9, 1, 2, 5, 9])) == some [1, 6]
-#guard (aj #[key lk] #[key rk] (key lt) ⟨.int, ⟨.int, 10, .bytes (packLongs rt)⟩⟩).toOption.isNone
+#guard (aj #[key lk] #[key rk] (key lt) ⟨.int, ⟨.int, 10, .bytes (packLongs rt), none⟩⟩).toOption.isNone
 private def w₀ : List Int64 := lt.map (· - 3)
 #guard [false, true].all fun p => [key rt, rtf].all fun c =>
   ansP Lg (wj p (key w₀) (key lt) #[key lk] #[key rk] c) == some (wjSpec p lk w₀ lt rk rt)

@@ -53,8 +53,13 @@ theorem get_ne (x : Arr t n) (i : Fin n) (h : t ≠ .general) :
     x.get i = ((Column.get x.c i).bind fun a => Carrier.of? t (.atom a)).getD default := by
   cases t <;> first | exact absurd rfl h | rfl
 
-/-- Under `wf`, the column is its header and the payload `e`: what a kernel matching `⟨_, n, e⟩` sees. -/
-theorem c_eq (x : Arr t n) {e : Enc} (h : x.c.enc = e) : x.c = ⟨t, n, e, x.c.attr⟩ := by
+/-- The column's attribute and index cell, `QValue.attrCell` of the vector. A constant of `x` rather than
+    `x.c.attr`, so that `c_eq`, which states `x.c` through it, is a rewrite that ends. -/
+def attrCell (x : Arr t n) : Option (UInt8 × IndexCell) := x.c.attr
+
+/-- Under `wf`, the column is its header, the payload `e` and its attribute: what a kernel matching
+    `⟨_, n, e, _⟩` sees. -/
+theorem c_eq (x : Arr t n) {e : Enc} (h : x.c.enc = e) : x.c = ⟨t, n, e, x.attrCell⟩ := by
   revert h; obtain ⟨⟨ty, m, enc, a⟩, ⟨h1, h2, -⟩⟩ := x; intro h; simp only at h1 h2 h; subst h1 h2 h; rfl
 
 /-- The elements in position order, for proofs only. -/
@@ -75,11 +80,21 @@ theorem holds_iff_mem_zipIdx (x : Arr t n) (i : Int64) (y : El t) :
   · rintro ⟨j, rfl, rfl⟩; exact ⟨j, rfl, j.2, by rw [getElem_toList]⟩
   · rintro ⟨j, rfl, h, rfl⟩; exact ⟨⟨j, h⟩, rfl, by rw [getElem_toList]⟩
 
+/-- `x` under q's attribute `a`, with the index q builds when it applies it (`QValue.mark` on a column):
+    the column's `attr`, its payload and so `wf` untouched. -/
+def mark (a : UInt8) (x : Arr t n) : Arr t n := ⟨{ x.c with attr := some (a, QValue.IndexCell.new a (.vector x.c)) }, x.wf⟩
+
+/-- `mark a`, and `0`, no attribute, leaves `x` as it is: a producer's attribute (§2.4). -/
+def markIf (a : UInt8) (x : Arr t n) : Arr t n := if a == 0 then x else x.mark a
+
+/-- Marking touches the attribute only: the column is `x`'s with `attr` replaced. -/
+theorem markIf_c (a : UInt8) (x : Arr t n) : (x.markIf a).c = { x.c with attr := (x.markIf a).attrCell } := by
+  obtain ⟨⟨ty, m, e, b⟩, w⟩ := x; unfold markIf; split <;> rfl
+
 /-- A kernel's answer as an `Arr`, the one way in: `wf` is decided (the header's two fields and
-    `Column.WF`), never assumed; `what` names the producer in the error. A nonzero `attr` marks the answer
-    (`QValue.mark`'s cell); `0` leaves the kernel's column as it is. -/
-def of (t : QAtomicType) (n : Nat) (c : Column) (what : String) (attr : UInt8 := 0) : Except String (Arr t n) :=
-  let c := if attr == 0 then c else { c with attr := some (attr, QValue.IndexCell.new attr (.vector c)) }
+    `Column.WF`), never assumed; `what` names the producer in the error. The column is the kernel's, mark
+    and all; a producer that knows an attribute applies it after (`markIf`). -/
+def of (t : QAtomicType) (n : Nat) (c : Column) (what : String) : Except String (Arr t n) :=
   if h : c.ty = t ∧ c.n = n ∧ c.WF then .ok ⟨c, h⟩
   else .error s!"{what}: the kernel answered a payload that is not {n} well-formed elements of its type"
 
