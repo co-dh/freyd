@@ -610,13 +610,13 @@ def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← c
 
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
     flattened indices of the codes, cut at the values they hold (`runs`). -/
-def group (x : Vec B) : Except String (Rel B .general) := do
-  let c ← single (← codes B #[x.val.c])
+def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
+  let c ← single (← codes B #[x.c])
   -- below a byte `group` has no lane: its indices are the stable grade of the classes by first occurrence
   let idx := match c.kind with
     | some k => (Order.group k c.n.toUSize c.b).2.1
     | none => let (gid, fs) := c.groupIds; (Code.ofIds (len fs) c.n gid).grade
-  runs B (← pick B x.val.c idx) (← Arr.of (.atom .long) (len idx) (.bytes idx) "group")
+  runs B (← pick B x.c idx) (← Arr.of (.atom .long) (len idx) (.bytes idx) "group")
 
 /-- `∋` of a stored family (one boxed set of `v` per key): the pairs `(set id, element)` — the flat form
     (`Parted.ofBoxes`) and the group of each position (`groupOf`). -/
@@ -725,11 +725,11 @@ def foldGroups (op : Coc.Over) (R : Rel A (.atom .long)) : Except String (Rel A 
   ofCols A (.atom .long) (← pick A r.key firsts) (.bytes ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng)))
 
 /-- `α⁻¹` of a list, `uncons`: its first element and the rest, two picks (`gatherColumn`). -/
-def uncons (x : Vec B) : Except String (Vec B × Vec B) := do
-  if x.n = 0 then throw "uncons of an empty list"
-  let m := x.n - 1
+def uncons {n : Nat} (x : Arr B n) : Except String (Arr B 1 × Arr B (n - 1)) := do
+  if n = 0 then throw "uncons of an empty list"
+  let m := n - 1
   let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m.toUSize) (one 1) m.toUSize
-  pure (⟨1, ← Arr.of B 1 (← pick B x.val.c (one 0)) "uncons"⟩, ⟨m, ← Arr.of B m (← pick B x.val.c rest) "uncons"⟩)
+  pure (← Arr.of B 1 (← pick B x.c (one 0)) "uncons", ← Arr.of B m (← pick B x.c rest) "uncons")
 
 /-- An unfold then a fold: Lean's loop, at most `fuel` rounds of `step` until `done`, each round kernels. -/
 def hylo {α : Type} (done : α → Except String Bool) (step : α → Except String α) : Nat → α → Except String α
@@ -778,8 +778,8 @@ private def S : LL := ⟨4, { c := .bytes <| packLongs [1, 2, 2, 4], wf := by de
 private def T : LL := ⟨3, { c := .bytes <| packLongs [10, 20, 20], wf := by decide }, { c := .bytes <| packLongs [7, 8, 9], wf := by decide }⟩
 -- a list with a repeat, (5 3 5 9), and the same as a relation from its positions
 private def U4 : Arr L 4 := { c := .bytes <| packLongs [0, 1, 2, 3], wf := by decide }
-private def LsV : Vec L := ⟨4, { c := .bytes <| packLongs [5, 3, 5, 9], wf := by decide }⟩
-private def Ls : LL := ⟨4, U4, LsV.val⟩
+private def LsV : Arr L 4 := { c := .bytes <| packLongs [5, 3, 5, 9], wf := by decide }
+private def Ls : LL := ⟨4, U4, LsV⟩
 /-- A stored family's pairs `(key, element)`: the boxes razed (`Parted.ofBoxes`), each element beside its
     group's key. -/
 private def flat {k : QVecType} (v : QVecType) (X : Rel k .general) : Except String (List (El k × El v)) := do
@@ -829,8 +829,8 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
   (l.map (·.1)) == [1, 1, 2, 3]
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
-private def LfV : Vec L := ⟨4, { c := .foR 4 (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2, wf := ⟨rfl, rfl⟩ }⟩
-private def Lf : LL := ⟨4, U4, LfV.val⟩
+private def LfV : Arr L 4 := { c := .foR 4 (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2, wf := ⟨rfl, rfl⟩ }
+private def Lf : LL := ⟨4, U4, LfV⟩
 #guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (do transpose (← union R R)) (·.n == 3)
 #guard ok (do mem L (← transpose R)) fun X => X.toList.map (·.2) == [10, 20, 10, 30] && (X.toList.map (·.1)) == [0, 0, 1, 2]
@@ -862,10 +862,10 @@ private def G : LL := ⟨3, { c := .bytes <| packLongs [1, 1, 2], wf := by decid
 #guard ok (mapVal Ew.neg Ls) fun X => X.toList == [(0, -5), (1, -3), (2, -5), (3, -9)]
 #guard ok (foldOver .add Ls.val) (· == 22)
 #guard ok (foldGroups .add R) fun X => X.toList == [(1, 30), (2, 10), (3, 30)]
-#guard ok (uncons LsV) fun (h, t) => h.toList == [(0, 5)] && t.toList == [(0, 3), (1, 5), (2, 9)]
+#guard ok (uncons LsV) fun (h, t) => h.toList == [5] && t.toList == [3, 5, 9]
 -- an unfold then a fold: uncons to the end, summing the heads
-#guard ok (hylo (fun (xs, _) => pure (xs.n == 0))
-    (fun ((xs : Vec L), (acc : Int64)) => do let (h, t) ← uncons xs; pure (t, acc + (← foldOver .add h.val))) 10 (LsV, 0))
+#guard ok (hylo (fun (xs, _) => pure (xs.1 == 0))
+    (fun ((xs : (m : Nat) × Arr L m), (acc : Int64)) => do let (h, t) ← uncons xs.2; pure (⟨_, t⟩, acc + (← foldOver .add h))) 10 (⟨_, LsV⟩, 0))
   fun (_, s) => s == 22
 #guard ok (est false R) fun X => X.toList == [(1, 10), (2, 10), (3, 30)]
 #guard ok (est true R) fun X => X.toList == [(1, 20), (2, 10), (3, 30)]
@@ -905,13 +905,13 @@ private def Ua3 : Arr L 3 := { c := .bytes <| packLongs [3, 1, 2], wf := by deci
 /-! ### Every other encoding: the list `i ↦ x i` of four elements in each, against its own spec -/
 
 /-- A list over the payload `c`. -/
-private def lstV (t : QVecType) (c : Column) : Except String (Vec t) := do
+private def lstV (t : QVecType) (c : Column) : Except String ((m : Nat) × Arr t m) := do
   let n := Column.count t c
   pure ⟨n, ← Arr.of t n c "lst"⟩
 /-- The same as a relation from its positions, `tilLongs` the key. -/
 private def lst (t : QVecType) (c : Column) : Except String (Rel L t) := do
   let x ← lstV t c
-  pure ⟨x.n, ← Arr.of L x.n (.bytes (tilLongs x.n.toUSize)) "lst", x.val⟩
+  pure ⟨x.1, ← Arr.of L x.1 (.bytes (tilLongs x.1.toUSize)) "lst", x.2⟩
 /-- `L ≫ L°`: the pairs of positions holding one element. -/
 private def same {t : QVecType} (X Y : Rel L t) : Except String LL := do comp X (← conv Y)
 -- the positions of `(p q p r)` paired with equal elements: `(0 2)` share, `1` and `3` alone
@@ -922,7 +922,7 @@ private abbrev Bo := QVecType.atom .boolean
 private def bitsC : Column := .bits 4 (ByteArray.mk #[0b0101])
 #guard ok (do same (← lst Bo bitsC) (← lst Bo bitsC)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
-#guard okFlat L (do group (← lstV Bo bitsC)) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
+#guard okFlat L (do group (← lstV Bo bitsC).2) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
 #guard ok (do ran (← lst Bo bitsC)) fun X => seteq X.toList [(true, true), (false, false)] && X.n == 2
 #guard ok (do union (← lst Bo bitsC) (← lst Bo bitsC)) fun X => X.n == 4
 #guard ok (do symDiv (← lst Bo bitsC) (← lst Bo bitsC) U4 U4) fun X =>
@@ -938,8 +938,8 @@ private def enumC : Column :=
 #guard ok (do same (← lst Sy enumC) (← lst Sy enumC)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do union (← lst Sy symsC) (← lst Sy enumC)) fun X => X.n == 4 &&
   seteq X.toList [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
-#guard okFlat L (do group (← lstV Sy enumC)) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
-#guard okFlat L (do group (← lstV Sy symsC)) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
+#guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
+#guard okFlat L (do group (← lstV Sy symsC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard ok (do symDiv (← lst Sy symsC) (← lst Sy enumC) U4 U4) fun X => seteq X.toList pqpr
 #guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.of Sy 4 symsC "U") (← Arr.of Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
@@ -982,7 +982,7 @@ private def alpC : Column := (Column.alpOf .float (.bytes fb)).getD (.bytes fb)
 #guard ok (do same (← lst Fl alpC) (← lst Fl alpC)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do same (← lst Fl alpC) (← lst Fl (.bytes fb))) fun X => seteq X.toList pqpr && X.n == 6
 -- a float element is its IEEE bits
-#guard okFlat L (do group (← lstV Fl alpC)) fun l =>
+#guard okFlat L (do group (← lstV Fl alpC).2) fun l =>
   l.map (·.2) == [0, 2, 1, 3] && l.map (·.1) == [1.5, 1.5, 2.25, 0.1].map Float.toBits
 #guard ok (do union (← lst Fl alpC) (← lst Fl (.bytes fb))) fun X => X.n == 4
 #guard ok (do symDiv (← lst Fl alpC) (← lst Fl alpC) U4 U4) fun X => seteq X.toList pqpr
@@ -990,11 +990,11 @@ private def alpC : Column := (Column.alpOf .float (.bytes fb)).getD (.bytes fb)
 -- a general list, `(1; (); 1; ,2)`, elements matched by identity
 private def gs : Array QValue := #[.atom (.long 1), .list #[], .atom (.long 1), .list #[.atom (.long 2)]]
 #guard ok (do same (← lst .general (.gen gs)) (← lst .general (.gen gs))) fun X => seteq X.toList pqpr && X.n == 6
-#guard okFlat L (do group (← lstV .general (.gen gs))) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
+#guard okFlat L (do group (← lstV .general (.gen gs)).2) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
 #guard ok (do union (← lst .general (.gen gs)) (← lst .general (.gen gs))) fun X => X.n == 4
 #guard ok (do dom (← conv (← lst .general (.gen gs)))) (·.n == 3)
 #guard ok (do symDiv (← lst .general (.gen gs)) (← lst .general (.gen gs)) U4 U4) fun X => seteq X.toList pqpr
-#guard ok (do uncons (← lstV .general (.gen gs))) fun (h, t) => h.n == 1 && t.n == 3
+#guard match lstV .general (.gen gs) with | .ok ⟨_, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | .error _ => false
 #guard ok (do zero (A := .general) (B := Sy)) (·.n == 0)
 
 end Checks
