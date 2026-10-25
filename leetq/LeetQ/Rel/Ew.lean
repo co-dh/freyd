@@ -355,7 +355,7 @@ theorem Ew.elem_long_val {v : Prim.Dyadic} {op : UInt8} (hop : valOp v = some op
     (h : Eval.ewType v .long .long = some .long) (x y : Int64) :
     elem v h x y = .ok (Ew.intStep op Int64.minValue x y) := by
   have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_val hop h x y
-  unfold elem
+  unfold elem; rw [dif_neg (by decide), dif_neg (by decide)]
   split
   · rename_i hz; rw [hd] at hz; cases hz
   · rename_i hz; rw [hd] at hz; cases hz; rfl
@@ -365,7 +365,7 @@ theorem Ew.elem_long_cmp {v : Prim.Dyadic} {op : UInt8} (hop : cmpOp v = some op
     (h : Eval.ewType v .long .long = some .boolean) (x y : Int64) :
     elem v h x y = .ok (Ew.cmpStep op Ew.i64 x.toUInt64 y.toUInt64) := by
   have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_cmp hop x y
-  unfold elem
+  unfold elem; rw [dif_neg (by decide), dif_neg (by decide)]
   split
   · rename_i hz; rw [hd] at hz; cases hz
   · rename_i hz; rw [hd] at hz; cases hz; rfl

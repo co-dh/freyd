@@ -32,7 +32,7 @@ open QLean QLean.Dep QLean.Kernel
 /-- A list of `a`s from a column a kernel wrote: `m` the column's own count, `attr` the producer's
     attribute (§2.4). -/
 def list (a : QAtomicType) (c : Column) (attr : UInt8 := 0) : Except String ((m : Nat) × Arr a m) := do
-  pure ⟨_, ← Arr.of a (Column.count a c) c "a list answer" attr⟩
+  pure ⟨_, ← Arr.of a c.n c "a list answer" attr⟩
 
 /-- An answer per element of an operand of `n` elements; the count is checked, not assumed. -/
 def onKey (n : Nat) (a : QAtomicType) (c : Column) (verb : String) : Except String (Arr a n) :=
@@ -40,13 +40,13 @@ def onKey (n : Nat) (a : QAtomicType) (c : Column) (verb : String) : Except Stri
 
 /-- The vector payload of a dispatcher's answer at type `a`. -/
 def vec (verb : String) (a : QAtomicType) : Option QValue → Except String Column
-  | some (.vector b c) => if b == .atom a then .ok c else .error s!"{verb}: the kernel answered a vector of another type"
+  | some (.vector c) => if c.ty == a then .ok c else .error s!"{verb}: the kernel answered a vector of another type"
   | some _ => .error s!"{verb}: the kernel answered a non-vector where a vector was due"
   | none => .error s!"{verb}: no qlean kernel claims this operand (q's 'type)"
 
 /-- A dense payload of an operand, or the error naming the verb. -/
 def dense (verb : String) (a : QAtomicType) (c : Column) : Except String ByteArray :=
-  match Column.bytesOf a c with
+  match Column.bytesOf c with
   | some b => .ok b
   | none => .error s!"{verb}: the operand has no dense payload at its type"
 
@@ -74,12 +74,12 @@ def probe (t : ByteArray) (n : Nat) (lo : Int64) (ndl : ByteArray) : ByteArray :
     so `sub`, which maps the null to itself, offsets every element from it. -/
 def direct (a : QAtomicType) (c : Column) (n : Nat) : Option (ByteArray × Int64 × ByteArray) := do
   guard (clsOf a == some Ew.i64)
-  let .foR k md pk := c | none
+  let ⟨_, k, .foR md pk⟩ := c | none
   guard (!md.isEmpty)
   let (lo, hi) ← Coc.range (← Coc.nullOf a) md pk k.toUSize
   let r := (hi.toInt - lo.toInt).toNat + 1
   guard (r ≤ 4 * max 65536 n)
-  let hb ← Column.bytesOf a c
+  let hb ← Column.bytesOf c
   pure (firstTable hb n lo r, lo, hb)
 
 /-! ## The verbs -/
@@ -104,7 +104,7 @@ def whereCounts {nx : Nat} (x : Arr .long nx) : Except String ((m : Nat) × Arr 
   let b ← dense "&x" .long x.c
   let neg := whereBits nx.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va b (one 0) nx.toUSize)
   if neg.size > 0 then throw s!"&x: count {(Column.bitsAt b ((Column.bitsAt neg 0 8).toNat * 8) 8).toInt64} at position {(Column.bitsAt neg 0 8).toNat} is negative or null (q's 'domain)"
-  list .long (.bytes (expand b).1) 1
+  list .long ⟨.long, (expand b).1.size / 8, .bytes (expand b).1⟩ 1
 
 /-- `?x`: the first occurrences, in order (attribute `u`). Already unique: the operand itself. Small
     range: the positions where `T[x − lo]` is the position itself, then `x@` those. -/
@@ -114,15 +114,15 @@ def distinct {a : QAtomicType} {nx : Nat} (x : Arr a nx) : Except String ((m : N
   | some (t, lo, hb) =>
     let n := nx.toUSize
     let p := whereBits n (Ew.cmp Ew.eq Ew.i64 Ew.vv (probe t nx lo hb) (tilLongs n) n)
-    list a (.bytes (gatherBytes 8 0 hb p)) 2
+    list a ⟨a, (gatherBytes 8 0 hb p).size / 8, .bytes (gatherBytes 8 0 hb p)⟩ 2
   | none => do list a (← vec "?x" a (distinctColumn a x.c)) 2
 
 /-- `x?y`: each element of `y`'s first position in `x`, `count x` at a miss; on `y`'s key. -/
 def find {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
     Except String (Arr .long ny) := do
   let c ← match direct a x.c nx with
-    | some (t, lo, _) => do pure (.bytes (probe t nx lo (← dense "x?y" a y.c)))
-    | none => vec "x?y" .long (findColumn a (x.attr == 1) x.c (.vector (.atom a) y.c))
+    | some (t, lo, _) => do pure ⟨.long, ny, .bytes (probe t nx lo (← dense "x?y" a y.c))⟩
+    | none => vec "x?y" .long (findColumn a (x.attr == 1) x.c (.vector y.c))
   onKey ny .long c "x?y"
 
 /-- `x in y`: whether each element of `x` is in `y`; on `x`'s key. -/
@@ -131,15 +131,15 @@ def «in» {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
   let c ← match direct a y.c ny with
     | some (t, lo, _) => do
       let g := probe t ny lo (← dense "x in y" a x.c)
-      pure (.bits nx (Ew.cmp Ew.lt Ew.i64 Ew.va g (one ny.toUInt64) nx.toUSize))
-    | none => vec "x in y" .boolean (memberColumn a (y.attr == 1) (.vector (.atom a) x.c) y.c)
+      pure ⟨.boolean, nx, .bits (Ew.cmp Ew.lt Ew.i64 Ew.va g (one ny.toUInt64) nx.toUSize)⟩
+    | none => vec "x in y" .boolean (memberColumn a (y.attr == 1) (.vector x.c) y.c)
   onKey nx .boolean c "x in y"
 
 /-- `x bin y`: for each element of `y`, the last position of sorted `x` holding at most it, `-1`
     below all; `binBytes`/`foRBin`/`binBits`/`binSymColumn` by encoding. On `y`'s key. -/
 def bin {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
     Except String (Arr .long ny) := do
-  onKey ny .long (← vec "x bin y" .long (binColumn a false x.c (.vector (.atom a) y.c))) "x bin y"
+  onKey ny .long (← vec "x bin y" .long (binColumn a false x.c (.vector y.c))) "x bin y"
 
 /-! ## The List-level spec -/
 

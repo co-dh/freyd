@@ -7,6 +7,7 @@
 -/
 import QLean.Value
 import QLean.Dep.Val
+import QLean.Dep.Monadic
 import QLean.Kernel.Sort
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
@@ -17,15 +18,8 @@ namespace LeetQ.Rel
 
 open QLean QLean.Dep
 
-/-- An element of a column of type `t`: a `QValue` in a general list, the atom type's `Carrier`
-    otherwise. Its own `.general` arm, so nothing here reads `Carrier .general`. -/
-@[reducible] def El : QAtomicType → Type
-  | .general => QValue
-  | t => Carrier t
-
-/-- An atom of an atom type `t` as an element of a column of `t`. -/
-def El.ofCarrier {t : QAtomicType} (h : t ≠ .general) (x : Carrier t) : El t := by
-  cases t <;> first | exact absurd rfl h | exact x
+/-- An element of a column of type `t`: qlean's `Carrier`, a `QValue` in a general list. -/
+abbrev El := Carrier
 
 /-- A column of `n` elements of type `t`: the header says `t` and `n`, and `Column.WF` that the payload
     agrees with it; a general list is `.gen xs`. `attr` is q's attribute byte
@@ -49,17 +43,16 @@ theorem gen_size (x : Arr .general n) {xs : Array QValue} (hc : x.c.enc = .gen x
 /-- Element `i`. At an atom type it is `Column.get`'s atom at `i` read back at the index; the
     fallback, the atom of zero bits, is unreachable under `wf`, as is the general list's non-`gen` one. -/
 def get (x : Arr t n) (i : Fin n) : El t :=
-  if h : t = .general then by
-    subst h
-    exact match hc : x.c.enc with
-      | .gen xs => xs[i.1]'(by rw [gen_size x hc]; exact i.2)
-      | _ => QValue.general #[]
-  else El.ofCarrier h (((Column.get x.c i).bind (Carrier.of? t)).getD (Carrier.ofAtom (Column.atomOfBits_type t 0 h)))
+  match t, x with
+  | .general, x => match hc : x.c.enc with
+    | .gen xs => xs[i.1]'(by rw [gen_size x hc]; exact i.2)
+    | _ => QValue.general #[]
+  | t, x => ((Column.get x.c i).bind fun a => Carrier.of? t (.atom a)).getD default
 
-/-- `get` at an atom type, the `dite` taken. -/
+/-- `get` at an atom type: `Column.get`'s atom read back at `t`. -/
 theorem get_ne (x : Arr t n) (i : Fin n) (h : t ≠ .general) :
-    x.get i = El.ofCarrier h (((Column.get x.c i).bind (Carrier.of? t)).getD
-      (Carrier.ofAtom (Column.atomOfBits_type t 0 h))) := dif_neg h
+    x.get i = ((Column.get x.c i).bind fun a => Carrier.of? t (.atom a)).getD default := by
+  cases t <;> first | exact absurd rfl h | rfl
 
 /-- The elements in position order, for proofs only. -/
 def toList (x : Arr t n) : List (El t) := List.ofFn x.get
@@ -269,7 +262,7 @@ theorem str_bytes {B : ByteArray} (h : ∃ s : String, s.toUTF8.data.toList = B.
 theorem get_sym_bytes {c : Column} {i : Nat} (d : String) (ht : c.ty = .symbol) (hw : c.WF)
     (hi : i < c.n) (h2 : i < (Verify.symsOf c).length)
     (hk : ∃ s : String, s.toUTF8.data.toList = (Verify.symsOf c)[i]) :
-    (((Column.get c i).bind (Carrier.of? .symbol)).getD d).toUTF8.data.toList = (Verify.symsOf c)[i] := by
+    (((Column.get c i).bind fun a => Carrier.of? .symbol (.atom a)).getD d).toUTF8.data.toList = (Verify.symsOf c)[i] := by
   obtain ⟨ty, n, enc⟩ := c
   simp only at ht; subst ht
   cases enc with
@@ -529,8 +522,8 @@ private def es : Arr .symbol 3 :=
 #guard ss.toList == ["bc", "a", "bc"]
 #guard es.toList == ss.toList
 
-private def gs : Arr .general 2 := { c := ⟨.general, 2, .gen #[.atom (.long 1), .general #[]]⟩, wf := ⟨rfl, rfl, rfl⟩ }
-#guard match gs.get 0, gs.get 1 with | .atom (.long 1), .general #[] _ => true | _, _ => false
+private def gs : Arr .general 2 := { c := ⟨.general, 2, .gen #[(.atom (.long 1) : QValue), (.general #[] : QValue)]⟩, wf := ⟨rfl, rfl, rfl⟩ }
+#guard match id (α := QValue) (gs.get 0), id (α := QValue) (gs.get 1) with | .atom (.long 1), .general #[] _ => true | _, _ => false
 
 -- groups `[0,1) [1,1) [1,3)`: the empty middle group owns no position
 private def o3 : Arr .long 4 := { c := ⟨.long, 4, .bytes <| packLongs [0, 1, 1, 3]⟩, wf := by decide }
