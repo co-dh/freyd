@@ -15,7 +15,7 @@ import QLean.Verify.EwEnc
 
 namespace LeetQ.Rel.Struct
 
-open QLean QLean.Kernel
+open QLean QLean.Dep QLean.Kernel
 open LeetQ.Rel.Find (list onKey vec dense one expand)
 
 /-! ## Concat, take, drop, reverse, rotate: a new list -/
@@ -173,7 +173,7 @@ def indexParted {k' : QListType} {a : QAtomicType} (x : Rel (.atom .long) (.atom
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
 /-- A key column in any encoding: its element type and payload, compared only by `Alg.codes`. -/
-abbrev KCol := (t : QListType) × Pay t
+abbrev KCol := (t : QListType) × Column
 
 /-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tuples`), left
     then right, each at the narrowest layout its columns allow. -/
@@ -181,7 +181,7 @@ def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg
   if l.size == 0 then throw s!"{verb}: no key column"
   unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
   let cs ← (l.zip r).mapM fun ((p : KCol), (q : KCol)) =>
-    if h : q.1 = p.1 then Alg.codes p.1 #[p.2, h ▸ q.2] else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
+    if q.1 = p.1 then Alg.codes p.1 #[p.2, q.2] else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
   Alg.two (← Alg.tuples cs)
 
 /-- `ej`: every pair of a left and a right row with equal key tuples, left row ↦ right row (`Alg.join`). -/
@@ -201,12 +201,10 @@ def ij (l r : Array KCol) : Except String (Rel (.atom .long) (.atom .long)) := d
 /-- A key or time column as the `QValue` qlean's join passes read: the payload where it lies, no copy. -/
 def colValue : KCol → QValue
   | ⟨.atom a, c⟩ => .vector a c
-  | ⟨.gen, xs⟩ => .list xs
+  | ⟨.general, c⟩ => .list (match c with | .gen xs => xs | _ => #[])
 
 /-- The rows of a key or time column. -/
-def colRows : KCol → Nat
-  | ⟨.atom a, c⟩ => Column.count a c
-  | ⟨.gen, xs⟩ => xs.size
+def colRows (p : KCol) : Nat := Column.count p.1 p.2
 
 /-- `Eval.keyMatch`, q's `?` of the key tuples (`q.k` line 42): the right's `nr` rows grouped by key tuple
     **as they lie**, and each of the left's `nl` rows' group as a `long` column, the group count at a miss. -/
@@ -243,7 +241,7 @@ def wj (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : E
     | ⟨.atom t, c⟩ => match dyadColumn .sub Ew.va t .long c (.bytes (one 1)) with
       | some (u, d) => pure (QValue.vector u d)
       | none => throw s!"wj1: no kernel subtracts 1 from a {repr t} window"
-    | ⟨.gen, _⟩ => throw "wj1: a general list window (q's 'type)"
+    | ⟨.general, _⟩ => throw "wj1: a general list window (q's 'type)"
   -- each left row's group start, `0` at a key miss: `firsts` gathered at the ids, whose miss is `firsts`' size
   let starts := Alg.gather 8 (← dense "wj" .long (Kernel.longColumn (gs.firsts.push 0))) (← dense "wj" .long ids)
   let n := nl.toUSize
@@ -883,7 +881,7 @@ theorem toList_mk {k v : QListType} {n : Nat} (key : KeyCol k n) (val : Arr v n)
     simp [Rel.toList, KeyCol.toList, Arr.toList]
 
 /-- An `Arr.of` answer holds the payload it was given. -/
-theorem of_c {t : QListType} {n : Nat} {c : Pay t} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
+theorem of_c {t : QListType} {n : Nat} {c : Column} {w : String} {u : UInt8} {a : Arr t n} (h : Arr.of t n c w u = .ok a) :
     a.c = c := by
   unfold Arr.of at h; split at h
   · cases h; rfl
@@ -1112,7 +1110,7 @@ open QLean.Column
 private def ans {α : Type} {k v : QListType} (f : Rel k v → α) : Except String (Rel k v) → Option α
   | .ok r => some (f r)
   | .error _ => none
-private def lv (xs : List Int64) (h : QListType.WF (.atom .long) xs.length (.bytes (packLongs xs)) := by decide) :
+private def lv (xs : List Int64) (h : Column.admits (.atom .long) (.bytes (packLongs xs)) = true ∧ Column.count (.atom .long) (.bytes (packLongs xs)) = xs.length := by decide) :
     Rel (.atom .long) (.atom .long) := ⟨xs.length, .til _, { c := .bytes (packLongs xs), wf := h }⟩
 
 private def xs := lv [5, 3, 5, 9, 3]

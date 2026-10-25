@@ -25,7 +25,7 @@ import QLean.Verify.Ids
 
 namespace LeetQ.Rel.Find
 
-open QLean QLean.Kernel
+open QLean QLean.Dep QLean.Kernel
 
 /-! ## Wrapping a kernel's answer -/
 
@@ -225,7 +225,7 @@ theorem where_toList {k : QListType} {x : Rel k (.atom .boolean)} {r : Rel (.ato
     · intro j h1 _
       rw [List.getElem_map, Arr.getElem_toList, Arr.get_long_bytes r.val hr]
       exact toInt64_of_toNat (hj j (by rw [Arr.length_toList] at h1; omega))
-  | _ => all_goals (rw [hc] at hw; simp [QListType.WF, Column.admits] at hw)
+  | _ => all_goals (rw [hc] at hw; simp [Column.admits] at hw)
 
 /-- An answer per operand element has the kernel's column. -/
 theorem onKey_c {k : QListType} {n : Nat} {key : KeyCol k n} {a : QAtomicType} {c : Column} {s : String}
