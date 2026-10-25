@@ -14,6 +14,16 @@ Done
 - sed over all leetq: QVecType -> QAtomicType, `(.atom .x)` -> `.x`, `X (.atom v)` -> `X v` for
   Arr/Parted/Rel/El/..., `QValue.list` -> `QValue.general`, `.wf.2` -> `.wf.2.1` (count is now wf.2.1).
 
+BLOCKER (stopped here): with qlean's current `Carrier .general := Empty`, leetq's `El` cannot be
+`Carrier`, and `El t` does not reduce to `Carrier t` for a variable `t`. Every spec stated over a variable
+atom type then fails, e.g. LeetQ/Rel/Ew.lean:208 `Ew.ValSpec` — `p.fst has type El t but is expected to
+have type Carrier t` (also `Ew.MapSpec`, and the same in Find/Scan). Old `El (.atom t)` was `Carrier t` by
+definition. Once qlean has `Carrier .general := QValue` (the user's choice), set `abbrev El := Carrier`
+in Core.lean (drop `El.ofCarrier`/the `dite` in `Arr.get`: `get` reads `.gen` at `.general` by matching
+`t`), and the specs port unchanged.
+Ew.lean is partly ported (atom-only calls take a defaulted `ht : t ≠ .general` last; header columns in
+the checks).
+
 Left (error-driven): Ew, Find, Scan (~100 errors each), then Struct, Algebra, Compressed, QRel, Bench.
 Recurring fixes: `Column.count t c` -> `c.n`; old `Column` ctors -> `Enc` under `c.enc`, building a column
 is `⟨t, n, .bytes b⟩`; `QValue.vector t c` -> `QValue.vector c` (check `c.ty`); `Column.bytesOf t c` ->

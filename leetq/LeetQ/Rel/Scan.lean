@@ -416,7 +416,7 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
   refine ⟨B, hBw, hBs, hw1, ?_⟩
   simp only [mwin, hd w hw, show ¬ w < 1 by omega, if_false, Option.bind, if_true, Option.map] at h
   generalize Column.answer rt (.bytes (Scan.mwinBits op .i64 w n B)) = A at h ⊢
-  by_cases hwf : (Column.admits (.atom rt) A = true ∧ Column.count (.atom rt) A = n)
+  by_cases hwf : (Column.admits rt A = true ∧ Column.count rt A = n)
   · rw [Arr.of, dif_pos hwf] at h
     cases h
     rfl
