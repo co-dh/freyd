@@ -189,14 +189,12 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
 
 /-! ## The RelRep layer (`LeetQ.Rel`): a relation is a key and a value column -/
 
-abbrev LR := LeetQ.Rel.Vec (.atom .long)
-
 /-- The list `x` of longs. -/
-def listR (n : Nat) (a : Array Int) : Except String LR := do
-  return ⟨n, ← LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"⟩
+def listR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr (.atom .long) n) :=
+  LeetQ.Rel.Arr.of (.atom .long) n (.bytes (col a)) "listR"
 
 /-- `sum` of a list: `Ops.over .add`. -/
-def sumR (what : String) {t : QLean.QAtomicType} (r : LeetQ.Rel.Vec (.atom t)) : Except String Int64 :=
+def sumR (what : String) {t : QLean.QAtomicType} {m : Nat} (r : LeetQ.Rel.Arr (.atom t) m) : Except String Int64 :=
   match LeetQ.Rel.Ops.over .add r with
   | some c => .ok c
   | none => .error s!"{what}: Ops.over .add answered none"
@@ -239,12 +237,12 @@ def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
   let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map Int.ofNat)) (.bytes <| col (ints n 26 1000)))
   let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols (.atom .long) (.atom .long) (.bytes <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
     (.bytes <| col (ints n 27 1000)))
-  timedE "relZipD" (d, e) fun (d, e) => do let r ← LeetQ.Rel.Ew.dyadic .add .long d e; sumR "relZipD" ⟨r.n, r.val⟩
+  timedE "relZipD" (d, e) fun (d, e) => do let r ← LeetQ.Rel.Ew.dyadic .add .long d e; sumR "relZipD" r.val
 
 /-- The list `x` of longs `foR`-encoded: the haystack `Find.direct` admits. -/
-def foRR (n : Nat) (a : Array Int) : Except String LR := do
+def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr (.atom .long) n) := do
   let (md, pk) := QLean.Kernel.Coc.encode 8 (col a)
-  return ⟨n, ← LeetQ.Rel.Arr.of (.atom .long) n (.foR n md pk) "foRR"⟩
+  LeetQ.Rel.Arr.of (.atom .long) n (.foR n md pk) "foRR"
 
 /-- `x?y`, `x` a `foR` haystack and `y` dense needles, both below 1000; `sum x?y`. -/
 def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
@@ -261,7 +259,7 @@ def inFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `?x`, `x` a `foR` column below 1000; `sum ?x`. -/
 def distinctFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
   let x ← io "distinctFoR" (foRR n (ints n 26 1000))
-  timedE "distinctFoR" x fun x => do sumR "distinctFoR" (← LeetQ.Rel.Find.distinct x)
+  timedE "distinctFoR" x fun x => do sumR "distinctFoR" (← LeetQ.Rel.Find.distinct x).2
 
 /-! ## The relation algebra's codes: `|R|` and `ej` on keys of each encoding -/
 
@@ -311,7 +309,7 @@ def relJoinOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let m := encRange enc
   let l ← io "relJoin" (encCol enc m (ints n 30 m))
   let r ← io "relJoin" (encCol enc m ((Array.range m).map Int.ofNat))
-  timedE s!"relJoin {enc}" (l, r) fun (l, r) => do let j ← LeetQ.Rel.Struct.ej #[l] #[r]; sumR "relJoin" ⟨j.n, j.val⟩
+  timedE s!"relJoin {enc}" (l, r) fun (l, r) => do let j ← LeetQ.Rel.Struct.ej #[l] #[r]; sumR "relJoin" j.val
 
 /-- `ej` on a two-column key tuple in `enc`: `n` left tuples against `m` right ones, both drawn from the
     range; the sum of the right rows. -/
@@ -322,7 +320,7 @@ def relJoin2Op (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let r₁ ← io "relJoin2" (encCol enc m ((Array.range m).map Int.ofNat))
   let r₂ ← io "relJoin2" (encCol enc m (ints m 32 m))
   timedE s!"relJoin2 {enc}" (l₁, l₂, r₁, r₂) fun (l₁, l₂, r₁, r₂) => do
-    let j ← LeetQ.Rel.Struct.ej #[l₁, l₂] #[r₁, r₂]; sumR "relJoin2" ⟨j.n, j.val⟩
+    let j ← LeetQ.Rel.Struct.ej #[l₁, l₂] #[r₁, r₂]; sumR "relJoin2" j.val
 
 /-- `aj`/`wj` input: `n` left rows (key below 1000, time below 1e6) and `n` right rows sorted by key then time
     (q's `` `p#s `` quote layout, which `wj` requires): left keys, left times, right keys, right times. -/
@@ -337,14 +335,14 @@ def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.atom .long, .bytes (c
 def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
   timedE "relAj" (longKey lk, longKey lt, longKey rk, longKey rt) fun (lk, lt, rk, rt) => do
-    sumR "relAj" (← LeetQ.Rel.Struct.aj #[lk] #[rk] lt rt)
+    sumR "relAj" (← LeetQ.Rel.Struct.aj #[lk] #[rk] lt rt).2
 
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
   timedE "relWj" (longKey (lt.map (· - 100)), longKey lt, longKey lk, longKey rk, longKey rt,
       longKey ((Array.range rt.size).map Int.ofNat)) fun (w, lt, lk, rk, rt, c) => do
-    let ⟨_, s⟩ ← LeetQ.Rel.Struct.wjBy .add true w lt #[lk] #[rk] rt c
+    let ⟨_, _, s⟩ ← LeetQ.Rel.Struct.wjBy .add true w lt #[lk] #[rk] rt c
     sumR "relWj" s
 
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
