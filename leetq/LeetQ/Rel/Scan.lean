@@ -40,7 +40,7 @@ def over (op : Coc.Over) {n : Nat} (R : Arr t n) : Option Int64 := overColumn op
 
 /-- `avg x`: the bits of the `float` q answers. -/
 def avg {n : Nat} (R : Arr t n) : Option UInt64 :=
-  (avgColumn t R.c).bind (Carrier.of? .float)
+  (avgColumn t R.c).bind fun a => Carrier.of? .float (.atom a)
 
 /-! ## Grouped folds over a parted list: one answer per group
 
@@ -49,7 +49,7 @@ row: `o bin til n` would be an `n`-row pass to recover what `o` already says. A 
 then one boxed vector per key) reaches them through `byKey`, which unboxes once (`Parted.ofBoxes`). -/
 
 /-- `o`'s dense payload, the `g+1` offsets the segment kernels read. -/
-def offs {g : Nat} (o : Arr .long (g+1)) : Option ByteArray := Column.bytesOf .long o.c
+def offs {g : Nat} (o : Arr .long (g+1)) : Option ByteArray := Column.bytesOf o.c
 
 /-- `1_o` over `g+1` offsets: each group's end. -/
 def ends (g : Nat) (ob : ByteArray) : ByteArray := ob.extract 8 (8 * (g+1))
@@ -61,16 +61,16 @@ def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
 
 /-- `count each` by group: `1_deltas o`. -/
 def countBy {v : QAtomicType} (P : Parted v) : Option (Arr .long P.g) := do
-  (Arr.of .long P.g (.bytes (sizes P.g (← offs P.o))) "count each").toOption
+  (Arr.of .long P.g ⟨.long, P.g, .bytes (sizes P.g (← offs P.o))⟩ "count each").toOption
 
 /-- `last each` by group: `x[-1+1_o]`. `none` when a group is empty, which has no last row. -/
 def lastBy (P : Parted t) : Option (Arr t P.g) := do
   let g := P.g
   let ob ← offs P.o
-  let least ← overColumn .lesser .long (.bytes (sizes g ob))
+  let least ← overColumn .lesser .long ⟨.long, g, .bytes (sizes g ob)⟩
   if 0 < g ∧ least ≤ 0 then none else
     let lasts := Ew.val Ew.add Ew.i64 Ew.va Int64.minValue (ends g ob) (atomBytes Ew.i64 (-1 : Int64).toUInt64) g.toUSize
-    (Arr.of t g (← vecCol (← gatherColumn t P.val.c (.bytes lasts))) "last each").toOption
+    (Arr.of t g (← vecCol (← gatherColumn t P.val.c ⟨.long, g, .bytes lasts⟩)) "last each").toOption
 
 /-- `select f x by k`: `f/` over each segment's rows at every type q's grouped fold has an engine for
     (`groupedOver`: integral and float, not boolean), answered at `Coc.Over.resultType`'s type, q's
@@ -78,7 +78,7 @@ def lastBy (P : Parted t) : Option (Arr t P.g) := do
 def overBy (op : Coc.Over) (P : Parted t) : Option ((rt : QAtomicType) × Arr rt P.g) := do
   let rt ← op.resultType false t
   let s ← groupedOver op false false t (.segs (← offs P.o)) P.val.c (tilLongs P.g.toUSize)
-  pure ⟨rt, ← (Arr.of rt P.g (.bytes s) "f/ by").toOption⟩
+  pure ⟨rt, ← (Arr.of rt P.g ⟨rt, P.g, .bytes s⟩ "f/ by").toOption⟩
 
 /-- A per-group answer of a grouped dict `R` (one boxed `v` vector per key): unbox once, run `f`, key the
     answer by `R.key`. The group count is re-read by `Arr.of`, one O(1) check. -/
@@ -261,9 +261,9 @@ namespace Ops
 
 variable {k : QAtomicType} {t : QAtomicType}
 /-- The longs `overBytes` folds over a dense long payload are the column's elements. -/
-theorem denseElems_long {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c = .bytes b) :
+theorem denseElems_long {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) :
     QLean.Verify.denseElems Ew.i64 b = R.toList := by
-  have hn : n = b.size / 8 := by have := R.wf.2.1; rw [hc] at this; simp only [Column.count] at this; exact this.symm
+  have hn : n = b.size / 8 := (Arr.n_long_bytes R hc).symm
   apply List.ext_getElem
   · rw [QLean.Verify.denseElems, List.length_map, List.length_range, Arr.length_toList, hn]; rfl
   · intro j _ _
@@ -273,11 +273,11 @@ theorem denseElems_long {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c = 
 /-- `f/x` over a dense long column, at a verb that skips the null (not `all`/`any`): `Spec.over` at the
     kernel's step and seed, from `overBytes_eq`. -/
 theorem over_bytes {op : Coc.Over} (hb : op.boolCast = false) {n : Nat} {R : Arr .long n} {b : ByteArray}
-    (hc : R.c = .bytes b) : over op R = some (Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.toList) := by
+    (hc : R.c.enc = .bytes b) : over op R = some (Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.toList) := by
   have he : overBytes op Ew.i64 Spec.nul b = Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.toList := by
     rw [QLean.Verify.overBytes_eq, QLean.Verify.overList, hb, QLean.Verify.foldl_filter, denseElems_long hc, Spec.over]
     congr 1; funext a x; by_cases hx : x = Spec.nul <;> simp [hx]
-  simp only [over, overColumn, hc, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
+  simp only [over, R.c_eq hc, overColumn, overFoR, clsOf, Coc.denseNul, Coc.nullOf, bind, Option.bind, Coc.narrowed]
   rw [he]; simp
 
 /-- A `long` fold that is not `all`/`any` answers at `long`. -/
@@ -292,7 +292,7 @@ theorem groupedOver_long {op : Coc.Over} (hb : op.boolCast = false) (gs : Groups
   cases h : overGroupsColumn op .long gs c <;> cases op <;> simp_all [groupedOver, bind, Option.bind] <;> rfl
 
 /-- Offset `j` of `o` is the long `atI64` reads at `j` of its dense payload. -/
-theorem offs_get {g : Nat} {o : Arr .long (g+1)} {ob : ByteArray} (ho : o.c = .bytes ob) {j : Nat}
+theorem offs_get {g : Nat} {o : Arr .long (g+1)} {ob : ByteArray} (ho : o.c.enc = .bytes ob) {j : Nat}
     (hj : j < g + 1) : o.toList[j]! = atI64 ob j := by
   rw [getElem!_pos _ j (by rw [Arr.length_toList]; exact hj), Arr.getElem_toList, Arr.get_long_bytes o ho, QLean.Verify.atI64_eq]
 
@@ -301,23 +301,22 @@ theorem offs_get {g : Nat} {o : Arr .long (g+1)} {ob : ByteArray} (ho : o.c = .b
     is needed: rows outside `[0, n)` and a descending pair of offsets name no row. -/
 theorem overBy_bytes {op : Coc.Over} (hb : op.boolCast = false) {n g : Nat}
     {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr .long n} {b ob : ByteArray}
-    {S : Arr .long g} (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.c = .bytes b) (ho : o.c = .bytes ob)
+    {S : Arr .long g} (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.c.enc = .bytes b) (ho : o.c.enc = .bytes ob)
     (h : overBy op ⟨g, n, o, co, x⟩ = some ⟨.long, S⟩) :
     S.toList = (List.range g).map fun j => Spec.over op.step (op.denseSeed Ew.i64 Spec.nul)
       (((List.range n).filter fun i => decide ((o.toList[j]!).toNatClampNeg ≤ i ∧ i < (o.toList[j+1]!).toNatClampNeg)).map
         fun i => x.toList[i]!) := by
-  have hn : b.size / 8 = n := by have := x.wf.2.1; rw [hc] at this; exact this
-  have hob : ob.size / 8 = g + 1 := by have := o.wf.2.1; rw [ho] at this; exact this
+  have hn : b.size / 8 = n := Arr.n_long_bytes x hc
+  have hob : ob.size / 8 = g + 1 := Arr.n_long_bytes o ho
   have hgu : g.toUSize.toNat = g := USize.toNat_ofNat_of_lt hg
   have hcnt : (Groups.segs ob).count.toNat = g := by simp only [Groups.count, hob, Nat.add_sub_cancel]; exact hgu
   have hm : overGroupsColumn op .long (.segs ob) x.c = some (overSegments op Ew.i64 Spec.nul ob b) := by
-    simp only [overGroupsColumn, hc, clsOf, Coc.denseNul, Coc.nullOf, Column.bytesOf, bind, Option.bind]
-  have hof : offs o = some ob := by simp only [offs, ho, Column.bytesOf]
+    simp only [overGroupsColumn, x.c_eq hc, clsOf, Coc.denseNul, Coc.nullOf, Column.bytesOf, bind, Option.bind]
+  have hof : offs o = some ob := by simp only [offs, o.c_eq ho, Column.bytesOf]
   simp only [overBy, hof, resultType_long hb, groupedOver_long hb, hm, bind, Option.bind, Option.map] at h
-  by_cases hw : (Column.admits .long (.bytes (groupCells .wrap 8 (Groups.segs ob).count (overSegments op Ew.i64 Spec.nul ob b) (tilLongs g.toUSize))) = true ∧
-      Column.count .long (.bytes (groupCells .wrap 8 (Groups.segs ob).count (overSegments op Ew.i64 Spec.nul ob b) (tilLongs g.toUSize))) = g)
-  · rw [Arr.of, dif_pos hw] at h
-    cases h
+  rw [Arr.of] at h
+  split at h
+  · cases h
     have e : QLean.Verify.denseElems Ew.i64 b = x.toList := denseElems_long (R := x) hc
     have hx : ∀ i, i < n → x.toList[i]! = QLean.Verify.valAt Ew.i64 b i := fun i hi => by
       rw [← e, QLean.Verify.denseElems, getElem!_pos _ i (by rw [List.length_map, List.length_range]; show i < b.size / 8; omega),

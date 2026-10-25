@@ -35,4 +35,8 @@ Left
   `c.ty = t ∧ c.n = n ∧ c.WF`) at 317-318, 419, 438, 479, 678; checks 812-816.
 - Then Struct (also has `Column.admits`/`Column.count` at 1136 and old foR checks at 1143), Algebra,
   Compressed, QRel, Bench.
+- Scan (WIP, agent a87e30c5): definitions ported (`avg` via `.atom a`; answers `⟨.long, P.g, .bytes s⟩`);
+  laws in progress: `Arr.of` branches now `rw [Arr.of] at h; split at h`; mwin answers carry `n` in the
+  header, not `size/8`, so `toList_answer_long`/`longWords_answer` need `M.size / 8 = n` from
+  `Verify.foldl_pushBits` (mwinExt/mwinSum/Ew.val are pushBits folds).
 - Bench results-identical check vs /data/tmp/ck/bench-4238 at n=100000, then timings.
