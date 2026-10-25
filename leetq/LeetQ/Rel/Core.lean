@@ -73,7 +73,7 @@ instance {g : Nat} (o : Arr (.atom .long) (g+1)) (n : Nat) : Decidable (Cuts o n
   unfold Cuts; infer_instance
 
 /-- The group holding each of `n` positions under the offsets `o`: the last cut at or below it, `o bin til n`
-    (`KeyCol.group` read by `binBytes`). -/
+    (`Parted.group` read by `binBytes`). -/
 def groupOf (o : ByteArray) (n : Nat) : ByteArray := Kernel.binBytes 8 false true false o (Kernel.tilLongs n.toUSize)
 
 /-- `xs` as a dense long payload, eight bytes each: the literal columns of every module's checks. -/
@@ -302,59 +302,123 @@ theorem cuts_get {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) {i j 
   rw [h0] at a; rw [hl] at c
   exact ⟨by simpa using a, b, c⟩
 
-/-- A key column of `n` keys of type `k`, storing only what q stores. -/
-inductive KeyCol : QListType → Nat → Type
-  /-- A list: key `i` is `i`, nothing stored. -/
-  | til (n : Nat) : KeyCol (.atom .long) n
-  /-- Grouped: key `i` is `d`'s key of the group holding `i`; `o` holds q's one offset per group. -/
-  | grp {k : QListType} {g n : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (wf : Cuts o n) : KeyCol k n
-  /-- A dict or a multi-valued relation: an explicit key column. -/
-  | arr {k : QListType} {n : Nat} (a : Arr k n) : KeyCol k n
-
-namespace KeyCol
-
-/-- The number of cut points after the first at or below `i`: the largest `r` with `o[r] ≤ i`, which
-    under `Cuts` is the group holding `i`. -/
-def group {g : Nat} (o : Arr (.atom .long) (g+1)) (i : Nat) : Nat :=
-  (List.finRange g).countP fun r => (o.get r.succ).toInt ≤ i
-
-/-- Key `i`. -/
-def get : {k : QListType} → {n : Nat} → KeyCol k n → Fin n → El k
-  | _, _, .til _, i => Int64.ofNat i
-  | _, n, .grp (g := g) d o wf, i =>
-    -- the `min` is unreachable under `Cuts`, which puts `i < o[g]` and so `group o i < g`
-    if h : 0 < g then d.get ⟨min (group o i) (g - 1), by omega⟩ else absurd i.2 (by
-      obtain rfl : g = 0 := by omega
-      have h2 := wf.2.2; rw [show Fin.last 0 = 0 from rfl, wf.2.1] at h2; simp at h2; omega)
-  | _, _, .arr a, i => a.get i
-
-/-- The keys in position order, for proofs only. -/
-def toList {k : QListType} {n : Nat} (c : KeyCol k n) : List (El k) := List.ofFn c.get
-
 /-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
 def longBytes : Column → Option ByteArray
   | .bytes b => some b
   | .foR m md pk => some (Kernel.Coc.decode 8 md pk m.toUSize)
   | _ => none
 
-/-- `grp d o` built at run time: `Cuts` decided by `Order.ascending` on `o`'s dense payload and one read of
+/-- The column of a q vector answer. -/
+def vecCol : QValue → Option Column
+  | .vector _ c => some c
+  | _ => none
+
+/-- A q list: `n` elements, its positions implicit — computed (`tilLongs`) where an op needs them,
+    never stored. -/
+structure Vec (t : QListType) where
+  n : Nat
+  val : Arr t n
+
+namespace Vec
+
+variable {t : QListType}
+
+/-- The list as a relation from its positions: `x i y ↔ val[i] = y`. -/
+def Holds (x : Vec t) (i : Int64) (y : El t) : Prop := ∃ j : Fin x.n, Int64.ofNat j = i ∧ x.val.get j = y
+
+/-- The pairs `(i, val[i])` in position order, for proofs only. -/
+def toList (x : Vec t) : List (Int64 × El t) := List.ofFn fun j => (Int64.ofNat j, x.val.get j)
+
+theorem holds_iff_mem_toList (x : Vec t) (i : Int64) (y : El t) : x.Holds i y ↔ (i, y) ∈ x.toList := by
+  simp [Holds, toList, List.mem_ofFn]
+
+end Vec
+
+/-- Under `Cuts o n`, a position exists only when there is a group to hold it. -/
+theorem Cuts.pos {g n : Nat} {o : Arr (.atom .long) (g+1)} (co : Cuts o n) (i : Fin n) : 0 < g := by
+  rcases g with _ | g
+  · have h2 := co.2.2; rw [show Fin.last 0 = 0 from rfl, co.2.1] at h2; simp at h2; have := i.2; omega
+  · omega
+
+/-- A parted list in its flat form: `n` values cut into `g` groups by the `g+1` offsets `o`. It is the
+    kernels' working shape, never a value: `box` turns it into q's nested list, one vector per group. -/
+structure Parted (v : QListType) where
+  g : Nat
+  n : Nat
+  o : Arr (.atom .long) (g+1)
+  co : Cuts o n
+  val : Arr v n
+
+namespace Parted
+
+variable {v : QListType}
+
+/-- The number of cut points after the first at or below `i`: the largest `r` with `o[r] ≤ i`, which
+    under `Cuts` is the group holding `i`. -/
+def group {g : Nat} (o : Arr (.atom .long) (g+1)) (i : Nat) : Nat :=
+  (List.finRange g).countP fun r => (o.get r.succ).toInt ≤ i
+
+/-- The group holding position `i`; the `min` is unreachable under `Cuts`, which puts `group o i < g`. -/
+def key (P : Parted v) (i : Fin P.n) : Fin P.g := ⟨min (group P.o i) (P.g - 1), by have := P.co.pos i; omega⟩
+
+/-- The pairs `(group, value)` in position order, for proofs only. -/
+def toList (P : Parted v) : List (Int64 × El v) := List.ofFn fun i => (Int64.ofNat (P.key i), P.val.get i)
+
+/-- `Parted` built at run time: `Cuts` decided by `Order.ascending` on `o`'s dense payload and one read of
     each end, `cuts_of_ascending` turning the kernel's answer into the proof. `none` when `o` is not cuts of `n`. -/
-def grp? {k : QListType} {g : Nat} (d : KeyCol k g) (o : Arr (.atom .long) (g+1)) (n : Nat) : Option (KeyCol k n) := do
+def of? {g n : Nat} (o : Arr (.atom .long) (g+1)) (val : Arr v n) : Option (Parted v) := do
   let b ← longBytes o.c
   if h : (Column.admits (.atom .long) (.bytes b) = true ∧ Column.count (.atom .long) (.bytes b) = g+1) ∧
       g + 1 < USize.size then
     let ob : Arr (.atom .long) (g+1) := ⟨.bytes b, h.1, o.attr, none⟩
     if hc : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true ∧ ob.get 0 = 0 ∧ (ob.get (Fin.last g)).toInt = n then
-      some (.grp d ob (cuts_of_ascending ob rfl h.2 hc.1 hc.2.1 hc.2.2))
+      some ⟨g, n, ob, cuts_of_ascending ob rfl h.2 hc.1 hc.2.1 hc.2.2, val⟩
     else none
   else none
 
-end KeyCol
+/-- Group `r`'s values `val[o[r] … o[r+1]-1]` as a q value: `sliceColumn` at an atomic type, the
+    general list's sub-array otherwise. -/
+def slice (P : Parted v) (r : Fin P.g) : Option QValue :=
+  let lo := (P.o.get r.castSucc).toNatClampNeg; let hi := (P.o.get r.succ).toNatClampNeg
+  match v, P.val.c with
+  | .atom t, c => Kernel.sliceColumn t c lo (hi - lo)
+  | .general, .gen xs => some (.list (xs.extract lo hi))
+  | .general, _ => none
 
-/-- A relation from `k` to `v`: `n` positions, a key and a value at each. -/
+/-- q's nested list: one vector per group, each its own slice. -/
+def box (P : Parted v) : Except String (Arr .general P.g) := do
+  let some xs := (Array.ofFn (P.slice ·)).mapM id | throw "box: sliceColumn declines a group's slice"
+  Arr.of .general P.g (.gen xs) "box"
+
+/-- The parts of a nested list as each part's count and one flat column: `raze` of the vectors at an
+    atomic type, the concatenated lists at `.general`; a part of another shape is declined. -/
+def razeParts : QListType → Array QValue → Except String (Array Nat × Column)
+  | .atom t, xs => do
+    let cs ← xs.mapM fun | .vector t' c => if t' == t then pure c else throw "razeParts: a part of another type"
+                          | _ => throw "razeParts: a part that is not a vector"
+    let some c := (if cs.isEmpty then Kernel.sliceColumn t (Kernel.nullColumn t) 0 0 else Kernel.razeColumn t cs).bind vecCol
+      | throw "razeParts: razeColumn declines the parts"
+    pure (cs.map (Column.count (.atom t)), c)
+  | .general, xs => do
+    let ls ← xs.mapM fun | .list ys => pure ys | _ => throw "razeParts: a general part that is not a list"
+    pure (ls.map (·.size), Column.gen (ls.foldl (· ++ ·) #[]))
+
+/-- The flat form of a nested list of `g` parts at `v`: `razeParts`, the offsets their running counts. -/
+def ofBoxes (v : QListType) {g : Nat} (b : Arr .general g) : Except String (Parted v) := do
+  let .gen xs := b.c | throw "ofBoxes: a nested list's payload is not .gen"
+  let (cnt, c) ← razeParts v xs
+  let os := cnt.foldl (fun (s, b) m => (s + m, Column.pushBits b (Int64.ofNat (s + m)).toUInt64 8)) (0, Column.pushBits .empty 0 8)
+  let o ← Arr.of (.atom .long) (g+1) (.bytes os.2) "ofBoxes"
+  let val ← Arr.of v os.1 c "ofBoxes"
+  let some P := of? o val | throw "ofBoxes: the running counts are not cuts"
+  pure P
+
+end Parted
+
+/-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays. -/
 structure Rel (k v : QListType) where
   n : Nat
-  key : KeyCol k n
+  key : Arr k n
   val : Arr v n
 
 namespace Rel
@@ -396,32 +460,35 @@ private def es : Arr (.atom .symbol) 3 :=
 private def gs : Arr .general 2 := { c := .gen #[.atom (.long 1), .list #[]], wf := ⟨rfl, rfl⟩ }
 #guard match gs.get 0, gs.get 1 with | .atom (.long 1), .list #[] => true | _, _ => false
 
--- groups `[0,1) [1,1) [1,3)` under the keys `a bc d`: the empty middle group owns no position
+-- groups `[0,1) [1,1) [1,3)`: the empty middle group owns no position
 private def o3 : Arr (.atom .long) 4 := { c := .bytes <| packLongs [0, 1, 1, 3], wf := by decide }
-private def ds : Arr (.atom .symbol) 3 := { c := .syms (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7], wf := by decide }
-private def grpKey : KeyCol (.atom .symbol) 3 := .grp (.arr ds) o3 (by decide)
-#guard grpKey.toList == ["a", "d", "d"]
--- the parted list `(10 20; 30)`: positions `0 1 | 2`, keys `0 0 1`
+-- the parted list `(10 20; 30)`: positions `0 1 | 2`, groups `0 0 1`
 private def o2 : Arr (.atom .long) 3 := { c := .bytes <| packLongs [0, 2, 3], wf := by decide }
-private def parted : Rel (.atom .long) (.atom .long) := ⟨3, .grp (.til 2) o2 (by decide), { c := .bytes <| packLongs [10, 20, 30], wf := by decide }⟩
--- `grp?` decides the same `Cuts` at run time, on `bytes` and on `foR` offsets
+private def v3 : Arr (.atom .long) 3 := { c := .bytes <| packLongs [10, 20, 30], wf := by decide }
+-- `of?` decides `Cuts` at run time, on `bytes` and on `foR` offsets
 private def o3f : Arr (.atom .long) 4 :=
   { c := .foR 4 (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).1
       (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).2, wf := ⟨rfl, rfl⟩ }
-#guard [o3, o3f].all fun o => ((KeyCol.grp? (.arr ds) o 3).map KeyCol.toList) == some ["a", "d", "d"]
-#guard ((KeyCol.grp? (.til 2) o2 3).map KeyCol.toList) == some [0, 0, 1]
-#guard (KeyCol.grp? (.til 2) o2 4).isNone
-#guard (KeyCol.grp? (.til 2) ({ c := .bytes <| packLongs [0, 2, 1], wf := by decide } : Arr (.atom .long) 3) 1).isNone
-#guard (KeyCol.grp? (.til 2) ({ c := .bytes <| packLongs [1, 2, 3], wf := by decide } : Arr (.atom .long) 3) 3).isNone
-#guard parted.toList == [(0, 10), (0, 20), (1, 30)]
-example : parted.Holds 1 30 := (parted.holds_iff_mem_toList 1 30).2 (by decide)
-#guard (Rel.mk 3 (.til 3) ss).toList == [(0, "bc"), (1, "a"), (2, "bc")]
+#guard [o3, o3f].all fun o => ((Parted.of? o v3).map Parted.toList) == some [(0, 10), (2, 20), (2, 30)]
+#guard ((Parted.of? o2 v3).map Parted.toList) == some [(0, 10), (0, 20), (1, 30)]
+#guard (Parted.of? o2 ({ c := .bytes <| packLongs [10, 20], wf := by decide } : Arr (.atom .long) 2)).isNone
+#guard (Parted.of? ({ c := .bytes <| packLongs [0, 2, 1], wf := by decide } : Arr (.atom .long) 3) v3).isNone
+#guard (Parted.of? ({ c := .bytes <| packLongs [1, 2, 3], wf := by decide } : Arr (.atom .long) 3) v3).isNone
+-- `box` then `ofBoxes` is the identity on the flat form, and each box is q's vector of its slice
+#guard match Parted.of? o3 v3 with
+  | some P => match P.box with
+    | .ok b => (match (b.toList[1]? : Option QValue) with | some (.vector .long c) => Column.count (.atom .long) c == 0 | _ => false) &&
+        match Parted.ofBoxes (.atom .long) b with | .ok Q => Q.toList == P.toList | .error _ => false
+    | .error _ => false
+  | none => false
+#guard (Vec.mk 3 ss).toList == [(0, "bc"), (1, "a"), (2, "bc")]
+example : (Vec.mk 3 ss).Holds 1 "a" := ((Vec.mk 3 ss).holds_iff_mem_toList 1 "a").2 (by decide)
 
 end Checks
 
 #print axioms Arr.get
-#print axioms KeyCol.get
-#print axioms KeyCol.grp?
+#print axioms Parted.key
+#print axioms Parted.of?
 #print axioms cuts_of_ascending
 #print axioms Rel.holds_iff_mem_toList
 
