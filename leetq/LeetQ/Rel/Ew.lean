@@ -19,15 +19,16 @@ namespace Ew
 /-- One `dyadColumn` call — qlean's per-encoding dispatch (`bytes`, `foR`, ALP, `bits`, `syms`) —
     checked against the result type `rt` the caller asked for. -/
 def dyad (v : Prim.Dyadic) (shape : UInt8) (t u rt : QAtomicType) (a b : Column) (n : Nat) :
-    Except String (Arr (.atom rt) n) :=
+    Except String (Arr rt n) :=
   match dyadColumn v shape t u a b with
   | none => .error s!"Ew: no qlean kernel claims {repr v} at {repr t}, {repr u} (shape {shape})"
   | some (rt', c) =>
-    if rt' = rt then Arr.of (.atom rt) n c s!"Ew {repr v}" else .error s!"Ew {repr v}: answers {repr rt'}, not {repr rt}"
+    if rt' = rt then Arr.of rt n c s!"Ew {repr v}" else .error s!"Ew {repr v}: answers {repr rt'}, not {repr rt}"
 
 /-- A one-element column holding `a`: how an atom reaches a kernel, once per call. -/
-def atomCol (t : QAtomicType) (a : QAtom) : Except String Column :=
-  match Column.ofAtoms t #[a] with
+def atomCol (t : QAtomicType) (a : QAtom) (ht : t ≠ .general := by first | decide | assumption) :
+    Except String Column :=
+  match Column.ofAtoms t #[a] ht with
   | some c => .ok c
   | none => .error s!"Ew: Column.ofAtoms refused an atom at {repr t}"
 
@@ -38,13 +39,13 @@ variable {t u : QAtomicType} {n : Nat}
 /-- `x f y` element by element: `yv` a value column on `x`'s positions. A list's or a dict's values go in
     alone; the positions or the key stay where they are. Comparisons are this at `rt = boolean`
     (`Ew.cmp` in the design is the same `dyadColumn` call, `cmpPayload` inside). -/
-def Ew.val (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr (.atom t) n) (yv : Arr (.atom u) n) :
-    Except String (Arr (.atom rt) n) :=
+def Ew.val (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr t n) (yv : Arr u n) :
+    Except String (Arr rt n) :=
   Ew.dyad v Ew.vv t u rt x.c yv.c n
 
 /-- `a f x`: the atom on the left, the one atom shape `av` that reaches a kernel. -/
-def Ew.atomVal (v : Prim.Dyadic) (rt : QAtomicType) (a : Carrier t) (x : Arr (.atom u) n) :
-    Except String (Arr (.atom rt) n) := do
+def Ew.atomVal (v : Prim.Dyadic) (rt : QAtomicType) (a : Carrier t) (x : Arr u n)
+    (ht : t ≠ .general := by first | decide | assumption) : Except String (Arr rt n) := do
   Ew.dyad v Ew.av t u rt (← Ew.atomCol t (Carrier.atom a)) x.c n
 
 /-- The verb `v'` with `x v a = a v' x`, where one exists. -/
@@ -56,33 +57,34 @@ def Ew.flip : Prim.Dyadic → Option Prim.Dyadic
 /-- `x f a`, rewritten onto `av` by `flip` (`x<a = a>x`). `-` and `%` keep `va`, which the kernel has:
     `(−a)+x` changes the type rule at temporal types (`d−d` is `int`, `d+(−d)` is `'type`) and
     `(1/a)×x` is not `x/a` bit for bit in floats. -/
-def Ew.valAtom (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr (.atom t) n) (a : Carrier u) :
-    Except String (Arr (.atom rt) n) :=
+def Ew.valAtom (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr t n) (a : Carrier u)
+    (hu : u ≠ .general := by first | decide | assumption) : Except String (Arr rt n) :=
   match Ew.flip v with
   | some vf => Ew.atomVal vf rt a x
   | none => do Ew.dyad v Ew.va t u rt x.c (← Ew.atomCol u (Carrier.atom a)) n
 
 /-- `f x` for qlean's monadic kernels by name (`neg`, `abs`, `reciprocal`, `null`, …): one `monColumn`. -/
-def Ew.mon (name : String) (rt : QAtomicType) (x : Arr (.atom t) n) : Except String (Arr (.atom rt) n) :=
+def Ew.mon (name : String) (rt : QAtomicType) (x : Arr t n) : Except String (Arr rt n) :=
   match monColumn name t x.c with
   | none => .error s!"Ew.mon: no qlean kernel claims {name} at {repr t}"
   | some (rt', c) =>
-    if rt' = rt then Arr.of (.atom rt) n c s!"Ew.mon {name}"
+    if rt' = rt then Arr.of rt n c s!"Ew.mon {name}"
     else .error s!"Ew.mon {name}: answers {repr rt'}, not {repr rt}"
 
 /-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
 def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize
 
 /-- `~x`: `Ew.notBits` of the column. -/
-def Ew.not (x : Arr (.atom .boolean) n) : Except String (Arr (.atom .boolean) n) :=
-  match x.c with
-  | .bits m b => Arr.of (.atom .boolean) n (.bits m (Ew.notBits m b)) "Ew.not"
+def Ew.not (x : Arr .boolean n) : Except String (Arr .boolean n) :=
+  match x.c.enc with
+  | .bits b => Arr.of .boolean n ⟨.boolean, x.c.n, .bits (Ew.notBits x.c.n b)⟩ "Ew.not"
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
 /-- The raw bits of a one-element column, as `shiftColumn`'s `fill` takes them. -/
-def Ew.atomBits (t : QAtomicType) : Column → Except String UInt64
-  | .bits _ b => .ok (if Column.bitAt b 0 then 1 else 0)
-  | c => match Column.bytesOf t c, t.width with
+def Ew.atomBits (t : QAtomicType) (c : Column) : Except String UInt64 :=
+  match c.enc with
+  | .bits b => .ok (if Column.bitAt b 0 then 1 else 0)
+  | _ => match Column.bytesOf c, t.width with
     | some b, some w => .ok (Column.bitsAt b 0 w)
     | _, _ => .error s!"Ew: no fixed-width payload for an atom at {repr t}"
 
@@ -90,16 +92,16 @@ def Ew.atomBits (t : QAtomicType) : Column → Except String UInt64
     prior operand is `shiftColumn` (`shiftBytes`/`shiftFoR`/`shiftALP`/`shiftBits`) and then one
     `dyadColumn`; on two `foR`s that pair is `priorValFoR`'s body. A dense fused kernel reading the
     one payload at offset `−w` does not exist in qlean: this is two passes there. -/
-def Ew.prior (v : Prim.Dyadic) (rt : QAtomicType) (seed : Carrier t) (x : Arr (.atom t) n) :
-    Except String (Arr (.atom rt) n) := do
+def Ew.prior (v : Prim.Dyadic) (rt : QAtomicType) (seed : Carrier t) (x : Arr t n)
+    (ht : t ≠ .general := by first | decide | assumption) : Except String (Arr rt n) := do
   let fill ← Ew.atomBits t (← Ew.atomCol t (Carrier.atom seed))
   match shiftColumn t 1 fill x.c with
-  | some (.vector _ p) => Ew.dyad v Ew.vv t t rt x.c p n
+  | some (.vector p) => Ew.dyad v Ew.vv t t rt x.c p n
   | _ => .error s!"Ew.prior: shiftColumn refused a column at {repr t}"
 
 /-- `x f y` on two lists: one `Ew.val` when the lengths agree, q's `'length` otherwise. -/
-def Ew.zip (v : Prim.Dyadic) (rt : QAtomicType) {m : Nat} (x : Arr (.atom t) n) (y : Arr (.atom u) m) :
-    Except String (Arr (.atom rt) n) :=
+def Ew.zip (v : Prim.Dyadic) (rt : QAtomicType) {m : Nat} (x : Arr t n) (y : Arr u m) :
+    Except String (Arr rt n) :=
   if h : m = n then Ew.val v rt x (h ▸ y) else .error "'length"
 
 /-! ## §4: different keys -/
@@ -146,16 +148,16 @@ namespace Ew
 
 /-- A `.vector`'s column out of a kernel's `QValue`. -/
 def vec (what : String) : Option QValue → Except String Column
-  | some (.vector _ c) => .ok c
+  | some (.vector c) => .ok c
   | _ => .error s!"align: {what} answered no vector"
 
 /-- `src@idx` with misses (`idx ≥ n`) filled by `fill`: `gatherBytes` on `bytes`, `gatherFoR` on `foR`. -/
 def gatherFill (t : QAtomicType) (fill : UInt64) (src idx : Column) : Except String Column := do
   let some w := t.width | .error s!"align: {repr t} has no fixed width"
-  let some ib := Column.bytesOf .long idx | .error "align: index column has no long payload"
-  match src with
-  | .bytes b => return .bytes (gatherBytes w.toUSize fill b ib)
-  | .foR n m p => return .bytes (gatherFoR w.toUSize fill m p n.toUSize ib)
+  let some ib := Column.bytesOf idx | .error "align: index column has no long payload"
+  match src.enc with
+  | .bytes b => return ⟨t, idx.n, .bytes (gatherBytes w.toUSize fill b ib)⟩
+  | .foR m p => return ⟨t, idx.n, .bytes (gatherFoR w.toUSize fill m p src.n.toUSize ib)⟩
   | _ => .error s!"align: no fill-gather for this encoding at {repr t}"
 
 end Ew
@@ -166,30 +168,30 @@ end Ew
     `razeColumn` of keys and of values. No `Option` is written; the spec is `alignList`. Keys equal as
     columns (`matchColumn`, whatever form each key takes) are one key: one `Ew.val`, `x.key` kept, as q
     does when the two dicts' keys match. -/
-def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) (.atom t)) (y : Rel (.atom s) (.atom u)) :
-    Except String (Rel (.atom s) (.atom rt)) := do
+def Ew.align (L : Lift) (rt : QAtomicType) {s : QAtomicType} (x : Rel s t) (y : Rel s u)
+    (ht : t ≠ .general := by first | decide | assumption) : Except String (Rel s rt) := do
   let kx := x.key.c
   let ky := y.key.c
   -- `matchColumn` answers `none` only where no kernel compares the two encodings: the general path is right there.
   -- Symbol keys always have one: `matchSyms`, `matchIds`, and `matchSymsIds` for a blob against an interned column
   if h : y.n = x.n then
     if matchColumn s kx ky == some true then return ⟨x.n, x.key, ← Ew.val L.v rt x.val (h ▸ y.val)⟩
-  let ix ← Ew.vec "findColumn" (findColumn s false ky (.vector (.atom s) kx))
+  let ix ← Ew.vec "findColumn" (findColumn s false ky (.vector kx))
   let yx ← Ew.gatherFill u L.er y.val.c ix
   let l ← Ew.dyad L.v Ew.vv t u rt x.val.c yx x.n
-  let some (.vector _ (.bits m b)) := memberColumn s false (.vector (.atom s) ky) kx | .error "align: memberColumn"
-  let some (.vector _ iy) := whereColumn .boolean (.bits m (Ew.notBits m b))
+  let some (.vector ⟨_, m, .bits b⟩) := memberColumn s false (.vector ky) kx | .error "align: memberColumn"
+  let some (.vector iy) := whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b)⟩
     | .error "align: whereColumn"
-  let r := Column.count (.atom .long) iy
+  let r := iy.n
   let ry ← Ew.dyad L.vr Ew.av t u rt (← Ew.atomCol t (Column.atomOfBits t L.el))
     (← Ew.vec "gatherColumn" (gatherColumn u y.val.c iy)) r
   let keys ← Ew.vec "razeColumn" (razeColumn s #[kx, ← Ew.vec "gatherColumn" (gatherColumn s ky iy)])
   let vals ← Ew.vec "razeColumn" (razeColumn rt #[l.c, ry.c])
-  return ⟨x.n + r, ← Arr.of (.atom s) (x.n + r) keys "align keys", ← Arr.of (.atom rt) (x.n + r) vals "align vals"⟩
+  return ⟨x.n + r, ← Arr.of s (x.n + r) keys "align keys", ← Arr.of rt (x.n + r) vals "align vals"⟩
 
 /-- `x f y` on two dicts: `align` under the verb's `Lift`, one `Ew.val` when the keys match. -/
-def Ew.dyadic (v : Prim.Dyadic) (rt : QAtomicType) {s : QAtomicType} (x : Rel (.atom s) (.atom t))
-    (y : Rel (.atom s) (.atom u)) : Except String (Rel (.atom s) (.atom rt)) := do
+def Ew.dyadic (v : Prim.Dyadic) (rt : QAtomicType) {s : QAtomicType} (x : Rel s t)
+    (y : Rel s u) (ht : t ≠ .general := by first | decide | assumption) : Except String (Rel s rt) := do
   Ew.align (← Lift.ofVerb v t u) rt x y
 
 /-! ## Spec over `toList` -/
@@ -202,11 +204,11 @@ def alignList {K A B : Type} [BEq K] (xs : List (K × A)) (ys : List (K × B)) :
 
 /-- `R` is `x f y` element by element: the values `Dep.elem v h` of the pairs. -/
 def Ew.ValSpec (v : Prim.Dyadic) {rt : QAtomicType} (h : Eval.ewType v t u = some rt)
-    (x : Arr (.atom t) n) (yv : Arr (.atom u) n) (R : Arr (.atom rt) n) : Prop :=
+    (x : Arr t n) (yv : Arr u n) (R : Arr rt n) : Prop :=
   (x.toList.zip yv.toList).mapM (fun p => elem v h p.1 p.2) = .ok R.toList
 
 /-- `R` is `x` with `f` on every value. -/
-def Ew.MapSpec {rt : QAtomicType} (f : Carrier t → Carrier rt) (x : Arr (.atom t) n) (R : Arr (.atom rt) n) : Prop :=
+def Ew.MapSpec {rt : QAtomicType} (f : Carrier t → Carrier rt) (x : Arr t n) (R : Arr rt n) : Prop :=
   R.toList = x.toList.map f
 
 /-- `align`'s answer has `x`'s keys first, in `x`'s order: its key list starts with `x.key`. -/
@@ -262,22 +264,22 @@ theorem Ew.notBits_bitAt {m : Nat} (hm : m < USize.size) (b : ByteArray) {i : Na
   cases Column.bitAt b i <;> decide
 
 /-- **`~x`** is `x` with `not` on every boolean. `x.n < USize.size`: the kernel takes the count as a `USize`. -/
-theorem Ew.not_spec {x R : Arr (.atom .boolean) n} (hn : n < USize.size) (h : Ew.not x = .ok R) :
+theorem Ew.not_spec {x R : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = .ok R) :
     Ew.MapSpec (fun b => !b) x R := by
   unfold Ew.not at h
   split at h
-  · rename_i m b hc
-    have hm : m = n := by have := x.wf.2; rw [hc] at this; exact this
+  · rename_i b hc
+    have hm : x.c.n = n := x.wf.2.1
     apply List.ext_getElem (by rw [List.length_map]; exact (Arr.length_toList R).trans (Arr.length_toList x).symm)
     intro i h1 h2
-    have hac : R.c = .bits m (Ew.notBits m b) := by
+    have hac : R.c.enc = .bits (Ew.notBits x.c.n b) := by
       unfold Arr.of at h; split at h
       · cases h; rfl
       · cases h
     rw [Arr.getElem_toList, List.getElem_map, Arr.getElem_toList, Arr.get_bool_bits _ hac,
       Arr.get_bool_bits _ hc]
     rw [Arr.length_toList] at h1
-    exact Ew.notBits_bitAt (hm ▸ hn) b (by omega)
+    exact Ew.notBits_bitAt (by rw [hm]; exact hn) b (by omega)
   · cases h
 
 
@@ -353,7 +355,7 @@ theorem Ew.elem_long_val {v : Prim.Dyadic} {op : UInt8} (hop : valOp v = some op
     (h : Eval.ewType v .long .long = some .long) (x y : Int64) :
     elem v h x y = .ok (Ew.intStep op Int64.minValue x y) := by
   have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_val hop h x y
-  unfold elem
+  unfold elem; rw [dif_neg (by decide), dif_neg (by decide)]
   split
   · rename_i hz; rw [hd] at hz; cases hz
   · rename_i hz; rw [hd] at hz; cases hz; rfl
@@ -363,7 +365,7 @@ theorem Ew.elem_long_cmp {v : Prim.Dyadic} {op : UInt8} (hop : cmpOp v = some op
     (h : Eval.ewType v .long .long = some .boolean) (x y : Int64) :
     elem v h x y = .ok (Ew.cmpStep op Ew.i64 x.toUInt64 y.toUInt64) := by
   have hd : dyadAtom v (Carrier.atom (t := .long) x) (Carrier.atom (t := .long) y) = _ := Ew.dyadAtom_long_cmp hop x y
-  unfold elem
+  unfold elem; rw [dif_neg (by decide), dif_neg (by decide)]
   split
   · rename_i hz; rw [hd] at hz; cases hz
   · rename_i hz; rw [hd] at hz; cases hz; rfl
@@ -379,10 +381,10 @@ end Step
 section Checks
 
 /-- A column of longs, a list of them, or a dict of longs; built through `Arr.of`'s run-time `wf`. -/
-private def LA (vs : List Int64) : Except String (Arr (.atom .long) vs.length) :=
-  Arr.of (.atom .long) _ (.bytes (packLongs vs)) "L"
-private def D (ks vs : List Int64) : Except String (Rel (.atom .long) (.atom .long)) :=
-  return ⟨vs.length, ← Arr.of (.atom .long) _ (.bytes (packLongs ks)) "D", ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "D"⟩
+private def LA (vs : List Int64) : Except String (Arr .long vs.length) :=
+  Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "L"
+private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
+  return ⟨vs.length, ← Arr.of .long _ ⟨.long, ks.length, .bytes (packLongs ks)⟩ "D", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
 private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
 
@@ -399,10 +401,10 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El
 #guard av (do Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2)) == some [false, true, true]
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← LA [1, 4, 9, 16])) == some [1, 3, 5, 7]
 -- `foR` operands: `tilColumn` writes one once it is long enough for the encoding to pay
-private def tilFoR (n : Nat) : Except String (Arr (.atom .long) n) := do
-  let some (.vector _ c) := tilColumn n | throw "tilColumn refused"
-  unless c matches .foR .. do throw "tilColumn answered no foR"
-  Arr.of (.atom .long) n c "til"
+private def tilFoR (n : Nat) : Except String (Arr .long n) := do
+  let some (.vector c) := tilColumn n | throw "tilColumn refused"
+  unless c.enc matches .foR .. do throw "tilColumn answered no foR"
+  Arr.of .long n c "til"
 #guard av (do Ew.val .add .long (← tilFoR 4096) (← tilFoR 4096)) == some ((List.range 4096).map (Int64.ofNat <| 2 * ·))
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← tilFoR 4096)) == some (0 :: List.replicate 4095 1)
 #guard av (do Ew.valAtom (u := .long) .lt .boolean (← tilFoR 4096) 3) == some ((List.range 4096).map (decide <| · < 3))
@@ -417,7 +419,7 @@ private def tilFoR (n : Nat) : Except String (Arr (.atom .long) n) := do
 #guard alignList [((1 : Int64), (10 : Int64)), (2, 20), (3, 30)] [((2 : Int64), (5 : Int64)), (4, 7)] ==
   [(1, some 10, none), (2, some 20, some 5), (3, some 30, none), (4, none, some 7)]
 /-- `x+y` read off `alignList`: `+`'s unit `0` on the missing side. -/
-private def addSpec (x y : Except String (Rel (.atom .long) (.atom .long))) : Option (List (Int64 × Int64)) := do
+private def addSpec (x y : Except String (Rel .long .long)) : Option (List (Int64 × Int64)) := do
   pure ((alignList (← x.toOption).toList (← y.toOption).toList).map fun (k, a, b) => (k, a.getD 0 + b.getD 0))
 -- different keys, repeated or not: `x` keys `0 1 2`, `1 3 3`, `1 2 3`; `y` keys `0 1 2`, `0 0 1`, `2 4`
 #guard [D [0, 1, 2] [10, 20, 30], D [1, 3, 3] [10, 20, 30], D [1, 2, 3] [10, 20, 30]].all fun x =>
@@ -433,17 +435,17 @@ private def addSpec (x y : Except String (Rel (.atom .long) (.atom .long))) : Op
   some [(0, 11), (0, 22), (1, 33)]
 -- symbol keys `a a b`, as a blob (`SS`) and interned over `a, b` (`SE`): equal keys in every pair of encodings
 -- take the one-key path, which alone adds position by position across the repeated `a`
-private def SK (c : Column) (vs : List Int64) : Except String (Rel (.atom .symbol) (.atom .long)) :=
-  return ⟨vs.length, ← Arr.of (.atom .symbol) _ c "SK", ← Arr.of (.atom .long) _ (.bytes (packLongs vs)) "SK"⟩
-private def SS (vs : List Int64) := SK (.syms (ByteArray.mk #[97, 0, 97, 0, 98, 0]) #[0, 2, 4, 6]) vs
+private def SK (c : Column) (vs : List Int64) : Except String (Rel .symbol .long) :=
+  return ⟨vs.length, ← Arr.of .symbol _ c "SK", ← Arr.of .long _ ⟨.long, vs.length, .bytes (packLongs vs)⟩ "SK"⟩
+private def SS (vs : List Int64) := SK ⟨.symbol, 3, .syms (ByteArray.mk #[97, 0, 97, 0, 98, 0]) #[0, 2, 4, 6]⟩ vs
 private def SE (vs : List Int64) :=
-  SK (.enum 3 (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 3 fun i => [0, 0, 1][i]!)) vs
+  SK ⟨.symbol, 3, .enum (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 3 fun i => [0, 0, 1][i]!)⟩ vs
 private def addL := Lift.ofVerb .add .long .long
 #guard [SS, SE].all fun x => [SS, SE].all fun y =>
   pairs (do Ew.align (← addL) .long (← x [10, 20, 30]) (← y [1, 2, 3])) == some [("a", 11), ("a", 22), ("b", 33)]
 -- different symbol keys `a b` against `b c` in every pair of encodings: the general path
-private def S2 (b : ByteArray) (vs : List Int64) : List (Except String (Rel (.atom .symbol) (.atom .long))) :=
-  [SK (.syms b #[0, 2, 4]) vs, SK (.enum 2 b #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 2 id)) vs]
+private def S2 (b : ByteArray) (vs : List Int64) : List (Except String (Rel .symbol .long)) :=
+  [SK ⟨.symbol, 2, .syms b #[0, 2, 4]⟩ vs, SK ⟨.symbol, 2, .enum b #[0, 2, 4] (Column.packIds (Column.idWidth #[0, 2, 4]) 2 id)⟩ vs]
 #guard (S2 (ByteArray.mk #[97, 0, 98, 0]) [10, 20]).all fun x => (S2 (ByteArray.mk #[98, 0, 99, 0]) [1, 2]).all fun y =>
   pairs (do Ew.align (← addL) .long (← x) (← y)) == some [("a", 10), ("b", 21), ("c", 2)]
 
