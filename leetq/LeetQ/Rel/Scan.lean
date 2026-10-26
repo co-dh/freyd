@@ -286,6 +286,101 @@ def quot (p : Int64 × Nat) : UInt64 :=
 /-- `avg x`: the total of the elements that are not `0N`, wrapping at `Int64`, over their count. -/
 def avg (xs : List Int64) : UInt64 := quot (over (· + ·) 0 xs, (xs.filter (· != nul)).length)
 
+/-- The step and seed the long scan kernel folds at each verb (`intScan`'s, read on longs): `fills` keeps
+    the last element read, from `0N`. -/
+def kern : Scan.Verb → (Int64 → Int64 → Int64) × Int64
+  | .sums => (Coc.Over.step .add, 0)
+  | .prds => (Coc.Over.step .mul, 1)
+  | .mins => (Coc.Over.step .lesser, Int64.maxValue)
+  | .maxs => (Coc.Over.step .greater, -Int64.maxValue)
+  | .fills => (fun _ y => y, nul)
+
+/-- At a verb that is a fold's scan, the kernel's step and seed are the fold's. -/
+theorem kern_verb {op : Coc.Over} {sv : Scan.Verb} (hv : verb op = some sv) :
+    (kern sv).1 = op.step ∧ (kern sv).2 = op.seed nul := by
+  cases op <;> simp only [verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv <;> exact ⟨rfl, by decide⟩
+
+/-- A float's bits with every NaN as q's `0n`: the `foR` path of `avg` divides with no NaN guard, which
+    the dense path has. -/
+def canon (r : UInt64) : UInt64 := if Bits.f64IsNaN r then QLean.nanBits else r
+
+theorem nanBits_isNaN : Bits.f64IsNaN QLean.nanBits = true := by first | rfl | decide
+
+/-- `quot` is already canonical. -/
+theorem canon_quot (p : Int64 × Nat) : canon (quot p) = quot p := by
+  by_cases h0 : (p.2 == 0) = true
+  · simp [canon, quot, h0, nanBits_isNaN]
+  · by_cases hr : Bits.f64IsNaN (p.1.toFloat / p.2.toFloat).toBits = true <;>
+      simp [canon, quot, h0, hr, nanBits_isNaN]
+
+/-- The unguarded quotient, made canonical, is `quot`. -/
+theorem canon_raw (p : Int64 × Nat) :
+    canon (if p.2 == 0 then QLean.nanBits else (p.1.toFloat / p.2.toFloat).toBits) = quot p := by
+  by_cases h0 : (p.2 == 0) = true
+  · simp [canon, quot, h0, nanBits_isNaN]
+  · simp [canon, quot, h0]
+
+/-- `0N` is the least long, so every other long is at least `0N + 1`. -/
+theorem toInt_ne_nul (x : Int64) (h : x ≠ nul) : -9223372036854775807 ≤ x.toInt := by
+  have h0 : nul.toInt ≤ x.toInt := by first | exact Int64.minValue_le_toInt x | exact Int64.minValue_le_toInt
+  have hm : nul.toInt = -9223372036854775808 := by first | rfl | decide
+  have hne : x.toInt ≠ nul.toInt := fun e => h (Int64.toInt_inj.1 e)
+  omega
+
+theorem toInt_nul_succ : (nul + 1).toInt = -9223372036854775807 := by first | rfl | decide
+
+/-- `x < 0N + 1` is `x = 0N`: `Coc.countLt` at `0N + 1` counts the nulls. -/
+theorem lt_nul_succ (x : Int64) : decide (x < nul + 1) = (x == nul) := by
+  by_cases h : x = nul
+  · subst h; decide
+  · have := toInt_ne_nul x h
+    rw [show (x == nul) = false by simpa using h, decide_eq_false_iff_not, Int64.lt_iff_toInt_lt, toInt_nul_succ]
+    omega
+
+/-- `max`'s step is associative. -/
+theorem greater_assoc (a b c : Int64) : Coc.Over.step .greater (Coc.Over.step .greater a b) c =
+    Coc.Over.step .greater a (Coc.Over.step .greater b c) := by
+  simp only [Coc.Over.step]
+  repeat' split
+  all_goals simp only [Int64.lt_iff_toInt_lt] at *
+  all_goals first
+    | rfl
+    | (exfalso; omega)
+    | exact Int64.toInt_inj.1 (by omega)
+
+/-- `max`'s seed `-0W = 0N + 1` is a unit on the longs that are not `0N`, which are all `skipNul` lets in. -/
+theorem greater_seed (a : Int64) (h : a ≠ nul) :
+    Coc.Over.step .greater (Coc.Over.seed .greater nul) a = a ∧ Coc.Over.step .greater a (Coc.Over.seed .greater nul) = a := by
+  have ha := toInt_ne_nul a h
+  refine ⟨?_, ?_⟩
+  · show (if a < nul + 1 then nul + 1 else a) = a
+    rw [if_neg (by rw [Int64.lt_iff_toInt_lt, toInt_nul_succ]; omega)]
+  · show (if nul + 1 < a then a else nul + 1) = a
+    by_cases hlt : nul + 1 < a
+    · rw [if_pos hlt]
+    · rw [if_neg hlt]
+      rw [Int64.lt_iff_toInt_lt, toInt_nul_succ] at hlt
+      exact Int64.toInt_inj.1 (by rw [toInt_nul_succ]; omega)
+
+/-- `max` of two longs that are not `0N` is not `0N`. -/
+theorem greater_ne (a b : Int64) (ha : a ≠ nul) (hb : b ≠ nul) : Coc.Over.step .greater a b ≠ nul := by
+  simp only [Coc.Over.step]; split <;> assumption
+
+/-- `fills` over a list with no `0N` is the identity: the kernel's short-cut. -/
+theorem scan_last_id (xs : List Int64) (h : ∀ x ∈ xs, x ≠ nul) : scan (fun _ y => y) nul xs = xs := by
+  have hs : ∀ (a : Int64) (l : List Int64), scanl (fun a x => if x == nul then a else x) a l =
+      a :: (scanl (fun a x => if x == nul then a else x) a l).tail := fun a l => by cases l <;> rfl
+  suffices H : ∀ l : List Int64, (∀ x ∈ l, x ≠ nul) → ∀ a,
+      (scanl (fun a x => if x == nul then a else x) a l).tail = l from H xs h nul
+  intro l
+  induction l with
+  | nil => intro _ a; rfl
+  | cons x l ih =>
+    intro h a
+    have hx : (x == nul) = false := by simpa using h x (List.mem_cons_self ..)
+    simp only [scanl, List.tail_cons, hx, Bool.false_eq_true, ↓reduceIte]
+    rw [hs, ih (fun y hy => h y (List.mem_cons_of_mem _ hy))]
+
 end Spec
 
 /-! ## Laws on the ops -/
@@ -424,62 +519,134 @@ theorem ite_lt_max (a y : Int64) : (if a < y then y else a) = (if y < a then a e
   by_cases h1 : y < a <;> by_cases h2 : a < y <;> simp only [h1, h2, if_true, if_false] <;>
     simp only [Int64.lt_iff_toInt_lt] at h1 h2 <;> first | omega | exact Int64.toInt_inj.1 (by omega)
 
-/-- **The long scan kernel over a dense payload** at `+\ *\ &\ |\`: its words are `Spec.scan` of the
-    payload's longs at the matching fold's step and seed. `Alg.sums b` is the `.sums` case at `op = .add`. -/
-theorem scan_i64_words {op : Coc.Over} {sv : Scan.Verb} (hv : Spec.verb op = some sv) (b : ByteArray)
-    (hm : b.size / 8 < USize.size) :
+/-- **The long scan kernel over a dense payload**, at each of `+\ *\ &\ |\ ^\`: its words are `Spec.scan`
+    of the payload's longs at the verb's `Spec.kern`. `Alg.sums b` is the `.sums` case. -/
+theorem scan_i64_words (sv : Scan.Verb) (b : ByteArray) (hm : b.size / 8 < USize.size) :
     Verify.elemsW 8 (Scan.scan sv .i64 (b.size / 8).toUSize b)
-      = (Spec.scan op.step (op.seed Spec.nul) ((Verify.elemsW 8 b).map UInt64.toInt64)).map Int64.toUInt64 := by
+      = (Spec.scan (Spec.kern sv).1 (Spec.kern sv).2 ((Verify.elemsW 8 b).map UInt64.toInt64)).map Int64.toUInt64 := by
   have hn : min (b.size / 8).toUSize.toNat (Scan.Kind.i64.avail b) = b.size / 8 := by
     rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.i64.avail b = b.size / 8 from rfl, Nat.min_self]
   have e : Scan.scan sv .i64 (b.size / 8).toUSize b = Scan.intScan sv .i64 b
       (min (b.size / 8).toUSize.toNat (Scan.Kind.i64.avail b)) (Scan.outKind sv .i64).width
       Int64.maxValue (-Int64.maxValue) Int64.minValue := rfl
   rw [e, hn]
-  cases op <;> simp only [Spec.verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv
+  cases sv
   · exact scanOf_i64 b 0 (fun _ _ => rfl) (fun a => by simp [Scan.narrow, Scan.outKind, Scan.Kind.width])
   · exact scanOf_i64 b 1 (fun _ _ => rfl) (fun _ => rfl)
-  · rw [show Coc.Over.seed .lesser Spec.nul = Int64.maxValue by decide]
-    exact scanOf_i64 b _ (fun a x => ite_lt_min a x.toInt64) (fun _ => rfl)
-  · rw [show Coc.Over.seed .greater Spec.nul = -Int64.maxValue by decide]
-    exact scanOf_i64 b _ (fun a x => ite_lt_max a x.toInt64) (fun _ => rfl)
+  · exact scanOf_i64 b _ (fun a x => ite_lt_min a x.toInt64) (fun _ => rfl)
+  · exact scanOf_i64 b _ (fun a x => ite_lt_max a x.toInt64) (fun _ => rfl)
+  · exact scanOf_i64 (g := fun _ y => y) b Spec.nul (fun _ _ => rfl) (fun _ => rfl)
 
 /-- The long scan kernel writes eight bytes per element. -/
-theorem scan_i64_size {op : Coc.Over} {sv : Scan.Verb} (hv : Spec.verb op = some sv) (b : ByteArray)
+theorem scan_i64_size (sv : Scan.Verb) (b : ByteArray)
     (hm : b.size / 8 < USize.size) : (Scan.scan sv .i64 (b.size / 8).toUSize b).size / 8 = b.size / 8 := by
-  have := congrArg List.length (scan_i64_words hv b hm)
+  have := congrArg List.length (scan_i64_words sv b hm)
   simpa [Verify.elemsW, Spec.scan_range] using this
 
-/-- **`f\x` over a dense long column** at `+ * & |`: `Spec.scan` at the matching fold's step and seed. -/
-theorem scan_toList {f : Prim.Dyadic} {op : Coc.Over} {sv : Scan.Verb} (hf : scanVerb f = some sv)
-    (hv : Spec.verb op = some sv) {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b)
-    (hn : n < USize.size) {S : Arr .long n} (h : scan f .long R = some S) :
-    S.toList = Spec.scan op.step (op.seed Spec.nul) R.toList := by
-  have hbn : b.size / 8 = n := Arr.n_long_bytes R hc
-  have hm : b.size / 8 < USize.size := hbn ▸ hn
-  have hs : (sv == .fills) = false := by
-    cases op <;> simp only [Spec.verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv <;> rfl
-  have hk : Scan.outKind sv .i64 = .i64 := by cases sv <;> rfl
-  have hcol : scanColumn f .long .long R.c = some (Column.answer ⟨.long, (b.size / 8).toUSize.toNat,
-      .bytes (Scan.scan sv .i64 (b.size / 8).toUSize b), none⟩) := by
-    rw [R.c_eq hc]
-    simp [scanColumn, scanWith, hf, hk, hs, show scanKind .long = some .i64 from rfl,
-      show QAtomicType.width .long = some 8 from rfl, Column.bytesOf, Scan.scanForm]
-  simp only [scan, hcol, Option.bind] at h
-  rw [Arr.of] at h
-  split at h
-  · rename_i hw
-    have hS : S.c = Column.answer ⟨.long, (b.size / 8).toUSize.toNat,
-        .bytes (Scan.scan sv .i64 (b.size / 8).toUSize b), none⟩ := by cases h; rfl
-    rw [show (b.size / 8).toUSize.toNat = (Scan.scan sv .i64 (b.size / 8).toUSize b).size / 8 by
-      rw [scan_i64_size hv b hm, USize.toNat_ofNat_of_lt' hm]] at hS
-    rw [Arr.toList_long S (by rw [hS]; exact longWords_answer _), scan_i64_words hv b hm,
-      Arr.toList_long R (show longWords R.c = some (Verify.elemsW 8 b) by rw [R.c_eq hc]; rfl), List.map_map]
-    exact (List.map_congr_left fun _ _ => rfl).trans (List.map_id _)
-  · cases h
+/-- A long `foR` column lists `Coc.elems`, the words `Coc.over`, `countLt` and `anyNull` fold over. -/
+theorem toList_elems {n : Nat} (R : Arr .long n) {md pk : ByteArray} (hc : R.c.enc = .foR md pk)
+    (hn : n < USize.size) : R.toList = (Coc.elems md pk n.toUSize).map UInt64.toInt64 := by
+  rw [Arr.toList_long R (show longWords R.c = some ((List.range R.c.n).map
+      (Column.foRBits md pk (Column.blockStarts md))) by unfold longWords; rw [hc]),
+    R.wf.2.1, Coc.elems, USize.toNat_ofNat_of_lt' hn]
 
-/-- **`avg x` over a dense long column**: `Spec.avg`, from `avgBits` at the long layout, which the
-    encoded paths (`overFoR`, `liveFoR`, alp) decline. -/
+/-- A long column `holdsNull` clears holds no `0N`: block metadata on `foR`, one pass on `bytes`. -/
+theorem nul_free {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws)
+    (hn : n < USize.size) (h : holdsNull .long R.c = false) : ∀ x ∈ R.toList, x ≠ Spec.nul := by
+  unfold longWords at hx
+  cases hc : R.c.enc with
+  | bytes b =>
+    have h' : Scan.anyNull .i64 (b.size / 8).toUSize b = false := by rw [R.c_eq hc] at h; exact h
+    have hm : b.size / 8 < USize.size := (Arr.n_long_bytes R hc) ▸ hn
+    unfold Scan.anyNull at h'
+    rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.i64.avail b = b.size / 8 from rfl, Nat.min_self,
+      Arr.n_long_bytes R hc] at h'
+    rw [Arr.toList_long_bytes R hc, List.map_map]
+    intro x hxm
+    obtain ⟨i, hi, rfl⟩ := List.mem_map.1 hxm
+    have := List.any_eq_false.1 h' i hi
+    simpa [Scan.Kind.isNull, Scan.Kind.bitsAt, Scan.Kind.width] using this
+  | foR md pk =>
+    have h' : Coc.anyNull Spec.nul md pk n.toUSize = false := by rw [R.c_eq hc] at h; exact h
+    unfold Coc.anyNull at h'
+    rw [toList_elems R hc hn]
+    intro x hxm
+    obtain ⟨u, hu, rfl⟩ := List.mem_map.1 hxm
+    have := List.any_eq_false.1 h' u hu
+    simpa using this
+  | _ => all_goals (rw [hc] at hx; cases hx)
+
+/-- **`f\x` over a long column** (`bytes` or `foR`) at `+ * & | ^`: `Spec.scan` at the verb's `Spec.kern`.
+    `^\` over a column with no `0N` is the kernel's identity short-cut, the argument handed back. -/
+theorem scan_toList {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv)
+    {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws)
+    (hn : n < USize.size) {S : Arr .long n} (h : scan f .long R = some S) :
+    S.toList = Spec.scan (Spec.kern sv).1 (Spec.kern sv).2 R.toList := by
+  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R hx hn
+  have hm : B.size / 8 < USize.size := hBs ▸ hn
+  have hk : Scan.outKind sv .i64 = .i64 := by cases sv <;> rfl
+  have hL : R.toList = (Verify.elemsW 8 B).map UInt64.toInt64 := by rw [Arr.toList_long R hx, hBw]
+  cases hfl : (sv == .fills && !(Scan.Kind.i64.hasNull && holdsNull .long R.c))
+  · have hcol : scanColumn f .long .long R.c = some (Column.answer ⟨.long, (B.size / 8).toUSize.toNat,
+        .bytes (Scan.scan sv .i64 (B.size / 8).toUSize B), none⟩) := by
+      rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [R.c_eq hc] at hfl ⊢
+      · simp [scanColumn, scanWith, hf, hk, hfl, show scanKind .long = some .i64 from rfl,
+          show QAtomicType.width .long = some 8 from rfl, Column.bytesOf, Scan.scanForm]
+        intro hs hor; subst hs; simp_all [Scan.Kind.hasNull]
+      · rw [hBs]
+        simp [scanColumn, scanWith, hf, hk, hfl, show scanKind .long = some .i64 from rfl,
+          show QAtomicType.width .long = some 8 from rfl, Scan.scanForm, Scan.scanFoR, Scan.Kind.width]
+        intro hs hor; subst hs; simp_all [Scan.Kind.hasNull]
+    simp only [scan, hcol, Option.bind] at h
+    rw [Arr.of] at h
+    split at h
+    · rename_i hw
+      have hS : S.c = Column.answer ⟨.long, (B.size / 8).toUSize.toNat,
+          .bytes (Scan.scan sv .i64 (B.size / 8).toUSize B), none⟩ := by cases h; rfl
+      rw [show (B.size / 8).toUSize.toNat = (Scan.scan sv .i64 (B.size / 8).toUSize B).size / 8 by
+        rw [scan_i64_size sv B hm, USize.toNat_ofNat_of_lt' hm]] at hS
+      rw [Arr.toList_long S (by rw [hS]; exact longWords_answer _), scan_i64_words sv B hm, hL, List.map_map]
+      exact (List.map_congr_left fun _ _ => rfl).trans (List.map_id _)
+    · cases h
+  · have hsv : sv = .fills := by cases sv <;> first | rfl | simp at hfl
+    subst hsv
+    have hnn : holdsNull .long R.c = false := by
+      cases hh : holdsNull .long R.c
+      · rfl
+      · rw [hh] at hfl; simp [Scan.Kind.hasNull] at hfl
+    have hcol : scanColumn f .long .long R.c = some R.c := by
+      simp [scanColumn, scanWith, hf, hnn, Scan.Kind.hasNull, Scan.outKind, show scanKind .long = some .i64 from rfl]
+    simp only [scan, hcol, Option.bind] at h
+    rw [Arr.of] at h
+    split at h
+    · have hS : S.c = R.c := by cases h; rfl
+      rw [Arr.toList_long S (show longWords S.c = some ws by rw [hS]; exact hx), ← Arr.toList_long R hx]
+      exact (Spec.scan_last_id _ (nul_free hx hn hnn)).symm
+    · cases h
+
+/-- `Coc.over` over a long `foR` column, at a verb that skips the null: `Spec.over` from `Over.seed`. -/
+theorem over_foR {op : Coc.Over} (hb : op.boolCast = false) {n : Nat} {R : Arr .long n} {md pk : ByteArray}
+    (hc : R.c.enc = .foR md pk) (hn : n < USize.size) :
+    Coc.over op Spec.nul md pk n.toUSize = Spec.over op.step (op.seed Spec.nul) R.toList := by
+  rw [Verify.over_eq, Verify.overList, hb, Verify.foldl_filter, toList_elems R hc hn, Coc.elems, List.map_map,
+    Spec.over, List.foldl_map, List.foldl_map]
+  congr 1; funext a x; by_cases hx : (Column.foRBits md pk (Column.blockStarts md) x).toInt64 = Spec.nul <;> simp [hx]
+
+/-- **`f/x` over a long column** (`bytes` or `foR`), at a verb that skips the null: `Spec.over` at the
+    kernel's step and `Over.seed`. -/
+theorem over_long {op : Coc.Over} (hb : op.boolCast = false) {n : Nat} {R : Arr .long n} {ws : List UInt64}
+    (hx : longWords R.c = some ws) (hn : n < USize.size) :
+    over op R = some (Spec.over op.step (op.seed Spec.nul) R.toList) := by
+  unfold longWords at hx
+  cases hc : R.c.enc with
+  | bytes b => rw [over_bytes hb hc, show op.denseSeed Ew.i64 Spec.nul = op.seed Spec.nul by cases op <;> rfl]
+  | foR md pk =>
+    have hcol : over op R = some (Coc.over op Spec.nul md pk n.toUSize) := by
+      simp only [over, R.c_eq hc, overColumn, overFoR]; cases op <;> rfl
+    rw [hcol, over_foR hb hc hn]
+  | _ => all_goals (rw [hc] at hx; cases hx)
+
+/-- **`avg x` over a dense long column**: `Spec.avg`, from `avgBits` at the long layout. -/
 theorem avg_bytes {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) :
     avg R = some (Spec.avg R.toList) := by
   have hbn : b.size / 8 = n := Arr.n_long_bytes R hc
@@ -492,6 +659,46 @@ theorem avg_bytes {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .b
   rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.i64.avail b = b.size / 8 from rfl, Nat.min_self,
     ← List.countP_eq_length_filter, List.countP_map, Spec.over, List.foldl_map]
   rfl
+
+/-- The nulls and the rest of a list make up its length. -/
+theorem count_nul (xs : List Int64) :
+    (xs.filter (· == Spec.nul)).length + (xs.filter (· != Spec.nul)).length = xs.length := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => by_cases hx : x = Spec.nul <;> simp [hx] <;> omega
+
+/-- **`avg x` over a long column** (`bytes` or `foR`): `Spec.avg`, NaN made canonical. The `foR` path is
+    `sum`'s fold `overFoR` over `liveFoR`'s count, `n` less `countLt` at `0N + 1`; it divides with no NaN
+    guard, so the law reads the answer through `Spec.canon`. -/
+theorem avg_long {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws)
+    (hn : n < USize.size) {a : UInt64} (h : avg R = some a) : Spec.canon a = Spec.avg R.toList := by
+  unfold longWords at hx
+  cases hc : R.c.enc with
+  | bytes b => rw [avg_bytes hc hn, Option.some.injEq] at h; rw [← h]; exact Spec.canon_quot _
+  | foR md pk =>
+    have hE := toList_elems R hc hn
+    have hlen : (Coc.elems md pk n.toUSize).length = n := by
+      simp [Coc.elems, USize.toNat_ofNat_of_lt' hn]
+    have hcnt : (Coc.countLt md pk n.toUSize (Spec.nul + 1)).toNat = (R.toList.filter (· == Spec.nul)).length := by
+      have hl : ((Coc.elems md pk n.toUSize).filter (·.toInt64 < Spec.nul + 1)).length < USize.size :=
+        Nat.lt_of_le_of_lt (List.length_filter_le _ _) (by rw [hlen]; exact hn)
+      rw [Coc.countLt, USize.toNat_ofNat_of_lt' hl, hE, List.filter_map, List.length_map]
+      exact congrArg List.length (List.filter_congr fun u _ => by simpa using Spec.lt_nul_succ u.toInt64)
+    have hlive : n - (Coc.countLt md pk n.toUSize (Spec.nul + 1)).toNat = (R.toList.filter (· != Spec.nul)).length := by
+      have := count_nul R.toList
+      rw [Arr.length_toList] at this; omega
+    have ho : Coc.over .add Spec.nul md pk n.toUSize = Spec.over (· + ·) 0 R.toList := over_foR rfl hc hn
+    have hcol : avgColumn .long R.c = some (.float (if (n - (Coc.countLt md pk n.toUSize (Spec.nul + 1)).toNat) == 0
+        then QLean.nanBits else ((Coc.over .add Spec.nul md pk n.toUSize).toFloat /
+          (n - (Coc.countLt md pk n.toUSize (Spec.nul + 1)).toNat).toFloat).toBits)) := by
+      rw [R.c_eq hc]; rfl
+    simp only [avg, hcol, Option.bind, Carrier.of?, Option.some.injEq] at h
+    have e : a = (if (R.toList.filter (· != Spec.nul)).length == 0 then QLean.nanBits else
+        ((Spec.over (· + ·) 0 R.toList).toFloat / ((R.toList.filter (· != Spec.nul)).length).toFloat).toBits) := by
+      rw [← ho, ← hlive]; exact h.symm
+    rw [e]
+    exact Spec.canon_raw (Spec.over (· + ·) 0 R.toList, (R.toList.filter (· != Spec.nul)).length)
+  | _ => all_goals (rw [hc] at hx; cases hx)
 
 /-- The window `[i+1-w, i]` of `til m` mapped, `i < m`. -/
 theorem window_range_map {α : Type} (g : Nat → α) (w : Nat) {i m : Nat} (hi : i < m) :
