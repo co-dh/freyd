@@ -1,8 +1,16 @@
 import LeetQ.Rel.SpecStruct
 
+/-!
+The `keyCodes` path for one dense long key column per side: `rangeOffsets` rebases both columns'
+words onto one lane and `enumIds` codes them injectively (`rangeOffsets_long`), which discharges the
+code hypotheses of `ej_rel_lane` (`keyCodes_long`) and leaves `ej`'s law unconditional on the codes
+(`ej_long`). Bytes and frame-of-reference encodings are covered alike, through `longWords`.
+-/
+
 namespace LeetQ.Rel.Verb
 
 open QLean QLean.Dep
+open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 /-- `min/` folded from any seed lies below the seed and below every element it reads. -/
 theorem foldl_lesser (l : List Int64) : ∀ acc : Int64,
@@ -212,13 +220,13 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
     (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (hl : wl.length < USize.size)
     (hr : wr.length < USize.size) (htot : total ≤ 2 ^ 32)
     (h : Alg.rangeOffsets .long #[cl, cr] total = .ok (some os)) :
-    ∃ (k : Kernel.Scan.Kind) (f : UInt64 → Nat), (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧
+    ∃ (k : Kernel.Scan.Kind) (f : UInt64 → UInt64), (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧
       (∀ u ∈ wl ++ wr, ∀ u' ∈ wl ++ wr, (f u = f u' ↔ u = u')) ∧
       ∃ lc rc : Alg.Code, os = #[lc, rc] ∧
       lc.kind = some k ∧ lc.n = wl.length ∧ lc.b.size = k.width * wl.length ∧
-        (∀ i (hi : i < wl.length), k.bitsAt lc.b i = (f wl[i]).toUInt64) ∧
+        (∀ i (hi : i < wl.length), k.bitsAt lc.b i = f wl[i]) ∧
       rc.kind = some k ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧
-        (∀ j (hj : j < wr.length), k.bitsAt rc.b j = (f wr[j]).toUInt64) := by
+        (∀ j (hj : j < wr.length), k.bitsAt rc.b j = f wr[j]) := by
   unfold Alg.rangeOffsets at h
   simp only [bind, Except.bind, pure, Except.pure] at h
   rw [if_pos (by decide)] at h
@@ -418,23 +426,95 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
     rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
   have hkind : ∀ c : Alg.Code, c.w = 8 * k.width → c.kind = some k := fun c hw => by
     simp only [Alg.Code.kind, hw]; rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
-  refine ⟨k, fun u => if Kernel.Ew.intStep Kernel.Ew.add Alg.nul u.toInt64 (-base) = Int64.minValue
-      then (card - 1).toUSize.toNat else (Kernel.Ew.intStep Kernel.Ew.add Alg.nul u.toInt64 (-base)).toInt.toNat,
-    hk4, ?_, c1, c2, rfl,
+  let F : UInt64 → Nat := fun u => if Kernel.Ew.intStep Kernel.Ew.add Alg.nul u.toInt64 (-base) = Int64.minValue
+      then (card - 1).toUSize.toNat else (Kernel.Ew.intStep Kernel.Ew.add Alg.nul u.toInt64 (-base)).toInt.toNat
+  have hinj : ∀ u ∈ wl ++ wr, ∀ u' ∈ wl ++ wr, (F u = F u' ↔ u = u') := by
+    intro u hu u' hu'
+    have toI : ∀ x y : UInt64, x.toInt64 = y.toInt64 → x = y := fun x y e => by
+      have := congrArg Int64.toUInt64 e; simpa using this
+    rcases key u hu with ⟨hv, hR⟩ | ⟨hv, hR, hR1, hR2⟩ <;>
+      rcases key u' hu' with ⟨hv', hR'⟩ | ⟨hv', hR', hR1', hR2'⟩
+    · dsimp only [F]; rw [if_pos hR, if_pos hR']
+      exact ⟨fun _ => toI _ _ (hv.trans hv'.symm), fun _ => rfl⟩
+    · dsimp only [F]; rw [if_pos hR, if_neg hR', hnull']
+      exact ⟨fun e => by omega, fun e => absurd (e ▸ hv) hv'⟩
+    · dsimp only [F]; rw [if_neg hR, if_pos hR', hnull']
+      exact ⟨fun e => by omega, fun e => absurd hv' (e ▸ hv)⟩
+    · dsimp only [F]; rw [if_neg hR, if_neg hR']
+      exact ⟨fun e => toI _ _ (Int64.toInt_inj.1 (by omega)), fun e => by rw [e]⟩
+  -- a lane value is an id below `USize.size` or a non-negative `Int64`, so `toUInt64` keeps it
+  have fb : ∀ u, F u < 2 ^ 64 := fun u => by
+    dsimp only [F]; split
+    · exact Nat.lt_of_lt_of_le (USize.toNat_lt_size _)
+        (by first | exact USize.size_le | (rcases USize.size_eq with h | h <;> omega))
+    · have := Int64.toInt_lt (Kernel.Ew.intStep Kernel.Ew.add Alg.nul u.toInt64 (-base)); omega
+  refine ⟨k, fun u => (F u).toUInt64, hk4, fun u hu u' hu' => ?_, c1, c2, rfl,
     hkind c1 w1, n1, s1, fun i hi => by rw [hkb]; exact (b1 i hi).1,
     hkind c2 w2, n2, s2, fun j hj => by rw [hkb]; exact (b2 j hj).1⟩
-  intro u hu u' hu'
-  have toI : ∀ x y : UInt64, x.toInt64 = y.toInt64 → x = y := fun x y e => by
-    have := congrArg Int64.toUInt64 e; simpa using this
-  rcases key u hu with ⟨hv, hR⟩ | ⟨hv, hR, hR1, hR2⟩ <;>
-    rcases key u' hu' with ⟨hv', hR'⟩ | ⟨hv', hR', hR1', hR2'⟩
-  · dsimp only; rw [if_pos hR, if_pos hR']
-    exact ⟨fun _ => toI _ _ (hv.trans hv'.symm), fun _ => rfl⟩
-  · dsimp only; rw [if_pos hR, if_neg hR', hnull']
-    exact ⟨fun e => by omega, fun e => absurd (e ▸ hv) hv'⟩
-  · dsimp only; rw [if_neg hR, if_pos hR', hnull']
-    exact ⟨fun e => by omega, fun e => absurd hv' (e ▸ hv)⟩
-  · dsimp only; rw [if_neg hR, if_neg hR']
-    exact ⟨fun e => toI _ _ (Int64.toInt_inj.1 (by omega)), fun e => by rw [e]⟩
+  show (F u).toUInt64 = (F u').toUInt64 ↔ u = u'
+  rw [← hinj u hu u' hu']
+  refine ⟨fun e => ?_, fun e => by rw [e]⟩
+  have := congrArg UInt64.toNat e
+  simpa [Nat.mod_eq_of_lt (fb u), Nat.mod_eq_of_lt (fb u')] using this
+
+/-- The `keyCodes` of one dense long key column per side, when `rangeOffsets` codes them: both sides
+at one lane `k`, the left one's size its row count, and equal lane words exactly at equal keys. -/
+theorem keyCodes_long {verb : String} {cl cr : Column} {lc rc : Alg.Code} {wl wr : List UInt64}
+    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (hl : wl.length < USize.size)
+    (hr : wr.length < USize.size) (htot : cl.n + cr.n ≤ 2 ^ 32)
+    (hR : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+    (hc : Struct.keyCodes verb #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok (lc, rc)) :
+    ∃ k : Kernel.Scan.Kind, (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧ lc.kind = some k ∧ rc.kind = some k ∧
+      rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ lc.b.size / k.width = wl.length ∧
+      ∀ i (hi : i < wl.length) j (hj : j < wr.length), (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ wr[j] = wl[i]) := by
+  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) = .ok (some os) ∧
+      Alg.two os = .ok (lc, rc) := by
+    unfold Struct.keyCodes Alg.codes at hc
+    rcases hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) with err | _ | os
+    all_goals
+      obtain ⟨t1, n1, e1, a1⟩ := cl
+      obtain ⟨t2, n2, e2, a2⟩ := cr
+      dsimp only at hro
+      cases e1 <;> simp [longWords] at hwl <;> cases e2 <;> simp [longWords] at hwr <;>
+        simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
+          Alg.tuples, hro] at hc hR ⊢
+    all_goals exact hc
+  obtain ⟨k, f, hk4, hf, lc', rc', rfl, hlk, -, hls, hlb, hrk, hrn, hrs, hrb⟩ :=
+    rangeOffsets_long hwl hwr hl hr htot hro
+  have e2 : (lc', rc') = (lc, rc) := by simpa [Alg.two, pure, Except.pure] using h2
+  cases e2
+  have hw0 : 0 < k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
+  refine ⟨k, hk4, hlk, hrk, ?_, hrn, by rw [hls, Nat.mul_div_cancel_left _ hw0], fun i hi j hj => ?_⟩
+  · rcases hk4 with rfl | rfl | rfl | rfl <;>
+      simp only [Kernel.Scan.Kind.avail, hrs, hrn, Nat.mul_div_cancel_left _ hw0, Nat.le_refl]
+  · rw [hrb j hj, hlb i hi]
+    exact hf _ (List.mem_append_right _ (List.getElem_mem hj)) _ (List.mem_append_left _ (List.getElem_mem hi))
+
+/-- `ej` on one dense long key column per side, unconditionally on the codes: its relation is the
+key join `(ix tl)(ix tr)°` read at the row ids, wherever `rangeOffsets` codes the two columns. -/
+theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
+    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (htot : cl.n + cr.n ≤ 2 ^ 32)
+    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+    (hU : wl.length * wr.length + wl.length + wr.length + wr.length + 1 < USize.size)
+    (hB : wl.length * wr.length + wl.length + wr.length + wr.length < 2 ^ 63)
+    (h : Struct.ej #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ ix (wl.map (fun u => [u.toInt64])) ≫
+        (ix (wr.map (fun u => [u.toInt64])))° ≫ graph Int64.ofNat := by
+  rcases hc : Struct.keyCodes "ej" #[⟨.long, cl⟩] #[⟨.long, cr⟩] with err | ⟨lc, rc⟩
+  · simp [Struct.ej, hc, bind, Except.bind] at h
+  obtain ⟨k, hk4, hlk, hrk, hav, hrn, hnl, hkey⟩ :=
+    keyCodes_long hwl hwr (by omega) (by omega) htot hro hc
+  refine ej_rel_lane hk4 hc hrk hlk hav (by simp [hrn]) (by simp [hnl]) (fun i hi j hj => ?_)
+    (by simp only [List.length_map, hrn]; exact hU) (by simp only [List.length_map, hrn]; exact hB) h
+  simp only [List.length_map] at hi hj
+  rw [hkey i hi j hj, getElem!_pos _ _ (by simpa using hj), getElem!_pos _ _ (by simpa using hi)]
+  simp only [List.getElem_map, List.cons.injEq, and_true]
+  refine ⟨fun e => by rw [e], fun e => ?_⟩
+  have := congrArg Int64.toUInt64 e; simpa using this
+
+#print axioms rangeOffsets_long
+#print axioms keyCodes_long
+#print axioms ej_long
 
 end LeetQ.Rel.Verb
