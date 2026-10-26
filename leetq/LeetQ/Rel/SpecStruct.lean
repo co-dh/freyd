@@ -665,42 +665,19 @@ theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs :
     (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {verb : String} {c : Column}
     (hvec : Find.vec verb .long (Kernel.gatherColumn .long x.c (Alg.longs idx)) = .ok c) :
     ∃ X : Arr .long N, X.c = c ∧ (∃ B, c.enc = .bytes B) ∧ ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
-  obtain ⟨hg, hct⟩ := Struct.vec_ok hvec
   have hsW : (Alg.longs idx).WF := by show idx.size = idx.size / 8 * 8; omega
-  have hA : ∀ M Q a, x.c.enc = .alp M Q a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hv
-  have hfit : Verify.countFits x.c := Struct.countFits_long x hv hxU
-  have hfi : Verify.countFits (Alg.longs idx) := by simp [Verify.countFits, Alg.longs]
-  obtain ⟨src, ix, -, hix, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c (Alg.longs idx) c
-    x.wf.1 rfl hfi hA hg
-  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl x.c (Alg.longs idx) c x.wf.1 x.wf.2.2 rfl
-    hsW hfit hfi hA hg
-  have hix' : ix = idx := by
-    have e : Column.bytesOf (Alg.longs idx) = some idx := by first | rfl | simp [Column.bytesOf, Alg.longs]
-    rw [e] at hix; exact (Option.some.inj hix).symm
-  subst hix'
-  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hGs := (Verify.gatherBytes_spec (8 : Nat).toUSize (Nat.le_of_eq h8) ((Kernel.nullBits .long).getD 0) src ix).1
-  have hcW : c.ty = .long ∧ c.n = N ∧ c.WF := by
-    subst hcB
-    refine ⟨rfl, hn, ?_⟩
-    show (Kernel.gatherBytes (8 : Nat).toUSize _ src ix).size = ix.size / 8 * 8
-    rw [hGs, h8]; exact Nat.mul_comm _ _
-  have hw : longWords c = some (Column.raw c).toList := by
-    cases hl : longWords c with
-    | none => rw [hcB] at hl; cases hl
-    | some ws => rw [Struct.raw_long hct hcW.2.2 hl]
+  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU ⟨Alg.longs idx, rfl, hn, hsW⟩ (is := Verify.elemsW 8 idx)
+    rfl (by simp [Verify.countFits, Alg.longs]) (Struct.vec_ok hvec).1
   have hvs : vs.length = nx := by have := Arr.length_toList x; rw [Arr.toList_long x hv, List.length_map] at this; omega
-  refine ⟨⟨c, hcW⟩, rfl, ⟨_, by rw [hcB]⟩, fun p hp => ?_⟩
+  refine ⟨⟨⟨.long, N, .bytes B, none⟩, rfl, rfl, by show B.size = N * 8; exact hBs⟩, rfl, ⟨B, rfl⟩, fun p hp => ?_⟩
   have hlt := hi p hp
-  rw [nats_get ix (by omega)] at hlt ⊢
-  rw [Arr.toList_long ⟨c, hcW⟩ hw, hraw, Struct.raw_long (c := Alg.longs ix) rfl hsW (ws := Verify.elemsW 8 ix) rfl,
-    Struct.raw_long x.wf.1 x.wf.2.2 hv, Arr.toList_long x hv, getElem!_pos _ p (by simp [Verify.elemsW]; omega),
-    getElem!_pos _ _ (by simp; omega), List.getElem_map, List.getElem_map, List.getElem_map,
-    show (Verify.elemsW 8 ix)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt ix (p * 8) 8 by
+  rw [nats_get idx (by omega)] at hlt ⊢
+  rw [Arr.toList_long _ (ws := Verify.elemsW 8 B) rfl, hBw, Arr.toList_long x hv,
+    getElem!_pos _ p (by simp [Verify.elemsW]; omega), getElem!_pos _ _ (by simp; omega), List.getElem_map,
+    List.getElem_map, List.getElem_map,
+    show (Verify.elemsW 8 idx)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt idx (p * 8) 8 by
       simp only [Verify.elemsW, List.getElem_map, List.getElem_range],
     List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega), Option.getD_some]
-  exact congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)
 
 /-- **`flipP` transposes**, on a long `val` (`bytes` or `foR`) whose runs all have length `n/g`: column `j`
     of the answer is element `j` of every run. The bounds keep every position below `2^63` and `USize`. -/
