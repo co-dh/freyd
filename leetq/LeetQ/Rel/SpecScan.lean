@@ -583,6 +583,48 @@ theorem ix_prefix {β : Type} (xs : List α) (F : List α → β) :
   refine congrArg ix (List.map_congr_left fun i hi => ?_)
   rw [show i + 1 - xs.length = 0 by have := List.mem_range.1 hi; omega, List.drop_zero, CL.toList_ofList]
 
+/-- `Lᵥ`, the positions at least `w` before: position `i` to the `j` with `j + w ≤ i`. -/
+def lag (w : Nat) : Idx ⟶ Idx := fun i j => j + w ≤ i
+
+/-- At `i`, the rows below `k(i)` through `F`, for any `R` holding `i` to exactly the `j < k(i)`. -/
+theorem Λ_enum_take {β : Type} (xs : List α) (k : Nat → Nat) (R : Idx ⟶ Idx) (hR : ∀ i j : Nat, R i j ↔ j < k i)
+    (F : CL.ConsList Unit α → β) {i : Nat} (hk : k i ≤ xs.length) (a : β) :
+    (Λ R ≫ enum ≫ ListRel.list (ix xs) ≫ (graph F : dList α ⟶ (⟨β⟩ : RelSet.{0}))) i a
+      ↔ a = F (CL.ofList (xs.take (k i))) := by
+  have hW : ∀ ys, (Λ R ≫ enum) i ys ↔ ys = CL.ofList (List.range' 0 (k i)) :=
+    Λ_enum (a := 0) (k := k i) _ fun j => (hR i j).trans (by omega)
+  have hl : 0 + k i ≤ xs.length := by omega
+  constructor
+  · rintro ⟨s, hs, zs, hz, ws, hw, rfl⟩
+    rw [(hW zs).1 ⟨s, hs, hz⟩] at hw
+    rw [(listP_ix_range' xs _ _ hl ws).1 hw, List.drop_zero]
+  · rintro rfl
+    obtain ⟨s, hs, he⟩ := (hW _).2 rfl
+    exact ⟨s, hs, _, he, _, (listP_ix_range' xs _ _ hl _).2 rfl, by rw [List.drop_zero]; rfl⟩
+
+/-- At each `i < |xs|`, `H` of `F` of the first `i+1` rows and `F` of the first `i+1−w`: a prefix and its lag,
+    `corefl(<|xs|) ≫ ⟪Λ(≥) ≫ enum ≫ list(xs) ≫ F, Λ(Lᵥ) ≫ enum ≫ list(xs) ≫ F⟫ ≫ H`. -/
+theorem ix_lagged {β γ : Type} (xs : List α) (w : Nat) (F : CL.ConsList Unit α → β) (H : β × β → γ) :
+    ix ((List.range xs.length).map fun i => H (F (CL.ofList (xs.take (i+1))), F (CL.ofList (xs.take (i+1-w)))))
+      = corefl (· < xs.length) ≫ ⟪Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list (ix xs)
+            ≫ (graph F : dList α ⟶ (⟨β⟩ : RelSet.{0})),
+          Λ (lag w) ≫ enum ≫ ListRel.list (ix xs) ≫ (graph F : dList α ⟶ (⟨β⟩ : RelSet.{0}))⟫
+        ≫ (graph H : (⟨β × β⟩ : RelSet.{0}) ⟶ (⟨γ⟩ : RelSet.{0})) :=
+  hom_ext fun (i : Nat) c => by
+    show ((List.range xs.length).map _)[i]? = some c ↔ _
+    by_cases hi : i < xs.length
+    · have e1 := Λ_enum_take xs (fun i => i + 1) ((· ≥ ·) : Idx ⟶ Idx) (fun _ _ => Nat.lt_succ_iff.symm) F
+        (i := i) (by show i + 1 ≤ xs.length; omega)
+      have e2 := Λ_enum_take xs (fun i => i + 1 - w) (lag w)
+        (fun (i j : Nat) => by show j + w ≤ i ↔ j < i + 1 - w; omega) F (i := i) (by show i + 1 - w ≤ xs.length; omega)
+      rw [List.getElem?_map, List.getElem?_range hi, Option.map_some, Option.some.injEq]
+      constructor
+      · intro e; exact ⟨i, ⟨rfl, hi⟩, _, ⟨(e1 _).2 rfl, (e2 _).2 rfl⟩, e.symm⟩
+      · rintro ⟨_, ⟨rfl, -⟩, ⟨a, b⟩, ⟨ha, hb⟩, rfl⟩
+        rw [(e1 a).1 ha, (e2 b).1 hb]
+    · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
+      exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
+
 /-- The count of the elements that are not `0N`, as a right fold. -/
 theorem count_foldr (xs : List Int64) :
     (xs.filter (· != Spec.nul)).length = xs.foldr (fun x c => if x == Spec.nul then c else c + 1) 0 := by
@@ -1057,6 +1099,37 @@ theorem mext_float_rel {op : Scan.MOp} (hop : op = .mmin ∨ op = .mmax) {w : Na
   rfl
 
 open QLean.Kernel in
+/-- `w msum x` / `w mavg x` / `w mdev x` on a float column (`bytes` or `alp`): the kernel's own computation,
+    the left fold `mstep` of the four totals over the rows up to `i` and over the rows `w` before, then
+    `memit` of the two, `corefl(<n) ≫ ⟪Λ(≥) ≫ enum ≫ list(x) ≫ rev ≫ ⦇[0, mstep]⦈,
+    Λ(Lᵥ) ≫ enum ≫ list(x) ≫ rev ≫ ⦇[0, mstep]⦈⟫ ≫ memit`. Not a fold of each window: `Float` subtraction
+    does not undo addition. -/
+theorem mfloat_rel {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op = .mdev) {w : Nat} (hw : w < USize.size)
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
+    (h32 : n < 2 ^ 32) {S : Arr .float n} (h : Ops.mwin op w .float R = some S) :
+    S.rel = corefl (· < n) ≫ ⟪Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+          ≫ (graph fun ys => CL.ofList (CL.toList ys).reverse : dList UInt64 ⟶ dList UInt64)
+          ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨UInt64 × (Float × Float × Float × Int64)⟩)
+              (graph fun _ => ((0.0, 0.0, 0.0, 0) : Float × Float × Float × Int64))
+              (graph fun q : UInt64 × (Float × Float × Float × Int64) => Spec.mstep q.2 q.1)
+              : Alg (CL.F Unit UInt64) (⟨Float × Float × Float × Int64⟩ : RelSet.{0}))⦈,
+        Λ (lag w) ≫ enum ≫ ListRel.list R.rel
+          ≫ (graph fun ys => CL.ofList (CL.toList ys).reverse : dList UInt64 ⟶ dList UInt64)
+          ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨UInt64 × (Float × Float × Float × Int64)⟩)
+              (graph fun _ => ((0.0, 0.0, 0.0, 0) : Float × Float × Float × Int64))
+              (graph fun q : UInt64 × (Float × Float × Float × Int64) => Spec.mstep q.2 q.1)
+              : Alg (CL.F Unit UInt64) (⟨Float × Float × Float × Int64⟩ : RelSet.{0}))⦈⟫
+      ≫ (graph fun p : (Float × Float × Float × Int64) × (Float × Float × Float × Int64) => Spec.memit op p.1 p.2
+          : (⟨(Float × Float × Float × Int64) × (Float × Float × Float × Int64)⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0})) := by
+  show ix S.toList = _
+  have e := ix_lagged R.toList w (fun ys => (CL.toList ys).foldl Spec.mstep (0.0, 0.0, 0.0, 0))
+    (fun p => Spec.memit op p.1 p.2)
+  simp only [CL.toList_ofList] at e
+  rw [Ops.mfloat_toList_float hop hw hx hn h32 h, Spec.mfloat, e, Arr.length_toList,
+    ← foldr_cata (fun x a => Spec.mstep a x) ((0.0, 0.0, 0.0, 0) : Float × Float × Float × Int64), graph_comp]
+  simp only [CL.toList_ofList, List.foldl_eq_foldr_reverse]; rfl
+
+open QLean.Kernel in
 /-- A scan on a long column (`bytes` or `foR`) whose kernel fold over each prefix is the right fold of
     `g` from `e`: the fold of each prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, g]⦈`. -/
 theorem scan_fold_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv) {e : Int64}
@@ -1199,6 +1272,9 @@ theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some 
 #print axioms mmax_rel
 #print axioms ix_mext_window
 #print axioms mext_float_rel
+#print axioms Λ_enum_take
+#print axioms ix_lagged
+#print axioms mfloat_rel
 #print axioms rank_toList
 #print axioms rank_rel
 #print axioms mcount_rel
