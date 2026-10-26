@@ -316,11 +316,11 @@ theorem memberColumn_long (s : Bool) (c y : Column) (hc : c.ty = .long) : member
     else (probeColumns .long 8 true y c).map fun out => .vector ⟨.boolean, c.n, .bits out, none⟩ := by
   obtain ⟨ty, n, e⟩ := c; obtain ⟨yt, yn, ye⟩ := y; simp only at hc; subst hc; cases ye <;> rfl
 
-/-- `x bin y` at long operands is `binOperands` over the two `operand`s. -/
-theorem binColumn_long (x c : Column) (hc : c.ty = .long) : binColumn .long false x (.vector c) = (do
+/-- `x bin y` and `x binr y` at long operands are `binOperands` over the two `operand`s. -/
+theorem binColumn_long (right : Bool) (x c : Column) (hc : c.ty = .long) : binColumn .long right x (.vector c) = (do
     let (hn, hm, hp) ← operand .long x
     let (kn, km, kp) ← operand .long c
-    some (QValue.vector ⟨.long, c.n, .bytes (binOperands 8 false true false hm hp hn.toUSize km kp kn.toUSize), none⟩)) := by
+    some (QValue.vector ⟨.long, c.n, .bytes (binOperands 8 false true right hm hp hn.toUSize km kp kn.toUSize), none⟩)) := by
   obtain ⟨ty, n, e⟩ := c; obtain ⟨xt, xn, xe⟩ := x; simp only at hc; subst hc; cases xe <;> rfl
 
 /-- `probeColumns` at long operands is the dense probe over the two decoded operands: with both
@@ -1418,7 +1418,7 @@ theorem bin_toList {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {
   obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x hx hn
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y hy hm
   unfold bin at h
-  rw [binColumn_long _ _ y.wf.1, hox, hoy] at h
+  rw [binColumn_long false _ _ y.wf.1, hox, hoy] at h
   change onKey ny .long ⟨.long, _, .bytes (binBytes 8 false true false (operandBytes 8 hmd hp hk.toUSize)
     (operandBytes 8 nmd np nk.toUSize)), none⟩ "x bin y" = .ok r at h
   generalize operandBytes 8 hmd hp hk.toUSize = hb at h hbx
