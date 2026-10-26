@@ -433,41 +433,11 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
   have htl : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → m < USize.size →
       z.toList = (Verify.elemsW w D).map dec := fun {_} z {_} hD hm => toList_fixed hw he z hD hm
   have hsm : ∀ n : Nat, n < 2 ^ 64 → n.toUInt64.toNat = n := fun n hn => by simp; omega
-  -- the indices: a long column's words
-  obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
-    rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
-  obtain ⟨ib, -, hib, hibw, hibn⟩ := Arr.dense_long i hws hUi
-  have hil : i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 := by rw [Arr.toList_long i hws, hibw]
-  have hny : ni = ny := by
-    by_cases hny : ni = ny
-    · exact hny
-    · simp only [Struct.amend, ne_eq, hny, not_false_eq_true, ↓reduceIte] at h; cases h
+  obtain ⟨hny, ib, hd, hibn, hil, hmiss, hbit, hix, hin⟩ := amend_indices hnx hni h
   subst hny
   subst hibn
   have hw0 := Verify.amendRounds_word0 nx.toUSize true ib
-  by_cases hmiss : ∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8
-  · rw [if_pos hmiss] at hw0
-    simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
-      ne_eq, not_true_eq_false, ↓reduceIte, pure_bind, Option.isSome_some, Nat.zero_mul, hw0, beq_self_eq_true] at h
-    cases h
   rw [if_neg hmiss] at hw0
-  have hnxU : nx.toUSize.toUInt64.toNat = nx := by rw [USize.toNat_toUInt64, USize.toNat_ofNat_of_lt' hU]
-  -- every index is a position below `nx`
-  have hbit : ∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toNat < nx := fun k hk => by
-    have := UInt64.lt_iff_toNat_lt.1 (UInt64.not_le.1 fun hle => hmiss ⟨k, hk, hle⟩)
-    omega
-  have h63 : ∀ u : UInt64, u.toNat < 2 ^ 63 → u.toInt64.toInt = u.toNat := fun u hu => by
-    have := Find.toInt_ofNat_lt hu; rwa [UInt64.ofNat_toNat] at this
-  have hix : ∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toInt64.toInt.toNat = (Column.bitsAt ib (k * 8) 8).toNat :=
-    fun k hk => by rw [h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk; omega)]; rfl
-  have hin : ∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx := by
-    intro v hv
-    rw [hil, Verify.elemsW, List.map_map, List.mem_map] at hv
-    obtain ⟨k, hk, rfl⟩ := hv
-    have hk' : k < ib.size / 8 := List.mem_range.1 hk
-    have e := h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk'; omega)
-    refine ⟨Int64.le_iff_toInt_le.2 (by simp only [Function.comp]; rw [e]; exact Int.natCast_nonneg _), ?_⟩
-    simp only [Function.comp]; rw [hix k hk']; exact hbit k hk'
   refine ⟨rfl, hin, ?_⟩
   -- the rounds: one per rank
   have hRN : Verify.amendRoundCount true ib ≤ ib.size / 8 := by
@@ -498,8 +468,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
     rw [hround] at e2
     have : (~~~0 : UInt64).toNat = 18446744073709551615 := by decide
     omega
-  simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
-    pure_bind, Option.isSome_some, Nat.zero_mul, hne, hround, ne_eq, not_true_eq_false, if_false,
+  simp only [Struct.amend, hd, pure_bind, Option.isSome_some, Nat.zero_mul, hne, hround, ne_eq, not_true_eq_false, if_false,
     Bool.false_eq_true, ↓reduceIte] at h
   -- `simp` cannot reach the round count under `Nat.foldM`'s dependent binder; `rw` abstracts every occurrence
   rw [show (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 true ib) (0 * 8) 8).toNat =
