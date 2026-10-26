@@ -327,6 +327,33 @@ def femit (x : Float) : UInt64 := if Bits.f64IsNaN x.toBits then QLean.nanBits e
     the dense path has. -/
 def canon (r : UInt64) : UInt64 := if Bits.f64IsNaN r then QLean.nanBits else r
 
+/-- One element `u` into the four running totals `mwinBits`' float pass keeps: the total with the null
+    skipped, the total with the null as `0.0`, the total of squares, the live count. -/
+def mstep (a : Float × Float × Float × Int64) (u : UInt64) : Float × Float × Float × Int64 :=
+  let nul := Scan.Kind.f64.isNull u
+  let x := if nul then 0.0 else Scan.Kind.f64.toFloat u
+  (if nul then a.1 else a.1 + Scan.Kind.f64.toFloat u, a.2.1 + x, a.2.2.1 + x * x, a.2.2.2 + if nul then 0 else 1)
+
+/-- What `mwinBits` writes at a float `msum`/`mavg`/`mdev` from the totals `c` after the window's last
+    element and `b` before its first: their difference, then `mavg`'s quotient by the count and `mdev`'s
+    population deviation, a NaN of the last two as `0n`. -/
+def memit (op : Scan.MOp) (c b : Float × Float × Float × Int64) : UInt64 :=
+  match op with
+  | .msum => (c.1 - b.1).toBits
+  | .mavg => let a := (c.2.1 - b.2.1) / (c.2.2.2 - b.2.2.2).toFloat; if a.isNaN then QLean.nanBits else a.toBits
+  | _ =>
+    let k := (c.2.2.2 - b.2.2.2).toFloat
+    let mn := (c.2.1 - b.2.1) / k
+    let r := Float.sqrt ((c.2.2.1 - b.2.2.1) / k - mn * mn)
+    if r.isNaN then QLean.nanBits else r.toBits
+
+/-- `w msum/mavg/mdev x` on floats as q runs them, `{y-(-x)_(0i*x#y),y:+\y}`: the prefix fold `mstep` from
+    zero, then at `i` `memit` of the totals after `i+1` and after `i+1−w` elements. Not a fold of each window:
+    `Float` subtraction does not undo addition, so the window total is this difference and nothing else. -/
+def mfloat (op : Scan.MOp) (w : Nat) (xs : List UInt64) : List UInt64 :=
+  let P (j : Nat) := (xs.take j).foldl mstep (0.0, 0.0, 0.0, 0)
+  (List.range xs.length).map fun i => memit op (P (i+1)) (P (i+1-w))
+
 theorem nanBits_isNaN : Bits.f64IsNaN QLean.nanBits = true := by first | rfl | decide
 
 /-- `quot` is already canonical. -/
@@ -1339,6 +1366,74 @@ theorem lastBy_toList {n g : Nat} {o : Arr .long (g+1)} {co : Cuts o n}
         (by rw [List.length_map, List.length_range]; omega), List.getElem_map, List.getElem_range]
   · rename_i hw
     cases h
+
+/-- The state of `mwinBits`' first float pass, in the order its `MProd` keeps it: the four totals `a`, and
+    the array `A` of the totals after each element. -/
+abbrev mst (a : Float × Float × Float × Int64) (A : Array (Float × Float × Float × Int64)) :
+    MProd Int64 (MProd Float (MProd Float (MProd Float (Array (Float × Float × Float × Int64))))) :=
+  ⟨a.2.2.2, a.2.1, a.1, a.2.2.1, A⟩
+
+/-- Any pass whose step is `mstep` on the totals and a push of the new totals leaves the prefix fold and,
+    pushed after `A`, the totals after each element. -/
+theorem mloop (rd : Nat → UInt64) {F : MProd Int64 (MProd Float (MProd Float (MProd Float
+      (Array (Float × Float × Float × Int64))))) → Nat → MProd Int64 (MProd Float (MProd Float (MProd Float
+      (Array (Float × Float × Float × Int64)))))}
+    (hF : ∀ a A i, F (mst a A) i = mst (Spec.mstep a (rd i)) (A.push (Spec.mstep a (rd i)))) :
+    ∀ (l : List Nat) a A, l.foldl F (mst a A) =
+      mst ((l.map rd).foldl Spec.mstep a) (A ++ (Spec.scanl Spec.mstep a (l.map rd)).tail.toArray)
+  | [], a, A => by simp [Spec.scanl]
+  | i :: l, a, A => by
+    have e : Spec.scanl Spec.mstep (Spec.mstep a (rd i)) (l.map rd) =
+        Spec.mstep a (rd i) :: (Spec.scanl Spec.mstep (Spec.mstep a (rd i)) (l.map rd)).tail := by cases l <;> rfl
+    rw [List.foldl_cons, hF, mloop rd hF l, List.map_cons, List.foldl_cons, Spec.scanl, List.tail_cons, e]
+    simp
+
+/-- `mloop` from the zero totals and an empty array, as `mwinBits` starts it. -/
+theorem mloop0 (rd : Nat → UInt64) {F : MProd Int64 (MProd Float (MProd Float (MProd Float
+      (Array (Float × Float × Float × Int64))))) → Nat → MProd Int64 (MProd Float (MProd Float (MProd Float
+      (Array (Float × Float × Float × Int64)))))}
+    (hF : ∀ a A i, F (mst a A) i = mst (Spec.mstep a (rd i)) (A.push (Spec.mstep a (rd i)))) (l : List Nat) (c : Nat) :
+    l.foldl F ⟨0, 0.0, 0.0, 0.0, Array.emptyWithCapacity c⟩ =
+      mst ((l.map rd).foldl Spec.mstep (0.0, 0.0, 0.0, 0)) (Spec.scanl Spec.mstep (0.0, 0.0, 0.0, 0) (l.map rd)).tail.toArray := by
+  have := mloop rd hF l (0.0, 0.0, 0.0, 0) #[]
+  simpa using this
+
+/-- **`w msum/mavg/mdev x` over a dense `f64` payload**: `mwinBits`' two passes are the prefix fold `mstep`
+    then, at each `i`, `memit` of the totals after `i+1` and after `i+1−w` elements. -/
+theorem mwinBits_mfloat {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op = .mdev) (w : Nat) (B : ByteArray) :
+    Scan.mwinBits op .f64 w (B.size / 8) B = (List.range (B.size / 8)).foldl (fun out i => Column.pushBits out
+      (Spec.memit op (((List.range (i+1)).map (Scan.Kind.f64.bitsAt B)).foldl Spec.mstep (0.0, 0.0, 0.0, 0))
+        (((List.range (i+1-w)).map (Scan.Kind.f64.bitsAt B)).foldl Spec.mstep (0.0, 0.0, 0.0, 0))) 8)
+      ByteArray.empty := by
+  have hm : min (B.size / 8) (Scan.Kind.f64.avail B) = B.size / 8 := by
+    rw [show Scan.Kind.f64.avail B = B.size / 8 from rfl, Nat.min_self]
+  have hP : ∀ j, j ≤ B.size / 8 → ((List.range' 0 (B.size / 8)).map (Scan.Kind.f64.bitsAt B)).take j =
+      (List.range j).map (Scan.Kind.f64.bitsAt B) := fun j hj => by
+    rw [← List.range_eq_range', ← List.map_take, List.take_range, Nat.min_eq_left hj]
+  have hps : ∀ j, j < B.size / 8 → ((Spec.scanl Spec.mstep (0.0, 0.0, 0.0, 0)
+      ((List.range' 0 (B.size / 8)).map (Scan.Kind.f64.bitsAt B))).tail.toArray)[j]! =
+      ((List.range (j+1)).map (Scan.Kind.f64.bitsAt B)).foldl Spec.mstep (0.0, 0.0, 0.0, 0) := fun j hj => by
+    rw [Spec.scanl_range, List.range_succ_eq_map, List.map_cons, List.tail_cons, List.map_map, List.length_map,
+      List.length_range']
+    rw [List.getElem!_toArray, getElem!_pos _ j (by simp; omega), List.getElem_map, List.getElem_range]
+    simp only [Function.comp_apply, hP (j+1) (by omega)]
+  rcases hop with rfl | rfl | rfl <;>
+  · unfold Scan.mwinBits
+    simp only [Id.run, Std.Legacy.Range.forIn_eq_forIn_range', List.forIn_pure_yield_eq_foldl, map_pure, Id.run_bind,
+      Id.run_pure, bind_pure_comp, hm, Std.Legacy.Range.size, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one]
+    rw [mloop0 (Scan.Kind.f64.bitsAt B) ?_]
+    · rw [List.range_eq_range', show ByteArray.emptyWithCapacity _ = ByteArray.empty from rfl]
+      refine List.foldl_ext _ _ fun out i hi => ?_
+      have hi : i < B.size / 8 := by simpa using hi
+      have hb : (if i < w then ((0.0, 0.0, 0.0, 0) : Float × Float × Float × Int64) else
+          ((Spec.scanl Spec.mstep (0.0, 0.0, 0.0, 0) ((List.range' 0 (B.size / 8)).map (Scan.Kind.f64.bitsAt B))).tail.toArray)[i - w]!)
+          = ((List.range (i+1-w)).map (Scan.Kind.f64.bitsAt B)).foldl Spec.mstep (0.0, 0.0, 0.0, 0) := by
+        split
+        · rw [show i + 1 - w = 0 by omega]; rfl
+        · rw [hps (i - w) (by omega), show i - w + 1 = i + 1 - w by omega]
+      simp only [Array.get!Internal_eq_getElem!, hps i hi, hb]
+      rfl
+    · intro a A i; rfl
 
 end Ops
 
