@@ -975,51 +975,6 @@ theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (h
   rw [e, hBw, hix8]
   exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
-/-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
-theorem elemsW_append {A B : ByteArray} (hA : A.size % 8 = 0) :
-    Verify.elemsW 8 (A ++ B) = Verify.elemsW 8 A ++ Verify.elemsW 8 B := by
-  have hs := Verify.ba_size_append A B
-  apply List.ext_getElem (by simp only [Verify.elemsW, List.length_append, List.length_map, List.length_range, hs]; omega)
-  intro i h1 h2
-  simp only [Verify.elemsW, List.length_map, List.length_range] at h1 h2
-  rw [List.getElem_append]
-  split
-  · rename_i hi
-    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
-    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
-    exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left _ _ _ (by omega)
-  · rename_i hi
-    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
-    simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range]
-    refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
-    rw [show i * 8 + k = A.size + ((i - A.size / 8) * 8 + k) by omega]
-    exact Verify.ba_append_right _ _ _
-
-/-- `concatBytes`' words, every part holding whole words: the parts' words in order. -/
-theorem elemsW_concat (ps : Array ByteArray) (hp : ∀ p ∈ ps, p.size % 8 = 0) :
-    Verify.elemsW 8 (Kernel.concatBytes ps) = ps.toList.flatMap (Verify.elemsW 8) := by
-  have key : ∀ (qs : List ByteArray), (∀ p ∈ qs, p.size % 8 = 0) → ∀ acc : ByteArray, acc.size % 8 = 0 →
-      Verify.elemsW 8 (qs.foldl (· ++ ·) acc) = Verify.elemsW 8 acc ++ qs.flatMap (Verify.elemsW 8) := by
-    intro qs
-    induction qs with
-    | nil => intros; simp
-    | cons p qs ih =>
-      intro hq acc ha
-      have hp0 := hq p List.mem_cons_self
-      rw [List.foldl_cons, ih (fun q h => hq q (List.mem_cons_of_mem _ h)) _
-        (by rw [Verify.ba_size_append]; omega), elemsW_append ha, List.flatMap_cons, List.append_assoc]
-  rw [Kernel.concatBytes, ← Array.foldl_toList, key _ (fun p h => hp p (Array.mem_toList_iff.1 h)) _ rfl]
-  simp [Verify.elemsW]
-
-/-- `razeColumn` at `long` over two `bytes` parts is the dense join: no part is encoded, so `encodedParts`
-    declines. A part in `foR` meets `concatFoR`, which has no value law yet. -/
-theorem razeColumn_long_bytes {a b : Column} {A B : ByteArray} (ha : a.enc = .bytes A) (hb : b.enc = .bytes B) :
-    Kernel.razeColumn .long #[a, b] = some (.vector ⟨.long, a.n + b.n, .bytes (Kernel.concatBytes #[A, B]), none⟩) := by
-  obtain ⟨at_, an, ae, ap⟩ := a; obtain ⟨bt, bn, be, bp⟩ := b
-  simp only at ha hb; subst ha hb
-  simp [Kernel.razeColumn, Kernel.encodedParts, Column.bytesOf,
-    show Column.encodes .long = true from rfl, show Column.alpEncodes .long = false from rfl]
-
 section FoRRaze
 open QLean.Kernel
 
@@ -1188,17 +1143,21 @@ theorem resAt_lt (P : ByteArray) (s w j : Nat) : (Column.resAt P s w j).toNat < 
     refine Nat.or_lt_two_pow ha ?_
     simp only [Nat.toUInt64, UInt64.toNat_ofNat']; exact Nat.lt_of_le_of_lt (Nat.mod_le _ _) (Nat.mod_lt _ (Nat.two_pow_pos w))
 
-theorem toUSize8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+/-- An element's low `w` bytes: what a `w`-byte decode keeps of a `foR` word. -/
+abbrev lowBytes (w : Nat) (a : UInt64) : UInt64 := UInt64.ofNat (a.toNat % 2 ^ (8 * w))
 
-/-- A part decoded at eight bytes: `8 * n` bytes whose words are the part's. -/
-theorem decode_words {n : Nat} (m p : ByteArray) (hn : n < USize.size) :
-    (Coc.decode (8 : Nat).toUSize m p n.toUSize).size = 8 * n ∧
-      Verify.elemsW 8 (Coc.decode (8 : Nat).toUSize m p n.toUSize) = foRWords n m p := by
-  obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [toUSize8]; decide) m p n.toUSize
-  rw [toUSize8, USize.toNat_ofNat_of_lt' hn] at hsz hg
-  refine ⟨hsz, List.ext_getElem (by simp [Verify.elemsW, hsz]) fun i h1 _ => ?_⟩
+theorem lowBytes8 (l : List UInt64) : l.map (lowBytes 8) = l :=
+  (List.map_congr_left fun a _ => Verify.ofNat_toNat_mod64 a).trans (List.map_id _)
+
+theorem decode_words {w n : Nat} (hw : 0 < w ∧ w ≤ 8) (m p : ByteArray) (hn : n < USize.size) :
+    (Coc.decode w.toUSize m p n.toUSize).size = w * n ∧
+      Verify.elemsW w (Coc.decode w.toUSize m p n.toUSize) = (foRWords n m p).map (lowBytes w) := by
+  obtain ⟨hsz, hg⟩ := Verify.decodeW w.toUSize (by rw [Verify.toUSize_toNat_of_le8 w hw.2]; exact hw.2) m p n.toUSize
+  rw [Verify.toUSize_toNat_of_le8 w hw.2, USize.toNat_ofNat_of_lt' hn] at hsz hg
+  refine ⟨hsz, List.ext_getElem (by simp [Verify.elemsW, hsz, Nat.mul_div_cancel_left n hw.1]) fun i h1 _ => ?_⟩
+  simp only [Verify.elemsW, hsz, Nat.mul_div_cancel_left n hw.1, List.length_map, List.length_range] at h1
   simp only [Verify.elemsW, foRWords, List.getElem_map, List.getElem_range]
-  rw [hg i (by simp [Verify.elemsW, hsz] at h1; omega), Verify.ofNat_toNat_mod64]
+  rw [hg i h1]
 
 /-- **`appendFoR` joins the words**: the tail's words written as residuals into the first part's last block. It
     claims only a writer-form first part with no exception past its count in that block; a patch list rides along
@@ -1206,7 +1165,8 @@ theorem decode_words {n : Nat} (m p : ByteArray) (hn : n < USize.size) :
 theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (hn1 : n1 < USize.size)
     (h : appendFoR n0 m0 p0 (Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize) = some (M, P)) :
     foRWords (n0 + n1) M P = foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
-  obtain ⟨hTs, hTw⟩ := decode_words m1 p1 hn1
+  obtain ⟨hTs, hTw⟩ := decode_words (w := 8) (by decide) m1 p1 hn1
+  rw [lowBytes8] at hTw
   generalize Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize = T at hTs hTw h
   have hv : ∀ j < n1, Column.bitsAt T (j * 8) 8 = Column.foRBits m1 p1 (Column.blockStarts m1) j := by
     intro j hj
@@ -1293,37 +1253,74 @@ theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (hn1 : n1 < 
       Nat.add_sub_cancel_left]
     rw [Nat.mod_eq_of_lt ((hc2 i hi).2), tn, cancel, hv i hi]
 
-/-- An eight-byte payload encoded lists the payload's words (`Verify.foRWF_encode` is its writer form). -/
-theorem encode_words (x : ByteArray) (hn : x.size / 8 < USize.size) :
-    foRWords (x.size / 8) (Coc.encode (8 : Nat).toUSize x).1 (Coc.encode (8 : Nat).toUSize x).2 = Verify.elemsW 8 x := by
-  rw [← (decode_words _ _ hn).2, Verify.elemsW_decode_encode 8 (by decide) (by decide) x _
+theorem encode_words {w : Nat} (hw : 1 < w ∧ w ≤ 8) (x : ByteArray) (hn : x.size / w < USize.size) :
+    (foRWords (x.size / w) (Coc.encode w.toUSize x).1 (Coc.encode w.toUSize x).2).map (lowBytes w) =
+      Verify.elemsW w x := by
+  rw [← (decode_words ⟨by omega, hw.2⟩ _ _ hn).2, Verify.elemsW_decode_encode w hw.1 hw.2 x _
     (by rw [USize.toNat_ofNat_of_lt' hn])]
 
-/-- `razeColumn` at `long` where some part is encoded: the dense join or `concatFoR` of the parts' encoded forms. -/
-theorem raze_encoded {a b c : Column} {n n0 n1 : Nat} {m0 m1 k0 k1 D0 D1 : ByteArray} {es : Array ByteArray}
-    (he : encodedParts .long #[a, b] = some (false, n, #[n0, n1], #[m0, m1], #[k0, k1], es))
-    (hd0 : Column.bytesOf a = some D0) (hd1 : Column.bytesOf b = some D1)
-    (h : razeColumn .long #[a, b] = some (.vector c)) :
-    c = ⟨.long, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩ ∨
-      c = Column.answer ⟨.long, n, .foR (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[k0, k1]).1
-        (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[k0, k1]).2, none⟩ := by
-  have w8 : QAtomicType.width .long = some 8 := rfl
-  by_cases hd : denseCheaper 5 n 8 (straddles #[n0, n1]) = true
-  · simp [razeColumn, he, w8, hd, hd0, hd1] at h <;> exact .inl h.symm
-  · simp [razeColumn, he, w8, hd] at h; exact .inr (by rw [← h])
+/-- A part at a type `encodes` takes: `bytes` of `w * n` bytes, or `foR`. -/
+theorem fixed_parts {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
+    (x : Arr t n) : (∃ B, x.c.enc = .bytes B ∧ B.size = w * n) ∨ ∃ md pk, x.c.enc = .foR md pk := by
+  obtain ⟨⟨t', _, e, _⟩, ht, hm, hwf⟩ := x
+  simp only at ht hm hwf ⊢; subst ht hm
+  cases t' <;> cases e <;> simp_all [Column.WF, Column.encodes, QAtomicType.width, Nat.mul_comm]
 
-/-- **`concatFoR` joins the words** of two parts, whichever of its three branches answers: the move and the
-    append claim only parts they carry, and the re-encode decodes whatever it is handed. -/
-theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray}
+theorem alp_fixed {t : QAtomicType} (he : Column.encodes t = true) : Column.alpEncodes t = false := by
+  cases t <;> simp_all [Column.encodes, Column.alpEncodes]
+
+theorem width_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (he : Column.encodes t = true) :
+    1 < w ∧ w ≤ 8 := by
+  cases t <;> simp_all [Column.encodes, QAtomicType.width] <;> omega
+
+/-- `razeColumn` at a type `encodes` takes: the dense join, or `concatFoR`'s answer where `encodedParts` claims. -/
+theorem raze_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
+    {a b c : Column} (h : razeColumn t #[a, b] = some (.vector c)) :
+    (∃ D0 D1, Column.bytesOf a = some D0 ∧ Column.bytesOf b = some D1 ∧
+      c = ⟨t, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩) ∨
+    ∃ n ns ms ps es, encodedParts t #[a, b] = some (false, n, ns, ms, ps, es) ∧
+      c = Column.answer ⟨t, n, .foR (concatFoR w.toUSize ns ms ps).1 (concatFoR w.toUSize ns ms ps).2, none⟩ := by
+  have halp := alp_fixed he
+  have dense : ∀ (r : Option QValue), (match (#[a, b] : Array Column).mapM Column.bytesOf with
+      | some ps => some (QValue.vector ⟨t, (#[a, b] : Array Column).foldl (· + ·.n) 0, .bytes (concatBytes ps), none⟩)
+      | none => none) = some (.vector c) → ∃ D0 D1, Column.bytesOf a = some D0 ∧ Column.bytesOf b = some D1 ∧
+        c = ⟨t, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩ := by
+    intro _ hd
+    cases h0 : Column.bytesOf a <;> cases h1 : Column.bytesOf b <;> simp_all
+  unfold razeColumn at h
+  simp only [show (#[a, b] : Array Column).isEmpty = false from rfl, Bool.false_eq_true, if_false] at h
+  split at h
+  · simp [Column.encodes] at he
+  · simp [Column.encodes] at he
+  cases hE : encodedParts t #[a, b] with
+  | none => simp only [hE] at h; exact .inl (dense none h)
+  | some r =>
+    obtain ⟨alp, n, ns, ms, ps, as⟩ := r
+    have hal : alp = false := by
+      have key : ∀ {α β : Type} (o : Option α) (f : α → β) (r : β),
+          (o.bind fun x => some (false, f x)) = some (alp, r) → alp = false := by
+        intro α β o f r h; cases o <;> simp_all
+      have := hE; simp [encodedParts, halp] at this
+      exact key _ _ _ this.2
+    subst hal
+    simp only [hE, hw, Bool.false_eq_true, if_false] at h
+    by_cases hd : denseCheaper 5 n w (straddles ns) = true
+    · simp only [hd, if_true] at h; exact .inl (dense none h)
+    · simp only [hd, Bool.false_eq_true, if_false, Option.some.injEq, QValue.vector.injEq] at h
+      exact .inr ⟨n, ns, ms, ps, as, rfl, h.symm⟩
+
+theorem concatFoR_words {w n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (hw : 1 < w ∧ w ≤ 8)
     (hn : n0 + n1 < USize.size) :
-    foRWords (n0 + n1) (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[p0, p1]).1
-      (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[p0, p1]).2 = foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
+    (foRWords (n0 + n1) (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[p0, p1]).1
+      (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[p0, p1]).2).map (lowBytes w) =
+      (foRWords n0 m0 p0 ++ foRWords n1 m1 p1).map (lowBytes w) := by
   have hz : (#[n0, n1].zip #[m0, m1]).zip #[p0, p1] = #[((n0, m0), p0), ((n1, m1), p1)] := by simp
-  obtain ⟨d0s, d0w⟩ := decode_words m0 p0 (n := n0) (by omega)
-  obtain ⟨d1s, d1w⟩ := decode_words m1 p1 (n := n1) (by omega)
+  have hw0 : 0 < w ∧ w ≤ 8 := ⟨by omega, hw.2⟩
+  obtain ⟨d0s, d0w⟩ := decode_words hw0 m0 p0 (n := n0) (by omega)
+  obtain ⟨d1s, d1w⟩ := decode_words hw0 m1 p1 (n := n1) (by omega)
   simp only [concatFoR, hz]
   split
-  · rename_i out hmv; obtain ⟨M, P⟩ := out; exact moveFoR_words hmv
+  · rename_i out hmv; obtain ⟨M, P⟩ := out; rw [moveFoR_words hmv]
   · have g0 : (#[((n0, m0), p0), ((n1, m1), p1)] : Array ((Nat × ByteArray) × ByteArray)).get!Internal 0 =
         ((n0, m0), p0) := rfl
     have tl : concatBytes (Array.map (fun p : (Nat × ByteArray) × ByteArray => Coc.decode 8 p.fst.snd p.snd p.fst.fst.toUSize)
@@ -1332,81 +1329,153 @@ theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray}
       simp [concatBytes, ByteArray.empty_append]; rfl
     simp only [g0, tl]
     split
-    · rename_i out hap; obtain ⟨M, P⟩ := out; exact appendFoR_words (by omega) hap
+    · rename_i out hap; obtain ⟨M, P⟩ := out; rw [appendFoR_words (by omega) hap]
     · rw [show concatBytes ((#[((n0, m0), p0), ((n1, m1), p1)] : Array _).map
-          (fun p => Coc.decode (8 : Nat).toUSize p.1.2 p.2 p.1.1.toUSize)) =
-          Coc.decode (8 : Nat).toUSize m0 p0 n0.toUSize ++ Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize by
+          (fun p => Coc.decode w.toUSize p.1.2 p.2 p.1.1.toUSize)) =
+          Coc.decode w.toUSize m0 p0 n0.toUSize ++ Coc.decode w.toUSize m1 p1 n1.toUSize by
         simp [concatBytes, ByteArray.empty_append]]
-      have hX := ByteArray.size_append (a := Coc.decode (8 : Nat).toUSize m0 p0 n0.toUSize)
-        (b := Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize)
-      rw [show n0 + n1 = (Coc.decode (8 : Nat).toUSize m0 p0 n0.toUSize ++
-          Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize).size / 8 by omega,
-        encode_words _ (by omega), elemsW_append (by omega), d0w, d1w]
+      have hX : (Coc.decode w.toUSize m0 p0 n0.toUSize ++ Coc.decode w.toUSize m1 p1 n1.toUSize).size / w = n0 + n1 := by
+        rw [ByteArray.size_append, d0s, d1s, ← Nat.mul_add, Nat.mul_div_cancel_left _ hw0.1]
+      rw [← hX, encode_words hw _ (by rw [hX]; exact hn), Struct.elemsW_append w hw0.1 _ _ (by rw [d0s]; simp),
+        d0w, d1w, List.map_append]
 
-/-- Where some part is encoded, `razeColumn` at `long` joins the parts' words: `ws0`, `ws1` as both the dense
-    payloads and the encoded forms `encodedParts` meets the parts in list them. -/
-theorem raze_parts {a b c : Column} {n0 n1 : Nat} {m0 m1 k0 k1 D0 D1 : ByteArray} {es : Array ByteArray}
-    {ws0 ws1 : List UInt64}
-    (he : encodedParts .long #[a, b] = some (false, n0 + n1, #[n0, n1], #[m0, m1], #[k0, k1], es))
-    (hd0 : Column.bytesOf a = some D0) (hd1 : Column.bytesOf b = some D1) (hz0 : D0.size = 8 * n0)
-    (hz1 : D1.size = 8 * n1) (hv0 : Verify.elemsW 8 D0 = ws0) (hv1 : Verify.elemsW 8 D1 = ws1)
-    (hw0 : foRWords n0 m0 k0 = ws0) (hw1 : foRWords n1 m1 k1 = ws1) (hn : n0 + n1 < USize.size)
-    (h : razeColumn .long #[a, b] = some (.vector c)) : longWords c = some (ws0 ++ ws1) := by
-  rcases raze_encoded he hd0 hd1 h with rfl | rfl
-  · simp only [longWords]; rw [elemsW_concat _ (by simp [hz0, hz1])]; simp [hv0, hv1]
-  · rw [longWords_answer_foR _ _ hn, (decode_words _ _ hn).2, concatFoR_words hn, hw0, hw1]
+/-- `concatFoR`'s answer at width `w` lists the parts' cut words in turn, through either form `answer` gives it. -/
+theorem raze_answer {t : QAtomicType} {w n0 n1 : Nat} (hw : t.width = some w) (hw8 : 1 < w ∧ w ≤ 8)
+    {m0 m1 k0 k1 D0 D1 : ByteArray} (hn : n0 + n1 < USize.size)
+    (e0 : (foRWords n0 m0 k0).map (lowBytes w) = Verify.elemsW w D0)
+    (e1 : (foRWords n1 m1 k1).map (lowBytes w) = Verify.elemsW w D1) :
+    ∃ D, Column.bytesOf (Column.answer ⟨t, n0 + n1, .foR (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).1
+      (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).2, none⟩) = some D ∧
+      Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
+  refine ⟨_, ?_, (decode_words ⟨by omega, hw8.2⟩ _ _ hn).2.trans (by rw [concatFoR_words hw8 hn, List.map_append, e0, e1])⟩
+  rcases Verify.answer_foR t w (n0 + n1) _ _ hw (a := none) with e | e <;> rw [e] <;> simp [Column.bytesOf, hw]
 
-/-- A long column lists its words: `Column.WF` leaves a long payload `bytes` or `foR`. -/
-theorem longWords_arr {m : Nat} (x : Arr .long m) : ∃ ws, longWords x.c = some ws := by
-  obtain ⟨⟨_, _, e, _⟩, ht, hm, hw⟩ := x
-  simp only at ht hm hw ⊢; subst ht hm
-  cases e <;> simp_all [longWords, Column.WF]
+/-- **`razeColumn` joins the words** at every type `encodes` takes (each Frame-of-Reference width): the
+    answer's dense form lists the parts' `w`-byte words in turn, whatever their payloads. -/
+theorem razeColumn_words {t : QAtomicType} {w na nb : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
+    (p : Arr t na) (q : Arr t nb) {c : Column} {D0 D1 : ByteArray} (h0 : Column.bytesOf p.c = some D0)
+    (h1 : Column.bytesOf q.c = some D1) (hn : na + nb < USize.size)
+    (h : razeColumn t #[p.c, q.c] = some (.vector c)) :
+    ∃ D, Column.bytesOf c = some D ∧ Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
+  have hw8 := width_fixed hw he
+  have hw0 : 0 < w ∧ w ≤ 8 := ⟨by omega, hw8.2⟩
+  have fp := fixed_parts hw he p; have fq := fixed_parts hw he q
+  obtain ⟨⟨ta, ma, ea, ia⟩, hta, hna, wa⟩ := p
+  obtain ⟨⟨tb, mb, eb, ib⟩, htb, hnb, wb⟩ := q
+  simp only at hta hna wa htb hnb wb h0 h1 h fp fq ⊢; subst ta tb ma mb
+  have sz : ∀ {n} (e : Enc) a {D}, Column.bytesOf ⟨t, n, e, a⟩ = some D → ((∃ B, e = .bytes B ∧ B.size = w * n) ∨
+      ∃ md pk, e = .foR md pk) → n < USize.size → D.size = w * n := by
+    intro n e a D hD he hn
+    rcases he with ⟨B, rfl, hB⟩ | ⟨md, pk, rfl⟩
+    · simp only [Column.bytesOf, Option.some.injEq] at hD; rw [← hD, hB]
+    · simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
+      exact (decode_words hw0 md pk hn).1
+  have s0 := sz ea ia h0 fp (by omega); have s1 := sz eb ib h1 fq (by omega)
+  rcases raze_fixed hw he h with ⟨E0, E1, e0, e1, rfl⟩ | ⟨n, ns, ms, ps, es, hE, rfl⟩
+  · simp only [e0, Option.some.injEq] at h0; simp only [e1, Option.some.injEq] at h1; subst h0 h1
+    refine ⟨_, rfl, ?_⟩
+    rw [Struct.elemsW_concatBytes w hw0.1 _ (by simp [s0, s1])]; simp
+  · have hal := alp_fixed he
+    -- a `bytes` part is met encoded: `encode`'s words cut to `w` bytes are its own
+    have eA : ∀ {k} (A : ByteArray), A.size = w * k → k < USize.size →
+        (foRWords k (Coc.encode w.toUSize A).1 (Coc.encode w.toUSize A).2).map (lowBytes w) = Verify.elemsW w A := by
+      intro k A hA hk
+      have := encode_words hw8 A (by rw [hA, Nat.mul_div_cancel_left _ hw0.1]; exact hk)
+      rwa [hA, Nat.mul_div_cancel_left _ hw0.1] at this
+    rcases fp with ⟨A, rfl, hA⟩ | ⟨m0, k0, rfl⟩ <;> rcases fq with ⟨B, rfl, hB⟩ | ⟨m1, k1, rfl⟩ <;>
+      simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at h0 h1 <;> subst h0 h1 <;>
+      simp [encodedParts, Column.encode, Column.bytesOf, hw, he, hal] at hE
+    all_goals obtain ⟨rfl, rfl, rfl, rfl, -⟩ := hE
+    · exact raze_answer hw hw8 hn (eA _ hA (by omega)) (decode_words hw0 _ _ (by omega)).2.symm
+    · exact raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm (eA _ hB (by omega))
+    · exact raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm (decode_words hw0 _ _ (by omega)).2.symm
 
-/-- **`razeColumn` at `long` joins the words** of two long columns, whatever their encodings. -/
-theorem razeColumn_long {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) {c : Column} {ws0 ws1 : List UInt64}
-    (hp : longWords p.c = some ws0) (hq : longWords q.c = some ws1) (hn : na + nb < USize.size)
-    (h : razeColumn .long #[p.c, q.c] = some (.vector c)) : longWords c = some (ws0 ++ ws1) := by
-  obtain ⟨⟨_, ma, ea, ia⟩, hta, hna, wa⟩ := p
-  obtain ⟨⟨_, mb, eb, ib⟩, htb, hnb, wb⟩ := q
-  simp only at hta hna wa htb hnb wb hp hq h ⊢; subst hta htb ma mb
-  have w8 : QAtomicType.width .long = some 8 := rfl
-  have ha : (∃ A, ea = .bytes A) ∨ ∃ md pk, ea = .foR md pk := by cases ea <;> simp [longWords] at hp ⊢
-  have hb : (∃ B, eb = .bytes B) ∨ ∃ md pk, eb = .foR md pk := by cases eb <;> simp [longWords] at hq ⊢
-  have ds : ∀ (n : Nat) (md pk : ByteArray) (o : Option (UInt8 × IndexCell)),
-      Column.bytesOf ⟨.long, n, .foR md pk, o⟩ = some (Coc.decode (8 : Nat).toUSize md pk n.toUSize) := fun n md pk o => by
-    simp [Column.bytesOf, w8]
-  rcases ha with ⟨A, rfl⟩ | ⟨m0, k0, rfl⟩ <;> rcases hb with ⟨B, rfl⟩ | ⟨m1, k1, rfl⟩ <;>
-    simp only [longWords] at hp hq <;> cases hp <;> cases hq
-  · have hA : A.size = na * 8 := by simpa [Column.WF, w8] using wa
-    have hB : B.size = nb * 8 := by simpa [Column.WF, w8] using wb
-    rw [razeColumn_long_bytes (a := ⟨.long, na, .bytes A, ia⟩) rfl rfl] at h
-    cases h
-    simp only [longWords]; rw [elemsW_concat _ (by simp [hA, hB])]; simp
-  · have hA : A.size = na * 8 := by simpa [Column.WF, w8] using wa
-    obtain ⟨d1s, d1w⟩ := decode_words m1 k1 (n := nb) (by omega)
-    refine raze_parts (es := #[.empty, .empty]) ?_ rfl (ds _ _ _ _) (by omega) d1s rfl d1w
-      (by rw [show na = A.size / 8 by omega]; exact encode_words A (by omega)) rfl hn h
-    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
-      show Column.alpEncodes .long = false from rfl]
-  · have hB : B.size = nb * 8 := by simpa [Column.WF, w8] using wb
-    obtain ⟨d0s, d0w⟩ := decode_words m0 k0 (n := na) (by omega)
-    refine raze_parts (es := #[.empty, .empty]) ?_ (ds _ _ _ _) rfl d0s (by omega) d0w rfl rfl
-      (by rw [show nb = B.size / 8 by omega]; exact encode_words B (by omega)) hn h
-    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
-      show Column.alpEncodes .long = false from rfl]
-  · obtain ⟨d0s, d0w⟩ := decode_words m0 k0 (n := na) (by omega)
-    obtain ⟨d1s, d1w⟩ := decode_words m1 k1 (n := nb) (by omega)
-    refine raze_parts (es := #[.empty, .empty]) ?_ (ds _ _ _ _) (ds _ _ _ _) d0s d1s d0w d1w rfl rfl hn h
-    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
-      show Column.alpEncodes .long = false from rfl]
+/-- Under `wf`, a column at a type `encodes` takes lists its dense form's `w`-byte words, each read as an atom. -/
+theorem toList_fixed {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
+    (x : Arr t n) {D : ByteArray} (hD : Column.bytesOf x.c = some D) (hn : n < USize.size) :
+    x.toList = (Verify.elemsW w D).map fun v =>
+      (Carrier.of? t (.atom (Column.atomOfBits t v (QAtomicType.ne_general_of_width hw)))).getD default := by
+  have hw8 := width_fixed hw he
+  have hg := QAtomicType.ne_general_of_width hw
+  have hb : t ≠ .boolean := by rintro rfl; simp [Column.encodes] at he
+  have hgu : t ≠ .guid := by rintro rfl; simp [Column.encodes] at he
+  have hsz : D.size = w * n ∧ ∀ i < n, Column.get x.c i = some (Column.atomOfBits t (Column.bitsAt D (i * w) w) hg) := by
+    rcases fixed_parts hw he x with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩
+    · rw [Arr.c_eq x hc] at hD ⊢; simp only [Column.bytesOf, Option.some.injEq] at hD; subst hD
+      refine ⟨hB, fun i hi => ?_⟩
+      cases t <;> simp_all [Column.get, QAtomicType.width, Column.encodes]
+    · rw [Arr.c_eq x hc] at hD ⊢; simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; subst hD
+      obtain ⟨hs, hg'⟩ := Verify.decodeW w.toUSize (by rw [Verify.toUSize_toNat_of_le8 w hw8.2]; exact hw8.2) md pk n.toUSize
+      rw [Verify.toUSize_toNat_of_le8 w hw8.2, USize.toNat_ofNat_of_lt' hn] at hs hg'
+      refine ⟨hs, fun i hi => ?_⟩
+      rw [hg' i hi, Verify.atomOfBits_mod hw hb hgu, ← foRBits_starts]
+      cases t <;> simp_all [Column.get, QAtomicType.width, Column.encodes]
+  apply List.ext_getElem (by rw [Arr.length_toList]; simp [Verify.elemsW, hsz.1, Nat.mul_div_cancel_left n (by omega : 0 < w)])
+  intro i h1 _
+  rw [Arr.getElem_toList, Arr.get_ne x _ hg, hsz.2 i (by rw [Arr.length_toList] at h1; exact h1)]
+  simp [Verify.elemsW]
 
-/-- `razeColumn` at `long` as lists: the answer read as an `Arr` is the two parts in turn. -/
-theorem raze_toList_long {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) {c : Column}
-    (hn : na + nb < USize.size) (h : razeColumn .long #[p.c, q.c] = some (.vector c)) (V : Arr .long (na + nb))
-    (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
-  obtain ⟨ws0, hp⟩ := longWords_arr p; obtain ⟨ws1, hq⟩ := longWords_arr q
-  rw [Arr.toList_long V (hV ▸ razeColumn_long p q hp hq hn h), Arr.toList_long p hp, Arr.toList_long q hq,
-    List.map_append]
+theorem width_encodes {t : QAtomicType} (he : Column.encodes t = true) : ∃ w, t.width = some w := by
+  cases t <;> simp_all [Column.encodes, QAtomicType.width]
+
+/-- **`razeColumn` as lists** at every type `encodes` takes: the answer read as an `Arr` is the parts in turn. -/
+theorem raze_toList_fixed {t : QAtomicType} {na nb : Nat} (he : Column.encodes t = true) (p : Arr t na)
+    (q : Arr t nb) {c : Column} (hn : na + nb < USize.size) (h : razeColumn t #[p.c, q.c] = some (.vector c))
+    (V : Arr t (na + nb)) (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
+  obtain ⟨w, hw⟩ := width_encodes he
+  have dense : ∀ {n} (x : Arr t n), ∃ D, Column.bytesOf x.c = some D := fun x => by
+    rcases fixed_parts hw he x with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [Column.bytesOf, hc, x.wf.1, hw]
+  obtain ⟨D0, h0⟩ := dense p; obtain ⟨D1, h1⟩ := dense q
+  obtain ⟨D, hD, hDw⟩ := razeColumn_words hw he p q h0 h1 hn h
+  rw [toList_fixed hw he V (hV ▸ hD) hn, toList_fixed hw he p h0 (by omega), toList_fixed hw he q h1 (by omega),
+    hDw, List.map_append]
+
+/-- Under `wf`, a boolean column is `bits`. -/
+theorem bits_arr {n : Nat} (x : Arr .boolean n) : ∃ b, x.c.enc = .bits b := by
+  obtain ⟨⟨_, _, e, _⟩, ht, hm, hwf⟩ := x
+  simp only at ht hm hwf ⊢; subst ht hm
+  cases e <;> simp_all [Column.WF]
+
+theorem get_bits {n : Nat} (x : Arr .boolean n) {b : ByteArray} (hc : x.c.enc = .bits b) (i : Fin n) :
+    x.get i = (Carrier.of? .boolean (.atom (.boolean (Column.bitAt b i)))).getD default := by
+  rw [Arr.get_ne x i (by decide), Arr.c_eq x hc]; simp [Column.get, i.2]
+
+/-- `concatBits`' bit `j`: the first part's below its count, the second's past it. -/
+theorem concatBits_at {na nb j : Nat} (b0 b1 : ByteArray) (hj : j < na + nb) :
+    Column.bitAt (concatBits #[na, nb] #[b0, b1]) j =
+      if j < na then Column.bitAt b0 j else Column.bitAt b1 (j - na) := by
+  simp only [concatBits]
+  rw [Verify.bitAt_packOf _ _ _ (by simp; omega)]
+  split
+  · simp; rw [List.getElem?_append_left (by simp; omega)]; simp [*]
+  · simp; rw [List.getElem?_append_right (by simp; omega)]; simp [show j - na < nb by omega]
+
+/-- **`razeColumn` at boolean as lists**: `concatBits` lays the parts' bits down in turn. -/
+theorem raze_toList_bits {na nb : Nat} (p : Arr .boolean na) (q : Arr .boolean nb) {c : Column}
+    (h : razeColumn .boolean #[p.c, q.c] = some (.vector c)) (V : Arr .boolean (na + nb)) (hV : V.c = c) :
+    V.toList = p.toList ++ q.toList := by
+  obtain ⟨b0, h0⟩ := bits_arr p; obtain ⟨b1, h1⟩ := bits_arr q
+  rw [Arr.c_eq p h0, Arr.c_eq q h1] at h
+  simp [razeColumn] at h
+  have hVc : V.c.enc = .bits (concatBits #[na, nb] #[b0, b1]) := by rw [hV, ← h]
+  apply List.ext_getElem (by rw [List.length_append, Arr.length_toList, Arr.length_toList, Arr.length_toList])
+  intro j h1' _
+  rw [Arr.length_toList] at h1'
+  rw [Arr.getElem_toList, get_bits V hVc, List.getElem_append, concatBits_at _ _ h1']
+  by_cases hj : j < na
+  · rw [dif_pos (by rw [Arr.length_toList]; exact hj), if_pos hj, Arr.getElem_toList, get_bits p h0]
+  · rw [dif_neg (by rw [Arr.length_toList]; exact hj), if_neg hj, Arr.getElem_toList, get_bits q h1]
+    have hl : p.toList.length = na := Arr.length_toList p
+    simp only [hl]
+
+/-- **`razeColumn` as lists** at boolean and at every type `encodes` takes. -/
+theorem raze_toList {t : QAtomicType} {na nb : Nat} (ht : Column.encodes t = true ∨ t = .boolean) (p : Arr t na)
+    (q : Arr t nb) {c : Column} (hn : na + nb < USize.size) (h : razeColumn t #[p.c, q.c] = some (.vector c))
+    (V : Arr t (na + nb)) (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
+  rcases ht with he | rfl
+  · exact raze_toList_fixed he p q hn h V hV
+  · exact raze_toList_bits p q h V hV
+
 end FoRRaze
 
 /-- A successful `Except` bind ran both halves (qlean's `Verify.bind_ok` is at its own `R` only). -/
@@ -1627,9 +1696,8 @@ theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel
 
 /-- **`align` on different keys, long keys and long `y` values: the keys `x.key ++ y.key` at the rows only `y`
     has, the values the rows of `x` (`align_left_rel`) then those rows (`align_right_rel`).** `hlaw`/`hlawr` are
-    value laws of the `vv`/`av` dyads at the encodings at hand. The keys are joined by `raze_toList_long`;
-    `hraze` is the value law of `razeColumn` at the value type `rt`, which `raze_toList_long` is at `rt = .long`
-    (the `example` below). -/
+    value laws of the `vv`/`av` dyads at the encodings at hand. Keys and values are joined by `raze_toList`, which
+    `hrt` admits: `rt` boolean or a type `encodes` takes (symbol and the `alp` types have no raze law yet). -/
 theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn .long x.key.c y.key.c ≠ some true) {el : Carrier t}
@@ -1640,9 +1708,7 @@ theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long
     (hlaw : ∀ (Y : Arr .long x.n) l, Ew.val L.v rt x.val Y = .ok l → Ew.ValSpec L.v he x.val Y l)
     (hlawr : ∀ {n : Nat} (Y : Arr .long n) r, Ew.atomVal L.vr rt el Y ht = .ok r →
       Y.toList.mapM (fun c => elem L.vr hr el c) = .ok r.toList)
-    (hraze : ∀ {na nb : Nat} (p : Arr rt na) (q : Arr rt nb) (c : Column) (V : Arr rt (na + nb)),
-      na + nb < USize.size → Kernel.razeColumn rt #[p.c, q.c] = some (.vector c) → V.c = c →
-        V.toList = p.toList ++ q.toList) :
+    (hrt : Column.encodes rt = true ∨ rt = .boolean) :
     ∃ (n : Nat) (l : Arr rt x.n) (gk : Arr .long n) (ry : Arr rt n) (K : Arr .long (x.n + n)) (V : Arr rt (x.n + n)),
       R = ⟨x.n + n, K, V⟩ ∧ K.toList = x.key.toList ++ gk.toList ∧ V.toList = l.toList ++ ry.toList ∧
       l.rel = rpair x.val.rel (x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64) ≫
@@ -1657,16 +1723,11 @@ theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long
   obtain ⟨F, henum, hFn, hIn, I, hIc, hI⟩ := only_rows x.key y.key hkx hky hnx hny hmem hw
   obtain ⟨_, _, _, kyw, -, hwy, -, -⟩ := Find.operand_long y.key hky hny
   obtain ⟨G, rfl, hG⟩ := gather_rel y.key hwy hny I hI hFn (by omega) (hIc ▸ vec_some hgk)
-  refine ⟨iy.n, l, G, ry, K, V, rfl, raze_toList_long x.key G (by omega) (vec_some hkeys) K (Find.onKey_c hK),
-    hraze l ry vals V (by omega) (vec_some hvals) (Find.onKey_c hV),
+  refine ⟨iy.n, l, G, ry, K, V, rfl, raze_toList (.inl rfl) x.key G (by omega) (vec_some hkeys) K (Find.onKey_c hK),
+    raze_toList hrt l ry (by omega) (vec_some hvals) V (Find.onKey_c hV),
     align_left_rel he hkx hky hyv hnx hny hix hyx hl hlaw, hR.1, fun ys hy => ⟨?_, hR.2 ys hy⟩⟩
   obtain rfl := (henum ys).1 hy
   rw [CL.toList_ofList]; exact hG
-
-/-- `align_rel`'s `hraze` at long values. -/
-example : ∀ {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) (c : Column) (V : Arr .long (na + nb)),
-    na + nb < USize.size → Kernel.razeColumn .long #[p.c, q.c] = some (.vector c) → V.c = c →
-      V.toList = p.toList ++ q.toList := fun p q _ V hn h hV => raze_toList_long p q hn h V hV
 
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
@@ -2949,9 +3010,6 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms atomDict_rel
 #print axioms dictAtom_rel
 #print axioms gatherFill_long
-#print axioms elemsW_append
-#print axioms elemsW_concat
-#print axioms razeColumn_long_bytes
 #print axioms bind_ok
 #print axioms align_gather
 #print axioms ix_lookup
@@ -2968,11 +3026,22 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms appendFoR_words
 #print axioms encode_words
 #print axioms foRExc_congr
-#print axioms raze_parts
-#print axioms longWords_arr
-#print axioms razeColumn_long
-#print axioms raze_toList_long
-#print axioms raze_encoded
+#print axioms lowBytes8
+#print axioms decode_words
+#print axioms fixed_parts
+#print axioms alp_fixed
+#print axioms width_fixed
+#print axioms raze_fixed
 #print axioms concatFoR_words
+#print axioms raze_answer
+#print axioms razeColumn_words
+#print axioms toList_fixed
+#print axioms width_encodes
+#print axioms raze_toList_fixed
+#print axioms bits_arr
+#print axioms get_bits
+#print axioms concatBits_at
+#print axioms raze_toList_bits
+#print axioms raze_toList
 
 end LeetQ.Rel.Verb
