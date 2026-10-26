@@ -380,6 +380,99 @@ theorem ej_rel {R : Rel .long .long} {l r : List (List Int64)} (hk : R.toList = 
     _ = (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ ix l ≫ (ix r)° ≫ graph Int64.ofNat :=
         rel_ejSpec l r
 
+/-! ## `+x`
+
+  `Struct.flip` boxes its answer; `hk` is the kernel law `R.segs = (til m).map (P.segs.map (·[j]))`, every run of
+  `P` of length `m`. -/
+
+theorem toList_ofList {α : Type} : ∀ xs : List α, CL.toList (CL.ofList xs) = xs
+  | [] => rfl
+  | a :: xs => by
+    rw [CL.ofList_cons, show CL.toList (.cons a (CL.ofList xs)) = a :: CL.toList (CL.ofList xs) from rfl, toList_ofList xs]
+
+/-- `list(R)` of a list whose every element `R` sends to `f` of it alone is the list mapped by `f`. -/
+theorem list_ofList {α β : Type} (R : (⟨α⟩ : RelSet.{0}) ⟶ ⟨β⟩) (f : α → β) : ∀ (xs : List α) (w : CL.ConsList Unit β),
+    (∀ a ∈ xs, ∀ b, R a b ↔ b = f a) → (list R (CL.ofList xs) w ↔ w = CL.ofList (xs.map f))
+  | [], w, _ => by
+    cases w with
+    | wrap u => exact ⟨fun _ => rfl, fun _ => rfl⟩
+    | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
+  | a :: xs, w, h => by
+    rw [List.map_cons, CL.ofList_cons, CL.ofList_cons]
+    cases w with
+    | wrap u => exact ⟨False.elim, fun h => nomatch h⟩
+    | cons b z =>
+      show (R a b ∧ list R (CL.ofList xs) z) ↔ _
+      rw [h a (List.mem_cons_self ..) b, list_ofList R f xs z (fun a' m => h a' (List.mem_cons_of_mem _ m))]
+      exact ⟨fun ⟨e1, e2⟩ => by rw [e1, e2], fun e => by cases e; exact ⟨rfl, rfl⟩⟩
+
+/-- `(@) : list(t) × til → t`, element `j` of a list. -/
+def nth {α : Type} : (⟨CL.ConsList Unit α × Nat⟩ : RelSet.{0}) ⟶ ⟨α⟩ := fun p a => (CL.toList p.1)[p.2]? = some a
+
+/-- The columns of `g` runs of one length `m`: `⟨!til g, til m⟩ ≫ cpl ≫ list(x̂)`, `x̂ = ⟨outl ≫ x, outr⟩ ≫ (@)`;
+    column `j` is `x̂(i, j)` for `i` in `til g`. -/
+theorem ix_flip {α : Type} [Inhabited α] (segs : List (List α)) (g m : Nat) (hg : segs.length = g)
+    (hm : ∀ s ∈ segs, s.length = m) :
+    ix (((List.range m).map fun j => segs.map (·[j]!)).map CL.ofList) =
+      rpair (cst (CL.ofList (List.range g))) (corefl (· < m)) ≫ ListRel.cpl ≫
+        list (rpair ((graph Prod.fst : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ ix (segs.map CL.ofList))
+          (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) :=
+  hom_ext fun (j : Nat) w => by
+    subst hg
+    show _ ↔ ∃ p, (p.1 = CL.ofList (List.range segs.length) ∧ (j = p.2 ∧ j < m)) ∧ ∃ q, q = ListRel.cplFn p ∧ list _ q w
+    show ((((List.range m).map fun k => segs.map (·[k]!)).map CL.ofList)[j]? = some w) ↔ _
+    rw [List.getElem?_map, List.getElem?_map]
+    by_cases hj : j < m
+    · rw [List.getElem?_range hj]
+      simp only [Option.map_some, Option.some.injEq]
+      have e : ListRel.cplFn (CL.ofList (List.range segs.length), j) =
+          CL.ofList ((List.range segs.length).map (·, j)) := by
+        simp only [ListRel.cplFn, cmap_ofList]
+      have hl := list_ofList (rpair ((graph Prod.fst : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ ix (segs.map CL.ofList))
+          (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) (fun p => segs[p.1]![p.2]!)
+          ((List.range segs.length).map (·, j)) w (fun p hp b => by
+            obtain ⟨i, hi, rfl⟩ := List.mem_map.1 hp
+            have hs : i < segs.length := List.mem_range.1 hi
+            have hlen := hm segs[i] (List.getElem_mem hs)
+            show (∃ q : CL.ConsList Unit α × Nat, ((∃ i', i' = i ∧ (segs.map CL.ofList)[i']? = some q.1) ∧ q.2 = j) ∧
+              (CL.toList q.1)[q.2]? = some b) ↔ b = segs[i]![j]!
+            rw [getElem!_pos segs i hs, getElem!_pos segs[i] j (by omega)]
+            constructor
+            · rintro ⟨⟨s, j'⟩, ⟨⟨_, rfl, hs1⟩, rfl⟩, h⟩
+              rw [List.getElem?_map, List.getElem?_eq_getElem hs, Option.map_some, Option.some.injEq] at hs1
+              subst hs1
+              rw [toList_ofList, List.getElem?_eq_getElem (by omega), Option.some.injEq] at h
+              exact h.symm
+            · rintro rfl
+              exact ⟨(CL.ofList segs[i], j), ⟨⟨i, rfl, by rw [List.getElem?_map, List.getElem?_eq_getElem hs]; rfl⟩, rfl⟩,
+                by rw [toList_ofList, List.getElem?_eq_getElem (by omega)]⟩)
+      have hseg : CL.ofList (((List.range segs.length).map (·, j)).map fun p => segs[p.1]![p.2]!) =
+          CL.ofList (segs.map (·[j]!)) := by
+        congr 1; apply List.ext_getElem (by simp); intro i h1 h2
+        simp only [List.length_map, List.length_range] at h1
+        simp only [List.getElem_map, List.getElem_range]
+        rw [getElem!_pos segs i h1]
+      rw [hseg] at hl
+      constructor
+      · rintro rfl; exact ⟨_, ⟨rfl, rfl, hj⟩, _, rfl, by rw [e]; exact hl.2 rfl⟩
+      · rintro ⟨⟨_, _⟩, ⟨rfl, rfl, _⟩, _, rfl, h⟩; rw [e] at h; exact (hl.1 h).symm
+    · have hn : (List.range m)[j]? = none := List.getElem?_eq_none (by simp; omega)
+      simp only [hn, Option.map_none]
+      exact ⟨(fun h => nomatch h), (fun ⟨_, ⟨_, _, h⟩, _⟩ => absurd h hj)⟩
+
+/-- **`+x = ⟨!til g, til m⟩ ≫ cpl ≫ list(⟨outl ≫ x, outr⟩ ≫ (@))`**: column `j < m` lists `x(i)[j]` for `i < g`. -/
+theorem flip_rel {v : QAtomicType} [Inhabited (El v)] {P R : Parted v} {m : Nat} (hm : ∀ s ∈ P.segs, s.length = m)
+    (hk : R.segs = (List.range m).map fun j => P.segs.map (·[j]!)) :
+    R.rel = rpair (cst (CL.ofList (List.range P.g))) (corefl (· < m)) ≫ ListRel.cpl ≫
+      list (rpair ((graph Prod.fst : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ P.rel)
+        (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) :=
+  calc R.rel = ix (((List.range m).map fun j => P.segs.map (·[j]!)).map CL.ofList) := by rw [Parted.rel, hk]
+    _ = rpair (cst (CL.ofList (List.range P.g))) (corefl (· < m)) ≫ ListRel.cpl ≫
+          list (rpair ((graph Prod.fst : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ P.rel)
+            (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) :=
+        ix_flip P.segs P.g m (by simp [Parted.segs]) hm
+
+#print axioms flip_rel
 #print axioms ej_rel
 #print axioms indexParted_rel
 #print axioms eachRight_rel
