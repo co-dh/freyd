@@ -10,6 +10,7 @@ import QLean.Verify.Group
 import QLean.Verify.BinWin
 import QLean.Verify.Encoding
 import QLean.Verify.Ids
+import QLean.Verify.Grade
 
 namespace LeetQ.Rel.Verb
 
@@ -1779,6 +1780,24 @@ theorem idWidthOf_lane (G : Nat) : Column.idWidthOf G = 0 ∨ Column.idWidthOf G
   repeat' split
   all_goals omega
 
+/-- At most `m` classes among `m` rows. -/
+theorem firstsOf_length_le {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) : (Verify.firstsOf g m).length ≤ m := by
+  unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+
+/-- **`groupIds` of a code at a sort layout `k`** holding all its `n` rows: `groupIds_spec` at `n`, the
+    classes `groupOf` packed at their lane and the firsts. -/
+theorem groupIds_at (rc : Alg.Code) {k : Kernel.Scan.Kind} (hk : rc.kind = some k)
+    (hav : rc.n ≤ k.avail rc.b) (hn : rc.n < USize.size) :
+    rc.groupIds.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length)
+      rc.n (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) ∧
+    Verify.ids rc.groupIds.2 = Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n := by
+  have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
+    unfold Alg.Code.groupIds; rw [hk]
+  have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
+    rw [USize.toNat_ofNat_of_lt' hn]; exact Nat.min_eq_left hav
+  have := Verify.groupIds_spec k rc.n.toUSize rc.b
+  rw [hm] at this; rw [hg]; exact this
+
 /-- **`groupIds`, `classSizes` of a code at a sort layout `k`**: `join_nats`'s right-side hypotheses, the
     classes `gid = groupOf` of the lane's keys numbered by first occurrence, `G = |firstsOf|` of them, each
     class's size its count of rows. -/
@@ -1790,17 +1809,10 @@ theorem groupIds_lane (rc : Alg.Code) {k : Kernel.Scan.Kind} (hk : rc.kind = som
     nats (Alg.classSizes rc.n rc.groupIds) =
       (List.range (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length).map fun h =>
         (List.range rc.n).countP fun j => decide (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n j = h) := by
-  have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
-    unfold Alg.Code.groupIds; rw [hk]
-  have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
-    rw [USize.toNat_ofNat_of_lt' hn]; exact Nat.min_eq_left hav
-  obtain ⟨h1, h2⟩ := Verify.groupIds_spec k rc.n.toUSize rc.b
-  rw [hm] at h1 h2
-  rw [hg]
-  generalize Kernel.Order.groupIds k rc.n.toUSize rc.b = g at h1 h2
-  generalize Kernel.Order.keyAt k rc.b = key at h1 h2
-  have hGn : (Verify.firstsOf key rc.n).length ≤ rc.n := by
-    unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+  obtain ⟨h1, h2⟩ := groupIds_at rc hk hav hn
+  generalize rc.groupIds = g at h1 h2
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
+  generalize Kernel.Order.keyAt k rc.b = key at h1 h2 hGn
   have hlt : ∀ j, j < rc.n → Verify.groupOf key rc.n j < (Verify.firstsOf key rc.n).length :=
     fun j hj => Verify.groupOf_lt hj
   have hl : Alg.len g.2 = (Verify.firstsOf key rc.n).length := by
@@ -1822,6 +1834,203 @@ theorem groupIds_lane (rc : Alg.Code) {k : Kernel.Scan.Kind} (hk : rc.kind = som
   have hj := List.mem_range.1 hj
   rw [Function.comp_apply, Verify.idAt_packIds hW hj (Verify.lt_two_pow_idWidthOf (by omega) (hlt j hj))]
   simp
+
+open QLean.Kernel in
+/-- **`find` of a code in the right's class firsts, at one byte layout `k`**: `join_nats`'s `hit`, each left
+    element's position among the right's class firsts' elements, the class count at a miss. -/
+theorem find_lane (lc rc : Alg.Code) {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (hr : rc.kind = some k) (hl : lc.kind = some k) (hav : rc.n ≤ k.avail rc.b) (hn : rc.n < USize.size) :
+    nats ((rc.gather rc.groupIds.2).find lc) = (List.range (lc.b.size / k.width)).map fun i =>
+      ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) := by
+  have hw0 : 0 < k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
+  have hw8 : k.width ≤ 8 := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
+  have hwU : k.width.toUSize.toNat = k.width :=
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw8 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
+  have hbits : ∀ b i, k.bitsAt b i = Column.bitsAt b (i * k.width) k.width := fun b i => by
+    rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hids := (groupIds_at rc hr hav hn).2
+  have hgk : (rc.gather rc.groupIds.2).kind = some k := hr
+  have hgb : (rc.gather rc.groupIds.2).b = gatherBytes k.width.toUSize 0 rc.b rc.groupIds.2 := by
+    show (match rc.kind with
+      | some .bit => gatherBits rc.n.toUSize rc.b rc.groupIds.2
+      | some k => gatherBytes k.width.toUSize 0 rc.b rc.groupIds.2
+      | none => gatherPacked rc.n.toUSize rc.w.toUSize rc.w.toUSize 0 rc.b rc.groupIds.2) = _
+    rw [hr]; rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hf : (rc.gather rc.groupIds.2).find lc = findVec k.width.toUSize false (rc.gather rc.groupIds.2).b lc.b := by
+    unfold Alg.Code.find; rw [hgk, hl]; rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hfs : ∀ f ∈ Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n, f < rc.n := fun f hf => Verify.firsts_lt _ _ hf
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
+  have hava : k.avail rc.b = rc.b.size / k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  generalize Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n = fs at hids hfs hGn ⊢
+  -- the firsts' elements
+  have hay : Verify.elemsW k.width (rc.gather rc.groupIds.2).b = fs.map (k.bitsAt rc.b) := by
+    have e := Verify.elemsW_gatherBytes k.width.toUSize (by rw [hwU]; exact hw0) (by rw [hwU]; exact hw8) 0 rc.b
+      rc.groupIds.2
+    rw [hwU] at e
+    rw [hgb, e]
+    have e2 : ∀ (F : Nat → UInt64), (Verify.elemsW 8 rc.groupIds.2).map (fun u => F u.toNat) = (Verify.ids rc.groupIds.2).map F :=
+      fun F => by simp only [Verify.elemsW, Verify.ids, List.map_map]; rfl
+    rw [e2 fun f => UInt64.ofNat (((Verify.elemsW k.width rc.b).getD f 0).toNat % 2 ^ (8 * k.width)), hids]
+    refine List.map_congr_left fun f hf => ?_
+    have hf' : f < rc.b.size / k.width := by have := hfs f hf; omega
+    unfold Verify.elemsW
+    rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hf', Option.map_some,
+      Option.getD_some, Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ hw8), UInt64.ofNat_toNat, hbits]
+  have hhs : (rc.gather rc.groupIds.2).b.size / k.width < USize.size := by
+    have := congrArg List.length hay
+    simp only [Verify.elemsW, List.length_map, List.length_range] at this
+    omega
+  obtain ⟨hsz, hget⟩ := Verify.findVec_idxOf k.width.toUSize false (rc.gather rc.groupIds.2).b lc.b (by rw [hwU]; exact hhs)
+  rw [hwU] at hsz hget
+  rw [hf]
+  apply List.ext_getElem (by rw [nats_length, hsz]; simp)
+  intro i h1 h2
+  rw [nats_length, hsz, Nat.mul_div_cancel_left _ (by decide)] at h1
+  simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range]
+  rw [hget i h1, if_pos hw8, hay, hbits lc.b i]
+  rw [show normalise k.width false = id from funext fun v => by simp [normalise], List.map_id, id]
+
+/-- Below `2^k`, flipping bit `k` adds it: the sign flip of a sort key over a non-negative code. -/
+theorem xor_two_pow_of_lt {a k : Nat} (h : a < 2 ^ k) : a ^^^ 2 ^ k = a + 2 ^ k := by
+  have h1 := Nat.xor_div_two_pow (a := a) (b := 2 ^ k) (n := k)
+  have h2 := Nat.xor_mod_two_pow (a := a) (b := 2 ^ k) (n := k)
+  rw [Nat.div_eq_of_lt h, Nat.div_self (Nat.two_pow_pos k), Nat.mod_eq_of_lt h, Nat.mod_self, Nat.xor_zero,
+    show (0 ^^^ 1 : Nat) = 1 from rfl] at *
+  have := Nat.div_add_mod (a ^^^ 2 ^ k) (2 ^ k)
+  rw [h1, h2] at this; omega
+
+/-- **A stable sort by keys that order as the classes do is a stable sort by class**: `grade`'s answer, read
+    on `n` rows whose key `key` is the class `gid` shifted by a constant. -/
+theorem grade_by_class {L : List Nat} {n : Nat} (gid key : Nat → Nat) (hp : L.Perm (List.range n))
+    (hs : L.Pairwise fun i j => key i ≤ key j ∧ (key j ≤ key i → i < j))
+    (hk : ∀ i j, i < n → j < n → (key i ≤ key j ↔ gid i ≤ gid j)) :
+    L.Pairwise fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j) :=
+  hs.imp_of_mem fun hi hj ⟨a, b⟩ =>
+    have hi := List.mem_range.1 (hp.mem_iff.1 hi); have hj := List.mem_range.1 (hp.mem_iff.1 hj)
+    ⟨(hk _ _ hi hj).1 a, fun h => b ((hk _ _ hj hi).2 h)⟩
+
+open QLean.Kernel in
+/-- **`grade` of `n` class ids packed at their lane** (`Code.ofIds`, as `Alg.join` grades the right's
+    classes) is a stable sort of the rows by class, at every lane `idWidthOf G` picks: `join_nats`'s `hpn`,
+    with `ej_rel_codes`'s `hp`, `hs`. -/
+theorem grade_ofIds {G n : Nat} (gid : Nat → Nat) (hlt : ∀ j, j < n → gid j < G) (hG : G < 2 ^ 63)
+    (hn : n < USize.size) :
+    (nats (Alg.Code.ofIds G n (Column.packIds (Column.idWidthOf G) n gid)).grade).Perm (List.range n) ∧
+    (nats (Alg.Code.ofIds G n (Column.packIds (Column.idWidthOf G) n gid)).grade).Pairwise
+      fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j) := by
+  have hnU : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hW := idWidthOf_lane G
+  have hb : ∀ j, j < n → gid j < 2 ^ Column.idWidthOf G :=
+    fun j hj => Verify.lt_two_pow_idWidthOf (by omega) (hlt j hj)
+  -- a byte-layout `grade` whose key is the class shifted by `off`
+  have viaGrade : ∀ (k : Scan.Kind) (b : ByteArray) (off : Nat), n ≤ k.avail b →
+      (∀ i, i < n → (Order.keyAt k b i).toNat = gid i + off) →
+      (nats (Order.grade k false n.toUSize b)).Perm (List.range n) ∧
+      (nats (Order.grade k false n.toUSize b)).Pairwise fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j) :=
+    fun k b off hav hkey => by
+      obtain ⟨hp, hs⟩ := Verify.grade_spec k false n.toUSize b
+      rw [hnU, Nat.min_eq_left hav, ← nats_eq_ids] at hp
+      rw [← nats_eq_ids] at hs
+      refine ⟨hp, grade_by_class gid (fun i => (Order.keyAt k b i).toNat) hp
+        (hs.imp fun ⟨a, c⟩ => ⟨UInt64.le_iff_toNat_le.1 a, fun h => c (UInt64.le_iff_toNat_le.2 h)⟩) ?_⟩
+      intro i j hi hj; dsimp only; rw [hkey i hi, hkey j hj]; omega
+  -- `gradeLane` at a lane `w`, keyed by the ids themselves
+  have viaLane : ∀ w, Column.idWidthOf G = w →
+      (nats (Order.gradeLane false n.toUSize w.toUSize (Column.packIds w n gid))).Perm (List.range n) ∧
+      (nats (Order.gradeLane false n.toUSize w.toUSize (Column.packIds w n gid))).Pairwise
+        fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j) := fun w hw => by
+    have hw64 : w ≤ 64 := by rcases hW with h | h | h | h | h | h | h | h <;> omega
+    have hwU : w.toUSize.toNat = w :=
+      USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw64 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
+    obtain ⟨hp, hs⟩ := Verify.gradeLane_spec false n.toUSize w.toUSize (Column.packIds w n gid)
+    rw [hnU, hwU, Verify.idsCap_packIds _ _ (hw ▸ hW), ← nats_eq_ids] at hp
+    rw [hwU, ← nats_eq_ids] at hs
+    refine ⟨hp, grade_by_class gid (fun i => Column.idAt (Column.packIds w n gid) w i) hp
+      (hs.imp fun ⟨a, c⟩ => ⟨by simpa using a, fun h => c (by simpa using h)⟩) ?_⟩
+    intro i j hi hj; dsimp only
+    rw [Verify.idAt_packIds (hw ▸ hW) hi (hw ▸ hb i hi), Verify.idAt_packIds (hw ▸ hW) hj (hw ▸ hb j hj)]
+  -- a whole-byte lane `8c` read at the kind of width `c`
+  have viaBytes : ∀ (c w : Nat) (k : Scan.Kind), 8 * c = w → 1 ≤ c → c ≤ 8 → k.avail = (fun b => b.size / c) →
+      Column.idWidthOf G = w → (∀ b i, k.bitsAt b i = Column.bitsAt b (i * c) c) →
+      n ≤ k.avail (Column.packIds w n gid) ∧
+      ∀ i, i < n → k.bitsAt (Column.packIds w n gid) i = (gid i).toUInt64 :=
+    fun c w k hcw h1 h8 hav hw hbits => by
+      subst hcw
+      obtain ⟨hs, hg⟩ := Verify.packIds_bytes c n gid h1 h8
+      refine ⟨Nat.le_of_eq (by rw [hav]; dsimp only; rw [hs, Nat.mul_div_cancel_left _ (by omega)]), fun i hi => ?_⟩
+      rw [hbits, hg i hi (hw ▸ hb i hi)]
+  have hzero : ∀ k i, Column.bitAt ⟨Array.replicate k 0⟩ i = false := fun k i => by
+    unfold Column.bitAt
+    have hs : (⟨Array.replicate k 0⟩ : ByteArray).size = k := Array.size_replicate
+    by_cases h : i / 8 < k
+    · rw [getElem?_pos (⟨Array.replicate k 0⟩ : ByteArray) _ (by rw [hs]; exact h)]
+      simp [ByteArray.getElem_eq_getElem_data]
+    · rw [getElem?_neg (⟨Array.replicate k 0⟩ : ByteArray) _ (by rw [hs]; exact h)]; simp
+  have htn : ∀ x, x < 2 ^ 64 → x.toUInt64.toNat = x := fun x hx => by
+    rw [Nat.toUInt64_eq, UInt64.toNat_ofNat', Nat.mod_eq_of_lt hx]
+  rcases hW with hw | hw | hw | hw | hw | hw | hw | hw
+  · -- no bits: every id is `0`, a bitmap of zeros
+    simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    have hsz : (⟨Array.replicate ((n + 7) / 8) 0⟩ : ByteArray).size = (n + 7) / 8 := Array.size_replicate
+    refine viaGrade .bit _ 0 (by show n ≤ (⟨Array.replicate ((n + 7) / 8) 0⟩ : ByteArray).size * 8; omega)
+      fun i hi => ?_
+    have := hb i hi; rw [hw] at this
+    show (if Column.bitAt ⟨Array.replicate ((n + 7) / 8) 0⟩ i then (1 : UInt64) else 0).toNat = _
+    rw [hzero]; simp; omega
+  · -- one bit: `bitAt` is the id
+    simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    have hc := Verify.idsCap_packIds (W := 1) n gid (by decide)
+    unfold Column.idsCap at hc
+    rw [if_neg (by decide), Nat.div_one] at hc
+    refine viaGrade .bit _ 0 (by show n ≤ (Column.packIds 1 n gid).size * 8; omega) fun i hi => ?_
+    have e := Verify.idAt_one (Column.packIds 1 n gid) i
+    rw [Verify.idAt_packIds (by decide) hi (hw ▸ hb i hi)] at e
+    show (if Column.bitAt (Column.packIds 1 n gid) i then (1 : UInt64) else 0).toNat = _
+    rw [e]; split <;> rfl
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    exact viaLane 2 hw
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    exact viaLane 4 hw
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    obtain ⟨hav, hk⟩ := viaBytes 1 8 .u8 rfl (by decide) (by decide) rfl hw fun _ _ => rfl
+    refine viaGrade .u8 _ 0 hav fun i hi => ?_
+    show (Order.rank .u8 (Scan.Kind.bitsAt .u8 (Column.packIds 8 n gid) i)).toNat = _
+    rw [hk i hi]; have := hb i hi; rw [hw] at this; exact htn _ (by omega)
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    by_cases hG16 : 32768 < G
+    · simp only [hG16, decide_true, Bool.and_true, Bool.true_or, Bool.or_true, reduceIte]; exact viaLane 16 hw
+    · simp only [hG16, decide_false, Bool.and_false, Bool.false_eq_true, reduceIte]
+      obtain ⟨hav, hk⟩ := viaBytes 2 16 .i16 rfl (by decide) (by decide) rfl hw fun _ _ => rfl
+      refine viaGrade .i16 _ (2 ^ 15) hav fun i hi => ?_
+      show (Order.rank .i16 (Scan.Kind.bitsAt .i16 (Column.packIds 16 n gid) i)).toNat = _
+      have := hlt i hi
+      rw [hk i hi, Order.rank, UInt64.toNat_xor, htn _ (by omega), show (0x8000 : UInt64).toNat = 2 ^ 15 from rfl,
+        xor_two_pow_of_lt (by omega)]
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    by_cases hG32 : 2147483648 < G
+    · simp only [hG32, decide_true, Bool.and_true, Bool.true_or, Bool.or_true, reduceIte]; exact viaLane 32 hw
+    · simp only [hG32, decide_false, Bool.and_false, Bool.false_eq_true, reduceIte]
+      obtain ⟨hav, hk⟩ := viaBytes 4 32 .i32 rfl (by decide) (by decide) rfl hw fun _ _ => rfl
+      refine viaGrade .i32 _ (2 ^ 31) hav fun i hi => ?_
+      show (Order.rank .i32 (Scan.Kind.bitsAt .i32 (Column.packIds 32 n gid) i)).toNat = _
+      have := hlt i hi
+      rw [hk i hi, Order.rank, UInt64.toNat_xor, htn _ (by omega),
+        show (0x80000000 : UInt64).toNat = 2 ^ 31 from rfl, xor_two_pow_of_lt (by omega)]
+  · simp (config := {decide := true}) only [Alg.Code.ofIds, Alg.Code.ofLane, hw, Alg.Code.grade, Alg.Code.kind,
+      Alg.laneKind, reduceIte]
+    obtain ⟨hav, hk⟩ := viaBytes 8 64 .i64 rfl (by decide) (by decide) rfl hw fun _ _ => rfl
+    refine viaGrade .i64 _ (2 ^ 63) hav fun i hi => ?_
+    show (Order.rank .i64 (Scan.Kind.bitsAt .i64 (Column.packIds 64 n gid) i)).toNat = _
+    have := hlt i hi
+    rw [hk i hi, Order.rank, UInt64.toNat_xor, htn _ (by omega),
+      show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl, xor_two_pow_of_lt (by omega)]
 
 /-- A word read as a long is the long of its natural. -/
 theorem toInt64_eq_ofNat (u : UInt64) : u.toInt64 = Int64.ofNat u.toNat := by
@@ -1875,6 +2084,74 @@ theorem ej_rel_codes {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lo
   congr 1
   exact List.map_congr_left fun i _ => by rw [List.map_map]; rfl
 
+/-- **A right row's class is a left element's `find_lane` hit exactly when their codes agree**, at one byte
+    layout: `ej_rel_codes`'s `heq`, read on the codes. -/
+theorem class_hit_iff {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (rb lb : ByteArray) {n j : Nat} (i : Nat) (hj : j < n) :
+    Verify.groupOf (Kernel.Order.keyAt k rb) n j =
+      ((Verify.firstsOf (Kernel.Order.keyAt k rb) n).map (k.bitsAt rb)).idxOf (k.bitsAt lb i) ↔
+    k.bitsAt rb j = k.bitsAt lb i := by
+  have hk5 : k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64 := by
+    rcases hk4 with h | h | h | h <;> simp [h]
+  have hbits : ∀ b i, k.bitsAt b i = Column.bitsAt b (i * k.width) k.width := fun b i => by
+    rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hki : ∀ a c, Kernel.Order.keyAt k rb a = Kernel.Order.keyAt k rb c ↔ k.bitsAt rb a = k.bitsAt rb c :=
+    fun a c => by rw [Verify.keyAt_eq_iff hk5, hbits, hbits]
+  rw [List.idxOf, List.findIdx_map]
+  constructor
+  · intro h
+    have hq : (Verify.firstsOf (Kernel.Order.keyAt k rb) n).findIdx ((· == k.bitsAt lb i) ∘ k.bitsAt rb) <
+        (Verify.firstsOf (Kernel.Order.keyAt k rb) n).length := h ▸ Verify.groupOf_lt hj
+    have e1 := (Verify.groupOf_eq_iff hj hq).1 h
+    have e2 := List.findIdx_getElem (w := hq)
+    simp only [Function.comp, beq_iff_eq] at e2
+    rw [(hki _ _).1 e1, e2]
+  · intro hx
+    unfold Verify.groupOf
+    congr 1; funext f
+    simp only [Function.comp, hx.symm]
+    by_cases e : k.bitsAt rb f = k.bitsAt rb j
+    · simp [e, (hki f j).2 e]
+    · simp [e, mt (hki f j).1 e]
+
+/-- **`ej` tabulates `l ≫ r°`** once its key codes lie at one byte layout `k` and agree exactly where the key
+    tuples `tl`, `tr` do: `ej_rel_codes` with the three lane kernels discharged (`groupIds_lane`, `find_lane`,
+    `grade_ofIds`, `class_hit_iff`). -/
+theorem ej_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .long .long} {tl tr : List (List Int64)}
+    {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (hc : Struct.keyCodes "ej" lk rk = .ok (lc, rc)) (hr : rc.kind = some k) (hl : lc.kind = some k)
+    (hav : rc.n ≤ k.avail rc.b) (hn : rc.n = tr.length) (hnl : lc.b.size / k.width = tl.length)
+    (hkey : ∀ i, i < tl.length → ∀ j, j < tr.length → (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ tr[j]! = tl[i]!))
+    (hU : tl.length * rc.n + tl.length + rc.n + rc.n + 1 < USize.size)
+    (hB : tl.length * rc.n + tl.length + rc.n + rc.n < 2 ^ 63) (h : Struct.ej lk rk = .ok R) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ ix tl ≫ (ix tr)° ≫ graph Int64.ofNat := by
+  have hnU : rc.n < USize.size := by omega
+  obtain ⟨hG, hgid, hsz⟩ := groupIds_lane rc hr hav hnU
+  have hhit := find_lane lc rc hk4 hr hl hav hnU
+  rw [hnl] at hhit
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
+  have hids1 := (groupIds_at rc hr hav hnU).1
+  obtain ⟨hp, hs⟩ := grade_ofIds (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) hgid (by omega) hnU
+  rw [← hids1] at hp hs
+  have hhG : ∀ i, ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) ≤
+      (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length := fun i => by
+    have := Verify.idxOf_le_length (k.bitsAt lc.b i) ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b))
+    rw [List.length_map] at this; exact this
+  have heq : ∀ i, i < tl.length → ∀ j, j < tr.length → (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n j =
+      ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) ↔
+        tr[j]! = tl[i]!) := fun i hi j hj =>
+    (class_hit_iff hk4 rc.b lc.b i (by omega)).trans (hkey i hi j hj)
+  have hU' : tl.length * rc.n + tl.length + rc.n + (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length + 1 <
+      USize.size := by omega
+  have hB' : tl.length * rc.n + tl.length + rc.n + (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length < 2 ^ 63 := by
+    omega
+  exact ej_rel_codes (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n)
+    (fun i => ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i))
+    _ hc hn hG hgid hsz hhit hhG rfl (by rw [← hn]; exact hp) hs heq hU' hB' h
+
+#print axioms class_hit_iff
+#print axioms ej_rel_lane
 #print axioms expand_nats
 #print axioms zip_flatMap
 #print axioms join_nats
@@ -1882,6 +2159,10 @@ theorem ej_rel_codes {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lo
 #print axioms nats_eq_ids
 #print axioms idWidthOf_lane
 #print axioms groupIds_lane
+#print axioms find_lane
+#print axioms xor_two_pow_of_lt
+#print axioms grade_by_class
+#print axioms grade_ofIds
 #print axioms ej_rel_codes
 
 #print axioms nats_gather
