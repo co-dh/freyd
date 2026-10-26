@@ -2394,12 +2394,10 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
     (List.pairwise_lt_range ..).filter _
   have hlt : ∀ j ∈ Verify.firstsOf (fun i => x.toList[i]!) x.toList.length, j < x.toList.length :=
     fun j hj => List.mem_range.1 (List.mem_filter.1 hj).1
-  refine ⟨⟨CL.ofList _, (enum_iff _ _).2 ⟨funext fun j => propext ((hS j).trans (inlistP_ofList j _).symm),
-    (orderedP_ofList _ _).2 hP⟩⟩, fun ys hy => ?_⟩
-  obtain ⟨hS', ho⟩ := (enum_iff _ _).1 hy
-  have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length :=
-    eq_of_pairwise_lt (by rw [← orderedP_ofList, ofList_toList]; exact ho) hP fun j => by
-      rw [← inlistP_ofList, ofList_toList, ← hS']; exact hS j
+  have he := enum_ofList _ _ hP fun j => (hS j).symm
+  refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
+  have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := by
+    rw [(he ys).1 hy, CL.toList_ofList]
   calc r.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8 h)
     _ = ix ((Verify.firstsOf (fun i => x.toList[i]!) x.toList.length).map fun i => x.toList[i]!) :=
         congrArg ix (eraseDups_firsts _)

@@ -75,38 +75,6 @@ theorem countP_cuts_eq (c : Nat → Nat) (h0 : c 0 = 0) {g : Nat} (mono : ∀ r,
       have := b.1 h; omega
     omega
 
-/-- `enum` of the interval `[a, a+k)` is `range'(a, k)`. -/
-theorem enum_range' (a k : Nat) (L : CL.ConsList Unit Nat) :
-    enum (fun i => a ≤ i ∧ i < a + k) L ↔ L = CL.ofList (List.range' a k) := by
-  rw [enum_iff]
-  have pw : (List.range' a k).Pairwise (· < ·) := List.pairwise_lt_range' ..
-  have mem : ∀ i, i ∈ List.range' a k ↔ a ≤ i ∧ i < a + k := fun i => by simp [List.mem_range'_1]
-  constructor
-  · rintro ⟨hS, ho⟩
-    rw [← ofList_toList L, orderedP_ofList] at ho
-    rw [← ofList_toList L]
-    refine congrArg CL.ofList (eq_of_pairwise_lt ho pw fun i => ?_)
-    rw [mem, ← inlistP_ofList, ofList_toList, ← hS]
-  · rintro rfl
-    exact ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i _).symm), (orderedP_ofList _ _).2 pw⟩
-
-/-- `list(ix xs)` takes the positions `[a, a+k)`, all below `|xs|`, to the values there. -/
-theorem list_ix_range' (xs : List α) : ∀ (k a : Nat) (w : CL.ConsList Unit α), a + k ≤ xs.length →
-    (list (ix xs) (CL.ofList (List.range' a k)) w ↔ w = CL.ofList ((xs.drop a).take k))
-  | 0, a, w, _ => by
-    cases w with
-    | wrap u => exact ⟨fun _ => rfl, fun _ => rfl⟩
-    | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
-  | k+1, a, w, h => by
-    rw [List.range'_succ, List.drop_eq_getElem_cons (by omega : a < xs.length), List.take_succ_cons,
-      CL.ofList_cons, CL.ofList_cons]
-    cases w with
-    | wrap u => exact ⟨False.elim, fun h => nomatch h⟩
-    | cons b z =>
-      show (xs[a]? = some b ∧ list (ix xs) (CL.ofList (List.range' (a+1) k)) z) ↔ _
-      rw [List.getElem?_eq_getElem (by omega), Option.some.injEq, list_ix_range' xs k (a+1) z (by omega)]
-      exact ⟨fun ⟨e, h⟩ => by rw [← e, h], fun e => by cases e; exact ⟨rfl, rfl⟩⟩
-
 /-- `ix(xs ++ ys) = split ≫ [ix xs, ix ys]`: the junction of the two lists over the split of positions. -/
 theorem ix_append (xs ys : List α) :
     ix (xs ++ ys) = split xs.length ys.length ≫ junc (sumCop Idx Idx) (ix xs) (ix ys) :=
@@ -167,12 +135,12 @@ theorem ix_runs (xs : List α) (g : Nat) (c : Nat → Nat) (h0 : c 0 = 0) (hg : 
       constructor
       · rintro rfl
         refine ⟨r, ⟨rfl, hr⟩, _, (Λ_iff _ r _).2 rfl, _, ?_,
-          (list_ix_range' xs (c (r+1) - c r) (c r) _ (by omega)).2 rfl⟩
+          (listP_ix_range' xs (c (r+1) - c r) (c r) (by omega) _).2 rfl⟩
         rw [hset hr]; exact (enum_range' _ _ _).2 rfl
       · rintro ⟨_, ⟨rfl, _⟩, S, hS, L, he, hl⟩
         rw [(Λ_iff _ r S).1 hS, hset hr, enum_range'] at he
         subst he
-        exact ((list_ix_range' xs (c (r+1) - c r) (c r) w (by omega)).1 hl).symm
+        exact ((listP_ix_range' xs (c (r+1) - c r) (c r) (by omega) w).1 hl).symm
     · rw [List.getElem?_map, List.getElem?_eq_none (by simp; omega)]
       exact ⟨fun h => by simp at h, fun ⟨_, ⟨_, h⟩, _⟩ => absurd h hr⟩
 
@@ -393,11 +361,6 @@ theorem ej_rel {R : Rel .long .long} {l r : List (List Int64)} (hk : R.toList = 
   `Struct.flip` boxes its answer; `hk` is the kernel law `R.segs = (til m).map (P.segs.map (·[j]))`, every run of
   `P` of length `m`. -/
 
-theorem toList_ofList {α : Type} : ∀ xs : List α, CL.toList (CL.ofList xs) = xs
-  | [] => rfl
-  | a :: xs => by
-    rw [CL.ofList_cons, show CL.toList (.cons a (CL.ofList xs)) = a :: CL.toList (CL.ofList xs) from rfl, toList_ofList xs]
-
 /-- `list(R)` of a list whose every element `R` sends to `f` of it alone is the list mapped by `f`. -/
 theorem list_ofList {α β : Type} (R : (⟨α⟩ : RelSet.{0}) ⟶ ⟨β⟩) (f : α → β) : ∀ (xs : List α) (w : CL.ConsList Unit β),
     (∀ a ∈ xs, ∀ b, R a b ↔ b = f a) → (list R (CL.ofList xs) w ↔ w = CL.ofList (xs.map f))
@@ -449,11 +412,11 @@ theorem ix_flip {α : Type} [Inhabited α] (segs : List (List α)) (g m : Nat) (
             · rintro ⟨⟨s, j'⟩, ⟨⟨_, rfl, hs1⟩, rfl⟩, h⟩
               rw [List.getElem?_map, List.getElem?_eq_getElem hs, Option.map_some, Option.some.injEq] at hs1
               subst hs1
-              rw [toList_ofList, List.getElem?_eq_getElem (by omega), Option.some.injEq] at h
+              rw [CL.toList_ofList, List.getElem?_eq_getElem (by omega), Option.some.injEq] at h
               exact h.symm
             · rintro rfl
               exact ⟨(CL.ofList segs[i], j), ⟨⟨i, rfl, by rw [List.getElem?_map, List.getElem?_eq_getElem hs]; rfl⟩, rfl⟩,
-                by rw [toList_ofList, List.getElem?_eq_getElem (by omega)]⟩)
+                by rw [CL.toList_ofList, List.getElem?_eq_getElem (by omega)]⟩)
       have hseg : CL.ofList (((List.range segs.length).map (·, j)).map fun p => segs[p.1]![p.2]!) =
           CL.ofList (segs.map (·[j]!)) := by
         congr 1; apply List.ext_getElem (by simp); intro i h1 h2
