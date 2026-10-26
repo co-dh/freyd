@@ -467,7 +467,8 @@ theorem keyCodes_long {verb : String} {cl cr : Column} {lc rc : Alg.Code} {wl wr
     (hR : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
     (hc : Struct.keyCodes verb #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok (lc, rc)) :
     ∃ k : Kernel.Scan.Kind, (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧ lc.kind = some k ∧ rc.kind = some k ∧
-      rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ lc.b.size / k.width = wl.length ∧
+      rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧ lc.n = wl.length ∧
+      lc.b.size / k.width = wl.length ∧
       ∀ i (hi : i < wl.length) j (hj : j < wr.length), (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ wr[j] = wl[i]) := by
   obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) = .ok (some os) ∧
       Alg.two os = .ok (lc, rc) := by
@@ -481,12 +482,12 @@ theorem keyCodes_long {verb : String} {cl cr : Column} {lc rc : Alg.Code} {wl wr
         simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
           Alg.tuples, hro] at hc hR ⊢
     all_goals exact hc
-  obtain ⟨k, f, hk4, hf, lc', rc', rfl, hlk, -, hls, hlb, hrk, hrn, hrs, hrb⟩ :=
+  obtain ⟨k, f, hk4, hf, lc', rc', rfl, hlk, hln, hls, hlb, hrk, hrn, hrs, hrb⟩ :=
     rangeOffsets_long hwl hwr hl hr htot hro
   have e2 : (lc', rc') = (lc, rc) := by simpa [Alg.two, pure, Except.pure] using h2
   cases e2
   have hw0 : 0 < k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
-  refine ⟨k, hk4, hlk, hrk, ?_, hrn, by rw [hls, Nat.mul_div_cancel_left _ hw0], fun i hi j hj => ?_⟩
+  refine ⟨k, hk4, hlk, hrk, ?_, hrn, hrs, hln, by rw [hls, Nat.mul_div_cancel_left _ hw0], fun i hi j hj => ?_⟩
   · rcases hk4 with rfl | rfl | rfl | rfl <;>
       simp only [Kernel.Scan.Kind.avail, hrs, hrn, Nat.mul_div_cancel_left _ hw0, Nat.le_refl]
   · rw [hrb j hj, hlb i hi]
@@ -505,12 +506,47 @@ theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
         (ix (wr.map (fun u => [u.toInt64])))° ≫ graph Int64.ofNat := by
   rcases hc : Struct.keyCodes "ej" #[⟨.long, cl⟩] #[⟨.long, cr⟩] with err | ⟨lc, rc⟩
   · simp [Struct.ej, hc, bind, Except.bind] at h
-  obtain ⟨k, hk4, hlk, hrk, hav, hrn, hnl, hkey⟩ :=
+  obtain ⟨k, hk4, hlk, hrk, hav, hrn, -, -, hnl, hkey⟩ :=
     keyCodes_long hwl hwr (by omega) (by omega) htot hro hc
   refine ej_rel_lane hk4 hc hrk hlk hav (by simp [hrn]) (by simp [hnl]) (fun i hi j hj => ?_)
     (by simp only [List.length_map, hrn]; exact hU) (by simp only [List.length_map, hrn]; exact hB) h
   simp only [List.length_map] at hi hj
   rw [hkey i hi j hj, getElem!_pos _ _ (by simpa using hj), getElem!_pos _ _ (by simpa using hi)]
+  simp only [List.getElem_map, List.cons.injEq, and_true]
+  refine ⟨fun e => by rw [e], fun e => ?_⟩
+  have := congrArg Int64.toUInt64 e; simpa using this
+
+/-- `ij` on one dense long key column per side, unconditionally on the codes: each left row with its first right
+row of an equal key, `Λ((ix tl)(ix tr)°) ≫ est(≤)` read at the row ids, wherever `rangeOffsets` codes the two
+columns — `ij_rel_codes` at the one byte lane `keyCodes_long` names. -/
+theorem ij_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
+    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (htot : cl.n + cr.n ≤ 2 ^ 32)
+    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+    (hU : 64 * wr.length < USize.size) (hLU : wl.length < USize.size) (hB : 64 * wr.length < 2 ^ 63)
+    (h : Struct.ij #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫
+        (Λ (ix (wl.map (fun u => [u.toInt64])) ≫ (ix (wr.map (fun u => [u.toInt64])))°) ≫ est (· ≤ ·)) ≫
+        graph Int64.ofNat := by
+  rcases hc : Struct.keyCodes "ij" #[⟨.long, cl⟩] #[⟨.long, cr⟩] with err | ⟨lc, rc⟩
+  · simp [Struct.ij, hc, bind, Except.bind] at h
+  obtain ⟨k, hk4, hlk, hrk, hav, hrn, hrs, hln, hnl, hkey⟩ :=
+    keyCodes_long hwl hwr hLU (by omega) htot hro hc
+  have hrw := w_of_kind hk4 hrk
+  have hlw := w_of_kind hk4 hlk
+  have hlane : 8 * k.width = 8 ∨ 8 * k.width = 16 ∨ 8 * k.width = 32 ∨ 8 * k.width = 64 := by
+    rcases hk4 with rfl | rfl | rfl | rfl <;> decide
+  have hdiv : ∀ s, s * 8 / (8 * k.width) = s / k.width := fun s => by
+    rw [Nat.mul_comm s 8, Nat.mul_div_mul_left _ _ (by decide)]
+  have hava : k.avail rc.b = rc.b.size / k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hsz8 : rc.b.size * 8 ≤ 64 * wr.length := by
+    rw [hrs]; rcases hk4 with rfl | rfl | rfl | rfl <;> (dsimp only [Kernel.Scan.Kind.width]; omega)
+  refine ij_rel_codes hc (by rw [hrw]; omega) (by rw [hlw]; omega) (by rw [hrw, hdiv, ← hava]; exact hav)
+    (Nat.le_of_eq (by rw [hlw, hdiv, hnl, hln])) (by simp [hrn]) (by simp [hln]) (fun i hi j hj => ?_)
+    (by omega) (by simpa using hLU) (by omega) h
+  simp only [List.length_map] at hi hj
+  rw [hrw, hlw, idAt_kind hk4, idAt_kind hk4, UInt64.toNat_inj, hkey i hi j hj,
+    getElem!_pos _ _ (by simpa using hj), getElem!_pos _ _ (by simpa using hi)]
   simp only [List.getElem_map, List.cons.injEq, and_true]
   refine ⟨fun e => by rw [e], fun e => ?_⟩
   have := congrArg Int64.toUInt64 e; simpa using this
@@ -3638,6 +3674,7 @@ theorem aj_rel {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr .
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
+#print axioms ij_long
 #print axioms binStep_go
 #print axioms bitsAt_binRows
 #print axioms bitsAt_binRows_miss
