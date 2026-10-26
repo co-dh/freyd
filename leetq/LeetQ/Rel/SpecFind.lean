@@ -802,6 +802,77 @@ theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : N
   rw [List.map_replicate, ht i hi]
   simp [List.getD_eq_getElem?_getD, hi]
 
+/-- Position `j` of `i` repeated `f i` times, `i < n`, is the group `i` whose segment `[c i, c (i+1))` holds
+    `j`, counted as the cuts `c (r+1) ≤ j`; `c` the exclusive prefix sums of `f`. -/
+theorem flatMap_replicate_getElem? (f c : Nat → Nat) (h0 : c 0 = 0) (hs : ∀ i, c (i+1) = c i + f i) :
+    ∀ n j a, ((List.range n).flatMap fun i => List.replicate (f i) i)[j]? = some a ↔
+      j < c n ∧ a = (List.range n).countP fun r => c (r+1) ≤ j := by
+  have hm : ∀ {a b}, a ≤ b → c a ≤ c b := fun h => by
+    induction h with
+    | refl => exact Nat.le_refl _
+    | step _ ih => rw [hs]; omega
+  have hl : ∀ n, ((List.range n).flatMap fun i => List.replicate (f i) i).length = c n := fun n => by
+    induction n with
+    | zero => simp [h0]
+    | succ n ih => simp [List.range_succ, List.flatMap_append, ih, hs]
+  intro n
+  induction n with
+  | zero => intro j a; simp [h0]
+  | succ n ih =>
+    intro j a
+    have hn : c n ≤ c (n+1) := hm (Nat.le_succ n)
+    rw [List.range_succ, List.flatMap_append, List.countP_append, List.getElem?_append, hl]
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.countP_cons, List.countP_nil]
+    by_cases hj : j < c n
+    · rw [if_pos hj, ih]
+      have : ¬ c (n+1) ≤ j := by omega
+      simp [this, hj, show j < c (n+1) by omega]
+    · rw [if_neg hj, List.getElem?_replicate]
+      have hall : ((List.range n).countP fun r => c (r+1) ≤ j) = n := by
+        have e := (List.countP_eq_length (p := fun r => decide (c (r+1) ≤ j)) (l := List.range n)).2
+          fun r hr => by have := hm (show r+1 ≤ n from List.mem_range.1 hr); simp only [decide_eq_true_eq]; omega
+        rwa [List.length_range] at e
+      rw [hall, hs n]
+      by_cases hk : j < c n + f n
+      · simp [show j - c n < f n by omega, hk, show ¬ c n + f n ≤ j by omega, eq_comm]
+      · simp [show ¬ j - c n < f n by omega, hk]
+
+/-- The offsets of `&x` on counts, `0, +\(0|x)`: the exclusive prefix sums, a negative count read as `0`. -/
+def whereOffsets (ns : List Int64) (i : Nat) : Nat := ((List.range i).map fun k => (ns.getD k 0).toInt.toNat).sum
+
+/-- **`&x` on counts `= corefl(< Σ(0|x)) ≫ grp(o)`**, the group read as a long: output position `j` goes to
+    the input position whose segment holds it, the segments cut at `o = 0, +\(0|x)` (as `cut` reads them).
+    Stated for every dense long `o` holding the offsets; `whereCounts_toList` and `flatMap_replicate_getElem?`. -/
+theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
+    (hb : x.c.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩)
+    (o : Arr .long (nx+1)) (ho : ∀ i : Fin (nx+1), (o.get i).toInt = whereOffsets x.toList i) :
+    r.rel = corefl (· < whereOffsets x.toList nx) ≫ grp o ≫ graph Int64.ofNat := by
+  let f := fun k => (x.toList.getD k 0).toInt.toNat
+  have hs : ∀ i, whereOffsets x.toList (i+1) = whereOffsets x.toList i + f i := fun i => by
+    simp [whereOffsets, List.range_succ, f]
+  have hgrp : ∀ j, Parted.group o j = (List.range nx).countP fun r => whereOffsets x.toList (r+1) ≤ j := fun j => by
+    unfold Parted.group
+    rw [show List.range nx = (List.finRange nx).map Fin.val from List.ext_getElem (by simp) (fun _ _ _ => by simp),
+      List.countP_map]
+    congr 1; funext r
+    simp [Function.comp, ho r.succ]
+  have key : ∀ j a, ((List.range nx).flatMap fun i => List.replicate (f i) i)[j]? = some a ↔
+      j < whereOffsets x.toList nx ∧ a = Parted.group o j := fun j a =>
+    (flatMap_replicate_getElem? f (whereOffsets x.toList) rfl hs nx j a).trans (by rw [hgrp j])
+  have hr : r.rel = ix (((List.range nx).flatMap fun i => List.replicate (f i) i).map Int64.ofNat) := by
+    show ix r.toList = _
+    rw [whereCounts_toList hb hn h]
+    unfold Find.whereCountsSpec
+    rw [Arr.length_toList]
+    simp [List.map_flatMap, List.map_replicate, f]
+  rw [hr, ix_map]
+  refine hom_ext fun j c => ⟨?_, ?_⟩
+  · rintro ⟨a, ha, rfl⟩
+    obtain ⟨hj, rfl⟩ := (key j a).1 ha
+    exact ⟨j, ⟨rfl, hj⟩, _, rfl, rfl⟩
+  · rintro ⟨_, ⟨rfl, hj⟩, _, rfl, rfl⟩
+    exact ⟨_, (key j _).2 ⟨hj, rfl⟩, rfl⟩
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
@@ -913,5 +984,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms prior_spec_long
 #print axioms prior_rel_long
 #print axioms whereCounts_toList
+#print axioms flatMap_replicate_getElem?
+#print axioms whereCounts_rel
 
 end LeetQ.Rel.Verb
