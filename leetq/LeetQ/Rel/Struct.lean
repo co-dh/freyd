@@ -144,14 +144,30 @@ def cutP {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Exc
 def cut {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Except String ((g : Nat) × Arr .general g) := do
   boxed (← cutP o x)
 
-/-- `x f/: y`: `m` runs of `n`, run `j` is `x f y[j]` — `Alg.cross` of the positions, two gathers and ONE
-    `Ew.dyad` over all `m·n` pairs, no call per right element; `o := j·n` for `j ≤ m`. -/
+/-- `m` runs of `k` pairs: `x` gathered at the long positions `xi`, `y` at `yi`, and ONE `Ew.dyad` over all
+    `m·k` pairs, no call per run; `o := r·k` for `r ≤ m`. Both each-verbs are this at `Alg.cross`'s two orders. -/
+def pairsP {t u : QAtomicType} (verb : String) (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) (m k : Nat) (xi yi : ByteArray) : Except String (Parted rt) := do
+  let xs ← vec verb t (gatherColumn t x.c (Alg.longs xi))
+  let ys ← vec verb u (gatherColumn u y.c (Alg.longs yi))
+  partedP verb (Alg.mulc (tilLongs (m + 1).toUSize) k) (← Ew.dyad v Ew.vv t u rt xs ys (m * k))
+
+/-- `x f/: y`: `ny` runs of `nx`, run `j` is `x f y[j]` — `pairsP` at `Alg.cross ny nx`, `y` outer. -/
 def eachRightP {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
     (y : Arr u ny) : Except String (Parted rt) := do
   let (j, i) := Alg.cross ny nx
-  let xs ← vec "x f/:y" t (gatherColumn t x.c (Alg.longs i))
-  let ys ← vec "x f/:y" u (gatherColumn u y.c (Alg.longs j))
-  partedP "x f/:y" (Alg.mulc (tilLongs (ny + 1).toUSize) nx) (← Ew.dyad v Ew.vv t u rt xs ys (ny * nx))
+  pairsP "x f/:y" v rt x y ny nx i j
+
+/-- `x f\: y`: `nx` runs of `ny`, run `i` is `x[i] f y` — `pairsP` at `Alg.cross nx ny`, `x` outer. -/
+def eachLeftP {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) : Except String (Parted rt) := do
+  let (i, j) := Alg.cross nx ny
+  pairsP "x f\\:y" v rt x y nx ny i j
+
+/-- `x f\: y`: `eachLeftP`, boxed. -/
+def eachLeft {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) : Except String ((g : Nat) × Arr .general g) := do
+  boxed (← eachLeftP v rt x y)
 
 /-- `x f/: y`: `eachRightP`, boxed. -/
 def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
@@ -189,6 +205,28 @@ def indexPartedP {a : QAtomicType} {ny : Nat} (P : Parted a) (y : Arr .long ny) 
 /-- `x@y` on a nested list: `indexPartedP` of the flat form, boxed. -/
 def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .long ny) : Except String ((g : Nat) × Arr .general g) := do
   boxed (← indexPartedP (← Parted.ofBoxes a x) y)
+
+/-- `x . (i;j)` on a nested list in its flat form: `(x@i)@j` — `indexPartedP` at the one index `i`, whose one
+    run is the answer's `val`, then `index` of that run at `j`. -/
+def dotP {a : QAtomicType} {nj : Nat} (P : Parted a) (i : Arr .long 1) (j : Arr .long nj) : Except String (Arr a nj) := do
+  index (← indexPartedP P i).val j
+
+/-! ## `!n`, `,a`, `x~y`: a list from nothing, an atom, and a test -/
+
+/-- `!n`: `tilLongs`, the positions `0 … n-1` as longs. -/
+def til (n : Nat) : Except String (Arr .long n) := Arr.of .long n ⟨.long, n, .bytes (tilLongs n.toUSize), none⟩ "!n"
+
+/-- `,a`: the atom as a one-element list, `Ew.atomCol`. -/
+def enlist (t : QAtomicType) (a : El t) (ht : t ≠ .general := by first | decide | assumption) : Except String (Arr t 1) := do
+  Arr.of t 1 (← Ew.atomCol t (Carrier.atom a)) ",a"
+
+/-- `x~y`: lengths differ, `0b` (the length is the type index); else one `matchColumn` over the two encoded
+    payloads, whatever form each takes. `none` from it means no kernel compares the pair: refused, not guessed. -/
+def same {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Except String Bool :=
+  if nx ≠ ny then pure false else
+  match matchColumn t x.c y.c with
+  | some b => pure b
+  | none => throw s!"x~y: no qlean kernel compares these two {repr t} encodings"
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
