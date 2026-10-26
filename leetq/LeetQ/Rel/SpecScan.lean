@@ -214,17 +214,55 @@ theorem grade_map (desc : Bool) (xs : List Int64) (h63 : xs.length < 2 ^ 63) :
 /-- `f/` with q's null skip, head first: `skip(f)(x, a) = a` at a null `x`, else `f(x, a)`. -/
 def skipNul (f : Int64 → Int64 → Int64) (x a : Int64) : Int64 := if x == Spec.nul then a else f x a
 
-/-- The left fold `Spec.over` is the right fold of `skipNul` when `f` is associative with unit `e`. -/
+/-- The left fold `Spec.over` is the right fold of `skipNul` when `f` is associative with unit `e` on the
+    values `P` holds of: `e`, every element that is not `0N`, and closed under `f`. `max`'s seed `-0W` is
+    a unit only away from `0N`, which `skipNul` never lets in. -/
+theorem over_foldr_inv (f : Int64 → Int64 → Int64) (e : Int64) (P : Int64 → Prop)
+    (hA : ∀ a b c, f (f a b) c = f a (f b c)) (hl : ∀ a, P a → f e a = a) (hr : ∀ a, P a → f a e = a)
+    (hP : P e) (hPn : ∀ x, x ≠ Spec.nul → P x) (hPf : ∀ a b, P a → P b → P (f a b)) (xs : List Int64) :
+    Spec.over f e xs = xs.foldr (skipNul f) e := by
+  have hQ : ∀ xs : List Int64, P (xs.foldr (skipNul f) e) := fun xs => by
+    induction xs with
+    | nil => exact hP
+    | cons x xs ih =>
+      rw [List.foldr_cons, skipNul]
+      by_cases hx : x = Spec.nul
+      · simp only [hx, beq_self_eq_true, if_true]; exact ih
+      · rw [if_neg (by simpa using hx)]; exact hPf x _ (hPn x hx) ih
+  suffices h : ∀ (xs : List Int64) a, P a → xs.foldl (fun a x => if x == Spec.nul then a else f a x) a
+      = f a (xs.foldr (skipNul f) e) by rw [Spec.over, h xs e hP, hl _ (hQ xs)]
+  intro xs; induction xs with
+  | nil => intro a ha; exact (hr a ha).symm
+  | cons x xs ih =>
+    intro a ha; rw [List.foldl_cons, List.foldr_cons]
+    by_cases hx : x = Spec.nul
+    · simp only [hx, beq_self_eq_true, if_true, skipNul]; exact ih a ha
+    · have hx' : (x == Spec.nul) = false := by simpa using hx
+      simp only [hx', skipNul, Bool.false_eq_true, if_false]
+      rw [ih _ (hPf a x ha (hPn x hx)), hA]
+
+/-- `over_foldr_inv` where `e` is a unit everywhere. -/
 theorem over_foldr (f : Int64 → Int64 → Int64) (e : Int64) (hA : ∀ a b c, f (f a b) c = f a (f b c))
     (hl : ∀ a, f e a = a) (hr : ∀ a, f a e = a) (xs : List Int64) :
-    Spec.over f e xs = xs.foldr (skipNul f) e := by
-  suffices h : ∀ (xs : List Int64) a, xs.foldl (fun a x => if x == Spec.nul then a else f a x) a
-      = f a (xs.foldr (skipNul f) e) by rw [Spec.over, h, hl]
+    Spec.over f e xs = xs.foldr (skipNul f) e :=
+  over_foldr_inv f e (fun _ => True) hA (fun a _ => hl a) (fun a _ => hr a) trivial (fun _ _ => trivial)
+    (fun _ _ _ _ => trivial) xs
+
+/-- `fills`'s step from the right: an element below a `0N` suffix answers itself, else the suffix's. -/
+def last (x a : Int64) : Int64 := if a == Spec.nul then x else a
+
+/-- The last element that is not `0N`, `0N` if none: `Spec.over` keeping the newest element is the right
+    fold of `skipNul last` from `0N`. -/
+theorem over_last (xs : List Int64) : Spec.over (fun _ y => y) Spec.nul xs = xs.foldr (skipNul last) Spec.nul := by
+  suffices h : ∀ (xs : List Int64) a, xs.foldl (fun a x => if x == Spec.nul then a else x) a
+      = if xs.foldr (skipNul last) Spec.nul == Spec.nul then a else xs.foldr (skipNul last) Spec.nul by
+    rw [Spec.over, h]; split <;> simp_all
   intro xs; induction xs with
-  | nil => intro a; exact (hr a).symm
+  | nil => intro a; simp
   | cons x xs ih =>
-    intro a; rw [List.foldl_cons, List.foldr_cons, ih]
-    cases hx : (x == Spec.nul) <;> simp [skipNul, hx, hA]
+    intro a; rw [List.foldl_cons, ih, List.foldr_cons]
+    by_cases hx : x = Spec.nul <;> by_cases hr : xs.foldr (skipNul last) Spec.nul = Spec.nul <;>
+      simp [skipNul, last, hx, hr]
 
 /-- A list's length, read on its cons-list. -/
 theorem clen_ofList : ∀ xs : List α, ListRel.clen (CL.ofList xs) = xs.length
@@ -526,21 +564,22 @@ end Vocabulary
 /-! ## The laws -/
 
 open QLean.Kernel in
-/-- `f/x = ⦇[e, f]⦈` on a dense long column, `f` associative with unit `e` = the kernel's seed, the
-    null skipped (`skipNul`). -/
+/-- `f/x = ⦇[e, f]⦈` on a long column (`bytes` or `foR`), `f` associative with unit `e` = the kernel's
+    seed, the null skipped (`skipNul`). -/
 theorem over_rel {op : Coc.Over} (hb : op.boolCast = false)
     (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
-    (hl : ∀ a, op.step (op.denseSeed Ew.i64 Spec.nul) a = a) (hr : ∀ a, op.step a (op.denseSeed Ew.i64 Spec.nul) = a)
-    {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) {a : Int64} (h : Ops.over op R = some a) :
+    (hl : ∀ a, op.step (op.seed Spec.nul) a = a) (hr : ∀ a, op.step a (op.seed Spec.nul) = a)
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {a : Int64}
+    (h : Ops.over op R = some a) :
     (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨Int64⟩ : RelSet.{0}))
       = cst (CL.ofList R.toList) ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
-          (graph fun _ => op.denseSeed Ew.i64 Spec.nul) (graph fun q : Int64 × Int64 => skipNul op.step q.1 q.2)
+          (graph fun _ => op.seed Spec.nul) (graph fun q : Int64 × Int64 => skipNul op.step q.1 q.2)
           : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
   calc (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨Int64⟩ : RelSet.{0}))
-      = cst (Spec.over op.step (op.denseSeed Ew.i64 Spec.nul) R.toList) :=
-        congrArg cst (Option.some.inj (h.symm.trans (Ops.over_bytes hb hc)))
-    _ = cst (R.toList.foldr (skipNul op.step) (op.denseSeed Ew.i64 Spec.nul)) := by rw [over_foldr _ _ hA hl hr]
-    _ = cst (CL.ofList R.toList) ≫ graph fun ys => (CL.toList ys).foldr (skipNul op.step) (op.denseSeed Ew.i64 Spec.nul) := by
+      = cst (Spec.over op.step (op.seed Spec.nul) R.toList) :=
+        congrArg cst (Option.some.inj (h.symm.trans (Ops.over_long hb hx hn)))
+    _ = cst (R.toList.foldr (skipNul op.step) (op.seed Spec.nul)) := by rw [over_foldr _ _ hA hl hr]
+    _ = cst (CL.ofList R.toList) ≫ graph fun ys => (CL.toList ys).foldr (skipNul op.step) (op.seed Spec.nul) := by
         rw [cst_graph, CL.toList_ofList]
     _ = _ := by rw [foldr_cata]
 
@@ -971,35 +1010,80 @@ theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
   rfl
 
 open QLean.Kernel in
-/-- `f\x` on a dense long column, `f` associative with unit `e` = the kernel's seed: the fold of each
-    prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, f]⦈`, the null skipped (`skipNul`). -/
+/-- A scan on a long column (`bytes` or `foR`) whose kernel fold over each prefix is the right fold of
+    `g` from `e`: the fold of each prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, g]⦈`. -/
+theorem scan_fold_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv) {e : Int64}
+    {g : Int64 → Int64 → Int64} (hF : ∀ ys, Spec.over (Spec.kern sv).1 (Spec.kern sv).2 ys = ys.foldr g e)
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    (h : Ops.scan f .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+      ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => e) (graph fun q : Int64 × Int64 => g q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
+  calc S.rel = ix ((List.range R.toList.length).map fun i =>
+          (CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-n)))).foldr g e) := by
+        show ix S.toList = _
+        rw [Ops.scan_toList hf hx hn h, Spec.scan_range]
+        refine congrArg ix (List.map_congr_left fun i hi => ?_)
+        have hi := List.mem_range.1 hi
+        rw [Arr.length_toList] at hi
+        rw [show i + 1 - n = 0 by omega, List.drop_zero, CL.toList_ofList, hF]
+    _ = corefl (· < R.toList.length) ≫ Λ (win n) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
+          (CL.toList ys).foldr g e : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})) :=
+        ix_window R.toList n fun ys => (CL.toList ys).foldr g e
+    _ = _ := by rw [Arr.length_toList, corefl_Λ_win, foldr_cata]
+
+open QLean.Kernel in
+/-- `f\x` on a long column (`bytes` or `foR`), `f` associative with unit `e` = the kernel's seed: the fold
+    of each prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, f]⦈`, the null skipped (`skipNul`). Holds
+    for `+\ *\ &\`; `|\` is `maxs_rel`. -/
 theorem scan_rel {f : Prim.Dyadic} {op : Coc.Over} {sv : Scan.Verb} (hf : scanVerb f = some sv)
     (hv : Spec.verb op = some sv) (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
     (hl : ∀ a, op.step (op.seed Spec.nul) a = a) (hr : ∀ a, op.step a (op.seed Spec.nul) = a)
-    {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) {S : Arr .long n}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
     (h : Ops.scan f .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
           (graph fun _ => op.seed Spec.nul) (graph fun q : Int64 × Int64 => skipNul op.step q.1 q.2)
           : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
-  calc S.rel = ix ((List.range R.toList.length).map fun i =>
-          (CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-n)))).foldr (skipNul op.step) (op.seed Spec.nul)) := by
-        show ix S.toList = _
-        rw [Ops.scan_toList hf hv hc hn h, Spec.scan_range]
-        refine congrArg ix (List.map_congr_left fun i hi => ?_)
-        have hi := List.mem_range.1 hi
-        rw [Arr.length_toList] at hi
-        rw [show i + 1 - n = 0 by omega, List.drop_zero, CL.toList_ofList, over_foldr _ _ hA hl hr]
-    _ = corefl (· < R.toList.length) ≫ Λ (win n) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
-          (CL.toList ys).foldr (skipNul op.step) (op.seed Spec.nul) : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})) :=
-        ix_window R.toList n fun ys => (CL.toList ys).foldr (skipNul op.step) (op.seed Spec.nul)
-    _ = _ := by rw [Arr.length_toList, corefl_Λ_win, foldr_cata]
+  scan_fold_rel hf (fun ys => by rw [(Spec.kern_verb hv).1, (Spec.kern_verb hv).2, over_foldr _ _ hA hl hr]) hx hn h
 
-/-- `avg x` on a dense long column: the total and the count of the elements that are not `0N`, then their
-    quotient, `⟨⦇[0, +]⦈, ⦇[0, 1+]⦈⟩ ≫ quot`, the null skipped by both folds. -/
-theorem avg_rel {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) {a : UInt64}
-    (h : Ops.avg R = some a) :
-    (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
+open QLean.Kernel in
+/-- `|\x` (`maxs`) on a long column: `⦇[-0W, max]⦈` of each prefix, the null skipped. The seed `-0W` is
+    not a unit at `0N` (`max(-0W, 0N) = -0W`), but `skipNul` lets no `0N` reach `max`, so it is a unit on
+    every value the fold meets (`over_foldr_inv` at `P = (≠ 0N)`). -/
+theorem maxs_rel {f : Prim.Dyadic} (hf : scanVerb f = some .maxs)
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    (h : Ops.scan f .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+      ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => Coc.Over.seed .greater Spec.nul)
+          (graph fun q : Int64 × Int64 => skipNul (Coc.Over.step .greater) q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
+  scan_fold_rel hf (fun ys => by
+    rw [(Spec.kern_verb (op := .greater) rfl).1, (Spec.kern_verb (op := .greater) rfl).2]
+    exact over_foldr_inv _ _ (· ≠ Spec.nul) Spec.greater_assoc (fun a ha => (Spec.greater_seed a ha).1)
+      (fun a ha => (Spec.greater_seed a ha).2) (by decide) (fun _ h => h) Spec.greater_ne ys) hx hn h
+
+open QLean.Kernel in
+/-- `^\x` (`fills`) on a long column: at each position the last element at or before it that is not
+    `0N`, `0N` if none: `⦇[0N, skipNul last]⦈` of each prefix. Covers the kernel's identity short-cut,
+    the argument handed back when `holdsNull` clears the column. -/
+theorem fills_rel {f : Prim.Dyadic} (hf : scanVerb f = some .fills)
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    (h : Ops.scan f .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+      ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => Spec.nul) (graph fun q : Int64 × Int64 => skipNul last q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
+  scan_fold_rel hf over_last hx hn h
+
+/-- `avg x` on a long column (`bytes` or `foR`): the total and the count of the elements that are not
+    `0N`, then their quotient, `⟨⦇[0, +]⦈, ⦇[0, 1+]⦈⟩ ≫ quot`, the null skipped by both folds. The answer
+    is read through `Spec.canon`, which the `foR` path's unguarded division needs. -/
+theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+    {a : UInt64} (h : Ops.avg R = some a) :
+    (cst (Spec.canon a) : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
       = cst (CL.ofList R.toList) ≫ ⟪⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
           (graph fun _ => (0 : Int64)) (graph fun q : Int64 × Int64 => skipNul (· + ·) q.1 q.2)
           : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈,
@@ -1007,8 +1091,8 @@ theorem avg_rel {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn 
           (graph fun _ => (0 : Nat)) (graph fun q : Int64 × Nat => if q.1 == Spec.nul then q.2 else q.2 + 1)
           : Alg (CL.F Unit Int64) (⟨Nat⟩ : RelSet.{0}))⦈⟫
         ≫ (graph Spec.quot : (⟨Int64 × Nat⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0})) :=
-  calc (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
-      = cst (Spec.avg R.toList) := congrArg cst (Option.some.inj (h.symm.trans (Ops.avg_bytes hc hn)))
+  calc (cst (Spec.canon a) : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
+      = cst (Spec.avg R.toList) := congrArg cst (Ops.avg_long hx hn h)
     _ = cst (Spec.quot ((CL.toList (CL.ofList R.toList)).foldr (skipNul (· + ·)) 0,
           (CL.toList (CL.ofList R.toList)).foldr (fun x c => if x == Spec.nul then c else c + 1) 0)) := by
         rw [CL.toList_ofList, ← over_foldr (· + ·) 0 Int64.add_assoc Int64.zero_add Int64.add_zero, ← count_foldr]
@@ -1021,7 +1105,25 @@ theorem avg_rel {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn 
         rw [rpair_graph, graph_comp, cst_graph]
     _ = _ := by rw [foldr_cata, foldr_cata]
 
+#print axioms scan_fold_rel
 #print axioms scan_rel
+#print axioms maxs_rel
+#print axioms fills_rel
+#print axioms over_foldr_inv
+#print axioms over_last
+#print axioms Ops.toList_elems
+#print axioms Ops.nul_free
+#print axioms Ops.over_foR
+#print axioms Ops.over_long
+#print axioms Ops.avg_long
+#print axioms Spec.kern_verb
+#print axioms Spec.canon_quot
+#print axioms Spec.canon_raw
+#print axioms Spec.lt_nul_succ
+#print axioms Spec.greater_assoc
+#print axioms Spec.greater_seed
+#print axioms Spec.greater_ne
+#print axioms Spec.scan_last_id
 #print axioms avg_rel
 #print axioms Ops.scan_toList
 #print axioms Ops.scan_i64_words
