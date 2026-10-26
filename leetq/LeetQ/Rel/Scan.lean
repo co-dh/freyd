@@ -893,11 +893,10 @@ theorem sum_float {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWor
   · rw [R.c_eq hc]; rfl
 
 /-- **float `avg x` at every encoding** (`bytes` or `alp`): `Spec.favg` of the words. The ALP path counts
-    `alpLive`, `n` less the NaN exceptions; that this is the decoded words' non-NaN count is `hlive`,
-    which qlean does not state. -/
+    `alpLive`, `n` less the NaN exceptions, the decoded words' non-NaN count on a well-formed ALP blob
+    (`Verify.alpLive_eq_countP`); `alpEncode64` writes one (`Verify.alpWF_alpEncode64`). -/
 theorem avg_float {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws)
-    (hn : n < USize.size)
-    (hlive : ∀ md pk a, R.c.enc = .alp md pk a → alpLive a n = R.toList.countP fun u => !Bits.f64IsNaN u) :
+    (hn : n < USize.size) (hwf : ∀ md pk a, R.c.enc = .alp md pk a → Verify.AlpWF md pk a n) :
     avg R = some (Spec.favg R.toList) := by
   obtain ⟨B, hc, hBw, hBs⟩ := Arr.dense_float R hx hn
   have hL : R.toList = Verify.elemsW 8 B := by rw [Arr.toList_float R hx, hBw]
@@ -915,7 +914,9 @@ theorem avg_float {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWor
         Spec.canon (alpSumF64 true md pk a n.toUSize / (alpLive a n).toFloat).toBits)) := by
       rw [R.c_eq hc]; rfl
     simp only [avg, hcol, Option.bind, Carrier.of?]
-    rw [hlive md pk a hc, hL, Spec.favg, ← sumF64Total_words]
+    have hR : R.toList = (List.range n).map (Column.alpBits md pk a (Column.blockStarts md)) := by
+      have h := hx; unfold floatWords at h; rw [hc, R.wf.2.1] at h; rw [Arr.toList_float R hx]; exact (Option.some.inj h).symm
+    rw [Verify.alpLive_eq_countP (hwf md pk a hc), ← hR, hL, Spec.favg, ← sumF64Total_words]
     rfl
 
 /-- The window `[i+1-w, i]` of `til m` mapped, `i < m`. -/
