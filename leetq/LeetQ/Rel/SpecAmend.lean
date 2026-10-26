@@ -594,8 +594,54 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
     List.filter_congr fun k hk => by rw [hik k (List.mem_range.1 hk)]
   rw [hpos j, Arr.length_toList, hf]
 
+/-- An element law that always answers, mapped over a zip: `zipWith` of the law. -/
+theorem mapM_ok_zipWith {α β γ ε : Type} (g : α → β → γ) : ∀ (l₁ : List α) (l₂ : List β),
+    (l₁.zip l₂).mapM (fun p => (Except.ok (g p.1 p.2) : Except ε γ)) = .ok (List.zipWith g l₁ l₂)
+  | [], _ => rfl
+  | _ :: _, [] => rfl
+  | a :: l₁, b :: l₂ => by
+    simp only [List.zip_cons_cons, List.mapM_cons, List.zipWith_cons_cons, mapM_ok_zipWith g l₁ l₂]; rfl
+
+/-- **`@[x;i;v;y]` on longs, `v` an arithmetic verb (`valOp`), is `amendSpec` of `v`'s step**
+    (`intStep`, nulls by q's rule): `amend_verb_toList` with the element law of `val_spec_long` /
+    `val_spec_long_bF` (a gathered `x` is dense, `y` dense or `foR`). -/
+theorem amend_verb_toList_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (hv : Eval.ewType v .long .long = some .long) {nx ni ny : Nat} {x : Arr .long nx} {i : Arr .long ni}
+    {y : Arr .long ny} {R : Arr .long nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32)
+    (h : Struct.amend x i (some v) y = .ok R) :
+    ni = ny ∧ (∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx) ∧
+      -- the generic lemmas state `amendSpec` with `Carrier`'s `Inhabited`; instance search would pick `Int64`'s
+      R.toList = @Struct.amendSpec (El .long) instInhabitedCarrier (Kernel.Ew.intStep op Int64.minValue)
+        x.toList i.toList y.toList := by
+  have noAlp : ∀ {m} (z : Arr .long m) (M P a : ByteArray), z.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) :=
+    fun z M P a e => by rcases fixed_parts (w := 8) rfl rfl z with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩ <;> rw [hb] at e <;> cases e
+  refine amend_verb_toList (f := Kernel.Ew.intStep op Int64.minValue) rfl (.inl rfl) ?_ (noAlp x) (noAlp y) hnx hni h
+  intro m cur yv R ⟨B, hB⟩ hm hR
+  have hmU : m < USize.size := Nat.lt_of_lt_of_le hm USize.le_size
+  have hs : Ew.ValSpec v hv cur yv R := by
+    rcases fixed_parts (w := 8) rfl rfl yv with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩
+    · exact val_spec_long hop hv hB hb hmU hR
+    · exact val_spec_long_bF hop hv hB hb hmU hR
+  unfold Ew.ValSpec at hs
+  simp only [Ew.elem_long_val hop hv] at hs
+  rw [mapM_ok_zipWith (Kernel.Ew.intStep op Int64.minValue)] at hs
+  exact (Except.ok.inj hs).symm
+
+/-- **`@[x;i;v;y]` on longs as a relation**, `v` an arithmetic verb, distinct indices: positions no index
+    names keep `x`; a named position pairs its `x` with the `y` its index carries and applies `v`'s step. -/
+theorem amend_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (hv : Eval.ewType v .long .long = some .long) {nx ni ny : Nat} {x : Arr .long nx} {i : Arr .long ni}
+    {y : Arr .long ny} {R : Arr .long nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32)
+    (h : Struct.amend x i (some v) y = .ok R) (hnd : (i.toList.map fun v => v.toInt.toNat).Nodup) :
+    R.rel = corNeg (ran (i.rel ≫ pos)) ≫ x.rel ∪
+      ran (i.rel ≫ pos) ≫ ⟪x.rel, (i.rel ≫ pos)° ≫ y.rel⟫ ≫
+        RelSet.graph fun p => Kernel.Ew.intStep op Int64.minValue p.1 p.2 :=
+  amend_rel (amend_verb_toList_long hop hv hnx hni h) hnd
+
 #print axioms amend_round
 #print axioms amend_round_ranked
 #print axioms amend_verb_toList
+#print axioms amend_verb_toList_long
+#print axioms amend_rel_long
 
 end LeetQ.Rel.Verb
