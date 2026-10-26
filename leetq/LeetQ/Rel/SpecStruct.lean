@@ -2079,6 +2079,82 @@ theorem ej_rel_codes {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lo
   congr 1
   exact List.map_congr_left fun i _ => by rw [List.map_map]; rfl
 
+/-- **A right row's class is a left element's `find_lane` hit exactly when their codes agree**, at one byte
+    layout: `ej_rel_codes`'s `heq`, read on the codes. -/
+theorem class_hit_iff {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (rb lb : ByteArray) {n j : Nat} (i : Nat) (hj : j < n) :
+    Verify.groupOf (Kernel.Order.keyAt k rb) n j =
+      ((Verify.firstsOf (Kernel.Order.keyAt k rb) n).map (k.bitsAt rb)).idxOf (k.bitsAt lb i) ↔
+    k.bitsAt rb j = k.bitsAt lb i := by
+  have hk5 : k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64 := by
+    rcases hk4 with h | h | h | h <;> simp [h]
+  have hbits : ∀ b i, k.bitsAt b i = Column.bitsAt b (i * k.width) k.width := fun b i => by
+    rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hki : ∀ a c, Kernel.Order.keyAt k rb a = Kernel.Order.keyAt k rb c ↔ k.bitsAt rb a = k.bitsAt rb c :=
+    fun a c => by rw [Verify.keyAt_eq_iff hk5, hbits, hbits]
+  rw [List.idxOf, List.findIdx_map]
+  constructor
+  · intro h
+    have hq : (Verify.firstsOf (Kernel.Order.keyAt k rb) n).findIdx ((· == k.bitsAt lb i) ∘ k.bitsAt rb) <
+        (Verify.firstsOf (Kernel.Order.keyAt k rb) n).length := h ▸ Verify.groupOf_lt hj
+    have e1 := (Verify.groupOf_eq_iff hj hq).1 h
+    have e2 := List.findIdx_getElem (w := hq)
+    simp only [Function.comp, beq_iff_eq] at e2
+    rw [(hki _ _).1 e1, e2]
+  · intro hx
+    unfold Verify.groupOf
+    congr 1; funext f
+    simp only [Function.comp, hx.symm]
+    by_cases e : k.bitsAt rb f = k.bitsAt rb j
+    · simp [e, (hki f j).2 e]
+    · simp [e, mt (hki f j).1 e]
+
+/-- **`ej` tabulates `l ≫ r°`** once its key codes lie at one byte layout `k` and agree exactly where the key
+    tuples `tl`, `tr` do: `ej_rel_codes` with the three lane kernels discharged (`groupIds_lane`, `find_lane`,
+    `grade_ofIds`, `class_hit_iff`). -/
+theorem ej_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .long .long} {tl tr : List (List Int64)}
+    {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (hc : Struct.keyCodes "ej" lk rk = .ok (lc, rc)) (hr : rc.kind = some k) (hl : lc.kind = some k)
+    (hav : rc.n ≤ k.avail rc.b) (hn : rc.n = tr.length) (hnl : lc.b.size / k.width = tl.length)
+    (hkey : ∀ i, i < tl.length → ∀ j, j < tr.length → (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ tr[j]! = tl[i]!))
+    (hU : tl.length * rc.n + tl.length + rc.n + rc.n + 1 < USize.size)
+    (hB : tl.length * rc.n + tl.length + rc.n + rc.n < 2 ^ 63) (h : Struct.ej lk rk = .ok R) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ ix tl ≫ (ix tr)° ≫ graph Int64.ofNat := by
+  have hnU : rc.n < USize.size := by omega
+  obtain ⟨hG, hgid, hsz⟩ := groupIds_lane rc hr hav hnU
+  have hhit := find_lane lc rc hk4 hr hl hav hnU
+  rw [hnl] at hhit
+  have hGn : (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length ≤ rc.n := by
+    unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+  have hids1 : rc.groupIds.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length)
+      rc.n (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) := by
+    have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
+      unfold Alg.Code.groupIds; rw [hr]
+    have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
+      rw [USize.toNat_ofNat_of_lt' hnU]; exact Nat.min_eq_left hav
+    have := (Verify.groupIds_spec k rc.n.toUSize rc.b).1
+    rw [hm] at this; rw [hg]; exact this
+  obtain ⟨hp, hs⟩ := grade_ofIds (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) hgid (by omega) hnU
+  rw [← hids1] at hp hs
+  have hhG : ∀ i, ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) ≤
+      (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length := fun i => by
+    have := Verify.idxOf_le_length (k.bitsAt lc.b i) ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b))
+    rw [List.length_map] at this; exact this
+  have heq : ∀ i, i < tl.length → ∀ j, j < tr.length → (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n j =
+      ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) ↔
+        tr[j]! = tl[i]!) := fun i hi j hj =>
+    (class_hit_iff hk4 rc.b lc.b i (by omega)).trans (hkey i hi j hj)
+  have hU' : tl.length * rc.n + tl.length + rc.n + (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length + 1 <
+      USize.size := by omega
+  have hB' : tl.length * rc.n + tl.length + rc.n + (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length < 2 ^ 63 := by
+    omega
+  exact ej_rel_codes (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n)
+    (fun i => ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i))
+    _ hc hn hG hgid hsz hhit hhG rfl (by rw [← hn]; exact hp) hs heq hU' hB' h
+
+#print axioms class_hit_iff
+#print axioms ej_rel_lane
 #print axioms expand_nats
 #print axioms zip_flatMap
 #print axioms join_nats
