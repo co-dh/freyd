@@ -10,7 +10,6 @@ import QLean.Verify.Chain
 import QLean.Verify.Dyad
 import QLean.Verify.EwEnc
 import QLean.Verify.Gather
-import QLean.Verify.JoinDictCast
 
 namespace LeetQ.Rel.Verb
 
@@ -938,11 +937,11 @@ theorem elemsW_append {A B : ByteArray} (hA : A.size % 8 = 0) :
   rw [List.getElem_append]
   split
   · rename_i hi
-    try simp only [List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
     simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
     exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left _ _ _ (by omega)
   · rename_i hi
-    try simp only [List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
     simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range]
     refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
     rw [show i * 8 + k = A.size + ((i - A.size / 8) * 8 + k) by omega]
@@ -973,6 +972,13 @@ theorem razeColumn_long_bytes {a b : Column} {A B : ByteArray} (ha : a.enc = .by
   simp [Kernel.razeColumn, Kernel.encodedParts, Column.bytesOf,
     show Column.encodes .long = true from rfl, show Column.alpEncodes .long = false from rfl]
 
+/-- A successful `Except` bind ran both halves (qlean's `Verify.bind_ok` is at its own `R` only). -/
+theorem bind_ok {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {v : β} (h : (x >>= f) = .ok v) :
+    ∃ a, x = .ok a ∧ f a = .ok v := by
+  cases x with
+  | error e => simp [bind, Except.bind] at h
+  | ok a => exact ⟨a, rfl, h⟩
+
 /-- `align` off the matching-keys case, unfolded: `findColumn`, `gatherFill` at `eᵣ` and one `dyad` give the
     rows of `x`; `memberColumn`, `~`, `whereColumn`, `gatherColumn` and one `dyad` against `eₗ` the rows only
     `y` has; `razeColumn` joins the keys and the values. -/
@@ -1001,23 +1007,23 @@ theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u}
   · rename_i h hc; exact absurd (beq_iff_eq.1 hc) (hm h)
   all_goals
     try simp only [pure_bind] at hv
-    obtain ⟨ix, hix, hv⟩ := Verify.bind_ok hv
-    obtain ⟨yx, hyx, hv⟩ := Verify.bind_ok hv
-    obtain ⟨l, hl, hv⟩ := Verify.bind_ok hv
+    obtain ⟨ix, hix, hv⟩ := bind_ok hv
+    obtain ⟨yx, hyx, hv⟩ := bind_ok hv
+    obtain ⟨l, hl, hv⟩ := bind_ok hv
     split at hv
     all_goals first | (cases hv; done) | skip
     rename_i ty m b hmem
     split at hv
     all_goals first | (cases hv; done) | skip
     rename_i iy hw
-    obtain ⟨ac, hac, hv⟩ := Verify.bind_ok hv
-    obtain ⟨gy, hgy, hv⟩ := Verify.bind_ok hv
-    obtain ⟨ry, hry, hv⟩ := Verify.bind_ok hv
-    obtain ⟨gk, hgk, hv⟩ := Verify.bind_ok hv
-    obtain ⟨keys, hkeys, hv⟩ := Verify.bind_ok hv
-    obtain ⟨vals, hvals, hv⟩ := Verify.bind_ok hv
-    obtain ⟨K, hK, hv⟩ := Verify.bind_ok hv
-    obtain ⟨V, hV, hv⟩ := Verify.bind_ok hv
+    obtain ⟨ac, hac, hv⟩ := bind_ok hv
+    obtain ⟨gy, hgy, hv⟩ := bind_ok hv
+    obtain ⟨ry, hry, hv⟩ := bind_ok hv
+    obtain ⟨gk, hgk, hv⟩ := bind_ok hv
+    obtain ⟨keys, hkeys, hv⟩ := bind_ok hv
+    obtain ⟨vals, hvals, hv⟩ := bind_ok hv
+    obtain ⟨K, hK, hv⟩ := bind_ok hv
+    obtain ⟨V, hV, hv⟩ := bind_ok hv
     exact ⟨ix, yx, l, ty, m, b, iy, ac, gy, ry, gk, keys, vals, K, V, hix, hyx, hl, hmem, hw, hac, hgy, hry, hgk,
       hkeys, hvals, hK, hV, (Except.ok.inj hv).symm⟩
 
@@ -2303,5 +2309,11 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms miss_comp
 #print axioms atomDict_rel
 #print axioms dictAtom_rel
+#print axioms gatherFill_long
+#print axioms elemsW_append
+#print axioms elemsW_concat
+#print axioms razeColumn_long_bytes
+#print axioms bind_ok
+#print axioms align_gather
 
 end LeetQ.Rel.Verb
