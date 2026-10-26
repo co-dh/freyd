@@ -936,6 +936,7 @@ theorem groups_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r 
     (hU : bs.flatten.length < USize.size) {gs : Eval.Groups}
     (hgs : gs = Eval.Groups.of (Kernel.Order.indices bs.flatten)
       ((Kernel.Order.bounds (bs.map List.length)).map (· / 8))) :
+    gs.bounds.toList = (List.range (bs.length + 1)).map (fun k => ((bs.map List.length).take k).sum) ∧
     (Kernel.longBytes gs.bounds).size / 8 - 1 = bs.length ∧
     ∀ g (hg : g < bs.length),
       (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8) 8).toNat = ((bs.map List.length).take g).sum ∧
@@ -985,7 +986,7 @@ theorem groups_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r 
       exact ids_identity bs.flatten (ascending_ids hI h63 hid.2 (by rw [hk]; exact hU)) fun h => by
         have hl := hid.1.2; rw [hk] at hl; rw [← Verify.ids_get hI (by omega)]; exact hl
     · right; rfl
-  refine ⟨by omega, fun g hg => ⟨hat g (by omega), ?_, fun p hp => ?_⟩⟩
+  refine ⟨hB, by omega, fun g hg => ⟨hat g (by omega), ?_, fun p hp => ?_⟩⟩
   · rw [show g * 8 + 8 = (g + 1) * 8 by omega, hat (g + 1) (by omega), List.take_succ, List.sum_append_nat]
     simp [List.getElem?_map, List.getElem?_eq_getElem hg]
   · obtain ⟨hq, hr⟩ := hrow g hg p hp
@@ -995,6 +996,32 @@ theorem groups_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r 
     · have hne : (Kernel.Order.indices bs.flatten).isEmpty = false := by
         simp only [ByteArray.isEmpty, beq_eq_false_iff_ne]; omega
       simp only [hne, Bool.false_eq_true, ↓reduceIte]
+
+/-- **`Groups.firsts` over buckets laid end to end is each bucket's first row**, no bucket being empty. -/
+theorem firsts_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r < 2 ^ 63)
+    (hU : bs.flatten.length < USize.size) (hne : ∀ b ∈ bs, b ≠ []) {gs : Eval.Groups}
+    (hgs : gs = Eval.Groups.of (Kernel.Order.indices bs.flatten)
+      ((Kernel.Order.bounds (bs.map List.length)).map (· / 8))) :
+    gs.firsts.toList = bs.map fun b => b.head?.getD 0 := by
+  obtain ⟨hB, -, hspan⟩ := groups_of_buckets bs h63 hU hgs
+  have hsz : gs.bounds.size = bs.length + 1 := by rw [← Array.length_toList, hB]; simp
+  unfold Eval.Groups.firsts
+  apply List.ext_getElem (by simp [hsz])
+  intro g h1 h2
+  simp only [List.length_map] at h2
+  simp only [Array.toList_map, Array.toList_range, List.getElem_map, List.getElem_range]
+  have hb : gs.bounds[g]? = some ((bs.map List.length).take g).sum := by
+    rw [← Array.getElem?_toList, hB, List.getElem?_map, List.getElem?_range (by omega)]; rfl
+  obtain ⟨-, -, hrow⟩ := hspan g h2
+  have hn := hne _ (List.getElem_mem h2)
+  have hp := hrow 0 (List.length_pos_iff.2 hn)
+  rw [Nat.add_zero] at hp
+  simp only [Eval.Groups.span, Eval.Groups.row, hb, Option.getD_some]
+  rw [← hp]
+  generalize bs[g] = l at hn ⊢
+  cases l with
+  | nil => exact absurd rfl hn
+  | cons a l => simp
 
 open QLean.Kernel in
 /-- **`groupColumn` at a long column is `Order.group` over its words**, laid out in bytes `B` — the column's
@@ -1076,9 +1103,12 @@ theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .l
 
 /-- **What `keyMatch` must answer for a key join**: `ids` is a long payload with a word per left key, and
     word `i` names a group whose span (`bounds` read as longs, rows through `rows` or the position itself) lists
-    `Struct.group rk lk[i]`, or names no group where that is empty — `aj_groups`' hypothesis. -/
+    `Struct.group rk lk[i]`, or names no group where that is empty — `aj_groups`' hypothesis; and `gs.firsts`
+    gathered at the ids (`0` past them) is word `i` the head of that group, `0` where it is empty — `wj`'s start. -/
 def KeyAnswers {κ : Type} [BEq κ] [Inhabited κ] (rk lk : List κ) (gs : Eval.Groups) (ids : Column) : Prop :=
-  ∃ gids, Column.bytesOf ids = some gids ∧ gids.size / 8 = lk.length ∧ ∀ i, i < lk.length →
+  ∃ gids, Column.bytesOf ids = some gids ∧ gids.size / 8 = lk.length ∧
+    nats (Alg.gather 8 (Kernel.longBytes (gs.firsts.push 0)) gids) =
+      (List.range lk.length).map (fun i => (Struct.group rk lk[i]!).head?.getD 0) ∧ ∀ i, i < lk.length →
     (Kernel.longBytes gs.bounds).size / 8 - 1 ≤ (Column.bitsAt gids (i * 8) 8).toNat ∧
         Struct.group rk lk[i]! = [] ∨
       (Column.bitsAt gids (i * 8) 8).toNat < (Kernel.longBytes gs.bounds).size / 8 - 1 ∧
@@ -1160,24 +1190,55 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
   dsimp only
   have hflat := buckets_length (Order.keyAt .i64 B) (B.size / 8)
   rw [hF] at hflat
-  obtain ⟨hsz, hspan⟩ := groups_of_buckets (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)))
-    (fun r hr => by
+  have hbs63 : ∀ r ∈ (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8))).flatten, r < B.size / 8 :=
+    fun r hr => by
       obtain ⟨l, hl, hrl⟩ := List.mem_flatten.1 hr
       obtain ⟨f, -, rfl⟩ := List.mem_map.1 hl
-      have := List.mem_range.1 (List.mem_filter.1 hrl).1
-      omega)
-    (by rw [hflat]; omega) rfl
+      exact List.mem_range.1 (List.mem_filter.1 hrl).1
+  obtain ⟨-, hsz, hspan⟩ := groups_of_buckets (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)))
+    (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega) rfl
   have hPn : P.size / 8 = wl.length := by
     have := congrArg List.length hmap; simpa [Verify.elemsW] using this
-  refine ⟨P, rfl, hPn, fun i hi => ?_⟩
-  have hPi : (Column.bitsAt P (i * 8) 8).toNat =
-      (F.map fun f => Column.bitsAt B (f * 8) 8).idxOf wl[i] := by
+  have hPi : ∀ i (hi : i < wl.length), (Column.bitsAt P (i * 8) 8).toNat =
+      (F.map fun f => Column.bitsAt B (f * 8) 8).idxOf wl[i] := fun i hi => by
     have := congrArg (·[i]?) hmap
     rw [hkw] at this
     simp only [Verify.elemsW, List.map_map, List.getElem?_map, List.getElem?_range (by omega : i < P.size / 8),
       List.getElem?_eq_getElem hi, Option.map_some, Option.some.injEq, Function.comp_apply] at this
     exact this
-  rw [getElem!_pos wl i hi, ← hBw, hPi]
+  refine ⟨P, rfl, hPn, ?_, fun i hi => ?_⟩
+  · -- the starts: each bucket holds its own first occurrence, so `firsts` is each bucket's head
+    have hne : ∀ b ∈ F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)), b ≠ [] := fun b hb => by
+      obtain ⟨f, hf, rfl⟩ := List.mem_map.1 hb
+      rw [← hF] at hf
+      unfold Verify.firstsOf at hf
+      have hf' := List.mem_range.1 (List.mem_filter.1 hf).1
+      exact List.ne_nil_of_mem (show f ∈ Verify.bucketOf _ _ f from List.mem_filter.2 ⟨List.mem_range.2 hf', by simp⟩)
+    have hfi := firsts_of_buckets _ (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega) hne rfl
+    rw [nats_gather, nats_eq_ids (Kernel.longBytes _), longBytes_ids _ (by
+      rw [Array.toList_push, hfi]
+      intro x hx
+      rcases List.mem_append.1 hx with hx | hx
+      · obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hx
+        cases b with
+        | nil => simp
+        | cons a l =>
+          have := hbs63 a (List.mem_flatten.2 ⟨_, hb, List.mem_cons_self ..⟩)
+          simp only [List.head?_cons, Option.getD_some]; omega
+      · simp at hx; omega), Array.toList_push, hfi]
+    apply List.ext_getElem (by simp [nats_length, hPn])
+    intro i h1 h2
+    simp only [List.length_map, List.length_range] at h1 h2
+    rw [List.getElem_map, List.getElem_map, List.getElem_range, ← getElem!_pos (nats P) i h1,
+      nats_get P (by omega), hPi i h2, getElem!_pos wl i h2, ← hBw]
+    subst hF
+    rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
+    · rw [hnil, List.getD_eq_getElem?_getD, List.getElem?_append_right (by simp; omega)]
+      rw [List.getElem?_singleton]; split <;> rfl
+    · change Verify.bucketOf _ _ _ = _ at hb
+      rw [← hb, List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt')]
+      simp [List.getElem?_map, List.getElem?_eq_getElem hlt']
+  rw [getElem!_pos wl i hi, ← hBw, hPi i hi]
   simp only [List.length_map] at hsz
   subst hF
   rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
@@ -1205,7 +1266,7 @@ theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr 
   have hkg : Struct.keyGroups "aj" #[⟨.long, cl⟩] #[⟨.long, cr⟩] tl.n tr.n =
       .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] tl.n) := by
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
-  obtain ⟨gids, hgb, hgn, hgrp⟩ := keyMatch_grouped tr.n tl.n hrt hlt hwr hrn (by omega) (by omega) (by omega)
+  obtain ⟨gids, hgb, hgn, -, hgrp⟩ := keyMatch_grouped tr.n tl.n hrt hlt hwr hrn (by omega) (by omega) (by omega)
     hlwf hlR hwl hattr
   exact aj_groups wl wr htl htr hkb hrb hgb hkn (by omega) hhn (by omega) (by omega) hU h63 hkg
     (fun i hi => hgrp i (by omega)) h
@@ -1222,6 +1283,7 @@ theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr 
 #print axioms aj_groups
 #print axioms bucket_idxOf
 #print axioms groups_of_buckets
+#print axioms firsts_of_buckets
 #print axioms groupColumn_long
 #print axioms keyColumns_long
 #print axioms keyMatch_grouped
