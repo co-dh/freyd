@@ -2247,6 +2247,97 @@ theorem ij_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lon
         hom_ext fun a b => (R.holds_iff_mem_toList a b).trans (by rw [hk]; exact Iff.rfl)
     _ = _ := rel_ijHits (fun i => E.idxOf (k.bitsAt lc.b i)) hfirst
 
+/-! ## `@[x;i;f;y]`
+
+  `amendSpec` writes index by index, left to right; at indices in range and without repeats each position is
+  written at most once, from `x`'s own element. -/
+
+/-- One write per position: after the writes of pairs whose positions are distinct and in range, position `j`
+    holds `f` of its old element and the value of the pair naming it, its old element where none does. -/
+theorem foldl_set_iff {α : Type} [Inhabited α] (f : α → α → α) (j : Nat) (y : α) :
+    ∀ (L : List (Int64 × α)) (acc : List α), (L.map fun p => p.1.toInt.toNat).Nodup →
+      (∀ p ∈ L, p.1.toInt.toNat < acc.length) →
+      ((L.foldl (fun acc (i, v) => acc.set i.toInt.toNat (f acc[i.toInt.toNat]! v)) acc)[j]? = some y ↔
+        (∃ p ∈ L, p.1.toInt.toNat = j ∧ ∃ x, acc[j]? = some x ∧ y = f x p.2) ∨
+          ((∀ p ∈ L, p.1.toInt.toNat ≠ j) ∧ acc[j]? = some y))
+  | [], acc, _, _ => by simp
+  | (i, b) :: L, acc, hnd, hin => by
+    rw [List.map_cons, List.nodup_cons] at hnd
+    have hi : i.toInt.toNat < acc.length := hin (i, b) List.mem_cons_self
+    rw [List.foldl_cons, foldl_set_iff f j y L _ hnd.2
+      (fun p hp => by rw [List.length_set]; exact hin p (List.mem_cons_of_mem _ hp))]
+    dsimp only
+    by_cases hj : i.toInt.toNat = j
+    · subst hj
+      have hn : ∀ p ∈ L, p.1.toInt.toNat ≠ i.toInt.toNat := fun p hp e => hnd.1 (List.mem_map.2 ⟨p, hp, e⟩)
+      rw [List.getElem?_set_self hi]
+      constructor
+      · rintro (⟨p, hp, e, -⟩ | ⟨-, e⟩)
+        · exact absurd e (hn p hp)
+        · exact .inl ⟨(i, b), List.mem_cons_self, rfl, acc[i.toInt.toNat]!,
+            by rw [getElem!_pos acc _ hi]; exact List.getElem?_eq_getElem hi, (Option.some.inj e).symm⟩
+      · rintro (⟨p, hp, e, x, hx, rfl⟩ | ⟨hn', -⟩)
+        · rcases List.mem_cons.1 hp with rfl | hp
+          · obtain ⟨_, hx'⟩ := List.getElem?_eq_some_iff.1 hx
+            exact .inr ⟨hn, by rw [getElem!_pos acc _ hi, hx']⟩
+          · exact absurd e (hn p hp)
+        · exact absurd rfl (hn' (i, b) List.mem_cons_self)
+    · rw [List.getElem?_set_ne hj]
+      simp only [List.mem_cons, exists_eq_or_imp, forall_eq_or_imp, hj, false_and, false_or, ne_eq,
+        not_false_eq_true, true_and]
+
+/-- **`@[x;i;f;y]` at indices in range and without repeats is
+    `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ f)`**, `I = i ≫ pos` the indices as positions: a position no
+    index names keeps `x`'s element, a named one is `f` of `x`'s element and the `y` at its index. `:` is
+    `f = outr`. -/
+theorem ix_amendSpec {α : Type} [Inhabited α] (f : α → α → α) (xs ys : List α) (is : List Int64)
+    (hl : is.length = ys.length) (hin : ∀ i ∈ is, 0 ≤ i ∧ i.toInt.toNat < xs.length)
+    (hnd : (is.map fun i => i.toInt.toNat).Nodup) :
+    ix (Struct.amendSpec f xs is ys) = (corNeg (ran (ix is ≫ pos)) ≫ ix xs) ∪
+      (ran (ix is ≫ pos) ≫ rpair (ix xs) ((ix is ≫ pos)° ≫ ix ys) ≫ graph fun p : α × α => f p.1 p.2) := by
+  have hI : ∀ c a, (ix is ≫ pos) c a ↔ ∃ i, is[c]? = some i ∧ 0 ≤ i ∧ a = i.toInt.toNat := fun c a =>
+    ⟨fun ⟨_, hi, _, ⟨rfl, h0⟩, ha⟩ => ⟨_, hi, h0, ha⟩, fun ⟨i, hi, h0, ha⟩ => ⟨i, hi, i, ⟨rfl, h0⟩, ha⟩⟩
+  have hran : ∀ a b, ran (ix is ≫ pos) a b ↔ a = b ∧ ∃ c, (ix is ≫ pos) c a ∧ (ix is ≫ pos) c b :=
+    fun _ _ => Iff.rfl
+  have hcor : ∀ a b, corNeg (ran (ix is ≫ pos)) a b ↔ a = b ∧ ¬ ∃ c, (ix is ≫ pos) c a := fun a b =>
+    ⟨fun ⟨e, h⟩ => ⟨e, fun ⟨c, hc⟩ => h a ⟨rfl, c, hc, hc⟩⟩,
+      fun ⟨e, h⟩ => ⟨e, fun _ ⟨_, c, _, h2⟩ => h ⟨c, h2⟩⟩⟩
+  have hz : ∀ (i : Int64) (b : α), (i, b) ∈ is.zip ys ↔ ∃ c, is[c]? = some i ∧ ys[c]? = some b := fun i b => by
+    rw [List.mem_iff_getElem?]; simp only [List.getElem?_zip_eq_some]; exact Iff.rfl
+  have hnd' : ((is.zip ys).map fun p => p.1.toInt.toNat).Nodup := by
+    rw [show ((is.zip ys).map fun p => p.1.toInt.toNat) = ((is.zip ys).map Prod.fst).map (·.toInt.toNat) by
+      rw [List.map_map]; rfl, List.map_fst_zip (by omega)]
+    exact hnd
+  have hin' : ∀ p ∈ is.zip ys, p.1.toInt.toNat < xs.length := fun p hp => (hin p.1 (List.of_mem_zip hp).1).2
+  refine hom_ext fun (j : Nat) y => ?_
+  show (Struct.amendSpec f xs is ys)[j]? = some y ↔
+    (∃ w, corNeg (ran (ix is ≫ pos)) j w ∧ xs[w]? = some y) ∨
+      (∃ w, ran (ix is ≫ pos) j w ∧ ∃ p : α × α, (xs[w]? = some p.1 ∧ ∃ c, (ix is ≫ pos) c w ∧ ys[c]? = some p.2) ∧
+        y = f p.1 p.2)
+  unfold Struct.amendSpec
+  rw [foldl_set_iff f j y _ xs hnd' hin']
+  constructor
+  · rintro (⟨⟨i, b⟩, hp, e, x, hx, rfl⟩ | ⟨hn, hx⟩)
+    · obtain ⟨c, hc1, hc2⟩ := (hz i b).1 hp
+      have hcj := (hI c j).2 ⟨i, hc1, (hin i (List.mem_of_getElem? hc1)).1, e.symm⟩
+      exact .inr ⟨j, (hran j j).2 ⟨rfl, c, hcj, hcj⟩, (x, b), ⟨hx, c, hcj, hc2⟩, rfl⟩
+    · refine .inl ⟨j, (hcor j j).2 ⟨rfl, fun ⟨c, hcj⟩ => ?_⟩, hx⟩
+      obtain ⟨i, hc1, -, e⟩ := (hI c j).1 hcj
+      have hc : c < ys.length := by rw [← hl]; exact (List.getElem?_eq_some_iff.1 hc1).1
+      exact hn (i, ys[c]) ((hz i ys[c]).2 ⟨c, hc1, List.getElem?_eq_getElem hc⟩) e.symm
+  · rintro (⟨w, hw, hx⟩ | ⟨w, hw, ⟨x, b⟩, ⟨hx, c, hcw, hc2⟩, rfl⟩)
+    · obtain ⟨e, hn⟩ := (hcor j w).1 hw
+      subst e
+      refine .inr ⟨fun ⟨i, b⟩ hp e => hn ?_, hx⟩
+      obtain ⟨c, hc1, -⟩ := (hz i b).1 hp
+      exact ⟨c, (hI c _).2 ⟨i, hc1, (hin i (List.mem_of_getElem? hc1)).1, e.symm⟩⟩
+    · obtain ⟨e, -⟩ := (hran j w).1 hw
+      subst e
+      obtain ⟨i, hc1, -, e⟩ := (hI c _).1 hcw
+      exact .inl ⟨(i, b), (hz i b).2 ⟨c, hc1, hc2⟩, e.symm, x, hx, rfl⟩
+
+#print axioms foldl_set_iff
+#print axioms ix_amendSpec
 #print axioms nats_whereBits
 #print axioms bitAt_cmp_lt_va
 #print axioms rel_ijHits
