@@ -1596,6 +1596,529 @@ theorem ofRuns_answers {wr wl : List UInt64} {run : Nat → Option (Nat × Nat)}
     simp [hemp, List.getElem!_eq_getElem?_getD, hp]
 
 open QLean.Kernel in
+/-- **The kernel's `ofRuns` at `key = id`, one key per needle, answers the key groups** (`KeyAnswers`) where
+    each needle's run is its group: `none` where the group is empty, else `(a, z)` with the group the rows
+    `[a, z)`, `z ≤ nr`. The statement carries `Eval.keyMatch`'s local `ofRuns` verbatim; the `s#` halving and the
+    `u#`/`p#` gallop each call it so. -/
+theorem ofRuns_kernel {wr wl : List UInt64} (nr nl : Nat) (run : Nat → Option (Nat × Nat)) (hnl : wl.length = nl)
+    (hnr : nr < 2 ^ 63) (hnl2 : 2 * nl + 2 < 2 ^ 63)
+    (hrun : ∀ i, i < nl → (run i = none ∧ Struct.group wr wl[i]! = []) ∨
+      ∃ a z, run i = some (a, z) ∧ a < z ∧ z ≤ nr ∧ Struct.group wr wl[i]! = List.range' a (z - a)) :
+    let ofRuns (nk : Nat) (key : Nat → Nat) (run : Nat → Option (Nat × Nat)) : Eval.Groups × Column :=
+      let met := if nk ≤ nl then Array.replicate nk true else
+        (Array.range nl).foldl (init := Array.replicate nk false) fun m i =>
+          if key i < nk then m.set! (key i) true else m
+      let span : Std.HashMap Nat Nat := (Array.range nk).foldl (init := {}) fun m k =>
+        if !met[k]! then m else match run k with
+          | some (a, z) => m.insert a z
+          | none => m
+      let (bounds, ix) := ((span.toArray.map (·.1)).qsort (· < ·)).foldl
+        (init := (#[0], ({} : Std.HashMap Nat Nat))) fun (bounds, ix) a =>
+          let bounds := if bounds.back? == some a then bounds else bounds.push a
+          (bounds.push (span.getD a a), ix.insert a (bounds.size - 1))
+      let bounds := if bounds.back? == some nr then bounds else bounds.push nr
+      let gid := (Array.range nk).map fun k => if met[k]! then (run k).bind (ix[·.1]?) else none
+      (⟨ByteArray.empty, bounds⟩, Eval.groupIds (bounds.size - 1) ((Array.range nl).map fun i => gid.getD (key i) none))
+    KeyAnswers wr wl (ofRuns nl id run).1 (ofRuns nl id run).2 := by
+  intro ofRuns
+  -- needles sharing a start share the end: both groups hold the start, so the two needles' words agree
+  have hcons : ∀ k k' a z z', k < nl → k' < nl → run k = some (a, z) → run k' = some (a, z') → z = z' := by
+    intro k k' a z z' hk hk' h1 h2
+    rcases hrun k hk with ⟨h, -⟩ | ⟨a1, z1, e1, l1, -, g1⟩
+    · rw [h] at h1; cases h1
+    rcases hrun k' hk' with ⟨h, -⟩ | ⟨a2, z2, e2, l2, -, g2⟩
+    · rw [h] at h2; cases h2
+    rw [h1] at e1; rw [h2] at e2
+    simp only [Option.some.injEq, Prod.mk.injEq] at e1 e2
+    obtain ⟨rfl, rfl⟩ := e1; obtain ⟨rfl, rfl⟩ := e2
+    have m1 : a ∈ Struct.group wr wl[k]! := by rw [g1]; simp; omega
+    have m2 : a ∈ Struct.group wr wl[k']! := by rw [g2]; simp; omega
+    simp only [Struct.group, List.mem_filter, beq_iff_eq] at m1 m2
+    have hg : Struct.group wr wl[k]! = Struct.group wr wl[k']! := by rw [← m1.2, ← m2.2]
+    rw [g1, g2] at hg
+    have := congrArg List.length hg; simp at this; omega
+  have hrep : ∀ k, k < nl → (Array.replicate nl true)[k]! = true := fun k hk => by
+    rw [getElem!_pos _ k (by simpa using hk)]; simp
+  dsimp only [ofRuns]
+  generalize hS : (Array.range nl).foldl (β := Std.HashMap Nat Nat) _ {} = S
+  generalize hP : ((S.toArray.map (·.1)).qsort (· < ·)).foldl (β := Array Nat × Std.HashMap Nat Nat) _ (#[0], {}) = P
+  rcases P with ⟨B1, ix1⟩
+  dsimp only
+  rw [if_pos (Nat.le_refl nl)] at hS ⊢
+  -- the span: each needle's start maps to its end, and nothing else is a start
+  rw [← Array.foldl_toList, Array.toList_range] at hS
+  have hsp : ∀ step, (∀ m k, k < nl → step m k = match run k with | some (a, z) => m.insert a z | none => m) →
+      (List.range nl).foldl step ∅ = S →
+      (∀ k, k < nl → ∀ a z, run k = some (a, z) → S[a]? = some z) ∧
+      (∀ a, (∀ k, k < nl → ∀ z, run k ≠ some (a, z)) → S[a]? = none) ∧ S.size ≤ nl := fun step hst h => by
+    have := QSort.ofRuns_span hst hcons nl (Nat.le_refl _) ∅
+    have hsz : ∀ L : List Nat, (∀ k ∈ L, k < nl) → ∀ m : Std.HashMap Nat Nat, (L.foldl step m).size ≤ m.size + L.length := by
+      intro L
+      induction L with
+      | nil => intro _ m; simp
+      | cons k L ih =>
+        intro hL m
+        have h1 := ih (fun x hx => hL x (List.mem_cons_of_mem _ hx)) (step m k)
+        have h2 : (step m k).size ≤ m.size + 1 := by
+          rw [hst m k (hL k List.mem_cons_self)]
+          split
+          · exact Std.HashMap.size_insert_le
+          · omega
+        simp only [List.foldl_cons, List.length_cons]; omega
+    have h3 := hsz (List.range nl) (fun k hk => List.mem_range.1 hk) ∅
+    rw [h] at this h3
+    exact ⟨this.1, fun a ha => by rw [this.2 a ha]; simp, by simpa using h3⟩
+  obtain ⟨s1, s2, s3⟩ := hsp _ (fun m k hk => by
+    simp only [hrep k hk, Bool.not_true, Bool.false_eq_true, ↓reduceIte]) hS
+  have hSa : ∀ a z, S[a]? = some z → ∃ k, k < nl ∧ run k = some (a, z) := fun a z hz =>
+    Classical.byContradiction fun hn => by
+      rw [s2 a (fun k hk z' hr => hn ⟨k, hk, by
+        have := s1 k hk a z' hr; rw [hz] at this; cases this; exact hr⟩)] at hz
+      cases hz
+  have hmem : ∀ a, a ∈ S → ∃ k z, k < nl ∧ run k = some (a, z) ∧ S.getD a a = z := fun a ha => by
+    obtain ⟨z, hz⟩ := Option.isSome_iff_exists.1 (Std.HashMap.mem_iff_isSome_getElem?.1 ha)
+    obtain ⟨k, hk, hr⟩ := hSa a z hz
+    exact ⟨k, z, hk, hr, by rw [Std.HashMap.getD_eq_getD_getElem?, hz]; rfl⟩
+  -- the bounds fold over the sorted starts
+  have hK := QSort.ofRuns_keys S
+  rw [← Array.foldl_toList] at hP
+  generalize hKdef : ((S.toArray.map (·.1)).qsort (· < ·)).toList = K at hP hK
+  have hKle : ∀ a ∈ K, a ≤ nr ∧ S.getD a a ≤ nr := fun a ha => by
+    obtain ⟨k, z, hk, hr, hg⟩ := hmem a ((hK.2.1 a).1 ha)
+    rcases hrun k hk with ⟨h, -⟩ | ⟨a', z', e, l, hz, -⟩
+    · rw [h] at hr; cases hr
+    · rw [hr] at e; simp only [Option.some.injEq, Prod.mk.injEq] at e; obtain ⟨rfl, rfl⟩ := e
+      omega
+  have hKn : K.length ≤ nl := by
+    rw [← hKdef, (QSort.qsort_nat _).1.length_eq]; simpa using s3
+  have hb : ∀ F, K.foldl F (#[0], ∅) = (B1, ix1) → (∀ B ix a, F (B, ix) a =
+      (let B' := if B.back? == some a then B else B.push a; (B'.push (S.getD a a), ix.insert a (B'.size - 1)))) →
+      (∀ a ∈ K, ∃ g, ix1[a]? = some g ∧ B1[g]? = some a ∧ B1[g + 1]? = some (S.getD a a)) ∧ 0 < B1.size ∧
+      (∀ x ∈ B1.toList, x ≤ nr) ∧ B1.size ≤ 1 + 2 * K.length := fun F h hF => by
+    have b1 := QSort.ofRuns_bounds hF K #[0] ∅ hK.1 (by simp)
+    have b2 := QSort.ofRuns_bounds_le hF nr K #[0] ∅ (by simp) hKle
+    rw [h] at b1 b2
+    exact ⟨b1.1, b1.2.2.2, b2.1, by simpa using b2.2⟩
+  obtain ⟨b1, b2, b3, b4⟩ := hb _ hP (fun _ _ _ => rfl)
+  -- the last bound `nr`
+  generalize hBF : (if (B1.back? == some nr) = true then B1 else B1.push nr) = BF
+  have f1 : ∀ g x, B1[g]? = some x → BF[g]? = some x := fun g x h => by
+    rw [← hBF]; split
+    · exact h
+    · rw [Array.getElem?_push]; split
+      · next he => subst he; simp at h
+      · exact h
+  have f2 : ∀ x ∈ BF.toList, x ≤ nr := fun x hx => by
+    rw [← hBF] at hx; split at hx
+    · exact b3 x hx
+    · simp only [Array.toList_push, List.mem_append, List.mem_singleton] at hx
+      rcases hx with hx | rfl
+      · exact b3 x hx
+      · exact Nat.le_refl _
+  have f3 : 0 < BF.size ∧ BF.size ≤ B1.size + 1 := by rw [← hBF]; split <;> simp <;> omega
+  -- the needles' ids
+  generalize hG : Eval.groupIds (BF.size - 1) _ = Gc
+  have hGc : Gc = Eval.groupIds (BF.size - 1) ((Array.range wl.length).map fun i => (run i).bind fun p => ix1[p.1]?) := by
+    rw [← hG]; congr 1
+    apply Array.ext (by simp [hnl])
+    intro i h1 h2
+    simp only [Array.size_map, Array.size_range] at h1
+    simp [Array.getD_eq_getD_getElem?, h1]
+  rw [hGc]
+  refine ofRuns_answers (fun x hx => by have := f2 x hx; omega) (by omega) f3.1 fun i hi => ?_
+  rcases hrun i (by omega) with h | ⟨a, z, hr, haz, hz, hgr⟩
+  · exact Or.inl h
+  · right
+    have hS1 := s1 i (by omega) a z hr
+    have haK : a ∈ K := (hK.2.1 a).2 (Std.HashMap.mem_iff_isSome_getElem?.2 (by rw [hS1]; rfl))
+    obtain ⟨g, hg, hga, hgz⟩ := b1 a haK
+    rw [Std.HashMap.getD_eq_getD_getElem?, hS1] at hgz
+    exact ⟨a, z, g, hr, haz, hgr, hg, f1 _ _ hga, f1 _ _ hgz⟩
+
+/-- `idxOf` names the first row holding `x`: none before it holds `x`, and it does where it is a row. -/
+theorem idxOf_first {x : UInt64} : ∀ l : List UInt64,
+    (∀ i, i < l.idxOf x → i < l.length → l[i]! ≠ x) ∧ (l.idxOf x < l.length → l[l.idxOf x]! = x)
+  | [] => by simp
+  | b :: l => by
+    obtain ⟨h1, h2⟩ := idxOf_first l
+    rw [List.idxOf_cons]
+    by_cases hb : b = x
+    · subst hb; simp
+    · have e : (b == x) = false := by simpa using hb
+      rw [e, cond_false]
+      refine ⟨fun i hi hl => ?_, fun h => ?_⟩
+      · cases i with
+        | zero => simpa using hb
+        | succ i => simpa using h1 i (by omega) (by simpa using hl)
+      · simpa using h2 (by simpa using h)
+
+/-- **One needle's state in `gallop`**, after `t` steps: a miss (`p` past the rows) sits at `lo = hi = n`;
+    otherwise row `lo ≥ p` holds the needle `x`, `hi` is `n` or a row that does not, and the needle is done
+    (`hi ≤ lo + 1`), galloping (stride `2^t`, `lo = p + 2^t - 1`), or halving a gap of at most `2^(126 - t)`. -/
+def GallopInv (w : Nat → UInt64) (n : Nat) (x : UInt64) (p t lo hi st : Nat) : Prop :=
+  (n ≤ p ∧ lo = n ∧ hi = n) ∨
+  (p < n ∧ p ≤ lo ∧ lo < hi ∧ hi ≤ n ∧ w lo = x ∧ (hi = n ∨ w hi ≠ x) ∧
+    (hi ≤ lo + 1 ∨ (st = 2 ^ t ∧ lo + 1 = p + 2 ^ t) ∨ (st = 0 ∧ hi - lo ≤ 2 ^ (126 - t))))
+
+theorem gallopInv_start {w : Nat → UInt64} {n p : Nat} {x : UInt64} (hp : p ≤ n) (hx : p < n → w p = x) :
+    GallopInv w n x p 0 (if p < n then p else n) n 1 := by
+  unfold GallopInv
+  by_cases h : p < n
+  · right; rw [if_pos h]
+    refine ⟨h, Nat.le_refl _, h, Nat.le_refl _, hx h, Or.inl rfl, ?_⟩
+    by_cases h1 : n ≤ p + 1
+    · exact Or.inl h1
+    · exact Or.inr (Or.inl ⟨by simp, by simp⟩)
+  · left; rw [if_neg h]; exact ⟨by omega, rfl, rfl⟩
+
+theorem gallopInv_idle {w : Nat → UInt64} {n p t lo hi st : Nat} {x : UInt64} (h : GallopInv w n x p t lo hi st)
+    (hi1 : hi ≤ lo + 1) : GallopInv w n x p (t + 1) lo hi st := by
+  unfold GallopInv at *
+  rcases h with h | ⟨a, b, c, d, e, f, -⟩
+  · exact Or.inl h
+  · exact Or.inr ⟨a, b, c, d, e, f, Or.inl hi1⟩
+
+/-- **A `gallop` step** on an active needle probes a row strictly inside `(lo, hi)`; a hit moves `lo` there and
+    doubles the stride, a miss moves `hi` there and halves from then on, and either keeps `GallopInv`. -/
+theorem gallopInv_step {w : Nat → UInt64} {n p t lo hi st : Nat} {x : UInt64} (hn : n < 2 ^ 63)
+    (h : GallopInv w n x p t lo hi st) (ha : lo + 1 < hi) :
+    lo < (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) ∧
+    (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) < hi ∧
+    (w (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) = x →
+      GallopInv w n x p (t + 1) (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) hi (2 * st)) ∧
+    (w (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) ≠ x →
+      GallopInv w n x p (t + 1) lo (if st > 0 then min (lo + st) (hi - 1) else (lo + hi) / 2) 0) := by
+  unfold GallopInv at h
+  rcases h with ⟨-, rfl, rfl⟩ | ⟨hp, hpl, hlh, hhn, hw, hh, hpot⟩
+  · omega
+  rcases hpot with h1 | ⟨hst, hl⟩ | ⟨hst, hd⟩
+  · omega
+  · have h2 : 2 ^ t > 0 := Nat.two_pow_pos t
+    have ht : t ≤ 62 := by
+      rcases Nat.lt_or_ge t 63 with ht | ht
+      · omega
+      · have := Nat.pow_le_pow_right (show 2 > 0 by decide) ht; omega
+    have hs : 2 ^ (t + 1) = 2 * 2 ^ t := by rw [Nat.pow_succ]; omega
+    have hm : 2 ^ t ≤ 2 ^ (126 - (t + 1)) := Nat.pow_le_pow_right (by decide) (by omega)
+    subst hst
+    rw [if_pos h2]
+    refine ⟨by omega, by omega, fun hx => ?_, fun hx => ?_⟩
+    · unfold GallopInv; right
+      refine ⟨hp, by omega, by omega, hhn, hx, hh, ?_⟩
+      by_cases hc : hi - 1 ≤ lo + 2 ^ t
+      · exact Or.inl (by omega)
+      · exact Or.inr (Or.inl ⟨hs.symm, by omega⟩)
+    · unfold GallopInv; right
+      exact ⟨hp, hpl, by omega, by omega, hw, Or.inr hx, Or.inr (Or.inr ⟨rfl, by omega⟩)⟩
+  · subst hst
+    have h0 : ¬ (0 > 0) := by decide
+    rw [if_neg h0]
+    have hk : 1 ≤ 126 - t := by
+      rcases Nat.lt_or_ge t 126 with ht | ht
+      · omega
+      · rw [show 126 - t = 0 by omega] at hd; simp at hd; omega
+    have hs : 2 ^ (126 - t) = 2 * 2 ^ (126 - (t + 1)) := by
+      rw [show 126 - t = (126 - (t + 1)) + 1 by omega, Nat.pow_succ]; omega
+    refine ⟨by omega, by omega, fun hx => ?_, fun hx => ?_⟩
+    · unfold GallopInv; right
+      exact ⟨hp, by omega, by omega, hhn, hx, hh, Or.inr (Or.inr ⟨rfl, by omega⟩)⟩
+    · unfold GallopInv; right
+      exact ⟨hp, hpl, by omega, by omega, hw, Or.inr hx, Or.inr (Or.inr ⟨rfl, by omega⟩)⟩
+
+/-- After `2·64` steps every needle is done: a gallop cannot have reached a stride `2^128` below `n < 2^63`, and
+    a halving's gap is down to `2^0`. -/
+theorem gallopInv_done {w : Nat → UInt64} {n p lo hi st : Nat} {x : UInt64} (hn : n < 2 ^ 63)
+    (h : GallopInv w n x p (2 * 64) lo hi st) : hi ≤ lo + 1 := by
+  unfold GallopInv at h
+  rcases h with ⟨-, rfl, rfl⟩ | ⟨hp, hpl, hlh, hhn, hw, hh, h1 | ⟨-, hl⟩ | ⟨-, hd⟩⟩
+  · omega
+  · exact h1
+  · have := Nat.pow_le_pow_right (show 2 > 0 by decide) (show 63 ≤ 2 * 64 by decide); omega
+  · simp at hd; omega
+
+/-- **A done needle's run is its group**: with each value in one run, the rows holding `x` are `[p, hi)` from its
+    first row `p`, or none where `p` is past the rows. -/
+theorem gallop_group {wr : List UInt64} {x : UInt64} {t lo hi st : Nat} (hrun : OneRun (fun i => wr[i]!) wr.length)
+    (h : GallopInv (fun i => wr[i]!) wr.length x (wr.idxOf x) t lo hi st) (hi1 : hi ≤ lo + 1) :
+    (wr.length ≤ wr.idxOf x ∧ Struct.group wr x = []) ∨
+    (wr.idxOf x < wr.length ∧ wr.idxOf x < hi ∧ hi ≤ wr.length ∧
+      Struct.group wr x = List.range' (wr.idxOf x) (hi - wr.idxOf x)) := by
+  obtain ⟨f1, f2⟩ := idxOf_first (x := x) wr
+  unfold GallopInv at h
+  rcases h with ⟨hp, -, -⟩ | ⟨hp, hpl, hlh, hhn, hw, hh, -⟩
+  · left; refine ⟨hp, ?_⟩
+    unfold Struct.group
+    apply List.filter_eq_nil_iff.2
+    intro i hi
+    have := f1 i (by have := List.mem_range.1 hi; omega) (List.mem_range.1 hi)
+    simpa using this
+  · right
+    refine ⟨hp, by omega, hhn, ?_⟩
+    have hfx := f2 hp
+    unfold Struct.group
+    rw [← show min hi wr.length = hi from Nat.min_eq_left hhn, ← filter_range_interval]
+    apply List.filter_congr
+    intro i hmem
+    have hin := List.mem_range.1 hmem
+    show (wr[i]! == x) = decide (wr.idxOf x ≤ i ∧ i < hi)
+    by_cases h1 : i < wr.idxOf x
+    · have e1 : (wr[i]! == x) = false := by simpa using f1 i h1 hin
+      rw [e1]; symm; simp; omega
+    by_cases h2 : i ≤ lo
+    · have := hrun (wr.idxOf x) lo i (by omega) h2 (by omega)
+        (by show wr[wr.idxOf x]! = wr[lo]!; rw [hfx]; exact hw.symm)
+      have e1 : (wr[i]! == x) = true := by
+        simp only at this; rw [this, hfx]; simp
+      rw [e1]; symm; simp; omega
+    · have hne : wr[i]! ≠ x := fun e => by
+        rcases hh with hh | hh
+        · omega
+        · exact hh (by
+            have := hrun (wr.idxOf x) i hi (by omega) (by omega) hin
+              (by show wr[wr.idxOf x]! = wr[i]!; rw [hfx, e])
+            show wr[hi]! = x
+            simp only at this; rw [this, hfx])
+      have e1 : (wr[i]! == x) = false := by simpa using hne
+      rw [e1]; symm; simp; omega
+
+/-- **An invariant of a `for _ in [:n]` loop in `Option`**: each step from a state meeting `P t` either stops at
+    a state meeting `Q` or goes on to one meeting `P (t+1)`, and `P n` gives `Q`; then the loop answers a `Q` state. -/
+theorem forIn_range_inv {σ : Type} {n : Nat} {init : σ} {body : Nat → σ → Option (ForInStep σ)} {F : Option σ}
+    (hF : forIn [:n] init body = F) (P : Nat → σ → Prop) (Q : σ → Prop) (h0 : P 0 init)
+    (hstep : ∀ t s, t < n → P t s →
+      (∃ s', body t s = some (.done s') ∧ Q s') ∨ (∃ s', body t s = some (.yield s') ∧ P (t + 1) s'))
+    (hend : ∀ s, P n s → Q s) : ∃ s', F = some s' ∧ Q s' := by
+  subst hF
+  rw [Std.Legacy.Range.forIn_eq_forIn_range']
+  have hsz : ([:n] : Std.Legacy.Range).size = n := by simp [Std.Legacy.Range.size]
+  rw [hsz]
+  have key : ∀ m b s, b + m = n → P b s → ∃ s', forIn (List.range' b m 1) s body = some s' ∧ Q s' := by
+    intro m
+    induction m with
+    | zero => intro b s hb hP; exact ⟨s, rfl, hend s (by rw [← hb]; simpa using hP)⟩
+    | succ m ih =>
+      intro b s hb hP
+      rw [List.range'_succ, List.forIn_cons]
+      rcases hstep b s (by omega) hP with ⟨s', h, hq⟩ | ⟨s', h, hp⟩
+      · rw [h]; exact ⟨s', rfl, hq⟩
+      · rw [h]; exact ih (b + 1) s' (by omega) hp
+  exact key n 0 init (by omega) h0
+
+theorem getElem!_set! {a : Array Nat} {i j v : Nat} (hj : j < a.size) :
+    (a.set! i v)[j]! = if i = j then v else a[j]! := by
+  rw [Array.set!_eq_setIfInBounds, getElem!_pos _ j (by simpa using hj), Array.getElem_setIfInBounds hj,
+    getElem!_pos a j hj]
+
+open QLean.Kernel in
+/-- **`gallop`'s loop** (`Eval.keyMatch`'s `u#`/`p#` pass, copied verbatim): every step's gather answering the
+    right words at the probes, after `2·64` steps each needle `i` is done, its `hi` the end of the run that
+    starts at `ps[i]`, the first row holding it (`GallopInv` with `hi ≤ lo + 1`). The continuation `k` is
+    whatever the kernel does with `hi`. -/
+theorem gallop_loop {α : Type} (k : Array Nat → α) (t : QAtomicType) (rc : Column) (nd : ByteArray) (w nr nl : Nat)
+    (ps : Array Nat) (wr wl : List UInt64) (hps : ps.size = nl) (hnr : wr.length = nr) (h63 : nr < 2 ^ 63)
+    (hp : ∀ i, i < nl → ps[i]! = wr.idxOf wl[i]!) (hnd : ∀ i, i < nl → Column.bitsAt nd (i * w) w = wl[i]!)
+    (hg : ∀ pr : Array Nat, (∀ k, k < pr.size → pr[k]! < nr) → ∃ cn ce ca g,
+      gatherColumn t rc (longColumn pr) = some (.vector ⟨.long, cn, ce, ca⟩) ∧
+      Column.bytesOf ⟨.long, cn, ce, ca⟩ = some g ∧ ∀ k, k < pr.size → Column.bitsAt g (k * w) w = wr[pr[k]!]!) :
+    ∃ H : Array Nat, (do
+      let mut lo := ps.map fun p => if p < nr then p else nr
+      let mut hi := ps.map fun _ => nr
+      let mut st := ps.map fun _ => 1
+      for _ in [0:2 * 64] do
+        let act := (Array.range nl).filter fun i => lo[i]! + 1 < hi[i]!
+        if act.isEmpty then break
+        let pr := act.map fun i => if st[i]! > 0 then min (lo[i]! + st[i]!) (hi[i]! - 1) else (lo[i]! + hi[i]!) / 2
+        let g ← match ← Kernel.gatherColumn t rc (Kernel.longColumn pr) with
+          | .vector ⟨.general, _, _, _⟩ => none
+          | .vector c => Column.bytesOf c
+          | _ => none
+        for k in [0:act.size] do
+          let i := act[k]!
+          if Column.bitsAt g (k * w) w == Column.bitsAt nd (i * w) w then
+            lo := lo.set! i pr[k]!; st := st.set! i (2 * st[i]!)
+          else hi := hi.set! i pr[k]!; st := st.set! i 0
+      some (k hi) : Option α) = some (k H) ∧ H.size = nl ∧ ∀ i, i < nl →
+      ∃ T lo st, GallopInv (fun j => wr[j]!) nr wl[i]! ps[i]! T lo H[i]! st ∧ H[i]! ≤ lo + 1 := by
+  dsimp only
+  generalize hF : forIn (m := Option) [:2 * 64] _ _ = F
+  obtain ⟨s, hs, hQ1, hQ2⟩ := forIn_range_inv hF
+    (fun t (s : MProd (Array Nat) (MProd (Array Nat) (Array Nat))) => s.fst.size = nl ∧ s.snd.fst.size = nl ∧
+      s.snd.snd.size = nl ∧ ∀ i, i < nl →
+        GallopInv (fun j => wr[j]!) nr wl[i]! ps[i]! t s.snd.fst[i]! s.fst[i]! s.snd.snd[i]!)
+    (fun s => s.fst.size = nl ∧ ∀ i, i < nl →
+      ∃ T lo st, GallopInv (fun j => wr[j]!) nr wl[i]! ps[i]! T lo s.fst[i]! st ∧ s.fst[i]! ≤ lo + 1)
+    (by
+      refine ⟨by simp [hps], by simp [hps], by simp [hps], fun i hi => ?_⟩
+      obtain ⟨-, f2⟩ := idxOf_first (x := wl[i]!) wr
+      have hip : i < ps.size := by omega
+      have e1 : (ps.map fun _ => nr)[i]! = nr := by
+        rw [getElem!_pos (ps.map fun _ => nr) i (by simpa using hip)]; simp
+      have e2 : (ps.map fun p => if p < nr then p else nr)[i]! = if ps[i]! < nr then ps[i]! else nr := by
+        rw [getElem!_pos (ps.map fun p => if p < nr then p else nr) i (by simpa using hip), getElem!_pos ps i hip]
+        simp
+      have e3 : (ps.map fun _ => 1)[i]! = 1 := by
+        rw [getElem!_pos (ps.map fun _ => 1) i (by simpa using hip)]; simp
+      dsimp only
+      rw [e1, e2, e3, hp i hi]
+      exact gallopInv_start (by rw [← hnr]; exact List.idxOf_le_length) (fun h => f2 (by omega)))
+    (fun t s ht hP => by
+      obtain ⟨H0, L0, S0⟩ := s
+      obtain ⟨s1, s2, s3, hI⟩ := hP
+      dsimp only at s1 s2 s3 hI ⊢
+      generalize hA : Array.filter (fun i => decide (L0[i]! + 1 < H0[i]!)) (Array.range nl) = A
+      have hAm : ∀ i, i ∈ A.toList ↔ i < nl ∧ L0[i]! + 1 < H0[i]! := fun i => by
+        rw [← hA]; simp
+      have hAs : A.toList.Pairwise (· < ·) := by
+        rw [← hA, Array.toList_filter, Array.toList_range]; exact (List.pairwise_lt_range ..).filter _
+      split
+      · next hE =>
+        left
+        refine ⟨_, rfl, by simpa using s1, fun i hi => ⟨t, L0[i]!, S0[i]!, hI i hi, ?_⟩⟩
+        have : A = #[] := by simpa using hE
+        rcases Nat.lt_or_ge (L0[i]! + 1) H0[i]! with h | h
+        · have := (hAm i).2 ⟨hi, h⟩; simp_all
+        · exact h
+      · next hE =>
+        right
+        obtain ⟨f, hf⟩ : ∃ f : Nat → Nat, ∀ i, f i =
+            (if S0[i]! > 0 then min (L0[i]! + S0[i]!) (H0[i]! - 1) else (L0[i]! + H0[i]!) / 2) := ⟨_, fun _ => rfl⟩
+        have hstp := fun i (hi : i < nl) (ha : L0[i]! + 1 < H0[i]!) => gallopInv_step h63 (hI i hi) ha
+        generalize hpr : Array.map (fun i => if S0[i]! > 0 then min (L0[i]! + S0[i]!) (H0[i]! - 1)
+          else (L0[i]! + H0[i]!) / 2) A = pr
+        have hprs : pr.size = A.size := by rw [← hpr]; simp
+        have hAk : ∀ k (hk : k < A.size), A[k]! < nl ∧ L0[A[k]!]! + 1 < H0[A[k]!]! := fun k hk =>
+          (hAm _).1 (by rw [getElem!_pos A k hk]; simp)
+        have hprk : ∀ k, k < A.size → pr[k]! = f A[k]! := fun k hk => by
+          rw [← hpr, getElem!_pos _ k (by simpa using hk), Array.getElem_map, hf, getElem!_pos A k hk]
+        obtain ⟨cn, ce, ca, g, hgc, hbg, hgw⟩ := hg pr (fun k hk => by
+          rw [hprk k (by omega), hf]
+          have := hstp _ (hAk k (by omega)).1 (hAk k (by omega)).2
+          have := (hI _ (hAk k (by omega)).1)
+          unfold GallopInv at this
+          omega)
+        simp only [hgc, hbg, bind, Option.bind]
+        generalize hF2 : forIn (m := Option) [:A.size] _ _ = F2
+        have hlt : ∀ k (hk : k < A.size) i, i ∈ A.toList.take k → i < A[k]! := by
+          intro k hk i hi
+          obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hi
+          simp only [List.length_take] at hj
+          rw [List.getElem_take, getElem!_pos A k hk]
+          have := List.pairwise_iff_getElem.1 hAs j k (by simp; omega) (by simpa using hk) (by omega)
+          simpa using this
+        have hTk : ∀ k (hk : k < A.size) i, i ∈ A.toList.take (k + 1) ↔ i ∈ A.toList.take k ∨ i = A[k]! := by
+          intro k hk i
+          rw [List.take_add_one, List.mem_append, getElem!_pos A k hk]
+          simp [hk]
+        obtain ⟨s2', hs2, z1, z2, z3, hz⟩ := forIn_range_inv hF2
+          (fun k (s : MProd (Array Nat) (MProd (Array Nat) (Array Nat))) => s.fst.size = nl ∧ s.snd.fst.size = nl ∧
+            s.snd.snd.size = nl ∧ ∀ i, i < nl →
+              (i ∈ A.toList.take k → (wr[f i]! = wl[i]! → s.snd.fst[i]! = f i ∧ s.fst[i]! = H0[i]! ∧
+                  s.snd.snd[i]! = 2 * S0[i]!) ∧
+                (wr[f i]! ≠ wl[i]! → s.snd.fst[i]! = L0[i]! ∧ s.fst[i]! = f i ∧ s.snd.snd[i]! = 0)) ∧
+              (i ∉ A.toList.take k → s.snd.fst[i]! = L0[i]! ∧ s.fst[i]! = H0[i]! ∧ s.snd.snd[i]! = S0[i]!))
+          (fun s => s.fst.size = nl ∧ s.snd.fst.size = nl ∧ s.snd.snd.size = nl ∧ ∀ i, i < nl →
+              (i ∈ A.toList.take A.size → (wr[f i]! = wl[i]! → s.snd.fst[i]! = f i ∧ s.fst[i]! = H0[i]! ∧
+                  s.snd.snd[i]! = 2 * S0[i]!) ∧
+                (wr[f i]! ≠ wl[i]! → s.snd.fst[i]! = L0[i]! ∧ s.fst[i]! = f i ∧ s.snd.snd[i]! = 0)) ∧
+              (i ∉ A.toList.take A.size → s.snd.fst[i]! = L0[i]! ∧ s.fst[i]! = H0[i]! ∧ s.snd.snd[i]! = S0[i]!))
+          ⟨s1, s2, s3, fun i hi => ⟨fun h => by simp at h, fun _ => ⟨rfl, rfl, rfl⟩⟩⟩
+          (fun k s hk hP => by
+            obtain ⟨H1, L1, S1⟩ := s
+            obtain ⟨z1, z2, z3, hz⟩ := hP
+            dsimp only at z1 z2 z3 hz ⊢
+            right
+            have ⟨hi0, ha0⟩ := hAk k hk
+            have hn0 : A[k]! ∉ A.toList.take k := fun h => Nat.lt_irrefl _ (hlt k hk _ h)
+            obtain ⟨hl1, hh1, hs1⟩ := (hz _ hi0).2 hn0
+            have hc : (Column.bitsAt g (k * w) w == Column.bitsAt nd (A[k]! * w) w) =
+                decide (wr[f A[k]!]! = wl[A[k]!]!) := by
+              rw [hgw k (by omega), hnd _ hi0, hprk k hk]; exact Bool.eq_iff_iff.2 (by simp)
+            rw [hc, hprk k hk]
+            by_cases hh : wr[f A[k]!]! = wl[A[k]!]!
+            · rw [if_pos (by simpa using hh)]
+              refine ⟨_, rfl, by simpa using z1, by simpa using z2, by simpa using z3, fun i hi => ?_⟩
+              dsimp only
+              rw [getElem!_set! (by omega), getElem!_set! (by omega), hTk k hk]
+              by_cases hii : A[k]! = i
+              · subst hii
+                simp only [hs1]
+                exact ⟨fun _ => ⟨fun _ => ⟨rfl, hh1, rfl⟩, fun h => absurd hh h⟩, fun h => absurd (Or.inr trivial) h⟩
+              · simp only [if_neg hii, Ne.symm hii, or_false]
+                exact hz i hi
+            · rw [if_neg (by simpa using hh)]
+              refine ⟨_, rfl, by simpa using z1, by simpa using z2, by simpa using z3, fun i hi => ?_⟩
+              dsimp only
+              rw [getElem!_set! (by omega), getElem!_set! (by omega), hTk k hk]
+              by_cases hii : A[k]! = i
+              · subst hii
+                simp only []
+                exact ⟨fun _ => ⟨fun h => absurd h hh, fun _ => ⟨hl1, rfl, rfl⟩⟩, fun h => absurd (Or.inr trivial) h⟩
+              · simp only [if_neg hii, Ne.symm hii, or_false]
+                exact hz i hi)
+          (fun s h => h)
+        rw [hs2]
+        refine ⟨_, rfl, by simpa using z1, by simpa using z2, by simpa using z3, fun i hi => ?_⟩
+        dsimp only
+        rw [List.take_of_length_le (by simp)] at hz
+        obtain ⟨hz1, hz2⟩ := hz i hi
+        by_cases ha : L0[i]! + 1 < H0[i]!
+        · have hm := (hAm i).2 ⟨hi, ha⟩
+          obtain ⟨-, -, e1, e2⟩ := hstp i hi ha
+          rw [← hf] at e1 e2
+          by_cases hh : wr[f i]! = wl[i]!
+          · obtain ⟨a1, a2, a3⟩ := (hz1 hm).1 hh
+            rw [a1, a2, a3]; exact e1 hh
+          · obtain ⟨a1, a2, a3⟩ := (hz1 hm).2 hh
+            rw [a1, a2, a3]; exact e2 hh
+        · have hm : i ∉ A.toList := fun h => ha ((hAm i).1 h).2
+          obtain ⟨a1, a2, a3⟩ := hz2 hm
+          rw [a1, a2, a3]; exact gallopInv_idle (hI i hi) (by omega))
+    (fun s hP => ⟨hP.1, fun i hi => ⟨2 * 64, s.snd.fst[i]!, s.snd.snd[i]!, hP.2.2.2 i hi,
+      gallopInv_done h63 (hP.2.2.2 i hi)⟩⟩)
+  rw [hs]
+  exact ⟨s.fst, rfl, hQ1, hQ2⟩
+
+open QLean.Kernel in
+/-- Gathering a long column at rows `pr` inside it answers a long column whose words are the column's words at
+    `pr`: `gallop_loop`'s gather hypothesis at the kernel's own right key column. -/
+theorem gather_rows {cr : Column} {wr : List UInt64} (hrt : cr.ty = .long) (hrw : longWords cr = some wr)
+    (hrn : wr.length = cr.n) (hU : cr.n < USize.size) (pr : Array Nat) (hpr : ∀ k, k < pr.size → pr[k]! < cr.n) :
+    ∃ cn ce ca g, gatherColumn .long { cr with attr := none } (longColumn pr) = some (.vector ⟨.long, cn, ce, ca⟩) ∧
+      Column.bytesOf ⟨.long, cn, ce, ca⟩ = some g ∧ ∀ k, k < pr.size → Column.bitsAt g (k * 8) 8 = wr[pr[k]!]! := by
+  have hrw' : longWords { cr with attr := none } = some wr := by
+    rw [show longWords { cr with attr := none } = longWords cr from rfl]; exact hrw
+  obtain ⟨B, hBb, hBw, hBn⟩ := bytesOf_longWords (c := { cr with attr := none }) hrt hU hrw' hrn
+  simp only at hBn
+  have hw : ∀ i, i < B.size / 8 → wr[i]! = Column.bitsAt B (i * 8) 8 := fun i hi => by
+    rw [← hBw, getElem!_pos _ i (by simp [Verify.elemsW]; omega)]; simp [Verify.elemsW]
+  have hix : Column.bytesOf (longColumn pr) = some (Kernel.longBytes pr) := rfl
+  obtain ⟨c, hgc⟩ := gatherColumn_long_some (x := { cr with attr := none }) (i := longColumn pr) hrt hrw' hix
+  obtain ⟨src, ix', hsrc, hix', hc⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl
+    { cr with attr := none } (longColumn pr) c hrt rfl (show Verify.countFits (longColumn pr) from trivial)
+    (fun M P a he => by simp only at he; simp [longWords, he] at hrw') hgc
+  have hsB : src = B := Option.some.inj (hsrc.symm.trans hBb)
+  have hixe : ix' = Kernel.longBytes pr := Option.some.inj (hix'.symm.trans hix)
+  rw [hsB, hixe] at hc
+  subst hc
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have h64 : ∀ x ∈ pr.toList, x < 2 ^ 64 := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    have := hpr k (by simpa using hk); rw [getElem!_pos pr k (by simpa using hk)] at this
+    simp at this ⊢; rcases USize.size_eq with h | h <;> omega
+  have hLB := longBytes_ids pr h64
+  have hLs : (Kernel.longBytes pr).size / 8 = pr.size := by
+    have := congrArg List.length hLB; simpa [Verify.ids] using this
+  refine ⟨_, _, _, _, hgc, rfl, fun k hk => ?_⟩
+  obtain ⟨-, hg⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8)
+    ((nullBits .long).getD 0) B (Kernel.longBytes pr)
+  have hat : (Column.bitsAt (Kernel.longBytes pr) (k * 8) 8).toNat = pr[k]! := by
+    rw [getElem!_pos pr k hk, ← Array.getElem_toList]
+    exact Verify.ids_get hLB _
+  have e := hg k (by omega)
+  rw [h8, hat, if_pos (by have := hpr k hk; omega)] at e
+  rw [e, hw _ (by have := hpr k hk; omega)]
+
+open QLean.Kernel in
 /-- **`keyMatch` at an `s#` right key column, where halving is not worth it, answers the key groups** through
     `byRuns`: the run starts cut the rows into the groups, read as their own row numbers, and `?` places each left
     word among the words at those starts. The kernel trusts the mark, so each value is assumed to occupy one run
@@ -2451,6 +2974,13 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms keyMatch_runs
 #print axioms keyMatch_answers
 #print axioms ofRuns_answers
+#print axioms ofRuns_kernel
+#print axioms idxOf_first
+#print axioms gallopInv_step
+#print axioms gallop_group
+#print axioms forIn_range_inv
+#print axioms gallop_loop
+#print axioms gather_rows
 #print axioms aj_long
 #print axioms binRows_group
 #print axioms bitsAt_elemsW
