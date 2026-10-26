@@ -391,6 +391,96 @@ theorem ix_window {β : Type} (xs : List α) (w : Nat) (f : CL.ConsList Unit α 
     · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
 
+/-- The members of the window ending at `i` are the rows `j` with `i Wᵥ j`. -/
+theorem mem_window (xs : List α) (w i : Nat) (z : α) :
+    z ∈ (xs.take (i+1)).drop (i+1-w) ↔ ∃ j, (j ≤ i ∧ i < j + w) ∧ xs[j]? = some z := by
+  rw [List.mem_iff_getElem?]
+  simp only [List.getElem?_drop, List.getElem?_take]
+  constructor
+  · rintro ⟨k, hk⟩
+    split at hk
+    · exact ⟨i+1-w+k, ⟨by omega, by omega⟩, hk⟩
+    · cases hk
+  · rintro ⟨j, ⟨h1, h2⟩, hj⟩
+    exact ⟨j - (i+1-w), by rw [if_pos (by omega), show i+1-w+(j-(i+1-w)) = j by omega]; exact hj⟩
+
+/-- A left fold keeping the strictly `lt`-better element lands on a member that is `le`-below every member,
+    when `lt u e` means `le u e` and its failure `le e u`. -/
+theorem foldl_better {lt : α → α → Bool} {le : α → α → Prop} (htr : ∀ a b c, le a b → le b c → le a c)
+    (hrefl : ∀ a, le a a) (htl : ∀ u e, lt u e = true → le u e) (hfl : ∀ u e, lt u e = false → le e u) :
+    ∀ (es : List α) (e : α), es.foldl (fun e u => if lt u e then u else e) e ∈ e :: es ∧
+      ∀ z ∈ e :: es, le (es.foldl (fun e u => if lt u e then u else e) e) z
+  | [], e => ⟨List.mem_cons_self .., fun z hz => by rw [List.mem_singleton.1 hz]; exact hrefl e⟩
+  | u :: es, e => by
+    have ih := foldl_better htr hrefl htl hfl es (if lt u e then u else e)
+    rw [List.foldl_cons]
+    cases h : lt u e
+    · simp only [h, Bool.false_eq_true, ↓reduceIte] at ih ⊢
+      obtain ⟨m, hle⟩ := ih
+      refine ⟨?_, fun z hz => ?_⟩
+      · rcases List.mem_cons.1 m with e1 | m
+        · rw [e1]; exact List.mem_cons_self ..
+        · exact List.mem_cons_of_mem _ (List.mem_cons_of_mem _ m)
+      · rcases List.mem_cons.1 hz with rfl | hz
+        · exact hle _ (List.mem_cons_self ..)
+        rcases List.mem_cons.1 hz with rfl | hz
+        · exact htr _ _ _ (hle _ (List.mem_cons_self ..)) (hfl _ _ h)
+        · exact hle _ (List.mem_cons_of_mem _ hz)
+    · simp only [h, ↓reduceIte] at ih ⊢
+      obtain ⟨m, hle⟩ := ih
+      refine ⟨List.mem_cons_of_mem _ m, fun z hz => ?_⟩
+      rcases List.mem_cons.1 hz with rfl | hz
+      · exact htr _ _ _ (hle _ (List.mem_cons_self ..)) (htl _ _ h)
+      · exact hle _ hz
+
+/-- The seeded moving extreme `Spec.mext` read as an expression: at `i`, `est(le)` of the window's values,
+    the seed joining the window on the first `w−1` positions,
+    `corefl(<|xs|) ≫ Λ((Wᵥ ≫ xs) ∪ (corefl(i+1<w) ≫ !seed)) ≫ est(le)`. -/
+theorem ix_mext {lt : Int64 → Int64 → Bool} {le : Int64 → Int64 → Prop} (htr : ∀ a b c, le a b → le b c → le a c)
+    (hrefl : ∀ a, le a a) (anti : ∀ a b, le a b → le b a → a = b) (htl : ∀ u e, lt u e = true → le u e)
+    (hfl : ∀ u e, lt u e = false → le e u) (seed : Int64) {w : Nat} (hw : 0 < w) (xs : List Int64) :
+    ix (Spec.mext lt seed w xs) = corefl (· < xs.length)
+      ≫ Λ ((win w ≫ ix xs) ∪ (corefl (· + 1 < w) ≫ (cst seed : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) ≫ est le :=
+  hom_ext fun (i : Nat) c => by
+    rw [Λ_eq_classifier]
+    show (Spec.mext lt seed w xs)[i]? = some c ↔ ∃ z, (i = z ∧ i < xs.length) ∧ ∃ P,
+      P = (fun a => ((win w ≫ ix xs) ∪ (corefl (· + 1 < w) ≫ (cst seed : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) z a) ∧
+      (P c ∧ ∀ a, P a → le c a)
+    by_cases hi : i < xs.length
+    · have hQ : ∀ a, ((win w ≫ ix xs) ∪ (corefl (· + 1 < w) ≫ (cst seed : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) i a ↔
+          a ∈ (if i + 1 < w then seed :: (xs.take (i+1)).drop (i+1-w) else (xs.take (i+1)).drop (i+1-w)) := fun a => by
+        show (∃ j, (j ≤ i ∧ i < j + w) ∧ xs[j]? = some a) ∨ (∃ z, (i = z ∧ i + 1 < w) ∧ a = seed) ↔ _
+        split
+        · rename_i hw'
+          rw [List.mem_cons, mem_window]
+          exact ⟨fun h => h.elim .inr (fun ⟨_, _, e⟩ => .inl e), fun h => h.elim (fun e => .inr ⟨i, ⟨rfl, hw'⟩, e⟩) .inl⟩
+        · rename_i hw'
+          rw [mem_window]
+          exact ⟨fun h => h.elim id (fun ⟨_, ⟨rfl, h⟩, _⟩ => absurd h hw'), .inl⟩
+      have hmem : xs[i] ∈ (xs.take (i+1)).drop (i+1-w) :=
+        (mem_window xs w i _).2 ⟨i, ⟨Nat.le_refl _, by omega⟩, List.getElem?_eq_getElem hi⟩
+      obtain ⟨e, es, hE⟩ : ∃ e es, (if i + 1 < w then seed :: (xs.take (i+1)).drop (i+1-w)
+          else (xs.take (i+1)).drop (i+1-w)) = e :: es := by
+        split
+        · exact ⟨_, _, rfl⟩
+        · exact List.exists_cons_of_ne_nil (List.ne_nil_of_mem hmem)
+      have hv : (Spec.mext lt seed w xs)[i]? = some (es.foldl (fun e u => if lt u e then u else e) e) := by
+        unfold Spec.mext
+        rw [List.getElem?_map, List.getElem?_range hi, Option.map_some]
+        dsimp only
+        rw [hE]
+      obtain ⟨m, hle⟩ := foldl_better htr hrefl htl hfl es e
+      rw [hE] at hQ
+      rw [hv]
+      constructor
+      · intro hc
+        obtain rfl := Option.some.inj hc
+        exact ⟨i, ⟨rfl, hi⟩, _, rfl, (hQ _).2 m, fun a ha => hle a ((hQ a).1 ha)⟩
+      · rintro ⟨_, ⟨rfl, -⟩, _, rfl, hc, hmin⟩
+        exact congrArg some (anti _ _ (hle c ((hQ c).1 hc)) (hmin _ ((hQ _).2 m)))
+    · rw [List.getElem?_eq_none (by simp only [Spec.mext, List.length_map, List.length_range]; omega)]
+      exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
+
 end Vocabulary
 
 /-! ## The laws -/
@@ -615,6 +705,40 @@ theorem msum_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
         ix_window R.toList w fun ys => (CL.toList ys).foldr (skipNul (· + ·)) (0 : Int64)
     _ = _ := by rw [Arr.length_toList, foldr_cata]
 
+/-- `w mmin x` on a dense long column: the least value of each window, the seed `0W` joining the first `w−1`
+    windows, `corefl(<n) ≫ Λ((Wᵥ ≫ x) ∪ (corefl(i+1<w) ≫ !0W)) ≫ est(≤)`. -/
+theorem mmin_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
+    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmin w .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((win w ≫ R.rel)
+      ∪ (corefl (· + 1 < w) ≫ (cst Int64.maxValue : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) ≫ est (· ≤ ·) := by
+  obtain ⟨-, -, -, hw1, -⟩ := Ops.mwin_answer (rk := .i64) rfl rfl rfl rfl hw hx hn h
+  show ix S.toList = _
+  rw [Ops.mmin_toList hw hx hn h, ix_mext (lt := fun a b => decide (a < b)) (le := fun a b => a ≤ b)
+    (fun _ _ _ => Int64.le_trans) Int64.le_refl (fun _ _ => Int64.le_antisymm)
+    (fun u e h => by simp only [decide_eq_true_eq, Int64.lt_iff_toInt_lt, Int64.le_iff_toInt_le] at h ⊢; omega)
+    (fun u e h => by simp only [decide_eq_false_iff_not, Int64.lt_iff_toInt_lt, Int64.le_iff_toInt_le] at h ⊢; omega)
+    _ hw1, Arr.length_toList]
+  rfl
+
+/-- `w mmax x` on a dense long column: the greatest value of each window, the seed `-0W` joining the first
+    `w−1` windows, `corefl(<n) ≫ Λ((Wᵥ ≫ x) ∪ (corefl(i+1<w) ≫ !-0W)) ≫ est(≥)`. -/
+theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
+    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmax w .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((win w ≫ R.rel)
+      ∪ (corefl (· + 1 < w) ≫ (cst (-Int64.maxValue) : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) ≫ est (· ≥ ·) := by
+  obtain ⟨-, -, -, hw1, -⟩ := Ops.mwin_answer (rk := .i64) rfl rfl rfl rfl hw hx hn h
+  show ix S.toList = _
+  rw [Ops.mmax_toList hw hx hn h, ix_mext (lt := fun a b => decide (a > b)) (le := fun a b => a ≥ b)
+    (fun _ _ _ h₁ h₂ => Int64.le_trans h₂ h₁) Int64.le_refl (fun _ _ h₁ h₂ => Int64.le_antisymm h₂ h₁)
+    (fun u e h => by simp only [decide_eq_true_eq, gt_iff_lt, ge_iff_le, Int64.lt_iff_toInt_lt,
+      Int64.le_iff_toInt_le] at h ⊢; omega)
+    (fun u e h => by simp only [decide_eq_false_iff_not, gt_iff_lt, ge_iff_le, Int64.lt_iff_toInt_lt,
+      Int64.le_iff_toInt_le] at h ⊢; omega)
+    _ hw1, Arr.length_toList]
+  rfl
+
+#print axioms mmin_rel
+#print axioms mmax_rel
 #print axioms mcount_rel
 #print axioms msum_rel
 #print axioms countBy_rel
