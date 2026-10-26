@@ -1,4 +1,5 @@
 import LeetQ.Rel.SpecStruct
+import LeetQ.Rel.SpecScan
 
 /-!
 The `keyCodes` path for one dense long key column per side: `rangeOffsets` rebases both columns'
@@ -1639,6 +1640,73 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
   obtain ⟨gids, hgb, -⟩ := id hk
   exact wj_groups wl wr h0t h1t htr h0b h1b hrb hgb h0n h1n hhn (by omega) (by omega) hU h62 hkg hk h
 
+/-- `wj`'s window, `Wᵥ` with both ends moving: left row `i` to the right rows `j` with `lo i ≤ j < hi i`. -/
+def winAt (lo hi : Nat → Nat) : Idx ⟶ Idx := fun i j => lo i ≤ j ∧ j < hi i
+
+/-- The window aggregate read on a list `xs`: at `i < m`, `f` of the rows `[lo i, hi i)` of `xs`, is
+    `corefl(<m) ≫ Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. -/
+theorem ix_winAt {α β : Type} (xs : List α) (m : Nat) (lo hi : Nat → Nat)
+    (hb : ∀ i, i < m → lo i ≤ xs.length ∧ hi i ≤ xs.length) (f : CL.ConsList Unit α → β) :
+    ix ((List.range m).map fun i => f (CL.ofList ((xs.drop (lo i)).take (hi i - lo i))))
+      = corefl (· < m) ≫ Λ (winAt lo hi) ≫ enum ≫ ListRel.list (ix xs)
+          ≫ (graph f : ListRel.dList α ⟶ (⟨β⟩ : RelSet.{0})) :=
+  hom_ext fun (i : Nat) c => by
+    show ((List.range m).map _)[i]? = some c ↔
+      ∃ z, (i = z ∧ i < m) ∧ ∃ s, Λ (winAt lo hi) z s ∧ ∃ zs, enum s zs ∧ ∃ ws, ListRel.listP (ix xs) zs ws ∧ c = f ws
+    by_cases him : i < m
+    · have hl : lo i + (hi i - lo i) ≤ xs.length := by have := hb i him; omega
+      have hW : ∀ ys, (Λ (winAt lo hi) ≫ enum) i ys ↔ ys = CL.ofList (List.range' (lo i) (hi i - lo i)) :=
+        Λ_enum _ fun j => show lo i ≤ j ∧ j < hi i ↔ _ by omega
+      rw [List.getElem?_map, List.getElem?_range him, Option.map_some, Option.some.injEq]
+      constructor
+      · intro e
+        obtain ⟨s, hs, he⟩ := (hW _).2 rfl
+        exact ⟨i, ⟨rfl, him⟩, s, hs, _, he, _, (listP_ix_range' xs _ _ hl _).2 rfl, e.symm⟩
+      · rintro ⟨_, ⟨rfl, -⟩, s, hs, zs, hz, ws, hw, rfl⟩
+        rw [(hW zs).1 ⟨s, hs, hz⟩] at hw
+        rw [(listP_ix_range' xs _ _ hl ws).1 hw]
+    · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
+      exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h him⟩
+
+/-- **`wjSpec` is a window per left row** (`prevailing`): row `i`'s run is the right rows `[lo i, hi i)`, both
+    edges inside `rk`, so the aggregate over it is `ix_winAt`'s `Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. -/
+theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ)
+    (rt : List Int64) : ∃ lo hi : Nat → Nat, (∀ i, lo i ≤ rk.length ∧ hi i ≤ rk.length) ∧
+      Struct.wjSpec true lk w₀ w₁ rk rt = Struct.runsSpec ((List.range lk.length).map fun i =>
+        (List.range' (lo i) (hi i - lo i)).map Int64.ofNat) := by
+  have hgr : ∀ k s, s ∈ Struct.group rk k → s < rk.length := fun k s hs => by
+    simp only [Struct.group, List.mem_filter, List.mem_range] at hs; omega
+  have hb : ∀ (i : Nat) (x : Int64) (off : Nat), off ≤ 1 → (match (Struct.group rk lk[i]!).head? with
+      | none => 0
+      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) x).map (max s <| · + off)).getD s) ≤ rk.length :=
+    fun i x off ho => by
+      cases e : (Struct.group rk lk[i]!).head? with
+      | none => exact Nat.zero_le _
+      | some s =>
+        have := hgr _ s (List.mem_of_mem_head? e)
+        cases e' : Struct.binSpec rt (Struct.group rk lk[i]!) x with
+        | none => simp only [Option.map_none, Option.getD_none]; omega
+        | some r =>
+          have := hgr _ r (binSpec_mem e'); simp only [Option.map_some, Option.getD_some]
+          rw [Nat.max_def]; split <;> omega
+  refine ⟨fun i => match (Struct.group rk lk[i]!).head? with
+      | none => 0
+      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₀[i]!).map (max s <| · + 0)).getD s,
+    fun i => match (Struct.group rk lk[i]!).head? with
+      | none => 0
+      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₁[i]!).map (max s <| · + 1)).getD s,
+    fun i => ⟨hb i _ 0 (by decide), hb i _ 1 (by decide)⟩, ?_⟩
+  unfold Struct.wjSpec
+  congr 1
+  apply List.map_congr_left
+  intro i _
+  dsimp only
+  cases (Struct.group rk lk[i]!).head? with
+  | none => rfl
+  | some s =>
+    simp only [↓reduceIte, List.range'_eq_map_range, List.map_map]
+    try rfl
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
@@ -1667,5 +1735,7 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
 #print axioms wj_tail
 #print axioms wj_groups
 #print axioms wj_long
+#print axioms ix_winAt
+#print axioms wjSpec_runs
 
 end LeetQ.Rel.Verb
