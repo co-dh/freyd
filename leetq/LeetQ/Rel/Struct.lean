@@ -1111,16 +1111,25 @@ def ajSpec {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (lt : List Int64) 
 /-- `wj` / `wj1`: the right rows `[lo, hi)`, `hi` one past `binSpec` at `w₁`; `lo` the row at `w₀` (`wj`) or one
     past the row at `w₀-1` (`wj1`); a miss is the group's first row `s`, nothing below `s`. `w₀-1` is q's
     subtraction (`Ew.intStep`), so `0N-1` is `0N`, where `Int64`'s would wrap it to `0W`. -/
+def wjRun {κ : Type} [BEq κ] [Inhabited κ] (prevailing : Bool) (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ)
+    (rt : List Int64) (i : Nat) : List Int64 :=
+  let g := group rk lk[i]!
+  match g.head? with
+  | none => []
+  | some s =>
+    let edge (x : Int64) (off : Nat) := ((binSpec rt g x).map (max s <| · + off)).getD s
+    let lo := if prevailing then edge w₀[i]! 0 else edge (Ew.intStep Ew.sub Int64.minValue w₀[i]! 1) 1
+    (List.range (edge w₁[i]! 1 - lo)).map fun j => Int64.ofNat (lo + j)
+
+/-- `wj` / `wj1`'s runs, `wjRun` of each left row; `wjSpec` is their pairs, which forget trailing empty runs. -/
+def wjRuns {κ : Type} [BEq κ] [Inhabited κ] (prevailing : Bool) (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ)
+    (rt : List Int64) : List (List Int64) :=
+  (List.range lk.length).map (wjRun prevailing lk w₀ w₁ rk rt)
+
+/-- `wj` / `wj1` as pairs `(left row, right row)`. -/
 def wjSpec {κ : Type} [BEq κ] [Inhabited κ] (prevailing : Bool) (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ) (rt : List Int64) :
     List (Int64 × Int64) :=
-  runsSpec ((List.range lk.length).map fun i =>
-    let g := group rk lk[i]!
-    match g.head? with
-    | none => []
-    | some s =>
-      let edge (x : Int64) (off : Nat) := ((binSpec rt g x).map (max s <| · + off)).getD s
-      let lo := if prevailing then edge w₀[i]! 0 else edge (Ew.intStep Ew.sub Int64.minValue w₀[i]! 1) 1
-      (List.range (edge w₁[i]! 1 - lo)).map fun j => Int64.ofNat (lo + j))
+  runsSpec (wjRuns prevailing lk w₀ w₁ rk rt)
 
 /-! ## Checks against the spec on small literal Rels -/
 

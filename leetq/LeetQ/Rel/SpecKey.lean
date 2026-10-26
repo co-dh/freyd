@@ -2932,7 +2932,7 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
     (hkg : Struct.keyGroups "wj" l r t0.n tr.n = .ok (gs, ids)) (hk : KeyAnswers rk lk gs ids)
     (h : Struct.wjP prevailing ⟨.long, t0⟩ ⟨.long, t1⟩ l r ⟨.long, tr⟩ = .ok P) :
-    Struct.runsSpec P.segs = Struct.wjSpec prevailing lk ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) rk
+    P.segs = Struct.wjRuns prevailing lk ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) rk
       ((nats hay).map Int64.ofNat) := by
   obtain ⟨g', hg', hgn, hst, -⟩ := id hk
   rw [Option.some.inj (hg'.symm.trans hgb)] at hgn hst
@@ -3005,11 +3005,11 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
         try dsimp only
         omega)
       (fun i => by have := hedge b1 1 i (by decide); (try dsimp only); omega) hU (by omega) rfl (Struct.of_c hv) h
-    rw [hseg, Struct.wjSpec, hlk]
-    congr 1
+    rw [hseg, Struct.wjRuns, hlk]
     apply List.map_congr_left
     intro i hi
     have hi := List.mem_range.1 hi
+    unfold Struct.wjRun
     dsimp only
     rw [hLw i hi, hw b0 h0n i hi, hw b1 h1n i hi]
     cases e : (Struct.group rk lk[i]!).head? with
@@ -3038,7 +3038,7 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
     (h : Struct.wjP true ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
-    Struct.runsSpec P.segs = Struct.wjSpec true wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
+    P.segs = Struct.wjRuns true wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
       ((nats hay).map Int64.ofNat) := by
   have hkg : Struct.keyGroups "wj" #[⟨.long, cl⟩] #[⟨.long, cr⟩] t0.n tr.n =
       .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] t0.n) := by
@@ -3067,7 +3067,7 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
     (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
-    Struct.runsSpec P.segs = Struct.wjSpec false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
+    P.segs = Struct.wjRuns false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
       ((nats hay).map Int64.ofNat) := by
   have hkg : Struct.keyGroups "wj" #[⟨.long, cl⟩] #[⟨.long, cr⟩] t0.n tr.n =
       .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] t0.n) := by
@@ -3147,10 +3147,11 @@ theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w�
           have := hgr _ r (binSpec_mem e'); simp only [Option.map_some, Option.getD_some]
           rw [Nat.max_def]; split <;> omega
   refine ⟨fun i => ⟨hb _ 0 i (by decide), hb _ 1 i (by decide)⟩, ?_⟩
-  unfold Struct.wjSpec wjEdge
+  unfold Struct.wjSpec Struct.wjRuns wjEdge
   congr 1
   apply List.map_congr_left
   intro i _
+  unfold Struct.wjRun
   dsimp only
   cases (Struct.group rk lk[i]!).head? with
   | none => rfl
@@ -3226,6 +3227,316 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
         rw [Nat.max_def]; split <;> omega
   have := key w₀ 0 (by decide); have := key w₁ 1 (by decide)
   rw [hg, List.mem_range'_1]; omega
+
+/-! ## `wj` in the algebra
+
+`wjSpec` takes a range of right rows per left row; the algebra takes the right rows of the left row's key whose
+time lies in the window. They agree where each key's right rows are contiguous and their times ascend (q's
+precondition for `wj`; `wjSpec_mixes` is what breaks without it). -/
+
+/-- **In a contiguous group whose times ascend, the rows at or before `x` are a prefix `[s, e)`**, and `bin` at
+    `x` names its last row: the edge `max s (r + off)` is `e - 1 + off`, `s` where the prefix is empty. -/
+theorem bin_prefix (rt : List Int64) (s c : Nat) (hs : (List.range' s c).Pairwise fun a b => rt[a]! ≤ rt[b]!)
+    (x : Int64) : ∃ e, s ≤ e ∧ e ≤ s + c ∧ (∀ j, (j ∈ List.range' s c ∧ rt[j]! ≤ x) ↔ s ≤ j ∧ j < e) ∧
+      ∀ off, ((Struct.binSpec rt (List.range' s c) x).map (max s <| · + off)).getD s =
+        if e = s then s else e - 1 + off := by
+  have hp : ((List.range' s c).filter fun j => decide (rt[j]! ≤ x)).Pairwise (· < ·) :=
+    List.Pairwise.filter _ List.pairwise_lt_range'
+  have hmem : ∀ j, j ∈ (List.range' s c).filter (fun j => decide (rt[j]! ≤ x)) ↔ j ∈ List.range' s c ∧ rt[j]! ≤ x :=
+    fun j => by simp only [List.mem_filter, decide_eq_true_eq]
+  have mono : ∀ a b, a ∈ List.range' s c → b ∈ List.range' s c → a ≤ b → rt[a]! ≤ rt[b]! := fun a b ha hb hab => by
+    rcases Nat.eq_or_lt_of_le hab with rfl | hlt
+    · exact Int64.le_refl _
+    · rw [List.mem_range'_1] at ha hb
+      have := List.pairwise_iff_getElem.1 hs (a - s) (b - s) (by simp only [List.length_range']; omega)
+        (by simp only [List.length_range']; omega) (by omega)
+      simp only [List.getElem_range', Nat.one_mul] at this
+      rwa [Nat.add_sub_cancel' ha.1, Nat.add_sub_cancel' hb.1] at this
+  rw [binSpec_sorted rt _ x hs]
+  cases h : ((List.range' s c).filter fun j => decide (rt[j]! ≤ x)).getLast? with
+  | none =>
+    rw [List.getLast?_eq_none_iff, List.filter_eq_nil_iff] at h
+    exact ⟨s, Nat.le_refl _, by omega, fun j => ⟨fun ⟨hj, hx⟩ => absurd (decide_eq_true hx) (h j hj),
+      fun h' => by omega⟩, fun off => by simp⟩
+  | some r =>
+    obtain ⟨hr, hm⟩ := (getLast?_greatest hp r).1 h
+    obtain ⟨hrg, hrx⟩ := (hmem r).1 hr
+    have hrs := List.mem_range'_1.1 hrg
+    refine ⟨r + 1, by omega, by omega, fun j => ⟨fun hj => ?_, fun hj => ?_⟩, fun off => ?_⟩
+    · have := hm j ((hmem j).2 hj); have := List.mem_range'_1.1 hj.1; omega
+    · have hjg : j ∈ List.range' s c := List.mem_range'_1.2 (by omega)
+      exact ⟨hjg, Int64.le_trans (mono j r hjg hrg (by omega)) hrx⟩
+    · simp only [Option.map_some, Option.getD_some, if_neg (show r + 1 ≠ s by omega), Nat.add_sub_cancel]
+      rw [Nat.max_def]; split <;> omega
+
+/-- `lk ≫ rk°` at a left row: the right rows of its key, `group`. -/
+theorem key_iff {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk rk : List κ) (i j : Nat) (hi : i < lk.length) :
+    (ix lk ≫ (ix rk)°) i j ↔ j ∈ Struct.group rk lk[i]! := by
+  show (∃ k, lk[i]? = some k ∧ rk[j]? = some k) ↔ _
+  simp only [Struct.group, List.mem_filter, List.mem_range, beq_iff_eq, List.getElem?_eq_getElem hi,
+    Option.some.injEq]
+  constructor
+  · rintro ⟨k, rfl, h⟩
+    obtain ⟨hj, e⟩ := List.getElem?_eq_some_iff.1 h
+    exact ⟨hj, by rw [getElem!_pos rk j hj, e, getElem!_pos lk i hi]⟩
+  · rintro ⟨hj, e⟩
+    exact ⟨_, rfl, by rw [List.getElem?_eq_getElem hj, ← getElem!_pos rk j hj, e, getElem!_pos lk i hi]⟩
+
+/-- `w ≫ ρ ≫ rt°` at rows inside both lists: `ρ` of the two values. -/
+theorem cmp_iff (w rt : List Int64) (ρ : Int64 → Int64 → Prop) (i j : Nat) (hi : i < w.length) (hj : j < rt.length) :
+    (ix w ≫ (ρ : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°) i j ↔ ρ w[i]! rt[j]! := by
+  show (∃ a, w[i]? = some a ∧ ∃ b, ρ a b ∧ rt[j]? = some b) ↔ _
+  simp only [List.getElem?_eq_getElem hi, List.getElem?_eq_getElem hj, getElem!_pos w i hi, getElem!_pos rt j hj,
+    Option.some.injEq]
+  exact ⟨fun ⟨_, e, _, h, e'⟩ => by subst e e'; exact h, fun h => ⟨_, rfl, _, h, rfl⟩⟩
+
+/-- The right rows of left row `i`'s key whose time `ρ`-follows `w[i]`: `(lk ≫ rk°) ∩ (w ≫ ρ ≫ rt°)`. -/
+theorem keyed_iff {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk rk : List κ) (w rt : List Int64)
+    (ρ : Int64 → Int64 → Prop) (i j : Nat) (hi : i < lk.length) (hw : i < w.length) (hrt : rt.length = rk.length) :
+    ((ix lk ≫ (ix rk)°) ∩ (ix w ≫ (ρ : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°)) i j ↔
+      j ∈ Struct.group rk lk[i]! ∧ ρ w[i]! rt[j]! := by
+  have hj : j ∈ Struct.group rk lk[i]! → j < rt.length := fun h => by
+    simp only [Struct.group, List.mem_filter, List.mem_range] at h; omega
+  constructor
+  · rintro ⟨hk, h⟩
+    have hk := (key_iff lk rk i j hi).1 hk
+    exact ⟨hk, (cmp_iff w rt ρ i j hw (hj hk)).1 h⟩
+  · rintro ⟨hk, h⟩
+    exact ⟨(key_iff lk rk i j hi).2 hk, (cmp_iff w rt ρ i j hw (hj hk)).2 h⟩
+
+/-- `wj`'s window `W`, its lower bound `ρ`: left row `i` to the right rows of its key with
+    `ρ w₀[i] rt[j]` and `rt[j] ≤ w₁[i]`, `(lk ≫ rk°) ∩ (w₀ ≫ ρ ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)`. -/
+def wjWin {κ : Type} (lk rk : List κ) (w₀ w₁ rt : List Int64) (ρ : Int64 → Int64 → Prop) : Idx ⟶ Idx :=
+  (ix lk ≫ (ix rk)°) ∩ (ix w₀ ≫ (ρ : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°) ∩
+    (ix w₁ ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°)
+
+theorem wjWin_iff {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk rk : List κ) (w₀ w₁ rt : List Int64)
+    (ρ : Int64 → Int64 → Prop) (i j : Nat) (hi : i < lk.length) (h0 : i < w₀.length) (h1 : i < w₁.length)
+    (hrt : rt.length = rk.length) :
+    wjWin lk rk w₀ w₁ rt ρ i j ↔ j ∈ Struct.group rk lk[i]! ∧ ρ w₀[i]! rt[j]! ∧ rt[j]! ≤ w₁[i]! := by
+  have hj : j ∈ Struct.group rk lk[i]! → j < rt.length := fun h => by
+    simp only [Struct.group, List.mem_filter, List.mem_range] at h; omega
+  constructor
+  · rintro ⟨h, h'⟩
+    obtain ⟨hk, h⟩ := (keyed_iff lk rk w₀ rt ρ i j hi h0 hrt).1 h
+    exact ⟨hk, h, (cmp_iff w₁ rt (· ≥ ·) i j h1 (hj hk)).1 h'⟩
+  · rintro ⟨hk, h, h'⟩
+    exact ⟨(keyed_iff lk rk w₀ rt ρ i j hi h0 hrt).2 ⟨hk, h⟩, (cmp_iff w₁ rt (· ≥ ·) i j h1 (hj hk)).2 h'⟩
+
+/-- **Runs that are windows read as `Λ(S) ≫ enum`**: where left row `i < m`'s run is the right rows `[lo, hi)`
+    and `S` relates `i` to exactly those, the runs are `corefl(<m) ≫ Λ(S) ≫ enum ≫ list(til n)`. -/
+theorem ix_wins (S : Idx ⟶ Idx) (m n : Nat) (F : Nat → List Int64)
+    (h : ∀ i, i < m → ∃ lo hi, lo ≤ n ∧ hi ≤ n ∧ (∀ j, S i j ↔ lo ≤ j ∧ j < hi) ∧
+      F i = (List.range (hi - lo)).map fun j => Int64.ofNat (lo + j)) :
+    ix (((List.range m).map F).map CL.ofList) =
+      corefl (· < m) ≫ Λ S ≫ enum ≫ ListRel.list (ix ((List.range n).map Int64.ofNat)) :=
+  hom_ext fun (i : Nat) c => by
+    change (((List.range m).map F).map CL.ofList)[i]? = some c ↔
+      ∃ z, (i = z ∧ i < m) ∧ ∃ s, Λ S z s ∧ ∃ zs, enum s zs ∧ ListRel.listP (ix ((List.range n).map Int64.ofNat)) zs c
+    by_cases him : i < m
+    · obtain ⟨lo, hi, hlo, hhi, hS, hF⟩ := h i him
+      have hW : ∀ ys, (Λ S ≫ enum) i ys ↔ ys = CL.ofList (List.range' lo (hi - lo)) :=
+        Λ_enum S (i := i) (a := lo) (k := hi - lo) fun j =>
+          (hS j).trans <| and_congr_right fun h1 => by
+            by_cases hl : lo ≤ hi
+            · rw [Nat.add_sub_cancel' hl]
+            · rw [Nat.sub_eq_zero_of_le (Nat.le_of_not_le hl), Nat.add_zero]
+              exact ⟨fun h2 => absurd (Nat.lt_trans h2 (Nat.lt_of_not_le hl)) (Nat.not_lt.2 h1),
+                fun h2 => absurd h2 (Nat.not_lt.2 h1)⟩
+      have hl : lo + (hi - lo) ≤ ((List.range n).map Int64.ofNat).length := by
+        simp only [List.length_map, List.length_range]; omega
+      have hd : (((List.range n).map Int64.ofNat).drop lo).take (hi - lo) =
+          (List.range (hi - lo)).map fun j => Int64.ofNat (lo + j) :=
+        List.ext_getElem (by simp only [List.length_take, List.length_drop, List.length_map, List.length_range]; omega)
+          fun k _ _ => by simp only [List.getElem_take, List.getElem_drop, List.getElem_map, List.getElem_range]
+      rw [List.map_map, List.getElem?_map, List.getElem?_range him, Option.map_some, Option.some.injEq,
+        Function.comp_apply, hF]
+      constructor
+      · intro e
+        obtain ⟨s, hs, he⟩ := (hW _).2 rfl
+        exact ⟨i, ⟨rfl, him⟩, s, hs, _, he, (listP_ix_range' _ (hi - lo) lo hl _).2 (by rw [hd, e])⟩
+      · rintro ⟨_, ⟨rfl, -⟩, s, hs, zs, hz, hw⟩
+        rw [(hW zs).1 ⟨s, hs, hz⟩] at hw
+        rw [(listP_ix_range' _ (hi - lo) lo hl c).1 hw, hd]
+    · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
+      exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h him⟩
+
+/-- q's `w - 1` off `0N` is `Int64`'s, and does not wrap. -/
+theorem toInt_sub_one {w : Int64} (h : w ≠ Int64.minValue) : (w - 1).toInt = w.toInt - 1 := by
+  have h1 : w.toInt ≠ Int64.minValue.toInt := fun e => h (Int64.toInt_inj.1 e)
+  rw [Int64.toInt_minValue] at h1
+  have := Int64.le_toInt w; have := Int64.toInt_lt w
+  rw [Int64.toInt_sub, show (1 : Int64).toInt = 1 from rfl, Int.bmod_eq_of_le] <;> omega
+
+theorem intStep_sub_one {w : Int64} (h : w ≠ Int64.minValue) :
+    Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue w 1 = w - 1 := by
+  have : (w == Int64.minValue || (1 : Int64) == Int64.minValue) = false := by
+    simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne]; exact ⟨h, by decide⟩
+  unfold Kernel.Ew.intStep
+  rw [if_neg (by decide), if_pos (by decide), this]; rfl
+
+/-- The hypotheses both laws read the right table under: each key's right rows are one contiguous block, their
+    times ascending (q's `wj` precondition, a table sorted by key then time). -/
+def WjSorted {κ : Type} [BEq κ] [Inhabited κ] (rk : List κ) (rt : List Int64) : Prop :=
+  ∀ k, (∃ s c, Struct.group rk k = List.range' s c) ∧ (Struct.group rk k).Pairwise fun a b => rt[a]! ≤ rt[b]!
+
+/-- Row `i`'s run read as a window, both edges from `bin_prefix`: `e₀`, `e₁` the ends of the prefixes at or before
+    `x₀` and `w₁[i]`, the group `[s, s + c)`. The run is empty where the key has no right rows. -/
+theorem wjRow {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (prevailing : Bool) (lk rk : List κ)
+    (w₀ w₁ rt : List Int64) (hsrt : WjSorted rk rt) (i : Nat) (hi : i < lk.length) (x₀ : Int64)
+    (hx₀ : (if prevailing then w₀[i]! else Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue w₀[i]! 1) = x₀)
+    (S : Idx ⟶ Idx)
+    (hS : ∀ s c e₀ e₁, Struct.group rk lk[i]! = List.range' s c → 0 < c → s ≤ e₀ → e₀ ≤ s + c → s ≤ e₁ →
+      e₁ ≤ s + c →
+      (∀ j, (j ∈ List.range' s c ∧ rt[j]! ≤ x₀) ↔ s ≤ j ∧ j < e₀) →
+      (∀ j, (j ∈ List.range' s c ∧ rt[j]! ≤ w₁[i]!) ↔ s ≤ j ∧ j < e₁) →
+      ∀ j, S i j ↔ (if prevailing then (if e₀ = s then s else e₀ - 1) else e₀) ≤ j ∧ j < e₁)
+    (hS0 : Struct.group rk lk[i]! = [] → ∀ j, ¬ S i j) :
+    ∃ lo hi, lo ≤ rk.length ∧ hi ≤ rk.length ∧ (∀ j, S i j ↔ lo ≤ j ∧ j < hi) ∧
+      Struct.wjRun prevailing lk w₀ w₁ rk rt i = (List.range (hi - lo)).map fun j => Int64.ofNat (lo + j) := by
+  unfold Struct.wjRun
+  obtain ⟨⟨s, c, hg⟩, hs⟩ := hsrt lk[i]!
+  rw [hg] at hs
+  rcases Nat.eq_zero_or_pos c with rfl | hc
+  · have hh : Struct.group rk lk[i]! = [] := hg
+    refine ⟨0, 0, Nat.zero_le _, Nat.zero_le _, fun j => ⟨fun h => absurd h (hS0 hh j), fun h => absurd h.2 (Nat.not_lt_zero _)⟩, ?_⟩
+    simp only [hh, List.head?_nil]; rfl
+  · have hcn : s + c ≤ rk.length := by
+      have : s + c - 1 ∈ Struct.group rk lk[i]! := by rw [hg, List.mem_range'_1]; omega
+      simp only [Struct.group, List.mem_filter, List.mem_range] at this; omega
+    have hh : (Struct.group rk lk[i]!).head? = some s := by
+      rw [hg]; obtain ⟨c', rfl⟩ : ∃ c', c = c' + 1 := ⟨c - 1, by omega⟩; simp [List.range'_succ]
+    obtain ⟨e₀, hs0, he0, hm0, hed0⟩ := bin_prefix rt s c hs x₀
+    obtain ⟨e₁, hs1, he1, hm1, hed1⟩ := bin_prefix rt s c hs w₁[i]!
+    have hS' := hS s c e₀ e₁ hg hc hs0 he0 hs1 he1 hm0 hm1
+    have he : ∀ e, s ≤ e → (if e = s then s else e - 1 + 1) = e := fun e h => by split <;> omega
+    refine ⟨if prevailing then (if e₀ = s then s else e₀ - 1) else e₀, e₁, by split <;> (try split) <;> omega,
+      by omega, hS', ?_⟩
+    simp only [hh]
+    rw [hg]
+    cases prevailing
+    · simp only [Bool.false_eq_true, ↓reduceIte] at hx₀ ⊢
+      rw [hx₀, hed0, hed1, he e₀ hs0, he e₁ hs1]
+    · simp only [↓reduceIte] at hx₀ ⊢
+      rw [hx₀, hed0, hed1, he e₁ hs1, Nat.add_zero]
+
+/-- **`wj1` in the algebra**: left row `i`'s run is the right rows of its key whose time lies in
+    `[w₀[i], w₁[i]]`, `Λ(W) ≫ enum` with `W = (lk ≫ rk°) ∩ (w₀ ≫ (≤) ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)`, read through
+    `til |rk|`. Hypotheses: `WjSorted`, and no `0N` in `w₀`, where q's `0N - 1` is `0N` and the kernel's lower
+    edge skips the right rows at `0N` that `W` keeps. -/
+theorem wj1Spec_rel {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk rk : List κ) (w₀ w₁ rt : List Int64)
+    (hsrt : WjSorted rk rt) (h0 : w₀.length = lk.length) (h1 : w₁.length = lk.length)
+    (hrt : rt.length = rk.length) (hn : ∀ i, i < lk.length → w₀[i]! ≠ Int64.minValue) :
+    ix ((Struct.wjRuns false lk w₀ w₁ rk rt).map CL.ofList) = corefl (· < lk.length) ≫ Λ (wjWin lk rk w₀ w₁ rt (· ≤ ·)) ≫
+      enum ≫ ListRel.list (ix ((List.range rk.length).map Int64.ofNat)) := by
+  refine ix_wins _ _ _ (Struct.wjRun false lk w₀ w₁ rk rt) fun i hi => wjRow false lk rk w₀ w₁ rt hsrt i hi (w₀[i]! - 1)
+    (by simp only [Bool.false_eq_true, ↓reduceIte]; exact intStep_sub_one (hn i hi)) _ ?_ ?_
+  · intro s c e₀ e₁ hg _ hs0 _ _ _ hm0 hm1 j
+    rw [wjWin_iff lk rk w₀ w₁ rt _ i j hi (by omega) (by omega) hrt, hg]
+    have := hm0 j; have := hm1 j; have := toInt_sub_one (hn i hi)
+    simp only [List.mem_range'_1, Int64.le_iff_toInt_le, Bool.false_eq_true, ↓reduceIte] at *
+    omega
+  · intro hg j h
+    have := ((wjWin_iff lk rk w₀ w₁ rt _ i j hi (by omega) (by omega) hrt).1 h).1
+    rw [hg] at this; cases this
+
+/-- **`wj` in the algebra**: left row `i`'s run is the right rows of its key strictly after `w₀[i]` up to `w₁[i]`,
+    with the prevailing row added — the last of its key at or before `w₀[i]`, `est(≥)` of those:
+    `Λ(W₍<₎ ∪ (Λ((lk ≫ rk°) ∩ (w₀ ≫ (≥) ≫ rt°)) ≫ est(≥))) ≫ enum`. Hypotheses: `WjSorted`, `w₀ ≤ w₁`. -/
+theorem wjSpec_rel {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk rk : List κ) (w₀ w₁ rt : List Int64)
+    (hsrt : WjSorted rk rt) (h0 : w₀.length = lk.length) (h1 : w₁.length = lk.length)
+    (hrt : rt.length = rk.length) (hw : ∀ i, i < lk.length → w₀[i]! ≤ w₁[i]!) :
+    ix ((Struct.wjRuns true lk w₀ w₁ rk rt).map CL.ofList) = corefl (· < lk.length) ≫
+      Λ (wjWin lk rk w₀ w₁ rt (· < ·) ∪ (Λ ((ix lk ≫ (ix rk)°) ∩
+        (ix w₀ ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°)) ≫ est (· ≥ ·))) ≫
+      enum ≫ ListRel.list (ix ((List.range rk.length).map Int64.ofNat)) := by
+  refine ix_wins _ _ _ (Struct.wjRun true lk w₀ w₁ rk rt) fun i hi => wjRow true lk rk w₀ w₁ rt hsrt i hi w₀[i]! (by simp) _ ?_ ?_
+  · intro s c e₀ e₁ hg _ hs0 _ _ _ hm0 hm1 j
+    have hT : ∀ z, ((ix lk ≫ (ix rk)°) ∩ (ix w₀ ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°)) i z ↔
+        s ≤ z ∧ z < e₀ := fun z => by
+      rw [keyed_iff lk rk w₀ rt _ i z hi (by omega) hrt, hg, ← hm0 z]
+    have hP : (Λ ((ix lk ≫ (ix rk)°) ∩ (ix w₀ ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°)) ≫
+        est (· ≥ ·)) i j ↔ s < e₀ ∧ j = e₀ - 1 := by
+      rw [RelSet.Λ_comp_est_apply]
+      simp only [hT]
+      constructor
+      · rintro ⟨hj, hm⟩; have := hm (e₀ - 1) ⟨by omega, by omega⟩; exact ⟨by omega, by omega⟩
+      · rintro ⟨_, rfl⟩; exact ⟨⟨by omega, by omega⟩, fun z hz => by omega⟩
+    show wjWin lk rk w₀ w₁ rt (· < ·) i j ∨ _ ↔ _
+    rw [hP, wjWin_iff lk rk w₀ w₁ rt _ i j hi (by omega) (by omega) hrt, hg]
+    have := hm0 j; have := hm1 j; have := hm0 (e₀ - 1); have := hm1 (e₀ - 1); have := hw i hi
+    simp only [List.mem_range'_1, Int64.le_iff_toInt_le, Int64.lt_iff_toInt_lt, ↓reduceIte] at *
+    split <;> omega
+  · intro hg j h
+    rcases h with h | h
+    · have := ((wjWin_iff lk rk w₀ w₁ rt _ i j hi (by omega) (by omega) hrt).1 h).1
+      rw [hg] at this; cases this
+    · have := ((keyed_iff lk rk w₀ rt _ i j hi (by omega) hrt).1 ((RelSet.Λ_comp_est_apply _ _ _ _).1 h).1).1
+      rw [hg] at this; cases this
+
+/-- **`wj`'s kernel answer is the algebra's** at one long key column per side (`wj_long`, then `wjSpec_rel`):
+    `P.rel = corefl(<|t0|) ≫ Λ(W₍<₎ ∪ (Λ((lk ≫ rk°) ∩ (w₀ ≫ (≥) ≫ rt°)) ≫ est(≥))) ≫ enum ≫ list(til |tr|)`,
+    where the right table is `WjSorted` and every window has `w₀ ≤ w₁`. -/
+theorem wj_rel {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .long} {b0 b1 hay : ByteArray}
+    (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
+    (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
+    (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hrwf : cr.WF) (hrR : Find.Readable .long cr)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) →
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
+    (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
+    (h0b : Column.bytesOf t0 = some b0)
+    (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
+    (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
+    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
+    (hsrt : WjSorted wr ((nats hay).map Int64.ofNat))
+    (hw : ∀ i, i < t0.n → ((nats b0).map Int64.ofNat)[i]! ≤ ((nats b1).map Int64.ofNat)[i]!)
+    (h : Struct.wjP true ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
+    P.rel = corefl (· < t0.n) ≫
+      Λ (wjWin wl wr ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) ((nats hay).map Int64.ofNat) (· < ·) ∪
+        (Λ ((ix wl ≫ (ix wr)°) ∩ (ix ((nats b0).map Int64.ofNat) ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫
+          (ix ((nats hay).map Int64.ofNat))°)) ≫ est (· ≥ ·))) ≫
+      enum ≫ ListRel.list (ix ((List.range tr.n).map Int64.ofNat)) := by
+  show ix (P.segs.map CL.ofList) = _
+  rw [wj_long hlt hrt hwl hwr hln hrn hcl hcr hlwf hlR hrwf hrR hattr h0t h1t htr h0b h1b hrb h0n h1n hhn hU h62 h]
+  have l0 : ((nats b0).map Int64.ofNat).length = wl.length := by rw [List.length_map, nats_length]; omega
+  have l1 : ((nats b1).map Int64.ofNat).length = wl.length := by rw [List.length_map, nats_length]; omega
+  have lr : ((nats hay).map Int64.ofNat).length = wr.length := by rw [List.length_map, nats_length]; omega
+  rw [show t0.n = wl.length by omega, show tr.n = wr.length by omega]
+  exact wjSpec_rel wl wr _ _ _ hsrt l0 l1 lr fun i hi => hw i (by omega)
+
+/-- **`wj1`'s kernel answer is the algebra's** at one long key column per side (`wj1_long`, then `wj1Spec_rel`):
+    `P.rel = corefl(<|t0|) ≫ Λ(W) ≫ enum ≫ list(til |tr|)`, `W = (lk ≫ rk°) ∩ (w₀ ≫ (≤) ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)`,
+    where the right table is `WjSorted` and `w₀` holds no `0N`. -/
+theorem wj1_rel {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .long} {b0 b1 hay : ByteArray}
+    (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
+    (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
+    (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hrwf : cr.WF) (hrR : Find.Readable .long cr)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) →
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
+    (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
+    (hb0 : t0.enc = .bytes b0 ∨ ∃ md pk, t0.enc = .foR md pk ∧ b0 = Kernel.Coc.decode (8 : Nat).toUSize md pk t0.n.toUSize)
+    (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
+    (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
+    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
+    (hsrt : WjSorted wr ((nats hay).map Int64.ofNat))
+    (hn : ∀ i, i < t0.n → ((nats b0).map Int64.ofNat)[i]! ≠ Int64.minValue)
+    (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
+    P.rel = corefl (· < t0.n) ≫
+      Λ (wjWin wl wr ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) ((nats hay).map Int64.ofNat) (· ≤ ·)) ≫
+      enum ≫ ListRel.list (ix ((List.range tr.n).map Int64.ofNat)) := by
+  show ix (P.segs.map CL.ofList) = _
+  rw [wj1_long hlt hrt hwl hwr hln hrn hcl hcr hlwf hlR hrwf hrR hattr h0t h1t htr hb0 h1b hrb h0n h1n hhn hU h62 h]
+  have l0 : ((nats b0).map Int64.ofNat).length = wl.length := by rw [List.length_map, nats_length]; omega
+  have l1 : ((nats b1).map Int64.ofNat).length = wl.length := by rw [List.length_map, nats_length]; omega
+  have lr : ((nats hay).map Int64.ofNat).length = wr.length := by rw [List.length_map, nats_length]; omega
+  rw [show t0.n = wl.length by omega, show tr.n = wr.length by omega]
+  exact wj1Spec_rel wl wr _ _ _ hsrt l0 l1 lr fun i hi => hn i (by omega)
 
 /-- `xs[j]? = some a` is `j` in range with `xs[j]! = a`, the form `group` and `cand` read positions in. -/
 theorem getElem?_eq_some_iff! {α : Type} [Inhabited α] (xs : List α) (j : Nat) (a : α) :
@@ -3385,5 +3696,18 @@ theorem aj_rel {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr .
 #print axioms aj_rel
 #print axioms bytesOf_longWords
 #print axioms dyadColumn_sub_one_foR
+#print axioms bin_prefix
+#print axioms key_iff
+#print axioms cmp_iff
+#print axioms keyed_iff
+#print axioms wjWin_iff
+#print axioms ix_wins
+#print axioms toInt_sub_one
+#print axioms intStep_sub_one
+#print axioms wjRow
+#print axioms wj1Spec_rel
+#print axioms wjSpec_rel
+#print axioms wj_rel
+#print axioms wj1_rel
 
 end LeetQ.Rel.Verb
