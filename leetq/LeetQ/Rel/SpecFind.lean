@@ -1046,6 +1046,46 @@ theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u}
     exact ⟨ix, yx, l, ty, m, b, iy, ac, gy, ry, gk, keys, vals, K, V, hix, hyx, hl, hmem, hw, hac, hgy, hry, hgk,
       hkeys, hvals, hK, hV, (Except.ok.inj hv).symm⟩
 
+/-- **The rows of `x` in `align`, long keys and long `y` values: `⟨x, x.key ≫ miss(Λ(y.key°) est(≤) y, eᵣ)⟩ ≫ f`.**
+    Each key of `x` meets `y`'s value at the key's first position in `y.key`, `eᵣ` where `y` lacks it
+    (`probe_find`, `gatherFill_long`, `ix_lookup`); `hlaw` is any value law of the encodings at hand. -/
+theorem align_left_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Column}
+    {l : Arr rt x.n} (he : Eval.ewType L.v t .long = some rt)
+    (hkx : Find.Readable .long x.key.c) (hky : Find.Readable .long y.key.c) (hyv : Find.Readable .long y.val.c)
+    (hnx : x.n < USize.size) (hny : y.n < USize.size)
+    (hix : Ew.vec "findColumn" (Kernel.findColumn .long false y.key.c (.vector x.key.c)) = .ok ix)
+    (hyx : Ew.gatherFill .long L.er y.val.c ix = .ok yx)
+    (hl : Ew.dyad L.v Kernel.Ew.vv t .long rt x.val.c yx x.n = .ok l)
+    (hlaw : ∀ (Y : Arr .long x.n) l, Ew.val L.v rt x.val Y = .ok l → Ew.ValSpec L.v he x.val Y l) :
+    l.rel = rpair x.val.rel (x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64) ≫
+      ofExcept (fun p : Carrier t × Carrier .long => elem L.v he p.1 p.2) := by
+  obtain ⟨B, ky, kx, hp, hwy, hwx, hB⟩ := Find.probe_find y.key x.key hky hkx hny hnx
+  rw [Find.findColumn_long false _ _ x.key.wf.1] at hix
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, hp, Option.map_some, Ew.vec, Except.ok.injEq] at hix
+  subst hix
+  obtain ⟨_, _, _, vs, -, hwv, -, hlv⟩ := Find.operand_long y.val hyv hny
+  obtain ⟨G, rfl, hG, hGw⟩ := gatherFill_long y.val hwv hny (ib := B) (by simp [Column.bytesOf]) hyx
+  have hkx : kx.length = x.n := by rw [← Arr.length_toList x.key, Arr.toList_long x.key hwx, List.length_map]
+  have hky : ky.length = y.n := by rw [← Arr.length_toList y.key, Arr.toList_long y.key hwy, List.length_map]
+  have hn : B.size / 8 = x.n := by
+    have := congrArg List.length hB; simp only [Verify.elemsW, List.length_map, List.length_range] at this; omega
+  let Y : Arr .long x.n := ⟨⟨.long, B.size / 8, .bytes G, none⟩, rfl, hn, by simp only [Column.WF, QAtomicType.width]; omega⟩
+  have hY : Y.rel = x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64 := by
+    simp only [Arr.rel]
+    rw [Arr.toList_long Y (ws := Verify.elemsW 8 G) rfl, Arr.toList_long x.key hwx, Arr.toList_long y.key hwy,
+      Arr.toList_long y.val hwv, ← ix_lookup _ _ _ _ (by simp [hky, hlv])]
+    refine congrArg ix ?_
+    calc (Verify.elemsW 8 G).map UInt64.toInt64
+        = ((Verify.elemsW 8 B).map UInt64.toNat).map fun i => (vs.getD i L.er).toInt64 := by
+          rw [hGw, List.map_map, List.map_map]; rfl
+      _ = (kx.map UInt64.toInt64).map fun k =>
+            (vs.map UInt64.toInt64).getD ((ky.map UInt64.toInt64).idxOf k) L.er.toInt64 := by
+          rw [hB, List.map_map, List.map_map]
+          refine List.map_congr_left fun k _ => ?_
+          simp only [Function.comp, Find.idxOf_map_of_inj (fun a b h => toInt64_inj h), List.getD_eq_getElem?_getD,
+            List.getElem?_map, Option.getD_map]
+  rw [val_rel (hlaw Y l hl), hY]
+
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
 /-- `miss(R, n) ≫ miss(S, e) = miss(R ≫ S, e)` when `R` lands where `S` is defined and `n` is not: the
@@ -2334,5 +2374,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms razeColumn_long_bytes
 #print axioms bind_ok
 #print axioms align_gather
+#print axioms ix_lookup
+#print axioms align_left_rel
 
 end LeetQ.Rel.Verb
