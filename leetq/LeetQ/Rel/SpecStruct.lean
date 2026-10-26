@@ -920,6 +920,208 @@ theorem eachRightP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (ho
   eachRight_rel (t := .long) (u := .long) (rt := .long) (x := x) (y := y) (R := R)
     (fun a b => Kernel.Ew.intStep op Int64.minValue a b) (eachRightP_segs hop he hx hy hU hB h)
 
+/-! ## `ej`: `Alg.join`'s grouping, on naturals
+
+  `Alg.join` grades the right rows stably by class id (`grade_spec`), so class `c`'s rows sit at
+  `[starts c, starts c + sizes c)` of the grade, in row order; a left row of class `c` expands (`expand`) to
+  `sizes c` pairs reading that slice. `starts c` is the rows of a smaller class, `sums sizes - sizes`. -/
+
+/-- A list sorted along `R` splits at a predicate `p` that holds of every `R`-predecessor, in the list, of a
+    row holding it: the rows holding `p`, then the rest. -/
+theorem split_sorted {α : Type} {R : α → α → Prop} (p : α → Bool) : ∀ {L : List α}, L.Pairwise R →
+    (∀ a ∈ L, ∀ b ∈ L, R a b → p b = true → p a = true) → L.filter p ++ L.filter (fun a => !p a) = L
+  | [], _, _ => rfl
+  | a :: L, h, hp => by
+    obtain ⟨ha, hL⟩ := List.pairwise_cons.1 h
+    have ih := split_sorted p hL fun x hx y hy => hp x (List.mem_cons_of_mem _ hx) y (List.mem_cons_of_mem _ hy)
+    by_cases hpa : p a = true
+    · rw [List.filter_cons_of_pos hpa, List.filter_cons_of_neg (by simp [hpa]), List.cons_append, ih]
+    · have hn : ∀ b ∈ L, ¬ p b = true := fun b hb hpb =>
+        hpa (hp a (List.mem_cons_self ..) b (List.mem_cons_of_mem _ hb) (ha b hb) hpb)
+      rw [List.filter_cons_of_neg hpa, List.filter_cons_of_pos (by simp [hpa]), List.filter_eq_nil_iff.2 hn,
+        List.filter_eq_self.2 fun b hb => by simpa using hn b hb, List.nil_append]
+
+/-- **A stable grade by `g`, sliced at class `c`**: of a permutation of `til n` ascending in `g` and, within one
+    `g`, in row order, the `#{g = c}` entries after the `#{g < c}` first are class `c`'s rows in row order. -/
+theorem grade_slice (g : Nat → Nat) {n : Nat} (perm : List Nat) (hp : perm.Perm (List.range n))
+    (hs : perm.Pairwise fun i j => g i ≤ g j ∧ (g j ≤ g i → i < j)) (c : Nat) :
+    (perm.drop ((List.range n).countP fun i => decide (g i < c))).take
+        ((List.range n).countP fun i => decide (g i = c)) = (List.range n).filter fun i => decide (g i = c) := by
+  have h1 := split_sorted (fun i => decide (g i < c)) hs fun a _ b _ hab hb => by
+    simp only [decide_eq_true_eq] at hb ⊢; exact Nat.lt_of_le_of_lt hab.1 hb
+  have hB := List.drop_left' (l₁ := perm.filter fun i => decide (g i < c))
+    (l₂ := perm.filter fun i => !decide (g i < c)) (List.countP_eq_length_filter ..).symm
+  rw [h1] at hB
+  have hC : (perm.filter fun i => !decide (g i < c)).filter (fun i => decide (g i = c)) =
+      perm.filter fun i => decide (g i = c) := by
+    rw [List.filter_filter]; exact List.filter_congr fun i _ => by by_cases h : g i = c <;> simp [h]
+  have h2 := split_sorted (fun i => decide (g i = c)) (hs.filter fun i => !decide (g i < c))
+      fun a ha b _ ⟨hab, _⟩ hb => by
+    obtain ⟨-, ha⟩ := List.mem_filter.1 ha
+    simp only [decide_eq_true_eq] at hb ⊢
+    have ha : c ≤ g a := by simpa using ha
+    omega
+  rw [hC] at h2
+  have hT := List.take_left' (l₁ := perm.filter fun i => decide (g i = c))
+    (l₂ := (perm.filter fun i => !decide (g i < c)).filter fun i => !decide (g i = c)) (List.countP_eq_length_filter ..).symm
+  rw [h2] at hT
+  rw [← hp.countP_eq, ← hp.countP_eq, hB, hT]
+  refine eq_of_pairwise_lt (List.Pairwise.imp_of_mem (fun ha hb hab => ?_) (hs.filter _))
+    ((List.pairwise_lt_range ..).filter _) fun i => (hp.filter _).mem_iff
+  obtain ⟨-, ha⟩ := List.mem_filter.1 ha
+  obtain ⟨-, hb⟩ := List.mem_filter.1 hb
+  simp only [decide_eq_true_eq] at ha hb
+  exact hab.2 (by omega)
+
+/-- The grade slice read as `sizes c` reads at `starts c + w`, `w < sizes c`. -/
+theorem grade_slice_map (g : Nat → Nat) {n : Nat} (perm : List Nat) (hp : perm.Perm (List.range n))
+    (hs : perm.Pairwise fun i j => g i ≤ g j ∧ (g j ≤ g i → i < j)) (c : Nat) :
+    ((List.range ((List.range n).countP fun i => decide (g i = c))).map
+        fun w => perm[((List.range n).countP fun i => decide (g i < c)) + w]!) =
+      (List.range n).filter fun i => decide (g i = c) := by
+  have e := grade_slice g perm hp hs c
+  have hl : perm.length = n := by rw [hp.length_eq, List.length_range]
+  have hk := congrArg List.length e
+  rw [List.length_take, List.length_drop, ← List.countP_eq_length_filter, hl] at hk
+  by_cases h0 : (List.range n).countP (fun i => decide (g i = c)) = 0
+  · rw [h0, List.take_zero] at e
+    rw [h0, List.range_zero, List.map_nil]; exact e
+  · rw [← take_drop_eq perm _ _ (by omega)]; exact e
+
+/-- `#{g < c+1} = #{g < c} + #{g = c}`. -/
+theorem countP_lt_succ (g : Nat → Nat) (c : Nat) : ∀ L : List Nat,
+    L.countP (fun i => decide (g i < c + 1)) = L.countP (fun i => decide (g i < c)) + L.countP (fun i => decide (g i = c))
+  | [] => rfl
+  | a :: L => by
+    simp only [List.countP_cons, countP_lt_succ g c L, decide_eq_true_eq]
+    split <;> split <;> split <;> omega
+
+/-- **`starts = sums sizes - sizes`, on naturals**: the rows of a class below `c` are the sizes of the classes
+    below `c`, summed. -/
+theorem countP_lt_sum (g : Nat → Nat) (n : Nat) : ∀ c,
+    (List.range n).countP (fun i => decide (g i < c)) =
+      ((List.range c).map fun c' => (List.range n).countP fun i => decide (g i = c')).sum
+  | 0 => by simp
+  | c + 1 => by
+    rw [countP_lt_succ, countP_lt_sum g n c, List.range_succ, List.map_append, List.map_cons, List.map_nil]
+    generalize List.map _ (List.range c) = A
+    induction A with
+    | nil => simp
+    | cons a A ih => rw [List.cons_append, List.sum_cons, List.sum_cons, ← ih]; omega
+
+/-- **`Alg.join`'s pairs are `ejSpec`**, on naturals: left row `i` of class `hit i` expands to `sizes (hit i)`
+    pairs `(i, perm[starts (hit i) + w])`, `perm` the stable grade of the right rows by class `gid`; the classes
+    meet exactly where the key tuples do. A miss is a class no right row holds. -/
+theorem join_ejSpec {l r : List (List Int64)} (gid hit : Nat → Nat) (perm : List Nat)
+    (hp : perm.Perm (List.range r.length))
+    (hs : perm.Pairwise fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j))
+    (heq : ∀ i, i < l.length → ∀ j, j < r.length → (gid j = hit i ↔ r[j]! = l[i]!)) :
+    ((List.range l.length).flatMap fun i =>
+      (List.range ((List.range r.length).countP fun j => decide (gid j = hit i))).map fun w =>
+        (Int64.ofNat i, Int64.ofNat perm[((List.range r.length).countP fun j => decide (gid j < hit i)) + w]!)) =
+      Struct.ejSpec l r := by
+  unfold Struct.ejSpec List.flatMap
+  congr 1
+  refine List.map_congr_left fun i hi => ?_
+  have hi := List.mem_range.1 hi
+  have e := grade_slice_map gid perm hp hs (hit i)
+  rw [show ((List.range ((List.range r.length).countP fun j => decide (gid j = hit i))).map fun w =>
+      (Int64.ofNat i, Int64.ofNat perm[((List.range r.length).countP fun j => decide (gid j < hit i)) + w]!)) =
+      (((List.range ((List.range r.length).countP fun j => decide (gid j = hit i))).map fun w =>
+        perm[((List.range r.length).countP fun j => decide (gid j < hit i)) + w]!).map
+          fun j => (Int64.ofNat i, Int64.ofNat j)) by rw [List.map_map]; rfl, e]
+  congr 1
+  exact List.filter_congr fun j hj => by
+    have hj := List.mem_range.1 hj
+    by_cases h : gid j = hit i
+    · rw [decide_eq_true h, beq_iff_eq.2 ((heq i hi j hj).1 h)]
+    · rw [decide_eq_false h, beq_eq_false_iff_ne.2 fun e => h ((heq i hi j hj).2 e)]
+
+/-- **`ej` tabulates `l ≫ r°`**, its kernel law narrowed to `Alg.join`'s reading on naturals (`join_ejSpec`):
+    the answer's pairs are the expansion of the stable grade `perm` of the right rows by class `gid`, the left
+    rows' classes `hit` meeting `gid` exactly where the key tuples do. -/
+theorem ej_rel_join {R : Rel .long .long} {l r : List (List Int64)} (gid hit : Nat → Nat) (perm : List Nat)
+    (hp : perm.Perm (List.range r.length))
+    (hs : perm.Pairwise fun i j => gid i ≤ gid j ∧ (gid j ≤ gid i → i < j))
+    (heq : ∀ i, i < l.length → ∀ j, j < r.length → (gid j = hit i ↔ r[j]! = l[i]!))
+    (hk : R.toList = (List.range l.length).flatMap fun i =>
+      (List.range ((List.range r.length).countP fun j => decide (gid j = hit i))).map fun w =>
+        (Int64.ofNat i, Int64.ofNat perm[((List.range r.length).countP fun j => decide (gid j < hit i)) + w]!)) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ ix l ≫ (ix r)° ≫ graph Int64.ofNat :=
+  ej_rel (by rw [hk]; exact join_ejSpec gid hit perm hp hs heq)
+
+/-! ## `aj`: q's bisection inside a group whose times ascend
+
+  The design assumes each key's right rows ascend in time. There `binSpec`'s bisection (`Eval.partitionAt`)
+  lands one past the group's rows at or before the needle, so `aj` names the last of them. -/
+
+/-- The bisection's loop lands on `P` when `below` holds exactly below `P` on `[lo, hi)`, `lo ≤ P ≤ hi`. -/
+theorem partitionAt_go (below : Nat → Id Bool) (P : Nat) : ∀ fuel lo hi, lo ≤ P → P ≤ hi → hi - lo < fuel →
+    (∀ j, lo ≤ j → j < hi → (Id.run (below j) = true ↔ j < P)) →
+    Id.run (Eval.partitionAt.go below fuel lo hi) = P
+  | 0, _, _, _, _, h, _ => absurd h (Nat.not_lt_zero _)
+  | fuel + 1, lo, hi, h1, h2, h3, hf => by
+    rw [Eval.partitionAt.go]
+    by_cases hle : hi ≤ lo
+    · rw [if_pos hle]; show lo = P; omega
+    · rw [if_neg hle]
+      have hm := hf (lo + (hi - lo) / 2) (Nat.le_add_right ..) (by omega)
+      show Id.run (if Id.run (below (lo + (hi - lo) / 2)) = true then
+          Eval.partitionAt.go below fuel (lo + (hi - lo) / 2 + 1) hi
+        else Eval.partitionAt.go below fuel lo (lo + (hi - lo) / 2)) = P
+      by_cases hv : Id.run (below (lo + (hi - lo) / 2)) = true
+      · rw [if_pos hv]
+        have := hm.1 hv
+        exact partitionAt_go below P fuel _ hi (by omega) h2 (by omega) fun j a b => hf j (by omega) b
+      · rw [if_neg hv]
+        have : ¬ lo + (hi - lo) / 2 < P := fun h => hv (hm.2 h)
+        exact partitionAt_go below P fuel lo _ h1 (by omega) (by omega) fun j a b => hf j a (by omega)
+
+/-- **`partitionAt` is the partition point**: `below` holding exactly below `P ≤ n` on `til n`, it answers `P`. -/
+theorem partitionAt_eq (below : Nat → Id Bool) {n P : Nat} (hP : P ≤ n)
+    (hf : ∀ j, j < n → (Id.run (below j) = true ↔ j < P)) : Id.run (Eval.partitionAt below n) = P :=
+  partitionAt_go below P (n + 1) 0 n (Nat.zero_le _) hP (by omega) fun j _ hj => hf j hj
+
+/-- **`bin` in a group whose times ascend names the last row at or before `x`**: `binSpec` is the last of the
+    group's rows whose time is at most `x`, `none` where there is none. -/
+theorem binSpec_sorted (rt : List Int64) (g : List Nat) (x : Int64) (hs : g.Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    Struct.binSpec rt g x = (g.filter fun j => decide (rt[j]! ≤ x)).getLast? := by
+  have hsp := split_sorted (fun j => decide (rt[j]! ≤ x)) hs fun a _ b _ hab hb => by
+    simp only [decide_eq_true_eq] at hb ⊢; exact Int64.le_trans hab hb
+  generalize hA : g.filter (fun j => decide (rt[j]! ≤ x)) = A at hsp
+  generalize hB : g.filter (fun j => !decide (rt[j]! ≤ x)) = B at hsp
+  have hAp : ∀ a ∈ A, rt[a]! ≤ x := fun a ha => by rw [← hA] at ha; simpa using (List.mem_filter.1 ha).2
+  have hBp : ∀ b ∈ B, ¬ rt[b]! ≤ x := fun b hb => by rw [← hB] at hb; simpa using (List.mem_filter.1 hb).2
+  subst hsp
+  unfold Struct.binSpec
+  rw [partitionAt_eq _ (P := A.length) (by simp) fun j hj => by
+    by_cases h : j < A.length
+    · rw [getElem!_pos _ j hj, List.getElem_append_left h]
+      change decide (_ ≤ x) = true ↔ _
+      rw [decide_eq_true_eq]; exact ⟨fun _ => h, fun _ => hAp _ (List.getElem_mem h)⟩
+    · rw [getElem!_pos _ j hj, List.getElem_append_right (by omega)]
+      change decide (_ ≤ x) = true ↔ _
+      rw [decide_eq_true_eq]; exact ⟨fun e => absurd e (hBp _ (List.getElem_mem _)), fun e => absurd e h⟩]
+  rcases Nat.eq_zero_or_pos A.length with h0 | h0
+  · obtain rfl := List.length_eq_zero_iff.1 h0; rfl
+  · obtain ⟨p, hp⟩ : ∃ p, A.length = p + 1 := ⟨A.length - 1, by omega⟩
+    rw [hp]
+    show some (A ++ B)[p + 1 - 1]! = A.getLast?
+    rw [List.getLast?_eq_getElem?, hp, Nat.add_sub_cancel, getElem!_pos _ p (by simp; omega),
+      List.getElem_append_left (by omega), List.getElem?_eq_getElem (by omega)]
+
+/-- **`aj` names, per left row, the last row of its key's group at or before its time**, `0N` at none, where each
+    key's right rows ascend in time (`hs`): `ajSpec` with `binSpec_sorted` for its bisection. -/
+theorem ajSpec_sorted {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (lt : List Int64) (rk : List κ) (rt : List Int64)
+    (hs : ∀ k ∈ lk, (Struct.group rk k).Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    Struct.ajSpec lk lt rk rt = (lk.zip lt).map fun p =>
+      ((((Struct.group rk p.1).filter fun j => decide (rt[j]! ≤ p.2)).getLast?).map Int64.ofNat).getD Int64.minValue := by
+  unfold Struct.ajSpec
+  refine List.map_congr_left fun ⟨k, t⟩ hkt => ?_
+  dsimp only
+  rw [binSpec_sorted _ _ _ (hs k (List.of_mem_zip hkt).1)]
+
 
 
 #print axioms flip_rel
@@ -946,5 +1148,14 @@ theorem eachRightP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (ho
 #print axioms parted_rel
 #print axioms raze_rel
 #print axioms cut_rel
+#print axioms split_sorted
+#print axioms grade_slice
+#print axioms grade_slice_map
+#print axioms countP_lt_sum
+#print axioms join_ejSpec
+#print axioms ej_rel_join
+#print axioms partitionAt_eq
+#print axioms binSpec_sorted
+#print axioms ajSpec_sorted
 
 end LeetQ.Rel.Verb
