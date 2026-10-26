@@ -1754,35 +1754,37 @@ theorem ix_winAt {α β : Type} (xs : List α) (m : Nat) (lo hi : Nat → Nat)
     · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h him⟩
 
-/-- **`wjSpec` is a window per left row** (`prevailing`): row `i`'s run is the right rows `[lo i, hi i)`, both
-    edges inside `rk`, so the aggregate over it is `ix_winAt`'s `Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. -/
+/-- `wjSpec`'s edge of left row `i` at the bounds `w`: `max s (r + off)` where `bin` names the row `r` in the
+    key's group, `s` (the group's first row) where it names none, `0` for a key with no right rows. -/
+def wjEdge {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (off i : Nat) : Nat :=
+  match (Struct.group rk lk[i]!).head? with
+  | none => 0
+  | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w[i]!).map (max s <| · + off)).getD s
+
+/-- **`wjSpec` is a window per left row** (`prevailing`): row `i`'s run is the right rows `[lo i, hi i)` between
+    its two `wjEdge`s, both inside `rk`, so the aggregate over it is `ix_winAt`'s
+    `Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. `wjEdge_est` reads the edges as `est(≥)` of the candidates. -/
 theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ)
-    (rt : List Int64) : ∃ lo hi : Nat → Nat, (∀ i, lo i ≤ rk.length ∧ hi i ≤ rk.length) ∧
+    (rt : List Int64) :
+    (∀ i, wjEdge lk rk rt w₀ 0 i ≤ rk.length ∧ wjEdge lk rk rt w₁ 1 i ≤ rk.length) ∧
       Struct.wjSpec true lk w₀ w₁ rk rt = Struct.runsSpec ((List.range lk.length).map fun i =>
-        (List.range' (lo i) (hi i - lo i)).map Int64.ofNat) := by
+        (List.range' (wjEdge lk rk rt w₀ 0 i) (wjEdge lk rk rt w₁ 1 i - wjEdge lk rk rt w₀ 0 i)).map Int64.ofNat) := by
   have hgr : ∀ k s, s ∈ Struct.group rk k → s < rk.length := fun k s hs => by
     simp only [Struct.group, List.mem_filter, List.mem_range] at hs; omega
-  have hb : ∀ (i : Nat) (x : Int64) (off : Nat), off ≤ 1 → (match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) x).map (max s <| · + off)).getD s) ≤ rk.length :=
-    fun i x off ho => by
+  have hb : ∀ (w : List Int64) (off i : Nat), off ≤ 1 → wjEdge lk rk rt w off i ≤ rk.length :=
+    fun w off i ho => by
+      unfold wjEdge
       cases e : (Struct.group rk lk[i]!).head? with
       | none => exact Nat.zero_le _
       | some s =>
         have := hgr _ s (List.mem_of_mem_head? e)
-        cases e' : Struct.binSpec rt (Struct.group rk lk[i]!) x with
+        cases e' : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
         | none => simp only [Option.map_none, Option.getD_none]; omega
         | some r =>
           have := hgr _ r (binSpec_mem e'); simp only [Option.map_some, Option.getD_some]
           rw [Nat.max_def]; split <;> omega
-  refine ⟨fun i => match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₀[i]!).map (max s <| · + 0)).getD s,
-    fun i => match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₁[i]!).map (max s <| · + 1)).getD s,
-    fun i => ⟨hb i _ 0 (by decide), hb i _ 1 (by decide)⟩, ?_⟩
-  unfold Struct.wjSpec
+  refine ⟨fun i => ⟨hb _ 0 i (by decide), hb _ 1 i (by decide)⟩, ?_⟩
+  unfold Struct.wjSpec wjEdge
   congr 1
   apply List.map_congr_left
   intro i _
@@ -1792,6 +1794,75 @@ theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w�
   | some s =>
     simp only [↓reduceIte, List.range'_eq_map_range, List.map_map]
     try rfl
+
+/-- Left row `i`'s candidates at the bounds `w`: the rows of its key's group whose time is at most `w[i]`. -/
+def cand {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) : Idx ⟶ Idx :=
+  fun i j => j ∈ Struct.group rk lk[i]! ∧ rt[j]! ≤ w[i]!
+
+/-- On an ascending list the last element is the one at or above every element. -/
+theorem getLast?_greatest {L : List Nat} (hp : L.Pairwise (· < ·)) (r : Nat) :
+    L.getLast? = some r ↔ r ∈ L ∧ ∀ z, z ∈ L → r ≥ z := by
+  have fwd : ∀ r, L.getLast? = some r → r ∈ L ∧ ∀ z, z ∈ L → r ≥ z := fun r h => by
+    obtain ⟨ys, rfl⟩ := List.getLast?_eq_some_iff.1 h
+    refine ⟨by simp, fun z hz => ?_⟩
+    rcases List.mem_append.1 hz with hz | hz
+    · exact Nat.le_of_lt ((List.pairwise_append.1 hp).2.2 z hz r (by simp))
+    · simp only [List.mem_singleton] at hz; omega
+  refine ⟨fwd r, fun ⟨hr, hm⟩ => ?_⟩
+  cases h : L.getLast? with
+  | none => rw [List.getLast?_eq_none_iff] at h; subst h; cases hr
+  | some r' => obtain ⟨hr', hm'⟩ := fwd r' h; have := hm r' hr'; have := hm' r hr; congr 1; omega
+
+/-- **`bin` in an ascending group is `est(≥)` of the candidates**: where the group's times ascend, `binSpec` at
+    `w[i]` names `r` iff `r` is the greatest of left row `i`'s candidates, `Λ(cand) ≫ est(≥)`. -/
+theorem binSpec_est {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (i r : Nat)
+    (hs : (Struct.group rk lk[i]!).Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! = some r ↔ (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r := by
+  have hp : ((Struct.group rk lk[i]!).filter fun j => decide (rt[j]! ≤ w[i]!)).Pairwise (· < ·) :=
+    ((List.pairwise_lt_range).filter _).filter _
+  have hc : ∀ j, cand lk rk rt w i j ↔ j ∈ (Struct.group rk lk[i]!).filter fun j => decide (rt[j]! ≤ w[i]!) :=
+    fun j => by simp only [cand, List.mem_filter, decide_eq_true_eq]
+  rw [binSpec_sorted _ _ _ hs, RelSet.Λ_comp_est_apply, getLast?_greatest hp, hc]
+  exact and_congr_right fun _ => forall_congr' fun z => by rw [hc]
+
+/-- **`wj`'s edges are `est(≥)` of the candidates** where the key's group (first row `s`) ascends in time: the
+    greatest candidate `r` gives the edge `max s (r + off)`, and no candidate gives `s`. -/
+theorem wjEdge_est {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (off i s : Nat)
+    (hh : (Struct.group rk lk[i]!).head? = some s)
+    (hs : (Struct.group rk lk[i]!).Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    (∀ r, (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r → wjEdge lk rk rt w off i = max s (r + off)) ∧
+      ((∀ r, ¬ (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r) → wjEdge lk rk rt w off i = s) := by
+  unfold wjEdge
+  simp only [hh]
+  refine ⟨fun r h => by rw [(binSpec_est lk rk rt w i r hs).2 h]; rfl, fun h => ?_⟩
+  cases e : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
+  | none => rfl
+  | some r => exact absurd ((binSpec_est lk rk rt w i r hs).1 e) (h r)
+
+/-- **A window is a range of right rows, so a group that is not contiguous mixes keys**: left key `0`'s run
+    `[0, 3)` holds row `1`, of key `1`. -/
+theorem wjSpec_mixes : Struct.wjSpec true [0] [1] [3] [0, 1, 0] [1, 2, 3] = Struct.runsSpec [[0, 1, 2]] := by decide
+
+/-- **On a contiguous group the window stays inside it**: where key `lk[i]`'s right rows are `[s, s + c)`, every
+    row between `wj`'s two edges is in the group. -/
+theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w₀ w₁ : List Int64) (i s c j : Nat)
+    (hc : 0 < c) (hg : Struct.group rk lk[i]! = List.range' s c) (h0 : wjEdge lk rk rt w₀ 0 i ≤ j)
+    (h1 : j < wjEdge lk rk rt w₁ 1 i) : j ∈ Struct.group rk lk[i]! := by
+  have hh : (Struct.group rk lk[i]!).head? = some s := by
+    rw [hg]; obtain ⟨c', rfl⟩ : ∃ c', c = c' + 1 := ⟨c - 1, by omega⟩; simp [List.range'_succ]
+  have key : ∀ (w : List Int64) off, off ≤ 1 → s ≤ wjEdge lk rk rt w off i ∧ wjEdge lk rk rt w off i ≤ s + c :=
+    fun w off ho => by
+      unfold wjEdge
+      simp only [hh]
+      cases e : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
+      | none => simp only [Option.map_none, Option.getD_none]; omega
+      | some r =>
+        have := binSpec_mem e
+        rw [hg, List.mem_range'_1] at this
+        simp only [Option.map_some, Option.getD_some]
+        rw [Nat.max_def]; split <;> omega
+  have := key w₀ 0 (by decide); have := key w₁ 1 (by decide)
+  rw [hg, List.mem_range'_1]; omega
 
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
@@ -1825,5 +1896,10 @@ theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w�
 #print axioms wjSpec_runs
 #print axioms dyadColumn_sub_one
 #print axioms wj1_long
+#print axioms getLast?_greatest
+#print axioms binSpec_est
+#print axioms wjEdge_est
+#print axioms wjSpec_mixes
+#print axioms wjEdge_contig
 
 end LeetQ.Rel.Verb
