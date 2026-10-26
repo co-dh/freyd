@@ -327,6 +327,22 @@ def ss {nx : Nat} (x : Arr .char nx) (p : String) : Except String ((m : Nat) × 
     | throw s!"x ss p: the pattern {p} is not fixed-width (q's 'nyi)"
   list .long (Alg.longs hs)
 
+/-- `p?` on a string's bytes `s`: `parsePat`'s items accept all of `s`, `*` taking any run — qlean's
+    matcher `patMatch`, which `likeSyms` runs per symbol; `false` where `p` does not parse. -/
+def likeP (p : String) (s : ByteArray) : Bool :=
+  match parsePat p.toUTF8 with
+  | .ok its => patMatch its s (its.size + s.size + 1) 0 0
+  | .error _ => false
+
+/-- The fixed-width items `its` fit `xs` at `i`: each accepts its byte of `xs[i, i+|its|)` (`patHit`). -/
+def fitsAt (its : Array PatItem) (xs : List UInt8) (i : Nat) : Bool :=
+  decide (i + its.size ≤ xs.length) && (List.range its.size).all fun k => patHit its[k]! (xs.getD (i + k) 0)
+
+/-- `S` is the set of non-overlapping starts of `its` in `xs`: a fit is a start exactly when no earlier
+    start's match covers it. One `S` satisfies this (by induction on `i`). -/
+def Starts (its : Array PatItem) (xs : List UInt8) (S : Nat → Prop) : Prop :=
+  ∀ i, S i ↔ fitsAt its xs i = true ∧ ∀ j, S j → j < i → j + its.size ≤ i
+
 /-! ## The List-level spec -/
 
 /-- `n#xs` on a non-empty `xs`: `|n|` elements from `takeFrom n |xs|`, cycling. -/
