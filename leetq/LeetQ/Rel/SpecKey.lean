@@ -1125,15 +1125,15 @@ theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .l
     (unfold Eval.keyColumns; rw [Array.mapM_eq_mapM_toList, Array.toList_zip]; rfl)
 
 open QLean.Kernel in
-/-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column no mark claims (`` `s ``,
-    `` `u ``, `` `p ``, `` `g ``) is grouped by `Order.group` and each left word placed among the distinct words
+/-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column marked neither `` `s ``,
+    `` `u `` nor `` `p ``, and `` `g `` only with no index built (`cell.ready = none`, so `viaIndex` scans), is grouped by `Order.group` and each left word placed among the distinct words
     by `?`; the groups and ids it answers are `KeyAnswers` of the two sides' words, bytes or frame of
     reference alike. -/
 theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (hrt : cr.ty = .long)
     (hlt : cl.ty = .long) (hrw : longWords cr = some wr) (hrn : wr.length = cr.n) (h63 : cr.n < 2 ^ 63)
     (hU : cr.n < USize.size) (hlU : cl.n < USize.size) (hlwf : cl.WF) (hlR : Find.Readable .long cl)
     (hwl : longWords cl = some wl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4) :
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none)) :
     KeyAnswers wr wl (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).1
       (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).2 := by
   obtain ⟨B, hBw, hBn, hG⟩ := groupColumn_long (c := { cr with attr := none }) hrt hrw hrn hU
@@ -1190,7 +1190,9 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
     rcases a with _ | ⟨a, cell⟩
     · simp [QValue.marking]
     · obtain ⟨h1, h2, h3, h4⟩ := hattr a cell rfl
-      simp [QValue.marking, h1, h2, h3, h4]
+      by_cases ha : a = 4
+      · subst ha; simp [QValue.marking, Eval.viaIndex, h4 rfl]
+      · simp [QValue.marking, h1, h2, h3, ha]
   rw [hK, hgroup, hbs]
   dsimp only
   have hflat := buckets_length (Order.keyAt .i64 B) (B.size / 8)
@@ -1262,7 +1264,7 @@ theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr 
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = tl.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
     (hrb : Column.bytesOf tr = some hay) (hkn : keys.size / 8 = tl.n) (hhn : hay.size / 8 = tr.n)
     (hU : tl.n < USize.size) (hrU : tr.n < USize.size) (h63 : tr.n < 2 ^ 63)
@@ -1677,7 +1679,7 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (h0b : Column.bytesOf t0 = some b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
@@ -1700,7 +1702,7 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (hb0 : t0.enc = .bytes b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
