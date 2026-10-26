@@ -1306,6 +1306,95 @@ theorem bucket_run {B : ByteArray} (hB : OneRun B) {F : List Nat}
     · omega
     · exact hne ((hB i F[g] (F[g] - 1) (by omega) (by omega) hg0.1 e).trans e).symm
 
+/-- The rows in the buckets of any first occurrences are rows of the column. -/
+theorem buckets_lt {B : ByteArray} (F : List Nat) :
+    ∀ r ∈ (F.map (Verify.bucketOf (Kernel.Order.keyAt .i64 B) (B.size / 8))).flatten, r < B.size / 8 := fun r hr => by
+  obtain ⟨l, hl, hrl⟩ := List.mem_flatten.1 hr
+  obtain ⟨f, -, rfl⟩ := List.mem_map.1 hl
+  exact List.mem_range.1 (List.mem_filter.1 hrl).1
+
+open QLean.Kernel in
+/-- **`?` of the left words among the distinct right words answers the key groups** (`keyMatch`'s `ofKey`), on
+    whichever path built them: groups `gs` holding each first occurrence's bucket as one span, the bucket's head as
+    its `firsts`, and the distinct words `D` in first-occurrence order. -/
+theorem ofKey_answers {B D : ByteArray} {k : Nat} {F : List Nat} {cl : Column} {wl : List UInt64} {gs : Eval.Groups}
+    (hlt : cl.ty = .long) (hlU : cl.n < USize.size) (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hwl : longWords cl = some wl) (hBU : B.size / 8 < USize.size) (h63 : B.size / 8 < 2 ^ 63)
+    (hF : Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8) = F)
+    (hD : Verify.elemsW 8 D = F.map fun f => Column.bitsAt B (f * 8) 8) (hDs : D.size = k * 8)
+    (hsz : (Kernel.longBytes gs.bounds).size / 8 - 1 = F.length)
+    (hspan : ∀ g (hg : g < F.length),
+      (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8) F[g]).length =
+        (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8 + 8) 8).toNat -
+          (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8) 8).toNat ∧
+      ∀ p, p < (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8) F[g]).length →
+        (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8) F[g])[p]! =
+          if gs.rows.isEmpty then (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8) 8).toNat + p
+          else (Column.bitsAt gs.rows (((Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8) 8).toNat + p) * 8) 8).toNat)
+    (hfi : gs.firsts.toList = (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8))).map fun b => b.head?.getD 0) :
+    ∃ P, findColumn .long false ⟨.long, k, .bytes D, none⟩ (.vector { cl with attr := none }) =
+        some (.vector ⟨.long, P.size / 8, .bytes P, none⟩) ∧
+      KeyAnswers (Verify.elemsW 8 B) wl gs ⟨.long, P.size / 8, .bytes P, none⟩ := by
+  have hk : k = F.length := by
+    have := congrArg List.length hD
+    simp only [Verify.elemsW, List.length_map, List.length_range] at this; omega
+  have hFlen : F.length ≤ B.size / 8 := by
+    rw [← hF]; exact Nat.le_trans (List.length_filter_le _ _) (by simp [Verify.firstsOf])
+  let kx : Arr .long k := ⟨⟨.long, k, .bytes D, none⟩, rfl, rfl, by show D.size = k * 8; exact hDs⟩
+  let ly : Arr .long cl.n := ⟨{ cl with attr := none }, hlt, rfl, hlwf⟩
+  obtain ⟨P, xs, ys, hP, hxs, hys, hmap⟩ := Find.probe_find kx ly trivial hlR (by omega) hlU
+  simp only [kx, longWords, Option.some.injEq] at hxs
+  have hys' : ys = wl := by simp only [ly] at hys; rw [show longWords { cl with attr := none } = longWords cl from rfl, hwl] at hys; exact (Option.some.inj hys).symm
+  subst hxs
+  rw [hys'] at hmap
+  have hFc := Find.findColumn_long false ⟨.long, k, .bytes D, none⟩ { cl with attr := none } hlt
+  simp only [kx, ly] at hP
+  simp only [Bool.false_eq_true, false_and, ↓reduceIte, hP, Option.map_some] at hFc
+  refine ⟨P, hFc, ?_⟩
+  have hbs63 := buckets_lt (B := B) F
+  have hPn : P.size / 8 = wl.length := by
+    have := congrArg List.length hmap; simpa [Verify.elemsW] using this
+  have hPi : ∀ i (hi : i < wl.length), (Column.bitsAt P (i * 8) 8).toNat =
+      (F.map fun f => Column.bitsAt B (f * 8) 8).idxOf wl[i] := fun i hi => by
+    have := congrArg (·[i]?) hmap
+    rw [hD] at this
+    simp only [Verify.elemsW, List.map_map, List.getElem?_map, List.getElem?_range (by omega : i < P.size / 8),
+      List.getElem?_eq_getElem hi, Option.map_some, Option.some.injEq, Function.comp_apply] at this
+    exact this
+  refine ⟨P, rfl, hPn, ?_, fun i hi => ?_⟩
+  · -- the starts: `firsts` is each bucket's head
+    rw [nats_gather, nats_eq_ids (Kernel.longBytes _), longBytes_ids _ (by
+      rw [Array.toList_push, hfi]
+      intro x hx
+      rcases List.mem_append.1 hx with hx | hx
+      · obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hx
+        cases b with
+        | nil => simp
+        | cons a l =>
+          have := hbs63 a (List.mem_flatten.2 ⟨_, hb, List.mem_cons_self ..⟩)
+          simp only [List.head?_cons, Option.getD_some]; omega
+      · simp at hx; omega), Array.toList_push, hfi]
+    apply List.ext_getElem (by simp [nats_length, hPn])
+    intro i h1 h2
+    simp only [List.length_map, List.length_range] at h1 h2
+    rw [List.getElem_map, List.getElem_map, List.getElem_range, ← getElem!_pos (nats P) i h1,
+      nats_get P (by omega), hPi i h2, getElem!_pos wl i h2]
+    subst hF
+    rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
+    · rw [hnil, List.getD_eq_getElem?_getD, List.getElem?_append_right (by simp; omega)]
+      rw [List.getElem?_singleton]; split <;> rfl
+    · change Verify.bucketOf _ _ _ = _ at hb
+      rw [← hb, List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt')]
+      simp [List.getElem?_map, List.getElem?_eq_getElem hlt']
+  rw [getElem!_pos wl i hi, hPi i hi]
+  subst hF
+  rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
+  · exact Or.inl ⟨by omega, hnil⟩
+  · obtain ⟨hlen, hrow⟩ := hspan _ hlt'
+    change Verify.bucketOf _ _ _ = _ at hb
+    rw [hb] at hlen hrow
+    exact Or.inr ⟨by omega, hlen, fun p hp => hrow p hp⟩
+
 open QLean.Kernel in
 /-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column marked neither `` `s ``,
     `` `u `` nor `` `p ``, and `` `g `` only with no index built (`cell.ready = none`, so `viaIndex` scans), is grouped by `Order.group` and each left word placed among the distinct words
@@ -1342,26 +1431,33 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
     have e : (Order.distinct .i64 cr.n.toUSize B).size = ByteArray.empty.size + 8 * F.length := by
       rw [← h]; unfold Order.distinct; dsimp only; rw [hm, show Order.firsts .i64 (B.size / 8) B = F from hF]; rfl
     rw [e]; simp [Nat.mul_comm]
-  have hFlen : F.length ≤ B.size / 8 := by
-    rw [← hF]; exact Nat.le_trans (List.length_filter_le _ _) (by simp [Verify.firstsOf])
-  let kx : Arr .long ((Order.distinct .i64 cr.n.toUSize B).size / 8) :=
-    ⟨⟨.long, _, .bytes (Order.distinct .i64 cr.n.toUSize B), none⟩, rfl, rfl, by
-      show _ = _ * 8; rw [hks, Nat.mul_div_cancel _ (by decide)]⟩
-  let ly : Arr .long cl.n := ⟨{ cl with attr := none }, hlt, rfl, hlwf⟩
-  obtain ⟨P, xs, ys, hP, hxs, hys, hmap⟩ := Find.probe_find kx ly trivial hlR
-    (by rw [hks, Nat.mul_div_cancel _ (by decide)]; omega) hlU
-  simp only [kx, longWords, Option.some.injEq] at hxs
-  have hys' : ys = wl := by simp only [ly] at hys; rw [show longWords { cl with attr := none } = longWords cl from rfl, hwl] at hys; exact (Option.some.inj hys).symm
-  subst hxs
-  rw [hys'] at hmap
+  have hflat := buckets_length (Order.keyAt .i64 B) (B.size / 8)
+  rw [hF] at hflat
+  have hbs63 : ∀ r ∈ (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8))).flatten, r < B.size / 8 :=
+    buckets_lt F
+  obtain ⟨-, hsz, hspan⟩ := groups_of_buckets (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)))
+    (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega)
+    (gs := Eval.Groups.of (Order.group .i64 cr.n.toUSize B).2.1 ((Order.group .i64 cr.n.toUSize B).2.2.map (· / 8)))
+    (by rw [hgroup, hbs])
+  have hne : ∀ b ∈ F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)), b ≠ [] := fun b hb => by
+    obtain ⟨f, hf, rfl⟩ := List.mem_map.1 hb
+    rw [← hF] at hf
+    unfold Verify.firstsOf at hf
+    have hf' := List.mem_range.1 (List.mem_filter.1 hf).1
+    exact List.ne_nil_of_mem (show f ∈ Verify.bucketOf _ _ f from List.mem_filter.2 ⟨List.mem_range.2 hf', by simp⟩)
+  have hfi := firsts_of_buckets _ (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega) hne
+    (gs := Eval.Groups.of (Order.group .i64 cr.n.toUSize B).2.1 ((Order.group .i64 cr.n.toUSize B).2.2.map (· / 8)))
+    (by rw [hgroup, hbs])
+  obtain ⟨P, hFc, hKA⟩ := ofKey_answers (k := (Order.distinct .i64 cr.n.toUSize B).size / 8) hlt hlU hlwf hlR hwl
+    (by omega) (by omega) hF hkw (by rw [hks, Nat.mul_div_cancel _ (by decide)])
+    (by simpa using hsz) (fun g hg => by
+      obtain ⟨hlo, hhi, hrow⟩ := hspan g (by simpa using hg)
+      simp only [List.getElem_map] at hlo hhi hrow
+      exact ⟨by rw [hhi, hlo]; omega, fun p hp => by rw [hrow p hp, hlo]⟩) hfi
   -- `keyMatch` at an unmarked right column is `grouped`
   have hK : Eval.keyMatch #[.vector cr] nr #[.vector cl] nl =
       (Eval.Groups.of (Order.group .i64 cr.n.toUSize B).2.1 ((Order.group .i64 cr.n.toUSize B).2.2.map (· / 8)),
         ⟨.long, P.size / 8, .bytes P, none⟩) := by
-    have hFc := Find.findColumn_long false ⟨.long, (Order.distinct .i64 cr.n.toUSize B).size / 8, .bytes (Order.distinct .i64 cr.n.toUSize B), none⟩
-      { cl with attr := none } hlt
-    simp only [kx, ly] at hP
-    simp only [Bool.false_eq_true, false_and, ↓reduceIte, hP, Option.map_some] at hFc
     unfold Eval.keyMatch
     rw [keyColumns_long cr cl hrt hlt]
     have hg1 : (Order.group .i64 cr.n.toUSize B).1 = Order.distinct .i64 cr.n.toUSize B := by rw [hgroup]
@@ -1375,69 +1471,7 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
       by_cases ha : a = 4
       · subst ha; simp [QValue.marking, Eval.viaIndex, h4 rfl]
       · simp [QValue.marking, h1, h2, h3, ha]
-  rw [hK, hgroup, hbs]
-  dsimp only
-  have hflat := buckets_length (Order.keyAt .i64 B) (B.size / 8)
-  rw [hF] at hflat
-  have hbs63 : ∀ r ∈ (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8))).flatten, r < B.size / 8 :=
-    fun r hr => by
-      obtain ⟨l, hl, hrl⟩ := List.mem_flatten.1 hr
-      obtain ⟨f, -, rfl⟩ := List.mem_map.1 hl
-      exact List.mem_range.1 (List.mem_filter.1 hrl).1
-  obtain ⟨-, hsz, hspan⟩ := groups_of_buckets (F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)))
-    (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega) rfl
-  have hPn : P.size / 8 = wl.length := by
-    have := congrArg List.length hmap; simpa [Verify.elemsW] using this
-  have hPi : ∀ i (hi : i < wl.length), (Column.bitsAt P (i * 8) 8).toNat =
-      (F.map fun f => Column.bitsAt B (f * 8) 8).idxOf wl[i] := fun i hi => by
-    have := congrArg (·[i]?) hmap
-    rw [hkw] at this
-    simp only [Verify.elemsW, List.map_map, List.getElem?_map, List.getElem?_range (by omega : i < P.size / 8),
-      List.getElem?_eq_getElem hi, Option.map_some, Option.some.injEq, Function.comp_apply] at this
-    exact this
-  refine ⟨P, rfl, hPn, ?_, fun i hi => ?_⟩
-  · -- the starts: each bucket holds its own first occurrence, so `firsts` is each bucket's head
-    have hne : ∀ b ∈ F.map (Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8)), b ≠ [] := fun b hb => by
-      obtain ⟨f, hf, rfl⟩ := List.mem_map.1 hb
-      rw [← hF] at hf
-      unfold Verify.firstsOf at hf
-      have hf' := List.mem_range.1 (List.mem_filter.1 hf).1
-      exact List.ne_nil_of_mem (show f ∈ Verify.bucketOf _ _ f from List.mem_filter.2 ⟨List.mem_range.2 hf', by simp⟩)
-    have hfi := firsts_of_buckets _ (fun r hr => by have := hbs63 r hr; omega) (by rw [hflat]; omega) hne rfl
-    rw [nats_gather, nats_eq_ids (Kernel.longBytes _), longBytes_ids _ (by
-      rw [Array.toList_push, hfi]
-      intro x hx
-      rcases List.mem_append.1 hx with hx | hx
-      · obtain ⟨b, hb, rfl⟩ := List.mem_map.1 hx
-        cases b with
-        | nil => simp
-        | cons a l =>
-          have := hbs63 a (List.mem_flatten.2 ⟨_, hb, List.mem_cons_self ..⟩)
-          simp only [List.head?_cons, Option.getD_some]; omega
-      · simp at hx; omega), Array.toList_push, hfi]
-    apply List.ext_getElem (by simp [nats_length, hPn])
-    intro i h1 h2
-    simp only [List.length_map, List.length_range] at h1 h2
-    rw [List.getElem_map, List.getElem_map, List.getElem_range, ← getElem!_pos (nats P) i h1,
-      nats_get P (by omega), hPi i h2, getElem!_pos wl i h2, ← hBw]
-    subst hF
-    rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
-    · rw [hnil, List.getD_eq_getElem?_getD, List.getElem?_append_right (by simp; omega)]
-      rw [List.getElem?_singleton]; split <;> rfl
-    · change Verify.bucketOf _ _ _ = _ at hb
-      rw [← hb, List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt')]
-      simp [List.getElem?_map, List.getElem?_eq_getElem hlt']
-  rw [getElem!_pos wl i hi, ← hBw, hPi i hi]
-  simp only [List.length_map] at hsz
-  subst hF
-  rcases bucket_idxOf B wl[i] with ⟨hge, hnil⟩ | ⟨hlt', hb⟩
-  · exact Or.inl ⟨by omega, hnil⟩
-  · obtain ⟨hlo, hhi, hrow⟩ := hspan _ (by simpa using hlt')
-    simp only [List.getElem_map] at hlo hhi hrow
-    change Verify.bucketOf _ _ _ = _ at hb
-    simp only [hb] at hhi hrow
-    refine Or.inr ⟨by omega, by rw [hhi, hlo]; omega, fun p hp => ?_⟩
-    rw [hrow p hp, hlo]
+  rw [hK, ← hBw]; exact hKA
 
 /-- **`aj` at one long key column per side is `ajSpec`** of the two sides' key words: `aj_groups` with its
     group hypothesis answered by `keyMatch_grouped`. The right key column carries no `s#`/`u#`/`p#`/`g#` mark;
