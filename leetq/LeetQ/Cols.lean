@@ -117,17 +117,17 @@ def alpBitsCol (vs : List UInt64) : ValCol UInt64 :=
 def alpCol (vs : List Float) : ValCol Float :=
   let c := alpBitsCol (vs.map Float.toBits); ⟨fun i => Float.ofBits (c.get i)⟩
 
-/-- **The ALP column reads back its bits**, from qlean's `alpBits_alpEncode64`. The bound is the
+/-- **The ALP column reads back its bits**, from qlean's `alpBits_alpEncodeAt`. The bound is the
 encoder's: a block start is a 32-bit offset. -/
 theorem alpBitsCol_get (vs : List UInt64) (hn : vs.length < 2 ^ 32) (i : Nat) (hi : i < vs.length) :
     (alpBitsCol vs).get i = vs[i] := by
   have hs : (enc 8 (vs.map UInt64.toInt64)).size / 8 = vs.length := by
     rw [enc_size (by decide), List.length_map, Nat.mul_div_cancel_left _ (by decide)]
-  have e := alpBits_alpEncode64 (enc 8 (vs.map UInt64.toInt64)) (hs ▸ hn) i (hs ▸ hi)
+  have e := (alpBits_alpEncodeAt false 8 rfl (enc 8 (vs.map UInt64.toInt64)) (hs ▸ hn)).2 i (hs ▸ hi)
   have d := atW_enc (by decide) (vs.map UInt64.toInt64) i (by simpa using hi) (fits_eight _)
   rw [atW_eight, List.getElem_map] at d
   show alpBits _ _ _ _ i = _
-  rw [e]
+  refine e.trans ?_
   simpa using congrArg Int64.toUInt64 d
 
 /-- **`rep(ofList(l)) = rel(l)` for an ALP value column**, the values carried as their IEEE bits, so

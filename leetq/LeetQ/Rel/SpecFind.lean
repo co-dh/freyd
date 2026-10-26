@@ -1336,7 +1336,7 @@ theorem concatFoR_words {w n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (hw : 1 < w �
         simp [concatBytes, ByteArray.empty_append]]
       have hX : (Coc.decode w.toUSize m0 p0 n0.toUSize ++ Coc.decode w.toUSize m1 p1 n1.toUSize).size / w = n0 + n1 := by
         rw [ByteArray.size_append, d0s, d1s, ← Nat.mul_add, Nat.mul_div_cancel_left _ hw0.1]
-      rw [← hX, encode_words hw _ (by rw [hX]; exact hn), Struct.elemsW_append w hw0.1 _ _ (by rw [d0s]; simp),
+      rw [← hX, encode_words hw _ (by rw [hX]; exact hn), Verify.elemsW_append w hw0.1 _ _ (by rw [d0s]; simp),
         d0w, d1w, List.map_append]
 
 /-- `concatFoR`'s answer at width `w` lists the parts' cut words in turn, through either form `answer` gives it. -/
