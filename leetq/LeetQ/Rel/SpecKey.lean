@@ -786,6 +786,148 @@ theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
       simp [hfill, Nat.toUInt64_eq, hr']
       exact fun e => absurd e (hr' ▸ hne)
 
+/-! ## `keyMatch`'s `grouped` path: the right's buckets, and the left's `?` into its distinct words
+
+  A right key column no mark claims takes `grouped`: `Kernel.groupColumn` answers `Order.group` — the first
+  occurrences' words, the buckets laid end to end, their byte bounds — and `findColumn` places each left
+  word among those words. The bucket a left word lands on is its `Struct.group`. -/
+
+open QLean.Kernel in
+/-- **The bucket at a needle's place among the first occurrences is the needle's `Struct.group`**; a needle
+    past them all has an empty group. -/
+theorem bucket_idxOf (B : ByteArray) (x : UInt64) :
+    ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).length ≤
+        ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8).idxOf x ∧
+      Struct.group (Verify.elemsW 8 B) x = []) ∨
+    ∃ h : ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8).idxOf x <
+        (Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).length,
+      Order.bucket .i64 (B.size / 8) B ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8))[
+        ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8).idxOf x]'h) =
+        Struct.group (Verify.elemsW 8 B) x := by
+  have hw : ∀ i, i < B.size / 8 → (Verify.elemsW 8 B)[i]! = Column.bitsAt B (i * 8) 8 := fun i hi => by
+    rw [getElem!_pos _ i (by simp [Verify.elemsW]; omega)]; simp [Verify.elemsW]
+  have hlen : (Verify.elemsW 8 B).length = B.size / 8 := by simp [Verify.elemsW]
+  have hkey : ∀ i j, Order.keyAt .i64 B i = Order.keyAt .i64 B j ↔
+      Column.bitsAt B (i * 8) 8 = Column.bitsAt B (j * 8) 8 := fun i j => Verify.keyAt_eq_iff (by simp) B i j
+  unfold Struct.group
+  rw [hlen]
+  by_cases hg : ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8).idxOf x <
+      (Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).length
+  · right
+    refine ⟨hg, ?_⟩
+    have hx : ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8)[
+        ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8).idxOf x]'(by
+          simpa using hg) = x := by
+      have hlt : List.findIdx (fun y => y == x) ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map
+          fun f => Column.bitsAt B (f * 8) 8) < ((Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map
+          fun f => Column.bitsAt B (f * 8) 8).length := by rw [List.length_map]; exact hg
+      exact beq_iff_eq.1 (List.findIdx_getElem (w := hlt))
+    rw [List.getElem_map] at hx
+    unfold Order.bucket
+    apply List.filter_congr
+    intro i hi
+    rw [hw i (List.mem_range.1 hi)]
+    apply Bool.eq_iff_iff.2
+    rw [beq_iff_eq, beq_iff_eq, hkey, hx]
+  · left
+    refine ⟨by omega, List.filter_eq_nil_iff.2 fun i hi e => hg ?_⟩
+    have hi := List.mem_range.1 hi
+    rw [hw i hi, beq_iff_eq] at e
+    obtain ⟨f, hf, ef⟩ := Verify.exists_first (g := Order.keyAt .i64 B) hi
+    have hm : x ∈ (Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8)).map fun f => Column.bitsAt B (f * 8) 8 :=
+      List.mem_map.2 ⟨f, hf, by rw [← e]; exact (hkey f i).1 ef⟩
+    simpa using (Verify.idxOf_lt_length x _).2 hm
+
+/-- `Order.bounds`' fold from any start: the start's entries, then `8·` each running total past `pos`. -/
+theorem bounds_fold (lens : List Nat) : ∀ (acc : Array Nat) (pos : Nat),
+    (lens.foldl (fun (x : Array Nat × Nat) len => (x.1.push (8 * (x.2 + len)), x.2 + len)) (acc, pos)).1.toList =
+      acc.toList ++ (List.range lens.length).map fun k => 8 * (pos + (lens.take (k + 1)).sum) := by
+  induction lens with
+  | nil => intro acc pos; simp
+  | cons len ls ih =>
+    intro acc pos
+    rw [List.foldl_cons]
+    refine (ih (acc.push (8 * (pos + len))) (pos + len)).trans ?_
+    simp [List.range_succ_eq_map, List.take_succ_cons, Nat.add_assoc]
+
+/-- `Order.bounds` cut down to element counts: entry `k` is the lengths before bucket `k`. -/
+theorem bounds_div (lens : List Nat) :
+    ((Kernel.Order.bounds lens).map (· / 8)).toList = (List.range (lens.length + 1)).map fun k => (lens.take k).sum := by
+  have e : (Kernel.Order.bounds lens).toList =
+      #[0].toList ++ (List.range lens.length).map fun k => 8 * (0 + (lens.take (k + 1)).sum) := bounds_fold lens #[0] 0
+  rw [Array.toList_map, e]
+  simp [List.range_succ_eq_map, Function.comp_def]
+
+/-- `longBytes` reads back, eight bytes a long, as the numbers it was built from. -/
+theorem longBytes_ids (a : Array Nat) (h : ∀ x ∈ a.toList, x < 2 ^ 64) :
+    Verify.ids (Kernel.longBytes a) = a.toList := by
+  have : Kernel.longBytes a = Kernel.Order.indices a.toList := by
+    rw [Kernel.longBytes, ← Array.foldl_toList]; rfl
+  rw [this]; exact Verify.ids_indices _ h
+
+/-- Position `p` of bucket `g` sits, in the buckets laid end to end, past the lengths before it. -/
+theorem flatten_getElem? (bs : List (List Nat)) : ∀ g (hg : g < bs.length) p, p < bs[g].length →
+    bs.flatten[((bs.take g).map List.length).sum + p]? = bs[g][p]? := by
+  induction bs with
+  | nil => intro g hg; simp at hg
+  | cons l ls ih =>
+    intro g hg p hp
+    cases g with
+    | zero =>
+      simp only [List.take_zero, List.map_nil, List.sum_nil, Nat.zero_add, List.flatten_cons,
+        List.getElem_cons_zero] at hp ⊢
+      rw [List.getElem?_append_left hp]
+    | succ g =>
+      simp only [List.take_succ_cons, List.map_cons, List.sum_cons, List.flatten_cons,
+        List.getElem_cons_succ] at hp ⊢
+      rw [Nat.add_assoc, List.getElem?_append_right (by omega), Nat.add_sub_cancel_left]
+      exact ih g (by simpa using hg) p hp
+
+/-- The lengths of the first `k` buckets are at most all of them laid end to end. -/
+theorem take_sum_le (bs : List (List Nat)) (k : Nat) :
+    ((bs.map List.length).take k).sum ≤ bs.flatten.length := by
+  rw [← List.map_take, ← List.length_flatten]
+  have e : bs.flatten = (bs.take k).flatten ++ (bs.drop k).flatten := by
+    rw [← List.flatten_append, List.take_append_drop]
+  rw [e, List.length_append]; omega
+
+/-- A strictly ascending list from `0` to its length less one is `0, 1, …`. -/
+theorem ids_identity (L : List Nat) (hlt : ∀ i (h : i + 1 < L.length), L[i] < L[i + 1])
+    (hl : ∀ h : 0 < L.length, L[L.length - 1] = L.length - 1) :
+    ∀ q (h : q < L.length), L[q] = q := by
+  have ge : ∀ q (h : q < L.length), q ≤ L[q] := by
+    intro q
+    induction q with
+    | zero => intro _; omega
+    | succ q ih => intro h; have := hlt q h; have := ih (by omega); omega
+  have le : ∀ d q (h : q < L.length), q + d = L.length - 1 → L[q] + d ≤ L[L.length - 1] := by
+    intro d
+    induction d with
+    | zero => intro q h e; obtain rfl : q = L.length - 1 := by omega
+              simp
+    | succ d ih => intro q h e; have := hlt q (by omega); have := ih (q + 1) (by omega) (by omega); omega
+  intro q h
+  have := ge q h; have := le (L.length - 1 - q) q h (by omega); have := hl (by omega); omega
+
+open QLean.Kernel in
+/-- `Order.ascending`, strict and at `i64`, over longs below `2^63`: each long is below the next. -/
+theorem ascending_ids {b : ByteArray} {L : List Nat} (hL : Verify.ids b = L) (h63 : ∀ x ∈ L, x < 2 ^ 63)
+    (ha : Order.ascending .i64 false true (b.size / 8).toUSize b = true) (hU : b.size / 8 < USize.size) :
+    ∀ i (h : i + 1 < L.length), L[i] < L[i + 1] := by
+  intro i h
+  have hlen : L.length = b.size / 8 := by rw [← hL]; simp [Verify.ids]
+  unfold Order.ascending at ha
+  have := List.all_eq_true.1 ha i (List.mem_range.2 (by
+    simp only [USize.toNat_ofNat_of_lt' hU, Scan.Kind.avail, Scan.Kind.width]; omega))
+  simp only [Bool.false_eq_true, ↓reduceIte, decide_eq_true_eq, Order.keyAt, Order.rank, Scan.Kind.bitsAt,
+    Scan.Kind.width] at this
+  rw [UInt64.lt_iff_toNat_lt, UInt64.toNat_xor, UInt64.toNat_xor] at this
+  have e1 := Verify.ids_get hL (j := i) (by omega)
+  have e2 := Verify.ids_get hL (j := i + 1) h
+  rw [e1, e2, show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl,
+    xor_two_pow_of_lt (h63 _ (List.getElem_mem _)), xor_two_pow_of_lt (h63 _ (List.getElem_mem _))] at this
+  omega
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
