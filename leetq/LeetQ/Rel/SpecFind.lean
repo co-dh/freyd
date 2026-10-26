@@ -895,6 +895,27 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
 
+/-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
+
+/-- `miss(R, n) ≫ miss(S, e) = miss(R ≫ S, e)` when `R` lands where `S` is defined and `n` is not: the
+    gather/fill branch of `align`, `R` the found position of a key, `n` the not-found position. -/
+theorem miss_comp {A B C : RelSet.{0}} (R : A ⟶ B) (S : B ⟶ C) (n : B.carrier) (e : C.carrier)
+    (hR : ∀ a b, R a b → ∃ c, S b c) (hn : ¬ ∃ c, S n c) : miss R n ≫ miss S e = miss (R ≫ S) e :=
+  hom_ext fun a c => by
+    change (∃ b, miss R n a b ∧ miss S e b c) ↔ miss (R ≫ S) e a c
+    simp only [miss_iff]
+    constructor
+    · rintro ⟨b, hb | ⟨hnone, rfl⟩, hc | ⟨hnc, rfl⟩⟩
+      · exact Or.inl ⟨b, hb, hc⟩
+      · exact absurd (hR a b hb) hnc
+      · exact absurd ⟨c, hc⟩ hn
+      · exact Or.inr ⟨fun ⟨_, b', hb', _⟩ => hnone ⟨b', hb'⟩, rfl⟩
+    · rintro (⟨b, hb, hc⟩ | ⟨hnone, rfl⟩)
+      · exact ⟨b, Or.inl hb, Or.inl hc⟩
+      · refine ⟨n, Or.inr ⟨fun ⟨b, hb⟩ => ?_, rfl⟩, Or.inr ⟨hn, rfl⟩⟩
+        obtain ⟨c', hc'⟩ := hR a b hb
+        exact hnone ⟨c', b, hb, hc'⟩
+
 /-! ### Dicts with matching keys: the key kept, the verb on the values -/
 
 /-- `Lift.ofVerb` keeps the verb itself for the rows both sides have. -/
@@ -939,6 +960,38 @@ theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel
       V.rel = rpair x.val.rel (h ▸ y.val).rel ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
   let ⟨V, hV, hR⟩ := dyadic_match ht hv h hm
   ⟨V, hR, hlaw V hV, val_rel (hlaw V hV)⟩
+
+/-! ### An atom and a dict: the key kept, the verb on the values -/
+
+/-- `Ew.keyed x f` answers `f` of `x`'s values under `x`'s key. -/
+theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
+    (hv : Ew.keyed x f = .ok R) : ∃ V, f x.val = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
+  unfold Ew.keyed at hv
+  simp only [bind, Except.bind, pure, Except.pure] at hv
+  split at hv
+  · cases hv
+  · rename_i V hV
+    exact ⟨V, hV, (Except.ok.inj hv).symm⟩
+
+/-- `a f d = ⟨!a, d⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
+    (`atomVal_spec_long`, `atomVal_spec_long_foR`, …) read through `keyed_ok` and `atomVal_rel`. -/
+theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.atomVal v rt a · ht) = .ok R)
+    (hlaw : ∀ V, Ew.atomVal v rt a x.val ht = .ok V → x.val.toList.mapM (fun b => elem v he a b) = .ok V.toList) :
+    ∃ V, R = ⟨x.n, x.key, V⟩ ∧
+      V.rel = rpair (cst a) x.val.rel ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
+  let ⟨V, hV, hR⟩ := keyed_ok hv
+  ⟨V, hR, atomVal_rel (hlaw V hV)⟩
+
+/-- `d f a = ⟨d, !a⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
+    (`valAtom_spec_long`, `valAtom_spec_long_foR`, …) read through `keyed_ok` and `valAtom_rel`. -/
+theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
+    (hu : u ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.valAtom v rt · a hu) = .ok R)
+    (hlaw : ∀ V, Ew.valAtom v rt x.val a hu = .ok V → x.val.toList.mapM (fun b => elem v he b a) = .ok V.toList) :
+    ∃ V, R = ⟨x.n, x.key, V⟩ ∧
+      V.rel = rpair x.val.rel (cst a) ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
+  let ⟨V, hV, hR⟩ := keyed_ok hv
+  ⟨V, hR, valAtom_rel (hlaw V hV)⟩
 
 /-- The column `Ew.mon` answers is the one `monColumn` builds. -/
 theorem mon_c {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Column}
@@ -1932,6 +1985,17 @@ theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat}
   · rintro ⟨_, ⟨rfl, hj⟩, _, rfl, rfl⟩
     exact ⟨_, (key j _).2 ⟨hj, rfl⟩, rfl⟩
 
+-- The value laws `atomDict_rel`/`dictAtom_rel` take, filled by the encoding's own law.
+example {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op) (h : Eval.ewType v .long .long = some .long)
+    {k : Int64} {x : Rel .symbol .long} {R : Rel .symbol .long} {b : ByteArray} (hb : x.val.c.enc = .bytes b)
+    (hn : x.n < USize.size) (hv : Ew.keyed x (Ew.atomVal v .long (t := .long) k · (by decide)) = .ok R) :=
+  atomDict_rel (by decide) h hv fun _ hV => atomVal_spec_long hop h hb hn hV
+
+example {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op) (h : Eval.ewType v .long .long = some .long)
+    {k : Int64} {x : Rel .symbol .long} {R : Rel .symbol .long} {md pk : ByteArray} (ha : x.val.c.enc = .foR md pk)
+    (hn : x.n < USize.size) (hv : Ew.keyed x (Ew.valAtom v .long (u := .long) · k (by decide)) = .ok R) :=
+  dictAtom_rel (by decide) h hv fun _ hV => valAtom_spec_long_foR hop h ha hn hV
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
@@ -2109,5 +2173,9 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms align_match
 #print axioms dyadic_match
 #print axioms dyadic_rel
+#print axioms keyed_ok
+#print axioms miss_comp
+#print axioms atomDict_rel
+#print axioms dictAtom_rel
 
 end LeetQ.Rel.Verb

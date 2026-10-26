@@ -194,6 +194,12 @@ def Ew.dyadic (v : Prim.Dyadic) (rt : QAtomicType) {s : QAtomicType} (x : Rel s 
     (y : Rel s u) (ht : t ≠ .general := by first | decide | assumption) : Except String (Rel s rt) := do
   Ew.align (← Lift.ofVerb v t u) rt x y
 
+/-- A verb on a dict's values alone, the key kept: `a f d` is `Ew.keyed d (Ew.atomVal v rt a ·)`, `d f a` is
+    `Ew.keyed d (Ew.valAtom v rt · a)`, as q's atom-dict verbs map the values. -/
+def Ew.keyed {s rt : QAtomicType} (x : Rel s t) (f : Arr t x.n → Except String (Arr rt x.n)) :
+    Except String (Rel s rt) := do
+  return ⟨x.n, x.key, ← f x.val⟩
+
 /-! ## Spec over `toList` -/
 
 /-- The aligned rows of §4 (c): `x`'s keys in order, then `y`'s keys `x` lacks; each side's value where
