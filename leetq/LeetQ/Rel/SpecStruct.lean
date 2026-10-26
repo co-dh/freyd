@@ -2774,4 +2774,250 @@ theorem amend_rel {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr .lo
 #print axioms binSpec_sorted
 #print axioms ajSpec_sorted
 
+/-! ## §11.3 `like`, `ss`: the pattern predicate `p?` -/
+
+section LikeSs
+
+open QLean.Kernel
+
+/-- `x like p` lists `p?` of each symbol's bytes (`likeSyms`, then `maskByIds` on an interned column).
+    Restrictions: `x` readable (`Find.Readable`). -/
+theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boolean nx}
+    (hx : Find.Readable .symbol x.c) (h : Struct.like x p = .ok r) :
+    r.toList = x.toList.map fun s => Struct.likeP p s.toUTF8 := by
+  have hX := Arr.toList_sym x hx.2
+  have hk : ∀ i (hi : i < x.toList.length), x.toList[i].toUTF8.data.toList =
+      (Verify.symsOf x.c)[i]'(by rw [← hX, List.length_map]; exact hi) := fun i hi => by
+    have e := List.getElem_of_eq hX (by rw [List.length_map]; exact hi)
+    rw [List.getElem_map] at e; exact e
+  have hn : x.c.n = nx := x.wf.2.1
+  have hw := x.wf.2.2
+  cases hp : parsePat p.toByteArray with
+  | error e =>
+    cases he : x.c.enc <;> simp [Struct.like, he, likeSyms, hp, bind, Except.bind, pure, Except.pure] at h
+  | ok its =>
+    have hL : ∀ s : String, Struct.likeP p s.toUTF8 = patMatch its s.toUTF8 (its.size + s.toUTF8.size + 1) 0 0 :=
+      fun s => by simp only [Struct.likeP, show p.toUTF8 = p.toByteArray from rfl, hp]
+    have hp' : parsePat p.toUTF8 = .ok its := hp
+    cases he : x.c.enc with
+    | syms b o =>
+      have hc := x.c_eq he
+      simp only [Struct.like, he, likeSyms, hp', bind, Except.bind, pure, Except.pure] at h
+      rw [hc] at hw; simp only [Column.WF] at hw
+      rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
+      refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
+        fun i h1 h2 => ?_
+      have hi : i < nx := by simpa using h1
+      have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
+      have e := hk i hi'
+      simp only [hc, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
+      have hb : x.toList[i].toUTF8 = Column.symKey b o i := ByteArray.ext (Array.ext' e)
+      simp only [List.getElem_map, List.getElem_range, hL, hb]
+      exact Verify.bitAt_packBits_range _ _ (by omega)
+    | enum d dof ids =>
+      have hc := x.c_eq he
+      have hs := hx.1; rw [hc] at hs
+      obtain ⟨hn', hd, -, hid, -⟩ := hs
+      simp only [Struct.like, he, likeSyms, hp', Option.map_some, bind, Except.bind, pure, Except.pure] at h
+      rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
+      refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
+        fun i h1 h2 => ?_
+      have hi : i < nx := by simpa using h1
+      have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
+      have e := hk i hi'
+      simp only [hc, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
+      have hb : x.toList[i].toUTF8 = Column.symKey d dof (Column.idAt ids (Column.idWidth dof) i) :=
+        ByteArray.ext (Array.ext' e)
+      simp only [List.getElem_map, List.getElem_range, hL, hb]
+      rw [maskByIds, hn, Verify.toUSize_toNat hn', Verify.toUSize_toNat hd, Verify.idWidth_toNat,
+        Verify.bitAt_packBits_range _ _ hi, decide_eq_true (hid i hi), Bool.true_and,
+        Verify.bitAt_packBits_range _ _ (hid i hi)]
+    | _ => all_goals simp [Struct.like, he, bind, Except.bind] at h
+
+/-- `x like p = x ≫ p?`, `p? = graph(likeP p)` on each symbol's bytes. Restrictions as `like_toList`'s. -/
+theorem like_rel {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boolean nx}
+    (hx : Find.Readable .symbol x.c) (h : Struct.like x p = .ok r) :
+    r.rel = x.rel ≫ graph fun s : String => Struct.likeP p s.toUTF8 :=
+  (congrArg ix (like_toList hx h)).trans (ix_map ..)
+
+/-- The greedy scan `fixedHits` runs: at `i`, take `i` when it is past the last match (`next ≤ i`) and
+    `P i`; then `next = i + w`. What it has taken from `range k` is the set `Starts` describes. -/
+theorem greedy_fold (P : Nat → Bool) (w : Nat) (f : List Nat × Nat → Nat → List Nat × Nat)
+    (hf : ∀ acc next i, f (acc, next) i = if next ≤ i ∧ P i = true then (i :: acc, i + w) else (acc, next))
+    (k : Nat) :
+    ((List.range k).foldl f ([], 0)).1.Pairwise (· > ·) ∧ (∀ j ∈ ((List.range k).foldl f ([], 0)).1, j < k) ∧
+      ((List.range k).foldl f ([], 0)).2 = ((((List.range k).foldl f ([], 0)).1.head?.map (· + w)).getD 0) ∧
+      ∀ i, i ∈ ((List.range k).foldl f ([], 0)).1 ↔
+        i < k ∧ P i = true ∧ ∀ j ∈ ((List.range k).foldl f ([], 0)).1, j < i → j + w ≤ i := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    generalize (List.range k).foldl f ([], 0) = st at ih
+    obtain ⟨acc, nxt⟩ := st
+    obtain ⟨hpw, hlt, hnx, hm⟩ := ih
+    simp only at hpw hlt hnx hm
+    -- every taken `j` ends its match by `nxt`
+    have hend : ∀ j ∈ acc, j + w ≤ nxt := by
+      intro j hj
+      cases acc with
+      | nil => simp at hj
+      | cons a as =>
+        simp only [List.head?_cons, Option.map_some, Option.getD_some] at hnx
+        rcases List.mem_cons.1 hj with rfl | hj
+        · omega
+        · have := List.rel_of_pairwise_cons hpw hj; omega
+    rw [hf]
+    by_cases hc : nxt ≤ k ∧ P k = true
+    · rw [if_pos hc]
+      refine ⟨List.Pairwise.cons (fun j hj => hlt j hj) hpw, fun j hj => ?_, by simp, fun i => ?_⟩
+      · rcases List.mem_cons.1 hj with rfl | hj
+        · omega
+        · have := hlt j hj; omega
+      · by_cases hik : i = k
+        · subst hik
+          simp only [List.mem_cons, true_or, true_iff]
+          refine ⟨by omega, hc.2, fun j hj hji => ?_⟩
+          rcases hj with rfl | hj
+          · omega
+          · have := hend j hj; omega
+        · simp only [List.mem_cons, hik, false_or]; rw [hm i]
+          constructor
+          · rintro ⟨h1, h2, h3⟩
+            exact ⟨by omega, h2, fun j hj hji => by
+              rcases hj with rfl | hj
+              · have := hlt i (by rw [hm i]; exact ⟨h1, h2, h3⟩); omega
+              · exact h3 j hj hji⟩
+          · rintro ⟨h1, h2, h3⟩
+            by_cases hik' : i < k
+            · exact ⟨hik', h2, fun j hj hji => h3 j (Or.inr hj) hji⟩
+            · exfalso; omega
+    · rw [if_neg hc]
+      refine ⟨hpw, fun j hj => by have := hlt j hj; omega, hnx, fun i => ?_⟩
+      rw [hm i]
+      constructor
+      · rintro ⟨h1, h2, h3⟩; exact ⟨by omega, h2, h3⟩
+      · rintro ⟨h1, h2, h3⟩
+        by_cases hik : i < k
+        · exact ⟨hik, h2, h3⟩
+        · exfalso
+          have hik : i = k := by omega
+          subst hik
+          apply hc; refine ⟨?_, h2⟩
+          cases acc with
+          | nil => simp at hnx; omega
+          | cons a as =>
+            simp only [List.head?_cons, Option.map_some, Option.getD_some] at hnx
+            have := h3 a (List.mem_cons_self ..) (hlt a (List.mem_cons_self ..)); omega
+
+/-- A `.bytes` char column lists its bytes. -/
+theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : x.c.enc = .bytes b) :
+    x.toList = b.data.toList := by
+  have hw := x.wf.2.2; have hn : x.c.n = m := x.wf.2.1
+  rw [x.c_eq hc] at hw; simp only [Column.WF, QAtomicType.width] at hw
+  refine List.ext_getElem (by rw [Arr.length_toList]; simp; omega) fun i h1 h2 => ?_
+  have hi : i < x.c.n := by rw [Arr.length_toList] at h1; omega
+  rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
+  simp only [Column.get, if_pos hi, x.wf.1, hc, QAtomicType.width]
+  simp [Carrier.of?, Column.atomOfBits, Verify.bitsAt_one, Array.getElem_toList]
+  rw [getElem?_pos b i (show i < b.data.size by simpa using h2)]; rfl
+
+/-- `x ss p`: the positions `enum(S)` of the set `S` of non-overlapping starts of `p`'s items in `x`
+    (`Struct.Starts`), read as longs — the same shape as `where_rel`'s `&x = enum(dom(x ≫ 1b°))`, the
+    mask being "a fit not covered by an earlier start". `S` exists and every `S` that `Starts` describes
+    gives the answer. Restrictions: a dense (`.bytes`) char column. -/
+theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
+    (he : x.c.enc = .bytes b) (h : Struct.ss x p = .ok ⟨nr, r⟩) :
+    ∃ its, parsePat p.toUTF8 = .ok its ∧ (∃ S, Struct.Starts its x.toList S) ∧
+      ∀ S, Struct.Starts its x.toList S → (∃ ys, enum S ys) ∧
+        ∀ ys, enum S ys → r.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
+  have hX := Arr.toList_char_bytes x he
+  have hd : Find.dense "x ss p" .char x.c = .ok b := by simp only [Find.dense, Column.bytesOf, x.c_eq he]
+  unfold Struct.ss at h; rw [hd] at h; simp only [bind, Except.bind] at h
+  cases hp : parsePat p.toByteArray with
+  | error e =>
+    have hn : fixedHits p.toUTF8 b = none := by
+      rw [fixedHits]; simp only [fixedItems, Bool.false_and, Bool.false_eq_true, ↓reduceIte,
+        show p.toUTF8 = p.toByteArray from rfl, hp]
+    rw [hn] at h; simp at h
+  | ok its =>
+    refine ⟨its, hp, ?_⟩
+    have hfi : fixedItems false p.toUTF8 = some its := by
+      simp only [fixedItems, Bool.false_and, Bool.false_eq_true, ↓reduceIte, show p.toUTF8 = p.toByteArray from rfl, hp]
+    cases hfh : fixedHits p.toUTF8 b with
+    | none => rw [hfh] at h; simp at h
+    | some B' =>
+      have hg : ∀ j, b.get! j = b.data.toList.getD j 0 := fun j => by
+        simp [ByteArray.get!, List.getD_eq_getElem?_getD, getElem!_def]
+        cases b.data[j]? <;> rfl
+      let f : List Nat × Nat → Nat → List Nat × Nat := fun st i =>
+        if st.2 ≤ i && i + its.size ≤ b.size && (List.range its.size).all (fun k => patHit its[k]! (b.get! (i + k)))
+          then (i :: st.1, i + its.size) else (st.1, st.2)
+      have hf : ∀ acc next i, f (acc, next) i =
+          if next ≤ i ∧ Struct.fitsAt its x.toList i = true then (i :: acc, i + its.size) else (acc, next) := by
+        intro acc next i
+        have hcond : (decide (next ≤ i) && decide (i + its.size ≤ b.size) &&
+            (List.range its.size).all fun k => patHit its[k]! (b.get! (i + k))) =
+            (decide (next ≤ i) && Struct.fitsAt its x.toList i) := by
+          simp only [Struct.fitsAt, hX, hg, Bool.and_assoc, Array.length_toList, ByteArray.size]
+        show (if _ then _ else _) = _
+        rw [hcond]; simp only [Bool.and_eq_true, decide_eq_true_eq]
+      let B := (((List.range (b.size + 1)).foldl f ([], 0)).1.reverse).foldl (init := ByteArray.empty)
+        fun acc i => Column.pushBits acc (Int64.ofNat i).toUInt64 8
+      have hfe : B' = B := by
+        rw [fixedHits, hfi] at hfh; dsimp only at hfh
+        split at hfh
+        · cases hfh
+        · cases hfh; rfl
+      rw [hfh, hfe] at h; dsimp only at h
+      obtain ⟨hpw, -, -, hm⟩ := greedy_fold (Struct.fitsAt its x.toList) its.size f hf (b.size + 1)
+      generalize hA : ((List.range (b.size + 1)).foldl f ([], 0)).1 = A at hpw hm
+      have hB : B = A.reverse.foldl (init := ByteArray.empty) fun acc i => Column.pushBits acc (Int64.ofNat i).toUInt64 8 := by
+        simp only [B, hA]
+      -- the answer lists `A.reverse` as longs
+      have hrc := Find.list_c h
+      obtain ⟨hsz, -, hbits⟩ := Verify.foldl_pushBits (fun i : Nat => (Int64.ofNat i).toUInt64) 8 (by decide)
+        A.reverse ByteArray.empty
+      have hnr : nr = A.reverse.length := by
+        have := r.wf.2.1; rw [hrc] at this; simp only [Alg.longs, Alg.len] at this
+        rw [← this, hB, hsz]; simp
+      have hL : r.toList = A.reverse.map Int64.ofNat := by
+        rw [Arr.toList_long_bytes r (by rw [hrc]; rfl)]
+        refine List.ext_getElem (by simp [hnr]) fun j h1 h2 => ?_
+        simp only [List.getElem_map, List.getElem_range]
+        have := hbits j (by rw [← hnr]; simpa using h1)
+        simp only [ByteArray.size_empty, Nat.zero_add] at this
+        rw [hB, Nat.mul_comm, this, show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _),
+          UInt64.ofNat_toNat]
+        rfl
+      have hrel : r.rel = ix A.reverse ≫ graph Int64.ofNat := (congrArg ix hL).trans (ix_map ..)
+      -- `A` is the one set `Starts` describes
+      have hfit : ∀ i, Struct.fitsAt its x.toList i = true → i < b.size + 1 := fun i hi => by
+        simp only [Struct.fitsAt, Bool.and_eq_true, decide_eq_true_eq, hX, Array.length_toList] at hi
+        have := hi.1; simp only [ByteArray.size]; omega
+      have hT : Struct.Starts its x.toList (· ∈ A) := fun i => by
+        dsimp only; rw [hm i]
+        exact ⟨fun ⟨_, h2, h3⟩ => ⟨h2, fun j hj hji => h3 j hj hji⟩,
+          fun ⟨h2, h3⟩ => ⟨hfit i h2, h2, fun j hj hji => h3 j hj hji⟩⟩
+      have huniq : ∀ S, Struct.Starts its x.toList S → ∀ i, S i ↔ i ∈ A.reverse := fun S hS i => by
+        rw [List.mem_reverse]
+        refine Nat.strongRecOn (motive := fun i => S i ↔ i ∈ A) i fun i ih => ?_
+        show S i ↔ i ∈ A
+        rw [hS i, show i ∈ A ↔ Struct.fitsAt its x.toList i = true ∧ ∀ j, j ∈ A → j < i → j + its.size ≤ i from hT i]
+        exact and_congr_right fun _ => forall_congr' fun j =>
+          ⟨fun h hj hji => h ((ih j hji).2 hj) hji, fun h hj hji => h ((ih j hji).1 hj) hji⟩
+      have hpw' : A.reverse.Pairwise (· < ·) := List.pairwise_reverse.2 hpw
+      refine ⟨⟨_, hT⟩, fun S hS => ?_⟩
+      have he' := enum_ofList S A.reverse hpw' fun i => (huniq S hS i).symm
+      refine ⟨⟨_, (he' _).2 rfl⟩, fun ys hy => ?_⟩
+      obtain rfl := (he' ys).1 hy
+      rw [CL.toList_ofList]; exact hrel
+
+end LikeSs
+
+#print axioms like_toList
+#print axioms like_rel
+#print axioms greedy_fold
+#print axioms ss_rel
+
 end LeetQ.Rel.Verb
