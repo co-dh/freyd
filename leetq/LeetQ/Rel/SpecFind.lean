@@ -6,6 +6,9 @@
 -/
 import LeetQ.Rel.Spec
 import AOP.A7_2_RelSet
+import QLean.Verify.Chain
+import QLean.Verify.Dyad
+import QLean.Verify.EwEnc
 
 namespace LeetQ.Rel.Verb
 
@@ -304,6 +307,163 @@ theorem prior_rel {v : Prim.Dyadic} {h : Eval.ewType v t t = some rt} {seed : Ca
 
 end Elementwise
 
+/-! ## §11.1 Elementwise: kernel ⇒ List spec
+
+  Each kernel theorem follows the one `dyadColumn`/`monColumn` path a column of one encoding takes, down
+  to `Build.run` (qlean's `run_val`), and reads the answer back whichever form `Column.answer` leaves it in.
+  Restricted to dense long `bytes` operands. -/
+
+section Kernel
+
+/-- q's null at `long` is the least long. -/
+theorem nullPayload_long : Kernel.nullPayload .long = Int64.minValue := by decide
+
+/-- A `long` answer `payload` lists the dense chain's words, encoded (`foRBits_encode_bits`) or decoded
+    back (`elemsW_decode_encode`) by `Column.answer`. -/
+theorem longWords_payload (bld : Kernel.Ew.Build) (last : Kernel.Ew.Stage) {n : Nat} (hn : n < USize.size)
+    (hs : (bld.run last n.toUSize).size / 8 = n) :
+    longWords (Kernel.payload .long n.toUSize (bld, last)) = some (Verify.elemsW 8 (bld.run last n.toUSize)) := by
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hp : Kernel.payload .long n.toUSize (bld, last) = Column.answer ⟨.long, n,
+      .foR (bld.runEnc last n.toUSize (8 : Nat).toUSize).1 (bld.runEnc last n.toUSize (8 : Nat).toUSize).2, none⟩ := by
+    simp only [Kernel.payload, hN]; rfl
+  rw [hp]
+  rcases Verify.answer_foR .long 8 n _ _ rfl (a := none) with e | e <;> rw [e] <;> unfold longWords
+  · simp only [Verify.elemsW]
+    refine congrArg some ?_
+    rw [hs]
+    refine List.map_congr_left fun i hi => UInt64.toNat_inj.1 ?_
+    rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
+    exact Verify.foRBits_encode_bits 8 (by decide) (by decide) _ i (Nat.lt_of_lt_of_eq (List.mem_range.1 hi) hs.symm)
+  · exact congrArg some (Verify.runEnc_elems bld last n.toUSize 8 (by decide) (by decide) n.toUSize (by rw [hN, hs]))
+
+/-- `dyadColumn` on two dense long columns of one count, at a value verb whose result is `long`: the
+    one-stage `eVal` chain over the two payloads. -/
+theorem dyadColumn_long_vv {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (a b : ByteArray)
+    (pa pb : Option (UInt8 × IndexCell)) :
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .bytes a, pa⟩ ⟨.long, n, .bytes b, pb⟩ =
+      some (.long, Kernel.payload .long n.toUSize ({ inputs := #[a, b] },
+        { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1,
+          nul := Kernel.nullPayload .long })) := by
+  cases v <;> simp only [Kernel.valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals first | exact absurd hr (by decide) | skip
+  all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.valPayload, Kernel.cmpOp,
+    Kernel.valOp, Kernel.clsOf, Kernel.scales, Kernel.tickIn, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible,
+    Kernel.promotable, Kernel.foRValPayload, Kernel.foRPairVV, Kernel.zipPass, Kernel.operandSource,
+    Kernel.Ew.Build.input, Kernel.Ew.i64, Kernel.Ew.bits, (by decide : ¬Kernel.Ew.vv = Kernel.Ew.va)]
+
+/-- **`Ew.val` at `long` on dense columns is `ValSpec`**: one `dyadColumn` call, `run_val`, `val_i64_vv`,
+    and q's element `Ew.elem_long_val`. -/
+theorem val_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {a b : ByteArray}
+    (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .long := by
+    cases v <;> first | rfl | exact absurd h (by decide) | exact absurd hop (by simp [Kernel.valOp])
+  have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[a, b] },
+      { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1,
+        nul := Kernel.nullPayload .long }) := by
+    unfold Ew.val Ew.dyad at hv
+    rw [Arr.c_eq x ha, Arr.c_eq yv hb, dyadColumn_long_vv hop hr] at hv
+    simp only [↓reduceIte] at hv
+    unfold Arr.of at hv
+    split at hv
+    · cases hv; rfl
+    · cases hv
+  have hrun := Verify.run_val ({ inputs := #[a, b] } : Kernel.Ew.Build) rfl op Kernel.Ew.i64 Kernel.Ew.vv 0 1
+    (Kernel.nullPayload .long) (by decide) (by decide) n.toUSize
+  simp only [show (#[a, b] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl,
+    show (#[a, b] : Array ByteArray)[(1 : UInt8).toNat]! = b from rfl] at hrun
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hs : (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.vv (Kernel.nullPayload .long) a b n.toUSize).size / 8 = n := by
+    rw [← Verify.val_size8, hN]
+  rw [← hrun] at hs
+  have hw := longWords_payload _ _ hn hs
+  rw [← hR, hrun, Verify.val_i64_vv _ _ _ _ _ hn, nullPayload_long] at hw
+  have hel : (fun p : Int64 × Int64 => elem v h p.1 p.2) =
+      fun p => pure (Kernel.Ew.intStep op Int64.minValue p.1 p.2) := funext fun p => Ew.elem_long_val hop h p.1 p.2
+  have hRl : R.toList = (List.range n).map fun i => Kernel.Ew.intStep op Int64.minValue
+      (Column.bitsAt a (i * 8) 8).toInt64 (Column.bitsAt b (i * 8) 8).toInt64 := by
+    rw [Arr.toList_long R hw]; simp
+  unfold Ew.ValSpec
+  rw [show (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) = _ from hel, List.mapM_pure, hRl,
+    Arr.toList_long_bytes x ha, Arr.toList_long_bytes yv hb]
+  exact congrArg Except.ok (List.ext_getElem (by simp) fun i _ _ => by simp)
+
+/-- `dyadColumn` on two dense long columns of one count, at a comparison: the one-stage `eCmp` chain over
+    the two payloads, answered as a bitmap. -/
+theorem dyadColumn_long_vv_cmp {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a b : ByteArray)
+    (pa pb : Option (UInt8 × IndexCell)) :
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .bytes a, pa⟩ ⟨.long, n, .bytes b, pb⟩ =
+      some (.boolean, Kernel.payload .boolean n.toUSize ({ inputs := #[a, b] },
+        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1, nul := 0 })) := by
+  cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.cmpPayload, Kernel.cmpOp,
+    Kernel.clsOf, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible, Kernel.promotable, Kernel.foRCmpPayload,
+    Kernel.alpCmpPayload, Kernel.foRPairVV, Kernel.zipPass, Kernel.operandSource, Kernel.Ew.Build.input,
+    Kernel.Ew.i64, Kernel.Ew.bits, (by decide : ¬Kernel.Ew.vv = Kernel.Ew.va)]
+
+/-- **A comparison at `long` on dense columns is `ValSpec`**: one `dyadColumn` call, `run_cmp`, `cmp_bitAt`,
+    and q's element `Ew.elem_long_cmp`. -/
+theorem cmp_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {a b : ByteArray} (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .boolean := by
+    cases v <;> first | rfl | exact absurd hop (by simp [Kernel.cmpOp])
+  have hR : R.c = Kernel.payload .boolean n.toUSize ({ inputs := #[a, b] },
+      { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1, nul := 0 }) := by
+    unfold Ew.val Ew.dyad at hv
+    rw [Arr.c_eq x ha, Arr.c_eq yv hb, dyadColumn_long_vv_cmp hop hr] at hv
+    simp only [↓reduceIte] at hv
+    unfold Arr.of at hv
+    split at hv
+    · cases hv; rfl
+    · cases hv
+  have hrun := Verify.run_cmp ({ inputs := #[a, b] } : Kernel.Ew.Build) rfl op Kernel.Ew.i64 Kernel.Ew.vv 0 1 0
+    (by decide) (by decide) n.toUSize
+  simp only [show (#[a, b] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl,
+    show (#[a, b] : Array ByteArray)[(1 : UInt8).toNat]! = b from rfl] at hrun
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hc : R.c.enc = .bits (Kernel.Ew.cmp op Kernel.Ew.i64 Kernel.Ew.vv a b n.toUSize) := by
+    rw [hR, ← hrun]; simp [Kernel.payload]
+  have hel : (fun p : Int64 × Int64 => elem v h p.1 p.2) =
+      fun p => pure (Kernel.Ew.cmpStep op Kernel.Ew.i64 p.1.toUInt64 p.2.toUInt64) :=
+    funext fun p => Ew.elem_long_cmp hop h p.1 p.2
+  have hRl : R.toList = (List.range n).map fun i => Kernel.Ew.cmpStep op Kernel.Ew.i64
+      (Kernel.Ew.elem Kernel.Ew.i64 a i) (Kernel.Ew.elem Kernel.Ew.i64 b i) := by
+    apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+    intro i h1 h2
+    have hi : i < n := by simpa using h2
+    rw [Arr.getElem_toList, Arr.get_bool_bits R hc, (Verify.cmp_bitAt _ _ _ _ _ _).2 i (by rw [hN]; omega)]
+    simp [hN, hi, Kernel.Ew.shapeIdx, Kernel.Ew.vv, Kernel.Ew.va, Kernel.Ew.av]
+  unfold Ew.ValSpec
+  rw [show (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) = _ from hel, List.mapM_pure, hRl,
+    Arr.toList_long_bytes x ha, Arr.toList_long_bytes yv hb]
+  exact congrArg Except.ok (List.ext_getElem (by simp) fun i _ _ => by
+    simp [Kernel.Ew.elem, Kernel.Ew.width, Kernel.Ew.i64, Kernel.Ew.u8, Kernel.Ew.i16, Kernel.Ew.i32,
+      Kernel.Ew.f32])
+
+/-- `x+y = ⟨x, y⟩ ≫ (+)` from the kernel: `val_rel` of `val_spec_long`. Dense long columns. -/
+theorem val_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {a b : ByteArray}
+    (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (val_spec_long hop h ha hb hn hv)
+
+/-- `x<y = ⟨x, y⟩ ≫ (<)` from the kernel: `val_rel` of `cmp_spec_long`. Dense long columns. -/
+theorem cmp_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {a b : ByteArray} (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (cmp_spec_long hop h ha hb hn hv)
+
+end Kernel
+
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
     `enum` relates `F` to gives the answer, and there is one. Restrictions as `distinct_toList`'s:
     long columns. -/
@@ -399,5 +559,9 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms atomVal_rel
 #print axioms valAtom_rel
 #print axioms prior_rel
+#print axioms val_spec_long
+#print axioms cmp_spec_long
+#print axioms val_rel_long
+#print axioms cmp_rel_long
 
 end LeetQ.Rel.Verb
