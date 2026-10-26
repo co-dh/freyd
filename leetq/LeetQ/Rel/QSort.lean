@@ -2,9 +2,10 @@ import Lean
 
 /-!
 `Array.qsort` on naturals by `<` answers a sorted permutation of its input (`qsort_nat`). The kernel's `ofRuns`
-(`Eval.keyMatch`'s `s#` halving and `u#`/`p#` galloping) sorts its run starts with it. Core ships no lemma about
-`qsort`, and its recursion `qsort.sort` and partition loop `qpartition.loop` are private to
-`Init.Data.Array.QSort.Basic`, so `qsort_priv%`/`qsort_unfold%` name them by their private names.
+(`Eval.keyMatch`'s `s#` halving and `u#`/`p#` galloping) sorts its run starts with it; `ofRuns_keys`,
+`ofRuns_bounds` and `ofRuns_span` are its three folds. Core ships no lemma about `qsort`, and its recursion
+`qsort.sort` and partition loop `qpartition.loop` are private to `Init.Data.Array.QSort.Basic`, so
+`qsort_priv%`/`qsort_unfold%` name them by their private names.
 -/
 
 namespace LeetQ.Rel.QSort
@@ -228,5 +229,100 @@ theorem qsort_nat (xs : Array Nat) :
       simp only [Array.length_toList, Vector.size_toArray] at hi hj
       simp only [Array.getElem_toList, Vector.getElem_toArray]
       exact o i j hi hj (by omega) (by omega) (by omega)
+
+/-- **A map's keys sorted by `qsort`** (as `ofRuns` sorts its run starts) are its keys, each once, ascending. -/
+theorem ofRuns_keys (span : Std.HashMap Nat Nat) :
+    ((span.toArray.map (·.1)).qsort (· < ·)).toList.Nodup ∧
+    (∀ a, a ∈ ((span.toArray.map (·.1)).qsort (· < ·)).toList ↔ a ∈ span) ∧
+    ((span.toArray.map (·.1)).qsort (· < ·)).toList.Pairwise (· < ·) := by
+  obtain ⟨hp, hs⟩ := qsort_nat (span.toArray.map (·.1))
+  have hk : (span.toArray.map (·.1)).toList = span.keys := by
+    rw [Array.toList_map, Std.HashMap.toList_toArray, Std.HashMap.map_fst_toList_eq_keys]
+  rw [hk] at hp
+  have hn : ((span.toArray.map (·.1)).qsort (· < ·)).toList.Nodup := hp.nodup_iff.2 Std.HashMap.nodup_keys
+  refine ⟨hn, fun a => by rw [hp.mem_iff, Std.HashMap.mem_keys], ?_⟩
+  exact (hs.and hn).imp fun ⟨h1, h2⟩ => Nat.lt_of_le_of_ne h1 h2
+
+/-- **`ofRuns`' bounds fold**: over distinct run starts `K`, each start `a` gets a group `g` (`ix'[a]`) whose
+    bounds are `a` and its end `e a`; the bounds already laid down stay, and other keys of `ix` are untouched.
+    `step` is the kernel's fold step, stated by its equation so a use site proves it by `rfl`. -/
+theorem ofRuns_bounds {e : Nat → Nat} {step : Array Nat × Std.HashMap Nat Nat → Nat → Array Nat × Std.HashMap Nat Nat}
+    (hstep : ∀ B ix a, step (B, ix) a =
+      (let B' := if B.back? == some a then B else B.push a; (B'.push (e a), ix.insert a (B'.size - 1)))) :
+    ∀ (K : List Nat) (B : Array Nat) (ix : Std.HashMap Nat Nat), K.Nodup → 0 < B.size →
+    (∀ a ∈ K, ∃ g, (K.foldl step (B, ix)).2[a]? = some g ∧ (K.foldl step (B, ix)).1[g]? = some a ∧
+      (K.foldl step (B, ix)).1[g + 1]? = some (e a)) ∧
+    (∀ a, a ∉ K → (K.foldl step (B, ix)).2[a]? = ix[a]?) ∧
+    (∀ (g x : Nat), B[g]? = some x → (K.foldl step (B, ix)).1[g]? = some x) ∧ 0 < (K.foldl step (B, ix)).1.size := by
+  intro K
+  induction K with
+  | nil => intro B ix _ hB; simp [hB]
+  | cons a K ih =>
+    intro B ix hnd hB
+    obtain ⟨haK, hnd'⟩ := List.nodup_cons.1 hnd
+    simp only [List.foldl_cons, hstep]
+    generalize hB1 : (if B.back? == some a then B else B.push a) = B1
+    have h1 : 0 < B1.size ∧ B1[B1.size - 1]? = some a ∧ ∀ (g x : Nat), B[g]? = some x → B1[g]? = some x := by
+      rw [← hB1]; split
+      · next h => refine ⟨hB, ?_, fun _ _ h => h⟩; rw [← Array.back?_eq_getElem?]; simpa using h
+      · exact ⟨by simp, by simp, fun g x h => by
+          rw [Array.getElem?_push]; split
+          · next he => subst he; simp at h
+          · exact h⟩
+    obtain ⟨r1, r2, r3, r4⟩ := ih (B1.push (e a)) (ix.insert a (B1.size - 1)) hnd' (by simp)
+    have hp : ∀ (g x : Nat), B1[g]? = some x → (B1.push (e a))[g]? = some x := fun g x h => by
+      rw [Array.getElem?_push]; split
+      · next he => subst he; simp at h
+      · exact h
+    refine ⟨fun b hb => ?_, fun b hb => ?_, fun g x h => r3 g x (hp g x (h1.2.2 g x h)), r4⟩
+    · rcases List.mem_cons.1 hb with rfl | hb
+      · refine ⟨B1.size - 1, ?_, r3 _ _ (hp _ _ h1.2.1), ?_⟩
+        · rw [r2 b haK, Std.HashMap.getElem?_insert]; simp
+        · apply r3; rw [Array.getElem?_push, if_pos (by omega)]
+      · exact r1 b hb
+    · have hne : a ≠ b := fun h => hb (h ▸ List.mem_cons_self ..)
+      rw [r2 b (fun h => hb (List.mem_cons_of_mem _ h)), Std.HashMap.getElem?_insert]
+      simp [hne]
+
+/-- **`ofRuns`' span fold**: inserting each needle's run `a ↦ z` maps every start to its run's end, where needles
+    that share a start share the end; a start no needle names keeps what `m` had. `step` is the kernel's step
+    (on needles below `N`), stated by its equation. -/
+theorem ofRuns_span {run : Nat → Option (Nat × Nat)} {N : Nat} {step : Std.HashMap Nat Nat → Nat → Std.HashMap Nat Nat}
+    (hstep : ∀ m k, k < N → step m k = match run k with | some (a, z) => m.insert a z | none => m)
+    (hcons : ∀ k k' a z z', k < N → k' < N → run k = some (a, z) → run k' = some (a, z') → z = z') :
+    ∀ M, M ≤ N → ∀ m : Std.HashMap Nat Nat,
+    (∀ k, k < M → ∀ a z, run k = some (a, z) → ((List.range M).foldl step m)[a]? = some z) ∧
+    (∀ a, (∀ k, k < M → ∀ z, run k ≠ some (a, z)) → ((List.range M).foldl step m)[a]? = m[a]?) := by
+  intro M
+  induction M with
+  | zero => intro _ m; simp
+  | succ M ih =>
+    intro hM m
+    obtain ⟨i1, i2⟩ := ih (by omega) m
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil, hstep _ M (by omega)]
+    generalize hF : (List.range M).foldl step m = F at i1 i2
+    refine ⟨fun k hk a z hr => ?_, fun a ha => ?_⟩
+    · rcases hrM : run M with _ | ⟨a', z'⟩
+      · have hkM : k ≠ M := fun e => by subst e; rw [hr] at hrM; cases hrM
+        simp only; exact i1 k (by omega) a z hr
+      · simp only
+        rw [Std.HashMap.getElem?_insert]
+        by_cases hkM : k = M
+        · subst hkM; rw [hr] at hrM; cases hrM; simp
+        · by_cases ha : a' = a
+          · subst ha; rw [if_pos (by simp), hcons M k a' z' z (by omega) (by omega) hrM hr]
+          · rw [if_neg (by simpa using ha)]; exact i1 k (by omega) a z hr
+    · have h2 := i2 a fun k hk z => ha k (by omega) z
+      rcases hrM : run M with _ | ⟨a', z'⟩
+      · exact h2
+      · simp only
+        rw [Std.HashMap.getElem?_insert, if_neg (by
+          simp only [beq_iff_eq]; rintro rfl; exact ha M (by omega) z' hrM)]
+        exact h2
+
+#print axioms qsort_nat
+#print axioms ofRuns_keys
+#print axioms ofRuns_bounds
+#print axioms ofRuns_span
 
 end LeetQ.Rel.QSort

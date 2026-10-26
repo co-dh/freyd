@@ -1513,6 +1513,89 @@ theorem gatherColumn_long_some {x i : Column} {ws : List UInt64} {ix : ByteArray
   | _ => simp [longWords] at hw
 
 open QLean.Kernel in
+/-- **`ofRuns`' answer is `KeyAnswers`** where each left row `i`'s run is its group: `none` where the group is
+    empty, else `(a, z)` with the group the rows `[a, z)`, `ix[a]` a group `g` whose bounds are `a` and `z`. The ids
+    are `gid i` or the group count; the groups' rows are their own index (`rows` empty). This is what the `s#`
+    halving and the `u#`/`p#` gallop each leave to prove of their runs (`ofRuns` at `key = id`, every needle met). -/
+theorem ofRuns_answers {wr wl : List UInt64} {run : Nat → Option (Nat × Nat)} {B : Array Nat}
+    {ix : Std.HashMap Nat Nat} (h63 : ∀ x ∈ B.toList, x < 2 ^ 63) (hBU : B.size < 2 ^ 63) (hB0 : 0 < B.size)
+    (hrun : ∀ i, i < wl.length → (run i = none ∧ Struct.group wr wl[i]! = []) ∨
+      ∃ a z g, run i = some (a, z) ∧ a < z ∧ Struct.group wr wl[i]! = List.range' a (z - a) ∧ ix[a]? = some g ∧
+        B[g]? = some a ∧ B[g + 1]? = some z) :
+    KeyAnswers wr wl ⟨ByteArray.empty, B⟩
+      (Eval.groupIds (B.size - 1) ((Array.range wl.length).map fun i => (run i).bind fun p => ix[p.1]?)) := by
+  generalize hH : ((Array.range wl.length).map fun i => (run i).bind fun p => ix[p.1]?).map
+    (·.getD (B.size - 1)) = H
+  have hids : Eval.groupIds (B.size - 1) ((Array.range wl.length).map fun i => (run i).bind fun p => ix[p.1]?) =
+      ⟨.long, H.size, .bytes (Kernel.longBytes H), none⟩ := by rw [← hH]; rfl
+  rw [hids]
+  have hHs : H.size = wl.length := by rw [← hH]; simp
+  -- each left row's id: its group, or the count where it has none
+  have hHi : ∀ i (hi : i < wl.length), H[i]'(by omega) = ((run i).bind fun p => ix[p.1]?).getD (B.size - 1) := by
+    intro i hi; subst hH; simp
+  have hHg : ∀ i (hi : i < wl.length), H[i]'(by omega) < B.size := by
+    intro i hi; rw [hHi i hi]
+    rcases hrun i hi with ⟨hn, -⟩ | ⟨a, z, g, hs, -, -, hg, -, hz⟩
+    · rw [hn]; show B.size - 1 < B.size; omega
+    · rw [hs]; simp only [Option.bind_some, hg, Option.getD_some]
+      have := (Array.getElem?_eq_some_iff.1 hz).1; omega
+  have hH64 : ∀ x ∈ H.toList, x < 2 ^ 64 := by
+    intro x hx
+    obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hx
+    simp only [Array.length_toList] at hi
+    have := hHg i (by omega); simp only [Array.getElem_toList]; omega
+  have hLH : Verify.ids (Kernel.longBytes H) = H.toList := longBytes_ids H hH64
+  have hLB : Verify.ids (Kernel.longBytes B) = B.toList := longBytes_ids B fun x hx => by have := h63 x hx; omega
+  have hBn : (Kernel.longBytes B).size / 8 = B.size := by
+    have := congrArg List.length hLB; simpa [Verify.ids] using this
+  have hatB : ∀ q (hq : q < B.size), (Column.bitsAt (Kernel.longBytes B) (q * 8) 8).toNat = B[q] := fun q hq => by
+    rw [Verify.ids_get hLB] <;> simp [hq]
+  have hatH : ∀ q (hq : q < H.size), (Column.bitsAt (Kernel.longBytes H) (q * 8) 8).toNat = H[q] := fun q hq => by
+    rw [Verify.ids_get hLH] <;> simp [hq]
+  have hemp : (ByteArray.empty).isEmpty = true := by simp [ByteArray.isEmpty]
+  have hBg : ∀ g : Nat, (B[g]?).getD 0 < 2 ^ 63 := fun g => by
+    cases h : B[g]? with
+    | none => simp
+    | some x => exact h63 x (by simpa using Array.mem_of_getElem? h)
+  have hfs : (Eval.Groups.firsts ⟨ByteArray.empty, B⟩).toList = (List.range (B.size - 1)).map fun g => (B[g]?).getD 0 := by
+    simp [Eval.Groups.firsts, Eval.Groups.row, Eval.Groups.span, hemp]
+  have hF64 : ∀ x ∈ ((Eval.Groups.firsts ⟨ByteArray.empty, B⟩).push 0).toList, x < 2 ^ 64 := by
+    intro x hx
+    rw [Array.toList_push, hfs] at hx
+    rcases List.mem_append.1 hx with hx | hx
+    · obtain ⟨g, -, rfl⟩ := List.mem_map.1 hx; have := hBg g; omega
+    · simp at hx; omega
+  refine ⟨Kernel.longBytes H, rfl, ?_, ?_, fun i hi => ?_⟩
+  · have := congrArg List.length hLH; simp [Verify.ids] at this; omega
+  · rw [nats_gather, nats_eq_ids (Kernel.longBytes H), hLH, nats_eq_ids, longBytes_ids _ hF64, Array.toList_push, hfs]
+    apply List.ext_getElem (by simp [hHs])
+    intro i h1 h2
+    simp only [List.length_map, List.length_range] at h2
+    simp only [List.getElem_map, List.getElem_range, Array.getElem_toList]
+    rw [hHi i h2]
+    rcases hrun i h2 with ⟨hn, hgr⟩ | ⟨a, z, g, hs, haz, hgr, hg, ha, hz⟩
+    · rw [hn, hgr]
+      simp [List.getD_eq_getElem?_getD]
+    · have hg1 := (Array.getElem?_eq_some_iff.1 hz).1
+      rw [hs, hgr]
+      simp only [Option.bind_some, hg, Option.getD_some]
+      rw [List.getD_eq_getElem?_getD, List.getElem?_append_left (by simp; omega)]
+      obtain ⟨d, hd⟩ : ∃ d, z - a = d + 1 := ⟨z - a - 1, by omega⟩
+      simp [List.getElem?_range (show g < B.size - 1 by omega), ha, hd, List.range'_succ]
+  rw [hatH i (by omega), hHi i hi]
+  rcases hrun i hi with ⟨hn, hgr⟩ | ⟨a, z, g, hs, haz, hgr, hg, ha, hz⟩
+  · left; rw [hn, hBn]; exact ⟨by simp, hgr⟩
+  · right
+    have hg1 := (Array.getElem?_eq_some_iff.1 hz).1
+    obtain ⟨_, e0⟩ := Array.getElem?_eq_some_iff.1 ha
+    obtain ⟨_, e1⟩ := Array.getElem?_eq_some_iff.1 hz
+    simp only [hs, Option.bind_some, hg, Option.getD_some]
+    rw [show g * 8 + 8 = (g + 1) * 8 by omega, hatB (g + 1) hg1, hatB g (by omega), hBn, hgr, e0, e1]
+    refine ⟨by omega, by simp, fun p hp => ?_⟩
+    simp only [List.length_range'] at hp
+    simp [hemp, List.getElem!_eq_getElem?_getD, hp]
+
+open QLean.Kernel in
 /-- **`keyMatch` at an `s#` right key column, where halving is not worth it, answers the key groups** through
     `byRuns`: the run starts cut the rows into the groups, read as their own row numbers, and `?` places each left
     word among the words at those starts. The kernel trusts the mark, so each value is assumed to occupy one run
@@ -2367,6 +2450,7 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms gatherColumn_long_some
 #print axioms keyMatch_runs
 #print axioms keyMatch_answers
+#print axioms ofRuns_answers
 #print axioms aj_long
 #print axioms binRows_group
 #print axioms bitsAt_elemsW
