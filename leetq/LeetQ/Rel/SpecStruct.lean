@@ -2424,6 +2424,29 @@ theorem bytesOf_answer_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some 
         (by rw [hk]; exact hn)
       rwa [hE, hk] at this
 
+/-- A fixed-width array's dense payload: `w` bytes an element, never a bitmap. -/
+theorem bytesOf_fixed {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
+    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m) (hm : m < USize.size) :
+    ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.c.enc ≠ .bits b := by
+  have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
+  have parts : (∃ B, z.c.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.c.enc = .foR md pk) ∨
+      ∃ md pk a, z.c.enc = .alp md pk a :=
+    he.elim (fun he => (fixed_parts hw he z).elim .inl (.inr ∘ .inl)) (alp_parts hw · z)
+  rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
+  · exact ⟨B, by rw [Arr.c_eq z hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
+  · exact ⟨Kernel.Coc.decode w.toUSize md pk m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+      (decode_words ⟨by omega, hw8.2⟩ md pk hm).1, fun b e => by rw [hc] at e; cases e⟩
+  · exact ⟨Kernel.Coc.alpDecode w.toUSize md pk a m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+      (alpDecode_words ⟨by omega, hw8.2⟩ md pk a hm).1, fun b e => by rw [hc] at e; cases e⟩
+
+/-- What `scatter` writes from and into: the dense payload at `8 w` bits an element. -/
+theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb : String) (c : Column)
+    {D : ByteArray} (hD : Column.bytesOf c = some D) (hb : ∀ b, c.enc ≠ .bits b) :
+    Struct.packed verb t c = pure (D, 8 * w) := by
+  unfold Struct.packed; split
+  · next b e => exact absurd e (hb b)
+  · simp [hw, Find.dense, hD] <;> rfl
+
 /-- **`@[x;i;:;y]`, the kernel, is `amendSpec` of `:`** at every type with a fixed-width encoding (`encodes` or
     `alpEncodes`), any indices, repeats included: the kernel answers only when every index is in `0..nx` and as
     many as the values, and then lists the last write at each position. -/
@@ -2435,25 +2458,6 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
   have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
   have hU : nx < USize.size := Nat.lt_of_lt_of_le hnx USize.le_size
   have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
-  -- the dense payloads `dense` and `packed` read
-  have dn : ∀ {m} (z : Arr t m), m < USize.size →
-      ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.c.enc ≠ .bits b := by
-    intro m z hm
-    have parts : (∃ B, z.c.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.c.enc = .foR md pk) ∨
-        ∃ md pk a, z.c.enc = .alp md pk a :=
-      he.elim (fun he => (fixed_parts hw he z).elim .inl (.inr ∘ .inl)) (alp_parts hw · z)
-    rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
-    · exact ⟨B, by rw [Arr.c_eq z hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
-    · exact ⟨Kernel.Coc.decode w.toUSize md pk m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
-        (decode_words ⟨by omega, hw8.2⟩ md pk hm).1, fun b e => by rw [hc] at e; cases e⟩
-    · exact ⟨Kernel.Coc.alpDecode w.toUSize md pk a m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
-        (alpDecode_words ⟨by omega, hw8.2⟩ md pk a hm).1, fun b e => by rw [hc] at e; cases e⟩
-  have pkd : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → (∀ b, z.c.enc ≠ .bits b) →
-      Struct.packed "@[x;i;f;y]" t z.c = pure (D, 8 * w) := by
-    intro m z D hD hb
-    unfold Struct.packed; split
-    · next b e => exact absurd e (hb b)
-    · simp [hw, Find.dense, hD] <;> rfl
   -- the indices: a long column's words
   obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
     rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
@@ -2464,8 +2468,8 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
     · exact hny
     · simp only [Struct.amend, ne_eq, hny, not_false_eq_true, ↓reduceIte] at h; cases h
   subst hny
-  obtain ⟨xb, hxb, hxs, hxn⟩ := dn x hU
-  obtain ⟨yb, hyb, hys, hyn⟩ := dn y hUi
+  obtain ⟨xb, hxb, hxs, hxn⟩ := bytesOf_fixed hw he x hU
+  obtain ⟨yb, hyb, hys, hyn⟩ := bytesOf_fixed hw he y hUi
   have hw0 := Verify.amendRounds_word0 nx.toUSize false ib
   have hnxU : nx.toUSize.toUInt64.toNat = nx := by rw [USize.toNat_toUInt64, USize.toNat_ofNat_of_lt' hU]
   by_cases hmiss : ∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8
@@ -2502,7 +2506,7 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
       pure ⟨t, nx, .bytes (Kernel.scatterPacked (8 * w).toUSize xb ib yb 0 false), none⟩ := by
     unfold Struct.scatter; split
     · exact absurd rfl hts
-    · rw [pkd x hxb hxn, pkd y hyb hyn]
+    · rw [packed_fixed hw _ x.c hxb hxn, packed_fixed hw _ y.c hyb hyn]
       simp [show 8 * w ≠ 1 by omega]
   simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
     pure_bind, Option.isSome_none, Nat.zero_mul, hne, hr1, ne_eq, not_true_eq_false, if_false, if_true,
@@ -2541,18 +2545,20 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
     cases (List.filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) (List.range ni)).getLast? <;> rfl
   · rw [List.getElem?_eq_none (by rw [List.length_range]; omega : (List.range nx).length ≤ j)]; rfl
 
-/-- **`@[x;i;:;y]` is `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ outr)`**, `I = i ≫ pos`, from the kernel, at
-    every type with a fixed-width encoding and indices without repeats; the kernel itself checks the range. -/
-theorem amend_rel {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w)
-    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
-    {R : Arr t nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32) (hnd : (i.toList.map fun v => v.toInt.toNat).Nodup)
-    (h : Struct.amend x i none y = .ok R) :
+/-- **`@[x;i;f;y]` is `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ f)`**, `I = i ≫ pos`, at every `op` whose
+    kernel is `amendSpec f` (`hk`: `amend_toList` for `:`, `f = outr`; `amend_verb_toList` for a verb), indices
+    without repeats; the kernel itself checks the range. -/
+theorem amend_rel {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
+    {R : Arr t nx} {f : El t → El t → El t}
+    (hk : ni = ny ∧ (∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx) ∧
+      R.toList = Struct.amendSpec f x.toList i.toList y.toList)
+    (hnd : (i.toList.map fun v => v.toInt.toNat).Nodup) :
     R.rel = (corNeg (ran (i.rel ≫ pos)) ≫ x.rel) ∪
-      (ran (i.rel ≫ pos) ≫ rpair x.rel ((i.rel ≫ pos)° ≫ y.rel) ≫ graph fun p : El t × El t => p.2) := by
-  obtain ⟨rfl, hin, hR⟩ := amend_toList hw he hnx hni h
+      (ran (i.rel ≫ pos) ≫ rpair x.rel ((i.rel ≫ pos)° ≫ y.rel) ≫ graph fun p : El t × El t => f p.1 p.2) := by
+  obtain ⟨rfl, hin, hR⟩ := hk
   show ix R.toList = _
   rw [hR]
-  exact ix_amendSpec (fun _ b => b) x.toList y.toList i.toList (by rw [Arr.length_toList, Arr.length_toList])
+  exact ix_amendSpec f x.toList y.toList i.toList (by rw [Arr.length_toList, Arr.length_toList])
     (fun v hv => ⟨(hin v hv).1, by rw [Arr.length_toList]; exact (hin v hv).2⟩) hnd
 
 #print axioms foldl_set_getElem?
