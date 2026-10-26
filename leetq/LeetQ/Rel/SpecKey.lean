@@ -678,10 +678,123 @@ theorem groupEdge_long (gs : Eval.Groups) (ids rc nc : Column) (nr : Nat) {hay k
     · simp [Kernel.foRColumn, hm, Kernel.foRBinRows, Column.encodes, ← hd] <;> rfl
   | _ => simp [Kernel.foRColumn, hrb'] <;> rfl
 
+/-- What `binSpec` names is a row of its group. -/
+theorem binSpec_mem {rt : List Int64} {g : List Nat} {x : Int64} {r : Nat} (h : Struct.binSpec rt g x = some r) :
+    r ∈ g := by
+  unfold Struct.binSpec at h
+  have hle : Id.run (Eval.partitionAt (fun j => (pure (decide (rt[g[j]!]! ≤ x)) : Id Bool)) g.length) ≤ g.length :=
+    partitionAt_go_le _ _ _ _ (Nat.zero_le _)
+  generalize Id.run (Eval.partitionAt (fun j => (pure (decide (rt[g[j]!]! ≤ x)) : Id Bool)) g.length) = P at h hle
+  rcases P with _ | p
+  · cases h
+  · simp only [Option.some.injEq, Nat.add_sub_cancel] at h
+    subst h
+    rw [getElem!_pos g p (by omega)]; exact List.getElem_mem _
+
+/-- **`aj` is `ajSpec` once its groups are known.** Where `keyGroups` answers groups `gs` and ids whose word
+    `i` names a group spanning exactly `Struct.group rk lk[i]` (the right rows of left row `i`'s key, in row
+    order, read through `gs.rows`), or no group where that is empty, `aj` over dense long times `keys`, `hay`
+    answers `ajSpec`. Nothing is assumed about the times' order inside a group. -/
+theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {tl tr : Column} {m : Nat}
+    {A : Arr .long m} {gs : Eval.Groups} {ids : Column} {keys hay gids : ByteArray} (lk rk : List κ)
+    (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
+    (hrb : Column.bytesOf tr = some hay) (hgb : Column.bytesOf ids = some gids)
+    (hkn : keys.size / 8 = tl.n) (hgn : gids.size / 8 = tl.n) (hrn : hay.size / 8 = tr.n)
+    (hlk : lk.length = tl.n) (hrk : rk.length = tr.n) (hU : tl.n < USize.size) (h63 : tr.n < 2 ^ 63)
+    (hkg : Struct.keyGroups "aj" l r tl.n tr.n = .ok (gs, ids))
+    (hgrp : ∀ i, i < tl.n →
+      (Kernel.longBytes gs.bounds).size / 8 - 1 ≤ (Column.bitsAt gids (i * 8) 8).toNat ∧
+        Struct.group rk lk[i]! = [] ∨
+      (Column.bitsAt gids (i * 8) 8).toNat < (Kernel.longBytes gs.bounds).size / 8 - 1 ∧
+        (Struct.group rk lk[i]!).length =
+          (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8 + 8) 8).toNat -
+          (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8) 8).toNat ∧
+        ∀ p, p < (Struct.group rk lk[i]!).length → (Struct.group rk lk[i]!)[p]! =
+          let lo := (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8) 8).toNat
+          if gs.rows.isEmpty then lo + p else (Column.bitsAt gs.rows ((lo + p) * 8) 8).toNat)
+    (h : Struct.aj l r ⟨.long, tl⟩ ⟨.long, tr⟩ = .ok ⟨m, A⟩) :
+    A.toList = Struct.ajSpec lk ((nats keys).map Int64.ofNat) rk ((nats hay).map Int64.ofNat) := by
+  have hE := groupEdge_long gs ids tr tl tr.n htr htl hrb hkb hgb (by omega)
+  simp only [Struct.aj, Struct.colRows, Struct.colValue, hkg, hE, Find.dense, Column.ofBytes, Column.bytesOf,
+    beq_self_eq_true, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
+  split at h
+  · cases h
+  rename_i A' hA
+  simp only [Except.ok.injEq, Sigma.mk.injEq] at h
+  obtain ⟨rfl, h⟩ := h
+  obtain rfl := eq_of_heq h
+  have hc := Struct.of_c hA
+  rw [Arr.toList_long_bytes _ (by rw [hc]; rfl)]
+  -- `^`'s word `i`: the atom where the word is the null `nr`, the word otherwise
+  have hfill : ∀ (nul x y : Int64), Kernel.Ew.intStep Kernel.Ew.fill nul x y = if y == nul then x else y :=
+    fun _ _ _ => rfl
+  have key : ∀ (nul : Int64) (c : UInt64) (b : ByteArray) (i : Nat), i < tl.n →
+      Column.bitsAt (Kernel.Ew.val Kernel.Ew.fill Kernel.Ew.i64 Kernel.Ew.av nul (Find.one c) b tl.n.toUSize)
+        (i * 8) 8 = (Kernel.Ew.intStep Kernel.Ew.fill nul c.toInt64 (Column.bitsAt b (i * 8) 8).toInt64).toUInt64 := by
+    intro nul c b i hi
+    have hv := val_i64_av Kernel.Ew.fill nul c b tl.n hU
+    have hl := congrArg List.length hv
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hl
+    have := congrArg (fun L => L[i]?) hv
+    simp only [Verify.elemsW, List.getElem?_map, List.getElem?_range, hl, hi, Option.map_some,
+      Option.some.injEq] at this
+    exact this
+  have hnr : (UInt64.ofNat tr.n).toInt64 = Int64.ofNat tr.n := by
+    rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
+  rw [List.map_map]
+  unfold Struct.ajSpec
+  apply List.ext_getElem (by simp [nats_length, hlk, hkn])
+  intro i h1 h2
+  simp only [List.length_map, List.length_range] at h1
+  simp only [List.getElem_map, List.getElem_range, List.getElem_zip, Function.comp_apply]
+  rw [key _ _ _ i h1, show i * 8 = 8 * i from Nat.mul_comm ..]
+  have h8 : (8 : USize).toNat = 8 := by simp
+  have hx : (nats keys)[i]'(by rw [nats_length]; omega) = (Column.bitsAt keys (i * 8) 8).toNat := by
+    rw [← getElem!_pos _ i (by rw [nats_length]; omega), nats_get _ (by omega)]
+  rw [hx, ← toInt64_eq_ofNat, ← getElem!_pos lk i (by omega)]
+  have hG : ∀ p, p < (Struct.group rk lk[i]!).length → (Struct.group rk lk[i]!)[p]! < tr.n := fun p hp => by
+    rw [getElem!_pos _ p hp]
+    have := List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hp)).1
+    omega
+  rcases hgrp i h1 with ⟨hng, hG0⟩ | ⟨hng, hlen, hrow⟩
+  · rw [bitsAt_binRows_miss 8 false true false hay keys gs.rows _ gids _ (by simp; omega) rfl hng, hG0]
+    simp [Struct.binSpec, hfill, Nat.toUInt64_eq, hnr] <;> rfl
+  · rw [bitsAt_binRows 8 false true false hay keys gs.rows _ gids _ (by simp; omega) (by omega) rfl hng rfl rfl
+      ((nats hay).map Int64.ofNat) _ (Column.bitsAt keys (i * 8) 8).toInt64 hlen hrow fun p hp => by
+        have hr := hrow p hp
+        unfold binTest
+        simp only [h8, Bool.false_eq_true, ↓reduceIte]
+        rw [← hr, get!_map _ _ (by rw [nats_length]; have := hG p hp; omega), nats_get _ (by have := hG p hp; omega),
+          ← toInt64_eq_ofNat]
+        simp only [ordKey8_le]]
+    cases hb : Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt keys (i * 8) 8).toInt64
+    · simp [hfill, Nat.toUInt64_eq, hnr]
+    · rename_i r
+      have hrn : r < tr.n := by
+        have := binSpec_mem hb
+        simp only [Struct.group, List.mem_filter, List.mem_range] at this
+        omega
+      have hr' : (UInt64.ofNat r).toInt64 = Int64.ofNat r := by
+        rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
+      have hne : (UInt64.ofNat r).toInt64 ≠ Int64.ofNat tr.n := fun e => by
+        rw [← hnr] at e
+        have := congrArg Int64.toInt e
+        rw [toInt_word (u := UInt64.ofNat r) (a := r) (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)])
+          (by omega), toInt_word (u := UInt64.ofNat tr.n) (a := tr.n)
+          (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]) h63] at this
+        omega
+      simp [hfill, Nat.toUInt64_eq, hr']
+      exact fun e => absurd e (hr' ▸ hne)
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
 #print axioms binStep_go
 #print axioms bitsAt_binRows
+#print axioms bitsAt_binRows_miss
+#print axioms ordKey8_le
+#print axioms groupEdge_long
+#print axioms binSpec_mem
+#print axioms aj_groups
 
 end LeetQ.Rel.Verb
