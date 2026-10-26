@@ -320,9 +320,42 @@ theorem ofRuns_span {run : Nat → Option (Nat × Nat)} {N : Nat} {step : Std.Ha
           simp only [beq_iff_eq]; rintro rfl; exact ha M (by omega) z' hrM)]
         exact h2
 
+/-- **`ofRuns`' bounds fold stays under `N`** when its bounds and its starts and their ends do, and lays down at
+    most two bounds per start. -/
+theorem ofRuns_bounds_le {e : Nat → Nat} {step : Array Nat × Std.HashMap Nat Nat → Nat → Array Nat × Std.HashMap Nat Nat}
+    (hstep : ∀ B ix a, step (B, ix) a =
+      (let B' := if B.back? == some a then B else B.push a; (B'.push (e a), ix.insert a (B'.size - 1)))) (N : Nat) :
+    ∀ (K : List Nat) (B : Array Nat) (ix : Std.HashMap Nat Nat), (∀ x ∈ B.toList, x ≤ N) → (∀ a ∈ K, a ≤ N ∧ e a ≤ N) →
+    (∀ x ∈ (K.foldl step (B, ix)).1.toList, x ≤ N) ∧ (K.foldl step (B, ix)).1.size ≤ B.size + 2 * K.length := by
+  intro K
+  induction K with
+  | nil => intro B ix hB _; simpa using hB
+  | cons a K ih =>
+    intro B ix hB hK
+    simp only [List.foldl_cons, hstep]
+    have ha := hK a List.mem_cons_self
+    generalize hB1 : (if B.back? == some a then B else B.push a) = B1
+    have h1 : (∀ x ∈ B1.toList, x ≤ N) ∧ B1.size ≤ B.size + 1 := by
+      rw [← hB1]; split
+      · exact ⟨hB, by omega⟩
+      · refine ⟨fun x hx => ?_, by simp⟩
+        simp only [Array.toList_push, List.mem_append, List.mem_singleton] at hx
+        rcases hx with hx | rfl
+        · exact hB x hx
+        · exact ha.1
+    obtain ⟨r1, r2⟩ := ih (B1.push (e a)) (ix.insert a (B1.size - 1)) (fun x hx => by
+      simp only [Array.toList_push, List.mem_append, List.mem_singleton] at hx
+      rcases hx with hx | rfl
+      · exact h1.1 x hx
+      · exact ha.2) (fun b hb => hK b (List.mem_cons_of_mem _ hb))
+    refine ⟨r1, ?_⟩
+    simp only [List.length_cons, Array.size_push] at r2 ⊢
+    omega
+
 #print axioms qsort_nat
 #print axioms ofRuns_keys
 #print axioms ofRuns_bounds
 #print axioms ofRuns_span
+#print axioms ofRuns_bounds_le
 
 end LeetQ.Rel.QSort

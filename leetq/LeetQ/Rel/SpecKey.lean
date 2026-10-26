@@ -1596,6 +1596,146 @@ theorem ofRuns_answers {wr wl : List UInt64} {run : Nat → Option (Nat × Nat)}
     simp [hemp, List.getElem!_eq_getElem?_getD, hp]
 
 open QLean.Kernel in
+/-- **The kernel's `ofRuns` at `key = id`, one key per needle, answers the key groups** (`KeyAnswers`) where
+    each needle's run is its group: `none` where the group is empty, else `(a, z)` with the group the rows
+    `[a, z)`, `z ≤ nr`. The statement carries `Eval.keyMatch`'s local `ofRuns` verbatim; the `s#` halving and the
+    `u#`/`p#` gallop each call it so. -/
+theorem ofRuns_kernel {wr wl : List UInt64} (nr nl : Nat) (run : Nat → Option (Nat × Nat)) (hnl : wl.length = nl)
+    (hnr : nr < 2 ^ 63) (hnl2 : 2 * nl + 2 < 2 ^ 63)
+    (hrun : ∀ i, i < nl → (run i = none ∧ Struct.group wr wl[i]! = []) ∨
+      ∃ a z, run i = some (a, z) ∧ a < z ∧ z ≤ nr ∧ Struct.group wr wl[i]! = List.range' a (z - a)) :
+    let ofRuns (nk : Nat) (key : Nat → Nat) (run : Nat → Option (Nat × Nat)) : Eval.Groups × Column :=
+      let met := if nk ≤ nl then Array.replicate nk true else
+        (Array.range nl).foldl (init := Array.replicate nk false) fun m i =>
+          if key i < nk then m.set! (key i) true else m
+      let span : Std.HashMap Nat Nat := (Array.range nk).foldl (init := {}) fun m k =>
+        if !met[k]! then m else match run k with
+          | some (a, z) => m.insert a z
+          | none => m
+      let (bounds, ix) := ((span.toArray.map (·.1)).qsort (· < ·)).foldl
+        (init := (#[0], ({} : Std.HashMap Nat Nat))) fun (bounds, ix) a =>
+          let bounds := if bounds.back? == some a then bounds else bounds.push a
+          (bounds.push (span.getD a a), ix.insert a (bounds.size - 1))
+      let bounds := if bounds.back? == some nr then bounds else bounds.push nr
+      let gid := (Array.range nk).map fun k => if met[k]! then (run k).bind (ix[·.1]?) else none
+      (⟨ByteArray.empty, bounds⟩, Eval.groupIds (bounds.size - 1) ((Array.range nl).map fun i => gid.getD (key i) none))
+    KeyAnswers wr wl (ofRuns nl id run).1 (ofRuns nl id run).2 := by
+  intro ofRuns
+  -- needles sharing a start share the end: both groups hold the start, so the two needles' words agree
+  have hcons : ∀ k k' a z z', k < nl → k' < nl → run k = some (a, z) → run k' = some (a, z') → z = z' := by
+    intro k k' a z z' hk hk' h1 h2
+    rcases hrun k hk with ⟨h, -⟩ | ⟨a1, z1, e1, l1, -, g1⟩
+    · rw [h] at h1; cases h1
+    rcases hrun k' hk' with ⟨h, -⟩ | ⟨a2, z2, e2, l2, -, g2⟩
+    · rw [h] at h2; cases h2
+    rw [h1] at e1; rw [h2] at e2
+    simp only [Option.some.injEq, Prod.mk.injEq] at e1 e2
+    obtain ⟨rfl, rfl⟩ := e1; obtain ⟨rfl, rfl⟩ := e2
+    have m1 : a ∈ Struct.group wr wl[k]! := by rw [g1]; simp; omega
+    have m2 : a ∈ Struct.group wr wl[k']! := by rw [g2]; simp; omega
+    simp only [Struct.group, List.mem_filter, beq_iff_eq] at m1 m2
+    have hg : Struct.group wr wl[k]! = Struct.group wr wl[k']! := by rw [← m1.2, ← m2.2]
+    rw [g1, g2] at hg
+    have := congrArg List.length hg; simp at this; omega
+  have hrep : ∀ k, k < nl → (Array.replicate nl true)[k]! = true := fun k hk => by
+    rw [getElem!_pos _ k (by simpa using hk)]; simp
+  dsimp only [ofRuns]
+  generalize hS : (Array.range nl).foldl (β := Std.HashMap Nat Nat) _ {} = S
+  generalize hP : ((S.toArray.map (·.1)).qsort (· < ·)).foldl (β := Array Nat × Std.HashMap Nat Nat) _ (#[0], {}) = P
+  rcases P with ⟨B1, ix1⟩
+  dsimp only
+  rw [if_pos (Nat.le_refl nl)] at hS ⊢
+  -- the span: each needle's start maps to its end, and nothing else is a start
+  rw [← Array.foldl_toList, Array.toList_range] at hS
+  have hsp : ∀ step, (∀ m k, k < nl → step m k = match run k with | some (a, z) => m.insert a z | none => m) →
+      (List.range nl).foldl step ∅ = S →
+      (∀ k, k < nl → ∀ a z, run k = some (a, z) → S[a]? = some z) ∧
+      (∀ a, (∀ k, k < nl → ∀ z, run k ≠ some (a, z)) → S[a]? = none) ∧ S.size ≤ nl := fun step hst h => by
+    have := QSort.ofRuns_span hst hcons nl (Nat.le_refl _) ∅
+    have hsz : ∀ L : List Nat, (∀ k ∈ L, k < nl) → ∀ m : Std.HashMap Nat Nat, (L.foldl step m).size ≤ m.size + L.length := by
+      intro L
+      induction L with
+      | nil => intro _ m; simp
+      | cons k L ih =>
+        intro hL m
+        have h1 := ih (fun x hx => hL x (List.mem_cons_of_mem _ hx)) (step m k)
+        have h2 : (step m k).size ≤ m.size + 1 := by
+          rw [hst m k (hL k List.mem_cons_self)]
+          split
+          · exact Std.HashMap.size_insert_le
+          · omega
+        simp only [List.foldl_cons, List.length_cons]; omega
+    have h3 := hsz (List.range nl) (fun k hk => List.mem_range.1 hk) ∅
+    rw [h] at this h3
+    exact ⟨this.1, fun a ha => by rw [this.2 a ha]; simp, by simpa using h3⟩
+  obtain ⟨s1, s2, s3⟩ := hsp _ (fun m k hk => by
+    simp only [hrep k hk, Bool.not_true, Bool.false_eq_true, ↓reduceIte]) hS
+  have hSa : ∀ a z, S[a]? = some z → ∃ k, k < nl ∧ run k = some (a, z) := fun a z hz =>
+    Classical.byContradiction fun hn => by
+      rw [s2 a (fun k hk z' hr => hn ⟨k, hk, by
+        have := s1 k hk a z' hr; rw [hz] at this; cases this; exact hr⟩)] at hz
+      cases hz
+  have hmem : ∀ a, a ∈ S → ∃ k z, k < nl ∧ run k = some (a, z) ∧ S.getD a a = z := fun a ha => by
+    obtain ⟨z, hz⟩ := Option.isSome_iff_exists.1 (Std.HashMap.mem_iff_isSome_getElem?.1 ha)
+    obtain ⟨k, hk, hr⟩ := hSa a z hz
+    exact ⟨k, z, hk, hr, by rw [Std.HashMap.getD_eq_getD_getElem?, hz]; rfl⟩
+  -- the bounds fold over the sorted starts
+  have hK := QSort.ofRuns_keys S
+  rw [← Array.foldl_toList] at hP
+  generalize hKdef : ((S.toArray.map (·.1)).qsort (· < ·)).toList = K at hP hK
+  have hKle : ∀ a ∈ K, a ≤ nr ∧ S.getD a a ≤ nr := fun a ha => by
+    obtain ⟨k, z, hk, hr, hg⟩ := hmem a ((hK.2.1 a).1 ha)
+    rcases hrun k hk with ⟨h, -⟩ | ⟨a', z', e, l, hz, -⟩
+    · rw [h] at hr; cases hr
+    · rw [hr] at e; simp only [Option.some.injEq, Prod.mk.injEq] at e; obtain ⟨rfl, rfl⟩ := e
+      omega
+  have hKn : K.length ≤ nl := by
+    rw [← hKdef, (QSort.qsort_nat _).1.length_eq]; simpa using s3
+  have hb : ∀ F, K.foldl F (#[0], ∅) = (B1, ix1) → (∀ B ix a, F (B, ix) a =
+      (let B' := if B.back? == some a then B else B.push a; (B'.push (S.getD a a), ix.insert a (B'.size - 1)))) →
+      (∀ a ∈ K, ∃ g, ix1[a]? = some g ∧ B1[g]? = some a ∧ B1[g + 1]? = some (S.getD a a)) ∧ 0 < B1.size ∧
+      (∀ x ∈ B1.toList, x ≤ nr) ∧ B1.size ≤ 1 + 2 * K.length := fun F h hF => by
+    have b1 := QSort.ofRuns_bounds hF K #[0] ∅ hK.1 (by simp)
+    have b2 := QSort.ofRuns_bounds_le hF nr K #[0] ∅ (by simp) hKle
+    rw [h] at b1 b2
+    exact ⟨b1.1, b1.2.2.2, b2.1, by simpa using b2.2⟩
+  obtain ⟨b1, b2, b3, b4⟩ := hb _ hP (fun _ _ _ => rfl)
+  -- the last bound `nr`
+  generalize hBF : (if (B1.back? == some nr) = true then B1 else B1.push nr) = BF
+  have f1 : ∀ g x, B1[g]? = some x → BF[g]? = some x := fun g x h => by
+    rw [← hBF]; split
+    · exact h
+    · rw [Array.getElem?_push]; split
+      · next he => subst he; simp at h
+      · exact h
+  have f2 : ∀ x ∈ BF.toList, x ≤ nr := fun x hx => by
+    rw [← hBF] at hx; split at hx
+    · exact b3 x hx
+    · simp only [Array.toList_push, List.mem_append, List.mem_singleton] at hx
+      rcases hx with hx | rfl
+      · exact b3 x hx
+      · exact Nat.le_refl _
+  have f3 : 0 < BF.size ∧ BF.size ≤ B1.size + 1 := by rw [← hBF]; split <;> simp <;> omega
+  -- the needles' ids
+  generalize hG : Eval.groupIds (BF.size - 1) _ = Gc
+  have hGc : Gc = Eval.groupIds (BF.size - 1) ((Array.range wl.length).map fun i => (run i).bind fun p => ix1[p.1]?) := by
+    rw [← hG]; congr 1
+    apply Array.ext (by simp [hnl])
+    intro i h1 h2
+    simp only [Array.size_map, Array.size_range] at h1
+    simp [Array.getD_eq_getD_getElem?, h1]
+  rw [hGc]
+  refine ofRuns_answers (fun x hx => by have := f2 x hx; omega) (by omega) f3.1 fun i hi => ?_
+  rcases hrun i (by omega) with h | ⟨a, z, hr, haz, hz, hgr⟩
+  · exact Or.inl h
+  · right
+    have hS1 := s1 i (by omega) a z hr
+    have haK : a ∈ K := (hK.2.1 a).2 (Std.HashMap.mem_iff_isSome_getElem?.2 (by rw [hS1]; rfl))
+    obtain ⟨g, hg, hga, hgz⟩ := b1 a haK
+    rw [Std.HashMap.getD_eq_getD_getElem?, hS1] at hgz
+    exact ⟨a, z, g, hr, haz, hgr, hg, f1 _ _ hga, f1 _ _ hgz⟩
+
+open QLean.Kernel in
 /-- **`keyMatch` at an `s#` right key column, where halving is not worth it, answers the key groups** through
     `byRuns`: the run starts cut the rows into the groups, read as their own row numbers, and `?` places each left
     word among the words at those starts. The kernel trusts the mark, so each value is assumed to occupy one run
@@ -2451,6 +2591,7 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms keyMatch_runs
 #print axioms keyMatch_answers
 #print axioms ofRuns_answers
+#print axioms ofRuns_kernel
 #print axioms aj_long
 #print axioms binRows_group
 #print axioms bitsAt_elemsW
