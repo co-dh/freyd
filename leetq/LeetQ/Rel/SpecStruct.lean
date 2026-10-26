@@ -834,8 +834,8 @@ theorem pairsP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop :
     have := Nat.mul_le_mul_right k (show r ≤ m by exact hr); dsimp only; omega
   rw [segs_uniform _ k hcR]
   refine List.map_congr_left fun r hr => List.map_congr_left fun c hc => ?_
-  have hr' := List.mem_range.1 hr
-  have hc' := List.mem_range.1 hc
+  have hr' : r < m := List.mem_range.1 hr
+  have hc' : c < k := List.mem_range.1 hc
   have : r * k + c < m * k := by
     have := Nat.mul_le_mul_right k (show r + 1 ≤ m by omega); rw [Nat.add_mul, Nat.one_mul] at this; omega
   exact hZp _ this
@@ -2854,16 +2854,17 @@ theorem til_rel {n : Nat} {r : Arr .long n} (hU : n < USize.size) (h : Struct.ti
     rw [hl, List.getElem?_map]
     by_cases hj : j < n
     · rw [List.getElem?_range hj, Option.map_some, Option.some.injEq]
-      exact ⟨fun e => ⟨j, ⟨rfl, hj⟩, e.symm⟩, fun ⟨_, ⟨rfl, _⟩, e⟩ => e.symm⟩
+      exact ⟨(fun e => ⟨j, ⟨rfl, hj⟩, e.symm⟩), (fun ⟨_, ⟨h', _⟩, e⟩ => by rw [h']; exact e.symm)⟩
     · rw [List.getElem?_eq_none (by simp; omega), Option.map_none]
-      exact ⟨fun e => nomatch e, fun ⟨_, ⟨_, h'⟩, _⟩ => absurd h' hj⟩
+      exact ⟨(fun e => nomatch e), (fun ⟨_, ⟨_, h'⟩, _⟩ => absurd h' hj)⟩
 
 /-- **`,a` is the point `a` as the list `til 1 → t`**: `corefl(< 1) ≫ !a`. At `long`, where `Ew.atomCol`'s payload
     is one `pushBits` word (`bitsAt_pushBits8`); the other types need qlean's `get` of `ofAtoms`, not stated yet. -/
 theorem enlist_rel {a : El .long} {r : Arr .long 1} (h : Struct.enlist .long a = .ok r) :
     r.rel = corefl (· < (1 : Nat)) ≫ cst a := by
   have hof : Column.ofAtoms .long #[Carrier.atom a] = some ⟨.long, 1,
-      .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a)) 8), none⟩ := rfl
+      .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a)) 8), none⟩ := by
+    simp [Column.ofAtoms, Carrier.atom, QAtom.type, QAtomicType.width]
   have hc : r.c = ⟨.long, 1, .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8))
       (Column.bitsOf (.long a)) 8), none⟩ := by
     unfold Struct.enlist Ew.atomCol at h
@@ -2873,17 +2874,19 @@ theorem enlist_rel {a : El .long} {r : Arr .long 1} (h : Struct.enlist .long a =
     split at h
     · cases h; rfl
     · cases h
-  have e := Verify.bitsAt_pushBits8 (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a))
-  rw [show (ByteArray.emptyWithCapacity (1 * 8)).size = 0 from rfl] at e
+  have e := Verify.bitsAt_pushBits8 (ByteArray.emptyWithCapacity 8) a.toUInt64
+  rw [show (ByteArray.emptyWithCapacity 8).size = 0 from rfl] at e
   have hl : r.toList = [a] := by
     rw [Arr.toList_long_bytes r (by rw [hc])]
-    simp [e, Column.bitsOf]
+    simp [Column.bitsOf]
+    rw [e]
+    first | rfl | simp
   exact hom_ext fun (j : Nat) b => by
     show r.toList[j]? = some b ↔ ∃ z, (j = z ∧ j < 1) ∧ b = a
     rw [hl]
     cases j with
-    | zero => exact ⟨fun e => ⟨0, ⟨rfl, by omega⟩, (Option.some.inj e).symm⟩, fun ⟨_, _, e⟩ => by rw [e]; rfl⟩
-    | succ j => exact ⟨fun e => nomatch e, fun ⟨_, ⟨_, h'⟩, _⟩ => absurd h' (by omega)⟩
+    | zero => exact ⟨(fun e => ⟨0, ⟨rfl, by omega⟩, (Option.some.inj e).symm⟩), (fun ⟨_, _, e⟩ => by rw [e]; rfl)⟩
+    | succ j => exact ⟨(fun e => nomatch e), (fun ⟨_, ⟨_, h'⟩, _⟩ => absurd h' (by omega))⟩
 
 /-- `ys.map (fun a => ys'.map (f a ·))` reads as `⟨x, !y⟩ ≫ cpr ≫ list(f)`, the mirror of `ix_eachRight`. -/
 theorem ix_eachLeft {α β γ : Type} (f : α → β → γ) (xs : List α) (ys : List β) :
@@ -2930,9 +2933,15 @@ theorem eachLeftP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop
     (fun a b => Kernel.Ew.intStep op Int64.minValue a b) (eachLeftP_segs hop he hx hy hU hB h)
 
 /-- Two lists are one relation exactly when they are one list: `ix` is injective. -/
-theorem ix_inj {α : Type} {xs ys : List α} : ix xs = ix ys ↔ xs = ys :=
-  ⟨(fun e => List.ext_getElem? fun j => Option.ext fun a =>
-    Eq.to_iff (congrArg (fun R : Idx ⟶ (⟨α⟩ : RelSet.{0}) => R j a) e)), fun e => by rw [e]⟩
+theorem ix_inj {α : Type} {xs ys : List α} : ix xs = ix ys ↔ xs = ys := by
+  constructor
+  · intro e
+    apply List.ext_getElem?
+    intro j
+    apply Option.ext
+    intro a
+    exact Eq.to_iff (congrArg (fun R : Idx ⟶ (⟨α⟩ : RelSet.{0}) => R j a) e)
+  · intro e; rw [e]
 
 /-- **`x~y` is `x ⊑ y ∧ y ⊑ x`**, here `x.rel = y.rel` (antisymmetry). `hk` is the kernel law qlean does not
     state yet — `matchColumn` answers `true` exactly on equal element lists (`Verify.Identical` proves only its
@@ -2947,7 +2956,7 @@ theorem same_rel {t : QAtomicType} {nx ny : Nat} {x : Arr t nx} {y : Arr t ny} {
   · rename_i hne
     simp only [pure, Except.pure, Except.ok.injEq] at h
     subst h
-    exact ⟨fun e => nomatch e, fun e => absurd (by rw [← x.length_toList, e, y.length_toList]) hne⟩
+    exact ⟨(fun e => nomatch e), (fun e => absurd (by rw [← x.length_toList, e, y.length_toList]) hne)⟩
   · split at h
     · rename_i b' hb
       simp only [pure, Except.pure, Except.ok.injEq] at h
