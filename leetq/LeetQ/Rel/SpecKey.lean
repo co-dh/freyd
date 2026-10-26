@@ -3227,6 +3227,103 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
   have := key w₀ 0 (by decide); have := key w₁ 1 (by decide)
   rw [hg, List.mem_range'_1]; omega
 
+/-- `xs[j]? = some a` is `j` in range with `xs[j]! = a`, the form `group` and `cand` read positions in. -/
+theorem getElem?_eq_some_iff! {α : Type} [Inhabited α] (xs : List α) (j : Nat) (a : α) :
+    xs[j]? = some a ↔ j < xs.length ∧ xs[j]! = a :=
+  ⟨fun e => let ⟨h, e⟩ := List.getElem?_eq_some_iff.1 e; ⟨h, by rw [getElem!_pos xs j h, e]⟩,
+   fun ⟨h, e⟩ => List.getElem?_eq_some_iff.2 ⟨h, by rw [← getElem!_pos xs j h, e]⟩⟩
+
+/-- **`aj` as the expression (design §11.3)**: `S = (lk ≫ rk°) ∩ (lt ≫ (≥) ≫ rt°)` relates a left row to the right
+    rows of its key at or before its time, and `aj = miss(Λ(S) ≫ est(≥), 0N)` on the left's rows: the greatest of
+    them, the last, since within a key the right times ascend (`binSpec` bisects, `binSpec_est`). -/
+theorem ajSpec_rel {κ : Type} [BEq κ] [LawfulBEq κ] [Inhabited κ] (lk : List κ) (lt : List Int64) (rk : List κ)
+    (rt : List Int64) (hl : lt.length = lk.length) (hr : rt.length = rk.length)
+    (htime : ∀ i j, i ≤ j → j < rt.length → rk[i]! = rk[j]! → rt[i]! ≤ rt[j]!) :
+    ix (Struct.ajSpec lk lt rk rt) = corefl (· < lk.length) ≫
+      miss ((Λ ((ix lk ≫ (ix rk)°) ∩ (ix lt ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°))
+        ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) Int64.minValue := by
+  obtain ⟨S, hS⟩ : ∃ S : Idx ⟶ Idx,
+      S = (ix lk ≫ (ix rk)°) ∩ (ix lt ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) ≫ (ix rt)°) := ⟨_, rfl⟩
+  rw [← hS]
+  have key : ∀ i, i < lk.length → ∀ j, S i j ↔ cand lk rk rt lt i j := fun i hi j => by
+    subst hS
+    show ((∃ k, lk[i]? = some k ∧ rk[j]? = some k) ∧ ∃ a, lt[i]? = some a ∧ ∃ b, a ≥ b ∧ rt[j]? = some b) ↔
+      j ∈ Struct.group rk lk[i]! ∧ rt[j]! ≤ lt[i]!
+    constructor
+    · rintro ⟨⟨k, hk1, hk2⟩, ⟨a, ha, b, hab, hb⟩⟩
+      obtain ⟨-, rfl⟩ := (getElem?_eq_some_iff! lk i k).1 hk1
+      obtain ⟨hj, e⟩ := (getElem?_eq_some_iff! rk j _).1 hk2
+      obtain ⟨-, rfl⟩ := (getElem?_eq_some_iff! lt i a).1 ha
+      obtain ⟨-, rfl⟩ := (getElem?_eq_some_iff! rt j b).1 hb
+      exact ⟨List.mem_filter.2 ⟨List.mem_range.2 hj, beq_iff_eq.2 e⟩, hab⟩
+    · rintro ⟨hm, hab⟩
+      obtain ⟨hj, e⟩ := List.mem_filter.1 hm
+      have hj := List.mem_range.1 hj
+      exact ⟨⟨_, (getElem?_eq_some_iff! lk i _).2 ⟨hi, rfl⟩, (getElem?_eq_some_iff! rk j _).2 ⟨hj, beq_iff_eq.1 e⟩⟩,
+        ⟨_, (getElem?_eq_some_iff! lt i _).2 ⟨by omega, rfl⟩, _, hab, (getElem?_eq_some_iff! rt j _).2 ⟨by omega, rfl⟩⟩⟩
+  have hs : ∀ k, (Struct.group rk k).Pairwise fun a b => rt[a]! ≤ rt[b]! := fun k =>
+    ((List.pairwise_lt_range (n := rk.length)).filter _).imp_of_mem fun ha hb hab => by
+      obtain ⟨-, ha2⟩ := List.mem_filter.1 ha
+      obtain ⟨hb1, hb2⟩ := List.mem_filter.1 hb
+      have := List.mem_range.1 hb1
+      exact htime _ _ (Nat.le_of_lt hab) (by omega) ((beq_iff_eq.1 ha2).trans (beq_iff_eq.1 hb2).symm)
+  have hB : ∀ i, i < lk.length → ∀ r,
+      (Λ S ≫ est (· ≥ ·)) i r ↔ Struct.binSpec rt (Struct.group rk lk[i]!) lt[i]! = some r := fun i hi r => by
+    rw [binSpec_est lk rk rt lt i r (hs _), Λ_comp_est_apply, Λ_comp_est_apply]
+    simp only [key i hi]
+  have hR : ∀ i, i < lk.length → ∀ c, miss ((Λ S ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) Int64.minValue i c ↔
+      c = ((Struct.binSpec rt (Struct.group rk lk[i]!) lt[i]!).map Int64.ofNat).getD Int64.minValue := fun i hi c => by
+    have hM : ∀ c, ((Λ S ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) i c ↔
+        ∃ r, Struct.binSpec rt (Struct.group rk lk[i]!) lt[i]! = some r ∧ c = Int64.ofNat r :=
+      fun c => ⟨fun ⟨r, h, e⟩ => ⟨r, (hB i hi r).1 h, e⟩, fun ⟨r, h, e⟩ => ⟨r, (hB i hi r).2 h, e⟩⟩
+    rw [miss_iff]
+    simp only [hM]
+    cases Struct.binSpec rt (Struct.group rk lk[i]!) lt[i]! <;> simp
+  refine hom_ext fun (i : Nat) c => ?_
+  show (Struct.ajSpec lk lt rk rt)[i]? = some c ↔
+    ∃ i', (i = i' ∧ i < lk.length) ∧ miss ((Λ S ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) Int64.minValue i' c
+  by_cases hi : i < lk.length
+  · have hv : (Struct.ajSpec lk lt rk rt)[i]? =
+        some (((Struct.binSpec rt (Struct.group rk lk[i]!) lt[i]!).map Int64.ofNat).getD Int64.minValue) := by
+      rw [getElem!_pos lk i hi, getElem!_pos lt i (by omega), Struct.ajSpec, List.getElem?_map,
+        List.getElem?_eq_getElem (by rw [List.length_zip]; omega), List.getElem_zip]
+      rfl
+    rw [hv, Option.some.injEq, eq_comm, ← hR i hi c]
+    exact ⟨fun h => ⟨i, ⟨rfl, hi⟩, h⟩, fun ⟨_, ⟨e, _⟩, h⟩ => by subst e; exact h⟩
+  · rw [List.getElem?_eq_none (by simp only [Struct.ajSpec, List.length_map, List.length_zip]; omega)]
+    exact ⟨(fun e => nomatch e), fun ⟨_, ⟨_, h⟩, _⟩ => absurd h hi⟩
+
+/-- **The `aj` kernel computes the expression**: `aj_long`'s answer is `miss(Λ(S) ≫ est(≥), 0N)` (`ajSpec_rel`)
+    on the key words and the times read as longs, where within each right key the times ascend. -/
+theorem aj_rel {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr .long m} {keys hay : ByteArray}
+    (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
+    (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = tl.n) (hcr : cr.n = tr.n)
+    (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hrwf : cr.WF) (hrR : Find.Readable .long cr)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) →
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
+    (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
+    (hrb : Column.bytesOf tr = some hay) (hkn : keys.size / 8 = tl.n) (hhn : hay.size / 8 = tr.n)
+    (hU : tl.n < USize.size) (hrU : tr.n < USize.size) (h63 : tr.n < 2 ^ 63) (h2l : 2 * tl.n + 2 < 2 ^ 63)
+    (htime : ∀ i j, i ≤ j → j < tr.n → wr[i]! = wr[j]! →
+      ((nats hay).map Int64.ofNat)[i]! ≤ ((nats hay).map Int64.ofNat)[j]!)
+    (h : Struct.aj #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tl⟩ ⟨.long, tr⟩ = .ok ⟨m, A⟩) :
+    A.rel = corefl (· < m) ≫
+      miss ((Λ ((ix wl ≫ (ix wr)°) ∩ (ix ((nats keys).map Int64.ofNat) ≫ ((· ≥ ·) : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩)
+        ≫ (ix ((nats hay).map Int64.ofNat))°)) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) Int64.minValue := by
+  have hA := aj_long hlt hrt hwl hwr hln hrn hcl hcr hlwf hlR hrwf hrR hattr htl htr hkb hrb hkn hhn hU hrU h63 h2l h
+  have hm : m = wl.length := by
+    have := congrArg List.length hA
+    rw [Arr.length_toList] at this
+    rw [this]; simp only [Struct.ajSpec, List.length_map, List.length_zip, nats_length]; omega
+  show ix A.toList = _
+  rw [hA, hm]
+  exact ajSpec_rel wl _ wr _ (by simp only [List.length_map, nats_length]; omega)
+    (by simp only [List.length_map, nats_length]; omega)
+    fun i j hij hj e => htime i j hij (by simp only [List.length_map, nats_length] at hj; omega) e
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
@@ -3284,6 +3381,8 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms wjEdge_est
 #print axioms wjSpec_mixes
 #print axioms wjEdge_contig
+#print axioms ajSpec_rel
+#print axioms aj_rel
 #print axioms bytesOf_longWords
 #print axioms dyadColumn_sub_one_foR
 
