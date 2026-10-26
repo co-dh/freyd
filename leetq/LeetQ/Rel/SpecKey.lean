@@ -2492,18 +2492,43 @@ theorem keyMatch_halved {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) {ce
   simp [QValue.marking, hh]
   simpa using hKA
 
-/-- **`keyMatch` answers the key groups** at an unmarked right key column, at `s#` not worth halving with
-    each value in one run (`keyMatch_runs`), at `u#`/`p#` with no index built and each value in one run
-    (`keyMatch_gallop`), at `s#` worth halving on an ascending column (`keyMatch_halved`), and at `` `g `` with no
-    index built (`keyMatch_grouped`). -/
+/-- An ascending column (at the `Int64` order `s#` claims) holds each value in one run: a row between two equal
+    rows is squeezed between them, and `Int64` order is antisymmetric. -/
+theorem oneRun_of_ascending {wr : List UInt64}
+    (hasc : ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) :
+    OneRun (fun i => wr[i]!) wr.length := fun i j k hik hkj hj e => by
+  have h1 := hasc i k hik (by omega)
+  have h2 := hasc k j hkj hj
+  simp only at e ⊢
+  rw [e] at h1
+  have h := congrArg Int64.toUInt64 (Int64.le_antisymm h2 h1)
+  simpa [e] using h
+
+-- gap: a ready index (`a ∈ {2,3,4}`, `cell.ready = some ix`; `s#` is `a = 1 < 2`, so `viaIndex` always scans it).
+--   `viaIndex` runs `indexed ix` and scans only on `none`, so the scan half is the proofs above; the index half
+--   needs, first, a predicate `Describes ix wr` tying `ix` to `cr`'s words — none can be stated, since
+--   `IndexCell.ready` is opaque and no invariant links the cell to the column. From it:
+--   * `a = 2, 3`: `Index.spans ix .long lcol = some (nk, key, run)` →
+--     `∀ i < nl, (∃ a z, key i < nk ∧ run (key i) = some (a, z) ∧ a < z ∧ z ≤ nr ∧ group wr wl[i]! = range' a (z-a))
+--       ∨ ((nk ≤ key i ∨ run (key i) = none) ∧ group wr wl[i]! = [])`
+--     (via `Index.positions`, and `spans`' `.more` shift by `n`), and `ofRuns_kernel` generalised from
+--     `nk = nl`, `key = id` to any `nk`, `key` (the `met` fold where `nk > nl`).
+--   * `a = 4`: `partGroups nr nl leaf ix` answers `KeyAnswers` — specs of `Index.positions`, `Index.runRows`,
+--     `binColumn` on the index's `keys`, the `walk` fold, the cached `(kv, offs, rows)` as `groupColumn`'s answer,
+--     and `partGroups.join` merging two parts' groups under `.more`/`.edit`.
+
+/-- **`keyMatch` answers the key groups** at an unmarked right key column, at `s#` on an ascending column (not
+    worth halving: `keyMatch_runs` through `oneRun_of_ascending`; worth halving: `keyMatch_halved`), at `u#`/`p#`
+    with no index built and each value in one run (`keyMatch_gallop`), and at `` `g `` with no index built
+    (`keyMatch_grouped`). -/
 theorem keyMatch_answers {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (hrt : cr.ty = .long)
     (hlt : cl.ty = .long) (hrw : longWords cr = some wr) (hrn : wr.length = cr.n) (h63 : cr.n < 2 ^ 63)
     (hU : cr.n < USize.size) (hrwf : cr.WF) (hrR : Find.Readable .long cr) (hlU : cl.n < USize.size)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl) (hwl : longWords cl = some wl) (hln : wl.length = cl.n)
     (hnr : nr = cr.n) (hnl : wl.length = nl) (hnl2 : 2 * nl + 2 < 2 ^ 63)
     (hattr : ∀ a cell, cr.attr = some (a, cell) →
-      (a = 1 → Kernel.worthHalving nr nl = true → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
-      (a = 1 ∧ Kernel.worthHalving nr nl = false ∨ a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
       (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none)) :
     KeyAnswers wr wl (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).1
       (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).2 := by
@@ -2513,18 +2538,18 @@ theorem keyMatch_answers {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
     by_cases ha : a = 1
     · subst ha
       cases hw : Kernel.worthHalving nr nl
-      · exact keyMatch_runs nr nl hrt hlt hrw hrn h63 hU hlU hlwf hlR hwl hca hw (h2 (Or.inl ⟨rfl, hw⟩))
-      · exact keyMatch_halved nr nl hrt hlt hrw hrn h63 hU hrwf hrR hlU hlwf hlR hwl hnr hnl hnl2 hca hw (h1 rfl hw)
+      · exact keyMatch_runs nr nl hrt hlt hrw hrn h63 hU hlU hlwf hlR hwl hca hw (oneRun_of_ascending (h1 rfl))
+      · exact keyMatch_halved nr nl hrt hlt hrw hrn h63 hU hrwf hrR hlU hlwf hlR hwl hnr hnl hnl2 hca hw (h1 rfl)
     by_cases hb : a = 2 ∨ a = 3
     · exact keyMatch_gallop nr nl hrt hlt hrw hrn h63 hU hrwf hrR hlU hlwf hlR hwl hln hnr hnl hnl2 hca hb
-        (h3 (hb.elim Or.inl fun e => Or.inr (Or.inl e))) (h2 (Or.inr hb))
+        (h3 (hb.elim Or.inl fun e => Or.inr (Or.inl e))) (h2 hb)
     · exact keyMatch_grouped nr nl hrt hlt hrw hrn h63 hU hlU hlwf hlR hwl (fun a' cell' h => by
         rw [hca] at h; simp only [Option.some.injEq, Prod.mk.injEq] at h; obtain ⟨rfl, rfl⟩ := h
         exact ⟨ha, fun e => hb (Or.inl e), fun e => hb (Or.inr e), fun e => h3 (Or.inr (Or.inr e))⟩)
 
 /-- **`aj` at one long key column per side is `ajSpec`** of the two sides' key words: `aj_groups` with its
-    group hypothesis answered by `keyMatch_answers`. The right key column's `s#` is taken ascending where halving is
-    worth it, else with each value in one run; `u#`/`p#` only unindexed with each value in one run, `g#` only unindexed;
+    group hypothesis answered by `keyMatch_answers`. The right key column's `s#` is taken ascending;
+    `u#`/`p#` only unindexed with each value in one run, `g#` only unindexed;
     key columns bytes or frame of reference, times dense long. -/
 theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr .long m} {keys hay : ByteArray}
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
@@ -2532,8 +2557,8 @@ theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr 
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
     (hrwf : cr.WF) (hrR : Find.Readable .long cr)
     (hattr : ∀ a cell, cr.attr = some (a, cell) →
-      (a = 1 → Kernel.worthHalving tr.n tl.n = true → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
-      (a = 1 ∧ Kernel.worthHalving tr.n tl.n = false ∨ a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
       (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
     (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
     (hrb : Column.bytesOf tr = some hay) (hkn : keys.size / 8 = tl.n) (hhn : hay.size / 8 = tr.n)
@@ -3003,15 +3028,15 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hrwf : cr.WF) (hrR : Find.Readable .long cr) (h2l : 2 * t0.n + 2 < 2 ^ 63)
+    (hrwf : cr.WF) (hrR : Find.Readable .long cr)
     (hattr : ∀ a cell, cr.attr = some (a, cell) →
-      (a = 1 → Kernel.worthHalving tr.n t0.n = true → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
-      (a = 1 ∧ Kernel.worthHalving tr.n t0.n = false ∨ a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
       (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (h0b : Column.bytesOf t0 = some b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
-    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
+    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
     (h : Struct.wjP true ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
     Struct.runsSpec P.segs = Struct.wjSpec true wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
       ((nats hay).map Int64.ofNat) := by
@@ -3019,10 +3044,10 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
       .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] t0.n) := by
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
   have hk := keyMatch_answers tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) hrwf hrR (by omega) hlwf hlR hwl
-    hln hcr.symm (by omega) h2l hattr
+    hln hcr.symm (by omega) (by omega) hattr
   obtain ⟨gids, hgb, -⟩ := id hk
   exact wj_groups (L := t0) (bL := b0) true wl wr h0t h1t htr rfl h0t h0b h0n (fun _ _ => (if_pos rfl).symm) h1b hrb hgb h0n
-    h1n hhn (by omega) (by omega) hU h62 hkg hk h
+    h1n hhn (by omega) (by omega) hU (by omega) hkg hk h
 
 /-- **`wj1` is `wjSpec false`** at one long key column per side, the right one's mark as in `wj_long` (q's `wj1`): as `wj_long`,
     the lower edge binned at `w₀ - 1`, q's subtraction in both: `dyadColumn_sub_one` on a dense window,
@@ -3031,16 +3056,16 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hrwf : cr.WF) (hrR : Find.Readable .long cr) (h2l : 2 * t0.n + 2 < 2 ^ 63)
+    (hrwf : cr.WF) (hrR : Find.Readable .long cr)
     (hattr : ∀ a cell, cr.attr = some (a, cell) →
-      (a = 1 → Kernel.worthHalving tr.n t0.n = true → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
-      (a = 1 ∧ Kernel.worthHalving tr.n t0.n = false ∨ a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
+      (a = 1 → ∀ i j, i ≤ j → j < wr.length → wr[i]!.toInt64 ≤ wr[j]!.toInt64) ∧
+      (a = 2 ∨ a = 3 → OneRun (fun i => wr[i]!) wr.length) ∧
       (a = 2 ∨ a = 3 ∨ a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (hb0 : t0.enc = .bytes b0 ∨ ∃ md pk, t0.enc = .foR md pk ∧ b0 = Kernel.Coc.decode (8 : Nat).toUSize md pk t0.n.toUSize)
     (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
-    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
+    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n + 1 < 2 ^ 62)
     (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
     Struct.runsSpec P.segs = Struct.wjSpec false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
       ((nats hay).map Int64.ofNat) := by
@@ -3048,7 +3073,7 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
       .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] t0.n) := by
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
   have hk := keyMatch_answers tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) hrwf hrR (by omega) hlwf hlR hwl
-    hln hcr.symm (by omega) h2l hattr
+    hln hcr.symm (by omega) (by omega) hattr
   obtain ⟨gids, hgb, -⟩ := id hk
   obtain ⟨L, bL, hd, hLt, hLb, hLn, hLw⟩ : ∃ L bL, Kernel.dyadColumn .sub Kernel.Ew.va .long .long t0
       (Alg.longs (Find.one 1)) = some (.long, L) ∧ L.ty = .long ∧ Column.bytesOf L = some bL ∧ bL.size / 8 = t0.n ∧
@@ -3061,7 +3086,7 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     · exact dyadColumn_sub_one a hn0 h0n
     · exact dyadColumn_sub_one_foR a hn0
   refine wj_groups false wl wr h0t h1t htr hd hLt hLb hLn (fun i hi => ?_) h1b hrb hgb h0n h1n hhn
-    (by omega) (by omega) hU h62 hkg hk h
+    (by omega) (by omega) hU (by omega) hkg hk h
   rw [hLw i hi, if_neg Bool.false_ne_true]
 
 /-- `wj`'s window, `Wᵥ` with both ends moving: left row `i` to the right rows `j` with `lo i ≤ j < hi i`. -/
@@ -3228,6 +3253,7 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms keyMatch_gallop
 #print axioms binEdges_long
 #print axioms keyMatch_halved
+#print axioms oneRun_of_ascending
 #print axioms keyMatch_answers
 #print axioms ofRuns_answers
 #print axioms ofRuns_kernel
