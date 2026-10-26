@@ -851,6 +851,38 @@ theorem cmp_spec_long_Fb {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = 
   exact cmp_spec_words hop h hn hx (by simp only [longWords, hb]) hxs (Arr.n_long_bytes yv hb)
     (by rw [hR, ← hrun]; simp [Kernel.payload])
 
+/-- `x+y = ⟨x, y⟩ ≫ (+)` from the kernel on a dense `x` and a `foR` `y`: `val_rel` of `val_spec_long_bF`. -/
+theorem val_rel_long_bF {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {a md pk : ByteArray}
+    (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .foR md pk) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (val_spec_long_bF hop h ha hb hn hv)
+
+/-- `x+y = ⟨x, y⟩ ≫ (+)` from the kernel on a `foR` `x` and a dense `y`: `val_rel` of `val_spec_long_Fb`. -/
+theorem val_rel_long_Fb {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {md pk b : ByteArray}
+    (ha : x.c.enc = .foR md pk) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (val_spec_long_Fb hop h ha hb hn hv)
+
+/-- `x<y = ⟨x, y⟩ ≫ (<)` from the kernel on a dense `x` and a `foR` `y`: `val_rel` of `cmp_spec_long_bF`. -/
+theorem cmp_rel_long_bF {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {a md pk : ByteArray} (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .foR md pk) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (cmp_spec_long_bF hop h ha hb hn hv)
+
+/-- `x<y = ⟨x, y⟩ ≫ (<)` from the kernel on a `foR` `x` and a dense `y`: `val_rel` of `cmp_spec_long_Fb`. -/
+theorem cmp_rel_long_Fb {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {md pk b : ByteArray} (ha : x.c.enc = .foR md pk) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) :
+    R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  val_rel (cmp_spec_long_Fb hop h ha hb hn hv)
+
 /-- A one-stage `eMon` chain is `Ew.mon` over the input payload it names (`Verify.run_val`'s proof). -/
 theorem run_mon (b : Kernel.Ew.Build) (hb : b.stages = #[]) (op cls sa : UInt8) (nul : Int64)
     (ha : sa < Kernel.Ew.slot0) (n : USize) :
