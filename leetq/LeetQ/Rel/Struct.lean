@@ -13,6 +13,7 @@ import QLean.Verify.Group
 import QLean.Verify.Gather
 import QLean.Verify.Dyad
 import QLean.Verify.EwEnc
+import QLean.Verify.AlpConcat
 
 namespace LeetQ.Rel.Struct
 
@@ -379,41 +380,10 @@ theorem words_bytes {c : Column} (h : Words c) : ∃ b, c.enc = .bytes b ∧ b.s
 
 theorem elemsW_empty (w : Nat) : Verify.elemsW w ByteArray.empty = [] := by simp [Verify.elemsW]
 
-/-- Reading `w`-byte words is local: past `a`'s whole words, `a ++ b` reads `b`'s. -/
-theorem elemsW_append (w : Nat) (hw : 0 < w) (a b : ByteArray) (ha : a.size % w = 0) :
-    Verify.elemsW w (a ++ b) = Verify.elemsW w a ++ Verify.elemsW w b := by
-  obtain ⟨q, hq⟩ : ∃ q, a.size = w * q := ⟨a.size / w, by have := Nat.div_add_mod a.size w; omega⟩
-  have hqa : a.size / w = q := by rw [hq, Nat.mul_div_cancel_left q hw]
-  have hs : (a ++ b).size / w = q + b.size / w := by rw [ByteArray.size_append, hq, Nat.mul_add_div hw]
-  apply List.ext_getElem (by simp only [Verify.elemsW, List.length_map, List.length_range, List.length_append, hs, hqa])
-  intro i h1 h2
-  simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.getElem_append, List.length_map,
-    List.length_range, hqa]
-  split
-  · rename_i hi
-    have : (i + 1) * w ≤ q * w := Nat.mul_le_mul_right w hi
-    rw [Nat.succ_mul] at this
-    exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left a b _ (by rw [hq, Nat.mul_comm w q]; omega)
-  · rename_i hi
-    refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
-    have e : i * w + k = a.size + ((i - q) * w + k) := by
-      rw [hq, Nat.mul_comm w q, Nat.sub_mul]; have := Nat.mul_le_mul_right w (Nat.le_of_not_lt hi); omega
-    rw [e, Verify.ba_append_right]
-
-/-- A fold of `++` over parts of whole words reads the parts' words in order. -/
-theorem elemsW_foldl_append (w : Nat) (hw : 0 < w) :
-    ∀ (ps : List ByteArray) (acc : ByteArray), acc.size % w = 0 → (∀ p ∈ ps, p.size % w = 0) →
-      Verify.elemsW w (ps.foldl (· ++ ·) acc) = Verify.elemsW w acc ++ ps.flatMap (Verify.elemsW w)
-  | [], _, _, _ => by simp
-  | p :: ps, acc, ha, hp => by
-    rw [List.foldl_cons, elemsW_foldl_append w hw ps _ (by rw [ByteArray.size_append, Nat.add_mod, ha, hp p (by simp)] <;> simp)
-      (fun q hq => hp q (by simp [hq])), elemsW_append w hw _ _ ha]
-    simp
-
 /-- `concatBytes` over parts of whole words reads the parts' words in order. -/
 theorem elemsW_concatBytes (w : Nat) (hw : 0 < w) (ps : Array ByteArray) (hp : ∀ p ∈ ps.toList, p.size % w = 0) :
     Verify.elemsW w (concatBytes ps) = ps.toList.flatMap (Verify.elemsW w) := by
-  rw [concatBytes, ← Array.foldl_toList, elemsW_foldl_append w hw _ _ (by rfl) hp, elemsW_empty, List.nil_append]
+  rw [concatBytes, ← Array.foldl_toList, Verify.elemsW_foldl_append w hw _ _ (by rfl) hp, elemsW_empty, List.nil_append]; rfl
 
 /-- A whole-word range of a payload reads the range of its words. -/
 theorem elemsW_extract (w : Nat) (hw : 0 < w) (b : ByteArray) {s e : Nat} (he : e ≤ b.size / w) :
@@ -711,8 +681,8 @@ theorem concat_toList {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {r : A
   rw [Arr.toList_long r (show longWords r.c = some (Verify.elemsW 8 (concatBytes #[b, c])) by
     rw [Find.onKey_c h]; rfl), toList_bytes x hc, toList_bytes y hc',
     show concatBytes #[b, c] = (ByteArray.empty ++ b) ++ c from rfl,
-    elemsW_append 8 (by decide) _ _ (by rw [ByteArray.size_append]; simpa using hb),
-    elemsW_append 8 (by decide) _ _ (by rfl), elemsW_empty, List.nil_append, List.map_append]
+    Verify.elemsW_append 8 (by decide) _ _ (by rw [ByteArray.size_append]; simpa using hb),
+    Verify.elemsW_append 8 (by decide) _ _ (by rfl), elemsW_empty, List.nil_append, List.map_append]
 
 /-- A long column's words are its fixed-width reads, `Column.raw`. -/
 theorem raw_long {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hw : c.WF) (h : longWords c = some ws) :

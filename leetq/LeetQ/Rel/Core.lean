@@ -304,7 +304,7 @@ theorem Arr.dense_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : flo
   | _ => all_goals (rw [hc] at h; cases h)
 
 /-- A dense float answer lists its words whichever form `Column.answer` leaves it in: dense, or ALP
-    encoded (`alpBits_alpEncode64`, below `2³²` elements). -/
+    encoded (`alpBits_alpEncodeAt`, below `2³²` elements). -/
 theorem floatWords_answer (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) :
     floatWords (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩) = some (Verify.elemsW 8 b) := by
   have ha : (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩).enc = .bytes b ∨
@@ -321,7 +321,7 @@ theorem floatWords_answer (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) :
   rcases ha with e | e
   · rw [e]
   · rw [e]; simp only [hn, Verify.elemsW]
-    exact congrArg some (List.map_congr_left fun i hi => Verify.alpBits_alpEncode64 b h32 i (List.mem_range.1 hi))
+    exact congrArg some (List.map_congr_left fun i hi => (Verify.alpBits_alpEncodeAt false 8 rfl b h32).2 i (List.mem_range.1 hi))
 
 /-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
     width four, the `foR` form read back by `foRBits_encode_bits`. -/
