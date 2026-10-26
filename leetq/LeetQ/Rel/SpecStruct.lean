@@ -232,6 +232,30 @@ theorem parted_rel {v : QAtomicType} (P : Parted v) :
           list P.val.rel := ix_runs _ _ _ h0 (by rw [hl]; exact cg) mono
     _ = corefl (· < P.g) ≫ Λ ((corefl (· < P.n) ≫ grp P.o)°) ≫ enum ≫ list P.val.rel := by rw [hl, grp_cnt]
 
+/-! ## `o cut x` -/
+
+/-- `o cut x = Λ(grp(o)°) ≫ enum ≫ list(x)`, for a first offset `o₀ = 0` (q keeps every row): `cutP` answers
+    `x` itself cut at its offsets `r.o`, which are `o` closed by `nx`, so `parted_rel` is the law. Restricted to
+    a dense long `o`; at `o₀ > 0` the rows below `o₀` are dropped first (`cut_toList` covers it, as a List). -/
+theorem cut_rel {no nx : Nat} {o : Arr .long no} {x : Arr .long nx} {r : Parted .long} {ob : ByteArray}
+    (ho : o.c.enc = .bytes ob) (h0 : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = 0)
+    (h : Struct.cutP o x = .ok r) :
+    r.rel = corefl (· < r.g) ≫ Λ ((corefl (· < nx) ≫ grp r.o)°) ≫ enum ≫ list x.rel := by
+  unfold Struct.cutP at h
+  rw [o.c_eq ho, show Find.dense "o cut x" .long ⟨.long, no, .bytes ob, o.attrCell⟩ = pure ob from rfl,
+    pure_bind] at h
+  generalize ho₀ : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = o₀ at h
+  rw [h0] at ho₀; subst ho₀
+  dsimp only at h
+  split at h
+  · simp [bind, Except.bind] at h
+  simp only [pure_bind] at h
+  split at h
+  · rw [bind_pure] at h
+    obtain ⟨g, oa, co, _, rfl⟩ := Struct.parted_ok h
+    exact parted_rel _
+  · exact absurd trivial ‹¬True›
+
 /-! ## raze -/
 
 /-- `raze = concat` (`ListRel.concatR`, the graph of `cconcat`): the answer is the nested list's runs flattened. -/
@@ -260,5 +284,6 @@ theorem concat_rel {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {r : Arr 
 #print axioms ix_runs
 #print axioms parted_rel
 #print axioms raze_rel
+#print axioms cut_rel
 
 end LeetQ.Rel.Verb
