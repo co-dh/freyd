@@ -98,6 +98,9 @@ def sort {A : Type} (R : A → A → Prop) : dList A ⟶ dList A := perm ≫ ord
     the strict `<`, because `setify°` takes a set to lists with repeats too, which `≤` would keep. -/
 def enum := (setify (A := Nat))° ≫ sort (· < ·)
 
+/-- `grpL(k) = Λ(k°) ≫ enum`: each key's positions as a list in position order. -/
+def grpL {K : RelSet.{0}} (k : Idx ⟶ K) := Λ (k°) ≫ enum
+
 /-! ## `enum` -/
 
 theorem inlistP_ofList {A : Type} (a : A) : ∀ xs : List A, inlistP (CL.ofList xs) a ↔ a ∈ xs
@@ -191,16 +194,16 @@ theorem ix_map {β : Type} (f : α → β) (xs : List α) : ix (xs.map f) = ix x
 
 theorem ix_takeSpec [Inhabited α] (k : Int) (xs : List α) (h : 0 < xs.length) :
     ix (Struct.takeSpec k xs) = take k xs.length ≫ ix xs :=
-  hom_ext fun j a => by
+  hom_ext fun (j : Nat) a => by
     show (Struct.takeSpec k xs)[j]? = some a ↔ ∃ i, (∃ z, (j = z ∧ j < k.natAbs) ∧ i = (Kernel.takeFrom k xs.length + z) % xs.length) ∧ xs[i]? = some a
     have hm : (Kernel.takeFrom k xs.length + j) % xs.length < xs.length := Nat.mod_lt _ h
-    simp only [Struct.takeSpec, List.getElem?_map, List.getElem?_range]
+    simp only [Struct.takeSpec, List.getElem?_map]
     by_cases hj : j < k.natAbs
-    · simp [hj, getElem!_pos, hm, List.getElem?_eq_getElem hm]
+    · simp [hj, hm]
     · simp [hj]
 
 theorem ix_dropSpec (k : Int) (xs : List α) : ix (Struct.dropSpec k xs) = drop k xs.length ≫ ix xs :=
-  hom_ext fun j a => by
+  hom_ext fun (j : Nat) a => by
     show (Struct.dropSpec k xs)[j]? = some a ↔ ∃ i, (∃ z, (j = z ∧ j < xs.length - k.natAbs) ∧ i = z + k.toNat) ∧ xs[i]? = some a
     simp only [Struct.dropSpec]
     split
@@ -217,13 +220,13 @@ theorem ix_dropSpec (k : Int) (xs : List α) : ix (Struct.dropSpec k xs) = drop 
       · rintro ⟨_, ⟨_, ⟨rfl, hj⟩, rfl⟩, e⟩; rw [if_pos hj]; rwa [show j + k.toNat = j by omega] at e
 
 theorem ix_reverse (xs : List α) : ix xs.reverse = rev xs.length ≫ ix xs :=
-  hom_ext fun j a => by
+  hom_ext fun (j : Nat) a => by
     show xs.reverse[j]? = some a ↔ ∃ i, (∃ z, (j = z ∧ j < xs.length) ∧ i = xs.length - 1 - z) ∧ xs[i]? = some a
     by_cases hj : j < xs.length
     · rw [List.getElem?_reverse hj]; exact ⟨fun e => ⟨_, ⟨j, ⟨rfl, hj⟩, rfl⟩, e⟩, fun ⟨_, ⟨_, ⟨rfl, _⟩, rfl⟩, e⟩ => e⟩
     · have hl : xs.reverse.length ≤ j := by rw [List.length_reverse]; omega
       rw [List.getElem?_eq_none hl]
-      exact ⟨fun e => by cases e, fun ⟨_, ⟨_, ⟨_, h⟩, _⟩, _⟩ => absurd h hj⟩
+      exact ⟨(fun e => nomatch e), fun ⟨_, ⟨_, ⟨_, h⟩, _⟩, _⟩ => absurd h hj⟩
 
 /-- Element `j` of `xs` rotated left by `s < |xs|` is element `(j+s) mod |xs|`. -/
 theorem getElem?_rotateLeft (xs : List α) {s j : Nat} (hs : s < xs.length) (hj : j < xs.length) :
@@ -245,7 +248,7 @@ theorem getElem?_rotateLeft (xs : List α) {s j : Nat} (hs : s < xs.length) (hj 
       congr 1; omega
 
 theorem ix_rotateSpec (k : Int) (xs : List α) : ix (Struct.rotateSpec k xs) = rot k xs.length ≫ ix xs :=
-  hom_ext fun j a => by
+  hom_ext fun (j : Nat) a => by
     show (Struct.rotateSpec k xs)[j]? = some a ↔ ∃ i, (∃ z, (j = z ∧ j < xs.length) ∧ i = (z +(k.emod xs.length).toNat) % xs.length) ∧ xs[i]? = some a
     simp only [Struct.rotateSpec]
     split
@@ -258,9 +261,11 @@ theorem ix_rotateSpec (k : Int) (xs : List α) : ix (Struct.rotateSpec k xs) = r
       by_cases hj : j < xs.length
       · rw [getElem?_rotateLeft xs hs hj]
         exact ⟨fun e => ⟨_, ⟨j, ⟨rfl, hj⟩, rfl⟩, e⟩, fun ⟨_, ⟨_, ⟨rfl, _⟩, rfl⟩, e⟩ => e⟩
-      · have hl : (xs.rotateLeft (k.emod xs.length).toNat).length ≤ j := by rw [List.length_rotateLeft]; omega
+      · have hl : (xs.rotateLeft (k.emod xs.length).toNat).length ≤ j := by
+          simp only [List.rotateLeft]
+          split <;> (try simp only [List.length_append, List.length_drop, List.length_take]) <;> omega
         rw [List.getElem?_eq_none hl]
-        exact ⟨fun e => by cases e, fun ⟨_, ⟨_, ⟨_, h⟩, _⟩, _⟩ => absurd h hj⟩
+        exact ⟨(fun e => nomatch e), fun ⟨_, ⟨_, ⟨_, h⟩, _⟩, _⟩ => absurd h hj⟩
 
 /-- `miss` pointwise: `R`, or `e` where `R` holds nothing. -/
 theorem miss_iff {A B : RelSet.{0}} (R : A ⟶ B) (e : B.carrier) (i : A.carrier) (b : B.carrier) :
@@ -271,7 +276,7 @@ theorem miss_iff {A B : RelSet.{0}} (R : A ⟶ B) (e : B.carrier) (i : A.carrier
 
 theorem ix_indexSpec (d : α) (xs : List α) (is : List Int64) :
     ix (Struct.indexSpec d xs is) = ix is ≫ miss (pos ≫ ix xs) d :=
-  hom_ext fun j a => by
+  hom_ext fun (j : Nat) a => by
     show (Struct.indexSpec d xs is)[j]? = some a ↔ ∃ i, is[j]? = some i ∧ miss (pos ≫ ix xs) d i a
     simp only [Struct.indexSpec, List.getElem?_map, miss_iff]
     have hp : ∀ (i : Int64) c, (pos ≫ ix xs) i c ↔ 0 ≤ i ∧ xs[i.toInt.toNat]? = some c := fun i c =>
