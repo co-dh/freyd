@@ -54,6 +54,23 @@ theorem perm_toList : ∀ {x y : CL.ConsList Unit α}, Perm x y → (CL.toList x
   | _, _, .swap a b _ => .swap b a _
   | _, _, .trans h₁ h₂ => (perm_toList h₁).trans (perm_toList h₂)
 
+/-- Two lists sorted under an antisymmetric `r` that are permutations of each other are one list. -/
+theorem eq_of_perm_pairwise {r : α → α → Prop} (anti : ∀ a b, r a b → r b a → a = b) :
+    ∀ {xs ys : List α}, xs.Perm ys → xs.Pairwise r → ys.Pairwise r → xs = ys
+  | [], [], _, _, _ => rfl
+  | [], _ :: _, h, _, _ => absurd h.length_eq (by simp)
+  | _ :: _, [], h, _, _ => absurd h.length_eq (by simp)
+  | a :: xs, b :: ys, h, hx, hy => by
+    rw [List.pairwise_cons] at hx hy
+    have hab : a = b := by
+      rcases List.mem_cons.1 (h.subset (List.mem_cons_self ..)) with e | m
+      · exact e
+      rcases List.mem_cons.1 (h.symm.subset (List.mem_cons_self ..)) with e | m'
+      · exact e.symm
+      exact anti a b (hx.1 b m') (hy.1 a m)
+    subst hab
+    rw [eq_of_perm_pairwise anti h.cons_inv hx.2 hy.2]
+
 /-- `cst(L) = cst(xs) ≫ sort(r)` when `L` is a permutation of `xs` sorted under the antisymmetric `r`:
     `sort(r)` relates `xs` to `L` and to nothing else. -/
 theorem cst_sort (r : α → α → Prop) (anti : ∀ a b, r a b → r b a → a = b) {xs L : List α}

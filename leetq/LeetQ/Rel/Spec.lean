@@ -125,28 +125,28 @@ theorem perm_inlistP {A : Type} {x y : CL.ConsList Unit A} (h : Perm x y) (a : A
   | swap b c z => show (a = b ∨ a = c ∨ _) ↔ (a = c ∨ a = b ∨ _); exact ⟨fun | .inl h => .inr (.inl h) | .inr (.inl h) => .inl h | .inr (.inr h) => .inr (.inr h), fun | .inl h => .inr (.inl h) | .inr (.inl h) => .inl h | .inr (.inr h) => .inr (.inr h)⟩
   | trans _ _ i1 i2 => exact i1.trans i2
 
-/-- Two lists sorted under an antisymmetric `r` that are permutations of each other are one list. -/
-theorem eq_of_perm_pairwise {α : Type} {r : α → α → Prop} (anti : ∀ a b, r a b → r b a → a = b) :
-    ∀ {xs ys : List α}, xs.Perm ys → xs.Pairwise r → ys.Pairwise r → xs = ys
+/-- Two strictly ascending lists with the same members are one list. -/
+theorem eq_of_pairwise_lt : ∀ {xs ys : List Nat}, xs.Pairwise (· < ·) → ys.Pairwise (· < ·) →
+    (∀ a, a ∈ xs ↔ a ∈ ys) → xs = ys
   | [], [], _, _, _ => rfl
-  | [], _ :: _, h, _, _ => absurd h.length_eq (by simp)
-  | _ :: _, [], h, _, _ => absurd h.length_eq (by simp)
-  | a :: xs, b :: ys, h, hx, hy => by
+  | [], b :: _, _, _, h => absurd ((h b).2 (List.mem_cons_self ..)) List.not_mem_nil
+  | a :: _, [], _, _, h => absurd ((h a).1 (List.mem_cons_self ..)) List.not_mem_nil
+  | a :: xs, b :: ys, hx, hy, h => by
     rw [List.pairwise_cons] at hx hy
     have hab : a = b := by
-      rcases List.mem_cons.1 (h.subset (List.mem_cons_self ..)) with e | m
+      rcases List.mem_cons.1 ((h a).1 (List.mem_cons_self ..)) with e | m
       · exact e
-      rcases List.mem_cons.1 (h.symm.subset (List.mem_cons_self ..)) with e | m'
+      rcases List.mem_cons.1 ((h b).2 (List.mem_cons_self ..)) with e | m'
       · exact e.symm
-      exact anti a b (hx.1 b m') (hy.1 a m)
+      have := hy.1 a m; have := hx.1 b m'; omega
     subst hab
-    rw [eq_of_perm_pairwise anti h.cons_inv hx.2 hy.2]
-
-/-- Two strictly ascending lists with the same members are one list. -/
-theorem eq_of_pairwise_lt {xs ys : List Nat} (hx : xs.Pairwise (· < ·)) (hy : ys.Pairwise (· < ·))
-    (h : ∀ a, a ∈ xs ↔ a ∈ ys) : xs = ys :=
-  eq_of_perm_pairwise (fun _ _ h1 h2 => by omega)
-    ((List.perm_ext_iff_of_nodup (hx.imp Nat.ne_of_lt) (hy.imp Nat.ne_of_lt)).2 h) hx hy
+    rw [eq_of_pairwise_lt hx.2 hy.2 fun c => ⟨fun m => ?_, fun m => ?_⟩]
+    · have := hx.1 c m; rcases List.mem_cons.1 ((h c).1 (List.mem_cons_of_mem _ m)) with e | m'
+      · omega
+      · exact m'
+    · have := hy.1 c m; rcases List.mem_cons.1 ((h c).2 (List.mem_cons_of_mem _ m)) with e | m'
+      · omega
+      · exact m'
 
 /-- `enum` relates a set to exactly the strictly ascending lists of its members. -/
 theorem enum_iff (S) (ys : CL.ConsList Unit Nat) :
