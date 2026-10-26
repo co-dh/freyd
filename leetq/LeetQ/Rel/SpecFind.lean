@@ -97,6 +97,26 @@ theorem ix_idxOf [BEq α] [LawfulBEq α] (xs : List α) :
     · simp [hm]
     · simp [hm, List.idxOf_eq_length hm]
 
+/-- A key looked up in a key list `ks` beside values `vs`, `e` at a miss:
+    `ix(xs.map (vs.getD (ks.idxOf ·) e)) = xs ≫ miss(Λ(ks°) ≫ est(≤) ≫ vs, e)`, `ks` and `vs` of one length. -/
+theorem ix_lookup [BEq α] [LawfulBEq α] {β : Type} (xs ks : List α) (vs : List β) (e : β)
+    (hl : ks.length = vs.length) :
+    ix (xs.map fun k => vs.getD (ks.idxOf k) e) = ix xs ≫ miss ((Λ ((ix ks)°) ≫ est (· ≤ ·)) ≫ ix vs) e := by
+  rw [ix_map]
+  refine congrArg (ix xs ≫ ·) (hom_ext fun k b => ?_)
+  have key : ∀ c, (Λ ((ix ks)°) ≫ est (· ≤ ·)) k c ↔ k ∈ ks ∧ c = ks.idxOf k :=
+    fun c => (Λ_comp_est_apply _ _ k c).trans (idxOf_least k ks c)
+  have hR : ∀ b', ((Λ ((ix ks)°) ≫ est (· ≤ ·)) ≫ ix vs) k b' ↔ k ∈ ks ∧ vs[ks.idxOf k]? = some b' :=
+    fun b' => ⟨fun ⟨c, hc, hv⟩ => by obtain ⟨hm, rfl⟩ := (key c).1 hc; exact ⟨hm, hv⟩,
+      fun ⟨hm, hv⟩ => ⟨_, (key _).2 ⟨hm, rfl⟩, hv⟩⟩
+  rw [miss_iff]
+  simp only [hR]
+  show b = vs.getD (ks.idxOf k) e ↔ _
+  by_cases hm : k ∈ ks
+  · have hi : ks.idxOf k < vs.length := hl ▸ List.idxOf_lt_length_iff.2 hm
+    simp [hm, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, eq_comm]
+  · simp [hm, List.idxOf_eq_length hm, hl, List.getD_eq_getElem?_getD]
+
 /-- On an ascending list, the positions holding at most `v` are those below `countP (· ≤ v)`. -/
 theorem lt_countP_iff (v : Int64) : ∀ {xs : List Int64}, xs.Pairwise (· ≤ ·) → ∀ i,
     (∃ w, xs[i]? = some w ∧ w ≤ v) ↔ i < xs.countP (· ≤ v)
@@ -904,27 +924,26 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
 theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : longWords y.c = some ys)
     (hm : m < USize.size) {fill : UInt64} {idx C : Column} {ib : ByteArray} (hi : Column.bytesOf idx = some ib)
     (hv : Ew.gatherFill .long fill y.c idx = .ok C) :
-    ∃ B, C = ⟨.long, idx.n, .bytes B, none⟩ ∧
+    ∃ B, C = ⟨.long, idx.n, .bytes B, none⟩ ∧ B.size = 8 * (ib.size / 8) ∧
       Verify.elemsW 8 B = (Verify.elemsW 8 ib).map fun k => ys.getD k.toNat fill := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  obtain ⟨B0, hB0 | ⟨md, pk, he, rfl⟩, -, hw0, -⟩ := Arr.dense_long y hy hm
-  all_goals simp only [Ew.gatherFill, show QAtomicType.width .long = some 8 from rfl, hi, bind, Except.bind,
-    pure, Except.pure] at hv
-  · rw [hB0] at hv
-    cases hv
-    refine ⟨_, rfl, ?_⟩
-    have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8) fill B0 ib
+  -- both encodings gather from a dense payload `B0` of words `ys`: `bytes` itself, `foR` its decode
+  obtain ⟨B0, hB0, hC⟩ : ∃ B0, Verify.elemsW 8 B0 = ys ∧
+      C = ⟨.long, idx.n, .bytes (Kernel.gatherBytes (8 : Nat).toUSize fill B0 ib), none⟩ := by
+    obtain ⟨B0, hB0 | ⟨md, pk, he, rfl⟩, -, hw0, -⟩ := Arr.dense_long y hy hm
+    all_goals simp only [Ew.gatherFill, show QAtomicType.width .long = some 8 from rfl, hi, bind, Except.bind,
+      pure, Except.pure] at hv
+    · rw [hB0] at hv; cases hv; exact ⟨B0, hw0, rfl⟩
+    · rw [he] at hv; cases hv
+      exact ⟨_, hw0, by rw [y.wf.2.1]; rfl⟩
+  subst hC
+  refine ⟨_, rfl, ?_, ?_⟩
+  · have := (Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) fill B0 ib).1
+    rwa [h8] at this
+  · have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8)
+      fill B0 ib
     rw [h8] at e
-    rw [e, hw0]
-    exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
-  · rw [he] at hv
-    cases hv
-    refine ⟨_, rfl, ?_⟩
-    have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8) fill
-      (Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ib
-    rw [h8] at e
-    rw [show Kernel.gatherFoR (8 : Nat).toUSize fill md pk y.c.n.toUSize ib = Kernel.gatherBytes (8 : Nat).toUSize
-      fill (Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ib by rw [y.wf.2.1]; rfl, e, hw0]
+    rw [e, hB0]
     exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
 /-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
