@@ -1189,6 +1189,27 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
     refine Or.inr ⟨by omega, by rw [hhi, hlo]; omega, fun p hp => ?_⟩
     rw [hrow p hp, hlo]
 
+/-- **`aj` at one long key column per side is `ajSpec`** of the two sides' key words: `aj_groups` with its
+    group hypothesis answered by `keyMatch_grouped`. The right key column carries no `s#`/`u#`/`p#`/`g#` mark;
+    key columns bytes or frame of reference, times dense long. -/
+theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr .long m} {keys hay : ByteArray}
+    (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
+    (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = tl.n) (hcr : cr.n = tr.n)
+    (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
+    (hrb : Column.bytesOf tr = some hay) (hkn : keys.size / 8 = tl.n) (hhn : hay.size / 8 = tr.n)
+    (hU : tl.n < USize.size) (hrU : tr.n < USize.size) (h63 : tr.n < 2 ^ 63)
+    (h : Struct.aj #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tl⟩ ⟨.long, tr⟩ = .ok ⟨m, A⟩) :
+    A.toList = Struct.ajSpec wl ((nats keys).map Int64.ofNat) wr ((nats hay).map Int64.ofNat) := by
+  have hkg : Struct.keyGroups "aj" #[⟨.long, cl⟩] #[⟨.long, cr⟩] tl.n tr.n =
+      .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] tl.n) := by
+    simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
+  obtain ⟨gids, hgb, hgn, hgrp⟩ := keyMatch_grouped tr.n tl.n hrt hlt hwr hrn (by omega) (by omega) (by omega)
+    hlwf hlR hwl hattr
+  exact aj_groups wl wr htl htr hkb hrb hgb hkn (by omega) hhn (by omega) (by omega) hU h63 hkg
+    (fun i hi => hgrp i (by omega)) h
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
@@ -1199,5 +1220,11 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
 #print axioms groupEdge_long
 #print axioms binSpec_mem
 #print axioms aj_groups
+#print axioms bucket_idxOf
+#print axioms groups_of_buckets
+#print axioms groupColumn_long
+#print axioms keyColumns_long
+#print axioms keyMatch_grouped
+#print axioms aj_long
 
 end LeetQ.Rel.Verb
