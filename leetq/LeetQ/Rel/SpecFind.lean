@@ -947,14 +947,14 @@ theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : lon
     exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
 /-- `x@i` at long, source and index each `bytes` or `foR` (`longWords`): word `j` is the source's word at index
-    word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). -/
+    word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). The index
+    need only fit its count (`countFits`), which a dense index does at any length. -/
 theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
-    (hm : m < USize.size) (i : Arr .long k) (hi : longWords i.c = some is) (hk : k < USize.size) {c : Column}
+    (hm : m < USize.size) (i : Arr .long k) (hi : longWords i.c = some is) (hfi : Verify.countFits i.c) {c : Column}
     (h : Kernel.gatherColumn .long x.c i.c = some (.vector c)) :
     ∃ B, c = ⟨.long, k, .bytes B, none⟩ ∧ B.size = k * 8 ∧
       Verify.elemsW 8 B = is.map fun j => xs.getD j.toNat 0x8000000000000000 := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hfi : Verify.countFits i.c := Struct.countFits_long i hi hk
   have hA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
     simp [longWords, he] at hx
   obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c i.c c x.wf.1
@@ -1189,7 +1189,7 @@ theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWo
     (hk : k < USize.size) (I : Arr .long n) {F : List Nat} (hI : longWords I.c = some (F.map UInt64.ofNat))
     (hF : ∀ j ∈ F, j < k) (hn : n < USize.size) {c : Column} (h : Kernel.gatherColumn .long z.c I.c = some (.vector c)) :
     ∃ G : Arr .long n, G.c = c ∧ G.rel = ix F ≫ z.rel := by
-  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long z hz hk I hI hn h
+  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long z hz hk I hI (Struct.countFits_long I hI hn) h
   have hzl : zs.length = k := by rw [← Arr.length_toList z, Arr.toList_long z hz, List.length_map]
   let G : Arr .long n := ⟨⟨.long, n, .bytes B, none⟩, rfl, rfl, by simp only [Column.WF, QAtomicType.width]; omega⟩
   refine ⟨G, rfl, ?_⟩
@@ -2394,12 +2394,10 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
     (List.pairwise_lt_range ..).filter _
   have hlt : ∀ j ∈ Verify.firstsOf (fun i => x.toList[i]!) x.toList.length, j < x.toList.length :=
     fun j hj => List.mem_range.1 (List.mem_filter.1 hj).1
-  refine ⟨⟨CL.ofList _, (enum_iff _ _).2 ⟨funext fun j => propext ((hS j).trans (inlistP_ofList j _).symm),
-    (orderedP_ofList _ _).2 hP⟩⟩, fun ys hy => ?_⟩
-  obtain ⟨hS', ho⟩ := (enum_iff _ _).1 hy
-  have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length :=
-    eq_of_pairwise_lt (by rw [← orderedP_ofList, ofList_toList]; exact ho) hP fun j => by
-      rw [← inlistP_ofList, ofList_toList, ← hS']; exact hS j
+  have he := enum_ofList _ _ hP fun j => (hS j).symm
+  refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
+  have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := by
+    rw [(he ys).1 hy, CL.toList_ofList]
   calc r.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8 h)
     _ = ix ((Verify.firstsOf (fun i => x.toList[i]!) x.toList.length).map fun i => x.toList[i]!) :=
         congrArg ix (eraseDups_firsts _)

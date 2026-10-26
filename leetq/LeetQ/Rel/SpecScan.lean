@@ -264,11 +264,6 @@ theorem over_last (xs : List Int64) : Spec.over (fun _ y => y) Spec.nul xs = xs.
     by_cases hx : x = Spec.nul <;> by_cases hr : xs.foldr (skipNul last) Spec.nul = Spec.nul <;>
       simp [skipNul, last, hx, hr]
 
-/-- A list's length, read on its cons-list. -/
-theorem clen_ofList : ∀ xs : List α, ListRel.clen (CL.ofList xs) = xs.length
-  | [] => rfl
-  | a :: xs => by rw [CL.ofList_cons, List.length_cons, ← clen_ofList xs]; rfl
-
 /-- `countP` over `Fin g` of a test on the value is `countP` over `til g`. -/
 theorem countP_finRange (q : Nat → Bool) : ∀ g, (List.finRange g).countP (fun r => q r.val) = (List.range g).countP q
   | 0 => rfl
@@ -336,20 +331,10 @@ theorem group_iff {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (h
 /-- `Λ(R) ≫ enum` at `i`, when the `R`-image of `i` is the interval `[a, a+k)`: the list `range' a k`. -/
 theorem Λ_enum (R : Idx ⟶ Idx) {i a k : Nat} (h : ∀ j : Nat, R i j ↔ a ≤ j ∧ j < a + k)
     (ys : CL.ConsList Unit Nat) : (Λ R ≫ enum) i ys ↔ ys = CL.ofList (List.range' a k) := by
-  have mem : ∀ j, j ∈ List.range' a k ↔ R i j := fun j => by rw [List.mem_range'_1, h]
-  have pw : (List.range' a k).Pairwise (· < ·) := List.pairwise_lt_range'
   rw [Λ_eq_classifier]
   show (∃ P, P = (fun j => R i j) ∧ enum P ys) ↔ _
-  constructor
-  · rintro ⟨P, rfl, hP⟩
-    obtain ⟨hS, ho⟩ := (enum_iff _ _).1 hP
-    rw [← ofList_toList ys, orderedP_ofList] at ho
-    rw [← ofList_toList ys]
-    refine congrArg CL.ofList (eq_of_pairwise_lt ho pw fun i => ?_)
-    (rw [mem, ← inlistP_ofList, ofList_toList, ← hS]) <;> exact Iff.rfl
-  · rintro rfl
-    exact ⟨_, rfl, (enum_iff _ _).2 ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i _).symm),
-      (orderedP_ofList _ _).2 pw⟩⟩
+  rw [show (fun j => R i j) = fun j => a ≤ j ∧ j < a + k from funext fun j => propext (h j), ← enum_range']
+  exact ⟨fun ⟨_, e, hP⟩ => e ▸ hP, fun hP => ⟨_, rfl, hP⟩⟩
 
 /-- `grpL(grp o)` at a group `j < g`: its rows `[o[j], o[j+1])` in position order. -/
 theorem grpL_grp {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (hj : j < g)
@@ -361,24 +346,6 @@ theorem grpL_grp {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (hj
   have cb := Ops.toNat_cast (Int.le_trans a0 a1)
   exact Λ_enum _ (fun i => (eq_comm.trans (group_iff co hj i)).trans
     ⟨fun h => ⟨h.1, by omega⟩, fun h => ⟨h.1, by omega⟩⟩) ys
-
-/-- `list(ix xs)` takes the positions `[a, a+k)` to the rows `(xs.drop a).take k`. -/
-theorem listP_ix_range' (xs : List α) : ∀ k a, a + k ≤ xs.length → ∀ ys,
-    ListRel.listP (ix xs) (CL.ofList (List.range' a k)) ys ↔ ys = CL.ofList ((xs.drop a).take k)
-  | 0, a, _, ys => by
-    cases ys with
-    | wrap u => cases u; exact ⟨fun _ => rfl, fun _ => rfl⟩
-    | cons b y => exact ⟨fun h => h.elim, fun h => nomatch h⟩
-  | k+1, a, h, ys => by
-    have ha : a < xs.length := by omega
-    rw [List.range'_succ, List.drop_eq_getElem_cons ha, List.take_succ_cons, CL.ofList_cons, CL.ofList_cons]
-    cases ys with
-    | wrap u => exact ⟨fun h => h.elim, fun h => nomatch h⟩
-    | cons b y =>
-      show (xs[a]? = some b ∧ ListRel.listP (ix xs) (CL.ofList (List.range' (a+1) k)) y) ↔ _
-      rw [listP_ix_range' xs k (a+1) (by omega) y, List.getElem?_eq_getElem ha]
-      simp only [CL.ConsList.cons.injEq, Option.some.injEq]
-      exact and_congr eq_comm Iff.rfl
 
 /-- The rows `[a, b)` of `xs` read by position are its slice `(xs.drop a).take (b−a)`. -/
 theorem take_drop_map [Inhabited α] (xs : List α) {a b : Nat} (hb : b ≤ xs.length) :

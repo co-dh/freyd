@@ -75,38 +75,6 @@ theorem countP_cuts_eq (c : Nat → Nat) (h0 : c 0 = 0) {g : Nat} (mono : ∀ r,
       have := b.1 h; omega
     omega
 
-/-- `enum` of the interval `[a, a+k)` is `range'(a, k)`. -/
-theorem enum_range' (a k : Nat) (L : CL.ConsList Unit Nat) :
-    enum (fun i => a ≤ i ∧ i < a + k) L ↔ L = CL.ofList (List.range' a k) := by
-  rw [enum_iff]
-  have pw : (List.range' a k).Pairwise (· < ·) := List.pairwise_lt_range' ..
-  have mem : ∀ i, i ∈ List.range' a k ↔ a ≤ i ∧ i < a + k := fun i => by simp [List.mem_range'_1]
-  constructor
-  · rintro ⟨hS, ho⟩
-    rw [← ofList_toList L, orderedP_ofList] at ho
-    rw [← ofList_toList L]
-    refine congrArg CL.ofList (eq_of_pairwise_lt ho pw fun i => ?_)
-    rw [mem, ← inlistP_ofList, ofList_toList, ← hS]
-  · rintro rfl
-    exact ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i _).symm), (orderedP_ofList _ _).2 pw⟩
-
-/-- `list(ix xs)` takes the positions `[a, a+k)`, all below `|xs|`, to the values there. -/
-theorem list_ix_range' (xs : List α) : ∀ (k a : Nat) (w : CL.ConsList Unit α), a + k ≤ xs.length →
-    (list (ix xs) (CL.ofList (List.range' a k)) w ↔ w = CL.ofList ((xs.drop a).take k))
-  | 0, a, w, _ => by
-    cases w with
-    | wrap u => exact ⟨fun _ => rfl, fun _ => rfl⟩
-    | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
-  | k+1, a, w, h => by
-    rw [List.range'_succ, List.drop_eq_getElem_cons (by omega : a < xs.length), List.take_succ_cons,
-      CL.ofList_cons, CL.ofList_cons]
-    cases w with
-    | wrap u => exact ⟨False.elim, fun h => nomatch h⟩
-    | cons b z =>
-      show (xs[a]? = some b ∧ list (ix xs) (CL.ofList (List.range' (a+1) k)) z) ↔ _
-      rw [List.getElem?_eq_getElem (by omega), Option.some.injEq, list_ix_range' xs k (a+1) z (by omega)]
-      exact ⟨fun ⟨e, h⟩ => by rw [← e, h], fun e => by cases e; exact ⟨rfl, rfl⟩⟩
-
 /-- `ix(xs ++ ys) = split ≫ [ix xs, ix ys]`: the junction of the two lists over the split of positions. -/
 theorem ix_append (xs ys : List α) :
     ix (xs ++ ys) = split xs.length ys.length ≫ junc (sumCop Idx Idx) (ix xs) (ix ys) :=
@@ -167,12 +135,12 @@ theorem ix_runs (xs : List α) (g : Nat) (c : Nat → Nat) (h0 : c 0 = 0) (hg : 
       constructor
       · rintro rfl
         refine ⟨r, ⟨rfl, hr⟩, _, (Λ_iff _ r _).2 rfl, _, ?_,
-          (list_ix_range' xs (c (r+1) - c r) (c r) _ (by omega)).2 rfl⟩
+          (listP_ix_range' xs (c (r+1) - c r) (c r) (by omega) _).2 rfl⟩
         rw [hset hr]; exact (enum_range' _ _ _).2 rfl
       · rintro ⟨_, ⟨rfl, _⟩, S, hS, L, he, hl⟩
         rw [(Λ_iff _ r S).1 hS, hset hr, enum_range'] at he
         subst he
-        exact ((list_ix_range' xs (c (r+1) - c r) (c r) w (by omega)).1 hl).symm
+        exact ((listP_ix_range' xs (c (r+1) - c r) (c r) (by omega) w).1 hl).symm
     · rw [List.getElem?_map, List.getElem?_eq_none (by simp; omega)]
       exact ⟨fun h => by simp at h, fun ⟨_, ⟨_, h⟩, _⟩ => absurd h hr⟩
 
@@ -393,11 +361,6 @@ theorem ej_rel {R : Rel .long .long} {l r : List (List Int64)} (hk : R.toList = 
   `Struct.flip` boxes its answer; `hk` is the kernel law `R.segs = (til m).map (P.segs.map (·[j]))`, every run of
   `P` of length `m`. -/
 
-theorem toList_ofList {α : Type} : ∀ xs : List α, CL.toList (CL.ofList xs) = xs
-  | [] => rfl
-  | a :: xs => by
-    rw [CL.ofList_cons, show CL.toList (.cons a (CL.ofList xs)) = a :: CL.toList (CL.ofList xs) from rfl, toList_ofList xs]
-
 /-- `list(R)` of a list whose every element `R` sends to `f` of it alone is the list mapped by `f`. -/
 theorem list_ofList {α β : Type} (R : (⟨α⟩ : RelSet.{0}) ⟶ ⟨β⟩) (f : α → β) : ∀ (xs : List α) (w : CL.ConsList Unit β),
     (∀ a ∈ xs, ∀ b, R a b ↔ b = f a) → (list R (CL.ofList xs) w ↔ w = CL.ofList (xs.map f))
@@ -449,11 +412,11 @@ theorem ix_flip {α : Type} [Inhabited α] (segs : List (List α)) (g m : Nat) (
             · rintro ⟨⟨s, j'⟩, ⟨⟨_, rfl, hs1⟩, rfl⟩, h⟩
               rw [List.getElem?_map, List.getElem?_eq_getElem hs, Option.map_some, Option.some.injEq] at hs1
               subst hs1
-              rw [toList_ofList, List.getElem?_eq_getElem (by omega), Option.some.injEq] at h
+              rw [CL.toList_ofList, List.getElem?_eq_getElem (by omega), Option.some.injEq] at h
               exact h.symm
             · rintro rfl
               exact ⟨(CL.ofList segs[i], j), ⟨⟨i, rfl, by rw [List.getElem?_map, List.getElem?_eq_getElem hs]; rfl⟩, rfl⟩,
-                by rw [toList_ofList, List.getElem?_eq_getElem (by omega)]⟩)
+                by rw [CL.toList_ofList, List.getElem?_eq_getElem (by omega)]⟩)
       have hseg : CL.ofList (((List.range segs.length).map (·, j)).map fun p => segs[p.1]![p.2]!) =
           CL.ofList (segs.map (·[j]!)) := by
         congr 1; apply List.ext_getElem (by simp); intro i h1 h2
@@ -665,42 +628,19 @@ theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs :
     (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {verb : String} {c : Column}
     (hvec : Find.vec verb .long (Kernel.gatherColumn .long x.c (Alg.longs idx)) = .ok c) :
     ∃ X : Arr .long N, X.c = c ∧ (∃ B, c.enc = .bytes B) ∧ ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
-  obtain ⟨hg, hct⟩ := Struct.vec_ok hvec
   have hsW : (Alg.longs idx).WF := by show idx.size = idx.size / 8 * 8; omega
-  have hA : ∀ M Q a, x.c.enc = .alp M Q a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hv
-  have hfit : Verify.countFits x.c := Struct.countFits_long x hv hxU
-  have hfi : Verify.countFits (Alg.longs idx) := by simp [Verify.countFits, Alg.longs]
-  obtain ⟨src, ix, -, hix, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c (Alg.longs idx) c
-    x.wf.1 rfl hfi hA hg
-  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl x.c (Alg.longs idx) c x.wf.1 x.wf.2.2 rfl
-    hsW hfit hfi hA hg
-  have hix' : ix = idx := by
-    have e : Column.bytesOf (Alg.longs idx) = some idx := by first | rfl | simp [Column.bytesOf, Alg.longs]
-    rw [e] at hix; exact (Option.some.inj hix).symm
-  subst hix'
-  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hGs := (Verify.gatherBytes_spec (8 : Nat).toUSize (Nat.le_of_eq h8) ((Kernel.nullBits .long).getD 0) src ix).1
-  have hcW : c.ty = .long ∧ c.n = N ∧ c.WF := by
-    subst hcB
-    refine ⟨rfl, hn, ?_⟩
-    show (Kernel.gatherBytes (8 : Nat).toUSize _ src ix).size = ix.size / 8 * 8
-    rw [hGs, h8]; exact Nat.mul_comm _ _
-  have hw : longWords c = some (Column.raw c).toList := by
-    cases hl : longWords c with
-    | none => rw [hcB] at hl; cases hl
-    | some ws => rw [Struct.raw_long hct hcW.2.2 hl]
+  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU ⟨Alg.longs idx, rfl, hn, hsW⟩ (is := Verify.elemsW 8 idx)
+    rfl (by simp [Verify.countFits, Alg.longs]) (Struct.vec_ok hvec).1
   have hvs : vs.length = nx := by have := Arr.length_toList x; rw [Arr.toList_long x hv, List.length_map] at this; omega
-  refine ⟨⟨c, hcW⟩, rfl, ⟨_, by rw [hcB]⟩, fun p hp => ?_⟩
+  refine ⟨⟨⟨.long, N, .bytes B, none⟩, rfl, rfl, by show B.size = N * 8; exact hBs⟩, rfl, ⟨B, rfl⟩, fun p hp => ?_⟩
   have hlt := hi p hp
-  rw [nats_get ix (by omega)] at hlt ⊢
-  rw [Arr.toList_long ⟨c, hcW⟩ hw, hraw, Struct.raw_long (c := Alg.longs ix) rfl hsW (ws := Verify.elemsW 8 ix) rfl,
-    Struct.raw_long x.wf.1 x.wf.2.2 hv, Arr.toList_long x hv, getElem!_pos _ p (by simp [Verify.elemsW]; omega),
-    getElem!_pos _ _ (by simp; omega), List.getElem_map, List.getElem_map, List.getElem_map,
-    show (Verify.elemsW 8 ix)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt ix (p * 8) 8 by
+  rw [nats_get idx (by omega)] at hlt ⊢
+  rw [Arr.toList_long _ (ws := Verify.elemsW 8 B) rfl, hBw, Arr.toList_long x hv,
+    getElem!_pos _ p (by simp [Verify.elemsW]; omega), getElem!_pos _ _ (by simp; omega), List.getElem_map,
+    List.getElem_map, List.getElem_map,
+    show (Verify.elemsW 8 idx)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt idx (p * 8) 8 by
       simp only [Verify.elemsW, List.getElem_map, List.getElem_range],
     List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega), Option.getD_some]
-  exact congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)
 
 /-- **`flipP` transposes**, on a long `val` (`bytes` or `foR`) whose runs all have length `n/g`: column `j`
     of the answer is element `j` of every run. The bounds keep every position below `2^63` and `USize`. -/

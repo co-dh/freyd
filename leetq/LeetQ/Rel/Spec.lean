@@ -170,6 +170,10 @@ theorem enum_ofList (S : Nat → Prop) (L : List Nat) (pw : L.Pairwise (· < ·)
   · rintro rfl
     exact ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i L).symm), (orderedP_ofList _ L).2 pw⟩
 
+/-- `enum` of the interval `[a, a+k)` is `range'(a, k)`. -/
+theorem enum_range' (a k : Nat) : ∀ L, enum (fun i => a ≤ i ∧ i < a + k) L ↔ L = CL.ofList (List.range' a k) :=
+  enum_ofList _ _ List.pairwise_lt_range' fun i => by simp [List.mem_range'_1]
+
 /-- `enum` executed: the coreflexive given as a bit column `x` (its set `{i ∣ x.rel i 1b}`) enumerates as
     `Find.where x`, the `whereBits` positions, read as naturals. -/
 theorem enum_where {nx m : Nat} {x : Arr .boolean nx} {r : Arr .long m} (hn : nx < USize.size)
@@ -348,13 +352,33 @@ theorem mk_rel {k v : QAtomicType} (x : Arr k n) (y : Arr v n) :
     simp only [rel_iff]
     exact ⟨fun ⟨i, ha, hb⟩ => ⟨i, ⟨i.2, ha⟩, ⟨i.2, hb⟩⟩, fun ⟨j, ⟨h, ha⟩, ⟨_, hb⟩⟩ => ⟨⟨j, h⟩, ha, hb⟩⟩
 
+/-- `list(ix xs)` takes the positions `[a, a+k)` to the rows `(xs.drop a).take k`. -/
+theorem listP_ix_range' {α : Type} (xs : List α) : ∀ k a, a + k ≤ xs.length → ∀ ys,
+    ListRel.listP (ix xs) (CL.ofList (List.range' a k)) ys ↔ ys = CL.ofList ((xs.drop a).take k)
+  | 0, a, _, ys => by
+    cases ys with
+    | wrap u => cases u; exact ⟨fun _ => rfl, fun _ => rfl⟩
+    | cons b y => exact ⟨fun h => h.elim, fun h => nomatch h⟩
+  | k+1, a, h, ys => by
+    have ha : a < xs.length := by omega
+    rw [List.range'_succ, List.drop_eq_getElem_cons ha, List.take_succ_cons, CL.ofList_cons, CL.ofList_cons]
+    cases ys with
+    | wrap u => exact ⟨fun h => h.elim, fun h => nomatch h⟩
+    | cons b y =>
+      show (xs[a]? = some b ∧ ListRel.listP (ix xs) (CL.ofList (List.range' (a+1) k)) y) ↔ _
+      rw [listP_ix_range' xs k (a+1) (by omega) y, List.getElem?_eq_getElem ha]
+      simp only [CL.ConsList.cons.injEq, Option.some.injEq]
+      exact and_congr eq_comm Iff.rfl
+
+/-- A list's length, read on its cons-list. -/
+theorem clen_ofList {α : Type} : ∀ xs : List α, ListRel.clen (CL.ofList xs) = xs.length
+  | [] => rfl
+  | a :: xs => by rw [CL.ofList_cons, List.length_cons, ← clen_ofList xs]; rfl
+
 /-- `#x = length(x)`, the fold `⦇0, succ⦈` (`ListRel.length_cata`): by the type, nothing runs. -/
 theorem count_rel (x : Arr t n) : (ListRel.length : dList (El t) ⟶ (⟨Nat⟩ : RelSet.{0})) (CL.ofList x.toList) n := by
   show n = ListRel.clen (CL.ofList x.toList)
-  suffices ∀ xs : List (El t), ListRel.clen (CL.ofList xs) = xs.length by rw [this, Arr.length_toList]
-  intro xs; induction xs with
-  | nil => rfl
-  | cons a xs ih => rw [CL.ofList_cons, List.length_cons, ← ih]; rfl
+  rw [clen_ofList, Arr.length_toList]
 
 #print axioms enum_where
 #print axioms not_rel
