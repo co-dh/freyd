@@ -564,7 +564,124 @@ theorem idesc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = s
           (fun a h => by simp only [gt_iff_lt, Int64.lt_iff_toInt_lt] at h; omega)
     _ = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a > b) := by rw [Arr.length_toList]
 
-/-- `count each` by the cuts `o`: `corefl(<g) ≫ grpL(grp o) ≫ list(x) ≫ length`, as a long. -/
+/-- In a list without repeats, `i` sits at `k` exactly when `i` is a member and `k` is its index. -/
+theorem getElem?_eq_some_idxOf : ∀ {G : List Nat}, G.Nodup → ∀ {i k : Nat}, G[k]? = some i ↔ i ∈ G ∧ G.idxOf i = k
+  | [], _, i, k => by simp
+  | a :: G, hn, i, k => by
+    rw [List.nodup_cons] at hn
+    by_cases hai : a = i
+    · subst hai
+      rw [show (a :: G).idxOf a = 0 by simp]
+      cases k with
+      | zero => simp
+      | succ k =>
+        simp only [List.getElem?_cons_succ]
+        exact ⟨fun h => absurd (List.mem_of_getElem? h) hn.1, fun h => absurd h.2 (by omega)⟩
+    · rw [show (a :: G).idxOf i = G.idxOf i + 1 by rw [List.idxOf_cons, beq_false_of_ne hai]; rfl, List.mem_cons]
+      cases k with
+      | zero =>
+        simp only [List.getElem?_cons_zero, Option.some.injEq]
+        exact ⟨fun h => absurd h hai, fun h => absurd h.2 (by omega)⟩
+      | succ k =>
+        simp only [List.getElem?_cons_succ]
+        rw [getElem?_eq_some_idxOf hn.2]
+        exact ⟨fun ⟨m, e⟩ => ⟨.inr m, by omega⟩, fun ⟨m, e⟩ => ⟨m.resolve_left (Ne.symm hai), by omega⟩⟩
+
+open QLean.Kernel in
+/-- `rank x` over a long column: position `i` holds where `i` stands in the stable ascending grade, the
+    grade inverted by `Order.invert`. -/
+theorem rank_toList {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+    {S : Arr .long n} (h : Ops.rank R = some S) :
+    S.toList = (List.range n).map fun i => Int64.ofNat
+      (((List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!)).idxOf i) := by
+  obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R hx hn
+  obtain ⟨k, hg⟩ : ∃ k, gradeColumn .long false R.c (rank := true) =
+      some (.vector ⟨.long, k, .bytes (Order.invert (Order.grade .i64 false n.toUSize B)), none⟩) := by
+    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [R.c_eq hc]
+    · generalize R.attrCell = a; rw [← hBs]; exact ⟨_, rfl⟩
+    · exact ⟨_, rfl⟩
+  simp only [Ops.rank, hg, vecCol, bind, Option.bind] at h
+  generalize hP : Order.grade .i64 false n.toUSize B = P at h
+  rw [Arr.of] at h
+  split at h
+  · rename_i hw
+    have hS : S.c.enc = .bytes (Order.invert P) := by cases h; rfl
+    have h64 : USize.size ≤ 2 ^ 64 := by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e]
+    have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
+      rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
+    have hids : Verify.ids P = (List.range n).mergeSort fun i j => Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j := by
+      rw [← hP, Order.grade, hm]
+      exact Verify.ids_indices _ fun i hi =>
+        Nat.lt_of_lt_of_le (Nat.lt_trans (List.mem_range.1 ((List.mergeSort_perm _ _).mem_iff.1 hi)) hn) h64
+    have hPs : P.size / 8 = n := by
+      have := congrArg List.length hids
+      rwa [Verify.ids, List.length_map, List.length_range, List.length_mergeSort, List.length_range] at this
+    have hxs := Ops.toList_words R hx hBw hBs
+    have hG : (List.range n).mergeSort (fun i j => decide (Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j))
+        = (List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!) := by
+      have := List.map_mergeSort (f := id) (l := List.range n)
+        (r := fun i j => decide (Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j))
+        (s := fun i j => decide (R.toList[i]! ≤ R.toList[j]!)) fun i hi j hj => by
+          have hi' := List.mem_range.1 hi
+          have hj' := List.mem_range.1 hj
+          simp only [id, hxs]
+          simp [Order.keyAt, Scan.Kind.bitsAt, Scan.Kind.width, rank_i64_le_iff, List.getElem?_range hi',
+            List.getElem?_range hj']
+      simpa using this
+    have e1 : S.toList = (Verify.ids (Order.invert P)).map Int64.ofNat := by
+      rw [Arr.toList_long_bytes _ hS, Verify.ids, Arr.n_long_bytes _ hS, List.map_map, List.map_map]
+      exact List.map_congr_left fun i _ => toInt64_of_toNat rfl
+    have e2 : Verify.ids (Order.invert P) = (List.range n).map fun i => (Verify.ids P).idxOf i := by
+      show Verify.ids (Order.indices ((List.range (P.size / 8)).map fun i =>
+        (List.range (P.size / 8)).findIdx fun j => (Column.bitsAt P (8 * j) 8).toNat == i)) = _
+      rw [Verify.ids_indices _ fun i hi => by
+        obtain ⟨a, -, rfl⟩ := List.mem_map.1 hi
+        exact Nat.lt_of_le_of_lt List.findIdx_le_length (by rw [List.length_range, hPs]; omega), hPs]
+      refine List.map_congr_left fun i _ => ?_
+      rw [Verify.ids, hPs, List.idxOf, List.findIdx_map]
+      simp only [Function.comp_def, Nat.mul_comm 8]
+    rw [e1, e2, hids, hG, List.map_map]
+    exact List.map_congr_left fun _ _ => rfl
+  · cases h
+
+/-- `rank x = (<x)°` on a dense long column, positions below `2⁶³`: `G` is the grade `sort(⊴ₓ)` gives,
+    and `rank` read as positions is its converse. -/
+theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+    (h63 : n < 2 ^ 63) {S : Arr .long n} (h : Ops.rank R = some S) :
+    ∃ G : List Nat, (cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
+        = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b)
+      ∧ S.rel ≫ pos = (ix G)° := by
+  refine ⟨(List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!), ?_, ?_⟩
+  · have := cst_grade R.toList (fun a b => decide (a ≤ b)) (fun a b : Int64 => a < b)
+      (fun _ _ _ h₁ h₂ => by simp only [decide_eq_true_eq] at *; exact Int64.le_trans h₁ h₂)
+      (fun a b => by rcases Int64.le_total a b with h | h <;> simp [h])
+      (fun _ _ h₁ h₂ => Int64.le_antisymm (of_decide_eq_true h₁) (of_decide_eq_true h₂))
+      (fun _ _ _ h₂ => Int64.not_le.1 (of_decide_eq_false h₂))
+      (fun a b h₁ h₂ => by simp only [Int64.lt_iff_toInt_lt] at h₁ h₂; omega)
+      (fun a h => by simp only [Int64.lt_iff_toInt_lt] at h; omega)
+    rw [Arr.length_toList] at this
+    exact this
+  · have hp := List.mergeSort_perm (List.range n) fun i j => decide (R.toList[i]! ≤ R.toList[j]!)
+    have hnd := hp.nodup_iff.2 List.nodup_range
+    refine hom_ext fun (i : Nat) (k : Nat) => ?_
+    show (∃ a, S.toList[i]? = some a ∧ ∃ b, (a = b ∧ 0 ≤ a) ∧ k = b.toInt.toNat) ↔ _ = some i
+    rw [rank_toList hx hn h, List.getElem?_map, getElem?_eq_some_idxOf hnd, hp.mem_iff, List.mem_range]
+    by_cases hi : i < n
+    · rw [List.getElem?_range hi]
+      simp only [Option.map_some, Option.some.injEq]
+      have hlt := List.idxOf_lt_length_of_mem (hp.mem_iff.2 (List.mem_range.2 hi))
+      rw [List.length_mergeSort, List.length_range] at hlt
+      generalize ((List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!)).idxOf i = m at hlt ⊢
+      have hv : (Int64.ofNat m).toInt.toNat = m := by
+        rw [Int64.toNat_toInt, Int64.toNatClampNeg_ofNat_of_lt (by omega)]
+      have h0 : 0 ≤ Int64.ofNat m := by rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega)]; simp
+      constructor
+      · rintro ⟨_, rfl, _, ⟨rfl, -⟩, rfl⟩; exact ⟨hi, hv.symm⟩
+      · rintro ⟨-, rfl⟩; exact ⟨_, rfl, _, ⟨rfl, h0⟩, hv.symm⟩
+    · rw [List.getElem?_eq_none (by simp only [List.length_range]; omega)]
+      exact ⟨fun ⟨_, e, _⟩ => by simp at e, fun ⟨h, _⟩ => absurd h hi⟩
+
+/-- `count each` by the cuts `o`:`corefl(<g) ≫ grpL(grp o) ≫ list(x) ≫ length`, as a long. -/
 theorem countBy_rel {v : QAtomicType} {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr v n}
     {wo : List UInt64} (ho : longWords o.c = some wo) (hg : g + 1 < USize.size) {S : Arr .long g}
     (h : Ops.countBy ⟨g, n, o, co, x⟩ = some S) :
@@ -739,6 +856,8 @@ theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
 
 #print axioms mmin_rel
 #print axioms mmax_rel
+#print axioms rank_toList
+#print axioms rank_rel
 #print axioms mcount_rel
 #print axioms msum_rel
 #print axioms countBy_rel
