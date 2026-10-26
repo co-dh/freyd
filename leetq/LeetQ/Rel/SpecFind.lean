@@ -526,6 +526,93 @@ theorem neg_rel_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.c.enc
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
   mon_rel (neg_spec_long ha hn hv)
 
+/-- `Ew.val` at `i64` with one long atom on the left (`av`): element `i` is `intStep` of the atom and
+    element `i` (`Verify.val_i64_va`'s mirror). -/
+theorem val_i64_av (op : UInt8) (nul : Int64) (c : UInt64) (b : ByteArray) (n : Nat) (hn : n < USize.size) :
+    Verify.elemsW 8 (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.av nul (Kernel.atomBytes Kernel.Ew.i64 c) b n.toUSize) =
+      (List.range n).map fun i =>
+        (Kernel.Ew.intStep op nul c.toInt64 (Column.bitsAt b (i * 8) 8).toInt64).toUInt64 := by
+  rw [← Verify.elemsW_foldl (fun i => (Kernel.Ew.intStep op nul c.toInt64 (Column.bitsAt b (i * 8) 8).toInt64).toUInt64)
+    8 (by decide) (by decide) (List.range n) (fun _ _ => UInt64.toNat_lt _)]
+  unfold Kernel.Ew.val
+  rw [USize.toNat_ofNat_of_lt' hn]
+  congr 2; funext acc i
+  show Column.pushBits acc (Kernel.Ew.valStep op Kernel.Ew.i64 nul.toUInt64
+    (Column.bitsAt (Column.pushBits ByteArray.empty c 8) ByteArray.empty.size 8) (Column.bitsAt b (i * 8) 8)) 8 = _
+  rw [Verify.bitsAt_pushBits8]; rfl
+
+/-- The one-element column `Ew.atomCol` builds for a long: its bits, the payload `atomBytes` names. -/
+theorem atomCol_long (k : Int64) :
+    Ew.atomCol .long (Carrier.atom (t := .long) k) =
+      .ok ⟨.long, 1, .bytes (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64), none⟩ := by
+  simp [Ew.atomCol, Column.ofAtoms, Carrier.atom, QAtom.type, Column.bitsOf, Kernel.atomBytes, Kernel.Ew.width,
+    Kernel.Ew.i64, Kernel.Ew.u8, Kernel.Ew.i16, Kernel.Ew.i32, Kernel.Ew.f32] <;> rfl
+
+/-- `dyadColumn` on a long atom column (left) and a dense long column, at a value verb: the one-stage
+    `eVal` chain at `av`. The atom reaches the chain by `operandAt` when `n ≠ 1` and as a chain input
+    when `n = 1`; both name its payload as input `0`. -/
+theorem dyadColumn_long_av {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (c b : ByteArray)
+    (pa pb : Option (UInt8 × IndexCell)) :
+    Kernel.dyadColumn v Kernel.Ew.av .long .long ⟨.long, 1, .bytes c, pa⟩ ⟨.long, n, .bytes b, pb⟩ =
+      some (.long, Kernel.payload .long n.toUSize ({ inputs := #[c, b] },
+        { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1,
+          nul := Kernel.nullPayload .long })) := by
+  cases v <;> simp only [Kernel.valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals first | exact absurd hr (by decide) | skip
+  all_goals by_cases h1 : n = 1
+  all_goals first | subst h1 | have h2 : 1 ≠ n := Ne.symm h1
+  all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.valPayload, Kernel.cmpOp,
+    Kernel.valOp, Kernel.clsOf, Kernel.scales, Kernel.tickIn, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible,
+    Kernel.promotable, Kernel.foRValPayload, Kernel.foRPair, Kernel.foRPairVV, Kernel.zipPass, Kernel.operandSource,
+    Kernel.operandAt, Column.bytesOf, Kernel.Ew.Build.input, Kernel.Ew.i64, Kernel.Ew.bits,
+    (by decide : ¬Kernel.Ew.av = Kernel.Ew.vv), (by decide : ¬Kernel.Ew.av = Kernel.Ew.va), *]
+
+/-- **`a f x` at `long` on a dense column is its List spec** `x.mapM (a f ·)`: `atomCol_long`,
+    `dyadColumn_long_av`, `run_val`, `val_i64_av`, and q's element `Ew.elem_long_val`. -/
+theorem atomVal_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {k : Int64} {x R : Arr .long n} {b : ByteArray}
+    (hb : x.c.enc = .bytes b) (hn : n < USize.size) (hv : Ew.atomVal v .long (t := .long) k x = .ok R) :
+    x.toList.mapM (fun y => elem v h k y) = .ok R.toList := by
+  have hr : Kernel.resultType v .long .long = some .long := by
+    cases v <;> first | rfl | exact absurd h (by decide) | exact absurd hop (by simp [Kernel.valOp])
+  unfold Ew.atomVal Ew.dyad at hv
+  rw [atomCol_long, Arr.c_eq x hb] at hv
+  simp only [bind, Except.bind] at hv
+  rw [dyadColumn_long_av hop hr] at hv
+  have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] },
+      { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1,
+        nul := Kernel.nullPayload .long }) := by
+    simp only [↓reduceIte] at hv
+    unfold Arr.of at hv
+    split at hv
+    · cases hv; rfl
+    · cases hv
+  have hrun := Verify.run_val ({ inputs := #[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] } : Kernel.Ew.Build) rfl
+    op Kernel.Ew.i64 Kernel.Ew.av 0 1 (Kernel.nullPayload .long) (by decide) (by decide) n.toUSize
+  simp only [show (#[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] : Array ByteArray)[(0 : UInt8).toNat]! =
+      Kernel.atomBytes Kernel.Ew.i64 k.toUInt64 from rfl,
+    show (#[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] : Array ByteArray)[(1 : UInt8).toNat]! = b from rfl] at hrun
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hs : (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.av (Kernel.nullPayload .long)
+      (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64) b n.toUSize).size / 8 = n := by
+    rw [← Verify.val_size8, hN]
+  rw [← hrun] at hs
+  have hw := longWords_payload _ _ hn hs
+  rw [← hR, hrun, val_i64_av _ _ _ _ _ hn, nullPayload_long] at hw
+  have hel : (fun y : Int64 => elem v h k y) =
+      fun y => pure (Kernel.Ew.intStep op Int64.minValue k y) := funext fun y => Ew.elem_long_val hop h k y
+  rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, Arr.toList_long R hw,
+    Arr.toList_long_bytes x hb]
+  exact congrArg Except.ok (List.ext_getElem (by simp) fun i _ _ => by simp)
+
+/-- `a+x = ⟨!a, x⟩ ≫ (+)` from the kernel: `atomVal_rel` of `atomVal_spec_long`. Dense long column. -/
+theorem atomVal_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {k : Int64} {x R : Arr .long n} {b : ByteArray}
+    (hb : x.c.enc = .bytes b) (hn : n < USize.size) (hv : Ew.atomVal v .long (t := .long) k x = .ok R) :
+    R.rel = rpair (cst k) x.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
+  atomVal_rel (atomVal_spec_long hop h hb hn hv)
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
