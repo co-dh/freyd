@@ -1529,31 +1529,68 @@ theorem wj_tail {n N m : Nat} {los lens I W : ByteArray} {lo c : Nat → Nat} {A
   rw [get!_map _ _ (by simp [Verify.elemsW]; omega)] at hp
   rw [hAt, get!_map _ _ (by simp [Verify.elemsW]; omega), toInt64_eq_ofNat, hp]
 
-/-- **`wj` is `wjSpec` once its groups are known** (`prevailing`, q's `wj`): where `keyGroups` answers groups
-    `gs` and ids that `KeyAnswers` the two sides' keys, `wjP` over dense long windows `b0`, `b1` and times `hay`
-    answers `wjSpec`'s runs. Nothing is assumed about the times' order inside a group. -/
-theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {t0 t1 tr : Column}
-    {P : Parted .long} {gs : Eval.Groups} {ids : Column} {b0 b1 hay gids : ByteArray} (lk rk : List κ)
-    (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
-    (h0b : Column.bytesOf t0 = some b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
+/-- `wj1`'s lower bound `w₀ - 1` as `wjP` builds it on a dense long window: `dyadColumn .sub` against the atom
+    `1` is the one-stage `eVal` chain, answered encoded or dense, and either way its words are `w₀[i] - 1` under
+    q's null rule (`0N - 1 = 0N`). -/
+theorem dyadColumn_sub_one {n : Nat} {b0 : ByteArray} (p : Option (UInt8 × IndexCell)) (hn : n < USize.size)
+    (hb : b0.size / 8 = n) :
+    ∃ L bL, Kernel.dyadColumn .sub Kernel.Ew.va .long .long ⟨.long, n, .bytes b0, p⟩ (Alg.longs (Find.one 1)) =
+      some (.long, L) ∧ L.ty = .long ∧ Column.bytesOf L = some bL ∧ bL.size / 8 = n ∧
+      ∀ i, i < n → (Column.bitsAt bL (i * 8) 8).toInt64 =
+        Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue (Column.bitsAt b0 (i * 8) 8).toInt64 1 := by
+  rw [show Alg.longs (Find.one 1) = ⟨.long, 1, .bytes (Find.one 1), none⟩ from rfl,
+    dyadColumn_long_va (v := .sub) rfl (by decide) rfl n b0 (Find.one 1) p none]
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hrun := (Verify.run_val ({ inputs := #[b0, Find.one 1] } : Kernel.Ew.Build) rfl Kernel.Ew.sub Kernel.Ew.i64
+    Kernel.Ew.va 0 1 (Kernel.nullPayload .long) (by decide) (by decide) n.toUSize).trans (show _ =
+      Kernel.Ew.val Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va Int64.minValue b0 (Kernel.atomBytes Kernel.Ew.i64 1)
+        n.toUSize from rfl)
+  have hv := Verify.val_i64_va Kernel.Ew.sub Int64.minValue b0 1 n hn
+  rw [← hrun] at hv
+  have hs := congrArg List.length hv
+  simp only [Verify.elemsW, List.length_map, List.length_range] at hs
+  have he := Verify.runEnc_elems _ _ n.toUSize 8 (by decide) (by decide) n.toUSize (by rw [hN, hs])
+  rw [hv] at he
+  refine ⟨_, _, rfl, by simp, ?_, ?_, fun i hi => by rw [bitsAt_elemsW he hi, Int64.toInt64_toUInt64]; rfl⟩
+  · show Column.bytesOf (Kernel.payload .long n.toUSize _) = _
+    have hp : ∀ x, Kernel.payload .long n.toUSize x = Column.answer ⟨.long, n,
+        .foR (x.1.runEnc x.2 n.toUSize (8 : Nat).toUSize).1 (x.1.runEnc x.2 n.toUSize (8 : Nat).toUSize).2, none⟩ :=
+      fun x => by simp only [Kernel.payload, hN]; rfl
+    rw [hp]
+    rcases Verify.answer_foR .long 8 n _ _ rfl (a := none) with e | e <;> rw [e] <;> rfl
+  · have := congrArg List.length he
+    simp only [Verify.elemsW, List.length_map, List.length_range] at this
+    exact this
+
+/-- **`wj` and `wj1` are `wjSpec` once their groups are known**: where `keyGroups` answers groups `gs` and ids
+    that `KeyAnswers` the two sides' keys, `wjP` over dense long windows `b0`, `b1` and times `hay` answers
+    `wjSpec`'s runs. `L` is the column `wjP` bins the lower edge at — `t0` itself (`wj`) or its `dyadColumn`
+    `- 1` (`wj1`), words `bL`. Nothing is assumed about the times' order inside a group. -/
+theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {t0 t1 tr L : Column}
+    {P : Parted .long} {gs : Eval.Groups} {ids : Column} {b0 bL b1 hay gids : ByteArray} (prevailing : Bool)
+    (lk rk : List κ) (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
+    (hL : if prevailing then L = t0 else
+      Kernel.dyadColumn .sub Kernel.Ew.va .long .long t0 (Alg.longs (Find.one 1)) = some (.long, L))
+    (hLt : L.ty = .long) (hLb : Column.bytesOf L = some bL) (hLn : bL.size / 8 = t0.n)
+    (hLw : ∀ i, i < t0.n → (Column.bitsAt bL (i * 8) 8).toInt64 =
+      if prevailing then (Column.bitsAt b0 (i * 8) 8).toInt64 else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1)
+    (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (hgb : Column.bytesOf ids = some gids) (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n)
     (hrn : hay.size / 8 = tr.n) (hlk : lk.length = t0.n) (hrk : rk.length = tr.n)
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
     (hkg : Struct.keyGroups "wj" l r t0.n tr.n = .ok (gs, ids)) (hk : KeyAnswers rk lk gs ids)
-    (h : Struct.wjP true ⟨.long, t0⟩ ⟨.long, t1⟩ l r ⟨.long, tr⟩ = .ok P) :
-    Struct.runsSpec P.segs = Struct.wjSpec true lk ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) rk
+    (h : Struct.wjP prevailing ⟨.long, t0⟩ ⟨.long, t1⟩ l r ⟨.long, tr⟩ = .ok P) :
+    Struct.runsSpec P.segs = Struct.wjSpec prevailing lk ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) rk
       ((nats hay).map Int64.ofNat) := by
   obtain ⟨g', hg', hgn, hst, -⟩ := id hk
   rw [Option.some.inj (hg'.symm.trans hgb)] at hgn hst
-  have hE0 := groupEdge_long gs ids tr t0 tr.n htr h0t hrb h0b hgb (by omega)
+  have hE0 := groupEdge_long gs ids tr L tr.n htr hLt hrb hLb hgb (by omega)
   have hE1 := groupEdge_long gs ids tr t1 tr.n htr h1t hrb h1b hgb (by omega)
   have hdo : ∀ X, Find.dense "wj" .long (Column.ofBytes .long X) = .ok X := fun X => by
     simp [Find.dense, Column.ofBytes, Column.bytesOf]
   have hdi : Find.dense "wj" .long ids = .ok gids := by simp [Find.dense, hgb]
   have hdf : Find.dense "wj" .long (Kernel.longColumn (gs.firsts.push 0)) = .ok (Kernel.longBytes (gs.firsts.push 0)) := by
     simp [Find.dense, Kernel.longColumn, Column.bytesOf]
-  simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
-    beq_self_eq_true, Bool.and_self, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
   have hN : tr.n < 2 ^ 62 := by omega
   have hn : t0.n < USize.size := by omega
   have hst' : nats (Alg.gather 8 (Kernel.longBytes (gs.firsts.push 0)) gids) =
@@ -1582,42 +1619,56 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
         (Column.bitsAt b (i * 8) 8).toInt64 with
       | none => simp only [Option.map_none, Option.getD_none]; exact this
       | some r => have := hbin b i r e; simp only [Option.map_some, Option.getD_some]; omega
-  have e0 := wj_edge _ _ t0.n tr.n 0
-    (fun i => Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt b0 (i * 8) 8).toInt64)
-    (fun i => (Struct.group rk lk[i]!).head?.getD 0) hn (by decide) hN (fun i r _ e => hbin b0 i r e)
-    (fun i _ => by have := hhd lk[i]!; dsimp only; omega) (hEw b0 h0n) hst'
-  rw [show ((0 : Nat) == 0) = true from rfl, if_pos rfl] at e0
+  have e0 := wj_edge _ _ t0.n tr.n (if prevailing then 0 else 1)
+    (fun i => Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt bL (i * 8) 8).toInt64)
+    (fun i => (Struct.group rk lk[i]!).head?.getD 0) hn (by cases prevailing <;> decide) hN
+    (fun i r _ e => hbin bL i r e) (fun i _ => by have := hhd lk[i]!; dsimp only; omega) (hEw bL hLn) hst'
   have e1 := wj_edge _ _ t0.n tr.n 1
     (fun i => Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt b1 (i * 8) 8).toInt64)
     (fun i => (Struct.group rk lk[i]!).head?.getD 0) hn (by decide) hN (fun i r _ e => hbin b1 i r e)
     (fun i _ => by have := hhd lk[i]!; dsimp only; omega) (hEw b1 h1n) hst'
   have hc := wj_lens _ _ t0.n _ _ hn e1 e0 fun i _ => by
-    have := hedge b0 0 i (by decide); have := hedge b1 1 i (by decide); dsimp only; exact ⟨by omega, by omega⟩
-  split at h
-  · cases h
-  rename_i v hv
-  have hseg := wj_tail (N := tr.n) e0 hc (fun i _ => by
-      have := hedge b0 0 i (by decide); have := hedge b1 1 i (by decide); dsimp only; omega)
-    (fun i => by have := hedge b1 1 i (by decide); dsimp only; omega) hU (by omega) rfl (Struct.of_c hv) h
+    have := hedge bL (if prevailing then 0 else 1) i (by cases prevailing <;> decide)
+    have := hedge b1 1 i (by decide); dsimp only; exact ⟨by omega, by omega⟩
   have hw : ∀ (b : ByteArray), b.size / 8 = t0.n → ∀ i, i < t0.n →
       ((nats b).map Int64.ofNat)[i]! = (Column.bitsAt b (i * 8) 8).toInt64 := fun b hb i hi => by
     rw [get!_map _ _ (by rw [nats_length]; omega), nats_get b (by omega), toInt64_eq_ofNat]
-  rw [hseg, Struct.wjSpec, hlk]
-  congr 1
-  apply List.map_congr_left
-  intro i hi
-  have hi := List.mem_range.1 hi
-  dsimp only
-  rw [hw b0 h0n i hi, hw b1 h1n i hi]
-  cases e : (Struct.group rk lk[i]!).head? with
-  | none =>
-    have hg : Struct.group rk lk[i]! = [] := List.head?_eq_none_iff.1 e
-    have hb : ∀ x, Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) x = none := fun x => by
-      cases e' : Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) x with
-      | none => rfl
-      | some r => have := binSpec_mem e'; rw [hg] at this; cases this
-    simp only [hb, Option.map_none, Option.getD_none, Nat.sub_self, List.range_zero, List.map_nil]
-  | some s => simp only [Option.getD_some, ↓reduceIte]
+  -- the lower edge's bound: `t0` itself, or `wj1`'s `t0 - 1`, after which both cases run alike
+  cases prevailing
+  simp only [Bool.false_eq_true, ↓reduceIte] at hL hLw e0 hc
+  simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hL, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
+    beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, bind, Except.bind, pure, Except.pure] at h
+  rotate_left
+  simp only [↓reduceIte] at hL hLw e0 hc
+  subst hL
+  simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
+    beq_self_eq_true, Bool.and_self, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
+  rotate_left
+  all_goals
+    split at h
+    · cases h
+    rename_i v hv
+    have hseg := wj_tail (N := tr.n) e0 hc (fun i _ => by
+        have := hedge bL 0 i (by decide); have := hedge bL 1 i (by decide); have := hedge b1 1 i (by decide)
+        try dsimp only
+        omega)
+      (fun i => by have := hedge b1 1 i (by decide); (try dsimp only); omega) hU (by omega) rfl (Struct.of_c hv) h
+    rw [hseg, Struct.wjSpec, hlk]
+    congr 1
+    apply List.map_congr_left
+    intro i hi
+    have hi := List.mem_range.1 hi
+    dsimp only
+    rw [hLw i hi, hw b0 h0n i hi, hw b1 h1n i hi]
+    cases e : (Struct.group rk lk[i]!).head? with
+    | none =>
+      have hg : Struct.group rk lk[i]! = [] := List.head?_eq_none_iff.1 e
+      have hb : ∀ x, Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) x = none := fun x => by
+        cases e' : Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) x with
+        | none => rfl
+        | some r => have := binSpec_mem e'; rw [hg] at this; cases this
+      simp only [hb, Option.map_none, Option.getD_none, Nat.sub_self, List.range_zero, List.map_nil]
+    | some s => simp only [Option.getD_some, ↓reduceIte, Bool.false_eq_true]
 
 /-- **`wj` is `wjSpec`** at one long key column per side, the right one unmarked (`prevailing`, q's `wj`): the
     key side from `keyMatch_grouped`, both edges from `binRows` inside the key group. -/
@@ -1638,7 +1689,42 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
   have hk := keyMatch_grouped tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) (by omega) hlwf hlR hwl hattr
   obtain ⟨gids, hgb, -⟩ := id hk
-  exact wj_groups wl wr h0t h1t htr h0b h1b hrb hgb h0n h1n hhn (by omega) (by omega) hU h62 hkg hk h
+  exact wj_groups (L := t0) (bL := b0) true wl wr h0t h1t htr rfl h0t h0b h0n (fun _ _ => (if_pos rfl).symm) h1b hrb hgb h0n
+    h1n hhn (by omega) (by omega) hU h62 hkg hk h
+
+/-- **`wj1` is `wjSpec false`** at one long key column per side, the right one unmarked (q's `wj1`): as `wj_long`,
+    the lower edge binned at `dyadColumn_sub_one`'s `w₀ - 1`. The window `t0` is dense (`hb0`), and no `w₀` is
+    `0N` (`hnul`): q's `0N - 1` is `0N`, where `wjSpec`'s `Int64` subtraction wraps it to `0W`. -/
+theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .long} {b0 b1 hay : ByteArray}
+    (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
+    (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
+    (hlwf : cl.WF) (hlR : Find.Readable .long cl)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
+    (hb0 : t0.enc = .bytes b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
+    (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
+    (hnul : ∀ i, i < t0.n → ((nats b0).map Int64.ofNat)[i]! ≠ Int64.minValue)
+    (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
+    (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
+    Struct.runsSpec P.segs = Struct.wjSpec false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
+      ((nats hay).map Int64.ofNat) := by
+  have hkg : Struct.keyGroups "wj" #[⟨.long, cl⟩] #[⟨.long, cr⟩] t0.n tr.n =
+      .ok (Eval.keyMatch #[.vector cr] tr.n #[.vector cl] t0.n) := by
+    simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
+  have hk := keyMatch_grouped tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) (by omega) hlwf hlR hwl hattr
+  obtain ⟨gids, hgb, -⟩ := id hk
+  have ht0 : t0 = ⟨.long, t0.n, .bytes b0, t0.attr⟩ := by
+    obtain ⟨t, n, e, a⟩ := t0; simp only at h0t hb0; subst h0t hb0; rfl
+  obtain ⟨L, bL, hd, hLt, hLb, hLn, hLw⟩ := dyadColumn_sub_one (n := t0.n) t0.attr (by omega) h0n
+  rw [← ht0] at hd
+  refine wj_groups false wl wr h0t h1t htr hd hLt hLb hLn (fun i hi => ?_) h1b hrb hgb h0n h1n hhn
+    (by omega) (by omega) hU h62 hkg hk h
+  have hx := hnul i hi
+  rw [get!_map _ _ (by rw [nats_length]; omega), nats_get b0 (by omega), ← toInt64_eq_ofNat] at hx
+  rw [hLw i hi, if_neg Bool.false_ne_true]
+  show (if ((Column.bitsAt b0 (i * 8) 8).toInt64 == Int64.minValue || (1 : Int64) == Int64.minValue) then
+    Int64.minValue else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1) = _
+  rw [show ((1 : Int64) == Int64.minValue) = false from rfl, Bool.or_false, if_neg (by simpa using hx)]
 
 /-- `wj`'s window, `Wᵥ` with both ends moving: left row `i` to the right rows `j` with `lo i ≤ j < hi i`. -/
 def winAt (lo hi : Nat → Nat) : Idx ⟶ Idx := fun i j => lo i ≤ j ∧ j < hi i
@@ -1668,35 +1754,37 @@ theorem ix_winAt {α β : Type} (xs : List α) (m : Nat) (lo hi : Nat → Nat)
     · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h him⟩
 
-/-- **`wjSpec` is a window per left row** (`prevailing`): row `i`'s run is the right rows `[lo i, hi i)`, both
-    edges inside `rk`, so the aggregate over it is `ix_winAt`'s `Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. -/
+/-- `wjSpec`'s edge of left row `i` at the bounds `w`: `max s (r + off)` where `bin` names the row `r` in the
+    key's group, `s` (the group's first row) where it names none, `0` for a key with no right rows. -/
+def wjEdge {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (off i : Nat) : Nat :=
+  match (Struct.group rk lk[i]!).head? with
+  | none => 0
+  | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w[i]!).map (max s <| · + off)).getD s
+
+/-- **`wjSpec` is a window per left row** (`prevailing`): row `i`'s run is the right rows `[lo i, hi i)` between
+    its two `wjEdge`s, both inside `rk`, so the aggregate over it is `ix_winAt`'s
+    `Λ(winAt lo hi) ≫ enum ≫ list(xs) ≫ f`. `wjEdge_est` reads the edges as `est(≥)` of the candidates. -/
 theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w₁ : List Int64) (rk : List κ)
-    (rt : List Int64) : ∃ lo hi : Nat → Nat, (∀ i, lo i ≤ rk.length ∧ hi i ≤ rk.length) ∧
+    (rt : List Int64) :
+    (∀ i, wjEdge lk rk rt w₀ 0 i ≤ rk.length ∧ wjEdge lk rk rt w₁ 1 i ≤ rk.length) ∧
       Struct.wjSpec true lk w₀ w₁ rk rt = Struct.runsSpec ((List.range lk.length).map fun i =>
-        (List.range' (lo i) (hi i - lo i)).map Int64.ofNat) := by
+        (List.range' (wjEdge lk rk rt w₀ 0 i) (wjEdge lk rk rt w₁ 1 i - wjEdge lk rk rt w₀ 0 i)).map Int64.ofNat) := by
   have hgr : ∀ k s, s ∈ Struct.group rk k → s < rk.length := fun k s hs => by
     simp only [Struct.group, List.mem_filter, List.mem_range] at hs; omega
-  have hb : ∀ (i : Nat) (x : Int64) (off : Nat), off ≤ 1 → (match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) x).map (max s <| · + off)).getD s) ≤ rk.length :=
-    fun i x off ho => by
+  have hb : ∀ (w : List Int64) (off i : Nat), off ≤ 1 → wjEdge lk rk rt w off i ≤ rk.length :=
+    fun w off i ho => by
+      unfold wjEdge
       cases e : (Struct.group rk lk[i]!).head? with
       | none => exact Nat.zero_le _
       | some s =>
         have := hgr _ s (List.mem_of_mem_head? e)
-        cases e' : Struct.binSpec rt (Struct.group rk lk[i]!) x with
+        cases e' : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
         | none => simp only [Option.map_none, Option.getD_none]; omega
         | some r =>
           have := hgr _ r (binSpec_mem e'); simp only [Option.map_some, Option.getD_some]
           rw [Nat.max_def]; split <;> omega
-  refine ⟨fun i => match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₀[i]!).map (max s <| · + 0)).getD s,
-    fun i => match (Struct.group rk lk[i]!).head? with
-      | none => 0
-      | some s => ((Struct.binSpec rt (Struct.group rk lk[i]!) w₁[i]!).map (max s <| · + 1)).getD s,
-    fun i => ⟨hb i _ 0 (by decide), hb i _ 1 (by decide)⟩, ?_⟩
-  unfold Struct.wjSpec
+  refine ⟨fun i => ⟨hb _ 0 i (by decide), hb _ 1 i (by decide)⟩, ?_⟩
+  unfold Struct.wjSpec wjEdge
   congr 1
   apply List.map_congr_left
   intro i _
@@ -1706,6 +1794,75 @@ theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w�
   | some s =>
     simp only [↓reduceIte, List.range'_eq_map_range, List.map_map]
     try rfl
+
+/-- Left row `i`'s candidates at the bounds `w`: the rows of its key's group whose time is at most `w[i]`. -/
+def cand {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) : Idx ⟶ Idx :=
+  fun i j => j ∈ Struct.group rk lk[i]! ∧ rt[j]! ≤ w[i]!
+
+/-- On an ascending list the last element is the one at or above every element. -/
+theorem getLast?_greatest {L : List Nat} (hp : L.Pairwise (· < ·)) (r : Nat) :
+    L.getLast? = some r ↔ r ∈ L ∧ ∀ z, z ∈ L → r ≥ z := by
+  have fwd : ∀ r, L.getLast? = some r → r ∈ L ∧ ∀ z, z ∈ L → r ≥ z := fun r h => by
+    obtain ⟨ys, rfl⟩ := List.getLast?_eq_some_iff.1 h
+    refine ⟨by simp, fun z hz => ?_⟩
+    rcases List.mem_append.1 hz with hz | hz
+    · exact Nat.le_of_lt ((List.pairwise_append.1 hp).2.2 z hz r (by simp))
+    · simp only [List.mem_singleton] at hz; omega
+  refine ⟨fwd r, fun ⟨hr, hm⟩ => ?_⟩
+  cases h : L.getLast? with
+  | none => rw [List.getLast?_eq_none_iff] at h; subst h; cases hr
+  | some r' => obtain ⟨hr', hm'⟩ := fwd r' h; have := hm r' hr'; have := hm' r hr; congr 1; omega
+
+/-- **`bin` in an ascending group is `est(≥)` of the candidates**: where the group's times ascend, `binSpec` at
+    `w[i]` names `r` iff `r` is the greatest of left row `i`'s candidates, `Λ(cand) ≫ est(≥)`. -/
+theorem binSpec_est {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (i r : Nat)
+    (hs : (Struct.group rk lk[i]!).Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! = some r ↔ (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r := by
+  have hp : ((Struct.group rk lk[i]!).filter fun j => decide (rt[j]! ≤ w[i]!)).Pairwise (· < ·) :=
+    ((List.pairwise_lt_range).filter _).filter _
+  have hc : ∀ j, cand lk rk rt w i j ↔ j ∈ (Struct.group rk lk[i]!).filter fun j => decide (rt[j]! ≤ w[i]!) :=
+    fun j => by simp only [cand, List.mem_filter, decide_eq_true_eq]
+  rw [binSpec_sorted _ _ _ hs, RelSet.Λ_comp_est_apply, getLast?_greatest hp, hc]
+  exact and_congr_right fun _ => forall_congr' fun z => by rw [hc]
+
+/-- **`wj`'s edges are `est(≥)` of the candidates** where the key's group (first row `s`) ascends in time: the
+    greatest candidate `r` gives the edge `max s (r + off)`, and no candidate gives `s`. -/
+theorem wjEdge_est {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w : List Int64) (off i s : Nat)
+    (hh : (Struct.group rk lk[i]!).head? = some s)
+    (hs : (Struct.group rk lk[i]!).Pairwise fun a b => rt[a]! ≤ rt[b]!) :
+    (∀ r, (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r → wjEdge lk rk rt w off i = max s (r + off)) ∧
+      ((∀ r, ¬ (Λ (cand lk rk rt w) ≫ est (· ≥ ·)) i r) → wjEdge lk rk rt w off i = s) := by
+  unfold wjEdge
+  simp only [hh]
+  refine ⟨fun r h => by rw [(binSpec_est lk rk rt w i r hs).2 h]; rfl, fun h => ?_⟩
+  cases e : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
+  | none => rfl
+  | some r => exact absurd ((binSpec_est lk rk rt w i r hs).1 e) (h r)
+
+/-- **A window is a range of right rows, so a group that is not contiguous mixes keys**: left key `0`'s run
+    `[0, 3)` holds row `1`, of key `1`. -/
+theorem wjSpec_mixes : Struct.wjSpec true [0] [1] [3] [0, 1, 0] [1, 2, 3] = Struct.runsSpec [[0, 1, 2]] := by decide
+
+/-- **On a contiguous group the window stays inside it**: where key `lk[i]`'s right rows are `[s, s + c)`, every
+    row between `wj`'s two edges is in the group. -/
+theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt w₀ w₁ : List Int64) (i s c j : Nat)
+    (hc : 0 < c) (hg : Struct.group rk lk[i]! = List.range' s c) (h0 : wjEdge lk rk rt w₀ 0 i ≤ j)
+    (h1 : j < wjEdge lk rk rt w₁ 1 i) : j ∈ Struct.group rk lk[i]! := by
+  have hh : (Struct.group rk lk[i]!).head? = some s := by
+    rw [hg]; obtain ⟨c', rfl⟩ : ∃ c', c = c' + 1 := ⟨c - 1, by omega⟩; simp [List.range'_succ]
+  have key : ∀ (w : List Int64) off, off ≤ 1 → s ≤ wjEdge lk rk rt w off i ∧ wjEdge lk rk rt w off i ≤ s + c :=
+    fun w off ho => by
+      unfold wjEdge
+      simp only [hh]
+      cases e : Struct.binSpec rt (Struct.group rk lk[i]!) w[i]! with
+      | none => simp only [Option.map_none, Option.getD_none]; omega
+      | some r =>
+        have := binSpec_mem e
+        rw [hg, List.mem_range'_1] at this
+        simp only [Option.map_some, Option.getD_some]
+        rw [Nat.max_def]; split <;> omega
+  have := key w₀ 0 (by decide); have := key w₁ 1 (by decide)
+  rw [hg, List.mem_range'_1]; omega
 
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
@@ -1737,5 +1894,12 @@ theorem wjSpec_runs {κ : Type} [BEq κ] [Inhabited κ] (lk : List κ) (w₀ w�
 #print axioms wj_long
 #print axioms ix_winAt
 #print axioms wjSpec_runs
+#print axioms dyadColumn_sub_one
+#print axioms wj1_long
+#print axioms getLast?_greatest
+#print axioms binSpec_est
+#print axioms wjEdge_est
+#print axioms wjSpec_mixes
+#print axioms wjEdge_contig
 
 end LeetQ.Rel.Verb
