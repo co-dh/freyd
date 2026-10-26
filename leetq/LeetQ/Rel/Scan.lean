@@ -18,6 +18,7 @@ import QLean.Verify.Group
 import QLean.Verify.Structural
 import QLean.Verify.BinWin
 import QLean.Verify.Dyad
+import QLean.Verify.ScanOver
 
 namespace LeetQ.Rel
 
@@ -253,6 +254,38 @@ theorem scan_getLast? (f : Int64 → Int64 → Int64) (a : Int64) (xs : List Int
   simp only [scan, over, scanl, List.tail_cons, List.foldl_cons]
   exact scanl_getLast? _ _ _
 
+/-- Term `j` of `scanl` is the fold over the first `j` elements. -/
+theorem scanl_range {α β : Type} (f : β → α → β) (a : β) (xs : List α) :
+    scanl f a xs = (List.range (xs.length + 1)).map fun j => (xs.take j).foldl f a := by
+  induction xs generalizing a with
+  | nil => rfl
+  | cons x xs ih =>
+    rw [scanl, ih, List.length_cons, List.range_succ_eq_map (n := xs.length + 1), List.map_cons, List.map_map]
+    simp [Function.comp_def]
+
+/-- Term `j` of `Spec.scan` is `Spec.over` of the first `j+1` elements. -/
+theorem scan_range (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) :
+    scan step seed xs = (List.range xs.length).map fun j => over step seed (xs.take (j+1)) := by
+  rw [scan, scanl_range, List.range_succ_eq_map, List.map_cons, List.tail_cons, List.map_map]; rfl
+
+/-- The scan verb whose seed and step are the fold `op`'s: `q.k` spells `+\ *\ &\ |\` with the dyads of
+    `+/ */ &/ |/`. `all`/`any` fold over `"b"$x` and have no scan. -/
+def verb : Coc.Over → Option Scan.Verb
+  | .add => some .sums
+  | .mul => some .prds
+  | .lesser => some .mins
+  | .greater => some .maxs
+  | _ => none
+
+/-- A total over a count, as the bits of a `float`; `0n` for an empty count or a NaN quotient. -/
+def quot (p : Int64 × Nat) : UInt64 :=
+  if p.2 == 0 then QLean.nanBits else
+    let r := (p.1.toFloat / p.2.toFloat).toBits
+    if Bits.f64IsNaN r then QLean.nanBits else r
+
+/-- `avg x`: the total of the elements that are not `0N`, wrapping at `Int64`, over their count. -/
+def avg (xs : List Int64) : UInt64 := quot (over (· + ·) 0 xs, (xs.filter (· != nul)).length)
+
 end Spec
 
 /-! ## Laws on the ops -/
@@ -363,6 +396,102 @@ theorem toList_words {m : Nat} (x : Arr .long m) {B : ByteArray} {ws : List UInt
 theorem take_range_map {α : Type} (g : Nat → α) {j m : Nat} (h : j ≤ m) :
     ((List.range m).map g).take j = (List.range j).map g :=
   List.ext_getElem (by simp; omega) fun _ _ _ => by simp
+
+/-- `scanOf` over a dense long payload, eight bytes out, at a step and writer that read each word as a
+    long: its words are `Spec.scan` of the payload's longs, from `scanOf_get`. -/
+theorem scanOf_i64 (b : ByteArray) (seed : Int64) {st : Int64 → UInt64 → Int64} {g : Int64 → Int64 → Int64}
+    (hst : ∀ a x, st a x = g a x.toInt64) {emit : Int64 → UInt64} (he : ∀ a, emit a = a.toUInt64) :
+    Verify.elemsW 8 (Scan.scanOf (b.size / 8) 8 (Scan.Kind.i64.bitsAt b) Scan.Kind.i64.isNull seed st emit)
+      = (Spec.scan g seed ((Verify.elemsW 8 b).map UInt64.toInt64)).map Int64.toUInt64 := by
+  rw [Verify.elemsW, Scan.scanOf_size, Nat.mul_div_cancel _ (by decide), Spec.scan_range, List.map_map,
+    Verify.elemsW, List.length_map, List.length_map, List.length_range]
+  refine List.map_congr_left fun j hj => ?_
+  have hj := List.mem_range.1 hj
+  rw [Verify.scanOf_get _ 8 (by decide) _ _ _ _ _ j hj, he, Function.comp_apply, List.map_map,
+    take_range_map _ (show j + 1 ≤ b.size / 8 by omega), Spec.over, List.foldl_map, List.foldl_map,
+    show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
+  congr 2
+  funext a i
+  simp [Scan.Kind.isNull, Scan.Kind.bitsAt, Scan.Kind.width, hst, Spec.nul]
+
+/-- `(if y < a then y else a) = (if a < y then a else y)` on longs: `mins`'s step is `min`'s. -/
+theorem ite_lt_min (a y : Int64) : (if y < a then y else a) = (if a < y then a else y) := by
+  by_cases h1 : y < a <;> by_cases h2 : a < y <;> simp only [h1, h2, if_true, if_false] <;>
+    simp only [Int64.lt_iff_toInt_lt] at h1 h2 <;> first | omega | exact Int64.toInt_inj.1 (by omega)
+
+/-- `(if a < y then y else a) = (if y < a then a else y)` on longs: `maxs`'s step is `max`'s. -/
+theorem ite_lt_max (a y : Int64) : (if a < y then y else a) = (if y < a then a else y) := by
+  by_cases h1 : y < a <;> by_cases h2 : a < y <;> simp only [h1, h2, if_true, if_false] <;>
+    simp only [Int64.lt_iff_toInt_lt] at h1 h2 <;> first | omega | exact Int64.toInt_inj.1 (by omega)
+
+/-- **The long scan kernel over a dense payload** at `+\ *\ &\ |\`: its words are `Spec.scan` of the
+    payload's longs at the matching fold's step and seed. `Alg.sums b` is the `.sums` case at `op = .add`. -/
+theorem scan_i64_words {op : Coc.Over} {sv : Scan.Verb} (hv : Spec.verb op = some sv) (b : ByteArray)
+    (hm : b.size / 8 < USize.size) :
+    Verify.elemsW 8 (Scan.scan sv .i64 (b.size / 8).toUSize b)
+      = (Spec.scan op.step (op.seed Spec.nul) ((Verify.elemsW 8 b).map UInt64.toInt64)).map Int64.toUInt64 := by
+  have hn : min (b.size / 8).toUSize.toNat (Scan.Kind.i64.avail b) = b.size / 8 := by
+    rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.i64.avail b = b.size / 8 from rfl, Nat.min_self]
+  have e : Scan.scan sv .i64 (b.size / 8).toUSize b = Scan.intScan sv .i64 b
+      (min (b.size / 8).toUSize.toNat (Scan.Kind.i64.avail b)) (Scan.outKind sv .i64).width
+      Int64.maxValue (-Int64.maxValue) Int64.minValue := rfl
+  rw [e, hn]
+  cases op <;> simp only [Spec.verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv
+  · exact scanOf_i64 b 0 (fun _ _ => rfl) (fun a => by simp [Scan.narrow, Scan.outKind, Scan.Kind.width])
+  · exact scanOf_i64 b 1 (fun _ _ => rfl) (fun _ => rfl)
+  · rw [show Coc.Over.seed .lesser Spec.nul = Int64.maxValue by decide]
+    exact scanOf_i64 b _ (fun a x => ite_lt_min a x.toInt64) (fun _ => rfl)
+  · rw [show Coc.Over.seed .greater Spec.nul = -Int64.maxValue by decide]
+    exact scanOf_i64 b _ (fun a x => ite_lt_max a x.toInt64) (fun _ => rfl)
+
+/-- The long scan kernel writes eight bytes per element. -/
+theorem scan_i64_size {op : Coc.Over} {sv : Scan.Verb} (hv : Spec.verb op = some sv) (b : ByteArray)
+    (hm : b.size / 8 < USize.size) : (Scan.scan sv .i64 (b.size / 8).toUSize b).size / 8 = b.size / 8 := by
+  have := congrArg List.length (scan_i64_words hv b hm)
+  simpa [Verify.elemsW, Spec.scan_range] using this
+
+/-- **`f\x` over a dense long column** at `+ * & |`: `Spec.scan` at the matching fold's step and seed. -/
+theorem scan_toList {f : Prim.Dyadic} {op : Coc.Over} {sv : Scan.Verb} (hf : scanVerb f = some sv)
+    (hv : Spec.verb op = some sv) {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b)
+    (hn : n < USize.size) {S : Arr .long n} (h : scan f .long R = some S) :
+    S.toList = Spec.scan op.step (op.seed Spec.nul) R.toList := by
+  have hbn : b.size / 8 = n := Arr.n_long_bytes R hc
+  have hm : b.size / 8 < USize.size := hbn ▸ hn
+  have hs : (sv == .fills) = false := by
+    cases op <;> simp only [Spec.verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv <;> rfl
+  have hk : Scan.outKind sv .i64 = .i64 := by cases sv <;> rfl
+  have hcol : scanColumn f .long .long R.c = some (Column.answer ⟨.long, (b.size / 8).toUSize.toNat,
+      .bytes (Scan.scan sv .i64 (b.size / 8).toUSize b), none⟩) := by
+    rw [R.c_eq hc]
+    simp [scanColumn, scanWith, hf, hk, hs, show scanKind .long = some .i64 from rfl,
+      show QAtomicType.width .long = some 8 from rfl, Column.bytesOf, Scan.scanForm]
+  simp only [scan, hcol, Option.bind] at h
+  rw [Arr.of] at h
+  split at h
+  · rename_i hw
+    have hS : S.c = Column.answer ⟨.long, (b.size / 8).toUSize.toNat,
+        .bytes (Scan.scan sv .i64 (b.size / 8).toUSize b), none⟩ := by cases h; rfl
+    rw [show (b.size / 8).toUSize.toNat = (Scan.scan sv .i64 (b.size / 8).toUSize b).size / 8 by
+      rw [scan_i64_size hv b hm, USize.toNat_ofNat_of_lt' hm]] at hS
+    rw [Arr.toList_long S (by rw [hS]; exact longWords_answer _), scan_i64_words hv b hm,
+      Arr.toList_long R (show longWords R.c = some (Verify.elemsW 8 b) by rw [R.c_eq hc]; rfl), List.map_map]
+    exact (List.map_congr_left fun _ _ => rfl).trans (List.map_id _)
+  · cases h
+
+/-- **`avg x` over a dense long column**: `Spec.avg`, from `avgBits` at the long layout, which the
+    encoded paths (`overFoR`, `liveFoR`, alp) decline. -/
+theorem avg_bytes {n : Nat} {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) :
+    avg R = some (Spec.avg R.toList) := by
+  have hbn : b.size / 8 = n := Arr.n_long_bytes R hc
+  have hm : b.size / 8 < USize.size := hbn ▸ hn
+  have hcol : avgColumn .long R.c = some (.float (Scan.avgBits .i64 (b.size / 8).toUSize b)) := by
+    rw [R.c_eq hc]; rfl
+  simp only [avg, hcol, Option.bind, Carrier.of?, Option.some.injEq]
+  rw [Arr.toList_long_bytes R hc, List.map_map, ← hbn]
+  unfold Scan.avgBits Spec.avg Spec.quot
+  rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.i64.avail b = b.size / 8 from rfl, Nat.min_self,
+    ← List.countP_eq_length_filter, List.countP_map, Spec.over, List.foldl_map]
+  rfl
 
 /-- The window `[i+1-w, i]` of `til m` mapped, `i < m`. -/
 theorem window_range_map {α : Type} (g : Nat → α) (w : Nat) {i m : Nat} (hi : i < m) :
