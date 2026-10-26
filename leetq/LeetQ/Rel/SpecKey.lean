@@ -1124,6 +1124,188 @@ theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .l
   rcases a with _ | ⟨_, _⟩ <;> rcases a' with _ | ⟨_, _⟩ <;>
     (unfold Eval.keyColumns; rw [Array.mapM_eq_mapM_toList, Array.toList_zip]; rfl)
 
+
+open QLean.Kernel in
+/-- `runsColumn` at a long column is `runStarts` over its bytes: the column's own, or its decode. -/
+theorem runsColumn_long (c : Column) (ht : c.ty = .long) :
+    runsColumn .long c = (Column.bytesOf c).map (runStarts 8 false) := by
+  obtain ⟨t, n, e, a⟩ := c
+  simp only at ht; subst ht
+  cases e with
+  | foR md pk =>
+    simp only [runsColumn, denseWidth, foRColumn, QAtomicType.width]
+    split <;> simp_all [Column.bytesOf, foRRunStarts, QAtomicType.width, foldsZero] <;> (subst_vars; rfl)
+  | _ => simp [runsColumn, denseWidth, foRColumn, QAtomicType.width, foldsZero] <;> rfl
+
+open QLean.Kernel in
+/-- **`runStarts` read back as row numbers**: the positions that start a run of equal words, then the count. -/
+theorem longRows_runStarts (B : ByteArray) (h63 : B.size / 8 < 2 ^ 63) :
+    (longRows (runStarts 8 false B)).toList =
+      (List.range (B.size / 8)).filter (fun i => i == 0 || Column.bitsAt B (i * 8) 8 != Column.bitsAt B ((i - 1) * 8) 8)
+        ++ [B.size / 8] := by
+  have h8 : (8 : USize).toNat = 8 := by simp
+  have hf : ∀ (l : List Nat) (acc : ByteArray),
+      l.foldl (fun acc i => if (i == 0 || key 8 false B i != key 8 false B (i - 1)) = true
+        then Column.pushBits acc i.toUInt64 8 else acc) acc =
+      (l.filter fun i => i == 0 || Column.bitsAt B (i * 8) 8 != Column.bitsAt B ((i - 1) * 8) 8).foldl
+        (fun acc i => Column.pushBits acc i.toUInt64 8) acc := by
+    intro l; induction l with
+    | nil => intro _; rfl
+    | cons a l ih =>
+      intro acc
+      simp only [List.foldl_cons, List.filter_cons]
+      cases h : (a == 0 || Column.bitsAt B (a * 8) 8 != Column.bitsAt B ((a - 1) * 8) 8) <;>
+        simp only [show ∀ i, Kernel.key 8 false B i = Column.bitsAt B (i * 8) 8 from fun _ => rfl, h, ite_true,
+          Bool.false_eq_true, ite_false, List.foldl_cons] <;> exact ih _
+  generalize hL : (List.range (B.size / 8)).filter
+    (fun i => i == 0 || Column.bitsAt B (i * 8) 8 != Column.bitsAt B ((i - 1) * 8) 8) = L at hf ⊢
+  have e : runStarts 8 false B = (L ++ [B.size / 8]).foldl (fun acc i => Column.pushBits acc i.toUInt64 8)
+      ByteArray.empty := by
+    simp only [runStarts, h8]; rw [List.foldl_append, ← hL, ← hf]; rfl
+  have hle : ∀ x ∈ L ++ [B.size / 8], x ≤ B.size / 8 := fun x hx => by
+    rcases List.mem_append.1 hx with hx | hx
+    · rw [← hL] at hx; exact Nat.le_of_lt (List.mem_range.1 (List.mem_filter.1 hx).1)
+    · simp at hx; omega
+  obtain ⟨hs, -, hb⟩ := Verify.foldl_pushBits Nat.toUInt64 8 (by decide) (L ++ [B.size / 8]) ByteArray.empty
+  rw [e]
+  apply List.ext_getElem (by
+    simp only [longRows, Array.toList_map, Array.toList_range, List.length_map, List.length_range]; rw [hs]; simp)
+  intro i h1 h2
+  simp only [longRows, Array.toList_map, Array.toList_range, List.getElem_map, List.getElem_range]
+  have := hb i h2
+  simp only [ByteArray.size_empty, Nat.zero_add] at this
+  have hle2 := hle _ (List.getElem_mem h2)
+  have hx : (L ++ [B.size / 8])[i] < 2 ^ 64 := by omega
+  have hx' : (L ++ [B.size / 8])[i] < 2 ^ (8 * 8) := hx
+  rw [this, show (L ++ [B.size / 8])[i].toUInt64 = UInt64.ofNat (L ++ [B.size / 8])[i] from rfl,
+    UInt64.toNat_ofNat_of_lt' hx, Nat.mod_eq_of_lt hx', UInt64.toNat_ofNat_of_lt' hx]
+
+/-- **Each word of `B` occupies one run**: two equal words have only that word between them — what a sorted
+    column gives (`s#`), and what `u#`/`p#` claim. -/
+def OneRun (B : ByteArray) : Prop := ∀ i j k, i ≤ k → k ≤ j → j < B.size / 8 →
+  Column.bitsAt B (i * 8) 8 = Column.bitsAt B (j * 8) 8 → Column.bitsAt B (k * 8) 8 = Column.bitsAt B (i * 8) 8
+
+open QLean.Kernel in
+/-- **Where each word occupies one run, the first occurrences are the run starts.** -/
+theorem firstsOf_runs {B : ByteArray} (hB : OneRun B) :
+    Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8) =
+      (List.range (B.size / 8)).filter (fun i => i == 0 || Column.bitsAt B (i * 8) 8 != Column.bitsAt B ((i - 1) * 8) 8) := by
+  unfold Verify.firstsOf
+  apply List.filter_congr
+  intro i hi
+  have hi := List.mem_range.1 hi
+  have hkey : ∀ j, Order.keyAt .i64 B j = Order.keyAt .i64 B i ↔
+      Column.bitsAt B (j * 8) 8 = Column.bitsAt B (i * 8) 8 := fun j => Verify.keyAt_eq_iff (by simp) B j i
+  have L : ((List.range i).all fun j => !decide (Order.keyAt .i64 B j = Order.keyAt .i64 B i)) = true ↔
+      ∀ j, j < i → Column.bitsAt B (j * 8) 8 ≠ Column.bitsAt B (i * 8) 8 := by simp [List.all_eq_true, hkey]
+  have R : (i == 0 || Column.bitsAt B (i * 8) 8 != Column.bitsAt B ((i - 1) * 8) 8) = true ↔
+      i = 0 ∨ Column.bitsAt B (i * 8) 8 ≠ Column.bitsAt B ((i - 1) * 8) 8 := by simp
+  rw [Bool.eq_iff_iff, L, R]
+  constructor
+  · intro h
+    rcases Nat.eq_zero_or_pos i with h0 | h0
+    · exact Or.inl h0
+    · exact Or.inr fun e => h (i - 1) (by omega) e.symm
+  · rintro (h0 | hne) j hj e
+    · omega
+    · exact hne ((hB j i (i - 1) (by omega) (by omega) hi e).trans e).symm
+
+/-- The numbers below `n` in `[a, b)` are `range' a`, cut at `n`. -/
+theorem filter_range_interval (a b : Nat) : ∀ n,
+    (List.range n).filter (fun i => decide (a ≤ i ∧ i < b)) = List.range' a (min b n - a) := by
+  intro n
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [List.range_succ, List.filter_append, ih]
+    by_cases h : a ≤ n ∧ n < b
+    · rw [show min b (n + 1) - a = (min b n - a) + 1 by omega, List.range'_concat]
+      simp [List.filter_cons, h]; omega
+    · rw [show min b (n + 1) - a = min b n - a by omega]
+      simp <;> omega
+
+/-- Below the end of a run, a word equals the run's first exactly when no run starts in between. -/
+theorem same_run {B : ByteArray} (hB : OneRun B) {a i : Nat} (hai : a ≤ i) (hi : i < B.size / 8) :
+    Column.bitsAt B (i * 8) 8 = Column.bitsAt B (a * 8) 8 ↔
+      ∀ r, a < r → r ≤ i → Column.bitsAt B (r * 8) 8 = Column.bitsAt B ((r - 1) * 8) 8 := by
+  constructor
+  · intro e r h1 h2
+    rw [hB a i r (by omega) h2 hi e.symm, hB a i (r - 1) (by omega) (by omega) hi e.symm]
+  · intro h
+    obtain ⟨d, rfl⟩ : ∃ d, i = a + d := ⟨i - a, by omega⟩
+    clear hai
+    induction d with
+    | zero => rfl
+    | succ d ih =>
+      rw [h (a + (d + 1)) (by omega) (Nat.le_refl _), show a + (d + 1) - 1 = a + d by omega]
+      exact ih (by omega) fun r h1 h2 => h r h1 (by omega)
+
+open QLean.Kernel in
+/-- **Where each word occupies one run, the bucket at run start `F[g]` is the run**: the rows from it to the next
+    start, or to the count past the last. -/
+theorem bucket_run {B : ByteArray} (hB : OneRun B) {F : List Nat}
+    (hF : Verify.firstsOf (Order.keyAt .i64 B) (B.size / 8) = F) {g : Nat} (hg : g < F.length) :
+    Verify.bucketOf (Order.keyAt .i64 B) (B.size / 8) F[g] =
+      List.range' F[g] ((F ++ [B.size / 8])[g + 1]! - F[g]) := by
+  have hFs : F.Pairwise (· < ·) := by
+    rw [← hF]; unfold Verify.firstsOf; exact (List.pairwise_lt_range ..).filter _
+  have hmem : ∀ r, r ∈ F ↔ r < B.size / 8 ∧ (r = 0 ∨ Column.bitsAt B (r * 8) 8 ≠ Column.bitsAt B ((r - 1) * 8) 8) :=
+    fun r => by rw [← hF, firstsOf_runs hB, List.mem_filter, List.mem_range]; simp
+  have hlt : ∀ i j (hi : i < F.length) (hj : j < F.length), F[i] < F[j] → i < j := fun i j hi hj h =>
+    Nat.lt_of_not_le fun hc => by
+    rcases Nat.lt_or_eq_of_le hc with hc | rfl
+    · have := List.pairwise_iff_getElem.1 hFs j i hj hi hc; omega
+    · omega
+  have hg0 := (hmem _).1 (List.getElem_mem hg)
+  -- `hi` is the next start, or the count
+  have hhi : (F ++ [B.size / 8])[g + 1]! = if h : g + 1 < F.length then F[g + 1] else B.size / 8 := by
+    split
+    · rename_i h; rw [getElem!_pos _ _ (by simp <;> omega), List.getElem_append_left h]
+    · rename_i h; rw [getElem!_pos _ _ (by simp <;> omega), List.getElem_append_right (by omega)]; simp <;> omega
+  have hgt : F[g] < (F ++ [B.size / 8])[g + 1]! ∧ (F ++ [B.size / 8])[g + 1]! ≤ B.size / 8 := by
+    rw [hhi]; split
+    · rename_i h
+      exact ⟨List.pairwise_iff_getElem.1 hFs g (g + 1) hg h (by omega), Nat.le_of_lt ((hmem _).1 (List.getElem_mem h)).1⟩
+    · exact ⟨hg0.1, Nat.le_refl _⟩
+  rw [show (F ++ [B.size / 8])[g + 1]! - F[g] = min (F ++ [B.size / 8])[g + 1]! (B.size / 8) - F[g] by
+    rw [Nat.min_eq_left hgt.2], ← filter_range_interval]
+  unfold Verify.bucketOf
+  apply List.filter_congr
+  intro i hi
+  have hi := List.mem_range.1 hi
+  rw [Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff, Verify.keyAt_eq_iff (by simp) B i F[g]]
+  change Column.bitsAt B (i * 8) 8 = Column.bitsAt B (F[g] * 8) 8 ↔ _
+  by_cases hai : F[g] ≤ i
+  · rw [same_run hB hai hi]
+    constructor
+    · intro h
+      refine ⟨hai, Nat.lt_of_not_le fun hge => ?_⟩
+      rw [hhi] at hge
+      split at hge
+      · rename_i h1
+        have hs := ((hmem _).1 (List.getElem_mem h1)).2
+        have hgt1 := List.pairwise_iff_getElem.1 hFs g (g + 1) hg h1 (by omega)
+        rcases hs with hs | hs
+        · omega
+        · exact hs (h _ hgt1 hge)
+      · omega
+    · rintro ⟨-, hlt'⟩ r h1 h2
+      refine Classical.byContradiction fun hne => ?_
+      obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem ((hmem r).2 ⟨by omega, Or.inr hne⟩)
+      have hgk := hlt g k hg hk h1
+      rw [hhi] at hlt'
+      split at hlt'
+      · rename_i h1'
+        rcases Nat.lt_or_eq_of_le (show g + 1 ≤ k by omega) with h3 | h3
+        · have := List.pairwise_iff_getElem.1 hFs (g + 1) k h1' hk h3; omega
+        · subst h3; omega
+      · omega
+  · simp only [hai, false_and, iff_false]
+    intro e
+    rcases hg0.2 with h0 | hne
+    · omega
+    · exact hne ((hB i F[g] (F[g] - 1) (by omega) (by omega) hg0.1 e).trans e).symm
+
 open QLean.Kernel in
 /-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column marked neither `` `s ``,
     `` `u `` nor `` `p ``, and `` `g `` only with no index built (`cell.ready = none`, so `viaIndex` scans), is grouped by `Order.group` and each left word placed among the distinct words
