@@ -145,18 +145,22 @@ def cut {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Exce
 
 /-- `x f/: y`: `m` runs of `n`, run `j` is `x f y[j]` — `Alg.cross` of the positions, two gathers and ONE
     `Ew.dyad` over all `m·n` pairs, no call per right element; `o := j·n` for `j ≤ m`. -/
-def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
-    (y : Arr u ny) : Except String ((g : Nat) × Arr .general g) := do
+def eachRightP {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) : Except String (Parted rt) := do
   let (j, i) := Alg.cross ny nx
   let xs ← vec "x f/:y" t (gatherColumn t x.c (Alg.longs i))
   let ys ← vec "x f/:y" u (gatherColumn u y.c (Alg.longs j))
-  parted "x f/:y" (Alg.mulc (tilLongs (ny + 1).toUSize) nx) (← Ew.dyad v Ew.vv t u rt xs ys (ny * nx))
+  partedP "x f/:y" (Alg.mulc (tilLongs (ny + 1).toUSize) nx) (← Ew.dyad v Ew.vv t u rt xs ys (ny * nx))
+
+/-- `x f/: y`: `eachRightP`, boxed. -/
+def eachRight {t u : QAtomicType} (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
+    (y : Arr u ny) : Except String ((g : Nat) × Arr .general g) := do
+  boxed (← eachRightP v rt x y)
 
 /-- `+x` of a nested list of `g` runs of `a`s of one length `m`: `m` runs of `g`. The equal lengths are one
     `matchBytes` of `o` against `j·m`; position `p` of the answer reads `(p mod g)·m + p div g`
     (`Alg.cross`, `Ew.val`, one gather); `o' := j·g`. -/
-def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g : Nat) × Arr .general g) := do
-  let P ← Parted.ofBoxes a x
+def flipP {a : QAtomicType} (P : Parted a) : Except String (Parted a) := do
   let g := P.g
   let m := if g = 0 then 0 else P.n / g
   let some ob := longBytes P.o.c | throw "+x: the offsets have no long payload"
@@ -164,19 +168,26 @@ def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g 
     throw "+x: the runs differ in length (q's 'length)"
   let (q, r) := Alg.cross m g
   let c ← vec "+x" a (gatherColumn a P.val.c (Alg.longs (Alg.add (Alg.mulc r m) q)))
-  parted "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of a (m * g) c "+x")
+  partedP "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.of a (m * g) c "+x")
+
+/-- `+x`: `flipP` of the flat form, boxed. -/
+def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g : Nat) × Arr .general g) := do
+  boxed (← flipP (← Parted.ofBoxes a x))
 
 /-- `x@y` on a nested list of `a`s: the runs `y` selects — the run lengths `o[1..] − o[..g]` gathered at
     `y` (`0` outside `0 … g-1`), `Find.expand` of them, one gather of `val` at `o[y[i]] + w`; `o' := 0, sums`. -/
-def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .long ny) : Except String ((g : Nat) × Arr .general g) := do
-  let P ← Parted.ofBoxes a x
+def indexPartedP {a : QAtomicType} {ny : Nat} (P : Parted a) (y : Arr .long ny) : Except String (Parted a) := do
   let some ob := longBytes P.o.c | throw "x@y: the offsets have no long payload"
   let yb ← dense "x@y" .long y.c
   let lens := Alg.gather 8 (Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8))) yb
   let (i, w) := expand lens
   let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
   let c ← vec "x@y" a (gatherColumn a P.val.c (Alg.longs src))
-  parted "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of a (Alg.len src) c "x@y")
+  partedP "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.of a (Alg.len src) c "x@y")
+
+/-- `x@y` on a nested list: `indexPartedP` of the flat form, boxed. -/
+def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .long ny) : Except String ((g : Nat) × Arr .general g) := do
+  boxed (← indexPartedP (← Parted.ofBoxes a x) y)
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
