@@ -507,29 +507,13 @@ theorem ne_min_word {u : UInt64} (ha : u.toNat < 2 ^ 63) : (u.toInt64 == Int64.m
 /-- `Ew.val` of a long payload against one long atom `c`, element by element on the naturals. -/
 theorem nats_val_va (op : UInt8) (b : ByteArray) (c : UInt64) (hn : b.size / 8 < USize.size) (F : Nat → Nat)
     (hF : ∀ a ∈ nats b, (Kernel.Ew.intStep op Int64.minValue (UInt64.ofNat a).toInt64 c.toInt64).toUInt64.toNat = F a) :
-    nats (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.va Int64.minValue b (one c) (b.size / 8).toUSize) = (nats b).map F := by
-  rw [nats, show one c = Kernel.atomBytes Kernel.Ew.i64 c from rfl, Verify.val_i64_va _ _ _ _ _ hn]
+    nats (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.va Int64.minValue b (Find.one c) (b.size / 8).toUSize) = (nats b).map F := by
+  rw [nats, show Find.one c = Kernel.atomBytes Kernel.Ew.i64 c from rfl, Verify.val_i64_va _ _ _ _ _ hn]
   apply List.ext_getElem (by simp [nats, Verify.elemsW])
   intro i h1 h2
   simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range] at h2 ⊢
   have := hF _ (List.mem_map.2 ⟨_, List.mem_map.2 ⟨i, List.mem_range.2 h2, rfl⟩, rfl⟩)
   rwa [UInt64.ofNat_toNat] at this
-
-/-- `Ew.val` of two long payloads of one length, element by element on the naturals. -/
-theorem nats_val_vv (op : UInt8) (a b : ByteArray) (hn : a.size / 8 < USize.size) (hab : b.size / 8 = a.size / 8)
-    (F : Nat → Nat → Nat) (hF : ∀ i (h : i < a.size / 8), (Kernel.Ew.intStep op Int64.minValue
-      (UInt64.ofNat ((nats a)[i]'(by rw [nats_length]; exact h))).toInt64
-      (UInt64.ofNat ((nats b)[i]'(by rw [nats_length]; omega))).toInt64).toUInt64.toNat =
-        F ((nats a)[i]'(by rw [nats_length]; exact h)) ((nats b)[i]'(by rw [nats_length]; omega))) :
-    nats (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.vv Int64.minValue a b (a.size / 8).toUSize) =
-      List.zipWith F (nats a) (nats b) := by
-  rw [nats, Verify.val_i64_vv _ _ _ _ _ hn]
-  apply List.ext_getElem (by simp [nats, Verify.elemsW, hab])
-  intro i h1 h2
-  simp only [List.length_map, List.length_range] at h1
-  have := hF i h1
-  simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range, List.getElem_zipWith, UInt64.ofNat_toNat] at this ⊢
-  exact this
 
 /-- `Alg.mulc a x`: each natural times `x`, all products below `2^63`. -/
 theorem nats_mulc (a : ByteArray) (x : Nat) (hn : a.size / 8 < USize.size) (hx : x < 2 ^ 63)
@@ -547,6 +531,10 @@ theorem nats_mulc (a : ByteArray) (x : Nat) (hn : a.size / 8 < USize.size) (hx :
 
 
 #print axioms flip_rel
+#print axioms nats_til
+#print axioms nats_val_va
+#print axioms nats_mulc
+#print axioms toNat_of_toInt
 #print axioms ej_rel
 #print axioms indexParted_rel
 #print axioms eachRight_rel
