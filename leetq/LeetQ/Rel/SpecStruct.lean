@@ -3,6 +3,7 @@
   the List spec as the expression (`ix_*`), over `Spec.lean`'s reading `x.rel = ix(x.toList)`.
 -/
 import LeetQ.Rel.Spec
+import LeetQ.Rel.SpecFind
 import QLean.Verify.Dyad
 import QLean.Verify.Structural
 
@@ -629,7 +630,7 @@ theorem cut_uniform {v : QAtomicType} (P : Parted v) (k : Nat) (hm : ∀ s ∈ P
   | r+1, hr => by
     obtain ⟨-, cg, mono⟩ := Struct.cuts_nat P.co
     have ih := cut_uniform P k hm r (by omega)
-    have hs := hm _ (List.getElem_mem (l := P.segs) (i := r) (by simp [Parted.segs]; omega))
+    have hs := hm _ (List.getElem_mem (show r < P.segs.length by simp [Parted.segs]; omega))
     simp only [Parted.segs, List.getElem_map, List.getElem_range, List.length_take, List.length_drop,
       Arr.length_toList] at hs
     have hm' : P.cut r ≤ P.cut (r+1) := mono r (by omega)
@@ -652,6 +653,50 @@ theorem cut_of_nats {v : QAtomicType} (R : Parted v) {B : ByteArray} (hB : R.o.c
     toInt_word (a := f r) (by simp only [Verify.elemsW, List.getElem_map, List.getElem_range]; exact e) (hl r hr),
     Int.toNat_natCast]
 
+/-- **A gather of a long column** (`bytes` or `foR`) at a dense long index payload whose words, read as
+    naturals, all lie below `nx`: an `Arr` of `N` longs, dense, whose element `p` is `x[idx[p]]`. -/
+theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs : List UInt64}
+    (hv : longWords x.c = some vs) (hxU : nx < USize.size) {idx : ByteArray} (hn : idx.size / 8 = N)
+    (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {verb : String} {c : Column}
+    (hvec : Find.vec verb .long (Kernel.gatherColumn .long x.c (Alg.longs idx)) = .ok c) :
+    ∃ X : Arr .long N, X.c = c ∧ (∃ B, c.enc = .bytes B) ∧ ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
+  obtain ⟨hg, hct⟩ := Struct.vec_ok hvec
+  have hsW : (Alg.longs idx).WF := by show idx.size = idx.size / 8 * 8; omega
+  have hA : ∀ M Q a, x.c.enc = .alp M Q a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
+    simp [longWords, he] at hv
+  have hfit : Verify.countFits x.c := Struct.countFits_long x hv hxU
+  have hfi : Verify.countFits (Alg.longs idx) := by simp [Verify.countFits, Alg.longs]
+  obtain ⟨src, ix, -, hix, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c (Alg.longs idx) c
+    x.wf.1 rfl hfi hA hg
+  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl x.c (Alg.longs idx) c x.wf.1 x.wf.2.2 rfl
+    hsW hfit hfi hA hg
+  have hix' : ix = idx := by
+    have e : Column.bytesOf (Alg.longs idx) = some idx := by first | rfl | simp [Column.bytesOf, Alg.longs]
+    rw [e] at hix; exact (Option.some.inj hix).symm
+  subst hix'
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hGs := (Verify.gatherBytes_spec (8 : Nat).toUSize (Nat.le_of_eq h8) ((Kernel.nullBits .long).getD 0) src ix).1
+  have hcW : c.ty = .long ∧ c.n = N ∧ c.WF := by
+    subst hcB
+    refine ⟨rfl, hn, ?_⟩
+    show (Kernel.gatherBytes (8 : Nat).toUSize _ src ix).size = ix.size / 8 * 8
+    rw [hGs, h8]; exact Nat.mul_comm _ _
+  have hw : longWords c = some (Column.raw c).toList := by
+    cases hl : longWords c with
+    | none => rw [hcB] at hl; cases hl
+    | some ws => rw [Struct.raw_long hct hcW.2.2 hl]
+  have hvs : vs.length = nx := by have := Arr.length_toList x; rw [Arr.toList_long x hv, List.length_map] at this; omega
+  refine ⟨⟨c, hcW⟩, rfl, ⟨_, by rw [hcB]⟩, fun p hp => ?_⟩
+  have hlt := hi p hp
+  rw [nats_get ix (by omega)] at hlt ⊢
+  rw [Arr.toList_long ⟨c, hcW⟩ hw, hraw, Struct.raw_long (c := Alg.longs ix) rfl hsW (ws := Verify.elemsW 8 ix) rfl,
+    Struct.raw_long x.wf.1 x.wf.2.2 hv, Arr.toList_long x hv, getElem!_pos _ p (by simp [Verify.elemsW]; omega),
+    getElem!_pos _ _ (by simp; omega), List.getElem_map, List.getElem_map, List.getElem_map,
+    show (Verify.elemsW 8 ix)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt ix (p * 8) 8 by
+      simp only [Verify.elemsW, List.getElem_map, List.getElem_range],
+    List.getD_eq_getElem?_getD, List.getElem?_eq_getElem (by omega), Option.getD_some]
+  exact congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)
+
 /-- **`flipP` transposes**, on a long `val` (`bytes` or `foR`) whose runs all have length `n/g`: column `j`
     of the answer is element `j` of every run. The bounds keep every position below `2^63` and `USize`. -/
 theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64} (hv : longWords P.val.c = some vs)
@@ -661,7 +706,8 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   unfold Struct.flipP at h
   dsimp only at h
   rw [show (if P.g = 0 then 0 else P.n / P.g) = P.n / P.g by split <;> simp_all] at h
-  generalize hmd : P.n / P.g = m at h hm ⊢
+  have hmn : P.n / P.g ≤ P.n := Nat.div_le_self _ _
+  generalize hmd : P.n / P.g = m at h hm hmn ⊢
   have hcP := cut_uniform P m hm
   obtain ⟨-, cg, -⟩ := Struct.cuts_nat P.co
   have hn : P.g * m = P.n := by rw [← hcP P.g (Nat.le_refl _)]; exact cg
@@ -671,8 +717,7 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   rw [hob] at h
   dsimp only at h
   split at h
-  swap
-  · first | cases h | simp [bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at h
+  case isFalse => first | cases h | simp [bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at h
   simp only [bind, Except.bind, pure, Except.pure] at h
   generalize hx : Alg.cross m P.g = qr at h
   obtain ⟨q, r⟩ := qr
@@ -713,35 +758,21 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   generalize hsd : Alg.add (Alg.mulc r m) q = src at hsrc hvec
   have hss : src.size = 8 * (m * P.g) := by
     rw [← hsd, Alg.add, (Verify.val_spec _ _ _ _ _ _ _).1, Alg.len, hrms, USize.toNat_ofNat_of_lt' hmgU]; rfl
-  have hsW : (Alg.longs src).WF := by show src.size = src.size / 8 * 8; omega
-  obtain ⟨hg, hct⟩ := Struct.vec_ok hvec
-  have hA : ∀ M Q a, P.val.c.enc = .alp M Q a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hv
-  have hfit : Verify.countFits P.val.c := Struct.countFits_long P.val hv (by omega)
-  obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ c P.val.wf.1 rfl
-    trivial hA hg
-  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl _ _ c P.val.wf.1 P.val.wf.2.2 rfl hsW hfit trivial hA hg
-  have hcv : val'.c = c := Struct.of_c hof
-  have hw : longWords c = some (Column.raw c).toList := by
-    cases hl : longWords c with
-    | none => rw [hcB] at hl; cases hl
-    | some ws => rw [Struct.raw_long hct (by rw [← hcv]; exact val'.wf.2.2) hl]
-  have hvs : vs.length = P.n := by have := Arr.length_toList P.val; rw [Arr.toList_long P.val hv, List.length_map] at this; omega
+  have hlt : ∀ p, p < m * P.g → p % P.g * m + p / P.g < P.n := fun p hp => by
+    have hg : 0 < P.g := Nat.pos_of_ne_zero fun e => by rw [e, Nat.mul_zero] at hp; omega
+    have h1 : p / P.g < m := Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact hp)
+    have h2 : (p % P.g + 1) * m ≤ P.g * m := Nat.mul_le_mul_right m (Nat.mod_lt p hg)
+    rw [Nat.succ_mul] at h2; omega
+  obtain ⟨X, hXc, -, hXv⟩ := gather_long P.val hv (by omega) (show src.size / 8 = m * P.g by omega) (by omega)
+    (fun p hp => by rw [hsrc p hp]; exact hlt p hp) hvec
+  have hX : val' = X := by
+    obtain ⟨vc, vw⟩ := val'
+    obtain ⟨xc, xw⟩ := X
+    have hcv := Struct.of_c hof
+    dsimp only at hcv hXc
+    subst hcv; subst hXc; rfl
   have hval : ∀ p, p < m * P.g → val'.toList[p]! = P.val.toList[p % P.g * m + p / P.g]! := fun p hp => by
-    have hi := hsrc p hp
-    have hlt : p % P.g * m + p / P.g < vs.length := by
-      have hg : 0 < P.g := Nat.pos_of_ne_zero fun e => by rw [e, Nat.mul_zero] at hp; omega
-      have h1 : p / P.g < m := Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact hp)
-      have h2 : (p % P.g + 1) * m ≤ P.g * m := Nat.mul_le_mul_right m (Nat.mod_lt p hg)
-      rw [Nat.succ_mul] at h2; omega
-    rw [nats_get src (by omega)] at hi
-    rw [Arr.toList_long val' (by rw [hcv]; exact hw), hraw,
-      Struct.raw_long (c := Alg.longs src) rfl hsW (ws := Verify.elemsW 8 src) rfl, Struct.raw_long P.val.wf.1 P.val.wf.2.2 hv,
-      Arr.toList_long P.val hv, getElem!_pos _ p (by simp [Verify.elemsW]; omega),
-      getElem!_pos _ _ (by simp; omega), List.getElem_map, List.getElem_map, List.getElem_map,
-      show (Verify.elemsW 8 src)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt src (p * 8) 8 by
-        simp only [Verify.elemsW, List.getElem_map, List.getElem_range], hi, List.getD_eq_getElem _ _ hlt]
-    exact congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)
+    rw [hX, hXv p hp, hsrc p hp]
   -- the answer's offsets `j·g`
   have hts := nats_til (m + 1) (by omega)
   have hB' : nats (Alg.mulc (Kernel.tilLongs (m + 1).toUSize) P.g) = (List.range (m + 1)).map (· * P.g) := by
@@ -754,21 +785,23 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   have hg' : g' = m := by
     have := Arr.n_long_bytes o' hoB
     rw [← nats_length, hB'] at this; simp at this; omega
-  subst hg'
-  have hcR := cut_of_nats ⟨g', m * P.g, o', co', val'⟩ hoB (f := (· * P.g)) hB' fun k hk => by
-    have := Nat.mul_le_mul_right P.g (show k ≤ g' by exact hk)
-    rw [Nat.mul_comm g'] at this; dsimp only; omega
-  rw [segs_uniform _ P.g hcR, segs_uniform P g' hcP]
+  subst g'
+  have hcR := cut_of_nats ⟨m, m * P.g, o', co', val'⟩ hoB (f := (· * P.g)) hB' fun k hk => by
+    have := Nat.mul_le_mul_right P.g (show k ≤ m by exact hk)
+    rw [Nat.mul_comm m] at this; dsimp only; omega
+  rw [segs_uniform _ P.g hcR, segs_uniform P m hcP]
   refine List.map_congr_left fun j hj => ?_
-  have hj := List.mem_range.1 hj
+  have hj : j < m := List.mem_range.1 hj
   rw [List.map_map]
   refine List.map_congr_left fun i hi => ?_
   have hi := List.mem_range.1 hi
-  have hji : j * P.g + i < g' * P.g := by
-    have := Nat.mul_le_mul_right P.g (show j + 1 ≤ g' by omega); rw [Nat.succ_mul] at this; omega
-  show val'.toList[j * P.g + i]! = ((List.range g').map fun l => P.val.toList[i * g' + l]!)[j]!
-  rw [hval _ hji, getElem!_range_map _ hj, Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi,
-    Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hi, Nat.zero_add]
+  have e1 : (j * P.g + i) % P.g = i := by rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hi]
+  have e2 : (j * P.g + i) / P.g = j := by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt hi, Nat.zero_add]
+  have hji : j * P.g + i < m * P.g := by
+    have := Nat.mul_le_mul_right P.g (show j + 1 ≤ m by omega); rw [Nat.succ_mul] at this; omega
+  show val'.toList[j * P.g + i]! = ((List.range m).map fun l => P.val.toList[i * m + l]!)[j]!
+  rw [hval _ hji, getElem!_range_map _ hj, e1, e2]
 
 /-- **`+x = ⟨!til g, til m⟩ ≫ cpl ≫ list(⟨outl ≫ x, outr⟩ ≫ (@))`**, the kernel itself, on a long `val` whose
     runs all have length `m = n/g`: `flipP_segs`, then `flip_rel`. -/
@@ -780,8 +813,127 @@ theorem flipP_rel [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64}
         (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) :=
   flip_rel hm (flipP_segs hv hm hU hB h)
 
+/-! ## `x f/:y` on longs -/
+
+/-- `Alg.cross n m`'s two payloads hold `n·m` whole words each. -/
+theorem cross_size (n m : Nat) (hU : n * m < USize.size) :
+    (Alg.cross n m).1.size = 8 * (n * m) ∧ (Alg.cross n m).2.size = 8 * (n * m) := by
+  unfold Alg.cross
+  exact ⟨by rw [(Verify.val_spec _ _ _ _ _ _ _).1, USize.toNat_ofNat_of_lt' hU]; rfl,
+    by rw [(Verify.val_spec _ _ _ _ _ _ _).1, USize.toNat_ofNat_of_lt' hU]; rfl⟩
+
+/-- **`eachRightP` is `y.map (x.map (f · b))`** on two long columns (`bytes` or `foR`), `f` a value verb whose
+    answer is `long` (`intStep` at q's null, `Ew.elem_long_val`); the bounds keep `ny·nx` positions below
+    `2^63` and `USize`. -/
+theorem eachRightP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
+    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    (hU : ny * nx + nx + ny + 1 < USize.size) (hB : ny * nx + nx + ny < 2 ^ 63)
+    (h : Struct.eachRightP v .long x y = .ok R) :
+    R.segs = y.toList.map fun b => x.toList.map (Kernel.Ew.intStep op Int64.minValue · b) := by
+  unfold Struct.eachRightP at h
+  generalize hx' : Alg.cross ny nx = ji at h
+  obtain ⟨j, i⟩ := ji
+  dsimp only at h
+  simp only [bind, Except.bind] at h
+  split at h
+  · cases h
+  rename_i xc hxc
+  split at h
+  · cases h
+  rename_i yc hyc
+  split at h
+  · cases h
+  rename_i Z hZ
+  obtain ⟨hj, hi⟩ := nats_cross ny nx (by omega) (by omega) (by omega)
+  rw [hx'] at hj hi
+  have hjs : j.size / 8 = ny * nx := by rw [← nats_length, hj]; simp
+  have his : i.size / 8 = ny * nx := by rw [← nats_length, hi]; simp
+  obtain ⟨hjz, hiz⟩ := cross_size ny nx (by omega)
+  rw [hx'] at hjz hiz
+  dsimp only at hjz hiz
+  have hpos : ∀ p, p < ny * nx → 0 < nx := fun p hp => Nat.pos_of_ne_zero fun e => by rw [e, Nat.mul_zero] at hp; omega
+  obtain ⟨X, hXc, ⟨Bx, hBx⟩, hXv⟩ := gather_long x hx (by omega) his (by omega) (fun p hp => by
+    rw [hi, getElem!_range_map _ hp]; exact Nat.mod_lt p (hpos p hp)) hxc
+  obtain ⟨Y, hYc, ⟨By, hBy⟩, hYv⟩ := gather_long y hy (by omega) hjs (by omega) (fun p hp => by
+    rw [hj, getElem!_range_map _ hp]; exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact hp)) hyc
+  have hv : Ew.val v .long X Y = .ok Z := by
+    show Ew.dyad v Kernel.Ew.vv .long .long .long X.c Y.c (ny * nx) = .ok Z
+    rw [hXc, hYc]; exact hZ
+  have hs := val_spec_long hop he (x := X) (yv := Y) (by rw [hXc]; exact hBx) (by rw [hYc]; exact hBy) (by omega) hv
+  unfold Ew.ValSpec at hs
+  have hel : (fun p : Carrier .long × Carrier .long => elem v he p.1 p.2) =
+      fun p => pure (Kernel.Ew.intStep op Int64.minValue p.1 p.2) := funext fun p => Ew.elem_long_val hop he p.1 p.2
+  rw [show (fun p : Carrier .long × Carrier .long => elem v he p.1 p.2) = _ from hel, List.mapM_pure] at hs
+  have hZl : Z.toList = (X.toList.zip Y.toList).map fun p => Kernel.Ew.intStep op Int64.minValue p.1 p.2 := by
+    simpa [pure, Except.pure] using hs.symm
+  have hZp : ∀ p, p < ny * nx →
+      Z.toList[p]! = Kernel.Ew.intStep op Int64.minValue x.toList[p % nx]! y.toList[p / nx]! := fun p hp => by
+    have hXl := Arr.length_toList X
+    have hYl := Arr.length_toList Y
+    rw [hZl, getElem!_pos _ p (by simp; omega), List.getElem_map, List.getElem_zip]
+    dsimp only
+    rw [← getElem!_pos X.toList p (by omega), ← getElem!_pos Y.toList p (by omega), hXv p hp, hYv p hp, hi, hj,
+      getElem!_range_map _ hp, getElem!_range_map _ hp]
+  -- the answer's offsets `j·nx`
+  have hts := nats_til (ny + 1) (by omega)
+  have hB' : nats (Alg.mulc (Kernel.tilLongs (ny + 1).toUSize) nx) = (List.range (ny + 1)).map (· * nx) := by
+    rw [nats_mulc _ _ (by rw [← nats_length, hts]; simp; omega) (by omega) fun k hk => by
+      rw [hts, List.mem_range] at hk
+      have := Nat.mul_le_mul_right nx (show k ≤ ny by omega)
+      exact ⟨by omega, by omega⟩, hts]
+  obtain ⟨g', o', co', hoB, rfl⟩ := Struct.parted_ok h
+  have hg' : g' = ny := by
+    have := Arr.n_long_bytes o' hoB
+    rw [← nats_length, hB'] at this; simp at this; omega
+  subst g'
+  have hcR := cut_of_nats ⟨ny, ny * nx, o', co', Z⟩ hoB (f := (· * nx)) hB' fun k hk => by
+    have := Nat.mul_le_mul_right nx (show k ≤ ny by exact hk); dsimp only; omega
+  rw [segs_uniform _ nx hcR]
+  have hyl := Arr.length_toList y
+  have hxl := Arr.length_toList x
+  apply List.ext_getElem (by simp [hyl])
+  intro r h1 h2
+  simp only [List.length_map, List.length_range] at h1
+  rw [List.getElem_map, List.getElem_map, List.getElem_range]
+  apply List.ext_getElem (by simp [hxl])
+  intro k k1 k2
+  simp only [List.length_map, List.length_range] at k1
+  rw [List.getElem_map, List.getElem_map, List.getElem_range]
+  have hrk : r * nx + k < ny * nx := by
+    have := Nat.mul_le_mul_right nx (show r + 1 ≤ ny by omega); rw [Nat.succ_mul] at this; omega
+  have e1 : (r * nx + k) % nx = k := by rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt k1]
+  have e2 : (r * nx + k) / nx = r := by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt k1, Nat.zero_add]
+  show Z.toList[r * nx + k]! = _
+  rw [hZp _ hrk, e1, e2, getElem!_pos x.toList k (by omega), getElem!_pos y.toList r (by omega)]
+
+/-- **`x f/:y = ⟨!x, y⟩ ≫ cpl ≫ list(f)`**, the kernel itself, on two long columns at a value verb answering
+    `long`: `eachRightP_segs`, then `eachRight_rel`. -/
+theorem eachRightP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
+    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    (hU : ny * nx + nx + ny + 1 < USize.size) (hB : ny * nx + nx + ny < 2 ^ 63)
+    (h : Struct.eachRightP v .long x y = .ok R) :
+    R.rel = rpair (cst (CL.ofList x.toList)) y.rel ≫ ListRel.cpl ≫
+      list (graph fun p : El .long × El .long => Kernel.Ew.intStep op Int64.minValue p.1 p.2) :=
+  eachRight_rel (t := .long) (u := .long) (rt := .long) (x := x) (y := y) (R := R)
+    (fun a b => Kernel.Ew.intStep op Int64.minValue a b) (eachRightP_segs hop he hx hy hU hB h)
+
+
 
 #print axioms flip_rel
+#print axioms flipP_rel
+#print axioms flipP_segs
+#print axioms nats_cross
+#print axioms nats_add
+#print axioms segs_uniform
+#print axioms cut_uniform
+#print axioms cut_of_nats
+#print axioms gather_long
+#print axioms cross_size
+#print axioms eachRightP_segs
+#print axioms eachRightP_rel
 #print axioms nats_til
 #print axioms nats_val_va
 #print axioms nats_mulc
