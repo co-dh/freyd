@@ -552,6 +552,17 @@ theorem corefl_Λ_win {C : RelSet.{0}} (n : Nat) (T : pow Idx ⟶ C) :
   · rintro ⟨_, ⟨rfl, hi⟩, _, rfl, hT⟩; exact ⟨i, ⟨rfl, hi⟩, _, rfl, by rwa [e i hi] at hT⟩
   · rintro ⟨_, ⟨rfl, hi⟩, _, rfl, hT⟩; exact ⟨i, ⟨rfl, hi⟩, _, rfl, by rwa [e i hi]⟩
 
+/-- The prefix spec read on a list `xs`: at `i < |xs|`, `F` of the first `i+1` rows, is
+    `corefl(<|xs|) ≫ Λ(≥) ≫ enum ≫ list(xs) ≫ F`, `ix_window` at the full width. Every scan law, whatever
+    its fold, is this at its own `F`. -/
+theorem ix_prefix {β : Type} (xs : List α) (F : List α → β) :
+    ix ((List.range xs.length).map fun i => F (xs.take (i+1)))
+      = corefl (· < xs.length) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list (ix xs)
+          ≫ (graph fun ys => F (CL.toList ys) : dList α ⟶ (⟨β⟩ : RelSet.{0})) := by
+  rw [← corefl_Λ_win, ← ix_window xs xs.length]
+  refine congrArg ix (List.map_congr_left fun i hi => ?_)
+  rw [show i + 1 - xs.length = 0 by have := List.mem_range.1 hi; omega, List.drop_zero, CL.toList_ofList]
+
 /-- The count of the elements that are not `0N`, as a right fold. -/
 theorem count_foldr (xs : List Int64) :
     (xs.filter (· != Spec.nul)).length = xs.foldr (fun x c => if x == Spec.nul then c else c + 1) 0 := by
@@ -1020,18 +1031,34 @@ theorem scan_fold_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
           (graph fun _ => e) (graph fun q : Int64 × Int64 => g q.1 q.2)
           : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
-  calc S.rel = ix ((List.range R.toList.length).map fun i =>
-          (CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-n)))).foldr g e) := by
+  calc S.rel = ix ((List.range R.toList.length).map fun i => (R.toList.take (i+1)).foldr g e) := by
         show ix S.toList = _
         rw [Ops.scan_toList hf hx hn h, Spec.scan_range]
-        refine congrArg ix (List.map_congr_left fun i hi => ?_)
-        have hi := List.mem_range.1 hi
-        rw [Arr.length_toList] at hi
-        rw [show i + 1 - n = 0 by omega, List.drop_zero, CL.toList_ofList, hF]
-    _ = corefl (· < R.toList.length) ≫ Λ (win n) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
-          (CL.toList ys).foldr g e : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})) :=
-        ix_window R.toList n fun ys => (CL.toList ys).foldr g e
-    _ = _ := by rw [Arr.length_toList, corefl_Λ_win, foldr_cata]
+        exact congrArg ix (List.map_congr_left fun i _ => hF _)
+    _ = _ := (ix_prefix R.toList fun ys => ys.foldr g e).trans (by rw [Arr.length_toList, ← foldr_cata]; rfl)
+
+open QLean.Kernel in
+/-- `f\x` on a float column (`bytes` or `alp`) at `+ * & | ^`, off the kernel's `^\` identity short-cut:
+    of each prefix the left fold the kernel runs, NaN skipped, written by `Spec.femit`. On cons-lists a left
+    fold is the reversal then `⦇[seed, step]⦈`: `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ rev ≫ ⦇[seed, step]⦈
+    ≫ femit`, in the kernel's own order since `Float` is not associative. -/
+theorem scan_float_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv)
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
+    (h32 : n < 2 ^ 32) (hc : (sv == .fills && !holdsNull .float R.c) = false) {S : Arr .float n}
+    (h : Ops.scan f .float R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+      ≫ (graph fun ys => CL.ofList (CL.toList ys).reverse : dList UInt64 ⟶ dList UInt64)
+      ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨UInt64 × Float⟩) (graph fun _ => (Spec.fkern sv).2)
+          (graph fun q : UInt64 × Float => if Scan.Kind.f64.isNull q.1 then q.2 else (Spec.fkern sv).1 q.2 q.1)
+          : Alg (CL.F Unit UInt64) (⟨Float⟩ : RelSet.{0}))⦈
+      ≫ (graph Spec.femit : (⟨Float⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0})) := by
+  show ix S.toList = _
+  rw [Ops.scan_toList_float hf hx hn h32 h, hc, if_neg Bool.false_ne_true, Spec.scanBy_range, List.map_map]
+  refine (ix_prefix R.toList fun ys => Spec.femit (ys.foldl (fun a x =>
+    if Scan.Kind.f64.isNull x then a else (Spec.fkern sv).1 a x) (Spec.fkern sv).2)).trans ?_
+  rw [Arr.length_toList, ← foldr_cata (fun x a => if Scan.Kind.f64.isNull x then a else (Spec.fkern sv).1 a x)
+    (Spec.fkern sv).2, graph_comp, graph_comp]
+  simp only [CL.toList_ofList, List.foldl_eq_foldr_reverse]; rfl
 
 open QLean.Kernel in
 /-- `f\x` on a long column (`bytes` or `foR`), `f` associative with unit `e` = the kernel's seed: the fold
@@ -1106,6 +1133,8 @@ theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some 
     _ = _ := by rw [foldr_cata, foldr_cata]
 
 #print axioms scan_fold_rel
+#print axioms ix_prefix
+#print axioms scan_float_rel
 #print axioms scan_rel
 #print axioms maxs_rel
 #print axioms fills_rel
