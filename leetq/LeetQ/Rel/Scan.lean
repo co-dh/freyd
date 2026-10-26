@@ -1417,13 +1417,22 @@ theorem mwinBits_mfloat {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op 
       List.length_range']
     rw [List.getElem!_toArray, getElem!_pos _ j (by simp; omega), List.getElem_map, List.getElem_range]
     simp only [Function.comp_apply, hP (j+1) (by omega)]
+  have fext : ∀ (l : List Nat) (f g : ByteArray → Nat → ByteArray) (b : ByteArray),
+      (∀ b i, i ∈ l → f b i = g b i) → l.foldl f b = l.foldl g b := by
+    intro l; induction l with
+    | nil => intros; rfl
+    | cons x l ih =>
+      intro f g b h
+      rw [List.foldl_cons, List.foldl_cons, h b x (List.mem_cons_self ..)]
+      exact ih f g _ fun b i hi => h b i (List.mem_cons_of_mem _ hi)
   rcases hop with rfl | rfl | rfl <;>
   · unfold Scan.mwinBits
-    simp only [Id.run, Std.Legacy.Range.forIn_eq_forIn_range', List.forIn_pure_yield_eq_foldl, map_pure, Id.run_bind,
-      Id.run_pure, bind_pure_comp, hm, Std.Legacy.Range.size, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one]
+    simp only [Id.run, Std.Legacy.Range.forIn_eq_forIn_range', List.forIn_pure_yield_eq_foldl, map_pure,
+      bind_pure_comp, hm, Std.Legacy.Range.size, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one]
     rw [mloop0 (Scan.Kind.f64.bitsAt B) ?_]
-    · rw [List.range_eq_range', show ByteArray.emptyWithCapacity _ = ByteArray.empty from rfl]
-      refine List.foldl_ext _ _ fun out i hi => ?_
+    · simp only [pure_bind]
+      rw [List.range_eq_range', (fun c => rfl : ∀ c, ByteArray.emptyWithCapacity c = ByteArray.empty)]
+      refine fext _ _ _ _ fun out i hi => ?_
       have hi : i < B.size / 8 := by simpa using hi
       have hb : (if i < w then ((0.0, 0.0, 0.0, 0) : Float × Float × Float × Int64) else
           ((Spec.scanl Spec.mstep (0.0, 0.0, 0.0, 0) ((List.range' 0 (B.size / 8)).map (Scan.Kind.f64.bitsAt B))).tail.toArray)[i - w]!)
@@ -1434,6 +1443,34 @@ theorem mwinBits_mfloat {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op 
       simp only [Array.get!Internal_eq_getElem!, hps i hi, hb]
       rfl
     · intro a A i; rfl
+
+/-- **`w msum x` / `w mavg x` / `w mdev x` over a float column** (`bytes` or `alp`): `Spec.mfloat`, the
+    prefix fold of the four totals and, at each position, `memit` of the totals at the window's two ends. -/
+theorem mfloat_toList_float {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op = .mdev) {w : Nat}
+    (hw : w < USize.size) {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws)
+    (hn : n < USize.size) (h32 : n < 2 ^ 32) {S : Arr .float n} (h : mwin op w .float R = some S) :
+    S.toList = Spec.mfloat op w R.toList := by
+  obtain ⟨B, hBw, hBs, hd⟩ := mwin_float (op := op) (rt := .float) (rk := .f64)
+    (by rcases hop with rfl | rfl | rfl <;> rfl) (by rcases hop with rfl | rfl | rfl <;> rfl) rfl
+    (by rcases hop with rfl | rfl | rfl <;> rfl) hx hn
+  obtain ⟨-, hS⟩ := mwin_answer_of hw hd h
+  subst hBs
+  have hE := mwinBits_mfloat hop w B
+  have hsz : (Scan.mwinBits op .f64 w (B.size / 8) B).size / 8 = B.size / 8 := by
+    rw [hE, foldl_push_size _ 8 (by decide), Nat.mul_div_cancel _ (by decide)]
+  have hS' : S.c = Column.answer ⟨.float, (Scan.mwinBits op .f64 w (B.size / 8) B).size / 8,
+      .bytes (Scan.mwinBits op .f64 w (B.size / 8) B), none⟩ := by rw [hsz]; exact hS
+  rw [Arr.toList_float S (by rw [hS']; exact floatWords_answer _ (by rw [hsz]; exact h32)), hE,
+    Verify.elemsW_foldl_mod _ 8 (by decide) (by decide), Arr.toList_float R hx, ← hBw, Spec.mfloat, Verify.elemsW,
+    List.length_map, List.length_range]
+  refine List.map_congr_left fun i hi => ?_
+  have hi := List.mem_range.1 hi
+  have h1 : min (i + 1) (B.size / 8) = i + 1 := by omega
+  have h2 : min (i + 1 - w) (B.size / 8) = i + 1 - w := by omega
+  rw [show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64]
+  dsimp only
+  simp only [← List.map_take, List.take_range, h1, h2]
+  rfl
 
 end Ops
 
@@ -1555,5 +1592,8 @@ end Checks
 #print axioms Ops.mwin_answer_of
 #print axioms Ops.mwinExt_words
 #print axioms Ops.mext_toList_float
+#print axioms Ops.mloop
+#print axioms Ops.mwinBits_mfloat
+#print axioms Ops.mfloat_toList_float
 
 end LeetQ.Rel
