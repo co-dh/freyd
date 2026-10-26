@@ -2090,6 +2090,259 @@ theorem ej_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lon
     (fun i => ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i))
     _ hc hn hG hgid hsz hhit hhG rfl (by rw [← hn]; exact hp) hs heq hU' hB' h
 
+/-! ## `ij`
+
+  `Struct.ij` keeps each left row whose first hit in the right's codes lies below the right's row count,
+  paired with that hit: `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
+
+/-- `whereBits` on naturals: the positions below `n` whose bit is set. -/
+theorem nats_whereBits (n : Nat) (hn : n < USize.size) (bits : ByteArray) :
+    nats (Kernel.whereBits n.toUSize bits) = (List.range n).filter (Column.bitAt bits) := by
+  obtain ⟨hs, hj⟩ := Verify.whereBits_spec n.toUSize bits
+  rw [USize.toNat_ofNat_of_lt' hn] at hs hj
+  apply List.ext_getElem (by rw [nats_length, hs]; omega)
+  intro j _ h2
+  simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range]
+  exact hj j h2
+
+/-- Bit `i` of `b < m`, `b` a dense long payload and `m` a long atom, both below `2^63`, is `b[i] < m` on
+    naturals. -/
+theorem bitAt_cmp_lt_va (b : ByteArray) {m n i : Nat} (hn : n < USize.size) (hi : i < n) (hm : m < 2 ^ 63)
+    (hw : (Column.bitsAt b (i * 8) 8).toNat < 2 ^ 63) :
+    Column.bitAt (Kernel.Ew.cmp Kernel.Ew.lt Kernel.Ew.i64 Kernel.Ew.va b (Find.one m.toUInt64) n.toUSize) i =
+      decide ((Column.bitsAt b (i * 8) 8).toNat < m) := by
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  rw [(Verify.cmp_bitAt _ _ _ _ _ _).2 i (by rw [hN]; omega)]
+  have hsh : Kernel.Ew.shapeIdx Kernel.Ew.va i = (i, 0) := rfl
+  have hel : ∀ x j, Kernel.Ew.elem Kernel.Ew.i64 x j = Column.bitsAt x (j * 8) 8 := fun _ _ => rfl
+  have hm' : m.toUInt64.toNat = m := UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le hm (by decide))
+  rw [hsh, hel, hel, Nat.zero_mul, Find.bitsAt_one, Find.cmpStep_lt, hN, decide_eq_true hi, Bool.true_and]
+  exact decide_eq_decide.2 (by
+    rw [Int64.lt_iff_toInt_lt, toInt_word rfl hw, toInt_word hm' hm]; exact Int.ofNat_lt)
+
+/-- A list zipped with its own image is the list of pairs. -/
+theorem zip_map_self {α β : Type} (g : α → β) : ∀ F : List α, F.zip (F.map g) = F.map fun x => (x, g x)
+  | [] => rfl
+  | x :: F => by rw [List.map_cons, List.map_cons, List.zip_cons_cons, zip_map_self g F]
+
+/-- **The kept hits tabulate `Λ(l ≫ r°) ≫ est(≤)`**, the rows read as naturals, once `hit i` is the least right
+    row whose tuple is left row `i`'s, and lies at or past `|r|` at none. -/
+theorem rel_ijHits {tl tr : List (List Int64)} (hit : Nat → Nat)
+    (hfirst : ∀ i, i < tl.length → ∀ j, (hit i = j ∧ j < tr.length) ↔
+      ((ix tl ≫ (ix tr)°) i j ∧ ∀ z, (ix tl ≫ (ix tr)°) i z → j ≤ z)) :
+    RelSet.rel (((List.range tl.length).filter fun i => hit i < tr.length).map
+        fun i => (Int64.ofNat i, Int64.ofNat (hit i))) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ (Λ (ix tl ≫ (ix tr)°) ≫ est (· ≤ ·)) ≫
+        graph Int64.ofNat :=
+  hom_ext fun a b => by
+    show (a, b) ∈ _ ↔ ∃ i, a = Int64.ofNat i ∧ ∃ j, (Λ (ix tl ≫ (ix tr)°) ≫ est (· ≤ ·)) i j ∧ b = Int64.ofNat j
+    simp only [Λ_comp_est_apply, List.mem_map, List.mem_filter, List.mem_range, decide_eq_true_eq, Prod.mk.injEq]
+    constructor
+    · rintro ⟨i, ⟨hi, hh⟩, rfl, rfl⟩
+      exact ⟨i, rfl, hit i, (hfirst i hi _).1 ⟨rfl, hh⟩, rfl⟩
+    · rintro ⟨i, rfl, j, hj, rfl⟩
+      obtain ⟨k, hk, -⟩ := hj.1
+      have hi := (List.getElem?_eq_some_iff.1 hk).1
+      obtain ⟨e, hjm⟩ := (hfirst i hi j).2 hj
+      exact ⟨i, ⟨hi, by rw [e]; exact hjm⟩, rfl, by rw [e]⟩
+
+open QLean.Kernel in
+/-- **`ij` tabulates `Λ(l ≫ r°) ≫ est(≤)`**: each left row with its first right row of an equal key tuple, left
+    rows with none dropped, the rows read as naturals. The key codes lie at one byte layout `k` and agree exactly
+    where the key tuples `tl`, `tr` do (`ej_rel_lane`'s `hkey`); `findVec_idxOf` is the first hit, `cmp_bitAt`
+    and `whereBits_spec` keep the hits below `|tr|`, then `rel_ijHits`. -/
+theorem ij_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .long .long} {tl tr : List (List Int64)}
+    {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (hc : Struct.keyCodes "ij" lk rk = .ok (lc, rc)) (hr : rc.kind = some k) (hl : lc.kind = some k)
+    (hav : rc.n ≤ k.avail rc.b) (hn : rc.n = tr.length) (hln : lc.n = tl.length)
+    (hnl : lc.b.size / k.width = tl.length)
+    (hkey : ∀ i, i < tl.length → ∀ j, j < tr.length → (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ tr[j]! = tl[i]!))
+    (hRU : rc.b.size / k.width < USize.size) (hLU : tl.length < USize.size) (hB : rc.b.size / k.width < 2 ^ 63)
+    (h : Struct.ij lk rk = .ok R) :
+    (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
+      (graph Int64.ofNat : Idx ⟶ (⟨Int64⟩ : RelSet.{0}))° ≫ (Λ (ix tl ≫ (ix tr)°) ≫ est (· ≤ ·)) ≫
+        graph Int64.ofNat := by
+  have hw8 : k.width ≤ 8 := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
+  have hwU : k.width.toUSize.toNat = k.width :=
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw8 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
+  have hbits : ∀ b i, k.bitsAt b i = Column.bitsAt b (i * k.width) k.width := fun b i => by
+    rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  have hava : k.avail rc.b = rc.b.size / k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  rw [hava] at hav
+  have hf : rc.find lc = findVec k.width.toUSize false rc.b lc.b := by
+    unfold Alg.Code.find; rw [hr, hl]; rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
+  -- `E`, the right's codes; left row `i`'s hit is its code's first position in `E`
+  generalize hE : Verify.elemsW k.width rc.b = E
+  have hEl : E.length = rc.b.size / k.width := by rw [← hE]; simp [Verify.elemsW]
+  have hEj : ∀ j, j < E.length → E[j]? = some (k.bitsAt rc.b j) := fun j hj => by
+    rw [hEl] at hj; rw [← hE, hbits]; simp [Verify.elemsW, hj]
+  have hhit : nats (rc.find lc) = (List.range tl.length).map fun i => E.idxOf (k.bitsAt lc.b i) := by
+    obtain ⟨hsz, hget⟩ := Verify.findVec_idxOf k.width.toUSize false rc.b lc.b (by rw [hwU]; exact hRU)
+    rw [hwU] at hsz hget
+    rw [hf]
+    apply List.ext_getElem (by rw [nats_length, hsz]; simp [hnl])
+    intro i h1 _
+    rw [nats_length, hsz, Nat.mul_div_cancel_left _ (by decide)] at h1
+    simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [hget i h1, if_pos hw8, hE, hbits lc.b i]
+    rw [show normalise k.width false = id from funext fun v => by simp [normalise], List.map_id, id]
+  have hle : ∀ i, E.idxOf (k.bitsAt lc.b i) ≤ rc.b.size / k.width := fun i => hEl ▸ Verify.idxOf_le_length _ _
+  have hword : ∀ i, i < tl.length → (Column.bitsAt (rc.find lc) (i * 8) 8).toNat = E.idxOf (k.bitsAt lc.b i) :=
+    fun i hi => by
+      have e := congrArg (·[i]?) hhit
+      simp only [nats, Verify.elemsW, List.getElem?_map, List.getElem?_range hi, Option.map_some] at e
+      have hs : i < (rc.find lc).size / 8 := by
+        have := congrArg List.length hhit; simp only [nats_length, List.length_map, List.length_range] at this; omega
+      rw [List.getElem?_range hs, Option.map_some, Option.map_some, Option.some.injEq] at e
+      exact e
+  simp only [Struct.ij, hc, bind, Except.bind] at h
+  have hk := toList_ofCols h
+  rw [nats_gather, nats_whereBits _ (by omega), hhit] at hk
+  have hF : (List.range lc.n).filter (Column.bitAt (Kernel.Ew.cmp Kernel.Ew.lt Kernel.Ew.i64 Kernel.Ew.va
+      (rc.find lc) (Find.one rc.n.toUInt64) lc.n.toUSize)) =
+      (List.range tl.length).filter fun i => E.idxOf (k.bitsAt lc.b i) < tr.length := by
+    rw [hln]
+    refine List.filter_congr fun i hi => ?_
+    have hi := List.mem_range.1 hi
+    rw [bitAt_cmp_lt_va _ (by omega) hi (by omega) (by rw [hword i hi]; have := hle i; omega), hword i hi, hn]
+  rw [hF] at hk
+  have hg : ((List.range tl.length).filter fun i => E.idxOf (k.bitsAt lc.b i) < tr.length).map
+      (fun j => (((List.range tl.length).map fun i => E.idxOf (k.bitsAt lc.b i))).getD j 0) =
+      ((List.range tl.length).filter fun i => E.idxOf (k.bitsAt lc.b i) < tr.length).map
+        fun i => E.idxOf (k.bitsAt lc.b i) :=
+    List.map_congr_left fun j hj => by
+      have hj := List.mem_range.1 (List.mem_filter.1 hj).1
+      rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hj, Option.map_some, Option.getD_some]
+  rw [hg, zip_map_self, List.map_map] at hk
+  have hfirst : ∀ i, i < tl.length → ∀ j, (E.idxOf (k.bitsAt lc.b i) = j ∧ j < tr.length) ↔
+      ((ix tl ≫ (ix tr)°) i j ∧ ∀ z, (ix tl ≫ (ix tr)°) i z → j ≤ z) := fun i hi j => by
+    -- on right rows, `l ≫ r°` holds exactly where `E` holds left row `i`'s code
+    have hT : ∀ z, (ix tl ≫ (ix tr)°) i z ↔ z < tr.length ∧ E[z]? = some (k.bitsAt lc.b i) := fun z => by
+      show (∃ key, tl[i]? = some key ∧ tr[z]? = some key) ↔ _
+      constructor
+      · rintro ⟨key, hl', hr'⟩
+        obtain ⟨hz, ez⟩ := List.getElem?_eq_some_iff.1 hr'
+        obtain ⟨_, el⟩ := List.getElem?_eq_some_iff.1 hl'
+        refine ⟨hz, ?_⟩
+        rw [hEj z (by omega), (hkey i hi z hz).2 (by rw [getElem!_pos tr z hz, getElem!_pos tl i hi, ez, el])]
+      · rintro ⟨hz, ez⟩
+        rw [hEj z (by rw [hEl]; exact Nat.lt_of_lt_of_le (by rw [hn]; exact hz) hav)] at ez
+        have e := (hkey i hi z hz).1 (Option.some.inj ez)
+        rw [getElem!_pos tr z hz, getElem!_pos tl i hi] at e
+        exact ⟨tl[i], List.getElem?_eq_getElem hi, by rw [List.getElem?_eq_getElem hz, e]⟩
+    simp only [hT]
+    constructor
+    · rintro ⟨rfl, hj⟩
+      have hmem : k.bitsAt lc.b i ∈ E := if hx : k.bitsAt lc.b i ∈ E then hx else
+        absurd (List.idxOf_eq_length hx) (by omega)
+      obtain ⟨e1, e2⟩ := (idxOf_least (k.bitsAt lc.b i) E _).2 ⟨hmem, rfl⟩
+      exact ⟨⟨hj, e1⟩, fun z hz => e2 z hz.2⟩
+    · rintro ⟨⟨hj, ej⟩, hleast⟩
+      obtain ⟨-, e⟩ := (idxOf_least (k.bitsAt lc.b i) E j).1 ⟨ej, fun z ez =>
+        if hz : z < tr.length then hleast z ⟨hz, ez⟩ else by omega⟩
+      exact ⟨e.symm, hj⟩
+  calc (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) = RelSet.rel (((List.range tl.length).filter
+        fun i => E.idxOf (k.bitsAt lc.b i) < tr.length).map
+          fun i => (Int64.ofNat i, Int64.ofNat (E.idxOf (k.bitsAt lc.b i)))) :=
+        hom_ext fun a b => (R.holds_iff_mem_toList a b).trans (by rw [hk]; exact Iff.rfl)
+    _ = _ := rel_ijHits (fun i => E.idxOf (k.bitsAt lc.b i)) hfirst
+
+/-! ## `@[x;i;f;y]`
+
+  `amendSpec` writes index by index, left to right; at indices in range and without repeats each position is
+  written at most once, from `x`'s own element. -/
+
+/-- One write per position: after the writes of pairs whose positions are distinct and in range, position `j`
+    holds `f` of its old element and the value of the pair naming it, its old element where none does. -/
+theorem foldl_set_iff {α : Type} [Inhabited α] (f : α → α → α) (j : Nat) (y : α) :
+    ∀ (L : List (Int64 × α)) (acc : List α), (L.map fun p => p.1.toInt.toNat).Nodup →
+      (∀ p ∈ L, p.1.toInt.toNat < acc.length) →
+      ((L.foldl (fun acc (i, v) => acc.set i.toInt.toNat (f acc[i.toInt.toNat]! v)) acc)[j]? = some y ↔
+        (∃ p ∈ L, p.1.toInt.toNat = j ∧ ∃ x, acc[j]? = some x ∧ y = f x p.2) ∨
+          ((∀ p ∈ L, p.1.toInt.toNat ≠ j) ∧ acc[j]? = some y))
+  | [], acc, _, _ => by simp
+  | (i, b) :: L, acc, hnd, hin => by
+    rw [List.map_cons, List.nodup_cons] at hnd
+    have hi : i.toInt.toNat < acc.length := hin (i, b) List.mem_cons_self
+    rw [List.foldl_cons, foldl_set_iff f j y L _ hnd.2
+      (fun p hp => by rw [List.length_set]; exact hin p (List.mem_cons_of_mem _ hp))]
+    dsimp only
+    by_cases hj : i.toInt.toNat = j
+    · subst hj
+      have hn : ∀ p ∈ L, p.1.toInt.toNat ≠ i.toInt.toNat := fun p hp e => hnd.1 (List.mem_map.2 ⟨p, hp, e⟩)
+      rw [List.getElem?_set_self hi]
+      constructor
+      · rintro (⟨p, hp, e, -⟩ | ⟨-, e⟩)
+        · exact absurd e (hn p hp)
+        · exact .inl ⟨(i, b), List.mem_cons_self, rfl, acc[i.toInt.toNat]!,
+            by rw [getElem!_pos acc _ hi]; exact List.getElem?_eq_getElem hi, (Option.some.inj e).symm⟩
+      · rintro (⟨p, hp, e, x, hx, rfl⟩ | ⟨hn', -⟩)
+        · rcases List.mem_cons.1 hp with rfl | hp
+          · obtain ⟨_, hx'⟩ := List.getElem?_eq_some_iff.1 hx
+            exact .inr ⟨hn, by rw [getElem!_pos acc _ hi, hx']⟩
+          · exact absurd e (hn p hp)
+        · exact absurd rfl (hn' (i, b) List.mem_cons_self)
+    · rw [List.getElem?_set_ne hj]
+      simp only [List.mem_cons, exists_eq_or_imp, forall_eq_or_imp, hj, false_and, false_or, ne_eq,
+        not_false_eq_true, true_and]
+
+/-- **`@[x;i;f;y]` at indices in range and without repeats is
+    `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ f)`**, `I = i ≫ pos` the indices as positions: a position no
+    index names keeps `x`'s element, a named one is `f` of `x`'s element and the `y` at its index. `:` is
+    `f = outr`. -/
+theorem ix_amendSpec {α : Type} [Inhabited α] (f : α → α → α) (xs ys : List α) (is : List Int64)
+    (hl : is.length = ys.length) (hin : ∀ i ∈ is, 0 ≤ i ∧ i.toInt.toNat < xs.length)
+    (hnd : (is.map fun i => i.toInt.toNat).Nodup) :
+    ix (Struct.amendSpec f xs is ys) = (corNeg (ran (ix is ≫ pos)) ≫ ix xs) ∪
+      (ran (ix is ≫ pos) ≫ rpair (ix xs) ((ix is ≫ pos)° ≫ ix ys) ≫ graph fun p : α × α => f p.1 p.2) := by
+  have hI : ∀ c a, (ix is ≫ pos) c a ↔ ∃ i, is[c]? = some i ∧ 0 ≤ i ∧ a = i.toInt.toNat := fun c a =>
+    ⟨fun ⟨_, hi, _, ⟨rfl, h0⟩, ha⟩ => ⟨_, hi, h0, ha⟩, fun ⟨i, hi, h0, ha⟩ => ⟨i, hi, i, ⟨rfl, h0⟩, ha⟩⟩
+  have hran : ∀ a b, ran (ix is ≫ pos) a b ↔ a = b ∧ ∃ c, (ix is ≫ pos) c a ∧ (ix is ≫ pos) c b :=
+    fun _ _ => Iff.rfl
+  have hcor : ∀ a b, corNeg (ran (ix is ≫ pos)) a b ↔ a = b ∧ ¬ ∃ c, (ix is ≫ pos) c a := fun a b =>
+    ⟨fun ⟨e, h⟩ => ⟨e, fun ⟨c, hc⟩ => h a ⟨rfl, c, hc, hc⟩⟩,
+      fun ⟨e, h⟩ => ⟨e, fun _ ⟨_, c, _, h2⟩ => h ⟨c, h2⟩⟩⟩
+  have hz : ∀ (i : Int64) (b : α), (i, b) ∈ is.zip ys ↔ ∃ c, is[c]? = some i ∧ ys[c]? = some b := fun i b => by
+    rw [List.mem_iff_getElem?]; simp only [List.getElem?_zip_eq_some]; exact Iff.rfl
+  have hnd' : ((is.zip ys).map fun p => p.1.toInt.toNat).Nodup := by
+    rw [show ((is.zip ys).map fun p => p.1.toInt.toNat) = ((is.zip ys).map Prod.fst).map (·.toInt.toNat) by
+      rw [List.map_map]; rfl, List.map_fst_zip (by omega)]
+    exact hnd
+  have hin' : ∀ p ∈ is.zip ys, p.1.toInt.toNat < xs.length := fun p hp => (hin p.1 (List.of_mem_zip hp).1).2
+  refine hom_ext fun (j : Nat) y => ?_
+  show (Struct.amendSpec f xs is ys)[j]? = some y ↔
+    (∃ w, corNeg (ran (ix is ≫ pos)) j w ∧ xs[w]? = some y) ∨
+      (∃ w, ran (ix is ≫ pos) j w ∧ ∃ p : α × α, (xs[w]? = some p.1 ∧ ∃ c, (ix is ≫ pos) c w ∧ ys[c]? = some p.2) ∧
+        y = f p.1 p.2)
+  unfold Struct.amendSpec
+  rw [foldl_set_iff f j y _ xs hnd' hin']
+  constructor
+  · rintro (⟨⟨i, b⟩, hp, e, x, hx, rfl⟩ | ⟨hn, hx⟩)
+    · obtain ⟨c, hc1, hc2⟩ := (hz i b).1 hp
+      have hcj := (hI c j).2 ⟨i, hc1, (hin i (List.mem_of_getElem? hc1)).1, e.symm⟩
+      exact .inr ⟨j, (hran j j).2 ⟨rfl, c, hcj, hcj⟩, (x, b), ⟨hx, c, hcj, hc2⟩, rfl⟩
+    · refine .inl ⟨j, (hcor j j).2 ⟨rfl, fun ⟨c, hcj⟩ => ?_⟩, hx⟩
+      obtain ⟨i, hc1, -, e⟩ := (hI c j).1 hcj
+      have hc : c < ys.length := by rw [← hl]; exact (List.getElem?_eq_some_iff.1 hc1).1
+      exact hn (i, ys[c]) ((hz i ys[c]).2 ⟨c, hc1, List.getElem?_eq_getElem hc⟩) e.symm
+  · rintro (⟨w, hw, hx⟩ | ⟨w, hw, ⟨x, b⟩, ⟨hx, c, hcw, hc2⟩, rfl⟩)
+    · obtain ⟨e, hn⟩ := (hcor j w).1 hw
+      subst e
+      refine .inr ⟨fun ⟨i, b⟩ hp e => hn ?_, hx⟩
+      obtain ⟨c, hc1, -⟩ := (hz i b).1 hp
+      exact ⟨c, (hI c _).2 ⟨i, hc1, (hin i (List.mem_of_getElem? hc1)).1, e.symm⟩⟩
+    · obtain ⟨e, -⟩ := (hran j w).1 hw
+      subst e
+      obtain ⟨i, hc1, -, e⟩ := (hI c _).1 hcw
+      exact .inl ⟨(i, b), (hz i b).2 ⟨c, hc1, hc2⟩, e.symm, x, hx, rfl⟩
+
+#print axioms foldl_set_iff
+#print axioms ix_amendSpec
+#print axioms nats_whereBits
+#print axioms bitAt_cmp_lt_va
+#print axioms rel_ijHits
+#print axioms ij_rel_lane
+
 #print axioms class_hit_iff
 #print axioms ej_rel_lane
 #print axioms expand_nats
