@@ -655,6 +655,202 @@ theorem cmp_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = 
     R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
   val_rel (cmp_spec_long_foR hop h ha hb hn hv)
 
+/-! ### A mixed pair: one dense and one `foR` operand
+
+  `zipPass` reads the `foR` side through an `eDecode` stage, so the chain has two stages: the decode, then
+  the verb, which names the decode's answer by `slot0`. -/
+
+/-- A build with one stage `d` of its own writes a two-stage program: `d`, then `last` (`Verify.prog_one`'s
+    proof, one record longer). -/
+theorem prog_two (b : Kernel.Ew.Build) (d : Kernel.Ew.Stage) (hb : b.stages = #[d]) (last : Kernel.Ew.Stage) :
+    (b.prog last).size / Kernel.Ew.stageBytes = 2 ∧ Kernel.Ew.stageAt (b.prog last) 0 = d ∧
+      Kernel.Ew.stageAt (b.prog last) 1 = last := by
+  refine ⟨?_, by rw [Verify.stageAt_prog b last 0 (by simp [hb])]; simp [hb],
+    by rw [Verify.stageAt_prog b last 1 (by simp [hb])]; simp [hb]⟩
+  have hL : ∀ x ∈ (b.stages.push last).toList.map Kernel.Ew.Stage.bytes, x.size = Kernel.Ew.stageBytes :=
+    fun x hx => by obtain ⟨s, -, rfl⟩ := List.mem_map.1 hx; exact Verify.stage_bytes_size s
+  have hs := (Verify.foldl_append_get Kernel.Ew.stageBytes _ hL ByteArray.empty).1
+  have hp : b.prog last = ((b.stages.push last).toList.map Kernel.Ew.Stage.bytes).foldl (· ++ ·)
+      ByteArray.empty := by
+    simp only [Kernel.Ew.Build.prog, ← Array.foldl_toList, Array.toList_map]
+  rw [hp, hs]; simp [hb, Kernel.Ew.stageBytes]
+
+/-- **A decode stage then a value stage is `Ew.val`** over the payloads the value stage names, `slot0` naming
+    the decode of the two inputs the decode stage names. -/
+theorem run_val_decode (b : Kernel.Ew.Build) (d : Kernel.Ew.Stage) (hb : b.stages = #[d])
+    (hd : d.engine = Kernel.Ew.eDecode) (hda : d.a < Kernel.Ew.slot0) (hdb : d.b < Kernel.Ew.slot0)
+    (op cls shape sa sb : UInt8) (nul : Int64) (hsa : sa < Kernel.Ew.slot0 ∨ sa = Kernel.Ew.slot0)
+    (hsb : sb < Kernel.Ew.slot0 ∨ sb = Kernel.Ew.slot0) (n : USize) :
+    b.run { engine := Kernel.Ew.eVal, op, cls, shape, a := sa, b := sb, nul } n =
+      Kernel.Ew.val op cls shape nul
+        (if sa < Kernel.Ew.slot0 then b.inputs[sa.toNat]!
+          else Kernel.Coc.decode (Kernel.Ew.width d.cls).toUSize b.inputs[d.a.toNat]! b.inputs[d.b.toNat]! n)
+        (if sb < Kernel.Ew.slot0 then b.inputs[sb.toNat]!
+          else Kernel.Coc.decode (Kernel.Ew.width d.cls).toUSize b.inputs[d.a.toNat]! b.inputs[d.b.toNat]! n) n := by
+  obtain ⟨hk, h0, h1⟩ := prog_two b d hb { engine := Kernel.Ew.eVal, op, cls, shape, a := sa, b := sb, nul }
+  simp only [Kernel.Ew.Build.run, Kernel.Ew.chain, hk, show List.range 2 = [0, 1] from rfl, List.foldl_cons,
+    List.foldl_nil]
+  rw [h0, h1]
+  rcases hsa with hsa | rfl <;> rcases hsb with hsb | rfl <;>
+    simp [*, Kernel.Ew.eVal, Kernel.Ew.eCmp, Kernel.Ew.eMon, Kernel.Ew.eWiden, Kernel.Ew.eBit,
+      Kernel.Ew.eFloor, Kernel.Ew.eCast, Kernel.Ew.eTick, Kernel.Ew.eIds, Kernel.Ew.ePack, Kernel.Ew.eDecode]
+
+/-- **A decode stage then a comparison stage is `Ew.cmp`** over the payloads the comparison names
+    (`run_val_decode` at `eCmp`). -/
+theorem run_cmp_decode (b : Kernel.Ew.Build) (d : Kernel.Ew.Stage) (hb : b.stages = #[d])
+    (hd : d.engine = Kernel.Ew.eDecode) (hda : d.a < Kernel.Ew.slot0) (hdb : d.b < Kernel.Ew.slot0)
+    (op cls shape sa sb : UInt8) (nul : Int64) (hsa : sa < Kernel.Ew.slot0 ∨ sa = Kernel.Ew.slot0)
+    (hsb : sb < Kernel.Ew.slot0 ∨ sb = Kernel.Ew.slot0) (n : USize) :
+    b.run { engine := Kernel.Ew.eCmp, op, cls, shape, a := sa, b := sb, nul } n =
+      Kernel.Ew.cmp op cls shape
+        (if sa < Kernel.Ew.slot0 then b.inputs[sa.toNat]!
+          else Kernel.Coc.decode (Kernel.Ew.width d.cls).toUSize b.inputs[d.a.toNat]! b.inputs[d.b.toNat]! n)
+        (if sb < Kernel.Ew.slot0 then b.inputs[sb.toNat]!
+          else Kernel.Coc.decode (Kernel.Ew.width d.cls).toUSize b.inputs[d.a.toNat]! b.inputs[d.b.toNat]! n) n := by
+  obtain ⟨hk, h0, h1⟩ := prog_two b d hb { engine := Kernel.Ew.eCmp, op, cls, shape, a := sa, b := sb, nul }
+  simp only [Kernel.Ew.Build.run, Kernel.Ew.chain, hk, show List.range 2 = [0, 1] from rfl, List.foldl_cons,
+    List.foldl_nil]
+  rw [h0, h1]
+  rcases hsa with hsa | rfl <;> rcases hsb with hsb | rfl <;>
+    simp [*, Kernel.Ew.eVal, Kernel.Ew.eCmp, Kernel.Ew.eMon, Kernel.Ew.eWiden, Kernel.Ew.eBit,
+      Kernel.Ew.eFloor, Kernel.Ew.eCast, Kernel.Ew.eTick, Kernel.Ew.eIds, Kernel.Ew.ePack, Kernel.Ew.eDecode]
+
+/-- The decode stage `operandSource` adds for a `foR` long operand whose payloads are inputs `a` and `b`. -/
+abbrev decodeStage (a b : UInt8) : Kernel.Ew.Stage := { engine := Kernel.Ew.eDecode, cls := Kernel.Ew.i64, a, b }
+
+/-- `dyadColumn` on a dense and a `foR` long column, either order, at a value verb whose result is `long`:
+    `zipPass`'s decode stage, then the `eVal` stage reading the dense input and `slot0`. -/
+theorem dyadColumn_long_vv_mixed {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (a md pk : ByteArray)
+    (pa pb : Option (UInt8 × IndexCell)) :
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .bytes a, pa⟩ ⟨.long, n, .foR md pk, pb⟩ =
+      some (.long, Kernel.payload .long n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
+        { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := Kernel.Ew.slot0,
+          nul := Kernel.nullPayload .long })) ∧
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .foR md pk, pb⟩ ⟨.long, n, .bytes a, pa⟩ =
+      some (.long, Kernel.payload .long n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
+        { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := Kernel.Ew.slot0, b := 2,
+          nul := Kernel.nullPayload .long })) := by
+  cases v <;> simp only [Kernel.valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals first | exact absurd hr (by decide) | skip
+  all_goals constructor
+  all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.valPayload, Kernel.cmpOp,
+    Kernel.valOp, Kernel.clsOf, Kernel.scales, Kernel.tickIn, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible,
+    Kernel.promotable, Kernel.foRValPayload, Kernel.foRPairVV, Kernel.zipPass, Kernel.operandSource,
+    Kernel.Ew.Build.input, Kernel.Ew.Build.add, Kernel.Ew.i64, Kernel.Ew.bits, QAtomicType.width, Kernel.Ew.width, Kernel.Ew.u8, Kernel.Ew.i16,
+    Kernel.Ew.i32, Kernel.Ew.f32, decodeStage,
+    (by decide : ¬Kernel.Ew.vv = Kernel.Ew.va), Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or]
+
+/-- `dyadColumn` on a dense and a `foR` long column, either order, at a comparison: the decode stage, then the
+    `eCmp` stage reading the dense input and `slot0`. -/
+theorem dyadColumn_long_vv_cmp_mixed {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a md pk : ByteArray)
+    (pa pb : Option (UInt8 × IndexCell)) :
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .bytes a, pa⟩ ⟨.long, n, .foR md pk, pb⟩ =
+      some (.boolean, Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
+        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := Kernel.Ew.slot0,
+          nul := 0 })) ∧
+    Kernel.dyadColumn v Kernel.Ew.vv .long .long ⟨.long, n, .foR md pk, pb⟩ ⟨.long, n, .bytes a, pa⟩ =
+      some (.boolean, Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
+        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := Kernel.Ew.slot0, b := 2,
+          nul := 0 })) := by
+  cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
+  all_goals constructor
+  all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.cmpPayload, Kernel.cmpOp,
+    Kernel.clsOf, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible, Kernel.promotable, Kernel.foRCmpPayload,
+    Kernel.alpCmpPayload, Kernel.foRPairVV, Kernel.zipPass, Kernel.operandSource, Kernel.Ew.Build.input,
+    Kernel.Ew.Build.add, Kernel.Ew.i64, Kernel.Ew.bits, QAtomicType.width, Kernel.Ew.width, Kernel.Ew.u8, Kernel.Ew.i16,
+    Kernel.Ew.i32, Kernel.Ew.f32, decodeStage, (by decide : ¬Kernel.Ew.vv = Kernel.Ew.va),
+    Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or]
+
+/-- **`x f y` at `long` on a dense `x` and a `foR` `y` is `ValSpec`**: `dyadColumn_long_vv_mixed`,
+    `run_val_decode`, read by `val_spec_words`. -/
+theorem val_spec_long_bF {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {a md pk : ByteArray}
+    (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .foR md pk) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .long := by
+    cases v <;> first | rfl | exact absurd h (by decide) | exact absurd hop (by simp [Kernel.valOp])
+  unfold Ew.val at hv
+  rw [Arr.c_eq x ha, Arr.c_eq yv hb] at hv
+  have hR := dyad_c (dyadColumn_long_vv_mixed hop hr n a md pk _ _).1 hv
+  obtain ⟨hy, hys⟩ := longWords_of_foR hb (by rw [yv.wf.2.1]; exact hn)
+  rw [yv.wf.2.1] at hy hys
+  have hrun := (run_val_decode { stages := #[decodeStage 1 2], inputs := #[a, md, pk] } _ rfl rfl (by decide)
+    (by decide) op Kernel.Ew.i64 Kernel.Ew.vv 0 Kernel.Ew.slot0 (Kernel.nullPayload .long) (.inl (by decide))
+    (.inr rfl) n.toUSize).trans (show _ = Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.vv (Kernel.nullPayload .long) a
+      (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize) n.toUSize by rw [if_pos (by decide), if_neg (by decide)]; rfl)
+  have hs : (Kernel.Ew.Build.run { stages := #[decodeStage 1 2], inputs := #[a, md, pk] }
+      { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := Kernel.Ew.slot0,
+        nul := Kernel.nullPayload .long } n.toUSize).size / 8 = n := by
+    rw [hrun, ← Verify.val_size8, USize.toNat_ofNat_of_lt' hn]
+  have hw := longWords_payload _ _ hn hs
+  rw [← hR, hrun, nullPayload_long] at hw
+  exact val_spec_words hop h hn (by simp only [longWords, ha]) hy (Arr.n_long_bytes x ha) hys hw
+
+/-- **`x f y` at `long` on a `foR` `x` and a dense `y` is `ValSpec`**: `val_spec_long_bF` the other way round. -/
+theorem val_spec_long_Fb {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
+    (h : Eval.ewType v .long .long = some .long) {n : Nat} {x yv R : Arr .long n} {md pk b : ByteArray}
+    (ha : x.c.enc = .foR md pk) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .long x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .long := by
+    cases v <;> first | rfl | exact absurd h (by decide) | exact absurd hop (by simp [Kernel.valOp])
+  unfold Ew.val at hv
+  rw [Arr.c_eq x ha, Arr.c_eq yv hb] at hv
+  have hR := dyad_c (dyadColumn_long_vv_mixed hop hr n b md pk _ _).2 hv
+  obtain ⟨hx, hxs⟩ := longWords_of_foR ha (by rw [x.wf.2.1]; exact hn)
+  rw [x.wf.2.1] at hx hxs
+  have hrun := (run_val_decode { stages := #[decodeStage 0 1], inputs := #[md, pk, b] } _ rfl rfl (by decide)
+    (by decide) op Kernel.Ew.i64 Kernel.Ew.vv Kernel.Ew.slot0 2 (Kernel.nullPayload .long) (.inr rfl)
+    (.inl (by decide)) n.toUSize).trans (show _ = Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.vv (Kernel.nullPayload .long)
+      (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize) b n.toUSize by rw [if_neg (by decide), if_pos (by decide)]; rfl)
+  have hs : (Kernel.Ew.Build.run { stages := #[decodeStage 0 1], inputs := #[md, pk, b] }
+      { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := Kernel.Ew.slot0, b := 2,
+        nul := Kernel.nullPayload .long } n.toUSize).size / 8 = n := by
+    rw [hrun, ← Verify.val_size8, USize.toNat_ofNat_of_lt' hn]
+  have hw := longWords_payload _ _ hn hs
+  rw [← hR, hrun, nullPayload_long] at hw
+  exact val_spec_words hop h hn hx (by simp only [longWords, hb]) hxs (Arr.n_long_bytes yv hb) hw
+
+/-- **`x<y` at `long` on a dense `x` and a `foR` `y` is `ValSpec`**: `run_cmp_decode`, read by
+    `cmp_spec_words`. -/
+theorem cmp_spec_long_bF {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {a md pk : ByteArray} (ha : x.c.enc = .bytes a) (hb : yv.c.enc = .foR md pk) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .boolean := by
+    cases v <;> first | rfl | exact absurd hop (by simp [Kernel.cmpOp])
+  unfold Ew.val at hv
+  rw [Arr.c_eq x ha, Arr.c_eq yv hb] at hv
+  have hR := dyad_c (dyadColumn_long_vv_cmp_mixed hop hr n a md pk _ _).1 hv
+  obtain ⟨hy, hys⟩ := longWords_of_foR hb (by rw [yv.wf.2.1]; exact hn)
+  rw [yv.wf.2.1] at hy hys
+  have hrun := (run_cmp_decode { stages := #[decodeStage 1 2], inputs := #[a, md, pk] } _ rfl rfl (by decide)
+    (by decide) op Kernel.Ew.i64 Kernel.Ew.vv 0 Kernel.Ew.slot0 0 (.inl (by decide)) (.inr rfl) n.toUSize).trans
+    (show _ = Kernel.Ew.cmp op Kernel.Ew.i64 Kernel.Ew.vv a (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize)
+      n.toUSize by rw [if_pos (by decide), if_neg (by decide)]; rfl)
+  exact cmp_spec_words hop h hn (by simp only [longWords, ha]) hy (Arr.n_long_bytes x ha) hys
+    (by rw [hR, ← hrun]; simp [Kernel.payload])
+
+/-- **`x<y` at `long` on a `foR` `x` and a dense `y` is `ValSpec`**: `cmp_spec_long_bF` the other way round. -/
+theorem cmp_spec_long_Fb {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
+    (h : Eval.ewType v .long .long = some .boolean) {n : Nat} {x yv : Arr .long n} {R : Arr .boolean n}
+    {md pk b : ByteArray} (ha : x.c.enc = .foR md pk) (hb : yv.c.enc = .bytes b) (hn : n < USize.size)
+    (hv : Ew.val v .boolean x yv = .ok R) : Ew.ValSpec v h x yv R := by
+  have hr : Kernel.resultType v .long .long = some .boolean := by
+    cases v <;> first | rfl | exact absurd hop (by simp [Kernel.cmpOp])
+  unfold Ew.val at hv
+  rw [Arr.c_eq x ha, Arr.c_eq yv hb] at hv
+  have hR := dyad_c (dyadColumn_long_vv_cmp_mixed hop hr n b md pk _ _).2 hv
+  obtain ⟨hx, hxs⟩ := longWords_of_foR ha (by rw [x.wf.2.1]; exact hn)
+  rw [x.wf.2.1] at hx hxs
+  have hrun := (run_cmp_decode { stages := #[decodeStage 0 1], inputs := #[md, pk, b] } _ rfl rfl (by decide)
+    (by decide) op Kernel.Ew.i64 Kernel.Ew.vv Kernel.Ew.slot0 2 0 (.inr rfl) (.inl (by decide)) n.toUSize).trans
+    (show _ = Kernel.Ew.cmp op Kernel.Ew.i64 Kernel.Ew.vv (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize) b
+      n.toUSize by rw [if_neg (by decide), if_pos (by decide)]; rfl)
+  exact cmp_spec_words hop h hn hx (by simp only [longWords, hb]) hxs (Arr.n_long_bytes yv hb)
+    (by rw [hR, ← hrun]; simp [Kernel.payload])
+
 /-- A one-stage `eMon` chain is `Ew.mon` over the input payload it names (`Verify.run_val`'s proof). -/
 theorem run_mon (b : Kernel.Ew.Build) (hb : b.stages = #[]) (op cls sa : UInt8) (nul : Int64)
     (ha : sa < Kernel.Ew.slot0) (n : USize) :
