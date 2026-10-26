@@ -462,6 +462,70 @@ theorem cmp_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some
     R.rel = rpair x.rel yv.rel ≫ ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
   val_rel (cmp_spec_long hop h ha hb hn hv)
 
+/-- A one-stage `eMon` chain is `Ew.mon` over the input payload it names (`Verify.run_val`'s proof). -/
+theorem run_mon (b : Kernel.Ew.Build) (hb : b.stages = #[]) (op cls sa : UInt8) (nul : Int64)
+    (ha : sa < Kernel.Ew.slot0) (n : USize) :
+    b.run { engine := Kernel.Ew.eMon, op, cls, a := sa, nul } n = Kernel.Ew.mon op cls nul b.inputs[sa.toNat]! n := by
+  obtain ⟨hk, h0⟩ := Verify.prog_one b hb { engine := Kernel.Ew.eMon, op, cls, a := sa, nul }
+  simp only [Kernel.Ew.Build.run, Kernel.Ew.chain, hk, show List.range 1 = [0] from rfl, List.foldl_cons,
+    List.foldl_nil]
+  rw [h0]
+  simp [ha, Kernel.Ew.eMon, Kernel.Ew.eVal, Kernel.Ew.eCmp]
+
+/-- `Ew.mon` at `i64`, element by element: `monStep` of element `i` (`Verify.val_i64_vv`'s proof). -/
+theorem mon_i64 (op : UInt8) (nul : Int64) (a : ByteArray) (n : Nat) (hn : n < USize.size) :
+    Verify.elemsW 8 (Kernel.Ew.mon op Kernel.Ew.i64 nul a n.toUSize) =
+      (List.range n).map fun i => Kernel.Ew.monStep op Kernel.Ew.i64 nul.toUInt64 (Column.bitsAt a (i * 8) 8) := by
+  rw [← Verify.elemsW_foldl (fun i => Kernel.Ew.monStep op Kernel.Ew.i64 nul.toUInt64 (Column.bitsAt a (i * 8) 8))
+    8 (by decide) (by decide) (List.range n) (fun _ _ => UInt64.toNat_lt _)]
+  unfold Kernel.Ew.mon
+  rw [USize.toNat_ofNat_of_lt' hn]
+  rfl
+
+/-- `monColumn "neg"` on a dense long column: the one-stage `eMon` chain over its payload. -/
+theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × IndexCell)) :
+    Kernel.monColumn "neg" .long ⟨.long, n, .bytes a, pa⟩ = some (.long, Kernel.payload .long n.toUSize
+      ({ inputs := #[a] },
+        { engine := Kernel.Ew.eMon, op := Kernel.Ew.neg, cls := Kernel.Ew.i64, a := 0, nul := Kernel.nullPayload .long })) := by
+  simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
+    Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
+
+/-- **`-x` at `long` on a dense column is `MapSpec`** of `monStep`'s `neg`, which `Verify.negAtom_long`
+    proves is q's `neg`: `0N` stays `0N`, everything else is `0 - x`. -/
+theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.c.enc = .bytes a)
+    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+    Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
+  have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[a] },
+      { engine := Kernel.Ew.eMon, op := Kernel.Ew.neg, cls := Kernel.Ew.i64, a := 0, nul := Kernel.nullPayload .long }) := by
+    unfold Ew.mon at hv
+    rw [Arr.c_eq x ha, monColumn_neg_long] at hv
+    simp only [↓reduceIte] at hv
+    unfold Arr.of at hv
+    split at hv
+    · cases hv; rfl
+    · cases hv
+  have hrun := run_mon ({ inputs := #[a] } : Kernel.Ew.Build) rfl Kernel.Ew.neg Kernel.Ew.i64 0
+    (Kernel.nullPayload .long) (by decide) n.toUSize
+  simp only [show (#[a] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl] at hrun
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hs : (Kernel.Ew.mon Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) a n.toUSize).size / 8 = n := by
+    have := congrArg List.length (mon_i64 Kernel.Ew.neg (Kernel.nullPayload .long) a n hn)
+    simpa [Verify.elemsW] using this
+  rw [← hrun] at hs
+  have hw := longWords_payload _ _ hn hs
+  rw [← hR, hrun, mon_i64 _ _ _ _ hn, nullPayload_long] at hw
+  unfold Ew.MapSpec
+  rw [Arr.toList_long R hw, Arr.toList_long_bytes x ha]
+  simp
+
+/-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long`. Dense long column. -/
+theorem neg_rel_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.c.enc = .bytes a)
+    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+    R.rel = x.rel ≫ graph (fun y : Int64 =>
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
+  mon_rel (neg_spec_long ha hn hv)
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
@@ -563,5 +627,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms cmp_spec_long
 #print axioms val_rel_long
 #print axioms cmp_rel_long
+#print axioms neg_spec_long
+#print axioms neg_rel_long
 
 end LeetQ.Rel.Verb
