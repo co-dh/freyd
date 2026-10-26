@@ -618,6 +618,35 @@ theorem bitsAt_binRows (w : USize) (float signed right : Bool) (hay keys order b
       Nat.add_sub_cancel, hr]
     by_cases ho : order.isEmpty = true <;> simp [ho]
 
+/-- `binRows` at a needle whose id names no group answers the miss. -/
+theorem bitsAt_binRows_miss (w : USize) (float signed right : Bool) (hay keys order bounds gids : ByteArray)
+    (miss : UInt64) {j g : Nat} (hj : j < keys.size / w.toNat) (hg : (Column.bitsAt gids (j * 8) 8).toNat = g)
+    (hng : bounds.size / 8 - 1 ≤ g) :
+    Column.bitsAt (Kernel.binRows w float signed right hay keys order bounds gids miss) (8 * j) 8 = miss := by
+  simp only [Kernel.binRows]
+  rw [show 8 * j = ByteArray.empty.size + 8 * j by simp,
+    (Verify.foldl_pushBits _ 8 (by decide) _ _).2.2 j (by simpa using hj),
+    show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64, List.getElem_range, hg]
+  simp [hng]
+
+/-- A word read as `Int64` is its two's-complement value, `sx` at width 8. -/
+theorem sx8_toInt64 (v : UInt64) : Verify.sx 8 v = v.toInt64.toInt := by
+  have hv := v.toNat_lt
+  rw [show v.toInt64.toInt = v.toBitVec.toInt from rfl, BitVec.toInt_eq_toNat_cond]
+  simp only [Verify.sx, Nat.reducePow, Nat.reduceMul, Nat.reduceSub, UInt64.toNat_toBitVec] at hv ⊢
+  rw [Nat.mod_eq_of_lt hv]
+  split <;> split <;> omega
+
+/-- At width 8, signed, `ordKey` carries `Int64` order onto unsigned order. -/
+theorem ordKey8_le (a b : UInt64) :
+    Kernel.ordKey 8 false true a ≤ Kernel.ordKey 8 false true b ↔ a.toInt64 ≤ b.toInt64 := by
+  have ha := Verify.ordKey_signed (w := 8) (by decide) (by decide) a
+  have hb := Verify.ordKey_signed (w := 8) (by decide) (by decide) b
+  rw [sx8_toInt64] at ha hb
+  simp only [Nat.reducePow, Nat.reduceMul, Nat.reduceSub] at ha hb
+  rw [UInt64.le_iff_toNat_le, Int64.le_iff_toInt_le]
+  omega
+
 /-- **`groupEdge` at `long` times is one `binRows`**, the right's time column read where it lies (its
     bytes, or its frame-of-reference decode — the payload `bytesOf` names either way), the groups' `rows`
     as the order and their `bounds` as longs, `nr` the miss. -/
