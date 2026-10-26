@@ -539,6 +539,26 @@ theorem ix_mext {lt : Int64 → Int64 → Bool} {le : Int64 → Int64 → Prop} 
     · rw [List.getElem?_eq_none (by simp only [Spec.mext, List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
 
+/-- `Spec.mext` as a window expression at any element type and any `better`, no order assumed: at `i`, the
+    kernel's left fold of the window's rows from its oldest, the seed standing as that oldest in a window
+    shorter than `w`, `corefl(<|xs|) ≫ Λ(Wᵥ) ≫ enum ≫ list(xs) ≫ F`. Where `better` is strictness of an
+    order, `ix_mext` reads the same answer as `est`. -/
+theorem ix_mext_window (better : α → α → Bool) (seed : α) (w : Nat) (xs : List α) :
+    ix (Spec.mext better seed w xs) = corefl (· < xs.length) ≫ Λ (win w) ≫ enum ≫ ListRel.list (ix xs)
+      ≫ (graph fun ys => (fun l : List α => l.tail.foldl (fun e u => if better u e then u else e) (l.headD seed))
+          (if (CL.toList ys).length < w then seed :: CL.toList ys else CL.toList ys) : dList α ⟶ (⟨α⟩ : RelSet.{0})) := by
+  refine Eq.trans ?_ (ix_window xs w _)
+  refine congrArg ix (List.map_congr_left fun i hi => ?_)
+  have hl : ((xs.take (i+1)).drop (i+1-w)).length < w ↔ i + 1 < w := by
+    have := List.mem_range.1 hi; simp only [List.length_drop, List.length_take]; omega
+  dsimp only
+  rw [CL.toList_ofList]
+  by_cases h : i + 1 < w
+  · rw [if_pos h, if_pos (hl.2 h)]
+    all_goals rfl
+  · rw [if_neg h, if_neg (mt hl.1 h)]
+    all_goals (cases (xs.take (i+1)).drop (i+1-w) <;> rfl)
+
 /-- Below `n`, the window of width `n` is every earlier position: `corefl(<n) ≫ Λ(Wₙ) = corefl(<n) ≫ Λ(≥)`. -/
 theorem corefl_Λ_win {C : RelSet.{0}} (n : Nat) (T : pow Idx ⟶ C) :
     corefl (· < n) ≫ Λ (win n) ≫ T = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ T := by
@@ -1021,6 +1041,22 @@ theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
   rfl
 
 open QLean.Kernel in
+/-- `w mmin x` / `w mmax x` on a float column (`bytes` or `alp`): of each window the kernel's left fold
+    under its own `better` on the bits, the seed `0w`/`-0w` the oldest element of a window shorter than
+    `w`. `Float`'s order is opaque, so this is `ix_mext_window`, not `ix_mext`'s `est`. -/
+theorem mext_float_rel {op : Scan.MOp} (hop : op = .mmin ∨ op = .mmax) {w : Nat} (hw : w < USize.size)
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
+    (h32 : n < 2 ^ 32) {S : Arr .float n} (h : Ops.mwin op w .float R = some S) :
+    S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel
+      ≫ (graph fun ys => (fun l : List UInt64 => l.tail.foldl (fun e u => if op.better .f64 u e then u else e)
+            (l.headD (op.seed .f64)))
+          (if (CL.toList ys).length < w then op.seed .f64 :: CL.toList ys else CL.toList ys)
+          : dList UInt64 ⟶ (⟨UInt64⟩ : RelSet.{0})) := by
+  show ix S.toList = _
+  rw [Ops.mext_toList_float hop hw hx hn h32 h, ix_mext_window, Arr.length_toList]
+  rfl
+
+open QLean.Kernel in
 /-- A scan on a long column (`bytes` or `foR`) whose kernel fold over each prefix is the right fold of
     `g` from `e`: the fold of each prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, g]⦈`. -/
 theorem scan_fold_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv) {e : Int64}
@@ -1161,6 +1197,8 @@ theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some 
 #print axioms xasc_rel
 #print axioms mmin_rel
 #print axioms mmax_rel
+#print axioms ix_mext_window
+#print axioms mext_float_rel
 #print axioms rank_toList
 #print axioms rank_rel
 #print axioms mcount_rel
