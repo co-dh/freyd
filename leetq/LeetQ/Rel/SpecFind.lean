@@ -1126,6 +1126,83 @@ theorem cset_only {A B C : RelSet.{0}} (K : A ⟶ B) (J : C ⟶ B) (i : A.carrie
   · rintro ⟨⟨k, hk⟩, hn⟩
     exact ⟨⟨rfl, k, hk, hk⟩, rfl, fun _ ⟨_, p, _, ⟨k, hk, hp⟩⟩ => hn ⟨k, hk, p, hp⟩⟩
 
+/-- `Ew.vec` answers only a kernel's vector. -/
+theorem vec_some {w : String} {o : Option QValue} {c : Column} (h : Ew.vec w o = .ok c) : o = some (.vector c) := by
+  unfold Ew.vec at h; split at h
+  next c' => cases h; rfl
+  · cases h
+
+/-- `memberColumn`, `~` and `whereColumn` at long keys `kx`, `ky`: the ascending positions `F` of `ky` whose key
+    `kx` lacks, the one list `enum(dom(ky) ∩ corNeg(dom(ky ≫ kx°)))` gives, as an index column `I` (`probe_member`,
+    `notBits_bitAt`, `whereBits_spec`). -/
+theorem only_rows {nx ny : Nat} (kx : Arr .long nx) (ky : Arr .long ny) {ty : QAtomicType} {m : Nat}
+    {b : ByteArray} {iy : Column} (hkx : Find.Readable .long kx.c) (hky : Find.Readable .long ky.c)
+    (hnx : nx < USize.size) (hny : ny < USize.size)
+    (hmem : Kernel.memberColumn .long false (.vector ky.c) kx.c = some (.vector ⟨ty, m, .bits b, none⟩))
+    (hw : Kernel.whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b), none⟩ = some (.vector iy)) :
+    ∃ F : List Nat, (∀ ys, enum (cset (dom ky.rel ∩ corNeg (dom (ky.rel ≫ kx.rel°)))) ys ↔ ys = CL.ofList F) ∧
+      (∀ j ∈ F, j < ny) ∧ iy.n ≤ ny ∧ ∃ I : Arr .long iy.n, I.c = iy ∧ longWords I.c = some (F.map UInt64.ofNat) := by
+  obtain ⟨M, kyw, kxw, hp, hwy, hwx, hM⟩ := Find.probe_member ky kx hky hkx hny hnx
+  rw [Find.memberColumn_long false _ _ ky.wf.1] at hmem
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, hp, Option.map_some] at hmem
+  cases hmem
+  have hN : ky.c.n = kyw.length := by rw [ky.wf.2.1, ← Arr.length_toList ky, Arr.toList_long ky hwy, List.length_map]
+  have hNU : ky.c.n < USize.size := by rw [ky.wf.2.1]; exact hny
+  have hky' : ky.c.n = ny := ky.wf.2.1
+  obtain ⟨hs, hj⟩ := Verify.whereBits_spec ky.c.n.toUSize (Ew.notBits ky.c.n b)
+  rw [USize.toNat_ofNat_of_lt' hNU] at hs hj
+  generalize hF : (List.range ky.c.n).filter (Column.bitAt (Ew.notBits ky.c.n b)) = F at hs hj
+  simp only [Kernel.whereColumn] at hw
+  generalize Kernel.whereBits ky.c.n.toUSize (Ew.notBits ky.c.n b) = P at hs hj hw
+  cases hw
+  have mem : ∀ i, i ∈ F ↔ cset (dom ky.rel ∩ corNeg (dom (ky.rel ≫ kx.rel°))) i := fun i => by
+    rw [cset_only, ← hF, List.mem_filter, List.mem_range]
+    show _ ↔ (∃ k, ky.toList[i]? = some k) ∧ ¬ ∃ k, ky.toList[i]? = some k ∧ ∃ p, kx.toList[p]? = some k
+    rw [Arr.toList_long ky hwy, Arr.toList_long kx hwx]
+    by_cases hik : i < kyw.length
+    · rw [Ew.notBits_bitAt hNU b (by omega), hM i hik]
+      simp only [List.getElem?_map, List.getElem?_eq_getElem hik, Option.map_some, Option.some.injEq,
+        exists_eq', true_and, exists_eq_left', Bool.not_eq_true', decide_eq_false_iff_not]
+      have hx : (∃ p : Nat, Option.map UInt64.toInt64 kxw[p]? = some kyw[i].toInt64) ↔ kyw[i] ∈ kxw := by
+        rw [← Find.mem_map_of_inj (fun a b h => toInt64_inj h) (l := kxw), List.mem_iff_getElem?]
+        simp only [List.getElem?_map]
+      exact ⟨fun h hp => h.2 (hx.1 hp), fun h => ⟨by omega, fun hm => h (hx.2 hm)⟩⟩
+    · simp only [List.getElem?_map, List.getElem?_eq_none (Nat.le_of_not_lt hik), Option.map_none, reduceCtorEq,
+        exists_false, false_and, iff_false, not_and]
+      intro h; omega
+  have pw : F.Pairwise (· < ·) := hF ▸ (List.pairwise_lt_range ..).filter _
+  have hPw : Verify.elemsW 8 P = F.map UInt64.ofNat := by
+    apply List.ext_getElem (by simp only [Verify.elemsW, List.length_map, List.length_range, hs]; omega)
+    intro j h1 h2
+    simp only [List.length_map] at h2
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [← hj j h2, UInt64.ofNat_toNat]
+  have hFl : F.length ≤ ky.c.n := by rw [← hF]; exact Nat.le_trans (List.length_filter_le _ _) (by simp)
+  refine ⟨F, enum_ofList _ F pw mem, fun j h => ?_, show P.size / 8 ≤ ny by omega,
+    ⟨⟨.long, P.size / 8, .bytes P, none⟩, rfl, rfl, by simp only [Column.WF, QAtomicType.width]; omega⟩, rfl,
+    by simp only [longWords, hPw]⟩
+  rw [← hF, List.mem_filter, List.mem_range] at h; omega
+
+/-- `z@I` at long, the index `I` the positions `F` of `z` as words: `ix(F) ≫ z` (`gather_long`,
+    `ix_map_getElem!`). -/
+theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWords z.c = some zs)
+    (hk : k < USize.size) (I : Arr .long n) {F : List Nat} (hI : longWords I.c = some (F.map UInt64.ofNat))
+    (hF : ∀ j ∈ F, j < k) (hn : n < USize.size) {c : Column} (h : Kernel.gatherColumn .long z.c I.c = some (.vector c)) :
+    ∃ G : Arr .long n, G.c = c ∧ G.rel = ix F ≫ z.rel := by
+  obtain ⟨B, rfl, hBs, hBw⟩ := gather_long z hz hk I hI hn h
+  have hzl : zs.length = k := by rw [← Arr.length_toList z, Arr.toList_long z hz, List.length_map]
+  let G : Arr .long n := ⟨⟨.long, n, .bytes B, none⟩, rfl, rfl, by simp only [Column.WF, QAtomicType.width]; omega⟩
+  refine ⟨G, rfl, ?_⟩
+  show ix G.toList = ix F ≫ ix z.toList
+  rw [Arr.toList_long G (ws := Verify.elemsW 8 B) rfl, hBw, Arr.toList_long z hz, List.map_map, List.map_map,
+    ← ix_map_getElem! F _ (fun j h => by have := hF j h; rw [List.length_map, hzl]; omega)]
+  refine congrArg ix (List.map_congr_left fun j hj => ?_)
+  have hjl : j < zs.length := by have := hF j hj; omega
+  have h64 : j < 2 ^ 64 := by have := hF j hj; have := USize.size_le; omega
+  simp only [Function.comp, UInt64.toNat_ofNat_of_lt' h64, List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem hjl, Option.getD_some]
+  rw [getElem!_pos _ j (by rw [List.length_map]; exact hjl), List.getElem_map]
+
 /-- **The rows only `y` has in `align`, long keys and long `y` values:
     `enum(dom(y.key) ∩ corNeg(dom(y.key ≫ x.key°))) ≫ ⟨!eₗ, y⟩ ≫ f`.** `memberColumn`, `~` and `whereColumn`
     enumerate the positions of `y` whose key `x` lacks (`probe_member`, `notBits_bitAt`, `whereBits_spec`),
@@ -1147,73 +1224,55 @@ theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel
     ∀ ys, enum (cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°)))) ys →
       ry.rel = ix (CL.toList ys) ≫
         (rpair (cst el) y.val.rel ≫ ofExcept (fun p : Carrier t × Carrier .long => elem L.vr he p.1 p.2)) := by
-  obtain ⟨M, kyw, kxw, hp, hwy, hwx, hM⟩ := Find.probe_member y.key x.key hky hkx hny hnx
-  rw [Find.memberColumn_long false _ _ y.key.wf.1] at hmem
-  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, hp, Option.map_some] at hmem
-  cases hmem
-  simp only [Kernel.whereColumn] at hw
-  cases hw
-  have hN : y.key.c.n = kyw.length := by
-    rw [y.key.wf.2.1, ← Arr.length_toList y.key, Arr.toList_long y.key hwy, List.length_map]
-  have hNU : y.key.c.n < USize.size := by rw [y.key.wf.2.1]; exact hny
-  generalize hF : (List.range y.key.c.n).filter (Column.bitAt (Ew.notBits y.key.c.n M)) = F
-  obtain ⟨hs, hj⟩ := Verify.whereBits_spec y.key.c.n.toUSize (Ew.notBits y.key.c.n M)
-  rw [USize.toNat_ofNat_of_lt' hNU, hF] at hs hj
-  generalize Kernel.whereBits y.key.c.n.toUSize (Ew.notBits y.key.c.n M) = P at hs hj ry hgy hry hlaw
-  -- the positions `whereBits` lists are those of `y` whose key word `x` lacks
-  have mem : ∀ i, i ∈ F ↔ cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°))) i := fun i => by
-    rw [cset_only, ← hF, List.mem_filter, List.mem_range]
-    show _ ↔ (∃ k, y.key.toList[i]? = some k) ∧ ¬ ∃ k, y.key.toList[i]? = some k ∧ ∃ p, x.key.toList[p]? = some k
-    rw [Arr.toList_long y.key hwy, Arr.toList_long x.key hwx]
-    by_cases hik : i < kyw.length
-    · rw [Ew.notBits_bitAt hNU M (by omega), hM i hik]
-      simp only [List.getElem?_map, List.getElem?_eq_getElem hik, Option.map_some, Option.some.injEq,
-        exists_eq', true_and, exists_eq_left', ← List.mem_iff_getElem?,
-        Find.mem_map_of_inj (fun a b h => toInt64_inj h), Bool.not_eq_true', decide_eq_false_iff_not]
-      exact ⟨fun h => h.2, fun h => ⟨by omega, h⟩⟩
-    · simp only [List.getElem?_map, List.getElem?_eq_none (Nat.le_of_not_lt hik), Option.map_none, reduceCtorEq,
-        exists_false, false_and, iff_false, not_and]
-      intro h; omega
-  have pw : F.Pairwise (· < ·) := hF ▸ (List.pairwise_lt_range ..).filter _
-  have henum := enum_ofList _ F pw mem
+  obtain ⟨F, henum, hFn, hIn, I, hIc, hI⟩ := only_rows x.key y.key hkx hky hnx hny hmem hw
+  obtain ⟨_, _, _, yvw, -, hwv, -, -⟩ := Find.operand_long y.val hyv hny
+  obtain ⟨G, rfl, hG⟩ := gather_rel y.val hwv hny I hI hFn (by omega) (hIc ▸ vec_some hgy)
+  have hat : Ew.atomVal L.vr rt el G ht = .ok ry := by
+    unfold Ew.atomVal; rw [hel]; simp only [hac, bind, Except.bind]; exact hry
   refine ⟨⟨_, (henum _).2 rfl⟩, fun ys hy => ?_⟩
   obtain rfl := (henum ys).1 hy
   rw [CL.toList_ofList]
-  -- the index column: `F` as words
-  have hPw : Verify.elemsW 8 P = F.map UInt64.ofNat := by
-    apply List.ext_getElem (by simp only [Verify.elemsW, List.length_map, List.length_range, hs]; omega)
-    intro j h1 h2
-    simp only [List.length_map] at h2
-    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
-    rw [← hj j h2, UInt64.ofNat_toNat]
-  have hFN : ∀ j ∈ F, j < kyw.length := fun j h => by
-    rw [← hF, List.mem_filter, List.mem_range] at h; omega
-  have hFl : F.length ≤ y.key.c.n := by rw [← hF]; exact (List.length_filter_le _ _).trans (by simp)
-  let IY : Arr .long (P.size / 8) := ⟨⟨.long, P.size / 8, .bytes P, none⟩, rfl, rfl,
-    by simp only [Column.WF, QAtomicType.width]; omega⟩
-  have hg : Kernel.gatherColumn .long y.val.c IY.c = some (.vector gy) := by
-    unfold Ew.vec at hgy; split at hgy
-    · cases hgy; assumption
-    · cases hgy
-  obtain ⟨_, _, _, yvw, -, hwv, -, hlv⟩ := Find.operand_long y.val hyv hny
-  obtain ⟨B, rfl, hBs, hBw⟩ := gather_long y.val hwv hny IY rfl (by omega) hg
-  let GY : Arr .long (P.size / 8) := ⟨⟨.long, P.size / 8, .bytes B, none⟩, rfl, rfl,
-    by simp only [Column.WF, QAtomicType.width]; omega⟩
-  have hat : Ew.atomVal L.vr rt el GY ht = .ok ry := by
-    unfold Ew.atomVal; rw [hel]; simp only [hac, bind, Except.bind]; exact hry
-  have hGY : GY.rel = ix F ≫ y.val.rel := by
-    show ix GY.toList = ix F ≫ ix y.val.toList
-    rw [Arr.toList_long GY (ws := Verify.elemsW 8 B) rfl, hBw, hPw, Arr.toList_long y.val hwv, List.map_map,
-      List.map_map, ← ix_map_getElem! F _ (fun j h => by rw [List.length_map, hlv, ← y.key.wf.2.1 ▸ y.val.wf.2.1];
-        have := hFN j h; omega)]
-    refine congrArg ix (List.map_congr_left fun j hj => ?_)
-    have hjl : j < yvw.length := by have := hFN j hj; omega
-    simp only [Function.comp, UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) (Nat.le_of_lt USize.size_le)),
-      List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hjl, Option.getD_some]
-    rw [getElem!_pos _ j (by rw [List.length_map]; exact hjl), List.getElem_map]
-  calc ry.rel = GY.rel ≫ ofExcept (elem L.vr he el) := ix_mapM _ _ _ (hlaw GY ry hat)
-    _ = ix F ≫ (y.val.rel ≫ ofExcept (elem L.vr he el)) := by rw [hGY, Cat.assoc]
+  calc ry.rel = G.rel ≫ ofExcept (elem L.vr he el) := ix_mapM _ _ _ (hlaw G ry hat)
+    _ = ix F ≫ (y.val.rel ≫ ofExcept (elem L.vr he el)) := by rw [hG, Cat.assoc]
     _ = _ := by rw [pair_cst_left el y.val.rel (elem L.vr he)]
+
+/-- **`align` on different keys, long keys and long `y` values: the keys `x.key ++ y.key` at the rows only `y`
+    has, the values the rows of `x` (`align_left_rel`) then those rows (`align_right_rel`).** `hlaw`/`hlawr` are
+    value laws of the `vv`/`av` dyads at the encodings at hand; `hraze` is a value law of `razeColumn` at the
+    two types joined, which qlean proves only for dense parts (`razeColumn_long_bytes`): a `foR` part meets
+    `concatFoR`, whose move branch reads no part's patch list. -/
+theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
+    (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
+    (hm : ∀ _ : y.n = x.n, Kernel.matchColumn .long x.key.c y.key.c ≠ some true) {el : Carrier t}
+    (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.v t .long = some rt)
+    (hr : Eval.ewType L.vr t .long = some rt)
+    (hkx : Find.Readable .long x.key.c) (hky : Find.Readable .long y.key.c) (hyv : Find.Readable .long y.val.c)
+    (hnx : x.n < USize.size) (hny : y.n < USize.size)
+    (hlaw : ∀ (Y : Arr .long x.n) l, Ew.val L.v rt x.val Y = .ok l → Ew.ValSpec L.v he x.val Y l)
+    (hlawr : ∀ {n : Nat} (Y : Arr .long n) r, Ew.atomVal L.vr rt el Y ht = .ok r →
+      Y.toList.mapM (fun c => elem L.vr hr el c) = .ok r.toList)
+    (hraze : ∀ {a : QAtomicType} {na nb : Nat} (p : Arr a na) (q : Arr a nb) (c : Column) (V : Arr a (na + nb)),
+      (a = .long ∨ a = rt) → Kernel.razeColumn a #[p.c, q.c] = some (.vector c) → V.c = c →
+        V.toList = p.toList ++ q.toList) :
+    ∃ (n : Nat) (l : Arr rt x.n) (gk : Arr .long n) (ry : Arr rt n) (K : Arr .long (x.n + n)) (V : Arr rt (x.n + n)),
+      R = ⟨x.n + n, K, V⟩ ∧ K.toList = x.key.toList ++ gk.toList ∧ V.toList = l.toList ++ ry.toList ∧
+      l.rel = rpair x.val.rel (x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64) ≫
+        ofExcept (fun p : Carrier t × Carrier .long => elem L.v he p.1 p.2) ∧
+      (∃ ys, enum (cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°)))) ys) ∧
+      ∀ ys, enum (cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°)))) ys →
+        gk.rel = ix (CL.toList ys) ≫ y.key.rel ∧ ry.rel = ix (CL.toList ys) ≫
+          (rpair (cst el) y.val.rel ≫ ofExcept (fun p : Carrier t × Carrier .long => elem L.vr hr p.1 p.2)) := by
+  obtain ⟨ixc, yx, l, ty, m, b, iy, ac, gy, ry, gk, keys, vals, K, V, hix, hyx, hl, hmem, hw, hac, hgy, hry, hgk,
+    hkeys, hvals, hK, hV, rfl⟩ := align_gather ht hv hm
+  have hR := align_right_rel ht hel hr hkx hky hyv hnx hny hmem hw hac hgy hry (hlawr (n := iy.n))
+  obtain ⟨F, henum, hFn, hIn, I, hIc, hI⟩ := only_rows x.key y.key hkx hky hnx hny hmem hw
+  obtain ⟨_, _, _, kyw, -, hwy, -, -⟩ := Find.operand_long y.key hky hny
+  obtain ⟨G, rfl, hG⟩ := gather_rel y.key hwy hny I hI hFn (by omega) (hIc ▸ vec_some hgk)
+  refine ⟨iy.n, l, G, ry, K, V, rfl, hraze x.key G keys K (.inl rfl) (vec_some hkeys) (Find.onKey_c hK),
+    hraze l ry vals V (.inr rfl) (vec_some hvals) (Find.onKey_c hV),
+    align_left_rel he hkx hky hyv hnx hny hix hyx hl hlaw, hR.1, fun ys hy => ⟨?_, hR.2 ys hy⟩⟩
+  obtain rfl := (henum ys).1 hy
+  rw [CL.toList_ofList]; exact hG
 
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
@@ -2506,5 +2565,12 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms ix_lookup
 #print axioms align_left_rel
 #print axioms gather_long
+#print axioms enum_ofList
+#print axioms cset_only
+#print axioms vec_some
+#print axioms only_rows
+#print axioms gather_rel
+#print axioms align_right_rel
+#print axioms align_rel
 
 end LeetQ.Rel.Verb
