@@ -2798,13 +2798,15 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
   | ok its =>
     have hL : ∀ s : String, Struct.likeP p s.toUTF8 = patMatch its s.toUTF8 (its.size + s.toUTF8.size + 1) 0 0 :=
       fun s => by simp only [Struct.likeP, show p.toUTF8 = p.toByteArray from rfl, hp]
+    have hp' : parsePat p.toUTF8 = .ok its := hp
     cases he : x.c.enc with
     | syms b o =>
       have hc := x.c_eq he
-      simp only [Struct.like, he, likeSyms, hp, bind, Except.bind, pure, Except.pure] at h
+      simp only [Struct.like, he, likeSyms, hp', bind, Except.bind, pure, Except.pure] at h
       rw [hc] at hw; simp only [Column.WF] at hw
       rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
-      refine List.ext_getElem (by simp [Arr.length_toList]) fun i h1 h2 => ?_
+      refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
+        fun i h1 h2 => ?_
       have hi : i < nx := by simpa using h1
       have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
       have e := hk i hi'
@@ -2816,9 +2818,10 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
       have hc := x.c_eq he
       have hs := hx.1; rw [hc] at hs
       obtain ⟨hn', hd, -, hid, -⟩ := hs
-      simp only [Struct.like, he, likeSyms, hp, Option.map_some, bind, Except.bind, pure, Except.pure] at h
+      simp only [Struct.like, he, likeSyms, hp', Option.map_some, bind, Except.bind, pure, Except.pure] at h
       rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
-      refine List.ext_getElem (by simp [Arr.length_toList]) fun i h1 h2 => ?_
+      refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
+        fun i h1 h2 => ?_
       have hi : i < nx := by simpa using h1
       have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
       have e := hk i hi'
@@ -2916,8 +2919,8 @@ theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : 
   have hi : i < x.c.n := by rw [Arr.length_toList] at h1; omega
   rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
   simp only [Column.get, if_pos hi, x.wf.1, hc, QAtomicType.width]
-  simp [Carrier.of?, Column.atomOfBits, Verify.bitsAt_one, List.getElem_toArray, Array.getElem_toList]
-  sorry
+  simp [Carrier.of?, Column.atomOfBits, Verify.bitsAt_one, Array.getElem_toList]
+  rw [getElem?_pos b i (show i < b.data.size by simpa using h2)]; rfl
 
 /-- `x ss p`: the positions `enum(S)` of the set `S` of non-overlapping starts of `p`'s items in `x`
     (`Struct.Starts`), read as longs — the same shape as `where_rel`'s `&x = enum(dom(x ≫ 1b°))`, the
@@ -2941,14 +2944,15 @@ theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : 
     refine ⟨its, hp, ?_⟩
     have hfi : fixedItems false p.toUTF8 = some its := by
       simp only [fixedItems, Bool.false_and, Bool.false_eq_true, ↓reduceIte, show p.toUTF8 = p.toByteArray from rfl, hp]
-    by_cases hz : (its.isEmpty || its.any (· matches PatItem.star)) = true
-    · have hn : fixedHits p.toUTF8 b = none := by rw [fixedHits, hfi]; dsimp only; rw [if_pos hz]
-      rw [hn] at h; simp at h
-    · have hg : ∀ j, b.get! j = b.data.toList.getD j 0 := fun j => by
+    cases hfh : fixedHits p.toUTF8 b with
+    | none => rw [hfh] at h; simp at h
+    | some B' =>
+      have hg : ∀ j, b.get! j = b.data.toList.getD j 0 := fun j => by
         simp [ByteArray.get!, List.getD_eq_getElem?_getD, getElem!_def]
-      let f : List Nat × Nat → Nat → List Nat × Nat := fun (acc, next) i =>
-        if next ≤ i && i + its.size ≤ b.size && (List.range its.size).all (fun k => patHit its[k]! (b.get! (i + k)))
-          then (i :: acc, i + its.size) else (acc, next)
+        cases b.data[j]? <;> rfl
+      let f : List Nat × Nat → Nat → List Nat × Nat := fun st i =>
+        if st.2 ≤ i && i + its.size ≤ b.size && (List.range its.size).all (fun k => patHit its[k]! (b.get! (i + k)))
+          then (i :: st.1, i + its.size) else (st.1, st.2)
       have hf : ∀ acc next i, f (acc, next) i =
           if next ≤ i ∧ Struct.fitsAt its x.toList i = true then (i :: acc, i + its.size) else (acc, next) := by
         intro acc next i
@@ -2960,8 +2964,12 @@ theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : 
         rw [hcond]; simp only [Bool.and_eq_true, decide_eq_true_eq]
       let B := (((List.range (b.size + 1)).foldl f ([], 0)).1.reverse).foldl (init := ByteArray.empty)
         fun acc i => Column.pushBits acc (Int64.ofNat i).toUInt64 8
-      have hfe : fixedHits p.toUTF8 b = some B := by rw [fixedHits, hfi]; dsimp only; rw [if_neg hz]
-      rw [hfe] at h; dsimp only at h
+      have hfe : B' = B := by
+        rw [fixedHits, hfi] at hfh; dsimp only at hfh
+        split at hfh
+        · cases hfh
+        · cases hfh; rfl
+      rw [hfh, hfe] at h; dsimp only at h
       obtain ⟨hpw, -, -, hm⟩ := greedy_fold (Struct.fitsAt its x.toList) its.size f hf (b.size + 1)
       generalize hA : ((List.range (b.size + 1)).foldl f ([], 0)).1 = A at hpw hm
       have hB : B = A.reverse.foldl (init := ByteArray.empty) fun acc i => Column.pushBits acc (Int64.ofNat i).toUInt64 8 := by
@@ -2979,23 +2987,25 @@ theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : 
         simp only [List.getElem_map, List.getElem_range]
         have := hbits j (by rw [← hnr]; simpa using h1)
         simp only [ByteArray.size_empty, Nat.zero_add] at this
-        rw [hB, Nat.mul_comm, this]; simp
+        rw [hB, Nat.mul_comm, this, show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _),
+          UInt64.ofNat_toNat]
+        rfl
       have hrel : r.rel = ix A.reverse ≫ graph Int64.ofNat := (congrArg ix hL).trans (ix_map ..)
       -- `A` is the one set `Starts` describes
       have hfit : ∀ i, Struct.fitsAt its x.toList i = true → i < b.size + 1 := fun i hi => by
-        simp only [Struct.fitsAt, Bool.and_eq_true, decide_eq_true_eq, hX, Array.length_toList, ByteArray.size] at hi
+        simp only [Struct.fitsAt, Bool.and_eq_true, decide_eq_true_eq, hX, Array.length_toList] at hi
         have := hi.1; simp only [ByteArray.size]; omega
       have hT : Struct.Starts its x.toList (· ∈ A) := fun i => by
-        rw [hm i]
+        dsimp only; rw [hm i]
         exact ⟨fun ⟨_, h2, h3⟩ => ⟨h2, fun j hj hji => h3 j hj hji⟩,
           fun ⟨h2, h3⟩ => ⟨hfit i h2, h2, fun j hj hji => h3 j hj hji⟩⟩
       have huniq : ∀ S, Struct.Starts its x.toList S → ∀ i, S i ↔ i ∈ A.reverse := fun S hS i => by
         rw [List.mem_reverse]
-        induction i using Nat.strong_induction_on with
-        | _ i ih =>
-          rw [hS i, hT i]
-          exact and_congr_right fun _ => forall_congr' fun j =>
-            ⟨fun h hj hji => h ((ih j hji).2 hj) hji, fun h hj hji => h ((ih j hji).1 hj) hji⟩
+        refine Nat.strongRecOn (motive := fun i => S i ↔ i ∈ A) i fun i ih => ?_
+        show S i ↔ i ∈ A
+        rw [hS i, show i ∈ A ↔ Struct.fitsAt its x.toList i = true ∧ ∀ j, j ∈ A → j < i → j + its.size ≤ i from hT i]
+        exact and_congr_right fun _ => forall_congr' fun j =>
+          ⟨fun h hj hji => h ((ih j hji).2 hj) hji, fun h hj hji => h ((ih j hji).1 hj) hji⟩
       have hpw' : A.reverse.Pairwise (· < ·) := List.pairwise_reverse.2 hpw
       refine ⟨⟨_, hT⟩, fun S hS => ?_⟩
       have he' := enum_ofList S A.reverse hpw' fun i => (huniq S hS i).symm
