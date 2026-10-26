@@ -182,6 +182,26 @@ theorem cst_grade {β : Type} [Inhabited β] (xs : List β) (le : β → β → 
   · exact .inl (hlt _ _ h₁ h₂)
   · exact .inr ⟨hanti _ _ h₁ h₂, h₃⟩
 
+/-- `cst_grade` at `Int64`'s `≤`: the ascending grade of a long list is `sort(⊴ₓ)` at the strict `<`. -/
+theorem cst_grade_long (xs : List Int64) :
+    (cst (CL.ofList ((List.range xs.length).mergeSort fun i j => decide (xs[i]! ≤ xs[j]!))) :
+        (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
+      = cst (CL.ofList (List.range xs.length)) ≫ sort (stable (ix xs) fun a b : Int64 => a < b) :=
+  cst_grade xs (fun a b => decide (a ≤ b)) _
+    (fun _ _ _ h₁ h₂ => by simp only [decide_eq_true_eq] at *; exact Int64.le_trans h₁ h₂)
+    (fun a b => by rcases Int64.le_total a b with h | h <;> simp [h])
+    (fun _ _ h₁ h₂ => Int64.le_antisymm (of_decide_eq_true h₁) (of_decide_eq_true h₂))
+    (fun _ _ _ h₂ => Int64.not_le.1 (of_decide_eq_false h₂))
+    (fun a b h₁ h₂ => by simp only [Int64.lt_iff_toInt_lt] at h₁ h₂; omega)
+    (fun a h => by simp only [Int64.lt_iff_toInt_lt] at h; omega)
+
+/-- A bind through `vecCol` that answers names the vector its first step answered. -/
+theorem vecCol_bind {α : Type} {o : Option QValue} {f : Column → Option α} {X : α}
+    (h : (do let c ← vecCol (← o); f c) = some X) : ∃ c, o = some (.vector c) ∧ f c = some X := by
+  rcases o with _ | a
+  · simp at h
+  · cases a <;> first | exact ⟨_, rfl, h⟩ | simp [vecCol] at h
+
 /-- The grade's positions read back as naturals, below `2⁶³`: the merge sort of `til n`. -/
 theorem grade_map (desc : Bool) (xs : List Int64) (h63 : xs.length < 2 ^ 63) :
     (Spec.grade desc xs).map Int64.toNatClampNeg = (List.range xs.length).mergeSort
@@ -537,13 +557,7 @@ theorem iasc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = so
       = cst (CL.ofList ((Spec.grade false R.toList).map Int64.toNatClampNeg)) := by rw [Ops.grade_toList hx hn h]
     _ = cst (CL.ofList (List.range R.toList.length)) ≫ sort (stable R.rel fun a b : Int64 => a < b) := by
         rw [grade_map false _ (by rw [Arr.length_toList]; exact h63)]
-        exact cst_grade R.toList (fun a b => decide (a ≤ b)) _
-          (fun _ _ _ h₁ h₂ => by simp only [decide_eq_true_eq] at *; exact Int64.le_trans h₁ h₂)
-          (fun a b => by rcases Int64.le_total a b with h | h <;> simp [h])
-          (fun _ _ h₁ h₂ => Int64.le_antisymm (of_decide_eq_true h₁) (of_decide_eq_true h₂))
-          (fun _ _ _ h₂ => Int64.not_le.1 (of_decide_eq_false h₂))
-          (fun a b h₁ h₂ => by simp only [Int64.lt_iff_toInt_lt] at h₁ h₂; omega)
-          (fun a h => by simp only [Int64.lt_iff_toInt_lt] at h; omega)
+        exact cst_grade_long R.toList
     _ = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b) := by rw [Arr.length_toList]
 
 /-- `>x = sort(⊵ₓ)` of `til n` on a dense long column, positions below `2⁶³`. -/
@@ -652,13 +666,7 @@ theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some
         = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b)
       ∧ S.rel ≫ pos = (ix G)° := by
   refine ⟨(List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!), ?_, ?_⟩
-  · have := cst_grade R.toList (fun a b => decide (a ≤ b)) (fun a b : Int64 => a < b)
-      (fun _ _ _ h₁ h₂ => by simp only [decide_eq_true_eq] at *; exact Int64.le_trans h₁ h₂)
-      (fun a b => by rcases Int64.le_total a b with h | h <;> simp [h])
-      (fun _ _ h₁ h₂ => Int64.le_antisymm (of_decide_eq_true h₁) (of_decide_eq_true h₂))
-      (fun _ _ _ h₂ => Int64.not_le.1 (of_decide_eq_false h₂))
-      (fun a b h₁ h₂ => by simp only [Int64.lt_iff_toInt_lt] at h₁ h₂; omega)
-      (fun a h => by simp only [Int64.lt_iff_toInt_lt] at h; omega)
+  · have := cst_grade_long R.toList
     rw [Arr.length_toList] at this
     exact this
   · have hp := List.mergeSort_perm (List.range n) fun i j => decide (R.toList[i]! ≤ R.toList[j]!)
@@ -680,6 +688,94 @@ theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some
       · rintro ⟨-, rfl⟩; exact ⟨_, rfl, _, ⟨rfl, h0⟩, hv.symm⟩
     · rw [List.getElem?_eq_none (by simp only [List.length_range]; omega)]
       exact ⟨fun ⟨_, e, _⟩ => by simp at e, fun ⟨h, _⟩ => absurd h hi⟩
+
+open QLean.Kernel LeetQ.Rel.Struct in
+/-- **`xasc` over long columns**: `x` gathered at the ascending grade of `s`, `x@<s` (`indexSpec 0N`), from
+    `Struct.index_toList`'s steps with the grade payload as the index column; `|x| < 2⁶³`. -/
+theorem xasc_toList {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords s.c = some ws)
+    (hx : longWords x.c = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
+    X.toList = indexSpec Spec.nul x.toList (Spec.grade false s.toList) := by
+  obtain ⟨B, hc, -, -, hBs⟩ := Arr.dense_long s hs hn
+  obtain ⟨k, hg, hk⟩ : ∃ k, gradeColumn .long false s.c =
+      some (.vector ⟨.long, k, .bytes (Order.grade .i64 false n.toUSize B), none⟩) ∧ k = n := by
+    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [s.c_eq hc]
+    · generalize s.attrCell = a; rw [← hBs]
+      exact ⟨_, rfl, USize.toNat_ofNat_of_lt' (by rw [show Scan.Kind.i64.width = 8 from rfl, hBs]; exact hn)⟩
+    · exact ⟨_, rfl, rfl⟩
+  rw [hk] at hg
+  generalize hP : Order.grade .i64 false n.toUSize B = P at hg
+  have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
+    rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
+  -- the grade payload is `n` longs, so `Arr.of` accepts it
+  have hPw : Column.WF ⟨.long, n, .bytes P, none⟩ := by
+    show P.size = n * 8
+    rw [← hP, Order.grade, hm, Order.indices, (Verify.foldl_pushBits _ 8 (by decide) _ _).1]
+    simp [Nat.mul_comm]
+  have hG : Ops.grade false s = some (⟨⟨.long, n, .bytes P, none⟩, rfl, rfl, hPw⟩ : Arr .long n) := by
+    unfold Ops.grade; rw [hg]
+    show (Arr.of .long n ⟨.long, n, .bytes P, none⟩ "<x").toOption = _
+    rw [Arr.of, dif_pos ⟨rfl, rfl, hPw⟩]; rfl
+  have hgl := Ops.grade_toList hs hn hG
+  rw [Arr.toList_long _ (show longWords (⟨⟨.long, n, .bytes P, none⟩, rfl, rfl, hPw⟩ : Arr .long n).c
+    = some (Verify.elemsW 8 P) from rfl)] at hgl
+  have h' : Ops.permute ⟨.long, n, .bytes P, none⟩ x = some X := by unfold Ops.xasc at h; rw [hg] at h; exact h
+  unfold Ops.permute at h'
+  obtain ⟨c, hv, hof⟩ := vecCol_bind (f := fun c => (Arr.of .long n c "x@p").toOption) h'
+  have rc : X.c = c := by
+    rw [Arr.of] at hof; split at hof
+    · cases hof; rfl
+    · cases hof
+  have hA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
+    simp [longWords, he] at hx
+  have hcf : Verify.countFits (⟨.long, n, .bytes P, none⟩ : Column) := by simp only [Verify.countFits]
+  obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c
+    ⟨.long, n, .bytes P, none⟩ c x.wf.1 rfl hcf hA hv
+  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl x.c ⟨.long, n, .bytes P, none⟩ c
+    x.wf.1 x.wf.2.2 rfl hPw (countFits_long x hx hn) hcf hA hv
+  have hcw : c.ty = .long ∧ c.WF := by rw [← rc]; exact ⟨X.wf.1, X.wf.2.2⟩
+  have hw : longWords c = some (Column.raw c).toList := by
+    cases hl : longWords c with
+    | none => rw [hcB] at hl; cases hl
+    | some ws => rw [raw_long hcw.1 hcw.2 hl]
+  have hlen : wx.length < 2 ^ 63 := by
+    have := Arr.length_toList x; rw [Arr.toList_long x hx, List.length_map] at this; omega
+  rw [← hgl, Arr.toList_long X (show longWords X.c = _ by rw [rc]; exact hw), hraw, raw_long x.wf.1 x.wf.2.2 hx,
+    raw_long (c := ⟨.long, n, .bytes P, none⟩) rfl hPw rfl, Arr.toList_long x hx, indexSpec, List.map_map,
+    List.map_map]
+  refine List.map_congr_left fun u _ => ?_
+  exact (congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)).trans (index_word wx u hlen)
+
+/-- `s xasc x = (<s) ≫ x` on dense long columns, positions below `2⁶³`: `G` is the grade `sort(⊴ₛ)` gives,
+    and `xasc` is `x` read at it, `ix(G) ≫ x`. -/
+theorem xasc_rel {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords s.c = some ws)
+    (hx : longWords x.c = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
+    ∃ G : List Nat, (cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
+        = cst (CL.ofList (List.range n)) ≫ sort (stable s.rel fun a b : Int64 => a < b)
+      ∧ X.rel = ix G ≫ x.rel := by
+  have hgr : Spec.grade false s.toList = ((List.range n).mergeSort fun i j => decide (s.toList[i]! ≤ s.toList[j]!)).map
+      Int64.ofNat := by simp only [Spec.grade, Bool.false_eq_true, ↓reduceIte]; rw [Arr.length_toList]
+  refine ⟨(List.range n).mergeSort fun i j => decide (s.toList[i]! ≤ s.toList[j]!), ?_, ?_⟩
+  · have := cst_grade_long s.toList
+    rw [Arr.length_toList] at this
+    exact this
+  · have hp := List.mergeSort_perm (List.range n) fun i j => decide (s.toList[i]! ≤ s.toList[j]!)
+    generalize ((List.range n).mergeSort fun i j => decide (s.toList[i]! ≤ s.toList[j]!)) = G at hp hgr ⊢
+    refine hom_ext fun (i : Nat) c => ?_
+    show X.toList[i]? = some c ↔ ∃ j, G[i]? = some j ∧ x.toList[j]? = some c
+    rw [xasc_toList hs hx hn h63 h, hgr, Struct.indexSpec, List.map_map, List.getElem?_map]
+    cases hj : G[i]? with
+    | none => simp
+    | some j =>
+      have hjn : j < n := List.mem_range.1 (hp.subset (List.mem_of_getElem? hj))
+      have h0 : (0 : Int64) ≤ Int64.ofNat j := by
+        rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega)]; simp
+      have hv : (Int64.ofNat j).toInt.toNat = j := by
+        rw [Int64.toNat_toInt, Int64.toNatClampNeg_ofNat_of_lt (by omega)]
+      have hjl : j < x.toList.length := by rw [Arr.length_toList]; exact hjn
+      have hxj : x.toList[j]? = some x.toList[j] := List.getElem?_eq_getElem hjl
+      simp only [Option.map_some, Function.comp_apply, if_pos h0, hv, List.getD_eq_getElem?_getD, hxj,
+        Option.getD_some, Option.some.injEq]
+      exact ⟨fun e => ⟨j, rfl, by rw [hxj, e]⟩, fun ⟨_, e, e'⟩ => by cases e; rw [hxj] at e'; exact Option.some.inj e'⟩
 
 /-- `count each` by the cuts `o`:`corefl(<g) ≫ grpL(grp o) ≫ list(x) ≫ length`, as a long. -/
 theorem countBy_rel {v : QAtomicType} {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr v n}
@@ -854,6 +950,8 @@ theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
     _ hw1, Arr.length_toList]
   rfl
 
+#print axioms xasc_toList
+#print axioms xasc_rel
 #print axioms mmin_rel
 #print axioms mmax_rel
 #print axioms rank_toList
