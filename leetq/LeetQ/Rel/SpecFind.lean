@@ -895,6 +895,51 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
 
+/-! ### Dicts with matching keys: the key kept, the verb on the values -/
+
+/-- `Lift.ofVerb` keeps the verb itself for the rows both sides have. -/
+theorem lift_v {v : Prim.Dyadic} {t u : QAtomicType} {L : Lift} (h : Lift.ofVerb v t u = .ok L) : L.v = v := by
+  unfold Lift.ofVerb at h
+  simp only [bind, Except.bind, pure, Except.pure] at h
+  repeat' split at h
+  all_goals (cases h <;> first | rfl | (split <;> rfl))
+
+/-- `align` on keys `matchColumn` finds equal: one `Ew.val` of the values, `x`'s key kept. -/
+theorem align_match {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt} (ht : t ≠ .general)
+    (hv : Ew.align L rt x y ht = .ok R) (h : y.n = x.n) (hm : Kernel.matchColumn s x.key.c y.key.c = some true) :
+    ∃ V, Ew.val L.v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
+  unfold Ew.align at hv
+  rw [dif_pos h] at hv
+  simp only [hm, beq_self_eq_true, ↓reduceIte, bind, Except.bind, pure, Except.pure] at hv
+  split at hv
+  · cases hv
+  · rename_i V hV
+    exact ⟨V, hV, (Except.ok.inj hv).symm⟩
+
+/-- **`d f e` on dicts with matching keys is `Ew.val` of the values, `d`'s key kept** (`align_match`, `lift_v`). -/
+theorem dyadic_match {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
+    (hm : Kernel.matchColumn s x.key.c y.key.c = some true) :
+    ∃ V, Ew.val v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
+  unfold Ew.dyadic at hv
+  cases hL : Lift.ofVerb v t u with
+  | error e => simp [hL, bind, Except.bind] at hv
+  | ok L =>
+    simp only [hL, bind, Except.bind] at hv
+    rw [← lift_v hL]
+    exact align_match ht hv h hm
+
+/-- `d f e = ⟨d, e⟩ ≫ f` on the values of dicts with matching keys, `d`'s key kept: any value law `hlaw` of
+    the encodings at hand (`val_spec_long`, `cmp_spec_long_foR`, …) read through `dyadic_match` and `val_rel`. -/
+theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
+    (hm : Kernel.matchColumn s x.key.c y.key.c = some true)
+    (hlaw : ∀ V, Ew.val v rt x.val (h ▸ y.val) = .ok V → Ew.ValSpec v he x.val (h ▸ y.val) V) :
+    ∃ V, R = ⟨x.n, x.key, V⟩ ∧ Ew.ValSpec v he x.val (h ▸ y.val) V ∧
+      V.rel = rpair x.val.rel (h ▸ y.val).rel ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
+  let ⟨V, hV, hR⟩ := dyadic_match ht hv h hm
+  ⟨V, hR, hlaw V hV, val_rel (hlaw V hV)⟩
+
 /-- The column `Ew.mon` answers is the one `monColumn` builds. -/
 theorem mon_c {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Column}
     (hd : Kernel.monColumn name t x.c = some (rt, C)) (hv : Ew.mon name rt x = .ok R) : R.c = C := by
@@ -2050,5 +2095,19 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms val_rel_long
 #print axioms cmp_rel_long
 #print axioms prior_rel_long
+
+#print axioms shift_words
+#print axioms toList_cmp_bits
+#print axioms bits_Fb
+#print axioms priorCmp_spec_words
+#print axioms priorCmp_rel_long
+#print axioms priorCmp_rel_long_foR
+#print axioms mon_c
+#print axioms map_spec_words
+#print axioms neg_rel_long
+#print axioms lift_v
+#print axioms align_match
+#print axioms dyadic_match
+#print axioms dyadic_rel
 
 end LeetQ.Rel.Verb
