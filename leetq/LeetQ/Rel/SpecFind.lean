@@ -766,6 +766,42 @@ theorem prior_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = so
       ofExcept (fun p : Carrier .long × Carrier .long => elem v h p.1 p.2) :=
   prior_rel (prior_spec_long hop h ha hn hv)
 
+/-- **`&x` on dense long counts is `whereCountsSpec`**: `expandBytes_spec` repeats `til n`'s element `i`
+    `x[i]` times (a negative count none, as the spec's `toNat`), and `tilLongs_spec` reads element `i` as `i`.
+    The kernel's refusal of a negative count only narrows when it answers. -/
+theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
+    (hb : x.c.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩) :
+    r.toList = Find.whereCountsSpec x.toList := by
+  simp only [Find.whereCounts, Find.dense, Arr.c_eq x hb, Column.bytesOf, bind, Except.bind] at h
+  split at h
+  · cases h
+  have hr := Find.list_c h
+  have hw : longWords r.c = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
+  have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
+  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
+    (Kernel.tilLongs (b.size / 8).toUSize) b
+  rw [h8] at he
+  have hl : (Verify.elemsW 8 (Kernel.tilLongs nx.toUSize)).length = nx := by
+    have := congrArg List.length (Verify.tilLongs_spec nx.toUSize)
+    simpa [USize.toNat_ofNat_of_lt' hn] using this
+  have ht : ∀ i < nx, ((Verify.elemsW 8 (Kernel.tilLongs nx.toUSize)).getD i 0).toInt64 = Int64.ofNat i :=
+    fun i hi => toInt64_of_toNat <| by
+      have hi' : i < (Verify.elemsW 8 (Kernel.tilLongs nx.toUSize)).length := by rw [hl]; exact hi
+      have e := congrArg (fun l => l[i]?) (Verify.tilLongs_spec nx.toUSize)
+      simp only [USize.toNat_ofNat_of_lt' hn, List.getElem?_map, List.getElem?_range hi,
+        List.getElem?_eq_getElem hi', Option.map_some, Option.some.injEq] at e
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi', Option.getD_some, e]
+  rw [Arr.toList_long r hw, Arr.toList_long_bytes x hb]
+  unfold Find.expand Find.whereCountsSpec
+  simp only
+  rw [he, hsz, List.map_flatMap, List.length_map, List.length_map, List.length_range]
+  simp only [List.flatMap]
+  refine congrArg List.flatten (List.map_congr_left fun i hi => ?_)
+  have hi : i < nx := List.mem_range.1 hi
+  rw [List.map_replicate, ht i hi]
+  simp [List.getD_eq_getElem?_getD, hi]
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
@@ -876,5 +912,6 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms intStep_comm
 #print axioms prior_spec_long
 #print axioms prior_rel_long
+#print axioms whereCounts_toList
 
 end LeetQ.Rel.Verb
