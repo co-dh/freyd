@@ -618,6 +618,37 @@ theorem bitsAt_binRows (w : USize) (float signed right : Bool) (hay keys order b
       Nat.add_sub_cancel, hr]
     by_cases ho : order.isEmpty = true <;> simp [ho]
 
+/-- **`groupEdge` at `long` times is one `binRows`**, the right's time column read where it lies (its
+    bytes, or its frame-of-reference decode — the payload `bytesOf` names either way), the groups' `rows`
+    as the order and their `bounds` as longs, `nr` the miss. -/
+theorem groupEdge_long (gs : Eval.Groups) (ids rc nc : Column) (nr : Nat) {hay keys gids : ByteArray}
+    (hrt : rc.ty = .long) (hnt : nc.ty = .long) (hrb : Column.bytesOf rc = some hay)
+    (hkb : Column.bytesOf nc = some keys) (hgb : Column.bytesOf ids = some gids)
+    (hsz : keys.size / 8 = gids.size / 8) :
+    Eval.groupEdge gs ids (.vector rc) (.vector nc) nr = Column.ofBytes .long
+      (Kernel.binRows 8 false true false hay keys gs.rows (Kernel.longBytes gs.bounds) gids nr.toUInt64) := by
+  obtain ⟨t, n, e, a⟩ := rc
+  obtain ⟨u, m, f, b⟩ := nc
+  simp only at hrt hnt
+  subst hrt hnt
+  have h1 : (QValue.vector ⟨.long, n, e, a⟩).bare = .vector ⟨.long, n, e, none⟩ := by
+    rcases a with _ | ⟨_, _⟩ <;> rfl
+  have h2 : (QValue.vector ⟨.long, m, f, b⟩).bare = .vector ⟨.long, m, f, none⟩ := by
+    rcases b with _ | ⟨_, _⟩ <;> rfl
+  have hrb' : Column.bytesOf ⟨.long, n, e, none⟩ = some hay := by rw [← hrb]; rfl
+  have hkb' : Column.bytesOf ⟨.long, m, f, none⟩ = some keys := by rw [← hkb]; rfl
+  unfold Eval.groupEdge
+  simp only [h1, h2, Kernel.denseWidth, QAtomicType.width, hkb', hgb, hsz, Kernel.longColumn, bne_self_eq_false,
+    beq_self_eq_true, ↓reduceIte, Bool.false_eq_true, bind, Option.bind, Kernel.foldsZero, Kernel.ordSigned]
+  cases e with
+  | foR md pk =>
+    have hd : Kernel.Coc.decode (USize.ofNat 8) md pk (USize.ofNat n) = hay := by
+      simpa [Column.bytesOf, QAtomicType.width] using hrb'
+    by_cases hm : md.isEmpty = true
+    · simp [Kernel.foRColumn, hm, hrb'] <;> rfl
+    · simp [Kernel.foRColumn, hm, Kernel.foRBinRows, Column.encodes, ← hd] <;> rfl
+  | _ => simp [Kernel.foRColumn, hrb'] <;> rfl
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
