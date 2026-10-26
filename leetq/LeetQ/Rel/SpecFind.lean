@@ -895,6 +895,27 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
 
+/-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
+
+/-- `miss(R, n) ≫ miss(S, e) = miss(R ≫ S, e)` when `R` lands where `S` is defined and `n` is not: the
+    gather/fill branch of `align`, `R` the found position of a key, `n` the not-found position. -/
+theorem miss_comp {A B C : RelSet.{0}} (R : A ⟶ B) (S : B ⟶ C) (n : B.carrier) (e : C.carrier)
+    (hR : ∀ a b, R a b → ∃ c, S b c) (hn : ¬ ∃ c, S n c) : miss R n ≫ miss S e = miss (R ≫ S) e :=
+  hom_ext fun a c => by
+    change (∃ b, miss R n a b ∧ miss S e b c) ↔ miss (R ≫ S) e a c
+    simp only [miss_iff]
+    constructor
+    · rintro ⟨b, hb | ⟨hnone, rfl⟩, hc | ⟨hnc, rfl⟩⟩
+      · exact Or.inl ⟨b, hb, hc⟩
+      · exact absurd (hR a b hb) hnc
+      · exact absurd ⟨c, hc⟩ hn
+      · exact Or.inr ⟨fun ⟨_, b', hb', _⟩ => hnone ⟨b', hb'⟩, rfl⟩
+    · rintro (⟨b, hb, hc⟩ | ⟨hnone, rfl⟩)
+      · exact ⟨b, Or.inl hb, Or.inl hc⟩
+      · refine ⟨n, Or.inr ⟨fun ⟨b, hb⟩ => ?_, rfl⟩, Or.inr ⟨hn, rfl⟩⟩
+        obtain ⟨c', hc'⟩ := hR a b hb
+        exact hnone ⟨c', b, hb, hc'⟩
+
 /-! ### Dicts with matching keys: the key kept, the verb on the values -/
 
 /-- `Lift.ofVerb` keeps the verb itself for the rows both sides have. -/
@@ -2153,6 +2174,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms dyadic_match
 #print axioms dyadic_rel
 #print axioms keyed_ok
+#print axioms miss_comp
 #print axioms atomDict_rel
 #print axioms dictAtom_rel
 
