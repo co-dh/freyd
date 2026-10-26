@@ -513,8 +513,115 @@ theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
   refine ⟨fun e => by rw [e], fun e => ?_⟩
   have := congrArg Int64.toUInt64 e; simpa using this
 
+/-! ## `aj` and `wj`'s time edge: `binRows` is `binSpec` in each needle's group
+
+  `Eval.groupEdge`, which both `aj` and `wjP` read their edges from, is one `Kernel.binRows` (over the time
+  column where it lies, or decoded first by `foRBinRows`). Its halving `binStep` is `binSpec`'s
+  `partitionAt` walk shifted to the group's start, element for element — not merely on a sorted group —
+  so the law holds on any group, and `binSpec_sorted` reads it as "the last row at or before" where
+  the times ascend. -/
+
+/-- `binStep`'s test at position `m`: the element `order` names there (`m` itself where `order` is empty),
+    its `ordKey` below `k` (`binr`) or at most `k` (`bin`). -/
+def binTest (w : Nat) (float signed right : Bool) (hay order : ByteArray) (k : UInt64) (m : Nat) : Bool :=
+  let v := Kernel.ordKey w float signed (Column.bitsAt hay ((if order.isEmpty then m else
+    (Column.bitsAt order (m * 8) 8).toNat) * w) w)
+  decide (if right then v < k else v ≤ k)
+
+/-- `partitionAt`'s loop never answers past `hi`. -/
+theorem partitionAt_go_le (below : Nat → Id Bool) : ∀ fuel lo hi, lo ≤ hi →
+    Id.run (Eval.partitionAt.go below fuel lo hi) ≤ hi
+  | 0, _, _, h => h
+  | fuel + 1, lo, hi, h => by
+    rw [Eval.partitionAt.go]
+    by_cases hle : hi ≤ lo
+    · rw [if_pos hle]; exact h
+    · rw [if_neg hle]
+      show Id.run (if Id.run (below (lo + (hi - lo) / 2)) = true then
+          Eval.partitionAt.go below fuel (lo + (hi - lo) / 2 + 1) hi
+        else Eval.partitionAt.go below fuel lo (lo + (hi - lo) / 2)) ≤ hi
+      split
+      · exact partitionAt_go_le below fuel _ hi (by omega)
+      · exact Nat.le_trans (partitionAt_go_le below fuel lo _ (by omega)) (by omega)
+
+/-- **`binStep` over `[lo+a, lo+b)` is `partitionAt`'s loop over `[a, b)` shifted by `lo`**, for any
+    `below` that reads `binTest` at `lo + j`: the same walk, step for step. -/
+theorem binStep_go (w : Nat) (float signed right : Bool) (hay order : ByteArray) (k : UInt64) (lo : Nat)
+    (below : Nat → Id Bool) : ∀ fuel a b,
+    (∀ j, a ≤ j → j < b → Id.run (below j) = binTest w float signed right hay order k (lo + j)) →
+    Kernel.binStep w float signed right hay order k fuel (lo + a) (lo + b) =
+      lo + Id.run (Eval.partitionAt.go below fuel a b)
+  | 0, _, _, _ => rfl
+  | fuel + 1, a, b, hb => by
+    rw [Eval.partitionAt.go, Kernel.binStep]
+    by_cases hle : b ≤ a
+    · rw [if_pos (show lo + b ≤ lo + a by omega), if_pos hle]; rfl
+    · rw [if_neg (show ¬ lo + b ≤ lo + a by omega), if_neg hle]
+      show _ = lo + Id.run (if Id.run (below (a + (b - a) / 2)) = true then
+          Eval.partitionAt.go below fuel (a + (b - a) / 2 + 1) b
+        else Eval.partitionAt.go below fuel a (a + (b - a) / 2))
+      have hm : lo + a + (lo + b - (lo + a)) / 2 = lo + (a + (b - a) / 2) := by omega
+      have hv := hb (a + (b - a) / 2) (Nat.le_add_right ..) (by omega)
+      simp only [hm]
+      cases e : binTest w float signed right hay order k (lo + (a + (b - a) / 2))
+      · rw [e] at hv; unfold binTest at e
+        simp only [decide_eq_false_iff_not] at e
+        simp only [e, hv, ↓reduceIte, Bool.false_eq_true]
+        exact binStep_go w float signed right hay order k lo below fuel a (a + (b - a) / 2) fun j h1 h2 => hb j h1 (by omega)
+      · rw [e] at hv; unfold binTest at e
+        simp only [decide_eq_true_eq] at e
+        simp only [e, hv, ↓reduceIte]
+        rw [show lo + (a + (b - a) / 2) + 1 = lo + (a + (b - a) / 2 + 1) by omega]
+        exact binStep_go w float signed right hay order k lo below fuel _ b fun j h1 h2 => hb j (by omega) h2
+
+/-- **`binRows` answers `binSpec` in each needle's group**: needle `j` names group `g`, which spans
+    `[lo, hi)` of `bounds`; where `G` lists that span's rows (`order` read there, the position itself
+    where it is empty) and the test at each is `rt[G[i]] ≤ x`, word `j` is `binSpec rt G x`'s row,
+    `miss` where the bisection lands at the group's start. Nothing is assumed about the times' order. -/
+theorem bitsAt_binRows (w : USize) (float signed right : Bool) (hay keys order bounds gids : ByteArray)
+    (miss : UInt64) {j g lo hi : Nat} (hj : j < keys.size / w.toNat) (hgi : (j + 1) * 8 ≤ gids.size)
+    (hg : (Column.bitsAt gids (j * 8) 8).toNat = g) (hng : g < bounds.size / 8 - 1)
+    (hlo : (Column.bitsAt bounds (g * 8) 8).toNat = lo) (hhi : (Column.bitsAt bounds (g * 8 + 8) 8).toNat = hi)
+    (rt : List Int64) (G : List Nat) (x : Int64) (hlen : G.length = hi - lo)
+    (hrow : ∀ i, i < G.length →
+      G[i]! = if order.isEmpty then lo + i else (Column.bitsAt order ((lo + i) * 8) 8).toNat)
+    (htest : ∀ i, i < G.length → binTest w.toNat float signed right hay order
+      (Kernel.ordKey w.toNat float signed (Column.bitsAt keys (j * w.toNat) w.toNat)) (lo + i) =
+        decide (rt[G[i]!]! ≤ x)) :
+    Column.bitsAt (Kernel.binRows w float signed right hay keys order bounds gids miss) (8 * j) 8 =
+      ((Struct.binSpec rt G x).map Nat.toUInt64).getD miss := by
+  simp only [Kernel.binRows]
+  rw [show 8 * j = ByteArray.empty.size + 8 * j by simp,
+    (Verify.foldl_pushBits _ 8 (by decide) _ _).2.2 j (by simpa using hj),
+    show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64, List.getElem_range, hg, hlo, hhi]
+  obtain ⟨P, hP, hPe, hPle⟩ : ∃ P, Kernel.binStep w.toNat float signed right hay order
+      (Kernel.ordKey w.toNat float signed (Column.bitsAt keys (j * w.toNat) w.toNat)) (hi - lo + 1) lo hi =
+        lo + P ∧ Id.run (Eval.partitionAt (fun i => pure (decide (rt[G[i]!]! ≤ x))) G.length) = P ∧
+        P ≤ G.length := by
+    by_cases hle : hi ≤ lo
+    · refine ⟨0, ?_, ?_, Nat.zero_le _⟩
+      · rw [show hi - lo + 1 = 0 + 1 by omega, Kernel.binStep, if_pos hle]; rfl
+      · rw [show G.length = 0 by omega]; rfl
+    · refine ⟨_, ?_, rfl, partitionAt_go_le _ _ _ _ (Nat.zero_le _)⟩
+      have := binStep_go w.toNat float signed right hay order _ lo (fun i => pure (decide (rt[G[i]!]! ≤ x)))
+        (hi - lo + 1) 0 (hi - lo) fun i _ hi' => (htest i (by omega)).symm
+      rw [Nat.add_sub_cancel' (by omega)] at this
+      simp only [Nat.add_zero] at this
+      rw [this, hlen]; rfl
+  rw [hP]
+  unfold Struct.binSpec
+  rw [hPe]
+  rcases P with _ | p
+  · simp
+  · have hr := hrow p (by omega)
+    simp only [show ¬ gids.size < (j + 1) * 8 by omega, show ¬ bounds.size / 8 - 1 ≤ g by omega,
+      Nat.add_sub_cancel, hr]
+    by_cases ho : order.isEmpty = true <;> simp [ho]
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
+#print axioms binStep_go
+#print axioms bitsAt_binRows
 
 end LeetQ.Rel.Verb
