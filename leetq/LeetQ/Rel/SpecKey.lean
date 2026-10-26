@@ -1541,11 +1541,10 @@ theorem dyadColumn_sub_one {n : Nat} {b0 : ByteArray} (p : Option (UInt8 × Inde
   rw [show Alg.longs (Find.one 1) = ⟨.long, 1, .bytes (Find.one 1), none⟩ from rfl,
     dyadColumn_long_va (v := .sub) rfl (by decide) rfl n b0 (Find.one 1) p none]
   have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
-  have hrun : ({ inputs := #[b0, Find.one 1] } : Kernel.Ew.Build).run ({ engine := Kernel.Ew.eVal, op := Kernel.Ew.sub,
-      cls := Kernel.Ew.i64, shape := Kernel.Ew.va, a := 0, b := 1, nul := Kernel.nullPayload .long } : Kernel.Ew.Stage) n.toUSize =
+  have hrun := (Verify.run_val ({ inputs := #[b0, Find.one 1] } : Kernel.Ew.Build) rfl Kernel.Ew.sub Kernel.Ew.i64
+    Kernel.Ew.va 0 1 (Kernel.nullPayload .long) (by decide) (by decide) n.toUSize).trans (show _ =
       Kernel.Ew.val Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va Int64.minValue b0 (Kernel.atomBytes Kernel.Ew.i64 1)
-        n.toUSize := by
-    rw [Verify.run_val _ rfl _ _ _ 0 1 _ (by decide) (by decide)]; rfl
+        n.toUSize from rfl)
   have hv := Verify.val_i64_va Kernel.Ew.sub Int64.minValue b0 1 n hn
   rw [← hrun] at hv
   have hs := congrArg List.length hv
@@ -1636,23 +1635,24 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
     rw [get!_map _ _ (by rw [nats_length]; omega), nats_get b (by omega), toInt64_eq_ofNat]
   -- the lower edge's bound: `t0` itself, or `wj1`'s `t0 - 1`, after which both cases run alike
   cases prevailing
-  on_goal 1 =>
-    simp only [Bool.false_eq_true, ↓reduceIte] at hL hLw e0 hc
-    simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hL, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
-      beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, bind, Except.bind, pure, Except.pure] at h
-  on_goal 2 =>
-    simp only [↓reduceIte] at hL hLw e0 hc
-    subst hL
-    simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
-      beq_self_eq_true, Bool.and_self, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
+  simp only [Bool.false_eq_true, ↓reduceIte] at hL hLw e0 hc
+  simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hL, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
+    beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, bind, Except.bind, pure, Except.pure] at h
+  rotate_left
+  simp only [↓reduceIte] at hL hLw e0 hc
+  subst hL
+  simp only [Struct.wjP, Struct.colRows, Struct.colValue, hkg, hE0, hE1, hdo, hdi, hdf, h0t, h1t, htr,
+    beq_self_eq_true, Bool.and_self, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
+  rotate_left
   all_goals
     split at h
     · cases h
     rename_i v hv
     have hseg := wj_tail (N := tr.n) e0 hc (fun i _ => by
         have := hedge bL 0 i (by decide); have := hedge bL 1 i (by decide); have := hedge b1 1 i (by decide)
-        dsimp only; omega)
-      (fun i => by have := hedge b1 1 i (by decide); dsimp only; omega) hU (by omega) rfl (Struct.of_c hv) h
+        try dsimp only
+        omega)
+      (fun i => by have := hedge b1 1 i (by decide); (try dsimp only); omega) hU (by omega) rfl (Struct.of_c hv) h
     rw [hseg, Struct.wjSpec, hlk]
     congr 1
     apply List.map_congr_left
@@ -1689,7 +1689,7 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
   have hk := keyMatch_grouped tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) (by omega) hlwf hlR hwl hattr
   obtain ⟨gids, hgb, -⟩ := id hk
-  exact wj_groups (L := t0) (bL := b0) true wl wr h0t h1t htr (if_pos rfl) h0t h0b h0n (fun _ _ => (if_pos rfl).symm) h1b hrb hgb h0n
+  exact wj_groups (L := t0) (bL := b0) true wl wr h0t h1t htr rfl h0t h0b h0n (fun _ _ => (if_pos rfl).symm) h1b hrb hgb h0n
     h1n hhn (by omega) (by omega) hU h62 hkg hk h
 
 /-- **`wj1` is `wjSpec false`** at one long key column per side, the right one unmarked (q's `wj1`): as `wj_long`,
