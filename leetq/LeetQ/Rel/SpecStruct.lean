@@ -2447,6 +2447,54 @@ theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb :
   · next b e => exact absurd e (hb b)
   · simp [hw, Find.dense, hD] <;> rfl
 
+/-- **The indices of `@[x;i;o;y]`, whatever `o`**: when the kernel answers, `i` is as long as `y`, its payload
+    `ib` holds one word an index, and every index is a position below `nx`. -/
+theorem amend_indices {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
+    {o : Option Prim.Dyadic} {R : Arr t nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32)
+    (h : Struct.amend x i o y = .ok R) :
+    ni = ny ∧ ∃ ib : ByteArray, Find.dense "@[x;i;f;y]" .long i.c = pure ib ∧ ib.size / 8 = ni ∧
+      i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 ∧
+      ¬(∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8) ∧
+      (∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toNat < nx) ∧
+      (∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toInt64.toInt.toNat = (Column.bitsAt ib (k * 8) 8).toNat) ∧
+      ∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx := by
+  have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
+  -- the indices: a long column's words
+  obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
+    rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
+  obtain ⟨ib, -, hib, hibw, hibn⟩ := Arr.dense_long i hws hUi
+  have hd : Find.dense "@[x;i;f;y]" .long i.c = pure ib := by simp [Find.dense, hib]; rfl
+  have hil : i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 := by rw [Arr.toList_long i hws, hibw]
+  have hny : ni = ny := by
+    by_cases hny : ni = ny
+    · exact hny
+    · simp only [Struct.amend, ne_eq, hny, not_false_eq_true, ↓reduceIte] at h; cases h
+  refine ⟨hny, ib, hd, hibn, hil, ?_⟩
+  subst hny
+  have hw0 := Verify.amendRounds_word0 nx.toUSize o.isSome ib
+  by_cases hmiss : ∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8
+  · rw [if_pos hmiss] at hw0
+    simp only [Struct.amend, hd, ne_eq, not_true_eq_false, ↓reduceIte, pure_bind, Nat.zero_mul, hw0,
+      beq_self_eq_true] at h
+    cases h
+  have hnxU : nx.toUSize.toUInt64.toNat = nx := by
+    rw [USize.toNat_toUInt64, USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le hnx USize.le_size)]
+  -- every index is a position below `nx`
+  have hbit : ∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toNat < nx := fun k hk => by
+    have := UInt64.lt_iff_toNat_lt.1 (UInt64.not_le.1 fun hle => hmiss ⟨k, hk, hle⟩)
+    omega
+  have h63 : ∀ u : UInt64, u.toNat < 2 ^ 63 → u.toInt64.toInt = u.toNat := fun u hu => by
+    have := Find.toInt_ofNat_lt hu; rwa [UInt64.ofNat_toNat] at this
+  have hix : ∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toInt64.toInt.toNat = (Column.bitsAt ib (k * 8) 8).toNat :=
+    fun k hk => by rw [h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk; omega)]; rfl
+  refine ⟨hmiss, hbit, hix, fun v hv => ?_⟩
+  rw [hil, Verify.elemsW, List.map_map, List.mem_map] at hv
+  obtain ⟨k, hk, rfl⟩ := hv
+  have hk' : k < ib.size / 8 := List.mem_range.1 hk
+  have e := h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk'; omega)
+  refine ⟨Int64.le_iff_toInt_le.2 (by simp only [Function.comp]; rw [e]; exact Int.natCast_nonneg _), ?_⟩
+  simp only [Function.comp]; rw [hix k hk']; exact hbit k hk'
+
 /-- **`@[x;i;:;y]`, the kernel, is `amendSpec` of `:`** at every type with a fixed-width encoding (`encodes` or
     `alpEncodes`), any indices, repeats included: the kernel answers only when every index is in `0..nx` and as
     many as the values, and then lists the last write at each position. -/
@@ -2458,42 +2506,13 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
   have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
   have hU : nx < USize.size := Nat.lt_of_lt_of_le hnx USize.le_size
   have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
-  -- the indices: a long column's words
-  obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
-    rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
-  obtain ⟨ib, -, hib, hibw, hibn⟩ := Arr.dense_long i hws hUi
-  have hil : i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 := by rw [Arr.toList_long i hws, hibw]
-  have hny : ni = ny := by
-    by_cases hny : ni = ny
-    · exact hny
-    · simp only [Struct.amend, ne_eq, hny, not_false_eq_true, ↓reduceIte] at h; cases h
+  obtain ⟨hny, ib, hd, hibn, hil, hmiss, hbit, hix, hin⟩ := amend_indices hnx hni h
   subst hny
+  rw [hibn] at hbit hix
   obtain ⟨xb, hxb, hxs, hxn⟩ := bytesOf_fixed hw he x hU
   obtain ⟨yb, hyb, hys, hyn⟩ := bytesOf_fixed hw he y hUi
   have hw0 := Verify.amendRounds_word0 nx.toUSize false ib
-  have hnxU : nx.toUSize.toUInt64.toNat = nx := by rw [USize.toNat_toUInt64, USize.toNat_ofNat_of_lt' hU]
-  by_cases hmiss : ∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8
-  · rw [if_pos hmiss] at hw0
-    simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
-      ne_eq, not_true_eq_false, ↓reduceIte, pure_bind, Option.isSome_none, Nat.zero_mul, hw0, beq_self_eq_true] at h
-    cases h
   rw [if_neg hmiss] at hw0
-  -- every index is a position below `nx`
-  have hbit : ∀ k < ni, (Column.bitsAt ib (k * 8) 8).toNat < nx := fun k hk => by
-    have := UInt64.lt_iff_toNat_lt.1 (UInt64.not_le.1 fun hle => hmiss ⟨k, by omega, hle⟩)
-    omega
-  have h63 : ∀ u : UInt64, u.toNat < 2 ^ 63 → u.toInt64.toInt = u.toNat := fun u hu => by
-    have := Find.toInt_ofNat_lt hu; rwa [UInt64.ofNat_toNat] at this
-  have hix : ∀ k < ni, (Column.bitsAt ib (k * 8) 8).toInt64.toInt.toNat = (Column.bitsAt ib (k * 8) 8).toNat :=
-    fun k hk => by rw [h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk; omega)]; rfl
-  have hin : ∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx := by
-    intro v hv
-    rw [hil, Verify.elemsW, List.map_map, List.mem_map] at hv
-    obtain ⟨k, hk, rfl⟩ := hv
-    have hk' : k < ni := by rw [List.mem_range] at hk; omega
-    have e := h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk'; omega)
-    refine ⟨Int64.le_iff_toInt_le.2 (by simp only [Function.comp]; rw [e]; exact Int.natCast_nonneg _), ?_⟩
-    simp only [Function.comp]; rw [hix k hk']; exact hbit k hk'
   refine ⟨rfl, hin, ?_⟩
   -- the kernel runs one round of `scatter`
   have hr1 : (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 false ib) 0 8).toNat ≤ 1 := by
@@ -2508,7 +2527,7 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
     · exact absurd rfl hts
     · rw [packed_fixed hw _ x.c hxb hxn, packed_fixed hw _ y.c hyb hyn]
       simp [show 8 * w ≠ 1 by omega]
-  simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
+  simp only [Struct.amend, hd,
     pure_bind, Option.isSome_none, Nat.zero_mul, hne, hr1, ne_eq, not_true_eq_false, if_false, if_true,
     Bool.false_eq_true, ↓reduceIte, hsc] at h
   have hRc := Find.onKey_c h
@@ -2565,6 +2584,7 @@ theorem amend_rel {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr .lo
 #print axioms amendSpec_cata
 #print axioms foldl_outr
 #print axioms bytesOf_answer_bytes
+#print axioms amend_indices
 #print axioms amend_toList
 #print axioms amend_rel
 #print axioms foldl_set_iff
