@@ -1059,20 +1059,41 @@ theorem blockStart_mono (m : ByteArray) {a b : Nat} (h : a ≤ b) : Column.block
   | refl => exact Nat.le_refl _
   | step _ ih => rw [blockStart_succ]; omega
 
+/-- An element the patch list does not hold: its block's base and frame plus its residual. -/
+theorem foRBits_none {md pk : ByteArray} {i : Nat} (he : Column.foRExc md pk i = none)
+    (hb : i / Column.blk ≤ Column.nblk md) :
+    Column.foRBits md pk (Column.blockStarts md) i = Column.baseAt md (i / Column.blk) +
+      Column.foRFrame md pk (i / Column.blk) +
+      Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
+  simp only [Column.foRBits, he, Verify.blockStarts_get md hb]
+
 /-- A pack with no patch list: element `i` is its block's base plus its residual. -/
 theorem foRBits_plain {md pk : ByteArray} {i : Nat} (hp : pk.size ≤ Column.blockStart md (Column.nblk md))
     (hb : i / Column.blk ≤ Column.nblk md) :
     Column.foRBits md pk (Column.blockStarts md) i = Column.baseAt md (i / Column.blk) +
       Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
-  have he : Column.foRExc md pk i = none := by simp [Column.foRExc, hp]
-  have hf : Column.foRFrame md pk (i / Column.blk) = 0 := by simp [Column.foRFrame, hp]
-  simp only [Column.foRBits, he, hf, Verify.blockStarts_get md hb, UInt64.add_zero]
+  rw [foRBits_none (by simp [Column.foRExc, hp]) hb, show Column.foRFrame md pk (i / Column.blk) = 0 by
+    simp [Column.foRFrame, hp], UInt64.add_zero]
 
-/-- A part as the writer leaves it: one block per started `blk` elements and a pack that ends where its last
-    block does, so no patch list. -/
-abbrev FoRStd (n : Nat) (md pk : ByteArray) : Prop :=
-  Column.nblk md = (n + Column.blk - 1) / Column.blk ∧ pk.size = Column.blockStart md (Column.nblk md) ∧
-    ∀ b < Column.nblk md, Column.widthAt md b ≤ 64
+/-- A writer-form pack reaches at least to its last block's end. -/
+theorem foRWF_le {n : Nat} {md pk : ByteArray} (s : Verify.FoRWF n md pk) :
+    Column.blockStart md (Column.nblk md) ≤ pk.size := by
+  rcases s.size with h | h
+  · omega
+  · revert h; cases Coc.foRTail (Column.nblk md) pk (Column.blockStart md (Column.nblk md)) <;> simp <;> omega
+
+/-- The patch list and the frames are read past the last block's residuals, out of the pack's size and the
+    bytes there: two packs of one size that agree there agree on both. -/
+theorem foRExc_congr {m A B : ByteArray} (hs : A.size = B.size)
+    (h : ∀ k, A[Column.blockStart m (Column.nblk m) + k]? = B[Column.blockStart m (Column.nblk m) + k]?) (i b : Nat) :
+    Column.foRExc m A i = Column.foRExc m B i ∧ Column.foRFrame m A b = Column.foRFrame m B b := by
+  have key : ∀ d w, Column.bitsAt A (Column.blockStart m (Column.nblk m) + d) w =
+      Column.bitsAt B (Column.blockStart m (Column.nblk m) + d) w :=
+    fun d w => Column.bitsAt_congr B A _ w fun k _ => by rw [Nat.add_assoc]; exact h _
+  have key0 : ∀ w, Column.bitsAt A (Column.blockStart m (Column.nblk m)) w =
+      Column.bitsAt B (Column.blockStart m (Column.nblk m)) w := fun w => key 0 w
+  exact ⟨by unfold Column.foRExc; simp only [hs, Nat.add_assoc, key, key0],
+    by unfold Column.foRFrame; simp only [hs, Nat.add_assoc, key, key0]⟩
 
 /-- The words a `foR` part of `n` elements denotes. -/
 abbrev foRWords (n : Nat) (md pk : ByteArray) : List UInt64 := (List.range n).map (Column.foRBits md pk (Column.blockStarts md))
@@ -1086,7 +1107,8 @@ abbrev blocksOf (m : ByteArray) : Array (UInt64 × UInt64 × UInt64 × Nat) :=
 theorem blockStart_zero (m : ByteArray) : Column.blockStart m 0 = 0 := by simp [Column.blockStart]
 
 /-- Two writer-form parts' blocks in turn and their packs in turn, the first filling its blocks: the words in turn. -/
-theorem moved_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 m0 p0) (s1 : FoRStd n1 m1 p1)
+theorem moved_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : Verify.FoRWF n0 m0 p0) (s1 : Verify.FoRWF n1 m1 p1)
+    (z0 : p0.size = Column.blockStart m0 (Column.nblk m0)) (z1 : p1.size = Column.blockStart m1 (Column.nblk m1))
     (hn0 : n0 % Column.blk = 0) (nul : UInt64) (sumn : Nat) :
     foRWords (n0 + n1) (Coc.foRMeta nul sumn (blocksOf m0 ++ blocksOf m1)) (p0 ++ p1) =
       foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
@@ -1104,28 +1126,29 @@ theorem moved_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 m0 p
     have := blockStart_add (m := M) (m' := m0) 0 b fun c hc => by rw [Nat.zero_add]; exact (e0 c (by omega)).2
     rw [Nat.zero_add, blockStart_zero, Nat.zero_add] at this; exact this
   have st1 : ∀ b ≤ Column.nblk m1, Column.blockStart M (Column.nblk m0 + b) = p0.size + Column.blockStart m1 b :=
-    fun b _ => by rw [blockStart_add _ b fun c hc => (e1 c (by omega)).2, st0 _ (Nat.le_refl _), s0.2.1]
+    fun b _ => by rw [blockStart_add _ b fun c hc => (e1 c (by omega)).2, st0 _ (Nat.le_refl _), z0]
   have hP : (p0 ++ p1).size ≤ Column.blockStart M (Column.nblk M) := by
-    rw [hnb, hsz, st1 _ (Nat.le_refl _), ByteArray.size_append, s1.2.1]; exact Nat.le_refl _
-  have hN0 : n0 = Column.blk * Column.nblk m0 := by rw [s0.1]; simp only [Column.blk] at hn0 ⊢; omega
+    rw [hnb, hsz, st1 _ (Nat.le_refl _), ByteArray.size_append, z1]; exact Nat.le_refl _
+  have hN0 : n0 = Column.blk * Column.nblk m0 := by rw [s0.nblk]; simp only [Column.blk] at hn0 ⊢; omega
   simp only [foRWords]
   rw [List.range_add, List.map_append, List.map_map]
   congr 1
   · apply List.map_congr_left; intro i hi; rw [List.mem_range] at hi
     have hb : i / Column.blk < Column.nblk m0 := by rw [hN0] at hi; simp only [Column.blk] at hi ⊢; omega
-    rw [foRBits_plain hP (by rw [hnb, hsz]; omega), foRBits_plain (Nat.le_of_eq s0.2.1) (Nat.le_of_lt hb), st0 _ (Nat.le_of_lt hb), (e0 _ hb).1,
-      (e0 _ hb).2, resAt_append_left (by rw [← blockStart_succ, s0.2.1]; exact blockStart_mono _ hb)
+    rw [foRBits_plain hP (by rw [hnb, hsz]; omega), foRBits_plain (Nat.le_of_eq z0) (Nat.le_of_lt hb), st0 _ (Nat.le_of_lt hb), (e0 _ hb).1,
+      (e0 _ hb).2, resAt_append_left (by rw [← blockStart_succ, z0]; exact blockStart_mono _ hb)
         (Nat.mod_lt _ (by decide))]
   · apply List.map_congr_left; intro i hi; rw [List.mem_range] at hi
     have hq : (n0 + i) / Column.blk = Column.nblk m0 + i / Column.blk ∧ (n0 + i) % Column.blk = i % Column.blk := by
       rw [hN0]; simp only [Column.blk]; omega
-    have hb : i / Column.blk < Column.nblk m1 := by rw [s1.1]; simp only [Column.blk] at hi ⊢; omega
+    have hb : i / Column.blk < Column.nblk m1 := by rw [s1.nblk]; simp only [Column.blk] at hi ⊢; omega
     simp only [Function.comp_apply]
-    rw [foRBits_plain hP (by rw [hnb, hsz, hq.1]; omega), foRBits_plain (Nat.le_of_eq s1.2.1) (Nat.le_of_lt hb), hq.1, hq.2, st1 _ (Nat.le_of_lt hb),
+    rw [foRBits_plain hP (by rw [hnb, hsz, hq.1]; omega), foRBits_plain (Nat.le_of_eq z1) (Nat.le_of_lt hb), hq.1, hq.2, st1 _ (Nat.le_of_lt hb),
       (e1 _ hb).1, (e1 _ hb).2, resAt_append_right]
 
-/-- **`moveFoR` joins the words**: two writer-form parts, the first filling its blocks, moved whole. -/
-theorem moveFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd n0 m0 p0) (s1 : FoRStd n1 m1 p1)
+/-- **`moveFoR` joins the words**: it claims only writer-form parts with no patch list, the first filling its
+    blocks, and moves them whole. -/
+theorem moveFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray}
     (h : moveFoR #[((n0, m0), p0), ((n1, m1), p1)] = some (M, P)) :
     foRWords (n0 + n1) M P = foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
   simp only [moveFoR] at h
@@ -1134,6 +1157,11 @@ theorem moveFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd n
   rename_i hc
   have hn0 : n0 % Column.blk = 0 := by
     exact Decidable.byContradiction fun hne => hc (by simp [hne])
+  have s0 : Verify.FoRWF n0 m0 p0 := Verify.foRStd_iff.1 (Decidable.byContradiction fun hne => hc (by simp [hne]))
+  have s1 : Verify.FoRWF n1 m1 p1 := Verify.foRStd_iff.1 (Decidable.byContradiction fun hne => hc (by simp [hne]))
+  have l0 : ¬ Column.blockStart m0 (Column.nblk m0) < p0.size := fun hl => hc (by simp [hl])
+  have l1 : ¬ Column.blockStart m1 (Column.nblk m1) < p1.size := fun hl => hc (by simp [hl])
+  have e0 := foRWF_le s0; have e1 := foRWF_le s1
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj (Option.some.inj h).symm
   have hbs : ∀ (f : Nat → ByteArray → UInt64 × UInt64 × UInt64 × Nat),
       (#[((n0, m0), p0), ((n1, m1), p1)] : Array _).foldl (init := (#[] : Array (UInt64 × UInt64 × UInt64 × Nat)))
@@ -1144,7 +1172,7 @@ theorem moveFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd n
   simp only at hb
   rw [hb, show concatBytes (#[((n0, m0), p0), ((n1, m1), p1)].map (·.2)) = p0 ++ p1 by
     simp [concatBytes, ByteArray.empty_append]]
-  exact moved_words s0 s1 hn0 _ _
+  exact moved_words s0 s1 (by omega) (by omega) hn0 _ _
 
 /-- A residual holds `w` bits. -/
 theorem resAt_lt (P : ByteArray) (s w j : Nat) : (Column.resAt P s w j).toNat < 2 ^ w := by
@@ -1172,8 +1200,10 @@ theorem decode_words {n : Nat} (m p : ByteArray) (hn : n < USize.size) :
   simp only [Verify.elemsW, foRWords, List.getElem_map, List.getElem_range]
   rw [hg i (by simp [Verify.elemsW, hsz] at h1; omega), Verify.ofNat_toNat_mod64]
 
-/-- **`appendFoR` joins the words**: the tail's words written as residuals into the first part's last block. -/
-theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd n0 m0 p0) (hn1 : n1 < USize.size)
+/-- **`appendFoR` joins the words**: the tail's words written as residuals into the first part's last block. It
+    claims only a writer-form first part with no exception past its count in that block; a patch list rides along
+    at the same offset, so every element the first part had reads the same. -/
+theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (hn1 : n1 < USize.size)
     (h : appendFoR n0 m0 p0 (Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize) = some (M, P)) :
     foRWords (n0 + n1) M P = foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
   obtain ⟨hTs, hTw⟩ := decode_words m1 p1 hn1
@@ -1192,27 +1222,40 @@ theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd
   rename_i hc2
   obtain ⟨hM, hPe⟩ := Prod.mk.inj (Option.some.inj h)
   subst hM hPe
-  simp only [Bool.or_eq_true, beq_iff_eq, decide_eq_true_eq, not_or, Nat.not_lt] at hc1
-  obtain ⟨⟨hlo, hlm⟩, hps⟩ := hc1
+  have hlo : ¬ n0 % Column.blk = 0 := fun e => hc1 (by simp [e])
+  have hlm : n0 % Column.blk + n1 ≤ Column.blk := Nat.not_lt.1 fun e => hc1 (by simp [e])
+  have s0 : Verify.FoRWF n0 m0 p0 := Verify.foRStd_iff.1 (Decidable.byContradiction fun e => hc1 (by simp [e]))
+  have hexc : ∀ j < Column.blk - n0 % Column.blk, Column.foRExc m0 p0 (n0 + j) = none := fun j hj =>
+    Option.not_isSome_iff_eq_none.1 fun e => hc1 (by
+      rw [Bool.or_eq_true]; exact .inr (List.any_eq_true.2 ⟨j, List.mem_range.2 hj, e⟩))
+  have hle := foRWF_le s0
   simp only [List.any_eq_true, List.mem_range, Bool.or_eq_true, decide_eq_true_eq, not_exists, not_and,
     not_or, Nat.not_le] at hc2
   generalize hb : n0 / Column.blk = b at *
+  have hbn : b < Column.nblk m0 := by rw [s0.nblk, ← hb]; simp only [Column.blk] at hlo ⊢; omega
+  have hse : Column.blockStart m0 b + Column.blk * Column.widthAt m0 b / 8 ≤ Column.blockStart m0 (Column.nblk m0) := by
+    rw [← blockStart_succ]; exact blockStart_mono _ hbn
+  have hw64 : Column.widthAt m0 b ≤ 64 := s0.width b hbn
   generalize hs : Column.blockStart m0 b = s at *
   generalize hw : Column.widthAt m0 b = w at *
-  have hfr : Column.foRFrame m0 p0 b = 0 := by simp [Column.foRFrame, s0.2.1]
-  simp only [hfr, UInt64.add_zero] at hc2 ⊢
-  have hbn : b < Column.nblk m0 := by rw [s0.1, ← hb]; simp only [Column.blk] at hlo ⊢; omega
-  have hw64 : w ≤ 64 := hw ▸ s0.2.2 b hbn
+  generalize hF : Column.foRFrame m0 p0 b = F at *
   generalize hE : p0.extract 0 s = E
   have hEs : E.size = s := by rw [← hE, ByteArray.size_extract]; omega
   have hp0 : p0 = E ++ p0.extract s p0.size := by
     rw [← hE, ← ByteArray.extract_eq_extract_append_extract s (Nat.zero_le _) (by omega), ByteArray.extract_zero_size]
-  generalize hC : p0.extract (s + Column.blk * w / 8) p0.size = C
+  have hp1 : p0 = p0.extract 0 (s + Column.blk * w / 8) ++ p0.extract (s + Column.blk * w / 8) p0.size := by
+    rw [← ByteArray.extract_eq_extract_append_extract _ (Nat.zero_le _) (by omega), ByteArray.extract_zero_size]
+  generalize hX : p0.extract 0 (s + Column.blk * w / 8) = X at hp1
+  have hXs : X.size = s + Column.blk * w / 8 := by rw [← hX, ByteArray.size_extract]; omega
+  generalize hC : p0.extract (s + Column.blk * w / 8) p0.size = C at hp1
   generalize hQ : Coc.packRes w _ = Q
   have hQs : Q.size = Column.blk * w / 8 := by rw [← hQ, Verify.packRes_size]
-  have hP : (E ++ Q ++ C).size ≤ Column.blockStart m0 (Column.nblk m0) := by
-    have hCs : C.size = p0.size - (s + Column.blk * w / 8) := by rw [← hC, ByteArray.size_extract]; omega
-    rw [ByteArray.size_append, ByteArray.size_append, hEs, hQs, hCs, ← s0.2.1]; omega
+  have hCs : C.size = p0.size - (s + Column.blk * w / 8) := by rw [← hC, ByteArray.size_extract]; omega
+  have hcong := foRExc_congr (m := m0) (A := E ++ Q ++ C) (B := p0)
+    (by rw [ByteArray.size_append, ByteArray.size_append, hEs, hQs, hCs]; omega) (fun k => by
+      conv => rhs; rw [hp1]
+      rw [Verify.ba_append_right' _ _ _ (by rw [ByteArray.size_append, hEs, hQs]; omega),
+        Verify.ba_append_right' _ _ _ (by rw [hXs]; omega), ByteArray.size_append, hEs, hQs, hXs])
   have hQk : ∀ k < Column.blk * w / 8, (E ++ Q ++ C)[s + k]? = Q[k]? := fun k hk => by
     rw [Verify.ba_append_left _ _ _ (by rw [ByteArray.size_append, hEs, hQs]; omega), ← hEs, Verify.ba_append_right]
   have hpk := fun j (hj : j < Column.blk) => Verify.resAt_packRes w hw64 _ (E ++ Q ++ C) s
@@ -1224,7 +1267,10 @@ theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd
   congr 1
   · apply List.map_congr_left; intro i hi; rw [List.mem_range] at hi
     have hib : i / Column.blk ≤ b := by rw [← hb]; exact Nat.div_le_div_right (Nat.le_of_lt hi)
-    rw [foRBits_plain hP (by omega), foRBits_plain (Nat.le_of_eq s0.2.1) (by omega)]
+    cases hx : Column.foRExc m0 p0 i with
+    | some v => simp only [Column.foRBits, (hcong i 0).1, hx]
+    | none =>
+    rw [foRBits_none ((hcong i 0).1.trans hx) (by omega), foRBits_none hx (by omega), (hcong 0 (i / Column.blk)).2]
     congr 1
     rcases Nat.lt_or_eq_of_le hib with hlt | heq
     · have hend : Column.blockStart m0 (i / Column.blk) + Column.blk * Column.widthAt m0 (i / Column.blk) / 8 ≤ s := by
@@ -1241,43 +1287,17 @@ theorem appendFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 M P : ByteArray} (s0 : FoRStd
     have hq : (n0 + i) / Column.blk = b ∧ (n0 + i) % Column.blk = n0 % Column.blk + i := by
       rw [← hb]; simp only [Column.blk] at hlm hlo ⊢; omega
     simp only [Function.comp_apply]
-    rw [foRBits_plain hP (by rw [hq.1]; omega), hq.1, hq.2, hs, hw, hpk _ (by omega)]
+    rw [foRBits_none ((hcong (n0 + i) 0).1.trans (hexc i (by omega))) (by rw [hq.1]; omega), hq.1, hq.2, hs, hw,
+      (hcong 0 b).2, hF, hpk _ (by omega)]
     simp only [Nat.le_add_right, decide_true, Nat.add_lt_add_iff_left, hi, Bool.and_self, if_true,
       Nat.add_sub_cancel_left]
     rw [Nat.mod_eq_of_lt ((hc2 i hi).2), tn, cancel, hv i hi]
 
-/-- An eight-byte payload encoded is in writer form and lists the payload's words. -/
-theorem encode_std (x : ByteArray) (hn : x.size / 8 < USize.size) :
-    FoRStd (x.size / 8) (Coc.encode (8 : Nat).toUSize x).1 (Coc.encode (8 : Nat).toUSize x).2 ∧
-      foRWords (x.size / 8) (Coc.encode (8 : Nat).toUSize x).1 (Coc.encode (8 : Nat).toUSize x).2 = Verify.elemsW 8 x := by
-  refine ⟨?_, by
-    rw [← (decode_words _ _ hn).2, Verify.elemsW_decode_encode 8 (by decide) (by decide) x _
-      (by rw [USize.toNat_ofNat_of_lt' hn])]⟩
-  generalize hn8 : x.size / 8 = n at *
-  have hbl : ∀ b, b < (n + Column.blk - 1) / Column.blk → (Coc.blockOf 8 n b x).2.2.2 ≤ 64 := fun b hb =>
-    (Verify.blockOf_bounds 8 n b (by decide) x (b * Column.blk) (Nat.le_refl _) (by simp only [Column.blk]; omega)
-      (by simp only [Column.blk] at hb ⊢; omega)).2.2
-  simp only [Coc.encode, toUSize8, hn8]
-  generalize hbs : (Array.range ((n + Column.blk - 1) / Column.blk)).map (fun b => Coc.blockOf 8 n b x) = bs
-  have hbsz : bs.size = (n + Column.blk - 1) / Column.blk := by rw [← hbs]; simp
-  have hw : ∀ b (h : b < bs.size), bs[b].2.2.2 ≤ 64 := fun b h => by
-    subst hbs; simp only [Array.getElem_map, Array.getElem_range]; exact hbl b (by simpa using h)
-  obtain ⟨hnb, hrd⟩ := Verify.foRMeta_reads (Coc.sumNul 8) n
-    (bs.map fun (mn, mx, s, wd) => (Coc.unbias 8 mn, Coc.unbias 8 mx, s, wd))
-    (fun b h => by
-      have hb : b < bs.size := by simpa using h
-      simp only [Array.getElem_map]; have := hw b hb; revert this; rcases bs[b]'hb with ⟨_, _, _, _⟩; simp; omega)
-  generalize Coc.foRMeta _ _ _ = M at hnb hrd ⊢
-  simp only [Array.size_map] at hnb hrd
-  have hwM : ∀ b (h : b < bs.size), Column.widthAt M b = bs[b].2.2.2 := fun b h => by
-    rw [(hrd b (by simpa using h)).2]; simp only [Array.getElem_map]
-  refine ⟨by rw [hnb, hbsz], ?_, fun b hb => by rw [hnb] at hb; rw [hwM b hb]; exact hw b hb⟩
-  rw [← Array.foldl_toList]
-  refine Eq.trans (Verify.pack_fold0 _ (fun m (e : Nat × Nat × UInt64 × Nat) =>
-      Coc.packRes e.2.2.2 fun j => (if m * Column.blk + j < n then Coc.keyAt 8 x (m * Column.blk + j) - e.1 else 0).toUInt64)
-    (fun _ _ _ => rfl) (Column.blockStart M) bs.toList (blockStart_zero M)
-    (fun i h => by rw [blockStart_succ, Verify.packRes_size, Array.getElem_toList, hwM i (by simpa using h)])).1 ?_
-  rw [hnb, Array.length_toList]
+/-- An eight-byte payload encoded lists the payload's words (`Verify.foRWF_encode` is its writer form). -/
+theorem encode_words (x : ByteArray) (hn : x.size / 8 < USize.size) :
+    foRWords (x.size / 8) (Coc.encode (8 : Nat).toUSize x).1 (Coc.encode (8 : Nat).toUSize x).2 = Verify.elemsW 8 x := by
+  rw [← (decode_words _ _ hn).2, Verify.elemsW_decode_encode 8 (by decide) (by decide) x _
+    (by rw [USize.toNat_ofNat_of_lt' hn])]
 
 /-- `razeColumn` at `long` where some part is encoded: the dense join or `concatFoR` of the parts' encoded forms. -/
 theorem raze_encoded {a b c : Column} {n n0 n1 : Nat} {m0 m1 k0 k1 D0 D1 : ByteArray} {es : Array ByteArray}
@@ -1292,8 +1312,9 @@ theorem raze_encoded {a b c : Column} {n n0 n1 : Nat} {m0 m1 k0 k1 D0 D1 : ByteA
   · simp [razeColumn, he, w8, hd, hd0, hd1] at h <;> exact .inl h.symm
   · simp [razeColumn, he, w8, hd] at h; exact .inr (by rw [← h])
 
-/-- **`concatFoR` joins the words** of two writer-form parts, whichever of its three branches answers. -/
-theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 m0 p0) (s1 : FoRStd n1 m1 p1)
+/-- **`concatFoR` joins the words** of two parts, whichever of its three branches answers: the move and the
+    append claim only parts they carry, and the re-encode decodes whatever it is handed. -/
+theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray}
     (hn : n0 + n1 < USize.size) :
     foRWords (n0 + n1) (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[p0, p1]).1
       (concatFoR (8 : Nat).toUSize #[n0, n1] #[m0, m1] #[p0, p1]).2 = foRWords n0 m0 p0 ++ foRWords n1 m1 p1 := by
@@ -1302,7 +1323,7 @@ theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 
   obtain ⟨d1s, d1w⟩ := decode_words m1 p1 (n := n1) (by omega)
   simp only [concatFoR, hz]
   split
-  · rename_i out hmv; obtain ⟨M, P⟩ := out; exact moveFoR_words s0 s1 hmv
+  · rename_i out hmv; obtain ⟨M, P⟩ := out; exact moveFoR_words hmv
   · have g0 : (#[((n0, m0), p0), ((n1, m1), p1)] : Array ((Nat × ByteArray) × ByteArray)).get!Internal 0 =
         ((n0, m0), p0) := rfl
     have tl : concatBytes (Array.map (fun p : (Nat × ByteArray) × ByteArray => Coc.decode 8 p.fst.snd p.snd p.fst.fst.toUSize)
@@ -1311,7 +1332,7 @@ theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 
       simp [concatBytes, ByteArray.empty_append]; rfl
     simp only [g0, tl]
     split
-    · rename_i out hap; obtain ⟨M, P⟩ := out; exact appendFoR_words s0 (by omega) hap
+    · rename_i out hap; obtain ⟨M, P⟩ := out; exact appendFoR_words (by omega) hap
     · rw [show concatBytes ((#[((n0, m0), p0), ((n1, m1), p1)] : Array _).map
           (fun p => Coc.decode (8 : Nat).toUSize p.1.2 p.2 p.1.1.toUSize)) =
           Coc.decode (8 : Nat).toUSize m0 p0 n0.toUSize ++ Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize by
@@ -1320,7 +1341,72 @@ theorem concatFoR_words {n0 n1 : Nat} {m0 p0 m1 p1 : ByteArray} (s0 : FoRStd n0 
         (b := Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize)
       rw [show n0 + n1 = (Coc.decode (8 : Nat).toUSize m0 p0 n0.toUSize ++
           Coc.decode (8 : Nat).toUSize m1 p1 n1.toUSize).size / 8 by omega,
-        (encode_std _ (by omega)).2, elemsW_append (by omega), d0w, d1w]
+        encode_words _ (by omega), elemsW_append (by omega), d0w, d1w]
+
+/-- Where some part is encoded, `razeColumn` at `long` joins the parts' words: `ws0`, `ws1` as both the dense
+    payloads and the encoded forms `encodedParts` meets the parts in list them. -/
+theorem raze_parts {a b c : Column} {n0 n1 : Nat} {m0 m1 k0 k1 D0 D1 : ByteArray} {es : Array ByteArray}
+    {ws0 ws1 : List UInt64}
+    (he : encodedParts .long #[a, b] = some (false, n0 + n1, #[n0, n1], #[m0, m1], #[k0, k1], es))
+    (hd0 : Column.bytesOf a = some D0) (hd1 : Column.bytesOf b = some D1) (hz0 : D0.size = 8 * n0)
+    (hz1 : D1.size = 8 * n1) (hv0 : Verify.elemsW 8 D0 = ws0) (hv1 : Verify.elemsW 8 D1 = ws1)
+    (hw0 : foRWords n0 m0 k0 = ws0) (hw1 : foRWords n1 m1 k1 = ws1) (hn : n0 + n1 < USize.size)
+    (h : razeColumn .long #[a, b] = some (.vector c)) : longWords c = some (ws0 ++ ws1) := by
+  rcases raze_encoded he hd0 hd1 h with rfl | rfl
+  · simp only [longWords]; rw [elemsW_concat _ (by simp [hz0, hz1])]; simp [hv0, hv1]
+  · rw [longWords_answer_foR _ _ hn, (decode_words _ _ hn).2, concatFoR_words hn, hw0, hw1]
+
+/-- A long column lists its words: `Column.WF` leaves a long payload `bytes` or `foR`. -/
+theorem longWords_arr {m : Nat} (x : Arr .long m) : ∃ ws, longWords x.c = some ws := by
+  obtain ⟨⟨_, _, e, _⟩, ht, hm, hw⟩ := x
+  simp only at ht hm hw ⊢; subst ht hm
+  cases e <;> simp_all [longWords, Column.WF]
+
+/-- **`razeColumn` at `long` joins the words** of two long columns, whatever their encodings. -/
+theorem razeColumn_long {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) {c : Column} {ws0 ws1 : List UInt64}
+    (hp : longWords p.c = some ws0) (hq : longWords q.c = some ws1) (hn : na + nb < USize.size)
+    (h : razeColumn .long #[p.c, q.c] = some (.vector c)) : longWords c = some (ws0 ++ ws1) := by
+  obtain ⟨⟨_, ma, ea, ia⟩, hta, hna, wa⟩ := p
+  obtain ⟨⟨_, mb, eb, ib⟩, htb, hnb, wb⟩ := q
+  simp only at hta hna wa htb hnb wb hp hq h ⊢; subst hta htb ma mb
+  have w8 : QAtomicType.width .long = some 8 := rfl
+  have ha : (∃ A, ea = .bytes A) ∨ ∃ md pk, ea = .foR md pk := by cases ea <;> simp [longWords] at hp ⊢
+  have hb : (∃ B, eb = .bytes B) ∨ ∃ md pk, eb = .foR md pk := by cases eb <;> simp [longWords] at hq ⊢
+  have ds : ∀ (n : Nat) (md pk : ByteArray) (o : Option (UInt8 × IndexCell)),
+      Column.bytesOf ⟨.long, n, .foR md pk, o⟩ = some (Coc.decode (8 : Nat).toUSize md pk n.toUSize) := fun n md pk o => by
+    simp [Column.bytesOf, w8]
+  rcases ha with ⟨A, rfl⟩ | ⟨m0, k0, rfl⟩ <;> rcases hb with ⟨B, rfl⟩ | ⟨m1, k1, rfl⟩ <;>
+    simp only [longWords] at hp hq <;> cases hp <;> cases hq
+  · have hA : A.size = na * 8 := by simpa [Column.WF, w8] using wa
+    have hB : B.size = nb * 8 := by simpa [Column.WF, w8] using wb
+    rw [razeColumn_long_bytes (a := ⟨.long, na, .bytes A, ia⟩) rfl rfl] at h
+    cases h
+    simp only [longWords]; rw [elemsW_concat _ (by simp [hA, hB])]; simp
+  · have hA : A.size = na * 8 := by simpa [Column.WF, w8] using wa
+    obtain ⟨d1s, d1w⟩ := decode_words m1 k1 (n := nb) (by omega)
+    refine raze_parts (es := #[.empty, .empty]) ?_ rfl (ds _ _ _ _) (by omega) d1s rfl d1w
+      (by rw [show na = A.size / 8 by omega]; exact encode_words A (by omega)) rfl hn h
+    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
+      show Column.alpEncodes .long = false from rfl]
+  · have hB : B.size = nb * 8 := by simpa [Column.WF, w8] using wb
+    obtain ⟨d0s, d0w⟩ := decode_words m0 k0 (n := na) (by omega)
+    refine raze_parts (es := #[.empty, .empty]) ?_ (ds _ _ _ _) rfl d0s (by omega) d0w rfl rfl
+      (by rw [show nb = B.size / 8 by omega]; exact encode_words B (by omega)) hn h
+    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
+      show Column.alpEncodes .long = false from rfl]
+  · obtain ⟨d0s, d0w⟩ := decode_words m0 k0 (n := na) (by omega)
+    obtain ⟨d1s, d1w⟩ := decode_words m1 k1 (n := nb) (by omega)
+    refine raze_parts (es := #[.empty, .empty]) ?_ (ds _ _ _ _) (ds _ _ _ _) d0s d1s d0w d1w rfl rfl hn h
+    simp [encodedParts, Column.encode, Column.bytesOf, w8, show Column.encodes .long = true from rfl,
+      show Column.alpEncodes .long = false from rfl]
+
+/-- `razeColumn` at `long` as lists: the answer read as an `Arr` is the two parts in turn. -/
+theorem raze_toList_long {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) {c : Column}
+    (hn : na + nb < USize.size) (h : razeColumn .long #[p.c, q.c] = some (.vector c)) (V : Arr .long (na + nb))
+    (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
+  obtain ⟨ws0, hp⟩ := longWords_arr p; obtain ⟨ws1, hq⟩ := longWords_arr q
+  rw [Arr.toList_long V (hV ▸ razeColumn_long p q hp hq hn h), Arr.toList_long p hp, Arr.toList_long q hq,
+    List.map_append]
 end FoRRaze
 
 /-- A successful `Except` bind ran both halves (qlean's `Verify.bind_ok` is at its own `R` only). -/
@@ -1541,21 +1627,21 @@ theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel
 
 /-- **`align` on different keys, long keys and long `y` values: the keys `x.key ++ y.key` at the rows only `y`
     has, the values the rows of `x` (`align_left_rel`) then those rows (`align_right_rel`).** `hlaw`/`hlawr` are
-    value laws of the `vv`/`av` dyads at the encodings at hand; `hraze` is a value law of `razeColumn` at the
-    two types joined, which qlean proves only for dense parts (`razeColumn_long_bytes`): a `foR` part meets
-    `concatFoR`, whose move branch reads no part's patch list. -/
+    value laws of the `vv`/`av` dyads at the encodings at hand. The keys are joined by `raze_toList_long`;
+    `hraze` is the value law of `razeColumn` at the value type `rt`, which `raze_toList_long` is at `rt = .long`
+    (the `example` below). -/
 theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn .long x.key.c y.key.c ≠ some true) {el : Carrier t}
     (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.v t .long = some rt)
     (hr : Eval.ewType L.vr t .long = some rt)
     (hkx : Find.Readable .long x.key.c) (hky : Find.Readable .long y.key.c) (hyv : Find.Readable .long y.val.c)
-    (hnx : x.n < USize.size) (hny : y.n < USize.size)
+    (hnx : x.n < USize.size) (hny : y.n < USize.size) (hnk : x.n + y.n < USize.size)
     (hlaw : ∀ (Y : Arr .long x.n) l, Ew.val L.v rt x.val Y = .ok l → Ew.ValSpec L.v he x.val Y l)
     (hlawr : ∀ {n : Nat} (Y : Arr .long n) r, Ew.atomVal L.vr rt el Y ht = .ok r →
       Y.toList.mapM (fun c => elem L.vr hr el c) = .ok r.toList)
-    (hraze : ∀ {a : QAtomicType} {na nb : Nat} (p : Arr a na) (q : Arr a nb) (c : Column) (V : Arr a (na + nb)),
-      (a = .long ∨ a = rt) → Kernel.razeColumn a #[p.c, q.c] = some (.vector c) → V.c = c →
+    (hraze : ∀ {na nb : Nat} (p : Arr rt na) (q : Arr rt nb) (c : Column) (V : Arr rt (na + nb)),
+      na + nb < USize.size → Kernel.razeColumn rt #[p.c, q.c] = some (.vector c) → V.c = c →
         V.toList = p.toList ++ q.toList) :
     ∃ (n : Nat) (l : Arr rt x.n) (gk : Arr .long n) (ry : Arr rt n) (K : Arr .long (x.n + n)) (V : Arr rt (x.n + n)),
       R = ⟨x.n + n, K, V⟩ ∧ K.toList = x.key.toList ++ gk.toList ∧ V.toList = l.toList ++ ry.toList ∧
@@ -1571,11 +1657,16 @@ theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long
   obtain ⟨F, henum, hFn, hIn, I, hIc, hI⟩ := only_rows x.key y.key hkx hky hnx hny hmem hw
   obtain ⟨_, _, _, kyw, -, hwy, -, -⟩ := Find.operand_long y.key hky hny
   obtain ⟨G, rfl, hG⟩ := gather_rel y.key hwy hny I hI hFn (by omega) (hIc ▸ vec_some hgk)
-  refine ⟨iy.n, l, G, ry, K, V, rfl, hraze x.key G keys K (.inl rfl) (vec_some hkeys) (Find.onKey_c hK),
-    hraze l ry vals V (.inr rfl) (vec_some hvals) (Find.onKey_c hV),
+  refine ⟨iy.n, l, G, ry, K, V, rfl, raze_toList_long x.key G (by omega) (vec_some hkeys) K (Find.onKey_c hK),
+    hraze l ry vals V (by omega) (vec_some hvals) (Find.onKey_c hV),
     align_left_rel he hkx hky hyv hnx hny hix hyx hl hlaw, hR.1, fun ys hy => ⟨?_, hR.2 ys hy⟩⟩
   obtain rfl := (henum ys).1 hy
   rw [CL.toList_ofList]; exact hG
+
+/-- `align_rel`'s `hraze` at long values. -/
+example : ∀ {na nb : Nat} (p : Arr .long na) (q : Arr .long nb) (c : Column) (V : Arr .long (na + nb)),
+    na + nb < USize.size → Kernel.razeColumn .long #[p.c, q.c] = some (.vector c) → V.c = c →
+      V.toList = p.toList ++ q.toList := fun p q _ V hn h hV => raze_toList_long p q hn h V hV
 
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
@@ -2875,7 +2966,12 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms align_rel
 #print axioms moveFoR_words
 #print axioms appendFoR_words
-#print axioms encode_std
+#print axioms encode_words
+#print axioms foRExc_congr
+#print axioms raze_parts
+#print axioms longWords_arr
+#print axioms razeColumn_long
+#print axioms raze_toList_long
 #print axioms raze_encoded
 #print axioms concatFoR_words
 
