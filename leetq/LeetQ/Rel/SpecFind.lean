@@ -946,6 +946,27 @@ theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : lon
     rw [e, hB0]
     exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
+/-- `x@i` at long, source and index each `bytes` or `foR` (`longWords`): word `j` is the source's word at index
+    word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). -/
+theorem gather_long {m : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
+    (hm : m < USize.size) {i c : Column} (hit : i.ty = .long) (hiw : i.WF) (hi : longWords i = some is)
+    (hiU : i.n < USize.size) (h : Kernel.gatherColumn .long x.c i = some (.vector c)) :
+    longWords c = some (is.map fun k => xs.getD k.toNat 0x8000000000000000) := by
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hfi : Verify.countFits i := by unfold Verify.countFits; split <;> first | exact hiU | trivial
+  have hA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
+    simp [longWords, he] at hx
+  obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c i c x.wf.1 hit
+    hfi hA h
+  obtain ⟨B, -, hB, hBw, -⟩ := Arr.dense_long x hx hm
+  obtain rfl : B = src := Option.some.inj (hB.symm.trans hsrc)
+  have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8)
+    ((Kernel.nullBits .long).getD 0) B ix
+  rw [h8] at e
+  simp only [longWords, Option.some.injEq]
+  rw [e, hBw, Verify.elemsW_index i hit hiw hfi ix hix, Struct.raw_long hit hiw hi]
+  exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
+
 /-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
 theorem elemsW_append {A B : ByteArray} (hA : A.size % 8 = 0) :
     Verify.elemsW 8 (A ++ B) = Verify.elemsW 8 A ++ Verify.elemsW 8 B := by
@@ -2376,5 +2397,6 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms align_gather
 #print axioms ix_lookup
 #print axioms align_left_rel
+#print axioms gather_long
 
 end LeetQ.Rel.Verb
