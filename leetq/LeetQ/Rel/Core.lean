@@ -238,6 +238,91 @@ theorem longWords_answer (b : ByteArray) :
     rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
     exact Verify.foRBits_encode_bits 8 (by decide) (by decide) b i (List.mem_range.1 hi)
 
+/-- `alpBits` with no hoisted table reads the start `blockStarts` holds, as `foRBits_starts`. -/
+theorem alpBits_starts (md pk a : ByteArray) (i : Nat) :
+    Column.alpBits md pk a #[] i = Column.alpBits md pk a (Column.blockStarts md) i := by
+  unfold Column.alpBits; rw [foRBits_starts]
+
+/-- A float column's words in position order, the bits each `float` holds: a `bytes` payload's eight-byte
+    elements, an `alp` payload's `alpBits` decode. -/
+def floatWords (c : Column) : Option (List UInt64) :=
+  match c.enc with
+  | .bytes b => some (Verify.elemsW 8 b)
+  | .alp md pk a => some ((List.range c.n).map (Column.alpBits md pk a (Column.blockStarts md)))
+  | _ => none
+
+/-- Under `wf`, a float column lists its words. -/
+theorem Arr.toList_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : floatWords x.c = some ws) :
+    x.toList = ws := by
+  have hn := x.wf.2.1
+  unfold floatWords at h
+  cases hc : x.c.enc with
+  | bytes b =>
+    rw [hc] at h; cases h
+    have hb : b.size / 8 = m := by
+      have hw := x.wf.2.2; simp only [Column.WF, x.wf.1, hc, QAtomicType.width] at hw; omega
+    apply List.ext_getElem (by rw [Arr.length_toList, Verify.elemsW, List.length_map, List.length_range, hb])
+    intro i h1 h2
+    rw [Arr.length_toList] at h1
+    rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range, Column.get, if_pos (show i < x.c.n by omega),
+      x.wf.1, hc, QAtomicType.width]
+    rfl
+  | alp md pk a =>
+    rw [hc, hn] at h; cases h
+    apply List.ext_getElem (by rw [Arr.length_toList]; simp)
+    intro i h1 h2
+    rw [Arr.length_toList] at h1
+    rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
+    simp only [List.getElem_map, List.getElem_range, Column.get, if_pos (show i < x.c.n by omega), x.wf.1, hc,
+      QAtomicType.width, alpBits_starts]
+    rfl
+  | _ => all_goals (rw [hc] at h; cases h)
+
+/-- The dense payload a kernel reads off a float column that lists `floatWords`: a `bytes` payload is
+    itself, an `alp` one is decoded (`alpDecode64`) to the same words. -/
+theorem Arr.dense_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : floatWords x.c = some ws)
+    (hm : m < USize.size) : ∃ B, (x.c.enc = .bytes B ∨ ∃ md pk a, x.c.enc = .alp md pk a ∧
+      B = Kernel.Coc.alpDecode64 md pk a m.toUSize) ∧ Verify.elemsW 8 B = ws ∧ B.size / 8 = m := by
+  unfold floatWords at h
+  cases hc : x.c.enc with
+  | bytes b =>
+    rw [hc] at h; cases h
+    have hw := x.wf.2.2; have := x.wf.2.1
+    simp only [Column.WF, x.wf.1, hc, QAtomicType.width] at hw
+    exact ⟨b, .inl rfl, rfl, by omega⟩
+  | alp md pk a =>
+    rw [hc, x.wf.2.1] at h; cases h
+    have e : Verify.elemsW 8 (Kernel.Coc.alpDecode64 md pk a m.toUSize) =
+        (Kernel.Coc.alpElems md pk a m.toUSize).map fun v => UInt64.ofNat (v.toNat % 2 ^ (8 * 8)) :=
+      Verify.elemsW_foldl_mod id 8 (by decide) (by decide) _
+    rw [Kernel.Coc.alpElems, USize.toNat_ofNat_of_lt' hm, List.map_map, show 8 * 8 = 64 from rfl] at e
+    refine ⟨_, .inr ⟨md, pk, a, rfl, rfl⟩, ?_, ?_⟩
+    · rw [e]; exact List.map_congr_left fun i _ => Verify.ofNat_toNat_mod64 _
+    · have := congrArg List.length e
+      simpa [Verify.elemsW] using this
+  | _ => all_goals (rw [hc] at h; cases h)
+
+/-- A dense float answer lists its words whichever form `Column.answer` leaves it in: dense, or ALP
+    encoded (`alpBits_alpEncode64`, below `2³²` elements). -/
+theorem floatWords_answer (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) :
+    floatWords (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩) = some (Verify.elemsW 8 b) := by
+  have ha : (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩).enc = .bytes b ∨
+      (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩).enc =
+      .alp (Kernel.Coc.alpEncode64 b).1 (Kernel.Coc.alpEncode64 b).2.1 (Kernel.Coc.alpEncode64 b).2.2 := by
+    simp only [Column.answer, QAtomicType.width, show Column.alpEncodes .float = true from rfl,
+      Kernel.Coc.alpEncodeBelow64]
+    repeat' split
+    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+  have hn : (Column.answer ⟨.float, b.size / 8, .bytes b, none⟩).n = b.size / 8 := by
+    simp only [Column.answer]; repeat' split
+    all_goals rfl
+  unfold floatWords
+  rcases ha with e | e
+  · rw [e]
+  · rw [e]; simp only [hn, Verify.elemsW]
+    exact congrArg some (List.map_congr_left fun i hi => Verify.alpBits_alpEncode64 b h32 i (List.mem_range.1 hi))
+
 /-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
     width four, the `foR` form read back by `foRBits_encode_bits`. -/
 theorem toList_answer_int {m : Nat} (x : Arr .int m) {b : ByteArray}

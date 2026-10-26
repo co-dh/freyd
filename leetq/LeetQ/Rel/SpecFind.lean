@@ -9,6 +9,7 @@ import AOP.A7_2_RelSet
 import QLean.Verify.Chain
 import QLean.Verify.Dyad
 import QLean.Verify.EwEnc
+import QLean.Verify.Gather
 
 namespace LeetQ.Rel.Verb
 
@@ -95,6 +96,26 @@ theorem ix_idxOf [BEq α] [LawfulBEq α] (xs : List α) :
     by_cases hm : a ∈ xs
     · simp [hm]
     · simp [hm, List.idxOf_eq_length hm]
+
+/-- A key looked up in a key list `ks` beside values `vs`, `e` at a miss:
+    `ix(xs.map (vs.getD (ks.idxOf ·) e)) = xs ≫ miss(Λ(ks°) ≫ est(≤) ≫ vs, e)`, `ks` and `vs` of one length. -/
+theorem ix_lookup [BEq α] [LawfulBEq α] {β : Type} (xs ks : List α) (vs : List β) (e : β)
+    (hl : ks.length = vs.length) :
+    ix (xs.map fun k => vs.getD (ks.idxOf k) e) = ix xs ≫ miss ((Λ ((ix ks)°) ≫ est (· ≤ ·)) ≫ ix vs) e := by
+  rw [ix_map]
+  refine congrArg (ix xs ≫ ·) (hom_ext fun k b => ?_)
+  have key : ∀ c, (Λ ((ix ks)°) ≫ est (· ≤ ·)) k c ↔ k ∈ ks ∧ c = ks.idxOf k :=
+    fun c => (Λ_comp_est_apply _ _ k c).trans (idxOf_least k ks c)
+  have hR : ∀ b', ((Λ ((ix ks)°) ≫ est (· ≤ ·)) ≫ ix vs) k b' ↔ k ∈ ks ∧ vs[ks.idxOf k]? = some b' :=
+    fun b' => ⟨fun ⟨c, hc, hv⟩ => by obtain ⟨hm, rfl⟩ := (key c).1 hc; exact ⟨hm, hv⟩,
+      fun ⟨hm, hv⟩ => ⟨_, (key _).2 ⟨hm, rfl⟩, hv⟩⟩
+  rw [miss_iff]
+  simp only [hR]
+  show b = vs.getD (ks.idxOf k) e ↔ _
+  by_cases hm : k ∈ ks
+  · have hi : ks.idxOf k < vs.length := hl ▸ List.idxOf_lt_length_iff.2 hm
+    simp [hm, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, eq_comm]
+  · simp [hm, List.idxOf_eq_length hm, hl, List.getD_eq_getElem?_getD]
 
 /-- On an ascending list, the positions holding at most `v` are those below `countP (· ≤ v)`. -/
 theorem lt_countP_iff (v : Int64) : ∀ {xs : List Int64}, xs.Pairwise (· ≤ ·) → ∀ i,
@@ -895,6 +916,197 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
 
+/-! ### Dicts with different keys: the kernels of `align`'s gather/fill branch -/
+
+/-- `gatherFill` from a long source, `bytes` or `foR` (`longWords`), at a dense index: word `j` is the
+    source's word at index word `j`, `fill` past the end (`elemsW_gatherBytes`; `gatherFoR` is `gatherBytes`
+    on the decode). -/
+theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : longWords y.c = some ys)
+    (hm : m < USize.size) {fill : UInt64} {idx C : Column} {ib : ByteArray} (hi : Column.bytesOf idx = some ib)
+    (hv : Ew.gatherFill .long fill y.c idx = .ok C) :
+    ∃ B, C = ⟨.long, idx.n, .bytes B, none⟩ ∧ B.size = 8 * (ib.size / 8) ∧
+      Verify.elemsW 8 B = (Verify.elemsW 8 ib).map fun k => ys.getD k.toNat fill := by
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  -- both encodings gather from a dense payload `B0` of words `ys`: `bytes` itself, `foR` its decode
+  obtain ⟨B0, hB0, hC⟩ : ∃ B0, Verify.elemsW 8 B0 = ys ∧
+      C = ⟨.long, idx.n, .bytes (Kernel.gatherBytes (8 : Nat).toUSize fill B0 ib), none⟩ := by
+    obtain ⟨B0, hB0 | ⟨md, pk, he, rfl⟩, -, hw0, -⟩ := Arr.dense_long y hy hm
+    all_goals simp only [Ew.gatherFill, show QAtomicType.width .long = some 8 from rfl, hi, bind, Except.bind,
+      pure, Except.pure] at hv
+    · rw [hB0] at hv; cases hv; exact ⟨B0, hw0, rfl⟩
+    · rw [he] at hv; cases hv
+      exact ⟨_, hw0, by rw [y.wf.2.1]; rfl⟩
+  subst hC
+  refine ⟨_, rfl, ?_, ?_⟩
+  · have := (Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) fill B0 ib).1
+    rwa [h8] at this
+  · have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8)
+      fill B0 ib
+    rw [h8] at e
+    rw [e, hB0]
+    exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
+
+/-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
+theorem elemsW_append {A B : ByteArray} (hA : A.size % 8 = 0) :
+    Verify.elemsW 8 (A ++ B) = Verify.elemsW 8 A ++ Verify.elemsW 8 B := by
+  have hs := Verify.ba_size_append A B
+  apply List.ext_getElem (by simp only [Verify.elemsW, List.length_append, List.length_map, List.length_range, hs]; omega)
+  intro i h1 h2
+  simp only [Verify.elemsW, List.length_map, List.length_range] at h1 h2
+  rw [List.getElem_append]
+  split
+  · rename_i hi
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left _ _ _ (by omega)
+  · rename_i hi
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range]
+    refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
+    rw [show i * 8 + k = A.size + ((i - A.size / 8) * 8 + k) by omega]
+    exact Verify.ba_append_right _ _ _
+
+/-- `concatBytes`' words, every part holding whole words: the parts' words in order. -/
+theorem elemsW_concat (ps : Array ByteArray) (hp : ∀ p ∈ ps, p.size % 8 = 0) :
+    Verify.elemsW 8 (Kernel.concatBytes ps) = ps.toList.flatMap (Verify.elemsW 8) := by
+  have key : ∀ (qs : List ByteArray), (∀ p ∈ qs, p.size % 8 = 0) → ∀ acc : ByteArray, acc.size % 8 = 0 →
+      Verify.elemsW 8 (qs.foldl (· ++ ·) acc) = Verify.elemsW 8 acc ++ qs.flatMap (Verify.elemsW 8) := by
+    intro qs
+    induction qs with
+    | nil => intros; simp
+    | cons p qs ih =>
+      intro hq acc ha
+      have hp0 := hq p List.mem_cons_self
+      rw [List.foldl_cons, ih (fun q h => hq q (List.mem_cons_of_mem _ h)) _
+        (by rw [Verify.ba_size_append]; omega), elemsW_append ha, List.flatMap_cons, List.append_assoc]
+  rw [Kernel.concatBytes, ← Array.foldl_toList, key _ (fun p h => hp p (Array.mem_toList_iff.1 h)) _ rfl]
+  simp [Verify.elemsW]
+
+/-- `razeColumn` at `long` over two `bytes` parts is the dense join: no part is encoded, so `encodedParts`
+    declines. A part in `foR` meets `concatFoR`, which has no value law yet. -/
+theorem razeColumn_long_bytes {a b : Column} {A B : ByteArray} (ha : a.enc = .bytes A) (hb : b.enc = .bytes B) :
+    Kernel.razeColumn .long #[a, b] = some (.vector ⟨.long, a.n + b.n, .bytes (Kernel.concatBytes #[A, B]), none⟩) := by
+  obtain ⟨at_, an, ae, ap⟩ := a; obtain ⟨bt, bn, be, bp⟩ := b
+  simp only at ha hb; subst ha hb
+  simp [Kernel.razeColumn, Kernel.encodedParts, Column.bytesOf,
+    show Column.encodes .long = true from rfl, show Column.alpEncodes .long = false from rfl]
+
+/-- A successful `Except` bind ran both halves (qlean's `Verify.bind_ok` is at its own `R` only). -/
+theorem bind_ok {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {v : β} (h : (x >>= f) = .ok v) :
+    ∃ a, x = .ok a ∧ f a = .ok v := by
+  cases x with
+  | error e => simp [bind, Except.bind] at h
+  | ok a => exact ⟨a, rfl, h⟩
+
+/-- `align` off the matching-keys case, unfolded: `findColumn`, `gatherFill` at `eᵣ` and one `dyad` give the
+    rows of `x`; `memberColumn`, `~`, `whereColumn`, `gatherColumn` and one `dyad` against `eₗ` the rows only
+    `y` has; `razeColumn` joins the keys and the values. -/
+theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
+    (hm : ∀ _ : y.n = x.n, Kernel.matchColumn s x.key.c y.key.c ≠ some true) :
+    ∃ (ix yx : Column) (l : Arr rt x.n) (ty : QAtomicType) (m : Nat) (b : ByteArray) (iy ac gy : Column)
+      (ry : Arr rt iy.n) (gk keys vals : Column) (K : Arr s (x.n + iy.n)) (V : Arr rt (x.n + iy.n)),
+      Ew.vec "findColumn" (Kernel.findColumn s false y.key.c (.vector x.key.c)) = .ok ix ∧
+      Ew.gatherFill u L.er y.val.c ix = .ok yx ∧
+      Ew.dyad L.v Kernel.Ew.vv t u rt x.val.c yx x.n = .ok l ∧
+      Kernel.memberColumn s false (.vector y.key.c) x.key.c = some (.vector ⟨ty, m, .bits b, none⟩) ∧
+      Kernel.whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b), none⟩ = some (.vector iy) ∧
+      Ew.atomCol t (Column.atomOfBits t L.el) = .ok ac ∧
+      Ew.vec "gatherColumn" (Kernel.gatherColumn u y.val.c iy) = .ok gy ∧
+      Ew.dyad L.vr Kernel.Ew.av t u rt ac gy iy.n = .ok ry ∧
+      Ew.vec "gatherColumn" (Kernel.gatherColumn s y.key.c iy) = .ok gk ∧
+      Ew.vec "razeColumn" (Kernel.razeColumn s #[x.key.c, gk]) = .ok keys ∧
+      Ew.vec "razeColumn" (Kernel.razeColumn rt #[l.c, ry.c]) = .ok vals ∧
+      Arr.of s (x.n + iy.n) keys "align keys" = .ok K ∧ Arr.of rt (x.n + iy.n) vals "align vals" = .ok V ∧
+      R = ⟨x.n + iy.n, K, V⟩ := by
+  unfold Ew.align at hv
+  dsimp only at hv
+  split at hv
+  split at hv
+  · rename_i h hc; exact absurd (beq_iff_eq.1 hc) (hm h)
+  all_goals
+    try simp only [pure_bind] at hv
+    obtain ⟨ix, hix, hv⟩ := bind_ok hv
+    obtain ⟨yx, hyx, hv⟩ := bind_ok hv
+    obtain ⟨l, hl, hv⟩ := bind_ok hv
+    split at hv
+    all_goals first | (cases hv; done) | skip
+    rename_i ty m b hmem
+    split at hv
+    all_goals first | (cases hv; done) | skip
+    rename_i iy hw
+    obtain ⟨ac, hac, hv⟩ := bind_ok hv
+    obtain ⟨gy, hgy, hv⟩ := bind_ok hv
+    obtain ⟨ry, hry, hv⟩ := bind_ok hv
+    obtain ⟨gk, hgk, hv⟩ := bind_ok hv
+    obtain ⟨keys, hkeys, hv⟩ := bind_ok hv
+    obtain ⟨vals, hvals, hv⟩ := bind_ok hv
+    obtain ⟨K, hK, hv⟩ := bind_ok hv
+    obtain ⟨V, hV, hv⟩ := bind_ok hv
+    exact ⟨ix, yx, l, ty, m, b, iy, ac, gy, ry, gk, keys, vals, K, V, hix, hyx, hl, hmem, hw, hac, hgy, hry, hgk,
+      hkeys, hvals, hK, hV, (Except.ok.inj hv).symm⟩
+
+/-- **The rows of `x` in `align`, long keys and long `y` values: `⟨x, x.key ≫ miss(Λ(y.key°) est(≤) y, eᵣ)⟩ ≫ f`.**
+    Each key of `x` meets `y`'s value at the key's first position in `y.key`, `eᵣ` where `y` lacks it
+    (`probe_find`, `gatherFill_long`, `ix_lookup`); `hlaw` is any value law of the encodings at hand. -/
+theorem align_left_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Column}
+    {l : Arr rt x.n} (he : Eval.ewType L.v t .long = some rt)
+    (hkx : Find.Readable .long x.key.c) (hky : Find.Readable .long y.key.c) (hyv : Find.Readable .long y.val.c)
+    (hnx : x.n < USize.size) (hny : y.n < USize.size)
+    (hix : Ew.vec "findColumn" (Kernel.findColumn .long false y.key.c (.vector x.key.c)) = .ok ix)
+    (hyx : Ew.gatherFill .long L.er y.val.c ix = .ok yx)
+    (hl : Ew.dyad L.v Kernel.Ew.vv t .long rt x.val.c yx x.n = .ok l)
+    (hlaw : ∀ (Y : Arr .long x.n) l, Ew.val L.v rt x.val Y = .ok l → Ew.ValSpec L.v he x.val Y l) :
+    l.rel = rpair x.val.rel (x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64) ≫
+      ofExcept (fun p : Carrier t × Carrier .long => elem L.v he p.1 p.2) := by
+  obtain ⟨B, ky, kx, hp, hwy, hwx, hB⟩ := Find.probe_find y.key x.key hky hkx hny hnx
+  rw [Find.findColumn_long false _ _ x.key.wf.1] at hix
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, hp, Option.map_some, Ew.vec, Except.ok.injEq] at hix
+  subst hix
+  obtain ⟨_, _, _, vs, -, hwv, -, hlv⟩ := Find.operand_long y.val hyv hny
+  obtain ⟨G, rfl, hG, hGw⟩ := gatherFill_long y.val hwv hny (ib := B) (by simp [Column.bytesOf]) hyx
+  have hkx : kx.length = x.n := by rw [← Arr.length_toList x.key, Arr.toList_long x.key hwx, List.length_map]
+  have hky : ky.length = y.n := by rw [← Arr.length_toList y.key, Arr.toList_long y.key hwy, List.length_map]
+  have hn : B.size / 8 = x.n := by
+    have := congrArg List.length hB; simp only [Verify.elemsW, List.length_map, List.length_range] at this; omega
+  let Y : Arr .long x.n := ⟨⟨.long, B.size / 8, .bytes G, none⟩, rfl, hn, by simp only [Column.WF, QAtomicType.width]; omega⟩
+  have hY : Y.rel = x.key.rel ≫ miss ((Λ (y.key.rel°) ≫ est (· ≤ ·)) ≫ y.val.rel) L.er.toInt64 := by
+    simp only [Arr.rel]
+    rw [Arr.toList_long Y (ws := Verify.elemsW 8 G) rfl, Arr.toList_long x.key hwx, Arr.toList_long y.key hwy,
+      Arr.toList_long y.val hwv, ← ix_lookup _ _ _ _ (by simp [hky, hlv])]
+    refine congrArg ix ?_
+    calc (Verify.elemsW 8 G).map UInt64.toInt64
+        = ((Verify.elemsW 8 B).map UInt64.toNat).map fun i => (vs.getD i L.er).toInt64 := by
+          rw [hGw, List.map_map, List.map_map]; rfl
+      _ = (kx.map UInt64.toInt64).map fun k =>
+            (vs.map UInt64.toInt64).getD ((ky.map UInt64.toInt64).idxOf k) L.er.toInt64 := by
+          rw [hB, List.map_map, List.map_map]
+          refine List.map_congr_left fun k _ => ?_
+          simp only [Function.comp, Find.idxOf_map_of_inj (fun a b h => toInt64_inj h), List.getD_eq_getElem?_getD,
+            List.getElem?_map, Option.getD_map]
+  rw [val_rel (hlaw Y l hl), hY]
+
+/-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
+
+/-- `miss(R, n) ≫ miss(S, e) = miss(R ≫ S, e)` when `R` lands where `S` is defined and `n` is not: the
+    gather/fill branch of `align`, `R` the found position of a key, `n` the not-found position. -/
+theorem miss_comp {A B C : RelSet.{0}} (R : A ⟶ B) (S : B ⟶ C) (n : B.carrier) (e : C.carrier)
+    (hR : ∀ a b, R a b → ∃ c, S b c) (hn : ¬ ∃ c, S n c) : miss R n ≫ miss S e = miss (R ≫ S) e :=
+  hom_ext fun a c => by
+    change (∃ b, miss R n a b ∧ miss S e b c) ↔ miss (R ≫ S) e a c
+    simp only [miss_iff]
+    constructor
+    · rintro ⟨b, hb | ⟨hnone, rfl⟩, hc | ⟨hnc, rfl⟩⟩
+      · exact Or.inl ⟨b, hb, hc⟩
+      · exact absurd (hR a b hb) hnc
+      · exact absurd ⟨c, hc⟩ hn
+      · exact Or.inr ⟨fun ⟨_, b', hb', _⟩ => hnone ⟨b', hb'⟩, rfl⟩
+    · rintro (⟨b, hb, hc⟩ | ⟨hnone, rfl⟩)
+      · exact ⟨b, Or.inl hb, Or.inl hc⟩
+      · refine ⟨n, Or.inr ⟨fun ⟨b, hb⟩ => ?_, rfl⟩, Or.inr ⟨hn, rfl⟩⟩
+        obtain ⟨c', hc'⟩ := hR a b hb
+        exact hnone ⟨c', b, hb, hc'⟩
+
 /-! ### Dicts with matching keys: the key kept, the verb on the values -/
 
 /-- `Lift.ofVerb` keeps the verb itself for the rows both sides have. -/
@@ -939,6 +1151,38 @@ theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel
       V.rel = rpair x.val.rel (h ▸ y.val).rel ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
   let ⟨V, hV, hR⟩ := dyadic_match ht hv h hm
   ⟨V, hR, hlaw V hV, val_rel (hlaw V hV)⟩
+
+/-! ### An atom and a dict: the key kept, the verb on the values -/
+
+/-- `Ew.keyed x f` answers `f` of `x`'s values under `x`'s key. -/
+theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
+    (hv : Ew.keyed x f = .ok R) : ∃ V, f x.val = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
+  unfold Ew.keyed at hv
+  simp only [bind, Except.bind, pure, Except.pure] at hv
+  split at hv
+  · cases hv
+  · rename_i V hV
+    exact ⟨V, hV, (Except.ok.inj hv).symm⟩
+
+/-- `a f d = ⟨!a, d⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
+    (`atomVal_spec_long`, `atomVal_spec_long_foR`, …) read through `keyed_ok` and `atomVal_rel`. -/
+theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.atomVal v rt a · ht) = .ok R)
+    (hlaw : ∀ V, Ew.atomVal v rt a x.val ht = .ok V → x.val.toList.mapM (fun b => elem v he a b) = .ok V.toList) :
+    ∃ V, R = ⟨x.n, x.key, V⟩ ∧
+      V.rel = rpair (cst a) x.val.rel ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
+  let ⟨V, hV, hR⟩ := keyed_ok hv
+  ⟨V, hR, atomVal_rel (hlaw V hV)⟩
+
+/-- `d f a = ⟨d, !a⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
+    (`valAtom_spec_long`, `valAtom_spec_long_foR`, …) read through `keyed_ok` and `valAtom_rel`. -/
+theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
+    (hu : u ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.valAtom v rt · a hu) = .ok R)
+    (hlaw : ∀ V, Ew.valAtom v rt x.val a hu = .ok V → x.val.toList.mapM (fun b => elem v he b a) = .ok V.toList) :
+    ∃ V, R = ⟨x.n, x.key, V⟩ ∧
+      V.rel = rpair x.val.rel (cst a) ≫ ofExcept (fun p : Carrier t × Carrier u => elem v he p.1 p.2) :=
+  let ⟨V, hV, hR⟩ := keyed_ok hv
+  ⟨V, hR, valAtom_rel (hlaw V hV)⟩
 
 /-- The column `Ew.mon` answers is the one `monColumn` builds. -/
 theorem mon_c {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Column}
@@ -1932,6 +2176,17 @@ theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat}
   · rintro ⟨_, ⟨rfl, hj⟩, _, rfl, rfl⟩
     exact ⟨_, (key j _).2 ⟨hj, rfl⟩, rfl⟩
 
+-- The value laws `atomDict_rel`/`dictAtom_rel` take, filled by the encoding's own law.
+example {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op) (h : Eval.ewType v .long .long = some .long)
+    {k : Int64} {x : Rel .symbol .long} {R : Rel .symbol .long} {b : ByteArray} (hb : x.val.c.enc = .bytes b)
+    (hn : x.n < USize.size) (hv : Ew.keyed x (Ew.atomVal v .long (t := .long) k · (by decide)) = .ok R) :=
+  atomDict_rel (by decide) h hv fun _ hV => atomVal_spec_long hop h hb hn hV
+
+example {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op) (h : Eval.ewType v .long .long = some .long)
+    {k : Int64} {x : Rel .symbol .long} {R : Rel .symbol .long} {md pk : ByteArray} (ha : x.val.c.enc = .foR md pk)
+    (hn : x.n < USize.size) (hv : Ew.keyed x (Ew.valAtom v .long (u := .long) · k (by decide)) = .ok R) :=
+  dictAtom_rel (by decide) h hv fun _ hV => valAtom_spec_long_foR hop h ha hn hV
+
 end Kernel
 
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
@@ -2109,5 +2364,17 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms align_match
 #print axioms dyadic_match
 #print axioms dyadic_rel
+#print axioms keyed_ok
+#print axioms miss_comp
+#print axioms atomDict_rel
+#print axioms dictAtom_rel
+#print axioms gatherFill_long
+#print axioms elemsW_append
+#print axioms elemsW_concat
+#print axioms razeColumn_long_bytes
+#print axioms bind_ok
+#print axioms align_gather
+#print axioms ix_lookup
+#print axioms align_left_rel
 
 end LeetQ.Rel.Verb
