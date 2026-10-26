@@ -501,6 +501,26 @@ theorem ix_mext {lt : Int64 → Int64 → Bool} {le : Int64 → Int64 → Prop} 
     · rw [List.getElem?_eq_none (by simp only [Spec.mext, List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
 
+/-- Below `n`, the window of width `n` is every earlier position: `corefl(<n) ≫ Λ(Wₙ) = corefl(<n) ≫ Λ(≥)`. -/
+theorem corefl_Λ_win {C : RelSet.{0}} (n : Nat) (T : pow Idx ⟶ C) :
+    corefl (· < n) ≫ Λ (win n) ≫ T = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ T := by
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  have e : ∀ i, i < n → (fun j => win n i j) = fun j : Nat => i ≥ j :=
+    fun i hi => funext fun j => propext ⟨fun h => h.1, fun h => ⟨h, Nat.lt_of_lt_of_le hi (Nat.le_add_left n j)⟩⟩
+  refine hom_ext fun (i : Nat) c => ?_
+  show (∃ z, (i = z ∧ i < n) ∧ ∃ P, P = (fun j => win n z j) ∧ T P c) ↔
+    (∃ z, (i = z ∧ i < n) ∧ ∃ P, P = (fun j : Nat => z ≥ j) ∧ T P c)
+  constructor
+  · rintro ⟨_, ⟨rfl, hi⟩, _, rfl, hT⟩; exact ⟨i, ⟨rfl, hi⟩, _, rfl, by rwa [e i hi] at hT⟩
+  · rintro ⟨_, ⟨rfl, hi⟩, _, rfl, hT⟩; exact ⟨i, ⟨rfl, hi⟩, _, rfl, by rwa [e i hi]⟩
+
+/-- The count of the elements that are not `0N`, as a right fold. -/
+theorem count_foldr (xs : List Int64) :
+    (xs.filter (· != Spec.nul)).length = xs.foldr (fun x c => if x == Spec.nul then c else c + 1) 0 := by
+  induction xs with
+  | nil => rfl
+  | cons x xs ih => by_cases hx : x = Spec.nul <;> simp [hx, ih]
+
 end Vocabulary
 
 /-! ## The laws -/
@@ -950,6 +970,62 @@ theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
     _ hw1, Arr.length_toList]
   rfl
 
+open QLean.Kernel in
+/-- `f\x` on a dense long column, `f` associative with unit `e` = the kernel's seed: the fold of each
+    prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, f]⦈`, the null skipped (`skipNul`). -/
+theorem scan_rel {f : Prim.Dyadic} {op : Coc.Over} {sv : Scan.Verb} (hf : scanVerb f = some sv)
+    (hv : Spec.verb op = some sv) (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
+    (hl : ∀ a, op.step (op.seed Spec.nul) a = a) (hr : ∀ a, op.step a (op.seed Spec.nul) = a)
+    {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) {S : Arr .long n}
+    (h : Ops.scan f .long R = some S) :
+    S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
+      ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => op.seed Spec.nul) (graph fun q : Int64 × Int64 => skipNul op.step q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
+  calc S.rel = ix ((List.range R.toList.length).map fun i =>
+          (CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-n)))).foldr (skipNul op.step) (op.seed Spec.nul)) := by
+        show ix S.toList = _
+        rw [Ops.scan_toList hf hv hc hn h, Spec.scan_range]
+        refine congrArg ix (List.map_congr_left fun i hi => ?_)
+        have hi := List.mem_range.1 hi
+        rw [Arr.length_toList] at hi
+        rw [show i + 1 - n = 0 by omega, List.drop_zero, CL.toList_ofList, over_foldr _ _ hA hl hr]
+    _ = corefl (· < R.toList.length) ≫ Λ (win n) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
+          (CL.toList ys).foldr (skipNul op.step) (op.seed Spec.nul) : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})) :=
+        ix_window R.toList n fun ys => (CL.toList ys).foldr (skipNul op.step) (op.seed Spec.nul)
+    _ = _ := by rw [Arr.length_toList, corefl_Λ_win, foldr_cata]
+
+/-- `avg x` on a dense long column: the total and the count of the elements that are not `0N`, then their
+    quotient, `⟨⦇[0, +]⦈, ⦇[0, 1+]⦈⟩ ≫ quot`, the null skipped by both folds. -/
+theorem avg_rel {R : Arr .long n} {b : ByteArray} (hc : R.c.enc = .bytes b) (hn : n < USize.size) {a : UInt64}
+    (h : Ops.avg R = some a) :
+    (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
+      = cst (CL.ofList R.toList) ≫ ⟪⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => (0 : Int64)) (graph fun q : Int64 × Int64 => skipNul (· + ·) q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈,
+        ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Nat⟩)
+          (graph fun _ => (0 : Nat)) (graph fun q : Int64 × Nat => if q.1 == Spec.nul then q.2 else q.2 + 1)
+          : Alg (CL.F Unit Int64) (⟨Nat⟩ : RelSet.{0}))⦈⟫
+        ≫ (graph Spec.quot : (⟨Int64 × Nat⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0})) :=
+  calc (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
+      = cst (Spec.avg R.toList) := congrArg cst (Option.some.inj (h.symm.trans (Ops.avg_bytes hc hn)))
+    _ = cst (Spec.quot ((CL.toList (CL.ofList R.toList)).foldr (skipNul (· + ·)) 0,
+          (CL.toList (CL.ofList R.toList)).foldr (fun x c => if x == Spec.nul then c else c + 1) 0)) := by
+        rw [CL.toList_ofList, ← over_foldr (· + ·) 0 Int64.add_assoc Int64.zero_add Int64.add_zero, ← count_foldr]
+        rfl
+    _ = cst (CL.ofList R.toList) ≫ ⟪(graph fun ys => (CL.toList ys).foldr (skipNul (· + ·)) (0 : Int64)
+            : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})),
+          (graph fun ys => (CL.toList ys).foldr (fun x c => if x == Spec.nul then c else c + 1) (0 : Nat)
+            : dList Int64 ⟶ (⟨Nat⟩ : RelSet.{0}))⟫
+        ≫ (graph Spec.quot : (⟨Int64 × Nat⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0})) := by
+        rw [rpair_graph, graph_comp, cst_graph]
+    _ = _ := by rw [foldr_cata, foldr_cata]
+
+#print axioms scan_rel
+#print axioms avg_rel
+#print axioms Ops.scan_toList
+#print axioms Ops.scan_i64_words
+#print axioms Ops.avg_bytes
 #print axioms xasc_toList
 #print axioms xasc_rel
 #print axioms mmin_rel
