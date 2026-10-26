@@ -1363,6 +1363,83 @@ theorem toInt_toNat_word {u : UInt64} (h : (0 : Int64) ≤ u.toInt64) : u.toInt6
   have := Int64.toInt_lt u.toInt64
   exact (toNat_of_toInt (r := u.toInt64) (by omega) (Int.toNat_of_nonneg h').symm).symm
 
+/-- **`expand` on naturals**: counts `c i` (`i < n`, each at most `B`) answer the block index `I`, block `i`
+    as `c i` copies of `i`, and the offset `W`, `w` at position `S i + w`, `S i = Σ_{k<i} c k`. -/
+theorem expand_nats (lens : ByteArray) (c : Nat → Nat) (n B : Nat) (hLn : nats lens = (List.range n).map c)
+    (hcn : ∀ i, c i ≤ B) (hU : n * B + n + B + 1 < USize.size) (hB : n * B + n + B < 2 ^ 63) :
+    nats (Find.expand lens).1 = (List.range n).flatMap (fun i => List.replicate (c i) i) ∧
+      (Find.expand lens).2.size / 8 = ((List.range n).map c).sum ∧
+      ∀ i w, i < n → w < c i → (nats (Find.expand lens).2)[((List.range i).map c).sum + w]! = w := by
+  have hlens : lens.size / 8 = n := by rw [← nats_length, hLn]; simp
+  have hsum : ((List.range n).map c).sum ≤ n * B := sum_range_le_mul c B hcn n
+  have hSle : ∀ i, i ≤ n → ((List.range i).map c).sum ≤ n * B := fun i hi =>
+    Nat.le_trans (sum_range_mono c hi) hsum
+  generalize hE : Find.expand lens = IW
+  obtain ⟨I, W⟩ := IW
+  unfold Find.expand at hE
+  obtain ⟨hI, hW⟩ := Prod.mk.inj hE
+  rw [hI] at hW
+  have hIn : nats I = (List.range n).flatMap fun i => List.replicate (c i) i := by
+    have h8u : (8 : USize).toNat = 8 := by
+      show (USize.ofNat 8).toNat = 8; exact USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+    have e := Verify.expandBytes_spec 8 (by rw [h8u]; decide) (by rw [h8u]; exact Nat.le_refl 8) 0
+      (by rw [h8u]; decide) (Kernel.tilLongs (lens.size / 8).toUSize) lens
+    rw [hI, h8u, hlens] at e
+    rw [nats, e, List.map_flatMap]
+    unfold List.flatMap
+    congr 1
+    refine List.map_congr_left fun i hi => ?_
+    have hi := List.mem_range.1 hi
+    rw [List.map_replicate]
+    have hci : (nats lens)[i]! = c i := by rw [hLn]; exact getElem!_range_map _ hi
+    rw [nats_get lens (by omega)] at hci
+    rw [toInt_word hci (by have := hcn i; omega), Int.toNat_natCast, getD_nats, nats_til n (by omega)]
+    simp [List.getD_eq_getElem?_getD, hi]
+  have hIs : I.size / 8 = ((List.range n).map c).sum := by
+    rw [← nats_length, hIn, List.length_flatMap]; simp
+  have hIp : ∀ i w, i < n → w < c i → (nats I)[((List.range i).map c).sum + w]! = i := fun i w hi hw => by
+    rw [hIn]
+    exact get!_of_get? (by
+      rw [blocks_get c (fun i => List.replicate (c i) i) (fun i => List.length_replicate ..) n hi hw,
+        List.getElem?_replicate, if_pos hw])
+  have hpos : ∀ i w, i < n → w < c i → ((List.range i).map c).sum + w < I.size / 8 := fun i w hi hw => by
+    have := sum_range_mono c (show i + 1 ≤ n by omega); rw [sum_range_succ] at this; omega
+  generalize hrs : Kernel.Ew.val Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.vv Int64.minValue
+    (Kernel.Scan.scan .sums .i64 (lens.size / 8).toUSize lens) lens (lens.size / 8).toUSize = rs at hW
+  have hsums := nats_sums_range lens c n hLn (by omega) (by omega)
+  have hrsn : nats rs = (List.range n).map fun i => ((List.range i).map c).sum := by
+    rw [← hrs, hlens, show Kernel.Scan.scan .sums .i64 n.toUSize lens = Alg.sums lens by
+        unfold Alg.sums Alg.len; rw [hlens],
+      nats_val_sub _ _ n (by omega) (by rw [← nats_length, hsums]; simp) (by omega) fun i hi => by
+        rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]
+        exact ⟨by omega, by have := hSle i (by omega); have := hcn i; omega⟩]
+    exact List.map_congr_left fun i hi => by
+      have hi := List.mem_range.1 hi
+      rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]; omega
+  rw [show Kernel.gatherBytes 8 0 rs I = Alg.gather 8 rs I from rfl] at hW
+  have hGs : (Alg.gather 8 rs I).size / 8 = I.size / 8 := by
+    rw [← nats_length, nats_gather, List.length_map, nats_length]
+  have hWp : ∀ i w, i < n → w < c i → (nats W)[((List.range i).map c).sum + w]! = w := fun i w hi hw => by
+    have hg : ∀ p, p < I.size / 8 → (nats (Alg.gather 8 rs I))[p]! = ((List.range (nats I)[p]!).map c).sum :=
+      fun p hp => by
+        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c n (p := p) (by omega)
+        rw [nats_gather, get!_map _ _ (by rw [nats_length]; omega), hIp i' w' hi' hw', hrsn, getD_range_map, if_pos hi']
+    have hts : (Kernel.tilLongs (I.size / 8).toUSize).size / 8 = I.size / 8 := by
+      rw [← nats_length (Kernel.tilLongs (I.size / 8).toUSize), nats_til _ (by omega), List.length_range]
+    have hr : ∀ p, p < I.size / 8 → (nats (Kernel.tilLongs (I.size / 8).toUSize))[p]! = p := fun p hp => by
+      rw [nats_til _ (by omega), getElem!_pos (List.range _) p (by simp; omega), List.getElem_range]
+    rw [← hW, nats_val_sub _ _ _ (by omega) (by rw [hts]; exact Nat.le_refl _) (by omega)
+      fun p hp => by
+        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c n (p := p) (by omega)
+        rw [hg _ hp, hIp i' w' hi' hw', hr _ hp]
+        exact ⟨by omega, by have := hSle i' (by omega); have := hcn i'; omega⟩,
+      getElem!_range_map _ (hpos i w hi hw), hg _ (hpos i w hi hw), hIp i w hi hw, hr _ (hpos i w hi hw)]
+    omega
+  have hWs : W.size / 8 = I.size / 8 := by
+    rw [← hW, (Verify.val_spec _ _ _ _ _ _ _).1, USize.toNat_ofNat_of_lt' (by omega),
+      show Kernel.Ew.width Kernel.Ew.i64 = 8 from rfl]; omega
+  exact ⟨hIn, by rw [hWs, hIs], hWp⟩
+
 /-- **`indexPartedP` indexes the runs**: run `i` of the answer is run `y[i]` of `P`, the empty run at an index
     outside `til g`. Restricted to a long `val` (`bytes` or `foR`), dense long offsets and a dense long `y`; the
     bounds keep every position below `2^63` and `USize`. -/
@@ -1433,25 +1510,9 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
   have hSle : ∀ i, i ≤ ny → ((List.range i).map c).sum ≤ ny * P.n := fun i hi =>
     Nat.le_trans (sum_range_mono c hi) hsum
   -- `expand`: the block index `I` and the offset in the block `W`
-  unfold Find.expand at hE
-  obtain ⟨hI, hW⟩ := Prod.mk.inj hE
-  rw [hI] at hW
-  have hIn : nats I = (List.range ny).flatMap fun i => List.replicate (c i) i := by
-    have h8u : (8 : USize).toNat = 8 := by
-      show (USize.ofNat 8).toNat = 8; exact USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-    have e := Verify.expandBytes_spec 8 (by rw [h8u]; decide) (by rw [h8u]; exact Nat.le_refl 8) 0
-      (by rw [h8u]; decide) (Kernel.tilLongs (lens.size / 8).toUSize) lens
-    rw [hI, h8u, hlens] at e
-    rw [nats, e, List.map_flatMap]
-    unfold List.flatMap
-    congr 1
-    refine List.map_congr_left fun i hi => ?_
-    have hi := List.mem_range.1 hi
-    rw [List.map_replicate]
-    have hci : (nats lens)[i]! = c i := by rw [hLn]; exact getElem!_range_map _ hi
-    rw [nats_get lens (by omega)] at hci
-    rw [toInt_word hci (by have := hcn i; omega), Int.toNat_natCast, getD_nats, nats_til ny (by omega)]
-    simp [List.getD_eq_getElem?_getD, hi]
+  obtain ⟨hIn, hWs, hWp⟩ := expand_nats lens c ny P.n hLn hcn (by omega) (by omega)
+  rw [hE] at hIn hWs hWp
+  dsimp only at hIn hWs hWp
   have hIs : I.size / 8 = ((List.range ny).map c).sum := by
     rw [← nats_length, hIn, List.length_flatMap]; simp
   have hIp : ∀ i w, i < ny → w < c i → (nats I)[((List.range i).map c).sum + w]! = i := fun i w hi hw => by
@@ -1461,39 +1522,7 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
         List.getElem?_replicate, if_pos hw])
   have hpos : ∀ i w, i < ny → w < c i → ((List.range i).map c).sum + w < I.size / 8 := fun i w hi hw => by
     have := sum_range_mono c (show i + 1 ≤ ny by omega); rw [sum_range_succ] at this; omega
-  -- `rs`: each block's start
-  generalize hrs : Kernel.Ew.val Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.vv Int64.minValue
-    (Kernel.Scan.scan .sums .i64 (lens.size / 8).toUSize lens) lens (lens.size / 8).toUSize = rs at hW
   have hsums := nats_sums_range lens c ny hLn (by omega) (by omega)
-  have hrsn : nats rs = (List.range ny).map fun i => ((List.range i).map c).sum := by
-    rw [← hrs, hlens, show Kernel.Scan.scan .sums .i64 ny.toUSize lens = Alg.sums lens by
-        unfold Alg.sums Alg.len; rw [hlens],
-      nats_val_sub _ _ ny (by omega) (by rw [← nats_length, hsums]; simp) (by omega) fun i hi => by
-        rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]
-        exact ⟨by omega, by have := hSle i (by omega); have := hcn i; omega⟩]
-    exact List.map_congr_left fun i hi => by
-      have hi := List.mem_range.1 hi
-      rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]; omega
-  -- `W`: the offset in the block
-  rw [show Kernel.gatherBytes 8 0 rs I = Alg.gather 8 rs I from rfl] at hW
-  have hGs : (Alg.gather 8 rs I).size / 8 = I.size / 8 := by
-    rw [← nats_length, nats_gather, List.length_map, nats_length]
-  have hWp : ∀ i w, i < ny → w < c i → (nats W)[((List.range i).map c).sum + w]! = w := fun i w hi hw => by
-    have hg : ∀ p, p < I.size / 8 → (nats (Alg.gather 8 rs I))[p]! = ((List.range (nats I)[p]!).map c).sum :=
-      fun p hp => by
-        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c ny (p := p) (by omega)
-        rw [nats_gather, get!_map _ _ (by rw [nats_length]; omega), hIp i' w' hi' hw', hrsn, getD_range_map, if_pos hi']
-    have hts : (Kernel.tilLongs (I.size / 8).toUSize).size / 8 = I.size / 8 := by
-      rw [← nats_length (Kernel.tilLongs (I.size / 8).toUSize), nats_til _ (by omega), List.length_range]
-    have hr : ∀ p, p < I.size / 8 → (nats (Kernel.tilLongs (I.size / 8).toUSize))[p]! = p := fun p hp => by
-      rw [nats_til _ (by omega), getElem!_pos (List.range _) p (by simp; omega), List.getElem_range]
-    rw [← hW, nats_val_sub _ _ _ (by omega) (by rw [hts]; exact Nat.le_refl _) (by omega)
-      fun p hp => by
-        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c ny (p := p) (by omega)
-        rw [hg _ hp, hIp i' w' hi' hw', hr _ hp]
-        exact ⟨by omega, by have := hSle i' (by omega); have := hcn i'; omega⟩,
-      getElem!_range_map _ (hpos i w hi hw), hg _ (hpos i w hi hw), hIp i w hi hw, hr _ (hpos i w hi hw)]
-    omega
   -- `src`: run `y[i]`'s start plus the offset
   have hCi : ∀ i, i < ny → (nats (Alg.gather 8 ob yb)).getD i 0 = (nats ob).getD (nats yb)[i]! 0 := fun i hi => by
     rw [nats_gather, map_eq_range _ (nats yb), hyl, getD_range_map, if_pos hi]
@@ -1509,9 +1538,7 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
       have hh := hhit i (by omega)
       rw [nats_gather, get!_map _ _ (by rw [nats_length]; exact hpos i w hi hw), hIp i w hi hw, hCi i hi, hob,
         getD_range_map, if_pos (by omega)]
-  have hWs : W.size / 8 = I.size / 8 := by
-    rw [← hW, (Verify.val_spec _ _ _ _ _ _ _).1, USize.toNat_ofNat_of_lt' (by omega),
-      show Kernel.Ew.width Kernel.Ew.i64 = 8 from rfl]; omega
+  rw [← hIs] at hWs
   have hsrc : ∀ i w, i < ny → w < c i → (nats src)[((List.range i).map c).sum + w]! = P.cut (nats yb)[i]! + w :=
     fun i w hi hw => by
       rw [← hS, nats_add _ _ (by rw [hAs]; omega) (by rw [hWs, hAs]) fun p hp => by
@@ -1602,83 +1629,6 @@ theorem indexPartedP_rel [Inhabited (El .long)] {P R : Parted .long} {ny : Nat} 
   (`grade`) — and the rest is long arithmetic: `expand` of the matched sizes, the class starts
   `sums sizes - sizes`, two gathers and an add. `join_nats` reads that arithmetic on naturals, the three lane
   kernels' answers its hypotheses. -/
-
-/-- **`expand` on naturals**: counts `c i` (`i < n`, each at most `B`) answer the block index `I`, block `i`
-    as `c i` copies of `i`, and the offset `W`, `w` at position `S i + w`, `S i = Σ_{k<i} c k`. -/
-theorem expand_nats (lens : ByteArray) (c : Nat → Nat) (n B : Nat) (hLn : nats lens = (List.range n).map c)
-    (hcn : ∀ i, c i ≤ B) (hU : n * B + n + B + 1 < USize.size) (hB : n * B + n + B < 2 ^ 63) :
-    nats (Find.expand lens).1 = (List.range n).flatMap (fun i => List.replicate (c i) i) ∧
-      (Find.expand lens).2.size / 8 = ((List.range n).map c).sum ∧
-      ∀ i w, i < n → w < c i → (nats (Find.expand lens).2)[((List.range i).map c).sum + w]! = w := by
-  have hlens : lens.size / 8 = n := by rw [← nats_length, hLn]; simp
-  have hsum : ((List.range n).map c).sum ≤ n * B := sum_range_le_mul c B hcn n
-  have hSle : ∀ i, i ≤ n → ((List.range i).map c).sum ≤ n * B := fun i hi =>
-    Nat.le_trans (sum_range_mono c hi) hsum
-  generalize hE : Find.expand lens = IW
-  obtain ⟨I, W⟩ := IW
-  unfold Find.expand at hE
-  obtain ⟨hI, hW⟩ := Prod.mk.inj hE
-  rw [hI] at hW
-  have hIn : nats I = (List.range n).flatMap fun i => List.replicate (c i) i := by
-    have h8u : (8 : USize).toNat = 8 := by
-      show (USize.ofNat 8).toNat = 8; exact USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-    have e := Verify.expandBytes_spec 8 (by rw [h8u]; decide) (by rw [h8u]; exact Nat.le_refl 8) 0
-      (by rw [h8u]; decide) (Kernel.tilLongs (lens.size / 8).toUSize) lens
-    rw [hI, h8u, hlens] at e
-    rw [nats, e, List.map_flatMap]
-    unfold List.flatMap
-    congr 1
-    refine List.map_congr_left fun i hi => ?_
-    have hi := List.mem_range.1 hi
-    rw [List.map_replicate]
-    have hci : (nats lens)[i]! = c i := by rw [hLn]; exact getElem!_range_map _ hi
-    rw [nats_get lens (by omega)] at hci
-    rw [toInt_word hci (by have := hcn i; omega), Int.toNat_natCast, getD_nats, nats_til n (by omega)]
-    simp [List.getD_eq_getElem?_getD, hi]
-  have hIs : I.size / 8 = ((List.range n).map c).sum := by
-    rw [← nats_length, hIn, List.length_flatMap]; simp
-  have hIp : ∀ i w, i < n → w < c i → (nats I)[((List.range i).map c).sum + w]! = i := fun i w hi hw => by
-    rw [hIn]
-    exact get!_of_get? (by
-      rw [blocks_get c (fun i => List.replicate (c i) i) (fun i => List.length_replicate ..) n hi hw,
-        List.getElem?_replicate, if_pos hw])
-  have hpos : ∀ i w, i < n → w < c i → ((List.range i).map c).sum + w < I.size / 8 := fun i w hi hw => by
-    have := sum_range_mono c (show i + 1 ≤ n by omega); rw [sum_range_succ] at this; omega
-  generalize hrs : Kernel.Ew.val Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.vv Int64.minValue
-    (Kernel.Scan.scan .sums .i64 (lens.size / 8).toUSize lens) lens (lens.size / 8).toUSize = rs at hW
-  have hsums := nats_sums_range lens c n hLn (by omega) (by omega)
-  have hrsn : nats rs = (List.range n).map fun i => ((List.range i).map c).sum := by
-    rw [← hrs, hlens, show Kernel.Scan.scan .sums .i64 n.toUSize lens = Alg.sums lens by
-        unfold Alg.sums Alg.len; rw [hlens],
-      nats_val_sub _ _ n (by omega) (by rw [← nats_length, hsums]; simp) (by omega) fun i hi => by
-        rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]
-        exact ⟨by omega, by have := hSle i (by omega); have := hcn i; omega⟩]
-    exact List.map_congr_left fun i hi => by
-      have hi := List.mem_range.1 hi
-      rw [hsums, hLn, getElem!_range_map _ hi, getElem!_range_map _ hi, sum_range_succ]; omega
-  rw [show Kernel.gatherBytes 8 0 rs I = Alg.gather 8 rs I from rfl] at hW
-  have hGs : (Alg.gather 8 rs I).size / 8 = I.size / 8 := by
-    rw [← nats_length, nats_gather, List.length_map, nats_length]
-  have hWp : ∀ i w, i < n → w < c i → (nats W)[((List.range i).map c).sum + w]! = w := fun i w hi hw => by
-    have hg : ∀ p, p < I.size / 8 → (nats (Alg.gather 8 rs I))[p]! = ((List.range (nats I)[p]!).map c).sum :=
-      fun p hp => by
-        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c n (p := p) (by omega)
-        rw [nats_gather, get!_map _ _ (by rw [nats_length]; omega), hIp i' w' hi' hw', hrsn, getD_range_map, if_pos hi']
-    have hts : (Kernel.tilLongs (I.size / 8).toUSize).size / 8 = I.size / 8 := by
-      rw [← nats_length (Kernel.tilLongs (I.size / 8).toUSize), nats_til _ (by omega), List.length_range]
-    have hr : ∀ p, p < I.size / 8 → (nats (Kernel.tilLongs (I.size / 8).toUSize))[p]! = p := fun p hp => by
-      rw [nats_til _ (by omega), getElem!_pos (List.range _) p (by simp; omega), List.getElem_range]
-    rw [← hW, nats_val_sub _ _ _ (by omega) (by rw [hts]; exact Nat.le_refl _) (by omega)
-      fun p hp => by
-        obtain ⟨i', w', hi', hw', rfl⟩ := blocks_cover c n (p := p) (by omega)
-        rw [hg _ hp, hIp i' w' hi' hw', hr _ hp]
-        exact ⟨by omega, by have := hSle i' (by omega); have := hcn i'; omega⟩,
-      getElem!_range_map _ (hpos i w hi hw), hg _ (hpos i w hi hw), hIp i w hi hw, hr _ (hpos i w hi hw)]
-    omega
-  have hWs : W.size / 8 = I.size / 8 := by
-    rw [← hW, (Verify.val_spec _ _ _ _ _ _ _).1, USize.toNat_ofNat_of_lt' (by omega),
-      show Kernel.Ew.width Kernel.Ew.i64 = 8 from rfl]; omega
-  exact ⟨hIn, by rw [hWs, hIs], hWp⟩
 
 /-- Two flatMaps of blocks of equal lengths zip block by block. -/
 theorem zip_flatMap {α β : Type} (A : Nat → List α) (B : Nat → List β) (hl : ∀ i, (A i).length = (B i).length) :
