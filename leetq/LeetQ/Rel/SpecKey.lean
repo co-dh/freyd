@@ -513,8 +513,288 @@ theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
   refine ⟨fun e => by rw [e], fun e => ?_⟩
   have := congrArg Int64.toUInt64 e; simpa using this
 
+/-! ## `aj` and `wj`'s time edge: `binRows` is `binSpec` in each needle's group
+
+  `Eval.groupEdge`, which both `aj` and `wjP` read their edges from, is one `Kernel.binRows` (over the time
+  column where it lies, or decoded first by `foRBinRows`). Its halving `binStep` is `binSpec`'s
+  `partitionAt` walk shifted to the group's start, element for element — not merely on a sorted group —
+  so the law holds on any group, and `binSpec_sorted` reads it as "the last row at or before" where
+  the times ascend. -/
+
+/-- `binStep`'s test at position `m`: the element `order` names there (`m` itself where `order` is empty),
+    its `ordKey` below `k` (`binr`) or at most `k` (`bin`). -/
+def binTest (w : Nat) (float signed right : Bool) (hay order : ByteArray) (k : UInt64) (m : Nat) : Bool :=
+  let v := Kernel.ordKey w float signed (Column.bitsAt hay ((if order.isEmpty then m else
+    (Column.bitsAt order (m * 8) 8).toNat) * w) w)
+  decide (if right then v < k else v ≤ k)
+
+/-- `partitionAt`'s loop never answers past `hi`. -/
+theorem partitionAt_go_le (below : Nat → Id Bool) : ∀ fuel lo hi, lo ≤ hi →
+    Id.run (Eval.partitionAt.go below fuel lo hi) ≤ hi
+  | 0, _, _, h => h
+  | fuel + 1, lo, hi, h => by
+    rw [Eval.partitionAt.go]
+    by_cases hle : hi ≤ lo
+    · rw [if_pos hle]; exact h
+    · rw [if_neg hle]
+      show Id.run (if Id.run (below (lo + (hi - lo) / 2)) = true then
+          Eval.partitionAt.go below fuel (lo + (hi - lo) / 2 + 1) hi
+        else Eval.partitionAt.go below fuel lo (lo + (hi - lo) / 2)) ≤ hi
+      split
+      · exact partitionAt_go_le below fuel _ hi (by omega)
+      · exact Nat.le_trans (partitionAt_go_le below fuel lo _ (by omega)) (by omega)
+
+/-- **`binStep` over `[lo+a, lo+b)` is `partitionAt`'s loop over `[a, b)` shifted by `lo`**, for any
+    `below` that reads `binTest` at `lo + j`: the same walk, step for step. -/
+theorem binStep_go (w : Nat) (float signed right : Bool) (hay order : ByteArray) (k : UInt64) (lo : Nat)
+    (below : Nat → Id Bool) : ∀ fuel a b,
+    (∀ j, a ≤ j → j < b → Id.run (below j) = binTest w float signed right hay order k (lo + j)) →
+    Kernel.binStep w float signed right hay order k fuel (lo + a) (lo + b) =
+      lo + Id.run (Eval.partitionAt.go below fuel a b)
+  | 0, _, _, _ => rfl
+  | fuel + 1, a, b, hb => by
+    rw [Eval.partitionAt.go, Kernel.binStep]
+    by_cases hle : b ≤ a
+    · rw [if_pos (show lo + b ≤ lo + a by omega), if_pos hle]; rfl
+    · rw [if_neg (show ¬ lo + b ≤ lo + a by omega), if_neg hle]
+      show _ = lo + Id.run (if Id.run (below (a + (b - a) / 2)) = true then
+          Eval.partitionAt.go below fuel (a + (b - a) / 2 + 1) b
+        else Eval.partitionAt.go below fuel a (a + (b - a) / 2))
+      have hm : lo + a + (lo + b - (lo + a)) / 2 = lo + (a + (b - a) / 2) := by omega
+      have hv := hb (a + (b - a) / 2) (Nat.le_add_right ..) (by omega)
+      simp only [hm]
+      cases e : binTest w float signed right hay order k (lo + (a + (b - a) / 2))
+      · rw [e] at hv; unfold binTest at e
+        simp only [decide_eq_false_iff_not] at e
+        simp only [e, hv, ↓reduceIte, Bool.false_eq_true]
+        exact binStep_go w float signed right hay order k lo below fuel a (a + (b - a) / 2) fun j h1 h2 => hb j h1 (by omega)
+      · rw [e] at hv; unfold binTest at e
+        simp only [decide_eq_true_eq] at e
+        simp only [e, hv, ↓reduceIte]
+        rw [show lo + (a + (b - a) / 2) + 1 = lo + (a + (b - a) / 2 + 1) by omega]
+        exact binStep_go w float signed right hay order k lo below fuel _ b fun j h1 h2 => hb j (by omega) h2
+
+/-- **`binRows` answers `binSpec` in each needle's group**: needle `j` names group `g`, which spans
+    `[lo, hi)` of `bounds`; where `G` lists that span's rows (`order` read there, the position itself
+    where it is empty) and the test at each is `rt[G[i]] ≤ x`, word `j` is `binSpec rt G x`'s row,
+    `miss` where the bisection lands at the group's start. Nothing is assumed about the times' order. -/
+theorem bitsAt_binRows (w : USize) (float signed right : Bool) (hay keys order bounds gids : ByteArray)
+    (miss : UInt64) {j g lo hi : Nat} (hj : j < keys.size / w.toNat) (hgi : (j + 1) * 8 ≤ gids.size)
+    (hg : (Column.bitsAt gids (j * 8) 8).toNat = g) (hng : g < bounds.size / 8 - 1)
+    (hlo : (Column.bitsAt bounds (g * 8) 8).toNat = lo) (hhi : (Column.bitsAt bounds (g * 8 + 8) 8).toNat = hi)
+    (rt : List Int64) (G : List Nat) (x : Int64) (hlen : G.length = hi - lo)
+    (hrow : ∀ i, i < G.length →
+      G[i]! = if order.isEmpty then lo + i else (Column.bitsAt order ((lo + i) * 8) 8).toNat)
+    (htest : ∀ i, i < G.length → binTest w.toNat float signed right hay order
+      (Kernel.ordKey w.toNat float signed (Column.bitsAt keys (j * w.toNat) w.toNat)) (lo + i) =
+        decide (rt[G[i]!]! ≤ x)) :
+    Column.bitsAt (Kernel.binRows w float signed right hay keys order bounds gids miss) (8 * j) 8 =
+      ((Struct.binSpec rt G x).map Nat.toUInt64).getD miss := by
+  simp only [Kernel.binRows]
+  rw [show 8 * j = ByteArray.empty.size + 8 * j by simp,
+    (Verify.foldl_pushBits _ 8 (by decide) _ _).2.2 j (by simpa using hj),
+    show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64, List.getElem_range, hg, hlo, hhi]
+  obtain ⟨P, hP, hPe, hPle⟩ : ∃ P, Kernel.binStep w.toNat float signed right hay order
+      (Kernel.ordKey w.toNat float signed (Column.bitsAt keys (j * w.toNat) w.toNat)) (hi - lo + 1) lo hi =
+        lo + P ∧ Id.run (Eval.partitionAt (fun i => pure (decide (rt[G[i]!]! ≤ x))) G.length) = P ∧
+        P ≤ G.length := by
+    by_cases hle : hi ≤ lo
+    · refine ⟨0, ?_, ?_, Nat.zero_le _⟩
+      · rw [show hi - lo + 1 = 0 + 1 by omega, Kernel.binStep, if_pos hle]; rfl
+      · rw [show G.length = 0 by omega]; rfl
+    · refine ⟨_, ?_, rfl, partitionAt_go_le _ _ _ _ (Nat.zero_le _)⟩
+      have := binStep_go w.toNat float signed right hay order _ lo (fun i => pure (decide (rt[G[i]!]! ≤ x)))
+        (hi - lo + 1) 0 (hi - lo) fun i _ hi' => (htest i (by omega)).symm
+      rw [Nat.add_sub_cancel' (by omega)] at this
+      simp only [Nat.add_zero] at this
+      rw [this, hlen]; rfl
+  rw [hP]
+  unfold Struct.binSpec
+  rw [hPe]
+  rcases P with _ | p
+  · simp
+  · have hr := hrow p (by omega)
+    simp only [show ¬ gids.size < (j + 1) * 8 by omega, show ¬ bounds.size / 8 - 1 ≤ g by omega,
+      Nat.add_sub_cancel, hr]
+    by_cases ho : order.isEmpty = true <;> simp [ho]
+
+/-- `binRows` at a needle whose id names no group answers the miss. -/
+theorem bitsAt_binRows_miss (w : USize) (float signed right : Bool) (hay keys order bounds gids : ByteArray)
+    (miss : UInt64) {j g : Nat} (hj : j < keys.size / w.toNat) (hg : (Column.bitsAt gids (j * 8) 8).toNat = g)
+    (hng : bounds.size / 8 - 1 ≤ g) :
+    Column.bitsAt (Kernel.binRows w float signed right hay keys order bounds gids miss) (8 * j) 8 = miss := by
+  simp only [Kernel.binRows]
+  rw [show 8 * j = ByteArray.empty.size + 8 * j by simp,
+    (Verify.foldl_pushBits _ 8 (by decide) _ _).2.2 j (by simpa using hj),
+    show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64, List.getElem_range, hg]
+  simp [hng]
+
+/-- A word read as `Int64` is its two's-complement value, `sx` at width 8. -/
+theorem sx8_toInt64 (v : UInt64) : Verify.sx 8 v = v.toInt64.toInt := by
+  have hv := v.toNat_lt
+  rw [show v.toInt64.toInt = v.toBitVec.toInt from rfl, BitVec.toInt_eq_toNat_cond]
+  simp only [Verify.sx, Nat.reducePow, Nat.reduceMul, Nat.reduceSub, UInt64.toNat_toBitVec] at hv ⊢
+  rw [Nat.mod_eq_of_lt hv]
+  split <;> split <;> omega
+
+/-- At width 8, signed, `ordKey` carries `Int64` order onto unsigned order. -/
+theorem ordKey8_le (a b : UInt64) :
+    Kernel.ordKey 8 false true a ≤ Kernel.ordKey 8 false true b ↔ a.toInt64 ≤ b.toInt64 := by
+  have ha := Verify.ordKey_signed (w := 8) (by decide) (by decide) a
+  have hb := Verify.ordKey_signed (w := 8) (by decide) (by decide) b
+  rw [sx8_toInt64] at ha hb
+  simp only [Nat.reducePow, Nat.reduceMul, Nat.reduceSub] at ha hb
+  rw [UInt64.le_iff_toNat_le, Int64.le_iff_toInt_le]
+  omega
+
+/-- **`groupEdge` at `long` times is one `binRows`**, the right's time column read where it lies (its
+    bytes, or its frame-of-reference decode — the payload `bytesOf` names either way), the groups' `rows`
+    as the order and their `bounds` as longs, `nr` the miss. -/
+theorem groupEdge_long (gs : Eval.Groups) (ids rc nc : Column) (nr : Nat) {hay keys gids : ByteArray}
+    (hrt : rc.ty = .long) (hnt : nc.ty = .long) (hrb : Column.bytesOf rc = some hay)
+    (hkb : Column.bytesOf nc = some keys) (hgb : Column.bytesOf ids = some gids)
+    (hsz : keys.size / 8 = gids.size / 8) :
+    Eval.groupEdge gs ids (.vector rc) (.vector nc) nr = Column.ofBytes .long
+      (Kernel.binRows 8 false true false hay keys gs.rows (Kernel.longBytes gs.bounds) gids nr.toUInt64) := by
+  obtain ⟨t, n, e, a⟩ := rc
+  obtain ⟨u, m, f, b⟩ := nc
+  simp only at hrt hnt
+  subst hrt hnt
+  have h1 : (QValue.vector ⟨.long, n, e, a⟩).bare = .vector ⟨.long, n, e, none⟩ := by
+    rcases a with _ | ⟨_, _⟩ <;> rfl
+  have h2 : (QValue.vector ⟨.long, m, f, b⟩).bare = .vector ⟨.long, m, f, none⟩ := by
+    rcases b with _ | ⟨_, _⟩ <;> rfl
+  have hrb' : Column.bytesOf ⟨.long, n, e, none⟩ = some hay := by rw [← hrb]; rfl
+  have hkb' : Column.bytesOf ⟨.long, m, f, none⟩ = some keys := by rw [← hkb]; rfl
+  unfold Eval.groupEdge
+  simp only [h1, h2, Kernel.denseWidth, QAtomicType.width, hkb', hgb, hsz, Kernel.longColumn, bne_self_eq_false,
+    beq_self_eq_true, ↓reduceIte, Bool.false_eq_true, bind, Option.bind, Kernel.foldsZero, Kernel.ordSigned]
+  cases e with
+  | foR md pk =>
+    have hd : Kernel.Coc.decode (USize.ofNat 8) md pk (USize.ofNat n) = hay := by
+      simpa [Column.bytesOf, QAtomicType.width] using hrb'
+    by_cases hm : md.isEmpty = true
+    · simp [Kernel.foRColumn, hm, hrb'] <;> rfl
+    · simp [Kernel.foRColumn, hm, Kernel.foRBinRows, Column.encodes, ← hd] <;> rfl
+  | _ => simp [Kernel.foRColumn, hrb'] <;> rfl
+
+/-- What `binSpec` names is a row of its group. -/
+theorem binSpec_mem {rt : List Int64} {g : List Nat} {x : Int64} {r : Nat} (h : Struct.binSpec rt g x = some r) :
+    r ∈ g := by
+  unfold Struct.binSpec at h
+  have hle : Id.run (Eval.partitionAt (fun j => (pure (decide (rt[g[j]!]! ≤ x)) : Id Bool)) g.length) ≤ g.length :=
+    partitionAt_go_le _ _ _ _ (Nat.zero_le _)
+  generalize Id.run (Eval.partitionAt (fun j => (pure (decide (rt[g[j]!]! ≤ x)) : Id Bool)) g.length) = P at h hle
+  rcases P with _ | p
+  · cases h
+  · simp only [Option.some.injEq, Nat.add_sub_cancel] at h
+    subst h
+    rw [getElem!_pos g p (by omega)]; exact List.getElem_mem _
+
+/-- **`aj` is `ajSpec` once its groups are known.** Where `keyGroups` answers groups `gs` and ids whose word
+    `i` names a group spanning exactly `Struct.group rk lk[i]` (the right rows of left row `i`'s key, in row
+    order, read through `gs.rows`), or no group where that is empty, `aj` over dense long times `keys`, `hay`
+    answers `ajSpec`. Nothing is assumed about the times' order inside a group. -/
+theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {tl tr : Column} {m : Nat}
+    {A : Arr .long m} {gs : Eval.Groups} {ids : Column} {keys hay gids : ByteArray} (lk rk : List κ)
+    (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
+    (hrb : Column.bytesOf tr = some hay) (hgb : Column.bytesOf ids = some gids)
+    (hkn : keys.size / 8 = tl.n) (hgn : gids.size / 8 = tl.n) (hrn : hay.size / 8 = tr.n)
+    (hlk : lk.length = tl.n) (hrk : rk.length = tr.n) (hU : tl.n < USize.size) (h63 : tr.n < 2 ^ 63)
+    (hkg : Struct.keyGroups "aj" l r tl.n tr.n = .ok (gs, ids))
+    (hgrp : ∀ i, i < tl.n →
+      (Kernel.longBytes gs.bounds).size / 8 - 1 ≤ (Column.bitsAt gids (i * 8) 8).toNat ∧
+        Struct.group rk lk[i]! = [] ∨
+      (Column.bitsAt gids (i * 8) 8).toNat < (Kernel.longBytes gs.bounds).size / 8 - 1 ∧
+        (Struct.group rk lk[i]!).length =
+          (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8 + 8) 8).toNat -
+          (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8) 8).toNat ∧
+        ∀ p, p < (Struct.group rk lk[i]!).length → (Struct.group rk lk[i]!)[p]! =
+          let lo := (Column.bitsAt (Kernel.longBytes gs.bounds) ((Column.bitsAt gids (i * 8) 8).toNat * 8) 8).toNat
+          if gs.rows.isEmpty then lo + p else (Column.bitsAt gs.rows ((lo + p) * 8) 8).toNat)
+    (h : Struct.aj l r ⟨.long, tl⟩ ⟨.long, tr⟩ = .ok ⟨m, A⟩) :
+    A.toList = Struct.ajSpec lk ((nats keys).map Int64.ofNat) rk ((nats hay).map Int64.ofNat) := by
+  have hE := groupEdge_long gs ids tr tl tr.n htr htl hrb hkb hgb (by omega)
+  simp only [Struct.aj, Struct.colRows, Struct.colValue, hkg, hE, Find.dense, Column.ofBytes, Column.bytesOf,
+    beq_self_eq_true, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
+  split at h
+  · cases h
+  rename_i A' hA
+  simp only [Except.ok.injEq, Sigma.mk.injEq] at h
+  obtain ⟨rfl, h⟩ := h
+  obtain rfl := eq_of_heq h
+  have hc := Struct.of_c hA
+  rw [Arr.toList_long_bytes _ (by rw [hc]; rfl)]
+  -- `^`'s word `i`: the atom where the word is the null `nr`, the word otherwise
+  have hfill : ∀ (nul x y : Int64), Kernel.Ew.intStep Kernel.Ew.fill nul x y = if y == nul then x else y :=
+    fun _ _ _ => rfl
+  have key : ∀ (nul : Int64) (c : UInt64) (b : ByteArray) (i : Nat), i < tl.n →
+      Column.bitsAt (Kernel.Ew.val Kernel.Ew.fill Kernel.Ew.i64 Kernel.Ew.av nul (Find.one c) b tl.n.toUSize)
+        (i * 8) 8 = (Kernel.Ew.intStep Kernel.Ew.fill nul c.toInt64 (Column.bitsAt b (i * 8) 8).toInt64).toUInt64 := by
+    intro nul c b i hi
+    have hv := val_i64_av Kernel.Ew.fill nul c b tl.n hU
+    have hl := congrArg List.length hv
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hl
+    have := congrArg (fun L => L[i]?) hv
+    simp only [Verify.elemsW, List.getElem?_map, List.getElem?_range, hl, hi, Option.map_some,
+      Option.some.injEq] at this
+    exact this
+  have hnr : (UInt64.ofNat tr.n).toInt64 = Int64.ofNat tr.n := by
+    rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
+  rw [List.map_map]
+  unfold Struct.ajSpec
+  apply List.ext_getElem (by simp [nats_length, hlk, hkn])
+  intro i h1 h2
+  simp only [List.length_map, List.length_range] at h1
+  simp only [List.getElem_map, List.getElem_range, List.getElem_zip, Function.comp_apply]
+  rw [key _ _ _ i h1, show i * 8 = 8 * i from Nat.mul_comm ..]
+  have h8 : (8 : USize).toNat = 8 := by simp
+  have hx : (nats keys)[i]'(by rw [nats_length]; omega) = (Column.bitsAt keys (i * 8) 8).toNat := by
+    rw [← getElem!_pos _ i (by rw [nats_length]; omega), nats_get _ (by omega)]
+  rw [hx, ← toInt64_eq_ofNat, ← getElem!_pos lk i (by omega)]
+  have hG : ∀ p, p < (Struct.group rk lk[i]!).length → (Struct.group rk lk[i]!)[p]! < tr.n := fun p hp => by
+    rw [getElem!_pos _ p hp]
+    have := List.mem_range.1 (List.mem_filter.1 (List.getElem_mem hp)).1
+    omega
+  rcases hgrp i h1 with ⟨hng, hG0⟩ | ⟨hng, hlen, hrow⟩
+  · rw [bitsAt_binRows_miss 8 false true false hay keys gs.rows _ gids _ (by simp; omega) rfl hng, hG0]
+    simp [Struct.binSpec, hfill, Nat.toUInt64_eq, hnr] <;> rfl
+  · rw [bitsAt_binRows 8 false true false hay keys gs.rows _ gids _ (by simp; omega) (by omega) rfl hng rfl rfl
+      ((nats hay).map Int64.ofNat) _ (Column.bitsAt keys (i * 8) 8).toInt64 hlen hrow fun p hp => by
+        have hr := hrow p hp
+        unfold binTest
+        simp only [h8, Bool.false_eq_true, ↓reduceIte]
+        rw [← hr, get!_map _ _ (by rw [nats_length]; have := hG p hp; omega), nats_get _ (by have := hG p hp; omega),
+          ← toInt64_eq_ofNat]
+        simp only [ordKey8_le]]
+    cases hb : Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt keys (i * 8) 8).toInt64
+    · simp [hfill, Nat.toUInt64_eq, hnr]
+    · rename_i r
+      have hrn : r < tr.n := by
+        have := binSpec_mem hb
+        simp only [Struct.group, List.mem_filter, List.mem_range] at this
+        omega
+      have hr' : (UInt64.ofNat r).toInt64 = Int64.ofNat r := by
+        rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
+      have hne : (UInt64.ofNat r).toInt64 ≠ Int64.ofNat tr.n := fun e => by
+        rw [← hnr] at e
+        have := congrArg Int64.toInt e
+        rw [toInt_word (u := UInt64.ofNat r) (a := r) (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)])
+          (by omega), toInt_word (u := UInt64.ofNat tr.n) (a := tr.n)
+          (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]) h63] at this
+        omega
+      simp [hfill, Nat.toUInt64_eq, hr']
+      exact fun e => absurd e (hr' ▸ hne)
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
+#print axioms binStep_go
+#print axioms bitsAt_binRows
+#print axioms bitsAt_binRows_miss
+#print axioms ordKey8_le
+#print axioms groupEdge_long
+#print axioms binSpec_mem
+#print axioms aj_groups
 
 end LeetQ.Rel.Verb
