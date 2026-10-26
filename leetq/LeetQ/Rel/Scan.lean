@@ -142,9 +142,14 @@ def scanl {α β : Type} (f : β → α → β) : β → List α → List β
   | a, [] => [a]
   | a, x :: xs => a :: scanl f (f a x) xs
 
-/-- `f\x` with q's null skip: the accumulator after each element, a null leaving it unchanged. -/
+/-- `f\x` with q's null skip at any element and accumulator type, `isNull` naming the null: the
+    accumulator after each element, a null leaving it unchanged. The left fold the kernel runs. -/
+def scanBy {α β : Type} (isNull : α → Bool) (step : β → α → β) (seed : β) (xs : List α) : List β :=
+  (scanl (fun a x => if isNull x then a else step a x) seed xs).tail
+
+/-- `f\x` on longs: `scanBy` at `0N`. -/
 def scan (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) : List Int64 :=
-  (scanl (fun a x => if x == nul then a else step a x) seed xs).tail
+  scanBy (· == nul) step seed xs
 
 /-- `f/x` with the same skip. -/
 def over (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) : Int64 :=
@@ -251,7 +256,7 @@ theorem scanl_getLast? {α β : Type} (f : β → α → β) (a : β) (xs : List
 theorem scan_getLast? (f : Int64 → Int64 → Int64) (a : Int64) (xs : List Int64) (h : xs ≠ []) :
     (scan f a xs).getLast? = some (over f a xs) := by
   obtain ⟨x, xs, rfl⟩ := List.exists_cons_of_ne_nil h
-  simp only [scan, over, scanl, List.tail_cons, List.foldl_cons]
+  simp only [scan, scanBy, over, scanl, List.tail_cons, List.foldl_cons]
   exact scanl_getLast? _ _ _
 
 /-- Term `j` of `scanl` is the fold over the first `j` elements. -/
@@ -263,10 +268,16 @@ theorem scanl_range {α β : Type} (f : β → α → β) (a : β) (xs : List α
     rw [scanl, ih, List.length_cons, List.range_succ_eq_map (n := xs.length + 1), List.map_cons, List.map_map]
     simp [Function.comp_def]
 
+/-- Term `j` of `scanBy` is the null-skipping left fold of the first `j+1` elements. -/
+theorem scanBy_range {α β : Type} (isNull : α → Bool) (step : β → α → β) (seed : β) (xs : List α) :
+    scanBy isNull step seed xs = (List.range xs.length).map fun j =>
+      (xs.take (j+1)).foldl (fun a x => if isNull x then a else step a x) seed := by
+  rw [scanBy, scanl_range, List.range_succ_eq_map, List.map_cons, List.tail_cons, List.map_map]; rfl
+
 /-- Term `j` of `Spec.scan` is `Spec.over` of the first `j+1` elements. -/
 theorem scan_range (step : Int64 → Int64 → Int64) (seed : Int64) (xs : List Int64) :
-    scan step seed xs = (List.range xs.length).map fun j => over step seed (xs.take (j+1)) := by
-  rw [scan, scanl_range, List.range_succ_eq_map, List.map_cons, List.tail_cons, List.map_map]; rfl
+    scan step seed xs = (List.range xs.length).map fun j => over step seed (xs.take (j+1)) :=
+  scanBy_range _ step seed xs
 
 /-- The scan verb whose seed and step are the fold `op`'s: `q.k` spells `+\ *\ &\ |\` with the dyads of
     `+/ */ &/ |/`. `all`/`any` fold over `"b"$x` and have no scan. -/
@@ -299,6 +310,18 @@ def kern : Scan.Verb → (Int64 → Int64 → Int64) × Int64
 theorem kern_verb {op : Coc.Over} {sv : Scan.Verb} (hv : verb op = some sv) :
     (kern sv).1 = op.step ∧ (kern sv).2 = op.seed nul := by
   cases op <;> simp only [verb, Option.some.injEq, reduceCtorEq] at hv <;> subst hv <;> exact ⟨rfl, by decide⟩
+
+/-- The step and seed the float scan kernel folds at each verb (`fltScan`'s at `float`): a `Float`
+    accumulator, each element's bits read by `Float.ofBits`. -/
+def fkern : Scan.Verb → (Float → UInt64 → Float) × Float
+  | .sums => (fun a x => a + Float.ofBits x, 0.0)
+  | .prds => (fun a x => a * Float.ofBits x, 1.0)
+  | .mins => (fun a x => if Float.ofBits x < a then Float.ofBits x else a, Float.ofBits 0x7ff0000000000000)
+  | .maxs => (fun a x => if a < Float.ofBits x then Float.ofBits x else a, Float.ofBits 0xfff0000000000000)
+  | .fills => (fun _ x => Float.ofBits x, Float.ofBits QLean.nanBits)
+
+/-- A `Float` accumulator written out as the bits of q's `float`, every NaN as `0n`. -/
+def femit (x : Float) : UInt64 := if Bits.f64IsNaN x.toBits then QLean.nanBits else x.toBits
 
 /-- A float's bits with every NaN as q's `0n`: the `foR` path of `avg` divides with no NaN guard, which
     the dense path has. -/
@@ -492,22 +515,53 @@ theorem take_range_map {α : Type} (g : Nat → α) {j m : Nat} (h : j ≤ m) :
     ((List.range m).map g).take j = (List.range j).map g :=
   List.ext_getElem (by simp; omega) fun _ _ _ => by simp
 
-/-- `scanOf` over a dense long payload, eight bytes out, at a step and writer that read each word as a
-    long: its words are `Spec.scan` of the payload's longs, from `scanOf_get`. -/
+/-- **The scan engine over eight-byte words**, at any accumulator, seed, step and writer: the words
+    `scanOf` writes are `Spec.scanBy` of the payload's words, each written by `emit`, from `scanOf_get`.
+    The core every eight-byte layout's scan law (long, float) is an instance of. -/
+theorem scanOf_words {α : Type} (b : ByteArray) {rd : Nat → UInt64} (hrd : ∀ i, rd i = Column.bitsAt b (i * 8) 8)
+    (isNull : UInt64 → Bool) (seed : α) (st : α → UInt64 → α) (emit : α → UInt64) :
+    Verify.elemsW 8 (Scan.scanOf (b.size / 8) 8 rd isNull seed st emit)
+      = (Spec.scanBy isNull st seed (Verify.elemsW 8 b)).map emit := by
+  obtain rfl : rd = fun i => Column.bitsAt b (i * 8) 8 := funext hrd
+  rw [Verify.elemsW, Scan.scanOf_size, Nat.mul_div_cancel _ (by decide), Spec.scanBy_range, List.map_map,
+    Verify.elemsW, List.length_map, List.length_range]
+  refine List.map_congr_left fun j hj => ?_
+  have hj := List.mem_range.1 hj
+  rw [Verify.scanOf_get _ 8 (by decide) _ _ _ _ _ j hj, Function.comp_apply,
+    take_range_map _ (show j + 1 ≤ b.size / 8 by omega), show 8 * 8 = 64 from rfl, Verify.ofNat_toNat_mod64]
+
+/-- `scanOf_words` at a step and writer that read each word as a long: its words are `Spec.scan` of the
+    payload's longs. -/
 theorem scanOf_i64 (b : ByteArray) (seed : Int64) {st : Int64 → UInt64 → Int64} {g : Int64 → Int64 → Int64}
     (hst : ∀ a x, st a x = g a x.toInt64) {emit : Int64 → UInt64} (he : ∀ a, emit a = a.toUInt64) :
     Verify.elemsW 8 (Scan.scanOf (b.size / 8) 8 (Scan.Kind.i64.bitsAt b) Scan.Kind.i64.isNull seed st emit)
       = (Spec.scan g seed ((Verify.elemsW 8 b).map UInt64.toInt64)).map Int64.toUInt64 := by
-  rw [Verify.elemsW, Scan.scanOf_size, Nat.mul_div_cancel _ (by decide), Spec.scan_range, List.map_map,
-    Verify.elemsW, List.length_map, List.length_map, List.length_range]
-  refine List.map_congr_left fun j hj => ?_
-  have hj := List.mem_range.1 hj
-  rw [Verify.scanOf_get _ 8 (by decide) _ _ _ _ _ j hj, he, Function.comp_apply, List.map_map,
-    take_range_map _ (show j + 1 ≤ b.size / 8 by omega), Spec.over, List.foldl_map, List.foldl_map,
-    show 8 * 8 = 64 from rfl, Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
+  rw [scanOf_words b (rd := Scan.Kind.i64.bitsAt b) (fun _ => rfl), Spec.scan, Spec.scanBy_range, Spec.scanBy_range, List.map_map, List.map_map,
+    List.length_map]
+  refine List.map_congr_left fun j _ => ?_
+  rw [Function.comp_apply, Function.comp_apply, he, ← List.map_take, List.foldl_map]
   congr 2
   funext a i
-  simp [Scan.Kind.isNull, Scan.Kind.bitsAt, Scan.Kind.width, hst, Spec.nul]
+  simp [Scan.Kind.isNull, hst, Spec.nul]
+
+/-- **The float scan kernel over a dense payload**, at each of `+\ *\ &\ |\ ^\`: its words are
+    `Spec.scanBy` of the payload's words at q's NaN null and the verb's `Spec.fkern`, each accumulator
+    written by `Spec.femit`. -/
+theorem scan_f64_words (sv : Scan.Verb) (b : ByteArray) (hm : b.size / 8 < USize.size) :
+    Verify.elemsW 8 (Scan.scan sv .f64 (b.size / 8).toUSize b)
+      = (Spec.scanBy Scan.Kind.f64.isNull (Spec.fkern sv).1 (Spec.fkern sv).2 (Verify.elemsW 8 b)).map Spec.femit := by
+  have hn : min (b.size / 8).toUSize.toNat (Scan.Kind.f64.avail b) = b.size / 8 := by
+    rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.f64.avail b = b.size / 8 from rfl, Nat.min_self]
+  have e : Scan.scan sv .f64 (b.size / 8).toUSize b = Scan.fltScan sv .f64 b
+      (min (b.size / 8).toUSize.toNat (Scan.Kind.f64.avail b)) (Scan.outKind sv .f64).width := rfl
+  rw [e, hn]
+  cases sv <;> exact scanOf_words b (fun _ => rfl) _ _ _ _
+
+/-- The float scan kernel writes eight bytes per element. -/
+theorem scan_f64_size (sv : Scan.Verb) (b : ByteArray)
+    (hm : b.size / 8 < USize.size) : (Scan.scan sv .f64 (b.size / 8).toUSize b).size / 8 = b.size / 8 := by
+  have := congrArg List.length (scan_f64_words sv b hm)
+  simpa [Verify.elemsW, Spec.scanBy_range] using this
 
 /-- `(if y < a then y else a) = (if a < y then a else y)` on longs: `mins`'s step is `min`'s. -/
 theorem ite_lt_min (a y : Int64) : (if y < a then y else a) = (if a < y then a else y) := by
@@ -622,6 +676,53 @@ theorem scan_toList {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some s
     · have hS : S.c = R.c := by cases h; rfl
       rw [Arr.toList_long S (show longWords S.c = some ws by rw [hS]; exact hx), ← Arr.toList_long R hx]
       exact (Spec.scan_last_id _ (nul_free hx hn hnn)).symm
+    · cases h
+
+/-- **`f\x` over a float column** (`bytes` or `alp`) at `+ * & | ^`: the left fold the kernel runs,
+    `Spec.scanBy` at q's NaN null and the verb's `Spec.fkern`, each accumulator written by `Spec.femit`;
+    `Float` has no associativity to regroup it by. `^\` over a column with no NaN is the kernel's identity
+    short-cut, the argument handed back: that it is the fold too needs `toBits ∘ ofBits = id`, which core's
+    opaque `Float` does not state. Below `2³²` elements, the ALP encoder's exception-offset bound. -/
+theorem scan_toList_float {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv)
+    {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws)
+    (hn : n < USize.size) (h32 : n < 2 ^ 32) {S : Arr .float n} (h : scan f .float R = some S) :
+    S.toList = if (sv == .fills && !holdsNull .float R.c) = true then R.toList
+      else (Spec.scanBy Scan.Kind.f64.isNull (Spec.fkern sv).1 (Spec.fkern sv).2 R.toList).map Spec.femit := by
+  obtain ⟨B, hc, hBw, hBs⟩ := Arr.dense_float R hx hn
+  have hm : B.size / 8 < USize.size := hBs ▸ hn
+  have hk : Scan.outKind sv .f64 = .f64 := by cases sv <;> rfl
+  have hL : R.toList = Verify.elemsW 8 B := by rw [Arr.toList_float R hx, hBw]
+  cases hfl : (sv == .fills && !holdsNull .float R.c)
+  · rw [if_neg Bool.false_ne_true]
+    have hcol : scanColumn f .float .float R.c = some (Column.answer ⟨.float, (B.size / 8).toUSize.toNat,
+        .bytes (Scan.scan sv .f64 (B.size / 8).toUSize B), none⟩) := by
+      rcases hc with hc | ⟨md, pk, a, hc, rfl⟩ <;> rw [R.c_eq hc] at hfl ⊢
+      · simp [scanColumn, scanWith, hf, hk, hfl, show scanKind .float = some .f64 from rfl,
+          show QAtomicType.width .float = some 8 from rfl, Column.bytesOf, Scan.scanForm, Scan.Kind.hasNull]
+      · rw [hBs]
+        simp [scanColumn, scanWith, hf, hk, hfl, show scanKind .float = some .f64 from rfl,
+          show QAtomicType.width .float = some 8 from rfl, Scan.scanForm, Scan.scanAlp, Scan.Kind.hasNull]
+    simp only [scan, hcol, Option.bind] at h
+    rw [Arr.of] at h
+    split at h
+    · have hS : S.c = Column.answer ⟨.float, (B.size / 8).toUSize.toNat,
+          .bytes (Scan.scan sv .f64 (B.size / 8).toUSize B), none⟩ := by cases h; rfl
+      rw [show (B.size / 8).toUSize.toNat = (Scan.scan sv .f64 (B.size / 8).toUSize B).size / 8 by
+        rw [scan_f64_size sv B hm, USize.toNat_ofNat_of_lt' hm]] at hS
+      rw [Arr.toList_float S (by rw [hS]; exact floatWords_answer _ (by rw [scan_f64_size sv B hm, hBs]; exact h32)),
+        scan_f64_words sv B hm, hL]
+    · cases h
+  · rw [if_pos rfl]
+    have hsv : sv = .fills := by cases sv <;> first | rfl | simp at hfl
+    subst hsv
+    have hnn : holdsNull .float R.c = false := by simpa using hfl
+    have hcol : scanColumn f .float .float R.c = some R.c := by
+      simp [scanColumn, scanWith, hf, hnn, Scan.Kind.hasNull, Scan.outKind, show scanKind .float = some .f64 from rfl]
+    simp only [scan, hcol, Option.bind] at h
+    rw [Arr.of] at h
+    split at h
+    · have hS : S.c = R.c := by cases h; rfl
+      rw [Arr.toList_float S (show floatWords S.c = some ws by rw [hS]; exact hx), ← Arr.toList_float R hx]
     · cases h
 
 /-- `Coc.over` over a long `foR` column, at a verb that skips the null: `Spec.over` from `Over.seed`. -/
@@ -1274,5 +1375,10 @@ end Checks
 #print axioms Ops.lastBy_toList
 #print axioms longWords_answer
 #print axioms Arr.dense_long
+#print axioms Ops.scanOf_words
+#print axioms Ops.scan_f64_words
+#print axioms Ops.scan_toList_float
+#print axioms floatWords_answer
+#print axioms Arr.dense_float
 
 end LeetQ.Rel
