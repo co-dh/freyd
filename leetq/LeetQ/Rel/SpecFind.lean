@@ -2017,4 +2017,24 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms cmpAtom_rel_long_foR
 #print axioms neg_rel_long_foR
 
+#print axioms prog_two
+#print axioms run_val_decode
+#print axioms run_cmp_decode
+#print axioms dyadColumn_long_vv_mixed
+#print axioms dyadColumn_long_vv_cmp_mixed
+#print axioms longWords_run_val
+#print axioms longWords_Fb
+#print axioms longWords_val_foR
+#print axioms val_rel_long_bF
+#print axioms val_rel_long_Fb
+#print axioms cmp_rel_long_bF
+#print axioms cmp_rel_long_Fb
+#print axioms atomBits_long
+#print axioms prior_spec_words
+#print axioms shiftColumn_long_foR
+#print axioms prior_rel_long_foR
+#print axioms val_rel_long
+#print axioms cmp_rel_long
+#print axioms prior_rel_long
+
 end LeetQ.Rel.Verb
