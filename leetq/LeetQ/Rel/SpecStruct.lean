@@ -2495,7 +2495,7 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
   have hr1 : (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 false ib) 0 8).toNat ≤ 1 := by
     rw [hw0]; split <;> simp
   have hne : (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 false ib) 0 8 == ~~~0) = false := by
-    rw [hw0]; split <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> decide
+    rw [hw0]; split <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> decide
   have hwb : (8 * w).toUSize.toNat = 8 * w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have hts : t ≠ .symbol := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
   have hsc : Struct.scatter "@[x;i;f;y]" t nx x.c y.c ib =
@@ -2510,7 +2510,7 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
   have hRc := Find.onKey_c h
   -- the answer read back, word by word the last write (`scatterPacked_spec`)
   have spec := Verify.scatterPacked_spec w (by omega) (8 * w).toUSize hwb xb ib yb 0 false
-    (by simp only [Bool.false_eq_true, if_false, USize.toNat_zero, Nat.zero_add]; rw [hibn, hys, Nat.mul_comm])
+    (by simp only [Bool.false_eq_true, if_false, USize.toNat_zero, Nat.zero_add]; rw [hibn, hys, Nat.mul_comm]; exact Nat.le_refl _)
   obtain ⟨D, hD, hDw⟩ := bytesOf_answer_bytes hw he _ (by rw [spec.1, hxs]) hnx
   rw [toList_fixed hw he R (by rw [hRc]; exact hD) hU, toList_fixed hw he x hxb hU, toList_fixed hw he y hyb hUi,
     hil, hDw]
@@ -2526,16 +2526,20 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
     fun p hp => by
       have := (hin p.1 (by rw [hil]; exact (List.of_mem_zip hp).1)).2
       simpa [Verify.elemsW, hxk] using this
-  rw [foldl_set_getElem? _ j _ _ hinL]
+  refine Eq.trans ?_ (foldl_set_getElem? (fun _ b => b) j _ _ hinL).symm
   simp only [Verify.elemsW, spec.1, hxk, hyk, hibn, List.map_map, List.zip_map', List.filter_map, List.getElem?_map,
     List.getElem?_range]
   by_cases hj : j < nx
-  · rw [List.getElem?_range hj, List.getElem?_range hj]
-    simp only [Option.map_some, Function.comp, foldl_outr, List.getLast?_map]
-    rw [(spec.2 j (by omega)), List.filter_congr (q := fun k => (Column.bitsAt ib (k * 8) 8).toNat == j)
-      fun k hk => by rw [hix k (List.mem_range.1 hk)]; simp]
-    cases (List.filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) (List.range ni)).getLast? <;> simp
-  · rw [List.getElem?_eq_none (by simp; omega), List.getElem?_eq_none (by simp; omega)]; rfl
+  · rw [List.getElem?_range hj]
+    have hf : (List.range ni).filter (fun a => decide ((Column.bitsAt ib (a * 8) 8).toInt64.toInt.toNat = j)) =
+        (List.range ni).filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) :=
+      List.filter_congr fun k hk => by rw [hix k (List.mem_range.1 hk)]; exact Bool.eq_iff_iff.2 (by simp)
+    have hs2 := spec.2 j (by omega)
+    rw [hibn] at hs2
+    simp only [Option.map_some, Function.comp_def, foldl_outr, List.getLast?_map, List.map_map, hf, hs2,
+      Bool.false_eq_true, ↓reduceIte, USize.toNat_zero, Nat.zero_add]
+    cases (List.filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) (List.range ni)).getLast? <;> rfl
+  · rw [List.getElem?_eq_none (by rw [List.length_range]; omega : (List.range nx).length ≤ j)]; rfl
 
 /-- **`@[x;i;:;y]` is `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ outr)`**, `I = i ≫ pos`, from the kernel, at
     every type with a fixed-width encoding and indices without repeats; the kernel itself checks the range. -/
