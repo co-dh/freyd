@@ -337,6 +337,50 @@ theorem probeColumns_long (member : Bool) {x c : Column} {hn nn : Nat} {hm hp nm
     simp only [operandBytes, he.1, he.2, ↓reduceIte]; rfl
   · rfl
 
+/-- The probe for `x?y` at readable long columns, whatever form each is in: one word per needle of `y`, its
+    first position among `x`'s words, `|x|` at a miss (`findVec_idxOf` over the two `operandBytes`). -/
+theorem probe_find {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hx : Readable .long x.c)
+    (hy : Readable .long y.c) (hn : nx < USize.size) (hm : ny < USize.size) :
+    ∃ B xs ys, probeColumns .long 8 false x.c y.c = some B ∧ longWords x.c = some xs ∧ longWords y.c = some ys ∧
+      (Verify.elemsW 8 B).map UInt64.toNat = ys.map xs.idxOf := by
+  obtain ⟨hk, hmd, hp, xs, hox, hwx, hbx, hlx⟩ := operand_long x hx hn
+  obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y hy hm
+  refine ⟨_, xs, ys, probeColumns_long false hox hoy, hwx, hwy, ?_⟩
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  generalize operandBytes 8 hmd hp hk.toUSize = Bx at hbx ⊢
+  generalize operandBytes 8 nmd np nk.toUSize = By at hby ⊢
+  obtain ⟨hsx, -⟩ := elemsW8_get hbx
+  obtain ⟨hsy, gy⟩ := elemsW8_get hby
+  obtain ⟨hF, hj⟩ := Verify.findVec_idxOf 8 false Bx By (by rw [usize_eight, hsx, hlx]; exact hn)
+  rw [usize_eight] at hF hj
+  simp only [hbx, Nat.le_refl, ↓reduceIte, show normalise 8 false = id from rfl, List.map_id, id_eq] at hj
+  apply List.ext_getElem (by simp [Verify.elemsW, hF, hsy])
+  intro j h1 h2
+  have hj' : j < ys.length := by simpa using h2
+  simp only [List.getElem_map, Verify.elemsW, List.getElem_range]
+  rw [hj j (by rw [hsy]; exact hj'), gy j hj']
+
+/-- The probe for `x in y` at readable long columns, whatever form each is in: bit `i` says whether `x`'s
+    word `i` is among `y`'s (`memberVec_mem` over the two `operandBytes`). -/
+theorem probe_member {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hx : Readable .long x.c)
+    (hy : Readable .long y.c) (hn : nx < USize.size) (hm : ny < USize.size) :
+    ∃ M xs ys, probeColumns .long 8 true y.c x.c = some M ∧ longWords x.c = some xs ∧ longWords y.c = some ys ∧
+      ∀ i (hi : i < xs.length), Column.bitAt M i = decide (xs[i] ∈ ys) := by
+  obtain ⟨hk, hmd, hp, ys, hoy, hwy, hby, hly⟩ := operand_long y hy hm
+  obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x hx hn
+  refine ⟨_, xs, ys, probeColumns_long true hoy hox, hwx, hwy, ?_⟩
+  simp only [↓reduceIte]
+  generalize operandBytes 8 hmd hp hk.toUSize = By at hby ⊢
+  generalize operandBytes 8 nmd np nk.toUSize = Bx at hbx ⊢
+  obtain ⟨hsx, gx⟩ := elemsW8_get hbx
+  obtain ⟨hsy, -⟩ := elemsW8_get hby
+  obtain ⟨-, hj⟩ := Verify.memberVec_mem 8 false Bx By (by rw [usize_eight, hsy, hly]; exact hm)
+  rw [usize_eight] at hj
+  simp only [Nat.le_refl, ↓reduceIte, show normalise 8 false = id from rfl, List.map_id, hby, id_eq] at hj
+  intro i hi
+  rw [hj i (by rw [hsx]; omega)]
+  simp only [hsx, hi, decide_true, Bool.true_and, gx i hi]
+
 /-- `?x`'s kernel answer on a long column: some `e` lists `x`'s words, and the answer's words are `e` at
     `firstsOf` of its rank — `distinct_spec` on `bytes`; on `foR`, `distinctFoR_spec`, whose answer
     `Column.answer` leaves encoded or decodes (`decodeW`), the same words either way. -/
@@ -1058,23 +1102,19 @@ theorem find_long {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r
       (operandBytes 8 hmd hp hk.toUSize) (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_c h]; rfl),
       Arr.toList_long x hwx, Arr.toList_long y hwy, findSpec, findSortedBytes_idxOf hbx hby hsx]
     simp only [List.map_map]; rfl
-  rw [if_neg hw, probeColumns_long false hox hoy] at h
-  generalize operandBytes 8 hmd hp hk.toUSize = Bx at h hbx
-  generalize operandBytes 8 nmd np nk.toUSize = By at h hby
-  change onKey ny .long ⟨.long, _, .bytes (findVec 8 false Bx By), none⟩ "x?y" = .ok r at h
-  obtain ⟨hsx, -⟩ := elemsW8_get hbx
-  obtain ⟨hsy, gy⟩ := elemsW8_get hby
-  obtain ⟨hF, hj⟩ := Verify.findVec_idxOf 8 false Bx By (by rw [usize_eight, hsx, hlx]; exact hn)
-  rw [usize_eight] at hF hj
-  simp only [hbx, Nat.le_refl, ↓reduceIte, show normalise 8 false = id from rfl, List.map_id, id_eq] at hj
-  rw [Arr.toList_long r (show longWords r.c = some (Verify.elemsW 8 (findVec 8 false Bx By)) by
-    rw [onKey_c h]; rfl), Arr.toList_long x hwx, Arr.toList_long y hwy, findSpec]
-  apply List.ext_getElem (by simp [Verify.elemsW, hF, hsy])
-  intro j h1 h2
-  have hj' : j < ys.length := by simpa using h2
-  simp only [List.getElem_map, Verify.elemsW, List.getElem_range]
+  obtain ⟨B, xs', ys', hP, hwx', hwy', hB⟩ := probe_find x y hx hy hn hm
+  cases hwx.symm.trans hwx'; cases hwy.symm.trans hwy'
+  rw [if_neg hw, hP] at h
+  change onKey ny .long ⟨.long, _, .bytes B, none⟩ "x?y" = .ok r at h
+  rw [Arr.toList_long r (show longWords r.c = some (Verify.elemsW 8 B) by rw [onKey_c h]; rfl),
+    Arr.toList_long x hwx, Arr.toList_long y hwy, findSpec]
+  have hl : (Verify.elemsW 8 B).length = ys.length := by simpa using congrArg List.length hB
+  apply List.ext_getElem (by simp [hl])
+  intro j h1 _
+  have hj := List.getElem_of_eq hB (by simpa using h1)
+  simp only [List.getElem_map] at hj ⊢
   rw [idxOf_map_of_inj (fun _ _ => toInt64_inj)]
-  exact toInt64_of_toNat (by rw [hj j (by rw [hsy]; exact hj'), gy j hj'])
+  exact toInt64_of_toNat hj
 
 /-- `x in y` on long columns is `inSpec`: `memberVec_mem` over the decoded operands, or, where `y` is
     marked `s`, `memberSortedBytes_mem`. Restrictions: `Readable` payloads; q's `s#` contract on `y`, as in
@@ -1115,15 +1155,10 @@ theorem in_long {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r :
     simp only [List.getElem_map]
     apply Bool.eq_iff_iff.2
     rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj)]
-  rw [if_neg hw, probeColumns_long true hoy hox] at h
-  generalize operandBytes 8 hmd hp hk.toUSize = By at h hby
-  generalize operandBytes 8 nmd np nk.toUSize = Bx at h hbx
-  change onKey nx .boolean ⟨.boolean, x.c.n, .bits (memberVec 8 false Bx By), none⟩ "x in y" = .ok r at h
-  obtain ⟨hsx, gx⟩ := elemsW8_get hbx
-  obtain ⟨hsy, -⟩ := elemsW8_get hby
-  obtain ⟨-, hj⟩ := Verify.memberVec_mem 8 false Bx By (by rw [usize_eight, hsy, hly]; exact hn)
-  rw [usize_eight] at hj
-  simp only [Nat.le_refl, ↓reduceIte, show normalise 8 false = id from rfl, List.map_id, hby, id_eq] at hj
+  obtain ⟨M, xs', ys', hP, hwx', hwy', hM⟩ := probe_member x y hx hy hm hn
+  cases hwx.symm.trans hwx'; cases hwy.symm.trans hwy'
+  rw [if_neg hw, hP] at h
+  change onKey nx .boolean ⟨.boolean, x.c.n, .bits M, none⟩ "x in y" = .ok r at h
   unfold inSpec
   rw [Arr.toList_long x hwx, Arr.toList_long y hwy]
   apply List.ext_getElem (by rw [Arr.length_toList]; simp [hlx])
@@ -1131,8 +1166,7 @@ theorem in_long {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r :
   have hi : i < nx := by rw [Arr.length_toList] at h1; exact h1
   rw [Arr.getElem_toList, Arr.get_bool_bits r (by rw [onKey_c h])]
   simp only [List.getElem_map]
-  rw [hj i (by rw [hsx, hlx]; omega)]
-  simp only [hsx, hlx, hi, decide_true, Bool.true_and, gx i (by omega)]
+  rw [hM i (by omega)]
   apply Bool.eq_iff_iff.2
   rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj)]
 
@@ -1523,6 +1557,8 @@ end Checks
 #print axioms distinct_toList
 #print axioms find_long
 #print axioms in_long
+#print axioms probe_find
+#print axioms probe_member
 #print axioms find_bits
 #print axioms in_bits
 #print axioms find_sym

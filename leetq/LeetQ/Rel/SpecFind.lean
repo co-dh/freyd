@@ -9,6 +9,8 @@ import AOP.A7_2_RelSet
 import QLean.Verify.Chain
 import QLean.Verify.Dyad
 import QLean.Verify.EwEnc
+import QLean.Verify.Gather
+import QLean.Verify.JoinDictCast
 
 namespace LeetQ.Rel.Verb
 
@@ -894,6 +896,130 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
         { engine := Kernel.Ew.eMon, op := Kernel.Ew.neg, cls := Kernel.Ew.i64, a := 0, nul := Kernel.nullPayload .long })) := by
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
+
+/-! ### Dicts with different keys: the kernels of `align`'s gather/fill branch -/
+
+/-- `gatherFill` from a long source, `bytes` or `foR` (`longWords`), at a dense index: word `j` is the
+    source's word at index word `j`, `fill` past the end (`elemsW_gatherBytes`; `gatherFoR` is `gatherBytes`
+    on the decode). -/
+theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : longWords y.c = some ys)
+    (hm : m < USize.size) {fill : UInt64} {idx C : Column} {ib : ByteArray} (hi : Column.bytesOf idx = some ib)
+    (hv : Ew.gatherFill .long fill y.c idx = .ok C) :
+    ∃ B, C = ⟨.long, idx.n, .bytes B, none⟩ ∧
+      Verify.elemsW 8 B = (Verify.elemsW 8 ib).map fun k => ys.getD k.toNat fill := by
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  obtain ⟨B0, hB0 | ⟨md, pk, he, rfl⟩, -, hw0, -⟩ := Arr.dense_long y hy hm
+  all_goals simp only [Ew.gatherFill, show QAtomicType.width .long = some 8 from rfl, hi, bind, Except.bind,
+    pure, Except.pure] at hv
+  · rw [hB0] at hv
+    cases hv
+    refine ⟨_, rfl, ?_⟩
+    have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8) fill B0 ib
+    rw [h8] at e
+    rw [e, hw0]
+    exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
+  · rw [he] at hv
+    cases hv
+    refine ⟨_, rfl, ?_⟩
+    have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8) fill
+      (Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ib
+    rw [h8] at e
+    rw [show Kernel.gatherFoR (8 : Nat).toUSize fill md pk y.c.n.toUSize ib = Kernel.gatherBytes (8 : Nat).toUSize
+      fill (Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ib by rw [y.wf.2.1]; rfl, e, hw0]
+    exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
+
+/-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
+theorem elemsW_append {A B : ByteArray} (hA : A.size % 8 = 0) :
+    Verify.elemsW 8 (A ++ B) = Verify.elemsW 8 A ++ Verify.elemsW 8 B := by
+  have hs := Verify.ba_size_append A B
+  apply List.ext_getElem (by simp only [Verify.elemsW, List.length_append, List.length_map, List.length_range, hs]; omega)
+  intro i h1 h2
+  simp only [Verify.elemsW, List.length_map, List.length_range] at h1 h2
+  rw [List.getElem_append]
+  split
+  · rename_i hi
+    try simp only [List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    exact Verify.bitsAt_shift _ _ _ _ _ fun k hk => Verify.ba_append_left _ _ _ (by omega)
+  · rename_i hi
+    try simp only [List.length_map, List.length_range] at hi
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range]
+    refine Verify.bitsAt_shift _ _ _ _ _ fun k hk => ?_
+    rw [show i * 8 + k = A.size + ((i - A.size / 8) * 8 + k) by omega]
+    exact Verify.ba_append_right _ _ _
+
+/-- `concatBytes`' words, every part holding whole words: the parts' words in order. -/
+theorem elemsW_concat (ps : Array ByteArray) (hp : ∀ p ∈ ps, p.size % 8 = 0) :
+    Verify.elemsW 8 (Kernel.concatBytes ps) = ps.toList.flatMap (Verify.elemsW 8) := by
+  have key : ∀ (qs : List ByteArray), (∀ p ∈ qs, p.size % 8 = 0) → ∀ acc : ByteArray, acc.size % 8 = 0 →
+      Verify.elemsW 8 (qs.foldl (· ++ ·) acc) = Verify.elemsW 8 acc ++ qs.flatMap (Verify.elemsW 8) := by
+    intro qs
+    induction qs with
+    | nil => intros; simp
+    | cons p qs ih =>
+      intro hq acc ha
+      have hp0 := hq p List.mem_cons_self
+      rw [List.foldl_cons, ih (fun q h => hq q (List.mem_cons_of_mem _ h)) _
+        (by rw [Verify.ba_size_append]; omega), elemsW_append ha, List.flatMap_cons, List.append_assoc]
+  rw [Kernel.concatBytes, ← Array.foldl_toList, key _ (fun p h => hp p (Array.mem_toList_iff.1 h)) _ rfl]
+  simp [Verify.elemsW]
+
+/-- `razeColumn` at `long` over two `bytes` parts is the dense join: no part is encoded, so `encodedParts`
+    declines. A part in `foR` meets `concatFoR`, which has no value law yet. -/
+theorem razeColumn_long_bytes {a b : Column} {A B : ByteArray} (ha : a.enc = .bytes A) (hb : b.enc = .bytes B) :
+    Kernel.razeColumn .long #[a, b] = some (.vector ⟨.long, a.n + b.n, .bytes (Kernel.concatBytes #[A, B]), none⟩) := by
+  obtain ⟨at_, an, ae, ap⟩ := a; obtain ⟨bt, bn, be, bp⟩ := b
+  simp only at ha hb; subst ha hb
+  simp [Kernel.razeColumn, Kernel.encodedParts, Column.bytesOf,
+    show Column.encodes .long = true from rfl, show Column.alpEncodes .long = false from rfl]
+
+/-- `align` off the matching-keys case, unfolded: `findColumn`, `gatherFill` at `eᵣ` and one `dyad` give the
+    rows of `x`; `memberColumn`, `~`, `whereColumn`, `gatherColumn` and one `dyad` against `eₗ` the rows only
+    `y` has; `razeColumn` joins the keys and the values. -/
+theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+    (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
+    (hm : ∀ _ : y.n = x.n, Kernel.matchColumn s x.key.c y.key.c ≠ some true) :
+    ∃ (ix yx : Column) (l : Arr rt x.n) (ty : QAtomicType) (m : Nat) (b : ByteArray) (iy ac gy : Column)
+      (ry : Arr rt iy.n) (gk keys vals : Column) (K : Arr s (x.n + iy.n)) (V : Arr rt (x.n + iy.n)),
+      Ew.vec "findColumn" (Kernel.findColumn s false y.key.c (.vector x.key.c)) = .ok ix ∧
+      Ew.gatherFill u L.er y.val.c ix = .ok yx ∧
+      Ew.dyad L.v Kernel.Ew.vv t u rt x.val.c yx x.n = .ok l ∧
+      Kernel.memberColumn s false (.vector y.key.c) x.key.c = some (.vector ⟨ty, m, .bits b, none⟩) ∧
+      Kernel.whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b), none⟩ = some (.vector iy) ∧
+      Ew.atomCol t (Column.atomOfBits t L.el) = .ok ac ∧
+      Ew.vec "gatherColumn" (Kernel.gatherColumn u y.val.c iy) = .ok gy ∧
+      Ew.dyad L.vr Kernel.Ew.av t u rt ac gy iy.n = .ok ry ∧
+      Ew.vec "gatherColumn" (Kernel.gatherColumn s y.key.c iy) = .ok gk ∧
+      Ew.vec "razeColumn" (Kernel.razeColumn s #[x.key.c, gk]) = .ok keys ∧
+      Ew.vec "razeColumn" (Kernel.razeColumn rt #[l.c, ry.c]) = .ok vals ∧
+      Arr.of s (x.n + iy.n) keys "align keys" = .ok K ∧ Arr.of rt (x.n + iy.n) vals "align vals" = .ok V ∧
+      R = ⟨x.n + iy.n, K, V⟩ := by
+  unfold Ew.align at hv
+  dsimp only at hv
+  split at hv
+  split at hv
+  · rename_i h hc; exact absurd (beq_iff_eq.1 hc) (hm h)
+  all_goals
+    try simp only [pure_bind] at hv
+    obtain ⟨ix, hix, hv⟩ := Verify.bind_ok hv
+    obtain ⟨yx, hyx, hv⟩ := Verify.bind_ok hv
+    obtain ⟨l, hl, hv⟩ := Verify.bind_ok hv
+    split at hv
+    all_goals first | (cases hv; done) | skip
+    rename_i ty m b hmem
+    split at hv
+    all_goals first | (cases hv; done) | skip
+    rename_i iy hw
+    obtain ⟨ac, hac, hv⟩ := Verify.bind_ok hv
+    obtain ⟨gy, hgy, hv⟩ := Verify.bind_ok hv
+    obtain ⟨ry, hry, hv⟩ := Verify.bind_ok hv
+    obtain ⟨gk, hgk, hv⟩ := Verify.bind_ok hv
+    obtain ⟨keys, hkeys, hv⟩ := Verify.bind_ok hv
+    obtain ⟨vals, hvals, hv⟩ := Verify.bind_ok hv
+    obtain ⟨K, hK, hv⟩ := Verify.bind_ok hv
+    obtain ⟨V, hV, hv⟩ := Verify.bind_ok hv
+    exact ⟨ix, yx, l, ty, m, b, iy, ac, gy, ry, gk, keys, vals, K, V, hix, hyx, hl, hmem, hw, hac, hgy, hry, hgk,
+      hkeys, hvals, hK, hV, (Except.ok.inj hv).symm⟩
 
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
