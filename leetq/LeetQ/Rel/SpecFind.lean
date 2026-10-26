@@ -1380,5 +1380,14 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms cmpAtom_rel_long
 #print axioms priorCmp_spec_long
 #print axioms priorCmp_rel_long
+#print axioms dyad_c
+#print axioms longWords_of_foR
+#print axioms longWords_answer_foR
+#print axioms val_spec_words
+#print axioms cmp_spec_words
+#print axioms dyadColumn_long_vv_foR
+#print axioms dyadColumn_long_vv_cmp_foR
+#print axioms val_rel_long_foR
+#print axioms cmp_rel_long_foR
 
 end LeetQ.Rel.Verb
