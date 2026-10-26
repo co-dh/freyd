@@ -895,34 +895,51 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide]
 
+/-- The column `Ew.mon` answers is the one `monColumn` builds. -/
+theorem mon_c {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Column}
+    (hd : Kernel.monColumn name t x.c = some (rt, C)) (hv : Ew.mon name rt x = .ok R) : R.c = C := by
+  unfold Ew.mon at hv
+  simp only [hd, ↓reduceIte] at hv
+  unfold Arr.of at hv
+  split at hv
+  · cases hv; rfl
+  · cases hv
+
+/-- The reading every `long` map kernel ends in: an answer listing `g` of each word of `X`, which lists `x`'s
+    words, is `MapSpec g`. -/
+theorem map_spec_words {g : Int64 → Int64} {n : Nat} {x R : Arr .long n} {X : ByteArray}
+    (hx : longWords x.c = some (Verify.elemsW 8 X)) (hX : X.size / 8 = n)
+    (hR : longWords R.c = some ((List.range n).map fun i => (g (Column.bitsAt X (i * 8) 8).toInt64).toUInt64)) :
+    Ew.MapSpec (t := .long) (rt := .long) g x R := by
+  unfold Ew.MapSpec
+  rw [Arr.toList_long R hR, Arr.toList_long x hx]
+  exact List.ext_getElem (by simp [Verify.elemsW, hX]) fun i _ _ => by simp [Verify.elemsW]
+
+/-- The reading every one-operand `long` kernel ends in: `map_spec_words` under q's element `F = pure ∘ g`. -/
+theorem mapM_spec_words {ε : Type} {F : Int64 → Except ε Int64} {g : Int64 → Int64} (hF : ∀ y, F y = pure (g y))
+    {n : Nat} {x R : Arr .long n} {X : ByteArray} (hx : longWords x.c = some (Verify.elemsW 8 X))
+    (hX : X.size / 8 = n)
+    (hR : longWords R.c = some ((List.range n).map fun i => (g (Column.bitsAt X (i * 8) 8).toInt64).toUInt64)) :
+    x.toList.mapM F = .ok R.toList := by
+  rw [show F = fun y => pure (g y) from funext hF, List.mapM_pure, map_spec_words hx hX hR]; rfl
+
 /-- **`-x` at `long` on a dense column is `MapSpec`** of `monStep`'s `neg`, which `Verify.negAtom_long`
     proves is q's `neg`: `0N` stays `0N`, everything else is `0 - x`. -/
 theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.c.enc = .bytes a)
     (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
-  have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[a] },
-      { engine := Kernel.Ew.eMon, op := Kernel.Ew.neg, cls := Kernel.Ew.i64, a := 0, nul := Kernel.nullPayload .long }) := by
-    unfold Ew.mon at hv
-    rw [Arr.c_eq x ha, monColumn_neg_long] at hv
-    simp only [↓reduceIte] at hv
-    unfold Arr.of at hv
-    split at hv
-    · cases hv; rfl
-    · cases hv
+  have hR := mon_c (by rw [Arr.c_eq x ha]; exact monColumn_neg_long _ _ _) hv
   have hrun := run_mon ({ inputs := #[a] } : Kernel.Ew.Build) rfl Kernel.Ew.neg Kernel.Ew.i64 0
     (Kernel.nullPayload .long) (by decide) n.toUSize
   simp only [show (#[a] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl] at hrun
-  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
   have hs : (Kernel.Ew.mon Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) a n.toUSize).size / 8 = n := by
     have := congrArg List.length (mon_i64 Kernel.Ew.neg (Kernel.nullPayload .long) a n hn)
     simpa [Verify.elemsW] using this
   rw [← hrun] at hs
   have hw := longWords_payload _ _ hn hs
   rw [← hR, hrun, mon_i64 _ _ _ _ hn, nullPayload_long] at hw
-  unfold Ew.MapSpec
-  rw [Arr.toList_long R hw, Arr.toList_long_bytes x ha]
-  simp
+  exact map_spec_words (by simp only [longWords, ha]) (Arr.n_long_bytes x ha) (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long`. Dense long column. -/
 theorem neg_rel_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.c.enc = .bytes a)
@@ -999,18 +1016,10 @@ theorem atomVal_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v =
     x.toList.mapM (fun y => elem v h k y) = .ok R.toList := by
   have hr : Kernel.resultType v .long .long = some .long := by
     cases v <;> first | rfl | exact absurd h (by decide) | exact absurd hop (by simp [Kernel.valOp])
-  unfold Ew.atomVal Ew.dyad at hv
+  unfold Ew.atomVal at hv
   rw [atomCol_long, Arr.c_eq x hb] at hv
   simp only [bind, Except.bind] at hv
-  rw [dyadColumn_long_av hop hr] at hv
-  have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] },
-      { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1,
-        nul := Kernel.nullPayload .long }) := by
-    simp only [↓reduceIte] at hv
-    unfold Arr.of at hv
-    split at hv
-    · cases hv; rfl
-    · cases hv
+  have hR := dyad_c (dyadColumn_long_av hop hr n _ b _ _) hv
   have hel : (fun y : Int64 => elem v h k y) =
       fun y => pure (Kernel.Ew.intStep op Int64.minValue k y) := funext fun y => Ew.elem_long_val hop h k y
   rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, toList_val_long _ _ hn hR,
@@ -1080,16 +1089,7 @@ theorem valAtom_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v =
     simp only [bind, Except.bind] at hv)
   case fill => simp [Ew.dyad, Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.Ew.va] at hv
   case sub =>
-    unfold Ew.dyad at hv
-    rw [dyadColumn_long_va rfl (by decide) hr] at hv
-    have hR : R.c = Kernel.payload .long n.toUSize ({ inputs := #[b, Kernel.atomBytes Kernel.Ew.i64 k.toUInt64] },
-        { engine := Kernel.Ew.eVal, op := Kernel.Ew.sub, cls := Kernel.Ew.i64, shape := Kernel.Ew.va, a := 0, b := 1,
-          nul := Kernel.nullPayload .long }) := by
-      simp only [↓reduceIte] at hv
-      unfold Arr.of at hv
-      split at hv
-      · cases hv; rfl
-      · cases hv
+    have hR := dyad_c (dyadColumn_long_va rfl (by decide) hr n b _ _ _) hv
     have hel : (fun y : Int64 => elem .sub h y k) =
         fun y => pure (Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue y k) :=
       funext fun y => Ew.elem_long_val rfl h y k
@@ -1334,17 +1334,10 @@ theorem atomCmp_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v =
     x.toList.mapM (fun y => elem v h k y) = .ok R.toList := by
   have hr : Kernel.resultType v .long .long = some .boolean := by
     cases v <;> first | rfl | exact absurd hop (by simp [Kernel.cmpOp])
-  unfold Ew.atomVal Ew.dyad at hv
+  unfold Ew.atomVal at hv
   rw [atomCol_long, Arr.c_eq x hb] at hv
   simp only [bind, Except.bind] at hv
-  rw [dyadColumn_long_av_cmp hop hr] at hv
-  have hR : R.c = Kernel.payload .boolean n.toUSize ({ inputs := #[Kernel.atomBytes Kernel.Ew.i64 k.toUInt64, b] },
-      { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1, nul := 0 }) := by
-    simp only [↓reduceIte] at hv
-    unfold Arr.of at hv
-    split at hv
-    · cases hv; rfl
-    · cases hv
+  have hR := dyad_c (dyadColumn_long_av_cmp hop hr n _ b _ _) hv
   have hel : (fun y : Int64 => elem v h k y) = fun y => pure (Kernel.Ew.cmpStep op Kernel.Ew.i64 k.toUInt64 y.toUInt64) :=
     funext fun y => Ew.elem_long_cmp hop h k y
   rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, toList_cmp_long _ _ hn hR,
@@ -1421,16 +1414,6 @@ theorem cmpStep_cmpFlip {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = s
     generalize compare (Kernel.Ew.signed Kernel.Ew.i64 y) (Kernel.Ew.signed Kernel.Ew.i64 x) = o
     cases o <;> simp (config := { decide := true }) [Kernel.Ew.i64, Kernel.Ew.f64, Kernel.Ew.f32, Kernel.Ew.eq,
       Kernel.Ew.ne, Kernel.Ew.lt, Kernel.Ew.le, Kernel.Ew.gt, Kernel.Ew.ge, Ordering.swap]
-
-/-- The reading every one-operand `long` kernel ends in: an answer listing `g` of the words of a payload
-    that lists `x`'s words is the List spec `x.mapM F`, where `F` is `pure ∘ g`. -/
-theorem mapM_spec_words {ε : Type} {F : Int64 → Except ε Int64} {g : Int64 → Int64} (hF : ∀ y, F y = pure (g y))
-    {n : Nat} {x R : Arr .long n} {X : ByteArray} (hx : longWords x.c = some (Verify.elemsW 8 X))
-    (hX : X.size / 8 = n)
-    (hR : longWords R.c = some ((List.range n).map fun i => (g (Column.bitsAt X (i * 8) 8).toInt64).toUInt64)) :
-    x.toList.mapM F = .ok R.toList := by
-  rw [show F = fun y => pure (g y) from funext hF, List.mapM_pure, Arr.toList_long R hR, Arr.toList_long x hx]
-  exact congrArg Except.ok (List.ext_getElem (by simp [Verify.elemsW, hX]) fun i _ _ => by simp [Verify.elemsW])
 
 /-- `dyadColumn` on a long atom column (left) and a `foR` long column, at a value verb whose result is `long`:
     `foRValPayload`'s atom branch at `av`. -/
@@ -1701,16 +1684,7 @@ theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha 
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
   have h8 : (8 : Nat).toUSize = (8 : USize) := rfl
-  have hR : R.c = Column.answer ⟨.long, n,
-      .foR (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).1
-        (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2, none⟩ := by
-    unfold Ew.mon at hv
-    rw [Arr.c_eq x ha, monColumn_neg_foR] at hv
-    simp only [↓reduceIte] at hv
-    unfold Arr.of at hv
-    split at hv
-    · cases hv; rfl
-    · cases hv
+  have hR := mon_c (by rw [Arr.c_eq x ha]; exact monColumn_neg_foR _ _ _ _) hv
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha (by rw [x.wf.2.1]; exact hn)
   rw [x.wf.2.1, h8] at hx hxs
   have hw := longWords_answer_foR
@@ -1728,9 +1702,7 @@ theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha 
     (p := (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2)
     (n := n.toUSize) rfl (by rw [hM, USize.toNat_ofNat_of_lt' hn])
   rw [he, mon_i64 _ _ _ _ hn, nullPayload_long] at hw
-  unfold Ew.MapSpec
-  rw [Arr.toList_long R hw, Arr.toList_long x hx]
-  exact List.ext_getElem (by simp [Verify.elemsW, hxs]) fun i _ _ => by simp [Verify.elemsW]
+  exact map_spec_words hx hxs (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long_foR`. `foR` column. -/
 theorem neg_rel_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha : x.c.enc = .foR md pk)
