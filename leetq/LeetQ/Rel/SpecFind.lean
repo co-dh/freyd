@@ -948,23 +948,31 @@ theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : lon
 
 /-- `x@i` at long, source and index each `bytes` or `foR` (`longWords`): word `j` is the source's word at index
     word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). -/
-theorem gather_long {m : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
-    (hm : m < USize.size) {i c : Column} (hit : i.ty = .long) (hiw : i.WF) (hi : longWords i = some is)
-    (hiU : i.n < USize.size) (h : Kernel.gatherColumn .long x.c i = some (.vector c)) :
-    longWords c = some (is.map fun k => xs.getD k.toNat 0x8000000000000000) := by
+theorem gather_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
+    (hm : m < USize.size) (i : Arr .long k) (hi : longWords i.c = some is) (hk : k < USize.size) {c : Column}
+    (h : Kernel.gatherColumn .long x.c i.c = some (.vector c)) :
+    ∃ B, c = ⟨.long, k, .bytes B, none⟩ ∧ B.size = k * 8 ∧
+      Verify.elemsW 8 B = is.map fun j => xs.getD j.toNat 0x8000000000000000 := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hfi : Verify.countFits i := by unfold Verify.countFits; split <;> first | exact hiU | trivial
+  have hfi : Verify.countFits i.c := Struct.countFits_long i hi hk
   have hA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
     simp [longWords, he] at hx
-  obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c i c x.wf.1 hit
-    hfi hA h
+  obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c i.c c x.wf.1
+    i.wf.1 hfi hA h
   obtain ⟨B, -, hB, hBw, -⟩ := Arr.dense_long x hx hm
   obtain rfl : B = src := Option.some.inj (hB.symm.trans hsrc)
+  have hix8 : Verify.elemsW 8 ix = is := by
+    rw [Verify.elemsW_index i.c i.wf.1 i.wf.2.2 hfi ix hix, Struct.raw_long i.wf.1 i.wf.2.2 hi]
+  have hlen : is.length = k := by rw [← Arr.length_toList i, Arr.toList_long i hi, List.length_map]
+  have hk8 : ix.size / 8 = k := by
+    have := congrArg List.length hix8; simp only [Verify.elemsW, List.length_map, List.length_range] at this; omega
   have e := Verify.elemsW_gatherBytes (8 : Nat).toUSize (by rw [h8]; decide) (by rw [h8]; exact Nat.le_refl 8)
     ((Kernel.nullBits .long).getD 0) B ix
-  rw [h8] at e
-  simp only [longWords, Option.some.injEq]
-  rw [e, hBw, Verify.elemsW_index i hit hiw hfi ix hix, Struct.raw_long hit hiw hi]
+  have hs := (Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8)
+    ((Kernel.nullBits .long).getD 0) B ix).1
+  rw [h8] at e hs
+  refine ⟨_, by rw [hk8], by rw [hs, hk8, Nat.mul_comm], ?_⟩
+  rw [e, hBw, hix8]
   exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
 /-- Eight-byte words of a join: `A`'s words, then `B`'s, when `A` holds whole words. -/
@@ -1106,6 +1114,106 @@ theorem align_left_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel 
           simp only [Function.comp, Find.idxOf_map_of_inj (fun a b h => toInt64_inj h), List.getD_eq_getElem?_getD,
             List.getElem?_map, Option.getD_map]
   rw [val_rel (hlaw Y l hl), hY]
+
+/-- The positions `K` holds whose value no position of `J` holds: `dom K ∩ corNeg(dom(K ≫ J°))`. -/
+theorem cset_only {A B C : RelSet.{0}} (K : A ⟶ B) (J : C ⟶ B) (i : A.carrier) :
+    cset (dom K ∩ corNeg (dom (K ≫ J°))) i ↔ (∃ k, K i k) ∧ ¬ ∃ k, K i k ∧ ∃ p, J p k := by
+  show ((i = i ∧ ∃ k, K i k ∧ K i k) ∧
+    (i = i ∧ ∀ v, (v = i ∧ ∃ p, (∃ k, K v k ∧ J p k) ∧ (∃ k, K i k ∧ J p k)) → False)) ↔ _
+  constructor
+  · rintro ⟨⟨-, k, hk, -⟩, -, hn⟩
+    exact ⟨⟨k, hk⟩, fun ⟨k, hk, p, hp⟩ => hn i ⟨rfl, p, ⟨k, hk, hp⟩, ⟨k, hk, hp⟩⟩⟩
+  · rintro ⟨⟨k, hk⟩, hn⟩
+    exact ⟨⟨rfl, k, hk, hk⟩, rfl, fun _ ⟨_, p, _, ⟨k, hk, hp⟩⟩ => hn ⟨k, hk, p, hp⟩⟩
+
+/-- **The rows only `y` has in `align`, long keys and long `y` values:
+    `enum(dom(y.key) ∩ corNeg(dom(y.key ≫ x.key°))) ≫ ⟨!eₗ, y⟩ ≫ f`.** `memberColumn`, `~` and `whereColumn`
+    enumerate the positions of `y` whose key `x` lacks (`probe_member`, `notBits_bitAt`, `whereBits_spec`),
+    `gatherColumn` reads `y` there (`gather_long`), and the `av` dyad pairs each with `eₗ`; `hlaw` is any value
+    law of `a f y` at the encoding at hand. -/
+theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
+    {m : Nat} {b : ByteArray} {iy ac gy : Column} {ry : Arr rt iy.n} (ht : t ≠ .general) {el : Carrier t}
+    (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.vr t .long = some rt)
+    (hkx : Find.Readable .long x.key.c) (hky : Find.Readable .long y.key.c) (hyv : Find.Readable .long y.val.c)
+    (hnx : x.n < USize.size) (hny : y.n < USize.size)
+    (hmem : Kernel.memberColumn .long false (.vector y.key.c) x.key.c = some (.vector ⟨ty, m, .bits b, none⟩))
+    (hw : Kernel.whereColumn .boolean ⟨.boolean, m, .bits (Ew.notBits m b), none⟩ = some (.vector iy))
+    (hac : Ew.atomCol t (Column.atomOfBits t L.el) ht = .ok ac)
+    (hgy : Ew.vec "gatherColumn" (Kernel.gatherColumn .long y.val.c iy) = .ok gy)
+    (hry : Ew.dyad L.vr Kernel.Ew.av t .long rt ac gy iy.n = .ok ry)
+    (hlaw : ∀ (Y : Arr .long iy.n) r, Ew.atomVal L.vr rt el Y ht = .ok r →
+      Y.toList.mapM (fun c => elem L.vr he el c) = .ok r.toList) :
+    (∃ ys, enum (cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°)))) ys) ∧
+    ∀ ys, enum (cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°)))) ys →
+      ry.rel = ix (CL.toList ys) ≫
+        (rpair (cst el) y.val.rel ≫ ofExcept (fun p : Carrier t × Carrier .long => elem L.vr he p.1 p.2)) := by
+  obtain ⟨M, kyw, kxw, hp, hwy, hwx, hM⟩ := Find.probe_member y.key x.key hky hkx hny hnx
+  rw [Find.memberColumn_long false _ _ y.key.wf.1] at hmem
+  simp only [Bool.false_and, Bool.false_eq_true, ↓reduceIte, hp, Option.map_some] at hmem
+  cases hmem
+  simp only [Kernel.whereColumn] at hw
+  cases hw
+  have hN : y.key.c.n = kyw.length := by
+    rw [y.key.wf.2.1, ← Arr.length_toList y.key, Arr.toList_long y.key hwy, List.length_map]
+  have hNU : y.key.c.n < USize.size := by rw [y.key.wf.2.1]; exact hny
+  generalize hF : (List.range y.key.c.n).filter (Column.bitAt (Ew.notBits y.key.c.n M)) = F
+  obtain ⟨hs, hj⟩ := Verify.whereBits_spec y.key.c.n.toUSize (Ew.notBits y.key.c.n M)
+  rw [USize.toNat_ofNat_of_lt' hNU, hF] at hs hj
+  generalize Kernel.whereBits y.key.c.n.toUSize (Ew.notBits y.key.c.n M) = P at hs hj ry hgy hry hlaw
+  -- the positions `whereBits` lists are those of `y` whose key word `x` lacks
+  have mem : ∀ i, i ∈ F ↔ cset (dom y.key.rel ∩ corNeg (dom (y.key.rel ≫ x.key.rel°))) i := fun i => by
+    rw [cset_only, ← hF, List.mem_filter, List.mem_range]
+    show _ ↔ (∃ k, y.key.toList[i]? = some k) ∧ ¬ ∃ k, y.key.toList[i]? = some k ∧ ∃ p, x.key.toList[p]? = some k
+    rw [Arr.toList_long y.key hwy, Arr.toList_long x.key hwx]
+    by_cases hik : i < kyw.length
+    · rw [Ew.notBits_bitAt hNU M (by omega), hM i hik]
+      simp only [List.getElem?_map, List.getElem?_eq_getElem hik, Option.map_some, Option.some.injEq,
+        exists_eq', true_and, exists_eq_left', ← List.mem_iff_getElem?,
+        Find.mem_map_of_inj (fun a b h => toInt64_inj h), Bool.not_eq_true', decide_eq_false_iff_not]
+      exact ⟨fun h => h.2, fun h => ⟨by omega, h⟩⟩
+    · simp only [List.getElem?_map, List.getElem?_eq_none (Nat.le_of_not_lt hik), Option.map_none, reduceCtorEq,
+        exists_false, false_and, iff_false, not_and]
+      intro h; omega
+  have pw : F.Pairwise (· < ·) := hF ▸ (List.pairwise_lt_range ..).filter _
+  have henum := enum_ofList _ F pw mem
+  refine ⟨⟨_, (henum _).2 rfl⟩, fun ys hy => ?_⟩
+  obtain rfl := (henum ys).1 hy
+  rw [CL.toList_ofList]
+  -- the index column: `F` as words
+  have hPw : Verify.elemsW 8 P = F.map UInt64.ofNat := by
+    apply List.ext_getElem (by simp only [Verify.elemsW, List.length_map, List.length_range, hs]; omega)
+    intro j h1 h2
+    simp only [List.length_map] at h2
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [← hj j h2, UInt64.ofNat_toNat]
+  have hFN : ∀ j ∈ F, j < kyw.length := fun j h => by
+    rw [← hF, List.mem_filter, List.mem_range] at h; omega
+  have hFl : F.length ≤ y.key.c.n := by rw [← hF]; exact (List.length_filter_le _ _).trans (by simp)
+  let IY : Arr .long (P.size / 8) := ⟨⟨.long, P.size / 8, .bytes P, none⟩, rfl, rfl,
+    by simp only [Column.WF, QAtomicType.width]; omega⟩
+  have hg : Kernel.gatherColumn .long y.val.c IY.c = some (.vector gy) := by
+    unfold Ew.vec at hgy; split at hgy
+    · cases hgy; assumption
+    · cases hgy
+  obtain ⟨_, _, _, yvw, -, hwv, -, hlv⟩ := Find.operand_long y.val hyv hny
+  obtain ⟨B, rfl, hBs, hBw⟩ := gather_long y.val hwv hny IY rfl (by omega) hg
+  let GY : Arr .long (P.size / 8) := ⟨⟨.long, P.size / 8, .bytes B, none⟩, rfl, rfl,
+    by simp only [Column.WF, QAtomicType.width]; omega⟩
+  have hat : Ew.atomVal L.vr rt el GY ht = .ok ry := by
+    unfold Ew.atomVal; rw [hel]; simp only [hac, bind, Except.bind]; exact hry
+  have hGY : GY.rel = ix F ≫ y.val.rel := by
+    show ix GY.toList = ix F ≫ ix y.val.toList
+    rw [Arr.toList_long GY (ws := Verify.elemsW 8 B) rfl, hBw, hPw, Arr.toList_long y.val hwv, List.map_map,
+      List.map_map, ← ix_map_getElem! F _ (fun j h => by rw [List.length_map, hlv, ← y.key.wf.2.1 ▸ y.val.wf.2.1];
+        have := hFN j h; omega)]
+    refine congrArg ix (List.map_congr_left fun j hj => ?_)
+    have hjl : j < yvw.length := by have := hFN j hj; omega
+    simp only [Function.comp, UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) (Nat.le_of_lt USize.size_le)),
+      List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hjl, Option.getD_some]
+    rw [getElem!_pos _ j (by rw [List.length_map]; exact hjl), List.getElem_map]
+  calc ry.rel = GY.rel ≫ ofExcept (elem L.vr he el) := ix_mapM _ _ _ (hlaw GY ry hat)
+    _ = ix F ≫ (y.val.rel ≫ ofExcept (elem L.vr he el)) := by rw [hGY, Cat.assoc]
+    _ = _ := by rw [pair_cst_left el y.val.rel (elem L.vr he)]
 
 /-! ### Dicts with different keys: a miss sent to a point outside `S` stays a miss -/
 
