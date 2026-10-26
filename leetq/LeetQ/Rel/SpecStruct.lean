@@ -3,6 +3,8 @@
   the List spec as the expression (`ix_*`), over `Spec.lean`'s reading `x.rel = ix(x.toList)`.
 -/
 import LeetQ.Rel.Spec
+import QLean.Verify.Dyad
+import QLean.Verify.Structural
 
 namespace LeetQ.Rel.Verb
 
@@ -471,6 +473,78 @@ theorem flip_rel {v : QAtomicType} [Inhabited (El v)] {P R : Parted v} {m : Nat}
           list (rpair ((graph Prod.fst : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ P.rel)
             (graph Prod.snd : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ Idx) ≫ nth) :=
         ix_flip P.segs P.g m (by simp [Parted.segs]) hm
+
+/-! ## Long index arithmetic, read as naturals
+
+  The boxed verbs build their positions with `tilLongs`, `Alg.cross`, `Alg.mulc` and `Alg.add`; below `2^63` no
+  operand is `0N` and nothing wraps, so each is its arithmetic on naturals. -/
+
+/-- The words of a dense long payload, read as naturals. -/
+def nats (b : ByteArray) : List Nat := (Verify.elemsW 8 b).map UInt64.toNat
+
+theorem nats_length (b : ByteArray) : (nats b).length = b.size / 8 := by simp [nats, Verify.elemsW]
+
+theorem nats_til (N : Nat) (hN : N < USize.size) : nats (Kernel.tilLongs N.toUSize) = List.range N := by
+  rw [nats, Verify.tilLongs_spec, USize.toNat_ofNat_of_lt' hN]
+
+/-- A word holding a natural below `2^63` reads as that natural. -/
+theorem toInt_word {u : UInt64} {a : Nat} (h : u.toNat = a) (ha : a < 2 ^ 63) : u.toInt64.toInt = a := by
+  obtain rfl : u = UInt64.ofNat a := UInt64.toNat_inj.1 (by rw [h, UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le ha (by decide))])
+  exact Find.toInt_ofNat_lt ha
+
+/-- A long whose value is a natural `k < 2^63` is the word `k`. -/
+theorem toNat_of_toInt {r : Int64} {k : Nat} (hk : k < 2 ^ 63) (h : r.toInt = k) : r.toUInt64.toNat = k := by
+  obtain rfl : r = (UInt64.ofNat k).toInt64 := Int64.toInt_inj.1 (by rw [h, Find.toInt_ofNat_lt hk])
+  show (UInt64.ofNat k).toNat = k
+  exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le hk (by decide))
+
+/-- A long read off a word below `2^63` is not `0N`. -/
+theorem ne_min_word {u : UInt64} (ha : u.toNat < 2 ^ 63) : (u.toInt64 == Int64.minValue) = false := by
+  have e := toInt_word rfl ha
+  refine beq_eq_false_iff_ne.2 fun h => ?_
+  rw [h] at e; simp at e
+
+/-- `Ew.val` of a long payload against one long atom `c`, element by element on the naturals. -/
+theorem nats_val_va (op : UInt8) (b : ByteArray) (c : UInt64) (hn : b.size / 8 < USize.size) (F : Nat → Nat)
+    (hF : ∀ a ∈ nats b, (Kernel.Ew.intStep op Int64.minValue (UInt64.ofNat a).toInt64 c.toInt64).toUInt64.toNat = F a) :
+    nats (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.va Int64.minValue b (one c) (b.size / 8).toUSize) = (nats b).map F := by
+  rw [nats, show one c = Kernel.atomBytes Kernel.Ew.i64 c from rfl, Verify.val_i64_va _ _ _ _ _ hn]
+  apply List.ext_getElem (by simp [nats, Verify.elemsW])
+  intro i h1 h2
+  simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range, List.length_map, List.length_range] at h2 ⊢
+  have := hF _ (List.mem_map.2 ⟨_, List.mem_map.2 ⟨i, List.mem_range.2 h2, rfl⟩, rfl⟩)
+  rwa [UInt64.ofNat_toNat] at this
+
+/-- `Ew.val` of two long payloads of one length, element by element on the naturals. -/
+theorem nats_val_vv (op : UInt8) (a b : ByteArray) (hn : a.size / 8 < USize.size) (hab : b.size / 8 = a.size / 8)
+    (F : Nat → Nat → Nat) (hF : ∀ i (h : i < a.size / 8), (Kernel.Ew.intStep op Int64.minValue
+      (UInt64.ofNat ((nats a)[i]'(by rw [nats_length]; exact h))).toInt64
+      (UInt64.ofNat ((nats b)[i]'(by rw [nats_length]; omega))).toInt64).toUInt64.toNat =
+        F ((nats a)[i]'(by rw [nats_length]; exact h)) ((nats b)[i]'(by rw [nats_length]; omega))) :
+    nats (Kernel.Ew.val op Kernel.Ew.i64 Kernel.Ew.vv Int64.minValue a b (a.size / 8).toUSize) =
+      List.zipWith F (nats a) (nats b) := by
+  rw [nats, Verify.val_i64_vv _ _ _ _ _ hn]
+  apply List.ext_getElem (by simp [nats, Verify.elemsW, hab])
+  intro i h1 h2
+  simp only [List.length_map, List.length_range] at h1
+  have := hF i h1
+  simp only [nats, Verify.elemsW, List.getElem_map, List.getElem_range, List.getElem_zipWith, UInt64.ofNat_toNat] at this ⊢
+  exact this
+
+/-- `Alg.mulc a x`: each natural times `x`, all products below `2^63`. -/
+theorem nats_mulc (a : ByteArray) (x : Nat) (hn : a.size / 8 < USize.size) (hx : x < 2 ^ 63)
+    (hl : ∀ k ∈ nats a, k < 2 ^ 63 ∧ k * x < 2 ^ 63) : nats (Alg.mulc a x) = (nats a).map (· * x) := by
+  unfold Alg.mulc Alg.len
+  refine nats_val_va _ a _ hn _ fun k hk => ?_
+  obtain ⟨hk, hkx⟩ := hl k hk
+  have hk' : (UInt64.ofNat k).toNat = k := UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le hk (by decide))
+  have hx' : x.toUInt64.toNat = x := UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le hx (by decide))
+  show (if (UInt64.ofNat k).toInt64 == Int64.minValue || x.toUInt64.toInt64 == Int64.minValue then Int64.minValue
+    else (UInt64.ofNat k).toInt64 * x.toUInt64.toInt64).toUInt64.toNat = k * x
+  rw [ne_min_word (by omega), ne_min_word (by omega), Bool.false_or, if_neg Bool.false_ne_true]
+  show (UInt64.ofNat k * x.toUInt64).toNat = k * x
+  rw [UInt64.toNat_mul, hk', hx', Nat.mod_eq_of_lt (by omega)]
+
 
 #print axioms flip_rel
 #print axioms ej_rel
