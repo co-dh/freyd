@@ -327,6 +327,16 @@ def femit (x : Float) : UInt64 := if Bits.f64IsNaN x.toBits then QLean.nanBits e
     the dense path has. -/
 def canon (r : UInt64) : UInt64 := if Bits.f64IsNaN r then QLean.nanBits else r
 
+/-- The total of float words in `sumF64Total`'s order, q's one order at every encoding: `avg` picks
+    `avg`'s lanes (two with a null), else `sum`'s (one with a null); eight lanes with none. -/
+def fsum (avg : Bool) (xs : List UInt64) : Float := sumF64Total avg xs.length fun i => Float.ofBits (xs.getD i 0)
+
+/-- `avg` of float words: `fsum true` over the non-NaN count, `0n` when there is none or the quotient
+    is a NaN. -/
+def favg (xs : List UInt64) : UInt64 :=
+  let live := xs.countP fun u => !Bits.f64IsNaN u
+  if live == 0 then QLean.nanBits else canon (fsum true xs / live.toFloat).toBits
+
 /-- One element `u` into the four running totals `mwinBits`' float pass keeps: the total with the null
     skipped, the total with the null as `0.0`, the total of squares, the live count. -/
 def mstep (a : Float × Float × Float × Int64) (u : UInt64) : Float × Float × Float × Int64 :=
@@ -828,6 +838,85 @@ theorem avg_long {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords 
     rw [e]
     exact Spec.canon_raw (Spec.over (· + ·) 0 R.toList, (R.toList.filter (· != Spec.nul)).length)
   | _ => all_goals (rw [hc] at hx; cases hx)
+
+/-- `List.foldl` reads its step only on the list's members. -/
+theorem foldl_congr_mem {α β : Type} {l : List α} {f g : β → α → β} (h : ∀ b, ∀ a ∈ l, f b a = g b a) :
+    ∀ {b b' : β}, b = b' → l.foldl f b = l.foldl g b' := by
+  induction l with
+  | nil => intro b b' e; exact e
+  | cons x l ih =>
+    intro b b' e; subst e
+    exact ih (fun b a ha => h b a (List.mem_cons_of_mem _ ha)) (h b x (by simp))
+
+/-- `laneSum` reads `live` and `f` only below `n`. -/
+theorem laneSum_congr (lanes n : Nat) {live live' : Nat → Bool} {f f' : Nat → Float}
+    (hl : ∀ i < n, live i = live' i) (hf : ∀ i < n, f i = f' i) :
+    laneSum lanes n live f = laneSum lanes n live' f' := by
+  have hs : ∀ (acc : Float) i, i < n → (if live i then acc + f i else acc) = (if live' i then acc + f' i else acc) :=
+    fun acc i hi => by rw [hl i hi, hf i hi]
+  dsimp only [laneSum]
+  refine foldl_congr_mem (fun acc i hi => hs acc i ?_) (foldl_congr_mem (fun s j hj =>
+    congrArg (s + ·) (foldl_congr_mem (fun acc i hi => hs acc _ ?_) rfl)) rfl)
+  all_goals first
+    | (simp only [List.mem_range'_1] at hi; omega)
+    | (simp only [List.mem_range] at hi hj
+       have h1 := Nat.mul_le_mul_right lanes (Nat.succ_le_of_lt hi)
+       have h2 := Nat.div_mul_le_self n lanes
+       rw [Nat.succ_mul] at h1; omega)
+
+/-- `sumF64Total` reads its getter only below `n`. -/
+theorem sumF64Total_congr (avg : Bool) (n : Nat) {f f' : Nat → Float} (h : ∀ i < n, f i = f' i) :
+    sumF64Total avg n f = sumF64Total avg n f' := by
+  have hl : ∀ i < n, (!Bits.f64IsNaN (f i).toBits) = !Bits.f64IsNaN (f' i).toBits := fun i hi => by rw [h i hi]
+  have ha : ((List.range n).all fun i => !Bits.f64IsNaN (f i).toBits) =
+      (List.range n).all fun i => !Bits.f64IsNaN (f' i).toBits :=
+    Bool.eq_iff_iff.2 (by
+      simp only [List.all_eq_true, List.mem_range]
+      exact ⟨fun H i hi => by rw [← hl i hi]; exact H i hi, fun H i hi => by rw [hl i hi]; exact H i hi⟩)
+  unfold sumF64Total; dsimp only; rw [ha]; exact laneSum_congr _ _ hl h
+
+/-- A dense payload's total is `Spec.fsum` of its words. -/
+theorem sumF64Total_words (avg : Bool) (B : ByteArray) :
+    sumF64Total avg (B.size / 8) (atF64 B) = Spec.fsum avg (Verify.elemsW 8 B) := by
+  unfold Spec.fsum
+  rw [show (Verify.elemsW 8 B).length = B.size / 8 by simp [Verify.elemsW]]
+  exact sumF64Total_congr _ _ fun i hi => by simp [atF64, Verify.elemsW, List.getD_eq_getElem?_getD, hi]
+
+/-- **float `sum x` at every encoding** (`bytes` or `alp`): `Spec.fsum false` of the words — the dense
+    `overF64 .add` and the ALP `alpSumF64 false` are both `sumF64Total false`. -/
+theorem sum_float {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws)
+    (hn : n < USize.size) : floatOver .add .float R.c = some (Spec.fsum false R.toList).toBits := by
+  obtain ⟨B, hc, hBw, -⟩ := Arr.dense_float R hx hn
+  rw [Arr.toList_float R hx, ← hBw, ← sumF64Total_words]
+  rcases hc with hc | ⟨md, pk, a, hc, rfl⟩
+  · rw [R.c_eq hc]; rfl
+  · rw [R.c_eq hc]; rfl
+
+/-- **float `avg x` at every encoding** (`bytes` or `alp`): `Spec.favg` of the words. The ALP path counts
+    `alpLive`, `n` less the NaN exceptions; that this is the decoded words' non-NaN count is `hlive`,
+    which qlean does not state. -/
+theorem avg_float {n : Nat} {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws)
+    (hn : n < USize.size)
+    (hlive : ∀ md pk a, R.c.enc = .alp md pk a → alpLive a n = R.toList.countP fun u => !Bits.f64IsNaN u) :
+    avg R = some (Spec.favg R.toList) := by
+  obtain ⟨B, hc, hBw, hBs⟩ := Arr.dense_float R hx hn
+  have hL : R.toList = Verify.elemsW 8 B := by rw [Arr.toList_float R hx, hBw]
+  rcases hc with hc | ⟨md, pk, a, hc, rfl⟩
+  · have hm : B.size / 8 < USize.size := hBs ▸ hn
+    have hcol : avgColumn .float R.c = some (QAtom.float (Spec.favg (Verify.elemsW 8 B))) := by
+      rw [R.c_eq hc, Spec.favg, ← sumF64Total_words]
+      show some (QAtom.float (Scan.avgBits .f64 (B.size / 8).toUSize B)) = _
+      unfold Scan.avgBits
+      rw [USize.toNat_ofNat_of_lt' hm, show Scan.Kind.f64.avail B = B.size / 8 from rfl, Nat.min_self,
+        Verify.elemsW, List.countP_map]
+      rfl
+    simp only [avg, hcol, Option.bind, Carrier.of?, hL]
+  · have hcol : avgColumn .float R.c = some (QAtom.float (if alpLive a n == 0 then QLean.nanBits else
+        Spec.canon (alpSumF64 true md pk a n.toUSize / (alpLive a n).toFloat).toBits)) := by
+      rw [R.c_eq hc]; rfl
+    simp only [avg, hcol, Option.bind, Carrier.of?]
+    rw [hlive md pk a hc, hL, Spec.favg, ← sumF64Total_words]
+    rfl
 
 /-- The window `[i+1-w, i]` of `til m` mapped, `i < m`. -/
 theorem window_range_map {α : Type} (g : Nat → α) (w : Nat) {i m : Nat} (hi : i < m) :
@@ -1595,5 +1684,9 @@ end Checks
 #print axioms Ops.mloop
 #print axioms Ops.mwinBits_mfloat
 #print axioms Ops.mfloat_toList_float
+#print axioms Ops.sumF64Total_congr
+#print axioms Ops.sumF64Total_words
+#print axioms Ops.sum_float
+#print axioms Ops.avg_float
 
 end LeetQ.Rel
