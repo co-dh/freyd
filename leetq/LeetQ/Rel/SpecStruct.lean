@@ -2228,14 +2228,14 @@ theorem find_first (c x : Alg.Code)
       rw [Verify.elemsW_foldl _ 8 (by decide) (by decide) _ (fun _ _ => UInt64.toNat_lt _), hxnU]
     have hsz : (findBitVec c.n.toUSize c.b x.n.toUSize x.b).size / 8 = x.n := by
       have := congrArg List.length hw; simpa [Verify.elemsW] using this
-    refine ⟨by rw [hsz], fun i hi => ?_⟩
+    refine ⟨Nat.le_of_eq hsz.symm, fun i hi => ?_⟩
     have hi' : i < (findBitVec c.n.toUSize c.b x.n.toUSize x.b).size / 8 := by rw [hsz]; exact hi
     have hword : (Column.bitsAt (findBitVec c.n.toUSize c.b x.n.toUSize x.b) (i * 8) 8).toNat =
         ((List.range c.n).map (Column.bitAt c.b)).idxOf (Column.bitAt x.b i) := by
       have e := congrArg (·[i]?) hw
       simp only [Verify.elemsW, List.getElem?_map, List.getElem?_range hi, List.getElem?_range hi',
         Option.map_some, Option.some.injEq] at e
-      rw [e, USize.toNat_toUInt64, findBit_idxOf c.b (by omega)]
+      rw [e, USize.toNat_toUInt64, Find.findBit_idxOf c.b (by omega)]
     have hid : ∀ j, Column.idAt c.b c.w j = Column.idAt x.b x.w i ↔ Column.bitAt c.b j = Column.bitAt x.b i :=
       fun j => by
         rw [hc1, hx1, Verify.idAt_one, Verify.idAt_one]
@@ -2250,7 +2250,7 @@ theorem find_first (c x : Alg.Code)
     have hw8 : k.width ≤ 8 := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
     have hwU : k.width.toUSize.toNat = k.width :=
       USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw8 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
-    have hdiv : ∀ s, s * 8 / (8 * k.width) = s / k.width := fun s => by
+    have hdiv : ∀ s, (s * 8 / (8 * k.width) : Nat) = s / k.width := fun s => by
       rw [Nat.mul_comm s 8, Nat.mul_div_mul_left _ _ (by decide)]
     rw [hck, hdiv] at hcap
     rw [hxk, hdiv] at hxcap
@@ -2288,12 +2288,12 @@ theorem find_first (c x : Alg.Code)
       fun w hw => by rw [hl w hw]; omega
     obtain ⟨hsz, hget⟩ := Verify.findIdsVec_idxOf c.w.toUSize x.w.toUSize c.n.toUSize x.n.toUSize c.b x.b
       (hlane _ hcw) (hlane _ hxw)
-    have hcap' : ∀ (b : ByteArray) w n, w ≠ 0 → n ≤ b.size * 8 / w → Column.idsCap b w n = n := fun b w n hw h => by
+    have hcap' : ∀ (b : ByteArray) w n, w ≠ 0 → n ≤ (b.size * 8 / w : Nat) → Column.idsCap b w n = n := fun b w n hw h => by
       unfold Column.idsCap; rw [if_neg hw]; exact Nat.min_eq_left h
     have ec := hcap' c.b c.w c.n (by omega) hcap
     have ex := hcap' x.b x.w x.n (by omega) hxcap
     simp only [hl _ hcw, hl _ hxw, hcnU, hxnU, ec, ex] at hsz hget
-    refine ⟨by rw [hsz, Nat.mul_div_cancel_left _ (by decide)], fun i hi => ?_⟩
+    refine ⟨Nat.le_of_eq (by rw [hsz, Nat.mul_div_cancel_left _ (by decide)]), fun i hi => ?_⟩
     rw [hget i hi]
     exact ⟨Nat.le_trans (Verify.idxOf_le_length _ _) (by simp only [List.length_map, List.length_range]; exact hcn),
       fun j => idxOf_prefix _ _ (Nat.le_refl _) j⟩

@@ -536,7 +536,7 @@ theorem ij_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
   have hlw := w_of_kind hk4 hlk
   have hlane : 8 * k.width = 8 ∨ 8 * k.width = 16 ∨ 8 * k.width = 32 ∨ 8 * k.width = 64 := by
     rcases hk4 with rfl | rfl | rfl | rfl <;> decide
-  have hdiv : ∀ s, s * 8 / (8 * k.width) = s / k.width := fun s => by
+  have hdiv : ∀ s, (s * 8 / (8 * k.width) : Nat) = s / k.width := fun s => by
     rw [Nat.mul_comm s 8, Nat.mul_div_mul_left _ _ (by decide)]
   have hava : k.avail rc.b = rc.b.size / k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
   have hsz8 : rc.b.size * 8 ≤ 64 * wr.length := by
