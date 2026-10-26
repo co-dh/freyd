@@ -1573,7 +1573,8 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
       Kernel.dyadColumn .sub Kernel.Ew.va .long .long t0 (Alg.longs (Find.one 1)) = some (.long, L))
     (hLt : L.ty = .long) (hLb : Column.bytesOf L = some bL) (hLn : bL.size / 8 = t0.n)
     (hLw : ∀ i, i < t0.n → (Column.bitsAt bL (i * 8) 8).toInt64 =
-      if prevailing then (Column.bitsAt b0 (i * 8) 8).toInt64 else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1)
+      if prevailing then (Column.bitsAt b0 (i * 8) 8).toInt64
+      else Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue (Column.bitsAt b0 (i * 8) 8).toInt64 1)
     (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (hgb : Column.bytesOf ids = some gids) (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n)
     (hrn : hay.size / 8 = tr.n) (hlk : lk.length = t0.n) (hrk : rk.length = tr.n)
@@ -1693,8 +1694,8 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     h1n hhn (by omega) (by omega) hU h62 hkg hk h
 
 /-- **`wj1` is `wjSpec false`** at one long key column per side, the right one unmarked (q's `wj1`): as `wj_long`,
-    the lower edge binned at `dyadColumn_sub_one`'s `w₀ - 1`. The window `t0` is dense (`hb0`), and no `w₀` is
-    `0N` (`hnul`): q's `0N - 1` is `0N`, where `wjSpec`'s `Int64` subtraction wraps it to `0W`. -/
+    the lower edge binned at `dyadColumn_sub_one`'s `w₀ - 1`, q's subtraction in both. The window `t0` is
+    dense (`hb0`). -/
 theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .long} {b0 b1 hay : ByteArray}
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
@@ -1703,7 +1704,6 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (hb0 : t0.enc = .bytes b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
-    (hnul : ∀ i, i < t0.n → ((nats b0).map Int64.ofNat)[i]! ≠ Int64.minValue)
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
     (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
     Struct.runsSpec P.segs = Struct.wjSpec false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
@@ -1719,12 +1719,7 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
   rw [← ht0] at hd
   refine wj_groups false wl wr h0t h1t htr hd hLt hLb hLn (fun i hi => ?_) h1b hrb hgb h0n h1n hhn
     (by omega) (by omega) hU h62 hkg hk h
-  have hx := hnul i hi
-  rw [get!_map _ _ (by rw [nats_length]; omega), nats_get b0 (by omega), ← toInt64_eq_ofNat] at hx
   rw [hLw i hi, if_neg Bool.false_ne_true]
-  show (if ((Column.bitsAt b0 (i * 8) 8).toInt64 == Int64.minValue || (1 : Int64) == Int64.minValue) then
-    Int64.minValue else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1) = _
-  rw [show ((1 : Int64) == Int64.minValue) = false from rfl, Bool.or_false, if_neg (by simpa using hx)]
 
 /-- `wj`'s window, `Wᵥ` with both ends moving: left row `i` to the right rows `j` with `lo i ≤ j < hi i`. -/
 def winAt (lo hi : Nat → Nat) : Idx ⟶ Idx := fun i j => lo i ≤ j ∧ j < hi i
