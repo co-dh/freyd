@@ -1,5 +1,6 @@
 import LeetQ.Rel.SpecStruct
 import LeetQ.Rel.SpecScan
+import LeetQ.Rel.QSort
 
 /-!
 The `keyCodes` path for one dense long key column per side: `rangeOffsets` rebases both columns'
