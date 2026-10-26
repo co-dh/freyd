@@ -948,7 +948,7 @@ theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : lon
 
 /-- `x@i` at long, source and index each `bytes` or `foR` (`longWords`): word `j` is the source's word at index
     word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). -/
-theorem gather_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
+theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
     (hm : m < USize.size) (i : Arr .long k) (hi : longWords i.c = some is) (hk : k < USize.size) {c : Column}
     (h : Kernel.gatherColumn .long x.c i.c = some (.vector c)) :
     ∃ B, c = ⟨.long, k, .bytes B, none⟩ ∧ B.size = k * 8 ∧
@@ -1183,13 +1183,13 @@ theorem only_rows {nx ny : Nat} (kx : Arr .long nx) (ky : Arr .long ny) {ty : QA
     by simp only [longWords, hPw]⟩
   rw [← hF, List.mem_filter, List.mem_range] at h; omega
 
-/-- `z@I` at long, the index `I` the positions `F` of `z` as words: `ix(F) ≫ z` (`gather_long`,
+/-- `z@I` at long, the index `I` the positions `F` of `z` as words: `ix(F) ≫ z` (`gatherColumn_long`,
     `ix_map_getElem!`). -/
 theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWords z.c = some zs)
     (hk : k < USize.size) (I : Arr .long n) {F : List Nat} (hI : longWords I.c = some (F.map UInt64.ofNat))
     (hF : ∀ j ∈ F, j < k) (hn : n < USize.size) {c : Column} (h : Kernel.gatherColumn .long z.c I.c = some (.vector c)) :
     ∃ G : Arr .long n, G.c = c ∧ G.rel = ix F ≫ z.rel := by
-  obtain ⟨B, rfl, hBs, hBw⟩ := gather_long z hz hk I hI hn h
+  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long z hz hk I hI hn h
   have hzl : zs.length = k := by rw [← Arr.length_toList z, Arr.toList_long z hz, List.length_map]
   let G : Arr .long n := ⟨⟨.long, n, .bytes B, none⟩, rfl, rfl, by simp only [Column.WF, QAtomicType.width]; omega⟩
   refine ⟨G, rfl, ?_⟩
@@ -1206,7 +1206,7 @@ theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWo
 /-- **The rows only `y` has in `align`, long keys and long `y` values:
     `enum(dom(y.key) ∩ corNeg(dom(y.key ≫ x.key°))) ≫ ⟨!eₗ, y⟩ ≫ f`.** `memberColumn`, `~` and `whereColumn`
     enumerate the positions of `y` whose key `x` lacks (`probe_member`, `notBits_bitAt`, `whereBits_spec`),
-    `gatherColumn` reads `y` there (`gather_long`), and the `av` dyad pairs each with `eₗ`; `hlaw` is any value
+    `gatherColumn` reads `y` there (`gatherColumn_long`), and the `av` dyad pairs each with `eₗ`; `hlaw` is any value
     law of `a f y` at the encoding at hand. -/
 theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
     {m : Nat} {b : ByteArray} {iy ac gy : Column} {ry : Arr rt iy.n} (ht : t ≠ .general) {el : Carrier t}
@@ -2564,7 +2564,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms align_gather
 #print axioms ix_lookup
 #print axioms align_left_rel
-#print axioms gather_long
+#print axioms gatherColumn_long
 #print axioms enum_ofList
 #print axioms cset_only
 #print axioms vec_some
