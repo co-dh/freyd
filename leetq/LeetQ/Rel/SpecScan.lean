@@ -275,22 +275,13 @@ theorem group_iff {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (h
   · omega
   · rw [Nat.sub_add_cancel hpos]; omega
 
-/-- `grpL(grp o)` at a group `j < g`: its rows `[o[j], o[j+1])` in position order. -/
-theorem grpL_grp {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (hj : j < g)
-    (ys : CL.ConsList Unit Nat) :
-    grpL (grp o) j ys ↔ ys = CL.ofList (List.range' (o.toList[j]!).toNatClampNeg
-      ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg)) := by
-  obtain ⟨a0, a1, -⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
-  have ca := Ops.toNat_cast a0
-  have cb := Ops.toNat_cast (Int.le_trans a0 a1)
-  have mem : ∀ i, i ∈ List.range' (o.toList[j]!).toNatClampNeg
-      ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg) ↔ j = Parted.group o i := fun i => by
-    rw [List.mem_range'_1, eq_comm, group_iff co hj]; omega
-  have pw : (List.range' (o.toList[j]!).toNatClampNeg
-      ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg)).Pairwise (· < ·) := List.pairwise_lt_range'
-  show (Λ (grp o)° ≫ enum) j ys ↔ _
+/-- `Λ(R) ≫ enum` at `i`, when the `R`-image of `i` is the interval `[a, a+k)`: the list `range' a k`. -/
+theorem Λ_enum (R : Idx ⟶ Idx) {i a k : Nat} (h : ∀ j : Nat, R i j ↔ a ≤ j ∧ j < a + k)
+    (ys : CL.ConsList Unit Nat) : (Λ R ≫ enum) i ys ↔ ys = CL.ofList (List.range' a k) := by
+  have mem : ∀ j, j ∈ List.range' a k ↔ R i j := fun j => by rw [List.mem_range'_1, h]
+  have pw : (List.range' a k).Pairwise (· < ·) := List.pairwise_lt_range'
   rw [Λ_eq_classifier]
-  show (∃ P, P = (fun i => (grp o)° j i) ∧ enum P ys) ↔ _
+  show (∃ P, P = (fun j => R i j) ∧ enum P ys) ↔ _
   constructor
   · rintro ⟨P, rfl, hP⟩
     obtain ⟨hS, ho⟩ := (enum_iff _ _).1 hP
@@ -301,6 +292,17 @@ theorem grpL_grp {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (hj
   · rintro rfl
     exact ⟨_, rfl, (enum_iff _ _).2 ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i _).symm),
       (orderedP_ofList _ _).2 pw⟩⟩
+
+/-- `grpL(grp o)` at a group `j < g`: its rows `[o[j], o[j+1])` in position order. -/
+theorem grpL_grp {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {j : Nat} (hj : j < g)
+    (ys : CL.ConsList Unit Nat) :
+    grpL (grp o) j ys ↔ ys = CL.ofList (List.range' (o.toList[j]!).toNatClampNeg
+      ((o.toList[j+1]!).toNatClampNeg - (o.toList[j]!).toNatClampNeg)) := by
+  obtain ⟨a0, a1, -⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+  have ca := Ops.toNat_cast a0
+  have cb := Ops.toNat_cast (Int.le_trans a0 a1)
+  exact Λ_enum _ (fun i => (eq_comm.trans (group_iff co hj i)).trans
+    ⟨fun h => ⟨h.1, by omega⟩, fun h => ⟨h.1, by omega⟩⟩) ys
 
 /-- `list(ix xs)` takes the positions `[a, a+k)` to the rows `(xs.drop a).take k`. -/
 theorem listP_ix_range' (xs : List α) : ∀ k a, a + k ≤ xs.length → ∀ ys,
@@ -361,6 +363,33 @@ theorem ix_groups {v : QAtomicType} {β : Type} {g n : Nat} {o : Arr .long (g+1)
         rw [(listP_ix_range' x.toList _ _ hl ws).1 hw]
     · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
       exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hj⟩
+
+/-- `Wᵥ`, the window of width `w`: position `i` to the positions `j` with `i−w < j ≤ i`. -/
+def win (w : Nat) : Idx ⟶ Idx := fun i j => j ≤ i ∧ i < j + w
+
+/-- The window spec read on a list `xs`: at `i < |xs|`, `f` of the last `w` rows up to `i`, is
+    `corefl(<|xs|) ≫ Λ(Wᵥ) ≫ enum ≫ list(xs) ≫ f`. -/
+theorem ix_window {β : Type} (xs : List α) (w : Nat) (f : CL.ConsList Unit α → β) :
+    ix ((List.range xs.length).map fun i => f (CL.ofList ((xs.take (i+1)).drop (i+1-w))))
+      = corefl (· < xs.length) ≫ Λ (win w) ≫ enum ≫ ListRel.list (ix xs)
+          ≫ (graph f : dList α ⟶ (⟨β⟩ : RelSet.{0})) :=
+  hom_ext fun (i : Nat) c => by
+    show ((List.range xs.length).map _)[i]? = some c ↔
+      ∃ z, (i = z ∧ i < xs.length) ∧ ∃ s, Λ (win w) z s ∧ ∃ zs, enum s zs ∧ ∃ ws, ListRel.listP (ix xs) zs ws ∧ c = f ws
+    by_cases hi : i < xs.length
+    · have hl : (i+1-w) + (i+1-(i+1-w)) ≤ xs.length := by omega
+      have hW : ∀ ys, (Λ (win w) ≫ enum) i ys ↔ ys = CL.ofList (List.range' (i+1-w) (i+1-(i+1-w))) :=
+        Λ_enum _ fun j => show j ≤ i ∧ i < j + w ↔ _ by omega
+      rw [List.getElem?_map, List.getElem?_range hi, Option.map_some, Option.some.injEq, List.drop_take]
+      constructor
+      · intro e
+        obtain ⟨s, hs, he⟩ := (hW _).2 rfl
+        exact ⟨i, ⟨rfl, hi⟩, s, hs, _, he, _, (listP_ix_range' xs _ _ hl _).2 rfl, e.symm⟩
+      · rintro ⟨_, ⟨rfl, -⟩, s, hs, zs, hz, ws, hw, rfl⟩
+        rw [(hW zs).1 ⟨s, hs, hz⟩] at hw
+        rw [(listP_ix_range' xs _ _ hl ws).1 hw]
+    · rw [List.getElem?_eq_none (by simp only [List.length_map, List.length_range]; omega)]
+      exact ⟨(fun e => nomatch e), by rintro ⟨_, ⟨_, h⟩, -⟩; exact absurd h hi⟩
 
 end Vocabulary
 
@@ -541,6 +570,53 @@ theorem overBy_rel {op : Coc.Over} (hb : op.boolCast = false)
         ix_groups co x fun ys => (CL.toList ys).foldr (skipNul op.step) (op.denseSeed Ew.i64 Spec.nul)
     _ = _ := by rw [foldr_cata]
 
+/-- `w mcount x` on a dense long column: the non-null count of each window,
+    `corefl(<n) ≫ Λ(Wᵥ) ≫ enum ≫ list(x) ≫ count`, as an `int`. -/
+theorem mcount_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
+    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .int n} (h : Ops.mwin .mcount w .int R = some S) :
+    S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
+      Int32.ofNat ((CL.toList ys).filter (· != Spec.nul)).length : dList Int64 ⟶ (⟨Int32⟩ : RelSet.{0})) :=
+  calc S.rel = ix ((List.range R.toList.length).map fun i => Int32.ofNat
+          ((CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-w)))).filter (· != Spec.nul)).length) := by
+        show ix S.toList = _
+        rw [Ops.mcount_toList hw hx hn h, Spec.mcount]; simp only [CL.toList_ofList]
+    _ = corefl (· < R.toList.length) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
+          Int32.ofNat ((CL.toList ys).filter (· != Spec.nul)).length : dList Int64 ⟶ (⟨Int32⟩ : RelSet.{0})) :=
+        ix_window R.toList w fun ys => Int32.ofNat ((CL.toList ys).filter (· != Spec.nul)).length
+    _ = _ := by rw [Arr.length_toList]
+
+/-- `w msum x` on a dense long column, when no running total `+\` (nulls as `0`) is `0N`: the sum of each
+    window, the null skipped, `corefl(<n) ≫ Λ(Wᵥ) ≫ enum ≫ list(x) ≫ ⦇[0, +]⦈`. Without the restriction
+    q answers `0N` where a running total at either end of the window is `0N`, which no fold of the window sees. -/
+theorem msum_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
+    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .msum w .long R = some S)
+    (hno : ∀ j, j ≤ n → ((R.toList.map fun x => if x == Spec.nul then 0 else x).take j).foldl (· + ·) 0 ≠ Spec.nul) :
+    S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
+          (graph fun _ => (0 : Int64)) (graph fun q : Int64 × Int64 => skipNul (· + ·) q.1 q.2)
+          : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈ :=
+  calc S.rel = ix ((List.range R.toList.length).map fun i =>
+          (CL.toList (CL.ofList ((R.toList.take (i+1)).drop (i+1-w)))).foldr (skipNul (· + ·)) 0) := by
+        show ix S.toList = _
+        rw [Ops.msum_toList hw hx hn h]
+        refine congrArg ix ?_
+        simp only [Spec.msum, CL.toList_ofList]
+        refine List.map_congr_left fun i hi => ?_
+        have hi := List.mem_range.1 hi
+        rw [Arr.length_toList] at hi
+        have e1 := hno (i+1) (by omega)
+        have e2 := hno (i+1-w) (by omega)
+        rw [if_neg (by simp only [Bool.or_eq_true, beq_iff_eq] at e1 e2 ⊢; exact fun h => h.elim e1 e2),
+          show ((R.toList.map fun x => if x == Spec.nul then 0 else x).take (i+1)).drop (i+1-w)
+            = ((R.toList.take (i+1)).drop (i+1-w)).map (fun x => if x == Spec.nul then 0 else x) by simp,
+          List.foldl_map, ← over_foldr (· + ·) 0 Int64.add_assoc Int64.zero_add Int64.add_zero, Spec.over]
+        congr 1; funext a x; by_cases hx : x = Spec.nul <;> simp [hx]
+    _ = corefl (· < R.toList.length) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
+          (CL.toList ys).foldr (skipNul (· + ·)) (0 : Int64) : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0})) :=
+        ix_window R.toList w fun ys => (CL.toList ys).foldr (skipNul (· + ·)) (0 : Int64)
+    _ = _ := by rw [Arr.length_toList, foldr_cata]
+
+#print axioms mcount_rel
+#print axioms msum_rel
 #print axioms countBy_rel
 #print axioms lastBy_rel
 #print axioms overBy_rel
