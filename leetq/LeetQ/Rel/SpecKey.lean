@@ -2079,6 +2079,46 @@ theorem gallop_loop {α : Type} (k : Array Nat → α) (t : QAtomicType) (rc : C
   exact ⟨s.fst, rfl, hQ1, hQ2⟩
 
 open QLean.Kernel in
+/-- Gathering a long column at rows `pr` inside it answers a long column whose words are the column's words at
+    `pr`: `gallop_loop`'s gather hypothesis at the kernel's own right key column. -/
+theorem gather_rows {cr : Column} {wr : List UInt64} (hrt : cr.ty = .long) (hrw : longWords cr = some wr)
+    (hrn : wr.length = cr.n) (hU : cr.n < USize.size) (pr : Array Nat) (hpr : ∀ k, k < pr.size → pr[k]! < cr.n) :
+    ∃ cn ce ca g, gatherColumn .long { cr with attr := none } (longColumn pr) = some (.vector ⟨.long, cn, ce, ca⟩) ∧
+      Column.bytesOf ⟨.long, cn, ce, ca⟩ = some g ∧ ∀ k, k < pr.size → Column.bitsAt g (k * 8) 8 = wr[pr[k]!]! := by
+  have hrw' : longWords { cr with attr := none } = some wr := by
+    rw [show longWords { cr with attr := none } = longWords cr from rfl]; exact hrw
+  obtain ⟨B, hBb, hBw, hBn⟩ := bytesOf_longWords (c := { cr with attr := none }) hrt hU hrw' hrn
+  simp only at hBn
+  have hw : ∀ i, i < B.size / 8 → wr[i]! = Column.bitsAt B (i * 8) 8 := fun i hi => by
+    rw [← hBw, getElem!_pos _ i (by simp [Verify.elemsW]; omega)]; simp [Verify.elemsW]
+  have hix : Column.bytesOf (longColumn pr) = some (Kernel.longBytes pr) := rfl
+  obtain ⟨c, hgc⟩ := gatherColumn_long_some (x := { cr with attr := none }) (i := longColumn pr) hrt hrw' hix
+  obtain ⟨src, ix', hsrc, hix', hc⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl
+    { cr with attr := none } (longColumn pr) c hrt rfl (show Verify.countFits (longColumn pr) from trivial)
+    (fun M P a he => by simp only at he; simp [longWords, he] at hrw') hgc
+  have hsB : src = B := Option.some.inj (hsrc.symm.trans hBb)
+  have hixe : ix' = Kernel.longBytes pr := Option.some.inj (hix'.symm.trans hix)
+  rw [hsB, hixe] at hc
+  subst hc
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have h64 : ∀ x ∈ pr.toList, x < 2 ^ 64 := fun x hx => by
+    obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hx
+    have := hpr k (by simpa using hk); rw [getElem!_pos pr k (by simpa using hk)] at this
+    simp at this ⊢; rcases USize.size_eq with h | h <;> omega
+  have hLB := longBytes_ids pr h64
+  have hLs : (Kernel.longBytes pr).size / 8 = pr.size := by
+    have := congrArg List.length hLB; simpa [Verify.ids] using this
+  refine ⟨_, _, _, _, hgc, rfl, fun k hk => ?_⟩
+  obtain ⟨-, hg⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8)
+    ((nullBits .long).getD 0) B (Kernel.longBytes pr)
+  have hat : (Column.bitsAt (Kernel.longBytes pr) (k * 8) 8).toNat = pr[k]! := by
+    rw [getElem!_pos pr k hk, ← Array.getElem_toList]
+    exact Verify.ids_get hLB _
+  have e := hg k (by omega)
+  rw [h8, hat, if_pos (by have := hpr k hk; omega)] at e
+  rw [e, hw _ (by have := hpr k hk; omega)]
+
+open QLean.Kernel in
 /-- **`keyMatch` at an `s#` right key column, where halving is not worth it, answers the key groups** through
     `byRuns`: the run starts cut the rows into the groups, read as their own row numbers, and `?` places each left
     word among the words at those starts. The kernel trusts the mark, so each value is assumed to occupy one run
@@ -2940,6 +2980,7 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms gallop_group
 #print axioms forIn_range_inv
 #print axioms gallop_loop
+#print axioms gather_rows
 #print axioms aj_long
 #print axioms binRows_group
 #print axioms bitsAt_elemsW
