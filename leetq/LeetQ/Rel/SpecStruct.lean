@@ -1294,7 +1294,9 @@ theorem scanl_words (f : Int64 → Int64 → Int64)
     (`Ops.scan_i64_words` at `+`). -/
 theorem nats_sums (b : ByteArray) (hn : b.size / 8 < USize.size) (hs : (nats b).sum < 2 ^ 63) :
     nats (Alg.sums b) = (Spec.scanl (· + ·) 0 (nats b)).tail := by
-  have e := Ops.scan_i64_words (op := .add) (sv := .sums) rfl b hn
+  have e := Ops.scan_i64_words .sums b hn
+  obtain ⟨h1, h2⟩ := Spec.kern_verb (op := .add) (sv := .sums) rfl
+  rw [h1, h2] at e
   have hf : ∀ a (u : UInt64), u.toNat < 2 ^ 63 →
       ((fun a x => if x == Spec.nul then a else Kernel.Coc.Over.step .add a x) a u.toInt64 : Int64).toUInt64.toNat =
         (a.toUInt64.toNat + u.toNat) % 2 ^ 64 := fun a u hu => by
