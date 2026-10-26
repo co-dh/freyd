@@ -157,6 +157,19 @@ theorem enum_iff (S) (ys : CL.ConsList Unit Nat) :
   · rintro ⟨hS, ho⟩
     exact ⟨ys, hS, ys, Perm.refl ys, rfl, ho⟩
 
+/-- `enum` of a set its one strictly ascending list `L` holds is `L`, and only `L`. -/
+theorem enum_ofList (S : Nat → Prop) (L : List Nat) (pw : L.Pairwise (· < ·)) (mem : ∀ i, i ∈ L ↔ S i) :
+    ∀ ys, enum S ys ↔ ys = CL.ofList L := fun ys => by
+  rw [enum_iff]
+  constructor
+  · rintro ⟨hS, ho⟩
+    rw [← ofList_toList ys, orderedP_ofList] at ho
+    rw [← ofList_toList ys]
+    refine congrArg CL.ofList (eq_of_pairwise_lt ho pw fun a => ?_)
+    rw [mem, ← inlistP_ofList, ofList_toList, ← hS]
+  · rintro rfl
+    exact ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i L).symm), (orderedP_ofList _ L).2 pw⟩
+
 /-- `enum` executed: the coreflexive given as a bit column `x` (its set `{i ∣ x.rel i 1b}`) enumerates as
     `Find.where x`, the `whereBits` positions, read as naturals. -/
 theorem enum_where {nx m : Nat} {x : Arr .boolean nx} {r : Arr .long m} (hn : nx < USize.size)
@@ -170,16 +183,7 @@ theorem enum_where {nx m : Nat} {x : Arr .boolean nx} {r : Arr .long m} (hn : nx
     · rintro ⟨hi, e⟩; rw [List.getElem?_eq_getElem hi] at e ⊢; simpa using e
     · intro e; have hi : i < x.toList.length := (List.getElem?_eq_some_iff.1 e).1; exact ⟨hi, by rw [e]; rfl⟩
   have pw : L.Pairwise (· < ·) := (List.pairwise_lt_range ..).filter _
-  refine ⟨L, Find.where_toList hn h, fun ys => ?_⟩
-  rw [enum_iff]
-  constructor
-  · rintro ⟨hS, ho⟩
-    rw [← ofList_toList ys, orderedP_ofList] at ho
-    rw [← ofList_toList ys]
-    refine congrArg CL.ofList (eq_of_pairwise_lt ho pw fun a => ?_)
-    rw [mem, ← inlistP_ofList, ofList_toList, ← hS]
-  · rintro rfl
-    exact ⟨funext fun i => propext ((mem i).symm.trans (inlistP_ofList i L).symm), (orderedP_ofList _ L).2 pw⟩
+  exact ⟨L, Find.where_toList hn h, enum_ofList _ L pw mem⟩
 
 /-! ## The List specs read as expressions -/
 
