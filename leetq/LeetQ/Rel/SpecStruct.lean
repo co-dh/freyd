@@ -4,6 +4,8 @@
 -/
 import LeetQ.Rel.Spec
 import LeetQ.Rel.SpecFind
+import LeetQ.Rel.SpecScan
+import QLean.Verify.Amend
 import QLean.Verify.Dyad
 import QLean.Verify.Structural
 import QLean.Verify.Group
@@ -2336,6 +2338,229 @@ theorem ix_amendSpec {α : Type} [Inhabited α] (f : α → α → α) (xs ys : 
       obtain ⟨i, hc1, -, e⟩ := (hI c _).1 hcw
       exact .inl ⟨(i, b), (hz i b).2 ⟨c, hc1, hc2⟩, e.symm, x, hx, rfl⟩
 
+/-- **Position `j` after the writes is the fold of `f` over the values naming `j`, from its old element**, every
+    position in range, repeats allowed: q's index-by-index `@[x;i;f;y]` read position by position. -/
+theorem foldl_set_getElem? {α : Type} [Inhabited α] (f : α → α → α) (j : Nat) :
+    ∀ (L : List (Int64 × α)) (acc : List α), (∀ p ∈ L, p.1.toInt.toNat < acc.length) →
+      (L.foldl (fun acc (i, v) => acc.set i.toInt.toNat (f acc[i.toInt.toNat]! v)) acc)[j]? =
+        acc[j]?.map fun x => ((L.filter fun p => p.1.toInt.toNat = j).map (·.2)).foldl f x
+  | [], acc, _ => by simp
+  | (i, b) :: L, acc, hin => by
+    have hi : i.toInt.toNat < acc.length := hin (i, b) List.mem_cons_self
+    rw [List.foldl_cons, foldl_set_getElem? f j L _
+      (fun p hp => by rw [List.length_set]; exact hin p (List.mem_cons_of_mem _ hp))]
+    dsimp only
+    by_cases hj : i.toInt.toNat = j
+    · subst hj
+      rw [List.getElem?_set_self hi, List.getElem?_eq_getElem hi, List.filter_cons_of_pos (by simp),
+        getElem!_pos acc i.toInt.toNat hi]
+      rfl
+    · rw [List.getElem?_set_ne hj, List.filter_cons_of_neg (by simpa using hj)]
+
+/-- **`@[x;i;f;y]` is the fold `⦇x, step⦈` over the pairs `⟨i, y⟩`**, `step` one write, any indices: the
+    left-to-right `foldl` is the cons-list fold of the pairs taken from the last. -/
+theorem amendSpec_cata {α : Type} [Inhabited α] (f : α → α → α) (xs ys : List α) (is : List Int64) :
+    (cst (Struct.amendSpec f xs is ys) : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨List α⟩ : RelSet.{0}))
+      = cst (CL.ofList (is.zip ys).reverse) ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨(Int64 × α) × List α⟩)
+          (graph fun _ => xs) (graph fun q : (Int64 × α) × List α =>
+            q.2.set q.1.1.toInt.toNat (f q.2[q.1.1.toInt.toNat]! q.1.2))
+          : Alg (CL.F Unit (Int64 × α)) (⟨List α⟩ : RelSet.{0}))⦈ :=
+  calc (cst (Struct.amendSpec f xs is ys) : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨List α⟩ : RelSet.{0}))
+      = cst ((is.zip ys).reverse.foldr (fun (p : Int64 × α) (acc : List α) =>
+          acc.set p.1.toInt.toNat (f acc[p.1.toInt.toNat]! p.2)) xs) := by
+        rw [List.foldr_reverse]; rfl
+    _ = cst (CL.ofList (is.zip ys).reverse) ≫ RelSet.graph fun zs => (CL.toList zs).foldr
+          (fun (p : Int64 × α) (acc : List α) =>
+          acc.set p.1.toInt.toNat (f acc[p.1.toInt.toNat]! p.2)) xs := by rw [cst_graph, CL.toList_ofList]
+    _ = _ := by rw [foldr_cata]
+
+/-- The fold of `:` (`f = outr`) is the last value, its seed when there is none: q's last write stays. -/
+theorem foldl_outr {α : Type} : ∀ (l : List α) (x : α), l.foldl (fun _ b => b) x = l.getLast?.getD x
+  | [], _ => rfl
+  | a :: l, x => by rw [List.foldl_cons, foldl_outr l a, List.getLast?_cons]; rfl
+
+/-- **A dense answer reads back as itself whichever form `Column.answer` leaves it in**: kept dense, or encoded by
+    Frame of Reference (`encode_words`) or by ALP (`elemsW_alpDecode_alpEncodeAt`, below `2³²` elements). -/
+theorem bytesOf_answer_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some w)
+    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (B : ByteArray) (hB : B.size = w * n)
+    (hn : n < 2 ^ 32) :
+    ∃ D, Column.bytesOf (Column.answer ⟨t, n, .bytes B, none⟩) = some D ∧ Verify.elemsW w D = Verify.elemsW w B := by
+  have hw8 : 0 < w ∧ w ≤ 8 :=
+    he.elim (fun he => by have := width_fixed hw he; omega) (fun ha => by have := alp_width hw ha; omega)
+  have hk : B.size / w = n := by rw [hB, Nat.mul_div_cancel_left _ hw8.1]
+  have hU : n < USize.size := Nat.lt_of_lt_of_le hn USize.le_size
+  rcases he with he | ha
+  · have h1 := width_fixed hw he
+    have hans : Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .bytes B, none⟩ ∨
+        Column.answer ⟨t, n, .bytes B, none⟩ =
+          ⟨t, n, .foR (Kernel.Coc.encode w.toUSize B).1 (Kernel.Coc.encode w.toUSize B).2, none⟩ := by
+      simp only [Column.answer, Kernel.Coc.encodeBelow]
+      repeat' split
+      all_goals first | exact .inl rfl | exact .inr rfl | simp_all [alp_fixed he]
+    rcases hans with e | e <;> rw [e]
+    · exact ⟨B, rfl, rfl⟩
+    · refine ⟨Kernel.Coc.decode w.toUSize (Kernel.Coc.encode w.toUSize B).1 (Kernel.Coc.encode w.toUSize B).2
+        n.toUSize, by simp [Column.bytesOf, hw], ?_⟩
+      rw [(decode_words hw8 _ _ hU).2]
+      have := encode_words h1 B (by rw [hk]; exact hU)
+      rwa [hk] at this
+  · have hw48 := alp_width hw ha
+    obtain ⟨⟨m, p, a⟩, hE⟩ : ∃ q, Kernel.Coc.alpEncodeAt (w == 4) B = q := ⟨_, rfl⟩
+    have hans : Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .bytes B, none⟩ ∨
+        Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .alp m p a, none⟩ := by
+      rcases hw48 with rfl | rfl
+      · have hE' : Kernel.Coc.alpEncode32 B = (m, p, a) := hE
+        simp only [Column.answer, Kernel.Coc.alpEncodeBelow32, hE']
+        repeat' split
+        all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+      · have hE' : Kernel.Coc.alpEncode64 B = (m, p, a) := hE
+        simp only [Column.answer, Kernel.Coc.alpEncodeBelow64, hE']
+        repeat' split
+        all_goals first | exact .inl rfl | exact .inr rfl | simp_all
+    rcases hans with e | e <;> rw [e]
+    · exact ⟨B, rfl, rfl⟩
+    · refine ⟨Kernel.Coc.alpDecode w.toUSize m p a n.toUSize, by simp [Column.bytesOf, hw], ?_⟩
+      have := Verify.elemsW_alpDecode_alpEncodeAt (w == 4) w (by rcases hw48 with rfl | rfl <;> rfl) B
+        (by rw [hk]; exact hn)
+      rwa [hE, hk] at this
+
+/-- **`@[x;i;:;y]`, the kernel, is `amendSpec` of `:`** at every type with a fixed-width encoding (`encodes` or
+    `alpEncodes`), any indices, repeats included: the kernel answers only when every index is in `0..nx` and as
+    many as the values, and then lists the last write at each position. -/
+theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w)
+    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
+    {R : Arr t nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32) (h : Struct.amend x i none y = .ok R) :
+    ni = ny ∧ (∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx) ∧
+      R.toList = Struct.amendSpec (fun _ b => b) x.toList i.toList y.toList := by
+  have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
+  have hU : nx < USize.size := Nat.lt_of_lt_of_le hnx USize.le_size
+  have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
+  -- the dense payloads `dense` and `packed` read
+  have dn : ∀ {m} (z : Arr t m), m < USize.size →
+      ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.c.enc ≠ .bits b := by
+    intro m z hm
+    have parts : (∃ B, z.c.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.c.enc = .foR md pk) ∨
+        ∃ md pk a, z.c.enc = .alp md pk a :=
+      he.elim (fun he => (fixed_parts hw he z).elim .inl (.inr ∘ .inl)) (alp_parts hw · z)
+    rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
+    · exact ⟨B, by rw [Arr.c_eq z hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
+    · exact ⟨Kernel.Coc.decode w.toUSize md pk m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+        (decode_words ⟨by omega, hw8.2⟩ md pk hm).1, fun b e => by rw [hc] at e; cases e⟩
+    · exact ⟨Kernel.Coc.alpDecode w.toUSize md pk a m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+        (alpDecode_words ⟨by omega, hw8.2⟩ md pk a hm).1, fun b e => by rw [hc] at e; cases e⟩
+  have pkd : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → (∀ b, z.c.enc ≠ .bits b) →
+      Struct.packed "@[x;i;f;y]" t z.c = pure (D, 8 * w) := by
+    intro m z D hD hb
+    unfold Struct.packed; split
+    · next b e => exact absurd e (hb b)
+    · simp [hw, Find.dense, hD] <;> rfl
+  -- the indices: a long column's words
+  obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
+    rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
+  obtain ⟨ib, -, hib, hibw, hibn⟩ := Arr.dense_long i hws hUi
+  have hil : i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 := by rw [Arr.toList_long i hws, hibw]
+  have hny : ni = ny := by
+    by_cases hny : ni = ny
+    · exact hny
+    · simp only [Struct.amend, ne_eq, hny, not_false_eq_true, ↓reduceIte] at h; cases h
+  subst hny
+  obtain ⟨xb, hxb, hxs, hxn⟩ := dn x hU
+  obtain ⟨yb, hyb, hys, hyn⟩ := dn y hUi
+  have hw0 := Verify.amendRounds_word0 nx.toUSize false ib
+  have hnxU : nx.toUSize.toUInt64.toNat = nx := by rw [USize.toNat_toUInt64, USize.toNat_ofNat_of_lt' hU]
+  by_cases hmiss : ∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8
+  · rw [if_pos hmiss] at hw0
+    simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
+      ne_eq, not_true_eq_false, ↓reduceIte, pure_bind, Option.isSome_none, Nat.zero_mul, hw0, beq_self_eq_true] at h
+    cases h
+  rw [if_neg hmiss] at hw0
+  -- every index is a position below `nx`
+  have hbit : ∀ k < ni, (Column.bitsAt ib (k * 8) 8).toNat < nx := fun k hk => by
+    have := UInt64.lt_iff_toNat_lt.1 (UInt64.not_le.1 fun hle => hmiss ⟨k, by omega, hle⟩)
+    omega
+  have h63 : ∀ u : UInt64, u.toNat < 2 ^ 63 → u.toInt64.toInt = u.toNat := fun u hu => by
+    have := Find.toInt_ofNat_lt hu; rwa [UInt64.ofNat_toNat] at this
+  have hix : ∀ k < ni, (Column.bitsAt ib (k * 8) 8).toInt64.toInt.toNat = (Column.bitsAt ib (k * 8) 8).toNat :=
+    fun k hk => by rw [h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk; omega)]; rfl
+  have hin : ∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx := by
+    intro v hv
+    rw [hil, Verify.elemsW, List.map_map, List.mem_map] at hv
+    obtain ⟨k, hk, rfl⟩ := hv
+    have hk' : k < ni := by rw [List.mem_range] at hk; omega
+    have e := h63 (Column.bitsAt ib (k * 8) 8) (by have := hbit k hk'; omega)
+    refine ⟨Int64.le_iff_toInt_le.2 (by simp only [Function.comp]; rw [e]; exact Int.natCast_nonneg _), ?_⟩
+    simp only [Function.comp]; rw [hix k hk']; exact hbit k hk'
+  refine ⟨rfl, hin, ?_⟩
+  -- the kernel runs one round of `scatter`
+  have hr1 : (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 false ib) 0 8).toNat ≤ 1 := by
+    rw [hw0]; split <;> simp
+  have hne : (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 false ib) 0 8 == ~~~0) = false := by
+    rw [hw0]; split <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> decide
+  have hwb : (8 * w).toUSize.toNat = 8 * w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
+  have hts : t ≠ .symbol := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
+  have hsc : Struct.scatter "@[x;i;f;y]" t nx x.c y.c ib =
+      pure ⟨t, nx, .bytes (Kernel.scatterPacked (8 * w).toUSize xb ib yb 0 false), none⟩ := by
+    unfold Struct.scatter; split
+    · exact absurd rfl hts
+    · rw [pkd x hxb hxn, pkd y hyb hyn]
+      simp [show 8 * w ≠ 1 by omega]
+  simp only [Struct.amend, show Find.dense "@[x;i;f;y]" .long i.c = pure ib by simp [Find.dense, hib]; rfl,
+    pure_bind, Option.isSome_none, Nat.zero_mul, hne, hr1, ne_eq, not_true_eq_false, if_false, if_true,
+    Bool.false_eq_true, ↓reduceIte, hsc] at h
+  have hRc := Find.onKey_c h
+  -- the answer read back, word by word the last write (`scatterPacked_spec`)
+  have spec := Verify.scatterPacked_spec w (by omega) (8 * w).toUSize hwb xb ib yb 0 false
+    (by simp only [Bool.false_eq_true, if_false, USize.toNat_zero, Nat.zero_add]; rw [hibn, hys, Nat.mul_comm]; exact Nat.le_refl _)
+  obtain ⟨D, hD, hDw⟩ := bytesOf_answer_bytes hw he _ (by rw [spec.1, hxs]) hnx
+  rw [toList_fixed hw he R (by rw [hRc]; exact hD) hU, toList_fixed hw he x hxb hU, toList_fixed hw he y hyb hUi,
+    hil, hDw]
+  have hxk : xb.size / w = nx := by rw [hxs, Nat.mul_div_cancel_left _ (by omega)]
+  have hyk : yb.size / w = ni := by rw [hys, Nat.mul_div_cancel_left _ (by omega)]
+  apply List.ext_getElem?
+  intro j
+  unfold Struct.amendSpec
+  have hinL : ∀ p ∈ ((Verify.elemsW 8 ib).map UInt64.toInt64).zip ((Verify.elemsW w yb).map fun v =>
+      (Carrier.of? t (.atom (Column.atomOfBits t v (QAtomicType.ne_general_of_width hw)))).getD default),
+      p.1.toInt.toNat < ((Verify.elemsW w xb).map fun v =>
+        (Carrier.of? t (.atom (Column.atomOfBits t v (QAtomicType.ne_general_of_width hw)))).getD default).length :=
+    fun p hp => by
+      have := (hin p.1 (by rw [hil]; exact (List.of_mem_zip hp).1)).2
+      simpa [Verify.elemsW, hxk] using this
+  refine Eq.trans ?_ (foldl_set_getElem? (fun _ b => b) j _ _ hinL).symm
+  simp only [Verify.elemsW, spec.1, hxk, hyk, hibn, List.map_map, List.zip_map', List.filter_map, List.getElem?_map,
+    List.getElem?_range]
+  by_cases hj : j < nx
+  · rw [List.getElem?_range hj]
+    have hf : (List.range ni).filter (fun a => decide ((Column.bitsAt ib (a * 8) 8).toInt64.toInt.toNat = j)) =
+        (List.range ni).filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) :=
+      List.filter_congr fun k hk => by rw [hix k (List.mem_range.1 hk)]; exact Bool.eq_iff_iff.2 (by simp)
+    have hs2 := spec.2 j (by omega)
+    rw [hibn] at hs2
+    simp only [Option.map_some, Function.comp_def, foldl_outr, List.getLast?_map, List.map_map, hf, hs2,
+      Bool.false_eq_true, ↓reduceIte, USize.toNat_zero, Nat.zero_add]
+    cases (List.filter (fun k => (Column.bitsAt ib (k * 8) 8).toNat == j) (List.range ni)).getLast? <;> rfl
+  · rw [List.getElem?_eq_none (by rw [List.length_range]; omega : (List.range nx).length ≤ j)]; rfl
+
+/-- **`@[x;i;:;y]` is `(corNeg(ran I) ≫ x) ∪ (ran(I) ≫ ⟨x, I° ≫ y⟩ ≫ outr)`**, `I = i ≫ pos`, from the kernel, at
+    every type with a fixed-width encoding and indices without repeats; the kernel itself checks the range. -/
+theorem amend_rel {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w)
+    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
+    {R : Arr t nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32) (hnd : (i.toList.map fun v => v.toInt.toNat).Nodup)
+    (h : Struct.amend x i none y = .ok R) :
+    R.rel = (corNeg (ran (i.rel ≫ pos)) ≫ x.rel) ∪
+      (ran (i.rel ≫ pos) ≫ rpair x.rel ((i.rel ≫ pos)° ≫ y.rel) ≫ graph fun p : El t × El t => p.2) := by
+  obtain ⟨rfl, hin, hR⟩ := amend_toList hw he hnx hni h
+  show ix R.toList = _
+  rw [hR]
+  exact ix_amendSpec (fun _ b => b) x.toList y.toList i.toList (by rw [Arr.length_toList, Arr.length_toList])
+    (fun v hv => ⟨(hin v hv).1, by rw [Arr.length_toList]; exact (hin v hv).2⟩) hnd
+
+#print axioms foldl_set_getElem?
+#print axioms amendSpec_cata
+#print axioms foldl_outr
+#print axioms bytesOf_answer_bytes
+#print axioms amend_toList
+#print axioms amend_rel
 #print axioms foldl_set_iff
 #print axioms ix_amendSpec
 #print axioms nats_whereBits
