@@ -1125,15 +1125,15 @@ theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .l
     (unfold Eval.keyColumns; rw [Array.mapM_eq_mapM_toList, Array.toList_zip]; rfl)
 
 open QLean.Kernel in
-/-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column no mark claims (`` `s ``,
-    `` `u ``, `` `p ``, `` `g ``) is grouped by `Order.group` and each left word placed among the distinct words
+/-- **`keyMatch`'s `grouped` path answers the key groups.** A right long key column marked neither `` `s ``,
+    `` `u `` nor `` `p ``, and `` `g `` only with no index built (`cell.ready = none`, so `viaIndex` scans), is grouped by `Order.group` and each left word placed among the distinct words
     by `?`; the groups and ids it answers are `KeyAnswers` of the two sides' words, bytes or frame of
     reference alike. -/
 theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (hrt : cr.ty = .long)
     (hlt : cl.ty = .long) (hrw : longWords cr = some wr) (hrn : wr.length = cr.n) (h63 : cr.n < 2 ^ 63)
     (hU : cr.n < USize.size) (hlU : cl.n < USize.size) (hlwf : cl.WF) (hlR : Find.Readable .long cl)
     (hwl : longWords cl = some wl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4) :
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none)) :
     KeyAnswers wr wl (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).1
       (Eval.keyMatch #[.vector cr] nr #[.vector cl] nl).2 := by
   obtain ⟨B, hBw, hBn, hG⟩ := groupColumn_long (c := { cr with attr := none }) hrt hrw hrn hU
@@ -1190,7 +1190,9 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
     rcases a with _ | ⟨a, cell⟩
     · simp [QValue.marking]
     · obtain ⟨h1, h2, h3, h4⟩ := hattr a cell rfl
-      simp [QValue.marking, h1, h2, h3, h4]
+      by_cases ha : a = 4
+      · subst ha; simp [QValue.marking, Eval.viaIndex, h4 rfl]
+      · simp [QValue.marking, h1, h2, h3, ha]
   rw [hK, hgroup, hbs]
   dsimp only
   have hflat := buckets_length (Order.keyAt .i64 B) (B.size / 8)
@@ -1262,7 +1264,7 @@ theorem aj_long {cl cr tl tr : Column} {wl wr : List UInt64} {m : Nat} {A : Arr 
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = tl.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
     (hrb : Column.bytesOf tr = some hay) (hkn : keys.size / 8 = tl.n) (hhn : hay.size / 8 = tr.n)
     (hU : tl.n < USize.size) (hrU : tr.n < USize.size) (h63 : tr.n < 2 ^ 63)
@@ -1562,6 +1564,80 @@ theorem dyadColumn_sub_one {n : Nat} {b0 : ByteArray} (p : Option (UInt8 × Inde
     simp only [Verify.elemsW, List.length_map, List.length_range] at this
     exact this
 
+/-- A long column listing `ws` (`longWords`) hands a kernel a dense payload of those words: itself, or its `foR`
+    decoded (`decodeW`). -/
+theorem bytesOf_longWords {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hn : c.n < USize.size)
+    (h : longWords c = some ws) (hl : ws.length = c.n) :
+    ∃ B, Column.bytesOf c = some B ∧ Verify.elemsW 8 B = ws ∧ B.size / 8 = c.n := by
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  unfold longWords at h
+  cases hc : c.enc with
+  | bytes b =>
+    rw [hc] at h; cases h
+    exact ⟨b, by simp only [Column.bytesOf, hc], rfl, by simpa [Verify.elemsW] using hl⟩
+  | foR md pk =>
+    rw [hc] at h; cases h
+    obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk c.n.toUSize
+    rw [h8, USize.toNat_ofNat_of_lt' hn] at hsz hg
+    refine ⟨_, by simp only [Column.bytesOf, hc, ht, QAtomicType.width]; rfl,
+      List.ext_getElem (by simp [Verify.elemsW, hsz]) fun i h1 _ => ?_, by rw [hsz]; omega⟩
+    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+    rw [hg i (by simpa [Verify.elemsW, hsz] using h1), Verify.ofNat_toNat_mod64]
+  | _ => all_goals (rw [hc] at h; cases h)
+
+/-- `wj1`'s lower bound `w₀ - 1` on a `foR` long window: `dyadColumn .sub` against the atom `1` is `foRShift` of
+    `-1`, or `foRValAtom`'s dense pass where that declines; either way its words are q's `w₀[i] - 1` over the
+    decoded window. -/
+theorem dyadColumn_sub_one_foR {n : Nat} {md pk : ByteArray} (p : Option (UInt8 × IndexCell)) (hn : n < USize.size) :
+    ∃ L bL, Kernel.dyadColumn .sub Kernel.Ew.va .long .long ⟨.long, n, .foR md pk, p⟩ (Alg.longs (Find.one 1)) =
+      some (.long, L) ∧ L.ty = .long ∧ Column.bytesOf L = some bL ∧ bL.size / 8 = n ∧
+      ∀ i, i < n → (Column.bitsAt bL (i * 8) 8).toInt64 = Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue
+        (Column.bitsAt (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize) (i * 8) 8).toInt64 1 := by
+  rw [show Alg.longs (Find.one 1) = ⟨.long, 1, .bytes (Find.one 1), none⟩ from rfl,
+    dyadColumn_long_va_sub_foR n md pk (Find.one 1) p none]
+  have h1 : (Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0).toInt64 = 1 := by decide
+  have hN : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hadd : ∀ nul x y : Int64, Kernel.Ew.intStep Kernel.Ew.add nul x y = if (x == nul || y == nul) then nul else x + y :=
+    fun _ _ _ => rfl
+  have hsub : ∀ nul x y : Int64, Kernel.Ew.intStep Kernel.Ew.sub nul x y = if (x == nul || y == nul) then nul else x - y :=
+    fun _ _ _ => rfl
+  split
+  · rename_i m p' heq
+    have hs := Verify.foRShift_spec false _ md pk n.toUSize m p' heq
+    simp only [Bool.false_eq_true, ↓reduceIte] at hs
+    have hv := Verify.val_i64_va Kernel.Ew.add Int64.minValue (Kernel.Coc.decode 8 md pk n.toUSize)
+      (-(Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0).toInt64).toUInt64 n hn
+    rw [show Kernel.atomBytes Kernel.Ew.i64 (-(Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0).toInt64).toUInt64 =
+      Column.pushBits ByteArray.empty (-(Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0).toInt64).toUInt64 8 from rfl,
+      ← hs] at hv
+    have hsz := (Verify.decodeW 8 (by simp) m p' n.toUSize).1
+    rw [hN] at hsz
+    refine ⟨_, Kernel.Coc.decode 8 m p' n.toUSize, rfl, ?_, ?_, ?_, fun i hi => ?_⟩
+    · rcases Verify.answer_foR .long 8 n m p' rfl (a := none) with e | e <;> rw [e]
+    · rcases Verify.answer_foR .long 8 n m p' rfl (a := none) with e | e <;> rw [e] <;> rfl
+    · rw [hsz]; simp
+    · rw [bitsAt_elemsW hv hi, Int64.toInt64_toUInt64, Int64.toInt64_toUInt64, h1, hadd, hsub, Int64.sub_eq_add_neg]
+      rfl
+  · have hv : Verify.elemsW 8 (Kernel.Ew.foRValAtom Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va (Kernel.nullPayload .long)
+        md pk n.toUSize (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0))) =
+        (List.range n).map fun i => (Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue
+          (Column.bitsAt (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize) (i * 8) 8).toInt64
+          (Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0).toInt64).toUInt64 :=
+      Verify.val_i64_va Kernel.Ew.sub Int64.minValue _ _ n hn
+    generalize Kernel.Ew.foRValAtom Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va (Kernel.nullPayload .long)
+      md pk n.toUSize (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 (Find.one 1) 0)) = V at hv ⊢
+    have hl := congrArg List.length hv
+    simp only [Verify.elemsW, List.length_map, List.length_range] at hl
+    have hA : ∀ c : Column, (Column.answer c).ty = c.ty ∧ (Column.answer c).n = c.n := fun c => by
+      simp only [Column.answer]; repeat' split
+      all_goals exact ⟨rfl, rfl⟩
+    obtain ⟨B, hB, hBw, hBn⟩ := bytesOf_longWords (hA _).1 (by rw [(hA _).2]; dsimp only; omega) (longWords_answer V)
+      (by rw [(hA _).2]; simp [Verify.elemsW])
+    rw [(hA _).2, hl] at hBn
+    rw [hl] at hB
+    refine ⟨_, B, rfl, (hA _).1, hB, hBn, fun i hi => ?_⟩
+    rw [bitsAt_elemsW (hBw.trans hv) hi, Int64.toInt64_toUInt64, h1]
+
 /-- **`wj` and `wj1` are `wjSpec` once their groups are known**: where `keyGroups` answers groups `gs` and ids
     that `KeyAnswers` the two sides' keys, `wjP` over dense long windows `b0`, `b1` and times `hay` answers
     `wjSpec`'s runs. `L` is the column `wjP` bins the lower edge at — `t0` itself (`wj`) or its `dyadColumn`
@@ -1573,7 +1649,8 @@ theorem wj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
       Kernel.dyadColumn .sub Kernel.Ew.va .long .long t0 (Alg.longs (Find.one 1)) = some (.long, L))
     (hLt : L.ty = .long) (hLb : Column.bytesOf L = some bL) (hLn : bL.size / 8 = t0.n)
     (hLw : ∀ i, i < t0.n → (Column.bitsAt bL (i * 8) 8).toInt64 =
-      if prevailing then (Column.bitsAt b0 (i * 8) 8).toInt64 else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1)
+      if prevailing then (Column.bitsAt b0 (i * 8) 8).toInt64
+      else Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue (Column.bitsAt b0 (i * 8) 8).toInt64 1)
     (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (hgb : Column.bytesOf ids = some gids) (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n)
     (hrn : hay.size / 8 = tr.n) (hlk : lk.length = t0.n) (hrk : rk.length = tr.n)
@@ -1676,7 +1753,7 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
     (h0b : Column.bytesOf t0 = some b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
@@ -1693,17 +1770,17 @@ theorem wj_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lon
     h1n hhn (by omega) (by omega) hU h62 hkg hk h
 
 /-- **`wj1` is `wjSpec false`** at one long key column per side, the right one unmarked (q's `wj1`): as `wj_long`,
-    the lower edge binned at `dyadColumn_sub_one`'s `w₀ - 1`. The window `t0` is dense (`hb0`), and no `w₀` is
-    `0N` (`hnul`): q's `0N - 1` is `0N`, where `wjSpec`'s `Int64` subtraction wraps it to `0W`. -/
+    the lower edge binned at `w₀ - 1`, q's subtraction in both: `dyadColumn_sub_one` on a dense window,
+    `dyadColumn_sub_one_foR` on a `foR` one, whose words `b0` are its decode (`hb0`). -/
 theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .long} {b0 b1 hay : ByteArray}
     (hlt : cl.ty = .long) (hrt : cr.ty = .long) (hwl : longWords cl = some wl) (hwr : longWords cr = some wr)
     (hln : wl.length = cl.n) (hrn : wr.length = cr.n) (hcl : cl.n = t0.n) (hcr : cr.n = tr.n)
     (hlwf : cl.WF) (hlR : Find.Readable .long cl)
-    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ a ≠ 4)
+    (hattr : ∀ a cell, cr.attr = some (a, cell) → a ≠ 1 ∧ a ≠ 2 ∧ a ≠ 3 ∧ (a = 4 → cell.ready = none))
     (h0t : t0.ty = .long) (h1t : t1.ty = .long) (htr : tr.ty = .long)
-    (hb0 : t0.enc = .bytes b0) (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
+    (hb0 : t0.enc = .bytes b0 ∨ ∃ md pk, t0.enc = .foR md pk ∧ b0 = Kernel.Coc.decode (8 : Nat).toUSize md pk t0.n.toUSize)
+    (h1b : Column.bytesOf t1 = some b1) (hrb : Column.bytesOf tr = some hay)
     (h0n : b0.size / 8 = t0.n) (h1n : b1.size / 8 = t0.n) (hhn : hay.size / 8 = tr.n)
-    (hnul : ∀ i, i < t0.n → ((nats b0).map Int64.ofNat)[i]! ≠ Int64.minValue)
     (hU : t0.n * tr.n + t0.n + tr.n + 1 < USize.size) (h62 : t0.n * tr.n + t0.n + tr.n < 2 ^ 62)
     (h : Struct.wjP false ⟨.long, t0⟩ ⟨.long, t1⟩ #[⟨.long, cl⟩] #[⟨.long, cr⟩] ⟨.long, tr⟩ = .ok P) :
     Struct.runsSpec P.segs = Struct.wjSpec false wl ((nats b0).map Int64.ofNat) ((nats b1).map Int64.ofNat) wr
@@ -1713,18 +1790,19 @@ theorem wj1_long {cl cr t0 t1 tr : Column} {wl wr : List UInt64} {P : Parted .lo
     simp [Struct.keyGroups, Struct.colRows, Struct.colValue, hcl, hcr]; rfl
   have hk := keyMatch_grouped tr.n t0.n hrt hlt hwr hrn (by omega) (by omega) (by omega) hlwf hlR hwl hattr
   obtain ⟨gids, hgb, -⟩ := id hk
-  have ht0 : t0 = ⟨.long, t0.n, .bytes b0, t0.attr⟩ := by
-    obtain ⟨t, n, e, a⟩ := t0; simp only at h0t hb0; subst h0t hb0; rfl
-  obtain ⟨L, bL, hd, hLt, hLb, hLn, hLw⟩ := dyadColumn_sub_one (n := t0.n) t0.attr (by omega) h0n
-  rw [← ht0] at hd
+  obtain ⟨L, bL, hd, hLt, hLb, hLn, hLw⟩ : ∃ L bL, Kernel.dyadColumn .sub Kernel.Ew.va .long .long t0
+      (Alg.longs (Find.one 1)) = some (.long, L) ∧ L.ty = .long ∧ Column.bytesOf L = some bL ∧ bL.size / 8 = t0.n ∧
+      ∀ i, i < t0.n → (Column.bitsAt bL (i * 8) 8).toInt64 =
+        Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue (Column.bitsAt b0 (i * 8) 8).toInt64 1 := by
+    have hn0 : t0.n < USize.size := by omega
+    obtain ⟨t, n, e, a⟩ := t0
+    simp only at h0t hb0 h0n hn0 ⊢; subst h0t
+    rcases hb0 with rfl | ⟨md, pk, rfl, rfl⟩
+    · exact dyadColumn_sub_one a hn0 h0n
+    · exact dyadColumn_sub_one_foR a hn0
   refine wj_groups false wl wr h0t h1t htr hd hLt hLb hLn (fun i hi => ?_) h1b hrb hgb h0n h1n hhn
     (by omega) (by omega) hU h62 hkg hk h
-  have hx := hnul i hi
-  rw [get!_map _ _ (by rw [nats_length]; omega), nats_get b0 (by omega), ← toInt64_eq_ofNat] at hx
   rw [hLw i hi, if_neg Bool.false_ne_true]
-  show (if ((Column.bitsAt b0 (i * 8) 8).toInt64 == Int64.minValue || (1 : Int64) == Int64.minValue) then
-    Int64.minValue else (Column.bitsAt b0 (i * 8) 8).toInt64 - 1) = _
-  rw [show ((1 : Int64) == Int64.minValue) = false from rfl, Bool.or_false, if_neg (by simpa using hx)]
 
 /-- `wj`'s window, `Wᵥ` with both ends moving: left row `i` to the right rows `j` with `lo i ≤ j < hi i`. -/
 def winAt (lo hi : Nat → Nat) : Idx ⟶ Idx := fun i j => lo i ≤ j ∧ j < hi i
@@ -1901,5 +1979,7 @@ theorem wjEdge_contig {κ : Type} [BEq κ] [Inhabited κ] (lk rk : List κ) (rt 
 #print axioms wjEdge_est
 #print axioms wjSpec_mixes
 #print axioms wjEdge_contig
+#print axioms bytesOf_longWords
+#print axioms dyadColumn_sub_one_foR
 
 end LeetQ.Rel.Verb
