@@ -1780,6 +1780,24 @@ theorem idWidthOf_lane (G : Nat) : Column.idWidthOf G = 0 ∨ Column.idWidthOf G
   repeat' split
   all_goals omega
 
+/-- At most `m` classes among `m` rows. -/
+theorem firstsOf_length_le {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) : (Verify.firstsOf g m).length ≤ m := by
+  unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+
+/-- **`groupIds` of a code at a sort layout `k`** holding all its `n` rows: `groupIds_spec` at `n`, the
+    classes `groupOf` packed at their lane and the firsts. -/
+theorem groupIds_at (rc : Alg.Code) {k : Kernel.Scan.Kind} (hk : rc.kind = some k)
+    (hav : rc.n ≤ k.avail rc.b) (hn : rc.n < USize.size) :
+    rc.groupIds.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length)
+      rc.n (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) ∧
+    Verify.ids rc.groupIds.2 = Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n := by
+  have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
+    unfold Alg.Code.groupIds; rw [hk]
+  have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
+    rw [USize.toNat_ofNat_of_lt' hn]; exact Nat.min_eq_left hav
+  have := Verify.groupIds_spec k rc.n.toUSize rc.b
+  rw [hm] at this; rw [hg]; exact this
+
 /-- **`groupIds`, `classSizes` of a code at a sort layout `k`**: `join_nats`'s right-side hypotheses, the
     classes `gid = groupOf` of the lane's keys numbered by first occurrence, `G = |firstsOf|` of them, each
     class's size its count of rows. -/
@@ -1791,17 +1809,10 @@ theorem groupIds_lane (rc : Alg.Code) {k : Kernel.Scan.Kind} (hk : rc.kind = som
     nats (Alg.classSizes rc.n rc.groupIds) =
       (List.range (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length).map fun h =>
         (List.range rc.n).countP fun j => decide (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n j = h) := by
-  have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
-    unfold Alg.Code.groupIds; rw [hk]
-  have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
-    rw [USize.toNat_ofNat_of_lt' hn]; exact Nat.min_eq_left hav
-  obtain ⟨h1, h2⟩ := Verify.groupIds_spec k rc.n.toUSize rc.b
-  rw [hm] at h1 h2
-  rw [hg]
-  generalize Kernel.Order.groupIds k rc.n.toUSize rc.b = g at h1 h2
-  generalize Kernel.Order.keyAt k rc.b = key at h1 h2
-  have hGn : (Verify.firstsOf key rc.n).length ≤ rc.n := by
-    unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+  obtain ⟨h1, h2⟩ := groupIds_at rc hk hav hn
+  generalize rc.groupIds = g at h1 h2
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
+  generalize Kernel.Order.keyAt k rc.b = key at h1 h2 hGn
   have hlt : ∀ j, j < rc.n → Verify.groupOf key rc.n j < (Verify.firstsOf key rc.n).length :=
     fun j hj => Verify.groupOf_lt hj
   have hl : Alg.len g.2 = (Verify.firstsOf key rc.n).length := by
@@ -1837,12 +1848,7 @@ theorem find_lane (lc rc : Alg.Code) {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k
     USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw8 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
   have hbits : ∀ b i, k.bitsAt b i = Column.bitsAt b (i * k.width) k.width := fun b i => by
     rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
-  have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
-    unfold Alg.Code.groupIds; rw [hr]
-  have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
-    rw [USize.toNat_ofNat_of_lt' hn]; exact Nat.min_eq_left hav
-  have hids := (Verify.groupIds_spec k rc.n.toUSize rc.b).2
-  rw [hm, ← hg] at hids
+  have hids := (groupIds_at rc hr hav hn).2
   have hgk : (rc.gather rc.groupIds.2).kind = some k := hr
   have hgb : (rc.gather rc.groupIds.2).b = gatherBytes k.width.toUSize 0 rc.b rc.groupIds.2 := by
     show (match rc.kind with
@@ -1853,8 +1859,7 @@ theorem find_lane (lc rc : Alg.Code) {k : Kernel.Scan.Kind} (hk4 : k = .u8 ∨ k
   have hf : (rc.gather rc.groupIds.2).find lc = findVec k.width.toUSize false (rc.gather rc.groupIds.2).b lc.b := by
     unfold Alg.Code.find; rw [hgk, hl]; rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
   have hfs : ∀ f ∈ Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n, f < rc.n := fun f hf => Verify.firsts_lt _ _ hf
-  have hGn : (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length ≤ rc.n := by
-    unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
   have hava : k.avail rc.b = rc.b.size / k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> rfl
   generalize Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n = fs at hids hfs hGn ⊢
   -- the firsts' elements
@@ -2125,16 +2130,8 @@ theorem ej_rel_lane {lk rk : Array Struct.KCol} {lc rc : Alg.Code} {R : Rel .lon
   obtain ⟨hG, hgid, hsz⟩ := groupIds_lane rc hr hav hnU
   have hhit := find_lane lc rc hk4 hr hl hav hnU
   rw [hnl] at hhit
-  have hGn : (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length ≤ rc.n := by
-    unfold Verify.firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
-  have hids1 : rc.groupIds.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).length)
-      rc.n (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) := by
-    have hg : rc.groupIds = Kernel.Order.groupIds k rc.n.toUSize rc.b := by
-      unfold Alg.Code.groupIds; rw [hr]
-    have hm : min rc.n.toUSize.toNat (k.avail rc.b) = rc.n := by
-      rw [USize.toNat_ofNat_of_lt' hnU]; exact Nat.min_eq_left hav
-    have := (Verify.groupIds_spec k rc.n.toUSize rc.b).1
-    rw [hm] at this; rw [hg]; exact this
+  have hGn := firstsOf_length_le (Kernel.Order.keyAt k rc.b) rc.n
+  have hids1 := (groupIds_at rc hr hav hnU).1
   obtain ⟨hp, hs⟩ := grade_ofIds (Verify.groupOf (Kernel.Order.keyAt k rc.b) rc.n) hgid (by omega) hnU
   rw [← hids1] at hp hs
   have hhG : ∀ i, ((Verify.firstsOf (Kernel.Order.keyAt k rc.b) rc.n).map (k.bitsAt rc.b)).idxOf (k.bitsAt lc.b i) ≤
