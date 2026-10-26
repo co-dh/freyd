@@ -928,6 +928,107 @@ theorem ascending_ids {b : ByteArray} {L : List Nat} (hL : Verify.ids b = L) (h6
     xor_two_pow_of_lt (h63 _ (List.getElem_mem _)), xor_two_pow_of_lt (h63 _ (List.getElem_mem _))] at this
   omega
 
+/-- **`Groups.of` over buckets laid end to end answers each bucket as one span**: there are as many groups as
+    buckets, group `g`'s bounds read as longs are the lengths before bucket `g` and through it, and its rows
+    read through `rows` — the position itself where `Groups.of` dropped `rows` as the identity — are the
+    bucket. -/
+theorem groups_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r < 2 ^ 63)
+    (hU : bs.flatten.length < USize.size) {gs : Eval.Groups}
+    (hgs : gs = Eval.Groups.of (Kernel.Order.indices bs.flatten)
+      ((Kernel.Order.bounds (bs.map List.length)).map (· / 8))) :
+    (Kernel.longBytes gs.bounds).size / 8 - 1 = bs.length ∧
+    ∀ g (hg : g < bs.length),
+      (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8) 8).toNat = ((bs.map List.length).take g).sum ∧
+      (Column.bitsAt (Kernel.longBytes gs.bounds) (g * 8 + 8) 8).toNat =
+        ((bs.map List.length).take g).sum + bs[g].length ∧
+      ∀ p, p < bs[g].length → bs[g][p]! =
+        if gs.rows.isEmpty then ((bs.map List.length).take g).sum + p
+        else (Column.bitsAt gs.rows ((((bs.map List.length).take g).sum + p) * 8) 8).toNat := by
+  have hbd : gs.bounds = (Kernel.Order.bounds (bs.map List.length)).map (· / 8) := by
+    rw [hgs]; unfold Eval.Groups.of; dsimp only; split <;> rfl
+  have hB : gs.bounds.toList = (List.range (bs.length + 1)).map fun k => ((bs.map List.length).take k).sum := by
+    rw [hbd, bounds_div, List.length_map]
+  have h64 : USize.size ≤ 2 ^ 64 := USize.size_le
+  have hBi : Verify.ids (Kernel.longBytes gs.bounds) = gs.bounds.toList := longBytes_ids _ (by
+    rw [hB]; intro x hx
+    obtain ⟨k, -, rfl⟩ := List.mem_map.1 hx
+    have := take_sum_le bs k
+    omega)
+  have hlen : (Kernel.longBytes gs.bounds).size / 8 = bs.length + 1 := by
+    have := congrArg List.length hBi
+    simpa [Verify.ids, hB] using this
+  have hat : ∀ k, k ≤ bs.length → (Column.bitsAt (Kernel.longBytes gs.bounds) (k * 8) 8).toNat =
+      ((bs.map List.length).take k).sum := fun k hk => by
+    rw [Verify.ids_get hBi (j := k) (by rw [hB]; simp; omega)]
+    simp [hB]
+  have hI : Verify.ids (Kernel.Order.indices bs.flatten) = bs.flatten :=
+    Verify.ids_indices _ fun r hr => Nat.lt_trans (h63 r hr) (by decide)
+  have hk : (Kernel.Order.indices bs.flatten).size / 8 = bs.flatten.length := by
+    have := congrArg List.length hI; simpa [Verify.ids] using this
+  have hrow : ∀ g (hg : g < bs.length) p (hp : p < bs[g].length),
+      ((bs.map List.length).take g).sum + p < bs.flatten.length ∧
+      (Column.bitsAt (Kernel.Order.indices bs.flatten) ((((bs.map List.length).take g).sum + p) * 8) 8).toNat =
+        bs[g][p] := by
+    intro g hg p hp
+    have e := flatten_getElem? bs g hg p hp
+    rw [List.map_take, List.getElem?_eq_getElem hp] at e
+    obtain ⟨hq, e⟩ := List.getElem?_eq_some_iff.1 e
+    exact ⟨hq, by rw [Verify.ids_get hI hq, e]⟩
+  -- `Groups.of` keeps the rows, or drops them where they are `0, 1, …` (strictly ascending, first and last)
+  have hcases : (gs.rows = ByteArray.empty ∧ ∀ q (h : q < bs.flatten.length), bs.flatten[q] = q) ∨
+      gs.rows = Kernel.Order.indices bs.flatten := by
+    rw [hgs]; unfold Eval.Groups.of; dsimp only
+    split
+    · rename_i hid
+      left; refine ⟨rfl, ?_⟩
+      simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at hid
+      exact ids_identity bs.flatten (ascending_ids hI h63 hid.2 (by rw [hk]; exact hU)) fun h => by
+        have hl := hid.1.2; rw [hk] at hl; rw [← Verify.ids_get hI (by omega)]; exact hl
+    · right; rfl
+  refine ⟨by omega, fun g hg => ⟨hat g (by omega), ?_, fun p hp => ?_⟩⟩
+  · rw [show g * 8 + 8 = (g + 1) * 8 by omega, hat (g + 1) (by omega), List.take_succ, List.sum_append_nat]
+    simp [List.getElem?_map, List.getElem?_eq_getElem hg]
+  · obtain ⟨hq, hr⟩ := hrow g hg p hp
+    rw [getElem!_pos _ p hp, ← hr]
+    rcases hcases with ⟨he, hid⟩ | he <;> rw [he]
+    · rw [if_pos (by simp [ByteArray.isEmpty]), Verify.ids_get hI hq, hid _ hq]
+    · have hne : (Kernel.Order.indices bs.flatten).isEmpty = false := by
+        simp only [ByteArray.isEmpty, beq_eq_false_iff_ne]; omega
+      simp only [hne, Bool.false_eq_true, ↓reduceIte]
+
+open QLean.Kernel in
+/-- **`groupColumn` at a long column is `Order.group` over its words**, laid out in bytes `B` — the column's
+    own, or its frame-of-reference decode. -/
+theorem groupColumn_long {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hw : longWords c = some ws)
+    (hn : ws.length = c.n) (hU : c.n < USize.size) :
+    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = c.n ∧ groupColumn .long c =
+      some (.dict (.vector ⟨.long, (Order.group .i64 c.n.toUSize B).1.size / 8,
+          .bytes (Order.group .i64 c.n.toUSize B).1, none⟩)
+        (.slices ⟨.long, (Order.group .i64 c.n.toUSize B).2.1.size / 8,
+          .bytes (Order.group .i64 c.n.toUSize B).2.1, none⟩ (Order.group .i64 c.n.toUSize B).2.2) false) := by
+  obtain ⟨t, n, e, a⟩ := c
+  simp only at ht hn hU ⊢
+  subst ht
+  cases e with
+  | bytes b =>
+    simp only [longWords, Option.some.injEq] at hw
+    have hs : b.size / 8 = n := by rw [← hn, ← hw]; simp [Verify.elemsW]
+    refine ⟨b, hw, hs, ?_⟩
+    simp [groupColumn, orderKind, Column.bytesOf, hs, Scan.Kind.width]
+  | foR md pk =>
+    simp only [longWords, Option.some.injEq] at hw
+    have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+    obtain ⟨hsz, hbits⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk n.toUSize
+    rw [h8, USize.toNat_ofNat_of_lt' hU] at hsz hbits
+    refine ⟨Coc.decode (8 : Nat).toUSize md pk n.toUSize, ?_, by rw [hsz]; omega, ?_⟩
+    · rw [← hw]
+      apply List.ext_getElem (by simp [Verify.elemsW, hsz])
+      intro i h1 h2
+      simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
+      rw [hbits i (by simpa using h2), Verify.ofNat_toNat_mod64]
+    · simp [groupColumn, orderKind, Order.groupFoR, Scan.Kind.width]
+  | _ => simp [longWords] at hw
+
 #print axioms rangeOffsets_long
 #print axioms keyCodes_long
 #print axioms ej_long
