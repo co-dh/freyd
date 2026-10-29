@@ -220,8 +220,7 @@ theorem cut_rel {no nx : Nat} {o : Arr .long no} {x : Arr .long nx} {r : Parted 
     (h : Struct.cutP o x = .ok r) :
     r.rel = corefl (· < r.g) ≫ Λ ((corefl (· < nx) ≫ grp r.o)°) ≫ enum ≫ list x.rel := by
   unfold Struct.cutP at h
-  rw [o.c_eq ho, show Find.dense "o cut x" .long ⟨.long, no, .bytes ob, o.attrCell⟩ = pure ob from rfl,
-    pure_bind] at h
+  rw [ho, show Find.dense "o cut x" .long no (.bytes ob) = pure ob from rfl, pure_bind] at h
   generalize ho₀ : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = o₀ at h
   rw [h0] at ho₀; subst ho₀
   dsimp only at h
@@ -623,21 +622,35 @@ theorem cut_of_nats {v : QAtomicType} (R : Parted v) {B : ByteArray} (hB : R.o.e
     toInt_word (a := f r) (by simp only [Verify.elemsW, List.getElem_map, List.getElem_range]; exact e) (hl r hr),
     Int.toNat_natCast]
 
+/-- An `Arr.ofPart` answer holds the part's payload. -/
+theorem ofPart_enc {t : QAtomicType} {n : Nat} {p : Nat × Enc} {w : String} {a : Arr t n}
+    (h : Arr.ofPart t n p w = .ok a) : a.enc = p.2 := by
+  have h1 := Struct.of_val h
+  rw [a.val_eq] at h1
+  injection h1
+
 /-- **A gather of a long column** (`bytes` or `foR`) at a dense long index payload whose words, read as
     naturals, all lie below `nx`: an `Arr` of `N` longs, dense, whose element `p` is `x[idx[p]]`. -/
 theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs : List UInt64}
     (hv : longWords nx x.enc = some vs) (hxU : nx < USize.size) {idx : ByteArray} (hn : idx.size / 8 = N)
-    (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {verb : String} {c : Column}
-    (hvec : Find.vec verb .long (Kernel.gatherColumn .long x.c (Alg.longs idx)) = .ok c) :
-    ∃ X : Arr .long N, X.c = c ∧ (∃ B, c.enc = .bytes B) ∧ ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
-  have hsW : (Alg.longs idx).WF := by show idx.size = idx.size / 8 * 8; omega
-  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU ⟨Alg.longs idx, rfl, hn, hsW⟩ (is := Verify.elemsW 8 idx)
-    rfl (by simp [Verify.countFits, Alg.longs]) (Struct.vec_ok hvec).1
+    (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {c : Nat × Enc}
+    (hp : Alg.pick .long (nx, x.enc) idx = .ok c) :
+    c.1 = N ∧ (∃ B, c.2 = .bytes B) ∧ Enc.WF .long N c.2 ∧
+      ∀ X : Arr .long N, X.enc = c.2 → ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
+  cases hg : Kernel.gatherColumn .long nx x.enc (Alg.len idx) (.bytes idx) with
+  | none => simp only [Alg.pick, hg] at hp; first | cases hp | simp [throw, throwThe, MonadExceptOf.throw] at hp
+  | some e =>
+  simp only [Alg.pick, hg] at hp
+  cases hp
+  have hsW : Enc.WF .long (Alg.len idx) (.bytes idx) := by show idx.size = idx.size / 8 * 8; omega
+  obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU (Arr.mk (.bytes idx) hsW) (is := Verify.elemsW 8 idx)
+    rfl (by simp [Verify.countFits]) hg
+  have hBs' : B.size = N * 8 := by rw [hBs]; exact congrArg (· * 8) hn
   have hvs : vs.length = nx := by have := Arr.length_toList x; rw [Arr.toList_long x hv, List.length_map] at this; omega
-  refine ⟨⟨⟨.long, N, .bytes B, none⟩, rfl, rfl, by show B.size = N * 8; exact hBs⟩, rfl, ⟨B, rfl⟩, fun p hp => ?_⟩
+  refine ⟨hn, ⟨B, rfl⟩, hBs', fun X hX p hp => ?_⟩
   have hlt := hi p hp
   rw [nats_get idx (by omega)] at hlt ⊢
-  rw [Arr.toList_long _ (ws := Verify.elemsW 8 B) rfl, hBw, Arr.toList_long x hv,
+  rw [Arr.toList_long X (ws := Verify.elemsW 8 B) (by unfold longWords; rw [hX]), hBw, Arr.toList_long x hv,
     getElem!_pos _ p (by simp [Verify.elemsW]; omega), getElem!_pos _ _ (by simp; omega), List.getElem_map,
     List.getElem_map, List.getElem_map,
     show (Verify.elemsW 8 idx)[p]'(by simp [Verify.elemsW]; omega) = Column.bitsAt idx (p * 8) 8 by
@@ -710,16 +723,10 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
     have h1 : p / P.g < m := Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact hp)
     have h2 : (p % P.g + 1) * m ≤ P.g * m := Nat.mul_le_mul_right m (Nat.mod_lt p hg)
     rw [Nat.succ_mul] at h2; omega
-  obtain ⟨X, hXc, -, hXv⟩ := gather_long P.val hv (by omega) (show src.size / 8 = m * P.g by omega) (by omega)
+  obtain ⟨-, -, -, hXv⟩ := gather_long P.val hv (by omega) (show src.size / 8 = m * P.g by omega) (by omega)
     (fun p hp => by rw [hsrc p hp]; exact hlt p hp) hvec
-  have hX : val' = X := by
-    obtain ⟨vc, vw⟩ := val'
-    obtain ⟨xc, xw⟩ := X
-    have hcv := Struct.of_c hof
-    dsimp only at hcv hXc
-    subst hcv; subst hXc; rfl
   have hval : ∀ p, p < m * P.g → val'.toList[p]! = P.val.toList[p % P.g * m + p / P.g]! := fun p hp => by
-    rw [hX, hXv p hp, hsrc p hp]
+    rw [hXv val' (ofPart_enc hof) p hp, hsrc p hp]
   -- the answer's offsets `j·g`
   have hts := nats_til (m + 1) (by omega)
   have hB' : nats (Alg.mulc (Kernel.tilLongs (m + 1).toUSize) P.g) = (List.range (m + 1)).map (· * P.g) := by
@@ -796,14 +803,17 @@ theorem pairsP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop :
   rename_i Z hZ
   have his : xi.size / 8 = m * k := by rw [← nats_length, hxi]; simp
   have hjs : yi.size / 8 = m * k := by rw [← nats_length, hyi]; simp
-  obtain ⟨X, hXc, ⟨Bx, hBx⟩, hXv⟩ := gather_long x hx hxU his (by omega) (fun p hp => by
+  obtain ⟨hx1, ⟨Bx, hBx⟩, hxW, hXv'⟩ := gather_long x hx hxU his (by omega) (fun p hp => by
     rw [hxi, getElem!_range_map _ hp]; exact hfx p hp) hxc
-  obtain ⟨Y, hYc, ⟨By, hBy⟩, hYv⟩ := gather_long y hy hyU hjs (by omega) (fun p hp => by
+  obtain ⟨hy1, ⟨By, hBy⟩, hyW, hYv'⟩ := gather_long y hy hyU hjs (by omega) (fun p hp => by
     rw [hyi, getElem!_range_map _ hp]; exact hfy p hp) hyc
-  have hv : Ew.val v .long X Y = .ok Z := by
-    show Ew.dyad v Kernel.Ew.vv .long .long .long X.c Y.c (m * k) = .ok Z
-    rw [hXc, hYc]; exact hZ
-  have hs := val_spec_long hop he (x := X) (yv := Y) (by rw [hXc]; exact hBx) (by rw [hYc]; exact hBy) (by omega) hv
+  -- the two gathers as `Arr`s, so `val_spec_long` reads them
+  let X : Arr .long (m * k) := Arr.mk xc.2 hxW
+  let Y : Arr .long (m * k) := Arr.mk yc.2 hyW
+  have hXv := hXv' X rfl
+  have hYv := hYv' Y rfl
+  have hv : Ew.val v .long X Y = .ok Z := by rw [hx1, hy1] at hZ; exact hZ
+  have hs := val_spec_long hop he (x := X) (yv := Y) hBx hBy (by omega) hv
   unfold Ew.ValSpec at hs
   have hel : (fun p : Carrier .long × Carrier .long => elem v he p.1 p.2) =
       fun p => pure (Kernel.Ew.intStep op Int64.minValue p.1 p.2) := funext fun p => Ew.elem_long_val hop he p.1 p.2
@@ -1448,7 +1458,7 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
   unfold Struct.indexPartedP at h
   rw [show longBytes (P.g + 1) P.o.enc = some ob by unfold longBytes; rw [hoB]] at h
   dsimp only at h
-  rw [y.c_eq hy, show Find.dense "x@y" .long ⟨.long, ny, .bytes yb, y.attrCell⟩ = pure yb from rfl, pure_bind] at h
+  rw [hy, show Find.dense "x@y" .long ny (.bytes yb) = pure yb from rfl, pure_bind] at h
   generalize hD : Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8)) = D at h
   generalize hL : Alg.gather 8 D yb = lens at h
   generalize hE : Find.expand lens = IW at h
@@ -1469,11 +1479,9 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
     rw [← cg']; exact mono_chain P.cut mono hr (Nat.le_refl _)
   have hob := nats_cuts P hoB (by omega)
   have hobs : ob.size = (P.g + 1) * 8 := by
-    have hw := P.o.wf.2.2; have := P.o.wf.2.1
-    simp only [Column.WF, P.o.wf.1, hoB, QAtomicType.width] at hw; omega
+    have hw := P.o.wf; rw [hoB] at hw; exact hw
   have hybs : yb.size = ny * 8 := by
-    have hw := y.wf.2.2; have := y.wf.2.1
-    simp only [Column.WF, y.wf.1, hy, QAtomicType.width] at hw; omega
+    have hw := y.wf; rw [hy] at hw; exact hw
   have hyl : (nats yb).length = ny := by rw [nats_length, hybs]; omega
   have hobi : ∀ r, r ≤ P.g → (nats ob)[r]! = P.cut r := fun r hr => by
     rw [hob]; exact getElem!_range_map _ (by omega)
@@ -1550,18 +1558,13 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
       show Kernel.Ew.width Kernel.Ew.i64 = 8 from rfl]
   have hlen : Alg.len src = ((List.range ny).map c).sum := by unfold Alg.len; omega
   -- the gather of `val`
-  obtain ⟨X, hXc, -, hXv⟩ := gather_long P.val hv (by omega) (N := Alg.len src) rfl (by omega) (fun p hp => by
+  obtain ⟨-, -, -, hXv⟩ := gather_long P.val hv (by omega) (N := Alg.len src) rfl (by omega) (fun p hp => by
     obtain ⟨i, w, hi, hw, rfl⟩ := blocks_cover c ny (p := p) (by omega)
     have hh := hhit i (by omega)
     have := hcut ((nats yb)[i]! + 1) (by omega)
     rw [hsrc i w hi hw]; rw [hc] at hw; dsimp only at hw; rw [if_pos hh] at hw; omega) hvec
-  have hX : val' = X := by
-    obtain ⟨vc, vw⟩ := val'
-    obtain ⟨xc, xw⟩ := X
-    have hcv := Struct.of_c hof
-    dsimp only at hcv hXc
-    subst hcv; subst hXc; rfl
-  subst val'
+  replace hXv := hXv val' (ofPart_enc hof)
+  generalize val' = X at hXv h
   -- the answer's offsets `0, S 1, …, S ny`
   obtain ⟨g', o', co', hoB', rfl⟩ := Struct.parted_ok h
   have hcat : nats (Kernel.concatBytes #[Find.one 0, Alg.sums lens]) =
@@ -2034,10 +2037,10 @@ theorem toList_ofCols {R : Rel .long .long} {a b : ByteArray}
     R.toList = ((nats a).zip (nats b)).map fun p => (Int64.ofNat p.1, Int64.ofNat p.2) := by
   obtain ⟨hk, hv⟩ := Alg.ofCols_ok h
   have hkl : R.key.toList = (nats a).map Int64.ofNat := by
-    rw [Arr.toList_long R.key (ws := Verify.elemsW 8 a) (by rw [hk]; rfl), nats, List.map_map]
+    rw [Arr.toList_long R.key (ws := Verify.elemsW 8 a) (by rw [show R.key.enc = .bytes a from congrArg Prod.snd hk]; rfl), nats, List.map_map]
     exact List.map_congr_left fun u _ => toInt64_eq_ofNat u
   have hvl : R.val.toList = (nats b).map Int64.ofNat := by
-    rw [Arr.toList_long R.val (ws := Verify.elemsW 8 b) (by rw [hv]; rfl), nats, List.map_map]
+    rw [Arr.toList_long R.val (ws := Verify.elemsW 8 b) (by rw [show R.val.enc = .bytes b from congrArg Prod.snd hv]; rfl), nats, List.map_map]
     exact List.map_congr_left fun u _ => toInt64_eq_ofNat u
   have hz : R.toList = R.key.toList.zip R.val.toList :=
     List.ext_getElem (by
@@ -2550,42 +2553,42 @@ theorem foldl_outr {α : Type} : ∀ (l : List α) (x : α), l.foldl (fun _ b =>
 theorem bytesOf_answer_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (B : ByteArray) (hB : B.size = w * n)
     (hn : n < 2 ^ 32) :
-    ∃ D, Column.bytesOf (Column.answer ⟨t, n, .bytes B, none⟩) = some D ∧ Verify.elemsW w D = Verify.elemsW w B := by
+    ∃ D, Enc.bytesOf t n (Enc.answer t n (.bytes B)) = some D ∧ Verify.elemsW w D = Verify.elemsW w B := by
   have hw8 : 0 < w ∧ w ≤ 8 :=
     he.elim (fun he => by have := width_fixed hw he; omega) (fun ha => by have := alp_width hw ha; omega)
   have hk : B.size / w = n := by rw [hB, Nat.mul_div_cancel_left _ hw8.1]
   have hU : n < USize.size := Nat.lt_of_lt_of_le hn USize.le_size
   rcases he with he | ha
   · have h1 := width_fixed hw he
-    have hans : Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .bytes B, none⟩ ∨
-        Column.answer ⟨t, n, .bytes B, none⟩ =
-          ⟨t, n, .foR (Kernel.Coc.encode w.toUSize B).1 (Kernel.Coc.encode w.toUSize B).2, none⟩ := by
-      simp only [Column.answer, Kernel.Coc.encodeBelow]
+    have hans : Enc.answer t n (.bytes B) = .bytes B ∨
+        Enc.answer t n (.bytes B) =
+          .foR (Kernel.Coc.encode w.toUSize B).1 (Kernel.Coc.encode w.toUSize B).2 := by
+      simp only [Enc.answer, Kernel.Coc.encodeBelow]
       repeat' split
       all_goals first | exact .inl rfl | exact .inr rfl | simp_all [alp_fixed he]
     rcases hans with e | e <;> rw [e]
     · exact ⟨B, rfl, rfl⟩
     · refine ⟨Kernel.Coc.decode w.toUSize (Kernel.Coc.encode w.toUSize B).1 (Kernel.Coc.encode w.toUSize B).2
-        n.toUSize, by simp [Column.bytesOf, hw], ?_⟩
+        n.toUSize, by simp [Enc.bytesOf, hw], ?_⟩
       rw [(decode_words hw8 _ _ hU).2]
       have := encode_words h1 B (by rw [hk]; exact hU)
       rwa [hk] at this
   · have hw48 := alp_width hw ha
     obtain ⟨⟨m, p, a⟩, hE⟩ : ∃ q, Kernel.Coc.alpEncodeAt (w == 4) B = q := ⟨_, rfl⟩
-    have hans : Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .bytes B, none⟩ ∨
-        Column.answer ⟨t, n, .bytes B, none⟩ = ⟨t, n, .alp m p a, none⟩ := by
+    have hans : Enc.answer t n (.bytes B) = .bytes B ∨
+        Enc.answer t n (.bytes B) = .alp m p a := by
       rcases hw48 with rfl | rfl
       · have hE' : Kernel.Coc.alpEncode32 B = (m, p, a) := hE
-        simp only [Column.answer, Kernel.Coc.alpEncodeBelow32, hE']
+        simp only [Enc.answer, Kernel.Coc.alpEncodeBelow32, hE']
         repeat' split
         all_goals first | exact .inl rfl | exact .inr rfl | simp_all
       · have hE' : Kernel.Coc.alpEncode64 B = (m, p, a) := hE
-        simp only [Column.answer, Kernel.Coc.alpEncodeBelow64, hE']
+        simp only [Enc.answer, Kernel.Coc.alpEncodeBelow64, hE']
         repeat' split
         all_goals first | exact .inl rfl | exact .inr rfl | simp_all
     rcases hans with e | e <;> rw [e]
     · exact ⟨B, rfl, rfl⟩
-    · refine ⟨Kernel.Coc.alpDecode w.toUSize m p a n.toUSize, by simp [Column.bytesOf, hw], ?_⟩
+    · refine ⟨Kernel.Coc.alpDecode w.toUSize m p a n.toUSize, by simp [Enc.bytesOf, hw], ?_⟩
       have := Verify.elemsW_alpDecode_alpEncodeAt (w == 4) w (by rcases hw48 with rfl | rfl <;> rfl) B
         (by rw [hk]; exact hn)
       rwa [hE, hk] at this
@@ -2593,22 +2596,22 @@ theorem bytesOf_answer_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some 
 /-- A fixed-width array's dense payload: `w` bytes an element, never a bitmap. -/
 theorem bytesOf_fixed {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m) (hm : m < USize.size) :
-    ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.enc ≠ .bits b := by
+    ∃ D, Enc.bytesOf t m z.enc = some D ∧ D.size = w * m ∧ ∀ b, z.enc ≠ .bits b := by
   have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
   have parts : (∃ B, z.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.enc = .foR md pk) ∨
       ∃ md pk a, z.enc = .alp md pk a :=
     he.elim (fun he => (fixed_parts hw he z).elim .inl (.inr ∘ .inl)) (alp_parts hw · z)
   rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
-  · exact ⟨B, by rw [Arr.c_eq z hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
-  · exact ⟨Kernel.Coc.decode w.toUSize md pk m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+  · exact ⟨B, by rw [hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
+  · exact ⟨Kernel.Coc.decode w.toUSize md pk m.toUSize, by rw [hc]; simp [Enc.bytesOf, hw],
       (decode_words ⟨by omega, hw8.2⟩ md pk hm).1, fun b e => by rw [hc] at e; cases e⟩
-  · exact ⟨Kernel.Coc.alpDecode w.toUSize md pk a m.toUSize, by rw [Arr.c_eq z hc]; simp [Column.bytesOf, hw],
+  · exact ⟨Kernel.Coc.alpDecode w.toUSize md pk a m.toUSize, by rw [hc]; simp [Enc.bytesOf, hw],
       (alpDecode_words ⟨by omega, hw8.2⟩ md pk a hm).1, fun b e => by rw [hc] at e; cases e⟩
 
 /-- What `scatter` writes from and into: the dense payload at `8 w` bits an element. -/
-theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb : String) (c : Column)
-    {D : ByteArray} (hD : Column.bytesOf c = some D) (hb : ∀ b, c.enc ≠ .bits b) :
-    Struct.packed verb t c = pure (D, 8 * w) := by
+theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb : String) (n : Nat) (e : Enc)
+    {D : ByteArray} (hD : Enc.bytesOf t n e = some D) (hb : ∀ b, e ≠ .bits b) :
+    Struct.packed verb t n e = pure (D, 8 * w) := by
   unfold Struct.packed; split
   · next b e => exact absurd e (hb b)
   · simp [hw, Find.dense, hD] <;> rfl
@@ -2618,7 +2621,7 @@ theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb :
 theorem amend_indices {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny}
     {o : Option Prim.Dyadic} {R : Arr t nx} (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32)
     (h : Struct.amend x i o y = .ok R) :
-    ni = ny ∧ ∃ ib : ByteArray, Find.dense "@[x;i;f;y]" .long i.c = pure ib ∧ ib.size / 8 = ni ∧
+    ni = ny ∧ ∃ ib : ByteArray, Find.dense "@[x;i;f;y]" .long ni i.enc = pure ib ∧ ib.size / 8 = ni ∧
       i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 ∧
       ¬(∃ k < ib.size / 8, nx.toUSize.toUInt64 ≤ Column.bitsAt ib (k * 8) 8) ∧
       (∀ k < ib.size / 8, (Column.bitsAt ib (k * 8) 8).toNat < nx) ∧
@@ -2626,10 +2629,10 @@ theorem amend_indices {t : QAtomicType} {nx ni ny : Nat} {x : Arr t nx} {i : Arr
       ∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx := by
   have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
   -- the indices: a long column's words
-  obtain ⟨ws, hws⟩ : ∃ ws, longWords i.c = some ws := by
+  obtain ⟨ws, hws⟩ : ∃ ws, longWords ni i.enc = some ws := by
     rcases fixed_parts (w := 8) rfl rfl i with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [longWords, hc]
   obtain ⟨ib, -, hib, hibw, hibn⟩ := Arr.dense_long i hws hUi
-  have hd : Find.dense "@[x;i;f;y]" .long i.c = pure ib := by simp [Find.dense, hib]; rfl
+  have hd : Find.dense "@[x;i;f;y]" .long ni i.enc = pure ib := by simp [Find.dense, hib]; rfl
   have hil : i.toList = (Verify.elemsW 8 ib).map UInt64.toInt64 := by rw [Arr.toList_long i hws, hibw]
   have hny : ni = ny := by
     by_cases hny : ni = ny
@@ -2687,16 +2690,16 @@ theorem amend_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w
     rw [hw0]; split <;> (try simp only [Bool.false_eq_true, ↓reduceIte]) <;> decide
   have hwb : (8 * w).toUSize.toNat = 8 * w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have hts : t ≠ .symbol := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
-  have hsc : Struct.scatter "@[x;i;f;y]" t nx x.c y.c ib =
-      pure ⟨t, nx, .bytes (Kernel.scatterPacked (8 * w).toUSize xb ib yb 0 false), none⟩ := by
+  have hsc : Struct.scatter "@[x;i;f;y]" t nx x.enc (ni, y.enc) ib =
+      pure (.bytes (Kernel.scatterPacked (8 * w).toUSize xb ib yb 0 false)) := by
     unfold Struct.scatter; split
     · exact absurd rfl hts
-    · rw [packed_fixed hw _ x.c hxb hxn, packed_fixed hw _ y.c hyb hyn]
+    · rw [packed_fixed hw _ nx x.enc hxb hxn, packed_fixed hw _ ni y.enc hyb hyn]
       simp [show 8 * w ≠ 1 by omega]
-  simp only [Struct.amend, hd,
+  simp only [Struct.amend, hd, Arr.part,
     pure_bind, Option.isSome_none, Nat.zero_mul, hne, hr1, ne_eq, not_true_eq_false, if_false, if_true,
     Bool.false_eq_true, ↓reduceIte, hsc] at h
-  have hRc := Find.onKey_c h
+  have hRc := Find.onKey_enc h
   -- the answer read back, word by word the last write (`scatterPacked_spec`)
   have spec := Verify.scatterPacked_spec w (by omega) (8 * w).toUSize hwb xb ib yb 0 false
     (by simp only [Bool.false_eq_true, if_false, USize.toNat_zero, Nat.zero_add]; rw [hibn, hys, Nat.mul_comm]; exact Nat.le_refl _)
