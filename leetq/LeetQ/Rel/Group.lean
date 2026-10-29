@@ -304,6 +304,148 @@ theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArra
     simp only [x, dif_pos s.2]
   · first | simp at h | simp [throw, throwThe, MonadExceptOf.throw] at h | cases h
 
+/-- A code at a byte lane is read at an integral sort layout of one, two or four bytes. -/
+theorem byteLane {c : Code} (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32) :
+    ∃ k : Scan.Kind, (k = .u8 ∨ k = .i16 ∨ k = .i32) ∧ c.w = 8 * k.width ∧ c.kind = some k := by
+  rcases hw with h | h | h
+  · exact ⟨.u8, .inl rfl, by rw [h]; rfl, by simp only [Code.kind, h, laneKind]⟩
+  · exact ⟨.i16, .inr (.inl rfl), by rw [h]; rfl, by simp only [Code.kind, h, laneKind]⟩
+  · exact ⟨.i32, .inr (.inr rfl), by rw [h]; rfl, by simp only [Code.kind, h, laneKind]⟩
+
+/-- **A byte-lane code's `grade` is a permutation of its rows ascending by a key that agrees exactly where
+    the codes do** (item 4): `Order.grade` at the lane's layout (`keyAt`), or `gradeLane` (the id itself)
+    where an `i16`/`i32` code would read past the sign. -/
+theorem code_grade (c : Code) (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32) (hsz : c.b.size = c.w / 8 * c.n)
+    (hnU : c.n < USize.size) :
+    ∃ κ : Nat → UInt64, (Verify.ids c.grade).Perm (List.range c.n) ∧
+      (Verify.ids c.grade).Pairwise (fun i j => κ i ≤ κ j) ∧
+      ∀ i j, (κ i = κ j ↔ Column.idAt c.b c.w i = Column.idAt c.b c.w j) := by
+  have hn : c.n.toUSize.toNat = c.n := USize.toNat_ofNat_of_lt' hnU
+  obtain ⟨k, hk, hkw, hkind⟩ := byteLane hw
+  have hkw8 : k.width ≤ 8 := by rcases hk with rfl | rfl | rfl <;> decide
+  have hb : c.b.size = k.width * c.n := by
+    rcases hk with rfl | rfl | rfl <;> simp only [Scan.Kind.width] at hkw ⊢ <;> rw [hsz, hkw] <;> omega
+  have hid : ∀ i, Column.idAt c.b c.w i = (Column.bitsAt c.b (i * k.width) k.width).toNat := fun i => by
+    rw [hkw]; exact Verb.idAt_bytes c.b i hkw8
+  have heq : ∀ i j, (Column.bitsAt c.b (i * k.width) k.width = Column.bitsAt c.b (j * k.width) k.width ↔
+      Column.idAt c.b c.w i = Column.idAt c.b c.w j) := fun i j => by
+    rw [hid, hid]; exact ⟨congrArg _, UInt64.toNat_inj.1⟩
+  simp only [Code.grade, hkind]
+  split
+  · obtain ⟨hp, hs⟩ := Verify.gradeLane_spec false c.n.toUSize c.w.toUSize c.b
+    have hwU : c.w.toUSize.toNat = c.w :=
+      USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by rcases hk with rfl | rfl | rfl <;> simp [hkw, Scan.Kind.width]) USize.le_size)
+    have hcap : Column.idsCap c.b c.w c.n = c.n := by
+      unfold Column.idsCap
+      rcases hk with rfl | rfl | rfl <;> simp only [Scan.Kind.width] at hkw hb <;> rw [if_neg (by omega), hb, hkw] <;> omega
+    rw [hwU, hn, hcap] at hp; rw [hwU] at hs
+    refine ⟨fun i => Column.bitsAt c.b (i * k.width) k.width, hp, hs.imp fun h => ?_, heq⟩
+    have := h.1; simp only [Bool.false_eq_true, if_false, hid] at this; exact UInt64.le_iff_toNat_le.2 this
+  · obtain ⟨hp, hs⟩ := Verify.grade_spec k false c.n.toUSize c.b
+    have hav : k.avail c.b = c.n := by
+      rcases hk with rfl | rfl | rfl <;> simp only [Scan.Kind.avail, Scan.Kind.width] at hb ⊢ <;> omega
+    rw [hn, hav, Nat.min_self] at hp
+    refine ⟨Order.keyAt k c.b, hp, hs.imp fun h => by simpa [Verify.keyOrd] using h.1, fun i j => ?_⟩
+    rw [Verify.keyAt_eq_iff (by rcases hk with rfl | rfl | rfl <;> simp) c.b i j]; exact heq i j
+
+/-- The long read at row `s` of an index column, as a natural. -/
+abbrev at8 (p : ByteArray) (s : Nat) : Nat := (Column.bitsAt p (s * 8) 8).toNat
+
+theorem ids_eq_map (p : ByteArray) : Verify.ids p = (List.range (p.size / 8)).map (at8 p) := rfl
+
+/-- **`gradeBy`'s step at a byte-lane code keeps a permutation, and sorts by the code** (item 4): `p` a
+    permutation of the `c.n` rows, the grade of `c` gathered through `p`, composed with `p`, is again one,
+    and along it the rows of any `x` the code is faithful to are contiguous. -/
+theorem grade_step {α : Type} (c : Code) (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32) (hsz : c.b.size = c.w / 8 * c.n)
+    (hnU : c.n < USize.size) (p : ByteArray) (hpn : p.size / 8 = c.n) (hpp : (Verify.ids p).Perm (List.range c.n))
+    (x : Nat → α) (hf : ∀ i j, i < c.n → j < c.n → (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ x i = x j)) :
+    (gather 8 p (c.gather p).grade).size = 8 * c.n ∧ (Verify.ids (gather 8 p (c.gather p).grade)).Perm (List.range c.n) ∧
+      ∀ s t u, s ≤ t → t ≤ u → u < c.n → x (at8 (gather 8 p (c.gather p).grade) s) =
+        x (at8 (gather 8 p (c.gather p).grade) u) →
+        x (at8 (gather 8 p (c.gather p).grade) t) = x (at8 (gather 8 p (c.gather p).grade) s) := by
+  obtain ⟨k, hk, hkw, hkind⟩ := byteLane hw
+  have hkw8 : k.width ≤ 8 := by rcases hk with rfl | rfl | rfl <;> decide
+  have hk0 : 0 < k.width := by rcases hk with rfl | rfl | rfl <;> decide
+  have hkU : k.width.toUSize.toNat = k.width := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
+  have hb : c.b.size = k.width * c.n := by
+    rcases hk with rfl | rfl | rfl <;> simp only [Scan.Kind.width] at hkw ⊢ <;> rw [hsz, hkw] <;> omega
+  have hP : ∀ s, s < c.n → at8 p s < c.n := fun s hs => by
+    have : at8 p s ∈ Verify.ids p := by rw [ids_eq_map, hpn]; exact List.mem_map_of_mem (List.mem_range.2 hs)
+    exact List.mem_range.1 (hpp.mem_iff.1 this)
+  -- the code gathered through `p`
+  have hdb : (c.gather p).b = gatherBytes k.width.toUSize 0 c.b p := by
+    simp only [Code.gather, hkind]; rcases hk with rfl | rfl | rfl <;> rfl
+  obtain ⟨gs, ge⟩ := Verify.gatherBytes_spec k.width.toUSize (by rw [hkU]; exact hkw8) 0 c.b p
+  rw [hkU] at gs ge
+  have hdn : (c.gather p).n = c.n := by simp only [Code.gather, len]; exact hpn
+  have hdw : (c.gather p).w = c.w := rfl
+  have hid : ∀ (b : ByteArray) i, Column.idAt b c.w i = (Column.bitsAt b (i * k.width) k.width).toNat := fun b i => by
+    rw [hkw]; exact Verb.idAt_bytes b i hkw8
+  have hdat : ∀ s, s < c.n → Column.idAt (c.gather p).b c.w s = Column.idAt c.b c.w (at8 p s) := fun s hs => by
+    rw [hid, hid, hdb, ge s (by omega), if_pos (by rw [hb, Nat.mul_div_cancel_left _ hk0]; exact hP s hs)]
+  obtain ⟨κ, gp, gm, gk⟩ := code_grade (c.gather p) (by rw [hdw]; exact hw)
+    (by rw [hdb, gs, hpn, hdw, hdn, ← hb]; exact hsz) (by rw [hdn]; exact hnU)
+  rw [hdn] at gp
+  generalize (c.gather p).grade = gr at gp gm
+  have hgl : gr.size / 8 = c.n := by have := gp.length_eq; rw [ids_eq_map] at this; simpa using this
+  have hG : ∀ s, s < c.n → at8 gr s < c.n := fun s hs => by
+    have : at8 gr s ∈ Verify.ids gr := by rw [ids_eq_map, hgl]; exact List.mem_map_of_mem (List.mem_range.2 hs)
+    exact List.mem_range.1 (gp.mem_iff.1 this)
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  obtain ⟨qs, qe⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl _) 0 p gr
+  rw [h8] at qs qe
+  have hq : ∀ s, s < c.n → at8 (gather 8 p gr) s = at8 p (at8 gr s) := fun s hs => by
+    simp only [at8, gather]; rw [qe s (by omega), if_pos (by rw [hpn]; exact hG s hs)]
+  have hqs : (gather 8 p gr).size = 8 * c.n := by simp only [gather]; rw [qs, hgl]
+  refine ⟨hqs, ?_, ?_⟩
+  · have e : Verify.ids (gather 8 p gr) = (Verify.ids gr).map (at8 p) := by
+      rw [ids_eq_map, ids_eq_map, hqs, hgl, Nat.mul_div_cancel_left _ (by decide), List.map_map]
+      exact List.map_congr_left fun s hs => hq s (List.mem_range.1 hs)
+    rw [e]
+    refine (gp.map _).trans ?_
+    have e' := ids_eq_map p; rw [hpn] at e'; rw [← e']; exact hpp
+  · intro s t u h1 h2 hu
+    simp only [hq s (by omega), hq t (by omega), hq u hu]
+    have hgi : ∀ s (hs : s < c.n), (Verify.ids gr)[s]'(by rw [gp.length_eq]; simpa using hs) = at8 gr s := fun s hs => by
+      simp only [ids_eq_map, List.getElem_map, List.getElem_range]
+    refine sorted_contig (fun s => x (at8 p (at8 gr s))) (fun s => κ (at8 gr s)) (fun s t hst ht => ?_)
+      (fun s t hs ht => ?_) s t u h1 h2 hu
+    · rcases Nat.lt_or_eq_of_le hst with h | rfl
+      · have := List.pairwise_iff_getElem.1 gm s t (by rw [gp.length_eq]; simp; omega) (by rw [gp.length_eq]; simpa using ht) h
+        rwa [hgi s (by omega), hgi t ht] at this
+      · exact UInt64.le_refl _
+    · rw [gk, hdw, hdat _ (hG s hs), hdat _ (hG t ht)]; exact hf _ _ (hP _ (hG s hs)) (hP _ (hG t ht))
+
+theorem tilLongs_ids {n : Nat} (hn : n < USize.size) : Verify.ids (tilLongs n.toUSize) = List.range n := by
+  have e : tilLongs n.toUSize = Order.indices (List.range n.toUSize.toNat) := rfl
+  rw [e, Verify.ids_indices _ fun i hi => Nat.lt_trans (List.mem_range.1 hi) (Verify.usize_lt _),
+    USize.toNat_ofNat_of_lt' hn]
+
+/-- **`gradeBy` on (key code, value code) at byte lanes is a permutation of the rows along which the
+    elements of any `x` the key code is faithful to are contiguous** (item 4). The value code's grade only
+    has to be a permutation. -/
+theorem gradeBy_contig {α : Type} {n : Nat} (hnU : n < USize.size) (kc vc : Code)
+    (hkw : kc.w = 8 ∨ kc.w = 16 ∨ kc.w = 32) (hks : kc.b.size = kc.w / 8 * kc.n) (hkn : kc.n = n)
+    (hvw : vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32) (hvs : vc.b.size = vc.w / 8 * vc.n) (hvn : vc.n = n)
+    (x : Nat → α) (hf : ∀ i j, i < n → j < n → (Column.idAt kc.b kc.w i = Column.idAt kc.b kc.w j ↔ x i = x j)) :
+    (gradeBy n #[kc, vc]).size = 8 * n ∧ (Verify.ids (gradeBy n #[kc, vc])).Perm (List.range n) ∧
+      ∀ s t u, s ≤ t → t ≤ u → u < n → x (at8 (gradeBy n #[kc, vc]) s) = x (at8 (gradeBy n #[kc, vc]) u) →
+        x (at8 (gradeBy n #[kc, vc]) t) = x (at8 (gradeBy n #[kc, vc]) s) := by
+  subst hkn
+  have e : gradeBy kc.n #[kc, vc] = gather 8 (gather 8 (tilLongs kc.n.toUSize) (vc.gather (tilLongs kc.n.toUSize)).grade)
+      (kc.gather (gather 8 (tilLongs kc.n.toUSize) (vc.gather (tilLongs kc.n.toUSize)).grade)).grade := rfl
+  have ht := tilLongs_ids hnU
+  have hts : (tilLongs kc.n.toUSize).size / 8 = kc.n := by
+    have := congrArg List.length ht; rw [ids_eq_map] at this; simpa using this
+  obtain ⟨s1, p1, -⟩ := grade_step vc hvw hvs (by rw [hvn]; exact hnU) _ (by rw [hts, hvn]) (by rw [ht, hvn])
+    (fun i => Column.idAt vc.b vc.w i) (fun _ _ _ _ => Iff.rfl)
+  rw [e]
+  rw [hvn] at s1 p1
+  exact grade_step kc hkw hks hnU _ (by omega) p1 x hf
+
+#print axioms code_grade
+#print axioms grade_step
+#print axioms gradeBy_contig
 #print axioms rangeOffsets_bytes
 #print axioms code_runs
 #print axioms codes_long_bytes
