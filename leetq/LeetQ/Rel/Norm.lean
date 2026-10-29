@@ -211,16 +211,28 @@ def mapOn? : (K : Prog .long .long) → Option ((n : Nat) ×' (n ≤ 2 ^ 63 → 
   | ajJ (nl := nl) _ _ _ _ => some ⟨nl, fun h => mapOn_miss h _ _⟩
   | _ => none
 
+/-- `a` and `b` one list of values. The pointer test runs first, since the two copies of a pattern's list are
+    one object; the O(n) list comparison (not tail recursive) only when they are not. -/
+def sameArr {n m : Nat} (a : Arr .long n) (b : Arr .long m) : Option (PLift (a.toList = b.toList)) :=
+  if hn : n = m then
+    if h : withPtrEq (hn ▸ a) b (fun _ => decide (a.toList = b.toList)) (fun e => by subst hn; subst e; simp) = true
+    then some ⟨of_decide_eq_true h⟩ else none
+  else none
+
 /-- Two kernel nodes over one list of values each: one relation. -/
 def sameKer : (K L : Prog .long .long) → Option (PLift (K.den = L.den))
   | binJ x y, binJ x' y' =>
-    if h : x.toList = x'.toList ∧ y.toList = y'.toList then some ⟨by
-      show posL° ≫ y.rel ≫ _ = posL° ≫ y'.rel ≫ _; rw [rel_of_toList h.1, rel_of_toList h.2]⟩ else none
+    match sameArr x x', sameArr y y' with
+    | some ⟨hx⟩, some ⟨hy⟩ => some ⟨by
+        show posL° ≫ y.rel ≫ _ = posL° ≫ y'.rel ≫ _; rw [rel_of_toList hx, rel_of_toList hy]⟩
+    | _, _ => none
   | ajJ (nl := nl) lk lt rk rt, ajJ (nl := nl') lk' lt' rk' rt' =>
-    if h : nl = nl' then if h' : lk.toList = lk'.toList ∧ lt.toList = lt'.toList ∧ rk.toList = rk'.toList ∧
-        rt.toList = rt'.toList then some ⟨by
-      subst h; show posL° ≫ corefl (· < nl) ≫ _ = posL° ≫ corefl (· < nl) ≫ _
-      rw [rel_of_toList h'.1, rel_of_toList h'.2.1, rel_of_toList h'.2.2.1, rel_of_toList h'.2.2.2]⟩ else none
+    if h : nl = nl' then
+      match sameArr lk lk', sameArr lt lt', sameArr rk rk', sameArr rt rt' with
+      | some ⟨h1⟩, some ⟨h2⟩, some ⟨h3⟩, some ⟨h4⟩ => some ⟨by
+          subst h; show posL° ≫ corefl (· < nl) ≫ _ = posL° ≫ corefl (· < nl) ≫ _
+          rw [rel_of_toList h1, rel_of_toList h2, rel_of_toList h3, rel_of_toList h4]⟩
+      | _, _, _, _ => none
     else none
   | _, _ => none
 
@@ -304,12 +316,12 @@ theorem exec_sound {A B : QAtomicType} (P : Prog A B) {R : Rel A B} (h : P.Small
 /-- `bin` normalised: one `binJ` bisection, its miss fill its own. -/
 theorem bin_norm {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hy : ny ≤ 2 ^ 63) :
     norm (bin x y) = binJ x y := by
-  simp [norm, normS, bin, missP, orRule, rule, missRule, mapOn?, sameKer, pt, hy]
+  simp [norm, normS, bin, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, pt, hy]
 
 /-- `aj` normalised: one `ajJ` per-key bisection, its miss fill its own. -/
 theorem aj_norm {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) :
     norm (aj lk lt rk rt) = ajJ lk lt rk rt := by
-  simp [norm, normS, aj, missP, orRule, rule, missRule, mapOn?, sameKer, asLen, pt, hl]
+  simp [norm, normS, aj, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, asLen, pt, hl]
 
 /-- `wj1` normalised: its three order joins are `wjJ`'s window. -/
 theorem wj1_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
