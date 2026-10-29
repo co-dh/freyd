@@ -94,7 +94,8 @@ inductive Prog : QAtomicType → QAtomicType → Type
   | mem {A B : QAtomicType} : Prog A B → Prog A B
   /-- `Λ(R) ≫ est(≤)`, `desc`: `est(≥)` (P8, P10) -/
   | extr {A : QAtomicType} (desc : Bool) : Prog A .long → Prog A .long
-  /-- `Λ(G) ≫ enum ≫ list(x) ≫ ⦇e,f⦈` (P8, P11, P12), `G` keys against positions, `op` the kernel of `f` -/
+  /-- `dom(G) ≫ Λ(G) ≫ enum ≫ list(x) ≫ ⦇e,f⦈` (P8, P11, P12), `G` keys against positions, `op` the kernel of `f`;
+      `Λ` on `dom G` only, since a key that does not occur has no row (`Λ` alone gives it `e`) -/
   | fold {A : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
       Prog A .long → Prog A .long
   /-- `enum(dom(x ≫ !1b°))` (P11): the set bits of `x`, ascending, keyed by `til m` -/
@@ -107,7 +108,7 @@ inductive Prog : QAtomicType → QAtomicType → Type
   | dom {A B : QAtomicType} : Prog A B → Prog A A
   /-- `enum` of the positions `j < n` whose long is in `dom C` (P11 over a computed coreflexive) -/
   | enumC (n : Nat) : Prog .long .long → Prog .long .long
-  /-- `Λ(G ≫ pos) ≫ enum ≫ length` (P8, P11, P12): each key's count; no `Coc.Over` counts -/
+  /-- `dom(G ≫ pos) ≫ Λ(G ≫ pos) ≫ enum ≫ length` (P8, P11, P12): each occurring key's count; no `Coc.Over` counts -/
   | count {A : QAtomicType} : Prog A .long → Prog A .long
   /-- `grade(⊴ₓ) = cst(til n) ≫ sort(⊴ₓ)` (P17): the stable grade of `x` under its type's strict order `lt`,
       `desc` flipping it; `x` keyed by `til n` -/
@@ -132,7 +133,7 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, B, mem P => Λ P.den ≫ ∋ (Ob B)
   | _, _, extr false P => Λ P.den ≫ est (fun a b : Int64 => a ≤ b)
   | _, _, extr true P => Λ P.den ≫ est (fun a b : Int64 => a ≥ b)
-  | _, _, fold _ e f x G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f
+  | _, _, fold _ e f x G => Verb.dom (G.den ≫ Verb.pos) ≫ Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f
   | _, _, enum x => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (x.rel ≫
       (Verb.cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys ∧ (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
   | _, _, anti P C => P.den ≫ Verb.corNeg C.den
@@ -140,7 +141,7 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, _, dom P => Verb.dom P.den
   | _, _, enumC n C => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫ C.den))) ys ∧
       (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
-  | _, _, count G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat
+  | _, _, count G => Verb.dom (G.den ≫ Verb.pos) ≫ Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat
   | _, _, grade (n := n) d lt x => posL° ≫ fun i v => ∃ G, Verb.sort (Verb.stable x.rel (if d then flip lt else lt))
       (CL.ofList (List.range n)) G ∧ (ix (CL.toList G) ≫ graph Int64.ofNat) i v
 
@@ -450,21 +451,19 @@ def lastBy {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) : Prog K t 
 theorem lastBy_den {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) :
     (lastBy k v).den = (Λ (posL° ≫ k.rel)° ≫ est (fun a b : Int64 => a ≥ b)) ≫ posL° ≫ v.rel := rfl
 
+/-- A fold node over `op`'s kernel: its seed and step are the ones `op` computes, q's null skipped
+    (`overBy_rel`), so no caller can pair a kernel with a fold it does not run. -/
+def foldOp {A : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) (G : Prog A .long) : Prog A .long :=
+  fold op (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) x G
+
 /-- `select f x by k`: `grpL(k) ≫ list(x) ≫ ⦇e,f⦈`, `grpL(k) = Λ(k°) ≫ enum` (`overBy_rel`). -/
-def selectBy {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (k : Arr K n)
-    (x : Arr .long n) : Prog K .long := fold op e f x (conv (arr k))
+def selectBy {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (k : Arr K n) (x : Arr .long n) : Prog K .long :=
+  foldOp op x (conv (arr k))
 
-theorem selectBy_den {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64)
-    (k : Arr K n) (x : Arr .long n) :
-    (selectBy op e f k x).den = Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f :=
+theorem selectBy_den {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (k : Arr K n) (x : Arr .long n) :
+    (selectBy op k x).den = Verb.dom ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫
+      Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) :=
   rfl
-
-/-- `x@y` inside the range: `y ≫ x` through the positions (the `miss` fill is not a node yet). -/
-def index {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) : Prog .long t := comp (arr y) (arr x)
-
-theorem index_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) :
-    (index x y).den = posL° ≫ y.rel ≫ posL° ≫ x.rel :=
-  hom_ext fun _ _ => ⟨fun ⟨b, ⟨j, ea, hy⟩, hx⟩ => ⟨j, ea, b, hy, hx⟩, fun ⟨j, ea, b, hy, hx⟩ => ⟨b, ⟨j, ea, hy⟩, hx⟩⟩
 
 /-! ## posL bridge
 
@@ -565,13 +564,41 @@ theorem find_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) :
       Verb.miss (Λ ((posL° ≫ x.rel)°) ≫ est (fun a b : Int64 => a ≤ b)) (Int64.ofNat nx) :=
   comp_cup _ _ _ _
 
-/-- `x@y = y ≫ miss(pos ≫ x, e)`, `e` the null of `x`'s type: `index` with the fill. -/
-def indexFill {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) : Prog .long t :=
+/-- `x@y = y ≫ miss(pos ≫ x, e)`, `e` the null of `x`'s type. -/
+def index {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) : Prog .long t :=
   union (comp (arr y) (arr x)) (cst e (anti (arr y) (dom (arr x))))
 
-theorem indexFill_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) :
-    (indexFill x y e).den = (posL° ≫ y.rel) ≫ Verb.miss (posL° ≫ x.rel) e :=
+theorem index_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) :
+    (index x y e).den = (posL° ≫ y.rel) ≫ Verb.miss (posL° ≫ x.rel) e :=
   comp_cup _ _ _ _
+
+/-- Below `2^63` a long names a position the same way through `posL°` and through `pos`. -/
+theorem posL_pos {t : QAtomicType} {n : Nat} (x : Arr t n) (hn : n ≤ 2 ^ 63) :
+    (posL° ≫ x.rel : Ob .long ⟶ Ob t) = Verb.pos ≫ x.rel :=
+  hom_ext fun a b => ⟨fun ⟨j, ea, hx⟩ => by
+      have hj := ((rel_iff x j b).1 hx).1
+      have h0 : (0 : Int64) ≤ Int64.ofNat j := by
+        rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega)]; simp
+      have hv : (Int64.ofNat j).toInt.toNat = j := by
+        rw [Int64.toNat_toInt, Int64.toNatClampNeg_ofNat_of_lt (by omega)]
+      subst ea
+      exact ⟨j, ⟨_, ⟨rfl, h0⟩, hv.symm⟩, hx⟩,
+    fun ⟨j, ⟨w, ⟨ew, h0⟩, ej⟩, hx⟩ => by
+      subst ew ej
+      refine ⟨_, ?_, hx⟩
+      apply Int64.toInt_inj.1
+      have h1 := Int64.le_iff_toInt_le.1 h0
+      have h2 := Int64.toInt_lt a
+      simp at h1
+      dsimp only
+      rw [Int64.toInt_ofNat_of_lt (by omega)]; omega⟩
+
+/-- `x@y` runs to `index_rel`'s right side (at `e = 0N` on longs). -/
+theorem index_prog {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) (hx : nx ≤ 2 ^ 63)
+    (hy : ny ≤ 2 ^ 64) {R : Rel .long t} (h : (index x y e).run = .ok R) (hs : (index x y e).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob t) = y.rel ≫ Verb.miss (Verb.pos ≫ x.rel) e :=
+  (posL_iff fun i _ ⟨_, hy', _⟩ => Nat.lt_of_lt_of_le ((rel_iff y i _).1 hy').1 hy).1
+    ((run_sound _ hs h).trans (by rw [index_den, posL_pos x hx]; exact Cat.assoc _ _ _))
 
 /-- `?x = enum(ran(Λ(x°) ≫ est(≤))) ≫ x`: each value's first position, ascending, read through `x`. -/
 def distinct {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long t :=
@@ -586,36 +613,164 @@ theorem distinct_den {t : QAtomicType} {n : Nat} (x : Arr t n) :
 /-- `count by k = grpL(k) ≫ length`. -/
 def countBy {K : QAtomicType} {n : Nat} (k : Arr K n) : Prog K .long := count (conv (arr k))
 
-theorem countBy_den {K : QAtomicType} {n : Nat} (k : Arr K n) :
-    (countBy k).den = Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat :=
-  rfl
+/-- A cons-list's length is the right fold that counts its conses. -/
+theorem clen_foldr {A : Type} : ∀ ys : CL.ConsList Unit A, ListRel.clen ys = (CL.toList ys).foldr (fun _ c => c + 1) 0
+  | .wrap () => rfl
+  | .cons a ys => by
+    rw [show CL.toList (.cons a ys) = a :: CL.toList ys from rfl, List.foldr_cons, ← clen_foldr ys]; rfl
 
-/-- The whole list as one group: the key `0` against every position, `(x ≫ !0)°`. -/
-def whole {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long .long := conv (cst (u := .long) (0 : Int64) (arr x))
+/-- `length = ⦇0, succ⦈`. -/
+theorem length_cata {A : Type} : (ListRel.length : ListRel.dList A ⟶ (⟨Nat⟩ : RelSet.{0})) =
+    ⦇(junc (sumCop (CL.dL Unit) ⟨A × Nat⟩) (graph fun _ => (0 : Nat)) (graph fun q : A × Nat => q.2 + 1)
+      : Alg (CL.F Unit A) (⟨Nat⟩ : RelSet.{0}))⦈ := by
+  exact (congrArg graph (funext clen_foldr)).trans (Verb.foldr_cata (fun _ c => c + 1) 0)
+
+theorem countBy_den {K : QAtomicType} {n : Nat} (k : Arr K n) :
+    (countBy k).den = Verb.dom ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫
+      ⦇(junc (sumCop (CL.dL Unit) ⟨Nat × Nat⟩) (graph fun _ => (0 : Nat)) (graph fun q : Nat × Nat => q.2 + 1)
+        : Alg (CL.F Unit Nat) (⟨Nat⟩ : RelSet.{0}))⦈ ≫ graph Int64.ofNat := by
+  rw [← length_cata]; rfl
+
+/-- A list's rows as one group: the key `0` against every position, `(P ≫ !0)°`. -/
+def whole {t : QAtomicType} (P : Prog .long t) : Prog .long .long := conv (cst (u := .long) (0 : Int64) P)
 
 /-- `#x = ⦇0, succ⦈`, at the one key `0`. -/
-def size {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long .long := count (whole x)
+def size {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long .long := count (whole (arr x))
 
 theorem size_den {t : QAtomicType} {n : Nat} (x : Arr t n) :
-    (size x).den = Λ (((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos) ≫ Verb.enum ≫
-      ListRel.length ≫ graph Int64.ofNat :=
+    (size x).den = Verb.dom (((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos) ≫ Λ (((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos) ≫ Verb.enum ≫
+      ⦇(junc (sumCop (CL.dL Unit) ⟨Nat × Nat⟩) (graph fun _ => (0 : Nat)) (graph fun q : Nat × Nat => q.2 + 1)
+        : Alg (CL.F Unit Nat) (⟨Nat⟩ : RelSet.{0}))⦈ ≫ graph Int64.ofNat := by
+  rw [← length_cata]; rfl
+
+/-- `f/x = ⦇e, f⦈` of the list, at the one key `0`, `e` and `f` the kernel's (`foldOp`). -/
+def over {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) : Prog .long .long := foldOp op x (whole (arr x))
+
+theorem over_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
+    (over op x).den = Verb.dom (((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos) ≫ Λ ((((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos)) ≫
+      Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) :=
   rfl
 
-/-- `f/x = ⦇e, f⦈` of the list, at the one key `0`. -/
-def over {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
-    Prog .long .long := fold op e f x (whole x)
+/-- `x` with its nulls dropped: the anti-join against the coreflexive `ran x ∩ (ran x ≫ !0N)` on `0N`. -/
+def nonNul {n : Nat} (x : Arr .long n) : Prog .long .long :=
+  anti (arr x) (inter (idU x) (cst (u := .long) Spec.nul (idU x)))
 
-theorem over_den {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
-    (over op e f x).den = Λ ((((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos)) ≫
-      Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f :=
-  rfl
-
-/-- `avg x = ⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`. -/
+/-- `avg x = ⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the
+    count over `nonNul x`. -/
 def avg {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    Prog .long rt := dy .div h (over .add 0 (· + ·) x) (size x)
+    Prog .long rt := dy .div h (over .add x) (count (whole (nonNul x)))
 
 theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    (avg h x).den = rpair (over .add 0 (· + ·) x).den (size x).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
+    (avg h x).den = rpair (over .add x).den (count (whole (nonNul x))).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
+  rfl
+
+/-- On `x`'s values, missing the coreflexive `ran x ∩ (ran x ≫ !0N)` is being other than `0N`. -/
+theorem corNeg_nul {n : Nat} (x : Arr .long n) :
+    (x.rel ≫ Verb.corNeg (Verb.ran x.rel ∩ (Verb.ran x.rel ≫ Verb.cst (B := Ob .long) Spec.nul)) : Idx ⟶ Ob .long)
+      = x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul) := by
+  refine hom_ext fun j b => ⟨fun ⟨c, hx, hc⟩ => ?_, fun ⟨c, hx, hc⟩ => ?_⟩
+  · obtain ⟨ecb, hn⟩ := hc
+    subst ecb
+    exact ⟨c, hx, rfl, fun hb => hn c ⟨⟨rfl, j, hx, hx⟩, c, ⟨rfl, j, hx, hx⟩, hb⟩⟩
+  · obtain ⟨ecb, hb⟩ := hc
+    subst ecb
+    exact ⟨c, hx, rfl, fun v ⟨_, _, _, hv⟩ => hb hv⟩
+
+/-- `nonNul x` holds `x` where it is not `0N`. -/
+theorem nonNul_den {n : Nat} (x : Arr .long n) :
+    (nonNul x).den = posL° ≫ x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul) := by
+  rw [← corNeg_nul]; exact Cat.assoc _ _ _
+
+/-! ## Key value and group number
+
+  The programs key a group by its key value `a`; the kernel laws (`lastBy_rel`, `overBy_rel`) key it by its
+  group number `j`, under the offsets `o`. A grouping of `k` is `keys : til g → K` with `k i = keys j` exactly
+  when `i` lies in group `j`, `keys` one-to-one; through it the two say one thing: `den = keys° ≫ law`. -/
+
+/-- `pos` reads a long below `2^63` back as the position it came from. -/
+theorem pos_ofNat {j : Nat} (hj : j < 2 ^ 63) (i : Nat) : Verb.pos (Int64.ofNat j) i ↔ i = j := by
+  have h0 : (0 : Int64) ≤ Int64.ofNat j := by
+    rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega)]; simp
+  have hv : (Int64.ofNat j).toInt.toNat = j := by
+    rw [Int64.toNat_toInt, Int64.toNatClampNeg_ofNat_of_lt (by omega)]
+  exact ⟨fun ⟨_, ⟨e, _⟩, hi⟩ => by subst e; rw [hi]; exact hv, fun hi => ⟨_, ⟨rfl, h0⟩, hi.trans hv.symm⟩⟩
+
+/-- Below `2^63` `ofNat` keeps the order. -/
+theorem ofNat_le {z i : Nat} (hz : z < 2 ^ 63) (hi : i < 2 ^ 63) : Int64.ofNat z ≤ Int64.ofNat i ↔ z ≤ i := by
+  rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt (by omega), Int64.toInt_ofNat_of_lt (by omega)]; omega
+
+/-- `Λ(G) ≫ est(R) ≫ T` pointwise: the `R`-greatest of `G`'s image, read through `T`. -/
+theorem lamEst_iff {A B C : RelSet.{0}} (G : A ⟶ B) (R : B ⟶ B) (T : B ⟶ C) (a : A.carrier) (c : C.carrier) :
+    ((Λ G ≫ est R) ≫ T) a c ↔ ∃ w, (G a w ∧ ∀ z, G a z → R w z) ∧ T w c := by
+  rw [Λ_eq_classifier]
+  exact ⟨fun ⟨w, ⟨_, rfl, h⟩, ht⟩ => ⟨w, h, ht⟩, fun ⟨w, h, ht⟩ => ⟨w, ⟨_, rfl, h⟩, ht⟩⟩
+
+/-- `Λ` on what occurs, `dom X ≫ Λ X`, is `M ≫ Λ Y` when `X = M ≫ Y`, `M` simple and every `Y` image
+    nonempty: a key's set of positions is its group's. -/
+theorem lam_key {K : RelSet.{0}} (X : K ⟶ Idx) (M : K ⟶ Idx) (Y : Idx ⟶ Idx)
+    (hM : ∀ a j j', M a j → M a j' → j = j') (hY : ∀ a j, M a j → ∃ i, Y j i)
+    (hX : ∀ a i, X a i ↔ ∃ j, M a j ∧ Y j i) : (Verb.dom X ≫ Λ X : K ⟶ _) = M ≫ Λ Y := by
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  refine hom_ext fun a S => ⟨fun ⟨_, ⟨e, i, hi, _⟩, hS⟩ => ?_, fun ⟨j, hm, hS⟩ => ?_⟩
+  · subst e
+    obtain ⟨j, hm, -⟩ := (hX a i).1 hi
+    have h : (fun i' => X a i') = fun i' => Y j i' := funext fun i' => propext ⟨fun h => by
+      obtain ⟨j', hm', hy⟩ := (hX a i').1 h; rwa [hM a j j' hm hm'], fun h => (hX a i').2 ⟨j, hm, h⟩⟩
+    exact ⟨j, hm, hS.trans h⟩
+  · obtain ⟨i, hi⟩ := hY a j hm
+    have hx := (hX a i).2 ⟨j, hm, hi⟩
+    have h : (fun i' => X a i') = fun i' => Y j i' := funext fun i' => propext ⟨fun h => by
+      obtain ⟨j', hm', hy⟩ := (hX a i').1 h; rwa [hM a j j' hm hm'], fun h => (hX a i').2 ⟨j, hm, h⟩⟩
+    exact ⟨a, ⟨rfl, i, hx, hx⟩, hS.trans h.symm⟩
+
+/-- **`last by` keys by value what `lastBy_rel` keys by group**: through a grouping `keys` of `k`. -/
+theorem lastBy_grp {K t : QAtomicType} {n g : Nat} (k : Arr K n) (v : Arr t n) (keys : Arr K g)
+    (o : Arr .long (g+1)) (hn : n ≤ 2 ^ 63) (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j')
+    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) :
+    (lastBy k v).den = keys.rel° ≫ ((Λ ((Verb.grp o)°) ≫ est (fun a b : Nat => a ≥ b)) ≫ v.rel) := by
+  refine hom_ext fun a c => (lamEst_iff _ _ _ a c).trans ⟨fun ⟨w, ⟨⟨i', ea', hk'⟩, hmax⟩, i, ea, hv⟩ => ?_,
+    fun ⟨j, hkey, hr⟩ => ?_⟩
+  · have hi' := ((rel_iff k i' a).1 hk').1
+    have hi := ((rel_iff v i c).1 hv).1
+    subst ea
+    obtain rfl := ofNat_inj (by omega) (by omega) ea'
+    obtain ⟨j, hkey, hg⟩ := (hk a i).1 hk'
+    refine ⟨j, hkey, (lamEst_iff _ _ _ j c).2 ⟨i, ⟨hg, fun z hz => ?_⟩, hv⟩⟩
+    have hkz := (hk a z).2 ⟨j, hkey, hz⟩
+    have hz' := ((rel_iff k z a).1 hkz).1
+    exact (ofNat_le (by omega) (by omega)).1 (hmax _ ⟨z, rfl, hkz⟩)
+  · obtain ⟨i, ⟨hg, hmax⟩, hv⟩ := (lamEst_iff _ _ _ j c).1 hr
+    have hki := (hk a i).2 ⟨j, hkey, hg⟩
+    have hi := ((rel_iff k i a).1 hki).1
+    refine ⟨Int64.ofNat i, ⟨⟨i, rfl, hki⟩, fun z hz => ?_⟩, i, rfl, hv⟩
+    obtain ⟨i', ez, hkz⟩ := hz
+    subst ez
+    have hz' := ((rel_iff k i' a).1 hkz).1
+    obtain ⟨j', hkey', hg'⟩ := (hk a i').1 hkz
+    obtain rfl := hinj j j' a hkey hkey'
+    exact (ofNat_le (by omega) (by omega)).2 (hmax i' hg')
+
+/-- **`select f x by k` keys by value what `overBy_rel` keys by group**: through a grouping `keys` of `k`
+    in which every key occurs. -/
+theorem selectBy_grp {K : QAtomicType} {n g : Nat} (op : Kernel.Coc.Over) (k : Arr K n) (x : Arr .long n)
+    (keys : Arr K g) (o : Arr .long (g+1)) (hn : n ≤ 2 ^ 63) (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j')
+    (hocc : ∀ j a, keys.rel j a → ∃ i, k.rel i a) (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) :
+    (selectBy op k x).den = keys.rel° ≫ Λ ((Verb.grp o)°) ≫ Verb.enum ≫ ListRel.list x.rel ≫
+      Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) := by
+  have hX : ∀ a i, ((posL° ≫ k.rel)° ≫ Verb.pos : Ob K ⟶ Idx) a i ↔ ∃ j, keys.rel° a j ∧ (Verb.grp o)° j i :=
+    fun a i => ⟨fun ⟨l, ⟨i', el, hk'⟩, hp⟩ => by
+        have hi' := ((rel_iff k i' a).1 hk').1
+        subst el
+        obtain rfl := (pos_ofNat (by omega) i).1 hp
+        exact (hk a i).1 hk',
+      fun h => by
+        have hki := (hk a i).2 h
+        have hi := ((rel_iff k i a).1 hki).1
+        exact ⟨_, ⟨i, rfl, hki⟩, (pos_ofNat (by omega) i).2 rfl⟩⟩
+  rw [selectBy_den, ← Cat.assoc, lam_key _ _ _ (fun a j j' h h' => hinj j j' a h h') (fun a j hkey => by
+    obtain ⟨i, hki⟩ := hocc j a hkey
+    obtain ⟨j', hkey', hg⟩ := (hk a i).1 hki
+    exact ⟨i, by rw [hinj j j' a hkey hkey']; exact hg⟩) hX, Cat.assoc]
   rfl
 
 /-! ## Verbs over `grade` (design P17, §7 line 4) -/
@@ -785,7 +940,15 @@ end Prog
 #print axioms Prog.enum_prog
 #print axioms Prog.in_den
 #print axioms Prog.find_den
-#print axioms Prog.indexFill_den
+#print axioms Prog.index_prog
+#print axioms Prog.posL_pos
+#print axioms Prog.length_cata
+#print axioms Prog.nonNul_den
+#print axioms Prog.corNeg_nul
+#print axioms Prog.lam_key
+#print axioms Prog.lamEst_iff
+#print axioms Prog.lastBy_grp
+#print axioms Prog.selectBy_grp
 #print axioms Prog.distinct_den
 #print axioms Prog.countBy_den
 #print axioms Prog.size_den
