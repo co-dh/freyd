@@ -2572,7 +2572,9 @@ theorem dyadColumn_long_av_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valO
     Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or, Kernel.Ew.add, Kernel.Ew.sub, Kernel.Ew.mul,
     Kernel.Ew.div, Kernel.Ew.fill, Kernel.Ew.lesser, Kernel.Ew.greater, *]
   -- at `n = 1` the atom and the vector both pass `dyadCount`, and `simp` leaves the `some` outside the match
-  all_goals first | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*]) | (left; split <;> simp [*])
+  all_goals first
+    | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*])
+    | (left; split <;> simp [*])
     | (right; split <;> simp [*])
 
 /-- `dyadColumn` on a `foR` long column and a long atom column (right), at `-`, the one value verb `Ew.flip`
@@ -2595,7 +2597,9 @@ theorem dyadColumn_long_va_sub_foR (n : Nat) (md pk c : ByteArray) :
     (by decide : ¬Kernel.Ew.va = Kernel.Ew.vv), (by decide : ¬Kernel.Ew.va = Kernel.Ew.av),
     (by decide : (Kernel.Ew.va == Kernel.Ew.av) = false),
     Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or, Kernel.Ew.add, Kernel.Ew.sub, Kernel.Ew.mul, *]
-  all_goals first | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*]) | (left; split <;> simp [*])
+  all_goals first
+    | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*])
+    | (left; split <;> simp [*])
     | (right; split <;> simp [*])
 
 /-- `dyadColumn` on a long atom column (left) and a `foR` long column, at a comparison: `foRCmp`'s bitmap of
@@ -2896,7 +2900,7 @@ theorem priorCmp_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpO
   · rcases Verify.answer_foR .long 8 n (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).1
       (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).2 rfl with e | e <;> rw [e] at hv
     · exact priorCmp_spec_words hop h hn hx hxs hF
-        (by rw [dyad_enc (dyadColumn_long_vv_cmp_foR hop hr n md pk _ _) hv])
+        (by rw [dyad_enc (dyadColumn_long_vv_cmp_foR hop hr n md pk _ _) hv]; rfl)
     · exact priorCmp_spec_words hop h hn hx hxs hF
         (bits_Fb (dyad_enc (dyadColumn_long_vv_cmp_mixed hop hr n _ md pk).2 hv))
 
@@ -2920,7 +2924,7 @@ theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : N
   · cases h
   obtain ⟨hnr, hr⟩ := Find.list_enc h
   subst hnr
-  have hw : longWords _ r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
+  have hw : longWords ((Find.expand b).1.size / 8) r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
   have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
   have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
@@ -3150,7 +3154,7 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms cmpAtom_rel_long
 #print axioms priorCmp_spec_long
 #print axioms priorCmp_rel_long
-#print axioms dyad_c
+#print axioms dyad_enc
 #print axioms longWords_of_foR
 #print axioms longWords_answer_foR
 #print axioms val_spec_words
@@ -3215,6 +3219,14 @@ theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
 #print axioms gatherColumn_long
 #print axioms enum_ofList
 #print axioms cset_only
+
+/-- `Ew.vec` answers only on a vector, whose count and payload it passes on. -/
+theorem vec_some {w : String} {o : Option QValue} {p : Nat × Enc} (h : Ew.vec w o = .ok p) :
+    ∃ t a, o = some (.vector t p.1 p.2 a) := by
+  unfold Ew.vec at h; split at h
+  · cases h; exact ⟨_, _, rfl⟩
+  · cases h
+
 #print axioms vec_some
 #print axioms only_rows
 #print axioms gather_rel
