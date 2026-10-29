@@ -173,14 +173,14 @@ theorem overList_greater_ge {nul s x : Int64} {xs : List Int64} (hx : x ∈ xs) 
 
 /-- A long column's fold as `rangeOffsets` reads its bound — `overBytes` of a dense payload, `overFoR` of an
     encoded one — is `overList` over a list holding every word of the column, as a long. -/
-theorem bound_overList (op : Kernel.Coc.Over) (c : Column) {ws : List UInt64} {x : Int64}
-    (hw : longWords c = some ws) (hn : ws.length < USize.size)
-    (hf : (match c.enc with
+theorem bound_overList (op : Kernel.Coc.Over) (c : Nat × Enc) {ws : List UInt64} {x : Int64}
+    (hw : longWords c.1 c.2 = some ws) (hn : ws.length < USize.size)
+    (hf : (match c.2 with
       | .bytes b => some (Kernel.overBytes op Kernel.Ew.i64 Alg.nul b)
-      | .foR .. => Kernel.overFoR op .long c
+      | .foR .. => Kernel.overFoR op .long c.1 c.2
       | _ => none) = some x) :
     ∃ s L, x = Verify.overList op Alg.nul s L ∧ ∀ u ∈ ws, u.toInt64 ∈ L := by
-  obtain ⟨t, n, e, a⟩ := c
+  obtain ⟨n, e⟩ := c
   cases e
   case bytes b =>
     simp only [longWords, Option.some.injEq] at hw hf
@@ -218,8 +218,8 @@ theorem rebase_val {v base : Int64} (hv : v ≠ Alg.nul) (hb : base ≠ Alg.nul)
 /-- **`rangeOffsets` codes two long key columns injectively at one byte lane**, whichever encoding (`bytes`,
     `foR`) each arrives in: a lane `k` and a code `f` on words, one-to-one over both columns' words, such that
     each part holds `f` of its words at `k`. Restricted to `total ≤ 2³²` rows, where no rebase wraps. -/
-theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {wl wr : List UInt64}
-    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (hl : wl.length < USize.size)
+theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Array Alg.Code} {wl wr : List UInt64}
+    (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (hl : wl.length < USize.size)
     (hr : wr.length < USize.size) (htot : total ≤ 2 ^ 32)
     (h : Alg.rangeOffsets .long #[cl, cr] total = .ok (some os)) :
     ∃ (k : Kernel.Scan.Kind) (f : UInt64 → UInt64), (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧
@@ -240,10 +240,10 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
   rotate_left
   · cases h
   rename_i his hhis
-  obtain ⟨l1, l2, rfl, hl1, hl2⟩ := mapM_pair_P (fun c x => ∀ ws, longWords c = some ws → ws.length < USize.size →
+  obtain ⟨l1, l2, rfl, hl1, hl2⟩ := mapM_pair_P (fun c x => ∀ ws, longWords c.1 c.2 = some ws → ws.length < USize.size →
       ∃ s L, x = Verify.overList .lesser Alg.nul s L ∧ ∀ u ∈ ws, u.toInt64 ∈ L)
     (fun c x hf ws hw hn => bound_overList .lesser c hw hn hf) hlos
-  obtain ⟨g1, g2, rfl, hg1, hg2⟩ := mapM_pair_P (fun c x => ∀ ws, longWords c = some ws → ws.length < USize.size →
+  obtain ⟨g1, g2, rfl, hg1, hg2⟩ := mapM_pair_P (fun c x => ∀ ws, longWords c.1 c.2 = some ws → ws.length < USize.size →
       ∃ s L, x = Verify.overList .greater Alg.nul s L ∧ ∀ u ∈ ws, u.toInt64 ∈ L)
     (fun c x hf ws hw hn => bound_overList .greater c hw hn hf) hhis
   generalize hlo : Array.foldl min Int64.maxValue #[l1, l2] = lo at h
@@ -301,7 +301,7 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
     USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have hnull : (card - 1).toUSize.toNat < 2 ^ (8 * k.width) := by rw [hnull']; omega
   -- each part holds, at the lane, the `enumIds` code of its rebased words
-  obtain ⟨r1, r2, rfl, hp1, hp2⟩ := mapM_pair_P (fun c r => ∀ code, r = .ok code → ∀ ws, longWords c = some ws →
+  obtain ⟨r1, r2, rfl, hp1, hp2⟩ := mapM_pair_P (fun c r => ∀ code, r = .ok code → ∀ ws, longWords c.1 c.2 = some ws →
       ws.length < USize.size → code.w = 8 * k.width ∧ code.n = ws.length ∧ code.b.size = k.width * ws.length ∧
       ∀ i (hi : i < ws.length), Column.bitsAt code.b (i * k.width) k.width =
         (if Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base) = Int64.minValue then (card - 1).toUSize.toNat
@@ -310,7 +310,7 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
           0 ≤ (Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base)).toInt ∧
           (Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base)).toInt.toNat < card.toUSize.toNat))
     (fun c r hf code hcode ws hw hn => by
-      obtain ⟨t, n, e, a⟩ := c
+      obtain ⟨n, e⟩ := c
       cases e
       case bytes b =>
         simp only [longWords, Option.some.injEq] at hw; subst hw
@@ -461,22 +461,22 @@ theorem rangeOffsets_long {cl cr : Column} {total : Nat} {os : Array Alg.Code} {
 
 /-- The `keyCodes` of one dense long key column per side, when `rangeOffsets` codes them: both sides
 at one lane `k`, the left one's size its row count, and equal lane words exactly at equal keys. -/
-theorem keyCodes_long {verb : String} {cl cr : Column} {lc rc : Alg.Code} {wl wr : List UInt64}
-    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (hl : wl.length < USize.size)
-    (hr : wr.length < USize.size) (htot : cl.n + cr.n ≤ 2 ^ 32)
-    (hR : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+theorem keyCodes_long {verb : String} {cl cr : Nat × Enc} {lc rc : Alg.Code} {wl wr : List UInt64}
+    (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (hl : wl.length < USize.size)
+    (hr : wr.length < USize.size) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
+    (hR : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
     (hc : Struct.keyCodes verb #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok (lc, rc)) :
     ∃ k : Kernel.Scan.Kind, (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧ lc.kind = some k ∧ rc.kind = some k ∧
       rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧ lc.n = wl.length ∧
       lc.b.size / k.width = wl.length ∧
       ∀ i (hi : i < wl.length) j (hj : j < wr.length), (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ wr[j] = wl[i]) := by
-  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) = .ok (some os) ∧
+  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) = .ok (some os) ∧
       Alg.two os = .ok (lc, rc) := by
     unfold Struct.keyCodes Alg.codes at hc
-    rcases hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) with err | _ | os
+    rcases hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) with err | _ | os
     all_goals
-      obtain ⟨t1, n1, e1, a1⟩ := cl
-      obtain ⟨t2, n2, e2, a2⟩ := cr
+      obtain ⟨n1, e1⟩ := cl
+      obtain ⟨n2, e2⟩ := cr
       dsimp only at hro
       cases e1 <;> simp [longWords] at hwl <;> cases e2 <;> simp [longWords] at hwr <;>
         simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
@@ -495,9 +495,9 @@ theorem keyCodes_long {verb : String} {cl cr : Column} {lc rc : Alg.Code} {wl wr
 
 /-- `ej` on one dense long key column per side, unconditionally on the codes: its relation is the
 key join `(ix tl)(ix tr)°` read at the row ids, wherever `rangeOffsets` codes the two columns. -/
-theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
-    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (htot : cl.n + cr.n ≤ 2 ^ 32)
-    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+theorem ej_long {cl cr : Nat × Enc} {wl wr : List UInt64} {R : Rel .long .long}
+    (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
+    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
     (hU : wl.length * wr.length + wl.length + wr.length + wr.length + 1 < USize.size)
     (hB : wl.length * wr.length + wl.length + wr.length + wr.length < 2 ^ 63)
     (h : Struct.ej #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
@@ -519,9 +519,9 @@ theorem ej_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
 /-- `ij` on one dense long key column per side, unconditionally on the codes: each left row with its first right
 row of an equal key, `Λ((ix tl)(ix tr)°) ≫ est(≤)` read at the row ids, wherever `rangeOffsets` codes the two
 columns — `ij_rel_codes` at the one byte lane `keyCodes_long` names. -/
-theorem ij_long {cl cr : Column} {wl wr : List UInt64} {R : Rel .long .long}
-    (hwl : longWords cl = some wl) (hwr : longWords cr = some wr) (htot : cl.n + cr.n ≤ 2 ^ 32)
-    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.n + cr.n) ≠ .ok none)
+theorem ij_long {cl cr : Nat × Enc} {wl wr : List UInt64} {R : Rel .long .long}
+    (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
+    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
     (hU : 64 * wr.length < USize.size) (hLU : wl.length < USize.size) (hB : 64 * wr.length < 2 ^ 63)
     (h : Struct.ij #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
     (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
