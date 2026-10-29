@@ -338,8 +338,8 @@ def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timedE "relAj" (longKey lk, longKey lt, longKey rk, longKey rt) fun (lk, lt, rk, rt) => do
     sumR "relAj" (← LeetQ.Rel.Struct.aj #[lk] #[rk] lt rt).2
 
-/-- `aj` as a `Prog` term executed through `norm` (`Prog.exec`), its order join rewritten to `ajJ` (R7), over
-    `relAj`'s data; the checksum must be `relAj`'s. -/
+/-- `aj` as a `Prog` term executed through `norm` (`Prog.exec`), its order join rewritten to `ajJ` (R7) and its
+    `miss` to that one `ajJ` (`missRule`), over `relAj`'s data; the checksum must be `relAj`'s. -/
 def progAjOp (n : Nat) : IO (IO (Nat × Int64)) := do
   let (lk, lt, rk, rt) := asofData n
   let arr (a : Array Int) : IO (LeetQ.Rel.Arr .long n) :=
