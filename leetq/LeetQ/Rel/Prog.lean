@@ -773,6 +773,65 @@ theorem selectBy_grp {K : QAtomicType} {n g : Nat} (op : Kernel.Coc.Over) (k : A
     exact ⟨i, by rw [hinj j j' a hkey hkey']; exact hg⟩) hX, Cat.assoc]
   rfl
 
+/-- **`miss` is inert on the groups a key names**: read through `keys°`, `corefl(<g) ≫ miss(M, e)` is `M`
+    when `M` is defined at every group some key names. -/
+theorem keys_miss {K : QAtomicType} {g : Nat} {B : RelSet.{0}} (keys : Arr K g) (M : Idx ⟶ B) (e : B.carrier)
+    (h : ∀ j a, keys.rel j a → ∃ c, M j c) :
+    (keys.rel° ≫ corefl (· < g) ≫ Verb.miss M e : Ob K ⟶ B) = keys.rel° ≫ M :=
+  hom_ext fun a c => ⟨fun ⟨j, hkey, _, ⟨rfl, _⟩, hm⟩ => ⟨j, hkey, ((Verb.miss_iff M e j c).1 hm).elim id
+      fun ⟨hn, _⟩ => absurd (h j a hkey) hn⟩,
+    fun ⟨j, hkey, hm⟩ => ⟨j, hkey, j, ⟨rfl, ((rel_iff keys j a).1 hkey).1⟩, (Verb.miss_iff M e j c).2 (.inl hm)⟩⟩
+
+/-- A group `j < g` that holds a row has a last row, read through `x`: `Λ(grp o)° ≫ est(≥) ≫ x` is
+    defined at `j`. -/
+theorem lastEst_some {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {t : QAtomicType} (x : Arr t n) {i j : Nat}
+    (hj : j < g) (hi : Verb.grp o i j) :
+    ∃ c, (Λ ((Verb.grp o)°) ≫ est (fun a b : Nat => a ≥ b) ≫ x.rel : Idx ⟶ Ob t) j c := by
+  obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
+  have ca := Ops.toNat_cast a0
+  have cb := Ops.toNat_cast (Int.le_trans a0 a1)
+  have T : ∀ z : Nat, Verb.grp o z j ↔ (o.toList[j]!).toNatClampNeg ≤ z ∧ z < (o.toList[j+1]!).toNatClampNeg :=
+    fun z => eq_comm.trans (Verb.group_iff co hj z)
+  have hi' := (T i).1 hi
+  have hw : (o.toList[j+1]!).toNatClampNeg - 1 < n := by omega
+  rw [← Cat.assoc]
+  exact ⟨x.get ⟨_, hw⟩, (lamEst_iff _ _ _ j _).2 ⟨_, ⟨(T _).2 ⟨by omega, by omega⟩,
+    fun z hz => Nat.le_sub_one_of_lt ((T z).1 hz).2⟩, (rel_iff x _ _).2 ⟨hw, rfl⟩⟩⟩
+
+/-- **`last by` against `lastBy_rel`**: through a grouping `keys` of `k` in which every key occurs, the
+    program is the kernel's answer on the cuts `o`, read by key value; `lastBy_rel`'s `miss` is inert there
+    (`keys_miss`). -/
+theorem lastBy_link {K : QAtomicType} {n g : Nat} (k : Arr K n) (v : Arr .long n) (keys : Arr K g)
+    {o : Arr .long (g+1)} {co : Cuts o n} {wo wv : List UInt64} (ho : longWords (g+1) o.enc = some wo)
+    (hv : longWords n v.enc = some wv) (hg : g + 1 < USize.size) (hU : n < USize.size) (hn : n ≤ 2 ^ 63)
+    (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j') (hocc : ∀ j a, keys.rel j a → ∃ i, k.rel i a)
+    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) {S : Arr .long g}
+    (h : Ops.lastBy ⟨g, n, o, co, v⟩ = some S) : (lastBy k v).den = keys.rel° ≫ S.rel := by
+  have hne : ∀ j a, keys.rel j a → ∃ c, (Λ ((Verb.grp o)°) ≫ est (fun a b : Nat => a ≥ b) ≫ v.rel : Idx ⟶ Ob .long) j c :=
+    fun j a hkey => by
+      obtain ⟨i, hki⟩ := hocc j a hkey
+      obtain ⟨j', hkey', hg'⟩ := (hk a i).1 hki
+      obtain rfl := hinj j j' a hkey hkey'
+      exact lastEst_some co v ((rel_iff keys j a).1 hkey).1 hg'
+  rw [lastBy_grp k v keys o hn hinj hk, Verb.lastBy_rel ho hv hg hU h]
+  exact (congrArg (keys.rel° ≫ ·) (Cat.assoc _ _ _)).trans (keys_miss keys _ _ hne).symm
+
+/-- **`select f x by k` against `overBy_rel`**: through a grouping `keys` of `k` in which every key occurs,
+    the program is the kernel's answer on the cuts `o`, read by key value. -/
+theorem selectBy_link {K : QAtomicType} {n g : Nat} {op : Kernel.Coc.Over} (hb : op.boolCast = false)
+    (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
+    (hl : ∀ a, op.step (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) a = a)
+    (hr : ∀ a, op.step a (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) = a)
+    (k : Arr K n) (x : Arr .long n) (keys : Arr K g) {o : Arr .long (g+1)} {co : Cuts o n} {b ob : ByteArray}
+    (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.enc = .bytes b) (ho : o.enc = .bytes ob) (hn : n ≤ 2 ^ 63)
+    (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j') (hocc : ∀ j a, keys.rel j a → ∃ i, k.rel i a)
+    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) {S : Arr .long g}
+    (h : Ops.overBy op ⟨g, n, o, co, x⟩ = some ⟨.long, S⟩) : (selectBy op k x).den = keys.rel° ≫ S.rel := by
+  rw [selectBy_grp op k x keys o hn hinj hocc hk, Verb.overBy_rel hb hA hl hr hg h63 hc ho h]
+  exact hom_ext fun a c => ⟨fun ⟨j, hkey, m, hΛ, ys, he, ht⟩ =>
+      ⟨j, hkey, j, ⟨rfl, ((rel_iff keys j a).1 hkey).1⟩, ys, ⟨m, hΛ, he⟩, ht⟩,
+    fun ⟨j, hkey, _, ⟨rfl, _⟩, ys, ⟨m, hΛ, he⟩, ht⟩ => ⟨j, hkey, m, hΛ, ys, he, ht⟩⟩
+
 /-! ## Verbs over `grade` (design P17, §7 line 4) -/
 
 /-- `<x = grade(⊴ₓ)`, `lt` the strict order of `x`'s type. -/
@@ -919,6 +978,39 @@ theorem xsort_prog {u : QAtomicType} {n : Nat} (d : Bool) {s : Arr .long n} {x :
         exact ⟨i, ea, j, hj, hx⟩,
       fun ⟨i, ea, j, hj, hx⟩ => ⟨_, ⟨i, ea, j, hj, rfl⟩, j, rfl, hx⟩⟩
 
+/-- A run of `conv P` ran `P`, and holds its converse. -/
+theorem conv_run {A B : QAtomicType} {P : Prog A B} {R : Rel B A} (h : (conv P).run = .ok R) :
+    ∃ R₁, P.run = .ok R₁ ∧ ∀ a b, R.Holds b a ↔ R₁.Holds a b := by
+  simp only [run, bind, Except.bind] at h; split at h
+  · cases h
+  · exact ⟨_, by assumption, Alg.conv_holds h⟩
+
+/-- `rank x` runs to `rank_rel`'s right side: read at the positions below `2^64` and back through `pos`, it is
+    `(ix G)°`, `G` the list `sort(⊴ₓ)` gives. -/
+theorem rank_prog {n : Nat} {x : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) {R : Rel .long .long}
+    (h : (rank (fun a b : Int64 => a < b) x).run = .ok R) :
+    ∃ G : List Nat, (Verb.cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
+        = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable x.rel fun a b : Int64 => a < b)
+      ∧ corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) ≫ Verb.pos = (ix G)° := by
+  obtain ⟨R₁, h1, hcv⟩ := conv_run h
+  obtain ⟨S, k, hg, hk, rfl⟩ := grade_run h1
+  obtain ⟨M, hc, hS, hl, hM⟩ := grade_long hx hn h63 hg
+  have h64 := USize.size_le
+  have hR : ∀ a b, R.Holds b a ↔ ∃ p, a = Int64.ofNat p ∧ ∃ m, M[p]? = some m ∧ b = Int64.ofNat m := fun a b =>
+    (hcv a b).trans (Iff.of_eq (congrArg (fun r => r a b)
+      ((arr_sound S hk).trans (congrArg (posL° ≫ ·) (rel_ofList hS)))))
+  refine ⟨M, hc, hom_ext fun i j => ⟨fun ⟨_, ⟨rfl, hi⟩, _, rfl, w, hw, hp⟩ => ?_, fun hj => ?_⟩⟩
+  · obtain ⟨p, rfl, m, hm, e⟩ := (hR w _).1 hw
+    have hp' : p < n := hl ▸ (List.getElem?_eq_some_iff.1 hm).1
+    have hmn := hM m (List.mem_of_getElem? hm)
+    obtain rfl := ofNat_inj hi (by omega) e
+    obtain rfl := (pos_ofNat (by omega) j).1 hp
+    exact hm
+  · have hj' := (List.getElem?_eq_some_iff.1 hj).1
+    have hin := hM i (List.mem_of_getElem? hj)
+    exact ⟨i, ⟨rfl, by omega⟩, _, rfl, Int64.ofNat j, (hR _ _).2 ⟨j, rfl, i, hj, rfl⟩, (pos_ofNat (by omega) j).2 rfl⟩
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -963,5 +1055,10 @@ end Prog
 #print axioms Prog.grade_sound_long
 #print axioms Prog.grade_prog
 #print axioms Prog.xsort_prog
+#print axioms Prog.keys_miss
+#print axioms Prog.lastEst_some
+#print axioms Prog.lastBy_link
+#print axioms Prog.selectBy_link
+#print axioms Prog.rank_prog
 
 end LeetQ.Rel
