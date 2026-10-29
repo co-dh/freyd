@@ -646,6 +646,54 @@ theorem rangeOffsets_vals {b b' : ByteArray} {m m' total : Nat} {os : Array Code
       · simp [pure, Except.pure] at h
   · simp [pure, Except.pure] at h
 
+/-- **A dense long key read through a permutation `q` of its rows (`pick`) is a dense long key holding the
+    same longs, coded on `rangeOffsets`' branch again, and contiguous where `q` makes it** (items 3 and 5 at
+    the key): `familyP`'s `runsP` runs on this column, so `runsP_long`'s `hr` and `hcont` hold there. -/
+theorem pick_perm {n : Nat} (key : Arr .long n) {b : ByteArray} (hc : key.enc = .bytes b)
+    (hU : 2 ^ 32 < USize.size) (hn : n ≤ 2 ^ 32) {os : Array Code}
+    (hr : rangeOffsets .long #[key.part] n = .ok (some os))
+    (q : ByteArray) (hqs : q.size / 8 = n) (hqp : (Verify.ids q).Perm (List.range n))
+    (hqc : ∀ s t u, s ≤ t → t ≤ u → u < n → (Column.bitsAt b (at8 q s * 8) 8) = (Column.bitsAt b (at8 q u * 8) 8) →
+      (Column.bitsAt b (at8 q t * 8) 8) = (Column.bitsAt b (at8 q s * 8) 8))
+    {k : Nat} {c : Enc} (hp : pick .long key.part q = .ok (k, c)) :
+    ∃ b', c = .bytes b' ∧ k = n ∧ b'.size / 8 = n ∧
+      (∀ s, s < n → Column.bitsAt b' (s * 8) 8 = Column.bitsAt b (at8 q s * 8) 8) ∧
+      (∃ os', rangeOffsets .long #[(k, .bytes b')] n = .ok (some os')) ∧
+      ∀ s t u, s ≤ t → t ≤ u → u < n → Column.bitsAt b' (s * 8) 8 = Column.bitsAt b' (u * 8) 8 →
+        Column.bitsAt b' (t * 8) 8 = Column.bitsAt b' (s * 8) 8 := by
+  have hbn := Arr.n_long_bytes key hc
+  have hpt : key.part = (n, .bytes b) := by simp only [Arr.part, hc]
+  obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
+    (fun _ _ _ e => by rw [hc] at e; cases e) q (by rw [Arr.part] at hp; exact hp)
+  have hs : src = b := by rw [hc] at hsrc; simp [Enc.bytesOf] at hsrc; exact hsrc.symm
+  subst hs
+  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  obtain ⟨gs, ge⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl _)
+    ((Kernel.nullBits .long).getD 0) src q
+  rw [h8] at gs ge
+  have hQ : ∀ s, s < n → at8 q s < n := fun s hs => by
+    have : at8 q s ∈ Verify.ids q := by rw [ids_eq_map, hqs]; exact List.mem_map_of_mem (List.mem_range.2 hs)
+    exact List.mem_range.1 (hqp.mem_iff.1 this)
+  have hel : ∀ s, s < n → Column.bitsAt (gatherBytes (8 : Nat).toUSize ((Kernel.nullBits .long).getD 0) src q) (s * 8) 8 =
+      Column.bitsAt src (at8 q s * 8) 8 := fun s hs => by
+    rw [ge s (by omega), if_pos (by rw [hbn]; exact hQ s hs)]
+  have hsz : (gatherBytes (8 : Nat).toUSize ((Kernel.nullBits .long).getD 0) src q).size / 8 = n := by rw [gs]; omega
+  refine ⟨_, he, by omega, hsz, hel, ?_, fun s t u h1 h2 hu e => ?_⟩
+  · rw [hpt] at hr
+    refine rangeOffsets_vals (b := src) hU hn (by omega) (fun i hi _ => ⟨at8 q i, by rw [hbn]; exact hQ i (by omega),
+      by rw [hel i (by omega)]⟩) (fun i hi _ => ?_) hr
+    have hm : i ∈ Verify.ids q := hqp.mem_iff.2 (List.mem_range.2 (by rw [hbn] at hi; exact hi))
+    obtain ⟨j, hj, ej⟩ := List.mem_iff_getElem.1 hm
+    have hjn : j < n := by rw [hqp.length_eq] at hj; simpa using hj
+    refine ⟨j, by omega, ?_⟩
+    rw [hel j hjn]
+    simp only [ids_eq_map, List.getElem_map, List.getElem_range] at ej
+    rw [ej]
+  · rw [hel s (by omega), hel t (by omega)]
+    rw [hel s (by omega), hel u hu] at e
+    exact hqc s t u h1 h2 hu e
+
+#print axioms pick_perm
 #print axioms overBytes_vals
 #print axioms enumIds_all
 #print axioms rangeOffsets_vals
