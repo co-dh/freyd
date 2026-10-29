@@ -191,7 +191,7 @@ def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
 
 /-- The list `x` of longs. -/
 def listR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) :=
-  LeetQ.Rel.Arr.of .long n (LeetQ.Rel.Alg.longs (col a)) "listR"
+  LeetQ.Rel.Arr.ofPart .long n (LeetQ.Rel.Alg.longs (col a)) "listR"
 
 /-- `sum` of a list: `Ops.over .add`. -/
 def sumR (what : String) {t : QLean.QAtomicType} {m : Nat} (r : LeetQ.Rel.Arr t m) : Except String Int64 :=
@@ -242,7 +242,7 @@ def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- The list `x` of longs `foR`-encoded: the haystack `Find.direct` admits. -/
 def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) := do
   let (md, pk) := QLean.Kernel.Coc.encode 8 (col a)
-  LeetQ.Rel.Arr.of .long n ⟨.long, n, .foR md pk, none⟩ "foRR"
+  LeetQ.Rel.Arr.of .long n (.vector .long n (.foR md pk) none) "foRR"
 
 /-- `x?y`, `x` a `foR` haystack and `y` dense needles, both below 1000; `sum x?y`. -/
 def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
@@ -277,7 +277,7 @@ def oddBits (a : Array Int) : ByteArray := Id.run do
     the dictionary `s0 … s(m-1)`, `foR` and dense `long`. -/
 def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.Struct.KCol := do
   match enc with
-  | "bits" => pure ⟨.boolean, ⟨.boolean, a.size, .bits (oddBits a), none⟩⟩
+  | "bits" => pure (.boolean, (a.size, .bits (oddBits a)))
   | "enum" =>
     let (blob, dof) := (Array.range m).foldl (init := (ByteArray.empty, #[0])) fun (b, o) i =>
       let b := (b ++ s!"s{i}".toUTF8).push 0
@@ -285,8 +285,8 @@ def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.St
     let w := QLean.Column.idWidth dof
     let (ids, bad) := QLean.Kernel.enumIds a.size.toUSize m.toUSize 0 w.toUSize (col a)
     if bad.toNat != a.size then throw s!"encCol enum: value at {bad} is outside 0..{m}"
-    pure ⟨.symbol, ⟨.symbol, a.size, .enum blob dof ids, none⟩⟩
-  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure ⟨.long, ⟨.long, a.size, .foR md pk, none⟩⟩
+    pure (.symbol, (a.size, .enum blob dof ids))
+  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure (.long, (a.size, .foR md pk))
   | "dense" => pure ⟨.long, LeetQ.Rel.Alg.longs (col a)⟩
   | e => throw s!"encCol: no encoding {e}"
 
