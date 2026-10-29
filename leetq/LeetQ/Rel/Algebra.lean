@@ -18,6 +18,8 @@ import QLean.Kernel.Reduce
 import QLean.Kernel.Elementwise
 import QLean.Kernel.Coc
 import QLean.Eval.Dyad
+import QLean.Verify.Grade
+import QLean.Verify.Chain
 
 namespace LeetQ.Rel.Alg
 
@@ -1190,10 +1192,311 @@ theorem groupIds_long_faithful {m : Nat} (x : Arr .long m) {b : ByteArray} (hc :
   rw [e, Verify.keyAt_eq_iff (by simp) b i.1 j.1, Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
   exact ⟨fun h => by simp only [Scan.Kind.width] at h; rw [h], fun h => toInt64_inj h⟩
 
+/-- **Run starts group a column whose equal elements are contiguous.** `r 0 < … < r m = n` lists every
+    run start of `key` below `n` and nothing else; then the run keys `key (r j)` are one-to-one and
+    `key s = key (r j) ⟺ r j ≤ s < r (j+1)`. Encoding-free: each lane's kernel answers these hypotheses. -/
+theorem runs_group {α : Type} {n m : Nat} (key : Nat → α) (r : Nat → Nat) (hlast : r m = n)
+    (hasc : ∀ i j, i < j → j ≤ m → r i < r j) (h0 : 0 < n → r 0 = 0)
+    (hstart : ∀ j, j < m → r j = 0 ∨ key (r j) ≠ key (r j - 1))
+    (hall : ∀ s, s < n → (s = 0 ∨ key s ≠ key (s - 1)) → ∃ j, j < m ∧ r j = s)
+    (hcont : ∀ s t u, s ≤ t → t ≤ u → u < n → key s = key u → key t = key s) :
+    (∀ j j', j < m → j' < m → key (r j) = key (r j') → j = j') ∧
+    (∀ s j, s < n → j < m → (key s = key (r j) ↔ r j ≤ s ∧ s < r (j + 1))) := by
+  have hle : ∀ i j, i ≤ j → j ≤ m → r i ≤ r j := fun i j h hj => by
+    rcases Nat.lt_or_eq_of_le h with h | rfl
+    · exact Nat.le_of_lt (hasc i j h hj)
+    · exact Nat.le_refl _
+  -- inside a run, every row holds its start's element
+  have hin : ∀ j, j < m → ∀ s, r j ≤ s → s < r (j + 1) → key s = key (r j) := by
+    intro j hj s
+    induction s with
+    | zero => intro h _; rw [Nat.le_zero.1 h]
+    | succ s ih =>
+      intro h1 h2
+      rcases Nat.lt_or_eq_of_le h1 with h1 | h1
+      · have hn : s + 1 < n := hlast ▸ Nat.lt_of_lt_of_le h2 (hle (j + 1) m hj (Nat.le_refl m))
+        by_cases hk : key (s + 1) = key s
+        · exact hk.trans (ih (Nat.le_of_lt_succ h1) (by omega))
+        · exfalso
+          obtain ⟨j', hj', e⟩ := hall (s + 1) hn (.inr hk)
+          rcases Nat.lt_or_ge j' (j + 1) with h | h
+          · have := hle j' j (by omega) (by omega); omega
+          · have := hle (j + 1) j' h (by omega); omega
+      · rw [← h1]
+  have hcov : ∀ s, s < n → ∃ j, j < m ∧ r j ≤ s ∧ s < r (j + 1) := by
+    intro s
+    induction s with
+    | zero =>
+      intro hn
+      have hm : 0 < m := Nat.pos_of_ne_zero fun e => by subst e; have := h0 hn; omega
+      exact ⟨0, hm, Nat.le_of_eq (h0 hn), by have := hasc 0 (0 + 1) (by omega) hm; have := h0 hn; omega⟩
+    | succ s ih =>
+      intro hn
+      obtain ⟨j, hj, h1, h2⟩ := ih (by omega)
+      rcases Nat.lt_or_eq_of_le (Nat.succ_le_of_lt h2) with h | h
+      · exact ⟨j, hj, by omega, h⟩
+      · have hj1 : j + 1 < m := by
+          rcases Nat.lt_or_ge (j + 1) m with h' | h'
+          · exact h'
+          · have : j + 1 = m := by omega
+            subst this; omega
+        exact ⟨j + 1, hj1, by omega, by have := hasc (j + 1) (j + 1 + 1) (by omega) hj1; omega⟩
+  have hinj : ∀ j j', j < j' → j' < m → key (r j) ≠ key (r j') := by
+    intro j j' hjj hj' e
+    have hlt := hasc j j' hjj (by omega)
+    have hn : r j' < n := hlast ▸ hasc j' m hj' (Nat.le_refl _)
+    rcases hstart j' hj' with h | h
+    · omega
+    · exact h ((hcont (r j) (r j' - 1) (r j') (by omega) (by omega) hn e).trans e).symm
+  refine ⟨fun j j' hj hj' e => ?_, fun s j hs hj => ⟨fun e => ?_, fun ⟨h1, h2⟩ => hin j hj s h1 h2⟩⟩
+  · rcases Nat.lt_trichotomy j j' with h | h | h
+    · exact absurd e (hinj j j' h hj')
+    · exact h
+    · exact absurd e.symm (hinj j' j h hj)
+  · obtain ⟨j', hj', h1, h2⟩ := hcov s hs
+    have e' := (hin j' hj' s h1 h2).symm.trans e
+    rcases Nat.lt_trichotomy j' j with h | h | h
+    · exact absurd e' (hinj j' j h hj)
+    · subst h; exact ⟨h1, h2⟩
+    · exact absurd e'.symm (hinj j j' h hj')
+
+/-- **`runStarts` at a byte lane groups a column its key is faithful to.** `key` agrees with the lane's
+    search key exactly where the elements do, and its equal elements are contiguous; then the starts `r`
+    the kernel writes (`runStarts_spec`), read as naturals, end at the count, ascend, name one-to-one
+    keys and cut the column into its runs (`runs_group`). -/
+theorem runStarts_group {α : Type} (w : USize) (float : Bool) (hay : ByteArray) (h63 : hay.size / w.toNat < 2 ^ 63)
+    (key : Nat → α)
+    (hk : ∀ i j, i < hay.size / w.toNat → j < hay.size / w.toNat →
+      (key i = key j ↔ Kernel.key w.toNat float hay i = Kernel.key w.toNat float hay j))
+    (hcont : ∀ s t u, s ≤ t → t ≤ u → u < hay.size / w.toNat → key s = key u → key t = key s) :
+    ∃ m, (Kernel.runStarts w float hay).size = 8 * (m + 1) ∧
+      (∀ j, j ≤ m → (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt =
+        (((Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat : Nat) : Int)) ∧
+      (Column.bitsAt (Kernel.runStarts w float hay) (8 * m) 8).toInt64.toInt.toNat = hay.size / w.toNat ∧
+      (∀ i j, i < j → j ≤ m → (Column.bitsAt (Kernel.runStarts w float hay) (8 * i) 8).toInt64.toInt.toNat <
+        (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat) ∧
+      (∀ j j', j < m → j' < m →
+        key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat =
+          key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j') 8).toInt64.toInt.toNat → j = j') ∧
+      (∀ s j, s < hay.size / w.toNat → j < m →
+        (key s = key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat ↔
+          (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat ≤ s ∧
+            s < (Column.bitsAt (Kernel.runStarts w float hay) (8 * (j + 1)) 8).toInt64.toInt.toNat)) := by
+  obtain ⟨m, hsz, hlast, hasc, h0, hst, hall⟩ := Verify.runStarts_spec w float hay h63
+  generalize hay.size / w.toNat = n at h63 hk hcont hlast h0 hst hall
+  -- `R j`, the start the kernel wrote at `j`, as an integer
+  let R : Nat → Int := fun j => (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt
+  change ∀ i j, i < j → j ≤ m → R i < R j at hasc
+  change R m = n at hlast
+  change 0 < n → 0 < m ∧ R 0 = 0 at h0
+  change ∀ j, j < m → ∃ r : Nat, R j = r ∧ _ at hst
+  change ∀ r, r < n → _ → ∃ j, j < m ∧ R j = r at hall
+  change ∃ m, _ ∧ (∀ j, j ≤ m → R j = ((R j).toNat : Int)) ∧ (R m).toNat = n ∧
+    (∀ i j, i < j → j ≤ m → (R i).toNat < (R j).toNat) ∧
+    (∀ j j', j < m → j' < m → key (R j).toNat = key (R j').toNat → j = j') ∧
+    (∀ s j, s < n → j < m → (key s = key (R j).toNat ↔ (R j).toNat ≤ s ∧ s < (R (j + 1)).toNat))
+  -- every start is a natural below `n`, the last entry `n` itself
+  have hnn : ∀ j, j ≤ m → R j = ((R j).toNat : Int) := fun j hj => by
+    rcases Nat.lt_or_eq_of_le hj with h | rfl
+    · obtain ⟨r, e, -⟩ := hst j h; rw [e]; rfl
+    · rw [hlast]; rfl
+  have hlt : ∀ j, j < m → (R j).toNat < n ∧ ((R j).toNat = 0 ∨ Kernel.key w.toNat float hay (R j).toNat ≠
+      Kernel.key w.toNat float hay ((R j).toNat - 1)) := fun j hj => by
+    obtain ⟨r, e, h1, h2⟩ := hst j hj; rw [e]; exact ⟨h1, h2⟩
+  have G := runs_group key (fun j => (R j).toNat) (by dsimp only; rw [hlast]; rfl)
+    (fun i j hij hj => by dsimp only; have := hasc i j hij hj; rw [hnn i (by omega), hnn j hj] at this; omega)
+    (fun hn => by dsimp only; rw [(h0 hn).2]; rfl)
+    (fun j hj => (hlt j hj).2.imp id fun h e => h ((hk _ _ (hlt j hj).1 (by have := (hlt j hj).1; omega)).1 e))
+    (fun s hs h => by
+      obtain ⟨j, hj, e⟩ := hall s hs (h.imp id fun h e => h ((hk _ _ hs (by omega)).2 e))
+      exact ⟨j, hj, by dsimp only; rw [e]; rfl⟩)
+    hcont
+  exact ⟨m, hsz, hnn, by rw [hlast]; rfl,
+    fun i j hij hj => by have := hasc i j hij hj; rw [hnn i (by omega), hnn j hj] at this; omega, G.1, G.2⟩
+
+
+/-- **Sorted by a key faithful to the elements, equal elements are contiguous**: `κ` ascends along the
+    rows and agrees exactly where `x` does, so a row between two equal elements holds that element. The
+    `hcont` of `runs_group`, from any stable sort (`grade_mono`). -/
+theorem sorted_contig {α : Type} {n : Nat} (x : Nat → α) (κ : Nat → UInt64)
+    (hmono : ∀ s t, s ≤ t → t < n → κ s ≤ κ t) (hk : ∀ s t, s < n → t < n → (κ s = κ t ↔ x s = x t)) :
+    ∀ s t u, s ≤ t → t ≤ u → u < n → x s = x u → x t = x s := fun s t u h1 h2 hu e => by
+  have a := hmono s t h1 (by omega); have b := hmono t u h2 hu
+  have c := (hk s u (by omega) hu).2 e
+  rw [← c] at b
+  exact ((hk s t (by omega) (by omega)).1 (UInt64.le_antisymm a b)).symm
+
+/-- **`grade` ascends its key along its answer**: row `s` of the grade has a key no greater than row `t ≥ s`
+    has (`grade_spec`, ascending). -/
+theorem grade_mono (k : Scan.Kind) (n : USize) (b : ByteArray) {s t : Nat} (hst : s ≤ t)
+    (ht : t < (Verify.ids (Order.grade k false n b)).length) :
+    Order.keyAt k b (Verify.ids (Order.grade k false n b))[s] ≤
+      Order.keyAt k b (Verify.ids (Order.grade k false n b))[t] := by
+  rcases Nat.lt_or_eq_of_le hst with h | rfl
+  · exact (List.pairwise_iff_getElem.1 (Verify.grade_spec k false n b).2 s t (by omega) ht h).1
+  · exact UInt64.le_refl _
+
+
+/-- **At an integral byte lane the search key and the sort key agree together**: both are the stored
+    bits (`keyAt_eq_iff`), so `runStarts`' runs and `grade`'s order see one equality. -/
+theorem key_eq_iff_keyAt {k : Scan.Kind} (hk : k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (b : ByteArray) (i j : Nat) :
+    Kernel.key k.width false b i = Kernel.key k.width false b j ↔ Order.keyAt k b i = Order.keyAt k b j := by
+  rw [Verify.keyAt_eq_iff hk]
+  simp only [Kernel.key, Kernel.normalise, Bool.not_false, if_true]
+
+
+/-- **`overBytes lesser` is a lower bound and `greater` an upper bound of every element that is not the
+    null**: the fold's step is `min`/`max`, and a null is skipped. `rangeOffsets`' `lo`/`hi`. -/
+theorem overBytes_bounds (cls : UInt8) (nul : Int64) (b : ByteArray) {i : Nat} (hi : i < b.size / Ew.width cls)
+    (hx : Ew.signed cls (Ew.elem cls b i) ≠ nul) :
+    overBytes .lesser cls nul b ≤ Ew.signed cls (Ew.elem cls b i) ∧
+      Ew.signed cls (Ew.elem cls b i) ≤ overBytes .greater cls nul b := by
+  generalize hx' : (fun i => Ew.signed cls (Ew.elem cls b i)) = x at hx
+  have ex : ∀ i, Ew.signed cls (Ew.elem cls b i) = x i := fun i => by rw [← hx']
+  simp only [ex] at hx ⊢
+  have mem : i ∈ List.range (b.size / Ew.width cls) := List.mem_range.2 hi
+  unfold overBytes; simp only [ex]
+  generalize List.range (b.size / Ew.width cls) = l at mem
+  constructor
+  · generalize Coc.Over.denseSeed .lesser cls nul = acc
+    induction l generalizing acc with
+    | nil => cases mem
+    | cons a l ih =>
+      simp only [List.foldl_cons]
+      have lo : ∀ (l : List Nat) (acc : Int64), l.foldl (fun acc i => if (!Coc.Over.boolCast .lesser && x i == nul) = true then acc
+          else Coc.Over.step .lesser acc (x i)) acc ≤ acc := fun l => by
+        induction l with
+        | nil => exact fun _ => Int64.le_refl _
+        | cons c l ihl =>
+          intro acc; simp only [List.foldl_cons]
+          refine Int64.le_trans (ihl _) ?_
+          simp only [Coc.Over.boolCast, Coc.Over.step]; split
+          · exact Int64.le_refl _
+          · split
+            · exact Int64.le_refl _
+            · rename_i h; exact Int64.le_iff_toInt_le.2 (by have := mt Int64.lt_iff_toInt_lt.2 h; omega)
+      rcases List.mem_cons.1 mem with rfl | m
+      · refine Int64.le_trans (lo _ _) ?_
+        simp only [Coc.Over.boolCast, Coc.Over.step, beq_iff_eq, hx, Bool.not_false, Bool.true_and, if_false]; split
+        next h => exact Int64.le_iff_toInt_le.2 (by have := Int64.lt_iff_toInt_lt.1 h; omega)
+        next => exact Int64.le_refl _
+      · exact ih m _
+  · generalize Coc.Over.denseSeed .greater cls nul = acc
+    induction l generalizing acc with
+    | nil => cases mem
+    | cons a l ih =>
+      simp only [List.foldl_cons]
+      have up : ∀ (l : List Nat) (acc : Int64), acc ≤ l.foldl (fun acc i => if (!Coc.Over.boolCast .greater && x i == nul) = true then acc
+          else Coc.Over.step .greater acc (x i)) acc := fun l => by
+        induction l with
+        | nil => exact fun _ => Int64.le_refl _
+        | cons c l ihl =>
+          intro acc; simp only [List.foldl_cons]
+          refine Int64.le_trans ?_ (ihl _)
+          simp only [Coc.Over.boolCast, Coc.Over.step]; split
+          · exact Int64.le_refl _
+          · split
+            · exact Int64.le_refl _
+            · rename_i h; exact Int64.le_iff_toInt_le.2 (by have := mt Int64.lt_iff_toInt_lt.2 h; omega)
+      rcases List.mem_cons.1 mem with rfl | m
+      · refine Int64.le_trans ?_ (up _ _)
+        simp only [Coc.Over.boolCast, Coc.Over.step, beq_iff_eq, hx, Bool.not_false, Bool.true_and, if_false]; split
+        next h => exact Int64.le_iff_toInt_le.2 (by have := Int64.lt_iff_toInt_lt.1 h; omega)
+        next => exact Int64.le_refl _
+      · exact ih m _
+
+
+/-- **`rangeOffsets`' shift, element by element**: `Ew.val add` against the one long `c` answers
+    `x + c` at every element, and the null where `x` or `c` is one (`elemsW_val`, `intStep`). -/
+theorem shift_elem (b : ByteArray) (c : Int64) {n : Nat} (hn : n < USize.size) {i : Nat} (hi : i < n) :
+    (Column.bitsAt (Kernel.Ew.val Ew.add Ew.i64 Ew.va nul b (one c.toUInt64) n.toUSize) (i * 8) 8).toInt64 =
+      if (Column.bitsAt b (i * 8) 8).toInt64 = nul ∨ c = nul then nul else (Column.bitsAt b (i * 8) 8).toInt64 + c := by
+  have hu : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have e := congrArg (fun l => l[i]?) (Verify.elemsW_val Ew.add Ew.i64 Ew.va nul b (one c.toUInt64) n.toUSize)
+  have hs := Verify.val_size8 Ew.add Ew.va nul b (one c.toUInt64) n.toUSize
+  have hw : Ew.width Ew.i64 = 8 := by decide
+  have ho : Ew.elem Ew.i64 (one c.toUInt64) 0 = c.toUInt64 := by
+    simp only [Ew.elem, hw, Nat.zero_mul]; exact Find.bitsAt_one c.toUInt64
+  simp only [Verify.elemsW, hw, List.getElem?_map] at e
+  rw [← hs, hu, List.getElem?_range hi] at e
+  simp only [Option.map_some, Option.some.injEq, Ew.shapeIdx] at e
+  rw [e]
+  simp only [show (Ew.va == Ew.vv) = false from rfl, show (Ew.va == Ew.va) = true from rfl, if_true,
+    Bool.false_eq_true, if_false, ho]
+  have hm : ∀ v : UInt64, UInt64.ofNat (v.toNat % 2 ^ (8 * 8)) = v := fun v => by
+    rw [Nat.mod_eq_of_lt (by simpa using v.toNat_lt)]; exact UInt64.ofNat_toNat
+  simp only [Ew.valStep, Ew.intStep, Ew.signed, Ew.elem, hw, hm,
+    show (Ew.i64 == Ew.f64) = false from rfl, show (Ew.i64 == Ew.f32) = false from rfl,
+    show (Ew.i64 == Ew.u8) = false from rfl, show (Ew.i64 == Ew.i16) = false from rfl,
+    show (Ew.i64 == Ew.i32) = false from rfl, show (Ew.add == Ew.add) = true from rfl,
+    Bool.false_eq_true, if_false, if_true]
+  by_cases hx : (Column.bitsAt b (i * 8) 8).toInt64 = nul <;> by_cases hc : c = nul <;> simp [hx, hc]
+
+
+/-- **`rangeOffsets`' codes are faithful**: offsets `x − base` packed by `enumIds` at a byte lane, the null
+    at `card − 1`, agree exactly where the elements do, when every element that is not the null lies in
+    `[base, base + card − 2]` (`overBytes_bounds`) and the kernel reported every row in range. -/
+theorem offsets_faithful {n card w : Nat} {b' : ByteArray} (x : Nat → Int64) (base : Int64)
+    (hn : n < USize.size) (hcard : card < USize.size) (hc0 : 1 ≤ card) (h63 : card ≤ 2 ^ 63)
+    (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w) (hb : base ≠ nul)
+    (hok : (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').2 = n.toUSize)
+    (hv : ∀ i, i < n → (Column.bitsAt b' (i * 8) 8).toInt64 = if x i = nul then nul else x i + -base)
+    (hr : ∀ i, i < n → x i ≠ nul → base.toInt ≤ (x i).toInt ∧ (x i).toInt - base.toInt + 2 ≤ card)
+    {i j : Nat} (hi : i < n) (hj : j < n) :
+    Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w i =
+      Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w j ↔ x i = x j := by
+  have hwu : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt'
+    (Nat.lt_of_lt_of_le (by rcases hw with rfl | rfl | rfl | rfl <;> decide : w < 2 ^ 32) USize.le_size)
+  have hnu : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hcu : card.toUSize.toNat = card := USize.toNat_ofNat_of_lt' hcard
+  have hc1 : (card - 1).toUSize.toNat = card - 1 := USize.toNat_ofNat_of_lt' (by omega)
+  have code : ∀ i, i < n → Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w i =
+      if x i = nul then card - 1 else ((x i).toInt - base.toInt).toNat := fun i hi => by
+    have e := Verify.enumIds_idAt n.toUSize card.toUSize (card - 1).toUSize w.toUSize b'
+      (by rw [hwu]; rcases hw with rfl | rfl | rfl | rfl <;> simp) (by rw [hcu, hwu]; exact hd)
+      (by rw [hc1, hwu]; omega) hok (i := i) (by rw [hnu]; exact hi)
+    rw [hwu] at e; rw [e, hv i hi, hc1]
+    by_cases hx : x i = nul
+    · simp only [hx, if_true, nul]
+    · obtain ⟨r1, r2⟩ := hr i hi hx
+      have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
+      have hxl := Int64.le_toInt (x i); have hxu := Int64.toInt_lt (x i)
+      have hbn : base.toInt ≠ -2 ^ 63 := fun h => hb (Int64.toInt_inj.1 (by rw [h]; decide))
+      have hs : (x i + -base).toInt = (x i).toInt - base.toInt := by
+        rw [Int64.toInt_add, Int64.toInt_neg]
+        simp only [Int.bmod]; split <;> split <;> omega
+      have hne : x i + -base ≠ nul := fun h => by
+        have := congrArg Int64.toInt h; rw [hs] at this
+        have : nul.toInt = -2 ^ 63 := by decide
+        omega
+      simp only [hx, if_false]
+      rw [if_neg (by simpa [nul] using hne), hs]
+  rw [code i hi, code j hj]
+  by_cases hx : x i = nul <;> by_cases hy : x j = nul
+  · simp only [hx, hy, if_true]
+  · simp only [hx, hy, if_true, if_false]
+    have := hr j hj hy
+    exact ⟨fun h => by omega, fun h => absurd h.symm hy⟩
+  · simp only [hx, hy, if_true, if_false]
+    have := hr i hi hx
+    exact ⟨fun h => by omega, fun h => h.elim⟩
+  · simp only [hx, hy, if_false]
+    have := hr i hi hx; have := hr j hj hy
+    exact ⟨fun h => Int64.toInt_inj.1 (by omega), fun h => by rw [h]⟩
+
 end Laws
 
 #print axioms conv_holds
 #print axioms groupIds_faithful
 #print axioms groupIds_long_faithful
+#print axioms runs_group
+#print axioms runStarts_group
+#print axioms sorted_contig
+#print axioms grade_mono
+#print axioms key_eq_iff_keyAt
+#print axioms overBytes_bounds
+#print axioms shift_elem
+#print axioms offsets_faithful
 
 end LeetQ.Rel.Alg
