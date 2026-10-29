@@ -1598,6 +1598,98 @@ theorem avg_prog {n : Nat} {x : Arr .long n} {ws : List UInt64} (hx : longWords 
     (T.Holds : Ob .long ⟶ Ob .float) k v ↔ k = 0 ∧ v = Spec.canon a := by
   rw [run_sound _ hS h, avg_val x hn hF hs, Ops.avg_long hx hU ha]
 
+/-! ## Verbs, second half (design §2.3 `ij` to §2.5)
+
+  The verbs of the second half that had no term yet, each from the existing constructors only. -/
+
+/-- `ij = Λ(l ≫ r°) ≫ est(≤)`: the first right row matching each left row; unmatched left rows have none. -/
+def ij {t : QAtomicType} {nl nr : Nat} (l : Arr t nl) (r : Arr t nr) : Prog .long .long :=
+  extr false (comp (arr l) (conv (arr r)))
+
+theorem ij_den {t : QAtomicType} {nl nr : Nat} (l : Arr t nl) (r : Arr t nr) :
+    (ij l r).den = Λ ((posL° ≫ l.rel) ≫ (posL° ≫ r.rel)°) ≫ est (fun a b : Int64 => a ≤ b) := rfl
+
+/-- `inits = Λ((≥)) ≫ enum` on `til n`: position `i` against every `j ≤ i`, written as the order join. -/
+def inits (n : Nat) : Prog .long .long := ojoin .ge (til n) (til n)
+
+/-- `f\x = inits ≫ list(x) ≫ ⦇e,f⦈`, `f` one of the kernel folds (`sums`, `prds`, `maxs`, `mins`). -/
+def scan {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) : Prog .long .long := foldOp op x (inits n)
+
+theorem scan_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
+    (scan op x).den = Verb.dom ((til n).den ≫ ord .ge ≫ (til n).den° ≫ Verb.pos) ≫
+      Λ ((til n).den ≫ ord .ge ≫ (til n).den° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫
+      Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) := by
+  simp only [scan, foldOp, inits, den, Cat.assoc]
+
+/-- `win(w) = (≥) ∩ (drop(w−1)° ≫ (≤))` on `til n`: `i` against `j` with `i−(w−1) ≤ j ≤ i`. The shift
+    `drop(w−1)°` is the dyadic `−` against the constant `w−1`, so the window is two order joins. -/
+def mwin (n w : Nat) : Prog .long .long :=
+  inter (inits n) (ojoin .le (dy .sub rfl (til n) (cst (u := .long) (Int64.ofNat (w - 1)) (til n))) (til n))
+
+theorem mwin_den (n w : Nat) : (mwin n w).den = ((til n).den ≫ ord .ge ≫ (til n).den°) ∩
+    ((dy .sub rfl (til n) (cst (u := .long) (Int64.ofNat (w - 1)) (til n))).den ≫ ord .le ≫ (til n).den°) := rfl
+
+/-- `w msum x = Λ(win(w)) ≫ enum ≫ list(x) ≫ ⦇0,+⦈`, nulls skipped. -/
+def msum {n : Nat} (w : Nat) (x : Arr .long n) : Prog .long .long := foldOp .add x (mwin n w)
+
+theorem msum_den {n : Nat} (w : Nat) (x : Arr .long n) :
+    (msum w x).den = Verb.dom ((mwin n w).den ≫ Verb.pos) ≫ Λ ((mwin n w).den ≫ Verb.pos) ≫ Verb.enum ≫
+      ListRel.list x.rel ≫ Verb.fold (Kernel.Coc.Over.add.denseSeed QLean.Kernel.Ew.i64 Spec.nul)
+        (Verb.skipNul Kernel.Coc.Over.add.step) := rfl
+
+/-- `w mcount x = Λ(win(w) ∩ nonnull) ≫ enum ≫ length`; `count` has no row where the window holds no
+    non-null, so q's `0` there is a `miss`. -/
+def mcount {n : Nat} (w : Nat) (x : Arr .long n) : Prog .long .long :=
+  missP (til n) (count (comp (mwin n w) (dom (nonNul x)))) 0
+
+theorem mcount_den {n : Nat} (w : Nat) (x : Arr .long n) :
+    (mcount w x).den = (til n).den ≫ Verb.miss (Verb.dom (((mwin n w).den ≫ Verb.dom (nonNul x).den) ≫ Verb.pos) ≫
+      Λ (((mwin n w).den ≫ Verb.dom (nonNul x).den) ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫
+        graph Int64.ofNat) 0 :=
+  missP_den _ _ _
+
+/-- `w mmin x = Λ(win(w) ≫ x) ≫ est(≤)` (`mmax`: `est(≥)`), over the non-null `x`, which q's `mmin` skips. -/
+def mext {n : Nat} (desc : Bool) (w : Nat) (x : Arr .long n) : Prog .long .long :=
+  extr desc (comp (mwin n w) (nonNul x))
+
+theorem mmin_den {n : Nat} (w : Nat) (x : Arr .long n) :
+    (mext false w x).den = Λ ((mwin n w).den ≫ posL° ≫ x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul)) ≫
+      est (fun a b : Int64 => a ≤ b) := by
+  show Λ ((mwin n w).den ≫ (nonNul x).den) ≫ _ = _
+  rw [nonNul_den]
+
+theorem mmax_den {n : Nat} (w : Nat) (x : Arr .long n) :
+    (mext true w x).den = Λ ((mwin n w).den ≫ posL° ≫ x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul)) ≫
+      est (fun a b : Int64 => a ≥ b) := by
+  show Λ ((mwin n w).den ≫ (nonNul x).den) ≫ _ = _
+  rw [nonNul_den]
+
+/-- `,a = corefl(<1) ≫ !a`: an atom enlisted. A list enlisted is a `general` value, which `cst` refuses. -/
+def enlist {u : QAtomicType} (a : El u) : Prog .long u := cst a (til 1)
+
+theorem enlist_den {u : QAtomicType} (a : El u) : (enlist a).den = (til 1).den ≫ Verb.cst a := rfl
+
+/-- `x~y` as the relation of its witnesses against it: the positions where `x <> y`, and the positions one
+    list has and the other lacks. `x~y` holds iff the run is empty; the emptiness test is outside the term. -/
+def matchW {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : Prog .long .boolean :=
+  union (inter (dy .ne rfl (arr x) (arr y)) (cst true (dy .ne rfl (arr x) (arr y))))
+    (cst true (union (anti (til nx) (dom (arr y))) (anti (til ny) (dom (arr x)))))
+
+theorem matchW_den {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) :
+    (matchW x y).den = ((dy .ne rfl (arr x) (arr y)).den ∩ ((dy .ne rfl (arr x) (arr y)).den ≫ Verb.cst true)) ∪
+      ((((til nx).den ≫ Verb.corNeg (Verb.dom (posL° ≫ y.rel))) ∪
+        ((til ny).den ≫ Verb.corNeg (Verb.dom (posL° ≫ x.rel)))) ≫ Verb.cst true) := rfl
+
+/-- `x . (i;j) = ⟨i ≫ x, !j⟩ ≫ (@)`, a nested `x` stored flat: `v` its values, `o` its row offsets, so the
+    row `i` is `o@i` and the element `v@(o@i)+j`. Nothing bounds `j` by the row's length. -/
+def dot {t : QAtomicType} {g n : Nat} (o : Arr .long g) (v : Arr t n) (i j : Int64) : Prog .long t :=
+  comp (dy .add rfl (comp (cst (u := .long) i (til 1)) (arr o)) (cst (u := .long) j (til 1))) (arr v)
+
+theorem dot_den {t : QAtomicType} {g n : Nat} (o : Arr .long g) (v : Arr t n) (i j : Int64) :
+    (dot o v i j).den = (rpair ((til 1).den ≫ Verb.cst i ≫ posL° ≫ o.rel) ((til 1).den ≫ Verb.cst j) ≫
+      ofExcept fun p => elem .add (rfl : Eval.ewType .add .long .long = some .long) p.1 p.2) ≫ posL° ≫ v.rel := by
+  simp only [dot, den, Cat.assoc]
+
 end Prog
 
 #print axioms Prog.enum_sound
