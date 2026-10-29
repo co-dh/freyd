@@ -532,7 +532,7 @@ theorem enumIds_all {n d nid w : USize} {b : ByteArray}
     and `total`, and its kernel's range report is always full (`enumIds_all`, `overBytes_bounds`). So a
     column sorted, or cut to its distinct rows at the same count, is coded on the same branch. -/
 theorem rangeOffsets_vals {b b' : ByteArray} {m m' total : Nat} {os : Array Code} (hU : 2 ^ 32 < USize.size)
-    (hn' : b'.size / 8 ≤ 2 ^ 32)
+    (ht : total ≤ 2 ^ 32) (hn' : b'.size / 8 ≤ 2 ^ 32)
     (hv : ∀ i, i < b'.size / 8 → (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul →
       ∃ j, j < b.size / 8 ∧ (Column.bitsAt b (j * 8) 8).toInt64 = (Column.bitsAt b' (i * 8) 8).toInt64)
     (hv' : ∀ i, i < b.size / 8 → (Column.bitsAt b (i * 8) 8).toInt64 ≠ nul →
@@ -554,10 +554,101 @@ theorem rangeOffsets_vals {b b' : ByteArray} {m m' total : Nat} {os : Array Code
   generalize overBytes .lesser Ew.i64 nul b = L at h bnd ⊢
   generalize overBytes .greater Ew.i64 nul b = H at h bnd ⊢
   simp at h ⊢
-  trace_state
-  sorry
+  have hloL : (min Int64.maxValue L).toInt ≤ L.toInt := by
+    show (if Int64.maxValue ≤ L then Int64.maxValue else L).toInt ≤ L.toInt
+    split
+    · exact Int64.le_iff_toInt_le.1 ‹_›
+    · exact Int.le_refl _
+  have hHhi : H.toInt ≤ (max (Int64.minValue + 1) H).toInt := by
+    show H.toInt ≤ (if Int64.minValue + 1 ≤ H then H else Int64.minValue + 1).toInt
+    split
+    · exact Int.le_refl _
+    · rename_i h'; have := mt Int64.le_iff_toInt_le.2 h'; omega
+  generalize min Int64.maxValue L = lo at h hloL ⊢
+  generalize max (Int64.minValue + 1) H = hi at h hHhi ⊢
+  have xb : ∀ i, i < b'.size / 8 → (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul →
+      lo.toInt ≤ (Column.bitsAt b' (i * 8) 8).toInt64.toInt ∧ (Column.bitsAt b' (i * 8) 8).toInt64.toInt ≤ hi.toInt :=
+    fun i hi hx => by
+      have := bnd i hi hx
+      exact ⟨by have := Int64.le_iff_toInt_le.1 this.1; omega, by have := Int64.le_iff_toInt_le.1 this.2; omega⟩
+  have h0 : (0 : Int64).toInt = 0 := by decide
+  -- the kernel's report is full at whichever base and payload the branch took
+  have tail : ∀ (base : Int64) (b'' : ByteArray) (card : Nat), base ≠ nul → (codeKind card).width ≤ 4 →
+      (∀ i, i < b'.size / 8 → (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul →
+        base.toInt ≤ (Column.bitsAt b' (i * 8) 8).toInt64.toInt ∧
+          (Column.bitsAt b' (i * 8) 8).toInt64.toInt - base.toInt + 2 ≤ card) →
+      (∀ i, i < b'.size / 8 → (Column.bitsAt b'' (i * 8) 8).toInt64 =
+        if (Column.bitsAt b' (i * 8) 8).toInt64 = nul then nul else (Column.bitsAt b' (i * 8) 8).toInt64 + -base) →
+      ∀ w, (enumIds (USize.ofNat (b'.size / 8)) (USize.ofNat card) (USize.ofNat (card - 1)) w b'').snd.toNat =
+        b'.size / 8 := by
+    intro base b'' card hb hk4 hr hv w
+    obtain ⟨hfit, -⟩ := codeKind_fits card hk4
+    have hc32 : card ≤ 2 ^ 32 := by
+      have : 2 ^ (8 * (codeKind card).width) ≤ 2 ^ 32 := Nat.pow_le_pow_right (by decide) (by omega)
+      omega
+    have hcU : card < USize.size := by omega
+    have hnu : (USize.ofNat (b'.size / 8)).toNat = b'.size / 8 := USize.toNat_ofNat_of_lt' hnU
+    rw [enumIds_all fun i hi hx => ?_, hnu]
+    rw [hnu] at hi
+    rw [hv i hi] at hx ⊢
+    have hxn : (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul := fun e => hx (by rw [if_pos e]; rfl)
+    rw [if_neg hxn] at hx ⊢
+    obtain ⟨r1, r2⟩ := hr i hi hxn
+    have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
+    have hxl := Int64.le_toInt (Column.bitsAt b' (i * 8) 8).toInt64
+    have hxu := Int64.toInt_lt (Column.bitsAt b' (i * 8) 8).toInt64
+    have hbn : base.toInt ≠ -2 ^ 63 := fun h => hb (Int64.toInt_inj.1 (by rw [h]; decide))
+    have hs : ((Column.bitsAt b' (i * 8) 8).toInt64 + -base).toInt =
+        (Column.bitsAt b' (i * 8) 8).toInt64.toInt - base.toInt := by
+      rw [Int64.toInt_add, Int64.toInt_neg]
+      simp only [Int.bmod]; split <;> split <;> omega
+    rw [USize.toNat_ofNat_of_lt' hcU]
+    exact ⟨Int64.le_iff_toInt_le.2 (by rw [hs, h0]; omega), by rw [hs]; omega⟩
+  have hk4 : (codeKind total).width ≤ 4 := codeKind_small ht
+  split at h
+  · rename_i hg; rw [if_pos hg]
+    split at h
+    · simp [pure, Except.pure] at h
+    · rename_i hlh; rw [if_neg hlh]
+      split at h
+      · rename_i hwid; rw [if_pos hwid]
+        have hlo : lo ≠ nul := fun e => hlh (.inl e)
+        split
+        · rename_i hP
+          rw [if_pos (fun e => absurd hP.2 (e hP.1))]
+          simp only [h0, Int.sub_zero]
+          split
+          · exact ⟨_, rfl⟩
+          · rename_i hc
+            have hl0 := Int64.le_iff_toInt_le.1 hP.1
+            rw [h0] at hl0
+            exact absurd (tail 0 b' _ zero_ne_nul (by rw [hP.2]; omega) (fun i hi hx => by
+              have := xb i hi hx; rw [h0]; omega) (fun i hi => by split <;> simp_all) _) hc
+        · rename_i hP
+          split
+          · rename_i hc0
+            have hl0 : lo = 0 := hc0 fun a b => hP ⟨a, b⟩
+            split
+            · exact ⟨_, rfl⟩
+            · rename_i hc
+              exact absurd (tail lo b' _ hlo (by omega) (fun i hi hx => by have := xb i hi hx; omega)
+                (fun i hi => by subst hl0; split <;> simp_all) _) hc
+          · rename_i hc0
+            have hl0 : lo ≠ 0 := fun e => hc0 fun _ => e
+            split
+            · exact ⟨_, rfl⟩
+            · rename_i hc
+              refine absurd (tail lo _ _ hlo (by omega) (fun i hi hx => by have := xb i hi hx; omega) (fun i hi => ?_) _) hc
+              have hneg : -lo ≠ nul := fun e => hlo (by rw [← Int64.neg_neg (a := lo), e]; decide)
+              have := shift_elem b' (-lo) hnU hi
+              rw [Int64.toUInt64_neg] at this
+              rw [this]; simp only [hneg, or_false]
+      · simp [pure, Except.pure] at h
+  · simp [pure, Except.pure] at h
 
 #print axioms overBytes_vals
+#print axioms enumIds_all
+#print axioms rangeOffsets_vals
 #print axioms code_grade
 #print axioms grade_step
 #print axioms gradeBy_contig
