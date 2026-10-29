@@ -50,7 +50,7 @@ theorem ok_of_map_ite {α : Type} {p : Prop} [Decidable p] {x : α} {e : String}
 theorem rangeOffsets_bytes {b : ByteArray} {n total : Nat} {cs : Array Code} (hU : 2 ^ 32 < USize.size)
     (ht : total ≤ 2 ^ 32) (hn : b.size / 8 ≤ 2 ^ 32)
     (h : rangeOffsets .long #[(n, .bytes b)] total = .ok (some cs)) :
-    ∃ c : Code, cs = #[c] ∧ c.n = b.size / 8 ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧
+    ∃ c : Code, cs = #[c] ∧ c.n = b.size / 8 ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧ c.b.size = c.w / 8 * c.n ∧
       ∀ i j, i < b.size / 8 → j < b.size / 8 →
         (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
           (Column.bitsAt b (i * 8) 8).toInt64 = (Column.bitsAt b (j * 8) 8).toInt64) := by
@@ -96,7 +96,7 @@ theorem rangeOffsets_bytes {b : ByteArray} {n total : Nat} {cs : Array Code} (hU
         (USize.ofNat 8 * USize.ofNat kw) b').snd.toNat = b.size / 8 →
       ∃ c : Code, #[(⟨8 * kw, b.size / 8, card, (enumIds (USize.ofNat (b.size / 8)) (USize.ofNat card)
           (USize.ofNat (card - 1)) (USize.ofNat 8 * USize.ofNat kw) b').fst⟩ : Code)] = #[c] ∧
-        c.n = b.size / 8 ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧
+        c.n = b.size / 8 ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧ c.b.size = c.w / 8 * c.n ∧
         ∀ i j, i < b.size / 8 → j < b.size / 8 →
           (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
             (Column.bitsAt b (i * 8) 8).toInt64 = (Column.bitsAt b (j * 8) 8).toInt64) := by
@@ -108,7 +108,12 @@ theorem rangeOffsets_bytes {b : ByteArray} {n total : Nat} {cs : Array Code} (hU
     have hcU : card < USize.size := by
       have : 2 ^ (8 * kw) ≤ 2 ^ 32 := Nat.pow_le_pow_right (by decide) (by omega)
       omega
-    refine ⟨_, rfl, rfl, by rcases hw3 with h | h | h <;> simp [h], fun i j hi hj => ?_⟩
+    have hwu : (8 * kw).toUSize.toNat = 8 * kw := USize.toNat_ofNat_of_lt' (by omega)
+    have hs : (enumIds (b.size / 8).toUSize card.toUSize (card - 1).toUSize (8 * kw).toUSize b').1.size =
+        kw * (b.size / 8) := by
+      simp only [enumIds]
+      rw [hwu, USize.toNat_ofNat_of_lt' hnU]; exact (Verify.packIds_bytes kw _ _ (by omega) (by omega)).1
+    refine ⟨_, rfl, rfl, by rcases hw3 with h | h | h <;> simp [h], by rw [hs, Nat.mul_div_cancel_left kw (by decide : 0 < 8)], fun i j hi hj => ?_⟩
     exact offsets_faithful (fun i => (Column.bitsAt b (i * 8) 8).toInt64) base hnU hcU hc1
       (by have : 2 ^ (8 * kw) ≤ 2 ^ 63 := Nat.pow_le_pow_right (by decide) (by omega); omega)
       (by rcases hw3 with h | h | h <;> simp [h]) hfit hb
@@ -149,6 +154,39 @@ theorem rangeOffsets_bytes {b : ByteArray} {n total : Nat} {cs : Array Code} (hU
       · simp [pure, Except.pure] at h
   · simp [pure, Except.pure] at h
 
+/-- **A code at a byte lane, faithful to `x`, cuts a contiguous `x` into its runs** (items 3 and 6's
+    core): `Code.runStarts` is `runStarts` at the lane's width, whose search key (`Kernel.key`) is the
+    id `idAt` reads, so `runStarts_group` applies with the code's own count. -/
+theorem code_runs {α : Type} (c : Code) (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32) (hsz : c.b.size = c.w / 8 * c.n)
+    (h63 : c.n < 2 ^ 63) (x : Nat → α)
+    (hf : ∀ i j, i < c.n → j < c.n → (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ x i = x j))
+    (hcont : ∀ s t u, s ≤ t → t ≤ u → u < c.n → x s = x u → x t = x s) :
+    let R := fun j => (Column.bitsAt c.runStarts (8 * j) 8).toInt64.toInt
+    ∃ m, c.runStarts.size = 8 * (m + 1) ∧ (∀ j, j ≤ m → R j = ((R j).toNat : Int)) ∧ (R m).toNat = c.n ∧
+      (∀ i j, i < j → j ≤ m → (R i).toNat < (R j).toNat) ∧
+      (∀ j j', j < m → j' < m → x (R j).toNat = x (R j').toNat → j = j') ∧
+      (∀ s j, s < c.n → j < m → (x s = x (R j).toNat ↔ (R j).toNat ≤ s ∧ s < (R (j + 1)).toNat)) := by
+  intro R
+  obtain ⟨kw, hkw, hw', hrs⟩ : ∃ kw : Nat, (kw = 1 ∨ kw = 2 ∨ kw = 4) ∧ c.w = 8 * kw ∧
+      c.runStarts = Kernel.runStarts kw.toUSize false c.b := by
+    rcases hw with h | h | h
+    · exact ⟨1, by simp, by omega, by simp only [Code.runStarts, Code.kind, h, laneKind]; rfl⟩
+    · exact ⟨2, by simp, by omega, by simp only [Code.runStarts, Code.kind, h, laneKind]; rfl⟩
+    · exact ⟨4, by simp, by omega, by simp only [Code.runStarts, Code.kind, h, laneKind]; rfl⟩
+  have hkU : kw.toUSize.toNat = kw :=
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by rcases hkw with rfl | rfl | rfl <;> decide) USize.le_size)
+  have hn : c.b.size / kw.toUSize.toNat = c.n := by
+    rw [hkU, hsz, hw']; rcases hkw with rfl | rfl | rfl <;> omega
+  have G := runStarts_group kw.toUSize false c.b (by rw [hn]; exact h63) x (fun i j hi hj => by
+      rw [hn] at hi hj
+      rw [← hf i j hi hj, hw', Verb.idAt_bytes c.b i (by omega), Verb.idAt_bytes c.b j (by omega), hkU]
+      simp only [Kernel.key, Kernel.normalise, Bool.not_false, if_true]
+      exact ⟨fun h => UInt64.toNat_inj.1 h, fun h => congrArg _ h⟩)
+    (by rw [hn]; exact hcont)
+  rw [hn] at G
+  simp only [R]; rw [hrs]; exact G
+
 #print axioms rangeOffsets_bytes
+#print axioms code_runs
 
 end LeetQ.Rel.Alg
