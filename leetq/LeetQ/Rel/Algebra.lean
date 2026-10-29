@@ -1190,10 +1190,134 @@ theorem groupIds_long_faithful {m : Nat} (x : Arr .long m) {b : ByteArray} (hc :
   rw [e, Verify.keyAt_eq_iff (by simp) b i.1 j.1, Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
   exact ⟨fun h => by simp only [Scan.Kind.width] at h; rw [h], fun h => toInt64_inj h⟩
 
+/-- **Run starts group a column whose equal elements are contiguous.** `r 0 < … < r m = n` lists every
+    run start of `key` below `n` and nothing else; then the run keys `key (r j)` are one-to-one and
+    `key s = key (r j) ⟺ r j ≤ s < r (j+1)`. Encoding-free: each lane's kernel answers these hypotheses. -/
+theorem runs_group {α : Type} {n m : Nat} (key : Nat → α) (r : Nat → Nat) (hlast : r m = n)
+    (hasc : ∀ i j, i < j → j ≤ m → r i < r j) (h0 : 0 < n → r 0 = 0)
+    (hstart : ∀ j, j < m → r j = 0 ∨ key (r j) ≠ key (r j - 1))
+    (hall : ∀ s, s < n → (s = 0 ∨ key s ≠ key (s - 1)) → ∃ j, j < m ∧ r j = s)
+    (hcont : ∀ s t u, s ≤ t → t ≤ u → u < n → key s = key u → key t = key s) :
+    (∀ j j', j < m → j' < m → key (r j) = key (r j') → j = j') ∧
+    (∀ s j, s < n → j < m → (key s = key (r j) ↔ r j ≤ s ∧ s < r (j + 1))) := by
+  have hle : ∀ i j, i ≤ j → j ≤ m → r i ≤ r j := fun i j h hj => by
+    rcases Nat.lt_or_eq_of_le h with h | rfl
+    · exact Nat.le_of_lt (hasc i j h hj)
+    · exact Nat.le_refl _
+  -- inside a run, every row holds its start's element
+  have hin : ∀ j, j < m → ∀ s, r j ≤ s → s < r (j + 1) → key s = key (r j) := by
+    intro j hj s
+    induction s with
+    | zero => intro h _; rw [Nat.le_zero.1 h]
+    | succ s ih =>
+      intro h1 h2
+      rcases Nat.lt_or_eq_of_le h1 with h1 | h1
+      · have hn : s + 1 < n := hlast ▸ Nat.lt_of_lt_of_le h2 (hle (j + 1) m hj (Nat.le_refl m))
+        by_cases hk : key (s + 1) = key s
+        · exact hk.trans (ih (Nat.le_of_lt_succ h1) (by omega))
+        · exfalso
+          obtain ⟨j', hj', e⟩ := hall (s + 1) hn (.inr hk)
+          rcases Nat.lt_or_ge j' (j + 1) with h | h
+          · have := hle j' j (by omega) (by omega); omega
+          · have := hle (j + 1) j' h (by omega); omega
+      · rw [← h1]
+  have hcov : ∀ s, s < n → ∃ j, j < m ∧ r j ≤ s ∧ s < r (j + 1) := by
+    intro s
+    induction s with
+    | zero =>
+      intro hn
+      have hm : 0 < m := Nat.pos_of_ne_zero fun e => by subst e; have := h0 hn; omega
+      exact ⟨0, hm, Nat.le_of_eq (h0 hn), by have := hasc 0 (0 + 1) (by omega) hm; have := h0 hn; omega⟩
+    | succ s ih =>
+      intro hn
+      obtain ⟨j, hj, h1, h2⟩ := ih (by omega)
+      rcases Nat.lt_or_eq_of_le (Nat.succ_le_of_lt h2) with h | h
+      · exact ⟨j, hj, by omega, h⟩
+      · have hj1 : j + 1 < m := by
+          rcases Nat.lt_or_ge (j + 1) m with h' | h'
+          · exact h'
+          · have : j + 1 = m := by omega
+            subst this; omega
+        exact ⟨j + 1, hj1, by omega, by have := hasc (j + 1) (j + 1 + 1) (by omega) hj1; omega⟩
+  have hinj : ∀ j j', j < j' → j' < m → key (r j) ≠ key (r j') := by
+    intro j j' hjj hj' e
+    have hlt := hasc j j' hjj (by omega)
+    have hn : r j' < n := hlast ▸ hasc j' m hj' (Nat.le_refl _)
+    rcases hstart j' hj' with h | h
+    · omega
+    · exact h ((hcont (r j) (r j' - 1) (r j') (by omega) (by omega) hn e).trans e).symm
+  refine ⟨fun j j' hj hj' e => ?_, fun s j hs hj => ⟨fun e => ?_, fun ⟨h1, h2⟩ => hin j hj s h1 h2⟩⟩
+  · rcases Nat.lt_trichotomy j j' with h | h | h
+    · exact absurd e (hinj j j' h hj')
+    · exact h
+    · exact absurd e.symm (hinj j' j h hj)
+  · obtain ⟨j', hj', h1, h2⟩ := hcov s hs
+    have e' := (hin j' hj' s h1 h2).symm.trans e
+    rcases Nat.lt_trichotomy j' j with h | h | h
+    · exact absurd e' (hinj j' j h hj)
+    · subst h; exact ⟨h1, h2⟩
+    · exact absurd e'.symm (hinj j j' h hj')
+
+/-- **`runStarts` at a byte lane groups a column its key is faithful to.** `key` agrees with the lane's
+    search key exactly where the elements do, and its equal elements are contiguous; then the starts `r`
+    the kernel writes (`runStarts_spec`), read as naturals, end at the count, ascend, name one-to-one
+    keys and cut the column into its runs (`runs_group`). -/
+theorem runStarts_group {α : Type} (w : USize) (float : Bool) (hay : ByteArray) (h63 : hay.size / w.toNat < 2 ^ 63)
+    (key : Nat → α)
+    (hk : ∀ i j, i < hay.size / w.toNat → j < hay.size / w.toNat →
+      (key i = key j ↔ Kernel.key w.toNat float hay i = Kernel.key w.toNat float hay j))
+    (hcont : ∀ s t u, s ≤ t → t ≤ u → u < hay.size / w.toNat → key s = key u → key t = key s) :
+    ∃ m, (Kernel.runStarts w float hay).size = 8 * (m + 1) ∧
+      (∀ j, j ≤ m → (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt =
+        (((Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat : Nat) : Int)) ∧
+      (Column.bitsAt (Kernel.runStarts w float hay) (8 * m) 8).toInt64.toInt.toNat = hay.size / w.toNat ∧
+      (∀ i j, i < j → j ≤ m → (Column.bitsAt (Kernel.runStarts w float hay) (8 * i) 8).toInt64.toInt.toNat <
+        (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat) ∧
+      (∀ j j', j < m → j' < m →
+        key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat =
+          key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j') 8).toInt64.toInt.toNat → j = j') ∧
+      (∀ s j, s < hay.size / w.toNat → j < m →
+        (key s = key (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat ↔
+          (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt.toNat ≤ s ∧
+            s < (Column.bitsAt (Kernel.runStarts w float hay) (8 * (j + 1)) 8).toInt64.toInt.toNat)) := by
+  obtain ⟨m, hsz, hlast, hasc, h0, hst, hall⟩ := Verify.runStarts_spec w float hay h63
+  generalize hay.size / w.toNat = n at h63 hk hcont hlast h0 hst hall
+  -- `R j`, the start the kernel wrote at `j`, as an integer
+  let R : Nat → Int := fun j => (Column.bitsAt (Kernel.runStarts w float hay) (8 * j) 8).toInt64.toInt
+  change ∀ i j, i < j → j ≤ m → R i < R j at hasc
+  change R m = n at hlast
+  change 0 < n → 0 < m ∧ R 0 = 0 at h0
+  change ∀ j, j < m → ∃ r : Nat, R j = r ∧ _ at hst
+  change ∀ r, r < n → _ → ∃ j, j < m ∧ R j = r at hall
+  change ∃ m, _ ∧ (∀ j, j ≤ m → R j = ((R j).toNat : Int)) ∧ (R m).toNat = n ∧
+    (∀ i j, i < j → j ≤ m → (R i).toNat < (R j).toNat) ∧
+    (∀ j j', j < m → j' < m → key (R j).toNat = key (R j').toNat → j = j') ∧
+    (∀ s j, s < n → j < m → (key s = key (R j).toNat ↔ (R j).toNat ≤ s ∧ s < (R (j + 1)).toNat))
+  -- every start is a natural below `n`, the last entry `n` itself
+  have hnn : ∀ j, j ≤ m → R j = ((R j).toNat : Int) := fun j hj => by
+    rcases Nat.lt_or_eq_of_le hj with h | rfl
+    · obtain ⟨r, e, -⟩ := hst j h; rw [e]; rfl
+    · rw [hlast]; rfl
+  have hlt : ∀ j, j < m → (R j).toNat < n ∧ ((R j).toNat = 0 ∨ Kernel.key w.toNat float hay (R j).toNat ≠
+      Kernel.key w.toNat float hay ((R j).toNat - 1)) := fun j hj => by
+    obtain ⟨r, e, h1, h2⟩ := hst j hj; rw [e]; exact ⟨h1, h2⟩
+  have G := runs_group key (fun j => (R j).toNat) (by dsimp only; rw [hlast]; rfl)
+    (fun i j hij hj => by dsimp only; have := hasc i j hij hj; rw [hnn i (by omega), hnn j hj] at this; omega)
+    (fun hn => by dsimp only; rw [(h0 hn).2]; rfl)
+    (fun j hj => (hlt j hj).2.imp id fun h e => h ((hk _ _ (hlt j hj).1 (by have := (hlt j hj).1; omega)).1 e))
+    (fun s hs h => by
+      obtain ⟨j, hj, e⟩ := hall s hs (h.imp id fun h e => h ((hk _ _ hs (by omega)).2 e))
+      exact ⟨j, hj, by dsimp only; rw [e]; rfl⟩)
+    hcont
+  exact ⟨m, hsz, hnn, by rw [hlast]; rfl,
+    fun i j hij hj => by have := hasc i j hij hj; rw [hnn i (by omega), hnn j hj] at this; omega, G.1, G.2⟩
+
 end Laws
 
 #print axioms conv_holds
 #print axioms groupIds_faithful
 #print axioms groupIds_long_faithful
+#print axioms runs_group
+#print axioms runStarts_group
 
 end LeetQ.Rel.Alg
