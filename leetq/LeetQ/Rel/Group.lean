@@ -443,6 +443,121 @@ theorem gradeBy_contig {α : Type} {n : Nat} (hnU : n < USize.size) (kc vc : Cod
   rw [hvn] at s1 p1
   exact grade_step kc hkw hks hnU _ (by omega) p1 x hf
 
+/-- **The `min`/`max` fold `overBytes` runs answers its seed or one of the non-null elements it read.** -/
+theorem overFold_attained (op : Coc.Over) (hop : op = .lesser ∨ op = .greater) (x : Nat → Int64) :
+    ∀ (l : List Nat) (acc : Int64),
+      l.foldl (fun acc i => if (!op.boolCast && x i == nul) = true then acc else op.step acc (x i)) acc = acc ∨
+      ∃ i ∈ l, x i ≠ nul ∧
+        l.foldl (fun acc i => if (!op.boolCast && x i == nul) = true then acc else op.step acc (x i)) acc = x i
+  | [], _ => .inl rfl
+  | a :: l, acc => by
+    have hb : op.boolCast = false := by rcases hop with rfl | rfl <;> rfl
+    simp only [List.foldl_cons, hb, Bool.not_false, Bool.true_and, beq_iff_eq]
+    have hs : ∀ y, op.step acc y = acc ∨ op.step acc y = y := fun y => by
+      rcases hop with rfl | rfl <;> simp only [Coc.Over.step] <;> split <;> simp
+    rcases overFold_attained op hop x l
+        (if (!op.boolCast && x a == nul) = true then acc else op.step acc (x a)) with h | ⟨i, hi, hx, h⟩
+    · simp only [hb, Bool.not_false, Bool.true_and, beq_iff_eq] at h
+      rw [h]
+      by_cases ha : x a = nul
+      · exact .inl (by simp only [ha, if_true])
+      · simp only [ha, if_false]
+        rcases hs (x a) with e | e
+        · exact .inl e
+        · exact .inr ⟨a, List.mem_cons_self .., ha, e⟩
+    · exact .inr ⟨i, List.mem_cons_of_mem _ hi, hx, by simpa only [hb, Bool.not_false, Bool.true_and, beq_iff_eq] using h⟩
+
+/-- **`overBytes lesser`/`greater` of a long payload sees only the set of its non-null elements**: two
+    payloads holding the same non-null longs have one least and one greatest. `rangeOffsets`' `lo`/`hi`
+    are the same for a column and any permutation of its rows. -/
+theorem overBytes_vals (op : Coc.Over) (hop : op = .lesser ∨ op = .greater) {b b' : ByteArray}
+    (hv : ∀ i, i < b'.size / 8 → Ew.signed Ew.i64 (Ew.elem Ew.i64 b' i) ≠ nul →
+      ∃ j, j < b.size / 8 ∧ Ew.signed Ew.i64 (Ew.elem Ew.i64 b j) = Ew.signed Ew.i64 (Ew.elem Ew.i64 b' i))
+    (hv' : ∀ i, i < b.size / 8 → Ew.signed Ew.i64 (Ew.elem Ew.i64 b i) ≠ nul →
+      ∃ j, j < b'.size / 8 ∧ Ew.signed Ew.i64 (Ew.elem Ew.i64 b' j) = Ew.signed Ew.i64 (Ew.elem Ew.i64 b i)) :
+    overBytes op Ew.i64 nul b = overBytes op Ew.i64 nul b' := by
+  have hw : Ew.width Ew.i64 = 8 := by decide
+  -- `overBytes` is the fold `overFold_attained` reads, at the payload's own elements
+  have att : ∀ c : ByteArray, overBytes op Ew.i64 nul c = Coc.Over.denseSeed op Ew.i64 nul ∨
+      ∃ i, i < c.size / 8 ∧ Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) ≠ nul ∧
+        overBytes op Ew.i64 nul c = Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) := fun c => by
+    rcases overFold_attained op hop (fun i => Ew.signed Ew.i64 (Ew.elem Ew.i64 c i))
+      (List.range (c.size / Ew.width Ew.i64)) (Coc.Over.denseSeed op Ew.i64 nul) with h | ⟨i, hi, hx, h⟩
+    · exact .inl h
+    · rw [hw] at hi; exact .inr ⟨i, List.mem_range.1 hi, hx, h⟩
+  have hseed : Coc.Over.denseSeed op Ew.i64 nul = op.seed nul := by rcases hop with rfl | rfl <;> rfl
+  have bnd : ∀ c : ByteArray, ∀ i, i < c.size / 8 → Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) ≠ nul →
+      overBytes .lesser Ew.i64 nul c ≤ Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) ∧
+        Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) ≤ overBytes .greater Ew.i64 nul c := fun c i hi hx =>
+    overBytes_bounds Ew.i64 nul c (by rw [hw]; exact hi) hx
+  have nl : (nul + 1).toInt = -2 ^ 63 + 1 := by decide
+  have mx : (~~~nul).toInt = 2 ^ 63 - 1 := by decide
+  -- one inequality from each side's attained value; the seed is the extreme of the order
+  have le : ∀ c c' : ByteArray, (∀ i, i < c'.size / 8 → Ew.signed Ew.i64 (Ew.elem Ew.i64 c' i) ≠ nul →
+      ∃ j, j < c.size / 8 ∧ Ew.signed Ew.i64 (Ew.elem Ew.i64 c j) = Ew.signed Ew.i64 (Ew.elem Ew.i64 c' i)) →
+      (op = .lesser → overBytes op Ew.i64 nul c ≤ overBytes op Ew.i64 nul c') ∧
+        (op = .greater → overBytes op Ew.i64 nul c' ≤ overBytes op Ew.i64 nul c) := fun c c' h => by
+    refine ⟨fun e => ?_, fun e => ?_⟩ <;> subst e
+    · rcases att c' with s | ⟨i, hi, hx, s⟩
+      · rw [s, hseed]; exact Int64.le_iff_toInt_le.2 (by simp only [Coc.Over.seed]; rw [mx]; have := Int64.toInt_lt (overBytes .lesser Ew.i64 nul c); omega)
+      · obtain ⟨j, hj, ej⟩ := h i hi hx
+        rw [s, ← ej]; exact (bnd c j hj (by rw [ej]; exact hx)).1
+    · rcases att c' with s | ⟨i, hi, hx, s⟩
+      · rcases att c with t | ⟨j, hj, hy, t⟩
+        · rw [s, t]; exact Int64.le_refl _
+        · rw [s, hseed, t]; simp only [Coc.Over.seed]
+          refine Int64.le_iff_toInt_le.2 ?_
+          rw [nl]; have := Int64.le_toInt (Ew.signed Ew.i64 (Ew.elem Ew.i64 c j))
+          have : (Ew.signed Ew.i64 (Ew.elem Ew.i64 c j)).toInt ≠ -2 ^ 63 := fun e' => hy (Int64.toInt_inj.1 (by rw [e']; decide))
+          omega
+      · obtain ⟨j, hj, ej⟩ := h i hi hx
+        rw [s, ← ej]; exact (bnd c j hj (by rw [ej]; exact hx)).2
+  rcases hop with rfl | rfl
+  · exact Int64.le_antisymm ((le b b' hv).1 rfl) ((le b' b hv').1 rfl)
+  · exact Int64.le_antisymm ((le b' b hv').2 rfl) ((le b b' hv).2 rfl)
+
+/-- **`enumIds` reports every row in range** when every non-null long of `b` is an offset below `d`. -/
+theorem enumIds_all {n d nid w : USize} {b : ByteArray}
+    (h : ∀ i, i < n.toNat → (Column.bitsAt b (i * 8) 8).toInt64 ≠ Int64.minValue →
+      0 ≤ (Column.bitsAt b (i * 8) 8).toInt64 ∧ (Column.bitsAt b (i * 8) 8).toInt64.toInt.toNat < d.toNat) :
+    (enumIds n d nid w b).2 = n := by
+  simp only [enumIds]
+  rw [List.find?_eq_none.2 fun i hi => by
+    have := h i (List.mem_range.1 hi)
+    by_cases hx : (Column.bitsAt b (i * 8) 8).toInt64 = Int64.minValue <;> simp_all]
+  simp
+
+/-- **`rangeOffsets` answers for a dense long part exactly when it answers for any part holding the same
+    non-null longs, at the same `total`** (item 3): its decisions read only `lo`/`hi` (`overBytes_vals`)
+    and `total`, and its kernel's range report is always full (`enumIds_all`, `overBytes_bounds`). So a
+    column sorted, or cut to its distinct rows at the same count, is coded on the same branch. -/
+theorem rangeOffsets_vals {b b' : ByteArray} {m m' total : Nat} {os : Array Code} (hU : 2 ^ 32 < USize.size)
+    (hn' : b'.size / 8 ≤ 2 ^ 32)
+    (hv : ∀ i, i < b'.size / 8 → (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul →
+      ∃ j, j < b.size / 8 ∧ (Column.bitsAt b (j * 8) 8).toInt64 = (Column.bitsAt b' (i * 8) 8).toInt64)
+    (hv' : ∀ i, i < b.size / 8 → (Column.bitsAt b (i * 8) 8).toInt64 ≠ nul →
+      ∃ j, j < b'.size / 8 ∧ (Column.bitsAt b' (j * 8) 8).toInt64 = (Column.bitsAt b (i * 8) 8).toInt64)
+    (h : rangeOffsets .long #[(m, .bytes b)] total = .ok (some os)) :
+    ∃ os', rangeOffsets .long #[(m', .bytes b')] total = .ok (some os') := by
+  have hnU : b'.size / 8 < USize.size := by omega
+  have hw : Ew.width Ew.i64 = 8 := by decide
+  have e : ∀ (c : ByteArray) i, Ew.signed Ew.i64 (Ew.elem Ew.i64 c i) = (Column.bitsAt c (i * 8) 8).toInt64 :=
+    fun c i => by simp only [Ew.signed, Ew.elem, hw]; rfl
+  have eL := overBytes_vals .lesser (.inl rfl) (b := b) (b' := b') (by simpa only [e] using hv) (by simpa only [e] using hv')
+  have eH := overBytes_vals .greater (.inr rfl) (b := b) (b' := b') (by simpa only [e] using hv) (by simpa only [e] using hv')
+  have bnd : ∀ i, i < b'.size / 8 → (Column.bitsAt b' (i * 8) 8).toInt64 ≠ nul →
+      overBytes .lesser Ew.i64 nul b ≤ (Column.bitsAt b' (i * 8) 8).toInt64 ∧
+        (Column.bitsAt b' (i * 8) 8).toInt64 ≤ overBytes .greater Ew.i64 nul b := fun i hi hx => by
+    rw [eL, eH, ← e]; exact overBytes_bounds Ew.i64 nul b' (by rw [hw]; exact hi) (by rw [e]; exact hx)
+  simp only [rangeOffsets, Array.mapM_eq_mapM_toList, List.mapM_cons, List.mapM_nil] at h ⊢
+  rw [← eL, ← eH]
+  generalize overBytes .lesser Ew.i64 nul b = L at h bnd ⊢
+  generalize overBytes .greater Ew.i64 nul b = H at h bnd ⊢
+  simp at h ⊢
+  trace_state
+  sorry
+
+#print axioms overBytes_vals
 #print axioms code_grade
 #print axioms grade_step
 #print axioms gradeBy_contig
