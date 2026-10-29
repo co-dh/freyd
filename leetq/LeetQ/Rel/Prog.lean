@@ -1,17 +1,55 @@
 /-
-  RelRep design B, step 1: a k verb is a term `Prog` over the executable Rel primitives (design §1:
-  P1–P6, P6′, P13). `den P` is its spec in `RelSet`, `run P` executes it one `Alg.*` kernel per node.
+  RelRep design B: a k verb is a term `Prog` over the executable Rel primitives (design §1: step 1
+  P1–P6, P6′, P13; step 3 P8–P12, P16, `Λ` carried as its keys beside a `Parted`, boxed only at output). `den P` is its spec in `RelSet`, `run P` executes it one `Alg.*` kernel per node.
   `run_sound`: `run P = ok R → R.Holds = den P`, from one lemma per node; a kernel node whose kernel has
   no theorem yet (`comp`, `∩`, `∪`, `𝟘`, `⊤`, `mapVal`, `pair`, `Ew.val`) contributes its law to `Sound P`.
 -/
 import LeetQ.Rel.Algebra
 import LeetQ.Rel.SpecStruct
+import LeetQ.Rel.SpecScan
+import LeetQ.Rel.SpecFind
 
 namespace LeetQ.Rel
 
 open QLean QLean.Dep QLean.Eval
-open Freyd Freyd.Alg Freyd.Alg.RelSet
-open LeetQ.Rel.Verb (ofExcept rel_iff mk_rel til_rel)
+open Freyd Freyd.Alg Freyd.Alg.RelSet PowerAllegory
+open LeetQ.Rel.Verb (ofExcept rel_iff mk_rel til_rel where_rel)
+
+namespace Verb
+open Freyd.Alg.RelSet.ListRel (dList)
+
+/-- `⦇e, f⦈` on lists of longs, `f` the step: the per-segment fold of design P12. -/
+def fold (e : Int64) (f : Int64 → Int64 → Int64) : dList Int64 ⟶ (⟨Int64⟩ : RelSet.{0}) :=
+  ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩) (graph fun _ => e) (graph fun q : Int64 × Int64 => f q.1 q.2)
+    : Alg (CL.F Unit Int64) (⟨Int64⟩ : RelSet.{0}))⦈
+
+end Verb
+
+namespace Alg
+variable {A B : QAtomicType}
+
+/-- `⦇e,f⦈` of each segment of `Λ`'s carrier, `op` its kernel (`Ops.overBy`), keyed by the carrier's keys. -/
+def overP (op : Kernel.Coc.Over) (F : (g : Nat) × Arr A g × Parted .long) : Except String (Rel A .long) := do
+  let some r := Ops.overBy op F.2.2 | throw "f/ by: no grouped kernel for this op"
+  pure ⟨F.1, F.2.1, ← Arr.ofPart .long F.1 r.2.part "f/ by"⟩
+
+/-- `Λ(R) ≫ ∋`: the carrier built, then flattened. -/
+def lamMem (R : Rel A B) : Except String (Rel A B) := do memP (← transposeP R)
+
+/-- `Λ(R) ≫ est(≤)` (`desc`: `est(≥)`): the carrier's segments reduced by `lesser`/`greater`. -/
+def lamEst (desc : Bool) (R : Rel A .long) : Except String (Rel A .long) := do
+  overP (if desc then .greater else .lesser) (← transposeP R)
+
+/-- `Λ(G) ≫ enum ≫ list(x) ≫ ⦇e,f⦈`: `G`'s positions per key, gathered through `x` in place of the
+    segment values (the offsets kept), then each segment folded by `op`. -/
+def lamFold (op : Kernel.Coc.Over) {n : Nat} (x : Arr .long n) (G : Rel A .long) : Except String (Rel A .long) := do
+  let F ← transposeP G
+  let P := F.2.2
+  let (_, i) ← arrDense P.val
+  let v ← Arr.ofPart .long P.n (← pick .long x.part i) "list(x)"
+  overP op ⟨F.1, F.2.1, ⟨P.g, P.n, P.o, P.co, v⟩⟩
+
+end Alg
 
 /-- An atomic type as an object of `RelSet`. -/
 abbrev Ob (t : QAtomicType) : RelSet.{0} := ⟨El t⟩
@@ -39,6 +77,17 @@ inductive Prog : QAtomicType → QAtomicType → Type
   /-- `⟨R, S⟩ ≫ graph(v)`: the pair (P13) under a dyadic map (P6′); `⟨R,S⟩` alone is no `Rel` -/
   | dy {K t u rt : QAtomicType} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) :
       Prog K t → Prog K u → Prog K rt
+  /-- `Λ(R) ≫ ∋` (P8, P9): `Λ` makes the keys-and-`Parted` carrier, `∋` flattens it -/
+  | mem {A B : QAtomicType} : Prog A B → Prog A B
+  /-- `Λ(R) ≫ est(≤)`, `desc`: `est(≥)` (P8, P10) -/
+  | extr {A : QAtomicType} (desc : Bool) : Prog A .long → Prog A .long
+  /-- `Λ(G) ≫ enum ≫ list(x) ≫ ⦇e,f⦈` (P8, P11, P12), `G` keys against positions, `op` the kernel of `f` -/
+  | fold {A : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
+      Prog A .long → Prog A .long
+  /-- `enum(dom(x ≫ !1b°))` (P11): the set bits of `x`, ascending, keyed by `til m` -/
+  | enum {n : Nat} (x : Arr .boolean n) : Prog .long .long
+  /-- `R ≫ corNeg(C)`, the anti-join (P16) -/
+  | anti {A B : QAtomicType} : Prog A B → Prog B B → Prog A B
 
 namespace Prog
 
@@ -56,6 +105,13 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, _, union P Q => P.den ∪ Q.den
   | _, _, map _ f P => P.den ≫ graph f
   | _, _, dy v h P Q => rpair P.den Q.den ≫ ofExcept fun p => elem v h p.1 p.2
+  | _, B, mem P => Λ P.den ≫ ∋ (Ob B)
+  | _, _, extr false P => Λ P.den ≫ est (fun a b : Int64 => a ≤ b)
+  | _, _, extr true P => Λ P.den ≫ est (fun a b : Int64 => a ≥ b)
+  | _, _, fold _ e f x G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f
+  | _, _, enum x => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (x.rel ≫
+      (Verb.cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys ∧ (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
+  | _, _, anti P C => P.den ≫ Verb.corNeg C.den
 
 /-- `til n` as a key, refused past `USize`, where `tilLongs` would wrap. -/
 def tilKey (n : Nat) : Except String (Arr .long n) :=
@@ -77,6 +133,11 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, dy (rt := rt) v _ P Q => do
     let T ← Alg.pair (← P.run) (← Q.run)
     pure ⟨T.n, T.key, ← Ew.val v rt T.fst T.snd⟩
+  | _, _, mem P => do Alg.lamMem (← P.run)
+  | _, _, extr d P => do Alg.lamEst d (← P.run)
+  | _, _, fold op _ _ x G => do Alg.lamFold op x (← G.run)
+  | _, _, enum x => do let w ← Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
+  | _, _, anti P C => do Alg.antiJoin (← P.run) (← C.run)
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -96,6 +157,15 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
   | K, _, dy (t := t) (u := u) (rt := rt) v h P Q => P.Sound ∧ Q.Sound ∧
       (∀ (R : Rel K t) (S : Rel K u) T, Alg.pair R S = .ok T → ∀ k a b, T.Holds k a b ↔ R.Holds k a ∧ S.Holds k b) ∧
       ∀ n (x : Arr t n) (y : Arr u n) V, Ew.val v rt x y = .ok V → Ew.ValSpec v h x y V
+  | A, B, mem P => P.Sound ∧ ∀ R T : Rel A B, Alg.lamMem R = .ok T →
+      @Eq (Ob A ⟶ Ob B) T.Holds (Λ (R.Holds : Ob A ⟶ Ob B) ≫ ∋ (Ob B))
+  | A, _, extr d P => P.Sound ∧ ∀ R T : Rel A .long, Alg.lamEst d R = .ok T →
+      @Eq (Ob A ⟶ Ob .long) T.Holds (extr d (rel R)).den
+  | A, _, fold op e f x G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamFold op x R = .ok T →
+      @Eq (Ob A ⟶ Ob .long) T.Holds (fold op e f x (rel R)).den
+  | _, _, enum (n := n) _ => n < USize.size
+  | A, B, anti P C => P.Sound ∧ C.Sound ∧ ∀ (R : Rel A B) (S : Rel B B) T, Alg.antiJoin R S = .ok T →
+      @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob B) ≫ Verb.corNeg S.Holds)
 
 /-! ## Node soundness -/
 
@@ -144,6 +214,20 @@ theorem dy_sound {K t u rt : QAtomicType} {v : Prim.Dyadic} {h : Eval.ewType v t
     exact ⟨⟨j, hj⟩, ek, ea, eb⟩
   · obtain ⟨i, ek, ea, eb⟩ := (hp k p.1 p.2).2 hab
     exact ⟨i.1, (rel_iff _ _ _).2 ⟨i.2, ek⟩, p, ⟨(rel_iff _ _ _).2 ⟨i.2, ea⟩, (rel_iff _ _ _).2 ⟨i.2, eb⟩⟩, e⟩
+
+/-- `&x` runs to its spec: `Find.where` keyed by `til m` holds `enum(dom(x ≫ !1b°))` (`where_rel`). -/
+theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : Rel .long .long}
+    (h : (enum x).run = .ok R) : (R.Holds : Ob .long ⟶ Ob .long) = (enum x).den := by
+  simp only [run, bind, Except.bind] at h; split at h
+  · cases h
+  rename_i w hw
+  split at h
+  · cases h
+  cases h
+  obtain ⟨⟨ys, hy⟩, hall⟩ := where_rel hn hw
+  rw [arr_sound w.2 (by assumption)]
+  exact hom_ext fun a b => ⟨fun ⟨j, ea, hr⟩ => ⟨j, ea, ys, hy, by rw [← hall ys hy]; exact hr⟩,
+    fun ⟨j, ea, ys', hy', hr⟩ => ⟨j, ea, by rw [hall ys' hy']; exact hr⟩⟩
 
 /-- **A sound term runs to its spec**: the answer of `run P` holds `den P`. -/
 theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Sound → P.run = .ok R →
@@ -204,6 +288,29 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     cases h
     rw [dy_sound (hp _ _ _ (by assumption)) (hv _ _ _ _ (by assumption)), run_sound P sP (by assumption),
       run_sound Q sQ (by assumption)]; rfl
+  | _, _, mem P, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h, run_sound P sP (by assumption)]; rfl
+  | _, _, extr d P, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h]; cases d <;> simp only [den] <;> rw [run_sound P sP (by assumption)]
+  | _, _, fold _ _ _ _ G, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+  | _, _, enum x, _, hs, h => enum_sound x hs h
+  | _, _, anti P C, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, sC, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    split at h
+    · cases h
+    rw [hl _ _ _ h, run_sound P sP (by assumption), run_sound C sC (by assumption)]; rfl
 
 /-! ## Verbs that need no rewrite rule (design §2, §7 line 2) -/
 
@@ -249,8 +356,36 @@ theorem val_den {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewT
       exact ⟨j, ea, p, ⟨hx, hy⟩, e⟩,
     fun ⟨j, ea, p, ⟨hx, hy⟩, e⟩ => ⟨p, ⟨⟨j, ea, hx⟩, j, ea, hy⟩, e⟩⟩
 
+/-! ## Verbs over `Λ`, `est`, `enum`, the fold (design §2, §7 line 3) -/
+
+/-- `last by`: `Λ(k°) ≫ est(≥) ≫ v`, the last position of each key read through `v` (`lastBy_rel`). -/
+def lastBy {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) : Prog K t := comp (extr true (conv (arr k))) (arr v)
+
+theorem lastBy_den {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) :
+    (lastBy k v).den = (Λ (posL° ≫ k.rel)° ≫ est (fun a b : Int64 => a ≥ b)) ≫ posL° ≫ v.rel := rfl
+
+/-- `select f x by k`: `grpL(k) ≫ list(x) ≫ ⦇e,f⦈`, `grpL(k) = Λ(k°) ≫ enum` (`overBy_rel`). -/
+def selectBy {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (k : Arr K n)
+    (x : Arr .long n) : Prog K .long := fold op e f x (conv (arr k))
+
+theorem selectBy_den {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64)
+    (k : Arr K n) (x : Arr .long n) :
+    (selectBy op e f k x).den = Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f :=
+  rfl
+
+/-- `x@y` inside the range: `y ≫ x` through the positions (the `miss` fill is not a node yet). -/
+def index {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) : Prog .long t := comp (arr y) (arr x)
+
+theorem index_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) :
+    (index x y).den = posL° ≫ y.rel ≫ posL° ≫ x.rel :=
+  hom_ext fun _ _ => ⟨fun ⟨b, ⟨j, ea, hy⟩, hx⟩ => ⟨j, ea, b, hy, hx⟩, fun ⟨j, ea, b, hy, hx⟩ => ⟨b, ⟨j, ea, hy⟩, hx⟩⟩
+
 end Prog
 
+#print axioms Prog.enum_sound
+#print axioms Prog.lastBy_den
+#print axioms Prog.selectBy_den
+#print axioms Prog.index_den
 #print axioms Prog.run_sound
 #print axioms Prog.ej_den
 #print axioms Prog.dict_den
