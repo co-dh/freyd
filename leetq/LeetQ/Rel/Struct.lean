@@ -232,7 +232,7 @@ def same {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Except 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
 /-- A key column in any encoding: its element type and part, compared only by `Alg.codes`. -/
-abbrev KCol := (t : QAtomicType) × (Nat × Enc)
+abbrev KCol := QAtomicType × (Nat × Enc)
 
 /-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tuples`), left
     then right, each at the narrowest layout its columns allow. -/
