@@ -1344,6 +1344,67 @@ theorem key_eq_iff_keyAt {k : Scan.Kind} (hk : k = .u8 ∨ k = .c8 ∨ k = .i16 
   rw [Verify.keyAt_eq_iff hk]
   simp only [Kernel.key, Kernel.normalise, Bool.not_false, if_true]
 
+
+/-- **`overBytes lesser` is a lower bound and `greater` an upper bound of every element that is not the
+    null**: the fold's step is `min`/`max`, and a null is skipped. `rangeOffsets`' `lo`/`hi`. -/
+theorem overBytes_bounds (cls : UInt8) (nul : Int64) (b : ByteArray) {i : Nat} (hi : i < b.size / Ew.width cls)
+    (hx : Ew.signed cls (Ew.elem cls b i) ≠ nul) :
+    overBytes .lesser cls nul b ≤ Ew.signed cls (Ew.elem cls b i) ∧
+      Ew.signed cls (Ew.elem cls b i) ≤ overBytes .greater cls nul b := by
+  generalize hx' : (fun i => Ew.signed cls (Ew.elem cls b i)) = x at hx
+  have ex : ∀ i, Ew.signed cls (Ew.elem cls b i) = x i := fun i => by rw [← hx']
+  simp only [ex] at hx ⊢
+  have mem : i ∈ List.range (b.size / Ew.width cls) := List.mem_range.2 hi
+  unfold overBytes; simp only [ex]
+  generalize List.range (b.size / Ew.width cls) = l at mem
+  constructor
+  · generalize Coc.Over.denseSeed .lesser cls nul = acc
+    induction l generalizing acc with
+    | nil => cases mem
+    | cons a l ih =>
+      simp only [List.foldl_cons]
+      have lo : ∀ (l : List Nat) (acc : Int64), l.foldl (fun acc i => if (!Coc.Over.boolCast .lesser && x i == nul) = true then acc
+          else Coc.Over.step .lesser acc (x i)) acc ≤ acc := fun l => by
+        induction l with
+        | nil => exact fun _ => Int64.le_refl _
+        | cons c l ihl =>
+          intro acc; simp only [List.foldl_cons]
+          refine Int64.le_trans (ihl _) ?_
+          simp only [Coc.Over.boolCast, Coc.Over.step]; split
+          · exact Int64.le_refl _
+          · split
+            · exact Int64.le_refl _
+            · rename_i h; exact Int64.le_iff_toInt_le.2 (by have := mt Int64.lt_iff_toInt_lt.2 h; omega)
+      rcases List.mem_cons.1 mem with rfl | m
+      · refine Int64.le_trans (lo _ _) ?_
+        simp only [Coc.Over.boolCast, Coc.Over.step, beq_iff_eq, hx, Bool.not_false, Bool.true_and, if_false]; split
+        next h => exact Int64.le_iff_toInt_le.2 (by have := Int64.lt_iff_toInt_lt.1 h; omega)
+        next => exact Int64.le_refl _
+      · exact ih m _
+  · generalize Coc.Over.denseSeed .greater cls nul = acc
+    induction l generalizing acc with
+    | nil => cases mem
+    | cons a l ih =>
+      simp only [List.foldl_cons]
+      have up : ∀ (l : List Nat) (acc : Int64), acc ≤ l.foldl (fun acc i => if (!Coc.Over.boolCast .greater && x i == nul) = true then acc
+          else Coc.Over.step .greater acc (x i)) acc := fun l => by
+        induction l with
+        | nil => exact fun _ => Int64.le_refl _
+        | cons c l ihl =>
+          intro acc; simp only [List.foldl_cons]
+          refine Int64.le_trans ?_ (ihl _)
+          simp only [Coc.Over.boolCast, Coc.Over.step]; split
+          · exact Int64.le_refl _
+          · split
+            · exact Int64.le_refl _
+            · rename_i h; exact Int64.le_iff_toInt_le.2 (by have := mt Int64.lt_iff_toInt_lt.2 h; omega)
+      rcases List.mem_cons.1 mem with rfl | m
+      · refine Int64.le_trans ?_ (up _ _)
+        simp only [Coc.Over.boolCast, Coc.Over.step, beq_iff_eq, hx, Bool.not_false, Bool.true_and, if_false]; split
+        next h => exact Int64.le_iff_toInt_le.2 (by have := Int64.lt_iff_toInt_lt.1 h; omega)
+        next => exact Int64.le_refl _
+      · exact ih m _
+
 end Laws
 
 #print axioms conv_holds
@@ -1354,5 +1415,6 @@ end Laws
 #print axioms sorted_contig
 #print axioms grade_mono
 #print axioms key_eq_iff_keyAt
+#print axioms overBytes_bounds
 
 end LeetQ.Rel.Alg
