@@ -223,8 +223,9 @@ theorem Arr.dense_long {m : Nat} (x : Arr .long m) {ws : List UInt64} (h : longW
 
 /-- A dense long answer lists its words whichever form `Enc.answer` leaves it in: dense, or encoded
     (`foRBits_encode_bits`). -/
-theorem longWords_answer (b : ByteArray) :
-    longWords (b.size / 8) (Enc.answer .long (b.size / 8) (.bytes b)) = some (Verify.elemsW 8 b) := by
+theorem longWords_answer {m : Nat} (b : ByteArray) (hm : b.size / 8 = m) :
+    longWords m (Enc.answer .long m (.bytes b)) = some (Verify.elemsW 8 b) := by
+  subst hm
   have ha : Enc.answer .long (b.size / 8) (.bytes b) = .bytes b ∨
       Enc.answer .long (b.size / 8) (.bytes b) =
       .foR (Kernel.Coc.encode (8 : Nat).toUSize b).1 (Kernel.Coc.encode (8 : Nat).toUSize b).2 := by
@@ -304,8 +305,9 @@ theorem Arr.dense_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : flo
 
 /-- A dense float answer lists its words whichever form `Enc.answer` leaves it in: dense, or ALP
     encoded (`alpBits_alpEncodeAt`, below `2³²` elements). -/
-theorem floatWords_answer (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) :
-    floatWords (b.size / 8) (Enc.answer .float (b.size / 8) (.bytes b)) = some (Verify.elemsW 8 b) := by
+theorem floatWords_answer {m : Nat} (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) (hm : b.size / 8 = m) :
+    floatWords m (Enc.answer .float m (.bytes b)) = some (Verify.elemsW 8 b) := by
+  subst hm
   have ha : Enc.answer .float (b.size / 8) (.bytes b) = .bytes b ∨
       Enc.answer .float (b.size / 8) (.bytes b) =
       .alp (Kernel.Coc.alpEncode64 b).1 (Kernel.Coc.alpEncode64 b).2.1 (Kernel.Coc.alpEncode64 b).2.2 := by
@@ -322,8 +324,9 @@ theorem floatWords_answer (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) :
 /-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
     width four, the `foR` form read back by `foRBits_encode_bits`. -/
 theorem toList_answer_int {m : Nat} (x : Arr .int m) {b : ByteArray} (hm : b.size / 4 = m)
-    (hc : x.enc = Enc.answer .int (b.size / 4) (.bytes b)) :
+    (hc : x.enc = Enc.answer .int m (.bytes b)) :
     x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 4) 4).toUInt32.toInt32 := by
+  subst hm
   have ha : Enc.answer .int (b.size / 4) (.bytes b) = .bytes b ∨
       Enc.answer .int (b.size / 4) (.bytes b) =
       .foR (Kernel.Coc.encode (4 : Nat).toUSize b).1 (Kernel.Coc.encode (4 : Nat).toUSize b).2 := by
@@ -333,7 +336,7 @@ theorem toList_answer_int {m : Nat} (x : Arr .int m) {b : ByteArray} (hm : b.siz
     all_goals first | exact .inl rfl | exact .inr rfl | simp_all
   apply List.ext_getElem (by rw [Arr.length_toList]; simp)
   intro i h1 _
-  have hn : i < m := by rw [Arr.length_toList] at h1; omega
+  have hn : i < b.size / 4 := by rw [Arr.length_toList] at h1; omega
   rw [Arr.getElem_toList, List.getElem_map, List.getElem_range, Arr.get_ne x _ (by decide)]
   rw [← hc] at ha
   rcases ha with e | e <;> simp only [Enc.get, if_pos hn, e, QAtomicType.width]
