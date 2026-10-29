@@ -109,6 +109,9 @@ inductive Prog : QAtomicType → QAtomicType → Type
   | enumC (n : Nat) : Prog .long .long → Prog .long .long
   /-- `Λ(G ≫ pos) ≫ enum ≫ length` (P8, P11, P12): each key's count; no `Coc.Over` counts -/
   | count {A : QAtomicType} : Prog A .long → Prog A .long
+  /-- `grade(⊴ₓ) = cst(til n) ≫ sort(⊴ₓ)` (P17): the stable grade of `x` under its type's strict order `lt`,
+      `desc` flipping it; `x` keyed by `til n` -/
+  | grade {t : QAtomicType} {n : Nat} (desc : Bool) (lt : El t → El t → Prop) (x : Arr t n) : Prog .long .long
 
 namespace Prog
 
@@ -138,6 +141,8 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, _, enumC n C => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫ C.den))) ys ∧
       (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
   | _, _, count G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat
+  | _, _, grade (n := n) d lt x => posL° ≫ fun i v => ∃ G, Verb.sort (Verb.stable x.rel (if d then flip lt else lt))
+      (CL.ofList (List.range n)) G ∧ (ix (CL.toList G) ≫ graph Int64.ofNat) i v
 
 /-- `til n` as a key, refused past `USize`, where `tilLongs` would wrap. -/
 def tilKey (n : Nat) : Except String (Arr .long n) :=
@@ -172,6 +177,9 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, dom P => do Alg.dom (← P.run)
   | _, _, enumC n C => do enumIn n (← C.run)
   | _, _, count G => do Alg.lamCount (← G.run)
+  | _, _, grade (n := n) d _ x => do
+    let some S := Ops.grade d x | throw "<x: no grade kernel for this type"
+    pure ⟨n, ← tilKey n, S⟩
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -208,6 +216,7 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
       @Eq (Ob .long ⟶ Ob .long) T.Holds (enumC n (rel R)).den
   | A, _, count G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamCount R = .ok T →
       @Eq (Ob A ⟶ Ob .long) T.Holds (count (rel R)).den
+  | _, _, grade d lt x => ∀ S, Ops.grade d x = some S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
 
 /-! ## Node soundness -/
 
@@ -270,6 +279,17 @@ theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : Rel
   rw [arr_sound w.2 (by assumption)]
   exact hom_ext fun a b => ⟨fun ⟨j, ea, hr⟩ => ⟨j, ea, ys, hy, by rw [← hall ys hy]; exact hr⟩,
     fun ⟨j, ea, ys', hy', hr⟩ => ⟨j, ea, by rw [hall ys' hy']; exact hr⟩⟩
+
+/-- A grade that runs is the kernel's list keyed by `til n`. -/
+theorem grade_run {t : QAtomicType} {n : Nat} {d : Bool} {lt : El t → El t → Prop} {x : Arr t n} {R : Rel .long .long}
+    (h : (grade d lt x).run = .ok R) : ∃ S k, Ops.grade d x = some S ∧ tilKey n = .ok k ∧ R = ⟨n, k, S⟩ := by
+  simp only [run, bind, Except.bind] at h
+  split at h
+  · rename_i S hg
+    split at h
+    · cases h
+    · cases h; exact ⟨S, _, hg, by assumption, rfl⟩
+  · cases h
 
 /-- **A sound term runs to its spec**: the answer of `run P` holds `den P`. -/
 theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Sound → P.run = .ok R →
@@ -373,6 +393,10 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
     rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+  | _, _, grade .., _, hs, h => by
+    unfold Sound at hs
+    obtain ⟨S, k, hg, hk, rfl⟩ := grade_run h
+    rw [arr_sound S hk]; exact hs S hg
 
 /-! ## Verbs that need no rewrite rule (design §2, §7 line 2) -/
 
@@ -594,6 +618,152 @@ theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long =
     (avg h x).den = rpair (over .add 0 (· + ·) x).den (size x).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
   rfl
 
+/-! ## Verbs over `grade` (design P17, §7 line 4) -/
+
+/-- `<x = grade(⊴ₓ)`, `lt` the strict order of `x`'s type. -/
+def iasc {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) : Prog .long .long := grade false lt x
+
+theorem iasc_den {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) :
+    (iasc lt x).den = posL° ≫ fun i v => ∃ G, Verb.sort (Verb.stable x.rel lt) (CL.ofList (List.range n)) G ∧
+      (ix (CL.toList G) ≫ graph Int64.ofNat) i v := rfl
+
+/-- `>x = grade(⊵ₓ)`, `⊵ₓ` the stable order at the flipped `lt`. -/
+def idesc {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) : Prog .long .long := grade true lt x
+
+theorem idesc_den {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) :
+    (idesc lt x).den = posL° ≫ fun i v => ∃ G, Verb.sort (Verb.stable x.rel (flip lt)) (CL.ofList (List.range n)) G ∧
+      (ix (CL.toList G) ≫ graph Int64.ofNat) i v := rfl
+
+/-- `rank x = (<x)°`: each position's place in the ascending grade. -/
+def rank {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) : Prog .long .long := conv (iasc lt x)
+
+theorem rank_den {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) :
+    (rank lt x).den = (iasc lt x).den° := rfl
+
+/-- `x` read in the grade of `s`: `grade(⊴ₛ) ≫ x` (R19), the one shape of `asc`, `desc`, `xasc`. -/
+def xsort {t u : QAtomicType} {n : Nat} (d : Bool) (lt : El t → El t → Prop) (s : Arr t n) (x : Arr u n) :
+    Prog .long u := comp (grade d lt s) (arr x)
+
+/-- `asc x = (<x) ≫ x`. -/
+def asc {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) : Prog .long t := xsort false lt x x
+
+theorem asc_den {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) :
+    (asc lt x).den = (iasc lt x).den ≫ posL° ≫ x.rel := rfl
+
+/-- `desc x = (>x) ≫ x`. -/
+def desc {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) : Prog .long t := xsort true lt x x
+
+theorem desc_den {t : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (x : Arr t n) :
+    (desc lt x).den = (idesc lt x).den ≫ posL° ≫ x.rel := rfl
+
+/-- `s xasc x = (<s) ≫ x`: one more column read in the ascending grade of the sort column. -/
+def xasc {t u : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (s : Arr t n) (x : Arr u n) : Prog .long u :=
+  xsort false lt s x
+
+theorem xasc_den {t u : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (s : Arr t n) (x : Arr u n) :
+    (xasc lt s x).den = (iasc lt s).den ≫ posL° ≫ x.rel := rfl
+
+/-! ### `grade` on a long column: the kernel law from `iasc_rel`/`idesc_rel`, and the runs read back -/
+
+/-- A run of `comp P Q` ran `P`. -/
+theorem comp_run {A B C : QAtomicType} {P : Prog A B} {Q : Prog B C} {R : Rel A C} (h : (comp P Q).run = .ok R) :
+    ∃ R₁, P.run = .ok R₁ := by
+  simp only [run, bind, Except.bind] at h; split at h
+  · cases h
+  · exact ⟨_, by assumption⟩
+
+/-- A list of longs that is `M` read through `ofNat` holds `ix(M) ≫ ofNat`. -/
+theorem rel_ofList {n : Nat} {S : Arr .long n} {M : List Nat} (hS : S.toList = M.map Int64.ofNat) :
+    (S.rel : Idx ⟶ Ob .long) = ix M ≫ graph Int64.ofNat :=
+  hom_ext fun i v => by
+    show S.toList[i]? = some v ↔ ∃ j, M[i]? = some j ∧ v = Int64.ofNat j
+    rw [hS, List.getElem?_map]
+    cases M[i]? with
+    | none => simp
+    | some j =>
+      simp only [Option.map_some, Option.some.injEq]
+      exact ⟨fun e => ⟨j, rfl, e.symm⟩, fun ⟨_, e, e'⟩ => by cases e; exact e'.symm⟩
+
+/-- When `sort(P)` of `til n` is the one list `M`, `grade`'s spec is `M` read as longs. -/
+theorem sort_spec {n : Nat} {P : Nat → Nat → Prop} {M : List Nat}
+    (hc : (Verb.cst (CL.ofList M) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
+      = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort P) :
+    (fun (i : Nat) (v : Int64) => ∃ G, Verb.sort P (CL.ofList (List.range n)) G ∧
+      (ix (CL.toList G) ≫ graph Int64.ofNat) i v : Idx ⟶ Ob .long) = ix M ≫ graph Int64.ofNat := by
+  have key : ∀ G, Verb.sort P (CL.ofList (List.range n)) G ↔ G = CL.ofList M := fun G => by
+    have e : (G = CL.ofList M) ↔ ∃ m, m = CL.ofList (List.range n) ∧ Verb.sort P m G :=
+      Iff.of_eq (congrArg (fun r => r () G) hc)
+    exact ⟨fun h => e.2 ⟨_, rfl, h⟩, fun h => by obtain ⟨_, rfl, h'⟩ := e.1 h; exact h'⟩
+  exact hom_ext fun i v => ⟨fun ⟨G, hG, hv⟩ => by obtain rfl := (key G).1 hG; rwa [CL.toList_ofList] at hv,
+    fun hv => ⟨_, (key _).2 rfl, by rwa [CL.toList_ofList]⟩⟩
+
+/-- **The long grade kernel's answer** is `M` read as longs, `M` the one list `sort(⊴ₓ)` (`⊵ₓ`) gives of
+    `til n` (`iasc_rel`, `idesc_rel`), its entries below `n`. -/
+theorem grade_long {n : Nat} {d : Bool} {x S : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.grade d x = some S) :
+    ∃ M : List Nat, (Verb.cst (CL.ofList M) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
+        = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable x.rel
+          (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
+      ∧ S.toList = M.map Int64.ofNat ∧ M.length = n ∧ ∀ j ∈ M, j < n := by
+  have hl : x.toList.length < 2 ^ 63 := by rw [Arr.length_toList]; exact h63
+  refine ⟨(List.range x.toList.length).mergeSort fun i j =>
+      if d then decide (x.toList[j]! ≤ x.toList[i]!) else decide (x.toList[i]! ≤ x.toList[j]!), ?_,
+    by rw [Ops.grade_toList hx hn h]; rfl, by rw [List.length_mergeSort, List.length_range, Arr.length_toList],
+    fun j hj => ?_⟩
+  · rw [← Verb.grade_map d _ hl, ← Ops.grade_toList hx hn h]
+    cases d
+    · exact Verb.iasc_rel hx hn h63 h
+    · exact Verb.idesc_rel hx hn h63 h
+  · have := List.mem_range.1 ((List.mergeSort_perm _ _).subset hj); rwa [Arr.length_toList] at this
+
+/-- `grade`'s kernel law holds on a dense long column: `Sound` of `<x`/`>x` is a theorem there. -/
+theorem grade_sound_long {n : Nat} (d : Bool) {x : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) : (grade d (fun a b : Int64 => a < b) x).Sound := by
+  unfold Sound; intro S h
+  obtain ⟨M, hc, hS, -, -⟩ := grade_long hx hn h63 h
+  exact congrArg (posL° ≫ ·) ((rel_ofList hS).trans (sort_spec hc).symm)
+
+/-- `<x`/`>x` run to `iasc_rel`/`idesc_rel`'s right side: `G` the list `sort(⊴ₓ)` gives, read as longs. -/
+theorem grade_prog {n : Nat} (d : Bool) {x : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) {R : Rel .long .long}
+    (h : (grade d (fun a b : Int64 => a < b) x).run = .ok R) :
+    ∃ G : List Nat, (Verb.cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
+        = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable x.rel
+          (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
+      ∧ corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = ix G ≫ graph Int64.ofNat := by
+  obtain ⟨S, k, hg, hk, rfl⟩ := grade_run h
+  obtain ⟨M, hc, hS, hl, -⟩ := grade_long hx hn h63 hg
+  have h64 := USize.size_le
+  have hb : ∀ i j, M[i]? = some j → i < 2 ^ 64 := fun i j hj => by
+    have := (List.getElem?_eq_some_iff.1 hj).1; omega
+  exact ⟨M, hc, (posL_iff fun i _ ⟨j, hj, _⟩ => hb i j hj).1
+    ((arr_sound S hk).trans (congrArg (posL° ≫ ·) (rel_ofList hS)))⟩
+
+/-- `asc`, `desc`, `xasc` run to `xasc_rel`'s right side: `x` read at the list `sort(⊴ₛ)` gives. -/
+theorem xsort_prog {u : QAtomicType} {n : Nat} (d : Bool) {s : Arr .long n} {x : Arr u n} {ws : List UInt64}
+    (hs : longWords n s.enc = some ws) (hn : n < USize.size) (h63 : n < 2 ^ 63) {R : Rel .long u}
+    (h : (xsort d (fun a b : Int64 => a < b) s x).run = .ok R) (hS : (xsort d (fun a b : Int64 => a < b) s x).Sound) :
+    ∃ G : List Nat, (Verb.cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
+        = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable s.rel
+          (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
+      ∧ corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob u) = ix G ≫ x.rel := by
+  obtain ⟨_, h1⟩ := comp_run h
+  obtain ⟨S, _, hg, -, -⟩ := grade_run h1
+  obtain ⟨M, hc, -, hl, hM⟩ := grade_long hs hn h63 hg
+  have h64 := USize.size_le
+  have hb : ∀ i j, M[i]? = some j → i < 2 ^ 64 := fun i j hj => by
+    have := (List.getElem?_eq_some_iff.1 hj).1; omega
+  refine ⟨M, hc, (posL_iff fun i _ ⟨j, hj, _⟩ => hb i j hj).1 ((run_sound _ hS h).trans ?_)⟩
+  · show (grade d (fun a b : Int64 => a < b) s).den ≫ posL° ≫ x.rel = _
+    rw [show (grade d (fun a b : Int64 => a < b) s).den = posL° ≫ (ix M ≫ graph Int64.ofNat) from
+      congrArg (posL° ≫ ·) (sort_spec hc)]
+    exact hom_ext fun a c => ⟨fun ⟨b, ⟨i, ea, j, hj, eb⟩, j', eb', hx⟩ => by
+        have hj' := ((rel_iff x j' c).1 hx).1
+        have hjn := hM j (List.mem_of_getElem? (hj : M[i]? = some j))
+        obtain rfl := ofNat_inj (by omega) (by omega) (eb.symm.trans eb')
+        exact ⟨i, ea, j, hj, hx⟩,
+      fun ⟨i, ea, j, hj, hx⟩ => ⟨_, ⟨i, ea, j, hj, rfl⟩, j, rfl, hx⟩⟩
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -621,5 +791,14 @@ end Prog
 #print axioms Prog.size_den
 #print axioms Prog.over_den
 #print axioms Prog.avg_den
+#print axioms Prog.iasc_den
+#print axioms Prog.idesc_den
+#print axioms Prog.rank_den
+#print axioms Prog.asc_den
+#print axioms Prog.desc_den
+#print axioms Prog.xasc_den
+#print axioms Prog.grade_sound_long
+#print axioms Prog.grade_prog
+#print axioms Prog.xsort_prog
 
 end LeetQ.Rel
