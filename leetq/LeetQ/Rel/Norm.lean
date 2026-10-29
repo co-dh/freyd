@@ -193,9 +193,20 @@ theorem exec_sound {A B : QAtomicType} (P : Prog A B) {R : Rel A B} (h : P.Small
 theorem bin_norm {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) :
     norm (bin x y) = missP (til ny) (anti (binJ x y) (pt (-1))) (-1) := rfl
 
+/-- `aj` normalised: both of its order joins are `ajJ`'s per-key bisection. -/
+theorem aj_norm {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    norm (aj lk lt rk rt) = missP (til nl) (anti (ajJ lk lt rk rt) (pt Int64.minValue)) Int64.minValue := by
+  simp [norm, normS, aj, missP, orRule, rule, asLen]
+
+/-- `wj1` normalised: its three order joins are `wjJ`'s window. -/
 theorem wj1_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj1 lk w₀ w₁ rk rt) = wjJ false lk w₀ w₁ rk rt := by
   simp [norm, normS, wj1, orRule, rule, asLen]
+
+/-- `wj` normalised: its window and prevailing row are `wjJ`'s. -/
+theorem wj_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
+    norm (wj lk w₀ w₁ rk rt) = wjJ true lk w₀ w₁ rk rt := by
+  simp [norm, normS, wj, orRule, rule, asLen]
 
 end Prog
 

@@ -16,6 +16,7 @@ import LeetQ.Long
 import LeetQ.Rel.Scan
 import LeetQ.Rel.Struct
 import LeetQ.Rel.Find
+import LeetQ.Rel.Norm
 
 open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
@@ -337,6 +338,15 @@ def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   timedE "relAj" (longKey lk, longKey lt, longKey rk, longKey rt) fun (lk, lt, rk, rt) => do
     sumR "relAj" (← LeetQ.Rel.Struct.aj #[lk] #[rk] lt rt).2
 
+/-- `aj` as a `Prog` term executed through `norm` (`Prog.exec`), its order join rewritten to `ajJ` (R7), over
+    `relAj`'s data; the checksum must be `relAj`'s. -/
+def progAjOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let (lk, lt, rk, rt) := asofData n
+  let arr (a : Array Int) : IO (LeetQ.Rel.Arr .long n) :=
+    io "progAj" (LeetQ.Rel.Arr.ofPart .long n (LeetQ.Rel.Alg.longs (col a)) "progAj")
+  timedE "progAj" (← arr lk, ← arr lt, ← arr rk, ← arr rt) fun (lk, lt, rk, rt) => do
+    sumR "progAj" (← LeetQ.Rel.Prog.exec (LeetQ.Rel.Prog.aj lk lt rk rt)).val
+
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
@@ -348,7 +358,7 @@ def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("relWj", relWjOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("relWj", relWjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
