@@ -18,6 +18,7 @@ import QLean.Kernel.Reduce
 import QLean.Kernel.Elementwise
 import QLean.Kernel.Coc
 import QLean.Eval.Dyad
+import QLean.Verify.Grade
 
 namespace LeetQ.Rel.Alg
 
@@ -1312,6 +1313,37 @@ theorem runStarts_group {α : Type} (w : USize) (float : Bool) (hay : ByteArray)
   exact ⟨m, hsz, hnn, by rw [hlast]; rfl,
     fun i j hij hj => by have := hasc i j hij hj; rw [hnn i (by omega), hnn j hj] at this; omega, G.1, G.2⟩
 
+
+/-- **Sorted by a key faithful to the elements, equal elements are contiguous**: `κ` ascends along the
+    rows and agrees exactly where `x` does, so a row between two equal elements holds that element. The
+    `hcont` of `runs_group`, from any stable sort (`grade_mono`). -/
+theorem sorted_contig {α : Type} {n : Nat} (x : Nat → α) (κ : Nat → UInt64)
+    (hmono : ∀ s t, s ≤ t → t < n → κ s ≤ κ t) (hk : ∀ s t, s < n → t < n → (κ s = κ t ↔ x s = x t)) :
+    ∀ s t u, s ≤ t → t ≤ u → u < n → x s = x u → x t = x s := fun s t u h1 h2 hu e => by
+  have a := hmono s t h1 (by omega); have b := hmono t u h2 hu
+  have c := (hk s u (by omega) hu).2 e
+  rw [← c] at b
+  exact ((hk s t (by omega) (by omega)).1 (UInt64.le_antisymm a b)).symm
+
+/-- **`grade` ascends its key along its answer**: row `s` of the grade has a key no greater than row `t ≥ s`
+    has (`grade_spec`, ascending). -/
+theorem grade_mono (k : Scan.Kind) (n : USize) (b : ByteArray) {s t : Nat} (hst : s ≤ t)
+    (ht : t < (Verify.ids (Order.grade k false n b)).length) :
+    Order.keyAt k b (Verify.ids (Order.grade k false n b))[s] ≤
+      Order.keyAt k b (Verify.ids (Order.grade k false n b))[t] := by
+  rcases Nat.lt_or_eq_of_le hst with h | rfl
+  · exact (List.pairwise_iff_getElem.1 (Verify.grade_spec k false n b).2 s t (by omega) ht h).1
+  · exact UInt64.le_refl _
+
+
+/-- **At an integral byte lane the search key and the sort key agree together**: both are the stored
+    bits (`keyAt_eq_iff`), so `runStarts`' runs and `grade`'s order see one equality. -/
+theorem key_eq_iff_keyAt {k : Scan.Kind} (hk : k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)
+    (b : ByteArray) (i j : Nat) :
+    Kernel.key k.width false b i = Kernel.key k.width false b j ↔ Order.keyAt k b i = Order.keyAt k b j := by
+  rw [Verify.keyAt_eq_iff hk]
+  simp only [Kernel.key, Kernel.normalise, Bool.not_false, if_true]
+
 end Laws
 
 #print axioms conv_holds
@@ -1319,5 +1351,8 @@ end Laws
 #print axioms groupIds_long_faithful
 #print axioms runs_group
 #print axioms runStarts_group
+#print axioms sorted_contig
+#print axioms grade_mono
+#print axioms key_eq_iff_keyAt
 
 end LeetQ.Rel.Alg
