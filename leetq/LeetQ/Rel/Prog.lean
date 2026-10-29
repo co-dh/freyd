@@ -238,6 +238,87 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, ajJ lk lt rk rt => do let r ← ajRun lk lt rk rt; pure ⟨r.1, ← tilKey r.1, r.2⟩
   | _, _, wjJ prev lk w₀ w₁ rk rt => wjRun prev lk w₀ w₁ rk rt
 
+/-- `S` lists each group of `X` as a permutation of it: defined on `dom X`, `S ⊑ dom X ≫ Λ X ≫ enum ≫ perm`.
+    The kernel lists a group in code or first-appearance order (`familyP`), not by position. -/
+def Segs {K : RelSet.{0}} (X : K ⟶ Idx) (S : K ⟶ ListRel.dList Nat) : Prop :=
+  (∀ a, Verb.dom X a a → ∃ ys, S a ys) ∧ ∀ a ys, S a ys → (Verb.dom X ≫ Λ X ≫ Verb.enum ≫ ListRel.perm) a ys
+
+/-- `list(R)` follows a permutation of its input with one of its output. -/
+theorem listP_perm {α β : Type} {R} : ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' →
+    ∀ {zs : CL.ConsList Unit β}, ListRel.listP R ys zs → ∃ zs', ListRel.listP R ys' zs' ∧ ListRel.Perm zs zs'
+  | _, _, .nil, zs, h => ⟨zs, h, ListRel.Perm.refl zs⟩
+  | _, _, .cons a p, zs, h => by
+    cases zs with
+    | wrap _ => exact h.elim
+    | cons b w =>
+      obtain ⟨w', hw', pw⟩ := listP_perm p h.2
+      exact ⟨.cons b w', ⟨h.1, hw'⟩, .cons b pw⟩
+  | _, _, .swap a b x, zs, h => by
+    cases zs with
+    | wrap _ => exact h.elim
+    | cons c z =>
+      cases z with
+      | wrap _ => exact h.2.elim
+      | cons d w => exact ⟨.cons d (.cons c w), ⟨h.2.1, h.1, h.2.2⟩, .swap c d w⟩
+  | _, _, .trans p q, zs, h => by
+    obtain ⟨z₁, h₁, p₁⟩ := listP_perm p h
+    obtain ⟨z₂, h₂, p₂⟩ := listP_perm q h₁
+    exact ⟨z₂, h₂, .trans p₁ p₂⟩
+
+/-- A right fold whose step is left-commutative ignores the order of the list. -/
+theorem foldr_perm {α γ : Type} {g : α → γ → γ} (hg : ∀ a b c, g a (g b c) = g b (g a c)) (e : γ) :
+    ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' → (CL.toList ys).foldr g e = (CL.toList ys').foldr g e
+  | _, _, .nil => rfl
+  | _, _, .cons a p => congrArg (g a) (foldr_perm hg e p)
+  | _, _, .swap a b _ => hg a b _
+  | _, _, .trans p q => (foldr_perm hg e p).trans (foldr_perm hg e q)
+
+/-- `list(R) ≫ ⦇e,f⦈` ignores the order of its input when `f` is left-commutative. -/
+theorem listFold_perm {α : Type} {R} {e : Int64} {f : Int64 → Int64 → Int64} (hf : ∀ a b c, f a (f b c) = f b (f a c))
+    (ys ys' : CL.ConsList Unit α) (b : Int64) (p : ListRel.Perm ys ys') (h : (ListRel.list R ≫ Verb.fold e f) ys b) :
+    (ListRel.list R ≫ Verb.fold e f) ys' b := by
+  obtain ⟨zs, hz, hb⟩ := h
+  obtain ⟨zs', hz', p'⟩ := listP_perm p hz
+  rw [show Verb.fold e f = graph (fun ys => (CL.toList ys).foldr f e) from (Verb.foldr_cata f e).symm] at hb ⊢
+  exact ⟨zs', hz', Eq.trans hb (foldr_perm hf e p')⟩
+
+/-- `length ≫ ofNat` ignores the order of its input. -/
+theorem length_perm {α : Type} (ys ys' : CL.ConsList Unit α) (b : Int64) (p : ListRel.Perm ys ys')
+    (h : (ListRel.length ≫ graph Int64.ofNat) ys b) : (ListRel.length ≫ graph Int64.ofNat) ys' b := by
+  obtain ⟨c, hc, hb⟩ := h
+  exact ⟨c, Eq.trans hc (clen_perm p), hb⟩
+where
+  clen_perm : ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' → ListRel.clen ys = ListRel.clen ys'
+  | _, _, .nil => rfl
+  | _, _, .cons _ p => congrArg (· + 1) (clen_perm p)
+  | _, _, .swap _ _ _ => rfl
+  | _, _, .trans p q => (clen_perm p).trans (clen_perm q)
+
+/-- `enum` gives a set one list. -/
+theorem enum_simple {s} {zs zs' : CL.ConsList Unit Nat} (h : Verb.enum s zs) (h' : Verb.enum s zs') : zs = zs' := by
+  obtain ⟨hs, o⟩ := (Verb.enum_iff _ _).1 h
+  have pw := (Verb.orderedP_ofList _ (CL.toList zs)).1 (by rw [Verb.ofList_toList]; exact o)
+  exact (((Verb.enum_ofList s _ pw fun i => (Verb.inlistP_ofList i _).symm.trans (by rw [Verb.ofList_toList, hs])) zs').1 h'
+    |>.trans (Verb.ofList_toList zs)).symm
+
+/-- **A group listed in any order folds as `enum` lists it**, for an `L` that ignores the order. -/
+theorem segs_eq {K B : RelSet.{0}} {X : K ⟶ Idx} {S : K ⟶ ListRel.dList Nat} (hS : Segs X S)
+    (L : ListRel.dList Nat ⟶ B) (hL : ∀ ys ys' b, ListRel.Perm ys ys' → L ys b → L ys' b) :
+    S ≫ L = Verb.dom X ≫ Λ X ≫ Verb.enum ≫ L := by
+  obtain ⟨hd, hs⟩ := hS
+  refine hom_ext fun a b => ⟨fun ⟨ys, h, hl⟩ => ?_, fun ⟨a', ⟨e, hx⟩, s, hc, zs, he, hl⟩ => ?_⟩
+  · obtain ⟨a', hx, s, hc, zs, he, p⟩ := hs a ys h
+    exact ⟨a', hx, s, hc, zs, he, hL _ _ b p.symm hl⟩
+  · subst e
+    obtain ⟨ys, h⟩ := hd a ⟨rfl, hx⟩
+    obtain ⟨_, ⟨e', _⟩, s', hc', zs', he', p⟩ := hs a ys h
+    subst e'
+    rw [Λ_eq_classifier] at hc hc'
+    have hss : s' = s := hc'.trans hc.symm
+    subst hss
+    obtain rfl := enum_simple he he'
+    exact ⟨ys, h, hL _ _ b p hl⟩
+
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
 def Sound : {A B : QAtomicType} → Prog A B → Prop
@@ -260,8 +341,9 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
       @Eq (Ob A ⟶ Ob B) T.Holds (Λ (R.Holds : Ob A ⟶ Ob B) ≫ ∋ (Ob B))
   | A, _, extr d P => P.Sound ∧ ∀ R T : Rel A .long, Alg.lamEst d R = .ok T →
       @Eq (Ob A ⟶ Ob .long) T.Holds (extr d (rel R)).den
-  | A, _, fold op e f x G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamFold op x R = .ok T →
-      @Eq (Ob A ⟶ Ob .long) T.Holds (fold op e f x (rel R)).den
+  | A, _, fold op e f x G => G.Sound ∧ (∀ a b c, f a (f b c) = f b (f a c)) ∧ ∀ R T : Rel A .long,
+      Alg.lamFold op x R = .ok T → ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
+        @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.list x.rel ≫ Verb.fold e f)
   | _, _, enum (n := n) _ => n < USize.size
   | A, B, anti P C => P.Sound ∧ C.Sound ∧ ∀ (R : Rel A B) (S : Rel B B) T, Alg.antiJoin R S = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob B) ≫ Verb.corNeg S.Holds)
@@ -272,7 +354,8 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
   | _, _, enumC n C => C.Sound ∧ ∀ R T : Rel .long .long, enumIn n R = .ok T →
       @Eq (Ob .long ⟶ Ob .long) T.Holds (enumC n (rel R)).den
   | A, _, count G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamCount R = .ok T →
-      @Eq (Ob A ⟶ Ob .long) T.Holds (count (rel R)).den
+      ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
+        @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.length ≫ graph Int64.ofNat)
   | _, _, grade d lt x => ∀ S, Ops.grade d x = some S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
   | A, B, ojoin v P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : Rel A .long) (S : Rel B .long) T, ordJoin v R S = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob .long) ≫ ord v ≫ (S.Holds : Ob B ⟶ Ob .long)°)
@@ -428,10 +511,11 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     · cases h
     rw [hl _ _ h]; cases d <;> simp only [den] <;> rw [run_sound P sP (by assumption)]
   | _, _, fold _ _ _ _ G, _, hs, h => by
-    unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
+    unfold Sound at hs; obtain ⟨sG, hf, hl⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+    obtain ⟨S, hS, hT⟩ := hl _ _ h
+    rw [hT, segs_eq hS _ (listFold_perm hf)]; simp only [den]; rw [run_sound G sG (by assumption)]
   | _, _, enum x, _, hs, h => enum_sound x hs h
   | _, _, anti P C, _, hs, h => by
     unfold Sound at hs; obtain ⟨sP, sC, hl⟩ := hs
@@ -459,7 +543,8 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+    obtain ⟨S, hS, hT⟩ := hl _ _ h
+    rw [hT, segs_eq hS _ length_perm]; simp only [den]; rw [run_sound G sG (by assumption)]
   | _, _, grade .., _, hs, h => by
     unfold Sound at hs
     obtain ⟨S, k, hg, hk, rfl⟩ := grade_run h
@@ -547,6 +632,22 @@ theorem lastBy_den {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) :
     (`overBy_rel`), so no caller can pair a kernel with a fold it does not run. -/
 def foldOp {A : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) (G : Prog A .long) : Prog A .long :=
   fold op (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) x G
+
+/-- `foldOp`'s step is left-commutative at every `op` that skips `0N` (`boolCast = false`): `+ * & |` are
+    commutative and associative. So the order a kernel lists a segment in does not change its fold. -/
+theorem foldOp_comm {op : Kernel.Coc.Over} (hb : op.boolCast = false) (a b c : Int64) :
+    Verb.skipNul op.step a (Verb.skipNul op.step b c) = Verb.skipNul op.step b (Verb.skipNul op.step a c) := by
+  have lc : ∀ x y z : Int64, op.step x (op.step y z) = op.step y (op.step x z) := by
+    intro x y z
+    cases op <;> simp only [Kernel.Coc.Over.boolCast, Bool.true_eq_false] at hb <;> simp only [Kernel.Coc.Over.step]
+    · rw [← Int64.add_assoc, Int64.add_comm x y, Int64.add_assoc]
+    · rw [← Int64.mul_assoc, Int64.mul_comm x y, Int64.mul_assoc]
+    all_goals
+      repeat' split
+      all_goals first | rfl | (apply Int64.toInt_inj.1; simp only [Int64.lt_iff_toInt_lt] at *; omega)
+  unfold Verb.skipNul
+  cases ha : (a == Spec.nul) <;> cases hb' : (b == Spec.nul) <;> simp only [ha, hb', Bool.false_eq_true, ↓reduceIte] <;>
+    exact lc a b c
 
 /-- `select f x by k`: `grpL(k) ≫ list(x) ≫ ⦇e,f⦈`, `grpL(k) = Λ(k°) ≫ enum` (`overBy_rel`). -/
 def selectBy {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (k : Arr K n) (x : Arr .long n) : Prog K .long :=
@@ -747,14 +848,17 @@ theorem over_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
 def nonNul {n : Nat} (x : Arr .long n) : Prog .long .long :=
   anti (arr x) (inter (idU x) (cst (u := .long) Spec.nul (idU x)))
 
-/-- `avg x = ⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the
-    count over `nonNul x`. -/
-def avg {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    Prog .long rt := dy .div h (over .add x) (count (whole (nonNul x)))
+/-- `⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the count over
+    `nonNul x`. No row where nothing counts: `count` has none there. -/
+def avgDiv {n : Nat} (x : Arr .long n) : Prog .long .float := dy .div rfl (over .add x) (count (whole (nonNul x)))
 
-theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    (avg h x).den = rpair (over .add x).den (count (whole (nonNul x))).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
-  rfl
+/-- `avg x = !1 ≫ miss(avgDiv x, 0n)`: the key `0` always, `0n` where no element counts, as q answers. -/
+def avg {n : Nat} (x : Arr .long n) : Prog .long .float :=
+  union (comp (til 1) (avgDiv x)) (cst QLean.nanBits (anti (til 1) (dom (avgDiv x))))
+
+theorem avg_den {n : Nat} (x : Arr .long n) :
+    (avg x).den = (til 1).den ≫ Verb.miss (avgDiv x).den QLean.nanBits :=
+  comp_cup _ _ _ _
 
 /-- On `x`'s values, missing the coreflexive `ran x ∩ (ran x ≫ !0N)` is being other than `0N`. -/
 theorem corNeg_nul {n : Nat} (x : Arr .long n) :
@@ -1317,6 +1421,183 @@ theorem rank_prog {n : Nat} {x : Arr .long n} {ws : List UInt64} (hx : longWords
     have hin := hM i (List.mem_of_getElem? hj)
     exact ⟨i, ⟨rfl, by omega⟩, _, rfl, Int64.ofNat j, (hR _ _).2 ⟨j, rfl, i, hj, rfl⟩, (pos_ofNat (by omega) j).2 rfl⟩
 
+/-! ## `avg` against q's `avg` -/
+
+/-- A list's rows as one group, read through `pos`: the key `0` against each position `X` holds. -/
+theorem whole_iff {t : QAtomicType} (X : Idx ⟶ Ob t) (hX : ∀ i v, X i v → i < 2 ^ 63) (k : Int64) (i : Nat) :
+    (((posL° ≫ X) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos : Ob .long ⟶ Idx) k i ↔ k = 0 ∧ ∃ v, X i v :=
+  ⟨fun ⟨l, ⟨v, ⟨j, ej, hx⟩, hc⟩, hp⟩ => by
+      subst ej
+      obtain rfl := (pos_ofNat (hX j v hx) i).1 hp
+      exact ⟨hc, v, hx⟩,
+    fun ⟨hk, v, hx⟩ => ⟨_, ⟨v, ⟨i, rfl, hx⟩, hk⟩, (pos_ofNat (hX i v hx) i).2 rfl⟩⟩
+
+/-- `Λ` over one group: `W` relates the key `0` alone to the positions `s`. -/
+theorem whole_lam {B : RelSet.{0}} {W : Ob .long ⟶ Idx} {s : Nat → Prop} (hW : ∀ k i, W k i ↔ k = 0 ∧ s i)
+    (L : ListRel.dList Nat ⟶ B) (k : Int64) (v : B.carrier) :
+    (Verb.dom W ≫ Λ W ≫ Verb.enum ≫ L) k v ↔ k = 0 ∧ (∃ i, s i) ∧ ∃ zs, Verb.enum s zs ∧ L zs v := by
+  have hs : (fun i => W 0 i) = s := funext fun i => propext ((hW 0 i).trans ⟨fun h => h.2, fun h => ⟨rfl, h⟩⟩)
+  rw [Λ_eq_classifier]
+  constructor
+  · rintro ⟨_, ⟨rfl, i, hi, -⟩, _, rfl, zs, he, hl⟩
+    obtain ⟨rfl, h⟩ := (hW _ i).1 hi
+    exact ⟨rfl, ⟨i, h⟩, zs, hs ▸ he, hl⟩
+  · rintro ⟨rfl, ⟨i, h⟩, zs, he, hl⟩
+    have hi := (hW 0 i).2 ⟨rfl, h⟩
+    exact ⟨0, ⟨rfl, i, hi, hi⟩, _, rfl, zs, (show Verb.enum (fun i => W 0 i) zs from hs ▸ he), hl⟩
+
+/-- `f/x` at its one key: `0` against the fold of the whole list, where the list is not empty. -/
+theorem over_val {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) (hn : n ≤ 2 ^ 63) (k v : Int64) :
+    (over op x).den k v ↔
+      k = 0 ∧ 0 < n ∧ v = x.toList.foldr (Verb.skipNul op.step) (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) := by
+  have hW : ∀ k i, ((whole (arr x)).den ≫ Verb.pos) k i ↔ k = 0 ∧ ∃ v, x.rel i v := whole_iff x.rel (arr_lt x hn)
+  have hmem : ∀ i, i ∈ List.range' 0 n ↔ ∃ v, x.rel i v := fun i => by
+    rw [List.mem_range'_1]
+    exact ⟨fun h => ⟨_, (rel_iff x i _).2 ⟨by omega, rfl⟩⟩, fun ⟨v, h⟩ => ⟨Nat.zero_le _, by have := ((rel_iff x i v).1 h).1; omega⟩⟩
+  have hE := Verb.enum_ofList _ _ List.pairwise_lt_range' hmem
+  have hY : ∀ ys, ListRel.list x.rel (CL.ofList (List.range' 0 n)) ys ↔ ys = CL.ofList x.toList := fun ys => by
+    have := Verb.listP_ix_range' x.toList n 0 (by rw [Arr.length_toList]; omega) ys
+    rw [List.drop_zero, List.take_of_length_le (by rw [Arr.length_toList]; try omega)] at this
+    exact this
+  refine (whole_lam hW _ k v).trans ?_
+  rw [show Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) = graph (fun ys =>
+    (CL.toList ys).foldr (Verb.skipNul op.step) (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul)) from (Verb.foldr_cata _ _).symm]
+  constructor
+  · rintro ⟨rfl, ⟨i, w, hi⟩, zs, he, ys, hy, hv⟩
+    obtain rfl := (hE zs).1 he
+    obtain rfl := (hY ys).1 hy
+    have := ((rel_iff x i w).1 hi).1
+    exact ⟨rfl, by omega, by rw [hv]; simp only [CL.toList_ofList]⟩
+  · rintro ⟨rfl, hn0, rfl⟩
+    exact ⟨rfl, ⟨0, _, (rel_iff x 0 _).2 ⟨hn0, rfl⟩⟩, _, (hE _).2 rfl, _, (hY _).2 rfl,
+      by simp only [RelSet.graph, CL.toList_ofList]⟩
+
+/-- Counting the positions of a list that pass `p` counts the elements that pass it. -/
+theorem filter_range_len {α : Type} (p : α → Bool) (d : α) : ∀ xs : List α,
+    ((List.range xs.length).filter fun i => p (xs.getD i d)).length = (xs.filter p).length
+  | [] => rfl
+  | a :: xs => by
+    have ih := filter_range_len p d xs
+    simp only [List.getD_eq_getElem?_getD] at ih
+    rw [List.length_cons, List.range_succ_eq_map, List.filter_cons, List.filter_map, List.filter_cons]
+    cases h : p a <;> simp [h, Function.comp_def, ih]
+
+/-- `count(whole(nonNul x))` at its one key: `0` against the number of elements that are not `0N`, where
+    there is one. -/
+theorem count_val {n : Nat} (x : Arr .long n) (hn : n ≤ 2 ^ 63) (k c : Int64) :
+    (count (whole (nonNul x))).den k c ↔ k = 0 ∧ 0 < (x.toList.filter (· != Spec.nul)).length ∧
+      c = Int64.ofNat (x.toList.filter (· != Spec.nul)).length := by
+  let X : Idx ⟶ Ob .long := x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul)
+  have hX : ∀ i v, X i v → i < 2 ^ 63 := fun i v ⟨w, hw, _⟩ => arr_lt x hn i w hw
+  have hW : ∀ k i, ((whole (nonNul x)).den ≫ Verb.pos) k i ↔ k = 0 ∧ ∃ v, X i v := fun k i => by
+    show ((((nonNul x).den ≫ _)° ≫ _) k i ↔ _)
+    rw [nonNul_den]; exact whole_iff X hX k i
+  let L := (List.range x.toList.length).filter fun i => x.toList.getD i 0 != Spec.nul
+  have hmem : ∀ i, i ∈ L ↔ ∃ v, X i v := fun i => by
+    simp only [L, List.mem_filter, List.mem_range, List.getD_eq_getElem?_getD]
+    constructor
+    · rintro ⟨hi, e⟩
+      rw [List.getElem?_eq_getElem hi] at e
+      exact ⟨_, _, List.getElem?_eq_getElem hi, rfl, by simpa using e⟩
+    · rintro ⟨v, w, hw, rfl, hne⟩
+      have hi : i < x.toList.length := (List.getElem?_eq_some_iff.1 hw).1
+      exact ⟨hi, by rw [show x.toList[i]? = some w from hw]; simpa using hne⟩
+  have hE := Verb.enum_ofList _ L ((List.pairwise_lt_range ..).filter _) hmem
+  have hlen : L.length = (x.toList.filter (· != Spec.nul)).length := filter_range_len (· != Spec.nul) 0 x.toList
+  have hf : ∀ l : List Nat, l.foldr (fun _ c => c + 1) 0 = l.length := fun l => by induction l <;> simp [*]
+  refine (whole_lam hW _ k c).trans ?_
+  rw [← hlen]
+  constructor
+  · rintro ⟨rfl, ⟨i, hi⟩, zs, he, m, hm, hc⟩
+    obtain rfl := (hE zs).1 he
+    refine ⟨rfl, List.length_pos_iff_exists_mem.2 ⟨i, (hmem i).2 hi⟩, ?_⟩
+    rw [hc, show m = ListRel.clen (CL.ofList L) from hm, clen_foldr, CL.toList_ofList, hf]
+  · rintro ⟨rfl, hpos, rfl⟩
+    obtain ⟨i, hi⟩ := List.length_pos_iff_exists_mem.1 hpos
+    exact ⟨rfl, ⟨i, (hmem i).1 hi⟩, _, (hE _).2 rfl, _, rfl, by rw [clen_foldr, CL.toList_ofList, hf]; rfl⟩
+
+/-- `÷` on two longs that are not `0N`: the `Float.ofInt` quotient, a NaN read as `0n`. -/
+theorem div_long {a b : Int64} (ha : a ≠ Spec.nul) (hb : b ≠ Spec.nul) :
+    elem (a := .long) (b := .long) (c := .float) .div rfl a b =
+      .ok (let r := (Float.ofInt a.toInt / Float.ofInt b.toInt).toBits; if Bits.f64IsNaN r then QLean.nanBits else r) := by
+  have hd : dyadAtom .div (.long a) (.long b) =
+      .ok (.float (let r := (Float.ofInt a.toInt / Float.ofInt b.toInt).toBits;
+        if Bits.f64IsNaN r then QLean.nanBits else r)) := by
+    have ha' : (a == Int64.minValue) = false := by simpa using ha
+    have hb' : (b == Int64.minValue) = false := by simpa using hb
+    simp [dyadAtom, Prim.arith, Prim.nonNumeric, arithAtoms, missing, QAtom.isNull, QAtom.type, ha', hb', isFloatPayload,
+      floatIn, temporalIn, temporalScale, temporalNanos, floatPayload, intPayload, atomOfFloat]
+  unfold elem
+  rw [dif_neg (by decide), dif_neg (by decide)]
+  split
+  · rename_i e he; cases he.symm.trans hd
+  · rename_i z hz; cases hz.symm.trans hd; rfl
+
+/-- **`avg x` is q's `avg`**: the key `0` against `Spec.avg`, `0n` where no element counts. Two side
+    conditions: the total is not `0N`, which `÷` reads as null like every long `0N` (no kernel route
+    reads a long `0N` as `-2^63`); and `Int64.toFloat`, opaque, is `Float.ofInt ∘ toInt`. -/
+theorem avg_val {n : Nat} (x : Arr .long n) (hn : n < 2 ^ 63) (hF : ∀ a : Int64, a.toFloat = Float.ofInt a.toInt)
+    (hs : x.toList.foldr (Verb.skipNul (· + ·)) 0 ≠ Spec.nul) (k : Int64) (v : UInt64) :
+    (avg x).den k v ↔ k = 0 ∧ v = Spec.avg x.toList := by
+  have hn' : n ≤ 2 ^ 63 := Nat.le_of_lt hn
+  obtain ⟨m, hm⟩ : ∃ m, (x.toList.filter (· != Spec.nul)).length = m := ⟨_, rfl⟩
+  have hmn : m ≤ n := by
+    rw [← hm]; have := List.length_filter_le (· != Spec.nul) x.toList; rw [Arr.length_toList] at this; exact this
+  have hmo : (Int64.ofNat m).toInt = m := Int64.toInt_ofNat_of_lt (by omega)
+  have hS := over_val .add x hn'
+  have hC := count_val x hn'
+  rw [hm] at hC
+  have hM : ∀ k' w, (avgDiv x).den k' w ↔ k' = 0 ∧ 0 < m ∧
+      elem (a := .long) (b := .long) (c := .float) .div rfl (x.toList.foldr (Verb.skipNul (· + ·)) 0) (Int64.ofNat m) = .ok w :=
+    fun k' w => ⟨fun ⟨p, ⟨h1, h2⟩, he⟩ => by
+        obtain ⟨rfl, -, e1⟩ := (hS k' p.1).1 h1
+        obtain ⟨-, hm0, e2⟩ := (hC 0 p.2).1 h2
+        refine ⟨rfl, hm0, ?_⟩
+        rw [show x.toList.foldr (Verb.skipNul (· + ·)) 0 = p.1 from e1.symm, ← e2]; exact he,
+      fun ⟨e, hm0, he⟩ => ⟨(_, Int64.ofNat m), ⟨(hS k' _).2 ⟨e, by omega, rfl⟩, (hC k' _).2 ⟨e, hm0, rfl⟩⟩, he⟩⟩
+  have hq : Spec.avg x.toList = Spec.quot (x.toList.foldr (Verb.skipNul (· + ·)) 0, m) := by
+    rw [← hm, ← Verb.over_foldr (· + ·) 0 Int64.add_assoc Int64.zero_add Int64.add_zero]; rfl
+  have hnul : Int64.ofNat m ≠ Spec.nul := fun e => by
+    have := congrArg Int64.toInt e; rw [hmo] at this; simp [Spec.nul] at this
+  have hval : ∀ w, 0 < m → elem (a := .long) (b := .long) (c := .float) .div rfl
+      (x.toList.foldr (Verb.skipNul (· + ·)) 0) (Int64.ofNat m) = .ok w → w = Spec.avg x.toList := fun w hm0 he => by
+    rw [div_long hs hnul, hmo] at he
+    cases he
+    rw [hq]
+    simp only [Spec.quot, beq_iff_eq, Nat.pos_iff_ne_zero.1 hm0, if_false]
+    rw [hF]
+    rfl
+  rw [avg_den]
+  constructor
+  · rintro ⟨k', ⟨j, ej, j', ⟨rfl, hj⟩, ej'⟩, hmiss⟩
+    obtain rfl : j = 0 := Nat.lt_one_iff.mp hj
+    subst ej; subst ej'
+    refine ⟨rfl, ?_⟩
+    rcases (Verb.miss_iff _ _ _ _).1 hmiss with h | ⟨hno, rfl⟩
+    · obtain ⟨-, hm0, he⟩ := (hM _ _).1 h
+      exact hval v hm0 he
+    · have hm0 : m = 0 := Nat.eq_zero_of_not_pos fun hm0 => hno (by
+        cases hd : elem (a := .long) (b := .long) (c := .float) .div rfl (x.toList.foldr (Verb.skipNul (· + ·)) 0)
+          (Int64.ofNat m) with
+        | error e => exact absurd hd (by rw [div_long hs hnul]; simp)
+        | ok w => exact ⟨w, (hM _ _).2 ⟨rfl, hm0, hd⟩⟩)
+      rw [hq, hm0]; rfl
+  · rintro ⟨rfl, rfl⟩
+    refine ⟨0, ⟨0, rfl, 0, ⟨rfl, Nat.zero_lt_one⟩, rfl⟩, (Verb.miss_iff _ _ _ _).2 ?_⟩
+    by_cases hm0 : 0 < m
+    · exact .inl ((hM _ _).2 ⟨rfl, hm0, by rw [div_long hs hnul, ← hval _ hm0 (div_long hs hnul)]⟩)
+    · refine .inr ⟨fun ⟨w, hw⟩ => hm0 ((hM _ _).1 hw).2.1, ?_⟩
+      rw [hq, show m = 0 by omega]; rfl
+
+/-- **`avg x` runs to `avg_rel`'s answer**: on a dense long column whose `Ops.avg` is `a`, the run of `avg x`
+    holds the key `0` against `canon(a)`, under `avg_val`'s two side conditions. -/
+theorem avg_prog {n : Nat} {x : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws) (hU : n < USize.size)
+    (hn : n < 2 ^ 63) (hF : ∀ a : Int64, a.toFloat = Float.ofInt a.toInt)
+    (hs : x.toList.foldr (Verb.skipNul (· + ·)) 0 ≠ Spec.nul) {a : UInt64} (ha : Ops.avg x = some a)
+    {T : Rel .long .float} (h : (avg x).run = .ok T) (hS : (avg x).Sound) (k : Int64) (v : UInt64) :
+    (T.Holds : Ob .long ⟶ Ob .float) k v ↔ k = 0 ∧ v = Spec.canon a := by
+  rw [run_sound _ hS h, avg_val x hn hF hs, Ops.avg_long hx hU ha]
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -1352,6 +1633,10 @@ end Prog
 #print axioms Prog.size_den
 #print axioms Prog.over_den
 #print axioms Prog.avg_den
+#print axioms Prog.segs_eq
+#print axioms Prog.foldOp_comm
+#print axioms Prog.avg_val
+#print axioms Prog.avg_prog
 #print axioms Prog.iasc_den
 #print axioms Prog.idesc_den
 #print axioms Prog.rank_den
