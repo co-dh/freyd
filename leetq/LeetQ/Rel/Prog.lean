@@ -109,6 +109,33 @@ inductive Prog : QAtomicType → QAtomicType → Type
   | enumC (n : Nat) : Prog .long .long → Prog .long .long
   /-- `Λ(G ≫ pos) ≫ enum ≫ length` (P8, P11, P12): each key's count; no `Coc.Over` counts -/
   | count {A : QAtomicType} : Prog A .long → Prog A .long
+  /-- `R ≫ (⊴) ≫ S°`, the order join (P7), `v` one of `<`, `≤`, `>`, `≥`: literal, `n·m` rows -/
+  | ojoin {A B : QAtomicType} (v : Prim.Dyadic) : Prog A .long → Prog B .long → Prog A B
+  /-- R6's right side: `x bin y`, `Find.bin` bisecting the ascending `x` -/
+  | binJ {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : Prog .long .long
+  /-- R7's right side: `aj` at one long key column a side, `Struct.aj` (`Eval.groupEdge`) -/
+  | ajJ {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Prog .long .long
+  /-- R8's right side: the `wj` (`prev`) or `wj1` window, left row ↦ right row, `Struct.wjP`'s ranges -/
+  | wjJ {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) : Prog .long .long
+
+/-- The comparison `v` names, `𝟘` for a verb that is none. -/
+def ord : Prim.Dyadic → (Ob .long ⟶ Ob .long)
+  | .lt => fun a b : Int64 => a < b
+  | .le => fun a b : Int64 => a ≤ b
+  | .gt => fun a b : Int64 => a > b
+  | .ge => fun a b : Int64 => a ≥ b
+  | _ => fun _ _ => False
+
+/-- `≥` on positions, the order `est` takes the last by. -/
+abbrev geN : Idx ⟶ Idx := fun a b : Nat => a ≥ b
+
+/-- The `wj` (`true`) and `wj1` (`false`) window on positions, `K = lk ≫ rk°` the key match:
+    `wj1 = K ∩ (w₀ ≫ (≤) ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)`; `wj` opens the window at `<` and adds the prevailing
+    row, `Λ(K ∩ (w₀ ≫ (≥) ≫ rt°)) ≫ est(≥)`. -/
+def win {nl nr : Nat} : Bool → Arr .long nl → Arr .long nl → Arr .long nl → Arr .long nr → Arr .long nr → (Idx ⟶ Idx)
+  | true, lk, w₀, w₁, rk, rt => ((lk.rel ≫ rk.rel°) ∩ (w₀.rel ≫ ord .lt ≫ rt.rel°)) ∩ (w₁.rel ≫ ord .ge ≫ rt.rel°) ∪
+      (Λ ((lk.rel ≫ rk.rel°) ∩ (w₀.rel ≫ ord .ge ≫ rt.rel°)) ≫ est geN)
+  | false, lk, w₀, w₁, rk, rt => ((lk.rel ≫ rk.rel°) ∩ (w₀.rel ≫ ord .le ≫ rt.rel°)) ∩ (w₁.rel ≫ ord .ge ≫ rt.rel°)
 
 namespace Prog
 
@@ -138,6 +165,11 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, _, enumC n C => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫ C.den))) ys ∧
       (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
   | _, _, count G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat
+  | _, _, ojoin v P Q => P.den ≫ ord v ≫ Q.den°
+  | _, _, binJ x y => posL° ≫ y.rel ≫ Verb.miss ((Λ (ord .ge ≫ x.rel°) ≫ est geN) ≫ graph Int64.ofNat) (-1)
+  | _, _, ajJ (nl := nl) lk lt rk rt => posL° ≫ corefl (· < nl) ≫
+      Verb.miss ((Λ ((lk.rel ≫ rk.rel°) ∩ (lt.rel ≫ ord .ge ≫ rt.rel°)) ≫ est geN) ≫ graph Int64.ofNat) Int64.minValue
+  | _, _, wjJ prev lk w₀ w₁ rk rt => posL° ≫ win prev lk w₀ w₁ rk rt ≫ posL
 
 /-- `til n` as a key, refused past `USize`, where `tilLongs` would wrap. -/
 def tilKey (n : Nat) : Except String (Arr .long n) :=
@@ -146,6 +178,26 @@ def tilKey (n : Nat) : Except String (Arr .long n) :=
 /-- `enumC`'s kernel: `til n in C`'s keys (`Find.in`), then `Find.where` keyed by `til m`. -/
 def enumIn (n : Nat) (C : Rel .long .long) : Except String (Rel .long .long) := do
   let w ← Find.where (← Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
+
+/-- The order join's literal kernel (P7): `prod R S`, `v` on the two value columns (P6′), the rows whose bit
+    is set (`Find.where`), their two keys picked. -/
+def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .long) : Except String (Rel A B) := do
+  unless v matches .lt | .le | .gt | .ge do throw "order join: not a comparison"
+  let T ← Alg.prod R S
+  let w ← Find.where (← Ew.val v .boolean T.v₁ T.v₂)
+  let (_, i) ← Alg.arrDense w.2
+  pure ⟨w.1, ← Arr.ofPart A w.1 (← Alg.pick A T.k₁.part i) "order join",
+    ← Arr.ofPart B w.1 (← Alg.pick B T.k₂.part i) "order join"⟩
+
+/-- `aj`'s kernel keyed by `til m`: one long key column a side. -/
+def ajRun {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Except String ((m : Nat) × Arr .long m) :=
+  Struct.aj #[(.long, lk.part)] #[(.long, rk.part)] (.long, lt.part) (.long, rt.part)
+
+/-- `wj`/`wj1`'s kernel: `Struct.wjP`'s windows as the carrier of `til nl`, flattened (`memP`). -/
+def wjRun {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
+    Except String (Rel .long .long) := do
+  let P ← Struct.wjP prev ⟨.long, w₀.part⟩ ⟨.long, w₁.part⟩ #[⟨.long, lk.part⟩] #[⟨.long, rk.part⟩] ⟨.long, rt.part⟩
+  Alg.memP ⟨nl, ← tilKey nl, P⟩
 
 /-- The literal interpreter: one kernel per node. -/
 def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
@@ -172,6 +224,10 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, dom P => do Alg.dom (← P.run)
   | _, _, enumC n C => do enumIn n (← C.run)
   | _, _, count G => do Alg.lamCount (← G.run)
+  | _, _, ojoin v P Q => do ordJoin v (← P.run) (← Q.run)
+  | _, _, binJ (ny := ny) x y => do let r ← Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
+  | _, _, ajJ lk lt rk rt => do let r ← ajRun lk lt rk rt; pure ⟨r.1, ← tilKey r.1, r.2⟩
+  | _, _, wjJ prev lk w₀ w₁ rk rt => wjRun prev lk w₀ w₁ rk rt
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -208,6 +264,16 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
       @Eq (Ob .long ⟶ Ob .long) T.Holds (enumC n (rel R)).den
   | A, _, count G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamCount R = .ok T →
       @Eq (Ob A ⟶ Ob .long) T.Holds (count (rel R)).den
+  | A, B, ojoin v P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : Rel A .long) (S : Rel B .long) T, ordJoin v R S = .ok T →
+      @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob .long) ≫ ord v ≫ (S.Holds : Ob B ⟶ Ob .long)°)
+  -- `bin_rel`'s hypotheses: the law is proved
+  | _, _, binJ (nx := nx) (ny := ny) x y => Find.Readable .long nx x.enc ∧ Find.Readable .long ny y.enc ∧
+      nx < USize.size ∧ ny < USize.size ∧ ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j
+  -- `aj_rel`'s conclusion on the key columns as longs; `aj_rel` states it on their words
+  | _, _, ajJ (nl := nl) lk lt rk rt => ∀ r, ajRun lk lt rk rt = .ok r → r.2.rel = corefl (· < nl) ≫
+      Verb.miss ((Λ ((lk.rel ≫ rk.rel°) ∩ (lt.rel ≫ ord .ge ≫ rt.rel°)) ≫ est geN) ≫ graph Int64.ofNat) Int64.minValue
+  | _, _, wjJ prev lk w₀ w₁ rk rt => ∀ T, wjRun prev lk w₀ w₁ rk rt = .ok T →
+      @Eq (Ob .long ⟶ Ob .long) T.Holds (wjJ prev lk w₀ w₁ rk rt).den
 
 /-! ## Node soundness -/
 
@@ -373,6 +439,32 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
     rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+  | _, _, ojoin _ P Q, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, sQ, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    split at h
+    · cases h
+    rw [hl _ _ _ h, run_sound P sP (by assumption), run_sound Q sQ (by assumption)]; rfl
+  | _, _, binJ x y, _, hs, h => by
+    unfold Sound at hs; obtain ⟨hx, hy, hn, hm, hsort⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rename_i r hr
+    split at h
+    · cases h
+    cases h
+    rw [arr_sound r (by assumption), Verb.bin_rel hx hy hn hm hsort hr]; rfl
+  | _, _, ajJ .., _, hs, h => by
+    unfold Sound at hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rename_i r hr
+    split at h
+    · cases h
+    cases h
+    rw [arr_sound r.2 (by assumption), hs r hr]; rfl
+  | _, _, wjJ .., _, hs, h => by unfold Sound at hs; exact hs _ h
 
 /-! ## Verbs that need no rewrite rule (design §2, §7 line 2) -/
 
@@ -594,6 +686,225 @@ theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long =
     (avg h x).den = rpair (over .add 0 (· + ·) x).den (size x).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
   rfl
 
+/-! ## The order join and R6–R8 (design §5, §7 line 4)
+
+  A verb's term joins its lists by `ojoin`, keyed by longs; its rule's right side (`binJ`, `ajJ`, `wjJ`) states
+  the same relation on positions read through `posL`. Below `2^63` `posL` is injective and order-preserving, so
+  `posL° ≫ — ≫ posL` commutes with `∩`, `∪` and `Λ(—) ≫ est(≥)`: each rule is those three steps. -/
+
+/-- A position relation below `2^63` on both sides, where `posL` keeps the order. -/
+def Bd (W : Idx ⟶ Idx) : Prop := ∀ i j, W i j → i < 2 ^ 63 ∧ j < 2 ^ 63
+
+theorem lt64 {i : Nat} (h : i < 2 ^ 63) : i < 2 ^ 64 := Nat.lt_trans h (by decide)
+
+theorem arr_lt {t : QAtomicType} {n : Nat} (x : Arr t n) (hn : n ≤ 2 ^ 63) : ∀ i v, x.rel i v → i < 2 ^ 63 :=
+  fun i v h => Nat.lt_of_lt_of_le ((rel_iff x i v).1 h).1 hn
+
+theorem bd_comp {B : RelSet.{0}} {X Y : Idx ⟶ B} (hX : ∀ i v, X i v → i < 2 ^ 63) (hY : ∀ j v, Y j v → j < 2 ^ 63) :
+    Bd (X ≫ Y°) := fun _ _ ⟨_, hx, hy⟩ => ⟨hX _ _ hx, hY _ _ hy⟩
+
+theorem bd_join {B C : RelSet.{0}} {X : Idx ⟶ B} {Y : Idx ⟶ C} (o : B ⟶ C) (hX : ∀ i v, X i v → i < 2 ^ 63)
+    (hY : ∀ j v, Y j v → j < 2 ^ 63) : Bd (X ≫ o ≫ Y°) := fun _ _ ⟨_, hx, _, _, hy⟩ => ⟨hX _ _ hx, hY _ _ hy⟩
+
+theorem bd_est {W : Idx ⟶ Idx} (R : Idx ⟶ Idx) (hW : Bd W) : Bd (Λ W ≫ est R) :=
+  fun i j h => hW i j ((RelSet.Λ_comp_est_apply _ _ _ _).1 h).1
+
+/-- Two positions below `2^63` compare as their longs. -/
+theorem ofNat_le {j k : Nat} (hj : j < 2 ^ 63) (hk : k < 2 ^ 63) : Int64.ofNat j ≤ Int64.ofNat k ↔ j ≤ k := by
+  rw [Int64.le_iff_toInt_le, Int64.toInt_ofNat_of_lt hj, Int64.toInt_ofNat_of_lt hk]; omega
+
+/-- A join of two lists keyed by longs is the join of the lists read through `posL`. -/
+theorem join_lift {B C : RelSet.{0}} (X : Idx ⟶ B) (o : B ⟶ C) (Y : Idx ⟶ C) :
+    (posL° ≫ X) ≫ o ≫ (posL° ≫ Y)° = posL° ≫ (X ≫ o ≫ Y°) ≫ posL :=
+  hom_ext fun _ _ => ⟨fun ⟨v, ⟨i, ea, hx⟩, w, ho, j, eb, hy⟩ => ⟨i, ea, j, ⟨v, hx, w, ho, hy⟩, eb⟩,
+    fun ⟨i, ea, j, ⟨v, hx, w, ho, hy⟩, eb⟩ => ⟨v, ⟨i, ea, hx⟩, w, ho, j, eb, hy⟩⟩
+
+theorem comp_lift {B : RelSet.{0}} (X Y : Idx ⟶ B) : (posL° ≫ X) ≫ (posL° ≫ Y)° = posL° ≫ (X ≫ Y°) ≫ posL :=
+  hom_ext fun _ _ => ⟨fun ⟨v, ⟨i, ea, hx⟩, j, eb, hy⟩ => ⟨i, ea, j, ⟨v, hx, hy⟩, eb⟩,
+    fun ⟨i, ea, j, ⟨v, hx, hy⟩, eb⟩ => ⟨v, ⟨i, ea, hx⟩, j, eb, hy⟩⟩
+
+theorem lift_inter {W V : Idx ⟶ Idx} (hW : Bd W) (hV : Bd V) :
+    (posL° ≫ W ≫ posL) ∩ (posL° ≫ V ≫ posL) = posL° ≫ (W ∩ V) ≫ posL :=
+  hom_ext fun _ _ => ⟨fun ⟨⟨i, ea, j, hw, eb⟩, ⟨i', ea', j', hv, eb'⟩⟩ => by
+      obtain rfl := ofNat_inj (lt64 (hW i j hw).1) (lt64 (hV i' j' hv).1) (ea.symm.trans ea')
+      obtain rfl := ofNat_inj (lt64 (hW _ j hw).2) (lt64 (hV _ j' hv).2) (eb.symm.trans eb')
+      exact ⟨_, ea, _, ⟨hw, hv⟩, eb⟩,
+    fun ⟨i, ea, j, ⟨hw, hv⟩, eb⟩ => ⟨⟨i, ea, j, hw, eb⟩, ⟨i, ea, j, hv, eb⟩⟩⟩
+
+theorem lift_union (W V : Idx ⟶ Idx) : (posL° ≫ W ≫ posL) ∪ (posL° ≫ V ≫ posL) = posL° ≫ (W ∪ V) ≫ posL :=
+  hom_ext fun _ _ => ⟨fun h => h.elim (fun ⟨i, ea, j, hw, eb⟩ => ⟨i, ea, j, Or.inl hw, eb⟩)
+      (fun ⟨i, ea, j, hv, eb⟩ => ⟨i, ea, j, Or.inr hv, eb⟩),
+    fun ⟨i, ea, j, h, eb⟩ => h.elim (fun hw => Or.inl ⟨i, ea, j, hw, eb⟩) (fun hv => Or.inr ⟨i, ea, j, hv, eb⟩)⟩
+
+/-- `est(≥)` on the longs of positions is `est(≥)` on the positions. -/
+theorem lift_est {W : Idx ⟶ Idx} (hW : Bd W) :
+    Λ (posL° ≫ W ≫ posL) ≫ est (fun a b : Int64 => a ≥ b) = posL° ≫ (Λ W ≫ est geN) ≫ posL := by
+  refine hom_ext fun a b => ?_
+  rw [RelSet.Λ_comp_est_apply]
+  constructor
+  · rintro ⟨⟨i, rfl, j, hw, rfl⟩, hm⟩
+    exact ⟨i, rfl, j, (RelSet.Λ_comp_est_apply _ _ _ _).2 ⟨hw, fun k hk =>
+      (ofNat_le (hW i k hk).2 (hW i j hw).2).1 (hm _ ⟨i, rfl, k, hk, rfl⟩)⟩, rfl⟩
+  · rintro ⟨i, rfl, j, h, rfl⟩
+    obtain ⟨hw, hm⟩ := (RelSet.Λ_comp_est_apply _ _ _ _).1 h
+    refine ⟨⟨i, rfl, j, hw, rfl⟩, fun _ ⟨i', ea, k, hk, ez⟩ => ?_⟩
+    obtain rfl := ofNat_inj (lt64 (hW i' k hk).1) (lt64 (hW i j hw).1) ea.symm
+    subst ez
+    exact (ofNat_le (hW _ k hk).2 (hW _ j hw).2).2 (hm k hk)
+
+/-- `miss` on `til n`'s longs is `miss` on its positions. -/
+theorem til_miss_lift {n : Nat} {M : Idx ⟶ Idx} (e : Int64) (hn : n ≤ 2 ^ 63) (hM : ∀ i j, M i j → i < 2 ^ 63) :
+    (til n).den ≫ Verb.miss (posL° ≫ M ≫ posL) e = posL° ≫ corefl (· < n) ≫ Verb.miss (M ≫ graph Int64.ofNat) e := by
+  have hat : ∀ i, i < 2 ^ 63 → ∀ c, (posL° ≫ M ≫ posL) (Int64.ofNat i) c ↔ (M ≫ graph Int64.ofNat) i c :=
+    fun i hi c => ⟨fun ⟨i', ea, j, hm, eb⟩ => by
+        obtain rfl := ofNat_inj (lt64 (hM i' j hm)) (lt64 hi) ea.symm; exact ⟨j, hm, eb⟩,
+      fun ⟨j, hm, eb⟩ => ⟨i, rfl, j, hm, eb⟩⟩
+  have key : ∀ i, i < n → ∀ c, Verb.miss (posL° ≫ M ≫ posL) e (Int64.ofNat i) c ↔
+      Verb.miss (M ≫ graph Int64.ofNat) e i c := fun i hi c => by
+    rw [Verb.miss_iff, Verb.miss_iff]; simp only [hat i (by omega)]
+  exact hom_ext fun a c => ⟨fun ⟨_, ⟨i, ea, _, ⟨rfl, hi⟩, rfl⟩, hm⟩ => ⟨i, ea, i, ⟨rfl, hi⟩, (key i hi c).1 hm⟩,
+    fun ⟨i, ea, _, ⟨rfl, hi⟩, hm⟩ => ⟨_, ⟨i, ea, i, ⟨rfl, hi⟩, rfl⟩, (key i hi c).2 hm⟩⟩
+
+/-- **Λ-fusion under `miss`**: a list `y` before `Λ(G) ≫ est(R)` moves inside, `y ≫ G`, on `y`'s positions. -/
+theorem fuse {t : QAtomicType} {ny : Nat} (y : Arr t ny) {B : RelSet.{0}} (G : Ob t ⟶ Idx) (R : Idx ⟶ Idx)
+    (F : Idx ⟶ B) (e : B.carrier) :
+    y.rel ≫ Verb.miss ((Λ G ≫ est R) ≫ F) e = corefl (· < ny) ≫ Verb.miss ((Λ (y.rel ≫ G) ≫ est R) ≫ F) e := by
+  have hf : ∀ {i v v'}, y.rel i v → y.rel i v' → v = v' := fun h h' => by
+    obtain ⟨_, ea⟩ := (rel_iff y _ _).1 h; obtain ⟨_, eb⟩ := (rel_iff y _ _).1 h'; exact ea.symm.trans eb
+  have hM : ∀ i v c, y.rel i v →
+      (Verb.miss ((Λ G ≫ est R) ≫ F) e v c ↔ Verb.miss ((Λ (y.rel ≫ G) ≫ est R) ≫ F) e i c) := fun i v c hv => by
+    have hE : ∀ j, (Λ (y.rel ≫ G) ≫ est R) i j ↔ (Λ G ≫ est R) v j := fun j => by
+      rw [RelSet.Λ_comp_est_apply, RelSet.Λ_comp_est_apply]
+      constructor
+      · rintro ⟨⟨v', hv', hg⟩, hm⟩; obtain rfl := hf hv hv'; exact ⟨hg, fun z hz => hm z ⟨_, hv, hz⟩⟩
+      · rintro ⟨hg, hm⟩; exact ⟨⟨v, hv, hg⟩, fun z ⟨v', hv', hz⟩ => by obtain rfl := hf hv hv'; exact hm z hz⟩
+    have h1 : ∀ c, ((Λ (y.rel ≫ G) ≫ est R) ≫ F) i c ↔ ((Λ G ≫ est R) ≫ F) v c :=
+      fun c => ⟨fun ⟨j, h, f⟩ => ⟨j, (hE j).1 h, f⟩, fun ⟨j, h, f⟩ => ⟨j, (hE j).2 h, f⟩⟩
+    rw [Verb.miss_iff, Verb.miss_iff]; simp only [h1]
+  exact hom_ext fun i c => ⟨fun ⟨v, hv, hm⟩ => ⟨i, ⟨rfl, ((rel_iff y i v).1 hv).1⟩, (hM i v c hv).1 hm⟩,
+    fun ⟨_, ⟨rfl, hi⟩, hm⟩ => ⟨_, (rel_iff y i _).2 ⟨hi, rfl⟩, (hM i _ c ((rel_iff y i _).2 ⟨hi, rfl⟩)).2 hm⟩⟩
+
+/-- `miss(E, e)` on the keys `T`: `T ≫ E`, and `e` on the keys of `T` that `E` misses (`anti`). -/
+def missP (T E : Prog .long .long) (e : Int64) : Prog .long .long :=
+  union (comp T E) (cst (u := .long) e (anti T (dom E)))
+
+theorem missP_den (T E : Prog .long .long) (e : Int64) : (missP T E e).den = T.den ≫ Verb.miss E.den e :=
+  comp_cup _ _ _ _
+
+/-- `x bin y = y ≫ miss(Λ((≥) ≫ x°) ≫ est(≥), −1)`, written Λ-fused: `miss(Λ(y ≫ (≥) ≫ x°) ≫ est(≥), −1)` on `til |y|`. -/
+def bin {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : Prog .long .long :=
+  missP (til ny) (extr true (ojoin .ge (arr y) (arr x))) (-1)
+
+theorem bin_den {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) :
+    (bin x y).den = (til ny).den ≫
+      Verb.miss (Λ ((posL° ≫ y.rel) ≫ ord .ge ≫ (posL° ≫ x.rel)°) ≫ est (fun a b : Int64 => a ≥ b)) (-1) :=
+  missP_den _ _ _
+
+/-- **R6**: the order join of `bin` is `binJ`'s bisection, for lists below `2^63`. -/
+theorem bin_R6 {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hx : nx ≤ 2 ^ 63) (hy : ny ≤ 2 ^ 63) :
+    (bin x y).den = (binJ x y).den := by
+  have hW := bd_join (ord .ge) (arr_lt y hy) (arr_lt x hx)
+  rw [bin_den, join_lift, lift_est hW, til_miss_lift _ hy fun i j h => (bd_est _ hW i j h).1]
+  show _ = posL° ≫ y.rel ≫ _
+  rw [fuse y]
+
+/-- `aj = miss(Λ((lk ≫ rk°) ∩ (lt ≫ (≥) ≫ rt°)) ≫ est(≥), 0N)` on `til |lk|`. -/
+def aj {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Prog .long .long :=
+  missP (til nl) (extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt)))) Int64.minValue
+
+theorem aj_den {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    (aj lk lt rk rt).den = (til nl).den ≫ Verb.miss (Λ (((posL° ≫ lk.rel) ≫ (posL° ≫ rk.rel)°) ∩
+      ((posL° ≫ lt.rel) ≫ ord .ge ≫ (posL° ≫ rt.rel)°)) ≫ est (fun a b : Int64 => a ≥ b)) Int64.minValue :=
+  missP_den _ _ _
+
+/-- **R7**: `aj`'s order join is `ajJ`'s per-key bisection, for tables below `2^63`. -/
+theorem aj_R7 {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63) :
+    (aj lk lt rk rt).den = (ajJ lk lt rk rt).den := by
+  have hK := bd_comp (arr_lt lk hl) (arr_lt rk hr)
+  have hJ := bd_join (ord .ge) (arr_lt lt hl) (arr_lt rt hr)
+  have hKJ : Bd ((lk.rel ≫ rk.rel°) ∩ (lt.rel ≫ ord .ge ≫ rt.rel°)) := fun i j h => hK i j h.1
+  rw [aj_den, comp_lift, join_lift, lift_inter hK hJ, lift_est hKJ,
+    til_miss_lift _ hl fun i j h => (bd_est _ hKJ i j h).1]
+  rfl
+
+/-- `wj1 = (lk ≫ rk°) ∩ (w₀ ≫ (≤) ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)`: the window as a relation, its runs `Λ(—) ≫ enum`. -/
+def wj1 {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) : Prog .long .long :=
+  inter (inter (comp (arr lk) (conv (arr rk))) (ojoin .le (arr w₀) (arr rt))) (ojoin .ge (arr w₁) (arr rt))
+
+theorem wj1_den {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
+    (wj1 lk w₀ w₁ rk rt).den = (((posL° ≫ lk.rel) ≫ (posL° ≫ rk.rel)°) ∩
+      ((posL° ≫ w₀.rel) ≫ ord .le ≫ (posL° ≫ rt.rel)°)) ∩ ((posL° ≫ w₁.rel) ≫ ord .ge ≫ (posL° ≫ rt.rel)°) :=
+  rfl
+
+/-- `wj = (K ∩ (w₀ ≫ (<) ≫ rt°) ∩ (w₁ ≫ (≥) ≫ rt°)) ∪ (Λ(K ∩ (w₀ ≫ (≥) ≫ rt°)) ≫ est(≥))`, `K = lk ≫ rk°`. -/
+def wj {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) : Prog .long .long :=
+  union (inter (inter (comp (arr lk) (conv (arr rk))) (ojoin .lt (arr w₀) (arr rt))) (ojoin .ge (arr w₁) (arr rt)))
+    (extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr w₀) (arr rt))))
+
+theorem wj_den {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
+    (wj lk w₀ w₁ rk rt).den = ((((posL° ≫ lk.rel) ≫ (posL° ≫ rk.rel)°) ∩
+      ((posL° ≫ w₀.rel) ≫ ord .lt ≫ (posL° ≫ rt.rel)°)) ∩ ((posL° ≫ w₁.rel) ≫ ord .ge ≫ (posL° ≫ rt.rel)°)) ∪
+      (Λ (((posL° ≫ lk.rel) ≫ (posL° ≫ rk.rel)°) ∩ ((posL° ≫ w₀.rel) ≫ ord .ge ≫ (posL° ≫ rt.rel)°)) ≫
+        est (fun a b : Int64 => a ≥ b)) :=
+  rfl
+
+/-- **R8** (`wj1`): the three order joins are `wjJ`'s window ranges, for tables below `2^63`. -/
+theorem wj1_R8 {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63) :
+    (wj1 lk w₀ w₁ rk rt).den = (wjJ false lk w₀ w₁ rk rt).den := by
+  have hK := bd_comp (arr_lt lk hl) (arr_lt rk hr)
+  have h0 := bd_join (ord .le) (arr_lt w₀ hl) (arr_lt rt hr)
+  have h1 := bd_join (ord .ge) (arr_lt w₁ hl) (arr_lt rt hr)
+  rw [wj1_den, comp_lift, join_lift, join_lift, lift_inter hK h0, lift_inter (fun i j h => hK i j h.1) h1]
+  rfl
+
+/-- **R8** (`wj`): the window and the prevailing row are `wjJ`'s ranges, for tables below `2^63`. -/
+theorem wj_R8 {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63) :
+    (wj lk w₀ w₁ rk rt).den = (wjJ true lk w₀ w₁ rk rt).den := by
+  have hK := bd_comp (arr_lt lk hl) (arr_lt rk hr)
+  have h0 := bd_join (ord .lt) (arr_lt w₀ hl) (arr_lt rt hr)
+  have h1 := bd_join (ord .ge) (arr_lt w₁ hl) (arr_lt rt hr)
+  have hP := bd_join (ord .ge) (arr_lt w₀ hl) (arr_lt rt hr)
+  rw [wj_den, comp_lift, join_lift, join_lift, join_lift, lift_inter hK h0, lift_inter (fun i j h => hK i j h.1) h1,
+    lift_inter hK hP, lift_est (fun i j h => hK i j h.1), lift_union]
+  rfl
+
+/-- The key `i` of a window row is a left row. -/
+theorem win_lt {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
+    ∀ i j, win prev lk w₀ w₁ rk rt i j → i < nl := by
+  have hK : ∀ i j, (lk.rel ≫ rk.rel°) i j → i < nl := fun i _ ⟨_, h, _⟩ => ((rel_iff lk i _).1 h).1
+  cases prev
+  · exact fun i j h => hK i j h.1.1
+  · exact fun i j h => h.elim (fun h => hK i j h.1.1) (fun h => hK i j ((RelSet.Λ_comp_est_apply _ _ _ _).1 h).1.1)
+
+/-- `x bin y` runs to `bin_rel`'s right side. -/
+theorem bin_prog {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hx : nx ≤ 2 ^ 63) (hy : ny ≤ 2 ^ 63)
+    {R : Rel .long .long} (h : (bin x y).run = .ok R) (hs : (bin x y).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) =
+      y.rel ≫ Verb.miss ((Λ (ord .ge ≫ x.rel°) ≫ est geN) ≫ graph Int64.ofNat) (-1) :=
+  (posL_iff fun i _ ⟨_, hv, _⟩ => Nat.lt_of_lt_of_le ((rel_iff y i _).1 hv).1 (by omega : ny ≤ 2 ^ 64)).1
+    ((run_sound _ hs h).trans (bin_R6 x y hx hy))
+
+/-- `aj` runs to `aj_rel`'s right side, on the key columns as longs. -/
+theorem aj_prog {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63)
+    {R : Rel .long .long} (h : (aj lk lt rk rt).run = .ok R) (hs : (aj lk lt rk rt).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = corefl (· < nl) ≫
+      Verb.miss ((Λ ((lk.rel ≫ rk.rel°) ∩ (lt.rel ≫ ord .ge ≫ rt.rel°)) ≫ est geN) ≫ graph Int64.ofNat) Int64.minValue :=
+  (posL_iff fun _ _ ⟨_, ⟨e, hi⟩, _⟩ => by subst e; exact Nat.lt_of_lt_of_le hi (by omega : nl ≤ 2 ^ 64)).1 ((run_sound _ hs h).trans (aj_R7 lk lt rk rt hl hr))
+
+/-- `wj1` runs to `wj1_rel`'s window, `W` on positions read through `posL`. -/
+theorem wj1_prog {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63)
+    {R : Rel .long .long} (h : (wj1 lk w₀ w₁ rk rt).run = .ok R) (hs : (wj1 lk w₀ w₁ rk rt).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = win false lk w₀ w₁ rk rt ≫ posL :=
+  (posL_iff fun i _ ⟨j, hw, _⟩ => Nat.lt_of_lt_of_le (win_lt false lk w₀ w₁ rk rt i j hw) (by omega : nl ≤ 2 ^ 64)).1
+    ((run_sound _ hs h).trans (wj1_R8 lk w₀ w₁ rk rt hl hr))
+
+/-- `wj` runs to `wj_rel`'s window with the prevailing row, `W` on positions read through `posL`. -/
+theorem wj_prog {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) (hr : nr ≤ 2 ^ 63)
+    {R : Rel .long .long} (h : (wj lk w₀ w₁ rk rt).run = .ok R) (hs : (wj lk w₀ w₁ rk rt).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = win true lk w₀ w₁ rk rt ≫ posL :=
+  (posL_iff fun i _ ⟨j, hw, _⟩ => Nat.lt_of_lt_of_le (win_lt true lk w₀ w₁ rk rt i j hw) (by omega : nl ≤ 2 ^ 64)).1
+    ((run_sound _ hs h).trans (wj_R8 lk w₀ w₁ rk rt hl hr))
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -621,5 +932,13 @@ end Prog
 #print axioms Prog.size_den
 #print axioms Prog.over_den
 #print axioms Prog.avg_den
+#print axioms Prog.bin_R6
+#print axioms Prog.aj_R7
+#print axioms Prog.wj1_R8
+#print axioms Prog.wj_R8
+#print axioms Prog.bin_prog
+#print axioms Prog.aj_prog
+#print axioms Prog.wj1_prog
+#print axioms Prog.wj_prog
 
 end LeetQ.Rel
