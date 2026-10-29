@@ -4,6 +4,9 @@
   key's `codes`.
 -/
 import LeetQ.Rel.Prog
+import LeetQ.Rel.SpecAmend
+import QLean.Verify.Where
+import QLean.Verify.Group
 
 namespace LeetQ.Rel.Alg
 
@@ -207,8 +210,103 @@ theorem codes_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.enc
   rw [Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
   exact hf i j (by omega) (by omega)
 
+/-- A word whose long reading is not negative reads the same as a natural. -/
+theorem toInt64_toInt_of_nonneg (u : UInt64) (h : 0 ≤ u.toInt64.toInt) : u.toInt64.toInt = u.toNat := by
+  have hl := u.toNat_lt
+  have e : u.toInt64.toInt = if decide (2 ^ 63 ≤ u.toNat) = true then (u.toNat : Int) - (2 ^ 64 : Nat) else u.toNat := by
+    rw [Int64.toInt, BitVec.toInt_eq_msb_cond, BitVec.msb_eq_decide]; rfl
+  rw [e] at h ⊢
+  by_cases hc : 2 ^ 63 ≤ u.toNat <;> simp [hc] at h ⊢ <;> omega
+
+theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArray} (hc : key.enc = .bytes b)
+    (hU : 2 ^ 32 < USize.size) (hn : n ≤ 2 ^ 32) {os : Array Code}
+    (hr : rangeOffsets .long #[key.part] n = .ok (some os))
+    (hcont : ∀ s t u : Fin n, s ≤ t → t ≤ u → key.get s = key.get u → key.get t = key.get s)
+    (val : Arr v n) {g : Nat} {keys : Arr .long g} {P : Parted v}
+    (h : runsP .long key.part val = .ok ⟨g, keys, P⟩) :
+    P.n = n ∧ P.g = g ∧ (∀ j j' : Fin g, keys.get j = keys.get j' → j = j') ∧
+      ∀ (s : Fin n) (j : Fin g), (key.get s = keys.get j ↔ Parted.group P.o s = j) := by
+  obtain ⟨c, -, hcodes, hcn, hw, hsz, hf⟩ := codes_long_bytes key hc hU hn hr
+  let x : Nat → Int64 := fun i => if hi : i < n then key.get ⟨i, hi⟩ else 0
+  have hf' : ∀ i j, i < c.n → j < c.n → (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ x i = x j) :=
+    fun i j hi hj => by
+      rw [hcn] at hi hj; simp only [x, dif_pos hi, dif_pos hj]; exact hf ⟨i, hi⟩ ⟨j, hj⟩
+  have hcont' : ∀ s t u, s ≤ t → t ≤ u → u < c.n → x s = x u → x t = x s := fun s t u h1 h2 hu e => by
+    rw [hcn] at hu
+    simp only [x, dif_pos (show s < n by omega), dif_pos (show t < n by omega), dif_pos hu] at e ⊢
+    exact hcont ⟨s, by omega⟩ ⟨t, by omega⟩ ⟨u, hu⟩ h1 h2 e
+  obtain ⟨m, hst, hnn, hlast, hasc, hinj, hgrp⟩ := code_runs c hw hsz (by omega) x hf' hcont'
+  rw [hcn] at hlast hgrp
+  simp only [runsP, hcodes, single, bind, Except.bind, pure, Except.pure] at h
+  rw [dif_pos (show #[c].size = 1 from rfl)] at h
+  dsimp only at h
+  split at h
+  · simp at h
+  rename_i ds hp
+  rcases ds with ⟨k, e⟩
+  obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
+    (fun _ _ _ e => by rw [hc] at e; cases e) _ hp
+  simp only [groupedP, bind, Except.bind, pure, Except.pure, List.getElem_toArray, List.getElem_cons_zero] at h hp hk he
+  split at h
+  · simp at h
+  rename_i o ho
+  split at h
+  · rename_i P' hP
+    split at h
+    · simp at h
+    rename_i keys' hks
+    cases h
+    dsimp only at hnn hlast hasc hinj hgrp
+    -- the count of keys is the count of starts
+    have hgm : g = m := by
+      rw [hk, ByteArray.size_extract, hst]; omega
+    subst hgm
+    -- the parted list's offsets are the starts the kernel wrote
+    have hoe : o.enc = .bytes c.runStarts := Verb.ofPart_enc ho
+    unfold Parted.of? at hP
+    rw [hoe] at hP
+    simp only [longBytes, Option.bind_eq_bind, Option.bind_some] at hP
+    split at hP
+    case isFalse => cases hP
+    split at hP
+    case isFalse => cases hP
+    cases hP
+    -- each key is the column's element at its run's start
+    have hsrc' : src = b := by rw [hc] at hsrc; simp [Enc.bytesOf] at hsrc; exact hsrc.symm
+    subst hsrc'
+    have hbn := Arr.n_long_bytes key hc
+    have hR : ∀ j, j < g → (Column.bitsAt c.runStarts (8 * j) 8).toInt64.toInt.toNat < n := fun j hj => by
+      have := hasc j g hj (Nat.le_refl _); omega
+    have hRn : ∀ j, j ≤ g → (Column.bitsAt c.runStarts (8 * j) 8).toNat =
+        (Column.bitsAt c.runStarts (8 * j) 8).toInt64.toInt.toNat := fun j hj => by
+      have := toInt64_toInt_of_nonneg _ (by rw [hnn j hj]; omega); omega
+    have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+    have hkey : ∀ j : Fin g, keys.get j = x (Column.bitsAt c.runStarts (8 * j) 8).toInt64.toInt.toNat := fun j => by
+      have hke : keys.enc = e := Verb.ofPart_enc hks
+      rw [he] at hke
+      rw [Arr.get_long_bytes keys hke]
+      obtain ⟨-, hg⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl _) ((Kernel.nullBits .long).getD 0)
+        src (c.runStarts.extract 0 (c.runStarts.size - 8))
+      have hj : j.1 < (c.runStarts.extract 0 (c.runStarts.size - 8)).size / 8 := by
+        rw [ByteArray.size_extract, hst]; omega
+      have g1 := hg j hj
+      rw [h8] at g1
+      rw [g1, Verify.bitsAt_extract _ (by rw [hst]; omega), Nat.zero_add, Nat.mul_comm j.1 8, hRn j (by omega),
+        if_pos (by rw [hbn]; exact hR j j.2)]
+      simp only [x, dif_pos (hR j j.2)]
+      rw [Arr.get_long_bytes key hc]
+    refine ⟨rfl, rfl, fun j j' e => Fin.ext (hinj j j' j.2 j'.2 (by rw [← hkey, ← hkey, e])), fun s j => ?_⟩
+    have hof : ∀ (a : Arr .long (g + 1)), a.enc = .bytes c.runStarts → ∀ i (hi : i ≤ g), (a.toList[i]!).toNatClampNeg =
+        (Column.bitsAt c.runStarts (8 * i) 8).toInt64.toInt.toNat := fun a ha i hi => by
+      rw [getElem!_pos _ i (by rw [Arr.length_toList]; omega), Arr.getElem_toList, Arr.get_long_bytes _ ha]
+      simp only [Int64.toNatClampNeg, Nat.mul_comm i 8]
+    rw [Verb.group_iff (Parted.co _) j.2, hof _ rfl j (by omega), hof _ rfl (j + 1) (by omega), hkey j, ← hgrp s j s.2 j.2]
+    simp only [x, dif_pos s.2]
+  · first | simp at h | simp [throw, throwThe, MonadExceptOf.throw] at h | cases h
+
 #print axioms rangeOffsets_bytes
 #print axioms code_runs
 #print axioms codes_long_bytes
+#print axioms runsP_long
 
 end LeetQ.Rel.Alg
