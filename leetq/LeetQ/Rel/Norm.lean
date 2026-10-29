@@ -115,6 +115,39 @@ theorem rel_of_toList {t : QAtomicType} {n m : Nat} {a : Arr t n} {b : Arr t m} 
     a.rel = b.rel := by
   show ix a.toList = ix b.toList; rw [h]
 
+/-- `Nat.all` is a tail-recursive loop (`all_eq_allTR`); it holds exactly when every test does. -/
+theorem all_true : ∀ (n : Nat) (f : (i : Nat) → i < n → Bool), Nat.all n f = true → ∀ i (h : i < n), f i h = true
+  | 0, _, _, _, h => absurd h (by omega)
+  | n + 1, f, hf, i, h => by
+    rw [Nat.all_succ, Bool.and_eq_true] at hf
+    by_cases hi : i = n
+    · subst hi; exact hf.2
+    · exact all_true n _ hf.1 i (by omega)
+
+theorem of_all_true : ∀ (n : Nat) (f : (i : Nat) → i < n → Bool), (∀ i (h : i < n), f i h = true) → Nat.all n f = true
+  | 0, _, _ => Nat.all_zero
+  | n + 1, f, hf => by
+    rw [Nat.all_succ, Bool.and_eq_true]; exact ⟨of_all_true n _ fun i h => hf i (by omega), hf n (by omega)⟩
+
+/-- Two arrays of one length compared by an index loop: no list is built (`List` equality is not tail
+    recursive and overflows the stack at ~1e6). -/
+def eqAt {n : Nat} (a b : Arr .long n) : Bool := Nat.all n fun i h => decide (a.get ⟨i, h⟩ = b.get ⟨i, h⟩)
+
+/-- The loop decides `toList` equality. -/
+theorem eqAt_toList {n : Nat} {a b : Arr .long n} (h : eqAt a b = true) : a.toList = b.toList := by
+  have : a.get = b.get := funext fun i => of_decide_eq_true (all_true _ _ h i.1 i.2)
+  unfold Arr.toList; rw [this]
+
+@[simp] theorem eqAt_self {n : Nat} (a : Arr .long n) : eqAt a a = true := of_all_true _ _ fun _ _ => by simp
+
+/-- `a` and `b` one list of values. The pointer test runs first, since the two copies of a pattern's list are
+    one object; the index loop `eqAt` only when they are not. -/
+def sameArr {n m : Nat} (a : Arr .long n) (b : Arr .long m) : Option (PLift (a.toList = b.toList)) :=
+  if hn : n = m then
+    if h : withPtrEq (hn ▸ a) b (fun _ => eqAt (hn ▸ a) b) (fun e => by subst hn; subst e; simp) = true
+    then some ⟨by subst hn; exact eqAt_toList h⟩ else none
+  else none
+
 /-- `b` at the length `n`, when that is its length. -/
 def asLen {t : QAtomicType} {m : Nat} (n : Nat) (b : Arr t m) : Option {c : Arr t n // c.rel = b.rel} :=
   if h : m = n then some ⟨h ▸ b, by subst h; rfl⟩ else none
@@ -135,26 +168,28 @@ def rule : {A B : QAtomicType} → (P : Prog A B) → Option {Q : Prog A B // P.
       (ojoin .ge (arr w₁) (arr rt₁)) =>
     match asLen _ w₀, asLen _ w₁, asLen _ rt with
     | some ⟨w₀', e0⟩, some ⟨w₁', e1⟩, some ⟨rt', et⟩ =>
-      if h1 : rt₁.toList = rt.toList then some ⟨wjJ false lk w₀' w₁' rk rt', fun h => by
+      match sameArr rt₁ rt with
+      | some ⟨h1⟩ => some ⟨wjJ false lk w₀' w₁' rk rt', fun h => by
         rw [← wj1_R8 lk w₀' w₁' rk rt' h.1.1.1 h.1.1.2, wj1_den, e0, e1, et]
         show _ = _ ∩ ((posL° ≫ w₁.rel) ≫ ord .ge ≫ (posL° ≫ rt₁.rel)°)
         rw [rel_of_toList h1]; rfl⟩
-      else none
+      | none => none
     | _, _, _ => none
   | _, _, union (inter (inter (@comp _ .long _ (arr lk) (conv (arr rk))) (ojoin .lt (arr w₀) (arr rt)))
         (ojoin .ge (arr w₁) (arr rt₁)))
       (extr true (inter (@comp _ .long _ (arr lk₂) (conv (arr rk₂))) (ojoin .ge (arr w₀₂) (arr rt₂)))) =>
     match asLen _ w₀, asLen _ w₁, asLen _ rt with
     | some ⟨w₀', e0⟩, some ⟨w₁', e1⟩, some ⟨rt', et⟩ =>
-      if h1 : rt₁.toList = rt.toList ∧ lk₂.toList = lk.toList ∧ rk₂.toList = rk.toList ∧
-          w₀₂.toList = w₀.toList ∧ rt₂.toList = rt.toList then some ⟨wjJ true lk w₀' w₁' rk rt', fun h => by
+      match sameArr rt₁ rt, sameArr lk₂ lk, sameArr rk₂ rk, sameArr w₀₂ w₀, sameArr rt₂ rt with
+      | some ⟨i1⟩, some ⟨i2⟩, some ⟨i3⟩, some ⟨i4⟩, some ⟨i5⟩ => some ⟨wjJ true lk w₀' w₁' rk rt', fun h => by
+        have h1 : _ ∧ _ ∧ _ ∧ _ ∧ _ := ⟨i1, i2, i3, i4, i5⟩
         rw [← wj_R8 lk w₀' w₁' rk rt' h.1.1.1.1 h.1.1.1.2, wj_den, e0, e1, et]
         show _ = ((_ ∩ ((posL° ≫ w₁.rel) ≫ ord .ge ≫ (posL° ≫ rt₁.rel)°)) ∪
           (Λ (((posL° ≫ lk₂.rel) ≫ (posL° ≫ rk₂.rel)°) ∩ ((posL° ≫ w₀₂.rel) ≫ ord .ge ≫ (posL° ≫ rt₂.rel)°)) ≫
             est (fun a b : Int64 => a ≥ b)))
         rw [rel_of_toList h1.1, rel_of_toList h1.2.1, rel_of_toList h1.2.2.1, rel_of_toList h1.2.2.2.1,
           rel_of_toList h1.2.2.2.2]; rfl⟩
-      else none
+      | _, _, _, _, _ => none
     | _, _, _ => none
   | _, _, _ => none
 
@@ -210,14 +245,6 @@ def mapOn? : (K : Prog .long .long) → Option ((n : Nat) ×' (n ≤ 2 ^ 63 → 
       show MapOn ny (posL° ≫ y.rel ≫ _); rw [fuse y]; exact mapOn_miss h _ _⟩
   | ajJ (nl := nl) _ _ _ _ => some ⟨nl, fun h => mapOn_miss h _ _⟩
   | _ => none
-
-/-- `a` and `b` one list of values. The pointer test runs first, since the two copies of a pattern's list are
-    one object; the O(n) list comparison (not tail recursive) only when they are not. -/
-def sameArr {n m : Nat} (a : Arr .long n) (b : Arr .long m) : Option (PLift (a.toList = b.toList)) :=
-  if hn : n = m then
-    if h : withPtrEq (hn ▸ a) b (fun _ => decide (a.toList = b.toList)) (fun e => by subst hn; subst e; simp) = true
-    then some ⟨of_decide_eq_true h⟩ else none
-  else none
 
 /-- Two kernel nodes over one list of values each: one relation. -/
 def sameKer : (K L : Prog .long .long) → Option (PLift (K.den = L.den))
@@ -326,12 +353,12 @@ theorem aj_norm {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl 
 /-- `wj1` normalised: its three order joins are `wjJ`'s window. -/
 theorem wj1_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj1 lk w₀ w₁ rk rt) = wjJ false lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj1, orRule, rule, asLen]
+  simp [norm, normS, wj1, orRule, rule, asLen, sameArr, withPtrEq]
 
 /-- `wj` normalised: its window and prevailing row are `wjJ`'s. -/
 theorem wj_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj lk w₀ w₁ rk rt) = wjJ true lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj, orRule, rule, asLen]
+  simp [norm, normS, wj, orRule, rule, asLen, sameArr, withPtrEq]
 
 end Prog
 
