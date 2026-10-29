@@ -2033,8 +2033,7 @@ theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x :
 theorem mon_enc {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Enc}
     (hd : Kernel.monColumn name t n x.enc = some (rt, C)) (hv : Ew.mon name rt x = .ok R) : R.enc = C := by
   unfold Ew.mon at hv
-  simp only [hd, ↓reduceIte] at hv
-  unfold Arr.of at hv
+  simp only [hd, ↓reduceIte, Arr.of] at hv
   split at hv
   · cases hv; rfl
   · cases hv
@@ -2063,7 +2062,7 @@ theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc 
     (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_long _ _ _) hv
+  have hR := mon_enc (by rw [ha]; exact monColumn_neg_long _ _) hv
   have hrun := run_mon ({ inputs := #[a] } : Kernel.Ew.Build) rfl Kernel.Ew.neg Kernel.Ew.i64 0
     (Kernel.nullPayload .long) (by decide) n.toUSize
   simp only [show (#[a] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl] at hrun
@@ -2152,7 +2151,7 @@ theorem atomVal_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v =
   unfold Ew.atomVal at hv
   rw [atomCol_long, hb] at hv
   simp only [bind, Except.bind] at hv
-  have hR := dyad_enc (dyadColumn_long_av hop hr n _ b _ _) hv
+  have hR := dyad_enc (dyadColumn_long_av hop hr n _ b) hv
   have hel : (fun y : Int64 => elem v h k y) =
       fun y => pure (Kernel.Ew.intStep op Int64.minValue k y) := funext fun y => Ew.elem_long_val hop h k y
   rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, toList_val_long _ _ hn hR,
@@ -2169,8 +2168,7 @@ theorem atomVal_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = 
 /-- `dyadColumn` on a dense long column and a long atom column (right), at a value verb other than `^`
     (q's `x^atom` is `'nyi`): the one-stage `eVal` chain at `va`. -/
 theorem dyadColumn_long_va {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op) (hf : v ≠ .fill)
-    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (b c : ByteArray)
-    (pb pa : Option (UInt8 × IndexCell)) :
+    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (b c : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.va .long .long n (.bytes b) 1 (.bytes c) =
       some (.long, .vector .long n (Kernel.payload .long n.toUSize ({ inputs := #[b, c] },
         { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.va, a := 0, b := 1,
@@ -2222,7 +2220,7 @@ theorem valAtom_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v =
     simp only [bind, Except.bind] at hv)
   case fill => simp [Ew.dyad, Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.Ew.va] at hv
   case sub =>
-    have hR := dyad_enc (dyadColumn_long_va rfl (by decide) hr n b _ _ _) hv
+    have hR := dyad_enc (dyadColumn_long_va rfl (by decide) hr n b _) hv
     have hel : (fun y : Int64 => elem .sub h y k) =
         fun y => pure (Kernel.Ew.intStep Kernel.Ew.sub Int64.minValue y k) :=
       funext fun y => Ew.elem_long_val rfl h y k
@@ -2336,7 +2334,7 @@ theorem prior_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = s
     show (#[a, Kernel.shiftBytes 8 s.toUInt64 1 a] : Array ByteArray)[(1 : UInt8).toNat]! =
       Kernel.shiftBytes 8 s.toUInt64 1 a from rfl] at hrun
   exact prior_spec_words hop h hn (by simp only [longWords, ha]) (Arr.n_long_bytes x ha) rfl
-    (longWords_run_val hn (dyad_enc (dyadColumn_long_vv hop hr n a _ _ _) hv) hrun)
+    (longWords_run_val hn (dyad_enc (dyadColumn_long_vv hop hr n a _) hv) hrun)
 
 /-- `seed f': x = ⟨x, prev⟩ ≫ f` from the kernel: `prior_rel` of `prior_spec_long`. Dense long column. -/
 theorem prior_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
@@ -2347,19 +2345,21 @@ theorem prior_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = so
   prior_rel (prior_spec_long hop h ha hn hv)
 
 /-- `shiftColumn` by one on a `foR` long column: the dense `shiftBytes` of the decode where `denseCheaper` (or
-    an empty metadata) sends it, else `shiftFoR`'s blocks, which `Column.answer` keeps or decodes. -/
-theorem shiftColumn_long_foR (n : Nat) (md pk : ByteArray) (fill : UInt64) (p : Option (UInt8 × IndexCell)) :
-    Kernel.shiftColumn .long 1 fill n (.foR md pk) = some (.vector ⟨.long, n, .bytes
-      (Kernel.shiftBytes (8 : Nat).toUSize fill 1 (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize)), none⟩) ∨
-    Kernel.shiftColumn .long 1 fill n (.foR md pk) = some (.vector (Column.answer ⟨.long, n, .foR
+    an empty metadata) sends it, else `shiftFoR`'s blocks, which `Enc.answer` keeps or decodes. The dense
+    branch needs the decode to fill the header count (`hs`), else the kernel refuses. -/
+theorem shiftColumn_long_foR (n : Nat) (md pk : ByteArray) (fill : UInt64)
+    (hs : ¬ (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize).size < n * 8) :
+    Kernel.shiftColumn .long 1 fill n (.foR md pk) = some (.bytes
+      (Kernel.shiftBytes (8 : Nat).toUSize fill 1 (Kernel.Coc.decode (8 : Nat).toUSize md pk n.toUSize))) ∨
+    Kernel.shiftColumn .long 1 fill n (.foR md pk) = some (Enc.answer .long n (.foR
       (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 fill).1
-      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 fill).2, none⟩)) := by
+      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 fill).2)) := by
   unfold Kernel.shiftColumn
   by_cases hm : md.isEmpty
-  · left; simp [hm, Kernel.foRColumn, Kernel.denseWidth, Enc.bytesOf, QAtomicType.width, Column.encodes] <;> rfl
+  · left; simp [hm, hs, Kernel.foRColumn, Kernel.denseWidth, Enc.bytesOf, QAtomicType.width, Column.encodes] <;> rfl
   · cases hd : Kernel.denseCheaper 5 n 8 ((n + Column.blk - 1) / Column.blk)
     · right; simp [hm, hd, Kernel.foRColumn, Kernel.denseWidth, Enc.bytesOf, QAtomicType.width, Column.encodes] <;> rfl
-    · left; simp [hm, hd, Kernel.foRColumn, Kernel.denseWidth, Enc.bytesOf, QAtomicType.width, Column.encodes] <;> rfl
+    · left; simp [hm, hd, hs, Kernel.foRColumn, Kernel.denseWidth, Enc.bytesOf, QAtomicType.width, Column.encodes] <;> rfl
 
 /-- **`seed f': x` at `long` on a `foR` column is its List spec** `zip(x, seed :: x).mapM f`: the prior operand
     is dense (`longWords_Fb`) or `shiftFoR`'s blocks (`shiftFoR_spec`), kept encoded (`longWords_val_foR`) or
@@ -2378,15 +2378,15 @@ theorem prior_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v
   rw [ha] at hv
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
   have hF := Verify.shiftFoR_spec 8 (by decide) (by decide) md pk n.toUSize 1 s.toUInt64
-  rcases shiftColumn_long_foR n md pk s.toUInt64 x.attrCell with hs | hs <;> rw [hs] at hv <;> simp only at hv
+  rcases shiftColumn_long_foR n md pk s.toUInt64 (by omega) with hs | hs <;> rw [hs] at hv <;> simp only at hv
   · exact prior_spec_words hop h hn hx hxs rfl
-      (longWords_Fb hn (dyad_enc (dyadColumn_long_vv_mixed hop hr n _ md pk _ _).2 hv))
+      (longWords_Fb hn (dyad_enc (dyadColumn_long_vv_mixed hop hr n _ md pk).2 hv))
   · rcases Verify.answer_foR .long 8 n (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).1
-      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).2 rfl (a := none) with e | e <;> rw [e] at hv
+      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).2 rfl with e | e <;> rw [e] at hv
     · exact prior_spec_words hop h hn hx hxs hF (by
-        rw [dyad_enc (dyadColumn_long_vv_foR hop hr n md pk _ _ _ _) hv]; exact longWords_val_foR op _ _ _ _ hn)
+        rw [dyad_enc (dyadColumn_long_vv_foR hop hr n md pk _ _) hv]; exact longWords_val_foR op _ _ _ _ hn)
     · exact prior_spec_words hop h hn hx hxs hF
-        (longWords_Fb hn (dyad_enc (dyadColumn_long_vv_mixed hop hr n _ md pk _ _).2 hv))
+        (longWords_Fb hn (dyad_enc (dyadColumn_long_vv_mixed hop hr n _ md pk).2 hv))
 
 /-- `seed f': x = ⟨x, prev⟩ ≫ f` from the kernel: `prior_rel` of `prior_spec_long_foR`. `foR` column. -/
 theorem prior_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
@@ -2445,8 +2445,8 @@ theorem elem_atomBytes_long (k : Int64) :
 theorem dyadColumn_long_av_cmp {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
     (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (c b : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.av .long .long 1 (.bytes c) n (.bytes b) =
-      some (.boolean, Kernel.payload .boolean n.toUSize ({ inputs := #[c, b] },
-        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1, nul := 0 })) := by
+      some (.boolean, .vector .boolean n (Kernel.payload .boolean n.toUSize ({ inputs := #[c, b] },
+        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.av, a := 0, b := 1, nul := 0 })) none) := by
   cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals by_cases h1 : n = 1
   all_goals first | subst h1 | have h2 : 1 ≠ n := Ne.symm h1
@@ -2468,7 +2468,7 @@ theorem atomCmp_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v =
   unfold Ew.atomVal at hv
   rw [atomCol_long, hb] at hv
   simp only [bind, Except.bind] at hv
-  have hR := dyad_enc (dyadColumn_long_av_cmp hop hr n _ b _ _) hv
+  have hR := dyad_enc (dyadColumn_long_av_cmp hop hr n _ b) hv
   have hel : (fun y : Int64 => elem v h k y) = fun y => pure (Kernel.Ew.cmpStep op Kernel.Ew.i64 k.toUInt64 y.toUInt64) :=
     funext fun y => Ew.elem_long_cmp hop h k y
   rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, toList_cmp_long _ _ hn hR,
@@ -2551,15 +2551,15 @@ theorem cmpStep_cmpFlip {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = s
 theorem dyadColumn_long_av_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (c md pk : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.av .long .long 1 (.bytes c) n (.foR md pk) =
-      some (.long, match (if op == Kernel.Ew.mul then
+      some (.long, .vector .long n (match (if op == Kernel.Ew.mul then
             Kernel.Ew.foRScale (Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64 md pk n.toUSize
           else if op == Kernel.Ew.add || op == Kernel.Ew.sub then
             Kernel.Ew.foRShift (op == Kernel.Ew.sub) (Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64 md pk n.toUSize
           else none) with
-        | some (m, p) => Column.answer n (.foR m p)
-        | none => Column.answer ⟨.long, n, .bytes (Kernel.Ew.foRValAtom op Kernel.Ew.i64 Kernel.Ew.av
+        | some (m, p) => Enc.answer .long n (.foR m p)
+        | none => Enc.answer .long n (.bytes (Kernel.Ew.foRValAtom op Kernel.Ew.i64 Kernel.Ew.av
             (Kernel.nullPayload .long) md pk n.toUSize
-            (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 c 0))), none⟩) := by
+            (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 c 0))))) none) := by
   cases v <;> simp only [Kernel.valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals first | exact absurd hr (by decide) | skip
   all_goals by_cases h1 : n = 1
@@ -2572,17 +2572,19 @@ theorem dyadColumn_long_av_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valO
     Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or, Kernel.Ew.add, Kernel.Ew.sub, Kernel.Ew.mul,
     Kernel.Ew.div, Kernel.Ew.fill, Kernel.Ew.lesser, Kernel.Ew.greater, *]
   -- at `n = 1` the atom and the vector both pass `dyadCount`, and `simp` leaves the `some` outside the match
-  all_goals first | (left; split <;> simp [*]) | (right; split <;> simp [*])
+  all_goals first | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*]) | (left; split <;> simp [*])
+    | (right; split <;> simp [*])
 
 /-- `dyadColumn` on a `foR` long column and a long atom column (right), at `-`, the one value verb `Ew.flip`
     leaves at `va`: `foRShift` of the negated atom, else `foRValAtom`. -/
-theorem dyadColumn_long_va_sub_foR (n : Nat) (md pk c : ByteArray) (pb pa : Option (UInt8 × IndexCell)) :
+theorem dyadColumn_long_va_sub_foR (n : Nat) (md pk c : ByteArray) :
     Kernel.dyadColumn .sub Kernel.Ew.va .long .long n (.foR md pk) 1 (.bytes c) =
-      some (.long, match Kernel.Ew.foRShift false (-(Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64) md pk n.toUSize with
-        | some (m, p) => Column.answer n (.foR m p)
-        | none => Column.answer ⟨.long, n, .bytes (Kernel.Ew.foRValAtom Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va
+      some (.long, .vector .long n (match Kernel.Ew.foRShift false (-(Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64) md pk
+          n.toUSize with
+        | some (m, p) => Enc.answer .long n (.foR m p)
+        | none => Enc.answer .long n (.bytes (Kernel.Ew.foRValAtom Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va
             (Kernel.nullPayload .long) md pk n.toUSize
-            (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 c 0))), none⟩) := by
+            (Kernel.atomBytes Kernel.Ew.i64 (Kernel.Ew.elem Kernel.Ew.i64 c 0))))) none) := by
   have hr : Kernel.resultType .sub .long .long = some .long := by decide
   by_cases h1 : n = 1
   all_goals first | subst h1 | have h2 : 1 ≠ n := Ne.symm h1
@@ -2593,15 +2595,16 @@ theorem dyadColumn_long_va_sub_foR (n : Nat) (md pk c : ByteArray) (pb pa : Opti
     (by decide : ¬Kernel.Ew.va = Kernel.Ew.vv), (by decide : ¬Kernel.Ew.va = Kernel.Ew.av),
     (by decide : (Kernel.Ew.va == Kernel.Ew.av) = false),
     Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or, Kernel.Ew.add, Kernel.Ew.sub, Kernel.Ew.mul, *]
-  all_goals first | (left; split <;> simp [*]) | (right; split <;> simp [*])
+  all_goals first | (refine ⟨_, .inl ?_, rfl⟩; split <;> simp [*]) | (left; split <;> simp [*])
+    | (right; split <;> simp [*])
 
 /-- `dyadColumn` on a long atom column (left) and a `foR` long column, at a comparison: `foRCmp`'s bitmap of
     the flipped comparison. -/
 theorem dyadColumn_long_av_cmp_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
     (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (c md pk : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.av .long .long 1 (.bytes c) n (.foR md pk) =
-      some (.boolean, ⟨.boolean, n, .bits (Kernel.Ew.foRCmp (Kernel.Ew.cmpFlip op)
-        (Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64 md pk n.toUSize), none⟩) := by
+      some (.boolean, .vector .boolean n (.bits (Kernel.Ew.foRCmp (Kernel.Ew.cmpFlip op)
+        (Kernel.Ew.elem Kernel.Ew.i64 c 0).toInt64 md pk n.toUSize)) none) := by
   cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals by_cases h1 : n = 1
   all_goals first | subst h1 | have h2 : 1 ≠ n := Ne.symm h1
@@ -2643,10 +2646,10 @@ theorem atomVal_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp
   unfold Ew.atomVal at hv
   rw [atomCol_long, ha] at hv
   simp only [bind, Except.bind] at hv
-  have hR := dyad_enc (dyadColumn_long_av_foR hop hr n _ md pk _ _) hv
+  have hR := dyad_enc (dyadColumn_long_av_foR hop hr n _ md pk) hv
   rw [elem_atomBytes_long, hk] at hR
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
-  rw [x.wf.2.1, h8] at hx hxs
+  rw [h8] at hx hxs
   refine mapM_spec_words (fun y => Ew.elem_long_val hop h k y) hx hxs ?_
   rw [hR]
   split
@@ -2673,8 +2676,7 @@ theorem atomVal_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp
       · cases hvv
   · obtain ⟨hs, he⟩ := foRValAtom_long op Kernel.Ew.av md pk (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64) hn
     have hw := longWords_answer (Kernel.Ew.foRValAtom op Kernel.Ew.i64 Kernel.Ew.av (Kernel.nullPayload .long) md pk
-      n.toUSize (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64))
-    rw [hs] at hw
+      n.toUSize (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64)) hs
     rw [hw, he, if_neg (by decide), val_i64_av _ _ _ _ _ hn]
     simp only [hk]
 
@@ -2709,10 +2711,10 @@ theorem valAtom_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp
     simp only [bind, Except.bind] at hv)
   case fill => simp [Ew.dyad, Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.Ew.va] at hv
   case sub =>
-    have hR := dyad_enc (dyadColumn_long_va_sub_foR n md pk _ _ _) hv
+    have hR := dyad_enc (dyadColumn_long_va_sub_foR n md pk _) hv
     rw [elem_atomBytes_long, hk] at hR
     obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
-    rw [x.wf.2.1, h8] at hx hxs
+    rw [h8] at hx hxs
     refine mapM_spec_words (fun y => Ew.elem_long_val rfl h y k) hx hxs ?_
     rw [hR]
     split
@@ -2724,8 +2726,7 @@ theorem valAtom_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp
       rw [intStep_sub_neg]; simp
     · obtain ⟨hs, he⟩ := foRValAtom_long Kernel.Ew.sub Kernel.Ew.va md pk (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64) hn
       have hw := longWords_answer (Kernel.Ew.foRValAtom Kernel.Ew.sub Kernel.Ew.i64 Kernel.Ew.va
-        (Kernel.nullPayload .long) md pk n.toUSize (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64))
-      rw [hs] at hw
+        (Kernel.nullPayload .long) md pk n.toUSize (Kernel.atomBytes Kernel.Ew.i64 k.toUInt64)) hs
       rw [hw, he, if_pos (by decide), Verify.val_i64_va _ _ _ _ _ hn]
       simp only [hk]
 
@@ -2751,11 +2752,11 @@ theorem atomCmp_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp
   unfold Ew.atomVal at hv
   rw [atomCol_long, ha] at hv
   simp only [bind, Except.bind] at hv
-  have hR := dyad_enc (dyadColumn_long_av_cmp_foR hop hr n _ md pk _ _) hv
+  have hR := dyad_enc (dyadColumn_long_av_cmp_foR hop hr n _ md pk) hv
   rw [elem_atomBytes_long, hk] at hR
   have hc : R.enc = .bits (Kernel.Ew.foRCmp (Kernel.Ew.cmpFlip op) k md pk n.toUSize) := by rw [hR]
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
-  rw [x.wf.2.1, h8] at hx hxs
+  rw [h8] at hx hxs
   have hel : (fun y : Int64 => elem v h k y) = fun y => pure (Kernel.Ew.cmpStep op Kernel.Ew.i64 k.toUInt64 y.toUInt64) :=
     funext fun y => Ew.elem_long_cmp hop h k y
   rw [show (fun y : Carrier .long => elem v h k y) = _ from hel, List.mapM_pure, Arr.toList_long x hx]
@@ -2799,9 +2800,9 @@ theorem cmpAtom_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp 
 /-- `monColumn "neg"` on a `foR` long column: `negAbsPayload`'s encoded branch, `foRMonEnc`, which re-encodes
     the dense `Ew.mon` over the decode. -/
 theorem monColumn_neg_foR (n : Nat) (md pk : ByteArray) :
-    Kernel.monColumn "neg" .long n (.foR md pk) = some (.long, Column.answer ⟨.long, n,
-      .foR (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).1
-        (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2, none⟩) := by
+    Kernel.monColumn "neg" .long n (.foR md pk) = some (.long, Enc.answer .long n
+      (.foR (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).1
+        (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2)) := by
   simp [Kernel.monColumn, Kernel.monResultType, Kernel.negType, Kernel.monPayload, Kernel.negAbsPayload,
     Kernel.mapPass, Kernel.operandSource, Kernel.clsOf, Kernel.Ew.Build.input, show Prim.nonNumeric .long = false by decide,
     Option.orElse_eq_orElse, Option.orElse_eq_or, Option.some_or]
@@ -2813,9 +2814,9 @@ theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha 
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
   have h8 : (8 : Nat).toUSize = (8 : USize) := rfl
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_foR _ _ _ _) hv
+  have hR := mon_enc (by rw [ha]; exact monColumn_neg_foR _ _ _) hv
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
-  rw [x.wf.2.1, h8] at hx hxs
+  rw [h8] at hx hxs
   have hw := longWords_answer_foR
     (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).1
     (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2 hn
@@ -2862,7 +2863,7 @@ theorem priorCmp_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v 
       Kernel.shiftBytes 8 s.toUInt64 1 a from rfl] at hrun
   exact priorCmp_spec_words (B := Kernel.shiftBytes 8 s.toUInt64 1 a) hop h hn (by simp only [longWords, ha])
     (Arr.n_long_bytes x ha) rfl
-    (by rw [dyad_enc (dyadColumn_long_vv_cmp hop hr n a _ _ _) hv, ← hrun]; simp [Kernel.payload])
+    (by rw [dyad_enc (dyadColumn_long_vv_cmp hop hr n a _) hv, ← hrun]; simp [Kernel.payload])
 
 /-- `seed <': x = ⟨x, prev⟩ ≫ (<)` from the kernel: `prior_rel` of `priorCmp_spec_long`. Dense long column. -/
 theorem priorCmp_rel_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
@@ -2889,15 +2890,15 @@ theorem priorCmp_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpO
   rw [ha] at hv
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
   have hF := Verify.shiftFoR_spec 8 (by decide) (by decide) md pk n.toUSize 1 s.toUInt64
-  rcases shiftColumn_long_foR n md pk s.toUInt64 x.attrCell with hs | hs <;> rw [hs] at hv <;> simp only at hv
+  rcases shiftColumn_long_foR n md pk s.toUInt64 (by omega) with hs | hs <;> rw [hs] at hv <;> simp only at hv
   · exact priorCmp_spec_words hop h hn hx hxs rfl
-      (bits_Fb (dyad_enc (dyadColumn_long_vv_cmp_mixed hop hr n _ md pk _ _).2 hv))
+      (bits_Fb (dyad_enc (dyadColumn_long_vv_cmp_mixed hop hr n _ md pk).2 hv))
   · rcases Verify.answer_foR .long 8 n (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).1
-      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).2 rfl (a := none) with e | e <;> rw [e] at hv
+      (Kernel.shiftFoR (8 : Nat).toUSize md pk n.toUSize 1 s.toUInt64).2 rfl with e | e <;> rw [e] at hv
     · exact priorCmp_spec_words hop h hn hx hxs hF
-        (by rw [dyad_enc (dyadColumn_long_vv_cmp_foR hop hr n md pk _ _ _ _) hv]; rfl)
+        (by rw [dyad_enc (dyadColumn_long_vv_cmp_foR hop hr n md pk _ _) hv])
     · exact priorCmp_spec_words hop h hn hx hxs hF
-        (bits_Fb (dyad_enc (dyadColumn_long_vv_cmp_mixed hop hr n _ md pk _ _).2 hv))
+        (bits_Fb (dyad_enc (dyadColumn_long_vv_cmp_mixed hop hr n _ md pk).2 hv))
 
 /-- `seed <': x = ⟨x, prev⟩ ≫ (<)` from the kernel: `prior_rel` of `priorCmp_spec_long_foR`. `foR` column. -/
 theorem priorCmp_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
@@ -2917,8 +2918,9 @@ theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : N
   simp only [Find.whereCounts, Find.dense, hb, Enc.bytesOf, bind, Except.bind] at h
   split at h
   · cases h
-  have hr := Find.list_c h
-  have hw : longWords n r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
+  obtain ⟨hnr, hr⟩ := Find.list_enc h
+  subst hnr
+  have hw : longWords _ r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
   have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
   have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
@@ -3032,7 +3034,7 @@ end Kernel
     `enum` relates `F` to gives the answer, and there is one. Restrictions as `distinct_toList`'s:
     long columns. -/
 theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr} {xs : List UInt64}
-    (hx : longWords n x.enc = some xs) (hu : x.c.attr.map (·.1) = some 2 → x.toList.Nodup)
+    (hx : longWords nx x.enc = some xs) (hu : x.attrCell.map (·.1) = some 2 → x.toList.Nodup)
     (hn8 : 8 * nx < USize.size) (h : Find.distinct x = .ok ⟨nr, r⟩) :
     (∃ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys) ∧
     ∀ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys → r.rel = ix (CL.toList ys) ≫ x.rel := by
@@ -3060,7 +3062,7 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
 /-- `x in y = x ≫ χ(ran y)`. Restrictions as `in_toList`'s. -/
 theorem in_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
     {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .boolean nx}
-    (hx : Find.Readable a x.c) (hy : Find.Readable a y.c) (hs : Find.Ascends y)
+    (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends y)
     (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) (h : Find.«in» x y = .ok r) :
     r.rel = x.rel ≫ χ (ran y.rel) :=
   calc r.rel = ix (Find.inSpec x.toList y.toList) := congrArg ix (Find.in_toList hx hy hs hn8 hm h)
@@ -3070,7 +3072,7 @@ theorem in_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
 /-- `x?y = y ≫ miss(Λ(x°) ≫ est(≤), n)`, the position read as a long. Restrictions as `find_toList`'s. -/
 theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
     {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .long ny}
-    (hx : Find.Readable a x.c) (hy : Find.Readable a y.c) (hs : Find.Ascends x)
+    (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends x)
     (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) (h : Find.find x y = .ok r) :
     r.rel = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) nx ≫ graph Int64.ofNat :=
   calc r.rel = ix (Find.findSpec x.toList y.toList) := congrArg ix (Find.find_toList hx hy hs hn8 hm h)
@@ -3083,7 +3085,7 @@ theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
 /-- `x bin y = y ≫ miss(Λ((≥) ≫ x°) ≫ est(≥), −1)`, the position read as a long. Restrictions as
     `bin_toList`'s: long columns, `x` ascending. -/
 theorem bin_rel {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r : Arr .long ny}
-    (hx : Find.Readable .long x.c) (hy : Find.Readable .long y.c) (hn : nx < USize.size) (hm : ny < USize.size)
+    (hx : Find.Readable .long nx x.enc) (hy : Find.Readable .long ny y.enc) (hn : nx < USize.size) (hm : ny < USize.size)
     (hsort : ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j) (h : Find.bin x y = .ok r) :
     r.rel = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
   have hp : x.toList.Pairwise (· ≤ ·) := List.pairwise_iff_getElem.2 fun i j hi hj hij => by
