@@ -309,28 +309,28 @@ theorem not_rel {x r : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = .ok
     _ = x.rel ≫ graph (fun b => !b) := ix_map ..
 
 /-- `n#x = take(n) ≫ x`. -/
-theorem take_rel {k : Int} {x : Arr .long n} {r : Arr .long k.natAbs} (hw : Struct.Words x.c) (h0 : 0 < n)
+theorem take_rel {k : Int} {x : Arr .long n} {r : Arr .long k.natAbs} (hw : Struct.Words x.enc) (h0 : 0 < n)
     (h : Struct.take k x = .ok r) : r.rel = take k n ≫ x.rel :=
   calc r.rel = ix (Struct.takeSpec k x.toList) := congrArg ix (Struct.take_toList hw h0 h)
     _ = take k x.toList.length ≫ x.rel := ix_takeSpec k _ (by rw [Arr.length_toList]; exact h0)
     _ = take k n ≫ x.rel := by rw [Arr.length_toList]
 
 /-- `n_x = drop(n) ≫ x`. -/
-theorem drop_rel {k : Int} {x : Arr .long n} {r : Arr .long (n - k.natAbs)} {b : ByteArray} (hc : x.c.enc = .bytes b)
+theorem drop_rel {k : Int} {x : Arr .long n} {r : Arr .long (n - k.natAbs)} {b : ByteArray} (hc : x.enc = .bytes b)
     (h : Struct.drop k x = .ok r) : r.rel = drop k n ≫ x.rel :=
   calc r.rel = ix (Struct.dropSpec k x.toList) := congrArg ix (Struct.drop_toList hc h)
     _ = drop k x.toList.length ≫ x.rel := ix_dropSpec ..
     _ = drop k n ≫ x.rel := by rw [Arr.length_toList]
 
 /-- `n rotate x = rot(n) ≫ x`. -/
-theorem rotate_rel {k : Int} {x r : Arr .long n} (hw : Struct.Words x.c) (h : Struct.rotate k x = .ok r) :
+theorem rotate_rel {k : Int} {x r : Arr .long n} (hw : Struct.Words x.enc) (h : Struct.rotate k x = .ok r) :
     r.rel = rot k n ≫ x.rel :=
   calc r.rel = ix (Struct.rotateSpec k x.toList) := congrArg ix (Struct.rotate_toList hw h)
     _ = rot k x.toList.length ≫ x.rel := ix_rotateSpec ..
     _ = rot k n ≫ x.rel := by rw [Arr.length_toList]
 
 /-- `|x = rev ≫ x`. -/
-theorem reverse_rel {x r : Arr .long n} {b : ByteArray} (hc : x.c.enc = .bytes b) (h : Struct.reverse x = .ok r) :
+theorem reverse_rel {x r : Arr .long n} {b : ByteArray} (hc : x.enc = .bytes b) (h : Struct.reverse x = .ok r) :
     r.rel = rev n ≫ x.rel :=
   calc r.rel = ix x.toList.reverse := congrArg ix (Struct.reverse_toList hc h)
     _ = rev x.toList.length ≫ x.rel := ix_reverse _
@@ -338,7 +338,7 @@ theorem reverse_rel {x r : Arr .long n} {b : ByteArray} (hc : x.c.enc = .bytes b
 
 /-- `x@y = y ≫ miss(pos ≫ x, 0N)`. -/
 theorem index_rel {nx ny : Nat} {x : Arr .long nx} {y r : Arr .long ny} {xs ws : List UInt64}
-    (hx : longWords x.c = some xs) (hy : longWords y.c = some ws) (hnx : nx < USize.size) (hny : ny < USize.size)
+    (hx : longWords nx x.enc = some xs) (hy : longWords ny y.enc = some ws) (hnx : nx < USize.size) (hny : ny < USize.size)
     (h63 : nx < 2 ^ 63) (h : Struct.index x y = .ok r) : r.rel = y.rel ≫ miss (pos ≫ x.rel) Int64.minValue :=
   calc r.rel = ix (Struct.indexSpec Int64.minValue x.toList y.toList) :=
         congrArg ix (Struct.index_toList hx hy hnx hny h63 h)

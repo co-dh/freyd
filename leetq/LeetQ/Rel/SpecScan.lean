@@ -195,13 +195,6 @@ theorem cst_grade_long (xs : List Int64) :
     (fun a b h₁ h₂ => by simp only [Int64.lt_iff_toInt_lt] at h₁ h₂; omega)
     (fun a h => by simp only [Int64.lt_iff_toInt_lt] at h; omega)
 
-/-- A bind through `vecCol` that answers names the vector its first step answered. -/
-theorem vecCol_bind {α : Type} {o : Option QValue} {f : Column → Option α} {X : α}
-    (h : (do let c ← vecCol (← o); f c) = some X) : ∃ c, o = some (.vector c) ∧ f c = some X := by
-  rcases o with _ | a
-  · simp at h
-  · cases a <;> first | exact ⟨_, rfl, h⟩ | simp [vecCol] at h
-
 /-- The grade's positions read back as naturals, below `2⁶³`: the merge sort of `til n`. -/
 theorem grade_map (desc : Bool) (xs : List Int64) (h63 : xs.length < 2 ^ 63) :
     (Spec.grade desc xs).map Int64.toNatClampNeg = (List.range xs.length).mergeSort
@@ -609,7 +602,7 @@ open QLean.Kernel in
 theorem over_rel {op : Coc.Over} (hb : op.boolCast = false)
     (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
     (hl : ∀ a, op.step (op.seed Spec.nul) a = a) (hr : ∀ a, op.step a (op.seed Spec.nul) = a)
-    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {a : Int64}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size) {a : Int64}
     (h : Ops.over op R = some a) :
     (cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨Int64⟩ : RelSet.{0}))
       = cst (CL.ofList R.toList) ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
@@ -624,7 +617,7 @@ theorem over_rel {op : Coc.Over} (hb : op.boolCast = false)
     _ = _ := by rw [foldr_cata]
 
 /-- `asc x = sort(≤)(x)` on a dense long column. -/
-theorem asc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem asc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     (h : Ops.sort false R = some S) :
     (cst (CL.ofList S.toList) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Int64) = cst (CL.ofList R.toList) ≫ sort (· ≤ ·) :=
   calc (cst (CL.ofList S.toList) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Int64)
@@ -636,7 +629,7 @@ theorem asc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = som
           (fun _ _ => Int64.le_antisymm) _
 
 /-- `desc x = sort(≥)(x)` on a dense long column. -/
-theorem desc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem desc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     (h : Ops.sort true R = some S) :
     (cst (CL.ofList S.toList) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Int64) = cst (CL.ofList R.toList) ≫ sort (· ≥ ·) :=
   calc (cst (CL.ofList S.toList) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Int64)
@@ -648,7 +641,7 @@ theorem desc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = so
           (fun _ _ h₁ h₂ => Int64.le_antisymm h₂ h₁) _
 
 /-- `<x = sort(⊴ₓ)` of `til n` on a dense long column, positions below `2⁶³`. -/
-theorem iasc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem iasc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     (h63 : n < 2 ^ 63) (h : Ops.grade false R = some S) :
     (cst (CL.ofList (S.toList.map Int64.toNatClampNeg)) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
       = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b) :=
@@ -660,7 +653,7 @@ theorem iasc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = so
     _ = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b) := by rw [Arr.length_toList]
 
 /-- `>x = sort(⊵ₓ)` of `til n` on a dense long column, positions below `2⁶³`. -/
-theorem idesc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem idesc_rel {R S : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     (h63 : n < 2 ^ 63) (h : Ops.grade true R = some S) :
     (cst (CL.ofList (S.toList.map Int64.toNatClampNeg)) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
       = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a > b) :=
@@ -703,22 +696,23 @@ theorem getElem?_eq_some_idxOf : ∀ {G : List Nat}, G.Nodup → ∀ {i k : Nat}
 open QLean.Kernel in
 /-- `rank x` over a long column: position `i` holds where `i` stands in the stable ascending grade, the
     grade inverted by `Order.invert`. -/
-theorem rank_toList {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem rank_toList {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     {S : Arr .long n} (h : Ops.rank R = some S) :
     S.toList = (List.range n).map fun i => Int64.ofNat
       (((List.range n).mergeSort fun i j => decide (R.toList[i]! ≤ R.toList[j]!)).idxOf i) := by
   obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R hx hn
-  obtain ⟨k, hg⟩ : ∃ k, gradeColumn .long false R.c (rank := true) =
-      some (.vector ⟨.long, k, .bytes (Order.invert (Order.grade .i64 false n.toUSize B)), none⟩) := by
-    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [R.c_eq hc]
-    · generalize R.attrCell = a; rw [← hBs]; exact ⟨_, rfl⟩
-    · exact ⟨_, rfl⟩
-  simp only [Ops.rank, hg, vecCol, bind, Option.bind] at h
+  have hg : gradeColumn .long false n R.enc (rank := true) =
+      some (.bytes (Order.invert (Order.grade .i64 false n.toUSize B))) := by
+    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
+    · rw [← hBs]; simp [gradeColumn, Enc.bytesOf, Order.ranks, show orderKind .long = some .i64 from rfl,
+        show Scan.Kind.width .i64 = 8 from rfl, Nat.not_lt.2 (Nat.div_mul_le_self _ _)]
+    · rfl
+  simp only [Ops.rank, hg, Option.bind] at h
   generalize hP : Order.grade .i64 false n.toUSize B = P at h
-  rw [Arr.of] at h
+  simp only [Arr.of] at h
   split at h
   · rename_i hw
-    have hS : S.c.enc = .bytes (Order.invert P) := by cases h; rfl
+    have hS : S.enc = .bytes (Order.invert P) := by cases h; rfl
     have h64 : USize.size ≤ 2 ^ 64 := by rcases System.Platform.numBits_eq with e | e <;> simp [USize.size, e]
     have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
       rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
@@ -759,7 +753,7 @@ theorem rank_toList {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = s
 
 /-- `rank x = (<x)°` on a dense long column, positions below `2⁶³`: `G` is the grade `sort(⊴ₓ)` gives,
     and `rank` read as positions is its converse. -/
-theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     (h63 : n < 2 ^ 63) {S : Arr .long n} (h : Ops.rank R = some S) :
     ∃ G : List Nat, (cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
         = cst (CL.ofList (List.range n)) ≫ sort (stable R.rel fun a b : Int64 => a < b)
@@ -791,63 +785,62 @@ theorem rank_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some
 open QLean.Kernel LeetQ.Rel.Struct in
 /-- **`xasc` over long columns**: `x` gathered at the ascending grade of `s`, `x@<s` (`indexSpec 0N`), from
     `Struct.index_toList`'s steps with the grade payload as the index column; `|x| < 2⁶³`. -/
-theorem xasc_toList {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords s.c = some ws)
-    (hx : longWords x.c = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
+theorem xasc_toList {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords n s.enc = some ws)
+    (hx : longWords n x.enc = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
     X.toList = indexSpec Spec.nul x.toList (Spec.grade false s.toList) := by
   obtain ⟨B, hc, -, -, hBs⟩ := Arr.dense_long s hs hn
-  obtain ⟨k, hg, hk⟩ : ∃ k, gradeColumn .long false s.c =
-      some (.vector ⟨.long, k, .bytes (Order.grade .i64 false n.toUSize B), none⟩) ∧ k = n := by
-    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [s.c_eq hc]
-    · generalize s.attrCell = a; rw [← hBs]
-      exact ⟨_, rfl, USize.toNat_ofNat_of_lt' (by rw [show Scan.Kind.i64.width = 8 from rfl, hBs]; exact hn)⟩
-    · exact ⟨_, rfl, rfl⟩
-  rw [hk] at hg
+  have hg : gradeColumn .long false n s.enc = some (.bytes (Order.grade .i64 false n.toUSize B)) := by
+    rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
+    · rw [← hBs]; simp [gradeColumn, Enc.bytesOf, show orderKind .long = some .i64 from rfl,
+        show Scan.Kind.width .i64 = 8 from rfl, Nat.not_lt.2 (Nat.div_mul_le_self _ _)]
+    · rfl
   generalize hP : Order.grade .i64 false n.toUSize B = P at hg
   have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
     rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
   -- the grade payload is `n` longs, so `Arr.of` accepts it
-  have hPw : Column.WF ⟨.long, n, .bytes P, none⟩ := by
+  have hPw : Enc.WF .long n (.bytes P) := by
     show P.size = n * 8
     rw [← hP, Order.grade, hm, Order.indices, (Verify.foldl_pushBits _ 8 (by decide) _ _).1]
     simp [Nat.mul_comm]
-  have hG : Ops.grade false s = some (⟨⟨.long, n, .bytes P, none⟩, rfl, rfl, hPw⟩ : Arr .long n) := by
+  have hG : Ops.grade false s = some (Arr.mk (.bytes P) hPw) := by
     unfold Ops.grade; rw [hg]
-    show (Arr.of .long n ⟨.long, n, .bytes P, none⟩ "<x").toOption = _
+    show (Arr.of .long n (.vector .long n (.bytes P) none) "<x").toOption = _
     rw [Arr.of, dif_pos ⟨rfl, rfl, hPw⟩]; rfl
   have hgl := Ops.grade_toList hs hn hG
-  rw [Arr.toList_long _ (show longWords (⟨⟨.long, n, .bytes P, none⟩, rfl, rfl, hPw⟩ : Arr .long n).c
+  rw [Arr.toList_long _ (show longWords n (Arr.mk (.bytes P) hPw : Arr .long n).enc
     = some (Verify.elemsW 8 P) from rfl)] at hgl
-  have h' : Ops.permute ⟨.long, n, .bytes P, none⟩ x = some X := by unfold Ops.xasc at h; rw [hg] at h; exact h
+  have h' : Ops.permute (.bytes P) x = some X := by unfold Ops.xasc at h; rw [hg] at h; exact h
   unfold Ops.permute at h'
-  obtain ⟨c, hv, hof⟩ := vecCol_bind (f := fun c => (Arr.of .long n c "x@p").toOption) h'
-  have rc : X.c = c := by
-    rw [Arr.of] at hof; split at hof
-    · cases hof; rfl
-    · cases hof
-  have hA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hx
-  have hcf : Verify.countFits (⟨.long, n, .bytes P, none⟩ : Column) := by simp only [Verify.countFits]
-  obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c
-    ⟨.long, n, .bytes P, none⟩ c x.wf.1 rfl hcf hA hv
-  have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl x.c ⟨.long, n, .bytes P, none⟩ c
-    x.wf.1 x.wf.2.2 rfl hPw (countFits_long x hx hn) hcf hA hv
-  have hcw : c.ty = .long ∧ c.WF := by rw [← rc]; exact ⟨X.wf.1, X.wf.2.2⟩
-  have hw : longWords c = some (Column.raw c).toList := by
-    cases hl : longWords c with
-    | none => rw [hcB] at hl; cases hl
-    | some ws => rw [raw_long hcw.1 hcw.2 hl]
-  have hlen : wx.length < 2 ^ 63 := by
-    have := Arr.length_toList x; rw [Arr.toList_long x hx, List.length_map] at this; omega
-  rw [← hgl, Arr.toList_long X (show longWords X.c = _ by rw [rc]; exact hw), hraw, raw_long x.wf.1 x.wf.2.2 hx,
-    raw_long (c := ⟨.long, n, .bytes P, none⟩) rfl hPw rfl, Arr.toList_long x hx, indexSpec, List.map_map,
-    List.map_map]
-  refine List.map_congr_left fun u _ => ?_
-  exact (congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)).trans (index_word wx u hlen)
+  cases hv : gatherColumn .long n x.enc n (.bytes P) with
+  | none => rw [hv] at h'; cases h'
+  | some c =>
+    rw [hv] at h'
+    have rc : X.enc = c := by
+      simp only [bind, Option.bind, Arr.of] at h'; split at h'
+      · cases h'; rfl
+      · cases h'
+    have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
+      simp [longWords, he] at hx
+    have hcf : Verify.countFits n (.bytes P) := by simp only [Verify.countFits]
+    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ _ _ c hA hv
+    have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl _ _ _ _ c x.wf hPw
+      (countFits_long x hx hn) hcf hA hv
+    have hcw : Enc.WF .long n c := rc ▸ X.wf
+    have hw : longWords n c = some (Enc.raw .long n c).toList := by
+      cases hl : longWords n c with
+      | none => rw [hcB] at hl; cases hl
+      | some ws => rw [raw_long hcw hl]
+    have hlen : wx.length < 2 ^ 63 := by
+      have := Arr.length_toList x; rw [Arr.toList_long x hx, List.length_map] at this; omega
+    rw [← hgl, Arr.toList_long X (show longWords n X.enc = _ by rw [rc]; exact hw), hraw, raw_long x.wf hx,
+      raw_long hPw rfl, Arr.toList_long x hx, indexSpec, List.map_map, List.map_map]
+    refine List.map_congr_left fun u _ => ?_
+    exact (congrArg UInt64.toInt64 (Verify.ofNat_toNat_mod64 _)).trans (index_word wx u hlen)
 
 /-- `s xasc x = (<s) ≫ x` on dense long columns, positions below `2⁶³`: `G` is the grade `sort(⊴ₛ)` gives,
     and `xasc` is `x` read at it, `ix(G) ≫ x`. -/
-theorem xasc_rel {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords s.c = some ws)
-    (hx : longWords x.c = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
+theorem xasc_rel {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords n s.enc = some ws)
+    (hx : longWords n x.enc = some wx) (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.xasc s x = some X) :
     ∃ G : List Nat, (cst (CL.ofList G) : (⟨Unit⟩ : RelSet.{0}) ⟶ dList Nat)
         = cst (CL.ofList (List.range n)) ≫ sort (stable s.rel fun a b : Int64 => a < b)
       ∧ X.rel = ix G ≫ x.rel := by
@@ -878,7 +871,7 @@ theorem xasc_rel {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords s.c
 
 /-- `count each` by the cuts `o`:`corefl(<g) ≫ grpL(grp o) ≫ list(x) ≫ length`, as a long. -/
 theorem countBy_rel {v : QAtomicType} {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr v n}
-    {wo : List UInt64} (ho : longWords o.c = some wo) (hg : g + 1 < USize.size) {S : Arr .long g}
+    {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size) {S : Arr .long g}
     (h : Ops.countBy ⟨g, n, o, co, x⟩ = some S) :
     S.rel = corefl (· < g) ≫ grpL (grp o) ≫ ListRel.list x.rel ≫ ListRel.length
       ≫ (graph Int64.ofNat : (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Int64⟩ : RelSet.{0})) :=
@@ -896,7 +889,7 @@ theorem countBy_rel {v : QAtomicType} {g : Nat} {o : Arr .long (g+1)} {co : Cuts
 /-- `last each` by the cuts `o` on a long column: the greatest row of each group through `x`, `0N` for an
     empty group, `corefl(<g) ≫ miss(Λ(grp(o)°) ≫ est(≥) ≫ x, 0N)`. -/
 theorem lastBy_rel {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr .long n} {wo wx : List UInt64}
-    (ho : longWords o.c = some wo) (hx : longWords x.c = some wx) (hg : g + 1 < USize.size) (hn : n < USize.size)
+    (ho : longWords (g+1) o.enc = some wo) (hx : longWords n x.enc = some wx) (hg : g + 1 < USize.size) (hn : n < USize.size)
     {S : Arr .long g} (h : Ops.lastBy ⟨g, n, o, co, x⟩ = some S) :
     S.rel = corefl (· < g) ≫ miss (Λ (grp o)° ≫ est (· ≥ ·) ≫ x.rel) Spec.nul :=
   calc S.rel = ix ((Spec.groups (o.toList.map Int64.toNatClampNeg) x.toList).map fun l => l.getLastD Spec.nul) :=
@@ -949,7 +942,7 @@ theorem overBy_rel {op : Coc.Over} (hb : op.boolCast = false)
     (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
     (hl : ∀ a, op.step (op.denseSeed Ew.i64 Spec.nul) a = a) (hr : ∀ a, op.step a (op.denseSeed Ew.i64 Spec.nul) = a)
     {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr .long n} {b ob : ByteArray} {S : Arr .long g}
-    (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.c.enc = .bytes b) (ho : o.c.enc = .bytes ob)
+    (hg : g < USize.size) (h63 : g < 2 ^ 63) (hc : x.enc = .bytes b) (ho : o.enc = .bytes ob)
     (h : Ops.overBy op ⟨g, n, o, co, x⟩ = some ⟨.long, S⟩) :
     S.rel = corefl (· < g) ≫ grpL (grp o) ≫ ListRel.list x.rel ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
           (graph fun _ => op.denseSeed Ew.i64 Spec.nul) (graph fun q : Int64 × Int64 => skipNul op.step q.1 q.2)
@@ -975,7 +968,7 @@ theorem overBy_rel {op : Coc.Over} (hb : op.boolCast = false)
 /-- `w mcount x` on a dense long column: the non-null count of each window,
     `corefl(<n) ≫ Λ(Wᵥ) ≫ enum ≫ list(x) ≫ count`, as an `int`. -/
 theorem mcount_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
-    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .int n} (h : Ops.mwin .mcount w .int R = some S) :
+    (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .int n} (h : Ops.mwin .mcount w .int R = some S) :
     S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ (graph fun ys =>
       Int32.ofNat ((CL.toList ys).filter (· != Spec.nul)).length : dList Int64 ⟶ (⟨Int32⟩ : RelSet.{0})) :=
   calc S.rel = ix ((List.range R.toList.length).map fun i => Int32.ofNat
@@ -991,7 +984,7 @@ theorem mcount_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List 
     window, the null skipped, `corefl(<n) ≫ Λ(Wᵥ) ≫ enum ≫ list(x) ≫ ⦇[0, +]⦈`. Without the restriction
     q answers `0N` where a running total at either end of the window is `0N`, which no fold of the window sees. -/
 theorem msum_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
-    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .msum w .long R = some S)
+    (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .msum w .long R = some S)
     (hno : ∀ j, j ≤ n → ((R.toList.map fun x => if x == Spec.nul then 0 else x).take j).foldl (· + ·) 0 ≠ Spec.nul) :
     S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
           (graph fun _ => (0 : Int64)) (graph fun q : Int64 × Int64 => skipNul (· + ·) q.1 q.2)
@@ -1020,7 +1013,7 @@ theorem msum_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
 /-- `w mmin x` on a dense long column: the least value of each window, the seed `0W` joining the first `w−1`
     windows, `corefl(<n) ≫ Λ((Wᵥ ≫ x) ∪ (corefl(i+1<w) ≫ !0W)) ≫ est(≤)`. -/
 theorem mmin_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
-    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmin w .long R = some S) :
+    (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmin w .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((win w ≫ R.rel)
       ∪ (corefl (· + 1 < w) ≫ (cst Int64.maxValue : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) ≫ est (· ≤ ·) := by
   obtain ⟨-, -, -, hw1, -⟩ := Ops.mwin_answer (rk := .i64) rfl rfl rfl rfl hw hx hn h
@@ -1035,7 +1028,7 @@ theorem mmin_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UI
 /-- `w mmax x` on a dense long column: the greatest value of each window, the seed `-0W` joining the first
     `w−1` windows, `corefl(<n) ≫ Λ((Wᵥ ≫ x) ∪ (corefl(i+1<w) ≫ !-0W)) ≫ est(≥)`. -/
 theorem mmax_rel {w : Nat} (hw : w < USize.size) {R : Arr .long n} {ws : List UInt64}
-    (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmax w .long R = some S) :
+    (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n} (h : Ops.mwin .mmax w .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((win w ≫ R.rel)
       ∪ (corefl (· + 1 < w) ≫ (cst (-Int64.maxValue) : Idx ⟶ (⟨Int64⟩ : RelSet.{0})))) ≫ est (· ≥ ·) := by
   obtain ⟨-, -, -, hw1, -⟩ := Ops.mwin_answer (rk := .i64) rfl rfl rfl rfl hw hx hn h
@@ -1054,7 +1047,7 @@ open QLean.Kernel in
     under its own `better` on the bits, the seed `0w`/`-0w` the oldest element of a window shorter than
     `w`. `Float`'s order is opaque, so this is `ix_mext_window`, not `ix_mext`'s `est`. -/
 theorem mext_float_rel {op : Scan.MOp} (hop : op = .mmin ∨ op = .mmax) {w : Nat} (hw : w < USize.size)
-    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords n R.enc = some ws) (hn : n < USize.size)
     (h32 : n < 2 ^ 32) {S : Arr .float n} (h : Ops.mwin op w .float R = some S) :
     S.rel = corefl (· < n) ≫ Λ (win w) ≫ enum ≫ ListRel.list R.rel
       ≫ (graph fun ys => (fun l : List UInt64 => l.tail.foldl (fun e u => if op.better .f64 u e then u else e)
@@ -1072,7 +1065,7 @@ open QLean.Kernel in
     Λ(Lᵥ) ≫ enum ≫ list(x) ≫ rev ≫ ⦇[0, mstep]⦈⟫ ≫ memit`. Not a fold of each window: `Float` subtraction
     does not undo addition. -/
 theorem mfloat_rel {op : Scan.MOp} (hop : op = .msum ∨ op = .mavg ∨ op = .mdev) {w : Nat} (hw : w < USize.size)
-    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords n R.enc = some ws) (hn : n < USize.size)
     (h32 : n < 2 ^ 32) {S : Arr .float n} (h : Ops.mwin op w .float R = some S) :
     S.rel = corefl (· < n) ≫ ⟪Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
           ≫ (graph fun ys => CL.ofList (CL.toList ys).reverse : dList UInt64 ⟶ dList UInt64)
@@ -1101,7 +1094,7 @@ open QLean.Kernel in
     `g` from `e`: the fold of each prefix, `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ ⦇[e, g]⦈`. -/
 theorem scan_fold_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv) {e : Int64}
     {g : Int64 → Int64 → Int64} (hF : ∀ ys, Spec.over (Spec.kern sv).1 (Spec.kern sv).2 ys = ys.foldr g e)
-    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n}
     (h : Ops.scan f .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
@@ -1119,8 +1112,8 @@ open QLean.Kernel in
     fold is the reversal then `⦇[seed, step]⦈`: `corefl(<n) ≫ Λ(≥) ≫ enum ≫ list(x) ≫ rev ≫ ⦇[seed, step]⦈
     ≫ femit`, in the kernel's own order since `Float` is not associative. -/
 theorem scan_float_rel {f : Prim.Dyadic} {sv : Scan.Verb} (hf : scanVerb f = some sv)
-    {R : Arr .float n} {ws : List UInt64} (hx : floatWords R.c = some ws) (hn : n < USize.size)
-    (h32 : n < 2 ^ 32) (hc : (sv == .fills && !holdsNull .float R.c) = false) {S : Arr .float n}
+    {R : Arr .float n} {ws : List UInt64} (hx : floatWords n R.enc = some ws) (hn : n < USize.size)
+    (h32 : n < 2 ^ 32) (hc : (sv == .fills && !holdsNull .float n R.enc) = false) {S : Arr .float n}
     (h : Ops.scan f .float R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ (graph fun ys => CL.ofList (CL.toList ys).reverse : dList UInt64 ⟶ dList UInt64)
@@ -1143,7 +1136,7 @@ open QLean.Kernel in
 theorem scan_rel {f : Prim.Dyadic} {op : Coc.Over} {sv : Scan.Verb} (hf : scanVerb f = some sv)
     (hv : Spec.verb op = some sv) (hA : ∀ a b c, op.step (op.step a b) c = op.step a (op.step b c))
     (hl : ∀ a, op.step (op.seed Spec.nul) a = a) (hr : ∀ a, op.step a (op.seed Spec.nul) = a)
-    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n}
     (h : Ops.scan f .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
@@ -1156,7 +1149,7 @@ open QLean.Kernel in
     not a unit at `0N` (`max(-0W, 0N) = -0W`), but `skipNul` lets no `0N` reach `max`, so it is a unit on
     every value the fold meets (`over_foldr_inv` at `P = (≠ 0N)`). -/
 theorem maxs_rel {f : Prim.Dyadic} (hf : scanVerb f = some .maxs)
-    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n}
     (h : Ops.scan f .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
@@ -1173,7 +1166,7 @@ open QLean.Kernel in
     `0N`, `0N` if none: `⦇[0N, skipNul last]⦈` of each prefix. Covers the kernel's identity short-cut,
     the argument handed back when `holdsNull` clears the column. -/
 theorem fills_rel {f : Prim.Dyadic} (hf : scanVerb f = some .fills)
-    {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size) {S : Arr .long n}
+    {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size) {S : Arr .long n}
     (h : Ops.scan f .long R = some S) :
     S.rel = corefl (· < n) ≫ Λ ((· ≥ ·) : Idx ⟶ Idx) ≫ enum ≫ ListRel.list R.rel
       ≫ ⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
@@ -1184,7 +1177,7 @@ theorem fills_rel {f : Prim.Dyadic} (hf : scanVerb f = some .fills)
 /-- `avg x` on a long column (`bytes` or `foR`): the total and the count of the elements that are not
     `0N`, then their quotient, `⟨⦇[0, +]⦈, ⦇[0, 1+]⦈⟩ ≫ quot`, the null skipped by both folds. The answer
     is read through `Spec.canon`, which the `foR` path's unguarded division needs. -/
-theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords R.c = some ws) (hn : n < USize.size)
+theorem avg_rel {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws) (hn : n < USize.size)
     {a : UInt64} (h : Ops.avg R = some a) :
     (cst (Spec.canon a) : (⟨Unit⟩ : RelSet.{0}) ⟶ (⟨UInt64⟩ : RelSet.{0}))
       = cst (CL.ofList R.toList) ≫ ⟪⦇(junc (sumCop (CL.dL Unit) ⟨Int64 × Int64⟩)
