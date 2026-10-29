@@ -19,6 +19,7 @@ import QLean.Kernel.Elementwise
 import QLean.Kernel.Coc
 import QLean.Eval.Dyad
 import QLean.Verify.Grade
+import QLean.Verify.Chain
 
 namespace LeetQ.Rel.Alg
 
@@ -1405,6 +1406,33 @@ theorem overBytes_bounds (cls : UInt8) (nul : Int64) (b : ByteArray) {i : Nat} (
         next => exact Int64.le_refl _
       · exact ih m _
 
+
+/-- **`rangeOffsets`' shift, element by element**: `Ew.val add` against the one long `c` answers
+    `x + c` at every element, and the null where `x` or `c` is one (`elemsW_val`, `intStep`). -/
+theorem shift_elem (b : ByteArray) (c : Int64) {n : Nat} (hn : n < USize.size) {i : Nat} (hi : i < n) :
+    (Column.bitsAt (Kernel.Ew.val Ew.add Ew.i64 Ew.va nul b (one c.toUInt64) n.toUSize) (i * 8) 8).toInt64 =
+      if (Column.bitsAt b (i * 8) 8).toInt64 = nul ∨ c = nul then nul else (Column.bitsAt b (i * 8) 8).toInt64 + c := by
+  have hu : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have e := congrArg (fun l => l[i]?) (Verify.elemsW_val Ew.add Ew.i64 Ew.va nul b (one c.toUInt64) n.toUSize)
+  have hs := Verify.val_size8 Ew.add Ew.va nul b (one c.toUInt64) n.toUSize
+  have hw : Ew.width Ew.i64 = 8 := by decide
+  have ho : Ew.elem Ew.i64 (one c.toUInt64) 0 = c.toUInt64 := by
+    simp only [Ew.elem, hw, Nat.zero_mul]; exact Find.bitsAt_one c.toUInt64
+  simp only [Verify.elemsW, hw, List.getElem?_map] at e
+  rw [← hs, hu, List.getElem?_range hi] at e
+  simp only [Option.map_some, Option.some.injEq, Ew.shapeIdx] at e
+  rw [e]
+  simp only [show (Ew.va == Ew.vv) = false from rfl, show (Ew.va == Ew.va) = true from rfl, if_true,
+    Bool.false_eq_true, if_false, ho]
+  have hm : ∀ v : UInt64, UInt64.ofNat (v.toNat % 2 ^ (8 * 8)) = v := fun v => by
+    rw [Nat.mod_eq_of_lt (by simpa using v.toNat_lt)]; exact UInt64.ofNat_toNat
+  simp only [Ew.valStep, Ew.intStep, Ew.signed, Ew.elem, hw, hm,
+    show (Ew.i64 == Ew.f64) = false from rfl, show (Ew.i64 == Ew.f32) = false from rfl,
+    show (Ew.i64 == Ew.u8) = false from rfl, show (Ew.i64 == Ew.i16) = false from rfl,
+    show (Ew.i64 == Ew.i32) = false from rfl, show (Ew.add == Ew.add) = true from rfl,
+    Bool.false_eq_true, if_false, if_true]
+  by_cases hx : (Column.bitsAt b (i * 8) 8).toInt64 = nul <;> by_cases hc : c = nul <;> simp [hx, hc]
+
 end Laws
 
 #print axioms conv_holds
@@ -1416,5 +1444,6 @@ end Laws
 #print axioms grade_mono
 #print axioms key_eq_iff_keyAt
 #print axioms overBytes_bounds
+#print axioms shift_elem
 
 end LeetQ.Rel.Alg
