@@ -347,6 +347,21 @@ def progAjOp (n : Nat) : IO (IO (Nat × Int64)) := do
   timedE "progAj" (← arr lk, ← arr lt, ← arr rk, ← arr rt) fun (lk, lt, rk, rt) => do
     sumR "progAj" (← LeetQ.Rel.Prog.exec (LeetQ.Rel.Prog.aj lk lt rk rt)).val
 
+open LeetQ.Rel.Prog in
+/-- `progAj` with the miss branch's `E` over a second copy of the four lists, loaded again so the copies are distinct
+    objects: `missRule`'s `sameArr` runs its index loop (`eqAt`), not the pointer test. Checksum as `progAj`'s. -/
+def progAjCopyOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  let (lk, lt, rk, rt) := asofData n
+  let ld (a : Array Int) : IO (LeetQ.Rel.Arr .long n) :=
+    io "progAjCopy" (LeetQ.Rel.Arr.ofPart .long n (LeetQ.Rel.Alg.longs (col a)) "progAjCopy")
+  timedE "progAjCopy" (← ld lk, ← ld lt, ← ld rk, ← ld rt, ← ld lk, ← ld lt, ← ld rk, ← ld rt)
+    fun (lk, lt, rk, rt, lk', lt', rk', rt') => do
+    let E (lk lt rk rt : LeetQ.Rel.Arr .long n) : LeetQ.Rel.Prog .long .long :=
+      extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt)))
+    let P : LeetQ.Rel.Prog .long .long := union (comp (til n) (E lk lt rk rt))
+      (cst (u := .long) Int64.minValue (anti (til n) (dom (E lk' lt' rk' rt'))))
+    sumR "progAjCopy" (← exec P).val
+
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
@@ -358,7 +373,7 @@ def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("relWj", relWjOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("relWj", relWjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
