@@ -49,6 +49,19 @@ def lamFold (op : Kernel.Coc.Over) {n : Nat} (x : Arr .long n) (G : Rel A .long)
   let v ← Arr.ofPart .long P.n (← pick .long x.part i) "list(x)"
   overP op ⟨F.1, F.2.1, ⟨P.g, P.n, P.o, P.co, v⟩⟩
 
+/-- `R ≫ !e`: `n#,e` beside `R`'s key (`Struct.take` of `Struct.enlist`). A boxed `e` has no atom
+    column, so it is refused. -/
+def cstVal {K t u : QAtomicType} (e : El u) (R : Rel K t) : Except String (Rel K u) :=
+  if h : u = .general then throw "!e: no general constant" else do
+    let a ← Struct.enlist u e h
+    pure ⟨R.n, R.key, ← Arr.ofPart u R.n (← Struct.take (R.n : Int) a).part "!e"⟩
+
+/-- `Λ(G) ≫ enum ≫ length`: `countBy` of the carrier's segments, keyed by the carrier's keys. -/
+def lamCount (G : Rel A .long) : Except String (Rel A .long) := do
+  let F ← transposeP G
+  let some r := Ops.countBy F.2.2 | throw "count by: no kernel"
+  pure ⟨F.1, F.2.1, ← Arr.ofPart .long F.1 r.part "count by"⟩
+
 end Alg
 
 /-- An atomic type as an object of `RelSet`. -/
@@ -88,6 +101,14 @@ inductive Prog : QAtomicType → QAtomicType → Type
   | enum {n : Nat} (x : Arr .boolean n) : Prog .long .long
   /-- `R ≫ corNeg(C)`, the anti-join (P16) -/
   | anti {A B : QAtomicType} : Prog A B → Prog B B → Prog A B
+  /-- `R ≫ !e`, the constant map: the one node that changes the value type (`miss`, `χ`) -/
+  | cst {K t u : QAtomicType} (e : El u) : Prog K t → Prog K u
+  /-- `dom R = 𝟙 ∩ (R ≫ R°)`; `ran R` is `dom R°` -/
+  | dom {A B : QAtomicType} : Prog A B → Prog A A
+  /-- `enum` of the positions `j < n` whose long is in `dom C` (P11 over a computed coreflexive) -/
+  | enumC (n : Nat) : Prog .long .long → Prog .long .long
+  /-- `Λ(G ≫ pos) ≫ enum ≫ length` (P8, P11, P12): each key's count; no `Coc.Over` counts -/
+  | count {A : QAtomicType} : Prog A .long → Prog A .long
 
 namespace Prog
 
@@ -112,10 +133,19 @@ def den : {A B : QAtomicType} → Prog A B → (Ob A ⟶ Ob B)
   | _, _, enum x => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (x.rel ≫
       (Verb.cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys ∧ (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
   | _, _, anti P C => P.den ≫ Verb.corNeg C.den
+  | _, _, cst e P => P.den ≫ Verb.cst e
+  | _, _, dom P => Verb.dom P.den
+  | _, _, enumC n C => posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫ C.den))) ys ∧
+      (ix (CL.toList ys) ≫ graph Int64.ofNat) i v
+  | _, _, count G => Λ (G.den ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat
 
 /-- `til n` as a key, refused past `USize`, where `tilLongs` would wrap. -/
 def tilKey (n : Nat) : Except String (Arr .long n) :=
   if n < USize.size then Struct.til n else throw s!"til {n}: past USize"
+
+/-- `enumC`'s kernel: `til n in C`'s keys (`Find.in`), then `Find.where` keyed by `til m`. -/
+def enumIn (n : Nat) (C : Rel .long .long) : Except String (Rel .long .long) := do
+  let w ← Find.where (← Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
 
 /-- The literal interpreter: one kernel per node. -/
 def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
@@ -138,6 +168,10 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, fold op _ _ x G => do Alg.lamFold op x (← G.run)
   | _, _, enum x => do let w ← Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
   | _, _, anti P C => do Alg.antiJoin (← P.run) (← C.run)
+  | _, _, cst e P => do Alg.cstVal e (← P.run)
+  | _, _, dom P => do Alg.dom (← P.run)
+  | _, _, enumC n C => do enumIn n (← C.run)
+  | _, _, count G => do Alg.lamCount (← G.run)
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -166,6 +200,14 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
   | _, _, enum (n := n) _ => n < USize.size
   | A, B, anti P C => P.Sound ∧ C.Sound ∧ ∀ (R : Rel A B) (S : Rel B B) T, Alg.antiJoin R S = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob B) ≫ Verb.corNeg S.Holds)
+  | K, u, cst (t := t) e P => P.Sound ∧ ∀ (R : Rel K t) (T : Rel K u), Alg.cstVal e R = .ok T →
+      @Eq (Ob K ⟶ Ob u) T.Holds ((R.Holds : Ob K ⟶ Ob t) ≫ Verb.cst e)
+  | A, _, dom (B := B) P => P.Sound ∧ ∀ (R : Rel A B) T, Alg.dom R = .ok T →
+      @Eq (Ob A ⟶ Ob A) T.Holds (Verb.dom (R.Holds : Ob A ⟶ Ob B))
+  | _, _, enumC n C => C.Sound ∧ ∀ R T : Rel .long .long, enumIn n R = .ok T →
+      @Eq (Ob .long ⟶ Ob .long) T.Holds (enumC n (rel R)).den
+  | A, _, count G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamCount R = .ok T →
+      @Eq (Ob A ⟶ Ob .long) T.Holds (count (rel R)).den
 
 /-! ## Node soundness -/
 
@@ -311,6 +353,26 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     split at h
     · cases h
     rw [hl _ _ _ h, run_sound P sP (by assumption), run_sound C sC (by assumption)]; rfl
+  | _, _, cst _ P, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h, run_sound P sP (by assumption)]; rfl
+  | _, _, dom P, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sP, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h, run_sound P sP (by assumption)]; rfl
+  | _, _, enumC _ C, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sC, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h]; simp only [den]; rw [run_sound C sC (by assumption)]
+  | _, _, count G, _, hs, h => by
+    unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
+    simp only [run, bind, Except.bind] at h; split at h
+    · cases h
+    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
 
 /-! ## Verbs that need no rewrite rule (design §2, §7 line 2) -/
 
@@ -452,6 +514,85 @@ theorem enum_prog {n : Nat} (x : Arr .boolean n) {R : Rel .long .long} (h : (enu
   rw [← (where_rel hs hw).2 ys hy]
   exact (posL_iff fun i _ hi => Nat.lt_trans ((rel_iff _ i _).1 hi).1 (tilKey_lt (by assumption))).1
     (arr_sound w.2 (by assumption))
+/-! ## Verbs over `!e`, `dom`, `enumC`, `count` (design §2.2–2.5) -/
+
+/-- `P ≫ (R ∪ (Q ≫ S))` is the union of its two branches as `run` composes them: `miss` and `χ` applied. -/
+theorem comp_cup {A B C D : RelSet.{0}} (P : A ⟶ B) (R : B ⟶ D) (Q : B ⟶ C) (S : C ⟶ D) :
+    (P ≫ R) ∪ ((P ≫ Q) ≫ S) = P ≫ (R ∪ (Q ≫ S)) :=
+  hom_ext fun _ _ => ⟨fun h => Or.elim h (fun ⟨b, hp, hr⟩ => ⟨b, hp, Or.inl hr⟩)
+      (fun ⟨c, ⟨b, hp, hq⟩, hs⟩ => ⟨b, hp, Or.inr ⟨c, hq, hs⟩⟩),
+    fun ⟨b, hp, h⟩ => Or.elim h (fun hr => Or.inl ⟨b, hp, hr⟩) (fun ⟨c, hq, hs⟩ => Or.inr ⟨c, ⟨b, hp, hq⟩, hs⟩)⟩
+
+/-- `x in y = x ≫ χ(ran y)`: the hit branch `x ≫ (ran y ≫ !1b)`, the miss branch the anti-join `≫ !0b`. -/
+def «in» {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Prog .long .boolean :=
+  union (comp (arr x) (cst true (idU y))) (cst false (anti (arr x) (idU y)))
+
+theorem in_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) :
+    («in» x y).den = (posL° ≫ x.rel) ≫ Verb.χ (Verb.ran y.rel) :=
+  comp_cup _ _ _ _
+
+/-- `x?y = y ≫ miss(Λ(x°) ≫ est(≤), n)`: the first position, `n` where `y` misses `x`. -/
+def find {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Prog .long .long :=
+  union (comp (arr y) (extr false (conv (arr x))))
+    (cst (u := .long) (Int64.ofNat nx) (anti (arr y) (dom (extr false (conv (arr x))))))
+
+theorem find_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) :
+    (find x y).den = (posL° ≫ y.rel) ≫
+      Verb.miss (Λ ((posL° ≫ x.rel)°) ≫ est (fun a b : Int64 => a ≤ b)) (Int64.ofNat nx) :=
+  comp_cup _ _ _ _
+
+/-- `x@y = y ≫ miss(pos ≫ x, e)`, `e` the null of `x`'s type: `index` with the fill. -/
+def indexFill {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) : Prog .long t :=
+  union (comp (arr y) (arr x)) (cst e (anti (arr y) (dom (arr x))))
+
+theorem indexFill_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long ny) (e : El t) :
+    (indexFill x y e).den = (posL° ≫ y.rel) ≫ Verb.miss (posL° ≫ x.rel) e :=
+  comp_cup _ _ _ _
+
+/-- `?x = enum(ran(Λ(x°) ≫ est(≤))) ≫ x`: each value's first position, ascending, read through `x`. -/
+def distinct {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long t :=
+  comp (enumC n (dom (conv (extr false (conv (arr x)))))) (arr x)
+
+theorem distinct_den {t : QAtomicType} {n : Nat} (x : Arr t n) :
+    (distinct x).den = (posL° ≫ fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫
+      Verb.ran (Λ ((posL° ≫ x.rel)°) ≫ est (fun a b : Int64 => a ≤ b))))) ys ∧
+      (ix (CL.toList ys) ≫ graph Int64.ofNat) i v) ≫ posL° ≫ x.rel :=
+  rfl
+
+/-- `count by k = grpL(k) ≫ length`. -/
+def countBy {K : QAtomicType} {n : Nat} (k : Arr K n) : Prog K .long := count (conv (arr k))
+
+theorem countBy_den {K : QAtomicType} {n : Nat} (k : Arr K n) :
+    (countBy k).den = Λ ((posL° ≫ k.rel)° ≫ Verb.pos) ≫ Verb.enum ≫ ListRel.length ≫ graph Int64.ofNat :=
+  rfl
+
+/-- The whole list as one group: the key `0` against every position, `(x ≫ !0)°`. -/
+def whole {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long .long := conv (cst (u := .long) (0 : Int64) (arr x))
+
+/-- `#x = ⦇0, succ⦈`, at the one key `0`. -/
+def size {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long .long := count (whole x)
+
+theorem size_den {t : QAtomicType} {n : Nat} (x : Arr t n) :
+    (size x).den = Λ (((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos) ≫ Verb.enum ≫
+      ListRel.length ≫ graph Int64.ofNat :=
+  rfl
+
+/-- `f/x = ⦇e, f⦈` of the list, at the one key `0`. -/
+def over {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
+    Prog .long .long := fold op e f x (whole x)
+
+theorem over_den {n : Nat} (op : Kernel.Coc.Over) (e : Int64) (f : Int64 → Int64 → Int64) (x : Arr .long n) :
+    (over op e f x).den = Λ ((((posL° ≫ x.rel) ≫ Verb.cst (B := Ob .long) (0 : Int64))° ≫ Verb.pos)) ≫
+      Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold e f :=
+  rfl
+
+/-- `avg x = ⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`. -/
+def avg {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
+    Prog .long rt := dy .div h (over .add 0 (· + ·) x) (size x)
+
+theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
+    (avg h x).den = rpair (over .add 0 (· + ·) x).den (size x).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
+  rfl
 
 end Prog
 
@@ -472,5 +613,13 @@ end Prog
 #print axioms Prog.mon_prog
 #print axioms Prog.val_prog
 #print axioms Prog.enum_prog
+#print axioms Prog.in_den
+#print axioms Prog.find_den
+#print axioms Prog.indexFill_den
+#print axioms Prog.distinct_den
+#print axioms Prog.countBy_den
+#print axioms Prog.size_den
+#print axioms Prog.over_den
+#print axioms Prog.avg_den
 
 end LeetQ.Rel
