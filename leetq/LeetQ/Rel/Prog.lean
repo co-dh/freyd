@@ -238,6 +238,87 @@ def run : {A B : QAtomicType} → Prog A B → Except String (Rel A B)
   | _, _, ajJ lk lt rk rt => do let r ← ajRun lk lt rk rt; pure ⟨r.1, ← tilKey r.1, r.2⟩
   | _, _, wjJ prev lk w₀ w₁ rk rt => wjRun prev lk w₀ w₁ rk rt
 
+/-- `S` lists each group of `X` as a permutation of it: defined on `dom X`, `S ⊑ dom X ≫ Λ X ≫ enum ≫ perm`.
+    The kernel lists a group in code or first-appearance order (`familyP`), not by position. -/
+def Segs {K : RelSet.{0}} (X : K ⟶ Idx) (S : K ⟶ ListRel.dList Nat) : Prop :=
+  (∀ a, Verb.dom X a a → ∃ ys, S a ys) ∧ ∀ a ys, S a ys → (Verb.dom X ≫ Λ X ≫ Verb.enum ≫ ListRel.perm) a ys
+
+/-- `list(R)` follows a permutation of its input with one of its output. -/
+theorem listP_perm {α β : Type} {R} : ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' →
+    ∀ {zs : CL.ConsList Unit β}, ListRel.listP R ys zs → ∃ zs', ListRel.listP R ys' zs' ∧ ListRel.Perm zs zs'
+  | _, _, .nil, zs, h => ⟨zs, h, ListRel.Perm.refl zs⟩
+  | _, _, .cons a p, zs, h => by
+    cases zs with
+    | wrap _ => exact h.elim
+    | cons b w =>
+      obtain ⟨w', hw', pw⟩ := listP_perm p h.2
+      exact ⟨.cons b w', ⟨h.1, hw'⟩, .cons b pw⟩
+  | _, _, .swap a b x, zs, h => by
+    cases zs with
+    | wrap _ => exact h.elim
+    | cons c z =>
+      cases z with
+      | wrap _ => exact h.2.elim
+      | cons d w => exact ⟨.cons d (.cons c w), ⟨h.2.1, h.1, h.2.2⟩, .swap c d w⟩
+  | _, _, .trans p q, zs, h => by
+    obtain ⟨z₁, h₁, p₁⟩ := listP_perm p h
+    obtain ⟨z₂, h₂, p₂⟩ := listP_perm q h₁
+    exact ⟨z₂, h₂, .trans p₁ p₂⟩
+
+/-- A right fold whose step is left-commutative ignores the order of the list. -/
+theorem foldr_perm {α γ : Type} {g : α → γ → γ} (hg : ∀ a b c, g a (g b c) = g b (g a c)) (e : γ) :
+    ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' → (CL.toList ys).foldr g e = (CL.toList ys').foldr g e
+  | _, _, .nil => rfl
+  | _, _, .cons a p => congrArg (g a) (foldr_perm hg e p)
+  | _, _, .swap a b _ => hg a b _
+  | _, _, .trans p q => (foldr_perm hg e p).trans (foldr_perm hg e q)
+
+/-- `list(R) ≫ ⦇e,f⦈` ignores the order of its input when `f` is left-commutative. -/
+theorem listFold_perm {α : Type} {R} {e : Int64} {f : Int64 → Int64 → Int64} (hf : ∀ a b c, f a (f b c) = f b (f a c))
+    (ys ys' : CL.ConsList Unit α) (b : Int64) (p : ListRel.Perm ys ys') (h : (ListRel.list R ≫ Verb.fold e f) ys b) :
+    (ListRel.list R ≫ Verb.fold e f) ys' b := by
+  obtain ⟨zs, hz, hb⟩ := h
+  obtain ⟨zs', hz', p'⟩ := listP_perm p hz
+  rw [show Verb.fold e f = graph (fun ys => (CL.toList ys).foldr f e) from (Verb.foldr_cata f e).symm] at hb ⊢
+  exact ⟨zs', hz', Eq.trans hb (foldr_perm hf e p')⟩
+
+/-- `length ≫ ofNat` ignores the order of its input. -/
+theorem length_perm {α : Type} (ys ys' : CL.ConsList Unit α) (b : Int64) (p : ListRel.Perm ys ys')
+    (h : (ListRel.length ≫ graph Int64.ofNat) ys b) : (ListRel.length ≫ graph Int64.ofNat) ys' b := by
+  obtain ⟨c, hc, hb⟩ := h
+  exact ⟨c, Eq.trans hc (clen_perm p), hb⟩
+where
+  clen_perm : ∀ {ys ys' : CL.ConsList Unit α}, ListRel.Perm ys ys' → ListRel.clen ys = ListRel.clen ys'
+  | _, _, .nil => rfl
+  | _, _, .cons _ p => congrArg (· + 1) (clen_perm p)
+  | _, _, .swap _ _ _ => rfl
+  | _, _, .trans p q => (clen_perm p).trans (clen_perm q)
+
+/-- `enum` gives a set one list. -/
+theorem enum_simple {s} {zs zs' : CL.ConsList Unit Nat} (h : Verb.enum s zs) (h' : Verb.enum s zs') : zs = zs' := by
+  obtain ⟨hs, o⟩ := (Verb.enum_iff _ _).1 h
+  have pw := (Verb.orderedP_ofList _ (CL.toList zs)).1 (by rw [Verb.ofList_toList]; exact o)
+  exact (((Verb.enum_ofList s _ pw fun i => (Verb.inlistP_ofList i _).symm.trans (by rw [Verb.ofList_toList, hs])) zs').1 h'
+    |>.trans (Verb.ofList_toList zs)).symm
+
+/-- **A group listed in any order folds as `enum` lists it**, for an `L` that ignores the order. -/
+theorem segs_eq {K B : RelSet.{0}} {X : K ⟶ Idx} {S : K ⟶ ListRel.dList Nat} (hS : Segs X S)
+    (L : ListRel.dList Nat ⟶ B) (hL : ∀ ys ys' b, ListRel.Perm ys ys' → L ys b → L ys' b) :
+    S ≫ L = Verb.dom X ≫ Λ X ≫ Verb.enum ≫ L := by
+  obtain ⟨hd, hs⟩ := hS
+  refine hom_ext fun a b => ⟨fun ⟨ys, h, hl⟩ => ?_, fun ⟨a', ⟨e, hx⟩, s, hc, zs, he, hl⟩ => ?_⟩
+  · obtain ⟨a', hx, s, hc, zs, he, p⟩ := hs a ys h
+    exact ⟨a', hx, s, hc, zs, he, hL _ _ b p.symm hl⟩
+  · subst e
+    obtain ⟨ys, h⟩ := hd a ⟨rfl, hx⟩
+    obtain ⟨_, ⟨e', _⟩, s', hc', zs', he', p⟩ := hs a ys h
+    subst e'
+    rw [Λ_eq_classifier] at hc hc'
+    have hss : s' = s := hc'.trans hc.symm
+    subst hss
+    obtain rfl := enum_simple he he'
+    exact ⟨ys, h, hL _ _ b p hl⟩
+
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
 def Sound : {A B : QAtomicType} → Prog A B → Prop
@@ -260,8 +341,9 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
       @Eq (Ob A ⟶ Ob B) T.Holds (Λ (R.Holds : Ob A ⟶ Ob B) ≫ ∋ (Ob B))
   | A, _, extr d P => P.Sound ∧ ∀ R T : Rel A .long, Alg.lamEst d R = .ok T →
       @Eq (Ob A ⟶ Ob .long) T.Holds (extr d (rel R)).den
-  | A, _, fold op e f x G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamFold op x R = .ok T →
-      @Eq (Ob A ⟶ Ob .long) T.Holds (fold op e f x (rel R)).den
+  | A, _, fold op e f x G => G.Sound ∧ (∀ a b c, f a (f b c) = f b (f a c)) ∧ ∀ R T : Rel A .long,
+      Alg.lamFold op x R = .ok T → ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
+        @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.list x.rel ≫ Verb.fold e f)
   | _, _, enum (n := n) _ => n < USize.size
   | A, B, anti P C => P.Sound ∧ C.Sound ∧ ∀ (R : Rel A B) (S : Rel B B) T, Alg.antiJoin R S = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob B) ≫ Verb.corNeg S.Holds)
@@ -272,7 +354,8 @@ def Sound : {A B : QAtomicType} → Prog A B → Prop
   | _, _, enumC n C => C.Sound ∧ ∀ R T : Rel .long .long, enumIn n R = .ok T →
       @Eq (Ob .long ⟶ Ob .long) T.Holds (enumC n (rel R)).den
   | A, _, count G => G.Sound ∧ ∀ R T : Rel A .long, Alg.lamCount R = .ok T →
-      @Eq (Ob A ⟶ Ob .long) T.Holds (count (rel R)).den
+      ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
+        @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.length ≫ graph Int64.ofNat)
   | _, _, grade d lt x => ∀ S, Ops.grade d x = some S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
   | A, B, ojoin v P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : Rel A .long) (S : Rel B .long) T, ordJoin v R S = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob .long) ≫ ord v ≫ (S.Holds : Ob B ⟶ Ob .long)°)
@@ -428,10 +511,11 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     · cases h
     rw [hl _ _ h]; cases d <;> simp only [den] <;> rw [run_sound P sP (by assumption)]
   | _, _, fold _ _ _ _ G, _, hs, h => by
-    unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
+    unfold Sound at hs; obtain ⟨sG, hf, hl⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+    obtain ⟨S, hS, hT⟩ := hl _ _ h
+    rw [hT, segs_eq hS _ (listFold_perm hf)]; simp only [den]; rw [run_sound G sG (by assumption)]
   | _, _, enum x, _, hs, h => enum_sound x hs h
   | _, _, anti P C, _, hs, h => by
     unfold Sound at hs; obtain ⟨sP, sC, hl⟩ := hs
@@ -459,7 +543,8 @@ theorem run_sound : ∀ {A B : QAtomicType} (P : Prog A B) {R : Rel A B}, P.Soun
     unfold Sound at hs; obtain ⟨sG, hl⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rw [hl _ _ h]; simp only [den]; rw [run_sound G sG (by assumption)]
+    obtain ⟨S, hS, hT⟩ := hl _ _ h
+    rw [hT, segs_eq hS _ length_perm]; simp only [den]; rw [run_sound G sG (by assumption)]
   | _, _, grade .., _, hs, h => by
     unfold Sound at hs
     obtain ⟨S, k, hg, hk, rfl⟩ := grade_run h
@@ -547,6 +632,22 @@ theorem lastBy_den {K t : QAtomicType} {n : Nat} (k : Arr K n) (v : Arr t n) :
     (`overBy_rel`), so no caller can pair a kernel with a fold it does not run. -/
 def foldOp {A : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) (G : Prog A .long) : Prog A .long :=
   fold op (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) x G
+
+/-- `foldOp`'s step is left-commutative at every `op` that skips `0N` (`boolCast = false`): `+ * & |` are
+    commutative and associative. So the order a kernel lists a segment in does not change its fold. -/
+theorem foldOp_comm {op : Kernel.Coc.Over} (hb : op.boolCast = false) (a b c : Int64) :
+    Verb.skipNul op.step a (Verb.skipNul op.step b c) = Verb.skipNul op.step b (Verb.skipNul op.step a c) := by
+  have lc : ∀ x y z : Int64, op.step x (op.step y z) = op.step y (op.step x z) := by
+    intro x y z
+    cases op <;> simp only [Kernel.Coc.Over.boolCast, Bool.true_eq_false] at hb <;> simp only [Kernel.Coc.Over.step]
+    · rw [← Int64.add_assoc, Int64.add_comm x y, Int64.add_assoc]
+    · rw [← Int64.mul_assoc, Int64.mul_comm x y, Int64.mul_assoc]
+    all_goals
+      repeat' split
+      all_goals first | rfl | (apply Int64.toInt_inj.1; simp only [Int64.lt_iff_toInt_lt] at *; omega)
+  unfold Verb.skipNul
+  cases ha : (a == Spec.nul) <;> cases hb' : (b == Spec.nul) <;> simp only [ha, hb', Bool.false_eq_true, ↓reduceIte] <;>
+    exact lc a b c
 
 /-- `select f x by k`: `grpL(k) ≫ list(x) ≫ ⦇e,f⦈`, `grpL(k) = Λ(k°) ≫ enum` (`overBy_rel`). -/
 def selectBy {K : QAtomicType} {n : Nat} (op : Kernel.Coc.Over) (k : Arr K n) (x : Arr .long n) : Prog K .long :=
@@ -747,14 +848,17 @@ theorem over_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
 def nonNul {n : Nat} (x : Arr .long n) : Prog .long .long :=
   anti (arr x) (inter (idU x) (cst (u := .long) Spec.nul (idU x)))
 
-/-- `avg x = ⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the
-    count over `nonNul x`. -/
-def avg {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    Prog .long rt := dy .div h (over .add x) (count (whole (nonNul x)))
+/-- `⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the count over
+    `nonNul x`. No row where nothing counts: `count` has none there. -/
+def avgDiv {n : Nat} (x : Arr .long n) : Prog .long .float := dy .div rfl (over .add x) (count (whole (nonNul x)))
 
-theorem avg_den {n : Nat} {rt : QAtomicType} (h : Eval.ewType .div .long .long = some rt) (x : Arr .long n) :
-    (avg h x).den = rpair (over .add x).den (count (whole (nonNul x))).den ≫ ofExcept fun p => elem .div h p.1 p.2 :=
-  rfl
+/-- `avg x = !1 ≫ miss(avgDiv x, 0n)`: the key `0` always, `0n` where no element counts, as q answers. -/
+def avg {n : Nat} (x : Arr .long n) : Prog .long .float :=
+  union (comp (til 1) (avgDiv x)) (cst QLean.nanBits (anti (til 1) (dom (avgDiv x))))
+
+theorem avg_den {n : Nat} (x : Arr .long n) :
+    (avg x).den = (til 1).den ≫ Verb.miss (avgDiv x).den QLean.nanBits :=
+  comp_cup _ _ _ _
 
 /-- On `x`'s values, missing the coreflexive `ran x ∩ (ran x ≫ !0N)` is being other than `0N`. -/
 theorem corNeg_nul {n : Nat} (x : Arr .long n) :
@@ -1352,6 +1456,9 @@ end Prog
 #print axioms Prog.size_den
 #print axioms Prog.over_den
 #print axioms Prog.avg_den
+#print axioms Prog.segs_eq
+#print axioms Prog.foldOp_comm
+#print axioms Prog.run_sound
 #print axioms Prog.iasc_den
 #print axioms Prog.idesc_den
 #print axioms Prog.rank_den
