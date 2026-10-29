@@ -1598,6 +1598,127 @@ theorem avg_prog {n : Nat} {x : Arr .long n} {ws : List UInt64} (hx : longWords 
     (T.Holds : Ob .long ⟶ Ob .float) k v ↔ k = 0 ∧ v = Spec.canon a := by
   rw [run_sound _ hS h, avg_val x hn hF hs, Ops.avg_long hx hU ha]
 
+/-! ## Verbs, first half (design §2.1–§2.3, up to `+x`)
+
+  Each verb written with the existing constructors only. A verb with no term here is not expressible; the
+  reason is recorded in the design's verb table (`rows-1.html`), not in a stub. -/
+
+/-- `a v x = ⟨!a, x⟩ ≫ (v)`: the atom as the constant map on `x`'s keys (R2's left shape, run literally). -/
+def atomL {t u rt : QAtomicType} {n : Nat} (a : El u) (v : Prim.Dyadic) (h : Eval.ewType v u t = some rt)
+    (x : Arr t n) : Prog .long rt := dy v h (cst a (arr x)) (arr x)
+
+theorem atomL_den {t u rt : QAtomicType} {n : Nat} (a : El u) (v : Prim.Dyadic) (h : Eval.ewType v u t = some rt)
+    (x : Arr t n) : (atomL a v h x).den =
+      rpair ((posL° ≫ x.rel) ≫ Verb.cst a) (posL° ≫ x.rel) ≫ ofExcept fun p => elem v h p.1 p.2 := rfl
+
+/-- `x v a = ⟨x, !a⟩ ≫ (v)`. -/
+def atomR {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) (x : Arr t n)
+    (a : El u) : Prog .long rt := dy v h (arr x) (cst a (arr x))
+
+theorem atomR_den {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt)
+    (x : Arr t n) (a : El u) : (atomR v h x a).den =
+      rpair (posL° ≫ x.rel) ((posL° ≫ x.rel) ≫ Verb.cst a) ≫ ofExcept fun p => elem v h p.1 p.2 := rfl
+
+/-- `%x = 1 % x`: `map` keeps the value type, so the reciprocal (long → float) goes through the dyadic `%`. -/
+def recip {n : Nat} (x : Arr .long n) : Prog .long .float := atomL (u := .long) (1 : Int64) .div rfl x
+
+/-- `^x = x = 0N` on longs: the null test, through the dyadic `=` against a constant column. -/
+def isNul {n : Nat} (x : Arr .long n) : Prog .long .boolean := atomR .eq rfl x (u := .long) Spec.nul
+
+/-- `til n + c`: the position map `k ↦ k + c` on `til n` (`take`/`drop`/`rot`/`rev`/`,` read through it). -/
+def shiftBy (n : Nat) (c : Int64) : Prog .long .long := dy .add rfl (til n) (cst (u := .long) c (til n))
+
+/-- `x v': x = ⟨x, miss(prev ≫ x, seed)⟩ ≫ (v)`, `prev = til n − 1`: position `0` has no predecessor, so
+    the seed fills it. -/
+def eachPrior {rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v .long .long = some rt)
+    (seed : Int64) (x : Arr .long n) : Prog .long rt :=
+  dy v h (arr x) (missP (til n) (comp (shiftBy n (-1)) (arr x)) seed)
+
+theorem eachPrior_den {rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v .long .long = some rt)
+    (seed : Int64) (x : Arr .long n) : (eachPrior v h seed x).den =
+      rpair (posL° ≫ x.rel) ((til n).den ≫ Verb.miss ((shiftBy n (-1)).den ≫ posL° ≫ x.rel) seed) ≫
+        ofExcept fun p => elem v h p.1 p.2 := by
+  show rpair _ (missP (til n) (comp (shiftBy n (-1)) (arr x)) seed).den ≫ _ = _
+  rw [missP_den]; rfl
+
+/-- `miss(D, e)` on the keys `U`, any key and value type (`missP` at longs). -/
+def missG {K t : QAtomicType} (U : Prog K K) (D : Prog K t) (e : El t) : Prog K t :=
+  union (comp U D) (cst e (anti U (dom D)))
+
+theorem missG_den {K t : QAtomicType} (U : Prog K K) (D : Prog K t) (e : El t) :
+    (missG U D e).den = U.den ≫ Verb.miss D.den e :=
+  comp_cup _ _ _ _
+
+/-- `d v e` on dicts: q's outer pairing, `⟨miss(d,eₗ), miss(e,eᵣ)⟩ ≫ (v)` on `dom d ∪ dom e`. -/
+def dictDy {K t u rt : QAtomicType} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) (D : Prog K t)
+    (E : Prog K u) (el : El t) (er : El u) : Prog K rt :=
+  dy v h (missG (union (dom D) (dom E)) D el) (missG (union (dom D) (dom E)) E er)
+
+theorem dictDy_den {K t u rt : QAtomicType} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) (D : Prog K t)
+    (E : Prog K u) (el : El t) (er : El u) : (dictDy v h D E el er).den =
+      rpair ((Verb.dom D.den ∪ Verb.dom E.den) ≫ Verb.miss D.den el)
+        ((Verb.dom D.den ∪ Verb.dom E.den) ≫ Verb.miss E.den er) ≫ ofExcept fun p => elem v h p.1 p.2 := by
+  show rpair (missG (union (dom D) (dom E)) D el).den (missG (union (dom D) (dom E)) E er).den ≫ _ = _
+  rw [missG_den, missG_den]; rfl
+
+/-- `x,y = split ≫ [x,y]`: `y` re-keyed past `x` by `(til |y| + |x|)°`, then the union. -/
+def cat {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Prog .long t :=
+  union (arr x) (comp (conv (shiftBy ny (Int64.ofNat nx))) (arr y))
+
+theorem cat_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) :
+    (cat x y).den = (posL° ≫ x.rel) ∪ ((shiftBy ny (Int64.ofNat nx)).den° ≫ posL° ≫ y.rel) := rfl
+
+/-- `n#x = take(n) ≫ x` for `n ≤ |x|`: `til n` read through `x`. -/
+def take {t : QAtomicType} {nx : Nat} (n : Nat) (x : Arr t nx) : Prog .long t := comp (til n) (arr x)
+
+theorem take_den {t : QAtomicType} {nx : Nat} (n : Nat) (x : Arr t nx) :
+    (take n x).den = (til n).den ≫ posL° ≫ x.rel := rfl
+
+/-- `n_x = drop(n) ≫ x`: `k ↦ x[k+n]` on `til (|x|−n)`. -/
+def drop {t : QAtomicType} {nx : Nat} (n : Nat) (x : Arr t nx) : Prog .long t :=
+  comp (shiftBy (nx - n) (Int64.ofNat n)) (arr x)
+
+theorem drop_den {t : QAtomicType} {nx : Nat} (n : Nat) (x : Arr t nx) :
+    (drop n x).den = (shiftBy (nx - n) (Int64.ofNat n)).den ≫ posL° ≫ x.rel := rfl
+
+/-- `r rotate x`, `r ≤ |x|`: no `mod` among the dyadic maps, so `rot(r)` is two shifted pieces,
+    `k ↦ x[k+r]` below `|x|−r` and `k ↦ x[k+r−|x|]` from there. -/
+def rotate {t : QAtomicType} {nx : Nat} (r : Nat) (x : Arr t nx) : Prog .long t :=
+  union (drop r x) (comp (conv (shiftBy r (Int64.ofNat (nx - r)))) (arr x))
+
+theorem rotate_den {t : QAtomicType} {nx : Nat} (r : Nat) (x : Arr t nx) :
+    (rotate r x).den = (drop r x).den ∪ ((shiftBy r (Int64.ofNat (nx - r))).den° ≫ posL° ≫ x.rel) := rfl
+
+/-- `|x = rev ≫ x`, `rev = (|x|−1) − til |x|`. -/
+def revMap (n : Nat) : Prog .long .long := dy .sub rfl (cst (u := .long) (Int64.ofNat (n - 1)) (til n)) (til n)
+
+def rev {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long t := comp (revMap n) (arr x)
+
+theorem rev_den {t : QAtomicType} {n : Nat} (x : Arr t n) : (rev x).den = (revMap n).den ≫ posL° ≫ x.rel := rfl
+
+/-- `@[x;i;v;y]` at distinct `i`: `(corNeg(ran i) ≫ x) ∪ (ran(i) ≫ ⟨x, i° ≫ y⟩ ≫ (v))`. The kept rows are
+    `(x° ≫ corNeg(ran i))°`, since `anti` cuts on the value side. Repeated `i` pair every `y` with one `x`
+    instead of folding them in order. -/
+def amend {t u : QAtomicType} {nx ni : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some t) (x : Arr t nx)
+    (i : Arr .long ni) (y : Arr u ni) : Prog .long t :=
+  union (conv (anti (conv (arr x)) (dom (conv (arr i)))))
+    (dy v h (comp (dom (conv (arr i))) (arr x)) (comp (conv (arr i)) (arr y)))
+
+theorem amend_den {t u : QAtomicType} {nx ni : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some t)
+    (x : Arr t nx) (i : Arr .long ni) (y : Arr u ni) : (amend v h x i y).den =
+      ((posL° ≫ x.rel)° ≫ Verb.corNeg (Verb.dom (posL° ≫ i.rel)°))° ∪
+        (rpair (Verb.dom (posL° ≫ i.rel)° ≫ posL° ≫ x.rel) ((posL° ≫ i.rel)° ≫ posL° ≫ y.rel) ≫
+          ofExcept fun p => elem v h p.1 p.2) := rfl
+
+/-- `o cut x`, flattened: each segment index against its values, `(Λ(til n ≫ (≥) ≫ o°) ≫ est(≥))° ≫ x`.
+    The nested list itself is no `Prog` value; this is its `∋`. -/
+def cutFlat {t : QAtomicType} {g n : Nat} (o : Arr .long g) (x : Arr t n) : Prog .long t :=
+  comp (conv (extr true (ojoin .ge (til n) (arr o)))) (arr x)
+
+theorem cutFlat_den {t : QAtomicType} {g n : Nat} (o : Arr .long g) (x : Arr t n) :
+    (cutFlat o x).den = (Λ ((til n).den ≫ ord .ge ≫ (posL° ≫ o.rel)°) ≫ est (fun a b : Int64 => a ≥ b))° ≫
+      posL° ≫ x.rel := rfl
+
 end Prog
 
 #print axioms Prog.enum_sound
