@@ -688,33 +688,28 @@ theorem ordKey8_le (a b : UInt64) :
 /-- **`groupEdge` at `long` times is one `binRows`**, the right's time column read where it lies (its
     bytes, or its frame-of-reference decode — the payload `bytesOf` names either way), the groups' `rows`
     as the order and their `bounds` as longs, `nr` the miss. -/
-theorem groupEdge_long (gs : Eval.Groups) (ids rc nc : Column) (nr : Nat) {hay keys gids : ByteArray}
-    (hrt : rc.ty = .long) (hnt : nc.ty = .long) (hrb : Column.bytesOf rc = some hay)
-    (hkb : Column.bytesOf nc = some keys) (hgb : Column.bytesOf ids = some gids)
-    (hsz : keys.size / 8 = gids.size / 8) :
-    Eval.groupEdge gs ids (.vector rc) (.vector nc) nr = Column.ofBytes .long
-      (Kernel.binRows 8 false true false hay keys gs.rows (Kernel.longBytes gs.bounds) gids nr.toUInt64) := by
-  obtain ⟨t, n, e, a⟩ := rc
-  obtain ⟨u, m, f, b⟩ := nc
-  simp only at hrt hnt
-  subst hrt hnt
-  have h1 : (QValue.vector ⟨.long, n, e, a⟩).bare = .vector ⟨.long, n, e, none⟩ := by
-    rcases a with _ | ⟨_, _⟩ <;> rfl
-  have h2 : (QValue.vector ⟨.long, m, f, b⟩).bare = .vector ⟨.long, m, f, none⟩ := by
-    rcases b with _ | ⟨_, _⟩ <;> rfl
-  have hrb' : Column.bytesOf ⟨.long, n, e, none⟩ = some hay := by rw [← hrb]; rfl
-  have hkb' : Column.bytesOf ⟨.long, m, f, none⟩ = some keys := by rw [← hkb]; rfl
+theorem groupEdge_long (gs : Eval.Groups) (ids rc nc : Nat × Enc) (nr : Nat) {hay keys gids : ByteArray}
+    (hrb : Enc.bytesOf .long rc.1 rc.2 = some hay) (hkb : Enc.bytesOf .long nc.1 nc.2 = some keys)
+    (hgb : Enc.bytesOf .long ids.1 ids.2 = some gids) (hsz : keys.size / 8 = gids.size / 8) :
+    Eval.groupEdge gs ids (.vector .long rc.1 rc.2 none) (.vector .long nc.1 nc.2 none) nr =
+      (ids.1, .bytes (Kernel.binRows 8 false true false hay keys gs.rows (Kernel.longBytes gs.bounds) gids
+        nr.toUInt64)) := by
+  obtain ⟨n, e⟩ := rc
+  obtain ⟨m, f⟩ := nc
+  have h1 : (QValue.vector .long n e none).bare = .vector .long n e none := rfl
+  have h2 : (QValue.vector .long m f none).bare = .vector .long m f none := rfl
+  dsimp only at hrb hkb
   unfold Eval.groupEdge
-  simp only [h1, h2, Kernel.denseWidth, QAtomicType.width, hkb', hgb, hsz, Kernel.longColumn, bne_self_eq_false,
+  simp only [h1, h2, Kernel.denseWidth, QAtomicType.width, hkb, hgb, hsz, bne_self_eq_false,
     beq_self_eq_true, ↓reduceIte, Bool.false_eq_true, bind, Option.bind, Kernel.foldsZero, Kernel.ordSigned]
   cases e with
   | foR md pk =>
     have hd : Kernel.Coc.decode (USize.ofNat 8) md pk (USize.ofNat n) = hay := by
-      simpa [Column.bytesOf, QAtomicType.width] using hrb'
+      simpa [Enc.bytesOf, QAtomicType.width] using hrb
     by_cases hm : md.isEmpty = true
-    · simp [Kernel.foRColumn, hm, hrb'] <;> rfl
+    · simp [Kernel.foRColumn, hm, hrb] <;> rfl
     · simp [Kernel.foRColumn, hm, Kernel.foRBinRows, Column.encodes, ← hd] <;> rfl
-  | _ => simp [Kernel.foRColumn, hrb'] <;> rfl
+  | _ => simp [Kernel.foRColumn, hrb] <;> rfl
 
 /-- What `binSpec` names is a row of its group. -/
 theorem binSpec_mem {rt : List Int64} {g : List Nat} {x : Int64} {r : Nat} (h : Struct.binSpec rt g x = some r) :
@@ -733,8 +728,8 @@ theorem binSpec_mem {rt : List Int64} {g : List Nat} {x : Int64} {r : Nat} (h : 
     word `i` names a group whose span (`bounds` read as longs, rows through `rows` or the position itself) lists
     `Struct.group rk lk[i]`, or names no group where that is empty; and `gs.firsts` gathered at the ids (`0`
     past them) is word `i` the head of that group, `0` where it is empty — `wj`'s start. -/
-def KeyAnswers {κ : Type} [BEq κ] [Inhabited κ] (rk lk : List κ) (gs : Eval.Groups) (ids : Column) : Prop :=
-  ∃ gids, Column.bytesOf ids = some gids ∧ gids.size / 8 = lk.length ∧
+def KeyAnswers {κ : Type} [BEq κ] [Inhabited κ] (rk lk : List κ) (gs : Eval.Groups) (ids : Nat × Enc) : Prop :=
+  ∃ gids, Enc.bytesOf .long ids.1 ids.2 = some gids ∧ gids.size / 8 = lk.length ∧
     nats (Alg.gather 8 (Kernel.longBytes (gs.firsts.push 0)) gids) =
       (List.range lk.length).map (fun i => (Struct.group rk lk[i]!).head?.getD 0) ∧ ∀ i, i < lk.length →
     (Kernel.longBytes gs.bounds).size / 8 - 1 ≤ (Column.bitsAt gids (i * 8) 8).toNat ∧
@@ -749,8 +744,8 @@ def KeyAnswers {κ : Type} [BEq κ] [Inhabited κ] (rk lk : List κ) (gs : Eval.
 
 /-- **`binRows` over answered key groups is `binSpec` in each left row's group**: word `i` is the right row
     `binSpec` names among the rows of left key `i`, the miss `nr` where it names none. -/
-theorem binRows_group {κ : Type} [BEq κ] [Inhabited κ] {rk lk : List κ} {gs : Eval.Groups} {ids : Column}
-    {keys hay gids : ByteArray} {nr : Nat} (hk : KeyAnswers rk lk gs ids) (hgb : Column.bytesOf ids = some gids)
+theorem binRows_group {κ : Type} [BEq κ] [Inhabited κ] {rk lk : List κ} {gs : Eval.Groups} {ids : Nat × Enc}
+    {keys hay gids : ByteArray} {nr : Nat} (hk : KeyAnswers rk lk gs ids) (hgb : Enc.bytesOf .long ids.1 ids.2 = some gids)
     (hkn : keys.size / 8 = lk.length) (hrn : hay.size / 8 = nr) (hrk : rk.length = nr) {i : Nat} (hi : i < lk.length) :
     Column.bitsAt (Kernel.binRows 8 false true false hay keys gs.rows (Kernel.longBytes gs.bounds) gids nr.toUInt64)
         (8 * i) 8 =
@@ -778,19 +773,19 @@ theorem binRows_group {κ : Type} [BEq κ] [Inhabited κ] {rk lk : List κ} {gs 
 /-- **`aj` is `ajSpec` once its groups are known.** Where `keyGroups` answers groups `gs` and ids that
     `KeyAnswers` the two sides' keys, `aj` over dense long times `keys`, `hay` answers `ajSpec`. Nothing is
     assumed about the times' order inside a group. -/
-theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {tl tr : Column} {m : Nat}
-    {A : Arr .long m} {gs : Eval.Groups} {ids : Column} {keys hay gids : ByteArray} (lk rk : List κ)
-    (htl : tl.ty = .long) (htr : tr.ty = .long) (hkb : Column.bytesOf tl = some keys)
-    (hrb : Column.bytesOf tr = some hay) (hgb : Column.bytesOf ids = some gids)
-    (hkn : keys.size / 8 = tl.n) (hrn : hay.size / 8 = tr.n)
-    (hlk : lk.length = tl.n) (hrk : rk.length = tr.n) (hU : tl.n < USize.size) (h63 : tr.n < 2 ^ 63)
-    (hkg : Struct.keyGroups "aj" l r tl.n tr.n = .ok (gs, ids)) (hk : KeyAnswers rk lk gs ids)
+theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} {tl tr : Nat × Enc} {m : Nat}
+    {A : Arr .long m} {gs : Eval.Groups} {ids : Nat × Enc} {keys hay gids : ByteArray} (lk rk : List κ)
+    (hkb : Enc.bytesOf .long tl.1 tl.2 = some keys)
+    (hrb : Enc.bytesOf .long tr.1 tr.2 = some hay) (hgb : Enc.bytesOf .long ids.1 ids.2 = some gids)
+    (hkn : keys.size / 8 = tl.1) (hrn : hay.size / 8 = tr.1)
+    (hlk : lk.length = tl.1) (hrk : rk.length = tr.1) (hU : tl.1 < USize.size) (h63 : tr.1 < 2 ^ 63)
+    (hkg : Struct.keyGroups "aj" l r tl.1 tr.1 = .ok (gs, ids)) (hk : KeyAnswers rk lk gs ids)
     (h : Struct.aj l r ⟨.long, tl⟩ ⟨.long, tr⟩ = .ok ⟨m, A⟩) :
     A.toList = Struct.ajSpec lk ((nats keys).map Int64.ofNat) rk ((nats hay).map Int64.ofNat) := by
   obtain ⟨g', hg', hgn, -⟩ := id hk
   rw [Option.some.inj (hg'.symm.trans hgb)] at hgn
-  have hE :=groupEdge_long gs ids tr tl tr.n htr htl hrb hkb hgb (by omega)
-  simp only [Struct.aj, Struct.colRows, Struct.colValue, hkg, hE, Find.dense, Column.ofBytes, Column.bytesOf,
+  have hE := groupEdge_long gs ids tr tl tr.1 hrb hkb hgb (by omega)
+  simp only [Struct.aj, Struct.colRows, Struct.colValue, hkg, hE, Find.dense, Enc.bytesOf,
     beq_self_eq_true, ↓reduceIte, bind, Except.bind, pure, Except.pure] at h
   split at h
   · cases h
@@ -798,23 +793,23 @@ theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
   simp only [Except.ok.injEq, Sigma.mk.injEq] at h
   obtain ⟨rfl, h⟩ := h
   obtain rfl := eq_of_heq h
-  have hc := Struct.of_c hA
+  have hc := ofPart_enc hA
   rw [Arr.toList_long_bytes _ (by rw [hc]; rfl)]
   -- `^`'s word `i`: the atom where the word is the null `nr`, the word otherwise
   have hfill : ∀ (nul x y : Int64), Kernel.Ew.intStep Kernel.Ew.fill nul x y = if y == nul then x else y :=
     fun _ _ _ => rfl
-  have key : ∀ (nul : Int64) (c : UInt64) (b : ByteArray) (i : Nat), i < tl.n →
-      Column.bitsAt (Kernel.Ew.val Kernel.Ew.fill Kernel.Ew.i64 Kernel.Ew.av nul (Find.one c) b tl.n.toUSize)
+  have key : ∀ (nul : Int64) (c : UInt64) (b : ByteArray) (i : Nat), i < tl.1 →
+      Column.bitsAt (Kernel.Ew.val Kernel.Ew.fill Kernel.Ew.i64 Kernel.Ew.av nul (Find.one c) b tl.1.toUSize)
         (i * 8) 8 = (Kernel.Ew.intStep Kernel.Ew.fill nul c.toInt64 (Column.bitsAt b (i * 8) 8).toInt64).toUInt64 := by
     intro nul c b i hi
-    have hv := val_i64_av Kernel.Ew.fill nul c b tl.n hU
+    have hv := val_i64_av Kernel.Ew.fill nul c b tl.1 hU
     have hl := congrArg List.length hv
     simp only [Verify.elemsW, List.length_map, List.length_range] at hl
     have := congrArg (fun L => L[i]?) hv
     simp only [Verify.elemsW, List.getElem?_map, List.getElem?_range, hl, hi, Option.map_some,
       Option.some.injEq] at this
     exact this
-  have hnr : (UInt64.ofNat tr.n).toInt64 = Int64.ofNat tr.n := by
+  have hnr : (UInt64.ofNat tr.1).toInt64 = Int64.ofNat tr.1 := by
     rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
   rw [List.map_map]
   unfold Struct.ajSpec
@@ -830,17 +825,17 @@ theorem aj_groups {κ : Type} [BEq κ] [Inhabited κ] {l r : Array Struct.KCol} 
   cases hb : Struct.binSpec ((nats hay).map Int64.ofNat) (Struct.group rk lk[i]!) (Column.bitsAt keys (i * 8) 8).toInt64 with
     | none => simp [hfill, Nat.toUInt64_eq, hnr]
     | some r =>
-      have hrn : r < tr.n := by
+      have hrn : r < tr.1 := by
         have := binSpec_mem hb
         simp only [Struct.group, List.mem_filter, List.mem_range] at this
         omega
       have hr' : (UInt64.ofNat r).toInt64 = Int64.ofNat r := by
         rw [toInt64_eq_ofNat, UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]
-      have hne : (UInt64.ofNat r).toInt64 ≠ Int64.ofNat tr.n := fun e => by
+      have hne : (UInt64.ofNat r).toInt64 ≠ Int64.ofNat tr.1 := fun e => by
         rw [← hnr] at e
         have := congrArg Int64.toInt e
         rw [toInt_word (u := UInt64.ofNat r) (a := r) (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)])
-          (by omega), toInt_word (u := UInt64.ofNat tr.n) (a := tr.n)
+          (by omega), toInt_word (u := UInt64.ofNat tr.1) (a := tr.1)
           (by rw [UInt64.toNat_ofNat', Nat.mod_eq_of_lt (by omega)]) h63] at this
         omega
       simp [hfill, Nat.toUInt64_eq, hr']
