@@ -463,11 +463,10 @@ theorem val_spec_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = som
 /-- `dyadColumn` on two dense long columns of one count, at a comparison: the one-stage `eCmp` chain over
     the two payloads, answered as a bitmap. -/
 theorem dyadColumn_long_vv_cmp {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
-    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a b : ByteArray)
-    (pa pb : Option (UInt8 × IndexCell)) :
+    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a b : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.vv .long .long n (.bytes a) n (.bytes b) =
-      some (.boolean, Kernel.payload .boolean n.toUSize ({ inputs := #[a, b] },
-        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1, nul := 0 })) := by
+      some (.boolean, .vector .boolean n (Kernel.payload .boolean n.toUSize ({ inputs := #[a, b] },
+        { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := 1, nul := 0 })) none) := by
   cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.cmpPayload, Kernel.cmpOp,
     Kernel.clsOf, Kernel.ticksMeet, Kernel.tickAgrees, Kernel.convertible, Kernel.promotable, Kernel.foRCmpPayload,
@@ -617,7 +616,7 @@ theorem cmp_spec_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v =
     (hv : Ew.val v .boolean x yv = .ok R) : Ew.ValSpec v h x yv R := by
   have hr : Kernel.resultType v .long .long = some .boolean := by
     cases v <;> first | rfl | exact absurd hop (by simp [Kernel.cmpOp])
-  have hR : R.c = ⟨.boolean, n, .bits (Kernel.Ew.foRCmpVV op ma pa mb pb n.toUSize), none⟩ := by
+  have hR : R.enc = .bits (Kernel.Ew.foRCmpVV op ma pa mb pb n.toUSize) := by
     unfold Ew.val at hv
     rw [ha, hb] at hv
     exact dyad_enc (dyadColumn_long_vv_cmp_foR hop hr n ma pa mb pb) hv
@@ -707,16 +706,15 @@ abbrev decodeStage (a b : UInt8) : Kernel.Ew.Stage := { engine := Kernel.Ew.eDec
 /-- `dyadColumn` on a dense and a `foR` long column, either order, at a value verb whose result is `long`:
     `zipPass`'s decode stage, then the `eVal` stage reading the dense input and `slot0`. -/
 theorem dyadColumn_long_vv_mixed {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
-    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (a md pk : ByteArray)
-    (pa pb : Option (UInt8 × IndexCell)) :
+    (hr : Kernel.resultType v .long .long = some .long) (n : Nat) (a md pk : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.vv .long .long n (.bytes a) n (.foR md pk) =
-      some (.long, Kernel.payload .long n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
+      some (.long, .vector .long n (Kernel.payload .long n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
         { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := Kernel.Ew.slot0,
-          nul := Kernel.nullPayload .long })) ∧
+          nul := Kernel.nullPayload .long })) none) ∧
     Kernel.dyadColumn v Kernel.Ew.vv .long .long n (.foR md pk) n (.bytes a) =
-      some (.long, Kernel.payload .long n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
+      some (.long, .vector .long n (Kernel.payload .long n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
         { engine := Kernel.Ew.eVal, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := Kernel.Ew.slot0, b := 2,
-          nul := Kernel.nullPayload .long })) := by
+          nul := Kernel.nullPayload .long })) none) := by
   cases v <;> simp only [Kernel.valOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals first | exact absurd hr (by decide) | skip
   all_goals constructor
@@ -730,16 +728,15 @@ theorem dyadColumn_long_vv_mixed {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.va
 /-- `dyadColumn` on a dense and a `foR` long column, either order, at a comparison: the decode stage, then the
     `eCmp` stage reading the dense input and `slot0`. -/
 theorem dyadColumn_long_vv_cmp_mixed {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp v = some op)
-    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a md pk : ByteArray)
-    (pa pb : Option (UInt8 × IndexCell)) :
+    (hr : Kernel.resultType v .long .long = some .boolean) (n : Nat) (a md pk : ByteArray) :
     Kernel.dyadColumn v Kernel.Ew.vv .long .long n (.bytes a) n (.foR md pk) =
-      some (.boolean, Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
+      some (.boolean, .vector .boolean n (Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 1 2], inputs := #[a, md, pk] },
         { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := 0, b := Kernel.Ew.slot0,
-          nul := 0 })) ∧
+          nul := 0 })) none) ∧
     Kernel.dyadColumn v Kernel.Ew.vv .long .long n (.foR md pk) n (.bytes a) =
-      some (.boolean, Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
+      some (.boolean, .vector .boolean n (Kernel.payload .boolean n.toUSize ({ stages := #[decodeStage 0 1], inputs := #[md, pk, a] },
         { engine := Kernel.Ew.eCmp, op, cls := Kernel.Ew.i64, shape := Kernel.Ew.vv, a := Kernel.Ew.slot0, b := 2,
-          nul := 0 })) := by
+          nul := 0 })) none) := by
   cases v <;> simp only [Kernel.cmpOp, Option.some.injEq, reduceCtorEq] at hop <;> subst hop
   all_goals constructor
   all_goals simp [Kernel.dyadColumn, hr, Kernel.dyadPayload, Kernel.dyadCount, Kernel.cmpPayload, Kernel.cmpOp,
@@ -893,7 +890,7 @@ theorem mon_i64 (op : UInt8) (nul : Int64) (a : ByteArray) (n : Nat) (hn : n < U
   rfl
 
 /-- `monColumn "neg"` on a dense long column: the one-stage `eMon` chain over its payload. -/
-theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × IndexCell)) :
+theorem monColumn_neg_long (n : Nat) (a : ByteArray) :
     Kernel.monColumn "neg" .long n (.bytes a) = some (.long, Kernel.payload .long n.toUSize
       ({ inputs := #[a] },
         { engine := Kernel.Ew.eMon, op := Kernel.Ew.neg, cls := Kernel.Ew.i64, a := 0, nul := Kernel.nullPayload .long })) := by
@@ -905,21 +902,21 @@ theorem monColumn_neg_long (n : Nat) (a : ByteArray) (pa : Option (UInt8 × Inde
 /-- `gatherFill` from a long source, `bytes` or `foR` (`longWords`), at a dense index: word `j` is the
     source's word at index word `j`, `fill` past the end (`elemsW_gatherBytes`; `gatherFoR` is `gatherBytes`
     on the decode). -/
-theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : longWords y.c = some ys)
-    (hm : m < USize.size) {fill : UInt64} {idx C : Column} {ib : ByteArray} (hi : Column.bytesOf idx = some ib)
-    (hv : Ew.gatherFill .long fill y.c idx = .ok C) :
-    ∃ B, C = ⟨.long, idx.n, .bytes B, none⟩ ∧ B.size = 8 * (ib.size / 8) ∧
+theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : longWords m y.enc = some ys)
+    (hm : m < USize.size) {fill : UInt64} {idx C : Nat × Enc} {ib : ByteArray}
+    (hi : Enc.bytesOf .long idx.1 idx.2 = some ib) (hv : Ew.gatherFill .long fill m y.enc idx = .ok C) :
+    ∃ B, C = (idx.1, .bytes B) ∧ B.size = 8 * (ib.size / 8) ∧
       Verify.elemsW 8 B = (Verify.elemsW 8 ib).map fun k => ys.getD k.toNat fill := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   -- both encodings gather from a dense payload `B0` of words `ys`: `bytes` itself, `foR` its decode
   obtain ⟨B0, hB0, hC⟩ : ∃ B0, Verify.elemsW 8 B0 = ys ∧
-      C = ⟨.long, idx.n, .bytes (Kernel.gatherBytes (8 : Nat).toUSize fill B0 ib), none⟩ := by
+      C = (idx.1, .bytes (Kernel.gatherBytes (8 : Nat).toUSize fill B0 ib)) := by
     obtain ⟨B0, hB0 | ⟨md, pk, he, rfl⟩, -, hw0, -⟩ := Arr.dense_long y hy hm
     all_goals simp only [Ew.gatherFill, show QAtomicType.width .long = some 8 from rfl, hi, bind, Except.bind,
       pure, Except.pure] at hv
     · rw [hB0] at hv; cases hv; exact ⟨B0, hw0, rfl⟩
     · rw [he] at hv; cases hv
-      exact ⟨_, hw0, by rw [y.wf.2.1]; rfl⟩
+      exact ⟨_, hw0, rfl⟩
   subst hC
   refine ⟨_, rfl, ?_, ?_⟩
   · have := (Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8) fill B0 ib).1
@@ -933,20 +930,20 @@ theorem gatherFill_long {m : Nat} (y : Arr .long m) {ys : List UInt64} (hy : lon
 /-- `x@i` at long, source and index each `bytes` or `foR` (`longWords`): word `j` is the source's word at index
     word `j` read unsigned, `0N` past the end (`gatherColumn_fixed_shape`, `elemsW_gatherBytes`). The index
     need only fit its count (`countFits`), which a dense index does at any length. -/
-theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords x.c = some xs)
-    (hm : m < USize.size) (i : Arr .long k) (hi : longWords i.c = some is) (hfi : Verify.countFits i.c) {c : Column}
-    (h : Kernel.gatherColumn .long x.c i.c = some (.vector c)) :
-    ∃ B, c = ⟨.long, k, .bytes B, none⟩ ∧ B.size = k * 8 ∧
+theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (hx : longWords m x.enc = some xs)
+    (hm : m < USize.size) (i : Arr .long k) (hi : longWords k i.enc = some is) (hfi : Verify.countFits k i.enc)
+    {c : Enc} (h : Kernel.gatherColumn .long m x.enc k i.enc = some c) :
+    ∃ B, c = .bytes B ∧ B.size = k * 8 ∧
       Verify.elemsW 8 B = is.map fun j => xs.getD j.toNat 0x8000000000000000 := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
     simp [longWords, he] at hx
-  obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl x.c i.c c x.wf.1
-    i.wf.1 hfi hA h
+  obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl m x.enc k i.enc c
+    hA h
   obtain ⟨B, -, hB, hBw, -⟩ := Arr.dense_long x hx hm
   obtain rfl : B = src := Option.some.inj (hB.symm.trans hsrc)
   have hix8 : Verify.elemsW 8 ix = is := by
-    rw [Verify.elemsW_index i.c i.wf.1 i.wf.2.2 hfi ix hix, Struct.raw_long i.wf.1 i.wf.2.2 hi]
+    rw [Verify.elemsW_index k i.enc i.wf hfi ix hix, Struct.raw_long i.wf hi]
   have hlen : is.length = k := by rw [← Arr.length_toList i, Arr.toList_long i hi, List.length_map]
   have hk8 : ix.size / 8 = k := by
     have := congrArg List.length hix8; simp only [Verify.elemsW, List.length_map, List.length_range] at this; omega
@@ -955,7 +952,7 @@ theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (h
   have hs := (Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl 8)
     ((Kernel.nullBits .long).getD 0) B ix).1
   rw [h8] at e hs
-  refine ⟨_, by rw [hk8], by rw [hs, hk8, Nat.mul_comm], ?_⟩
+  refine ⟨_, rfl, by rw [hs, hk8, Nat.mul_comm], ?_⟩
   rw [e, hBw, hix8]
   exact List.map_congr_left fun k _ => Verify.ofNat_toNat_mod64 _
 
@@ -1246,9 +1243,9 @@ theorem encode_words {w : Nat} (hw : 1 < w ∧ w ≤ 8) (x : ByteArray) (hn : x.
 /-- A part at a type `encodes` takes: `bytes` of `w * n` bytes, or `foR`. -/
 theorem fixed_parts {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
     (x : Arr t n) : (∃ B, x.enc = .bytes B ∧ B.size = w * n) ∨ ∃ md pk, x.enc = .foR md pk := by
-  obtain ⟨⟨t', _, e, _⟩, ht, hm, hwf⟩ := x
-  simp only at ht hm hwf ⊢; subst ht hm
-  cases t' <;> cases e <;> simp_all [Column.WF, Column.encodes, QAtomicType.width, Nat.mul_comm]
+  have hwf := x.wf
+  generalize x.enc = e at hwf ⊢
+  cases t <;> cases e <;> simp_all [Enc.WF, Column.encodes, QAtomicType.width, Nat.mul_comm]
 
 theorem alp_fixed {t : QAtomicType} (he : Column.encodes t = true) : Column.alpEncodes t = false := by
   cases t <;> simp_all [Column.encodes, Column.alpEncodes]
@@ -1262,9 +1259,9 @@ theorem width_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (he : Co
 theorem alp_parts {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (ha : Column.alpEncodes t = true)
     (x : Arr t n) : (∃ B, x.enc = .bytes B ∧ B.size = w * n) ∨ (∃ md pk, x.enc = .foR md pk) ∨
       ∃ md pk a, x.enc = .alp md pk a := by
-  obtain ⟨⟨t', _, e, _⟩, ht, hm, hwf⟩ := x
-  simp only at ht hm hwf ⊢; subst ht hm
-  cases t' <;> cases e <;> simp_all [Column.WF, Column.alpEncodes, QAtomicType.width, Nat.mul_comm]
+  have hwf := x.wf
+  generalize x.enc = e at hwf ⊢
+  cases t <;> cases e <;> simp_all [Enc.WF, Column.alpEncodes, QAtomicType.width, Nat.mul_comm]
 
 theorem alp_width {t : QAtomicType} {w : Nat} (hw : t.width = some w) (ha : Column.alpEncodes t = true) :
     w = 4 ∨ w = 8 := by
@@ -1299,29 +1296,34 @@ theorem alpFlag {w : Nat} (hw : w = 4 ∨ w = 8) :
     exact ⟨rfl, rfl⟩
 
 /-- `razeColumn`'s dense arm: both parts' dense forms, joined. -/
-theorem raze_dense {t : QAtomicType} {a b c : Column}
-    (hd : (match (#[a, b] : Array Column).mapM Column.bytesOf with
-      | some ps => some (QValue.vector ⟨t, (#[a, b] : Array Column).foldl (· + ·.n) 0, .bytes (concatBytes ps), none⟩)
-      | none => none) = some (.vector c)) :
-    ∃ D0 D1, Column.bytesOf a = some D0 ∧ Column.bytesOf b = some D1 ∧
-      c = ⟨t, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩ := by
-  cases h0 : Column.bytesOf a <;> cases h1 : Column.bytesOf b <;> simp_all
+theorem raze_dense {t : QAtomicType} {w na nb : Nat} {ea eb : Enc} {v : QValue} (hw : t.width = some w)
+    (hd : (match t.width, (#[(na, ea), (nb, eb)] : Array (Nat × Enc)).mapM fun (n, e) => Enc.bytesOf t n e with
+      | some w, some ps =>
+        if ((#[(na, ea), (nb, eb)] : Array (Nat × Enc)).zip ps).any fun ((n, _), b) => b.size < n * w then none
+        else some (QValue.vector t ((#[(na, ea), (nb, eb)] : Array (Nat × Enc)).foldl (· + ·.1) 0)
+          (.bytes (concatBytes ps)) none)
+      | _, _ => none) = some v) :
+    ∃ D0 D1, Enc.bytesOf t na ea = some D0 ∧ Enc.bytesOf t nb eb = some D1 ∧
+      v = .vector t (na + nb) (.bytes (concatBytes #[D0, D1])) none := by
+  rw [hw] at hd
+  cases h0 : Enc.bytesOf t na ea <;> cases h1 : Enc.bytesOf t nb eb <;> simp_all
 
 /-- `razeColumn` at a type `encodes` takes: the dense join, or `concatFoR`'s answer where `encodedParts` claims. -/
-theorem raze_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
-    {a b c : Column} (h : razeColumn t #[a, b] = some (.vector c)) :
-    (∃ D0 D1, Column.bytesOf a = some D0 ∧ Column.bytesOf b = some D1 ∧
-      c = ⟨t, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩) ∨
-    ∃ n ns ms ps es, encodedParts t #[a, b] = some (false, n, ns, ms, ps, es) ∧
-      c = Column.answer ⟨t, n, .foR (concatFoR w.toUSize ns ms ps).1 (concatFoR w.toUSize ns ms ps).2, none⟩ := by
+theorem raze_fixed {t : QAtomicType} {w na nb : Nat} {ea eb : Enc} {v : QValue} (hw : t.width = some w)
+    (he : Column.encodes t = true) (h : razeColumn t #[(na, ea), (nb, eb)] = some v) :
+    (∃ D0 D1, Enc.bytesOf t na ea = some D0 ∧ Enc.bytesOf t nb eb = some D1 ∧
+      v = .vector t (na + nb) (.bytes (concatBytes #[D0, D1])) none) ∨
+    ∃ n ns ms ps es, encodedParts t #[(na, ea), (nb, eb)] = some (false, n, ns, ms, ps, es) ∧
+      v = .vector t n (Enc.answer t n (.foR (concatFoR w.toUSize ns ms ps).1 (concatFoR w.toUSize ns ms ps).2)) none := by
   have halp := alp_fixed he
   unfold razeColumn at h
-  simp only [show (#[a, b] : Array Column).isEmpty = false from rfl, Bool.false_eq_true, if_false] at h
+  simp only [show (#[(na, ea), (nb, eb)] : Array (Nat × Enc)).isEmpty = false from rfl, Bool.false_eq_true,
+    if_false] at h
   split at h
   · simp [Column.encodes] at he
   · simp [Column.encodes] at he
-  cases hE : encodedParts t #[a, b] with
-  | none => simp only [hE] at h; exact .inl (raze_dense h)
+  cases hE : encodedParts t #[(na, ea), (nb, eb)] with
+  | none => simp only [hE] at h; exact .inl (raze_dense hw h)
   | some r =>
     obtain ⟨alp, n, ns, ms, ps, as⟩ := r
     have hal : alp = false := by
@@ -1333,25 +1335,26 @@ theorem raze_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (he : Col
     subst hal
     simp only [hE, hw, Bool.false_eq_true, if_false] at h
     by_cases hd : denseCheaper 5 n w (straddles ns) = true
-    · simp only [hd, if_true] at h; exact .inl (raze_dense h)
-    · simp only [hd, Bool.false_eq_true, if_false, Option.some.injEq, QValue.vector.injEq] at h
+    · simp only [hd, if_true] at h; left; cases h0 : Enc.bytesOf t na ea <;> cases h1 : Enc.bytesOf t nb eb <;> simp_all
+    · simp only [hd, Bool.false_eq_true, if_false, Option.some.injEq] at h
       exact .inr ⟨n, ns, ms, ps, as, rfl, h.symm⟩
 
 /-- `razeColumn` at a type `alpEncodes` takes: the dense join, or `concatALP`'s answer where `encodedParts` claims. -/
-theorem raze_alp {t : QAtomicType} {w : Nat} (hw : t.width = some w) (ha : Column.alpEncodes t = true)
-    {a b c : Column} (h : razeColumn t #[a, b] = some (.vector c)) :
-    (∃ D0 D1, Column.bytesOf a = some D0 ∧ Column.bytesOf b = some D1 ∧
-      c = ⟨t, a.n + b.n, .bytes (concatBytes #[D0, D1]), none⟩) ∨
-    ∃ n ns ms ps es, encodedParts t #[a, b] = some (true, n, ns, ms, ps, es) ∧
-      c = Column.answer ⟨t, n, .alp (concatALP w.toUSize ns ms ps es).1 (concatALP w.toUSize ns ms ps es).2.1
-        (concatALP w.toUSize ns ms ps es).2.2, none⟩ := by
+theorem raze_alp {t : QAtomicType} {w na nb : Nat} {ea eb : Enc} {v : QValue} (hw : t.width = some w)
+    (ha : Column.alpEncodes t = true) (h : razeColumn t #[(na, ea), (nb, eb)] = some v) :
+    (∃ D0 D1, Enc.bytesOf t na ea = some D0 ∧ Enc.bytesOf t nb eb = some D1 ∧
+      v = .vector t (na + nb) (.bytes (concatBytes #[D0, D1])) none) ∨
+    ∃ n ns ms ps es, encodedParts t #[(na, ea), (nb, eb)] = some (true, n, ns, ms, ps, es) ∧
+      v = .vector t n (Enc.answer t n (.alp (concatALP w.toUSize ns ms ps es).1 (concatALP w.toUSize ns ms ps es).2.1
+        (concatALP w.toUSize ns ms ps es).2.2)) none := by
   unfold razeColumn at h
-  simp only [show (#[a, b] : Array Column).isEmpty = false from rfl, Bool.false_eq_true, if_false] at h
+  simp only [show (#[(na, ea), (nb, eb)] : Array (Nat × Enc)).isEmpty = false from rfl, Bool.false_eq_true,
+    if_false] at h
   split at h
   · simp [Column.alpEncodes] at ha
   · simp [Column.alpEncodes] at ha
-  cases hE : encodedParts t #[a, b] with
-  | none => simp only [hE] at h; exact .inl (raze_dense h)
+  cases hE : encodedParts t #[(na, ea), (nb, eb)] with
+  | none => simp only [hE] at h; exact .inl (raze_dense hw h)
   | some r =>
     obtain ⟨alp, n, ns, ms, ps, as⟩ := r
     have hal : alp = true := by
@@ -1363,18 +1366,17 @@ theorem raze_alp {t : QAtomicType} {w : Nat} (hw : t.width = some w) (ha : Colum
     subst hal
     simp only [hE, hw, ↓reduceIte] at h
     by_cases hd : denseCheaper 8 n 8 (straddles ns) = true
-    · simp only [hd, if_true] at h; exact .inl (raze_dense h)
-    · simp only [hd, Bool.false_eq_true, if_false, Option.some.injEq, QValue.vector.injEq] at h
+    · simp only [hd, if_true] at h; left; cases h0 : Enc.bytesOf t na ea <;> cases h1 : Enc.bytesOf t nb eb <;> simp_all
+    · simp only [hd, Bool.false_eq_true, if_false, Option.some.injEq] at h
       exact .inr ⟨n, ns, ms, ps, as, rfl, h.symm⟩
 
 /-- An ALP answer's dense form, whichever form `answer` leaves it in, is its decode at the type's width. -/
 theorem bytesOf_answer_alp {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (M P A : ByteArray) :
-    Column.bytesOf (Column.answer ⟨t, n, .alp M P A, none⟩) = some (Coc.alpDecode w.toUSize M P A n.toUSize) := by
-  simp only [Column.answer]
+    Enc.bytesOf t n (Enc.answer t n (.alp M P A)) = some (Coc.alpDecode w.toUSize M P A n.toUSize) := by
+  simp only [Enc.answer]
   split
   · simp_all [QAtomicType.width]
-  · simp only [hw]
-    split <;> simp [Column.bytesOf, hw]
+  · simp [hw, Enc.bytesOf]
 
 /-- `concatALP` of two parts: their decodes at `w`, joined, encoded again. -/
 theorem concatALP_pair {w : Nat} (hw48 : w = 4 ∨ w = 8) (n0 n1 : Nat) (m0 k0 a0 m1 k1 a1 : ByteArray) :
@@ -1400,10 +1402,10 @@ theorem raze_alp_answer {t : QAtomicType} {w n0 n1 : Nat} (hw : t.width = some w
     {m0 k0 a0 m1 k1 a1 D0 D1 : ByteArray} (hn : n0 + n1 < 2 ^ 32)
     (e0 : Verify.elemsW w (Coc.alpDecode w.toUSize m0 k0 a0 n0.toUSize) = Verify.elemsW w D0)
     (e1 : Verify.elemsW w (Coc.alpDecode w.toUSize m1 k1 a1 n1.toUSize) = Verify.elemsW w D1) :
-    ∃ D, Column.bytesOf (Column.answer ⟨t, n0 + n1,
-      .alp (concatALP w.toUSize #[n0, n1] #[m0, m1] #[k0, k1] #[a0, a1]).1
+    ∃ D, Enc.bytesOf t (n0 + n1) (Enc.answer t (n0 + n1)
+      (.alp (concatALP w.toUSize #[n0, n1] #[m0, m1] #[k0, k1] #[a0, a1]).1
         (concatALP w.toUSize #[n0, n1] #[m0, m1] #[k0, k1] #[a0, a1]).2.1
-        (concatALP w.toUSize #[n0, n1] #[m0, m1] #[k0, k1] #[a0, a1]).2.2, none⟩) = some D ∧
+        (concatALP w.toUSize #[n0, n1] #[m0, m1] #[k0, k1] #[a0, a1]).2.2)) = some D ∧
       Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
   have hw0 : 0 < w ∧ w ≤ 8 := by omega
   have hU : n0 + n1 < USize.size := Nat.lt_of_lt_of_le hn USize.le_size
@@ -1452,36 +1454,36 @@ theorem raze_answer {t : QAtomicType} {w n0 n1 : Nat} (hw : t.width = some w) (h
     {m0 m1 k0 k1 D0 D1 : ByteArray} (hn : n0 + n1 < USize.size)
     (e0 : (foRWords n0 m0 k0).map (lowBytes w) = Verify.elemsW w D0)
     (e1 : (foRWords n1 m1 k1).map (lowBytes w) = Verify.elemsW w D1) :
-    ∃ D, Column.bytesOf (Column.answer ⟨t, n0 + n1, .foR (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).1
-      (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).2, none⟩) = some D ∧
+    ∃ D, Enc.bytesOf t (n0 + n1) (Enc.answer t (n0 + n1) (.foR (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).1
+      (concatFoR w.toUSize #[n0, n1] #[m0, m1] #[k0, k1]).2)) = some D ∧
       Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
   refine ⟨_, ?_, (decode_words ⟨by omega, hw8.2⟩ _ _ hn).2.trans (by rw [concatFoR_words hw8 hn, List.map_append, e0, e1])⟩
-  rcases Verify.answer_foR t w (n0 + n1) _ _ hw (a := none) with e | e <;> rw [e] <;> simp [Column.bytesOf, hw]
+  rcases Verify.answer_foR t w (n0 + n1) _ _ hw with e | e <;> rw [e] <;> simp [Enc.bytesOf, hw]
 
 /-- **`razeColumn` joins the words** at every type `encodes` takes (each Frame-of-Reference width): the
     answer's dense form lists the parts' `w`-byte words in turn, whatever their payloads. -/
 theorem razeColumn_words {t : QAtomicType} {w na nb : Nat} (hw : t.width = some w) (he : Column.encodes t = true)
-    (p : Arr t na) (q : Arr t nb) {c : Column} {D0 D1 : ByteArray} (h0 : Column.bytesOf p.c = some D0)
-    (h1 : Column.bytesOf q.c = some D1) (hn : na + nb < USize.size)
-    (h : razeColumn t #[p.c, q.c] = some (.vector c)) :
-    ∃ D, Column.bytesOf c = some D ∧ Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
+    (p : Arr t na) (q : Arr t nb) {v : QValue} {D0 D1 : ByteArray} (h0 : Enc.bytesOf t na p.enc = some D0)
+    (h1 : Enc.bytesOf t nb q.enc = some D1) (hn : na + nb < USize.size)
+    (h : razeColumn t #[(na, p.enc), (nb, q.enc)] = some v) :
+    ∃ e D, v = .vector t (na + nb) e none ∧ Enc.bytesOf t (na + nb) e = some D ∧
+      Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
   have hw8 := width_fixed hw he
   have hw0 : 0 < w ∧ w ≤ 8 := ⟨by omega, hw8.2⟩
   have fp := fixed_parts hw he p; have fq := fixed_parts hw he q
-  obtain ⟨⟨ta, ma, ea, ia⟩, hta, hna, wa⟩ := p
-  obtain ⟨⟨tb, mb, eb, ib⟩, htb, hnb, wb⟩ := q
-  simp only at hta hna wa htb hnb wb h0 h1 h fp fq ⊢; subst ta tb ma mb
-  have sz : ∀ {n} (e : Enc) a {D}, Column.bytesOf ⟨t, n, e, a⟩ = some D → ((∃ B, e = .bytes B ∧ B.size = w * n) ∨
+  generalize p.enc = ea at fp h0 h
+  generalize q.enc = eb at fq h1 h
+  have sz : ∀ {n} (e : Enc) {D}, Enc.bytesOf t n e = some D → ((∃ B, e = .bytes B ∧ B.size = w * n) ∨
       ∃ md pk, e = .foR md pk) → n < USize.size → D.size = w * n := by
-    intro n e a D hD he hn
+    intro n e D hD he hn
     rcases he with ⟨B, rfl, hB⟩ | ⟨md, pk, rfl⟩
-    · simp only [Column.bytesOf, Option.some.injEq] at hD; rw [← hD, hB]
-    · simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
+    · simp only [Enc.bytesOf, Option.some.injEq] at hD; rw [← hD, hB]
+    · simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
       exact (decode_words hw0 md pk hn).1
-  have s0 := sz ea ia h0 fp (by omega); have s1 := sz eb ib h1 fq (by omega)
+  have s0 := sz ea h0 fp (by omega); have s1 := sz eb h1 fq (by omega)
   rcases raze_fixed hw he h with ⟨E0, E1, e0, e1, rfl⟩ | ⟨n, ns, ms, ps, es, hE, rfl⟩
   · simp only [e0, Option.some.injEq] at h0; simp only [e1, Option.some.injEq] at h1; subst h0 h1
-    refine ⟨_, rfl, ?_⟩
+    refine ⟨_, _, rfl, rfl, ?_⟩
     rw [Struct.elemsW_concatBytes w hw0.1 _ (by simp [s0, s1])]; simp
   · have hal := alp_fixed he
     -- a `bytes` part is met encoded: `encode`'s words cut to `w` bytes are its own
@@ -1491,41 +1493,45 @@ theorem razeColumn_words {t : QAtomicType} {w na nb : Nat} (hw : t.width = some 
       have := encode_words hw8 A (by rw [hA, Nat.mul_div_cancel_left _ hw0.1]; exact hk)
       rwa [hA, Nat.mul_div_cancel_left _ hw0.1] at this
     rcases fp with ⟨A, rfl, hA⟩ | ⟨m0, k0, rfl⟩ <;> rcases fq with ⟨B, rfl, hB⟩ | ⟨m1, k1, rfl⟩ <;>
-      simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at h0 h1 <;> subst h0 h1 <;>
-      simp [encodedParts, Column.encode, Column.bytesOf, hw, he, hal] at hE
+      simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at h0 h1 <;> subst h0 h1 <;>
+      simp [encodedParts, Enc.encode, Enc.bytesOf, hw, he, hal] at hE
     all_goals obtain ⟨rfl, rfl, rfl, rfl, -⟩ := hE
-    · exact raze_answer hw hw8 hn (eA _ hA (by omega)) (decode_words hw0 _ _ (by omega)).2.symm
-    · exact raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm (eA _ hB (by omega))
-    · exact raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm (decode_words hw0 _ _ (by omega)).2.symm
+    · obtain ⟨D, hD, hDw⟩ := raze_answer hw hw8 hn (eA _ hA (by omega)) (decode_words hw0 _ _ (by omega)).2.symm
+      exact ⟨_, D, rfl, hD, hDw⟩
+    · obtain ⟨D, hD, hDw⟩ := raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm (eA _ hB (by omega))
+      exact ⟨_, D, rfl, hD, hDw⟩
+    · obtain ⟨D, hD, hDw⟩ := raze_answer hw hw8 hn (decode_words hw0 _ _ (by omega)).2.symm
+        (decode_words hw0 _ _ (by omega)).2.symm
+      exact ⟨_, D, rfl, hD, hDw⟩
 
 /-- **`razeColumn` joins the words** at the ALP types (`real` at four bytes, `float` and `datetime` at eight): the
     answer's dense form lists the parts' words in turn, whatever their payloads, below `2³²` elements (the bound
     an ALP blob stores its offsets at). -/
 theorem razeColumn_alp {t : QAtomicType} {w na nb : Nat} (hw : t.width = some w) (ha : Column.alpEncodes t = true)
-    (p : Arr t na) (q : Arr t nb) {c : Column} {D0 D1 : ByteArray} (h0 : Column.bytesOf p.c = some D0)
-    (h1 : Column.bytesOf q.c = some D1) (hn : na + nb < 2 ^ 32)
-    (h : razeColumn t #[p.c, q.c] = some (.vector c)) :
-    ∃ D, Column.bytesOf c = some D ∧ Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
+    (p : Arr t na) (q : Arr t nb) {v : QValue} {D0 D1 : ByteArray} (h0 : Enc.bytesOf t na p.enc = some D0)
+    (h1 : Enc.bytesOf t nb q.enc = some D1) (hn : na + nb < 2 ^ 32)
+    (h : razeColumn t #[(na, p.enc), (nb, q.enc)] = some v) :
+    ∃ e D, v = .vector t (na + nb) e none ∧ Enc.bytesOf t (na + nb) e = some D ∧
+      Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 := by
   have hw48 := alp_width hw ha
   have hw0 : 0 < w ∧ w ≤ 8 := by omega
   have hU : na + nb < USize.size := Nat.lt_of_lt_of_le hn USize.le_size
   have fp := alp_parts hw ha p; have fq := alp_parts hw ha q
-  obtain ⟨⟨ta, ma, ea, ia⟩, hta, hna, wa⟩ := p
-  obtain ⟨⟨tb, mb, eb, ib⟩, htb, hnb, wb⟩ := q
-  simp only at hta hna wa htb hnb wb h0 h1 h fp fq ⊢; subst ta tb ma mb
-  have sz : ∀ {n} (e : Enc) a {D}, Column.bytesOf ⟨t, n, e, a⟩ = some D → ((∃ B, e = .bytes B ∧ B.size = w * n) ∨
+  generalize p.enc = ea at fp h0 h
+  generalize q.enc = eb at fq h1 h
+  have sz : ∀ {n} (e : Enc) {D}, Enc.bytesOf t n e = some D → ((∃ B, e = .bytes B ∧ B.size = w * n) ∨
       (∃ md pk, e = .foR md pk) ∨ ∃ md pk al, e = .alp md pk al) → n < USize.size → D.size = w * n := by
-    intro n e a D hD he hn
+    intro n e D hD he hn
     rcases he with ⟨B, rfl, hB⟩ | ⟨md, pk, rfl⟩ | ⟨md, pk, al, rfl⟩
-    · simp only [Column.bytesOf, Option.some.injEq] at hD; rw [← hD, hB]
-    · simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
+    · simp only [Enc.bytesOf, Option.some.injEq] at hD; rw [← hD, hB]
+    · simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
       exact (decode_words hw0 md pk hn).1
-    · simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
+    · simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; rw [← hD]
       exact (alpDecode_words hw0 md pk al hn).1
-  have s0 := sz ea ia h0 fp (by omega); have s1 := sz eb ib h1 fq (by omega)
+  have s0 := sz ea h0 fp (by omega); have s1 := sz eb h1 fq (by omega)
   rcases raze_alp hw ha h with ⟨E0, E1, e0, e1, rfl⟩ | ⟨n, ns, ms, ps, es, hE, rfl⟩
   · simp only [e0, Option.some.injEq] at h0; simp only [e1, Option.some.injEq] at h1; subst h0 h1
-    refine ⟨_, rfl, ?_⟩
+    refine ⟨_, _, rfl, rfl, ?_⟩
     rw [Struct.elemsW_concatBytes w hw0.1 _ (by simp [s0, s1])]; simp
   · -- a `bytes` part is met encoded by `alpOf`: decoded at its count it is itself (the round trip)
     have hAE : ∀ A, (if w = 4 then Coc.alpEncode32 A else Coc.alpEncode64 A) = Coc.alpEncodeAt (w == 4) A :=
@@ -1540,16 +1546,19 @@ theorem razeColumn_alp {t : QAtomicType} {w na nb : Nat} (hw : t.width = some w)
       rwa [hk'] at this
     rcases fp with ⟨A, rfl, hA⟩ | ⟨m0, k0, rfl⟩ | ⟨m0, k0, a0, rfl⟩ <;>
       rcases fq with ⟨B, rfl, hB⟩ | ⟨m1, k1, rfl⟩ | ⟨m1, k1, a1, rfl⟩ <;>
-      simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at h0 h1 <;> subst h0 h1 <;>
-      simp [encodedParts, Column.alpOf, Column.bytesOf, hw, ha] at hE
+      simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at h0 h1 <;> subst h0 h1 <;>
+      simp [encodedParts, Enc.alpOf, Enc.bytesOf, hw, ha] at hE
     all_goals ((try simp only [hAE] at hE); obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := hE)
-    · exact raze_alp_answer hw hw48 hn (eA _ hA (by omega)) rfl
-    · exact raze_alp_answer hw hw48 hn rfl (eA _ hB (by omega))
-    · exact raze_alp_answer hw hw48 hn rfl rfl
+    · obtain ⟨D, hD, hDw⟩ := raze_alp_answer hw hw48 hn (eA _ hA (by omega)) rfl
+      exact ⟨_, D, rfl, hD, hDw⟩
+    · obtain ⟨D, hD, hDw⟩ := raze_alp_answer hw hw48 hn rfl (eA _ hB (by omega))
+      exact ⟨_, D, rfl, hD, hDw⟩
+    · obtain ⟨D, hD, hDw⟩ := raze_alp_answer hw hw48 hn rfl rfl
+      exact ⟨_, D, rfl, hD, hDw⟩
 
 /-- An `Arr` whose element `i` is the atom of `D`'s word `i` lists those atoms. -/
 theorem toList_words {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (hw0 : 0 < w) (x : Arr t n)
-    {D : ByteArray} (hs : D.size = w * n) (hg : ∀ i < n, Column.get x.c i =
+    {D : ByteArray} (hs : D.size = w * n) (hg : ∀ i < n, Enc.get t n x.enc i =
       some (Column.atomOfBits t (Column.bitsAt D (i * w) w) (QAtomicType.ne_general_of_width hw))) :
     x.toList = (Verify.elemsW w D).map fun v =>
       (Carrier.of? t (.atom (Column.atomOfBits t v (QAtomicType.ne_general_of_width hw)))).getD default := by
@@ -1563,7 +1572,7 @@ theorem toList_words {t : QAtomicType} {w n : Nat} (hw : t.width = some w) (hw0 
     as an atom. -/
 theorem toList_fixed {t : QAtomicType} {w n : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true)
-    (x : Arr t n) {D : ByteArray} (hD : Column.bytesOf x.c = some D) (hn : n < USize.size) :
+    (x : Arr t n) {D : ByteArray} (hD : Enc.bytesOf t n x.enc = some D) (hn : n < USize.size) :
     x.toList = (Verify.elemsW w D).map fun v =>
       (Carrier.of? t (.atom (Column.atomOfBits t v (QAtomicType.ne_general_of_width hw)))).getD default := by
   have hw8 : 0 < w ∧ w ≤ 8 :=
@@ -1575,53 +1584,53 @@ theorem toList_fixed {t : QAtomicType} {w n : Nat} (hw : t.width = some w)
       ∃ md pk a, x.enc = .alp md pk a :=
     he.elim (fun he => (fixed_parts hw he x).elim .inl (.inr ∘ .inl)) (alp_parts hw · x)
   obtain ⟨hs, hg'⟩ : D.size = w * n ∧
-      ∀ i < n, Column.get x.c i = some (Column.atomOfBits t (Column.bitsAt D (i * w) w) hg) := by
+      ∀ i < n, Enc.get t n x.enc i = some (Column.atomOfBits t (Column.bitsAt D (i * w) w) hg) := by
     rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
-    · rw [Arr.c_eq x hc] at hD ⊢; simp only [Column.bytesOf, Option.some.injEq] at hD; subst hD
+    · rw [hc] at hD ⊢; simp only [Enc.bytesOf, Option.some.injEq] at hD; subst hD
       refine ⟨hB, fun i hi => ?_⟩
-      cases t <;> simp_all [Column.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
-    · rw [Arr.c_eq x hc] at hD ⊢; simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; subst hD
+      cases t <;> simp_all [Enc.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
+    · rw [hc] at hD ⊢; simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; subst hD
       obtain ⟨hs, hg'⟩ := Verify.decodeW w.toUSize (by rw [Verify.toUSize_toNat_of_le8 w hw8.2]; exact hw8.2) md pk n.toUSize
       rw [Verify.toUSize_toNat_of_le8 w hw8.2, USize.toNat_ofNat_of_lt' hn] at hs hg'
       refine ⟨hs, fun i hi => ?_⟩
       rw [hg' i hi, Verify.atomOfBits_mod hw hb hgu, ← foRBits_starts]
-      cases t <;> simp_all [Column.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
-    · rw [Arr.c_eq x hc] at hD ⊢; simp only [Column.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; subst hD
+      cases t <;> simp_all [Enc.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
+    · rw [hc] at hD ⊢; simp only [Enc.bytesOf, hw, Option.map_some, Option.some.injEq] at hD; subst hD
       obtain ⟨hs, hg'⟩ := alpDecode_words hw8 md pk a hn
       refine ⟨hs, fun i hi => ?_⟩
       rw [hg' i hi, Verify.atomOfBits_mod hw hb hgu]
-      cases t <;> simp_all [Column.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
+      cases t <;> simp_all [Enc.get, QAtomicType.width, Column.encodes, Column.alpEncodes]
   exact toList_words hw hw8.1 x hs hg'
 
 /-- **`razeColumn` as lists** at every type `encodes` or `alpEncodes` takes: the answer read as an `Arr` is the
     parts in turn. An ALP join is bounded by `2³²` elements. -/
 theorem raze_toList_fixed {t : QAtomicType} {na nb : Nat} (he : Column.encodes t = true ∨ Column.alpEncodes t = true)
-    (p : Arr t na) (q : Arr t nb) {c : Column} (hn : na + nb < USize.size)
-    (h32 : Column.alpEncodes t = true → na + nb < 2 ^ 32) (h : razeColumn t #[p.c, q.c] = some (.vector c))
-    (V : Arr t (na + nb)) (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
+    (p : Arr t na) (q : Arr t nb) {v : QValue} (hn : na + nb < USize.size)
+    (h32 : Column.alpEncodes t = true → na + nb < 2 ^ 32) (h : razeColumn t #[(na, p.enc), (nb, q.enc)] = some v)
+    (V : Arr t (na + nb)) (hV : V.1 = v) : V.toList = p.toList ++ q.toList := by
   obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by
     rcases he with he | he <;> cases t <;> simp_all [Column.encodes, Column.alpEncodes, QAtomicType.width]
-  have dense : ∀ {n} (x : Arr t n), ∃ D, Column.bytesOf x.c = some D := fun x => by
+  have dense : ∀ {n} (x : Arr t n), ∃ D, Enc.bytesOf t n x.enc = some D := fun x => by
     rcases he with he | ha
-    · rcases fixed_parts hw he x with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [Column.bytesOf, hc, x.wf.1, hw]
+    · rcases fixed_parts hw he x with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ <;> simp [Enc.bytesOf, hc, hw]
     · rcases alp_parts hw ha x with ⟨B, hc, -⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩ <;>
-        simp [Column.bytesOf, hc, x.wf.1, hw]
+        simp [Enc.bytesOf, hc, hw]
   obtain ⟨D0, h0⟩ := dense p; obtain ⟨D1, h1⟩ := dense q
-  have hr : ∃ D, Column.bytesOf c = some D ∧ Verify.elemsW w D = Verify.elemsW w D0 ++ Verify.elemsW w D1 :=
-    he.elim (fun he => razeColumn_words hw he p q h0 h1 hn h) (fun ha => razeColumn_alp hw ha p q h0 h1 (h32 ha) h)
-  obtain ⟨D, hD, hDw⟩ := hr
-  rw [toList_fixed hw he V (hV ▸ hD) hn, toList_fixed hw he p h0 (by omega), toList_fixed hw he q h1 (by omega),
+  obtain ⟨e, D, rfl, hD, hDw⟩ := he.elim (fun he => razeColumn_words hw he p q h0 h1 hn h)
+    (fun ha => razeColumn_alp hw ha p q h0 h1 (h32 ha) h)
+  have hVe : V.enc = e := by simp only [Arr.enc, hV]
+  rw [toList_fixed hw he V (hVe ▸ hD) hn, toList_fixed hw he p h0 (by omega), toList_fixed hw he q h1 (by omega),
     hDw, List.map_append]
 
 /-- Under `wf`, a boolean column is `bits`. -/
 theorem bits_arr {n : Nat} (x : Arr .boolean n) : ∃ b, x.enc = .bits b := by
-  obtain ⟨⟨_, _, e, _⟩, ht, hm, hwf⟩ := x
-  simp only at ht hm hwf ⊢; subst ht hm
-  cases e <;> simp_all [Column.WF]
+  have hwf := x.wf
+  generalize x.enc = e at hwf ⊢
+  cases e <;> simp_all [Enc.WF]
 
 theorem get_bits {n : Nat} (x : Arr .boolean n) {b : ByteArray} (hc : x.enc = .bits b) (i : Fin n) :
     x.get i = (Carrier.of? .boolean (.atom (.boolean (Column.bitAt b i)))).getD default := by
-  rw [Arr.get_ne x i (by decide), Arr.c_eq x hc]; simp [Column.get, i.2]
+  rw [Arr.get_ne x i (by decide), hc]; simp [Enc.get, i.2]
 
 /-- `concatBits`' bit `j`: the first part's below its count, the second's past it. -/
 theorem concatBits_at {na nb j : Nat} (b0 b1 : ByteArray) (hj : j < na + nb) :
@@ -1634,13 +1643,14 @@ theorem concatBits_at {na nb j : Nat} (b0 b1 : ByteArray) (hj : j < na + nb) :
   · simp; rw [List.getElem?_append_right (by simp; omega)]; simp [show j - na < nb by omega]
 
 /-- **`razeColumn` at boolean as lists**: `concatBits` lays the parts' bits down in turn. -/
-theorem raze_toList_bits {na nb : Nat} (p : Arr .boolean na) (q : Arr .boolean nb) {c : Column}
-    (h : razeColumn .boolean #[p.c, q.c] = some (.vector c)) (V : Arr .boolean (na + nb)) (hV : V.c = c) :
+theorem raze_toList_bits {na nb : Nat} (p : Arr .boolean na) (q : Arr .boolean nb) {v : QValue}
+    (h : razeColumn .boolean #[(na, p.enc), (nb, q.enc)] = some v) (V : Arr .boolean (na + nb)) (hV : V.1 = v) :
     V.toList = p.toList ++ q.toList := by
   obtain ⟨b0, h0⟩ := bits_arr p; obtain ⟨b1, h1⟩ := bits_arr q
-  rw [Arr.c_eq p h0, Arr.c_eq q h1] at h
+  rw [h0, h1] at h
   simp [razeColumn] at h
-  have hVc : V.enc = .bits (concatBits #[na, nb] #[b0, b1]) := by rw [hV, ← h]
+  subst h
+  have hVc : V.enc = .bits (concatBits #[na, nb] #[b0, b1]) := by simp only [Arr.enc, hV]
   apply List.ext_getElem (by rw [List.length_append, Arr.length_toList, Arr.length_toList, Arr.length_toList])
   intro j h1' _
   rw [Arr.length_toList] at h1'
@@ -1654,9 +1664,9 @@ theorem raze_toList_bits {na nb : Nat} (p : Arr .boolean na) (q : Arr .boolean n
 /-- **`razeColumn` as lists** at boolean and at every type `encodes` or `alpEncodes` takes. -/
 theorem raze_toList {t : QAtomicType} {na nb : Nat}
     (ht : Column.encodes t = true ∨ Column.alpEncodes t = true ∨ t = .boolean) (p : Arr t na)
-    (q : Arr t nb) {c : Column} (hn : na + nb < USize.size) (h32 : Column.alpEncodes t = true → na + nb < 2 ^ 32)
-    (h : razeColumn t #[p.c, q.c] = some (.vector c))
-    (V : Arr t (na + nb)) (hV : V.c = c) : V.toList = p.toList ++ q.toList := by
+    (q : Arr t nb) {v : QValue} (hn : na + nb < USize.size) (h32 : Column.alpEncodes t = true → na + nb < 2 ^ 32)
+    (h : razeColumn t #[(na, p.enc), (nb, q.enc)] = some v)
+    (V : Arr t (na + nb)) (hV : V.1 = v) : V.toList = p.toList ++ q.toList := by
   rcases ht with he | he | rfl
   · exact raze_toList_fixed (.inl he) p q hn h32 h V hV
   · exact raze_toList_fixed (.inr he) p q hn h32 h V hV
@@ -2789,7 +2799,7 @@ theorem cmpAtom_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp 
 
 /-- `monColumn "neg"` on a `foR` long column: `negAbsPayload`'s encoded branch, `foRMonEnc`, which re-encodes
     the dense `Ew.mon` over the decode. -/
-theorem monColumn_neg_foR (n : Nat) (md pk : ByteArray) (pa : Option (UInt8 × IndexCell)) :
+theorem monColumn_neg_foR (n : Nat) (md pk : ByteArray) :
     Kernel.monColumn "neg" .long n (.foR md pk) = some (.long, Column.answer ⟨.long, n,
       .foR (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).1
         (Kernel.Ew.foRMonEnc Kernel.Ew.neg Kernel.Ew.i64 (Kernel.nullPayload .long) md pk n.toUSize).2, none⟩) := by
