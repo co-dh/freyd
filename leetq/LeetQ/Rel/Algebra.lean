@@ -29,8 +29,16 @@ open LeetQ.Rel.Find (expand one)
 /-- Elements of a long payload. -/
 def len (b : ByteArray) : Nat := b.size / 8
 
-/-- A dense long payload as a column, its header counting `len b` elements. -/
-def longs (b : ByteArray) : Column := ⟨.long, len b, .bytes b, none⟩
+/-- A dense long payload as a part, counting `len b` elements. A part is the `(count, payload)` pair
+    the kernels take, its type known where it is used. -/
+def longs (b : ByteArray) : Nat × Enc := (len b, .bytes b)
+
+/-- `x` as a part. -/
+def _root_.LeetQ.Rel.Arr.part {t : QAtomicType} {n : Nat} (x : Arr t n) : Nat × Enc := (n, x.enc)
+
+/-- `Arr.of` of a part at `t`: the count and the payload are checked, not assumed. -/
+def _root_.LeetQ.Rel.Arr.ofPart (t : QAtomicType) (n : Nat) (p : Nat × Enc) (what : String) : Except String (Arr t n) :=
+  Arr.of t n (.vector t p.1 p.2 none) what
 
 def nul : Int64 := Int64.minValue
 
@@ -181,37 +189,37 @@ def gradeBy (n : Nat) (ks : Array Code) : ByteArray :=
 /-! ## Payloads of any encoding: count, pick, join, code -/
 
 /-- A general list's boxed elements: its `gen` column, which is the only one `Arr .general` admits. -/
-def gens (c : Column) : Except String (Array QValue) :=
-  match c.enc with
+def gens (c : Nat × Enc) : Except String (Array QValue) :=
+  match c.2 with
   | .gen xs => pure xs
   | _ => throw "a general list's payload is not a gen column"
 
 /-- A general list's column over `xs`. -/
-def genCol (xs : Array QValue) : Column := ⟨.general, xs.size, .gen xs, none⟩
+def genCol (xs : Array QValue) : Nat × Enc := (xs.size, .gen xs)
 
 /-- `x@i` for an in-range long payload `i`: `gatherColumn`, which answers every column encoding. A
     general list is picked by position, which is all qlean's own `@` does there (`pickAt`, private). -/
-def pick (t : QAtomicType) (c : Column) (i : ByteArray) : Except String Column :=
+def pick (t : QAtomicType) (c : Nat × Enc) (i : ByteArray) : Except String (Nat × Enc) :=
   match t with
   | .general => do let xs ← gens c; pure (genCol ((longRows i).map fun p => xs[p]?.getD (QValue.general #[])))
-  | a => match gatherColumn a c (longs i) with
-    | some (.vector out) => pure out
-    | _ => throw s!"gatherColumn declines a column of type {a.code} in this encoding"
+  | a => match gatherColumn a c.1 c.2 (len i) (.bytes i) with
+    | some e => pure (len i, e)
+    | none => throw s!"gatherColumn declines a column of type {a.code} in this encoding"
 
 /-- `raze` of payloads of one type: `razeColumn`, which interns a symbol part to meet an interned one
     and decodes an encoded part to meet a dense one. A general list is `Array.append`. -/
-def raze (t : QAtomicType) (cs : Array Column) : Except String Column :=
+def raze (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Nat × Enc) :=
   match t with
   | .general => do pure (genCol (← cs.foldlM (fun xs c => do pure (xs ++ (← gens c))) #[]))
   | a => if h : cs.size = 1 then pure cs[0] else match razeColumn a cs with
-    | some (.vector out) => pure out
+    | some (.vector _ m e _) => pure (m, e)
     | _ => throw s!"razeColumn declines {cs.size} columns of type {a.code}"
 
-/-- No element of `t`: `Column.ofAtoms` of nothing, which picks the type's own constructor. -/
-def empty (t : QAtomicType) : Except String Column :=
-  if h : t = .general then pure (genCol #[]) else match Column.ofAtoms t #[] h with
-    | some c => pure c
-    | none => throw s!"Column.ofAtoms has no empty column of type {t.code}"
+/-- No element of `t`: `Enc.ofAtoms` of nothing, which picks the type's own constructor. -/
+def empty (t : QAtomicType) : Except String (Nat × Enc) :=
+  if h : t = .general then pure (genCol #[]) else match Enc.ofAtoms t #[] h with
+    | some e => pure (0, e)
+    | none => throw s!"Enc.ofAtoms has no empty payload of type {t.code}"
 
 
 /-- `foR` and dense parts of a long type as offsets from their joint least element, at the width of the
@@ -221,11 +229,11 @@ def empty (t : QAtomicType) : Except String Column :=
     where a part is neither, or the range is wider than a grouping pass's ids over `total` rows would be.
     A dense part is here because its first-appearance ids (`groupIdsColumn`) cost a table probe a row
     (measured: `ej` of two million-wide dense key columns, 1e6 rows, the codes 16.7 ms). -/
-def rangeOffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except String (Option (Array Code)) := do
+def rangeOffsets (a : QAtomicType) (cs : Array (Nat × Enc)) (total : Nat) : Except String (Option (Array Code)) := do
   unless orderKind a == some .i64 && Column.encodes a do return none
-  let bound (op : Coc.Over) (c : Column) : Option Int64 := match c.enc with
+  let bound (op : Coc.Over) (c : Nat × Enc) : Option Int64 := match c.2 with
     | .bytes b => some (overBytes op Ew.i64 nul b)
-    | .foR .. => overFoR op a c
+    | .foR .. => overFoR op a c.1 c.2
     | _ => none
   let some los := cs.mapM (bound .lesser) | return none
   let some his := cs.mapM (bound .greater) | return none
@@ -243,7 +251,7 @@ def rangeOffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except St
   let packed (kernel : String) (n : Nat) : ByteArray × USize → Except String Code
     | (ids, bad) => if bad.toNat != n then throw s!"{kernel}: the offset at {bad} lies outside 0..{card}"
       else pure ⟨w, n, card, ids⟩
-  let part (c : Column) : Option (Except String Code) := let n := c.n; match c.enc with
+  let part (c : Nat × Enc) : Option (Except String Code) := let n := c.1; match c.2 with
     | .foR m p => (if base == 0 then some (m, p) else Ew.foRShift false (-base) m p n.toUSize).map fun (m, p) =>
         packed "enumIdsFoR" n (enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize w.toUSize m p)
     | .bytes b =>
@@ -261,20 +269,21 @@ def rangeOffsets (a : QAtomicType) (cs : Array Column) (total : Nat) : Except St
     - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
       encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
       the join against itself, its positions packed. -/
-def codes (t : QAtomicType) (cs : Array Column) : Except String (Array Code) :=
+def codes (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Array Code) :=
   match t with
   | .general => do
     let all ← gens (← raze .general cs)
-    pure ((pack all.size (findList all all)).cut (cs.map (·.n)))
+    pure ((pack all.size (findList all all)).cut (cs.map (·.1)))
   | a => do
-    if let some bs := cs.mapM (fun c => match c.enc with | .bits b => some (⟨1, c.n, 2, b⟩ : Code) | _ => none) then
+    if let some bs := cs.mapM (fun c => match c.2 with | .bits b => some (⟨1, c.1, 2, b⟩ : Code) | _ => none) then
       return bs
-    let ns := cs.map (·.n)
+    let ns := cs.map (·.1)
     let total := ns.foldl (· + ·) 0
     if let some os ← rangeOffsets a cs total then return os
-    let all := Column.intern (← raze a cs)
-    if let .enum _ dof ids := all.enc then return (Code.ofLane (Column.idWidth dof) all.n (dof.size - 1) ids).cut ns
-    let some (gid, fs) := groupIdsColumn a all
+    let (an, ae) ← raze a cs
+    let ae := Column.intern ae
+    if let .enum _ dof ids := ae then return (Code.ofLane (Column.idWidth dof) an (dof.size - 1) ids).cut ns
+    let some (gid, fs) := groupIdsColumn a an ae
       | throw s!"groupIdsColumn declines a column of type {a.code} in this encoding"
     pure ((Code.ofIds (len fs) total gid).cut ns)
 
@@ -287,41 +296,41 @@ def single (cs : Array Code) : Except String Code :=
     A symbol, guid or general list has no such payload; equality steps never come here (`codes`). -/
 def arrDense {a : QAtomicType} {n : Nat} (x : Arr a n) : Except String (Scan.Kind × ByteArray) := do
   let some k := orderKind a | throw s!"type {a.code} has no sort layout: no arithmetic kernel reads it"
-  match x.c.enc with
+  match x.enc with
   | .bits b => pure (k, b)
-  | _ => match Column.bytesOf x.c with
+  | _ => match Enc.bytesOf a n x.enc with
     | some b => pure (k, b)
-    | none => throw s!"type {a.code}: Column.bytesOf has no dense payload for this encoding"
+    | none => throw s!"type {a.code}: Enc.bytesOf has no dense payload for this encoding"
 
 /-- A relation's two payloads. -/
 structure Cols (k v : QAtomicType) where
   n : Nat
-  key : Column
-  val : Column
+  key : Nat × Enc
+  val : Nat × Enc
 
-def cols {k v : QAtomicType} (R : Rel k v) : Except String (Cols k v) := pure ⟨R.n, R.key.c, R.val.c⟩
+def cols {k v : QAtomicType} (R : Rel k v) : Except String (Cols k v) := pure ⟨R.n, R.key.part, R.val.part⟩
 
 /-- The rows of `d` at the index column `i`. -/
 def Cols.rows {k v : QAtomicType} (d : Cols k v) (i : ByteArray) : Except String (Cols k v) := do
   pure ⟨len i, ← pick k d.key i, ← pick v d.val i⟩
 
 /-- Two payloads as a relation keyed by an explicit column. -/
-def ofCols (k v : QAtomicType) (kc : Column) (vc : Column) : Except String (Rel k v) := do
-  let n := kc.n
-  pure ⟨n, ← Arr.of k n kc "ofCols", ← Arr.of v n vc "ofCols"⟩
+def ofCols (k v : QAtomicType) (kc : Nat × Enc) (vc : Nat × Enc) : Except String (Rel k v) := do
+  let n := kc.1
+  pure ⟨n, ← Arr.ofPart k n kc "ofCols", ← Arr.ofPart v n vc "ofCols"⟩
 
 /-! ## The composite steps, named once -/
 
 /-- A code's payload as the column `composeKey` reads: a bit a boolean bitmap, a byte layout the
     dense column of that width, a `2`/`4`-bit lane an interned column of `card` ids, read by `eIds`
     where they lie; `composeKey` reads no dictionary, so it holds `card` empty symbols. -/
-def Code.column (c : Code) : Option (QAtomicType × Column) :=
+def Code.column (c : Code) : Option (QAtomicType × (Nat × Enc)) :=
   match c.kind with
-  | some .bit => some (.boolean, ⟨.boolean, c.n, .bits c.b, none⟩) | some .u8 => some (.byte, ⟨.byte, c.n, .bytes c.b, none⟩)
-  | some .i16 => some (.short, ⟨.short, c.n, .bytes c.b, none⟩) | some .i32 => some (.int, ⟨.int, c.n, .bytes c.b, none⟩)
-  | some .i64 => some (.long, ⟨.long, c.n, .bytes c.b, none⟩)
+  | some .bit => some (.boolean, (c.n, .bits c.b)) | some .u8 => some (.byte, (c.n, .bytes c.b))
+  | some .i16 => some (.short, (c.n, .bytes c.b)) | some .i32 => some (.int, (c.n, .bytes c.b))
+  | some .i64 => some (.long, (c.n, .bytes c.b))
   | some _ => none
-  | none => if Column.idWidthOf c.card == c.w then some (.symbol, ⟨.symbol, c.n, .enum .empty (Array.replicate (c.card + 1) 0) c.b, none⟩)
+  | none => if Column.idWidthOf c.card == c.w then some (.symbol, (c.n, .enum .empty (Array.replicate (c.card + 1) 0) c.b))
     else none
 
 /-- The code of each row's pair `(a, b)`: `composeKey`'s `a·|b| + b` at the width of the product of
@@ -340,7 +349,7 @@ def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteAr
     guard (!classes || w ≤ 16)
     let (t₁, c₁) ← a.column
     let (t₂, c₂) ← b.column
-    (⟨w, a.n, d₁ * d₂, ·⟩) <$> composeKey t₁ c₁ d₁ d₂ t₂ c₂
+    (⟨w, a.n, d₁ * d₂, ·⟩) <$> composeKey t₁ c₁.1 c₁.2 d₁ d₂ t₂ c₂.1 c₂.2
   match composed with
   | some c => (c, none)
   -- `composeKey` declines a bound past 2⁶³ or a code outside it (a 16-bit lane past 2¹⁵ reads signed):
@@ -449,15 +458,15 @@ def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
 /-- `setIds` of a stored family (one boxed set of `v` per key): one id per set, equal sets one id. -/
 def setId {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String ByteArray := do
   let P ← Parted.ofBoxes v G.val
-  let some ob := longBytes P.o.c | throw "setId: the offsets have no dense payload"
-  setIds (← single (← codes v #[P.val.c])) ob
+  let some ob := longBytes (P.g + 1) P.o.enc | throw "setId: the offsets have no dense payload"
+  setIds (← single (← codes v #[P.val.part])) ob
 
 /-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, larger
     better on column `c` exactly when `big[c]`: per set, the rows no row of the set strictly
     dominates (`thinSweep` over the `segments` of the key codes). A column not of longs is
     compared by its dense rank (`drank`). Equal rows of one set are one element: the first is kept.
     Answers the kept rows' indices. -/
-def thin {k : QAtomicType} (key : Column) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
+def thin {k : QAtomicType} (key : Nat × Enc) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
   if cs.size != big.size then throw s!"thin: {cs.size} columns but {big.size} directions"
   let kc ← single (← codes k #[key])
   let (p, o, _) := segments kc
@@ -499,7 +508,7 @@ def zero : Except String (Rel A B) := do ofCols A B (← empty A) (← empty B)
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`. -/
 def top {ma mb : Nat} (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) := do
   let (i, j) := cross ma mb
-  ofCols A B (← pick A Ua.c i) (← pick B Ub.c j)
+  ofCols A B (← pick A Ua.part i) (← pick B Ub.part j)
 
 /-- `𝟙` on `U`: key and val the one column, shared. -/
 def idU {t : QAtomicType} {m : Nat} (U : Arr t m) : Rel t t := ⟨m, U, U⟩
@@ -528,7 +537,7 @@ def comp (R : Rel A B) (S : Rel B C) : Except String (Rel A C) := do
   ofCols A C (← pick A r.key i) (← pick C s.val j)
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
-def distinctCorefl (t : QAtomicType) (x : Column) : Except String (Rel t t) := do
+def distinctCorefl (t : QAtomicType) (x : Nat × Enc) : Except String (Rel t t) := do
   let d ← pick t x (← single (← codes t #[x])).groupIds.2
   ofCols t t d d
 
@@ -542,7 +551,7 @@ def ran (R : Rel A B) : Except String (Rel B B) := do let r ← cols R; distinct
     The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do
   let (k, u) ← arrDense U
-  let d ← pick a U.c (whereBits m.toUSize (Ew.cmp op (cls k) Ew.va u (Column.pushBits .empty e k.width) m.toUSize))
+  let d ← pick a U.part (whereBits m.toUSize (Ew.cmp op (cls k) Ew.va u (Column.pushBits .empty e k.width) m.toUSize))
   ofCols _ _ d d
 
 /-- `Coreflexive R`, `R ⊑ 𝟙`: every key's code equals its val's. -/
@@ -559,7 +568,7 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Arr B mb) (Uc : Arr 
   let (rk, sk) ← two (← codes A #[r.key, s.key])
   let (i, j) := join rk sk
   let y ← pick B r.val i; let z ← pick C s.val j
-  let ycs ← codes B #[y, r.val, Ub.c]
+  let ycs ← codes B #[y, r.val, Ub.part]
   let some yc := ycs[0]? | throw "leftDiv: no code of y"
   let some rvc := ycs[1]? | throw "leftDiv: no code of R.val"
   let some ubc := ycs[2]? | throw "leftDiv: no code of Ub"
@@ -569,8 +578,8 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Arr B mb) (Uc : Arr 
   let keep := gather 8 firsts (whereEqV got (atCnt (cnt rvc) (yc.gather firsts)))
   let miss := anti ubc rvc
   let (p, q) := cross (len miss) mc
-  ofCols B C (← raze B #[← pick B y keep, ← pick B Ub.c (gather 8 miss p)])
-    (← raze C #[← pick C z keep, ← pick C Uc.c q])
+  ofCols B C (← raze B #[← pick B y keep, ← pick B Ub.part (gather 8 miss p)])
+    (← raze C #[← pick C z keep, ← pick C Uc.part q])
 
 /-- `R / S = (S° \ R°)°` (`R : a ⟶ c`, `S : b ⟶ c`); its vacuous term is `cross(Ua, anti(Ub, dom S))`. -/
 def rightDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) := do
@@ -582,27 +591,27 @@ def rightDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr
 def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B mb) : Except String (Rel A B) := do
   let r ← cols R; let s ← cols S
   let (rv, sv) ← two (← codes C #[r.val, s.val])
-  let (rk, uac) ← two (← codes A #[r.key, Ua.c])
-  let (sk, ubc) ← two (← codes B #[s.key, Ub.c])
+  let (rk, uac) ← two (← codes A #[r.key, Ua.part])
+  let (sk, ubc) ← two (← codes B #[s.key, Ub.part])
   let (pr, orr, fr) := segments rk; let (ps, os, fs) := segments sk
   let ids ← setIds (Code.cat #[rv.gather pr, sv.gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc os r.n])
   let (i, j) := join (Code.ofLongs (ids.extract 0 (8 * len fr))) (Code.ofLongs (ids.extract (8 * len fr) ids.size))
   let ex := anti uac rk; let ey := anti ubc sk
   let (p, q) := cross (len ex) (len ey)
-  ofCols A B (← raze A #[← pick A r.key (gather 8 fr i), ← pick A Ua.c (gather 8 ex p)])
-    (← raze B #[← pick B s.key (gather 8 fs j), ← pick B Ub.c (gather 8 ey q)])
+  ofCols A B (← raze A #[← pick A r.key (gather 8 fr i), ← pick A Ua.part (gather 8 ex p)])
+    (← raze B #[← pick B s.key (gather 8 fs j), ← pick B Ub.part (gather 8 ey q)])
 
 /-- The groups `ds` against their boxed slices of `val`: the offsets `o` a kernel wrote (`runStarts`,
     which ends with the count) decided as cuts by `Parted.of?`, then `box`. -/
-def grouped {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : Column) (o : ByteArray) (val : Arr v n) : Except String (Rel t .general) := do
-  let g := ds.n
-  let some P := Parted.of? (← Arr.of .long (g + 1) (longs o) "grouped") val
+def grouped {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : Nat × Enc) (o : ByteArray) (val : Arr v n) : Except String (Rel t .general) := do
+  let g := ds.1
+  let some P := Parted.of? (← Arr.ofPart .long (g + 1) (longs o) "grouped") val
     | throw s!"grouped: the offsets are not ascending cuts of {n} rows"
-  pure ⟨g, ← Arr.of t g ds "grouped", ← Arr.of .general g (← P.box).c "grouped"⟩
+  pure ⟨g, ← Arr.ofPart t g ds "grouped", ← Arr.ofPart .general g (← P.box).part "grouped"⟩
 
 /-- The groups of a column whose equal elements are contiguous: `grouped` with `o` the run starts
     of its codes and the count (`runStarts`) and `ds` the element at each start. -/
-def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Column) (val : Arr v n) : Except String (Rel t .general) := do
+def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) : Except String (Rel t .general) := do
   let st := (← single (← codes t #[key])).runStarts
   grouped t (← pick t key (st.extract 0 (st.size - 8))) st val
 
@@ -611,7 +620,7 @@ def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Column) (val : Arr
 def family (d : Cols A B) : Except String (Rel A .general) := do
   let d ← d.nub
   let s ← d.rows (gradeBy d.n #[← single (← codes A #[d.key]), ← single (← codes B #[d.val])])
-  runs A s.key (← Arr.of B s.n s.val "family")
+  runs A s.key (← Arr.ofPart B s.n s.val "family")
 
 /-- `Λ(R)`: `x Λ(R) X ↔ X = {z | x R z}` — the family of `R`'s fibres, one segment per `x ∈ dom R`. -/
 def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← cols R)
@@ -619,19 +628,19 @@ def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← c
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
     flattened indices of the codes, cut at the values they hold (`runs`). -/
 def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
-  let c ← single (← codes B #[x.c])
+  let c ← single (← codes B #[x.part])
   -- below a byte `group` has no lane: its indices are the stable grade of the classes by first occurrence
   let idx := match c.kind with
     | some k => (Order.group k c.n.toUSize c.b).2.1
     | none => let (gid, fs) := c.groupIds; (Code.ofIds (len fs) c.n gid).grade
-  runs B (← pick B x.c idx) (← Arr.of .long (len idx) (longs idx) "group")
+  runs B (← pick B x.part idx) (← Arr.ofPart .long (len idx) (longs idx) "group")
 
 /-- `∋` of a stored family (one boxed set of `v` per key): the pairs `(set id, element)` — the flat form
     (`Parted.ofBoxes`) and the group of each position (`groupOf`). -/
 def mem {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String (Rel .long v) := do
   let P ← Parted.ofBoxes v G.val
-  let some ob := longBytes P.o.c | throw "∋: the offsets have no dense payload"
-  pure ⟨P.n, ← Arr.of .long P.n (longs (groupOf ob P.n)) "mem", P.val⟩
+  let some ob := longBytes (P.g + 1) P.o.enc | throw "∋: the offsets have no dense payload"
+  pure ⟨P.n, ← Arr.ofPart .long P.n (longs (groupOf ob P.n)) "mem", P.val⟩
 
 /-- `E(R)` of a family `G` given as its pairs `(X, x)`: `Λ(∋ ≫ R)` = the family of `G ≫ R`. -/
 def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A .general) := do
@@ -656,7 +665,7 @@ def pair (R : Rel A B) (S : Rel A C) : Except String (Tab A B C) := do
   let (rk, sk) ← two (← codes A #[r.key, s.key])
   let (i, j) := join rk sk
   let t ← ofCols A B (← pick A r.key i) (← pick B r.val i)
-  pure ⟨t.n, t.key, t.val, ← Arr.of C t.n (← pick C s.val j) "pair"⟩
+  pure ⟨t.n, t.key, t.val, ← Arr.ofPart C t.n (← pick C s.val j) "pair"⟩
 
 /-- `outl`: the first component column, nothing runs. -/
 def outl {k v w : QAtomicType} (T : Tab k v w) : Rel k v := ⟨T.n, T.key, T.fst⟩
@@ -685,8 +694,8 @@ def prod {D E : QAtomicType} (R : Rel A B) (S : Rel D E) : Except String (Rel2 A
   let r ← cols R; let s ← cols S
   let (i, j) := cross r.n s.n
   let m := r.n * s.n
-  pure ⟨m, ← Arr.of A m (← pick A r.key i) "prod", ← Arr.of D m (← pick D s.key j) "prod",
-    ← Arr.of B m (← pick B r.val i) "prod", ← Arr.of E m (← pick E s.val j) "prod"⟩
+  pure ⟨m, ← Arr.ofPart A m (← pick A r.key i) "prod", ← Arr.ofPart D m (← pick D s.key j) "prod",
+    ← Arr.ofPart B m (← pick B r.val i) "prod", ← Arr.ofPart E m (← pick E s.val j) "prod"⟩
 
 /-- A relation out of a sum `a + a`: a tag bit beside each key, `false` for `inl`. Read with the
     value tagged by the key's own tag it is `R + S` as well as `[R, S]`. -/
@@ -707,18 +716,18 @@ def bitsOf (x : Bool) (n : Nat) : ByteArray :=
 def junc (R : Rel A C) (S : Rel A C) : Except String (SumRel A C) := do
   let r ← cols R; let s ← cols S
   let m := r.n + s.n
-  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n]), none⟩ "junc",
-    ← Arr.of A m (← raze A #[r.key, s.key]) "junc", ← Arr.of C m (← raze C #[r.val, s.val]) "junc"⟩
+  pure ⟨m, ← Arr.ofPart .boolean m (m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n])) "junc",
+    ← Arr.ofPart A m (← raze A #[r.key, s.key]) "junc", ← Arr.ofPart C m (← raze C #[r.val, s.val]) "junc"⟩
 
 /-- `inl°` on `U`: `inl x ↦ x`, the tag set to `false`; `inr°` with `true`. -/
 def injConv {m : Nat} (tag : Bool) (U : Arr A m) : Except String (SumRel A A) := do
-  pure ⟨m, ← Arr.of .boolean m ⟨.boolean, m, .bits (bitsOf tag m), none⟩ "injConv", U, U⟩
+  pure ⟨m, ← Arr.ofPart .boolean m (m, .bits (bitsOf tag m)) "injConv", U, U⟩
 
 /-- `F(f)` on a map `f` given as an `Ew` monad: the functor on values, key kept (a `grp` key too). -/
 def mapVal {k : QAtomicType} {a : QAtomicType} (op : UInt8) (R : Rel k a) : Except String (Rel k a) := do
   let (vk, v) ← arrDense R.val
   let some nb := nullBits a | throw "a type with no null"
-  pure ⟨R.n, R.key, ← Arr.of a R.n ⟨a, R.n, .bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize), none⟩ "mapVal"⟩
+  pure ⟨R.n, R.key, ← Arr.ofPart a R.n (R.n, .bytes (Kernel.Ew.mon op (cls vk) nb.toInt64 v R.n.toUSize)) "mapVal"⟩
 
 /-- `⦇e, f⦈` of a list when `f` is one of `Coc.Over`'s reductions: `overBytes`. -/
 def foldOver {n : Nat} (op : Coc.Over) (x : Arr .long n) : Except String Int64 := do
@@ -737,7 +746,7 @@ def uncons {n : Nat} (x : Arr B n) : Except String (Arr B 1 × Arr B (n - 1)) :=
   if n = 0 then throw "uncons of an empty list"
   let m := n - 1
   let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m.toUSize) (one 1) m.toUSize
-  pure (← Arr.of B 1 (← pick B x.c (one 0)) "uncons", ← Arr.of B m (← pick B x.c rest) "uncons")
+  pure (← Arr.ofPart B 1 (← pick B x.part (one 0)) "uncons", ← Arr.ofPart B m (← pick B x.part rest) "uncons")
 
 /-- An unfold then a fold: Lean's loop, at most `fuel` rounds of `step` until `done`, each round kernels. -/
 def hylo {α : Type} (done : α → Except String Bool) (step : α → Except String α) : Nat → α → Except String α
@@ -751,7 +760,7 @@ def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
 /-- `Entire R` on the universe `U`: `member` of `U`'s codes in the keys', all set. -/
 def entire {m : Nat} (R : Rel A B) (U : Arr A m) : Except String Bool := do
   let r ← cols R
-  let (uc, kc) ← two (← codes A #[U.c, r.key])
+  let (uc, kc) ← two (← codes A #[U.part, r.key])
   pure (len (whereBits m.toUSize (uc.member kc)) == m)
 
 /-- `Simple R`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes). -/
@@ -780,13 +789,13 @@ private def seteq {α : Type} [BEq α] (xs ys : List α) : Bool := xs.all ys.con
 private def ok {α : Type} (x : Except String α) (p : α → Bool) : Bool := match x with | .ok v => p v | .error _ => false
 
 -- R = {1↦10, 1↦20, 2↦10, 3↦30}, S = {1↦10, 2↦10, 2↦20, 4↦40}
-private def R : LL := ⟨4, { c := longs <| packLongs [1, 1, 2, 3], wf := by decide }, { c := longs <| packLongs [10, 20, 10, 30], wf := by decide }⟩
-private def S : LL := ⟨4, { c := longs <| packLongs [1, 2, 2, 4], wf := by decide }, { c := longs <| packLongs [10, 10, 20, 40], wf := by decide }⟩
+private def R : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 1, 2, 3]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 10, 30]) (by decide))⟩
+private def S : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 2, 2, 4]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 10, 20, 40]) (by decide))⟩
 -- T : b ⟶ c, {10↦7, 20↦8, 20↦9}
-private def T : LL := ⟨3, { c := longs <| packLongs [10, 20, 20], wf := by decide }, { c := longs <| packLongs [7, 8, 9], wf := by decide }⟩
+private def T : LL := ⟨3, (Arr.mk (.bytes <| packLongs [10, 20, 20]) (by decide)), (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))⟩
 -- a list with a repeat, (5 3 5 9), and the same as a relation from its positions
-private def U4 : Arr L 4 := { c := longs <| packLongs [0, 1, 2, 3], wf := by decide }
-private def LsV : Arr L 4 := { c := longs <| packLongs [5, 3, 5, 9], wf := by decide }
+private def U4 : Arr L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by decide))
+private def LsV : Arr L 4 := (Arr.mk (.bytes <| packLongs [5, 3, 5, 9]) (by decide))
 private def Ls : LL := ⟨4, U4, LsV⟩
 /-- A stored family's pairs `(key, element)`: the boxes razed (`Parted.ofBoxes`), each element beside its
     group's key. -/
@@ -795,9 +804,9 @@ private def flat {k : QAtomicType} (v : QAtomicType) (X : Rel k .general) : Exce
   pure (P.toList.filterMap fun (g, y) => X.key.toList[g.toNatClampNeg]?.map (·, y))
 private def okFlat {k : QAtomicType} (v : QAtomicType) (x : Except String (Rel k .general)) (p : List (El k × El v) → Bool) : Bool :=
   match x with | .ok X => (match flat v X with | .ok l => p l | .error _ => false) | .error _ => false
-private def Ua : Arr L 4 := { c := longs <| packLongs [1, 2, 3, 4], wf := by decide }
-private def Ub : Arr L 4 := { c := longs <| packLongs [10, 20, 30, 40], wf := by decide }
-private def Uc : Arr L 3 := { c := longs <| packLongs [7, 8, 9], wf := by decide }
+private def Ua : Arr L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by decide))
+private def Ub : Arr L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
+private def Uc : Arr L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
 
 #guard ok (le R S) (· == false)
 #guard ok (inter R S) fun X => ok (le X R) id && ok (le X S) id
@@ -837,7 +846,7 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
   (l.map (·.1)) == [1, 1, 2, 3]
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
-private def LfV : Arr L 4 := { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2, none⟩, wf := ⟨rfl, rfl, foRLongs_wf [5, 3, 5, 9]⟩ }
+private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
 private def Lf : LL := ⟨4, U4, LfV⟩
 #guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (do transpose (← union R R)) (·.n == 3)
@@ -848,13 +857,13 @@ private def Lf : LL := ⟨4, U4, LfV⟩
 /-- The family of `g` sets keyed `0 … g-1`, the sets cut from `val` at the offsets `o`, boxed. -/
 private def boxed {g n : Nat} (o : Arr L (g+1)) (val : Arr L n) : Except String (Rel L .general) := do
   let some P := Parted.of? o val | throw "boxed: not cuts"
-  pure ⟨g, ← Arr.of L g (longs (tilLongs g.toUSize)) "boxed", ← Arr.of .general g (← P.box).c "boxed"⟩
+  pure ⟨g, ← Arr.ofPart L g (longs (tilLongs g.toUSize)) "boxed", ← Arr.ofPart .general g (← P.box).part "boxed"⟩
 -- `∋` of a stored family: the parted list `(10 20; 30)` from the core
-private def o2 : Arr L 3 := { c := longs <| packLongs [0, 2, 3], wf := by decide }
-private def parted : Except String (Rel L .general) := boxed o2 ({ c := longs <| packLongs [10, 20, 30], wf := by decide } : Arr L 3)
+private def o2 : Arr L 3 := (Arr.mk (.bytes <| packLongs [0, 2, 3]) (by decide))
+private def parted : Except String (Rel L .general) := boxed o2 ((Arr.mk (.bytes <| packLongs [10, 20, 30]) (by decide)) : Arr L 3)
 #guard ok (do mem L (← parted)) fun X => X.toList == [(0, 10), (0, 20), (1, 30)]
 -- `E(R)` of the family `G = {X₁ = {1, 2}, X₂ = {3}}`
-private def G : LL := ⟨3, { c := longs <| packLongs [1, 1, 2], wf := by decide }, { c := longs <| packLongs [1, 2, 3], wf := by decide }⟩
+private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide))⟩
 #guard okFlat L (existsImage G R) fun l => seteq l
   (G.toList.flatMap fun (s, x) => R.toList.filterMap fun (x', y) => if x == x' then some (s, y) else none)
 
@@ -883,7 +892,7 @@ private def lc (xs : List Int64) : Scan.Kind × ByteArray := (.i64, packLongs xs
 #guard ok (thin (k := L) (longs (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30]] #[false]) (· == packLongs [0, 2, 3])
 -- k = 2, one set (1,5) (3,2) (2,2) (3,1) (1,5): both larger → (1,5) and (3,2), one copy each;
 -- the second smaller → (3,1) alone
-private def k5 : Column := longs (packLongs [1, 1, 1, 1, 1])
+private def k5 : Nat × Enc := longs (packLongs [1, 1, 1, 1, 1])
 #guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, true]) (· == packLongs [0, 1])
 #guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, false]) (· == packLongs [3])
 -- k = 3, two sets: {(1,1,1) (2,2,2) (2,2,2) (3,0,0)} keeps (2,2,2) once and (3,0,0);
@@ -893,17 +902,17 @@ private def k5 : Column := longs (packLongs [1, 1, 1, 1, 1])
 #guard ok (thin (k := L) (longs (packLongs [2, 1, 2, 1, 1, 2, 1])) #[lc [0, 1, 0, 2, 2, 0, 3], lc [5, 1, 4, 2, 2, 4, 0],
     lc [0, 1, 1, 2, 2, 0, 0]] #[true, true, true]) (· == packLongs [0, 2, 3, 6])
 -- setId: segments {3 1 1} {1 3} {2} {} {} {1 3 3}: the three spellings of {1, 3} one id, `{}` one id
-private def o6 : Arr L 7 := { c := longs <| packLongs [0, 3, 5, 6, 6, 6, 9], wf := by decide }
+private def o6 : Arr L 7 := (Arr.mk (.bytes <| packLongs [0, 3, 5, 6, 6, 6, 9]) (by decide))
 private def sets : Except String (Rel L .general) :=
-  boxed o6 ({ c := longs <| packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3], wf := by decide } : Arr L 9)
+  boxed o6 ((Arr.mk (.bytes <| packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3]) (by decide)) : Arr L 9)
 #guard ok (do setId L (← sets)) (· == packLongs [0, 0, 1, 2, 2, 0])
 -- Λ(R ∪ S): fibres {10 20} {10 20} {30} {40}
 #guard ok (do setId L (← transpose (← union R S))) (· == packLongs [0, 0, 1, 2])
 -- Λ of {1↦10, 2↦20, 1↦20, 2↦10, 2↦10}: both fibres {10, 20}, in another order and with a repeat
-private def D : LL := ⟨5, { c := longs <| packLongs [1, 2, 1, 2, 2], wf := by decide }, { c := longs <| packLongs [10, 20, 20, 10, 10], wf := by decide }⟩
+private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by decide))⟩
 #guard ok (do setId L (← transpose D)) (· == packLongs [0, 0])
 
-private def Ua3 : Arr L 3 := { c := longs <| packLongs [3, 1, 2], wf := by decide }
+private def Ua3 : Arr L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by decide))
 #guard ok (entire R Ua) (· == false) && ok (entire R Ua3) id
 #guard ok (simple R) (· == false) && ok (simple (idU Ua)) id && ok (simple Ls) id
 #guard ok (isMap (idU Ua) Ua) id
@@ -913,13 +922,13 @@ private def Ua3 : Arr L 3 := { c := longs <| packLongs [3, 1, 2], wf := by decid
 /-! ### Every other encoding: the list `i ↦ x i` of four elements in each, against its own spec -/
 
 /-- A list over the payload `c`. -/
-private def lstV (t : QAtomicType) (c : Column) : Except String ((m : Nat) × Arr t m) := do
-  let n := c.n
-  pure ⟨n, ← Arr.of t n c "lst"⟩
+private def lstV (t : QAtomicType) (c : Nat × Enc) : Except String ((m : Nat) × Arr t m) := do
+  let n := c.1
+  pure ⟨n, ← Arr.ofPart t n c "lst"⟩
 /-- The same as a relation from its positions, `tilLongs` the key. -/
-private def lst (t : QAtomicType) (c : Column) : Except String (Rel L t) := do
+private def lst (t : QAtomicType) (c : Nat × Enc) : Except String (Rel L t) := do
   let x ← lstV t c
-  pure ⟨x.1, ← Arr.of L x.1 (longs (tilLongs x.1.toUSize)) "lst", x.2⟩
+  pure ⟨x.1, ← Arr.ofPart L x.1 (longs (tilLongs x.1.toUSize)) "lst", x.2⟩
 /-- `L ≫ L°`: the pairs of positions holding one element. -/
 private def same {t : QAtomicType} (X Y : Rel L t) : Except String LL := do comp X (← conv Y)
 -- the positions of `(p q p r)` paired with equal elements: `(0 2)` share, `1` and `3` alone
@@ -927,7 +936,7 @@ private def pqpr : List (Int64 × Int64) := [(0, 0), (0, 2), (2, 0), (2, 2), (1,
 
 -- boolean, `bits`: `1010b`, whose positions pair `(0 2)` and `(1 3)`
 private abbrev Bo := QAtomicType.boolean
-private def bitsC : Column := ⟨.boolean, 4, .bits (ByteArray.mk #[0b0101]), none⟩
+private def bitsC : Nat × Enc := (4, .bits (ByteArray.mk #[0b0101]))
 #guard ok (do same (← lst Bo bitsC) (← lst Bo bitsC)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
 #guard okFlat L (do group (← lstV Bo bitsC).2) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
@@ -938,9 +947,9 @@ private def bitsC : Column := ⟨.boolean, 4, .bits (ByteArray.mk #[0b0101]), no
 
 -- symbol, `syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
 private abbrev Sy := QAtomicType.symbol
-private def symsC : Column := ⟨.symbol, 4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10], none⟩
-private def enumC : Column :=
-  ⟨.symbol, 4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!), none⟩
+private def symsC : Nat × Enc := (4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10])
+private def enumC : Nat × Enc :=
+  (4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!))
 #guard ok (lst Sy enumC) fun X => X.toList == [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
 #guard ok (do same (← lst Sy symsC) (← lst Sy enumC)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do same (← lst Sy enumC) (← lst Sy enumC)) fun X => seteq X.toList pqpr && X.n == 6
@@ -949,16 +958,16 @@ private def enumC : Column :=
 #guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard okFlat L (do group (← lstV Sy symsC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard ok (do symDiv (← lst Sy symsC) (← lst Sy enumC) U4 U4) fun X => seteq X.toList pqpr
-#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.of Sy 4 symsC "U") (← Arr.of Sy 4 enumC "U")) fun X =>
+#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.ofPart Sy 4 symsC "U") (← Arr.ofPart Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
-#guard ok (do top (← Arr.of Sy 4 enumC "U") (← Arr.of Bo 4 bitsC "U")) (·.n == 16)
+#guard ok (do top (← Arr.ofPart Sy 4 enumC "U") (← Arr.ofPart Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) (·.n == 3)
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
 -- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
-private def laneOf (t : QAtomicType) (c : Column) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
+private def laneOf (t : QAtomicType) (c : Nat × Enc) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
 #guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
-#guard laneOf L Lf.val.c == some 8 && laneOf L (longs (packLongs [5, 3, 5, 9])) == some 8 &&
+#guard laneOf L Lf.val.part == some 8 && laneOf L (longs (packLongs [5, 3, 5, 9])) == some 8 &&
   laneOf L (longs (packLongs [5, 3, 5, 1099511627776])) == some 2
 -- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b` at domain `3·2`, no grouping pass
 #guard match pairCode false ⟨8, 4, 3, ByteArray.mk #[0, 1, 2, 1]⟩ ⟨1, 4, 2, ByteArray.mk #[0b0101]⟩ with
@@ -976,7 +985,7 @@ private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!
 #guard c2.find ⟨2, 2, 3, Column.packIds 2 2 ([1, 2][·]!)⟩ == packLongs [2, 0]
 #guard c2.eqAt ⟨2, 6, 3, Column.packIds 2 6 ([2, 1, 1, 0, 0, 2][·]!)⟩ == packLongs [0, 2, 4, 5]
 -- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
-private def Lneg : LL := ⟨4, U4, { c := ⟨.long, 4, .foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2, none⟩, wf := ⟨rfl, rfl, foRLongs_wf [9, -3, 5, 5]⟩ }⟩
+private def Lneg : LL := ⟨4, U4, Arr.mk (.foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2) (foRLongs_wf [9, -3, 5, 5])⟩
 #guard ok (do comp Lneg (← conv Lf)) fun X => seteq X.toList
   (Lneg.toList.flatMap fun (i, x) => Lf.toList.filterMap fun (j, y) => if x == y then some (i, j) else none)
 
@@ -984,10 +993,10 @@ private def Lneg : LL := ⟨4, U4, { c := ⟨.long, 4, .foR (Coc.encode 8 (packL
 private abbrev Fl := QAtomicType.float
 private def fs : List Float := [1.5, 2.25, 1.5, 0.1]
 private def fb : ByteArray := packLongs (fs.map (·.toBits.toInt64))
-private def fd : Column := ⟨.float, fs.length, .bytes fb, none⟩
+private def fd : Nat × Enc := (fs.length, .bytes fb)
 -- `alpOf` and not `Column.answer`, which keeps a column this short dense
-private def alpC : Column := (Column.alpOf fd).getD fd
-#guard alpC.enc matches .alp ..
+private def alpC : Nat × Enc := ((Enc.alpOf Fl fd.1 fd.2).map (fd.1, ·)).getD fd
+#guard alpC.2 matches .alp ..
 #guard ok (do same (← lst Fl alpC) (← lst Fl alpC)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do same (← lst Fl alpC) (← lst Fl fd)) fun X => seteq X.toList pqpr && X.n == 6
 -- a float element is its IEEE bits
@@ -1053,28 +1062,32 @@ section Laws
 open QLean.Verify (firstsOf)
 
 /-- An `Arr`'s element `i` depends on its payload and on `i`'s value alone. -/
-theorem Arr.get_congr {t : QAtomicType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) {i : Fin n} {j : Fin m}
+theorem Arr.get_congr {t : QAtomicType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.part = b.part) {i : Fin n} {j : Fin m}
     (hij : i.1 = j.1) : a.get i = b.get j := by
-  obtain ⟨c, _, _, _⟩ := a; obtain ⟨c', _, _, _⟩ := b; obtain ⟨i, _⟩ := i; obtain ⟨j, _⟩ := j
-  simp only at hc hij; subst hc hij; cases t <;> rfl
+  obtain ⟨rfl, he⟩ := Prod.mk.inj hc
+  obtain ⟨v, hv⟩ := a; obtain ⟨w, hw⟩ := b
+  cases v <;> try exact hv.elim
+  cases w <;> try exact hw.elim
+  obtain ⟨i, _⟩ := i; obtain ⟨j, _⟩ := j
+  simp only [Arr.enc] at he hij; subst he hij; cases t <;> rfl
 
-/-- Two `Arr`s over one payload have one length: `wf` counts it. -/
-theorem Arr.n_congr {t : QAtomicType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.c = b.c) : n = m := by
-  have ha := a.wf; have hb := b.wf; rw [hc] at ha; exact ha.2.1.symm.trans hb.2.1
+/-- Two `Arr`s over one part have one length: the part carries it. -/
+theorem Arr.n_congr {t : QAtomicType} {n m : Nat} {a : Arr t n} {b : Arr t m} (hc : a.part = b.part) : n = m :=
+  (Prod.mk.inj hc).1
 
-theorem Arr.of_c {t : QAtomicType} {n : Nat} {c : Column} {w : String} {a : Arr t n} (h : Arr.of t n c w = .ok a) : a.c = c := by
-  unfold Arr.of at h; split at h
-  · cases h; rfl
+theorem Arr.of_c {t : QAtomicType} {n : Nat} {c : Nat × Enc} {w : String} {a : Arr t n} (h : Arr.ofPart t n c w = .ok a) : a.part = c := by
+  simp only [Arr.ofPart, Arr.of] at h; split at h
+  · cases h; rename_i hw; obtain ⟨-, rfl, -⟩ := hw; rfl
   · cases h
 
 /-- `ofCols` keys the answer by `kc`, its values by `vc`. -/
-theorem ofCols_ok {k v : QAtomicType} {kc : Column} {vc : Column} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
-    T.key.c = kc ∧ T.val.c = vc := by
+theorem ofCols_ok {k v : QAtomicType} {kc : Nat × Enc} {vc : Nat × Enc} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
+    T.key.part = kc ∧ T.val.part = vc := by
   unfold ofCols at h
-  cases ha : Arr.of k kc.n kc "ofCols" with
+  cases ha : Arr.ofPart k kc.1 kc "ofCols" with
   | error e => simp [ha, bind, Except.bind] at h
   | ok a =>
-    cases hb : Arr.of v kc.n vc "ofCols" with
+    cases hb : Arr.ofPart v kc.1 vc "ofCols" with
     | error e => simp [ha, hb, bind, Except.bind] at h
     | ok b =>
       simp only [ha, hb, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
@@ -1136,7 +1149,7 @@ theorem groupIds_faithful (k : Scan.Kind) (n : USize) (b : ByteArray) {i j : Nat
 
 /-- **A long column's grouping ids are faithful to its elements**: `groupIds .i64` over a dense long
     payload, as `groupIdsColumn` runs it, gives two rows one id exactly when they hold one long. -/
-theorem groupIds_long_faithful {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.c.enc = .bytes b)
+theorem groupIds_long_faithful {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b)
     (hm : m < USize.size) (i j : Fin m) :
     Column.idAt (Order.groupIds .i64 (b.size / 8).toUSize b).1
         (Column.idWidthOf (firstsOf (Order.keyAt .i64 b) m).length) i =
