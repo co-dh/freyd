@@ -216,7 +216,7 @@ theorem parted_rel {v : QAtomicType} (P : Parted v) :
     `x` itself cut at its offsets `r.o`, which are `o` closed by `nx`, so `parted_rel` is the law. Restricted to
     a dense long `o`; at `o₀ > 0` the rows below `o₀` are dropped first (`cut_toList` covers it, as a List). -/
 theorem cut_rel {no nx : Nat} {o : Arr .long no} {x : Arr .long nx} {r : Parted .long} {ob : ByteArray}
-    (ho : o.c.enc = .bytes ob) (h0 : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = 0)
+    (ho : o.enc = .bytes ob) (h0 : (if no = 0 then (0 : Int64) else (Column.bitsAt ob 0 8).toInt64) = 0)
     (h : Struct.cutP o x = .ok r) :
     r.rel = corefl (· < r.g) ≫ Λ ((corefl (· < nx) ≫ grp r.o)°) ≫ enum ≫ list x.rel := by
   unfold Struct.cutP at h
@@ -252,7 +252,7 @@ theorem raze_rel {v : QAtomicType} {g : Nat} {x : Arr .general g} {P : Parted v}
 
 /-- `x,y = split ≫ [x, y]`, on long columns, `x` of whole words, `y` dense (`concat_toList`). -/
 theorem concat_rel {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {r : Arr .long (nx + ny)} {c : ByteArray}
-    (hx : Struct.Words x.c) (hc : y.c.enc = .bytes c) (h : Struct.concat x y = .ok r) :
+    (hx : Struct.Words x.enc) (hc : y.enc = .bytes c) (h : Struct.concat x y = .ok r) :
     r.rel = split nx ny ≫ junc (sumCop Idx Idx) x.rel y.rel :=
   calc r.rel = ix (x.toList ++ y.toList) := congrArg ix (Struct.concat_toList hx hc h)
     _ = split x.toList.length y.toList.length ≫ junc (sumCop Idx Idx) x.rel y.rel := ix_append ..
@@ -610,7 +610,7 @@ theorem cut_uniform {v : QAtomicType} (P : Parted v) (k : Nat) (hm : ∀ s ∈ P
     omega
 
 /-- The cuts of a flat form whose offsets are the dense payload `B`, read as naturals below `2^63`. -/
-theorem cut_of_nats {v : QAtomicType} (R : Parted v) {B : ByteArray} (hB : R.o.c.enc = .bytes B) {f : Nat → Nat}
+theorem cut_of_nats {v : QAtomicType} (R : Parted v) {B : ByteArray} (hB : R.o.enc = .bytes B) {f : Nat → Nat}
     (hf : nats B = (List.range (R.g + 1)).map f) (hl : ∀ r, r ≤ R.g → f r < 2 ^ 63) :
     ∀ r, r ≤ R.g → R.cut r = f r := by
   intro r hr
@@ -626,7 +626,7 @@ theorem cut_of_nats {v : QAtomicType} (R : Parted v) {B : ByteArray} (hB : R.o.c
 /-- **A gather of a long column** (`bytes` or `foR`) at a dense long index payload whose words, read as
     naturals, all lie below `nx`: an `Arr` of `N` longs, dense, whose element `p` is `x[idx[p]]`. -/
 theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs : List UInt64}
-    (hv : longWords x.c = some vs) (hxU : nx < USize.size) {idx : ByteArray} (hn : idx.size / 8 = N)
+    (hv : longWords nx x.enc = some vs) (hxU : nx < USize.size) {idx : ByteArray} (hn : idx.size / 8 = N)
     (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {verb : String} {c : Column}
     (hvec : Find.vec verb .long (Kernel.gatherColumn .long x.c (Alg.longs idx)) = .ok c) :
     ∃ X : Arr .long N, X.c = c ∧ (∃ B, c.enc = .bytes B) ∧ ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
@@ -646,7 +646,7 @@ theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs :
 
 /-- **`flipP` transposes**, on a long `val` (`bytes` or `foR`) whose runs all have length `n/g`: column `j`
     of the answer is element `j` of every run. The bounds keep every position below `2^63` and `USize`. -/
-theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64} (hv : longWords P.val.c = some vs)
+theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64} (hv : longWords P.n P.val.enc = some vs)
     (hm : ∀ s ∈ P.segs, s.length = P.n / P.g) (hU : P.n + P.g + 1 < USize.size) (hB : P.n + P.g < 2 ^ 63)
     (h : Struct.flipP P = .ok R) :
     R.segs = (List.range (P.n / P.g)).map fun j => P.segs.map (·[j]!) := by
@@ -658,7 +658,7 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   have hcP := cut_uniform P m hm
   obtain ⟨-, cg, -⟩ := Struct.cuts_nat P.co
   have hn : P.g * m = P.n := by rw [← hcP P.g (Nat.le_refl _)]; exact cg
-  cases hob : longBytes P.o.c with
+  cases hob : longBytes (P.g + 1) P.o.enc with
   | none => rw [hob] at h; cases h
   | some ob =>
   rw [hob] at h
@@ -752,7 +752,7 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
 
 /-- **`+x = ⟨!til g, til m⟩ ≫ cpl ≫ list(⟨outl ≫ x, outr⟩ ≫ (@))`**, the kernel itself, on a long `val` whose
     runs all have length `m = n/g`: `flipP_segs`, then `flip_rel`. -/
-theorem flipP_rel [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64} (hv : longWords P.val.c = some vs)
+theorem flipP_rel [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64} (hv : longWords P.n P.val.enc = some vs)
     (hm : ∀ s ∈ P.segs, s.length = P.n / P.g) (hU : P.n + P.g + 1 < USize.size) (hB : P.n + P.g < 2 ^ 63)
     (h : Struct.flipP P = .ok R) :
     R.rel = rpair (cst (CL.ofList (List.range P.g))) (corefl (· < P.n / P.g)) ≫ ListRel.cpl ≫
@@ -774,8 +774,8 @@ theorem cross_size (n m : Nat) (hU : n * m < USize.size) :
     whose position words `xi`, `yi` read `fx`, `fy` on `til(m·k)`. -/
 theorem pairsP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (he : Eval.ewType v .long .long = some .long) {verb : String} {nx ny m k : Nat} {x : Arr .long nx}
-    {y : Arr .long ny} {R : Parted .long} {xs ys : List UInt64} (hx : longWords x.c = some xs)
-    (hy : longWords y.c = some ys) {xi yi : ByteArray} {fx fy : Nat → Nat}
+    {y : Arr .long ny} {R : Parted .long} {xs ys : List UInt64} (hx : longWords nx x.enc = some xs)
+    (hy : longWords ny y.enc = some ys) {xi yi : ByteArray} {fx fy : Nat → Nat}
     (hxi : nats xi = (List.range (m * k)).map fx) (hyi : nats yi = (List.range (m * k)).map fy)
     (hxz : xi.size = 8 * (m * k)) (hyz : yi.size = 8 * (m * k))
     (hfx : ∀ p, p < m * k → fx p < nx) (hfy : ∀ p, p < m * k → fy p < ny)
@@ -849,7 +849,7 @@ theorem run_slot {r k c : Nat} (hc : c < k) : (r * k + c) % k = c ∧ (r * k + c
     `ny·nx` positions below `2^63` and `USize`. -/
 theorem eachRightP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
-    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    {xs ys : List UInt64} (hx : longWords nx x.enc = some xs) (hy : longWords ny y.enc = some ys)
     (hU : ny * nx + nx + ny + 1 < USize.size) (hB : ny * nx + nx + ny < 2 ^ 63)
     (h : Struct.eachRightP v .long x y = .ok R) :
     R.segs = y.toList.map fun b => x.toList.map (Kernel.Ew.intStep op Int64.minValue · b) := by
@@ -878,7 +878,7 @@ theorem eachRightP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (h
 /-- **`eachLeftP` is `x.map (fun a => y.map (f a ·))`**: `pairsP_segs` at `Alg.cross nx ny`, `x` outer. -/
 theorem eachLeftP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
-    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    {xs ys : List UInt64} (hx : longWords nx x.enc = some xs) (hy : longWords ny y.enc = some ys)
     (hU : nx * ny + nx + ny + 1 < USize.size) (hB : nx * ny + nx + ny < 2 ^ 63)
     (h : Struct.eachLeftP v .long x y = .ok R) :
     R.segs = x.toList.map fun a => y.toList.map (Kernel.Ew.intStep op Int64.minValue a ·) := by
@@ -909,7 +909,7 @@ theorem eachLeftP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (ho
     `long`: `eachRightP_segs`, then `eachRight_rel`. -/
 theorem eachRightP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
-    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    {xs ys : List UInt64} (hx : longWords nx x.enc = some xs) (hy : longWords ny y.enc = some ys)
     (hU : ny * nx + nx + ny + 1 < USize.size) (hB : ny * nx + nx + ny < 2 ^ 63)
     (h : Struct.eachRightP v .long x y = .ok R) :
     R.rel = rpair (cst (CL.ofList x.toList)) y.rel ≫ ListRel.cpl ≫
@@ -1322,7 +1322,7 @@ theorem nats_sums_range (b : ByteArray) (c : Nat → Nat) (k : Nat) (hb : nats b
   rw [e, Nat.zero_add]
 
 /-- Offsets read off a dense long payload are the cuts, below `2^63`. -/
-theorem nats_cuts {v : QAtomicType} (P : Parted v) {ob : ByteArray} (hoB : P.o.c.enc = .bytes ob) (hn : P.n < 2 ^ 63) :
+theorem nats_cuts {v : QAtomicType} (P : Parted v) {ob : ByteArray} (hoB : P.o.enc = .bytes ob) (hn : P.n < 2 ^ 63) :
     nats ob = (List.range (P.g + 1)).map P.cut := by
   obtain ⟨-, cg, mono⟩ := Struct.cuts_nat P.co
   have cg' : P.cut P.g = P.n := cg
@@ -1441,12 +1441,12 @@ theorem expand_nats (lens : ByteArray) (c : Nat → Nat) (n B : Nat) (hLn : nats
     outside `til g`. Restricted to a long `val` (`bytes` or `foR`), dense long offsets and a dense long `y`; the
     bounds keep every position below `2^63` and `USize`. -/
 theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat} {y : Arr .long ny}
-    {vs : List UInt64} {ob yb : ByteArray} (hv : longWords P.val.c = some vs) (hoB : P.o.c.enc = .bytes ob)
-    (hy : y.c.enc = .bytes yb) (hU : ny * P.n + P.n + P.g + ny + 1 < USize.size)
+    {vs : List UInt64} {ob yb : ByteArray} (hv : longWords P.n P.val.enc = some vs) (hoB : P.o.enc = .bytes ob)
+    (hy : y.enc = .bytes yb) (hU : ny * P.n + P.n + P.g + ny + 1 < USize.size)
     (hB : ny * P.n + P.n + P.g + ny < 2 ^ 63) (h : Struct.indexPartedP P y = .ok R) :
     R.segs = Struct.indexSpec [] P.segs y.toList := by
   unfold Struct.indexPartedP at h
-  rw [show longBytes P.o.c = some ob by unfold longBytes; rw [hoB]] at h
+  rw [show longBytes (P.g + 1) P.o.enc = some ob by unfold longBytes; rw [hoB]] at h
   dsimp only at h
   rw [y.c_eq hy, show Find.dense "x@y" .long ⟨.long, ny, .bytes yb, y.attrCell⟩ = pure yb from rfl, pure_bind] at h
   generalize hD : Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8)) = D at h
@@ -1613,8 +1613,8 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
 
 /-- **Nested `x@y = y ≫ miss(pos ≫ x, [])`**, the kernel itself: `indexPartedP_segs`, then `indexParted_rel`. -/
 theorem indexPartedP_rel [Inhabited (El .long)] {P R : Parted .long} {ny : Nat} {y : Arr .long ny}
-    {vs : List UInt64} {ob yb : ByteArray} (hv : longWords P.val.c = some vs) (hoB : P.o.c.enc = .bytes ob)
-    (hy : y.c.enc = .bytes yb) (hU : ny * P.n + P.n + P.g + ny + 1 < USize.size)
+    {vs : List UInt64} {ob yb : ByteArray} (hv : longWords P.n P.val.enc = some vs) (hoB : P.o.enc = .bytes ob)
+    (hy : y.enc = .bytes yb) (hU : ny * P.n + P.n + P.g + ny + 1 < USize.size)
     (hB : ny * P.n + P.n + P.g + ny < 2 ^ 63) (h : Struct.indexPartedP P y = .ok R) :
     R.rel = y.rel ≫ miss (pos ≫ P.rel) (CL.ofList []) :=
   indexParted_rel (indexPartedP_segs hv hoB hy hU hB h)
@@ -2593,10 +2593,10 @@ theorem bytesOf_answer_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some 
 /-- A fixed-width array's dense payload: `w` bytes an element, never a bitmap. -/
 theorem bytesOf_fixed {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m) (hm : m < USize.size) :
-    ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.c.enc ≠ .bits b := by
+    ∃ D, Column.bytesOf z.c = some D ∧ D.size = w * m ∧ ∀ b, z.enc ≠ .bits b := by
   have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
-  have parts : (∃ B, z.c.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.c.enc = .foR md pk) ∨
-      ∃ md pk a, z.c.enc = .alp md pk a :=
+  have parts : (∃ B, z.enc = .bytes B ∧ B.size = w * m) ∨ (∃ md pk, z.enc = .foR md pk) ∨
+      ∃ md pk a, z.enc = .alp md pk a :=
     he.elim (fun he => (fixed_parts hw he z).elim .inl (.inr ∘ .inl)) (alp_parts hw · z)
   rcases parts with ⟨B, hc, hB⟩ | ⟨md, pk, hc⟩ | ⟨md, pk, a, hc⟩
   · exact ⟨B, by rw [Arr.c_eq z hc]; rfl, hB, fun b e => by rw [hc] at e; cases e⟩
@@ -2833,7 +2833,7 @@ open QLean.Kernel
 /-- `x like p` lists `p?` of each symbol's bytes (`likeSyms`, then `maskByIds` on an interned column).
     Restrictions: `x` readable (`Find.Readable`). -/
 theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boolean nx}
-    (hx : Find.Readable .symbol x.c) (h : Struct.like x p = .ok r) :
+    (hx : Find.Readable .symbol nx x.enc) (h : Struct.like x p = .ok r) :
     r.toList = x.toList.map fun s => Struct.likeP p s.toUTF8 := by
   have hX := Arr.toList_sym x hx.2
   have hk : ∀ i (hi : i < x.toList.length), x.toList[i].toUTF8.data.toList =
@@ -2844,12 +2844,12 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
   have hw := x.wf.2.2
   cases hp : parsePat p.toByteArray with
   | error e =>
-    cases he : x.c.enc <;> simp [Struct.like, he, likeSyms, hp, bind, Except.bind, pure, Except.pure] at h
+    cases he : x.enc <;> simp [Struct.like, he, likeSyms, hp, bind, Except.bind, pure, Except.pure] at h
   | ok its =>
     have hL : ∀ s : String, Struct.likeP p s.toUTF8 = patMatch its s.toUTF8 (its.size + s.toUTF8.size + 1) 0 0 :=
       fun s => by simp only [Struct.likeP, show p.toUTF8 = p.toByteArray from rfl, hp]
     have hp' : parsePat p.toUTF8 = .ok its := hp
-    cases he : x.c.enc with
+    cases he : x.enc with
     | syms b o =>
       have hc := x.c_eq he
       simp only [Struct.like, he, likeSyms, hp', bind, Except.bind, pure, Except.pure] at h
@@ -2886,7 +2886,7 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
 
 /-- `x like p = x ≫ p?`, `p? = graph(likeP p)` on each symbol's bytes. Restrictions as `like_toList`'s. -/
 theorem like_rel {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boolean nx}
-    (hx : Find.Readable .symbol x.c) (h : Struct.like x p = .ok r) :
+    (hx : Find.Readable .symbol nx x.enc) (h : Struct.like x p = .ok r) :
     r.rel = x.rel ≫ graph fun s : String => Struct.likeP p s.toUTF8 :=
   (congrArg ix (like_toList hx h)).trans (ix_map ..)
 
@@ -2961,7 +2961,7 @@ theorem greedy_fold (P : Nat → Bool) (w : Nat) (f : List Nat × Nat → Nat �
             have := h3 a (List.mem_cons_self ..) (hlt a (List.mem_cons_self ..)); omega
 
 /-- A `.bytes` char column lists its bytes. -/
-theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : x.c.enc = .bytes b) :
+theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : x.enc = .bytes b) :
     x.toList = b.data.toList := by
   have hw := x.wf.2.2; have hn : x.c.n = m := x.wf.2.1
   rw [x.c_eq hc] at hw; simp only [Column.WF, QAtomicType.width] at hw
@@ -2977,7 +2977,7 @@ theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : 
     mask being "a fit not covered by an earlier start". `S` exists and every `S` that `Starts` describes
     gives the answer. Restrictions: a dense (`.bytes`) char column. -/
 theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
-    (he : x.c.enc = .bytes b) (h : Struct.ss x p = .ok ⟨nr, r⟩) :
+    (he : x.enc = .bytes b) (h : Struct.ss x p = .ok ⟨nr, r⟩) :
     ∃ its, parsePat p.toUTF8 = .ok its ∧ (∃ S, Struct.Starts its x.toList S) ∧
       ∀ S, Struct.Starts its x.toList S → (∃ ys, enum S ys) ∧
         ∀ ys, enum S ys → r.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
@@ -3170,7 +3170,7 @@ theorem eachLeft_rel {t u rt : QAtomicType} {nx ny : Nat} {x : Arr t nx} {y : Ar
     `long`: `eachLeftP_segs`, then `eachLeft_rel`. -/
 theorem eachLeftP_rel [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valOp v = some op)
     (he : Eval.ewType v .long .long = some .long) {nx ny : Nat} {x : Arr .long nx} {y : Arr .long ny} {R : Parted .long}
-    {xs ys : List UInt64} (hx : longWords x.c = some xs) (hy : longWords y.c = some ys)
+    {xs ys : List UInt64} (hx : longWords nx x.enc = some xs) (hy : longWords ny y.enc = some ys)
     (hU : nx * ny + nx + ny + 1 < USize.size) (hB : nx * ny + nx + ny < 2 ^ 63)
     (h : Struct.eachLeftP v .long x y = .ok R) :
     R.rel = rpair x.rel (cst (CL.ofList y.toList)) ≫ ListRel.cpr ≫
@@ -3213,8 +3213,8 @@ theorem same_rel {t : QAtomicType} {nx ny : Nat} {x : Arr t nx} {y : Arr t ny} {
 /-- **`x . (i;j) = (i ≫ x) @ j`** on a nested list of longs in its flat form: `R` is `x@i`
     (`indexPartedP_rel`), its one run is `R.val`, and the answer is `R.val@j` (`index_rel`). -/
 theorem dotP_rel [Inhabited (El .long)] {P R : Parted .long} {i : Arr .long 1} {nj : Nat} {j r : Arr .long nj}
-    {vs ws js : List UInt64} {ob ib : ByteArray} (hv : longWords P.val.c = some vs) (hoB : P.o.c.enc = .bytes ob)
-    (hi : i.c.enc = .bytes ib) (hU : 1 * P.n + P.n + P.g + 1 + 1 < USize.size)
+    {vs ws js : List UInt64} {ob ib : ByteArray} (hv : longWords P.n P.val.enc = some vs) (hoB : P.o.enc = .bytes ob)
+    (hi : i.enc = .bytes ib) (hU : 1 * P.n + P.n + P.g + 1 + 1 < USize.size)
     (hB : 1 * P.n + P.n + P.g + 1 < 2 ^ 63) (hR : Struct.indexPartedP P i = .ok R)
     (hw : longWords R.val.c = some ws) (hj : longWords j.c = some js) (hnU : R.n < USize.size)
     (hjU : nj < USize.size) (hn63 : R.n < 2 ^ 63) (h : Struct.dotP P i j = .ok r) :
