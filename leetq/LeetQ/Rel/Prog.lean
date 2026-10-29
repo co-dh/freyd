@@ -380,6 +380,79 @@ theorem index_den {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr .long 
     (index x y).den = posL° ≫ y.rel ≫ posL° ≫ x.rel :=
   hom_ext fun _ _ => ⟨fun ⟨b, ⟨j, ea, hy⟩, hx⟩ => ⟨j, ea, b, hy, hx⟩, fun ⟨j, ea, b, hy, hx⟩ => ⟨b, ⟨j, ea, hy⟩, hx⟩⟩
 
+/-! ## posL bridge
+
+  `den` keys a list by longs, `posL° ≫ S`; the `*_rel` laws key it by positions, `S`. Below `2^64` `posL` is a
+  bijection, so the two say one thing, and each `<verb>_prog` reads a run back into its law's right side. -/
+
+/-- **`T = posL° ≫ S` iff `T` read at the positions below `2^64` is `S`**, for `S` defined only there. The
+    `corefl` is needed because `posL` wraps: past `2^64` it hits the same longs again. -/
+theorem posL_iff {B : RelSet.{0}} {S : Idx ⟶ B} {T : Ob .long ⟶ B} (hS : ∀ i b, S i b → i < 2 ^ 64) :
+    T = posL° ≫ S ↔ corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ T = S := by
+  constructor
+  · rintro rfl
+    exact hom_ext fun i b => ⟨fun ⟨_, ⟨rfl, hi⟩, _, rfl, j, ej, hs⟩ => by
+        obtain rfl := ofNat_inj hi (hS j b hs) ej; exact hs,
+      fun hs => ⟨i, ⟨rfl, hS i b hs⟩, _, rfl, i, rfl, hs⟩⟩
+  · rintro rfl
+    exact hom_ext fun a b => ⟨fun ht => ⟨a.toBitVec.toNat, (Int64.toBitVec_inj.1 (by simp)).symm, _,
+        ⟨rfl, a.toBitVec.isLt⟩, _, rfl, by rw [Int64.toBitVec_inj.1 (by simp : (Int64.ofNat a.toBitVec.toNat).toBitVec = a.toBitVec)]; exact ht⟩,
+      fun ⟨_, ea, _, ⟨rfl, _⟩, _, rfl, ht⟩ => by rw [ea]; exact ht⟩
+
+/-- A key `til n` exists only below `2^64`. -/
+theorem tilKey_lt {n : Nat} {k : Arr .long n} (h : tilKey n = .ok k) : n < 2 ^ 64 := by
+  unfold tilKey at h; split at h
+  · exact Nat.lt_of_lt_of_le (by assumption) USize.size_le
+  · cases h
+
+/-- `ej` runs to `ej_rel`'s right side, its rows the one-key tuples. -/
+theorem ej_prog {nl nr : Nat} (l : Arr .long nl) (r : Arr .long nr) {R : Rel .long .long}
+    (h : (ej l r).run = .ok R) (hs : (ej l r).Sound) :
+    (R.Holds : Ob .long ⟶ Ob .long) = posL° ≫ ix (l.toList.map ([·])) ≫ (ix (r.toList.map ([·])))° ≫ posL := by
+  rw [run_sound _ hs h, ej_den, Verb.ix_map, Verb.ix_map]
+  exact hom_ext fun _ _ => ⟨fun ⟨j, ea, c, hl, j', hr, eb⟩ => ⟨j, ea, [c], ⟨c, hl, rfl⟩, j', ⟨c, hr, rfl⟩, eb⟩,
+    fun ⟨j, ea, _, ⟨c, hl, rfl⟩, j', ⟨_, hr, e⟩, eb⟩ => ⟨j, ea, c, hl, j', by cases e; exact hr, eb⟩⟩
+
+/-- `x!y` runs to `mk_rel`'s right side. -/
+theorem dict_prog {k v : QAtomicType} {n : Nat} (x : Arr k n) (y : Arr v n) {R : Rel k v}
+    (h : (dict x y).run = .ok R) (hs : (dict x y).Sound) : (R.Holds : Ob k ⟶ Ob v) = x.rel° ≫ y.rel :=
+  (run_sound _ hs h).trans (dict_den x y)
+
+/-- `!n` runs to `til_rel`'s right side. -/
+theorem til_prog {n : Nat} (hn : n ≤ 2 ^ 64) {R : Rel .long .long} (h : (til n).run = .ok R) (hs : (til n).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = corefl (· < n) ≫ graph Int64.ofNat :=
+  (posL_iff fun _ _ ⟨_, ⟨e, hi⟩, _⟩ => by subst e; exact Nat.lt_of_lt_of_le hi hn).1 ((run_sound _ hs h).trans (til_den n))
+
+/-- `f x` runs to `mon_rel`'s right side. -/
+theorem mon_prog {t : QAtomicType} {n : Nat} (op : UInt8) (f : El t → El t) (x : Arr t n) (hn : n ≤ 2 ^ 64)
+    {R : Rel .long t} (h : (mon op f x).run = .ok R) (hs : (mon op f x).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob t) = x.rel ≫ graph f :=
+  (posL_iff fun i _ ⟨_, hx, _⟩ => Nat.lt_of_lt_of_le ((rel_iff x i _).1 hx).1 hn).1
+    ((run_sound _ hs h).trans (mon_den op f x))
+
+/-- `x v y` runs to `val_rel`'s right side. -/
+theorem val_prog {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (e : Eval.ewType v t u = some rt)
+    (x : Arr t n) (y : Arr u n) (hn : n ≤ 2 ^ 64) {R : Rel .long rt} (h : (val v e x y).run = .ok R)
+    (hs : (val v e x y).Sound) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob rt) = rpair x.rel y.rel ≫ ofExcept fun p => elem v e p.1 p.2 :=
+  (posL_iff fun i _ ⟨_, ⟨hx, _⟩, _⟩ => Nat.lt_of_lt_of_le ((rel_iff x i _).1 hx).1 hn).1
+    ((run_sound _ hs h).trans (val_den v e x y hn))
+
+/-- `&x` runs to `where_rel`'s right side, for every list `enum` gives. -/
+theorem enum_prog {n : Nat} (x : Arr .boolean n) {R : Rel .long .long} (h : (enum x).run = .ok R)
+    (hs : (enum x).Sound) {ys}
+    (hy : Verb.enum (Verb.cset (Verb.dom (x.rel ≫ (Verb.cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys) :
+    corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = ix (CL.toList ys) ≫ graph Int64.ofNat := by
+  simp only [run, bind, Except.bind] at h; split at h
+  · cases h
+  rename_i w hw
+  split at h
+  · cases h
+  cases h
+  rw [← (where_rel hs hw).2 ys hy]
+  exact (posL_iff fun i _ hi => Nat.lt_trans ((rel_iff _ i _).1 hi).1 (tilKey_lt (by assumption))).1
+    (arr_sound w.2 (by assumption))
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -392,5 +465,12 @@ end Prog
 #print axioms Prog.til_den
 #print axioms Prog.mon_den
 #print axioms Prog.val_den
+#print axioms Prog.posL_iff
+#print axioms Prog.ej_prog
+#print axioms Prog.dict_prog
+#print axioms Prog.til_prog
+#print axioms Prog.mon_prog
+#print axioms Prog.val_prog
+#print axioms Prog.enum_prog
 
 end LeetQ.Rel
