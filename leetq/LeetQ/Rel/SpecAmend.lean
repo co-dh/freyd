@@ -4,11 +4,11 @@ namespace LeetQ.Rel.Verb
 open QLean QLean.Dep
 open Freyd Freyd.Alg Freyd.Alg.RelSet
 
-/-- A dense payload of `n` elements of a fixed-width type is a well-formed column. -/
+/-- A dense payload of `n` elements of a fixed-width type is a well-formed payload. -/
 theorem wf_bytes {t : QAtomicType} {w n : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (B : ByteArray) (h : B.size = n * w) :
-    Column.WF ⟨t, n, .bytes B, none⟩ := by
-  cases t <;> simp_all [Column.WF, QAtomicType.width, Column.encodes, Column.alpEncodes]
+    Enc.WF t n (.bytes B) := by
+  cases t <;> simp_all [Enc.WF, QAtomicType.width, Column.encodes, Column.alpEncodes]
 
 /-- Of positions whose index names are distinct, at most one names `j`. -/
 theorem filter_le_one (p : Nat → Nat) (m j : Nat) (hinj : ∀ k < m, ∀ k' < m, p k = p k' → k = k') :
@@ -27,27 +27,26 @@ theorem filter_le_one (p : Nat → Nat) (m j : Nat) (hinj : ∀ k < m, ∀ k' < 
     have hab := List.rel_of_pairwise_cons hp List.mem_cons_self
     exact absurd (hinj a ha.1 b hb.1 (ha.2.trans hb.2.symm)) (Nat.ne_of_lt hab)
 
-/-- `z` read at the long positions `ix` (`gatherColumn`, through `vec`): the dense gather of its payload. -/
-theorem vec_gather {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
-    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (verb : String) (z : Arr t m)
-    (hA : ∀ M P a, z.c.enc = .alp M P a → Column.alpF32 a = (w == 4)) (ix : ByteArray) {c : Column}
-    (hc : Find.vec verb t (Kernel.gatherColumn t z.c (LeetQ.Rel.Alg.longs ix)) = .ok c) :
-    ∃ src, Column.bytesOf z.c = some src ∧
-      c = ⟨t, ix.size / 8, .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix), none⟩ := by
+/-- `z` read at the long positions `ix` (`Alg.pick`, i.e. `gatherColumn`): the dense gather of its payload. -/
+theorem pick_gather {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
+    (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m)
+    (hA : ∀ M P a, z.enc = .alp M P a → Column.alpF32 a = (w == 4)) (ix : ByteArray) {k : Nat} {c : Enc}
+    (hc : Alg.pick t (m, z.enc) ix = .ok (k, c)) :
+    ∃ src, Enc.bytesOf t m z.enc = some src ∧ k = ix.size / 8 ∧
+      c = .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix) := by
   have hdw : Kernel.denseWidth t = some w := by
     cases t <;> first | exact hw | simp [Column.encodes, Column.alpEncodes] at he
-  have hg : Kernel.gatherColumn t z.c (LeetQ.Rel.Alg.longs ix) = some (.vector c) := by
-    unfold Find.vec at hc
-    split at hc
-    · next c' e => split at hc <;> cases hc; exact e
-    all_goals cases hc
-  obtain ⟨src, ixb, hsrc, hixb, rfl⟩ :=
-    Verify.gatherColumn_fixed_shape hdw z.c (LeetQ.Rel.Alg.longs ix) c z.wf.1 rfl
-      (by simp [Verify.countFits, LeetQ.Rel.Alg.longs]) hA hg
-  have e : ix = ixb := Option.some.inj
-    ((show Column.bytesOf (LeetQ.Rel.Alg.longs ix) = some ix by simp [LeetQ.Rel.Alg.longs, Column.bytesOf]).symm.trans hixb)
-  subst e
-  exact ⟨src, hsrc, rfl⟩
+  unfold Alg.pick at hc
+  split at hc
+  · simp [Column.encodes, Column.alpEncodes] at he
+  · split at hc
+    · next _ hg =>
+      cases hc
+      obtain ⟨src, ixb, hsrc, hixb, rfl⟩ := Verify.gatherColumn_fixed_shape hdw m z.enc _ _ _ hA hg
+      have e : ix = ixb := by simpa [Enc.bytesOf] using hixb
+      subst e
+      exact ⟨src, hsrc, rfl, rfl⟩
+    · cases hc
 
 /-- Positions listed in order, filtered and read through the list: the list filtered, then read. -/
 theorem filter_reindex {β : Type} (P : List Nat) (g : Nat → Nat) (h : Nat → β) (j : Nat) :
@@ -72,20 +71,21 @@ theorem rank_pairwise (ib : ByteArray) (N j : Nat) :
 theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {v : Prim.Dyadic}
     {f : Carrier t → Carrier t → Carrier t}
-    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.c.enc = .bytes B) → m < 2 ^ 32 →
-      Ew.dyad v Kernel.Ew.vv t t t cur.c yv.c m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
+    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.enc = .bytes B) → m < 2 ^ 32 →
+      Ew.dyad v Kernel.Ew.vv t t t m cur.enc m yv.enc m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
     (dec : UInt64 → Carrier t)
-    (htl : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → m < USize.size → z.toList = (Verify.elemsW w D).map dec)
+    (htl : ∀ {m} (z : Arr t m) {D}, Enc.bytesOf t m z.enc = some D → m < USize.size →
+      z.toList = (Verify.elemsW w D).map dec)
     (hnx : nx < 2 ^ 32) (verb : String) (acc : Arr t nx)
-    (hA : ∀ M P a, acc.c.enc = .alp M P a → Column.alpF32 a = (w == 4))
+    (hA : ∀ M P a, acc.enc = .alp M P a → Column.alpF32 a = (w == 4))
     (ix : ByteArray) (hm : ix.size / 8 < 2 ^ 32)
     (hinj : ∀ k < ix.size / 8, ∀ k' < ix.size / 8,
       (Column.bitsAt ix (k * 8) 8).toNat = (Column.bitsAt ix (k' * 8) 8).toNat → k = k')
-    {m : Nat} (yv : Arr t m) (hmx : ix.size / 8 = m) {c : Column} {R : Arr t (ix.size / 8)} {out : Column}
-    (hc : Find.vec verb t (Kernel.gatherColumn t acc.c (LeetQ.Rel.Alg.longs ix)) = .ok c)
-    (hR : Ew.dyad v Kernel.Ew.vv t t t c yv.c (ix.size / 8) = .ok R)
-    (hs : Struct.scatter verb t nx acc.c R.c ix = .ok out) :
-    ∃ acc' : Arr t nx, acc'.c = out ∧ (∃ B, out = ⟨t, nx, .bytes B, none⟩) ∧ ∀ j, acc'.toList[j]? =
+    {m : Nat} (yv : Arr t m) (hmx : ix.size / 8 = m) {k : Nat} {c : Enc} {R : Arr t k} {out : Enc}
+    (hc : LeetQ.Rel.Alg.pick t (nx, acc.enc) ix = .ok (k, c))
+    (hR : Ew.dyad v Kernel.Ew.vv t t t k c m yv.enc k = .ok R)
+    (hs : Struct.scatter verb t nx acc.enc (k, R.enc) ix = .ok out) :
+    ∃ acc' : Arr t nx, acc'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, acc'.toList[j]? =
       acc.toList[j]?.map fun a => (((List.range (ix.size / 8)).filter fun k =>
         (Column.bitsAt ix (k * 8) 8).toNat = j).map (yv.toList[·]!)).foldl f a := by
   have hw8 : 1 < w ∧ w ≤ 8 := he.elim (width_fixed hw) (fun ha => by have := alp_width hw ha; omega)
@@ -93,21 +93,22 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
   have hmU : ix.size / 8 < USize.size := Nat.lt_of_lt_of_le hm USize.le_size
   subst hmx
   obtain ⟨src, hsrc, hss, hsb⟩ := bytesOf_fixed hw he acc hU
-  obtain ⟨src', hsrc', rfl⟩ := vec_gather hw he verb acc hA ix hc
+  obtain ⟨src', hsrc', hk, rfl⟩ := pick_gather hw he acc hA ix hc
+  subst hk
   have e : src = src' := Option.some.inj (hsrc.symm.trans hsrc'); subst e
   have hw' : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have gs := Verify.gatherBytes_spec w.toUSize (by rw [hw']; exact hw8.2) ((Kernel.nullBits t).getD 0) src ix
   rw [hw'] at gs
   let cur : Arr t (ix.size / 8) :=
-    ⟨⟨t, ix.size / 8, .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix), none⟩,
-      rfl, rfl, wf_bytes hw he _ (by rw [gs.1, Nat.mul_comm])⟩
+    Arr.mk (.bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix))
+      (wf_bytes hw he _ (by rw [gs.1, Nat.mul_comm]))
   have hRl := hdy cur yv R ⟨_, rfl⟩ hm hR
   obtain ⟨E, hE, hEs, hEb⟩ := bytesOf_fixed hw he R hmU
   have hts : t ≠ .symbol := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
-  have hout : out = ⟨t, nx, .bytes (Kernel.scatterPacked (8 * w).toUSize src ix E 0 false), none⟩ := by
+  have hout : out = .bytes (Kernel.scatterPacked (8 * w).toUSize src ix E 0 false) := by
     unfold Struct.scatter at hs; split at hs
     · exact absurd rfl hts
-    · rw [packed_fixed hw verb acc.c hsrc hsb, packed_fixed hw verb R.c hE hEb] at hs
+    · rw [packed_fixed hw verb nx acc.enc hsrc hsb, packed_fixed hw verb _ R.enc hE hEb] at hs
       simp [show 8 * w ≠ 1 by omega] at hs
       cases hs; simp
   have hwb : (8 * w).toUSize.toNat = 8 * w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
@@ -115,7 +116,7 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
     (by simp only [Bool.false_eq_true, if_false, USize.toNat_zero, Nat.zero_add]
         exact Nat.le_of_eq (by rw [hEs, Nat.mul_comm]))
   subst hout
-  refine ⟨⟨_, rfl, rfl, wf_bytes hw he _ (by rw [spec.1, hss, Nat.mul_comm])⟩, rfl, ⟨_, rfl⟩, fun j => ?_⟩
+  refine ⟨Arr.mk _ (wf_bytes hw he _ (by rw [spec.1, hss, Nat.mul_comm])), rfl, ⟨_, rfl⟩, fun j => ?_⟩
   have hxk : src.size / w = nx := by rw [hss, Nat.mul_div_cancel_left _ (by omega)]
   rw [htl _ (D := Kernel.scatterPacked (8 * w).toUSize src ix E 0 false) rfl hU, htl acc hsrc hU]
   by_cases hj : j < nx
@@ -304,23 +305,24 @@ theorem foldl_max_le (l : List Nat) (a c : Nat) (ha : a ≤ c) (h : ∀ y ∈ l,
 theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {v : Prim.Dyadic}
     {f : Carrier t → Carrier t → Carrier t}
-    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.c.enc = .bytes B) → m < 2 ^ 32 →
-      Ew.dyad v Kernel.Ew.vv t t t cur.c yv.c m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
+    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.enc = .bytes B) → m < 2 ^ 32 →
+      Ew.dyad v Kernel.Ew.vv t t t m cur.enc m yv.enc m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
     (dec : UInt64 → Carrier t)
-    (htl : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → m < USize.size → z.toList = (Verify.elemsW w D).map dec)
+    (htl : ∀ {m} (z : Arr t m) {D}, Enc.bytesOf t m z.enc = some D → m < USize.size →
+      z.toList = (Verify.elemsW w D).map dec)
     (hnx : nx < 2 ^ 32) (verb : String) (ib : ByteArray) (hN : ib.size / 8 < 2 ^ 32) (rr : Nat)
-    (y : Arr t (ib.size / 8)) (hyA : ∀ M P a, y.c.enc = .alp M P a → Column.alpF32 a = (w == 4))
-    (x a : Arr t nx) (hA : ∀ M P al, a.c.enc = .alp M P al → Column.alpF32 al = (w == 4))
+    (y : Arr t (ib.size / 8)) (hyA : ∀ M P a, y.enc = .alp M P a → Column.alpF32 a = (w == 4))
+    (x a : Arr t nx) (hA : ∀ M P al, a.enc = .alp M P al → Column.alpF32 al = (w == 4))
     (hpos : ∀ j, a.toList[j]? = x.toList[j]?.map fun a0 => ((((List.range (ib.size / 8)).filter fun k =>
       (Column.bitsAt ib (k * 8) 8).toNat = j).filter fun k => Verify.amendRank ib k < rr).map (y.toList[·]!)).foldl f a0)
     (KS : ByteArray)
     (hKS : Verify.elemsW 8 KS = ((List.range (ib.size / 8)).filter fun k => Verify.amendRank ib k = rr).map Nat.toUInt64)
-    {yc cur : Column} {Rd : Arr t ((Kernel.gatherBytes 8 0 ib KS).size / 8)} {out : Column}
-    (hyc : Find.vec verb t (Kernel.gatherColumn t y.c (LeetQ.Rel.Alg.longs KS)) = .ok yc)
-    (hcur : Find.vec verb t (Kernel.gatherColumn t a.c (LeetQ.Rel.Alg.longs (Kernel.gatherBytes 8 0 ib KS))) = .ok cur)
-    (hRd : Ew.dyad v Kernel.Ew.vv t t t cur yc ((Kernel.gatherBytes 8 0 ib KS).size / 8) = .ok Rd)
-    (hsc : Struct.scatter verb t nx a.c Rd.c (Kernel.gatherBytes 8 0 ib KS) = .ok out) :
-    ∃ a' : Arr t nx, a'.c = out ∧ (∃ B, out = ⟨t, nx, .bytes B, none⟩) ∧ ∀ j, a'.toList[j]? =
+    {ky k : Nat} {yc c : Enc} {Rd : Arr t k} {out : Enc}
+    (hyc : LeetQ.Rel.Alg.pick t (ib.size / 8, y.enc) KS = .ok (ky, yc))
+    (hcur : LeetQ.Rel.Alg.pick t (nx, a.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok (k, c))
+    (hRd : Ew.dyad v Kernel.Ew.vv t t t k c ky yc k = .ok Rd)
+    (hsc : Struct.scatter verb t nx a.enc (k, Rd.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok out) :
+    ∃ a' : Arr t nx, a'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, a'.toList[j]? =
       x.toList[j]?.map fun a0 => ((((List.range (ib.size / 8)).filter fun k =>
         (Column.bitsAt ib (k * 8) 8).toNat = j).filter fun k => Verify.amendRank ib k < rr + 1).map
           (y.toList[·]!)).foldl f a0 := by
@@ -353,15 +355,16 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
       (Column.bitsAt ib (P[k]! * 8) 8).toNat := fun k hk => by
     rw [gs.2 k (by rw [hKl]; exact hk), hKw k hk, if_pos (hPlt k hk).1]
   -- `y` at the round's positions
-  obtain ⟨ysrc, hysrc, rfl⟩ := vec_gather hw he verb y hyA KS hyc
+  obtain ⟨ysrc, hysrc, hky, rfl⟩ := pick_gather hw he y hyA KS hyc
+  subst hky
   obtain ⟨yb, hyb, hys, -⟩ := bytesOf_fixed hw he y hUi
   have e : ysrc = yb := Option.some.inj (hysrc.symm.trans hyb); subst e
   have hw' : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have gw := Verify.gatherBytes_spec w.toUSize (by rw [hw']; exact hw8.2) ((Kernel.nullBits t).getD 0) ysrc KS
   rw [hw'] at gw
   let yA : Arr t (KS.size / 8) :=
-    ⟨⟨t, KS.size / 8, .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) ysrc KS), none⟩,
-      rfl, rfl, wf_bytes hw he _ (by rw [gw.1, Nat.mul_comm])⟩
+    Arr.mk (.bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) ysrc KS))
+      (wf_bytes hw he _ (by rw [gw.1, Nat.mul_comm]))
   have hKU : KS.size / 8 < USize.size := by rw [hKl]; omega
   have hyx : ysrc.size / w = ib.size / 8 := by rw [hys, Nat.mul_div_cancel_left _ (by omega)]
   have hyel : ∀ k < P.length, yA.toList[k]! = y.toList[P[k]!]! := fun k hk => by
@@ -418,11 +421,11 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
 theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) {v : Prim.Dyadic}
     {f : Carrier t → Carrier t → Carrier t}
-    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.c.enc = .bytes B) → m < 2 ^ 32 →
-      Ew.dyad v Kernel.Ew.vv t t t cur.c yv.c m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
+    (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.enc = .bytes B) → m < 2 ^ 32 →
+      Ew.dyad v Kernel.Ew.vv t t t m cur.enc m yv.enc m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
     {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny} {R : Arr t nx}
-    (hxA : ∀ M P a, x.c.enc = .alp M P a → Column.alpF32 a = (w == 4))
-    (hyA : ∀ M P a, y.c.enc = .alp M P a → Column.alpF32 a = (w == 4))
+    (hxA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (w == 4))
+    (hyA : ∀ M P a, y.enc = .alp M P a → Column.alpF32 a = (w == 4))
     (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32) (h : Struct.amend x i (some v) y = .ok R) :
     ni = ny ∧ (∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx) ∧
       R.toList = Struct.amendSpec f x.toList i.toList y.toList := by
@@ -430,7 +433,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
   have hUi : ni < USize.size := Nat.lt_of_lt_of_le hni USize.le_size
   let dec : UInt64 → Carrier t := fun u =>
     (Carrier.of? t (.atom (Column.atomOfBits t u (QAtomicType.ne_general_of_width hw)))).getD default
-  have htl : ∀ {m} (z : Arr t m) {D}, Column.bytesOf z.c = some D → m < USize.size →
+  have htl : ∀ {m} (z : Arr t m) {D}, Enc.bytesOf t m z.enc = some D → m < USize.size →
       z.toList = (Verify.elemsW w D).map dec := fun {_} z {_} hD hm => toList_fixed hw he z hD hm
   have hsm : ∀ n : Nat, n < 2 ^ 64 → n.toUInt64.toNat = n := fun n hn => by simp; omega
   obtain ⟨hny, ib, hd, hibn, hil, hmiss, hbit, hix, hin⟩ := amend_indices hnx hni h
@@ -468,13 +471,13 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
     rw [hround] at e2
     have : (~~~0 : UInt64).toNat = 18446744073709551615 := by decide
     omega
-  simp only [Struct.amend, hd, pure_bind, Option.isSome_some, Nat.zero_mul, hne, hround, ne_eq, not_true_eq_false, if_false,
+  simp only [Struct.amend, hd, pure_bind, Option.isSome_some, Nat.zero_mul, hne, hround, ne_eq, not_true_eq_false,
     Bool.false_eq_true, ↓reduceIte] at h
   -- `simp` cannot reach the round count under `Nat.foldM`'s dependent binder; `rw` abstracts every occurrence
   rw [show (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 true ib) (0 * 8) 8).toNat =
     Verify.amendRoundCount true ib by rw [Nat.zero_mul]; exact hround] at h
-  have key : ∃ out, Find.onKey nx t out.answer "@[x;i;f;y]" = .ok R ∧ ∃ acc' : Arr t nx, acc'.c = out ∧
-      (∃ B, out = ⟨t, nx, .bytes B, none⟩) ∧ ∀ j, acc'.toList[j]? =
+  have key : ∃ out, Find.onKey nx t (.vector t nx (Enc.answer t nx out) none) "@[x;i;f;y]" = .ok R ∧
+      ∃ acc' : Arr t nx, acc'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, acc'.toList[j]? =
       x.toList[j]?.map fun a => (((List.range (ib.size / 8)).filter fun k =>
         (Column.bitsAt ib (k * 8) 8).toNat = j).map (y.toList[·]!)).foldl f a := by
     by_cases h1 : Verify.amendRoundCount true ib ≤ 1
@@ -502,12 +505,12 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
         rw [grp.1 r hr, ← List.countP_eq_length_filter, List.countP_map,
           hsm _ (Nat.lt_of_le_of_lt (List.countP_le_length ..) (by simp; omega))]
         exact List.countP_congr fun k _ => by simp [Nat.lt_succ_iff]
-      let P := fun (rr : Nat) (acc : Column) => ∃ a : Arr t nx, a.c = acc ∧
-        ((rr = 0 ∧ acc = x.c) ∨ ∃ B, acc = ⟨t, nx, .bytes B, none⟩) ∧ ∀ j, a.toList[j]? =
+      let P := fun (rr : Nat) (acc : Enc) => ∃ a : Arr t nx, a.enc = acc ∧
+        ((rr = 0 ∧ acc = x.enc) ∨ ∃ B, acc = .bytes B) ∧ ∀ j, a.toList[j]? =
           x.toList[j]?.map fun a0 => ((((List.range (ib.size / 8)).filter fun k =>
             (Column.bitsAt ib (k * 8) 8).toNat = j).filter fun k => Verify.amendRank ib k < rr).map
               (y.toList[·]!)).foldl f a0
-      refine (fun fin : P (Verify.amendRoundCount true ib) out => ?_) (foldM_inv _ _ P x.c ?_ ?_ hout)
+      refine (fun fin : P (Verify.amendRoundCount true ib) out => ?_) (foldM_inv _ _ P x.enc ?_ ?_ hout)
       · obtain ⟨a, hac, hform, hpos⟩ := fin
         refine ⟨a, hac, ?_, fun j => ?_⟩
         · rcases hform with ⟨e, -⟩ | hB
@@ -525,7 +528,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
       · intro rr hrr acc b hPa hb
         obtain ⟨a, hac, hform, hpos⟩ := hPa
         subst hac
-        have hA : ∀ M Q al, a.c.enc = .alp M Q al → Column.alpF32 al = (w == 4) := by
+        have hA : ∀ M Q al, a.enc = .alp M Q al → Column.alpF32 al = (w == 4) := by
           rcases hform with ⟨-, e⟩ | ⟨B, e⟩
           · rw [e]; exact hxA
           · intro M Q al h'; rw [e] at h'; cases h'
@@ -543,7 +546,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
         exact ⟨a', ha', .inr hBo, hp⟩
   -- the answer read back is the last accumulator, and position by position it is `amendSpec`
   obtain ⟨out, hok, a, hac, ⟨B, hBo⟩, hpos⟩ := key
-  have hRc := Find.onKey_c hok
+  have hRc := Find.onKey_enc hok
   obtain ⟨D0, hD0, hD0s, -⟩ := bytesOf_fixed hw he a hU
   rw [hac, hBo] at hD0
   have e : B = D0 := Option.some.inj hD0
@@ -582,7 +585,7 @@ theorem amend_verb_toList_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valO
       -- the generic lemmas state `amendSpec` with `Carrier`'s `Inhabited`; instance search would pick `Int64`'s
       R.toList = @Struct.amendSpec (El .long) instInhabitedCarrier (Kernel.Ew.intStep op Int64.minValue)
         x.toList i.toList y.toList := by
-  have noAlp : ∀ {m} (z : Arr .long m) (M P a : ByteArray), z.c.enc = .alp M P a → Column.alpF32 a = (8 == 4) :=
+  have noAlp : ∀ {m} (z : Arr .long m) (M P a : ByteArray), z.enc = .alp M P a → Column.alpF32 a = (8 == 4) :=
     fun z M P a e => by rcases fixed_parts (w := 8) rfl rfl z with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩ <;> rw [hb] at e <;> cases e
   refine amend_verb_toList (f := Kernel.Ew.intStep op Int64.minValue) rfl (.inl rfl) ?_ (noAlp x) (noAlp y) hnx hni h
   intro m cur yv R ⟨B, hB⟩ hm hR
