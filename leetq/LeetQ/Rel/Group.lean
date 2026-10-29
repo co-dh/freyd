@@ -186,7 +186,29 @@ theorem code_runs {α : Type} (c : Code) (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32
   rw [hn] at G
   simp only [R]; rw [hrs]; exact G
 
+/-- **`codes` of one part that is not a bitmap answers `rangeOffsets`' codes, where those exist.** -/
+theorem codes_range {n : Nat} {e : Enc} {os : Array Code} (hb : ∀ b, e ≠ .bits b)
+    (hr : rangeOffsets .long #[(n, e)] n = .ok (some os)) : codes .long #[(n, e)] = .ok os := by
+  cases e <;> simp_all [codes, Array.mapM_eq_mapM_toList] <;> rfl
+
+/-- **A dense long column's `codes`, on `rangeOffsets`' branch, are one faithful code**: one code of its
+    `m` rows at a lane of one, two or four bytes, equal exactly where the column's elements are. -/
+theorem codes_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b)
+    (hU : 2 ^ 32 < USize.size) (hm : m ≤ 2 ^ 32) {os : Array Code}
+    (hr : rangeOffsets .long #[x.part] m = .ok (some os)) :
+    ∃ c : Code, os = #[c] ∧ codes .long #[x.part] = .ok #[c] ∧ c.n = m ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧
+      c.b.size = c.w / 8 * c.n ∧
+      ∀ i j : Fin m, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ x.get i = x.get j) := by
+  have hs := Arr.n_long_bytes x hc
+  have hp : x.part = (m, .bytes b) := by simp only [Arr.part, hc]
+  rw [hp] at hr ⊢
+  obtain ⟨c, rfl, hn, hw, hsz, hf⟩ := rangeOffsets_bytes hU hm (by omega) hr
+  refine ⟨c, rfl, codes_range (fun _ e => by cases e) hr, by omega, hw, hsz, fun i j => ?_⟩
+  rw [Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
+  exact hf i j (by omega) (by omega)
+
 #print axioms rangeOffsets_bytes
 #print axioms code_runs
+#print axioms codes_long_bytes
 
 end LeetQ.Rel.Alg
