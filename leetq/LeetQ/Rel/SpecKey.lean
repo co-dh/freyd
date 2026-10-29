@@ -1081,22 +1081,19 @@ theorem firsts_of_buckets (bs : List (List Nat)) (h63 : ∀ r ∈ bs.flatten, r 
 open QLean.Kernel in
 /-- **`groupColumn` at a long column is `Order.group` over its words**, laid out in bytes `B` — the column's
     own, or its frame-of-reference decode. -/
-theorem groupColumn_long {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hw : longWords c = some ws)
-    (hn : ws.length = c.n) (hU : c.n < USize.size) :
-    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = c.n ∧ groupColumn .long c =
-      some (.dict (.vector ⟨.long, (Order.group .i64 c.n.toUSize B).1.size / 8,
-          .bytes (Order.group .i64 c.n.toUSize B).1, none⟩)
-        (.slices ⟨.long, (Order.group .i64 c.n.toUSize B).2.1.size / 8,
-          .bytes (Order.group .i64 c.n.toUSize B).2.1, none⟩ (Order.group .i64 c.n.toUSize B).2.2) false) := by
-  obtain ⟨t, n, e, a⟩ := c
-  simp only at ht hn hU ⊢
-  subst ht
+theorem groupColumn_long {n : Nat} {e : Enc} {ws : List UInt64} (hw : longWords n e = some ws)
+    (hn : ws.length = n) (hU : n < USize.size) :
+    ∃ B, Verify.elemsW 8 B = ws ∧ B.size / 8 = n ∧ groupColumn .long n e =
+      some (.dict (.vector .long ((Order.group .i64 n.toUSize B).1.size / 8)
+          (.bytes (Order.group .i64 n.toUSize B).1) none)
+        (.slices .long ((Order.group .i64 n.toUSize B).2.1.size / 8)
+          (.bytes (Order.group .i64 n.toUSize B).2.1) none (Order.group .i64 n.toUSize B).2.2) false) := by
   cases e with
   | bytes b =>
     simp only [longWords, Option.some.injEq] at hw
     have hs : b.size / 8 = n := by rw [← hn, ← hw]; simp [Verify.elemsW]
     refine ⟨b, hw, hs, ?_⟩
-    simp [groupColumn, orderKind, Column.bytesOf, hs, Scan.Kind.width]
+    simp [groupColumn, orderKind, Enc.bytesOf, hs, Scan.Kind.width]
   | foR md pk =>
     simp only [longWords, Option.some.injEq] at hw
     have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
@@ -1145,13 +1142,11 @@ theorem buckets_length {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) :
   exact decide_eq_true (Verify.groupOf_lt (List.mem_range.1 hi))
 
 /-- One long key column per side meets `keyMatch`'s kernels as itself, bare. -/
-theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .long) :
-    Eval.keyColumns #[.vector cr] #[.vector cl] =
-      some (.long, { cr with attr := none }, .vector { cl with attr := none }) := by
-  obtain ⟨t, n, e, a⟩ := cr
-  obtain ⟨u, n', e', a'⟩ := cl
-  simp only at hrt hlt
-  subst hrt hlt
+theorem keyColumns_long (cr cl : Nat × Enc) (a a' : Option (UInt8 × IndexCell)) :
+    Eval.keyColumns #[.vector .long cr.1 cr.2 a] #[.vector .long cl.1 cl.2 a'] =
+      some (.long, cr, .vector .long cl.1 cl.2 none) := by
+  obtain ⟨n, e⟩ := cr
+  obtain ⟨n', e'⟩ := cl
   -- `Array.mapM` and `Array.zip` recurse well-founded, so the literals are read through their lists
   rcases a with _ | ⟨_, _⟩ <;> rcases a' with _ | ⟨_, _⟩ <;>
     (unfold Eval.keyColumns; rw [Array.mapM_eq_mapM_toList, Array.toList_zip]; rfl)
@@ -1159,14 +1154,12 @@ theorem keyColumns_long (cr cl : Column) (hrt : cr.ty = .long) (hlt : cl.ty = .l
 
 open QLean.Kernel in
 /-- `runsColumn` at a long column is `runStarts` over its bytes: the column's own, or its decode. -/
-theorem runsColumn_long (c : Column) (ht : c.ty = .long) :
-    runsColumn .long c = (Column.bytesOf c).map (runStarts 8 false) := by
-  obtain ⟨t, n, e, a⟩ := c
-  simp only at ht; subst ht
+theorem runsColumn_long (n : Nat) (e : Enc) :
+    runsColumn .long n e = (Enc.bytesOf .long n e).map (runStarts 8 false) := by
   cases e with
   | foR md pk =>
     simp only [runsColumn, denseWidth, foRColumn, QAtomicType.width]
-    split <;> simp_all [Column.bytesOf, foRRunStarts, QAtomicType.width, foldsZero] <;> (subst_vars; rfl)
+    split <;> simp_all [Enc.bytesOf, foRRunStarts, QAtomicType.width, foldsZero] <;> (subst_vars; rfl)
   | _ => simp [runsColumn, denseWidth, foRColumn, QAtomicType.width, foldsZero] <;> rfl
 
 open QLean.Kernel in
@@ -1507,20 +1500,20 @@ theorem keyMatch_grouped {cr cl : Column} {wr wl : List UInt64} (nr nl : Nat) (h
 
 /-- A long column listing `ws` (`longWords`) hands a kernel a dense payload of those words: itself, or its `foR`
     decoded (`decodeW`). -/
-theorem bytesOf_longWords {c : Column} {ws : List UInt64} (ht : c.ty = .long) (hn : c.n < USize.size)
-    (h : longWords c = some ws) (hl : ws.length = c.n) :
-    ∃ B, Column.bytesOf c = some B ∧ Verify.elemsW 8 B = ws ∧ B.size / 8 = c.n := by
+theorem bytesOf_longWords {n : Nat} {e : Enc} {ws : List UInt64} (hn : n < USize.size)
+    (h : longWords n e = some ws) (hl : ws.length = n) :
+    ∃ B, Enc.bytesOf .long n e = some B ∧ Verify.elemsW 8 B = ws ∧ B.size / 8 = n := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   unfold longWords at h
-  cases hc : c.enc with
+  cases hc : e with
   | bytes b =>
     rw [hc] at h; cases h
-    exact ⟨b, by simp only [Column.bytesOf, hc], rfl, by simpa [Verify.elemsW] using hl⟩
+    exact ⟨b, rfl, rfl, by simpa [Verify.elemsW] using hl⟩
   | foR md pk =>
     rw [hc] at h; cases h
-    obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk c.n.toUSize
+    obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk n.toUSize
     rw [h8, USize.toNat_ofNat_of_lt' hn] at hsz hg
-    refine ⟨_, by simp only [Column.bytesOf, hc, ht, QAtomicType.width]; rfl,
+    refine ⟨_, by simp only [Enc.bytesOf, QAtomicType.width]; rfl,
       List.ext_getElem (by simp [Verify.elemsW, hsz]) fun i h1 _ => ?_, by rw [hsz]; omega⟩
     simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
     rw [hg i (by simpa [Verify.elemsW, hsz] using h1), Verify.ofNat_toNat_mod64]
@@ -1528,19 +1521,19 @@ theorem bytesOf_longWords {c : Column} {ws : List UInt64} (ht : c.ty = .long) (h
 
 open QLean.Kernel in
 /-- `gatherColumn` at a long source in bytes or frame of reference answers a vector, at any index it can read. -/
-theorem gatherColumn_long_some {x i : Column} {ws : List UInt64} {ix : ByteArray} (hx : x.ty = .long)
-    (hw : longWords x = some ws) (hi : Column.bytesOf i = some ix) :
-    ∃ c, gatherColumn .long x i = some (.vector c) := by
-  obtain ⟨t, n, e, a⟩ := x
-  simp only at hx; subst hx
+theorem gatherColumn_long_some {n m : Nat} {e ie : Enc} {ws : List UInt64} {ix : ByteArray}
+    (hw : longWords n e = some ws) (hi : Enc.bytesOf .long m ie = some ix) (hm : m * 8 ≤ ix.size) :
+    ∃ c, gatherColumn .long n e m ie = some c := by
+  -- the index first: `gatherColumn` reads it at its own encoding, which `hi` names
+  cases ie <;> simp only [Enc.bytesOf, QAtomicType.width, Option.map_some] at hi <;> (try cases hi) <;>
   cases e with
   | bytes b =>
     unfold gatherColumn
-    split <;> simp_all [rowWidth, denseWidth, QAtomicType.width, foRColumn, Column.bytesOf]
+    split <;> simp_all [rowWidth, denseWidth, QAtomicType.width, foRColumn, Enc.bytesOf, hm]
   | foR md pk =>
     unfold gatherColumn
-    split <;> simp_all [rowWidth, denseWidth, QAtomicType.width, foRColumn, Column.bytesOf] <;>
-      (cases hmd : md.isEmpty <;> simp_all [Column.encodes])
+    split <;> simp_all [rowWidth, denseWidth, QAtomicType.width, foRColumn, Enc.bytesOf, hm] <;>
+      (cases hmd : md.isEmpty <;> simp_all [Column.encodes, hm])
   | _ => simp [longWords] at hw
 
 open QLean.Kernel in
