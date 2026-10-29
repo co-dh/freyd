@@ -644,7 +644,7 @@ theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs :
   cases hp
   have hsW : Enc.WF .long (Alg.len idx) (.bytes idx) := by show idx.size = idx.size / 8 * 8; omega
   obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU (Arr.mk (.bytes idx) hsW) (is := Verify.elemsW 8 idx)
-    rfl (by simp [Verify.countFits]) hg
+    rfl trivial hg
   have hBs' : B.size = N * 8 := by rw [hBs]; exact congrArg (· * 8) hn
   have hvs : vs.length = nx := by have := Arr.length_toList x; rw [Arr.toList_long x hv, List.length_map] at this; omega
   refine ⟨hn, ⟨B, rfl⟩, hBs', fun X hX p hp => ?_⟩
@@ -2613,7 +2613,7 @@ theorem packed_fixed {t : QAtomicType} {w : Nat} (hw : t.width = some w) (verb :
     {D : ByteArray} (hD : Enc.bytesOf t n e = some D) (hb : ∀ b, e ≠ .bits b) :
     Struct.packed verb t n e = pure (D, 8 * w) := by
   unfold Struct.packed; split
-  · next b e => exact absurd e (hb b)
+  · first | exact absurd rfl (hb _) | exact absurd ‹_ = Enc.bits _› (hb _)
   · simp [hw, Find.dense, hD] <;> rfl
 
 /-- **The indices of `@[x;i;o;y]`, whatever `o`**: when the kernel answers, `i` is as long as `y`, its payload
@@ -2840,11 +2840,10 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
     r.toList = x.toList.map fun s => Struct.likeP p s.toUTF8 := by
   have hX := Arr.toList_sym x hx.2
   have hk : ∀ i (hi : i < x.toList.length), x.toList[i].toUTF8.data.toList =
-      (Verify.symsOf x.c)[i]'(by rw [← hX, List.length_map]; exact hi) := fun i hi => by
+      (Verify.symsOf nx x.enc)[i]'(by rw [← hX, List.length_map]; exact hi) := fun i hi => by
     have e := List.getElem_of_eq hX (by rw [List.length_map]; exact hi)
     rw [List.getElem_map] at e; exact e
-  have hn : x.c.n = nx := x.wf.2.1
-  have hw := x.wf.2.2
+  have hw := x.wf
   cases hp : parsePat p.toByteArray with
   | error e =>
     cases he : x.enc <;> simp [Struct.like, he, likeSyms, hp, bind, Except.bind, pure, Except.pure] at h
@@ -2854,35 +2853,33 @@ theorem like_toList {nx : Nat} {x : Arr .symbol nx} {p : String} {r : Arr .boole
     have hp' : parsePat p.toUTF8 = .ok its := hp
     cases he : x.enc with
     | syms b o =>
-      have hc := x.c_eq he
       simp only [Struct.like, he, likeSyms, hp', bind, Except.bind, pure, Except.pure] at h
-      rw [hc] at hw; simp only [Column.WF] at hw
-      rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
+      rw [he] at hw; simp only [Enc.WF] at hw
+      rw [Find.Arr.toList_bits r (by rw [Find.onKey_enc h])]
       refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
         fun i h1 h2 => ?_
       have hi : i < nx := by simpa using h1
       have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
       have e := hk i hi'
-      simp only [hc, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
+      simp only [he, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
       have hb : x.toList[i].toUTF8 = Column.symKey b o i := ByteArray.ext (Array.ext' e)
       simp only [List.getElem_map, List.getElem_range, hL, hb]
       exact Verify.bitAt_packBits_range _ _ (by omega)
     | enum d dof ids =>
-      have hc := x.c_eq he
-      have hs := hx.1; rw [hc] at hs
+      have hs := hx.1; rw [he] at hs
       obtain ⟨hn', hd, -, hid, -⟩ := hs
       simp only [Struct.like, he, likeSyms, hp', Option.map_some, bind, Except.bind, pure, Except.pure] at h
-      rw [Find.Arr.toList_bits r (by rw [Find.onKey_c h])]
+      rw [Find.Arr.toList_bits r (by rw [Find.onKey_enc h])]
       refine List.ext_getElem (by rw [List.length_map, List.length_range, List.length_map, Arr.length_toList])
         fun i h1 h2 => ?_
       have hi : i < nx := by simpa using h1
       have hi' : i < x.toList.length := by rw [Arr.length_toList]; exact hi
       have e := hk i hi'
-      simp only [hc, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
+      simp only [he, Verify.symsOf, List.getElem_map, List.getElem_range, Verify.symAt] at e
       have hb : x.toList[i].toUTF8 = Column.symKey d dof (Column.idAt ids (Column.idWidth dof) i) :=
         ByteArray.ext (Array.ext' e)
       simp only [List.getElem_map, List.getElem_range, hL, hb]
-      rw [maskByIds, hn, Verify.toUSize_toNat hn', Verify.toUSize_toNat hd, Verify.idWidth_toNat,
+      rw [maskByIds, Verify.toUSize_toNat hn', Verify.toUSize_toNat hd, Verify.idWidth_toNat,
         Verify.bitAt_packBits_range _ _ hi, decide_eq_true (hid i hi), Bool.true_and,
         Verify.bitAt_packBits_range _ _ (hid i hi)]
     | _ => all_goals simp [Struct.like, he, bind, Except.bind] at h
@@ -2966,12 +2963,12 @@ theorem greedy_fold (P : Nat → Bool) (w : Nat) (f : List Nat × Nat → Nat �
 /-- A `.bytes` char column lists its bytes. -/
 theorem Arr.toList_char_bytes {m : Nat} (x : Arr .char m) {b : ByteArray} (hc : x.enc = .bytes b) :
     x.toList = b.data.toList := by
-  have hw := x.wf.2.2; have hn : x.c.n = m := x.wf.2.1
-  rw [x.c_eq hc] at hw; simp only [Column.WF, QAtomicType.width] at hw
+  have hw := x.wf
+  rw [hc] at hw; simp only [Enc.WF, QAtomicType.width] at hw
   refine List.ext_getElem (by rw [Arr.length_toList]; simp; omega) fun i h1 h2 => ?_
-  have hi : i < x.c.n := by rw [Arr.length_toList] at h1; omega
+  have hi : i < m := by rw [Arr.length_toList] at h1; omega
   rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
-  simp only [Column.get, if_pos hi, x.wf.1, hc, QAtomicType.width]
+  simp only [Enc.get, if_pos hi, hc, QAtomicType.width]
   simp [Carrier.of?, Column.atomOfBits, Verify.bitsAt_one, Array.getElem_toList]
   rw [getElem?_pos b i (show i < b.data.size by simpa using h2)]; rfl
 
@@ -2985,7 +2982,7 @@ theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : 
       ∀ S, Struct.Starts its x.toList S → (∃ ys, enum S ys) ∧
         ∀ ys, enum S ys → r.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
   have hX := Arr.toList_char_bytes x he
-  have hd : Find.dense "x ss p" .char x.c = .ok b := by simp only [Find.dense, Column.bytesOf, x.c_eq he]
+  have hd : Find.dense "x ss p" .char nx x.enc = .ok b := by rw [he]; rfl
   unfold Struct.ss at h; rw [hd] at h; simp only [bind, Except.bind] at h
   cases hp : parsePat p.toByteArray with
   | error e =>
@@ -3028,14 +3025,14 @@ theorem ss_rel {nx : Nat} {x : Arr .char nx} {p : String} {b : ByteArray} {nr : 
       have hB : B = A.reverse.foldl (init := ByteArray.empty) fun acc i => Column.pushBits acc (Int64.ofNat i).toUInt64 8 := by
         simp only [B, hA]
       -- the answer lists `A.reverse` as longs
-      have hrc := Find.list_c h
+      obtain ⟨hnr0, hrc⟩ := Find.list_enc h
       obtain ⟨hsz, -, hbits⟩ := Verify.foldl_pushBits (fun i : Nat => (Int64.ofNat i).toUInt64) 8 (by decide)
         A.reverse ByteArray.empty
       have hnr : nr = A.reverse.length := by
-        have := r.wf.2.1; rw [hrc] at this; simp only [Alg.longs, Alg.len] at this
-        rw [← this, hB, hsz]; simp
+        rw [hnr0, Alg.len]
+        rw [hB, hsz]; simp
       have hL : r.toList = A.reverse.map Int64.ofNat := by
-        rw [Arr.toList_long_bytes r (by rw [hrc]; rfl)]
+        rw [Arr.toList_long_bytes r (by rw [hrc])]
         refine List.ext_getElem (by simp [hnr]) fun j h1 h2 => ?_
         simp only [List.getElem_map, List.getElem_range]
         have := hbits j (by rw [← hnr]; simpa using h1)
@@ -3079,11 +3076,8 @@ end LikeSs
 /-- **`!n = 𝟙(til n)`**, the positions read as longs: `til n ≫ ofNat`, i.e. `corefl(< n) ≫ graph ofNat`. -/
 theorem til_rel {n : Nat} {r : Arr .long n} (hU : n < USize.size) (h : Struct.til n = .ok r) :
     r.rel = corefl (· < n) ≫ graph Int64.ofNat := by
-  have hc : r.c = ⟨.long, n, .bytes (Kernel.tilLongs n.toUSize), none⟩ := by
-    unfold Struct.til Arr.of at h
-    split at h
-    · cases h; rfl
-    · cases h
+  have hc : r.enc = .bytes (Kernel.tilLongs n.toUSize) := by
+    have h1 := Struct.of_val h; rw [r.val_eq] at h1; injection h1
   have ht := nats_til n hU
   unfold nats at ht
   have hl : r.toList = (List.range n).map Int64.ofNat := by
@@ -3111,18 +3105,14 @@ theorem til_rel {n : Nat} {r : Arr .long n} (hU : n < USize.size) (h : Struct.ti
     is one `pushBits` word (`bitsAt_pushBits8`); the other types need qlean's `get` of `ofAtoms`, not stated yet. -/
 theorem enlist_rel {a : El .long} {r : Arr .long 1} (h : Struct.enlist .long a = .ok r) :
     r.rel = corefl (· < (1 : Nat)) ≫ cst a := by
-  have hof : Column.ofAtoms .long #[Carrier.atom a] = some ⟨.long, 1,
-      .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a)) 8), none⟩ := by
-    simp [Column.ofAtoms, Carrier.atom, QAtom.type, QAtomicType.width]
-  have hc : r.c = ⟨.long, 1, .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8))
-      (Column.bitsOf (.long a)) 8), none⟩ := by
+  have hof : Enc.ofAtoms .long #[Carrier.atom a] =
+      some (.bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a)) 8)) := by
+    simp [Enc.ofAtoms, Carrier.atom, QAtom.type, QAtomicType.width]
+  have hc : r.enc = .bytes (Column.pushBits (ByteArray.emptyWithCapacity (1 * 8)) (Column.bitsOf (.long a)) 8) := by
     unfold Struct.enlist Ew.atomCol at h
     rw [hof] at h
     simp only [bind, Except.bind] at h
-    unfold Arr.of at h
-    split at h
-    · cases h; rfl
-    · cases h
+    have h1 := Struct.of_val h; rw [r.val_eq] at h1; injection h1
   have e := Verify.bitsAt_pushBits8 (ByteArray.emptyWithCapacity 8) a.toUInt64
   rw [show (ByteArray.emptyWithCapacity 8).size = 0 from rfl] at e
   have hl : r.toList = [a] := by
@@ -3196,7 +3186,7 @@ theorem ix_inj {α : Type} {xs ys : List α} : ix xs = ix ys ↔ xs = ys := by
     state yet — `matchColumn` answers `true` exactly on equal element lists (`Verify.Identical` proves only its
     hash side) — taken as the hypothesis, as `mon_rel` takes `MapSpec`. -/
 theorem same_rel {t : QAtomicType} {nx ny : Nat} {x : Arr t nx} {y : Arr t ny} {b : Bool}
-    (hk : ∀ b', Kernel.matchColumn t x.c y.c = some b' → (b' = true ↔ x.toList = y.toList))
+    (hk : ∀ b', Kernel.matchColumn t nx x.enc ny y.enc = some b' → (b' = true ↔ x.toList = y.toList))
     (h : Struct.same x y = .ok b) : b = true ↔ x.rel = y.rel := by
   have hr : x.rel = y.rel ↔ x.toList = y.toList := ix_inj
   rw [hr]
@@ -3219,7 +3209,7 @@ theorem dotP_rel [Inhabited (El .long)] {P R : Parted .long} {i : Arr .long 1} {
     {vs ws js : List UInt64} {ob ib : ByteArray} (hv : longWords P.n P.val.enc = some vs) (hoB : P.o.enc = .bytes ob)
     (hi : i.enc = .bytes ib) (hU : 1 * P.n + P.n + P.g + 1 + 1 < USize.size)
     (hB : 1 * P.n + P.n + P.g + 1 < 2 ^ 63) (hR : Struct.indexPartedP P i = .ok R)
-    (hw : longWords R.val.c = some ws) (hj : longWords j.c = some js) (hnU : R.n < USize.size)
+    (hw : longWords R.n R.val.enc = some ws) (hj : longWords nj j.enc = some js) (hnU : R.n < USize.size)
     (hjU : nj < USize.size) (hn63 : R.n < 2 ^ 63) (h : Struct.dotP P i j = .ok r) :
     R.rel = i.rel ≫ miss (pos ≫ P.rel) (CL.ofList []) ∧ R.rel 0 (CL.ofList R.val.toList) ∧
       r.rel = j.rel ≫ miss (pos ≫ R.val.rel) Int64.minValue := by
