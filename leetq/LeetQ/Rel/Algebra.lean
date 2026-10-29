@@ -547,6 +547,13 @@ def dom (R : Rel A B) : Except String (Rel A A) := do let r ← cols R; distinct
 /-- `ran R`: the coreflexive on the distinct vals. -/
 def ran (R : Rel A B) : Except String (Rel B B) := do let r ← cols R; distinctCorefl B r.val
 
+/-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no key of `C` (`anti` on one joint coding). -/
+def antiJoin (R : Rel A B) (C : Rel B B) : Except String (Rel A B) := do
+  let r ← cols R; let c ← cols C
+  let (rv, ck) ← two (← codes B #[r.val, c.key])
+  let i := anti rv ck
+  ofCols A B (← pick A r.key i) (← pick B r.val i)
+
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
     The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do
@@ -601,28 +608,47 @@ def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Arr A ma) (Ub : Arr B
   ofCols A B (← raze A #[← pick A r.key (gather 8 fr i), ← pick A Ua.part (gather 8 ex p)])
     (← raze B #[← pick B s.key (gather 8 fs j), ← pick B Ub.part (gather 8 ey q)])
 
-/-- The groups `ds` against their boxed slices of `val`: the offsets `o` a kernel wrote (`runStarts`,
-    which ends with the count) decided as cuts by `Parted.of?`, then `box`. -/
-def grouped {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : Nat × Enc) (o : ByteArray) (val : Arr v n) : Except String (Rel t .general) := do
+/-- The groups `ds` beside their slices of `val` (Proposal A, `Λ`'s carrier): the offsets `o` a kernel
+    wrote (`runStarts`, which ends with the count) decided as cuts by `Parted.of?`. -/
+def groupedP {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : Nat × Enc) (o : ByteArray) (val : Arr v n) :
+    Except String ((g : Nat) × Arr t g × Parted v) := do
   let g := ds.1
   let some P := Parted.of? (← Arr.ofPart .long (g + 1) (longs o) "grouped") val
     | throw s!"grouped: the offsets are not ascending cuts of {n} rows"
-  pure ⟨g, ← Arr.ofPart t g ds "grouped", ← Arr.ofPart .general g (← P.box).part "grouped"⟩
+  pure ⟨g, ← Arr.ofPart t g ds "grouped", P⟩
 
-/-- The groups of a column whose equal elements are contiguous: `grouped` with `o` the run starts
+/-- The output boundary: the carrier as q's nested list, one boxed vector per key (`Parted.box`). -/
+def boxP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t .general) := do
+  pure ⟨F.1, F.2.1, ← Arr.ofPart .general F.1 (← F.2.2.box).part "box"⟩
+
+/-- `∋` of the carrier: each value against its key, the key gathered at each row's group (`groupOf`). -/
+def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t v) := do
+  let P := F.2.2
+  let some ob := longBytes (P.g + 1) P.o.enc | throw "∋: the offsets have no dense payload"
+  pure ⟨P.n, ← Arr.ofPart t P.n (← pick t F.2.1.part (groupOf ob P.n)) "∋", P.val⟩
+
+/-- The groups of a column whose equal elements are contiguous: `groupedP` with `o` the run starts
     of its codes and the count (`runStarts`) and `ds` the element at each start. -/
-def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) : Except String (Rel t .general) := do
+def runsP {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) :
+    Except String ((g : Nat) × Arr t g × Parted v) := do
   let st := (← single (← codes t #[key])).runStarts
-  grouped t (← pick t key (st.extract 0 (st.size - 8))) st val
+  groupedP t (← pick t key (st.extract 0 (st.size - 8))) st val
+
+def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) : Except String (Rel t .general) := do
+  boxP (← runsP t key val)
 
 /-- A family stored as its pairs `(X, x)` sorted key-major, each pair once: the set `X` IS the
-    contiguous run of its key, boxed (`runs`). `gradeBy` on (key code, value code), `gatherColumn`. -/
-def family (d : Cols A B) : Except String (Rel A .general) := do
+    contiguous run of its key (`runsP`). `gradeBy` on (key code, value code), `gatherColumn`. -/
+def familyP (d : Cols A B) : Except String ((g : Nat) × Arr A g × Parted B) := do
   let d ← d.nub
   let s ← d.rows (gradeBy d.n #[← single (← codes A #[d.key]), ← single (← codes B #[d.val])])
-  runs A s.key (← Arr.ofPart B s.n s.val "family")
+  runsP A s.key (← Arr.ofPart B s.n s.val "family")
 
-/-- `Λ(R)`: `x Λ(R) X ↔ X = {z | x R z}` — the family of `R`'s fibres, one segment per `x ∈ dom R`. -/
+def family (d : Cols A B) : Except String (Rel A .general) := do boxP (← familyP d)
+
+/-- `Λ(R)` as its carrier: `x Λ(R) X ↔ X = {z | x R z}`, one segment per `x ∈ dom R`. -/
+def transposeP (R : Rel A B) : Except String ((g : Nat) × Arr A g × Parted B) := do familyP (← cols R)
+
 def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← cols R)
 
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
