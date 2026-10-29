@@ -1433,6 +1433,58 @@ theorem shift_elem (b : ByteArray) (c : Int64) {n : Nat} (hn : n < USize.size) {
     Bool.false_eq_true, if_false, if_true]
   by_cases hx : (Column.bitsAt b (i * 8) 8).toInt64 = nul <;> by_cases hc : c = nul <;> simp [hx, hc]
 
+
+/-- **`rangeOffsets`' codes are faithful**: offsets `x − base` packed by `enumIds` at a byte lane, the null
+    at `card − 1`, agree exactly where the elements do, when every element that is not the null lies in
+    `[base, base + card − 2]` (`overBytes_bounds`) and the kernel reported every row in range. -/
+theorem offsets_faithful {n card w : Nat} {b' : ByteArray} (x : Nat → Int64) (base : Int64)
+    (hn : n < USize.size) (hcard : card < USize.size) (hc0 : 1 ≤ card) (h63 : card ≤ 2 ^ 63)
+    (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w) (hb : base ≠ nul)
+    (hok : (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').2 = n.toUSize)
+    (hv : ∀ i, i < n → (Column.bitsAt b' (i * 8) 8).toInt64 = if x i = nul then nul else x i + -base)
+    (hr : ∀ i, i < n → x i ≠ nul → base.toInt ≤ (x i).toInt ∧ (x i).toInt - base.toInt + 2 ≤ card)
+    {i j : Nat} (hi : i < n) (hj : j < n) :
+    Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w i =
+      Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w j ↔ x i = x j := by
+  have hwu : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt'
+    (Nat.lt_of_lt_of_le (by rcases hw with rfl | rfl | rfl | rfl <;> decide : w < 2 ^ 32) USize.le_size)
+  have hnu : n.toUSize.toNat = n := USize.toNat_ofNat_of_lt' hn
+  have hcu : card.toUSize.toNat = card := USize.toNat_ofNat_of_lt' hcard
+  have hc1 : (card - 1).toUSize.toNat = card - 1 := USize.toNat_ofNat_of_lt' (by omega)
+  have code : ∀ i, i < n → Column.idAt (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b').1 w i =
+      if x i = nul then card - 1 else ((x i).toInt - base.toInt).toNat := fun i hi => by
+    have e := Verify.enumIds_idAt n.toUSize card.toUSize (card - 1).toUSize w.toUSize b'
+      (by rw [hwu]; rcases hw with rfl | rfl | rfl | rfl <;> simp) (by rw [hcu, hwu]; exact hd)
+      (by rw [hc1, hwu]; omega) hok (i := i) (by rw [hnu]; exact hi)
+    rw [hwu] at e; rw [e, hv i hi, hc1]
+    by_cases hx : x i = nul
+    · simp only [hx, if_true, nul]
+    · obtain ⟨r1, r2⟩ := hr i hi hx
+      have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
+      have hxl := Int64.le_toInt (x i); have hxu := Int64.toInt_lt (x i)
+      have hbn : base.toInt ≠ -2 ^ 63 := fun h => hb (Int64.toInt_inj.1 (by rw [h]; decide))
+      have hs : (x i + -base).toInt = (x i).toInt - base.toInt := by
+        rw [Int64.toInt_add, Int64.toInt_neg]
+        simp only [Int.bmod]; split <;> split <;> omega
+      have hne : x i + -base ≠ nul := fun h => by
+        have := congrArg Int64.toInt h; rw [hs] at this
+        have : nul.toInt = -2 ^ 63 := by decide
+        omega
+      simp only [hx, if_false]
+      rw [if_neg (by simpa [nul] using hne), hs]
+  rw [code i hi, code j hj]
+  by_cases hx : x i = nul <;> by_cases hy : x j = nul
+  · simp only [hx, hy, if_true]
+  · simp only [hx, hy, if_true, if_false]
+    have := hr j hj hy
+    exact ⟨fun h => by omega, fun h => absurd h.symm hy⟩
+  · simp only [hx, hy, if_true, if_false]
+    have := hr i hi hx
+    exact ⟨fun h => by omega, fun h => h.elim⟩
+  · simp only [hx, hy, if_false]
+    have := hr i hi hx; have := hr j hj hy
+    exact ⟨fun h => Int64.toInt_inj.1 (by omega), fun h => by rw [h]⟩
+
 end Laws
 
 #print axioms conv_holds
@@ -1445,5 +1497,6 @@ end Laws
 #print axioms key_eq_iff_keyAt
 #print axioms overBytes_bounds
 #print axioms shift_elem
+#print axioms offsets_faithful
 
 end LeetQ.Rel.Alg
