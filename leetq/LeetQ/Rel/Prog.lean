@@ -2091,13 +2091,24 @@ theorem cutFlat_den {t : QAtomicType} {g n : Nat} (o : Arr .long g) (x : Arr t n
     (cutFlat o x).den = (Λ ((til n).den ≫ ord .ge ≫ (posL° ≫ o.rel)°) ≫ est (fun a b : Int64 => a ≥ b))° ≫
       posL° ≫ x.rel := rfl
 
-/-- `a v R`: the coreflexive `{x | a v x}` composed with `R`, the key kept. -/
-def keyCmp {t : QAtomicType} {B : Obj} (v : Prim.Dyadic) (a : El t) (R : Prog (.atom t) B)
-    (h : Eval.ewType v t t = some .boolean := by rfl) : Prog (.atom t) B := comp (fn (.test (.sect true v h a))) R
+/-- The comparison `v` is the converse of: `<`↔`>`, `≤`↔`≥`; `=` and `≠` are their own. -/
+def mirror : Prim.Dyadic → Prim.Dyadic
+  | .lt => .gt
+  | .le => .ge
+  | .gt => .lt
+  | .ge => .le
+  | v => v
 
-/-- `R v a`: `R` composed with the coreflexive `{x | x v a}`. -/
+/-- `R v a = R ≫ (v) ≫ â`, `â = {(a,a)}`: the value becomes `a`. `(v)` is infinite, so it runs as its section's test
+    on `R`'s value followed by the constant `a`. -/
 def valCmp {A : Obj} {t : QAtomicType} (v : Prim.Dyadic) (R : Prog A (.atom t)) (a : El t)
-    (h : Eval.ewType v t t = some .boolean := by rfl) : Prog A (.atom t) := comp R (fn (.test (.sect false v h a)))
+    (h : Eval.ewType v t t = some .boolean := by rfl) : Prog A (.atom t) :=
+  comp (comp R (fn (.test (.sect false v h a)))) (fn (.cst a))
+
+/-- `a v R = â ≫ (v) ≫ R`: the key becomes `a`. It runs as `(R° (mirror v) a)°`, since `(â (v) R)° = R° (mirror v) â`. -/
+def keyCmp {t B : QAtomicType} (v : Prim.Dyadic) (a : El t) (R : Prog (.atom t) (.atom B))
+    (h : Eval.ewType (mirror v) t t = some .boolean := by rfl) : Prog (.atom t) (.atom B) :=
+  conv (valCmp (mirror v) (conv R) a h)
 
 /-! `a v R` and `R v a`, overloading the comparisons: Lean's own reading fails on a `Prog`, these on anything else. -/
 namespace Cmp
@@ -2115,13 +2126,11 @@ cmp_notation " ≠ " Prim.Dyadic.ne
 
 end Cmp
 
-open Cmp in
-/-- `a < R`, q's `(where k>a)` over the key. -/
-def selKey {B : Obj} (a : Int64) (R : Prog .long B) : Prog .long B := a < R
+/-- `(a <)? ≫ R`, q's `(where k>a)` over the key: the rows of `R` whose key is above `a`, the key kept. -/
+def selKey {B : Obj} (a : Int64) (R : Prog .long B) : Prog .long B := comp (fn (.test (.sect (u := .long) true .lt rfl a))) R
 
-open Cmp in
-/-- `R < a`, the rows of `R` whose value is below `a`. -/
-def selVal {A : Obj} (R : Prog A .long) (a : Int64) : Prog A .long := R < a
+/-- `R ≫ (< a)?`, the rows of `R` whose value is below `a`, the value kept. -/
+def selVal {A : Obj} (R : Prog A .long) (a : Int64) : Prog A .long := comp R (fn (.test (.sect (u := .long) false .lt rfl a)))
 
 theorem selKey_den {B : Obj} (a : Int64) (R : Prog .long B) :
     (selKey a R).den = corefl (fun x : Int64 => a < x) ≫ R.den :=
@@ -2141,6 +2150,64 @@ theorem test_sect_dom {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt �
       subst e; have o := (elem_ord hv h x a).1 hc; exact ⟨rfl, (), ⟨a, o, rfl⟩, ⟨a, o, rfl⟩⟩,
     fun ⟨e, _, ⟨c, hx, hc⟩, _⟩ => by cases hc; exact ⟨e, (elem_ord hv h x a).2 hx⟩⟩
 
+/-- `=` on longs: its `elem` is `true` exactly at `a`. -/
+theorem elem_eq (h : Eval.ewType .eq .long .long = some .boolean) (x a : Int64) : elem .eq h x a = .ok true ↔ x = a := by
+  rw [Ew.elem_long_cmp rfl h, Except.ok.injEq]
+  simp (config := { decide := true }) only [Kernel.Ew.cmpStep, signed_i64, beq_iff_eq, if_true, if_false]
+  exact (compare_iff x a).2.1
+
+/-- **`R v a` is `R ≫ o ≫ â`**, for the relation `o` the comparison's `elem` decides into `a`. -/
+theorem valCmp_den_of {A : Obj} {v : Prim.Dyadic} {o : Ob .long ⟶ Ob .long} (h : Eval.ewType v .long .long = some .boolean)
+    (R : Prog A .long) (a : Int64) (ho : ∀ x, elem v h x a = .ok true ↔ o x a) :
+    (valCmp v R a h).den = R.den ≫ o ≫ corefl (· = a) := by
+  show (R.den ≫ (Fn.test (.sect (u := .long) false v h a)).den) ≫ Verb.cst a = _
+  rw [Cat.assoc]
+  refine congrArg (R.den ≫ ·) (hom_ext fun x y => ⟨fun ⟨_, ⟨e, hc⟩, hy⟩ => ?_, fun ⟨_, hx, e, hc⟩ => ?_⟩)
+  · subst e; subst hy; exact ⟨_, (ho x).1 hc, rfl, rfl⟩
+  · subst e; subst hc; exact ⟨x, ⟨rfl, (ho x).2 hx⟩, rfl⟩
+
+/-- **`a v R` is `â ≫ o ≫ R`**, `o` read off the mirrored comparison. -/
+theorem keyCmp_den_of {B : QAtomicType} {v : Prim.Dyadic} {o : Ob .long ⟶ Ob .long}
+    (h : Eval.ewType (mirror v) .long .long = some .boolean) (R : Prog .long (.atom B)) (a : Int64)
+    (ho : ∀ x, elem (mirror v) h x a = .ok true ↔ o a x) :
+    (keyCmp v a R h).den = corefl (· = a) ≫ o ≫ R.den := by
+  show (valCmp (mirror v) (conv R) a h).den° = _
+  rw [valCmp_den_of (o := fun x y => o y x) h (conv R) a ho]
+  refine hom_ext fun x y => ⟨fun ⟨c, hR, d, hd, e, hc⟩ => ?_, fun ⟨d, ⟨e, hc⟩, c, hd, hR⟩ => ?_⟩
+  · subst e; subst hc; exact ⟨d, ⟨rfl, rfl⟩, c, hd, hR⟩
+  · subst e; subst hc; exact ⟨c, hR, x, hd, rfl, rfl⟩
+
+/-- `R v a` denotes `R ≫ (v) ≫ â` at the four orders. -/
+theorem valCmp_den {A : Obj} {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt ∨ v = .ge)
+    (h : Eval.ewType v .long .long = some .boolean) (R : Prog A .long) (a : Int64) :
+    (valCmp v R a h).den = R.den ≫ ord v ≫ corefl (· = a) :=
+  valCmp_den_of h R a (elem_ord hv h · a)
+
+/-- `a v R` denotes `â ≫ (v) ≫ R` at the four orders. -/
+theorem keyCmp_den {B : QAtomicType} {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt ∨ v = .ge)
+    (h : Eval.ewType (mirror v) .long .long = some .boolean) (R : Prog .long (.atom B)) (a : Int64) :
+    (keyCmp v a R h).den = corefl (· = a) ≫ ord v ≫ R.den := by
+  rcases hv with rfl | rfl | rfl | rfl <;>
+    exact keyCmp_den_of (o := ord _) h R a (elem_ord (by simp [mirror]) h · a)
+
+theorem valCmp_eq_den {A : Obj} (h : Eval.ewType .eq .long .long = some .boolean) (R : Prog A .long) (a : Int64) :
+    (valCmp .eq R a h).den = R.den ≫ (fun x y : Int64 => x = y) ≫ corefl (· = a) :=
+  valCmp_den_of h R a (elem_eq h · a)
+
+theorem valCmp_ne_den {A : Obj} (h : Eval.ewType .ne .long .long = some .boolean) (R : Prog A .long) (a : Int64) :
+    (valCmp .ne R a h).den = R.den ≫ (fun x y : Int64 => x ≠ y) ≫ corefl (· = a) :=
+  valCmp_den_of h R a (elem_ne h · a)
+
+theorem keyCmp_eq_den {B : QAtomicType} (h : Eval.ewType (mirror .eq) .long .long = some .boolean)
+    (R : Prog .long (.atom B)) (a : Int64) :
+    (keyCmp .eq a R h).den = corefl (· = a) ≫ (fun x y : Int64 => x = y) ≫ R.den :=
+  keyCmp_den_of h R a fun x => (elem_eq h x a).trans eq_comm
+
+theorem keyCmp_ne_den {B : QAtomicType} (h : Eval.ewType (mirror .ne) .long .long = some .boolean)
+    (R : Prog .long (.atom B)) (a : Int64) :
+    (keyCmp .ne a R h).den = corefl (· = a) ≫ (fun x y : Int64 => x ≠ y) ≫ R.den :=
+  keyCmp_den_of h R a fun x => (elem_ne h x a).trans ne_comm
+
 section Checks
 open Cmp
 
@@ -2150,8 +2217,12 @@ private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
 private def rows {A B : QAtomicType} (P : Except String (Prog (.atom A) (.atom B))) : Option (List (El A × El B)) :=
   (do pure (← (← P).run).toRel.toList : Except String _).toOption
 
-#guard rows (do pure ((2 : Int64) < rel (← D [1, 2, 3] [10, 20, 30]))) == some [(3, 30)]
-#guard rows (do pure (rel (← D [1, 2, 3] [10, 20, 30]) ≤ (20 : Int64))) == some [(1, 10), (2, 20)]
+#guard rows (do pure (selKey 2 (rel (← D [1, 2, 3] [10, 20, 30])))) == some [(3, 30)]
+#guard rows (do pure (selVal (rel (← D [1, 2, 3] [10, 20, 30])) 25)) == some [(1, 10), (2, 20)]
+#guard rows (do pure ((2 : Int64) < rel (← D [1, 2, 3] [10, 20, 30]))) == some [(2, 30)]
+#guard rows (do pure (rel (← D [1, 2, 3] [10, 20, 30]) < (25 : Int64))) == some [(1, 25), (2, 25)]
+#guard rows (do pure (rel (← D [1, 2, 3] [10, 20, 30]) ≤ (20 : Int64))) == some [(1, 20), (2, 20)]
+#guard rows (do pure (rel (← D [1, 2, 3] [10, 20, 30]) ≠ (20 : Int64))) == some [(1, 20), (3, 20)]
 #guard rows (do pure ((2 : Int64) = rel (← D [1, 2, 3] [10, 20, 30]))) == some [(2, 20)]
 #guard rows (do pure (comp (fn (.test (.sect (t := .long) (u := .long) false .gt rfl 1))) (rel (← D [1, 2, 3] [10, 20, 30])))) ==
   some [(2, 20), (3, 30)]
@@ -2190,6 +2261,12 @@ end Prog
 #print axioms Prog.selKey_den
 #print axioms Prog.selVal_den
 #print axioms Prog.test_sect_dom
+#print axioms Prog.valCmp_den
+#print axioms Prog.keyCmp_den
+#print axioms Prog.valCmp_eq_den
+#print axioms Prog.valCmp_ne_den
+#print axioms Prog.keyCmp_eq_den
+#print axioms Prog.keyCmp_ne_den
 #print axioms Prog.lam_key
 #print axioms Prog.lamEst_iff
 #print axioms Prog.lastBy_grp
