@@ -265,7 +265,7 @@ def sameKer : (K L : Prog .long .long) → Option (PLift (K.den = L.den))
     on `til n`, is `K` itself: the hit branch, the miss branch's `dom E` and the union all go. The two copies of
     `E` must rewrite to one kernel. -/
 def missRule : {A B : Obj} → (P : Prog A B) → Option {Q : Prog A B // P.Small → Q.den = P.den}
-  | _, _, union (@comp _ .long _ (til n) E) (@comp _ .long _ (anti (til n₂) (@dom .long .long E₂)) (fn (.cst e))) =>
+  | _, _, union (@comp _ .long _ (til n) E) (@comp _ .long _ (anti (til n₂) (@dom .long .long E₂)) (fn (@Fn.cst .long .long e))) =>
     match rule E, rule E₂ with
     | some ⟨anti K (@dom .long .long (@conv .long .long (@comp _ .long _ (til 1) (fn (.cst e₁))))), hQ⟩,
       some ⟨anti K₂ (@dom .long .long (@conv .long .long (@comp _ .long _ (til 1) (fn (.cst e₂))))), hQ₂⟩ =>
@@ -335,25 +335,107 @@ theorem exec_sound {A B : Obj} (P : Prog A B) {R : RelV A B} (h : P.Small) (hs :
     (hr : exec P = .ok R) : (R.Holds : Ob A ⟶ Ob B) = P.den :=
   (run_sound _ hs hr).trans (norm_den P h)
 
+/-! `rule` and `missRule` match through the `.atom` indices, where Lean generates no match equations, so the
+    normal forms below reduce them by `whnf`, and rewrite only what a variable length keeps stuck. -/
+
+theorem asLen_self {t : QAtomicType} {n : Nat} (b : Arr t n) : asLen n b = some ⟨b, rfl⟩ := by simp [asLen]
+
+theorem sameArr_self {n : Nat} (a : Arr .long n) : sameArr a a = some ⟨rfl⟩ := by simp [sameArr, withPtrEq]
+
+/-- `whnf` turns a `dite` into this recursor, where `dif_pos` no longer matches. -/
+theorem decRec_pos {p : Prop} {α : Type _} {d : Decidable p} (h : p) {a : ¬p → α} {b : p → α} :
+    Decidable.rec (motive := fun _ => α) a b d = b h := by
+  cases d with
+  | isFalse n => exact absurd h n
+  | isTrue _ => rfl
+
+theorem sameKer_bin {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : (sameKer (binJ x y) (binJ x y)).isSome = true := by
+  conv => lhs; arg 1; whnf
+  simp [sameArr_self]
+
+theorem sameKer_aj {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    (sameKer (ajJ lk lt rk rt) (ajJ lk lt rk rt)).isSome = true := by
+  conv => lhs; arg 1; whnf
+  simp only [sameArr_self]
+  rw [decRec_pos (p := nl = nl) rfl] <;> rfl
+
+/-- A node `rule` rewrites normalises to its rewrite. -/
+theorem orRule_some {A B : Obj} {P Q : Prog A B} {d} (h : (rule P).map Subtype.val = some Q) : (orRule P d).1 = Q := by
+  cases e : rule P with
+  | none => simp [e] at h
+  | some r => simp only [e, Option.map_some, Option.some.injEq] at h; simp [orRule, e, h]
+
+/-- A node only `missRule` rewrites normalises to its rewrite. -/
+theorem orRule_miss {A B : Obj} {P Q : Prog A B} {d} (h0 : rule P = none) (h : (missRule P).map Subtype.val = some Q) :
+    (orRule P d).1 = Q := by
+  cases e : missRule P with
+  | none => simp [e] at h
+  | some r => simp only [e, Option.map_some, Option.some.injEq] at h; simp [orRule, h0, e, h]
+
+/-- The miss rule fires when both copies of `E` rewrite to a cut of one map `K` on `til n`. -/
+theorem missRule_val {n : Nat} {e : Int64} {E E₂ K K₂ : Prog .long .long}
+    (hE : (rule E).map Subtype.val = some (anti K (pt e))) (hE₂ : (rule E₂).map Subtype.val = some (anti K₂ (pt e)))
+    (hm : (mapOn? K).map PSigma.fst = some n) (hs : (sameKer K₂ K).isSome = true) (hn : n ≤ 2 ^ 63) :
+    (missRule (union (comp (til n) E) (comp (anti (til n) (dom E₂)) (fn (@Fn.cst .long .long e))))).map Subtype.val =
+      some K := by
+  cases hr : rule E with
+  | none => simp [hr] at hE
+  | some r =>
+  cases hr₂ : rule E₂ with
+  | none => simp [hr₂] at hE₂
+  | some r₂ =>
+  cases hp : mapOn? K with
+  | none => simp [hp] at hm
+  | some p =>
+  cases hk : sameKer K₂ K with
+  | none => simp [hk] at hs
+  | some k =>
+  obtain ⟨Q, hQ⟩ := r; obtain ⟨Q₂, hQ₂⟩ := r₂; obtain ⟨m, hm'⟩ := p
+  simp only [hr, Option.map_some, Option.some.injEq] at hE; simp only [hr₂, Option.map_some, Option.some.injEq] at hE₂
+  simp only [hp, Option.map_some, Option.some.injEq] at hm
+  subst hE hE₂ hm
+  conv => lhs; arg 2; whnf
+  rw [hr, hr₂]
+  conv => lhs; arg 2; whnf
+  rw [hp, hk]
+  conv => lhs; arg 2; whnf
+  rw [decRec_pos]
+  · rfl
+  · exact ⟨rfl, rfl, hn, rfl, rfl⟩
+
 /-- `bin` normalised: one `binJ` bisection, its miss fill its own. -/
 theorem bin_norm {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hy : ny ≤ 2 ^ 63) :
-    norm (bin x y) = binJ x y := by
-  simp [norm, normS, bin, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, pt, hy]
+    norm (bin x y) = binJ x y :=
+  orRule_miss rfl (missRule_val (n := ny) (e := -1) (E := extr true (ojoin .ge (arr y) (arr x)))
+    (E₂ := extr true (ojoin .ge (arr y) (arr x))) (K := binJ x y) (K₂ := binJ x y) rfl rfl rfl (sameKer_bin x y) hy)
+
+/-- `aj`'s `E` rewrites to `ajJ` cut at `0N`. -/
+theorem rule_aj {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    (rule (extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt))))).map Subtype.val =
+      some (anti (ajJ lk lt rk rt) (pt Int64.minValue)) := by
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self] <;> rfl
 
 /-- `aj` normalised: one `ajJ` per-key bisection, its miss fill its own. -/
 theorem aj_norm {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) :
-    norm (aj lk lt rk rt) = ajJ lk lt rk rt := by
-  simp [norm, normS, aj, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, asLen, pt, hl]
+    norm (aj lk lt rk rt) = ajJ lk lt rk rt :=
+  orRule_miss rfl (missRule_val (n := nl) (e := Int64.minValue) (rule_aj lk lt rk rt) (rule_aj lk lt rk rt) rfl
+    (sameKer_aj lk lt rk rt) hl)
 
 /-- `wj1` normalised: its three order joins are `wjJ`'s window. -/
 theorem wj1_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj1 lk w₀ w₁ rk rt) = wjJ false lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj1, orRule, rule, asLen, sameArr, withPtrEq]
+  refine orRule_some (P := wj1 lk w₀ w₁ rk rt) ?_
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self, sameArr_self] <;> rfl
 
 /-- `wj` normalised: its window and prevailing row are `wjJ`'s. -/
 theorem wj_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj lk w₀ w₁ rk rt) = wjJ true lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj, orRule, rule, asLen, sameArr, withPtrEq]
+  refine orRule_some (P := wj lk w₀ w₁ rk rt) ?_
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self, sameArr_self] <;> rfl
+
 
 end Prog
 
