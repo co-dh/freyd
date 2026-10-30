@@ -359,7 +359,7 @@ def progAjCopyOp (n : Nat) : IO (IO (Nat × Int64)) := do
     let E (lk lt rk rt : LeetQ.Rel.Arr .long n) : LeetQ.Rel.Prog .long .long :=
       extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt)))
     let P : LeetQ.Rel.Prog .long .long := union (comp (til n) (E lk lt rk rt))
-      (cst (u := .long) Int64.minValue (anti (til n) (dom (E lk' lt' rk' rt'))))
+      (comp (anti (til n) (dom (E lk' lt' rk' rt'))) (fn (.cst (u := .long) Int64.minValue)))
     sumR "progAjCopy" (← exec P).val
 
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
