@@ -144,6 +144,8 @@ inductive Fn : Obj → Obj → Type
       (a : El u) : Fn (.atom t) (.atom rt)
   /-- `c?`, the coreflexive on `{a | c(a) = true}` -/
   | test {A : Obj} (c : Fn A (.atom .boolean)) : Fn A A
+  /-- `x ↦ x has t low zero bits` -/
+  | lowZero (t : Nat) : Fn (.atom .long) (.atom .boolean)
 
 /-- A verb's program: one constructor per executable primitive, the leaves stored data. -/
 inductive Prog : Obj → Obj → Type
@@ -221,6 +223,9 @@ def sectEl {t u rt : QAtomicType} : (left : Bool) → (v : Prim.Dyadic) →
   | false, v, h, a, x => elem v h x a
   | true, v, h, a, x => elem v h a x
 
+/-- `x` has `t` low zero bits, read off its bits, `0N` being `2^63` there. -/
+def lowBits (t : Nat) (x : Int64) : Bool := x.toBitVec.toNat &&& (2 ^ t - 1) == 0
+
 /-- The relation a map code names. -/
 def Fn.den : {A B : Obj} → Fn A B → (Ob A ⟶ Ob B)
   | _, _, .dy v h => ofExcept fun p => elem v h p.1 p.2
@@ -230,6 +235,7 @@ def Fn.den : {A B : Obj} → Fn A B → (Ob A ⟶ Ob B)
   | _, _, .snd => graph Prod.snd
   | _, _, .sect l v h a => ofExcept (sectEl l v h a)
   | _, _, .test c => corefl fun a => c.den a true
+  | _, _, .lowZero t => ofExcept (ε := String) fun x : Int64 => .ok (lowBits t x)
 
 namespace Prog
 
@@ -321,6 +327,12 @@ def sectVal {t u rt : QAtomicType} {n : Nat} (l : Bool) (v : Prim.Dyadic) (a : E
     | false => Ew.valAtom v rt x a hu
     | true => Ew.atomVal v rt a x hu
 
+/-- `(x & m) = 0`, `m = 2^t - 1`: the kernel reads an encoded `x` in place, the mask its atom. -/
+def lowZeroArr {n : Nat} (t : Nat) (x : Arr .long n) : Except String (Arr .boolean n) :=
+  match Kernel.lowZeroPayload n x.enc (UInt64.ofNat (2 ^ t - 1)) with
+  | some e => Arr.of .boolean n (.vector .boolean n e none) "lowZero"
+  | none => throw "lowZero: this long column has no dense payload"
+
 /-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
 def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do
   let w ← Find.where b
@@ -339,15 +351,34 @@ def _root_.LeetQ.Rel.Fn.apply {K : Obj} : {A B : Obj} → Fn A B → RelV K A �
   | _, _, .snd, R => pure ⟨R.n, R.key, R.val.2⟩
   | _, _, .sect (t := t) (rt := rt) l v _ a, R => do pure ⟨R.n, R.key, ← sectVal (t := t) (rt := rt) l v a R.val⟩
   | _, _, .test c, R => do RelV.sel (← c.apply R).val R
+  | _, _, .lowZero t, R => do pure ⟨R.n, R.key, ← lowZeroArr t R.val⟩
 
 /-- `c? ≫ R` with `R` run: `c` on the key column, handed as a value column beside itself, then `RelV.sel`; a
     kernel that needs an atomic key refuses a product key in `Fn.apply`. -/
 def testKey {A C : Obj} (c : Fn A (.atom .boolean)) (R : RelV A C) : Except String (RelV A C) := do
   RelV.sel (← c.apply (K := A) ⟨R.n, R.key, R.key⟩).val R
 
-/-- `P` as a coreflexive `c?`, its kernel on a run `R` beside it: `comp P R` runs `R` and applies `c` to the key. -/
+/-- The trailing zero bits of `n`, `k` the bits left to read. -/
+def tzNat : Nat → Nat → Nat
+  | 0, _ => 0
+  | k + 1, n => if n % 2 = 1 then 0 else tzNat k (n / 2) + 1
+
+/-- The trailing zero bits of `a`. -/
+def tz (a : Int64) : Nat := tzNat 64 a.toBitVec.toNat
+
+/-- `(×a)° (×a) ≫ R`: `ran(×a)` is the multiples of `2^tz(a)` (`ran_mul`). `a = 0` and `a = 0N` are refused, not
+    computed: `×0` sends `0N` to `0N` and all else to `0`, and `×0N` sends all to `0N`, neither of them such a set. -/
+def ranMul {C : Obj} (a : Int64) (R : RelV .long C) : Except String (RelV .long C) :=
+  if a = 0 then throw "(×0)°(×0): ran(×0) is {0,0N}, not a multiples-of-2^t test; select with (=0) and (=0N)"
+  else if a = Int64.minValue then throw "(×0N)°(×0N): ran(×0N) is {0N}, not a multiples-of-2^t test; select with (=0N)"
+  else testKey (.lowZero (tz a)) R
+
+/-- `P` as a coreflexive, its kernel on a run `R` beside it: `comp P R` runs `R` and applies `c` to the key. `c?` is
+    one, and so is `(×a)° (×a)` with one `a`: `f° f = ran(f)` for any map `f`, and each side alone is not runnable. -/
 def asTest {A B : Obj} : Prog A B → Option ((C : Obj) → RelV B C → Except String (RelV A C))
   | fn (.test c) => some fun _ R => testKey c R
+  | comp (conv (fn (@Fn.sect .long .long .long false .mul _ a))) (fn (@Fn.sect .long .long .long false .mul _ a')) =>
+    if (a : Int64) = (a' : Int64) then some fun _ R => ranMul a R else none
   | _ => none
 
 /-- `P ≫ Q` with `Q` stored: `Alg.comp`, which joins one value column on one key column. -/
@@ -492,6 +523,8 @@ def _root_.LeetQ.Rel.Fn.Sound (K : Obj) : {A B : Obj} → Fn A B → Prop
   | _, _, .sect (t := t) (rt := rt) l v h a => ∀ n (x : Arr t n) (V : Arr rt n), sectVal l v a x = .ok V →
       x.toList.mapM (sectEl l v h a) = .ok V.toList
   | A, _, .test c => ∀ R T : RelV K A, (Fn.test c).apply R = .ok T → @Eq (Ob K ⟶ Ob A) T.Holds (R.Holds ≫ (Fn.test c).den)
+  | _, _, .lowZero t => ∀ n (x : Arr .long n) (V : Arr .boolean n), lowZeroArr t x = .ok V →
+      x.toList.mapM (fun a => (.ok (lowBits t a) : Except String _)) = .ok V.toList
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -600,11 +633,10 @@ theorem dy_sound {K : Obj} {t u rt : QAtomicType} {v : Prim.Dyadic} {h : Eval.ew
     obtain ⟨_, ec⟩ := (rel_iff _ _ _).1 hi
     exact ⟨i, ek, ec⟩
 
-/-- `R ≫ (v a)` holds its spec, from the kernel's List spec (`ix_mapM`), at any key. -/
-theorem sect_sound {K : Obj} {t u rt : QAtomicType} {l : Bool} {v : Prim.Dyadic}
-    {h : Eval.ewType v (cond l u t) (cond l t u) = some rt} {a : El u} {R : RelV K t} {V : Arr rt R.n}
-    (hs : (R.val : Arr t R.n).toList.mapM (sectEl l v h a) = .ok V.toList) :
-    ((⟨R.n, R.key, V⟩ : RelV K rt).Holds : Ob K ⟶ Ob rt) = R.Holds ≫ (Fn.sect l v h a).den := by
+/-- `R ≫ g`, `g` a partial map on a value column, holds its spec, from the kernel's List spec (`ix_mapM`), at any key. -/
+theorem mapM_sound {K : Obj} {t rt : QAtomicType} {g : El t → Except String (El rt)} {R : RelV K t} {V : Arr rt R.n}
+    (hs : (R.val : Arr t R.n).toList.mapM g = .ok V.toList) :
+    ((⟨R.n, R.key, V⟩ : RelV K rt).Holds : Ob K ⟶ Ob rt) = R.Holds ≫ ofExcept g := by
   have hv : V.rel = _ := Verb.ix_mapM _ _ _ hs
   refine hom_ext fun k c => ⟨fun ⟨i, ek, ec⟩ => ?_, fun ⟨b, ⟨i, ek, eb⟩, e⟩ => ?_⟩
   · have hi : V.rel i.1 c := (rel_iff _ _ _).2 ⟨i.2, ec⟩
@@ -637,8 +669,12 @@ theorem _root_.LeetQ.Rel.Fn.apply_sound {K : Obj} : ∀ {A B : Obj} (c : Fn A B)
   | _, _, .sect .., _, _, hs, h => by
     simp only [Fn.apply, bind, Except.bind] at h; split at h
     · cases h
-    cases h; exact sect_sound (hs _ _ _ (by assumption))
+    cases h; exact mapM_sound (hs _ _ _ (by assumption))
   | _, _, .test _, _, _, hs, h => hs _ _ h
+  | _, _, .lowZero _, _, _, hs, h => by
+    simp only [Fn.apply, bind, Except.bind] at h; split at h
+    · cases h
+    cases h; exact mapM_sound (hs _ _ _ (by assumption))
 
 /-- `&x` runs to its spec: `Find.where` keyed by `til m` holds `enum(dom(x ≫ !1b°))` (`where_rel`). -/
 theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : RelV .long .long}
@@ -2150,6 +2186,121 @@ theorem test_sect_dom {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt �
       subst e; have o := (elem_ord hv h x a).1 hc; exact ⟨rfl, (), ⟨a, o, rfl⟩, ⟨a, o, rfl⟩⟩,
     fun ⟨e, _, ⟨c, hx, hc⟩, _⟩ => by cases hc; exact ⟨e, (elem_ord hv h x a).2 hx⟩⟩
 
+/-! ## `ran(×a)`, the multiples of `2^tz(a)` -/
+
+/-- Two longs of one bit pattern are one long. -/
+theorem bits_inj {x y : Int64} (e : x.toBitVec.toNat = y.toBitVec.toNat) : x = y :=
+  Int64.toBitVec_inj.1 (BitVec.eq_of_toNat_eq e)
+
+theorem bits_mul (x y : Int64) : (x * y).toBitVec.toNat = x.toBitVec.toNat * y.toBitVec.toNat % 2 ^ 64 := by
+  simp [Int64.toBitVec_mul, BitVec.toNat_mul]
+
+theorem bits_min : Int64.minValue.toBitVec.toNat = 2 ^ 63 := by decide
+
+/-- `(×a)` on longs, `a` not null: q's null rule on `x` alone, else the wrapped product. -/
+theorem elem_mul (h : Eval.ewType .mul .long .long = some .long) (x a : Int64) (ha : a ≠ Int64.minValue) :
+    elem .mul h x a = .ok (if x = Int64.minValue then Int64.minValue else x * a) := by
+  rw [Ew.elem_long_val (op := Kernel.Ew.mul) rfl h]
+  simp (config := { decide := true }) [Kernel.Ew.intStep, ha]
+
+/-- An odd number has an inverse modulo `2^n`. -/
+theorem odd_inv (w : Nat) : ∀ n, ∃ i c, (2 * w + 1) * i = 1 + 2 ^ n * c
+  | 0 => ⟨1, 2 * w, by simp; omega⟩
+  | n + 1 => by
+    obtain ⟨i, c, h⟩ := odd_inv w n
+    obtain ⟨d, hd | hd⟩ : ∃ d, c = 2 * d ∨ c = 2 * d + 1 := ⟨c / 2, by omega⟩
+    · exact ⟨i, d, by rw [h, hd, Nat.pow_succ]; grind⟩
+    · exact ⟨i + 2 ^ n, d + w + 1, by rw [Nat.mul_add, h, hd, Nat.pow_succ]; grind⟩
+
+/-- `n` is `2^tz(n)` times an odd number. -/
+theorem tzNat_spec : ∀ k n, n ≠ 0 → n < 2 ^ k → ∃ w, n = 2 ^ tzNat k n * (2 * w + 1)
+  | 0, n, h0, h => by simp at h; omega
+  | k + 1, n, h0, h => by
+    unfold tzNat
+    split
+    · exact ⟨n / 2, by simp; omega⟩
+    · rename_i ho
+      obtain ⟨w, hw⟩ := tzNat_spec k (n / 2) (by omega) (by rw [Nat.pow_succ] at h; omega)
+      refine ⟨w, ?_⟩
+      generalize tzNat k (n / 2) = s at hw
+      calc n = 2 * (n / 2) := by omega
+        _ = 2 * (2 ^ s * (2 * w + 1)) := by rw [← hw]
+        _ = _ := by rw [Nat.pow_succ]; grind
+
+/-- `a ≠ 0` is `2^tz(a)` times an odd number, with `tz(a) < 64`. -/
+theorem tz_spec {a : Int64} (h0 : a ≠ 0) : tz a < 64 ∧ ∃ w, a.toBitVec.toNat = 2 ^ tz a * (2 * w + 1) := by
+  have hn : a.toBitVec.toNat ≠ 0 := fun e => h0 (bits_inj (e.trans (by decide)))
+  have hl := a.toBitVec.isLt
+  obtain ⟨w, hw⟩ := tzNat_spec 64 _ hn hl
+  refine ⟨(Nat.pow_lt_pow_iff_right (a := 2) (by omega)).1 (Nat.lt_of_le_of_lt ?_ hl), w, hw⟩
+  rw [hw]; exact Nat.le_mul_of_pos_right _ (by omega)
+
+/-- `(×a)` lands in the multiples of `2^t`, `0N = 2^63` among them because `t < 64`. -/
+theorem mul_low {a : Int64} {t w : Nat} (ht : t < 64) (ha : a.toBitVec.toNat = 2 ^ t * (2 * w + 1)) (k : Int64) :
+    (if k = Int64.minValue then Int64.minValue else k * a).toBitVec.toNat % 2 ^ t = 0 := by
+  split
+  · rw [bits_min]; exact Nat.mod_eq_zero_of_dvd (Nat.pow_dvd_pow 2 (by omega))
+  · rw [bits_mul, Nat.mod_mod_of_dvd _ (Nat.pow_dvd_pow 2 (by omega)), ha]
+    exact Nat.mod_eq_zero_of_dvd ⟨k.toBitVec.toNat * (2 * w + 1), by grind⟩
+
+/-- Every multiple of `2^t` is reached by `(×a)`: the odd part of `a` is invertible modulo `2^64`. `0N` is reached
+    from `0N`, `0` from `0`, and any other `y` from a `k ≠ 0N`, since `0N × a` is `0` or `0N`. -/
+theorem mul_onto {a y : Int64} {t w : Nat} (ha : a.toBitVec.toNat = 2 ^ t * (2 * w + 1))
+    (hy : y.toBitVec.toNat % 2 ^ t = 0) : ∃ k, (if k = Int64.minValue then Int64.minValue else k * a) = y := by
+  by_cases h1 : y = Int64.minValue
+  · exact ⟨Int64.minValue, by rw [if_pos rfl, h1]⟩
+  by_cases h2 : y = 0
+  · exact ⟨0, by rw [if_neg (by decide), Int64.zero_mul, h2]⟩
+  obtain ⟨Z, hZ⟩ : ∃ Z, y.toBitVec.toNat = 2 ^ t * Z :=
+    ⟨y.toBitVec.toNat / 2 ^ t, (Nat.mul_div_cancel' (Nat.dvd_of_mod_eq_zero hy)).symm⟩
+  obtain ⟨i, c, hi⟩ := odd_inv w 64
+  have hl := y.toBitVec.isLt
+  have hk : Int64.ofNat (Z * i) * a = y := bits_inj (by
+    have e : Z * i * a.toBitVec.toNat = y.toBitVec.toNat + 2 ^ 64 * (y.toBitVec.toNat * c) := by
+      calc Z * i * a.toBitVec.toNat = 2 ^ t * Z * ((2 * w + 1) * i) := by rw [ha]; grind
+        _ = _ := by rw [← hZ, hi]; grind
+    rw [bits_mul, show (Int64.ofNat (Z * i)).toBitVec.toNat = Z * i % 2 ^ 64 by simp, Nat.mod_mul_mod, e,
+      Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hl])
+  refine ⟨Int64.ofNat (Z * i), ?_⟩
+  rw [if_neg, hk]
+  intro e
+  have hb := congrArg (fun x : Int64 => x.toBitVec.toNat) hk
+  simp only [e, bits_mul, bits_min] at hb
+  have hz : y.toBitVec.toNat = 0 ∨ y.toBitVec.toNat = 2 ^ 63 := by omega
+  exact hz.elim (fun h => h2 (bits_inj (h.trans (by decide)))) (fun h => h1 (bits_inj (h.trans bits_min.symm)))
+
+theorem lowZero_iff (t : Nat) (x : Int64) : (Fn.lowZero t).den x true ↔ x.toBitVec.toNat % 2 ^ t = 0 := by
+  show (Except.ok (lowBits t x) : Except String Bool) = .ok true ↔ _
+  simp [lowBits, Nat.and_two_pow_sub_one_eq_mod]
+
+/-- **`(×a)° (×a) = lowZero(tz(a))?`**: `f° f` is the coreflexive on `ran(f)`, and `ran(×a)` is the multiples of
+    `2^tz(a)`, for `a` neither `0` nor `0N`. -/
+theorem ran_mul (h : Eval.ewType .mul .long .long = some .long) (a : Int64) (h0 : a ≠ 0) (hn : a ≠ Int64.minValue) :
+    (conv (fn (.sect (t := .long) (u := .long) false .mul h a))).den ≫ (fn (.sect (t := .long) (u := .long) false .mul h a)).den =
+      (Fn.test (.lowZero (tz a))).den := by
+  obtain ⟨ht, w, ha⟩ := tz_spec h0
+  refine hom_ext fun x y => ⟨fun ⟨k, hx, hy⟩ => ?_, fun ⟨e, hc⟩ => ?_⟩
+  · have hx' : elem .mul h k a = .ok x := hx
+    have hy' : elem .mul h k a = .ok y := hy
+    rw [elem_mul h k a hn] at hx' hy'
+    cases hx'; cases hy'
+    exact ⟨rfl, (lowZero_iff _ _).2 (mul_low ht ha k)⟩
+  · subst e
+    obtain ⟨k, hk⟩ := mul_onto ha ((lowZero_iff _ _).1 hc)
+    have e : elem .mul h k a = .ok x := by rw [elem_mul h k a hn, hk]
+    exact ⟨k, e, e⟩
+
+/-- `(×2)`, the map whose range is the evens. -/
+def dbl : Fn .long .long := .sect (u := .long) false .mul rfl 2
+
+/-- The rows of `R` whose key is even: `(×2)° (×2) R`. -/
+def evens {B : Obj} (R : Prog .long B) : Prog .long B := comp (comp (conv (fn dbl)) (fn dbl)) R
+
+theorem evens_den {B : Obj} (R : Prog .long B) :
+    (evens R).den = corefl (fun x : Int64 => x.toBitVec.toNat % 2 = 0) ≫ R.den :=
+  congrArg (· ≫ R.den) ((ran_mul rfl 2 (by decide) (by decide)).trans
+    (congrArg (corefl (A := Ob .long)) (funext fun x => propext (lowZero_iff (tz 2) x))))
+
 /-- `=` on longs: its `elem` is `true` exactly at `a`. -/
 theorem elem_eq (h : Eval.ewType .eq .long .long = some .boolean) (x a : Int64) : elem .eq h x a = .ok true ↔ x = a := by
   rw [Ew.elem_long_cmp rfl h, Except.ok.injEq]
@@ -2229,6 +2380,14 @@ private def rows {A B : QAtomicType} (P : Except String (Prog (.atom A) (.atom B
 #guard rows (do pure (comp (comp (pair (rel (← D [0, 1, 2] [10, 20, 30])) (rel (← D [0, 1, 2] [11, 20, 29])))
   (fn (.test (.dy .lt rfl)))) (fn .fst))) == some [(0, 10)]
 #guard ((1 : Int64) < 2) && !((2 : Int64) ≤ 1) -- Lean's own reading still elaborates
+#guard rows (do pure (evens (rel (← D [1, 2, 3, 4] [10, 20, 30, 40])))) == some [(2, 20), (4, 40)]
+private def mulB (a : Int64) : Prog .long .long := fn (.sect (u := .long) false .mul rfl a)
+#guard rows (do pure (comp (comp (conv (mulB 12)) (mulB 12)) (rel (← D [3, 4, 8, 16] [1, 2, 3, 4])))) == some [(4, 2), (8, 3), (16, 4)]
+#guard rows (do pure (comp (comp (conv (mulB 3)) (mulB 3)) (rel (← D [3, 4] [1, 2])))) == some [(3, 1), (4, 2)]
+#guard rows (do pure (comp (comp (conv (mulB 0)) (mulB 0)) (rel (← D [0, 4] [1, 2])))) == none
+#guard rows (do pure (comp (comp (conv (mulB Int64.minValue)) (mulB Int64.minValue)) (rel (← D [0, 4] [1, 2])))) == none
+#guard rows (do pure (comp (comp (conv (mulB 2)) (mulB 3)) (rel (← D [0, 4] [1, 2])))) == none
+#guard rows (do pure (comp (conv (mulB 2)) (rel (← D [0, 4] [1, 2])))) == none
 
 end Checks
 
@@ -2261,6 +2420,8 @@ end Prog
 #print axioms Prog.selKey_den
 #print axioms Prog.selVal_den
 #print axioms Prog.test_sect_dom
+#print axioms Prog.ran_mul
+#print axioms Prog.evens_den
 #print axioms Prog.valCmp_den
 #print axioms Prog.keyCmp_den
 #print axioms Prog.valCmp_eq_den
