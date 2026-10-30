@@ -362,6 +362,26 @@ def progAjCopyOp (n : Nat) : IO (IO (Nat × Int64)) := do
       (comp (anti (til n) (dom (E lk' lt' rk' rt'))) (fn (.cst (u := .long) Int64.minValue)))
     sumR "progAjCopy" (← exec P).val
 
+/-- A key and a value column for `progSel`/`relSel`: `n` longs below 1e6, half the keys past the cut `5e5`. -/
+def selData (what : String) (n : Nat) : IO (LeetQ.Rel.Arr .long n × LeetQ.Rel.Arr .long n) := do
+  let arr (a : Array Int) : IO (LeetQ.Rel.Arr .long n) := io what (LeetQ.Rel.Arr.ofPart .long n (LeetQ.Rel.Alg.longs (col a)) what)
+  pure (← arr (ints n 12 1000000), ← arr (ints n 13 1000000))
+
+/-- `(>a)? R` as a `Prog` term through `Prog.exec`: the key column tested, key and value picked. Checksum: the
+    picked values' sum, as `relSel`'s. -/
+def progSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  timedE "progSel" (← selData "progSel" n) fun (k, v) => do
+    let R : LeetQ.Rel.Rel .long .long := ⟨n, k, v⟩
+    sumR "progSel" (← LeetQ.Rel.Prog.exec (LeetQ.Rel.Prog.selKey (B := .long) 500000 (.rel R))).val
+
+/-- `(>a)? R` by hand: `Ew.atomVal`, `Find.where`, two picks, q's `(where k>a)` on key and value. -/
+def relSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  timedE "relSel" (← selData "relSel" n) fun (k, v) => do
+    let w ← LeetQ.Rel.Find.where (← LeetQ.Rel.Ew.atomVal (t := .long) .lt .boolean (500000 : Int64) k)
+    let (_, i) ← LeetQ.Rel.Alg.arrDense w.2
+    let _ ← LeetQ.Rel.Arr.ofPart .long w.1 (← LeetQ.Rel.Alg.pick .long k.part i) "relSel"
+    sumR "relSel" (← LeetQ.Rel.Arr.ofPart .long w.1 (← LeetQ.Rel.Alg.pick .long v.part i) "relSel")
+
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
   let (lk, lt, rk, rt) := asofData n
@@ -373,7 +393,7 @@ def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("relWj", relWjOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("progSel", progSelOp), ("relSel", relSelOp), ("relWj", relWjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),

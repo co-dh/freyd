@@ -4,7 +4,8 @@
   Objects are `Obj`, atoms and products; `pair` is `⟨R, S⟩`, `fn` an infinite map relation composed on the right,
   so `x+y` is `comp (pair x y) (fn (.dy .add h))`; a run value `RelV` is key and value columns of one length.
   `run_sound`: `run P = ok R → R.Holds = den P`, from one lemma per node; a kernel node whose kernel has
-  no theorem yet (`comp`, `∩`, `∪`, `𝟘`, `⊤`, `mapVal`, `pair`, `Ew.val`) contributes its law to `Sound P`.
+  no theorem yet (`comp`, `∩`, `∪`, `𝟘`, `⊤`, `mapVal`, `pair`, `Ew.val`, `Ew.valAtom`, `Find.where` with `pick`)
+  contributes its law to `Sound P`. A coreflexive `c?` runs composed on either side: `R c?` on `R`'s value, `c? R` on its key.
 -/
 import LeetQ.Rel.Algebra
 import LeetQ.Rel.SpecStruct
@@ -124,8 +125,8 @@ theorem liftV_ok {A B : QAtomicType} {x : Except String (Rel A B)} {T : RelV (.a
 /-- A position read as a long: the key `til n` of a list. -/
 abbrev posL : Idx ⟶ Ob .long := graph Int64.ofNat
 
-/-- A map code: an infinite relation, so it has no stored form and runs only composed on the right of a finite
-    `P`, as `comp P (fn c)`. -/
+/-- A map code: an infinite relation, so it has no stored form and runs only composed with a finite `P`: on the
+    right, `comp P (fn c)`, or, a coreflexive being its own converse, on the left, `comp (fn (.test c)) P`. -/
 inductive Fn : Obj → Obj → Type
   /-- the dyadic map `v` (P6′) -/
   | dy {t u rt : QAtomicType} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) :
@@ -138,6 +139,11 @@ inductive Fn : Obj → Obj → Type
   | fst {A B : Obj} : Fn (.prod A B) A
   /-- `π₂` -/
   | snd {A B : Obj} : Fn (.prod A B) B
+  /-- A section: `(v a)`, `x ↦ x v a`; `left`: `(a v)`, `x ↦ a v x`, the operand types of `h` swapped -/
+  | sect {t u rt : QAtomicType} (left : Bool) (v : Prim.Dyadic) (h : Eval.ewType v (cond left u t) (cond left t u) = some rt)
+      (a : El u) : Fn (.atom t) (.atom rt)
+  /-- `c?`, the coreflexive on `{a | c(a) = true}` -/
+  | test {A : Obj} (c : Fn A (.atom .boolean)) : Fn A A
 
 /-- A verb's program: one constructor per executable primitive, the leaves stored data. -/
 inductive Prog : Obj → Obj → Type
@@ -209,6 +215,12 @@ def win {nl nr : Nat} : Bool → Arr .long nl → Arr .long nl → Arr .long nl 
       (Λ ((lk.rel ≫ rk.rel°) ∩ (w₀.rel ≫ ord .ge ≫ rt.rel°)) ≫ est geN)
   | false, lk, w₀, w₁, rk, rt => ((lk.rel ≫ rk.rel°) ∩ (w₀.rel ≫ ord .le ≫ rt.rel°)) ∩ (w₁.rel ≫ ord .ge ≫ rt.rel°)
 
+/-- A section's step: `x ↦ x v a`, `left`: `x ↦ a v x`. -/
+def sectEl {t u rt : QAtomicType} : (left : Bool) → (v : Prim.Dyadic) →
+    Eval.ewType v (cond left u t) (cond left t u) = some rt → El u → El t → Except String (El rt)
+  | false, v, h, a, x => elem v h x a
+  | true, v, h, a, x => elem v h a x
+
 /-- The relation a map code names. -/
 def Fn.den : {A B : Obj} → Fn A B → (Ob A ⟶ Ob B)
   | _, _, .dy v h => ofExcept fun p => elem v h p.1 p.2
@@ -216,6 +228,8 @@ def Fn.den : {A B : Obj} → Fn A B → (Ob A ⟶ Ob B)
   | _, _, .cst e => Verb.cst e
   | _, _, .fst => graph Prod.fst
   | _, _, .snd => graph Prod.snd
+  | _, _, .sect l v h a => ofExcept (sectEl l v h a)
+  | _, _, .test c => corefl fun a => c.den a true
 
 namespace Prog
 
@@ -298,6 +312,20 @@ def pairV : {K A B : Obj} → RelV K A → RelV K B → Except String (RelV K (.
     let T ← Alg.pair (⟨R.n, R.key, ← tilKey R.n⟩ : Rel K .long) (⟨S.n, S.key, ← tilKey S.n⟩ : Rel K .long)
     pure ⟨T.n, T.key, (← Vals.pick T.fst R.val, ← Vals.pick T.snd S.val)⟩
 
+/-- A section on a value column: `Ew.valAtom`, `left`: `Ew.atomVal`, the atom the kernel's one-element operand,
+    one pass over `x`, no constant column built. A boxed atom has no such operand. -/
+def sectVal {t u rt : QAtomicType} {n : Nat} (l : Bool) (v : Prim.Dyadic) (a : El u) (x : Arr t n) :
+    Except String (Arr rt n) :=
+  if hu : u = .general then throw "sect: a general atom has no kernel operand; compose a stored constant" else
+    match l with
+    | false => Ew.valAtom v rt x a hu
+    | true => Ew.atomVal v rt a x hu
+
+/-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
+def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do
+  let w ← Find.where b
+  pure ⟨w.1, ← Vals.pick w.2 R.key, ← Vals.pick w.2 R.val⟩
+
 /-- `R ≫ c` applied to `R`'s value columns; the key stays. -/
 def _root_.LeetQ.Rel.Fn.apply {K : Obj} : {A B : Obj} → Fn A B → RelV K A → Except String (RelV K B)
   | _, _, .dy (rt := rt) v _, R => do pure ⟨R.n, R.key, ← Ew.val v rt R.val.1 R.val.2⟩
@@ -309,6 +337,18 @@ def _root_.LeetQ.Rel.Fn.apply {K : Obj} : {A B : Obj} → Fn A B → RelV K A �
     | .prod .., _ => throw "!e: no kernel keeps a product key; compose it before the key is paired"
   | _, _, .fst, R => pure ⟨R.n, R.key, R.val.1⟩
   | _, _, .snd, R => pure ⟨R.n, R.key, R.val.2⟩
+  | _, _, .sect (t := t) (rt := rt) l v _ a, R => do pure ⟨R.n, R.key, ← sectVal (t := t) (rt := rt) l v a R.val⟩
+  | _, _, .test c, R => do RelV.sel (← c.apply R).val R
+
+/-- `c? ≫ R` with `R` run: `c` on the key column, handed as a value column beside itself, then `RelV.sel`; a
+    kernel that needs an atomic key refuses a product key in `Fn.apply`. -/
+def testKey {A C : Obj} (c : Fn A (.atom .boolean)) (R : RelV A C) : Except String (RelV A C) := do
+  RelV.sel (← c.apply (K := A) ⟨R.n, R.key, R.key⟩).val R
+
+/-- `P` as a coreflexive `c?`, its kernel on a run `R` beside it: `comp P R` runs `R` and applies `c` to the key. -/
+def asTest {A B : Obj} : Prog A B → Option ((C : Obj) → RelV B C → Except String (RelV A C))
+  | fn (.test c) => some fun _ R => testKey c R
+  | _ => none
 
 /-- `P ≫ Q` with `Q` stored: `Alg.comp`, which joins one value column on one key column. -/
 def compV : {A B C : Obj} → RelV A B → RelV B C → Except String (RelV A C)
@@ -331,11 +371,13 @@ def run : {A B : Obj} → Prog A B → Except String (RelV A B)
   | _, _, idU U => pure (.of (Alg.idU U))
   | _, _, zero => liftV Alg.zero
   | _, _, top Ua Ub => liftV (Alg.top Ua Ub)
-  | _, _, comp P Q => do
-    let R ← P.run
-    match Q.asFn with
-    | some c => c.apply R
-    | none => compV R (← Q.run)
+  | _, _, comp P Q => match P.asTest with
+    | some g => do g _ (← Q.run)
+    | none => do
+      let R ← P.run
+      match Q.asFn with
+      | some c => c.apply R
+      | none => compV R (← Q.run)
   | _, _, conv P => do liftV (Alg.conv (← P.run).toRel)
   | _, _, inter P Q => do liftV (Alg.inter (← P.run).toRel (← Q.run).toRel)
   | _, _, union P Q => do liftV (Alg.union (← P.run).toRel (← Q.run).toRel)
@@ -447,6 +489,9 @@ def _root_.LeetQ.Rel.Fn.Sound (K : Obj) : {A B : Obj} → Fn A B → Prop
   | .atom t, .atom u, .cst e => ∀ (R : RelV K t) (T : RelV K u), (Fn.cst e).apply R = .ok T →
       @Eq (Ob K ⟶ Ob u) T.Holds (R.Holds ≫ Verb.cst e)
   | _, _, .fst | _, _, .snd => True
+  | _, _, .sect (t := t) (rt := rt) l v h a => ∀ n (x : Arr t n) (V : Arr rt n), sectVal l v a x = .ok V →
+      x.toList.mapM (sectEl l v h a) = .ok V.toList
+  | A, _, .test c => ∀ R T : RelV K A, (Fn.test c).apply R = .ok T → @Eq (Ob K ⟶ Ob A) T.Holds (R.Holds ≫ (Fn.test c).den)
 
 /-- The kernel laws a term's run needs and no theorem gives yet, one per kernel node; the stored leaves,
     `til`, `idU` and `°` need none (`arr_sound` … `conv_sound`). -/
@@ -456,10 +501,13 @@ def Sound : {A B : Obj} → Prog A B → Prop
   | .atom A, .atom B, top Ua Ub => ∀ T : RelV A B, liftV (Alg.top Ua Ub) = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds (Ua.rel° ≫ ⊤ ≫ Ub.rel)
   | _, _, conv P => P.Sound
-  | A, C, comp (B := B) P Q => P.Sound ∧ match Q.asFn with
-    | some c => c.Sound A
-    | none => Q.Sound ∧ ∀ (R : RelV A B) (S : RelV B C) (T : RelV A C), compV R S = .ok T →
-        @Eq (Ob A ⟶ Ob C) T.Holds (@Cat.comp _ _ (Ob A) (Ob B) (Ob C) R.Holds S.Holds)
+  | A, C, comp (B := B) P Q => match P.asTest with
+    | some g => Q.Sound ∧ ∀ (R : RelV B C) (T : RelV A C), g C R = .ok T →
+        @Eq (Ob A ⟶ Ob C) T.Holds (@Cat.comp _ _ (Ob A) (Ob B) (Ob C) P.den R.Holds)
+    | none => P.Sound ∧ match Q.asFn with
+      | some c => c.Sound A
+      | none => Q.Sound ∧ ∀ (R : RelV A B) (S : RelV B C) (T : RelV A C), compV R S = .ok T →
+          @Eq (Ob A ⟶ Ob C) T.Holds (@Cat.comp _ _ (Ob A) (Ob B) (Ob C) R.Holds S.Holds)
   | K, _, pair (A := A) (B := B) P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : RelV K A) (S : RelV K B) (T : RelV K (.prod A B)),
       pairV R S = .ok T → @Eq (Ob K ⟶ Ob (.prod A B)) T.Holds (rpair R.Holds S.Holds)
   | .atom A, .atom B, inter P Q => P.Sound ∧ Q.Sound ∧ ∀ R S T : RelV A B, liftV (Alg.inter R.toRel S.toRel) = .ok T →
@@ -552,6 +600,23 @@ theorem dy_sound {K : Obj} {t u rt : QAtomicType} {v : Prim.Dyadic} {h : Eval.ew
     obtain ⟨_, ec⟩ := (rel_iff _ _ _).1 hi
     exact ⟨i, ek, ec⟩
 
+/-- `R ≫ (v a)` holds its spec, from the kernel's List spec (`ix_mapM`), at any key. -/
+theorem sect_sound {K : Obj} {t u rt : QAtomicType} {l : Bool} {v : Prim.Dyadic}
+    {h : Eval.ewType v (cond l u t) (cond l t u) = some rt} {a : El u} {R : RelV K t} {V : Arr rt R.n}
+    (hs : (R.val : Arr t R.n).toList.mapM (sectEl l v h a) = .ok V.toList) :
+    ((⟨R.n, R.key, V⟩ : RelV K rt).Holds : Ob K ⟶ Ob rt) = R.Holds ≫ (Fn.sect l v h a).den := by
+  have hv : V.rel = _ := Verb.ix_mapM _ _ _ hs
+  refine hom_ext fun k c => ⟨fun ⟨i, ek, ec⟩ => ?_, fun ⟨b, ⟨i, ek, eb⟩, e⟩ => ?_⟩
+  · have hi : V.rel i.1 c := (rel_iff _ _ _).2 ⟨i.2, ec⟩
+    rw [hv] at hi
+    obtain ⟨b, hb, e⟩ := hi
+    obtain ⟨_, eb⟩ := (rel_iff _ _ _).1 hb
+    exact ⟨b, ⟨i, ek, eb⟩, e⟩
+  · subst eb
+    have hi : V.rel i.1 c := by rw [hv]; exact ⟨_, (rel_iff _ _ _).2 ⟨i.2, rfl⟩, e⟩
+    obtain ⟨_, ec⟩ := (rel_iff _ _ _).1 hi
+    exact ⟨i, ek, ec⟩
+
 /-- `R ≫ c` holds its spec, from the kernel law of `c`. -/
 theorem _root_.LeetQ.Rel.Fn.apply_sound {K : Obj} : ∀ {A B : Obj} (c : Fn A B) {R : RelV K A} {T : RelV K B},
     c.Sound K → c.apply R = .ok T → (T.Holds : Ob K ⟶ Ob B) = R.Holds ≫ c.den
@@ -569,6 +634,11 @@ theorem _root_.LeetQ.Rel.Fn.apply_sound {K : Obj} : ∀ {A B : Obj} (c : Fn A B)
     cases h
     exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.get R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
       fun ⟨p, ⟨i, ek, ep⟩, e⟩ => ⟨i, ek, by subst ep; exact e.symm⟩⟩
+  | _, _, .sect .., _, _, hs, h => by
+    simp only [Fn.apply, bind, Except.bind] at h; split at h
+    · cases h
+    cases h; exact sect_sound (hs _ _ _ (by assumption))
+  | _, _, .test _, _, _, hs, h => hs _ _ h
 
 /-- `&x` runs to its spec: `Find.where` keyed by `til m` holds `enum(dom(x ≫ !1b°))` (`where_rel`). -/
 theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : RelV .long .long}
@@ -611,20 +681,31 @@ theorem run_sound : ∀ {A B : Obj} (P : Prog A B) {R : RelV A B}, P.Sound → P
   | _, _, zero, _, hs, h => by unfold Sound at hs; exact hs _ h
   | _, _, top .., _, hs, h => by unfold Sound at hs; exact hs _ h
   | _, _, comp P Q, _, hs, h => by
-    unfold Sound at hs; obtain ⟨sP, hl⟩ := hs
-    simp only [run, bind, Except.bind] at h; split at h
-    · cases h
-    rename_i r hr
-    cases hq : Q.asFn with
-    | some c =>
-      rw [hq] at h hl
-      rw [Fn.apply_sound c hl h, run_sound P sP hr, asFn_some hq]; rfl
-    | none =>
-      rw [hq] at h hl
-      obtain ⟨sQ, hl⟩ := hl
+    unfold Sound at hs
+    simp only [run, bind, Except.bind] at h
+    cases hp : P.asTest with
+    | some g =>
+      rw [hp] at hs h
+      obtain ⟨sQ, hl⟩ := hs
       simp only at h; split at h
       · cases h
-      rw [hl _ _ _ h, run_sound P sP hr, run_sound Q sQ (by assumption)]; rfl
+      rw [hl _ _ h, run_sound Q sQ (by assumption)]; rfl
+    | none =>
+      rw [hp] at hs h
+      obtain ⟨sP, hl⟩ := hs
+      simp only at h; split at h
+      · cases h
+      rename_i r hr
+      cases hq : Q.asFn with
+      | some c =>
+        rw [hq] at h hl
+        rw [Fn.apply_sound c hl h, run_sound P sP hr, asFn_some hq]; rfl
+      | none =>
+        rw [hq] at h hl
+        obtain ⟨sQ, hl⟩ := hl
+        simp only at h; split at h
+        · cases h
+        rw [hl _ _ _ h, run_sound P sP hr, run_sound Q sQ (by assumption)]; rfl
   | _, _, conv P, _, hs, h => by
     unfold Sound at hs
     simp only [run, bind, Except.bind] at h; split at h
@@ -757,6 +838,20 @@ theorem mon_den {t : QAtomicType} {n : Nat} (op : UInt8) (f : El t → El t) (x 
 /-- `x v y = ⟨x, y⟩ ≫ (v)` (§11.1 dyadic): `val_rel`'s right side, read through the key. -/
 def val {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) (x : Arr t n)
     (y : Arr u n) : Prog .long rt := comp (pair (arr x) (arr y)) (fn (.dy v h))
+
+/-- `⟨P, Q ≫ !a⟩ ≫ (v) = P (v a)`, `Q` defined wherever `P` is: the atom a section's operand, no pair. -/
+theorem sect_pairR {K C : RelSet.{0}} {t u rt : QAtomicType} (P : K ⟶ Ob t) (Q : K ⟶ C) (v : Prim.Dyadic)
+    (h : Eval.ewType v t u = some rt) (a : El u) (hd : ∀ k b, P k b → ∃ c, Q k c) :
+    rpair P (Q ≫ Verb.cst a) ≫ ofExcept (fun p : El t × El u => elem v h p.1 p.2) = P ≫ (Fn.sect false v h a).den :=
+  hom_ext fun k c => ⟨fun ⟨p, ⟨hp, _, _, ea⟩, e⟩ => by cases ea; exact ⟨p.1, hp, e⟩,
+    fun ⟨b, hb, e⟩ => ⟨(b, a), ⟨hb, by obtain ⟨c', hc⟩ := hd k b hb; exact ⟨c', hc, rfl⟩⟩, e⟩⟩
+
+/-- `⟨Q ≫ !a, P⟩ ≫ (v) = P (a v)`. -/
+theorem sect_pairL {K C : RelSet.{0}} {t u rt : QAtomicType} (P : K ⟶ Ob t) (Q : K ⟶ C) (v : Prim.Dyadic)
+    (h : Eval.ewType v u t = some rt) (a : El u) (hd : ∀ k b, P k b → ∃ c, Q k c) :
+    rpair (Q ≫ Verb.cst a) P ≫ ofExcept (fun p : El u × El t => elem v h p.1 p.2) = P ≫ (Fn.sect true v h a).den :=
+  hom_ext fun k c => ⟨fun ⟨p, ⟨⟨_, _, ea⟩, hp⟩, e⟩ => by cases ea; exact ⟨p.2, hp, e⟩,
+    fun ⟨b, hb, e⟩ => ⟨(a, b), ⟨by obtain ⟨c', hc⟩ := hd k b hb; exact ⟨c', hc, rfl⟩, hb⟩, e⟩⟩
 
 theorem val_den {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt)
     (x : Arr t n) (y : Arr u n) (hn : n ≤ 2 ^ 64) :
@@ -991,9 +1086,9 @@ theorem over_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
       Verb.enum ≫ ListRel.list x.rel ≫ Verb.fold (op.denseSeed QLean.Kernel.Ew.i64 Spec.nul) (Verb.skipNul op.step) :=
   rfl
 
-/-- `x` with its nulls dropped: the anti-join against the coreflexive `ran x ∩ (ran x ≫ !0N)` on `0N`. -/
+/-- `x` with its nulls dropped: `x (≠0N)?`. -/
 def nonNul {n : Nat} (x : Arr .long n) : Prog .long .long :=
-  anti (arr x) (inter (idU x) (comp (idU x) (fn (.cst (u := .long) Spec.nul))))
+  comp (arr x) (fn (.test (.sect (u := .long) false .ne rfl Spec.nul)))
 
 /-- `⟨⦇0,+⦈, ⦇0,succ⦈⟩ ≫ (÷)`, one key `0`, nulls skipped by both: the sum by `skipNul`, the count over
     `nonNul x`. No row where nothing counts: `count` has none there. -/
@@ -1007,22 +1102,38 @@ theorem avg_den {n : Nat} (x : Arr .long n) :
     (avg x).den = (til 1).den ≫ Verb.miss (avgDiv x).den QLean.nanBits :=
   comp_cup _ _ _ _
 
-/-- On `x`'s values, missing the coreflexive `ran x ∩ (ran x ≫ !0N)` is being other than `0N`. -/
-theorem corNeg_nul {n : Nat} (x : Arr .long n) :
-    (x.rel ≫ Verb.corNeg (Verb.ran x.rel ∩ (Verb.ran x.rel ≫ Verb.cst (B := Ob .long) Spec.nul)) : Idx ⟶ Ob .long)
-      = x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul) := by
-  refine hom_ext fun j b => ⟨fun ⟨c, hx, hc⟩ => ?_, fun ⟨c, hx, hc⟩ => ?_⟩
-  · obtain ⟨ecb, hn⟩ := hc
-    subst ecb
-    exact ⟨c, hx, rfl, fun hb => hn c ⟨⟨rfl, j, hx, hx⟩, c, ⟨rfl, j, hx, hx⟩, hb⟩⟩
-  · obtain ⟨ecb, hb⟩ := hc
-    subst ecb
-    exact ⟨c, hx, rfl, fun v ⟨_, _, _, hv⟩ => hb hv⟩
+/-- Int64's `compare` read as its three orders. -/
+theorem compare_iff (x a : Int64) : (compare x a = .lt ↔ x < a) ∧ (compare x a = .eq ↔ x = a) ∧ (compare x a = .gt ↔ a < x) := by
+  have e : x = a ↔ x.toInt = a.toInt := Int64.toInt_inj.symm
+  rw [Ew.compare_toInt, Int64.lt_iff_toInt_lt, Int64.lt_iff_toInt_lt, e]
+  exact ⟨Int.compare_eq_lt, Int.compare_eq_eq, Int.compare_eq_gt⟩
+
+theorem signed_i64 (x : Int64) : Kernel.Ew.signed Kernel.Ew.i64 x.toUInt64 = x := by
+  simp (config := { decide := true }) [Kernel.Ew.signed]
+
+/-- A comparison's `elem` on longs is `true` exactly where the order `ord v` holds, for the four orders. -/
+theorem elem_ord {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt ∨ v = .ge) (h : Eval.ewType v .long .long = some .boolean)
+    (x a : Int64) : elem v h x a = .ok true ↔ ord v x a := by
+  obtain ⟨hl, he, hg⟩ := compare_iff x a
+  rcases hv with rfl | rfl | rfl | rfl <;> rw [Ew.elem_long_cmp rfl h, Except.ok.injEq] <;>
+    simp (config := { decide := true }) only [Kernel.Ew.cmpStep, signed_i64, ord, if_true, if_false, beq_iff_eq, bne_iff_ne,
+      ne_eq, reduceCtorEq, Bool.false_eq_true]
+  all_goals cases hc : compare x a <;> simp only [reduceCtorEq, not_true_eq_false, not_false_eq_true, true_iff, false_iff]
+  all_goals first | exact hl.1 hc | exact he.1 hc | exact hg.1 hc | skip
+  all_goals (simp only [hc, reduceCtorEq, false_iff, true_iff] at hl he hg
+             simp only [Int64.le_iff_toInt_le, Int64.lt_iff_toInt_lt, ← Int64.toInt_inj] at *; omega)
+
+/-- `≠` on longs: its `elem` is `true` exactly off `a`. -/
+theorem elem_ne (h : Eval.ewType .ne .long .long = some .boolean) (x a : Int64) : elem .ne h x a = .ok true ↔ x ≠ a := by
+  rw [Ew.elem_long_cmp rfl h, Except.ok.injEq]
+  simp (config := { decide := true }) only [Kernel.Ew.cmpStep, signed_i64, bne_iff_ne, ne_eq, if_true, if_false]
+  exact not_congr (compare_iff x a).2.1
 
 /-- `nonNul x` holds `x` where it is not `0N`. -/
 theorem nonNul_den {n : Nat} (x : Arr .long n) :
     (nonNul x).den = posL° ≫ x.rel ≫ corefl (fun c : Int64 => c ≠ Spec.nul) := by
-  rw [← corNeg_nul]; exact Cat.assoc _ _ _
+  have e := congrArg (corefl (A := Ob .long)) (funext fun c => propext (elem_ne rfl c Spec.nul))
+  exact (congrArg (_ ≫ ·) e).trans (Cat.assoc _ _ _)
 
 /-! ## Key value and group number
 
@@ -1222,10 +1333,10 @@ theorem xasc_den {t u : QAtomicType} {n : Nat} (lt : El t → El t → Prop) (s 
 
 /-! ### `grade` on a long column: the kernel law from `iasc_rel`/`idesc_rel`, and the runs read back -/
 
-/-- A run of `comp P Q` ran `P`. -/
-theorem comp_run {A B C : QAtomicType} {P : Prog A B} {Q : Prog B C} {R : RelV A C} (h : (comp P Q).run = .ok R) :
-    ∃ R₁, P.run = .ok R₁ := by
-  simp only [run, bind, Except.bind] at h; split at h
+/-- A run of `comp P Q` ran `P`, unless `P` is a coreflexive, which `Q`'s run is filtered by. -/
+theorem comp_run {A B C : QAtomicType} {P : Prog A B} {Q : Prog B C} {R : RelV A C} (hp : P.asTest = none)
+    (h : (comp P Q).run = .ok R) : ∃ R₁, P.run = .ok R₁ := by
+  simp only [run, bind, Except.bind] at h; rw [hp] at h; simp only at h; split at h
   · cases h
   · exact ⟨_, by assumption⟩
 
@@ -1304,7 +1415,7 @@ theorem xsort_prog {u : QAtomicType} {n : Nat} (d : Bool) {s : Arr .long n} {x :
         = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable s.rel
           (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
       ∧ corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob u) = ix G ≫ x.rel := by
-  obtain ⟨_, h1⟩ := comp_run h
+  obtain ⟨_, h1⟩ := comp_run rfl h
   obtain ⟨S, _, hg, -, -⟩ := grade_run h1
   obtain ⟨M, hc, -, hl, hM⟩ := grade_long hs hn h63 hg
   have h64 := USize.size_le
@@ -1771,10 +1882,13 @@ theorem scan_den {n : Nat} (op : Kernel.Coc.Over) (x : Arr .long n) :
 /-- `win(w) = (≥) ∩ (drop(w−1)° ≫ (≤))` on `til n`: `i` against `j` with `i−(w−1) ≤ j ≤ i`. The shift
     `drop(w−1)°` is the dyadic `−` against the constant `w−1`, so the window is two order joins. -/
 def mwin (n w : Nat) : Prog .long .long :=
-  inter (inits n) (ojoin .le (comp (pair (til n) (comp (til n) (fn (.cst (u := .long) (Int64.ofNat (w - 1)))))) (fn (.dy .sub rfl))) (til n))
+  inter (inits n) (ojoin .le (comp (til n) (fn (.sect (u := .long) false .sub rfl (Int64.ofNat (w - 1))))) (til n))
 
 theorem mwin_den (n w : Nat) : (mwin n w).den = ((til n).den ≫ ord .ge ≫ (til n).den°) ∩
-    ((comp (pair (til n) (comp (til n) (fn (.cst (u := .long) (Int64.ofNat (w - 1)))))) (fn (.dy .sub rfl))).den ≫ ord .le ≫ (til n).den°) := rfl
+    ((comp (pair (til n) (comp (til n) (fn (.cst (u := .long) (Int64.ofNat (w - 1)))))) (fn (.dy .sub rfl))).den ≫ ord .le ≫ (til n).den°) := by
+  rw [show (comp (pair (til n) (comp (til n) (fn (.cst (u := .long) (Int64.ofNat (w - 1)))))) (fn (.dy .sub rfl))).den =
+    (comp (til n) (fn (.sect (u := .long) false .sub rfl (Int64.ofNat (w - 1))))).den from
+    sect_pairR (t := .long) (u := .long) (rt := .long) (til n).den (til n).den .sub rfl _ fun _ b h => ⟨b, h⟩]; rfl
 
 /-- `w msum x = Λ(win(w)) ≫ enum ≫ list(x) ≫ ⦇0,+⦈`, nulls skipped. -/
 def msum {n : Nat} (w : Nat) (x : Arr .long n) : Prog .long .long := foldOp .add x (mwin n w)
@@ -1819,52 +1933,72 @@ theorem enlist_den {u : QAtomicType} (a : El u) : (enlist a).den = (til 1).den �
 /-- `x~y` as the relation of its witnesses against it: the positions where `x <> y`, and the positions one
     list has and the other lacks. `x~y` holds iff the run is empty; the emptiness test is outside the term. -/
 def matchW {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : Prog .long .boolean :=
-  union (inter (comp (pair (arr x) (arr y)) (fn (.dy .ne rfl))) (comp (comp (pair (arr x) (arr y)) (fn (.dy .ne rfl))) (fn (.cst true))))
+  union (comp (comp (pair (arr x) (arr y)) (fn (.test (.dy .ne rfl)))) (fn (.dy .ne rfl)))
     (comp (union (anti (til nx) (dom (arr y))) (anti (til ny) (dom (arr x)))) (fn (.cst true)))
+
+/-- `T ∩ (T ≫ !1b)`, the true rows of `T = P ≫ c`, is `P c? c`, `c` simple. -/
+theorem test_true {K : RelSet.{0}} {X : Obj} (P : K ⟶ Ob X) (c : Fn X (.atom .boolean))
+    (hc : ∀ p b, c.den p b → c.den p true → b = true) :
+    (P ≫ c.den) ∩ ((P ≫ c.den) ≫ Verb.cst true) = (P ≫ (Fn.test c).den) ≫ c.den := by
+  refine hom_ext fun k b => ⟨?_, ?_⟩
+  · rintro ⟨⟨p, hp, hb⟩, _, _, e⟩
+    have e' : b = true := e
+    have ht : c.den p true := e' ▸ hb
+    exact ⟨p, ⟨p, hp, rfl, ht⟩, hb⟩
+  · rintro ⟨_, ⟨p, hp, rfl, ht⟩, hb⟩
+    exact ⟨⟨p, hp, hb⟩, true, ⟨p, hp, ht⟩, hc p b hb ht⟩
 
 theorem matchW_den {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) :
     (matchW x y).den = ((comp (pair (arr x) (arr y)) (fn (.dy .ne rfl))).den ∩ ((comp (pair (arr x) (arr y)) (fn (.dy .ne rfl))).den ≫ Verb.cst true)) ∪
       ((((til nx).den ≫ Verb.corNeg (Verb.dom (posL° ≫ y.rel))) ∪
-        ((til ny).den ≫ Verb.corNeg (Verb.dom (posL° ≫ x.rel)))) ≫ Verb.cst true) := rfl
+        ((til ny).den ≫ Verb.corNeg (Verb.dom (posL° ≫ x.rel)))) ≫ Verb.cst true) :=
+  (congrArg (fun T : Ob .long ⟶ Ob .boolean => T ∪ _) (test_true (pair (arr x) (arr y)).den
+    (Fn.dy (t := .long) (u := .long) .ne rfl) fun _ _ h h' => Except.ok.inj (h.symm.trans h'))).symm
 
 /-- `x . (i;j) = ⟨i ≫ x, !j⟩ ≫ (@)`, a nested `x` stored flat: `v` its values, `o` its row offsets, so the
     row `i` is `o@i` and the element `v@(o@i)+j`. Nothing bounds `j` by the row's length. -/
 def dot {t : QAtomicType} {g n : Nat} (o : Arr .long g) (v : Arr t n) (i j : Int64) : Prog .long t :=
-  comp (comp (pair (comp (comp (til 1) (fn (.cst (u := .long) i))) (arr o)) (comp (til 1) (fn (.cst (u := .long) j)))) (fn (.dy .add rfl))) (arr v)
+  comp (comp (comp (comp (til 1) (fn (.cst (u := .long) i))) (arr o)) (fn (.sect (u := .long) false .add rfl j))) (arr v)
 
 theorem dot_den {t : QAtomicType} {g n : Nat} (o : Arr .long g) (v : Arr t n) (i j : Int64) :
     (dot o v i j).den = (rpair ((til 1).den ≫ Verb.cst i ≫ posL° ≫ o.rel) ((til 1).den ≫ Verb.cst j) ≫
       ofExcept fun p => elem .add (rfl : Eval.ewType .add .long .long = some .long) p.1 p.2) ≫ posL° ≫ v.rel := by
-  simp only [dot, den, Fn.den, Cat.assoc]
+  refine Eq.trans ?_ (congrArg (fun T : Ob .long ⟶ Ob .long => T ≫ posL° ≫ v.rel)
+    (sect_pairR (t := .long) (u := .long) (rt := .long) ((til 1).den ≫ Verb.cst i ≫ posL° ≫ o.rel) (til 1).den .add rfl j
+      fun _ _ ⟨m, hk, _⟩ => ⟨m, hk⟩)).symm
+  simp only [dot, den, Cat.assoc]; rfl
+
 /-! ## Verbs, first half (design §2.1–§2.3, up to `+x`)
 
   Each verb written with the existing constructors only. A verb with no term here is not expressible; the
   reason is recorded in the design's verb table (`rows-1.html`), not in a stub. -/
 
-/-- `a v x = ⟨!a, x⟩ ≫ (v)`: the atom as the constant map on `x`'s keys (R2's left shape, run literally). -/
+/-- `a v x = x (a v)`: the atom a section's operand (R2's left shape). -/
 def atomL {t u rt : QAtomicType} {n : Nat} (a : El u) (v : Prim.Dyadic) (h : Eval.ewType v u t = some rt)
-    (x : Arr t n) : Prog .long rt := comp (pair (comp (arr x) (fn (.cst a))) (arr x)) (fn (.dy v h))
+    (x : Arr t n) : Prog .long rt := comp (arr x) (fn (.sect true v h a))
 
 theorem atomL_den {t u rt : QAtomicType} {n : Nat} (a : El u) (v : Prim.Dyadic) (h : Eval.ewType v u t = some rt)
     (x : Arr t n) : (atomL a v h x).den =
-      rpair ((posL° ≫ x.rel) ≫ Verb.cst a) (posL° ≫ x.rel) ≫ ofExcept fun p => elem v h p.1 p.2 := rfl
+      rpair ((posL° ≫ x.rel) ≫ Verb.cst a) (posL° ≫ x.rel) ≫ ofExcept fun p => elem v h p.1 p.2 :=
+  (sect_pairL _ _ v h a fun _ b h => ⟨b, h⟩).symm
 
-/-- `x v a = ⟨x, !a⟩ ≫ (v)`. -/
+/-- `x v a = x (v a)`. -/
 def atomR {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt) (x : Arr t n)
-    (a : El u) : Prog .long rt := comp (pair (arr x) (comp (arr x) (fn (.cst a)))) (fn (.dy v h))
+    (a : El u) : Prog .long rt := comp (arr x) (fn (.sect false v h a))
 
 theorem atomR_den {t u rt : QAtomicType} {n : Nat} (v : Prim.Dyadic) (h : Eval.ewType v t u = some rt)
     (x : Arr t n) (a : El u) : (atomR v h x a).den =
-      rpair (posL° ≫ x.rel) ((posL° ≫ x.rel) ≫ Verb.cst a) ≫ ofExcept fun p => elem v h p.1 p.2 := rfl
+      rpair (posL° ≫ x.rel) ((posL° ≫ x.rel) ≫ Verb.cst a) ≫ ofExcept fun p => elem v h p.1 p.2 :=
+  (sect_pairR _ _ v h a fun _ b h => ⟨b, h⟩).symm
 
 /-- `%x = 1 % x`: `Fn.mono` keeps the value type, so the reciprocal (long → float) goes through the dyadic `%`. -/
 def recip {n : Nat} (x : Arr .long n) : Prog .long .float := atomL (u := .long) (1 : Int64) .div rfl x
 
-/-- `^x = x = 0N` on longs: the null test, through the dyadic `=` against a constant column. -/
+/-- `^x = x = 0N` on longs: the null test, the section `(=0N)`. -/
 def isNul {n : Nat} (x : Arr .long n) : Prog .long .boolean := atomR .eq rfl x (u := .long) Spec.nul
 
 /-- `til n + c`: the position map `k ↦ k + c` on `til n` (`take`/`drop`/`rot`/`rev`/`,` read through it). -/
-def shiftBy (n : Nat) (c : Int64) : Prog .long .long := comp (pair (til n) (comp (til n) (fn (.cst (u := .long) c)))) (fn (.dy .add rfl))
+def shiftBy (n : Nat) (c : Int64) : Prog .long .long := comp (til n) (fn (.sect (u := .long) false .add rfl c))
 
 /-- `x v': x = ⟨x, miss(prev ≫ x, seed)⟩ ≫ (v)`, `prev = til n − 1`: position `0` has no predecessor, so
     the seed fills it. -/
@@ -1928,7 +2062,7 @@ theorem rotate_den {t : QAtomicType} {nx : Nat} (r : Nat) (x : Arr t nx) :
     (rotate r x).den = (drop r x).den ∪ ((shiftBy r (Int64.ofNat (nx - r))).den° ≫ posL° ≫ x.rel) := rfl
 
 /-- `|x = rev ≫ x`, `rev = (|x|−1) − til |x|`. -/
-def revMap (n : Nat) : Prog .long .long := comp (pair (comp (til n) (fn (.cst (u := .long) (Int64.ofNat (n - 1))))) (til n)) (fn (.dy .sub rfl))
+def revMap (n : Nat) : Prog .long .long := comp (til n) (fn (.sect (u := .long) true .sub rfl (Int64.ofNat (n - 1))))
 
 def rev {t : QAtomicType} {n : Nat} (x : Arr t n) : Prog .long t := comp (revMap n) (arr x)
 
@@ -1957,6 +2091,76 @@ theorem cutFlat_den {t : QAtomicType} {g n : Nat} (o : Arr .long g) (x : Arr t n
     (cutFlat o x).den = (Λ ((til n).den ≫ ord .ge ≫ (posL° ≫ o.rel)°) ≫ est (fun a b : Int64 => a ≥ b))° ≫
       posL° ≫ x.rel := rfl
 
+/-- `a v R`: the coreflexive `{x | a v x}` composed with `R`, the key kept. -/
+def keyCmp {t : QAtomicType} {B : Obj} (v : Prim.Dyadic) (a : El t) (R : Prog (.atom t) B)
+    (h : Eval.ewType v t t = some .boolean := by rfl) : Prog (.atom t) B := comp (fn (.test (.sect true v h a))) R
+
+/-- `R v a`: `R` composed with the coreflexive `{x | x v a}`. -/
+def valCmp {A : Obj} {t : QAtomicType} (v : Prim.Dyadic) (R : Prog A (.atom t)) (a : El t)
+    (h : Eval.ewType v t t = some .boolean := by rfl) : Prog A (.atom t) := comp R (fn (.test (.sect false v h a)))
+
+/-! `a v R` and `R v a`, overloading the comparisons: Lean's own reading fails on a `Prog`, these on anything else. -/
+namespace Cmp
+
+macro "cmp_notation " tk:str v:term : command => `(
+  scoped notation:50 a:51 $tk:str R:51 => keyCmp $v a R
+  scoped notation:50 R:51 $tk:str a:51 => valCmp $v R a)
+
+cmp_notation " < " Prim.Dyadic.lt
+cmp_notation " ≤ " Prim.Dyadic.le
+cmp_notation " > " Prim.Dyadic.gt
+cmp_notation " ≥ " Prim.Dyadic.ge
+cmp_notation " = " Prim.Dyadic.eq
+cmp_notation " ≠ " Prim.Dyadic.ne
+
+end Cmp
+
+open Cmp in
+/-- `a < R`, q's `(where k>a)` over the key. -/
+def selKey {B : Obj} (a : Int64) (R : Prog .long B) : Prog .long B := a < R
+
+open Cmp in
+/-- `R < a`, the rows of `R` whose value is below `a`. -/
+def selVal {A : Obj} (R : Prog A .long) (a : Int64) : Prog A .long := R < a
+
+theorem selKey_den {B : Obj} (a : Int64) (R : Prog .long B) :
+    (selKey a R).den = corefl (fun x : Int64 => a < x) ≫ R.den :=
+  congrArg (· ≫ R.den) (congrArg (corefl (A := Ob .long)) (funext fun x => propext (elem_ord (Or.inl rfl) rfl a x)))
+
+theorem selVal_den {A : Obj} (R : Prog A .long) (a : Int64) :
+    (selVal R a).den = R.den ≫ corefl (fun x : Int64 => x < a) :=
+  congrArg (R.den ≫ ·) (congrArg (corefl (A := Ob .long)) (funext fun x => propext (elem_ord (Or.inl rfl) rfl x a)))
+
+/-- **The bool path is the relational reading**: `(v a)?`, the test of a section, is `dom((v) ≫ a°)`, `a` the point
+    `1 → long`, at the four orders. -/
+theorem test_sect_dom {v : Prim.Dyadic} (hv : v = .lt ∨ v = .le ∨ v = .gt ∨ v = .ge)
+    (h : Eval.ewType v .long .long = some .boolean) (a : Int64) :
+    (Fn.test (.sect (t := .long) (u := .long) false v h a)).den =
+      Verb.dom (ord v ≫ (Verb.cst a : (⟨Unit⟩ : RelSet.{0}) ⟶ Ob .long)°) :=
+  hom_ext fun x y => ⟨fun ⟨e, hc⟩ => by
+      subst e; have o := (elem_ord hv h x a).1 hc; exact ⟨rfl, (), ⟨a, o, rfl⟩, ⟨a, o, rfl⟩⟩,
+    fun ⟨e, _, ⟨c, hx, hc⟩, _⟩ => by cases hc; exact ⟨e, (elem_ord hv h x a).2 hx⟩⟩
+
+section Checks
+open Cmp
+
+private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
+  return ⟨vs.length, ← Arr.of .long _ (.vector .long ks.length (.bytes (packLongs ks)) none) "D",
+    ← Arr.of .long _ (.vector .long vs.length (.bytes (packLongs vs)) none) "D"⟩
+private def rows {A B : QAtomicType} (P : Except String (Prog (.atom A) (.atom B))) : Option (List (El A × El B)) :=
+  (do pure (← (← P).run).toRel.toList : Except String _).toOption
+
+#guard rows (do pure ((2 : Int64) < rel (← D [1, 2, 3] [10, 20, 30]))) == some [(3, 30)]
+#guard rows (do pure (rel (← D [1, 2, 3] [10, 20, 30]) ≤ (20 : Int64))) == some [(1, 10), (2, 20)]
+#guard rows (do pure ((2 : Int64) = rel (← D [1, 2, 3] [10, 20, 30]))) == some [(2, 20)]
+#guard rows (do pure (comp (fn (.test (.sect (t := .long) (u := .long) false .gt rfl 1))) (rel (← D [1, 2, 3] [10, 20, 30])))) ==
+  some [(2, 20), (3, 30)]
+#guard rows (do pure (comp (comp (pair (rel (← D [0, 1, 2] [10, 20, 30])) (rel (← D [0, 1, 2] [11, 20, 29])))
+  (fn (.test (.dy .lt rfl)))) (fn .fst))) == some [(0, 10)]
+#guard ((1 : Int64) < 2) && !((2 : Int64) ≤ 1) -- Lean's own reading still elaborates
+
+end Checks
+
 end Prog
 
 #print axioms Prog.enum_sound
@@ -1982,7 +2186,10 @@ end Prog
 #print axioms Prog.posL_pos
 #print axioms Prog.length_cata
 #print axioms Prog.nonNul_den
-#print axioms Prog.corNeg_nul
+#print axioms Prog.elem_ord
+#print axioms Prog.selKey_den
+#print axioms Prog.selVal_den
+#print axioms Prog.test_sect_dom
 #print axioms Prog.lam_key
 #print axioms Prog.lamEst_iff
 #print axioms Prog.lastBy_grp
