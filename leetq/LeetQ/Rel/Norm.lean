@@ -16,27 +16,25 @@ namespace Prog
   `Small P`, every stored list below `2^63`, where `posL` keeps the order. -/
 
 /-- Every stored list of `P` below `2^63`: the side condition of R6–R8. -/
-def Small : {A B : QAtomicType} → Prog A B → Prop
+def Small : {A B : Obj} → Prog A B → Prop
   | _, _, arr (n := n) _ => n ≤ 2 ^ 63
   | _, _, comp P Q => P.Small ∧ Q.Small
   | _, _, inter P Q => P.Small ∧ Q.Small
   | _, _, union P Q => P.Small ∧ Q.Small
-  | _, _, dy _ _ P Q => P.Small ∧ Q.Small
+  | _, _, pair P Q => P.Small ∧ Q.Small
   | _, _, anti P Q => P.Small ∧ Q.Small
   | _, _, ojoin _ P Q => P.Small ∧ Q.Small
   | _, _, conv P => P.Small
-  | _, _, map _ _ P => P.Small
   | _, _, mem P => P.Small
   | _, _, extr _ P => P.Small
   | _, _, fold _ _ _ _ P => P.Small
-  | _, _, cst _ P => P.Small
   | _, _, dom P => P.Small
   | _, _, enumC _ P => P.Small
   | _, _, count P => P.Small
   | _, _, _ => True
 
 /-- `{e}` as a coreflexive on longs: `ran(til 1 ≫ !e)`, one row. -/
-def pt (e : Int64) : Prog .long .long := dom (conv (cst (u := .long) e (til 1)))
+def pt (e : Int64) : Prog .long .long := dom (conv (comp (til 1) (fn (.cst (u := .long) e))))
 
 theorem pt_den (e a b : Int64) : (pt e).den a b ↔ a = b ∧ a = e := by
   constructor
@@ -62,7 +60,7 @@ theorem arith_add_ofNat {j w : Nat} (h : j + w < 2 ^ 63) :
   simp [arithAtoms, missing, QAtom.isNull, QAtom.type, Prim.clockIntoDays, isFloatPayload, intIn, temporalIn,
     roundedPayload, atomOfInt, intPayload, hj, hw, tj, tw, Int64.ofInt_eq_ofNat]
 
-/-- **`j + w` on longs** (`dy .add`'s `elem`): two positions whose sum is below `2^63` add to the position `j + w`;
+/-- **`j + w` on longs** (`Fn.dy .add`'s `elem`): two positions whose sum is below `2^63` add to the position `j + w`;
     the step a literal window `j ≤ i < j + w` needs. -/
 theorem elem_add_ofNat {j w : Nat} (h : j + w < 2 ^ 63) :
     elem .add (a := .long) (b := .long) (c := .long) rfl (Int64.ofNat j) (Int64.ofNat w) = .ok (Int64.ofNat (j + w)) := by
@@ -154,7 +152,7 @@ def asLen {t : QAtomicType} {m : Nat} (n : Nat) (b : Arr t m) : Option {c : Arr 
 
 /-- The rewrite rules at one node: the fused term and its law, `none` where no rule matches. A list that
     a pattern names twice (`rt` in `wj1`) must hold one list of values in both places. -/
-def rule : {A B : QAtomicType} → (P : Prog A B) → Option {Q : Prog A B // P.Small → Q.den = P.den}
+def rule : {A B : Obj} → (P : Prog A B) → Option {Q : Prog A B // P.Small → Q.den = P.den}
   | _, _, extr true (ojoin .ge (arr y) (arr x)) =>
     some ⟨anti (binJ x y) (pt (-1)), fun h => binE x y h.2 h.1⟩
   | _, _, extr true (inter (@comp _ .long _ (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt))) =>
@@ -266,17 +264,17 @@ def sameKer : (K L : Prog .long .long) → Option (PLift (K.den = L.den))
 /-- **The miss rule**: `miss(E, e)` on `til n` (`missP`), where `E` rewrites to `K ≫ corNeg{e}` and `K` is a map
     on `til n`, is `K` itself: the hit branch, the miss branch's `dom E` and the union all go. The two copies of
     `E` must rewrite to one kernel. -/
-def missRule : {A B : QAtomicType} → (P : Prog A B) → Option {Q : Prog A B // P.Small → Q.den = P.den}
-  | _, _, union (@comp _ .long _ (til n) E) (@cst _ .long .long e (anti (til n₂) (@dom .long .long E₂))) =>
+def missRule : {A B : Obj} → (P : Prog A B) → Option {Q : Prog A B // P.Small → Q.den = P.den}
+  | _, _, union (@comp _ .long _ (til n) E) (@comp _ .long _ (anti (til n₂) (@dom .long .long E₂)) (fn (@Fn.cst .long .long e))) =>
     match rule E, rule E₂ with
-    | some ⟨anti K (@dom .long .long (@conv .long .long (@cst .long .long .long e₁ (til 1)))), hQ⟩,
-      some ⟨anti K₂ (@dom .long .long (@conv .long .long (@cst .long .long .long e₂ (til 1)))), hQ₂⟩ =>
+    | some ⟨anti K (@dom .long .long (@conv .long .long (@comp _ .long _ (til 1) (fn (.cst e₁))))), hQ⟩,
+      some ⟨anti K₂ (@dom .long .long (@conv .long .long (@comp _ .long _ (til 1) (fn (.cst e₂))))), hQ₂⟩ =>
       match mapOn? K, sameKer K₂ K with
       | some ⟨m, hm⟩, some ⟨hKK⟩ =>
         if hc : n = m ∧ n = n₂ ∧ n ≤ 2 ^ 63 ∧ e = e₁ ∧ e = e₂ then some ⟨K, fun h => by
           obtain ⟨rfl, rfl, hn, rfl, rfl⟩ := hc
           have h1 : E.den = K.den ≫ Verb.corNeg (pt e).den := (hQ h.1.2).symm
-          have h2 : E₂.den = E.den := by rw [h1, ← hQ₂ h.2.2, ← hKK]; rfl
+          have h2 : E₂.den = E.den := by rw [h1, ← hQ₂ h.2.1.2, ← hKK]; rfl
           show _ = (til n).den ≫ E.den ∪ ((til n).den ≫ Verb.corNeg (Verb.dom E₂.den)) ≫ Verb.cst e
           rw [h2]
           exact calc K.den = (til n).den ≫ Verb.miss (K.den ≫ Verb.corNeg (pt e).den) e := (miss_map (hm hn) e).symm
@@ -288,12 +286,12 @@ def missRule : {A B : QAtomicType} → (P : Prog A B) → Option {Q : Prog A B /
   | _, _, _ => none
 
 /-- A rule where one matches, else `d`, the node rebuilt from its normalised children. -/
-def orRule {A B : QAtomicType} (P : Prog A B) (d : {Q : Prog A B // P.Small → Q.den = P.den}) :
+def orRule {A B : Obj} (P : Prog A B) (d : {Q : Prog A B // P.Small → Q.den = P.den}) :
     {Q : Prog A B // P.Small → Q.den = P.den} :=
   ((rule P).orElse fun _ => missRule P).getD d
 
 /-- `norm` with its law: top-down, a node a rule matches replaced, every other rebuilt. -/
-def normS : {A B : QAtomicType} → (P : Prog A B) → {Q : Prog A B // P.Small → Q.den = P.den}
+def normS : {A B : Obj} → (P : Prog A B) → {Q : Prog A B // P.Small → Q.den = P.den}
   | _, _, comp P Q => ⟨comp (normS P).1 (normS Q).1, fun h => by
       show (normS P).1.den ≫ (normS Q).1.den = _; rw [(normS P).2 h.1, (normS Q).2 h.2]; rfl⟩
   | _, _, conv P => ⟨conv (normS P).1, fun h => by show (normS P).1.den° = _; rw [(normS P).2 h]; rfl⟩
@@ -301,10 +299,8 @@ def normS : {A B : QAtomicType} → (P : Prog A B) → {Q : Prog A B // P.Small 
       show (normS P).1.den ∩ (normS Q).1.den = _; rw [(normS P).2 h.1, (normS Q).2 h.2]; rfl⟩
   | _, _, union P Q => orRule (union P Q) ⟨union (normS P).1 (normS Q).1, fun h => by
       show (normS P).1.den ∪ (normS Q).1.den = _; rw [(normS P).2 h.1, (normS Q).2 h.2]; rfl⟩
-  | _, _, map op f P => ⟨map op f (normS P).1, fun h => by
-      show (normS P).1.den ≫ graph f = _; rw [(normS P).2 h]; rfl⟩
-  | _, _, dy v e P Q => ⟨dy v e (normS P).1 (normS Q).1, fun h => by
-      show rpair (normS P).1.den (normS Q).1.den ≫ _ = _; rw [(normS P).2 h.1, (normS Q).2 h.2]; rfl⟩
+  | _, _, pair P Q => ⟨pair (normS P).1 (normS Q).1, fun h => by
+      show rpair (normS P).1.den (normS Q).1.den = _; rw [(normS P).2 h.1, (normS Q).2 h.2]; rfl⟩
   | _, _, mem P => ⟨mem (normS P).1, fun h => by show Λ (normS P).1.den ≫ _ = _; rw [(normS P).2 h]; rfl⟩
   | _, _, extr false P => orRule (extr false P) ⟨extr false (normS P).1, fun h => by
       show Λ (normS P).1.den ≫ _ = _; rw [(normS P).2 h]; rfl⟩
@@ -314,7 +310,6 @@ def normS : {A B : QAtomicType} → (P : Prog A B) → {Q : Prog A B // P.Small 
       show Verb.dom ((normS G).1.den ≫ Verb.pos) ≫ Λ ((normS G).1.den ≫ Verb.pos) ≫ _ = _; rw [(normS G).2 h]; rfl⟩
   | _, _, anti P C => ⟨anti (normS P).1 (normS C).1, fun h => by
       show (normS P).1.den ≫ Verb.corNeg (normS C).1.den = _; rw [(normS P).2 h.1, (normS C).2 h.2]; rfl⟩
-  | _, _, cst e P => ⟨cst e (normS P).1, fun h => by show (normS P).1.den ≫ _ = _; rw [(normS P).2 h]; rfl⟩
   | _, _, dom P => ⟨dom (normS P).1, fun h => by show Verb.dom (normS P).1.den = _; rw [(normS P).2 h]; rfl⟩
   | _, _, enumC n C => ⟨enumC n (normS C).1, fun h => by
       show posL° ≫ (fun i v => ∃ ys, Verb.enum (Verb.cset (Verb.dom (corefl (· < n) ≫ posL ≫ (normS C).1.den))) ys ∧
@@ -327,38 +322,120 @@ def normS : {A B : QAtomicType} → (P : Prog A B) → {Q : Prog A B // P.Small 
   | _, _, P => ⟨P, fun _ => rfl⟩
 
 /-- The normal form: the fused kernels in place of the literal order joins. -/
-def norm {A B : QAtomicType} (P : Prog A B) : Prog A B := (normS P).1
+def norm {A B : Obj} (P : Prog A B) : Prog A B := (normS P).1
 
 /-- **`norm` keeps the spec**, every stored list below `2^63`. -/
-theorem norm_den {A B : QAtomicType} (P : Prog A B) (h : P.Small) : (norm P).den = P.den := (normS P).2 h
+theorem norm_den {A B : Obj} (P : Prog A B) (h : P.Small) : (norm P).den = P.den := (normS P).2 h
 
 /-- A verb executed: its normal form run. -/
-def exec {A B : QAtomicType} (P : Prog A B) : Except String (Rel A B) := (norm P).run
+def exec {A B : Obj} (P : Prog A B) : Except String (RelV A B) := (norm P).run
 
 /-- **`exec` runs to the spec**: `run_sound` of the normal form, then `norm_den`. -/
-theorem exec_sound {A B : QAtomicType} (P : Prog A B) {R : Rel A B} (h : P.Small) (hs : (norm P).Sound)
+theorem exec_sound {A B : Obj} (P : Prog A B) {R : RelV A B} (h : P.Small) (hs : (norm P).Sound)
     (hr : exec P = .ok R) : (R.Holds : Ob A ⟶ Ob B) = P.den :=
   (run_sound _ hs hr).trans (norm_den P h)
 
+/-! `rule` and `missRule` match through the `.atom` indices, where Lean generates no match equations, so the
+    normal forms below reduce them by `whnf`, and rewrite only what a variable length keeps stuck. -/
+
+theorem asLen_self {t : QAtomicType} {n : Nat} (b : Arr t n) : asLen n b = some ⟨b, rfl⟩ := by simp [asLen]
+
+theorem sameArr_self {n : Nat} (a : Arr .long n) : sameArr a a = some ⟨rfl⟩ := by simp [sameArr, withPtrEq]
+
+/-- `whnf` turns a `dite` into this recursor, where `dif_pos` no longer matches. -/
+theorem decRec_pos {p : Prop} {α : Type _} {d : Decidable p} (h : p) {a : ¬p → α} {b : p → α} :
+    Decidable.rec (motive := fun _ => α) a b d = b h := by
+  cases d with
+  | isFalse n => exact absurd h n
+  | isTrue _ => rfl
+
+theorem sameKer_bin {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) : (sameKer (binJ x y) (binJ x y)).isSome = true := by
+  conv => lhs; arg 1; whnf
+  simp [sameArr_self]
+
+theorem sameKer_aj {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    (sameKer (ajJ lk lt rk rt) (ajJ lk lt rk rt)).isSome = true := by
+  conv => lhs; arg 1; whnf
+  simp only [sameArr_self]
+  rw [decRec_pos (p := nl = nl) rfl] <;> rfl
+
+/-- A node `rule` rewrites normalises to its rewrite. -/
+theorem orRule_some {A B : Obj} {P Q : Prog A B} {d} (h : (rule P).map Subtype.val = some Q) : (orRule P d).1 = Q := by
+  cases e : rule P with
+  | none => simp [e] at h
+  | some r => simp only [e, Option.map_some, Option.some.injEq] at h; simp [orRule, e, h]
+
+/-- A node only `missRule` rewrites normalises to its rewrite. -/
+theorem orRule_miss {A B : Obj} {P Q : Prog A B} {d} (h0 : rule P = none) (h : (missRule P).map Subtype.val = some Q) :
+    (orRule P d).1 = Q := by
+  cases e : missRule P with
+  | none => simp [e] at h
+  | some r => simp only [e, Option.map_some, Option.some.injEq] at h; simp [orRule, h0, e, h]
+
+/-- The miss rule fires when both copies of `E` rewrite to a cut of one map `K` on `til n`. -/
+theorem missRule_val {n : Nat} {e : Int64} {E E₂ K K₂ : Prog .long .long}
+    (hE : (rule E).map Subtype.val = some (anti K (pt e))) (hE₂ : (rule E₂).map Subtype.val = some (anti K₂ (pt e)))
+    (hm : (mapOn? K).map PSigma.fst = some n) (hs : (sameKer K₂ K).isSome = true) (hn : n ≤ 2 ^ 63) :
+    (missRule (union (comp (til n) E) (comp (anti (til n) (dom E₂)) (fn (@Fn.cst .long .long e))))).map Subtype.val =
+      some K := by
+  cases hr : rule E with
+  | none => simp [hr] at hE
+  | some r =>
+  cases hr₂ : rule E₂ with
+  | none => simp [hr₂] at hE₂
+  | some r₂ =>
+  cases hp : mapOn? K with
+  | none => simp [hp] at hm
+  | some p =>
+  cases hk : sameKer K₂ K with
+  | none => simp [hk] at hs
+  | some k =>
+  obtain ⟨Q, hQ⟩ := r; obtain ⟨Q₂, hQ₂⟩ := r₂; obtain ⟨m, hm'⟩ := p
+  simp only [hr, Option.map_some, Option.some.injEq] at hE; simp only [hr₂, Option.map_some, Option.some.injEq] at hE₂
+  simp only [hp, Option.map_some, Option.some.injEq] at hm
+  subst hE hE₂ hm
+  conv => lhs; arg 2; whnf
+  rw [hr, hr₂]
+  conv => lhs; arg 2; whnf
+  rw [hp, hk]
+  conv => lhs; arg 2; whnf
+  rw [decRec_pos]
+  · rfl
+  · exact ⟨rfl, rfl, hn, rfl, rfl⟩
+
 /-- `bin` normalised: one `binJ` bisection, its miss fill its own. -/
 theorem bin_norm {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hy : ny ≤ 2 ^ 63) :
-    norm (bin x y) = binJ x y := by
-  simp [norm, normS, bin, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, pt, hy]
+    norm (bin x y) = binJ x y :=
+  orRule_miss rfl (missRule_val (n := ny) (e := -1) (E := extr true (ojoin .ge (arr y) (arr x)))
+    (E₂ := extr true (ojoin .ge (arr y) (arr x))) (K := binJ x y) (K₂ := binJ x y) rfl rfl rfl (sameKer_bin x y) hy)
+
+/-- `aj`'s `E` rewrites to `ajJ` cut at `0N`. -/
+theorem rule_aj {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) :
+    (rule (extr true (inter (comp (arr lk) (conv (arr rk))) (ojoin .ge (arr lt) (arr rt))))).map Subtype.val =
+      some (anti (ajJ lk lt rk rt) (pt Int64.minValue)) := by
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self] <;> rfl
 
 /-- `aj` normalised: one `ajJ` per-key bisection, its miss fill its own. -/
 theorem aj_norm {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) (hl : nl ≤ 2 ^ 63) :
-    norm (aj lk lt rk rt) = ajJ lk lt rk rt := by
-  simp [norm, normS, aj, missP, orRule, rule, missRule, mapOn?, sameKer, sameArr, withPtrEq, asLen, pt, hl]
+    norm (aj lk lt rk rt) = ajJ lk lt rk rt :=
+  orRule_miss rfl (missRule_val (n := nl) (e := Int64.minValue) (rule_aj lk lt rk rt) (rule_aj lk lt rk rt) rfl
+    (sameKer_aj lk lt rk rt) hl)
 
 /-- `wj1` normalised: its three order joins are `wjJ`'s window. -/
 theorem wj1_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj1 lk w₀ w₁ rk rt) = wjJ false lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj1, orRule, rule, asLen, sameArr, withPtrEq]
+  refine orRule_some (P := wj1 lk w₀ w₁ rk rt) ?_
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self, sameArr_self] <;> rfl
 
 /-- `wj` normalised: its window and prevailing row are `wjJ`'s. -/
 theorem wj_norm {nl nr : Nat} (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     norm (wj lk w₀ w₁ rk rt) = wjJ true lk w₀ w₁ rk rt := by
-  simp [norm, normS, wj, orRule, rule, asLen, sameArr, withPtrEq]
+  refine orRule_some (P := wj lk w₀ w₁ rk rt) ?_
+  conv => lhs; arg 2; whnf
+  simp only [asLen_self, sameArr_self] <;> rfl
+
 
 end Prog
 
