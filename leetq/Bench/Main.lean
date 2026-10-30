@@ -374,6 +374,13 @@ def progSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
     let R : LeetQ.Rel.Rel .long .long := ⟨n, k, v⟩
     sumR "progSel" (← LeetQ.Rel.Prog.exec (LeetQ.Rel.Prog.selKey (B := .long) 500000 (.rel R))).val
 
+/-- `(×2)° (×2) R` through `Prog.exec`: the even keys by the `lowZero` kernel, key and value picked. Checksum: the
+    picked values' sum. -/
+def progEvenOp (n : Nat) : IO (IO (Nat × Int64)) := do
+  timedE "progEven" (← selData "progEven" n) fun (k, v) => do
+    let R : LeetQ.Rel.Rel .long .long := ⟨n, k, v⟩
+    sumR "progEven" (← LeetQ.Rel.Prog.exec (LeetQ.Rel.Prog.evens (B := .long) (.rel R))).val
+
 /-- `(>a)? R` by hand: `Ew.atomVal`, `Find.where`, two picks, q's `(where k>a)` on key and value. -/
 def relSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
   timedE "relSel" (← selData "relSel" n) fun (k, v) => do
@@ -393,7 +400,7 @@ def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("progSel", progSelOp), ("relSel", relSelOp), ("relWj", relWjOp),
+  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("progSel", progSelOp), ("progEven", progEvenOp), ("relSel", relSelOp), ("relWj", relWjOp),
    ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
    ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
    ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
