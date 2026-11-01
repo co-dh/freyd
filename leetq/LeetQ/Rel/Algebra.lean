@@ -549,11 +549,11 @@ def dom (R : Rel A B) : Except String (Rel A A) := do let r ← cols R; distinct
 /-- `ran R`: the coreflexive on the distinct vals. -/
 def ran (R : Rel A B) : Except String (Rel B B) := do let r ← cols R; distinctCorefl B r.val
 
-/-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no key of `C` (`anti` on one joint coding). -/
+/-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no value of `C` (`anti` on one joint coding). -/
 def antiJoin (R : Rel A B) (C : Rel B B) : Except String (Rel A B) := do
   let r ← cols R; let c ← cols C
-  let (rv, ck) ← two (← codes B #[r.val, c.key])
-  let i := anti rv ck
+  let (rv, cv) ← two (← codes B #[r.val, c.val])
+  let i := anti rv cv
   ofCols A B (← pick A r.key i) (← pick B r.val i)
 
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
@@ -882,6 +882,10 @@ private def Lf : LL := ⟨4, U4, LfV⟩
 #guard ok (do transpose (← zero (A := L) (B := L))) (·.n == 0)
 -- `anti`: the positions of `x` not in `y`
 #guard anti (Code.ofLongs (packLongs [3, 1, 4, 1])) (Code.ofLongs (packLongs [1, 5])) == packLongs [0, 2]
+-- `R ≫ corNeg(C)` at a `C` that is no coreflexive: `1` is a key of `C` and no value, so the row stays
+private def Ra : LL := ⟨1, (Arr.mk (.bytes <| packLongs [0]) (by decide)), (Arr.mk (.bytes <| packLongs [1]) (by decide))⟩
+private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Arr.mk (.bytes <| packLongs [2]) (by decide))⟩
+#guard ok (antiJoin Ra Ca) fun X => X.toList == [(0, 1)]
 /-- The family of `g` sets keyed `0 … g-1`, the sets cut from `val` at the offsets `o`, boxed. -/
 private def boxed {g n : Nat} (o : Arr L (g+1)) (val : Arr L n) : Except String (Rel L .general) := do
   let some P := Parted.of? o val | throw "boxed: not cuts"

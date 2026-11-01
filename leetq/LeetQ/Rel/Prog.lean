@@ -555,6 +555,8 @@ def Sound : {A B : Obj} → Prog A B → Prop
       liftV (Alg.lamFold op x R.toRel) = .ok T → ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
         @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.list x.rel ≫ Verb.fold e f)
   | _, _, enum (n := n) _ => n < USize.size
+  -- False at `B = .float`, so `run_sound` says nothing there: `Carrier .float` compares bits, the kernel
+  -- codes take `-0.0 = 0.0` and equal NaNs. Conditioning this clause instead would make `run_sound` false.
   | .atom A, .atom B, anti P C => P.Sound ∧ C.Sound ∧ ∀ (R : RelV A B) (S : RelV B B) (T : RelV A B),
       liftV (Alg.antiJoin R.toRel S.toRel) = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob B) ≫ Verb.corNeg S.Holds)
