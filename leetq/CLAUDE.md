@@ -8,9 +8,11 @@
   position order, the one place row order enters).
 
 ## Goal
-Use RelRep to implement k's operations, to show that the relation algebra is concise and powerful:
-- Every k verb's spec is built only from that algebra.
-- The qlean kernel that executes the verb is an optimisation, tied to the spec by a `kernel = spec` theorem.
+Test how useful Rel is as a programming language, by implementing k in it:
+- Every k verb is a program written in the algebra above — a composition of a few executable Rel primitives —
+  and runs as written; where it cannot be written, or only awkwardly, that is the finding to record.
+- Only the primitives are qlean C kernels. A fused kernel for a pattern of primitives is an optimisation, tied
+  to the pattern by a theorem.
 - Execution is compute-on-compression (qlean's encoded columns), so it is also efficient: memory IO is the
   speed limit.
 - No serialization: the in-memory structure is the on-disk structure, so loading an array is an mmap.
