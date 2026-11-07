@@ -584,21 +584,55 @@ def ofBoxes (v : QAtomicType) {g : Nat} (b : Arr .general g) : Except String (Pa
 
 end Parted
 
-/-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays. -/
-structure Rel (k v : QAtomicType) where
+/-- A side of a relation: an atomic type, or a product of sides. A tree, so `Vals (.atom t)` is `Arr t`
+    itself and every one-column path is unchanged; a list would wrap even one column. -/
+inductive Obj
+  | atom (t : QAtomicType)
+  | prod (a b : Obj)
+
+instance : Coe QAtomicType Obj := ⟨.atom⟩
+
+/-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
+@[match_pattern, reducible] def Obj.long : Obj := .atom .long
+@[match_pattern, reducible] def Obj.boolean : Obj := .atom .boolean
+@[match_pattern, reducible] def Obj.float : Obj := .atom .float
+@[match_pattern, reducible] def Obj.symbol : Obj := .atom .symbol
+@[match_pattern, reducible] def Obj.general : Obj := .atom .general
+
+/-- An element of a side: a tuple of its atoms' elements. -/
+@[reducible] def Obj.El : Obj → Type
+  | .atom t => Carrier t
+  | .prod a b => a.El × b.El
+
+/-- `n` values of `A`, one column per atom, side by side (struct of arrays): nothing boxed. -/
+@[reducible] def Vals : Obj → Nat → Type
+  | .atom t, n => Arr t n
+  | .prod a b, n => Vals a n × Vals b n
+
+/-- The value at row `i`, read across the columns. -/
+def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
+  | .atom _, _, x, i => Arr.get x i
+  | .prod _ _, _, x, i => (Vals.row x.1 i, Vals.row x.2 i)
+
+@[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
+    Vals.row (A := .atom t) x i = x.get i := rfl
+
+/-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays at atoms,
+    one column per atom of a product side, so `B×C` stored as two columns IS one side of pairs. -/
+structure Rel (k v : Obj) where
   n : Nat
-  key : Arr k n
-  val : Arr v n
+  key : Vals k n
+  val : Vals v n
 
 namespace Rel
 
-variable {k v : QAtomicType}
+variable {k v : Obj}
 
-/-- The relation `R` denotes: `R x y ↔ ∃ i, key.get i = x ∧ val.get i = y`. -/
-def Holds (R : Rel k v) (x : El k) (y : El v) : Prop := ∃ i, R.key.get i = x ∧ R.val.get i = y
+/-- The relation `R` denotes: `R x y ↔ ∃ i, key.row i = x ∧ val.row i = y`. -/
+def Holds (R : Rel k v) (x : k.El) (y : v.El) : Prop := ∃ i, R.key.row i = x ∧ R.val.row i = y
 
 /-- The pairs, in position order, for proofs only. -/
-def toList (R : Rel k v) : List (El k × El v) := List.ofFn fun i => (R.key.get i, R.val.get i)
+def toList (R : Rel k v) : List (k.El × v.El) := List.ofFn fun i => (R.key.row i, R.val.row i)
 
 theorem holds_iff_mem_toList (R : Rel k v) (x : El k) (y : El v) : R.Holds x y ↔ (x, y) ∈ R.toList := by
   simp [Holds, toList, List.mem_ofFn]

@@ -67,41 +67,14 @@ def lamCount (G : Rel A .long) : Except String (Rel A .long) := do
 
 end Alg
 
-/-- A program's object: an atomic type, or a product of objects. -/
-inductive Obj
-  | atom (t : QAtomicType)
-  | prod (a b : Obj)
+/-- An object as an object of `RelSet`: its elements, a product the carrier `rpair` targets. -/
+@[reducible] def Ob (A : Obj) : RelSet.{0} := ⟨A.El⟩
 
-instance : Coe QAtomicType Obj := ⟨.atom⟩
-
-/-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
-@[match_pattern, reducible] def Obj.long : Obj := .atom .long
-@[match_pattern, reducible] def Obj.boolean : Obj := .atom .boolean
-@[match_pattern, reducible] def Obj.float : Obj := .atom .float
-
-/-- An object as an object of `RelSet`, a product the carrier `rpair` targets. -/
-@[reducible] def Ob : Obj → RelSet.{0}
-  | .atom t => ⟨El t⟩
-  | .prod a b => ⟨(Ob a).carrier × (Ob b).carrier⟩
-
-/-- `n` values of `A`, one column per atom, side by side: nothing boxed. -/
-def Vals : Obj → Nat → Type
-  | .atom t, n => Arr t n
-  | .prod a b, n => Vals a n × Vals b n
-
-/-- The value at row `i`, read across the columns. -/
-def Vals.get : {A : Obj} → {n : Nat} → Vals A n → Fin n → (Ob A).carrier
-  | .atom _, _, x, i => Arr.get x i
-  | .prod _ _, _, x, i => (Vals.get x.1 i, Vals.get x.2 i)
-
-/-- A relation as `run` answers it: key columns and value columns of one length (`Rel` at two atoms, `Tab` at a pair). -/
-structure RelV (A B : Obj) where
-  n : Nat
-  key : Vals A n
-  val : Vals B n
+/-- A relation as `run` answers it: `Rel` itself, its `Holds` read as a `RelSet` arrow. -/
+abbrev RelV (A B : Obj) := Rel A B
 
 /-- The relation `R` denotes, as `Rel.Holds`. -/
-def RelV.Holds {A B : Obj} (R : RelV A B) : Ob A ⟶ Ob B := fun a b => ∃ i, Vals.get R.key i = a ∧ Vals.get R.val i = b
+def RelV.Holds {A B : Obj} (R : RelV A B) : Ob A ⟶ Ob B := fun a b => ∃ i, Vals.row R.key i = a ∧ Vals.row R.val i = b
 
 /-- A kernel's answer as a run value: at two atoms the columns are the same. -/
 def RelV.of {A B : QAtomicType} (R : Rel A B) : RelV (.atom A) (.atom B) := ⟨R.n, R.key, R.val⟩
@@ -285,10 +258,10 @@ def enumIn (n : Nat) (C : Rel .long .long) : Except String (Rel .long .long) := 
 def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .long) : Except String (Rel A B) := do
   unless v matches .lt | .le | .gt | .ge do throw "order join: not a comparison"
   let T ← Alg.prod R S
-  let w ← Find.where (← Ew.val v .boolean T.v₁ T.v₂)
+  let w ← Find.where (← Ew.val v .boolean T.val.1 T.val.2)
   let (_, i) ← Alg.arrDense w.2
-  pure ⟨w.1, ← Arr.ofPart A w.1 (← Alg.pick A T.k₁.part i) "order join",
-    ← Arr.ofPart B w.1 (← Alg.pick B T.k₂.part i) "order join"⟩
+  pure ⟨w.1, ← Arr.ofPart A w.1 (← Alg.pick A T.key.1.part i) "order join",
+    ← Arr.ofPart B w.1 (← Alg.pick B T.key.2.part i) "order join"⟩
 
 /-- `aj`'s kernel keyed by `til m`: one long key column a side. -/
 def ajRun {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Except String ((m : Nat) × Arr .long m) :=
@@ -300,23 +273,8 @@ def wjRun {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr
   let P ← Struct.wjP prev ⟨.long, w₀.part⟩ ⟨.long, w₁.part⟩ #[⟨.long, lk.part⟩] #[⟨.long, rk.part⟩] ⟨.long, rt.part⟩
   Alg.memP ⟨nl, ← tilKey nl, P⟩
 
-/-- `x` at the rows `i`, column by column. -/
-def _root_.LeetQ.Rel.Vals.pick {n m : Nat} (i : Arr .long m) : {A : Obj} → Vals A n → Except String (Vals A m)
-  | .atom t, x => do
-    let (_, b) ← Alg.arrDense i
-    Arr.ofPart t m (← Alg.pick t (x : Arr t n).part b) "⟨R,S⟩"
-  | .prod _ _, x => do pure (← Vals.pick i x.1, ← Vals.pick i x.2)
-
-/-- `⟨R, S⟩`: `Alg.pair` at atoms. A nested side has no single column to hand it, so the join runs over row
-    numbers, then each column is picked. -/
-def pairV : {K A B : Obj} → RelV K A → RelV K B → Except String (RelV K (.prod A B))
-  | .prod .., _, _, _, _ => throw "⟨R,S⟩: a product key has no join kernel; pair over an atomic key"
-  | .atom _, .atom _, .atom _, R, S => do
-    let T ← Alg.pair R.toRel S.toRel
-    pure ⟨T.n, T.key, (T.fst, T.snd)⟩
-  | .atom K, _, _, R, S => do
-    let T ← Alg.pair (⟨R.n, R.key, ← tilKey R.n⟩ : Rel K .long) (⟨S.n, S.key, ← tilKey S.n⟩ : Rel K .long)
-    pure ⟨T.n, T.key, (← Vals.pick T.fst R.val, ← Vals.pick T.snd S.val)⟩
+/-- `⟨R, S⟩`: `Alg.pair`, at any sides — a product key joins on its tuple codes. -/
+def pairV {K A B : Obj} (R : RelV K A) (S : RelV K B) : Except String (RelV K (.prod A B)) := Alg.pair R S
 
 /-- A section on a value column: `Ew.valAtom`, `left`: `Ew.atomVal`, the atom the kernel's one-element operand,
     one pass over `x`, no constant column built. A boxed atom has no such operand. -/
@@ -662,11 +620,11 @@ theorem _root_.LeetQ.Rel.Fn.apply_sound {K : Obj} : ∀ {A B : Obj} (c : Fn A B)
   | _, _, .cst _, _, _, hs, h => hs _ _ h
   | _, _, .fst, R, _, _, h => by
     cases h
-    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.get R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
+    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.row R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
       fun ⟨p, ⟨i, ek, ep⟩, e⟩ => ⟨i, ek, by subst ep; exact e.symm⟩⟩
   | _, _, .snd, R, _, _, h => by
     cases h
-    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.get R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
+    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.row R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
       fun ⟨p, ⟨i, ek, ep⟩, e⟩ => ⟨i, ek, by subst ep; exact e.symm⟩⟩
   | _, _, .sect .., _, _, hs, h => by
     simp only [Fn.apply, bind, Except.bind] at h; split at h
