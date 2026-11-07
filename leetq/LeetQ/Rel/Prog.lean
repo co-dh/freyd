@@ -73,9 +73,6 @@ end Alg
 /-- A relation as `run` answers it: `Rel` itself, its `Holds` read as a `RelSet` arrow. -/
 abbrev RelV (A B : Obj) := Rel A B
 
-/-- The relation `R` denotes, as `Rel.Holds`. -/
-def RelV.Holds {A B : Obj} (R : RelV A B) : Ob A ⟶ Ob B := fun a b => ∃ i, Vals.row R.key i = a ∧ Vals.row R.val i = b
-
 /-- A kernel's answer as a run value: at two atoms the columns are the same. -/
 def RelV.of {A B : QAtomicType} (R : Rel A B) : RelV (.atom A) (.atom B) := ⟨R.n, R.key, R.val⟩
 
@@ -290,6 +287,10 @@ def lowZeroArr {n : Nat} (t : Nat) (x : Arr .long n) : Except String (Arr .boole
   match Kernel.lowZeroPayload n x.enc (UInt64.ofNat (2 ^ t - 1)) with
   | some e => Arr.of .boolean n (.vector .boolean n e none) "lowZero"
   | none => throw "lowZero: this long column has no dense payload"
+
+/-- `x` at the rows `i`, column by column (`Obj.pick`). -/
+def _root_.LeetQ.Rel.Vals.pick {n m : Nat} {A : Obj} (i : Arr .long m) (x : Vals A n) : Except String (Vals A m) := do
+  Vals.ofParts A m (← A.pick x.parts (← Alg.arrDense i).2) "pick"
 
 /-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
 def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do

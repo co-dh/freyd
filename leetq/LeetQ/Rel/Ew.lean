@@ -392,7 +392,7 @@ private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
   return ⟨vs.length, ← Arr.of .long _ (.vector .long ks.length (.bytes (packLongs ks)) none) "D",
     ← Arr.of .long _ (.vector .long vs.length (.bytes (packLongs vs)) none) "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
-private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
+private def pairs {k v} (r : Except String (Rel k v)) : Option (List (k.El × v.El)) := r.toOption.map (·.toList)
 
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20, -5])) == some [11, 22, -2]
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20])) == none

@@ -312,32 +312,32 @@ def arrDense {a : QAtomicType} {n : Nat} (x : Arr a n) : Except String (Scan.Kin
   | .prod a b => Part a × Part b
 
 /-- The rows of a side's parts: its first column's count. -/
-def Obj.count : (A : Obj) → Part A → Nat
+def _root_.LeetQ.Rel.Obj.count : (A : Obj) → Part A → Nat
   | .atom _, c => c.1
-  | .prod a _, c => a.count c.1
+  | .prod a _, c => Obj.count a c.1
 
 /-- `pick` of every column at the same rows. -/
-def Obj.pick : (A : Obj) → Part A → ByteArray → Except String (Part A)
-  | .atom t, c, i => pick t c i
-  | .prod a b, c, i => do pure (← a.pick c.1 i, ← b.pick c.2 i)
+def _root_.LeetQ.Rel.Obj.pick : (A : Obj) → Part A → ByteArray → Except String (Part A)
+  | .atom t, c, i => Alg.pick t c i
+  | .prod a b, c, i => do pure (← Obj.pick a c.1 i, ← Obj.pick b c.2 i)
 
 /-- `raze` column by column. -/
-def Obj.raze : (A : Obj) → Array (Part A) → Except String (Part A)
-  | .atom t, cs => raze t cs
-  | .prod a b, cs => do pure (← a.raze (cs.map (·.1)), ← b.raze (cs.map (·.2)))
+def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → Array (Part A) → Except String (Part A)
+  | .atom t, cs => Alg.raze t cs
+  | .prod a b, cs => do pure (← Obj.raze a (cs.map (·.1)), ← Obj.raze b (cs.map (·.2)))
 
 /-- No element, column by column. -/
-def Obj.empty : (A : Obj) → Except String (Part A)
-  | .atom t => empty t
-  | .prod a b => do pure (← a.empty, ← b.empty)
+def _root_.LeetQ.Rel.Obj.empty : (A : Obj) → Except String (Part A)
+  | .atom t => Alg.empty t
+  | .prod a b => do pure (← Obj.empty a, ← Obj.empty b)
 
 /-- A side's columns as parts. -/
-def Vals.parts : {A : Obj} → {n : Nat} → Vals A n → Part A
+def _root_.LeetQ.Rel.Vals.parts : {A : Obj} → {n : Nat} → Vals A n → Part A
   | .atom _, _, x => Arr.part x
   | .prod _ _, _, x => (Vals.parts x.1, Vals.parts x.2)
 
 /-- `Arr.ofPart` column by column: every count is checked against `n`. -/
-def Vals.ofParts : (A : Obj) → (n : Nat) → Part A → String → Except String (Vals A n)
+def _root_.LeetQ.Rel.Vals.ofParts : (A : Obj) → (n : Nat) → Part A → String → Except String (Vals A n)
   | .atom t, n, c, what => Arr.ofPart t n c what
   | .prod a b, n, c, what => do pure (← Vals.ofParts a n c.1 what, ← Vals.ofParts b n c.2 what)
 
@@ -423,9 +423,9 @@ where
 
 /-- Joint codes of a side's parts, one code per part: an atom's `codes`; a product's `tuples` of its
     columns' codes, so equal tuples are equal codes exactly when every column is. -/
-def Obj.codes : (A : Obj) → Array (Part A) → Except String (Array Code)
-  | .atom t, cs => codes t cs
-  | .prod a b, cs => do tuples #[← a.codes (cs.map (·.1)), ← b.codes (cs.map (·.2))]
+def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → Array (Part A) → Except String (Array Code)
+  | .atom t, cs => Alg.codes t cs
+  | .prod a b, cs => do tuples #[← Obj.codes a (cs.map (·.1)), ← Obj.codes b (cs.map (·.2))]
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Obj} (ds : Array (Cols k v)) : Except String (Array Code) := do
@@ -738,11 +738,11 @@ def outr {k v w : Obj} (T : Rel k (.prod v w)) : Rel k w := ⟨T.n, T.key, T.val
 
 theorem outl_holds {k v w : Obj} (T : Rel k (.prod v w)) (x : k.El) (y : v.El) :
     (outl T).Holds x y ↔ ∃ z, T.Holds x (y, z) :=
-  ⟨fun ⟨i, h1, h2⟩ => ⟨_, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.fst h2⟩⟩
+  ⟨fun ⟨i, h1, h2⟩ => ⟨T.val.2.row i, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.fst h2⟩⟩
 
 theorem outr_holds {k v w : Obj} (T : Rel k (.prod v w)) (x : k.El) (z : w.El) :
     (outr T).Holds x z ↔ ∃ y, T.Holds x (y, z) :=
-  ⟨fun ⟨i, h1, h2⟩ => ⟨_, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.snd h2⟩⟩
+  ⟨fun ⟨i, h1, h2⟩ => ⟨T.val.1.row i, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.snd h2⟩⟩
 
 /-- `R × S` as a relation of its own, `(x, x') ⟶ (y, y')`: `cross` of the rows of `R` and of `S`.
     `Δ(R)` is `prod R R`. -/
@@ -848,7 +848,7 @@ private def S : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 2, 2, 4]) (by decid
 -- T : b ⟶ c, {10↦7, 20↦8, 20↦9}
 private def T : LL := ⟨3, (Arr.mk (.bytes <| packLongs [10, 20, 20]) (by decide)), (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))⟩
 -- a list with a repeat, (5 3 5 9), and the same as a relation from its positions
-private def U4 : Arr L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by decide))
+private def U4 : Vals L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by decide))
 private def LsV : Arr L 4 := (Arr.mk (.bytes <| packLongs [5, 3, 5, 9]) (by decide))
 private def Ls : LL := ⟨4, U4, LsV⟩
 /-- A stored family's pairs `(key, element)`: the boxes razed (`Parted.ofBoxes`), each element beside its
@@ -858,9 +858,9 @@ private def flat {k : QAtomicType} (v : QAtomicType) (X : Rel k .general) : Exce
   pure (P.toList.filterMap fun (g, y) => X.key.toList[g.toNatClampNeg]?.map (·, y))
 private def okFlat {k : QAtomicType} (v : QAtomicType) (x : Except String (Rel k .general)) (p : List (El k × El v) → Bool) : Bool :=
   match x with | .ok X => (match flat v X with | .ok l => p l | .error _ => false) | .error _ => false
-private def Ua : Arr L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by decide))
-private def Ub : Arr L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
-private def Uc : Arr L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
+private def Ua : Vals L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by decide))
+private def Ub : Vals L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
+private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
 
 #guard ok (le R S) (· == false)
 #guard ok (inter R S) fun X => ok (le X R) id && ok (le X S) id
@@ -970,7 +970,7 @@ private def sets : Except String (Rel L .general) :=
 private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by decide))⟩
 #guard ok (do setId L (← transpose D)) (· == packLongs [0, 0])
 
-private def Ua3 : Arr L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by decide))
+private def Ua3 : Vals L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by decide))
 #guard ok (entire R Ua) (· == false) && ok (entire R Ua3) id
 #guard ok (simple R) (· == false) && ok (simple (idU Ua)) id && ok (simple Ls) id
 #guard ok (isMap (idU Ua) Ua) id
@@ -1016,9 +1016,9 @@ private def enumC : Nat × Enc :=
 #guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard okFlat L (do group (← lstV Sy symsC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard ok (do symDiv (← lst Sy symsC) (← lst Sy enumC) U4 U4) fun X => seteq X.toList pqpr
-#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.ofPart Sy 4 symsC "U") (← Arr.ofPart Sy 4 enumC "U")) fun X =>
+#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Vals.ofParts Sy 4 symsC "U") (← Vals.ofParts Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
-#guard ok (do top (← Arr.ofPart Sy 4 enumC "U") (← Arr.ofPart Bo 4 bitsC "U")) (·.n == 16)
+#guard ok (do top (← Vals.ofParts Sy 4 enumC "U") (← Vals.ofParts Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) (·.n == 3)
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
@@ -1141,7 +1141,7 @@ theorem Arr.of_c {t : QAtomicType} {n : Nat} {c : Nat × Enc} {w : String} {a : 
 /-- `ofCols` keys the answer by `kc`, its values by `vc`. -/
 theorem ofCols_ok {k v : QAtomicType} {kc : Nat × Enc} {vc : Nat × Enc} {T : Rel k v} (h : ofCols k v kc vc = .ok T) :
     T.key.part = kc ∧ T.val.part = vc := by
-  unfold ofCols at h
+  simp only [ofCols, Obj.count, Vals.ofParts] at h
   cases ha : Arr.ofPart k kc.1 kc "ofCols" with
   | error e => simp [ha, bind, Except.bind] at h
   | ok a =>

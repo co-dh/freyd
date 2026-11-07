@@ -1683,7 +1683,7 @@ theorem bind_ok {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {
 /-- `align` off the matching-keys case, unfolded: `findColumn`, `gatherFill` at `eᵣ` and one `dyad` give the
     rows of `x`; `memberColumn`, `~`, `whereColumn`, `gatherColumn` and one `dyad` against `eₗ` the rows only
     `y` has; `razeColumn` joins the keys and the values. -/
-theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem align_gather {L : Lift} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn s x.n x.key.enc y.n y.key.enc ≠ some true) :
     ∃ (ix yx : Nat × Enc) (l : Arr rt x.n) (ty : QAtomicType) (m : Nat) (b : ByteArray) (r : Nat) (iy ac gy : Enc)
@@ -1738,7 +1738,7 @@ theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u}
 /-- **The rows of `x` in `align`, long keys and long `y` values: `⟨x, x.key ≫ miss(Λ(y.key°) est(≤) y, eᵣ)⟩ ≫ f`.**
     Each key of `x` meets `y`'s value at the key's first position in `y.key`, `eᵣ` where `y` lacks it
     (`probe_find`, `gatherFill_long`, `ix_lookup`); `hlaw` is any value law of the encodings at hand. -/
-theorem align_left_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Nat × Enc}
+theorem align_left_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Nat × Enc}
     {l : Arr rt x.n} (he : Eval.ewType L.v t .long = some rt) (hkx : Find.Readable .long x.n x.key.enc)
     (hky : Find.Readable .long y.n y.key.enc) (hyv : Find.Readable .long y.n y.val.enc)
     (hnx : x.n < USize.size) (hny : y.n < USize.size)
@@ -1863,7 +1863,7 @@ theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWo
     enumerate the positions of `y` whose key `x` lacks (`probe_member`, `notBits_bitAt`, `whereBits_spec`),
     `gatherColumn` reads `y` there (`gatherColumn_long`), and the `av` dyad pairs each with `eₗ`; `hlaw` is any value
     law of `a f y` at the encoding at hand. -/
-theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
+theorem align_right_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
     {m : Nat} {b : ByteArray} {r : Nat} {iy ac gy : Enc} {ry : Arr rt r} (ht : t ≠ .general) {el : Carrier t}
     (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.vr t .long = some rt)
     (hkx : Find.Readable .long x.n x.key.enc) (hky : Find.Readable .long y.n y.key.enc)
@@ -1897,7 +1897,7 @@ theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel
     value laws of the `vv`/`av` dyads at the encodings at hand. Keys and values are joined by `raze_toList`, which
     `hrt` admits: `rt` boolean or a type `encodes` or `alpEncodes` takes (symbol has no raze law yet); `h32` bounds
     an ALP join. -/
-theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
+theorem align_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn .long x.n x.key.enc y.n y.key.enc ≠ some true) {el : Carrier t}
     (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.v t .long = some rt)
@@ -1962,7 +1962,7 @@ theorem lift_v {v : Prim.Dyadic} {t u : QAtomicType} {L : Lift} (h : Lift.ofVerb
   all_goals (cases h <;> first | rfl | (split <;> rfl))
 
 /-- `align` on keys `matchColumn` finds equal: one `Ew.val` of the values, `x`'s key kept. -/
-theorem align_match {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt} (ht : t ≠ .general)
+theorem align_match {L : Lift} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt} (ht : t ≠ .general)
     (hv : Ew.align L rt x y ht = .ok R) (h : y.n = x.n) (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true) :
     ∃ V, Ew.val L.v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
   unfold Ew.align at hv
@@ -1974,7 +1974,7 @@ theorem align_match {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} 
     exact ⟨V, hV, (Except.ok.inj hv).symm⟩
 
 /-- **`d f e` on dicts with matching keys is `Ew.val` of the values, `d`'s key kept** (`align_match`, `lift_v`). -/
-theorem dyadic_match {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem dyadic_match {v : Prim.Dyadic} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
     (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true) :
     ∃ V, Ew.val v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
@@ -1988,7 +1988,7 @@ theorem dyadic_match {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : R
 
 /-- `d f e = ⟨d, e⟩ ≫ f` on the values of dicts with matching keys, `d`'s key kept: any value law `hlaw` of
     the encodings at hand (`val_spec_long`, `cmp_spec_long_foR`, …) read through `dyadic_match` and `val_rel`. -/
-theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem dyadic_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
     (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true)
     (hlaw : ∀ V, Ew.val v rt x.val (h ▸ y.val) = .ok V → Ew.ValSpec v he x.val (h ▸ y.val) V) :
@@ -2000,7 +2000,7 @@ theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel
 /-! ### An atom and a dict: the key kept, the verb on the values -/
 
 /-- `Ew.keyed x f` answers `f` of `x`'s values under `x`'s key. -/
-theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
+theorem keyed_ok {s rt t : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
     (hv : Ew.keyed x f = .ok R) : ∃ V, f x.val = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
   unfold Ew.keyed at hv
   simp only [bind, Except.bind, pure, Except.pure] at hv
@@ -2011,7 +2011,7 @@ theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except St
 
 /-- `a f d = ⟨!a, d⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
     (`atomVal_spec_long`, `atomVal_spec_long_foR`, …) read through `keyed_ok` and `atomVal_rel`. -/
-theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
+theorem atomDict_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.atomVal v rt a · ht) = .ok R)
     (hlaw : ∀ V, Ew.atomVal v rt a x.val ht = .ok V → x.val.toList.mapM (fun b => elem v he a b) = .ok V.toList) :
     ∃ V, R = ⟨x.n, x.key, V⟩ ∧
@@ -2021,7 +2021,7 @@ theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x :
 
 /-- `d f a = ⟨d, !a⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
     (`valAtom_spec_long`, `valAtom_spec_long_foR`, …) read through `keyed_ok` and `valAtom_rel`. -/
-theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
+theorem dictAtom_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
     (hu : u ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.valAtom v rt · a hu) = .ok R)
     (hlaw : ∀ V, Ew.valAtom v rt x.val a hu = .ok V → x.val.toList.mapM (fun b => elem v he b a) = .ok V.toList) :
     ∃ V, R = ⟨x.n, x.key, V⟩ ∧

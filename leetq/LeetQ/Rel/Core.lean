@@ -634,7 +634,7 @@ def Holds (R : Rel k v) (x : k.El) (y : v.El) : Prop := ∃ i, R.key.row i = x �
 /-- The pairs, in position order, for proofs only. -/
 def toList (R : Rel k v) : List (k.El × v.El) := List.ofFn fun i => (R.key.row i, R.val.row i)
 
-theorem holds_iff_mem_toList (R : Rel k v) (x : El k) (y : El v) : R.Holds x y ↔ (x, y) ∈ R.toList := by
+theorem holds_iff_mem_toList (R : Rel k v) (x : k.El) (y : v.El) : R.Holds x y ↔ (x, y) ∈ R.toList := by
   simp [Holds, toList, List.mem_ofFn]
 
 end Rel

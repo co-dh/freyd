@@ -2046,7 +2046,7 @@ theorem toList_ofCols {R : Rel .long .long} {a b : ByteArray}
     List.ext_getElem (by
       simp only [Rel.toList, List.length_ofFn, List.length_zip]; rw [Arr.length_toList, Arr.length_toList, Nat.min_self])
       fun i h1 h2 => by
-        simp only [Rel.toList, List.getElem_ofFn, List.getElem_zip]
+        simp only [Rel.toList, List.getElem_ofFn, List.getElem_zip, Vals.row_atom]
         rw [Arr.getElem_toList, Arr.getElem_toList]
   rw [hz, hkl, hvl, List.zip_map]
   rfl
