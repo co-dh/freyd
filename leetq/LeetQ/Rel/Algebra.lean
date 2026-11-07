@@ -601,6 +601,13 @@ def antiJoin (R : Rel A B) (C : Rel B B) : Except String (Rel A B) := do
   let i := anti rv cv
   ofCols A B (← A.pick r.key i) (← B.pick r.val i)
 
+/-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
+def diff (R S : Rel A B) : Except String (Rel A B) := do
+  let r ← cols R; let s ← cols S
+  let (pr, ps) ← two (← pairs #[r, s])
+  let t ← r.rows (anti pr ps)
+  ofCols A B t.key t.val
+
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
     The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do
@@ -865,6 +872,9 @@ private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide)
 #guard ok (le R S) (· == false)
 #guard ok (inter R S) fun X => ok (le X R) id && ok (le X S) id
 #guard ok (inter R S) fun X => seteq X.toList (R.toList.filter S.toList.contains)
+#guard ok (diff R S) fun X => seteq X.toList (R.toList.filter fun p => !S.toList.contains p)
+#guard ok (diff R R) (·.n == 0)
+#guard ok (do union (← inter R S) (← diff R S)) fun X => seteq X.toList R.toList
 #guard ok (union R S) fun X => seteq X.toList (R.toList ++ S.toList) && X.n == 6
 #guard ok (zero (A := L) (B := L)) (·.n == 0)
 #guard ok (top Ua Uc) fun X => seteq X.toList (Ua.toList.flatMap fun x => Uc.toList.map (x, ·))
