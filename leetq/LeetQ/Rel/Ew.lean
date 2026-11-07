@@ -80,6 +80,13 @@ def Ew.not (x : Arr .boolean n) : Except String (Arr .boolean n) :=
   | .bits b => Arr.of .boolean n (.vector .boolean n (.bits (Ew.notBits n b)) none) "Ew.not"
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
+/-- `x & y` bit by bit on two long columns over the same positions: qlean's `bandPayload` (`Ew.band`, a
+    dense pass; an encoded operand is decoded first). q has no verb for it, so it is not a `Prim.Dyadic`. -/
+def Ew.band (x y : Arr .long n) : Except String (Arr .long n) :=
+  match bandPayload n x.enc y.enc with
+  | some e => Arr.of .long n (.vector .long n e none) "Ew.band"
+  | none => .error "Ew.band: a long column has no dense payload"
+
 /-- The raw bits of a one-element payload, as `shiftColumn`'s `fill` takes them. -/
 def Ew.atomBits (t : QAtomicType) (e : Enc) : Except String UInt64 :=
   match e with
@@ -406,6 +413,7 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (k.El × v.
 #guard av (do Ew.mon "neg" .long (← LA [1, -2, 3])) == some [-1, 2, -3]
 #guard av (do Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2)) == some [false, true, true]
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← LA [1, 4, 9, 16])) == some [1, 3, 5, 7]
+#guard av (do Ew.band (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1])) == some [8, 0, 7, 0]
 -- `foR` operands: `tilColumn` writes one once it is long enough for the encoding to pay
 private def tilFoR (n : Nat) : Except String (Arr .long n) := do
   let some c@(.vector _ _ (.foR ..) _) := tilColumn n | throw "tilColumn answered no foR"
