@@ -1,219 +1,164 @@
 import LeetQ.Rel.Algebra
 
-/-! Mate in one for the two-rook ladder, as relations over bitboards. A square is the long `0 … 63`
-    (a1 = 0, b1 = 1, …, h8 = 63), a bitboard the long whose bit `s` says square `s`. A position is one row
-    of three bitboards `(R, K, k)`: white rooks, white king, black king. A move is `(piece, from, to)`.
-    The mate test is relation algebra on two base relations, `att` and `nxt`, each keyed by the position
-    `x` it is read in: a piece is `(x, (p, s))`, a square `(x, t)`. -/
+/-! Mate in one as relation algebra. A square is the long `0 … 63` (a1 = 0, b1 = 1, …, h8 = 63), a piece
+    the long `colour*6 + kind` (kind 0 P, 1 N, 2 B, 3 R, 4 Q, 5 K; white `0 … 5`, black `6 … 11`), a
+    position the long id `x`. The board is one relation `on : X ⟶ Sq×Pc`, one row per piece, so a
+    position with other pieces is other rows, never other code. Mate is relation algebra on two base
+    relations `att`, `nxt : X×Sq ⟶ X×Sq`; only they know how a piece moves. -/
 
 namespace LeetQ.Rel.Chess
 
 open Alg QLean
 
+abbrev X : Obj := .long
 abbrev Sq : Obj := .long
-abbrev BB : Obj := .long
 abbrev Pc : Obj := .long
 abbrev Sq2 : Obj := .prod Sq Sq
+abbrev Pc2 : Obj := .prod Pc Pc
+/-- A square of a position, `(x, s)`. -/
+abbrev At : Obj := .prod X Sq
+/-- A board: `x ⟶ (s, p)`, in `x` the square `s` holds `p`. -/
+abbrev Board := Rel X (.prod Sq Pc)
 /-- `(piece, from, to)`. -/
 abbrev Move : Obj := .prod Pc Sq2
-/-- `(R, K, k)`. -/
-abbrev Pos : Obj := .prod BB (.prod BB BB)
-/-- A piece in the position `x`: `(x, (p, s))`. -/
-abbrev Pce (X : Obj) : Obj := .prod X (.prod Pc Sq)
-/-- A square in the position `x`: `(x, t)`. -/
-abbrev At (X : Obj) : Obj := .prod X Sq
-
-/-- The piece kinds, in `Pos`'s column order. -/
-def pR : Int64 := 0
-def pK : Int64 := 1
-def pk : Int64 := 2
+/-- A move read in a position, `(x, (p, (s, t)))`. -/
+abbrev W : Obj := .prod X (.prod Pc Sq2)
 
 /-- A literal long column; `Arr.ofPart` checks the count. -/
 def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart .long n (longs (packLongs xs)) "col"
 
 /-- A relation from its pairs of longs. -/
-def ofPairs (ps : List (Int64 × Int64)) : Except String (Rel Sq Sq) := do
+def ofPairs (ps : List (Int64 × Int64)) : Except String (Rel .long .long) := do
   pure ⟨ps.length, ← col ps.length (ps.map (·.1)), ← col ps.length (ps.map (·.2))⟩
 
-/-- The bitboard of the squares `ss`. -/
-def board (ss : List Nat) : Int64 := (ss.foldl (fun b s => b ||| (1 : UInt64) <<< s.toUInt64) 0).toInt64
+/-! ## The tables, built in Lean: only `att` and `nxt` read them -/
 
-/-- `a ≠ b` on a common rank or file, and the squares strictly between them. -/
-def onLine (a b : Nat) : Bool := a != b && (a % 8 == b % 8 || a / 8 == b / 8)
-def btw (a b : Nat) : List Nat :=
-  (List.range 64).filter fun s => (s % 8 == a % 8 && a % 8 == b % 8 || s / 8 == a / 8 && a / 8 == b / 8) &&
-    min a b < s && s < max a b
+def line (a b : Nat) : Bool := a != b && (a % 8 == b % 8 || a / 8 == b / 8)
+def adj (a b : Nat) : Bool := a != b && a % 8 ≤ b % 8 + 1 && b % 8 ≤ a % 8 + 1 && a / 8 ≤ b / 8 + 1 && b / 8 ≤ a / 8 + 1
+def sqPairs (f : Nat → Nat → Bool) : List (Nat × Nat) := (List.range 64).flatMap fun a => ((List.range 64).filter (f a)).map (a, ·)
 
-/-! ## The tables, built in Lean -/
-
-/-- `bit : Sq ⟶ BB`, `s ↦ 2^s`. -/
-def bit : Except String (Rel Sq BB) := ofPairs ((List.range 64).map fun s => (Int64.ofNat s, board [s]))
-
-/-- `between : Sq² ⟶ BB`, `Λ` of "strictly between": every `a ≠ b` on a rank or file, `0` when adjacent. -/
-def between : Except String (Rel Sq2 BB) := do
-  let ps := (List.range 64).flatMap fun a => ((List.range 64).filter (onLine a)).map (a, ·)
+/-- `pat : Pc×Sq ⟶ Sq`, the piece `p` on `s` reaches `t` on an empty board; its kinds are the implemented ones. -/
+def pat : Except String (Rel (.prod Pc Sq) Sq) := do
+  let ps : List (Int64 × Nat × Nat) := [((3 : Int64), line), (9, line), (5, adj), (11, adj)].flatMap fun (p, f) => (sqPairs f).map fun (a, b) => (p, a, b)
   let n := ps.length
-  pure ⟨n, (← col n (ps.map (Int64.ofNat ·.1)), ← col n (ps.map (Int64.ofNat ·.2))), ← col n (ps.map fun (a, b) => board (btw a b))⟩
+  pure ⟨n, (← col n (ps.map (·.1)), ← col n (ps.map (Int64.ofNat ·.2.1))), ← col n (ps.map (Int64.ofNat ·.2.2))⟩
 
-/-- `kAdj : Sq ⟶ Sq`, a king step. -/
-def kAdj : Except String (Rel Sq Sq) :=
-  ofPairs ((List.range 64).flatMap fun a => ((List.range 64).filter fun b => a != b &&
-    a % 8 ≤ b % 8 + 1 && b % 8 ≤ a % 8 + 1 && a / 8 ≤ b / 8 + 1 && b / 8 ≤ a / 8 + 1).map
-    fun b => (Int64.ofNat a, Int64.ofNat b))
+/-- `Btw : Sq² ⟶ Sq`, `s` strictly between `a` and `b` on a rank or file. -/
+def Btw : Except String (Rel Sq2 Sq) := do
+  let ps := (sqPairs line).flatMap fun (a, b) => ((List.range 64).filter fun s =>
+    (s % 8 == a % 8 && a % 8 == b % 8 || s / 8 == a / 8 && a / 8 == b / 8) && min a b < s && s < max a b).map (a, b, ·)
+  let n := ps.length
+  pure ⟨n, (← col n (ps.map (Int64.ofNat ·.1)), ← col n (ps.map (Int64.ofNat ·.2.1))), ← col n (ps.map (Int64.ofNat ·.2.2))⟩
 
-/-- `sel : Pc ⟶ Pos`, the kind's column as all ones and the others `0`: which bitboard a move moves. -/
-def sel : Except String (Rel Pc Pos) := do
-  pure ⟨3, ← col 3 [pR, pK, pk], (← col 3 [-1, 0, 0], ← col 3 [0, -1, 0], ← col 3 [0, 0, -1])⟩
+/-- The coreflexive on the piece pairs `(p, q)` with `f p q`. -/
+def pcRel (f : Int64 → Int64 → Bool) : Except String (Rel Pc2 Pc2) := do
+  let cs := (List.range 12).map Int64.ofNat
+  let ps := cs.flatMap fun p => (cs.filter (f p ·)).map (p, ·)
+  let P ← ofPairs ps; pure (idU (P.key, P.val))
 
-/-- `{0}` as a coreflexive: `≫ zero` keeps the rows whose value is `0`, `antiJoin · zero` the others. -/
-def zero : Except String (Rel BB BB) := do let z ← col 1 [0]; pure (idU z)
+/-- `(p, q)`: `q` cuts `p`'s line in `att`, every piece but `p`'s opposing king. -/
+def cutsAtt : Except String (Rel Pc2 Pc2) := pcRel fun p q => q != if p < 6 then 11 else 5
+/-- `(p, q)`: `q` cuts `p`'s line in `nxt`, every piece. -/
+def cutsNxt : Except String (Rel Pc2 Pc2) := pcRel fun _ _ => true
+/-- `(p, q)`: `p` and `q` have one colour. -/
+def same : Except String (Rel Pc2 Pc2) := pcRel fun p q => p / 6 == q / 6
 
-/-! ## Building `on`, `att`, `nxt` -/
+/-! ## `att` and `nxt` -/
 
-section
-variable {X : Obj}
+/-- `x×s ⟶ p`, the piece on each occupied square. -/
+def pcs (on : Board) : Rel At Pc := ⟨on.n, (on.key, on.val.1), on.val.2⟩
 
-/-- The squares of a bitboard: `s` with `bit(s) & B ≠ 0`, each of the 64 squares tried against each row. -/
-def squares (B : Rel X BB) : Except String (Rel X Sq) := do
-  let b ← bit
-  let T : Rel X (.prod Sq BB) ← top (B := .prod Sq BB) B.key (b.key, b.val)
-  let Z : Rel X (.prod (.prod Sq BB) BB) ← pair T B
-  let W : Rel (.prod X Sq) BB := ⟨Z.n, (Z.key, Z.val.1.1), ← Ew.bitwise Kernel.Ew.band Z.val.1.2 Z.val.2⟩
-  let S ← antiJoin W (← zero)
-  pure ⟨S.n, S.key.1, S.key.2⟩
+/-- The rows `(x, (p, (s, t)))` with `t` in `pat` of `p` on `s`; a kind with no `pat` is an error. -/
+def cand (on : Board) : Except String (Rel W W) := do
+  let O := pcs on; let pt ← pat
+  if let ((x, s), p) :: _ := (← antiJoin O (← dom (⟨pt.n, pt.key.1, pt.key.1⟩ : Rel Pc Pc))).toList then
+    throw s!"Chess: piece {p} on square {s} of position {x} has no att/nxt yet"
+  let M ← comp (⟨O.n, O.key, (O.val, O.key.2)⟩ : Rel At (.prod Pc Sq))
+    (⟨pt.n, pt.key, (pt.key.1, (pt.key.2, pt.val))⟩ : Rel (.prod Pc Sq) (.prod Pc Sq2))
+  pure (idU (M.key.1, M.val))
 
-/-- The white pieces `R | K`, and every piece `R | K | k`, row by row. -/
-def white (P : Rel X Pos) : Except String (Rel X BB) := do
-  pure ⟨P.n, P.key, ← Ew.bitwise Kernel.Ew.bor P.val.1 P.val.2.1⟩
-def occ (P : Rel X Pos) : Except String (Rel X BB) := do
-  pure ⟨P.n, P.key, ← Ew.bitwise Kernel.Ew.bor (← Ew.bitwise Kernel.Ew.bor P.val.1 P.val.2.1) P.val.2.2⟩
+/-- The rows `w = (x, (p, …))` of `S : W ⟶ Sq` whose square holds, in `x`, a piece `q` with `(p, q)` in `B`. -/
+def meets (on : Board) (S : Rel W Sq) (B : Rel Pc2 Pc2) : Except String (Rel W W) := do
+  let Q ← comp (⟨S.n, S.key, (S.key.1, S.val)⟩ : Rel W At) (pcs on)
+  dom (← comp (⟨Q.n, Q.key, (Q.key.2.1, Q.val)⟩ : Rel W Pc2) B)
 
-/-- A move applied to its row's position: with `s` the moved kind's mask (`sel`), `f`, `t` the bits of
-    the squares, each bitboard `c` becomes `(c & ~(f&s) & ~(t&~s)) | (t&s)` — the mover leaves `f` and
-    lands on `t`, every other kind loses `t` (a capture). `P`, `m` one row per key. -/
-def apply (P : Rel X Pos) (m : Rel X Move) : Except String (Rel X Pos) := do
-  let b ← bit
-  let Z ← pair P (← pair (← comp ⟨m.n, m.key, m.val.1⟩ (← sel))
-    (← pair (← comp ⟨m.n, m.key, m.val.2.1⟩ b) (← comp ⟨m.n, m.key, m.val.2.2⟩ b)))
-  let (f, t) := Z.val.2.2
-  let kind (c s : Arr .long Z.n) : Except String (Arr .long Z.n) := do
-    Ew.bitwise Kernel.Ew.bor (← Ew.bitwise Kernel.Ew.bandnot (← Ew.bitwise Kernel.Ew.bandnot c (← Ew.bitwise Kernel.Ew.band f s))
-      (← Ew.bitwise Kernel.Ew.bandnot t s)) (← Ew.bitwise Kernel.Ew.band t s)
-  let (c, s) := (Z.val.1, Z.val.2.1)
-  pure ⟨Z.n, Z.key, (← kind c.1 s.1, ← kind c.2.1 s.2.1, ← kind c.2.2 s.2.2)⟩
+/-- The rows of `C` with a piece of `B` strictly between `s` and `t`. -/
+def cut (on : Board) (C : Rel W W) (B : Rel Pc2 Pc2) : Except String (Rel W W) := do
+  meets on (← comp (⟨C.n, C.key, C.key.2.2⟩ : Rel W Sq2) (← Btw)) B
 
-/-- The rows `(x, (s, t))` of `M` whose mask (one per row) meets nothing of `o(x)`. -/
-def clear (M : Rel X Sq2) (mask : Rel (.prod X Sq2) BB) (o : Rel X BB) : Except String (Rel X Sq2) := do
-  let Z ← pair mask (← comp (⟨M.n, (M.key, M.val), M.key⟩ : Rel (.prod X Sq2) X) o)
-  let W ← comp (⟨Z.n, Z.key, ← Ew.bitwise Kernel.Ew.band Z.val.1 Z.val.2⟩ : Rel (.prod X Sq2) BB) (← zero)
-  pure ⟨W.n, W.key.1, W.key.2⟩
+/-- `(x, (p, (s, t))) ↦ ((x, s), (x, t))`. -/
+def toAt (C : Rel W W) : Rel At At := ⟨C.n, (C.key.1, C.key.2.2.1), (C.key.1, C.key.2.2.2)⟩
 
-/-- From the squares `S`, a rook's line cut at the first piece of `o`: `t` on a rank or file with `s`,
-    nothing of `o` strictly between. -/
-def reach (S : Rel X Sq) (o : Rel X BB) : Except String (Rel X Sq2) := do
-  let bw ← between
-  let M ← comp S ⟨bw.n, bw.key.1, bw.key⟩
-  clear M (← comp ⟨M.n, (M.key, M.val), M.val⟩ bw) o
+/-- `att : X×Sq ⟶ X×Sq`, in `x` the piece on `s` attacks `t`, which may hold a piece of either colour.
+    The opposing king does not cut a line, so the square behind a checked king counts as attacked. -/
+def att (on : Board) : Except String (Rel At At) := do
+  let C ← cand on; pure (toAt (← diff C (← cut on C (← cutsAtt))))
 
-/-- From the squares `S`, a king step. -/
-def step (S : Rel X Sq) : Except String (Rel X Sq2) := do
-  let a ← kAdj; comp S ⟨a.n, a.key, (a.key, a.val)⟩
-
-/-- The rows `(x, (s, t))` of `M` whose `t` holds nothing of `o`. -/
-def vacant (M : Rel X Sq2) (o : Rel X BB) : Except String (Rel X Sq2) := do
-  clear M (← comp ⟨M.n, (M.key, M.val), M.val.2⟩ (← bit)) o
-
-/-- The rows `(x, (s, t))` of the kind `p` as the pairs `(x, (p, s)) ⟶ (x, t)`. -/
-def tag (p : Int64) (M : Rel X Sq2) : Except String (Rel (Pce X) (At X)) := do
-  pure ⟨M.n, (M.key, (← col M.n (List.replicate M.n p), M.val.1)), (M.key, M.val.2)⟩
-
-/-- The pieces of kind `p` on the bitboard `B`: `x ⟶ (x, (p, s))`. -/
-def piece (p : Int64) (B : Rel X BB) : Except String (Rel X (Pce X)) := do
-  let S ← squares B; pure ⟨S.n, S.key, (S.key, (← col S.n (List.replicate S.n p), S.val))⟩
-
-variable (P : Rel X Pos)
-
-/-- `onʷ, onᵏ, on : X ⟶ X×(Pc×Sq)`: the white pieces, the black king, all pieces of each position. -/
-def onW : Except String (Rel X (Pce X)) := do
-  union (← piece pR ⟨P.n, P.key, P.val.1⟩) (← piece pK ⟨P.n, P.key, P.val.2.1⟩)
-def onK : Except String (Rel X (Pce X)) := piece pk ⟨P.n, P.key, P.val.2.2⟩
-def on : Except String (Rel X (Pce X)) := do union (← onW P) (← onK P)
-
-/-- `att : X×(Pc×Sq) ⟶ X×Sq`, piece `p` on `s` attacks `t` (`t` may hold a piece of either colour). The
-    lines are cut by white's pieces only — the board without the black king, the one board white's
-    attacks are asked on — so the square behind a checked king counts as attacked. -/
-def att : Except String (Rel (Pce X) (At X)) := do
-  let K ← squares ⟨P.n, P.key, P.val.2.1⟩; let k ← squares ⟨P.n, P.key, P.val.2.2⟩
-  union (← tag pR (← reach (← squares ⟨P.n, P.key, P.val.1⟩) (← white P)))
-    (← union (← tag pK (← step K)) (← tag pk (← step k)))
-
-/-- `nxt : X×(Pc×Sq) ⟶ X×Sq`, piece `p` on `s` can move to `t`: not onto its own colour, a capture
-    allowed; whether the mover's king is left in check is not asked. -/
-def nxt : Except String (Rel (Pce X) (At X)) := do
-  let w ← white P; let b : Rel X BB := ⟨P.n, P.key, P.val.2.2⟩
-  let K ← squares ⟨P.n, P.key, P.val.2.1⟩; let k ← squares ⟨P.n, P.key, P.val.2.2⟩
-  union (← tag pR (← vacant (← reach (← squares ⟨P.n, P.key, P.val.1⟩) (← occ P)) w))
-    (← union (← tag pK (← vacant (← step K) w)) (← tag pk (← vacant (← step k) b)))
-
-/-- `π₂ : X×(Pc×Sq) ⟶ X×Sq` on the pieces `O`, `(x, (p, s)) ↦ (x, s)`. -/
-def π₂ (O : Rel X (Pce X)) : Rel (Pce X) (At X) := ⟨O.n, O.val, (O.val.1, O.val.2.2)⟩
-
-end
+/-- `nxt : X×Sq ⟶ X×Sq`, in `x` the piece on `s` can move to `t`: every piece cuts a line, not onto its
+    own colour, a capture allowed; whether the mover's king is left in check is not asked. -/
+def nxt (on : Board) : Except String (Rel At At) := do
+  let C ← cand on; let C ← diff C (← cut on C (← cutsNxt))
+  pure (toAt (← diff C (← meets on ⟨C.n, C.key, C.key.2.2.2⟩ (← same))))
 
 /-! ## Mate -/
 
-section
-variable {X : Obj} (P : Rel X Pos)
+/-- `x ⟶ (x, s)`, the squares of the pieces `cs`. -/
+def side (cs : List Int64) (on : Board) : Except String (Rel X At) := do
+  let O ← comp (pcs on) (idU (← col cs.length cs)); pure ⟨O.n, O.key.1, O.key⟩
+
+/-- `onʷ, k : X ⟶ X×Sq`: the white-occupied squares; the black king's square. -/
+def onW : Board → Except String (Rel X At) := side [0, 1, 2, 3, 4, 5]
+def k : Board → Except String (Rel X At) := side [11]
 
 /-- `Aʷ ≜ onʷ att : X ⟶ X×Sq`, the squares white attacks. -/
-def Aw : Except String (Rel X (At X)) := do comp (← onW P) (← att P)
+def Aw (on : Board) : Except String (Rel X At) := do comp (← onW on) (← att on)
 
-/-- `D ≜ Aʷ / nxt : X ⟶ X×(Pc×Sq)`, `Z ⊑ D ⟺ Z nxt ⊑ Aʷ`: the pieces all of whose next squares are
-    attacked. The universes: the positions, and the pieces of `on`. -/
-def D : Except String (Rel X (Pce X)) := do rightDiv (← Aw P) (← nxt P) P.key (← ran (← on P)).key
+/-- `D ≜ Aʷ / nxt : X ⟶ X×Sq`, `Z ⊑ D ⟺ Z nxt ⊑ Aʷ`: the pieces all of whose next squares are attacked.
+    The universes: the positions, the occupied squares. -/
+def D (on : Board) : Except String (Rel X At) := do rightDiv (← Aw on) (← nxt on) (← dom on).key (pcs on).key
 
-/-- `Aʷ π₂° : X ⟶ X×(Pc×Sq)`, the pieces standing on an attacked square. -/
-def onA : Except String (Rel X (Pce X)) := do comp (← Aw P) (← conv (π₂ (← on P)))
+/-- `Mate ≜ k ∩ Aʷ ∩ D`: the black king, attacked, all of whose next squares are attacked. -/
+def Mate (on : Board) : Except String (Rel X At) := do inter (← k on) (← inter (← Aw on) (← D on))
 
-/-- `Mate ≜ onᵏ ∩ Aʷ π₂° ∩ D`: the black king, attacked, all of whose next squares are attacked. -/
-def Mate : Except String (Rel X (Pce X)) := do inter (← onK P) (← inter (← onA P) (← D P))
+/-- `k ⊑ Aʷ ∩ D`, for a board of one position. -/
+def isMate (on : Board) : Except String Bool := do le (← k on) (← inter (← Aw on) (← D on))
 
-end
+/-- The mate-in-one moves of white on the board `on` of position `0`: every white piece's `nxt`, the move
+    of row `i` reaching position `i + 1`, whose board is `on` without the rows on the move's `s` and `t`,
+    with `(t, p)`; the moves to `dom Mate`. -/
+def mateIn1 (on : Board) : Except String (Rel Move Move) := do
+  let Mv ← pair (pcs on) (← comp (idU (← onW on).val) (← nxt on))
+  let n := Mv.n
+  let y ← col n ((List.range n).map (Int64.ofNat · + 1))
+  let M : Rel Move X := ⟨n, (Mv.val.1, (Mv.key.2, Mv.val.2.2)), y⟩
+  let T ← top y on.val
+  let G ← union (⟨n, y, Mv.key.2⟩ : Rel X Sq) ⟨n, y, Mv.val.2.2⟩
+  let K ← antiJoin (⟨T.n, T.val.2, (T.key, T.val.1)⟩ : Rel Pc At) (idU (G.key, G.val))
+  let on1 ← union (⟨K.n, K.val.1, (K.val.2, K.key)⟩ : Board) ⟨n, y, (Mv.val.2.2, Mv.val.1)⟩
+  dom (← comp M (← dom (← Mate on1)))
 
-/-- `onᵏ ⊑ D ∩ Aʷ π₂°` for the one position `P0`. -/
-def isMate (P0 : Vals Pos 1) : Except String Bool := do
-  let P := idU P0; le (← onK P) (← inter (← D P) (← onA P))
-
-/-- The mate-in-one moves of white from the position `P0`: each white rook move (`onʷ`'s rooks, `nxt`)
-    applied to `P0`, `dom Mate` over the positions reached, read back to the moves leading there. -/
-def mateIn1 (P0 : Vals Pos 1) : Except String (Rel Move Move) := do
-  let P := idU P0
-  let N ← comp (← ran (← piece pR ⟨P.n, P.key, P.val.1⟩)) (← nxt P)
-  let W : Vals Move N.n := (N.key.2.1, N.key.2.2, N.val.2)
-  let P1 ← apply (← top W P0) (idU W)
-  dom (← comp P1 (← dom (← Mate (← ran P1))))
-
-/-- The position: white rooks, white king, black king, by squares. -/
-def pos (rooks : List Nat) (wk bk : Nat) : Except String (Vals Pos 1) := do
-  pure (← col 1 [board rooks], ← col 1 [board [wk]], ← col 1 [board [bk]])
+/-- The board of position `0` from its `(square, piece)` rows. -/
+def pos (ps : List (Nat × Int64)) : Except String Board := do
+  let n := ps.length
+  pure ⟨n, ← col n (List.replicate n 0), (← col n (ps.map (Int64.ofNat ·.1)), ← col n (ps.map (·.2)))⟩
 
 section Checks
 
-private def name (s : Int64) : String := ["a", "b", "c", "d", "e", "f", "g", "h"][s.toInt.toNat % 8]! ++ toString (s.toInt.toNat / 8 + 1)
-
-private def answer (rooks : List Nat) (wk bk : Nat) : Option (List (List Int64)) :=
-  (do mateIn1 (← pos rooks wk bk)).toOption.map fun (R : Rel Move Move) =>
+private def answer (ps : List (Nat × Int64)) : Except String (List (List Int64)) :=
+  (do mateIn1 (← pos ps)).map fun (R : Rel Move Move) =>
     (R.toList.map fun (m : (Int64 × Int64 × Int64) × (Int64 × Int64 × Int64)) => [m.1.1, m.1.2.1, m.1.2.2]).mergeSort fun a b => decide (a ≤ b)
 
 -- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates
-#guard answer [48, 1] 6 60 == some [[pR, 1, 57]]
+#guard (answer [(6, 5), (48, 3), (1, 3), (60, 11)]).toOption == some [[3, 1, 57]]
 -- B Kc8: Rb8+ fails to Kxb8, Ra8+ leaves c7
-#guard answer [48, 1] 6 58 == some []
+#guard (answer [(6, 5), (48, 3), (1, 3), (58, 11)]).toOption == some []
 -- W Kg1 Ra7 Rb8: Ke8 is mated (f8 is behind the king on b8's line); Kc8 takes the undefended b8
-#guard (do isMate (← pos [48, 57] 6 60)).toOption == some true
-#guard (do isMate (← pos [48, 57] 6 58)).toOption == some false
-
-#eval (answer [48, 1] 6 60).map (·.map fun m => name m[1]! ++ name m[2]!)
+#guard (do isMate (← pos [(6, 5), (48, 3), (57, 3), (60, 11)])).toOption == some true
+#guard (do isMate (← pos [(6, 5), (48, 3), (57, 3), (58, 11)])).toOption == some false
+-- a third rook, no new code: Rb1-b8 and Rh2-h8 (h8 = 63, the bit of Int64.minValue)
+#guard (answer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)]).toOption == some [[3, 1, 57], [3, 15, 63]]
+-- a white knight on f3: no att/nxt for it yet
+#guard answer [(6, 5), (48, 3), (1, 3), (21, 1), (60, 11)] matches .error "Chess: piece 1 on square 21 of position 0 has no att/nxt yet"
 
 end Checks
 
