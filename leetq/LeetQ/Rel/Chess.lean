@@ -23,8 +23,12 @@ def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart 
 def ofPairs (ps : List (Int64 × Int64)) : Except String (Rel .long .long) := do
   pure ⟨ps.length, ← col ps.length (ps.map (·.1)), ← col ps.length (ps.map (·.2))⟩
 
+/-- The 64 squares. -/
+def U : Except String (Arr .long 64) := col 64 ((List.range 64).map Int64.ofNat)
 /-- `𝟙 : Sq ⟶ Sq` on the 64 squares. -/
-def one : Except String V := do pure (idU (← col 64 ((List.range 64).map Int64.ofNat)))
+def one : Except String V := do pure (idU (← U))
+/-- `⊤ : Sq ⟶ Sq`, every pair of squares. -/
+def T : Except String V := do let u ← U; top u u
 
 /-- `R₁R₂…Rₙ`, composition in diagram order. -/
 def seq : List V → Except String V
@@ -118,14 +122,14 @@ def P (on : Board) : Except String V := do
 
 /-! ## Mate -/
 
-/-- Mate, single check only, as the two inclusions in their `⊤`-free form:
-    `ran(k(𝟙 ∪ Kf)) ⊑ ran(W)` — the king is attacked, and so is each king step onto a square with no black piece;
-    `dom(B(𝟙 ∪ P°)Wk) ⊑ ran(P)` — each black move capturing the checker or landing between it and the king
-    starts on a pinned square. -/
+/-- Mate, single check only, `⊤` (Lean `T`) the full relation on the squares:
+    `k(𝟙 ∪ Kf) ⊑ ⊤W` — the king is attacked, and so is each king step onto a square with no black piece;
+    `B(𝟙 ∪ P°)Wk ⊑ P°⊤` — each black move capturing the checker or landing between it and the king starts on
+    a pinned square. -/
 def isMate (on : Board) : Except String Bool := do
-  let W ← W on; let k ← k on; let P ← P on; let one ← one
-  let king ← le (← ran (← comp k (← union one (← comp (← K) (← f on))))) (← ran W)
-  let other ← le (← dom (← seq [← B on, ← union one (← conv P), W, k])) (← ran P)
+  let W ← W on; let k ← k on; let P ← P on; let one ← one; let T ← T; let P' ← conv P
+  let king ← le (← comp k (← union one (← comp (← K) (← f on)))) (← comp T W)
+  let other ← le (← seq [← B on, ← union one P', W, k]) (← comp P' T)
   pure (king && other)
 
 /-- `M`: white's moves, pins and checks on white ignored: slider, knight and king moves onto a square with neither
