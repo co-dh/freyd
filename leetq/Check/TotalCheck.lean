@@ -31,6 +31,7 @@ import LeetQ.Rel.Struct
 import LeetQ.Rel.Wumpus
 import LeetQ.Rel.KernelWF.Dyad
 import LeetQ.Rel.KernelWF.DyadCmpWF
+import LeetQ.Rel.KernelWF.DyadValWF
 import LeetQ.Rel.KernelWF.Gather
 import LeetQ.Rel.KernelWF.Raze
 import LeetQ.Rel.KernelWF.Reduce
