@@ -23,6 +23,6 @@ lean_lib LeetQ where
 /-- `doc/qrel-total-plan.md` §6's end check: red by design while an offender remains, so not a default target. -/
 lean_lib Check
 
-/-- `bench <op> <n>…`: the RelRep operators timed against `q/bench.q`. -/
+/-- `bench <op> <n>…`: the Rel operators timed. -/
 lean_exe bench where
   root := `Bench.Main
