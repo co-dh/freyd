@@ -38,14 +38,17 @@ def gate (f : Bool → Bool → Bool) : Rel Bit2 Bit :=
 def adder : Except String (Rel Bit3 Bit2) := do
   let (p₁, p₂, p₃) := (π₁, π₂, π₃)
   let (xor, and, or) := (gate (· != ·), gate (· && ·), gate (· || ·))
-  let x₁ ← comp (← pair p₁ p₂) xor
+  let q ← pair p₁ p₂
+  let x₁ := comp q xor
   let x₂ ← pair x₁ p₃
-  pair (← comp x₂ xor) (← comp (← pair (← comp (← pair p₁ p₂) and) (← comp x₂ and)) or)
+  let c ← pair (comp q and) (comp x₂ and)
+  pair (comp x₂ xor) (comp c or)
 
 /-- Query 6, `F p° : Bit³ ⟶ 1` with `p : 1 ⟶ Bit²` the point `(0,1)`: the inputs giving sum 0, carry 1. -/
 def answer : Except String (Rel Bit3 Bit) := do
   let p : Rel Bit Bit2 := ⟨1, col [0], (col [0], col [1])⟩
-  comp (← adder) (← conv p)
+  let F ← adder
+  pure (comp F (conv p))
 
 section Checks
 
