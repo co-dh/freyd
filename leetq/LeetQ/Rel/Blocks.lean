@@ -29,9 +29,6 @@ def M (S : V) : V := ∼((R S)° ≫ ⊤ ∪ ⊤ ≫ R S)
 /-- `S' ≜ (S ∩ ∼(p⊤)) ∪ p`: the move `p` replaces the row of its block. -/
 def move (S p : V) : V := (S ∩ ∼(p ≫ ⊤)) ∪ p
 
-/-- `S = S'` as `S ⊑ S' ∧ S' ⊑ S`. -/
-def same (S S' : V) : Bool := S ⊑ S' && S' ⊑ S
-
 /-- Breadth-first from `S₀` over the states, each reached once, to the first `S` with `G ⊑ S`; the moves as
     `(b, y)` pairs, empty when no plan reaches `G`. Three blocks have at most `3³` maps, so `27` levels exhaust
     the search. -/
@@ -43,7 +40,7 @@ def plan : List (Int64 × Int64) := Id.run do
       if G ⊑ S then return ps
       for p in (M S).toList do
         let S' := move S (ofPairs [p])
-        if !seen.any (same S') then seen := S' :: seen; next := next ++ [(S', ps ++ [p])]
+        if !seen.any (· == S') then seen := S' :: seen; next := next ++ [(S', ps ++ [p])]
     q := next
   return []
 

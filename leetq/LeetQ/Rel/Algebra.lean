@@ -729,6 +729,8 @@ scoped infixl:80 " ≫ " => comp
 scoped postfix:max "°" => conv
 /-- `R ⊑ S`: inclusion, decided. -/
 scoped infix:50 " ⊑ " => le
+/-- `R = S` as `R ⊑ S ∧ S ⊑ R`: the same pairs, whatever the row order and multiplicity. -/
+instance : BEq (Rel A B) := ⟨fun R S => R ⊑ S && S ⊑ R⟩
 
 /-- The elements of the object `A` in this program: what `𝟙` and `⊤` range over. -/
 class Univ (A : Obj) where
