@@ -173,4 +173,89 @@ theorem overColumn_isSome {op : Coc.Over} {t : QAtomicType} {n : Nat} {e : Enc} 
     cases op <;> simp
   all_goals simp [overColumn, overFoR, clsOf, Coc.denseNul, narrowed_isSome]
 
+
+/-! ## `groupedOver`: `select f x by k` -/
+
+/-- Every type q answers `f/` of has a width: no fold answers a symbol, a guid or a general list. -/
+theorem resultType_width (op : Coc.Over) (avg : Bool) {t : QAtomicType} (hg : t ≠ .general) :
+    ((op.resultType avg t).bind QAtomicType.width).isSome = (op.resultType avg t).isSome := by
+  cases t <;> (try exact absurd rfl hg) <;> cases op <;> cases avg <;> rfl
+
+/-- A float fold answers its own type, or a boolean (`all`, `any`). -/
+theorem resultType_float (op : Coc.Over) :
+    (op.resultType false .float).all (fun r => r == .float || r == .boolean) = true ∧
+    (op.resultType false .real).all (fun r => r == .real || r == .boolean) = true := by
+  cases op <;> exact ⟨rfl, rfl⟩
+
+/-- `groupCells` writes one cell per group number in `order`: `w` bytes wrapped or clamped, a float
+    at four or eight bytes, an average at eight. -/
+theorem groupCells_size (kind : GroupCell) (w ng : USize) (m order : ByteArray) :
+    (groupCells kind w ng m order).size = order.size / 8 *
+      (match kind with | .wrap | .clamp => w.toNat | .float => if w == 4 then 4 else 8 | _ => 8) := by
+  simp only [groupCells]
+  rw [foldl_size ByteArray.size _ (match kind with | .wrap | .clamp => w.toNat | .float => if w == 4 then 4 else 8 | _ => 8)
+    (fun acc i => by cases kind <;> dsimp only <;> (repeat' split) <;> simp [Column.pushBits_size] <;> omega)]
+  simp
+
+
+/-- **`groupedOver` answers** at every type q types `f/` of (`hr`) that has a fold engine: a type with an
+    integral null, `byte`, `char`, or `float`/`real` under a verb with a float seed (not `all`/`any`).
+    It declines `boolean` and `datetime` (no `denseNul`) and `guid`/`symbol`/`general` (no `clsOf`). -/
+theorem groupedOver_isSome {op : Coc.Over} {whole : Bool} {t rt : QAtomicType} {gs : Groups} {n : Nat}
+    {e : Enc} {ord : ByteArray} (hn : n < USize.size) (hw : Enc.WF t n e) (hr : op.resultType false t = some rt)
+    (ht : (Coc.nullOf t).isSome ∨ t = .byte ∨ t = .char ∨ ((t = .float ∨ t = .real) ∧ op.floatSeed.isSome)) :
+    (groupedOver op false whole t gs n e ord).isSome := by
+  have hg : t ≠ .general := by rintro rfl; simp [Coc.nullOf] at ht
+  obtain ⟨w, hrw⟩ : ∃ w, rt.width = some w := by
+    have := resultType_width op false hg; rw [hr] at this; simpa [Option.isSome_iff_exists] using this
+  obtain ⟨tw, htw, htb⟩ : ∃ w, t.width = some w ∧ t ≠ .boolean := by
+    cases t <;> simp_all [Coc.nullOf, QAtomicType.width]
+  obtain ⟨b, hb, -⟩ := bytesOf_size htb htw hw (countFits_of_lt hn)
+  unfold groupedOver
+  rcases ht with h | rfl | rfl | ⟨rfl | rfl, hs⟩
+  · cases t <;> simp [Coc.nullOf] at h <;> simp_all [overGroupsColumn, clsOf, Coc.denseNul, Coc.nullOf]
+  all_goals simp_all [overGroupsColumn, clsOf, Coc.denseNul, Coc.nullOf, guard]
+
+theorem groupedOver_wf {op : Coc.Over} {whole : Bool} {t rt : QAtomicType} {gs : Groups} {n : Nat}
+    {e : Enc} {ord s : ByteArray} (hr : op.resultType false t = some rt) (hb : rt ≠ .boolean)
+    (h : groupedOver op false whole t gs n e ord = some s) : Enc.WF rt (ord.size / 8) (.bytes s) := by
+  unfold groupedOver at h
+  rcases hrw : rt.width with _ | w
+  · simp [hr, hrw] at h
+  simp [hr, hrw] at h
+  have hwu : (USize.ofNat w).toNat = w :=
+    toUSize_small (by cases rt <;> simp [QAtomicType.width] at hrw <;> omega)
+  refine wf_bytes hb hrw ?_
+  split at h
+  · rename_i hf
+    obtain ⟨_, -, b, -, hs⟩ := by simpa only [Option.bind_eq_some_iff] using h
+    cases hs
+    rw [groupCells_size]; congr 1
+    have h2 := resultType_float op
+    rcases hf with rfl | rfl
+    · have := h2.1; rw [hr] at this; simp at this
+      rcases this with rfl | rfl
+      · simp [QAtomicType.width] at hrw; subst hrw
+        have h4 : (4 : USize).toNat = 4 := toUSize_small (k := 4) (by decide)
+        exact if_neg fun e => by have := congrArg USize.toNat (beq_iff_eq.1 e); rw [hwu, h4] at this; cases this
+      · exact absurd rfl hb
+    · have := h2.2; rw [hr] at this; simp at this
+      rcases this with rfl | rfl
+      · simp [QAtomicType.width] at hrw; subst hrw; exact if_pos (beq_self_eq_true _)
+      · exact absurd rfl hb
+  · obtain ⟨m, -, hs⟩ := Option.bind_eq_some_iff.1 h
+    cases hs
+    rw [groupCells_size]
+    by_cases hc : Coc.narrowed op t whole 4294967301 = some (-2147483648)
+    · rw [if_pos hc]; exact congrArg (ord.size / 8 * ·) hwu
+    · rw [if_neg hc]; exact congrArg (ord.size / 8 * ·) hwu
+
+/-- `overBy`'s call: the order `til g` makes the answer `g` cells. -/
+theorem groupedOver_tilLongs_wf {op : Coc.Over} {whole : Bool} {t rt : QAtomicType} {gs : Groups} {n : Nat}
+    {e : Enc} {g : USize} {s : ByteArray} (hr : op.resultType false t = some rt) (hb : rt ≠ .boolean)
+    (h : groupedOver op false whole t gs n e (tilLongs g) = some s) : Enc.WF rt g.toNat (.bytes s) := by
+  have := groupedOver_wf hr hb h
+  have hs : (tilLongs g).size = g.toNat * 8 := by simpa [Enc.WF, QAtomicType.width] using tilLongs_wf g
+  rwa [hs, Nat.mul_div_cancel _ (by decide)] at this
+
 end LeetQ.Rel.KernelWF
