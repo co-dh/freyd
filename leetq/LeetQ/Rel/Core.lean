@@ -109,15 +109,8 @@ def of (t : QAtomicType) (n : Nat) (v : QValue) (what : String) : Except String 
 
 end Arr
 
-/-- Ascending offsets from `0` to `n`: `g+1` cut points of `n` positions into `g` groups. -/
-def Cuts {g : Nat} (o : Arr .long (g+1)) (n : Nat) : Prop :=
-  (∀ i j, i ≤ j → o.get i ≤ o.get j) ∧ o.get 0 = 0 ∧ (o.get (Fin.last g)).toInt = n
-
-instance {g : Nat} (o : Arr .long (g+1)) (n : Nat) : Decidable (Cuts o n) := by
-  unfold Cuts; infer_instance
-
 /-- The group holding each of `n` positions under the offsets `o`: the last cut at or below it, `o bin til n`
-    (`Parted.group` read by `binBytes`). -/
+    (`binBytes`). -/
 def groupOf (o : ByteArray) (n : Nat) : ByteArray := Kernel.binBytes 8 false true false o (Kernel.tilLongs n.toUSize)
 
 /-- `xs` as a dense long payload, eight bytes each: the literal columns of every module's checks. -/
@@ -468,41 +461,6 @@ theorem ordKey_long (v : UInt64) : Kernel.ordKey 8 false true v = Kernel.Order.r
   rw [UInt64.toNat_and, show (18446744073709551615 : UInt64).toNat = 2 ^ 64 - 1 from rfl,
     Nat.and_two_pow_sub_one_eq_mod, Nat.mod_eq_of_lt v.toNat_lt]
 
-/-- `Cuts` from `Order.ascending`'s Lean body on the dense payload, and the two end reads. -/
-theorem cuts_of_ascending {g n : Nat} (o : Arr .long (g+1)) {b : ByteArray} (hc : o.enc = .bytes b)
-    (hu : g + 1 < USize.size) (ha : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true)
-    (h0 : o.get 0 = 0) (hl : (o.get (Fin.last g)).toInt = n) : Cuts o n := by
-  refine ⟨?_, h0, hl⟩
-  have hsz : b.size / 8 = g + 1 := Arr.n_long_bytes o hc
-  have adj : ∀ i (h : i + 1 < g + 1), o.get ⟨i, by omega⟩ ≤ o.get ⟨i + 1, h⟩ := by
-    intro i h
-    simp only [Kernel.Order.ascending, List.all_eq_true, List.mem_range] at ha
-    have hm : (g + 1).toUSize.toNat = g + 1 := USize.toNat_ofNat_of_lt hu
-    have := ha i (by simp only [Kernel.Scan.Kind.avail, Kernel.Scan.Kind.width, hm, hsz]; omega)
-    simp only [Bool.false_eq_true, if_false, decide_eq_true_eq, Kernel.Order.keyAt, Kernel.Scan.Kind.bitsAt,
-      Kernel.Scan.Kind.width] at this
-    rw [Arr.get_long_bytes o hc, Arr.get_long_bytes o hc]
-    exact rank_i64_le this
-  intro ⟨i, hi⟩ ⟨j, hj⟩ hij
-  change i ≤ j at hij
-  obtain ⟨d, rfl⟩ : ∃ d, j = i + d := ⟨j - i, by omega⟩
-  induction d with
-  | zero => exact Int64.le_refl _
-  | succ d ih => exact Int64.le_trans (ih (by omega) (by omega)) (adj (i + d) hj)
-
-/-- Under `Cuts o n`, offsets `i ≤ j ≤ g` read `0 ≤ o[i] ≤ o[j] ≤ n`. -/
-theorem cuts_get {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {i j : Nat} (hij : i ≤ j) (hj : j ≤ g) :
-    0 ≤ (o.toList[i]!).toInt ∧ (o.toList[i]!).toInt ≤ (o.toList[j]!).toInt ∧ (o.toList[j]!).toInt ≤ n := by
-  have e : ∀ m (hm : m ≤ g), o.toList[m]! = o.get ⟨m, by omega⟩ := fun m hm => by
-    rw [getElem!_pos _ m (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
-  obtain ⟨hm, h0, hl⟩ := co
-  rw [e i (by omega), e j hj]
-  have a := Int64.le_iff_toInt_le.1 (hm 0 ⟨i, by omega⟩ (by simp [Fin.le_def]))
-  have b := Int64.le_iff_toInt_le.1 (hm ⟨i, by omega⟩ ⟨j, by omega⟩ (by simp [Fin.le_def]; omega))
-  have c := Int64.le_iff_toInt_le.1 (hm ⟨j, by omega⟩ (Fin.last g) (by simp [Fin.le_def]; omega))
-  rw [h0] at a; rw [hl] at c
-  exact ⟨by simpa using a, b, c⟩
-
 /-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
 def longBytes (n : Nat) (e : Enc) : Option ByteArray :=
   match e with
@@ -655,7 +613,6 @@ example : ss.Holds 1 "a" := (ss.holds_iff_mem_zipIdx 1 "a").2 ⟨1, rfl, by deci
 end Checks
 
 #print axioms Arr.get
-#print axioms cuts_of_ascending
 #print axioms Rel.holds_iff_mem_toList
 
 end LeetQ.Rel

@@ -57,11 +57,15 @@ qlean      kernels, Enc
 
 What `master` still has beside it, each removed by a step of the plan:
 
-| extra                                                             | removed by |
-|-------------------------------------------------------------------|------------|
-| `Find`, `Ew`, `Scan`, `Parted`, `KernelWF/*` between `Alg` and qlean | step 2     |
-| reference implementations beside a kernel (`setIdsRef`, …)        | step 4     |
-| `Code`, `Alg` and the guards in one file `Algebra.lean`           | step 5     |
+| extra                                                                  | removed by      |
+|------------------------------------------------------------------------|-----------------|
+| `Find`, `Ew`, `Scan`, `Parted`, `QSort`, eight `KernelWF/*` modules    | step 2 (done)   |
+| reference implementations beside a kernel (`setIdsRef`, …)             | step 4          |
+| `Code`, `Alg` and the guards in one file `Algebra.lean`                | step 5          |
+
+After step 2, below `Algebra` there are only `Core` (with `one`, `bitsAt_one`, `expand`, `Ew.notBits`) and the
+three theorem modules `KernelWF/{Raze, Gather, Reduce}`; `Reduce` also holds `Ops.rank`/`rankAt`, because the
+`gradeColumn` facts it cites rest on `Raze`, which imports `Core`.
 
 The names behind the symbols: `/` `leftDiv`, `\` (division) `rightDiv`, `÷` `symDiv`, `Λ` `transpose`, `∋` `mem`,
 `⟨R,S⟩` `pair` with `outl`/`outr`, `×` `prod`, `[R,S]` `junc`, `⦇e,S⦈` `fold`, `F(R)` `map`, `cons°` `uncons`;
@@ -185,8 +189,9 @@ Simplification, in order:
 1. [x] one representation: `Part A := (n : Nat) × Vals A n`; `Cols`, `cols`, `ofCols`, `Vals.ofParts`,
    `Obj.count` deleted; `rows`, `nub` on `Rel`. Two new `if count fits then kernel else reference` sites:
    `shiftArr` (its reference keeps null as null from the `Ew` documentation, not a theorem) and `uncons`
-2. [ ] move the functions `Alg` uses from `Find`/`Ew`/`Scan`/`Parted` into `Core`; delete those modules and the
-   unimported `QSort`, `KernelWF/*` nothing reaches
+2. [x] move the functions `Alg` uses from `Find`/`Ew`/`Scan`/`Parted` into `Core` (`Ops.rank` into
+   `KernelWF/Reduce`); delete those modules, the unimported `QSort`, the `KernelWF/*` nothing reaches, `Core`'s
+   `Parted` and `Cuts`
 3. [x] `est` is the least value, `thin` the minimal ones; `uncons` (`cons°`), `fold` (`⦇e,S⦈`), `map` (`F(R)`) on
    arrays, through one helper `foldBy` and a `cons`; `mapVal`, `foldOver`, the kernel `thin`, `arrDense`,
    `Arr.ofPart` deleted. `est` reads `Q` up to its reflexive closure (`b Q c` for every OTHER value `c`), so a
@@ -207,6 +212,8 @@ Open after that:
 - [ ] `est` gives the minimal elements of a partial order, not a least one
 - [ ] properties are `#guard`s, not theorems: `Λ(R) ≫ ∋(R) == R`, kernel and reference agree
 - [ ] not implemented: general `⦇R⦈`, `F(R)`, an unfold then a fold, `enum`, maps on positions
-- [ ] `scripts/lean-refactor` cannot load the leetq package (`unknown module prefix 'LeetQ'`)
+- [ ] `scripts/lean-refactor -C leetq` loads the package, but its index of `LeetQ.Rel.Lang.TestChess` runs out of
+  memory at the 12 GB cap, and `move` does not rewrite a selective `open N (a b)`, so a move out of a namespace
+  that is opened that way fails its build
 
 Deferred non-`Alg` work: `doc/qrel-total-later.md`.

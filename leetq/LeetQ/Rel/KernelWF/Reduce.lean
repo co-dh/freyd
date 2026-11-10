@@ -6,6 +6,7 @@
 import LeetQ.Rel.KernelWF.Raze
 import QLean.Kernel.Scan
 import QLean.Kernel.Search
+import QLean.Dep.Table
 
 namespace LeetQ.Rel.KernelWF
 
