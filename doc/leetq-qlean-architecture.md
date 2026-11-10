@@ -195,8 +195,8 @@ Simplification, in order:
 
 Open after that:
 
-- [ ] a `sum` row whose own side holds no value: `row` reads a default, `codes` reads code 0, `raze` points it at
-  the next part; no op builds such a row, a hand-built column can
+- [x] a `sum` row whose own side holds no value reads that side's null (`Obj.dflt`, what a gather past the side
+  reads) everywhere: `row` keeps its tag, `codes` and `raze` first give it its value (`Vals.held`, a `compact`)
 
 - [ ] `join_len` is `≤`, not `=`: `add` takes its count as `USize`, so past `2^64` rows `≫` truncates
 - [ ] `symDiv` assumes the last offset of `segments` is the code count
