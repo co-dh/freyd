@@ -280,3 +280,57 @@ theorem dyadColumn_isSome {v : Prim.Dyadic} {shape : UInt8} {t u rt : QAtomicTyp
     · rw [if_pos hc.1]; simp only [Option.isSome_map]; exact cmpPayload_isSome hc ha hb hsym
     · rw [if_neg (by simp [cmpOp_none_of_valOp hv.1])]; simp only [Option.isSome_map]
       exact valPayload_isSome hv ha hb
+
+/-! ## `monColumn` -/
+
+/-- `mapPass` answers on a well-formed operand of a type with a class, at any class but a boolean's own. -/
+theorem mapPass_isSome {bld : Kernel.Ew.Build} {cls : UInt8} {nulIn : QAtomicType → Int64} {nulOut : Int64}
+    {t rt : QAtomicType} {n : Nat} {e : Enc} {stage : UInt8 → Kernel.Ew.Stage} {src : UInt8}
+    (hc : clsOf t = some src) (hw : Enc.WF t n e) (hb : t = .boolean → cls ≠ Kernel.Ew.bits) :
+    (mapPass bld cls nulIn nulOut t rt n e stage).isSome := by
+  obtain ⟨⟨b, s⟩, h1⟩ := Option.isSome_iff_exists.1 (operandSource_isSome (b := bld) (dst := cls)
+    (nulIn := nulIn t) (nulOut := nulOut) (n := n) (tk := none) hc hw hb (by simp))
+  simp [mapPass, h1]
+
+/-- `negAbsPayload` answers on a well-formed operand of a type with a class, at a result type with a class
+    other than the bitmap's. -/
+theorem negAbsPayload_isSome {op : UInt8} {t rt : QAtomicType} {n : Nat} {e : Enc} {src cls : UInt8}
+    (hc : clsOf t = some src) (hrt : clsOf rt = some cls) (hcls : cls ≠ Kernel.Ew.bits) (hw : Enc.WF t n e) :
+    (negAbsPayload op t rt n e).isSome := by
+  unfold negAbsPayload
+  simp only [hrt, Option.bind_eq_bind, Option.bind_some]
+  exact orElse_isSome _ (mapPass_isSome hc hw (fun _ => hcls))
+
+/-- `eqConstPayload` answers on every well-formed operand of a type with a class. -/
+theorem eqConstPayload_isSome {t : QAtomicType} {k : UInt64} {n : Nat} {e : Enc} {src : UInt8}
+    (hc : clsOf t = some src) (hw : Enc.WF t n e) : (eqConstPayload t k n e).isSome := by
+  unfold eqConstPayload cmpClsOf
+  simp only [hc, Option.map_some, Option.bind_eq_bind, Option.bind_some]
+  refine orElse_isSome _ (mapPass_isSome hc hw (fun _ => ?_))
+  split <;> simp_all [Kernel.Ew.i32, Kernel.Ew.bits]
+
+/-- The types the monadic maps read have a class, except the general list. -/
+theorem clsOf_of_numeric {t : QAtomicType} (hg : t ≠ .general) (hn : Prim.nonNumeric t = false) :
+    ∃ s, clsOf t = some s := by
+  cases t <;> simp_all [Prim.nonNumeric, clsOf]
+
+/-- `neg` and `abs` read a type with a class and answer at one other than the bitmap's. -/
+theorem negType_cls {t rt : QAtomicType} (h : negType t = some rt) (hg : t ≠ .general) :
+    ∃ s c, clsOf t = some s ∧ clsOf rt = some c ∧ c ≠ Kernel.Ew.bits := by
+  cases t <;> simp [negType, Prim.nonNumeric] at h <;> subst h <;>
+    simp_all [clsOf, Kernel.Ew.bits, Kernel.Ew.i32, Kernel.Ew.i16, Kernel.Ew.i64, Kernel.Ew.u8, Kernel.Ew.f32,
+      Kernel.Ew.f64]
+
+/-- A bind of an answer into a function that always answers, answers. -/
+theorem bind_isSome {α β : Type} {x : Option α} {f : α → Option β} (hx : x.isSome) (hf : ∀ a, (f a).isSome) :
+    (x.bind f).isSome := by
+  cases x <;> simp_all
+
+/-- `signumPayload` answers on every well-formed operand of a type with a class. -/
+theorem signumPayload_isSome {t : QAtomicType} {n : Nat} {e : Enc} {src : UInt8}
+    (hc : clsOf t = some src) (hw : Enc.WF t n e) : (signumPayload t n e).isSome := by
+  unfold signumPayload cmpClsOf
+  simp only [hc, Option.map_some, Option.bind_eq_bind, Option.bind_some]
+  refine bind_isSome (operandSource_isSome hc hw (fun _ => ?_) (by simp)) (fun _ => rfl)
+  split <;> simp_all [Kernel.Ew.i32, Kernel.Ew.bits]
+
