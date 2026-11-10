@@ -395,6 +395,58 @@ theorem run_mon_size (b : Kernel.Ew.Build) (op cls a : UInt8) (nul : Int64) (n :
     (b.run { engine := Kernel.Ew.eMon, op, cls, a, nul } n).size = n.toNat * Kernel.Ew.width cls := by
   run_reduce; simp [Kernel.Ew.eMon, Kernel.Ew.eVal, Kernel.Ew.eCmp, Ew.mon_size]
 
+/-- A chain ending in `Ew.val` answers `n` elements at its class's width. -/
+theorem run_val_size (b : Kernel.Ew.Build) (op cls shape a b' : UInt8) (nul : Int64) (n : USize) :
+    (b.run { engine := Kernel.Ew.eVal, op, cls, shape, a, b := b', nul } n).size =
+      n.toNat * Kernel.Ew.width cls := by
+  run_reduce; simp [Kernel.Ew.eVal, Ew.val_size]
+
+/-- `Ew.floor` answers `n` longs. -/
+theorem floor_size (cls : UInt8) (x : ByteArray) (n : USize) : (Kernel.Ew.floor cls x n).size = n.toNat * 8 := by
+  simp only [Kernel.Ew.floor]; rw [foldl_size ByteArray.size _ 8 (fun _ _ => Column.pushBits_size ..)]; simp
+
+/-- A chain ending in `Ew.floor` answers `n` longs. -/
+theorem run_floor_size (b : Kernel.Ew.Build) (cls a : UInt8) (n : USize) :
+    (b.run { engine := Kernel.Ew.eFloor, cls, a } n).size = n.toNat * 8 := by
+  run_reduce
+  simp [Kernel.Ew.eFloor, Kernel.Ew.eVal, Kernel.Ew.eCmp, Kernel.Ew.eMon, Kernel.Ew.eWiden, Kernel.Ew.eBit,
+    floor_size]
+
+/-- A fold that pushes one byte a step answers one byte per step. -/
+local macro "bitmap_size" : tactic => `(tactic| (
+  rw [foldl_size ByteArray.size _ 1 (fun _ _ => by simp only [ByteArray.size, ByteArray.push, Array.size_push])]
+  simp))
+
+/-- `Ew.cmp` answers `⌈n/8⌉` bytes. -/
+theorem cmp_size (op cls shape : UInt8) (a b : ByteArray) (n : USize) :
+    (Kernel.Ew.cmp op cls shape a b n).size = (n.toNat + 7) / 8 := by
+  simp only [Kernel.Ew.cmp]; bitmap_size
+
+/-- `Ew.bit` answers `⌈n/8⌉` bytes. -/
+theorem bit_size (op shape : UInt8) (a b : ByteArray) (n : USize) :
+    (Kernel.Ew.bit op shape a b n).size = (n.toNat + 7) / 8 := by
+  simp only [Kernel.Ew.bit]; bitmap_size
+
+/-- `Ew.cmpSyms` answers `⌈n/8⌉` bytes. -/
+theorem cmpSyms_size (op shape : UInt8) (ba : ByteArray) (oa : Array Nat) (bb : ByteArray) (ob : Array Nat)
+    (n : USize) : (Kernel.Ew.cmpSyms op shape ba oa bb ob n).size = (n.toNat + 7) / 8 := by
+  simp only [Kernel.Ew.cmpSyms]; bitmap_size
+
+/-- `Ew.cmpIdsKey` answers `⌈n/8⌉` bytes. -/
+theorem cmpIdsKey_size (op : UInt8) (d : ByteArray) (o : Array Nat) (i : ByteArray) (w : USize) (k : ByteArray)
+    (n : USize) : (Kernel.Ew.cmpIdsKey op d o i w k n).size = (n.toNat + 7) / 8 := by
+  simp only [Kernel.Ew.cmpIdsKey]; bitmap_size
+
+/-- `Coc.alpMaskLt` answers `⌈n/8⌉` bytes. -/
+theorem alpMaskLt_size (m p a : ByteArray) (n : USize) (v : Float) :
+    (Kernel.Coc.alpMaskLt m p a n v).size = (n.toNat + 7) / 8 := by
+  simp only [Kernel.Coc.alpMaskLt]; bitmap_size
+
+/-- A chain ending in `Ew.cmp` answers `⌈n/8⌉` bytes. -/
+theorem run_cmp_size (b : Kernel.Ew.Build) (op cls shape a b' : UInt8) (nul : Int64) (n : USize) :
+    (b.run { engine := Kernel.Ew.eCmp, op, cls, shape, a, b := b', nul } n).size = (n.toNat + 7) / 8 := by
+  run_reduce; simp [Kernel.Ew.eVal, Kernel.Ew.eCmp, cmp_size]
+
 /-! ## What `payload` answers -/
 
 /-- A chain's answer of `n` elements at a type's width, other than boolean, is a well-formed payload. -/
@@ -417,11 +469,29 @@ theorem payload_wf {rt : QAtomicType} {w : Nat} {b : Kernel.Ew.Build} {last : Ke
   · simp only [Bool.not_eq_true] at he; simp only [he]
     exact answer_wf (wf_bytes hb hw hs) hn
 
-/-- `mapPass` answers a well-formed payload when its stage writes `n` elements at the result type's width. -/
+-- a term, not `nomatch`: under `first` a failed `exact` throws, where `nomatch` only logs
+theorem none_some_elim {α : Type} {a : α} {P : Prop} (h : (none : Option α) = some a) : P := nomatch h
+
+/-- `payload_wf` at a count handed down as a `Nat` that fits a `USize`. -/
+theorem payload_wf_nat {rt : QAtomicType} {w : Nat} {b : Kernel.Ew.Build} {last : Kernel.Ew.Stage} {n : Nat}
+    (hn : n < USize.size) (hb : rt ≠ .boolean) (hw : rt.width = some w)
+    (hs : (b.run last n.toUSize).size = n * w) : Enc.WF rt n (payload rt n.toUSize (b, last)) := by
+  have := payload_wf (n := n.toUSize) (b := b) (last := last) hb hw (by rw [hs, toUSize_toNat hn])
+  rwa [toUSize_toNat hn] at this
+
+/-- A bitmap of `⌈n/8⌉` bytes is a well-formed boolean payload. -/
+theorem bits_wf {n : Nat} {x : ByteArray} (h : x.size = (n + 7) / 8) : Enc.WF .boolean n (.bits x) := by
+  simpa [Enc.WF] using h
+
+/-- A chain's answer of `⌈n/8⌉` bytes is a well-formed boolean payload. -/
+theorem payload_bits_wf {b : Kernel.Ew.Build} {last : Kernel.Ew.Stage} {n : USize}
+    (hs : (b.run last n).size = (n.toNat + 7) / 8) : Enc.WF .boolean n.toNat (payload .boolean n (b, last)) := by
+  simp only [payload]; exact bits_wf hs
+
+/-- `mapPass` answers a well-formed payload when the payload its stage makes is one. -/
 theorem mapPass_wf {bld : Kernel.Ew.Build} {cls : UInt8} {nulIn : QAtomicType → Int64} {nulOut : Int64}
-    {t rt : QAtomicType} {n w : Nat} {e r : Enc} {stage : UInt8 → Kernel.Ew.Stage} (hn : n < USize.size)
-    (hb : rt ≠ .boolean) (hw : rt.width = some w)
-    (hs : ∀ (b : Kernel.Ew.Build) sa, (b.run (stage sa) n.toUSize).size = n * w)
+    {t rt : QAtomicType} {n : Nat} {e r : Enc} {stage : UInt8 → Kernel.Ew.Stage} (hn : n < USize.size)
+    (hp : ∀ (b : Kernel.Ew.Build) sa, Enc.WF rt n.toUSize.toNat (payload rt n.toUSize (b, stage sa)))
     (h : mapPass bld cls nulIn nulOut t rt n e stage = some r) : Enc.WF rt n r := by
   unfold mapPass at h
   cases ho : operandSource bld t n e cls (nulIn t) nulOut n with
@@ -430,8 +500,29 @@ theorem mapPass_wf {bld : Kernel.Ew.Build} {cls : UInt8} {nulIn : QAtomicType �
     obtain ⟨b, sa⟩ := x
     simp only [ho, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h
     subst h
-    have := payload_wf (n := n.toUSize) (b := b) (last := stage sa) hb hw (by rw [hs, toUSize_toNat hn])
+    have := hp b sa
     rwa [toUSize_toNat hn] at this
+
+/-- `zipPass` answers a well-formed payload when the payload its stage makes is one. -/
+theorem zipPass_wf {cls : UInt8} {nulIn : QAtomicType → Int64} {nulOut nulOutB : Int64}
+    {t u rt : QAtomicType} {na nb n : Nat} {ea eb r : Enc} {stage : UInt8 → UInt8 → Kernel.Ew.Stage}
+    {ta tb : Option UInt8} (hn : n < USize.size)
+    (hp : ∀ (b : Kernel.Ew.Build) sa sb, Enc.WF rt n.toUSize.toNat (payload rt n.toUSize (b, stage sa sb)))
+    (h : zipPass cls nulIn nulOut nulOutB t u rt na ea nb eb n stage ta tb = some r) : Enc.WF rt n r := by
+  unfold zipPass at h
+  cases ho : operandSource {} t na ea cls (nulIn t) nulOut n ta with
+  | none => simp [ho] at h
+  | some x =>
+    obtain ⟨b, sa⟩ := x
+    simp only [ho, Option.bind_eq_bind, Option.bind_some] at h
+    cases ho' : operandSource b u nb eb cls (nulIn u) nulOutB n tb with
+    | none => simp [ho'] at h
+    | some y =>
+      obtain ⟨b', sb⟩ := y
+      simp only [ho', Option.bind_some, Option.some.injEq] at h
+      subst h
+      have := hp b' sa sb
+      rwa [toUSize_toNat hn] at this
 
 /-- An alternative that answered is one of its two sides. -/
 theorem orElse_eq_some {α : Type} {x y : Option α} {r : α} (h : (x <|> y) = some r) :
@@ -466,7 +557,7 @@ theorem negAbsPayload_wf {op : UInt8} {t rt : QAtomicType} {n : Nat} {e r : Enc}
         simp only [Column.blk]; omega
       · exact absurd h1 (by simp)
     · exact absurd h1 (by simp)
-  · exact mapPass_wf hn hb hwd (fun b sa => by rw [run_mon_size, toUSize_toNat hn]) h1
+  · exact mapPass_wf hn (fun b sa => payload_wf hb hwd (run_mon_size ..)) h1
 
 /-! ## `monColumn` answers -/
 
@@ -521,7 +612,7 @@ theorem monColumn_isSome {name : String} {t rt : QAtomicType} {n : Nat} {e : Enc
     by_cases hsy : t = .symbol
     · subst hsy; simp only [beq_self_eq_true, ↓reduceIte]
       exact cmpPayload_isSome ⟨rfl, .inl ⟨rfl, rfl⟩⟩ hw (by decide)
-        (fun _ _ => by cases e <;> simp [Enc.WF] at hw <;> simp [SymClaims, symIds])
+        (fun _ _ => by cases e <;> simp [Enc.WF, QAtomicType.width] at hw <;> simp [SymClaims, symIds])
     rw [if_neg (by simpa using hsy)]
     obtain ⟨s, hs⟩ := clsOf_of_numeric hg (by cases t <;> simp_all [Prim.nonNumeric])
     cases hk : nullBits t
@@ -567,4 +658,187 @@ theorem monColumn_isSome {name : String} {t rt : QAtomicType} {n : Nat} {e : Enc
       exact negAbsPayload_isSome hs2 hc3 hcb3 (negAbsPayload_wf hn hc1 hcb1 hr1)
     · simp only [hc1, hc3, Option.bind_some]
       exact bind_isSome (operandSource_isSome hs hw (fun _ => hcb1) (by simp)) (fun _ => rfl)
+
+/-! ## The comparison payloads are bitmaps of `n` -/
+
+/-- A bind that answered had an answer to bind. -/
+theorem bind_some_inv {α β : Type} {x : Option α} {f : α → Option β} {b : β} (h : x.bind f = some b) :
+    ∃ a, x = some a ∧ f a = some b := by
+  cases x with
+  | none => exact absurd h (by simp)
+  | some a => exact ⟨a, rfl, h⟩
+
+/-- A map that answered had an answer to map. -/
+theorem map_some_inv {α β : Type} {x : Option α} {f : α → β} {b : β} (h : x.map f = some b) :
+    ∃ a, x = some a ∧ f a = b := by
+  cases x with
+  | none => exact absurd h (by simp)
+  | some a => exact ⟨a, rfl, Option.some.inj h⟩
+
+/-- What `foRCmpPayload` answers is `n` bits. -/
+theorem foRCmpPayload_wf {op shape : UInt8} {t : QAtomicType} {na nb n : Nat} {ea eb r : Enc}
+    (hn : n < USize.size) (h : foRCmpPayload op shape t na ea nb eb n = some r) : Enc.WF .boolean n r := by
+  unfold foRCmpPayload at h
+  split at h
+  · obtain ⟨⟨_, ma, pa, mb, pb⟩, -, h⟩ := bind_some_inv h
+    cases h; exact bits_wf (by simp only [Kernel.Ew.foRCmpVV, cmp_size, toUSize_toNat hn])
+  · obtain ⟨⟨_, md, pk, bits⟩, -, h⟩ := bind_some_inv h
+    cases h; exact bits_wf (by simp only [Kernel.Ew.foRCmp, cmp_size, toUSize_toNat hn])
+
+/-- What `alpCmpPayload` answers is `n` bits. -/
+theorem alpCmpPayload_wf {op shape : UInt8} {t : QAtomicType} {na nb n : Nat} {ea eb r : Enc}
+    (hn : n < USize.size) (h : alpCmpPayload op shape t na ea nb eb n = some r) : Enc.WF .boolean n r := by
+  unfold alpCmpPayload at h
+  repeat' split at h
+  all_goals first
+    | exact none_some_elim h
+    | (obtain ⟨_, -, h⟩ := bind_some_inv h
+       dsimp only at h
+       obtain ⟨_, -, h⟩ := map_some_inv h
+       subst h; exact bits_wf (by rw [alpMaskLt_size, toUSize_toNat hn]))
+
+/-- What `cmpPayload` answers is `n` bits, at every operand pair and encoding it claims. -/
+theorem cmpPayload_wf {v : Prim.Dyadic} {shape : UInt8} {t u : QAtomicType} {na nb n : Nat} {ea eb r : Enc}
+    (hn : n < USize.size) (h : cmpPayload v shape t u na ea nb eb n = some r) : Enc.WF .boolean n r := by
+  unfold cmpPayload at h
+  obtain ⟨op, -, h⟩ := bind_some_inv h
+  split at h
+  · split at h
+    · cases h; exact bits_wf (by rw [cmpSyms_size, toUSize_toNat hn])
+    · split at h
+      · cases h; exact bits_wf (by rw [cmpIdsKey_size, toUSize_toNat hn])
+      · cases h; exact bits_wf (by rw [cmpIdsKey_size, toUSize_toNat hn])
+      · split at h
+        · split at h
+          · cases h; exact bits_wf (by simp only [Kernel.Ew.eqIds, cmp_size, toUSize_toNat hn])
+          · generalize Kernel.Ew.rankPair _ _ _ _ = p at h
+            obtain ⟨ra, rb⟩ := p
+            cases h; exact bits_wf (by simp only [Kernel.Ew.cmpIds, cmp_size, toUSize_toNat hn])
+        · exact none_some_elim h
+  · split at h
+    · cases h; exact bits_wf (by rw [bit_size, toUSize_toNat hn])
+    · dsimp only at h
+      split at h <;> (try obtain ⟨_, -, h⟩ := bind_some_inv h)
+      all_goals split at h
+      all_goals try exact none_some_elim h
+      all_goals obtain ⟨raw, -, h⟩ := bind_some_inv h
+      repeat' (split at h <;> try exact none_some_elim h)
+      all_goals rcases orElse_eq_some h with h | h
+      all_goals first
+        | exact none_some_elim h
+        | exact zipPass_wf hn (fun b sa sb => payload_bits_wf (run_cmp_size ..)) h
+        | (rcases orElse_eq_some h with h | h
+           · exact foRCmpPayload_wf hn h
+           · exact alpCmpPayload_wf hn h)
+
+/-- What `eqConstPayload` answers is `n` bits. -/
+theorem eqConstPayload_wf {t : QAtomicType} {k : UInt64} {n : Nat} {e r : Enc} (hn : n < USize.size)
+    (h : eqConstPayload t k n e = some r) : Enc.WF .boolean n r := by
+  unfold eqConstPayload at h
+  obtain ⟨cls, -, h⟩ := bind_some_inv h
+  rcases orElse_eq_some h with h | h
+  · exact foRCmpPayload_wf hn h
+  · exact mapPass_wf hn (fun b sa => payload_bits_wf (run_cmp_size ..)) h
+
+/-- What `signumPayload` answers is `n` ints. -/
+theorem signumPayload_wf {t : QAtomicType} {n : Nat} {e r : Enc} (hn : n < USize.size)
+    (h : signumPayload t n e = some r) : Enc.WF .int n r := by
+  unfold signumPayload at h
+  obtain ⟨cls, -, h⟩ := bind_some_inv h
+  obtain ⟨⟨bld, sa⟩, -, h⟩ := bind_some_inv h
+  cases h
+  exact payload_wf_nat hn (w := 4) (by decide) rfl (by rw [run_val_size, toUSize_toNat hn]; rfl)
+
+/-! ## What `monColumn` answers -/
+
+/-- What a float map answers is `n` floats. -/
+theorem floatMap_wf {name : String} {t rt : QAtomicType} {n : Nat} {e r : Enc} (hn : n < USize.size)
+    (hrt : (if (clsOf t).isSome then some QAtomicType.float else none) = some rt)
+    (h : ((floatMapOp name).bind fun op => mapPass {} Kernel.Ew.f64 (verbNull false) (nullPayload .float) t rt n e
+      fun sa => { engine := Kernel.Ew.eMon, op, cls := Kernel.Ew.f64, a := sa, nul := Kernel.Ew.noNull }) = some r) :
+    Enc.WF rt n r := by
+  have hr : rt = .float := by split at hrt <;> simp_all
+  subst hr
+  obtain ⟨op, -, h⟩ := bind_some_inv h
+  exact mapPass_wf hn (fun b sa => payload_wf (w := 8) (by decide) rfl (by rw [run_mon_size]; rfl)) h
+
+/-- What `monColumn` answers is `n` well-formed elements of the type it names, at every name. -/
+theorem monColumn_wf {name : String} {t rt : QAtomicType} {n : Nat} {e r : Enc} (hname : name ∈ monNames)
+    (hg : t ≠ .general) (hw : Enc.WF t n e) (hn : n < USize.size) (h : monColumn name t n e = some (rt, r)) :
+    Enc.WF rt n r := by
+  have hrt := monColumn_type h
+  have hp : monPayload name t n e = some r := by
+    unfold monColumn at h; rw [hrt] at h; obtain ⟨r', h1, h2⟩ := map_some_inv h; cases h2; exact h1
+  have key : ∀ {f : QAtomicType → Option Enc}, monPayload name t n e = (monResultType name t).bind f →
+      f rt = some r := fun h1 => by rw [h1, hrt] at hp; exact hp
+  simp only [monNames, List.mem_cons, List.not_mem_nil, or_false] at hname
+  rcases hname with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl
+  · obtain ⟨s, c, hs, hc, hcb⟩ := negType_cls (rt := rt) hrt hg
+    exact negAbsPayload_wf hn hc hcb (key rfl)
+  · obtain ⟨s, c, hs, hc, hcb⟩ := negType_cls (rt := rt) hrt hg
+    exact negAbsPayload_wf hn hc hcb (key rfl)
+  iterate 9 exact floatMap_wf hn hrt (key rfl)
+  · have hr : (if t == .guid || t == .symbol || !Prim.nonNumeric t then some QAtomicType.boolean else none) =
+        some rt := hrt
+    have hrb : rt = .boolean := by split at hr <;> simp_all
+    subst hrb
+    have h' : (if t == .guid then guidNull n e
+      else if t == .symbol then cmpPayload .eq Kernel.Ew.va .symbol .symbol n e 1 (.syms ⟨#[0]⟩ #[0, 1]) n
+      else match nullBits t with
+        | some k => eqConstPayload t k n e
+        | none => do let _ ← clsOf t; some (.bits ⟨Array.replicate ((n + 7) / 8) 0⟩)) = some r := key rfl
+    by_cases hgd : t = .guid
+    · subst hgd; simp only [beq_self_eq_true, ↓reduceIte, guidNull] at h'
+      obtain ⟨p, -, h'⟩ := map_some_inv h'
+      subst h'; exact bits_wf (by simp [Kernel.guidEq, Column.packBits_size, toUSize_toNat hn])
+    rw [if_neg (by simpa using hgd)] at h'
+    by_cases hsy : t = .symbol
+    · subst hsy; simp only [beq_self_eq_true, ↓reduceIte] at h'
+      exact cmpPayload_wf hn h'
+    rw [if_neg (by simpa using hsy)] at h'
+    split at h'
+    · exact eqConstPayload_wf hn h'
+    · obtain ⟨_, -, h'⟩ := bind_some_inv h'
+      cases h'; exact bits_wf (by simp [ByteArray.size])
+  · have hrb : rt = .boolean := by
+      have hr : (if Prim.nonNumeric t then none else some QAtomicType.boolean) = some rt := hrt
+      split at hr <;> simp_all
+    subst hrb; exact eqConstPayload_wf hn (key rfl)
+  · have hrb : rt = .int := by
+      have hr : (if Prim.nonNumeric t then none else some QAtomicType.int) = some rt := hrt
+      split at hr <;> simp_all
+    subst hrb; exact signumPayload_wf hn (key rfl)
+  · have hrb : rt = .float := by
+      have hr : (if Prim.nonNumeric t then none else some QAtomicType.float) = some rt := hrt
+      split at hr <;> simp_all
+    subst hrb
+    exact mapPass_wf hn (fun b sa => payload_wf (w := 8) (by decide) rfl (by rw [run_val_size]; rfl)) (key rfl)
+  · have hr : kernelFloorType t = some rt := hrt
+    have h' : floorPayload t rt n e = some r := key rfl
+    unfold floorPayload at h'
+    split at h'
+    · rename_i htr; cases h'; rwa [← (beq_iff_eq.1 htr)]
+    · obtain ⟨cls, -, h'⟩ := bind_some_inv h'
+      have hl : rt = .long := by
+        rename_i htr; cases t <;> simp_all [kernelFloorType]
+      subst hl
+      exact mapPass_wf hn (fun b sa => payload_wf (w := 8) (by decide) rfl (run_floor_size ..)) h'
+  · have hr : ((negType t).bind fun t1 => (kernelFloorType t1).bind fun t2 => negType t2) = some rt := hrt
+    obtain ⟨t1, h1, hr⟩ := bind_some_inv hr
+    obtain ⟨t2, h2, hr⟩ := bind_some_inv hr
+    have h' : ceilingPayload t n e = some r := key rfl
+    unfold ceilingPayload at h'
+    simp only [h1, h2, hr, Option.bind_eq_bind, Option.bind_some] at h'
+    obtain ⟨s, c1, hs, hc1, hcb1⟩ := negType_cls h1 hg
+    have hg2 : t2 ≠ .general := by rintro rfl; cases t1 <;> simp [kernelFloorType] at h2
+    obtain ⟨s2, c3, hs2, hc3, hcb3⟩ := negType_cls hr hg2
+    split at h'
+    · obtain ⟨r1, -, h'⟩ := bind_some_inv h'
+      exact negAbsPayload_wf hn hc3 hcb3 h'
+    · simp only [hc1, hc3, Option.bind_some] at h'
+      obtain ⟨⟨bld, sa⟩, -, h'⟩ := bind_some_inv h'
+      cases h'
+      have hb3 : rt ≠ .boolean := by rintro rfl; simp [clsOf] at hc3; exact hcb3 hc3.symm
+      exact payload_wf_nat hn hb3 (width_clsOf hc3 hb3) (by rw [run_mon_size, toUSize_toNat hn])
 
