@@ -20,9 +20,11 @@ structure Err where
 
 instance : ToString Err := ⟨fun e => s!"{e.pos}: {e.msg}"⟩
 
-/-- An object as written: a declared name, `A×B`, `A+B`, `𝒫A`, `[A]`. -/
+/-- An object as written: a declared name, `A×B`, `A+B`, `𝒫A`, `[A]`; in a parameter's type also an object
+    variable `α`, instantiated at each use (§e). -/
 inductive OExp
   | name (p : Pos) (n : String)
+  | var (p : Pos) (n : String)
   | prod (a b : OExp)
   | sum (a b : OExp)
   | pow (a : OExp)
@@ -127,7 +129,7 @@ abbrev Program := List Decl
 
 /-- `o` printed; `inner` parenthesises a product or sum, as an operand of `×`, `+`, `𝒫` needs. -/
 def OExp.render (inner : Bool) : OExp → String
-  | .name _ n => n
+  | .name _ n | .var _ n => n
   | .prod a b => let s := s!"{a.render true}×{b.render true}"; if inner then s!"({s})" else s
   | .sum a b => let s := s!"{a.render true}+{b.render true}"; if inner then s!"({s})" else s
   | .pow a => s!"𝒫{a.render true}"

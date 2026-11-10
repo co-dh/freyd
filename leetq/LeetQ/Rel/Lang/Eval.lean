@@ -281,7 +281,7 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
   | .elems ws => pure { ty := .base n, elems := ws, uni := some ⟨_, col ((List.range ws.length).map Int64.ofNat)⟩ }
   | .range lo hi =>
     pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo)).map fun k => Int64.ofNat (k + lo))⟩ }
-  | .alias o => do let (t, _) ← (oty env o).run {}; pure { ty := t }
+  | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs

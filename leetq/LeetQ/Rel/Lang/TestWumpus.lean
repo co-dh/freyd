@@ -112,7 +112,7 @@ def entailed : List (List (String × List Int64)) := Id.run do
     ("noW", "(V ∪ ran((noS(V, S) adj)))"),
     ("wmay", "((S ⊤(C, 1)) \\ adj)"),
     ("wcand", "(wmay(S) (𝟙 − noW(V, S)))"),
-    ("wumpus", "ran((wcand(V, S) ∩ (wcand(V, S)° \\ 𝟙)))"),
+    ("wumpus", "ran(uniq(wcand(V, S)))"),
     ("noWumpus", "(𝟙 − ran(wcand(V, S)))"),
     ("safe", "(noPit(V, B) ∩ noWumpus(V, S))"),
     ("frontier", "(ran((V adj)) (𝟙 − V))"),

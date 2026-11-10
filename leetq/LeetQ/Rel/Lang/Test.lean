@@ -72,6 +72,26 @@ def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L 
       !R.toList.isEmpty && f.all R.toList.contains && R.toList.all f.contains
     | _, _ => false
 
+/-- Object variables (§e): `uq : α ⟶ β` at `X ⟶ N` and at `N ⟶ X` against the ground copies `uX`, `uN`; and
+    `d : α ⟶ α` given `Fm : K ⟶ X×X`, which `α ⟶ α` reads as a family, against `d` of each fibre. -/
+def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj K = 0…2\n" ++
+  "uq(R : α ⟶ β) ≜ R ∩ (R°\\𝟙)\nuX(R : X ⟶ N) ≜ R ∩ (R°\\𝟙)\nuN(R : N ⟶ X) ≜ R ∩ (R°\\𝟙)\n" ++
+  "R₁ ≜ {(A,x),(A,y),(B,z)}\nR₂ ≜ {(x,A),(y,B),(y,C),(z,C)}\na₁ ≜ uq(R₁)\nb₁ ≜ uX(R₁)\na₂ ≜ uq(R₂)\nb₂ ≜ uN(R₂)\n" ++
+  "d(R : α ⟶ α) ≜ R ∩ (R°\\𝟙)\nF₀ ≜ {(A,B),(A,C)}\nF₁ ≜ {(A,B),(B,C)}\nF₂ ≜ {(A,A),(B,A),(B,B),(C,A)}\n" ++
+  "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,F₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,F₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,F₂⟩)\n" ++
+  "dF ≜ d(Fm)\nd₀ ≜ d(F₀)\nd₁ ≜ d(F₁)\nd₂ ≜ d(F₂)\n")
+
+#guard let o := ok objVars
+  let g (n : String) := get o n .long .long
+  objVars.isOk && g "a₁" == g "b₁" && g "a₂" == g "b₂" && (g "a₁").map (·.toList) == some [(1, 2)] &&
+    (g "a₂").map (·.n) == some 2 &&
+    [((0 : Int64), "d₀"), (1, "d₁"), (2, "d₂")].all fun (k, n) =>
+      match get o "dF" .long XX, g n with
+      | some F, some R =>
+        let f := (F.toList.filter (·.1 == k)).map (·.2)
+        f.all R.toList.contains && R.toList.all f.contains && (k == 0 || !f.isEmpty)
+      | _, _ => false
+
 -- `ζ(0) = S₀`; `ζ(1)` is `S₀` with `C` moved to the table
 #guard (ok twoIdx).prints.drop 1 == [
   "s₀ × {(0, 0)} k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 0), (A, A)), (({(A, A), (B, B), (C, A)}, 0), (B, B)), " ++
@@ -123,6 +143,12 @@ def errAt (src : String) (line : Nat) (what : String) : Bool :=
 #guard errAt "obj B = 0…1\nf(S, E : B ⟶ B) ≜ S ∩ E\n" 2 "`E` is a builtin"
 #guard errAt "obj B = 0…1\nK ≜ π₁\nq ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
 #guard errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
+-- an object variable met at two objects, in one parameter's type or across two; a defined name is no variable
+#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nf(R : α ⟶ α) ≜ R\ng ≜ f({(A,1)})\n" 4
+  "`α` in the type of 'R' is both X and N"
+#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nh(R : α ⟶ X, S : α ⟶ X) ≜ R\ng ≜ h({(A,B)},{(1,B)})\n" 4
+  "`α` in the type of 'S' is both X and N"
+#guard errAt "obj X = {A,B,C}\nπ ≜ 𝟙(X)\nf(R : π ⟶ π) ≜ R\n" 3 "expected an object, found 'π'"
 -- a `where` item taking a defined name, a parameter's, an earlier item's or a builtin's; an item used outside
 #guard errAt "obj B = 0…1\nK ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
 #guard errAt "obj B = 0…1\nf(S) ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"

@@ -21,6 +21,8 @@ structure S where
   objs : List String := []
   /-- Every name the program has defined or declared, with where: a second definition of it is an error. -/
   taken : List (String × Pos) := []
+  /-- Inside a parameter's type: an object may be an object variable (§e). -/
+  vars : Bool := false
 
 abbrev P := StateT S (Except Err)
 
@@ -50,6 +52,10 @@ def reserved : List Char :=
   ['(', ')', ',', '⟨', '⟩', '[', ']', '⦇', '⦈', '{', '}', '°', '∼', '≜', '⊑', '=', ':', '⟶', '…', '-', '𝒫'] ++
     Bin.table.map (·.1)
 def isSym (c : Char) : Bool := !(c.isWhitespace || isIdCont c || reserved.contains c)
+/-- The form of an object variable: one lowercase Greek letter `α`…`ω`, then only primes and subscript digits. -/
+def isVar (w : String) : Bool := match w.toList with
+  | c :: cs => 0x3B1 ≤ c.val && c.val ≤ 0x3C9 && cs.all fun d => isSub d || d == '\''
+  | [] => false
 
 /-- Spaces and a `--` comment, never the newline that ends a declaration. -/
 partial def ws : P Unit := do
@@ -121,7 +127,11 @@ partial def oprim : P OExp := do
   | some '(' => adv; let o ← object; tok ')'; pure o
   | _ =>
     let w ← word
-    if (← get).objs.contains w then pure (.name p w) else throw ⟨p, s!"expected an object, found '{w}'"⟩
+    let s ← get
+    -- a variable is not a declared object and not a definition in scope (§e)
+    if s.objs.contains w then pure (.name p w)
+    else if s.vars && isVar w && !s.known.any (·.1 == w) then pure (.var p w)
+    else throw ⟨p, s!"expected an object, found '{w}'"⟩
 
 end
 
@@ -215,7 +225,10 @@ def param : P Param := do
   let n ← word
   if (builtin n).isSome then throw ⟨p, s!"`{n}` is a builtin; choose another name"⟩
   ws
-  if (← peek) == some ':' then do adv; let a ← object; tok '⟶'; let b ← object; pure ⟨n, some (a, b)⟩
+  if (← peek) == some ':' then do
+    adv; modify fun s => { s with vars := true }
+    let a ← object; tok '⟶'; let b ← object
+    modify fun s => { s with vars := false }; pure ⟨n, some (a, b)⟩
   else pure ⟨n, none⟩
 
 def num : P Nat := do

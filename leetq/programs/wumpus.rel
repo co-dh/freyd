@@ -6,7 +6,7 @@ a ≜ {(11,12),(12,13),(13,14),(21,22),(22,23),(23,24),(31,32),(32,33),(33,34),(
 adj ≜ a ∪ a°                                  -- the cells beside each cell
 
 -- the views of one KB: V visited, B breeze, S stench; R(𝟙 − X) keeps the rows of R whose value is not in X
-uniq(R : C ⟶ C) ≜ R ∩ (R°\𝟙)                  -- the rows whose key has one value
+uniq(R : α ⟶ β) ≜ R ∩ (R°\𝟙)                  -- the rows whose key has one value
 noB(V : C ⟶ C, B : C ⟶ C) ≜ V(𝟙 − B)
 noPit(V : C ⟶ C, B : C ⟶ C) ≜ V ∪ ran(noB(V,B) adj)
 cand(V : C ⟶ C, B : C ⟶ C) ≜ B adj(𝟙 − noPit(V,B))
@@ -15,7 +15,7 @@ noS(V : C ⟶ C, S : C ⟶ C) ≜ V(𝟙 − S)
 noW(V : C ⟶ C, S : C ⟶ C) ≜ V ∪ ran(noS(V,S) adj)
 wmay(S : C ⟶ C) ≜ S⊤(C,1) \ adj               -- 1 ⟶ C: the cells beside every stench
 wcand(V : C ⟶ C, S : C ⟶ C) ≜ wmay(S)(𝟙 − noW(V,S))
-wumpus(V : C ⟶ C, S : C ⟶ C) ≜ ran(wcand(V,S) ∩ (wcand(V,S)°\𝟙))   -- uniq at 1 ⟶ C
+wumpus(V : C ⟶ C, S : C ⟶ C) ≜ ran(uniq(wcand(V,S)))
 noWumpus(V : C ⟶ C, S : C ⟶ C) ≜ 𝟙 − ran(wcand(V,S))
 safe(V : C ⟶ C, B : C ⟶ C, S : C ⟶ C) ≜ noPit(V,B) ∩ noWumpus(V,S)
 frontier(V : C ⟶ C) ≜ ran(V adj)(𝟙 − V)

@@ -249,14 +249,18 @@ structure Env where
   defs : List (String × Def) := []
   params : List (String × Arg) := []
 
-/-- `o` as the program wrote it, resolved: an alias stands for its definition. -/
-def oty (env : Env) : OExp → M OTy
+/-- `o` as the program wrote it, resolved: an alias stands for its definition, a variable for its object in `vs`,
+    one use's instantiation (§e). -/
+def oty (env : Env) (vs : List (String × OTy) := []) : OExp → M OTy
   | .name p n => match env.objs.lookup n with
     | some i => pure i.ty
     | none => throw ⟨p, s!"unknown object '{n}'"⟩
-  | .prod a b => return .prod (← oty env a) (← oty env b)
-  | .sum a b => return .sum (← oty env a) (← oty env b)
-  | .pow a | .list a => return .arr (← oty env a)
+  | .var p n => match vs.lookup n with
+    | some o => pure o
+    | none => throw ⟨p, s!"the object variable '{n}' is not instantiated here"⟩
+  | .prod a b => return .prod (← oty env vs a) (← oty env vs b)
+  | .sum a b => return .sum (← oty env vs a) (← oty env vs b)
+  | .pow a | .list a => return .arr (← oty env vs a)
 
 section Rows
 
@@ -425,8 +429,8 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | _ => (.id a, a, a)
   match objs with
   | [] => pure ()
-  | [x] => unify p s!"the object of {o.sym}" s (← oty env x)
-  | [x, y] => do unify p s!"the source of {o.sym}" s (← oty env x); unify p s!"the target of {o.sym}" t (← oty env y)
+  | [x] => unify p s!"the object of {o.sym}" s (← oty env [] x)
+  | [x, y] => do unify p s!"the source of {o.sym}" s (← oty env [] x); unify p s!"the target of {o.sym}" t (← oty env [] y)
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
@@ -629,28 +633,80 @@ def elabArgs (env : Env) (m : Option OTy) : List Expr → M (List Arg)
 
 end
 
+/-- A declared type matched against an argument's: the variables' objects so far, no match, or a variable met
+    at two objects. -/
+inductive Match
+  | ok (vs : List (String × OTy))
+  | no
+  | clash (n : String) (o o' : OTy)
+
+/-- `t` as `mk a b`, an unsolved variable solved to that form; none when `t` is another object. -/
+def split (p : Pos) (mk : OTy → OTy → OTy) (t : OTy) : M (Option (OTy × OTy)) := do
+  let a ← fresh; let b ← fresh
+  let st ← get
+  try unify p "" t (mk a b); let s ← get; pure (some (zonk s a, zonk s b)) catch _ => do set st; pure none
+
+def Match.bind (r : Match) (k : List (String × OTy) → M Match) : M Match :=
+  match r with | .ok vs => k vs | r => pure r
+
+/-- First-order matching of the declared `o` against `t`, extending the instantiation `vs`: a variable takes
+    the object it meets, once; a declared object unifies. -/
+def pmatch (env : Env) (p : Pos) (vs : List (String × OTy)) : OExp → OTy → M Match
+  | .var _ n, t => match vs.lookup n with
+    | none => pure (.ok ((n, t) :: vs))
+    | some o => do
+      let st ← get
+      try unify p "" t o; pure (.ok vs) catch _ => do set st; pure (.clash n (zonk st o) (zonk st t))
+  | .prod x y, t => do match ← split p .prod t with
+    | some (a, b) => (← pmatch env p vs x a).bind (pmatch env p · y b)
+    | none => pure .no
+  | .sum x y, t => do match ← split p .sum t with
+    | some (a, b) => (← pmatch env p vs x a).bind (pmatch env p · y b)
+    | none => pure .no
+  | .pow x, t | .list x, t => do match ← split p (fun a _ => .arr a) t with
+    | some (a, _) => pmatch env p vs x a
+    | none => pure .no
+  | o@(.name ..), t => do
+    let O ← oty env [] o
+    let st ← get
+    try unify p "" t O; pure (.ok vs) catch _ => do set st; pure .no
+
+/-- `x ⟶ y` matched against `s ⟶ t`. -/
+def both (env : Env) (p : Pos) (vs : List (String × OTy)) (x y : OExp) (s t : OTy) : M Match := do
+  (← pmatch env p vs x s).bind (pmatch env p · y t)
+
 /-- Bind a parameter to its argument: one relation, or, for a declared `S : A ⟶ B` given `I ⟶ A×B`, a family
-    with the index `I` (§e). -/
-def bind (env : Env) (p : Pos) (P : Param) (a : Arg) : M ((String × Arg) × Option OTy) := do
+    with the index `I` (§e). `vs` is the use's instantiation of the object variables so far. -/
+def bind (env : Env) (p : Pos) (P : Param) (a : Arg) (vs : List (String × OTy)) :
+    M ((String × Arg) × Option OTy × List (String × OTy)) := do
   match P.ty, a with
-  | none, .rel .. => pure ((P.name, a), none)
+  | none, .rel .. => pure ((P.name, a), none, vs)
   | none, .fam .. =>
     throw ⟨p, s!"parameter '{P.name}' is given a family but declares no type; write '{P.name} : A ⟶ B'"⟩
-  | some (x, y), .fam q i s t => do
-    let A ← oty env x; let B ← oty env y
-    unify p s!"the fibre of '{P.name}'s family" (.prod s t) (.prod A B)
-    pure ((P.name, .fam q i A B), some i)
-  | some (x, y), .rel q s t => do
-    let A ← oty env x; let B ← oty env y
+  | some (x, y), a => do
     let st ← get
-    try unify p "" s A; unify p "" t B; pure ((P.name, a), none)
-    catch _ => do
+    let decl := s!"'{P.name} : {x.show} ⟶ {y.show}'"
+    let clash (r : Match) (s t : OTy) : M Unit := match r with
+      | .clash n o o' => throw ⟨p, s!"`{n}` in the type of '{P.name}' is both {o} and {o'}: {decl} given {s} ⟶ {t}"⟩
+      | _ => pure ()
+    match a with
+    | .fam q i s t =>
+      match ← both env p vs x y s t with
+      | .ok vs => pure ((P.name, .fam q i (← oty env vs x) (← oty env vs y)), some i, vs)
+      | r => do set st; clash r (zonk st s) (zonk st t); throw ⟨p, s!"{decl} given a family of fibre {zonk st s} ⟶ {zonk st t}"⟩
+    | .rel q s t =>
+      -- one relation `A ⟶ B` first; failing that, a family `I ⟶ A×B` (§e)
+      let r ← both env p vs x y s t
+      if let .ok vs := r then return ((P.name, a), none, vs)
       set st
-      try unify p "" t (.prod A B); pure ((P.name, .fam q s A B), some s)
-      catch _ => do
-        set st
-        let s := zonk st s; let t := zonk st t
-        throw ⟨p, s!"'{P.name} : {A} ⟶ {B}' given {s} ⟶ {t}: neither {A} ⟶ {B} nor a family I ⟶ {A}×{B}"⟩
+      let r' ← match ← split p .prod t with
+        | some (u, v) => both env p vs x y u v
+        | none => pure .no
+      if let .ok vs := r' then return ((P.name, .fam q s (← oty env vs x) (← oty env vs y)), some s, vs)
+      set st
+      let s := zonk st s; let t := zonk st t
+      clash r s t; clash r' s t
+      throw ⟨p, s!"{decl} given {s} ⟶ {t}: neither {x.show} ⟶ {y.show} nor a family I ⟶ {x.render true}×{y.render true}"⟩
 
 /-- The projection of `(I₀×I₁)×…×Iₙ`, left-nested over the factors `ix`, onto the factor `k`. -/
 def proj (ix : Array OTy) (k : Nat) : Pre := go (ix.size - 1)
@@ -668,7 +724,9 @@ where
 def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
   arity := ps.length
   apply p args := do
-    let bs ← (ps.zip args).mapM fun (P, a) => bind env p P a
+    -- one instantiation of the object variables per use, shared by the parameters left to right (§e)
+    let (bs, _) ← (ps.zip args).foldlM (fun (bs, vs) (P, a) => do
+      let (b, j, vs) ← bind env p P a vs; pure (bs ++ [(b, j)], vs)) ([], [])
     -- the distinct indices `I₀ … Iₙ` of the family arguments, and each family's place among them (§e, mixed terms)
     let mut ix : Array OTy := #[]
     let mut pl : List (Option Nat) := []

@@ -86,7 +86,7 @@ any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤
 - On one atom, not operators: postfix `°`, application `N(e,…)`, `dom(R)`, `⊤(A,B)`, the brackets `⟨ ⟩ ⦇ ⦈ { }`,
   and prefix `∼` on the next atom (`∼𝟙`, `∼(p⊤)`).
 - `e ⊑ f`, `e = f` is the whole of a test body (§e) or a `check`, not nested.
-- A parameter may declare its type (§e).
+- A parameter may declare its type (§e), with object variables: `uniq(R : α ⟶ β)`.
 
 ```
 program  := line*
@@ -102,7 +102,8 @@ atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
           | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ, objects optional
           | '{' '(' Word ',' Word ')' (',' '(' Word ',' Word ')')* '}' | '(' expr ')'
-object   := Word | object '×' object | object '+' object | '𝒫' object | '[' object ']'
+object   := Word | Var | object '×' object | object '+' object | '𝒫' object | '[' object ']'
+Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a parameter's type only: an object variable (§e)
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
           | Symbol                                    -- one character outside the grammar: `≼`
 ```
@@ -153,7 +154,7 @@ Equal sub-terms are evaluated once (`Lang/Eval.lean`, `hoist`, `ev`):
 | on demand, inside one evaluation          | once per demand (equal as a set): a lifted body, one fold step |
 
 An identity is structural: the core constructor, its objects, the identities of its parts, and for a value its
-rows as a set; nothing printed. Chess's pinned squares repeat `ⁿ(De)` per direction and `dom(on{(R,R),(Q,Q)})`
+rows as a set; nothing printed. Chess's pinned squares repeat `L(De)` per direction and `dom(on{(R,R),(Q,Q)})`
 eight times: `rel chess.rel` 3.6 s → 0.7 s.
 
 ## e. Definitions, and lifting a formula to a family
@@ -179,6 +180,20 @@ because the body's types alone do not decide: an undeclared `S` gets its type fr
 `∼(S°⊤ ∪ (⊤S))` types plainly with `S : St ⟶ X×X` — as a relation on `X×X`, a different meaning from "per state".
 The declaration is the smallest marker: no new operator, only the parameter's type, and an undeclared
 parameter keeps the plain reading.
+
+**Object variables.** A parameter's type may name object variables: `uniq(R : α ⟶ β) ≜ R ∩ (R°\𝟙)`.
+
+- A variable is a word of one lowercase Greek letter `α`…`ω`, then only primes and subscript digits, that is
+  neither a declared object nor a definition in scope at that line (`π` defined as a relation is not a
+  variable). A builtin's name (`α`, `τ`) may be a variable: a type holds no relation, so nothing collides.
+- Each use instantiates the variables afresh, by first-order matching of the declared types against the
+  arguments, left to right, one instantiation per use shared by all parameters: first `A ⟶ B` (one relation),
+  and when that fails, `I ⟶ A×B` (a family of index `I`, the body lifted as for a ground type). A family met
+  inside a lifted body is matched by its fibre. So `α ⟶ β` given `I ⟶ X×X` outside a lifted body is one
+  relation, while `α ⟶ α` is a family.
+- A definition with object variables is elaborated at each use, as every definition with parameters is.
+- The same variable matched to two objects is a front-end error at the use: "`α` in the type of 'R' is both X
+  and N: 'R : α ⟶ α' given X ⟶ N".
 
 **Lifted rows.** `R : I ⟶ A×B`; `S` of the type the row names; `D` the keys in demand (a coreflexive on `I`,
 by §a from the left context, or `𝟙` of `I` when `I` has a universe); `π₁`, `π₂` and `𝟙` in the right column run
@@ -240,7 +255,7 @@ Not liftable:
 
 Cost of the keyed fold: `Sᴵ` reads the step's fibre at each key in full, so a closed part of the step (`π₂` in
 `π₂ ∪ (π₂(𝟙×R))`) becomes its whole universe at every key, where the unlifted step runs only on the pairs a round
-meets. Chess's `ⁿ` written as this fold, lifted over the boards and moves, ran over 3 min against 0.7 s for the
+meets. Chess's `L` written as this fold, lifted over the boards and moves, ran over 3 min against 0.7 s for the
 eight-term union, so Chess keeps the union; the step would have to run keyed on demand (`I×(E×V)` as its source),
 a second lifting of every row.
 
