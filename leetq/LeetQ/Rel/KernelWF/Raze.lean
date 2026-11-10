@@ -1,6 +1,6 @@
 /-
   Well-formedness of the payloads qlean's kernels answer, read off their Lean bodies, in the form
-  `Arr.ofPart`/`ofCols` take (`Enc.WF t n e`), and the `isSome` facts that make `codes`/`arrDense`
+  `Arr.ofPart` takes (`Enc.WF t n e`), and the `isSome` facts that make `codes`/`arrDense`
   total. Gathering kernels (`gatherColumn`, `sliceColumn`, `bytesOf`, `longBytes`, `gens`) are in
   `KernelWF/Gather`.
 -/
