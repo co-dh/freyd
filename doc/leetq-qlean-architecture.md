@@ -18,7 +18,7 @@ In scope: the `Alg` ops, their helpers, the programs that test them (Blocks, Che
 kernel or theorem only when an `Alg` op needs it. Out of scope until an `Alg` op or a program needs it: q's verbs,
 q compatibility, qlean kernel coverage of cells no `Alg` op reads.
 
-State on 2026-11-10, `master` at 4d108a0; the whole leetq package builds. Items marked `[~]` are in an agent's
+State on 2026-11-10, `master` at 77d84e2; the whole leetq package builds. Items marked `[~]` are in an agent's
 worktree and not on `master`.
 
 ## Data
@@ -97,7 +97,7 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 5   | `⟨R,S⟩`, `π₁`, `π₂`, `R×S`                             | `pair`, `outl`, `outr`, `prod`              | yes   |
 | 5   | `[R,S]`, `inl`, `inr`, `R+S`                           | `junc`, `inl`, `inr`, `sum` on `Obj.sum`     | yes   |
 | 5   | `Λ(R)`, `∋`, `∈`                                       | `Λ(R)`, `∋(R)`, `mem`                       | yes   |
-| 5   | `E(R) ≜ frac(∋R,∋)`, `P(R)`, `union ≜ frac(∋∋,∋)`, `τ` | —                                           | no    |
+| 5   | `E(R) ≜ frac(∋R,∋)`, `P(R)`, `union ≜ frac(∋∋,∋)`, `τ`, `nil`, `α` | `E`, `P`, `Arr.union`, `τ`, `nil`, `alpha` | yes   |
 | 5   | `α ≜ [nil,cons]`, `nil`, `cons`, `cons°`, `snoc`       | `uncons` (`cons°`)                          | yes   |
 | 5   | `⦇R⦈` on lists                                         | `fold`                                      | yes   |
 | 5   | `F(R)` for the list functor                            | `map`                                       | yes   |
@@ -106,8 +106,9 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 6   | closure `R*`                                           | written with `iter` in `Chess.star`         | part  |
 | 6   | `perm`, `bagify`, `setify`, `ordered(≼)`, `sort(≼)`    | —                                           | no    |
 | 7   | `est(R) ≜ ∋ ∩ (∈\R°)`, `lb`                            | `est` (least)                               | yes   |
-| 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `init`, `inits`, `tails`, `prefix`, `suffix`, `concat`, `zip`, `unzip` | — (each is a fold or `cons°` term once `fold`, `cons`, `nil` exist) | no |
-| 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `≤` only as a table (`Blocks.lt`)           | no    |
+| 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `prefix`, `suffix`, `succ`, `+` | `filter takewhile length Arr.sum head tail «prefix» suffix succ plus` | yes |
+| 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`      | — (need an array of arrays in list order, an append `cat`, maps on positions) | no |
+| 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `leq U`, `lt U` from kernels (not `general`) | yes   |
 | 8   | `thin(Q)`                                              | `thin` (minimal)                            | yes   |
 | 8   | `merge`, sorting sets, binary thinning                 | —                                           | no    |
 | 9   | tabulation (`array`, `row`, `col`, `tic`, `loop`)      | —                                           | no    |
@@ -202,7 +203,6 @@ Open after that:
 - [ ] `Λ` does not give equal sets equal arrays for `general` atoms or nested arrays
 - [ ] a list row with `lo`/`hi` out of range is clamped; untested at `Int64.minValue`
 - [ ] `est` gives the minimal elements of a partial order, not a least one
-- [ ] `Blocks.lt` is a table on ids `0…26`; no op compares two longs
 - [ ] properties are `#guard`s, not theorems: `Λ(R) ≫ ∋(R) == R`, kernel and reference agree
 - [ ] not implemented: general `⦇R⦈`, `F(R)`, an unfold then a fold, `enum`, maps on positions
 - [ ] `scripts/lean-refactor` cannot load the leetq package (`unknown module prefix 'LeetQ'`)
