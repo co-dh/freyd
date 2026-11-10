@@ -730,6 +730,18 @@ scoped postfix:max "°" => conv
 /-- `R ⊑ S`: inclusion, decided. -/
 scoped infix:50 " ⊑ " => le
 
+/-- The elements of the object `A` in this program: what `𝟙` and `⊤` range over. -/
+class Univ (A : Obj) where
+  n : Nat
+  xs : Vals A n
+
+/-- `𝟙 : A ⟶ A`, the identity on the elements of `A`. -/
+scoped notation "𝟙" => idU Univ.xs
+/-- `⊤ : A ⟶ B`, every pair. -/
+scoped notation "⊤" => top Univ.xs Univ.xs
+/-- `∼R`: the complement of `R` in `⊤`. -/
+scoped notation:max "∼" R:max => ⊤ \ R
+
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
     The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do

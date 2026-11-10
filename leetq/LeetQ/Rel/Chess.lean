@@ -18,17 +18,11 @@ abbrev V := Rel Sq Sq
 
 /-- The 64 squares. -/
 def U := col ((List.range 64).map Int64.ofNat)
-/-- `𝟙 : Sq ⟶ Sq` on the 64 squares. -/
-def one : V := idU U
-/-- `⊤ : Sq ⟶ Sq`, every pair of squares. -/
-def T : V := top U U
-
-local notation "𝟙" => one
-local notation "⊤" => T
+local instance : Univ Sq := ⟨_, U⟩
 
 /-- `R₁R₂…Rₙ`, composition in diagram order. -/
 def seq : List V → V
-  | [] => one
+  | [] => 𝟙
   | r :: rs => rs.foldl (· ≫ ·) r
 
 /-- `⋃ Rᵢ`. -/
@@ -37,7 +31,7 @@ def unions (rs : List V) : V := rs.foldl (· ∪ ·) zero
 /-- `R*`, the union of the powers `R⁰ … R⁷`: no step on the board repeats more than 7 times, so `R⁸` adds
     nothing for the step tables `R` is built from. -/
 def star (R : V) : V := Id.run do
-  let mut p := one; let mut a := p
+  let mut p : V := 𝟙; let mut a := p
   for _ in [0:7] do p := p ≫ R; a := a ∪ p
   return a
 
@@ -74,11 +68,11 @@ def S (c : Int64) : V :=
 def sq (cs : List Int64) (on : Board) : V := dom (on ≫ idU (col cs))
 
 /-- `e`: the empty squares; the black king's square is not empty. -/
-def e (on : Board) : V := antiJoin one (dom on)
+def e (on : Board) : V := antiJoin 𝟙 (dom on)
 /-- `k`: the black king's square. -/
 def k : Board → V := sq [11]
 /-- `f`: the squares holding no black piece. -/
-def f (on : Board) : V := antiJoin one (sq [6, 7, 8, 9, 10, 11] on)
+def f (on : Board) : V := antiJoin 𝟙 (sq [6, 7, 8, 9, 10, 11] on)
 
 /-- `s_D`: colour `c`'s pieces that slide along `d`, rook and queen orthogonally, bishop and queen diagonally. -/
 def s (c : Int64) (d : Int × Int) : Board → V :=
@@ -117,7 +111,7 @@ def P (on : Board) : V :=
 
 /-! ## Mate -/
 
-/-- Mate, single check only, `⊤` (Lean `T`) the full relation on the squares:
+/-- Mate, single check only, `⊤` the full relation on the squares:
     `k(𝟙 ∪ Kf) ⊑ ⊤W` — the king is attacked, and so is each king step onto a square with no black piece;
     `B(𝟙 ∪ P°)Wk ⊑ P°⊤` — each black move capturing the checker or landing between it and the king starts on
     a pinned square. -/
@@ -128,7 +122,7 @@ def isMate (on : Board) : Bool :=
 /-- `M`: white's moves, pins and checks on white ignored: slider, knight and king moves onto a square with neither
     a white piece nor the black king, and pawn moves capturing any black piece but the king. -/
 def M (on : Board) : V :=
-  let g := antiJoin one (sq [0, 1, 2, 3, 4, 5, 11] on)
+  let g := antiJoin 𝟙 (sq [0, 1, 2, 3, 4, 5, 11] on)
   unions [unions [rays 0 (e on) on, sq [1] on ≫ N, sq [5] on ≫ K] ≫ g,
     sq [0] on ≫ pawn 0 (sq [6, 7, 8, 9, 10] on) on]
 

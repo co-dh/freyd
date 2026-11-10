@@ -13,15 +13,7 @@ abbrev V := Rel X X
 
 /-- The 3 blocks. -/
 def xs := col [0, 1, 2]
-/-- `𝟙 : X ⟶ X` on the blocks. -/
-def one : V := idU xs
-/-- `⊤ : X ⟶ X`, every pair of blocks. -/
-def T : V := top xs xs
-
-local notation "𝟙" => one
-local notation "⊤" => T
-/-- `∼X`: the complement in `⊤`. -/
-local notation:max "∼" X:max => T \ X
+local instance : Univ X := ⟨_, xs⟩
 
 /-- `S₀`, Init: C on A, A and B on the table. -/
 def S₀ : V := ofPairs [(0, 0), (1, 1), (2, 0)]
@@ -64,7 +56,7 @@ private def after : V := plan.foldl (fun S p => move S (ofPairs [p])) S₀
 
 #guard sorted (M S₀) == [[1, 1], [1, 2], [2, 1], [2, 2]]
 -- all three on the table: every move is allowed
-#guard sorted (M one) == [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+#guard sorted (M 𝟙) == [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
 -- MoveToTable C, Move B onto C, Move A onto B
 #guard plan == [(2, 2), (1, 2), (0, 1)]
 #guard (G ⊑ S₀) == false
