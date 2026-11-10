@@ -138,6 +138,8 @@ def Q : Rel St St := ran (outl (lay S₀ (s₀ S₀) t))
 def H : Rel St St := h G (Q S₀) (Q S₀ ≫ mem (Q S₀).val)
 
 /-- `C ≜ L(H, (Qt)°)`, each state with each length of a walk to a goal state. -/
+-- the step value is bound outside the step's lambda, as `Z`'s is: inside it every round recomputes `Q`, a fold
+
 def C : Rel SN SN := let B := (Q S₀ ≫ t (Q S₀))°; lay S₀ (H S₀ G) fun _ => B
 
 /-- `W ≜ (Cπ₁)°(Cπ₂) : St ⟶ N`. -/
