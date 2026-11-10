@@ -303,9 +303,9 @@ end Lists
 /-! ## The first batch of laws: the 8 verbs whose List spec already is the expression -/
 
 /-- `~x = x ≫ not`. -/
-theorem not_rel {x r : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = .ok r) :
+theorem not_rel {x r : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = r) :
     r.rel = x.rel ≫ graph (fun b => !b) :=
-  calc r.rel = ix (x.toList.map fun b => !b) := congrArg ix (Ew.not_spec hn h)
+  calc r.rel = ix (x.toList.map fun b => !b) := congrArg ix (h ▸ Ew.not_spec hn)
     _ = x.rel ≫ graph (fun b => !b) := ix_map ..
 
 /-- `n#x = take(n) ≫ x`. -/
