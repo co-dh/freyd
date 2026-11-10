@@ -35,23 +35,16 @@ def xs := col [0, 1, 2]
 local instance : Univ X := ⟨_, xs⟩
 /-- `X×X`, the product universe. -/
 local instance : Univ XX := ⟨_, (prod (𝟙 : Rel X X) 𝟙).key⟩
-/-- `obj N = 0…6`: a shortest plan moves each block at most twice (to the table, then to its place), so no
-    distance exceeds `2|X| = 6`. -/
-def Nu := tilCol 7
-/-- `succ` on `N`, partial at its top: `Alg.succ` maps `6` to `7`, which `𝟙` on `N` drops. -/
-def succN : Rel N N := succ Nu ≫ idU Nu
+/-- `obj N = 0…27`, fixed before the search and not read off it. -/
+def Nu := tilCol 28
+/-- `succ` on `N`, partial at its top: `27` goes to nothing. -/
+def succN : Rel N N := succ Nu
 
 /-- `π₁`, `π₂ : X×X ⟶ X`. -/
 def π₁ : Rel XX X := outl (𝟙 : Rel XX XX)
 def π₂ : Rel XX X := outr (𝟙 : Rel XX XX)
 
-/-! ### The helpers: a fold whose step runs on the pairs it meets, and `μ` -/
-
-/-- `⦇e,S⦈` on the arrays `xa`, `S` in demand form: each round `S` runs on the pairs (element, value) it
-    meets. `Alg.fold` takes `S` as a relation, which an object without a universe cannot give. -/
-def foldOn {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
-    (xa : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldBy xa e fun el pend => pair el pend ≫ S (ran (pair el pend))
+/-! ### The helper `μ` -/
 
 /-- `μY : φ(Y)` from `𝟘` until a round changes nothing; `bound` is never reached on a finite hom-set. -/
 def mu {A B : Obj} (bound : Nat) (φ : Rel A B → Rel A B) : Rel A B :=
@@ -177,10 +170,8 @@ private def AB : Rel X X := ofPairs [(0, 1), (1, 0)]
 #guard M (Blocks.lvl tbl) == Blocks.lvl (Blocks.M tbl)
 #guard S' (Blocks.lvl S₁) (Blocks.lvl (ofPairs [(2, 2)])) == Blocks.lvl (Blocks.move S₁ (ofPairs [(2, 2)]))
 -- the 13 states of three blocks
--- `∪` razes both parts' flat payloads and keeps every element: the payload under the states grows by a factor
--- per round, not by the rows (`L(s₀,𝟙)` at 7 rounds: 7 rows of 3 pairs over the payload below)
-#guard (lay S₁ (s₀ S₁) fun D => D).n == 7
-#guard (lay S₁ (s₀ S₁) fun D => D).val.1.1 == 2295
+-- a payload holds only the cells its rows refer to (`Vals.pick`): `L(s₀,𝟙)`, one row per count, each state 3 pairs
+#guard let L := lay S₁ (s₀ S₁) fun D => D; L.n == 28 && L.val.1.1 ≤ 3 * L.n
 -- each state's chosen move is one pair, held in 3 rows: row multiplicity is kept by `≫`, `est`, `pair`
 #guard (σ S₁ G₁).n == 3 * (σ S₁ G₁).nub.n
 #guard (Q S₁).n == 13

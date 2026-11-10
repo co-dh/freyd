@@ -411,11 +411,11 @@ def slices (m : Nat) (lo hi : ByteArray) : ByteArray × ByteArray :=
 /-- One column picked at the index column `i`: `len i` rows (`pick_len`). -/
 def pickArr (t : QAtomicType) (c : (n : Nat) × Arr t n) (i : ByteArray) : Arr t (len i) := pick_len t c i ▸ (pick t c i).2
 
-/-- A side's columns picked at the index column `i`: `len i` rows each; an array's `lo` and `hi`, its flat
-    payload shared. -/
-def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → {n : Nat} → Vals A n → (i : ByteArray) → Vals A (len i)
+/-- A side's columns picked at the index column `i`: `len i` rows each; an array's `lo` and `hi` and a sum's
+    tags and positions picked, their payloads shared whole: the reference `Vals.pick` falls back to. -/
+def _root_.LeetQ.Rel.Vals.pickShared : (A : Obj) → {n : Nat} → Vals A n → (i : ByteArray) → Vals A (len i)
   | .atom t, _, x, i => pickArr t ⟨_, x⟩ i
-  | .prod a b, _, x, i => (Vals.pick a x.1 i, Vals.pick b x.2 i)
+  | .prod a b, _, x, i => (Vals.pickShared a x.1 i, Vals.pickShared b x.2 i)
   | .arr _, _, x, i => ⟨x.1, pickArr .long ⟨_, x.2.1⟩ i, pickArr .long ⟨_, x.2.2.1⟩ i, x.2.2.2⟩
   | .sum _ _, _, x, i =>
     ⟨x.1, x.2.1, pickArr .boolean ⟨_, x.2.2.1⟩ i, pickArr .long ⟨_, x.2.2.2.1⟩ i, x.2.2.2.2.1, x.2.2.2.2.2⟩
@@ -441,10 +441,6 @@ theorem fit_len {m : Nat} {i : ByteArray} (h : m ≤ len i) : len (fit m i) = m 
 
 /-- The long payload `b` as a column of its first `m` longs, `m ≤ len b` (`fit_len`). -/
 def longsN (m : Nat) (b : ByteArray) (h : m ≤ len b) : Arr .long m := fit_len h ▸ longCol (fit m b)
-
-/-- A side's columns picked at the first `m` longs of `i`. -/
-def _root_.LeetQ.Rel.Vals.pickN (A : Obj) {n : Nat} (x : Vals A n) (i : ByteArray) (m : Nat) (h : m ≤ len i) : Vals A m :=
-  fit_len h ▸ Vals.pick A x (fit m i)
 
 /-- A map of counted parts that keeps each part's count keeps their sum. -/
 theorem sum_mapIdx_fst {α β : Nat → Type} (cs : Array ((n : Nat) × α n)) (f : Nat → ((n : Nat) × α n) → (n : Nat) × β n)
@@ -499,6 +495,50 @@ def place {n : Nat} {A B : Obj} (x : Vals (.sum A B) n) (p₀ p₁ o₀ o₁ : I
   if h : len s = n then h ▸ longCol s else colFn n fun i =>
     let t : Int := if x.2.2.1.get i then 1 else 0
     Int64.ofInt (max (min (x.2.2.2.1.get i).toInt (p₀ + t * p₁)) 0 + o₀ + t * o₁)
+
+/-- A side's columns picked at the index column `i`, `len i` rows each, every payload holding only the cells
+    the picked rows refer to, so no op that picks rows (`Rel.rows`, `≫`, `nub`, `∪`) carries a dead cell on:
+    - an array: each row's clamped slice gathered contiguous (`expand` of the counts, as `mem`), the rows
+      laid one after another (`sums`); a row picked twice holds its own copy;
+    - a sum: each row's clamped position in its own side (`place`) gathered per side (`whereBits` of the tags),
+      the row's new position its rank among the rows of its side (`sums` of the tags);
+    - the payloads picked by `Vals.pick` itself, so a nested array or sum is compacted the same way.
+    Where the new offsets' count is not `len i` (`sums` past a `USize`), `pickShared`, the same rows. -/
+def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → {n : Nat} → Vals A n → (i : ByteArray) → Vals A (len i)
+  | .atom t, _, x, i => pickArr t ⟨_, x⟩ i
+  | .prod a b, _, x, i => (Vals.pick a x.1 i, Vals.pick b x.2 i)
+  | .arr b, _, x, i =>
+    let s := slices x.1 (longsOf (pickArr .long ⟨_, x.2.1⟩ i)) (longsOf (pickArr .long ⟨_, x.2.2.1⟩ i))
+    let e := expand s.2
+    let hi := sums s.2
+    let lo := sub hi s.2
+    if h : len lo = len i ∧ len hi = len i then
+      ⟨_, h.1 ▸ longCol lo, h.2 ▸ longCol hi, Vals.pick b x.2.2.2 (add (gather 8 s.1 e.1) e.2)⟩
+    else Vals.pickShared (.arr b) x i
+  | .sum a b, _, x, i =>
+    let y := Vals.pickShared (.sum a b) x i
+    let m := (len i).toUSize
+    let tb := tagBits y.2.2.1
+    let τ := Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m
+    -- the rows of the other side before each row, then of its own: `inr` ones `sums τ - τ`, `inl` ones the rest
+    let rr := sub (sums τ) τ
+    let rl := sub (tilLongs m) rr
+    let ix := add rl (Kernel.Ew.val Ew.mul Ew.i64 Ew.vv nul τ (sub rr rl) m)
+    let p := longsOf (place y ((y.1 : Int) - 1) ((y.2.1 : Int) - y.1) 0 0)
+    if h : len ix = len i then
+      ⟨_, _, y.2.2.1, h ▸ longCol ix, Vals.pick a y.2.2.2.2.1 (gather 8 p (whereBits m (Ew.notBits (len i) tb))),
+        Vals.pick b y.2.2.2.2.2 (gather 8 p (whereBits m tb))⟩
+    else y
+
+/-- A side's columns picked at the first `m` longs of `i`. -/
+def _root_.LeetQ.Rel.Vals.pickN (A : Obj) {n : Nat} (x : Vals A n) (i : ByteArray) (m : Nat) (h : m ≤ len i) : Vals A m :=
+  fit_len h ▸ Vals.pick A x (fit m i)
+
+/-- `x` with every payload holding only the cells its rows refer to: `Vals.pick` at `til n`; `x` itself where
+    `tilLongs` does not answer `n` longs. -/
+def _root_.LeetQ.Rel.Vals.compact (A : Obj) {n : Nat} (x : Vals A n) : Vals A n :=
+  let t := tilLongs n.toUSize
+  if h : n ≤ len t then Vals.pickN A x t n h else x
 
 /-- `raze` column by column, at the parts' summed count (`raze_len`). An array's flat payloads are razed, and
     each part's `lo`, `hi` move past the flat values of the parts before it (`shiftArr`), so every row still
@@ -1043,8 +1083,8 @@ def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B :=
   G \ G ≫ ((top (A := B) (B := B) d d \ Q) \ idU d)°
 
 /-- `cons° : arr B ⟶ B × arr B` on the arrays of `X`: each non-empty row to its first element and the rest.
-    The rows with a clamped count above `0` (`whereBits`); the rest shares the flat payload, `lo + 1`, `hi`
-    the clamped end. The count is the shorter of the two `Ew.val` answers, which both hold every row. -/
+    The rows with a clamped count above `0` (`whereBits`); the rest `lo + 1`, `hi` the clamped end, its payload
+    then cut to the cells it refers to (`Vals.compact`). The count is the shorter of the two `Ew.val` answers, which both hold every row. -/
 def uncons {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (.arr B)) :=
   let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
   let i := whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one 0) n.toUSize)
@@ -1055,7 +1095,8 @@ def uncons {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (.a
   have hl : r ≤ len l := Nat.le_trans (Nat.min_le_left _ _) (val_len_le Ew.add Ew.va l _)
   have hi' : r ≤ len i := Nat.le_trans hl (Nat.le_of_eq (gather_len _ _))
   ⟨r, Vals.pickN (.arr B) X i r hi',
-    (Vals.pickN B X.2.2.2 l r hl, ⟨X.1, longsN r lo (Nat.min_le_left _ _), longsN r hi (Nat.min_le_right _ _), X.2.2.2⟩)⟩
+    (Vals.pickN B X.2.2.2 l r hl,
+      Vals.compact (.arr B) ⟨X.1, longsN r lo (Nat.min_le_left _ _), longsN r hi (Nat.min_le_right _ _), X.2.2.2⟩)⟩
 
 /-- `cons : B × arr B ⟶ arr B` on the rows of `P`: each `(y, ys)` to the array `y` then `ys`, under its key.
     The new arrays are laid out one after another (`sums` of the counts plus one); the tails gathered from
@@ -1094,13 +1135,22 @@ def foldBy {E V : Obj} {n m : Nat} (X : Vals (.arr E) n) (e : Vals V m)
     let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul g (one (k + 1).toUInt64) (len g).toUSize
     have h : len pos ≤ len a := Nat.le_trans (val_len_le _ _ _ _) (Nat.le_of_eq (gather_len _ _))
     let el : Rel .long E := ⟨len pos, Vals.pickN .long ids.key a (len pos) h, Vals.pick E X.2.2.2 pos⟩
-    (step el pend, out ∪ (antiJoin pend° (idU el.key))°, k + 1)
+    -- `≫` keeps row multiplicity, so a step reaching a value along two paths doubles its rows: `nub` each round,
+    -- or the rows of `pend` grow as the paths do (`2^k` for `π₂ ∪ π₂ succ`), not as the pairs
+    ((step el pend).nub, out ∪ (antiJoin pend° (idU el.key))°, k + 1)
   ids° ≫ (iter (X.1 + 1) (fun st => st.1.n == 0) round (top (A := .long) (B := V) ids.key e, zero, 0)).2.1
 
-/-- `⦇e, S⦈` on the arrays of `X`, the fold of cons-lists: `[]` to each value of `e`, `cons(x, xs)` to `w`
-    when `xs` goes to `v` and `(x, v) S w`. `S` any relation: an array may have several results or none. -/
+/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` in demand form: each round `S` runs on the pairs
+    (element, value) it meets, `S D` for the coreflexive `D` on them, so a carrier with no universe folds too.
+    `[]` to each value of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and `(x, v) S(D) w`. -/
+def foldOn {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
+    (X : Vals (.arr E) n) : Rel (.arr E) V :=
+  foldBy X e fun el pend => let p := pair el pend; p ≫ S (ran p)
+
+/-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOn` with `S` whatever pairs a round meets. An array
+    may have several results or none. -/
 def fold {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldBy X e fun el pend => pair el pend ≫ S
+  foldOn e (fun _ => S) X
 
 /-- The one-row side holding the empty array. -/
 def nilVal (B : Obj) : Vals (.arr B) 1 := ⟨0, col [0], col [0], Vals.empty B⟩
@@ -1126,14 +1176,14 @@ def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_h : t ≠ .general :
 def leq {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
   lt U h ∪ idU U
 
-/-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1`, `Ew.val`
-    add; the key read at `til`, of the count `Ew.val` answers too (`Ew.val_size`), as `num`. -/
+/-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1` where `u + 1`
+    is in `U`, so the range stays in `U` and the top of `U` goes to nothing. `Ew.val` add, then the rows whose
+    sum is a `member` of `U` (`whereBits`), key and sum gathered there. -/
 def succ {n : Nat} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) :=
-  let m := n.toUSize
-  let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
-  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (longsOf U) (one 1) m
-  have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
-  ⟨len i, Vals.pick _ U i, h ▸ longCol s⟩
+  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (longsOf U) (one 1) n.toUSize
+  let c := codes .long #v[⟨_, longCol s⟩, ⟨_, U⟩]
+  let k := whereBits c[0].n.toUSize (c[0].member c[1])
+  ⟨len k, Vals.pick _ U k, gather_len s k ▸ longCol (gather 8 s k)⟩
 
 /-- `plus : long × long ⟶ long` on the pairs `W` (`plus`, AOP/A5_6_ListCombinators.lean:339): each `(u, v)` to
     `u + v`, `Ew.val` add of the two columns, keyed as `succ`. -/
@@ -1182,9 +1232,10 @@ def head {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) B := outl (unc
 def tail {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outr (uncons X)
 
 /-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
-    AOP/A5_6_ListCombinators.lean:328): each round's `π₂ succ` on the pairs it meets (`succ` on their counts). -/
+    AOP/A5_6_ListCombinators.lean:328): `succ` on `0 … X.1`, since no array is longer than the payload `X.1`. -/
 def length {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
-  foldBy X (col [0]) fun el pend => let p := outr (pair el pend); p ≫ succ (ran p).val
+  let sc := succ (tilCol (X.1 + 1))
+  foldOn (col [0]) (fun D => outr D ≫ sc) X
 
 /-- `filter(p)` on the arrays `X`, `p` a coreflexive. The note's `filter(p)≜frac(subseq p′,∋) est(R°)`
     (diag/aop/07-optimisation.typ:1041; `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the
@@ -1221,7 +1272,7 @@ def union {A : Obj} {n : Nat} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A))
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
 def sum {n : Nat} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) :=
-  foldBy X (col [0]) fun el pend => let p := pair el pend; p ≫ plus (ran p).val
+  foldOn (col [0]) (fun D => plus D.val) X
 
 end Arr
 
@@ -1647,7 +1698,9 @@ info: lt gs ⋯ : Rel (Obj.atom QAtomicType.general) (Obj.atom QAtomicType.gener
 #guard_msgs in #check lt gs
 
 -- `succ`, `plus` on their universes
-#guard seteq (succ Ua).toList (Ua.toList.map fun x => (x, x + 1))
+#guard seteq (succ Ua).toList ((Ua.toList.filter fun x => Ua.toList.contains (x + 1)).map fun x => (x, x + 1))
+-- partial at the top: on `0 … 6` the range stays in `0 … 6`, and `6` goes to nothing
+#guard (succ (tilCol 7)).toList == [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6)]
 #guard seteq ((plus ((col [1, 2, 3], col [10, 20, 30]) : Vals (.prod L L) 3)).toList : List ((Int64 × Int64) × Int64))
   [((1, 10), 11), ((2, 20), 22), ((3, 30), 33)]
 
@@ -1671,6 +1724,12 @@ private def XX : Vals (.arr (.arr L)) 4 := ⟨3, col [0, 1, 0, 3], col [2, 3, 0,
 #guard ((idU XX).toList.map (·.1) : List (List (List Int64))) == [[[1], [1, 2]], [[1, 2], []], [], []]
 #guard seteq ((Arr.union XX).toList : List (List (List Int64) × List Int64))
   (((idU XX).toList.map (·.1) : List (List (List Int64))).map fun xss => (xss, setOf xss.flatten)) && isMap (Arr.union XX) XX
+-- `∪` of a relation with itself, again and again: its payloads hold the cells its rows refer to and no more,
+-- for a nested array, an array of sums and a sum (`Vals.pick`)
+private def selfU {A : Obj} (R : Rel A A) : Nat → Rel A A | 0 => R | k + 1 => selfU R k ∪ selfU R k
+#guard let b := selfU (idU XX) 4; b == idU XX && (b.val.1, b.val.2.2.2.1) == (4, 5)
+#guard let b := selfU (idU Xa) 4; b == idU Xa && (b.val.1, b.val.2.2.2.1, b.val.2.2.2.2.1) == (5, 2, 3)
+#guard let b := selfU (idU Xo) 4; b == idU Xo && (b.val.1, b.val.2.1) == (2, 2)
 -- `τ union = 𝟙` on sets; `union` of `τ`'s images of arrays not sets is their set
 #guard comp (τ Λ(R).val) (Arr.union (τ Λ(R).val).val) == idU Λ(R).val
 #guard seteq ((comp (τ Xs) (Arr.union (τ Xs).val)).toList : List (List Int64 × List Int64)) ((arrs Xs).map fun xs => (xs, setOf xs))
