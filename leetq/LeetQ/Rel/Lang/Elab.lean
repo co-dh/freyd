@@ -75,6 +75,9 @@ inductive Tm : Obj → Obj → Bool → Type where
       each key by the fibre of `e` there, its step `S` given `(x,(i,v))` and carrying the key `i`. -/
   | foldI {I E V : Obj} {d d' : Bool} (e : Tm I (.prod V V) d) (S : Tm (.prod E (.prod I V)) (.prod I V) d') :
       Tm (.prod I (.arr E)) V true
+  /-- `Rᴵ`, the family `R : I ⟶ A×B` as one relation of the key and the source, on the pairs (key, source) in
+      demand: `R` at their keys, each row `(i,(a,b))` re-keyed as `((i,a),b)`, then joined with the pairs. -/
+  | flat {I A B : Obj} {d : Bool} (R : Tm I (.prod A B) d) : Tm (.prod I A) B true
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
@@ -173,6 +176,7 @@ inductive Pre
   | lt (pos : Pos) (n : OTy)
   | fold (e s : Pre)
   | foldI (e s : Pre)
+  | flat (p : Pre)
   | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
   | close (pos : Pos) (p : Pre) (a : OTy)
 
@@ -355,13 +359,41 @@ def lSum : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
     (join (comp R (pair (comp (outl a c) (inl a b)) (comp (outr a c) (inl c d))))
       (comp S (pair (comp (outl b d) (inr a b)) (comp (outr b d) (inr c d)))), .sum a b, .sum c d)
 
-/-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ :
-    I×a ⟶ b`. Every part runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would
-    close over all of `I`). -/
-def keyed (R : Pre) (a b : OTy) : Pre :=
-  let ab := OTy.prod a b
-  comp (comp (pair (comp (outl I a) R) (outr I a)) (dom (meet (comp (outl ab a) (outl a b)) (outr ab a))))
-    (comp (outl ab a) (outr a b))
+/-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ : I×a ⟶ b`, run on the pairs
+    (key, source) in demand (§e, cost of the keyed fold). A row whose fibre at a source reads only that source
+    is keyed through its parts, so a closed part runs on the sources in demand, not on its domain at every key.
+    Any other family is read whole at each key and cut to the source, `⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂`: every part
+    runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
+def keyed : Pre → OTy → OTy → Pre
+  | .join R S, a, b => join (keyed R a b) (keyed S a b)
+  | .meet R S, a, b => meet (keyed R a b) (keyed S a b)
+  | .diff R S, a, b => diff (keyed R a b) (keyed S a b)
+  -- `D⊤`, `⊤ : I ⟶ a×b`: `D⊤`, `⊤ : I×a ⟶ b`
+  | .top q _ (.prod _ _) none, a, b => top q (.prod I a) b none
+  -- a closed `C` as a family, `D⊤⟨𝟙,C⟩` with `⊤` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets; onto
+  -- `V = dom(C')`, `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
+  | .comp (.top _ _ _ (some (.close _ (.dom C') _))) (.pair (.id _) C), a, _ =>
+    comp (dom (comp (outr I a) C')) (comp (outr I a) C)
+  | .comp (.top _ _ _ V) (.pair (.id _) C), a, _ => comp (match V with | some V => comp (outr I a) V | none => outr I a) C
+  -- `RS` lifted: `⟨π₁,Rᴵ⟩Sᴵ`
+  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outr a m)) (.comp (.outr _ _) (.outl _ c)))))
+      (.pair (.comp (.outl _ _) (.outl _ _)) (.comp (.outr _ _) (.outr _ _))), _, _ =>
+    comp (pair (outl I a) (keyed R a m)) (keyed S m c)
+  -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
+  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl _ c)))))
+      (.pair (.comp (.outl _ _) (.outl _ _)) (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))),
+      _, _ => pair (keyed R a b) (keyed S a c)
+  -- `R×S` lifted: `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩` on `I×(a×a')`
+  | .comp (.pair R S) (.pair (.pair (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl a' b')))
+      (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))), _, _ =>
+    let s := OTy.prod a a'
+    pair (comp (pair (outl I s) (comp (outr I s) (outl a a'))) (keyed R a b))
+      (comp (pair (outl I s) (comp (outr I s) (outr a a'))) (keyed S a' b'))
+  -- `F` then `C`, `F⟨π₁,π₂C⟩`: `FᴵC`
+  | .comp F (.pair (.outl a b) (.comp (.outr _ _) C)), _, _ => comp (keyed F a b) C
+  -- `dom(F)` lifted, `F⟨π₁,π₁⟩`: `dom(Fᴵ)π₂`
+  | .comp F (.pair (.outl a b) (.outl _ _)), _, _ => comp (dom (keyed F a b)) (outr I a)
+  | R, _, _ => flat R
 
 /-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`. -/
 def lLam : Pre × OTy × OTy → Pre × OTy × OTy
@@ -933,6 +965,10 @@ def build : Pre → Except Err Res
       let ⟨_, S⟩ ← at? dp (A := .prod E (.prod I V)) (B := .prod I V) sr
       pure ⟨_, _, _, .foldI et S⟩
     | _, _ => internal dp "the lifted fold's objects"
+  | .flat p => do
+    match ← build p with
+    | ⟨I, .prod A B, _, t⟩ => pure ⟨.prod I A, B, true, .flat t⟩
+    | _ => internal dp "a family's objects"
   | .lit p a b ps => do
     let ⟨A, k⟩ ← litCol objs st dp p ps.length (zonk st a) (ps.map (·.1))
     let ⟨B, v⟩ ← litCol objs st dp p ps.length (zonk st b) (ps.map (·.2))

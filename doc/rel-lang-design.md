@@ -203,8 +203,9 @@ parameter keeps the plain reading.
 **Lifted rows.** `R : I ⟶ A×B`; `S` of the type the row names; `D` the keys in demand (a coreflexive on `I`,
 by §a from the left context, or `𝟙` of `I` when `I` has a universe); `π₁`, `π₂` and `𝟙` in the right column run
 on demand, and the right column is plain, `⟨R,S⟩` there the plain pair of two relations out of `I`. For a row
-needing the key and the source together, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ : I×A ⟶ B`, on the keys in demand
-(no converse and no `ran`, which would need all of `I`). The law of every row: at every key `i` in demand, the
+needing the key and the source together, `Rᴵ : I×A ⟶ B`, `(i,a) Rᴵ b ⟺ i R (a,b)`, on the pairs (key, source)
+in demand: `R` read at their keys, each row `(i,(a,b))` re-keyed as `((i,a),b)` and joined with the pairs
+(`Tm.flat`; no `ran` over all of `I`), or keyed through its rows (the cost paragraph below). The law of every row: at every key `i` in demand, the
 fibre of the lifted term is the operator applied to the fibres at `i` (`BlocksRel.lean` guards it for each row
 marked ✓ on three states and an empty key; `Lang/Test.lean` guards the `est` and `thin` rows against the closed
 row).
@@ -258,11 +259,27 @@ Not liftable:
   array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them.
 - `⦇e,S⦈` given a family with nothing on its left: the keyed fold needs the arrays of each key, `X`.
 
-Cost of the keyed fold: `Sᴵ` reads the step's fibre at each key in full, so a closed part of the step (`π₂` in
-`π₂ ∪ (π₂(𝟙×R))`) becomes its whole universe at every key, where the unlifted step runs only on the pairs a round
-meets. Chess's `L` written as this fold, lifted over the boards and moves, ran over 3 min against 0.7 s for the
-eight-term union, so Chess keeps the union; the step would have to run keyed on demand (`I×(E×V)` as its source),
-a second lifting of every row.
+Cost of the keyed fold: the lifted step runs on the pairs (key, (element, value)) a round meets, as the unlifted
+step runs on the pairs (element, value). `Sᴵ` is keyed through the rows that built `S` (`Lang/Elab.lean`,
+`keyed`), so a closed part runs on the sources in demand and never on its universe at each key:
+
+| `R : I ⟶ A×B` built as                    | `Rᴵ : I×A ⟶ B`                                       |
+|-------------------------------------------|------------------------------------------------------|
+| `R ∪ S`, `R ∩ S`, `R − S`                 | the same operator on `Rᴵ`, `Sᴵ`                      |
+| `D⊤`, `⊤ : I ⟶ A×B`                       | `D⊤`, `⊤ : I×A ⟶ B`                                  |
+| closed `C`: `D⊤⟨𝟙,C⟩`, `⊤` onto `dom(C)`  | `dom(π₂C)π₂C`                                        |
+| `RS`                                      | `⟨π₁,Rᴵ⟩Sᴵ`                                          |
+| `⟨R,S⟩`                                   | `⟨Rᴵ,Sᴵ⟩`                                            |
+| `R×S`                                     | `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩`                          |
+| `F` then closed `C`, `F⟨π₁,π₂C⟩`          | `FᴵC`                                                |
+| `dom(F)`, `F⟨π₁,π₁⟩`                      | `dom(Fᴵ)π₂`                                          |
+| any other (`R°`, `ran`, `Λ`, an argument) | `R` read at the keys in demand, re-keyed by a join   |
+
+A closed sub-term of `Sᴵ` is evaluated once per program (`hoist`), not once per key. The fold reads each pair
+(key, array) back by a join on both, never pairing a pair with every key's values of its array (keys squared).
+Chess's `L` written as this fold over `0…6`, lifted over the boards and moves, makes `rel chess.rel` 2.6 s, against
+0.7 s for the eight-term union and over 3 min with the step read whole at each key; the rest is the fold stepping
+every value it holds each round, where `RRR` composes only the last power. So Chess keeps the union.
 
 **Mixed terms.**
 

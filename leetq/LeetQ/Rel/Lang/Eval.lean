@@ -101,15 +101,20 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
     let v ← ev cnt e ()
     pure (foldOn v.val (fun A => Id.run ((ev cnt S (Dem.of d A)).run' {})) D.val)
   -- the pairs (i, xs) in demand: each key's seed `(i,v)` from `e`, one fold of the arrays on `I×V`, then each
-  -- pair keeps the values its own key reached
+  -- pair keeps the values its own key reached: `G : [E] ⟶ I×V` re-keyed by `(i,xs)`, a join, where pairing each
+  -- pair with every key's values of its array grows as the keys squared
   | _, _, _, .foldI (d := d) (d' := d') e S, D => do
     let es ← ev cnt e (Dem.of d (ran (outl D)))
     let iv := pair (dom es) (es ≫ outl (ran es))
     let G := foldOn (ran iv).val (fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})) (ran (outr D)).val
-    let Q := pair (outl D) (outr D ≫ G)
-    let C := ran Q
-    let K := dom (outl C ∩ (outr C ≫ outl (ran (outr C))))
-    pure (Q ≫ K ≫ (outr K ≫ outr (ran (outr K))))
+    let U := ran G
+    pure (D ≫ ((pair (outl U) G°)° ≫ outr U))
+  -- `R` at the keys of the pairs, its rows `(i,(a,b))` re-keyed as `((i,a),b)`, a join with the pairs: no pair
+  -- meets a row of another source
+  | _, _, _, .flat (d := d) R, D => do
+    let r ← ev cnt R (Dem.of d (ran (outl D)))
+    let U := ran r
+    pure (D ≫ ((pair r° (outl U))° ≫ outr U))
   | _, _, false, .share _ R, D => ev cnt R D
   | A, B, true, .share k R, D => do
     if cnt.getD k 0 < 2 then ev cnt R D else
@@ -226,6 +231,7 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .lt U => do node 45 (.lt U) [← leaf (idU (t := .long) U)]
   | _, _, _, .fold e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 46 (.fold x s) [i, j]
   | _, _, _, .foldI e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 47 (.foldI x s) [i, j]
+  | _, _, _, .flat R => do let (r, i) ← hoist R; node 48 (.flat r) [i]
   -- a definition's term, interned when the definition was
   | _, _, _, .share k R => pure (.share k R, k)
 

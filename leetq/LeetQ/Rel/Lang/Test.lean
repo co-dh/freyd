@@ -72,6 +72,24 @@ def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L 
       !R.toList.isEmpty && f.all R.toList.contains && R.toList.all f.contains
     | _, _ => false
 
+/-- A lifted fold whose step has closed parts (§e, cost of the keyed fold): `G`, `∼R ∩ G` (a complement, so
+    `⊤`), `dom(R)`, `π₂⟨π₁,π₁⟩`, each keyed on the pairs a round meets; at every key the fibre is the fold of
+    the fibre. -/
+def foldClosed : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\nobj 1 = {∗}\n" ++
+  "ℓ ≜ Λ(⊤(1,L))\nG ≜ {(A,B),(C,C)}\n" ++
+  "p(R : X ⟶ X) ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)⦈)\n" ++
+  "R₀ ≜ {(A,B)}\nR₁ ≜ {(A,B),(B,C)}\nR₂ ≜ {(A,B),(B,C),(C,A)}\n" ++
+  "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
+  "pF ≜ p(Fm)\np₀ ≜ p(R₀)\np₁ ≜ p(R₁)\np₂ ≜ p(R₂)\n")
+
+#guard let o := ok foldClosed
+  [((0 : Int64), "p₀"), (1, "p₁"), (2, "p₂")].all fun (k, n) =>
+    match get o "pF" .long (.prod XX XX), get o n XX XX with
+    | some F, some R =>
+      let f := (F.toList.filter (·.1 == k)).map (·.2)
+      !R.toList.isEmpty && f.all R.toList.contains && R.toList.all f.contains
+    | _, _ => false
+
 /-- Object variables (§e): `uq : α ⟶ β` at `X ⟶ N` and at `N ⟶ X` against the ground copies `uX`, `uN`; and
     `d : α ⟶ α` given `Fm : K ⟶ X×X`, which `α ⟶ α` reads as a family, against `d` of each fibre. -/
 def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj K = 0…2\n" ++
