@@ -41,6 +41,22 @@ def cycle : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,A)}"
 
 def ok (r : Except Err Out) : Out := match r with | .ok o => o | .error _ => {}
 
+/-- `Λ(S)est(P)`, `Λ(S)thin(P)` with the order `P` a family (the rows of §e on `S∋`) against the order closed
+    (the closed row), on the reachable states — `est` of a map is the map — and on their complements, where a
+    block has two values. -/
+def orders : Except Err Out := runText (blocks ++ "O ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
+  "Of ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) ≜ Λ(S)est(O)\nlf(S : X ⟶ X, P : X ⟶ X) ≜ Λ(S)est(P)\n" ++
+  "tc(S : X ⟶ X) ≜ Λ(S)thin(O)\ntf(S : X ⟶ X, P : X ⟶ X) ≜ Λ(S)thin(P)\nY(S : X ⟶ X) ≜ ∼S\n" ++
+  "check Qlc(∋) = Q∋\ncheck Qlf(∋,Of) = Qlc(∋)\ncheck Qlf(Y(∋),Of) = Qlc(Y(∋))\n" ++
+  "check Qtf(∋,Of) = Qtc(∋)\ncheck Qtf(Y(∋),Of) = Qtc(Y(∋))\nprint s₀lf(Y(∋),Of)\nprint s₀tf(Y(∋),Of)\n")
+
+-- at `S₀`, `∼S₀` gives `A` the values `B C`, `B` the values `A C`, `C` the values `B C`: the least of each
+#guard (ok orders).prints.drop 1 == [
+  "s₀ lf(Y(∋), Of) = {({(A, A), (B, B), (C, A)}, (A, B)), ({(A, A), (B, B), (C, A)}, (B, A)), " ++
+    "({(A, A), (B, B), (C, A)}, (C, B))}",
+  "s₀ tf(Y(∋), Of) = {({(A, A), (B, B), (C, A)}, (A, {B})), ({(A, A), (B, B), (C, A)}, (B, {A})), " ++
+    "({(A, A), (B, B), (C, A)}, (C, {B}))}"]
+
 #guard given.isOk && table.isOk && cycle.isOk
 #guard (ok given).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
 #guard moves (ok given) == some [(2, 2), (1, 2), (0, 1)]

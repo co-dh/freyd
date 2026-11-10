@@ -171,9 +171,11 @@ parameter keeps the plain reading.
 **Lifted rows.** `R : I ⟶ A×B`; `S` of the type the row names; `D` the keys in demand (a coreflexive on `I`,
 by §a from the left context, or `𝟙` of `I` when `I` has a universe); `π₁`, `π₂` and `𝟙` in the right column run
 on demand, and the right column is plain, `⟨R,S⟩` there the plain pair of two relations out of `I`. For a row
-needing the key and the source together, `Rᴵ ≜ (ρ⟨π₁,π₂π₁⟩)°(ρπ₂π₂) : I×A ⟶ B` with `ρ ≜ ran⟨𝟙,R⟩` the rows of
-`R`. The law of every row: at every key `i` in demand, the fibre of the lifted term is the operator applied to
-the fibres at `i` (`BlocksRel.lean` guards it for each row marked ✓ on three states and an empty key).
+needing the key and the source together, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ : I×A ⟶ B`, on the keys in demand
+(no converse and no `ran`, which would need all of `I`). The law of every row: at every key `i` in demand, the
+fibre of the lifted term is the operator applied to the fibres at `i` (`BlocksRel.lean` guards it for each row
+marked ✓ on three states and an empty key; `Lang/Test.lean` guards the `est` and `thin` rows against the closed
+row).
 
 | operator                        | lifted, `I ⟶ …`                            | why the fibre at `i` is right        |
 |---------------------------------|--------------------------------------------|--------------------------------------|
@@ -197,15 +199,18 @@ the fibres at `i` (`BlocksRel.lean` guards it for each row marked ✓ on three s
 | `R×S`, `S : I ⟶ A'×B'`          | `⟨R,S⟩⟨⟨π₁π₁,π₂π₁⟩,⟨π₁π₂,π₂π₂⟩⟩`           | each row of `R` with each of `S`     |
 | `[R,S]`, `S : I ⟶ A'×B`         | `R(inl×𝟙) ∪ S(inr×𝟙)`                      | `R`'s rows left, `S`'s right         |
 | `R+S`, `S : I ⟶ A'×B'`          | `R(inl×inl) ∪ S(inr×inr)`                  | as `[R,S]`                           |
-| `Λ(R)`                          | `(dom(Rᴵ)π₁)°⟨π₂,Λ(Rᴵ)⟩`                   | `Λ(Rᴵ)` groups each `(i,a)`          |
+| `Λ(R)`                          | `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`                        | `Λ(Rᴵ)` groups each `(i,a)`          |
 | `∋ ∈ union τ nil α cons°`       | closed, on the arrays in demand            | the same at every key                |
 | `E(R)`                          | `Λ(∋R)` by the rows, `∋` closed            | `E(R) = Λ(∋R)`, Algebra.lean:1169    |
 | `P(R)`                          | not liftable                               | target `𝒫B`: no universe, no demand  |
 | `F(R) filter(p) takewhile(p)`   | closed: closed; a family: not liftable     | one `R` for every array              |
 | `⦇e,S⦈`                         | closed: closed; a family: not liftable     | one step for every array             |
-| `Λ(G)est(Q)`, `G : I ⟶ A×B`     | closed `Q`: `(dom(Gᴵ)π₁)°⟨π₂,Λ(Gᴵ)est(Q)⟩` | `est` at each `(i,a)`                |
-|                                 | a family `Q`: `G ∩ (G°\Q°)` by the rows    | `Q`-below each value of `a`          |
-| `thin(Q)` on `G : I ⟶ A×B`      | `G − G(Q − Q°)` by the rows                | `thin Q G`, Algebra.lean:1035        |
+| `Xest(Q)`, `X : I ⟶ A×𝒫B`       | closed `Q`: `X⟨π₁,π₂est(Q)⟩`               | `est` on each value of `X`           |
+|                                 | a family `Q`: `G ∩ (G°\Q°)` by the rows,   | `Q`-below each value of `a`          |
+|                                 | `G ≜ X⟨π₁,π₂∋⟩`                            |                                      |
+| `Xthin(Q)`, `X : I ⟶ A×𝒫B`      | closed `Q`: `X⟨π₁,π₂thin(Q)⟩`              | `thin` on each value of `X`          |
+|                                 | a family `Q`: `Λ(G − G(Q − Q°))` by the    | `thin Q G`, Algebra.lean:1035        |
+|                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
 | `succ plus ≤ <`, `{(a,b),…}`    | closed                                     | the same at every key                |
 | `R ⊑ S` ✓, a test               | `D − dom(R − S)`, a coreflexive on `I`     | `i` stays iff `R − S` is empty there |

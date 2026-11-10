@@ -343,14 +343,14 @@ def lSum : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
     (join (comp R (pair (comp (outl a c) (inl a b)) (comp (outr a c) (inl c d))))
       (comp S (pair (comp (outl b d) (inr a b)) (comp (outr b d) (inr c d)))), .sum a b, .sum c d)
 
-/-- `Λ(R)` lifted: `(dom(Rᴵ)π₁)°⟨π₂,Λ(Rᴵ)⟩`, `Rᴵ ≜ (ρ⟨π₁,π₂π₁⟩)°(ρπ₂π₂)`, `ρ ≜ ran⟨𝟙,R⟩`. -/
+/-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ : I×a ⟶ b`. Every part runs on
+    the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
 def lLam : Pre × OTy × OTy → Pre × OTy × OTy
   | (R, a, b) =>
-    let ab := OTy.prod a b; let iab := OTy.prod I ab; let ia := OTy.prod I a
-    let ρ := ran (close p (pair (id I) R) I)
-    let Ri := comp (conv (close p (comp ρ (pair (outl I ab) (comp (outr I ab) (outl a b)))) iab))
-      (comp ρ (comp (outr I ab) (outr a b)))
-    (comp (conv (close p (comp (dom Ri) (outl I a)) ia)) (pair (outr I a) (lam Ri)), a, .arr b)
+    let ab := OTy.prod a b
+    let Ri := comp (comp (pair (comp (outl I a) R) (outr I a)) (dom (meet (comp (outl ab a) (outl a b)) (outr ab a))))
+      (comp (outl ab a) (outr a b))
+    (comp (pair (id I) (comp R (outl a b))) (pair (outr I a) (lam Ri)), a, .arr b)
 
 end Rows
 
@@ -434,8 +434,8 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
   let r ← match o, fs with
     | .dom, [R] => pure (lDom R)
     | .ran, [R] => pure (lRan R)
-    | .lam, [R] => pure (lLam I p R)
-    | .E, [R] => do let b ← fresh; pure (lLam I p (← lComp p (liftConst I p (.mem b) (.arr b) b) R))
+    | .lam, [R] => pure (lLam I R)
+    | .E, [R] => do let b ← fresh; pure (lLam I (← lComp p (liftConst I p (.mem b) (.arr b) b) R))
     | .frac, [R, S] => lFrac I p R S
     | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
@@ -504,18 +504,35 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       settle m p (← d.apply p as)
     | none => throw ⟨p, s!"unknown name '{n}'"⟩
   | .comp a b => do
-    let x ← elabE env m a; let y ← elabE env m b
+    let x ← elabE env m a
     let p := b.pos
-    match m, x.isFam || y.isFam with
-    | some I, true =>
-      let r ← match x, y with
-        | .fam .., .rel q s t => lThen p (← famOf I p x) (q, s, t)
-        | _, _ => do lComp p (← famOf I p x) (← famOf I p y)
+    -- `Xest(Q)`, `Xthin(Q)` with `Q` a family: `est`, `thin` run one `Q` on every array, so the rows of §e
+    -- work on `G ≜ X∋`, the values of each key; a closed `Q` takes the closed row below
+    let q? ← match m, b with
+      | some _, .op _ .est [] [qe] | some _, .op _ .thin [] [qe] => do
+        let y ← elabE env m qe; pure (if y.isFam then some y else none)
+      | _, _ => pure none
+    let est := match b with | .op _ .est _ _ => true | _ => false
+    match m, q? with
+    | some I, some q => do
+      let e ← fresh
+      let G ← lThen p (← famOf I p x) (.mem e, .arr e, e)
+      let Q ← famOf I p q
+      let r ← if est then do lSame p Pre.meet G (← lLdiv I p (lConv G) (lConv Q))
+        else do pure (lLam I (← lSame p Pre.diff G (← lComp p G (← lSame p Pre.diff Q (lConv Q)))))
       pure (.fam r.1 I r.2.1 r.2.2)
     | _, _ =>
-      let (q, s, t) := x.plain; let (r, s', t') := y.plain
-      unify p "the source of the right factor of a composition" s' t
-      pure (.rel (.comp q r) s t')
+      let y ← elabE env m b
+      match m, x.isFam || y.isFam with
+      | some I, true =>
+        let r ← match x, y with
+          | .fam .., .rel q s t => lThen p (← famOf I p x) (q, s, t)
+          | _, _ => do lComp p (← famOf I p x) (← famOf I p y)
+        pure (.fam r.1 I r.2.1 r.2.2)
+      | _, _ =>
+        let (q, s, t) := x.plain; let (r, s', t') := y.plain
+        unify p "the source of the right factor of a composition" s' t
+        pure (.rel (.comp q r) s t')
   | .bin p o a b => do
     let x ← elabE env m a; let y ← elabE env m b
     match m, x.isFam || y.isFam with
