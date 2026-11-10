@@ -1110,7 +1110,7 @@ theorem groupColumn_long {n : Nat} {e : Enc} {ws : List UInt64} (hw : longWords 
   | _ => simp [longWords] at hw
 
 /-- Counting below `K + 1` is counting below `K` and at `K`. -/
-theorem filter_lt_succ (f : Nat → Nat) (K : Nat) (L : List Nat) :
+theorem length_filter_lt_succ (f : Nat → Nat) (K : Nat) (L : List Nat) :
     (L.filter fun i => decide (f i < K + 1)).length =
       (L.filter fun i => decide (f i < K)).length + (L.filter fun i => f i == K).length := by
   induction L with
@@ -1130,7 +1130,7 @@ theorem buckets_length {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) :
     | zero =>
       rw [show ((List.range m).filter fun i => decide (Verify.groupOf g m i < 0)) = [] from
         List.filter_eq_nil_iff.2 fun i _ => by simp]; rfl
-    | succ K ih => rw [List.range_succ, List.map_append, List.sum_append_nat, ih, filter_lt_succ]; simp
+    | succ K ih => rw [List.range_succ, List.map_append, List.sum_append_nat, ih, length_filter_lt_succ]; simp
   have hmap : (Verify.firstsOf g m).map (fun f => (Verify.bucketOf g m f).length) =
       (List.range (Verify.firstsOf g m).length).map fun j =>
         ((List.range m).filter fun i => Verify.groupOf g m i == j).length := by

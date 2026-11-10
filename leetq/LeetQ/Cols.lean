@@ -89,9 +89,9 @@ theorem findSymScalar_spec (blob : ByteArray) (offs : Array Nat) (s : String) (h
   | none => exact hn
   | some i => have := List.mem_range.1 (List.mem_of_find?_eq_some h); simp only [Option.getD_some]; omega
 
-/-- A symbol list as the column `Column.symsOf` writes. -/
+/-- A symbol list as the column `Enc.symsOf` writes. -/
 def symCol (ss : List String) : ByteArray × Array Nat :=
-  match Column.symsOf (ss.map QAtom.symbol).toArray with
+  match Enc.symsOf (ss.map QAtom.symbol).toArray with
   | .syms blob offs => (blob, offs)
   | _ => (ByteArray.empty, #[0])
 
