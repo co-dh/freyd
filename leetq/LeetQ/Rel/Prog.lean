@@ -62,7 +62,7 @@ def cstVal {K t u : QAtomicType} (e : El u) (R : Rel K t) : Except String (Rel K
 /-- `Λ(G) ≫ enum ≫ length`: `countBy` of the carrier's segments, keyed by the carrier's keys. -/
 def lamCount (G : Rel A .long) : Except String (Rel A .long) := do
   let F ← transposeP G
-  let some r := Ops.countBy F.2.2 | throw "count by: no kernel"
+  let r := Ops.countBy F.2.2
   pure ⟨F.1, F.2.1, ← Arr.ofPart .long F.1 r.part "count by"⟩
 
 end Alg
@@ -382,7 +382,7 @@ def run : {A B : Obj} → Prog A B → Except String (RelV A B)
   | _, _, enumC n C => do liftV (enumIn n (← C.run).toRel)
   | _, _, count G => do liftV (Alg.lamCount (← G.run).toRel)
   | _, _, grade (n := n) d _ x => do
-    let some S := Ops.grade d x | throw "<x: no grade kernel for this type"
+    let S := Ops.grade d x
     pure ⟨n, ← tilKey n, S⟩
   | _, _, ojoin v P Q => do liftV (ordJoin v (← P.run).toRel (← Q.run).toRel)
   | _, _, binJ (ny := ny) x y => do let r ← Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
@@ -526,7 +526,7 @@ def Sound : {A B : Obj} → Prog A B → Prop
   | .atom A, _, count G => G.Sound ∧ ∀ R T : RelV A .long, liftV (Alg.lamCount R.toRel) = .ok T →
       ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
         @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.length ≫ graph Int64.ofNat)
-  | _, _, grade d lt x => ∀ S, Ops.grade d x = some S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
+  | _, _, grade d lt x => ∀ S, Ops.grade d x = S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
   | .atom A, .atom B, ojoin v P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : RelV A .long) (S : RelV B .long) (T : RelV A B),
       liftV (ordJoin v R.toRel S.toRel) = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob .long) ≫ ord v ≫ (S.Holds : Ob B ⟶ Ob .long)°)
@@ -653,14 +653,11 @@ theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : Rel
 
 /-- A grade that runs is the kernel's list keyed by `til n`. -/
 theorem grade_run {t : QAtomicType} {n : Nat} {d : Bool} {lt : El t → El t → Prop} {x : Arr t n} {R : RelV .long .long}
-    (h : (grade d lt x).run = .ok R) : ∃ S k, Ops.grade d x = some S ∧ tilKey n = .ok k ∧ R = ⟨n, k, S⟩ := by
+    (h : (grade d lt x).run = .ok R) : ∃ S k, Ops.grade d x = S ∧ tilKey n = .ok k ∧ R = ⟨n, k, S⟩ := by
   simp only [run, bind, Except.bind] at h
   split at h
-  · rename_i S hg
-    split at h
-    · cases h
-    · cases h; exact ⟨S, _, hg, by assumption, rfl⟩
   · cases h
+  · cases h; exact ⟨_, _, rfl, by assumption, rfl⟩
 
 /-- **A sound term runs to its spec**: the answer of `run P` holds `den P`. -/
 theorem run_sound : ∀ {A B : Obj} (P : Prog A B) {R : RelV A B}, P.Sound → P.run = .ok R →
@@ -1365,7 +1362,7 @@ theorem sort_spec {n : Nat} {P : Nat → Nat → Prop} {M : List Nat}
 /-- **The long grade kernel's answer** is `M` read as longs, `M` the one list `sort(⊴ₓ)` (`⊵ₓ`) gives of
     `til n` (`iasc_rel`, `idesc_rel`), its entries below `n`. -/
 theorem grade_long {n : Nat} {d : Bool} {x S : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
-    (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.grade d x = some S) :
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.grade d x = S) :
     ∃ M : List Nat, (Verb.cst (CL.ofList M) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
         = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable x.rel
           (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
@@ -1373,9 +1370,9 @@ theorem grade_long {n : Nat} {d : Bool} {x S : Arr .long n} {ws : List UInt64} (
   have hl : x.toList.length < 2 ^ 63 := by rw [Arr.length_toList]; exact h63
   refine ⟨(List.range x.toList.length).mergeSort fun i j =>
       if d then decide (x.toList[j]! ≤ x.toList[i]!) else decide (x.toList[i]! ≤ x.toList[j]!), ?_,
-    by rw [Ops.grade_toList hx hn h]; rfl, by rw [List.length_mergeSort, List.length_range, Arr.length_toList],
+    by rw [← h, Ops.grade_toList hx hn]; rfl, by rw [List.length_mergeSort, List.length_range, Arr.length_toList],
     fun j hj => ?_⟩
-  · rw [← Verb.grade_map d _ hl, ← Ops.grade_toList hx hn h]
+  · rw [← Verb.grade_map d _ hl, ← Ops.grade_toList (desc := d) hx hn, h]
     cases d
     · exact Verb.iasc_rel hx hn h63 h
     · exact Verb.idesc_rel hx hn h63 h
