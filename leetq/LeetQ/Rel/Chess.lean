@@ -130,15 +130,13 @@ def M (on : Board) : V :=
     comp (sq [0] on) (pawn 0 (sq [6, 7, 8, 9, 10] on) on)]
 
 /-- The mate-in-one moves `(p, s, t)` of white on `on`: for each move `s ⟶ t` of `M`, the board without the rows
-    on `s` and `t`, with `t ⟶ p`, rebuilt and tested by `isMate`. -/
+    on `s` and `t`, with `t ⟶ p` for each row `tp` of the piece on `s`, rebuilt and tested by `isMate`. A move
+    from an empty square has no such row, so it contributes nothing. -/
 def mateIn1 (on : Board) : List (Int64 × Int64 × Int64) :=
-  (M on).toList.eraseDups.filterMap fun (a, b) =>
+  (M on).toList.eraseDups.flatMap fun (a, b) =>
     let tp := comp (ofPairs [(b, a)]) on
     let on1 := union (conv (antiJoin (conv on) (idU (col [a, b])))) tp
-    -- a move from an empty square (never produced by `M`) is no mate
-    match tp.toList.head? with
-    | some (_, p) => if isMate on1 then some (p, a, b) else none
-    | none => none
+    tp.toList.filterMap fun (_, p) => if isMate on1 then some (p, a, b) else none
 
 /-- The board from its `(square, piece)` rows. -/
 def pos (ps : List (Nat × Int64)) : Board := ofPairs (ps.map fun (s, p) => (Int64.ofNat s, p))
