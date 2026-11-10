@@ -80,6 +80,14 @@ def Ew.not (x : Arr .boolean n) : Except String (Arr .boolean n) :=
   | .bits b => Arr.of .boolean n (.vector .boolean n (.bits (Ew.notBits n b)) none) "Ew.not"
   | _ => .error "Ew.not: a boolean value column is not `bits`"
 
+/-- `x op y` bit by bit on two long columns over the same positions, `op` one of qlean's `Ew.band`,
+    `Ew.bor`, `Ew.bandnot` (`x & ~y`): `bitwPayload`, a dense pass; an encoded operand is decoded first.
+    q has no verb for these, so they are not `Prim.Dyadic`s. -/
+def Ew.bitwise (op : UInt8) (x y : Arr .long n) : Except String (Arr .long n) :=
+  match bitwPayload op n x.enc y.enc with
+  | some e => Arr.of .long n (.vector .long n e none) "Ew.bitwise"
+  | none => .error "Ew.bitwise: a long column has no dense payload"
+
 /-- The raw bits of a one-element payload, as `shiftColumn`'s `fill` takes them. -/
 def Ew.atomBits (t : QAtomicType) (e : Enc) : Except String UInt64 :=
   match e with
@@ -392,7 +400,7 @@ private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
   return ⟨vs.length, ← Arr.of .long _ (.vector .long ks.length (.bytes (packLongs ks)) none) "D",
     ← Arr.of .long _ (.vector .long vs.length (.bytes (packLongs vs)) none) "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
-private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
+private def pairs {k v} (r : Except String (Rel k v)) : Option (List (k.El × v.El)) := r.toOption.map (·.toList)
 
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20, -5])) == some [11, 22, -2]
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20])) == none
@@ -406,6 +414,9 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El
 #guard av (do Ew.mon "neg" .long (← LA [1, -2, 3])) == some [-1, 2, -3]
 #guard av (do Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2)) == some [false, true, true]
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← LA [1, 4, 9, 16])) == some [1, 3, 5, 7]
+#guard av (do Ew.bitwise Ew.band (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1])) == some [8, 0, 7, 0]
+#guard av (do Ew.bitwise Ew.bor (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1])) == some [14, 7, -1, -1]
+#guard av (do Ew.bitwise Ew.bandnot (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1])) == some [4, 5, -8, 0]
 -- `foR` operands: `tilColumn` writes one once it is long enough for the encoding to pay
 private def tilFoR (n : Nat) : Except String (Arr .long n) := do
   let some c@(.vector _ _ (.foR ..) _) := tilColumn n | throw "tilColumn answered no foR"
