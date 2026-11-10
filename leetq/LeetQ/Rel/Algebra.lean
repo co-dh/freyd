@@ -173,14 +173,15 @@ def cat (cs : Array Code) : Code :=
 
 /-- `c` cut into parts of the counts `ns` (summing to `c.n`): byte extracts at a byte lane, `cycleBits`
     and `cycleIds` below one, where a part can start inside a byte. -/
-def cut (c : Code) (ns : Array Nat) : Array Code :=
-  if ns.size == 1 then #[c] else
+def cut {p : Nat} (c : Code) (ns : Vector Nat p) : Vector Code p :=
+  if p = 1 then Vector.replicate p c else
   let part (o m : Nat) : ByteArray :=
     if m == 0 then .empty
     else if c.w % 8 == 0 then c.b.extract (c.w / 8 * o) (c.w / 8 * (o + m))
     else if c.w == 1 then cycleBits c.n.toUSize o.toUSize m.toUSize c.b
     else cycleIds c.n.toUSize o.toUSize m.toUSize c.w.toUSize c.b
-  (ns.foldl (init := (#[], 0)) fun (acc, o) m => (acc.push ⟨c.w, m, c.card, part o m⟩, o + m)).1
+  -- part `i` starts at the sum of the counts before it; the parts are few (two or three), so no running sum
+  ns.mapIdx fun i m => ⟨c.w, m, c.card, part ((ns.toArray.extract 0 i).foldl (· + ·) 0) m⟩
 
 /-- The run starts of `c` and its count: `runStartsBits`, `runStarts` at a byte lane, `runStartsIds` at
     `2`/`4` bits. -/
@@ -236,41 +237,41 @@ def empty (t : QAtomicType) : Except String (Nat × Enc) :=
     joint range: `overFoR` reads a `foR` part's bounds off the block metadata, `overBytes` a dense
     part's in one pass; `foRShift`/`Ew.val add` rebase a part and `enumIdsFoR`/`enumIds` pack its
     offsets, a null to the last code — no hashing, no `foR` element decoded. Order-preserving. `none`
-    where a part is neither, or the range is wider than a grouping pass's ids over `total` rows would be.
+    where a part is neither, the range is wider than a grouping pass's ids over `total` rows would be, or
+    a pass reports an offset outside `0 … card`: `codes` then takes its grouping branch, a faithful code too.
     A dense part is here because its first-appearance ids (`groupIdsColumn`) cost a table probe a row
     (measured: `ej` of two million-wide dense key columns, 1e6 rows, the codes 16.7 ms). -/
-def rangeOffsets (a : QAtomicType) (cs : Array (Nat × Enc)) (total : Nat) : Except String (Option (Array Code)) := do
-  unless orderKind a == some .i64 && Column.encodes a do return none
+def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (Nat × Enc) p) (total : Nat) : Option (Vector Code p) := do
+  guard (orderKind a == some .i64 && Column.encodes a)
   let bound (op : Coc.Over) (c : Nat × Enc) : Option Int64 := match c.2 with
     | .bytes b => some (overBytes op Ew.i64 nul b)
     | .foR .. => overFoR op a c.1 c.2
     | _ => none
-  let some los := cs.mapM (bound .lesser) | return none
-  let some his := cs.mapM (bound .greater) | return none
+  let los ← cs.toArray.mapM (bound .lesser)
+  let his ← cs.toArray.mapM (bound .greater)
   let lo := los.foldl min Int64.maxValue
   let hi := his.foldl max (Int64.minValue + 1)
-  if lo == nul || hi < lo then return none
+  guard !(lo == nul || hi < lo)
   -- the codes `0 … hi-base`, then one for a null (`enumIdsFoR`'s `nullId`)
   let span (base : Int64) : Nat := (hi.toInt - base.toInt + 2).toNat
   let k := codeKind (span lo)
-  unless k.width ≤ (codeKind total).width do return none
+  guard (k.width ≤ (codeKind total).width)
   -- values already at `0` and up that fit the same width are their own offsets: no `foRShift` pass
   let base := if 0 ≤ lo && (codeKind (span 0)).width == k.width then 0 else lo
   let card := span base
   let w := 8 * k.width
-  let packed (kernel : String) (n : Nat) : ByteArray × USize → Except String Code
-    | (ids, bad) => if bad.toNat != n then throw s!"{kernel}: the offset at {bad} lies outside 0..{card}"
-      else pure ⟨w, n, card, ids⟩
-  let part (c : Nat × Enc) : Option (Except String Code) := let n := c.1; match c.2 with
-    | .foR m p => (if base == 0 then some (m, p) else Ew.foRShift false (-base) m p n.toUSize).map fun (m, p) =>
-        packed "enumIdsFoR" n (enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize w.toUSize m p)
+  -- `bad` is the first row whose offset lies outside `0 … card`, `n` when none does
+  let packed (n : Nat) : ByteArray × USize → Option Code
+    | (ids, bad) => if bad.toNat != n then none else some ⟨w, n, card, ids⟩
+  let part (c : Nat × Enc) : Option Code := let n := c.1; match c.2 with
+    | .foR md pk => (if base == 0 then some (md, pk) else Ew.foRShift false (-base) md pk n.toUSize).bind fun (md, pk) =>
+        packed n (enumIdsFoR n.toUSize card.toUSize (card - 1).toUSize w.toUSize md pk)
     | .bytes b =>
       let n := b.size / 8
       let b := if base == 0 then b else Kernel.Ew.val Ew.add Ew.i64 Ew.va nul b (one (-base).toUInt64) n.toUSize
-      some (packed "enumIds" n (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b))
+      packed n (enumIds n.toUSize card.toUSize (card - 1).toUSize w.toUSize b)
     | _ => none
-  let some rs := cs.mapM part | return none
-  some <$> rs.mapM id
+  cs.mapM part
 
 /-- Joint codes of the parts `cs`, one `Code` per part, in one code space:
     - `bits`: each part is its own code, a bit wide, order-preserving;
@@ -279,27 +280,23 @@ def rangeOffsets (a : QAtomicType) (cs : Array (Nat × Enc)) (total : Nat) : Exc
     - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
       encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
       the join against itself, its positions packed. -/
-def codes (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Array Code) :=
+def codes {p : Nat} (t : QAtomicType) (cs : Vector (Nat × Enc) p) : Except String (Vector Code p) :=
   match t with
   | .general => do
-    let all ← gens (← raze .general cs)
+    let all ← gens (← raze .general cs.toArray)
     pure ((pack all.size (findList all all)).cut (cs.map (·.1)))
   | a => do
     if let some bs := cs.mapM (fun c => match c.2 with | .bits b => some (⟨1, c.1, 2, b⟩ : Code) | _ => none) then
       return bs
     let ns := cs.map (·.1)
     let total := ns.foldl (· + ·) 0
-    if let some os ← rangeOffsets a cs total then return os
-    let (an, ae) ← raze a cs
+    if let some os := rangeOffsets a cs total then return os
+    let (an, ae) ← raze a cs.toArray
     let ae := Column.intern ae
     if let .enum _ dof ids := ae then return (Code.ofLane (Column.idWidth dof) an (dof.size - 1) ids).cut ns
     let some (gid, fs) := groupIdsColumn a an ae
       | throw s!"groupIdsColumn declines a column of type {a.code} in this encoding"
     pure ((Code.ofIds (len fs) total gid).cut ns)
-
-/-- The one code of a single part. -/
-def single (cs : Array Code) : Except String Code :=
-  if h : cs.size = 1 then pure cs[0] else throw s!"{cs.size} code parts where one was coded"
 
 /-- The dense payload an ARITHMETIC kernel (`Ew`, `overGroups`, `grade` by value) reads, at its sort
     layout: a boolean's bits, any other ordered type's `Column.bytesOf` (an encoded one decoded once).
@@ -408,40 +405,38 @@ def pairCode (classes : Bool) (a b : Code) : Code × Option (ByteArray × ByteAr
       | _, _ => Order.groupIdsPairIds a.w.toUSize b.w.toUSize a.n.toUSize a.b b.b
     (Code.ofIds (len r.2) a.n r.1, some r)
 
-/-- `|R|` of tuples: `cols[j]` is column `j`'s codes per part (`codes`); the columns are folded left by
-    `pairCode`; one code per part. One column is its own codes. -/
-def tuples (cols : Array (Array Code)) : Except String (Array Code) := do
-  let some c0 := cols[0]? | throw "tuples: no column"
-  if cols.size == 1 then return c0
-  pure ((← tupleCode false (cols.map Code.cat)).1.cut (c0.map (·.n)))
+/-- `|R|` of tuples: `c0` is the first column's codes per part (`codes`), `rest` the other columns'; the
+    columns are folded left by `pairCode`; one code per part. One column is its own codes. -/
+def tuples {p : Nat} (c0 : Vector Code p) (rest : Array (Vector Code p)) : Vector Code p :=
+  if rest.isEmpty then c0 else
+  (tupleCode false (Code.cat c0.toArray) (rest.map (Code.cat ·.toArray))).1.cut (c0.map (·.n))
 where
-  /-- The fold of the columns `all` by `pairCode`, the last step told whether its answer is grouped
-      next (`classes`), and the classes when that step grouped. -/
-  tupleCode (classes : Bool) (all : Array Code) : Except String (Code × Option (ByteArray × ByteArray)) := do
-    let some c0 := all[0]? | throw "tuples: no column"
-    let some cl := all.back? | throw "tuples: no column"
-    if all.size == 1 then return (c0, none)
-    pure (pairCode classes ((all.extract 1 (all.size - 1)).foldl (fun a c => (pairCode false a c).1) c0) cl)
-  /-- The classes of the tuples of the columns `all`, as `groupIds` answers them; the last fold step's
-      own when it grouped, so a caller wanting the classes groups nothing twice. -/
-  tupleIds (all : Array Code) : Except String (ByteArray × ByteArray) := do
-    match ← tupleCode true all with
-    | (_, some r) => pure r
-    | (c, none) => pure c.groupIds
+  /-- The fold of the columns `c0`, then `rest`, by `pairCode`, the last step told whether its answer is
+      grouped next (`classes`), and the classes when that step grouped. -/
+  tupleCode (classes : Bool) (c0 : Code) (rest : Array Code) : Code × Option (ByteArray × ByteArray) :=
+    match rest.back? with
+    | none => (c0, none)
+    | some cl => pairCode classes (rest.pop.foldl (fun a c => (pairCode false a c).1) c0) cl
+  /-- The classes of the tuples of the columns `c0`, then `rest`, as `groupIds` answers them; the last
+      fold step's own when it grouped, so a caller wanting the classes groups nothing twice. -/
+  tupleIds (c0 : Code) (rest : Array Code) : ByteArray × ByteArray :=
+    match tupleCode true c0 rest with
+    | (_, some r) => r
+    | (c, none) => c.groupIds
 
 /-- Joint codes of a side's parts, one code per part: an atom's `codes`; a product's `tuples` of its
     columns' codes, so equal tuples are equal codes exactly when every column is. -/
-def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → Array (Part A) → Except String (Array Code)
-  | .atom t, cs => Alg.codes t cs
-  | .prod a b, cs => do tuples #[← Obj.codes a (cs.map (·.1)), ← Obj.codes b (cs.map (·.2))]
+def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p → Except String (Vector Code p)
+  | .atom t, _, cs => Alg.codes t cs
+  | .prod a b, _, cs => do pure (tuples (← Obj.codes a (cs.map (·.1))) #[← Obj.codes b (cs.map (·.2))])
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
-def pairs {k v : Obj} (ds : Array (Cols k v)) : Except String (Array Code) := do
-  tuples #[← k.codes (ds.map (·.key)), ← v.codes (ds.map (·.val))]
+def pairs {k v : Obj} {p : Nat} (ds : Vector (Cols k v) p) : Except String (Vector Code p) := do
+  pure (tuples (← k.codes (ds.map (·.key))) #[← v.codes (ds.map (·.val))])
 
 /-- `R` with each pair once: the first row of each class of `|R|`. -/
 def Cols.nub {k v : Obj} (d : Cols k v) : Except String (Cols k v) := do
-  d.rows (← tuples.tupleIds #[← single (← k.codes #[d.key]), ← single (← v.codes #[d.val])]).2
+  d.rows (tuples.tupleIds (← k.codes #v[d.key])[0] #[(← v.codes #v[d.val])[0]]).2
 
 /-- `join(l, r)`: every pair of a left and a right row with equal codes, as two index columns —
     `groupIds`/`groupSizes`/`grade` of the right, `find` of the left in its distinct codes,
@@ -512,20 +507,19 @@ def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
 def setId {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String ByteArray := do
   let P ← Parted.ofBoxes v G.val
   let some ob := longBytes (P.g + 1) P.o.enc | throw "setId: the offsets have no dense payload"
-  setIds (← single (← codes v #[P.val.part])) ob
+  setIds (← codes v #v[P.val.part])[0] ob
 
-/-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, larger
-    better on column `c` exactly when `big[c]`: per set, the rows no row of the set strictly
+/-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, each column
+    `(layout, payload, big)`, larger better exactly when `big`: per set, the rows no row of the set strictly
     dominates (`thinSweep` over the `segments` of the key codes). A column not of longs is
     compared by its dense rank (`drank`). Equal rows of one set are one element: the first is kept.
     Answers the kept rows' indices. -/
-def thin {k : QAtomicType} (key : Nat × Enc) (cs : Array (Scan.Kind × ByteArray)) (big : Array Bool) : Except String ByteArray := do
-  if cs.size != big.size then throw s!"thin: {cs.size} columns but {big.size} directions"
-  let kc ← single (← codes k #[key])
+def thin {k : QAtomicType} (key : Nat × Enc) (cs : Array (Scan.Kind × ByteArray × Bool)) : Except String ByteArray := do
+  let kc := (← codes k #v[key])[0]
   let (p, o, _) := segments kc
-  let ls := cs.map fun (kd, b) => gather 8 (match kd with | .i64 => b | kd => drank kd b) p
-  let s := whereBits kc.n.toUSize (thinSweep ls big o)
-  let t ← tuples.tupleIds (#[kc.gather (gather 8 p s)] ++ ls.map fun l => Code.ofLongs (gather 8 l s))
+  let ls := cs.map fun (kd, b, _) => gather 8 (match kd with | .i64 => b | kd => drank kd b) p
+  let s := whereBits kc.n.toUSize (thinSweep ls (cs.map (·.2.2)) o)
+  let t := tuples.tupleIds (kc.gather (gather 8 p s)) (ls.map fun l => Code.ofLongs (gather 8 l s))
   pure (gather 8 p (gather 8 s t.2))
 
 /-! ## The operators -/
@@ -534,21 +528,17 @@ section Gen
 
 variable {A B C : Obj}
 
-/-- The two parts of a joint coding of two payloads. -/
-def two (cs : Array Code) : Except String (Code × Code) :=
-  if h : cs.size = 2 then pure (cs[0], cs[1]) else throw s!"{cs.size} code parts where two were coded"
-
 /-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
 def le (R S : Rel A B) : Except String Bool := do
   let r ← cols R; let s ← cols S
-  let (pr, ps) ← two (← pairs #[r, s])
-  pure (len (whereBits r.n.toUSize (pr.member ps)) == r.n)
+  let c ← pairs #v[r, s]
+  pure (len (whereBits r.n.toUSize (c[0].member c[1])) == r.n)
 
 /-- `R ∩ S`: the semi-join on pairs — `member`, `whereBits`, `gatherColumn`. -/
 def inter (R S : Rel A B) : Except String (Rel A B) := do
   let r ← cols R; let s ← cols S
-  let (pr, ps) ← two (← pairs #[r, s])
-  let t ← r.rows (whereBits r.n.toUSize (pr.member ps))
+  let c ← pairs #v[r, s]
+  let t ← r.rows (whereBits r.n.toUSize (c[0].member c[1]))
   ofCols A B t.key t.val
 
 /-- `R ∪ S`: `razeColumn` of keys and of vals, the first row of each pair. -/
@@ -587,13 +577,13 @@ def conv (R : Rel A B) : Except String (Rel B A) := pure (convArr R.key R.val)
 /-- `R ≫ S`: `join` on `R.val = S.key`, the key picked from `R`, the val from `S`. -/
 def comp (R : Rel A B) (S : Rel B C) : Except String (Rel A C) := do
   let r ← cols R; let s ← cols S
-  let (rc, sc) ← two (← B.codes #[r.val, s.key])
-  let (i, j) := join rc sc
+  let c ← B.codes #v[r.val, s.key]
+  let (i, j) := join c[0] c[1]
   ofCols A C (← A.pick r.key i) (← C.pick s.val j)
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
 def distinctCorefl (t : Obj) (x : Part t) : Except String (Rel t t) := do
-  let d ← t.pick x (← single (← t.codes #[x])).groupIds.2
+  let d ← t.pick x (← t.codes #v[x])[0].groupIds.2
   ofCols t t d d
 
 /-- `dom R`: the coreflexive on the distinct keys. -/
@@ -605,15 +595,15 @@ def ran (R : Rel A B) : Except String (Rel B B) := do let r ← cols R; distinct
 /-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no value of `C` (`anti` on one joint coding). -/
 def antiJoin (R : Rel A B) (C : Rel B B) : Except String (Rel A B) := do
   let r ← cols R; let c ← cols C
-  let (rv, cv) ← two (← B.codes #[r.val, c.val])
-  let i := anti rv cv
+  let vc ← B.codes #v[r.val, c.val]
+  let i := anti vc[0] vc[1]
   ofCols A B (← A.pick r.key i) (← B.pick r.val i)
 
 /-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
 def diff (R S : Rel A B) : Except String (Rel A B) := do
   let r ← cols R; let s ← cols S
-  let (pr, ps) ← two (← pairs #[r, s])
-  let t ← r.rows (anti pr ps)
+  let c ← pairs #v[r, s]
+  let t ← r.rows (anti c[0] c[1])
   ofCols A B t.key t.val
 
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
@@ -626,23 +616,21 @@ def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) :
 /-- `Coreflexive R`, `R ⊑ 𝟙`: every key's code equals its val's. -/
 def isCorefl (R : Rel A A) : Except String Bool := do
   let r ← cols R
-  let (kc, vc) ← two (← A.codes #[r.key, r.val])
-  pure (len (kc.eqAt vc) == r.n)
+  let c ← A.codes #v[r.key, r.val]
+  pure (len (c[0].eqAt c[1]) == r.n)
 
 /-- `R \ S` (`R : a ⟶ b`, `S : a ⟶ c`), by counting: `join` on the shared key → rows `(y, z)`;
     `cnt(y, z)` against `cnt(R.val)` `at` `y`; the vacuous `y ∉ ran R` with every `z` from the
     universes `Ub`, `Uc`: `cross(anti(Ub, ran R), Uc)`. -/
 def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Except String (Rel B C) := do
   let r ← (← cols R).nub; let s ← (← cols S).nub
-  let (rk, sk) ← two (← A.codes #[r.key, s.key])
-  let (i, j) := join rk sk
+  let kc ← A.codes #v[r.key, s.key]
+  let (i, j) := join kc[0] kc[1]
   let y ← B.pick r.val i; let z ← C.pick s.val j
-  let ycs ← B.codes #[y, r.val, Ub.parts]
-  let some yc := ycs[0]? | throw "leftDiv: no code of y"
-  let some rvc := ycs[1]? | throw "leftDiv: no code of R.val"
-  let some ubc := ycs[2]? | throw "leftDiv: no code of Ub"
-  let zc ← single (← C.codes #[z])
-  let (gid, firsts) ← tuples.tupleIds #[yc, zc]
+  let ycs ← B.codes #v[y, r.val, Ub.parts]
+  let yc := ycs[0]; let rvc := ycs[1]; let ubc := ycs[2]
+  let zc := (← C.codes #v[z])[0]
+  let (gid, firsts) := tuples.tupleIds yc #[zc]
   let got := classSizes yc.n (gid, firsts)
   let keep := gather 8 firsts (whereEqV got (atCnt (cnt rvc) (yc.gather firsts)))
   let miss := anti ubc rvc
@@ -659,11 +647,11 @@ def rightDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Va
     term `cross(anti(Ua, dom R), anti(Ub, dom S))`, the empty fibres. -/
 def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Except String (Rel A B) := do
   let r ← cols R; let s ← cols S
-  let (rv, sv) ← two (← C.codes #[r.val, s.val])
-  let (rk, uac) ← two (← A.codes #[r.key, Ua.parts])
-  let (sk, ubc) ← two (← B.codes #[s.key, Ub.parts])
+  let vc ← C.codes #v[r.val, s.val]
+  let ac ← A.codes #v[r.key, Ua.parts]; let rk := ac[0]; let uac := ac[1]
+  let bc ← B.codes #v[s.key, Ub.parts]; let sk := bc[0]; let ubc := bc[1]
   let (pr, orr, fr) := segments rk; let (ps, os, fs) := segments sk
-  let ids ← setIds (Code.cat #[rv.gather pr, sv.gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc os r.n])
+  let ids ← setIds (Code.cat #[vc[0].gather pr, vc[1].gather ps]) (concatBytes #[orr.extract 0 (orr.size - 8), addc os r.n])
   let (i, j) := join (Code.ofLongs (ids.extract 0 (8 * len fr))) (Code.ofLongs (ids.extract (8 * len fr) ids.size))
   let ex := anti uac rk; let ey := anti ubc sk
   let (p, q) := cross (len ex) (len ey)
@@ -697,7 +685,7 @@ def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except Str
     of its codes and the count (`runStarts`) and `ds` the element at each start. -/
 def runsP {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) :
     Except String ((g : Nat) × Arr t g × Parted v) := do
-  let st := (← single (← codes t #[key])).runStarts
+  let st := (← codes t #v[key])[0].runStarts
   groupedP t (← pick t key (st.extract 0 (st.size - 8))) st val
 
 def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val : Arr v n) : Except String (Rel t .general) := do
@@ -707,7 +695,7 @@ def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : Nat × Enc) (val :
     contiguous run of its key (`runsP`). `gradeBy` on (key code, value code), `gatherColumn`. -/
 def familyP (d : Cols A B) : Except String ((g : Nat) × Arr A g × Parted B) := do
   let d ← d.nub
-  let s ← d.rows (gradeBy d.n #[← single (← codes A #[d.key]), ← single (← codes B #[d.val])])
+  let s ← d.rows (gradeBy d.n #[(← codes A #v[d.key])[0], (← codes B #v[d.val])[0]])
   runsP A s.key (← Arr.ofPart B s.n s.val "family")
 
 def family (d : Cols A B) : Except String (Rel A .general) := do boxP (← familyP d)
@@ -720,7 +708,7 @@ def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← c
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
     flattened indices of the codes, cut at the values they hold (`runs`). -/
 def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
-  let c ← single (← codes B #[x.part])
+  let c := (← codes B #v[x.part])[0]
   -- below a byte `group` has no lane: its indices are the stable grade of the classes by first occurrence
   let idx := match c.kind with
     | some k => (Order.group k c.n.toUSize c.b).2.1
@@ -742,8 +730,8 @@ def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A .general) := 
     columns of one product side. -/
 def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Except String (Rel A (.prod B C)) := do
   let r ← cols R; let s ← cols S
-  let (rk, sk) ← two (← A.codes #[r.key, s.key])
-  let (i, j) := join rk sk
+  let kc ← A.codes #v[r.key, s.key]
+  let (i, j) := join kc[0] kc[1]
   ofCols A (.prod B C) (← A.pick r.key i) (← B.pick r.val i, ← C.pick s.val j)
 
 /-- `outl`: the first component's columns, nothing runs. -/
@@ -806,21 +794,22 @@ def foldOver {n : Nat} (op : Coc.Over) (x : Arr .long n) : Except String Int64 :
 /-- The same per key: `overGroups` over the key codes' `groupIds`, one row per distinct key. -/
 def foldGroups (op : Coc.Over) (R : Rel A .long) : Except String (Rel A .long) := do
   let r ← cols R; let (_, v) ← arrDense R.val
-  let (gid, firsts) := (← single (← codes A #[r.key])).groupIds
+  let (gid, firsts) := (← codes A #v[r.key])[0].groupIds
   let ng := len firsts
   ofCols A .long (← pick A r.key firsts) (longs ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng)))
 
 /-- `α⁻¹` of a list, `uncons`: its first element and the rest, two picks (`gatherColumn`). -/
-def uncons {n : Nat} (x : Arr B n) : Except String (Arr B 1 × Arr B (n - 1)) := do
-  if n = 0 then throw "uncons of an empty list"
-  let m := n - 1
-  let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m.toUSize) (one 1) m.toUSize
-  pure (← Arr.ofPart B 1 (← pick B x.part (one 0)) "uncons", ← Arr.ofPart B m (← pick B x.part rest) "uncons")
+def uncons {n : Nat} (x : Arr B (n + 1)) : Except String (Arr B 1 × Arr B n) := do
+  let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs n.toUSize) (one 1) n.toUSize
+  pure (← Arr.ofPart B 1 (← pick B x.part (one 0)) "uncons", ← Arr.ofPart B n (← pick B x.part rest) "uncons")
 
-/-- An unfold then a fold: Lean's loop, at most `fuel` rounds of `step` until `done`, each round kernels. -/
-def hylo {α : Type} (done : α → Except String Bool) (step : α → Except String α) : Nat → α → Except String α
-  | 0, _ => throw "hylo: out of fuel"
-  | fuel + 1, x => do if ← done x then pure x else hylo done step fuel (← step x)
+/-- An unfold then a fold: Lean's loop, rounds of `step` until `done`, each round kernels. It ends because
+    each round not `done` lowers the measure `μ`: well-founded recursion, no fuel. -/
+def hylo {α : Type} (μ : α → Nat) (done : α → Bool) (step : α → α)
+    (dec : ∀ x, done x = false → μ (step x) < μ x) (x : α) : α :=
+  if h : done x then x else hylo μ done step dec (step x)
+termination_by μ x
+decreasing_by exact dec x (Bool.eq_false_iff.2 h)
 
 /-- `est(≤)` (`desc`: `est(≥)`) of a family of longs: `overGroups` lesser/greater per key. -/
 def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
@@ -829,13 +818,13 @@ def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
 /-- `Entire R` on the universe `U`: `member` of `U`'s codes in the keys', all set. -/
 def entire {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
   let r ← cols R
-  let (uc, kc) ← two (← A.codes #[U.parts, r.key])
-  pure (len (whereBits m.toUSize (uc.member kc)) == m)
+  let c ← A.codes #v[U.parts, r.key]
+  pure (len (whereBits m.toUSize (c[0].member c[1])) == m)
 
 /-- `Simple R`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes). -/
 def simple {A B : Obj} (R : Rel A B) : Except String Bool := do
   let r ← (← cols R).nub
-  pure (len (← single (← A.codes #[r.key])).groupIds.2 == r.n)
+  pure (len (← A.codes #v[r.key])[0].groupIds.2 == r.n)
 
 def isMap {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
   pure ((← entire R U) && (← simple R))
@@ -957,26 +946,42 @@ private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide))
 #guard ok (foldGroups .add R) fun X => X.toList == [(1, 30), (2, 10), (3, 30)]
 #guard ok (uncons LsV) fun (h, t) => h.toList == [5] && t.toList == [3, 5, 9]
 -- an unfold then a fold: uncons to the end, summing the heads
-#guard ok (hylo (fun (xs, _) => pure (xs.1 == 0))
-    (fun ((xs : (m : Nat) × Arr L m), (acc : Int64)) => do let (h, t) ← uncons xs.2; pure (⟨_, t⟩, acc + (← foldOver .add h))) 10 (⟨_, LsV⟩, 0))
-  fun (_, s) => s == 22
+-- the state is the rest and the sum; the measure is the rest's length, `0` once a step has failed, so the
+-- loop ends there too (`uncons` and `foldOver` still answer `Except`)
+private abbrev St := Except String (((m : Nat) × Arr L m) × Int64)
+private def stM : St → Nat | .ok (xs, _) => xs.1 | .error _ => 0
+private def stStep : St → St
+  | .ok (⟨k + 1, x⟩, acc) => match uncons x with
+    | .ok (h, t) => match foldOver .add h with
+      | .ok s => .ok (⟨k, t⟩, acc + s)
+      | .error e => .error e
+    | .error e => .error e
+  | s => s
+private theorem stStep_dec : ∀ s, (stM s == 0) = false → stM (stStep s) < stM s
+  | .ok (⟨k + 1, x⟩, acc), _ => by
+    simp only [stStep]; split
+    · split <;> simp [stM]
+    · simp [stM]
+  | .ok (⟨0, _⟩, _), h => by simp [stM] at h
+  | .error _, h => by simp [stM] at h
+#guard ok (hylo stM (stM · == 0) stStep stStep_dec (.ok (⟨_, LsV⟩, 0))) fun (_, s) => s == 22
 #guard ok (est false R) fun X => X.toList == [(1, 10), (2, 10), (3, 30)]
 #guard ok (est true R) fun X => X.toList == [(1, 20), (2, 10), (3, 30)]
 -- thin, k = 1: per key of `R` the largest value, then the smallest
-private def lc (xs : List Int64) : Scan.Kind × ByteArray := (.i64, packLongs xs)
-#guard ok (thin (k := L) (longs (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30]] #[true]) (· == packLongs [1, 2, 3])
-#guard ok (thin (k := L) (longs (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30]] #[false]) (· == packLongs [0, 2, 3])
+private def lc (xs : List Int64) (big : Bool) : Scan.Kind × ByteArray × Bool := (.i64, packLongs xs, big)
+#guard ok (thin (k := L) (longs (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30] true]) (· == packLongs [1, 2, 3])
+#guard ok (thin (k := L) (longs (packLongs [1, 1, 2, 3])) #[lc [10, 20, 10, 30] false]) (· == packLongs [0, 2, 3])
 -- k = 2, one set (1,5) (3,2) (2,2) (3,1) (1,5): both larger → (1,5) and (3,2), one copy each;
 -- the second smaller → (3,1) alone
 private def k5 : Nat × Enc := longs (packLongs [1, 1, 1, 1, 1])
-#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, true]) (· == packLongs [0, 1])
-#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1], lc [5, 2, 2, 1, 5]] #[true, false]) (· == packLongs [3])
+#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1] true, lc [5, 2, 2, 1, 5] true]) (· == packLongs [0, 1])
+#guard ok (thin (k := L) k5 #[lc [1, 3, 2, 3, 1] true, lc [5, 2, 2, 1, 5] false]) (· == packLongs [3])
 -- k = 3, two sets: {(1,1,1) (2,2,2) (2,2,2) (3,0,0)} keeps (2,2,2) once and (3,0,0);
 -- {(0,5,0) (0,4,1) (0,4,0)} drops (0,4,0); a key interleaved: set 2's rows come first
-#guard ok (thin (k := L) (longs (packLongs [1, 1, 1, 1, 2, 2, 2])) #[lc [1, 2, 2, 3, 0, 0, 0], lc [1, 2, 2, 0, 5, 4, 4],
-    lc [1, 2, 2, 0, 0, 1, 0]] #[true, true, true]) (· == packLongs [1, 3, 4, 5])
-#guard ok (thin (k := L) (longs (packLongs [2, 1, 2, 1, 1, 2, 1])) #[lc [0, 1, 0, 2, 2, 0, 3], lc [5, 1, 4, 2, 2, 4, 0],
-    lc [0, 1, 1, 2, 2, 0, 0]] #[true, true, true]) (· == packLongs [0, 2, 3, 6])
+#guard ok (thin (k := L) (longs (packLongs [1, 1, 1, 1, 2, 2, 2])) #[lc [1, 2, 2, 3, 0, 0, 0] true, lc [1, 2, 2, 0, 5, 4, 4] true,
+    lc [1, 2, 2, 0, 0, 1, 0] true]) (· == packLongs [1, 3, 4, 5])
+#guard ok (thin (k := L) (longs (packLongs [2, 1, 2, 1, 1, 2, 1])) #[lc [0, 1, 0, 2, 2, 0, 3] true, lc [5, 1, 4, 2, 2, 4, 0] true,
+    lc [0, 1, 1, 2, 2, 0, 0] true]) (· == packLongs [0, 2, 3, 6])
 -- setId: segments {3 1 1} {1 3} {2} {} {} {1 3 3}: the three spellings of {1, 3} one id, `{}` one id
 private def o6 : Arr L 7 := (Arr.mk (.bytes <| packLongs [0, 3, 5, 6, 6, 6, 9]) (by decide))
 private def sets : Except String (Rel L .general) :=
@@ -1041,7 +1046,7 @@ private def enumC : Nat × Enc :=
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
 -- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
-private def laneOf (t : QAtomicType) (c : Nat × Enc) : Option Nat := match codes t #[c] with | .ok #[x] => some x.w | _ => none
+private def laneOf (t : QAtomicType) (c : Nat × Enc) : Option Nat := match codes t #v[c] with | .ok x => some x[0].w | _ => none
 #guard laneOf Bo bitsC == some 1 && laneOf Sy enumC == some 2 && laneOf Sy symsC == some 2
 #guard laneOf L Lf.val.part == some 8 && laneOf L (longs (packLongs [5, 3, 5, 9])) == some 8 &&
   laneOf L (longs (packLongs [5, 3, 5, 1099511627776])) == some 2
@@ -1053,8 +1058,8 @@ private def laneOf (t : QAtomicType) (c : Nat × Enc) : Option Nat := match code
   | (c, none) => c.w == 4 && c.b == ByteArray.mk #[0x21, 0x25] | _ => false
 -- a 2-bit code cut inside a byte, gathered, graded, grouped, run-started where it lies
 private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!)⟩
-#guard (c2.cut #[3, 3]).map (fun p => (List.range p.n).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
-#guard (Code.cat (c2.cut #[1, 5])).b == c2.b
+#guard (c2.cut #v[3, 3]).toArray.map (fun p => (List.range p.n).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
+#guard (Code.cat (c2.cut #v[1, 5]).toArray).b == c2.b
 #guard let g := c2.gather (packLongs [5, 1]); (List.range 2).map (Column.idAt g.b 2) == [2, 0]
 #guard c2.grade == packLongs [1, 4, 2, 0, 3, 5]
 #guard c2.groupIds.2 == packLongs [0, 1, 2]
@@ -1088,7 +1093,7 @@ private def gs : Array QValue := #[.atom (.long 1), QValue.general #[], .atom (.
 #guard ok (do union (← lst .general (genCol gs)) (← lst .general (genCol gs))) fun X => X.n == 4
 #guard ok (do dom (← conv (← lst .general (genCol gs)))) (·.n == 3)
 #guard ok (do symDiv (← lst .general (genCol gs)) (← lst .general (genCol gs)) U4 U4) fun X => seteq X.toList pqpr
-#guard match lstV .general (genCol gs) with | .ok ⟨_, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | .error _ => false
+#guard match lstV .general (genCol gs) with | .ok ⟨_ + 1, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | _ => false
 #guard ok (do zero (A := .general) (B := Sy)) (·.n == 0)
 
 end Checks
