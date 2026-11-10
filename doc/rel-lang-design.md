@@ -211,7 +211,11 @@ row).
 | `E(R)`                          | `Λ(∋R)` by the rows, `∋` closed            | `E(R) = Λ(∋R)`, Algebra.lean:1169    |
 | `P(R)`                          | not liftable                               | target `𝒫B`: no universe, no demand  |
 | `F(R) filter(p) takewhile(p)`   | closed: closed; a family: not liftable     | one `R` for every array              |
-| `⦇e,S⦈`                         | closed: closed; a family: not liftable     | one step for every array             |
+| `X⦇e,S⦈` ✓, `X : I ⟶ A×[E]`,    | `⟨𝟙,X⟩⟨π₂π₁,⟨π₁,π₂π₂⟩⦇e,S'⦈ᴵ⟩`;            | each array folded by the seed and    |
+| `e : I ⟶ V×V`,                  | `⦇e,S'⦈ᴵ : I×[E] ⟶ V` one `foldOn`,        | step of its own key: `S'` carries    |
+| `S : I ⟶ (E×V)×V`               | carrier `I×V`, seeded at each key by `e`,  | the key                              |
+|                                 | `S' ≜ ⟨π₂π₁,⟨π₁,π₂π₂⟩⟩⟨π₁,Sᴵ⟩`             |                                      |
+| `⦇e,S⦈` alone                   | closed: closed; a family: not liftable     | its arrays come from its left        |
 | `Xest(Q)`, `X : I ⟶ A×𝒫B`       | closed `Q`: `X⟨π₁,π₂est(Q)⟩`               | `est` on each value of `X`           |
 |                                 | a family `Q`: `G ∩ (G°\Q°)` by the rows,   | `Q`-below each value of `a`          |
 |                                 | `G ≜ X⟨π₁,π₂∋⟩`                            |                                      |
@@ -225,9 +229,15 @@ row).
 Not liftable:
 
 - `P(R)`: its target `𝒫B` has no universe and, as a target, no demand (§a) — the same error as unlifted.
-- `F(R)`, `filter(p)`, `takewhile(p)`, `⦇e,S⦈` given a family: `map` and `foldBy` run ONE relation on every
-  array; a relation per key needs the array, or the fold's value, keyed by `I` — a fold on `I×V`, a different
-  program the author writes, not a row.
+- `F(R)`, `filter(p)`, `takewhile(p)` given a family: `map`, `filter`, `takewhile` run ONE relation on every
+  array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them.
+- `⦇e,S⦈` given a family with nothing on its left: the keyed fold needs the arrays of each key, `X`.
+
+Cost of the keyed fold: `Sᴵ` reads the step's fibre at each key in full, so a closed part of the step (`π₂` in
+`π₂ ∪ (π₂(𝟙×R))`) becomes its whole universe at every key, where the unlifted step runs only on the pairs a round
+meets. Chess's `ⁿ` written as this fold, lifted over the boards and moves, ran over 3 min against 0.7 s for the
+eight-term union, so Chess keeps the union; the step would have to run keyed on demand (`I×(E×V)` as its source),
+a second lifting of every row.
 
 **Mixed terms.**
 

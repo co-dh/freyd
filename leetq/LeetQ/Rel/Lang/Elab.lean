@@ -71,6 +71,10 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `R`, whose identity among the program's sub-terms is `k` (`Eval.hoist`): equal sub-terms have one
       identity, and one evaluation runs each identity once per demand. -/
   | share {A B : Obj} {d : Bool} (k : Nat) (R : Tm A B d) : Tm A B d
+  /-- `⦇e,S⦈` given a family (§e), on the pairs (key, array) in demand: one fold with carrier `I×V`, seeded at
+      each key by the fibre of `e` there, its step `S` given `(x,(i,v))` and carrying the key `i`. -/
+  | foldI {I E V : Obj} {d d' : Bool} (e : Tm I (.prod V V) d) (S : Tm (.prod E (.prod I V)) (.prod I V) d') :
+      Tm (.prod I (.arr E)) V true
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
@@ -168,6 +172,7 @@ inductive Pre
   | leq (pos : Pos) (n : OTy)
   | lt (pos : Pos) (n : OTy)
   | fold (e s : Pre)
+  | foldI (e s : Pre)
   | lit (pos : Pos) (a b : OTy) (ps : List (String × String))
   | close (pos : Pos) (p : Pre) (a : OTy)
 
@@ -346,14 +351,33 @@ def lSum : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
     (join (comp R (pair (comp (outl a c) (inl a b)) (comp (outr a c) (inl c d))))
       (comp S (pair (comp (outl b d) (inr a b)) (comp (outr b d) (inr c d)))), .sum a b, .sum c d)
 
-/-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ : I×a ⟶ b`. Every part runs on
-    the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
+/-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ ≜ ⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂ :
+    I×a ⟶ b`. Every part runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would
+    close over all of `I`). -/
+def keyed (R : Pre) (a b : OTy) : Pre :=
+  let ab := OTy.prod a b
+  comp (comp (pair (comp (outl I a) R) (outr I a)) (dom (meet (comp (outl ab a) (outl a b)) (outr ab a))))
+    (comp (outl ab a) (outr a b))
+
+/-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`. -/
 def lLam : Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, b) =>
-    let ab := OTy.prod a b
-    let Ri := comp (comp (pair (comp (outl I a) R) (outr I a)) (dom (meet (comp (outl ab a) (outl a b)) (outr ab a))))
-      (comp (outl ab a) (outr a b))
-    (comp (pair (id I) (comp R (outl a b))) (pair (outr I a) (lam Ri)), a, .arr b)
+  | (R, a, b) => (comp (pair (id I) (comp R (outl a b))) (pair (outr I a) (lam (keyed I R a b))), a, .arr b)
+
+/-- `X⦇e,S⦈` lifted, `X : I ⟶ a×[x]`, `e : I ⟶ v×v`, `S : I ⟶ (x×v)×v`: `⟨𝟙,X⟩⟨π₂π₁,⟨π₁,π₂π₂⟩⦇e,S'⦈ᴵ⟩`, where
+    `⦇e,S'⦈ᴵ : I×[x] ⟶ v` folds each array at its key, carrier `I×v`, `S' ≜ ⟨π₂π₁,⟨π₁,π₂π₂⟩⟩⟨π₁,Sᴵ⟩`. -/
+def lFold : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
+  | (X, a, xs), (e, v, v'), (S, xv, w) => do
+    unify p "the fold's start, a coreflexive" v' v
+    let x ← fresh
+    unify p "the source of the fold's step" xv (.prod x v)
+    unify p "the target of the fold's step" w v
+    unify p "the arrays a fold runs on" xs (.arr x)
+    let iv := OTy.prod I v; let xv := OTy.prod x v; let ax := OTy.prod a (.arr x)
+    let S' := comp (pair (comp (outr x iv) (outl I v)) (pair (outl x iv) (comp (outr x iv) (outr I v))))
+      (pair (outl I xv) (keyed I S xv v))
+    let f := foldI e S'
+    pure (comp (pair (id I) X) (pair (comp (outr I ax) (outl a (.arr x)))
+      (comp (pair (outl I ax) (comp (outr I ax) (outr a (.arr x)))) f)), a, v)
 
 end Rows
 
@@ -516,6 +540,15 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
         let y ← elabE env m qe; pure (if y.isFam then some y else none)
       | _, _ => pure none
     let est := match b with | .op _ .est _ _ => true | _ => false
+    -- `X⦇e,S⦈` with `e` or `S` a family: the fold keyed by the index, on the arrays `X` gives each key (§e)
+    let fold? ← match m, b with
+      | some _, .fold _ ea sa => do
+        let y ← elabE env m ea; let z ← elabE env m sa
+        pure (if y.isFam || z.isFam then some (y, z) else none)
+      | _, _ => pure none
+    if let (some I, some (y, z)) := (m, fold?) then
+      let r ← lFold I p (← famOf I p x) (← famOf I p y) (← famOf I p z)
+      return .fam r.1 I r.2.1 r.2.2
     match m, q? with
     | some I, some q => do
       let e ← fresh
@@ -570,7 +603,8 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       pure (.rel (.junc (.close p q s) (.close p r s')) (.sum s s') t)
   | .fold p a b => do
     let x ← elabE env m a; let y ← elabE env m b
-    if x.isFam || y.isFam then notLiftable p "⦇e,S⦈"
+    if x.isFam || y.isFam then
+      throw ⟨p, "⦇e,S⦈ given a family is not liftable on its own: its arrays come from its left, X⦇e,S⦈ (§e)"⟩
     let (q, v, v') := x.plain; let (r, ev, w) := y.plain
     unify p "the fold's start, a coreflexive" v' v
     let e ← fresh
@@ -806,6 +840,15 @@ def build : Pre → Except Err Res
         pure ⟨.arr E, V, true, .fold (← closed? dp (A := V) (B := V) r) (h.1 ▸ h.2 ▸ S)⟩
       else internal dp "the fold's objects"
     | _ => internal dp "the fold's step"
+  | .foldI e s => do
+    let r ← build e; let ⟨I, VV, _, _⟩ := r
+    let sr ← build s
+    match VV, sr with
+    | .prod V _, ⟨.prod E _, _, _, _⟩ => do
+      let ⟨_, et⟩ ← at? dp (A := I) (B := .prod V V) r
+      let ⟨_, S⟩ ← at? dp (A := .prod E (.prod I V)) (B := .prod I V) sr
+      pure ⟨_, _, _, .foldI et S⟩
+    | _, _ => internal dp "the lifted fold's objects"
   | .lit p a b ps => do
     let cs ← ps.mapM fun (x, y) => return (← code objs st p a x, ← code objs st p b y)
     pure ⟨.long, .long, false, .val (ofPairs cs)⟩
