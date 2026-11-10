@@ -2,12 +2,15 @@ import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.BlocksRel
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, read from `programs/blocks.rel`; its
-    front-end errors; the parser's round trip on every operator of §b. The module builds in about 20 s; the three
-    plans are computed in seconds, each closed definition once (`run`, `hoist`). -/
+    front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
+    plans and every guard), each closed definition evaluated once (`run`, `hoist`). -/
 
 namespace LeetQ.Rel.Lang.Test
 
-open LeetQ.Rel LeetQ.Rel.Lang
+open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
+
+/-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
+local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
 def blocks : String := include_str "../../../programs/blocks.rel"
 
@@ -83,6 +86,45 @@ def trip (s : String) : Bool :=
   "ran(R)", "R \\ S", "R / S", "frac(R, S)", "⟨R, S⟩", "π₁", "π₂", "R × S", "[R, S]", "inl", "inr", "R + S",
   "Λ(R)", "∋", "∈", "E(R)", "P(R)", "union", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
   "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "prefix", "suffix", "succ", "plus", "≤", "<",
-  "{(A, B), (B, A)}", "R S ∪ (S R)", "R ∩ S ∪ R", "∼(R S)°"].all trip
+  "{(A, B), (B, A)}", "R S ∪ S R", "R ∩ S ∪ R", "R ∪ (S ∩ R)", "(R ∪ S) R", "R (S p)", "∼(R S)°", "(∼R)°",
+  "∼R S"].all trip
+
+/-! The parser on each line of `blocks.rel`: every composite and infix term in parentheses, as the note reads the
+    formula (§c), not as the parser happens to print it. -/
+
+def reading : Decl → Option (String × String)
+  | .defn _ n _ (.rel e) => some (n, e.render 0 true)
+  | .defn _ n _ (.test e f) => some (n, s!"{e.render 0 true} ⊑ {f.render 0 true}")
+  | .print _ e => some ("print", e.render 0 true)
+  | _ => none
+
+#guard match Parse.parse blocks with
+  | .error _ => false
+  | .ok p => p.filterMap reading == [
+    ("S₀", "{(C, A), (A, A), (B, B)}"),
+    ("G", "{(A, B), (B, C)}"),
+    ("R", "(S ∩ ∼𝟙)"),
+    ("M", "∼((R(S)° ⊤) ∪ (⊤ R(S)))"),
+    ("S'", "((S ∩ ∼(p ⊤)) ∪ p)"),
+    ("h", "G ⊑ S"),
+    ("c", "⟨𝟙, M(∋)⟩"),
+    ("F", "S'((π₁ ∋), π₂)"),
+    ("t", "(c Λ(F))"),
+    ("s₀", "ran(Λ((⊤(X, X) ⟨𝟙, S₀⟩)))"),
+    ("r", "Λ((s₀ ⊤(St, N)))"),
+    ("L", "ran((r ⦇ran(⟨D, ((D ⊤) {(0, 0)})⟩), (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))⦈))"),
+    ("Q", "ran((L(s₀, t) π₁))"),
+    ("H", "(Q h(∋))"),
+    ("C", "L(H, (Q t)°)"),
+    ("W", "((C π₁)° (C π₂))"),
+    ("δ", "(Λ(W) est(≤))"),
+    ("K", "((Q c) dom((((Λ(F) δ) succ) ∩ (π₁ δ))))"),
+    ("≼", "(((π₁ <) π₁°) ∪ ((π₁ π₁°) ∩ ((π₂ ≤) π₂°)))"),
+    ("σ", "(Λ((K π₂)) est(≼))"),
+    ("ν", "(⟨dom(σ), σ⟩ Λ(F))"),
+    ("Z", "L(s₀, ν)"),
+    ("ζ", "((Z π₂)° (Z π₁))"),
+    ("plan", "(ζ σ)"),
+    ("print", "plan")]
 
 end LeetQ.Rel.Lang.Test

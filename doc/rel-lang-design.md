@@ -80,10 +80,20 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 
 ## c. Grammar and precedence
 
-Kept from the earlier design: one level, left to right — `a op₁ b op₂ c = (a op₁ b) op₂ c` for every binary
-operator, composition (juxtaposition) included, so the right operand of every operator is one primary and a
-composite on the right takes parentheses (`π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))`). Changed: `−` and `⇒` join the
-binary operators; a parameter may declare its type (§e); a body may be a test `expr ⊑ expr` (§e).
+A program reads as the note writes its formulas: `M ≜ ∼(R°⊤ ∪ ⊤R)` is `∼((R°⊤) ∪ (⊤R))`. From tightest to loosest:
+
+| level | form                                         | groups                                              |
+|-------|----------------------------------------------|-----------------------------------------------------|
+| 1     | `R°`, `N(e,…)`, `dom(R)`, `⊤(A,B)`, `( )`    | postfix `°` and application, on one atom            |
+| 2     | `∼R`                                         | prefix: the next factor of level 1 (`∼𝟙`, `∼(p⊤)`)  |
+| 3     | `RS`, juxtaposition                          | composition, left to right                          |
+| 4     | `∩ ∪ − ⇒ / \ × +`                            | one level: `a op₁ b op₂ c = (a op₁ b) op₂ c`        |
+| 5     | `e ⊑ f`, `e = f`                             | a test body (§e), `check`; not nested               |
+
+`≤`, `<`, `succ` are constants, so `π₂ ≤ π₂°` is a composite and binds as one: `π₁π₁° ∩ π₂ ≤ π₂°` is
+`(π₁π₁°) ∩ (π₂≤π₂°)`. A composite under `∼` or `°` takes parentheses (`∼(p⊤)`, `(Qt)°`), and so does an infix term on
+the right of another (`π₁ < π₁° ∪ (π₁π₁° ∩ π₂ ≤ π₂°)`): no formula of §g or of the note's blocks world needs `∩`
+above `∪`. A parameter may declare its type (§e); a body may be a test `expr ⊑ expr` (§e).
 
 ```
 program  := line*
@@ -91,7 +101,8 @@ line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )
           | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
           | 'print' expr | 'check' expr ('⊑' | '=') expr
 param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
-expr     := primary ( op? primary )*                 -- flat left fold; no op = composition
+expr     := term ( op term )*                        -- infix, one level, left to right
+term     := primary primary*                         -- composition by juxtaposition
 op       := '∩' | '∪' | '−' | '⇒' | '/' | '\' | '×' | '+'
 primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
@@ -246,7 +257,7 @@ S₀ ≜ {(C,A),(A,A),(B,B)}                      -- C on A, A and B on the tabl
 G ≜ {(A,B),(B,C)}                             -- A on B, B on C
 
 R(S : X ⟶ X) ≜ S ∩ ∼𝟙                         -- b rests on another block
-M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))            -- the moves allowed
+M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ ⊤R(S))              -- the moves allowed
 S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after the move p
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
@@ -255,14 +266,14 @@ F ≜ S'(π₁∋,π₂)                                -- St×(X×X) ⟶ X×X: 
 t ≜ cΛ(F)                                     -- St ⟶ St: one move
 s₀ ≜ ran(Λ(⊤(X,X)⟨𝟙,S₀⟩))                     -- the start state
 r ≜ Λ(s₀⊤(St,N))                              -- the array 0…27, one fold round each
-L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B,π₂ succ⟩)⦈)   -- (s,k): s is k steps of B from D
+L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ π₂⟨π₁B,π₂ succ⟩⦈)     -- (s,k): s is k steps of B from D
 Q ≜ ran(L(s₀,t)π₁)                            -- the reachable states
 H ≜ Qh(∋)                                     -- the reachable states holding G
 C ≜ L(H,(Qt)°)                                -- each state with each walk length to H
 W ≜ (Cπ₁)°(Cπ₂)                               -- St ⟶ N
 δ ≜ Λ(W)est(≤)                                -- the distance to the goal
-K ≜ Qc dom(Λ(F)δ succ ∩ (π₁δ))                -- the moves that take the distance down by one
-≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))           -- moves in lexicographic order
+K ≜ Qc dom(Λ(F)δ succ ∩ π₁δ)                  -- the moves that take the distance down by one
+≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ π₂ ≤ π₂°)             -- moves in lexicographic order
 σ ≜ Λ(Kπ₂)est(≼)                              -- the move chosen in each state
 ν ≜ ⟨dom(σ),σ⟩Λ(F)                            -- the state it leads to
 Z ≜ L(s₀,ν)                                   -- the chosen path, with each state's step
