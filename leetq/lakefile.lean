@@ -20,6 +20,6 @@ require qlean from (get_config? qlean |>.getD "../../qlean")
 lean_lib LeetQ where
   globs := #[.andSubmodules `LeetQ]
 
-/-- `bench <op> <n>…`: the RelRep operators timed against `q/bench.q`. -/
+/-- `bench <op> <n>…`: the Rel operators timed. -/
 lean_exe bench where
   root := `Bench.Main

@@ -1,12 +1,12 @@
 /-
-  Timing of leetq's RelRep q operators against real q (`q/bench.q`, the same data and the same checksum).
+  Timing of leetq's Rel operators.
 
   `bench <op> <n> <n> …` runs one operator at each size, ascending: one warm-up, then the median of 5
   runs, printed as `op n ms checksum`. A warm-up over 10 s is printed alone (`1run`) and the larger sizes
   are skipped, since a size ten times larger cannot fit the 60 s budget.
 
-  The data is MINSTD (`x ↦ 48271x mod (2³¹-1)`), one stream per column, seeded by the column's number,
-  exactly as `gen` in `q/bench.q`. Each run reads its input from an `IO.Ref` after the first clock read and
+  The data is MINSTD (`x ↦ 48271x mod (2³¹-1)`), one stream per column, seeded by the column's number.
+  Each run reads its input from an `IO.Ref` after the first clock read and
   stores its checksum before the second, so the work can be neither hoisted out of the loop nor dropped.
 -/
 import LeetQ.Rel.Scan
