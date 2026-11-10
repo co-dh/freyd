@@ -18,7 +18,7 @@ require qlean from (get_config? qlean |>.getD "../../qlean")
 
 @[default_target]
 lean_lib LeetQ where
-  globs := #[.andSubmodules `LeetQ]
+  globs := #[.submodules `LeetQ]
 
 /-- `bench <op> <n>…`: the RelRep operators timed against `q/bench.q`. -/
 lean_exe bench where
