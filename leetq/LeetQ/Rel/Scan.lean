@@ -7,7 +7,7 @@
   only through `Arr.of`, which checks its type and count instead of assuming them.
   The specs are List functions on `toList`; `#guard` runs each op against its spec.
 -/
-import LeetQ.Rel.Core
+import LeetQ.Rel.Parted
 import QLean.Kernel.Scan
 import QLean.Kernel.Sort
 import QLean.Kernel.Reduce

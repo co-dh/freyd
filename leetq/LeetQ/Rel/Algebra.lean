@@ -20,7 +20,7 @@ import QLean.Kernel.Coc
 import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
-import LeetQ.Rel.KernelWF.Gather
+import LeetQ.Rel.Parted
 
 namespace LeetQ.Rel.Alg
 
