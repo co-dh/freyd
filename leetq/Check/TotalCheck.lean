@@ -50,7 +50,7 @@ def roots : List Name := [`LeetQ.Rel, `Bench]
 /-- Part 1: the algebra of `leetq/CLAUDE.md` and the programs, as names resolved from `LeetQ.Rel`. -/
 def ops : List Name :=
   [`le, `inter, `union, `zero, `top, `idU, `conv, `comp, `dom, `ran, `antiJoin, `diff, `corefl, `isCorefl,
-   `leftDiv, `rightDiv, `symDiv, `transpose, `mem, `existsImage, `pair, `prod, `junc, `injConv, `mapVal,
+   `leftDiv, `rightDiv, `symDiv, `transpose, `pair, `prod, `junc, `injConv, `mapVal,
    `foldOver, `foldGroups, `uncons, `hylo, `est, `thin, `entire, `simple, `isMap, `injective, `surjective].map
     (`Alg ++ ·)
   ++ [`Prog.run, `Prog.exec]  -- §6's `Norm.exec`: `exec` is declared in module `Norm`, namespace `Prog`

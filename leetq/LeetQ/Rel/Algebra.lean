@@ -595,10 +595,12 @@ def setIdsRef (vc : Code) (o : ByteArray) : ByteArray :=
   let set (j : Nat) : List UInt64 :=
     (((List.range (off (j + 1) - off j)).map fun t => Column.resAt vc.b 0 vc.w (off j + t)).mergeSort
       fun a b => decide (a ≤ b)).eraseDups
-  ((List.range (len o - 1)).foldl (init := (ByteArray.empty, (#[] : Array (List UInt64)))) fun (ids, seen) j =>
-    match seen.findIdx? (· == set j) with
-    | some k => (Column.pushBits ids (UInt64.ofNat k) 8, seen)
-    | none => (Column.pushBits ids (UInt64.ofNat seen.size) 8, seen.push (set j))).1
+  let sets := (List.range (len o - 1)).map set
+  packLongs (sets.map fun x => Int64.ofNat (sets.eraseDups.idxOf x))
+
+/-- `setIdsRef` writes one long per segment (`packLongs_size`). -/
+theorem setIdsRef_size (vc : Code) (o : ByteArray) : (setIdsRef vc o).size = 8 * (len o - 1) := by
+  simp [setIdsRef, packLongs_size]
 
 /-- Set ids: the segments of the codes `vc` start at the longs `s`, the last ending at `vc.n`, so segment `j`
     is `vc[o[j] .. o[j+1])` for `o = s, n`; segments holding equal SETS get equal ids, numbered by first
@@ -620,12 +622,17 @@ def setIds (vc : Code) (s : ByteArray) : ByteArray :=
   -- yet rules out for these gathered offsets (`rankSlices_size`'s premises); the reference answers there
   if ids.size = 8 * len s then ids else setIdsRef vc o
 
-/-- `setIds` of a stored family (one boxed set of `v` per key): one id per set, equal sets one id. The
-    family's last offset is its value count (`Cuts`), so its starts are all offsets but the last. -/
-def setId {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String ByteArray := do
-  let P ← Parted.ofBoxes v G.val
-  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
-  pure (setIds (codes v #v[⟨_, P.val⟩])[0] (ob.extract 0 (ob.size - 8)))
+/-- `setIds` answers one long per start, on both branches: the kernel's by its check, the reference's by
+    `setIdsRef_size`, the offsets being the starts and one long more. -/
+theorem setIds_size (vc : Code) (s : ByteArray) : (setIds vc s).size = 8 * len s := by
+  have hr : (setIdsRef vc (concatBytes #[s, one vc.n.toUInt64])).size = 8 * len s := by
+    rw [setIdsRef_size]; simp [len, KernelWF.concatBytes_size, Find.one, Column.pushBits_size]
+  unfold setIds
+  split <;> (try dsimp only) <;> split <;> assumption
+
+/-- `setIds` as a long column of `len s` rows (`setIds_size`). -/
+def setIdCol (vc : Code) (s : ByteArray) : Arr .long (len s) :=
+  Arr.mk (.bytes (setIds vc s)) (by simp [Enc.WF, QAtomicType.width, setIds_size]; omega)
 
 /-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, each column
     `(layout, payload, big)`, larger better exactly when `big`: per set, the rows no row of the set strictly
@@ -797,6 +804,24 @@ def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals
     Vals.pick B (B.pick s.key fs) ij.2⟩
   union hit (top (Vals.pick A Ua.parts (anti uac rk)) (Vals.pick B Ub.parts (anti ubc sk)))
 
+/-- `Λ(R)` with no set object, as the pair `(Λ, ∋)`: a set of `B` is named by a `long` id, its members the
+    rows of `∋` at that id. `segments` of the key codes cut `R`'s rows into one run per distinct key, and
+    `setIds` of the value codes along the runs give each key the id of its set — equal sets one id,
+    `0 … g-1` by first occurrence, order and repeats inside a run ignored. `Λ` pairs each run's key with
+    its id; `∋` pairs each row's id (`groupOf` its run) with its value, each pair once (`Cols.nub`). -/
+def transpose (R : Rel A B) : Rel A .long × Rel .long B :=
+  let r := cols R
+  let (p, o, _) := segments (A.codes #v[r.key])[0]
+  let s := o.extract 0 (o.size - 8)
+  let ids := setIdCol ((B.codes #v[r.val])[0].gather p) s
+  (⟨len s, Vals.pick A (A.pick r.key p) s, ids⟩,
+   (Cols.mk (k := .long) (v := B) R.n (pick .long ⟨_, ids⟩ (groupOf o R.n)) (B.pick r.val p)).nub)
+
+/-- `Λ(R) : A ⟶ long`, each key of `R` to the id of its set of values. -/
+scoped notation:max "Λ(" R ")" => Prod.fst (transpose R)
+/-- `∋(R) : long ⟶ B`, each id of `Λ(R)` to the members of its set. -/
+scoped notation:max "∋(" R ")" => Prod.snd (transpose R)
+
 end Gen
 
 variable {A B C : QAtomicType}
@@ -837,12 +862,8 @@ def familyP (d : Cols A B) : Except String ((g : Nat) × Arr A g × Parted B) :=
   let s := d.rows (gradeBy d.n #[(codes A #v[d.key])[0], (codes B #v[d.val])[0]])
   runsP A ⟨s.n, s.key⟩ s.val
 
-def family (d : Cols A B) : Except String (Rel A .general) := do boxP (← familyP d)
-
 /-- `Λ(R)` as its carrier: `x Λ(R) X ↔ X = {z | x R z}`, one segment per `x ∈ dom R`. -/
 def transposeP (R : Rel A B) : Except String ((g : Nat) × Arr A g × Parted B) := do familyP (cols R)
-
-def transpose (R : Rel A B) : Except String (Rel A .general) := do family (cols R)
 
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
     flattened indices of the codes, cut at the values they hold (`runs`). -/
@@ -853,17 +874,6 @@ def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
     | some k => (Order.group k c.n.toUSize c.b).2.1
     | none => let (gid, fs) := c.groupIds; (Code.ofIds (len fs) c.n gid).grade
   runs B (pick B ⟨n, x⟩ idx) (← Arr.ofPart .long (len idx) (longs idx) "group")
-
-/-- `∋` of a stored family (one boxed set of `v` per key): the pairs `(set id, element)` — the flat form
-    (`Parted.ofBoxes`) and the group of each position (`groupOf`). -/
-def mem {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String (Rel .long v) := do
-  let P ← Parted.ofBoxes v G.val
-  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
-  pure ⟨P.n, ← Arr.ofPart .long P.n (longs (groupOf ob P.n)) "mem", P.val⟩
-
-/-- `E(R)` of a family `G` given as its pairs `(X, x)`: `Λ(∋ ≫ R)` = the family of `G ≫ R`. -/
-def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A .general) := do
-  family (cols (comp G R))
 
 /-- `⟨R, S⟩`: `join` on the keys → rows `(x, (y, z))`, both value sides kept under one `n` as the
     columns of one product side; the left index column read at the right's count (`join_len`), as `comp`. -/
@@ -1094,35 +1104,45 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
 #guard seteq (symDiv R R Ua Ua).toList
   (Ua.toList.flatMap fun x => (Ua.toList.filter fun y => seteq (fib R x) (fib R y)).map (x, ·))
 
--- `Λ(R)`: the same pairs, each set one contiguous run of its key
-#guard okFlat L (transpose (union R R)) fun l => seteq l R.toList && l.length == 4 &&
-  (l.map (·.1)) == [1, 1, 2, 3]
+/-- The four facts of `transpose R = (Λ, ∋)`: (1) `Λ ≫ ∋ = R`; (2) `Λ` one row per distinct key of `R`;
+    (3) two keys one id iff one set of values, the ids `0 … g-1`; (4) `∋` no repeated row. -/
+private def lamOk {A B : Obj} [BEq A.El] [BEq B.El] (R : Rel A B) : Bool :=
+  let (Lm, Ni) := transpose R
+  let r := R.toList; let l := Lm.toList; let m := Ni.toList
+  let fibr (x : A.El) := r.filterMap fun (x', z) => if x == x' then some z else none
+  let ids := l.map (·.2)
+  (Lm ≫ Ni == R) &&
+  (l.map (·.1)).eraseDups.length == l.length && seteq (l.map (·.1)) (r.map (·.1)) &&
+  l.all (fun (x, i) => l.all fun (y, j) => (i == j) == seteq (fibr x) (fibr y)) &&
+  seteq ids ((List.range ids.eraseDups.length).map Int64.ofNat) &&
+  m.eraseDups.length == m.length
+
+-- `Λ(R)`, `∋(R)`: R with a repeated pair, R ∪ S, a key with a repeat and its values out of order (D, below),
+-- a foR column, an empty relation, the family `G`, `G ≫ R`
+#guard lamOk R && lamOk S && lamOk (union R R) && lamOk (union R S) && lamOk T && lamOk Ls && lamOk (conv Ls)
+#guard lamOk (zero (A := L) (B := L)) && lamOk (comp R T) && lamOk (conv R)
+#guard seteq ∋(R).toList [(0, 10), (0, 20), (1, 10), (2, 30)] && Λ(R).toList == [(1, 0), (2, 1), (3, 2)]
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
 private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
 private def Lf : LL := ⟨4, U4, LfV⟩
 #guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
-#guard ok (transpose (union R R)) (·.n == 3)
-#guard ok (do mem L (← transpose R)) fun X => X.toList.map (·.2) == [10, 20, 10, 30] && (X.toList.map (·.1)) == [0, 0, 1, 2]
-#guard ok (transpose (zero (A := L) (B := L))) (·.n == 0)
+#guard lamOk Lf && lamOk (conv Lf) && Λ(conv Lf).n == 3
+#guard Λ(union R R).n == 3 && ∋(union R R).n == 4
+#guard Λ(zero (A := L) (B := L)).n == 0 && ∋(zero (A := L) (B := L)).n == 0
 -- `anti`: the positions of `x` not in `y`
 #guard anti (Code.ofLongs (packLongs [3, 1, 4, 1])) (Code.ofLongs (packLongs [1, 5])) == packLongs [0, 2]
 -- `R ≫ corNeg(C)` at a `C` that is no coreflexive: `1` is a key of `C` and no value, so the row stays
 private def Ra : LL := ⟨1, (Arr.mk (.bytes <| packLongs [0]) (by decide)), (Arr.mk (.bytes <| packLongs [1]) (by decide))⟩
 private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Arr.mk (.bytes <| packLongs [2]) (by decide))⟩
 #guard (antiJoin Ra Ca).toList == [(0, 1)]
-/-- The family of `g` sets keyed `0 … g-1`, the sets cut from `val` at the offsets `o`, boxed. -/
-private def boxed {g n : Nat} (o : Arr L (g+1)) (val : Arr L n) : Except String (Rel L .general) := do
-  let some P := Parted.of? o val | throw "boxed: not cuts"
-  pure ⟨g, ← Arr.ofPart L g (longs (tilLongs g.toUSize)) "boxed", ← Arr.ofPart .general g P.box.part "boxed"⟩
--- `∋` of a stored family: the parted list `(10 20; 30)` from the core
-private def o2 : Arr L 3 := (Arr.mk (.bytes <| packLongs [0, 2, 3]) (by decide))
-private def parted : Except String (Rel L .general) := boxed o2 ((Arr.mk (.bytes <| packLongs [10, 20, 30]) (by decide)) : Arr L 3)
-#guard ok (do mem L (← parted)) fun X => X.toList == [(0, 10), (0, 20), (1, 30)]
--- `E(R)` of the family `G = {X₁ = {1, 2}, X₂ = {3}}`
+-- `E(R)` of the family `G = {X₁ = {1, 2}, X₂ = {3}}`: `Λ(G ≫ R)`
 private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide))⟩
-#guard okFlat L (existsImage G R) fun l => seteq l
+#guard lamOk G && lamOk (comp G R) && seteq (comp Λ(comp G R) ∋(comp G R)).toList
   (G.toList.flatMap fun (s, x) => R.toList.filterMap fun (x', y) => if x == x' then some (s, y) else none)
+-- sets across two relations: the ids of `∋(R)` whose set is also a set of `∋(S)`, `symDiv` of the two
+-- (each `∋` its own universe, so no empty fibre): `{10 20}` and `{10}` occur in S, `{30}` does not
+#guard seteq (symDiv ∋(R) ∋(S) ∋(R).key ∋(S).key).toList [(0, 1), (1, 0)] && (dom (symDiv ∋(R) ∋(S) ∋(R).key ∋(S).key)).n == 2
 
 #guard seteq (pair R S).toList
   (R.toList.flatMap fun (x, y) => S.toList.filterMap fun (x', z) => if x == x' then some (x, y, z) else none)
@@ -1174,16 +1194,14 @@ private def k5 : (m : Nat) × Arr L m := ⟨_, col [1, 1, 1, 1, 1]⟩
     lc [1, 2, 2, 0, 0, 1, 0] true]) (· == packLongs [1, 3, 4, 5])
 #guard ok (thin ⟨_, col [2, 1, 2, 1, 1, 2, 1]⟩ #[lc [0, 1, 0, 2, 2, 0, 3] true, lc [5, 1, 4, 2, 2, 4, 0] true,
     lc [0, 1, 1, 2, 2, 0, 0] true]) (· == packLongs [0, 2, 3, 6])
--- setId: segments {3 1 1} {1 3} {2} {} {} {1 3 3}: the three spellings of {1, 3} one id, `{}` one id
-private def o6 : Arr L 7 := (Arr.mk (.bytes <| packLongs [0, 3, 5, 6, 6, 6, 9]) (by decide))
-private def sets : Except String (Rel L .general) :=
-  boxed o6 ((Arr.mk (.bytes <| packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3]) (by decide)) : Arr L 9)
-#guard ok (do setId L (← sets)) (· == packLongs [0, 0, 1, 2, 2, 0])
+-- setIds: segments {3 1 1} {1 3} {2} {} {} {1 3 3}: the three spellings of {1, 3} one id, `{}` one id
+#guard setIds (Code.ofLongs (packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3])) (packLongs [0, 3, 5, 6, 6, 6]) ==
+  packLongs [0, 0, 1, 2, 2, 0]
 -- Λ(R ∪ S): fibres {10 20} {10 20} {30} {40}
-#guard ok (do setId L (← transpose (union R S))) (· == packLongs [0, 0, 1, 2])
+#guard Λ(union R S).toList.map (·.2) == [0, 0, 1, 2]
 -- Λ of {1↦10, 2↦20, 1↦20, 2↦10, 2↦10}: both fibres {10, 20}, in another order and with a repeat
 private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by decide))⟩
-#guard ok (do setId L (← transpose D)) (· == packLongs [0, 0])
+#guard Λ(D).toList.map (·.2) == [0, 0] && ∋(D).n == 2 && lamOk D && lamOk (conv D) && lamOk (union D R)
 -- the reference `setIds` falls back on agrees with the kernel path, repeats and order inside a set ignored
 #guard let c := Code.ofLongs (packLongs [1, 2, 2, 1, 1, 2, 5, 5, 3]); let s := packLongs [0, 2, 4, 6, 8, 8]
   setIds c s == packLongs [0, 0, 0, 1, 2, 3] && setIdsRef c (packLongs [0, 2, 4, 6, 8, 8, 9]) == setIds c s
@@ -1237,7 +1255,9 @@ private def enumC : Nat × Enc :=
 #guard ok (do pure <| leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.ofPart Sy 4 symsC "U") (← Arr.ofPart Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
 #guard ok (do pure (top (A := .atom Sy) (B := .atom Bo) (← Arr.ofPart Sy 4 enumC "U") (← Arr.ofPart Bo 4 bitsC "U"))) (·.n == 16)
-#guard ok (do transpose (conv (← lst Sy enumC))) (·.n == 3)
+#guard ok (lst Sy enumC) fun X => Λ(conv X).n == 3 && lamOk X && lamOk (conv X)
+#guard ok (lst Sy symsC) fun X => lamOk X && lamOk (conv X)
+#guard ok (lst Bo bitsC) fun X => lamOk X && lamOk (conv X) && Λ(conv X).n == 2
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
 -- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
@@ -1312,8 +1332,8 @@ end Checks
 #print axioms rightDiv
 #print axioms symDiv
 #print axioms transpose
+#print axioms setIds_size
 #print axioms group
-#print axioms existsImage
 #print axioms pair
 #print axioms prod
 #print axioms junc
@@ -1323,7 +1343,6 @@ end Checks
 #print axioms uncons
 #print axioms thin
 #print axioms setIds
-#print axioms setId
 #print axioms tuples
 #print axioms codes
 #print axioms entire
