@@ -203,8 +203,13 @@ partial def atom : P Expr := do
     | none, none => pure (.name p n)
   | none => expected "a term"
 
-partial def litPair : P (String × String) := do
-  tok '('; let a ← word; tok ','; let b ← word; tok ')'; pure (a, b)
+/-- A literal's row `(a, b)`, each side a word or a nested pair. -/
+partial def litPair : P (Tup × Tup) := do
+  tok '('; let a ← tup; tok ','; let b ← tup; tok ')'; pure (a, b)
+
+partial def tup : P Tup := do
+  ws
+  if (← peek) == some '(' then do let (a, b) ← litPair; pure (.pair a b) else pure (.leaf (← word))
 
 end
 

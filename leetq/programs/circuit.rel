@@ -1,10 +1,9 @@
 obj B = 0…1                                   -- a bit
 obj I = B×(B×B)                               -- the adder's three inputs
 
-g(d) ≜ d⊤{(1,1)} ∪ ((𝟙 − d)⊤{(0,0)})          -- B×B ⟶ B: the gate whose output is 1 on the inputs d
-⊕ ≜ g(dom(π₁ − π₂))                           -- xor: 1 where the inputs differ
-∧ ≜ g(dom((π₁ ∩ π₂){(1,1)}))                  -- and: 1 where both are 1
-∨ ≜ g(dom((π₁ ∪ π₂){(1,1)}))                  -- or: 1 where one is 1
+⊕ ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),0)}   -- B×B ⟶ B, xor: 1 where the inputs differ
+∧ ≜ {((0,0),0),((0,1),0),((1,0),0),((1,1),1)}   -- and: 1 where both are 1
+∨ ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),1)}   -- or: 1 where one is 1
 
 a ≜ π₁                                        -- I ⟶ B: the first input
 b ≜ π₂π₁                                      -- I ⟶ B: the second input

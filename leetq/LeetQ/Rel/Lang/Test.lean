@@ -168,7 +168,14 @@ def reads (s r : String) : Bool := match parsed s with | .ok e => e.render 0 tru
   "Λ(R)", "∋", "∈", "E(R)", "P(R)", "union", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
   "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "prefix", "suffix", "succ", "plus", "≤", "<",
   "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
-  "(∼R)°", "∼R S"].all trip
+  "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"].all trip
+
+-- a nested literal (§c): each leaf position its own object, the side their product
+#guard match runText "obj X = {A,B}\nobj N = 0…1\nL ≜ {((A,0),(1,B)),((B,1),(0,A))}\nprint L\n" with
+  | .ok o => o.prints == ["L = {((A, 0), (1, B)), ((B, 1), (0, A))}"] &&
+    (get o "L" (.prod .long .long) (.prod .long .long)).map (·.toList) == some [((0, 0), (1, 1)), ((1, 1), (0, 0))]
+  | .error _ => false
+#guard errAt "obj X = {A,B}\nL ≜ {((A,B),A),(A,B)}\n" 2 "nest alike"
 
 #guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
   ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r

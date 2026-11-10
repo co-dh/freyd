@@ -173,7 +173,7 @@ inductive Pre
   | lt (pos : Pos) (n : OTy)
   | fold (e s : Pre)
   | foldI (e s : Pre)
-  | lit (pos : Pos) (a b : OTy) (ps : List (String × String))
+  | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
   | close (pos : Pos) (p : Pre) (a : OTy)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
@@ -434,6 +434,11 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
+/-- A literal side's object: the nesting of `t`, its leaves from `os` in order from `k`; and the next leaf. -/
+def Tup.ty (os : Array OTy) : Tup → Nat → OTy × Nat
+  | .leaf _, k => (os.getD k default, k + 1)
+  | .pair a b, k => let (x, k) := a.ty os k; let (y, k) := b.ty os k; (.prod x y, k)
+
 /-- A builtin applied to relations, every argument one relation. -/
 def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
   | [(q, s, t)] => do
@@ -616,14 +621,21 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     unify p "the target of the fold's step" w v
     pure (.rel (.fold (.close p q v) r) (.arr e) v)
   | .lit p ps => do
-    -- a side is the one declared object holding all its words: named elements, or numbers in its range
+    -- each leaf position of a side is the one declared object holding all its words: named elements, or
+    -- numbers in its range; the side is their product, nested as the rows nest
     let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
       match i.range, w.toNat? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
-    let side (ws : List String) : M OTy := do
+    let leaf (ws : List String) : M OTy := do
       match env.objs.filter (fun (_, i) => ws.all (holds i)) with
       | [(n, _)] => pure (.base n)
       | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
       | os => throw ⟨p, s!"the elements {ws} are in {os.map (·.1)}; write the literal after its object"⟩
+    let side (rows : List Tup) : M OTy := do
+      let t := rows.headD default
+      if let some r := rows.find? (!·.same t) then
+        throw ⟨p, s!"the rows of a literal nest alike: found {r.show}, expected the form of {t.show}"⟩
+      let os ← (List.range t.leaves.length).mapM fun k => leaf (rows.map (·.leaves.getD k ""))
+      pure (t.ty os.toArray 0).1
     let a ← side (ps.map (·.1)); let b ← side (ps.map (·.2))
     pure (.rel (.lit p a b ps) a b)
 
@@ -814,6 +826,20 @@ def code (p : Pos) (o : OTy) (w : String) : Except Err Int64 :=
     | none => throw ⟨p, s!"unknown object '{n}'"⟩
   | o => throw ⟨p, s!"a literal relates elements of declared objects, found {o}"⟩
 
+/-- The column of a literal's side of object `o`, its `n` rows' sides `rows`: a long column of codes at a leaf,
+    the pair of the two parts' columns at a product. `o` is zonked. -/
+def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Obj) × Vals A n) :=
+  match o with
+  | .prod x y => do
+    let ⟨A, u⟩ ← litCol p n x (rows.map fun | .pair r _ => r | r => r)
+    let ⟨B, v⟩ ← litCol p n y (rows.map fun | .pair _ r => r | r => r)
+    pure ⟨.prod A B, (u, v)⟩
+  | o => do
+    let cs ← rows.mapM fun
+      | .leaf w => code objs st p o w
+      | r => throw ⟨p, s!"a literal's element of {o} is a word, found {r.show}"⟩
+    if h : cs.length = n then (let c : Arr .long n := h ▸ col cs; pure ⟨.long, c⟩) else internal dp "literal rows"
+
 /-- `Pre` to `Tm` at the solved objects. Every check here holds by `elabE`'s unification except the
     universes, whose absence is the error of §a. -/
 def build : Pre → Except Err Res
@@ -908,8 +934,9 @@ def build : Pre → Except Err Res
       pure ⟨_, _, _, .foldI et S⟩
     | _, _ => internal dp "the lifted fold's objects"
   | .lit p a b ps => do
-    let cs ← ps.mapM fun (x, y) => return (← code objs st p a x, ← code objs st p b y)
-    pure ⟨.long, .long, false, .val (ofPairs cs)⟩
+    let ⟨A, k⟩ ← litCol objs st dp p ps.length (zonk st a) (ps.map (·.1))
+    let ⟨B, v⟩ ← litCol objs st dp p ps.length (zonk st b) (ps.map (·.2))
+    pure ⟨A, B, false, .val ⟨ps.length, k, v⟩⟩
   | .close p q a => do
     let ⟨A, B, d, t⟩ ← build q
     match d with

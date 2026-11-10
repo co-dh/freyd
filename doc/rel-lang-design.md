@@ -68,7 +68,7 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 | `length sum head tail`         | the note's list functions                 | `length Arr.sum head tail`     |
 | `prefix`, `suffix`             | the note's list functions                 | `«prefix»`, `suffix`           |
 | `succ`, `plus`, `≤`, `<`       | on a declared number universe             | `succ plus leq lt`             |
-| `{(a,b),…}`                    | a literal relation                        | `ofPairs`                      |
+| `{(a,b),…}`, `{((a,b),c),…}`   | a literal relation, rows nested (§c)      | `col`, a pair of `Vals`        |
 | `R ⊑ S`                        | inclusion: in `check`, and as a test (§e) | `⊑`                            |
 
 - `Λ(G) est(Q)` runs as `est Q G` (B&dM's `Λ(S) min R`): both are the `Q`-least value of each key of `G`.
@@ -101,7 +101,9 @@ primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
           | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ, objects optional
-          | '{' '(' Word ',' Word ')' (',' '(' Word ',' Word ')')* '}' | '(' expr ')'
+          | '{' row (',' row)* '}' | '(' expr ')'
+row      := '(' tup ',' tup ')'                       -- a literal's row
+tup      := Word | row                                -- a side: a word, or a pair nested to any depth
 object   := Word | Var | object '×' object | object '+' object | '𝒫' object | '[' object ']'
 Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a parameter's type only: an object variable (§e)
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
@@ -118,7 +120,10 @@ Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Gr
   its term put in place (it lifts with the body, §e) and is evaluated once by the sharing of §d: `Pin(on) ≜
   q(s,→,ε,κ) ∪ … where s ≜ dom(on{(R,R),(Q,Q)}), ε ≜ e(on), …`.
 - A one-argument builtin takes a pair as its parentheses: `ran⟨D,D⊤{(0,0)}⟩`.
-- A literal's side is the one declared object holding all its words (named elements, or numbers in its range).
+- A literal's rows nest alike on each side, to any depth: `{((0,1),1),((1,0),1)} : B×B ⟶ B`. Each leaf position
+  is the one declared object holding all its words (named elements, or numbers in its range); a side is the
+  product of its leaf positions' objects, nested as the rows nest. Its value is built from one long column per
+  leaf position, a product side the pair of its parts' columns.
 - A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.
 
 ## d. Iteration: a fold

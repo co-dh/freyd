@@ -61,6 +61,27 @@ def Bin.table : List (Char × Bin) :=
 
 def Bin.sym (o : Bin) : String := ((Bin.table.find? (·.2 == o)).map (·.1.toString)).getD "?"
 
+/-- A side of a literal's row: a word, or a pair of sides, nested to any depth (§c). -/
+inductive Tup
+  | leaf (w : String)
+  | pair (a b : Tup)
+  deriving Repr, Inhabited
+
+/-- The words at the leaves, left to right. -/
+def Tup.leaves : Tup → List String
+  | .leaf w => [w]
+  | .pair a b => a.leaves ++ b.leaves
+
+/-- The same nesting, whatever the words. -/
+def Tup.same : Tup → Tup → Bool
+  | .leaf _, .leaf _ => true
+  | .pair a b, .pair c d => a.same c && b.same d
+  | _, _ => false
+
+def Tup.show : Tup → String
+  | .leaf w => w
+  | .pair a b => s!"({a.show}, {b.show})"
+
 /-- A term of §c. `name` is a program's definition or parameter; `op` a builtin with its objects and arguments;
     `app` a program's operator applied. Composition is juxtaposition. -/
 inductive Expr
@@ -74,7 +95,7 @@ inductive Expr
   | pair (p : Pos) (a b : Expr)
   | junc (p : Pos) (a b : Expr)
   | fold (p : Pos) (e s : Expr)
-  | lit (p : Pos) (ps : List (String × String))
+  | lit (p : Pos) (ps : List (Tup × Tup))
   deriving Repr, Inhabited
 
 /-- The position a term starts at. -/
@@ -155,7 +176,7 @@ def Expr.render (l : Nat) (full : Bool := false) : Expr → String
   | .pair _ a b => s!"⟨{a.render 0 full}, {b.render 0 full}⟩"
   | .junc _ a b => s!"[{a.render 0 full}, {b.render 0 full}]"
   | .fold _ a b => s!"⦇{a.render 0 full}, {b.render 0 full}⦈"
-  | .lit _ ps => "{" ++ ", ".intercalate (ps.map fun (a, b) => s!"({a}, {b})") ++ "}"
+  | .lit _ ps => "{" ++ ", ".intercalate (ps.map fun (a, b) => (Tup.pair a b).show) ++ "}"
 
 def Expr.show (e : Expr) : String := e.render 0
 
