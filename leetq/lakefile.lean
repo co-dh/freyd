@@ -20,6 +20,9 @@ require qlean from (get_config? qlean |>.getD "../../qlean")
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ]
 
+/-- `doc/qrel-total-plan.md` §6's end check: red by design while an offender remains, so not a default target. -/
+lean_lib Check
+
 /-- `bench <op> <n>…`: the RelRep operators timed against `q/bench.q`. -/
 lean_exe bench where
   root := `Bench.Main
