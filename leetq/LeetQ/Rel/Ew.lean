@@ -10,6 +10,7 @@ import QLean.Kernel.Structural
 import QLean.Dep.Dyadic
 import QLean.Verify.Elementwise
 import LeetQ.Rel.KernelWF.Dyad
+import LeetQ.Rel.Find
 
 namespace LeetQ.Rel
 
@@ -32,15 +33,6 @@ def atomCol (t : QAtomicType) (a : QAtom) (ht : t ≠ .general := by first | dec
   match Enc.ofAtoms t #[a] ht with
   | some c => .ok c
   | none => .error s!"Ew: Enc.ofAtoms refused an atom at {repr t}"
-
-/-- The column of `f` over `vs`, through `Enc.ofAtoms`, which answers every count: the kernel-free answer.
-    The same as `Find.atomsOf` on the D2 branch, which Ew does not import; one goes once both land. -/
-def atomsOf {α : Type} {m : Nat} (t : QAtomicType) (hg : t ≠ .general) (f : α → QAtom) (hf : ∀ v, (f v).type = t)
-    (vs : List α) (hm : vs.length = m) : Arr t m :=
-  have ha : ∀ a ∈ (vs.map f).toArray, a.type = t := fun a h => by
-    obtain ⟨v, -, rfl⟩ := List.mem_map.1 (by simpa using h); exact hf v
-  Arr.mk ((Enc.ofAtoms t (vs.map f).toArray hg).get (Column.ofAtoms_isSome hg ha))
-    (by simpa [hm] using Column.ofAtoms_WF ha (Option.some_get (Column.ofAtoms_isSome hg ha)).symm)
 
 end Ew
 
@@ -87,7 +79,7 @@ def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.n
 /-- `~x`: `Ew.notBits` of the column when its count fits the kernel's `USize`; else, and on a payload
     `Enc.WF .boolean` excludes, q's `not` atom by atom. -/
 def Ew.not (x : Arr .boolean n) : Arr .boolean n :=
-  let ref := fun (_ : Unit) => Ew.atomsOf .boolean (by decide) (fun i : Fin n => .boolean !(x.get i))
+  let ref := fun (_ : Unit) => Find.atomsOf .boolean (by decide) (fun i : Fin n => .boolean !(x.get i))
     (fun _ => rfl) (List.finRange n) (by simp)
   if hn : n < USize.size then
     match x.enc with
@@ -104,7 +96,7 @@ def Ew.bitwise (op : UInt8) (x y : Arr .long n) : Arr .long n :=
   if hn : n < USize.size then
     Arr.mk ((bitwPayload op n x.enc y.enc).get (KernelWF.bitwPayload_isSome x.wf y.wf))
       (KernelWF.bitwPayload_wf hn (Option.some_get _).symm)
-  else Ew.atomsOf .long (by decide)
+  else Find.atomsOf .long (by decide)
     (fun i : Fin n => .long (Ew.bitwStep op (x.get i).toUInt64 (y.get i).toUInt64).toInt64) (fun _ => rfl)
     (List.finRange n) (by simp)
 
