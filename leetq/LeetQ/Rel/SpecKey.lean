@@ -477,9 +477,15 @@ theorem keyCodes_long {verb : String} {cl cr : Nat × Enc} {lc rc : Alg.Code} {w
     obtain ⟨n1, e1⟩ := cl
     obtain ⟨n2, e2⟩ := cr
     dsimp only at hro
+    -- `keyCodes` reads each raw part back as an `Arr`, whose payload is the part's (`Arr.of_c`)
+    rcases hx : Arr.ofPart .long n1 (n1, e1) verb with _ | x <;>
+      rcases hy : Arr.ofPart .long n2 (n2, e2) verb with _ | y <;>
+      simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList, hx, hy] at hc
+    have ex : x.enc = e1 := congrArg Prod.snd (Alg.Arr.of_c hx)
+    have ey : y.enc = e2 := congrArg Prod.snd (Alg.Arr.of_c hy)
+    simp only [Arr.part, ex, ey] at hc
     cases e1 <;> simp [longWords] at hwl <;> cases e2 <;> simp [longWords] at hwr <;>
-      simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
-        Alg.tuples, hro] at hc ⊢
+      simp [Alg.tuples, hro] at hc ⊢
     all_goals exact hc
   obtain ⟨k, f, hk4, hf, lc', rc', rfl, hlk, hln, hls, hlb, hrk, hrn, hrs, hrb⟩ :=
     rangeOffsets_long hwl hwr hl hr htot hro

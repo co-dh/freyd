@@ -239,7 +239,10 @@ abbrev KCol := QAtomicType × (Nat × Enc)
 def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg.Code) := do
   unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
   let cs ← (l.zip r).mapM fun ((p : KCol), (q : KCol)) =>
-    if q.1 = p.1 then Alg.codes p.1 #v[p.2, q.2] else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
+    if q.1 = p.1 then do
+      let x ← Arr.ofPart p.1 p.2.1 p.2 verb; let y ← Arr.ofPart p.1 q.2.1 q.2 verb
+      pure (Alg.codes p.1 #v[⟨_, x⟩, ⟨_, y⟩])
+    else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
   match cs.toList with
   | c0 :: rest => let t := Alg.tuples c0 rest.toArray; pure (t[0], t[1])
   | [] => throw s!"{verb}: no key column"
