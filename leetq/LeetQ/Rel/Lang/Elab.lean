@@ -68,6 +68,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lt {m : Nat} (U : Arr .long m) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
+  /-- `R`, whose identity among the program's sub-terms is `k` (`Eval.hoist`): equal sub-terms have one
+      identity, and one evaluation runs each identity once per demand. -/
+  | share {A B : Obj} {d : Bool} (k : Nat) (R : Tm A B d) : Tm A B d
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d

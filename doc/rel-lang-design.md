@@ -140,6 +140,17 @@ holds 28 rows on a payload of at most 3 pairs a row (`BlocksRel.lean` guards it)
 every definition, and every sub-term that does not read the round's pairs, once before the fold runs; the
 step recomputes only what depends on the round (`Lang/Eval.lean`, `hoist`).
 
+Equal sub-terms are evaluated once (`Lang/Eval.lean`, `hoist`, `ev`):
+
+| sub-term                                  | evaluated                                                      |
+|-------------------------------------------|----------------------------------------------------------------|
+| closed                                    | once per program: one table of identities runs through it      |
+| on demand, inside one evaluation          | once per demand (equal as a set): a lifted body, one fold step |
+
+An identity is structural: the core constructor, its objects, the identities of its parts, and for a value its
+rows as a set; nothing printed. Chess's pinned squares repeat `ⁿ(De)` per direction and `dom(on{(R,R),(Q,Q)})`
+eight times: `rel chess.rel` 3.6 s → 0.7 s.
+
 ## e. Definitions, and lifting a formula to a family
 
 - `N ≜ expr` binds a relation. `N(P₁,…,Pₖ) ≜ expr` defines an operator over relations, applied as
