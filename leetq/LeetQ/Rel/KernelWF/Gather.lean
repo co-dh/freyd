@@ -6,6 +6,7 @@
 import QLean.Kernel.Structural
 import QLean.Verify.Gather
 import QLean.Verify.Raw
+import QLean.Verify.Alp
 
 namespace LeetQ.Rel.KernelWF
 
@@ -152,7 +153,43 @@ theorem gatherColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e
       simp_all [gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherIds_wf, toNat_small,
         small_mod]
 
-/-- **`m` elements from `off`, cycling, answer** for every well-formed column but a general list. -/
+/-! ## The slice's answer: sizes and block counts -/
+
+theorem cycleBits_size (n off m : USize) (b : ByteArray) : (cycleBits n off m b).size = (m.toNat + 7) / 8 :=
+  packOf_size ..
+
+/-- A cycling symbol slice holds `m + 1` offsets: `Enc.WF`'s count for `syms`. -/
+theorem sliceSyms_wf (blob : ByteArray) (offs : Array Nat) (off m : Nat) :
+    Enc.WF .symbol m (sliceSyms blob offs off m) := by
+  simp only [sliceSyms, Enc.WF]
+  induction m with
+  | zero => rfl
+  | succ m ih => rw [Nat.fold_succ, Array.size_push, ih]
+
+/-- An interned slice's ids hold all `m` at the dictionary's width. -/
+theorem cycleIds_wf (dict : ByteArray) (dof : Array Nat) (n off : USize) {m : Nat} (hm : m < USize.size)
+    (ids : ByteArray) :
+    Enc.WF .symbol m (.enum dict dof (cycleIds n off m.toUSize (Column.idWidth dof).toUSize ids)) := by
+  have hl := Verify.laneWidth_cases (Column.widthFor (dof.size - 1 - 1))
+  have hU : (Column.idWidth dof).toUSize.toNat = Column.idWidth dof :=
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by rcases hl with h | h | h | h | h | h | h | h <;>
+      simp only [Column.idWidth, Column.idWidthOf, h] <;> decide) USize.le_size)
+  simp only [Enc.WF, cycleIds, hU, USize.toNat_ofNat_of_lt' hm]
+  exact Verify.idsCap_packIds _ _ hl
+
+/-- `alpEncodeAt` lays out a block for every `blk` of its elements: `Enc.WF`'s cover condition. -/
+theorem nblk_alpEncodeAt (f32 : Bool) (x : ByteArray) :
+    x.size / (if f32 then 4 else 8) ≤ Column.blk * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
+  unfold Coc.alpEncodeAt
+  simp only []
+  rw [show (8 : USize) = (8 : Nat).toUSize from rfl, Verify.nblk_encode 8 (by decide) (by decide),
+    Verify.blocks_size]
+  simp only [Array.toList_map, Array.toList_range, List.map_map, Function.comp_def, Coc.alpBlockOf,
+    Array.size_map, Array.size_range]
+  rw [Verify.sum_blocks]
+  generalize x.size / (if f32 then 4 else 8) = n
+  simp only [Column.blk] at *
+  omega
 theorem sliceColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
     (hc : countFits n e) (off m : Nat) : (sliceColumn t n e off m).isSome := by
   unfold sliceColumn
