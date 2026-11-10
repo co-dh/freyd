@@ -177,6 +177,41 @@ theorem cycleIds_wf (dict : ByteArray) (dof : Array Nat) (n off : USize) {m : Na
   simp only [Enc.WF, cycleIds, hU, USize.toNat_ofNat_of_lt' hm]
   exact Verify.idsCap_packIds _ _ hl
 
+/-- `Coc.alpDecode` holds `n` elements of `w` bytes, as `decodeW` says of `Coc.decode`. -/
+theorem alpDecode_size (w : USize) (hw : w.toNat ≤ 8) (M P a : ByteArray) (n : USize) :
+    (Coc.alpDecode w M P a n).size = w.toNat * n.toNat := by
+  obtain ⟨hs, -, -⟩ := Verify.foldl_pushBits id w.toNat hw (Coc.alpElems M P a n) ByteArray.empty
+  rw [Verify.alpDecode_eq]; simpa [Coc.alpElems] using hs
+
+theorem concat_size (l : List ByteArray) (a : ByteArray) :
+    (l.foldl (· ++ ·) a).size = a.size + (l.map ByteArray.size).sum := by
+  induction l generalizing a with
+  | nil => simp
+  | cons b l ih => simp only [List.foldl, ih, ByteArray.size_append, List.map_cons, List.sum_cons]; omega
+
+/-- A cycling dense slice of `m` elements is `m * w` bytes, from a source of exactly `n * w`. -/
+theorem cycleBytes_size (w n off m : Nat) (b : ByteArray) (hb : b.size = n * w) (hn : 0 < n) :
+    (cycleBytes (· * w) n off m b).size = m * w := by
+  unfold cycleBytes
+  split
+  · rename_i h
+    have : (off + m) * w ≤ n * w := Nat.mul_le_mul_right _ h
+    rw [ByteArray.size_extract, hb, Nat.min_eq_left this, Nat.add_mul, Nat.add_sub_cancel_left]
+  · rename_i h
+    have hr : (m - (n - off)) % n * w ≤ n * w := Nat.mul_le_mul_right _ (Nat.le_of_lt (Nat.mod_lt _ hn))
+    have hd := Nat.div_add_mod' (m - (n - off)) n
+    have hrep : ∀ k x : Nat, (List.replicate k x).sum = k * x := fun k x => by
+      induction k with
+      | zero => simp
+      | succ k ih => rw [List.replicate_succ, List.sum_cons, ih, Nat.succ_mul]; omega
+    rw [concatBytes, ← Array.foldl_toList, concat_size]
+    simp only [Array.toList_append, Array.toList_replicate, List.map_append, List.map_replicate,
+      List.sum_append_nat, hrep, ByteArray.size_extract, hb, Nat.min_self, Nat.min_eq_left hr,
+      List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, ByteArray.size_empty, Nat.sub_zero,
+      Nat.zero_add, Nat.add_zero]
+    rw [← Nat.sub_mul, ← Nat.mul_assoc, ← Nat.add_mul, ← Nat.add_mul]
+    congr 1; omega
+
 /-- `alpEncodeAt` lays out a block for every `blk` of its elements: `Enc.WF`'s cover condition. -/
 theorem nblk_alpEncodeAt (f32 : Bool) (x : ByteArray) :
     x.size / (if f32 then 4 else 8) ≤ Column.blk * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
