@@ -54,6 +54,18 @@ theorem groupIdsColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hg : t ≠ 
 theorem packOf_size (n : Nat) (f : Nat → Bool) : (packOf n f).size = (n + 7) / 8 := by
   simp only [packOf]; rw [foldl_size ByteArray.size _ 1 (fun _ _ => by simp only [ByteArray.size, ByteArray.push, Array.size_push])]; simp
 
+/-- The summed count of parts, as the kernels fold it. -/
+private theorem foldl_add_fst {β : Type} : ∀ (a : Nat) (l : List (Nat × β)),
+    l.foldl (fun s p => s + p.1) a = a + (l.map (·.1)).sum
+  | a, [] => by simp
+  | a, p :: l => by simp [foldl_add_fst _ l]; omega
+
+/-- A property every step keeps holds of the fold. -/
+private theorem foldl_inv {α σ : Type} (P : σ → Prop) (g : σ → α → σ) (hg : ∀ s a, P s → P (g s a)) :
+    ∀ (l : List α) (s : σ), P s → P (l.foldl g s)
+  | [], _, h => h
+  | a :: l, s, h => foldl_inv P g hg l (g s a) (hg s a h)
+
 /-- `concatBits` of parts `ps` holds their summed count, as `razeColumn` counts it. -/
 theorem concatBits_wf (ps : Array (Nat × ByteArray)) :
     Enc.WF .boolean (ps.foldl (fun s p => s + p.1) 0) (.bits (concatBits (ps.map (·.1)) (ps.map (·.2)))) := by
@@ -61,12 +73,7 @@ theorem concatBits_wf (ps : Array (Nat × ByteArray)) :
   congr 2
   rcases ps with ⟨l⟩
   simp only [Array.zip]; simp only [Array.size_flatMap]
-  have sum : ∀ (a : Nat) (l : List (Nat × ByteArray)),
-      l.foldl (fun s p => s + p.1) a = a + (l.map (·.1)).sum := by
-    intro a l; induction l generalizing a with
-    | nil => simp
-    | cons p l ih => simp [ih]; omega
-  simp [sum]
+  simp [foldl_add_fst]
 
 /-- `til n` as `tilLongs`: `n` longs. -/
 theorem tilLongs_wf (n : USize) : Enc.WF .long n.toNat (.bytes (tilLongs n)) :=
@@ -232,5 +239,37 @@ theorem razeColumn_isSome {t : QAtomicType} {cs : Array (Nat × Enc)} (hne : cs.
          simp only [Array.size_zip] at hi
          simp only [Array.getElem_zip, decide_eq_true_eq] at hc
          rw [hps' i (by omega) (by omega)] at hc; omega)
+
+/-- `concatSyms` (the symbol branch on `syms` parts) answers a symbol vector whose offsets count it. -/
+theorem concatSyms_wf (parts : Array (ByteArray × Array Nat)) :
+    ∃ n e, concatSyms parts = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
+  refine ⟨_, _, rfl, ?_⟩
+  simp only [Enc.WF]
+  have : 1 ≤ (Array.foldl (fun x y => match x with | (blob, offs) => match y with
+      | (b, o) => (blob ++ b, offs ++ Array.map (fun x => x + blob.size) (o.extract 1)))
+      (ByteArray.empty, #[0]) parts).snd.size := by
+    rw [← Array.foldl_toList]
+    refine foldl_inv (fun p : ByteArray × Array Nat => 1 ≤ p.2.size) _ (fun s a hs => ?_) _ _ (by simp)
+    rcases s with ⟨blob, offs⟩; rcases a with ⟨b, o⟩; simp only [Array.size_append] at hs ⊢; omega
+  exact (Nat.sub_add_cancel this).symm
+
+/-- The dense branch of `razeColumn`: parts of `cs.1 · w` bytes each, joined, hold the summed count. -/
+theorem concatBytes_wf {t : QAtomicType} {w : Nat} {cs : Array (Nat × Enc)} {ps : Array ByteArray}
+    (hb : t ≠ .boolean) (hw : t.width = some w) (hsz : ps.size = cs.size)
+    (hps : ∀ i (hi : i < cs.size) (hp : i < ps.size), ps[i].size = cs[i].1 * w) :
+    Enc.WF t (cs.foldl (fun x1 x2 => x1 + x2.1) 0) (.bytes (concatBytes ps)) := by
+  refine wf_bytes hb hw ?_
+  have happ : ∀ (l : List ByteArray) (b : ByteArray), (l.foldl (· ++ ·) b).size = b.size + (l.map (·.size)).sum := by
+    intro l; induction l with
+    | nil => simp
+    | cons a l ih => intro b; simp [ih, ByteArray.size_append]; omega
+  have hmap : ps.toList.map (·.size) = cs.toList.map (·.1 * w) := by
+    apply List.ext_getElem (by simp [hsz]); intro i h1 h2; simp at h1 h2; simp [hps i h2 h1]
+  have hm : ∀ l : List (Nat × Enc), (l.map (·.1 * w)).sum = (l.map (·.1)).sum * w := by
+    intro l; induction l with
+    | nil => simp
+    | cons a l ih => simp [ih, Nat.add_mul]
+  rw [concatBytes, ← Array.foldl_toList, happ, hmap, ← Array.foldl_toList, foldl_add_fst, hm]
+  simp
 
 end LeetQ.Rel.KernelWF
