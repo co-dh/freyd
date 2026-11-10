@@ -254,18 +254,18 @@ def foRR (n : Nat) (a : Array Int) : Except String (LeetQ.Rel.Arr .long n) := do
 def findFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
   let x ← io "findFoR" (foRR n (ints n 26 1000))
   let y ← io "findFoR" (listR n (ints n 27 1000))
-  timedE "findFoR" (x, y) fun (x, y) => do sumR "findFoR" (← LeetQ.Rel.Find.find x y)
+  timedE "findFoR" (x, y) fun (x, y) => do sumR "findFoR" (LeetQ.Rel.Find.find x y)
 
 /-- `y in x`, the same operands; `sum y in x`. -/
 def inFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
   let x ← io "inFoR" (foRR n (ints n 26 1000))
   let y ← io "inFoR" (listR n (ints n 27 1000))
-  timedE "inFoR" (x, y) fun (x, y) => do sumR "inFoR" (← LeetQ.Rel.Find.«in» y x)
+  timedE "inFoR" (x, y) fun (x, y) => do sumR "inFoR" (LeetQ.Rel.Find.«in» y x)
 
 /-- `?x`, `x` a `foR` column below 1000; `sum ?x`. -/
 def distinctFoROp (n : Nat) : IO (IO (Nat × Int64)) := do
   let x ← io "distinctFoR" (foRR n (ints n 26 1000))
-  timedE "distinctFoR" x fun x => do sumR "distinctFoR" (← LeetQ.Rel.Find.distinct x).2
+  timedE "distinctFoR" x fun x => do sumR "distinctFoR" (LeetQ.Rel.Find.distinct x).2
 
 /-! ## The relation algebra's codes: `|R|` and `ej` on keys of each encoding -/
 
@@ -389,7 +389,7 @@ def progEvenOp (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `(>a)? R` by hand: `Ew.atomVal`, `Find.where`, two picks, q's `(where k>a)` on key and value. -/
 def relSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
   timedE "relSel" (← selData "relSel" n) fun (k, v) => do
-    let w ← LeetQ.Rel.Find.where (← LeetQ.Rel.Ew.atomVal (t := .long) .lt .boolean (500000 : Int64) k)
+    let w := LeetQ.Rel.Find.where (← LeetQ.Rel.Ew.atomVal (t := .long) .lt .boolean (500000 : Int64) k)
     let (_, i) ← LeetQ.Rel.Alg.arrDense w.2
     let _ ← LeetQ.Rel.Vals.ofParts (.atom .long) w.1 (LeetQ.Rel.Alg.pick .long ⟨_, k⟩ i) "relSel"
     sumR "relSel" (← LeetQ.Rel.Vals.ofParts (.atom .long) w.1 (LeetQ.Rel.Alg.pick .long ⟨_, v⟩ i) "relSel")
