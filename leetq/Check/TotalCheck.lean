@@ -36,6 +36,7 @@ import LeetQ.Rel.KernelWF.Gather
 import LeetQ.Rel.KernelWF.Raze
 import LeetQ.Rel.KernelWF.Reduce
 import LeetQ.Rel.KernelWF.Search
+import LeetQ.Rel.KernelWF.SearchSym
 import LeetQ.Rel.KernelWF.Shape
 import Bench.Main
 
