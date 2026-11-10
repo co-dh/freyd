@@ -56,6 +56,8 @@ def nul : Int64 := Int64.minValue
 
 def add (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul a b (len a).toUSize
 def sub (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.sub Ew.i64 Ew.vv nul a b (len a).toUSize
+/-- `a + x` for the long `x`. -/
+def addc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
 def mulc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.mul Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
 def sums (b : ByteArray) : ByteArray := Scan.scan .sums .i64 (len b).toUSize b
 /-- `src@idx` at element width `w`; a miss reads `0`. -/
@@ -369,47 +371,72 @@ def arrDense {a : QAtomicType} {n : Nat} (x : Arr a n) : Except String (Scan.Kin
     | some b => pure (k, b)
     | none => throw s!"type {a.code}: Enc.bytesOf has no dense payload for this encoding"
 
+/-- A long column's dense payload, which always answers (`longBytes_isSome`). -/
+def longsOf {n : Nat} (x : Arr .long n) : ByteArray := (longBytes n x.enc).get (longBytes_isSome x)
+
+/-- A long payload as a column of `len b` rows: `b` itself, its trailing bytes past the last long cut. -/
+def longCol (b : ByteArray) : Arr .long (len b) :=
+  Arr.mk (.bytes (b.extract 0 (8 * len b))) (by simp [Enc.WF, QAtomicType.width, len, ByteArray.size_extract]; omega)
+
+/-- The slices `[lo i, hi i)` of a flat payload of `m` values clamped to `[0, m]`, as `Vals.row` reads
+    them: each clamped start and the slice's count, `Ew.val` lesser/greater. -/
+def slices (m : Nat) (lo hi : ByteArray) : ByteArray × ByteArray :=
+  let n := (len lo).toUSize
+  let clamp (b : ByteArray) : ByteArray :=
+    Kernel.Ew.val Ew.greater Ew.i64 Ew.va nul (Kernel.Ew.val Ew.lesser Ew.i64 Ew.va nul b (one m.toUInt64) n) (one 0) n
+  let l := clamp lo
+  (l, sub (Kernel.Ew.val Ew.greater Ew.i64 Ew.vv nul (clamp hi) l n) l)
+
 /-! ## A side's payloads: one part per atom, each step column by column -/
 
-/-- The parts of a side `A`: a part at an atom, a pair of parts at a product. -/
+/-- The parts of a side `A`: a part at an atom, a pair of parts at a product; at an array, the parts of its
+    `lo` and `hi` columns and the flat payload they slice. -/
 @[reducible] def Part : Obj → Type
   | .atom t => (n : Nat) × Arr t n
   | .prod a b => Part a × Part b
+  | .list b => ((n : Nat) × Arr .long n) × ((n : Nat) × Arr .long n) × ((m : Nat) × Vals b m)
 
 /-- The rows of a side's parts: its first column's count. -/
 def _root_.LeetQ.Rel.Obj.count : (A : Obj) → Part A → Nat
   | .atom _, c => c.1
   | .prod a _, c => Obj.count a c.1
+  | .list _, c => c.1.1
 
-/-- `pick` of every column at the same rows. -/
+/-- `pick` of every column at the same rows; an array's `lo` and `hi`, its flat payload shared. -/
 def _root_.LeetQ.Rel.Obj.pick : (A : Obj) → Part A → ByteArray → Part A
   | .atom t, c, i => Alg.pick t c i
   | .prod a b, c, i => (Obj.pick a c.1 i, Obj.pick b c.2 i)
-
-/-- `raze` column by column. -/
-def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → Array (Part A) → Part A
-  | .atom t, cs => Alg.raze t cs
-  | .prod a b, cs => (Obj.raze a (cs.map (·.1)), Obj.raze b (cs.map (·.2)))
-
-/-- No element, column by column. -/
-def _root_.LeetQ.Rel.Obj.empty : (A : Obj) → Part A
-  | .atom t => Alg.empty t
-  | .prod a b => (Obj.empty a, Obj.empty b)
+  | .list _, c, i => (Alg.pick .long c.1 i, Alg.pick .long c.2.1 i, c.2.2)
 
 /-- A side's columns as parts. -/
 def _root_.LeetQ.Rel.Vals.parts : {A : Obj} → {n : Nat} → Vals A n → Part A
   | .atom _, n, x => ⟨n, x⟩
   | .prod _ _, _, x => (Vals.parts x.1, Vals.parts x.2)
+  | .list _, n, x => (⟨n, x.2.1⟩, ⟨n, x.2.2.1⟩, ⟨x.1, x.2.2.2⟩)
 
-/-- A side's columns picked at the index column `i`: `len i` rows each (`pick_len`). -/
+/-- One column picked at the index column `i`: `len i` rows (`pick_len`). -/
+def pickArr (t : QAtomicType) (c : (n : Nat) × Arr t n) (i : ByteArray) : Arr t (len i) := pick_len t c i ▸ (pick t c i).2
+
+/-- A side's columns picked at the index column `i`: `len i` rows each; an array's `lo` and `hi`. -/
 def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → Part A → (i : ByteArray) → Vals A (len i)
-  | .atom t, c, i => Alg.pick_len t c i ▸ (Alg.pick t c i).2
+  | .atom t, c, i => pickArr t c i
   | .prod a b, c, i => (Vals.pick a c.1 i, Vals.pick b c.2 i)
+  | .list _, c, i => ⟨c.2.2.1, pickArr .long c.1 i, pickArr .long c.2.1 i, c.2.2.2⟩
+
+/-- No row of one column (`empty_len`). -/
+def emptyArr (t : QAtomicType) : Arr t 0 := empty_len t ▸ (empty t).2
 
 /-- No row, column by column (`empty_len`). -/
 def _root_.LeetQ.Rel.Vals.empty : (A : Obj) → Vals A 0
-  | .atom t => Alg.empty_len t ▸ (Alg.empty t).2
+  | .atom t => emptyArr t
   | .prod a b => (Vals.empty a, Vals.empty b)
+  | .list b => ⟨0, emptyArr .long, emptyArr .long, Vals.empty b⟩
+
+/-- No element, column by column. -/
+def _root_.LeetQ.Rel.Obj.empty : (A : Obj) → Part A
+  | .atom t => Alg.empty t
+  | .prod a b => (Obj.empty a, Obj.empty b)
+  | .list b => (Alg.empty .long, Alg.empty .long, ⟨0, Vals.empty b⟩)
 
 /-- The first `m` longs of the index column `i`, `m ≤ len i`: `i` itself when it holds `m` (no copy), else
     `extract`. Either way `m` rows (`fit_len`). -/
@@ -428,8 +455,27 @@ def _root_.LeetQ.Rel.Vals.pickN (A : Obj) (c : Part A) (i : ByteArray) (m : Nat)
     at another count is read at its first `n` rows (`pickRef`). An unproved check: only the ops after `diff`
     (`memP`, `uncons`) still read through it; the core ops pick at a proved count (`Vals.pick`). -/
 def _root_.LeetQ.Rel.Vals.ofParts : (A : Obj) → (n : Nat) → Part A → Vals A n
-  | .atom _, n, c => if h : c.1 = n then h ▸ c.2 else Find.pickRef c.2 fun j => j.1
+  | .atom _, n, c => ofArr n c
   | .prod a b, n, c => (Vals.ofParts a n c.1, Vals.ofParts b n c.2)
+  | .list _, n, c => ⟨c.2.2.1, ofArr n c.1, ofArr n c.2.1, c.2.2.2⟩
+where
+  /-- One column at the count `n`: itself, or its first `n` rows (`pickRef`). -/
+  ofArr {t : QAtomicType} (n : Nat) (c : (m : Nat) × Arr t m) : Arr t n :=
+    if h : c.1 = n then h ▸ c.2 else Find.pickRef c.2 fun j => j.1
+
+/-- `raze` column by column. An array's flat payloads are razed, and each part's `lo`, `hi` move past
+    the flat values of the parts before it (`addc`), so every row still slices its own values. -/
+def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → Array (Part A) → Part A
+  | .atom t, cs => Alg.raze t cs
+  | .prod a b, cs => (Obj.raze a (cs.map (·.1)), Obj.raze b (cs.map (·.2)))
+  | .list b, cs =>
+    let ms := cs.map (·.2.2.1)
+    let m := ms.foldl (· + ·) 0
+    -- the parts are few (two or three), so no running sum
+    let mv (k : Nat) (c : (n : Nat) × Arr .long n) : (n : Nat) × Arr .long n :=
+      let s := addc (longsOf c.2) ((ms.extract 0 k).foldl (· + ·) 0); ⟨len s, longCol s⟩
+    (Alg.raze .long (cs.mapIdx fun k c => mv k c.1), Alg.raze .long (cs.mapIdx fun k c => mv k c.2.1),
+      ⟨m, Vals.ofParts b m (Obj.raze b (cs.map fun c => c.2.2.2.parts))⟩)
 
 /-- A relation's two payloads. -/
 structure Cols (k v : Obj) where
@@ -509,11 +555,49 @@ where
     | (_, some r) => r
     | (c, none) => c.groupIds
 
+/-- Segment ids read off the codes directly: segment `j`'s codes `vc[o[j] .. o[j+1])` (`Column.resAt` at the
+    code's width) normalised by `norm`, numbered by first occurrence. One long per segment. -/
+def slicesRef (norm : List UInt64 → List UInt64) (vc : Code) (o : ByteArray) : ByteArray :=
+  let off (j : Nat) : Nat := (Column.bitsAt o (8 * j) 8).toNat
+  let seg (j : Nat) : List UInt64 := norm ((List.range (off (j + 1) - off j)).map fun t => Column.resAt vc.b 0 vc.w (off j + t))
+  let segs := (List.range (len o - 1)).map seg
+  packLongs (segs.map fun x => Int64.ofNat (segs.eraseDups.idxOf x))
+
+/-- Sequence ids: segment `j` of the codes `vc` is `vc[o[j] .. o[j+1])` for the `g + 1` offsets `o`; equal
+    SEQUENCES (order and repeats counted) get equal ids, numbered by first occurrence: `rankSlices`. -/
+def sliceIds (vc : Code) (o : ByteArray) : ByteArray :=
+  let ids := Order.rankSlices vc.w.toUSize vc.b o
+  -- `rankSlices` declines (answers empty) on offsets out of order or past its payload, which no theorem
+  -- yet rules out for offsets summed from counts; the reference answers there
+  if ids.size = 8 * (len o - 1) then ids else slicesRef id vc o
+
 /-- Joint codes of a side's parts, one code per part: an atom's `codes`; a product's `tuples` of its
-    columns' codes, so equal tuples are equal codes exactly when every column is. -/
+    columns' codes, so equal tuples are equal codes exactly when every column is; an array's `sliceIds` of
+    its elements' joint codes, each row's slice gathered contiguous (`expand` of the clamped counts), so
+    equal arrays (equal length, equal elements position by position) are equal codes exactly. -/
 def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p → Vector Code p
   | .atom t, _, cs => Alg.codes t cs
   | .prod a b, _, cs => tuples (Obj.codes a (cs.map (·.1))) #[Obj.codes b (cs.map (·.2))]
+  | .list b, _, cs =>
+    let ec := Obj.codes b (cs.map fun c => c.2.2.2.parts)
+    let sl := cs.map fun c => slices c.2.2.1 (longsOf c.1.2) (longsOf c.2.1.2)
+    let seq := Code.cat (Vector.zipWith (fun e s => let x := expand s.2; e.gather (add (gather 8 s.1 x.1) x.2)) ec sl).toArray
+    let ns := cs.map (·.1.1)
+    let o := concatBytes #[one 0, sums (concatBytes (sl.map (·.2)).toArray)]
+    (pack (ns.foldl (· + ·) 0) (sliceIds seq o)).cut ns
+
+/-- The permutation `p` refined stably by the values of `A` at its rows, ascending: `gradeColumn` of each
+    atom (a symbol by its string, so the order is the value's, the same in every call), the last component
+    first so a product sorts lexicographically. Where no kernel orders the values — a general list, an
+    array — by their codes: an order of this call only. -/
+def _root_.LeetQ.Rel.Obj.sortBy : (A : Obj) → Part A → ByteArray → ByteArray
+  | .atom t, c, p =>
+    let x := Alg.pick t c p
+    match gradeColumn t false x.1 x.2.enc with
+    | some (.bytes g) => gather 8 p g
+    | _ => gather 8 p (codes t #v[x])[0].grade
+  | .prod a b, c, p => Obj.sortBy a c.1 (Obj.sortBy b c.2 p)
+  | .list b, c, p => gather 8 p (Obj.codes (.list b) #v[Obj.pick (.list b) c p])[0].grade
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Obj} {p : Nat} (ds : Vector (Cols k v) p) : Vector Code p :=
@@ -536,17 +620,19 @@ def join (l r : Code) : ByteArray × ByteArray :=
 
 /-- `join`'s right index column is no longer than its left: equal wherever the count fits a `USize`, which
     `add` takes (`Ew.val_size`, `gatherBytes_size`). -/
-theorem join_len (l r : Code) : len (join l r).2 ≤ len (join l r).1 := by
+theorem gather_len (s i : ByteArray) : len (gather 8 s i) = len i := by
   have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
+
+/-- `add` answers at most its left count: equal wherever the count fits a `USize` (`Ew.val_size`). -/
+theorem add_len_le (a b : ByteArray) : len (add a b) ≤ len a := by
   have hw : Kernel.Ew.width Ew.i64 = 8 := by decide
-  have hu : ∀ n : Nat, n.toUSize.toNat ≤ n := fun n => by
-    simp only [Nat.toUSize]; exact Nat.mod_le _ _
-  have hG : ∀ s i, len (gather 8 s i) = len i := fun s i => by
-    simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
-  have hA : ∀ a b, len (add a b) ≤ len a := fun a b => by
-    simp only [len, add, KernelWF.Ew.val_size, hw]; have := hu (a.size / 8); omega
+  have hu : (a.size / 8).toUSize.toNat ≤ a.size / 8 := by simp only [Nat.toUSize]; exact Nat.mod_le _ _
+  simp only [len, add, KernelWF.Ew.val_size, hw]; omega
+
+theorem join_len (l r : Code) : len (join l r).2 ≤ len (join l r).1 := by
   unfold join; dsimp only
-  rw [hG]; exact Nat.le_trans (hA _ _) (by rw [hG, hG]; exact Nat.le_refl _)
+  rw [gather_len]; exact Nat.le_trans (add_len_le _ _) (by rw [gather_len, gather_len]; exact Nat.le_refl _)
 
 /-- `cnt(c)`: count by `c` — its distinct codes and how many rows hold each. -/
 def cnt (c : Code) : Code × ByteArray :=
@@ -576,9 +662,6 @@ def drank (k : Scan.Kind) (b : ByteArray) : ByteArray :=
   let d := Order.distinct k n b
   binBytes k.width.toUSize (isFloat k) true false (Order.sortValues k false (d.size / k.width).toUSize d) b
 
-/-- `a + x` for the long `x`. -/
-def addc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
-
 /-- The rows of a code column `c` cut into one segment per distinct code: the permutation `p` that
     makes each code's rows contiguous (`grade` of its `groupIds`), the `g + 1` offsets of the
     segments in that order (`runStarts`), and each segment's first row in `c`. -/
@@ -591,16 +674,11 @@ def segments (c : Code) : ByteArray × ByteArray × ByteArray :=
 /-- `setIds` read off the codes directly: segment `j`'s codes `vc[o[j] .. o[j+1])` (`Column.resAt` at the
     code's width), sorted with repeats dropped, numbered by first occurrence. One long per segment. -/
 def setIdsRef (vc : Code) (o : ByteArray) : ByteArray :=
-  let off (j : Nat) : Nat := (Column.bitsAt o (8 * j) 8).toNat
-  let set (j : Nat) : List UInt64 :=
-    (((List.range (off (j + 1) - off j)).map fun t => Column.resAt vc.b 0 vc.w (off j + t)).mergeSort
-      fun a b => decide (a ≤ b)).eraseDups
-  let sets := (List.range (len o - 1)).map set
-  packLongs (sets.map fun x => Int64.ofNat (sets.eraseDups.idxOf x))
+  slicesRef (fun s => (s.mergeSort fun a b => decide (a ≤ b)).eraseDups) vc o
 
 /-- `setIdsRef` writes one long per segment (`packLongs_size`). -/
 theorem setIdsRef_size (vc : Code) (o : ByteArray) : (setIdsRef vc o).size = 8 * (len o - 1) := by
-  simp [setIdsRef, packLongs_size]
+  simp [setIdsRef, slicesRef, packLongs_size]
 
 /-- Set ids: the segments of the codes `vc` start at the longs `s`, the last ending at `vc.n`, so segment `j`
     is `vc[o[j] .. o[j+1])` for `o = s, n`; segments holding equal SETS get equal ids, numbered by first
@@ -804,23 +882,34 @@ def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals
     Vals.pick B (B.pick s.key fs) ij.2⟩
   union hit (top (Vals.pick A Ua.parts (anti uac rk)) (Vals.pick B Ub.parts (anti ubc sk)))
 
-/-- `Λ(R)` with no set object, as the pair `(Λ, ∋)`: a set of `B` is named by a `long` id, its members the
-    rows of `∋` at that id. `segments` of the key codes cut `R`'s rows into one run per distinct key, and
-    `setIds` of the value codes along the runs give each key the id of its set — equal sets one id,
-    `0 … g-1` by first occurrence, order and repeats inside a run ignored. `Λ` pairs each run's key with
-    its id; `∋` pairs each row's id (`groupOf` its run) with its value, each pair once (`Cols.nub`). -/
-def transpose (R : Rel A B) : Rel A .long × Rel .long B :=
-  let r := cols R
-  let (p, o, _) := segments (A.codes #v[r.key])[0]
-  let s := o.extract 0 (o.size - 8)
-  let ids := setIdCol ((B.codes #v[r.val])[0].gather p) s
-  (⟨len s, Vals.pick A (A.pick r.key p) s, ids⟩,
-   (Cols.mk (k := .long) (v := B) R.n (pick .long ⟨_, ids⟩ (groupOf o R.n)) (B.pick r.val p)).nub)
+/-- `Λ(R) : A ⟶ list B`: one row per distinct key of `R`, its cell the ARRAY of the key's values, each once,
+    in ascending value order (`sortBy`), so two keys with one set of values have one array — across two
+    relations too, where `sortBy` orders by value. `Cols.nub`, the values sorted, then the keys' codes
+    graded stably: each key one run, whose start and end (`runStarts`) are its row's `lo`, `hi`. -/
+def transpose (R : Rel A B) : Rel A (.list B) :=
+  let d := cols (cols R).nub
+  let kc := (A.codes #v[d.key])[0]
+  let vp := B.sortBy d.val (tilLongs d.n.toUSize)
+  let p := gather 8 vp (kc.gather vp).grade
+  let o := (kc.gather p).runStarts
+  let lo := o.extract 0 (o.size - 8)
+  have h : len (o.extract 8 o.size) = len lo := by simp only [len, lo, ByteArray.size_extract]; omega
+  ⟨len lo, Vals.pick A (A.pick d.key p) lo, ⟨len p, longCol lo, h ▸ longCol (o.extract 8 o.size), Vals.pick B d.val p⟩⟩
 
-/-- `Λ(R) : A ⟶ long`, each key of `R` to the id of its set of values. -/
-scoped notation:max "Λ(" R ")" => Prod.fst (transpose R)
-/-- `∋(R) : long ⟶ B`, each id of `Λ(R)` to the members of its set. -/
-scoped notation:max "∋(" R ")" => Prod.snd (transpose R)
+/-- `∋ : list B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
+    holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank
+    added to its slice's start; the array's row read at the element's count (`add_len_le`). -/
+def mem {n : Nat} (X : Vals (.list B) n) : Rel (.list B) B :=
+  let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
+  let e := expand s.2
+  let j := add (gather 8 s.1 e.1) e.2
+  have h : len j ≤ len e.1 := Nat.le_trans (add_len_le _ _) (Nat.le_of_eq (gather_len _ _))
+  ⟨len j, Vals.pickN (.list B) X.parts e.1 (len j) h, Vals.pick B X.2.2.2.parts j⟩
+
+/-- `Λ(R) : A ⟶ list B`, each key of `R` to the array of its values. -/
+scoped notation:max "Λ(" R ")" => transpose R
+/-- `∋(R) : list B ⟶ B`, `mem` on the arrays of `Λ(R)`: `Λ(R) ≫ ∋(R) = R`. -/
+scoped notation:max "∋(" R ")" => mem (Rel.val (transpose R))
 
 end Gen
 
@@ -889,13 +978,11 @@ def outl {k v w : Obj} (T : Rel k (.prod v w)) : Rel k v := ⟨T.n, T.key, T.val
 /-- `outr`: the second component's columns. -/
 def outr {k v w : Obj} (T : Rel k (.prod v w)) : Rel k w := ⟨T.n, T.key, T.val.2⟩
 
-/-- `R` with each key `x` read as `x + k`, the value kept: `Ew.val` add on the keys' dense payload
-    (`longBytes`, total on a long column) and on `til`, both at one count `m`, so the shifted keys and the
-    row index have one length (`Ew.val_size`). -/
-def shift {B : Obj} (R : Rel .long B) (k : Nat) : Rel .long B :=
+/-- The rows of `R` numbered from `k`: row `i` keyed by `k + i`, its value kept — `Ew.val` add on `til`
+    at the count `m`, which the row index is too (`Ew.val_size`). Row order enters here, as in `enum`. -/
+def num {A B : Obj} (R : Rel A B) (k : Nat) : Rel .long B :=
   let m := R.n.toUSize
-  let kb := (longBytes R.n R.key.enc).get (longBytes_isSome R.key)
-  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul kb (one k.toUInt64) m
+  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one k.toUInt64) m
   let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
   have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
   have w : Kernel.Ew.width Ew.i64 = 8 := rfl
@@ -1117,24 +1204,36 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
 #guard seteq (symDiv R R Ua Ua).toList
   (Ua.toList.flatMap fun x => (Ua.toList.filter fun y => seteq (fib R x) (fib R y)).map (x, ·))
 
-/-- The four facts of `transpose R = (Λ, ∋)`: (1) `Λ ≫ ∋ = R`; (2) `Λ` one row per distinct key of `R`;
-    (3) two keys one id iff one set of values, the ids `0 … g-1`; (4) `∋` no repeated row. -/
+/-- The facts of `Λ(R)`: (1) `Λ(R) ≫ ∋(R) = R`; (2) one row per distinct key of `R`; (3) each cell is the
+    key's values, each once; (4) `Λ(R) ≫ Λ(R)°` relates two keys iff they have one set of values. -/
 private def lamOk {A B : Obj} [BEq A.El] [BEq B.El] (R : Rel A B) : Bool :=
-  let (Lm, Ni) := transpose R
-  let r := R.toList; let l := Lm.toList; let m := Ni.toList
+  let Lm := Λ(R)
+  let r := R.toList; let l : List (A.El × List B.El) := Lm.toList
   let fibr (x : A.El) := r.filterMap fun (x', z) => if x == x' then some z else none
-  let ids := l.map (·.2)
-  (Lm ≫ Ni == R) &&
+  let same := (Lm ≫ Lm°).toList
+  (Lm ≫ ∋(R) == R) &&
   (l.map (·.1)).eraseDups.length == l.length && seteq (l.map (·.1)) (r.map (·.1)) &&
-  l.all (fun (x, i) => l.all fun (y, j) => (i == j) == seteq (fibr x) (fibr y)) &&
-  seteq ids ((List.range ids.eraseDups.length).map Int64.ofNat) &&
-  m.eraseDups.length == m.length
+  l.all (fun (x, c) => seteq c (fibr x) && c.eraseDups.length == c.length) &&
+  l.all (fun (x, _) => l.all fun (y, _) => same.contains (x, y) == seteq (fibr x) (fibr y))
+
+/-- Arrays across two relations: `Λ(R₁) ≫ Λ(R₂)°` relates a key of `R₁` to a key of `R₂` iff their sets of
+    values are one, and `ran (Λ(R₁) ∪ Λ(R₂))` holds each distinct set once. -/
+private def crossOk {A B : Obj} [BEq A.El] [BEq B.El] (R₁ R₂ : Rel A B) : Bool :=
+  let f (R : Rel A B) (x : A.El) : List B.El := R.toList.filterMap fun (x', z) => if x == x' then some z else none
+  let k₁ := (R₁.toList.map (·.1)).eraseDups; let k₂ := (R₂.toList.map (·.1)).eraseDups
+  let rel := (Λ(R₁) ≫ Λ(R₂)°).toList
+  let sets := k₁.map (f R₁) ++ k₂.map (f R₂)
+  let distinct := sets.foldl (fun acc s => if acc.any (seteq s) then acc else acc ++ [s]) ([] : List (List B.El))
+  k₁.all (fun x => k₂.all fun y => rel.contains (x, y) == seteq (f R₁ x) (f R₂ y)) &&
+  (ran (Λ(R₁) ∪ Λ(R₂))).n == distinct.length
 
 -- `Λ(R)`, `∋(R)`: R with a repeated pair, R ∪ S, a key with a repeat and its values out of order (D, below),
 -- a foR column, an empty relation, the family `G`, `G ≫ R`
 #guard lamOk R && lamOk S && lamOk (union R R) && lamOk (union R S) && lamOk T && lamOk Ls && lamOk (conv Ls)
 #guard lamOk (zero (A := L) (B := L)) && lamOk (comp R T) && lamOk (conv R)
-#guard seteq ∋(R).toList [(0, 10), (0, 20), (1, 10), (2, 30)] && Λ(R).toList == [(1, 0), (2, 1), (3, 2)]
+#guard (Λ(R).toList : List (Int64 × List Int64)) == [(1, [10, 20]), (2, [10]), (3, [30])] && ∋(R).n == 4
+-- arrays of pairs: `B = X×X`
+#guard lamOk (pair R S) && lamOk (pair S R) && crossOk (pair R S) (pair S R) && crossOk (pair R R) (pair R S)
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
 private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
@@ -1153,9 +1252,22 @@ private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Ar
 private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide))⟩
 #guard lamOk G && lamOk (comp G R) && seteq (comp Λ(comp G R) ∋(comp G R)).toList
   (G.toList.flatMap fun (s, x) => R.toList.filterMap fun (x', y) => if x == x' then some (s, y) else none)
--- sets across two relations: the ids of `∋(R)` whose set is also a set of `∋(S)`, `symDiv` of the two
--- (each `∋` its own universe, so no empty fibre): `{10 20}` and `{10}` occur in S, `{30}` does not
-#guard seteq (symDiv ∋(R) ∋(S) ∋(R).key ∋(S).key).toList [(0, 1), (1, 0)] && (dom (symDiv ∋(R) ∋(S) ∋(R).key ∋(S).key)).n == 2
+-- arrays across two relations: `[10 20]` and `[10]` are cells of both, `[30]` and `[40]` of one
+#guard seteq (comp Λ(R) (conv Λ(S))).toList [(1, 2), (2, 1)] && (ran (union Λ(R) Λ(S))).n == 4
+#guard crossOk R S && crossOk S R && crossOk R R && crossOk Lf Ls && crossOk (zero (A := L) (B := L)) R
+-- a list column built by hand: `[1 2] [2 1] [1 1] [1 2]`, equal as arrays only where equal position by
+-- position, so rows 0 and 3 alone; `∋` one row per element, a repeat twice
+private def Xs : Vals (.list L) 4 := ⟨8, col [0, 2, 4, 6], col [2, 4, 6, 8], col [1, 2, 2, 1, 1, 1, 1, 2]⟩
+private def K : Rel L (.list L) := ⟨4, U4, Xs⟩
+#guard (K.toList.map (·.2) : List (List Int64)) == [[1, 2], [2, 1], [1, 1], [1, 2]]
+#guard seteq (comp K (conv K)).toList [(0, 0), (0, 3), (3, 0), (3, 3), (1, 1), (2, 2)] && (ran K).n == 3
+#guard ((mem Xs).toList : List (List Int64 × Int64)) ==
+  [([1, 2], 1), ([1, 2], 2), ([2, 1], 2), ([2, 1], 1), ([1, 1], 1), ([1, 1], 1), ([1, 2], 1), ([1, 2], 2)]
+-- slices past the payload read clamped: `[-1, 1)` is `[1]`, `[3, 9)` is `[1 2]`, `[5, 2)` is empty
+private def Xc : Vals (.list L) 3 := ⟨4, col [-1, 2, 5], col [1, 9, 2], col [1, 5, 1, 2]⟩
+#guard ((idU Xc).toList.map (·.1) : List (List Int64)) == [[1], [1, 2], []]
+#guard ((mem Xc).toList : List (List Int64 × Int64)) == [([1], 1), ([1, 2], 1), ([1, 2], 2)]
+#guard (comp (idU Xc) (mem Xc)).n == 3 && (ran (idU Xc)).n == 3
 
 #guard seteq (pair R S).toList
   (R.toList.flatMap fun (x, y) => S.toList.filterMap fun (x', z) => if x == x' then some (x, y, z) else none)
@@ -1211,10 +1323,11 @@ private def k5 : (m : Nat) × Arr L m := ⟨_, col [1, 1, 1, 1, 1]⟩
 #guard setIds (Code.ofLongs (packLongs [3, 1, 1, 1, 3, 2, 1, 3, 3])) (packLongs [0, 3, 5, 6, 6, 6]) ==
   packLongs [0, 0, 1, 2, 2, 0]
 -- Λ(R ∪ S): fibres {10 20} {10 20} {30} {40}
-#guard Λ(union R S).toList.map (·.2) == [0, 0, 1, 2]
+#guard (ran Λ(union R S)).n == 3
 -- Λ of {1↦10, 2↦20, 1↦20, 2↦10, 2↦10}: both fibres {10, 20}, in another order and with a repeat
 private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by decide))⟩
-#guard Λ(D).toList.map (·.2) == [0, 0] && ∋(D).n == 2 && lamOk D && lamOk (conv D) && lamOk (union D R)
+#guard (Λ(D).toList.map (·.2) : List (List Int64)) == [[10, 20], [10, 20]] && ∋(D).n == 4 && lamOk D &&
+  lamOk (conv D) && lamOk (union D R) && crossOk D R && crossOk D S
 -- the reference `setIds` falls back on agrees with the kernel path, repeats and order inside a set ignored
 #guard let c := Code.ofLongs (packLongs [1, 2, 2, 1, 1, 2, 5, 5, 3]); let s := packLongs [0, 2, 4, 6, 8, 8]
   setIds c s == packLongs [0, 0, 0, 1, 2, 3] && setIdsRef c (packLongs [0, 2, 4, 6, 8, 8, 9]) == setIds c s
@@ -1258,6 +1371,11 @@ private def symsC : Nat × Enc := (4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98
 private def enumC : Nat × Enc :=
   (4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!))
 #guard ok (lst Sy enumC) fun X => X.toList == [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
+-- `Λ` of `{bc, a}` met in two orders, in two relations, and of syms against enum: one array, `[a bc]`, by
+-- the strings' order, not by first appearance
+#guard ok (do pure (comp (ofPairs [(0, 0), (0, 1)]) (← lst Sy symsC), comp (ofPairs [(0, 1), (0, 0)]) (← lst Sy enumC)))
+  fun (X, Y) => crossOk X Y && crossOk Y X && lamOk X && lamOk Y &&
+    (Λ(X).toList.map (·.2) : List (List String)) == [["a", "bc"]] && (Λ(Y).toList.map (·.2) : List (List String)) == [["a", "bc"]]
 #guard ok (do pure (same (← lst Sy symsC) (← lst Sy enumC))) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do let x ← lst Sy enumC; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do pure (union (← lst Sy symsC) (← lst Sy enumC))) fun X => X.n == 4 &&
@@ -1391,7 +1509,7 @@ theorem Arr.of_c {t : QAtomicType} {n : Nat} {c : Nat × Enc} {w : String} {a : 
 /-- A part read at its own count `n` is its payload. -/
 theorem _root_.LeetQ.Rel.Vals.ofParts_atom {t : QAtomicType} {n : Nat} {c : Part (.atom t)} (h : c.1 = n) :
     (Vals.ofParts (.atom t) n c).part = c.2.part := by
-  obtain ⟨m, x⟩ := c; subst h; simp [Vals.ofParts, Arr.part]
+  obtain ⟨m, x⟩ := c; subst h; simp [Vals.ofParts, Vals.ofParts.ofArr, Arr.part]
 
 /-- `ofCols` keys the answer by `kc`, its values by `vc` where the two counts agree. -/
 theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)} (h : vc.1 = kc.1) :

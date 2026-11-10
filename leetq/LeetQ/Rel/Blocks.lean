@@ -2,7 +2,8 @@ import LeetQ.Rel.Algebra
 
 /-! AIMA §11.1.3, the blocks world (the Sussman anomaly) as relation algebra on the blocks. A block is the long
     `0 … 2` (A = 0, B = 1, C = 2). A state is one map `S : X ⟶ X`: `(b, y)` puts `b` on the block `y`, `(b, b)`
-    puts `b` on the table. The search names each state by a `long` id, `Λ`'s, and holds many states as one
+    puts `b` on the table. The search names each state by a `long` id, the number of the array `Λ` gives it,
+    and holds many states as one
     relation `L : long ⟶ X×X`: `(i, (b, y))`, in state `i` the block `b` is on `y`. Composition is in diagram
     order. -/
 
@@ -76,17 +77,17 @@ def least (Q : Rel I .long) : Rel I .long := Q \ Q ≫ lt
 
 /-- One round of the breadth-first search on `(St, L, P, d)`: `St` every state seen, `L` the last level, both
     keyed by the state id; `P : id ⟶ (k, m)` the path, `m` its `k`-th move; `d` the round. Each state `i` of `L`
-    and move `m` of `ML` is the candidate `c = (i, m)`, `par`, `mv` its sides, `F'` its state. `Λ(F')` names
-    equal states once, `symDiv` against `St` drops the seen ones, `Λ` again numbers the rest `0 … f-1`, and
-    `shift` moves them past `St`'s ids. A new state's path is its `least` parent's and its move. -/
+    and move `m` of `ML` is the candidate `c = (i, m)`, `par`, `mv` its sides, `F'` its state. `Λ(F')` is each
+    candidate's state as an array, equal states one array; `\ ran Λ(St)` drops the seen ones, and `num`
+    numbers the rest past `St`'s ids. A new state's path is its `least` parent's and its move. -/
 def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat →
     Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat
   | (St, L, P, d) =>
     let c := ran (pair (dom (ML L)) (ML L)); let par := outl c; let mv := outr c
     let F' := moveL (par ≫ L) mv
-    let E := (dom ∋(F') \ dom (symDiv ∋(F') St (Vals.empty _) (Vals.empty _))) ≫ ∋(F')
-    let L' := shift ∋(E) (dom St).n
-    let cand := shift (Λ(F') ≫ Λ(E))° (dom St).n
+    let E := num (ran Λ(F') \ ran Λ(St)) (dom St).n
+    let L' := E ≫ mem E.val
+    let cand := (Λ(F') ≫ E°)°
     let pick := cand ∩ least (cand ≫ par) ≫ par°
     (St ∪ L', L', P ∪ pick ≫ (par ≫ P ∪ pair (mv ≫ π₁ ≫ top xs (col [Int64.ofNat d])) mv), d + 1)
 
