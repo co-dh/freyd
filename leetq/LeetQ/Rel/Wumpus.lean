@@ -11,10 +11,7 @@ abbrev LL := Rel .long .long
 /-- The percept tables `V`, `B`, `S`, `G`, coreflexives on the cells: the only rows a step stores. -/
 abbrev KB := LL × LL × LL × LL
 
-def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart .long n (longs (packLongs xs)) "col"
-def rel (xs : List (Int64 × Int64)) : Except String LL := do
-  pure ⟨xs.length, ← col xs.length (xs.map (·.1)), ← col xs.length (xs.map (·.2))⟩
-def cor (xs : List Int64) : Except String LL := rel (xs.map fun x => (x, x))
+def cor (xs : List Int64) : Except String LL := ofPairs (xs.map fun x => (x, x))
 
 def cellL : List Int64 := [11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44]
 /-- Codes differ by 1 along a column and by 10 along a row; `y ≤ 4` keeps two columns from differing by 1. -/
@@ -62,7 +59,7 @@ def world (pits : List Int64) (w g c : Int64) : Bool × Bool × Bool := (pits.an
 def agent (see : Int64 → Bool × Bool × Bool) (route : List Int64) : Except String (List (List (String × LL))) := do
   let cells ← col cellL.length cellL
   let one ← col 1 [0]
-  let adj ← rel (cellL.flatMap fun a => (cellL.filter (near a)).map (a, ·))
+  let adj ← ofPairs (cellL.flatMap fun a => (cellL.filter (near a)).map (a, ·))
   let e ← cor []
   let mut k : KB := (e, e, e, e)
   let mut out := #[]

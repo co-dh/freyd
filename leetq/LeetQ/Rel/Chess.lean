@@ -16,13 +16,6 @@ abbrev Pc : Obj := .long
 abbrev Board := Rel Sq Pc
 abbrev V := Rel Sq Sq
 
-/-- A literal long column; `Arr.ofPart` checks the count. -/
-def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart .long n (longs (packLongs xs)) "col"
-
-/-- A relation from its pairs of longs. -/
-def ofPairs (ps : List (Int64 × Int64)) : Except String (Rel .long .long) := do
-  pure ⟨ps.length, ← col ps.length (ps.map (·.1)), ← col ps.length (ps.map (·.2))⟩
-
 /-- The 64 squares. -/
 def U : Except String (Arr .long 64) := col 64 ((List.range 64).map Int64.ofNat)
 /-- `𝟙 : Sq ⟶ Sq` on the 64 squares. -/

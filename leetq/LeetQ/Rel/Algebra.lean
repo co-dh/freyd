@@ -42,6 +42,13 @@ def _root_.LeetQ.Rel.Arr.part {t : QAtomicType} {n : Nat} (x : Arr t n) : Nat ×
 def _root_.LeetQ.Rel.Arr.ofPart (t : QAtomicType) (n : Nat) (p : Nat × Enc) (what : String) : Except String (Arr t n) :=
   Arr.of t n (.vector t p.1 p.2 none) what
 
+/-- A literal long column; `Arr.ofPart` checks the count. -/
+def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart .long n (longs (packLongs xs)) "col"
+
+/-- A relation from its pairs of longs. -/
+def ofPairs (ps : List (Int64 × Int64)) : Except String (Rel .long .long) := do
+  pure ⟨ps.length, ← col ps.length (ps.map (·.1)), ← col ps.length (ps.map (·.2))⟩
+
 def nul : Int64 := Int64.minValue
 
 def add (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul a b (len a).toUSize

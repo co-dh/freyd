@@ -1,4 +1,4 @@
-import LeetQ.Rel.Chess
+import LeetQ.Rel.Algebra
 
 /-! AIMA §11.1.3, the blocks world (the Sussman anomaly) as relation algebra on the blocks. A block is the long
     `0 … 2` (A = 0, B = 1, C = 2). A state is one map `S : X ⟶ X`: `(b, y)` puts `b` on the block `y`, `(b, b)`
@@ -7,7 +7,6 @@ import LeetQ.Rel.Chess
 namespace LeetQ.Rel.Blocks
 
 open Alg QLean
-open LeetQ.Rel.Chess (col ofPairs)
 
 abbrev X : Obj := .long
 abbrev V := Rel X X

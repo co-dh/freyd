@@ -12,9 +12,6 @@ abbrev Bit : Obj := .long
 abbrev Bit2 : Obj := .prod Bit Bit
 abbrev Bit3 : Obj := .prod Bit Bit2
 
-/-- A literal long column; `Arr.ofPart` checks the count. -/
-def col (n : Nat) (xs : List Int64) : Except String (Arr .long n) := Arr.ofPart .long n (longs (packLongs xs)) "col"
-
 def bits : List Int64 := [0, 1]
 /-- `Bitⁿ`'s elements, first component major. -/
 def cube : Nat → List (List Int64)
