@@ -1,8 +1,8 @@
 obj Sq = 0…63                                 -- the squares, a1 = 0, b1 = 1, …, h8 = 63
 obj Pc = {P,N,B,R,Q,K,p,n,b,r,q,k}            -- the pieces, white then black: colour*6 + kind
 obj Bd = 𝒫(Sq×Pc)                             -- a board: the set of its (square, piece) rows
+obj Rd = 0…6                                  -- the rounds of a line
 on ≜ {(6,K),(48,R),(1,R),(60,k)}              -- W Kg1 Ra7 Rb1, B Ke8
-
 h ≜ {(7,7),(15,15),(23,23),(31,31),(39,39),(47,47),(55,55),(63,63)}   -- the h-file
 → ≜ (𝟙 − h)succ                               -- one file right
 ← ≜ →°                                        -- one file left
@@ -19,7 +19,7 @@ X₁ ≜ ↘ ∪ ↙                                    -- a black pawn's forwar
 S₀ ≜ {(8,8),(9,9),(10,10),(11,11),(12,12),(13,13),(14,14),(15,15)}         -- white's pawn rank
 S₁ ≜ {(48,48),(49,49),(50,50),(51,51),(52,52),(53,53),(54,54),(55,55)}     -- black's pawn rank
 
-L(R : Sq ⟶ Sq) ≜ 𝟙 ∪ R ∪ (RR) ∪ (RRR) ∪ (RRRR) ∪ (RRRRR) ∪ (RRRRRR) ∪ (RRRRRRR)   -- a line: R⁰ ∪ … ∪ R⁷
+L(R : Sq ⟶ Sq) ≜ (C π₁)°π₂ where ι ≜ ran(Λ(⊤(Rd,Rd))), C ≜ ran(ι⦇ran⟨𝟙(Sq),𝟙⟩, π₂ ∪ (π₂(𝟙×R))⦈)   -- a line: R⁰ ∪ … ∪ R⁷, a fold over 0…6
 e(on : Sq ⟶ Pc) ≜ 𝟙 − dom(on)                   -- the empty squares
 k(on : Sq ⟶ Pc) ≜ dom(on{(k,k)})               -- the black king's square
 f(on : Sq ⟶ Pc) ≜ 𝟙 − dom(on{(p,p),(n,n),(b,b),(r,r),(q,q),(k,k)})   -- the squares with no black piece

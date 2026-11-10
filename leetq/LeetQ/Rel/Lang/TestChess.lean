@@ -3,7 +3,8 @@ import LeetQ.Rel.Chess
 
 /-! Mate in one in the Rel language, read from `programs/chess.rel`, against `Chess.lean`: each of its `#guard`s
     on the same position, the program's board `on` replaced at the AST, each guard running the program once; and
-    the program's tables and the relations `W`, `P` of its own board compared with `Chess`'s, as sets. -/
+    the program's tables and the relations `W`, `P` of its own board compared with `Chess`'s, as sets. Its line
+    `L` is a fold over `0…6`, lifted wherever its argument is a family. -/
 
 namespace LeetQ.Rel.Lang.TestChess
 
