@@ -455,12 +455,14 @@ theorem sum_map_fst {α β : Nat → Type} (cs : Array ((n : Nat) × α n)) (f :
     (h : ∀ c, (f c).1 = c.1) : ((cs.map f).toList.map (·.1)).sum = (cs.toList.map (·.1)).sum := by
   simp [Function.comp_def, h]
 
-/-- A long column plus the long `k`, at its own count: `addc`. Where `addc`'s count wraps (a count past `USize`,
-    no input a process holds) the same sum read through `toList`, `+` answering `0N` on a null as `addc` does. -/
-def shiftArr {n : Nat} (x : Arr .long n) (k : Nat) : Arr .long n :=
-  let s := addc (longsOf x) k
+/-- A column of offsets into a payload of `m` values, clamped into `[0, m]` as `slices` reads them, plus the long
+    `k`, at its own count: `Ew.val` lesser/greater, then `addc`. Where `addc`'s count wraps (a count past `USize`,
+    no input a process holds) the same read through `toList`, a null clamped to `0` as `greater` does. -/
+def shiftArr {n : Nat} (x : Arr .long n) (m k : Nat) : Arr .long n :=
+  let c := Kernel.Ew.val Ew.lesser Ew.i64 Ew.va nul (longsOf x) (one m.toUInt64) n.toUSize
+  let s := addc (Kernel.Ew.val Ew.greater Ew.i64 Ew.va nul c (one 0) n.toUSize) k
   if h : len s = n then h ▸ longCol s else
-    let ys := x.toList.map fun v => if v == nul then nul else v + Int64.ofNat k
+    let ys := x.toList.map fun v => min (max v 0) (Int64.ofNat m) + Int64.ofNat k
     have hl : ys.length = n := (List.length_map _).trans x.length_toList
     hl ▸ col ys
 
@@ -511,10 +513,11 @@ def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → (cs : Array (Part A)) → Vals A (
   | .arr b, cs =>
     let ms := cs.map (·.2.1)
     -- the parts are few (two or three), so no running sum
-    let mv (k : Nat) (c : (n : Nat) × Arr .long n) : (n : Nat) × Arr .long n :=
-      ⟨c.1, shiftArr c.2 ((ms.extract 0 k).foldl (· + ·) 0)⟩
-    let lo (k : Nat) (c : Part (.arr b)) := mv k ⟨c.1, c.2.2.1⟩
-    let hi (k : Nat) (c : Part (.arr b)) := mv k ⟨c.1, c.2.2.2.1⟩
+    -- each part's offsets clamped into its own payload first, so a row out of range reads no other part's values
+    let mv (k m : Nat) (c : (n : Nat) × Arr .long n) : (n : Nat) × Arr .long n :=
+      ⟨c.1, shiftArr c.2 m ((ms.extract 0 k).foldl (· + ·) 0)⟩
+    let lo (k : Nat) (c : Part (.arr b)) := mv k c.2.1 ⟨c.1, c.2.2.1⟩
+    let hi (k : Nat) (c : Part (.arr b)) := mv k c.2.1 ⟨c.1, c.2.2.2.1⟩
     ⟨_, (raze_len .long (cs.mapIdx lo)).trans (sum_mapIdx_fst cs lo fun _ _ => rfl) ▸ (Alg.raze .long (cs.mapIdx lo)).2,
       (raze_len .long (cs.mapIdx hi)).trans (sum_mapIdx_fst cs hi fun _ _ => rfl) ▸ (Alg.raze .long (cs.mapIdx hi)).2,
       Obj.raze b (cs.map fun c => ⟨c.2.1, c.2.2.2.2⟩)⟩
@@ -1113,7 +1116,7 @@ def map {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A)
     `U[i] < U[j]`. `rank` of `U` (`gradeColumn`, ties in position order), `cross` of the positions, `Ew.cmp <`
     of their ranks, less the pairs of one value the ties' order put apart. The domain is the types
     `gradeColumn` orders by value: every atom but a general list, whose witness `decide` discharges. -/
-def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_ : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
   let r := longsOf (Ops.rank (t := t) U)
   let c := cross n n
   let i := whereBits (n * n).toUSize (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) (n * n).toUSize)
@@ -1181,7 +1184,7 @@ def tail {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := ou
 /-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
     AOP/A5_6_ListCombinators.lean:328): each round's `π₂ succ` on the pairs it meets (`succ` on their counts). -/
 def length {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
-  foldBy X (col [0]) fun el pend => let p := outr (pair el pend); p ≫ succ p.val
+  foldBy X (col [0]) fun el pend => let p := outr (pair el pend); p ≫ succ (ran p).val
 
 /-- `filter(p)` on the arrays `X`, `p` a coreflexive. The note's `filter(p)≜frac(subseq p′,∋) est(R°)`
     (diag/aop/07-optimisation.typ:1041; `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the
@@ -1218,7 +1221,7 @@ def union {A : Obj} {n : Nat} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A))
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
 def sum {n : Nat} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) :=
-  foldBy X (col [0]) fun el pend => let p := pair el pend; p ≫ plus p.val
+  foldBy X (col [0]) fun el pend => let p := pair el pend; p ≫ plus (ran p).val
 
 end Arr
 
@@ -1628,17 +1631,19 @@ private def U5 : Vals L 5 := col [10, 15, 20, 30, 40]
   thin (lt U5) R == thin LT R && est (leq U5)° S == est LE° S
 -- a universe with repeats, a foR column, symbols (by their strings), booleans, floats
 #guard seteq (leq (col [20, 10, 20])).toList [(10, 10), (10, 20), (20, 20)] && (lt (col [20, 10, 20])).n == 2
-#guard seteq (lt LfV).toList [(3, 5), (3, 9), (5, 9)] && (lt LfV).n == 4
+#guard seteq (lt LfV).toList [(3, 5), (3, 9), (5, 9)] && (lt LfV).n == 5 && lt LfV == lt (col [5, 3, 5, 9])
 #guard seteq (lt symsC).toList [("a", "bc"), ("a", "d"), ("bc", "d")]
 #guard seteq (lt bitsC).toList [(false, true)] && (leq bitsC).nub.n == 3
-#guard seteq ((lt fd).toList.map fun (a, b) => (a.toBits, b.toBits)) ([(0.1, 1.5), (0.1, 2.25), (1.5, 2.25)].map fun (a, b) => (Float.toBits a, Float.toBits b))
+#guard seteq (lt fd).toList ([(0.1, 1.5), (0.1, 2.25), (1.5, 2.25)].map fun (a, b) => (Float.toBits a, Float.toBits b))
 #guard (lt (Vals.empty L)).n == 0
 -- a general list has no order: no witness
-/-- error: could not synthesize default value for parameter '_' using tactics
+/-- error: could not synthesize default value for parameter '_h' using tactics
 ---
 error: Tactic `decide` proved that the proposition
   QAtomicType.general ≠ QAtomicType.general
-is false -/
+is false
+---
+info: lt gs ⋯ : Rel (Obj.atom QAtomicType.general) (Obj.atom QAtomicType.general) -/
 #guard_msgs in #check lt gs
 
 -- `succ`, `plus` on their universes
@@ -1684,8 +1689,9 @@ private def pSpec {n m : Nat} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) 
 -- `head`, `tail`, `length`, `Arr.sum`, `filter(p)`, `takewhile(p)`, `prefix`, `suffix` against `List`
 #guard seteq ((head Xl).toList : List (List Int64 × Int64)) ((unconsSpec (arrs Xl)).map fun (a, y, _) => (a, y))
 #guard seteq ((tail Xs).toList : List (List Int64 × List Int64)) ((unconsSpec (arrs Xs)).map fun (a, _, t) => (a, t))
-private def onArrs {n : Nat} {β : Type} [BEq β] (X : Vals (.arr L) n) (R : Rel (.arr L) β) (f : List Int64 → List β) : Bool :=
-  seteq R.toList ((arrs X).flatMap fun xs => (f xs).map (xs, ·))
+private def onArrs {n : Nat} {B : Obj} [BEq B.El] (X : Vals (.arr L) n) (R : Rel (.arr L) B) (f : List Int64 → List B.El) : Bool :=
+  let r : List (List Int64 × B.El) := R.toList
+  seteq r ((arrs X).flatMap fun xs => (f xs).map (xs, ·))
 #guard onArrs Xl (length Xl) (fun xs => [Int64.ofNat xs.length]) && onArrs Xc (length Xc) (fun xs => [Int64.ofNat xs.length])
 #guard onArrs Xs (length Xs) (fun xs => [Int64.ofNat xs.length]) && (length (Vals.empty (.arr L))).n == 0
 #guard onArrs Xl (Arr.sum Xl) (fun xs => [xs.foldl (· + ·) 0]) && onArrs Xc (Arr.sum Xc) (fun xs => [xs.foldl (· + ·) 0])
