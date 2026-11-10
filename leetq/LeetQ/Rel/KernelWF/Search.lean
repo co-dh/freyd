@@ -624,4 +624,122 @@ theorem memberColumn_wf {t : QAtomicType} {s : Bool} {nx ny : Nat} {ex ey : Enc}
       rw [memberColumn_guid] at h; cases h
       exact bits_answer (by simp [memberVec_size, hx])
 
+/-! ## `distinct`: a column of the operand's own type -/
+
+open QLean.Kernel.Scan (Kind)
+
+theorem distinct_size (k : Kind) (n : USize) (b : ByteArray) :
+    (Order.distinct k n b).size = (Order.firsts k (min n.toNat (k.avail b)) b).length * k.width := by
+  simp only [Order.distinct]; rw [foldl_size ByteArray.size _ k.width (fun _ _ => Column.pushBits_size ..)]; simp
+
+theorem firsts_length_le (k : Kind) (m : Nat) (b : ByteArray) : (Order.firsts k m b).length ≤ m := by
+  rw [firsts_eq]; unfold firstsOf; exact Nat.le_trans (List.length_filter_le _ _) (by simp)
+
+theorem orderKind_width {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) : t.width = some k.width := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> rfl
+
+theorem orderKind_dense {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit) :
+    t ≠ .boolean ∧ t ≠ .guid := by
+  constructor <;> rintro rfl <;> simp [orderKind] at hk; exact hbit hk.symm
+
+/-- A payload of a type with a sort layout other than `bit` is dense, Frame of Reference or ALP. -/
+theorem dense_cases {t : QAtomicType} {k : Kind} {n : Nat} {e : Enc} (hk : orderKind t = some k)
+    (hbit : k ≠ .bit) (hw : Enc.WF t n e) :
+    (∃ b, e = .bytes b) ∨ (∃ md pk, e = .foR md pk) ∨ ∃ md pk a, e = .alp md pk a := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> cases e <;> simp_all [Enc.WF, QAtomicType.width]
+
+theorem distinctColumn_bytes {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (n : Nat) (b : ByteArray) :
+    distinctColumn t n (.bytes b) = some (.vector t ((Order.distinct k (b.size / k.width).toUSize b).size / k.width)
+      (.bytes (Order.distinct k (b.size / k.width).toUSize b)) none) := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> first | rfl | exact absurd rfl hbit
+
+theorem distinctColumn_foR {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (n : Nat) (md pk : ByteArray) :
+    distinctColumn t n (.foR md pk) = some (.vector t (Order.distinctFoR k n.toUSize md pk).1
+      (Enc.answer t (Order.distinctFoR k n.toUSize md pk).1
+        (.foR (Order.distinctFoR k n.toUSize md pk).2.1 (Order.distinctFoR k n.toUSize md pk).2.2)) none) := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> first | rfl | exact absurd rfl hbit
+
+theorem distinctColumn_alp {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (n : Nat) (md pk a : ByteArray) :
+    distinctColumn t n (.alp md pk a) = some (.vector t (Order.distinctALP k n.toUSize md pk a).1
+      (Enc.answer t (Order.distinctALP k n.toUSize md pk a).1
+        (.alp (Order.distinctALP k n.toUSize md pk a).2.1 (Order.distinctALP k n.toUSize md pk a).2.2.1
+          (Order.distinctALP k n.toUSize md pk a).2.2.2)) none) := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> first | rfl | exact absurd rfl hbit
+
+theorem distinctColumn_bits (n : Nat) (b : ByteArray) :
+    distinctColumn .boolean n (.bits b) = some (.vector .boolean (bitFirsts n b).length
+      (.bits (Column.packBits (((bitFirsts n b).map (QAtom.boolean ·.1))).toArray)) none) := rfl
+
+theorem distinctColumn_syms (n : Nat) (b : ByteArray) (o : Array Nat) :
+    distinctColumn .symbol n (.syms b o) = some (.vector .symbol ((Order.distinctSyms b o).2.size - 1)
+      (.syms (Order.distinctSyms b o).1 (Order.distinctSyms b o).2) none) := rfl
+
+theorem distinctColumn_enum (n : Nat) (d : ByteArray) (o : Array Nat) (i : ByteArray) :
+    distinctColumn .symbol n (.enum d o i) = some (.vector .symbol ((Order.distinctIds n.toUSize d o i).2.size - 1)
+      (.syms (Order.distinctIds n.toUSize d o i).1 (Order.distinctIds n.toUSize d o i).2) none) := rfl
+
+/-- The distinct elements' count fits a machine word: at most the `n` the kernel read. -/
+theorem distinct_count_lt (k : Kind) (n : USize) (b : ByteArray) :
+    (Order.distinct k n b).size / k.width < USize.size := by
+  rw [distinct_size, Nat.mul_div_cancel _ (kind_width k).1]
+  exact Nat.lt_of_le_of_lt (Nat.le_trans (firsts_length_le ..) (Nat.min_le_left _ _)) n.toNat_lt_size
+
+theorem distinct_bytes_wf {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (N : USize) (b : ByteArray) :
+    Enc.WF t ((Order.distinct k N b).size / k.width) (.bytes (Order.distinct k N b)) :=
+  wf_bytes (orderKind_dense hk hbit).1 (orderKind_width hk)
+    (by rw [distinct_size, Nat.mul_div_cancel _ (kind_width k).1])
+
+theorem distinct_foR_wf {t : QAtomicType} {k : Kind} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (N : USize) (md pk : ByteArray) :
+    Enc.WF t (Order.distinctFoR k N md pk).1 (Enc.answer t (Order.distinctFoR k N md pk).1
+      (.foR (Order.distinctFoR k N md pk).2.1 (Order.distinctFoR k N md pk).2.2)) := by
+  obtain ⟨hb, hg⟩ := orderKind_dense hk hbit
+  obtain ⟨h0, h8⟩ := kind_width k
+  simp only [Order.distinctFoR]
+  refine answer_wf (wf_foR (by simp [orderKind_width hk]) hb hg ?_) (distinct_count_lt ..)
+  rw [nblk_encode k.width h0 h8]
+  simp only [Column.blk]; omega
+
+theorem distinct_alp_wf {t : QAtomicType} {k : Kind} {n : Nat} (hk : orderKind t = some k) (hbit : k ≠ .bit)
+    (N : USize) (md pk a : ByteArray) (hw : Enc.WF t n (.alp md pk a)) :
+    Enc.WF t (Order.distinctALP k N md pk a).1 (Enc.answer t (Order.distinctALP k N md pk a).1
+      (.alp (Order.distinctALP k N md pk a).2.1 (Order.distinctALP k N md pk a).2.2.1
+        (Order.distinctALP k N md pk a).2.2.2)) := by
+  cases t <;> simp [orderKind] at hk <;> subst hk <;> simp [Enc.WF, QAtomicType.width] at hw <;>
+    simp only [Order.distinctALP, hw.2, ite_true, ite_false, Bool.false_eq_true] <;>
+    exact answer_wf (alpEncodeAt_wf _ rfl rfl _ (Nat.le_refl _)) (distinct_count_lt ..)
+
+/-- **`distinct` answers a well-formed column of the operand's own type.** -/
+theorem distinctColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} {v : QValue} (hw : Enc.WF t n e)
+    (h : distinctColumn t n e = some v) : ∃ m e', v = .vector t m e' none ∧ Enc.WF t m e' := by
+  cases ho : orderKind t with
+  | some k =>
+    by_cases hbit : k = .bit
+    · subst hbit
+      have : t = .boolean := by cases t <;> simp [orderKind] at ho ⊢
+      subst this
+      cases e <;> simp [Enc.WF, QAtomicType.width] at hw
+      rw [distinctColumn_bits] at h; cases h
+      exact ⟨_, _, rfl, by simp [Enc.WF, Column.packBits_size]⟩
+    · rcases dense_cases ho hbit hw with ⟨b, rfl⟩ | ⟨md, pk, rfl⟩ | ⟨md, pk, a, rfl⟩
+      · rw [distinctColumn_bytes ho hbit] at h; cases h; exact ⟨_, _, rfl, distinct_bytes_wf ho hbit _ _⟩
+      · rw [distinctColumn_foR ho hbit] at h; cases h; exact ⟨_, _, rfl, distinct_foR_wf ho hbit _ _ _⟩
+      · rw [distinctColumn_alp ho hbit] at h; cases h; exact ⟨_, _, rfl, distinct_alp_wf ho hbit _ _ _ _ hw⟩
+  | none =>
+    rcases orderKind_eq_none.1 ho with rfl | rfl | rfl
+    · rcases symbol_cases hw with ⟨b, o, rfl⟩ | ⟨d, o, i, rfl⟩
+      · rw [distinctColumn_syms] at h; cases h
+        exact ⟨_, _, rfl, by simp [Enc.WF, Order.distinctSyms, (symsAt_inv _ _ _).1]⟩
+      · rw [distinctColumn_enum] at h; cases h
+        exact ⟨_, _, rfl, by simp [Enc.WF, Order.distinctIds, (symsAt_inv _ _ _).1]⟩
+    · cases e <;> simp [Enc.WF, QAtomicType.width] at hw
+      cases h
+      exact ⟨_, _, rfl, by simp [Enc.WF, QAtomicType.width, gatherBytes_size]⟩
+    · cases e <;> simp [Enc.WF, QAtomicType.width] at hw
+      cases h
+
 end LeetQ.Rel.KernelWF
