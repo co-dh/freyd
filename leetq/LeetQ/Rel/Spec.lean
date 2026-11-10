@@ -177,7 +177,7 @@ theorem enum_range' (a k : Nat) : ∀ L, enum (fun i => a ≤ i ∧ i < a + k) L
 /-- `enum` executed: the coreflexive given as a bit column `x` (its set `{i ∣ x.rel i 1b}`) enumerates as
     `Find.where x`, the `whereBits` positions, read as naturals. -/
 theorem enum_where {nx m : Nat} {x : Arr .boolean nx} {r : Arr .long m} (hn : nx < USize.size)
-    (h : Find.where x = .ok ⟨m, r⟩) :
+    (h : Find.where x = ⟨m, r⟩) :
     ∃ L : List Nat, r.toList = L.map Int64.ofNat ∧ ∀ ys, enum (fun i => x.rel i true) ys ↔ ys = CL.ofList L := by
   let L := (List.range x.toList.length).filter fun j => x.toList.getD j false
   have mem : ∀ i, i ∈ L ↔ x.rel i true := fun i => by
@@ -187,7 +187,7 @@ theorem enum_where {nx m : Nat} {x : Arr .boolean nx} {r : Arr .long m} (hn : nx
     · rintro ⟨hi, e⟩; rw [List.getElem?_eq_getElem hi] at e ⊢; simpa using e
     · intro e; have hi : i < x.toList.length := (List.getElem?_eq_some_iff.1 e).1; exact ⟨hi, by rw [e]; rfl⟩
   have pw : L.Pairwise (· < ·) := (List.pairwise_lt_range ..).filter _
-  exact ⟨L, Find.where_toList hn h, enum_ofList _ L pw mem⟩
+  exact ⟨L, (by have e := Find.where_toList (x := x) hn; rw [h] at e; exact e), enum_ofList _ L pw mem⟩
 
 /-! ## The List specs read as expressions -/
 
@@ -303,9 +303,9 @@ end Lists
 /-! ## The first batch of laws: the 8 verbs whose List spec already is the expression -/
 
 /-- `~x = x ≫ not`. -/
-theorem not_rel {x r : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = .ok r) :
+theorem not_rel {x r : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = r) :
     r.rel = x.rel ≫ graph (fun b => !b) :=
-  calc r.rel = ix (x.toList.map fun b => !b) := congrArg ix (Ew.not_spec hn h)
+  calc r.rel = ix (x.toList.map fun b => !b) := congrArg ix (h ▸ Ew.not_spec hn)
     _ = x.rel ≫ graph (fun b => !b) := ix_map ..
 
 /-- `n#x = take(n) ≫ x`. -/

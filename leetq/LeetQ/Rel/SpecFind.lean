@@ -936,10 +936,8 @@ theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (h
     ∃ B, c = .bytes B ∧ B.size = k * 8 ∧
       Verify.elemsW 8 B = is.map fun j => xs.getD j.toNat 0x8000000000000000 := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hx
   obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl m x.enc k i.enc c
-    hA h
+    x.wf h
   obtain ⟨B, -, hB, hBw, -⟩ := Arr.dense_long x hx hm
   obtain rfl : B = src := Option.some.inj (hB.symm.trans hsrc)
   have hix8 : Verify.elemsW 8 ix = is := by
@@ -1683,7 +1681,7 @@ theorem bind_ok {ε α β : Type} {x : Except ε α} {f : α → Except ε β} {
 /-- `align` off the matching-keys case, unfolded: `findColumn`, `gatherFill` at `eᵣ` and one `dyad` give the
     rows of `x`; `memberColumn`, `~`, `whereColumn`, `gatherColumn` and one `dyad` against `eₗ` the rows only
     `y` has; `razeColumn` joins the keys and the values. -/
-theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem align_gather {L : Lift} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn s x.n x.key.enc y.n y.key.enc ≠ some true) :
     ∃ (ix yx : Nat × Enc) (l : Arr rt x.n) (ty : QAtomicType) (m : Nat) (b : ByteArray) (r : Nat) (iy ac gy : Enc)
@@ -1738,7 +1736,7 @@ theorem align_gather {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u}
 /-- **The rows of `x` in `align`, long keys and long `y` values: `⟨x, x.key ≫ miss(Λ(y.key°) est(≤) y, eᵣ)⟩ ≫ f`.**
     Each key of `x` meets `y`'s value at the key's first position in `y.key`, `eᵣ` where `y` lacks it
     (`probe_find`, `gatherFill_long`, `ix_lookup`); `hlaw` is any value law of the encodings at hand. -/
-theorem align_left_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Nat × Enc}
+theorem align_left_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ix yx : Nat × Enc}
     {l : Arr rt x.n} (he : Eval.ewType L.v t .long = some rt) (hkx : Find.Readable .long x.n x.key.enc)
     (hky : Find.Readable .long y.n y.key.enc) (hyv : Find.Readable .long y.n y.val.enc)
     (hnx : x.n < USize.size) (hny : y.n < USize.size)
@@ -1863,7 +1861,7 @@ theorem gather_rel {k n : Nat} (z : Arr .long k) {zs : List UInt64} (hz : longWo
     enumerate the positions of `y` whose key `x` lacks (`probe_member`, `notBits_bitAt`, `whereBits_spec`),
     `gatherColumn` reads `y` there (`gatherColumn_long`), and the `av` dyad pairs each with `eₗ`; `hlaw` is any value
     law of `a f y` at the encoding at hand. -/
-theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
+theorem align_right_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {ty : QAtomicType}
     {m : Nat} {b : ByteArray} {r : Nat} {iy ac gy : Enc} {ry : Arr rt r} (ht : t ≠ .general) {el : Carrier t}
     (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.vr t .long = some rt)
     (hkx : Find.Readable .long x.n x.key.enc) (hky : Find.Readable .long y.n y.key.enc)
@@ -1897,7 +1895,7 @@ theorem align_right_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel
     value laws of the `vv`/`av` dyads at the encodings at hand. Keys and values are joined by `raze_toList`, which
     `hrt` admits: `rt` boolean or a type `encodes` or `alpEncodes` takes (symbol has no raze law yet); `h32` bounds
     an ALP join. -/
-theorem align_rel {L : Lift} {rt : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
+theorem align_rel {L : Lift} {rt t : QAtomicType} {x : Rel .long t} {y : Rel .long .long} {R : Rel .long rt}
     (ht : t ≠ .general) (hv : Ew.align L rt x y ht = .ok R)
     (hm : ∀ _ : y.n = x.n, Kernel.matchColumn .long x.n x.key.enc y.n y.key.enc ≠ some true) {el : Carrier t}
     (hel : Carrier.atom el = Column.atomOfBits t L.el) (he : Eval.ewType L.v t .long = some rt)
@@ -1962,7 +1960,7 @@ theorem lift_v {v : Prim.Dyadic} {t u : QAtomicType} {L : Lift} (h : Lift.ofVerb
   all_goals (cases h <;> first | rfl | (split <;> rfl))
 
 /-- `align` on keys `matchColumn` finds equal: one `Ew.val` of the values, `x`'s key kept. -/
-theorem align_match {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt} (ht : t ≠ .general)
+theorem align_match {L : Lift} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt} (ht : t ≠ .general)
     (hv : Ew.align L rt x y ht = .ok R) (h : y.n = x.n) (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true) :
     ∃ V, Ew.val L.v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
   unfold Ew.align at hv
@@ -1974,7 +1972,7 @@ theorem align_match {L : Lift} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} 
     exact ⟨V, hV, (Except.ok.inj hv).symm⟩
 
 /-- **`d f e` on dicts with matching keys is `Ew.val` of the values, `d`'s key kept** (`align_match`, `lift_v`). -/
-theorem dyadic_match {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem dyadic_match {v : Prim.Dyadic} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
     (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true) :
     ∃ V, Ew.val v rt x.val (h ▸ y.val) = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
@@ -1988,7 +1986,7 @@ theorem dyadic_match {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : R
 
 /-- `d f e = ⟨d, e⟩ ≫ f` on the values of dicts with matching keys, `d`'s key kept: any value law `hlaw` of
     the encodings at hand (`val_spec_long`, `cmp_spec_long_foR`, …) read through `dyadic_match` and `val_rel`. -/
-theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
+theorem dyadic_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {x : Rel s t} {y : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.dyadic v rt x y ht = .ok R) (h : y.n = x.n)
     (hm : Kernel.matchColumn s x.n x.key.enc y.n y.key.enc = some true)
     (hlaw : ∀ V, Ew.val v rt x.val (h ▸ y.val) = .ok V → Ew.ValSpec v he x.val (h ▸ y.val) V) :
@@ -2000,7 +1998,7 @@ theorem dyadic_rel {v : Prim.Dyadic} {rt s : QAtomicType} {x : Rel s t} {y : Rel
 /-! ### An atom and a dict: the key kept, the verb on the values -/
 
 /-- `Ew.keyed x f` answers `f` of `x`'s values under `x`'s key. -/
-theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
+theorem keyed_ok {s rt t : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except String (Arr rt x.n)} {R : Rel s rt}
     (hv : Ew.keyed x f = .ok R) : ∃ V, f x.val = .ok V ∧ R = ⟨x.n, x.key, V⟩ := by
   unfold Ew.keyed at hv
   simp only [bind, Except.bind, pure, Except.pure] at hv
@@ -2011,7 +2009,7 @@ theorem keyed_ok {s rt : QAtomicType} {x : Rel s t} {f : Arr t x.n → Except St
 
 /-- `a f d = ⟨!a, d⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
     (`atomVal_spec_long`, `atomVal_spec_long_foR`, …) read through `keyed_ok` and `atomVal_rel`. -/
-theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
+theorem atomDict_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {a : Carrier t} {x : Rel s u} {R : Rel s rt}
     (ht : t ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.atomVal v rt a · ht) = .ok R)
     (hlaw : ∀ V, Ew.atomVal v rt a x.val ht = .ok V → x.val.toList.mapM (fun b => elem v he a b) = .ok V.toList) :
     ∃ V, R = ⟨x.n, x.key, V⟩ ∧
@@ -2021,7 +2019,7 @@ theorem atomDict_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier t} {x :
 
 /-- `d f a = ⟨d, !a⟩ ≫ f` on `d`'s values, `d`'s key kept: any value law `hlaw` of the encoding at hand
     (`valAtom_spec_long`, `valAtom_spec_long_foR`, …) read through `keyed_ok` and `valAtom_rel`. -/
-theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
+theorem dictAtom_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {a : Carrier u} {x : Rel s t} {R : Rel s rt}
     (hu : u ≠ .general) (he : Eval.ewType v t u = some rt) (hv : Ew.keyed x (Ew.valAtom v rt · a hu) = .ok R)
     (hlaw : ∀ V, Ew.valAtom v rt x.val a hu = .ok V → x.val.toList.mapM (fun b => elem v he b a) = .ok V.toList) :
     ∃ V, R = ⟨x.n, x.key, V⟩ ∧
@@ -2030,13 +2028,13 @@ theorem dictAtom_rel {v : Prim.Dyadic} {rt s : QAtomicType} {a : Carrier u} {x :
   ⟨V, hR, valAtom_rel (hlaw V hV)⟩
 
 /-- The column `Ew.mon` answers is the one `monColumn` builds. -/
-theorem mon_enc {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Enc}
-    (hd : Kernel.monColumn name t n x.enc = some (rt, C)) (hv : Ew.mon name rt x = .ok R) : R.enc = C := by
-  unfold Ew.mon at hv
-  simp only [hd, ↓reduceIte, Arr.of] at hv
-  split at hv
-  · cases hv; rfl
-  · cases hv
+theorem mon_enc {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {C : Enc}
+    {hname : name ∈ KernelWF.monNames} {hrt : Kernel.monResultType name t = some rt} {hg : t ≠ .general}
+    (hd : Kernel.monColumn name t n x.enc = some (rt, C)) (hn : n < USize.size) :
+    (Ew.mon name rt x hname hrt hg).enc = C := by
+  simp only [Ew.mon, dif_pos hn, Ew.monK]
+  show ((Kernel.monColumn name t n x.enc).get _).2 = C
+  simp only [hd, Option.get_some]
 
 /-- The reading every `long` map kernel ends in: an answer listing `g` of each word of `X`, which lists `x`'s
     words, is `MapSpec g`. -/
@@ -2058,11 +2056,14 @@ theorem mapM_spec_words {ε : Type} {F : Int64 → Except ε Int64} {g : Int64 �
 
 /-- **`-x` at `long` on a dense column is `MapSpec`** of `monStep`'s `neg`, which `Verify.negAtom_long`
     proves is q's `neg`: `0N` stays `0N`, everything else is `0 - x`. -/
-theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+theorem neg_spec_long {n : Nat} {x : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
+    (hn : n < USize.size) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
-      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_long _ _) hv
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x
+      (Ew.mon "neg" .long x) := by
+  have hR := mon_enc (name := "neg") (rt := .long) (x := x) (hname := by decide) (hrt := rfl) (hg := by decide)
+    (by rw [ha]; exact monColumn_neg_long _ _) hn
+  generalize Ew.mon "neg" .long x = R at hR ⊢
   have hrun := run_mon ({ inputs := #[a] } : Kernel.Ew.Build) rfl Kernel.Ew.neg Kernel.Ew.i64 0
     (Kernel.nullPayload .long) (by decide) n.toUSize
   simp only [show (#[a] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl] at hrun
@@ -2075,11 +2076,11 @@ theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc 
   exact map_spec_words (by simp only [longWords, ha]) (Arr.n_long_bytes x ha) (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long`. Dense long column. -/
-theorem neg_rel_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
-    R.rel = x.rel ≫ graph (fun y : Int64 =>
+theorem neg_rel_long {n : Nat} {x : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
+    (hn : n < USize.size) :
+    (Ew.mon "neg" .long x).rel = x.rel ≫ graph (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
-  mon_rel (neg_spec_long ha hn hv)
+  mon_rel (neg_spec_long ha hn)
 
 /-- `Ew.val` at `i64` with one long atom on the left (`av`): element `i` is `intStep` of the atom and
     element `i` (`Verify.val_i64_va`'s mirror). -/
@@ -2813,12 +2814,15 @@ theorem monColumn_neg_foR (n : Nat) (md pk : ByteArray) :
 
 /-- **`-x` at `long` on a `foR` column is `MapSpec`** of `monStep`'s `neg`: `foRMonEnc` re-encodes `Ew.mon` over
     the decode (`decode_of_encode8`), whose words `mon_i64` reads. -/
-theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+theorem neg_spec_long_foR {n : Nat} {x : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
+    (hn : n < USize.size) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
-      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x
+      (Ew.mon "neg" .long x) := by
   have h8 : (8 : Nat).toUSize = (8 : USize) := rfl
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_foR _ _ _) hv
+  have hR := mon_enc (name := "neg") (rt := .long) (x := x) (hname := by decide) (hrt := rfl) (hg := by decide)
+    (by rw [ha]; exact monColumn_neg_foR _ _ _) hn
+  generalize Ew.mon "neg" .long x = R at hR ⊢
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
   rw [h8] at hx hxs
   have hw := longWords_answer_foR
@@ -2839,11 +2843,11 @@ theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha 
   exact map_spec_words hx hxs (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long_foR`. `foR` column. -/
-theorem neg_rel_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
-    R.rel = x.rel ≫ graph (fun y : Int64 =>
+theorem neg_rel_long_foR {n : Nat} {x : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
+    (hn : n < USize.size) :
+    (Ew.mon "neg" .long x).rel = x.rel ≫ graph (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
-  mon_rel (neg_spec_long_foR ha hn hv)
+  mon_rel (neg_spec_long_foR ha hn)
 
 /-- **`seed <': x` at `long` on a dense column is its List spec** `zip(x, seed :: x).mapM (<)`:
     `prior_spec_long`'s prior operand, then `dyadColumn_long_vv_cmp` and `toList_cmp_long`. -/
@@ -2915,18 +2919,36 @@ theorem priorCmp_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp
 
 /-- **`&x` on dense long counts is `whereCountsSpec`**: `expandBytes_spec` repeats `til n`'s element `i`
     `x[i]` times (a negative count none, as the spec's `toNat`), and `tilLongs_spec` reads element `i` as `i`.
-    The kernel's refusal of a negative count only narrows when it answers. -/
-theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
-    (hb : x.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩) :
-    r.toList = Find.whereCountsSpec x.toList := by
-  simp only [Find.whereCounts, Find.dense, hb, Enc.bytesOf, bind, Except.bind] at h
-  split at h
-  · cases h
-  obtain ⟨hnr, hr⟩ := Find.list_enc h
-  subst hnr
+    `expand`'s payload is whole longs, so `whereCounts` takes its kernel branch. -/
+theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray}
+    (hb : x.enc = .bytes b) (hn : nx < USize.size) (hz : (Find.negs x).size = 0) :
+    (Find.whereCounts x hz).2.toList = Find.whereCountsSpec x.toList := by
+  have hd : Find.denseOf x = b := by simp [Find.denseOf, hb, Enc.bytesOf]
+  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hm : ∀ (l : List Nat) (f : ByteArray → Nat → ByteArray), (∀ acc i, (f acc i).size % 8 = acc.size % 8) →
+      ∀ acc, (l.foldl f acc).size % 8 = acc.size % 8 := fun l f hf => by
+    induction l with
+    | nil => intro; rfl
+    | cons i l ih => intro acc; rw [List.foldl_cons, ih, hf]
+  have hwf : Enc.WF .long ((Find.expand b).1.size / 8) (.bytes (Find.expand b).1) := by
+    have h0 : (Find.expand b).1.size % 8 = 0 := by
+      simp only [Find.expand, Kernel.expandBytes]
+      rw [← Array.foldl_toList]
+      refine (hm _ _ (fun acc i => ?_) _).trans rfl
+      dsimp only
+      rw [← Array.foldl_toList]
+      exact hm _ _ (fun acc _ => by rw [Column.pushBits_size, h8]; omega) _
+    show (Find.expand b).1.size = (Find.expand b).1.size / 8 * 8
+    omega
+  simp only [Find.whereCounts]
+  generalize Find.denseOf x = d at hd ⊢
+  subst d
+  rw [dif_pos hwf]
+  dsimp only
+  generalize hR : (Arr.mk _ hwf).markIf 1 = r
+  have hr : r.enc = .bytes (Find.expand b).1 := by rw [← hR, Arr.markIf_enc]; rfl
   have hw : longWords ((Find.expand b).1.size / 8) r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
   have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
-  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
     (Kernel.tilLongs (b.size / 8).toUSize) b
   rw [h8] at he
@@ -2991,10 +3013,10 @@ def whereOffsets (ns : List Int64) (i : Nat) : Nat := ((List.range i).map fun k 
 /-- **`&x` on counts `= corefl(< Σ(0|x)) ≫ grp(o)`**, the group read as a long: output position `j` goes to
     the input position whose segment holds it, the segments cut at `o = 0, +\(0|x)` (as `cut` reads them).
     Stated for every dense long `o` holding the offsets; `whereCounts_toList` and `flatMap_replicate_getElem?`. -/
-theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
-    (hb : x.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩)
+theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray}
+    (hb : x.enc = .bytes b) (hn : nx < USize.size) (hz : (Find.negs x).size = 0)
     (o : Arr .long (nx+1)) (ho : ∀ i : Fin (nx+1), (o.get i).toInt = whereOffsets x.toList i) :
-    r.rel = corefl (· < whereOffsets x.toList nx) ≫ grp o ≫ graph Int64.ofNat := by
+    (Find.whereCounts x hz).2.rel = corefl (· < whereOffsets x.toList nx) ≫ grp o ≫ graph Int64.ofNat := by
   let f := fun k => (x.toList.getD k 0).toInt.toNat
   have hs : ∀ i, whereOffsets x.toList (i+1) = whereOffsets x.toList i + f i := fun i => by
     simp [whereOffsets, List.range_succ, f]
@@ -3007,9 +3029,9 @@ theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat}
   have key : ∀ j a, ((List.range nx).flatMap fun i => List.replicate (f i) i)[j]? = some a ↔
       j < whereOffsets x.toList nx ∧ a = Parted.group o j := fun j a =>
     (flatMap_replicate_getElem? f (whereOffsets x.toList) rfl hs nx j a).trans (by rw [hgrp j])
-  have hr : r.rel = ix (((List.range nx).flatMap fun i => List.replicate (f i) i).map Int64.ofNat) := by
-    show ix r.toList = _
-    rw [whereCounts_toList hb hn h]
+  have hr : (Find.whereCounts x hz).2.rel = ix (((List.range nx).flatMap fun i => List.replicate (f i) i).map Int64.ofNat) := by
+    show ix (Find.whereCounts x hz).2.toList = _
+    rw [whereCounts_toList hb hn hz]
     unfold Find.whereCountsSpec
     rw [Arr.length_toList]
     simp [List.map_flatMap, List.map_replicate, f]
@@ -3037,11 +3059,11 @@ end Kernel
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
     `enum` relates `F` to gives the answer, and there is one. Restrictions as `distinct_toList`'s:
     long columns. -/
-theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr} {xs : List UInt64}
+theorem distinct_rel {nx : Nat} {x : Arr .long nx} {xs : List UInt64}
     (hx : longWords nx x.enc = some xs) (hu : x.attrCell.map (·.1) = some 2 → x.toList.Nodup)
-    (hn8 : 8 * nx < USize.size) (h : Find.distinct x = .ok ⟨nr, r⟩) :
+    (hn8 : 8 * nx < USize.size) :
     (∃ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys) ∧
-    ∀ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys → r.rel = ix (CL.toList ys) ≫ x.rel := by
+    ∀ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys → (Find.distinct x).2.rel = ix (CL.toList ys) ≫ x.rel := by
   have hS : ∀ j, cset (ran (Λ (x.rel°) ≫ est (· ≤ ·))) j ↔
       j ∈ Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := fun j =>
     ⟨fun ⟨_, a, h1, _⟩ => (least_iff_firsts _ j).1 ⟨a, (Λ_comp_est_apply _ _ a j).1 h1⟩,
@@ -3055,7 +3077,7 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
   refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
   have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := by
     rw [(he ys).1 hy, CL.toList_ofList]
-  calc r.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8 h)
+  calc (Find.distinct x).2.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8)
     _ = ix ((Verify.firstsOf (fun i => x.toList[i]!) x.toList.length).map fun i => x.toList[i]!) :=
         congrArg ix (eraseDups_firsts _)
     _ = ix (Verify.firstsOf (fun i => x.toList[i]!) x.toList.length) ≫ x.rel := ix_map_getElem! _ _ hlt
@@ -3065,21 +3087,21 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
 
 /-- `x in y = x ≫ χ(ran y)`. Restrictions as `in_toList`'s. -/
 theorem in_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
-    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .boolean nx}
+    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny}
     (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends y)
-    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) (h : Find.«in» x y = .ok r) :
-    r.rel = x.rel ≫ χ (ran y.rel) :=
-  calc r.rel = ix (Find.inSpec x.toList y.toList) := congrArg ix (Find.in_toList hx hy hs hn8 hm h)
+    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) :
+    (Find.«in» x y).rel = x.rel ≫ χ (ran y.rel) :=
+  calc (Find.«in» x y).rel = ix (Find.inSpec x.toList y.toList) := congrArg ix (Find.in_toList hx hy hs hn8 hm)
     _ = x.rel ≫ graph (fun v => y.toList.contains v) := ix_map ..
     _ = x.rel ≫ χ (ran y.rel) := congrArg (x.rel ≫ ·) (ix_contains _)
 
 /-- `x?y = y ≫ miss(Λ(x°) ≫ est(≤), n)`, the position read as a long. Restrictions as `find_toList`'s. -/
 theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
-    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .long ny}
+    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny}
     (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends x)
-    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) (h : Find.find x y = .ok r) :
-    r.rel = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) nx ≫ graph Int64.ofNat :=
-  calc r.rel = ix (Find.findSpec x.toList y.toList) := congrArg ix (Find.find_toList hx hy hs hn8 hm h)
+    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) :
+    (Find.find x y).rel = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) nx ≫ graph Int64.ofNat :=
+  calc (Find.find x y).rel = ix (Find.findSpec x.toList y.toList) := congrArg ix (Find.find_toList hx hy hs hn8 hm)
     _ = y.rel ≫ graph (fun v => Int64.ofNat (x.toList.idxOf v)) := ix_map ..
     _ = y.rel ≫ graph (fun v => x.toList.idxOf v) ≫ graph Int64.ofNat := congrArg (y.rel ≫ ·) (graph_comp ..).symm
     _ = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) x.toList.length ≫ graph Int64.ofNat :=
@@ -3088,32 +3110,32 @@ theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
 
 /-- `x bin y = y ≫ miss(Λ((≥) ≫ x°) ≫ est(≥), −1)`, the position read as a long. Restrictions as
     `bin_toList`'s: long columns, `x` ascending. -/
-theorem bin_rel {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r : Arr .long ny}
+theorem bin_rel {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny}
     (hx : Find.Readable .long nx x.enc) (hy : Find.Readable .long ny y.enc) (hn : nx < USize.size) (hm : ny < USize.size)
-    (hsort : ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j) (h : Find.bin x y = .ok r) :
-    r.rel = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
+    (hsort : ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j) :
+    (Find.bin x y).rel = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
   have hp : x.toList.Pairwise (· ≤ ·) := List.pairwise_iff_getElem.2 fun i j hi hj hij => by
     rw [Arr.getElem_toList, Arr.getElem_toList]
     exact hsort _ _ (Nat.le_of_lt hij)
-  calc r.rel = ix (Find.binSpec x.toList y.toList) := congrArg ix (Find.bin_toList hx hy hn hm hsort h)
+  calc (Find.bin x y).rel = ix (Find.binSpec x.toList y.toList) := congrArg ix (Find.bin_toList hx hy hn hm hsort)
     _ = y.rel ≫ graph (fun v => Int64.ofNat (x.toList.countP (· ≤ v)) - 1) := ix_map ..
     _ = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
         congrArg (y.rel ≫ ·) (ix_bin _ hp)
 
 /-- `&x = enum(dom(x ≫ 1b°))` on booleans, the positions read as longs: every list `enum` relates
     the set to is the answer, and there is one. -/
-theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
-    (hn : nx < USize.size) (h : Find.«where» x = .ok ⟨nr, r⟩) :
+theorem where_rel {nx : Nat} {x : Arr .boolean nx}
+    (hn : nx < USize.size) :
     (∃ ys, enum (cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys) ∧
     ∀ ys, enum (cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys →
-      r.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
-  obtain ⟨L, hL, he⟩ := enum_where hn h
+      (Find.«where» x).2.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
+  obtain ⟨L, hL, he⟩ := enum_where hn rfl
   have hS : cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°)) = fun i => x.rel i true :=
     funext fun i => propext ⟨fun ⟨_, _, ⟨b, hb, (e : b = true)⟩, _⟩ => e ▸ hb, fun hi => ⟨rfl, (), ⟨true, hi, rfl⟩, ⟨true, hi, rfl⟩⟩⟩
   rw [hS]
   refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
   obtain rfl := (he ys).1 hy
-  calc r.rel = ix (L.map Int64.ofNat) := congrArg ix hL
+  calc (Find.«where» x).2.rel = ix (L.map Int64.ofNat) := congrArg ix hL
     _ = ix L ≫ graph Int64.ofNat := ix_map ..
     _ = ix (CL.toList (CL.ofList L)) ≫ graph Int64.ofNat := by rw [CL.toList_ofList]
 

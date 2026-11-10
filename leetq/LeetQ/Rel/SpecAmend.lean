@@ -30,23 +30,19 @@ theorem filter_le_one (p : Nat → Nat) (m j : Nat) (hinj : ∀ k < m, ∀ k' < 
 /-- `z` read at the long positions `ix` (`Alg.pick`, i.e. `gatherColumn`): the dense gather of its payload. -/
 theorem pick_gather {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m)
-    (hA : ∀ M P a, z.enc = .alp M P a → Column.alpF32 a = (w == 4)) (ix : ByteArray) {k : Nat} {c : Enc}
-    (hc : Alg.pick t (m, z.enc) ix = .ok (k, c)) :
+    (ix : ByteArray) {k : Nat} {c : Enc}
+    (hc : (Alg.pick t ⟨m, z⟩ ix).2.part = (k, c)) :
     ∃ src, Enc.bytesOf t m z.enc = some src ∧ k = ix.size / 8 ∧
       c = .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix) := by
   have hdw : Kernel.denseWidth t = some w := by
     cases t <;> first | exact hw | simp [Column.encodes, Column.alpEncodes] at he
-  unfold Alg.pick at hc
-  split at hc
-  · simp [Column.encodes, Column.alpEncodes] at he
-  · split at hc
-    · next _ hg =>
-      cases hc
-      obtain ⟨src, ixb, hsrc, hixb, rfl⟩ := Verify.gatherColumn_fixed_shape hdw m z.enc _ _ _ hA hg
-      have e : ix = ixb := by simpa [Enc.bytesOf] using hixb
-      subst e
-      exact ⟨src, hsrc, rfl, rfl⟩
-    · cases hc
+  have hgen : t ≠ .general := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
+  obtain ⟨e, hg, hpe⟩ := Alg.pick_eq_gather hgen ⟨m, z⟩ ix
+  rw [hpe] at hc; cases hc
+  obtain ⟨src, ixb, hsrc, hixb, rfl⟩ := Verify.gatherColumn_fixed_shape hdw m z.enc _ _ _ z.wf hg
+  have e : ix = ixb := by simpa [Enc.bytesOf] using hixb
+  subst e
+  exact ⟨src, hsrc, rfl, rfl⟩
 
 /-- Positions listed in order, filtered and read through the list: the list filtered, then read. -/
 theorem filter_reindex {β : Type} (P : List Nat) (g : Nat → Nat) (h : Nat → β) (j : Nat) :
@@ -77,12 +73,11 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
     (htl : ∀ {m} (z : Arr t m) {D}, Enc.bytesOf t m z.enc = some D → m < USize.size →
       z.toList = (Verify.elemsW w D).map dec)
     (hnx : nx < 2 ^ 32) (verb : String) (acc : Arr t nx)
-    (hA : ∀ M P a, acc.enc = .alp M P a → Column.alpF32 a = (w == 4))
     (ix : ByteArray) (hm : ix.size / 8 < 2 ^ 32)
     (hinj : ∀ k < ix.size / 8, ∀ k' < ix.size / 8,
       (Column.bitsAt ix (k * 8) 8).toNat = (Column.bitsAt ix (k' * 8) 8).toNat → k = k')
     {m : Nat} (yv : Arr t m) (hmx : ix.size / 8 = m) {k : Nat} {c : Enc} {R : Arr t k} {out : Enc}
-    (hc : LeetQ.Rel.Alg.pick t (nx, acc.enc) ix = .ok (k, c))
+    {acc₀ : Arr t nx} (hacc : acc₀.enc = acc.enc) (hc : (LeetQ.Rel.Alg.pick t ⟨nx, acc₀⟩ ix).2.part = (k, c))
     (hR : Ew.dyad v Kernel.Ew.vv t t t k c m yv.enc k = .ok R)
     (hs : Struct.scatter verb t nx acc.enc (k, R.enc) ix = .ok out) :
     ∃ acc' : Arr t nx, acc'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, acc'.toList[j]? =
@@ -93,7 +88,7 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
   have hmU : ix.size / 8 < USize.size := Nat.lt_of_lt_of_le hm USize.le_size
   subst hmx
   obtain ⟨src, hsrc, hss, hsb⟩ := bytesOf_fixed hw he acc hU
-  obtain ⟨src', hsrc', hk, rfl⟩ := pick_gather hw he acc hA ix hc
+  obtain ⟨src', hsrc', hk, rfl⟩ := pick_gather hw he acc₀ ix hc; rw [hacc] at hsrc'
   subst hk
   have e : src = src' := Option.some.inj (hsrc.symm.trans hsrc'); subst e
   have hw' : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
@@ -311,15 +306,15 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
     (htl : ∀ {m} (z : Arr t m) {D}, Enc.bytesOf t m z.enc = some D → m < USize.size →
       z.toList = (Verify.elemsW w D).map dec)
     (hnx : nx < 2 ^ 32) (verb : String) (ib : ByteArray) (hN : ib.size / 8 < 2 ^ 32) (rr : Nat)
-    (y : Arr t (ib.size / 8)) (hyA : ∀ M P a, y.enc = .alp M P a → Column.alpF32 a = (w == 4))
-    (x a : Arr t nx) (hA : ∀ M P al, a.enc = .alp M P al → Column.alpF32 al = (w == 4))
+    (y : Arr t (ib.size / 8))
+    (x a : Arr t nx)
     (hpos : ∀ j, a.toList[j]? = x.toList[j]?.map fun a0 => ((((List.range (ib.size / 8)).filter fun k =>
       (Column.bitsAt ib (k * 8) 8).toNat = j).filter fun k => Verify.amendRank ib k < rr).map (y.toList[·]!)).foldl f a0)
     (KS : ByteArray)
     (hKS : Verify.elemsW 8 KS = ((List.range (ib.size / 8)).filter fun k => Verify.amendRank ib k = rr).map Nat.toUInt64)
     {ky k : Nat} {yc c : Enc} {Rd : Arr t k} {out : Enc}
-    (hyc : LeetQ.Rel.Alg.pick t (ib.size / 8, y.enc) KS = .ok (ky, yc))
-    (hcur : LeetQ.Rel.Alg.pick t (nx, a.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok (k, c))
+    (hyc : (LeetQ.Rel.Alg.pick t ⟨ib.size / 8, y⟩ KS).2.part = (ky, yc))
+    {a₀ : Arr t nx} (ha₀ : a₀.enc = a.enc) (hcur : (LeetQ.Rel.Alg.pick t ⟨nx, a₀⟩ (Kernel.gatherBytes 8 0 ib KS)).2.part = (k, c))
     (hRd : Ew.dyad v Kernel.Ew.vv t t t k c ky yc k = .ok Rd)
     (hsc : Struct.scatter verb t nx a.enc (k, Rd.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok out) :
     ∃ a' : Arr t nx, a'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, a'.toList[j]? =
@@ -355,7 +350,7 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
       (Column.bitsAt ib (P[k]! * 8) 8).toNat := fun k hk => by
     rw [gs.2 k (by rw [hKl]; exact hk), hKw k hk, if_pos (hPlt k hk).1]
   -- `y` at the round's positions
-  obtain ⟨ysrc, hysrc, hky, rfl⟩ := pick_gather hw he y hyA KS hyc
+  obtain ⟨ysrc, hysrc, hky, rfl⟩ := pick_gather hw he y KS hyc
   subst hky
   obtain ⟨yb, hyb, hys, -⟩ := bytesOf_fixed hw he y hUi
   have e : ysrc = yb := Option.some.inj (hysrc.symm.trans hyb); subst e
@@ -393,8 +388,8 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
     · exact (one k k' hk hk' hl e).elim
     · exact hl
     · exact (one k' k hk' hk hl e.symm).elim
-  obtain ⟨a', ha', hBo, hp⟩ := amend_round hw he hdy dec htl hnx verb a hA (Kernel.gatherBytes 8 0 ib KS)
-    (by rw [hixs]; omega) hinj yA (by rw [hixs, hKl]) hcur hRd hsc
+  obtain ⟨a', ha', hBo, hp⟩ := amend_round hw he hdy dec htl hnx verb a (Kernel.gatherBytes 8 0 ib KS)
+    (by rw [hixs]; omega) hinj yA (by rw [hixs, hKl]) ha₀ hcur hRd hsc
   refine ⟨a', ha', hBo, fun j => ?_⟩
   rw [hp j, hpos j, Option.map_map]
   congr 1; funext a0
@@ -424,8 +419,6 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
     (hdy : ∀ {m} (cur yv R : Arr t m), (∃ B, cur.enc = .bytes B) → m < 2 ^ 32 →
       Ew.dyad v Kernel.Ew.vv t t t m cur.enc m yv.enc m = .ok R → R.toList = List.zipWith f cur.toList yv.toList)
     {x : Arr t nx} {i : Arr .long ni} {y : Arr t ny} {R : Arr t nx}
-    (hxA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (w == 4))
-    (hyA : ∀ M P a, y.enc = .alp M P a → Column.alpF32 a = (w == 4))
     (hnx : nx < 2 ^ 32) (hni : ni < 2 ^ 32) (h : Struct.amend x i (some v) y = .ok R) :
     ni = ny ∧ (∀ v ∈ i.toList, 0 ≤ v ∧ v.toInt.toNat < nx) ∧
       R.toList = Struct.amendSpec f x.toList i.toList y.toList := by
@@ -487,7 +480,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
       refine ⟨out, hok, ?_⟩
       obtain ⟨cur, hcur, h2⟩ := bind_ok hout
       obtain ⟨Rd, hRd, hsc⟩ := bind_ok h2
-      refine amend_round hw he hdy dec htl hnx _ x hxA ib hni ?_ y rfl hcur hRd hsc
+      refine amend_round hw he hdy dec htl hnx _ x ib hni ?_ y rfl (congrArg Prod.snd (Alg.Arr.of_c hcur)) rfl hRd hsc
       intro k hk k' hk' e
       rcases Nat.lt_trichotomy k k' with hl | hl | hl
       · have := Verify.amendRank_lt ib k k' hl (UInt64.toNat_inj.1 e); have := hrank k' hk'; omega
@@ -528,12 +521,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
       · intro rr hrr acc b hPa hb
         obtain ⟨a, hac, hform, hpos⟩ := hPa
         subst hac
-        have hA : ∀ M Q al, a.enc = .alp M Q al → Column.alpF32 al = (w == 4) := by
-          rcases hform with ⟨-, e⟩ | ⟨B, e⟩
-          · rw [e]; exact hxA
-          · intro M Q al h'; rw [e] at h'; cases h'
-        obtain ⟨yc, hyc, hst⟩ := bind_ok hb
-        obtain ⟨cur, hcur, h2⟩ := bind_ok hst
+        obtain ⟨A, hA, h2⟩ := bind_ok hb
         obtain ⟨Rd, hRd, hsc⟩ := bind_ok h2
         have hlo : (if rr == 0 then 0 else
             (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 true ib) ((1 + rr) * 8) 8).toNat) =
@@ -541,8 +529,8 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
           cases rr with
           | zero => simp
           | succ q => rw [if_neg (by simp), show 1 + (q + 1) = 2 + q by omega, hcnt q (by omega)]
-        obtain ⟨a', ha', hBo, hp⟩ := amend_round_ranked hw he hdy dec htl hnx _ ib hni rr y hyA x a hA hpos _
-          (round_positions nx.toUSize ib hmiss h1' hrr hlo (hcnt rr hrr)) hyc hcur hRd hsc
+        obtain ⟨a', ha', hBo, hp⟩ := amend_round_ranked hw he hdy dec htl hnx _ ib hni rr y x a hpos _
+          (round_positions nx.toUSize ib hmiss h1' hrr hlo (hcnt rr hrr)) rfl (congrArg Prod.snd (Alg.Arr.of_c hA)) rfl hRd hsc
         exact ⟨a', ha', .inr hBo, hp⟩
   -- the answer read back is the last accumulator, and position by position it is `amendSpec`
   obtain ⟨out, hok, a, hac, ⟨B, hBo⟩, hpos⟩ := key
@@ -585,9 +573,7 @@ theorem amend_verb_toList_long {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.valO
       -- the generic lemmas state `amendSpec` with `Carrier`'s `Inhabited`; instance search would pick `Int64`'s
       R.toList = @Struct.amendSpec (El .long) instInhabitedCarrier (Kernel.Ew.intStep op Int64.minValue)
         x.toList i.toList y.toList := by
-  have noAlp : ∀ {m} (z : Arr .long m) (M P a : ByteArray), z.enc = .alp M P a → Column.alpF32 a = (8 == 4) :=
-    fun z M P a e => by rcases fixed_parts (w := 8) rfl rfl z with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩ <;> rw [hb] at e <;> cases e
-  refine amend_verb_toList (f := Kernel.Ew.intStep op Int64.minValue) rfl (.inl rfl) ?_ (noAlp x) (noAlp y) hnx hni h
+  refine amend_verb_toList (f := Kernel.Ew.intStep op Int64.minValue) rfl (.inl rfl) ?_ hnx hni h
   intro m cur yv R ⟨B, hB⟩ hm hR
   have hmU : m < USize.size := Nat.lt_of_lt_of_le hm USize.le_size
   have hs : Ew.ValSpec v hv cur yv R := by

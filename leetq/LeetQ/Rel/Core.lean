@@ -542,65 +542,59 @@ def of? {g n : Nat} (o : Arr .long (g+1)) (val : Arr v n) : Option (Parted v) :=
     else none
   else none
 
-/-- Group `r`'s values `val[o[r] … o[r+1]-1]` as a q value: `sliceColumn` at an atom type, the
-    general list's sub-array otherwise. -/
-def slice (P : Parted v) (r : Fin P.g) : Option QValue :=
-  let lo := (P.o.get r.castSucc).toNatClampNeg; let hi := (P.o.get r.succ).toNatClampNeg
-  match v, P.val.enc with
-  | .general, .gen xs => some (.general (xs.extract lo hi))
-  | .general, _ => none
-  | t, e => (Kernel.sliceColumn t P.n e lo (hi - lo)).map (.vector t (hi - lo) · none)
-
-/-- q's nested list: one vector per group, each its own slice. -/
-def box (P : Parted v) : Except String (Arr .general P.g) := do
-  let some xs := (Array.ofFn (P.slice ·)).mapM id | throw "box: sliceColumn declines a group's slice"
-  Arr.of .general P.g (.general xs) "box"
-
-/-- The parts of a nested list as each part's count and one flat vector: `raze` of the vectors at an
-    atom type, the concatenated lists at `.general`; a part of another shape is declined. -/
-def razeParts : QAtomicType → Array QValue → Except String (Array Nat × QValue)
-  | .general, xs => do
-    let ls ← xs.mapM fun | .general ys _ => pure ys | _ => throw "razeParts: a general part that is not a list"
-    pure (ls.map (·.size), .general (ls.foldl (· ++ ·) #[]))
-  | t, xs => do
-    let cs ← xs.mapM fun | .vector t' n e _ => if t' == t then pure (n, e) else throw "razeParts: a part of another type"
-                          | _ => throw "razeParts: a part that is not a vector"
-    -- no parts is `t`'s empty vector, which `razeColumn` declines for want of a part to read `t` from
-    let some c := (if cs.isEmpty then
-        (if h : t = .general then none else (Enc.ofAtoms t #[] h).map (.vector t 0 · none))
-      else Kernel.razeColumn t cs)
-      | throw "razeParts: razeColumn declines the parts"
-    pure (cs.map (·.1), c)
-
-/-- The flat form of a nested list of `g` parts at `v`: `razeParts`, the offsets their running counts. -/
-def ofBoxes (v : QAtomicType) {g : Nat} (b : Arr .general g) : Except String (Parted v) := do
-  let .gen xs := b.enc | throw "ofBoxes: a nested list's payload is not .gen"
-  let (cnt, c) ← razeParts v xs
-  let os := cnt.foldl (fun (s, b) m => (s + m, Column.pushBits b (Int64.ofNat (s + m)).toUInt64 8)) (0, Column.pushBits .empty 0 8)
-  let o ← Arr.of .long (g+1) (.vector .long (g+1) (.bytes os.2) none) "ofBoxes"
-  let val ← Arr.of v os.1 c "ofBoxes"
-  let some P := of? o val | throw "ofBoxes: the running counts are not cuts"
-  pure P
-
 end Parted
 
-/-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays. -/
-structure Rel (k v : QAtomicType) where
+/-- A side of a relation: an atomic type, or a product of sides. A tree, so `Vals (.atom t)` is `Arr t`
+    itself and every one-column path is unchanged; a list would wrap even one column. -/
+inductive Obj
+  | atom (t : QAtomicType)
+  | prod (a b : Obj)
+
+instance : Coe QAtomicType Obj := ⟨.atom⟩
+
+/-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
+@[match_pattern, reducible] def Obj.long : Obj := .atom .long
+@[match_pattern, reducible] def Obj.boolean : Obj := .atom .boolean
+@[match_pattern, reducible] def Obj.float : Obj := .atom .float
+@[match_pattern, reducible] def Obj.symbol : Obj := .atom .symbol
+@[match_pattern, reducible] def Obj.general : Obj := .atom .general
+
+/-- An element of a side: a tuple of its atoms' elements. -/
+@[reducible] def Obj.El : Obj → Type
+  | .atom t => Carrier t
+  | .prod a b => a.El × b.El
+
+/-- `n` values of `A`, one column per atom, side by side (struct of arrays): nothing boxed. -/
+@[reducible] def Vals : Obj → Nat → Type
+  | .atom t, n => Arr t n
+  | .prod a b, n => Vals a n × Vals b n
+
+/-- The value at row `i`, read across the columns. -/
+def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
+  | .atom _, _, x, i => Arr.get x i
+  | .prod _ _, _, x, i => (Vals.row x.1 i, Vals.row x.2 i)
+
+@[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
+    Vals.row (A := .atom t) x i = x.get i := rfl
+
+/-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays at atoms,
+    one column per atom of a product side, so `B×C` stored as two columns IS one side of pairs. -/
+structure Rel (k v : Obj) where
   n : Nat
-  key : Arr k n
-  val : Arr v n
+  key : Vals k n
+  val : Vals v n
 
 namespace Rel
 
-variable {k v : QAtomicType}
+variable {k v : Obj}
 
-/-- The relation `R` denotes: `R x y ↔ ∃ i, key.get i = x ∧ val.get i = y`. -/
-def Holds (R : Rel k v) (x : El k) (y : El v) : Prop := ∃ i, R.key.get i = x ∧ R.val.get i = y
+/-- The relation `R` denotes: `R x y ↔ ∃ i, key.row i = x ∧ val.row i = y`. -/
+def Holds (R : Rel k v) (x : k.El) (y : v.El) : Prop := ∃ i, R.key.row i = x ∧ R.val.row i = y
 
 /-- The pairs, in position order, for proofs only. -/
-def toList (R : Rel k v) : List (El k × El v) := List.ofFn fun i => (R.key.get i, R.val.get i)
+def toList (R : Rel k v) : List (k.El × v.El) := List.ofFn fun i => (R.key.row i, R.val.row i)
 
-theorem holds_iff_mem_toList (R : Rel k v) (x : El k) (y : El v) : R.Holds x y ↔ (x, y) ∈ R.toList := by
+theorem holds_iff_mem_toList (R : Rel k v) (x : k.El) (y : v.El) : R.Holds x y ↔ (x, y) ∈ R.toList := by
   simp [Holds, toList, List.mem_ofFn]
 
 end Rel
@@ -645,13 +639,6 @@ private def o3f : Except String (Arr .long 4) :=
 #guard (Parted.of? o2 (Arr.mk (.bytes <| packLongs [10, 20]) (by decide) : Arr .long 2)).isNone
 #guard (Parted.of? (Arr.mk (.bytes <| packLongs [0, 2, 1]) (by decide) : Arr .long 3) v3).isNone
 #guard (Parted.of? (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide) : Arr .long 3) v3).isNone
--- `box` then `ofBoxes` is the identity on the flat form, and each box is q's vector of its slice
-#guard match Parted.of? o3 v3 with
-  | some P => match P.box with
-    | .ok b => (match (b.toList[1]? : Option QValue) with | some (.vector t n _ _) => t == .long && n == 0 | _ => false) &&
-        match Parted.ofBoxes .long b with | .ok Q => Q.toList == P.toList | .error _ => false
-    | .error _ => false
-  | none => false
 #guard ss.toList.zipIdx == [("bc", 0), ("a", 1), ("bc", 2)]
 example : ss.Holds 1 "a" := (ss.holds_iff_mem_zipIdx 1 "a").2 ⟨1, rfl, by decide⟩
 

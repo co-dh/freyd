@@ -634,14 +634,11 @@ theorem ofPart_enc {t : QAtomicType} {n : Nat} {p : Nat × Enc} {w : String} {a 
 theorem gather_long [Inhabited (El .long)] {nx N : Nat} (x : Arr .long nx) {vs : List UInt64}
     (hv : longWords nx x.enc = some vs) (hxU : nx < USize.size) {idx : ByteArray} (hn : idx.size / 8 = N)
     (hiW : idx.size % 8 = 0) (hi : ∀ p, p < N → (nats idx)[p]! < nx) {c : Nat × Enc}
-    (hp : Alg.pick .long (nx, x.enc) idx = .ok c) :
+    (hp : (Alg.pick .long ⟨nx, x⟩ idx).2.part = c) :
     c.1 = N ∧ (∃ B, c.2 = .bytes B) ∧ Enc.WF .long N c.2 ∧
       ∀ X : Arr .long N, X.enc = c.2 → ∀ p, p < N → X.toList[p]! = x.toList[(nats idx)[p]!]! := by
-  cases hg : Kernel.gatherColumn .long nx x.enc (Alg.len idx) (.bytes idx) with
-  | none => simp only [Alg.pick, hg] at hp; first | cases hp | simp [throw, throwThe, MonadExceptOf.throw] at hp
-  | some e =>
-  simp only [Alg.pick, hg] at hp
-  cases hp
+  obtain ⟨e, hg, hpe⟩ := Alg.pick_eq_gather (t := .long) (by decide) ⟨nx, x⟩ idx
+  rw [hpe] at hp; subst hp
   have hsW : Enc.WF .long (Alg.len idx) (.bytes idx) := by show idx.size = idx.size / 8 * 8; omega
   obtain ⟨B, rfl, hBs, hBw⟩ := gatherColumn_long x hv hxU (Arr.mk (.bytes idx) hsW) (is := Verify.elemsW 8 idx)
     rfl trivial hg
@@ -684,10 +681,9 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   dsimp only at h
   split at h
   · cases h
-  rename_i c hvec
-  split at h
-  · cases h
   rename_i val' hof
+  have hof' := congrArg Prod.snd (Vals.ofParts_atom hof)
+  generalize hvec : (Alg.pick .long ⟨P.n, P.val⟩ (Alg.add (Alg.mulc r m) q)).2.part = c at hof'
   -- the positions: `q = p / g`, `r = p % g`, `src = r·m + q`
   have hmg : m * P.g < 2 ^ 63 := by rw [Nat.mul_comm]; omega
   have hmgU : m * P.g < USize.size := by rw [Nat.mul_comm]; omega
@@ -726,7 +722,7 @@ theorem flipP_segs [Inhabited (El .long)] {P R : Parted .long} {vs : List UInt64
   obtain ⟨-, -, -, hXv⟩ := gather_long P.val hv (by omega) (show src.size / 8 = m * P.g by omega) (by omega)
     (fun p hp => by rw [hsrc p hp]; exact hlt p hp) hvec
   have hval : ∀ p, p < m * P.g → val'.toList[p]! = P.val.toList[p % P.g * m + p / P.g]! := fun p hp => by
-    rw [hXv val' (ofPart_enc hof) p hp, hsrc p hp]
+    rw [hXv val' hof' p hp, hsrc p hp]
   -- the answer's offsets `j·g`
   have hts := nats_til (m + 1) (by omega)
   have hB' : nats (Alg.mulc (Kernel.tilLongs (m + 1).toUSize) P.g) = (List.range (m + 1)).map (· * P.g) := by
@@ -792,12 +788,8 @@ theorem pairsP_segs [Inhabited (El .long)] {v : Prim.Dyadic} {op : UInt8} (hop :
       Kernel.Ew.intStep op Int64.minValue x.toList[fx (r * k + c)]! y.toList[fy (r * k + c)]! := by
   unfold Struct.pairsP at h
   simp only [bind, Except.bind] at h
-  split at h
-  · cases h
-  rename_i xc hxc
-  split at h
-  · cases h
-  rename_i yc hyc
+  generalize hxc : (Alg.pick .long ⟨nx, x⟩ xi).2.part = xc at h
+  generalize hyc : (Alg.pick .long ⟨ny, y⟩ yi).2.part = yc at h
   split at h
   · cases h
   rename_i Z hZ
@@ -1468,10 +1460,9 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
   simp only [bind, Except.bind] at h
   split at h
   · cases h
-  rename_i c0 hvec
-  split at h
-  · cases h
   rename_i val' hof
+  have hof' := congrArg Prod.snd (Vals.ofParts_atom hof)
+  generalize hvec : (Alg.pick .long ⟨P.n, P.val⟩ src).2.part = c0 at hof'
   -- the cuts of `P`, read off `ob`
   obtain ⟨-, cg, mono⟩ := Struct.cuts_nat P.co
   have cg' : P.cut P.g = P.n := cg
@@ -1563,7 +1554,7 @@ theorem indexPartedP_segs [Inhabited (El .long)] {P R : Parted .long} {ny : Nat}
     have hh := hhit i (by omega)
     have := hcut ((nats yb)[i]! + 1) (by omega)
     rw [hsrc i w hi hw]; rw [hc] at hw; dsimp only at hw; rw [if_pos hh] at hw; omega) hvec
-  replace hXv := hXv val' (ofPart_enc hof)
+  replace hXv := hXv val' hof'
   generalize val' = X at hXv h
   -- the answer's offsets `0, S 1, …, S ny`
   obtain ⟨g', o', co', hoB', rfl⟩ := Struct.parted_ok h
@@ -2033,9 +2024,17 @@ theorem toInt64_eq_ofNat (u : UInt64) : u.toInt64 = Int64.ofNat u.toNat := by
 
 /-- **A relation of two dense long payloads lists their words**, as longs, zipped. -/
 theorem toList_ofCols {R : Rel .long .long} {a b : ByteArray}
-    (h : Alg.ofCols .long .long (Alg.longs a) (Alg.longs b) = .ok R) :
+    {w₁ w₂ : String} (h : (do Alg.ofCols .long .long (← Alg.longsP a w₁) (← Alg.longsP b w₂)) = .ok R) :
     R.toList = ((nats a).zip (nats b)).map fun p => (Int64.ofNat p.1, Int64.ofNat p.2) := by
+  simp only [bind, Except.bind] at h
+  split at h
+  · cases h
+  rename_i ka hka
+  split at h
+  · cases h
+  rename_i kb hkb
   obtain ⟨hk, hv⟩ := Alg.ofCols_ok h
+  rw [Alg.longsP_part hka] at hk; rw [Alg.longsP_part hkb] at hv
   have hkl : R.key.toList = (nats a).map Int64.ofNat := by
     rw [Arr.toList_long R.key (ws := Verify.elemsW 8 a) (by rw [show R.key.enc = .bytes a from congrArg Prod.snd hk]; rfl), nats, List.map_map]
     exact List.map_congr_left fun u _ => toInt64_eq_ofNat u
@@ -2046,7 +2045,7 @@ theorem toList_ofCols {R : Rel .long .long} {a b : ByteArray}
     List.ext_getElem (by
       simp only [Rel.toList, List.length_ofFn, List.length_zip]; rw [Arr.length_toList, Arr.length_toList, Nat.min_self])
       fun i h1 h2 => by
-        simp only [Rel.toList, List.getElem_ofFn, List.getElem_zip]
+        simp only [Rel.toList, List.getElem_ofFn, List.getElem_zip, Vals.row_atom]
         rw [Arr.getElem_toList, Arr.getElem_toList]
   rw [hz, hkl, hvl, List.zip_map]
   rfl

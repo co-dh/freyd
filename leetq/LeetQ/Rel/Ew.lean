@@ -9,6 +9,9 @@ import LeetQ.Rel.Core
 import QLean.Kernel.Structural
 import QLean.Dep.Dyadic
 import QLean.Verify.Elementwise
+import LeetQ.Rel.KernelWF.Dyad
+import LeetQ.Rel.KernelWF.Mon
+import LeetQ.Rel.Find
 
 namespace LeetQ.Rel
 
@@ -63,22 +66,55 @@ def Ew.valAtom (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr t n) (a : Carrier u
   | some vf => Ew.atomVal vf rt a x
   | none => do Ew.dyad v Ew.va t u rt n x.enc 1 (← Ew.atomCol u (Carrier.atom a)) n
 
-/-- `f x` for qlean's monadic kernels by name (`neg`, `abs`, `reciprocal`, `null`, …): one `monColumn`. -/
-def Ew.mon (name : String) (rt : QAtomicType) (x : Arr t n) : Except String (Arr rt n) :=
-  match monColumn name t n x.enc with
-  | none => .error s!"Ew.mon: no qlean kernel claims {name} at {repr t}"
-  | some (rt', e) =>
-    if rt' = rt then Arr.of rt n (.vector rt n e none) s!"Ew.mon {name}"
-    else .error s!"Ew.mon {name}: answers {repr rt'}, not {repr rt}"
+/-- One `monColumn` on a well-formed payload of `m < USize.size` elements, at a name `monNames` lists and
+    the type `monResultType` answers. -/
+def Ew.monK (name : String) (rt : QAtomicType) {m : Nat} (e : Enc) (hw : Enc.WF t m e)
+    (hname : name ∈ KernelWF.monNames) (hrt : monResultType name t = some rt) (hg : t ≠ .general)
+    (hm : m < USize.size) : Arr rt m :=
+  have hs := KernelWF.monColumn_isSome hname hrt hg hw hm
+  Arr.mk ((monColumn name t m e).get hs).2 (KernelWF.monColumn_wf hname hg hw hm (KernelWF.monColumn_get hrt hs))
+
+/-- `f x` for qlean's monadic kernels by name (`neg`, `abs`, `reciprocal`, `null`, …): one `monColumn`.
+    Past the kernel's `USize` count, the same kernel on each element's one-element column, atom by atom. -/
+def Ew.mon (name : String) (rt : QAtomicType) (x : Arr t n)
+    (hname : name ∈ KernelWF.monNames := by first | decide | assumption)
+    (hrt : monResultType name t = some rt := by first | rfl | assumption)
+    (hg : t ≠ .general := by first | decide | assumption) : Arr rt n :=
+  if hn : n < USize.size then Ew.monK name rt x.enc x.wf hname hrt hg hn
+  else
+    have hr := KernelWF.monResultType_ne_general hrt hg
+    Find.atomsOf rt hr (fun i : Fin n =>
+      let one := Find.atomsOf (m := 1) t hg (fun _ : Unit => Carrier.atom (x.get i) hg) (fun _ => by simp) [()] rfl
+      Carrier.atom ((Ew.monK name rt one.enc one.wf hname hrt hg (by have := USize.size_eq; omega)).get
+        ⟨0, Nat.one_pos⟩) hr)
+      (fun _ => by simp) (List.finRange n) (by simp)
 
 /-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
 def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize
 
-/-- `~x`: `Ew.notBits` of the column. -/
-def Ew.not (x : Arr .boolean n) : Except String (Arr .boolean n) :=
-  match x.enc with
-  | .bits b => Arr.of .boolean n (.vector .boolean n (.bits (Ew.notBits n b)) none) "Ew.not"
-  | _ => .error "Ew.not: a boolean value column is not `bits`"
+/-- `~x`: `Ew.notBits` of the column when its count fits the kernel's `USize`; else, and on a payload
+    `Enc.WF .boolean` excludes, q's `not` atom by atom. -/
+def Ew.not (x : Arr .boolean n) : Arr .boolean n :=
+  let ref := fun (_ : Unit) => Find.atomsOf .boolean (by decide) (fun i : Fin n => .boolean !(x.get i))
+    (fun _ => rfl) (List.finRange n) (by simp)
+  if hn : n < USize.size then
+    match x.enc with
+    | .bits b => Arr.mk (.bits (Ew.notBits n b))
+        (KernelWF.bits_wf (by rw [Ew.notBits, KernelWF.bit_size, USize.toNat_ofNat_of_lt' hn]))
+    | _ => ref ()
+  else ref ()
+
+/-- `x op y` bit by bit on two long columns over the same positions, `op` one of qlean's `Ew.band`,
+    `Ew.bor`, `Ew.bandnot` (`x & ~y`): `bitwPayload`, a dense pass; an encoded operand is decoded first.
+    q has no verb for these, so they are not `Prim.Dyadic`s. Past the kernel's `USize` count, `bitwStep`
+    atom by atom. -/
+def Ew.bitwise (op : UInt8) (x y : Arr .long n) : Arr .long n :=
+  if hn : n < USize.size then
+    Arr.mk ((bitwPayload op n x.enc y.enc).get (KernelWF.bitwPayload_isSome x.wf y.wf))
+      (KernelWF.bitwPayload_wf hn (Option.some_get _).symm)
+  else Find.atomsOf .long (by decide)
+    (fun i : Fin n => .long (Ew.bitwStep op (x.get i).toUInt64 (y.get i).toUInt64).toInt64) (fun _ => rfl)
+    (List.finRange n) (by simp)
 
 /-- The raw bits of a one-element payload, as `shiftColumn`'s `fill` takes them. -/
 def Ew.atomBits (t : QAtomicType) (e : Enc) : Except String UInt64 :=
@@ -270,22 +306,18 @@ theorem Ew.notBits_bitAt {m : Nat} (hm : m < USize.size) (b : ByteArray) {i : Na
   cases Column.bitAt b i <;> decide
 
 /-- **`~x`** is `x` with `not` on every boolean. `x.n < USize.size`: the kernel takes the count as a `USize`. -/
-theorem Ew.not_spec {x R : Arr .boolean n} (hn : n < USize.size) (h : Ew.not x = .ok R) :
-    Ew.MapSpec (fun b => !b) x R := by
-  unfold Ew.not at h
-  split at h
-  · rename_i b hc
-    apply List.ext_getElem (by rw [List.length_map]; exact (Arr.length_toList R).trans (Arr.length_toList x).symm)
+theorem Ew.not_spec {x : Arr .boolean n} (hn : n < USize.size) : Ew.MapSpec (fun b => !b) x (Ew.not x) := by
+  unfold Ew.not
+  rw [dif_pos hn]
+  cases hc : x.enc
+  case bits b =>
+    dsimp only
+    apply List.ext_getElem (by rw [List.length_map, Arr.length_toList, Arr.length_toList])
     intro i h1 h2
-    have hac : R.enc = .bits (Ew.notBits n b) := by
-      simp only [Arr.of] at h; split at h
-      · cases h; rfl
-      · cases h
-    rw [Arr.getElem_toList, List.getElem_map, Arr.getElem_toList, Arr.get_bool_bits _ hac,
-      Arr.get_bool_bits _ hc]
+    rw [Arr.getElem_toList, List.getElem_map, Arr.getElem_toList, Arr.get_bool_bits _ rfl, Arr.get_bool_bits _ hc]
     rw [Arr.length_toList] at h1
     exact Ew.notBits_bitAt hn b (by omega)
-  · cases h
+  all_goals (have hw := x.wf; rw [hc] at hw; simp [Enc.WF] at hw)
 
 
 /-! ## The element step at `long`: q's interpreter against the kernel's step
@@ -392,7 +424,7 @@ private def D (ks vs : List Int64) : Except String (Rel .long .long) :=
   return ⟨vs.length, ← Arr.of .long _ (.vector .long ks.length (.bytes (packLongs ks)) none) "D",
     ← Arr.of .long _ (.vector .long vs.length (.bytes (packLongs vs)) none) "D"⟩
 private def av {v n} (r : Except String (Arr v n)) : Option (List (El v)) := r.toOption.map (·.toList)
-private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El v)) := r.toOption.map (·.toList)
+private def pairs {k v} (r : Except String (Rel k v)) : Option (List (k.El × v.El)) := r.toOption.map (·.toList)
 
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20, -5])) == some [11, 22, -2]
 #guard av (do Ew.zip .add .long (← LA [1, 2, 3]) (← LA [10, 20])) == none
@@ -403,9 +435,12 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (El k × El
 #guard av (do Ew.atomVal (t := .long) .sub .long 10 (← LA [1, 2, 3])) == some [9, 8, 7]
 #guard av (do Ew.valAtom (u := .long) .sub .long (← LA [1, 2, 3]) 1) == some [0, 1, 2]
 #guard av (do Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2) == some [true, false, false]
-#guard av (do Ew.mon "neg" .long (← LA [1, -2, 3])) == some [-1, 2, -3]
-#guard av (do Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2)) == some [false, true, true]
+#guard av (do pure (Ew.mon "neg" .long (← LA [1, -2, 3]))) == some [-1, 2, -3]
+#guard av (do pure (Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2))) == some [false, true, true]
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← LA [1, 4, 9, 16])) == some [1, 3, 5, 7]
+#guard av (do pure (Ew.bitwise Ew.band (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1]))) == some [8, 0, 7, 0]
+#guard av (do pure (Ew.bitwise Ew.bor (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1]))) == some [14, 7, -1, -1]
+#guard av (do pure (Ew.bitwise Ew.bandnot (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1]))) == some [4, 5, -8, 0]
 -- `foR` operands: `tilColumn` writes one once it is long enough for the encoding to pay
 private def tilFoR (n : Nat) : Except String (Arr .long n) := do
   let some c@(.vector _ _ (.foR ..) _) := tilColumn n | throw "tilColumn answered no foR"

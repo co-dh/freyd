@@ -5,7 +5,8 @@
 #
 # The tool is CWD-relative — it reads `.lake/build/lib/lean/<Module>.ilean` and verifies edits with
 # `./scripts/cap lake build` — so cd to the repository root first and let the tool's own launcher supply
-# `lake env` and the address-space cap.
+# `lake env`, the address-space cap, the index lock, and `-C <dir>` for a nested package such as `leetq`
+# (resolved from this root: `./scripts/lean-refactor -C leetq index`).
 cd "$(dirname "$0")/.." || exit 1
 root=${LEAN_REFACTOR_ROOT:-$HOME/repo/lean-refactor}
 [ -x "$root/scripts/lean-refactor" ] || {
@@ -13,7 +14,4 @@ root=${LEAN_REFACTOR_ROOT:-$HOME/repo/lean-refactor}
   echo "               or point LEAN_REFACTOR_ROOT at your checkout." >&2
   exit 1
 }
-# `index` rewrites the one sqlite file every lookup reads, and diag-export refreshes it on each run, so
-# two writers at once are routine: they take turns.
-[ "$1" = index ] && exec flock .lake/build/refactor-index.lock "$root/scripts/lean-refactor" "$@"
 exec "$root/scripts/lean-refactor" "$@"

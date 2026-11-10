@@ -49,7 +49,7 @@ def lamFold (op : Kernel.Coc.Over) {n : Nat} (x : Arr .long n) (G : Rel A .long)
   let F ← transposeP G
   let P := F.2.2
   let (_, i) ← arrDense P.val
-  let v ← Arr.ofPart .long P.n (← pick .long x.part i) "list(x)"
+  let v ← Vals.ofParts (.atom .long) P.n (pick .long ⟨_, x⟩ i) "list(x)"
   overP op ⟨F.1, F.2.1, ⟨P.g, P.n, P.o, P.co, v⟩⟩
 
 /-- `R ≫ !e`: `n#,e` beside `R`'s key (`Struct.take` of `Struct.enlist`). A boxed `e` has no atom
@@ -62,46 +62,16 @@ def cstVal {K t u : QAtomicType} (e : El u) (R : Rel K t) : Except String (Rel K
 /-- `Λ(G) ≫ enum ≫ length`: `countBy` of the carrier's segments, keyed by the carrier's keys. -/
 def lamCount (G : Rel A .long) : Except String (Rel A .long) := do
   let F ← transposeP G
-  let some r := Ops.countBy F.2.2 | throw "count by: no kernel"
+  let r := Ops.countBy F.2.2
   pure ⟨F.1, F.2.1, ← Arr.ofPart .long F.1 r.part "count by"⟩
 
 end Alg
 
-/-- A program's object: an atomic type, or a product of objects. -/
-inductive Obj
-  | atom (t : QAtomicType)
-  | prod (a b : Obj)
+/-- An object as an object of `RelSet`: its elements, a product the carrier `rpair` targets. -/
+@[reducible] def Ob (A : Obj) : RelSet.{0} := ⟨A.El⟩
 
-instance : Coe QAtomicType Obj := ⟨.atom⟩
-
-/-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
-@[match_pattern, reducible] def Obj.long : Obj := .atom .long
-@[match_pattern, reducible] def Obj.boolean : Obj := .atom .boolean
-@[match_pattern, reducible] def Obj.float : Obj := .atom .float
-
-/-- An object as an object of `RelSet`, a product the carrier `rpair` targets. -/
-@[reducible] def Ob : Obj → RelSet.{0}
-  | .atom t => ⟨El t⟩
-  | .prod a b => ⟨(Ob a).carrier × (Ob b).carrier⟩
-
-/-- `n` values of `A`, one column per atom, side by side: nothing boxed. -/
-def Vals : Obj → Nat → Type
-  | .atom t, n => Arr t n
-  | .prod a b, n => Vals a n × Vals b n
-
-/-- The value at row `i`, read across the columns. -/
-def Vals.get : {A : Obj} → {n : Nat} → Vals A n → Fin n → (Ob A).carrier
-  | .atom _, _, x, i => Arr.get x i
-  | .prod _ _, _, x, i => (Vals.get x.1 i, Vals.get x.2 i)
-
-/-- A relation as `run` answers it: key columns and value columns of one length (`Rel` at two atoms, `Tab` at a pair). -/
-structure RelV (A B : Obj) where
-  n : Nat
-  key : Vals A n
-  val : Vals B n
-
-/-- The relation `R` denotes, as `Rel.Holds`. -/
-def RelV.Holds {A B : Obj} (R : RelV A B) : Ob A ⟶ Ob B := fun a b => ∃ i, Vals.get R.key i = a ∧ Vals.get R.val i = b
+/-- A relation as `run` answers it: `Rel` itself, its `Holds` read as a `RelSet` arrow. -/
+abbrev RelV (A B : Obj) := Rel A B
 
 /-- A kernel's answer as a run value: at two atoms the columns are the same. -/
 def RelV.of {A B : QAtomicType} (R : Rel A B) : RelV (.atom A) (.atom B) := ⟨R.n, R.key, R.val⟩
@@ -278,45 +248,30 @@ def tilKey (n : Nat) : Except String (Arr .long n) :=
 
 /-- `enumC`'s kernel: `til n in C`'s keys (`Find.in`), then `Find.where` keyed by `til m`. -/
 def enumIn (n : Nat) (C : Rel .long .long) : Except String (Rel .long .long) := do
-  let w ← Find.where (← Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
+  let w := Find.where (Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
 
 /-- The order join's literal kernel (P7): `prod R S`, `v` on the two value columns (P6′), the rows whose bit
     is set (`Find.where`), their two keys picked. -/
 def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .long) : Except String (Rel A B) := do
   unless v matches .lt | .le | .gt | .ge do throw "order join: not a comparison"
   let T ← Alg.prod R S
-  let w ← Find.where (← Ew.val v .boolean T.v₁ T.v₂)
+  let w := Find.where (← Ew.val v .boolean T.val.1 T.val.2)
   let (_, i) ← Alg.arrDense w.2
-  pure ⟨w.1, ← Arr.ofPart A w.1 (← Alg.pick A T.k₁.part i) "order join",
-    ← Arr.ofPart B w.1 (← Alg.pick B T.k₂.part i) "order join"⟩
+  pure ⟨w.1, ← Vals.ofParts (.atom A) w.1 (Alg.pick A ⟨_, T.key.1⟩ i) "order join",
+    ← Vals.ofParts (.atom B) w.1 (Alg.pick B ⟨_, T.key.2⟩ i) "order join"⟩
 
 /-- `aj`'s kernel keyed by `til m`: one long key column a side. -/
 def ajRun {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Except String ((m : Nat) × Arr .long m) :=
-  Struct.aj #[(.long, lk.part)] #[(.long, rk.part)] (.long, lt.part) (.long, rt.part)
+  Struct.aj #[⟨.long, _, lk⟩] #[⟨.long, _, rk⟩] ⟨.long, _, lt⟩ ⟨.long, _, rt⟩
 
 /-- `wj`/`wj1`'s kernel: `Struct.wjP`'s windows as the carrier of `til nl`, flattened (`memP`). -/
 def wjRun {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     Except String (Rel .long .long) := do
-  let P ← Struct.wjP prev ⟨.long, w₀.part⟩ ⟨.long, w₁.part⟩ #[⟨.long, lk.part⟩] #[⟨.long, rk.part⟩] ⟨.long, rt.part⟩
+  let P ← Struct.wjP prev ⟨.long, _, w₀⟩ ⟨.long, _, w₁⟩ #[⟨.long, _, lk⟩] #[⟨.long, _, rk⟩] ⟨.long, _, rt⟩
   Alg.memP ⟨nl, ← tilKey nl, P⟩
 
-/-- `x` at the rows `i`, column by column. -/
-def _root_.LeetQ.Rel.Vals.pick {n m : Nat} (i : Arr .long m) : {A : Obj} → Vals A n → Except String (Vals A m)
-  | .atom t, x => do
-    let (_, b) ← Alg.arrDense i
-    Arr.ofPart t m (← Alg.pick t (x : Arr t n).part b) "⟨R,S⟩"
-  | .prod _ _, x => do pure (← Vals.pick i x.1, ← Vals.pick i x.2)
-
-/-- `⟨R, S⟩`: `Alg.pair` at atoms. A nested side has no single column to hand it, so the join runs over row
-    numbers, then each column is picked. -/
-def pairV : {K A B : Obj} → RelV K A → RelV K B → Except String (RelV K (.prod A B))
-  | .prod .., _, _, _, _ => throw "⟨R,S⟩: a product key has no join kernel; pair over an atomic key"
-  | .atom _, .atom _, .atom _, R, S => do
-    let T ← Alg.pair R.toRel S.toRel
-    pure ⟨T.n, T.key, (T.fst, T.snd)⟩
-  | .atom K, _, _, R, S => do
-    let T ← Alg.pair (⟨R.n, R.key, ← tilKey R.n⟩ : Rel K .long) (⟨S.n, S.key, ← tilKey S.n⟩ : Rel K .long)
-    pure ⟨T.n, T.key, (← Vals.pick T.fst R.val, ← Vals.pick T.snd S.val)⟩
+/-- `⟨R, S⟩`: `Alg.pair`, at any sides — a product key joins on its tuple codes. -/
+def pairV {K A B : Obj} (R : RelV K A) (S : RelV K B) : Except String (RelV K (.prod A B)) := Alg.pair R S
 
 /-- A section on a value column: `Ew.valAtom`, `left`: `Ew.atomVal`, the atom the kernel's one-element operand,
     one pass over `x`, no constant column built. A boxed atom has no such operand. -/
@@ -333,9 +288,13 @@ def lowZeroArr {n : Nat} (t : Nat) (x : Arr .long n) : Except String (Arr .boole
   | some e => Arr.of .boolean n (.vector .boolean n e none) "lowZero"
   | none => throw "lowZero: this long column has no dense payload"
 
+/-- `x` at the rows `i`, column by column (`Obj.pick`). -/
+def _root_.LeetQ.Rel.Vals.pick {n m : Nat} {A : Obj} (i : Arr .long m) (x : Vals A n) : Except String (Vals A m) := do
+  Vals.ofParts A m (A.pick x.parts (← Alg.arrDense i).2) "pick"
+
 /-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
 def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do
-  let w ← Find.where b
+  let w := Find.where b
   pure ⟨w.1, ← Vals.pick w.2 R.key, ← Vals.pick w.2 R.val⟩
 
 /-- `R ≫ c` applied to `R`'s value columns; the key stays. -/
@@ -417,16 +376,16 @@ def run : {A B : Obj} → Prog A B → Except String (RelV A B)
   | _, _, mem P => do liftV (Alg.lamMem (← P.run).toRel)
   | _, _, extr d P => do liftV (Alg.lamEst d (← P.run).toRel)
   | _, _, fold op _ _ x G => do liftV (Alg.lamFold op x (← G.run).toRel)
-  | _, _, enum x => do let w ← Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
+  | _, _, enum x => do let w := Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
   | _, _, anti P C => do liftV (Alg.antiJoin (← P.run).toRel (← C.run).toRel)
   | _, _, dom P => do liftV (Alg.dom (← P.run).toRel)
   | _, _, enumC n C => do liftV (enumIn n (← C.run).toRel)
   | _, _, count G => do liftV (Alg.lamCount (← G.run).toRel)
   | _, _, grade (n := n) d _ x => do
-    let some S := Ops.grade d x | throw "<x: no grade kernel for this type"
+    let S := Ops.grade d x
     pure ⟨n, ← tilKey n, S⟩
   | _, _, ojoin v P Q => do liftV (ordJoin v (← P.run).toRel (← Q.run).toRel)
-  | _, _, binJ (ny := ny) x y => do let r ← Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
+  | _, _, binJ (ny := ny) x y => do let r := Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
   | _, _, ajJ lk lt rk rt => do let r ← ajRun lk lt rk rt; pure ⟨r.1, ← tilKey r.1, r.2⟩
   | _, _, wjJ prev lk w₀ w₁ rk rt => liftV (wjRun prev lk w₀ w₁ rk rt)
 
@@ -567,7 +526,7 @@ def Sound : {A B : Obj} → Prog A B → Prop
   | .atom A, _, count G => G.Sound ∧ ∀ R T : RelV A .long, liftV (Alg.lamCount R.toRel) = .ok T →
       ∃ S, Segs ((R.Holds : Ob A ⟶ Ob .long) ≫ Verb.pos) S ∧
         @Eq (Ob A ⟶ Ob .long) T.Holds (S ≫ ListRel.length ≫ graph Int64.ofNat)
-  | _, _, grade d lt x => ∀ S, Ops.grade d x = some S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
+  | _, _, grade d lt x => ∀ S, Ops.grade d x = S → @Eq (Ob .long ⟶ Ob .long) (posL° ≫ S.rel) (grade d lt x).den
   | .atom A, .atom B, ojoin v P Q => P.Sound ∧ Q.Sound ∧ ∀ (R : RelV A .long) (S : RelV B .long) (T : RelV A B),
       liftV (ordJoin v R.toRel S.toRel) = .ok T →
       @Eq (Ob A ⟶ Ob B) T.Holds ((R.Holds : Ob A ⟶ Ob .long) ≫ ord v ≫ (S.Holds : Ob B ⟶ Ob .long)°)
@@ -662,11 +621,11 @@ theorem _root_.LeetQ.Rel.Fn.apply_sound {K : Obj} : ∀ {A B : Obj} (c : Fn A B)
   | _, _, .cst _, _, _, hs, h => hs _ _ h
   | _, _, .fst, R, _, _, h => by
     cases h
-    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.get R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
+    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.row R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
       fun ⟨p, ⟨i, ek, ep⟩, e⟩ => ⟨i, ek, by subst ep; exact e.symm⟩⟩
   | _, _, .snd, R, _, _, h => by
     cases h
-    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.get R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
+    exact hom_ext fun k a => ⟨fun ⟨i, ek, ea⟩ => ⟨Vals.row R.val i, ⟨i, ek, rfl⟩, ea.symm⟩,
       fun ⟨p, ⟨i, ek, ep⟩, e⟩ => ⟨i, ek, by subst ep; exact e.symm⟩⟩
   | _, _, .sect .., _, _, hs, h => by
     simp only [Fn.apply, bind, Except.bind] at h; split at h
@@ -683,25 +642,19 @@ theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : Rel
     (h : (enum x).run = .ok R) : (R.Holds : Ob .long ⟶ Ob .long) = (enum x).den := by
   simp only [run, bind, Except.bind] at h; split at h
   · cases h
-  rename_i w hw
-  split at h
-  · cases h
   cases h
-  obtain ⟨⟨ys, hy⟩, hall⟩ := where_rel hn hw
-  rw [arr_sound w.2 (by assumption)]
+  obtain ⟨⟨ys, hy⟩, hall⟩ := where_rel (x := x) hn
+  rw [arr_sound (Find.where x).2 (by assumption)]
   exact hom_ext fun a b => ⟨fun ⟨j, ea, hr⟩ => ⟨j, ea, ys, hy, by rw [← hall ys hy]; exact hr⟩,
     fun ⟨j, ea, ys', hy', hr⟩ => ⟨j, ea, by rw [hall ys' hy']; exact hr⟩⟩
 
 /-- A grade that runs is the kernel's list keyed by `til n`. -/
 theorem grade_run {t : QAtomicType} {n : Nat} {d : Bool} {lt : El t → El t → Prop} {x : Arr t n} {R : RelV .long .long}
-    (h : (grade d lt x).run = .ok R) : ∃ S k, Ops.grade d x = some S ∧ tilKey n = .ok k ∧ R = ⟨n, k, S⟩ := by
+    (h : (grade d lt x).run = .ok R) : ∃ S k, Ops.grade d x = S ∧ tilKey n = .ok k ∧ R = ⟨n, k, S⟩ := by
   simp only [run, bind, Except.bind] at h
   split at h
-  · rename_i S hg
-    split at h
-    · cases h
-    · cases h; exact ⟨S, _, hg, by assumption, rfl⟩
   · cases h
+  · cases h; exact ⟨_, _, rfl, by assumption, rfl⟩
 
 /-- **A sound term runs to its spec**: the answer of `run P` holds `den P`. -/
 theorem run_sound : ∀ {A B : Obj} (P : Prog A B) {R : RelV A B}, P.Sound → P.run = .ok R →
@@ -826,11 +779,8 @@ theorem run_sound : ∀ {A B : Obj} (P : Prog A B) {R : RelV A B}, P.Sound → P
     unfold Sound at hs; obtain ⟨hx, hy, hn, hm, hsort⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rename_i r hr
-    split at h
-    · cases h
     cases h
-    rw [arr_sound r (by assumption), Verb.bin_rel hx hy hn hm hsort hr]; rfl
+    rw [arr_sound (Find.bin x y) (by assumption), Verb.bin_rel hx hy hn hm hsort]; rfl
   | _, _, ajJ .., _, hs, h => by
     unfold Sound at hs
     simp only [run, bind, Except.bind] at h; split at h
@@ -1003,13 +953,10 @@ theorem enum_prog {n : Nat} (x : Arr .boolean n) {R : RelV .long .long} (h : (en
     corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = ix (CL.toList ys) ≫ graph Int64.ofNat := by
   simp only [run, bind, Except.bind] at h; split at h
   · cases h
-  rename_i w hw
-  split at h
-  · cases h
   cases h
-  rw [← (where_rel hs hw).2 ys hy]
+  rw [← (where_rel (x := x) hs).2 ys hy]
   exact (posL_iff fun i _ hi => Nat.lt_trans ((rel_iff _ i _).1 hi).1 (tilKey_lt (by assumption))).1
-    (arr_sound w.2 (by assumption))
+    (arr_sound (Find.where x).2 (by assumption))
 /-! ## Verbs over `!e`, `dom`, `enumC`, `count` (design §2.2–2.5) -/
 
 /-- `P ≫ (R ∪ (Q ≫ S))` is the union of its two branches as `run` composes them: `miss` and `χ` applied. -/
@@ -1297,15 +1244,15 @@ theorem lastBy_link {K : QAtomicType} {n g : Nat} (k : Arr K n) (v : Arr .long n
     {o : Arr .long (g+1)} {co : Cuts o n} {wo wv : List UInt64} (ho : longWords (g+1) o.enc = some wo)
     (hv : longWords n v.enc = some wv) (hg : g + 1 < USize.size) (hU : n < USize.size) (hn : n ≤ 2 ^ 63)
     (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j') (hocc : ∀ j a, keys.rel j a → ∃ i, k.rel i a)
-    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) {S : Arr .long g}
-    (h : Ops.lastBy ⟨g, n, o, co, v⟩ = some S) : (lastBy k v).den = keys.rel° ≫ S.rel := by
+    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) (hrow : ∀ j : Fin g, o.get j.castSucc < o.get j.succ) :
+    (lastBy k v).den = keys.rel° ≫ (Ops.lastBy ⟨g, n, o, co, v⟩ hrow).rel := by
   have hne : ∀ j a, keys.rel j a → ∃ c, (Λ ((Verb.grp o)°) ≫ est (fun a b : Nat => a ≥ b) ≫ v.rel : Idx ⟶ Ob .long) j c :=
     fun j a hkey => by
       obtain ⟨i, hki⟩ := hocc j a hkey
       obtain ⟨j', hkey', hg'⟩ := (hk a i).1 hki
       obtain rfl := hinj j j' a hkey hkey'
       exact lastEst_some co v ((rel_iff keys j a).1 hkey).1 hg'
-  rw [lastBy_grp k v keys o hn hinj hk, Verb.lastBy_rel ho hv hg hU h]
+  rw [lastBy_grp k v keys o hn hinj hk, Verb.lastBy_rel ho hv hg hU hrow]
   exact (congrArg (keys.rel° ≫ ·) (Cat.assoc _ _ _)).trans (keys_miss keys _ _ hne).symm
 
 /-- **`select f x by k` against `overBy_rel`**: through a grouping `keys` of `k` in which every key occurs,
@@ -1406,7 +1353,7 @@ theorem sort_spec {n : Nat} {P : Nat → Nat → Prop} {M : List Nat}
 /-- **The long grade kernel's answer** is `M` read as longs, `M` the one list `sort(⊴ₓ)` (`⊵ₓ`) gives of
     `til n` (`iasc_rel`, `idesc_rel`), its entries below `n`. -/
 theorem grade_long {n : Nat} {d : Bool} {x S : Arr .long n} {ws : List UInt64} (hx : longWords n x.enc = some ws)
-    (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.grade d x = some S) :
+    (hn : n < USize.size) (h63 : n < 2 ^ 63) (h : Ops.grade d x = S) :
     ∃ M : List Nat, (Verb.cst (CL.ofList M) : (⟨Unit⟩ : RelSet.{0}) ⟶ ListRel.dList Nat)
         = Verb.cst (CL.ofList (List.range n)) ≫ Verb.sort (Verb.stable x.rel
           (if d then flip (fun a b : Int64 => a < b) else fun a b : Int64 => a < b))
@@ -1414,9 +1361,9 @@ theorem grade_long {n : Nat} {d : Bool} {x S : Arr .long n} {ws : List UInt64} (
   have hl : x.toList.length < 2 ^ 63 := by rw [Arr.length_toList]; exact h63
   refine ⟨(List.range x.toList.length).mergeSort fun i j =>
       if d then decide (x.toList[j]! ≤ x.toList[i]!) else decide (x.toList[i]! ≤ x.toList[j]!), ?_,
-    by rw [Ops.grade_toList hx hn h]; rfl, by rw [List.length_mergeSort, List.length_range, Arr.length_toList],
+    by rw [← h, Ops.grade_toList hx hn]; rfl, by rw [List.length_mergeSort, List.length_range, Arr.length_toList],
     fun j hj => ?_⟩
-  · rw [← Verb.grade_map d _ hl, ← Ops.grade_toList hx hn h]
+  · rw [← Verb.grade_map d _ hl, ← Ops.grade_toList (desc := d) hx hn, h]
     cases d
     · exact Verb.iasc_rel hx hn h63 h
     · exact Verb.idesc_rel hx hn h63 h
