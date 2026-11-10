@@ -442,6 +442,135 @@ private theorem hashJoin_wf (qs : Array (Nat × ByteArray × Array Nat × ByteAr
     obtain rfl := hashConcat_error heq
     exact internConcat_wf r
 
+/-! ## The `foR` branch: `concatFoR` -/
+
+private theorem sum_map_mul {β : Type} (f : β → Nat) (k : Nat) :
+    ∀ l : List β, (l.map (fun x => f x * k)).sum = (l.map f).sum * k
+  | [] => by simp
+  | x :: l => by simp [sum_map_mul f k l, Nat.add_mul]
+
+private theorem sum_le_mul {β : Type} (f g : β → Nat) (k : Nat) :
+    ∀ l : List β, (∀ x ∈ l, f x ≤ k * g x) → (l.map f).sum ≤ k * (l.map g).sum
+  | [], _ => by simp
+  | x :: l, h => by
+    simp only [List.map_cons, List.sum_cons, Nat.mul_add]
+    have h1 := sum_le_mul f g k l (fun y hy => h y (List.mem_cons_of_mem _ hy))
+    have h2 := h x (by simp)
+    omega
+
+private theorem foldl_append_size {α β : Type} (g : β → Array α) :
+    ∀ (l : List β) (a : Array α),
+      (l.foldl (fun acc p => acc ++ g p) a).size = a.size + (l.map (fun p => (g p).size)).sum
+  | [], a => by simp
+  | p :: l, a => by
+    simp only [List.foldl, foldl_append_size g l, Array.size_append, List.map_cons, List.sum_cons]; omega
+
+/-- `concatBytes` holds every part's bytes. -/
+theorem concatBytes_size (ps : Array ByteArray) : (concatBytes ps).size = (ps.toList.map (·.size)).sum := by
+  have happ : ∀ (l : List ByteArray) (b : ByteArray), (l.foldl (· ++ ·) b).size = b.size + (l.map (·.size)).sum := by
+    intro l; induction l with
+    | nil => simp
+    | cons a l ih => intro b; simp [ih, ByteArray.size_append]; omega
+  rw [concatBytes, ← Array.foldl_toList, happ]; simp
+
+/-- `foRMeta` of `bs` blocks: four sections of eight bytes a block, the sixteen-byte trailer, a width
+    byte a block. So `nblk` reads `bs.size` back. -/
+theorem foRMeta_size (nul : UInt64) (sumn : Nat) (bs : Array (UInt64 × UInt64 × UInt64 × Nat)) :
+    (Coc.foRMeta nul sumn bs).size = 33 * bs.size + 16 := by
+  have hA : ∀ (f : (UInt64 × UInt64 × UInt64 × Nat) → UInt64) (l : List (UInt64 × UInt64 × UInt64 × Nat)),
+      (l.foldl (fun acc b => Column.pushBits acc (f b) 8) ByteArray.empty).size = l.length * 8 := fun f l => by
+    rw [foldl_size ByteArray.size _ 8 (fun _ _ => Column.pushBits_size ..)]; simp
+  have hB : ∀ (l : List (UInt64 × UInt64 × UInt64 × Nat)),
+      (l.foldl (fun acc b => acc.push b.2.2.2.toUInt8) ByteArray.empty).size = l.length := fun l => by
+    rw [foldl_size ByteArray.size _ 1 (fun _ _ => by simp only [ByteArray.size, ByteArray.push, Array.size_push])]
+    simp
+  have hC : ∀ (l : List (UInt64 × UInt64 × UInt64 × Nat)) (g : ByteArray × Nat → _ → ByteArray × Nat),
+      (∀ x b, (g x b).1.size = x.1.size + 8) → (l.foldl g (ByteArray.empty, 0)).1.size = l.length * 8 :=
+    fun l g hg => by refine Eq.trans (foldl_size (fun p : ByteArray × Nat => p.1.size) g 8 hg l _) ?_; simp
+  simp only [Coc.foRMeta, ByteArray.size_append, ← Array.foldl_toList, hA, hB]
+  rw [hC _ _ (fun x b => by rcases x with ⟨acc, pos⟩; exact Column.pushBits_size ..)]
+  simp [Column.pushBits_size]; omega
+
+/-- `moveFoR` claims only parts in the writer's form, each `⌈n/blk⌉` blocks, and moves every block:
+    the answer's blocks cover the summed count. -/
+theorem moveFoR_nblk {ps : Array ((Nat × ByteArray) × ByteArray)} {m p : ByteArray}
+    (h : moveFoR ps = some (m, p)) : (ps.toList.map (·.1.1)).sum ≤ Column.blk * Column.nblk m := by
+  unfold moveFoR at h
+  split at h
+  · cases h
+  rename_i hc
+  injection h with h; injection h with hm
+  subst hm
+  have hall : ∀ x ∈ ps.toList, x.1.1 ≤ Column.blk * Column.nblk x.1.2 := by
+    intro x hx
+    have hs : Coc.foRStd x.1.1 x.1.2 x.2 = true := by
+      cases hs : Coc.foRStd x.1.1 x.1.2 x.2
+      · exfalso; apply hc
+        obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.1 hx
+        rw [Bool.or_eq_true, Array.any_eq_true]; right
+        refine ⟨i, by simpa using hi, ?_⟩
+        simp only [Array.getElem_toList] at hs; simp [hs]
+      · rfl
+    rw [(Verify.foRStd_iff.1 hs).nblk]; simp only [Column.blk]; omega
+  rw [Column.nblk, foRMeta_size, show ∀ k, (33 * k + 16) / 33 = k from fun k => by omega,
+    ← Array.foldl_toList, foldl_append_size]
+  simpa using sum_le_mul _ _ _ _ hall
+
+/-- `appendFoR` keeps the first part's metadata and claims only where the appended elements fit its
+    last, part-filled block. -/
+theorem appendFoR_nblk {n : Nat} {md pk tail m p : ByteArray} (h : appendFoR n md pk tail = some (m, p)) :
+    m = md ∧ n + tail.size / 8 ≤ Column.blk * Column.nblk md := by
+  unfold appendFoR at h
+  dsimp only at h
+  split at h
+  · cases h
+  rename_i hc
+  split at h
+  · cases h
+  injection h with h; injection h with hm
+  refine ⟨hm.symm, ?_⟩
+  simp only [Bool.or_eq_true, beq_iff_eq, decide_eq_true_eq, Bool.not_eq_true', not_or] at hc
+  obtain ⟨⟨⟨h0, hlt⟩, hs⟩, -⟩ := hc
+  rw [(Verify.foRStd_iff.1 (by simpa using hs)).nblk]
+  simp only [Column.blk] at *; omega
+
+/-- `concatFoR` of parts of `ns` elements, each fitting a `USize`, answers blocks covering their sum,
+    whichever of the move, the append and the re-encode it takes. -/
+theorem concatFoR_nblk {w : Nat} (hw0 : 0 < w) (hw : w ≤ 8) {ns : Array Nat} {ms ps : Array ByteArray}
+    (hm : ms.size = ns.size) (hp : ps.size = ns.size) (hn : ∀ k ∈ ns.toList, k < USize.size) :
+    ns.toList.sum ≤ Column.blk * Column.nblk (concatFoR w.toUSize ns ms ps).1 := by
+  have hq : ((ns.zip ms).zip ps).toList.map (·.1.1) = ns.toList := by
+    rw [show (fun x : (Nat × ByteArray) × ByteArray => x.1.1) = Prod.fst ∘ Prod.fst from rfl, ← List.map_map,
+      Array.toList_zip, List.map_fst_zip (by simp [hp, hm]), Array.toList_zip, List.map_fst_zip (by simp [hm])]
+  have hwu : w.toUSize.toNat = w := toUSize_toNat (lt_usize (by omega))
+  unfold concatFoR
+  dsimp only
+  generalize (ns.zip ms).zip ps = q at hq ⊢
+  rw [← hq]
+  rw [← hq] at hn
+  have hb : ∀ x ∈ q.toList, x.1.1.toUSize.toNat = x.1.1 :=
+    fun x hx => toUSize_toNat (hn _ (List.mem_map_of_mem hx))
+  split
+  · rename_i out heq; rcases out with ⟨m, p⟩; exact moveFoR_nblk heq
+  rcases q with ⟨_ | ⟨⟨⟨n0, md0⟩, pk0⟩, rest⟩⟩
+  · simp
+  have hx : (List.toArray (((n0, md0), pk0) :: rest)).extract 1 (rest.length + 1) = rest.toArray := by simp
+  simp only [List.size_toArray, List.length_cons, hx]
+  rw [show (Array.mk (((n0, md0), pk0) :: rest)).get!Internal 0 = ((n0, md0), pk0) from rfl]
+  dsimp only
+  have hrest : ∀ x ∈ rest, x.1.1.toUSize.toNat = x.1.1 := fun x hx => hb x (List.mem_cons_of_mem _ hx)
+  split
+  · rename_i out heq; rcases out with ⟨m, p⟩
+    obtain ⟨rfl, hk⟩ := appendFoR_nblk heq
+    rw [concatBytes_size] at hk
+    simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size] at hk
+    rw [List.map_congr_left (fun x hx => by rw [hrest x hx]), sum_map_mul, Nat.mul_div_cancel _ (by decide)] at hk
+    simpa [Nat.add_comm] using hk
+  · rw [Verify.nblk_encode w hw0 hw, concatBytes_size]
+    simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size, hwu]
+    rw [List.map_congr_left (fun x hx => by rw [hb x hx]), sum_map_mul, Nat.mul_div_cancel _ hw0]
+    simp only [Column.blk]; omega
+
 /-- `concatEnum` answers an interned symbol vector whose ids count it. -/
 theorem concatEnum_wf (ps : Array (Nat × ByteArray × Array Nat × ByteArray)) :
     ∃ n e, concatEnum ps = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
