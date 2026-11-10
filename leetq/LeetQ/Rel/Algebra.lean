@@ -462,13 +462,6 @@ def shiftArr {n : Nat} (x : Arr .long n) (m k : Nat) : Arr .long n :=
     have hl : ys.length = n := (List.length_map _).trans x.length_toList
     hl ▸ col ys
 
-/-- The column of `f` at the positions `0 … n-1`, packed by Lean with no kernel and no `List`: the reference
-    beside a kernel whose count is checked. -/
-def colFn (n : Nat) (f : Fin n → Int64) : Arr .long n :=
-  Arr.mk (.bytes ((Array.ofFn f).foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty)) (by
-    show _ = n * 8; rw [← Array.foldl_toList]
-    show (packLongs (Array.ofFn f).toList).size = n * 8; rw [packLongs_size]; simp [Nat.mul_comm])
-
 /-- `til n` as a long column: `tilLongs` wherever `n` fits a `USize` (`tilLongs_wf`), `colFn` past it. -/
 def tilCol (n : Nat) : Arr .long n :=
   if h : n < USize.size then
@@ -1179,7 +1172,7 @@ def map {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A)
     of their ranks, less the pairs of one value the ties' order put apart. The domain is the types
     `gradeColumn` orders by value: every atom but a general list, whose witness `decide` discharges. -/
 def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  let r := longsOf (Ops.rank (t := t) U)
+  let r := longsOf (Ops.rank (t := t) U _h)
   let c := cross n n
   let i := whereBits (n * n).toUSize (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) (n * n).toUSize)
   (⟨len i, gather_len c.1 i ▸ Vals.pick _ U (gather 8 c.1 i), gather_len c.2 i ▸ Vals.pick _ U (gather 8 c.2 i)⟩ : Rel _ _) \ idU U

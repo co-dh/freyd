@@ -128,6 +128,13 @@ theorem packLongs_size (xs : List Int64) : (packLongs xs).size = 8 * xs.length :
   | nil => simp
   | cons x xs ih => intro b; rw [List.foldl_cons, ih, Column.pushBits_size, List.length_cons]; omega
 
+/-- The column of `f` at the positions `0 … n-1`, packed by Lean with no kernel and no `List`: the reference
+    beside a kernel whose count is checked. -/
+def colFn (n : Nat) (f : Fin n → Int64) : Arr .long n :=
+  Arr.mk (.bytes ((Array.ofFn f).foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty)) (by
+    show _ = n * 8; rw [← Array.foldl_toList]
+    show (packLongs (Array.ofFn f).toList).size = n * 8; rw [packLongs_size]; simp [Nat.mul_comm])
+
 /-- `xs` Frame-of-Reference encoded is well formed: the checks' `foR` columns, which `decide` cannot
     evaluate through `Coc.encode`. -/
 theorem foRLongs_wf (xs : List Int64) : Enc.WF .long xs.length
