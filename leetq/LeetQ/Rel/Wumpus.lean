@@ -11,7 +11,7 @@ abbrev LL := Rel .long .long
 /-- The percept tables `V`, `B`, `S`, `G`, coreflexives on the cells: the only rows a step stores. -/
 abbrev KB := LL × LL × LL × LL
 
-def cor (xs : List Int64) : Except String LL := ofPairs (xs.map fun x => (x, x))
+def cor (xs : List Int64) : LL := ofPairs (xs.map fun x => (x, x))
 
 def cellL : List Int64 := [11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44]
 /-- Codes differ by 1 along a column and by 10 along a row; `y ≤ 4` keeps two columns from differing by 1. -/
@@ -47,7 +47,7 @@ def views {m : Nat} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB
 /-- The percept step: `c` joins `V` and each table that fired. `∪` keeps one row per pair, so a revisit adds nothing. -/
 def tell (k : KB) (c : Int64) (p : Bool × Bool × Bool) : Except String KB := do
   let (V, B, S, G) := k
-  let d ← cor [c]
+  let d := cor [c]
   let add (X : LL) (f : Bool) : Except String LL := if f then union X d else pure X
   pure (← union V d, ← add B p.1, ← add S p.2.1, ← add G p.2.2)
 
@@ -57,10 +57,10 @@ def world (pits : List Int64) (w g c : Int64) : Bool × Bool × Bool := (pits.an
 /-- The agent walks a supplied route through a world, so a step back to a visited cell needs no choice among `next`;
     the result is every view after each step. -/
 def agent (see : Int64 → Bool × Bool × Bool) (route : List Int64) : Except String (List (List (String × LL))) := do
-  let cells ← col cellL.length cellL
-  let one ← col 1 [0]
-  let adj ← ofPairs (cellL.flatMap fun a => (cellL.filter (near a)).map (a, ·))
-  let e ← cor []
+  let cells := col cellL
+  let one := col [0]
+  let adj := ofPairs (cellL.flatMap fun a => (cellL.filter (near a)).map (a, ·))
+  let e := cor []
   let mut k : KB := (e, e, e, e)
   let mut out := #[]
   for c in route do

@@ -19,32 +19,32 @@ def cube : Nat → List (List Int64)
   | n + 1 => bits.flatMap fun b => (cube n).map (b :: ·)
 
 /-- `Bit³`'s eight elements as its three columns. -/
-def U : Except String (Vals Bit3 8) := do
-  let c (i : Nat) := col 8 ((cube 3).map (·.getD i 0))
-  pure (← c 0, ← c 1, ← c 2)
+def U : Vals Bit3 8 :=
+  let c (i : Nat) : Arr .long 8 := col ((cube 3).map (·.getD i 0))
+  (c 0, c 1, c 2)
 
 /-- `πᵢ : Bit³ ⟶ Bit` on `U`: key `U`, val its `i`-th column — a column selected, nothing computed. -/
-def π₁ : Except String (Rel Bit3 Bit) := do let u ← U; pure ⟨8, u, u.1⟩
-def π₂ : Except String (Rel Bit3 Bit) := do let u ← U; pure ⟨8, u, u.2.1⟩
-def π₃ : Except String (Rel Bit3 Bit) := do let u ← U; pure ⟨8, u, u.2.2⟩
+def π₁ : Rel Bit3 Bit := ⟨8, U, U.1⟩
+def π₂ : Rel Bit3 Bit := ⟨8, U, U.2.1⟩
+def π₃ : Rel Bit3 Bit := ⟨8, U, U.2.2⟩
 
 /-- A gate `Bit² ⟶ Bit`, the graph of its truth table: two key columns, one val column. -/
-def gate (f : Bool → Bool → Bool) : Except String (Rel Bit2 Bit) := do
+def gate (f : Bool → Bool → Bool) : Rel Bit2 Bit :=
   let xs := cube 2
-  pure ⟨4, (← col 4 (xs.map (·.getD 0 0)), ← col 4 (xs.map (·.getD 1 0))),
-    ← col 4 (xs.map fun x => if f (x.getD 0 0 == 1) (x.getD 1 0 == 1) then 1 else 0)⟩
+  let c (g : List Int64 → Int64) : Arr .long 4 := col (xs.map g)
+  ⟨4, (c (·.getD 0 0), c (·.getD 1 0)), c fun x => if f (x.getD 0 0 == 1) (x.getD 1 0 == 1) then 1 else 0⟩
 
 /-- `F ≜ ⟨⟨x₁,π₃⟩ xor, ⟨⟨π₁,π₂⟩ and, ⟨x₁,π₃⟩ and⟩ or⟩` with `x₁ ≜ ⟨π₁,π₂⟩ xor`: (sum, carry). -/
 def adder : Except String (Rel Bit3 Bit2) := do
-  let (p₁, p₂, p₃) := (← π₁, ← π₂, ← π₃)
-  let (xor, and, or) := (← gate (· != ·), ← gate (· && ·), ← gate (· || ·))
+  let (p₁, p₂, p₃) := (π₁, π₂, π₃)
+  let (xor, and, or) := (gate (· != ·), gate (· && ·), gate (· || ·))
   let x₁ ← comp (← pair p₁ p₂) xor
   let x₂ ← pair x₁ p₃
   pair (← comp x₂ xor) (← comp (← pair (← comp (← pair p₁ p₂) and) (← comp x₂ and)) or)
 
 /-- Query 6, `F p° : Bit³ ⟶ 1` with `p : 1 ⟶ Bit²` the point `(0,1)`: the inputs giving sum 0, carry 1. -/
 def answer : Except String (Rel Bit3 Bit) := do
-  let p : Rel Bit Bit2 := ⟨1, ← col 1 [0], (← col 1 [0], ← col 1 [1])⟩
+  let p : Rel Bit Bit2 := ⟨1, col [0], (col [0], col [1])⟩
   comp (← adder) (← conv p)
 
 section Checks

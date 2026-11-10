@@ -1179,6 +1179,7 @@ def wjSpec {κ : Type} [BEq κ] [Inhabited κ] (prevailing : Bool) (lk : List κ
 section Checks
 
 open QLean.Column
+open LeetQ.Rel.Alg (col)
 
 private def ans {α β : Type} (f : β → α) : Except String β → Option α
   | .ok r => some (f r)
@@ -1188,11 +1189,9 @@ private def ansP (v : QAtomicType) : Except String ((g : Nat) × Arr .general g)
   | .ok r => (Parted.ofBoxes v r.2).toOption.map Parted.toList
   | .error _ => none
 private abbrev Lg := QAtomicType.long
-private def lv (xs : List Int64) (h : Enc.WF .long xs.length (.bytes (packLongs xs)) := by decide) :
-    Arr .long xs.length := Arr.mk _ h
 
-private def xs := lv [5, 3, 5, 9, 3]
-private def ys := lv [7, 8]
+private def xs := col [5, 3, 5, 9, 3]
+private def ys := col [7, 8]
 -- the five longs Frame-of-Reference encoded
 private def xf : Arr .long 5 :=
   Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9, 3])).2) (foRLongs_wf [5, 3, 5, 9, 3])
@@ -1203,9 +1202,9 @@ private def se : Arr .symbol 3 :=
   Arr.mk (.enum (ByteArray.mk #[97, 0, 98, 99, 0]) #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!)) (by decide)
 private def cs : Arr .char 6 := Arr.mk (.bytes "aaabaa".toUTF8) (by decide)
 -- the parted list `(10 20; 30)`, keys `0 0 1`
-private def o2 : Arr .long 3 := lv [0, 2, 3]
+private def o2 : Arr .long 3 := col [0, 2, 3]
 private def pl : Except String ((g : Nat) × Arr .general g) := do
-  let some P := Parted.of? o2 (lv [10, 20, 30]) | throw "pl: not cuts"
+  let some P := Parted.of? o2 (col [10, 20, 30]) | throw "pl: not cuts"
   boxed P
 
 #guard [xs, xf].all fun x => ans (·.toList) (concat x ys) == some (x.toList ++ ys.toList)
@@ -1223,14 +1222,14 @@ private def pl : Except String ((g : Nat) × Arr .general g) := do
 #guard ans (·.toList) (rotate 2 xs) == some [5, 9, 3, 5, 3]
 #guard [sy, se].all fun x => ans (·.toList) (rotate (-1) x) == some (rotateSpec (-1) x.toList)
 #guard [xs, xf].all fun x =>
-  ans (·.toList) (index x (lv [4, 0, 7, -1])) == some (indexSpec Int64.minValue x.toList [4, 0, 7, -1])
-#guard [sy, se].all fun x => ans (·.toList) (index x (lv [2, 1])) == some (indexSpec "" x.toList [2, 1])
-#guard ans (·.toList) (amend xs (lv [1, 3, 1]) none (lv [0, 7, 2])) == some (amendSpec (fun _ y => y) xs.toList [1, 3, 1] [0, 7, 2])
-#guard ans (·.toList) (amend xs (lv [1, 3, 1]) none (lv [0, 7, 2])) == some [5, 2, 5, 7, 3]
+  ans (·.toList) (index x (col [4, 0, 7, -1])) == some (indexSpec Int64.minValue x.toList [4, 0, 7, -1])
+#guard [sy, se].all fun x => ans (·.toList) (index x (col [2, 1])) == some (indexSpec "" x.toList [2, 1])
+#guard ans (·.toList) (amend xs (col [1, 3, 1]) none (col [0, 7, 2])) == some (amendSpec (fun _ y => y) xs.toList [1, 3, 1] [0, 7, 2])
+#guard ans (·.toList) (amend xs (col [1, 3, 1]) none (col [0, 7, 2])) == some [5, 2, 5, 7, 3]
 #guard [xs, xf].all fun x =>
-  ans (·.toList) (amend x (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some (amendSpec (· + ·) x.toList [0, 0, 4, 0] [1, 2, 3, 4])
-#guard ans (·.toList) (amend xs (lv [0, 0, 4, 0]) (some .add) (lv [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
-#guard (amend xs (lv [5]) none (lv [0])).toOption.isNone
+  ans (·.toList) (amend x (col [0, 0, 4, 0]) (some .add) (col [1, 2, 3, 4])) == some (amendSpec (· + ·) x.toList [0, 0, 4, 0] [1, 2, 3, 4])
+#guard ans (·.toList) (amend xs (col [0, 0, 4, 0]) (some .add) (col [1, 2, 3, 4])) == some [12, 3, 5, 9, 6]
+#guard (amend xs (col [5]) none (col [0])).toOption.isNone
 -- the other value types: `bits` (width 1), `float` with a `float` or a `long` `y`, `int` (width 4)
 private def bs3 : Arr .boolean 3 := Arr.mk (.bits (ByteArray.mk #[0b101])) (by decide)
 private def fv (xs : List Float) : (m : Nat) × Arr .float m :=
@@ -1240,20 +1239,20 @@ private def iv (xs : List Int32) : (m : Nat) × Arr .int m :=
   match Arr.of .int xs.length (.vector .int xs.length (.bytes (xs.foldl (fun b x => pushBits b x.toUInt32.toUInt64 4) .empty)) none) "iv" with
   | .ok a => ⟨xs.length, a⟩ | .error _ => ⟨0, Arr.mk (.bytes .empty) (by decide)⟩
 #guard [(Prim.Dyadic.greater, (· || ·)), (.lesser, (· && ·)), (.eq, (· == ·))].all fun (v, f) =>
-  ans (·.toList) (amend bs (lv [0, 0, 4]) (some v) bs3) == some (amendSpec f bs.toList [0, 0, 4] bs3.toList)
-#guard ans (·.toList) (amend bs (lv [0, 0, 4]) (some .greater) bs3) == some [true, true, true, false, true]
-#guard ans (·.toList) (amend bs (lv [3, 0, 3]) none bs3) == some [false, true, true, true, true]
+  ans (·.toList) (amend bs (col [0, 0, 4]) (some v) bs3) == some (amendSpec f bs.toList [0, 0, 4] bs3.toList)
+#guard ans (·.toList) (amend bs (col [0, 0, 4]) (some .greater) bs3) == some [true, true, true, false, true]
+#guard ans (·.toList) (amend bs (col [3, 0, 3]) none bs3) == some [false, true, true, true, true]
 -- a float element is its IEEE bits (`Carrier .float`), read as a `Float` by `Float.ofBits`
 private def fl {m : Nat} (r : Arr .float m) : List Float := r.toList.map Float.ofBits
-#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some (amendSpec (· + ·) [1.5, 2.5, 4] [0, 2, 0] [1, 2, 3])
-#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some [5.5, 2.5, 6]
-#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [0, 2]) (some .add) (lv [1, 2])) == some [2.5, 2.5, 6]
-#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (lv [1, 1]) (some .lesser) (fv [2, 0.5]).2) == some [1.5, 0.5, 4]
-#guard ans (·.toList) (amend (iv [1, 2, 3]).2 (lv [1, 1, 2]) (some .add) (iv [10, 20, 5]).2) ==
+#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (col [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some (amendSpec (· + ·) [1.5, 2.5, 4] [0, 2, 0] [1, 2, 3])
+#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (col [0, 2, 0]) (some .add) (fv [1, 2, 3]).2) == some [5.5, 2.5, 6]
+#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (col [0, 2]) (some .add) (col [1, 2])) == some [2.5, 2.5, 6]
+#guard ans fl (amend (fv [1.5, 2.5, 4]).2 (col [1, 1]) (some .lesser) (fv [2, 0.5]).2) == some [1.5, 0.5, 4]
+#guard ans (·.toList) (amend (iv [1, 2, 3]).2 (col [1, 1, 2]) (some .add) (iv [10, 20, 5]).2) ==
   some (amendSpec (· + ·) [1, 2, 3] [1, 1, 2] [10, 20, 5])
-#guard ans (·.toList) (amend (iv [1, 2, 3]).2 (lv [1, 1, 2]) (some .add) (iv [10, 20, 5]).2) == some [1, 32, 8]
+#guard ans (·.toList) (amend (iv [1, 2, 3]).2 (col [1, 1, 2]) (some .add) (iv [10, 20, 5]).2) == some [1, 32, 8]
 -- `:` keeps `x`'s type: a `long` `y` into a `float` list is q's 'type
-#guard (amend (fv [1.5]).2 (lv [0]) none (lv [1])).toOption.isNone
+#guard (amend (fv [1.5]).2 (col [0]) none (col [1])).toOption.isNone
 -- `:` on symbols, every pair of encodings: `y` is `d a e` (`d`, `e` in neither `x` dictionary), the index
 -- `2` repeated so the last write stays
 private def sy3 : Arr .symbol 3 :=
@@ -1261,11 +1260,11 @@ private def sy3 : Arr .symbol 3 :=
 private def se3 : Arr .symbol 3 :=
   Arr.mk (.enum (ByteArray.mk #[97, 0, 100, 0, 101, 0]) #[0, 2, 4, 6] (packIds (idWidth #[0, 2, 4, 6]) 3 fun i => [1, 0, 2][i]!)) (by decide)
 #guard [sy, se].all fun x => [sy3, se3].all fun y =>
-  ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some (amendSpec (fun _ y => y) x.toList [2, 0, 2] y.toList)
-#guard [sy, se].all fun x => [sy3, se3].all fun y => ans (·.toList) (amend x (lv [2, 0, 2]) none y) == some ["a", "a", "e"]
+  ans (·.toList) (amend x (col [2, 0, 2]) none y) == some (amendSpec (fun _ y => y) x.toList [2, 0, 2] y.toList)
+#guard [sy, se].all fun x => [sy3, se3].all fun y => ans (·.toList) (amend x (col [2, 0, 2]) none y) == some ["a", "a", "e"]
 -- the encoding kept: a blob stays a blob only against a blob, an interned `x` stays interned
-#guard ans (fun (r : Arr .symbol 3) => r.enc matches .syms ..) (amend sy (lv [0, 1, 2]) none sy3) == some true
-#guard [sy3, se3].all fun y => ans (fun (r : Arr .symbol 3) => r.enc matches .enum ..) (amend se (lv [0, 1, 2]) none y) == some true
+#guard ans (fun (r : Arr .symbol 3) => r.enc matches .syms ..) (amend sy (col [0, 1, 2]) none sy3) == some true
+#guard [sy3, se3].all fun y => ans (fun (r : Arr .symbol 3) => r.enc matches .enum ..) (amend se (col [0, 1, 2]) none y) == some true
 #guard ans (·.2.toList) (do raze Lg (← pl).2) == some [10, 20, 30]
 #guard ansP Lg pl == some [(0, 10), (0, 20), (1, 30)]
 #guard [sy, se].all fun x => ans (·.toList) (like x "b*") == some [true, false, true]
@@ -1273,27 +1272,27 @@ private def se3 : Arr .symbol 3 :=
 #guard ans (·.2.toList) (ss cs "aa") == some [0, 4]
 
 -- parted lists, on `bytes` and on `foR` payloads
-private def x6 := lv [1, 2, 3, 4, 5, 6]
+private def x6 := col [1, 2, 3, 4, 5, 6]
 private def x6f : Arr .long 6 :=
   Arr.mk (.foR (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).1 (Coc.encode 8 (packLongs [1, 2, 3, 4, 5, 6])).2) (foRLongs_wf [1, 2, 3, 4, 5, 6])
-#guard [xs, xf].all fun x => ansP Lg (cut (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
-#guard [xs, xf].all fun x => ans (·.toList) (cutP (lv [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
-#guard ansP Lg (cut (lv [0, 2]) xf) == some [(0, 5), (0, 3), (1, 5), (1, 9), (1, 3)]
+#guard [xs, xf].all fun x => ansP Lg (cut (col [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
+#guard [xs, xf].all fun x => ans (·.toList) (cutP (col [0, 2, 2]) x) == some (cutSpec [0, 2, 2] x.toList)
+#guard ansP Lg (cut (col [0, 2]) xf) == some [(0, 5), (0, 3), (1, 5), (1, 9), (1, 3)]
 -- q: `2 4 _ til 6` is `(2 3;4 5)`; the rows before the first offset are dropped
-#guard [x6, x6f].all fun x => ansP Lg (cut (lv [2, 4]) x) == some (runsSpec [[3, 4], [5, 6]])
-#guard [x6, x6f].all fun x => ansP Lg (cut (lv [0, 2, 4]) x) == some (runsSpec [[1, 2], [3, 4], [5, 6]])
-#guard [xs, xf].all fun x => ansP Lg (cut (lv [1, 2]) x) == some (cutSpec [1, 2] x.toList) &&
-  ansP Lg (cut (lv [1, 1, 4]) x) == some (cutSpec [1, 1, 4] x.toList) && ansP Lg (cut (lv [5]) x) == some (cutSpec [5] x.toList)
-#guard [(cut (lv [-1, 2]) xs), (cut (lv [0, 3, 2]) xs), (cut (lv [0, 9]) xs), (cut (lv [6]) xs)].all (·.toOption.isNone)
-#guard [sy, se].all fun x => ansP .symbol (cut (lv [0, 1]) x) == some (cutSpec [0, 1] x.toList)
+#guard [x6, x6f].all fun x => ansP Lg (cut (col [2, 4]) x) == some (runsSpec [[3, 4], [5, 6]])
+#guard [x6, x6f].all fun x => ansP Lg (cut (col [0, 2, 4]) x) == some (runsSpec [[1, 2], [3, 4], [5, 6]])
+#guard [xs, xf].all fun x => ansP Lg (cut (col [1, 2]) x) == some (cutSpec [1, 2] x.toList) &&
+  ansP Lg (cut (col [1, 1, 4]) x) == some (cutSpec [1, 1, 4] x.toList) && ansP Lg (cut (col [5]) x) == some (cutSpec [5] x.toList)
+#guard [(cut (col [-1, 2]) xs), (cut (col [0, 3, 2]) xs), (cut (col [0, 9]) xs), (cut (col [6]) xs)].all (·.toOption.isNone)
+#guard [sy, se].all fun x => ansP .symbol (cut (col [0, 1]) x) == some (cutSpec [0, 1] x.toList)
 #guard [xs, xf].all fun x => ansP Lg (eachRight .add .long x ys) == some (eachRightSpec (· + ·) x.toList ys.toList)
-#guard ansP .boolean (eachRight .lt .boolean xf (lv [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.toList [5, 4])
-#guard [x6, x6f].all fun x => ansP Lg (do flip .long (← cut (lv [0, 2, 4]) x).2) == some (runsSpec [[1, 3, 5], [2, 4, 6]])
-#guard [x6, x6f].all fun x => ansP Lg (do flip .long (← flip .long (← cut (lv [0, 2, 4]) x).2).2) == some (cutSpec [0, 2, 4] x6.toList)
-#guard (do flip .long (← cut (lv [0, 1, 4]) x6).2).toOption.isNone
-#guard [xs, xf].all fun x => ansP Lg (do indexParted .long (← cut (lv [0, 2, 3]) x).2 (lv [2, 0, 5, -1, 3])) ==
+#guard ansP .boolean (eachRight .lt .boolean xf (col [5, 4])) == some (eachRightSpec (fun a b => decide (a < b)) xf.toList [5, 4])
+#guard [x6, x6f].all fun x => ansP Lg (do flip .long (← cut (col [0, 2, 4]) x).2) == some (runsSpec [[1, 3, 5], [2, 4, 6]])
+#guard [x6, x6f].all fun x => ansP Lg (do flip .long (← flip .long (← cut (col [0, 2, 4]) x).2).2) == some (cutSpec [0, 2, 4] x6.toList)
+#guard (do flip .long (← cut (col [0, 1, 4]) x6).2).toOption.isNone
+#guard [xs, xf].all fun x => ansP Lg (do indexParted .long (← cut (col [0, 2, 3]) x).2 (col [2, 0, 5, -1, 3])) ==
   some (runsSpec [[9, 3], [5, 3], [], [], []])
-#guard [sy, se].all fun x => ansP .symbol (do indexParted .symbol (← cut (lv [0, 1]) x).2 (lv [1, 1])) ==
+#guard [sy, se].all fun x => ansP .symbol (do indexParted .symbol (← cut (col [0, 1]) x).2 (col [1, 1])) ==
   some (runsSpec [x.toList.drop 1, x.toList.drop 1])
 
 -- joins: left keys `lk` (and `lk₂`), times `lt`; right keys `rk` (and `rk₂`), times `rt`
