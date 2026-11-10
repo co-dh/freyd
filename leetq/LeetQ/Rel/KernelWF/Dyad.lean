@@ -123,4 +123,120 @@ theorem operandSource_isSome {b : Kernel.Ew.Build} {t : QAtomicType} {m : Nat} {
         · rcases wf_dense hc hbo hw with ⟨y, rfl⟩ | ⟨md, p, rfl⟩ | ⟨md, p, a, rfl, -⟩ <;> simp [hx]
       · simp [hx]
     · rcases wf_dense hc hbo hw with ⟨y, rfl⟩ | ⟨md, p, rfl⟩ | ⟨md, p, a, rfl, hal⟩ <;>
-        cases tk <;> simp [hwd, *] <;> (repeat' split) <;> rfl
+        cases tk <;> simp [*] <;> (repeat' split) <;> rfl
+
+/-- A type `convertible` reads has a class. -/
+theorem clsOf_of_convertible {t : QAtomicType} {cls : UInt8} (h : convertible t cls = true) :
+    ∃ src, clsOf t = some src := by
+  unfold convertible at h; split at h
+  · exact ⟨_, ‹_›⟩
+  · exact absurd h (by simp)
+
+/-- A boolean operand is never re-counted in a unit. -/
+theorem tickIn_boolean (rt : QAtomicType) : tickIn .boolean rt = none := by
+  unfold tickIn; split <;> simp [tickCode]
+
+/-- `zipPass` answers on two well-formed operands of types with a class, at any class but the bitmap's. -/
+theorem zipPass_isSome {cls : UInt8} {nulIn : QAtomicType → Int64} {nulOut nulOutB : Int64}
+    {t u rt : QAtomicType} {na nb n : Nat} {ea eb : Enc} {stage : UInt8 → UInt8 → Kernel.Ew.Stage}
+    {ta tb : Option UInt8} {sa sb : UInt8} (hca : clsOf t = some sa) (hcb : clsOf u = some sb)
+    (ha : Enc.WF t na ea) (hb : Enc.WF u nb eb) (hcls : cls ≠ Kernel.Ew.bits)
+    (hta : ta.isSome → t ≠ .boolean) (htb : tb.isSome → u ≠ .boolean) :
+    (zipPass cls nulIn nulOut nulOutB t u rt na ea nb eb n stage ta tb).isSome := by
+  obtain ⟨⟨bld, xa⟩, h1⟩ := Option.isSome_iff_exists.1 (operandSource_isSome (b := {}) (dst := cls)
+    (nulIn := nulIn t) (nulOut := nulOut) (n := n) (tk := ta) hca ha (fun _ => hcls) hta)
+  obtain ⟨⟨bld', xb⟩, h2⟩ := Option.isSome_iff_exists.1 (operandSource_isSome (b := bld) (dst := cls)
+    (nulIn := nulIn u) (nulOut := nulOutB) (n := n) (tk := tb) hcb hb (fun _ => hcls) htb)
+  simp [zipPass, h1, h2]
+
+/-- A fallback that answers makes `<|>` answer. -/
+theorem orElse_isSome {α : Type} (x : Option α) {y : Option α} (hy : y.isSome) : (x <|> y).isSome := by
+  cases x
+  · exact hy
+  · rfl
+
+/-- The conditions `valPayload` tests of the types alone, as it tests them. -/
+def ValClaims (v : Prim.Dyadic) (t u rt : QAtomicType) : Prop :=
+  (valOp v).isSome ∧ ∃ cls, clsOf rt = some cls ∧ (scales v = true ∨ ticksMeet t u rt = true) ∧
+    convertible t cls = true ∧ convertible u cls = true ∧ (cls = Kernel.Ew.bits → t = .boolean ∧ u = .boolean)
+
+/-- `valPayload` answers on well-formed operands whenever its type conditions hold. -/
+theorem valPayload_isSome {v : Prim.Dyadic} {shape : UInt8} {t u rt : QAtomicType} {na nb n : Nat}
+    {ea eb : Enc} (hv : ValClaims v t u rt) (ha : Enc.WF t na ea) (hb : Enc.WF u nb eb) :
+    (valPayload v shape t u rt na ea nb eb n).isSome := by
+  obtain ⟨hop, cls, hcls, htick, hct, hcu, hbits⟩ := hv
+  obtain ⟨op, hop⟩ := Option.isSome_iff_exists.1 hop
+  obtain ⟨sa, hsa⟩ := clsOf_of_convertible hct
+  obtain ⟨sb, hsb⟩ := clsOf_of_convertible hcu
+  unfold valPayload
+  simp only [hop, hcls, hct, hcu, Option.bind_eq_bind, Option.bind_some]
+  rw [if_neg (by rcases htick with h | h <;> simp [h])]
+  by_cases hc : cls = Kernel.Ew.bits
+  · obtain ⟨rfl, rfl⟩ := hbits hc
+    cases ea <;> simp [Enc.WF] at ha
+    cases eb <;> simp [Enc.WF] at hb
+    simp [hc]
+  · rw [if_neg (by simpa using hc)]
+    have hk : ∀ {s : QAtomicType}, (if scales v = true then tickIn s rt else none).isSome → s ≠ .boolean := by
+      intro s h hs; subst hs; split at h <;> simp [tickIn_boolean] at h
+    exact orElse_isSome _ (zipPass_isSome hsa hsb ha hb hc hk hk)
+
+/-- The conditions `cmpPayload` tests of the types alone, as it tests them: a symbol pair and a boolean pair
+    are served by their own engines, any other pair at the class of the type both widen to. -/
+def CmpClaims (v : Prim.Dyadic) (t u : QAtomicType) : Prop :=
+  (cmpOp v).isSome ∧ ((t = .symbol ∧ u = .symbol) ∨ (t = .boolean ∧ u = .boolean) ∨
+    ∃ ct raw, (if t == u then some t else Prim.common t u) = some ct ∧ ticksMeet t u ct = true ∧
+      clsOf ct = some raw ∧
+      let cls := if raw == Kernel.Ew.bits || ((clsOf t == some Kernel.Ew.bits || clsOf u == some Kernel.Ew.bits) &&
+        (raw == Kernel.Ew.u8 || raw == Kernel.Ew.i16)) then Kernel.Ew.i32 else raw
+      convertible t cls = true ∧ convertible u cls = true)
+
+/-- The symbol encodings `cmpPayload` reads against each other: two dense blobs, or two operands that are
+    each interned or a single symbol. It declines a dense blob of other than one symbol against an
+    interned column. -/
+def SymClaims (ea eb : Enc) : Prop :=
+  (∃ ba oa bb ob, ea = .syms ba oa ∧ eb = .syms bb ob) ∨ ((symIds ea).isSome ∧ (symIds eb).isSome)
+
+/-- `cmpPayload` answers on well-formed operands whenever its type conditions hold and, at a symbol pair,
+    the encodings are ones it reads. -/
+theorem cmpPayload_isSome {v : Prim.Dyadic} {shape : UInt8} {t u : QAtomicType} {na nb n : Nat}
+    {ea eb : Enc} (hv : CmpClaims v t u) (ha : Enc.WF t na ea) (hb : Enc.WF u nb eb)
+    (hsym : t = .symbol → u = .symbol → SymClaims ea eb) :
+    (cmpPayload v shape t u na ea nb eb n).isSome := by
+  obtain ⟨hop, hty⟩ := hv
+  obtain ⟨op, hop⟩ := Option.isSome_iff_exists.1 hop
+  unfold cmpPayload
+  simp only [hop, Option.bind_eq_bind, Option.bind_some]
+  by_cases hs : t = .symbol ∧ u = .symbol
+  · obtain ⟨rfl, rfl⟩ := hs
+    rcases hsym rfl rfl with ⟨ba, oa, bb, ob, rfl, rfl⟩ | ⟨h1, h2⟩
+    · simp
+    · obtain ⟨⟨da, doa, ia⟩, hia⟩ := Option.isSome_iff_exists.1 h1
+      obtain ⟨⟨db, dob, ib⟩, hib⟩ := Option.isSome_iff_exists.1 h2
+      simp only [beq_self_eq_true, Bool.and_self, if_true]
+      (repeat' split) <;> (try simp_all) <;> (rename_i h; exact h _ _ _ _ _ _ rfl rfl rfl rfl rfl rfl)
+  · rw [if_neg (by simpa [Bool.and_eq_true, beq_iff_eq] using hs)]
+    rcases hty with h | ⟨rfl, rfl⟩ | ⟨ct, raw, hct, htk, hraw, hcv⟩
+    · exact absurd h hs
+    · cases ea <;> simp [Enc.WF] at ha
+      cases eb <;> simp [Enc.WF] at hb
+      rfl
+    · obtain ⟨hct', hcu'⟩ := hcv
+      obtain ⟨sa, hsa⟩ := clsOf_of_convertible hct'
+      obtain ⟨sb, hsb⟩ := clsOf_of_convertible hcu'
+      split
+      · rfl
+      · have hne : (if (raw == Kernel.Ew.bits || ((clsOf t == some Kernel.Ew.bits ||
+            clsOf u == some Kernel.Ew.bits) && (raw == Kernel.Ew.u8 || raw == Kernel.Ew.i16))) = true
+            then Kernel.Ew.i32 else raw) ≠ Kernel.Ew.bits := by
+          split <;> rename_i h <;> simp_all [Kernel.Ew.i32, Kernel.Ew.bits]
+        split
+        · rename_i htu; simp only [htu, if_true, Option.some.injEq] at hct; subst hct
+          rw [if_neg (by simp [htk]), hraw]; simp only [Option.bind_some]; try rw [hraw] at hct' hcu' hne
+          rw [if_neg (by rw [hct', hcu']; decide)]
+          exact orElse_isSome _ (zipPass_isSome hsa hsb ha hb hne (by simp) (by simp))
+        · rename_i htu; simp only [htu, Bool.false_eq_true, if_false] at hct; rw [hct]
+          simp only [Option.bind_some]
+          rw [if_neg (by simp [htk]), hraw]; simp only [Option.bind_some]; try rw [hraw] at hct' hcu' hne
+          rw [if_neg (by rw [hct', hcu']; decide)]
+          exact orElse_isSome _ (zipPass_isSome hsa hsb ha hb hne (by simp) (by simp))
