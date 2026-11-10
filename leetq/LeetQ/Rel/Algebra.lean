@@ -1072,24 +1072,22 @@ private def pqpr : List (Int64 × Int64) := [(0, 0), (0, 2), (2, 0), (2, 2), (1,
 -- boolean, `bits`: `1010b`, whose positions pair `(0 2)` and `(1 3)`
 private abbrev Bo := QAtomicType.boolean
 private def bitsC : Nat × Enc := (4, .bits (ByteArray.mk #[0b0101]))
-#guard ok (do pure (same (← lst Bo bitsC) (← lst Bo bitsC))) fun X =>
+#guard ok (do let x ← lst Bo bitsC; pure (same x x)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
--- FIXME(A1): after the `same` above this `group` segfaults (exit 139); alone it passes
 #guard okFlat L (do group (← lstV Bo bitsC).2) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
 #guard ok (do pure (ran (← lst Bo bitsC))) fun X => seteq X.toList [(true, true), (false, false)] && X.n == 2
-#guard ok (do pure (union (← lst Bo bitsC) (← lst Bo bitsC))) fun X => X.n == 4
-#guard ok (do symDiv (← lst Bo bitsC) (← lst Bo bitsC) U4 U4) fun X =>
+#guard ok (do let x ← lst Bo bitsC; pure (union x x)) fun X => X.n == 4
+#guard ok (do let x ← lst Bo bitsC; symDiv x x U4 U4) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)]
 
-#exit
--- symbol, `syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
+-- symbol,`syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
 private abbrev Sy := QAtomicType.symbol
 private def symsC : Nat × Enc := (4, .syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10])
 private def enumC : Nat × Enc :=
   (4, .enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!))
 #guard ok (lst Sy enumC) fun X => X.toList == [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
 #guard ok (do pure (same (← lst Sy symsC) (← lst Sy enumC))) fun X => seteq X.toList pqpr && X.n == 6
-#guard ok (do pure (same (← lst Sy enumC) (← lst Sy enumC))) fun X => seteq X.toList pqpr && X.n == 6
+#guard ok (do let x ← lst Sy enumC; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do pure (union (← lst Sy symsC) (← lst Sy enumC))) fun X => X.n == 4 &&
   seteq X.toList [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
 #guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
@@ -1134,21 +1132,21 @@ private def fd : Nat × Enc := (fs.length, .bytes fb)
 -- `alpOf` and not `Column.answer`, which keeps a column this short dense
 private def alpC : Nat × Enc := ((Enc.alpOf Fl fd.1 fd.2).map (fd.1, ·)).getD fd
 #guard alpC.2 matches .alp ..
-#guard ok (do pure (same (← lst Fl alpC) (← lst Fl alpC))) fun X => seteq X.toList pqpr && X.n == 6
+#guard ok (do let x ← lst Fl alpC; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do pure (same (← lst Fl alpC) (← lst Fl fd))) fun X => seteq X.toList pqpr && X.n == 6
 -- a float element is its IEEE bits
 #guard okFlat L (do group (← lstV Fl alpC).2) fun l =>
   l.map (·.2) == [0, 2, 1, 3] && l.map (·.1) == [1.5, 1.5, 2.25, 0.1].map Float.toBits
 #guard ok (do pure (union (← lst Fl alpC) (← lst Fl fd))) fun X => X.n == 4
-#guard ok (do symDiv (← lst Fl alpC) (← lst Fl alpC) U4 U4) fun X => seteq X.toList pqpr
+#guard ok (do let x ← lst Fl alpC; symDiv x x U4 U4) fun X => seteq X.toList pqpr
 
 -- a general list, `(1; (); 1; ,2)`, elements matched by identity
 private def gs : Array QValue := #[.atom (.long 1), QValue.general #[], .atom (.long 1), QValue.general #[.atom (.long 2)]]
-#guard ok (do pure (same (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part))) fun X => seteq X.toList pqpr && X.n == 6
+#guard ok (do let x ← lst .general (genCol gs).2.part; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard okFlat L (do group (← lstV .general (genCol gs).2.part).2) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
-#guard ok (do pure (union (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part))) fun X => X.n == 4
+#guard ok (do let x ← lst .general (genCol gs).2.part; pure (union x x)) fun X => X.n == 4
 #guard ok (do pure (dom (conv (← lst .general (genCol gs).2.part)))) (·.n == 3)
-#guard ok (do symDiv (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part) U4 U4) fun X => seteq X.toList pqpr
+#guard ok (do let x ← lst .general (genCol gs).2.part; symDiv x x U4 U4) fun X => seteq X.toList pqpr
 #guard match lstV .general (genCol gs).2.part with | .ok ⟨_ + 1, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | _ => false
 #guard (zero (A := .general) (B := Sy)).n == 0
 
@@ -1229,7 +1227,8 @@ theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)
 
 /-- `longsP`'s part holds the dense payload it was given, where that holds whole longs. -/
 theorem longsP_part {b : ByteArray} (h : b.size = len b * 8) : (longsP b).2.part = longs b := by
-  simp [longsP, h, Arr.part, longs]
+  have e : longsP b = ⟨len b, Arr.mk (.bytes b) (KernelWF.wf_bytes (by decide) rfl h)⟩ := dif_pos h
+  rw [e]; simp [Arr.part, longs]; rfl
 
 /-- The generic `R°`: `ofCols` of the two payloads, swapped. -/
 theorem conv_cols_holds {R : Rel A B} (x : El A) (y : El B) :
