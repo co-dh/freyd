@@ -11,6 +11,8 @@ import QLean.Dep.Monadic
 import QLean.Kernel.Sort
 import QLean.Kernel.Search
 import QLean.Kernel.Structural
+import QLean.Kernel.Elementwise
+import QLean.Kernel.Scan
 import QLean.Verify.Encoding
 import QLean.Verify.SymFind
 import QLean.Verify.Alp
@@ -508,49 +510,6 @@ def longBytes (n : Nat) (e : Enc) : Option ByteArray :=
   | .foR md pk => some (Kernel.Coc.decode 8 md pk n.toUSize)
   | _ => none
 
-/-- Under `Cuts o n`, a position exists only when there is a group to hold it. -/
-theorem Cuts.pos {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) (i : Fin n) : 0 < g := by
-  rcases g with _ | g
-  · have h2 := co.2.2; rw [show Fin.last 0 = 0 from rfl, co.2.1] at h2; simp at h2; have := i.2; omega
-  · omega
-
-/-- A parted list in its flat form: `n` values cut into `g` groups by the `g+1` offsets `o`. It is the
-    kernels' working shape, never a value: `box` turns it into q's nested list, one vector per group. -/
-structure Parted (v : QAtomicType) where
-  g : Nat
-  n : Nat
-  o : Arr .long (g+1)
-  co : Cuts o n
-  val : Arr v n
-
-namespace Parted
-
-variable {v : QAtomicType}
-
-/-- The number of cut points after the first at or below `i`: the largest `r` with `o[r] ≤ i`, which
-    under `Cuts` is the group holding `i`. -/
-def group {g : Nat} (o : Arr .long (g+1)) (i : Nat) : Nat :=
-  (List.finRange g).countP fun r => (o.get r.succ).toInt ≤ i
-
-/-- The group holding position `i`; the `min` is unreachable under `Cuts`, which puts `group o i < g`. -/
-def key (P : Parted v) (i : Fin P.n) : Fin P.g := ⟨min (group P.o i) (P.g - 1), by have := P.co.pos i; omega⟩
-
-/-- The pairs `(group, value)` in position order, for proofs only. -/
-def toList (P : Parted v) : List (Int64 × El v) := List.ofFn fun i => (Int64.ofNat (P.key i), P.val.get i)
-
-/-- `Parted` built at run time: `Cuts` decided by `Order.ascending` on `o`'s dense payload and one read of
-    each end, `cuts_of_ascending` turning the kernel's answer into the proof. `none` when `o` is not cuts of `n`. -/
-def of? {g n : Nat} (o : Arr .long (g+1)) (val : Arr v n) : Option (Parted v) := do
-  let b ← longBytes (g+1) o.enc
-  if h : Enc.WF .long (g+1) (.bytes b) ∧ g + 1 < USize.size then
-    let ob : Arr .long (g+1) := Arr.mk (.bytes b) h.1 o.attrCell
-    if hc : Kernel.Order.ascending .i64 false false (g+1).toUSize b = true ∧ ob.get 0 = 0 ∧ (ob.get (Fin.last g)).toInt = n then
-      some ⟨g, n, ob, cuts_of_ascending ob rfl h.2 hc.1 hc.2.1 hc.2.2, val⟩
-    else none
-  else none
-
-end Parted
-
 /-- A side of a relation: an atomic type, a product of sides, or an array of a side. A tree, so
     `Vals (.atom t)` is `Arr t` itself and every one-column path is unchanged. A `arr b` element is an
     ARRAY of `b`: its order and multiplicity are part of the value. -/
@@ -638,6 +597,34 @@ theorem holds_iff_mem_toList (R : Rel k v) (x : k.El) (y : v.El) : R.Holds x y �
 
 end Rel
 
+/-! ## Payload helpers on qlean kernels -/
+
+section Payload
+
+open QLean.Kernel
+
+/-- One long as an eight-byte payload: the atom operand of an `av`/`va` kernel call. -/
+def one (v : UInt64) : ByteArray := Column.pushBits .empty v 8
+
+theorem bitsAt_one (v : UInt64) : Column.bitsAt (one v) 0 8 = v := by
+  simpa using Verify.bitsAt_pushBits8 ByteArray.empty v
+
+/-- q's `where` on a dense count column `cnt` (none negative): row `i` repeated `cnt[i]` times, and each
+    copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less its
+    run's start (`Scan.scan sums` less the count). One linear pass, where bisecting the outputs into the
+    run starts (`binBytes`) was `O(m log n)`. -/
+def expand (cnt : ByteArray) : ByteArray × ByteArray :=
+  let n := cnt.size / 8
+  let rs := Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (Scan.scan .sums .i64 n.toUSize cnt) cnt n.toUSize
+  let i := expandBytes 8 0 (tilLongs n.toUSize) cnt
+  let m := i.size / 8
+  (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (tilLongs m.toUSize) (gatherBytes 8 0 rs i) m.toUSize)
+
+/-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
+def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize
+
+end Payload
+
 /-! ## Sanity checks on small literal columns -/
 
 section Checks
@@ -662,30 +649,12 @@ private def es : Arr .symbol 3 :=
 private def gs : Arr .general 2 := Arr.mk (.gen #[(.atom (.long 1) : QValue), (.general #[] : QValue)]) rfl
 #guard match id (α := QValue) (gs.get 0), id (α := QValue) (gs.get 1) with | .atom (.long 1), .general #[] _ => true | _, _ => false
 
--- groups `[0,1) [1,1) [1,3)`: the empty middle group owns no position
-private def o3 : Arr .long 4 := Arr.mk (.bytes <| packLongs [0, 1, 1, 3]) (by decide)
--- the parted list `(10 20; 30)`: positions `0 1 | 2`, groups `0 0 1`
-private def o2 : Arr .long 3 := Arr.mk (.bytes <| packLongs [0, 2, 3]) (by decide)
-private def v3 : Arr .long 3 := Arr.mk (.bytes <| packLongs [10, 20, 30]) (by decide)
--- `of?` decides `Cuts` at run time, on `bytes` and on `foR` offsets; the `foR` header is decided too
-private def o3f : Except String (Arr .long 4) :=
-  Arr.of .long 4 (.vector .long 4 (.foR (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).1
-      (Kernel.Coc.encode 8 (packLongs [0, 1, 1, 3])).2) none) "o3f"
-#guard match o3f with
-  | .ok o3f => [o3, o3f].all fun o => ((Parted.of? o v3).map Parted.toList) == some [(0, 10), (2, 20), (2, 30)]
-  | .error _ => false
-#guard ((Parted.of? o2 v3).map Parted.toList) == some [(0, 10), (0, 20), (1, 30)]
-#guard (Parted.of? o2 (Arr.mk (.bytes <| packLongs [10, 20]) (by decide) : Arr .long 2)).isNone
-#guard (Parted.of? (Arr.mk (.bytes <| packLongs [0, 2, 1]) (by decide) : Arr .long 3) v3).isNone
-#guard (Parted.of? (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide) : Arr .long 3) v3).isNone
 #guard ss.toList.zipIdx == [("bc", 0), ("a", 1), ("bc", 2)]
 example : ss.Holds 1 "a" := (ss.holds_iff_mem_zipIdx 1 "a").2 ⟨1, rfl, by decide⟩
 
 end Checks
 
 #print axioms Arr.get
-#print axioms Parted.key
-#print axioms Parted.of?
 #print axioms cuts_of_ascending
 #print axioms Rel.holds_iff_mem_toList
 

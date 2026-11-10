@@ -129,31 +129,6 @@ theorem rankSlices_size (w : USize) (v o : ByteArray) (hw : w.toNat ≤ 64) (ho 
       not_exists, not_and, Nat.mul_zero]
     exact ⟨⟨⟨⟨Nat.not_lt.2 hw, Nat.not_lt.2 ho⟩, Int.not_lt.2 h0⟩, Int.not_lt.2 hcap⟩, fun j hj => Int.not_lt.2 (hasc j hj)⟩
 
-/-- `Parted.of?` answers `some` on dense offsets that are cuts: its run-time decision (`ascending`, the
-    two ends) holds of every `Cuts`, so a caller holding the proof never meets its `none`. -/
-theorem Parted.of?_isSome {v : QAtomicType} {g n : Nat} {o : Arr .long (g+1)} {b : ByteArray}
-    (val : Arr v n) (hb : o.enc = .bytes b) (hg : g + 1 < USize.size) (co : Cuts o n) :
-    (Parted.of? o val).isSome := by
-  have hwf : Enc.WF .long (g+1) (.bytes b) := hb ▸ o.wf
-  have hu : (g+1).toUSize.toNat = g + 1 := by simp only [Nat.toUSize]; exact Nat.mod_eq_of_lt hg
-  have hget : ∀ i, (Arr.mk (t := .long) (n := g+1) (.bytes b) hwf o.attrCell).get i = o.get i := fun i => by
-    rw [Arr.get_long_bytes _ rfl, Arr.get_long_bytes _ hb]
-  have hasc : Order.ascending .i64 false false (g+1).toUSize b = true := by
-    rw [Verify.ascending_i64_iff, List.pairwise_map]
-    have hs : min (g+1).toUSize.toNat (b.size / 8) = g + 1 := by
-      simp only [Enc.WF, QAtomicType.width] at hwf; omega
-    rw [hs]
-    refine (List.pairwise_lt_range (n := g+1)).imp_of_mem fun {i j} hi hj hij => ?_
-    rw [List.mem_range] at hi hj
-    have := co.1 ⟨i, hi⟩ ⟨j, hj⟩ (Fin.le_def.2 (Nat.le_of_lt hij))
-    rw [Arr.get_long_bytes _ hb, Arr.get_long_bytes _ hb] at this
-    simpa [Verify.ordRel] using this
-  unfold Parted.of?
-  rw [hb]
-  simp only [longBytes, Option.bind_eq_bind, Option.bind_some]
-  rw [dif_pos ⟨hwf, hg⟩, dif_pos ⟨hasc, (hget 0).trans co.2.1, by rw [hget]; exact co.2.2⟩]
-  rfl
-
 /-! ## `razeColumn` -/
 
 /-- An `Option` pass that answers `some (g x)` at every element answers `some` of the mapped array. -/

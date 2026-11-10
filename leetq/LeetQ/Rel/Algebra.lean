@@ -10,8 +10,7 @@
   The spec of each operator is the List-level relation on `toList`; `#guard`s below hold each one
   on small literal relations, and the laws that the kernels' Lean bodies make reachable are proved.
 -/
-import LeetQ.Rel.Find
-import LeetQ.Rel.Ew
+import LeetQ.Rel.KernelWF.Gather
 import QLean.Kernel.Sort
 import QLean.Kernel.Structural
 import QLean.Kernel.Reduce
@@ -20,14 +19,11 @@ import QLean.Kernel.Coc
 import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
-import LeetQ.Rel.Parted
 import LeetQ.Rel.KernelWF.Reduce
-import LeetQ.Rel.Scan
 
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel LeetQ.Rel
-open LeetQ.Rel.Find (expand one)
 
 /-! ## Long payloads: the index and count columns every step passes along -/
 
@@ -803,7 +799,7 @@ def setIds (vc : Code) (s : ByteArray) : ByteArray :=
     `setIdsRef_size`, the offsets being the starts and one long more. -/
 theorem setIds_size (vc : Code) (s : ByteArray) : (setIds vc s).size = 8 * len s := by
   have hr : (setIdsRef vc (concatBytes #[s, one vc.n.toUInt64])).size = 8 * len s := by
-    rw [setIdsRef_size]; simp [len, KernelWF.concatBytes_size, Find.one, Column.pushBits_size]
+    rw [setIdsRef_size]; simp [len, KernelWF.concatBytes_size, one, Column.pushBits_size]
   unfold setIds
   split <;> (try dsimp only) <;> split <;> assumption
 
@@ -2413,7 +2409,7 @@ theorem shift_elem (b : ByteArray) (c : Int64) {n : Nat} (hn : n < USize.size) {
   have hs := Verify.val_size8 Ew.add Ew.va nul b (one c.toUInt64) n.toUSize
   have hw : Ew.width Ew.i64 = 8 := by decide
   have ho : Ew.elem Ew.i64 (one c.toUInt64) 0 = c.toUInt64 := by
-    simp only [Ew.elem, hw, Nat.zero_mul]; exact Find.bitsAt_one c.toUInt64
+    simp only [Ew.elem, hw, Nat.zero_mul]; exact bitsAt_one c.toUInt64
   simp only [Verify.elemsW, hw, List.getElem?_map] at e
   rw [← hs, hu, List.getElem?_range hi] at e
   simp only [Option.map_some, Option.some.injEq, Ew.shapeIdx] at e
