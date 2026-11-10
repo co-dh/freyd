@@ -22,6 +22,7 @@ import QLean.Verify.Grade
 import QLean.Verify.Chain
 import LeetQ.Rel.Parted
 import LeetQ.Rel.KernelWF.Reduce
+import LeetQ.Rel.Scan
 
 namespace LeetQ.Rel.Alg
 
@@ -1098,10 +1099,128 @@ def foldBy {E V : Obj} {n m : Nat} (X : Vals (.arr E) n) (e : Vals V m)
 def fold {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) : Rel (.arr E) V :=
   foldBy X e fun el pend => pair el pend ≫ S
 
+/-- The one-row side holding the empty array. -/
+def nilVal (B : Obj) : Vals (.arr B) 1 := ⟨0, col [0], col [0], Vals.empty B⟩
+
 /-- `F(R)`, the list functor on the arrays of `X`: `xs` to every `ys` of its length with `xs[i] R ys[i]` at
     each `i` — `⦇[], (R × 𝟙) ≫ cons⦈`, each round pairing every image of the element with every array so far. -/
 def map {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) :=
-  foldBy X (⟨0, col [0], col [0], Vals.empty B⟩ : Vals (.arr B) 1) fun el pend => cons (pair (el ≫ R) pend)
+  foldBy X (nilVal B) fun el pend => cons (pair (el ≫ R) pend)
+
+/-! ## Order on numbers, the power side, and the note's list functions -/
+
+/-- `<` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160, strict): the pairs `(U[i], U[j])` with
+    `U[i] < U[j]`. `rank` of `U` (`gradeColumn`, ties in position order), `cross` of the positions, `Ew.cmp <`
+    of their ranks, less the pairs of one value the ties' order put apart. The domain is the types
+    `gradeColumn` orders by value: every atom but a general list, whose witness `decide` discharges. -/
+def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_ : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+  let r := longsOf (Ops.rank (t := t) U)
+  let c := cross n n
+  let i := whereBits (n * n).toUSize (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) (n * n).toUSize)
+  (⟨len i, gather_len c.1 i ▸ Vals.pick _ U (gather 8 c.1 i), gather_len c.2 i ▸ Vals.pick _ U (gather 8 c.2 i)⟩ : Rel _ _) \ idU U
+
+/-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160): `lt U ∪ 𝟙`. -/
+def leq {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+  lt U h ∪ idU U
+
+/-- `succ : long ⟶ long` on `U` (`succ`, AOP/A5_6_ListCombinators.lean:343): each `u` to `u + 1`, `Ew.val`
+    add; the key read at `til`, of the count `Ew.val` answers too (`Ew.val_size`), as `num`. -/
+def succ {n : Nat} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) :=
+  let m := n.toUSize
+  let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
+  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (longsOf U) (one 1) m
+  have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
+  ⟨len i, Vals.pick _ U i, h ▸ longCol s⟩
+
+/-- `plus : long × long ⟶ long` on the pairs `W` (`plus`, AOP/A5_6_ListCombinators.lean:339): each `(u, v)` to
+    `u + v`, `Ew.val` add of the two columns, keyed as `succ`. -/
+def plus {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) : Rel (.prod (.atom .long) (.atom .long)) (.atom .long) :=
+  let m := n.toUSize
+  let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
+  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul (longsOf W.1) (longsOf W.2) m
+  have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
+  ⟨len i, Vals.pick _ W i, h ▸ longCol s⟩
+
+/-- `τ : A ⟶ arr A` on `X`, each element to the array holding it alone: `Λ(𝟙)` (`Λ_id_eq_singletonMap`,
+    AOP/A5_7_PowerBeads.lean:171, of `singletonMap`, Freyd/S2_40.lean:170; the note's
+    `τ≜⟨𝟙,⊸ nil⟩ cons`, diag/aop/07-optimisation.typ:694). -/
+def τ {A : Obj} {n : Nat} (X : Vals A n) : Rel A (.arr A) := Λ(idU X)
+
+/-- `nil : K ⟶ arr B` on the one-row side `I`: its element to the empty array (`nil`,
+    AOP/A1_7_Pointfree.lean:36; the note's `nil ≜ []`, diag/aop/07-optimisation.typ:443). -/
+def nil {K B : Obj} (I : Vals K 1) : Rel K (.arr B) := ⟨1, I, nilVal B⟩
+
+/-- `α ≜ [nil, cons] : K + B × arr B ⟶ arr B`, `nil` on the one-row `I`, `cons` on the pairs `P` (the note's
+    `α ≜ [nil,cons]`, diag/aop/07-optimisation.typ:449; `alphaR_eq_junc`, AOP/A5_6_ListCombinators.lean:727). -/
+def alpha {K B : Obj} {n : Nat} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
+    Rel (.sum K (.prod B (.arr B))) (.arr B) :=
+  junc (nil I) (cons (idU P))
+
+/-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
+    one row per key of `R`, has no row for. -/
+private def lamOn {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
+  Λ(R) ∪ top (idU U \ dom R).key (nilVal B)
+
+/-- `E(R) : arr A ⟶ arr B` on the arrays `X`, the existential image, the note's `E(R)≜frac(∋R,∋)`
+    (diag/aop/07-optimisation.typ:718), `existsImage R ≜ Λ(∋ ≫ R)` (AOP/A4_6.lean:95): `Λ(∋R)` total on `X`. -/
+def E {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := lamOn (mem X ≫ R) X
+
+/-- `P(R) : arr A ⟶ arr B` from the arrays `X` to the arrays `Y`, the power relator (`powerRel`,
+    AOP/A5_4_PowerRel.lean:34): `((∋)° \ (R ≫ (∋)°)) ∩ ((∋ ≫ R) / ∋)`, every element of `xs` `R`-reaches into `ys`
+    and every element of `ys` is reached from `xs`. A relation, not a map, so both ends range over a
+    universe: `X` the inputs, `Y` the outputs. -/
+def P {A B : Obj} {n m : Nat} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) : Rel (.arr A) (.arr B) :=
+  leftDiv (mem X)° (R ≫ (mem Y)°) X Y ∩ rightDiv (mem X ≫ R) (mem Y) X Y
+
+/-- `head ≜ cons° π₁` on the arrays `X` (diag/aop/07-optimisation.typ:694). -/
+def head {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) B := outl (uncons X)
+
+/-- `tail ≜ cons° π₂` on the arrays `X` (diag/aop/05-datatypes.typ:561). -/
+def tail {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outr (uncons X)
+
+/-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
+    AOP/A5_6_ListCombinators.lean:328): each round's `π₂ succ` on the pairs it meets (`succ` on their counts). -/
+def length {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
+  foldBy X (col [0]) fun el pend => let p := outr (pair el pend); p ≫ succ p.val
+
+/-- `filter(p)` on the arrays `X`, `p` a coreflexive. The note's `filter(p)≜frac(subseq p′,∋) est(R°)`
+    (diag/aop/07-optimisation.typ:1041; `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the
+    fold B&dM derive from it, `⦇[nil, (p×𝟙) cons ∪ (∼p×𝟙) π₂]⦈`: a head in `p` kept, any other dropped. -/
+def filter {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  foldBy X (nilVal E) fun el pend => cons (pair (el ≫ p) pend) ∪ dom (antiJoin el p) ≫ pend
+
+/-- `takewhile(p)` on the arrays `X`, `p` a coreflexive. The note's `takewhile(p)≜frac(prefix p′,∋) est(R°)`
+    (diag/aop/07-optimisation.typ:1052; `takewhile`, AOP/A7_7_TakeWhile.lean:283) is the specification; this is
+    the fold of its algebra `[nil, (p×𝟙) cons ∪ ⊸ nil]` (`Salg`, AOP/A7_7_TakeWhile.lean:277) with the
+    `⊸ nil` restricted to the heads outside `p`, which `est(R°)` picks. -/
+def takewhile {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  foldBy X (nilVal E) fun el pend => cons (pair (el ≫ p) pend) ∪ top (antiJoin el p).key (nilVal E)
+
+/-- `prefix : arr E ⟶ arr E` on the arrays `X`, each array to each of its initial segments (`prefix`,
+    AOP/A5_6_ListCombinators.lean:97): `⦇[nil, cons ∪ ⊸ nil]⦈`. -/
+def «prefix» {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  foldBy X (nilVal E) fun el pend => cons (pair el pend) ∪ top el.key (nilVal E)
+
+/-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
+    AOP/A5_6_ListCombinators.lean:221): `tail*`, `𝟙 ∪ tail ∪ tail tail ∪ …` by `iter`, each round `tail` on the
+    arrays the last one reached; an array is never longer than the payload `X.1`, so `X.1 + 1` rounds end. -/
+def suffix {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  (iter (X.1 + 1) (fun s => s.2.n == 0) (fun (S, F) => let F' := F ≫ tail (ran F).val; (S ∪ F', F')) (idU X, idU X)).1
+
+namespace Arr
+
+/-- `union : arr (arr A) ⟶ arr A` on the arrays of arrays `X`, the note's `union≜frac(∋∋,∋)`
+    (diag/aop/07-optimisation.typ:718; `union ≜ Λ(∋∋)`, AOP/A5_4.lean:337): `Λ(∋∋)` total on `X`. Named
+    `Arr.union` because `union` is `∪`'s, which a program must not name. -/
+def union {A : Obj} {n : Nat} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) :=
+  lamOn (mem X ≫ mem X.2.2.2) X
+
+/-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
+    `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
+def sum {n : Nat} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) :=
+  foldBy X (col [0]) fun el pend => let p := pair el pend; p ≫ plus p.val
+
+end Arr
 
 /-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`. -/
 def entire {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Bool := idU U ⊑ dom R
@@ -1286,15 +1405,15 @@ private def Gp : Rel L (.prod L L) := ⟨5, col [1, 1, 1, 2, 2], (col [10, 20, 2
 private abbrev LS : Obj := .sum L L
 private def J : Rel LS L := junc R S
 private def J' : Rel LS L := junc S R
-private def P : Rel LS LS := sum R T
+private def Ps : Rel LS LS := sum R T
 #guard ((inl (B := L) Ua).toList : List (Int64 × (Int64 ⊕ Int64))) == Ua.toList.map fun x => (x, .inl x)
 #guard ((inr (A := L) Ub).toList : List (Int64 × (Int64 ⊕ Int64))) == Ub.toList.map fun x => (x, .inr x)
 #guard (J.toList : List ((Int64 ⊕ Int64) × Int64)) ==
   R.toList.map (fun (x, y) => (.inl x, y)) ++ S.toList.map fun (x, y) => (.inr x, y)
-#guard (P.toList : List ((Int64 ⊕ Int64) × (Int64 ⊕ Int64))) ==
+#guard (Ps.toList : List ((Int64 ⊕ Int64) × (Int64 ⊕ Int64))) ==
   R.toList.map (fun (x, y) => (.inl x, .inl y)) ++ T.toList.map fun (x, y) => (.inr x, .inr y)
 -- `R + T = [R inl, T inr]`, the term's values on other payloads than `R + T`'s
-#guard P == junc (comp R (inl (B := L) (ran R).val)) (comp T (inr (A := L) (ran T).val))
+#guard Ps == junc (comp R (inl (B := L) (ran R).val)) (comp T (inr (A := L) (ran T).val))
 -- `inl ≫ [R, S] = R` on the universe of `inl`, `inr ≫ [R, S] = S`; `inl° inl ∪ inr° inr = 𝟙` on `A + B`
 #guard comp (inl (B := L) Ua) J == comp (idU Ua) R && comp (inr (A := L) Ua) J == comp (idU Ua) S
 #guard union (comp (conv (inl (B := L) Ua)) (inl Ua)) (comp (conv (inr (A := L) Ub)) (inr Ub)) == idU (sumVals Ua Ub)
@@ -1305,15 +1424,15 @@ private def J2 : Rel LS L := union (junc R (zero (A := L) (B := L))) (junc (zero
   seteq (diff J J').toList (J.toList.filter fun p => !J'.toList.contains p)
 #guard seteq (union J J').toList (J.toList ++ J'.toList) && (union J J').n == (J.toList ++ J'.toList).eraseDups.length
 #guard (dom J).n == (J.toList.map (·.1)).eraseDups.length && seteq (dom J).toList (J.toList.map fun (x, _) => (x, x))
-#guard seteq (comp P (conv P)).toList
-  (P.toList.flatMap fun (x, y) => P.toList.filterMap fun (x', y') => if y == y' then some (x, x') else none)
+#guard seteq (comp Ps (conv Ps)).toList
+  (Ps.toList.flatMap fun (x, y) => Ps.toList.filterMap fun (x', y') => if y == y' then some (x, x') else none)
 #guard seteq (comp (conv J) J').toList
   (J.toList.flatMap fun (x, y) => J'.toList.filterMap fun (x', z) => if x == x' then some (y, z) else none)
 -- `Λ`, `∋`, `pair`, `est`, `thin` with sums as keys and values; `Λ(P)`'s cells are arrays of sums
-#guard lamOk J && lamOk P && lamOk (conv P) && lamOk J2 && crossOk J J2 && crossOk J J'
+#guard lamOk J && lamOk Ps && lamOk (conv Ps) && lamOk J2 && crossOk J J2 && crossOk J J'
 #guard seteq (pair J J').toList
   (J.toList.flatMap fun (x, y) => J'.toList.filterMap fun (x', z) => if x == x' then some (x, y, z) else none)
-#guard seteq (est (sum LE LE) P).toList (estSpec (sum LE LE) P) && seteq (thin (sum LT LT) P).toList (thinSpec (sum LT LT) P)
+#guard seteq (est (sum LE LE) Ps).toList (estSpec (sum LE LE) Ps) && seteq (thin (sum LT LT) Ps).toList (thinSpec (sum LT LT) Ps)
 -- a sum of a product and an array, as key
 private def M : Rel (.sum (.prod L L) (.arr L)) LS := sum (conv (pair R S)) (conv K)
 #guard lamOk M && lamOk (conv M) && crossOk M (union M M) && inter M (union M M) == M &&
@@ -1500,6 +1619,84 @@ private def gs : Arr .general 4 := Arr.mk (.gen #[.atom (.long 1), QValue.genera
 #guard (union (lst gs) (lst gs)).n == 4 && (dom (conv (lst gs))).n == 3
 #guard seteq (symDiv (lst gs) (lst gs) U4 U4).toList pqpr
 #guard (zero (A := .general) (B := Sy)).n == 0
+
+/-! ### Order, the power side, the list functions -/
+
+-- `lt`, `leq` on `10 15 20 30 40` are the tables `LT`, `LE`; `est` and `thin` answer as on the tables
+private def U5 : Vals L 5 := col [10, 15, 20, 30, 40]
+#guard lt U5 == LT && leq U5 == LE && est (leq U5) R == est LE R && est (lt U5) R == est LE R &&
+  thin (lt U5) R == thin LT R && est (leq U5)° S == est LE° S
+-- a universe with repeats, a foR column, symbols (by their strings), booleans, floats
+#guard seteq (leq (col [20, 10, 20])).toList [(10, 10), (10, 20), (20, 20)] && (lt (col [20, 10, 20])).n == 2
+#guard seteq (lt LfV).toList [(3, 5), (3, 9), (5, 9)] && (lt LfV).n == 4
+#guard seteq (lt symsC).toList [("a", "bc"), ("a", "d"), ("bc", "d")]
+#guard seteq (lt bitsC).toList [(false, true)] && (leq bitsC).nub.n == 3
+#guard seteq ((lt fd).toList.map fun (a, b) => (a.toBits, b.toBits)) ([(0.1, 1.5), (0.1, 2.25), (1.5, 2.25)].map fun (a, b) => (Float.toBits a, Float.toBits b))
+#guard (lt (Vals.empty L)).n == 0
+-- a general list has no order: no witness
+/-- error: could not synthesize default value for parameter '_' using tactics
+---
+error: Tactic `decide` proved that the proposition
+  QAtomicType.general ≠ QAtomicType.general
+is false -/
+#guard_msgs in #check lt gs
+
+-- `succ`, `plus` on their universes
+#guard seteq (succ Ua).toList (Ua.toList.map fun x => (x, x + 1))
+#guard seteq ((plus ((col [1, 2, 3], col [10, 20, 30]) : Vals (.prod L L) 3)).toList : List ((Int64 × Int64) × Int64))
+  [((1, 10), 11), ((2, 20), 22), ((3, 30), 33)]
+
+/-- A list of longs as a set: each value once, ascending, as `Λ` lays it out. -/
+private def setOf (xs : List Int64) : List Int64 := xs.eraseDups.mergeSort fun a b => decide (a ≤ b)
+-- `τ`: each element to `[x]`
+#guard seteq ((τ Ua).toList : List (Int64 × List Int64)) (Ua.toList.map fun x => (x, [x]))
+-- `E(R)`: every array of the universe, `[]` and arrays whose elements have no image included, to the set of
+-- images; a map (`two` is not), repeated arrays (`Xs`), clamped arrays (`Xc`), no array
+private def EOk {n : Nat} (R : LL) (X : Vals (.arr L) n) : Bool :=
+  seteq ((E R X).toList : List (List Int64 × List Int64)) ((arrs X).map fun xs => (xs, setOf (xs.flatMap (fib R)))) &&
+    isMap (E R X) X
+#guard EOk two Xl && EOk two Xs && EOk two Xc && EOk neg Xl && EOk R Xc && EOk (zero (A := L) (B := L)) Xl
+#guard (E two (Vals.empty (.arr L))).n == 0
+-- `Λ(R) E(S) = Λ(RS)` where every value of `G` has an image under `R`; `E(RT) = E(R) E(T)`; `E(𝟙) = 𝟙` on sets
+#guard comp Λ(G) (E R Λ(G).val) == Λ(comp G R)
+#guard E (comp R T) Xl == comp (E R Xl) (E T (E R Xl).val) && E (comp two neg) Xs == comp (E two Xs) (E neg (E two Xs).val)
+#guard E (idU Ub) Λ(R).val == idU Λ(R).val
+-- `union`: arrays of arrays over `Xc`'s `[1] [1 2] []`: `[[1] [1 2]]`, `[[1 2] []]`, `[]` twice
+private def XX : Vals (.arr (.arr L)) 4 := ⟨3, col [0, 1, 0, 3], col [2, 3, 0, 3], Xc⟩
+#guard ((idU XX).toList.map (·.1) : List (List (List Int64))) == [[[1], [1, 2]], [[1, 2], []], [], []]
+#guard seteq ((Arr.union XX).toList : List (List (List Int64) × List Int64))
+  (((idU XX).toList.map (·.1) : List (List (List Int64))).map fun xss => (xss, setOf xss.flatten)) && isMap (Arr.union XX) XX
+-- `τ union = 𝟙` on sets; `union` of `τ`'s images of arrays not sets is their set
+#guard comp (τ Λ(R).val) (Arr.union (τ Λ(R).val).val) == idU Λ(R).val
+#guard seteq ((comp (τ Xs) (Arr.union (τ Xs).val)).toList : List (List Int64 × List Int64)) ((arrs Xs).map fun xs => (xs, setOf xs))
+-- `P(R)`, Egli–Milner, `R` not a function, into the arrays `[10] [11 20] [] [10 20] [10 20 11 7]`
+private def Yp : Vals (.arr L) 5 := ⟨7, col [0, 1, 0, 3, 3], col [1, 3, 0, 5, 7], col [10, 11, 20, 10, 20, 11, 7]⟩
+private def pSpec {n m : Nat} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) m) : List (List Int64 × List Int64) :=
+  (arrs X).flatMap fun xs => ((arrs Y).filter fun ys => xs.all (fun x => ys.any fun y => R.toList.contains (x, y)) &&
+    ys.all fun y => xs.any fun x => R.toList.contains (x, y)).map (xs, ·)
+#guard seteq ((P two Xc Yp).toList : List (List Int64 × List Int64)) (pSpec two Xc Yp) && (P two Xc Yp).n > 0
+#guard seteq ((P two Xs Yp).toList : List (List Int64 × List Int64)) (pSpec two Xs Yp)
+-- on a map `P(f) = E(f)` into `E(f)`'s own arrays
+#guard P neg Xl (E neg Xl).val == E neg Xl
+-- `nil`, `α = [nil, cons]`
+#guard ((nil (B := L) zero1).toList : List (Int64 × List Int64)) == [(0, [])]
+#guard alpha zero1 XP == junc nilR (cons (idU XP))
+-- `head`, `tail`, `length`, `Arr.sum`, `filter(p)`, `takewhile(p)`, `prefix`, `suffix` against `List`
+#guard seteq ((head Xl).toList : List (List Int64 × Int64)) ((unconsSpec (arrs Xl)).map fun (a, y, _) => (a, y))
+#guard seteq ((tail Xs).toList : List (List Int64 × List Int64)) ((unconsSpec (arrs Xs)).map fun (a, _, t) => (a, t))
+private def onArrs {n : Nat} {β : Type} [BEq β] (X : Vals (.arr L) n) (R : Rel (.arr L) β) (f : List Int64 → List β) : Bool :=
+  seteq R.toList ((arrs X).flatMap fun xs => (f xs).map (xs, ·))
+#guard onArrs Xl (length Xl) (fun xs => [Int64.ofNat xs.length]) && onArrs Xc (length Xc) (fun xs => [Int64.ofNat xs.length])
+#guard onArrs Xs (length Xs) (fun xs => [Int64.ofNat xs.length]) && (length (Vals.empty (.arr L))).n == 0
+#guard onArrs Xl (Arr.sum Xl) (fun xs => [xs.foldl (· + ·) 0]) && onArrs Xc (Arr.sum Xc) (fun xs => [xs.foldl (· + ·) 0])
+private def ev : LL := idU (col [0, 2, 4])
+#guard onArrs Xl (filter ev Xl) (fun xs => [xs.filter [0, 2, 4].contains]) && onArrs Xs (filter ev Xs) (fun xs => [xs.filter [0, 2, 4].contains])
+#guard onArrs Xl (takewhile ev Xl) (fun xs => [xs.takeWhile [0, 2, 4].contains]) &&
+  onArrs Xs (takewhile ev Xs) (fun xs => [xs.takeWhile [0, 2, 4].contains])
+#guard onArrs Xl («prefix» Xl) (fun xs => (List.range (xs.length + 1)).map xs.take) &&
+  onArrs Xs («prefix» Xs) (fun xs => (List.range (xs.length + 1)).map xs.take)
+#guard onArrs Xl (suffix Xl) (fun xs => (List.range (xs.length + 1)).map xs.drop) &&
+  onArrs Xc (suffix Xc) (fun xs => (List.range (xs.length + 1)).map xs.drop)
 
 end Checks
 
