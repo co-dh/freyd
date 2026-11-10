@@ -18,17 +18,19 @@ In scope: the `Alg` ops, their helpers, the programs that test them (Blocks, Che
 kernel or theorem only when an `Alg` op needs it. Out of scope until an `Alg` op or a program needs it: q's verbs,
 q compatibility, qlean kernel coverage of cells no `Alg` op reads.
 
-State on 2026-11-10, `master` at 0936ad4; the whole leetq package builds. Items marked `[~]` are in an agent's
+State on 2026-11-10, `master` at 4d108a0; the whole leetq package builds. Items marked `[~]` are in an agent's
 worktree and not on `master`.
 
 ## Data
 
 ```
-Obj  = atom t | prod a b | arr b                        (Core)
+Obj  = atom t | prod a b | arr b | sum a b                  (Core)
 Arr t n          an Enc with a proof of Enc.WF t n       one qlean column of n elements
 Vals A n         atom: Arr t n     prod: Vals a n × Vals b n
                  arr:  (m : Nat) × Arr long n × Arr long n × Vals b m
                        row i is the slice [lo i, hi i) of one flat payload of m elements
+                 sum:  (l r : Nat) × Arr boolean n × Arr long n × Vals a l × Vals b r
+                       row i is inl (left[idx i]) when tag i is false, inr (right[idx i]) when true
 Rel k v          {n, key : Vals k n, val : Vals v n}
 Part A           (n : Nat) × Vals A n                    a side     of some count: what `codes` and `raze`
                                                          take when they read two relations of different n
@@ -49,7 +51,7 @@ The target, five layers, each using only the one below:
 programs   Blocks  Chess  Circuit  Wumpus;  the programs of the B&dM note, ch. 6–10      one relation term each
 Alg        ≫ ° ∩ ∪ \ ⊑ ==  𝟙 ⊤ ∼  dom ran  / \ ÷  Λ ∋  ⟨R,S⟩ ×  [R,S]  est thin  ⦇e,S⦈  F(R)  cons°  iter
 Code       codes, and find / member / gather / groupIds / grade on integer codes; join anti cross
-Core       Obj (atom | prod | arr)   Vals   Rel
+Core       Obj (atom | prod | arr | sum)   Vals   Rel
 qlean      kernels, Enc
 ```
 
@@ -92,7 +94,7 @@ operator it writes, and its programs as the tests. `yes` = on `master` and total
 | 4   | `R\S`, `R/S`, `frac(R,S)`                              | `leftDiv`, `rightDiv`, `symDiv`             | yes   |
 | 4   | `R ⇒ S` (as in `R;H ≜ R ∩ (R° ⇒ H)`), `−`              | `\` is set difference; `⇒` is `∼R ∪ S`      | yes   |
 | 5   | `⟨R,S⟩`, `π₁`, `π₂`, `R×S`                             | `pair`, `outl`, `outr`, `prod`              | yes   |
-| 5   | `[R,S]`, `inl`, `inr`, `R+S`                           | `junc`, `injConv` on `SumRel` (atoms only)  | part  |
+| 5   | `[R,S]`, `inl`, `inr`, `R+S`                           | `junc`, `inl`, `inr`, `sum` on `Obj.sum`     | yes   |
 | 5   | `Λ(R)`, `∋`, `∈`                                       | `Λ(R)`, `∋(R)`, `mem`                       | yes   |
 | 5   | `E(R) ≜ frac(∋R,∋)`, `P(R)`, `union ≜ frac(∋∋,∋)`, `τ` | —                                           | no    |
 | 5   | `α ≜ [nil,cons]`, `nil`, `cons`, `cons°`, `snoc`       | `uncons` (`cons°`)                          | yes   |
@@ -119,9 +121,8 @@ The note's programs, to be written as relation terms over `Alg` (none is written
 | 9   | string edit, optimal bracketing, data compression                                               |
 | 10  | detab-entab, minimum tardiness, TeX                                                             |
 
-What this asks of the layers below: a sum side (`Obj` has `atom | prod | arr`, no `sum`; a new constructor, to be
-approved before it is written), an order on numbers as a kernel-backed relation instead of a table, and `nil`,
-`cons` as relations so the list functions above are terms.
+What this still asks of the layers below: an order on numbers as a kernel-backed relation instead of a table, and
+`nil` as a relation beside `cons`, so the list functions above are terms.
 
 ## Why the helpers exist
 
@@ -185,12 +186,15 @@ Simplification, in order:
 3. [x] `est` is the least value, `thin` the minimal ones; `uncons` (`cons°`), `fold` (`⦇e,S⦈`), `map` (`F(R)`) on
    arrays, through one helper `foldBy` and a `cons`; `mapVal`, `foldOver`, the kernel `thin`, `arrDense`,
    `Arr.ofPart` deleted. `est` reads `Q` up to its reflexive closure (`b Q c` for every OTHER value `c`), so a
-   strict `<` works; on a reflexive `Q` it is the note's `∋ ∩ (∈\Q°)`. `junc`, `injConv`, `SumRel` unchanged
+   strict `<` works; on a reflexive `Q` it is the note's `∋ ∩ (∈\Q°)`. `Obj.sum` added: `inl`, `inr`, `junc`, `sum`; `SumRel` deleted
 4. [ ] prove the kernel count theorems and delete the reference implementations (`setIdsRef`, `pickRef`,
    `slicesRef`)
 5. [ ] split `Algebra.lean` (1803 lines) into `Code`, `Alg`, and the guards
 
 Open after that:
+
+- [ ] a `sum` row whose own side holds no value: `row` reads a default, `codes` reads code 0, `raze` points it at
+  the next part; no op builds such a row, a hand-built column can
 
 - [ ] `join_len` is `≤`, not `=`: `add` takes its count as `USize`, so past `2^64` rows `≫` truncates
 - [ ] `symDiv` assumes the last offset of `segments` is the code count
