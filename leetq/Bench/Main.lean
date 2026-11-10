@@ -1,24 +1,18 @@
 /-
-  Timing of leetq's RelRep q operators against real q (`q/bench.q`, the same data and the same checksum).
+  Timing of leetq's Rel operators.
 
   `bench <op> <n> <n> …` runs one operator at each size, ascending: one warm-up, then the median of 5
   runs, printed as `op n ms checksum`. A warm-up over 10 s is printed alone (`1run`) and the larger sizes
   are skipped, since a size ten times larger cannot fit the 60 s budget.
 
-  The data is MINSTD (`x ↦ 48271x mod (2³¹-1)`), one stream per column, seeded by the column's number,
-  exactly as `gen` in `q/bench.q`. Each run reads its input from an `IO.Ref` after the first clock read and
+  The data is MINSTD (`x ↦ 48271x mod (2³¹-1)`), one stream per column, seeded by the column's number.
+  Each run reads its input from an `IO.Ref` after the first clock read and
   stores its checksum before the second, so the work can be neither hoisted out of the loop nor dropped.
 -/
-import LeetQ.Q.Table
-import LeetQ.QRel
-import LeetQ.Compressed
-import LeetQ.Long
 import LeetQ.Rel.Scan
 import LeetQ.Rel.Struct
 import LeetQ.Rel.Find
 import LeetQ.Rel.Norm
-
-open Freyd.Alg.RelSet LeetQ LeetQ.Q
 
 namespace Bench
 
@@ -36,15 +30,6 @@ def gen (cnt seed : Nat) : Array Nat := Id.run do
 /-- q's `gen[cnt;seed] mod m`. -/
 def ints (cnt seed m : Nat) : Array Int := (gen cnt seed).map fun x => ((x % m : Nat) : Int)
 
-/-- Through `Array.zip`: the compiled `List.zip` takes one stack frame per pair. -/
-def zipL {β : Type} (a : Array Int) (b : Array β) : List (Int × β) := (a.zip b).toList
-
-/-- q's `a!b`. -/
-def fin (a b : Array Int) : FinRel Int Int := FinRel.ofList (zipL a b)
-
-/-- Wrapping 64-bit sum, like q's long `sum`: a bignum `Int` accumulator would allocate once past 2^31. -/
-@[inline] def sumBy {α : Type} (f : α → Int64) (xs : Array α) : Int64 := xs.foldl (fun s x => s + f x) 0
-
 /-- One timed run of `f` on `d`: nanoseconds and the checksum; an `error` from `f` is thrown. -/
 def timedE {α : Type} (name : String) (d : α) (f : α → Except String Int64) : IO (IO (Nat × Int64)) := do
   let r ← IO.mkRef d
@@ -59,12 +44,6 @@ def timedE {α : Type} (name : String) (d : α) (f : α → Except String Int64)
     | some (.error e) => throw (IO.userError s!"{name}: {e}")
     | none => throw (IO.userError s!"{name}: no answer was stored")
 
-/-- `timedE` for an `f` that answers `none` when the result is not held as pairs. -/
-def timed {α : Type} (name : String) (d : α) (f : α → Option Int64) : IO (IO (Nat × Int64)) :=
-  timedE name d fun x => match f x with
-    | some c => .ok c
-    | none => .error "the answer is not held as pairs (fin? answered none)"
-
 /-- An `Except` input built before the clock starts, thrown as an `IO` error. -/
 def io {α : Type} (what : String) : Except String α → IO α
   | .ok a => pure a
@@ -73,120 +52,7 @@ def io {α : Type} (what : String) : Except String α → IO α
 /-! ## The operators, each with q's expression and checksum -/
 
 /-- A dense `long` column, built before the clock starts. -/
-def col (a : Array Int) : ByteArray := enc 8 (a.toList.map Int64.ofInt)
-
-/-- q's `sum` of a dense `long` column, `0N` skipped: `overBytes .add`. -/
-def colSum (b : ByteArray) : Int64 := Compressed.Col.sum Compressed.nul (.dense 8 b)
-
-/-- `d@ks` by `Long.getAll`, `findVec` then `gatherBytes`; `sum d@ks` (q's `sum` skips `0N`). -/
-def getAllOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "getAll" (col (ints n 1 n), col (ints n 2 1000000), col (ints n 3 (2 * n)))
-    fun (k, v, ks) => some (colSum (Long.getAll k v ks))
-
-/-- `d+e` by `Long.zipD`, `findVec`, `gatherBytes`, `Ew.val`, `memberVec`, `whereBits`; `(sum key r)+sum value r`,
-`d`'s keys being `r`'s first rows. -/
-def zipDOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  let dk := col (ints n 1 n)
-  timed "zipD" (dk, col (ints n 2 1000000), col (ints n 4 n), col (ints n 5 1000000), colSum dk)
-    fun (dk, dv, ek, ev, sk) => let z := Long.zipD dk dv ek ev
-      some (sk + colSum z.1 + colSum z.2.1 + colSum z.2.2)
-
-/-- `select sum v by k from t` by `Compressed.selbySum`, `groupIds` then `overGroups`; `exec sum k+v`. -/
-def selbyOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "selby" (Keys.ofList false ((ints n 6 1000).toList.map Int64.ofInt),
-      Keys.ofList false ((ints n 7 1000000).toList.map Int64.ofInt))
-    fun (k, v) => some ((Compressed.selbySum Compressed.nul k v).foldl (fun s p => s + p.1 + p.2) 0)
-
-/-- `t ij kt` by `Long.ij`, `memberVec`, `whereBits`, `findVec`, `gatherBytes`; `kt` of `n/10` keys;
-`exec sum v+w`, `v` read at the kept rows by `Long.aIdx`. -/
-def ijOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  let m := max 1 (n / 10)
-  timed "ij" (col (ints n 8 m), col (ints n 11 1000000), col (ints m 9 m), col (ints m 10 1000000))
-    fun (tk, tv, kk, kv) => let p := Long.ij tk kk kv; some (colSum (Long.aIdx tv p.1) + colSum p.2)
-
-/-- ``aj[`s`tm;tr;qr]``, `qr` sorted by time (stably, as `` `tm xasc``); `exec sum p` (`0N` skipped). -/
-def ajOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  let qr := (zipL (ints n 14 100) ((ints n 15 1000000).zip (ints n 16 1000000))).mergeSort
-    fun a b => decide (a.2.1 ≤ b.2.1)
-  timed "aj" (tab ((ints n 12 100).zip (ints n 13 1000000)), tab qr.toArray)
-    fun (T, U) => ((aj Prod.fst Prod.snd Prod.fst Prod.snd T U).bind rows).map (sumBy (fun p => Int64.ofInt (p.2.getD 0)))
-
-/-- `wj` over `aj`'s tables, the window `(tm-100, tm]` and the row prevailing at `tm-100`. -/
-def wjOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  let qr := (zipL (ints n 14 100) ((ints n 15 1000000).zip (ints n 16 1000000))).mergeSort
-    fun a b => decide (a.2.1 ≤ b.2.1)
-  timed "wj" (tab ((ints n 12 100).zip (ints n 13 1000000)), tab qr.toArray)
-    fun (T, U) => ((wj (-100) 0 Prod.fst Prod.snd Prod.fst Prod.snd T U).bind rows).map (sumBy (fun p => Int64.ofInt p.2))
-
-/-- Key `gen 17 mod n`, value `gen 18 mod 1e6`, sorted by key stably (q's `iasc`). -/
-def sortedPairs (n : Nat) : List (Int64 × Int64) :=
-  (((gen n 17).zip (gen n 18)).toList.map fun (a, b) => (Int64.ofNat (a % n), Int64.ofNat (b % 1000000))).mergeSort
-    QSortedRel.keyLE
-
-def needles (n : Nat) : Array Int64 := (gen n 19).map fun x => Int64.ofNat (x % n)
-
-/-- Every needle's run, `v raze lo+til each 1+hi-lo` with `lo:k binr xs; hi:k bin xs`; `sum`. -/
-def lookups (s : QSortedRel Int64) (xs : Array Int64) : Option Int64 :=
-  some (xs.foldl (fun a k => (s.lookup k).foldl (fun a x => a + x) a) 0)
-
-/-- `QSortedRel.lookup` on a dense `long` key column. -/
-def lookupDenseOp (n : Nat) : IO (IO (Nat × Int64)) := do
-  let l := sortedPairs n
-  let some s := QSortedRel.ofBytes? (enc 8 (l.map Prod.fst)) (enc 8 (l.map Prod.snd))
-    | throw (IO.userError s!"lookupDense {n}: ofBytes? refused the sorted key column")
-  timed "lookupDense" (s, needles n) fun (s, xs) => lookups s xs
-
-/-- `QSortedRel.lookup` on the same keys Frame-of-Reference encoded; q has no in-memory FoR, so its
-    side is the dense lookup again. -/
-def lookupFoROp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "lookupFoR" (QSortedRel.ofList (sortedPairs n) dense true, needles n) fun (s, xs) => lookups s xs
-
-/-! ## Compute on compressed columns
-
-`LeetQ.Compressed` on a value column `v` (column 21, `mod 1000`: dense at 2 bytes, or FoR with small
-residuals), a bit column `b` (column 23, `mod 2`) and a key column `k` (column 22, `mod 1000`); q's side
-is `sum v`, `sum v where b`, `select sum v by k from t` in `q/bench.q`. -/
-
-def nul : Int64 := Int64.minValue
-
-def vcol (n : Nat) (seed : Nat) : List Int64 := (gen n seed).toList.map fun x => Int64.ofNat (x % 1000)
-
-/-- q's `1=gen[n;23] mod 2`, one bit per row, least significant bit first. -/
-def bitsOf (n : Nat) : ByteArray := Id.run do
-  let g := gen n 23
-  let mut b := ByteArray.emptyWithCapacity ((n + 7) / 8)
-  for j in [0:(n + 7) / 8] do
-    let mut byte : UInt8 := 0
-    for t in [0:8] do
-      if 8 * j + t < n && g[8 * j + t]! % 2 == 1 then byte := byte ||| (1 <<< t.toUInt8)
-    b := b.push byte
-  return b
-
-def sumColOp (name : String) (foR : Bool) (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed name (Keys.ofList foR (vcol n 21)) fun v => some (Compressed.Col.sum nul v)
-
-def sumDenseOp := sumColOp "sumDense" false
-def sumFoROp := sumColOp "sumFoR" true
-
-/-- The `.pairs` path: `Q.Agg.sum` of `ql(vs)`. -/
-def sumPairsOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "sumPairs" (Q.Agg.ql ((vcol n 21).map Int64.toInt).toArray) fun D => (Q.Agg.sum D).bind (·.head?.map Int64.ofInt)
-
-def sumWhereDenseOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "sumWhereDense" (bitsOf n, Keys.ofList false (vcol n 21))
-    fun (b, v) => some (Compressed.sumWhere nul n.toUSize b v)
-
-def selbySumColOp (name : String) (foR : Bool) (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed name (Keys.ofList foR (vcol n 22), Keys.ofList foR (vcol n 21))
-    fun (k, v) => some ((Compressed.selbySum nul k v).foldl (fun s p => s + p.1 + p.2) 0)
-
-def selbySumDenseOp := selbySumColOp "selbySumDense" false
-def selbySumFoROp := selbySumColOp "selbySumFoR" true
-
-/-- `a@ks` by `Long.aIdx`, `gatherBytes`; `sum a@ks`. -/
-def aIdxOp (n : Nat) : IO (IO (Nat × Int64)) :=
-  timed "aIdx" (col (ints n 24 1000000), col ((gen n 25).map fun x => ((x % n : Nat) : Int)))
-    fun (a, ks) => some (colSum (Long.aIdx a ks))
+def col (a : Array Int) : ByteArray := LeetQ.Rel.packLongs (a.toList.map Int64.ofInt)
 
 /-! ## The RelRep layer (`LeetQ.Rel`): a relation is a key and a value column -/
 
@@ -400,10 +266,8 @@ def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=
 def ops : List (String × (Nat → IO (IO (Nat × Int64)))) :=
   ["bits", "enum", "foR", "dense"].flatMap (fun e =>
     [(s!"relCard-{e}", relCardOp e), (s!"relJoin-{e}", relJoinOp e), (s!"relJoin2-{e}", relJoin2Op e)]) ++
-  [("getAll", getAllOp), ("zipD", zipDOp), ("selby", selbyOp), ("ij", ijOp), ("aj", ajOp), ("wj", wjOp), ("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("progSel", progSelOp), ("progEven", progEvenOp), ("relSel", relSelOp), ("relWj", relWjOp),
-   ("lookupDense", lookupDenseOp), ("lookupFoR", lookupFoROp),
-   ("sumDense", sumDenseOp), ("sumFoR", sumFoROp), ("sumPairs", sumPairsOp), ("sumWhereDense", sumWhereDenseOp),
-   ("selbySumDense", selbySumDenseOp), ("selbySumFoR", selbySumFoROp), ("aIdx", aIdxOp), ("sums", sumsOp),
+  [("relAj", relAjOp), ("progAj", progAjOp), ("progAjCopy", progAjCopyOp),("progSel", progSelOp), ("progEven", progEvenOp), ("relSel", relSelOp), ("relWj", relWjOp),
+   ("sums", sumsOp),
    ("mins", minsOp), ("msum", msumOp), ("mmin", mminOp 10), ("mmin1000", mminOp 1000),
    ("relEach2", relEach2Op), ("relZipD", relZipDOp),
    ("findFoR", findFoROp), ("inFoR", inFoROp), ("distinctFoR", distinctFoROp)]
