@@ -315,9 +315,76 @@ private theorem encodeBelow_eq {w : USize} {x : ByteArray} {mp : ByteArray × By
   · cases h; rfl
   · cases h
 
-/-- `Enc.answer` keeps a well-formed payload well formed at every type ALP does not encode: it keeps
-    it, encodes dense bytes by `encodeBelow`, or decodes it to `n · w` bytes, `n` fitting a `USize`. -/
-theorem answer_wf {t : QAtomicType} {n : Nat} {e : Enc} (hA : Column.alpEncodes t = false)
+/-! ## ALP payloads -/
+
+/-- `alpBlob`'s header declares the width it was handed, at any count: byte 8 is the flag. -/
+theorem alpF32_alpBlob (f32 : Bool) (w n : Nat) (x : ByteArray) (bs : Array (Nat × Array (Option UInt64))) :
+    Column.alpF32 (Coc.alpBlob f32 w n x bs) = f32 := by
+  obtain ⟨pad, hpg, hps, hA⟩ := Verify.alpBlob_eq f32 w n x bs _ rfl
+  rw [hA]
+  unfold Column.alpF32
+  generalize hS : Column.pushBits ByteArray.empty _ 8 = S
+  have hS8 : S.size = 8 := by rw [← hS, Column.pushBits_size]; rfl
+  have h16 : (Column.pushBits S (if f32 then 1 else 0) 8).size = 16 := by rw [Column.pushBits_size, hS8]
+  have hp : (pad (Column.pushBits S (if f32 then 1 else 0) 8)).size = 16 := by rw [hps, h16]
+  rw [Column.bitsAt_congr (Column.pushBits S (if f32 then 1 else 0) 8) _ 8 8 (fun k hk => ?_)]
+  · have hP := Column.bitsAt_pushBits S (if f32 then 1 else 0) 8 (by decide)
+    rw [hS8] at hP; rw [hP]; cases f32 <;> decide
+  · repeat rw [Verify.ba_append_left _ _ _ (by simp only [ByteArray.size_append, hp]; omega)]
+    exact hpg _ _ (by omega)
+
+/-- `alpEncodeAt` lays out a block for every `blk` of its elements: `Enc.WF`'s cover condition. -/
+theorem nblk_alpEncodeAt (f32 : Bool) (x : ByteArray) :
+    x.size / (if f32 then 4 else 8) ≤ Column.blk * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
+  unfold Coc.alpEncodeAt
+  simp only []
+  rw [show (8 : USize) = (8 : Nat).toUSize from rfl, Verify.nblk_encode 8 (by decide) (by decide),
+    Verify.blocks_size]
+  simp only [Array.toList_map, Array.toList_range, List.map_map, Function.comp_def, Coc.alpBlockOf,
+    Array.size_map, Array.size_range]
+  rw [Verify.sum_blocks]
+  generalize x.size / (if f32 then 4 else 8) = n
+  simp only [Column.blk] at *
+  omega
+
+/-- `Coc.alpDecode` holds `n` elements of `w` bytes, as `decodeW` says of `Coc.decode`. -/
+theorem alpDecode_size (w : USize) (hw : w.toNat ≤ 8) (M P a : ByteArray) (n : USize) :
+    (Coc.alpDecode w M P a n).size = w.toNat * n.toNat := by
+  obtain ⟨hs, -, -⟩ := Verify.foldl_pushBits id w.toNat hw (Coc.alpElems M P a n) ByteArray.empty
+  rw [Verify.alpDecode_eq]; simpa [Coc.alpElems] using hs
+
+/-- `alpEncodeAt` at a float type's own width is a well-formed ALP payload of every count its input
+    holds. -/
+theorem alpEncodeAt_wf {t : QAtomicType} {n : Nat} (f32 : Bool) (ht : Column.alpEncodes t = true)
+    (hf : t.width = some (if f32 then 4 else 8)) (x : ByteArray) (hn : n ≤ x.size / (if f32 then 4 else 8)) :
+    Enc.WF t n (.alp (Coc.alpEncodeAt f32 x).1 (Coc.alpEncodeAt f32 x).2.1 (Coc.alpEncodeAt f32 x).2.2) := by
+  have hF : Column.alpF32 (Coc.alpEncodeAt f32 x).2.2 = f32 := alpF32_alpBlob ..
+  simp only [Enc.WF]
+  refine ⟨by cases t <;> simp_all [Column.alpEncodes], Nat.le_trans hn (nblk_alpEncodeAt f32 x), ?_⟩
+  rw [hF, hf]; cases f32 <;> decide
+
+/-- `alpEncodeBelow`'s `some` is `alpEncodeAt`'s answer. -/
+private theorem alpEncodeBelow_eq {f32 : Bool} {x m p a : ByteArray}
+    (h : (if f32 = true then Coc.alpEncodeBelow32 x else Coc.alpEncodeBelow64 x) = some (m, p, a)) :
+    m = (Coc.alpEncodeAt f32 x).1 ∧ p = (Coc.alpEncodeAt f32 x).2.1 ∧ a = (Coc.alpEncodeAt f32 x).2.2 := by
+  cases f32 <;>
+    simp only [Coc.alpEncodeBelow32, Coc.alpEncodeBelow64, Coc.alpEncode32, Coc.alpEncode64, if_true,
+      Bool.false_eq_true, if_false] at h <;>
+    (generalize Coc.alpEncodeAt _ x = q at h ⊢
+     rcases q with ⟨m', p', a'⟩
+     simp only at h
+     split at h
+     · obtain ⟨rfl, rfl, rfl⟩ := h; exact ⟨rfl, rfl, rfl⟩
+     · cases h)
+
+/-- A float type's width is the one its ALP width flag names. -/
+private theorem alp_width {t : QAtomicType} {w : Nat} (ht : Column.alpEncodes t = true) (hw : t.width = some w) :
+    (if (w == 4) = true then 4 else 8) = w ∧ 0 < w := by
+  cases t <;> simp_all [Column.alpEncodes, QAtomicType.width] <;> subst hw <;> decide
+
+/-- `Enc.answer` keeps a well-formed payload well formed: it keeps it, encodes dense bytes by
+    `alpEncodeBelow` or `encodeBelow`, or decodes it to `n · w` bytes, `n` fitting a `USize`. -/
+theorem answer_wf {t : QAtomicType} {n : Nat} {e : Enc}
     (hwf : Enc.WF t n e) (hn : n < USize.size) : Enc.WF t n (Enc.answer t n e) := by
   have hdec : ∀ {w}, t.width = some w → ∀ {b}, Enc.bytesOf t n e = some b → Enc.WF t n (.bytes b) := by
     intro w hw b hbo
@@ -338,7 +405,15 @@ theorem answer_wf {t : QAtomicType} {n : Nat} {e : Enc} (hA : Column.alpEncodes 
     simp only
     split
     · exact hwf
-    simp only [hA, Bool.false_eq_true, if_false]
+    by_cases hA : Column.alpEncodes t = true
+    · rw [if_pos hA]
+      obtain ⟨h48, h0⟩ := alp_width hA hW
+      generalize hE : (if (w == 4) = true then Coc.alpEncodeBelow32 b else Coc.alpEncodeBelow64 b) = E
+      rcases E with _ | ⟨m, p, a⟩
+      · exact hwf
+      obtain ⟨rfl, rfl, rfl⟩ := alpEncodeBelow_eq hE
+      exact alpEncodeAt_wf _ hA (by rw [h48]; exact hW) b (by rw [h48, hs, Nat.mul_div_cancel _ h0]; exact Nat.le_refl _)
+    rw [if_neg hA]
     split
     · rename_i hE
       split
@@ -623,7 +698,7 @@ private theorem mapM_fst {α β : Type} {f : α → Option (Nat × β)} {key : �
 theorem encodedParts_spec {t : QAtomicType} {cs : Array (Nat × Enc)} {alp : Bool} {n : Nat} {ns : Array Nat}
     {ms ps as : Array ByteArray} (h : encodedParts t cs = some (alp, n, ns, ms, ps, as)) :
     alp = Column.alpEncodes t ∧ ns = cs.map (·.1) ∧ n = ns.toList.sum ∧ ms.size = ns.size ∧
-      ps.size = ns.size ∧ (Column.alpEncodes t || Column.encodes t) = true := by
+      ps.size = ns.size ∧ as.size = ns.size ∧ (Column.alpEncodes t || Column.encodes t) = true := by
   unfold encodedParts at h
   dsimp only at h
   split at h
@@ -638,15 +713,47 @@ theorem encodedParts_spec {t : QAtomicType} {cs : Array (Nat × Enc)} {alp : Boo
   have hk := mapM_fst (key := (·.1)) (fun c x hx => by
     rcases c with ⟨k, e⟩
     cases e <;> simp only at hx <;> (repeat' split at hx) <;> first | (cases hx; rfl) | cases hx) hq
-  refine ⟨rfl, hk, ?_, by simp, by simp, ?_⟩
+  refine ⟨rfl, hk, ?_, by simp, by simp, by simp, ?_⟩
   · rw [← Array.foldl_toList, foldl_add_fst]; simp
   · simp only [Bool.or_eq_true, Bool.not_eq_true', not_or] at hc
     cases h1 : Column.alpEncodes t <;> cases h2 : Column.encodes t <;> simp_all
 
-/-- `razeColumn` at a type ALP does not encode answers a well-formed vector on well-formed parts whose
-    counts, and their sum, fit a `USize`: `Enc.answer` decodes an encoded join at its count as a `USize`.
-    The float types wait for qlean's `Enc.WF` of ALP payloads. -/
-theorem razeColumn_wf {t : QAtomicType} {cs : Array (Nat × Enc)} (hA : Column.alpEncodes t = false)
+/-- `concatALP` of parts of `ns` elements, each fitting a `USize`, is a well-formed ALP payload of their
+    sum at a float type: it decodes every part at the type's width and encodes the join once. -/
+theorem concatALP_wf {t : QAtomicType} {w : Nat} (ht : Column.alpEncodes t = true) (hw : t.width = some w)
+    {ns : Array Nat} {ms ps as : Array ByteArray} (hm : ms.size = ns.size) (hp : ps.size = ns.size)
+    (ha : as.size = ns.size) (hn : ∀ k ∈ ns.toList, k < USize.size) :
+    Enc.WF t ns.toList.sum (.alp (concatALP w.toUSize ns ms ps as).1 (concatALP w.toUSize ns ms ps as).2.1
+      (concatALP w.toUSize ns ms ps as).2.2) := by
+  obtain ⟨h48, h0⟩ := alp_width ht hw
+  have hw8 : w ≤ 8 := by rw [← h48]; split <;> omega
+  have hwu : w.toUSize.toNat = w := toUSize_toNat (lt_usize (by omega))
+  have h4' : USize.toNat 4 = 4 := toUSize_toNat (k := 4) (lt_usize (by decide))
+  have h8' : USize.toNat 8 = 8 := toUSize_toNat (k := 8) (lt_usize (by decide))
+  have h4 : (w.toUSize == 4) = (w == 4) := by
+    rw [Bool.eq_iff_iff, beq_iff_eq, beq_iff_eq, ← USize.toNat_inj, hwu, h4']
+  have hW : (if (w == 4) = true then (4 : USize) else 8).toNat = w := by
+    cases hc : (w == 4) <;> simp only [hc, Bool.false_eq_true, if_false, if_true] at h48 ⊢ <;> omega
+  have hl : ((List.range ns.size).map fun k => w * (ns[k]!).toUSize.toNat) = ns.toList.map (fun x => x * w) := by
+    apply List.ext_getElem (by simp)
+    intro i h1 h2
+    simp only [List.length_map, List.length_range] at h1
+    have hk : ns[i] < 2 ^ System.Platform.numBits := hn _ (by simp)
+    simp [h1, Nat.mul_comm, Nat.mod_eq_of_lt hk]
+  have hsum : ∀ l : List Nat, (l.map (fun x => x * w)).sum = l.sum * w := fun l => by
+    induction l <;> simp_all [Nat.add_mul]
+  unfold concatALP
+  rw [h4]
+  refine alpEncodeAt_wf _ ht (by rw [h48]; exact hw) _ ?_
+  rw [h48, concatBytes_size]
+  simp only [Array.toList_map, Array.toList_range, List.map_map, Function.comp_def,
+    alpDecode_size _ (by rw [hW]; exact hw8), hW, hm, hp, ha, Nat.min_self]
+  rw [hl, hsum, Nat.mul_div_cancel _ h0]
+  exact Nat.le_refl _
+
+/-- `razeColumn` answers a well-formed vector on well-formed parts whose counts, and their sum, fit a
+    `USize`: `Enc.answer` decodes an encoded join at its count as a `USize`. -/
+theorem razeColumn_wf {t : QAtomicType} {cs : Array (Nat × Enc)}
     (h : ∀ c ∈ cs, Enc.WF t c.1 c.2 ∧ c.1 < USize.size) (hN : cs.foldl (fun s c => s + c.1) 0 < USize.size)
     {v : QValue} (hv : razeColumn t cs = some v) : ∃ n e, v = .vector t n e none ∧ Enc.WF t n e := by
   have hN' : (cs.map (·.1)).toList.sum < USize.size := by
@@ -678,7 +785,6 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (Nat × Enc)} (hA : Column.a
     dsimp only at hv
     generalize encodedParts _ cs = E at hv
     rcases E with _ | ⟨_, _, _, _, _, _⟩ <;> dsimp only [QAtomicType.width] at hv <;> try cases hv
-  all_goals try exact absurd hA (by decide)
   all_goals
     dsimp only at hv
     obtain ⟨ps', hps', hsz', hpz'⟩ := hdense _ rfl (by decide)
@@ -689,17 +795,19 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (Nat × Enc)} (hA : Column.a
       split at hv
       · cases hv
       · cases hv; exact ⟨_, _, rfl, concatBytes_wf (by decide) rfl hsz' hpz'⟩
-    obtain ⟨rfl, rfl, rfl, hms, hps, hen⟩ := encodedParts_spec hE
+    obtain ⟨rfl, rfl, rfl, hms, hps, has, hen⟩ := encodedParts_spec hE
     try (simp [Column.encodes, Column.alpEncodes] at hen; done)
     all_goals
-      simp only [QAtomicType.width, Column.alpEncodes, Bool.false_eq_true, if_false] at hv
+      simp only [QAtomicType.width, Column.alpEncodes, Bool.false_eq_true, if_false, if_true] at hv
       split at hv
       · rw [hps'] at hv; simp only at hv
         split at hv
         · cases hv
         · cases hv; exact ⟨_, _, rfl, concatBytes_wf (by decide) rfl hsz' hpz'⟩
       cases hv
-      exact ⟨_, _, rfl, answer_wf hA (wf_foR rfl (by decide) (by decide)
-        (concatFoR_nblk (by decide) (by decide) hms hps hn)) hN'⟩
+      first
+        | exact ⟨_, _, rfl, answer_wf (wf_foR rfl (by decide) (by decide)
+            (concatFoR_nblk (by decide) (by decide) hms hps hn)) hN'⟩
+        | exact ⟨_, _, rfl, answer_wf (concatALP_wf rfl rfl hms hps has hn) hN'⟩
 
 end LeetQ.Rel.KernelWF

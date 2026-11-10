@@ -146,12 +146,6 @@ theorem cycleIds_wf (dict : ByteArray) (dof : Array Nat) (n off : USize) {m : Na
   simp only [Enc.WF, cycleIds, hU, USize.toNat_ofNat_of_lt' hm]
   exact Verify.idsCap_packIds _ _ hl
 
-/-- `Coc.alpDecode` holds `n` elements of `w` bytes, as `decodeW` says of `Coc.decode`. -/
-theorem alpDecode_size (w : USize) (hw : w.toNat ≤ 8) (M P a : ByteArray) (n : USize) :
-    (Coc.alpDecode w M P a n).size = w.toNat * n.toNat := by
-  obtain ⟨hs, -, -⟩ := Verify.foldl_pushBits id w.toNat hw (Coc.alpElems M P a n) ByteArray.empty
-  rw [Verify.alpDecode_eq]; simpa [Coc.alpElems] using hs
-
 theorem concat_size (l : List ByteArray) (a : ByteArray) :
     (l.foldl (· ++ ·) a).size = a.size + (l.map ByteArray.size).sum := by
   induction l generalizing a with
@@ -181,19 +175,6 @@ theorem cycleBytes_size (w n off m : Nat) (b : ByteArray) (hb : b.size = n * w) 
     rw [← Nat.sub_mul, ← Nat.mul_assoc, ← Nat.add_mul, ← Nat.add_mul]
     congr 1; omega
 
-/-- `alpEncodeAt` lays out a block for every `blk` of its elements: `Enc.WF`'s cover condition. -/
-theorem nblk_alpEncodeAt (f32 : Bool) (x : ByteArray) :
-    x.size / (if f32 then 4 else 8) ≤ Column.blk * Column.nblk (Coc.alpEncodeAt f32 x).1 := by
-  unfold Coc.alpEncodeAt
-  simp only []
-  rw [show (8 : USize) = (8 : Nat).toUSize from rfl, Verify.nblk_encode 8 (by decide) (by decide),
-    Verify.blocks_size]
-  simp only [Array.toList_map, Array.toList_range, List.map_map, Function.comp_def, Coc.alpBlockOf,
-    Array.size_map, Array.size_range]
-  rw [Verify.sum_blocks]
-  generalize x.size / (if f32 then 4 else 8) = n
-  simp only [Column.blk] at *
-  omega
 theorem sliceColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
     (hc : countFits n e) (off m : Nat) : (sliceColumn t n e off m).isSome := by
   unfold sliceColumn
