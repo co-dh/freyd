@@ -77,7 +77,7 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
     (hinj : ∀ k < ix.size / 8, ∀ k' < ix.size / 8,
       (Column.bitsAt ix (k * 8) 8).toNat = (Column.bitsAt ix (k' * 8) 8).toNat → k = k')
     {m : Nat} (yv : Arr t m) (hmx : ix.size / 8 = m) {k : Nat} {c : Enc} {R : Arr t k} {out : Enc}
-    (hc : LeetQ.Rel.Alg.pick t (nx, acc.enc) ix = .ok (k, c))
+    {acc₀ : Arr t nx} (hacc : acc₀.enc = acc.enc) (hc : (LeetQ.Rel.Alg.pick t ⟨nx, acc₀⟩ ix).2.part = (k, c))
     (hR : Ew.dyad v Kernel.Ew.vv t t t k c m yv.enc k = .ok R)
     (hs : Struct.scatter verb t nx acc.enc (k, R.enc) ix = .ok out) :
     ∃ acc' : Arr t nx, acc'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, acc'.toList[j]? =
@@ -88,7 +88,7 @@ theorem amend_round {t : QAtomicType} {w nx : Nat} (hw : t.width = some w)
   have hmU : ix.size / 8 < USize.size := Nat.lt_of_lt_of_le hm USize.le_size
   subst hmx
   obtain ⟨src, hsrc, hss, hsb⟩ := bytesOf_fixed hw he acc hU
-  obtain ⟨src', hsrc', hk, rfl⟩ := pick_gather hw he acc ix hc
+  obtain ⟨src', hsrc', hk, rfl⟩ := pick_gather hw he acc₀ ix hc; rw [hacc] at hsrc'
   subst hk
   have e : src = src' := Option.some.inj (hsrc.symm.trans hsrc'); subst e
   have hw' : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
@@ -313,8 +313,8 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
     (KS : ByteArray)
     (hKS : Verify.elemsW 8 KS = ((List.range (ib.size / 8)).filter fun k => Verify.amendRank ib k = rr).map Nat.toUInt64)
     {ky k : Nat} {yc c : Enc} {Rd : Arr t k} {out : Enc}
-    (hyc : LeetQ.Rel.Alg.pick t (ib.size / 8, y.enc) KS = .ok (ky, yc))
-    (hcur : LeetQ.Rel.Alg.pick t (nx, a.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok (k, c))
+    (hyc : (LeetQ.Rel.Alg.pick t ⟨ib.size / 8, y⟩ KS).2.part = (ky, yc))
+    {a₀ : Arr t nx} (ha₀ : a₀.enc = a.enc) (hcur : (LeetQ.Rel.Alg.pick t ⟨nx, a₀⟩ (Kernel.gatherBytes 8 0 ib KS)).2.part = (k, c))
     (hRd : Ew.dyad v Kernel.Ew.vv t t t k c ky yc k = .ok Rd)
     (hsc : Struct.scatter verb t nx a.enc (k, Rd.enc) (Kernel.gatherBytes 8 0 ib KS) = .ok out) :
     ∃ a' : Arr t nx, a'.enc = out ∧ (∃ B, out = .bytes B) ∧ ∀ j, a'.toList[j]? =
@@ -389,7 +389,7 @@ theorem amend_round_ranked {t : QAtomicType} {w nx : Nat} (hw : t.width = some w
     · exact hl
     · exact (one k' k hk' hk hl e.symm).elim
   obtain ⟨a', ha', hBo, hp⟩ := amend_round hw he hdy dec htl hnx verb a (Kernel.gatherBytes 8 0 ib KS)
-    (by rw [hixs]; omega) hinj yA (by rw [hixs, hKl]) hcur hRd hsc
+    (by rw [hixs]; omega) hinj yA (by rw [hixs, hKl]) ha₀ hcur hRd hsc
   refine ⟨a', ha', hBo, fun j => ?_⟩
   rw [hp j, hpos j, Option.map_map]
   congr 1; funext a0
@@ -480,7 +480,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
       refine ⟨out, hok, ?_⟩
       obtain ⟨cur, hcur, h2⟩ := bind_ok hout
       obtain ⟨Rd, hRd, hsc⟩ := bind_ok h2
-      refine amend_round hw he hdy dec htl hnx _ x ib hni ?_ y rfl hcur hRd hsc
+      refine amend_round hw he hdy dec htl hnx _ x ib hni ?_ y rfl (congrArg Prod.snd (Alg.Arr.of_c hcur)) rfl hRd hsc
       intro k hk k' hk' e
       rcases Nat.lt_trichotomy k k' with hl | hl | hl
       · have := Verify.amendRank_lt ib k k' hl (UInt64.toNat_inj.1 e); have := hrank k' hk'; omega
@@ -521,8 +521,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
       · intro rr hrr acc b hPa hb
         obtain ⟨a, hac, hform, hpos⟩ := hPa
         subst hac
-        obtain ⟨yc, hyc, hst⟩ := bind_ok hb
-        obtain ⟨cur, hcur, h2⟩ := bind_ok hst
+        obtain ⟨A, hA, h2⟩ := bind_ok hb
         obtain ⟨Rd, hRd, hsc⟩ := bind_ok h2
         have hlo : (if rr == 0 then 0 else
             (Column.bitsAt (Kernel.amendRounds nx.toUSize 8 true ib) ((1 + rr) * 8) 8).toNat) =
@@ -531,7 +530,7 @@ theorem amend_verb_toList {t : QAtomicType} {w nx ni ny : Nat} (hw : t.width = s
           | zero => simp
           | succ q => rw [if_neg (by simp), show 1 + (q + 1) = 2 + q by omega, hcnt q (by omega)]
         obtain ⟨a', ha', hBo, hp⟩ := amend_round_ranked hw he hdy dec htl hnx _ ib hni rr y x a hpos _
-          (round_positions nx.toUSize ib hmiss h1' hrr hlo (hcnt rr hrr)) hyc hcur hRd hsc
+          (round_positions nx.toUSize ib hmiss h1' hrr hlo (hcnt rr hrr)) rfl (congrArg Prod.snd (Alg.Arr.of_c hA)) rfl hRd hsc
         exact ⟨a', ha', .inr hBo, hp⟩
   -- the answer read back is the last accumulator, and position by position it is `amendSpec`
   obtain ⟨out, hok, a, hac, ⟨B, hBo⟩, hpos⟩ := key

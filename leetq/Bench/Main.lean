@@ -235,9 +235,14 @@ def relEach2Op (n : Nat) : IO (IO (Nat × Int64)) := do
 /-- `d + e` on keys by `Ew.dyadic .add` over explicit key columns, the key sets overlapping by half: `Ew.align`;
     `sum d + e`. -/
 def relZipDOp (n : Nat) : IO (IO (Nat × Int64)) := do
-  let d ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (LeetQ.Rel.Alg.longs <| col ((Array.range n).map Int.ofNat)) (LeetQ.Rel.Alg.longs <| col (ints n 26 1000)))
-  let e ← io "relZipD" (LeetQ.Rel.Alg.ofCols .long .long (LeetQ.Rel.Alg.longs <| col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int)))
-    (LeetQ.Rel.Alg.longs <| col (ints n 27 1000)))
+  let d ← io "relZipD" do
+    let a ← LeetQ.Rel.Alg.longsP (col ((Array.range n).map Int.ofNat)) "relZipD"
+    let b ← LeetQ.Rel.Alg.longsP (col (ints n 26 1000)) "relZipD"
+    LeetQ.Rel.Alg.ofCols .long .long a b
+  let e ← io "relZipD" do
+    let a ← LeetQ.Rel.Alg.longsP (col ((Array.range n).map fun i => ((i + n / 2 : Nat) : Int))) "relZipD"
+    let b ← LeetQ.Rel.Alg.longsP (col (ints n 27 1000)) "relZipD"
+    LeetQ.Rel.Alg.ofCols .long .long a b
   timedE "relZipD" (d, e) fun (d, e) => do let r ← LeetQ.Rel.Ew.dyadic .add .long d e; sumR "relZipD" r.val
 
 /-- The list `x` of longs `foR`-encoded: the haystack `Find.direct` admits. -/
@@ -301,7 +306,10 @@ def relCardOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let ⟨t, k⟩ ← io "relCard" (encCol enc m (ints n 28 m))
   let ⟨u, v⟩ ← io "relCard" (encCol enc m (ints n 29 m))
   if u = t then
-    let R ← io "relCard" (LeetQ.Rel.Alg.ofCols t t k v)
+    let R ← io "relCard" do
+      let a ← LeetQ.Rel.Arr.ofPart t k.1 k "relCard"
+      let b ← LeetQ.Rel.Arr.ofPart t v.1 v "relCard"
+      LeetQ.Rel.Alg.ofCols t t ⟨k.1, a⟩ ⟨v.1, b⟩
     timedE s!"relCard {enc}" R fun R => do pure (Int64.ofNat (← (← LeetQ.Rel.Alg.cols R).nub).n)
   else throw (IO.userError "relCard: key and value differ in type")
 
