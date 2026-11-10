@@ -1,6 +1,0 @@
-prog sum    = cata (x => x) (acc x => acc + x)
-run sum [3, 1, 4, 1, 5]
-prog runmax = cata (x => x) (m x => max m x)
-run runmax [3, 1, 4, 1, 5]
-prog best = cata (p => (p, 0)) (s p => (min (fst s) p, max (snd s) (p - fst s))) ; fn (s => snd s)
-run best [7, 1, 5, 3, 6, 4]

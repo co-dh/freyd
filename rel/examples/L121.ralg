@@ -1,8 +1,0 @@
--- LeetCode 121 — Best Time to Buy and Sell Stock — as an evalP FOLD (cf. leet/L121.lean).
--- carrier = (minPriceSoFar, bestProfit): step keeps the running min and the best (price - min).
--- This is the PROGRAM side of the AoP derivation `solve = A spec ; max D` — cf. lc121spec.ralg
--- (the SPEC side) and RelInterp's Demo121, which proves the two agree.
-prog best = cata (p => (p, 0)) (s p => (min (fst s) p, max (snd s) (p - fst s))) ; fn (s => snd s)
-
--- [7,1,5,3,6,4] -> 5  (buy at 1, sell at 6).
-run best [7, 1, 5, 3, 6, 4]

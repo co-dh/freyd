@@ -1,6 +1,0 @@
--- LeetCode 198 — House Robber — as an evalP FOLD (cf. leet/L198.lean).
--- carrier = (rob-this, skip-this): rob' = skip + x ; skip' = max(rob, skip).  answer = max(rob, skip).
-prog rob = cata (x => (x, 0)) (a x => (snd a + x, max (fst a) (snd a))) ; fn (a => max (fst a) (snd a))
-
--- [2,7,9,3,1] -> 12  (rob houses 2 + 9 + 1).
-run rob [2, 7, 9, 3, 1]

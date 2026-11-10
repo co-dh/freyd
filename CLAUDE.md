@@ -7,8 +7,7 @@ This project explain the book Categories, Allegories of Freyd.
   (`A4_*`..`A10_*`) + infra (`A6_GenFold`, `A6_GenHylo`, `A6_ConsList`, `A6_HashMap`, `A6_Heap`,
   `A6_BinSearch`, `A6_1_RelSet`, …) + `Deriv*`. Modules `AOP.*`.
 - `leet/`   — LeetCode case studies `L<n>.lean` and derivations `L<n>_derived.lean`. Modules `leet.*`.
-- `rel/`    — the relation-algebra interpreter `RelInterp` + case studies (`UnixPipe`, `ShellCommands`)
-  + the auto-derivation drivers (`AutoDerive*`). Modules `rel.*`.
+- `rel/`    — the auto-derivation drivers (`AutoDerive*`). Modules `rel.*`.
 - `Freyd/note/` — the author's own `.typ`/`.pdf` section notes and diagrams (non-Lean).
 Imports cross libs freely within the one Lake package (e.g. `leet.L20` imports `AOP.A6_GenFold`).
 lakefile: `AOP`/`leet`/`rel` are glob'd; only `AOP` is in `defaultTargets` (nothing in `Freyd`/`AOP` imports
