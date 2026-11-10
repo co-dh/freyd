@@ -10,6 +10,7 @@ import QLean.Kernel.Structural
 import QLean.Dep.Dyadic
 import QLean.Verify.Elementwise
 import LeetQ.Rel.KernelWF.Dyad
+import LeetQ.Rel.KernelWF.Mon
 import LeetQ.Rel.Find
 
 namespace LeetQ.Rel
@@ -65,13 +66,28 @@ def Ew.valAtom (v : Prim.Dyadic) (rt : QAtomicType) (x : Arr t n) (a : Carrier u
   | some vf => Ew.atomVal vf rt a x
   | none => do Ew.dyad v Ew.va t u rt n x.enc 1 (← Ew.atomCol u (Carrier.atom a)) n
 
-/-- `f x` for qlean's monadic kernels by name (`neg`, `abs`, `reciprocal`, `null`, …): one `monColumn`. -/
-def Ew.mon (name : String) (rt : QAtomicType) (x : Arr t n) : Except String (Arr rt n) :=
-  match monColumn name t n x.enc with
-  | none => .error s!"Ew.mon: no qlean kernel claims {name} at {repr t}"
-  | some (rt', e) =>
-    if rt' = rt then Arr.of rt n (.vector rt n e none) s!"Ew.mon {name}"
-    else .error s!"Ew.mon {name}: answers {repr rt'}, not {repr rt}"
+/-- One `monColumn` on a well-formed payload of `m < USize.size` elements, at a name `monNames` lists and
+    the type `monResultType` answers. -/
+def Ew.monK (name : String) (rt : QAtomicType) {m : Nat} (e : Enc) (hw : Enc.WF t m e)
+    (hname : name ∈ KernelWF.monNames) (hrt : monResultType name t = some rt) (hg : t ≠ .general)
+    (hm : m < USize.size) : Arr rt m :=
+  have hs := KernelWF.monColumn_isSome hname hrt hg hw hm
+  Arr.mk ((monColumn name t m e).get hs).2 (KernelWF.monColumn_wf hname hg hw hm (KernelWF.monColumn_get hrt hs))
+
+/-- `f x` for qlean's monadic kernels by name (`neg`, `abs`, `reciprocal`, `null`, …): one `monColumn`.
+    Past the kernel's `USize` count, the same kernel on each element's one-element column, atom by atom. -/
+def Ew.mon (name : String) (rt : QAtomicType) (x : Arr t n)
+    (hname : name ∈ KernelWF.monNames := by first | decide | assumption)
+    (hrt : monResultType name t = some rt := by first | rfl | assumption)
+    (hg : t ≠ .general := by first | decide | assumption) : Arr rt n :=
+  if hn : n < USize.size then Ew.monK name rt x.enc x.wf hname hrt hg hn
+  else
+    have hr := KernelWF.monResultType_ne_general hrt hg
+    Find.atomsOf rt hr (fun i : Fin n =>
+      let one := Find.atomsOf (m := 1) t hg (fun _ : Unit => Carrier.atom (x.get i) hg) (fun _ => by simp) [()] rfl
+      Carrier.atom ((Ew.monK name rt one.enc one.wf hname hrt hg (by have := USize.size_eq; omega)).get
+        ⟨0, Nat.one_pos⟩) hr)
+      (fun _ => by simp) (List.finRange n) (by simp)
 
 /-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
 def Ew.notBits (m : Nat) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m.toUSize
@@ -419,7 +435,7 @@ private def pairs {k v} (r : Except String (Rel k v)) : Option (List (k.El × v.
 #guard av (do Ew.atomVal (t := .long) .sub .long 10 (← LA [1, 2, 3])) == some [9, 8, 7]
 #guard av (do Ew.valAtom (u := .long) .sub .long (← LA [1, 2, 3]) 1) == some [0, 1, 2]
 #guard av (do Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2) == some [true, false, false]
-#guard av (do Ew.mon "neg" .long (← LA [1, -2, 3])) == some [-1, 2, -3]
+#guard av (do pure (Ew.mon "neg" .long (← LA [1, -2, 3]))) == some [-1, 2, -3]
 #guard av (do pure (Ew.not (← Ew.valAtom (u := .long) .lt .boolean (← LA [1, 2, 3]) 2))) == some [false, true, true]
 #guard av (do Ew.prior (t := .long) .sub .long 0 (← LA [1, 4, 9, 16])) == some [1, 3, 5, 7]
 #guard av (do pure (Ew.bitwise Ew.band (← LA [12, 5, -1, 0]) (← LA [10, 2, 7, -1]))) == some [8, 0, 7, 0]
