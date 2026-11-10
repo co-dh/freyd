@@ -5,9 +5,8 @@
   constructor may take an `Except`-typed argument; (2) every declaration of every module under `roots` must not
   use `Except`/`ExceptT` in its type or value, nor answer `Option` unless it is a selector of `optionOk`.
   The modules swept are read from the directories, so a module nothing imports here is an error, not a skip.
-  Nothing imports this module: while an offender remains, building it fails and the rest builds as before.
-  Two modules are not imported, so the check names them as offenders instead of failing before it runs:
-  `LeetQ.Rel.Group` does not elaborate, and `LeetQ.Rel.SpecKey` clashes with `SpecAmend` on an import.
+  It is its own lib `Check`, outside the `LeetQ` glob and the default targets: while an offender remains,
+  building it fails, and a targetless `lake build` stays green. Run it with `lake build Check.TotalCheck`.
 -/
 import LeetQ.Rel.Algebra
 import LeetQ.Rel.Blocks
@@ -16,6 +15,7 @@ import LeetQ.Rel.Circuit
 import LeetQ.Rel.Core
 import LeetQ.Rel.Ew
 import LeetQ.Rel.Find
+import LeetQ.Rel.Group
 import LeetQ.Rel.Norm
 import LeetQ.Rel.Parted
 import LeetQ.Rel.Prog
@@ -24,15 +24,19 @@ import LeetQ.Rel.Scan
 import LeetQ.Rel.Spec
 import LeetQ.Rel.SpecAmend
 import LeetQ.Rel.SpecFind
+import LeetQ.Rel.SpecKey
 import LeetQ.Rel.SpecScan
 import LeetQ.Rel.SpecStruct
 import LeetQ.Rel.Struct
 import LeetQ.Rel.Wumpus
 import LeetQ.Rel.KernelWF.Dyad
+import LeetQ.Rel.KernelWF.DyadCmpWF
+import LeetQ.Rel.KernelWF.DyadValWF
 import LeetQ.Rel.KernelWF.Gather
 import LeetQ.Rel.KernelWF.Raze
 import LeetQ.Rel.KernelWF.Reduce
 import LeetQ.Rel.KernelWF.Search
+import LeetQ.Rel.KernelWF.SearchSym
 import LeetQ.Rel.KernelWF.Shape
 import Bench.Main
 
