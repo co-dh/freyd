@@ -258,4 +258,105 @@ theorem groupedOver_tilLongs_wf {op : Coc.Over} {whole : Bool} {t rt : QAtomicTy
   have hs : (tilLongs g).size = g.toNat * 8 := by simpa [Enc.WF, QAtomicType.width] using tilLongs_wf g
   rwa [hs, Nat.mul_div_cancel _ (by decide)] at this
 
+
+/-! ## `razeColumn`'s count: the sum of the parts' counts -/
+
+/-- A fold that adds `f a` a step adds their sum. -/
+private theorem foldl_add_sum {α σ : Type} (sz : σ → Nat) (f : α → Nat) (g : σ → α → σ)
+    (hg : ∀ s a, sz (g s a) = sz s + f a) : ∀ (l : List α) (s : σ), sz (l.foldl g s) = sz s + (l.map f).sum
+  | [], s => by simp
+  | a :: l, s => by simp only [List.foldl, List.map_cons, List.sum_cons]; rw [foldl_add_sum sz f g hg l, hg]; omega
+
+/-- An `Option` pass whose every answer measures `u` as its argument measures `v` keeps the sum. -/
+private theorem mapM_sum {α β : Type} {f : α → Option β} (u : β → Nat) (v : α → Nat) :
+    ∀ (l : List α) (qs : List β), (∀ a ∈ l, ∀ b, f a = some b → u b = v a) → l.mapM f = some qs →
+      (qs.map u).sum = (l.map v).sum
+  | [], qs, _, h => by simp at h; subst h; rfl
+  | a :: l, qs, hf, h => by
+    rw [List.mapM_cons] at h
+    cases ha : f a with
+    | none => simp [ha] at h
+    | some x =>
+      cases hl : l.mapM f with
+      | none => simp [ha, hl] at h
+      | some xs =>
+        simp [ha, hl] at h; subst h
+        simp [hf a (by simp) x ha, mapM_sum u v l xs (fun a' ha' b hb => hf a' (by simp [ha']) b hb) hl]
+
+private theorem mapM_sum_arr {α β : Type} {f : α → Option β} (u : β → Nat) (v : α → Nat) {cs : Array α}
+    {qs : Array β} (hf : ∀ a ∈ cs, ∀ b, f a = some b → u b = v a) (h : cs.mapM f = some qs) :
+    (qs.toList.map u).sum = (cs.toList.map v).sum := by
+  rcases cs with ⟨l⟩
+  rw [Array.mapM_eq_mapM_toList] at h
+  cases hq : l.mapM f with
+  | none => simp [hq] at h
+  | some ql =>
+    simp [hq] at h; subst h
+    simpa using mapM_sum u v l ql (fun a ha => hf a (by simpa using ha)) hq
+
+private theorem foldl_fst_sum {β : Type} (l : List (Nat × β)) (a : Nat) :
+    l.foldl (fun s c => s + c.1) a = a + (l.map (·.1)).sum :=
+  foldl_add_sum (σ := Nat) id (fun c : Nat × β => c.1) (fun s c => s + c.1) (fun _ _ => rfl) l a
+
+private theorem sum_fst {β : Type} (cs : Array (Nat × β)) :
+    cs.foldl (fun s c => s + c.1) 0 = (cs.toList.map (·.1)).sum := by
+  rw [← Array.foldl_toList, foldl_fst_sum, Nat.zero_add]
+
+/-- **`razeColumn` counts its answer as the sum of its parts' counts**, under `razeColumn_wf`'s
+    hypothesis on the parts (`hN` is not needed). -/
+theorem razeColumn_count {t : QAtomicType} {cs : Array (Nat × Enc)}
+    (h : ∀ c ∈ cs, Enc.WF t c.1 c.2 ∧ c.1 < USize.size) {n : Nat} {e : Enc}
+    (hv : razeColumn t cs = some (.vector t n e none)) : n = cs.foldl (fun s c => s + c.1) 0 := by
+  rw [sum_fst]
+  unfold razeColumn at hv
+  split at hv
+  · cases hv
+  cases t
+  case boolean =>
+    dsimp only at hv
+    split at hv
+    · rename_i ps hps
+      cases hv
+      rw [sum_fst, mapM_sum_arr (·.1) (·.1) (fun a _ b hb => by
+        rcases a with ⟨k, e'⟩; cases e' <;> simp at hb; subst hb; rfl) hps]
+    · cases hv
+  case symbol =>
+    dsimp only at hv
+    split at hv
+    · rename_i ps hps
+      simp only [concatSyms] at hv; cases hv
+      rw [← Array.foldl_toList, foldl_add_sum (fun p : ByteArray × Array Nat => p.2.size) (fun p => p.2.size - 1) _
+        (fun s a => by rcases s with ⟨blob, offs⟩; rcases a with ⟨b, o⟩; simp)]
+      rw [mapM_sum_arr (fun p => p.2.size - 1) (·.1) (fun a ha b hb => by
+        have hw := (h a ha).1; rcases a with ⟨k, e'⟩; cases e' <;> simp at hb; subst hb
+        simp [Enc.WF] at hw; simp [hw]) hps]
+      simp
+    · split at hv
+      · rename_i ps hps
+        simp only [concatEnum] at hv; cases hv
+        rw [← Array.foldl_toList, foldl_fst_sum]
+        rw [← mapM_sum_arr (·.1) (·.1) (fun a _ b hb => by
+          rcases a with ⟨k, e'⟩; dsimp only at hb; split at hb <;> first | (cases hb; rfl) | cases hb) hps]
+        simp only [id, Nat.zero_add]
+        congr 1
+        apply List.ext_getElem (by simp)
+        intro i h1 h2
+        simp only [List.getElem_map, Array.getElem_toList, Array.getElem_mapIdx]
+        split
+        · rfl
+        · split <;> rfl
+      · cases hv
+  all_goals
+    dsimp only at hv
+    generalize hE : encodedParts _ cs = E at hv
+    rcases E with _ | ⟨alp, m, ns, ms, ps, as⟩
+    all_goals
+      try dsimp only [QAtomicType.width] at hv
+      repeat' split at hv
+      all_goals first
+        | (cases hv; done)
+        | (cases hv; exact sum_fst cs)
+        | (cases hv; obtain ⟨-, rfl, rfl, -⟩ := encodedParts_spec hE; simp)
+        | contradiction
+
 end LeetQ.Rel.KernelWF
