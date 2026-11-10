@@ -2913,18 +2913,36 @@ theorem priorCmp_rel_long_foR {v : Prim.Dyadic} {op : UInt8} (hop : Kernel.cmpOp
 
 /-- **`&x` on dense long counts is `whereCountsSpec`**: `expandBytes_spec` repeats `til n`'s element `i`
     `x[i]` times (a negative count none, as the spec's `toNat`), and `tilLongs_spec` reads element `i` as `i`.
-    The kernel's refusal of a negative count only narrows when it answers. -/
-theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
-    (hb : x.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩) :
-    r.toList = Find.whereCountsSpec x.toList := by
-  simp only [Find.whereCounts, Find.dense, hb, Enc.bytesOf, bind, Except.bind] at h
-  split at h
-  · cases h
-  obtain ⟨hnr, hr⟩ := Find.list_enc h
-  subst hnr
+    `expand`'s payload is whole longs, so `whereCounts` takes its kernel branch. -/
+theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray}
+    (hb : x.enc = .bytes b) (hn : nx < USize.size) (hz : (Find.negs x).size = 0) :
+    (Find.whereCounts x hz).2.toList = Find.whereCountsSpec x.toList := by
+  have hd : Find.denseOf x = b := by simp [Find.denseOf, hb, Enc.bytesOf]
+  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hm : ∀ (l : List Nat) (f : ByteArray → Nat → ByteArray), (∀ acc i, (f acc i).size % 8 = acc.size % 8) →
+      ∀ acc, (l.foldl f acc).size % 8 = acc.size % 8 := fun l f hf => by
+    induction l with
+    | nil => intro; rfl
+    | cons i l ih => intro acc; rw [List.foldl_cons, ih, hf]
+  have hwf : Enc.WF .long ((Find.expand b).1.size / 8) (.bytes (Find.expand b).1) := by
+    have h0 : (Find.expand b).1.size % 8 = 0 := by
+      simp only [Find.expand, Kernel.expandBytes]
+      rw [← Array.foldl_toList]
+      refine (hm _ _ (fun acc i => ?_) _).trans rfl
+      dsimp only
+      rw [← Array.foldl_toList]
+      exact hm _ _ (fun acc _ => by rw [Column.pushBits_size, h8]; omega) _
+    show (Find.expand b).1.size = (Find.expand b).1.size / 8 * 8
+    omega
+  simp only [Find.whereCounts]
+  generalize Find.denseOf x = d at hd ⊢
+  subst d
+  rw [dif_pos hwf]
+  dsimp only
+  generalize hR : (Arr.mk _ hwf).markIf 1 = r
+  have hr : r.enc = .bytes (Find.expand b).1 := by rw [← hR, Arr.markIf_enc]; rfl
   have hw : longWords ((Find.expand b).1.size / 8) r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
   have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
-  have h8 : (8 : USize).toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
     (Kernel.tilLongs (b.size / 8).toUSize) b
   rw [h8] at he
@@ -2989,10 +3007,10 @@ def whereOffsets (ns : List Int64) (i : Nat) : Nat := ((List.range i).map fun k 
 /-- **`&x` on counts `= corefl(< Σ(0|x)) ≫ grp(o)`**, the group read as a long: output position `j` goes to
     the input position whose segment holds it, the segments cut at `o = 0, +\(0|x)` (as `cut` reads them).
     Stated for every dense long `o` holding the offsets; `whereCounts_toList` and `flatMap_replicate_getElem?`. -/
-theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat} {r : Arr .long nr}
-    (hb : x.enc = .bytes b) (hn : nx < USize.size) (h : Find.whereCounts x = .ok ⟨nr, r⟩)
+theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray}
+    (hb : x.enc = .bytes b) (hn : nx < USize.size) (hz : (Find.negs x).size = 0)
     (o : Arr .long (nx+1)) (ho : ∀ i : Fin (nx+1), (o.get i).toInt = whereOffsets x.toList i) :
-    r.rel = corefl (· < whereOffsets x.toList nx) ≫ grp o ≫ graph Int64.ofNat := by
+    (Find.whereCounts x hz).2.rel = corefl (· < whereOffsets x.toList nx) ≫ grp o ≫ graph Int64.ofNat := by
   let f := fun k => (x.toList.getD k 0).toInt.toNat
   have hs : ∀ i, whereOffsets x.toList (i+1) = whereOffsets x.toList i + f i := fun i => by
     simp [whereOffsets, List.range_succ, f]
@@ -3005,9 +3023,9 @@ theorem whereCounts_rel {nx : Nat} {x : Arr .long nx} {b : ByteArray} {nr : Nat}
   have key : ∀ j a, ((List.range nx).flatMap fun i => List.replicate (f i) i)[j]? = some a ↔
       j < whereOffsets x.toList nx ∧ a = Parted.group o j := fun j a =>
     (flatMap_replicate_getElem? f (whereOffsets x.toList) rfl hs nx j a).trans (by rw [hgrp j])
-  have hr : r.rel = ix (((List.range nx).flatMap fun i => List.replicate (f i) i).map Int64.ofNat) := by
-    show ix r.toList = _
-    rw [whereCounts_toList hb hn h]
+  have hr : (Find.whereCounts x hz).2.rel = ix (((List.range nx).flatMap fun i => List.replicate (f i) i).map Int64.ofNat) := by
+    show ix (Find.whereCounts x hz).2.toList = _
+    rw [whereCounts_toList hb hn hz]
     unfold Find.whereCountsSpec
     rw [Arr.length_toList]
     simp [List.map_flatMap, List.map_replicate, f]
@@ -3035,11 +3053,11 @@ end Kernel
 /-- `?x = enum(F) ≫ x`, `F = ran(Λ(x°) ≫ est(≤))` the first position of each value: every list
     `enum` relates `F` to gives the answer, and there is one. Restrictions as `distinct_toList`'s:
     long columns. -/
-theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr} {xs : List UInt64}
+theorem distinct_rel {nx : Nat} {x : Arr .long nx} {xs : List UInt64}
     (hx : longWords nx x.enc = some xs) (hu : x.attrCell.map (·.1) = some 2 → x.toList.Nodup)
-    (hn8 : 8 * nx < USize.size) (h : Find.distinct x = .ok ⟨nr, r⟩) :
+    (hn8 : 8 * nx < USize.size) :
     (∃ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys) ∧
-    ∀ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys → r.rel = ix (CL.toList ys) ≫ x.rel := by
+    ∀ ys, enum (cset (ran (Λ (x.rel°) ≫ est (· ≤ ·)))) ys → (Find.distinct x).2.rel = ix (CL.toList ys) ≫ x.rel := by
   have hS : ∀ j, cset (ran (Λ (x.rel°) ≫ est (· ≤ ·))) j ↔
       j ∈ Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := fun j =>
     ⟨fun ⟨_, a, h1, _⟩ => (least_iff_firsts _ j).1 ⟨a, (Λ_comp_est_apply _ _ a j).1 h1⟩,
@@ -3053,7 +3071,7 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
   refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
   have hys : CL.toList ys = Verify.firstsOf (fun i => x.toList[i]!) x.toList.length := by
     rw [(he ys).1 hy, CL.toList_ofList]
-  calc r.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8 h)
+  calc (Find.distinct x).2.rel = ix (Find.distinctSpec x.toList) := congrArg ix (Find.distinct_toList hx hu hn8)
     _ = ix ((Verify.firstsOf (fun i => x.toList[i]!) x.toList.length).map fun i => x.toList[i]!) :=
         congrArg ix (eraseDups_firsts _)
     _ = ix (Verify.firstsOf (fun i => x.toList[i]!) x.toList.length) ≫ x.rel := ix_map_getElem! _ _ hlt
@@ -3063,21 +3081,21 @@ theorem distinct_rel {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
 
 /-- `x in y = x ≫ χ(ran y)`. Restrictions as `in_toList`'s. -/
 theorem in_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
-    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .boolean nx}
+    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny}
     (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends y)
-    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) (h : Find.«in» x y = .ok r) :
-    r.rel = x.rel ≫ χ (ran y.rel) :=
-  calc r.rel = ix (Find.inSpec x.toList y.toList) := congrArg ix (Find.in_toList hx hy hs hn8 hm h)
+    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) :
+    (Find.«in» x y).rel = x.rel ≫ χ (ran y.rel) :=
+  calc (Find.«in» x y).rel = ix (Find.inSpec x.toList y.toList) := congrArg ix (Find.in_toList hx hy hs hn8 hm)
     _ = x.rel ≫ graph (fun v => y.toList.contains v) := ix_map ..
     _ = x.rel ≫ χ (ran y.rel) := congrArg (x.rel ≫ ·) (ix_contains _)
 
 /-- `x?y = y ≫ miss(Λ(x°) ≫ est(≤), n)`, the position read as a long. Restrictions as `find_toList`'s. -/
 theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
-    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny} {r : Arr .long ny}
+    {nx : Nat} {x : Arr a nx} {ny : Nat} {y : Arr a ny}
     (hx : Find.Readable a nx x.enc) (hy : Find.Readable a ny y.enc) (hs : Find.Ascends x)
-    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) (h : Find.find x y = .ok r) :
-    r.rel = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) nx ≫ graph Int64.ofNat :=
-  calc r.rel = ix (Find.findSpec x.toList y.toList) := congrArg ix (Find.find_toList hx hy hs hn8 hm h)
+    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) :
+    (Find.find x y).rel = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) nx ≫ graph Int64.ofNat :=
+  calc (Find.find x y).rel = ix (Find.findSpec x.toList y.toList) := congrArg ix (Find.find_toList hx hy hs hn8 hm)
     _ = y.rel ≫ graph (fun v => Int64.ofNat (x.toList.idxOf v)) := ix_map ..
     _ = y.rel ≫ graph (fun v => x.toList.idxOf v) ≫ graph Int64.ofNat := congrArg (y.rel ≫ ·) (graph_comp ..).symm
     _ = y.rel ≫ miss (Λ (x.rel°) ≫ est (· ≤ ·)) x.toList.length ≫ graph Int64.ofNat :=
@@ -3086,32 +3104,32 @@ theorem find_rel {a : QAtomicType} [BEq (El a)] [LawfulBEq (El a)]
 
 /-- `x bin y = y ≫ miss(Λ((≥) ≫ x°) ≫ est(≥), −1)`, the position read as a long. Restrictions as
     `bin_toList`'s: long columns, `x` ascending. -/
-theorem bin_rel {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r : Arr .long ny}
+theorem bin_rel {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny}
     (hx : Find.Readable .long nx x.enc) (hy : Find.Readable .long ny y.enc) (hn : nx < USize.size) (hm : ny < USize.size)
-    (hsort : ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j) (h : Find.bin x y = .ok r) :
-    r.rel = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
+    (hsort : ∀ i j : Fin nx, i ≤ j → x.get i ≤ x.get j) :
+    (Find.bin x y).rel = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
   have hp : x.toList.Pairwise (· ≤ ·) := List.pairwise_iff_getElem.2 fun i j hi hj hij => by
     rw [Arr.getElem_toList, Arr.getElem_toList]
     exact hsort _ _ (Nat.le_of_lt hij)
-  calc r.rel = ix (Find.binSpec x.toList y.toList) := congrArg ix (Find.bin_toList hx hy hn hm hsort h)
+  calc (Find.bin x y).rel = ix (Find.binSpec x.toList y.toList) := congrArg ix (Find.bin_toList hx hy hn hm hsort)
     _ = y.rel ≫ graph (fun v => Int64.ofNat (x.toList.countP (· ≤ v)) - 1) := ix_map ..
     _ = y.rel ≫ miss ((Λ ((· ≥ ·) ≫ x.rel°) ≫ est (· ≥ ·)) ≫ graph Int64.ofNat) (-1) :=
         congrArg (y.rel ≫ ·) (ix_bin _ hp)
 
 /-- `&x = enum(dom(x ≫ 1b°))` on booleans, the positions read as longs: every list `enum` relates
     the set to is the answer, and there is one. -/
-theorem where_rel {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
-    (hn : nx < USize.size) (h : Find.«where» x = .ok ⟨nr, r⟩) :
+theorem where_rel {nx : Nat} {x : Arr .boolean nx}
+    (hn : nx < USize.size) :
     (∃ ys, enum (cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys) ∧
     ∀ ys, enum (cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°))) ys →
-      r.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
-  obtain ⟨L, hL, he⟩ := enum_where hn h
+      (Find.«where» x).2.rel = ix (CL.toList ys) ≫ graph Int64.ofNat := by
+  obtain ⟨L, hL, he⟩ := enum_where hn rfl
   have hS : cset (dom (x.rel ≫ (cst true : (⟨Unit⟩ : RelSet.{0}) ⟶ ⟨El .boolean⟩)°)) = fun i => x.rel i true :=
     funext fun i => propext ⟨fun ⟨_, _, ⟨b, hb, (e : b = true)⟩, _⟩ => e ▸ hb, fun hi => ⟨rfl, (), ⟨true, hi, rfl⟩, ⟨true, hi, rfl⟩⟩⟩
   rw [hS]
   refine ⟨⟨_, (he _).2 rfl⟩, fun ys hy => ?_⟩
   obtain rfl := (he ys).1 hy
-  calc r.rel = ix (L.map Int64.ofNat) := congrArg ix hL
+  calc (Find.«where» x).2.rel = ix (L.map Int64.ofNat) := congrArg ix hL
     _ = ix L ≫ graph Int64.ofNat := ix_map ..
     _ = ix (CL.toList (CL.ofList L)) ≫ graph Int64.ofNat := by rw [CL.toList_ofList]
 

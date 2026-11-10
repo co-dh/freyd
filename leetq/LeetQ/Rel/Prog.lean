@@ -248,14 +248,14 @@ def tilKey (n : Nat) : Except String (Arr .long n) :=
 
 /-- `enumC`'s kernel: `til n in C`'s keys (`Find.in`), then `Find.where` keyed by `til m`. -/
 def enumIn (n : Nat) (C : Rel .long .long) : Except String (Rel .long .long) := do
-  let w ← Find.where (← Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
+  let w := Find.where (Find.«in» (← tilKey n) C.key); pure ⟨w.1, ← tilKey w.1, w.2⟩
 
 /-- The order join's literal kernel (P7): `prod R S`, `v` on the two value columns (P6′), the rows whose bit
     is set (`Find.where`), their two keys picked. -/
 def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .long) : Except String (Rel A B) := do
   unless v matches .lt | .le | .gt | .ge do throw "order join: not a comparison"
   let T ← Alg.prod R S
-  let w ← Find.where (← Ew.val v .boolean T.val.1 T.val.2)
+  let w := Find.where (← Ew.val v .boolean T.val.1 T.val.2)
   let (_, i) ← Alg.arrDense w.2
   pure ⟨w.1, ← Vals.ofParts (.atom A) w.1 (Alg.pick A ⟨_, T.key.1⟩ i) "order join",
     ← Vals.ofParts (.atom B) w.1 (Alg.pick B ⟨_, T.key.2⟩ i) "order join"⟩
@@ -294,7 +294,7 @@ def _root_.LeetQ.Rel.Vals.pick {n m : Nat} {A : Obj} (i : Arr .long m) (x : Vals
 
 /-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
 def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do
-  let w ← Find.where b
+  let w := Find.where b
   pure ⟨w.1, ← Vals.pick w.2 R.key, ← Vals.pick w.2 R.val⟩
 
 /-- `R ≫ c` applied to `R`'s value columns; the key stays. -/
@@ -376,7 +376,7 @@ def run : {A B : Obj} → Prog A B → Except String (RelV A B)
   | _, _, mem P => do liftV (Alg.lamMem (← P.run).toRel)
   | _, _, extr d P => do liftV (Alg.lamEst d (← P.run).toRel)
   | _, _, fold op _ _ x G => do liftV (Alg.lamFold op x (← G.run).toRel)
-  | _, _, enum x => do let w ← Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
+  | _, _, enum x => do let w := Find.where x; pure ⟨w.1, ← tilKey w.1, w.2⟩
   | _, _, anti P C => do liftV (Alg.antiJoin (← P.run).toRel (← C.run).toRel)
   | _, _, dom P => do liftV (Alg.dom (← P.run).toRel)
   | _, _, enumC n C => do liftV (enumIn n (← C.run).toRel)
@@ -385,7 +385,7 @@ def run : {A B : Obj} → Prog A B → Except String (RelV A B)
     let S := Ops.grade d x
     pure ⟨n, ← tilKey n, S⟩
   | _, _, ojoin v P Q => do liftV (ordJoin v (← P.run).toRel (← Q.run).toRel)
-  | _, _, binJ (ny := ny) x y => do let r ← Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
+  | _, _, binJ (ny := ny) x y => do let r := Find.bin x y; pure ⟨ny, ← tilKey ny, r⟩
   | _, _, ajJ lk lt rk rt => do let r ← ajRun lk lt rk rt; pure ⟨r.1, ← tilKey r.1, r.2⟩
   | _, _, wjJ prev lk w₀ w₁ rk rt => liftV (wjRun prev lk w₀ w₁ rk rt)
 
@@ -642,12 +642,9 @@ theorem enum_sound {n : Nat} (x : Arr .boolean n) (hn : n < USize.size) {R : Rel
     (h : (enum x).run = .ok R) : (R.Holds : Ob .long ⟶ Ob .long) = (enum x).den := by
   simp only [run, bind, Except.bind] at h; split at h
   · cases h
-  rename_i w hw
-  split at h
-  · cases h
   cases h
-  obtain ⟨⟨ys, hy⟩, hall⟩ := where_rel hn hw
-  rw [arr_sound w.2 (by assumption)]
+  obtain ⟨⟨ys, hy⟩, hall⟩ := where_rel (x := x) hn
+  rw [arr_sound (Find.where x).2 (by assumption)]
   exact hom_ext fun a b => ⟨fun ⟨j, ea, hr⟩ => ⟨j, ea, ys, hy, by rw [← hall ys hy]; exact hr⟩,
     fun ⟨j, ea, ys', hy', hr⟩ => ⟨j, ea, by rw [hall ys' hy']; exact hr⟩⟩
 
@@ -782,11 +779,8 @@ theorem run_sound : ∀ {A B : Obj} (P : Prog A B) {R : RelV A B}, P.Sound → P
     unfold Sound at hs; obtain ⟨hx, hy, hn, hm, hsort⟩ := hs
     simp only [run, bind, Except.bind] at h; split at h
     · cases h
-    rename_i r hr
-    split at h
-    · cases h
     cases h
-    rw [arr_sound r (by assumption), Verb.bin_rel hx hy hn hm hsort hr]; rfl
+    rw [arr_sound (Find.bin x y) (by assumption), Verb.bin_rel hx hy hn hm hsort]; rfl
   | _, _, ajJ .., _, hs, h => by
     unfold Sound at hs
     simp only [run, bind, Except.bind] at h; split at h
@@ -959,13 +953,10 @@ theorem enum_prog {n : Nat} (x : Arr .boolean n) {R : RelV .long .long} (h : (en
     corefl (fun i : Nat => i < 2 ^ 64) ≫ posL ≫ (R.Holds : Ob .long ⟶ Ob .long) = ix (CL.toList ys) ≫ graph Int64.ofNat := by
   simp only [run, bind, Except.bind] at h; split at h
   · cases h
-  rename_i w hw
-  split at h
-  · cases h
   cases h
-  rw [← (where_rel hs hw).2 ys hy]
+  rw [← (where_rel (x := x) hs).2 ys hy]
   exact (posL_iff fun i _ hi => Nat.lt_trans ((rel_iff _ i _).1 hi).1 (tilKey_lt (by assumption))).1
-    (arr_sound w.2 (by assumption))
+    (arr_sound (Find.where x).2 (by assumption))
 /-! ## Verbs over `!e`, `dom`, `enumC`, `count` (design §2.2–2.5) -/
 
 /-- `P ≫ (R ∪ (Q ≫ S))` is the union of its two branches as `run` composes them: `miss` and `χ` applied. -/
