@@ -889,6 +889,19 @@ def outl {k v w : Obj} (T : Rel k (.prod v w)) : Rel k v := ⟨T.n, T.key, T.val
 /-- `outr`: the second component's columns. -/
 def outr {k v w : Obj} (T : Rel k (.prod v w)) : Rel k w := ⟨T.n, T.key, T.val.2⟩
 
+/-- `R` with each key `x` read as `x + k`, the value kept: `Ew.val` add on the keys' dense payload
+    (`longBytes`, total on a long column) and on `til`, both at one count `m`, so the shifted keys and the
+    row index have one length (`Ew.val_size`). -/
+def shift {B : Obj} (R : Rel .long B) (k : Nat) : Rel .long B :=
+  let m := R.n.toUSize
+  let kb := (longBytes R.n R.key.enc).get (longBytes_isSome R.key)
+  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul kb (one k.toUInt64) m
+  let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
+  have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
+  have w : Kernel.Ew.width Ew.i64 = 8 := rfl
+  let a : Arr .long (len s) := Arr.mk (.bytes s) (by simp [Enc.WF, QAtomicType.width, len, s, KernelWF.Ew.val_size, w])
+  ⟨len i, h ▸ a, Vals.pick B R.val.parts i⟩
+
 theorem outl_holds {k v w : Obj} (T : Rel k (.prod v w)) (x : k.El) (y : v.El) :
     (outl T).Holds x y ↔ ∃ z, T.Holds x (y, z) :=
   ⟨fun ⟨i, h1, h2⟩ => ⟨T.val.2.row i, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.fst h2⟩⟩

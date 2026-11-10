@@ -2,7 +2,9 @@ import LeetQ.Rel.Algebra
 
 /-! AIMA §11.1.3, the blocks world (the Sussman anomaly) as relation algebra on the blocks. A block is the long
     `0 … 2` (A = 0, B = 1, C = 2). A state is one map `S : X ⟶ X`: `(b, y)` puts `b` on the block `y`, `(b, b)`
-    puts `b` on the table. Every relation below is `X ⟶ X`, composed in diagram order. -/
+    puts `b` on the table. The search names each state by a `long` id, `Λ`'s, and holds many states as one
+    relation `L : long ⟶ X×X`: `(i, (b, y))`, in state `i` the block `b` is on `y`. Composition is in diagram
+    order. -/
 
 namespace LeetQ.Rel.Blocks
 
@@ -10,10 +12,13 @@ open Alg QLean
 
 abbrev X : Obj := .long
 abbrev V := Rel X X
+abbrev XX : Obj := .prod X X
 
 /-- The 3 blocks. -/
 def xs := col [0, 1, 2]
 local instance : Univ X := ⟨_, xs⟩
+/-- `X×X`, every pair of blocks: what `⊤ : X ⟶ X×X` ranges over. -/
+local instance : Univ XX := ⟨_, (prod (𝟙 : V) 𝟙).key⟩
 
 /-- `S₀`, Init: C on A, A and B on the table. -/
 def S₀ : V := ofPairs [(0, 0), (1, 1), (2, 0)]
@@ -29,20 +34,76 @@ def M (S : V) : V := ∼((R S)° ≫ ⊤ ∪ ⊤ ≫ R S)
 /-- `S' ≜ (S ∩ ∼(p⊤)) ∪ p`: the move `p` replaces the row of its block. -/
 def move (S p : V) : V := (S ∩ ∼(p ≫ ⊤)) ∪ p
 
-/-- Breadth-first from `S₀` over the states, each reached once, to the first `S` with `G ⊑ S`; the moves as
-    `(b, y)` pairs, empty when no plan reaches `G`. Three blocks have at most `3³` maps, so `27` levels exhaust
-    the search. -/
-def plan : List (Int64 × Int64) := Id.run do
-  let mut seen : List V := [S₀]; let mut q : List (V × List (Int64 × Int64)) := [(S₀, [])]
-  for _ in [0:27] do
-    let mut next := []
-    for (S, ps) in q do
-      if G ⊑ S then return ps
-      for p in (M S).toList do
-        let S' := move S (ofPairs [p])
-        if !seen.any (· == S') then seen := S' :: seen; next := next ++ [(S', ps ++ [p])]
-    q := next
-  return []
+/-! ### Many states at once: `R`, `M`, `move` with the state as the key -/
+
+/-- `π₁, π₂ : X×X ⟶ X`, the two sides of `𝟙×𝟙`. -/
+def π₁ : Rel XX X := outl (prod 𝟙 𝟙)
+def π₂ : Rel XX X := outr (prod 𝟙 𝟙)
+
+/-- `⌊S⌋ : X×X ⟶ X×X`, the pairs of `S` as a coreflexive: `S ∩ T` per state is `L⌊T⌋`. -/
+def pts (S : V) : Rel XX XX := ran (pair 𝟙 S)
+
+/-- `S` as the level of the one state `0`. -/
+def lvl (S : V) : Rel .long XX := top (A := .long) (col [0]) xs ≫ pair 𝟙 S
+
+variable {I : Obj}
+
+/-- `⊤` per state: each state of `L` to every pair (a state is a map, so `Lπ₁` is every block). -/
+def all (L : Rel I XX) : Rel I XX := L ≫ π₁ ≫ ⊤
+
+/-- `R ≜ S ∩ ∼𝟙`, per state. -/
+def RL (L : Rel I XX) : Rel I XX := L ≫ pts (∼𝟙)
+
+/-- `M ≜ ∼(R°⊤ ∪ ⊤R)`, per state: per state a set of pairs `T` reads `R°⊤` as `Rπ₂π₁°` (the pairs whose
+    left a block rests on) and `⊤R` as `Rπ₂π₂°`. -/
+def ML (L : Rel I XX) : Rel I XX := all L \ RL L ≫ π₂ ≫ (π₁° ∪ π₂°)
+
+/-- `S' ≜ (S ∩ ∼(p⊤)) ∪ p`, per state: `p⊤` is `pπ₁π₁°`, the pairs of the moved block. -/
+def moveL (S p : Rel I XX) : Rel I XX := (S \ p ≫ π₁ ≫ π₁°) ∪ p
+
+/-- The states `i` of `L` with `G ⊑ Lᵢ`: no pair of `G` missing from `Lᵢ`. -/
+def hit (G : V) (L : Rel I XX) : Rel I I := dom L \ dom (all L ≫ pts G \ L)
+
+/-- Three blocks have at most `3³` maps: the bound on the states, so on the ids and on the levels. -/
+def N : Nat := 27
+
+/-- `<` on the ids `0 … N-1`. -/
+def lt : Rel .long .long :=
+  ofPairs ((List.range N).flatMap fun b => (List.range b).map fun a => (Int64.ofNat a, Int64.ofNat b))
+
+/-- The least value of each key of `Q`. -/
+def least (Q : Rel I .long) : Rel I .long := Q \ Q ≫ lt
+
+/-- One round of the breadth-first search on `(St, L, P, d)`: `St` every state seen, `L` the last level, both
+    keyed by the state id; `P : id ⟶ (k, m)` the path, `m` its `k`-th move; `d` the round. Each state `i` of `L`
+    and move `m` of `ML` is the candidate `c = (i, m)`, `par`, `mv` its sides, `F'` its state. `Λ(F')` names
+    equal states once, `symDiv` against `St` drops the seen ones, `Λ` again numbers the rest `0 … f-1`, and
+    `shift` moves them past `St`'s ids. A new state's path is its `least` parent's and its move. -/
+def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat →
+    Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat
+  | (St, L, P, d) =>
+    let c := ran (pair (dom (ML L)) (ML L)); let par := outl c; let mv := outr c
+    let F' := moveL (par ≫ L) mv
+    let E := (dom ∋(F') \ dom (symDiv ∋(F') St (Vals.empty _) (Vals.empty _))) ≫ ∋(F')
+    let L' := shift ∋(E) (dom St).n
+    let cand := shift (Λ(F') ≫ Λ(E))° (dom St).n
+    let pick := cand ∩ least (cand ≫ par) ≫ par°
+    (St ∪ L', L', P ∪ pick ≫ (par ≫ P ∪ pair (mv ≫ π₁ ≫ top xs (col [Int64.ofNat d])) mv), d + 1)
+
+/-- `steps : k ⟶ m`, the `k`-th move of a shortest plan from `S` to `G`, empty when none: rounds from `S` until
+    `St` holds `G` or a level is empty, the path of the least goal id. -/
+def steps (S G : V) : Rel .long XX :=
+  match iter N (fun (St, L, _) => L ⊑ zero || !(hit G St ⊑ zero)) round (lvl S, lvl S, zero, 0) with
+  | (St, _, P, _) =>
+    let h := hit G St; let p := ran ((h \ ran (h ≫ lt)) ≫ P)
+    (outl p)° ≫ outr p
+
+/-- The plan as a list: `steps` in the order of `k`. -/
+def solve (S G : V) : List (Int64 × Int64) :=
+  ((steps S G).toList.mergeSort fun a b => decide (a.1 ≤ b.1)).map (·.2)
+
+/-- The Sussman anomaly's plan. -/
+def plan : List (Int64 × Int64) := solve S₀ G
 
 section Checks
 
@@ -54,10 +115,24 @@ private def after : V := plan.foldl (fun S p => move S (ofPairs [p])) S₀
 #guard sorted (M S₀) == [[1, 1], [1, 2], [2, 1], [2, 2]]
 -- all three on the table: every move is allowed
 #guard sorted (M 𝟙) == [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+-- the per-state versions on a one-state level are the single-state ones
+#guard RL (lvl S₀) == lvl (R S₀)
+#guard ML (lvl S₀) == lvl (M S₀)
+#guard ML (lvl 𝟙) == lvl (M 𝟙)
+#guard moveL (lvl S₀) (lvl (ofPairs [(2, 2)])) == lvl (move S₀ (ofPairs [(2, 2)]))
+private def St : Rel .long XX := (iter N (fun _ => false) round (lvl S₀, lvl S₀, zero, 0)).1
+-- the whole search: the 13 states of three blocks, ids `0 … 12`, each state under one id
+#guard dom St == idU (col ((List.range 13).map Int64.ofNat))
+#guard symDiv St St (Vals.empty _) (Vals.empty _) == dom St
 -- MoveToTable C, Move B onto C, Move A onto B
 #guard plan == [(2, 2), (1, 2), (0, 1)]
 #guard (G ⊑ S₀) == false
 #guard G ⊑ after
+#guard hit G (lvl S₀) ⊑ zero
+-- from all on the table: Move B onto C, Move A onto B
+#guard solve 𝟙 G == [(1, 2), (0, 1)]
+-- A on B and B on A: no state holds it
+#guard solve 𝟙 (ofPairs [(0, 1), (1, 0)]) == []
 
 -- the operators are the only way a program writes these ops: the names must not resolve
 /-- error: Unknown identifier `Alg.comp` -/
