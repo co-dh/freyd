@@ -226,7 +226,8 @@ Not liftable:
 
 - The index of a lifted body is the product of the distinct indices of its family arguments. Arguments of one
   index object share the key: `S'(π₁∋,π₂)` has two families of index `St×(X×X)`, read at the same candidate.
-  Arguments of different indices `I`, `J` give `I×J`, each re-keyed on demand (`S` at `I` becomes `π₁S`).
+  Arguments of different indices `I`, `J` give `I×J`, each re-keyed on demand (`S` at `I` becomes `π₁S`); a
+  third `K` gives `(I×J)×K`, in the order the arguments first name them (`Lang/Test.lean` guards `St×N`).
 - A closed relation in the body (`G`, `𝟙`, `⊤`, a literal) or a plain argument takes the closed row.
 - A defined operator applied inside a lifted body to a lifted term runs lifted at the same index (`R(S)` in
   `M`); applied to closed terms it runs plainly and enters by the closed row.

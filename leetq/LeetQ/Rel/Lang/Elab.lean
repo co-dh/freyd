@@ -615,18 +615,44 @@ def bind (env : Env) (p : Pos) (P : Param) (a : Arg) : M ((String × Arg) × Opt
         let s := zonk st s; let t := zonk st t
         throw ⟨p, s!"'{P.name} : {A} ⟶ {B}' given {s} ⟶ {t}: neither {A} ⟶ {B} nor a family I ⟶ {A}×{B}"⟩
 
+/-- The projection of `(I₀×I₁)×…×Iₙ`, left-nested over the factors `ix`, onto the factor `k`. -/
+def proj (ix : Array OTy) (k : Nat) : Pre := go (ix.size - 1)
+where
+  pre (m : Nat) : OTy := (ix.toList.take (m + 1)).tail.foldl .prod (ix.toList.headD default)
+  go : Nat → Pre
+    | 0 => .id (pre 0)
+    | m + 1 =>
+      if m + 1 == k then .outr (pre m) (ix.toList.getD (m + 1) default)
+      else if m + 1 > k then .comp (.outl (pre m) (ix.toList.getD (m + 1) default)) (go m)
+      else .id (pre (m + 1))
+
 /-- A definition with parameters: its body elaborated at each use, lifted when a declared parameter is given
     a family; a test `e ⊑ f` is the coreflexive `D − dom(R − S)` of the keys whose fibres pass. -/
 def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
   arity := ps.length
   apply p args := do
     let bs ← (ps.zip args).mapM fun (P, a) => bind env p P a
-    let idx ← match bs.filterMap (·.2) with
-      | [] => pure none
-      | i :: is => do
-        for j in is do unify p "the indices of two families (only one index is supported)" j i
-        pure (some i)
-    let env' := { env with params := bs.map (·.1) }
+    -- the distinct indices `I₀ … Iₙ` of the family arguments, and each family's place among them (§e, mixed terms)
+    let mut ix : Array OTy := #[]
+    let mut pl : List (Option Nat) := []
+    for (_, j?) in bs do
+      match j? with
+      | none => pl := pl ++ [none]
+      | some j =>
+        let mut k? : Option Nat := none
+        for (i, k) in ix.toList.zipIdx do
+          if k?.isNone then
+            let st ← get
+            try unify p "" j i; k? := some k catch _ => set st
+        match k? with
+        | some k => pl := pl ++ [some k]
+        | none => pl := pl ++ [some ix.size]; ix := ix.push j
+    -- several indices: the body runs at `(I₀×I₁)×…`, each family re-keyed by its projection
+    let idx := ix.toList.head?.map fun i => ix.toList.tail.foldl .prod i
+    let bound := (bs.zip pl).map fun (((n, a), _), k?) => match a, k?, idx with
+      | .fam q _ s t, some k, some P => if ix.size > 1 then (n, .fam (.comp (proj ix k) q) P s t) else (n, a)
+      | _, _, _ => (n, a)
+    let env' := { env with params := bound }
     match body, idx with
     | .rel e, none => elabE env' none e
     | .rel e, some I => do

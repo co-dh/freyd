@@ -50,6 +50,18 @@ def orders : Except Err Out := runText (blocks ++ "O ≜ {(A,A),(A,B),(A,C),(B,B
   "check Qlc(∋) = Q∋\ncheck Qlf(∋,Of) = Qlc(∋)\ncheck Qlf(Y(∋),Of) = Qlc(Y(∋))\n" ++
   "check Qtf(∋,Of) = Qtc(∋)\ncheck Qtf(Y(∋),Of) = Qtc(Y(∋))\nprint s₀lf(Y(∋),Of)\nprint s₀tf(Y(∋),Of)\n")
 
+/-- A body given families of two indices, `∋` at `St` and `ζ∋` at `N` (the `k`-th state's pairs), runs at
+    `St×N`: the fibre at `(s,k)` is `s ∩ ζ(k)`. Against the same meet written by hand, and at `(s₀,0)`, `(s₀,1)`. -/
+def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) ≜ S ∩ T\n" ++
+  "check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩dom(π₁ ∩ π₂)π₁\n" ++
+  "print (s₀×{(0,0)})k(∋,ζ∋)\nprint (s₀×{(1,1)})k(∋,ζ∋)\n")
+
+-- `ζ(0) = S₀`; `ζ(1)` is `S₀` with `C` moved to the table
+#guard (ok twoIdx).prints.drop 1 == [
+  "(s₀ × {(0, 0)}) k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 0), (A, A)), (({(A, A), (B, B), (C, A)}, 0), (B, B)), " ++
+    "(({(A, A), (B, B), (C, A)}, 0), (C, A))}",
+  "(s₀ × {(1, 1)}) k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 1), (A, A)), (({(A, A), (B, B), (C, A)}, 1), (B, B))}"]
+
 -- at `S₀`, `∼S₀` gives `A` the values `B C`, `B` the values `A C`, `C` the values `B C`: the least of each
 #guard (ok orders).prints.drop 1 == [
   "s₀ lf(Y(∋), Of) = {({(A, A), (B, B), (C, A)}, (A, B)), ({(A, A), (B, B), (C, A)}, (B, A)), " ++
