@@ -29,11 +29,9 @@ def seq : List V → V
 def unions (rs : List V) : V := rs.foldl (· ∪ ·) zero
 
 /-- `R*`, the union of the powers `R⁰ … R⁷`: no step on the board repeats more than 7 times, so `R⁸` adds
-    nothing for the step tables `R` is built from. -/
-def star (R : V) : V := Id.run do
-  let mut p : V := 𝟙; let mut a := p
-  for _ in [0:7] do p := p ≫ R; a := a ∪ p
-  return a
+    nothing for the step tables `R` is built from; an empty power ends it early. -/
+def star (R : V) : V :=
+  (iter 7 (fun (p, _) => p ⊑ zero) (fun (p, a) => let q := p ≫ R; (q, a ∪ q)) ((𝟙 : V), (𝟙 : V))).2
 
 /-! ## Constant tables -/
 

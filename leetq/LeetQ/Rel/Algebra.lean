@@ -997,6 +997,12 @@ def hylo {α : Type} (μ : α → Nat) (done : α → Bool) (step : α → α)
 termination_by μ x
 decreasing_by exact dec x (Bool.eq_false_iff.2 h)
 
+/-- `f` from `a` until `done`, at most `n` rounds: `hylo` with the rounds left as its measure, so a caller
+    bounds the iteration by a count instead of proving a measure of its own. -/
+def iter {α : Type} (n : Nat) (done : α → Bool) (f : α → α) (a : α) : α :=
+  (hylo (·.1) (fun x => x.1 == 0 || done x.2) (fun x => (x.1 - 1, f x.2))
+    (fun x h => by simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h; show x.1 - 1 < x.1; omega) (n, a)).2
+
 /-- `est(≤)` (`desc`: `est(≥)`) of a family of longs: `overGroups` lesser/greater per key. -/
 def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
   foldGroups (if desc then .greater else .lesser) G
