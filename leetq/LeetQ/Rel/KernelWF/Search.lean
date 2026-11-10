@@ -360,9 +360,76 @@ theorem binColumn_guid (r : Bool) (n : Nat) (b : ByteArray) (m : Nat) (nb : Byte
     binColumn .guid r n (.bytes b) (.vector .guid m (.bytes nb) a) =
       some (.vector .long m (.bytes (binWide 16 r b nb)) none) := rfl
 
+/-! ### Symbols -/
+
+/-- A `Nat.fold` that pushes eight bytes a step writes `8 * k`. -/
+theorem fold_size8 : ∀ (k : Nat) (f : (i : Nat) → i < k → ByteArray → ByteArray),
+    (∀ i h acc, (f i h acc).size = acc.size + 8) → ∀ init, (Nat.fold k f init).size = init.size + k * 8
+  | 0, _, _, init => by simp
+  | k + 1, f, hf, init => by
+    rw [Nat.fold_succ, hf, fold_size8 k _ (fun i h acc => hf i _ acc)]; simp [Nat.succ_mul]; omega
+
+/-- A `Nat.fold` that pushes one offset a step pushes `k`. -/
+theorem fold_offs : ∀ (k : Nat) (f : (i : Nat) → i < k → ByteArray × Array Nat → ByteArray × Array Nat),
+    (∀ i h p, (f i h p).2.size = p.2.size + 1) → ∀ init, (Nat.fold k f init).2.size = init.2.size + k
+  | 0, _, _, init => by simp
+  | k + 1, f, hf, init => by
+    rw [Nat.fold_succ, hf, fold_offs k _ (fun i h p => hf i _ p)]; omega
+
+theorem longsByIds_size (vals : ByteArray) (nv n w : USize) (ids : ByteArray) :
+    (longsByIds vals nv n w ids).size = n.toNat * 8 := by
+  simp only [longsByIds]
+  rw [fold_size8 _ _ (fun _ _ _ => Column.pushBits_size ..)]; simp; rfl
+
+theorem findSymKeys_size {n : Nat} {e : Enc} {kb : ByteArray} {ko : Array Nat} {out : ByteArray}
+    (h : findSymKeys n e kb ko = some out) : out.size = (ko.size - 1) * 8 := by
+  unfold findSymKeys at h
+  split at h <;> cases h
+  · simp only [findSymVec]; rw [foldl_size ByteArray.size _ 8 (fun _ _ => Column.pushBits_size ..)]; simp
+  · simp only [findSymIdsVec]; rw [fold_size8 _ _ (fun _ _ _ => Column.pushBits_size ..)]; simp
+
+theorem fewSyms_offs {n : Nat} {e : Enc} {nb : ByteArray} {no : Array Nat} (h : fewSyms n e = some (nb, no)) :
+    no.size = n + 1 := by
+  unfold fewSyms at h
+  split at h
+  · split at h
+    · have h2 := congrArg (fun p : ByteArray × Array Nat => p.2.size) (Option.some.inj h)
+      simp only at h2
+      rw [← h2, fold_offs _ _ (fun _ _ p => by cases p; simp)]; simp; omega
+    · cases h
+  · cases h
+
+/-- `x?y` at a symbol needle column is `findSymColumn`'s answer as a long column. -/
+theorem findColumn_symbol (s : Bool) (n : Nat) (e : Enc) (m : Nat) (ne : Enc) (a : Option (UInt8 × IndexCell)) :
+    findColumn .symbol s n e (.vector .symbol m ne a) =
+      (findSymColumn n e m ne).map fun out => .vector .long (out.size / 8) (.bytes out) none := rfl
+
+theorem findSymColumn_size {xn n : Nat} {xe ne : Enc} {out : ByteArray} (hy : Enc.WF .symbol n ne)
+    (hn : n < USize.size) (h : findSymColumn xn xe n ne = some out) : out.size = n * 8 := by
+  unfold findSymColumn at h
+  cases hf : fewSyms n ne with
+  | some p =>
+    obtain ⟨nb, no⟩ := p
+    simp only [hf] at h
+    simp at h
+    rw [findSymKeys_size h, fewSyms_offs hf]; simp
+  | none =>
+    simp only [hf] at h
+    rcases symbol_cases hy with ⟨b, o, rfl⟩ | ⟨d, o, i, rfl⟩
+    · simp only [symKeys, Enc.WF] at h hy
+      simp at h
+      rw [findSymKeys_size h, hy]; simp
+    · simp only [symKeys] at h
+      cases hk : findSymKeys xn xe d o with
+      | none => simp [hk] at h
+      | some keys =>
+        simp [hk] at h
+        subst h
+        rw [longsByIds_size, USize.toNat_ofNat_of_lt' hn]
+
 /-- **`x?y` answers one long per needle** at every type with a fixed-width or bit layout. -/
 theorem findColumn_wf {t : QAtomicType} {s : Bool} {nx ny : Nat} {ex ey : Enc} {a : Option (UInt8 × IndexCell)}
-    {v : QValue} (hx : Enc.WF t nx ex) (hy : Enc.WF t ny ey) (ht : t ≠ .symbol) (hn : ny < USize.size)
+    {v : QValue} (hx : Enc.WF t nx ex) (hy : Enc.WF t ny ey) (hn : ny < USize.size)
     (h : findColumn t s nx ex (.vector t ny ey a) = some v) :
     ∃ e', v = .vector .long ny e' none ∧ Enc.WF .long ny e' := by
   cases hd : denseWidth t with
@@ -385,7 +452,10 @@ theorem findColumn_wf {t : QAtomicType} {s : Bool} {nx ny : Nat} {ex ey : Enc} {
   | none =>
     cases t <;> simp [denseWidth, QAtomicType.width] at hd
     case general => cases ex <;> simp [Enc.WF, QAtomicType.width] at hx; cases h
-    case symbol => exact absurd rfl ht
+    case symbol =>
+      rw [findColumn_symbol] at h
+      obtain ⟨out, ho, rfl⟩ := Option.map_eq_some_iff.1 h
+      exact long_answer (findSymColumn_size hy hn ho)
     case boolean =>
       cases ex <;> cases ey <;> simp [Enc.WF, QAtomicType.width] at hx hy
       rw [findColumn_bits] at h; cases h
