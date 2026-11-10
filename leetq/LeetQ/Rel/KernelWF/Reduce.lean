@@ -173,6 +173,23 @@ theorem overColumn_isSome {op : Coc.Over} {t : QAtomicType} {n : Nat} {e : Enc} 
     cases op <;> simp
   all_goals simp [overColumn, overFoR, clsOf, Coc.denseNul, narrowed_isSome]
 
+/-- q's `f/` of a vector of atoms answers an atom: only a general list's fold is general. -/
+theorem resultType_ne_general (op : Coc.Over) (avg : Bool) {t : QAtomicType} (ht : t ≠ .general) :
+    (op.resultType avg t).all (· != .general) = true := by
+  cases t <;> (try exact absurd rfl ht) <;> cases op <;> cases avg <;> decide
+
+/-- **`overAtom` answers** wherever q types `f/` (`hr`) and `overColumn` reads the column (`overColumn_isSome`'s
+    hypothesis): a type with an integral null at any layout, a boolean, a dense `byte`/`char`. No count bound. -/
+theorem overAtom_isSome {op : Coc.Over} {t rt : QAtomicType} {n : Nat} {e : Enc} (hr : op.resultType false t = some rt)
+    (hw : Enc.WF t n e)
+    (h : (Coc.nullOf t).isSome ∨ t = .boolean ∨ ((t = .byte ∨ t = .char) ∧ ∃ b, e = .bytes b)) :
+    (overAtom op t rt n e).isSome := by
+  have hg : rt ≠ .general := by
+    have ht : t ≠ .general := by rintro rfl; simp [Coc.nullOf] at h
+    have := resultType_ne_general op false ht; rw [hr] at this; simpa using this
+  obtain ⟨y, hy⟩ := Option.isSome_iff_exists.1 (overColumn_isSome (op := op) hw h)
+  simp [overAtom, hr, hg, hy]
+
 
 /-! ## `groupedOver`: `select f x by k` -/
 

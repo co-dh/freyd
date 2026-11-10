@@ -125,7 +125,7 @@ def lastBy (P : Parted t) (_hne : ∀ j : Fin P.g, P.o.get j.castSucc < P.o.get 
 def overBy (op : Coc.Over) (P : Parted t) : Option ((rt : QAtomicType) × Arr rt P.g) := do
   let rt ← op.resultType false t
   let s ← groupedOver op false false t (.segs (← offs P.o)) P.n P.val.enc (tilLongs P.g.toUSize)
-  pure ⟨rt, ← (Arr.of rt P.g (.vector rt P.g (.bytes s) none) "f/ by").toOption⟩
+  pure ⟨rt, ← (Arr.of rt P.g (.vector rt P.g s none) "f/ by").toOption⟩
 
 /-! ## Moving windows: `w mop x`, key kept -/
 
@@ -532,9 +532,10 @@ theorem resultType_long {op : Coc.Over} (hb : op.boolCast = false) : op.resultTy
 /-- `groupedOver` at `long`: the integral fold, each cell its slot's eight bytes. -/
 theorem groupedOver_long {op : Coc.Over} (hb : op.boolCast = false) (gs : Groups) (n : Nat) (e : Enc) (ord : ByteArray) :
     groupedOver op false false .long gs n e ord =
-      (overGroupsColumn op .long gs n e).map fun m => groupCells .wrap 8 gs.count m ord := by
+      (overGroupsColumn op .long gs n e).map fun m => .bytes (groupCells .wrap 8 gs.count m ord) := by
   have hr := resultType_long hb
-  cases h : overGroupsColumn op .long gs n e <;> cases op <;> simp_all [groupedOver, bind, Option.bind] <;> rfl
+  cases h : overGroupsColumn op .long gs n e <;> cases op <;>
+    simp_all [groupedOver, bind, Option.bind, Column.alpEncodes, QAtomicType.width] <;> try rfl
 
 /-- Offset `j` of `o` is the long `atI64` reads at `j` of its dense payload. -/
 theorem offs_get {g : Nat} {o : Arr .long (g+1)} {ob : ByteArray} (ho : o.enc = .bytes ob) {j : Nat}
