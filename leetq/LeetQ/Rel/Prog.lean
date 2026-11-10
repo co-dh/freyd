@@ -62,7 +62,7 @@ def cstVal {K t u : QAtomicType} (e : El u) (R : Rel K t) : Except String (Rel K
 /-- `Λ(G) ≫ enum ≫ length`: `countBy` of the carrier's segments, keyed by the carrier's keys. -/
 def lamCount (G : Rel A .long) : Except String (Rel A .long) := do
   let F ← transposeP G
-  let some r := Ops.countBy F.2.2 | throw "count by: no kernel"
+  let r := Ops.countBy F.2.2
   pure ⟨F.1, F.2.1, ← Arr.ofPart .long F.1 r.part "count by"⟩
 
 end Alg

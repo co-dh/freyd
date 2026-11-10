@@ -19,6 +19,7 @@ import QLean.Verify.Structural
 import QLean.Verify.BinWin
 import QLean.Verify.Dyad
 import QLean.Verify.ScanOver
+import LeetQ.Rel.KernelWF.Reduce
 
 namespace LeetQ.Rel
 
@@ -60,9 +61,41 @@ def ends (g : Nat) (ob : ByteArray) : ByteArray := ob.extract 8 (8 * (g+1))
 def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
 
-/-- `count each` by group: `1_deltas o`. -/
-def countBy {v : QAtomicType} (P : Parted v) : Option (Arr .long P.g) := do
-  (Arr.of .long P.g (.vector .long P.g (.bytes (sizes P.g (← offs P.o))) none) "count each").toOption
+/-- The column of `f` over `vs`, through `Enc.ofAtoms`, which answers every count: the kernel-free answer. -/
+def atomsOf {α : Type} {m : Nat} (t : QAtomicType) (hg : t ≠ .general) (f : α → QAtom) (hf : ∀ v, (f v).type = t)
+    (vs : List α) (hm : vs.length = m) : Arr t m :=
+  have ha : ∀ a ∈ (vs.map f).toArray, a.type = t := fun a h => by
+    obtain ⟨v, -, rfl⟩ := List.mem_map.1 (by simpa using h); exact hf v
+  Arr.mk ((Enc.ofAtoms t (vs.map f).toArray hg).get (Column.ofAtoms_isSome hg ha))
+    (by simpa [hm] using Column.ofAtoms_WF ha (Option.some_get (Column.ofAtoms_isSome hg ha)).symm)
+
+/-- A long column's dense payload: `Enc.WF .long` admits only `bytes` and `foR`, both of which decode. -/
+def denseOf {nx : Nat} (x : Arr .long nx) : ByteArray :=
+  (Enc.bytesOf .long nx x.enc).get (KernelWF.bytesOf_isSome (by decide) (by decide) x.wf)
+
+theorem denseOf_eq {nx : Nat} {x : Arr .long nx} {b : ByteArray} (h : Enc.bytesOf .long nx x.enc = some b) :
+    denseOf x = b := Option.some.inj ((Option.some_get _).trans h)
+
+/-- A pass pushing one `ow`-byte word per element of `til m` writes `m * ow` bytes. -/
+theorem foldl_push_size (f : Nat → UInt64) (ow : Nat) (how : ow ≤ 8) (m : Nat) :
+    ((List.range m).foldl (fun out i => Column.pushBits out (f i) ow) ByteArray.empty).size = m * ow := by
+  rw [(Verify.foldl_pushBits f ow how (List.range m) .empty).1]; simp [Nat.mul_comm]
+
+/-- `sizes` writes one long per group. -/
+theorem sizes_size {g : Nat} (B : ByteArray) (hg : g < USize.size) : (sizes g B).size = g * 8 := by
+  have e : sizes g B = (List.range g).foldl (fun out i => Column.pushBits out
+      ((Ew.intStep Ew.sub Int64.minValue (Column.bitsAt (ends g B) (i * 8) 8).toInt64
+        (Column.bitsAt (B.extract 0 (8 * g)) (i * 8) 8).toInt64).toUInt64) 8) ByteArray.empty := by
+    unfold sizes Ew.val; rw [USize.toNat_ofNat_of_lt' hg]; rfl
+  rw [e, foldl_push_size _ 8 (by decide)]
+
+/-- `count each` by group: `1_deltas o`, by the kernel where the count fits a `USize`, else the same
+    differences read off `o`'s elements. -/
+def countBy {v : QAtomicType} (P : Parted v) : Arr .long P.g :=
+  if h : P.g < USize.size then
+    Arr.mk (.bytes (sizes P.g (denseOf P.o))) (KernelWF.wf_bytes (w := 8) (by decide) rfl (sizes_size _ h))
+  else atomsOf .long (by decide) QAtom.long (fun _ => rfl)
+    (List.ofFn fun j : Fin P.g => P.o.get j.succ - P.o.get j.castSucc) (List.length_ofFn ..)
 
 /-- `last each` by group: `x[-1+1_o]`. `none` when a group is empty, which has no last row. -/
 def lastBy (P : Parted t) : Option (Arr t P.g) := do
@@ -951,12 +984,6 @@ theorem int32_count (L : Nat) : (UInt64.ofNat (L % 2 ^ 32)).toUInt32.toInt32 = I
     omega
   rw [this]; rfl
 
-/-- A pass pushing one `ow`-byte word per element of `til m` writes `m * ow` bytes: the size a kernel
-    answer's header must carry, which `Arr.of` checks. -/
-theorem foldl_push_size (f : Nat → UInt64) (ow : Nat) (how : ow ≤ 8) (m : Nat) :
-    ((List.range m).foldl (fun out i => Column.pushBits out (f i) ow) ByteArray.empty).size = m * ow := by
-  rw [(Verify.foldl_pushBits f ow how (List.range m) .empty).1]; simp [Nat.mul_comm]
-
 /-- `mwinColumn` over a long column that lists `longWords`, at a verb that reads it as `i64` and writes
     `rt`'s width: `mwinBits` over the dense payload `Arr.dense_long` names, whichever form the column is in. -/
 theorem mwin_long {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mwinType op .long = some rt)
@@ -1321,28 +1348,16 @@ theorem sizes_words {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {B : ByteA
   simp only [Ew.intStep, e0, e1, Bool.or_false, show (Ew.sub == Ew.add) = false by decide,
     show (Ew.sub == Ew.sub) = true by decide, if_true, Bool.false_eq_true, if_false]
 
-/-- `sizes` writes one long per group: the size `Arr.of` checks the count's header against. -/
-theorem sizes_size {g : Nat} (B : ByteArray) (hg : g < USize.size) : (sizes g B).size = g * 8 := by
-  have e : sizes g B = (List.range g).foldl (fun out i => Column.pushBits out
-      ((Ew.intStep Ew.sub Int64.minValue (Column.bitsAt (ends g B) (i * 8) 8).toInt64
-        (Column.bitsAt (B.extract 0 (8 * g)) (i * 8) 8).toInt64).toUInt64) 8) ByteArray.empty := by
-    unfold sizes Ew.val; rw [USize.toNat_ofNat_of_lt' hg]; rfl
-  rw [e, foldl_push_size _ 8 (by decide)]
-
 /-- **`count each` by group**: `1_deltas o`, each group's size, at any value type and any offsets that list
     `longWords`. `Cuts` keeps every offset in `[0, n]`, so no `0N` reaches `Ew.sub` and no difference wraps. -/
 theorem countBy_toList {v : QAtomicType} {n g : Nat} {o : Arr .long (g+1)} {co : Cuts o n}
-    {x : Arr v n} {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size)
-    {S : Arr .long g} (h : countBy ⟨g, n, o, co, x⟩ = some S) :
-    S.toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
+    {x : Arr v n} {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size) :
+    (countBy ⟨g, n, o, co, x⟩).toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
   obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
-  have hof : offs o = some B := hb
-  simp only [countBy, hof, bind, Option.bind] at h
-  simp only [Arr.of] at h
-  split at h
-  · rename_i hw
-    have hS : S.enc = .bytes (sizes g B) := by cases h; rfl
-    rw [Arr.toList_long S (show longWords g S.enc = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
+  have hd : denseOf o = B := denseOf_eq hb
+  have hS : (countBy ⟨g, n, o, co, x⟩).enc = .bytes (sizes g B) := by
+    simp only [countBy, dif_pos (show g < USize.size by omega), hd]; rfl
+  · rw [Arr.toList_long _ (show longWords g (countBy ⟨g, n, o, co, x⟩).enc = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
       sizes_words co (toList_words o ho hBw hBs) (by omega), Spec.countBy, Spec.groups_range,
       List.length_map, Arr.length_toList, Nat.add_sub_cancel, List.map_map, List.map_map]
     refine List.map_congr_left fun j hj => ?_
@@ -1354,8 +1369,6 @@ theorem countBy_toList {v : QAtomicType} {n g : Nat} {o : Arr .long (g+1)} {co :
       List.length_take, List.length_drop, Arr.length_toList, Int64.toInt64_toUInt64]
     congr 1
     omega
-  · rename_i hw
-    cases h
 
 /-- **`last each` by group over a long column**: the last row of each group. An answer means no group
     is empty — `lastBy` reads that off `min` of the sizes, here `over_bytes` and `over_lesser_le` — so
@@ -1648,9 +1661,9 @@ private def GI : Parted .int :=
       (by decide)⟩
 #guard vals (at? .int (overBy .add GI)) == [30, 30, 90]
 #guard vals (at? .int (overBy .greater GI)) == [20, 30, 50]
-#guard vals (countBy G) == Spec.countBy [0, 2, 3, 6] gv
-#guard vals (countBy E) == [1, 0, 2] ∧ vals (countBy E) == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
-#guard (do let b := G.box; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R countBy).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
+#guard (countBy G).toList == Spec.countBy [0, 2, 3, 6] gv
+#guard (countBy E).toList == [1, 0, 2] ∧ (countBy E).toList == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
+#guard (do let b := G.box; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R fun P => some (countBy P)).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
 #guard vals (lastBy G) == Spec.lastBy [0, 2, 3, 6] gv
 #guard (lastBy E).isNone
 #guard vals (at? .long (overBy .add G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))

@@ -869,14 +869,13 @@ theorem xasc_rel {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords n s
 
 /-- `count each` by the cuts `o`:`corefl(<g) ≫ grpL(grp o) ≫ list(x) ≫ length`, as a long. -/
 theorem countBy_rel {v : QAtomicType} {g : Nat} {o : Arr .long (g+1)} {co : Cuts o n} {x : Arr v n}
-    {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size) {S : Arr .long g}
-    (h : Ops.countBy ⟨g, n, o, co, x⟩ = some S) :
-    S.rel = corefl (· < g) ≫ grpL (grp o) ≫ ListRel.list x.rel ≫ ListRel.length
+    {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size) :
+    (Ops.countBy ⟨g, n, o, co, x⟩).rel = corefl (· < g) ≫ grpL (grp o) ≫ ListRel.list x.rel ≫ ListRel.length
       ≫ (graph Int64.ofNat : (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Int64⟩ : RelSet.{0})) :=
-  calc S.rel = ix ((Spec.groups (o.toList.map Int64.toNatClampNeg) x.toList).map fun l =>
+  calc (Ops.countBy ⟨g, n, o, co, x⟩).rel = ix ((Spec.groups (o.toList.map Int64.toNatClampNeg) x.toList).map fun l =>
           Int64.ofNat (ListRel.clen (CL.ofList l))) := by
-        show ix S.toList = _
-        rw [Ops.countBy_toList ho hg h, Spec.countBy]; simp only [clen_ofList]
+        show ix (Ops.countBy ⟨g, n, o, co, x⟩).toList = _
+        rw [Ops.countBy_toList ho hg, Spec.countBy]; simp only [clen_ofList]
     _ = corefl (· < g) ≫ grpL (grp o) ≫ ListRel.list x.rel
           ≫ (graph fun ys => Int64.ofNat (ListRel.clen ys) : dList (El v) ⟶ (⟨Int64⟩ : RelSet.{0})) :=
         ix_groups co x fun ys => Int64.ofNat (ListRel.clen ys)
