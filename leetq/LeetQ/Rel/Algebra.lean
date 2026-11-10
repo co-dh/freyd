@@ -21,6 +21,7 @@ import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
 import LeetQ.Rel.Parted
+import LeetQ.Rel.KernelWF.Reduce
 
 namespace LeetQ.Rel.Alg
 
@@ -260,12 +261,11 @@ def raze (t : QAtomicType) (cs : Array ((n : Nat) × Arr t n)) : (n : Nat) × Ar
     have hw : ∀ c ∈ ps, Enc.WF t c.1 c.2 ∧ c.1 < USize.size := fun c hc => by
       obtain ⟨x, -, rfl⟩ := Array.mem_map.1 hc; exact ⟨x.2.wf, hb.1 _ hc⟩
     have hs := KernelWF.razeColumn_isSome (by simpa [ps] using h0) hg hw
-    by
-      have hr := KernelWF.razeColumn_wf hw hb.2 (Option.some_get hs).symm
-      revert hr
-      cases (razeColumn t ps).get hs with
-      | vector _ m e _ => exact fun hr => ⟨m, Arr.mk e (by obtain ⟨n, e', he, hwf⟩ := hr; cases he; exact hwf)⟩
-      | _ => exact fun hr => False.elim (by obtain ⟨n, e', he, -⟩ := hr; cases he)
+    -- the answer itself, at the count `razeColumn_count` proves, so `raze_len` reads it off
+    ⟨ps.foldl (fun s c => s + c.1) 0, ⟨(razeColumn t ps).get hs, by
+      obtain ⟨n, e, he, hwf⟩ := KernelWF.razeColumn_wf hw hb.2 (Option.some_get hs).symm
+      have hn := KernelWF.razeColumn_count hw (by rw [← he]; exact (Option.some_get hs).symm)
+      rw [he]; subst hn; exact ⟨rfl, rfl, hwf⟩⟩⟩
   else
     -- counts past `USize` are no input a process holds; the same concatenation read through the parts'
     -- atoms and rebuilt by `Enc.ofAtoms` answers there, since `razeColumn`'s count arithmetic would wrap.
@@ -824,12 +824,13 @@ def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A .general) := 
   family (cols (comp G R))
 
 /-- `⟨R, S⟩`: `join` on the keys → rows `(x, (y, z))`, both value sides kept under one `n` as the
-    columns of one product side. -/
-def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Except String (Rel A (.prod B C)) := do
+    columns of one product side; the left index column read at the right's count (`join_len`), as `comp`. -/
+def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Rel A (.prod B C) :=
   let r := cols R; let s := cols S
   let kc := A.codes #v[r.key, s.key]
-  let (i, j) := join kc[0] kc[1]
-  pure (ofCols A (.prod B C) (A.pick r.key i) (B.pick r.val i, C.pick s.val j))
+  let ij := join kc[0] kc[1]
+  let h := join_len kc[0] kc[1]
+  ⟨len ij.2, Vals.pickN A r.key ij.1 (len ij.2) h, (Vals.pickN B r.val ij.1 (len ij.2) h, Vals.pick C s.val ij.2)⟩
 
 /-- `outl`: the first component's columns, nothing runs. -/
 def outl {k v w : Obj} (T : Rel k (.prod v w)) : Rel k v := ⟨T.n, T.key, T.val.1⟩
@@ -845,11 +846,12 @@ theorem outr_holds {k v w : Obj} (T : Rel k (.prod v w)) (x : k.El) (z : w.El) :
   ⟨fun ⟨i, h1, h2⟩ => ⟨T.val.1.row i, i, h1, by subst h2; rfl⟩, fun ⟨_, i, h1, h2⟩ => ⟨i, h1, congrArg Prod.snd h2⟩⟩
 
 /-- `R × S` as a relation of its own, `(x, x') ⟶ (y, y')`: `cross` of the rows of `R` and of `S`.
-    `Δ(R)` is `prod R R`. -/
-def prod {A B D E : Obj} (R : Rel A B) (S : Rel D E) : Except String (Rel (.prod A D) (.prod B E)) := do
+    `Δ(R)` is `prod R R`. Its two index columns have one length (`cross_len`). -/
+def prod {A B D E : Obj} (R : Rel A B) (S : Rel D E) : Rel (.prod A D) (.prod B E) :=
   let r := cols R; let s := cols S
-  let (i, j) := cross r.n s.n
-  pure (ofCols (.prod A D) (.prod B E) (A.pick r.key i, D.pick s.key j) (B.pick r.val i, E.pick s.val j))
+  let c := cross r.n s.n
+  ⟨len c.1, (Vals.pick A r.key c.1, cross_len r.n s.n ▸ Vals.pick D s.key c.2),
+    (Vals.pick B r.val c.1, cross_len r.n s.n ▸ Vals.pick E s.val c.2)⟩
 
 /-- A relation out of a sum `a + a`: a tag bit beside each key, `false` for `inl`. Read with the
     value tagged by the key's own tag it is `R + S` as well as `[R, S]`. -/
@@ -866,16 +868,60 @@ def SumRel.toList {k v : QAtomicType} (T : SumRel k v) : List ((Bool × El k) ×
 def bitsOf (x : Bool) (n : Nat) : ByteArray :=
   Ew.cmp (if x then Ew.ge else Ew.lt) Ew.i64 Ew.va (tilLongs n.toUSize) (one 0) n.toUSize
 
-/-- `[R, S]`: the rows of `R` tagged `inl`, of `S` tagged `inr` — `concatBits` of constant bit columns. -/
-def junc (R : Rel A C) (S : Rel A C) : Except String (SumRel A C) := do
+/-- The tag column of parts `ps`, each `(count, tag)`, `m` the summed count: `concatBits` of constant bit
+    columns, of the summed count whatever the parts' payloads hold (`concatBits_wf`). -/
+def tags (ps : Array (Nat × Bool)) (m : Nat) (h : ps.foldl (fun s p => s + p.1) 0 = m := by simp) : Arr .boolean m :=
+  let bs : Array (Nat × ByteArray) := ps.map fun p => (p.1, bitsOf p.2 p.1)
+  have hb : bs.foldl (fun s p => s + p.1) 0 = m := by rw [Array.foldl_map]; exact h
+  Arr.mk (.bits (concatBits (bs.map (·.1)) (bs.map (·.2)))) (hb ▸ KernelWF.concatBits_wf bs)
+
+/-- A general list's boxed elements are its count. -/
+theorem gens_size {n : Nat} (x : Arr .general n) : (gens x).size = n := by
+  obtain ⟨xs, he, hs⟩ := KernelWF.general_cases x.wf
+  rw [show gens x = xs from Option.some_inj.1 ((Option.some_get _).trans (by simp [he])), hs]
+
+/-- **`raze` counts the sum of its parts' counts**, on every branch: `razeColumn_count` where the counts
+    fit a `USize`, `count_atoms` on the reference past it. -/
+theorem raze_len (t : QAtomicType) (cs : Array ((n : Nat) × Arr t n)) :
+    (raze t cs).1 = (cs.toList.map (·.1)).sum := by
+  rcases cs with ⟨l⟩
+  unfold raze
+  by_cases h0 : l = []
+  · subst h0; simp [empty_len]
+  rw [dif_neg (by simpa using h0)]
+  by_cases hg : t = .general
+  · subst hg
+    simp only [dif_pos, genCol, List.foldl_toArray']
+    have key : ∀ (l : List ((n : Nat) × Arr .general n)) (acc : Array QValue),
+        (l.foldl (fun xs c => xs ++ gens c.2) acc).size = acc.size + (l.map (·.1)).sum := by
+      intro l; induction l with
+      | nil => simp
+      | cons c l ih => intro acc; simp [ih, gens_size, Nat.add_assoc]
+    simp [key]
+  rw [dif_neg hg]
+  by_cases h1 : l.length = 1
+  · obtain ⟨c, rfl⟩ := List.length_eq_one_iff.1 h1; simp
+  rw [dif_neg (by simpa using h1)]
+  dsimp only
+  split
+  · have key : ∀ (a : Nat) (l : List ((n : Nat) × Arr t n)),
+        (l.map fun x => (x.1, x.2.enc)).foldl (fun s c => s + c.1) a = a + (l.map (·.1)).sum := by
+      intro a l; induction l generalizing a <;> simp_all [Nat.add_assoc]
+    simpa [Arr.part] using key 0 l
+  · simp
+    exact congrArg List.sum (List.map_congr_left fun c _ => Column.count_atoms c.2.wf hg)
+
+/-- `[R, S]`: the rows of `R` tagged `inl`, of `S` tagged `inr` (`tags`); keys and vals `raze`d, of
+    `R.n + S.n` rows (`raze_len`). -/
+def junc (R : Rel A C) (S : Rel A C) : SumRel A C :=
   let r := cols R; let s := cols S
-  let m := r.n + s.n
-  pure ⟨m, ← Arr.ofPart .boolean m (m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n])) "junc",
-    ← Arr.ofPart A m (raze A #[r.key, s.key]).2.part "junc", ← Arr.ofPart C m (raze C #[r.val, s.val]).2.part "junc"⟩
+  have hk : (raze A #[r.key, s.key]).1 = r.n + s.n := by simp [raze_len, r, s, cols, Vals.parts]
+  have hv : (raze C #[r.val, s.val]).1 = r.n + s.n := by simp [raze_len, r, s, cols, Vals.parts]
+  ⟨r.n + s.n, tags #[(r.n, false), (s.n, true)] _, hk ▸ (raze A #[r.key, s.key]).2, hv ▸ (raze C #[r.val, s.val]).2⟩
 
 /-- `inl°` on `U`: `inl x ↦ x`, the tag set to `false`; `inr°` with `true`. -/
-def injConv {m : Nat} (tag : Bool) (U : Arr A m) : Except String (SumRel A A) := do
-  pure ⟨m, ← Arr.ofPart .boolean m (m, .bits (bitsOf tag m)) "injConv", U, U⟩
+def injConv {m : Nat} (tag : Bool) (U : Arr A m) : SumRel A A :=
+  ⟨m, tags #[(m, tag)] m, U, U⟩
 
 /-- `F(f)` on a map `f` given as an `Ew` monad: the functor on values, key kept (a `grp` key too). -/
 def mapVal {k : QAtomicType} {a : QAtomicType} (op : UInt8) (R : Rel k a) : Except String (Rel k a) := do
@@ -1030,14 +1076,14 @@ private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide))
 #guard okFlat L (existsImage G R) fun l => seteq l
   (G.toList.flatMap fun (s, x) => R.toList.filterMap fun (x', y) => if x == x' then some (s, y) else none)
 
-#guard ok (pair R S) fun P => seteq P.toList
+#guard seteq (pair R S).toList
   (R.toList.flatMap fun (x, y) => S.toList.filterMap fun (x', z) => if x == x' then some (x, y, z) else none)
-#guard ok (pair R S) fun P => seteq (outl P).toList (R.toList.filter fun (x, _) => S.toList.any (·.1 == x))
-#guard ok (pair R S) fun P => seteq (outr P).toList (S.toList.filter fun (x, _) => R.toList.any (·.1 == x))
-#guard ok (prod R T) fun P => seteq P.toList
+#guard seteq (outl (pair R S)).toList (R.toList.filter fun (x, _) => S.toList.any (·.1 == x))
+#guard seteq (outr (pair R S)).toList (S.toList.filter fun (x, _) => R.toList.any (·.1 == x))
+#guard seteq (prod R T).toList
   (R.toList.flatMap fun (x, x') => T.toList.map fun (y, y') => ((x, y), (x', y')))
-#guard ok (junc R S) fun J => seteq J.toList (R.toList.map (fun (x, y) => ((false, x), y)) ++ S.toList.map fun (x, y) => ((true, x), y))
-#guard ok (injConv true Ua) fun J => J.toList == Ua.toList.map fun x => ((true, x), x)
+#guard seteq (junc R S).toList (R.toList.map (fun (x, y) => ((false, x), y)) ++ S.toList.map fun (x, y) => ((true, x), y))
+#guard (injConv true Ua).toList == Ua.toList.map fun x => ((true, x), x)
 
 #guard ok (mapVal Ew.neg Ls) fun X => X.toList == [(0, -5), (1, -3), (2, -5), (3, -9)]
 #guard ok (foldOver .add Ls.val) (· == 22)
