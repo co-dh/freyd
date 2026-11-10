@@ -551,6 +551,7 @@ inductive Obj
   | atom (t : QAtomicType)
   | prod (a b : Obj)
   | arr (b : Obj)
+  | sum (a b : Obj)
 
 instance : Coe QAtomicType Obj := ⟨.atom⟩
 
@@ -566,22 +567,42 @@ instance : Coe QAtomicType Obj := ⟨.atom⟩
   | .atom t => Carrier t
   | .prod a b => a.El × b.El
   | .arr b => List b.El
+  | .sum a b => Sum a.El b.El
+
+/-- The element a sum row reads where its side holds no value at all (a side of `0` values), the one
+    position no clamp can land in: `inl` of the left side's own, an empty array, an atom's `default`. -/
+def Obj.dflt : (A : Obj) → A.El
+  | .atom _ => default
+  | .prod a b => (a.dflt, b.dflt)
+  | .arr _ => []
+  | .sum a _ => .inl a.dflt
 
 /-- `n` values of `A`, one column per atom, side by side (struct of arrays): nothing boxed. A `arr b`
     column is one flat payload of `m` values of `b` and two long columns `lo`, `hi`: row `i` is the slice
-    `[lo i, hi i)` of the payload, so picking rows gathers `lo` and `hi` and copies no flat value. -/
+    `[lo i, hi i)` of the payload, so picking rows gathers `lo` and `hi` and copies no flat value. A `sum a b`
+    column is a tag and a position per row into one of two payloads, `l` values of `a` (tag `false`) and `r`
+    of `b` (tag `true`): picking rows gathers the tag and the position and copies no value. -/
 @[reducible] def Vals : Obj → Nat → Type
   | .atom t, n => Arr t n
   | .prod a b, n => Vals a n × Vals b n
   | .arr b, n => (m : Nat) × Arr .long n × Arr .long n × Vals b m
+  | .sum a b, n => (l : Nat) × (r : Nat) × Arr .boolean n × Arr .long n × Vals a l × Vals b r
+
+/-- The position `k` clamped into `[0, m)`: the nearest position of a side of `m > 0` values. -/
+def clampFin (k : Int64) (m : Nat) (h : 0 < m) : Fin m :=
+  ⟨min (max k.toInt 0).toNat (m - 1), Nat.lt_of_le_of_lt (Nat.min_le_right _ _) (by omega)⟩
 
 /-- The value at row `i`, read across the columns. An array row is its slice clamped to `[0, m)`, so every
-    `lo`, `hi` reads as an array. -/
+    `lo`, `hi` reads as an array. A sum row is its side's value at its position clamped into the side, so
+    every position reads as a value of its side; only a side of no values reads `Obj.dflt`. -/
 def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
   | .atom _, _, x, i => Arr.get x i
   | .prod _ _, _, x, i => (Vals.row x.1 i, Vals.row x.2 i)
   | .arr _, _, ⟨m, lo, hi, f⟩, i => (List.finRange m).filterMap fun (j : Fin m) =>
       if (lo.get i).toInt ≤ (j.1 : Int) ∧ (j.1 : Int) < (hi.get i).toInt then some (Vals.row f j) else none
+  | .sum a b, _, ⟨l, r, tag, idx, x, y⟩, i =>
+    if tag.get i then (if h : 0 < r then .inr (Vals.row y (clampFin (idx.get i) r h)) else Obj.dflt (.sum a b))
+    else if h : 0 < l then .inl (Vals.row x (clampFin (idx.get i) l h)) else Obj.dflt (.sum a b)
 
 @[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
     Vals.row (A := .atom t) x i = x.get i := rfl
