@@ -48,7 +48,7 @@ Code             {w, n, card, b}   a column of integer codes: lane width w, coun
 The target, five layers, each using only the one below:
 
 ```
-programs   Blocks  Chess  Circuit  Wumpus;  the programs of the B&dM note, ch. 6–10      one relation term each
+programs   Blocks  Chess  Circuit  Wumpus          one relation term each
 Alg        ≫ ° ∩ ∪ \ ⊑ ==  𝟙 ⊤ ∼  dom ran  / \ ÷  Λ ∋  ⟨R,S⟩ ×  [R,S]  est thin  ⦇e,S⦈  F(R)  cons°  iter
 Code       codes, and find / member / gather / groupIds / grade on integer codes; join anti cross
 Core       Obj (atom | prod | arr | sum)   Vals   Rel
@@ -83,8 +83,9 @@ Not used by `Alg`: qlean's q interpreter verbs (`join`, `member`, `cross`, `find
 
 ## What the B&dM note needs from `Alg`
 
-The companion note (`diag/aop/04-relations.typ` … `10-greedy.typ`) is the list of what `Alg` has to support: every
-operator it writes, and its programs as the tests. `yes` = on `master` and total;
+The companion note (`diag/aop/04-relations.typ` … `10-greedy.typ`) sets the SCOPE of `Alg`: every operator it
+writes is supported. Its programs are examples of that scope, not programs to port. After the operators: the Rel
+language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is in it) and Blocks written in it. `yes` = on `master` and total;
 `no` = not in `Alg`.
 
 | ch. | operator in the note                                   | in `Alg`                                    | state |
@@ -111,7 +112,7 @@ operator it writes, and its programs as the tests. `yes` = on `master` and total
 | 8   | `merge`, sorting sets, binary thinning                 | —                                           | no    |
 | 9   | tabulation (`array`, `row`, `col`, `tic`, `loop`)      | —                                           | no    |
 
-The note's programs, to be written as relation terms over `Alg` (none is written yet):
+The note's programs, for reference only (they show which operators are used; they are not ported):
 
 | ch. | programs                                                                                        |
 |-----|-------------------------------------------------------------------------------------------------|
