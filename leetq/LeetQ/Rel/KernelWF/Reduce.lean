@@ -359,4 +359,378 @@ theorem razeColumn_count {t : QAtomicType} {cs : Array (Nat × Enc)}
         | (cases hv; obtain ⟨-, rfl, rfl, -⟩ := encodedParts_spec hE; simp)
         | contradiction
 
+/-! ## Sizes of the scan family's payloads -/
+
+private theorem toList_loop_length (bs : ByteArray) : ∀ (k i : Nat) (r : List UInt8), bs.size - i = k →
+    (ByteArray.toList.loop bs i r).length = r.length + k
+  | 0, i, r, h => by unfold ByteArray.toList.loop; split <;> first | omega | simp
+  | k+1, i, r, h => by
+    unfold ByteArray.toList.loop
+    split
+    · rw [toList_loop_length bs k (i+1) _ (by omega)]; simp only [List.length_cons]; omega
+    · omega
+
+theorem byteArray_length_toList (bs : ByteArray) : bs.toList.length = bs.size := by
+  unfold ByteArray.toList; simpa using toList_loop_length bs bs.size 0 [] (by simp)
+
+/-- `scan` answers one element per element it reads, at the verb's output width. -/
+theorem scan_size (v : Scan.Verb) (k : Scan.Kind) (n : USize) (b : ByteArray) :
+    (Scan.scan v k n b).size = min n.toNat (k.avail b) * (Scan.outKind v k).width := by
+  cases k <;> cases v <;> simp [Scan.scan, Scan.intScan, Scan.fltScan, Scan.scanOf_size]
+
+/-- `scanBits` packs `scan`'s bytes at `bit`, one bit an element. -/
+theorem scanBits_size (v : Scan.Verb) (n : USize) (b : ByteArray) :
+    (Scan.scanBits v n b).size = (min n.toNat (b.size * 8) * (Scan.outKind v .bit).width + 7) / 8 := by
+  simp only [Scan.scanBits, Column.packBits_size, List.size_toArray, List.length_map, byteArray_length_toList,
+    scan_size, Scan.Kind.avail]
+
+/-- A fold that pushes `w` bytes per element of a list. -/
+private theorem pushFold_size (w : Nat) (l : List UInt64) :
+    (l.foldl (fun acc v => Column.pushBits acc v w) ByteArray.empty).size = l.length * w := by
+  rw [foldl_size ByteArray.size _ w (fun _ _ => Column.pushBits_size ..)]; simp
+
+/-- `scanFoR` reads its `n` decoded elements. -/
+theorem scanFoR_size (v : Scan.Verb) {k : Scan.Kind} (hk : k ≠ .bit) (n : USize) (m p : ByteArray) :
+    (Scan.scanFoR v k n m p).size = n.toNat * (Scan.outKind v k).width := by
+  have h8 := width_pos k
+  rw [Scan.scanFoR, scan_size, avail_of_ne_bit hk, decode_size, toUSize_small (by omega),
+    Nat.mul_div_cancel _ h8.1, Nat.min_self]
+
+/-- `scanAlp` reads its `n` decoded elements, at either float layout. -/
+theorem scanAlp_size (v : Scan.Verb) {k : Scan.Kind} (hk : k = .f32 ∨ k = .f64) (n : USize) (m p a : ByteArray) :
+    (Scan.scanAlp v k n m p a).size = n.toNat * (Scan.outKind v k).width := by
+  rcases hk with rfl | rfl <;>
+    simp [Scan.scanAlp, scan_size, Scan.Kind.avail, Coc.alpDecode32, Coc.alpDecode64, pushFold_size,
+      Coc.alpElems, Scan.Kind.width]
+
+/-- The window's extremes push `ow` bytes per element. -/
+theorem mwinExt_size (keep : UInt64 → UInt64 → Bool) (seed : UInt64) (rd : Nat → UInt64) (w m ow : Nat) :
+    (Scan.mwinExt keep seed rd w m ow).size = m * ow := by
+  simp only [Scan.mwinExt]; rw [foldl_size ByteArray.size _ ow (fun _ _ => Column.pushBits_size ..)]; simp
+
+/-- The window's integral totals push `ow` bytes per element. -/
+theorem mwinSum_size (nl : Option Int64) (fit : Int64 → Int64) (val : Nat → Int64) (w m ow : Nat) :
+    (Scan.mwinSum nl fit val w m ow).size = m * ow := by
+  simp only [Scan.mwinSum]; rw [foldl_size ByteArray.size _ ow (fun _ _ => Column.pushBits_size ..)]; simp
+
+/-- `mwinBits` answers one element per element it reads, at the verb's width. -/
+theorem mwinBits_size (op : Scan.MOp) (k : Scan.Kind) (w n : Nat) (b : ByteArray) :
+    (Scan.mwinBits op k w n b).size = min n (k.avail b) * op.width k := by
+  unfold Scan.mwinBits
+  split
+  all_goals first
+    | (simp only [Id.run_pure, mwinExt_size, mwinSum_size]; done)
+    | (simp only [Id.run, Std.Legacy.Range.forIn_eq_forIn_range', Std.Legacy.Range.size,
+        List.forIn_pure_yield_eq_foldl, pure_bind, bind_pure_comp, Nat.sub_zero, Nat.add_sub_cancel, Nat.div_one]
+       rw [foldl_size ByteArray.size _ _ (fun _ _ => Column.pushBits_size ..)]
+       simp)
+
+theorem mwin_size (op : Scan.MOp) (k : Scan.Kind) (w n : USize) (b : ByteArray) :
+    (Scan.mwin op k w n b).size = min n.toNat (k.avail b) * op.width k := mwinBits_size ..
+
+theorem mwinBitmap_size (op : Scan.MOp) (w n : USize) (b : ByteArray) :
+    (Scan.mwinBitmap op w n b).size = (min n.toNat (b.size * 8) * op.width .bit + 7) / 8 := by
+  simp only [Scan.mwinBitmap, Column.packBits_size, List.size_toArray, List.length_map, byteArray_length_toList,
+    mwin_size, Scan.Kind.avail]
+
+theorem mwinFoR_size (op : Scan.MOp) {k : Scan.Kind} (hk : k ≠ .bit) (w n : USize) (m p : ByteArray) :
+    (Scan.mwinFoR op k w n m p).size = n.toNat * op.width k := by
+  have h8 := width_pos k
+  rw [Scan.mwinFoR, mwin_size, avail_of_ne_bit hk, decode_size, toUSize_small (by omega),
+    Nat.mul_div_cancel _ h8.1, Nat.min_self]
+
+theorem mwinAlp_size (op : Scan.MOp) {k : Scan.Kind} (hk : k = .f32 ∨ k = .f64) (w n : USize) (m p a : ByteArray) :
+    (Scan.mwinAlp op k w n m p a).size = n.toNat * op.width k := by
+  rcases hk with rfl | rfl <;> rw [Scan.mwinAlp, mwin_size] <;>
+    simp only [Scan.Kind.avail, Coc.alpDecode32, Coc.alpDecode64, pushFold_size, Coc.alpElems, List.length_map,
+      List.length_range, Scan.Kind.width] <;> simp
+
+/-! ## `scanKind`: the layout a type is read at -/
+
+theorem scanKind_width {t : QAtomicType} {k : Scan.Kind} (h : scanKind t = some k) : t.width = some k.width := by
+  cases t <;> simp [scanKind] at h <;> subst h <;> rfl
+
+theorem scanKind_bit {t : QAtomicType} (h : scanKind t = some .bit) : t = .boolean := by
+  cases t <;> simp [scanKind] at h <;> rfl
+
+/-- A float payload's layout is a float one. -/
+theorem scanKind_alp {t : QAtomicType} {k : Scan.Kind} {n : Nat} {m p a : ByteArray} (h : scanKind t = some k)
+    (hw : Enc.WF t n (.alp m p a)) : k = .f32 ∨ k = .f64 := by
+  simp only [Enc.WF] at hw
+  rcases hw.1 with rfl | rfl | rfl <;> simp [scanKind] at h <;> simp [← h]
+
+/-- Two types read at one layout have the same well-formed payloads. -/
+theorem wf_of_scanKind {t u : QAtomicType} {k : Scan.Kind} {n : Nat} {e : Enc} (ht : scanKind t = some k)
+    (hu : scanKind u = some k) (hw : Enc.WF t n e) : Enc.WF u n e := by
+  cases t <;> simp [scanKind] at ht <;> subst ht <;> cases u <;> simp [scanKind] at hu <;>
+    cases e <;> simp_all [Enc.WF, QAtomicType.width]
+
+/-- A dense payload of `n` elements at `rt`'s own layout, `rt` not boolean, answers well formed. -/
+private theorem answer_dense {rt : QAtomicType} {rk : Scan.Kind} {n : Nat} {s : ByteArray}
+    (hn : n < USize.size) (hr : scanKind rt = some rk) (hb : rk ≠ .bit) (hs : s.size = n * rk.width) :
+    Enc.WF rt n (Enc.answer rt n (.bytes s)) :=
+  answer_wf (wf_bytes (fun e => hb (by subst e; simp [scanKind] at hr; simp [← hr])) (scanKind_width hr) hs) hn
+
+/-- `outKind` keeps `bit` only at `bit`. -/
+theorem outKind_bit {v : Scan.Verb} {k : Scan.Kind} (h : Scan.outKind v k = .bit) : k = .bit := by
+  cases v <;> cases k <;> simp_all [Scan.outKind]
+
+/-! ## `scanColumn`: `f\x` -/
+
+/-- **`scanColumn` answers `n` well-formed elements of `rt`**, `n` fitting a `USize`. -/
+theorem scanColumn_wf {v : Prim.Dyadic} {rt et : QAtomicType} {n : Nat} {e out : Enc}
+    (hn : n < USize.size) (hw : Enc.WF et n e) (h : scanColumn v rt et n e = some out) : Enc.WF rt n out := by
+  have hu := toUSize_lt hn
+  unfold scanColumn scanWith at h
+  rcases hv : scanVerb v with _ | sv
+  · simp [hv] at h
+  rcases hk : scanKind et with _ | ek
+  · simp [hv, hk] at h
+  rcases hr : scanKind rt with _ | rk
+  · simp [hv, hk, hr] at h
+  simp only [hv, hk, hr] at h
+  split at h
+  · cases h
+  rename_i hg
+  have hout : Scan.outKind sv ek = rk := by
+    exact Decidable.byContradiction fun hc => hg (by simp [hc])
+  split at h
+  · cases h
+    rename_i hf
+    simp only [Bool.and_eq_true, beq_iff_eq] at hf
+    obtain ⟨rfl, -⟩ := hf
+    have : rk = ek := by rw [← hout]; cases ek <;> rfl
+    subst this
+    exact wf_of_scanKind hk hr hw
+  rw [scanKind_width hk, scanKind_width hr] at h
+  by_cases hb : ek = .bit
+  · subst hb
+    have := scanKind_bit hk; subst this
+    cases e <;> simp only [Enc.WF] at hw
+    rename_i b
+    simp only at h
+    split at h
+    · cases h
+      rename_i hc
+      have : rk = .bit := by simpa using hc
+      subst this
+      simp only [Enc.WF, scanBits_size, hu, hout, Scan.Kind.width]; omega
+    · cases h
+      rename_i hc
+      rw [hu]
+      refine answer_dense hn hr (by simpa using hc) ?_
+      simp only [Scan.scanForm, scan_size, hu, hout, Scan.Kind.avail]
+      rw [show min n (b.size * 8) = n by omega]
+  have hrb : rk ≠ .bit := fun e => hb (outKind_bit (hout.trans e))
+  cases e
+  case foR m p =>
+    simp only at h; split at h
+    all_goals first
+      | (exact absurd ‹_› hb)
+      | (cases h; rw [hu]; refine answer_dense hn hr hrb ?_
+         simp only [Scan.scanForm, scanFoR_size _ hb, hu, hout])
+      | (simp_all)
+  case alp m p a =>
+    simp only at h; split at h
+    all_goals first
+      | (exact absurd ‹_› hb)
+      | (cases h; rw [hu]; refine answer_dense hn hr hrb ?_
+         simp only [Scan.scanForm, scanAlp_size _ (scanKind_alp hk hw), hu, hout])
+      | (simp_all)
+  case bytes b =>
+    obtain ⟨b', hb', hs⟩ := bytesOf_size (fun e => hb (by subst e; simp [scanKind] at hk; simp [← hk]))
+      (scanKind_width hk) hw (countFits_of_lt hn)
+    simp only at h; split at h
+    all_goals first
+      | (exact absurd ‹_› hb)
+      | (rw [hb'] at h; simp only at h; split at h
+         · cases h
+         · cases h; rw [hu]; refine answer_dense hn hr hrb ?_
+           simp only [Scan.scanForm, scan_size, hu, hout, min_avail hb (Nat.le_of_eq hs.symm)])
+      | (simp_all)
+  all_goals simp [Enc.WF] at hw
+
+/-- **`scanColumn` answers** a well-formed payload of every type `scanKind` reads (all but symbol, guid,
+    general), `n` fitting a `USize`, at a q scan dyad (`+ * & | ^`) and the accumulator type `outKind`
+    names. It declines `+\`/`*\` over `char` (`hc`), which q types `'type`. -/
+theorem scanColumn_isSome {v : Prim.Dyadic} {rt et : QAtomicType} {n : Nat} {e : Enc} {sv : Scan.Verb}
+    {ek : Scan.Kind} (hn : n < USize.size) (hw : Enc.WF et n e) (hv : scanVerb v = some sv)
+    (hk : scanKind et = some ek) (hr : scanKind rt = some (Scan.outKind sv ek))
+    (hc : ¬(ek = .c8 ∧ (sv = .sums ∨ sv = .prds))) : (scanColumn v rt et n e).isSome := by
+  unfold scanColumn scanWith
+  simp only [hv, hk, hr, bne_self_eq_false, Bool.false_or]
+  rw [if_neg (by simpa using hc)]
+  split
+  · rfl
+  rw [scanKind_width hk, scanKind_width hr]
+  by_cases hb : ek = .bit
+  · subst hb
+    have := scanKind_bit hk; subst this
+    cases e <;> simp only [Enc.WF] at hw
+    simp only; split <;> rfl
+  cases e
+  case bytes b =>
+    obtain ⟨b', hb', hs⟩ := bytesOf_size (fun e => hb (by subst e; simp [scanKind] at hk; simp [← hk]))
+      (scanKind_width hk) hw (countFits_of_lt hn)
+    split
+    all_goals first
+      | (exact absurd ‹_› hb)
+      | (simp [hb', hs]; done)
+      | (simp_all)
+  all_goals first
+    | (simp [Enc.WF] at hw; done)
+    | (split <;> first | exact absurd ‹_› hb | rfl | simp_all)
+
+/-! ## `avgColumn`: `avg x` -/
+
+/-- **`avgColumn` answers** a well-formed payload of every type `scanKind` reads, `n` fitting a `USize`:
+    it declines only symbol, guid and general, which have no numeric payload. -/
+theorem avgColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hn : n < USize.size) (hw : Enc.WF t n e)
+    (ht : (scanKind t).isSome) : (avgColumn t n e).isSome := by
+  obtain ⟨k, hk⟩ := Option.isSome_iff_exists.1 ht
+  have htw := scanKind_width hk
+  unfold avgColumn
+  split
+  · rfl
+  rw [htw, hk]
+  cases k
+  case bit =>
+    have := scanKind_bit hk; subst this
+    cases e <;> simp [Enc.WF] at hw ⊢
+  all_goals
+    have hb : t ≠ .boolean := by rintro rfl; simp [scanKind] at hk
+    obtain ⟨b, hb'⟩ := Option.isSome_iff_exists.1 (bytesOf_isSome hb (by simp [htw]) hw)
+    cases e
+    all_goals first
+      | (simp [Scan.Kind.raw, hb']; done)
+      | (simp only [Enc.WF] at hw; rcases hw.1 with rfl | rfl | rfl <;> simp [Column.alpEncodes])
+
+/-- **`avgColumn`'s answer is a `float` atom**, so `Ops.avg`'s `Carrier.of? .float` reads it. -/
+theorem avgColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} {a : QAtom} (h : avgColumn t n e = some a) :
+    (QLean.Dep.Carrier.of? .float (.atom a)).isSome := by
+  rw [← avgColumn_type h]; exact QLean.Dep.Carrier.of?_type a
+
+/-! ## `mwinColumn`: `w mop x` -/
+
+theorem readKind_width (op : Scan.MOp) (k : Scan.Kind) : (op.readKind k).width = k.width := by
+  cases op <;> cases k <;> rfl
+
+theorem readKind_bit {op : Scan.MOp} {k : Scan.Kind} (h : op.readKind k = .bit) : k = .bit := by
+  cases op <;> cases k <;> simp_all [Scan.MOp.readKind, Scan.Kind.raw]
+
+theorem mwinType_boolean {op : Scan.MOp} {t : QAtomicType} (h : mwinType op t = some .boolean) : t = .boolean := by
+  cases op <;> cases t <;> simp [mwinType, scanKind] at h ⊢
+
+/-- Each type q answers a window at has a layout, and the verb writes at that layout's width. -/
+theorem mwinType_layout {op : Scan.MOp} {t rt : QAtomicType} (h : mwinType op t = some rt) :
+    ∃ k rk, scanKind t = some k ∧ scanKind rt = some rk ∧ op.width (op.readKind k) = rk.width := by
+  cases op <;> cases t <;> simp [mwinType, scanKind] at h <;> subst h <;>
+    simp [scanKind, Scan.MOp.width, Scan.MOp.readKind, Scan.outKind, Scan.Kind.raw, Scan.Kind.width]
+
+/-- **`mwinColumn` answers** a well-formed payload, `n` fitting a `USize`, at every type q types the
+    window verb at (`mwinType`: it has none for symbol, guid, general, nor `char` under
+    `msum`/`mavg`/`mdev`) and every window of at least one; a window `0` is declined (`hw1`). -/
+theorem mwinColumn_isSome {op : Scan.MOp} {t : QAtomicType} {w n : Nat} {e : Enc} (hn : n < USize.size)
+    (hw : Enc.WF t n e) (hr : (mwinType op t).isSome) (hw1 : 1 ≤ w) : (mwinColumn op t w n e).isSome := by
+  obtain ⟨rt, hrt⟩ := Option.isSome_iff_exists.1 hr
+  obtain ⟨k, rk, hk, hrk, hwd⟩ := mwinType_layout hrt
+  have htw := scanKind_width hk
+  unfold mwinColumn
+  simp only [hrt, hk, htw, Option.map_some, hrk]
+  split
+  · rename_i hc; simp [hwd] at hc <;> omega
+  by_cases hb : t = .boolean
+  · subst hb
+    have : k = .bit := by simp [scanKind] at hk; simp [← hk]
+    subst this
+    obtain ⟨b, rfl⟩ : ∃ b, e = .bits b := by cases e <;> simp [Enc.WF] at hw ⊢
+    have : op.readKind .bit = .bit := by cases op <;> rfl
+    simp only [this]
+    split <;> rfl
+  have hK : op.readKind k ≠ .bit := fun e => hb (scanKind_bit ((readKind_bit e) ▸ hk))
+  split
+  all_goals first
+    | (exact absurd ‹_› hK)
+    | skip
+  cases e
+  case bytes b =>
+    obtain ⟨b', hb', hs⟩ := bytesOf_size hb htw hw (countFits_of_lt hn)
+    simp [hb', hs]
+  case foR => simp
+  case alp => simp
+  all_goals (exfalso; cases t <;> simp [Enc.WF, scanKind] at hw hk hb)
+
+/-- **`mwinColumn` answers `n` well-formed elements** of the type `mwinType` names. -/
+theorem mwinColumn_wf {op : Scan.MOp} {t rt : QAtomicType} {w n : Nat} {e out : Enc} (hn : n < USize.size)
+    (hw : Enc.WF t n e) (h : mwinColumn op t w n e = some (rt, out)) :
+    mwinType op t = some rt ∧ Enc.WF rt n out := by
+  have hu := toUSize_lt hn
+  unfold mwinColumn at h
+  rcases hrt : mwinType op t with _ | rt'
+  · simp [hrt] at h
+  rcases hk : scanKind t with _ | k
+  · simp [hrt, hk] at h
+  have htw := scanKind_width hk
+  rcases hrk : scanKind rt' with _ | rk
+  · simp [hrt, hk, htw, hrk] at h
+  simp only [hrt, hk, htw, hrk, Option.map_some] at h
+  split at h
+  · cases h
+  rename_i hc
+  have hwd : op.width (op.readKind k) = rk.width :=
+    Decidable.byContradiction fun hne => hc (by simp [hne])
+  by_cases hb : t = .boolean
+  · subst hb
+    have : k = .bit := by simp [scanKind] at hk; simp [← hk]
+    subst this
+    obtain ⟨b, rfl⟩ : ∃ b, e = .bits b := by cases e <;> simp [Enc.WF] at hw ⊢
+    have hrb : op.readKind .bit = .bit := by cases op <;> rfl
+    simp only [hrb] at h hwd
+    simp only [Enc.WF] at hw
+    split at h
+    · cases h
+      rename_i hc'
+      have : rk = .bit := by simpa using hc'
+      subst this
+      have := scanKind_bit hrk; subst this
+      refine ⟨rfl, ?_⟩
+      simp only [Enc.WF, mwinBitmap_size, hu, hwd, Scan.Kind.width]; omega
+    · cases h
+      rename_i hc'
+      refine ⟨rfl, ?_⟩
+      rw [hu]
+      refine answer_dense hn hrk (by simpa using hc') ?_
+      simp only [mwin_size, hu, hwd, Scan.Kind.avail]
+      rw [show min n (b.size * 8) = n by omega]
+  have hK : op.readKind k ≠ .bit := fun e => hb (scanKind_bit ((readKind_bit e) ▸ hk))
+  have hrb : rk ≠ .bit := fun e => hb (mwinType_boolean (by rw [hrt, scanKind_bit (e ▸ hrk)]))
+  split at h
+  · exact absurd ‹_› hK
+  · cases h
+  obtain ⟨s, hs, hse⟩ := Option.map_eq_some_iff.1 h
+  simp only [Prod.mk.injEq] at hse
+  obtain ⟨rfl, rfl⟩ := hse
+  refine ⟨rfl, ?_⟩
+  rw [hu]
+  refine answer_dense hn hrk hrb ?_
+  rw [← hwd]
+  cases e
+  case foR m p => cases hs; rw [mwinFoR_size _ hK, hu]
+  case alp m p a =>
+    cases hs
+    have hk2 : op.readKind k = .f32 ∨ op.readKind k = .f64 := by
+      rcases scanKind_alp hk hw with rfl | rfl <;> cases op <;> simp [Scan.MOp.readKind, Scan.Kind.raw]
+    rw [mwinAlp_size _ hk2, hu]
+  case bytes b =>
+    obtain ⟨b', hb', hsz⟩ := bytesOf_size hb htw hw (countFits_of_lt hn)
+    rw [hb'] at hs
+    simp only at hs
+    split at hs
+    · cases hs
+    · cases hs
+      rename_i hlt
+      rw [mwin_size, hu, min_avail hK (by rw [readKind_width, hsz])]
+  all_goals (exfalso; cases t <;> simp [Enc.WF, scanKind] at hw hk hb)
+
 end LeetQ.Rel.KernelWF
+
