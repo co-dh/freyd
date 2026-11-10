@@ -49,7 +49,7 @@ def lamFold (op : Kernel.Coc.Over) {n : Nat} (x : Arr .long n) (G : Rel A .long)
   let F ← transposeP G
   let P := F.2.2
   let (_, i) ← arrDense P.val
-  let v ← Arr.ofPart .long P.n (← pick .long x.part i) "list(x)"
+  let v ← Vals.ofParts (.atom .long) P.n (pick .long ⟨_, x⟩ i) "list(x)"
   overP op ⟨F.1, F.2.1, ⟨P.g, P.n, P.o, P.co, v⟩⟩
 
 /-- `R ≫ !e`: `n#,e` beside `R`'s key (`Struct.take` of `Struct.enlist`). A boxed `e` has no atom
@@ -257,8 +257,8 @@ def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .
   let T ← Alg.prod R S
   let w ← Find.where (← Ew.val v .boolean T.val.1 T.val.2)
   let (_, i) ← Alg.arrDense w.2
-  pure ⟨w.1, ← Arr.ofPart A w.1 (← Alg.pick A T.key.1.part i) "order join",
-    ← Arr.ofPart B w.1 (← Alg.pick B T.key.2.part i) "order join"⟩
+  pure ⟨w.1, ← Vals.ofParts (.atom A) w.1 (Alg.pick A ⟨_, T.key.1⟩ i) "order join",
+    ← Vals.ofParts (.atom B) w.1 (Alg.pick B ⟨_, T.key.2⟩ i) "order join"⟩
 
 /-- `aj`'s kernel keyed by `til m`: one long key column a side. -/
 def ajRun {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Except String ((m : Nat) × Arr .long m) :=
@@ -290,7 +290,7 @@ def lowZeroArr {n : Nat} (t : Nat) (x : Arr .long n) : Except String (Arr .boole
 
 /-- `x` at the rows `i`, column by column (`Obj.pick`). -/
 def _root_.LeetQ.Rel.Vals.pick {n m : Nat} {A : Obj} (i : Arr .long m) (x : Vals A n) : Except String (Vals A m) := do
-  Vals.ofParts A m (← A.pick x.parts (← Alg.arrDense i).2) "pick"
+  Vals.ofParts A m (A.pick x.parts (← Alg.arrDense i).2) "pick"
 
 /-- `R`'s rows whose bit in `b` is set: `Find.where`, then key and value picked (as `ordJoin`). -/
 def _root_.LeetQ.Rel.RelV.sel {K A : Obj} {m : Nat} (b : Arr .boolean m) (R : RelV K A) : Except String (RelV K A) := do

@@ -98,7 +98,7 @@ def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr a nx) (i : Arr .long ni)
     let v ← match op with
       | none => if u = a then pure yv else throw s!"{verb}: `:` of a {repr u} into a {repr a} list (q's 'type)"
       | some v => do
-        let cur ← Alg.pick a (nx, acc) ix
+        let cur := (Alg.pick a ⟨nx, ← Arr.ofPart a nx (nx, acc) verb⟩ ix).2.part
         pure (cur.1, (← Ew.dyad v Ew.vv a u a cur.1 cur.2 yv.1 yv.2 cur.1).enc)
     scatter verb a nx acc v ix
   let rounds := (word 0).toNat
@@ -107,7 +107,7 @@ def amend {a u : QAtomicType} {nx ni ny : Nat} (x : Arr a nx) (i : Arr .long ni)
     rounds.foldM (fun rr _ acc => do
       let lo := if rr == 0 then 0 else (word (1 + rr)).toNat
       let ks := r.extract ((2 + rounds + lo) * 8) ((2 + rounds + (word (2 + rr)).toNat) * 8)
-      step acc (gatherBytes 8 0 ib ks) (← Alg.pick u y.part ks)) x.enc
+      step acc (gatherBytes 8 0 ib ks) (Alg.pick u ⟨ny, y⟩ ks).2.part) x.enc
   onKey nx a (.vector a nx (Enc.answer a nx out) none) verb
 
 /-! ## Parted lists: q's nested list, one boxed vector per run; `Parted` its flat working form -/
@@ -149,8 +149,8 @@ def cut {a : QAtomicType} {no nx : Nat} (o : Arr .long no) (x : Arr a nx) : Exce
     `m·k` pairs, no call per run; `o := r·k` for `r ≤ m`. Both each-verbs are this at `Alg.cross`'s two orders. -/
 def pairsP {t u : QAtomicType} (verb : String) (v : Prim.Dyadic) (rt : QAtomicType) {nx ny : Nat} (x : Arr t nx)
     (y : Arr u ny) (m k : Nat) (xi yi : ByteArray) : Except String (Parted rt) := do
-  let xs ← Alg.pick t x.part xi
-  let ys ← Alg.pick u y.part yi
+  let xs := (Alg.pick t ⟨nx, x⟩ xi).2.part
+  let ys := (Alg.pick u ⟨ny, y⟩ yi).2.part
   partedP verb (Alg.mulc (tilLongs (m + 1).toUSize) k) (← Ew.dyad v Ew.vv t u rt xs.1 xs.2 ys.1 ys.2 (m * k))
 
 /-- `x f/: y`: `ny` runs of `nx`, run `j` is `x f y[j]` — `pairsP` at `Alg.cross ny nx`, `y` outer. -/
@@ -185,8 +185,8 @@ def flipP {a : QAtomicType} (P : Parted a) : Except String (Parted a) := do
   unless matchBytes 8 false ob (Alg.mulc (tilLongs (g + 1).toUSize) m) do
     throw "+x: the runs differ in length (q's 'length)"
   let (q, r) := Alg.cross m g
-  let c ← Alg.pick a P.val.part (Alg.add (Alg.mulc r m) q)
-  partedP "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Arr.ofPart a (m * g) c "+x")
+  let c := Alg.pick a ⟨P.n, P.val⟩ (Alg.add (Alg.mulc r m) q)
+  partedP "+x" (Alg.mulc (tilLongs (m + 1).toUSize) g) (← Vals.ofParts (.atom a) (m * g) c "+x")
 
 /-- `+x`: `flipP` of the flat form, boxed. -/
 def flip (a : QAtomicType) {nx : Nat} (x : Arr .general nx) : Except String ((g : Nat) × Arr .general g) := do
@@ -200,8 +200,8 @@ def indexPartedP {a : QAtomicType} {ny : Nat} (P : Parted a) (y : Arr .long ny) 
   let lens := Alg.gather 8 (Alg.sub (ob.extract 8 ob.size) (ob.extract 0 (ob.size - 8))) yb
   let (i, w) := expand lens
   let src := Alg.add (Alg.gather 8 (Alg.gather 8 ob yb) i) w
-  let c ← Alg.pick a P.val.part src
-  partedP "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Arr.ofPart a (Alg.len src) c "x@y")
+  let c := Alg.pick a ⟨P.n, P.val⟩ src
+  partedP "x@y" (concatBytes #[one 0, Alg.sums lens]) (← Vals.ofParts (.atom a) (Alg.len src) c "x@y")
 
 /-- `x@y` on a nested list: `indexPartedP` of the flat form, boxed. -/
 def indexParted (a : QAtomicType) {nx ny : Nat} (x : Arr .general nx) (y : Arr .long ny) : Except String ((g : Nat) × Arr .general g) := do
@@ -248,7 +248,7 @@ def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg
 def ej (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ej" l r
   let (li, ri) := Alg.join lc rc
-  Alg.ofCols .long .long (Alg.longs li) (Alg.longs ri)
+  Alg.ofCols .long .long (← Alg.longsP li "join") (← Alg.longsP ri "join")
 
 /-- `ij` against a keyed right side: each left row ↦ the first right row of its key tuple, unmatched rows
     dropped — `findVec`, `Ew.cmp lt` against the miss, `whereBits`, a gather. -/
@@ -256,7 +256,7 @@ def ij (l r : Array KCol) : Except String (Rel .long .long) := do
   let (lc, rc) ← keyCodes "ij" l r
   let hit := rc.find lc
   let li := whereBits lc.n.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va hit (one rc.n.toUInt64) lc.n.toUSize)
-  Alg.ofCols .long .long (Alg.longs li) (Alg.longs (Alg.gather 8 hit li))
+  Alg.ofCols .long .long (← Alg.longsP li "ij") (← Alg.longsP (Alg.gather 8 hit li) "ij")
 
 /-- A key or time column as the `QValue` qlean's join passes read: the payload where it lies, no copy. -/
 def colValue (p : KCol) : QValue :=
@@ -336,8 +336,8 @@ def wjBy (op : Coc.Over) (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCo
   if a = .general then throw "wj: a general list aggregated column (q's 'type)"
   unless colRows c == colRows rt do throw s!"wj: {colRows c} values against {colRows rt} right rows (q's 'length)"
   let P ← wjP prevailing w₀ w₁ l r rt
-  let x ← Alg.pick a cc (← dense "wj" .long P.n P.val.enc)
-  let Q : Parted a := ⟨P.g, P.n, P.o, P.co, ← Arr.ofPart a P.n x "wj"⟩
+  let x := Alg.pick a ⟨cc.1, ← Arr.ofPart a cc.1 cc "wj"⟩ (← dense "wj" .long P.n P.val.enc)
+  let Q : Parted a := ⟨P.g, P.n, P.o, P.co, ← Vals.ofParts (.atom a) P.n x "wj"⟩
   let some ⟨u, s⟩ := Ops.overBy op Q | throw s!"wj: no grouped {repr op}/ over {repr a}"
   pure ⟨u, Q.g, s⟩
 

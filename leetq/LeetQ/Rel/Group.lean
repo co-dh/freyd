@@ -212,7 +212,7 @@ theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArra
     (hr : rangeOffsets .long #v[key.part] n = some os)
     (hcont : ∀ s t u : Fin n, s ≤ t → t ≤ u → key.get s = key.get u → key.get t = key.get s)
     (val : Arr v n) {g : Nat} {keys : Arr .long g} {P : Parted v}
-    (h : runsP .long key.part val = .ok ⟨g, keys, P⟩) :
+    (h : runsP .long ⟨n, key⟩ val = .ok ⟨g, keys, P⟩) :
     P.n = n ∧ P.g = g ∧ (∀ j j' : Fin g, keys.get j = keys.get j' → j = j') ∧
       ∀ (s : Fin n) (j : Fin g), (key.get s = keys.get j ↔ Parted.group P.o s = j) := by
   obtain ⟨c, -, hcodes, hcn, hw, hsz, hf⟩ := codes_long_bytes key hc hU hn hr
@@ -227,21 +227,16 @@ theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArra
   obtain ⟨m, hst, hnn, hlast, hasc, hinj, hgrp⟩ := code_runs c hw hsz (by omega) x hf' hcont'
   rw [hcn] at hlast hgrp
   simp only [runsP, hcodes, Vector.getElem_mk, List.getElem_toArray, List.getElem_cons_zero, bind, Except.bind, pure, Except.pure] at h
-  split at h
-  · simp at h
-  rename_i ds hp
-  rcases ds with ⟨k, e⟩
   obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
-    (fun _ _ _ e => by rw [hc] at e; cases e) _ hp
-  simp only [groupedP, bind, Except.bind, pure, Except.pure, List.getElem_toArray, List.getElem_cons_zero] at h hp hk he
+    (fun _ _ _ e => by rw [hc] at e; cases e) (c.runStarts.extract 0 (c.runStarts.size - 8)) rfl
+  generalize pick .long ⟨n, key⟩ (c.runStarts.extract 0 (c.runStarts.size - 8)) = ds at h hk he
+  rcases ds with ⟨k, keys'⟩
+  simp only [groupedP, bind, Except.bind, pure, Except.pure, List.getElem_toArray, List.getElem_cons_zero] at h hk he
   split at h
   · simp at h
   rename_i o ho
   split at h
   · rename_i P' hP
-    split at h
-    · simp at h
-    rename_i keys' hks
     cases h
     dsimp only at hnn hlast hasc hinj hgrp
     -- the count of keys is the count of starts
@@ -269,9 +264,7 @@ theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArra
       have := toInt64_toInt_of_nonneg _ (by rw [hnn j hj]; omega); omega
     have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
     have hkey : ∀ j : Fin g, keys.get j = x (Column.bitsAt c.runStarts (8 * j) 8).toInt64.toInt.toNat := fun j => by
-      have hke : keys.enc = e := Verb.ofPart_enc hks
-      rw [he] at hke
-      rw [Arr.get_long_bytes keys hke]
+      rw [Arr.get_long_bytes keys he]
       obtain ⟨-, hg⟩ := Verify.gatherBytes_spec (8 : Nat).toUSize (by rw [h8]; exact Nat.le_refl _) ((Kernel.nullBits .long).getD 0)
         src (c.runStarts.extract 0 (c.runStarts.size - 8))
       have hj : j.1 < (c.runStarts.extract 0 (c.runStarts.size - 8)).size / 8 := by
@@ -620,7 +613,7 @@ theorem pick_perm {n : Nat} (key : Arr .long n) {b : ByteArray} (hc : key.enc = 
     (q : ByteArray) (hqs : q.size / 8 = n) (hqp : (Verify.ids q).Perm (List.range n))
     (hqc : ∀ s t u, s ≤ t → t ≤ u → u < n → (Column.bitsAt b (at8 q s * 8) 8) = (Column.bitsAt b (at8 q u * 8) 8) →
       (Column.bitsAt b (at8 q t * 8) 8) = (Column.bitsAt b (at8 q s * 8) 8))
-    {k : Nat} {c : Enc} (hp : pick .long key.part q = .ok (k, c)) :
+    {k : Nat} {c : Enc} (hp : (pick .long ⟨n, key⟩ q).2.part = (k, c)) :
     ∃ b', c = .bytes b' ∧ k = n ∧ b'.size / 8 = n ∧
       (∀ s, s < n → Column.bitsAt b' (s * 8) 8 = Column.bitsAt b (at8 q s * 8) 8) ∧
       (∃ os', rangeOffsets .long #v[(k, .bytes b')] n = some os') ∧
@@ -629,7 +622,7 @@ theorem pick_perm {n : Nat} (key : Arr .long n) {b : ByteArray} (hc : key.enc = 
   have hbn := Arr.n_long_bytes key hc
   have hpt : key.part = (n, .bytes b) := by simp only [Arr.part, hc]
   obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
-    (fun _ _ _ e => by rw [hc] at e; cases e) q (by rw [Arr.part] at hp; exact hp)
+    (fun _ _ _ e => by rw [hc] at e; cases e) q hp
   have hs : src = b := by rw [hc] at hsrc; simp [Enc.bytesOf] at hsrc; exact hsrc.symm
   subst hs
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)

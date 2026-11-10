@@ -386,8 +386,8 @@ def relSelOp (n : Nat) : IO (IO (Nat × Int64)) := do
   timedE "relSel" (← selData "relSel" n) fun (k, v) => do
     let w ← LeetQ.Rel.Find.where (← LeetQ.Rel.Ew.atomVal (t := .long) .lt .boolean (500000 : Int64) k)
     let (_, i) ← LeetQ.Rel.Alg.arrDense w.2
-    let _ ← LeetQ.Rel.Arr.ofPart .long w.1 (← LeetQ.Rel.Alg.pick .long k.part i) "relSel"
-    sumR "relSel" (← LeetQ.Rel.Arr.ofPart .long w.1 (← LeetQ.Rel.Alg.pick .long v.part i) "relSel")
+    let _ ← LeetQ.Rel.Vals.ofParts (.atom .long) w.1 (LeetQ.Rel.Alg.pick .long ⟨_, k⟩ i) "relSel"
+    sumR "relSel" (← LeetQ.Rel.Vals.ofParts (.atom .long) w.1 (LeetQ.Rel.Alg.pick .long ⟨_, v⟩ i) "relSel")
 
 /-- `wj` by `Struct.wj` over `asofData`, the window `[tm-100, tm]` with the prevailing row; the sum of the rows. -/
 def relWjOp (n : Nat) : IO (IO (Nat × Int64)) :=

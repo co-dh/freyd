@@ -223,6 +223,15 @@ def pick (t : QAtomicType) (c : (n : Nat) × Arr t n) (i : ByteArray) : (n : Nat
     ⟨len i, Arr.mk ((gatherColumn t c.1 c.2.enc (len i) (.bytes i)).get h)
       (KernelWF.gatherColumn_wf c.2.wf i (Option.some_get h).symm)⟩
 
+/-- `pick` at a type other than `general` is `gatherColumn`'s answer, which always exists. -/
+theorem pick_eq_gather {t : QAtomicType} (hg : t ≠ .general) (c : (n : Nat) × Arr t n) (i : ByteArray) :
+    ∃ e, gatherColumn t c.1 c.2.enc (len i) (.bytes i) = some e ∧ (pick t c i).2.part = (len i, e) := by
+  obtain ⟨e, he⟩ := Option.isSome_iff_exists.1
+    (KernelWF.gatherColumn_isSome c.2.wf hg (m := len i) i (Nat.div_mul_le_self _ _))
+  refine ⟨e, he, ?_⟩
+  unfold pick; rw [dif_neg hg]
+  exact congrArg (len i, ·) (Option.some_inj.1 ((Option.some_get _).trans he))
+
 /-- `raze` of payloads of one type: `razeColumn`, which interns a symbol part to meet an interned one
     and decodes an encoded part to meet a dense one. A general list is `Array.append`. -/
 def raze (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Nat × Enc) :=
@@ -383,6 +392,10 @@ def Cols.rows {k v : Obj} (d : Cols k v) (i : ByteArray) : Except String (Cols k
 def ofCols (k v : Obj) (kc : Part k) (vc : Part v) : Except String (Rel k v) := do
   let n := k.count kc
   pure ⟨n, ← Vals.ofParts k n kc "ofCols", ← Vals.ofParts v n vc "ofCols"⟩
+
+/-- A kernel's dense long answer `b` as a part of `len b` longs, its payload checked (`Arr.ofPart`). -/
+def longsP (b : ByteArray) (what : String) : Except String (Part (.atom .long)) := do
+  pure ⟨len b, ← Arr.ofPart .long (len b) (longs b) what⟩
 
 /-! ## The composite steps, named once -/
 
@@ -1192,6 +1205,23 @@ theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)
   · subst he; simp only [dite_true, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
     subst h; exact ⟨rfl, rfl⟩
   · simp [he, bind, Except.bind, throw, throwThe, MonadExceptOf.throw, pure, Except.pure] at h
+
+/-- A part read at the count `n` holds the part's payload. -/
+theorem _root_.LeetQ.Rel.Vals.ofParts_atom {t : QAtomicType} {n : Nat} {c : Part (.atom t)} {w : String}
+    {a : Arr t n} (h : Vals.ofParts (.atom t) n c w = .ok a) : a.part = c.2.part := by
+  obtain ⟨m, x⟩ := c
+  simp only [Vals.ofParts] at h
+  split at h
+  · next he => subst he; cases h; rfl
+  · cases h
+
+/-- `longsP`'s part holds the dense payload it was given. -/
+theorem longsP_part {b : ByteArray} {w : String} {p : Part (.atom .long)} (h : longsP b w = .ok p) :
+    p.2.part = longs b := by
+  simp only [longsP, bind, Except.bind, pure, Except.pure] at h
+  split at h
+  · cases h
+  · next a ha => cases h; exact Arr.of_c ha
 
 /-- The generic `R°`: `ofCols` of the two payloads, swapped. -/
 theorem conv_cols_holds {R : Rel A B} {S : Rel B A}

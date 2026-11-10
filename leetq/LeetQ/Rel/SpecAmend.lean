@@ -31,22 +31,18 @@ theorem filter_le_one (p : Nat → Nat) (m j : Nat) (hinj : ∀ k < m, ∀ k' < 
 theorem pick_gather {t : QAtomicType} {w m : Nat} (hw : t.width = some w)
     (he : Column.encodes t = true ∨ Column.alpEncodes t = true) (z : Arr t m)
     (ix : ByteArray) {k : Nat} {c : Enc}
-    (hc : Alg.pick t (m, z.enc) ix = .ok (k, c)) :
+    (hc : (Alg.pick t ⟨m, z⟩ ix).2.part = (k, c)) :
     ∃ src, Enc.bytesOf t m z.enc = some src ∧ k = ix.size / 8 ∧
       c = .bytes (Kernel.gatherBytes w.toUSize ((Kernel.nullBits t).getD 0) src ix) := by
   have hdw : Kernel.denseWidth t = some w := by
     cases t <;> first | exact hw | simp [Column.encodes, Column.alpEncodes] at he
-  unfold Alg.pick at hc
-  split at hc
-  · simp [Column.encodes, Column.alpEncodes] at he
-  · split at hc
-    · next _ hg =>
-      cases hc
-      obtain ⟨src, ixb, hsrc, hixb, rfl⟩ := Verify.gatherColumn_fixed_shape hdw m z.enc _ _ _ z.wf hg
-      have e : ix = ixb := by simpa [Enc.bytesOf] using hixb
-      subst e
-      exact ⟨src, hsrc, rfl, rfl⟩
-    · cases hc
+  have hgen : t ≠ .general := by rintro rfl; simp [Column.encodes, Column.alpEncodes] at he
+  obtain ⟨e, hg, hpe⟩ := Alg.pick_eq_gather hgen ⟨m, z⟩ ix
+  rw [hpe] at hc; cases hc
+  obtain ⟨src, ixb, hsrc, hixb, rfl⟩ := Verify.gatherColumn_fixed_shape hdw m z.enc _ _ _ z.wf hg
+  have e : ix = ixb := by simpa [Enc.bytesOf] using hixb
+  subst e
+  exact ⟨src, hsrc, rfl, rfl⟩
 
 /-- Positions listed in order, filtered and read through the list: the list filtered, then read. -/
 theorem filter_reindex {β : Type} (P : List Nat) (g : Nat → Nat) (h : Nat → β) (j : Nat) :
