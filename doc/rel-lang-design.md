@@ -21,8 +21,7 @@ rows (§e) and of the program in §g.
 - A universe belongs to the declared object NAME, not to the `Obj` type: `X` and `N` are both `atom long` and have
   different universes. The interpreter keeps a table name ↦ universe and passes it explicitly (`idU U`, `top U V`,
   `leq U`, `succ U`), which every `Alg` op already takes; `class Univ` (one universe per `Obj`) is not used.
-- `succ` is partial at the top of its universe: on `N = 0…n` it maps `n` to nothing. The interpreter runs it as
-  `succ U ≫ idU U` while `Alg.succ U` maps `n` to `n+1`.
+- `succ` is partial at the top of its universe: on `N = 0…n` it maps `n` to nothing, as `Alg.succ U` does.
 - The universe of every object with one is computed once, when the program is loaded. An object built from an
   `arr` (`𝒫A`, `𝒫A×B`, …) has none.
 - `𝟙`, `⊤`, `∼`, `∋`, `π₁`, `π₂`, `dom` on an object WITHOUT a universe run on DEMAND: in `Q e`, the term `e`
@@ -93,15 +92,21 @@ line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )
           | 'print' expr | 'check' expr ('⊑' | '=') expr
 param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
 expr     := primary ( op? primary )*                 -- flat left fold; no op = composition
-op       := '∩' | '∪' | '−' | '⇒' | '/' | '\'
-primary  := atom '°'*
+op       := '∩' | '∪' | '−' | '⇒' | '/' | '\' | '×' | '+'
+primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
           | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ, objects optional
           | '{' '(' Word ',' Word ')' (',' '(' Word ',' Word ')')* '}' | '(' expr ')'
 object   := Word | object '×' object | object '+' object | '𝒫' object | '[' object ']'
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
+          | Symbol                                    -- one character outside the grammar: `≼`
 ```
+
+- A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`.
+- A one-argument builtin takes a pair as its parentheses: `ran⟨D,D⊤{(0,0)}⟩`.
+- A literal's side is the one declared object holding all its words (named elements, or numbers in its range).
+- A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.
 
 ## d. Iteration: a fold
 
@@ -111,9 +116,9 @@ number universe: `n+1` rounds, each `S` once.
 
 | iteration in Blocks                 | written as                    |
 |-------------------------------------|-------------------------------|
-| `Q`, the reachable states           | fold over `0…6`, step `t`     |
-| `C`, walk lengths to a goal state   | fold over `0…6`, step `(Qt)°` |
-| `Z`, the chosen path                | fold over `0…6`, step `ν`     |
+| `Q`, the reachable states           | fold over `0…27`, step `t`     |
+| `C`, walk lengths to a goal state   | fold over `0…27`, step `(Qt)°` |
+| `Z`, the chosen path                | fold over `0…27`, step `ν`     |
 
 The bound is the declared `N`: a shortest plan moves each block at most twice (to the table, then to its
 place), so every distance is at most `2|X| = 6`.
@@ -123,10 +128,10 @@ arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] + ⦇,⦈`, the fi
 `° dom ran P F est`), never under `frac Λ E thin filter takewhile` — and no array growing inside the body; then
 `iter` from `𝟘` until a round changes nothing reaches the least fixed point (AOP/A6_2.lean:53 `mu`).
 
-Cost found by the check: `∪` razes the flat payloads of both parts of an `arr` side and keeps every element,
-so a state carried through a round is copied, not shared. `L(s₀,𝟙)` over 7 rounds holds 7 states of 3 pairs on
-a payload of 2295 pairs; with `N = 0…27` the fold runs out of memory within 13 rounds. The language is not
-the cause; the fix is in `Alg` (§h).
+Cost: a result keeps only the payload its rows refer to (§h), so `L(s₀,𝟙)` over the 28 rounds of `N = 0…27`
+holds 28 rows on a payload of at most 3 pairs a row (`BlocksRel.lean` guards it). The interpreter evaluates
+every definition, and every sub-term that does not read the round's pairs, once before the fold runs; the
+step recomputes only what depends on the round (`Lang/Eval.lean`, `hoist`).
 
 ## e. Definitions, and lifting a formula to a family
 
@@ -229,7 +234,7 @@ mismatch, no universe for a term (§a), a lifting error (§e), each with its lin
 ## g. The blocks world and its search
 
 A state is a map `S : X ⟶ X`, `(b,y)` putting `b` on `y` and `(b,b)` on the table. The note's formulas are
-written for one state and lifted to the family `∋` of all states (§e). The search is three folds over `0…6`:
+written for one state and lifted to the family `∋` of all states (§e). The search is three folds over `0…27`:
 the reachable states from `s₀`, each state's walk lengths to a goal state (`est(≤)` gives the distance), and the
 path that takes in each state the least move (`est(≼)`) dropping the distance by one.
 
@@ -241,15 +246,15 @@ S₀ ≜ {(C,A),(A,A),(B,B)}                      -- C on A, A and B on the tabl
 G ≜ {(A,B),(B,C)}                             -- A on B, B on C
 
 R(S : X ⟶ X) ≜ S ∩ ∼𝟙                         -- b rests on another block
-M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ ⊤R(S))              -- the moves allowed
+M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))            -- the moves allowed
 S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after the move p
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- St ⟶ St×(X×X): a state, each move it allows
 F ≜ S'(π₁∋,π₂)                                -- St×(X×X) ⟶ X×X: the pairs it leads to
 t ≜ cΛ(F)                                     -- St ⟶ St: one move
-s₀ ≜ ran(Λ(⊤⟨𝟙,S₀⟩))                          -- the start state
-r ≜ Λ(s₀⊤(St,N))                              -- the array 0…6, one fold round each
+s₀ ≜ ran(Λ(⊤(X,X)⟨𝟙,S₀⟩))                     -- the start state
+r ≜ Λ(s₀⊤(St,N))                              -- the array 0…27, one fold round each
 L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B,π₂ succ⟩)⦈)   -- (s,k): s is k steps of B from D
 Q ≜ ran(L(s₀,t)π₁)                            -- the reachable states
 H ≜ Qh(∋)                                     -- the reachable states holding G
@@ -296,7 +301,7 @@ Transcription rules the Lean check follows (they are what the interpreter does):
 | a lifted body                   | a function of the keys in demand `D` and the families    |
 | `Λ(G)est(Q)`                    | `est Q G`                                                |
 | `R⦇e,S⦈`                        | `R ≫ foldOn e.val S (ran R).val`, `S` on the pairs met   |
-| `succ` on `N = 0…n`             | `succ U ≫ idU U`                                         |
+| `succ` on `N = 0…n`             | `succ U`, partial at `n`                                 |
 
 ## h. New types, constructors, approval
 

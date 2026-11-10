@@ -131,6 +131,13 @@ def showRel (objs : Objs) (s t : OTy) {A B : Obj} (R : Rel A B) : String :=
   let ps := R.nub.toList.map fun (x, y) => s!"({showEl objs s A x}, {showEl objs t B y})"
   "{" ++ ", ".intercalate (ps.mergeSort fun a b => decide (a ≤ b)) ++ "}"
 
+/-- An object with a variable left in it. -/
+def OTy.poly : OTy → Bool
+  | .mv _ => true
+  | .prod a b | .sum a b => a.poly || b.poly
+  | .arr a => a.poly
+  | .base _ => false
+
 /-- A relation with its objects. -/
 abbrev Val := (A : Obj) × (B : Obj) × Rel A B
 
@@ -168,6 +175,8 @@ def run (prog : Program) : Except Err Out := do
       let (r, st) ← (elabE env none e).run {}
       let (q, s, t) := r.plain
       let s := zonk st s; let t := zonk st t
+      -- objects its body leaves open (`≼` on any `A×B`) are fixed at each use, as a parameter's are
+      if s.poly || t.poly then env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
       let q := if (uniOf env.objs s).isSome then Pre.close p q s else q
       let ⟨A, B, d, tm⟩ ← build env.objs st p q
       let tm := hoist tm

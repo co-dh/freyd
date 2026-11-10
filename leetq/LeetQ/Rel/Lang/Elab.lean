@@ -557,7 +557,17 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     unify p "the source of the fold's step" ev (.prod e v)
     unify p "the target of the fold's step" w v
     pure (.rel (.fold (.close p q v) r) (.arr e) v)
-  | .lit p ps => do let a ← fresh; let b ← fresh; pure (.rel (.lit p a b ps) a b)
+  | .lit p ps => do
+    -- a side is the one declared object holding all its words: named elements, or numbers in its range
+    let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
+      match i.range, w.toNat? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
+    let side (ws : List String) : M OTy := do
+      match env.objs.filter (fun (_, i) => ws.all (holds i)) with
+      | [(n, _)] => pure (.base n)
+      | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
+      | os => throw ⟨p, s!"the elements {ws} are in {os.map (·.1)}; write the literal after its object"⟩
+    let a ← side (ps.map (·.1)); let b ← side (ps.map (·.2))
+    pure (.rel (.lit p a b ps) a b)
 
 def elabArgs (env : Env) (m : Option OTy) : List Expr → M (List Arg)
   | [] => pure []
@@ -686,42 +696,44 @@ def build : Pre → Except Err Res
   | .comp p q => do
     let ⟨A, B, d, t⟩ ← build p; let ⟨B', C, _, u⟩ ← build q
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
-  | .conv p => do let ⟨A, B, _, _⟩ ← build p; let t ← closed? dp (A := A) (B := B) (← build p); pure ⟨B, A, false, .conv t⟩
-  | .meet p q => do let ⟨A, B, d, t⟩ ← build p; let ⟨e, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .meet t u⟩
-  | .join p q => do let ⟨A, B, d, t⟩ ← build p; let ⟨e, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .join t u⟩
-  | .diff p q => do let ⟨A, B, d, t⟩ ← build p; let ⟨e, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .diff t u⟩
+  | .conv p => do let r ← build p; let ⟨A, B, _, _⟩ := r; pure ⟨B, A, false, .conv (← closed? dp (A := A) (B := B) r)⟩
+  | .meet p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .meet t u⟩
+  | .join p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .join t u⟩
+  | .diff p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .diff t u⟩
   | .dom p => do let ⟨A, _, d, t⟩ ← build p; pure ⟨A, A, d, .dom t⟩
-  | .ran p => do let ⟨A, B, _, _⟩ ← build p; let t ← closed? dp (A := A) (B := B) (← build p); pure ⟨B, B, false, .ran t⟩
+  | .ran p => do let r ← build p; let ⟨A, B, _, _⟩ := r; pure ⟨B, B, false, .ran (← closed? dp (A := A) (B := B) r)⟩
   | .ldiv pos p q b c => do
-    let ⟨A, B, _, _⟩ ← build p; let ⟨_, C, _, _⟩ ← build q
-    let R ← closed? dp (A := A) (B := B) (← build p); let S ← closed? dp (A := A) (B := C) (← build q)
+    let r ← build p; let s ← build q; let ⟨A, B, _, _⟩ := r; let ⟨_, C, _, _⟩ := s
+    let R ← closed? dp (A := A) (B := B) r; let S ← closed? dp (A := A) (B := C) s
     pure ⟨B, C, false, .ldiv R S (← uniTm objs st dp pos b B "R\\S") (← uniTm objs st dp pos c C "R\\S")⟩
   | .rdiv pos p q a b => do
-    let ⟨A, C, _, _⟩ ← build p; let ⟨B, _, _, _⟩ ← build q
-    let R ← closed? dp (A := A) (B := C) (← build p); let S ← closed? dp (A := B) (B := C) (← build q)
+    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
+    let R ← closed? dp (A := A) (B := C) r; let S ← closed? dp (A := B) (B := C) s
     pure ⟨A, B, false, .rdiv R S (← uniTm objs st dp pos a A "R/S") (← uniTm objs st dp pos b B "R/S")⟩
   | .frac pos p q a b => do
-    let ⟨A, C, _, _⟩ ← build p; let ⟨B, _, _, _⟩ ← build q
-    let R ← closed? dp (A := A) (B := C) (← build p); let S ← closed? dp (A := B) (B := C) (← build q)
+    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
+    let R ← closed? dp (A := A) (B := C) r; let S ← closed? dp (A := B) (B := C) s
     pure ⟨A, B, false, .frac R S (← uniTm objs st dp pos a A "frac") (← uniTm objs st dp pos b B "frac")⟩
-  | .pair p q => do let ⟨A, B, d, t⟩ ← build p; let ⟨_, C, _, _⟩ ← build q; let ⟨e, u⟩ ← at? dp (A := A) (B := C) (← build q); pure ⟨A, _, _, .pair t u⟩
+  | .pair p q => do
+    let ⟨A, _, _, t⟩ ← build p; let s ← build q; let ⟨_, C, _, _⟩ := s
+    let ⟨_, u⟩ ← at? dp (A := A) (B := C) s; pure ⟨A, _, _, .pair t u⟩
   | .prod p q => do
-    let ⟨A, B, _, _⟩ ← build p; let ⟨C, D, _, _⟩ ← build q
-    pure ⟨_, _, false, .prod (← closed? dp (A := A) (B := B) (← build p)) (← closed? dp (A := C) (B := D) (← build q))⟩
+    let r ← build p; let s ← build q; let ⟨A, B, _, _⟩ := r; let ⟨C, D, _, _⟩ := s
+    pure ⟨_, _, false, .prod (← closed? dp (A := A) (B := B) r) (← closed? dp (A := C) (B := D) s)⟩
   | .junc p q => do
-    let ⟨A, C, _, _⟩ ← build p; let ⟨B, _, _, _⟩ ← build q
-    pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) (← build p)) (← closed? dp (A := B) (B := C) (← build q))⟩
+    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
+    pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := C) s)⟩
   | .sum p q => do
-    let ⟨A, C, _, _⟩ ← build p; let ⟨B, D, _, _⟩ ← build q
-    pure ⟨_, _, false, .sum (← closed? dp (A := A) (B := C) (← build p)) (← closed? dp (A := B) (B := D) (← build q))⟩
+    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, D, _, _⟩ := s
+    pure ⟨_, _, false, .sum (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := D) s)⟩
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
-  | .est p => do let ⟨B, _, _, _⟩ ← build p; pure ⟨_, _, _, .est (← closed? dp (A := B) (B := B) (← build p))⟩
-  | .thin p => do let ⟨B, _, _, _⟩ ← build p; pure ⟨_, _, _, .thin (← closed? dp (A := B) (B := B) (← build p))⟩
-  | .filter p => do let ⟨B, _, _, _⟩ ← build p; pure ⟨_, _, _, .filter (← closed? dp (A := B) (B := B) (← build p))⟩
+  | .est p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .est (← closed? dp (A := B) (B := B) r)⟩
+  | .thin p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .thin (← closed? dp (A := B) (B := B) r)⟩
+  | .filter p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .filter (← closed? dp (A := B) (B := B) r)⟩
   | .takewhile p => do
-    let ⟨B, _, _, _⟩ ← build p; pure ⟨_, _, _, .takewhile (← closed? dp (A := B) (B := B) (← build p))⟩
+    let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .takewhile (← closed? dp (A := B) (B := B) r)⟩
   | .union a => return ⟨_, _, true, .union (A := ← toObj st dp a)⟩
   | .tau a => return ⟨_, _, true, .tau (A := ← toObj st dp a)⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
@@ -741,11 +753,11 @@ def build : Pre → Except Err Res
   | .leq p n => do let ⟨_, U⟩ ← numU objs st p n "≤"; pure ⟨_, _, false, .leq U⟩
   | .lt p n => do let ⟨_, U⟩ ← numU objs st p n "<"; pure ⟨_, _, false, .lt U⟩
   | .fold e s => do
-    let ⟨V, _, _, _⟩ ← build e
+    let r ← build e; let ⟨V, _, _, _⟩ := r
     match ← build s with
-    | ⟨.prod E V', V'', d, S⟩ =>
+    | ⟨.prod E V', V'', _, S⟩ =>
       if h : V' = V ∧ V'' = V then
-        pure ⟨.arr E, V, true, .fold (← closed? dp (A := V) (B := V) (← build e)) (h.1 ▸ h.2 ▸ S)⟩
+        pure ⟨.arr E, V, true, .fold (← closed? dp (A := V) (B := V) r) (h.1 ▸ h.2 ▸ S)⟩
       else internal dp "the fold's objects"
     | _ => internal dp "the fold's step"
   | .lit p a b ps => do

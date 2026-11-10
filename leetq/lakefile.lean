@@ -19,3 +19,7 @@ require qlean from (get_config? qlean |>.getD "../../qlean")
 @[default_target]
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ]
+
+/-- `rel FILE`: run a Rel program, printing each `print`. -/
+lean_exe rel where
+  root := `LeetQ.Rel.Lang.Main

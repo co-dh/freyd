@@ -138,7 +138,7 @@ def Q : Rel St St := ran (outl (lay S₀ (s₀ S₀) t))
 def H : Rel St St := h G (Q S₀) (Q S₀ ≫ mem (Q S₀).val)
 
 /-- `C ≜ L(H, (Qt)°)`, each state with each length of a walk to a goal state. -/
-def C : Rel SN SN := lay S₀ (H S₀ G) fun _ => (Q S₀ ≫ t (Q S₀))°
+def C : Rel SN SN := let B := (Q S₀ ≫ t (Q S₀))°; lay S₀ (H S₀ G) fun _ => B
 
 /-- `W ≜ (Cπ₁)°(Cπ₂) : St ⟶ N`. -/
 def W : Rel St N := (outl (C S₀ G))° ≫ outr (C S₀ G)
@@ -160,7 +160,7 @@ def σ : Rel St XX := est «≼» (outr (K S₀ G))
 def ν : Rel St St := pair (dom (σ S₀ G)) (σ S₀ G) ≫ Λ(F (ran (pair (dom (σ S₀ G)) (σ S₀ G))))
 
 /-- `Z ≜ L(s₀,ν)`, the chosen path's states with their step. -/
-def Z : Rel SN SN := lay S₀ (s₀ S₀) fun _ => ν S₀ G
+def Z : Rel SN SN := let B := ν S₀ G; lay S₀ (s₀ S₀) fun _ => B
 
 /-- `ζ ≜ (Zπ₂)°(Zπ₁) : N ⟶ St`, the `k`-th state. -/
 def ζ : Rel N St := (outr (Z S₀ G))° ≫ outl (Z S₀ G)
