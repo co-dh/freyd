@@ -26,6 +26,7 @@ import QLean.Dep.Table
 namespace LeetQ.Rel
 
 open QLean QLean.Dep QLean.Kernel
+open Find (atomsOf denseOf)
 
 namespace Ops
 
@@ -63,18 +64,16 @@ def ends (g : Nat) (ob : ByteArray) : ByteArray := ob.extract 8 (8 * (g+1))
 def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
 
-open Find (atomsOf denseOf)
-
 /-- `x` read at the positions `ix`, a position past `n` reading q's null (`()` in a general list): the
     kernel-free gather, through `Enc.atoms` and `Enc.ofAtoms` at an atom type. -/
 def pickRef {n m : Nat} (x : Arr t n) (ix : Fin m → Nat) : Arr t m :=
   if hg : t = .general then by
     subst hg
     exact Arr.mk (.gen (Array.ofFn fun j => if h : ix j < n then x.get ⟨ix j, h⟩ else .general #[])) (by simp [Enc.WF])
-  else atomsOf t hg (fun j => (Enc.atoms t n x.enc).getD (ix j) (nullAtom t hg))
+  else atomsOf t hg (fun j => (Enc.atoms t n x.enc).getD (ix j) (Eval.nullAtom t hg))
     (fun j => by
       simp only [Array.getD]; split
-      · exact Enc.atoms_type t n x.enc _ (Array.getElem_mem ..)
+      · exact Column.atoms_type t n x.enc _ (Array.getElem_mem ..)
       · exact Verify.nullAtom_type t)
     (List.finRange m) (List.length_finRange ..)
 
@@ -113,10 +112,11 @@ theorem lasts_size {g : Nat} (B : ByteArray) (hg : g < USize.size) : (lasts g B)
     last row). The kernel at an atom type where the count fits a `USize`, else `pickRef` at `o[j+1]-1`. -/
 def lastBy (P : Parted t) (_hne : ∀ j : Fin P.g, P.o.get j.castSucc < P.o.get j.succ) : Arr t P.g :=
   if h : t ≠ .general ∧ P.g < USize.size then
-    have hl := lasts_size (denseOf P.o) h.2
-    Arr.mk ((gatherColumn t P.n P.val.enc P.g (.bytes (lasts P.g (denseOf P.o)))).get
-        (KernelWF.gatherColumn_isSome P.val.wf h.1 _ (by rw [← hl]; exact Nat.div_mul_le_self ..)))
-      (hl ▸ KernelWF.gatherColumn_wf P.val.wf _ (by rw [hl]; exact (Option.some_get _).symm))
+    let L := lasts P.g (denseOf P.o)
+    Arr.mk ((gatherColumn t P.n P.val.enc (L.size / 8) (.bytes L)).get
+        (KernelWF.gatherColumn_isSome P.val.wf h.1 L (Nat.div_mul_le_self ..)))
+      (Eq.subst (motive := fun m => Enc.WF t m _) (lasts_size (denseOf P.o) h.2)
+        (KernelWF.gatherColumn_wf P.val.wf L (Option.some_get _).symm))
   else pickRef P.val fun j => (P.o.get j.succ - 1).toUInt64.toNat
 
 /-- `select f x by k`: `f/` over each segment's rows at every type q's grouped fold has an engine for
@@ -164,10 +164,10 @@ def rank {n : Nat} (R : Arr t n) : Arr .long n :=
     an atom type where `p`'s dense payload holds its `n` longs, else `pickRef`. -/
 def permute {n : Nat} (p : Arr .long n) (x : Arr t n) : Arr t n :=
   if h : t ≠ .general ∧ (denseOf p).size = n * 8 then
-    have hl : (denseOf p).size / 8 = n := by rw [h.2]; exact Nat.mul_div_cancel _ (by decide)
-    Arr.mk ((gatherColumn t n x.enc n (.bytes (denseOf p))).get
-        (KernelWF.gatherColumn_isSome x.wf h.1 _ (by rw [h.2])))
-      (hl ▸ KernelWF.gatherColumn_wf x.wf _ (by rw [hl]; exact (Option.some_get _).symm))
+    Arr.mk ((gatherColumn t n x.enc ((denseOf p).size / 8) (.bytes (denseOf p))).get
+        (KernelWF.gatherColumn_isSome x.wf h.1 _ (Nat.div_mul_le_self ..)))
+      (Eq.subst (motive := fun m => Enc.WF t m _) (by rw [h.2]; exact Nat.mul_div_cancel _ (by decide))
+        (KernelWF.gatherColumn_wf x.wf _ (Option.some_get _).symm))
   else pickRef x fun j => (p.get j).toUInt64.toNat
 
 /-- `asc x` / `desc x` = `(<x);x`, keyed by position. `sortValues` where the key is a bijection of
@@ -1409,19 +1409,21 @@ theorem lastBy_toList {n g : Nat} {o : Arr .long (g+1)} {co : Cuts o n}
     obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
     have c0 := toNat_cast a0
     have c1 := toNat_cast (Int.le_trans a0 a1)
-    have hl := Int64.lt_iff_toInt_lt.1 (hne ⟨j, hj⟩)
-    rw [getElem!_pos o.toList j (by rw [Arr.length_toList]; omega),
-      getElem!_pos o.toList (j+1) (by rw [Arr.length_toList]; omega), Arr.getElem_toList, Arr.getElem_toList] at c0 c1 ⊢
-    simp only [Fin.castSucc_mk, Fin.succ_mk] at hl
+    have e0 : o.toList[j]! = o.get ⟨j, by omega⟩ := by
+      rw [getElem!_pos o.toList j (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+    have e1 : o.toList[j+1]! = o.get ⟨j+1, by omega⟩ := by
+      rw [getElem!_pos o.toList (j+1) (by rw [Arr.length_toList]; omega), Arr.getElem_toList]
+    have hl : (o.toList[j]!).toInt < (o.toList[j+1]!).toInt := by
+      rw [e0, e1]; exact Int64.lt_iff_toInt_lt.1 (hne ⟨j, hj⟩)
     omega
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
   have hlw := Verify.val_i64_va Ew.add Int64.minValue (ends g B) ((-1 : Int64).toUInt64) g (by omega)
   change Verify.elemsW 8 (lasts g B) = _ at hlw
   have hlz := lasts_size (g := g) B (by omega)
   obtain ⟨b, hxc, -, hbw, hbn⟩ := Arr.dense_long x hx hn
-  have hgc : gatherColumn .long n x.enc g (.bytes (lasts g (denseOf o))) =
+  have hgc : gatherColumn .long n x.enc ((lasts g (denseOf o)).size / 8) (.bytes (lasts g (denseOf o))) =
       some (.bytes (gatherBytes (8 : Nat).toUSize 0x8000000000000000 b (lasts g B))) := by
-    rw [hdo]
+    rw [hdo, hlz]
     generalize lasts g B = L at hlz
     have hL : ¬ L.size < g * 8 := by rw [← hlz]; exact Nat.not_lt.2 (Nat.div_mul_le_self _ _)
     rcases hxc with hxc | ⟨md, pk, hxc, rfl⟩ <;> rw [hxc]
@@ -1437,7 +1439,7 @@ theorem lastBy_toList {n g : Nat} {o : Arr .long (g+1)} {co : Cuts o n}
   · rw [Arr.toList_long_bytes _ hS, Spec.lastBy, Spec.groups_range, List.length_map, Arr.length_toList,
       Nat.add_sub_cancel, List.map_map, List.map_map]
     refine List.map_congr_left fun j hj => ?_
-    have hj := List.mem_range.1 hj
+    have hj : j < g := List.mem_range.1 hj
     obtain ⟨a0, a1, a2⟩ := cuts_get co (i := j) (j := j + 1) (by omega) (by omega)
     have c0 := toNat_cast a0
     have c1 := toNat_cast (Int.le_trans a0 a1)
@@ -1639,10 +1641,11 @@ private def b101 : Arr .boolean 3 := (Arr.mk (.bits (ByteArray.mk #[0b101])) (by
 #guard (asc xsA).attrCell.map (·.1) == some 1
 #guard (desc xsA).toList == Spec.sort true xs
 #guard (xasc sA xsA).toList == (Spec.grade false sA.toList).map fun i => xs[i.toNatClampNeg]!
--- a general list takes `pickRef`: `` `a`b`c@2 0 1 `` boxed
-private def gL : Arr .general 3 := Arr.mk (.gen #[.atom (.long 7), .atom (.long 8), .atom (.long 9)]) (by simp [Enc.WF])
-#guard (permute (Arr.mk (.bytes (packLongs [2, 0, 1])) (by decide) : Arr .long 3) gL).toList ==
-  [.atom (.long 9), .atom (.long 7), .atom (.long 8)]
+-- a general list takes `pickRef`: `(7;8;9)@2 0 1`
+private def gL : Arr .general 3 :=
+  Arr.mk (.gen #[QValue.atom (.long 7), QValue.atom (.long 8), QValue.atom (.long 9)]) (by simp [Enc.WF])
+#guard ((permute (Arr.mk (.bytes (packLongs [2, 0, 1])) (by decide) : Arr .long 3) gL).toList.map fun v : QValue => reprStr v) ==
+  [9, 7, 8].map fun i => reprStr (QValue.atom (.long i))
 
 -- the parted list `(10 20; 30; 40 50 60)` and the groups `[0,1) [1,1) [1,3)` with an empty middle one
 private def og : Arr .long 4 := (Arr.mk (.bytes (packLongs [0, 2, 3, 6])) (by decide) : Arr .long 4)

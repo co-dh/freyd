@@ -1244,15 +1244,15 @@ theorem lastBy_link {K : QAtomicType} {n g : Nat} (k : Arr K n) (v : Arr .long n
     {o : Arr .long (g+1)} {co : Cuts o n} {wo wv : List UInt64} (ho : longWords (g+1) o.enc = some wo)
     (hv : longWords n v.enc = some wv) (hg : g + 1 < USize.size) (hU : n < USize.size) (hn : n ≤ 2 ^ 63)
     (hinj : ∀ j j' a, keys.rel j a → keys.rel j' a → j = j') (hocc : ∀ j a, keys.rel j a → ∃ i, k.rel i a)
-    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) {S : Arr .long g}
-    (h : Ops.lastBy ⟨g, n, o, co, v⟩ = some S) : (lastBy k v).den = keys.rel° ≫ S.rel := by
+    (hk : ∀ a i, k.rel i a ↔ ∃ j, keys.rel j a ∧ Verb.grp o i j) (hrow : ∀ j : Fin g, o.get j.castSucc < o.get j.succ) :
+    (lastBy k v).den = keys.rel° ≫ (Ops.lastBy ⟨g, n, o, co, v⟩ hrow).rel := by
   have hne : ∀ j a, keys.rel j a → ∃ c, (Λ ((Verb.grp o)°) ≫ est (fun a b : Nat => a ≥ b) ≫ v.rel : Idx ⟶ Ob .long) j c :=
     fun j a hkey => by
       obtain ⟨i, hki⟩ := hocc j a hkey
       obtain ⟨j', hkey', hg'⟩ := (hk a i).1 hki
       obtain rfl := hinj j j' a hkey hkey'
       exact lastEst_some co v ((rel_iff keys j a).1 hkey).1 hg'
-  rw [lastBy_grp k v keys o hn hinj hk, Verb.lastBy_rel ho hv hg hU h]
+  rw [lastBy_grp k v keys o hn hinj hk, Verb.lastBy_rel ho hv hg hU hrow]
   exact (congrArg (keys.rel° ≫ ·) (Cat.assoc _ _ _)).trans (keys_miss keys _ _ hne).symm
 
 /-- **`select f x by k` against `overBy_rel`**: through a grouping `keys` of `k` in which every key occurs,
