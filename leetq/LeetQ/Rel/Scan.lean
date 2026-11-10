@@ -19,6 +19,8 @@ import QLean.Verify.Structural
 import QLean.Verify.BinWin
 import QLean.Verify.Dyad
 import QLean.Verify.ScanOver
+import LeetQ.Rel.KernelWF.Reduce
+import QLean.Dep.Table
 
 namespace LeetQ.Rel
 
@@ -60,9 +62,41 @@ def ends (g : Nat) (ob : ByteArray) : ByteArray := ob.extract 8 (8 * (g+1))
 def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
 
-/-- `count each` by group: `1_deltas o`. -/
-def countBy {v : QAtomicType} (P : Parted v) : Option (Arr .long P.g) := do
-  (Arr.of .long P.g (.vector .long P.g (.bytes (sizes P.g (← offs P.o))) none) "count each").toOption
+/-- The column of `f` over `vs`, through `Enc.ofAtoms`, which answers every count: the kernel-free answer. -/
+def atomsOf {α : Type} {m : Nat} (t : QAtomicType) (hg : t ≠ .general) (f : α → QAtom) (hf : ∀ v, (f v).type = t)
+    (vs : List α) (hm : vs.length = m) : Arr t m :=
+  have ha : ∀ a ∈ (vs.map f).toArray, a.type = t := fun a h => by
+    obtain ⟨v, -, rfl⟩ := List.mem_map.1 (by simpa using h); exact hf v
+  Arr.mk ((Enc.ofAtoms t (vs.map f).toArray hg).get (Column.ofAtoms_isSome hg ha))
+    (by simpa [hm] using Column.ofAtoms_WF ha (Option.some_get (Column.ofAtoms_isSome hg ha)).symm)
+
+/-- A long column's dense payload: `Enc.WF .long` admits only `bytes` and `foR`, both of which decode. -/
+def denseOf {nx : Nat} (x : Arr .long nx) : ByteArray :=
+  (Enc.bytesOf .long nx x.enc).get (KernelWF.bytesOf_isSome (by decide) (by decide) x.wf)
+
+theorem denseOf_eq {nx : Nat} {x : Arr .long nx} {b : ByteArray} (h : Enc.bytesOf .long nx x.enc = some b) :
+    denseOf x = b := Option.some.inj ((Option.some_get _).trans h)
+
+/-- A pass pushing one `ow`-byte word per element of `til m` writes `m * ow` bytes. -/
+theorem foldl_push_size (f : Nat → UInt64) (ow : Nat) (how : ow ≤ 8) (m : Nat) :
+    ((List.range m).foldl (fun out i => Column.pushBits out (f i) ow) ByteArray.empty).size = m * ow := by
+  rw [(Verify.foldl_pushBits f ow how (List.range m) .empty).1]; simp [Nat.mul_comm]
+
+/-- `sizes` writes one long per group. -/
+theorem sizes_size {g : Nat} (B : ByteArray) (hg : g < USize.size) : (sizes g B).size = g * 8 := by
+  have e : sizes g B = (List.range g).foldl (fun out i => Column.pushBits out
+      ((Ew.intStep Ew.sub Int64.minValue (Column.bitsAt (ends g B) (i * 8) 8).toInt64
+        (Column.bitsAt (B.extract 0 (8 * g)) (i * 8) 8).toInt64).toUInt64) 8) ByteArray.empty := by
+    unfold sizes Ew.val; rw [USize.toNat_ofNat_of_lt' hg]; rfl
+  rw [e, foldl_push_size _ 8 (by decide)]
+
+/-- `count each` by group: `1_deltas o`, by the kernel where the count fits a `USize`, else the same
+    differences read off `o`'s elements. -/
+def countBy {v : QAtomicType} (P : Parted v) : Arr .long P.g :=
+  if h : P.g < USize.size then
+    Arr.mk (.bytes (sizes P.g (denseOf P.o))) (KernelWF.wf_bytes (w := 8) (by decide) rfl (sizes_size _ h))
+  else atomsOf .long (by decide) QAtom.long (fun _ => rfl)
+    (List.ofFn fun j : Fin P.g => P.o.get j.succ - P.o.get j.castSucc) (List.length_ofFn ..)
 
 /-- `last each` by group: `x[-1+1_o]`. `none` when a group is empty, which has no last row. -/
 def lastBy (P : Parted t) : Option (Arr t P.g) := do
@@ -96,17 +130,29 @@ def mwin (op : Scan.MOp) (w : Nat) (rt : QAtomicType) {n : Nat} (R : Arr t n) : 
 
 /-! ## Order: `iasc idesc rank asc desc xasc` -/
 
-/-- `<x` / `>x`: the stable grade, keyed by position. -/
-def grade (desc : Bool) {n : Nat} (R : Arr t n) : Option (Arr .long n) := do
-  let p ← gradeColumn t desc n R.enc
-  (Arr.of .long n (.vector .long n p none) "<x").toOption
+/-- `R`'s positions in q's order (`Carrier.le`), ties in index order both ways round: the kernel-free grade. -/
+def gradeList (desc : Bool) {n : Nat} (R : Arr t n) : List (Fin n) :=
+  (List.finRange n).mergeSort fun i j => if desc then Table.Carrier.le (R.get j) (R.get i) else Table.Carrier.le (R.get i) (R.get j)
+
+/-- `<x` / `>x`: the stable grade, keyed by position. The kernel where the count fits a `USize` and the
+    column is not general, which it does not grade; `gradeList` elsewhere. -/
+def grade (desc : Bool) {n : Nat} (R : Arr t n) : Arr .long n :=
+  if h : n < USize.size ∧ t ≠ .general then
+    Arr.mk ((gradeColumn t desc n R.enc).get (KernelWF.gradeColumn_isSome h.1 R.wf h.2))
+      (KernelWF.gradeColumn_wf h.1 R.wf (Option.some_get _).symm)
+  else atomsOf .long (by decide) (fun i : Fin n => QAtom.long (Int64.ofNat i)) (fun _ => rfl) (gradeList desc R)
+    (by simp [gradeList, List.length_mergeSort])
 
 def iasc {n : Nat} := @grade t false n
 def idesc {n : Nat} := @grade t true n
 
 /-- `rank x` = `<<x`, key kept: the place of each element in the ascending order. -/
-def rank {n : Nat} (R : Arr t n) : Option (Arr .long n) :=
-  (gradeColumn t false n R.enc (rank := true)).bind fun e => (Arr.of .long n (.vector .long n e none) "rank x").toOption
+def rank {n : Nat} (R : Arr t n) : Arr .long n :=
+  if h : n < USize.size ∧ t ≠ .general then
+    Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome h.1 R.wf h.2))
+      (KernelWF.gradeColumn_wf h.1 R.wf (Option.some_get _).symm)
+  else atomsOf .long (by decide) (fun i : Fin n => QAtom.long (Int64.ofNat ((gradeList false R).idxOf i))) (fun _ => rfl)
+    (List.finRange n) (List.length_finRange ..)
 
 /-- `x` reordered by the permutation `p`, a `long` payload of `n` positions: one gather. -/
 def permute {n : Nat} (p : Enc) (x : Arr t n) : Option (Arr t n) := do
@@ -951,12 +997,6 @@ theorem int32_count (L : Nat) : (UInt64.ofNat (L % 2 ^ 32)).toUInt32.toInt32 = I
     omega
   rw [this]; rfl
 
-/-- A pass pushing one `ow`-byte word per element of `til m` writes `m * ow` bytes: the size a kernel
-    answer's header must carry, which `Arr.of` checks. -/
-theorem foldl_push_size (f : Nat → UInt64) (ow : Nat) (how : ow ≤ 8) (m : Nat) :
-    ((List.range m).foldl (fun out i => Column.pushBits out (f i) ow) ByteArray.empty).size = m * ow := by
-  rw [(Verify.foldl_pushBits f ow how (List.range m) .empty).1]; simp [Nat.mul_comm]
-
 /-- `mwinColumn` over a long column that lists `longWords`, at a verb that reads it as `i64` and writes
     `rt`'s width: `mwinBits` over the dense payload `Arr.dense_long` names, whichever form the column is in. -/
 theorem mwin_long {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mwinType op .long = some rt)
@@ -1033,20 +1073,17 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
 /-- **`<x` / `>x` over a long column**: q's stable grade, from `Order.grade`'s merge sort of `til n`
     (`ids_indices`) under `rank_i64_le_iff`. -/
 theorem grade_toList {desc : Bool} {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws)
-    (hn : n < USize.size) {S : Arr .long n} (h : grade desc R = some S) :
-    S.toList = Spec.grade desc R.toList := by
+    (hn : n < USize.size) : (grade desc R).toList = Spec.grade desc R.toList := by
   obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R hx hn
   have hg : gradeColumn .long desc n R.enc = some (.bytes (Order.grade .i64 desc n.toUSize B)) := by
     rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
     · rw [← hBs]; simp [gradeColumn, Enc.bytesOf, show orderKind .long = some .i64 from rfl, show Scan.Kind.width .i64 = 8 from rfl, Nat.not_lt.2 (Nat.div_mul_le_self _ _)]
     · rfl
-  simp only [grade, hg, bind, Option.bind] at h
-  generalize hP : Order.grade .i64 desc n.toUSize B = P at h
-  simp only [Arr.of] at h
-  split at h
-  · rename_i hw
-    have hS : S.enc = .bytes P := by cases h; rfl
-    have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
+  have hS : (grade desc R).enc = .bytes (Order.grade .i64 desc n.toUSize B) := by
+    unfold grade; rw [dif_pos ⟨hn, by decide⟩]; exact Option.some.inj ((Option.some_get _).trans hg)
+  generalize hP : Order.grade .i64 desc n.toUSize B = P at hS
+  generalize grade desc R = S at hS ⊢
+  · have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
       rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
     have hids : Verify.ids P = (List.range n).mergeSort fun i j =>
         if desc then Order.keyAt .i64 B j ≤ Order.keyAt .i64 B i else Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j := by
@@ -1070,7 +1107,6 @@ theorem grade_toList {desc : Bool} {n : Nat} {R : Arr .long n} {ws : List UInt64
       cases desc <;> simp [Order.keyAt, Scan.Kind.bitsAt, Scan.Kind.width, rank_i64_le_iff, List.getElem?_range hi',
         List.getElem?_range hj']
     simpa using this
-  all_goals cases h
 
 /-- **`asc x` / `desc x` over a long column**: q's stable sort, from `sortValues_spec` under
     `rank_i64_le_iff`. -/
@@ -1321,28 +1357,16 @@ theorem sizes_words {g n : Nat} {o : Arr .long (g+1)} (co : Cuts o n) {B : ByteA
   simp only [Ew.intStep, e0, e1, Bool.or_false, show (Ew.sub == Ew.add) = false by decide,
     show (Ew.sub == Ew.sub) = true by decide, if_true, Bool.false_eq_true, if_false]
 
-/-- `sizes` writes one long per group: the size `Arr.of` checks the count's header against. -/
-theorem sizes_size {g : Nat} (B : ByteArray) (hg : g < USize.size) : (sizes g B).size = g * 8 := by
-  have e : sizes g B = (List.range g).foldl (fun out i => Column.pushBits out
-      ((Ew.intStep Ew.sub Int64.minValue (Column.bitsAt (ends g B) (i * 8) 8).toInt64
-        (Column.bitsAt (B.extract 0 (8 * g)) (i * 8) 8).toInt64).toUInt64) 8) ByteArray.empty := by
-    unfold sizes Ew.val; rw [USize.toNat_ofNat_of_lt' hg]; rfl
-  rw [e, foldl_push_size _ 8 (by decide)]
-
 /-- **`count each` by group**: `1_deltas o`, each group's size, at any value type and any offsets that list
     `longWords`. `Cuts` keeps every offset in `[0, n]`, so no `0N` reaches `Ew.sub` and no difference wraps. -/
 theorem countBy_toList {v : QAtomicType} {n g : Nat} {o : Arr .long (g+1)} {co : Cuts o n}
-    {x : Arr v n} {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size)
-    {S : Arr .long g} (h : countBy ⟨g, n, o, co, x⟩ = some S) :
-    S.toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
+    {x : Arr v n} {wo : List UInt64} (ho : longWords (g+1) o.enc = some wo) (hg : g + 1 < USize.size) :
+    (countBy ⟨g, n, o, co, x⟩).toList = Spec.countBy (o.toList.map Int64.toNatClampNeg) x.toList := by
   obtain ⟨B, -, hb, hBw, hBs⟩ := Arr.dense_long o ho hg
-  have hof : offs o = some B := hb
-  simp only [countBy, hof, bind, Option.bind] at h
-  simp only [Arr.of] at h
-  split at h
-  · rename_i hw
-    have hS : S.enc = .bytes (sizes g B) := by cases h; rfl
-    rw [Arr.toList_long S (show longWords g S.enc = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
+  have hd : denseOf o = B := denseOf_eq hb
+  have hS : (countBy ⟨g, n, o, co, x⟩).enc = .bytes (sizes g B) := by
+    simp only [countBy, dif_pos (show g < USize.size by omega), hd]; rfl
+  · rw [Arr.toList_long _ (show longWords g (countBy ⟨g, n, o, co, x⟩).enc = some (Verify.elemsW 8 (sizes g B)) by rw [hS]; rfl),
       sizes_words co (toList_words o ho hBw hBs) (by omega), Spec.countBy, Spec.groups_range,
       List.length_map, Arr.length_toList, Nat.add_sub_cancel, List.map_map, List.map_map]
     refine List.map_congr_left fun j hj => ?_
@@ -1354,8 +1378,6 @@ theorem countBy_toList {v : QAtomicType} {n g : Nat} {o : Arr .long (g+1)} {co :
       List.length_take, List.length_drop, Arr.length_toList, Int64.toInt64_toUInt64]
     congr 1
     omega
-  · rename_i hw
-    cases h
 
 /-- **`last each` by group over a long column**: the last row of each group. An answer means no group
     is empty — `lastBy` reads that off `min` of the sizes, here `over_bytes` and `over_lesser_le` — so
@@ -1624,9 +1646,9 @@ private def b101 : Arr .boolean 3 := (Arr.mk (.bits (ByteArray.mk #[0b101])) (by
 #guard vals (mwin .mcount 2 .int b101) == [1, 2, 2]
 #guard (mwin .msum 3 .int xsA).isNone
 
-#guard vals (iasc xsA) == Spec.grade false xs
-#guard vals (idesc zsA) == [1, 2, 3, 0] ∧ vals (idesc zsA) == Spec.grade true zsA.toList
-#guard vals (rank xsA) == Spec.rank xs
+#guard (iasc xsA).toList == Spec.grade false xs
+#guard (idesc zsA).toList == [1, 2, 3, 0] ∧ (idesc zsA).toList == Spec.grade true zsA.toList
+#guard (rank xsA).toList == Spec.rank xs
 #guard vals (asc xsA) == Spec.sort false xs
 #guard ((asc xsA).map (·.attrCell.map (·.1))) == some (some 1)
 #guard vals (desc xsA) == Spec.sort true xs
@@ -1648,9 +1670,9 @@ private def GI : Parted .int :=
       (by decide)⟩
 #guard vals (at? .int (overBy .add GI)) == [30, 30, 90]
 #guard vals (at? .int (overBy .greater GI)) == [20, 30, 50]
-#guard vals (countBy G) == Spec.countBy [0, 2, 3, 6] gv
-#guard vals (countBy E) == [1, 0, 2] ∧ vals (countBy E) == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
-#guard (do let b := G.box; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R countBy).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
+#guard (countBy G).toList == Spec.countBy [0, 2, 3, 6] gv
+#guard (countBy E).toList == [1, 0, 2] ∧ (countBy E).toList == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
+#guard (do let b := G.box; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R fun P => some (countBy P)).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
 #guard vals (lastBy G) == Spec.lastBy [0, 2, 3, 6] gv
 #guard (lastBy E).isNone
 #guard vals (at? .long (overBy .add G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))
