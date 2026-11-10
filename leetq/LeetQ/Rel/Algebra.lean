@@ -21,6 +21,7 @@ import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
 import LeetQ.Rel.Parted
+import LeetQ.Rel.Scan
 
 namespace LeetQ.Rel.Alg
 
@@ -390,10 +391,11 @@ def _root_.LeetQ.Rel.Vals.parts : {A : Obj} → {n : Nat} → Vals A n → Part 
   | .atom _, n, x => ⟨n, x⟩
   | .prod _ _, _, x => (Vals.parts x.1, Vals.parts x.2)
 
-/-- A side's parts at the count `n`, column by column: every count is checked against `n`. -/
-def _root_.LeetQ.Rel.Vals.ofParts : (A : Obj) → (n : Nat) → Part A → String → Except String (Vals A n)
-  | .atom _, n, c, what => if h : c.1 = n then pure (h ▸ c.2) else throw s!"{what}: {c.1} rows where {n} are expected"
-  | .prod a b, n, c, what => do pure (← Vals.ofParts a n c.1 what, ← Vals.ofParts b n c.2 what)
+/-- A side's parts at the count `n`, column by column: a column of `n` rows is itself; one a kernel answered
+    at another count (none does: no size theorem says so yet) is read at its first `n` rows (`pickRef`). -/
+def _root_.LeetQ.Rel.Vals.ofParts : (A : Obj) → (n : Nat) → Part A → Vals A n
+  | .atom _, n, c => if h : c.1 = n then h ▸ c.2 else Ops.pickRef c.2 fun j => j.1
+  | .prod a b, n, c => (Vals.ofParts a n c.1, Vals.ofParts b n c.2)
 
 /-- A relation's two payloads. -/
 structure Cols (k v : Obj) where
@@ -401,20 +403,22 @@ structure Cols (k v : Obj) where
   key : Part k
   val : Part v
 
-def cols {k v : Obj} (R : Rel k v) : Except String (Cols k v) := pure ⟨R.n, R.key.parts, R.val.parts⟩
+def cols {k v : Obj} (R : Rel k v) : Cols k v := ⟨R.n, R.key.parts, R.val.parts⟩
 
 /-- The rows of `d` at the index column `i`. -/
-def Cols.rows {k v : Obj} (d : Cols k v) (i : ByteArray) : Except String (Cols k v) := do
-  pure ⟨len i, k.pick d.key i, v.pick d.val i⟩
+def Cols.rows {k v : Obj} (d : Cols k v) (i : ByteArray) : Cols k v := ⟨len i, k.pick d.key i, v.pick d.val i⟩
 
-/-- Two payloads as a relation keyed by an explicit column. -/
-def ofCols (k v : Obj) (kc : Part k) (vc : Part v) : Except String (Rel k v) := do
+/-- Two payloads as a relation keyed by an explicit column, of the key's count. -/
+def ofCols (k v : Obj) (kc : Part k) (vc : Part v) : Rel k v :=
   let n := k.count kc
-  pure ⟨n, ← Vals.ofParts k n kc "ofCols", ← Vals.ofParts v n vc "ofCols"⟩
+  ⟨n, Vals.ofParts k n kc, Vals.ofParts v n vc⟩
 
-/-- A kernel's dense long answer `b` as a part of `len b` longs, its payload checked (`Arr.ofPart`). -/
-def longsP (b : ByteArray) (what : String) : Except String (Part (.atom .long)) := do
-  pure ⟨len b, ← Arr.ofPart .long (len b) (longs b) what⟩
+/-- A kernel's dense long answer `b` as a part of `len b` longs: `b` itself where it holds whole longs, else
+    its first `len b` longs (the bytes past them are no long). -/
+def longsP (b : ByteArray) : Part (.atom .long) :=
+  if h : b.size = len b * 8 then ⟨len b, Arr.mk (.bytes b) (KernelWF.wf_bytes (by decide) rfl h)⟩
+  else ⟨len b, Arr.mk (.bytes (b.extract 0 (len b * 8)))
+    (KernelWF.wf_bytes (by decide) rfl (by simp [ByteArray.size_extract, len, Nat.div_mul_le_self]))⟩
 
 /-! ## The composite steps, named once -/
 
@@ -484,11 +488,11 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
   | .prod a b, _, cs => tuples (Obj.codes a (cs.map (·.1))) #[Obj.codes b (cs.map (·.2))]
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
-def pairs {k v : Obj} {p : Nat} (ds : Vector (Cols k v) p) : Except String (Vector Code p) := do
-  pure (tuples (k.codes (ds.map (·.key))) #[v.codes (ds.map (·.val))])
+def pairs {k v : Obj} {p : Nat} (ds : Vector (Cols k v) p) : Vector Code p :=
+  tuples (k.codes (ds.map (·.key))) #[v.codes (ds.map (·.val))]
 
 /-- `R` with each pair once: the first row of each class of `|R|`. -/
-def Cols.nub {k v : Obj} (d : Cols k v) : Except String (Cols k v) := do
+def Cols.nub {k v : Obj} (d : Cols k v) : Cols k v :=
   d.rows (tuples.tupleIds (k.codes #v[d.key])[0] #[(v.codes #v[d.val])[0]]).2
 
 /-- `join(l, r)`: every pair of a left and a right row with equal codes, as two index columns —
@@ -582,29 +586,27 @@ section Gen
 variable {A B C : Obj}
 
 /-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
-def le (R S : Rel A B) : Except String Bool := do
-  let r ← cols R; let s ← cols S
-  let c ← pairs #v[r, s]
-  pure (len (whereBits r.n.toUSize (c[0].member c[1])) == r.n)
+def le (R S : Rel A B) : Bool :=
+  let c := pairs #v[cols R, cols S]
+  len (whereBits R.n.toUSize (c[0].member c[1])) == R.n
 
 /-- `R ∩ S`: the semi-join on pairs — `member`, `whereBits`, `gatherColumn`. -/
-def inter (R S : Rel A B) : Except String (Rel A B) := do
-  let r ← cols R; let s ← cols S
-  let c ← pairs #v[r, s]
-  let t ← r.rows (whereBits r.n.toUSize (c[0].member c[1]))
+def inter (R S : Rel A B) : Rel A B :=
+  let c := pairs #v[cols R, cols S]
+  let t := (cols R).rows (whereBits R.n.toUSize (c[0].member c[1]))
   ofCols A B t.key t.val
 
 /-- `R ∪ S`: `razeColumn` of keys and of vals, the first row of each pair. -/
-def union (R S : Rel A B) : Except String (Rel A B) := do
-  let r ← cols R; let s ← cols S
-  let u ← (Cols.mk (k := A) (v := B) (r.n + s.n) (A.raze #[r.key, s.key]) (B.raze #[r.val, s.val])).nub
+def union (R S : Rel A B) : Rel A B :=
+  let r := cols R; let s := cols S
+  let u := (Cols.mk (k := A) (v := B) (r.n + s.n) (A.raze #[r.key, s.key]) (B.raze #[r.val, s.val])).nub
   ofCols A B u.key u.val
 
 /-- `𝟘`: no pair. -/
-def zero : Except String (Rel A B) := ofCols A B A.empty B.empty
+def zero : Rel A B := ofCols A B A.empty B.empty
 
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`. -/
-def top {ma mb : Nat} (Ua : Vals A ma) (Ub : Vals B mb) : Except String (Rel A B) := do
+def top {ma mb : Nat} (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
   let (i, j) := cross ma mb
   ofCols A B (A.pick Ua.parts i) (B.pick Ub.parts j)
 
@@ -625,38 +627,37 @@ theorem convArr_holds {k v : Obj} {n : Nat} (key : Vals k n) (val : Vals v n) (x
   exact ⟨fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩, fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩⟩
 
 /-- `R°`: `convArr`. -/
-def conv (R : Rel A B) : Except String (Rel B A) := pure (convArr R.key R.val)
+def conv (R : Rel A B) : Rel B A := convArr R.key R.val
 
 /-- `R ≫ S`: `join` on `R.val = S.key`, the key picked from `R`, the val from `S`. -/
-def comp (R : Rel A B) (S : Rel B C) : Except String (Rel A C) := do
-  let r ← cols R; let s ← cols S
+def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
+  let r := cols R; let s := cols S
   let c := B.codes #v[r.val, s.key]
   let (i, j) := join c[0] c[1]
   ofCols A C (A.pick r.key i) (C.pick s.val j)
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
-def distinctCorefl (t : Obj) (x : Part t) : Except String (Rel t t) := do
+def distinctCorefl (t : Obj) (x : Part t) : Rel t t :=
   let d := t.pick x (t.codes #v[x])[0].groupIds.2
   ofCols t t d d
 
 /-- `dom R`: the coreflexive on the distinct keys. -/
-def dom (R : Rel A B) : Except String (Rel A A) := do let r ← cols R; distinctCorefl A r.key
+def dom (R : Rel A B) : Rel A A := distinctCorefl A (cols R).key
 
 /-- `ran R`: the coreflexive on the distinct vals. -/
-def ran (R : Rel A B) : Except String (Rel B B) := do let r ← cols R; distinctCorefl B r.val
+def ran (R : Rel A B) : Rel B B := distinctCorefl B (cols R).val
 
 /-- `R ≫ corNeg(C)`, the anti-join: the rows of `R` whose value is no value of `C` (`anti` on one joint coding). -/
-def antiJoin (R : Rel A B) (C : Rel B B) : Except String (Rel A B) := do
-  let r ← cols R; let c ← cols C
-  let vc := B.codes #v[r.val, c.val]
+def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B :=
+  let r := cols R
+  let vc := B.codes #v[r.val, (cols C).val]
   let i := anti vc[0] vc[1]
   ofCols A B (A.pick r.key i) (B.pick r.val i)
 
 /-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
-def diff (R S : Rel A B) : Except String (Rel A B) := do
-  let r ← cols R; let s ← cols S
-  let c ← pairs #v[r, s]
-  let t ← r.rows (anti c[0] c[1])
+def diff (R S : Rel A B) : Rel A B :=
+  let c := pairs #v[cols R, cols S]
+  let t := (cols R).rows (anti c[0] c[1])
   ofCols A B t.key t.val
 
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
@@ -664,11 +665,11 @@ def diff (R S : Rel A B) : Except String (Rel A B) := do
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do
   let (k, u) ← arrDense U
   let d := pick a ⟨m, U⟩ (whereBits m.toUSize (Ew.cmp op (cls k) Ew.va u (Column.pushBits .empty e k.width) m.toUSize))
-  ofCols _ _ d d
+  pure (ofCols _ _ d d)
 
 /-- `Coreflexive R`, `R ⊑ 𝟙`: every key's code equals its val's. -/
 def isCorefl (R : Rel A A) : Except String Bool := do
-  let r ← cols R
+  let r := cols R
   let c := A.codes #v[r.key, r.val]
   pure (len (c[0].eqAt c[1]) == r.n)
 
@@ -676,7 +677,7 @@ def isCorefl (R : Rel A A) : Except String Bool := do
     `cnt(y, z)` against `cnt(R.val)` `at` `y`; the vacuous `y ∉ ran R` with every `z` from the
     universes `Ub`, `Uc`: `cross(anti(Ub, ran R), Uc)`. -/
 def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Except String (Rel B C) := do
-  let r ← (← cols R).nub; let s ← (← cols S).nub
+  let r := (cols R).nub; let s := (cols S).nub
   let kc := A.codes #v[r.key, s.key]
   let (i, j) := join kc[0] kc[1]
   let y := B.pick r.val i; let z := C.pick s.val j
@@ -688,18 +689,18 @@ def leftDiv {mb mc : Nat} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Val
   let keep := gather 8 firsts (whereEqV got (atCnt (cnt rvc) (yc.gather firsts)))
   let miss := anti ubc rvc
   let (p, q) := cross (len miss) mc
-  ofCols B C (B.raze #[B.pick y keep, B.pick Ub.parts (gather 8 miss p)])
-    (C.raze #[C.pick z keep, C.pick Uc.parts q])
+  pure (ofCols B C (B.raze #[B.pick y keep, B.pick Ub.parts (gather 8 miss p)])
+    (C.raze #[C.pick z keep, C.pick Uc.parts q]))
 
 /-- `R / S = (S° \ R°)°` (`R : a ⟶ c`, `S : b ⟶ c`); its vacuous term is `cross(Ua, anti(Ub, dom S))`. -/
 def rightDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Except String (Rel A B) := do
-  conv (← leftDiv (← conv S) (← conv R) Ub Ua)
+  pure (conv (← leftDiv (conv S) (conv R) Ub Ua))
 
 /-- `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres: the fibres of `R` and of `S` as `segments`
     of one value code space, their `setIds` in one call, `join` on the ids → `(x, y)`; the vacuous
     term `cross(anti(Ua, dom R), anti(Ub, dom S))`, the empty fibres. -/
 def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Except String (Rel A B) := do
-  let r ← cols R; let s ← cols S
+  let r := cols R; let s := cols S
   let vc := C.codes #v[r.val, s.val]
   let ac := A.codes #v[r.key, Ua.parts]; let rk := ac[0]; let uac := ac[1]
   let bc := B.codes #v[s.key, Ub.parts]; let sk := bc[0]; let ubc := bc[1]
@@ -708,8 +709,8 @@ def symDiv {ma mb : Nat} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals
   let (i, j) := join (Code.ofLongs (ids.extract 0 (8 * len fr))) (Code.ofLongs (ids.extract (8 * len fr) ids.size))
   let ex := anti uac rk; let ey := anti ubc sk
   let (p, q) := cross (len ex) (len ey)
-  ofCols A B (A.raze #[A.pick r.key (gather 8 fr i), A.pick Ua.parts (gather 8 ex p)])
-    (B.raze #[B.pick s.key (gather 8 fs j), B.pick Ub.parts (gather 8 ey q)])
+  pure (ofCols A B (A.raze #[A.pick r.key (gather 8 fr i), A.pick Ua.parts (gather 8 ex p)])
+    (B.raze #[B.pick s.key (gather 8 fs j), B.pick Ub.parts (gather 8 ey q)]))
 
 end Gen
 
@@ -732,7 +733,7 @@ def boxP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except Str
 def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t v) := do
   let P := F.2.2
   let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
-  pure ⟨P.n, ← Vals.ofParts (.atom t) P.n (pick t ⟨F.1, F.2.1⟩ (groupOf ob P.n)) "∋", P.val⟩
+  pure ⟨P.n, Vals.ofParts (.atom t) P.n (pick t ⟨F.1, F.2.1⟩ (groupOf ob P.n)), P.val⟩
 
 /-- The groups of a column whose equal elements are contiguous: `groupedP` with `o` the run starts
     of its codes and the count (`runStarts`) and `ds` the element at each start. -/
@@ -747,16 +748,16 @@ def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : (m : Nat) × Arr t
 /-- A family stored as its pairs `(X, x)` sorted key-major, each pair once: the set `X` IS the
     contiguous run of its key (`runsP`). `gradeBy` on (key code, value code), `gatherColumn`. -/
 def familyP (d : Cols A B) : Except String ((g : Nat) × Arr A g × Parted B) := do
-  let d ← d.nub
-  let s ← d.rows (gradeBy d.n #[(codes A #v[d.key])[0], (codes B #v[d.val])[0]])
-  runsP A s.key (← Vals.ofParts (.atom B) s.n s.val "family")
+  let d := d.nub
+  let s := d.rows (gradeBy d.n #[(codes A #v[d.key])[0], (codes B #v[d.val])[0]])
+  runsP A s.key (Vals.ofParts (.atom B) s.n s.val)
 
 def family (d : Cols A B) : Except String (Rel A .general) := do boxP (← familyP d)
 
 /-- `Λ(R)` as its carrier: `x Λ(R) X ↔ X = {z | x R z}`, one segment per `x ∈ dom R`. -/
-def transposeP (R : Rel A B) : Except String ((g : Nat) × Arr A g × Parted B) := do familyP (← cols R)
+def transposeP (R : Rel A B) : Except String ((g : Nat) × Arr A g × Parted B) := do familyP (cols R)
 
-def transpose (R : Rel A B) : Except String (Rel A .general) := do family (← cols R)
+def transpose (R : Rel A B) : Except String (Rel A .general) := do family (cols R)
 
 /-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
     flattened indices of the codes, cut at the values they hold (`runs`). -/
@@ -777,15 +778,15 @@ def mem {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String
 
 /-- `E(R)` of a family `G` given as its pairs `(X, x)`: `Λ(∋ ≫ R)` = the family of `G ≫ R`. -/
 def existsImage (G : Rel A B) (R : Rel B C) : Except String (Rel A .general) := do
-  family (← cols (← comp G R))
+  family (cols (comp G R))
 
 /-- `⟨R, S⟩`: `join` on the keys → rows `(x, (y, z))`, both value sides kept under one `n` as the
     columns of one product side. -/
 def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Except String (Rel A (.prod B C)) := do
-  let r ← cols R; let s ← cols S
+  let r := cols R; let s := cols S
   let kc := A.codes #v[r.key, s.key]
   let (i, j) := join kc[0] kc[1]
-  ofCols A (.prod B C) (A.pick r.key i) (B.pick r.val i, C.pick s.val j)
+  pure (ofCols A (.prod B C) (A.pick r.key i) (B.pick r.val i, C.pick s.val j))
 
 /-- `outl`: the first component's columns, nothing runs. -/
 def outl {k v w : Obj} (T : Rel k (.prod v w)) : Rel k v := ⟨T.n, T.key, T.val.1⟩
@@ -803,9 +804,9 @@ theorem outr_holds {k v w : Obj} (T : Rel k (.prod v w)) (x : k.El) (z : w.El) :
 /-- `R × S` as a relation of its own, `(x, x') ⟶ (y, y')`: `cross` of the rows of `R` and of `S`.
     `Δ(R)` is `prod R R`. -/
 def prod {A B D E : Obj} (R : Rel A B) (S : Rel D E) : Except String (Rel (.prod A D) (.prod B E)) := do
-  let r ← cols R; let s ← cols S
+  let r := cols R; let s := cols S
   let (i, j) := cross r.n s.n
-  ofCols (.prod A D) (.prod B E) (A.pick r.key i, D.pick s.key j) (B.pick r.val i, E.pick s.val j)
+  pure (ofCols (.prod A D) (.prod B E) (A.pick r.key i, D.pick s.key j) (B.pick r.val i, E.pick s.val j))
 
 /-- A relation out of a sum `a + a`: a tag bit beside each key, `false` for `inl`. Read with the
     value tagged by the key's own tag it is `R + S` as well as `[R, S]`. -/
@@ -824,7 +825,7 @@ def bitsOf (x : Bool) (n : Nat) : ByteArray :=
 
 /-- `[R, S]`: the rows of `R` tagged `inl`, of `S` tagged `inr` — `concatBits` of constant bit columns. -/
 def junc (R : Rel A C) (S : Rel A C) : Except String (SumRel A C) := do
-  let r ← cols R; let s ← cols S
+  let r := cols R; let s := cols S
   let m := r.n + s.n
   pure ⟨m, ← Arr.ofPart .boolean m (m, .bits (concatBits #[r.n, s.n] #[bitsOf false r.n, bitsOf true s.n])) "junc",
     ← Arr.ofPart A m (raze A #[r.key, s.key]).2.part "junc", ← Arr.ofPart C m (raze C #[r.val, s.val]).2.part "junc"⟩
@@ -846,16 +847,16 @@ def foldOver {n : Nat} (op : Coc.Over) (x : Arr .long n) : Except String Int64 :
 
 /-- The same per key: `overGroups` over the key codes' `groupIds`, one row per distinct key. -/
 def foldGroups (op : Coc.Over) (R : Rel A .long) : Except String (Rel A .long) := do
-  let r ← cols R; let (_, v) ← arrDense R.val
+  let r := cols R; let (_, v) ← arrDense R.val
   let (gid, firsts) := (codes A #v[r.key])[0].groupIds
   let ng := len firsts
-  ofCols A .long (pick A r.key firsts)
-    ⟨ng, ← Arr.ofPart .long ng (longs ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng))) "foldGroups"⟩
+  pure (ofCols A .long (pick A r.key firsts)
+    ⟨ng, ← Arr.ofPart .long ng (longs ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng))) "foldGroups"⟩)
 
 /-- `α⁻¹` of a list, `uncons`: its first element and the rest, two picks (`gatherColumn`). -/
 def uncons {n : Nat} (x : Arr B (n + 1)) : Except String (Arr B 1 × Arr B n) := do
   let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs n.toUSize) (one 1) n.toUSize
-  pure (← Vals.ofParts (.atom B) 1 (pick B ⟨n + 1, x⟩ (one 0)) "uncons", ← Vals.ofParts (.atom B) n (pick B ⟨n + 1, x⟩ rest) "uncons")
+  pure (Vals.ofParts (.atom B) 1 (pick B ⟨n + 1, x⟩ (one 0)), Vals.ofParts (.atom B) n (pick B ⟨n + 1, x⟩ rest))
 
 /-- An unfold then a fold: Lean's loop, rounds of `step` until `done`, each round kernels. It ends because
     each round not `done` lowers the measure `μ`: well-founded recursion, no fuel. -/
@@ -871,24 +872,24 @@ def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
 
 /-- `Entire R` on the universe `U`: `member` of `U`'s codes in the keys', all set. -/
 def entire {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
-  let r ← cols R
+  let r := cols R
   let c := A.codes #v[U.parts, r.key]
   pure (len (whereBits m.toUSize (c[0].member c[1])) == m)
 
 /-- `Simple R`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes). -/
 def simple {A B : Obj} (R : Rel A B) : Except String Bool := do
-  let r ← (← cols R).nub
+  let r := (cols R).nub
   pure (len (A.codes #v[r.key])[0].groupIds.2 == r.n)
 
 def isMap {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
   pure ((← entire R U) && (← simple R))
 
 /-- `Injective R` = `Simple R°`. -/
-def injective {A B : Obj} (R : Rel A B) : Except String Bool := do simple (← conv R)
+def injective {A B : Obj} (R : Rel A B) : Except String Bool := do simple (conv R)
 
 /-- `Surjective R` = `Entire R°` on the universe `U` of `b`. -/
 def surjective {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals B m) : Except String Bool := do
-  entire (← conv R) U
+  entire (conv R) U
 
 /-! ## Checks against the `toList` specs, on small literal relations -/
 
@@ -920,24 +921,24 @@ private def Ua : Vals L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by deci
 private def Ub : Vals L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
 private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
 
-#guard ok (le R S) (· == false)
-#guard ok (inter R S) fun X => ok (le X R) id && ok (le X S) id
-#guard ok (inter R S) fun X => seteq X.toList (R.toList.filter S.toList.contains)
-#guard ok (diff R S) fun X => seteq X.toList (R.toList.filter fun p => !S.toList.contains p)
-#guard ok (diff R R) (·.n == 0)
-#guard ok (do union (← inter R S) (← diff R S)) fun X => seteq X.toList R.toList
-#guard ok (union R S) fun X => seteq X.toList (R.toList ++ S.toList) && X.n == 6
-#guard ok (zero (A := L) (B := L)) (·.n == 0)
-#guard ok (top Ua Uc) fun X => seteq X.toList (Ua.toList.flatMap fun x => Uc.toList.map (x, ·))
+#guard le R S == false
+#guard le (inter R S) R && le (inter R S) S
+#guard seteq (inter R S).toList (R.toList.filter S.toList.contains)
+#guard seteq (diff R S).toList (R.toList.filter fun p => !S.toList.contains p)
+#guard (diff R R).n == 0
+#guard seteq (union (inter R S) (diff R S)).toList R.toList
+#guard seteq (union R S).toList (R.toList ++ S.toList) && (union R S).n == 6
+#guard (zero (A := L) (B := L)).n == 0
+#guard seteq (top Ua Uc).toList (Ua.toList.flatMap fun x => Uc.toList.map (x, ·))
 #guard (idU Ua).toList == Ua.toList.map fun x => (x, x)
-#guard ok (conv R) fun X => seteq X.toList (R.toList.map fun (x, y) => (y, x))
-#guard ok (conv Ls) fun X => seteq X.toList (Ls.toList.map fun (x, y) => (y, x))
-#guard ok (comp R T) fun X =>
-  seteq X.toList (R.toList.flatMap fun (x, y) => T.toList.filterMap fun (y', z) => if y == y' then some (x, z) else none)
-#guard ok (comp Ls Ls) fun X =>
-  seteq X.toList (Ls.toList.flatMap fun (x, y) => Ls.toList.filterMap fun (y', z) => if y == y' then some (x, z) else none)
-#guard ok (dom R) fun X => seteq X.toList [(1, 1), (2, 2), (3, 3)] && X.n == 3
-#guard ok (ran S) fun X => seteq X.toList [(10, 10), (20, 20), (40, 40)] && X.n == 3
+#guard seteq (conv R).toList (R.toList.map fun (x, y) => (y, x))
+#guard seteq (conv Ls).toList (Ls.toList.map fun (x, y) => (y, x))
+#guard seteq (comp R T).toList
+  (R.toList.flatMap fun (x, y) => T.toList.filterMap fun (y', z) => if y == y' then some (x, z) else none)
+#guard seteq (comp Ls Ls).toList
+  (Ls.toList.flatMap fun (x, y) => Ls.toList.filterMap fun (y', z) => if y == y' then some (x, z) else none)
+#guard seteq (dom R).toList [(1, 1), (2, 2), (3, 3)] && (dom R).n == 3
+#guard seteq (ran S).toList [(10, 10), (20, 20), (40, 40)] && (ran S).n == 3
 #guard ok (corefl Ua Ew.gt 2) fun X => X.toList == [(3, 3), (4, 4)]
 #guard ok (isCorefl (idU Ua)) id && ok (isCorefl R) (· == false)
 
@@ -957,22 +958,22 @@ private def fib (R : LL) (x : Int64) : List Int64 := R.toList.filterMap fun (x',
   (Ua.toList.flatMap fun x => (Ua.toList.filter fun y => seteq (fib R x) (fib R y)).map (x, ·))
 
 -- `Λ(R)`: the same pairs, each set one contiguous run of its key
-#guard okFlat L (do transpose (← union R R)) fun l => seteq l R.toList && l.length == 4 &&
+#guard okFlat L (transpose (union R R)) fun l => seteq l R.toList && l.length == 4 &&
   (l.map (·.1)) == [1, 1, 2, 3]
 #guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard ok (group LsV) (·.n == 3)
 private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
 private def Lf : LL := ⟨4, U4, LfV⟩
 #guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
-#guard ok (do transpose (← union R R)) (·.n == 3)
+#guard ok (transpose (union R R)) (·.n == 3)
 #guard ok (do mem L (← transpose R)) fun X => X.toList.map (·.2) == [10, 20, 10, 30] && (X.toList.map (·.1)) == [0, 0, 1, 2]
-#guard ok (do transpose (← zero (A := L) (B := L))) (·.n == 0)
+#guard ok (transpose (zero (A := L) (B := L))) (·.n == 0)
 -- `anti`: the positions of `x` not in `y`
 #guard anti (Code.ofLongs (packLongs [3, 1, 4, 1])) (Code.ofLongs (packLongs [1, 5])) == packLongs [0, 2]
 -- `R ≫ corNeg(C)` at a `C` that is no coreflexive: `1` is a key of `C` and no value, so the row stays
 private def Ra : LL := ⟨1, (Arr.mk (.bytes <| packLongs [0]) (by decide)), (Arr.mk (.bytes <| packLongs [1]) (by decide))⟩
 private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Arr.mk (.bytes <| packLongs [2]) (by decide))⟩
-#guard ok (antiJoin Ra Ca) fun X => X.toList == [(0, 1)]
+#guard (antiJoin Ra Ca).toList == [(0, 1)]
 /-- The family of `g` sets keyed `0 … g-1`, the sets cut from `val` at the offsets `o`, boxed. -/
 private def boxed {g n : Nat} (o : Arr L (g+1)) (val : Arr L n) : Except String (Rel L .general) := do
   let some P := Parted.of? o val | throw "boxed: not cuts"
@@ -1215,40 +1216,26 @@ theorem Arr.of_c {t : QAtomicType} {n : Nat} {c : Nat × Enc} {w : String} {a : 
   · cases h; rename_i hw; obtain ⟨-, rfl, -⟩ := hw; rfl
   · cases h
 
-/-- `ofCols` keys the answer by `kc`, its values by `vc`. -/
-theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)} {T : Rel k v}
-    (h : ofCols k v kc vc = .ok T) : T.key.part = kc.2.part ∧ T.val.part = vc.2.part := by
-  obtain ⟨m, a⟩ := kc; obtain ⟨m', b⟩ := vc
-  simp only [ofCols, Obj.count, Vals.ofParts, dite_true] at h
-  by_cases he : m' = m
-  · subst he; simp only [dite_true, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
-    subst h; exact ⟨rfl, rfl⟩
-  · simp [he, bind, Except.bind, throw, throwThe, MonadExceptOf.throw, pure, Except.pure] at h
+/-- A part read at its own count `n` is its payload. -/
+theorem _root_.LeetQ.Rel.Vals.ofParts_atom {t : QAtomicType} {n : Nat} {c : Part (.atom t)} (h : c.1 = n) :
+    (Vals.ofParts (.atom t) n c).part = c.2.part := by
+  obtain ⟨m, x⟩ := c; subst h; simp [Vals.ofParts, Arr.part]
 
-/-- A part read at the count `n` holds the part's payload. -/
-theorem _root_.LeetQ.Rel.Vals.ofParts_atom {t : QAtomicType} {n : Nat} {c : Part (.atom t)} {w : String}
-    {a : Arr t n} (h : Vals.ofParts (.atom t) n c w = .ok a) : a.part = c.2.part := by
-  obtain ⟨m, x⟩ := c
-  simp only [Vals.ofParts] at h
-  split at h
-  · next he => subst he; cases h; rfl
-  · cases h
+/-- `ofCols` keys the answer by `kc`, its values by `vc` where the two counts agree. -/
+theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)} (h : vc.1 = kc.1) :
+    (ofCols k v kc vc).key.part = kc.2.part ∧ (ofCols k v kc vc).val.part = vc.2.part :=
+  ⟨Vals.ofParts_atom rfl, Vals.ofParts_atom h⟩
 
-/-- `longsP`'s part holds the dense payload it was given. -/
-theorem longsP_part {b : ByteArray} {w : String} {p : Part (.atom .long)} (h : longsP b w = .ok p) :
-    p.2.part = longs b := by
-  simp only [longsP, bind, Except.bind, pure, Except.pure] at h
-  split at h
-  · cases h
-  · next a ha => cases h; exact Arr.of_c ha
+/-- `longsP`'s part holds the dense payload it was given, where that holds whole longs. -/
+theorem longsP_part {b : ByteArray} (h : b.size = len b * 8) : (longsP b).2.part = longs b := by
+  simp [longsP, h, Arr.part, longs]
 
 /-- The generic `R°`: `ofCols` of the two payloads, swapped. -/
-theorem conv_cols_holds {R : Rel A B} {S : Rel B A}
-    (h : (do let r ← cols R; ofCols B A r.val r.key) = .ok S) (x : El A) (y : El B) :
-    S.Holds y x ↔ R.Holds x y := by
+theorem conv_cols_holds {R : Rel A B} (x : El A) (y : El B) :
+    (ofCols B A (cols R).val (cols R).key).Holds y x ↔ R.Holds x y := by
+  generalize hS : ofCols B A (cols R).val (cols R).key = S
   obtain ⟨n, K, v⟩ := R
-  simp only [cols, bind, Except.bind, pure, Except.pure] at h
-  obtain ⟨hkc, hvc⟩ := ofCols_ok h
+  obtain ⟨hkc, hvc⟩ := hS ▸ ofCols_ok (k := B) (v := A) (kc := (cols ⟨n, K, v⟩).val) (vc := (cols ⟨n, K, v⟩).key) rfl
   obtain ⟨m, SK, SV⟩ := S
   simp only at hkc hvc
   have hn : m = n := Arr.n_congr (a := SK) (b := v) hkc
@@ -1260,10 +1247,8 @@ theorem conv_cols_holds {R : Rel A B} {S : Rel B A}
     exact ⟨i, (Arr.get_congr hkc rfl).trans h2, (Arr.get_congr hvc rfl).trans h1⟩
 
 /-- **`R°` swaps the pairs**: the two fields swap (`convArr_holds`). -/
-theorem conv_holds {R : Rel A B} {S : Rel B A} (h : conv R = .ok S) (x : El A) (y : El B) :
-    S.Holds y x ↔ R.Holds x y := by
-  simp only [conv, pure, Except.pure, Except.ok.injEq] at h
-  subst h; exact convArr_holds R.key R.val x y
+theorem conv_holds {R : Rel A B} (x : El A) (y : El B) : (conv R).Holds y x ↔ R.Holds x y :=
+  convArr_holds R.key R.val x y
 
 /-- **`groupIds`' ids are faithful**: read at the width they are packed at, two rows' ids agree exactly
     when their keys do — at every lane `idWidthOf` answers (`idAt_packIds`), sub-byte ones too. The base
