@@ -545,12 +545,12 @@ def of? {g n : Nat} (o : Arr .long (g+1)) (val : Arr v n) : Option (Parted v) :=
 end Parted
 
 /-- A side of a relation: an atomic type, a product of sides, or an array of a side. A tree, so
-    `Vals (.atom t)` is `Arr t` itself and every one-column path is unchanged. A `list b` element is an
+    `Vals (.atom t)` is `Arr t` itself and every one-column path is unchanged. A `arr b` element is an
     ARRAY of `b`: its order and multiplicity are part of the value. -/
 inductive Obj
   | atom (t : QAtomicType)
   | prod (a b : Obj)
-  | list (b : Obj)
+  | arr (b : Obj)
 
 instance : Coe QAtomicType Obj := ⟨.atom⟩
 
@@ -565,22 +565,22 @@ instance : Coe QAtomicType Obj := ⟨.atom⟩
 @[reducible] def Obj.El : Obj → Type
   | .atom t => Carrier t
   | .prod a b => a.El × b.El
-  | .list b => List b.El
+  | .arr b => List b.El
 
-/-- `n` values of `A`, one column per atom, side by side (struct of arrays): nothing boxed. A `list b`
+/-- `n` values of `A`, one column per atom, side by side (struct of arrays): nothing boxed. A `arr b`
     column is one flat payload of `m` values of `b` and two long columns `lo`, `hi`: row `i` is the slice
     `[lo i, hi i)` of the payload, so picking rows gathers `lo` and `hi` and copies no flat value. -/
 @[reducible] def Vals : Obj → Nat → Type
   | .atom t, n => Arr t n
   | .prod a b, n => Vals a n × Vals b n
-  | .list b, n => (m : Nat) × Arr .long n × Arr .long n × Vals b m
+  | .arr b, n => (m : Nat) × Arr .long n × Arr .long n × Vals b m
 
-/-- The value at row `i`, read across the columns. A list row is its slice clamped to `[0, m)`, so every
+/-- The value at row `i`, read across the columns. An array row is its slice clamped to `[0, m)`, so every
     `lo`, `hi` reads as an array. -/
 def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
   | .atom _, _, x, i => Arr.get x i
   | .prod _ _, _, x, i => (Vals.row x.1 i, Vals.row x.2 i)
-  | .list _, _, ⟨m, lo, hi, f⟩, i => (List.finRange m).filterMap fun (j : Fin m) =>
+  | .arr _, _, ⟨m, lo, hi, f⟩, i => (List.finRange m).filterMap fun (j : Fin m) =>
       if (lo.get i).toInt ≤ (j.1 : Int) ∧ (j.1 : Int) < (hi.get i).toInt then some (Vals.row f j) else none
 
 @[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
