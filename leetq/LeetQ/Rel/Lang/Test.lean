@@ -123,6 +123,12 @@ def errAt (src : String) (line : Nat) (what : String) : Bool :=
 #guard errAt "obj B = 0…1\nf(S, E : B ⟶ B) ≜ S ∩ E\n" 2 "`E` is a builtin"
 #guard errAt "obj B = 0…1\nK ≜ π₁\nq ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
 #guard errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
+-- a `where` item taking a defined name, a parameter's, an earlier item's or a builtin's; an item used outside
+#guard errAt "obj B = 0…1\nK ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
+#guard errAt "obj B = 0…1\nf(S) ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"
+#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂, a ≜ π₁\n" 2 "`a` is already an item"
+#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂, π₁ ≜ a\n" 2 "`π₁` is a builtin"
+#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂\ng ≜ a\n" 3 "unknown name 'a'"
 
 /-! The parser's round trip: each operator row of §b, printed as it was read. -/
 
@@ -149,6 +155,11 @@ def reading : Decl → Option (String × String)
   | .defn _ n _ (.test e f) => some (n, s!"{e.render 0 true} ⊑ {f.render 0 true}")
   | .print _ e => some ("print", e.render 0 true)
   | _ => none
+
+-- a `where` item in place in the body and in the items after it (§c)
+#guard match Parse.parse "obj B = 0…1\nf(S) ≜ b ∪ S where a ≜ π₁, b ≜ a π₂ S\n" with
+  | .ok p => p.filterMap reading == [("f", "(((π₁ π₂) S) ∪ S)")]
+  | .error _ => false
 
 #guard match Parse.parse blocks with
   | .error _ => false

@@ -138,6 +138,11 @@ def constObjs : P (List OExp) := do
   let s ← get
   try adv; sepBy object ')' catch _ => do set s; pure []
 
+/-- The word `where` at the cursor: the end of a definition's body (§c). -/
+def atWhere : P Bool := do
+  let cs ← [0, 1, 2, 3, 4, 5].mapM peekAt
+  pure (cs.take 5 == "where".toList.map some && !((cs.getD 5 none).any isIdCont))
+
 def startsPrimary (c : Char) : Bool :=
   ['(', '⟨', '[', '⦇', '{', '∼'].contains c || isLetter c || isSym c
 
@@ -152,7 +157,7 @@ partial def expr : P Expr := do
     match ← peek with
     | some c => match Bin.table.lookup c with
       | some o => let p ← pos; adv; e := .bin p o e (← primary)
-      | none => if startsPrimary c then e := .comp e (← primary) else break
+      | none => if startsPrimary c && !(← atWhere) then e := .comp e (← primary) else break
     | none => break
   pure e
 
@@ -218,6 +223,20 @@ def num : P Nat := do
   let w ← word
   match w.toNat? with | some k => pure k | none => throw ⟨p, s!"expected a number, found '{w}'"⟩
 
+/-- The items `x ≜ e, y ≜ f` of a `where`, each in scope in the items after it and, through `σ`, in the body;
+    a name not yet defined, not a parameter of `w` and not an earlier item (§c). -/
+partial def items (w : String) (ps : List Param) (taken : List (String × Pos)) (σ : List (String × Expr)) :
+    P (List (String × Expr)) := do
+  let q ← pos
+  let n ← word
+  fresh q n taken
+  if ps.any (·.name == n) then throw ⟨q, s!"`{n}` is already a parameter of `{w}`"⟩
+  if σ.any (·.1 == n) then throw ⟨q, s!"`{n}` is already an item of this `where`"⟩
+  tok '≜'
+  let σ := σ ++ [(n, (← expr).subst σ)]
+  ws
+  if (← peek) == some ',' then do adv; items w ps taken σ else pure σ
+
 /-- One declaration, up to the end of its line. -/
 def decl (p : Pos) (w : String) : P Decl := do
   match w with
@@ -261,6 +280,9 @@ def decl (p : Pos) (w : String) : P Decl := do
     let e ← expr
     ws
     let b ← if (← peek) == some '⊑' then do adv; pure (Body.test e (← expr)) else pure (Body.rel e)
+    ws
+    let σ ← if ← atWhere then do let _ ← word; items w ps (← get).taken [] else pure []
+    let b := match b with | .rel e => Body.rel (e.subst σ) | .test e f => .test (e.subst σ) (f.subst σ)
     modify fun s => { s with known := (w, ps.length) :: outer }
     pure (.defn p w ps b)
 

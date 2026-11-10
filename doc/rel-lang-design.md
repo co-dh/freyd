@@ -92,6 +92,7 @@ any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤
 program  := line*
 line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )
           | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
+            ( 'where' Name '≜' expr (',' Name '≜' expr)* )?   -- local items (below)
           | 'print' expr | 'check' expr ('⊑' | '=') expr
 param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
 expr     := primary ( op? primary )*                 -- composition and infix, one level, left to right
@@ -111,6 +112,10 @@ Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Gr
   operator table: `π₂ is a builtin`), and a definition or an object not a name already defined or declared (`K is
   already defined at line n`), each an error at the second. A parameter may shadow a top-level definition (Chess
   names its board `on` and its parameters `on`), never another parameter of its definition.
+- `where x ≜ e, y ≜ f` after a body: each item is in scope in the body and in the items after it, nowhere
+  else; its name obeys the rule above and is not a parameter of its definition nor an earlier item. An item is
+  its term put in place (it lifts with the body, §e) and is evaluated once by the sharing of §d: `Pin(on) ≜
+  q(s,→,ε,κ) ∪ … where s ≜ dom(on{(R,R),(Q,Q)}), ε ≜ e(on), …`.
 - A one-argument builtin takes a pair as its parentheses: `ran⟨D,D⊤{(0,0)}⟩`.
 - A literal's side is the one declared object holding all its words (named elements, or numbers in its range).
 - A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.

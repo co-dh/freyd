@@ -81,6 +81,20 @@ def Expr.pos : Expr → Pos
   | .lit p _ => p
   | .comp a _ => a.pos
 
+/-- Each name of `σ` replaced by its term: a `where` item put in place in its body (§c). -/
+partial def Expr.subst (σ : List (String × Expr)) : Expr → Expr
+  | .name p n => (σ.lookup n).getD (.name p n)
+  | .op p o os as => .op p o os (as.map (·.subst σ))
+  | .app p n as => .app p n (as.map (·.subst σ))
+  | .comp a b => .comp (a.subst σ) (b.subst σ)
+  | .bin p o a b => .bin p o (a.subst σ) (b.subst σ)
+  | .conv p a => .conv p (a.subst σ)
+  | .compl p a => .compl p (a.subst σ)
+  | .pair p a b => .pair p (a.subst σ) (b.subst σ)
+  | .junc p a b => .junc p (a.subst σ) (b.subst σ)
+  | .fold p a b => .fold p (a.subst σ) (b.subst σ)
+  | .lit p ps => .lit p ps
+
 /-- A body: a relation, or a test `e ⊑ f` (§e). -/
 inductive Body
   | rel (e : Expr)

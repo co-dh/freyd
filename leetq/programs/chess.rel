@@ -29,10 +29,10 @@ r(s : Sq ⟶ Sq, D, V : Sq ⟶ Sq) ≜ sDⁿ(VD)     -- s's ray along D, on thro
 p(t, S, X, e : Sq ⟶ Sq, c : Sq ⟶ Sq) ≜ te ∪ (Stete) ∪ (Xc)   -- pawn moves: forward onto e, two from S across e, diagonally onto c
 q(s : Sq ⟶ Sq, D, e : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ sⁿ(De)D dom(ⁿ(De)Dk)   -- a slider of s to each square between it and k along D
 
-W(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K)   -- the squares white attacks
-B(on : Sq ⟶ Pc) ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), e(on)) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,e(on),dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)})))   -- black's moves but the king's
-Pin(on : Sq ⟶ Pc) ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))   -- the pinned squares
-M(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,e(on),dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)})))   -- white's moves
+W(on : Sq ⟶ Pc) ≜ ρ(s, d, e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K) where s ≜ dom(on{(R,R),(Q,Q)}), d ≜ dom(on{(B,B),(Q,Q)})   -- the squares white attacks
+B(on : Sq ⟶ Pc) ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), ε) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,ε,dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)}))) where ε ≜ e(on)   -- black's moves but the king's
+Pin(on : Sq ⟶ Pc) ≜ q(s,→,ε,κ) ∪ q(s,←,ε,κ) ∪ q(s,↑,ε,κ) ∪ q(s,↓,ε,κ) ∪ q(d,↗,ε,κ) ∪ q(d,↖,ε,κ) ∪ q(d,↘,ε,κ) ∪ q(d,↙,ε,κ) where s ≜ dom(on{(R,R),(Q,Q)}), d ≜ dom(on{(B,B),(Q,Q)}), ε ≜ e(on), κ ≜ k(on)   -- the pinned squares
+M(on : Sq ⟶ Pc) ≜ ρ(s, d, ε) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,ε,dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)}))) where s ≜ dom(on{(R,R),(Q,Q)}), d ≜ dom(on{(B,B),(Q,Q)}), ε ≜ e(on)   -- white's moves
 
 a(k : Sq ⟶ Sq, f : Sq ⟶ Sq, W : Sq ⟶ Sq) ≜ k(𝟙 ∪ (Kf)) ⊑ ⊤W   -- the king and each of its steps attacked
 i(B : Sq ⟶ Sq, Pin : Sq ⟶ Sq, W : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ B(𝟙 ∪ Pin°)Wk ⊑ Pin°⊤   -- each capture or interposition pinned

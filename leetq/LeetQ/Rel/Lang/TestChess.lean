@@ -103,4 +103,20 @@ def mate (ps : List (Nat × Int64)) (v : Bool) : Bool := let m := mated ps; m ==
 -- 8. W Kg1 Ra7 Rb8, B Kd8: Ke8 steps back along the checking line, still attacked
 #guard mate [(6, 5), (48, 3), (57, 3), (59, 11)] true
 
+/-! Each line rewritten with `where` (§c) reads as the line it replaced, its items put in place. -/
+
+def before : List String := [
+  "W(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K)",
+  "B(on : Sq ⟶ Pc) ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), e(on)) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,e(on),dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)})))",
+  "Pin(on : Sq ⟶ Pc) ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))",
+  "M(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,e(on),dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)})))"]
+
+def rewritten (p : Program) : List (String × String) :=
+  (p.filterMap Test.reading).filter fun r => ["W", "B", "Pin", "M"].contains r.1
+
+-- the program up to line 31, the lines `W B Pin M` refer to, is the same before and after
+#guard match Parse.parse chess, Parse.parse ("\n".intercalate ((chess.splitOn "\n").take 31 ++ before)) with
+  | .ok p, .ok q => (rewritten p).length == 4 && rewritten p == rewritten q
+  | _, _ => false
+
 end LeetQ.Rel.Lang.TestChess
