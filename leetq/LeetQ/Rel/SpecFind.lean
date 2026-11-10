@@ -2028,13 +2028,13 @@ theorem dictAtom_rel {v : Prim.Dyadic} {rt s t u : QAtomicType} {a : Carrier u} 
   ⟨V, hR, valAtom_rel (hlaw V hV)⟩
 
 /-- The column `Ew.mon` answers is the one `monColumn` builds. -/
-theorem mon_enc {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {R : Arr rt n} {C : Enc}
-    (hd : Kernel.monColumn name t n x.enc = some (rt, C)) (hv : Ew.mon name rt x = .ok R) : R.enc = C := by
-  unfold Ew.mon at hv
-  simp only [hd, ↓reduceIte, Arr.of] at hv
-  split at hv
-  · cases hv; rfl
-  · cases hv
+theorem mon_enc {name : String} {t rt : QAtomicType} {n : Nat} {x : Arr t n} {C : Enc}
+    {hname : name ∈ KernelWF.monNames} {hrt : Kernel.monResultType name t = some rt} {hg : t ≠ .general}
+    (hd : Kernel.monColumn name t n x.enc = some (rt, C)) (hn : n < USize.size) :
+    (Ew.mon name rt x hname hrt hg).enc = C := by
+  simp only [Ew.mon, dif_pos hn, Ew.monK]
+  show ((Kernel.monColumn name t n x.enc).get _).2 = C
+  simp only [hd, Option.get_some]
 
 /-- The reading every `long` map kernel ends in: an answer listing `g` of each word of `X`, which lists `x`'s
     words, is `MapSpec g`. -/
@@ -2056,11 +2056,14 @@ theorem mapM_spec_words {ε : Type} {F : Int64 → Except ε Int64} {g : Int64 �
 
 /-- **`-x` at `long` on a dense column is `MapSpec`** of `monStep`'s `neg`, which `Verify.negAtom_long`
     proves is q's `neg`: `0N` stays `0N`, everything else is `0 - x`. -/
-theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+theorem neg_spec_long {n : Nat} {x : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
+    (hn : n < USize.size) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
-      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_long _ _) hv
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x
+      (Ew.mon "neg" .long x) := by
+  have hR := mon_enc (name := "neg") (rt := .long) (x := x) (hname := by decide) (hrt := rfl) (hg := by decide)
+    (by rw [ha]; exact monColumn_neg_long _ _) hn
+  generalize Ew.mon "neg" .long x = R at hR ⊢
   have hrun := run_mon ({ inputs := #[a] } : Kernel.Ew.Build) rfl Kernel.Ew.neg Kernel.Ew.i64 0
     (Kernel.nullPayload .long) (by decide) n.toUSize
   simp only [show (#[a] : Array ByteArray)[(0 : UInt8).toNat]! = a from rfl] at hrun
@@ -2073,11 +2076,11 @@ theorem neg_spec_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc 
   exact map_spec_words (by simp only [longWords, ha]) (Arr.n_long_bytes x ha) (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long`. Dense long column. -/
-theorem neg_rel_long {n : Nat} {x R : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
-    R.rel = x.rel ≫ graph (fun y : Int64 =>
+theorem neg_rel_long {n : Nat} {x : Arr .long n} {a : ByteArray} (ha : x.enc = .bytes a)
+    (hn : n < USize.size) :
+    (Ew.mon "neg" .long x).rel = x.rel ≫ graph (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
-  mon_rel (neg_spec_long ha hn hv)
+  mon_rel (neg_spec_long ha hn)
 
 /-- `Ew.val` at `i64` with one long atom on the left (`av`): element `i` is `intStep` of the atom and
     element `i` (`Verify.val_i64_va`'s mirror). -/
@@ -2811,12 +2814,15 @@ theorem monColumn_neg_foR (n : Nat) (md pk : ByteArray) :
 
 /-- **`-x` at `long` on a `foR` column is `MapSpec`** of `monStep`'s `neg`: `foRMonEnc` re-encodes `Ew.mon` over
     the decode (`decode_of_encode8`), whose words `mon_i64` reads. -/
-theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
+theorem neg_spec_long_foR {n : Nat} {x : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
+    (hn : n < USize.size) :
     Ew.MapSpec (t := .long) (rt := .long) (fun y : Int64 =>
-      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x R := by
+      (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) x
+      (Ew.mon "neg" .long x) := by
   have h8 : (8 : Nat).toUSize = (8 : USize) := rfl
-  have hR := mon_enc (by rw [ha]; exact monColumn_neg_foR _ _ _) hv
+  have hR := mon_enc (name := "neg") (rt := .long) (x := x) (hname := by decide) (hrt := rfl) (hg := by decide)
+    (by rw [ha]; exact monColumn_neg_foR _ _ _) hn
+  generalize Ew.mon "neg" .long x = R at hR ⊢
   obtain ⟨hx, hxs⟩ := longWords_of_foR ha hn
   rw [h8] at hx hxs
   have hw := longWords_answer_foR
@@ -2837,11 +2843,11 @@ theorem neg_spec_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha 
   exact map_spec_words hx hxs (by rw [hw]; simp)
 
 /-- `-x = x ≫ neg` from the kernel: `mon_rel` of `neg_spec_long_foR`. `foR` column. -/
-theorem neg_rel_long_foR {n : Nat} {x R : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
-    (hn : n < USize.size) (hv : Ew.mon "neg" .long x = .ok R) :
-    R.rel = x.rel ≫ graph (fun y : Int64 =>
+theorem neg_rel_long_foR {n : Nat} {x : Arr .long n} {md pk : ByteArray} (ha : x.enc = .foR md pk)
+    (hn : n < USize.size) :
+    (Ew.mon "neg" .long x).rel = x.rel ≫ graph (fun y : Int64 =>
       (Kernel.Ew.monStep Kernel.Ew.neg Kernel.Ew.i64 Int64.minValue.toUInt64 y.toUInt64).toInt64) :=
-  mon_rel (neg_spec_long_foR ha hn hv)
+  mon_rel (neg_spec_long_foR ha hn)
 
 /-- **`seed <': x` at `long` on a dense column is its List spec** `zip(x, seed :: x).mapM (<)`:
     `prior_spec_long`'s prior operand, then `dyadColumn_long_vv_cmp` and `toList_cmp_long`. -/
