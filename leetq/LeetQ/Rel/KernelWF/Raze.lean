@@ -10,6 +10,9 @@ import QLean.Kernel.Reduce
 import QLean.Kernel.Elementwise
 import QLean.Verify.Group
 import QLean.Verify.Raw
+import QLean.Verify.Ids
+import QLean.Verify.Alp
+import QLean.Verify.EwEnc
 import LeetQ.Rel.Core
 
 namespace LeetQ.Rel.KernelWF
@@ -271,5 +274,180 @@ theorem concatBytes_wf {t : QAtomicType} {w : Nat} {cs : Array (Nat × Enc)} {ps
     | cons a l ih => simp [ih, Nat.add_mul]
   rw [concatBytes, ← Array.foldl_toList, happ, hmap, ← Array.foldl_toList, foldl_add_fst, hm]
   simp
+
+/-! ## `Enc.answer` -/
+
+private theorem toUSize_toNat {k : Nat} (h : k < USize.size) : k.toUSize.toNat = k := by
+  simp only [Nat.toUSize]; exact Nat.mod_eq_of_lt h
+
+private theorem lt_usize {k : Nat} (h : k ≤ 64) : k < USize.size :=
+  Nat.lt_of_lt_of_le (Nat.lt_of_le_of_lt h (by decide)) USize.le_size
+
+/-- `Coc.decode` answers `n` elements at `w` bytes. -/
+theorem decode_size (w : USize) (M P : ByteArray) (n : USize) :
+    (Coc.decode w M P n).size = n.toNat * w.toNat := by
+  simp only [Coc.decode, Coc.elems]
+  rw [foldl_size ByteArray.size _ w.toNat (fun _ _ => Column.pushBits_size ..)]; simp
+
+/-- `encodeBelow`'s `some` is `encode`'s answer. -/
+private theorem encodeBelow_eq {w : USize} {x : ByteArray} {mp : ByteArray × ByteArray}
+    (h : Coc.encodeBelow w x = some mp) : mp = Coc.encode w x := by
+  unfold Coc.encodeBelow at h
+  generalize Coc.encode w x = q at h ⊢
+  rcases q with ⟨m, p⟩
+  simp only at h; split at h
+  · cases h; rfl
+  · cases h
+
+/-- `Enc.answer` keeps a well-formed payload well formed at every type ALP does not encode: it keeps
+    it, encodes dense bytes by `encodeBelow`, or decodes it to `n · w` bytes, `n` fitting a `USize`. -/
+theorem answer_wf {t : QAtomicType} {n : Nat} {e : Enc} (hA : Column.alpEncodes t = false)
+    (hwf : Enc.WF t n e) (hn : n < USize.size) : Enc.WF t n (Enc.answer t n e) := by
+  have hfoR : ∀ {m p : ByteArray}, t.width.isSome → t ≠ .boolean → t ≠ .guid →
+      n ≤ Column.blk * Column.nblk m → Enc.WF t n (.foR m p) := by
+    intro m p h1 h2 h3 h4; cases t <;> simp_all [Enc.WF]
+  have hdec : ∀ {w}, t.width = some w → ∀ {b}, Enc.bytesOf t n e = some b → Enc.WF t n (.bytes b) := by
+    intro w hw b hbo
+    by_cases hb : t = .boolean
+    · subst hb; cases e <;> simp_all [Enc.WF, Enc.bytesOf]
+    obtain ⟨b', hb', hs⟩ := bytesOf_size hb hw hwf hn
+    rw [hbo] at hb'; cases hb'
+    exact wf_bytes hb hw hs
+  unfold Enc.answer
+  split
+  · exact hwf
+  rcases hW : t.width with _ | w
+  · exact hwf
+  cases e
+  case bytes b =>
+    have hb : t ≠ .boolean := by rintro rfl; simp [Enc.WF] at hwf
+    have hs : b.size = n * w := by simpa [Enc.WF, hW] using hwf
+    simp only
+    split
+    · exact hwf
+    simp only [hA, Bool.false_eq_true, if_false]
+    split
+    · rename_i hE
+      split
+      · rename_i m p heq
+        have h0 : 0 < w ∧ w ≤ 8 ∧ t ≠ .guid := by
+          cases t <;> simp_all [QAtomicType.width, Column.encodes] <;> omega
+        have hk := Verify.nblk_encode w h0.1 h0.2.1 b
+        rw [← encodeBelow_eq heq] at hk
+        simp only [hs, Nat.mul_div_cancel _ h0.1] at hk
+        refine hfoR (by simp [hW]) hb h0.2.2 ?_
+        rw [hk]; simp only [Column.blk]; omega
+      · exact hwf
+    · exact hwf
+  all_goals
+    simp only
+    split
+    · exact hwf
+    split
+    · rename_i b hbo; exact hdec hW hbo
+    · exact hwf
+
+/-! ## The `enum` branch: `concatEnum` -/
+
+/-- The widths an id pack takes: `laneWidth`'s answers. -/
+private abbrev Lane (w : Nat) : Prop := w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64
+
+private theorem lane_idWidth (offs : Array Nat) : Lane (Column.idWidth offs) := by
+  simp only [Column.idWidth, Column.idWidthOf, Column.laneWidth]
+  repeat' split
+  all_goals omega
+
+/-- A `Nat.fold` that pushes a byte a step answers one byte per step. -/
+private theorem fold_push_size (g : Nat → UInt8) :
+    ∀ (k : Nat) (b : ByteArray), (Nat.fold k (fun i _ acc => acc.push (g i)) b).size = b.size + k
+  | 0, b => by simp
+  | k + 1, b => by
+    rw [Nat.fold_succ, ← Nat.add_assoc, ← fold_push_size g k b]
+    simp only [ByteArray.size, ByteArray.push, Array.size_push]
+
+/-- `packIds` at a lane width holds the `n` ids it was handed: `idsCap` reads all of them back. -/
+theorem packIds_cap {w : Nat} (hw : Lane w) (n : Nat) (f : Nat → Nat) :
+    Column.idsCap (Column.packIds w n f) w n = n := by
+  have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → Column.idsCap (Column.packIds (8 * c) n f) (8 * c) n = n := by
+    intro c h1 h8
+    rw [Column.idsCap, if_neg (by omega), (Verify.packIds_bytes c n f h1 h8).1]
+    rw [show c * n * 8 / (8 * c) = n by
+      rw [Nat.mul_comm c n, Nat.mul_assoc, Nat.mul_comm c 8]; exact Nat.mul_div_cancel _ (by omega)]
+    exact Nat.min_self n
+  rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · simp [Column.idsCap]
+  all_goals first
+    | exact hbytes 1 (by decide) (by decide)
+    | exact hbytes 2 (by decide) (by decide)
+    | exact hbytes 4 (by decide) (by decide)
+    | exact hbytes 8 (by decide) (by decide)
+    | (unfold Column.idsCap Column.packIds
+       rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), fold_push_size]
+       simp only [ByteArray.emptyWithCapacity, ByteArray.size]; omega)
+
+/-- `internConcat` answers its joined dictionary and `concatIds` over every part's count and ids. -/
+private theorem internConcat_eq (qs : Array (Nat × ByteArray × Array Nat × ByteArray)) :
+    ∃ db dbo ws maps, internConcat qs =
+      (db, dbo, concatIds (Column.idWidth dbo).toUSize (qs.map (·.1)) ws maps (qs.map (·.2.2.2))) :=
+  ⟨_, _, _, _, rfl⟩
+
+private theorem hashConcat_ok {qs : Array (Nat × ByteArray × Array Nat × ByteArray)} {r}
+    (h : hashConcat qs = .ok r) : r = internConcat qs := by
+  simp only [hashConcat] at h
+  repeat' split at h
+  all_goals first | (injection h with h; exact h.symm) | simp at h
+
+private theorem hashConcat_error {qs : Array (Nat × ByteArray × Array Nat × ByteArray)} {r}
+    (h : hashConcat qs = .error r) : r = qs := by
+  simp only [hashConcat] at h
+  repeat' split at h
+  all_goals first | (injection h with h; exact h.symm) | simp at h
+
+/-- `internConcat` of parts holds their summed count. -/
+theorem internConcat_wf (qs : Array (Nat × ByteArray × Array Nat × ByteArray)) :
+    Enc.WF .symbol (qs.foldl (fun s p => s + p.1) 0)
+      (.enum (internConcat qs).1 (internConcat qs).2.1 (internConcat qs).2.2) := by
+  obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
+  rw [h]
+  simp only [Enc.WF, concatIds]
+  rw [toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
+  have hsz : ((Array.range (min (qs.map (·.1)).size (qs.map (·.2.2.2)).size)).flatMap fun k =>
+      (Array.range (qs.map (·.1))[k]!).map fun i =>
+        Column.idAt maps[k]! (Column.idWidth dbo) (Column.idAt (qs.map (·.2.2.2))[k]! ws[k]! i)).size =
+      qs.foldl (fun s p => s + p.1) 0 := by
+    rcases qs with ⟨l⟩
+    simp only [Array.size_flatMap, Array.size_map, Array.size_range, Nat.min_self]
+    rw [← Array.foldl_toList, foldl_add_fst, Nat.zero_add]
+    have hl : (Array.range l.length).map (fun k => (Array.map (·.1) l.toArray)[k]!) = (l.map (·.1)).toArray := by
+      apply Array.ext (by simp)
+      intro i h1 h2
+      simp only [Array.size_map, Array.size_range] at h1
+      simp [h1]
+    simp only [List.size_toArray] at hl ⊢
+    rw [hl]; simp
+  rw [← hsz]
+  exact packIds_cap (lane_idWidth dbo) _ _
+
+/-- The interned join `concatEnum` answers after `hashConcat`, whichever way that goes. -/
+private theorem hashJoin_wf (qs : Array (Nat × ByteArray × Array Nat × ByteArray)) :
+    Enc.WF .symbol (qs.foldl (fun s p => s + p.1) 0) (match hashConcat qs with
+      | .ok (db, dbo, ids) => .enum db dbo ids
+      | .error ps => match internConcat ps with | (db, dbo, ids) => .enum db dbo ids) := by
+  split
+  · rename_i db dbo ids heq
+    have := internConcat_wf qs
+    rw [← hashConcat_ok heq] at this
+    exact this
+  · rename_i r heq
+    obtain rfl := hashConcat_error heq
+    exact internConcat_wf r
+
+/-- `concatEnum` answers an interned symbol vector whose ids count it. -/
+theorem concatEnum_wf (ps : Array (Nat × ByteArray × Array Nat × ByteArray)) :
+    ∃ n e, concatEnum ps = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
+  unfold concatEnum
+  dsimp only
+  generalize Array.mapIdx _ ps = qs
+  exact ⟨_, _, rfl, hashJoin_wf qs⟩
 
 end LeetQ.Rel.KernelWF
