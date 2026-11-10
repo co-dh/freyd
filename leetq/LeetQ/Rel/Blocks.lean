@@ -70,6 +70,30 @@ private def after : V := plan.foldl (fun S p => move S (ofPairs [p])) S₀
 #guard (G ⊑ S₀) == false
 #guard G ⊑ after
 
+-- the operators are the only way a program writes these ops: the names must not resolve
+/-- error: Unknown identifier `Alg.comp` -/
+#guard_msgs in #check Alg.comp
+/-- error: Unknown identifier `Alg.conv` -/
+#guard_msgs in #check Alg.conv
+/-- error: Unknown identifier `Alg.inter` -/
+#guard_msgs in #check Alg.inter
+/-- error: Unknown identifier `Alg.union` -/
+#guard_msgs in #check Alg.union
+/-- error: Unknown identifier `Alg.diff` -/
+#guard_msgs in #check Alg.diff
+/-- error: Unknown identifier `Alg.le` -/
+#guard_msgs in #check Alg.le
+/-- error: Unknown identifier `comp` -/
+#guard_msgs in #check comp
+/-- error: Unknown identifier `conv` -/
+#guard_msgs in #check conv
+/-- error: Unknown identifier `inter` -/
+#guard_msgs in #check inter
+/-- error: Unknown identifier `union` -/
+#guard_msgs in #check union
+/-- error: Unknown identifier `diff` -/
+#guard_msgs in #check diff
+
 end Checks
 
 end LeetQ.Rel.Blocks

@@ -647,17 +647,17 @@ section Gen
 variable {A B C : Obj}
 
 /-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
-def le (R S : Rel A B) : Bool :=
+private def le (R S : Rel A B) : Bool :=
   let c := pairs #v[cols R, cols S]
   len (whereBits R.n.toUSize (c[0].member c[1])) == R.n
 
 /-- `R ∩ S`: the semi-join on pairs — `member`, `whereBits`, `gatherColumn`. -/
-def inter (R S : Rel A B) : Rel A B :=
+private def inter (R S : Rel A B) : Rel A B :=
   let c := pairs #v[cols R, cols S]
   (cols R).rows (whereBits R.n.toUSize (c[0].member c[1]))
 
 /-- `R ∪ S`: `razeColumn` of keys and of vals, the first row of each pair. -/
-def union (R S : Rel A B) : Rel A B :=
+private def union (R S : Rel A B) : Rel A B :=
   let r := cols R; let s := cols S
   (Cols.mk (k := A) (v := B) (r.n + s.n) (A.raze #[r.key, s.key]) (B.raze #[r.val, s.val])).nub
 
@@ -686,10 +686,10 @@ theorem convArr_holds {k v : Obj} {n : Nat} (key : Vals k n) (val : Vals v n) (x
   exact ⟨fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩, fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩⟩
 
 /-- `R°`: `convArr`. -/
-def conv (R : Rel A B) : Rel B A := convArr R.key R.val
+private def conv (R : Rel A B) : Rel B A := convArr R.key R.val
 
 /-- `R ≫ S`: `join` on `R.val = S.key`, the key picked from `R`, the val from `S`. -/
-def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
+private def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
   let r := cols R; let s := cols S
   let c := B.codes #v[r.val, s.key]
   let ij := join c[0] c[1]
@@ -714,7 +714,7 @@ def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B :=
   r.rows (anti vc[0] vc[1])
 
 /-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
-def diff (R S : Rel A B) : Rel A B :=
+private def diff (R S : Rel A B) : Rel A B :=
   let c := pairs #v[cols R, cols S]
   (cols R).rows (anti c[0] c[1])
 
