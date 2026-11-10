@@ -240,3 +240,43 @@ theorem cmpPayload_isSome {v : Prim.Dyadic} {shape : UInt8} {t u : QAtomicType} 
           rw [if_neg (by simp [htk]), hraw]; simp only [Option.bind_some]; try rw [hraw] at hct' hcu' hne
           rw [if_neg (by rw [hct', hcu']; decide)]
           exact orElse_isSome _ (zipPass_isSome hsa hsb ha hb hne (by simp) (by simp))
+
+/-- A value verb is not a comparison. -/
+theorem cmpOp_none_of_valOp {v : Prim.Dyadic} (h : (valOp v).isSome) : cmpOp v = none := by
+  cases v <;> simp_all [valOp, cmpOp]
+
+/-- `dyadColumn` answers, for each of the three shapes, on two well-formed operands whose counts conform,
+    when the type conditions of the branch that serves the pair hold: `guid` against `guid` under `=`, `<>`
+    or `^`; `CmpClaims` for a comparison; `ValClaims` for a value verb. It declines `x^atom` and, at a
+    symbol pair, the encodings `SymClaims` excludes. -/
+theorem dyadColumn_isSome {v : Prim.Dyadic} {shape : UInt8} {t u rt : QAtomicType} {na nb n : Nat}
+    {a b : Enc} (h : Eval.ewType v t u = some rt) (ha : Enc.WF t na a) (hb : Enc.WF u nb b)
+    (hs : dyadCount shape t u na nb = some n) (hfill : ¬(v = .fill ∧ shape = Kernel.Ew.va))
+    (hty : (t = .guid ∧ u = .guid ∧ (v = .eq ∨ v = .ne ∨ v = .fill)) ∨ CmpClaims v t u ∨ ValClaims v t u rt)
+    (hsym : t = .symbol → u = .symbol → SymClaims a b) :
+    (dyadColumn v shape t u na a nb b).isSome := by
+  unfold dyadColumn
+  rw [← ewType_eq_resultType, h]
+  simp only [Option.isSome_map]
+  unfold dyadPayload
+  rw [if_neg (by simpa using hfill)]
+  simp only [hs, Option.bind_eq_bind, Option.bind_some]
+  by_cases hg : t = .guid ∧ u = .guid ∧ (v = .eq ∨ v = .ne ∨ v = .fill)
+  · obtain ⟨rfl, rfl, hv⟩ := hg
+    cases a <;> simp [Enc.WF] at ha
+    cases b <;> simp [Enc.WF] at hb
+    rcases hv with rfl | rfl | rfl <;> by_cases hsh : shape = Kernel.Ew.av <;> simp [hsh, Enc.bytesOf]
+  · rw [if_neg (by
+          simp only [Bool.and_eq_true, beq_iff_eq, Bool.or_eq_true]
+          rintro ⟨⟨h1, h2⟩, h3 | h3⟩
+          · exact hg ⟨h1, h2, .inl h3⟩
+          · exact hg ⟨h1, h2, .inr (.inl h3)⟩),
+      if_neg (by
+          simp only [Bool.and_eq_true, beq_iff_eq]
+          rintro ⟨⟨h1, h2⟩, h3⟩
+          exact hg ⟨h1, h2, .inr (.inr h3)⟩)]
+    rcases hty with hg' | hc | hv
+    · exact absurd hg' hg
+    · rw [if_pos hc.1]; simp only [Option.isSome_map]; exact cmpPayload_isSome hc ha hb hsym
+    · rw [if_neg (by simp [cmpOp_none_of_valOp hv.1])]; simp only [Option.isSome_map]
+      exact valPayload_isSome hv ha hb
