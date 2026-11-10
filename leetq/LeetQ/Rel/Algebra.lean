@@ -20,7 +20,7 @@ import QLean.Kernel.Coc
 import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
-import LeetQ.Rel.KernelWF.Gather
+import LeetQ.Rel.Parted
 
 namespace LeetQ.Rel.Alg
 
@@ -726,7 +726,7 @@ def groupedP {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : (g : Nat) × Ar
 
 /-- The output boundary: the carrier as q's nested list, one boxed vector per key (`Parted.box`). -/
 def boxP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t .general) := do
-  pure ⟨F.1, F.2.1, ← Arr.ofPart .general F.1 (← F.2.2.box).part "box"⟩
+  pure ⟨F.1, F.2.1, ← Arr.ofPart .general F.1 F.2.2.box.part "box"⟩
 
 /-- `∋` of the carrier: each value against its key, the key gathered at each row's group (`groupOf`). -/
 def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t v) := do
@@ -976,7 +976,7 @@ private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Ar
 /-- The family of `g` sets keyed `0 … g-1`, the sets cut from `val` at the offsets `o`, boxed. -/
 private def boxed {g n : Nat} (o : Arr L (g+1)) (val : Arr L n) : Except String (Rel L .general) := do
   let some P := Parted.of? o val | throw "boxed: not cuts"
-  pure ⟨g, ← Arr.ofPart L g (longs (tilLongs g.toUSize)) "boxed", ← Arr.ofPart .general g (← P.box).part "boxed"⟩
+  pure ⟨g, ← Arr.ofPart L g (longs (tilLongs g.toUSize)) "boxed", ← Arr.ofPart .general g P.box.part "boxed"⟩
 -- `∋` of a stored family: the parted list `(10 20; 30)` from the core
 private def o2 : Arr L 3 := (Arr.mk (.bytes <| packLongs [0, 2, 3]) (by decide))
 private def parted : Except String (Rel L .general) := boxed o2 ((Arr.mk (.bytes <| packLongs [10, 20, 30]) (by decide)) : Arr L 3)
