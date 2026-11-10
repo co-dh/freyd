@@ -2098,7 +2098,7 @@ open QLean.Kernel in
 /-- Gathering a long column at rows `pr` inside it answers a long column whose words are the column's words at
     `pr`: `gallop_loop`'s gather hypothesis at the kernel's own right key column. -/
 theorem gather_rows {n : Nat} {e : Enc} {wr : List UInt64} (hrw : longWords n e = some wr)
-    (hrn : wr.length = n) (hU : n < USize.size) (pr : Array Nat) (hpr : ∀ k, k < pr.size → pr[k]! < n) :
+    (hrn : wr.length = n) (hU : n < USize.size) (hwf : Enc.WF .long n e) (pr : Array Nat) (hpr : ∀ k, k < pr.size → pr[k]! < n) :
     ∃ ce g, gatherColumn .long n e pr.size (.bytes (Kernel.longBytes pr)) = some ce ∧
       Enc.bytesOf .long pr.size ce = some g ∧ ∀ k, k < pr.size → Column.bitsAt g (k * 8) 8 = wr[pr[k]!]! := by
   obtain ⟨B, hBb, hBw, hBn⟩ := bytesOf_longWords hU hrw hrn
@@ -2116,7 +2116,7 @@ theorem gather_rows {n : Nat} {e : Enc} {wr : List UInt64} (hrw : longWords n e 
   obtain ⟨c, hgc⟩ := gatherColumn_long_some hrw hix
     (by have := Nat.div_mul_le_self (Kernel.longBytes pr).size 8; rw [hLs] at this; exact this)
   obtain ⟨src, ix', hsrc, hix', hc⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl n e pr.size _ c
-    (fun M P a he => by simp [longWords, he] at hrw) hgc
+    hwf hgc
   have hsB : src = B := Option.some.inj (hsrc.symm.trans hBb)
   have hixe : ix' = Kernel.longBytes pr := Option.some.inj (hix'.symm.trans hix)
   rw [hsB, hixe] at hc
@@ -2138,7 +2138,7 @@ open QLean.Kernel in
     (`OneRun`), which is all `byRuns` needs of the order. -/
 theorem keyMatch_runs {cr cl : Nat × Enc} {ar al : Option (UInt8 × IndexCell)} {wr wl : List UInt64}
     (nr nl : Nat) {cell : IndexCell} (hrw : longWords cr.1 cr.2 = some wr) (hrn : wr.length = cr.1)
-    (h63 : cr.1 < 2 ^ 63) (hU : cr.1 < USize.size) (hlU : cl.1 < USize.size) (hlwf : Enc.WF .long cl.1 cl.2)
+    (h63 : cr.1 < 2 ^ 63) (hU : cr.1 < USize.size) (hrwf : Enc.WF .long cr.1 cr.2) (hlU : cl.1 < USize.size) (hlwf : Enc.WF .long cl.1 cl.2)
     (hlR : Find.Readable .long cl.1 cl.2) (hwl : longWords cl.1 cl.2 = some wl) (hs : ar = some (1, cell))
     (hh : worthHalving nr nl = false) (hrun : OneRun (fun i => wr[i]!) wr.length) :
     KeyAnswers wr wl (Eval.keyMatch #[.vector .long cr.1 cr.2 ar] nr #[.vector .long cl.1 cl.2 al] nl).1
@@ -2204,7 +2204,7 @@ theorem keyMatch_runs {cr cl : Nat × Enc} {ar al : Option (UInt8 × IndexCell)}
   -- the gather: the words at the run starts, which are the distinct words in first-occurrence order
   obtain ⟨c, hgc⟩ := gatherColumn_long_some hrw hix (by have := Nat.div_mul_le_self ix.size 8; rw [hixn] at this; exact this)
   obtain ⟨src, ix', hsrc, hix', hc⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl cr.1 cr.2 _ A c
-    (fun M P a he => by simp [longWords, he] at hrw) hgc
+    hrwf hgc
   have hsB : src = B := Option.some.inj (hsrc.symm.trans hBb)
   have hixe : ix' = ix := Option.some.inj (hix'.symm.trans hix)
   rw [hsB, hixe] at hc
@@ -2319,7 +2319,7 @@ theorem keyMatch_gallop {cr cl : Nat × Enc} {ar al : Option (UInt8 × IndexCell
         (⟨ByteArray.empty, bounds⟩, Eval.groupIds (bounds.size - 1) ((Array.range nl).map fun i => gid.getD (key i) none))
       ofRuns nl id fun i => if (longRows P)[i]! < cr.1 then some ((longRows P)[i]!, hi[i]!) else none := ⟨_, rfl⟩
   obtain ⟨H, hL, hHs, hH⟩ := gallop_loop K .long cr.1 cr.2 Bl 8 cr.1 nl (longRows P) wr wl hpsz hrn
-    h63 hpi hnd (fun pr hpr => gather_rows hrw hrn hU pr hpr)
+    h63 hpi hnd (fun pr hpr => gather_rows hrw hrn hU hrwf pr hpr)
   have hK : Eval.keyMatch #[.vector .long cr.1 cr.2 (some (a, cell))] cr.1 #[.vector .long cl.1 cl.2 al] nl = K H := by
     subst hKdef
     unfold Eval.keyMatch
@@ -2519,7 +2519,7 @@ theorem keyMatch_answers {cr cl : Nat × Enc} {ar al : Option (UInt8 × IndexCel
     by_cases ha : a = 1
     · subst ha
       cases hw : Kernel.worthHalving nr nl
-      · exact keyMatch_runs nr nl hrw hrn h63 hU hlU hlwf hlR hwl rfl hw (oneRun_of_ascending (h1 rfl))
+      · exact keyMatch_runs nr nl hrw hrn h63 hU hrwf hlU hlwf hlR hwl rfl hw (oneRun_of_ascending (h1 rfl))
       · exact keyMatch_halved nr nl hrw hrn h63 hU hrwf hrR hlU hlwf hlR hwl hnr hnl hnl2 rfl hw (h1 rfl)
     by_cases hb : a = 2 ∨ a = 3
     · exact keyMatch_gallop nr nl hrw hrn h63 hU hrwf hrR hlU hlwf hlR hwl hln hnr hnl hnl2 rfl hb

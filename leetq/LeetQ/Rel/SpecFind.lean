@@ -936,10 +936,8 @@ theorem gatherColumn_long {m k : Nat} (x : Arr .long m) {xs is : List UInt64} (h
     ∃ B, c = .bytes B ∧ B.size = k * 8 ∧
       Verify.elemsW 8 B = is.map fun j => xs.getD j.toNat 0x8000000000000000 := by
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-    simp [longWords, he] at hx
   obtain ⟨src, ix, hsrc, hix, rfl⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl m x.enc k i.enc c
-    hA h
+    x.wf h
   obtain ⟨B, -, hB, hBw, -⟩ := Arr.dense_long x hx hm
   obtain rfl : B = src := Option.some.inj (hB.symm.trans hsrc)
   have hix8 : Verify.elemsW 8 ix = is := by

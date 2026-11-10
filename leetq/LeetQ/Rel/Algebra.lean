@@ -213,11 +213,11 @@ def gens (c : Nat × Enc) : Except String (Array QValue) :=
 /-- A general list's column over `xs`. -/
 def genCol (xs : Array QValue) : Nat × Enc := (xs.size, .gen xs)
 
-/-- `x@i` for an in-range long payload `i`: `gatherColumn`, which answers every column encoding. A
-    general list is picked by position, which is all qlean's own `@` does there (`pickAt`, private). -/
+/-- `x@i` for a long payload `i`: `gatherColumn`, which answers every column encoding. A general list
+    is picked by position; a position past the end reads the null, as q's `@`. -/
 def pick (t : QAtomicType) (c : Nat × Enc) (i : ByteArray) : Except String (Nat × Enc) :=
   match t with
-  | .general => do let xs ← gens c; pure (genCol ((longRows i).map fun p => xs[p]?.getD (QValue.general #[])))
+  | .general => do let xs ← gens c; pure (genCol ((longRows i).map fun p => xs[p]?.getD (QLean.Eval.fillOf xs)))
   | a => match gatherColumn a c.1 c.2 (len i) (.bytes i) with
     | some e => pure (len i, e)
     | none => throw s!"gatherColumn declines a column of type {a.code} in this encoding"

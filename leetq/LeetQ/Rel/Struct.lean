@@ -811,11 +811,9 @@ theorem index_toList {nx ny : Nat} {x : Arr .long nx} {y r : Arr .long ny}
   | some c =>
     rw [hg, Option.map_some] at hv
     have rc : r.enc = c := enc_of_vec hv
-    have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-      simp [longWords, he] at hx
-    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ _ _ c hA hg
+    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ _ _ c x.wf hg
     have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl _ _ _ _ c x.wf y.wf
-      (countFits_long x hx hxU) (countFits_long y hy hyU) hA hg
+      (countFits_long x hx hxU) (countFits_long y hy hyU) hg
     have hcw : Enc.WF .long ny c := rc ▸ r.wf
     have hw : longWords ny c = some (Enc.raw .long ny c).toList := by
       cases hl : longWords ny c with

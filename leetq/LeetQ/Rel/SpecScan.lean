@@ -819,12 +819,10 @@ theorem xasc_toList {s x X : Arr .long n} {ws wx : List UInt64} (hs : longWords 
       simp only [bind, Option.bind, Arr.of] at h'; split at h'
       · cases h'; rfl
       · cases h'
-    have hA : ∀ M P a, x.enc = .alp M P a → Column.alpF32 a = (8 == 4) := fun _ _ _ he => by
-      simp [longWords, he] at hx
     have hcf : Verify.countFits n (.bytes P) := by simp only [Verify.countFits]
-    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ _ _ c hA hv
+    obtain ⟨_, _, -, -, hcB⟩ := Verify.gatherColumn_fixed_shape (t := .long) (w := 8) rfl _ _ _ _ c x.wf hv
     have hraw := Verify.gatherColumn_raw (t := .long) (w := 8) rfl _ _ _ _ c x.wf hPw
-      (countFits_long x hx hn) hcf hA hv
+      (countFits_long x hx hn) hcf hv
     have hcw : Enc.WF .long n c := rc ▸ X.wf
     have hw : longWords n c = some (Enc.raw .long n c).toList := by
       cases hl : longWords n c with
