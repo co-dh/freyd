@@ -256,7 +256,7 @@ G ≜ {(A,B),(B,C)}                             -- A on B, B on C
 
 R(S : X ⟶ X) ≜ S ∩ ∼𝟙                         -- b rests on another block
 M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))            -- the moves allowed
-S'(S : X ⟶ X, p : X ⟶ X) ≜ S ∩ ∼(p⊤) ∪ p      -- the state after the move p
+S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after the move p
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- St ⟶ St×(X×X): a state, each move it allows
@@ -285,7 +285,7 @@ Lines changed from the per-key version:
 |---------------|------------------------------------------|--------------------------------------|
 | `R`           | `R(S) ≜ S ran⟨𝟙,∼𝟙⟩`                     | `R(S : X ⟶ X) ≜ S ∩ ∼𝟙`              |
 | `M`           | `M(S) ≜ Sπ₁⊤ − (R(S)π₂(π₁° ∪ π₂°))`      | `M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))` |
-| `S'`          | `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`             | `S'(S,p : X ⟶ X) ≜ S ∩ ∼(p⊤) ∪ p`    |
+| `S'`          | `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`             | `S'(S,p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p`  |
 | `g`           | `g ≜ ran⟨𝟙,G⟩`                           | `h(S : X ⟶ X) ≜ G ⊑ S`               |
 | `H`           | `H ≜ Q − dom(Q⊤g − (Q∋))`                | `H ≜ Qh(∋)`                          |
 | `T`           | `T ≜ cΛ(F)`                              | `t ≜ cΛ(F)`: `T` reads as `⊤`        |

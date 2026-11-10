@@ -6,7 +6,7 @@ G ≜ {(A,B),(B,C)}                             -- A on B, B on C
 
 R(S : X ⟶ X) ≜ S ∩ ∼𝟙                         -- b rests on another block
 M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))            -- the moves allowed
-S'(S : X ⟶ X, p : X ⟶ X) ≜ S ∩ ∼(p⊤) ∪ p      -- the state after the move p
+S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after the move p
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- St ⟶ St×(X×X): a state, each move it allows
