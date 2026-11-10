@@ -237,7 +237,7 @@ def raze (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Nat × Enc
 def empty (t : QAtomicType) : (n : Nat) × Arr t n :=
   if h : t = .general then h ▸ genCol #[] else
     ⟨0, Arr.mk ((Enc.ofAtoms t #[] h).get (Column.ofAtoms_isSome h (by simp)))
-      (Enc.ofAtoms_WF (by simp) (Option.some_get _).symm)⟩
+      (Column.ofAtoms_WF (by simp) (Option.some_get _).symm)⟩
 
 /-- `mapM` in `Option` over one part is the one part's answer. -/
 @[simp] theorem vmapM_one {α β : Type} (f : α → Option β) (x : α) : Vector.mapM f #v[x] = (f x).map (#v[·]) := by
@@ -1061,9 +1061,9 @@ private def enumC : Nat × Enc :=
 #guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard okFlat L (do group (← lstV Sy symsC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard ok (do symDiv (← lst Sy symsC) (← lst Sy enumC) U4 U4) fun X => seteq X.toList pqpr
-#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Vals.ofParts Sy 4 symsC "U") (← Vals.ofParts Sy 4 enumC "U")) fun X =>
+#guard ok (do leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.ofPart Sy 4 symsC "U") (← Arr.ofPart Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
-#guard ok (do top (← Vals.ofParts Sy 4 enumC "U") (← Vals.ofParts Bo 4 bitsC "U")) (·.n == 16)
+#guard ok (do top (A := .atom Sy) (B := .atom Bo) (← Arr.ofPart Sy 4 enumC "U") (← Arr.ofPart Bo 4 bitsC "U")) (·.n == 16)
 #guard ok (do transpose (← conv (← lst Sy enumC))) (·.n == 3)
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
@@ -1110,12 +1110,12 @@ private def alpC : Nat × Enc := ((Enc.alpOf Fl fd.1 fd.2).map (fd.1, ·)).getD 
 
 -- a general list, `(1; (); 1; ,2)`, elements matched by identity
 private def gs : Array QValue := #[.atom (.long 1), QValue.general #[], .atom (.long 1), QValue.general #[.atom (.long 2)]]
-#guard ok (do same (← lst .general (genCol gs)) (← lst .general (genCol gs))) fun X => seteq X.toList pqpr && X.n == 6
-#guard okFlat L (do group (← lstV .general (genCol gs)).2) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
-#guard ok (do union (← lst .general (genCol gs)) (← lst .general (genCol gs))) fun X => X.n == 4
-#guard ok (do dom (← conv (← lst .general (genCol gs)))) (·.n == 3)
-#guard ok (do symDiv (← lst .general (genCol gs)) (← lst .general (genCol gs)) U4 U4) fun X => seteq X.toList pqpr
-#guard match lstV .general (genCol gs) with | .ok ⟨_ + 1, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | _ => false
+#guard ok (do same (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part)) fun X => seteq X.toList pqpr && X.n == 6
+#guard okFlat L (do group (← lstV .general (genCol gs).2.part).2) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
+#guard ok (do union (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part)) fun X => X.n == 4
+#guard ok (do dom (← conv (← lst .general (genCol gs).2.part))) (·.n == 3)
+#guard ok (do symDiv (← lst .general (genCol gs).2.part) (← lst .general (genCol gs).2.part) U4 U4) fun X => seteq X.toList pqpr
+#guard match lstV .general (genCol gs).2.part with | .ok ⟨_ + 1, x⟩ => ok (uncons x) fun p => p.1.toList.length == 1 && p.2.toList.length == 3 | _ => false
 #guard ok (do zero (A := .general) (B := Sy)) (·.n == 0)
 
 end Checks
@@ -1191,7 +1191,7 @@ theorem ofCols_ok {k v : QAtomicType} {kc : Part (.atom k)} {vc : Part (.atom v)
   by_cases he : m' = m
   · subst he; simp only [dite_true, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
     subst h; exact ⟨rfl, rfl⟩
-  · simp [he, bind, Except.bind, throw, throwThe, MonadExceptOf.throw] at h
+  · simp [he, bind, Except.bind, throw, throwThe, MonadExceptOf.throw, pure, Except.pure] at h
 
 /-- The generic `R°`: `ofCols` of the two payloads, swapped. -/
 theorem conv_cols_holds {R : Rel A B} {S : Rel B A}
