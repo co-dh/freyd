@@ -19,28 +19,28 @@ def near (a b : Int64) : Bool := [1, -1, 10, -10].contains (a - b)
 
 /-- `uniq(R) ≜ R ∩ (R° \ 𝟙)`, the rows whose key has one value. The left universe is `R`'s own keys, because a key
     outside `R` would satisfy the division vacuously. -/
-def uniq {m : Nat} (R : LL) (cells : Arr .long m) : Except String LL := do
-  pure (inter R (← leftDiv (conv R) (idU cells) (dom R).key cells))
+def uniq {m : Nat} (R : LL) (cells : Arr .long m) : LL :=
+  inter R (leftDiv (conv R) (idU cells) (dom R).key cells)
 
 /-- Every view, recomputed from the KB. `noWumpus` is the complement of `ran(wcand)`, not `noW`, because exactly one
     wumpus also clears each cell that `wmay` drops; `(S !) \ adj` ranges over all of `S`, unlike `S \ adj`. -/
 def views {m : Nat} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB) :
-    Except String (List (String × LL)) := do
+    List (String × LL) :=
   let (V, B, S, G) := k
   let noB := antiJoin V B
   let noPit := union V (ran (comp noB adj))
   let cand := antiJoin (comp B adj) noPit
-  let pit := ran (← uniq cand cells)
+  let pit := ran (uniq cand cells)
   let noS := antiJoin V S
   let noW := union V (ran (comp noS adj))
-  let wmay ← leftDiv (top S.key one) adj one cells
+  let wmay := leftDiv (top S.key one) adj one cells
   let wcand := antiJoin wmay noW
-  let wumpus := ran (← uniq wcand cells)
+  let wumpus := ran (uniq wcand cells)
   let noWumpus := antiJoin (idU cells) (ran wcand)
   let safe := inter noPit noWumpus
   let frontier := antiJoin (ran (comp V adj)) V
   let next := inter frontier safe
-  pure [("V", V), ("B", B), ("S", S), ("G", G), ("noB", noB), ("noPit", noPit), ("cand", cand), ("pit", pit),
+  [("V", V), ("B", B), ("S", S), ("G", G), ("noB", noB), ("noPit", noPit), ("cand", cand), ("pit", pit),
     ("noS", noS), ("noW", noW), ("wmay", wmay), ("wcand", wcand), ("wumpus", wumpus), ("noWumpus", noWumpus),
     ("safe", safe), ("frontier", frontier), ("next", next)]
 
@@ -56,17 +56,14 @@ def world (pits : List Int64) (w g c : Int64) : Bool × Bool × Bool := (pits.an
 
 /-- The agent walks a supplied route through a world, so a step back to a visited cell needs no choice among `next`;
     the result is every view after each step. -/
-def agent (see : Int64 → Bool × Bool × Bool) (route : List Int64) : Except String (List (List (String × LL))) := do
+def agent (see : Int64 → Bool × Bool × Bool) (route : List Int64) : List (List (String × LL)) :=
   let cells := col cellL
   let one := col [0]
   let adj := ofPairs (cellL.flatMap fun a => (cellL.filter (near a)).map (a, ·))
   let e := cor []
-  let mut k : KB := (e, e, e, e)
-  let mut out := #[]
-  for c in route do
-    k := tell k c (see c)
-    out := out.push (← views cells one adj k)
-  pure out.toList
+  -- the KB after each step: the fold carries the current KB beside the ones so far
+  let ks := (route.foldl (fun (k, ks) c => let k := tell k c (see c); (k, ks.push k)) (((e, e, e, e) : KB), #[])).2
+  ks.toList.map (views cells one adj)
 
 section Checks
 
@@ -101,7 +98,7 @@ private def page : List String := [
    23:33; pit 31; noS 11 21 22; noW 11 12 21 22 23 31 32; wmay 0:13 0:22; wcand 0:13; wumpus 13; noWumpus 11 \
    12 14 21 22 23 24 31 32 33 34 41 42 43 44; safe 11 12 21 22 23 32; frontier 13 24 31 32 33; next 32"]
 
-#guard (agent see route).toOption.map (·.map showS) == some page
+#guard (agent see route).map showS == page
 
 /-- The literals true in every world that agrees with each prefix of the route. A percept splits into a breeze on the
     pits and a stench on the wumpus, so the worlds left are the product of `ms` and `ws`, and the agent lived at `c`. -/
@@ -118,7 +115,7 @@ private def entailed : List (List (String × List Int64)) := Id.run do
       ("noWumpus", cellL.filter fun x => !ws.contains x)]
   pure out.toList
 
-#guard (agent see route).toOption.any fun ts => ts.length == entailed.length && (ts.zip entailed).all fun (t, e) =>
+#guard (agent see route) |> fun ts => ts.length == entailed.length && (ts.zip entailed).all fun (t, e) =>
   e.all fun (n, l) => (t.lookup n).map showT == some (" ".intercalate (l.map toString))
 
 end Checks
