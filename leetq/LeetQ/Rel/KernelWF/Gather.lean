@@ -1,6 +1,6 @@
 /-
   Totality of the kernels a `Rel` op reads a payload through, under the payload's `Enc.WF`: the facts
-  that let `pick`, `Parted.box`, `longBytes` and `gens` drop their `Except`. Each hypothesis is one a
+  that let `pick`, `longBytes` and `gens` drop their `Except`. Each hypothesis is one a
   caller holding an `Arr` already has: `x.wf`, an index `.bytes i` of `i.size / 8` longs.
 -/
 import QLean.Kernel.Structural

@@ -26,6 +26,16 @@ moved to `Core`). Every line number below is of that tree and moves with any edi
 
 ## Step 2: move what `Alg` uses into `Core`, delete `Find`/`Ew`/`Scan`/`Parted`/`QSort` and unreached `KernelWF/*`
 
+Done on branch `leetq-arch-step2`. Differences from the plan below, found by the compiler:
+
+- `Ops.rank`/`rankAt` cannot move into `Core`: they cite `gradeColumn_isSome/_wf`, whose proofs use `Raze`'s
+  `wf_bytes`, `bytesOf_size`, `countFits_of_lt`, `orderKind_eq_none`, and `Raze` imports `Core`. They moved into
+  `KernelWF/Reduce`, cut to the grade facts and `razeColumn_count` (727 → about 270 lines).
+- `Core`'s `Cuts`, `cuts_of_ascending`, `cuts_get`, `Cuts.pos` and `Raze`'s `Parted.of?_isSome` served only
+  `Parted`; deleted with it, with the five `Parted.of?` guards in `Core`.
+- No other import was needed: `Algebra` imports `KernelWF.Gather` and `KernelWF.Reduce` in place of the four
+  modules; `Core` gains `QLean.Kernel.Elementwise` and `QLean.Kernel.Scan` (for `expand`, `Ew.notBits`).
+
 Moved into `Core` (a few dozen lines):
 
 - `Find.one` (1 line), `Find.expand` (`Find.lean:158`, its doc and body), `Find.bitsAt_one` (`Find.lean:560`, the one
