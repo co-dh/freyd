@@ -100,6 +100,23 @@ def dense (verb : String) (a : QAtomicType) (n : Nat) (e : Enc) : Except String 
   | some b => .ok b
   | none => .error s!"{verb}: the operand has no dense payload at its type"
 
+theorem list_enc {a t : QAtomicType} {m : Nat} {e : Enc} {ac : Option (UInt8 × IndexCell)} {u : UInt8}
+    {nr : Nat} {r : Arr a nr} (h : list a (.vector t m e ac) u = .ok ⟨nr, r⟩) : nr = m ∧ r.enc = e := by
+  simp only [list] at h
+  cases ho : Arr.of a m (.vector t m e ac) "a list answer" with
+  | error _ => simp [ho, bind, Except.bind] at h
+  | ok v =>
+    simp only [ho, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
+    cases h
+    simp only [Arr.of] at ho; split at ho <;> cases ho
+    exact ⟨rfl, by rw [Arr.markIf_enc]; rfl⟩
+
+theorem onKey_enc {n : Nat} {a t : QAtomicType} {m : Nat} {e : Enc} {ac : Option (UInt8 × IndexCell)}
+    {s : String} {r : Arr a n} (h : onKey n a (.vector t m e ac) s = .ok r) : r.enc = e := by
+  simp only [onKey, Arr.of] at h; split at h
+  · cases h; rfl
+  · cases h
+
 /-! ## The small-range test and direct address -/
 
 /-- One long as an eight-byte payload: the atom operand of an `av`/`va` kernel call. -/
