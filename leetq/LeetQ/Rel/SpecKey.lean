@@ -215,6 +215,14 @@ theorem rebase_val {v base : Int64} (hv : v ≠ Alg.nul) (hb : base ≠ Alg.nul)
   simp only [show ((2 ^ 64 : Nat) : Int) = 18446744073709551616 from rfl] at *
   split <;> split <;> omega
 
+/-- `Vector.mapM` in `Option` over two parts answers two results, each holding what `f` guarantees of its part. -/
+theorem vmapM_pair_some {α β : Type} {f : α → Option β} {x y : α} {r : Vector β 2} (P : α → β → Prop)
+    (hP : ∀ c b, f c = some b → P c b) (h : Vector.mapM f #v[x, y] = some r) :
+    ∃ a b, r = #v[a, b] ∧ P x a ∧ P y b := by
+  rw [Alg.vmapM_two] at h
+  cases hx : f x <;> cases hy : f y <;> simp [hx, hy] at h
+  exact ⟨_, _, Vector.toArray_inj.1 h.symm, hP _ _ hx, hP _ _ hy⟩
+
 /-- **`rangeOffsets` codes two long key columns injectively at one byte lane**, whichever encoding (`bytes`,
     `foR`) each arrives in: a lane `k` and a code `f` on words, one-to-one over both columns' words, such that
     each part holds `f` of its words at `k`. Restricted to `total ≤ 2³²` rows, where no rebase wraps. -/
@@ -230,14 +238,12 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
       rc.kind = some k ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧
         (∀ j (hj : j < wr.length), k.bitsAt rc.b j = f wr[j]) := by
   unfold Alg.rangeOffsets at h
-  simp only [bind, Except.bind, pure, Except.pure] at h
-  rw [if_pos (by decide)] at h
+  rw [if_neg (by decide)] at h
+  dsimp only at h
   split at h
-  rotate_left
   · cases h
   rename_i los hlos
   split at h
-  rotate_left
   · cases h
   rename_i his hhis
   obtain ⟨l1, l2, rfl, hl1, hl2⟩ := mapM_pair_P (fun c x => ∀ ws, longWords c.1 c.2 = some ws → ws.length < USize.size →
@@ -252,19 +258,13 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
   · cases h
   rename_i hlh
   split at h
-  rotate_left
   · cases h
   rename_i hwid
+  replace hwid := Decidable.of_not_not hwid
   generalize hk : Alg.codeKind ((hi.toInt - lo.toInt + 2).toNat) = k at h hwid
   generalize hbase : (if (decide (0 ≤ lo) && (Alg.codeKind ((hi.toInt - Int64.toInt 0 + 2).toNat)).width == k.width) = true
     then (0 : Int64) else lo) = base at h
   generalize hcard : (hi.toInt - base.toInt + 2).toNat = card at h
-  split at h
-  rotate_left
-  · cases h
-  rename_i rs hrs
-  have hm : Array.mapM id rs = .ok os := by
-    cases hm : Array.mapM id rs <;> rw [hm] at h <;> simp [Functor.map, Except.map] at h ⊢ <;> exact h
   -- the lane, the joint range `[lo, hi]` of the non-null words, and the rebase `base ≤ lo`
   have hk4 : k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64 := hk ▸ (codeKind_spec _).1
   have hk1 : 1 ≤ k.width ∧ k.width ≤ 8 := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
@@ -301,7 +301,7 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
     USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
   have hnull : (card - 1).toUSize.toNat < 2 ^ (8 * k.width) := by rw [hnull']; omega
   -- each part holds, at the lane, the `enumIds` code of its rebased words
-  obtain ⟨r1, r2, rfl, hp1, hp2⟩ := mapM_pair_P (fun c r => ∀ code, r = .ok code → ∀ ws, longWords c.1 c.2 = some ws →
+  obtain ⟨c1, c2, rfl, hp1, hp2⟩ := vmapM_pair_some (fun c code => ∀ ws, longWords c.1 c.2 = some ws →
       ws.length < USize.size → code.w = 8 * k.width ∧ code.n = ws.length ∧ code.b.size = k.width * ws.length ∧
       ∀ i (hi : i < ws.length), Column.bitsAt code.b (i * k.width) k.width =
         (if Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base) = Int64.minValue then (card - 1).toUSize.toNat
@@ -309,12 +309,12 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
         (Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base) ≠ Int64.minValue →
           0 ≤ (Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base)).toInt ∧
           (Kernel.Ew.intStep Kernel.Ew.add Alg.nul ws[i].toInt64 (-base)).toInt.toNat < card.toUSize.toNat))
-    (fun c r hf code hcode ws hw hn => by
+    (fun c code hcode ws hw hn => by
       obtain ⟨n, e⟩ := c
       cases e
       case bytes b =>
         simp only [longWords, Option.some.injEq] at hw; subst hw
-        simp only [Option.some.injEq] at hf; subst hf
+        dsimp only at hcode
         have hn' : b.size / 8 < USize.size := by simpa [Verify.elemsW] using hn
         generalize hE : (if (base == 0) = true then b else Kernel.Ew.val Kernel.Ew.add Kernel.Ew.i64 Kernel.Ew.va Alg.nul b
           (Find.one (-base).toUInt64) (b.size / 8).toUSize) = E at hcode
@@ -341,8 +341,8 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
       case foR md pk =>
         simp only [longWords, Option.some.injEq] at hw; subst hw
         have hn' : n < USize.size := by simpa using hn
-        obtain ⟨⟨m', p'⟩, hsh, hf⟩ := Option.map_eq_some_iff.1 hf
-        subst hf
+        dsimp only at hcode
+        obtain ⟨⟨m', p'⟩, hsh, hcode⟩ := Option.bind_eq_some_iff.1 hcode
         simp only [Kernel.enumIdsFoR] at hcode
         split at hcode
         · cases hcode
@@ -375,10 +375,9 @@ theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Co
             Column.bitsAt (Kernel.Coc.decode 8 md pk n.toUSize) (i * 8) 8 := by simp [hD i hi']
         rw [hwi, ← hEw i hi']
         exact hbits i hi'
-      all_goals simp [longWords] at hw) hrs
-  obtain ⟨c1, c2, rfl, rfl, rfl⟩ := mapM_pair_ok hm
-  obtain ⟨w1, n1, s1, b1⟩ := hp1 c1 rfl wl hwl hl
-  obtain ⟨w2, n2, s2, b2⟩ := hp2 c2 rfl wr hwr hr
+      all_goals simp [longWords] at hw) h
+  obtain ⟨w1, n1, s1, b1⟩ := hp1 wl hwl hl
+  obtain ⟨w2, n2, s2, b2⟩ := hp2 wr hwr hr
   -- the code of a word: `card - 1` at the null, its offset from `base` elsewhere, at most `card - 2`
   have hW : ∀ u ∈ wl ++ wr, u.toInt64 ≠ Alg.nul → lo.toInt ≤ u.toInt64.toInt ∧ u.toInt64.toInt ≤ hi.toInt := by
     have m1 : ∀ a b : Int64, (min a b).toInt ≤ a.toInt ∧ (min a b).toInt ≤ b.toInt := fun a b => by
@@ -470,22 +469,22 @@ theorem keyCodes_long {verb : String} {cl cr : Nat × Enc} {lc rc : Alg.Code} {w
       rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧ lc.n = wl.length ∧
       lc.b.size / k.width = wl.length ∧
       ∀ i (hi : i < wl.length) j (hj : j < wr.length), (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ wr[j] = wl[i]) := by
-  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) = some os ∧
-      Alg.two os = .ok (lc, rc) := by
+  obtain ⟨os, hro, h0, h1⟩ : ∃ os, Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) = some os ∧
+      os[0] = lc ∧ os[1] = rc := by
     unfold Struct.keyCodes Alg.codes at hc
-    rcases hro : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) with err | _ | os
-    all_goals
-      obtain ⟨n1, e1⟩ := cl
-      obtain ⟨n2, e2⟩ := cr
-      dsimp only at hro
-      cases e1 <;> simp [longWords] at hwl <;> cases e2 <;> simp [longWords] at hwr <;>
-        simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
-          Alg.tuples, hro] at hc hR ⊢
+    rcases hro : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) with _ | os
+    · exact absurd hro hR
+    obtain ⟨n1, e1⟩ := cl
+    obtain ⟨n2, e2⟩ := cr
+    dsimp only at hro
+    cases e1 <;> simp [longWords] at hwl <;> cases e2 <;> simp [longWords] at hwr <;>
+      simp [bind, Except.bind, pure, Except.pure, Functor.map, Except.map, Array.mapM_eq_mapM_toList,
+        Alg.tuples, hro] at hc ⊢
     all_goals exact hc
   obtain ⟨k, f, hk4, hf, lc', rc', rfl, hlk, hln, hls, hlb, hrk, hrn, hrs, hrb⟩ :=
     rangeOffsets_long hwl hwr hl hr htot hro
-  have e2 : (lc', rc') = (lc, rc) := by simpa [Alg.two, pure, Except.pure] using h2
-  cases e2
+  simp only [Vector.getElem_mk, List.getElem_toArray, List.getElem_cons_zero, List.getElem_cons_succ] at h0 h1
+  subst h0 h1
   have hw0 : 0 < k.width := by rcases hk4 with rfl | rfl | rfl | rfl <;> decide
   refine ⟨k, hk4, hlk, hrk, ?_, hrn, hrs, hln, by rw [hls, Nat.mul_div_cancel_left _ hw0], fun i hi j hj => ?_⟩
   · rcases hk4 with rfl | rfl | rfl | rfl <;>
