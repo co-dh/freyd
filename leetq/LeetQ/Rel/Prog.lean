@@ -262,12 +262,12 @@ def ordJoin {A B : QAtomicType} (v : Prim.Dyadic) (R : Rel A .long) (S : Rel B .
 
 /-- `aj`'s kernel keyed by `til m`: one long key column a side. -/
 def ajRun {nl nr : Nat} (lk lt : Arr .long nl) (rk rt : Arr .long nr) : Except String ((m : Nat) × Arr .long m) :=
-  Struct.aj #[(.long, lk.part)] #[(.long, rk.part)] (.long, lt.part) (.long, rt.part)
+  Struct.aj #[⟨.long, _, lk⟩] #[⟨.long, _, rk⟩] ⟨.long, _, lt⟩ ⟨.long, _, rt⟩
 
 /-- `wj`/`wj1`'s kernel: `Struct.wjP`'s windows as the carrier of `til nl`, flattened (`memP`). -/
 def wjRun {nl nr : Nat} (prev : Bool) (lk w₀ w₁ : Arr .long nl) (rk rt : Arr .long nr) :
     Except String (Rel .long .long) := do
-  let P ← Struct.wjP prev ⟨.long, w₀.part⟩ ⟨.long, w₁.part⟩ #[⟨.long, lk.part⟩] #[⟨.long, rk.part⟩] ⟨.long, rt.part⟩
+  let P ← Struct.wjP prev ⟨.long, _, w₀⟩ ⟨.long, _, w₁⟩ #[⟨.long, _, lk⟩] #[⟨.long, _, rk⟩] ⟨.long, _, rt⟩
   Alg.memP ⟨nl, ← tilKey nl, P⟩
 
 /-- `⟨R, S⟩`: `Alg.pair`, at any sides — a product key joins on its tuple codes. -/

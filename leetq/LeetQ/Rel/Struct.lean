@@ -231,18 +231,15 @@ def same {t : QAtomicType} {nx ny : Nat} (x : Arr t nx) (y : Arr t ny) : Except 
 
 /-! ## Joins on columns: `|R|` of the key tuples (`Alg.tuples`), then gathers -/
 
-/-- A key column in any encoding: its element type and part, compared only by `Alg.codes`. -/
-abbrev KCol := QAtomicType × (Nat × Enc)
+/-- A key column in any encoding: its element type and typed part, compared only by `Alg.codes`. -/
+abbrev KCol := (t : QAtomicType) × Alg.Part (.atom t)
 
 /-- The key tuples of both sides in one code space (`Alg.codes` per column pair, `Alg.tuples`), left
     then right, each at the narrowest layout its columns allow. -/
 def keyCodes (verb : String) (l r : Array KCol) : Except String (Alg.Code × Alg.Code) := do
   unless l.size == r.size do throw s!"{verb}: {l.size} left key columns against {r.size} right (q's 'length)"
   let cs ← (l.zip r).mapM fun ((p : KCol), (q : KCol)) =>
-    if q.1 = p.1 then do
-      let x ← Arr.ofPart p.1 p.2.1 p.2 verb; let y ← Arr.ofPart p.1 q.2.1 q.2 verb
-      pure (Alg.codes p.1 #v[⟨_, x⟩, ⟨_, y⟩])
-    else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
+    if h : q.1 = p.1 then pure (Alg.codes p.1 #v[p.2, h ▸ q.2]) else throw s!"{verb}: the two sides' key columns differ in type (q's 'type)"
   match cs.toList with
   | c0 :: rest => let t := Alg.tuples c0 rest.toArray; pure (t[0], t[1])
   | [] => throw s!"{verb}: no key column"
@@ -262,10 +259,9 @@ def ij (l r : Array KCol) : Except String (Rel .long .long) := do
   Alg.ofCols .long .long (← Alg.longsP li "ij") (← Alg.longsP (Alg.gather 8 hit li) "ij")
 
 /-- A key or time column as the `QValue` qlean's join passes read: the payload where it lies, no copy. -/
-def colValue (p : KCol) : QValue :=
-  match p.1 with
-  | .general => QValue.general (match p.2.2 with | .gen xs => xs | _ => #[])
-  | t => .vector t p.2.1 p.2.2 none
+def colValue : KCol → QValue
+  | ⟨.general, _, x⟩ => QValue.general (Alg.gens x)
+  | ⟨t, n, x⟩ => .vector t n x.enc none
 
 /-- The rows of a key or time column. -/
 def colRows (p : KCol) : Nat := p.2.1
@@ -304,7 +300,7 @@ def wjP (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCol) (rt : KCol) : 
   -- `wj1`'s `w-1` at q's own type rule for `-`, as qlean's interpreter subtracts it
   let lo ← if prevailing then pure (colValue w₀) else match w₀.1 with
     | .general => throw "wj1: a general list window (q's 'type)"
-    | t => match dyadColumn .sub Ew.va t .long w₀.2.1 w₀.2.2 1 (.bytes (one 1)) with
+    | t => match dyadColumn .sub Ew.va t .long w₀.2.1 w₀.2.2.enc 1 (.bytes (one 1)) with
       | some (_, d) => pure d
       | none => throw s!"wj1: no kernel subtracts 1 from a {repr t} window"
   -- each left row's group start, `0` at a key miss: `firsts` gathered at the ids, whose miss is `firsts`' size
@@ -339,7 +335,7 @@ def wjBy (op : Coc.Over) (prevailing : Bool) (w₀ w₁ : KCol) (l r : Array KCo
   if a = .general then throw "wj: a general list aggregated column (q's 'type)"
   unless colRows c == colRows rt do throw s!"wj: {colRows c} values against {colRows rt} right rows (q's 'length)"
   let P ← wjP prevailing w₀ w₁ l r rt
-  let x := Alg.pick a ⟨cc.1, ← Arr.ofPart a cc.1 cc "wj"⟩ (← dense "wj" .long P.n P.val.enc)
+  let x := Alg.pick a cc (← dense "wj" .long P.n P.val.enc)
   let Q : Parted a := ⟨P.g, P.n, P.o, P.co, ← Vals.ofParts (.atom a) P.n x "wj"⟩
   let some ⟨u, s⟩ := Ops.overBy op Q | throw s!"wj: no grouped {repr op}/ over {repr a}"
   pure ⟨u, Q.g, s⟩
@@ -1298,11 +1294,14 @@ private def x6f : Arr .long 6 :=
   some (runsSpec [x.toList.drop 1, x.toList.drop 1])
 
 -- joins: left keys `lk` (and `lk₂`), times `lt`; right keys `rk` (and `rk₂`), times `rt`
-private def key (xs : List Int64) : Struct.KCol := ⟨.long, Alg.longs (packLongs xs)⟩
+private def key (xs : List Int64) : Struct.KCol := ⟨.long, _, col xs⟩
 -- keys of any encoding: `bits` `101b` against `01b`, and `syms` `` `a`b `` against its interned self
-#guard ans (·.toList) (ej #[⟨.boolean, (3, .bits (ByteArray.mk #[0b101]))⟩] #[⟨.boolean, (2, .bits (ByteArray.mk #[0b10]))⟩]) == some [(0, 1), (1, 0), (2, 1)]
-#guard ans (·.toList) (ej #[⟨.symbol, (2, .syms (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4])⟩] #[⟨.symbol, (2, Column.intern (.syms (ByteArray.mk #[98, 0, 97, 0]) #[0, 2, 4]))⟩]) == some [(0, 1), (1, 0)]
-#guard (ej #[key [1]] #[⟨.boolean, (1, .bits (ByteArray.mk #[1]))⟩]).toOption.isNone
+#guard ans (·.toList) (ej #[⟨.boolean, 3, Arr.mk (.bits (ByteArray.mk #[0b101])) (by decide)⟩]
+  #[⟨.boolean, 2, Arr.mk (.bits (ByteArray.mk #[0b10])) (by decide)⟩]) == some [(0, 1), (1, 0), (2, 1)]
+#guard ans (·.toList) (ej #[⟨.symbol, 2, Arr.mk (.syms (ByteArray.mk #[97, 0, 98, 0]) #[0, 2, 4]) (by decide)⟩]
+  #[⟨.symbol, 2, Arr.mk (.enum (ByteArray.mk #[98, 0, 97, 0]) #[0, 2, 4] (packIds (idWidth #[0, 2, 4]) 2 fun i => [0, 1][i]!))
+    (by decide)⟩]) == some [(0, 1), (1, 0)]
+#guard (ej #[key [1]] #[⟨.boolean, 1, Arr.mk (.bits (ByteArray.mk #[1])) (by decide)⟩]).toOption.isNone
 private def lk : List Int64 := [1, 1, 2, 3]
 private def lk₂ : List Int64 := [0, 1, 0, 0]
 private def lt : List Int64 := [5, 10, 3, 4]
@@ -1310,7 +1309,8 @@ private def rk : List Int64 := [1, 2, 1, 2, 9]
 private def rk₂ : List Int64 := [0, 0, 1, 0, 0]
 private def rt : List Int64 := [3, 1, 7, 4, 0]
 -- the right times also as a `foR` column, which `groupEdge` bisects where it lies
-private def rtf : Struct.KCol := ⟨.long, (5, .foR (Coc.encode 8 (packLongs rt)).1 (Coc.encode 8 (packLongs rt)).2)⟩
+private def rtf : Struct.KCol :=
+  ⟨.long, _, Arr.mk (.foR (Coc.encode 8 (packLongs rt)).1 (Coc.encode 8 (packLongs rt)).2) (foRLongs_wf rt)⟩
 #guard ans (·.toList) (ej #[key lk] #[key rk]) == some (ejSpec (lk.map ([·])) (rk.map ([·])))
 #guard ans (·.toList) (ej #[key lk] #[key rk]) == some [(0, 0), (0, 2), (1, 0), (1, 2), (2, 1), (2, 3)]
 #guard ans (·.toList) (ej #[key lk, key lk₂] #[key rk, key rk₂]) == some (ejSpec (lk.zipWith (fun a b => [a, b]) lk₂) (rk.zipWith (fun a b => [a, b]) rk₂))
@@ -1328,7 +1328,7 @@ private def sk : List Int64 := [0, 0, 0, 0, 1, 1, 1, 1]
 #guard ans (·.2.toList) (aj #[key [0, 1]] #[key sk] (key [3, 8]) (key [5, 1, 9, 2, 5, 1, 9, 2])) == some [1, 5]
 #guard ajSpec [0, 1] [3, 8] sk [5, 1, 9, 2, 5, 1, 9, 2] == [1, 5]
 #guard ans (·.2.toList) (aj #[key [0, 1]] #[key sk] (key [3, 8]) (key [1, 2, 5, 9, 1, 2, 5, 9])) == some [1, 6]
-#guard (aj #[key lk] #[key rk] (key lt) ⟨.int, (10, .bytes (packLongs rt))⟩).toOption.isNone
+#guard (aj #[key lk] #[key rk] (key lt) ⟨.int, 10, Arr.mk (.bytes (packLongs rt)) (by decide)⟩).toOption.isNone
 private def w₀ : List Int64 := lt.map (· - 3)
 #guard [false, true].all fun p => [key rt, rtf].all fun c =>
   ansP Lg (wj p (key w₀) (key lt) #[key lk] #[key rk] c) == some (wjSpec p lk w₀ lt rk rt)

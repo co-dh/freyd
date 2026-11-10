@@ -279,11 +279,14 @@ def oddBits (a : Array Int) : ByteArray := Id.run do
     b := b.push byte
   return b
 
+/-- A dense `long` key column. -/
+def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.long, _, LeetQ.Rel.Alg.col (a.toList.map Int64.ofInt)⟩
+
 /-- The values `a` (each below `m`) as a key column in the encoding `enc`: `bits` (their parity), `enum` over
     the dictionary `s0 … s(m-1)`, `foR` and dense `long`. -/
 def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.Struct.KCol := do
   match enc with
-  | "bits" => pure (.boolean, (a.size, .bits (oddBits a)))
+  | "bits" => pure ⟨.boolean, a.size, ← LeetQ.Rel.Arr.of .boolean a.size (.vector .boolean a.size (.bits (oddBits a)) none) "encCol"⟩
   | "enum" =>
     let (blob, dof) := (Array.range m).foldl (init := (ByteArray.empty, #[0])) fun (b, o) i =>
       let b := (b ++ s!"s{i}".toUTF8).push 0
@@ -291,9 +294,9 @@ def encCol (enc : String) (m : Nat) (a : Array Int) : Except String LeetQ.Rel.St
     let w := QLean.Column.idWidth dof
     let (ids, bad) := QLean.Kernel.enumIds a.size.toUSize m.toUSize 0 w.toUSize (col a)
     if bad.toNat != a.size then throw s!"encCol enum: value at {bad} is outside 0..{m}"
-    pure (.symbol, (a.size, .enum blob dof ids))
-  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure (.long, (a.size, .foR md pk))
-  | "dense" => pure ⟨.long, LeetQ.Rel.Alg.longs (col a)⟩
+    pure ⟨.symbol, a.size, ← LeetQ.Rel.Arr.of .symbol a.size (.vector .symbol a.size (.enum blob dof ids) none) "encCol"⟩
+  | "foR" => let (md, pk) := QLean.Kernel.Coc.encode 8 (col a); pure ⟨.long, a.size, ← LeetQ.Rel.Arr.of .long a.size (.vector .long a.size (.foR md pk) none) "encCol"⟩
+  | "dense" => pure (longKey a)
   | e => throw s!"encCol: no encoding {e}"
 
 /-- The key range each encoding is benched at: two bits, a hundred symbols, a thousand-wide FoR range, a
@@ -305,11 +308,8 @@ def relCardOp (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
   let m := encRange enc
   let ⟨t, k⟩ ← io "relCard" (encCol enc m (ints n 28 m))
   let ⟨u, v⟩ ← io "relCard" (encCol enc m (ints n 29 m))
-  if u = t then
-    let R ← io "relCard" do
-      let a ← LeetQ.Rel.Arr.ofPart t k.1 k "relCard"
-      let b ← LeetQ.Rel.Arr.ofPart t v.1 v "relCard"
-      LeetQ.Rel.Alg.ofCols t t ⟨k.1, a⟩ ⟨v.1, b⟩
+  if h : u = t then
+    let R ← io "relCard" (LeetQ.Rel.Alg.ofCols t t k (h ▸ v))
     timedE s!"relCard {enc}" R fun R => do pure (Int64.ofNat (← (← LeetQ.Rel.Alg.cols R).nub).n)
   else throw (IO.userError "relCard: key and value differ in type")
 
@@ -336,9 +336,6 @@ def relJoin2Op (enc : String) (n : Nat) : IO (IO (Nat × Int64)) := do
 def asofData (n : Nat) : Array Int × Array Int × Array Int × Array Int :=
   let r := ((ints n 14 1000).zip (ints n 15 1000000)).toList.mergeSort fun a b => decide (a.1 < b.1 ∨ a.1 = b.1 ∧ a.2 ≤ b.2)
   (ints n 12 1000, ints n 13 1000000, (r.map (·.1)).toArray, (r.map (·.2)).toArray)
-
-/-- A dense `long` key column. -/
-def longKey (a : Array Int) : LeetQ.Rel.Struct.KCol := ⟨.long, LeetQ.Rel.Alg.longs (col a)⟩
 
 /-- ``aj[`s`tm;t;q]`` by `Struct.aj` over `asofData`, 1e3 key groups; the sum of the matched right rows. -/
 def relAjOp (n : Nat) : IO (IO (Nat × Int64)) :=
