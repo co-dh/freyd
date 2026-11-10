@@ -232,6 +232,16 @@ def empty (t : QAtomicType) : Except String (Nat × Enc) :=
     | some e => pure (0, e)
     | none => throw s!"Enc.ofAtoms has no empty payload of type {t.code}"
 
+/-- `mapM` in `Option` over one part is the one part's answer. -/
+@[simp] theorem vmapM_one {α β : Type} (f : α → Option β) (x : α) : Vector.mapM f #v[x] = (f x).map (#v[·]) := by
+  have e := Vector.toArray_mapM (f := f) (xs := #v[x])
+  cases h : Vector.mapM f #v[x] <;> cases h' : f x <;> simp_all [Array.mapM_eq_mapM_toList]
+
+/-- `mapM` in `Option` over two parts: both answer, or neither pair does. -/
+@[simp] theorem vmapM_two {α β : Type} (f : α → Option β) (x y : α) :
+    Vector.mapM f #v[x, y] = (f x).bind fun a => (f y).map fun b => #v[a, b] := by
+  have e := Vector.toArray_mapM (f := f) (xs := #v[x, y])
+  cases h : Vector.mapM f #v[x, y] <;> cases h' : f x <;> cases h'' : f y <;> simp_all [Array.mapM_eq_mapM_toList]
 
 /-- `foR` and dense parts of a long type as offsets from their joint least element, at the width of the
     joint range: `overFoR` reads a `foR` part's bounds off the block metadata, `overBytes` a dense
@@ -241,21 +251,24 @@ def empty (t : QAtomicType) : Except String (Nat × Enc) :=
     a pass reports an offset outside `0 … card`: `codes` then takes its grouping branch, a faithful code too.
     A dense part is here because its first-appearance ids (`groupIdsColumn`) cost a table probe a row
     (measured: `ej` of two million-wide dense key columns, 1e6 rows, the codes 16.7 ms). -/
-def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (Nat × Enc) p) (total : Nat) : Option (Vector Code p) := do
-  guard (orderKind a == some .i64 && Column.encodes a)
+def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (Nat × Enc) p) (total : Nat) : Option (Vector Code p) :=
+  if !(orderKind a == some .i64 && Column.encodes a) then none else
   let bound (op : Coc.Over) (c : Nat × Enc) : Option Int64 := match c.2 with
     | .bytes b => some (overBytes op Ew.i64 nul b)
     | .foR .. => overFoR op a c.1 c.2
     | _ => none
-  let los ← cs.toArray.mapM (bound .lesser)
-  let his ← cs.toArray.mapM (bound .greater)
+  match cs.toArray.mapM (bound .lesser) with
+  | none => none
+  | some los => match cs.toArray.mapM (bound .greater) with
+  | none => none
+  | some his =>
   let lo := los.foldl min Int64.maxValue
   let hi := his.foldl max (Int64.minValue + 1)
-  guard !(lo == nul || hi < lo)
+  if lo == nul || hi < lo then none else
   -- the codes `0 … hi-base`, then one for a null (`enumIdsFoR`'s `nullId`)
   let span (base : Int64) : Nat := (hi.toInt - base.toInt + 2).toNat
   let k := codeKind (span lo)
-  guard (k.width ≤ (codeKind total).width)
+  if ¬ k.width ≤ (codeKind total).width then none else
   -- values already at `0` and up that fit the same width are their own offsets: no `foRShift` pass
   let base := if 0 ≤ lo && (codeKind (span 0)).width == k.width then 0 else lo
   let card := span base

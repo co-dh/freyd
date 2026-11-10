@@ -218,13 +218,13 @@ theorem rebase_val {v base : Int64} (hv : v ≠ Alg.nul) (hb : base ≠ Alg.nul)
 /-- **`rangeOffsets` codes two long key columns injectively at one byte lane**, whichever encoding (`bytes`,
     `foR`) each arrives in: a lane `k` and a code `f` on words, one-to-one over both columns' words, such that
     each part holds `f` of its words at `k`. Restricted to `total ≤ 2³²` rows, where no rebase wraps. -/
-theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Array Alg.Code} {wl wr : List UInt64}
+theorem rangeOffsets_long {cl cr : Nat × Enc} {total : Nat} {os : Vector Alg.Code 2} {wl wr : List UInt64}
     (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (hl : wl.length < USize.size)
     (hr : wr.length < USize.size) (htot : total ≤ 2 ^ 32)
-    (h : Alg.rangeOffsets .long #[cl, cr] total = .ok (some os)) :
+    (h : Alg.rangeOffsets .long #v[cl, cr] total = some os) :
     ∃ (k : Kernel.Scan.Kind) (f : UInt64 → UInt64), (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧
       (∀ u ∈ wl ++ wr, ∀ u' ∈ wl ++ wr, (f u = f u' ↔ u = u')) ∧
-      ∃ lc rc : Alg.Code, os = #[lc, rc] ∧
+      ∃ lc rc : Alg.Code, os = #v[lc, rc] ∧
       lc.kind = some k ∧ lc.n = wl.length ∧ lc.b.size = k.width * wl.length ∧
         (∀ i (hi : i < wl.length), k.bitsAt lc.b i = f wl[i]) ∧
       rc.kind = some k ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧
@@ -464,16 +464,16 @@ at one lane `k`, the left one's size its row count, and equal lane words exactly
 theorem keyCodes_long {verb : String} {cl cr : Nat × Enc} {lc rc : Alg.Code} {wl wr : List UInt64}
     (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (hl : wl.length < USize.size)
     (hr : wr.length < USize.size) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
-    (hR : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
+    (hR : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) ≠ none)
     (hc : Struct.keyCodes verb #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok (lc, rc)) :
     ∃ k : Kernel.Scan.Kind, (k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64) ∧ lc.kind = some k ∧ rc.kind = some k ∧
       rc.n ≤ k.avail rc.b ∧ rc.n = wr.length ∧ rc.b.size = k.width * wr.length ∧ lc.n = wl.length ∧
       lc.b.size / k.width = wl.length ∧
       ∀ i (hi : i < wl.length) j (hj : j < wr.length), (k.bitsAt rc.b j = k.bitsAt lc.b i ↔ wr[j] = wl[i]) := by
-  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) = .ok (some os) ∧
+  obtain ⟨os, hro, h2⟩ : ∃ os, Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) = some os ∧
       Alg.two os = .ok (lc, rc) := by
     unfold Struct.keyCodes Alg.codes at hc
-    rcases hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) with err | _ | os
+    rcases hro : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) with err | _ | os
     all_goals
       obtain ⟨n1, e1⟩ := cl
       obtain ⟨n2, e2⟩ := cr
@@ -497,7 +497,7 @@ theorem keyCodes_long {verb : String} {cl cr : Nat × Enc} {lc rc : Alg.Code} {w
 key join `(ix tl)(ix tr)°` read at the row ids, wherever `rangeOffsets` codes the two columns. -/
 theorem ej_long {cl cr : Nat × Enc} {wl wr : List UInt64} {R : Rel .long .long}
     (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
-    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
+    (hro : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) ≠ none)
     (hU : wl.length * wr.length + wl.length + wr.length + wr.length + 1 < USize.size)
     (hB : wl.length * wr.length + wl.length + wr.length + wr.length < 2 ^ 63)
     (h : Struct.ej #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
@@ -521,7 +521,7 @@ row of an equal key, `Λ((ix tl)(ix tr)°) ≫ est(≤)` read at the row ids, wh
 columns — `ij_rel_codes` at the one byte lane `keyCodes_long` names. -/
 theorem ij_long {cl cr : Nat × Enc} {wl wr : List UInt64} {R : Rel .long .long}
     (hwl : longWords cl.1 cl.2 = some wl) (hwr : longWords cr.1 cr.2 = some wr) (htot : cl.1 + cr.1 ≤ 2 ^ 32)
-    (hro : Alg.rangeOffsets .long #[cl, cr] (cl.1 + cr.1) ≠ .ok none)
+    (hro : Alg.rangeOffsets .long #v[cl, cr] (cl.1 + cr.1) ≠ none)
     (hU : 64 * wr.length < USize.size) (hLU : wl.length < USize.size) (hB : 64 * wr.length < 2 ^ 63)
     (h : Struct.ij #[⟨.long, cl⟩] #[⟨.long, cr⟩] = .ok R) :
     (R.Holds : (⟨Int64⟩ : RelSet.{0}) ⟶ ⟨Int64⟩) =
