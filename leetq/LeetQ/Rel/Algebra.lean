@@ -718,6 +718,18 @@ def diff (R S : Rel A B) : Rel A B :=
   let c := pairs #v[cols R, cols S]
   (cols R).rows (anti c[0] c[1])
 
+/-! ## The ops as binary operators: the only way a program writes them -/
+
+instance : Inter (Rel A B) := ⟨inter⟩
+instance : Union (Rel A B) := ⟨union⟩
+instance : SDiff (Rel A B) := ⟨diff⟩
+/-- `R ≫ S`: composition in diagram order, first `R` then `S`. -/
+scoped infixl:80 " ≫ " => comp
+/-- `R°`: the converse. -/
+scoped postfix:max "°" => conv
+/-- `R ⊑ S`: inclusion, decided. -/
+scoped infix:50 " ⊑ " => le
+
 /-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
     The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
 def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do

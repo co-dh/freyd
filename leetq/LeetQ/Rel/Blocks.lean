@@ -18,22 +18,27 @@ def one : V := idU xs
 /-- `⊤ : X ⟶ X`, every pair of blocks. -/
 def T : V := top xs xs
 
+local notation "𝟙" => one
+local notation "⊤" => T
+/-- `∼X`: the complement in `⊤`. -/
+local notation:max "∼" X:max => T \ X
+
 /-- `S₀`, Init: C on A, A and B on the table. -/
 def S₀ : V := ofPairs [(0, 0), (1, 1), (2, 0)]
 /-- `G`: A on B, B on C. -/
 def G : V := ofPairs [(0, 1), (1, 2)]
 
 /-- `R ≜ S ∩ ∼𝟙`: `b` rests on another block. -/
-def R (S : V) : V := diff S one
+def R (S : V) : V := S ∩ ∼𝟙
 
 /-- `M ≜ ∼(R°⊤ ∪ ⊤R)`: nothing on `b`, nothing on `y`; `(b, y)` moves `b` onto `y`, `(b, b)` to the table. -/
-def M (S : V) : V := diff T (union (comp (conv (R S)) T) (comp T (R S)))
+def M (S : V) : V := ∼((R S)° ≫ ⊤ ∪ ⊤ ≫ R S)
 
 /-- `S' ≜ (S ∩ ∼(p⊤)) ∪ p`: the move `p` replaces the row of its block. -/
-def move (S p : V) : V := union (diff S (comp p T)) p
+def move (S p : V) : V := (S ∩ ∼(p ≫ ⊤)) ∪ p
 
 /-- `S = S'` as `S ⊑ S' ∧ S' ⊑ S`. -/
-def same (S S' : V) : Bool := le S S' && le S' S
+def same (S S' : V) : Bool := S ⊑ S' && S' ⊑ S
 
 /-- Breadth-first from `S₀` over the states, each reached once, to the first `S` with `G ⊑ S`; the moves as
     `(b, y)` pairs, empty when no plan reaches `G`. Three blocks have at most `3³` maps, so `27` levels exhaust
@@ -43,7 +48,7 @@ def plan : List (Int64 × Int64) := Id.run do
   for _ in [0:27] do
     let mut next := []
     for (S, ps) in q do
-      if le G S then return ps
+      if G ⊑ S then return ps
       for p in (M S).toList do
         let S' := move S (ofPairs [p])
         if !seen.any (same S') then seen := S' :: seen; next := next ++ [(S', ps ++ [p])]
@@ -62,8 +67,8 @@ private def after : V := plan.foldl (fun S p => move S (ofPairs [p])) S₀
 #guard sorted (M one) == [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
 -- MoveToTable C, Move B onto C, Move A onto B
 #guard plan == [(2, 2), (1, 2), (0, 1)]
-#guard le G S₀ == false
-#guard le G after
+#guard (G ⊑ S₀) == false
+#guard G ⊑ after
 
 end Checks
 

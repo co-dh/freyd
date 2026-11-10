@@ -38,12 +38,12 @@ def gate (f : Bool → Bool → Bool) : Rel Bit2 Bit :=
 def adder : Rel Bit3 Bit2 :=
   let (xor, and, or) := (gate (· != ·), gate (· && ·), gate (· || ·))
   let q := pair π₁ π₂
-  let x₂ := pair (comp q xor) π₃
-  pair (comp x₂ xor) (comp (pair (comp q and) (comp x₂ and)) or)
+  let x₂ := pair (q ≫ xor) π₃
+  pair (x₂ ≫ xor) (pair (q ≫ and) (x₂ ≫ and) ≫ or)
 
 /-- Query 6, `F p° : Bit³ ⟶ 1` with `p : 1 ⟶ Bit²` the point `(0,1)`: the inputs giving sum 0, carry 1. -/
 def answer : Rel Bit3 Bit :=
-  comp adder (conv (⟨1, col [0], (col [0], col [1])⟩ : Rel Bit Bit2))
+  adder ≫ (⟨1, col [0], (col [0], col [1])⟩ : Rel Bit Bit2)°
 
 section Checks
 

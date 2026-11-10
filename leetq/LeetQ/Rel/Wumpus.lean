@@ -20,7 +20,7 @@ def near (a b : Int64) : Bool := [1, -1, 10, -10].contains (a - b)
 /-- `uniq(R) ≜ R ∩ (R° \ 𝟙)`, the rows whose key has one value. The left universe is `R`'s own keys, because a key
     outside `R` would satisfy the division vacuously. -/
 def uniq {m : Nat} (R : LL) (cells : Arr .long m) : LL :=
-  inter R (leftDiv (conv R) (idU cells) (dom R).key cells)
+  R ∩ (leftDiv R° (idU cells) (dom R).key cells)
 
 /-- Every view, recomputed from the KB. `noWumpus` is the complement of `ran(wcand)`, not `noW`, because exactly one
     wumpus also clears each cell that `wmay` drops; `(S !) \ adj` ranges over all of `S`, unlike `S \ adj`. -/
@@ -28,18 +28,18 @@ def views {m : Nat} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB
     List (String × LL) :=
   let (V, B, S, G) := k
   let noB := antiJoin V B
-  let noPit := union V (ran (comp noB adj))
-  let cand := antiJoin (comp B adj) noPit
+  let noPit := V ∪ ran (noB ≫ adj)
+  let cand := antiJoin (B ≫ adj) noPit
   let pit := ran (uniq cand cells)
   let noS := antiJoin V S
-  let noW := union V (ran (comp noS adj))
+  let noW := V ∪ ran (noS ≫ adj)
   let wmay := leftDiv (top S.key one) adj one cells
   let wcand := antiJoin wmay noW
   let wumpus := ran (uniq wcand cells)
   let noWumpus := antiJoin (idU cells) (ran wcand)
-  let safe := inter noPit noWumpus
-  let frontier := antiJoin (ran (comp V adj)) V
-  let next := inter frontier safe
+  let safe := noPit ∩ noWumpus
+  let frontier := antiJoin (ran (V ≫ adj)) V
+  let next := frontier ∩ safe
   [("V", V), ("B", B), ("S", S), ("G", G), ("noB", noB), ("noPit", noPit), ("cand", cand), ("pit", pit),
     ("noS", noS), ("noW", noW), ("wmay", wmay), ("wcand", wcand), ("wumpus", wumpus), ("noWumpus", noWumpus),
     ("safe", safe), ("frontier", frontier), ("next", next)]
@@ -48,8 +48,8 @@ def views {m : Nat} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB
 def tell (k : KB) (c : Int64) (p : Bool × Bool × Bool) : KB :=
   let (V, B, S, G) := k
   let d := cor [c]
-  let add (X : LL) (f : Bool) : LL := if f then union X d else X
-  (union V d, add B p.1, add S p.2.1, add G p.2.2)
+  let add (X : LL) (f : Bool) : LL := if f then X ∪ d else X
+  (V ∪ d,add B p.1, add S p.2.1, add G p.2.2)
 
 /-- A world's percept at `c`: breeze beside a pit, stench beside the wumpus, glitter on the gold. -/
 def world (pits : List Int64) (w g c : Int64) : Bool × Bool × Bool := (pits.any (near c), near c w, c == g)

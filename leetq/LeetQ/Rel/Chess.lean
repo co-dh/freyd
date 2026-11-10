@@ -23,19 +23,22 @@ def one : V := idU U
 /-- `⊤ : Sq ⟶ Sq`, every pair of squares. -/
 def T : V := top U U
 
+local notation "𝟙" => one
+local notation "⊤" => T
+
 /-- `R₁R₂…Rₙ`, composition in diagram order. -/
 def seq : List V → V
   | [] => one
-  | r :: rs => rs.foldl comp r
+  | r :: rs => rs.foldl (· ≫ ·) r
 
 /-- `⋃ Rᵢ`. -/
-def unions (rs : List V) : V := rs.foldl union zero
+def unions (rs : List V) : V := rs.foldl (· ∪ ·) zero
 
 /-- `R*`, the union of the powers `R⁰ … R⁷`: no step on the board repeats more than 7 times, so `R⁸` adds
     nothing for the step tables `R` is built from. -/
 def star (R : V) : V := Id.run do
   let mut p := one; let mut a := p
-  for _ in [0:7] do p := comp p R; a := union a p
+  for _ in [0:7] do p := p ≫ R; a := a ∪ p
   return a
 
 /-! ## Constant tables -/
@@ -68,7 +71,7 @@ def S (c : Int64) : V :=
 /-! ## Coreflexives read off the board -/
 
 /-- The squares holding one of the pieces `cs`. -/
-def sq (cs : List Int64) (on : Board) : V := dom (comp on (idU (col cs)))
+def sq (cs : List Int64) (on : Board) : V := dom (on ≫ idU (col cs))
 
 /-- `e`: the empty squares; the black king's square is not empty. -/
 def e (on : Board) : V := antiJoin one (dom on)
@@ -86,30 +89,30 @@ def s (c : Int64) (d : Int × Int) : Board → V :=
 /-- `⋃_D s_D D(ED)*`: colour `c`'s slider rays, on through the squares of `E`, up to and including the first
     square off `E`. -/
 def rays (c : Int64) (E : V) (on : Board) : V :=
-  unions (dirs.map fun d => let t := D d; seq [s c d on, t, star (comp E t)])
+  unions (dirs.map fun d => let t := D d; seq [s c d on, t, star (E ≫ t)])
 
 /-- Colour `c`'s pawn moves: forward onto `e`, two forward from the start rank across `e`, diagonally forward
     onto `o`. -/
 def pawn (c : Int64) (o : V) (on : Board) : V :=
   let e := e on; let t := F c
-  unions [comp t e, seq [S c, t, e, t, e], comp (X c) o]
+  unions [t ≫ e, seq [S c, t, e, t, e], X c ≫ o]
 
 /-- `W`: the squares white attacks, the black king removed, so a ray runs on through `k`; a ray ends on the first
     occupied square, so a defended white piece counts as attacked. -/
 def W (on : Board) : V :=
-  unions [rays 0 (union (e on) (k on)) on, comp (sq [1] on) N, comp (sq [0] on) (X 0), comp (sq [5] on) K]
+  unions [rays 0 (e on ∪ k on) on, sq [1] on ≫ N, sq [0] on ≫ X 0, sq [5] on ≫ K]
 
 /-- `B`: black's moves but the king's, pins ignored: knight and slider moves onto `f`, pawn moves. -/
 def B (on : Board) : V :=
-  unions [comp (union (rays 1 (e on) on) (comp (sq [7] on) N)) (f on),
-    comp (sq [6] on) (pawn 1 (sq [0, 1, 2, 3, 4, 5] on) on)]
+  unions [(rays 1 (e on) on ∪ sq [7] on ≫ N) ≫ f on,
+    sq [6] on ≫ pawn 1 (sq [0, 1, 2, 3, 4, 5] on) on]
 
 /-- `P ≜ ⋃_D s_D (De)* D d_D`, `d_D ≜ dom((De)*Dk)`: a white slider to each square strictly between it and the
     black king on a `D`-line whose other between squares are empty; an occupied such square is pinned. -/
 def P (on : Board) : V :=
   let e := e on; let k := k on
   unions (dirs.map fun d =>
-    let t := D d; let R := star (comp t e)
+    let t := D d; let R := star (t ≫ e)
     seq [s 0 d on, R, t, dom (seq [R, t, k])])
 
 /-! ## Mate -/
@@ -119,23 +122,23 @@ def P (on : Board) : V :=
     `B(𝟙 ∪ P°)Wk ⊑ P°⊤` — each black move capturing the checker or landing between it and the king starts on
     a pinned square. -/
 def isMate (on : Board) : Bool :=
-  let W := W on; let k := k on; let P' := conv (P on)
-  le (comp k (union one (comp K (f on)))) (comp T W) && le (seq [B on, union one P', W, k]) (comp P' T)
+  let W := W on; let k := k on; let P' := (P on)°
+  k ≫ (𝟙 ∪ K ≫ f on) ⊑ ⊤ ≫ W && seq [B on, 𝟙 ∪ P', W, k] ⊑ P' ≫ ⊤
 
 /-- `M`: white's moves, pins and checks on white ignored: slider, knight and king moves onto a square with neither
     a white piece nor the black king, and pawn moves capturing any black piece but the king. -/
 def M (on : Board) : V :=
   let g := antiJoin one (sq [0, 1, 2, 3, 4, 5, 11] on)
-  unions [comp (unions [rays 0 (e on) on, comp (sq [1] on) N, comp (sq [5] on) K]) g,
-    comp (sq [0] on) (pawn 0 (sq [6, 7, 8, 9, 10] on) on)]
+  unions [unions [rays 0 (e on) on, sq [1] on ≫ N, sq [5] on ≫ K] ≫ g,
+    sq [0] on ≫ pawn 0 (sq [6, 7, 8, 9, 10] on) on]
 
 /-- The mate-in-one moves `(p, s, t)` of white on `on`: for each move `s ⟶ t` of `M`, the board without the rows
     on `s` and `t`, with `t ⟶ p` for each row `tp` of the piece on `s`, rebuilt and tested by `isMate`. A move
     from an empty square has no such row, so it contributes nothing. -/
 def mateIn1 (on : Board) : List (Int64 × Int64 × Int64) :=
   (M on).toList.eraseDups.flatMap fun (a, b) =>
-    let tp := comp (ofPairs [(b, a)]) on
-    let on1 := union (conv (antiJoin (conv on) (idU (col [a, b])))) tp
+    let tp := ofPairs [(b, a)] ≫ on
+    let on1 := (antiJoin on° (idU (col [a, b])))° ∪ tp
     tp.toList.filterMap fun (_, p) => if isMate on1 then some (p, a, b) else none
 
 /-- The board from its `(square, piece)` rows. -/
