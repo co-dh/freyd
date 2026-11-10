@@ -26,7 +26,7 @@ import QLean.Dep.Table
 namespace LeetQ.Rel
 
 open QLean QLean.Dep QLean.Kernel
-open Find (atomsOf denseOf)
+open Find (atomsOf denseOf pickRef)
 
 namespace Ops
 
@@ -63,19 +63,6 @@ def ends (g : Nat) (ob : ByteArray) : ByteArray := ob.extract 8 (8 * (g+1))
     no null, so `0N` as the null changes nothing. -/
 def sizes (g : Nat) (ob : ByteArray) : ByteArray :=
   Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (ends g ob) (ob.extract 0 (8 * g)) g.toUSize
-
-/-- `x` read at the positions `ix`, a position past `n` reading q's null (`()` in a general list): the
-    kernel-free gather, through `Enc.atoms` and `Enc.ofAtoms` at an atom type. -/
-def pickRef {n m : Nat} (x : Arr t n) (ix : Fin m → Nat) : Arr t m :=
-  if hg : t = .general then by
-    subst hg
-    exact Arr.mk (.gen (Array.ofFn fun j => if h : ix j < n then x.get ⟨ix j, h⟩ else .general #[])) (by simp [Enc.WF])
-  else atomsOf t hg (fun j => (Enc.atoms t n x.enc).getD (ix j) (Eval.nullAtom t hg))
-    (fun j => by
-      simp only [Array.getD]; split
-      · exact Column.atoms_type t n x.enc _ (Array.getElem_mem ..)
-      · exact Verify.nullAtom_type t)
-    (List.finRange m) (List.length_finRange ..)
 
 theorem denseOf_eq {nx : Nat} {x : Arr .long nx} {b : ByteArray} (h : Enc.bytesOf .long nx x.enc = some b) :
     denseOf x = b := Option.some.inj ((Option.some_get _).trans h)

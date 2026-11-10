@@ -1623,6 +1623,18 @@ theorem bin_toList {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny}
   rw [hk, Int64.toInt64_toUInt64, Int.toInt64, Int64.ofInt_sub]
   rfl
 
+/-- `x` read at the positions `ix`, a position past `n` reading q's null (`()` in a general list): the
+    kernel-free gather, through `Enc.atoms` and `Enc.ofAtoms` at an atom type. -/
+def pickRef {t : QAtomicType} {n m : Nat} (x : Arr t n) (ix : Fin m → Nat) : Arr t m :=
+  if hg : t = .general then by
+    subst hg
+    exact Arr.mk (.gen (Array.ofFn fun j => if h : ix j < n then x.get ⟨ix j, h⟩ else .general #[])) (by simp [Enc.WF])
+  else atomsOf t hg (fun j => (Enc.atoms t n x.enc).getD (ix j) (Eval.nullAtom t hg))
+    (fun j => by
+      simp only [Array.getD]; split
+      · exact Column.atoms_type t n x.enc _ (Array.getElem_mem ..)
+      · exact Verify.nullAtom_type t)
+    (List.finRange m) (List.length_finRange ..)
 
 section Checks
 
