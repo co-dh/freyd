@@ -346,4 +346,96 @@ theorem shiftColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e)
             (by rw [decode_size, toNat_toUSize hn, toUSize_width hW, Nat.mul_comm]), toUSize_width hW])) hn
     · exact hdense h
 
+/-! ## `:` of symbols: `assignSyms` -/
+
+/-- A scatter writes inside its destination and never past it: the size is kept, at every width. -/
+theorem scatterPacked_size (wb : USize) (dst idx src : ByteArray) (soff : USize) (bcast : Bool) :
+    (scatterPacked wb dst idx src soff bcast).size = dst.size := by
+  unfold scatterPacked
+  dsimp only
+  split
+  · rfl
+  rename_i hw0
+  rw [foldl_size ByteArray.size _ 0 (fun acc k => ?_)]
+  · simp
+  dsimp only
+  split
+  · simp
+  rename_i hu
+  split
+  · rename_i h8
+    have hlt : (Column.bitsAt idx (k * 8) 8).toNat < acc.size * 8 / wb.toNat := by omega
+    have h1 : ((Column.bitsAt idx (k * 8) 8).toNat + 1) * wb.toNat ≤ acc.size * 8 :=
+      Nat.le_trans (Nat.mul_le_mul_right _ hlt) (Nat.div_mul_le_self _ _)
+    have h2 : (wb.toNat / 8) * 8 ≤ wb.toNat := Nat.div_mul_le_self _ _
+    have h3 : ((Column.bitsAt idx (k * 8) 8).toNat + 1) * (wb.toNat / 8) * 8 ≤ acc.size * 8 := by
+      rw [Nat.mul_assoc]; exact Nat.le_trans (Nat.mul_le_mul_left _ h2) h1
+    have h4 := Nat.le_of_mul_le_mul_right h3 (by decide)
+    rw [Nat.add_mul, Nat.one_mul] at h4
+    simp only [ByteArray.copySlice, ByteArray.size, Array.size_append, Array.size_extract]
+    simp only [ByteArray.size] at h4
+    omega
+  · rcases acc with ⟨bs⟩
+    simp only [ByteArray.set!, ByteArray.size, Nat.add_zero]
+    first | simp [Array.set!] | simp [Array.setIfInBounds] | (unfold Array.set!; split <;> simp)
+
+/-- `Column.intern` of a well-formed symbol payload is an interned one holding its `n` ids. -/
+theorem intern_wf {n : Nat} {e : Enc} (hw : Enc.WF .symbol n e) :
+    ∃ d o ids, Column.intern e = .enum d o ids ∧ Column.idsCap ids (Column.idWidth o) n = n := by
+  cases e with
+  | syms b o =>
+    simp only [Enc.WF] at hw
+    obtain rfl : n = o.size - 1 := by omega
+    exact ⟨_, _, _, rfl, packIds_wf (Order.distinctSyms b o).1 (Order.distinctSyms b o).2 _ _⟩
+  | enum d o ids => exact ⟨d, o, ids, rfl, hw⟩
+  | _ => simp [Enc.WF, QAtomicType.width] at hw
+
+/-- An interned gather over `til n` holds `n` ids at its answer dictionary's width. -/
+theorem gatherIdsTil_wf (dict : ByteArray) (dof : Array Nat) (inRange : Unit → Bool) (m : USize) (ids : ByteArray)
+    {n : Nat} (hn : n < USize.size) :
+    Enc.WF .symbol n
+      (.enum (gatherIds dict dof inRange fun w wo e => gatherPacked m w wo e ids (tilLongs n.toUSize)).1
+        (gatherIds dict dof inRange fun w wo e => gatherPacked m w wo e ids (tilLongs n.toUSize)).2.1
+        (gatherIds dict dof inRange fun w wo e => gatherPacked m w wo e ids (tilLongs n.toUSize)).2.2) := by
+  have key := gatherIds_wf (inRange := inRange) (n := m) (ids := ids) (ix := tilLongs n.toUSize)
+    (db := (gatherIds dict dof inRange fun w wo e => gatherPacked m w wo e ids (tilLongs n.toUSize)).1) rfl
+  have ht := tilLongs_wf n.toUSize
+  simp only [Enc.WF, QAtomicType.width] at ht
+  rw [ht, toNat_toUSize hn, Nat.mul_div_cancel _ (by decide)] at key
+  exact key
+
+/-- **`:` of symbols answers `n` well-formed elements** for any well-formed symbol payloads `e` of `n`
+    and `ye` of `ny`, whatever the indices: two blobs scatter as a blob, an interned meeting widens
+    `e`'s ids to the joined dictionary and scatters in place, and the `concatEnum` fallback gathers the
+    scattered join over `til n`. -/
+theorem assignSyms_wf {n ny : Nat} {e ye : Enc} (hw : Enc.WF .symbol n e) (hy : Enc.WF .symbol ny ye)
+    (hn : n < USize.size) (ix : ByteArray) (bcast : Bool) {e' : Enc}
+    (h : assignSyms n e ny ye ix bcast = some e') : Enc.WF .symbol n e' := by
+  by_cases hs : ∃ b o yb yo, e = .syms b o ∧ ye = .syms yb yo
+  · obtain ⟨b, o, yb, yo, rfl, rfl⟩ := hs
+    obtain ⟨b', o', h', ho, -⟩ := assignSyms_syms n b o yb yo ix bcast ny
+    rw [h'] at h; cases h
+    simp only [Enc.WF] at hw ⊢; omega
+  obtain ⟨d, o, ids, hc, hcap⟩ := intern_wf hw
+  obtain ⟨yd, yo, yi, hyc, -⟩ := intern_wf hy
+  unfold assignSyms at h
+  split at h
+  · exact absurd ⟨_, _, _, _, rfl, rfl⟩ hs
+  rw [hc, hyc] at h
+  dsimp only at h
+  split at h
+  · rename_i db dbo yids hh
+    cases h
+    simp only [Enc.WF, scatterIds]
+    rw [Column.idsCap, scatterPacked_size, ← Column.idsCap]
+    split
+    · rename_i heq
+      have hwe : Column.idWidth o = Column.idWidth dbo := by
+        rw [← idWidth_toNat o, ← idWidth_toNat dbo, beq_iff_eq.1 heq]
+      rw [← hwe]; exact hcap
+    · rw [idWidth_toNat, toNat_toUSize hn]; exact packIds_wf db dbo _ _
+  · split at h
+    · cases h; exact gatherIdsTil_wf _ _ _ _ _ hn
+    · cases h
+
 end LeetQ.Rel.KernelWF
