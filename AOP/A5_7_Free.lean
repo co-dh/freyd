@@ -8,10 +8,8 @@
   For a REIFIED term language it is an ordinary theorem, by structural induction on the term:
   `PE.free` below.
 
-  Shape follows `rel/RelInterp.lean`'s `RE`/`eval`: one constructor per operation, interpreted
-  through the ALREADY PROVEN lemmas, so the laws hold of interpreted terms by construction.
-  The difference is that `RE` is MONOMORPHIC — indexed by two fixed objects — so it cannot type
-  a combinator polymorphic in an object.  `PE` is indexed by TYPE EXPRESSIONS `TyE` in one
+  One constructor per operation, interpreted through the ALREADY PROVEN lemmas, so the laws hold
+  of interpreted terms by construction.  `PE` is indexed by TYPE EXPRESSIONS `TyE` in one
   variable, and it is the variable that carries the theorem.
 
   Composition is diagram order (`≫`).  `LaxNatural F G φ` (A5_1) is `G.map R ≫ φ b ⊑ φ a ≫ F.map R`

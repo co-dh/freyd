@@ -18,8 +18,7 @@ name = "Freyd"           # book core: curated aggregator Freyd.lean stays the si
 name = "AOP"             # Algebra-of-Programming layer; glob so every AOP/*.lean is in the default build
 globs = ["AOP.+"]
 
-# `leet` (LeetCode case studies) and `rel` (the relation-algebra interpreter, its auto-derivation
-# drivers and the LeetRun studies) are declared but left out of `defaultTargets`: nothing in `Freyd`
+# `leet` (LeetCode case studies) and `rel` (the auto-derivation drivers) are declared but left out of `defaultTargets`: nothing in `Freyd`
 # or `AOP` imports them, so a default build skips them, while `lake build leet rel` still checks them.
 [[lean_lib]]
 name = "leet"
