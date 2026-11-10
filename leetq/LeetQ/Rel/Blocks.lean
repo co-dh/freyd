@@ -68,18 +68,15 @@ def hit (G : V) (L : Rel I XX) : Rel I I := dom L \ dom (all L ≫ pts G \ L)
 /-- Three blocks have at most `3³` maps: the bound on the states, so on the ids and on the levels. -/
 def N : Nat := 27
 
-/-- `<` on the ids `0 … N-1`. -/
+/-- `<` on the ids `0 … N-1`: the order `est` reads, no op on `long` comparing two of its elements. -/
 def lt : Rel .long .long :=
   ofPairs ((List.range N).flatMap fun b => (List.range b).map fun a => (Int64.ofNat a, Int64.ofNat b))
-
-/-- The least value of each key of `Q`. -/
-def least (Q : Rel I .long) : Rel I .long := Q \ Q ≫ lt
 
 /-- One round of the breadth-first search on `(St, L, P, d)`: `St` every state seen, `L` the last level, both
     keyed by the state id; `P : id ⟶ (k, m)` the path, `m` its `k`-th move; `d` the round. Each state `i` of `L`
     and move `m` of `ML` is the candidate `c = (i, m)`, `par`, `mv` its sides, `F'` its state. `Λ(F')` is each
     candidate's state as an array, equal states one array; `\ ran Λ(St)` drops the seen ones, and `num`
-    numbers the rest past `St`'s ids. A new state's path is its `least` parent's and its move. -/
+    numbers the rest past `St`'s ids. A new state's path is its least parent's (`est(<)`) and its move. -/
 def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat →
     Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat
   | (St, L, P, d) =>
@@ -88,7 +85,7 @@ def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat �
     let E := num (ran Λ(F') \ ran Λ(St)) (dom St).n
     let L' := E ≫ mem E.val
     let cand := (Λ(F') ≫ E°)°
-    let pick := cand ∩ least (cand ≫ par) ≫ par°
+    let pick := cand ∩ est lt (cand ≫ par) ≫ par°
     (St ∪ L', L', P ∪ pick ≫ (par ≫ P ∪ pair (mv ≫ π₁ ≫ top xs (col [Int64.ofNat d])) mv), d + 1)
 
 /-- `steps : k ⟶ m`, the `k`-th move of a shortest plan from `S` to `G`, empty when none: rounds from `S` until
@@ -96,7 +93,8 @@ def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat �
 def steps (S G : V) : Rel .long XX :=
   match iter N (fun (St, L, _) => L ⊑ zero || !(hit G St ⊑ zero)) round (lvl S, lvl S, zero, 0) with
   | (St, _, P, _) =>
-    let h := hit G St; let p := ran ((h \ ran (h ≫ lt)) ≫ P)
+    -- the goal ids as one set, under the one key `0`, and its `est(<)`
+    let h := hit G St; let p := ran (ran (est lt (top (A := .long) (col [0]) h.key)) ≫ P)
     (outl p)° ≫ outr p
 
 /-- The plan as a list: `steps` in the order of `k`. -/

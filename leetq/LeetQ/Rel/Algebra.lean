@@ -1086,14 +1086,6 @@ def foldOver {n : Nat} (op : Coc.Over) (x : Arr .long n) : Except String Int64 :
   let (_, v) ← arrDense x
   pure (overBytes op Ew.i64 nul v)
 
-/-- The same per key: `overGroups` over the key codes' `groupIds`, one row per distinct key. -/
-def foldGroups (op : Coc.Over) (R : Rel A .long) : Except String (Rel A .long) := do
-  let r := cols R; let (_, v) ← arrDense R.val
-  let (gid, firsts) := (codes A #v[r.key])[0].groupIds
-  let ng := len firsts
-  pure (ofCols A .long (pick A r.key firsts)
-    ⟨ng, ← Arr.ofPart .long ng (longs ((overGroups op Ew.i64 nul ng.toUSize (Column.idWidthOf ng).toUSize r.n gid v).extract 0 (8 * ng))) "foldGroups"⟩)
-
 /-- `α⁻¹` of a list, `uncons`: its first element and the rest, two picks (`gatherColumn`). -/
 def uncons {n : Nat} (x : Arr B (n + 1)) : Except String (Arr B 1 × Arr B n) := do
   let rest := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs n.toUSize) (one 1) n.toUSize
@@ -1113,30 +1105,28 @@ def iter {α : Type} (n : Nat) (done : α → Bool) (f : α → α) (a : α) : �
   (hylo (·.1) (fun x => x.1 == 0 || done x.2) (fun x => (x.1 - 1, f x.2))
     (fun x h => by simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h; show x.1 - 1 < x.1; omega) (n, a)).2
 
-/-- `est(≤)` (`desc`: `est(≥)`) of a family of longs: `overGroups` lesser/greater per key. -/
-def est (desc : Bool) (G : Rel A .long) : Except String (Rel A .long) :=
-  foldGroups (if desc then .greater else .lesser) G
+/-- `est(Q)` per key of the family `G : A ⟶ B`, least w.r.t. `Q`: the rows `(a, b)` of `G` with no `(a, b')`
+    of `G` where `b'` is strictly `Q`-below `b`, the strict part being `Q \ Q°` (`Q` itself when strict). On a
+    total preorder `Q` this is the book's `∋ ∩ (∈\Q°)`, `b Q b'` for every `b'` of the set; on a partial one,
+    the `Q`-minimal elements. -/
+def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := G \ G ≫ (Q \ Q°)
 
-/-- `Entire R` on the universe `U`: `member` of `U`'s codes in the keys', all set. -/
-def entire {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
-  let r := cols R
-  let c := A.codes #v[U.parts, r.key]
-  pure (len (whereBits m.toUSize (c[0].member c[1])) == m)
+/-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`. -/
+def entire {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Bool := idU U ⊑ dom R
 
-/-- `Simple R`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes). -/
-def simple {A B : Obj} (R : Rel A B) : Except String Bool := do
+/-- `Simple R`, `R° R ⊑ 𝟙`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes),
+    linear where `R° ≫ R` is a join quadratic in a key's values. -/
+def simple {A B : Obj} (R : Rel A B) : Bool :=
   let r := cols (cols R).nub
-  pure (len (A.codes #v[r.key])[0].groupIds.2 == r.n)
+  len (A.codes #v[r.key])[0].groupIds.2 == r.n
 
-def isMap {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Except String Bool := do
-  pure ((← entire R U) && (← simple R))
+def isMap {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Bool := entire R U && simple R
 
 /-- `Injective R` = `Simple R°`. -/
-def injective {A B : Obj} (R : Rel A B) : Except String Bool := do simple (conv R)
+def injective {A B : Obj} (R : Rel A B) : Bool := simple R°
 
 /-- `Surjective R` = `Entire R°` on the universe `U` of `b`. -/
-def surjective {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals B m) : Except String Bool := do
-  entire (conv R) U
+def surjective {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals B m) : Bool := entire R° U
 
 /-! ## Checks against the `toList` specs, on small literal relations -/
 
@@ -1280,7 +1270,6 @@ private def Xc : Vals (.list L) 3 := ⟨4, col [-1, 2, 5], col [1, 9, 2], col [1
 
 #guard ok (mapVal Ew.neg Ls) fun X => X.toList == [(0, -5), (1, -3), (2, -5), (3, -9)]
 #guard ok (foldOver .add Ls.val) (· == 22)
-#guard ok (foldGroups .add R) fun X => X.toList == [(1, 30), (2, 10), (3, 30)]
 #guard ok (uncons LsV) fun (h, t) => h.toList == [5] && t.toList == [3, 5, 9]
 -- an unfold then a fold: uncons to the end, summing the heads
 -- the state is the rest and the sum; the measure is the rest's length, `0` once a step has failed, so the
@@ -1302,8 +1291,30 @@ private theorem stStep_dec : ∀ s, (stM s == 0) = false → stM (stStep s) < st
   | .ok (⟨0, _⟩, _), h => by simp [stM] at h
   | .error _, h => by simp [stM] at h
 #guard ok (hylo stM (stM · == 0) stStep stStep_dec (.ok (⟨_, LsV⟩, 0))) fun (_, s) => s == 22
-#guard ok (est false R) fun X => X.toList == [(1, 10), (2, 10), (3, 30)]
-#guard ok (est true R) fun X => X.toList == [(1, 20), (2, 10), (3, 30)]
+-- `est(Q)`: the order `Q` a relation on `10 15 20 30 40`, `≤` and `<` alike, `≥` and `>` the greatest
+private def ordOn (p : Int64 → Int64 → Bool) : LL :=
+  let vs : List Int64 := [10, 15, 20, 30, 40]
+  ofPairs (vs.flatMap fun a => (vs.filter (p a)).map (a, ·))
+private def LE := ordOn (· ≤ ·)
+private def LT := ordOn (· < ·)
+/-- The spec: the rows `(a, b)` of `G` with no `(a, b')` of `G` where `b' Q b` and not `b Q b'`. -/
+private def estSpec (Q G : LL) : List (Int64 × Int64) :=
+  let q := Q.toList; let g := G.toList
+  g.filter fun (a, b) => g.all fun (a', b') => a' != a || !(q.contains (b', b) && !q.contains (b, b'))
+#guard seteq (est LE R).toList [(1, 10), (2, 10), (3, 30)] && est LT R == est LE R
+#guard seteq (est LE° R).toList [(1, 20), (2, 10), (3, 30)] && est LT° R == est LE° R
+#guard seteq (est LE S).toList (estSpec LE S) && seteq (est LT° S).toList (estSpec LT° S)
+-- ties: the preorder by tens, `10` and `15` tied; `(2, 20)` twice, kept twice
+private def Rt : LL := ofPairs [(1, 10), (1, 15), (1, 20), (2, 20), (2, 20)]
+private def tens := ordOn fun a b => a / 10 ≤ b / 10
+#guard seteq (est tens Rt).toList [(1, 10), (1, 15), (2, 20)] && (est tens Rt).n == 4 &&
+  seteq (est tens Rt).toList (estSpec tens Rt)
+-- empty: no rows, or no order (nothing below anything)
+#guard (est LE (zero (A := L) (B := L))).n == 0 && est (zero (A := L) (B := L)) R == R
+-- `B = X×X`, the Pareto orders on pairs: strict `<×<` drops nothing of {(10,10) (20,10)} {(10,10) (10,20)};
+-- `≤×≤`, a partial preorder, keeps the minimal `(10,10)` of each
+#guard est (prod LT LT) (pair R S) == pair R S
+#guard seteq (est (prod LE LE) (pair R S)).toList [(1, 10, 10), (2, 10, 10)]
 -- thin, k = 1: per key of `R` the largest value, then the smallest
 private def lc (xs : List Int64) (big : Bool) : Scan.Kind × ByteArray × Bool := (.i64, packLongs xs, big)
 #guard ok (thin ⟨_, col [1, 1, 2, 3]⟩ #[lc [10, 20, 10, 30] true]) (· == packLongs [1, 2, 3])
@@ -1333,11 +1344,11 @@ private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by de
   setIds c s == packLongs [0, 0, 0, 1, 2, 3] && setIdsRef c (packLongs [0, 2, 4, 6, 8, 8, 9]) == setIds c s
 
 private def Ua3 : Vals L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by decide))
-#guard ok (entire R Ua) (· == false) && ok (entire R Ua3) id
-#guard ok (simple R) (· == false) && ok (simple (idU Ua)) id && ok (simple Ls) id
-#guard ok (isMap (idU Ua) Ua) id
-#guard ok (injective Ls) (· == false) && ok (injective T) id
-#guard ok (surjective R Ub) (· == false) && ok (surjective (idU Ub) Ub) id
+#guard entire R Ua == false && entire R Ua3
+#guard simple R == false && simple (idU Ua) && simple Ls
+#guard isMap (idU Ua) Ua && isMap R Ua3 == false
+#guard injective Ls == false && injective T
+#guard surjective R Ub == false && surjective (idU Ub) Ub
 
 /-! ### Every other encoding: the list `i ↦ x i` of four elements in each, against its own spec -/
 
@@ -1470,7 +1481,6 @@ end Checks
 #print axioms junc
 #print axioms injConv
 #print axioms mapVal
-#print axioms foldGroups
 #print axioms uncons
 #print axioms thin
 #print axioms setIds
