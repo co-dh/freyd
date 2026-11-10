@@ -20,6 +20,7 @@ import QLean.Kernel.Coc
 import QLean.Eval.Dyad
 import QLean.Verify.Grade
 import QLean.Verify.Chain
+import LeetQ.Rel.KernelWF.Gather
 
 namespace LeetQ.Rel.Alg
 
@@ -199,6 +200,10 @@ def gradeBy (n : Nat) (ks : Array Code) : ByteArray :=
 
 /-! ## Payloads of any encoding: count, pick, join, code -/
 
+/-- A long column's dense payload always answers: `Enc.WF .long` admits only `bytes` and `foR`. -/
+theorem longBytes_isSome {n : Nat} (x : Arr .long n) : (longBytes n x.enc).isSome := by
+  rcases KernelWF.long_cases x.wf with ⟨b, h⟩ | ⟨M, P, h⟩ <;> simp [h, longBytes]
+
 /-- A general list's boxed elements: its `gen` column, which is the only one `Arr .general` admits. -/
 def gens (c : Nat × Enc) : Except String (Array QValue) :=
   match c.2 with
@@ -227,10 +232,8 @@ def raze (t : QAtomicType) (cs : Array (Nat × Enc)) : Except String (Nat × Enc
     | _ => throw s!"razeColumn declines {cs.size} columns of type {a.code}"
 
 /-- No element of `t`: `Enc.ofAtoms` of nothing, which picks the type's own constructor. -/
-def empty (t : QAtomicType) : Except String (Nat × Enc) :=
-  if h : t = .general then pure (genCol #[]) else match Enc.ofAtoms t #[] h with
-    | some e => pure (0, e)
-    | none => throw s!"Enc.ofAtoms has no empty payload of type {t.code}"
+def empty (t : QAtomicType) : Nat × Enc :=
+  if h : t = .general then genCol #[] else (0, (Enc.ofAtoms t #[] h).get (Column.ofAtoms_isSome h (by simp)))
 
 /-- `mapM` in `Option` over one part is the one part's answer. -/
 @[simp] theorem vmapM_one {α β : Type} (f : α → Option β) (x : α) : Vector.mapM f #v[x] = (f x).map (#v[·]) := by
@@ -345,9 +348,9 @@ def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → Array (Part A) → Except String (
   | .prod a b, cs => do pure (← Obj.raze a (cs.map (·.1)), ← Obj.raze b (cs.map (·.2)))
 
 /-- No element, column by column. -/
-def _root_.LeetQ.Rel.Obj.empty : (A : Obj) → Except String (Part A)
+def _root_.LeetQ.Rel.Obj.empty : (A : Obj) → Part A
   | .atom t => Alg.empty t
-  | .prod a b => do pure (← Obj.empty a, ← Obj.empty b)
+  | .prod a b => (Obj.empty a, Obj.empty b)
 
 /-- A side's columns as parts. -/
 def _root_.LeetQ.Rel.Vals.parts : {A : Obj} → {n : Nat} → Vals A n → Part A
@@ -519,7 +522,7 @@ def setIds (vc : Code) (o : ByteArray) : Except String ByteArray := do
 /-- `setIds` of a stored family (one boxed set of `v` per key): one id per set, equal sets one id. -/
 def setId {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String ByteArray := do
   let P ← Parted.ofBoxes v G.val
-  let some ob := longBytes (P.g + 1) P.o.enc | throw "setId: the offsets have no dense payload"
+  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
   setIds (← codes v #v[P.val.part])[0] ob
 
 /-- `thin(Q)` for `Q` the Pareto order over the columns `cs` of a family keyed by `key`, each column
@@ -561,7 +564,7 @@ def union (R S : Rel A B) : Except String (Rel A B) := do
   ofCols A B u.key u.val
 
 /-- `𝟘`: no pair. -/
-def zero : Except String (Rel A B) := do ofCols A B (← A.empty) (← B.empty)
+def zero : Except String (Rel A B) := ofCols A B A.empty B.empty
 
 /-- `⊤` on the universes `Ua`, `Ub`: `cross`. -/
 def top {ma mb : Nat} (Ua : Vals A ma) (Ub : Vals B mb) : Except String (Rel A B) := do
@@ -691,7 +694,7 @@ def boxP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except Str
 /-- `∋` of the carrier: each value against its key, the key gathered at each row's group (`groupOf`). -/
 def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t v) := do
   let P := F.2.2
-  let some ob := longBytes (P.g + 1) P.o.enc | throw "∋: the offsets have no dense payload"
+  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
   pure ⟨P.n, ← Arr.ofPart t P.n (← pick t F.2.1.part (groupOf ob P.n)) "∋", P.val⟩
 
 /-- The groups of a column whose equal elements are contiguous: `groupedP` with `o` the run starts
@@ -732,7 +735,7 @@ def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
     (`Parted.ofBoxes`) and the group of each position (`groupOf`). -/
 def mem {k : QAtomicType} (v : QAtomicType) (G : Rel k .general) : Except String (Rel .long v) := do
   let P ← Parted.ofBoxes v G.val
-  let some ob := longBytes (P.g + 1) P.o.enc | throw "∋: the offsets have no dense payload"
+  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
   pure ⟨P.n, ← Arr.ofPart .long P.n (longs (groupOf ob P.n)) "mem", P.val⟩
 
 /-- `E(R)` of a family `G` given as its pairs `(X, x)`: `Λ(∋ ≫ R)` = the family of `G ≫ R`. -/
