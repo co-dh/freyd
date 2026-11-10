@@ -1407,6 +1407,58 @@ def sort {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) 
 def sortSet {B : Obj} {n : Nat} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   (setify Y)° ≫ ordered Q Y
 
+/-- `subseq ≜ ⦇[nil, cons ∪ π₂]⦈` on the arrays `X`, each array to each of its subsequences (`subseq`,
+    AOP/A5_6_ListCombinators.lean:127): a head kept or dropped. -/
+def subseq {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  foldBy X (nilVal B) fun el pend => cons (pair el pend) ∪ pend
+
+/-- `thinL(Q) ≜ setify thin(Q) setify° ∩ subseq` on the arrays `Y` (`thinL`, AOP/A8_3.lean:567; B&dM p.200,
+    binary thinning), `thin(Q) ≜ ⊇ ∩ (∈ \ Q°∈)` on the sets of `Y` (`thinRel`, AOP/A8_1.lean:71): the
+    subsequences in `Y` that keep, for every element dropped, a `Q`-lower one. `⊇` is `∋ / ∋`. -/
+def thinL {B : Obj} {n : Nat} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  let S := (setify Y).val
+  let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (Q° ≫ (mem S)°) S S
+  (setify Y ≫ T ≫ (setify Y)°) ∩ subseq Y
+
+/-- `merge(Q) : arr B × arr B ⟶ arr B` on the rows of `P` (`merge`, AOP/A8_3.lean:1147; B&dM p.156): the
+    book's equations as rounds of `iter` on the states `((x, y), acc)`, `acc` the output so far: with both
+    non-empty the head `a` of `x` goes to `acc` when `a Q b`, `b` the head of `y`, else `b`; with either empty
+    the state ends as `acc` then `x` then `y`. A round shortens `x` or `y`, so the cells of both payloads
+    plus one bound the rounds. -/
+def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
+  let round : Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) →
+      Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) := fun (out, St) =>
+    let D := ran St
+    let x := outl (outl D)
+    let y := outr (outl D)
+    let acc := outr D
+    let ux := x ≫ uncons x.val
+    let uy := y ≫ uncons y.val
+    let both := dom (pair ux uy)
+    let l := dom (pair (outl ux) (outl uy) ≫ idU (Q.key, Q.val))
+    let take := l ≫ pair (pair (outr ux) y) (snoc (pair acc (outl ux))) ∪
+      antiJoin both l ≫ pair (pair x (outr uy)) (snoc (pair acc (outl uy)))
+    (out ∪ St ≫ antiJoin D both ≫ cat (pair (cat (pair acc x)) y), St ≫ take)
+  (iter (P.val.1.1 + P.val.2.1 + 1) (fun s => s.2.n == 0) round
+    (zero, P ≫ pair (idU (ran P).val) (top (ran P).val (nilVal B)))).1
+
+/-- `loop(F) : X × arr Y ⟶ X` on the rows of `P` (`loop`, AOP/A9_3_Bracket.lean:1686; B&dM Appendix), `F`
+    folded along the array from the left: rounds of `iter` taking `(c, y :: ys)` to `(F(c, y), ys)`, a state
+    whose array is empty ending at its `c`. The cells of the arrays' payload plus one bound the rounds. -/
+def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
+  let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
+    let D := ran St
+    let u := outr D ≫ uncons (outr D).val
+    (out ∪ St ≫ outl (antiJoin D (dom u)), St ≫ pair (pair (outl D) (outl u) ≫ F) (outr u))
+  (iter (P.val.2.1 + 1) (fun s => s.2.n == 0) round (zero, P)).1
+
+/-- `tic ≜ cons inits tail : B × arr B ⟶ arr (arr B)` on the rows of `P` (`tic`, AOP/A9_3_Bracket.lean:1845;
+    B&dM p.235): the non-empty prefixes of `a :: xs`. -/
+def tic {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr (.arr B)) :=
+  let C := cons P
+  let I := C ≫ inits C.val
+  I ≫ tail I.val
+
 namespace Arr
 
 /-- `union : arr (arr A) ⟶ arr A` on the arrays of arrays `X`, the note's `union≜frac(∋∋,∋)`
@@ -1964,6 +2016,36 @@ private def Yp' := (perm Xp).val
 #guard seteq ((sortSet LE9 Yp').toList : List (List Int64 × List Int64))
   (((arrs Yp').filter fun ys => sorted ys == ys).map fun ys => (setOf ys, ys))
 #guard seteq (setify Yp' ≫ sortSet LE9 Yp').toList (sort LE9 Yp').toList
+
+-- `subseq`; binary thinning among the subsequences of `Xp`, `Q` the `≤` on longs: keep a lower element
+private def subs : List Int64 → List (List Int64)
+  | [] => [[]]
+  | x :: xs => (subs xs).map (x :: ·) ++ subs xs
+#guard onArrs Xp (subseq Xp) subs && onArrs Xs (subseq Xs) subs
+private def Ysub := (subseq Xp).val
+#guard seteq ((thinL LE9 Ysub).toList : List (List Int64 × List Int64))
+  ((arrs Ysub).flatMap fun xs => ((subs xs).filter fun ys => (arrs Ysub).contains ys &&
+    xs.all fun a => ys.any (· ≤ a)).map (xs, ·))
+#guard thinL LE9 Ysub ⊑ subseq Ysub && (thinL LE9 Ysub).n > 0
+-- `merge(≤)` against `List.merge`, on ordered and on unordered arrays; `merge(⊤) = cat` (B&dM p.212)
+#guard seteq ((merge LE9 (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
+  ((pairsOf W2).map fun (x, y) => ((x, y), List.merge x y fun a b => decide (a ≤ b))) && isMap (merge LE9 (idU W2)) W2
+#guard seteq (merge (top (tilCol 10) (tilCol 10)) (idU W2)).toList (cat (idU W2)).toList
+-- merging two ordered arrays gives an ordered one
+#guard let O := sort LE9 Xp; let M := idU (O.val, O.val)
+  seteq (merge LE9 M ≫ ordered LE9 (merge LE9 M).val).toList (merge LE9 M).toList
+-- `loop(plus)` is the sum from a start; `loop(F)` against `List.foldl` with `F` not a function
+private def Wl : Vals (.prod L (.arr L)) 5 := (col [0, 100, 0, 7, 1], Xp)
+private def Tp : LL := top (tilCol 120) (tilCol 10)
+#guard seteq ((loop (plus (Tp.key, Tp.val)) (idU Wl)).toList : List ((Int64 × List Int64) × Int64))
+  (((idU Wl).toList.map (·.1) : List (Int64 × List Int64)).map fun (c, ys) => ((c, ys), ys.foldl (· + ·) c))
+#guard seteq ((loop (tab (upto 30) (upto 9) (· + ·) ∪ tab (upto 30) (upto 9) fun c _ => c) (idU Wl)).toList :
+    List ((Int64 × List Int64) × Int64))
+  (((idU Wl).toList.map (·.1) : List (Int64 × List Int64)).flatMap fun (c, ys) =>
+    if c ≤ 30 || ys.isEmpty then (ys.foldl (fun cs y => cs.flatMap fun c => [c + y, c]) [c]).map ((c, ys), ·) else [])
+-- `tic`: the non-empty prefixes of `a :: xs`
+#guard seteq ((tic (idU XP)).toList : List ((Int64 × List Int64) × List (List Int64)))
+  [((5, [1, 2]), [[5], [5, 1], [5, 1, 2]]), ((6, []), [[6]])]
 
 end Checks
 

@@ -101,7 +101,7 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 5   | `α ≜ [nil,cons]`, `nil`, `cons`, `cons°`, `snoc`       | `uncons` (`cons°`)                          | yes   |
 | 5   | `⦇R⦈` on lists                                         | `fold`                                      | yes   |
 | 5   | `F(R)` for the list functor                            | `map`                                       | yes   |
-| 5   | `⦇R⦈`, `F(R)` on other datatypes (`tip`/`bin` trees)   | —                                           | no    |
+| 5   | `⦇R⦈`, `F(R)` on other datatypes (`tip`/`bin` trees)   | — (needs a tree side: `doc/alg-bdm-ops-proposal.md`) | no |
 | 6   | `μX : φ(X)`, an unfold then a fold `⦇T⦈°⦇h⦈`           | `iter`, `hylo` (a Lean loop, not a term)    | part  |
 | 6   | closure `R*`                                           | written with `iter` in `Chess.star`         | part  |
 | 6   | `perm`, `setify`, `ordered(≼)`, `sort(≼)`              | `perm` (`⦇[nil, add]⦈`), `setify` (`Λ(∋)`), `ordered`, `sort` (`perm ordered`) | yes |
@@ -111,8 +111,9 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`, `cat`, `cat°`, `snoc°` | `inits tails zip cat unsnoc` on positions; `concat ≜ ⦇[nil,cat]⦈`, `snoc ≜ (𝟙×τ) cat`, `init ≜ snoc° π₁`, `uncat ≜ ⟨inits,tails⟩ zip ∋` | yes |
 | 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `leq U`, `lt U` from kernels (not `general`) | yes   |
 | 8   | `thin(Q)`                                              | `thin` (minimal)                            | yes   |
-| 8   | `merge`, sorting sets, binary thinning                 | —                                           | no    |
-| 9   | tabulation (`array`, `row`, `col`, `tic`, `loop`)      | —                                           | no    |
+| 8   | `merge`, sorting sets, binary thinning                 | `merge` (rounds of `iter`), `sortSet ≜ setify° ordered`, `thinL ≜ setify thin(Q) setify° ∩ subseq`, `subseq` | yes |
+| 9   | tabulation: `tic`, `loop`                              | `tic ≜ cons inits tail`, `loop` (rounds of `iter`) | yes |
+| 9   | tabulation: `array`, `row`, `col`                      | — (definitions of the bracketing program over `tip`/`bin` trees: `doc/alg-bdm-ops-proposal.md`) | no |
 
 The note's programs, for reference only (they show which operators are used; they are not ported):
 
