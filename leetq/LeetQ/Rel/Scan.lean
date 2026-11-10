@@ -20,6 +20,7 @@ import QLean.Verify.BinWin
 import QLean.Verify.Dyad
 import QLean.Verify.ScanOver
 import LeetQ.Rel.KernelWF.Reduce
+import QLean.Dep.Table
 
 namespace LeetQ.Rel
 
@@ -129,17 +130,29 @@ def mwin (op : Scan.MOp) (w : Nat) (rt : QAtomicType) {n : Nat} (R : Arr t n) : 
 
 /-! ## Order: `iasc idesc rank asc desc xasc` -/
 
-/-- `<x` / `>x`: the stable grade, keyed by position. -/
-def grade (desc : Bool) {n : Nat} (R : Arr t n) : Option (Arr .long n) := do
-  let p ← gradeColumn t desc n R.enc
-  (Arr.of .long n (.vector .long n p none) "<x").toOption
+/-- `R`'s positions in q's order (`Carrier.le`), ties in index order both ways round: the kernel-free grade. -/
+def gradeList (desc : Bool) {n : Nat} (R : Arr t n) : List (Fin n) :=
+  (List.finRange n).mergeSort fun i j => if desc then Table.Carrier.le (R.get j) (R.get i) else Table.Carrier.le (R.get i) (R.get j)
+
+/-- `<x` / `>x`: the stable grade, keyed by position. The kernel where the count fits a `USize` and the
+    column is not general, which it does not grade; `gradeList` elsewhere. -/
+def grade (desc : Bool) {n : Nat} (R : Arr t n) : Arr .long n :=
+  if h : n < USize.size ∧ t ≠ .general then
+    Arr.mk ((gradeColumn t desc n R.enc).get (KernelWF.gradeColumn_isSome h.1 R.wf h.2))
+      (KernelWF.gradeColumn_wf h.1 R.wf (Option.some_get _).symm)
+  else atomsOf .long (by decide) (fun i : Fin n => QAtom.long (Int64.ofNat i)) (fun _ => rfl) (gradeList desc R)
+    (by simp [gradeList, List.length_mergeSort])
 
 def iasc {n : Nat} := @grade t false n
 def idesc {n : Nat} := @grade t true n
 
 /-- `rank x` = `<<x`, key kept: the place of each element in the ascending order. -/
-def rank {n : Nat} (R : Arr t n) : Option (Arr .long n) :=
-  (gradeColumn t false n R.enc (rank := true)).bind fun e => (Arr.of .long n (.vector .long n e none) "rank x").toOption
+def rank {n : Nat} (R : Arr t n) : Arr .long n :=
+  if h : n < USize.size ∧ t ≠ .general then
+    Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome h.1 R.wf h.2))
+      (KernelWF.gradeColumn_wf h.1 R.wf (Option.some_get _).symm)
+  else atomsOf .long (by decide) (fun i : Fin n => QAtom.long (Int64.ofNat ((gradeList false R).idxOf i))) (fun _ => rfl)
+    (List.finRange n) (List.length_finRange ..)
 
 /-- `x` reordered by the permutation `p`, a `long` payload of `n` positions: one gather. -/
 def permute {n : Nat} (p : Enc) (x : Arr t n) : Option (Arr t n) := do
@@ -1060,20 +1073,17 @@ theorem mwin_answer {op : Scan.MOp} {rt : QAtomicType} {rk : Scan.Kind} (hT : mw
 /-- **`<x` / `>x` over a long column**: q's stable grade, from `Order.grade`'s merge sort of `til n`
     (`ids_indices`) under `rank_i64_le_iff`. -/
 theorem grade_toList {desc : Bool} {n : Nat} {R : Arr .long n} {ws : List UInt64} (hx : longWords n R.enc = some ws)
-    (hn : n < USize.size) {S : Arr .long n} (h : grade desc R = some S) :
-    S.toList = Spec.grade desc R.toList := by
+    (hn : n < USize.size) : (grade desc R).toList = Spec.grade desc R.toList := by
   obtain ⟨B, hc, -, hBw, hBs⟩ := Arr.dense_long R hx hn
   have hg : gradeColumn .long desc n R.enc = some (.bytes (Order.grade .i64 desc n.toUSize B)) := by
     rcases hc with hc | ⟨md, pk, hc, rfl⟩ <;> rw [hc]
     · rw [← hBs]; simp [gradeColumn, Enc.bytesOf, show orderKind .long = some .i64 from rfl, show Scan.Kind.width .i64 = 8 from rfl, Nat.not_lt.2 (Nat.div_mul_le_self _ _)]
     · rfl
-  simp only [grade, hg, bind, Option.bind] at h
-  generalize hP : Order.grade .i64 desc n.toUSize B = P at h
-  simp only [Arr.of] at h
-  split at h
-  · rename_i hw
-    have hS : S.enc = .bytes P := by cases h; rfl
-    have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
+  have hS : (grade desc R).enc = .bytes (Order.grade .i64 desc n.toUSize B) := by
+    unfold grade; rw [dif_pos ⟨hn, by decide⟩]; exact Option.some.inj ((Option.some_get _).trans hg)
+  generalize hP : Order.grade .i64 desc n.toUSize B = P at hS
+  generalize grade desc R = S at hS ⊢
+  · have hm : min n.toUSize.toNat (Scan.Kind.i64.avail B) = n := by
       rw [USize.toNat_ofNat_of_lt' hn, show Scan.Kind.i64.avail B = B.size / 8 from rfl, hBs, Nat.min_self]
     have hids : Verify.ids P = (List.range n).mergeSort fun i j =>
         if desc then Order.keyAt .i64 B j ≤ Order.keyAt .i64 B i else Order.keyAt .i64 B i ≤ Order.keyAt .i64 B j := by
@@ -1097,7 +1107,6 @@ theorem grade_toList {desc : Bool} {n : Nat} {R : Arr .long n} {ws : List UInt64
       cases desc <;> simp [Order.keyAt, Scan.Kind.bitsAt, Scan.Kind.width, rank_i64_le_iff, List.getElem?_range hi',
         List.getElem?_range hj']
     simpa using this
-  all_goals cases h
 
 /-- **`asc x` / `desc x` over a long column**: q's stable sort, from `sortValues_spec` under
     `rank_i64_le_iff`. -/
@@ -1637,9 +1646,9 @@ private def b101 : Arr .boolean 3 := (Arr.mk (.bits (ByteArray.mk #[0b101])) (by
 #guard vals (mwin .mcount 2 .int b101) == [1, 2, 2]
 #guard (mwin .msum 3 .int xsA).isNone
 
-#guard vals (iasc xsA) == Spec.grade false xs
-#guard vals (idesc zsA) == [1, 2, 3, 0] ∧ vals (idesc zsA) == Spec.grade true zsA.toList
-#guard vals (rank xsA) == Spec.rank xs
+#guard (iasc xsA).toList == Spec.grade false xs
+#guard (idesc zsA).toList == [1, 2, 3, 0] ∧ (idesc zsA).toList == Spec.grade true zsA.toList
+#guard (rank xsA).toList == Spec.rank xs
 #guard vals (asc xsA) == Spec.sort false xs
 #guard ((asc xsA).map (·.attrCell.map (·.1))) == some (some 1)
 #guard vals (desc xsA) == Spec.sort true xs
