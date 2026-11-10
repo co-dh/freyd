@@ -1,13 +1,16 @@
 import LeetQ.Rel.Algebra
 import LeetQ.Rel.Blocks
 
-/-! The machine check of `doc/rel-lang-design.md` §g: the blocks world and its search as the Rel language
-    writes them, one Lean definition per program line, transcribed by the rules of the design:
+/-! The machine check of `doc/rel-lang-design.md` §e and §g: the lifting of a relation formula to a family, and
+    the blocks world and its search written with the note's formulas, one Lean definition per program line,
+    transcribed by the rules of the design:
 
-    - `≜ ` is a `def`; `−` is `\`; composition is `≫`; `R π₁`, `R π₂` are `outl R`, `outr R` (the same pairs).
+    - `≜` is a `def`; `−` is `\`; composition is `≫`; `R π₁`, `R π₂` are `outl R`, `outr R` (the same pairs).
     - A term whose source object has no universe (`𝒫(X×X)` and the products holding it) runs on the keys its
       left context composes into it: its Lean form is a function of that coreflexive, the DEMAND `D`. On `D`,
       `𝟙` is `D`, `∋` is `D ≫ mem D.val`, `⊤` is `D ≫ top D.val U`, `π₁`, `π₂` are `outl D`, `outr D`.
+    - A definition whose parameter is declared `S : A ⟶ B` and is given a family `I ⟶ A×B` runs its body with
+      the lifted operators (`lift…` below) on the keys in demand `D : I ⟶ I`; `∩`, `∪`, `−` lift to themselves.
     - `Λ(G) est(Q)` is `est Q G` (both are the `Q`-least value of each key of `G`).
     - `R⦇e,S⦈` is `R ≫ foldOn e.val S (ran R).val`, `S` in its demand form: the pairs each round meets.
 
@@ -45,7 +48,7 @@ def succN : Rel N N := succ Nu ≫ idU Nu
 def π₁ : Rel XX X := outl (𝟙 : Rel XX XX)
 def π₂ : Rel XX X := outr (𝟙 : Rel XX XX)
 
-/-! ### The helpers: a fold whose step runs on the pairs it meets, and `μ` -/
+/-! ### The helper: a fold whose step runs on the pairs it meets -/
 
 /-- `⦇e,S⦈` on the arrays `xa`, `S` in demand form: each round `S` runs on the pairs (element, value) it
     meets. `Alg.fold` takes `S` as a relation, which an object without a universe cannot give. -/
@@ -53,40 +56,73 @@ def foldOn {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) (.prod E 
     (xa : Vals (.arr E) n) : Rel (.arr E) V :=
   foldBy xa e fun el pend => pair el pend ≫ S (ran (pair el pend))
 
-/-- `μY : φ(Y)` from `𝟘` until a round changes nothing; `bound` is never reached on a finite hom-set. -/
-def mu {A B : Obj} (bound : Nat) (φ : Rel A B → Rel A B) : Rel A B :=
-  (iter bound (fun p => p.1 == p.2) (fun p => (p.2, φ p.2)) (zero, φ zero)).2
+/-! ### The lifted operators: a family `I ⟶ A×B` holds at each key `i` a relation `A ⟶ B`, its fibre at `i`.
+    Each row is built from `Alg` ops on the family as one relation; `∩`, `∪`, `−` need no row, as the fibre of
+    `R ∩ S` at `i` is the meet of the fibres already. -/
 
-/-- `S R*` as `μY : S ∪ Y R` (`comp_star_eq_mu`, AOP/A6_7.lean:264), `R` in demand form. -/
-def star {A B : Obj} (bound : Nat) (S : Rel A B) (R : Rel B B → Rel B B) : Rel A B :=
-  mu bound fun Y => S ∪ Y ≫ R (ran Y)
+section Lift
 
-/-- More rounds than any `μ` below takes: `2⁹` sets of pairs times `7` counts. -/
-def cap : Nat := 2 ^ 9 * 7
+variable {I A B C : Obj}
 
-/-! ### The note's formulas, per key: `S : I ⟶ X×X` holds one state per key -/
+/-- A closed `C : A ⟶ B` in a lifted position: `D⊤⟨𝟙,C⟩` (`⊤ : I ⟶ A` on `dom(C)`), the fibre `C` at every key
+    in demand `D`. `𝟙`, `⊤`, `π₁`, `π₂` and every literal lift so. -/
+def liftConst (D : Rel I I) (C : Rel A B) : Rel I (.prod A B) := D ≫ top D.val (dom C).val ≫ pair (dom C) C
+
+/-- `RS` lifted: `⟨R,S⟩(𝟙 ∩ π₁π₂(π₂π₁)°)⟨π₁π₁,π₂π₂⟩`. `⟨R,S⟩` pairs each row of a key with each row of the same
+    key; the coreflexive keeps the pairs whose middles agree. -/
+def liftComp (R : Rel I (.prod A B)) (S : Rel I (.prod B C)) : Rel I (.prod A C) :=
+  pair R S ≫ (ran (pair R S) ∩ outr (outl (ran (pair R S))) ≫ (outl (outr (ran (pair R S))))°) ≫
+    pair (outl (outl (ran (pair R S)))) (outr (outr (ran (pair R S))))
+
+/-- `R°` lifted: `R⟨π₂,π₁⟩`. -/
+def liftConv (R : Rel I (.prod A B)) : Rel I (.prod B A) := R ≫ pair (outr (ran R)) (outl (ran R))
+
+/-- `dom(R)` lifted: `R⟨π₁,π₁⟩`. -/
+def liftDom (R : Rel I (.prod A B)) : Rel I (.prod A A) := R ≫ pair (outl (ran R)) (outl (ran R))
+
+/-- `ran(R)` lifted: `R⟨π₂,π₂⟩`. -/
+def liftRan (R : Rel I (.prod A B)) : Rel I (.prod B B) := R ≫ pair (outr (ran R)) (outr (ran R))
+
+/-- `∼R` lifted: `D⊤ − R`, `⊤ : I ⟶ A×B` on the keys in demand `D` and the universes `Ua`, `Ub`. -/
+def liftCompl {ma mb : Nat} (D : Rel I I) (Ua : Vals A ma) (Ub : Vals B mb) (R : Rel I (.prod A B)) :
+    Rel I (.prod A B) :=
+  liftConst D (top Ua Ub) \ R
+
+/-- `R ⊑ S` lifted: `D − dom(R − S)`, the keys in demand at which the fibre of `R` is in that of `S`. -/
+def liftLe (D : Rel I I) (R S : Rel I (.prod A B)) : Rel I I := D \ dom (R \ S)
+
+end Lift
+
+/-! ### The note's formulas, verbatim: `S : X ⟶ X`, run lifted on the keys in demand `D` of a family -/
 
 variable {I : Obj}
 
-/-- `R(S) ≜ S ran⟨𝟙,∼𝟙⟩`: the note's `S ∩ ∼𝟙`, per key. -/
-def R (S : Rel I XX) : Rel I XX := S ≫ ran (pair (𝟙 : Rel X X) ∼𝟙)
+/-- `R(S : X ⟶ X) ≜ S ∩ ∼𝟙`: `b` rests on another block. -/
+def R (D : Rel I I) (S : Rel I XX) : Rel I XX := S ∩ liftCompl D xs xs (liftConst D (𝟙 : Rel X X))
 
-/-- `M(S) ≜ Sπ₁⊤ − (R(S)π₂(π₁° ∪ π₂°))`: the note's `∼(R°⊤ ∪ ⊤R)`, per key. -/
-def M (S : Rel I XX) : Rel I XX := S ≫ π₁ ≫ ⊤ \ R S ≫ π₂ ≫ (π₁° ∪ π₂°)
+/-- `M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ ⊤R(S))`: the moves allowed. -/
+def M (D : Rel I I) (S : Rel I XX) : Rel I XX :=
+  liftCompl D xs xs
+    (liftComp (liftConv (R D S)) (liftConst D (⊤ : Rel X X)) ∪ liftComp (liftConst D (⊤ : Rel X X)) (R D S))
 
-/-- `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`: the note's `(S ∩ ∼(p⊤)) ∪ p`, per key. -/
-def S' (S p : Rel I XX) : Rel I XX := S \ p ≫ π₁ ≫ π₁° ∪ p
+/-- `S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p`: the state after the move `p`. -/
+def S' (D : Rel I I) (S p : Rel I XX) : Rel I XX :=
+  (S ∩ liftCompl D xs xs (liftComp p (liftConst D (⊤ : Rel X X)))) ∪ p
+
+/-- `h(S : X ⟶ X) ≜ G ⊑ S`: `S` holds the goal; on a family, the keys whose state does. -/
+def h (G : Rel X X) (D : Rel I I) (S : Rel I XX) : Rel I I := liftLe D (liftConst D G) S
 
 /-! ### The search -/
 
-/-- `c ≜ ⟨𝟙, M(∋)⟩ : St ⟶ St×(X×X)`, each state to itself and each move it allows. -/
-def c (D : Rel St St) : Rel St Cn := pair D (M (D ≫ mem D.val))
+/-- `c ≜ ⟨𝟙, M(∋)⟩ : St ⟶ St×(X×X)`, each state to itself and each move it allows: `M` lifted on the family `∋`. -/
+def c (D : Rel St St) : Rel St Cn := pair D (M D (D ≫ mem D.val))
 
-/-- `F ≜ S'(π₁∋, π₂) : St×(X×X) ⟶ X×X`, the pairs of the state a candidate leads to. -/
-def F (D : Rel Cn Cn) : Rel Cn XX := S' (outl D ≫ mem (outl D).val) (outr D)
+/-- `F ≜ S'(π₁∋, π₂) : St×(X×X) ⟶ X×X`, the pairs of the state a candidate leads to: `S'` lifted on two
+    families of one index `St×(X×X)`. -/
+def F (D : Rel Cn Cn) : Rel Cn XX := S' D (outl D ≫ mem (outl D).val) (outr D)
 
-/-- `T ≜ cΛ(F) : St ⟶ St`, one move. -/
-def T (D : Rel St St) : Rel St St := c D ≫ Λ(F (ran (c D)))
+/-- `t ≜ cΛ(F) : St ⟶ St`, one move: `Λ` of the family `F`, one state per candidate. -/
+def t (D : Rel St St) : Rel St St := c D ≫ Λ(F (ran (c D)))
 
 /-- `L(D,B) ≜ ran(r⦇ran⟨D, D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B, π₂ succ⟩)⦈)`: the step of the fold. -/
 def step (B : Rel St St → Rel St St) (A : Rel (.prod N SN) (.prod N SN)) : Rel (.prod N SN) SN :=
@@ -104,17 +140,14 @@ def r : Rel St (.arr N) := Λ(s₀ S₀ ≫ top (s₀ S₀).val Nu)
 def lay (D : Rel St St) (B : Rel St St → Rel St St) : Rel SN SN :=
   ran (r S₀ ≫ foldOn (ran (pair D (D ≫ top D.val Nu ≫ ofPairs [(0, 0)]))).val (step B) (ran (r S₀)).val)
 
-/-- `Q ≜ ran(L(s₀,T)π₁)`, the reachable states. -/
-def Q : Rel St St := ran (outl (lay S₀ (s₀ S₀) T))
+/-- `Q ≜ ran(L(s₀,t)π₁)`, the reachable states. -/
+def Q : Rel St St := ran (outl (lay S₀ (s₀ S₀) t))
 
-/-- `g ≜ ran⟨𝟙,G⟩`, the goal's pairs. -/
-def g : Rel XX XX := ran (pair (𝟙 : Rel X X) G)
+/-- `H ≜ Qh(∋)`, the reachable states holding `G`: `h` lifted on the family `∋`, on the keys `Q`. -/
+def H : Rel St St := h G (Q S₀) (Q S₀ ≫ mem (Q S₀).val)
 
-/-- `H ≜ Q − dom(Q⊤g − (Q∋))`, the reachable states holding `G`. -/
-def H : Rel St St := Q S₀ \ dom (Q S₀ ≫ top (Q S₀).val Univ.xs ≫ g G \ Q S₀ ≫ mem (Q S₀).val)
-
-/-- `C ≜ L(H, (QT)°)`, each state with each length of a walk to a goal state. -/
-def C : Rel SN SN := lay S₀ (H S₀ G) fun _ => (Q S₀ ≫ T (Q S₀))°
+/-- `C ≜ L(H, (Qt)°)`, each state with each length of a walk to a goal state. -/
+def C : Rel SN SN := lay S₀ (H S₀ G) fun _ => (Q S₀ ≫ t (Q S₀))°
 
 /-- `W ≜ (Cπ₁)°(Cπ₂) : St ⟶ N`. -/
 def W : Rel St N := (outl (C S₀ G))° ≫ outr (C S₀ G)
@@ -144,23 +177,6 @@ def ζ : Rel N St := (outr (Z S₀ G))° ≫ outl (Z S₀ G)
 /-- `plan ≜ ζσ : N ⟶ X×X`, the `k`-th move. -/
 def plan : Rel N XX := ζ S₀ G ≫ σ S₀ G
 
-/-! ### The same three iterations with `μ` and `*`, for comparison -/
-
-namespace Mu
-
-/-- `Q ≜ ran(s₀T*)`. -/
-def Q : Rel St St := ran (star cap (s₀ S₀) T)
-
-/-- `W ≜ μY : H⊤{(0,0)} ∪ (QTY succ)`. -/
-def W : Rel St N :=
-  mu cap fun Y => H S₀ G ≫ top (H S₀ G).val Nu ≫ ofPairs [(0, 0)] ∪ Q S₀ ≫ T (Q S₀) ≫ Y ≫ succN
-
-/-- `ζ ≜ μY : (s₀⊤{(0,0)})° ∪ (succ°Yν)`. -/
-def ζ : Rel N St :=
-  mu cap fun Y => (s₀ S₀ ≫ top (s₀ S₀).val Nu ≫ ofPairs [(0, 0)])° ∪ (succN)° ≫ Y ≫ ν S₀ G
-
-end Mu
-
 section Checks
 
 private def moves (S₀ G : Rel X X) : List (Int64 × Int64) :=
@@ -170,19 +186,55 @@ private def S₁ : Rel X X := Blocks.S₀
 private def G₁ : Rel X X := Blocks.G
 private def tbl : Rel X X := 𝟙
 private def AB : Rel X X := ofPairs [(0, 1), (1, 0)]
+/-- A on B on C: holds `G₁`. -/
+private def tw : Rel X X := ofPairs [(0, 1), (1, 2), (2, 2)]
 
--- the per-key formulas on a one-key family are the note's formulas on one state
-#guard R (Blocks.lvl S₁) == Blocks.lvl (Blocks.R S₁)
-#guard M (Blocks.lvl S₁) == Blocks.lvl (Blocks.M S₁)
-#guard M (Blocks.lvl tbl) == Blocks.lvl (Blocks.M tbl)
-#guard S' (Blocks.lvl S₁) (Blocks.lvl (ofPairs [(2, 2)])) == Blocks.lvl (Blocks.move S₁ (ofPairs [(2, 2)]))
--- the 13 states of three blocks
+/-- `S` as the fibre at the key `k`. -/
+private def st (k : Int64) (S : Rel X X) : Rel .long XX := top (A := .long) (col [k]) xs ≫ pair 𝟙 S
+
+/-- The fibre of the family `F` at the key `k`, as a relation. -/
+private def fib {A B : Obj} (k : Int64) (F : Rel .long (.prod A B)) : Rel A B :=
+  (outl (ran (idU (t := .long) (col [k]) ≫ F)))° ≫ outr (ran (idU (t := .long) (col [k]) ≫ F))
+
+/-- Three different states, and one move each, under the keys `0, 1, 2`. -/
+private def Fs : Rel .long XX := st 0 S₁ ∪ st 1 tbl ∪ st 2 tw
+private def Ps : Rel .long XX := st 0 (ofPairs [(2, 2)]) ∪ st 1 (ofPairs [(1, 2)]) ∪ st 2 (ofPairs [(0, 0)])
+/-- The keys in demand: `3` too, where both families are empty, so `∼` holds `⊤` there. -/
+private def Ds : Rel .long .long := idU (t := .long) (col [0, 1, 2, 3])
+/-- The law holds at every key in demand. -/
+private def every (p : Int64 → Bool) : Bool := p 0 && p 1 && p 2 && p 3
+
+-- the law of each lifted row: its fibre at every key is the operator on the fibres there
+#guard every fun k => fib k (liftComp Fs Ps) == fib k Fs ≫ fib k Ps
+#guard every fun k => fib k (liftComp Ps Fs) == fib k Ps ≫ fib k Fs
+#guard every fun k => fib k (liftConv Fs) == (fib k Fs)°
+#guard every fun k => fib k (Fs ∩ Ps) == fib k Fs ∩ fib k Ps
+#guard every fun k => fib k (Fs ∪ Ps) == fib k Fs ∪ fib k Ps
+#guard every fun k => fib k (Fs \ Ps) == fib k Fs \ fib k Ps
+#guard every fun k => fib k (liftCompl Ds xs xs Fs) == ∼(fib k Fs)
+#guard every fun k => fib k (liftConst Ds (𝟙 : Rel X X)) == 𝟙
+#guard every fun k => fib k (liftConst Ds (⊤ : Rel X X)) == ⊤
+#guard every fun k => fib k (liftConst Ds G₁) == G₁
+#guard every fun k => fib k (liftDom Fs) == dom (fib k Fs)
+#guard every fun k => fib k (liftRan Fs) == ran (fib k Fs)
+#guard every fun k => (idU (t := .long) (col [k]) ⊑ liftLe Ds (liftConst Ds G₁) Fs) == (G₁ ⊑ fib k Fs)
+#guard every fun k => (idU (t := .long) (col [k]) ⊑ liftLe Ds Ps Fs) == (fib k Ps ⊑ fib k Fs)
+-- the note's formulas, lifted: at every key, the formula on that key's state
+#guard every fun k => fib k (R Ds Fs) == Blocks.R (fib k Fs)
+#guard every fun k => fib k (M Ds Fs) == Blocks.M (fib k Fs)
+#guard every fun k => fib k (S' Ds Fs Ps) == Blocks.move (fib k Fs) (fib k Ps)
+#guard every fun k => (idU (t := .long) (col [k]) ⊑ h G₁ Ds Fs) == (G₁ ⊑ fib k Fs)
+-- on a one-key family: the note's formulas on one state
+#guard R (dom (Blocks.lvl S₁)) (Blocks.lvl S₁) == Blocks.lvl (Blocks.R S₁)
+#guard M (dom (Blocks.lvl S₁)) (Blocks.lvl S₁) == Blocks.lvl (Blocks.M S₁)
+#guard M (dom (Blocks.lvl tbl)) (Blocks.lvl tbl) == Blocks.lvl (Blocks.M tbl)
+#guard S' (dom (Blocks.lvl S₁)) (Blocks.lvl S₁) (Blocks.lvl (ofPairs [(2, 2)])) ==
+  Blocks.lvl (Blocks.move S₁ (ofPairs [(2, 2)]))
 -- `∪` razes both parts' flat payloads and keeps every element: the payload under the states grows by a factor
 -- per round, not by the rows (`L(s₀,𝟙)` at 7 rounds: 7 rows of 3 pairs over the payload below)
 #guard (lay S₁ (s₀ S₁) fun D => D).n == 7
 #guard (lay S₁ (s₀ S₁) fun D => D).val.1.1 == 2295
--- each state's chosen move is one pair, held in 3 rows: row multiplicity is kept by `≫`, `est`, `pair`
-#guard (σ S₁ G₁).n == 3 * (σ S₁ G₁).nub.n
+-- the 13 states of three blocks
 #guard (Q S₁).n == 13
 #guard (Q tbl).n == 13
 -- MoveToTable C, Move B onto C, Move A onto B
@@ -194,11 +246,6 @@ private def AB : Rel X X := ofPairs [(0, 1), (1, 0)]
 -- A on B and B on A: no state holds it
 #guard moves tbl AB == []
 #guard moves tbl AB == Blocks.solve 𝟙 AB
--- the folds and the fixed points agree
-#guard Mu.Q S₁ == Q S₁
-#guard Mu.W S₁ G₁ == W S₁ G₁
-#guard Mu.ζ S₁ G₁ == ζ S₁ G₁
-#guard Mu.W tbl AB == W tbl AB
 
 end Checks
 
