@@ -453,7 +453,7 @@ def _root_.LeetQ.Rel.Vals.pickN (A : Obj) (c : Part A) (i : ByteArray) (m : Nat)
 
 /-- A side's parts at the count `n`, column by column: a column of `n` rows is itself; one a kernel answered
     at another count is read at its first `n` rows (`pickRef`). An unproved check: only the ops after `diff`
-    (`memP`, `uncons`) still read through it; the core ops pick at a proved count (`Vals.pick`). -/
+    (`uncons`) still reads through it; the core ops pick at a proved count (`Vals.pick`). -/
 def _root_.LeetQ.Rel.Vals.ofParts : (A : Obj) → (n : Nat) → Part A → Vals A n
   | .atom _, n, c => ofArr n c
   | .prod a b, n, c => (Vals.ofParts a n c.1, Vals.ofParts b n c.2)
@@ -829,19 +829,6 @@ scoped notation "⊤" => top Univ.xs Univ.xs
 /-- `∼R`: the complement of `R` in `⊤`. -/
 scoped notation:max "∼" R:max => ⊤ \ R
 
-/-- `p?` on `U`, `p x ↔ x op e` for one of `Ew`'s six comparisons: `Ew.cmp`, `whereBits`, `gatherColumn`.
-    The comparison is arithmetic, so `U` is an ordered type (`arrDense`). -/
-def corefl {a : QAtomicType} {m : Nat} (U : Arr a m) (op : UInt8) (e : UInt64) : Except String (Rel a a) := do
-  let (k, u) ← arrDense U
-  let d := pick a ⟨m, U⟩ (whereBits m.toUSize (Ew.cmp op (cls k) Ew.va u (Column.pushBits .empty e k.width) m.toUSize))
-  pure (ofCols _ _ d d)
-
-/-- `Coreflexive R`, `R ⊑ 𝟙`: every key's code equals its val's. -/
-def isCorefl (R : Rel A A) : Except String Bool := do
-  let r := cols R
-  let c := A.codes #v[r.key, r.val]
-  pure (len (c[0].eqAt c[1]) == r.n)
-
 /-- `R \ S` (`R : a ⟶ b`, `S : a ⟶ c`), by counting: `join` on the shared key → rows `(y, z)`;
     `cnt(y, z)` against `cnt(R.val)` `at` `y`; the vacuous `y ∉ ran R` with every `z` from the
     universes `Ub`, `Uc`: `⊤` on `anti(Ub, ran R)` and `Uc`. The two parts are disjoint (a counted `y` is in
@@ -914,55 +901,6 @@ scoped notation:max "∋(" R ")" => mem (Rel.val (transpose R))
 end Gen
 
 variable {A B C : QAtomicType}
-
-/-- The groups `ds` beside their slices of `val` (Proposal A, `Λ`'s carrier): the offsets `o` a kernel
-    wrote (`runStarts`, which ends with the count) decided as cuts by `Parted.of?`. -/
-def groupedP {v : QAtomicType} {n : Nat} (t : QAtomicType) (ds : (g : Nat) × Arr t g) (o : ByteArray) (val : Arr v n) :
-    Except String ((g : Nat) × Arr t g × Parted v) := do
-  let g := ds.1
-  let some P := Parted.of? (← Arr.ofPart .long (g + 1) (longs o) "grouped") val
-    | throw s!"grouped: the offsets are not ascending cuts of {n} rows"
-  pure ⟨g, ds.2, P⟩
-
-/-- The output boundary: the carrier as q's nested list, one boxed vector per key (`Parted.box`). -/
-def boxP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t .general) := do
-  pure ⟨F.1, F.2.1, ← Arr.ofPart .general F.1 F.2.2.box.part "box"⟩
-
-/-- `∋` of the carrier: each value against its key, the key gathered at each row's group (`groupOf`). -/
-def memP {t v : QAtomicType} (F : (g : Nat) × Arr t g × Parted v) : Except String (Rel t v) := do
-  let P := F.2.2
-  let ob := (longBytes (P.g + 1) P.o.enc).get (longBytes_isSome P.o)
-  pure ⟨P.n, Vals.ofParts (.atom t) P.n (pick t ⟨F.1, F.2.1⟩ (groupOf ob P.n)), P.val⟩
-
-/-- The groups of a column whose equal elements are contiguous: `groupedP` with `o` the run starts
-    of its codes and the count (`runStarts`) and `ds` the element at each start. -/
-def runsP {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : (m : Nat) × Arr t m) (val : Arr v n) :
-    Except String ((g : Nat) × Arr t g × Parted v) := do
-  let st := (codes t #v[key])[0].runStarts
-  groupedP t (pick t key (st.extract 0 (st.size - 8))) st val
-
-def runs {v : QAtomicType} {n : Nat} (t : QAtomicType) (key : (m : Nat) × Arr t m) (val : Arr v n) : Except String (Rel t .general) := do
-  boxP (← runsP t key val)
-
-/-- A family stored as its pairs `(X, x)` sorted key-major, each pair once: the set `X` IS the
-    contiguous run of its key (`runsP`). `gradeBy` on (key code, value code), `gatherColumn`. -/
-def familyP (d : Cols A B) : Except String ((g : Nat) × Arr A g × Parted B) := do
-  let d := cols d.nub
-  let s := d.rows (gradeBy d.n #[(codes A #v[d.key])[0], (codes B #v[d.val])[0]])
-  runsP A ⟨s.n, s.key⟩ s.val
-
-/-- `Λ(R)` as its carrier: `x Λ(R) X ↔ X = {z | x R z}`, one segment per `x ∈ dom R`. -/
-def transposeP (R : Rel A B) : Except String ((g : Nat) × Arr A g × Parted B) := do familyP (cols R)
-
-/-- q's `=x` of a list: each distinct value against the positions holding it, boxed — `Order.group`'s
-    flattened indices of the codes, cut at the values they hold (`runs`). -/
-def group {n : Nat} (x : Arr B n) : Except String (Rel B .general) := do
-  let c := (codes B #v[⟨_, x⟩])[0]
-  -- below a byte `group` has no lane: its indices are the stable grade of the classes by first occurrence
-  let idx := match c.kind with
-    | some k => (Order.group k c.n.toUSize c.b).2.1
-    | none => let (gid, fs) := c.groupIds; (Code.ofIds (len fs) c.n gid).grade
-  runs B (pick B ⟨n, x⟩ idx) (← Arr.ofPart .long (len idx) (longs idx) "group")
 
 /-- `⟨R, S⟩`: `join` on the keys → rows `(x, (y, z))`, both value sides kept under one `n` as the
     columns of one product side; the left index column read at the right's count (`join_len`), as `comp`. -/
@@ -1147,13 +1085,6 @@ private def T : LL := ⟨3, (Arr.mk (.bytes <| packLongs [10, 20, 20]) (by decid
 private def U4 : Vals L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by decide))
 private def LsV : Arr L 4 := (Arr.mk (.bytes <| packLongs [5, 3, 5, 9]) (by decide))
 private def Ls : LL := ⟨4, U4, LsV⟩
-/-- A stored family's pairs `(key, element)`: the boxes razed (`Parted.ofBoxes`), each element beside its
-    group's key. -/
-private def flat {k : QAtomicType} (v : QAtomicType) (X : Rel k .general) : Except String (List (El k × El v)) := do
-  let P ← Parted.ofBoxes v X.val
-  pure (P.toList.filterMap fun (g, y) => X.key.toList[g.toNatClampNeg]?.map (·, y))
-private def okFlat {k : QAtomicType} (v : QAtomicType) (x : Except String (Rel k .general)) (p : List (El k × El v) → Bool) : Bool :=
-  match x with | .ok X => (match flat v X with | .ok l => p l | .error _ => false) | .error _ => false
 private def Ua : Vals L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by decide))
 private def Ub : Vals L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
 private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
@@ -1176,8 +1107,6 @@ private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide)
   (Ls.toList.flatMap fun (x, y) => Ls.toList.filterMap fun (y', z) => if y == y' then some (x, z) else none)
 #guard seteq (dom R).toList [(1, 1), (2, 2), (3, 3)] && (dom R).n == 3
 #guard seteq (ran S).toList [(10, 10), (20, 20), (40, 40)] && (ran S).n == 3
-#guard ok (corefl Ua Ew.gt 2) fun X => X.toList == [(3, 3), (4, 4)]
-#guard ok (isCorefl (idU Ua)) id && ok (isCorefl R) (· == false)
 
 -- `R \ S` over `Ub × Ub`: `y (R\S) z ↔ ∀ x, x R y → x S z`
 private def leftSpec (R S : LL) (Ub Uc : List Int64) : List (Int64 × Int64) :=
@@ -1224,11 +1153,8 @@ private def crossOk {A B : Obj} [BEq A.El] [BEq B.El] (R₁ R₂ : Rel A B) : Bo
 #guard (Λ(R).toList : List (Int64 × List Int64)) == [(1, [10, 20]), (2, [10]), (3, [30])] && ∋(R).n == 4
 -- arrays of pairs: `B = X×X`
 #guard lamOk (pair R S) && lamOk (pair S R) && crossOk (pair R S) (pair S R) && crossOk (pair R R) (pair R S)
-#guard okFlat L (group LsV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
-#guard ok (group LsV) (·.n == 3)
 private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
 private def Lf : LL := ⟨4, U4, LfV⟩
-#guard okFlat L (group LfV) (· == [(5, 0), (5, 2), (3, 1), (9, 3)])
 #guard lamOk Lf && lamOk (conv Lf) && Λ(conv Lf).n == 3
 #guard Λ(union R R).n == 3 && ∋(union R R).n == 4
 #guard Λ(zero (A := L) (B := L)).n == 0 && ∋(zero (A := L) (B := L)).n == 0
@@ -1370,7 +1296,6 @@ private abbrev Bo := QAtomicType.boolean
 private def bitsC : Nat × Enc := (4, .bits (ByteArray.mk #[0b0101]))
 #guard ok (do let x ← lst Bo bitsC; pure (same x x)) fun X =>
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
-#guard okFlat L (do group (← lstV Bo bitsC).2) (· == [(true, 0), (true, 2), (false, 1), (false, 3)])
 #guard ok (do pure (ran (← lst Bo bitsC))) fun X => seteq X.toList [(true, true), (false, false)] && X.n == 2
 #guard ok (do let x ← lst Bo bitsC; pure (union x x)) fun X => X.n == 4
 #guard ok (do let x ← lst Bo bitsC; pure (symDiv x x U4 U4)) fun X =>
@@ -1391,8 +1316,6 @@ private def enumC : Nat × Enc :=
 #guard ok (do let x ← lst Sy enumC; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do pure (union (← lst Sy symsC) (← lst Sy enumC))) fun X => X.n == 4 &&
   seteq X.toList [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
-#guard okFlat L (do group (← lstV Sy enumC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
-#guard okFlat L (do group (← lstV Sy symsC).2) (· == [("bc", 0), ("bc", 2), ("a", 1), ("d", 3)])
 #guard ok (do pure (symDiv (← lst Sy symsC) (← lst Sy enumC) U4 U4)) fun X => seteq X.toList pqpr
 #guard ok (do pure <| leftDiv (← lst Sy enumC) (← lst Sy symsC) (← Arr.ofPart Sy 4 symsC "U") (← Arr.ofPart Sy 4 enumC "U")) fun X =>
   seteq X.toList [("bc", "bc"), ("a", "a"), ("d", "d")]
@@ -1438,15 +1361,12 @@ private def alpC : Nat × Enc := ((Enc.alpOf Fl fd.1 fd.2).map (fd.1, ·)).getD 
 #guard ok (do let x ← lst Fl alpC; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
 #guard ok (do pure (same (← lst Fl alpC) (← lst Fl fd))) fun X => seteq X.toList pqpr && X.n == 6
 -- a float element is its IEEE bits
-#guard okFlat L (do group (← lstV Fl alpC).2) fun l =>
-  l.map (·.2) == [0, 2, 1, 3] && l.map (·.1) == [1.5, 1.5, 2.25, 0.1].map Float.toBits
 #guard ok (do pure (union (← lst Fl alpC) (← lst Fl fd))) fun X => X.n == 4
 #guard ok (do let x ← lst Fl alpC; pure (symDiv x x U4 U4)) fun X => seteq X.toList pqpr
 
 -- a general list, `(1; (); 1; ,2)`, elements matched by identity
 private def gs : Array QValue := #[.atom (.long 1), QValue.general #[], .atom (.long 1), QValue.general #[.atom (.long 2)]]
 #guard ok (do let x ← lst .general (genCol gs).2.part; pure (same x x)) fun X => seteq X.toList pqpr && X.n == 6
-#guard okFlat L (do group (← lstV .general (genCol gs).2.part).2) fun l => l.map (·.2) == [0, 2, 1, 3] && l.length == 4
 #guard ok (do let x ← lst .general (genCol gs).2.part; pure (union x x)) fun X => X.n == 4
 #guard ok (do pure (dom (conv (← lst .general (genCol gs).2.part)))) (·.n == 3)
 #guard ok (do let x ← lst .general (genCol gs).2.part; pure (symDiv x x U4 U4)) fun X => seteq X.toList pqpr
@@ -1468,14 +1388,11 @@ end Checks
 #print axioms comp
 #print axioms dom
 #print axioms ran
-#print axioms corefl
-#print axioms isCorefl
 #print axioms leftDiv
 #print axioms rightDiv
 #print axioms symDiv
 #print axioms transpose
 #print axioms setIds_size
-#print axioms group
 #print axioms pair
 #print axioms prod
 #print axioms junc
