@@ -503,4 +503,125 @@ theorem binColumn_wf {t : QAtomicType} {r : Bool} {nx ny : Nat} {ex ey : Enc} {a
       rw [binColumn_guid] at h; cases h
       exact ⟨_, rfl, by simp [Enc.WF, QAtomicType.width, binWide_size, hy]⟩
 
+/-! ## `in`: one boolean per element of the left operand -/
+
+private theorem push_step (acc : ByteArray) (x : UInt8) : (acc.push x).size = acc.size + 1 := by
+  simp only [ByteArray.size, ByteArray.push, Array.size_push]
+
+theorem memberVec_size (w : USize) (f : Bool) (xs hay : ByteArray) :
+    (memberVec w f xs hay).size = (xs.size / w.toNat + 7) / 8 := by
+  simp only [memberVec]; rw [foldl_size ByteArray.size _ 1 (fun _ _ => push_step ..)]; simp
+
+theorem memberSortedBytes_size (w : USize) (f s : Bool) (xs hay : ByteArray) :
+    (memberSortedBytes w f s xs hay).size = (xs.size / w.toNat + 7) / 8 := by
+  simp only [memberSortedBytes]; rw [foldl_size ByteArray.size _ 1 (fun _ _ => push_step ..)]; simp
+
+theorem memberBits_size (m : USize) (xs : ByteArray) (n : USize) (hay : ByteArray) :
+    (memberBits m xs n hay).size = (m.toNat + 7) / 8 := by
+  simp only [memberBits]; rw [foldl_size ByteArray.size _ 1 (fun _ _ => push_step ..)]; simp
+
+theorem cmpIdsKey_size (op : UInt8) (d : ByteArray) (o : Array Nat) (i : ByteArray) (w : USize) (k : ByteArray)
+    (n : USize) : (Ew.cmpIdsKey op d o i w k n).size = (n.toNat + 7) / 8 := by
+  simp only [Ew.cmpIdsKey]; rw [foldl_size ByteArray.size _ 1 (fun _ _ => push_step ..)]; simp
+
+theorem belowBits_size (vals : ByteArray) (m n : USize) : (belowBits vals m n).size = (m.toNat + 7) / 8 := by
+  simp [belowBits, Column.packBits_size]
+
+theorem maskByIds_size (mask : ByteArray) (nm n w : USize) (ids : ByteArray) :
+    (maskByIds mask nm n w ids).size = (n.toNat + 7) / 8 := by
+  simp [maskByIds, Column.packBits_size]
+
+/-- A boolean column of `m` elements, given its bits. -/
+theorem bits_answer {out : ByteArray} {m : Nat} (h : out.size = (m + 7) / 8) :
+    ∃ e', QValue.vector .boolean m (.bits out) none = .vector .boolean m e' none ∧ Enc.WF .boolean m e' :=
+  ⟨.bits out, rfl, by simp [Enc.WF, h]⟩
+
+theorem memberSorted_size {t : QAtomicType} {n w : Nat} {e : Enc} {ks out : ByteArray}
+    (hwU : w.toUSize.toNat = w) (h : memberSorted t w n e ks = some out) : out.size = (ks.size / w + 7) / 8 := by
+  unfold memberSorted at h
+  split at h
+  · cases h; simp [foRMemberSorted, memberSortedBytes_size, hwU]
+  · obtain ⟨_, _, rfl⟩ := Option.map_eq_some_iff.1 h; simp [memberSortedBytes_size, hwU]
+
+theorem probeColumns_member_size {t : QAtomicType} {w yn m : Nat} {ye ce : Enc} {out : ByteArray}
+    (hb : t ≠ .boolean) (hw : t.width = some w) (hw0 : 0 < w) (hx : Enc.WF t m ce)
+    (hn : m < USize.size) (h : probeColumns t w true yn ye m ce = some out) : out.size = (m + 7) / 8 := by
+  have hwU := width_toNat hw
+  unfold probeColumns at h
+  cases h1 : operand t yn ye with
+  | none => simp [h1] at h
+  | some s1 =>
+    cases h2 : operand t m ce with
+    | none => simp [h1, h2] at h
+    | some s2 =>
+      obtain ⟨a1, a2, a3⟩ := s1
+      obtain ⟨b1, b2, b3⟩ := s2
+      have hs := operandBytes_size hb hw hx hn h2
+      simp only [h1, h2, Option.bind_eq_bind, Option.bind_some] at h
+      split at h <;> cases h
+      · rename_i hE
+        have hE2 : b2.isEmpty = true := by simp_all
+        simp only [operandBytes, hE2, if_true] at hs
+        simp [memberVec_size, hs, hwU, Nat.mul_div_cancel _ hw0]
+      · simp [foRMemberVec, memberVec_size, hs, hwU, Nat.mul_div_cancel _ hw0]
+
+theorem memberColumn_bits (s : Bool) (m : Nat) (xb : ByteArray) (a : Option (UInt8 × IndexCell)) (n : Nat)
+    (hb : ByteArray) :
+    memberColumn .boolean s (.vector .boolean m (.bits xb) a) n (.bits hb) =
+      some (.vector .boolean m (.bits (memberBits m.toUSize xb n.toUSize hb)) none) := rfl
+
+theorem memberColumn_guid (s : Bool) (m : Nat) (xb : ByteArray) (a : Option (UInt8 × IndexCell)) (n : Nat)
+    (hb : ByteArray) :
+    memberColumn .guid s (.vector .guid m (.bytes xb) a) n (.bytes hb) =
+      some (.vector .boolean m (.bits (memberVec 16 false xb hb)) none) := rfl
+
+/-- **`x in y` answers one boolean per element of `x`**, at every type but a general list. -/
+theorem memberColumn_wf {t : QAtomicType} {s : Bool} {nx ny : Nat} {ex ey : Enc} {a : Option (UInt8 × IndexCell)}
+    {v : QValue} (hx : Enc.WF t nx ex) (hy : Enc.WF t ny ey) (hn : nx < USize.size)
+    (h : memberColumn t s (.vector t nx ex a) ny ey = some v) :
+    ∃ e', v = .vector .boolean nx e' none ∧ Enc.WF .boolean nx e' := by
+  cases hd : denseWidth t with
+  | some w =>
+    obtain ⟨hb, -⟩ := denseWidth_gates hd
+    have hw : t.width = some w := by cases t <;> simp_all [denseWidth]
+    have hw0 : 0 < w := by cases t <;> simp_all [denseWidth, QAtomicType.width] <;> omega
+    have hwU := width_toNat hw
+    rw [memberColumn_dense hd] at h
+    split at h
+    · split at h
+      · rename_i ks hks
+        obtain ⟨out, ho, rfl⟩ := Option.map_eq_some_iff.1 h
+        obtain ⟨ks', hks', hsz⟩ := bytesOf_size hb hw hx (countFits_lt hn)
+        rw [hks] at hks'; cases hks'
+        have hc : ks.size / w = nx := by rw [hsz, Nat.mul_div_cancel _ hw0]
+        rw [hc]
+        exact bits_answer (by rw [memberSorted_size hwU ho, hc])
+      · cases h
+    · obtain ⟨out, ho, rfl⟩ := Option.map_eq_some_iff.1 h
+      exact bits_answer (probeColumns_member_size hb hw hw0 hx hn ho)
+  | none =>
+    cases t <;> simp [denseWidth, QAtomicType.width] at hd
+    case general => cases ex <;> simp [Enc.WF, QAtomicType.width] at hx; cases h
+    case symbol =>
+      rcases symbol_cases hx with ⟨b, o, rfl⟩ | ⟨d, o, i, rfl⟩
+      · rw [memberColumn_syms] at h
+        obtain ⟨ans, -, rfl⟩ := Option.map_eq_some_iff.1 h
+        simp only [Enc.WF] at hx
+        rw [hx, Nat.add_sub_cancel]
+        exact bits_answer (by rw [belowBits_size, USize.toNat_ofNat_of_lt' (by omega)])
+      · rw [memberColumn_enum] at h
+        split at h
+        · cases h
+          exact bits_answer (by rw [cmpIdsKey_size, USize.toNat_ofNat_of_lt' hn])
+        · obtain ⟨ans, -, rfl⟩ := Option.map_eq_some_iff.1 h
+          exact bits_answer (by rw [maskByIds_size, USize.toNat_ofNat_of_lt' hn])
+    case boolean =>
+      cases ex <;> cases ey <;> simp [Enc.WF, QAtomicType.width] at hx hy
+      rw [memberColumn_bits] at h; cases h
+      exact bits_answer (by rw [memberBits_size, USize.toNat_ofNat_of_lt' hn])
+    case guid =>
+      cases ex <;> cases ey <;> simp [Enc.WF, QAtomicType.width] at hx hy
+      rw [memberColumn_guid] at h; cases h
+      exact bits_answer (by simp [memberVec_size, hx])
+
 end LeetQ.Rel.KernelWF
