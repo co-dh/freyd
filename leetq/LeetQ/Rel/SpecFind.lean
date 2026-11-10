@@ -2934,9 +2934,13 @@ theorem whereCounts_toList {nx : Nat} {x : Arr .long nx} {b : ByteArray}
       exact hm _ _ (fun acc _ => by rw [Column.pushBits_size, h8]; omega) _
     show (Find.expand b).1.size = (Find.expand b).1.size / 8 * 8
     omega
-  simp only [Find.whereCounts, hd, dif_pos hwf]
+  simp only [Find.whereCounts]
+  generalize Find.denseOf x = d at hd ⊢
+  subst d
+  rw [dif_pos hwf]
+  dsimp only
   generalize hR : (Arr.mk _ hwf).markIf 1 = r
-  have hr : r.enc = .bytes (Find.expand b).1 := by rw [← hR, Arr.markIf_enc]
+  have hr : r.enc = .bytes (Find.expand b).1 := by rw [← hR, Arr.markIf_enc]; rfl
   have hw : longWords ((Find.expand b).1.size / 8) r.enc = some (Verify.elemsW 8 (Find.expand b).1) := by rw [hr]; rfl
   have hsz : b.size / 8 = nx := by have := Arr.n_long_bytes x hb; omega
   have he := Verify.expandBytes_spec 8 (by rw [h8]; decide) (by rw [h8]; decide) 0 (by rw [h8]; decide)
