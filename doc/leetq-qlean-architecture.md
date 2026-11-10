@@ -104,10 +104,11 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 5   | `⦇R⦈`, `F(R)` on other datatypes (`tip`/`bin` trees)   | —                                           | no    |
 | 6   | `μX : φ(X)`, an unfold then a fold `⦇T⦈°⦇h⦈`           | `iter`, `hylo` (a Lean loop, not a term)    | part  |
 | 6   | closure `R*`                                           | written with `iter` in `Chess.star`         | part  |
-| 6   | `perm`, `bagify`, `setify`, `ordered(≼)`, `sort(≼)`    | —                                           | no    |
+| 6   | `perm`, `setify`, `ordered(≼)`, `sort(≼)`              | `perm` (`⦇[nil, add]⦈`), `setify` (`Λ(∋)`), `ordered`, `sort` (`perm ordered`) | yes |
+| 6   | `bagify`                                               | — (a bag needs a representation: `doc/alg-bdm-ops-proposal.md`) | no |
 | 7   | `est(R) ≜ ∋ ∩ (∈\R°)`, `lb`                            | `est` (least)                               | yes   |
 | 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `prefix`, `suffix`, `succ`, `+` | `filter takewhile length Arr.sum head tail «prefix» suffix succ plus` | yes |
-| 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`      | — (need an array of arrays in list order, an append `cat`, maps on positions) | no |
+| 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`, `cat`, `cat°`, `snoc°` | `inits tails zip cat unsnoc` on positions; `concat ≜ ⦇[nil,cat]⦈`, `snoc ≜ (𝟙×τ) cat`, `init ≜ snoc° π₁`, `uncat ≜ ⟨inits,tails⟩ zip ∋` | yes |
 | 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `leq U`, `lt U` from kernels (not `general`) | yes   |
 | 8   | `thin(Q)`                                              | `thin` (minimal)                            | yes   |
 | 8   | `merge`, sorting sets, binary thinning                 | —                                           | no    |

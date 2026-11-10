@@ -1261,6 +1261,152 @@ def «prefix» {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E)
 def suffix {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
   (iter (X.1 + 1) (fun s => s.2.n == 0) (fun (S, F) => let F' := F ≫ tail (ran F).val; (S ∪ F', F')) (idU X, idU X)).1
 
+/-! ## Arrays of arrays in list order: maps on positions -/
+
+/-- Each array of `X` to the array of its `count + 1` slices `[l k, h k)`, `k = 0 … count`, every one a slice
+    of `X`'s own payload, so no cell is copied before `Vals.compact`: `f` maps each row's clamped start and
+    count (`slices`) and the `expand` of the `count + 1`s (row, `k`) to the slices' starts and ends. -/
+private def nest {B : Obj} {n : Nat} (X : Vals (.arr B) n)
+    (f : ByteArray × ByteArray → ByteArray × ByteArray → ByteArray × ByteArray) : Rel (.arr B) (.arr (.arr B)) :=
+  let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
+  let c := addc s.2 1
+  let hi := sums c
+  let lo := sub hi c
+  let b := f s (expand c)
+  let m := min (len b.1) (len b.2)
+  let ix := tilLongs n.toUSize
+  let r := min (len ix) (min (len lo) (len hi))
+  ⟨r, Vals.pickN (.arr B) X ix r (Nat.min_le_left _ _),
+    ⟨m, longsN r lo (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)),
+      longsN r hi (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)),
+      Vals.compact (.arr B) ⟨X.1, longsN m b.1 (Nat.min_le_left _ _), longsN m b.2 (Nat.min_le_right _ _), X.2.2.2⟩⟩⟩
+
+/-- `inits : arr B ⟶ arr (arr B)` on the arrays `X`, the prefixes by increasing length, `[]` first (`initsFn`,
+    AOP/A5_6_ListCombinators.lean:847; B&dM §5.6 p.130): the `k`-th is `[lo, lo + k)`. -/
+def inits {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) :=
+  nest X fun s e => let l := gather 8 s.1 e.1; (l, add l e.2)
+
+/-- `tails : arr B ⟶ arr (arr B)` on the arrays `X`, the suffixes by decreasing length, `[]` last (`tailsFn`,
+    AOP/A5_6_ListCombinators.lean:857; B&dM §5.6 p.130): the `k`-th is `[lo + k, hi)`. -/
+def tails {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) :=
+  nest X fun s e => (add (gather 8 s.1 e.1) e.2, gather 8 (add s.1 s.2) e.1)
+
+/-- `cat : arr B × arr B ⟶ arr B` on the rows of `P`, each `(xs, ys)` to `xs` then `ys` under its key (`cat`,
+    AOP/A5_6_ListCombinators.lean:224, the graph of `cappend`). `cons` with an array for a head: the new arrays
+    laid out one after another (`sums` of the two counts), each side's cells gathered by the `expand` of its
+    counts and razed, then put in place by the `grade` of their places. -/
+def cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
+  let x := P.val.1
+  let y := P.val.2
+  let a := slices x.1 (longsOf x.2.1) (longsOf x.2.2.1)
+  let b := slices y.1 (longsOf y.2.1) (longsOf y.2.2.1)
+  let c := add a.2 b.2
+  let hi := sums c
+  let lo := sub hi c
+  let ea := expand a.2
+  let eb := expand b.2
+  let flat := Obj.raze B #[⟨_, Vals.pick B x.2.2.2 (add (gather 8 a.1 ea.1) ea.2)⟩,
+    ⟨_, Vals.pick B y.2.2.2 (add (gather 8 b.1 eb.1) eb.2)⟩]
+  let dst := concatBytes #[add (gather 8 lo ea.1) ea.2, add (add (gather 8 lo eb.1) (gather 8 a.2 eb.1)) eb.2]
+  let perm := (Code.ofLongs dst).grade
+  let ix := tilLongs P.n.toUSize
+  let r := min (len ix) (min (len lo) (len hi))
+  ⟨r, Vals.pickN K P.key ix r (Nat.min_le_left _ _),
+    ⟨len perm, longsN r lo (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)),
+      longsN r hi (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)), Vals.pick B flat perm⟩⟩
+
+/-- `zip : arr A × arr B ⟶ arr (A × B)` on the rows of `P`, the two arrays position by position up to the
+    shorter (`czip`, AOP/A1_7_Pointfree.lean:27; B&dM p.20): the counts' `Ew.val` lesser, laid out by `sums`,
+    each side's cell `k` gathered at its own start plus `k`. -/
+def zip {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod A B)) :=
+  let x := P.val.1
+  let y := P.val.2
+  let a := slices x.1 (longsOf x.2.1) (longsOf x.2.2.1)
+  let b := slices y.1 (longsOf y.2.1) (longsOf y.2.2.1)
+  let c := Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul a.2 b.2 (len a.2).toUSize
+  let hi := sums c
+  let lo := sub hi c
+  let e := expand c
+  let pa := add (gather 8 a.1 e.1) e.2
+  let pb := add (gather 8 b.1 e.1) e.2
+  let m := min (len pa) (len pb)
+  let ix := tilLongs P.n.toUSize
+  let r := min (len ix) (min (len lo) (len hi))
+  ⟨r, Vals.pickN K P.key ix r (Nat.min_le_left _ _),
+    ⟨m, longsN r lo (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)),
+      longsN r hi (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)),
+      (Vals.pickN A x.2.2.2 pa m (Nat.min_le_left _ _), Vals.pickN B y.2.2.2 pb m (Nat.min_le_right _ _))⟩⟩
+
+/-- `snoc° : arr B ⟶ arr B × B` on the arrays of `X`, `uncons` from the other end: each non-empty row to
+    all but its last element (`[lo, hi - 1)`, a slice of the same payload) and its last element. -/
+def unsnoc {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) B) :=
+  let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
+  let i := whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one 0) n.toUSize)
+  let l := gather 8 s.1 i
+  let e := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (add l (gather 8 s.2 i)) (one 1) (len l).toUSize
+  let r := min (len l) (len e)
+  have hi : r ≤ len i := Nat.le_trans (Nat.min_le_left _ _) (Nat.le_of_eq (gather_len _ _))
+  ⟨r, Vals.pickN (.arr B) X i r hi,
+    (Vals.compact (.arr B) ⟨X.1, longsN r l (Nat.min_le_left _ _), longsN r e (Nat.min_le_right _ _), X.2.2.2⟩,
+      Vals.pickN B X.2.2.2 e r (Nat.min_le_right _ _))⟩
+
+/-- `init ≜ snoc° π₁` on the arrays `X`, each non-empty array less its last element (`init`,
+    AOP/A9_2_Edit.lean:2135). -/
+def init {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outl (unsnoc X)
+
+/-- `snoc ≜ (𝟙 × τ) cat` on the rows of `P` (`snoc`, AOP/A9_3_Bracket.lean:933): `(xs, a)` to `xs` then `a`.
+    `𝟙 × τ` is `⟨π₁, π₂ τ⟩` on the distinct pairs of `P`, one row each, so `P` keeps its rows. -/
+def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) :=
+  let D := ran P
+  cat (P ≫ pair (outl D) (outr D ≫ τ (outr D).val))
+
+/-- `concat ≜ ⦇[nil, cat]⦈` on the arrays of arrays `X` (`concat`, AOP/A5_6_ListCombinators.lean:256, at
+    every `cat`, not only the `catNE` of `partition`): each round `cat` on the pairs it meets. -/
+def concat {B : Obj} {n : Nat} (X : Vals (.arr (.arr B)) n) : Rel (.arr (.arr B)) (.arr B) :=
+  foldOn (nilVal B) (fun D => cat D) X
+
+/-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
+    `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
+def uncat {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) :=
+  let Z := zip (pair (inits X) (tails X))
+  Z ≫ mem Z.val
+
+/-! ## Permutations, sets and order (ch. 6, 8) -/
+
+/-- `perm ≜ ⦇[nil, add]⦈` on the arrays `X` (`perm`, AOP/A5_6_ListCombinators.lean:81; B&dM p.130), `add` putting
+    the head anywhere: `(a, xs)` to `ys` then `a` then `zs` for every `(ys, zs)` of `cat°(xs)`. The tuples
+    `(a, (ys, zs))` a round meets are distinct keys (`ran`), so `⟨…⟩` on them keeps one row each. -/
+def perm {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  foldBy X (nilVal B) fun el pend =>
+    let q := pair el (pend ≫ uncat (ran pend).val)
+    let D := ran q
+    q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))
+
+/-- `setify : arr B ⟶ P B` on the arrays `X`, each array to the set of its elements (`setify`,
+    AOP/A5_6_ListCombinators.lean:49, `Λ(inlist)`; B&dM §7.3 p.177): `Λ(∋)` total on `X`. -/
+def setify {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := lamOn (mem X) X
+
+/-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
+    one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
+    of `ys` outside `y Q z`. `cons°` of the suffixes, the pairs `(y, z)`, those no pair of `Q` (`antiJoin`). -/
+def ordered {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  let T := suffix X ≫ uncons (ran (suffix X)).val
+  let D := ran T
+  let bad := antiJoin (pair (outl D) (outr D ≫ mem (outr D).val)) (idU (Q.key, Q.val))
+  antiJoin (idU X) (dom (T ≫ dom bad))
+
+/-- `sort(Q) ≜ perm ordered(Q)` on the arrays `X` (ch. 6, `selection_sort_correct`'s specification): each
+    array to its `Q`-ordered rearrangements. -/
+def sort {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  let Pm := perm X
+  Pm ≫ ordered Q (ran Pm).val
+
+/-- `sort(Q) ≜ setify° ordered(Q) : P B ⟶ arr B` (`sortRel`, AOP/A8_3.lean:77; B&dM p.201, "sorting sets"):
+    a set to its `Q`-ordered listings among the arrays `Y`. A relation into lists has no finite image without
+    a universe (`[1, 1, 2]` lists `{1, 2}` under `≤`), so the lists range over `Y`, as `P`'s do. -/
+def sortSet {B : Obj} {n : Nat} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  (setify Y)° ≫ ordered Q Y
+
 namespace Arr
 
 /-- `union : arr (arr A) ⟶ arr A` on the arrays of arrays `X`, the note's `union≜frac(∋∋,∋)`
@@ -1762,6 +1908,62 @@ private def ev : LL := idU (col [0, 2, 4])
   onArrs Xs («prefix» Xs) (fun xs => (List.range (xs.length + 1)).map xs.take)
 #guard onArrs Xl (suffix Xl) (fun xs => (List.range (xs.length + 1)).map xs.drop) &&
   onArrs Xc (suffix Xc) (fun xs => (List.range (xs.length + 1)).map xs.drop)
+
+-- arrays of arrays in list order: `[3 1 2] [] [1 5] [1 2] [2 1 5]` beside `[7] [8 9] [] [9 6] []`
+private def Xp : Vals (.arr L) 5 := ⟨_, col [0, 0, 3, 1, 2], col [3, 0, 5, 3, 5], col [3, 1, 2, 1, 5]⟩
+private def Yz : Vals (.arr L) 5 := ⟨_, col [0, 1, 0, 2, 3], col [1, 3, 0, 4, 3], col [7, 8, 9, 6]⟩
+private def W2 : Vals (.prod (.arr L) (.arr L)) 5 := (Xp, Yz)
+private def Ws : Vals (.prod (.arr L) L) 5 := (Xp, col [4, 5, 6, 7, 8])
+private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (List Int64 × List Int64) := (idU W).toList.map (·.1)
+#guard arrs Xp == [[3, 1, 2], [], [1, 5], [1, 2], [2, 1, 5]] && arrs Yz == [[7], [8, 9], [], [9, 6], []]
+-- `inits`, `tails` against `List`, each array once; `inits ∋ = prefix`, `tails ∋ = suffix`
+#guard onArrs Xl (inits Xl) (fun xs => [(List.range (xs.length + 1)).map xs.take]) &&
+  onArrs Xp (inits Xp) (fun xs => [(List.range (xs.length + 1)).map xs.take]) && isMap (inits Xc) Xc
+#guard onArrs Xl (tails Xl) (fun xs => [(List.range (xs.length + 1)).map xs.drop]) &&
+  onArrs Xc (tails Xc) (fun xs => [(List.range (xs.length + 1)).map xs.drop]) && isMap (tails Xp) Xp
+#guard seteq (inits Xl ≫ mem (inits Xl).val).toList («prefix» Xl).toList &&
+  seteq (tails Xp ≫ mem (tails Xp).val).toList (suffix Xp).toList
+-- `cat`, `zip` on pairs of arrays, `cat°` against `take`/`drop`, `cat° cat = 𝟙`
+#guard seteq ((cat (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
+  ((pairsOf W2).map fun (x, y) => ((x, y), x ++ y))
+#guard seteq ((zip (idU W2)).toList : List ((List Int64 × List Int64) × List (Int64 × Int64)))
+  ((pairsOf W2).map fun (x, y) => ((x, y), x.zip y))
+#guard seteq ((uncat Xp).toList : List (List Int64 × List Int64 × List Int64))
+  ((arrs Xp).flatMap fun xs => (List.range (xs.length + 1)).map fun k => (xs, xs.take k, xs.drop k))
+#guard seteq (cat (uncat Xl)).toList (idU Xl).toList
+-- `concat` against `flatten`, a map; `concat ∋ = ∋ ∋`
+#guard seteq ((concat XX).toList : List (List (List Int64) × List Int64))
+  (((idU XX).toList.map (·.1) : List (List (List Int64))).map fun xss => (xss, xss.flatten)) && isMap (concat XX) XX
+#guard seteq (concat XX ≫ mem (concat XX).val).toList (mem XX ≫ mem XX.2.2.2).toList
+-- `snoc`, `init`; `snoc snoc° = 𝟙`, and `snoc° snoc = 𝟙` on the non-empty arrays
+#guard seteq ((snoc (idU Ws)).toList : List ((List Int64 × Int64) × List Int64))
+  (((idU Ws).toList.map (·.1) : List (List Int64 × Int64)).map fun (x, a) => ((x, a), x ++ [a]))
+#guard seteq (snoc (idU Ws) ≫ unsnoc (snoc (idU Ws)).val).toList (idU Ws).toList
+#guard onArrs Xp (init Xp) (fun xs => if xs.isEmpty then [] else [xs.dropLast]) &&
+  onArrs Xl (init Xl) (fun xs => if xs.isEmpty then [] else [xs.dropLast])
+#guard seteq (snoc (unsnoc Xl)).toList (dom (unsnoc Xl)).toList
+
+-- `perm` against the insertions of `List`; `perm perm = perm`
+private def perms : List Int64 → List (List Int64)
+  | [] => [[]]
+  | x :: xs => (perms xs).flatMap fun ys => (List.range (ys.length + 1)).map fun k => ys.take k ++ x :: ys.drop k
+#guard onArrs Xp (perm Xp) perms && onArrs Xs (perm Xs) perms
+#guard seteq (perm Xp ≫ perm (perm Xp).val).toList (perm Xp).toList
+-- `setify` a map, `= E(𝟙)`; `ordered(≤)`, `ordered(<)`; `sort(≤)` a map, `⊑ perm`
+private def LE9 : LL := leq (tilCol 10)
+private def sorted (xs : List Int64) : List Int64 := xs.mergeSort fun a b => decide (a ≤ b)
+#guard onArrs Xp (setify Xp) (fun xs => [setOf xs]) && onArrs Xs (setify Xs) (fun xs => [setOf xs]) && isMap (setify Xp) Xp
+#guard seteq (setify Xl).toList (E (idU Xl.2.2.2) Xl).toList
+#guard onArrs Xs (ordered LE9 Xs) (fun xs => if sorted xs == xs then [xs] else []) &&
+  onArrs Xp (ordered LE9 Xp) (fun xs => if sorted xs == xs then [xs] else [])
+#guard onArrs Xs (ordered (lt (tilCol 10)) Xs) (fun xs => if sorted xs == xs && xs.eraseDups == xs then [xs] else [])
+#guard onArrs Xp (sort LE9 Xp) (fun xs => [sorted xs]) && onArrs Xs (sort LE9 Xs) (fun xs => [sorted xs]) &&
+  isMap (sort LE9 Xp) Xp && sort LE9 Xp ⊑ perm Xp
+-- sorting sets: `setify° ordered(≤)` among the rearrangements of `Xp`, none with a repeat, is `sort(≤)` after `setify`
+private def Yp' := (perm Xp).val
+#guard seteq ((sortSet LE9 Yp').toList : List (List Int64 × List Int64))
+  (((arrs Yp').filter fun ys => sorted ys == ys).map fun ys => (setOf ys, ys))
+#guard seteq (setify Yp' ≫ sortSet LE9 Yp').toList (sort LE9 Yp').toList
 
 end Checks
 
