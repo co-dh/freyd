@@ -564,11 +564,15 @@ theorem concatFoR_nblk {w : Nat} (hw0 : 0 < w) (hw : w ≤ 8) {ns : Array Nat} {
     obtain ⟨rfl, hk⟩ := appendFoR_nblk heq
     rw [concatBytes_size] at hk
     simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size] at hk
-    rw [List.map_congr_left (fun x hx => by rw [hrest x hx]), sum_map_mul, Nat.mul_div_cancel _ (by decide)] at hk
+    have h8 : USize.toNat 8 = 8 := toUSize_toNat (k := 8) (lt_usize (by decide))
+    rw [List.map_congr_left (fun x hx => by rw [hrest x hx]), sum_map_mul, h8,
+      Nat.mul_div_cancel _ (by decide : 0 < 8)] at hk
     simpa [Nat.add_comm] using hk
   · rw [Verify.nblk_encode w hw0 hw, concatBytes_size]
     simp only [Array.toList_map, List.map_map, Function.comp_def, decode_size, hwu]
-    rw [List.map_congr_left (fun x hx => by rw [hb x hx]), sum_map_mul, Nat.mul_div_cancel _ hw0]
+    rw [List.map_congr_left (l := ((n0, md0), pk0) :: rest) (f := fun x => x.1.1.toUSize.toNat * w)
+        (g := fun x => x.1.1 * w) (fun x hx => by dsimp only; rw [hb x hx]),
+      sum_map_mul, Nat.mul_div_cancel _ hw0]
     simp only [Column.blk]; omega
 
 /-- `concatEnum` answers an interned symbol vector whose ids count it. -/
