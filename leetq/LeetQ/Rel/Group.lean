@@ -179,23 +179,27 @@ theorem code_runs {α : Type} (c : Code) (hw : c.w = 8 ∨ c.w = 16 ∨ c.w = 32
   simp only [R]; rw [hrs]; exact G
 
 /-- **`codes` of one part that is not a bitmap answers `rangeOffsets`' codes, where those exist.** -/
-theorem codes_range {n : Nat} {e : Enc} {os : Vector Code 1} (hb : ∀ b, e ≠ .bits b)
-    (hr : rangeOffsets .long #v[(n, e)] n = some os) : codes .long #v[(n, e)] = .ok os := by
-  cases e <;> simp_all [codes] <;> rfl
+theorem codes_range {n : Nat} {x : Arr .long n} {os : Vector Code 1} (hb : ∀ b, x.enc ≠ .bits b)
+    (hr : rangeOffsets .long #v[x.part] n = some os) : codes .long #v[⟨n, x⟩] = os := by
+  unfold codes
+  cases e : x.enc with
+  | bits b => exact absurd e (hb b)
+  | _ => simp [e, hr]
 
 /-- **A dense long column's `codes`, on `rangeOffsets`' branch, are one faithful code**: one code of its
     `m` rows at a lane of one, two or four bytes, equal exactly where the column's elements are. -/
 theorem codes_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b)
     (hU : 2 ^ 32 < USize.size) (hm : m ≤ 2 ^ 32) {os : Vector Code 1}
     (hr : rangeOffsets .long #v[x.part] m = some os) :
-    ∃ c : Code, os = #v[c] ∧ codes .long #v[x.part] = .ok #v[c] ∧ c.n = m ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧
+    ∃ c : Code, os = #v[c] ∧ codes .long #v[⟨m, x⟩] = #v[c] ∧ c.n = m ∧ (c.w = 8 ∨ c.w = 16 ∨ c.w = 32) ∧
       c.b.size = c.w / 8 * c.n ∧
       ∀ i j : Fin m, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ x.get i = x.get j) := by
   have hs := Arr.n_long_bytes x hc
   have hp : x.part = (m, .bytes b) := by simp only [Arr.part, hc]
-  rw [hp] at hr ⊢
-  obtain ⟨c, rfl, hn, hw, hsz, hf⟩ := rangeOffsets_bytes hU hm (by omega) hr
-  refine ⟨c, rfl, codes_range (fun _ e => by cases e) hr, by omega, hw, hsz, fun i j => ?_⟩
+  have hr' := hr
+  rw [hp] at hr'
+  obtain ⟨c, rfl, hn, hw, hsz, hf⟩ := rangeOffsets_bytes hU hm (by omega) hr'
+  refine ⟨c, rfl, codes_range (fun _ e => by rw [hc] at e; cases e) hr, by omega, hw, hsz, fun i j => ?_⟩
   rw [Arr.get_long_bytes x hc, Arr.get_long_bytes x hc]
   exact hf i j (by omega) (by omega)
 
@@ -226,12 +230,12 @@ theorem runsP_long {v : QAtomicType} {n : Nat} (key : Arr .long n) {b : ByteArra
     exact hcont ⟨s, by omega⟩ ⟨t, by omega⟩ ⟨u, hu⟩ h1 h2 e
   obtain ⟨m, hst, hnn, hlast, hasc, hinj, hgrp⟩ := code_runs c hw hsz (by omega) x hf' hcont'
   rw [hcn] at hlast hgrp
-  simp only [runsP, hcodes, Vector.getElem_mk, List.getElem_toArray, List.getElem_cons_zero, bind, Except.bind, pure, Except.pure] at h
+  simp only [runsP, hcodes, Vector.getElem_mk, List.getElem_toArray, List.getElem_cons_zero] at h
   obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
-    (fun _ _ _ e => by rw [hc] at e; cases e) (c.runStarts.extract 0 (c.runStarts.size - 8)) rfl
+    (c.runStarts.extract 0 (c.runStarts.size - 8)) rfl
   generalize pick .long ⟨n, key⟩ (c.runStarts.extract 0 (c.runStarts.size - 8)) = ds at h hk he
   rcases ds with ⟨k, keys'⟩
-  simp only [groupedP, bind, Except.bind, pure, Except.pure, List.getElem_toArray, List.getElem_cons_zero] at h hk he
+  simp only [groupedP, bind, Except.bind, pure, Except.pure, List.getElem_cons_zero] at h hk he
   split at h
   · simp at h
   rename_i o ho
@@ -621,8 +625,7 @@ theorem pick_perm {n : Nat} (key : Arr .long n) {b : ByteArray} (hc : key.enc = 
         Column.bitsAt b' (t * 8) 8 = Column.bitsAt b' (s * 8) 8 := by
   have hbn := Arr.n_long_bytes key hc
   have hpt : key.part = (n, .bytes b) := by simp only [Arr.part, hc]
-  obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key
-    (fun _ _ _ e => by rw [hc] at e; cases e) q hp
+  obtain ⟨src, hsrc, hk, he⟩ := Verb.pick_gather (t := .long) (w := 8) rfl (.inl rfl) key q hp
   have hs : src = b := by rw [hc] at hsrc; simp [Enc.bytesOf] at hsrc; exact hsrc.symm
   subst hs
   have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
