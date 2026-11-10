@@ -18,16 +18,16 @@ In scope: the `Alg` ops, their helpers, the programs that test them (Blocks, Che
 kernel or theorem only when an `Alg` op needs it. Out of scope until an `Alg` op or a program needs it: q's verbs,
 q compatibility, qlean kernel coverage of cells no `Alg` op reads.
 
-State on 2026-11-10, `master` at 70f8b08; the whole leetq package builds. Items marked `[~]` are in an agent's
+State on 2026-11-10, `master` at 0936ad4; the whole leetq package builds. Items marked `[~]` are in an agent's
 worktree and not on `master`.
 
 ## Data
 
 ```
-Obj  = atom t | prod a b | list b                       (Core)
+Obj  = atom t | prod a b | arr b                        (Core)
 Arr t n          an Enc with a proof of Enc.WF t n       one qlean column of n elements
 Vals A n         atom: Arr t n     prod: Vals a n × Vals b n
-                 list: (m : Nat) × Arr long n × Arr long n × Vals b m
+                 arr:  (m : Nat) × Arr long n × Arr long n × Vals b m
                        row i is the slice [lo i, hi i) of one flat payload of m elements
 Rel k v          {n, key : Vals k n, val : Vals v n}
 Part A           (n : Nat) × Vals A n                    a side     of some count: what `codes` and `raze`
@@ -43,50 +43,85 @@ Code             {w, n, card, b}   a column of integer codes: lane width w, coun
 
 ## Layers
 
-```
- leetq  (freyd repo, leetq/, a Lake package that requires qlean)
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ programs      Blocks   Chess   Circuit   Wumpus                                          │
-│               each imports only LeetQ.Rel.Algebra and opens Alg; one relation term each  │
-├──────────────────────────────────────────────────────────────────────────────────────────┤
-│ Alg ops       ≫  °  ∩  ∪  \  ⊑  ==      (the six names behind them are private)          │
-│ (Algebra)     𝟙  ⊤  ∼   over class Univ (A : Obj);   zero  top  idU  dom  ran  antiJoin  │
-│               leftDiv  rightDiv  symDiv      Λ(R)  ∋(R)  mem                             │
-│               pair  outl  outr  prod  num    est     iter (bounded, over hylo)           │
-│               entire  simple  isMap  injective  surjective   (answer Bool)               │
-│  no program   junc  injConv  SumRel      (total)                                         │
-│  calls them   mapVal  foldOver  uncons  thin      (still Except; kept, to be made total) │
-├──────────────────────────────────────────────────────────────────────────────────────────┤
-│ helpers       on a side:   Obj.codes  Obj.raze  Obj.sortBy  Vals.pick  Vals.empty        │
-│ (Algebra)                  rows  nub  pairs  tuples  distinctCorefl                      │
-│               on codes:    Code.gather find member eqAt groupIds grade cat cut runStarts │
-│                            join  anti  cross  cnt  atCnt  gradeBy  segments  setIds      │
-│               on long payloads (ByteArray):  add  sub  mulc  sums  gather  whereEqV      │
-├──────────────────────────────────────────────────────────────────────────────────────────┤
-│ leetq modules Core    Obj, Arr, Vals, Rel                                                │
-│ imported      Find    expand, one, bitsAt                                                │
-│               Ew      (what Alg uses from it: to be listed)                              │
-│               Parted, Scan, KernelWF/*   reached through Find/Ew                         │
-└───────────────────────────────────────────┬──────────────────────────────────────────────┘
-                                            │ every helper is a dispatch on, or a composition of
-                                            ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│ qlean kernels  (QLean/Kernel/{Sort, Structural, Reduce, Elementwise, Coc} + c/*.c)       │
-│ search    memberBits/Vec/IdsVec   findBitVec/Vec/IdsVec   whereBits                      │
-│ gather    gatherBits  gatherBytes  gatherPacked   razeColumn  gatherColumn               │
-│ order     Order.groupIds  idGroups  groupSizes  grade  gradeColumn  groupIdsColumn       │
-│           rankSlices  runStarts  runStartsIds  runStartsBits                             │
-│ ew        Kernel.Ew.val  Ew.mon  Ew.notBits   (add sub mul idiv imod; i64; vv va)        │
-│ fold      Scan.scan .sums                                                                │
-│ columns   Column.intern  idWidthOf  packIds                                              │
-├──────────────────────────────────────────────────────────────────────────────────────────┤
-│ qlean storage   Enc (bytes, bits, foR, alp, gen ...)   Enc.WF t n e   QAtom  QAtomicType │
-└──────────────────────────────────────────────────────────────────────────────────────────┘
+The target, five layers, each using only the one below:
 
- also imported by Algebra: QLean.Eval.Dyad  (what is used from it: not checked)
- not used by Alg: qlean's q interpreter verbs (join, member, cross, findColumn, memberColumn on QValue,
- answering Except or Option)
 ```
+programs   Blocks  Chess  Circuit  Wumpus;  the programs of the B&dM note, ch. 6–10      one relation term each
+Alg        ≫ ° ∩ ∪ \ ⊑ ==  𝟙 ⊤ ∼  dom ran  / \ ÷  Λ ∋  ⟨R,S⟩ ×  [R,S]  est thin  ⦇e,S⦈  F(R)  cons°  iter
+Code       codes, and find / member / gather / groupIds / grade on integer codes; join anti cross
+Core       Obj (atom | prod | arr)   Vals   Rel
+qlean      kernels, Enc
+```
+
+What `master` still has beside it, each removed by a step of the plan:
+
+| extra                                                             | removed by |
+|-------------------------------------------------------------------|------------|
+| `Find`, `Ew`, `Scan`, `Parted`, `KernelWF/*` between `Alg` and qlean | step 2     |
+| reference implementations beside a kernel (`setIdsRef`, …)        | step 4     |
+| `Code`, `Alg` and the guards in one file `Algebra.lean`           | step 5     |
+
+The names behind the symbols: `/` `leftDiv`, `\` (division) `rightDiv`, `÷` `symDiv`, `Λ` `transpose`, `∋` `mem`,
+`⟨R,S⟩` `pair` with `outl`/`outr`, `×` `prod`, `[R,S]` `junc`, `⦇e,S⦈` `fold`, `F(R)` `map`, `cons°` `uncons`;
+also `zero`, `top`, `idU`, `antiJoin`, `num`, and the predicates `entire simple isMap injective surjective`.
+
+The qlean kernels `Code` dispatches to (`QLean/Kernel/{Sort, Structural, Reduce, Elementwise, Coc}` + `c/*.c`):
+
+| group   | kernels                                                                                   |
+|---------|-------------------------------------------------------------------------------------------|
+| search  | `memberBits/Vec/IdsVec`, `findBitVec/Vec/IdsVec`, `whereBits`                             |
+| gather  | `gatherBits`, `gatherBytes`, `gatherPacked`, `razeColumn`, `gatherColumn`                 |
+| order   | `Order.groupIds`, `idGroups`, `groupSizes`, `grade`, `gradeColumn`, `groupIdsColumn`, `rankSlices`, `runStarts*` |
+| ew      | `Kernel.Ew.val`, `Ew.mon`, `Ew.notBits`                                                   |
+| fold    | `Scan.scan .sums`                                                                         |
+| columns | `Column.intern`, `idWidthOf`, `packIds`                                                   |
+
+Not used by `Alg`: qlean's q interpreter verbs (`join`, `member`, `cross`, `findColumn`, `memberColumn` on
+`QValue`, answering `Except` or `Option`).
+
+## What the B&dM note needs from `Alg`
+
+The companion note (`diag/aop/04-relations.typ` … `10-greedy.typ`) is the list of what `Alg` has to support: every
+operator it writes, and its programs as the tests. `yes` = on `master` and total;
+`no` = not in `Alg`.
+
+| ch. | operator in the note                                   | in `Alg`                                    | state |
+|-----|--------------------------------------------------------|---------------------------------------------|-------|
+| 4   | `RS`, `R°`, `∩`, `∪`, `⊑`, `𝟘`, `⊤`, `𝟙`               | `≫ ° ∩ ∪ ⊑ zero ⊤ 𝟙`                        | yes   |
+| 4   | `dom`, `ran`, coreflexive of a predicate               | `dom`, `ran`; a predicate is a coreflexive  | yes   |
+| 4   | `R\S`, `R/S`, `frac(R,S)`                              | `leftDiv`, `rightDiv`, `symDiv`             | yes   |
+| 4   | `R ⇒ S` (as in `R;H ≜ R ∩ (R° ⇒ H)`), `−`              | `\` is set difference; `⇒` is `∼R ∪ S`      | yes   |
+| 5   | `⟨R,S⟩`, `π₁`, `π₂`, `R×S`                             | `pair`, `outl`, `outr`, `prod`              | yes   |
+| 5   | `[R,S]`, `inl`, `inr`, `R+S`                           | `junc`, `injConv` on `SumRel` (atoms only)  | part  |
+| 5   | `Λ(R)`, `∋`, `∈`                                       | `Λ(R)`, `∋(R)`, `mem`                       | yes   |
+| 5   | `E(R) ≜ frac(∋R,∋)`, `P(R)`, `union ≜ frac(∋∋,∋)`, `τ` | —                                           | no    |
+| 5   | `α ≜ [nil,cons]`, `nil`, `cons`, `cons°`, `snoc`       | `uncons` (`cons°`)                          | yes   |
+| 5   | `⦇R⦈` on lists                                         | `fold`                                      | yes   |
+| 5   | `F(R)` for the list functor                            | `map`                                       | yes   |
+| 5   | `⦇R⦈`, `F(R)` on other datatypes (`tip`/`bin` trees)   | —                                           | no    |
+| 6   | `μX : φ(X)`, an unfold then a fold `⦇T⦈°⦇h⦈`           | `iter`, `hylo` (a Lean loop, not a term)    | part  |
+| 6   | closure `R*`                                           | written with `iter` in `Chess.star`         | part  |
+| 6   | `perm`, `bagify`, `setify`, `ordered(≼)`, `sort(≼)`    | —                                           | no    |
+| 7   | `est(R) ≜ ∋ ∩ (∈\R°)`, `lb`                            | `est` (least)                               | yes   |
+| 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `init`, `inits`, `tails`, `prefix`, `suffix`, `concat`, `zip`, `unzip` | — (each is a fold or `cons°` term once `fold`, `cons`, `nil` exist) | no |
+| 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `≤` only as a table (`Blocks.lt`)           | no    |
+| 8   | `thin(Q)`                                              | `thin` (minimal)                            | yes   |
+| 8   | `merge`, sorting sets, binary thinning                 | —                                           | no    |
+| 9   | tabulation (`array`, `row`, `col`, `tic`, `loop`)      | —                                           | no    |
+
+The note's programs, to be written as relation terms over `Alg` (none is written yet):
+
+| ch. | programs                                                                                        |
+|-----|-------------------------------------------------------------------------------------------------|
+| 6   | digits of a number, fast exponentiation, selection sort, quicksort, closure                     |
+| 7   | `takewhile`, `mss`, `filter`, company party, shortest paths on a cylinder, security van         |
+| 8   | paths in a layered network, knapsack, paragraph, bitonic tours                                  |
+| 9   | string edit, optimal bracketing, data compression                                               |
+| 10  | detab-entab, minimum tardiness, TeX                                                             |
+
+What this asks of the layers below: a sum side (`Obj` has `atom | prod | arr`, no `sum`; a new constructor, to be
+approved before it is written), an order on numbers as a kernel-backed relation instead of a table, and `nil`,
+`cons` as relations so the list functions above are terms.
 
 ## Why the helpers exist
 
@@ -121,14 +156,8 @@ Code             {w, n, card, b}   a column of integer codes: lane width w, coun
 
 ## Where `Except` is left
 
-No program and no op a program calls answers `Except`. What is left in `Algebra.lean`:
-
-| def                                   | caller                                    |
-|---------------------------------------|-------------------------------------------|
-| `mapVal`, `foldOver`, `uncons`, `thin` | guards only                               |
-| `arrDense`                            | `mapVal`, `foldOver`                      |
-| `Arr.ofPart` (raw `Nat × Enc`)        | `mapVal`, `lst`/`lstV`, `laneOf` (guards) |
-| `ok`, `lst`, `lstV`                   | guards over encoded columns               |
+None in `Algebra.lean`. One guard (the ALP float column) matches on `Arr.of`, because no theorem gives `Enc.WF`
+for `Enc.alpOf`; an error there fails the guard.
 
 ## Plan
 
@@ -153,12 +182,13 @@ Simplification, in order:
    `shiftArr` (its reference keeps null as null from the `Ew` documentation, not a theorem) and `uncons`
 2. [ ] move the functions `Alg` uses from `Find`/`Ew`/`Scan`/`Parted` into `Core`; delete those modules and the
    unimported `QSort`, `KernelWF/*` nothing reaches
-3. [ ] keep `junc`, `injConv`, `SumRel`, `mapVal`, `foldOver`, `uncons`, `thin` (decided: they are B&dM's sum
-   `[R,S]`, `inl°`/`inr°`, a functor on values, a fold, `cons°`, `thin(Q)`); make the four that answer `Except`
-   total (`mapVal`, `foldOver`, `uncons`, `thin`), after which `arrDense` and `Arr.ofPart` answer bare or go
+3. [x] `est` is the least value, `thin` the minimal ones; `uncons` (`cons°`), `fold` (`⦇e,S⦈`), `map` (`F(R)`) on
+   arrays, through one helper `foldBy` and a `cons`; `mapVal`, `foldOver`, the kernel `thin`, `arrDense`,
+   `Arr.ofPart` deleted. `est` reads `Q` up to its reflexive closure (`b Q c` for every OTHER value `c`), so a
+   strict `<` works; on a reflexive `Q` it is the note's `∋ ∩ (∈\Q°)`. `junc`, `injConv`, `SumRel` unchanged
 4. [ ] prove the kernel count theorems and delete the reference implementations (`setIdsRef`, `pickRef`,
    `slicesRef`)
-5. [ ] split `Algebra.lean` (1765 lines) into `Code`, `Alg`, and the guards
+5. [ ] split `Algebra.lean` (1803 lines) into `Code`, `Alg`, and the guards
 
 Open after that:
 
