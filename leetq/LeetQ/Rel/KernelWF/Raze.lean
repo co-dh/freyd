@@ -13,6 +13,7 @@ import QLean.Verify.Raw
 import QLean.Verify.Ids
 import QLean.Verify.Alp
 import QLean.Verify.EwEnc
+import QLean.Verify.Gather
 import LeetQ.Rel.Core
 
 namespace LeetQ.Rel.KernelWF
@@ -22,7 +23,7 @@ open QLean QLean.Kernel LeetQ.Rel
 /-! ## Sizes of the folds the kernels are written as -/
 
 /-- A fold that appends `w` bytes a step answers `w` bytes per element. -/
-private theorem foldl_size {α σ : Type} (sz : σ → Nat) (g : σ → α → σ) (w : Nat)
+theorem foldl_size {α σ : Type} (sz : σ → Nat) (g : σ → α → σ) (w : Nat)
     (hg : ∀ acc a, sz (g acc a) = sz acc + w) :
     ∀ (l : List α) (b : σ), sz (l.foldl g b) = sz b + l.length * w
   | [], b => by simp
@@ -42,7 +43,7 @@ theorem orderKind_eq_none {t : QAtomicType} :
   cases t <;> simp [orderKind]
 
 /-- A well-formed payload of a type with a width, other than boolean, has a dense layout. -/
-private theorem bytesOf_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hb : t ≠ .boolean)
+theorem bytesOf_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hb : t ≠ .boolean)
     (hw : t.width.isSome) (h : Enc.WF t n e) : (Enc.bytesOf t n e).isSome := by
   cases t <;> cases e <;> simp_all [Enc.WF, Enc.bytesOf, QAtomicType.width]
 
@@ -169,11 +170,11 @@ private theorem mapM_some {α β : Type} {f : α → Option β} (g : α → β) 
   | cons a l ih => simp [List.mapM_cons, h a (by simp), ih (fun x hx => h x (by simp [hx]))]
 
 /-- The dense layout of a well-formed payload of a type with a width, other than boolean, holds its `n`
-    elements, `w` bytes each; `n` fits a `USize`, the count every decoding kernel reads. -/
+    elements, `w` bytes each; an encoded `n` fits a `USize`, the count every decoding kernel reads. -/
 theorem bytesOf_size {t : QAtomicType} {n w : Nat} {e : Enc} (hb : t ≠ .boolean) (hw : t.width = some w)
-    (h : Enc.WF t n e) (hn : n < USize.size) :
+    (h : Enc.WF t n e) (hc : Verify.countFits n e) :
     ∃ b, Enc.bytesOf t n e = some b ∧ b.size = n * w := by
-  have hu : n.toUSize.toNat = n := by simp only [Nat.toUSize]; exact Nat.mod_eq_of_lt hn
+  have hu : n < USize.size → n.toUSize.toNat = n := fun hn => by simp only [Nat.toUSize]; exact Nat.mod_eq_of_lt hn
   have hwu : w.toUSize.toNat = w := by
     simp only [Nat.toUSize]; apply Nat.mod_eq_of_lt
     have : w ≤ 16 := by cases t <;> simp [QAtomicType.width] at hw <;> omega
@@ -184,18 +185,21 @@ theorem bytesOf_size {t : QAtomicType} {n w : Nat} {e : Enc} (hb : t ≠ .boolea
   cases e
   case foR m p =>
     refine ⟨_, by simp [Enc.bytesOf, hw]; rfl, ?_⟩
-    simp only [Coc.decode, hpush, Coc.elems, List.length_map, List.length_range, hu, hwu]
+    simp only [Coc.decode, hpush, Coc.elems, List.length_map, List.length_range, hu hc, hwu]
   case alp m p a =>
     refine ⟨_, by simp [Enc.bytesOf, hw]; rfl, ?_⟩
     have h4 : (w.toUSize == 4) = true → w = 4 := fun e => by rw [← hwu, beq_iff_eq.1 e]; rcases System.Platform.numBits_eq with h' | h' <;> simp [USize.toNat_ofNat, h']
     have h8 : (w.toUSize == 8) = true → w = 8 := fun e => by rw [← hwu, beq_iff_eq.1 e]; rcases System.Platform.numBits_eq with h' | h' <;> simp [USize.toNat_ofNat, h']
     simp only [Coc.alpDecode, Coc.alpDecode32, Coc.alpDecode64]
     split
-    · rw [hpush, h4 ‹_›]; simp [Coc.alpElems, hu]
+    · rw [hpush, h4 ‹_›]; simp [Coc.alpElems, hu hc]
     · split
-      · rw [hpush, h8 ‹_›]; simp [Coc.alpElems, hu]
-      · rw [hpush]; simp [Coc.alpElems, hu, hwu]
+      · rw [hpush, h8 ‹_›]; simp [Coc.alpElems, hu hc]
+      · rw [hpush]; simp [Coc.alpElems, hu hc, hwu]
   all_goals cases t <;> simp_all [Enc.WF, Enc.bytesOf, QAtomicType.width]
+
+theorem countFits_of_lt {n : Nat} {e : Enc} (h : n < USize.size) : Verify.countFits n e := by
+  cases e <;> simp [Verify.countFits, h]
 
 /-- The dense layouts of well-formed parts, each count fitting a `USize`: one per part, `n · w` bytes each. -/
 private theorem dense_parts {t : QAtomicType} {cs : Array (Nat × Enc)} {w : Nat}
@@ -204,8 +208,8 @@ private theorem dense_parts {t : QAtomicType} {cs : Array (Nat × Enc)} {w : Nat
       ∀ i (hi : i < cs.size) (hp : i < ps.size), ps[i].size = cs[i].1 * w := by
   refine ⟨cs.map fun c => (Enc.bytesOf t c.1 c.2).getD .empty, mapM_some _ fun c hc => ?_, by simp,
     fun i hi hp => ?_⟩
-  · obtain ⟨b, hb', -⟩ := bytesOf_size hb hw (h c hc).1 (h c hc).2; simp [hb']
-  · obtain ⟨b, hb', hs⟩ := bytesOf_size hb hw (h _ (Array.getElem_mem hi)).1 (h _ (Array.getElem_mem hi)).2
+  · obtain ⟨b, hb', -⟩ := bytesOf_size hb hw (h c hc).1 (countFits_of_lt (h c hc).2); simp [hb']
+  · obtain ⟨b, hb', hs⟩ := bytesOf_size hb hw (h _ (Array.getElem_mem hi)).1 (countFits_of_lt (h _ (Array.getElem_mem hi)).2)
     simp [hb', hs]
 
 /-- `razeColumn` joins every non-empty array of well-formed parts of one type other than the general
@@ -319,7 +323,7 @@ theorem answer_wf {t : QAtomicType} {n : Nat} {e : Enc} (hA : Column.alpEncodes 
     intro w hw b hbo
     by_cases hb : t = .boolean
     · subst hb; cases e <;> simp_all [Enc.WF, Enc.bytesOf]
-    obtain ⟨b', hb', hs⟩ := bytesOf_size hb hw hwf hn
+    obtain ⟨b', hb', hs⟩ := bytesOf_size hb hw hwf (countFits_of_lt hn)
     rw [hbo] at hb'; cases hb'
     exact wf_bytes hb hw hs
   unfold Enc.answer

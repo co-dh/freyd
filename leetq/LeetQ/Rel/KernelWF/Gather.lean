@@ -7,6 +7,7 @@ import QLean.Kernel.Structural
 import QLean.Verify.Gather
 import QLean.Verify.Raw
 import QLean.Verify.Alp
+import LeetQ.Rel.KernelWF.Raze
 
 namespace LeetQ.Rel.KernelWF
 
@@ -21,26 +22,6 @@ theorem long_cases {n : Nat} {e : Enc} (hw : Enc.WF .long n e) :
 theorem general_cases {n : Nat} {e : Enc} (hw : Enc.WF .general n e) : ∃ xs, e = .gen xs ∧ xs.size = n := by
   cases e <;> simp_all [Enc.WF, QAtomicType.width]
 
-/-- `bytesOf` answers at every fixed-width type but `boolean`, whose payload is a bitmap. -/
-theorem bytesOf_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e) (hb : t ≠ .boolean)
-    (hs : t.width.isSome) : (Enc.bytesOf t n e).isSome := by
-  cases e <;> cases t <;> simp_all [Enc.WF, Enc.bytesOf, QAtomicType.width]
-
-/-- `bytesOf`'s answer holds the `n` elements: at least `n * w` bytes. An encoded count must fit a
-    machine word (`countFits`), the count the decoders are handed. -/
-theorem bytesOf_size {t : QAtomicType} {n w : Nat} {e : Enc} (hw : Enc.WF t n e) (hb : t ≠ .boolean)
-    (ht : t.width = some w) (hc : countFits n e) {b : ByteArray} (h : Enc.bytesOf t n e = some b) :
-    n * w ≤ b.size := by
-  by_cases hg : t = .guid
-  · subst hg; cases ht; cases e <;> simp_all [Enc.WF, Enc.bytesOf, QAtomicType.width]
-  have hw8 : 0 < w ∧ w ≤ 8 := by cases t <;> simp_all [QAtomicType.width] <;> subst ht <;> decide
-  have hs : t ≠ .symbol := by rintro rfl; cases ht
-  have hl := congrArg List.length (elemsW_bytesOf ht hb hg hw8.1 hw8.2 n e hw hc b h)
-  change (elemsW w b).length = _ at hl
-  simp only [Array.length_toList, List.length_map,
-    size_raw n e hw hb hg hs (QAtomicType.ne_general_of_width ht), elemsW, List.length_range] at hl
-  rw [← hl]; exact Nat.div_mul_le_self _ _
-
 /-- **`x@i` answers** for every well-formed column but a general list, and every dense index of at
     least `m` longs. -/
 theorem gatherColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
@@ -53,16 +34,6 @@ theorem gatherColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t
 
 /-! ## The answer's size: what `Enc.WF` asks of each gather's payload -/
 
-/-- A fold that adds `k` bytes a step adds `k` per element. -/
-theorem foldl_size {γ : Type} (f : ByteArray → γ → ByteArray) (k : Nat) (hf : ∀ a j, (f a j).size = a.size + k)
-    (l : List γ) (a : ByteArray) : (l.foldl f a).size = a.size + l.length * k := by
-  induction l generalizing a with
-  | nil => simp
-  | cons j l ih => simp only [List.foldl, ih, hf, List.length_cons]; rw [Nat.succ_mul]; omega
-
-theorem packOf_size (n : Nat) (f : Nat → Bool) : (packOf n f).size = (n + 7) / 8 := by
-  unfold packOf; rw [foldl_size _ 1 (fun a _ => Verify.ba_size_push ..)]; simp
-
 theorem gatherBits_size (n : USize) (b ix : ByteArray) : (gatherBits n b ix).size = (ix.size / 8 + 7) / 8 :=
   packOf_size ..
 
@@ -70,7 +41,7 @@ theorem gatherBits_size (n : USize) (b ix : ByteArray) : (gatherBits n b ix).siz
 theorem gatherBytes_size (w : USize) (fill : UInt64) (src ix : ByteArray) :
     (gatherBytes w fill src ix).size = ix.size / 8 * w.toNat := by
   unfold gatherBytes
-  rw [foldl_size _ w.toNat, List.length_range]; · simp
+  rw [foldl_size ByteArray.size _ w.toNat, List.length_range]; · simp
   intro a j
   split
   · rename_i i hi
@@ -123,11 +94,9 @@ theorem small_mod (k : Nat) (h : k ≤ 64) : k % 2 ^ System.Platform.numBits = k
 theorem toNat_small (k : Nat) (h : k ≤ 64) : (USize.ofNat k).toNat = k :=
   USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
 
-/-- **`x@i` answers `m` well-formed elements** of the source's type, for a dense index of `m` longs. An
-    ALP payload's float width must be its type's (`ha`): `Enc.WF` does not say it, and `gatherAlp`
-    writes at the payload's width. -/
+/-- **`x@i` answers `m` well-formed elements** of the source's type, for a dense index of `m` longs. -/
 theorem gatherColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e)
-    (ha : ∀ M P a, e = .alp M P a → Column.alpF32 a = (t.width == some 4)) (i : ByteArray) {e' : Enc}
+    (i : ByteArray) {e' : Enc}
     (h : gatherColumn t n e (i.size / 8) (.bytes i) = some e') : Enc.WF t (i.size / 8) e' := by
   unfold gatherColumn at h
   generalize hm : i.size / 8 = m at h ⊢
@@ -238,8 +207,8 @@ theorem sliceColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t 
     have hp := Column.pushBits_size .empty ((nullBits t).getD 0) w
     have hz : ¬ (Column.pushBits .empty ((nullBits t).getD 0) w).size < 1 * w := by simp [hp]
     cases t <;> simp_all [-Nat.not_lt, nullColumn, foRColumn, Enc.bytesOf, QAtomicType.width]
-  obtain ⟨b, hB⟩ := Option.isSome_iff_exists.1 (bytesOf_isSome hw hb (by simp [ht]))
-  have hz : ¬ b.size < n * w := Nat.not_lt.2 (bytesOf_size hw hb ht hc hB)
+  obtain ⟨b, hB, hs⟩ := bytesOf_size hb ht hw hc
+  have hz : ¬ b.size < n * w := by omega
   have hn : (n == 0) = false := by simpa using h0
   cases e <;> cases t <;> simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn] <;>
     (repeat' split) <;> simp_all [-Nat.not_lt]
