@@ -48,7 +48,7 @@ def Op.table : List (String × Op × Nat) :=
 
 def Op.sym (o : Op) : String := ((Op.table.find? (·.2.1 == o)).map (·.1)).getD "?"
 
-/-- The infix operators: `∩ ∪ − ⇒ / \ × +`, one level, left to right, below composition (§c). -/
+/-- The infix operators: `∩ ∪ − ⇒ / \ × +`, one level with composition, left to right (§c). -/
 inductive Bin
   | meet | join | diff | imp | rdiv | ldiv | prod | sum
   deriving Repr, BEq, Inhabited
@@ -120,10 +120,10 @@ def OExp.render (inner : Bool) : OExp → String
 
 def OExp.show (o : OExp) : String := o.render false
 
-/-- `e` printed at the level `l`, parenthesised as §c's precedence needs: `0` anywhere or the left operand of an
-    infix operator, `1` its right operand (an infix term in parentheses), `2` the left factor of a composite, `3`
-    its right factor or the operand of `∼` (a composite too), `4` under `°` (a complement too). `full` puts
-    every composite and infix term in parentheses: the parser guards compare it with the reading written out. -/
+/-- `e` printed at the level `l`, parenthesised as §c's one level needs: `0` anywhere or the left operand of a
+    composite or infix term, `1` its right operand or the operand of `∼` (a composite or infix term in
+    parentheses), `2` under `°` (a complement too). `full` puts every composite and infix term in parentheses:
+    the parser guards compare it with the reading written out. -/
 def Expr.render (l : Nat) (full : Bool := false) : Expr → String
   | .name _ n => n
   | .op _ o objs args =>
@@ -131,10 +131,10 @@ def Expr.render (l : Nat) (full : Bool := false) : Expr → String
     let as := if args.isEmpty then "" else "(" ++ ", ".intercalate (args.map (Expr.render 0 full)) ++ ")"
     o.sym ++ os ++ as
   | .app _ n args => n ++ "(" ++ ", ".intercalate (args.map (Expr.render 0 full)) ++ ")"
-  | .comp a b => let s := s!"{a.render 2 full} {b.render 3 full}"; if full || l ≥ 3 then s!"({s})" else s
+  | .comp a b => let s := s!"{a.render 0 full} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
   | .bin _ o a b => let s := s!"{a.render 0 full} {o.sym} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
-  | .conv _ a => s!"{a.render 4 full}°"
-  | .compl _ a => let s := s!"∼{a.render 3 full}"; if l ≥ 4 then s!"({s})" else s
+  | .conv _ a => s!"{a.render 2 full}°"
+  | .compl _ a => let s := s!"∼{a.render 1 full}"; if l ≥ 2 then s!"({s})" else s
   | .pair _ a b => s!"⟨{a.render 0 full}, {b.render 0 full}⟩"
   | .junc _ a b => s!"[{a.render 0 full}, {b.render 0 full}]"
   | .fold _ a b => s!"⦇{a.render 0 full}, {b.render 0 full}⦈"

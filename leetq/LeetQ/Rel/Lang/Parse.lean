@@ -141,23 +141,16 @@ def startsPrimary (c : Char) : Bool :=
 
 mutual
 
-/-- `expr := term (op term)*`: the infix operators, one level, left to right. -/
+/-- `expr := primary (op? primary)*`: composition by juxtaposition and the infix operators, one level, left to
+    right (§c). -/
 partial def expr : P Expr := do
-  let mut e ← term
-  repeat
-    ws
-    match (← peek).bind (Bin.table.lookup · ) with
-    | some o => let p ← pos; adv; e := .bin p o e (← term)
-    | none => break
-  pure e
-
-/-- `term := primary primary*`: composition by juxtaposition, left to right, tighter than every infix operator. -/
-partial def term : P Expr := do
   let mut e ← primary
   repeat
     ws
     match ← peek with
-    | some c => if startsPrimary c then e := .comp e (← primary) else break
+    | some c => match Bin.table.lookup c with
+      | some o => let p ← pos; adv; e := .bin p o e (← primary)
+      | none => if startsPrimary c then e := .comp e (← primary) else break
     | none => break
   pure e
 

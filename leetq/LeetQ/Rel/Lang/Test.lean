@@ -58,9 +58,9 @@ def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) �
 
 -- `ζ(0) = S₀`; `ζ(1)` is `S₀` with `C` moved to the table
 #guard (ok twoIdx).prints.drop 1 == [
-  "(s₀ × {(0, 0)}) k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 0), (A, A)), (({(A, A), (B, B), (C, A)}, 0), (B, B)), " ++
+  "s₀ × {(0, 0)} k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 0), (A, A)), (({(A, A), (B, B), (C, A)}, 0), (B, B)), " ++
     "(({(A, A), (B, B), (C, A)}, 0), (C, A))}",
-  "(s₀ × {(1, 1)}) k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 1), (A, A)), (({(A, A), (B, B), (C, A)}, 1), (B, B))}"]
+  "s₀ × {(1, 1)} k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 1), (A, A)), (({(A, A), (B, B), (C, A)}, 1), (B, B))}"]
 
 -- at `S₀`, `∼S₀` gives `A` the values `B C`, `B` the values `A C`, `C` the values `B C`: the least of each
 #guard (ok orders).prints.drop 1 == [
@@ -105,17 +105,20 @@ def errAt (src : String) (line : Nat) (what : String) : Bool :=
 
 /-! The parser's round trip: each operator row of §b, printed as it was read. -/
 
-def trip (s : String) : Bool :=
-  match Parse.parseExpr s [("R", 0), ("S", 0), ("p", 0), ("e", 0)] ["X"] with
-  | .ok e => e.show == s
-  | .error _ => false
+def parsed (s : String) : Except Err Expr := Parse.parseExpr s [("R", 0), ("S", 0), ("p", 0), ("e", 0)] ["X"]
+def trip (s : String) : Bool := match parsed s with | .ok e => e.show == s | .error _ => false
+/-- `s` reads as `r`, every composite and infix term of `r` in parentheses (§c: one level, left to right). -/
+def reads (s r : String) : Bool := match parsed s with | .ok e => e.render 0 true == r | .error _ => false
 
 #guard ["R S", "R°", "R ∩ S", "R ∪ S", "R − S", "∼R", "R ⇒ S", "𝟘", "⊤", "𝟙", "⊤(X, X)", "𝟙(X)", "dom(R)",
   "ran(R)", "R \\ S", "R / S", "frac(R, S)", "⟨R, S⟩", "π₁", "π₂", "R × S", "[R, S]", "inl", "inr", "R + S",
   "Λ(R)", "∋", "∈", "E(R)", "P(R)", "union", "τ", "nil", "α", "cons°", "⦇e, S⦈", "F(R)", "est(R)", "thin(R)",
   "filter(p)", "takewhile(p)", "length", "sum", "head", "tail", "prefix", "suffix", "succ", "plus", "≤", "<",
-  "{(A, B), (B, A)}", "R S ∪ S R", "R ∩ S ∪ R", "R ∪ (S ∩ R)", "(R ∪ S) R", "R (S p)", "∼(R S)°", "(∼R)°",
-  "∼R S"].all trip
+  "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
+  "(∼R)°", "∼R S"].all trip
+
+#guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
+  ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r
 
 /-! The parser on each line of `blocks.rel`: every composite and infix term in parentheses, as the note reads the
     formula (§c), not as the parser happens to print it. -/

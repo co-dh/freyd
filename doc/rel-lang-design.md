@@ -80,20 +80,13 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 
 ## c. Grammar and precedence
 
-A program reads as the note writes its formulas: `M ≜ ∼(R°⊤ ∪ ⊤R)` is `∼((R°⊤) ∪ (⊤R))`. From tightest to loosest:
+Composition by juxtaposition and the infix operators `∩ ∪ − ⇒ / \ × +` are one precedence level, left to right;
+any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))`.
 
-| level | form                                         | groups                                              |
-|-------|----------------------------------------------|-----------------------------------------------------|
-| 1     | `R°`, `N(e,…)`, `dom(R)`, `⊤(A,B)`, `( )`    | postfix `°` and application, on one atom            |
-| 2     | `∼R`                                         | prefix: the next factor of level 1 (`∼𝟙`, `∼(p⊤)`)  |
-| 3     | `RS`, juxtaposition                          | composition, left to right                          |
-| 4     | `∩ ∪ − ⇒ / \ × +`                            | one level: `a op₁ b op₂ c = (a op₁ b) op₂ c`        |
-| 5     | `e ⊑ f`, `e = f`                             | a test body (§e), `check`; not nested               |
-
-`≤`, `<`, `succ` are constants, so `π₂ ≤ π₂°` is a composite and binds as one: `π₁π₁° ∩ π₂ ≤ π₂°` is
-`(π₁π₁°) ∩ (π₂≤π₂°)`. A composite under `∼` or `°` takes parentheses (`∼(p⊤)`, `(Qt)°`), and so does an infix term on
-the right of another (`π₁ < π₁° ∪ (π₁π₁° ∩ π₂ ≤ π₂°)`): no formula of §g or of the note's blocks world needs `∩`
-above `∪`. A parameter may declare its type (§e); a body may be a test `expr ⊑ expr` (§e).
+- On one atom, not operators: postfix `°`, application `N(e,…)`, `dom(R)`, `⊤(A,B)`, the brackets `⟨ ⟩ ⦇ ⦈ { }`,
+  and prefix `∼` on the next atom (`∼𝟙`, `∼(p⊤)`).
+- `e ⊑ f`, `e = f` is the whole of a test body (§e) or a `check`, not nested.
+- A parameter may declare its type (§e).
 
 ```
 program  := line*
@@ -101,8 +94,7 @@ line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )
           | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
           | 'print' expr | 'check' expr ('⊑' | '=') expr
 param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
-expr     := term ( op term )*                        -- infix, one level, left to right
-term     := primary primary*                         -- composition by juxtaposition
+expr     := primary ( op? primary )*                 -- composition and infix, one level, left to right
 op       := '∩' | '∪' | '−' | '⇒' | '/' | '\' | '×' | '+'
 primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
@@ -134,7 +126,7 @@ number universe: `n+1` rounds, each `S` once.
 The bound is the declared `N`: a shortest plan moves each block at most twice (to the table, then to its
 place), so every distance is at most `2|X| = 6`.
 
-Not in the language yet: `μX : φ(X)` and `R* ≜ μX : 𝟙 ∪ RX`. They would need a polarity check — `X` only under
+Not in the language yet: `μX : φ(X)` and `R* ≜ μX : 𝟙 ∪ (RX)`. They would need a polarity check — `X` only under
 arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] + ⦇,⦈`, the first of `− /`, the second of `⇒ \`, the one of
 `° dom ran P F est`), never under `frac Λ E thin filter takewhile` — and no array growing inside the body; then
 `iter` from `𝟘` until a round changes nothing reaches the least fixed point (AOP/A6_2.lean:53 `mu`).
@@ -164,7 +156,7 @@ under consideration, each state the fibre at itself.
 
 The two readings never collide (`I ⟶ A×B` is never `A ⟶ B`: `B` is not `A×B`). The declaration is needed
 because the body's types alone do not decide: an undeclared `S` gets its type from the body, and a body like
-`∼(S°⊤ ∪ ⊤S)` types plainly with `S : St ⟶ X×X` — as a relation on `X×X`, a different meaning from "per state".
+`∼(S°⊤ ∪ (⊤S))` types plainly with `S : St ⟶ X×X` — as a relation on `X×X`, a different meaning from "per state".
 The declaration is the smallest marker: no new operator, only the parameter's type, and an undeclared
 parameter keeps the plain reading.
 
@@ -179,7 +171,7 @@ row).
 
 | operator                        | lifted, `I ⟶ …`                            | why the fibre at `i` is right        |
 |---------------------------------|--------------------------------------------|--------------------------------------|
-| `RS` ✓, `S : I ⟶ B×C`           | `⟨R,S⟩(𝟙 ∩ π₁π₂(π₂π₁)°)⟨π₁π₁,π₂π₂⟩`        | rows of `R`, `S` at `i` whose        |
+| `RS` ✓, `S : I ⟶ B×C`           | `⟨R,S⟩(𝟙∩(π₁π₂(π₂π₁)°))⟨π₁π₁,π₂π₂⟩`        | rows of `R`, `S` at `i` whose        |
 |                                 |                                            | middles agree                        |
 | `R°` ✓                          | `R⟨π₂,π₁⟩`                                 | each row swapped                     |
 | `R ∩ S`, `R ∪ S`, `R − S` ✓     | the same terms                             | a row is in both, either, one        |
@@ -194,11 +186,11 @@ row).
 | `R\S`, `S : I ⟶ A×C`            | `∼(R°(∼S))` by the rows                    | universes of `A×C`, `B×C`            |
 | `R/S`, `S : I ⟶ C×B`            | `∼((∼R)S°)` by the rows                    | universes of `A×B`, `A×C`            |
 | `frac(R,S)`, `S : I ⟶ C×B`      | `R/S ∩ (S/R)°` by the rows                 | both inclusions                      |
-| `⟨R,S⟩`, `S : I ⟶ A×C`          | `⟨R,S⟩(𝟙 ∩ π₁π₁(π₂π₁)°)⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩` | pairs of rows of one source          |
+| `⟨R,S⟩`, `S : I ⟶ A×C`          | `⟨R,S⟩(𝟙∩(π₁π₁(π₂π₁)°))⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩` | pairs of rows of one source          |
 | `π₁ π₂ inl inr`                 | closed                                     | the same map at every key            |
 | `R×S`, `S : I ⟶ A'×B'`          | `⟨R,S⟩⟨⟨π₁π₁,π₂π₁⟩,⟨π₁π₂,π₂π₂⟩⟩`           | each row of `R` with each of `S`     |
-| `[R,S]`, `S : I ⟶ A'×B`         | `R(inl×𝟙) ∪ S(inr×𝟙)`                      | `R`'s rows left, `S`'s right         |
-| `R+S`, `S : I ⟶ A'×B'`          | `R(inl×inl) ∪ S(inr×inr)`                  | as `[R,S]`                           |
+| `[R,S]`, `S : I ⟶ A'×B`         | `R(inl×𝟙) ∪ (S(inr×𝟙))`                    | `R`'s rows left, `S`'s right         |
+| `R+S`, `S : I ⟶ A'×B'`          | `R(inl×inl) ∪ (S(inr×inr))`                | as `[R,S]`                           |
 | `Λ(R)`                          | `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`                        | `Λ(Rᴵ)` groups each `(i,a)`          |
 | `∋ ∈ union τ nil α cons°`       | closed, on the arrays in demand            | the same at every key                |
 | `E(R)`                          | `Λ(∋R)` by the rows, `∋` closed            | `E(R) = Λ(∋R)`, Algebra.lean:1169    |
@@ -209,7 +201,7 @@ row).
 |                                 | a family `Q`: `G ∩ (G°\Q°)` by the rows,   | `Q`-below each value of `a`          |
 |                                 | `G ≜ X⟨π₁,π₂∋⟩`                            |                                      |
 | `Xthin(Q)`, `X : I ⟶ A×𝒫B`      | closed `Q`: `X⟨π₁,π₂thin(Q)⟩`              | `thin` on each value of `X`          |
-|                                 | a family `Q`: `Λ(G − G(Q − Q°))` by the    | `thin Q G`, Algebra.lean:1035        |
+|                                 | a family `Q`: `Λ(G − (G(Q − Q°)))` by the  | `thin Q G`, Algebra.lean:1035        |
 |                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
 | `succ plus ≤ <`, `{(a,b),…}`    | closed                                     | the same at every key                |
@@ -263,8 +255,8 @@ S₀ ≜ {(C,A),(A,A),(B,B)}                      -- C on A, A and B on the tabl
 G ≜ {(A,B),(B,C)}                             -- A on B, B on C
 
 R(S : X ⟶ X) ≜ S ∩ ∼𝟙                         -- b rests on another block
-M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ ⊤R(S))              -- the moves allowed
-S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after the move p
+M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))            -- the moves allowed
+S'(S : X ⟶ X, p : X ⟶ X) ≜ S ∩ ∼(p⊤) ∪ p      -- the state after the move p
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- St ⟶ St×(X×X): a state, each move it allows
@@ -272,14 +264,14 @@ F ≜ S'(π₁∋,π₂)                                -- St×(X×X) ⟶ X×X: 
 t ≜ cΛ(F)                                     -- St ⟶ St: one move
 s₀ ≜ ran(Λ(⊤(X,X)⟨𝟙,S₀⟩))                     -- the start state
 r ≜ Λ(s₀⊤(St,N))                              -- the array 0…27, one fold round each
-L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ π₂⟨π₁B,π₂ succ⟩⦈)     -- (s,k): s is k steps of B from D
+L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B,π₂ succ⟩)⦈)   -- (s,k): s is k steps of B from D
 Q ≜ ran(L(s₀,t)π₁)                            -- the reachable states
 H ≜ Qh(∋)                                     -- the reachable states holding G
 C ≜ L(H,(Qt)°)                                -- each state with each walk length to H
 W ≜ (Cπ₁)°(Cπ₂)                               -- St ⟶ N
 δ ≜ Λ(W)est(≤)                                -- the distance to the goal
-K ≜ Qc dom(Λ(F)δ succ ∩ π₁δ)                  -- the moves that take the distance down by one
-≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ π₂ ≤ π₂°)             -- moves in lexicographic order
+K ≜ Qc dom(Λ(F)δ succ ∩ (π₁δ))                -- the moves that take the distance down by one
+≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))           -- moves in lexicographic order
 σ ≜ Λ(Kπ₂)est(≼)                              -- the move chosen in each state
 ν ≜ ⟨dom(σ),σ⟩Λ(F)                            -- the state it leads to
 Z ≜ L(s₀,ν)                                   -- the chosen path, with each state's step
@@ -292,8 +284,8 @@ Lines changed from the per-key version:
 | line          | before (a per-key rewrite by hand)       | now                                  |
 |---------------|------------------------------------------|--------------------------------------|
 | `R`           | `R(S) ≜ S ran⟨𝟙,∼𝟙⟩`                     | `R(S : X ⟶ X) ≜ S ∩ ∼𝟙`              |
-| `M`           | `M(S) ≜ Sπ₁⊤ − (R(S)π₂(π₁° ∪ π₂°))`      | `M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ ⊤R(S))`   |
-| `S'`          | `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`             | `S'(S,p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p`  |
+| `M`           | `M(S) ≜ Sπ₁⊤ − (R(S)π₂(π₁° ∪ π₂°))`      | `M(S : X ⟶ X) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))` |
+| `S'`          | `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`             | `S'(S,p : X ⟶ X) ≜ S ∩ ∼(p⊤) ∪ p`    |
 | `g`           | `g ≜ ran⟨𝟙,G⟩`                           | `h(S : X ⟶ X) ≜ G ⊑ S`               |
 | `H`           | `H ≜ Q − dom(Q⊤g − (Q∋))`                | `H ≜ Qh(∋)`                          |
 | `T`           | `T ≜ cΛ(F)`                              | `t ≜ cΛ(F)`: `T` reads as `⊤`        |
