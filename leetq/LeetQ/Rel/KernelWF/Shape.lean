@@ -438,4 +438,30 @@ theorem assignSyms_wf {n ny : Nat} {e ye : Enc} (hw : Enc.WF .symbol n e) (hy : 
     · cases h; exact gatherIdsTil_wf _ _ _ _ _ hn
     · cases h
 
+/-- **`:` of symbols answers** on well-formed symbol payloads: both of `Column.intern`'s answers are
+    interned, and `concatEnum`'s payload is interned whichever way `hashConcat` goes. -/
+theorem assignSyms_isSome {n ny : Nat} {e ye : Enc} (hw : Enc.WF .symbol n e) (hy : Enc.WF .symbol ny ye)
+    (ix : ByteArray) (bcast : Bool) : (assignSyms n e ny ye ix bcast).isSome := by
+  by_cases hs : ∃ b o yb yo, e = .syms b o ∧ ye = .syms yb yo
+  · obtain ⟨b, o, yb, yo, rfl, rfl⟩ := hs
+    obtain ⟨b', o', h', -, -⟩ := assignSyms_syms n b o yb yo ix bcast ny
+    rw [h']; rfl
+  obtain ⟨d, o, ids, hc, -⟩ := intern_wf hw
+  obtain ⟨yd, yo, yi, hyc, -⟩ := intern_wf hy
+  unfold assignSyms
+  split
+  · exact absurd ⟨_, _, _, _, rfl, rfl⟩ hs
+  rw [hc, hyc]
+  dsimp only
+  split
+  · rfl
+  · simp only [concatEnum]
+    split
+    · rfl
+    · rename_i hne
+      generalize hashConcat _ = r at hne
+      rcases r with _ | ⟨db, dbo, ids⟩
+      · exact (hne _ _ _ _ _ _ rfl).elim
+      · exact (hne _ _ _ _ _ _ rfl).elim
+
 end LeetQ.Rel.KernelWF
