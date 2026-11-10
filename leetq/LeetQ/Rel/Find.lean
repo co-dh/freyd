@@ -23,34 +23,59 @@ import QLean.Verify.Elementwise
 import QLean.Verify.Encoding
 import QLean.Verify.EwEnc
 import QLean.Verify.Ids
+import QLean.Dep.Table
+import QLean.Dep.Monadic
+import LeetQ.Rel.KernelWF.Search
 
 namespace LeetQ.Rel.Find
 
 open QLean QLean.Dep QLean.Kernel
 
-/-! ## Wrapping a kernel's answer -/
+/-! ## Wrapping an answer -/
 
-/-- A list of `a`s from a vector a kernel wrote: `m` the vector's own count, `attr` the producer's
-    attribute (§2.4). -/
-def list (a : QAtomicType) (v : QValue) (attr : UInt8 := 0) : Except String ((m : Nat) × Arr a m) :=
-  match v with
-  | .vector _ m _ _ => do pure ⟨m, (← Arr.of a m v "a list answer").markIf attr⟩
-  | _ => .error "a list answer: the kernel answered a non-vector where a vector was due"
+/-- A vector header's count; the `0` is unreachable where `arrs` reads it, under its witness. -/
+def count : QValue → Nat
+  | .vector _ m _ _ => m
+  | _ => 0
 
-/-- An answer per element of an operand of `n` elements; the count is checked, not assumed. -/
-def onKey (n : Nat) (a : QAtomicType) (v : QValue) (verb : String) : Except String (Arr a n) :=
-  Arr.of a n v verb
+/-- A kernel's vector `v`, which the kernel's `_wf` theorem says is `m` well-formed elements of `t`. -/
+def arr {t : QAtomicType} {m : Nat} (v : QValue) (h : ∃ e, v = .vector t m e none ∧ Enc.WF t m e) : Arr t m :=
+  ⟨v, by obtain ⟨e, rfl, hw⟩ := h; exact ⟨rfl, rfl, hw⟩⟩
 
-/-- A dispatcher's answer; its type and count are `Arr.of`'s to check. -/
-def vec (verb : String) : Option QValue → Except String QValue
-  | some v => .ok v
-  | none => .error s!"{verb}: no qlean kernel claims this operand (q's 'type)"
+/-- A kernel's vector of the count it chose, under the producer's attribute `u` (§2.4). -/
+def arrs {t : QAtomicType} (v : QValue) (h : ∃ m e, v = .vector t m e none ∧ Enc.WF t m e) (u : UInt8) :
+    (m : Nat) × Arr t m :=
+  ⟨count v, (arr v (by obtain ⟨m, e, rfl, hw⟩ := h; exact ⟨e, rfl, hw⟩)).markIf u⟩
 
-/-- A dense payload of an operand, or the error naming the verb. -/
-def dense (verb : String) (a : QAtomicType) (n : Nat) (e : Enc) : Except String ByteArray :=
-  match Enc.bytesOf a n e with
-  | some b => .ok b
-  | none => .error s!"{verb}: the operand has no dense payload at its type"
+/-- A payload a pass outside the kernels computed: its vector where `Enc.WF` holds of it, else `alt`, the
+    kernels' answer to the same question. -/
+def orElse {t : QAtomicType} {m : Nat} (e : Enc) (alt : Unit → Arr t m) : Arr t m :=
+  if h : Enc.WF t m e then Arr.mk e h else alt ()
+
+/-- The column of `f` over `vs`, through `Enc.ofAtoms`, which answers every count: the kernel-free answer. -/
+def atomsOf {α : Type} {m : Nat} (t : QAtomicType) (hg : t ≠ .general) (f : α → QAtom) (hf : ∀ v, (f v).type = t)
+    (vs : List α) (hm : vs.length = m) : Arr t m :=
+  have ha : ∀ a ∈ (vs.map f).toArray, a.type = t := fun a h => by
+    obtain ⟨v, -, rfl⟩ := List.mem_map.1 (by simpa using h); exact hf v
+  Arr.mk ((Enc.ofAtoms t (vs.map f).toArray hg).get (Column.ofAtoms_isSome hg ha))
+    (by simpa [hm] using Column.ofAtoms_WF ha (Option.some_get (Column.ofAtoms_isSome hg ha)).symm)
+
+/-- A long column's dense payload: `Enc.WF .long` admits only `bytes` and `foR`, both of which decode. -/
+def denseOf {nx : Nat} (x : Arr .long nx) : ByteArray :=
+  (Enc.bytesOf .long nx x.enc).get (KernelWF.bytesOf_isSome (by decide) (by decide) x.wf)
+
+theorem arr_get {t t' : QAtomicType} {m m' : Nat} {o : Option QValue} {hs : o.isSome}
+    {h : ∃ e, o.get hs = .vector t m e none ∧ Enc.WF t m e} {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : o = some (.vector t' m' e c)) : (arr (o.get hs) h).enc = e := by subst ho; rfl
+
+theorem arrs_get {t t' : QAtomicType} {m : Nat} {o : Option QValue} {hs : o.isSome}
+    {h : ∃ m e, o.get hs = .vector t m e none ∧ Enc.WF t m e} {u : UInt8} {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : o = some (.vector t' m e c)) : (arrs (o.get hs) h u).1 = m ∧ (arrs (o.get hs) h u).2.enc = e := by
+  subst ho; exact ⟨rfl, by rw [Arr.markIf_enc]; rfl⟩
+
+theorem orElse_enc {t : QAtomicType} {m : Nat} {e : Enc} (hw : Enc.WF t m e) (alt : Unit → Arr t m) :
+    (orElse e alt).enc = e := by
+  unfold orElse; rw [dif_pos hw]; rfl
 
 /-! ## The small-range test and direct address -/
 
@@ -86,10 +111,6 @@ def direct (a : QAtomicType) (n : Nat) (e : Enc) : Option (ByteArray × Int64 ×
 
 /-! ## The verbs -/
 
-/-- `&x` on booleans: the positions of the set bits, `whereBits`; sorted (attribute `s`). -/
-def «where» {nx : Nat} (x : Arr .boolean nx) : Except String ((m : Nat) × Arr .long m) := do
-  list .long (← vec "&x" (whereColumn .boolean nx x.enc)) 1
-
 /-- q's `where` on a dense count column `cnt` (none negative): row `i` repeated `cnt[i]` times, and each
     copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less its
     run's start (`Scan.scan sums` less the count). One linear pass, where bisecting the outputs into the
@@ -100,48 +121,6 @@ def expand (cnt : ByteArray) : ByteArray × ByteArray :=
   let i := expandBytes 8 0 (tilLongs n.toUSize) cnt
   let m := i.size / 8
   (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (tilLongs m.toUSize) (gatherBytes 8 0 rs i) m.toUSize)
-
-/-- `&x` on counts: `expand`, after one `Ew.cmp lt 0` (`0N` included) refuses a negative count. -/
-def whereCounts {nx : Nat} (x : Arr .long nx) : Except String ((m : Nat) × Arr .long m) := do
-  let b ← dense "&x" .long nx x.enc
-  let neg := whereBits nx.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va b (one 0) nx.toUSize)
-  if neg.size > 0 then throw s!"&x: count {(Column.bitsAt b ((Column.bitsAt neg 0 8).toNat * 8) 8).toInt64} at position {(Column.bitsAt neg 0 8).toNat} is negative or null (q's 'domain)"
-  list .long (.vector .long ((expand b).1.size / 8) (.bytes (expand b).1) none) 1
-
-/-- `?x`: the first occurrences, in order (attribute `u`). Already unique: the operand itself. Small
-    range: the positions where `T[x − lo]` is the position itself, then `x@` those. -/
-def distinct {a : QAtomicType} {nx : Nat} (x : Arr a nx) : Except String ((m : Nat) × Arr a m) :=
-  if x.attrCell.map (·.1) == some 2 then .ok ⟨nx, x⟩ else
-  match direct a nx x.enc with
-  | some (t, lo, hb) =>
-    let n := nx.toUSize
-    let p := whereBits n (Ew.cmp Ew.eq Ew.i64 Ew.vv (probe t nx lo hb) (tilLongs n) n)
-    list a (.vector a ((gatherBytes 8 0 hb p).size / 8) (.bytes (gatherBytes 8 0 hb p)) none) 2
-  | none => do list a (← vec "?x" (distinctColumn a nx x.enc)) 2
-
-/-- `x?y`: each element of `y`'s first position in `x`, `count x` at a miss; on `y`'s key. -/
-def find {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
-    Except String (Arr .long ny) := do
-  let v ← match direct a nx x.enc with
-    | some (t, lo, _) => do pure (.vector .long ny (.bytes (probe t nx lo (← dense "x?y" a ny y.enc))) none)
-    | none => vec "x?y" (findColumn a (x.attrCell.map (·.1) == some 1) nx x.enc y.1)
-  onKey ny .long v "x?y"
-
-/-- `x in y`: whether each element of `x` is in `y`; on `x`'s key. -/
-def «in» {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
-    Except String (Arr .boolean nx) := do
-  let v ← match direct a ny y.enc with
-    | some (t, lo, _) => do
-      let g := probe t ny lo (← dense "x in y" a nx x.enc)
-      pure (.vector .boolean nx (.bits (Ew.cmp Ew.lt Ew.i64 Ew.va g (one ny.toUInt64) nx.toUSize)) none)
-    | none => vec "x in y" (memberColumn a (y.attrCell.map (·.1) == some 1) x.1 ny y.enc)
-  onKey nx .boolean v "x in y"
-
-/-- `x bin y`: for each element of `y`, the last position of sorted `x` holding at most it, `-1`
-    below all; `binBytes`/`foRBin`/`binBits`/`binSymColumn` by encoding. On `y`'s key. -/
-def bin {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) :
-    Except String (Arr .long ny) := do
-  onKey ny .long (← vec "x bin y" (binColumn a false nx x.enc y.1)) "x bin y"
 
 /-! ## The List-level spec -/
 
@@ -166,28 +145,133 @@ def inSpec {α : Type} [BEq α] (xs ys : List α) : List Bool := xs.map ys.conta
 def binSpec {α : Type} [LE α] [DecidableRel (α := α) (· ≤ ·)] (xs ys : List α) : List Int64 :=
   ys.map fun y => Int64.ofNat (xs.countP (· ≤ y)) - 1
 
-/-! ## Laws read off the construction -/
+/-! ## The verbs
 
-/-- A list answer's count and payload are the kernel's vector's. -/
-theorem list_enc {a t : QAtomicType} {m : Nat} {e : Enc} {ac : Option (UInt8 × IndexCell)} {u : UInt8}
-    {nr : Nat} {r : Arr a nr} (h : list a (.vector t m e ac) u = .ok ⟨nr, r⟩) : nr = m ∧ r.enc = e := by
-  simp only [list] at h
-  cases ho : Arr.of a m (.vector t m e ac) "a list answer" with
-  | error _ => simp [ho, bind, Except.bind] at h
-  | ok v =>
-    simp only [ho, bind, Except.bind, pure, Except.pure, Except.ok.injEq] at h
-    cases h
-    simp only [Arr.of] at ho; split at ho <;> cases ho
-    exact ⟨rfl, by rw [Arr.markIf_enc]; rfl⟩
+Each answers on every input. A kernel's premise that `Enc.WF` does not give — a type other than a general
+list, a count below `USize.size`, a type other than `symbol` for `bin` — is decided in the op; where it fails
+the answer is the spec above, under q's `~` (`Carrier.identical`) and order (`Carrier.le`), built by
+`Enc.ofAtoms`. A direct-address payload is taken where `Enc.WF` holds of it, else the kernels answer. -/
+
+/-- `&x` on booleans: the positions of the set bits, `whereBits`; sorted (attribute `s`). -/
+def «where» {nx : Nat} (x : Arr .boolean nx) : (m : Nat) × Arr .long m :=
+  arrs ((whereColumn .boolean nx x.enc).get (KernelWF.whereColumn_isSome x.wf))
+    (by obtain ⟨m, b, hv, hw⟩ := KernelWF.whereColumn_wf x.wf (Option.some_get _).symm; exact ⟨m, _, hv, hw⟩) 1
+
+/-- The positions of `x`'s counts below zero, `0N` among them: `&x`'s precondition is that there are none
+    (q's 'domain). -/
+def negs {nx : Nat} (x : Arr .long nx) : ByteArray :=
+  whereBits nx.toUSize (Ew.cmp Ew.lt Ew.i64 Ew.va (denseOf x) (one 0) nx.toUSize)
+
+/-- `&x` on counts none of which is negative: `expand`; sorted (attribute `s`). -/
+def whereCounts {nx : Nat} (x : Arr .long nx) (_ : (negs x).size = 0) : (m : Nat) × Arr .long m :=
+  let b := (expand (denseOf x)).1
+  if hw : Enc.WF .long (b.size / 8) (.bytes b) then ⟨_, (Arr.mk _ hw).markIf 1⟩
+  else ⟨_, (atomsOf .long (by decide) QAtom.long (fun _ => rfl) (whereCountsSpec x.toList) rfl).markIf 1⟩
+
+/-- `?x` by the kernels: `distinctColumn`, which answers every type but a general list; that one is
+    `distinctSpec` under q's `~`. -/
+def distinctK {a : QAtomicType} {nx : Nat} (x : Arr a nx) : (m : Nat) × Arr a m :=
+  if hg : a = .general then by
+    subst hg
+    exact ⟨_, (Arr.mk (.gen (@distinctSpec _ ⟨Carrier.identical⟩ x.toList).toArray)
+      (by simp [Enc.WF, QAtomicType.width])).markIf 2⟩
+  else arrs ((distinctColumn a nx x.enc).get (KernelWF.distinctColumn_isSome x.wf hg))
+    (KernelWF.distinctColumn_wf x.wf (Option.some_get _).symm) 2
+
+/-- `?x`: the first occurrences, in order (attribute `u`). Already unique: the operand itself. Small
+    range: the positions where `T[x − lo]` is the position itself, then `x@` those. -/
+def distinct {a : QAtomicType} {nx : Nat} (x : Arr a nx) : (m : Nat) × Arr a m :=
+  if x.attrCell.map (·.1) == some 2 then ⟨nx, x⟩ else
+  match direct a nx x.enc with
+  | some (t, lo, hb) =>
+    let n := nx.toUSize
+    let g := gatherBytes 8 0 hb (whereBits n (Ew.cmp Ew.eq Ew.i64 Ew.vv (probe t nx lo hb) (tilLongs n) n))
+    if hw : Enc.WF a (g.size / 8) (.bytes g) then ⟨_, (Arr.mk _ hw).markIf 2⟩ else distinctK x
+  | none => distinctK x
+
+/-- `x?y` by the kernels: `findColumn`, at a type other than a general list and a count it indexes by. -/
+def findK {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) : Arr .long ny :=
+  if h : a ≠ .general ∧ ny < USize.size then
+    arr ((findColumn a (x.attrCell.map (·.1) == some 1) nx x.enc y.1).get
+      (by rw [y.val_eq]; exact KernelWF.findColumn_isSome x.wf y.wf h.1))
+      (KernelWF.findColumn_wf x.wf y.wf h.2 (by rw [← y.val_eq]; exact (Option.some_get _).symm))
+  else atomsOf .long (by decide) QAtom.long (fun _ => rfl) (@findSpec _ ⟨Carrier.identical⟩ x.toList y.toList)
+    (by simp [findSpec, Arr.length_toList])
+
+/-- `x?y`: each element of `y`'s first position in `x`, `count x` at a miss; on `y`'s key. -/
+def find {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) : Arr .long ny :=
+  match direct a nx x.enc with
+  | some (t, lo, _) => match Enc.bytesOf a ny y.enc with
+    | some nb => orElse (.bytes (probe t nx lo nb)) fun _ => findK x y
+    | none => findK x y
+  | none => findK x y
+
+/-- `x in y` by the kernels: `memberColumn`, at a type other than a general list and a count it indexes by. -/
+def inK {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) : Arr .boolean nx :=
+  if h : a ≠ .general ∧ nx < USize.size then
+    arr ((memberColumn a (y.attrCell.map (·.1) == some 1) x.1 ny y.enc).get
+      (by rw [x.val_eq]; exact KernelWF.memberColumn_isSome x.wf y.wf h.1))
+      (KernelWF.memberColumn_wf x.wf y.wf h.2 (by rw [← x.val_eq]; exact (Option.some_get _).symm))
+  else atomsOf .boolean (by decide) QAtom.boolean (fun _ => rfl) (@inSpec _ ⟨Carrier.identical⟩ x.toList y.toList)
+    (by simp [inSpec, Arr.length_toList])
+
+/-- `x in y`: whether each element of `x` is in `y`; on `x`'s key. -/
+def «in» {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) : Arr .boolean nx :=
+  match direct a ny y.enc with
+  | some (t, lo, _) => match Enc.bytesOf a nx x.enc with
+    | some nb => orElse (.bits (Ew.cmp Ew.lt Ew.i64 Ew.va (probe t ny lo nb) (one ny.toUInt64) nx.toUSize))
+        fun _ => inK x y
+    | none => inK x y
+  | none => inK x y
+
+/-- `x bin y`: for each element of `y`, the last position of sorted `x` holding at most it, `-1`
+    below all; `binBytes`/`foRBin`/`binBits` by encoding, at a type other than a general list or a symbol
+    and a count `binColumn` indexes by. On `y`'s key. -/
+def bin {a : QAtomicType} {nx ny : Nat} (x : Arr a nx) (y : Arr a ny) : Arr .long ny :=
+  if h : a ≠ .general ∧ a ≠ .symbol ∧ ny < USize.size then
+    arr ((binColumn a false nx x.enc y.1).get (by rw [y.val_eq]; exact KernelWF.binColumn_isSome x.wf y.wf h.1))
+      (KernelWF.binColumn_wf x.wf y.wf h.2.1 h.2.2 (by rw [← y.val_eq]; exact (Option.some_get _).symm))
+  else atomsOf .long (by decide) QAtom.long (fun _ => rfl)
+    (@binSpec _ ⟨fun p q => Carrier.le p q = true⟩ (fun p q => inferInstanceAs (Decidable (Carrier.le p q = true)))
+      x.toList y.toList) (by simp [binSpec, Arr.length_toList])
+
+theorem where_enc {nx : Nat} {x : Arr .boolean nx} {m : Nat} {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : whereColumn .boolean nx x.enc = some (.vector .long m e c)) : («where» x).1 = m ∧ («where» x).2.enc = e :=
+  arrs_get ho
+
+theorem distinctK_enc {a t : QAtomicType} {nx : Nat} {x : Arr a nx} (hg : a ≠ .general) {m : Nat} {e : Enc}
+    {c : Option (UInt8 × IndexCell)} (ho : distinctColumn a nx x.enc = some (.vector t m e c)) :
+    (distinctK x).1 = m ∧ (distinctK x).2.enc = e := by
+  unfold distinctK; rw [dif_neg hg]; exact arrs_get ho
+
+theorem findK_enc {a t : QAtomicType} {nx ny m : Nat} {x : Arr a nx} {y : Arr a ny} (hg : a ≠ .general)
+    (hm : ny < USize.size) {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : findColumn a (x.attrCell.map (·.1) == some 1) nx x.enc y.1 = some (.vector t m e c)) : (findK x y).enc = e := by
+  unfold findK; rw [dif_pos ⟨hg, hm⟩]; exact arr_get ho
+
+theorem inK_enc {a t : QAtomicType} {nx ny m : Nat} {x : Arr a nx} {y : Arr a ny} (hg : a ≠ .general)
+    (hm : nx < USize.size) {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : memberColumn a (y.attrCell.map (·.1) == some 1) x.1 ny y.enc = some (.vector t m e c)) :
+    («inK» x y).enc = e := by
+  unfold inK; rw [dif_pos ⟨hg, hm⟩]; exact arr_get ho
+
+theorem bin_enc {a t : QAtomicType} {nx ny m : Nat} {x : Arr a nx} {y : Arr a ny} (hg : a ≠ .general)
+    (hs : a ≠ .symbol) (hm : ny < USize.size) {e : Enc} {c : Option (UInt8 × IndexCell)}
+    (ho : binColumn a false nx x.enc y.1 = some (.vector t m e c)) : (bin x y).enc = e := by
+  unfold bin; rw [dif_pos ⟨hg, hs, hm⟩]; exact arr_get ho
+
+/-! ## Laws read off the construction -/
 
 /-- `&x` on booleans is `whereSpec`, from `whereBits_spec`. `nx < USize.size` because `whereBits` takes
     its count as a `USize`. -/
-theorem where_toList {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long nr}
-    (hn : nx < USize.size) (h : «where» x = .ok ⟨nr, r⟩) : r.toList = whereSpec x.toList := by
+theorem where_toList {nx : Nat} {x : Arr .boolean nx} (hn : nx < USize.size) :
+    («where» x).2.toList = whereSpec x.toList := by
   cases he : x.enc with
   | bits bs =>
-    simp only [«where», he, whereColumn, vec, bind, Except.bind] at h
-    have hr := list_enc h
+    have hr := where_enc (x := x) (show whereColumn .boolean nx x.enc = _ by rw [he]; rfl)
+    generalize «where» x = R at hr ⊢
+    obtain ⟨nr, r⟩ := R
+    dsimp only at hr
     obtain ⟨hs, hj⟩ := QLean.Verify.whereBits_spec nx.toUSize bs
     rw [USize.toNat_ofNat_of_lt' hn] at hs hj
     have hl : nr = ((List.range nx).filter (Column.bitAt bs)).length := by rw [hr.1]; omega
@@ -204,14 +288,7 @@ theorem where_toList {nx : Nat} {x : Arr .boolean nx} {nr : Nat} {r : Arr .long 
     · intro j h1 _
       rw [List.getElem_map, Arr.getElem_toList, Arr.get_long_bytes r hr.2]
       exact toInt64_of_toNat (hj j (by rw [Arr.length_toList] at h1; omega))
-  | _ => all_goals simp [«where», he, whereColumn, vec, bind, Except.bind] at h
-
-/-- An answer per operand element has the kernel's payload. -/
-theorem onKey_enc {n : Nat} {a t : QAtomicType} {m : Nat} {e : Enc} {ac : Option (UInt8 × IndexCell)}
-    {s : String} {r : Arr a n} (h : onKey n a (.vector t m e ac) s = .ok r) : r.enc = e := by
-  simp only [onKey, Arr.of] at h; split at h
-  · cases h; rfl
-  · cases h
+  | _ => all_goals (have hw := x.wf; rw [he] at hw; simp [Enc.WF, QAtomicType.width] at hw)
 
 /-- An injective map keeps every first index. -/
 theorem idxOf_map_of_inj {α β : Type} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq β] {f : α → β}
@@ -392,7 +469,7 @@ theorem probe_member {nx ny : Nat} (x : Arr .long nx) (y : Arr .long ny) (hx : R
     `Enc.answer` leaves encoded or decodes (`decodeW`), the same words either way. -/
 theorem distinct_words {m : Nat} (x : Arr .long m) {xs : List UInt64} (hx : longWords m x.enc = some xs)
     (hn : m < USize.size) : ∃ (e : Nat → UInt64) (k : Nat) (c : Enc), xs = (List.range m).map e ∧
-      vec "?x" (distinctColumn .long m x.enc) = .ok (.vector .long k c none) ∧
+      distinctColumn .long m x.enc = some (.vector .long k c none) ∧
       longWords k c = some ((Verify.firstsOf (fun i => Order.rank .i64 (e i)) m).map e) := by
   cases he : x.enc with
   | bytes b =>
@@ -720,18 +797,19 @@ theorem direct_table {m : Nat} {x : Arr .long m} {t hb : ByteArray} {lo : Int64}
     refine ⟨a, ?_⟩
     have := off_toInt a; have := Int64.le_iff_toInt_le.mp b; omega
 
-theorem find_direct {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r : Arr .long ny}
+theorem find_direct {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny}
     (hy : Readable .long ny y.enc) {t hb : ByteArray} {lo : Int64} (hd : direct .long nx x.enc = some (t, lo, hb))
-    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) (h : find x y = .ok r) :
-    r.toList = findSpec x.toList y.toList := by
+    (hn8 : 8 * nx < USize.size) (hm : ny < USize.size) {nb : ByteArray} (hnb : Enc.bytesOf .long ny y.enc = some nb)
+    (hw : Enc.WF .long ny (.bytes (probe t nx lo nb))) :
+    (find x y).toList = findSpec x.toList y.toList := by
   have hS := USize.size_le
+  have hE : (find x y).enc = .bytes (probe t nx lo nb) := by unfold find; rw [hd, hnb]; exact orElse_enc hw _
+  generalize find x y = r at hE ⊢
   obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   obtain ⟨nk, nmd, np, ys, hoy, hwy, hby, hly⟩ := operand_long y hy hm
-  unfold find at h
-  rw [hd] at h
-  simp only [dense, bytesOf_long hy hoy, bind, Except.bind, pure, Except.pure] at h
+  obtain rfl := Option.some.inj ((bytesOf_long hy hoy).symm.trans hnb)
   rw [Arr.toList_long r (show longWords ny r.enc = some (Verify.elemsW 8 (probe (firstTable hb nx lo R) nx lo
-    (operandBytes 8 nmd np nk.toUSize))) by rw [onKey_enc h]; rfl),
+    (operandBytes 8 nmd np nk.toUSize))) by rw [hE]; rfl),
     Arr.toList_long x hwx, Arr.toList_long y hwy, findSpec,
     probe_spec _ xs nx lo _ hbx hlx (by omega) hr hlo hin _ ys hby (by rw [hly]; exact hm)]
   simp only [List.map_map]; rfl
@@ -768,16 +846,18 @@ theorem toInt_ofNat_lt {I : Nat} (h : I < 2 ^ 63) : (UInt64.ofNat I).toInt64.toI
   rw [toInt_bmod, hu, Int.bmod]; split <;> omega
 
 /-- `x in y` on the direct path: the probe's first positions compared below `count y`. -/
-theorem in_direct {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r : Arr .boolean nx}
+theorem in_direct {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny}
     (hx : Readable .long nx x.enc) {t hb : ByteArray} {lo : Int64} (hd : direct .long ny y.enc = some (t, lo, hb))
-    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) (h : «in» x y = .ok r) :
-    r.toList = inSpec x.toList y.toList := by
+    (hn8 : 8 * ny < USize.size) (hm : nx < USize.size) {nb : ByteArray} (hnb : Enc.bytesOf .long nx x.enc = some nb)
+    (hw : Enc.WF .boolean nx (.bits (Ew.cmp Ew.lt Ew.i64 Ew.va (probe t ny lo nb) (one ny.toUInt64) nx.toUSize))) :
+    («in» x y).toList = inSpec x.toList y.toList := by
   have hS := USize.size_le
+  have h : («in» x y).enc = .bits (Ew.cmp Ew.lt Ew.i64 Ew.va (probe t ny lo nb) (one ny.toUInt64) nx.toUSize) := by
+    unfold «in»; rw [hd, hnb]; exact orElse_enc hw _
+  generalize «in» x y = r at h ⊢
   obtain ⟨ys, R, hwy, hby, hly, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   obtain ⟨nk, nmd, np, xs, hox, hwx, hbx, hlx⟩ := operand_long x hx hm
-  unfold «in» at h
-  rw [hd] at h
-  simp only [dense, bytesOf_long hx hox, bind, Except.bind, pure, Except.pure] at h
+  obtain rfl := Option.some.inj ((bytesOf_long hx hox).symm.trans hnb)
   have hG := probe_spec hb ys ny lo R hby hly (by omega) hr hlo hin _ xs hbx (by rw [hlx]; exact hm)
   generalize probe (firstTable hb ny lo R) ny lo (operandBytes 8 nmd np nk.toUSize) = g at h hG
   obtain ⟨-, hc⟩ := Verify.cmp_bitAt Ew.lt Ew.i64 Ew.va g (one ny.toUInt64) nx.toUSize
@@ -788,7 +868,7 @@ theorem in_direct {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r
   apply List.ext_getElem (by rw [Arr.length_toList]; simp [hlx])
   intro i h1 _
   have hi : i < nx := by rw [Arr.length_toList] at h1; exact h1
-  rw [Arr.getElem_toList, Arr.get_bool_bits r (onKey_enc h), hc i (by omega)]
+  rw [Arr.getElem_toList, Arr.get_bool_bits r h, hc i (by omega)]
   rw [show Ew.shapeIdx Ew.va i = (i, 0) from rfl, show Ew.elem Ew.i64 g i = Column.bitsAt g (i * 8) 8 from rfl,
     show Ew.elem Ew.i64 (one ny.toUInt64) 0 = Column.bitsAt (one ny.toUInt64) 0 8 from rfl, bitsAt_one,
     gg i (by simp [hlx, hi]), cmpStep_lt]
@@ -822,21 +902,32 @@ theorem idxOf_self_iff {α : Type} [BEq α] [LawfulBEq α] : ∀ (l : List α) (
 
 /-- `?x` on the direct path: the positions whose probe answers the position itself are the first
     occurrences, and the gather at them lists `eraseDups`. -/
-theorem distinct_direct {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long nr}
+theorem distinct_direct {nx : Nat} {x : Arr .long nx}
     {t hb : ByteArray} {lo : Int64} (hd : direct .long nx x.enc = some (t, lo, hb)) (hu : x.attrCell.map (·.1) ≠ some 2)
-    (hn8 : 8 * nx < USize.size) (h : distinct x = .ok ⟨nr, r⟩) : r.toList = distinctSpec x.toList := by
+    (hn8 : 8 * nx < USize.size)
+    (hw : Enc.WF .long ((gatherBytes 8 0 hb (whereBits nx.toUSize (Ew.cmp Ew.eq Ew.i64 Ew.vv (probe t nx lo hb)
+      (tilLongs nx.toUSize) nx.toUSize))).size / 8) (.bytes (gatherBytes 8 0 hb (whereBits nx.toUSize
+      (Ew.cmp Ew.eq Ew.i64 Ew.vv (probe t nx lo hb) (tilLongs nx.toUSize) nx.toUSize))))) :
+    (distinct x).2.toList = distinctSpec x.toList := by
   have hS := USize.size_le
   have hn : nx < USize.size := by omega
-  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hn8
-  unfold distinct at h
-  rw [show (x.attrCell.map (·.1) == some 2) = false by simp [hu], hd] at h
+  have h : (distinct x).2.enc = .bytes (gatherBytes 8 0 hb (whereBits nx.toUSize (Ew.cmp Ew.eq Ew.i64 Ew.vv
+      (probe t nx lo hb) (tilLongs nx.toUSize) nx.toUSize))) := by
+    unfold distinct
+    rw [show (x.attrCell.map (·.1) == some 2) = false by simp [hu], hd]
+    dsimp only
+    rw [dif_pos hw]
+    exact Arr.markIf_enc _ _
+  generalize distinct x = D at h ⊢
+  obtain ⟨nr, r⟩ := D
   dsimp only at h
+  obtain ⟨xs, R, hwx, hbx, hlx, hr, hlo, hin, rfl⟩ := direct_table hd hn8
   have hP := probe_spec hb xs nx lo R hbx hlx hn hr hlo hin hb xs hbx (by rw [hlx]; exact hn)
   generalize probe (firstTable hb nx lo R) nx lo hb = P at h hP
   obtain ⟨-, hc⟩ := Verify.cmp_bitAt Ew.eq Ew.i64 Ew.vv P (tilLongs nx.toUSize) nx.toUSize
   rw [USize.toNat_ofNat_of_lt' hn] at hc
   generalize Ew.cmp Ew.eq Ew.i64 Ew.vv P (tilLongs nx.toUSize) nx.toUSize = bits at h hc
-  change list .long (.vector .long ((gatherBytes 8 0 hb (whereBits nx.toUSize bits)).size / 8) (.bytes (gatherBytes 8 0 hb (whereBits nx.toUSize bits))) none) 2 = .ok ⟨nr, r⟩ at h
+
   -- the words as a function of the position
   let e : Nat → UInt64 := fun i => xs.getD i 0
   have hxe : xs = (List.range nx).map e :=
@@ -891,7 +982,7 @@ theorem distinct_direct {nx : Nat} {x : Arr .long nx} {nr : Nat} {r : Arr .long 
     rw [gj j hj, gx _ hlt]
     show _ = xs.getD _ 0
     rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some]
-  rw [Arr.toList_long r (show longWords _ r.enc = _ by rw [(list_enc h).2]; exact congrArg some hw), distinctSpec,
+  rw [Arr.toList_long r (show longWords _ r.enc = _ by rw [h]; exact congrArg some hw), distinctSpec,
     Arr.toList_long x hwx, hxe, List.map_map, List.map_map]
   exact firstsOf_map_eraseDups e (UInt64.toInt64 ∘ e) (fun i j => ⟨congrArg UInt64.toInt64, toInt64_inj⟩) nx
 
@@ -1146,7 +1237,7 @@ theorem in_long {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r :
     apply List.ext_getElem (by rw [Arr.length_toList]; simp [hlx])
     intro i h1 _
     have hi : i < nx := by rw [Arr.length_toList] at h1; exact h1
-    rw [Arr.getElem_toList, Arr.get_bool_bits r (onKey_enc h), memberSortedBytes_mem hby hbx hsy i (by omega)]
+    rw [Arr.getElem_toList, Arr.get_bool_bits r h, memberSortedBytes_mem hby hbx hsy i (by omega)]
     simp only [List.getElem_map]
     apply Bool.eq_iff_iff.2
     rw [decide_eq_true_iff, List.contains_iff_mem, mem_map_of_inj (fun _ _ => toInt64_inj)]
@@ -1159,7 +1250,7 @@ theorem in_long {nx : Nat} {x : Arr .long nx} {ny : Nat} {y : Arr .long ny} {r :
   apply List.ext_getElem (by rw [Arr.length_toList]; simp [hlx])
   intro i h1 _
   have hi : i < nx := by rw [Arr.length_toList] at h1; exact h1
-  rw [Arr.getElem_toList, Arr.get_bool_bits r (onKey_enc h)]
+  rw [Arr.getElem_toList, Arr.get_bool_bits r h]
   simp only [List.getElem_map]
   rw [hM i (by omega)]
   apply Bool.eq_iff_iff.2
@@ -1219,7 +1310,7 @@ theorem in_bits {nx : Nat} {x : Arr .boolean nx} {ny : Nat} {y : Arr .boolean ny
   apply List.ext_getElem (by rw [Arr.length_toList]; simp)
   intro i h1 _
   have hi : i < nx := by rw [Arr.length_toList] at h1; exact h1
-  rw [Arr.getElem_toList, Arr.get_bool_bits r (onKey_enc h), hg i (by omega)]
+  rw [Arr.getElem_toList, Arr.get_bool_bits r h, hg i (by omega)]
   simp only [List.getElem_map, List.getElem_range, hi, decide_true, Bool.true_and]
   apply Bool.eq_iff_iff.2
   rw [decide_eq_true_iff, List.contains_iff_mem]
