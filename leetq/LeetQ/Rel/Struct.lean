@@ -123,7 +123,7 @@ def partedP {v : QAtomicType} {n : Nat} (verb : String) (o : ByteArray) (val : A
   pure P
 
 /-- q's nested list of a flat form: one boxed vector per run (`Parted.box`). -/
-def boxed {v : QAtomicType} (P : Parted v) : Except String ((g : Nat) × Arr .general g) := do pure ⟨P.g, ← P.box⟩
+def boxed {v : QAtomicType} (P : Parted v) : Except String ((g : Nat) × Arr .general g) := pure ⟨P.g, P.box⟩
 
 /-- `partedP`, boxed. -/
 def parted {v : QAtomicType} {n : Nat} (verb : String) (o : ByteArray) (val : Arr v n) : Except String ((g : Nat) × Arr .general g) := do

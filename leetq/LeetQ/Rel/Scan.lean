@@ -7,7 +7,7 @@
   only through `Arr.of`, which checks its type and count instead of assuming them.
   The specs are List functions on `toList`; `#guard` runs each op against its spec.
 -/
-import LeetQ.Rel.Core
+import LeetQ.Rel.Parted
 import QLean.Kernel.Scan
 import QLean.Kernel.Sort
 import QLean.Kernel.Reduce
@@ -1650,7 +1650,7 @@ private def GI : Parted .int :=
 #guard vals (at? .int (overBy .greater GI)) == [20, 30, 50]
 #guard vals (countBy G) == Spec.countBy [0, 2, 3, 6] gv
 #guard vals (countBy E) == [1, 0, 2] ∧ vals (countBy E) == Spec.countBy [0, 1, 1, 3] [(7 : Int64), 8, 9]
-#guard (do let b ← G.box.toOption; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R countBy).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
+#guard (do let b := G.box; let R : Rel .long .general := ⟨3, (Arr.mk (.bytes (packLongs [5, 6, 7])) (by decide) : Arr .long 3), b⟩; (byKey (v := .long) R countBy).map Rel.toList) == some [(5, 2), (6, 1), (7, 3)]
 #guard vals (lastBy G) == Spec.lastBy [0, 2, 3, 6] gv
 #guard (lastBy E).isNone
 #guard vals (at? .long (overBy .add G)) == ((Spec.groups [0, 2, 3, 6] gv).map (Spec.over (· + ·) 0))
