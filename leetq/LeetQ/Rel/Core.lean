@@ -128,6 +128,13 @@ theorem packLongs_size (xs : List Int64) : (packLongs xs).size = 8 * xs.length :
   | nil => simp
   | cons x xs ih => intro b; rw [List.foldl_cons, ih, Column.pushBits_size, List.length_cons]; omega
 
+/-- The column of `f` at the positions `0 … n-1`, packed by Lean with no kernel and no `List`: the reference
+    beside a kernel whose count is checked. -/
+def colFn (n : Nat) (f : Fin n → Int64) : Arr .long n :=
+  Arr.mk (.bytes ((Array.ofFn f).foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty)) (by
+    show _ = n * 8; rw [← Array.foldl_toList]
+    show (packLongs (Array.ofFn f).toList).size = n * 8; rw [packLongs_size]; simp [Nat.mul_comm])
+
 /-- `xs` Frame-of-Reference encoded is well formed: the checks' `foR` columns, which `decide` cannot
     evaluate through `Coc.encode`. -/
 theorem foRLongs_wf (xs : List Int64) : Enc.WF .long xs.length
@@ -569,8 +576,9 @@ instance : Coe QAtomicType Obj := ⟨.atom⟩
   | .arr b => List b.El
   | .sum a b => Sum a.El b.El
 
-/-- The element a sum row reads where its side holds no value at all (a side of `0` values), the one
-    position no clamp can land in: `inl` of the left side's own, an empty array, an atom's `default`. -/
+/-- The element a row reads where its side holds no value at all (a side of `0` values), the one position no
+    clamp can land in: what a gather past the side reads — an atom's `default` (q's null), an empty array, a
+    sum's `inl` of its left side's own. -/
 def Obj.dflt : (A : Obj) → A.El
   | .atom _ => default
   | .prod a b => (a.dflt, b.dflt)
@@ -594,15 +602,16 @@ def clampFin (k : Int64) (m : Nat) (h : 0 < m) : Fin m :=
 
 /-- The value at row `i`, read across the columns. An array row is its slice clamped to `[0, m)`, so every
     `lo`, `hi` reads as an array. A sum row is its side's value at its position clamped into the side, so
-    every position reads as a value of its side; only a side of no values reads `Obj.dflt`. -/
+    every position reads as a value of its side; a side of no values reads that side's `Obj.dflt`, the null a
+    gather past the side reads, so the row keeps its tag. -/
 def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
   | .atom _, _, x, i => Arr.get x i
   | .prod _ _, _, x, i => (Vals.row x.1 i, Vals.row x.2 i)
   | .arr _, _, ⟨m, lo, hi, f⟩, i => (List.finRange m).filterMap fun (j : Fin m) =>
       if (lo.get i).toInt ≤ (j.1 : Int) ∧ (j.1 : Int) < (hi.get i).toInt then some (Vals.row f j) else none
   | .sum a b, _, ⟨l, r, tag, idx, x, y⟩, i =>
-    if tag.get i then (if h : 0 < r then .inr (Vals.row y (clampFin (idx.get i) r h)) else Obj.dflt (.sum a b))
-    else if h : 0 < l then .inl (Vals.row x (clampFin (idx.get i) l h)) else Obj.dflt (.sum a b)
+    if tag.get i then .inr (if h : 0 < r then Vals.row y (clampFin (idx.get i) r h) else b.dflt)
+    else .inl (if h : 0 < l then Vals.row x (clampFin (idx.get i) l h) else a.dflt)
 
 @[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
     Vals.row (A := .atom t) x i = x.get i := rfl

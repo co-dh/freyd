@@ -139,13 +139,20 @@ def grade (desc : Bool) {n : Nat} (R : Arr t n) : Arr .long n :=
 def iasc {n : Nat} := @grade t false n
 def idesc {n : Nat} := @grade t true n
 
-/-- `rank x` = `<<x`, key kept: the place of each element in the ascending order. -/
-def rank {n : Nat} (R : Arr t n) : Arr .long n :=
-  if h : n < USize.size ∧ t ≠ .general then
-    Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome h.1 R.wf h.2))
-      (KernelWF.gradeColumn_wf h.1 R.wf (Option.some_get _).symm)
-  else atomsOf .long (by decide) (fun i : Fin n => QAtom.long (Int64.ofNat ((gradeList false R).idxOf i))) (fun _ => rfl)
-    (List.finRange n) (List.length_finRange ..)
+/-- The place of `i` in the stable ascending order of `R` (`Carrier.le`): the positions before it, each `j`
+    whose value is at most `i`'s and either earlier or strictly smaller. -/
+def rankAt {n : Nat} (R : Arr t n) (i : Fin n) : Int64 :=
+  Int64.ofNat (Fin.foldl n (fun c j => if Table.Carrier.le (R.get j) (R.get i) &&
+    (decide (j < i) || !Table.Carrier.le (R.get i) (R.get j)) then c + 1 else c) 0)
+
+/-- `rank x` = `<<x`, key kept: the place of each element in the ascending order, on the domain
+    `gradeColumn` orders by value (every atom but a general list, the witness `hg`). The kernel wherever the
+    count fits the `USize` every kernel takes; past it, where no kernel runs, `rankAt` on the array. -/
+def rank {n : Nat} (R : Arr t n) (hg : t ≠ .general) : Arr .long n :=
+  if h : n < USize.size then
+    Arr.mk ((gradeColumn t false n R.enc (rank := true)).get (KernelWF.gradeColumn_isSome h R.wf hg))
+      (KernelWF.gradeColumn_wf h R.wf (Option.some_get _).symm)
+  else colFn n (rankAt R)
 
 /-- `x@p`, `x` read at the `n` positions `p`, one gather; a position past `n` reads q's null. The kernel at
     an atom type where `p`'s dense payload holds its `n` longs, else `pickRef`. -/
@@ -1623,7 +1630,8 @@ private def b101 : Arr .boolean 3 := (Arr.mk (.bits (ByteArray.mk #[0b101])) (by
 
 #guard (iasc xsA).toList == Spec.grade false xs
 #guard (idesc zsA).toList == [1, 2, 3, 0] ∧ (idesc zsA).toList == Spec.grade true zsA.toList
-#guard (rank xsA).toList == Spec.rank xs
+#guard (rank xsA (by decide)).toList == Spec.rank xs && (rank xsA (by decide)).toList == (List.finRange _).map (rankAt xsA)
+#guard (rank zsA (by decide)).toList == (List.finRange _).map (rankAt zsA)
 #guard (asc xsA).toList == Spec.sort false xs
 #guard (asc xsA).attrCell.map (·.1) == some 1
 #guard (desc xsA).toList == Spec.sort true xs

@@ -462,13 +462,6 @@ def shiftArr {n : Nat} (x : Arr .long n) (m k : Nat) : Arr .long n :=
     have hl : ys.length = n := (List.length_map _).trans x.length_toList
     hl ▸ col ys
 
-/-- The column of `f` at the positions `0 … n-1`, packed by Lean with no kernel and no `List`: the reference
-    beside a kernel whose count is checked. -/
-def colFn (n : Nat) (f : Fin n → Int64) : Arr .long n :=
-  Arr.mk (.bytes ((Array.ofFn f).foldl (fun b x => Column.pushBits b x.toUInt64 8) .empty)) (by
-    show _ = n * 8; rw [← Array.foldl_toList]
-    show (packLongs (Array.ofFn f).toList).size = n * 8; rw [packLongs_size]; simp [Nat.mul_comm])
-
 /-- `til n` as a long column: `tilLongs` wherever `n` fits a `USize` (`tilLongs_wf`), `colFn` past it. -/
 def tilCol (n : Nat) : Arr .long n :=
   if h : n < USize.size then
@@ -540,6 +533,12 @@ def _root_.LeetQ.Rel.Vals.compact (A : Obj) {n : Nat} (x : Vals A n) : Vals A n 
   let t := tilLongs n.toUSize
   if h : n ≤ len t then Vals.pickN A x t n h else x
 
+/-- The sum column `x` with a value behind every row: where a row is tagged to a side of no values,
+    `Vals.compact`, whose gather past that side reads its null as `Vals.row` does; else `x` itself. -/
+def _root_.LeetQ.Rel.Vals.held {A B : Obj} {n : Nat} (x : Vals (.sum A B) n) : Vals (.sum A B) n :=
+  let r := len (whereBits n.toUSize (tagBits x.2.2.1))
+  if (x.1 = 0 ∧ r < n) ∨ (x.2.1 = 0 ∧ 0 < r) then Vals.compact (.sum A B) x else x
+
 /-- `raze` column by column, at the parts' summed count (`raze_len`). An array's flat payloads are razed, and
     each part's `lo`, `hi` move past the flat values of the parts before it (`shiftArr`), so every row still
     slices its own values. A sum's tags are razed, its two payloads razed side by side, and each row's
@@ -561,15 +560,19 @@ def _root_.LeetQ.Rel.Obj.raze : (A : Obj) → (cs : Array (Part A)) → Vals A (
     ⟨_, (raze_len .long (cs.mapIdx lo)).trans (sum_mapIdx_fst cs lo fun _ _ => rfl) ▸ (Alg.raze .long (cs.mapIdx lo)).2,
       (raze_len .long (cs.mapIdx hi)).trans (sum_mapIdx_fst cs hi fun _ _ => rfl) ▸ (Alg.raze .long (cs.mapIdx hi)).2,
       Obj.raze b (cs.map fun c => ⟨c.2.1, c.2.2.2.2⟩)⟩
-  | .sum a b, cs =>
+  | .sum a b, cs₀ =>
+    -- a row of a side of no values is given its value first (`held`): no other part's value lies past it
+    let held (c : Part (.sum a b)) : Part (.sum a b) := ⟨c.1, c.2.held⟩
+    let cs := cs₀.map held
+    have hc : (cs.toList.map (·.1)).sum = (cs₀.toList.map (·.1)).sum := sum_map_fst cs₀ held fun _ => rfl
     -- the parts are few (two or three), so no running sum
     let before (f : Part (.sum a b) → Nat) (k : Nat) : Nat := ((cs.map f).extract 0 k).foldl (· + ·) 0
     let ix (k : Nat) (c : Part (.sum a b)) : (n : Nat) × Arr .long n :=
       let dl := before (·.2.1) k; let dr := before (·.2.2.1) k
       ⟨c.1, place c.2 ((c.2.1 : Int) - 1) ((c.2.2.1 : Int) - c.2.1) dl ((dr : Int) - dl)⟩
     let tg (c : Part (.sum a b)) : (n : Nat) × Arr .boolean n := ⟨c.1, c.2.2.2.1⟩
-    ⟨_, _, (raze_len .boolean (cs.map tg)).trans (sum_map_fst cs tg fun _ => rfl) ▸ (Alg.raze .boolean (cs.map tg)).2,
-      (raze_len .long (cs.mapIdx ix)).trans (sum_mapIdx_fst cs ix fun _ _ => rfl) ▸ (Alg.raze .long (cs.mapIdx ix)).2,
+    ⟨_, _, ((raze_len .boolean (cs.map tg)).trans (sum_map_fst cs tg fun _ => rfl)).trans hc ▸ (Alg.raze .boolean (cs.map tg)).2,
+      ((raze_len .long (cs.mapIdx ix)).trans (sum_mapIdx_fst cs ix fun _ _ => rfl)).trans hc ▸ (Alg.raze .long (cs.mapIdx ix)).2,
       Obj.raze a (cs.map fun c => ⟨c.2.1, c.2.2.2.2.2.1⟩), Obj.raze b (cs.map fun c => ⟨c.2.2.1, c.2.2.2.2.2.2⟩)⟩
 
 /-- The rows of `R` at the index column `i`: `len i` pairs. -/
@@ -668,7 +671,9 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
     let ns := cs.map (·.1)
     let o := concatBytes #[one 0, sums (concatBytes (sl.map (·.2)).toArray)]
     (pack (ns.foldl (· + ·) 0) (sliceIds seq o)).cut ns
-  | .sum a b, _, cs =>
+  | .sum a b, _, cs₀ =>
+    -- a row of a side of no values is given its value first (`held`), so no row reads a miss
+    let cs := cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))
     -- each side's payloads in one code space; a row gathers its own side's code at its clamped position
     -- (`place`), and the other side's at a position moved past that side, a miss read as code `0`; the
     -- tuple (tag, left, right) is then equal exactly where the tags and the own side's values are
@@ -1167,7 +1172,7 @@ def map {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A)
     of their ranks, less the pairs of one value the ties' order put apart. The domain is the types
     `gradeColumn` orders by value: every atom but a general list, whose witness `decide` discharges. -/
 def lt {t : QAtomicType} {n : Nat} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  let r := longsOf (Ops.rank (t := t) U)
+  let r := longsOf (Ops.rank (t := t) U _h)
   let c := cross n n
   let i := whereBits (n * n).toUSize (Ew.cmp Ew.lt Ew.i64 Ew.vv (gather 8 r c.1) (gather 8 r c.2) (n * n).toUSize)
   (⟨len i, gather_len c.1 i ▸ Vals.pick _ U (gather 8 c.1 i), gather_len c.2 i ▸ Vals.pick _ U (gather 8 c.2 i)⟩ : Rel _ _) \ idU U
@@ -1706,6 +1711,31 @@ private def Xb : Vals (.arr LS) 3 := ⟨4, col [2, 0, 2], col [4, 2, 3], Xi⟩
 -- an empty side: `inl` has no right values, `[R, 𝟘]` none either
 #guard seteq (union (inl (B := L) Ua) (inr (A := L) Ub)).toList ((inl (B := L) Ua).toList ++ (inr (A := L) Ub).toList)
 #guard (dom (junc R (zero (A := L) (B := L)))).n == 3 && lamOk (junc R (zero (A := L) (B := L)))
+-- empty left, empty right, both: `inl inr [R, S] R + S`, then `° ≫ ∩ ∪` on them, against their pairs
+private def Z : LL := zero
+private def E0 : Vals L 0 := Vals.empty L
+#guard (inl (B := L) E0).n == 0 && (inr (A := L) E0).n == 0 && (junc Z Z).n == 0 && (sum Z Z).n == 0
+#guard (junc R Z).toList == R.toList.map (fun (x, y) => (.inl x, y)) &&
+  (junc Z S).toList == S.toList.map (fun (x, y) => (.inr x, y))
+#guard (sum R Z).toList == R.toList.map (fun (x, y) => (.inl x, .inl y)) &&
+  (sum Z T).toList == T.toList.map (fun (x, y) => (.inr x, .inr y))
+#guard (sum R Z)°.toList == R°.toList.map (fun (x, y) => (.inl x, .inl y)) &&
+  (sum Z T)°.toList == T°.toList.map (fun (x, y) => (.inr x, .inr y)) && ((sum Z Z)°).n == 0
+#guard sum R Z ≫ junc R S == junc (R ≫ R) Z && sum Z T ≫ sum Z T == sum Z (T ≫ T) && (sum Z Z ≫ junc R S).n == 0
+#guard inter (junc R Z) (junc R S) == junc R Z && inter (junc Z S) (junc R Z) == junc Z Z &&
+  union (junc R Z) (junc Z S) == junc R S && union (junc Z Z) (junc Z Z) == junc Z Z
+-- a sum column by hand with a row tagged to a side of no values: `Xel`'s `inl` row, `Xer`'s `inr` row. Each
+-- reads its own side's null, as a gather past a side reads it, and `∪` (razed), `∩` (coded) read it so too
+private def tg2 : Arr .boolean 2 := Arr.mk (.bits (ByteArray.mk #[0b10])) (by decide)
+private def Xel : Vals LS 2 := ⟨0, 1, tg2, col [0, 0], Vals.empty L, col [20]⟩
+private def Xer : Vals LS 2 := ⟨1, 0, tg2, col [0, 3], col [7], Vals.empty L⟩
+private def Yn : Vals LS 2 := ⟨2, 0, tags #[(2, false)] 2, col [0, 1], col [7, Int64.minValue], Vals.empty L⟩
+#guard ((idU Xel).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl Int64.minValue, .inr 20] &&
+  ((idU Xer).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl 7, .inr Int64.minValue]
+#guard ((idU (Obj.raze LS #[⟨_, Xel⟩, ⟨_, Xer⟩])).toList.map (·.1) : List (Int64 ⊕ Int64)) ==
+  [.inl Int64.minValue, .inr 20, .inl 7, .inr Int64.minValue]
+#guard idU Xel == idU (Vals.compact LS Xel) && idU Xer == idU (Vals.compact LS Xer) &&
+  ((inter (idU Yn) (idU Xel)).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl Int64.minValue]
 -- `α ≜ [nil, cons] : 1 + L × arr L ⟶ arr L`, the one point `0` standing for `1`
 private def nilR : Rel L (.arr L) := ⟨1, col [0], ⟨0, col [0], col [0], Vals.empty .long⟩⟩
 private def XP : Vals (.prod L (.arr L)) 2 := (col [5, 6], ⟨2, col [0, 2], col [2, 2], col [1, 2]⟩)
