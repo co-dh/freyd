@@ -21,7 +21,7 @@ def pcs : List String := ["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q",
 def lit (ps : List (Nat × Int64)) : String :=
   "{" ++ ",".intercalate (ps.map fun (s, p) => s!"({s},{pcs.getD p.toInt.toNat "?"})") ++ "}"
 
-/-- The program, its board `on` replaced by `ps` when given; `one` keeps the declarations up to `μ`, the mate
+/-- The program, its board `on` replaced by `ps` when given; `one` keeps the declarations up to `#`, the mate
     test of one board. -/
 def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := do
   let prog ← Parse.parse chess
@@ -30,12 +30,12 @@ def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := d
     | some ps => do
       let b ← Parse.parseExpr (lit ps)
       pure (prog.map fun | .defn p "on" [] _ => .defn p "on" [] (.rel b) | d => d)
-  let k := prog.findIdx fun | .defn _ "μ" _ _ => true | _ => false
+  let k := prog.findIdx fun | .defn _ "#" _ _ => true | _ => false
   run (if one then prog.take (k + 1) else prog)
 
-/-- `μ` is the board when it is mate, else empty. -/
+/-- `#` is the board when it is mate, else empty. -/
 def mated (ps : List (Nat × Int64)) : Option Bool :=
-  (Test.get (Test.ok (board ps true)) "μ" Bd Bd).map fun R => !(R ⊑ zero)
+  (Test.get (Test.ok (board ps true)) "#" Bd Bd).map fun R => !(R ⊑ zero)
 
 /-- `m`'s mating moves as `[p, s, t]`, sorted as `Chess`'s checks sort them. -/
 def moves (o : Out) : Option (List (List Int64)) :=
@@ -61,7 +61,7 @@ def on₀ : Chess.Board := Chess.pos [(6, 5), (48, 3), (1, 3), (60, 11)]
   ("↘", (1, -1)), ("↙", (-1, -1))].all (fun (n, d) => tbl n == some (Chess.D d)) &&
   tbl "K" == some Chess.K && tbl "N" == some Chess.N && tbl "X₀" == some (Chess.X 0) &&
   tbl "X₁" == some (Chess.X 1) && tbl "S₀" == some (Chess.S 0) && tbl "S₁" == some (Chess.S 1) &&
-  fibre "W'" == some (Chess.W on₀) && fibre "P'" == some (Chess.P on₀)
+  fibre "W'" == some (Chess.W on₀) && fibre "Pin'" == some (Chess.P on₀)
 
 /-! `Chess.lean`'s checks, each against `Chess` and against the value it states. -/
 
@@ -76,7 +76,7 @@ def on₀ : Chess.Board := Chess.pos [(6, 5), (48, 3), (1, 3), (60, 11)]
 #guard let a := answer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)]
   a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)]) && a == some [[3, 1, 57], [3, 15, 63]]
 
-/-- `μ` on `ps` agrees with `Chess.isMate` and with the verdict `v` the check states. -/
+/-- `#` on `ps` agrees with `Chess.isMate` and with the verdict `v` the check states. -/
 def mate (ps : List (Nat × Int64)) (v : Bool) : Bool := let m := mated ps; m == some (leanMate ps) && m == some v
 
 -- W Kg1 Ra7 Rb8, B Ke8 mated; with B Kc8, Kxb8 takes the undefended rook

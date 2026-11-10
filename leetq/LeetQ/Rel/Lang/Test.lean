@@ -35,7 +35,7 @@ def variant (s g : String) : Except Err Out := do
     | .defn p "G" [] _ => .defn p "G" [] (.rel g)
     | d => d)
 
-def given : Except Err Out := runText (blocks ++ "qR ≜ QR(∋)\nqM ≜ QM(∋)\nqF ≜ QcF\nqh ≜ Qh(∋)\n")
+def given : Except Err Out := runText (blocks ++ "qR ≜ QR(∋)\nqM ≜ QM(∋)\nqF ≜ Qc⇝\nqh ≜ Qh(∋)\n")
 def table : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,C)}"
 def cycle : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,A)}"
 
@@ -45,8 +45,8 @@ def ok (r : Except Err Out) : Out := match r with | .ok o => o | .error _ => {}
     (the closed row), on the reachable states — `est` of a map is the map — and on their complements, where a
     block has two values. -/
 def orders : Except Err Out := runText (blocks ++ "O ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
-  "Of ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) ≜ Λ(S)est(O)\nlf(S : X ⟶ X, P : X ⟶ X) ≜ Λ(S)est(P)\n" ++
-  "tc(S : X ⟶ X) ≜ Λ(S)thin(O)\ntf(S : X ⟶ X, P : X ⟶ X) ≜ Λ(S)thin(P)\nY(S : X ⟶ X) ≜ ∼S\n" ++
+  "Of ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) ≜ Λ(S)est(O)\nlf(S : X ⟶ X, V : X ⟶ X) ≜ Λ(S)est(V)\n" ++
+  "tc(S : X ⟶ X) ≜ Λ(S)thin(O)\ntf(S : X ⟶ X, V : X ⟶ X) ≜ Λ(S)thin(V)\nY(S : X ⟶ X) ≜ ∼S\n" ++
   "check Qlc(∋) = Q∋\ncheck Qlf(∋,Of) = Qlc(∋)\ncheck Qlf(Y(∋),Of) = Qlc(Y(∋))\n" ++
   "check Qtf(∋,Of) = Qtc(∋)\ncheck Qtf(Y(∋),Of) = Qtc(Y(∋))\nprint s₀lf(Y(∋),Of)\nprint s₀tf(Y(∋),Of)\n")
 
@@ -102,6 +102,11 @@ def errAt (src : String) (line : Nat) (what : String) : Bool :=
 #guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) ≜ ⦇S,S⦈\nf ≜ L(∋)\n" 3 "not liftable"
 -- a term that needs a universe its object does not have
 #guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
+-- a definition or parameter taking a builtin's name, or a name already defined or declared
+#guard errAt "obj B = 0…1\nq ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
+#guard errAt "obj B = 0…1\nf(S, E : B ⟶ B) ≜ S ∩ E\n" 2 "`E` is a builtin"
+#guard errAt "obj B = 0…1\nK ≜ π₁\nq ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
+#guard errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
 
 /-! The parser's round trip: each operator row of §b, printed as it was read. -/
 
@@ -139,8 +144,8 @@ def reading : Decl → Option (String × String)
     ("S'", "((S ∩ ∼(p ⊤)) ∪ p)"),
     ("h", "G ⊑ S"),
     ("c", "⟨𝟙, M(∋)⟩"),
-    ("F", "S'((π₁ ∋), π₂)"),
-    ("t", "(c Λ(F))"),
+    ("⇝", "S'((π₁ ∋), π₂)"),
+    ("t", "(c Λ(⇝))"),
     ("s₀", "ran(Λ((⊤(X, X) ⟨𝟙, S₀⟩)))"),
     ("r", "Λ((s₀ ⊤(St, N)))"),
     ("L", "ran((r ⦇ran(⟨D, ((D ⊤) {(0, 0)})⟩), (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))⦈))"),
@@ -149,10 +154,10 @@ def reading : Decl → Option (String × String)
     ("C", "L(H, (Q t)°)"),
     ("W", "((C π₁)° (C π₂))"),
     ("δ", "(Λ(W) est(≤))"),
-    ("K", "((Q c) dom((((Λ(F) δ) succ) ∩ (π₁ δ))))"),
+    ("K", "((Q c) dom((((Λ(⇝) δ) succ) ∩ (π₁ δ))))"),
     ("≼", "(((π₁ <) π₁°) ∪ ((π₁ π₁°) ∩ ((π₂ ≤) π₂°)))"),
     ("σ", "(Λ((K π₂)) est(≼))"),
-    ("ν", "(⟨dom(σ), σ⟩ Λ(F))"),
+    ("ν", "(⟨dom(σ), σ⟩ Λ(⇝))"),
     ("Z", "L(s₀, ν)"),
     ("ζ", "((Z π₂)° (Z π₁))"),
     ("plan", "(ζ σ)"),

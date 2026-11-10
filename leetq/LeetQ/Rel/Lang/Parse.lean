@@ -19,6 +19,8 @@ structure S where
   known : List (String × Nat) := []
   /-- The declared objects. -/
   objs : List String := []
+  /-- Every name the program has defined or declared, with where: a second definition of it is an error. -/
+  taken : List (String × Pos) := []
 
 abbrev P := StateT S (Except Err)
 
@@ -191,9 +193,22 @@ partial def litPair : P (String × String) := do
 
 end
 
+/-- The names a definition must not take: they read as `∪ ∩ ⊤ °`. -/
+def banned : List String := ["U", "u", "n", "T", "o"]
+
+/-- `w` may be defined at `p`: not a builtin of the operator table, not read as an operator, and not in
+    `taken`, the names already defined or declared in its scope. -/
+def fresh (p : Pos) (w : String) (taken : List (String × Pos)) : P Unit := do
+  if banned.contains w then throw ⟨p, s!"the name '{w}' reads as an operator; choose another"⟩
+  if (builtin w).isSome then throw ⟨p, s!"`{w}` is a builtin; choose another name"⟩
+  if let some q := taken.lookup w then throw ⟨p, s!"`{w}` is already defined at line {q.line}"⟩
+
 /-- A parameter: a name and, when it may be given a family, its type `A ⟶ B`. -/
 def param : P Param := do
+  ws
+  let p ← pos
   let n ← word
+  if (builtin n).isSome then throw ⟨p, s!"`{n}` is a builtin; choose another name"⟩
   ws
   if (← peek) == some ':' then do adv; let a ← object; tok '⟶'; let b ← object; pure ⟨n, some (a, b)⟩
   else pure ⟨n, none⟩
@@ -203,14 +218,15 @@ def num : P Nat := do
   let w ← word
   match w.toNat? with | some k => pure k | none => throw ⟨p, s!"expected a number, found '{w}'"⟩
 
-/-- The names a definition must not take: they read as `∪ ∩ ⊤ °`. -/
-def banned : List String := ["U", "u", "n", "T", "o"]
-
 /-- One declaration, up to the end of its line. -/
 def decl (p : Pos) (w : String) : P Decl := do
   match w with
   | "obj" =>
+    ws
+    let q ← pos
     let n ← word
+    if let some r := (← get).taken.lookup n then throw ⟨q, s!"`{n}` is already defined at line {r.line}"⟩
+    modify fun s => { s with taken := (n, q) :: s.taken }
     tok '='
     ws
     let d ← match ← peek with
@@ -231,9 +247,14 @@ def decl (p : Pos) (w : String) : P Decl := do
       | _ => expected "'⊑' or '='"
     pure (.check p e (← expr) eq)
   | _ =>
-    if banned.contains w then throw ⟨p, s!"the name '{w}' reads as an operator; choose another"⟩
+    fresh p w (← get).taken
     ws
     let ps ← if (← peek) == some '(' then do adv; sepBy param ')' else pure []
+    -- a parameter may shadow a top-level definition (`on` in Chess), never another parameter
+    let _ ← ps.foldlM (fun (seen : List String) q => do
+      if seen.contains q.name then throw ⟨p, s!"`{q.name}` is already a parameter of `{w}`"⟩
+      pure (q.name :: seen)) []
+    modify fun s => { s with taken := (w, p) :: s.taken }
     let outer := (← get).known
     modify fun s => { s with known := ps.map (fun q => (q.name, 0)) ++ s.known }
     tok '≜'

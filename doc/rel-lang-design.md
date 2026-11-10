@@ -107,6 +107,10 @@ Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Gr
 ```
 
 - A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`.
+- A name is defined once: a definition, an object or a parameter may not take a builtin of §b (an entry of the
+  operator table: `π₂ is a builtin`), and a definition or an object not a name already defined or declared (`K is
+  already defined at line n`), each an error at the second. A parameter may shadow a top-level definition (Chess
+  names its board `on` and its parameters `on`), never another parameter of its definition.
 - A one-argument builtin takes a pair as its parentheses: `ran⟨D,D⊤{(0,0)}⟩`.
 - A literal's side is the one declared object holding all its words (named elements, or numbers in its range).
 - A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.
@@ -230,15 +234,16 @@ Not liftable:
 
 **Back from a family.** Outside the body a family is an ordinary relation `I ⟶ A×B`. `Λ(F) : I ⟶ 𝒫(A×B)` gives
 each key its set of pairs, one state per key, equal fibres one array (`transpose` sorts the values), and a key
-with an empty fibre none. So `t ≜ cΛ(F)` is one move `St ⟶ St`: `c` takes each state to its candidates, `Λ(F)`
+with an empty fibre none. So `t ≜ cΛ(⇝)` is one move `St ⟶ St`: `c` takes each state to its candidates, `Λ(⇝)`
 each candidate to the state it leads to. A test needs no way back: `h(∋)` is already a coreflexive on states.
 
 ## f. Not in the language
 
 Lean `let`, lambdas, tuples of relations, `iter`, `Except`, `do`, a loop, recursion, `μ`, `*`, first-class
 operators, arithmetic beyond `succ`/`plus`/`≤`/`<` on a declared number universe, row order (`num`, `enum`),
-and every operator in the "not yet" list of §b. The only failures are the front end's: unknown name, object
-mismatch, no universe for a term (§a), a lifting error (§e), each with its line.
+and every operator in the "not yet" list of §b, shadowing (§c). The only failures are the front end's: unknown
+name, a name defined twice or a builtin's name taken (§c), object mismatch, no universe for a term (§a), a lifting
+error (§e), each with its line.
 
 ## g. The blocks world and its search
 
@@ -260,8 +265,8 @@ S'(S : X ⟶ X, p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p    -- the state after t
 h(S : X ⟶ X) ≜ G ⊑ S                          -- S holds the goal
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- St ⟶ St×(X×X): a state, each move it allows
-F ≜ S'(π₁∋,π₂)                                -- St×(X×X) ⟶ X×X: the pairs it leads to
-t ≜ cΛ(F)                                     -- St ⟶ St: one move
+⇝ ≜ S'(π₁∋,π₂)                                -- St×(X×X) ⟶ X×X: the pairs it leads to
+t ≜ cΛ(⇝)                                     -- St ⟶ St: one move
 s₀ ≜ ran(Λ(⊤(X,X)⟨𝟙,S₀⟩))                     -- the start state
 r ≜ Λ(s₀⊤(St,N))                              -- the array 0…27, one fold round each
 L(D,B) ≜ ran(r⦇ran⟨D,D⊤{(0,0)}⟩, π₂ ∪ (π₂⟨π₁B,π₂ succ⟩)⦈)   -- (s,k): s is k steps of B from D
@@ -270,10 +275,10 @@ H ≜ Qh(∋)                                     -- the reachable states holdin
 C ≜ L(H,(Qt)°)                                -- each state with each walk length to H
 W ≜ (Cπ₁)°(Cπ₂)                               -- St ⟶ N
 δ ≜ Λ(W)est(≤)                                -- the distance to the goal
-K ≜ Qc dom(Λ(F)δ succ ∩ (π₁δ))                -- the moves that take the distance down by one
+K ≜ Qc dom(Λ(⇝)δ succ ∩ (π₁δ))                -- the moves that take the distance down by one
 ≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))           -- moves in lexicographic order
 σ ≜ Λ(Kπ₂)est(≼)                              -- the move chosen in each state
-ν ≜ ⟨dom(σ),σ⟩Λ(F)                            -- the state it leads to
+ν ≜ ⟨dom(σ),σ⟩Λ(⇝)                            -- the state it leads to
 Z ≜ L(s₀,ν)                                   -- the chosen path, with each state's step
 ζ ≜ (Zπ₂)°(Zπ₁)                               -- N ⟶ St: the k-th state
 plan ≜ ζσ                                     -- N ⟶ X×X: the k-th move
@@ -288,9 +293,10 @@ Lines changed from the per-key version:
 | `S'`          | `S'(S,p) ≜ S − (pπ₁π₁°) ∪ p`             | `S'(S,p : X ⟶ X) ≜ (S ∩ ∼(p⊤)) ∪ p`  |
 | `g`           | `g ≜ ran⟨𝟙,G⟩`                           | `h(S : X ⟶ X) ≜ G ⊑ S`               |
 | `H`           | `H ≜ Q − dom(Q⊤g − (Q∋))`                | `H ≜ Qh(∋)`                          |
-| `T`           | `T ≜ cΛ(F)`                              | `t ≜ cΛ(F)`: `T` reads as `⊤`        |
+| `T`           | `T ≜ cΛ(F)`                              | `t ≜ cΛ(⇝)`: `T` reads as `⊤`        |
 
-`c` and `F` keep their text; they now apply `M` and `S'` to families, where before the bodies were rewritten.
+`c` and `⇝` (named `F` before, which is the list functor) keep their text; they now apply `M` and `S'` to families,
+where before the bodies were rewritten.
 
 `plan` is `{(0,(C,C)),(1,(B,C)),(2,(A,B))}`; from all blocks on the table it is `{(0,(B,C)),(1,(A,B))}`; for
 the goal `{(A,B),(B,A)}` no state is in `H`, `δ` is empty, so `σ` is, and `plan` is `𝟘`. `BlocksRel.lean`
@@ -318,7 +324,7 @@ Front end (parser data, no semantics): tokens `≜ ∩ ∪ − ⇒ ° ⟨ ⟩ �
 `Decl` = `obj` (elements, number range, or object alias) | `def name params body` | `print` | `check`, a param
 with its optional type; `Expr` = the grammar of §c; an object-name table (name ↦ `Obj` and universe), since
 `Obj` has no names. Interpreter environment: name ↦ evaluated relation, or ↦ demand-form term for the
-definitions whose source has no universe (`c F t`, the operator `L`); the lifting is a rewrite of a body by the
+definitions whose source has no universe (`c ⇝ t`, the operator `L`); the lifting is a rewrite of a body by the
 rows of §e before it runs, so it adds no runtime type.
 
 Now in `Alg` (no new type, field or constructor):

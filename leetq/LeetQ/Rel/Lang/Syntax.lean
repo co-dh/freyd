@@ -36,7 +36,8 @@ inductive Op
   | dom | ran | lam | E | P | est | thin | filter | takewhile | map | frac
   deriving Repr, BEq, Inhabited
 
-/-- The one table of builtins: symbol and arity. A program's definition of the same name shadows it. -/
+/-- The one table of builtins: symbol and arity. A program may not define or take as a parameter a name
+    in it (§c). -/
 def Op.table : List (String × Op × Nat) :=
   [("𝟙", .id, 0), ("𝟘", .zero, 0), ("⊤", .top, 0), ("∋", .mem, 0), ("∈", .ni, 0), ("π₁", .outl, 0),
    ("π₂", .outr, 0), ("inl", .inl, 0), ("inr", .inr, 0), ("≤", .leq, 0), ("<", .lt, 0), ("succ", .succ, 0),

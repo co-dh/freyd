@@ -19,36 +19,36 @@ X₁ ≜ ↘ ∪ ↙                                    -- a black pawn's forwar
 S₀ ≜ {(8,8),(9,9),(10,10),(11,11),(12,12),(13,13),(14,14),(15,15)}         -- white's pawn rank
 S₁ ≜ {(48,48),(49,49),(50,50),(51,51),(52,52),(53,53),(54,54),(55,55)}     -- black's pawn rank
 
-*(R : Sq ⟶ Sq) ≜ 𝟙 ∪ R ∪ (RR) ∪ (RRR) ∪ (RRRR) ∪ (RRRRR) ∪ (RRRRRR) ∪ (RRRRRRR)   -- R⁰ ∪ … ∪ R⁷
+ⁿ(R : Sq ⟶ Sq) ≜ 𝟙 ∪ R ∪ (RR) ∪ (RRR) ∪ (RRRR) ∪ (RRRRR) ∪ (RRRRRR) ∪ (RRRRRRR)   -- R⁰ ∪ … ∪ R⁷
 e(on : Sq ⟶ Pc) ≜ 𝟙 − dom(on)                   -- the empty squares
 k(on : Sq ⟶ Pc) ≜ dom(on{(k,k)})               -- the black king's square
 f(on : Sq ⟶ Pc) ≜ 𝟙 − dom(on{(p,p),(n,n),(b,b),(r,r),(q,q),(k,k)})   -- the squares with no black piece
 
-r(s : Sq ⟶ Sq, D, E : Sq ⟶ Sq) ≜ sD*(ED)     -- s's ray along D, on through E to the first square off E
-ρ(s : Sq ⟶ Sq, d : Sq ⟶ Sq, E : Sq ⟶ Sq) ≜ r(s,→,E) ∪ r(s,←,E) ∪ r(s,↑,E) ∪ r(s,↓,E) ∪ r(d,↗,E) ∪ r(d,↖,E) ∪ r(d,↘,E) ∪ r(d,↙,E)   -- the rays of the orthogonal sliders s and the diagonal d
+r(s : Sq ⟶ Sq, D, V : Sq ⟶ Sq) ≜ sDⁿ(VD)     -- s's ray along D, on through V to the first square off V
+ρ(s : Sq ⟶ Sq, d : Sq ⟶ Sq, V : Sq ⟶ Sq) ≜ r(s,→,V) ∪ r(s,←,V) ∪ r(s,↑,V) ∪ r(s,↓,V) ∪ r(d,↗,V) ∪ r(d,↖,V) ∪ r(d,↘,V) ∪ r(d,↙,V)   -- the rays of the orthogonal sliders s and the diagonal d
 p(t, S, X, e : Sq ⟶ Sq, c : Sq ⟶ Sq) ≜ te ∪ (Stete) ∪ (Xc)   -- pawn moves: forward onto e, two from S across e, diagonally onto c
-q(s : Sq ⟶ Sq, D, e : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ s*(De)D dom(*(De)Dk)   -- a slider of s to each square between it and k along D
+q(s : Sq ⟶ Sq, D, e : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ sⁿ(De)D dom(ⁿ(De)Dk)   -- a slider of s to each square between it and k along D
 
 W(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K)   -- the squares white attacks
 B(on : Sq ⟶ Pc) ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), e(on)) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,e(on),dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)})))   -- black's moves but the king's
-P(on : Sq ⟶ Pc) ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))   -- the pinned squares
+Pin(on : Sq ⟶ Pc) ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))   -- the pinned squares
 M(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,e(on),dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)})))   -- white's moves
 
 a(k : Sq ⟶ Sq, f : Sq ⟶ Sq, W : Sq ⟶ Sq) ≜ k(𝟙 ∪ (Kf)) ⊑ ⊤W   -- the king and each of its steps attacked
-i(B : Sq ⟶ Sq, P : Sq ⟶ Sq, W : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ B(𝟙 ∪ P°)Wk ⊑ P°⊤   -- each capture or interposition pinned
+i(B : Sq ⟶ Sq, Pin : Sq ⟶ Sq, W : Sq ⟶ Sq, k : Sq ⟶ Sq) ≜ B(𝟙 ∪ Pin°)Wk ⊑ Pin°⊤   -- each capture or interposition pinned
 
 b ≜ ran(Λ(⊤(Sq,Sq)⟨𝟙,on⟩))                    -- the board on
 W' ≜ bW(∋)
-P' ≜ bP(∋)
-μ ≜ b a(k(∋),f(∋),W') i(B(∋),P',W',k(∋))      -- the board, when it is mate
+Pin' ≜ bPin(∋)
+# ≜ b a(k(∋),f(∋),W') i(B(∋),Pin',W',k(∋))    -- the board, when it is mate
 
 c ≜ ⟨𝟙,M(∋)⟩                                  -- Bd ⟶ Bd×(Sq×Sq): a board, each white move on it
 A(on : Sq ⟶ Pc, m : Sq ⟶ Sq) ≜ 𝟙 − dom(m) − ran(m)on ∪ (m°on)   -- on after the move m
-F ≜ A(π₁∋,π₂)                                 -- Bd×(Sq×Sq) ⟶ Sq×Pc: the board after the move
+⇝ ≜ A(π₁∋,π₂)                                 -- Bd×(Sq×Sq) ⟶ Sq×Pc: the board after the move
 j ≜ ran(bc)                                   -- the moves on b
-W₁ ≜ jW(F)
-P₁ ≜ jP(F)
-ν ≜ j a(k(F),f(F),W₁) i(B(F),P₁,W₁,k(F))      -- the moves that mate
+W₁ ≜ jW(⇝)
+Pin₁ ≜ jPin(⇝)
+ν ≜ j a(k(⇝),f(⇝),W₁) i(B(⇝),Pin₁,W₁,k(⇝))      -- the moves that mate
 m ≜ ran(νπ₂)π₁ on                             -- Sq×Sq ⟶ Pc: each mating move, the piece it moves
 
 print m
