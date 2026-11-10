@@ -6,6 +6,8 @@
 import QLean.Kernel.Elementwise
 import QLean.Eval.Dyad
 import QLean.Dep.Val
+import QLean.Verify.Chain
+import QLean.Verify.Alp
 import LeetQ.Rel.KernelWF.Raze
 
 namespace LeetQ.Rel.KernelWF
@@ -155,6 +157,13 @@ theorem orElse_isSome {α : Type} (x : Option α) {y : Option α} (hy : y.isSome
   · exact hy
   · rfl
 
+/-- An `∃` whose witness an `Option` computes is decided by reading the `Option`. -/
+instance decExistsSome {α : Type} {o : Option α} {P : α → Prop} [DecidablePred P] :
+    Decidable (∃ a, o = some a ∧ P a) :=
+  match o with
+  | none => isFalse (by simp)
+  | some a => decidable_of_iff (P a) (by simp)
+
 /-- The conditions `valPayload` tests of the types alone, as it tests them. -/
 def ValClaims (v : Prim.Dyadic) (t u rt : QAtomicType) : Prop :=
   (valOp v).isSome ∧ ∃ cls, clsOf rt = some cls ∧ (scales v = true ∨ ticksMeet t u rt = true) ∧
@@ -185,8 +194,8 @@ theorem valPayload_isSome {v : Prim.Dyadic} {shape : UInt8} {t u rt : QAtomicTyp
     are served by their own engines, any other pair at the class of the type both widen to. -/
 def CmpClaims (v : Prim.Dyadic) (t u : QAtomicType) : Prop :=
   (cmpOp v).isSome ∧ ((t = .symbol ∧ u = .symbol) ∨ (t = .boolean ∧ u = .boolean) ∨
-    ∃ ct raw, (if t == u then some t else Prim.common t u) = some ct ∧ ticksMeet t u ct = true ∧
-      clsOf ct = some raw ∧
+    ∃ ct, (if t == u then some t else Prim.common t u) = some ct ∧ ticksMeet t u ct = true ∧
+      ∃ raw, clsOf ct = some raw ∧
       let cls := if raw == Kernel.Ew.bits || ((clsOf t == some Kernel.Ew.bits || clsOf u == some Kernel.Ew.bits) &&
         (raw == Kernel.Ew.u8 || raw == Kernel.Ew.i16)) then Kernel.Ew.i32 else raw
       convertible t cls = true ∧ convertible u cls = true)
@@ -196,6 +205,18 @@ def CmpClaims (v : Prim.Dyadic) (t u : QAtomicType) : Prop :=
     interned column. -/
 def SymClaims (ea eb : Enc) : Prop :=
   (∃ ba oa bb ob, ea = .syms ba oa ∧ eb = .syms bb ob) ∨ ((symIds ea).isSome ∧ (symIds eb).isSome)
+
+instance (v : Prim.Dyadic) (t u rt : QAtomicType) : Decidable (ValClaims v t u rt) := by
+  unfold ValClaims; exact inferInstance
+
+instance (v : Prim.Dyadic) (t u : QAtomicType) : Decidable (CmpClaims v t u) := by
+  unfold CmpClaims; exact inferInstance
+
+/-- Read off the two constructors: whether both are dense blobs. -/
+instance (ea eb : Enc) : Decidable (SymClaims ea eb) := by
+  unfold SymClaims
+  refine @instDecidableOr _ _ ?_ inferInstance
+  cases ea <;> cases eb <;> first | exact isTrue ⟨_, _, _, _, rfl, rfl⟩ | exact isFalse (by simp)
 
 /-- `cmpPayload` answers on well-formed operands whenever its type conditions hold and, at a symbol pair,
     the encodings are ones it reads. -/
@@ -216,7 +237,7 @@ theorem cmpPayload_isSome {v : Prim.Dyadic} {shape : UInt8} {t u : QAtomicType} 
       simp only [beq_self_eq_true, Bool.and_self, if_true]
       (repeat' split) <;> (try simp_all) <;> (rename_i h; exact h _ _ _ _ _ _ rfl rfl rfl rfl rfl rfl)
   · rw [if_neg (by simpa [Bool.and_eq_true, beq_iff_eq] using hs)]
-    rcases hty with h | ⟨rfl, rfl⟩ | ⟨ct, raw, hct, htk, hraw, hcv⟩
+    rcases hty with h | ⟨rfl, rfl⟩ | ⟨ct, hct, htk, raw, hraw, hcv⟩
     · exact absurd h hs
     · cases ea <;> simp [Enc.WF] at ha
       cases eb <;> simp [Enc.WF] at hb
@@ -281,6 +302,14 @@ theorem dyadColumn_isSome {v : Prim.Dyadic} {shape : UInt8} {t u rt : QAtomicTyp
     · rw [if_neg (by simp [cmpOp_none_of_valOp hv.1])]; simp only [Option.isSome_map]
       exact valPayload_isSome hv ha hb
 
+/-- The whole hypothesis bundle of `dyadColumn_isSome` past the payloads' well-formedness is decidable,
+    which is what `if h : claims then kernel else reference` needs. -/
+example (v : Prim.Dyadic) (shape : UInt8) (t u rt : QAtomicType) (na nb n : Nat) (a b : Enc) :
+    Decidable (Eval.ewType v t u = some rt ∧ dyadCount shape t u na nb = some n ∧
+      ¬(v = .fill ∧ shape = Kernel.Ew.va) ∧
+      ((t = .guid ∧ u = .guid ∧ (v = .eq ∨ v = .ne ∨ v = .fill)) ∨ CmpClaims v t u ∨ ValClaims v t u rt) ∧
+      (t = .symbol → u = .symbol → SymClaims a b)) := inferInstance
+
 /-! ## `monColumn` -/
 
 /-- `mapPass` answers on a well-formed operand of a type with a class, at any class but a boolean's own. -/
@@ -333,4 +362,209 @@ theorem signumPayload_isSome {t : QAtomicType} {n : Nat} {e : Enc} {src : UInt8}
   simp only [hc, Option.map_some, Option.bind_eq_bind, Option.bind_some]
   refine bind_isSome (operandSource_isSome hc hw (fun _ => ?_) (by simp)) (fun _ => rfl)
   split <;> simp_all [Kernel.Ew.i32, Kernel.Ew.bits]
+
+/-! ## A chain answers its last stage -/
+
+/-- A build's program holds one record per stage, and one for `last`. -/
+theorem prog_count (b : Kernel.Ew.Build) (last : Kernel.Ew.Stage) :
+    (b.prog last).size / Kernel.Ew.stageBytes = b.stages.size + 1 := by
+  have hL : ∀ x ∈ (b.stages.push last).toList.map Kernel.Ew.Stage.bytes, x.size = Kernel.Ew.stageBytes :=
+    fun x hx => by obtain ⟨s, -, rfl⟩ := List.mem_map.1 hx; exact Verify.stage_bytes_size s
+  have hs := (Verify.foldl_append_get Kernel.Ew.stageBytes _ hL ByteArray.empty).1
+  have hp : b.prog last =
+      ((b.stages.push last).toList.map Kernel.Ew.Stage.bytes).foldl (· ++ ·) ByteArray.empty := by
+    simp only [Kernel.Ew.Build.prog, ← Array.foldl_toList, Array.toList_map]
+  rw [hp, hs]; simp [Kernel.Ew.stageBytes]
+
+/-- The last of the outputs a fold pushes one per step is the last step's. -/
+theorem foldl_push_getLast {α : Type} [Inhabited α] (G : Array α → Nat → α) (m : Nat) :
+    ((List.range (m + 1)).foldl (fun outs j => outs.push (G outs j)) #[])[m]! =
+      G ((List.range m).foldl (fun outs j => outs.push (G outs j)) #[]) m := by
+  have hs : ((List.range m).foldl (fun outs j => outs.push (G outs j)) #[]).size = m := by
+    rw [foldl_size Array.size _ 1 (fun _ _ => Array.size_push ..)]; simp
+  rw [List.range_succ, List.foldl_append]
+  simp [Array.getElem_push, hs]
+
+/-- `chain` answers what its last stage's engine writes; the engine is read off `last`. -/
+local macro "run_reduce" : tactic => `(tactic| (
+  simp only [Kernel.Ew.Build.run, Kernel.Ew.chain, prog_count, Nat.add_sub_cancel]
+  rw [foldl_push_getLast, Verify.stageAt_prog _ _ _ (Nat.lt_succ_self _), Array.getElem_push_eq]))
+
+/-- A chain ending in `Ew.mon` answers `n` elements at its class's width. -/
+theorem run_mon_size (b : Kernel.Ew.Build) (op cls a : UInt8) (nul : Int64) (n : USize) :
+    (b.run { engine := Kernel.Ew.eMon, op, cls, a, nul } n).size = n.toNat * Kernel.Ew.width cls := by
+  run_reduce; simp [Kernel.Ew.eMon, Kernel.Ew.eVal, Kernel.Ew.eCmp, Ew.mon_size]
+
+/-! ## What `payload` answers -/
+
+/-- A chain's answer of `n` elements at a type's width, other than boolean, is a well-formed payload. -/
+theorem payload_wf {rt : QAtomicType} {w : Nat} {b : Kernel.Ew.Build} {last : Kernel.Ew.Stage} {n : USize}
+    (hb : rt ≠ .boolean) (hw : rt.width = some w) (hs : (b.run last n).size = n.toNat * w) :
+    Enc.WF rt n.toNat (payload rt n (b, last)) := by
+  have hn : n.toNat < USize.size := USize.toNat_lt_size n
+  simp only [payload]
+  rw [if_neg (by simpa using hb), hw]
+  by_cases he : Column.encodes rt = true
+  · simp only [he]
+    have h0 : 0 < w ∧ w ≤ 8 ∧ rt ≠ .guid := by
+      cases rt <;> simp_all [QAtomicType.width, Column.encodes] <;> omega
+    generalize hE : b.runEnc last n w.toUSize = E
+    obtain ⟨m, p⟩ := E
+    have hm : m = (Kernel.Coc.encode w.toUSize (b.run last n)).1 := (congrArg Prod.fst hE).symm
+    refine answer_wf (wf_foR (by simp [hw]) hb h0.2.2 ?_) hn
+    rw [hm, Verify.nblk_encode w h0.1 h0.2.1, hs, Nat.mul_div_cancel _ h0.1]
+    simp only [Column.blk]; omega
+  · simp only [Bool.not_eq_true] at he; simp only [he]
+    exact answer_wf (wf_bytes hb hw hs) hn
+
+/-- `mapPass` answers a well-formed payload when its stage writes `n` elements at the result type's width. -/
+theorem mapPass_wf {bld : Kernel.Ew.Build} {cls : UInt8} {nulIn : QAtomicType → Int64} {nulOut : Int64}
+    {t rt : QAtomicType} {n w : Nat} {e r : Enc} {stage : UInt8 → Kernel.Ew.Stage} (hn : n < USize.size)
+    (hb : rt ≠ .boolean) (hw : rt.width = some w)
+    (hs : ∀ (b : Kernel.Ew.Build) sa, (b.run (stage sa) n.toUSize).size = n * w)
+    (h : mapPass bld cls nulIn nulOut t rt n e stage = some r) : Enc.WF rt n r := by
+  unfold mapPass at h
+  cases ho : operandSource bld t n e cls (nulIn t) nulOut n with
+  | none => simp [ho] at h
+  | some x =>
+    obtain ⟨b, sa⟩ := x
+    simp only [ho, Option.bind_eq_bind, Option.bind_some, Option.some.injEq] at h
+    subst h
+    have := payload_wf (n := n.toUSize) (b := b) (last := stage sa) hb hw (by rw [hs, toUSize_toNat hn])
+    rwa [toUSize_toNat hn] at this
+
+/-- An alternative that answered is one of its two sides. -/
+theorem orElse_eq_some {α : Type} {x y : Option α} {r : α} (h : (x <|> y) = some r) :
+    x = some r ∨ y = some r := by
+  cases x with
+  | none => exact .inr h
+  | some a => exact .inl h
+
+/-- What `negAbsPayload` answers is `n` elements of its result type, when that type has a class other
+    than the bitmap's and `n` fits a `USize`. -/
+theorem negAbsPayload_wf {op : UInt8} {t rt : QAtomicType} {n : Nat} {e r : Enc} {cls : UInt8}
+    (hn : n < USize.size) (hc : clsOf rt = some cls) (hcls : cls ≠ Kernel.Ew.bits)
+    (h : negAbsPayload op t rt n e = some r) : Enc.WF rt n r := by
+  have hb : rt ≠ .boolean := by rintro rfl; simp [clsOf] at hc; exact hcls hc.symm
+  have hg : rt ≠ .guid := by rintro rfl; simp [clsOf] at hc
+  have hwd := width_clsOf hc hb
+  unfold negAbsPayload at h
+  simp only [hc, Option.bind_eq_bind, Option.bind_some] at h
+  rcases orElse_eq_some h with h1 | h1
+  · split at h1
+    · split at h1
+      · rename_i md pk _
+        generalize hE : Kernel.Ew.foRMonEnc op cls (nullPayload rt) md pk n.toUSize = E at h1
+        obtain ⟨m, p⟩ := E
+        simp only [Option.some.injEq] at h1; subst h1
+        have hm : m = (Kernel.Coc.encode (Kernel.Ew.width cls).toUSize
+            (Kernel.Ew.mon op cls (nullPayload rt) (Kernel.Coc.decode (Kernel.Ew.width cls).toUSize md pk
+              n.toUSize) n.toUSize)).1 := (congrArg Prod.fst hE).symm
+        have h0 := Verify.width_pos_le cls
+        refine answer_wf (wf_foR (by simp [hwd]) hb hg ?_) hn
+        rw [hm, Verify.nblk_encode _ h0.1 h0.2, Ew.mon_size, toUSize_toNat hn, Nat.mul_div_cancel _ h0.1]
+        simp only [Column.blk]; omega
+      · exact absurd h1 (by simp)
+    · exact absurd h1 (by simp)
+  · exact mapPass_wf hn hb hwd (fun b sa => by rw [run_mon_size, toUSize_toNat hn]) h1
+
+/-! ## `monColumn` answers -/
+
+/-- The names `monResultType` gives a type for. -/
+def monNames : List String :=
+  ["neg", "abs", "sqrt", "exp", "log", "sin", "cos", "tan", "asin", "acos", "atan", "null", "not", "signum",
+    "reciprocal", "floor", "ceiling"]
+
+/-- A type a numeric map answers for is not `guid` or `symbol`. -/
+theorem numeric_of {t x rt : QAtomicType} (h : (if Prim.nonNumeric t then none else some x) = some rt) :
+    Prim.nonNumeric t = false := by
+  cases hn : Prim.nonNumeric t <;> simp_all
+
+/-- A float map answers on every well-formed operand of a type with a class. -/
+theorem floatMap_isSome {name : String} {t rt : QAtomicType} {n : Nat} {e : Enc} {op : UInt8}
+    (hop : floatMapOp name = some op) (hrt : (if (clsOf t).isSome then some QAtomicType.float else none) = some rt)
+    (hw : Enc.WF t n e) :
+    ((floatMapOp name).bind fun op => mapPass {} Kernel.Ew.f64 (verbNull false) (nullPayload .float) t rt n e
+      fun sa => { engine := Kernel.Ew.eMon, op, cls := Kernel.Ew.f64, a := sa, nul := Kernel.Ew.noNull }).isSome := by
+  split at hrt
+  · rename_i hcs
+    obtain ⟨s, hs⟩ := Option.isSome_iff_exists.1 hcs
+    rw [hop, Option.bind_some]; exact mapPass_isSome hs hw (fun _ => by simp [Kernel.Ew.f64, Kernel.Ew.bits])
+  · exact absurd hrt (by simp)
+
+/-- `monColumn` answers on every well-formed operand at every name and type `monResultType` answers for,
+    except the general list, which no map reads. -/
+theorem monColumn_isSome {name : String} {t rt : QAtomicType} {n : Nat} {e : Enc} (hname : name ∈ monNames)
+    (hrt : monResultType name t = some rt) (hg : t ≠ .general) (hw : Enc.WF t n e) (hn : n < USize.size) :
+    (monColumn name t n e).isSome := by
+  unfold monColumn; rw [hrt]; simp only [Option.isSome_map]
+  have key : ∀ {f : QAtomicType → Option Enc}, monPayload name t n e = (monResultType name t).bind f →
+      (f rt).isSome → (monPayload name t n e).isSome := fun h1 h2 => by rw [h1, hrt]; exact h2
+  simp only [monNames, List.mem_cons, List.not_mem_nil, or_false] at hname
+  rcases hname with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl
+  · obtain ⟨s, c, hs, hc, hcb⟩ := negType_cls (rt := rt) hrt hg
+    exact key rfl (negAbsPayload_isSome hs hc hcb hw)
+  · obtain ⟨s, c, hs, hc, hcb⟩ := negType_cls (rt := rt) hrt hg
+    exact key rfl (negAbsPayload_isSome hs hc hcb hw)
+  iterate 9 exact key rfl (floatMap_isSome rfl hrt hw)
+  · refine key rfl ?_
+    show (if t == .guid then guidNull n e
+      else if t == .symbol then cmpPayload .eq Kernel.Ew.va .symbol .symbol n e 1 (.syms ⟨#[0]⟩ #[0, 1]) n
+      else match nullBits t with
+        | some k => eqConstPayload t k n e
+        | none => do let _ ← clsOf t; some (.bits ⟨Array.replicate ((n + 7) / 8) 0⟩)).isSome
+    by_cases hgd : t = .guid
+    · subst hgd; simp only [beq_self_eq_true, if_true, guidNull, Option.isSome_map]
+      exact bytesOf_isSome (by decide) (by decide) hw
+    rw [if_neg (by simpa using hgd)]
+    by_cases hsy : t = .symbol
+    · subst hsy; simp only [beq_self_eq_true, ↓reduceIte]
+      exact cmpPayload_isSome ⟨rfl, .inl ⟨rfl, rfl⟩⟩ hw (by decide)
+        (fun _ _ => by cases e <;> simp [Enc.WF] at hw <;> simp [SymClaims, symIds])
+    rw [if_neg (by simpa using hsy)]
+    obtain ⟨s, hs⟩ := clsOf_of_numeric hg (by cases t <;> simp_all [Prim.nonNumeric])
+    cases hk : nullBits t
+    · simp [hs]
+    · exact eqConstPayload_isSome hs hw
+  · obtain ⟨s, hs⟩ := clsOf_of_numeric hg (numeric_of hrt)
+    exact key rfl (eqConstPayload_isSome hs hw)
+  · obtain ⟨s, hs⟩ := clsOf_of_numeric hg (numeric_of hrt)
+    exact key rfl (signumPayload_isSome hs hw)
+  · obtain ⟨s, hs⟩ := clsOf_of_numeric hg (numeric_of hrt)
+    exact key rfl (mapPass_isSome hs hw (fun _ => by simp [Kernel.Ew.f64, Kernel.Ew.bits]))
+  · have hr : kernelFloorType t = some rt := hrt
+    refine key rfl ?_
+    show (floorPayload t rt n e).isSome
+    unfold floorPayload
+    split
+    · rfl
+    · obtain ⟨s, hs⟩ : ∃ s, clsOf t = some s := by cases t <;> simp_all [kernelFloorType, clsOf]
+      simp only [hs, Option.bind_eq_bind, Option.bind_some]
+      exact mapPass_isSome hs hw (fun h => by subst h; simp [kernelFloorType] at hr)
+  · have hr : ((negType t).bind fun t1 => (kernelFloorType t1).bind fun t2 => negType t2) = some rt := hrt
+    cases h1 : negType t with
+    | none => rw [h1] at hr; exact absurd hr (by simp)
+    | some t1 =>
+    rw [h1, Option.bind_some] at hr
+    cases h2 : kernelFloorType t1 with
+    | none => rw [h2] at hr; exact absurd hr (by simp)
+    | some t2 =>
+    rw [h2, Option.bind_some] at hr
+    refine key rfl ?_
+    show (ceilingPayload t n e).isSome
+    unfold ceilingPayload
+    simp only [h1, h2, hr, Option.bind_eq_bind, Option.bind_some]
+    obtain ⟨s, c1, hs, hc1, hcb1⟩ := negType_cls h1 hg
+    have hg2 : t2 ≠ .general := by rintro rfl; cases t1 <;> simp [kernelFloorType] at h2
+    obtain ⟨s2, c3, hs2, hc3, hcb3⟩ := negType_cls hr hg2
+    split
+    · rename_i h12
+      have h12' : t1 = t2 := by simpa using h12
+      subst h12'
+      obtain ⟨r1, hr1⟩ := Option.isSome_iff_exists.1 (negAbsPayload_isSome (op := Kernel.Ew.neg) hs hc1 hcb1 hw)
+      rw [hr1, Option.bind_some]
+      exact negAbsPayload_isSome hs2 hc3 hcb3 (negAbsPayload_wf hn hc1 hcb1 hr1)
+    · simp only [hc1, hc3, Option.bind_some]
+      exact bind_isSome (operandSource_isSome hs hw (fun _ => hcb1) (by simp)) (fun _ => rfl)
 
