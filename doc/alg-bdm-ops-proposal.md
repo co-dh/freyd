@@ -5,6 +5,8 @@ Not implemented: each needs a new `Obj` constructor or a new representation, whi
 
 ## 1. Trees `tip`/`bin` (ch. 5 `⦇R⦈`, `F(R)`; ch. 9 `array`, `row`, `col`)
 
+**Declined by the user**: no `Obj.tree`.
+
 The Lean layer's tree is `Tree A = tip A | bin (Tree A) (Tree A)` (`Freyd.Alg.RelSet.TT.Tree`,
 AOP/A6_TreeTip.lean; `binFn`, AOP/A9_3_Bracket.lean:1015). `Obj` has no recursive side: `arr` is the only one
 whose rows have unbounded size, and its cells are flat.
@@ -27,6 +29,9 @@ With it, `row ≜ tails F(mct)`, `col ≜ inits F(mct)` and `array ≜ inits F(r
 `map` (they are definitions of the bracketing program, not operators, so out of scope until the program is).
 
 ## 2. Bags `bagify` (ch. 6, ch. 10)
+
+**Done**, variant "representation, no new constructor" (a sorted `arr`): `Alg.bagify`, the order `Obj.sortBy`'s
+(value order, code order at `arr`/`sum` cells). `Obj.bag` was declined.
 
 The Lean layer's bag is a list up to permutation (`Bag Job := Quotient perm`, AOP/A10_3_Tardy.lean:193),
 `bagify : list ⟶ bag` the quotient map.

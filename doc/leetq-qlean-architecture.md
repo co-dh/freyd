@@ -105,7 +105,7 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 6   | `μX : φ(X)`, an unfold then a fold `⦇T⦈°⦇h⦈`           | `iter`, `hylo` (a Lean loop, not a term)    | part  |
 | 6   | closure `R*`                                           | written with `iter` in `Chess.star`         | part  |
 | 6   | `perm`, `setify`, `ordered(≼)`, `sort(≼)`              | `perm` (`⦇[nil, add]⦈`), `setify` (`Λ(∋)`), `ordered`, `sort` (`perm ordered`) | yes |
-| 6   | `bagify`                                               | — (a bag needs a representation: `doc/alg-bdm-ops-proposal.md`) | no |
+| 6   | `bagify`                                               | `bagify` (a per-row grade); a bag is an `arr` sorted by `Obj.sortBy` (value order, code order at `arr`/`sum` cells), repeats kept; no type records it | yes |
 | 7   | `est(R) ≜ ∋ ∩ (∈\R°)`, `lb`                            | `est` (least)                               | yes   |
 | 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `prefix`, `suffix`, `succ`, `+` | `filter takewhile length Arr.sum head tail «prefix» suffix succ plus` | yes |
 | 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`, `cat`, `cat°`, `snoc°` | `inits tails zip cat unsnoc` on positions; `concat ≜ ⦇[nil,cat]⦈`, `snoc ≜ (𝟙×τ) cat`, `init ≜ snoc° π₁`, `uncat ≜ ⟨inits,tails⟩ zip ∋` | yes |

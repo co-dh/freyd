@@ -1391,6 +1391,26 @@ def perm {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
     AOP/A5_6_ListCombinators.lean:49, `Λ(inlist)`; B&dM §7.3 p.177): `Λ(∋)` total on `X`. -/
 def setify {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := lamOn (mem X) X
 
+/-- `bagify : arr B ⟶ bag(B)` on the arrays `X` (`bagify`, AOP/A10_3_Tardy.lean:232, the quotient map of
+    `perm`). A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
+    of its `perm` class no type records. Each row's cells gathered contiguous (`expand` of the clamped counts),
+    graded by value, then stably by row, so the rows keep their `lo`/`hi`. A per-row grade, not `sort`:
+    `sort ≜ perm ordered` enumerates the permutations. -/
+def bagify {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
+  let e := expand s.2
+  let pos := add (gather 8 s.1 e.1) e.2
+  let cells := Vals.pick B X.2.2.2 pos
+  let v := Obj.sortBy B cells (tilLongs (len pos).toUSize)
+  let p := gather 8 v (Code.ofLongs (gather 8 e.1 v)).grade
+  let hi := sums s.2
+  let lo := sub hi s.2
+  let ix := tilLongs n.toUSize
+  let r := min (len ix) (min (len lo) (len hi))
+  ⟨r, Vals.pickN (.arr B) X ix r (Nat.min_le_left _ _),
+    ⟨len p, longsN r lo (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)),
+      longsN r hi (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)), Vals.pick B cells p⟩⟩
+
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
     of `ys` outside `y Q z`. `cons°` of the suffixes, the pairs `(y, z)`, those no pair of `Q` (`antiJoin`). -/
@@ -2076,6 +2096,25 @@ private def Tp : LL := top (tilCol 120) (tilCol 10)
 -- `tic`: the non-empty prefixes of `a :: xs`
 #guard seteq ((tic (idU XP)).toList : List ((Int64 × List Int64) × List (List Int64)))
   [((5, [1, 2]), [[5], [5, 1], [5, 1, 2]]), ((6, []), [[6]])]
+
+-- `bagify` against `mergeSort`, a map, idempotent; `[3 1 3]` and `[1 3 3]` one bag, also each on its own
+#guard onArrs Xp (bagify Xp) (fun xs => [sorted xs]) && onArrs Xl (bagify Xl) (fun xs => [sorted xs]) &&
+  onArrs Xc (bagify Xc) (fun xs => [sorted xs]) && onArrs Xs (bagify Xs) (fun xs => [sorted xs]) && isMap (bagify Xp) Xp
+#guard let B := bagify Xp; seteq (B ≫ bagify B.val).toList B.toList
+private def X3 : Vals (.arr L) 2 := ⟨6, col [0, 3], col [3, 6], col [3, 1, 3, 1, 3, 3]⟩
+private def X31 : Vals (.arr L) 1 := ⟨3, col [0], col [3], col [3, 1, 3]⟩
+#guard seteq ((bagify X3).toList : List (List Int64 × List Int64)) [([3, 1, 3], [1, 3, 3]), ([1, 3, 3], [1, 3, 3])] &&
+  ((bagify X31).toList : List (List Int64 × List Int64)) == [([3, 1, 3], [1, 3, 3])]
+-- `bagify bagify° = perm` (B&dM's `bagify° · bagify`) among the rearrangements of `Xp`, and of the arrays of
+-- arrays `XX`; `bagify setify = setify`; the empty column
+#guard let Y := (perm Xp).val; seteq (bagify Y ≫ (bagify Y)°).toList (perm Y).toList
+#guard let Y := (perm XX).val; seteq (bagify Y ≫ (bagify Y)°).toList (perm Y).toList && isMap (bagify XX) XX
+#guard seteq (bagify Xp ≫ setify (bagify Xp).val).toList (setify Xp).toList
+#guard (bagify (Vals.empty (.arr L))).n == 0
+-- an array of pairs, lexicographic: `[(2,5) (1,7) (2,3)]`, `[(9,1) (0,1)]`, `[]`
+private def Xq : Vals (.arr (.prod L L)) 3 := ⟨5, col [0, 3, 5], col [3, 5, 5], (col [2, 1, 2, 9, 0], col [5, 7, 3, 1, 1])⟩
+#guard seteq ((bagify Xq).toList : List (List (Int64 × Int64) × List (Int64 × Int64)))
+  [([(2, 5), (1, 7), (2, 3)], [(1, 7), (2, 3), (2, 5)]), ([(9, 1), (0, 1)], [(0, 1), (9, 1)]), ([], [])]
 
 end Checks
 
