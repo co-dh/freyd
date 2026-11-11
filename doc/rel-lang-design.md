@@ -157,8 +157,8 @@ demand by the rewrites of §a; the divisions are testable on pairs (§a).
 The converse of each leaf on demand, as `convTm` pushes `°` to it: `𝟙`, `dom(R)` themselves;
 `cons° = uncons`, `snoc°`, `cat°` and back; `perm° = perm` (the prelude's one converse rule, below); `succ°` and the value
 verbs' converses read whole on their number universe; a closed term conversed whole. No converse on demand:
-`⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin filter takewhile union length sum head tail prefix suffix inits tails
-zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
+`⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin union length sum inits zip setify bagify tic thinL merge loop ⦇e,S⦈` (and
+so the prelude's folds `prefix concat subseq tails filter takewhile`).
 
 | symbol                         | meaning                                   | `Alg`                          |
 |--------------------------------|-------------------------------------------|--------------------------------|
@@ -188,14 +188,17 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 | `F(R)`                         | the list functor                          | `map`                          |
 | `est(R)`                       | `∋ ∩ (∈\R°)`, the least                   | `est`                          |
 | `thin(Q)`                      | the minimal ones                          | `thin`                         |
-| `filter(p)`, `takewhile(p)`    | the note's list functions                 | `filter`, `takewhile`          |
-| `length sum head tail`         | the note's list functions                 | `length Arr.sum head tail`     |
-| `prefix`, `suffix`             | the note's list functions                 | `«prefix»`, `suffix`           |
-| `inits`, `tails`, `init`       | prefixes, suffixes, all but the last      | `inits`, `tails`, `init`       |
-| `cat`, `cat°`, `concat`        | join two lists, every cut in two, flatten | `cat`, `uncat`, `concat`       |
+| `filter(p)`, `takewhile(p)`    | the note's list functions                 | prelude                        |
+| `length sum`                   | the note's list functions                 | `length Arr.sum`               |
+| `head tail init`               | first, rest, all but the last             | prelude                        |
+| `prefix`, `suffix`             | the note's list functions                 | prelude                        |
+| `inits`                        | the prefixes, shortest first              | `inits`                        |
+| `tails`                        | the suffixes, longest first               | prelude                        |
+| `cat`, `cat°`                  | join two lists, every cut in two          | `cat`, `uncat`                 |
+| `concat`                       | flatten                                   | prelude                        |
 | `snoc`, `snoc°`, `zip`         | append one, split the last off, pair up   | `snoc`, `unsnoc`, `zip`        |
 | `perm`                         | rearrangements, `⦇ran(nil(1)), add⦈`      | prelude                        |
-| `subseq`                       | subsequences                              | `subseq`                       |
+| `subseq`                       | subsequences                              | prelude                        |
 | `setify`, `bagify`             | the set, the bag of a list                | `setify`, `bagify`             |
 | `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | prelude                        |
 | `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL`                        |
@@ -249,6 +252,16 @@ after an edit of a `.rel` file rebuilds `Parse` and the binary.
 | `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus`                | the sum of two values                       |
 | `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°`            | the symmetric division                      |
 | `cor(S)`     | `cor(S : α ⟶ β) : α×β ⟶ α×β ≜ dom(π₁S ∩ π₂)`                  | the pairs of `S`, as a coreflexive          |
+| `head`       | `head : [α] ⟶ α ≜ cons° π₁`                                    | the first element (B&dM p.267)              |
+| `tail`       | `tail : [α] ⟶ [α] ≜ cons° π₂`                                  | all but the first (B&dM p.149)              |
+| `init`       | `init : [α] ⟶ [α] ≜ snoc° π₁`                                  | all but the last (B&dM p.249)               |
+| `prefix`     | `prefix : [α] ⟶ [α] ≜ ⦇ran(nil(1)), nil ∪ cons⦈`               | the prefixes (B&dM p.126)                   |
+| `suffix`     | `suffix : [α] ⟶ [α] ≜ cat° π₂`                                 | the suffixes (B&dM p.127)                   |
+| `concat`     | `concat : [[α]] ⟶ [α] ≜ ⦇ran(nil(1)), cat⦈`                    | flatten (B&dM p.129)                        |
+| `subseq`     | `subseq : [α] ⟶ [α] ≜ ⦇ran(nil(1)), cons ∪ π₂⦈`                | the subsequences (B&dM p.123)               |
+| `tails`      | `tails : [α] ⟶ [[α]] ≜ ⦇ran(nil(1)τ), ⟨⟨π₁,π₂head⟩cons,π₂⟩cons⦈` | the suffixes, longest first (B&dM p.127)  |
+| `filter(p)`  | `⦇ran(nil(1)), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))π₂)⦈`             | the elements in `p` (B&dM p.66)             |
+| `takewhile(p)` | `⦇ran(nil(1)), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))nil)⦈`          | the longest prefix in `p` (B&dM p.174)      |
 | `perm`       | `perm : [α] ⟶ [α] ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
 | `ordered(Q)` | `ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))` | every element `Q`-related to each later one |
 | `sort(Q)`    | `sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)`                | the `Q`-ordered rearrangements              |
@@ -258,6 +271,11 @@ after an edit of a `.rel` file rebuilds `Parse` and the binary.
     numbers and an order tested on pairs would be lost.
   - `E(R)`: as `Λ(∋R)` it drops an array with no image, the row `(b,[])`.
   - `R×S`: the closed `Alg.prod` is needed when the source has no universe.
+  - `length`, `sum`: B&dM's `⦇[zero, succ outr]⦈`, `⦇[zero, plus]⦈` need a `zero`, a value of a number object,
+    which only a program declares; the prelude has none to name.
+  - `inits`: B&dM p.127 `⦇[wrap nil, cat ⟨wrap nil, list cons cpr⟩]⦈` needs `cpr`, not in the language.
+  - `snoc`: as `(𝟙×τ)cat` its converse `snoc°` (which `init` uses) would need `τ°`, which does not run on demand.
+  - `cat cons nil α τ union F zip setify bagify tic thinL merge loop`: primitives, or run by a demand rule.
 - The one converse rule for a definition: `perm° = perm` (`Tm.own`, applied by `preludeDef` to the name `perm`).
   It is a theorem the language cannot derive from the fold `perm` is, and the fold's converse does not run on
   demand ("the converse of ⦇e,S⦈ does not run on demand"); with it `sort(Q)° = ordered(Q) perm` runs. Each prelude

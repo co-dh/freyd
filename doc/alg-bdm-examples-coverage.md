@@ -13,6 +13,11 @@ step 2 deletes (`Find`, `Ew`, `Scan`, `Parted`, `QSort`, the eight `KernelWF` mo
 
 The table is wider than 120 columns because a table row cannot wrap.
 
+Since this audit, `head`, `init`, `prefix`, `concat`, `filter(p)`, `takewhile(p)` are no longer `Alg` ops, and
+`tail`, `suffix`, `tails`, `subseq` are no longer Rel builtins: all ten are definitions in the Rel prelude
+(`leetq/programs/prelude.rel`), B&dM's folds and compositions over `cons`, `cons°`, `snoc°`, `cat`, `cat°`, `nil`,
+`τ`. The table below still names the ops as the audit read them.
+
 | ch. | example                  | note's formula (file:line)                 | `Alg` ops it uses                                         | missing from `Alg`           | deleted module? |
 |-----|--------------------------|--------------------------------------------|-----------------------------------------------------------|------------------------------|-----------------|
 | 6   | digits of a number       | `val_converse_eq` 06:23                    | `fold` `°` `∪` `junc` `snoc` `plus` `times`               | —                            | no              |

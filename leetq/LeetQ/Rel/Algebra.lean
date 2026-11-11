@@ -1281,9 +1281,6 @@ def E {A B : Obj} {n : Nat} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (
 def P {A B : Obj} {n m : Nat} (R : Rel A B) (X : Vals (.arr A) n) (Y : Vals (.arr B) m) : Rel (.arr A) (.arr B) :=
   leftDiv (mem X)° (R ≫ (mem Y)°) X Y ∩ rightDiv (mem X ≫ R) (mem Y) X Y
 
-/-- `head ≜ cons° π₁` on the arrays `X` (diag/aop/07-optimisation.typ:694). -/
-def head {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) B := outl (uncons X)
-
 /-- `tail ≜ cons° π₂` on the arrays `X` (diag/aop/05-datatypes.typ:561). -/
 def tail {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outr (uncons X)
 
@@ -1293,43 +1290,6 @@ def length {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long
   let sc := succ (tilCol (X.1 + 1))
   foldOn (col [0]) (fun D => outr D ≫ sc) X
 
-/-- The elements of `el` whose pair `(x, x)` passes the test `q`: a coreflexive `p` tested on the pairs. -/
-def keepOn {K E : Obj} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E)) (el : Rel K E) : Rel E E :=
-  let V := ran el
-  let d := pair V V
-  dom (d ≫ q (ran d))
-
-/-- `filter(p)` on the arrays `X`, `p` a coreflexive, run as the test `q` on the pairs `(x, x)` of the elements
-    each round meets (`keepOn`). The note's `filter(p)≜frac(subseq p′,∋) est(R°)` (diag/aop/07-optimisation.typ:1041;
-    `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the fold B&dM derive from it,
-    `⦇[nil, (p×𝟙) cons ∪ (∼p×𝟙) π₂]⦈`: a head in `p` kept, any other dropped. `filter p` is this at `pairsIn p`. -/
-def filterOn {E : Obj} {n : Nat} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E))
-    (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  foldBy X (nilVal E) fun el pend =>
-    let p := keepOn q el
-    cons (pair (el ≫ p) pend) ∪ dom (antiJoin el p) ≫ pend
-
-def filter {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  filterOn (pairsIn p) X
-
-/-- `takewhile(p)` on the arrays `X`, `p` a coreflexive run as the test `q` (`keepOn`). The note's
-    `takewhile(p)≜frac(prefix p′,∋) est(R°)` (diag/aop/07-optimisation.typ:1052; `takewhile`,
-    AOP/A7_7_TakeWhile.lean:283) is the specification; this is the fold of its algebra `[nil, (p×𝟙) cons ∪ ⊸ nil]`
-    (`Salg`, AOP/A7_7_TakeWhile.lean:277) with the `⊸ nil` restricted to the heads outside `p`, which `est(R°)`
-    picks. `takewhile p` is this at `pairsIn p`. -/
-def takewhileOn {E : Obj} {n : Nat} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E))
-    (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  foldBy X (nilVal E) fun el pend =>
-    let p := keepOn q el
-    cons (pair (el ≫ p) pend) ∪ top (antiJoin el p).key (nilVal E)
-
-def takewhile {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  takewhileOn (pairsIn p) X
-
-/-- `prefix : arr E ⟶ arr E` on the arrays `X`, each array to each of its initial segments (`prefix`,
-    AOP/A5_6_ListCombinators.lean:97): `⦇[nil, cons ∪ ⊸ nil]⦈`. -/
-def «prefix» {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  foldBy X (nilVal E) fun el pend => cons (pair el pend) ∪ top el.key (nilVal E)
 
 /-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
     AOP/A5_6_ListCombinators.lean:221): `tail*`, `𝟙 ∪ tail ∪ tail tail ∪ …` by `iter`, each round `tail` on the
@@ -1426,20 +1386,11 @@ def unsnoc {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr
     (Vals.compact (.arr B) ⟨X.1, longsN r l (Nat.min_le_left _ _), longsN r e (Nat.min_le_right _ _), X.2.2.2⟩,
       Vals.pickN B X.2.2.2 e r (Nat.min_le_right _ _))⟩
 
-/-- `init ≜ snoc° π₁` on the arrays `X`, each non-empty array less its last element (`init`,
-    AOP/A9_2_Edit.lean:2135). -/
-def init {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := outl (unsnoc X)
-
 /-- `snoc ≜ (𝟙 × τ) cat` on the rows of `P` (`snoc`, AOP/A9_3_Bracket.lean:933): `(xs, a)` to `xs` then `a`.
     `𝟙 × τ` is `⟨π₁, π₂ τ⟩` on the distinct pairs of `P`, one row each, so `P` keeps its rows. -/
 def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) :=
   let D := ran P
   cat (P ≫ pair (outl D) (outr D ≫ τ (outr D).val))
-
-/-- `concat ≜ ⦇[nil, cat]⦈` on the arrays of arrays `X` (`concat`, AOP/A5_6_ListCombinators.lean:256, at
-    every `cat`, not only the `catNE` of `partition`): each round `cat` on the pairs it meets. -/
-def concat {B : Obj} {n : Nat} (X : Vals (.arr (.arr B)) n) : Rel (.arr (.arr B)) (.arr B) :=
-  foldOn (nilVal B) (fun D => cat D) X
 
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
     `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
@@ -2098,8 +2049,7 @@ private def pSpec {n m : Nat} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) 
 -- `nil`, `α = [nil, cons]`
 #guard ((nil (B := L) zero1).toList : List (Int64 × List Int64)) == [(0, [])]
 #guard alpha zero1 XP == junc nilR (cons (idU XP))
--- `head`, `tail`, `length`, `Arr.sum`, `filter(p)`, `takewhile(p)`, `prefix`, `suffix` against `List`
-#guard seteq ((head Xl).toList : List (List Int64 × Int64)) ((unconsSpec (arrs Xl)).map fun (a, y, _) => (a, y))
+-- `tail`, `length`, `Arr.sum`, `suffix` against `List`
 #guard seteq ((tail Xs).toList : List (List Int64 × List Int64)) ((unconsSpec (arrs Xs)).map fun (a, _, t) => (a, t))
 private def onArrs {n : Nat} {B : Obj} [BEq B.El] (X : Vals (.arr L) n) (R : Rel (.arr L) B) (f : List Int64 → List B.El) : Bool :=
   let r : List (List Int64 × B.El) := R.toList
@@ -2107,12 +2057,6 @@ private def onArrs {n : Nat} {B : Obj} [BEq B.El] (X : Vals (.arr L) n) (R : Rel
 #guard onArrs Xl (length Xl) (fun xs => [Int64.ofNat xs.length]) && onArrs Xc (length Xc) (fun xs => [Int64.ofNat xs.length])
 #guard onArrs Xs (length Xs) (fun xs => [Int64.ofNat xs.length]) && (length (Vals.empty (.arr L))).n == 0
 #guard onArrs Xl (Arr.sum Xl) (fun xs => [xs.foldl (· + ·) 0]) && onArrs Xc (Arr.sum Xc) (fun xs => [xs.foldl (· + ·) 0])
-private def ev : LL := idU (col [0, 2, 4])
-#guard onArrs Xl (filter ev Xl) (fun xs => [xs.filter [0, 2, 4].contains]) && onArrs Xs (filter ev Xs) (fun xs => [xs.filter [0, 2, 4].contains])
-#guard onArrs Xl (takewhile ev Xl) (fun xs => [xs.takeWhile [0, 2, 4].contains]) &&
-  onArrs Xs (takewhile ev Xs) (fun xs => [xs.takeWhile [0, 2, 4].contains])
-#guard onArrs Xl («prefix» Xl) (fun xs => (List.range (xs.length + 1)).map xs.take) &&
-  onArrs Xs («prefix» Xs) (fun xs => (List.range (xs.length + 1)).map xs.take)
 #guard onArrs Xl (suffix Xl) (fun xs => (List.range (xs.length + 1)).map xs.drop) &&
   onArrs Xc (suffix Xc) (fun xs => (List.range (xs.length + 1)).map xs.drop)
 
@@ -2123,12 +2067,12 @@ private def W2 : Vals (.prod (.arr L) (.arr L)) 5 := (Xp, Yz)
 private def Ws : Vals (.prod (.arr L) L) 5 := (Xp, col [4, 5, 6, 7, 8])
 private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (List Int64 × List Int64) := (idU W).toList.map (·.1)
 #guard arrs Xp == [[3, 1, 2], [], [1, 5], [1, 2], [2, 1, 5]] && arrs Yz == [[7], [8, 9], [], [9, 6], []]
--- `inits`, `tails` against `List`, each array once; `inits ∋ = prefix`, `tails ∋ = suffix`
+-- `inits`, `tails` against `List`, each array once; `inits ∋` the prefixes, `tails ∋ = suffix`
 #guard onArrs Xl (inits Xl) (fun xs => [(List.range (xs.length + 1)).map xs.take]) &&
   onArrs Xp (inits Xp) (fun xs => [(List.range (xs.length + 1)).map xs.take]) && isMap (inits Xc) Xc
 #guard onArrs Xl (tails Xl) (fun xs => [(List.range (xs.length + 1)).map xs.drop]) &&
   onArrs Xc (tails Xc) (fun xs => [(List.range (xs.length + 1)).map xs.drop]) && isMap (tails Xp) Xp
-#guard seteq (inits Xl ≫ mem (inits Xl).val).toList («prefix» Xl).toList &&
+#guard onArrs Xl (inits Xl ≫ mem (inits Xl).val) (fun xs => (List.range (xs.length + 1)).map xs.take) &&
   seteq (tails Xp ≫ mem (tails Xp).val).toList (suffix Xp).toList
 -- `cat`, `zip` on pairs of arrays, `cat°` against `take`/`drop`, `cat° cat = 𝟙`
 #guard seteq ((cat (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
@@ -2138,16 +2082,10 @@ private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (Lis
 #guard seteq ((uncat Xp).toList : List (List Int64 × List Int64 × List Int64))
   ((arrs Xp).flatMap fun xs => (List.range (xs.length + 1)).map fun k => (xs, xs.take k, xs.drop k))
 #guard seteq (cat (uncat Xl)).toList (idU Xl).toList
--- `concat` against `flatten`, a map; `concat ∋ = ∋ ∋`
-#guard seteq ((concat XX).toList : List (List (List Int64) × List Int64))
-  (((idU XX).toList.map (·.1) : List (List (List Int64))).map fun xss => (xss, xss.flatten)) && isMap (concat XX) XX
-#guard seteq (concat XX ≫ mem (concat XX).val).toList (mem XX ≫ mem XX.2.2.2).toList
--- `snoc`, `init`; `snoc snoc° = 𝟙`, and `snoc° snoc = 𝟙` on the non-empty arrays
+-- `snoc`; `snoc snoc° = 𝟙`, and `snoc° snoc = 𝟙` on the non-empty arrays
 #guard seteq ((snoc (idU Ws)).toList : List ((List Int64 × Int64) × List Int64))
   (((idU Ws).toList.map (·.1) : List (List Int64 × Int64)).map fun (x, a) => ((x, a), x ++ [a]))
 #guard seteq (snoc (idU Ws) ≫ unsnoc (snoc (idU Ws)).val).toList (idU Ws).toList
-#guard onArrs Xp (init Xp) (fun xs => if xs.isEmpty then [] else [xs.dropLast]) &&
-  onArrs Xl (init Xl) (fun xs => if xs.isEmpty then [] else [xs.dropLast])
 #guard seteq (snoc (unsnoc Xl)).toList (dom (unsnoc Xl)).toList
 
 -- `perm` against the insertions of `List`; `perm perm = perm`

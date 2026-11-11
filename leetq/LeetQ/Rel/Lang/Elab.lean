@@ -48,8 +48,6 @@ inductive Tm : Obj → Obj → Bool → Type where
       `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
   | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
   | thin {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | filter {B : Obj} (p : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | takewhile {B : Obj} (p : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | union {A : Obj} : Tm (.arr (.arr A)) (.arr A) true
   | tau {A : Obj} : Tm A (.arr A) true
   | nil {A B : Obj} : Tm A (.arr B) true
@@ -57,25 +55,17 @@ inductive Tm : Obj → Obj → Bool → Type where
   | uncons {B : Obj} : Tm (.arr B) (.prod B (.arr B)) true
   | length {B : Obj} : Tm (.arr B) .long true
   | total : Tm (.arr .long) .long true
-  | head {B : Obj} : Tm (.arr B) B true
-  | tail {B : Obj} : Tm (.arr B) (.arr B) true
-  | pre {B : Obj} : Tm (.arr B) (.arr B) true
-  | suf {B : Obj} : Tm (.arr B) (.arr B) true
   | inits {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
-  | tails {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
   | cat {B : Obj} : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   | uncat {B : Obj} : Tm (.arr B) (.prod (.arr B) (.arr B)) true
   | zip {A B : Obj} : Tm (.prod (.arr A) (.arr B)) (.arr (.prod A B)) true
   | snoc {B : Obj} : Tm (.prod (.arr B) B) (.arr B) true
   | unsnoc {B : Obj} : Tm (.arr B) (.prod (.arr B) B) true
-  | init {B : Obj} : Tm (.arr B) (.arr B) true
-  | concat {B : Obj} : Tm (.arr (.arr B)) (.arr B) true
   /-- The prelude's `perm`, kept as its own converse (`convTm`): the one converse rule the language has for a
       definition, because `perm° = perm` is a theorem it cannot derive from the fold `perm` is. -/
   | own {A : Obj} {d : Bool} (R : Tm A A d) : Tm A A d
   | setify {B : Obj} : Tm (.arr B) (.arr B) true
   | bagify {B : Obj} : Tm (.arr B) (.arr B) true
-  | subseq {B : Obj} : Tm (.arr B) (.arr B) true
   | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
   | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
@@ -177,8 +167,6 @@ inductive Pre
   | map (p : Pre)
   | est (p : Pre)
   | thin (p : Pre)
-  | filter (p : Pre)
-  | takewhile (p : Pre)
   | union (a : OTy)
   | tau (a : OTy)
   | nil (a b : OTy)
@@ -186,23 +174,15 @@ inductive Pre
   | uncons (b : OTy)
   | length (b n : OTy)
   | total (n : OTy)
-  | head (b : OTy)
-  | tail (b : OTy)
-  | pre (b : OTy)
-  | suf (b : OTy)
   | inits (b : OTy)
-  | tails (b : OTy)
   | cat (b : OTy)
   | uncat (b : OTy)
   | zip (a b : OTy)
   | snoc (b : OTy)
   | unsnoc (b : OTy)
-  | init (b : OTy)
-  | concat (b : OTy)
   | own (p : Pre)
   | setify (b : OTy)
   | bagify (b : OTy)
-  | subseq (b : OTy)
   | tic (b : OTy)
   | thinL (p : Pre)
   | merge (p : Pre)
@@ -239,8 +219,6 @@ def Pre.at (p : Pos) : Pre → Pre
   | .map x => .map (x.at p)
   | .est x => .est (x.at p)
   | .thin x => .thin (x.at p)
-  | .filter x => .filter (x.at p)
-  | .takewhile x => .takewhile (x.at p)
   | .own x => .own (x.at p)
   | .thinL x => .thinL (x.at p)
   | .merge x => .merge (x.at p)
@@ -257,9 +235,8 @@ def Pre.at (p : Pos) : Pre → Pre
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
-  | x@(.head _) | x@(.tail _) | x@(.pre _) | x@(.suf _) | x@(.inits _) | x@(.tails _) | x@(.cat _) | x@(.uncat _)
-  | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.init _) | x@(.concat _) | x@(.setify _) | x@(.bagify _)
-  | x@(.subseq _) | x@(.tic _) => x
+  | x@(.inits _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
+  | x@(.bagify _) | x@(.tic _) => x
 
 /-- The `why` of a top-level term's `close`. -/
 def noLeft : String := "the term here needs keys and has no left context"
@@ -525,20 +502,12 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .cons => (.cons b, .prod b (.arr b), .arr b)
     | .length => (.length b a, .arr b, a)
     | .total => (.total a, .arr a, a)
-    | .head => (.head b, .arr b, b)
-    | .tail => (.tail b, .arr b, .arr b)
-    | .pre => (.pre b, .arr b, .arr b)
-    | .suf => (.suf b, .arr b, .arr b)
     | .inits => (.inits b, .arr b, .arr (.arr b))
-    | .tails => (.tails b, .arr b, .arr (.arr b))
     | .cat => (.cat b, .prod (.arr b) (.arr b), .arr b)
     | .zip => (.zip a b, .prod (.arr a) (.arr b), .arr (.prod a b))
     | .snoc => (.snoc b, .prod (.arr b) b, .arr b)
-    | .init => (.init b, .arr b, .arr b)
-    | .concat => (.concat b, .arr (.arr b), .arr b)
     | .setify => (.setify b, .arr b, .arr b)
     | .bagify => (.bagify b, .arr b, .arr b)
-    | .subseq => (.subseq b, .arr b, .arr b)
     | .tic => (.tic b, .prod b (.arr b), .arr (.arr b))
     | _ => (.id a, a, a)
   match objs with
@@ -582,14 +551,14 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
     | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
-    | .est | .thin | .filter | .takewhile | .thinL | .merge => do
+    | .est | .thin | .thinL | .merge => do
       unify p s!"the target of {o.sym}'s argument" t s
       -- the order is tested on the pairs the operator compares (`build`, `param`), not read whole
       let c := Pre.close p q s s!"{o.sym}( )"
       let a := OTy.arr s
       let (r, x, y) : Pre × OTy × OTy := match o with
-        | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .filter => (.filter c, a, a)
-        | .takewhile => (.takewhile c, a, a) | .thinL => (.thinL c, a, a) | _ => (.merge c, .prod a a, a)
+        | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .thinL => (.thinL c, a, a)
+        | _ => (.merge c, .prod a a, a)
       pure (.rel r x y)
     | .loop => do
       let x ← fresh; let y ← fresh
@@ -1036,25 +1005,15 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .map _ => throw "F( )"
   | .est _ => throw "est( )"
   | .thin _ => throw "thin( )"
-  | .filter _ => throw "filter( )"
-  | .takewhile _ => throw "takewhile( )"
   | .union => throw "union"
   | .tau => throw "τ"
   | .nil => throw "nil"
   | .length => throw "length"
   | .total => throw "sum"
-  | .head => throw "head"
-  | .tail => throw "tail"
-  | .pre => throw "prefix"
-  | .suf => throw "suffix"
   | .inits => throw "inits"
-  | .tails => throw "tails"
   | .zip => throw "zip"
-  | .init => throw "init"
-  | .concat => throw "concat"
   | .setify => throw "setify"
   | .bagify => throw "bagify"
-  | .subseq => throw "subseq"
   | .tic => throw "tic"
   | .thinL _ => throw "thinL( )"
   | .merge _ => throw "merge( )"
@@ -1245,8 +1204,6 @@ def build : Pre → Except Err Res
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
   | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
   | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
-  | .filter p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .filter c⟩
-  | .takewhile p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .takewhile c⟩
   | .union a => return ⟨_, _, true, .union (A := ← toObj st dp a)⟩
   | .tau a => return ⟨_, _, true, .tau (A := ← toObj st dp a)⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
@@ -1257,25 +1214,17 @@ def build : Pre → Except Err Res
     pure ⟨_, _, true, .length (B := ← toObj st dp b)⟩
   | .total n => do if (← toObj st dp n) != .long then internal dp "sum's target"
                    pure ⟨_, _, true, .total⟩
-  | .head b => return ⟨_, _, true, .head (B := ← toObj st dp b)⟩
-  | .tail b => return ⟨_, _, true, .tail (B := ← toObj st dp b)⟩
-  | .pre b => return ⟨_, _, true, .pre (B := ← toObj st dp b)⟩
-  | .suf b => return ⟨_, _, true, .suf (B := ← toObj st dp b)⟩
   | .inits b => return ⟨_, _, true, .inits (B := ← toObj st dp b)⟩
-  | .tails b => return ⟨_, _, true, .tails (B := ← toObj st dp b)⟩
   | .cat b => return ⟨_, _, true, .cat (B := ← toObj st dp b)⟩
   | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj st dp b)⟩
   | .zip a b => return ⟨_, _, true, .zip (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
   | .snoc b => return ⟨_, _, true, .snoc (B := ← toObj st dp b)⟩
   | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj st dp b)⟩
-  | .init b => return ⟨_, _, true, .init (B := ← toObj st dp b)⟩
-  | .concat b => return ⟨_, _, true, .concat (B := ← toObj st dp b)⟩
   | .own p => do
     let ⟨A, B, d, t⟩ ← build p
     if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
   | .setify b => return ⟨_, _, true, .setify (B := ← toObj st dp b)⟩
   | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
-  | .subseq b => return ⟨_, _, true, .subseq (B := ← toObj st dp b)⟩
   | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
