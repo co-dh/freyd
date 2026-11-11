@@ -47,3 +47,4 @@ turn it is deleted from the list.
 | 48 | lean-refactor `coerce (A B f)…`: a named conversion where a term of type A meets expected type B     |
 | 49 | lean-refactor `uncoerce` (drop a redundant conversion) and `rename --terms-only`/`--patterns-only`   |
 | 50 | lean-refactor `retype A B`: retype a binder at its source where an A variable meets expected B       |
+| 52 | lean-refactor `retype` on a 4983-line file: 27:26 → 2:43 (site search was quadratic; gate reuses elaborations) |
