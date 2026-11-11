@@ -104,6 +104,8 @@ Each `if h : <count check> then kernel else reference` site in `Algebra.lean` (a
 
 ## Step 5: split `Algebra.lean` (2214 lines) into `Code`, `Alg`, and the guards
 
+DONE (branch `leetq-arch-step5`): `Code.lean` (codes, payload kernels, laws of codes), `Alg.lean` (operators, `conv_holds`), `AlgTest.lean` (guards); `Algebra.lean` is two imports; `le inter union conv comp diff lamOn nest` stay `private`, and the guards were rewritten with the operators `∩ ∪ ° ≫ \ ⊑` (the second option below). The `#print axioms` of `le inter union conv comp` moved to the end of `Alg.lean`, where they are visible.
+
 | part                                            | lines        | count | goes to         |
 |-------------------------------------------------|--------------|------:|-----------------|
 | header, long payloads, `Code`, payload kernels, `Part`, `pick`/`raze`/`codes`, the composite steps (`join`, `cross`, `anti`, `setIds`) | 1-812 | ~812 | `Code.lean` |
@@ -115,9 +117,9 @@ Each `if h : <count check> then kernel else reference` site in `Algebra.lean` (a
 - Dependents: every program and `Lang/Elab.lean` import `LeetQ.Rel.Algebra`. Keeping `Algebra.lean` as a three-line
   file that imports `Code`, `Alg` and nothing else leaves all of them unedited; the guards file is imported by nobody.
 - `private`: `le inter union conv comp diff` (`:821-885`) and `lamOn` (`:1219`) are private in `section Gen`, and the
-  guards call `inter`, `union`, `conv`, `comp`, `diff` by name. A guard file of its own cannot see them: either drop
-  `private` (the operators `∩ ∪ ° ≫ \` stay the program spelling, `Lang/` uses the operators) or rewrite those guards
-  with the operators. The `#guard_msgs` at `:1728` prints the parameter name `_h` of `lt` and must move unchanged.
+  guards call `inter`, `union`, `conv`, `comp`, `diff` by name. A guard file of its own cannot see them: taken:
+  the guards are rewritten with the operators (`∩ ∪ ° ≫ \ ⊑`), which stay the only spelling; `private` is kept so the
+  `#guard_msgs` in `Blocks.lean` still hold. The `#guard_msgs` at `:1728` prints the parameter name `_h` of `lt` and must move unchanged.
 - Risk: high only for collisions. Another agent appends ops to `Algebra.lean` now; a split moves every line, so its
   branch would merge as one conflict per hunk. Do step 5 when no other branch edits `Algebra.lean`, as one mechanical
   move (no body edits in the same commit), then build `LeetQ.Rel.Algebra LeetQ.Rel.Lang.Test rel` and the four
