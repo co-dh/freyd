@@ -94,9 +94,11 @@ def entailed : List (List (String × List Int64)) := Id.run do
 #guard views (ok given) |> fun ts => ts.length == entailed.length && (ts.zip entailed).all fun (t, e) =>
   e.all fun (n, l) => (t.lookup n).map showT == some (" ".intercalate (l.map toString))
 
--- the program's own `print`
-#guard (ok given).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), (1, (12, 12)), (2, (12, 12)), " ++
-  "(3, (22, 22)), (4, (23, 23)), (4, (32, 32)), (5, (32, 32))}"]
+-- the program's own `check next(V,B,S) = …` holds (a failed one is an error) and it prints nothing; printed here,
+-- `next(V,B,S)` is the table `page` states
+#guard (ok given).prints == []
+#guard (ok (runText (wumpus ++ "print next(V,B,S)\n"))).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), " ++
+  "(1, (12, 12)), (2, (12, 12)), (3, (22, 22)), (4, (23, 23)), (4, (32, 32)), (5, (32, 32))}"]
 
 /-! The parser on each line of `wumpus.rel.md`: every composite and infix term in parentheses (§c). -/
 

@@ -27,17 +27,20 @@ def word (s : List Char) : String := arrText false (s.map toString)
 
 /-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order: by element (`Eval.cmpEl`),
     an array lexicographically with a prefix first, which on strings is the order of `String`. -/
-def expected : String :=
+def expected (term : String) : String :=
   let key (p : List Char × List Char) := (String.ofList p.1, String.ofList p.2)
   let ps := (strs.flatMap fun x => strs.map (x, ·)).mergeSort fun p q =>
     (key p).1 < (key q).1 || ((key p).1 == (key q).1 && (key p).2 ≤ (key q).2)
-  "spec length 𝟙(N) = {" ++ ", ".intercalate (ps.map fun (x, y) => s!"(({word x}, {word y}), {cost x y})") ++ "}"
+  s!"{term} = \{" ++ ", ".intercalate (ps.map fun (x, y) => s!"(({word x}, {word y}), {cost x y})") ++ "}"
 
 def given : Except Err Out := runText edit
 
 #guard given.isOk
-#guard (ok given).prints.head? == some expected
+#guard (ok given).prints.head? == some (expected "spec length 𝟙(N)")
 -- the second `print`, the shortest sequences of the pairs of two-letter strings, is for reading only
 #guard (ok given).prints.length == 2
+-- the tabulation: the file's `check D mle ⊑ spec` and `check D mle length 𝟙(N) = (spec length 𝟙(N))` hold (a failed
+-- one is an error), and `mle`'s lengths printed here are the edit-distance recursion's, on the same 49 pairs
+#guard (ok (runText (edit ++ "print D mle length 𝟙(N)\n"))).prints.getLast? == some (expected "D mle length 𝟙(N)")
 
 end LeetQ.Rel.Lang.TestEdit

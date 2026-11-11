@@ -42,10 +42,16 @@ def x : List String := ["a", "b", "TB", "c", "BL", "d"]
 def inputs : List (String × List String) :=
   [("p", ["a", "BL", "BL", "BL"]), ("q", ["a", "a", "a", "BL", "a"]), ("y", List.replicate 5 "BL")]
 
-def out : Out := ok (runText detab)
+/-- The file's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below. -/
+def asPrints : List String := ["x detab", "x detab entab", "p Λ(H)est(R)", "q Λ(H)est(R)", "y Λ(H)est(R)", "p entab",
+  "q entab", "y entab"]
 
--- both `check`s hold (a failed one is an error): entab ⊑ the specification, and detab entab = 𝟙, on D
+def out : Out := ok (runText (detab ++ String.join (asPrints.map fun e => s!"print {e}\n")))
+
+-- every `check` holds (a failed one is an error), including entab ⊑ the specification and detab entab = 𝟙, on D;
+-- the file prints nothing itself
 #guard (runText detab).isOk
+#guard (ok (runText detab)).prints == []
 #guard out.prints.length == 8
 -- the note's run: detab of ab, a tab, c d
 #guard out.prints[0]! == s!"x detab = {shown [detabL x]}"

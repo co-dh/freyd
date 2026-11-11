@@ -42,7 +42,8 @@ def moves (o : Out) : Option (List (Int64 × Int64)) :=
 
 /-- The program with the start state and the goal replaced, at the AST: the lines `S₀ ≜ …`, `G ≜ …`. -/
 def variant (s g : String) : Except Err Out := do
-  let prog ← Parse.parse blocks
+  -- the file's `check plan = …` states the plan of its own S₀ and G, so it is dropped for a variant
+  let prog := (← Parse.parse blocks).filter fun | .check .. => false | _ => true
   let s ← Parse.parseExpr s; let g ← Parse.parseExpr g
   runProgram (prog.map fun
     | .defn p "S₀" [] _ ty => .defn p "S₀" [] (.rel s) ty
@@ -129,20 +130,22 @@ def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj 
       | _, _ => false
 
 -- `ζ(0) = S₀`; `ζ(1)` is `S₀` with `C` moved to the table
-#guard (ok twoIdx).prints.drop 1 == [
+#guard (ok twoIdx).prints == [
   "s₀ × {(0, 0)} k(∋, ζ ∋) = {(((A, A) (B, B) (C, A), 0), (A, A)), (((A, A) (B, B) (C, A), 0), (B, B)), " ++
     "(((A, A) (B, B) (C, A), 0), (C, A))}",
   "s₀ × {(1, 1)} k(∋, ζ ∋) = {(((A, A) (B, B) (C, A), 1), (A, A)), (((A, A) (B, B) (C, A), 1), (B, B))}"]
 
 -- at `S₀`, `∼S₀` gives `A` the values `B C`, `B` the values `A C`, `C` the values `B C`: the least of each
-#guard (ok orders).prints.drop 1 == [
+#guard (ok orders).prints == [
   "s₀ lf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, B)), ((A, A) (B, B) (C, A), (B, A)), " ++
     "((A, A) (B, B) (C, A), (C, B))}",
   "s₀ tf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, [B])), ((A, A) (B, B) (C, A), (B, [A])), " ++
     "((A, A) (B, B) (C, A), (C, [B]))}"]
 
 #guard given.isOk && table.isOk && cycle.isOk
-#guard (ok given).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
+-- the file's own `check plan = …` holds and it prints nothing; `plan` printed here is the move list below
+#guard (ok given).prints == []
+#guard (ok (runText (blocks ++ "print plan\n"))).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
 #guard moves (ok given) == some [(2, 2), (1, 2), (0, 1)]
 #guard moves (ok given) == some Blocks.plan
 #guard moves (ok table) == some [(1, 2), (0, 1)]
@@ -504,6 +507,7 @@ def reading : Decl → Option (String × String)
   | .defn _ n _ (.rel e) _ => some (n, e.render 0 true)
   | .defn _ n _ (.test e f) _ => some (n, s!"{e.render 0 true} ⊑ {f.render 0 true}")
   | .print _ e => some ("print", e.render 0 true)
+  | .check _ e f eq => some ("check", s!"{e.render 0 true} {if eq then "=" else "⊑"} {f.render 0 true}")
   | _ => none
 
 -- a `where` item in place in the body and in the items after it (§c)
@@ -640,6 +644,6 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
     ("Z", "L(s₀, ν)"),
     ("ζ", "((Z π₂)° (Z π₁))"),
     ("plan", "(ζ σ)"),
-    ("print", "plan")]
+    ("check", "plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}")]
 
 end LeetQ.Rel.Lang.Test

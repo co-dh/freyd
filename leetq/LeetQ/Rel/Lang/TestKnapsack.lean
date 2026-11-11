@@ -53,8 +53,9 @@ def agrees (o : Out) (n : String) : Bool := match packs o n with
 -- the derived program: one best packing of each instance, among the specification's
 #guard ((packs (ok given) "knap").getD []).map (·.1) == [0, 1, 2, 3]
 #guard ((packs (ok given) "knap").getD []).all ((packs (ok given) "s").getD []).contains
--- the program's own `print`s
-#guard (ok given).prints == [
+-- the program's three `check`s hold and print nothing; printed here, `s`, `p`, `knap` are the literals below
+#guard (ok given).prints == []
+#guard (ok (runText (knapsack ++ "print s\nprint p\nprint knap\n"))).prints == [
   "s = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "p = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "knap = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5))}"]

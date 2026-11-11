@@ -16,7 +16,10 @@ def rows {v : Obj} (f : v.El → List Int64) (R : Rel Bit3 v) : List (List Int64
   (R.toList.map fun ((a, b, c), y) => [a, b, c] ++ f y).mergeSort fun a b => decide (a ≤ b)
 
 #guard given.isOk
-#guard (ok given).prints == ["answer = {((0, (1, 1)), 0), ((1, (0, 1)), 0), ((1, (1, 0)), 0)}"]
+-- the file's own `check answer = …` holds and prints nothing; `answer` printed here is the same literal
+#guard (ok given).prints == []
+#guard (ok (runText (circuit ++ "print answer\n"))).prints ==
+  ["answer = {((0, (1, 1)), 0), ((1, (0, 1)), 0), ((1, (1, 0)), 0)}"]
 
 -- `Circuit.lean`'s first guard: query 6
 #guard get (ok given) "answer" Bit3 Bit == some answer
