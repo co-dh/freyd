@@ -13,8 +13,7 @@ mss ≜ Λ(segment⦇ran(zero),plus⦈)est(≥)        -- `sum ≜ ⦇[zero,plus
 
 -- the derived program, Lean `mss_eq_scan : mss = ⦇k⦈ π₂ est(≥)`
 ⊕ ≜ Λ(⊤zero ∪ plus)est(≥)                     -- N×N ⟶ N: the larger of 0 and a+b; `⊤zero` is the note's `⊸ zero`
-w ≜ ⟨π₁,π₂π₁⟩⊕                                -- N×(N×[N]) ⟶ N: the head ⊕ the value the tail carries;
-                                              -- the note's `(𝟙×π₁)⊕`: `×` does not run on demand (§b)
+w ≜ (𝟙×π₁)⊕                                  -- N×(N×[N]) ⟶ N: the head ⊕ the value the tail carries
 -- `k ≜ [zero⟨𝟙,Λ(𝟙)⟩, ⟨w,⟨wΛ(𝟙),π₂π₂⟩ cup⟩]` (note :844) is the fold's seed and step below; the step's set is
 -- Lean's own `Λ(w ∪ π₂π₂∋)` (`k`, :756), an array: the language has no `cup`
 

@@ -48,18 +48,73 @@ rows (§e) and of the program in §g.
   `arr` (`𝒫A`, `𝒫A×B`, …) has none.
 - `𝟙`, `⊤`, `∼`, `∋`, `π₁`, `π₂`, `dom` on an object WITHOUT a universe run on DEMAND: in `Q e`, the term `e`
   runs on the keys `ran(Q)` composes into it (`𝟙` ↦ `ran(Q)`, `∋` ↦ `ran(Q)∋`, `⊤` ↦ `ran(Q)⊤`). This is exact
-  for the operators whose value at a key depends only on that key (column "local" in §b). A term that needs
-  such a universe with no left context, or through a non-local operator (`°`, division, `frac`), is a
-  front-end error: "`⊤ : 𝒫(X×X) ⟶ N` has no universe; compose a set of states before it".
-- An `arr` object as a TARGET has no demand: `⊤ : A ⟶ 𝒫B`, `∈`, `R/S` into `𝒫B`, `P(R)` are errors there; the
-  program names the arrays it means (a coreflexive) and composes them.
+  for the operators whose value at a key depends only on that key (column "local" in §b).
+- THE DEMAND RULE. A term runs on demand when it is local (§b), or reduces to local terms by one of three
+  rewrites, each exact (`Lang/Elab.lean`, `build`):
+
+  | term                  | runs as                                         | when                                  |
+  |-----------------------|-------------------------------------------------|---------------------------------------|
+  | `R°`, `R` on demand   | `°` pushed to the leaves (`convTm`):            | every leaf has a converse on demand   |
+  |                       | `(RS)° = S°R°`, `(R∩S)° = R°∩S°` (`∪`, `−`),    | (§b, column "°")                      |
+  |                       | `⟨R,S⟩° = π₁R° ∩ π₂S°`, or `⟨π₁R°,π₂⟩τ(S)π₁`    |                                       |
+  |                       | with only `R°` (and the mirror), `R°° = R`, a   |                                       |
+  |                       | coreflexive its own converse                    |                                       |
+  | `R ∩ S`, `R − S`,     | `⟨𝟙,S⟩τ(R)π₂`, `⟨𝟙,R⟩(𝟙 − τ(S))π₂`: the local   | the other side is TESTABLE ON PAIRS   |
+  | one side not local    | side gives the pairs, the other tests them      | (below)                               |
+  | `R×S`, an operand     | `⟨π₁R,π₂S⟩` on demand; with both operands       | both operands run                     |
+  | whose source has no   | closed on their sources' universes, `prod` as   |                                       |
+  | universe              | before                                          |                                       |
+
+  `τ(R) : A×B ⟶ A×B`, for `R : A ⟶ B`, is the coreflexive on the pairs `(a,b)` in demand with `a R b`. A term
+  is testable on pairs when it is one of these, its parts as stated:
+
+  | `R`                         | `τ(R)`                                   | needs                                |
+  |-----------------------------|------------------------------------------|--------------------------------------|
+  | a term that runs            | `dom(π₂ ∩ π₁R)`                          |                                      |
+  | `R/S`, `S : B ⟶ C`          | `𝟙 − dom(⟨π₁,π₂S⟩(𝟙 − τ(R)))`            | `R` testable, `S` runs               |
+  | `R\S`, `R : A ⟶ B`          | `𝟙 − dom(⟨π₁R°,π₂⟩(𝟙 − τ(S)))`           | `R°` runs, `S` testable              |
+  | `frac(R,S)`                 | `τ(R/S)` and `τ(S/R)` on the swapped pair | `R`, `S` run                         |
+  | `⊤`, `∼R`, `R − S`          | `𝟙`, `𝟙 − τ(R)`, `τ(R) − τ(S)`           | the parts testable                   |
+  | `R ∩ S`, `R ∪ S`, `R°`      | `τ(R) ∩ τ(S)`, `τ(R) ∪ τ(S)`, swapped    | the parts testable                   |
+  | `PT`, `TQ`                  | `dom(⟨π₁P,π₂⟩τ(T))`, `dom(⟨π₁,π₂Q°⟩τ(T))` | `P` runs, `Q°` runs; `T` testable    |
+
+  Not testable: `dom`, `ran`, `⟨R,S⟩`, `R×S`, `Λ`, `E`, `P`, the folds and the list builtins, unless they run.
+  So `ok ≜ dom(π₁(R/∋) ∩ π₂)` runs on the pairs `(a,xs)` in demand: `π₂` gives `xs`, `τ(π₁(R/∋))` tests `a`
+  against each element of `xs`.
+- Everything else that needs a universe its object lacks is a front-end error at the term's position:
+
+  | error                                                       | when                                         |
+  |-------------------------------------------------------------|----------------------------------------------|
+  | "the term here needs keys and has no left context: `O` has  | a top-level term on demand, `O` its source   |
+  | no universe; compose a set of its elements before it (§a)"  |                                              |
+  | "the converse of `L` does not run on demand, so R° reads R  | a leaf `L` with no converse on demand (§b)   |
+  | whole: `O` has no universe; …"                              |                                              |
+  | "R/S reads its operands whole outside a meet with a term    | a division with no local side to test it     |
+  | run on demand: `O` has no universe; …" (and `R\S`, `frac`)  | against                                      |
+  | "`f( )` reads its argument whole: …" (`ran est thin filter  | an argument that must be closed (§b)         |
+  | takewhile ordered sort thinL merge loop`), "[R,S] reads its |                                              |
+  | parts whole", "R+S reads its operands whole", "the fold's   |                                              |
+  | start is read whole", "∈", "α"                              |                                              |
+  | "`what`: `O` has no universe; …" (`⊤'s target`, `R/S`, …)   | an operator's own universe                   |
+
+  `O` is printed as the program writes an array, `[N]`: `𝒫A` and `[A]` are one object.
+- An `arr` object as a TARGET has no demand: `⊤ : A ⟶ 𝒫B`, `∈`, `R/S` into `𝒫B` outside a meet, `P(R)` are
+  errors there; the program names the arrays it means (a coreflexive) and composes them, or meets the division
+  with a term that gives them.
 - Inference: each constant (`𝟙 ⊤ 𝟘 ∋ π₁ π₂ ≤ < succ`, the value verbs of §b) gets fresh object variables, unified along the term.
   An unresolved one is an error asking for the explicit form `⊤(A,B)`, `𝟙(A)`.
 
 ## b. Operators
 
-Every operator is LOCAL — its value at a key depends only on that key, so it may run on demand (§a) — except `°`,
-`ran`, the three divisions, `×`, `[R,S]`, `R+S`, `∈` and `P(R)`.
+Every operator is LOCAL — its value at a key depends only on that key, so it may run on demand (§a) — except
+`ran`, the three divisions, `[R,S]`, `R+S`, `∈` and `P(R)`, which read their operands whole. `°` and `×` run on
+demand by the rewrites of §a; the divisions are testable on pairs (§a).
+
+The converse of each leaf on demand, as `convTm` pushes `°` to it: `𝟙`, `dom(R)`, `ordered(Q)` themselves;
+`cons° = uncons`, `snoc°`, `cat°` and back; `perm° = perm`; `sort(Q)° = ordered(Q) perm`; `succ°` and the value
+verbs' converses read whole on their number universe; a closed term conversed whole. No converse on demand:
+`⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin filter takewhile union length sum head tail prefix suffix inits tails
+zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 
 | symbol                         | meaning                                   | `Alg`                          |
 |--------------------------------|-------------------------------------------|--------------------------------|
@@ -109,6 +164,9 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
   `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q`, `F` closed, as `filter(p)`'s `p`.
   A converse with a name runs as that op (`cat°`, `snoc°`).
+- `loop(F)` reads `F` whole on the universe of its source `X×Y`, because `Alg.loop` takes `F` as one relation:
+  a state with no universe (an array, `⟨nil,𝟙⟩loop(snoc)` on `[Ch]×Ch`) is refused. Running `F` on the pairs
+  each round meets, as `foldOn` runs `S`, needs `Alg.loop` to take `F` as a function of those pairs.
 - The value verbs `plus times minus div mod max min : N×N ⟶ N` are one builtin, `arith k` with the qlean kernel's
   opcode `k`, run on the pairs in demand (§a) as `Alg.arith k` then the universe of `N`. Each is partial, never a
   default: no row where the result falls outside `N` (`minus` below the bottom, `plus`, `times` past the top, as

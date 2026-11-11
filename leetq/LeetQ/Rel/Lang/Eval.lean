@@ -335,7 +335,7 @@ structure Out where
 def topVal (sh : Share) (env : Env) (p : Pos) (e : Expr) : Except Err ((Val × OTy × OTy) × Share) := do
   let (r, st) ← (elabE env none e).run {}
   let (q, s, t) := r.plain
-  let ⟨A, B, d, tm⟩ ← build env.objs st p (.close p q s)
+  let ⟨A, B, d, tm⟩ ← build env.objs st p (.close p q s noLeft)
   match d, tm with
   | false, tm => let (R, sh) := value sh tm; pure ((⟨A, B, R⟩, zonk st s, zonk st t), sh)
   | true, _ => throw ⟨p, s!"{e.show}: {zonk st s} has no universe; compose a set of its elements before it (§a)"⟩
@@ -362,7 +362,7 @@ def run (prog : Program) : Except Err Out := do
       let s := zonk st s; let t := zonk st t
       -- objects its body leaves open (`≼` on any `A×B`) are fixed at each use, as a parameter's are
       if s.poly || t.poly then env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
-      let q := if (uniOf env.objs s).isSome then Pre.close p q s else q
+      let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
       let ⟨A, B, d, tm⟩ ← build env.objs st p q
       let ((tm, _), sh') := Id.run ((hoist tm).run sh)
       sh := sh'
