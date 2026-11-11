@@ -1,4 +1,5 @@
 import LeetQ.Rel.Lang.Syntax
+import Lean
 
 /-! The parser of the Rel language: text to `Program`, recursive descent over the characters (§c).
 
@@ -459,16 +460,25 @@ def literate (text : String) : Except Err String := do
     throw ⟨⟨o, 1⟩, s!"the fence opened here is never closed: close it with a line of {k} or more '{c}'"⟩
   pure ("\n".intercalate out.toList)
 
-/-- The program text of the file named `file`, by its name: a `.rel` file is all program, a `.rel.md` file is
-    `literate`; any other name is an error. -/
+/-- The program text of the file named `file`: a `.rel.md` file is `literate`; any other name, a plain `.rel`
+    included, is an error. -/
 def programText (file text : String) : Except Err String :=
   if file.endsWith ".rel.md" then literate text
-  else if file.endsWith ".rel" then pure text
-  else throw ⟨default, "not a program file: its name must end in `.rel` (all program) or `.rel.md` " ++
-    "(Markdown, whose indented code blocks are the program)"⟩
+  else throw ⟨default, "not a program file: its name must end in `.rel.md` (Markdown, whose indented code " ++
+    "blocks are the program); the plain `.rel` format is no longer read"⟩
+
+open Lean Elab in
+/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and read by
+    `programText` while elaborating, so a malformed file fails the build at its line. -/
+elab "program_file " p:str : term => do
+  let src := (← readThe Core.Context).fileName
+  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
+  match programText p.getString (← IO.FS.readFile (dir / p.getString)) with
+  | .ok s => pure (mkStrLit s)
+  | .error e => throwError "{p.getString}: {e}"
 
 /-- The prelude (§c): definitions every program sees, each with its type, read and run before it. -/
-def prelude : String := include_str "../../../programs/prelude.rel"
+def prelude : String := program_file "../../../programs/prelude.rel.md"
 
 /-- The prelude's text `pre` parsed, and the scope a program is read in after it: its names and objects, each
     name taken "in the prelude". An error in it says it is in the prelude. -/

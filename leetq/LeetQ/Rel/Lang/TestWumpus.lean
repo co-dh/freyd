@@ -1,14 +1,14 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Wumpus
 
-/-! The Rel language on the Wumpus world, read from `programs/wumpus.rel`: every view of the KB after each step of
-    the route, against `Wumpus.agent` and against the literal tables `Wumpus.lean` states. -/
+/-! The Rel language on the Wumpus world, read from `programs/wumpus.rel.md`: every view of the KB after each step
+    of the route, against `Wumpus.agent` and against the literal tables `Wumpus.lean` states. -/
 
 namespace LeetQ.Rel.Lang.TestWumpus
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def wumpus : String := program_file "../../../programs/wumpus.rel"
+def wumpus : String := program_file "../../../programs/wumpus.rel.md"
 
 /-- Each table: its name, the program's term for it, and whether its key is `∗ : 1` rather than a cell. -/
 def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", false), ("S", "S", false),
@@ -98,7 +98,7 @@ def entailed : List (List (String × List Int64)) := Id.run do
 #guard (ok given).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), (1, (12, 12)), (2, (12, 12)), " ++
   "(3, (22, 22)), (4, (23, 23)), (4, (32, 32)), (5, (32, 32))}"]
 
-/-! The parser on each line of `wumpus.rel`: every composite and infix term in parentheses (§c). -/
+/-! The parser on each line of `wumpus.rel.md`: every composite and infix term in parentheses (§c). -/
 
 #guard match Parse.parse wumpus with
   | .error _ => false

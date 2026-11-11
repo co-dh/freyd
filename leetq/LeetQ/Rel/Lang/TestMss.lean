@@ -1,15 +1,15 @@
 import LeetQ.Rel.Lang.Test
 
-/-! The Rel language on B&dM Ex 7.40, the maximum segment sum, read from `programs/mss.rel`: the specification
-    `Λ(segment sum) est(≥)` and the derived fold `⦇k⦈ π₂ est(≥)`, each against a direct `List` computation. -/
+/-! The Rel language on B&dM Ex 7.40, the maximum segment sum, read from `programs/mss.rel.md`: the
+    specification `Λ(segment sum) est(≥)` and the derived fold `⦇k⦈ π₂ est(≥)`, each against a direct `List` computation. -/
 
 namespace LeetQ.Rel.Lang.TestMss
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def mss : String := program_file "../../../programs/mss.rel"
+def mss : String := program_file "../../../programs/mss.rel.md"
 
-/-- The program text of the derived fold, as `mss.rel` writes it. -/
+/-- The program text of the derived fold, as `mss.rel.md` writes it. -/
 def prog : String := "⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)"
 
 /-- The program with the specification and the fold on every array of `A`, named `s` and `p`. -/

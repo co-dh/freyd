@@ -2,7 +2,7 @@ import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.BlocksRel
 import Lean
 
-/-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, read from `programs/blocks.rel`; its
+/-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, read from `programs/blocks.rel.md`; its
     front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
     plans and every guard), each closed definition evaluated once (`run`, `hoist`). -/
 
@@ -13,17 +13,7 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 /-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
 local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
-open Lean Elab in
-/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and split by its name
-    (`Parse.programText`) while elaborating, so a malformed literate file fails the build at its line. -/
-elab "program_file " p:str : term => do
-  let src := (← readThe Core.Context).fileName
-  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
-  match Parse.programText p.getString (← IO.FS.readFile (dir / p.getString)) with
-  | .ok s => pure (mkStrLit s)
-  | .error e => throwError "{p.getString}: {e}"
-
-def blocks : String := program_file "../../../programs/blocks.rel"
+def blocks : String := program_file "../../../programs/blocks.rel.md"
 
 /-- The definition `n` at the objects `A ⟶ B`. -/
 def get (o : Out) (n : String) (A B : Obj) : Option (Rel A B) := do
@@ -186,9 +176,10 @@ def litErr (src : String) (line col : Nat) (what : String) : Bool :=
 -- a fenced block is prose, its definitions not run; a shorter fence does not close a longer one
 #guard ((lit "````\n    obj B = 0…1\n```\nB ≜ x\n````\n\n    obj B = 0…1\n    print 𝟙(B)\n").map runText).map
   (·.isOk) == some true
--- the file name chooses: `.rel` is all program, any other name is an error
-#guard (match Parse.programText "a.rel" "x\n  y" with | .ok t => t == "x\n  y" | .error _ => false) &&
-  (match Parse.programText "a.txt" "" with | .ok _ => false | .error e => (e.msg.splitOn "`.rel.md`").length > 1)
+-- the file name chooses: only `.rel.md` is a program file; a plain `.rel` and any other name are the one error
+#guard ["a.rel", "a.txt", "a.md"].all fun f => match Parse.programText f "x\n  y" with
+  | .ok _ => false
+  | .error e => (e.msg.splitOn "`.rel.md`").length > 1 && (e.msg.splitOn "no longer read").length > 1
 
 /-! One front-end error of each class, at its line. -/
 
@@ -467,7 +458,7 @@ def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) =>
 #guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
   ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r
 
-/-! The parser on each line of `blocks.rel`: every composite and infix term in parentheses, as the note reads the
+/-! The parser on each line of `blocks.rel.md`: every composite and infix term in parentheses, as the note reads the
     formula (§c), not as the parser happens to print it. -/
 
 def reading : Decl → Option (String × String)
