@@ -1,7 +1,9 @@
 # A full adder
 
+AIMA §8.4.2's one-bit full adder C1. Its three inputs are one array of three bits: the first, second and third
+input are the elements at positions `0`, `1`, `2`.
+
     obj B = 0…1                                   -- a bit
-    obj I = B×(B×B)                               -- the adder's three inputs
 
 The note writes ⊕ for xor; ⊕ is the sum of relations here, so xor is an ordinary definition.
 
@@ -9,13 +11,16 @@ The note writes ⊕ for xor; ⊕ is the sum of relations here, so xor is an ordi
     ∧ : B×B ⟶ B ≜ {((0,0),0),((0,1),0),((1,0),0),((1,1),1)}   -- and: 1 where both are 1
     ∨ : B×B ⟶ B ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),1)}   -- or: 1 where one is 1
 
-    b : α×(β×γ) ⟶ β ≜ π₂π₁                        -- the second input
-    c : α×(β×γ) ⟶ γ ≜ π₂π₂                        -- the third input
+An array has no universe, so the adder's inputs are built: every bit put in front of each array, three times
+from the empty one, gives the eight arrays of three bits.
 
-    q : α×(β×γ) ⟶ α×β ≜ ⟨π₁,b⟩                    -- the first two inputs
-    x₂ : B×(B×α) ⟶ B×α ≜ ⟨q xor,c⟩                -- their xor, and the third input
-    add : B×(B×B) ⟶ B×B ≜ ⟨x₂ xor,⟨q∧,x₂∧⟩∨⟩     -- (sum, carry)
+    ins : [α] ⟶ [α] ≜ ⟨⊤,𝟙⟩cons                    -- each element of α put in front
+    I : [B] ⟶ [B] ≜ ran(nil(1) ins ins ins)        -- the adder's inputs: the arrays of three bits
+
+    q : [α] ⟶ α×α ≜ ⟨at(0),at(1)⟩                  -- the first two inputs
+    x₂ : [B] ⟶ B×B ≜ ⟨q xor,at(2)⟩                 -- their xor, and the third input
+    add : [B] ⟶ B×B ≜ I⟨x₂ xor,⟨q∧,x₂∧⟩∨⟩         -- (sum, carry)
     p : B ⟶ B×B ≜ ⟨{(0,0)},{(0,1)}⟩               -- the point (0,1) at the bit 0
-    answer : B×(B×B) ⟶ B ≜ add p°                 -- the inputs giving sum 0, carry 1
+    answer : [B] ⟶ B ≜ add p°                     -- the inputs giving sum 0, carry 1
 
-    check answer = {((0,(1,1)),0),((1,(0,1)),0),((1,(1,0)),0)}
+    check answer = {(0 1 1,0),(1 0 1,0),(1 1 0,0)}
