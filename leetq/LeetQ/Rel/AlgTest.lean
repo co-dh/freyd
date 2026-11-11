@@ -524,6 +524,14 @@ private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (Lis
 #guard seteq (snoc (idU Ws) ≫ unsnoc (snoc (idU Ws)).val).toList (idU Ws).toList
 #guard seteq (snoc (unsnoc Xl)).toList (dom (unsnoc Xl)).toList
 
+-- `at(k)` against `List`'s `[k]?`; `at(0) = head`, `tail at(k) = at(k+1)`; past every row's end, no pair
+private def atOk {n : Nat} (X : Vals (.arr L) n) : Bool :=
+  seteq (atPos 0 X).toList (outl (uncons X)).toList && (List.range 21).all fun k =>
+    onArrs X (atPos k X) (fun xs => xs[k]?.toList) &&
+      seteq (tail X ≫ atPos k (tail X).val).toList (atPos (k + 1) X).toList
+#guard atOk Xl && atOk Xp && atOk Xc && atOk Xs
+#guard (atPos 2 Xp).n == 2 && (atPos 20 Xl).n == 0 && (atPos 0 (Vals.empty (.arr L))).n == 0
+
 -- `perm` against the insertions of `List`; `perm perm = perm`
 private def perms : List Int64 → List (List Int64)
   | [] => [[]]

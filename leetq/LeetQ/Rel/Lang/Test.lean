@@ -283,6 +283,21 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
   "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, [5] [5 1] [5 1 2])}"]
 
+/-! `at(i)`, positions from `0`, on the arrays `x` above: `at(0) = head`, `tail at(i) = at(i+1)`, and a position
+    past every array's end the empty relation. -/
+#guard ["at(0)", "at(12)", "R at(2) S"].all trip
+def ats : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
+  "x : K ⟶ [N] ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons\n" ++
+  "print x at(0)\nprint x at(1)\nprint x at(2)\nprint x at(3)\n" ++
+  "check x at(0) = x head\ncheck x tail at(0) = x at(1)\ncheck x tail at(1) = x at(2)\n" ++
+  "check x tail at(2) = x at(3)\ncheck x at(3) = 𝟘\n")
+#guard (ok ats).prints == ["x at(0) = {(a, 3), (b, 1)}", "x at(1) = {(a, 1), (b, 5)}", "x at(2) = {(a, 2)}",
+  "x at(3) = {}"]
+#guard match runText "obj N = 0…9\nf : [N] ⟶ N ≜ at(x)\n" with
+  | .error e => e.msg == "at( ) takes a position, a number from 0, found 'x'" | .ok _ => false
+#guard match runText "obj N = 0…9\nf : [N] ⟶ N ≜ at(-1)\n" with
+  | .error e => e.msg == "at( ) takes a position from 0 that fits a long, found -1" | .ok _ => false
+
 /-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
     lifted body is the body on the fibre. -/
 def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj J = {i,j}\n" ++

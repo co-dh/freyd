@@ -95,6 +95,7 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .setify, D => pure (Alg.setify D.val)
   | _, _, _, .bagify, D => pure (Alg.bagify D.val)
   | _, _, _, .tic, D => pure (Alg.tic D)
+  | _, _, _, .atPos k, D => pure (Alg.atPos k D.val)
   -- the note's one-pass thinning, which refines the specification `Alg.thinL`
   | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
   | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt Q P).run' {})) D)
@@ -242,6 +243,8 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .setify => node 59 .setify []
   | _, _, _, .bagify => node 60 .bagify []
   | _, _, _, .tic => node 62 .tic []
+  -- the position is a part, so `at(0)` and `at(1)` are two identities
+  | _, _, _, .atPos k => node 68 (.atPos k) [k]
   | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i]
   | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i]
   | _, _, _, .loop F => do let (f, i) ← hoist F; node 67 (.loop f) [i]
