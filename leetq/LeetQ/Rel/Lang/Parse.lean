@@ -303,6 +303,10 @@ partial def items (w : String) (ps : List Param) (taken : List (String × String
   fresh q n taken
   if ps.any (·.name == n) then throw ⟨q, s!"`{n}` is already a parameter of `{w}`"⟩
   if σ.any (·.1 == n) then throw ⟨q, s!"`{n}` is already an item of this `where`"⟩
+  -- an item is typed by its place in the body; a type of its own needs a definition of its own (§e)
+  ws
+  if (← peek) == some ':' then
+    throw ⟨q, s!"the `where` item `{n}` takes no type: make it a top-level definition to give it one (§e)"⟩
   tok '≜'
   let σ := σ ++ [(n, (← expr).subst σ)]
   ws

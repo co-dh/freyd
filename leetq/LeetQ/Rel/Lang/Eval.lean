@@ -347,9 +347,6 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
     pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
   | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
-/-- TEMPORARY: a definition missing its type is typed by inference instead of rejected. -/
-def lenient : Bool := true
-
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
     through the program, so a sub-term met in several definitions has one identity. `types`: only the
@@ -366,10 +363,8 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
     | .defn p n ps b ty =>
       -- a relation declares its type and every parameter its own (§e); a test has none of its own
       let missing := ps.any (·.ty.isNone) || match b with | .rel _ => ty.isNone | .test .. => false
-      let sig ← if missing then (inferSig env n ps b).run' {} else pure (sigOf n ps ty)
-      if missing && !lenient then throw ⟨p, s!"`{n}` has no type; it is {sig}"⟩
-      let sig := if missing then dbgTrace s!"SIG {p.line}: {sig}" fun _ => sig else sig
-      out := { out with sigs := out.sigs ++ [sig] }
+      if missing then throw ⟨p, s!"`{n}` has no type; it is {← (inferSig env n ps b).run' {}}"⟩
+      out := { out with sigs := out.sigs ++ [sigOf n ps ty] }
       match ps, b, ty with
       | [], .rel e, ty =>
         -- the declared type checked with its variables held apart (`α` matches only itself), so the body has it

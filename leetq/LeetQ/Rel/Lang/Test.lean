@@ -153,30 +153,32 @@ def errAt (src : String) (line : Nat) (what : String) : Bool :=
   | .ok _ => false
 
 -- unknown name
-#guard errAt "obj X = {A,B,C}\nf ≜ {(A,B)}\ng ≜ fh\n" 3 "unknown name 'h'"
+#guard errAt "obj X = {A,B,C}\nf : X ⟶ X ≜ {(A,B)}\ng ≜ fh\n" 3 "unknown name 'h'"
 -- type mismatch
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\na ≜ {(A,B)}\nb ≜ {(1,2)}\nf ≜ ab\n" 5 "found N, expected X"
+#guard errAt "obj X = {A,B,C}\nobj N = 0…3\na : X ⟶ X ≜ {(A,B)}\nb : N ⟶ N ≜ {(1,2)}\nf ≜ ab\n" 5
+  "found N, expected X"
 -- a family given where the row is not liftable
-#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) ≜ ⦇S,S⦈\nf ≜ L(∋)\n" 3 "not liftable"
+#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ ⦇S,S⦈\nf : St ⟶ X×X ≜ L(∋)\n" 3
+  "not liftable"
 -- a term that needs a universe its object does not have
 #guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nprint ⊤(St,X)\n" 3 "has no universe"
 -- a definition or parameter taking a builtin's name, or a name already defined or declared
-#guard errAt "obj B = 0…1\nq ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
-#guard errAt "obj B = 0…1\nf(S, E : B ⟶ B) ≜ S ∩ E\n" 2 "`E` is a builtin"
-#guard errAt "obj B = 0…1\nK ≜ π₁\nq ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
+#guard errAt "obj B = 0…1\nq : α×β ⟶ α ≜ π₁\nπ₂ ≜ π₁π₁\n" 3 "`π₂` is a builtin"
+#guard errAt "obj B = 0…1\nf(S : B ⟶ B, E : B ⟶ B) : B ⟶ B ≜ S ∩ E\n" 2 "`E` is a builtin"
+#guard errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nq : α×β ⟶ α ≜ K\nK ≜ π₂\n" 4 "`K` is already defined at line 2"
 #guard errAt "obj B = 0…1\nB ≜ π₁\n" 2 "`B` is already defined at line 1"
 -- an object variable met at two objects, in one parameter's type or across two; a defined name is no variable
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nf(R : α ⟶ α) ≜ R\ng ≜ f({(A,1)})\n" 4
+#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nf(R : α ⟶ α) : α ⟶ α ≜ R\ng ≜ f({(A,1)})\n" 4
   "`α` in the type of 'R' is both X and N"
-#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nh(R : α ⟶ X, S : α ⟶ X) ≜ R\ng ≜ h({(A,B)},{(1,B)})\n" 4
+#guard errAt "obj X = {A,B,C}\nobj N = 0…3\nh(R : α ⟶ X, S : α ⟶ X) : α ⟶ X ≜ R\ng ≜ h({(A,B)},{(1,B)})\n" 4
   "`α` in the type of 'S' is both X and N"
-#guard errAt "obj X = {A,B,C}\nπ ≜ 𝟙(X)\nf(R : π ⟶ π) ≜ R\n" 3 "expected an object, found 'π'"
+#guard errAt "obj X = {A,B,C}\nπ : X ⟶ X ≜ 𝟙(X)\nf(R : π ⟶ π) ≜ R\n" 3 "expected an object, found 'π'"
 -- a `where` item taking a defined name, a parameter's, an earlier item's or a builtin's; an item used outside
-#guard errAt "obj B = 0…1\nK ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
-#guard errAt "obj B = 0…1\nf(S) ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"
-#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂, a ≜ π₁\n" 2 "`a` is already an item"
-#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂, π₁ ≜ a\n" 2 "`π₁` is a builtin"
-#guard errAt "obj B = 0…1\nf ≜ a where a ≜ π₂\ng ≜ a\n" 3 "unknown name 'a'"
+#guard errAt "obj B = 0…1\nK : α×β ⟶ α ≜ π₁\nf ≜ a where a ≜ π₂, K ≜ π₁\n" 3 "`K` is already defined at line 2"
+#guard errAt "obj B = 0…1\nf(S : B ⟶ B) : B ⟶ B ≜ a where a ≜ S, S ≜ π₁\n" 2 "`S` is already a parameter of `f`"
+#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, a ≜ π₁\n" 2 "`a` is already an item"
+#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂, π₁ ≜ a\n" 2 "`π₁` is a builtin"
+#guard errAt "obj B = 0…1\nf : α×β ⟶ β ≜ a where a ≜ π₂\ng ≜ a\n" 3 "unknown name 'a'"
 
 /-! The parser's round trip: each operator row of §b, printed as it was read. -/
 
@@ -198,7 +200,8 @@ def reads (s r : String) : Bool := match parsed s with | .ok e => e.render 0 tru
 /-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
     states it: `x` is `a ↦ [3 1 2]`, `b ↦ [1 5]`; `y` is `a ↦ [7]`, `b ↦ [8 9]`; `z` is `a ↦ [3 3 1 2]`. -/
 def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
-  "x ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons\ny ≜ Λ({(a,7),(b,8),(b,9)})\nz ≜ ⟨{(a,3)}, x⟩cons\n" ++
+  "x : K ⟶ [N] ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons\ny : K ⟶ [N] ≜ Λ({(a,7),(b,8),(b,9)})\n" ++
+  "z : K ⟶ [N] ≜ ⟨{(a,3)}, x⟩cons\n" ++
   "print x inits\nprint x tails\nprint ⟨x,y⟩cat\nprint x cat°\nprint ⟨x,y⟩zip\nprint ⟨x,{(a,4),(b,6)}⟩snoc\n" ++
   "print x snoc°\nprint x init\nprint x inits concat\nprint y perm\nprint z setify\nprint z bagify\n" ++
   "print x ordered(≤)\nprint x sort(≤)\nprint y subseq\nprint x thinL(≤)\n" ++
@@ -231,8 +234,9 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
 /-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
     lifted body is the body on the fibre. -/
 def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj J = {i,j}\n" ++
-  "R₀ ≜ {(a,3),(a,1)}\nR₁ ≜ {(a,2),(b,5),(b,1)}\nFm ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
-  "f(S : K ⟶ N) ≜ ⟨S,Λ(S)⟩cons inits ∪ (Λ(S)cat°π₁ tails)\nfF ≜ f(Fm)\n" ++
+  "R₀ : K ⟶ N ≜ {(a,3),(a,1)}\nR₁ : K ⟶ N ≜ {(a,2),(b,5),(b,1)}\n" ++
+  "Fm : J ⟶ K×N ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
+  "f(S : K ⟶ N) : K ⟶ [[N]] ≜ ⟨S,Λ(S)⟩cons inits ∪ (Λ(S)cat°π₁ tails)\nfF : J ⟶ K×[[N]] ≜ f(Fm)\n" ++
   "check {(i,i)}fF = {(i,i)}⊤(J,K)⟨𝟙,f(R₀)⟩\ncheck {(j,j)}fF = {(j,j)}⊤(J,K)⟨𝟙,f(R₁)⟩\n")
 
 #guard listsLifted.isOk
@@ -240,7 +244,8 @@ def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj 
 /-- Orders on demand (§a): each operator runs its order on the pairs it compares, here `R ≜ length ≤ length°` on
     `[N]`, which has no universe; a closed order as before; and `∼R`, tested as the complement of `R`'s test. -/
 def onDemand : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
-  "L ≜ {(a,[1 2] [3] [8]),(b,[5] [4 6 7] [9])}\nG ≜ Λ(L∋)\nR ≜ length ≤(N,N) length°\np ≜ dom(length{(1,1)})\n" ++
+  "L : K ⟶ [[N]] ≜ {(a,[1 2] [3] [8]),(b,[5] [4 6 7] [9])}\nG : K ⟶ [[N]] ≜ Λ(L∋)\n" ++
+  "R : [α] ⟶ [β] ≜ length ≤(N,N) length°\np : [α] ⟶ [α] ≜ dom(length{(1,1)})\n" ++
   "print G est(R)\nprint G thin(R)\nprint L filter(p)\nprint L takewhile(p)\n" ++
   "print {(a,[3] [1 2]),(b,[1 2] [3])} ordered(R)\nprint L sort(R)\nprint L thinL(R)\n" ++
   "print ⟨L sort(R),{(a,[[1 2]]),(b,[[5]])}⟩merge(R)\nprint Λ({(a,3),(a,1),(b,5)})est(≤)\nprint G est(∼R)\n")
@@ -258,16 +263,17 @@ def onDemand : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "Λ({(a, 3), (a, 1), (b, 5)}) est(≤) = {(a, 1), (b, 5)}",
   "G est(∼R) = {(a, 1 2), (b, 4 6 7)}"]
 -- refused: an order with a leaf that reads its argument whole, so neither side of its composition is tested
-#guard errAt "obj N = 0…9\nobj K = {a,b}\nL ≜ {(a,[1 2] [3])}\nS ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n" 5
+#guard errAt ("obj N = 0…9\nobj K = {a,b}\nL : K ⟶ [[N]] ≜ {(a,[1 2] [3])}\n" ++
+  "S : [N] ⟶ [α] ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n") 5
   "⊤'s target: [N] has no universe"
 
 /-! The kernel's value verbs of §b on pairs of numbers, each `Alg.arith` with its opcode: a result outside the
     declared object has no row (`minus` below `0`, as `succ` at the top), nor a zero divisor. -/
 
 def arith : Except Err Out := runText ("obj N = 0…20\n" ++
-  "w ≜ {((7,2),(7,2)),((2,7),(2,7)),((7,0),(7,0)),((3,5),(3,5))}\n" ++
+  "w : N×N ⟶ N×N ≜ {((7,2),(7,2)),((2,7),(2,7)),((7,0),(7,0)),((3,5),(3,5))}\n" ++
   "print w plus\nprint w times\nprint w minus\nprint w div\nprint w mod\nprint w max\nprint w min\n" ++
-  "D ≜ dom(𝟙(N×N) div)\ncheck D⟨⟨π₂,div⟩times,mod⟩plus = Dπ₁\ncheck D⟨mod,π₂⟩ = D⟨mod,π₂⟩(𝟙 ∩ (π₁ < π₂°))\n")
+  "D : N×N ⟶ N×N ≜ dom(𝟙(N×N) div)\ncheck D⟨⟨π₂,div⟩times,mod⟩plus = Dπ₁\ncheck D⟨mod,π₂⟩ = D⟨mod,π₂⟩(𝟙 ∩ (π₁ < π₂°))\n")
 
 -- `a = b·div + mod` and `mod < b` on every pair of `N` with a divisor other than `0`
 #guard arith.isOk
@@ -284,8 +290,9 @@ def arith : Except Err Out := runText ("obj N = 0…20\n" ++
 
 /-- A value verb in a lifted body takes the closed row (§e): at each key the fibre is the body on the fibre. -/
 def arithLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj J = {i,j}\n" ++
-  "R₀ ≜ {(a,3),(b,1)}\nR₁ ≜ {(a,2),(b,5),(b,1)}\nFm ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
-  "f(S : K ⟶ N) ≜ ⟨S,S⟩times ∪ (⟨S succ,S⟩mod)\nfF ≜ f(Fm)\n" ++
+  "R₀ : K ⟶ N ≜ {(a,3),(b,1)}\nR₁ : K ⟶ N ≜ {(a,2),(b,5),(b,1)}\n" ++
+  "Fm : J ⟶ K×N ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
+  "f(S : K ⟶ N) : K ⟶ N ≜ ⟨S,S⟩times ∪ (⟨S succ,S⟩mod)\nfF : J ⟶ K×N ≜ f(Fm)\n" ++
   "check {(i,i)}fF = {(i,i)}⊤(J,K)⟨𝟙,f(R₀)⟩\ncheck {(j,j)}fF = {(j,j)}⊤(J,K)⟨𝟙,f(R₁)⟩\nprint f(R₀)\n")
 
 #guard arithLifted.isOk
@@ -295,19 +302,19 @@ def arithLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj 
     taken from `x` once a round until it reaches `0`, each digit put on the front of the list. The rounds `K`
     hold no number of `N`, so a literal's words name one object (§c). -/
 def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" ++
-  "ten ≜ ⊤(N,N){(10,10)}\ndg ≜ dom(<{(10,10)})\nop ≜ ⟨⟨π₁,π₁ ten⟩times,π₂ dg⟩plus\n" ++
-  "x ≜ {(107,107)}\nr ≜ Λ(x⊤(N,K))\nnz ≜ 𝟙(N) − {(0,0)}\n" ++
-  "step ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩\n" ++
-  "ds ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂\nprint ds\n")
+  "ten : N ⟶ N ≜ ⊤(N,N){(10,10)}\ndg : N ⟶ N ≜ dom(<{(10,10)})\nop : N×N ⟶ N ≜ ⟨⟨π₁,π₁ ten⟩times,π₂ dg⟩plus\n" ++
+  "x : N ⟶ N ≜ {(107,107)}\nr : N ⟶ [K] ≜ Λ(x⊤(N,K))\nnz : N ⟶ N ≜ 𝟙(N) − {(0,0)}\n" ++
+  "step : N×[N] ⟶ N×[N] ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩\n" ++
+  "ds : N ⟶ [N] ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂\nprint ds\n")
 
 #guard (ok digits).prints == ["ds = {(107, 1 0 7)}"]
 
--- a parameterised list builtin given a family
-#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3
-  "parameter 'Q' is given a family but declares no type; write 'Q : A ⟶ B'"
+-- a prelude definition given a family through a typed parameter: the lifted body reaches `perm`, closed on `[N]`
+#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) : [N] ⟶ [N] ≜ sort(S)\ng : St ⟶ [N]×[N] ≜ f(∋)\n" 3
+  "a closed term in a lifted body: [N] has no universe"
 
 -- a nested literal (§c): each leaf position its own object, the side their product
-#guard match runText "obj X = {A,B}\nobj N = 0…1\nL ≜ {((A,0),(1,B)),((B,1),(0,A))}\nprint L\n" with
+#guard match runText "obj X = {A,B}\nobj N = 0…1\nL : X×N ⟶ N×X ≜ {((A,0),(1,B)),((B,1),(0,A))}\nprint L\n" with
   | .ok o => o.prints == ["L = {((A, 0), (1, B)), ((B, 1), (0, A))}"] &&
     (get o "L" (.prod .long .long) (.prod .long .long)).map (·.toList) == some [((0, 0), (1, 1)), ((1, 1), (0, 0))]
   | .error _ => false
@@ -319,8 +326,31 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
 /-- The value printed by each `print` of `src`, after its ` = `. -/
 def printed (src : String) : List String := (ok (runText src)).prints.map fun s => (s.splitOn " = ").getLastD ""
 
+/-! Declared types (§e). -/
+
+-- a body that is not the declared type; a definition with none, told the type it has
+#guard errAt "obj X = {A,B}\nobj N = 0…1\nf : X ⟶ N ≜ 𝟙(X)\n" 3 "`f` is declared X ⟶ N, but its body is X ⟶ X"
+#guard errAt "obj X = {A,B}\nf ≜ 𝟙(X)\n" 2 "`f` has no type; it is f : X ⟶ X"
+#guard errAt "obj X = {A,B}\nf(R : X ⟶ X) ≜ R°\n" 2 "`f` has no type; it is f(R : X ⟶ X) : X ⟶ X"
+-- one generic definition at two objects in one program: its variables instantiated at each use
+#guard printed ("obj X = {A,B}\nobj N = 0…1\nsw : α×β ⟶ β×α ≜ ⟨π₂,π₁⟩\nprint {((A,0),(A,0))}sw\n" ++
+  "print {((1,B),(1,B))}sw\n") == ["{((A, 0), (0, A))}", "{((1, B), (B, 1))}"]
+-- the declared type determines an object the body leaves open: `nil`'s source and element
+#guard printed "obj N = 0…3\ne : 1 ⟶ [N] ≜ nil\nprint e\n" == ["{(∗, [])}"]
+-- `rel --types` prints each definition's head as it is declared
+def heads : List String := ["f : X ⟶ X", "g(R : α ⟶ β) : β ⟶ α", "_≼_(R : α ⟶ β, S : β ⟶ γ) : α ⟶ γ"]
+#guard match typesOf (some ("obj X = {A,B}\n" ++
+    String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n"))) with
+  | .ok ts => ts == heads
+  | .error _ => false
+-- a `where` item takes no type of its own, nor does a test
+#guard printed "obj B = 0…1\nf : B×B ⟶ B ≜ a where a ≜ π₂\nprint {((0,1),(0,1))}f\n" == ["{((0, 1), 1)}"]
+#guard errAt "obj B = 0…1\nf : B×B ⟶ B ≜ a where a : B×B ⟶ B ≜ π₂\n" 2
+  "the `where` item `a` takes no type: make it a top-level definition to give it one"
+#guard errAt "obj X = {A,B}\nh(S : X ⟶ X) : X ⟶ X ≜ 𝟙 ⊑ S\n" 2 "the test `h` has no type of its own"
+
 def arrs : String :="obj N = -3…9\nobj K = {a,b}\n" ++
-  "x ≜ {(∗,3 1 2)}\nxc ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons\ncheck x = xc\ncheck {(∗,[3 1 2])} = xc\n" ++
+  "x : 1 ⟶ [N] ≜ {(∗,3 1 2)}\nxc : 1 ⟶ [N] ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons\ncheck x = xc\ncheck {(∗,[3 1 2])} = xc\n" ++
   "check {(∗,[1])} = ⟨{(∗,1)},nil⟩cons\ncheck {(∗,[1] [2 3])} = ⟨{(∗,[1])},⟨{(∗,2 3)},nil⟩cons⟩cons\n" ++
   "check {(∗,(1,2) (3,4))} = ⟨{(∗,(1,2))},⟨{(∗,(3,4))},nil⟩cons⟩cons\n" ++
   "print x\nprint {(a b,1)}\nprint {(∗,(1,2) (3,4))}\nprint {(∗,[1] [2 3])}\nprint {((a,1 2),[3])}\n" ++
@@ -349,9 +379,10 @@ def arrE : String := "obj N = 0…9\n"
 
 def zs : List Int := (List.range 7).map fun k : Nat => (k : Int) - 3
 def signed : Except Err Out := runText ("obj Z = -3…3\nobj K = {a,b}\n" ++
-  "x ≜ {(a,-1),(b,2),(a,-3)} -- a comment, after a signed literal\nprint x\nprint Λ(x)\nprint x − {(a,-3)}\n" ++
-  "print {(-1,-1)}−{(2,2)}\ns ≜ 𝟙(Z) succ\nle ≜ 𝟙(Z) ≤\nlt ≜ 𝟙(Z) <\nW ≜ 𝟙(Z×Z)\n" ++
-  "pl ≜ W plus\ntm ≜ W times\nmi ≜ W minus\ndv ≜ W div\nmd ≜ W mod\nmx ≜ W max\nmn ≜ W min\n")
+  "x : K ⟶ Z ≜ {(a,-1),(b,2),(a,-3)} -- a comment, after a signed literal\nprint x\nprint Λ(x)\n" ++
+  "print x − {(a,-3)}\nprint {(-1,-1)}−{(2,2)}\ns : Z ⟶ Z ≜ 𝟙(Z) succ\nle : Z ⟶ Z ≜ 𝟙(Z) ≤\nlt : Z ⟶ Z ≜ 𝟙(Z) <\n" ++
+  "W : Z×Z ⟶ Z×Z ≜ 𝟙(Z×Z)\npl : Z×Z ⟶ Z ≜ W plus\ntm : Z×Z ⟶ Z ≜ W times\nmi : Z×Z ⟶ Z ≜ W minus\n" ++
+  "dv : Z×Z ⟶ Z ≜ W div\nmd : Z×Z ⟶ Z ≜ W mod\nmx : Z×Z ⟶ Z ≜ W max\nmn : Z×Z ⟶ Z ≜ W min\n")
 
 def sameSet {α : Type} [BEq α] (a b : List α) : Bool := a.all b.contains && b.all a.contains
 def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) => (a.toInt, b.toInt)
@@ -384,8 +415,8 @@ def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) =>
   | .ok _ => false
 #guard errAt "obj Z = -3…3\nf ≜ {(-4,0)}\n" 2 "no declared object has the elements [-4]"
 -- a `-` with no digit after it is no sign: `R -3` ends the term, `R −3` is a difference before no term
-#guard errAt "obj Z = -3…3\nR ≜ 𝟙(Z)\nf ≜ R -3\n" 3 "expected the end of the line, found '-'"
-#guard errAt "obj Z = -3…3\nR ≜ 𝟙(Z)\nf ≜ R −3\n" 3 "expected a term, found '3'"
+#guard errAt "obj Z = -3…3\nR : Z ⟶ Z ≜ 𝟙(Z)\nf ≜ R -3\n" 3 "expected the end of the line, found '-'"
+#guard errAt "obj Z = -3…3\nR : Z ⟶ Z ≜ 𝟙(Z)\nf ≜ R −3\n" 3 "expected a term, found '3'"
 #guard ["{(A, -1)}", "{((-1, B), -20)}", "R − S"].all trip
 
 #guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
@@ -409,10 +440,10 @@ def reading : Decl → Option (String × String)
     meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
 
 
-def chs : String := "obj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a b)}\n" ++
-  "y ≜ {(∗,a a b)}\nns ≜ {(∗,2 3)}\n" ++
-  "ms ≜ {(∗,3 1 2)}\nks ≜ {(∗,3 1 1)}\n" ++
-  "ok ≜ dom(π₁(≤/∋) ∩ π₂)\n"
+def chs : String := "obj Ch = {a,b}\nobj N = 0…3\nx : 1 ⟶ [Ch] ≜ {(∗,a b)}\n" ++
+  "y : 1 ⟶ [Ch] ≜ {(∗,a a b)}\nns : 1 ⟶ [N] ≜ {(∗,2 3)}\n" ++
+  "ms : 1 ⟶ [N] ≜ {(∗,3 1 2)}\nks : 1 ⟶ [N] ≜ {(∗,3 1 1)}\n" ++
+  "ok : α×[α] ⟶ α×[α] ≜ dom(π₁(≤/∋) ∩ π₂)\n"
 
 -- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
 #guard printed (chs ++ "print x cons° (perm cons°)°\nprint x (perm ∩ perm)° cons°\nprint x ⟨cons°π₁, perm⟩°° π₂\n" ++
@@ -451,8 +482,9 @@ def chs : String := "obj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a b)}\n" ++
     the converses; the declared infix operators; the errors. -/
 
 def pre : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b,c,d}\nobj Ch = {p,q}\n" ++
-  "x ≜ {(a,3 1 2),(b,2 1 2),(c,[]),(d,[5])}\nle ≜ 𝟙(N) ≤\npm ≜ x perm\nod ≜ x ordered(≤)\nst ≜ x sort(≤)\n" ++
-  "y ≜ {(a,p q p),(b,[])}\npy ≜ y perm\nz ≜ {(a,[1 2] [3] []),(b,[] [])}\npz ≜ z perm\n")
+  "x : K ⟶ [N] ≜ {(a,3 1 2),(b,2 1 2),(c,[]),(d,[5])}\nle : N ⟶ N ≜ 𝟙(N) ≤\npm : K ⟶ [N] ≜ x perm\n" ++
+  "od : K ⟶ [N] ≜ x ordered(≤)\nst : K ⟶ [N] ≜ x sort(≤)\ny : K ⟶ [Ch] ≜ {(a,p q p),(b,[])}\n" ++
+  "py : K ⟶ [Ch] ≜ y perm\nz : K ⟶ [[N]] ≜ {(a,[1 2] [3] []),(b,[] [])}\npz : K ⟶ [[N]] ≜ z perm\n")
 
 def same {A B : Obj} (R S : Rel A B) : Bool := R ⊑ S && S ⊑ R
 def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .long B).map (same · R)).getD false
@@ -470,15 +502,15 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 
 -- the converses: `perm° = perm` (the one rule kept for a definition), `ordered(Q)` a coreflexive, and
 -- `sort(Q)° = ordered(Q)° perm°` from them
-#guard printed ("obj N = 0…9\nx ≜ {(∗,1 2 3)}\nprint x perm°\nprint x ordered(≤)°\nprint x sort(≤)°\n" ++
+#guard printed ("obj N = 0…9\nx : 1 ⟶ [N] ≜ {(∗,1 2 3)}\nprint x perm°\nprint x ordered(≤)°\nprint x sort(≤)°\n" ++
   "print {(∗,3 1 2)} sort(≤)°\n") ==
   ["{(∗, 1 2 3), (∗, 1 3 2), (∗, 2 1 3), (∗, 2 3 1), (∗, 3 1 2), (∗, 3 2 1)}", "{(∗, 1 2 3)}",
    "{(∗, 1 2 3), (∗, 1 3 2), (∗, 2 1 3), (∗, 2 3 1), (∗, 3 1 2), (∗, 3 2 1)}", "{}"]
 
 -- a declared infix operator: `R + S = ⟨R,S⟩plus`, the prelude's `⇒` and `⊕`, a program's own `_≼_`, each read at
 -- the one level with `∩`, left to right
-#guard printed ("obj N = 0…9\nw ≜ {((2,3),(2,3)),((4,1),(4,1))}\nprint w(π₁ + π₂)\ncheck w(π₁ + π₂) = w⟨π₁,π₂⟩plus\n" ++
-  "_≼_(R,S) ≜ R ∩ S°\nprint {(1,1),(2,2)}(≤ ≼ ≤)\nprint {(1,1)}(≤ ≼ ≤ ∪ <)\nprint {(1,1)}(< ∪ 𝟙(N) ≼ ≤)\n" ++
+#guard printed ("obj N = 0…9\nw : N×N ⟶ N×N ≜ {((2,3),(2,3)),((4,1),(4,1))}\nprint w(π₁ + π₂)\n" ++
+  "check w(π₁ + π₂) = w⟨π₁,π₂⟩plus\n_≼_(R : α ⟶ β, S : β ⟶ α) : α ⟶ β ≜ R ∩ S°\nprint {(1,1),(2,2)}(≤ ≼ ≤)\nprint {(1,1)}(≤ ≼ ≤ ∪ <)\nprint {(1,1)}(< ∪ 𝟙(N) ≼ ≤)\n" ++
   "print {(1,1)}(𝟙(N) ∩ {(1,2)} ⇒ <)\nprint {(1,1)}inl(N,N+N)(𝟙 ⊕ succ)\n") ==
   ["{((2, 3), 5), ((4, 1), 5)}", "{(1, 1), (2, 2)}",
    "{(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, 1)}",
@@ -499,7 +531,7 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 #guard match runWith "f ≜ g\n" "obj X = {A}\n" with
   | .error e => toString e == "in the prelude, line 1, col 5: unknown name 'g'"
   | .ok _ => false
-#guard match runWith "f(R) ≜ R g\n" "obj X = {A}\nx ≜ {(A,A)}\ny ≜ f(x)\n" with
+#guard match runWith "f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n" with
   | .error e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
   | .ok _ => false
 
@@ -516,7 +548,7 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
     ("⇝", "S'((π₁ ∋), π₂)"),
     ("t", "(c Λ(⇝))"),
     ("s₀", "ran(Λ((⊤(X, X) ⟨𝟙, S₀⟩)))"),
-    ("r", "Λ((s₀ ⊤(St, N)))"),
+    ("r", "Λ((s₀ ⊤))"),
     ("L", "ran((r ⦇ran(⟨D, ((D ⊤) {(0, 0)})⟩), (π₂ ∪ (π₂ ⟨(π₁ B), (π₂ succ)⟩))⦈))"),
     ("Q", "ran((L(s₀, t) π₁))"),
     ("H", "(Q h(∋))"),
