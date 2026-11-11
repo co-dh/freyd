@@ -1,14 +1,14 @@
 import LeetQ.Rel.Lang.Test
 
-/-! The Rel language on B&dM's 0/1 knapsack (§8.4), read from `programs/knapsack.rel`: the specification `s` and
-    its fold `p` against a brute force over `List.sublists` on the same items — the best value of each instance,
+/-! The Rel language on B&dM's 0/1 knapsack (§8.4), read from `programs/knapsack.rel.md`: the specification `s`
+    and its fold `p` against a brute force over `List.sublists` on the same items — the best value of each instance,
     and every printed packing within the capacity and of that value. -/
 
 namespace LeetQ.Rel.Lang.TestKnapsack
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def knapsack : String := program_file "../../../programs/knapsack.rel"
+def knapsack : String := program_file "../../../programs/knapsack.rel.md"
 
 def given : Except Err Out := runText knapsack
 

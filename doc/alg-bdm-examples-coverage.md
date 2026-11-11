@@ -15,7 +15,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 
 Since this audit, `head`, `init`, `prefix`, `concat`, `filter(p)`, `takewhile(p)` are no longer `Alg` ops, and
 `tail`, `suffix`, `tails`, `subseq` are no longer Rel builtins: all ten are definitions in the Rel prelude
-(`leetq/programs/prelude.rel`), B&dM's folds and compositions over `cons`, `cons°`, `snoc°`, `cat`, `cat°`, `nil`,
+(`leetq/programs/prelude.rel.md`), B&dM's folds and compositions over `cons`, `cons°`, `snoc°`, `cat`, `cat°`, `nil`,
 `τ`. The table below still names the ops as the audit read them.
 
 | ch. | example                  | note's formula (file:line)                 | `Alg` ops it uses                                         | missing from `Alg`           | deleted module? |
@@ -26,25 +26,25 @@ Since this audit, `head`, `init`, `prefix`, `concat`, `filter(p)`, `takewhile(p)
 | 6   | quicksort                | `quicksort` 06:350                         | `perm` `ordered` (the spec only)                          | trees (declined)             | no              |
 | 6   | closure                  | `star_eq_mu'` 06:486                       | `𝟙` `∪` `≫`                                               | `μ`                          | no              |
 | 7   | takewhile                | `takewhile_eq_cata` 07:428                 | `takewhile` `fold` `prefix` `est` `length` `leq`          | —                            | no              |
-| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `∋` `fold` `plus` `Λ` `est` `leq`         | — (written: `leetq/programs/mss.rel`; signed elements `N = -10…20`, inputs with negatives; set → array; `⟨wΛ(𝟙),π₂π₂⟩ cup` → Lean's `Λ(w ∪ π₂π₂∋)`; B&dM's `⊕` is written `⊞` (`⊕` is the prelude's sum of relations), `(𝟙×π₁)⊕` → `(𝟙×π₁)⊞`; `⊸ zero` → `⊤zero`; `sum` → `⦇ran(zero),plus⦈`; `k`'s `[seed,step]` → `⦇seed,step⦈`) | no              |
+| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `∋` `fold` `plus` `Λ` `est` `leq`         | — (written: `leetq/programs/mss.rel.md`; signed elements `N = -10…20`, inputs with negatives; set → array; `⟨wΛ(𝟙),π₂π₂⟩ cup` → Lean's `Λ(w ∪ π₂π₂∋)`; B&dM's `⊕` is written `⊞` (`⊕` is the prelude's sum of relations), `(𝟙×π₁)⊕` → `(𝟙×π₁)⊞`; `⊸ zero` → `⊤zero`; `sum` → `⦇ran(zero),plus⦈`; `k`'s `[seed,step]` → `⦇seed,step⦈`) | no              |
 | 7   | filter                   | `filter_eq_cata` 07:886                    | `filter` `subseq` `fold` `est` `length` `leq`             | —                            | no              |
 | 7   | company party            | `party_laws` 07:1398                       | `Λ` `est` `Arr.sum` `leq` `map` `concat`                  | trees (declined)             | no              |
 | 7   | shortest paths, cylinder | `cyl_laws` 07:1616                         | `fold` `zip` `concat` `uncons` `snoc` `Λ` `est` `Arr.sum` | `cp` (a term)                | no              |
 | 7   | security van             | `van_laws` 07:2042                         | `fold` `cons` `prefix` `Arr.sum` `est` `leq` `Λ` `minus`  | —                            | no              |
 | 8   | layered network          | `thinning_paths` 08:350                    | `fold` `Λ` `P` `est` `∋` `plus` `leq`                     | —                            | no              |
-| 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | written: leetq/programs/knapsack.rel (below) | no |
+| 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | written: leetq/programs/knapsack.rel.md (below) | no |
 | 8   | paragraph                | `para_laws` 08:873                         | `fold` `cat` `thinL` `est` `Arr.sum` `length` `leq`       | —                            | no              |
 | 8   | bitonic tours            | `tour_laws` 08:1067                        | `fold` `cat` `thinL` `est` `plus` `Arr.sum` `leq`         | `cp` (a term)                | no              |
-| 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no; written: `leetq/programs/edit.rel` (spec only) |
+| 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no; written: `leetq/programs/edit.rel.md` (spec only) |
 | 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined)             | no              |
 | 9   | data compression         | `code_laws` 09:1060                        | `thin` `Λ` `P` `est` `prefix` `cat` `snoc` `Arr.sum`      | `μ`                          | no              |
-| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | — written: `leetq/programs/detab.rel`; differs from the note: the snoc-list folds `detab`, `triple` are `reverse ⦇…⦈` with the step's arguments swapped (`⦇e,S⦈` folds from the right; `loop(F)` folds from the left and takes an array state, `⟨nil,𝟙⟩loop(snoc)`, but the program keeps the fold); `𝟙×blanks` is `⟨π₁,π₂ blanks⟩` (`×` with `𝟙` on `[Ch]` is refused); `blanks` is `(B length)°` on the all-blank strings; `detab°` is restricted to `C`, the strings of length ≤ 5 over `{a,BL,TB}`; the `μ` of `entab_laws` is not written | no              |
+| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | — written: `leetq/programs/detab.rel.md`; differs from the note: the snoc-list folds `detab`, `triple` are `reverse ⦇…⦈` with the step's arguments swapped (`⦇e,S⦈` folds from the right; `loop(F)` folds from the left and takes an array state, `⟨nil,𝟙⟩loop(snoc)`, but the program keeps the fold); `𝟙×blanks` is `⟨π₁,π₂ blanks⟩` (`×` with `𝟙` on `[Ch]` is refused); `blanks` is `(B length)°` on the all-blank strings; `detab°` is restricted to `C`, the strings of length ≤ 5 over `{a,BL,TB}`; the `μ` of `entab_laws` is not written | no              |
 | 10  | minimum tardiness        | `tardy_laws` 10:463                        | `bagify` `Λ` `est` `snoc` `Arr.sum` `plus` `leq`          | `μ`                          | no              |
 | 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `μ`                          | no              |
 
 Notes on single rows:
 
-- Knapsack, written: `leetq/programs/knapsack.rel`, guarded by `LeetQ/Rel/Lang/TestKnapsack.lean`. It has the
+- Knapsack, written: `leetq/programs/knapsack.rel.md`, guarded by `LeetQ/Rel/Lang/TestKnapsack.lean`. It has the
   specification `Λ(subseq within(w)) est(R)` and its fold `⦇[nil, cons within(w) ∪ π₂]⦈` (`knap_spec`), checked
   equal. The orders `R ≜ value ≥ value°` and `Q ≜ R ∩ (weight ≤ weight°)` on `[N×N]`, which has no universe, run
   on the pairs `est`, `merge`, `thinL` compare (rel-lang-design §a). The derived program `knap_fold` is written as
@@ -60,7 +60,7 @@ Notes on single rows:
 - String edit: the recursive form `edit_X` needs `μ`; the tabulation (09:596-603, `column(xs) = ⦇[fstcol,nextcol]⦈`,
   `nextcol` a fold over `zip(xs, zip(init(us), tail(us)))`) is `fold`, `zip`, `tails`, `init`, `tail`, `est` on
   `length`; `nextcol(xs)(b, …)` depends on `b`, which a `loop` carries in its state.
-  Written in the Rel language as `leetq/programs/edit.rel`, the specification only: `edit ≜ ⦇[base,step]⦈` on the
+  Written in the Rel language as `leetq/programs/edit.rel.md`, the specification only: `edit ≜ ⦇[base,step]⦈` on the
   sequences of length ≤ 4 (`Es`), `R ≜ length ≤(N,N) length°` run on the pairs `est` compares, and
   `spec ≜ Λ(edit°) est(R)` on the pairs of strings of length ≤ 2 (`TestEdit.lean` guards the least lengths). The
   tabulation is not written: `nextcol`'s fold starts from `base(b,last(us))`, a seed that depends on the pair the

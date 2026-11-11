@@ -1,6 +1,6 @@
 import LeetQ.Rel.Lang.Test
 
-/-! The Rel language on B&dM's string edit (§9.2), read from `programs/edit.rel`: the specification
+/-! The Rel language on B&dM's string edit (§9.2), read from `programs/edit.rel.md`: the specification
     `Λ(edit°) est(R)` on every pair of strings of length ≤ 2 over `{a,b}`, its least lengths against the
     edit-distance recursion on `List` below. -/
 
@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestEdit
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 
-def edit : String := program_file "../../../programs/edit.rel"
+def edit : String := program_file "../../../programs/edit.rel.md"
 
 /-- The least length of an edit sequence of `(xs, ys)`, each of `cpy`, `del`, `ins` costing one: every
     operation that applies at the heads, the cheapest rest taken. A copy is one choice among three, not

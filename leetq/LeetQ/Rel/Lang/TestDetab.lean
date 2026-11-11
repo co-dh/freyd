@@ -1,6 +1,6 @@
 import LeetQ.Rel.Lang.Test
 
-/-! The Rel language on B&dM §10.2 detab-entab, read from `programs/detab.rel`: `detab`, the specification
+/-! The Rel language on B&dM §10.2 detab-entab, read from `programs/detab.rel.md`: `detab`, the specification
     `Λ(H)est(R)` (`H` = `detab°` on the candidates) and the derived program `entab`, against a direct `detab` on
     lists and a brute-force shortest preimage. -/
 
@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestDetab
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 
-def detab : String := program_file "../../../programs/detab.rel"
+def detab : String := program_file "../../../programs/detab.rel.md"
 
 /-- The tab width, the program's `m`. -/
 def n : Nat := 4

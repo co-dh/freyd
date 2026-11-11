@@ -1,6 +1,6 @@
 import LeetQ.Rel.Lang.Test
 
-/-! The Rel language on B&dM §6.6 selection sort, read from the literate `programs/selsort.rel.md`: the specification
+/-! The Rel language on B&dM §6.6 selection sort, read from `programs/selsort.rel.md`: the specification
     `perm ordered(≤)` and the derived program `X`, each checked on four arrays in the file, and against `List.mergeSort`. -/
 
 namespace LeetQ.Rel.Lang.TestSelsort
