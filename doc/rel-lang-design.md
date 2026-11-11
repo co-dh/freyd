@@ -508,7 +508,7 @@ row).
 | `filter(p) takewhile(p)`        | `p` closed or tested on pairs: closed; a   | one `p` for every array              |
 |                                 | family: not liftable                       |                                      |
 | `X⦇e,S⦈` ✓, `X : I ⟶ A×[E]`,    | `⟨𝟙,X⟩⟨π₂π₁,⟨π₁,π₂π₂⟩⦇e,S'⦈ᴵ⟩`;            | each array folded by the seed and    |
-| `e : I ⟶ V×V`,                  | `⦇e,S'⦈ᴵ : I×[E] ⟶ V` one `foldOn`,        | step of its own key: `S'` carries    |
+| `e : I ⟶ V×V`,                  | `⦇e,S'⦈ᴵ : I×[E] ⟶ V` one `foldRows`,      | step of its own key: `S'` carries    |
 | `S : I ⟶ (E×V)×V`               | carrier `I×V`, seeded at each key by `e`,  | the key                              |
 |                                 | `S' ≜ ⟨π₂π₁,⟨π₁,π₂π₂⟩⟩⟨π₁,Sᴵ⟩`             |                                      |
 | `⦇e,S⦈` alone                   | closed: closed; a family: not liftable     | its arrays come from its left        |
@@ -559,8 +559,9 @@ step runs on the pairs (element, value). `Sᴵ` is keyed through the rows that b
 | `dom(F)`, `F⟨π₁,π₁⟩`                      | `dom(Fᴵ)π₂`                                          |
 | any other (`R°`, `ran`, `Λ`, an argument) | `R` read at the keys in demand, re-keyed by a join   |
 
-A closed sub-term of `Sᴵ` is evaluated once per program (`hoist`), not once per key. The fold reads each pair
-(key, array) back by a join on both, never pairing a pair with every key's values of its array (keys squared).
+A closed sub-term of `Sᴵ` is evaluated once per program (`hoist`), not once per key. The fold's rows are the
+pairs (key, array) in demand, each starting from its own key's seeds (`Alg.foldRows`, a seed per row): no array
+is folded from another key's seed, so the rows folded are the pairs, not the arrays times every key's seeds.
 Chess's `L` written as this fold over `0…6`, lifted over the boards and moves, makes `rel chess.rel.md` 2.6 s, against
 0.7 s for the eight-term union and over 3 min with the step read whole at each key; the rest is the fold stepping
 every value it holds each round, where `RRR` composes only the last power. So Chess keeps the union.
@@ -682,6 +683,7 @@ Now in `Alg` (no new type, field or constructor):
 |----------------------------------------|------------------------------------------------------------------------|
 | `foldOn e S X`: `⦇e,S⦈` with `S` run   | `Alg.foldOn`; `fold`, `length`, `Arr.sum` are specialisations of it    |
 | on the pairs each round meets          |                                                                        |
+| a fold with a seed per row             | `Alg.foldRows ids pend step`; `foldBy` is it with every row at `e`     |
 | a payload holds only the cells its     | `Vals.pick` gathers each picked row's slice (array) or value (sum),    |
 | rows refer to                          | recursively, so `rows`, `≫`, `nub`, `∪` compact; `foldBy` nubs `pend`  |
 | `succ` partial at the top              | `Alg.succ U` keeps `u ↦ u+1` only where `u+1 ∈ U`                      |
