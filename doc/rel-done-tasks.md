@@ -40,3 +40,4 @@ turn it is deleted from the list.
 | 39 | Empty array literal takes its object from the other side of check/=                                  |
 | 40 | Programs: prints become checks; mss ⊞ → oplus, circuit ⊻ → xor; edit tabulation in edit.rel.md       |
 | 41 | Primitive at(i) : [α] ⟶ α (0-based Alg op + builtin); full adder on an array [B]                     |
+| 43 | qlean plan written: doc/qlean-kernel-length-plan.md (USize counts, run-time assert)                  |

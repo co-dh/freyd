@@ -308,4 +308,14 @@ answer, with `lean_internal_panic_out_of_memory` on overflow, as core does for a
 - Whether qlean's evaluator, which already returns `Except`/`Option`, should raise q's own error at a growing verb
   instead of `need`. The plan uses `need` everywhere, as decided; this is the one place a second form was available.
 - The section 5 hardening: take it with Q0 or leave it.
+
+## 8. Decisions (user, 2026-11-11)
+
+- **Laws of growing ops under the fits hypothesis are accepted**: "for raze_len etc, we do run time assert, that
+  should be fine."
+- **Every reference branch is removed**, `setIds` included: "they should be removed." A site that cannot close by
+  the type closes by `need`; no slow Lean alternative stays beside a kernel.
+- **The section 5 hardening is required, not optional**, and goes through the same `need`: a kernel whose answer is
+  sized `n * w` bytes is called only under `n.toNat * w < USize.size` ("til should check n>2^61, or even smaller").
+  The bound is one named constant for the byte size of an answer, not a number per op.
 - `setIds` on non-ascending starts stops the run after L3; say if it must keep answering.
