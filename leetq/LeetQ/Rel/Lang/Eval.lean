@@ -108,8 +108,7 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .tic, D => pure (Alg.tic D)
   | _, _, _, .ordered Q, D => return Alg.ordered (← ev cnt Q ()) D.val
   | _, _, _, .sort Q, D => return Alg.sort (← ev cnt Q ()) D.val
-  -- `thinL ⊑ subseq`: the subsequences of the arrays in demand hold every target, so it is exact at each of them
-  | _, _, _, .thinL Q, D => return D ≫ Alg.thinL (← ev cnt Q ()) (ran (Alg.subseq D.val)).val
+  | _, _, _, .thinL Q, D => return Alg.thinL (← ev cnt Q ()) D.val
   | _, _, _, .merge Q, D => return Alg.merge (← ev cnt Q ()) D
   | _, _, _, .loop F, D => return Alg.loop (← ev cnt F ()) D
   | _, _, _, .succ U, D => pure (D ≫ succ U)

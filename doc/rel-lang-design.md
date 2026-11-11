@@ -73,7 +73,7 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 | `perm`, `subseq`               | rearrangements, subsequences              | `perm`, `subseq`               |
 | `setify`, `bagify`             | the set, the bag of a list                | `setify`, `bagify`             |
 | `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | `ordered`, `sort`              |
-| `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL Q (ran(subseq))`        |
+| `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL`                        |
 | `merge(Q)`, `loop(F)`, `tic`   | merge two lists, `F` folded from the      | `merge`, `loop`, `tic`         |
 |                                | left, the non-empty prefixes of `a::xs`   |                                |
 | `succ`, `plus`, `≤`, `<`       | on a declared number universe             | `succ plus leq lt`             |
@@ -84,8 +84,7 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 - `−` replaces the earlier design's `\` for difference, because the note writes `\` for left division.
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
   `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q`, `F` closed, as `filter(p)`'s `p`.
-  `thinL(Q)` ranges its targets over the subsequences of the arrays in demand, which hold every one
-  (`thinL ⊑ subseq`), so it too is exact at each key. A converse with a name runs as that op (`cat°`, `snoc°`).
+  A converse with a name runs as that op (`cat°`, `snoc°`).
 - Not in the language yet (`no` in the architecture table): `⦇R⦈`, `F(R)` on datatypes other than lists;
   sorting sets (`setify° ordered(Q)`: its target is lists, which have no demand (§a), and a set has unboundedly
   many ordered listings with repeats); tabulation (`array`, `row`, `col`); `μX : φ(X)` and `R*` (§d).
