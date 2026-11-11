@@ -13,6 +13,19 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 /-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
 local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
+open Lean Elab in
+/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and read by
+    `Parse.programText` while elaborating, so a malformed file fails the build at its line. -/
+elab "program_file " p:str : term => do
+  let src := (← readThe Core.Context).fileName
+  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
+  match Parse.programText p.getString (← IO.FS.readFile (dir / p.getString)) with
+  | .ok s => pure (mkStrLit s)
+  | .error e => throwError "{p.getString}: {e}"
+
+-- the embedded prelude reads as literate text and its definitions type-check
+#guard (Parse.literate Parse.prelude).isOk && (typesOf none).isOk
+
 def blocks : String := program_file "../../../programs/blocks.rel.md"
 
 /-- The definition `n` at the objects `A ⟶ B`. -/
@@ -593,10 +606,10 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 #guard errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
 #guard errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
 -- an error of the prelude's own text, and one raised in a prelude body at a use: the prelude's line, the use's
-#guard match runWith "f ≜ g\n" "obj X = {A}\n" with
-  | .error e => toString e == "in the prelude, line 1, col 5: unknown name 'g'"
+#guard match runWith "    f ≜ g\n" "obj X = {A}\n" with
+  | .error e => toString e == "in the prelude, line 1, col 9: unknown name 'g'"
   | .ok _ => false
-#guard match runWith "f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n" with
+#guard match runWith "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n" with
   | .error e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
   | .ok _ => false
 

@@ -1,5 +1,4 @@
 import LeetQ.Rel.Lang.Syntax
-import Lean
 
 /-! The parser of the Rel language: text to `Program`, recursive descent over the characters (§c).
 

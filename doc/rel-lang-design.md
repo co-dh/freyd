@@ -30,7 +30,8 @@ as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --typ
 
 `FILE` is a `.rel.md` file, a literate one (next section); any other name, a plain `.rel` included, is the error
 "not a program file: its name must end in `.rel.md` …; the plain `.rel` format is no longer read" (exit 1). The
-prelude and the `#guard` modules read their programs the same way, through `program_file` (`Lang/Parse.lean`).
+`#guard` modules read their programs the same way, through `program_file` (`Lang/Test.lean`); the prelude is
+embedded raw (`include_str`) and read through `literate` by `Parse.scope`, and `Test.lean` guards it at build.
 
 ## Literate files
 
@@ -237,8 +238,9 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 
 ### The prelude
 
-A program of the language that every program sees: `leetq/programs/prelude.rel.md`, read through `literate` while
-`Parse` elaborates and embedded in the binary (`Parse.prelude`). `runText` parses and runs it first, then the
+A program of the language that every program sees: `leetq/programs/prelude.rel.md`, embedded raw in the binary
+(`Parse.prelude`, `include_str`) and read through `literate` by `Parse.scope`; `Test.lean` guards at build that it
+reads and type-checks. `runText` parses and runs it first, then the
 program in its scope, with one environment and one sharing table through both. Its definitions are ordinary ones:
 they lift, run on demand and converse as their bodies do. The `LeetQ` library `needs` the `programs/` directory
 (`leetq/lakefile.lean`), so `lake build rel` after an edit of a `.rel.md` file rebuilds `Parse` and the binary.
