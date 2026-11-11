@@ -30,7 +30,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | `cp` (a term)                | no              |
 | 8   | paragraph                | `para_laws` 08:873                         | `fold` `cat` `thinL` `est` `Arr.sum` `length` `leq`       | —                            | no              |
 | 8   | bitonic tours            | `tour_laws` 08:1067                        | `fold` `cat` `thinL` `est` `plus` `Arr.sum` `leq`         | `cp` (a term)                | no              |
-| 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no              |
+| 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no; written: `leetq/programs/edit.rel` (spec only) |
 | 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined)             | no              |
 | 9   | data compression         | `code_laws` 09:1060                        | `thin` `Λ` `P` `est` `prefix` `cat` `snoc` `Arr.sum`      | `μ`                          | no              |
 | 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | —                            | no              |
@@ -46,6 +46,13 @@ Notes on single rows:
 - String edit: the recursive form `edit_X` needs `μ`; the tabulation (09:596-603, `column(xs) = ⦇[fstcol,nextcol]⦈`,
   `nextcol` a fold over `zip(xs, zip(init(us), tail(us)))`) is `fold`, `zip`, `tails`, `init`, `tail`, `est` on
   `length`; `nextcol(xs)(b, …)` depends on `b`, which a `loop` carries in its state.
+  Written in the Rel language as `leetq/programs/edit.rel`, the specification only: `edit ≜ ⦇[base,step]⦈` on the
+  sequences of length ≤ 4 (`Es`), `R ≜ length ≤ length°` restricted to `Es` (`length°` has no universe), and
+  `spec ≜ Λ(edit°) est(R)` on the pairs of strings of length ≤ 2 (`TestEdit.lean` guards the least lengths). The
+  tabulation is not written: `nextcol`'s fold starts from `base(b,last(us))`, a seed that depends on the pair the
+  fold of `column` is at, and a fold's seed in the language is closed or a family of its own left's keys (§e); the
+  lifted attempt fails with "the index of a family: found (𝒫A×𝒫A)×(A×𝒫𝒫(A+(A+A))), expected 𝒫A×𝒫A". `est(R)`
+  builds `⊤` on all the candidates of all pairs, so the spec at length ≤ 3 (sequences ≤ 6) does not run.
 - Detab-entab: `entab_laws` is a `μ`, but the note's final program `entab_triple` is `triple ⦇…⦈` (`triple_fold`)
   then `assocl π₁ (𝟙×blanks) cat`: a fold. `fill` pads `n − col mod n` blanks (`AOP/A10_2_Detab.lean:64`).
 - Minimum tardiness: `bagify` is on `master`. The greedy `μ` recurses on the bag; no fold form is in the note.
