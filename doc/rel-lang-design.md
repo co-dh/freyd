@@ -211,7 +211,8 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 A program of the language that every program sees: `leetq/programs/prelude.rel`, embedded in the binary
 (`Parse.prelude`). `runText` parses and runs it first, then the program in its scope, with one environment and
 one sharing table through both. Its definitions are ordinary ones: they lift, run on demand and converse as their
-bodies do.
+bodies do. The `LeetQ` library `needs` the `programs/` directory (`leetq/lakefile.lean`), so `lake build rel`
+after an edit of a `.rel` file rebuilds `Parse` and the binary.
 
 | name         | definition                                                     | meaning                                     |
 |--------------|----------------------------------------------------------------|---------------------------------------------|

@@ -16,9 +16,18 @@ package leetq where
 require freyd from ".."
 require qlean from (get_config? qlean |>.getD "../../qlean")
 
+/-- The `.rel` programs that `Parse` (the prelude) and the `Test*` modules read with `include_str`. Lake does not
+trace an `include_str` file, so the library `needs` this directory: its hash enters every module's trace. -/
+input_dir programs where
+  text := true
+  filter := .extension "rel"
+
+/-- `needs` is per library; there is no per-module dependency, and a separate library for the readers would
+own the same modules as the `LeetQ` glob, so the whole library is rebuilt on a `.rel` edit. -/
 @[default_target]
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ]
+  needs := #[programs]
 
 /-- `rel FILE`: run a Rel program, printing each `print`. -/
 lean_exe rel where
