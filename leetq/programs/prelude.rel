@@ -7,6 +7,7 @@ _⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S                  
 _⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]      -- the sum of relations, A+B ⟶ C+D
 _+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus               -- the sum of two values
 frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°           -- the symmetric division
+cor(S : α ⟶ β) : α×β ⟶ α×β ≜ dom(π₁S ∩ π₂)                  -- the pairs of S, as a coreflexive
 
 -- B&dM p.130 `perm ≜ ⦇[nil, add]⦈`: add puts the head anywhere in the tail. Its converse is itself, a rule the
 -- language keeps for this one name (`Tm.own`), because `perm° = perm` cannot be derived from the fold. `nil(1)`

@@ -8,7 +8,7 @@ y : 1 ⟶ [N] ≜ {(∗,2 1 2)}                     -- a repeated element
 z : 1 ⟶ [N] ≜ {(∗,5 4 3 2 1)}
 e : 1 ⟶ [N] ≜ nil                             -- the empty array
 
-ok : α×[α] ⟶ α×[α] ≜ dom(π₁(≤/∋) ∩ π₂)        -- (a, xs) with a ≤ every element of xs (Lean `ok`)
+ok : α×[α] ⟶ α×[α] ≜ cor(≤/∋)                 -- (a, xs) with a ≤ every element of xs (Lean `ok`)
 select : [α] ⟶ α×[α] ≜ perm cons° ok          -- Lean `selectC`: a::y a permutation of x, a ≤ every element of y
 
 -- the converse of a fold needs the arrays it folds: C, every rearrangement of an input

@@ -81,7 +81,8 @@ as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --typ
   neither builds nor tests is refused at its use: `L sort(S)`, `S ≜ ran(𝟙([N])) length ≤(N,N) length°`, is
   "⊤'s target: [N] has no universe; …" at the `print`, from the prelude's `ordered(Q)` (`∼Q` is `⊤ − Q`). The annotation `(N,N)` is needed because `length`'s target is otherwise undetermined.
 
-  `τ(R) : A×B ⟶ A×B`, for `R : A ⟶ B`, is the coreflexive on the pairs `(a,b)` in demand with `a R b`. A term
+  `τ(R) : A×B ⟶ A×B`, for `R : A ⟶ B`, is the coreflexive on the pairs `(a,b)` in demand with `a R b`: it
+  denotes the prelude's `cor(R)` (§b), tested on the pairs in demand instead of built. A term
   is testable on pairs when it is one of these, its parts as stated:
 
   | `R`                         | `τ(R)`                                   | needs                                |
@@ -94,7 +95,8 @@ as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --typ
   | `PT`, `TQ`                  | `dom(⟨π₁P,π₂⟩τ(T))`, `dom(⟨π₁,π₂Q°⟩τ(T))` | `P` runs, `Q°` runs; `T` testable    |
 
   Not testable: `dom`, `ran`, `⟨R,S⟩`, `R×S`, `Λ`, `E`, `P`, the folds and the list builtins, unless they run.
-  So `ok ≜ dom(π₁(R/∋) ∩ π₂)` runs on the pairs `(a,xs)` in demand: `π₂` gives `xs`, `τ(π₁(R/∋))` tests `a`
+  So `ok : α×[α] ⟶ α×[α] ≜ cor(≤/∋)`, which is `dom(π₁(≤/∋) ∩ π₂)`, runs on the pairs `(a,xs)` in demand: `π₂`
+  gives `xs`, `τ(π₁(≤/∋))` tests `a`
   against each element of `xs`.
 - Everything else that needs a universe its object lacks is a front-end error at the term's position:
 
@@ -219,6 +221,7 @@ bodies do.
 | `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]`       | the sum of relations                        |
 | `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus`                | the sum of two values                       |
 | `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°`            | the symmetric division                      |
+| `cor(S)`     | `cor(S : α ⟶ β) : α×β ⟶ α×β ≜ dom(π₁S ∩ π₂)`                  | the pairs of `S`, as a coreflexive          |
 | `perm`       | `perm : [α] ⟶ [α] ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
 | `ordered(Q)` | `ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))` | every element `Q`-related to each later one |
 | `sort(Q)`    | `sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)`                | the `Q`-ordered rearrangements              |

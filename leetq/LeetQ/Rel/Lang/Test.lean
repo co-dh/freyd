@@ -55,7 +55,7 @@ def orders : Except Err Out := runText (blocks ++ "O : X ⟶ X ≜ {(A,A),(A,B),
 /-- A body given families of two indices, `∋` at `St` and `ζ∋` at `N` (the `k`-th state's pairs), runs at
     `St×N`: the fibre at `(s,k)` is `s ∩ ζ(k)`. Against the same meet written by hand, and at `(s₀,0)`, `(s₀,1)`. -/
 def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) : X ⟶ X ≜ S ∩ T\n" ++
-  "check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩dom(π₁ ∩ π₂)π₁\n" ++
+  "check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩cor(𝟙)π₁\n" ++
   "print (s₀×{(0,0)})k(∋,ζ∋)\nprint (s₀×{(1,1)})k(∋,ζ∋)\n")
 
 /-- `X⦇e,S⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
@@ -443,7 +443,7 @@ def reading : Decl → Option (String × String)
 def chs : String := "obj Ch = {a,b}\nobj N = 0…3\nx : 1 ⟶ [Ch] ≜ {(∗,a b)}\n" ++
   "y : 1 ⟶ [Ch] ≜ {(∗,a a b)}\nns : 1 ⟶ [N] ≜ {(∗,2 3)}\n" ++
   "ms : 1 ⟶ [N] ≜ {(∗,3 1 2)}\nks : 1 ⟶ [N] ≜ {(∗,3 1 1)}\n" ++
-  "ok : α×[α] ⟶ α×[α] ≜ dom(π₁(≤/∋) ∩ π₂)\n"
+  "ok : α×[α] ⟶ α×[α] ≜ cor(≤/∋)\n"
 
 -- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
 #guard printed (chs ++ "print x cons° (perm cons°)°\nprint x (perm ∩ perm)° cons°\nprint x ⟨cons°π₁, perm⟩°° π₂\n" ++
@@ -515,7 +515,10 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
   ["{((2, 3), 5), ((4, 1), 5)}", "{(1, 1), (2, 2)}",
    "{(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, 1)}",
    "{(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, inl 1)}"]
-#guard ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)"].all trip
+#guard ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)", "cor(R)"].all trip
+-- `cor(R)`: the pairs of `R` as a coreflexive on `A×B`
+#guard printed "obj N = 0…3\nprint {((1,2),(1,2)),((2,1),(2,1)),((3,3),(3,3))}cor(≤)\n" ==
+  ["{((1, 2), (1, 2)), ((3, 3), (3, 3))}"]
 #guard [("R ∩ S ⇒ R", "((R ∩ S) ⇒ R)"), ("R ⇒ S ∩ R", "((R ⇒ S) ∩ R)"), ("R S + R", "((R S) + R)"),
   ("R + S R", "((R + S) R)")].all fun (s, r) => reads s r
 -- infix only: used before its arguments, alone, or declared with other than two parameters
