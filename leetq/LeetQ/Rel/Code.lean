@@ -87,19 +87,19 @@ structure Code where
 def codeKind (card : Nat) : Scan.Kind :=
   if card ≤ 2 ^ 8 then .u8 else if card ≤ 2 ^ 16 then .i16 else if card ≤ 2 ^ 32 then .i32 else .i64
 
-/-- The long payload `b`'s count `len b`, where it fits a `USize`, handed to `k`; a stopped run's model is
-    `default`. -/
-def longCount {α : Type} [Inhabited α] (what : String) (b : ByteArray) (k : USize → α) : α :=
+/-- The long payload `b`'s count `len b`, where it fits a `USize`, handed to `k` with its equation; a stopped
+    run's model is `default`. -/
+def longCount {α : Type} [Inhabited α] (what : String) (b : ByteArray) (k : (n : USize) → len b = n.toNat → α) : α :=
   need (len b < USize.size) (fun _ => s!"{what}: {len b} longs do not fit a USize") (fun _ => default)
-    fun _ => k (len b).toUSize
+    fun h => k (len b).toUSize (USize.toNat_ofNat_of_lt' h).symm
 
 /-- The long ids `gid`, each below `card`, packed at `codeKind card` by `enumIds`. -/
-def pack (card : Nat) (gid : ByteArray) : Code := longCount "pack" gid fun n =>
+def pack (card : Nat) (gid : ByteArray) : Code := longCount "pack" gid fun n _ =>
   let k := codeKind card
   ⟨8 * k.width, n, card, if k == .i64 then gid else (enumIds n card.toUSize 0 (8 * k.width).toUSize gid).1⟩
 
 /-- A long payload as codes bounded by its layout alone. -/
-def Code.ofLongs (b : ByteArray) : Code := longCount "Code.ofLongs" b fun n => ⟨64, n, 2 ^ 64, b⟩
+def Code.ofLongs (b : ByteArray) : Code := longCount "Code.ofLongs" b fun n _ => ⟨64, n, 2 ^ 64, b⟩
 
 /-- The sort layout of a lane, where it has one: every lane but `2`/`4` bits. -/
 def laneKind : Nat → Option Scan.Kind
@@ -125,7 +125,7 @@ namespace Code
 def kind (c : Code) : Option Scan.Kind := laneKind c.w
 
 /-- `c@i` for an in-range long index column: `gatherBits`, `gatherBytes`, `gatherPacked` at the lane. -/
-def gather (c : Code) (i : ByteArray) : Code := longCount "Code.gather" i fun m =>
+def gather (c : Code) (i : ByteArray) : Code := longCount "Code.gather" i fun m _ =>
   ⟨c.w, m, c.card, match c.kind with
     | some .bit => gatherBits c.n c.b i
     | some k => gatherBytes k.width.toUSize 0 c.b i
@@ -820,15 +820,18 @@ def cnt (c : Code) : Code × ByteArray :=
 def atCnt (cs : Code × ByteArray) (k : Code) : ByteArray := gather 8 cs.2 (cs.1.find k)
 
 /-- `cross(n, m)`: every pair of `n` left and `m` right rows as two index columns, `p div m` and
-    `p mod m` over `til (n·m)` (`Ew.val` in place of the row's `expandBytes`/`cycleIds`). -/
-def cross (n m : Nat) : ByteArray × ByteArray :=
-  let p := tilLongs (n * m).toUSize
-  ( Kernel.Ew.val Ew.idiv Ew.i64 Ew.va nul p (one m.toUInt64) (n * m).toUSize
-  , Kernel.Ew.val Ew.imod Ew.i64 Ew.va nul p (one m.toUInt64) (n * m).toUSize)
+    `p mod m` over `til (n·m)` (`Ew.val` in place of the row's `expandBytes`/`cycleIds`), where `n·m` fits a
+    `USize`. -/
+def cross (n m : USize) : ByteArray × ByteArray :=
+  need (n.toNat * m.toNat < USize.size) (fun _ => s!"cross: {n}·{m} pairs do not fit a USize")
+    (fun _ => (.empty, .empty)) fun _ =>
+  let p := tilLongs (n * m)
+  ( Kernel.Ew.val Ew.idiv Ew.i64 Ew.va nul p (one m.toUInt64) (n * m)
+  , Kernel.Ew.val Ew.imod Ew.i64 Ew.va nul p (one m.toUInt64) (n * m))
 
 /-- `cross`'s two index columns have one length: both `Ew.val` at the count `n·m` (`Ew.val_size`). -/
-theorem cross_len (n m : Nat) : len (cross n m).2 = len (cross n m).1 := by
-  simp [cross, len, KernelWF.Ew.val_size]
+theorem cross_len (n m : USize) : len (cross n m).2 = len (cross n m).1 := by
+  simp only [cross, need]; split <;> simp [stop, len, KernelWF.Ew.val_size]
 
 /-- `anti(x, y)`: the positions of `x` whose code is not in `y` — `member`, `Ew.notBits`, `whereBits`. -/
 def anti (x y : Code) : ByteArray := whereBits x.n (Ew.notBits x.n (x.member y))
