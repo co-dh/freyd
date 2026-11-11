@@ -40,6 +40,7 @@ turn it is deleted from the list.
 | 39 | Empty array literal takes its object from the other side of check/=                                  |
 | 40 | Programs: prints become checks; mss ⊞ → oplus, circuit ⊻ → xor; edit tabulation in edit.rel.md       |
 | 41 | Primitive at(i) : [α] ⟶ α (0-based Alg op + builtin); full adder on an array [B]                     |
+| 28 | Evaluator waste: keyed fold per-row seeds, detab, lifted `RS` as a join (chess 1743 → 171 MB)        |
 | 37 | A `nil` whose source no context fixes has source `1`; `ran(nil)` in a fold seed elaborates           |
 | 42 | `where` names known while the body is split into names; a lifted definition applied to closed terms  |
 | 43 | qlean plan written: doc/qlean-kernel-length-plan.md (USize counts, run-time assert)                  |
