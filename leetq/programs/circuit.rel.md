@@ -15,7 +15,7 @@ An array has no universe, so the adder's inputs are built: every bit put in fron
 from the empty one, gives the eight arrays of three bits.
 
     ins : [α] ⟶ [α] ≜ ⟨⊤,𝟙⟩cons                    -- each element of α put in front
-    I : [B] ⟶ [B] ≜ ran(nil(1) ins ins ins)        -- the adder's inputs: the arrays of three bits
+    I : [B] ⟶ [B] ≜ ran(nil ins ins ins)           -- the adder's inputs: the arrays of three bits
 
     q : [α] ⟶ α×α ≜ ⟨at(0),at(1)⟩                  -- the first two inputs
     x₂ : [B] ⟶ B×B ≜ ⟨q xor,at(2)⟩                 -- their xor, and the third input

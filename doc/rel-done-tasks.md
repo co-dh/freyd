@@ -44,3 +44,6 @@ turn it is deleted from the list.
 | 37 | A `nil` whose source no context fixes has source `1`; `ran(nil)` in a fold seed elaborates           |
 | 42 | `where` names known while the body is split into names; a lifted definition applied to closed terms  |
 | 43 | qlean plan written: doc/qlean-kernel-length-plan.md (USize counts, run-time assert)                  |
+| 48 | lean-refactor `coerce (A B f)…`: a named conversion where a term of type A meets expected type B     |
+| 49 | lean-refactor `uncoerce` (drop a redundant conversion) and `rename --terms-only`/`--patterns-only`   |
+| 50 | lean-refactor `retype A B`: retype a binder at its source where an A variable meets expected B       |
