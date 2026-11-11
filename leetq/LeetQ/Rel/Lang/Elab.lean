@@ -38,11 +38,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   | ran {A B : Obj} (R : Tm A B false) : Tm B B false
   | ldiv {A B C : Obj} (R : Tm A B false) (S : Tm A C false) (UB : Tm B B false) (UC : Tm C C false) : Tm B C false
   | rdiv {A B C : Obj} (R : Tm A C false) (S : Tm B C false) (UA : Tm A A false) (UB : Tm B B false) : Tm A B false
-  | frac {A B C : Obj} (R : Tm A C false) (S : Tm B C false) (UA : Tm A A false) (UB : Tm B B false) : Tm A B false
   | pair {A B C : Obj} {d e : Bool} (R : Tm A B d) (S : Tm A C e) : Tm A (.prod B C) (d || e)
   | prod {A B C D : Obj} (R : Tm A B false) (S : Tm C D false) : Tm (.prod A C) (.prod B D) false
   | junc {A B C : Obj} (R : Tm A C false) (S : Tm B C false) : Tm (.sum A B) C false
-  | sum {A B C D : Obj} (R : Tm A C false) (S : Tm B D false) : Tm (.sum A B) (.sum C D) false
   | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) d
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
@@ -72,13 +70,13 @@ inductive Tm : Obj → Obj → Bool → Type where
   | unsnoc {B : Obj} : Tm (.arr B) (.prod (.arr B) B) true
   | init {B : Obj} : Tm (.arr B) (.arr B) true
   | concat {B : Obj} : Tm (.arr (.arr B)) (.arr B) true
-  | perm {B : Obj} : Tm (.arr B) (.arr B) true
+  /-- The prelude's `perm`, kept as its own converse (`convTm`): the one converse rule the language has for a
+      definition, because `perm° = perm` is a theorem it cannot derive from the fold `perm` is. -/
+  | own {A : Obj} {d : Bool} (R : Tm A A d) : Tm A A d
   | setify {B : Obj} : Tm (.arr B) (.arr B) true
   | bagify {B : Obj} : Tm (.arr B) (.arr B) true
   | subseq {B : Obj} : Tm (.arr B) (.arr B) true
   | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
-  | ordered {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
-  | sort {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
@@ -171,11 +169,9 @@ inductive Pre
   | ran (p : Pre)
   | ldiv (pos : Pos) (p q : Pre) (b c : OTy)
   | rdiv (pos : Pos) (p q : Pre) (a b : OTy)
-  | frac (pos : Pos) (p q : Pre) (a b : OTy)
   | pair (p q : Pre)
   | prod (p q : Pre)
   | junc (p q : Pre)
-  | sum (p q : Pre)
   | lam (p : Pre)
   | E (p : Pre)
   | map (p : Pre)
@@ -203,13 +199,11 @@ inductive Pre
   | unsnoc (b : OTy)
   | init (b : OTy)
   | concat (b : OTy)
-  | perm (b : OTy)
+  | own (p : Pre)
   | setify (b : OTy)
   | bagify (b : OTy)
   | subseq (b : OTy)
   | tic (b : OTy)
-  | ordered (p : Pre)
-  | sort (p : Pre)
   | thinL (p : Pre)
   | merge (p : Pre)
   | loop (p : Pre)
@@ -372,10 +366,6 @@ def lRdiv (R S : Pre × OTy × OTy) : M (Pre × OTy × OTy) := do
   unify p "the target of `/`'s right operand" S.2.2 R.2.2
   lComp p (lCompl I p R) (lConv S)
 
-def lFrac (R S : Pre × OTy × OTy) : M (Pre × OTy × OTy) := do
-  let rs ← lRdiv I p R S; let sr ← lRdiv I p S R
-  pure (meet rs.1 (lConv sr).1, rs.2.1, rs.2.2)
-
 /-- `⟨R,S⟩` lifted: `⟨R,S⟩dom(π₁π₁ ∩ π₂π₁)⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩`, pairs of rows of one source. -/
 def lPair : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, b), (S, a', c) => do
@@ -398,12 +388,6 @@ def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
     unify p "the target of the case's second part" c' c
     pure (join (comp R (pair (comp (outl a c) (inl a b)) (outr a c)))
       (comp S (pair (comp (outl b c) (inr a b)) (outr b c))), .sum a b, c)
-
-/-- `R+S` lifted: `R⟨π₁inl,π₂inl⟩ ∪ S⟨π₁inr,π₂inr⟩`. -/
-def lSum : Pre × OTy × OTy → Pre × OTy × OTy → Pre × OTy × OTy
-  | (R, a, c), (S, b, d) =>
-    (join (comp R (pair (comp (outl a c) (inl a b)) (comp (outr a c) (inl c d))))
-      (comp S (pair (comp (outl b d) (inr a b)) (comp (outr b d) (inr c d)))), .sum a b, .sum c d)
 
 /-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ : I×a ⟶ b`, run on the pairs
     (key, source) in demand (§e, cost of the keyed fold). A row whose fibre at a source reads only that source
@@ -484,7 +468,6 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .zero => (.zero a b, a, b)
     | .top => (.top p a b none, a, b)
     | .mem => (.mem b, .arr b, b)
-    | .ni => (.conv (.close p (.mem b) (.arr b) "∈"), b, .arr b)
     | .outl => (.outl a b, .prod a b, a)
     | .outr => (.outr a b, .prod a b, b)
     | .inl => (.inl a b, a, .sum a b)
@@ -511,7 +494,6 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .snoc => (.snoc b, .prod (.arr b) b, .arr b)
     | .init => (.init b, .arr b, .arr b)
     | .concat => (.concat b, .arr (.arr b), .arr b)
-    | .perm => (.perm b, .arr b, .arr b)
     | .setify => (.setify b, .arr b, .arr b)
     | .bagify => (.bagify b, .arr b, .arr b)
     | .subseq => (.subseq b, .arr b, .arr b)
@@ -558,28 +540,20 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
     | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
-    | .est | .thin | .filter | .takewhile | .ordered | .sort | .thinL | .merge => do
+    | .est | .thin | .filter | .takewhile | .thinL | .merge => do
       unify p s!"the target of {o.sym}'s argument" t s
       -- the order is tested on the pairs the operator compares (`build`, `param`), not read whole
       let c := Pre.close p q s s!"{o.sym}( )"
       let a := OTy.arr s
       let (r, x, y) : Pre × OTy × OTy := match o with
         | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .filter => (.filter c, a, a)
-        | .takewhile => (.takewhile c, a, a) | .ordered => (.ordered c, a, a) | .sort => (.sort c, a, a)
-        | .thinL => (.thinL c, a, a) | _ => (.merge c, .prod a a, a)
+        | .takewhile => (.takewhile c, a, a) | .thinL => (.thinL c, a, a) | _ => (.merge c, .prod a a, a)
       pure (.rel r x y)
     | .loop => do
       let x ← fresh; let y ← fresh
       unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
       pure (.rel (.loop q) (.prod x (.arr y)) x)
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
-  | [(q, a, c), (r, b, c')] => do
-    match o with
-    | .frac => do
-      unify p "the target of frac's second argument" c' c
-      let w := "frac( ) reads its arguments whole outside a meet with a term run on demand"
-      pure (.rel (.frac p (.close p q a w) (.close p r b w) a b) a b)
-    | _ => throw ⟨p, s!"{o.sym} takes 1 argument, found 2"⟩
   | as => throw ⟨p, s!"{o.sym}: wrong number of arguments, found {as.length}"⟩
 
 /-- A builtin applied with a family among its arguments, by the rows of §e. -/
@@ -590,7 +564,6 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
     | .ran, [R] => pure (lRan R)
     | .lam, [R] => pure (lLam I R)
     | .E, [R] => do let b ← fresh; pure (lLam I (← lComp p (liftConst I p (.mem b) (.arr b) b) R))
-    | .frac, [R, S] => lFrac I p R S
     | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
@@ -599,11 +572,10 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
 def binary (p : Pos) (o : Bin) : Pre × OTy × OTy → Pre × OTy × OTy → M Arg
   | (q, s, t), (r, s', t') => do
     match o with
-    | .meet | .join | .diff | .imp => do
+    | .meet | .join | .diff => do
       unify p s!"the source of {o.sym}'s right operand" s' s; unify p s!"the target of {o.sym}'s right operand" t' t
       let x := match o with
-        | .meet => Pre.meet q r | .join => .join q r | .diff => .diff q r
-        | _ => .join (.diff (.top p s t none) q) r
+        | .meet => Pre.meet q r | .join => .join q r | _ => .diff q r
       pure (.rel x s t)
     | .rdiv => do
       unify p "the target of `/`'s right operand" t' t
@@ -615,9 +587,6 @@ def binary (p : Pos) (o : Bin) : Pre × OTy × OTy → Pre × OTy × OTy → M A
       pure (.rel (.ldiv p (.close p q s w) (.close p r s w) t t') t t')
     -- `R×S = ⟨π₁R,π₂S⟩`: `build` runs it as that pair when an operand runs on demand
     | .prod => pure (.rel (.prod (.close p q s "R×S") (.close p r s' "R×S")) (.prod s s') (.prod t t'))
-    | .sum =>
-      let w := "R+S reads its operands whole"
-      pure (.rel (.sum (.close p q s w) (.close p r s' w)) (.sum s s') (.sum t t'))
 
 /-- A binary operator with a family on a side, by the rows of §e. -/
 def binaryL (I : OTy) (p : Pos) (o : Bin) (x y : Arg) : M Arg := do
@@ -626,11 +595,9 @@ def binaryL (I : OTy) (p : Pos) (o : Bin) (x y : Arg) : M Arg := do
     | .meet => lSame p Pre.meet R S
     | .join => lSame p Pre.join R S
     | .diff => lSame p Pre.diff R S
-    | .imp => lSame p Pre.join (lCompl I p R) S
     | .rdiv => lRdiv I p R S
     | .ldiv => lLdiv I p R S
     | .prod => pure (lProd R S)
-    | .sum => pure (lSum R S)
   pure (.fam r.1 I r.2.1 r.2.2)
 
 /-- A defined operator's result where it is used: a family stays one inside a lifted body of the same index,
@@ -666,6 +633,12 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       if d.arity != as.length then throw ⟨p, s!"'{n}' takes {d.arity} arguments, found {as.length}"⟩
       settle m p (← d.apply p as)
     | none => throw ⟨p, s!"unknown name '{n}'"⟩
+  -- `R n S`: the definition declared `_n_`, given `R` and `S` (§c)
+  | .inf p n a b => do
+    let x ← elabE env m a; let y ← elabE env m b
+    match env.defs.lookup s!"_{n}_" with
+    | some d => settle m p (← d.apply p [x, y])
+    | none => throw ⟨p, s!"unknown infix operator '{n}'"⟩
   | .comp a b => do
     let x ← elabE env m a
     let p := b.pos
@@ -894,7 +867,7 @@ def pairTest {A B : Obj} {d : Bool} (t : Tm A B d) : Tm (.prod A B) (.prod A B) 
 
 /-- `R°` for `R` run on demand (§a), itself run on demand: pushed to the leaves by `(RS)° = S°R°`,
     `(R∩S)° = R°∩S°` (and `∪`, `−`), `⟨R,S⟩° = π₁R° ∩ π₂S°`, a coreflexive is its own converse, and a builtin
-    by its named converse (`cons° = uncons`, `perm° = perm`, `sort(Q)° = ordered(Q) perm`). A closed part is
+    by its named converse (`cons° = uncons`), and the prelude's `perm` as its own (`Tm.own`). A closed part is
     conversed whole. The error is the leaf whose converse does not run on demand. -/
 def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × Tm B A e) :=
   if h : d = false then pure ⟨false, .conv (h ▸ t)⟩ else
@@ -906,15 +879,13 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .ran R => pure ⟨false, .ran R⟩
   | .ldiv R S U V => pure ⟨false, .conv (.ldiv R S U V)⟩
   | .rdiv R S U V => pure ⟨false, .conv (.rdiv R S U V)⟩
-  | .frac R S U V => pure ⟨false, .conv (.frac R S U V)⟩
   | .prod R S => pure ⟨false, .conv (.prod R S)⟩
   | .junc R S => pure ⟨false, .conv (.junc R S)⟩
-  | .sum R S => pure ⟨false, .conv (.sum R S)⟩
   | .leq U => pure ⟨false, .conv (.leq U)⟩
   | .lt U => pure ⟨false, .conv (.lt U)⟩
   | .id => pure ⟨_, .id⟩
   | .dom R => pure ⟨_, .dom R⟩
-  | .ordered Q => pure ⟨_, .ordered Q⟩
+  | .own R => pure ⟨_, .own R⟩
   | .comp R S => do let ⟨_, s⟩ ← convTm S; let ⟨_, r⟩ ← convTm R; pure ⟨_, .comp s r⟩
   | .meet R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet r s⟩
   | .join R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .join r s⟩
@@ -934,8 +905,6 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .unsnoc => pure ⟨_, .snoc⟩
   | .cat => pure ⟨_, .uncat⟩
   | .uncat => pure ⟨_, .cat⟩
-  | .perm => pure ⟨_, .perm⟩
-  | .sort Q => pure ⟨_, .comp (.ordered Q) .perm⟩
   -- the number verbs are closed on their universe: their converse is read whole there
   | .succ U => pure ⟨false, .conv (.comp (.uni (A := .long) U) (.succ U))⟩
   | .arith k U => pure ⟨false, .conv (.comp (.uni (Alg.prod (idU U) (idU U)).key) (.arith k U))⟩
@@ -1137,10 +1106,6 @@ def build : Pre → Except Err Res
     let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
     let R ← closed? dp (A := A) (B := C) r; let S ← closed? dp (A := B) (B := C) s
     pure ⟨A, B, false, .rdiv R S (← uniTm objs st dp pos a A "R/S") (← uniTm objs st dp pos b B "R/S")⟩
-  | .frac pos p q a b => do
-    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
-    let R ← closed? dp (A := A) (B := C) r; let S ← closed? dp (A := B) (B := C) s
-    pure ⟨A, B, false, .frac R S (← uniTm objs st dp pos a A "frac") (← uniTm objs st dp pos b B "frac")⟩
   | .pair p q => do
     let ⟨A, _, _, t⟩ ← build p; let s ← build q; let ⟨_, C, _, _⟩ := s
     let ⟨_, u⟩ ← at? dp (A := A) (B := C) s; pure ⟨A, _, _, .pair t u⟩
@@ -1158,9 +1123,6 @@ def build : Pre → Except Err Res
   | .junc p q => do
     let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
     pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := C) s)⟩
-  | .sum p q => do
-    let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, D, _, _⟩ := s
-    pure ⟨_, _, false, .sum (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := D) s)⟩
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
@@ -1191,13 +1153,13 @@ def build : Pre → Except Err Res
   | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj st dp b)⟩
   | .init b => return ⟨_, _, true, .init (B := ← toObj st dp b)⟩
   | .concat b => return ⟨_, _, true, .concat (B := ← toObj st dp b)⟩
-  | .perm b => return ⟨_, _, true, .perm (B := ← toObj st dp b)⟩
+  | .own p => do
+    let ⟨A, B, d, t⟩ ← build p
+    if h : B = A then pure ⟨A, A, d, .own (h ▸ t)⟩ else internal dp "perm's objects"
   | .setify b => return ⟨_, _, true, .setify (B := ← toObj st dp b)⟩
   | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
   | .subseq b => return ⟨_, _, true, .subseq (B := ← toObj st dp b)⟩
   | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
-  | .ordered p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .ordered c⟩
-  | .sort p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .sort c⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do
@@ -1279,17 +1241,10 @@ def test (p : Pre) : Except Err Cor :=
         let c ← test r; let ⟨_, C, _⟩ := c
         pure ⟨B, C, .diff .id (.dom (.comp (.pair (.comp .outl v) .outr) (.diff .id (← corAt dp A C c))))⟩
       | .error _ => throw err
-    -- `frac(R,S) = R/S ∩ (S/R)°`: both divisions tested, the second on the swapped pairs
-    | .frac _ (.close _ q _ _) (.close _ r _ _) _ _ => do
-      let cr ← test q; let ⟨A, C, _⟩ := cr
-      let cs ← test r; let ⟨B, _, _⟩ := cs
-      let ⟨_, rt⟩ ← at? dp (A := A) (B := C) (← build q)
-      let ⟨_, s⟩ ← at? dp (A := B) (B := C) (← build r)
-      pure ⟨A, B, .comp (divTest (← corAt dp A C cr) s) (.comp swapTm (.comp (divTest (← corAt dp B C cs) rt) swapTm))⟩
     | _ => throw err
 termination_by (sizeOf p, 1)
 
-/-- The order (or coreflexive) parameter `Q : B ⟶ B` of `est thin filter takewhile ordered sort thinL merge`
+/-- The order (or coreflexive) parameter `Q : B ⟶ B` of `est thin filter takewhile thinL merge`
     as its pair test `τ(Q)` (§a), which the operator runs on the pairs it compares: a closed `Q` and a `Q` that
     runs on demand alike, and any `Q` testable on pairs. `why` names the operator; the error names the leaf. -/
 def param : Pre → Except Err ((B : Obj) × Tm (.prod B B) (.prod B B) true)
