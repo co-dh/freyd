@@ -6,7 +6,8 @@
 # The tool is CWD-relative — it reads `.lake/build/lib/lean/<Module>.ilean` and verifies edits with
 # `./scripts/cap lake build` — so cd to the repository root first and let the tool's own launcher supply
 # `lake env`, the address-space cap, the index lock, and `-C <dir>` for a nested package such as `leetq`
-# (resolved from this root: `./scripts/lean-refactor -C leetq index`).
+# (resolved from this root: `./scripts/lean-refactor -C leetq index`). A plain `index` from this root also
+# refreshes every nested package (`leetq`) into the root's database.
 cd "$(dirname "$0")/.." || exit 1
 root=${LEAN_REFACTOR_ROOT:-$HOME/repo/lean-refactor}
 [ -x "$root/scripts/lean-refactor" ] || {

@@ -226,7 +226,8 @@ guessing.
 
 ## Searching the Lean declarations
 Do NOT grep `*.lean` to find a declaration. The whole corpus — every `Freyd`, `AOP`, `leet`, `rel`
-declaration with its statement text and source line — is indexed in one sqlite database,
+declaration, and the nested `leetq` package's `LeetQ.*` (when `leetq` is built; a worktree passes
+`index -K qlean=<dir>`), with its statement text and source line — is indexed in one sqlite database,
 `.lake/build/refactor-index.db` (rebuilt by `./scripts/lean-refactor index`, which `make` runs as a
 prerequisite of `cite`/`cover`). Query it, then read the source only to check the hypotheses of the
 one hit you are about to use — the indexed statement omits `variable`-bound hypotheses.
