@@ -201,9 +201,48 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
   sorting sets (`setify° ordered(Q)`: its target is lists, which have no demand (§a), and a set has unboundedly
   many ordered listings with repeats); tabulation (`array`, `row`, `col`); `μX : φ(X)` and `R*` (§d).
 
+### The prelude
+
+A program of the language that every program sees: `leetq/programs/prelude.rel`, embedded in the binary
+(`Parse.prelude`). `runText` parses and runs it first, then the program in its scope, with one environment and
+one sharing table through both. Its definitions are ordinary ones: they lift, run on demand and converse as their
+bodies do.
+
+| name         | definition                                                     | meaning                                     |
+|--------------|----------------------------------------------------------------|---------------------------------------------|
+| `1`          | `obj 1 = {∗}`                                                  | the terminal object: its one value          |
+| `∈`          | `∈ ≜ ∋°`                                                       | membership, the converse of `∋`             |
+| `R ⇒ S`      | `_⇒_(R : α ⟶ β, S : α ⟶ β) ≜ ∼R ∪ S`                           | implication                                 |
+| `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) ≜ [R inl, S inr]`                   | the sum of relations, `A+B ⟶ C+D`           |
+| `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) ≜ ⟨R,S⟩plus`                        | the sum of two values                       |
+| `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) ≜ R/S ∩ (S/R)°`                    | the symmetric division                      |
+| `perm`       | `perm ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
+| `ordered(Q)` | `ordered(Q) ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))`             | every element `Q`-related to each later one |
+| `sort(Q)`    | `sort(Q) ≜ perm ordered(Q)`                                    | the `Q`-ordered rearrangements              |
+
+- Kept builtin:
+  - `est(R)`: as the definition `∋ ∩ (∈\R°)` it needs `∋°`, which does not run on demand, so `Λ(G) est(≤)` on
+    numbers and an order tested on pairs would be lost.
+  - `E(R)`: as `Λ(∋R)` it drops an array with no image, the row `(b,[])`.
+  - `R×S`: the closed `Alg.prod` is needed when the source has no universe.
+- The one converse rule for a definition: `perm° = perm` (`Tm.own`, applied by `preludeDef` to the name `perm`).
+  It is a theorem the language cannot derive from the fold `perm` is, and the fold's converse does not run on
+  demand ("the converse of ⦇e,S⦈ does not run on demand"); with it `sort(Q)° = ordered(Q) perm` runs. Each prelude
+  definition is wrapped as it is defined, so `sort`'s body already sees the wrapped `perm`.
+- Errors:
+  - a prelude name defined again, as a definition, an infix operator or an object: "`perm` is already defined in
+    the prelude";
+  - an infix operator used before its arguments or alone: "`⇒` is an infix operator: write `R ⇒ S`, not
+    `⇒(R, S)`", "`⇒` is an infix operator: it stands between two terms, `R ⇒ S`"; declared with other than two
+    parameters: "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1";
+  - an error in the prelude's own text: "in the prelude, <position>: …";
+  - an error raised inside a prelude definition's body at a use: at the use, "in the prelude's `n` (its line L):
+    …"; one about the arguments passes as it is.
+
 ## c. Grammar and precedence
 
-Composition by juxtaposition and the infix operators `∩ ∪ − ⇒ / \ × +` are one precedence level, left to right;
+Composition by juxtaposition and the infix operators `∩ ∪ − / \ ×`, with every declared infix name (`_⇒_`, the
+prelude's `⇒ ⊕ +`, a program's own `_≼_`), are one precedence level, left to right;
 any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤R(S)))`.
 
 - On one atom, not operators: postfix `°`, application `N(e,…)`, `dom(R)`, `⊤(A,B)`, the brackets `⟨ ⟩ ⦇ ⦈ { }`,
@@ -216,10 +255,11 @@ program  := line*
 line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )   -- Num ≤ Num
           | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
             ( 'where' Name '≜' expr (',' Name '≜' expr)* )?   -- local items (below)
+          | '_' Name '_' '(' param ',' param ')' '≜' expr       -- an infix operator: `R Name S`
           | 'print' expr | 'check' expr ('⊑' | '=') expr
 param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
 expr     := primary ( op? primary )*                 -- composition and infix, one level, left to right
-op       := '∩' | '∪' | '−' | '⇒' | '/' | '\' | '×' | '+'
+op       := '∩' | '∪' | '−' | '/' | '\' | '×' | Name    -- Name: a declared infix operator `_Name_`
 primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
@@ -241,6 +281,7 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   comment), and `−` (U+2212) is the difference `R − S`, never a sign. A term never starts with a number, so `R -3`
   is an error at the `-` ("expected the end of the line, found '-'") and `R −3` one at the `3` ("expected a term").
 
+- The object `1` is declared by the language (the prelude), never by a program.
 - A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`.
 - A name is defined once: a definition, an object or a parameter may not take a builtin of §b (an entry of the
   operator table: `π₂ is a builtin`), and a definition or an object not a name already defined or declared (`K is
@@ -282,8 +323,8 @@ The bound is the declared `N`: a shortest plan moves each block at most twice (t
 place), so every distance is at most `2|X| = 6`.
 
 Not in the language yet: `μX : φ(X)` and `R* ≜ μX : 𝟙 ∪ (RX)`. They would need a polarity check — `X` only under
-arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] + ⦇,⦈`, the first of `− /`, the second of `⇒ \`, the one of
-`° dom ran P F est`), never under `frac Λ E thin filter takewhile` — and no array growing inside the body; then
+arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] ⦇,⦈`, the first of `− /`, the second of `\`, the one of
+`° dom ran P F est`; a prelude definition as its body), never under `Λ E thin filter takewhile` — and no array growing inside the body; then
 `iter` from `𝟘` until a round changes nothing reaches the least fixed point (AOP/A6_2.lean:53 `mu`).
 
 Cost: a result keeps only the payload its rows refer to (§h), so `L(s₀,𝟙)` over the 28 rounds of `N = 0…27`
@@ -371,9 +412,8 @@ row).
 | `π₁ π₂ inl inr`                 | closed                                     | the same map at every key            |
 | `R×S`, `S : I ⟶ A'×B'`          | `⟨R,S⟩⟨⟨π₁π₁,π₂π₁⟩,⟨π₁π₂,π₂π₂⟩⟩`           | each row of `R` with each of `S`     |
 | `[R,S]`, `S : I ⟶ A'×B`         | `R(inl×𝟙) ∪ (S(inr×𝟙))`                    | `R`'s rows left, `S`'s right         |
-| `R+S`, `S : I ⟶ A'×B'`          | `R(inl×inl) ∪ (S(inr×inr))`                | as `[R,S]`                           |
 | `Λ(R)`                          | `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`                        | `Λ(Rᴵ)` groups each `(i,a)`          |
-| `∋ ∈ union τ nil α cons°`       | closed, on the arrays in demand            | the same at every key                |
+| `∋ union τ nil α cons°`         | closed, on the arrays in demand            | the same at every key                |
 | `E(R)`                          | `Λ(∋R)` by the rows, `∋` closed            | `E(R) = Λ(∋R)`, Algebra.lean:1169    |
 | `P(R)`                          | not liftable                               | target `𝒫B`: no universe, no demand  |
 | `F(R)`                          | closed: closed; a family: not liftable     | one `R` for every array              |
@@ -394,10 +434,10 @@ row).
 |                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
 | `inits tails init cat cat°`,    | closed                                     | the same at every key                |
-| `concat zip snoc snoc° perm`,   |                                            |                                      |
+| `concat zip snoc snoc°`,        |                                            |                                      |
 | `subseq setify bagify tic`      |                                            |                                      |
-| `ordered(Q) sort(Q) thinL(Q)`,  | `Q` closed or tested on pairs: closed; a   | one `Q` for every array or pair      |
-| `merge(Q)`                      | family: not liftable                       |                                      |
+| `thinL(Q)`, `merge(Q)`          | `Q` closed or tested on pairs: closed; a   | one `Q` for every array or pair      |
+|                                 | family: not liftable                       |                                      |
 | `loop(F)`                       | closed: closed; a family: not liftable     | one `F` for every pair               |
 | `succ ≤ <`, `{(a,b),…}`,        | closed                                     | the same at every key                |
 | `plus times minus div mod`,     |                                            |                                      |
@@ -409,7 +449,9 @@ Not liftable:
 - `P(R)`: its target `𝒫B` has no universe and, as a target, no demand (§a) — the same error as unlifted.
 - `F(R)`, `filter(p)`, `takewhile(p)` given a family: `map`, `filter`, `takewhile` run ONE relation on every
   array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them. The same
-  for `ordered(Q)`, `sort(Q)`, `thinL(Q)`, `merge(Q)`, `loop(F)` given a family (`Lang/Test.lean` guards the error).
+  for `thinL(Q)`, `merge(Q)`, `loop(F)` given a family (`Lang/Test.lean` guards the error). The prelude's
+  `ordered(Q)`, `sort(Q)` declare no type for `Q`, so a family given them is "parameter 'Q' is given a family but
+  declares no type; write 'Q : A ⟶ B'".
 - `⦇e,S⦈` given a family with nothing on its left: the keyed fold needs the arrays of each key, `X`.
 
 Cost of the keyed fold: the lifted step runs on the pairs (key, (element, value)) a round meets, as the unlifted
@@ -538,7 +580,7 @@ Transcription rules the Lean check follows (they are what the interpreter does):
 
 ## h. New types, constructors, approval
 
-Front end (parser data, no semantics): tokens `≜ ∩ ∪ − ⇒ ° ⟨ ⟩ ⦇ ⦈ : ⟶ 𝟙 𝟘 ⊤ ∋ ∈ Λ ⊑ …` and subscript digits;
+Front end (parser data, no semantics): tokens `≜ ∩ ∪ − ° ⟨ ⟩ ⦇ ⦈ : ⟶ 𝟙 𝟘 ⊤ ∋ Λ ⊑ _ …` and subscript digits;
 `Decl` = `obj` (elements, number range, or object alias) | `def name params body` | `print` | `check`, a param
 with its optional type; `Expr` = the grammar of §c; an object-name table (name ↦ `Obj` and universe), since
 `Obj` has no names. Interpreter environment: name ↦ evaluated relation, or ↦ demand-form term for the
