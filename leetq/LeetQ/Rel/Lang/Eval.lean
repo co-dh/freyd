@@ -68,12 +68,9 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
     return leftDiv (← ev cnt R ()) (← ev cnt S ()) (← ev cnt UB ()).val (← ev cnt UC ()).val
   | _, _, _, .rdiv R S UA UB, _ =>
     return rightDiv (← ev cnt R ()) (← ev cnt S ()) (← ev cnt UA ()).val (← ev cnt UB ()).val
-  | _, _, _, .frac R S UA UB, _ =>
-    return symDiv (← ev cnt R ()) (← ev cnt S ()) (← ev cnt UA ()).val (← ev cnt UB ()).val
   | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt R (Dem.l d e D)) (← ev cnt S (Dem.r d e D))
   | _, _, _, .prod R S, _ => return Alg.prod (← ev cnt R ()) (← ev cnt S ())
   | _, _, _, .junc R S, _ => return junc (← ev cnt R ()) (← ev cnt S ())
-  | _, _, _, .sum R S, _ => return Alg.sum (← ev cnt R ()) (← ev cnt S ())
   | _, _, _, .lam R, D => do let r ← ev cnt R D; pure Λ(r)
   | _, _, _, .E (d := d) R, D => return E (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
   | _, _, _, .map (d := d) R, D => return map (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
@@ -103,13 +100,11 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .unsnoc, D => pure (Alg.unsnoc D.val)
   | _, _, _, .init, D => pure (Alg.init D.val)
   | _, _, _, .concat, D => pure (Alg.concat D.val)
-  | _, _, _, .perm, D => pure (Alg.perm D.val)
+  | _, _, _, .own R, D => ev cnt R D
   | _, _, _, .setify, D => pure (Alg.setify D.val)
   | _, _, _, .bagify, D => pure (Alg.bagify D.val)
   | _, _, _, .subseq, D => pure (Alg.subseq D.val)
   | _, _, _, .tic, D => pure (Alg.tic D)
-  | _, _, _, .ordered Q, D => pure (orderedOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
-  | _, _, _, .sort Q, D => pure (sortOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
   -- the note's one-pass thinning, which refines the specification `Alg.thinL`
   | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
   | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt Q P).run' {})) D)
@@ -224,13 +219,9 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .rdiv R S U V => do
     let (r, i) ← hoist R; let (s, j) ← hoist S; let (u, k) ← hoist U; let (v, l) ← hoist V
     node 18 (.rdiv r s u v) [i, j, k, l]
-  | _, _, _, .frac R S U V => do
-    let (r, i) ← hoist R; let (s, j) ← hoist S; let (u, k) ← hoist U; let (v, l) ← hoist V
-    node 19 (.frac r s u v) [i, j, k, l]
   | _, _, _, .pair R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 20 (.pair r s) [i, j]
   | _, _, _, .prod R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 21 (.prod r s) [i, j]
   | _, _, _, .junc R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 22 (.junc r s) [i, j]
-  | _, _, _, .sum R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 23 (.sum r s) [i, j]
   | _, _, _, .lam R => do let (r, i) ← hoist R; node 24 (.lam r) [i]
   | _, _, _, .E R => do let (r, i) ← hoist R; node 25 (.E r) [i]
   | _, _, _, .map R => do let (r, i) ← hoist R; node 26 (.map r) [i]
@@ -266,13 +257,11 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .unsnoc => node 55 .unsnoc []
   | _, _, _, .init => node 56 .init []
   | _, _, _, .concat => node 57 .concat []
-  | _, _, _, .perm => node 58 .perm []
+  | _, _, _, .own R => do let (r, i) ← hoist R; node 58 (.own r) [i]
   | _, _, _, .setify => node 59 .setify []
   | _, _, _, .bagify => node 60 .bagify []
   | _, _, _, .subseq => node 61 .subseq []
   | _, _, _, .tic => node 62 .tic []
-  | _, _, _, .ordered Q => do let (q, i) ← hoist Q; node 63 (.ordered q) [i]
-  | _, _, _, .sort Q => do let (q, i) ← hoist Q; node 64 (.sort q) [i]
   | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i]
   | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i]
   | _, _, _, .loop F => do let (f, i) ← hoist F; node 67 (.loop f) [i]
@@ -359,10 +348,11 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
     through the program, so a sub-term met in several definitions has one identity. -/
-def run (prog : Program) : Except Err Out := do
-  let mut env : Env := {}
-  let mut out : Out := {}
-  let mut sh : Share := {}
+def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) : Except Err (Env × Out × Share) := do
+  let (env₀, out₀, sh₀) := start
+  let mut env := env₀
+  let mut out := out₀
+  let mut sh := sh₀
   for d in prog do
     match d with
     | .obj _ n od => env := { env with objs := (n, ← objInfo env n od) :: env.objs }
@@ -399,9 +389,30 @@ def run (prog : Program) : Except Err Out := do
         if !(R ⊑ S && (!eq || S ⊑ R)) then
           throw ⟨p, s!"check failed: {e.show} = {showRel env.objs s t R}, {f.show} = {showRel env.objs s t S}"⟩
       else throw ⟨p, s!"check: the sides have types {s} ⟶ {t} and {s'} ⟶ {t'}"⟩
-  pure { out with objs := env.objs }
+  pure (env, { out with objs := env.objs }, sh)
 
-/-- Parse and run a program's text. -/
-def runText (src : String) : Except Err Out := do run (← Parse.parse src)
+/-- A prelude definition as a program sees it: an error raised in its body at a use names the definition and its
+    line in the prelude, at the use; one about the arguments (at the use) passes as it is. `perm` is its own
+    converse, the one converse rule kept for a definition (`Tm.own`): `perm° = perm` is a theorem the
+    language cannot derive from the fold `perm` is. -/
+def preludeDef (n : String) (d : Def) : Def :=
+  { d with apply := fun p as => do
+      let r ← tryCatch (d.apply p as) fun e =>
+        throw (if e.pos == p then e else ⟨p, s!"in the prelude's `{n}` (its line {e.pos.line}): {e.msg}"⟩)
+      match n, r with
+      | "perm", .rel q s t => pure (.rel (.own q) s t)
+      | _, r => pure r }
+
+/-- Run a program's text after the prelude `pre`: one environment and one sharing table through both. An error
+    of the prelude's own text says it is in the prelude. -/
+def runWith (pre src : String) : Except Err Out := do
+  let (pp, scope) ← Parse.scope pre
+  let (env, out, sh) ← (run pp).mapError Err.inPrelude
+  let env := { env with defs := env.defs.map fun (n, d) => (n, preludeDef n d) }
+  let (_, out, _) ← run (← Parse.parseIn scope src) (env, out, sh)
+  pure out
+
+/-- Parse and run a program's text, after the prelude. -/
+def runText (src : String) : Except Err Out := runWith Parse.prelude src
 
 end LeetQ.Rel.Lang

@@ -20,7 +20,11 @@ structure Err where
   msg : String
   deriving Repr, Inhabited
 
-instance : ToString Err := ⟨fun e => s!"{e.pos}: {e.msg}"⟩
+/-- Line 0 is no place in the program: an error of the prelude's own text says where in its message. -/
+instance : ToString Err := ⟨fun e => if e.pos.line == 0 then e.msg else s!"{e.pos}: {e.msg}"⟩
+
+/-- An error in the prelude's own text (§c), which is no place in the program. -/
+def Err.inPrelude (e : Err) : Err := ⟨default, s!"in the prelude, {e.pos}: {e.msg}"⟩
 
 /-- An object as written: a declared name, `A×B`, `A+B`, `𝒫A`, `[A]`; in a parameter's type also an object
     variable `α`, instantiated at each use (§e). -/
@@ -37,17 +41,17 @@ inductive OExp
     `arith k` is the qlean kernel's integral value verb `k` on pairs of numbers (`Alg.arith`): one constructor, so
     every verb is typed, lifted and run by one path. -/
 inductive Op
-  | id | zero | top | mem | ni | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
+  | id | zero | top | mem | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
   | union | tau | nil | alpha | cons | length | total | head | tail | pre | suf
-  | dom | ran | lam | E | P | est | thin | filter | takewhile | map | frac
-  | inits | tails | cat | zip | snoc | init | concat | perm | setify | bagify | subseq | tic
-  | ordered | sort | thinL | merge | loop
+  | dom | ran | lam | E | P | est | thin | filter | takewhile | map
+  | inits | tails | cat | zip | snoc | init | concat | setify | bagify | subseq | tic
+  | thinL | merge | loop
   deriving Repr, BEq, Inhabited
 
 /-- The one table of builtins: symbol and arity. A program may not define or take as a parameter a name
     in it (§c). -/
 def Op.table : List (String × Op × Nat) :=
-  [("𝟙", .id, 0), ("𝟘", .zero, 0), ("⊤", .top, 0), ("∋", .mem, 0), ("∈", .ni, 0), ("π₁", .outl, 0),
+  [("𝟙", .id, 0), ("𝟘", .zero, 0), ("⊤", .top, 0), ("∋", .mem, 0), ("π₁", .outl, 0),
    ("π₂", .outr, 0), ("inl", .inl, 0), ("inr", .inr, 0), ("≤", .leq, 0), ("<", .lt, 0), ("succ", .succ, 0),
    ("plus", .arith QLean.Kernel.Ew.add, 0), ("times", .arith QLean.Kernel.Ew.mul, 0),
    ("minus", .arith QLean.Kernel.Ew.sub, 0), ("div", .arith QLean.Kernel.Ew.idiv, 0),
@@ -56,20 +60,21 @@ def Op.table : List (String × Op × Nat) :=
    ("cons", .cons, 0), ("length", .length, 0), ("sum", .total, 0), ("head", .head, 0), ("tail", .tail, 0),
    ("prefix", .pre, 0), ("suffix", .suf, 0), ("dom", .dom, 1), ("ran", .ran, 1), ("Λ", .lam, 1), ("E", .E, 1),
    ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1), ("filter", .filter, 1), ("takewhile", .takewhile, 1),
-   ("F", .map, 1), ("frac", .frac, 2), ("inits", .inits, 0), ("tails", .tails, 0), ("cat", .cat, 0),
-   ("zip", .zip, 0), ("snoc", .snoc, 0), ("init", .init, 0), ("concat", .concat, 0), ("perm", .perm, 0),
+   ("F", .map, 1), ("inits", .inits, 0), ("tails", .tails, 0), ("cat", .cat, 0),
+   ("zip", .zip, 0), ("snoc", .snoc, 0), ("init", .init, 0), ("concat", .concat, 0),
    ("setify", .setify, 0), ("bagify", .bagify, 0), ("subseq", .subseq, 0), ("tic", .tic, 0),
-   ("ordered", .ordered, 1), ("sort", .sort, 1), ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1)]
+   ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1)]
 
 def Op.sym (o : Op) : String := ((Op.table.find? (·.2.1 == o)).map (·.1)).getD "?"
 
-/-- The infix operators: `∩ ∪ − ⇒ / \ × +`, one level with composition, left to right (§c). -/
+/-- The builtin infix operators: `∩ ∪ − / \ ×`, one level with composition and the declared ones (`_⇒_`),
+    left to right (§c). -/
 inductive Bin
-  | meet | join | diff | imp | rdiv | ldiv | prod | sum
+  | meet | join | diff | rdiv | ldiv | prod
   deriving Repr, BEq, Inhabited
 
 def Bin.table : List (Char × Bin) :=
-  [('∩', .meet), ('∪', .join), ('−', .diff), ('⇒', .imp), ('/', .rdiv), ('\\', .ldiv), ('×', .prod), ('+', .sum)]
+  [('∩', .meet), ('∪', .join), ('−', .diff), ('/', .rdiv), ('\\', .ldiv), ('×', .prod)]
 
 def Bin.sym (o : Bin) : String := ((Bin.table.find? (·.2 == o)).map (·.1.toString)).getD "?"
 
@@ -102,6 +107,8 @@ inductive Expr
   | app (p : Pos) (n : String) (args : List Expr)
   | comp (a b : Expr)
   | bin (p : Pos) (o : Bin) (a b : Expr)
+  /-- `a n b`: the definition declared `_n_` (§c). -/
+  | inf (p : Pos) (n : String) (a b : Expr)
   | conv (p : Pos) (a : Expr)
   | compl (p : Pos) (a : Expr)
   | pair (p : Pos) (a b : Expr)
@@ -112,7 +119,7 @@ inductive Expr
 
 /-- The position a term starts at. -/
 def Expr.pos : Expr → Pos
-  | .name p _ | .op p .. | .app p .. | .bin p .. | .conv p _ | .compl p _ | .pair p .. | .junc p .. | .fold p ..
+  | .name p _ | .op p .. | .app p .. | .bin p .. | .inf p .. | .conv p _ | .compl p _ | .pair p .. | .junc p .. | .fold p ..
   | .lit p _ => p
   | .comp a _ => a.pos
 
@@ -123,6 +130,7 @@ partial def Expr.subst (σ : List (String × Expr)) : Expr → Expr
   | .app p n as => .app p n (as.map (·.subst σ))
   | .comp a b => .comp (a.subst σ) (b.subst σ)
   | .bin p o a b => .bin p o (a.subst σ) (b.subst σ)
+  | .inf p n a b => .inf p n (a.subst σ) (b.subst σ)
   | .conv p a => .conv p (a.subst σ)
   | .compl p a => .compl p (a.subst σ)
   | .pair p a b => .pair p (a.subst σ) (b.subst σ)
@@ -183,6 +191,7 @@ def Expr.render (l : Nat) (full : Bool := false) : Expr → String
   | .app _ n args => n ++ "(" ++ ", ".intercalate (args.map (Expr.render 0 full)) ++ ")"
   | .comp a b => let s := s!"{a.render 0 full} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
   | .bin _ o a b => let s := s!"{a.render 0 full} {o.sym} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
+  | .inf _ n a b => let s := s!"{a.render 0 full} {n} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
   | .conv _ a => s!"{a.render 2 full}°"
   | .compl _ a => let s := s!"∼{a.render 1 full}"; if l ≥ 2 then s!"({s})" else s
   | .pair _ a b => s!"⟨{a.render 0 full}, {b.render 0 full}⟩"
