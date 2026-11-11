@@ -20,13 +20,13 @@ The converse of a fold needs the arrays it folds: `C`, every rearrangement of an
     C : [N] ⟶ [N] ≜ ran((x ∪ y ∪ z ∪ e)perm)
     X : [N] ⟶ [N] ≜ (C⦇ran(e), select°⦈)°         -- 06:316 ⦇[nil, select°]⦈°, the seed nil the empty array
 
-    print x perm ordered(≤)
-    print y perm ordered(≤)
-    print z perm ordered(≤)
-    print e perm ordered(≤)
-    print x X
-    print y X
-    print z X
-    print e X
+    check x perm ordered(≤) = {(∗,1 2 3)}
+    check y perm ordered(≤) = {(∗,1 2 2)}
+    check z perm ordered(≤) = {(∗,1 2 3 4 5)}
+    check e perm ordered(≤) = e
+    check x X = {(∗,1 2 3)}
+    check y X = {(∗,1 2 2)}
+    check z X = {(∗,1 2 3 4 5)}
+    check e X = e
     check C X ⊑ C perm ordered(≤)                 -- selection_sort, 06:316
     check C X = C perm ordered(≤)
