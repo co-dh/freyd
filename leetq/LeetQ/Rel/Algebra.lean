@@ -2188,6 +2188,9 @@ private def Ysub := (subseq Xp).val
   let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (LE9° ≫ (mem S)°) S S
   seteq (thinL LE9 Xp).toList (idU Xp ≫ ((setify Y ≫ T ≫ (setify Y)°) ∩ subseq Y)).toList
 #guard thinL LE9 Xp ⊑ subseq Xp && seteq (dom (thinL LE9 Xp)).toList (idU Xp).toList
+-- the one-pass thinning refines its specification and is a map: one thinned array of each source
+#guard let T := thinLOn (pairsIn LE9) Xp; T ⊑ thinL LE9 Xp && isMap T Xp
+#guard let T := thinLOn (pairsIn LE9) Ysub; T ⊑ thinL LE9 Ysub && isMap T Ysub
 -- `merge(≤)` against `List.merge`, on ordered and on unordered arrays; `merge(⊤) = cat` (B&dM p.212)
 #guard seteq ((merge LE9 (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
   ((pairsOf W2).map fun (x, y) => ((x, y), List.merge x y fun a b => decide (a ≤ b))) && isMap (merge LE9 (idU W2)) W2

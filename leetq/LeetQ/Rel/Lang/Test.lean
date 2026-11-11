@@ -201,7 +201,7 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "print ⟨Λ({(a,1),(a,5)}),Λ({(a,2),(a,3)})⟩merge(≤)\nprint ⟨{(a,0),(b,1)},x⟩loop(plus)\n" ++
   "print ⟨{(a,5)},Λ({(a,1),(a,2)})⟩tic\n")
 
--- `thinL(≤)` keeps a subsequence holding, for each element dropped, a lower one: here every one holding `1`
+-- `thinL(≤)` runs the one-pass thinning: each element bumped into the thinned rest keeps the lower of the two
 #guard (ok lists).prints == [
   "x inits = {(a, {{}, {3}, {3, 1}, {3, 1, 2}}), (b, {{}, {1}, {1, 5}})}",
   "x tails = {(a, {{3, 1, 2}, {1, 2}, {2}, {}}), (b, {{1, 5}, {5}, {}})}",
@@ -219,7 +219,7 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "x ordered(≤) = {(b, {1, 5})}",
   "x sort(≤) = {(a, {1, 2, 3}), (b, {1, 5})}",
   "y subseq = {(a, {}), (a, {7}), (b, {}), (b, {8}), (b, {8, 9}), (b, {9})}",
-  "x thinL(≤) = {(a, {1}), (a, {1, 2}), (a, {3, 1}), (a, {3, 1, 2}), (b, {1}), (b, {1, 5})}",
+  "x thinL(≤) = {(a, {1}), (b, {1})}",
   "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, {1, 2, 3, 5})}",
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
   "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, {{5}, {5, 1}, {5, 1, 2}})}"]

@@ -19,7 +19,7 @@ D ≜ Ss×Ss                                     -- the pairs of strings
 base ≜ ⟨nil(1,[A]),nil(1,[A])⟩                -- 1 ⟶ [A]×[A]: ([],[])
 step ≜ ⟨⟨π₁cpy°,π₂π₁⟩cons,⟨π₁cpy°,π₂π₂⟩cons⟩ ∪ ⟨⟨π₁del°,π₂π₁⟩cons,π₂π₂⟩ ∪ ⟨π₂π₁,⟨π₁ins°,π₂π₂⟩cons⟩   -- Op×([A]×[A]) ⟶ [A]×[A]
 edit ≜ Es⦇ran(base), step⦈                    -- edit ≜ ⦇[base,step]⦈, on the sequences Es
-R ≜ Es length ≤(N,N) (Es length)°             -- R ≜ length ≤ length°, on Es: length° needs a universe
+R ≜ length ≤(N,N) length°                     -- R ≜ length ≤ length°, run on the pairs est compares
 spec ≜ DΛ(edit°)est(R)                        -- Λ(edit°) est(R): a shortest sequence of each pair
 
 -- the tabulation (09:596-610): fstcol, base(b,u), bmin(R) are written; nextcol and column are not, because

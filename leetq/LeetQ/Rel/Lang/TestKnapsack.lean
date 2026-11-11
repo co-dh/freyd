@@ -50,11 +50,14 @@ def agrees (o : Out) (n : String) : Bool := match packs o n with
 #guard agrees (ok given) "p"
 -- instance d has two best packings: the specification is a relation
 #guard (((packs (ok given) "s").getD []).filter (·.1 == 3)).length == 2
+-- the derived program: one best packing of each instance, among the specification's
+#guard ((packs (ok given) "knap").getD []).map (·.1) == [0, 1, 2, 3]
+#guard ((packs (ok given) "knap").getD []).all ((packs (ok given) "s").getD []).contains
 -- the program's own `print`s
 #guard (ok given).prints == [
   "s = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)}), (d, {(5, 4), (5, 6)})}",
-  "p = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)}), (d, {(5, 4), (5, 6)})}"]
--- a `check` that fails is an error: the guards above would not see a silently skipped one
+  "p = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)}), (d, {(5, 4), (5, 6)})}",
+  "knap = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)})}"]-- a `check` that fails is an error: the guards above would not see a silently skipped one
 #guard !(runText (knapsack ++ "check p = X subseq\n")).isOk
 
 end LeetQ.Rel.Lang.TestKnapsack

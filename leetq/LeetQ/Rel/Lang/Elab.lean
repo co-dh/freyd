@@ -46,10 +46,12 @@ inductive Tm : Obj → Obj → Bool → Type where
   | lam {A B : Obj} {d : Bool} (R : Tm A B d) : Tm A (.arr B) d
   | E {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
   | map {A B : Obj} {d : Bool} (R : Tm A B d) : Tm (.arr A) (.arr B) true
-  | est {B : Obj} (Q : Tm B B false) : Tm (.arr B) B true
-  | thin {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
-  | filter {B : Obj} (p : Tm B B false) : Tm (.arr B) (.arr B) true
-  | takewhile {B : Obj} (p : Tm B B false) : Tm (.arr B) (.arr B) true
+  /-- An operator that takes an order `Q : B ⟶ B` (or a coreflexive `p`) holds it as its pair test
+      `τ(Q) : B×B ⟶ B×B` (§a), run on demand on the pairs the operator compares. -/
+  | est {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) B true
+  | thin {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
+  | filter {B : Obj} (p : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
+  | takewhile {B : Obj} (p : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | union {A : Obj} : Tm (.arr (.arr A)) (.arr A) true
   | tau {A : Obj} : Tm A (.arr A) true
   | nil {A B : Obj} : Tm A (.arr B) true
@@ -75,10 +77,10 @@ inductive Tm : Obj → Obj → Bool → Type where
   | bagify {B : Obj} : Tm (.arr B) (.arr B) true
   | subseq {B : Obj} : Tm (.arr B) (.arr B) true
   | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
-  | ordered {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
-  | sort {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
-  | thinL {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
-  | merge {B : Obj} (Q : Tm B B false) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
+  | ordered {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
+  | sort {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
+  | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
+  | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
   | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
@@ -538,7 +540,8 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
     | .est | .thin | .filter | .takewhile | .ordered | .sort | .thinL | .merge => do
       unify p s!"the target of {o.sym}'s argument" t s
-      let c := Pre.close p q s s!"{o.sym}( ) reads its argument whole"
+      -- the order is tested on the pairs the operator compares (`build`, `param`), not read whole
+      let c := Pre.close p q s s!"{o.sym}( )"
       let a := OTy.arr s
       let (r, x, y) : Pre × OTy × OTy := match o with
         | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .filter => (.filter c, a, a)
@@ -1051,6 +1054,12 @@ def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Ob
 def corAt (A B : Obj) : Cor → Except Err (Tm (.prod A B) (.prod A B) true)
   | ⟨A', B', c⟩ => if h : A' = A ∧ B' = B then pure (h.1 ▸ h.2 ▸ c) else internal dp "pair-test objects disagree"
 
+/-- The pair test of an order parameter at its object `B`, or the error naming the leaf that is not testable. -/
+def paramOf (why : String) : Except Err Cor → Except Err ((B : Obj) × Tm (.prod B B) (.prod B B) true)
+  | .ok ⟨A, B, c⟩ => if h : B = A then pure ⟨A, h ▸ c⟩ else internal dp s!"{why}'s order is not on one object"
+  | .error e => throw ⟨e.pos,
+    s!"{why} runs its order on the pairs it compares, and the order is not testable on pairs (§a): {e.msg}"⟩
+
 mutual
 
 /-- `Pre` to `Tm` at the solved objects. Every check here holds by `elabE`'s unification except the
@@ -1138,11 +1147,10 @@ def build : Pre → Except Err Res
   | .lam p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .lam t⟩
   | .E p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .E t⟩
   | .map p => do let ⟨_, _, _, t⟩ ← build p; pure ⟨_, _, _, .map t⟩
-  | .est p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .est (← closed? dp (A := B) (B := B) r)⟩
-  | .thin p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .thin (← closed? dp (A := B) (B := B) r)⟩
-  | .filter p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .filter (← closed? dp (A := B) (B := B) r)⟩
-  | .takewhile p => do
-    let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .takewhile (← closed? dp (A := B) (B := B) r)⟩
+  | .est p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .est c⟩
+  | .thin p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thin c⟩
+  | .filter p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .filter c⟩
+  | .takewhile p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .takewhile c⟩
   | .union a => return ⟨_, _, true, .union (A := ← toObj st dp a)⟩
   | .tau a => return ⟨_, _, true, .tau (A := ← toObj st dp a)⟩
   | .nil a b => return ⟨_, _, true, .nil (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
@@ -1171,10 +1179,10 @@ def build : Pre → Except Err Res
   | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
   | .subseq b => return ⟨_, _, true, .subseq (B := ← toObj st dp b)⟩
   | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
-  | .ordered p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .ordered (← closed? dp (A := B) (B := B) r)⟩
-  | .sort p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .sort (← closed? dp (A := B) (B := B) r)⟩
-  | .thinL p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .thinL (← closed? dp (A := B) (B := B) r)⟩
-  | .merge p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .merge (← closed? dp (A := B) (B := B) r)⟩
+  | .ordered p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .ordered c⟩
+  | .sort p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .sort c⟩
+  | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
+  | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do
     match ← build p with
     | r@⟨.prod X Y, _, _, _⟩ => pure ⟨_, _, _, .loop (← closed? dp (A := .prod X Y) (B := X) r)⟩
@@ -1263,6 +1271,14 @@ def test (p : Pre) : Except Err Cor :=
       pure ⟨A, B, .comp (divTest (← corAt dp A C cr) s) (.comp swapTm (.comp (divTest (← corAt dp B C cs) rt) swapTm))⟩
     | _ => throw err
 termination_by (sizeOf p, 1)
+
+/-- The order (or coreflexive) parameter `Q : B ⟶ B` of `est thin filter takewhile ordered sort thinL merge`
+    as its pair test `τ(Q)` (§a), which the operator runs on the pairs it compares: a closed `Q` and a `Q` that
+    runs on demand alike, and any `Q` testable on pairs. `why` names the operator; the error names the leaf. -/
+def param : Pre → Except Err ((B : Obj) × Tm (.prod B B) (.prod B B) true)
+  | .close _ q _ why => paramOf dp why (test q)
+  | q => paramOf dp "an operator" (test q)
+termination_by p => (sizeOf p, 2)
 
 end
 

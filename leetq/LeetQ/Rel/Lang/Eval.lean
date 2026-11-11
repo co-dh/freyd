@@ -77,10 +77,12 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .lam R, D => do let r ← ev cnt R D; pure Λ(r)
   | _, _, _, .E (d := d) R, D => return E (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
   | _, _, _, .map (d := d) R, D => return map (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
-  | _, _, _, .est Q, D => return est (← ev cnt Q ()) (mem D.val)
-  | _, _, _, .thin Q, D => do let T := thin (← ev cnt Q ()) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
-  | _, _, _, .filter p, D => return filter (← ev cnt p ()) D.val
-  | _, _, _, .takewhile p, D => return takewhile (← ev cnt p ()) D.val
+  -- an order is its pair test, run on the pairs the operator compares: each call one evaluation, as a fold step
+  | _, _, _, .est Q, D => pure (estOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val))
+  | _, _, _, .thin Q, D => do
+    let T := thinOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
+  | _, _, _, .filter p, D => pure (filterOn (fun P => Id.run ((ev cnt p P).run' {})) D.val)
+  | _, _, _, .takewhile p, D => pure (takewhileOn (fun P => Id.run ((ev cnt p P).run' {})) D.val)
   | _, _, _, .union, D => pure (Arr.union D.val)
   | _, _, _, .tau, D => pure (τ D.val)
   | _, _, _, .nil, D => pure (top D.val (nilVal _))
@@ -106,10 +108,11 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .bagify, D => pure (Alg.bagify D.val)
   | _, _, _, .subseq, D => pure (Alg.subseq D.val)
   | _, _, _, .tic, D => pure (Alg.tic D)
-  | _, _, _, .ordered Q, D => return Alg.ordered (← ev cnt Q ()) D.val
-  | _, _, _, .sort Q, D => return Alg.sort (← ev cnt Q ()) D.val
-  | _, _, _, .thinL Q, D => return Alg.thinL (← ev cnt Q ()) D.val
-  | _, _, _, .merge Q, D => return Alg.merge (← ev cnt Q ()) D
+  | _, _, _, .ordered Q, D => pure (orderedOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
+  | _, _, _, .sort Q, D => pure (sortOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
+  -- the note's one-pass thinning, which refines the specification `Alg.thinL`
+  | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
+  | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt Q P).run' {})) D)
   | _, _, _, .loop F, D => return Alg.loop (← ev cnt F ()) D
   | _, _, _, .succ U, D => pure (D ≫ succ U)
   -- a result outside the declared object has no row, as `succ` at its top
@@ -363,7 +366,11 @@ def run (prog : Program) : Except Err Out := do
       -- objects its body leaves open (`≼` on any `A×B`) are fixed at each use, as a parameter's are
       if s.poly || t.poly then env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
       let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
-      let ⟨A, B, d, tm⟩ ← build env.objs st p q
+      -- a body that runs only as a pair test (`length ≤ length°`) is an order: elaborated again at each use
+      let ⟨A, B, d, tm⟩ ← match build env.objs st p q, test env.objs st p q with
+        | .ok r, _ => pure r
+        | .error _, .ok _ => env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
+        | .error e, .error _ => throw e
       let ((tm, _), sh') := Id.run ((hoist tm).run sh)
       sh := sh'
       let res : Res := ⟨A, B, d, tm⟩
