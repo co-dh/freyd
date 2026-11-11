@@ -33,7 +33,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no              |
 | 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined)             | no              |
 | 9   | data compression         | `code_laws` 09:1060                        | `thin` `Λ` `P` `est` `prefix` `cat` `snoc` `Arr.sum`      | `μ`                          | no              |
-| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | —                            | no              |
+| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | — written: `leetq/programs/detab.rel`; differs from the note: the snoc-list folds `detab`, `triple` are `reverse ⦇…⦈` with the step's arguments swapped (`⦇e,S⦈` folds from the right, `loop(F)` refuses an array state); `𝟙×blanks` is `⟨π₁,π₂ blanks⟩` (`×` with `𝟙` on `[Ch]` is refused); `blanks` is `(B length)°` on the all-blank strings; `detab°` and `R` are restricted to `C`, the strings of length ≤ 5 over `{a,BL,TB}`; the `μ` of `entab_laws` is not written | no              |
 | 10  | minimum tardiness        | `tardy_laws` 10:463                        | `bagify` `Λ` `est` `snoc` `Arr.sum` `plus` `leq`          | `μ`                          | no              |
 | 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `μ`                          | no              |
 
@@ -48,6 +48,7 @@ Notes on single rows:
   `length`; `nextcol(xs)(b, …)` depends on `b`, which a `loop` carries in its state.
 - Detab-entab: `entab_laws` is a `μ`, but the note's final program `entab_triple` is `triple ⦇…⦈` (`triple_fold`)
   then `assocl π₁ (𝟙×blanks) cat`: a fold. `fill` pads `n − col mod n` blanks (`AOP/A10_2_Detab.lean:64`).
+  The specification runs to length 6; at 7 the order `R`, materialised on all 3280 candidates, exceeds 4 GB.
 - Minimum tardiness: `bagify` is on `master`. The greedy `μ` recurses on the bag; no fold form is in the note.
 - TeX: the Lean program (`AOP/A10_4_Tex.lean`, `Prog.f_cons`) is on integers: an interval `(p,q)` scaled by
   `w = 2¹⁷`, the digit `10q/w`, the next interval `(10p − w·d, 10q − w·d)`. So no rational object is needed, but it
