@@ -295,6 +295,23 @@ def unify (p : Pos) (what : String) (x y : OTy) : M Unit := do
       | _, _ => throw ⟨p, s!"{what}: found {fx}, expected {fy}"⟩
   go (s.ms.size + fx.size + fy.size + 1) fx fy
 
+/-- The source of each `nil` in `x`, a definition's body at its use included. -/
+def Pre.nilSrcs : Pre → List OTy
+  | .nil a _ => [a]
+  | .top _ _ _ t => (t.attach.map fun ⟨x, _⟩ => x.nilSrcs).getD []
+  | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
+  | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
+  | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .est x | .thin x | .own x | .thinL x | .merge x
+  | .loop x | .flat x | .close _ x _ _ => x.nilSrcs
+  | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
+  | .uncons _ | .length .. | .total _ | .inits _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
+  | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+
+/-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
+    `nil : 1 ⟶ [A]`. A fold's seed `ran(nil)` drops that source, so only this rule gives it (§e). -/
+def settleNil (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
+  if let .mv _ := zonk (← get) a then unify p "nil's source" a (.base "1")
+
 /-! ### Elaboration: environments and the lifted rows of §e -/
 
 /-- An elaborated argument or result: one relation `s ⟶ t`, or a family `i ⟶ a×b` read as its fibres `a ⟶ b`. -/
@@ -625,12 +642,13 @@ def binaryL (I : OTy) (p : Pos) (o : Bin) (x y : Arg) : M Arg := do
     | .prod => pure (lProd R S)
   pure (.fam r.1 I r.2.1 r.2.2)
 
-/-- A defined operator's result where it is used: a family stays one inside a lifted body of the same index,
-    and is a relation `i ⟶ a×b` outside. -/
-def settle (m : Option OTy) (p : Pos) : Arg → M Arg
-  | .fam q i a b => match m with
-    | some I => do unify p "the index of a family" i I; pure (.fam q i a b)
-    | none => pure (.rel q i (.prod a b))
+/-- A defined operator's result where it is used, given the arguments `as`: a family stays one inside a lifted
+    body of the same index when an argument is a family of that body; applied to closed terms only, it is a
+    closed relation `i ⟶ a×b`, which enters the body by the closed row (§e, mixed terms), as it does outside. -/
+def settle (m : Option OTy) (p : Pos) (as : List Arg) : Arg → M Arg
+  | .fam q i a b => match m, as.any Arg.isFam with
+    | some I, true => do unify p "the index of a family" i I; pure (.fam q i a b)
+    | _, _ => pure (.rel q i (.prod a b))
   | r => pure r
 
 mutual
@@ -642,7 +660,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     | some a => pure a
     | none => match env.defs.lookup n with
       | some d =>
-        if d.arity == 0 then (do settle m p (← d.apply p []))
+        if d.arity == 0 then (do settle m p [] (← d.apply p []))
         else throw ⟨p, s!"'{n}' takes {d.arity} arguments, found none"⟩
       | none => throw ⟨p, s!"unknown name '{n}'"⟩
   | .op p o objs args => do
@@ -656,13 +674,13 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     match env.defs.lookup n with
     | some d =>
       if d.arity != as.length then throw ⟨p, s!"'{n}' takes {d.arity} arguments, found {as.length}"⟩
-      settle m p (← d.apply p as)
+      settle m p as (← d.apply p as)
     | none => throw ⟨p, s!"unknown name '{n}'"⟩
   -- `R n S`: the definition declared `_n_`, given `R` and `S` (§c)
   | .inf p n a b => do
     let x ← elabE env m a; let y ← elabE env m b
     match env.defs.lookup s!"_{n}_" with
-    | some d => settle m p (← d.apply p [x, y])
+    | some d => settle m p [x, y] (← d.apply p [x, y])
     | none => throw ⟨p, s!"unknown infix operator '{n}'"⟩
   | .comp a b => do
     let x ← elabE env m a

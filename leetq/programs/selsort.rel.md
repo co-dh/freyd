@@ -18,7 +18,7 @@ The inputs, each an array `1 ⟶ [N]` written as a literal.
 The converse of a fold needs the arrays it folds: `C`, every rearrangement of an input.
 
     C : [N] ⟶ [N] ≜ ran((x ∪ y ∪ z ∪ e)perm)
-    X : [N] ⟶ [N] ≜ (C⦇ran(e), select°⦈)°         -- 06:316 ⦇[nil, select°]⦈°, the seed nil the empty array
+    X : [N] ⟶ [N] ≜ (C⦇ran(nil), select°⦈)°       -- 06:316 ⦇[nil, select°]⦈°
 
     check x perm ordered(≤) = {(∗,1 2 3)}
     check y perm ordered(≤) = {(∗,1 2 2)}

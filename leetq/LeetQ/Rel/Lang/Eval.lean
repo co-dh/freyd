@@ -362,6 +362,7 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
         let (r, st) ← (do
           let r ← elabE env none e
           if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
+          settleNil p r.plain.1
           pure r).run {}
         let (q, s, t) := r.plain
         let s := zonk st s; let t := zonk st t
@@ -385,7 +386,7 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
       | ps, b, ty => env := { env with defs := (n, wrap n (mkDef env n p ps b ty)) :: env.defs }
     | .print p e =>
       if types then continue
-      let (r, st) ← (elabE env none e).run {}
+      let (r, st) ← (do let r ← elabE env none e; settleNil p r.plain.1; pure r).run {}
       let ((⟨_, _, R⟩, s, t), sh') ← topVal sh env st p e r
       sh := sh'
       out := { out with prints := out.prints ++ [s!"{e.show} = {showRel env.objs s t R}"] }
@@ -398,6 +399,7 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
         let st ← get
         try unify p "" s' s; unify p "" t' t
         catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
+        settleNil p r.plain.1; settleNil p r'.plain.1
         pure (r, r') : M (Arg × Arg)).run {}
       let ((⟨A, B, R⟩, s, t), sh₁) ← topVal sh env st p e r
       let ((⟨A', B', S⟩, s', t'), sh₂) ← topVal sh₁ env st p f r'
