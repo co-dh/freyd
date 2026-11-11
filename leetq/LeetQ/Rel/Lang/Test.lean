@@ -188,6 +188,54 @@ def reads (s r : String) : Bool := match parsed s with | .ok e => e.render 0 tru
   "{(A, B), (B, A)}", "R ∪ S R", "R S ∪ R", "R ∩ S ∪ R", "R ∪ S ∩ R", "R ∪ (S R)", "R (S p)", "∼(R S)°",
   "(∼R)°", "∼R S", "{((A, B), A), ((B, A), B)}", "{(A, (B, (A, B)))}"].all trip
 
+#guard ["inits", "tails", "cat", "cat°", "zip", "snoc", "snoc°", "init", "concat", "perm", "setify", "bagify",
+  "subseq", "tic", "ordered(R)", "sort(R)", "thinL(R)", "merge(R)", "loop(R)", "R inits concat", "⟨R, S⟩ merge(p)"].all trip
+
+/-! The list builtins of §b on arrays built by `Λ` and `cons`, each value as `Algebra.lean`'s guard of the op
+    states it: `x` is `a ↦ [3 1 2]`, `b ↦ [1 5]`; `y` is `a ↦ [7]`, `b ↦ [8 9]`; `z` is `a ↦ [3 3 1 2]`. -/
+def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
+  "x ≜ ⟨{(a,3),(b,1)}, Λ({(a,1),(a,2),(b,5)})⟩cons\ny ≜ Λ({(a,7),(b,8),(b,9)})\nz ≜ ⟨{(a,3)}, x⟩cons\n" ++
+  "print x inits\nprint x tails\nprint ⟨x,y⟩cat\nprint x cat°\nprint ⟨x,y⟩zip\nprint ⟨x,{(a,4),(b,6)}⟩snoc\n" ++
+  "print x snoc°\nprint x init\nprint x inits concat\nprint y perm\nprint z setify\nprint z bagify\n" ++
+  "print x ordered(≤)\nprint x sort(≤)\nprint y subseq\nprint x thinL(≤)\n" ++
+  "print ⟨Λ({(a,1),(a,5)}),Λ({(a,2),(a,3)})⟩merge(≤)\nprint ⟨{(a,0),(b,1)},x⟩loop(plus)\n" ++
+  "print ⟨{(a,5)},Λ({(a,1),(a,2)})⟩tic\n")
+
+-- `thinL(≤)` keeps a subsequence holding, for each element dropped, a lower one: here every one holding `1`
+#guard (ok lists).prints == [
+  "x inits = {(a, {{}, {3}, {3, 1}, {3, 1, 2}}), (b, {{}, {1}, {1, 5}})}",
+  "x tails = {(a, {{3, 1, 2}, {1, 2}, {2}, {}}), (b, {{1, 5}, {5}, {}})}",
+  "⟨x, y⟩ cat = {(a, {3, 1, 2, 7}), (b, {1, 5, 8, 9})}",
+  "x cat° = {(a, ({3, 1, 2}, {})), (a, ({3, 1}, {2})), (a, ({3}, {1, 2})), (a, ({}, {3, 1, 2})), " ++
+    "(b, ({1, 5}, {})), (b, ({1}, {5})), (b, ({}, {1, 5}))}",
+  "⟨x, y⟩ zip = {(a, {(3, 7)}), (b, {(1, 8), (5, 9)})}",
+  "⟨x, {(a, 4), (b, 6)}⟩ snoc = {(a, {3, 1, 2, 4}), (b, {1, 5, 6})}",
+  "x snoc° = {(a, ({3, 1}, 2)), (b, ({1}, 5))}",
+  "x init = {(a, {3, 1}), (b, {1})}",
+  "x inits concat = {(a, {3, 3, 1, 3, 1, 2}), (b, {1, 1, 5})}",
+  "y perm = {(a, {7}), (b, {8, 9}), (b, {9, 8})}",
+  "z setify = {(a, {1, 2, 3})}",
+  "z bagify = {(a, {1, 2, 3, 3})}",
+  "x ordered(≤) = {(b, {1, 5})}",
+  "x sort(≤) = {(a, {1, 2, 3}), (b, {1, 5})}",
+  "y subseq = {(a, {7}), (a, {}), (b, {8, 9}), (b, {8}), (b, {9}), (b, {})}",
+  "x thinL(≤) = {(a, {1, 2}), (a, {1}), (a, {3, 1, 2}), (a, {3, 1}), (b, {1, 5}), (b, {1})}",
+  "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, {1, 2, 3, 5})}",
+  "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
+  "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, {{5}, {5, 1}, {5, 1, 2}})}"]
+
+/-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
+    lifted body is the body on the fibre. -/
+def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj J = {i,j}\n" ++
+  "R₀ ≜ {(a,3),(a,1)}\nR₁ ≜ {(a,2),(b,5),(b,1)}\nFm ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
+  "f(S : K ⟶ N) ≜ ⟨S,Λ(S)⟩cons inits ∪ (Λ(S)cat°π₁ tails)\nfF ≜ f(Fm)\n" ++
+  "check {(i,i)}fF = {(i,i)}⊤(J,K)⟨𝟙,f(R₀)⟩\ncheck {(j,j)}fF = {(j,j)}⊤(J,K)⟨𝟙,f(R₁)⟩\n")
+
+#guard listsLifted.isOk
+
+-- a parameterised list builtin given a family
+#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3 "not liftable"
+
 -- a nested literal (§c): each leaf position its own object, the side their product
 #guard match runText "obj X = {A,B}\nobj N = 0…1\nL ≜ {((A,0),(1,B)),((B,1),(0,A))}\nprint L\n" with
   | .ok o => o.prints == ["L = {((A, 0), (1, B)), ((B, 1), (0, A))}"] &&

@@ -92,6 +92,26 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .tail, D => pure (tail D.val)
   | _, _, _, .pre, D => pure («prefix» D.val)
   | _, _, _, .suf, D => pure (suffix D.val)
+  | _, _, _, .inits, D => pure (Alg.inits D.val)
+  | _, _, _, .tails, D => pure (Alg.tails D.val)
+  | _, _, _, .cat, D => pure (Alg.cat D)
+  | _, _, _, .uncat, D => pure (Alg.uncat D.val)
+  | _, _, _, .zip, D => pure (Alg.zip D)
+  | _, _, _, .snoc, D => pure (Alg.snoc D)
+  | _, _, _, .unsnoc, D => pure (Alg.unsnoc D.val)
+  | _, _, _, .init, D => pure (Alg.init D.val)
+  | _, _, _, .concat, D => pure (Alg.concat D.val)
+  | _, _, _, .perm, D => pure (Alg.perm D.val)
+  | _, _, _, .setify, D => pure (Alg.setify D.val)
+  | _, _, _, .bagify, D => pure (Alg.bagify D.val)
+  | _, _, _, .subseq, D => pure (Alg.subseq D.val)
+  | _, _, _, .tic, D => pure (Alg.tic D)
+  | _, _, _, .ordered Q, D => return Alg.ordered (← ev cnt Q ()) D.val
+  | _, _, _, .sort Q, D => return Alg.sort (← ev cnt Q ()) D.val
+  -- `thinL ⊑ subseq`: the subsequences of the arrays in demand hold every target, so it is exact at each of them
+  | _, _, _, .thinL Q, D => return D ≫ Alg.thinL (← ev cnt Q ()) (ran (Alg.subseq D.val)).val
+  | _, _, _, .merge Q, D => return Alg.merge (← ev cnt Q ()) D
+  | _, _, _, .loop F, D => return Alg.loop (← ev cnt F ()) D
   | _, _, _, .succ U, D => pure (D ≫ succ U)
   | _, _, _, .plus U, D => pure (plus D.val ≫ idU U)
   | _, _, _, .leq U, _ => pure (leq U)
@@ -232,6 +252,25 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .fold e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 46 (.fold x s) [i, j]
   | _, _, _, .foldI e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 47 (.foldI x s) [i, j]
   | _, _, _, .flat R => do let (r, i) ← hoist R; node 48 (.flat r) [i]
+  | _, _, _, .inits => node 49 .inits []
+  | _, _, _, .tails => node 50 .tails []
+  | _, _, _, .cat => node 51 .cat []
+  | _, _, _, .uncat => node 52 .uncat []
+  | _, _, _, .zip => node 53 .zip []
+  | _, _, _, .snoc => node 54 .snoc []
+  | _, _, _, .unsnoc => node 55 .unsnoc []
+  | _, _, _, .init => node 56 .init []
+  | _, _, _, .concat => node 57 .concat []
+  | _, _, _, .perm => node 58 .perm []
+  | _, _, _, .setify => node 59 .setify []
+  | _, _, _, .bagify => node 60 .bagify []
+  | _, _, _, .subseq => node 61 .subseq []
+  | _, _, _, .tic => node 62 .tic []
+  | _, _, _, .ordered Q => do let (q, i) ← hoist Q; node 63 (.ordered q) [i]
+  | _, _, _, .sort Q => do let (q, i) ← hoist Q; node 64 (.sort q) [i]
+  | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i]
+  | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i]
+  | _, _, _, .loop F => do let (f, i) ← hoist F; node 67 (.loop f) [i]
   -- a definition's term, interned when the definition was
   | _, _, _, .share k R => pure (.share k R, k)
 
