@@ -42,7 +42,10 @@ def rows : String := s!"\{(a, {mssL [3,1,4,1,5]}), (b, {mssL [2,0,7]}), (c, {mss
 #guard mssL [3,-4,2,-1,2] == 3 && mssL [-2,-1,-3] == 0
 #guard (arrays.filter fun xs => mssL xs < (xs.foldl (· + ·) 0)).isEmpty &&
   (arrays.any fun xs => mssL xs > (xs.foldl (· + ·) 0))
-#guard (ok given).prints == [s!"x mss = {rows}",
+-- the file's two `check`s hold (a failed one is an error) and print nothing; printed here, `x mss` and `x` then the
+-- fold are the rows `mssL` computes
+#guard (runText mss).isOk && (ok (runText mss)).prints == []
+#guard (ok (runText (mss ++ s!"print x mss\nprint x{prog}\n"))).prints == [s!"x mss = {rows}",
   s!"x ⦇ran(zero ⟨𝟙, Λ(𝟙)⟩), ⟨w, Λ(w ∪ (π₂ π₂ ∋))⟩⦈ π₂ est(≥) = {rows}"]
 
 end LeetQ.Rel.Lang.TestMss

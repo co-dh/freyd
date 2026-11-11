@@ -50,6 +50,6 @@ the step passes the item and the packings as ⟨⊤,π₁⟩, ⟨⊤,π₂⟩ an
     check p = s                                   -- knap_laws_step2
     check knap ⊑ s                                -- knap_fold: the derived program refines the specification
 
-    print s
-    print p
-    print knap
+    check s = {(a,(5,4) (6,5)),(b,(2,2) (9,8)),(c,[(1,9)]),(d,(5,4) (5,5)),(d,(5,4) (5,6))}
+    check p = {(a,(5,4) (6,5)),(b,(2,2) (9,8)),(c,[(1,9)]),(d,(5,4) (5,5)),(d,(5,4) (5,6))}
+    check knap = {(a,(5,4) (6,5)),(b,(2,2) (9,8)),(c,[(1,9)]),(d,(5,4) (5,5))}

@@ -3,9 +3,9 @@
     obj B = 0…1                                   -- a bit
     obj I = B×(B×B)                               -- the adder's three inputs
 
-The note writes ⊕; ⊕ is the sum of relations here.
+The note writes ⊕ for xor; ⊕ is the sum of relations here, so xor is an ordinary definition.
 
-    ⊻ : B×B ⟶ B ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),0)}   -- xor: 1 where the inputs differ
+    xor : B×B ⟶ B ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),0)}   -- xor: 1 where the inputs differ
     ∧ : B×B ⟶ B ≜ {((0,0),0),((0,1),0),((1,0),0),((1,1),1)}   -- and: 1 where both are 1
     ∨ : B×B ⟶ B ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),1)}   -- or: 1 where one is 1
 
@@ -13,9 +13,9 @@ The note writes ⊕; ⊕ is the sum of relations here.
     c : α×(β×γ) ⟶ γ ≜ π₂π₂                        -- the third input
 
     q : α×(β×γ) ⟶ α×β ≜ ⟨π₁,b⟩                    -- the first two inputs
-    x₂ : B×(B×α) ⟶ B×α ≜ ⟨q⊻,c⟩                   -- their xor, and the third input
-    add : B×(B×B) ⟶ B×B ≜ ⟨x₂⊻,⟨q∧,x₂∧⟩∨⟩        -- (sum, carry)
+    x₂ : B×(B×α) ⟶ B×α ≜ ⟨q xor,c⟩                -- their xor, and the third input
+    add : B×(B×B) ⟶ B×B ≜ ⟨x₂ xor,⟨q∧,x₂∧⟩∨⟩     -- (sum, carry)
     p : B ⟶ B×B ≜ ⟨{(0,0)},{(0,1)}⟩               -- the point (0,1) at the bit 0
     answer : B×(B×B) ⟶ B ≜ add p°                 -- the inputs giving sum 0, carry 1
 
-    print answer
+    check answer = {((0,(1,1)),0),((1,(0,1)),0),((1,(1,0)),0)}

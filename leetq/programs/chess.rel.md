@@ -53,4 +53,4 @@
     ν : [Sq×Pc]×(Sq×Sq) ⟶ [Sq×Pc]×(Sq×Sq) ≜ j a(k(⇝),f(⇝),W₁) i(B(⇝),Pin₁,W₁,k(⇝))   -- the moves that mate
     m : Sq×Sq ⟶ Pc ≜ ran(νπ₂)π₁ on                -- each mating move, the piece it moves
 
-    print m
+    check m = {((1,57),R)}                        -- Rb1-b8 mates

@@ -24,7 +24,8 @@ def lit (ps : List (Nat × Int64)) : String :=
 /-- The program, its board `on` replaced by `ps` when given; `one` keeps the declarations up to `Ω`, the mate
     test of one board. -/
 def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := do
-  let prog ← Parse.parse chess
+  -- the file's `check m = …` states the mate of its own board, so it is dropped for another one
+  let prog := (← Parse.parse chess).filter fun | .check .. => false | _ => true
   let prog ← match ps with
     | none => pure prog
     | some ps => do
@@ -65,10 +66,11 @@ def on₀ : Chess.Board := Chess.pos [(6, 5), (48, 3), (1, 3), (60, 11)]
 
 /-! `Chess.lean`'s checks, each against `Chess` and against the value it states. -/
 
--- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates; the program's own board, run as written, `print m` included
+-- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates; the program's own board, run as written: its `check m = …` holds and it
+-- prints nothing, and `m` printed here is the one move
 #guard let o := Test.ok (runText chess); let a := moves o
   a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (60, 11)]) && a == some [[3, 1, 57]] &&
-    o.prints == ["m = {((1, 57), R)}"]
+    o.prints == [] && (Test.ok (runText (chess ++ "print m\n"))).prints == ["m = {((1, 57), R)}"]
 -- B Kc8: Rb8+ fails to Kxb8, Ra8+ leaves c7
 #guard let a := answer [(6, 5), (48, 3), (1, 3), (58, 11)]
   a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (58, 11)]) && a == some []

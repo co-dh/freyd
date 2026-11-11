@@ -62,13 +62,13 @@ The note's run (10:268): ab, a tab, c d; and three candidates' outputs, a tie am
     q : 1 ⟶ [Ch] ≜ {(∗,a a a BL a)}
     y : 1 ⟶ [Ch] ≜ {(∗,BL BL BL BL BL)}
 
-    print x detab
-    print x detab entab
-    print p Λ(H)est(R)
-    print q Λ(H)est(R)
-    print y Λ(H)est(R)
-    print p entab
-    print q entab
-    print y entab
+    check x detab = {(∗,a b BL BL c BL d)}
+    check x detab entab = {(∗,a b TB c BL d)}
+    check p Λ(H)est(R) = {(∗,a TB)}
+    check q Λ(H)est(R) = {(∗,a a a BL a),(∗,a a a TB a)}
+    check y Λ(H)est(R) = {(∗,TB BL)}
+    check p entab = {(∗,a TB)}
+    check q entab = {(∗,a a a TB a)}
+    check y entab = {(∗,TB BL)}
     check D entab ⊑ D Λ(H)est(R)                  -- entab_laws, 10:148: the program is a shortest preimage
     check D entab detab = D                       -- detab entab = 𝟙 on detab's outputs

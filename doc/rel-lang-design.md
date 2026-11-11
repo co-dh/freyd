@@ -191,7 +191,7 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 | `thin(Q)`                      | the minimal ones                          | `thin`                         |
 | `filter(p)`, `takewhile(p)`    | the note's list functions                 | prelude                        |
 | `length sum`                   | the note's list functions                 | `length Arr.sum`               |
-| `head tail init`               | first, rest, all but the last             | prelude                        |
+| `head tail init last`          | first, rest, all but the last, the last   | prelude                        |
 | `prefix`, `suffix`             | the note's list functions                 | prelude                        |
 | `inits`                        | the prefixes, shortest first              | `inits`                        |
 | `tails`                        | the suffixes, longest first               | prelude                        |
@@ -257,6 +257,7 @@ they lift, run on demand and converse as their bodies do. The `LeetQ` library `n
 | `head`       | `head : [α] ⟶ α ≜ cons° π₁`                                    | the first element (B&dM p.267)              |
 | `tail`       | `tail : [α] ⟶ [α] ≜ cons° π₂`                                  | all but the first (B&dM p.149)              |
 | `init`       | `init : [α] ⟶ [α] ≜ snoc° π₁`                                  | all but the last (B&dM p.249)               |
+| `last`       | `last : [α] ⟶ α ≜ snoc° π₂`                                    | the last element (B&dM p.267)               |
 | `prefix`     | `prefix : [α] ⟶ [α] ≜ ⦇ran(nil(1)), nil ∪ cons⦈`               | the prefixes (B&dM p.126)                   |
 | `suffix`     | `suffix : [α] ⟶ [α] ≜ cat° π₂`                                 | the suffixes (B&dM p.127)                   |
 | `concat`     | `concat : [[α]] ⟶ [α] ≜ ⦇ran(nil(1)), cat⦈`                    | flatten (B&dM p.129)                        |
