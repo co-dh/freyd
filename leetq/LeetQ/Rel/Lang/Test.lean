@@ -413,7 +413,7 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[
 -- subsequences), and a pair with an array (the copy with its length)
 #guard printed (chs ++ "print x ⟨nil,𝟙⟩loop(snoc)\nprint y ⟨nil,𝟙⟩loop(⟨π₂,π₁⟩cons)\nprint x ⟨nil,𝟙⟩loop(snoc ∪ π₁)\n" ++
   "print x ⟨⟨nil,⊤{(0,0)}⟩,𝟙⟩loop(⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩)\n") ==
-  ["{(∗, {a, b})}", "{(∗, {b, a, a})}", "{(∗, {}), (∗, {a}), (∗, {a, b}), (∗, {b})}", "{(∗, ({a, b}, 2))}"]
+  ["{(∗, a b)}", "{(∗, b a a)}", "{(∗, []), (∗, [a]), (∗, a b), (∗, [b])}", "{(∗, (a b, 2))}"]
 -- refused: an `F` that runs neither way, the leaf named
 #guard errAt (chs ++ "print x ⟨nil,𝟙⟩loop(snoc ran(snoc))\n") 11 "ran( ) reads its argument whole: [Ch]×Ch has no universe"
 
