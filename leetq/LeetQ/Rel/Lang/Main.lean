@@ -3,7 +3,7 @@ import LeetQ.Rel.Lang.Eval
 /-! `rel FILE`: parse, elaborate and run a Rel program; print each `print`, or the front-end error and exit 1.
 
     Every run is capped in RESIDENT memory: `main` re-executes this binary once as a child that does the work, and
-    stays to poll the child's resident set (`/proc/<pid>/statm`) every `pollMs`; past `REL_MEM_MB` (default 4096)
+    stays to poll the child's resident set (`/proc/<pid>/statm`) every `pollMs`; past `REL_MEM_MB` (default 10240)
     it terminates the child and exits 3 naming the cap. Not an rlimit: `RLIMIT_RSS` is a no-op on Linux, and
     `RLIMIT_AS`/`RLIMIT_DATA` count address space, which here runs 6–35× the resident set (chess.rel peaks at
     11.5 GB of address space and 1.7 GB resident, an empty program at 1.2 GB and 0.02 GB), so a 4 GB `ulimit -v`
@@ -24,13 +24,13 @@ def childVar : String := "REL_MEM_CHILD"
 
 def pollMs : UInt32 := 20
 
-/-- The cap in MB: `REL_MEM_MB`, else 4096. -/
+/-- The cap in MB: `REL_MEM_MB`, else 10240. -/
 def limitMB : IO (Except String Nat) := do
   match ← IO.getEnv "REL_MEM_MB" with
-  | none => pure (.ok 4096)
+  | none => pure (.ok 10240)
   | some s => pure <| match s.toNat? with
-    | some n => if n > 0 then .ok n else .error s!"REL_MEM_MB={s} is not a positive number of MB; unset it for 4096"
-    | none => .error s!"REL_MEM_MB={s} is not a positive number of MB; unset it for 4096"
+    | some n => if n > 0 then .ok n else .error s!"REL_MEM_MB={s} is not a positive number of MB; unset it for 10240"
+    | none => .error s!"REL_MEM_MB={s} is not a positive number of MB; unset it for 10240"
 
 /-- The page size in bytes, which `statm` counts in: `getconf PAGESIZE`. -/
 def pageBytes : IO (Except String Nat) := do

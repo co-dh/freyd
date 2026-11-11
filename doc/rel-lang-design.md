@@ -10,7 +10,7 @@ rows (§e) and of the program in §g.
 **Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`) prints each `print`; it exits
 0, 1 on a front-end error or a failed `check`, 2 on a bad command line. Every run is capped in resident memory:
 
-- the cap is `REL_MEM_MB` megabytes, 4096 when unset; nothing about it is printed on a normal run;
+- the cap is `REL_MEM_MB` megabytes, 10240 when unset; nothing about it is printed on a normal run;
 - `rel` re-executes itself once as a child (`REL_MEM_CHILD=1`) that does the work, and polls the child's resident
   set (`/proc/<pid>/statm`, every 20 ms); past the cap it kills the child, prints
   `rel: FILE: stopped at <M> MB resident, past the cap of <N> MB (REL_MEM_MB); … rerun with REL_MEM_MB=<2N>` and
