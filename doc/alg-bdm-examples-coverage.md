@@ -27,7 +27,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 7   | shortest paths, cylinder | `cyl_laws` 07:1616                         | `fold` `zip` `concat` `uncons` `snoc` `Λ` `est` `Arr.sum` | `cp` (a term)                | no              |
 | 7   | security van             | `van_laws` 07:2042                         | `fold` `cons` `prefix` `Arr.sum` `est` `leq` `Λ` `minus`  | —                            | no              |
 | 8   | layered network          | `thinning_paths` 08:350                    | `fold` `Λ` `P` `est` `∋` `plus` `leq`                     | —                            | no              |
-| 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | `cp` (a term)                | no              |
+| 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | written: leetq/programs/knapsack.rel (below) | no |
 | 8   | paragraph                | `para_laws` 08:873                         | `fold` `cat` `thinL` `est` `Arr.sum` `length` `leq`       | —                            | no              |
 | 8   | bitonic tours            | `tour_laws` 08:1067                        | `fold` `cat` `thinL` `est` `plus` `Arr.sum` `leq`         | `cp` (a term)                | no              |
 | 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no              |
@@ -38,6 +38,15 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `μ`                          | no              |
 
 Notes on single rows:
+
+- Knapsack, written: `leetq/programs/knapsack.rel`, guarded by `LeetQ/Rel/Lang/TestKnapsack.lean`. It has the
+  specification `Λ(subseq within(w)) est(R)` and its fold `⦇[nil, cons within(w) ∪ π₂]⦈` (`knap_spec`), checked
+  equal. Differences from the note: `est(R)` with `R ≜ value ≥ value°` is written on the candidates `G` it chooses
+  among (`⟨𝟙,G⟩dom(π₁Λ(G value)est(≥) ∩ (π₂ value))π₂`), because `R` on `[N×N]` has no universe and `est`, `thinL`,
+  `merge` run their order closed. The derived program `knap_fold` is not written: `merge(R)`, `thinL(Q)`,
+  `minL(R)` need orders on `[N×N]`, `filter(within w)` a test on `[N×N]`, and `cpr` on lists in order a `loop(F)`
+  whose `F` reads an array — each a parameter the language runs closed, so `cp (a term)` above does not hold for
+  the list form. `thinL(Q)` is also the relational `setify thin(Q) setify° ∩ subseq`, exponential in the list.
 
 - Fast exponentiation: the note's `μX : …` has the base functor of a list of bits, so it is
   `⦇[zero,shift]⦈° ⦇[one,op(a)]⦈` on bit arrays, a `fold` after the converse of a `fold`; no `μ` is needed.
