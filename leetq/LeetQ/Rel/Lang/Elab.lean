@@ -117,7 +117,8 @@ def OTy.render (inner : Bool) : OTy → String
   | .base n => n
   | .prod a b => let s := s!"{a.render true}×{b.render true}"; if inner then s!"({s})" else s
   | .sum a b => let s := s!"{a.render true}+{b.render true}"; if inner then s!"({s})" else s
-  | .arr a => s!"𝒫{a.render true}"
+  -- `𝒫A` and `[A]` are one object, an array; printed as the array the interpreter holds
+  | .arr a => s!"[{a.render false}]"
   | .mv k => s!"?{k}"
 
 instance : ToString OTy := ⟨OTy.render false⟩
@@ -145,8 +146,9 @@ def uniOf (objs : Objs) : OTy → Option ((A : Obj) × (m : Nat) × Vals A m)
 /-! ### The typed surface term -/
 
 /-- A term typed but not yet built: the core operators, object variables on the constants. `close` marks a
-    place with no left context: its term runs on its source's universe when it needs keys. `tm` is a built
-    term, a definition's. -/
+    place whose term is read whole — no left context, or an operator that is not local (§a): its term runs on
+    its source's universe when it needs keys, `why` naming that operator in the error when there is none.
+    `tm` is a built term, a definition's. -/
 inductive Pre
   | tm (r : Res)
   | zero (a b : OTy)
@@ -216,9 +218,12 @@ inductive Pre
   | foldI (e s : Pre)
   | flat (p : Pre)
   | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
-  | close (pos : Pos) (p : Pre) (a : OTy)
+  | close (pos : Pos) (p : Pre) (a : OTy) (why : String)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
+
+/-- The `why` of a top-level term's `close`. -/
+def noLeft : String := "the term here needs keys and has no left context"
 
 /-! ### Object variables -/
 
@@ -316,7 +321,7 @@ def liftConst (C : Pre) (a b : OTy) : Pre × OTy × OTy :=
   match C with
   | .top _ _ _ none => (.top p I (.prod a b) none, a, b)
   | .id _ => (.comp (.top p I a none) (.pair (.id a) (.id a)), a, b)
-  | C => (.comp (.top p I a (some (.close p (.dom C) a))) (.pair (.id a) C), a, b)
+  | C => (.comp (.top p I a (some (.close p (.dom C) a "a closed term in a lifted body"))) (.pair (.id a) C), a, b)
 
 /-- A result as a family over `I`. -/
 def famOf : Arg → M (Pre × OTy × OTy)
@@ -410,7 +415,7 @@ def keyed : Pre → OTy → OTy → Pre
   | .top q _ (.prod _ _) none, a, b => top q (.prod I a) b none
   -- a closed `C` as a family, `D⊤⟨𝟙,C⟩` with `⊤` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets; onto
   -- `V = dom(C')`, `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
-  | .comp (.top _ _ _ (some (.close _ (.dom C') _))) (.pair (.id _) C), a, _ =>
+  | .comp (.top _ _ _ (some (.close _ (.dom C') _ _))) (.pair (.id _) C), a, _ =>
     comp (dom (comp (outr I a) C')) (comp (outr I a) C)
   | .comp (.top _ _ _ V) (.pair (.id _) C), a, _ => comp (match V with | some V => comp (outr I a) V | none => outr I a) C
   -- `RS` lifted: `⟨π₁,Rᴵ⟩Sᴵ`
@@ -476,7 +481,7 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .zero => (.zero a b, a, b)
     | .top => (.top p a b none, a, b)
     | .mem => (.mem b, .arr b, b)
-    | .ni => (.conv (.close p (.mem b) (.arr b)), b, .arr b)
+    | .ni => (.conv (.close p (.mem b) (.arr b) "∈"), b, .arr b)
     | .outl => (.outl a b, .prod a b, a)
     | .outr => (.outr a b, .prod a b, b)
     | .inl => (.inl a b, a, .sum a b)
@@ -488,7 +493,7 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .union => (.union a, .arr (.arr a), .arr a)
     | .tau => (.tau a, a, .arr a)
     | .nil => (.nil a b, a, .arr b)
-    | .alpha => (.junc (.close p (.nil a b) a) (.close p (.cons b) (.prod b (.arr b))), .sum a (.prod b (.arr b)), .arr b)
+    | .alpha => (.junc (.close p (.nil a b) a "α") (.close p (.cons b) (.prod b (.arr b)) "α"), .sum a (.prod b (.arr b)), .arr b)
     | .cons => (.cons b, .prod b (.arr b), .arr b)
     | .length => (.length b a, .arr b, a)
     | .total => (.total a, .arr a, a)
@@ -526,14 +531,14 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
   | [(q, s, t)] => do
     match o with
     | .dom => pure (.rel (.dom q) s s)
-    | .ran => pure (.rel (.ran (.close p q s)) t t)
+    | .ran => pure (.rel (.ran (.close p q s "ran( ) reads its argument whole")) t t)
     | .lam => pure (.rel (.lam q) s (.arr t))
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
     | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
     | .est | .thin | .filter | .takewhile | .ordered | .sort | .thinL | .merge => do
       unify p s!"the target of {o.sym}'s argument" t s
-      let c := Pre.close p q s
+      let c := Pre.close p q s s!"{o.sym}( ) reads its argument whole"
       let a := OTy.arr s
       let (r, x, y) : Pre × OTy × OTy := match o with
         | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .filter => (.filter c, a, a)
@@ -543,13 +548,14 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .loop => do
       let x ← fresh; let y ← fresh
       unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
-      pure (.rel (.loop (.close p q s)) (.prod x (.arr y)) x)
+      pure (.rel (.loop (.close p q s "loop( ) reads its argument whole")) (.prod x (.arr y)) x)
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
   | [(q, a, c), (r, b, c')] => do
     match o with
     | .frac => do
       unify p "the target of frac's second argument" c' c
-      pure (.rel (.frac p (.close p q a) (.close p r b) a b) a b)
+      let w := "frac( ) reads its arguments whole outside a meet with a term run on demand"
+      pure (.rel (.frac p (.close p q a w) (.close p r b w) a b) a b)
     | _ => throw ⟨p, s!"{o.sym} takes 1 argument, found 2"⟩
   | as => throw ⟨p, s!"{o.sym}: wrong number of arguments, found {as.length}"⟩
 
@@ -576,10 +582,19 @@ def binary (p : Pos) (o : Bin) : Pre × OTy × OTy → Pre × OTy × OTy → M A
         | .meet => Pre.meet q r | .join => .join q r | .diff => .diff q r
         | _ => .join (.diff (.top p s t none) q) r
       pure (.rel x s t)
-    | .rdiv => do unify p "the target of `/`'s right operand" t' t; pure (.rel (.rdiv p (.close p q s) (.close p r s') s s') s s')
-    | .ldiv => do unify p "the source of `\\`'s right operand" s' s; pure (.rel (.ldiv p (.close p q s) (.close p r s) t t') t t')
-    | .prod => pure (.rel (.prod (.close p q s) (.close p r s')) (.prod s s') (.prod t t'))
-    | .sum => pure (.rel (.sum (.close p q s) (.close p r s')) (.sum s s') (.sum t t'))
+    | .rdiv => do
+      unify p "the target of `/`'s right operand" t' t
+      let w := "R/S reads its operands whole outside a meet with a term run on demand"
+      pure (.rel (.rdiv p (.close p q s w) (.close p r s' w) s s') s s')
+    | .ldiv => do
+      unify p "the source of `\\`'s right operand" s' s
+      let w := "R\\S reads its operands whole outside a meet with a term run on demand"
+      pure (.rel (.ldiv p (.close p q s w) (.close p r s w) t t') t t')
+    -- `R×S = ⟨π₁R,π₂S⟩`: `build` runs it as that pair when an operand runs on demand
+    | .prod => pure (.rel (.prod q r) (.prod s s') (.prod t t'))
+    | .sum =>
+      let w := "R+S reads its operands whole"
+      pure (.rel (.sum (.close p q s w) (.close p r s' w)) (.sum s s') (.sum t t'))
 
 /-- A binary operator with a family on a side, by the rows of §e. -/
 def binaryL (I : OTy) (p : Pos) (o : Bin) (x y : Arg) : M Arg := do
@@ -673,15 +688,10 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     | some I, true => binaryL I p o x y
     | _, _ => binary p o x.plain y.plain
   | .conv p a => do
-    match a with
-    -- a converse with a name of its own runs as that op: `cons°`, `snoc°`, `cat°` on the arrays in demand
-    | .op _ .cons [] [] => do let b ← fresh; pure (.rel (.uncons b) (.arr b) (.prod b (.arr b)))
-    | .op _ .snoc [] [] => do let b ← fresh; pure (.rel (.unsnoc b) (.arr b) (.prod (.arr b) b))
-    | .op _ .cat [] [] => do let b ← fresh; pure (.rel (.uncat b) (.arr b) (.prod (.arr b) (.arr b)))
-    | _ =>
-      match ← elabE env m a with
-      | .fam q i s t => let r := lConv (q, s, t); pure (.fam r.1 i r.2.1 r.2.2)
-      | .rel q s t => pure (.rel (.conv (.close p q s)) t s)
+    -- `build` pushes the converse to the leaves when the term runs on demand (`convTm`)
+    match ← elabE env m a with
+    | .fam q i s t => let r := lConv (q, s, t); pure (.fam r.1 i r.2.1 r.2.2)
+    | .rel q s t => pure (.rel (.conv (.close p q s "R°")) t s)
   | .compl p a => do
     match ← elabE env m a with
     | .fam q i s t => let r := lCompl i p (q, s, t); pure (.fam r.1 i r.2.1 r.2.2)
@@ -701,7 +711,8 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     | _, _ =>
       let (q, s, t) := x.plain; let (r, s', t') := y.plain
       unify p "the target of the case's second part" t' t
-      pure (.rel (.junc (.close p q s) (.close p r s')) (.sum s s') t)
+      let w := "[R,S] reads its parts whole"
+      pure (.rel (.junc (.close p q s w) (.close p r s' w)) (.sum s s') t)
   | .fold p a b => do
     let x ← elabE env m a; let y ← elabE env m b
     if x.isFam || y.isFam then
@@ -711,7 +722,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     let e ← fresh
     unify p "the source of the fold's step" ev (.prod e v)
     unify p "the target of the fold's step" w v
-    pure (.rel (.fold (.close p q v) r) (.arr e) v)
+    pure (.rel (.fold (.close p q v "the fold's start is read whole") r) (.arr e) v)
   | .lit p ps => do
     -- each leaf position of a side is the one declared object holding all its words: named elements, or
     -- numbers in its range; the side is their product, nested as the rows nest
@@ -866,6 +877,99 @@ def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
 
 /-! ### Build: the solved objects, the core term -/
 
+/-- `R°` for `R` run on demand (§a), itself run on demand: pushed to the leaves by `(RS)° = S°R°`,
+    `(R∩S)° = R°∩S°` (and `∪`, `−`), `⟨R,S⟩° = π₁R° ∩ π₂S°`, a coreflexive is its own converse, and a builtin
+    by its named converse (`cons° = uncons`, `perm° = perm`, `sort(Q)° = ordered(Q) perm`). A closed part is
+    conversed whole. The error is the leaf whose converse does not run on demand. -/
+def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × Tm B A e) :=
+  if h : d = false then pure ⟨false, .conv (h ▸ t)⟩ else
+  match t with
+  | .val R => pure ⟨false, .conv (.val R)⟩
+  | .uni U => pure ⟨false, .uni U⟩
+  | .zero => pure ⟨false, .zero⟩
+  | .conv R => pure ⟨false, R⟩
+  | .ran R => pure ⟨false, .ran R⟩
+  | .ldiv R S U V => pure ⟨false, .conv (.ldiv R S U V)⟩
+  | .rdiv R S U V => pure ⟨false, .conv (.rdiv R S U V)⟩
+  | .frac R S U V => pure ⟨false, .conv (.frac R S U V)⟩
+  | .prod R S => pure ⟨false, .conv (.prod R S)⟩
+  | .junc R S => pure ⟨false, .conv (.junc R S)⟩
+  | .sum R S => pure ⟨false, .conv (.sum R S)⟩
+  | .leq U => pure ⟨false, .conv (.leq U)⟩
+  | .lt U => pure ⟨false, .conv (.lt U)⟩
+  | .id => pure ⟨_, .id⟩
+  | .dom R => pure ⟨_, .dom R⟩
+  | .ordered Q => pure ⟨_, .ordered Q⟩
+  | .comp R S => do let ⟨_, s⟩ ← convTm S; let ⟨_, r⟩ ← convTm R; pure ⟨_, .comp s r⟩
+  | .meet R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet r s⟩
+  | .join R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .join r s⟩
+  | .diff R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .diff r s⟩
+  | .pair R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet (.comp .outl r) (.comp .outr s)⟩
+  | .share _ R => convTm R
+  | .cons => pure ⟨_, .uncons⟩
+  | .uncons => pure ⟨_, .cons⟩
+  | .snoc => pure ⟨_, .unsnoc⟩
+  | .unsnoc => pure ⟨_, .snoc⟩
+  | .cat => pure ⟨_, .uncat⟩
+  | .uncat => pure ⟨_, .cat⟩
+  | .perm => pure ⟨_, .perm⟩
+  | .sort Q => pure ⟨_, .comp (.ordered Q) .perm⟩
+  -- the number verbs are closed on their universe: their converse is read whole there
+  | .succ U => pure ⟨false, .conv (.comp (.uni (A := .long) U) (.succ U))⟩
+  | .arith k U => pure ⟨false, .conv (.comp (.uni (Alg.prod (idU U) (idU U)).key) (.arith k U))⟩
+  | .top _ => throw "⊤"
+  | .mem => throw "∋"
+  | .outl => throw "π₁"
+  | .outr => throw "π₂"
+  | .inl => throw "inl"
+  | .inr => throw "inr"
+  | .lam _ => throw "Λ( )"
+  | .E _ => throw "E( )"
+  | .map _ => throw "F( )"
+  | .est _ => throw "est( )"
+  | .thin _ => throw "thin( )"
+  | .filter _ => throw "filter( )"
+  | .takewhile _ => throw "takewhile( )"
+  | .union => throw "union"
+  | .tau => throw "τ"
+  | .nil => throw "nil"
+  | .length => throw "length"
+  | .total => throw "sum"
+  | .head => throw "head"
+  | .tail => throw "tail"
+  | .pre => throw "prefix"
+  | .suf => throw "suffix"
+  | .inits => throw "inits"
+  | .tails => throw "tails"
+  | .zip => throw "zip"
+  | .init => throw "init"
+  | .concat => throw "concat"
+  | .setify => throw "setify"
+  | .bagify => throw "bagify"
+  | .subseq => throw "subseq"
+  | .tic => throw "tic"
+  | .thinL _ => throw "thinL( )"
+  | .merge _ => throw "merge( )"
+  | .loop _ => throw "loop( )"
+  | .fold .. => throw "⦇e,S⦈"
+  | .foldI .. => throw "a lifted fold"
+  | .flat _ => throw "a lifted family"
+
+/-- A pair test: `τ(R) : A×B ⟶ A×B`, the coreflexive on the pairs `(a,b)` in demand with `a R b`. -/
+abbrev Cor := (A : Obj) × (B : Obj) × Tm (.prod A B) (.prod A B) true
+
+/-- `R ∩ S` with `S` run on demand and `R` tested: `⟨𝟙,S⟩τ(R)π₂`; `R − S` is this with `𝟙 − τ(S)`. -/
+def onPairs {A B : Obj} {e : Bool} (s : Tm A B e) (c : Tm (.prod A B) (.prod A B) true) : Tm A B true :=
+  .comp (.pair .id s) (.comp c .outr)
+
+/-- `τ(R/S) = 𝟙 − dom(⟨π₁,π₂S⟩(𝟙 − τ(R)))`, `R : A ⟶ C`, `S : B ⟶ C`: no `c` with `b S c` and not `a R c`. -/
+def divTest {A B C : Obj} {e : Bool} (c : Tm (.prod A C) (.prod A C) true) (s : Tm B C e) :
+    Tm (.prod A B) (.prod A B) true :=
+  .diff .id (.dom (.comp (.pair .outl (.comp .outr s)) (.diff .id c)))
+
+/-- The swap `A×B ⟶ B×A`, `⟨π₂,π₁⟩`. -/
+def swapTm {A B : Obj} : Tm (.prod A B) (.prod B A) true := .pair .outr .outl
+
 section Build
 
 variable (objs : Objs) (st : St) (dp : Pos)
@@ -932,6 +1036,12 @@ def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Ob
       | r => throw ⟨p, s!"a literal's element of {o} is a word, found {r.show}"⟩
     if h : cs.length = n then (let c : Arr .long n := h ▸ col cs; pure ⟨.long, c⟩) else internal dp "literal rows"
 
+/-- A pair test at the objects `A×B`. -/
+def corAt (A B : Obj) : Cor → Except Err (Tm (.prod A B) (.prod A B) true)
+  | ⟨A', B', c⟩ => if h : A' = A ∧ B' = B then pure (h.1 ▸ h.2 ▸ c) else internal dp "pair-test objects disagree"
+
+mutual
+
 /-- `Pre` to `Tm` at the solved objects. Every check here holds by `elabE`'s unification except the
     universes, whose absence is the error of §a. -/
 def build : Pre → Except Err Res
@@ -952,10 +1062,33 @@ def build : Pre → Except Err Res
   | .comp p q => do
     let ⟨A, B, d, t⟩ ← build p; let ⟨B', C, _, u⟩ ← build q
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
+  -- `R°`: closed, conversed whole; on demand, pushed to the leaves (`convTm`); a leaf whose converse does not
+  -- run on demand reads `R` whole on its source's universe
+  | .conv (.close pos q a _) => do
+    let ⟨A, B, _, t⟩ ← build q
+    match convTm t with
+    | .ok ⟨e, u⟩ => pure ⟨B, A, e, u⟩
+    | .error leaf => do
+      let U ← uniTm objs st dp pos a A s!"the converse of {leaf} does not run on demand, so R° reads R whole"
+      pure ⟨B, A, false, .conv (.comp U t)⟩
   | .conv p => do let r ← build p; let ⟨A, B, _, _⟩ := r; pure ⟨B, A, false, .conv (← closed? dp (A := A) (B := B) r)⟩
-  | .meet p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .meet t u⟩
+  -- a side that cannot run is tested on the pairs the other side gives (`test`)
+  | .meet p q => match build p, build q with
+    | .ok ⟨A, B, _, t⟩, .ok s => do let ⟨_, u⟩ ← at? dp (A := A) (B := B) s; pure ⟨A, B, _, .meet t u⟩
+    | .error err, .ok ⟨A, B, _, s⟩ => match test p with
+      | .ok c => do pure ⟨A, B, true, onPairs s (← corAt dp A B c)⟩
+      | .error _ => throw err
+    | .ok ⟨A, B, _, s⟩, .error err => match test q with
+      | .ok c => do pure ⟨A, B, true, onPairs s (← corAt dp A B c)⟩
+      | .error _ => throw err
+    | .error err, .error _ => throw err
   | .join p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .join t u⟩
-  | .diff p q => do let ⟨A, B, _, t⟩ ← build p; let ⟨_, u⟩ ← at? dp (A := A) (B := B) (← build q); pure ⟨A, B, _, .diff t u⟩
+  | .diff p q => match build p, build q with
+    | .ok ⟨A, B, _, t⟩, .ok s => do let ⟨_, u⟩ ← at? dp (A := A) (B := B) s; pure ⟨A, B, _, .diff t u⟩
+    | .ok ⟨A, B, _, s⟩, .error err => match test q with
+      | .ok c => do pure ⟨A, B, true, onPairs s (.diff .id (← corAt dp A B c))⟩
+      | .error _ => throw err
+    | .error err, _ => throw err
   | .dom p => do let ⟨A, _, d, t⟩ ← build p; pure ⟨A, A, d, .dom t⟩
   | .ran p => do let r ← build p; let ⟨A, B, _, _⟩ := r; pure ⟨B, B, false, .ran (← closed? dp (A := A) (B := B) r)⟩
   | .ldiv pos p q b c => do
@@ -973,9 +1106,12 @@ def build : Pre → Except Err Res
   | .pair p q => do
     let ⟨A, _, _, t⟩ ← build p; let s ← build q; let ⟨_, C, _, _⟩ := s
     let ⟨_, u⟩ ← at? dp (A := A) (B := C) s; pure ⟨A, _, _, .pair t u⟩
+  -- `R×S`: closed, `Alg.prod`; an operand on demand, the pair `⟨π₁R,π₂S⟩` on demand
   | .prod p q => do
-    let r ← build p; let s ← build q; let ⟨A, B, _, _⟩ := r; let ⟨C, D, _, _⟩ := s
-    pure ⟨_, _, false, .prod (← closed? dp (A := A) (B := B) r) (← closed? dp (A := C) (B := D) s)⟩
+    let ⟨A, B, d, t⟩ ← build p; let ⟨C, D, e, u⟩ ← build q
+    match d, t, e, u with
+    | false, t, false, u => pure ⟨_, _, false, .prod t u⟩
+    | _, t, _, u => pure ⟨.prod A C, .prod B D, true, .pair (.comp .outl t) (.comp .outr u)⟩
   | .junc p q => do
     let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
     pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := C) s)⟩
@@ -1055,11 +1191,63 @@ def build : Pre → Except Err Res
     let ⟨A, k⟩ ← litCol objs st dp p ps.length (zonk st a) (ps.map (·.1))
     let ⟨B, v⟩ ← litCol objs st dp p ps.length (zonk st b) (ps.map (·.2))
     pure ⟨A, B, false, .val ⟨ps.length, k, v⟩⟩
-  | .close p q a => do
+  | .close p q a why => do
     let ⟨A, B, d, t⟩ ← build q
     match d with
     | false => pure ⟨A, B, false, t⟩
-    | true => pure ⟨A, B, false, .comp (← uniTm objs st dp p a A "the term here needs keys and has no left context") t⟩
+    | true => pure ⟨A, B, false, .comp (← uniTm objs st dp p a A why) t⟩
+termination_by x => (sizeOf x, 0)
+
+/-- `τ(R)`, the pair test of `R : A ⟶ B` (`Cor`), for `R` that cannot enumerate its targets: a term that
+    builds is tested as `dom(π₂ ∩ π₁R)`; otherwise by its form — `R/S`, `R\S`, `frac`, `∼`, `−`, `∩`, `∪`, `°`,
+    and a composite with a side that runs. The error is `p`'s own build error. -/
+def test (p : Pre) : Except Err Cor :=
+  match build p with
+  | .ok ⟨A, B, _, t⟩ => pure ⟨A, B, .dom (.meet .outr (.comp .outl t))⟩
+  | .error err => match p with
+    | .close _ q _ _ => test q
+    | .conv q => do let ⟨A, B, c⟩ ← test q; pure ⟨B, A, .comp swapTm (.comp c swapTm)⟩
+    | .top _ a b none => do pure ⟨← toObj st dp a, ← toObj st dp b, .id⟩
+    | .meet q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .meet c₁ (← corAt dp A B (← test r))⟩
+    | .join q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .join c₁ (← corAt dp A B (← test r))⟩
+    | .diff q r => do let c ← test q; let ⟨A, B, c₁⟩ := c; pure ⟨A, B, .diff c₁ (← corAt dp A B (← test r))⟩
+    -- `τ(PT) = dom(⟨π₁P,π₂⟩τ(T))` with `P` run; `τ(TQ) = dom(⟨π₁,π₂Q°⟩τ(T))` with `Q°` run on demand
+    | .comp q r => match build q with
+      | .ok ⟨A, M, _, t⟩ => do
+        let c ← test r; let ⟨_, B, _⟩ := c
+        pure ⟨A, B, .dom (.comp (.pair (.comp .outl t) .outr) (← corAt dp M B c))⟩
+      | .error _ => match build r with
+        | .ok ⟨M, B, _, u⟩ => match convTm u with
+          | .ok ⟨_, v⟩ => do
+            let c ← test q; let ⟨A, _, _⟩ := c
+            pure ⟨A, B, .dom (.comp (.pair .outl (.comp .outr v)) (← corAt dp A M c))⟩
+          | .error _ => throw err
+        | .error _ => throw err
+    -- `R/S`, `R : A ⟶ C` tested, `S : B ⟶ C` run on the `b`s
+    | .rdiv _ (.close _ q _ _) (.close _ r _ _) _ _ => do
+      let c ← test q; let ⟨A, C, _⟩ := c
+      let ⟨B, _, _, s⟩ ← build r
+      let ⟨_, s⟩ ← at? dp (A := B) (B := C) ⟨B, _, _, s⟩
+      pure ⟨A, B, divTest (← corAt dp A C c) s⟩
+    -- `R\S`, `R : A ⟶ B` with `R°` run on the `b`s, `S : A ⟶ C` tested: `τ = 𝟙 − dom(⟨π₁R°,π₂⟩(𝟙 − τ(S)))`
+    | .ldiv _ (.close _ q _ _) (.close _ r _ _) _ _ => do
+      let ⟨A, B, _, t⟩ ← build q
+      match convTm t with
+      | .ok ⟨_, v⟩ => do
+        let c ← test r; let ⟨_, C, _⟩ := c
+        pure ⟨B, C, .diff .id (.dom (.comp (.pair (.comp .outl v) .outr) (.diff .id (← corAt dp A C c))))⟩
+      | .error _ => throw err
+    -- `frac(R,S) = R/S ∩ (S/R)°`: both divisions tested, the second on the swapped pairs
+    | .frac _ (.close _ q _ _) (.close _ r _ _) _ _ => do
+      let cr ← test q; let ⟨A, C, _⟩ := cr
+      let cs ← test r; let ⟨B, _, _⟩ := cs
+      let ⟨_, rt⟩ ← at? dp (A := A) (B := C) (← build q)
+      let ⟨_, s⟩ ← at? dp (A := B) (B := C) (← build r)
+      pure ⟨A, B, .comp (divTest (← corAt dp A C cr) s) (.comp swapTm (.comp (divTest (← corAt dp B C cs) rt) swapTm))⟩
+    | _ => throw err
+termination_by (sizeOf p, 1)
+
+end
 
 end Build
 
