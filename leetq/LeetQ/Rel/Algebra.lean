@@ -1496,15 +1496,6 @@ def orderedOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.pro
 /-- `ordered(Q)`, `Q` closed: `orderedOn` at `pairsIn Q`, the test run on the pairs `(y, z)` it compares. -/
 def ordered {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := orderedOn (pairsIn Q) X
 
-/-- `sort(Q) ≜ perm ordered(Q)` on the arrays `X` (ch. 6, `selection_sort_correct`'s specification): each
-    array to its `Q`-ordered rearrangements, `Q` the test `q`. -/
-def sortOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
-    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  let Pm := perm X
-  Pm ≫ orderedOn q (ran Pm).val
-
-def sort {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := sortOn (pairsIn Q) X
-
 /-- `sort(Q) ≜ setify° ordered(Q) : P B ⟶ arr B` (`sortRel`, AOP/A8_3.lean:77; B&dM p.201, "sorting sets"):
     a set to its `Q`-ordered listings among the arrays `Y`. A relation into lists has no finite image without
     a universe (`[1, 1, 2]` lists `{1, 2}` under `≤`), so the lists range over `Y`, as `P`'s do. -/
@@ -2173,13 +2164,15 @@ private def sorted (xs : List Int64) : List Int64 := xs.mergeSort fun a b => dec
 #guard onArrs Xs (ordered LE9 Xs) (fun xs => if sorted xs == xs then [xs] else []) &&
   onArrs Xp (ordered LE9 Xp) (fun xs => if sorted xs == xs then [xs] else [])
 #guard onArrs Xs (ordered (lt (tilCol 10)) Xs) (fun xs => if sorted xs == xs && xs.eraseDups == xs then [xs] else [])
-#guard onArrs Xp (sort LE9 Xp) (fun xs => [sorted xs]) && onArrs Xs (sort LE9 Xs) (fun xs => [sorted xs]) &&
-  isMap (sort LE9 Xp) Xp && sort LE9 Xp ⊑ perm Xp
+-- `sort(Q) ≜ perm ordered(Q)`, the order tested on the arrays `perm` reaches
+#guard let sort {n} (X : Vals (.arr L) n) := let P := perm X; P ≫ ordered LE9 (ran P).val
+  onArrs Xp (sort Xp) (fun xs => [sorted xs]) && onArrs Xs (sort Xs) (fun xs => [sorted xs]) &&
+  isMap (sort Xp) Xp && sort Xp ⊑ perm Xp
 -- sorting sets: `setify° ordered(≤)` among the rearrangements of `Xp`, none with a repeat, is `sort(≤)` after `setify`
 private def Yp' := (perm Xp).val
 #guard seteq ((sortSet LE9 Yp').toList : List (List Int64 × List Int64))
   (((arrs Yp').filter fun ys => sorted ys == ys).map fun ys => (setOf ys, ys))
-#guard seteq (setify Yp' ≫ sortSet LE9 Yp').toList (sort LE9 Yp').toList
+#guard let P := perm Yp'; seteq (setify Yp' ≫ sortSet LE9 Yp').toList (P ≫ ordered LE9 (ran P).val).toList
 
 -- `subseq`; binary thinning among the subsequences of `Xp`, `Q` the `≤` on longs: keep a lower element
 private def subs : List Int64 → List (List Int64)
@@ -2206,7 +2199,7 @@ private def Ysub := (subseq Xp).val
   ((pairsOf W2).map fun (x, y) => ((x, y), List.merge x y fun a b => decide (a ≤ b))) && isMap (merge LE9 (idU W2)) W2
 #guard seteq (merge (top (tilCol 10) (tilCol 10)) (idU W2)).toList (cat (idU W2)).toList
 -- merging two ordered arrays gives an ordered one
-#guard let O := sort LE9 Xp; let M := idU (O.val, O.val)
+#guard let P := perm Xp; let O := P ≫ ordered LE9 (ran P).val; let M := idU (O.val, O.val)
   seteq (merge LE9 M ≫ ordered LE9 (merge LE9 M).val).toList (merge LE9 M).toList
 -- `loop(plus)` is the sum from a start; `loop(F)` against `List.foldl` with `F` not a function
 private def Wl : Vals (.prod L (.arr L)) 5 := (col [0, 100, 0, 7, 1], Xp)

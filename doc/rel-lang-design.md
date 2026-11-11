@@ -68,16 +68,15 @@ rows (§e) and of the program in §g.
   | whose source has no   | closed on their sources' universes, `prod` as   |                                       |
   | universe              | before                                          |                                       |
   | the order `Q` of      | `τ(Q)` run on the pairs the operator compares   | `Q` testable on pairs (below); a      |
-  | `est thin filter      | (`estOn thinOn filterOn takewhileOn orderedOn   | closed `Q` is `pairsIn Q`, an order   |
-  | takewhile ordered     | sortOn mergeOn thinLOn`, `Alg`), so `Q` on an   | on demand runs on just those pairs    |
-  | sort thinL merge`     | object with no universe (`[N]`)                 |                                       |
+  | `est thin filter      | (`estOn thinOn filterOn takewhileOn mergeOn     | closed `Q` is `pairsIn Q`, an order   |
+  | takewhile thinL       | thinLOn`, `Alg`), so `Q` on an object with no   | on demand runs on just those pairs    |
+  | merge`                | universe (`[N]`)                                |                                       |
 
   So `R ≜ length ≤(N,N) length°` on `[N]` is a definition that is TESTED but not BUILT: `length°` does not run on
   demand, so `R` has no value of its own, and it is read by the row `TQ` below as
   `τ(R) = dom(⟨π₁,π₂length⟩τ(length ≤))`, which `est(R)` runs on the pairs of arrays it compares. An order that
-  neither builds nor tests is refused at its definition (`ran(𝟙([N])) length ≤(N,N) length°`: "sort( ) runs its
-  order on the pairs it compares, and the order is not testable on pairs (§a): ran( ) reads its argument whole:
-  [N] has no universe; …"). The annotation `(N,N)` is needed because `length`'s target is otherwise undetermined.
+  neither builds nor tests is refused at its use: `L sort(S)`, `S ≜ ran(𝟙([N])) length ≤(N,N) length°`, is
+  "⊤'s target: [N] has no universe; …" at the `print`, from the prelude's `ordered(Q)` (`∼Q` is `⊤ − Q`). The annotation `(N,N)` is needed because `length`'s target is otherwise undetermined.
 
   `τ(R) : A×B ⟶ A×B`, for `R : A ⟶ B`, is the coreflexive on the pairs `(a,b)` in demand with `a R b`. A term
   is testable on pairs when it is one of these, its parts as stated:
@@ -87,7 +86,6 @@ rows (§e) and of the program in §g.
   | a term that runs            | `dom(π₂ ∩ π₁R)`                          |                                      |
   | `R/S`, `S : B ⟶ C`          | `𝟙 − dom(⟨π₁,π₂S⟩(𝟙 − τ(R)))`            | `R` testable, `S` runs               |
   | `R\S`, `R : A ⟶ B`          | `𝟙 − dom(⟨π₁R°,π₂⟩(𝟙 − τ(S)))`           | `R°` runs, `S` testable              |
-  | `frac(R,S)`                 | `τ(R/S)` and `τ(S/R)` on the swapped pair | `R`, `S` run                         |
   | `⊤`, `∼R`, `R − S`          | `𝟙`, `𝟙 − τ(R)`, `τ(R) − τ(S)`           | the parts testable                   |
   | `R ∩ S`, `R ∪ S`, `R°`      | `τ(R) ∩ τ(S)`, `τ(R) ∪ τ(S)`, swapped    | the parts testable                   |
   | `PT`, `TQ`                  | `dom(⟨π₁P,π₂⟩τ(T))`, `dom(⟨π₁,π₂Q°⟩τ(T))` | `P` runs, `Q°` runs; `T` testable    |
@@ -104,13 +102,12 @@ rows (§e) and of the program in §g.
   | "the converse of `L` does not run on demand, so R° reads R  | a leaf `L` with no converse on demand (§b)   |
   | whole: `O` has no universe; …"                              |                                              |
   | "R/S reads its operands whole outside a meet with a term    | a division with no local side to test it     |
-  | run on demand: `O` has no universe; …" (and `R\S`, `frac`)  | against                                      |
+  | run on demand: `O` has no universe; …" (and `R\S`)          | against                                      |
   | "`ran( )` reads its argument whole: …", "[R,S] reads its    | an argument that must be closed (§b)         |
-  | parts whole", "R+S reads its operands whole", "the fold's   |                                              |
-  | start is read whole", "∈", "α"                              |                                              |
+  | parts whole", "the fold's start is read whole", "α"         |                                              |
   | "`f( )` runs its order on the pairs it compares, and the    | an order parameter not testable on pairs     |
   | order is not testable on pairs (§a): …" (`est thin filter   | (above), the leaf's error after the colon    |
-  | takewhile ordered sort thinL merge`)                        |                                              |
+  | takewhile thinL merge`)                                     |                                              |
   | "`what`: `O` has no universe; …" (`⊤'s target`, `R/S`, …)   | an operator's own universe                   |
 
   `O` is printed as the program writes an array, `[N]`: `𝒫A` and `[A]` are one object.
@@ -123,11 +120,11 @@ rows (§e) and of the program in §g.
 ## b. Operators
 
 Every operator is LOCAL — its value at a key depends only on that key, so it may run on demand (§a) — except
-`ran`, the three divisions, `[R,S]`, `R+S`, `∈` and `P(R)`, which read their operands whole. `°` and `×` run on
+`ran`, the two divisions, `[R,S]` and `P(R)`, which read their operands whole. `°` and `×` run on
 demand by the rewrites of §a; the divisions are testable on pairs (§a).
 
-The converse of each leaf on demand, as `convTm` pushes `°` to it: `𝟙`, `dom(R)`, `ordered(Q)` themselves;
-`cons° = uncons`, `snoc°`, `cat°` and back; `perm° = perm`; `sort(Q)° = ordered(Q) perm`; `succ°` and the value
+The converse of each leaf on demand, as `convTm` pushes `°` to it: `𝟙`, `dom(R)` themselves;
+`cons° = uncons`, `snoc°`, `cat°` and back; `perm° = perm` (the prelude's one converse rule, below); `succ°` and the value
 verbs' converses read whole on their number universe; a closed term conversed whole. No converse on demand:
 `⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin filter takewhile union length sum head tail prefix suffix inits tails
 zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
@@ -139,17 +136,20 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 | `R ∩ S`, `R ∪ S`               | meet, join                                | `∩`, `∪`                       |
 | `R − S`                        | set difference                            | `\`                            |
 | `∼R`                           | complement, `⊤ − R`                       | `∼`                            |
-| `R ⇒ S`                        | `∼R ∪ S`                                  | `∼`, `∪`                       |
+| `R ⇒ S`                        | `∼R ∪ S`                                  | prelude                        |
 | `𝟘`, `⊤`, `𝟙`                  | empty, every pair, identity               | `zero`, `top`, `idU`           |
 | `dom(R)`, `ran(R)`             | coreflexives on keys, on values           | `dom`, `ran`                   |
 | `R\S`                          | `y (R\S) z ⟺ ∀x. xRy → xSz`               | `leftDiv`                      |
 | `R/S`                          | right division                            | `rightDiv`                     |
-| `frac(R,S)`                    | symmetric division                        | `symDiv`                       |
+| `frac(R,S)`                    | symmetric division, `R/S ∩ (S/R)°`        | prelude                        |
 | `⟨R,S⟩`, `π₁`, `π₂`            | pair, projections                         | `pair`, `outl`, `outr`         |
 | `R×S`                          | product                                   | `prod`                         |
-| `[R,S]`, `inl`, `inr`, `R+S`   | case, injections, sum                     | `junc`, `inl`, `inr`, `sum`    |
+| `[R,S]`, `inl`, `inr`          | case, injections                          | `junc`, `inl`, `inr`           |
+| `R ⊕ S`                        | sum of relations, `[R inl, S inr]`        | prelude                        |
+| `R + S`                        | sum of two values, `⟨R,S⟩plus`            | prelude                        |
 | `Λ(R)`                         | power transpose                           | `transpose`                    |
-| `∋`, `∈`                       | membership, its converse                  | `mem`, `°`                     |
+| `∋`                            | membership                                | `mem`                          |
+| `∈`                            | its converse, `∋°`                        | prelude                        |
 | `E(R)`                         | existential image, `Λ(∋R)`                | `E`                            |
 | `P(R)`                         | power relator                             | `P`                            |
 | `union τ nil α cons°`          | the note's set and list maps              | `Arr.union τ nil alpha uncons` |
@@ -163,9 +163,10 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 | `inits`, `tails`, `init`       | prefixes, suffixes, all but the last      | `inits`, `tails`, `init`       |
 | `cat`, `cat°`, `concat`        | join two lists, every cut in two, flatten | `cat`, `uncat`, `concat`       |
 | `snoc`, `snoc°`, `zip`         | append one, split the last off, pair up   | `snoc`, `unsnoc`, `zip`        |
-| `perm`, `subseq`               | rearrangements, subsequences              | `perm`, `subseq`               |
+| `perm`                         | rearrangements, `⦇ran(nil(1)), add⦈`      | prelude                        |
+| `subseq`                       | subsequences                              | `subseq`                       |
 | `setify`, `bagify`             | the set, the bag of a list                | `setify`, `bagify`             |
-| `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | `ordered`, `sort`              |
+| `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | prelude                        |
 | `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL`                        |
 | `merge(Q)`, `loop(F)`, `tic`   | merge two lists, `F` folded from the      | `merge`, `loop`, `tic`         |
 |                                | left, the non-empty prefixes of `a::xs`   |                                |

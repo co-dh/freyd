@@ -254,9 +254,8 @@ def onDemand : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "Λ({(a, 3), (a, 1), (b, 5)}) est(≤) = {(a, 1), (b, 5)}",
   "G est(∼R) = {(a, 1 2), (b, 4 6 7)}"]
 -- refused: an order with a leaf that reads its argument whole, so neither side of its composition is tested
-#guard errAt "obj N = 0…9\nobj K = {a,b}\nL ≜ {(a,[1 2] [3])}\nS ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n" 4
-  ("sort( ) runs its order on the pairs it compares, and the order is not testable on pairs (§a): " ++
-   "ran( ) reads its argument whole: [N] has no universe")
+#guard errAt "obj N = 0…9\nobj K = {a,b}\nL ≜ {(a,[1 2] [3])}\nS ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n" 5
+  "⊤'s target: [N] has no universe"
 
 /-! The kernel's value verbs of §b on pairs of numbers, each `Alg.arith` with its opcode: a result outside the
     declared object has no row (`minus` below `0`, as `succ` at the top), nor a zero divisor. -/
@@ -300,7 +299,8 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
 #guard (ok digits).prints == ["ds = {(107, 1 0 7)}"]
 
 -- a parameterised list builtin given a family
-#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3 "not liftable"
+#guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3
+  "parameter 'Q' is given a family but declares no type; write 'Q : A ⟶ B'"
 
 -- a nested literal (§c): each leaf position its own object, the side their product
 #guard match runText "obj X = {A,B}\nobj N = 0…1\nL ≜ {((A,0),(1,B)),((B,1),(0,A))}\nprint L\n" with
@@ -475,7 +475,7 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 -- the one level with `∩`, left to right
 #guard printed ("obj N = 0…9\nw ≜ {((2,3),(2,3)),((4,1),(4,1))}\nprint w(π₁ + π₂)\ncheck w(π₁ + π₂) = w⟨π₁,π₂⟩plus\n" ++
   "_≼_(R,S) ≜ R ∩ S°\nprint {(1,1),(2,2)}(≤ ≼ ≤)\nprint {(1,1)}(≤ ≼ ≤ ∪ <)\nprint {(1,1)}(< ∪ 𝟙(N) ≼ ≤)\n" ++
-  "print {(1,1)}(𝟙(N) ∩ {(1,2)} ⇒ <)\nprint {(1,1)}inl(N,N)(𝟙 ⊕ succ)\n") ==
+  "print {(1,1)}(𝟙(N) ∩ {(1,2)} ⇒ <)\nprint {(1,1)}inl(N,N+N)(𝟙 ⊕ succ)\n") ==
   ["{((2, 3), 5), ((4, 1), 5)}", "{(1, 1), (2, 2)}",
    "{(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, 1)}",
    "{(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, inl 1)}"]

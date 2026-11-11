@@ -348,7 +348,8 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
     through the program, so a sub-term met in several definitions has one identity. -/
-def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) : Except Err (Env × Out × Share) := do
+def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : String → Def → Def := fun _ d => d) :
+    Except Err (Env × Out × Share) := do
   let (env₀, out₀, sh₀) := start
   let mut env := env₀
   let mut out := out₀
@@ -371,11 +372,11 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) : Except 
       let ((tm, _), sh') := Id.run ((hoist tm).run sh)
       sh := sh'
       let res : Res := ⟨A, B, d, tm⟩
-      env := { env with defs := (n, { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
+      env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
       match d, tm with
       | false, tm => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt tm ()).run' {})⟩, s, t) :: out.vals }
       | true, _ => pure ()
-    | .defn p n ps b => env := { env with defs := (n, mkDef env p ps b) :: env.defs }
+    | .defn p n ps b => env := { env with defs := (n, wrap n (mkDef env p ps b)) :: env.defs }
     | .print p e =>
       let ((⟨_, _, R⟩, s, t), sh') ← topVal sh env p e
       sh := sh'
@@ -409,8 +410,7 @@ def preludeDef (n : String) (d : Def) : Def :=
     through both. An error of the prelude's own text says it is in the prelude. -/
 def runAfter (pre : String) (prog : Parse.S → Except Err Program) : Except Err Out := do
   let (pp, scope) ← Parse.scope pre
-  let (env, out, sh) ← (run pp).mapError Err.inPrelude
-  let env := { env with defs := env.defs.map fun (n, d) => (n, preludeDef n d) }
+  let (env, out, sh) ← (run pp ({}, {}, {}) preludeDef).mapError Err.inPrelude
   let (_, out, _) ← run (← prog scope) (env, out, sh)
   pure out
 
