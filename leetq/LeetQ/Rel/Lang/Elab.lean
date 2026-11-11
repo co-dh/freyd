@@ -364,13 +364,49 @@ def famOf : Arg → M (Pre × OTy × OTy)
   | .fam q i a b => do unify p "the index of a family" i I; pure (q, a, b)
   | .rel q s t => pure (liftConst I p q s t)
 
-/-- `RS` lifted: `⟨R,S⟩dom(π₁π₂ ∩ π₂π₁)⟨π₁π₁,π₂π₂⟩`, the rows of one key whose middles agree. -/
+/-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ : I×a ⟶ b`, run on the pairs
+    (key, source) in demand (§e, cost of the keyed fold). A row whose fibre at a source reads only that source
+    is keyed through its parts, so a closed part runs on the sources in demand, not on its domain at every key.
+    Any other family is read whole at each key and cut to the source, `⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂`: every part
+    runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
+def keyed : Pre → OTy → OTy → Pre
+  | .join R S, a, b => join (keyed R a b) (keyed S a b)
+  | .meet R S, a, b => meet (keyed R a b) (keyed S a b)
+  | .diff R S, a, b => diff (keyed R a b) (keyed S a b)
+  -- `D⊤`, `⊤ : I ⟶ a×b`: `D⊤`, `⊤ : I×a ⟶ b`
+  | .top q _ (.prod _ _) none, a, b => top q (.prod I a) b none
+  -- a closed `C` as a family, `D⊤⟨𝟙,C⟩` with `⊤` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets; onto
+  -- `V = dom(C')`, `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
+  | .comp (.top _ _ _ (some (.close _ (.dom C') _ _))) (.pair (.id _) C), a, _ =>
+    comp (dom (comp (outr I a) C')) (comp (outr I a) C)
+  | .comp (.top _ _ _ V) (.pair (.id _) C), a, _ => comp (match V with | some V => comp (outr I a) V | none => outr I a) C
+  -- `RS` lifted, and `X⦇e,S⦈` lifted, `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩G⟩`, `G : I×m ⟶ c`: `⟨π₁,Rᴵ⟩G`
+  | .comp (.pair (.id _) R) (.pair (.comp (.outr _ _) (.outl a m)) (.comp (.pair (.outl _ _) (.comp (.outr _ _) (.outr _ _))) G)),
+      _, _ => comp (pair (outl I a) (keyed R a m)) G
+  -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
+  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl _ c)))))
+      (.pair (.comp (.outl _ _) (.outl _ _)) (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))),
+      _, _ => pair (keyed R a b) (keyed S a c)
+  -- `R×S` lifted: `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩` on `I×(a×a')`
+  | .comp (.pair R S) (.pair (.pair (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl a' b')))
+      (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))), _, _ =>
+    let s := OTy.prod a a'
+    pair (comp (pair (outl I s) (comp (outr I s) (outl a a'))) (keyed R a b))
+      (comp (pair (outl I s) (comp (outr I s) (outr a a'))) (keyed S a' b'))
+  -- `F` then `C`, `F⟨π₁,π₂C⟩`: `FᴵC`
+  | .comp F (.pair (.outl a b) (.comp (.outr _ _) C)), _, _ => comp (keyed F a b) C
+  -- `dom(F)` lifted, `F⟨π₁,π₁⟩`: `dom(Fᴵ)π₂`
+  | .comp F (.pair (.outl a b) (.outl _ _)), _, _ => comp (dom (keyed F a b)) (outr I a)
+  | R, _, _ => flat R
+
+/-- `RS` lifted: `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩Sᴵ⟩`, each row `(a,b)` of `R` at its key `i` joined with `S` on `(i,b)`.
+    Not `⟨R,S⟩` cut to the agreeing middles, which pairs every row of `R` with every row of `S` at a key. -/
 def lComp : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
   | (R, a, b), (S, b', c) => do
     unify p "the middle object of a composition" b' b
-    let ab := OTy.prod a b; let bc := OTy.prod b c
-    let eq := dom (meet (comp (outl ab bc) (outr a b)) (comp (outr ab bc) (outl b c)))
-    pure (comp (comp (pair R S) eq) (pair (comp (outl ab bc) (outl a b)) (comp (outr ab bc) (outr b c))), a, c)
+    let ab := OTy.prod a b
+    pure (comp (pair (id I) R) (pair (comp (outr I ab) (outl a b))
+      (comp (pair (outl I ab) (comp (outr I ab) (outr a b))) (keyed I S b c))), a, c)
 
 /-- A family then a closed `C`: `F⟨π₁,π₂C⟩`, each row's value carried by `C`. -/
 def lThen : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
@@ -399,11 +435,11 @@ def lSame (op : Pre → Pre → Pre) : Pre × OTy × OTy → Pre × OTy × OTy �
 
 def lLdiv (R S : Pre × OTy × OTy) : M (Pre × OTy × OTy) := do
   unify p "the source of `\\`'s right operand" S.2.1 R.2.1
-  pure (lCompl I p (← lComp p (lConv R) (lCompl I p S)))
+  pure (lCompl I p (← lComp I p (lConv R) (lCompl I p S)))
 
 def lRdiv (R S : Pre × OTy × OTy) : M (Pre × OTy × OTy) := do
   unify p "the target of `/`'s right operand" S.2.2 R.2.2
-  lComp p (lCompl I p R) (lConv S)
+  lComp I p (lCompl I p R) (lConv S)
 
 /-- `⟨R,S⟩` lifted: `⟨R,S⟩dom(π₁π₁ ∩ π₂π₁)⟨π₁π₁,⟨π₁π₂,π₂π₂⟩⟩`, pairs of rows of one source. -/
 def lPair : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
@@ -427,42 +463,6 @@ def lJunc : Pre × OTy × OTy → Pre × OTy × OTy → M (Pre × OTy × OTy)
     unify p "the target of the case's second part" c' c
     pure (join (comp R (pair (comp (outl a c) (inl a b)) (outr a c)))
       (comp S (pair (comp (outl b c) (inr a b)) (outr b c))), .sum a b, c)
-
-/-- The family `R : I ⟶ a×b` as one relation of the key and the source, `Rᴵ : I×a ⟶ b`, run on the pairs
-    (key, source) in demand (§e, cost of the keyed fold). A row whose fibre at a source reads only that source
-    is keyed through its parts, so a closed part runs on the sources in demand, not on its domain at every key.
-    Any other family is read whole at each key and cut to the source, `⟨π₁R,π₂⟩dom(π₁π₁ ∩ π₂)π₁π₂`: every part
-    runs on the keys in demand, so `I` needs no universe (a converse or `ran` here would close over all of `I`). -/
-def keyed : Pre → OTy → OTy → Pre
-  | .join R S, a, b => join (keyed R a b) (keyed S a b)
-  | .meet R S, a, b => meet (keyed R a b) (keyed S a b)
-  | .diff R S, a, b => diff (keyed R a b) (keyed S a b)
-  -- `D⊤`, `⊤ : I ⟶ a×b`: `D⊤`, `⊤ : I×a ⟶ b`
-  | .top q _ (.prod _ _) none, a, b => top q (.prod I a) b none
-  -- a closed `C` as a family, `D⊤⟨𝟙,C⟩` with `⊤` onto `V`: `π₂VC`, `C` run on the sources `π₂V` meets; onto
-  -- `V = dom(C')`, `dom(π₂C')π₂C`, so `C'` too runs on the sources in demand, not on its universe
-  | .comp (.top _ _ _ (some (.close _ (.dom C') _ _))) (.pair (.id _) C), a, _ =>
-    comp (dom (comp (outr I a) C')) (comp (outr I a) C)
-  | .comp (.top _ _ _ V) (.pair (.id _) C), a, _ => comp (match V with | some V => comp (outr I a) V | none => outr I a) C
-  -- `RS` lifted: `⟨π₁,Rᴵ⟩Sᴵ`
-  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outr a m)) (.comp (.outr _ _) (.outl _ c)))))
-      (.pair (.comp (.outl _ _) (.outl _ _)) (.comp (.outr _ _) (.outr _ _))), _, _ =>
-    comp (pair (outl I a) (keyed R a m)) (keyed S m c)
-  -- `⟨R,S⟩` lifted: `⟨Rᴵ,Sᴵ⟩`
-  | .comp (.comp (.pair R S) (.dom (.meet (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl _ c)))))
-      (.pair (.comp (.outl _ _) (.outl _ _)) (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))),
-      _, _ => pair (keyed R a b) (keyed S a c)
-  -- `R×S` lifted: `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩` on `I×(a×a')`
-  | .comp (.pair R S) (.pair (.pair (.comp (.outl _ _) (.outl a b)) (.comp (.outr _ _) (.outl a' b')))
-      (.pair (.comp (.outl _ _) (.outr _ _)) (.comp (.outr _ _) (.outr _ _)))), _, _ =>
-    let s := OTy.prod a a'
-    pair (comp (pair (outl I s) (comp (outr I s) (outl a a'))) (keyed R a b))
-      (comp (pair (outl I s) (comp (outr I s) (outr a a'))) (keyed S a' b'))
-  -- `F` then `C`, `F⟨π₁,π₂C⟩`: `FᴵC`
-  | .comp F (.pair (.outl a b) (.comp (.outr _ _) C)), _, _ => comp (keyed F a b) C
-  -- `dom(F)` lifted, `F⟨π₁,π₁⟩`: `dom(Fᴵ)π₂`
-  | .comp F (.pair (.outl a b) (.outl _ _)), _, _ => comp (dom (keyed F a b)) (outr I a)
-  | R, _, _ => flat R
 
 /-- `Λ(R)` lifted: `⟨𝟙,Rπ₁⟩⟨π₂,Λ(Rᴵ)⟩`. -/
 def lLam : Pre × OTy × OTy → Pre × OTy × OTy
@@ -605,7 +605,7 @@ def appliedL (I : OTy) (p : Pos) (o : Op) (as : List Arg) : M Arg := do
     | .dom, [R] => pure (lDom R)
     | .ran, [R] => pure (lRan R)
     | .lam, [R] => pure (lLam I R)
-    | .E, [R] => do let b ← fresh; pure (lLam I (← lComp p (liftConst I p (.mem b) (.arr b) b) R))
+    | .E, [R] => do let b ← fresh; pure (lLam I (← lComp I p (liftConst I p (.mem b) (.arr b) b) R))
     | .P, _ => notLiftable p "P(R)"
     | o, _ => notLiftable p s!"{o.sym}( )"
   pure (.fam r.1 I r.2.1 r.2.2)
@@ -707,7 +707,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       let G ← lThen p (← famOf I p x) (.mem e, .arr e, e)
       let Q ← famOf I p q
       let r ← if est then do lSame p Pre.meet G (← lLdiv I p (lConv G) (lConv Q))
-        else do pure (lLam I (← lSame p Pre.diff G (← lComp p G (← lSame p Pre.diff Q (lConv Q)))))
+        else do pure (lLam I (← lSame p Pre.diff G (← lComp I p G (← lSame p Pre.diff Q (lConv Q)))))
       pure (.fam r.1 I r.2.1 r.2.2)
     | _, _ =>
       let y ← elabE env m b
@@ -715,7 +715,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
       | some I, true =>
         let r ← match x, y with
           | .fam .., .rel q s t => lThen p (← famOf I p x) (q, s, t)
-          | _, _ => do lComp p (← famOf I p x) (← famOf I p y)
+          | _, _ => do lComp I p (← famOf I p x) (← famOf I p y)
         pure (.fam r.1 I r.2.1 r.2.2)
       | _, _ =>
         let (q, s, t) := x.plain; let (r, s', t') := y.plain

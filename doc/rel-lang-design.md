@@ -413,7 +413,8 @@ Equal sub-terms are evaluated once (`Lang/Eval.lean`, `hoist`, `ev`):
 | on demand, inside one evaluation          | once per demand (equal as a set): a lifted body, one fold step |
 
 An identity is structural: the core constructor, its objects, the identities of its parts, and for a value its
-rows as a set; nothing printed. Chess's pinned squares repeat `L(De)` per direction and `dom(on{(R,R),(Q,Q)})`
+rows as a set; nothing printed. A node whose value is its part's (`Tm.own`, `perm`'s converse rule) has its
+part's identity, so `perm` is one memo entry per demand, not two. Chess's pinned squares repeat `L(De)` per direction and `dom(on{(R,R),(Q,Q)})`
 eight times: `rel chess.rel.md` 3.6 s → 0.7 s.
 
 ## e. Definitions, and lifting a formula to a family
@@ -485,8 +486,8 @@ row).
 
 | operator                        | lifted, `I ⟶ …`                            | why the fibre at `i` is right        |
 |---------------------------------|--------------------------------------------|--------------------------------------|
-| `RS` ✓, `S : I ⟶ B×C`           | `⟨R,S⟩(𝟙∩(π₁π₂(π₂π₁)°))⟨π₁π₁,π₂π₂⟩`        | rows of `R`, `S` at `i` whose        |
-|                                 |                                            | middles agree                        |
+| `RS` ✓, `S : I ⟶ B×C`           | `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩Sᴵ⟩`                  | each row `(a,b)` of `R` at `i` joined|
+|                                 |                                            | with `S` on `(i,b)`                  |
 | `R°` ✓                          | `R⟨π₂,π₁⟩`                                 | each row swapped                     |
 | `R ∩ S`, `R ∪ S`, `R − S` ✓     | the same terms                             | a row is in both, either, one        |
 | `∼R` ✓                          | `D⊤ − R`, `⊤ : I ⟶ A×B`                    | every pair of `A×B` at each key      |
@@ -537,6 +538,10 @@ row).
 | `max min`                       |                                            |                                      |
 | `R ⊑ S` ✓, a test               | `D − dom(R − S)`, a coreflexive on `I`     | `i` stays iff `R − S` is empty there |
 
+`RS` lifted is a join on (key, middle), `S` run on the pairs `(i,b)` the rows of `R` meet. Pairing the two
+families at each key and keeping the agreeing middles costs `Σᵢ |Rᵢ||Sᵢ|`: chess's `⊤W₁` (`a(…,W₁)`) made
+4,063,232 rows from `⊤`'s 4096 pairs and `W₁`'s 992 rows at 31 keys, and `rel chess.rel.md` 1.76 GB → 0.18 GB.
+
 Not liftable:
 
 - `P(R)`: its target `𝒫B` has no universe and, as a target, no demand (§a) — the same error as unlifted.
@@ -556,7 +561,7 @@ step runs on the pairs (element, value). `Sᴵ` is keyed through the rows that b
 | `R ∪ S`, `R ∩ S`, `R − S`                 | the same operator on `Rᴵ`, `Sᴵ`                      |
 | `D⊤`, `⊤ : I ⟶ A×B`                       | `D⊤`, `⊤ : I×A ⟶ B`                                  |
 | closed `C`: `D⊤⟨𝟙,C⟩`, `⊤` onto `dom(C)`  | `dom(π₂C)π₂C`                                        |
-| `RS`                                      | `⟨π₁,Rᴵ⟩Sᴵ`                                          |
+| `RS`, `X⦇e,S⦈`: `⟨𝟙,R⟩⟨π₂π₁,⟨π₁,π₂π₂⟩G⟩` | `⟨π₁,Rᴵ⟩G`                                           |
 | `⟨R,S⟩`                                   | `⟨Rᴵ,Sᴵ⟩`                                            |
 | `R×S`                                     | `⟨⟨π₁,π₂π₁⟩Rᴵ,⟨π₁,π₂π₂⟩Sᴵ⟩`                          |
 | `F` then closed `C`, `F⟨π₁,π₂C⟩`          | `FᴵC`                                                |
