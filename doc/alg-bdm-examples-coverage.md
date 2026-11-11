@@ -21,7 +21,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 6   | quicksort                | `quicksort` 06:350                         | `perm` `ordered` (the spec only)                          | trees (declined)             | no              |
 | 6   | closure                  | `star_eq_mu'` 06:486                       | `𝟙` `∪` `≫`                                               | `μ`                          | no              |
 | 7   | takewhile                | `takewhile_eq_cata` 07:428                 | `takewhile` `fold` `prefix` `est` `length` `leq`          | —                            | no              |
-| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `concat` `Arr.sum` `plus` `est` `leq`     | —                            | no              |
+| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `∋` `fold` `plus` `Λ` `est` `leq`         | — (written: `leetq/programs/mss.rel`; naturals only; set → array; `⟨wΛ(𝟙),π₂π₂⟩ cup` → Lean's `Λ(w ∪ π₂π₂∋)`; `(𝟙×π₁)⊕` → `⟨π₁,π₂π₁⟩⊕`; `⊸ zero` → `⊤zero`; `sum` → `⦇ran(zero),plus⦈`; `k`'s `[seed,step]` → `⦇seed,step⦈`) | no              |
 | 7   | filter                   | `filter_eq_cata` 07:886                    | `filter` `subseq` `fold` `est` `length` `leq`             | —                            | no              |
 | 7   | company party            | `party_laws` 07:1398                       | `Λ` `est` `Arr.sum` `leq` `map` `concat`                  | trees (declined)             | no              |
 | 7   | shortest paths, cylinder | `cyl_laws` 07:1616                         | `fold` `zip` `concat` `uncons` `snoc` `Λ` `est` `Arr.sum` | `cp` (a term)                | no              |
