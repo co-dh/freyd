@@ -14,19 +14,20 @@ namespace LeetQ.Rel.KernelWF
 open QLean QLean.Kernel QLean.Verify
 
 /-- A `long` payload is dense bytes or Frame of Reference: `WF` admits no other layout at `long`. -/
-theorem long_cases {n : Nat} {e : Enc} (hw : Enc.WF .long n e) :
+theorem long_cases {n : USize} {e : Enc} (hw : Enc.WF .long n e) :
     (∃ b, e = .bytes b) ∨ ∃ M P, e = .foR M P := by
   cases e <;> simp_all [Enc.WF, QAtomicType.width]
 
 /-- A general list's payload is a `gen` column of its `n` elements. -/
-theorem general_cases {n : Nat} {e : Enc} (hw : Enc.WF .general n e) : ∃ xs, e = .gen xs ∧ xs.size = n := by
+theorem general_cases {n : USize} {e : Enc} (hw : Enc.WF .general n e) :
+    ∃ xs, e = .gen xs ∧ xs.size = n.toNat := by
   cases e <;> simp_all [Enc.WF, QAtomicType.width]
 
 /-- **`x@i` answers** for every well-formed column but a general list, and every dense index of at
     least `m` longs. -/
-theorem gatherColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
-    {m : Nat} (i : ByteArray) (hm : m * 8 ≤ i.size) : (gatherColumn t n e m (.bytes i)).isSome := by
-  have hz : ¬ i.size < m * 8 := by omega
+theorem gatherColumn_isSome {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
+    {m : USize} (i : ByteArray) (hm : m.toNat * 8 ≤ i.size) : (gatherColumn t n e m (.bytes i)).isSome := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
   unfold gatherColumn
   cases e <;> cases t <;>
     simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, denseWidth, rowWidth, foRColumn, Enc.bytesOf,
@@ -95,12 +96,11 @@ theorem toNat_small (k : Nat) (h : k ≤ 64) : (USize.ofNat k).toNat = k :=
   USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) USize.le_size)
 
 /-- **`x@i` answers `m` well-formed elements** of the source's type, for a dense index of `m` longs. -/
-theorem gatherColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e)
-    (i : ByteArray) {e' : Enc}
-    (h : gatherColumn t n e (i.size / 8) (.bytes i) = some e') : Enc.WF t (i.size / 8) e' := by
+theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e)
+    (i : ByteArray) {m : USize} (hm : m.toNat = i.size / 8) {e' : Enc}
+    (h : gatherColumn t n e m (.bytes i) = some e') : Enc.WF t m e' := by
   unfold gatherColumn at h
-  generalize hm : i.size / 8 = m at h ⊢
-  have hz : ¬ i.size < m * 8 := by omega
+  have hz : ¬ i.size < m.toNat * 8 := by omega
   cases e with
   | foR M P =>
     by_cases hc : Column.encodes t = true ∧ M.isEmpty = false <;> cases t <;>
@@ -111,10 +111,8 @@ theorem gatherColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e
     cases t <;> simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn, Enc.bytesOf]
     split at h <;> cases h <;> simp only [Enc.WF] at *
     · simp_all
-    · subst hm
-      exact gatherIds_wf (inRange := fun _ => allBelow (USize.ofNat n) i) (n := USize.ofNat n) (ids := ids)
-        (db := (gatherIds d o (fun _ => allBelow (USize.ofNat n) i) fun w wo e =>
-          gatherPacked (USize.ofNat n) w wo e ids i).1) rfl
+    · exact gatherIds_wf (inRange := fun _ => allBelow n i) (n := n) (ids := ids)
+        (db := (gatherIds d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i).1) rfl
   | _ => cases t <;>
       simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, denseWidth, rowWidth, foRColumn, Enc.bytesOf,
         Column.alpEncodes, gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherIds_wf,
