@@ -206,8 +206,8 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "x inits = {(a, {{}, {3}, {3, 1}, {3, 1, 2}}), (b, {{}, {1}, {1, 5}})}",
   "x tails = {(a, {{3, 1, 2}, {1, 2}, {2}, {}}), (b, {{1, 5}, {5}, {}})}",
   "⟨x, y⟩ cat = {(a, {3, 1, 2, 7}), (b, {1, 5, 8, 9})}",
-  "x cat° = {(a, ({3, 1, 2}, {})), (a, ({3, 1}, {2})), (a, ({3}, {1, 2})), (a, ({}, {3, 1, 2})), " ++
-    "(b, ({1, 5}, {})), (b, ({1}, {5})), (b, ({}, {1, 5}))}",
+  "x cat° = {(a, ({}, {3, 1, 2})), (a, ({3}, {1, 2})), (a, ({3, 1}, {2})), (a, ({3, 1, 2}, {})), " ++
+    "(b, ({}, {1, 5})), (b, ({1}, {5})), (b, ({1, 5}, {}))}",
   "⟨x, y⟩ zip = {(a, {(3, 7)}), (b, {(1, 8), (5, 9)})}",
   "⟨x, {(a, 4), (b, 6)}⟩ snoc = {(a, {3, 1, 2, 4}), (b, {1, 5, 6})}",
   "x snoc° = {(a, ({3, 1}, 2)), (b, ({1}, 5))}",
@@ -218,8 +218,8 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
   "z bagify = {(a, {1, 2, 3, 3})}",
   "x ordered(≤) = {(b, {1, 5})}",
   "x sort(≤) = {(a, {1, 2, 3}), (b, {1, 5})}",
-  "y subseq = {(a, {7}), (a, {}), (b, {8, 9}), (b, {8}), (b, {9}), (b, {})}",
-  "x thinL(≤) = {(a, {1, 2}), (a, {1}), (a, {3, 1, 2}), (a, {3, 1}), (b, {1, 5}), (b, {1})}",
+  "y subseq = {(a, {}), (a, {7}), (b, {}), (b, {8}), (b, {8, 9}), (b, {9})}",
+  "x thinL(≤) = {(a, {1}), (a, {1, 2}), (a, {3, 1}), (a, {3, 1, 2}), (b, {1}), (b, {1, 5})}",
   "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, {1, 2, 3, 5})}",
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
   "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, {{5}, {5, 1}, {5, 1, 2}})}"]
@@ -283,6 +283,51 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
     (get o "L" (.prod .long .long) (.prod .long .long)).map (·.toList) == some [((0, 0), (1, 1)), ((1, 1), (0, 0))]
   | .error _ => false
 #guard errAt "obj X = {A,B}\nL ≜ {((A,B),A),(A,B)}\n" 2 "nest alike"
+
+/-! Signed numbers (§a, §c): a range `-3…3`, signed literal words, `succ ≤ <` and the value verbs on it, each
+    against Lean's `Int` (`div` floors and `mod` takes the divisor's sign, as q's: `Int.fdiv`, `Int.fmod`); a print
+    lists numbers by value. -/
+
+def zs : List Int := (List.range 7).map fun k : Nat => (k : Int) - 3
+def signed : Except Err Out := runText ("obj Z = -3…3\nobj K = {a,b}\n" ++
+  "x ≜ {(a,-1),(b,2),(a,-3)} -- a comment, after a signed literal\nprint x\nprint Λ(x)\nprint x − {(a,-3)}\n" ++
+  "print {(-1,-1)}−{(2,2)}\ns ≜ 𝟙(Z) succ\nle ≜ 𝟙(Z) ≤\nlt ≜ 𝟙(Z) <\nW ≜ 𝟙(Z×Z)\n" ++
+  "pl ≜ W plus\ntm ≜ W times\nmi ≜ W minus\ndv ≜ W div\nmd ≜ W mod\nmx ≜ W max\nmn ≜ W min\n")
+
+def sameSet {α : Type} [BEq α] (a b : List α) : Bool := a.all b.contains && b.all a.contains
+def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) => (a.toInt, b.toInt)
+
+#guard signed.isOk
+#guard (ok signed).prints == ["x = {(a, -3), (a, -1), (b, 2)}", "Λ(x) = {(a, {-3, -1}), (b, {2})}",
+  "x − {(a, -3)} = {(a, -1), (b, 2)}", "{(-1, -1)} − {(2, 2)} = {(-1, -1)}"]
+-- `succ` at `-1` gives `0`, at the top `3` nothing; `≤`, `<` the numeric order
+#guard (get (ok signed) "s" .long .long).map ints == some ((zs.filter (· < 3)).map fun a => (a, a + 1))
+#guard [("le", fun (a b : Int) => decide (a ≤ b)), ("lt", fun a b => decide (a < b))].all fun (n, f) =>
+  match get (ok signed) n .long .long with
+  | some R => sameSet (ints R) ((zs.flatMap fun a => zs.map (a, ·)).filter fun (a, b) => f a b)
+  | none => false
+-- each verb on every pair of `Z`: a row exactly where the result is in `Z` and the divisor is not `0`
+#guard [("pl", fun (a b : Int) => some (a + b)), ("tm", fun a b => some (a * b)), ("mi", fun a b => some (a - b)),
+    ("dv", fun a b => if b == 0 then none else some (a.fdiv b)),
+    ("md", fun a b => if b == 0 then none else some (a.fmod b)),
+    ("mx", fun a b => some (max a b)), ("mn", fun a b => some (min a b))].all fun (n, f) =>
+  match get (ok signed) n (.prod .long .long) .long with
+  | some R => sameSet (R.toList.map fun ((a, b), c) => ((a.toInt, b.toInt), c.toInt))
+      ((zs.flatMap fun a => zs.map (a, ·)).filterMap fun (a, b) =>
+        (f a b).bind fun c => if zs.contains c then some ((a, b), c) else none)
+  | none => false
+-- `-5…-1` is a range; `3…-3` is empty, refused at its last number; a word other than a number is no range bound
+#guard match runText "obj Z = -5…-1\nprint 𝟙(Z) succ\n" with
+  | .ok o => o.prints == ["𝟙(Z) succ = {(-5, -4), (-4, -3), (-3, -2), (-2, -1)}"]
+  | .error _ => false
+#guard match runText "obj X = {A}\nobj Z = 3…-3\n" with
+  | .error e => e.pos.line == 2 && e.pos.col == 11 && e.msg == "the range 3…-3 is empty: -3 is below 3"
+  | .ok _ => false
+#guard errAt "obj Z = -3…3\nf ≜ {(-4,0)}\n" 2 "no declared object has the elements [-4]"
+-- a `-` with no digit after it is no sign: `R -3` ends the term, `R −3` is a difference before no term
+#guard errAt "obj Z = -3…3\nR ≜ 𝟙(Z)\nf ≜ R -3\n" 3 "expected the end of the line, found '-'"
+#guard errAt "obj Z = -3…3\nR ≜ 𝟙(Z)\nf ≜ R −3\n" 3 "expected a term, found '3'"
+#guard ["{(A, -1)}", "{((-1, B), -20)}", "R − S"].all trip
 
 #guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
   ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r

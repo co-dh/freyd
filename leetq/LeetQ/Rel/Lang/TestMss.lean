@@ -21,9 +21,9 @@ def mssL (xs : List Int64) : Int64 :=
   ((List.range (n + 1)).flatMap fun i => (List.range (n + 1 - i)).map fun j =>
     ((xs.drop i).take j).foldl (· + ·) 0).foldl max 0
 
-/-- The arrays over `{0,1,2}` of length at most 3, as `A` builds them. -/
+/-- The arrays over `{-2,-1,3}` of length at most 3, as `A` builds them. -/
 def arrays : List (List Int64) :=
-  (List.range 4).flatMap fun n => (List.range n).foldl (fun xss _ => xss.flatMap fun xs => [0, 1, 2].map (· :: xs)) [[]]
+  (List.range 4).flatMap fun n => (List.range n).foldl (fun xss _ => xss.flatMap fun xs => [-2, -1, 3].map (· :: xs)) [[]]
 
 /-- Equal as sets of rows: row order is not part of a relation. -/
 def seteq (a b : List (List Int64 × Int64)) : Bool := a.all b.contains && b.all a.contains
@@ -35,8 +35,13 @@ def seteq (a b : List (List Int64 × Int64)) : Bool := a.all b.contains && b.all
   | some R => R.toList.length == 40 && seteq R.toList (arrays.map fun xs => (xs, mssL xs))
   | none => false
 
--- the prints: `x` is `a ↦ [3,1,4,1,5]`, `b ↦ [2,0,7]`, `c ↦ []`
-def rows : String := s!"\{(a, {mssL [3,1,4,1,5]}), (b, {mssL [2,0,7]}), (c, {mssL []})}"
+-- the prints: `x` is `a ↦ [3,1,4,1,5]`, `b ↦ [2,0,7]`, `c ↦ []`, `d ↦ [3,-4,2,-1,2]`, `e ↦ [-2,-1,-3]`
+def rows : String := s!"\{(a, {mssL [3,1,4,1,5]}), (b, {mssL [2,0,7]}), (c, {mssL []}), " ++
+  s!"(d, {mssL [3,-4,2,-1,2]}), (e, {mssL [-2,-1,-3]})}"
+-- a list with a negative element sums less than its best segment; an all-negative one has the empty segment's 0
+#guard mssL [3,-4,2,-1,2] == 3 && mssL [-2,-1,-3] == 0
+#guard (arrays.filter fun xs => mssL xs < (xs.foldl (· + ·) 0)).isEmpty &&
+  (arrays.any fun xs => mssL xs > (xs.foldl (· + ·) 0))
 #guard (ok given).prints == [s!"x mss = {rows}",
   s!"x ⦇ran(zero ⟨𝟙, Λ(𝟙)⟩), ⟨w, Λ(w ∪ (π₂ π₂ ∋))⟩⦈ π₂ est(≥) = {rows}"]
 
