@@ -1,0 +1,35 @@
+obj A = {a,b}                                 -- the alphabet
+obj Op = A+(A+A)                              -- Op ::= cpy A ∣ del A ∣ ins A
+obj N = 0…6                                   -- lengths, and the fold rounds
+obj 1 = {∗}
+
+cpy ≜ inl(A,A+(A+A))                          -- A ⟶ Op
+del ≜ inl(A,A+A)inr(A+A,A+(A+A))              -- A ⟶ Op
+ins ≜ inr(A,A+A)inr(A+A,A+(A+A))              -- A ⟶ Op
+
+-- the universe: the strings of length ≤ 2, and every edit sequence of length ≤ 4, which holds all the edit
+-- sequences of a pair of them (each operation consumes a character of one string)
+r₂ ≜ Λ(⊤(1,N){(0,0),(1,1)})                   -- the array 0…1, one fold round each
+r₄ ≜ Λ(⊤(1,N){(0,0),(1,1),(2,2),(3,3)})       -- the array 0…3
+Ss ≜ ran(r₂⦇ran(nil(1,[A])), π₂ ∪ (⟨π₂⊤,π₂⟩cons)⦈)    -- [A]: the strings
+Es ≜ ran(r₄⦇ran(nil(1,[Op])), π₂ ∪ (⟨π₂⊤,π₂⟩cons)⦈)   -- [Op]: the edit sequences
+D ≜ Ss×Ss                                     -- the pairs of strings
+
+-- the specification (09:485, edit-defn)
+base ≜ ⟨nil(1,[A]),nil(1,[A])⟩                -- 1 ⟶ [A]×[A]: ([],[])
+step ≜ ⟨⟨π₁cpy°,π₂π₁⟩cons,⟨π₁cpy°,π₂π₂⟩cons⟩ ∪ ⟨⟨π₁del°,π₂π₁⟩cons,π₂π₂⟩ ∪ ⟨π₂π₁,⟨π₁ins°,π₂π₂⟩cons⟩   -- Op×([A]×[A]) ⟶ [A]×[A]
+edit ≜ Es⦇ran(base), step⦈                    -- edit ≜ ⦇[base,step]⦈, on the sequences Es
+R ≜ Es length ≤(N,N) (Es length)°             -- R ≜ length ≤ length°, on Es: length° needs a universe
+spec ≜ DΛ(edit°)est(R)                        -- Λ(edit°) est(R): a shortest sequence of each pair
+
+-- the tabulation (09:596-610): fstcol, base(b,u), bmin(R) are written; nextcol and column are not, because
+-- the fold in nextcol starts from base(b,last(us)), a seed that depends on the pair (b,us) the fold of
+-- column is at, and a seed here is closed or a family of the keys of the fold's own left (§e)
+fstcol(x : 1 ⟶ [A]) ≜ x F(del) tails          -- fstcol = list(del) tails
+base'(b : 1 ⟶ A, u : 1 ⟶ [Op]) ≜ ⟨b ins,u⟩cons τ   -- base(b,u) = [[ins(b)]⧺u]
+bmin ≜ q π₁ ∪ (π₂ − (q π₂)) where q ≜ dom(⟨π₁length,π₂length⟩(𝟙(N×N) ∩ (π₁ ≤ π₂°)))   -- bmin(R)(p,q): p if p R q, else q
+-- nextcol(xs)(b,us) = ⦇[base(b,last(us)),step(b)]⦈(xus), xus = zip(xs,zip(init(us),tail(us)))
+-- column(xs) = ⦇[fstcol(xs),nextcol(xs)]⦈
+
+print spec length 𝟙(N)
+print Ddom(⟨π₁length,π₂length⟩{((2,2),(2,2))})spec
