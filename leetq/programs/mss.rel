@@ -1,0 +1,32 @@
+-- B&dM Ex 7.40, the maximum segment sum: the note diag/aop/07-optimisation.typ §mss (line 688), Lean
+-- AOP/A7_7_MSS.lean `mss` (:106) and `mss_eq_scan` (:993). The numbers are naturals (`obj N = m…n`), so every
+-- element is at least 0 and the largest segment is the whole list: the case the program exists for needs negatives.
+obj N = 0…80                                  -- the elements and the sums
+obj 1 = {∗}                                   -- the type 1: its one value
+
+zero ≜ {(∗,0)}                                -- 1 ⟶ N: the note's `zero`
+≥ ≜ ≤°                                        -- the order `est` maximises over
+
+-- the specification, Lean `mss ≜ Λ(segment sum) est(≥)`
+segment ≜ tails ∋ inits ∋                     -- a prefix of a suffix; the note's `segment = suffix prefix`
+mss ≜ Λ(segment⦇ran(zero),plus⦈)est(≥)        -- `sum ≜ ⦇[zero,plus]⦈` written in place: `sum` is a builtin's name
+
+-- the derived program, Lean `mss_eq_scan : mss = ⦇k⦈ π₂ est(≥)`
+⊕ ≜ Λ(⊤zero ∪ plus)est(≥)                     -- N×N ⟶ N: the larger of 0 and a+b; `⊤zero` is the note's `⊸ zero`
+w ≜ ⟨π₁,π₂π₁⟩⊕                                -- N×(N×[N]) ⟶ N: the head ⊕ the value the tail carries;
+                                              -- the note's `(𝟙×π₁)⊕`: `×` does not run on demand (§b)
+-- `k ≜ [zero⟨𝟙,Λ(𝟙)⟩, ⟨w,⟨wΛ(𝟙),π₂π₂⟩ cup⟩]` (note :844) is the fold's seed and step below; the step's set is
+-- Lean's own `Λ(w ∪ π₂π₂∋)` (`k`, :756), an array: the language has no `cup`
+
+-- the arrays over D = {0,1,2} of length at most 3: one fold round per element of D, each adding a head or not
+D ≜ {(0,0),(1,1),(2,2)}
+A ≜ ran(Λ(⊤(1,N)D)⦇ran(⊤(1,1)nil), π₂ ∪ (⟨⊤D,π₂⟩cons)⦈)
+
+check A⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥) ⊑ A mss
+check A⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥) = A mss
+
+-- inputs: [3,1,4,1,5], [2,0,7], [] keyed by a, b, c
+obj K = {a,b,c}
+x ≜ ⟨{(a,3)},⟨{(a,1)},⟨{(a,4)},⟨{(a,1)},⟨{(a,5)},{(a,a)}nil⟩cons⟩cons⟩cons⟩cons⟩cons ∪ (⟨{(b,2)},⟨{(b,0)},⟨{(b,7)},{(b,b)}nil⟩cons⟩cons⟩cons) ∪ ({(c,c)}nil)
+print x mss
+print x⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)
