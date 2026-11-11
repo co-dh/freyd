@@ -110,7 +110,8 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .sort Q, D => return Alg.sort (← ev cnt Q ()) D.val
   | _, _, _, .thinL Q, D => return Alg.thinL (← ev cnt Q ()) D.val
   | _, _, _, .merge Q, D => return Alg.merge (← ev cnt Q ()) D
-  | _, _, _, .loop F, D => return Alg.loop (← ev cnt F ()) D
+  -- one loop round's `F` is one evaluation, as a fold step's
+  | _, _, _, .loop (d := d) F, D => pure (loopOn (fun A => Id.run ((ev cnt F (Dem.of d A)).run' {})) D)
   | _, _, _, .succ U, D => pure (D ≫ succ U)
   -- a result outside the declared object has no row, as `succ` at its top
   | _, _, _, .arith k U, D => pure (arith k D.val ≫ idU U)

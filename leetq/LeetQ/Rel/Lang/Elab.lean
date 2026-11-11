@@ -79,7 +79,8 @@ inductive Tm : Obj → Obj → Bool → Type where
   | sort {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
   | thinL {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm B B false) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
-  | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true
+  /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
+  | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
   | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
   | arith {m : Nat} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
@@ -548,7 +549,7 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .loop => do
       let x ← fresh; let y ← fresh
       unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
-      pure (.rel (.loop (.close p q s "loop( ) reads its argument whole")) (.prod x (.arr y)) x)
+      pure (.rel (.loop q) (.prod x (.arr y)) x)
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
   | [(q, a, c), (r, b, c')] => do
     match o with
@@ -1177,7 +1178,7 @@ def build : Pre → Except Err Res
   | .merge p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .merge (← closed? dp (A := B) (B := B) r)⟩
   | .loop p => do
     match ← build p with
-    | r@⟨.prod X Y, _, _, _⟩ => pure ⟨_, _, _, .loop (← closed? dp (A := .prod X Y) (B := X) r)⟩
+    | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
     | _ => internal dp "loop's argument"
   | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
   | .arith p k n => do let ⟨_, U⟩ ← numU objs st p n (Op.arith k).sym; pure ⟨_, _, true, .arith k U⟩

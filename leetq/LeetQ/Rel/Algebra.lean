@@ -1494,14 +1494,23 @@ def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel 
     (zero, P ≫ pair (idU (ran P).val) (top (ran P).val (nilVal B)))).1
 
 /-- `loop(F) : X × arr Y ⟶ X` on the rows of `P` (`loop`, AOP/A9_3_Bracket.lean:1686; B&dM Appendix), `F`
-    folded along the array from the left: rounds of `iter` taking `(c, y :: ys)` to `(F(c, y), ys)`, a state
-    whose array is empty ending at its `c`. The cells of the arrays' payload plus one bound the rounds. -/
-def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
+    folded along the array from the left, in demand form as `foldOn`'s step: rounds of `iter` taking
+    `(c, y :: ys)` to `(c', ys)` with `(c, y) F(D) c'`, `D` the coreflexive on the pairs `(c, y)` the round
+    meets, so a state with no universe loops too; a state whose array is empty ends at its `c`. The states
+    are `nub`bed each round, as `foldBy`'s, or a value reached along two paths doubles its rows each round
+    after. The cells of the arrays' payload plus one bound the rounds. -/
+def loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) :
+    Rel K X :=
   let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
     let D := ran St
     let u := outr D ≫ uncons (outr D).val
-    (out ∪ St ≫ outl (antiJoin D (dom u)), St ≫ pair (pair (outl D) (outl u) ≫ F) (outr u))
+    let p := pair (outl D) (outl u)
+    (out ∪ St ≫ outl (antiJoin D (dom u)), (St ≫ pair (p ≫ F (ran p)) (outr u)).nub)
   (iter (P.val.2.1 + 1) (fun s => s.2.n == 0) round (zero, P)).1
+
+/-- `loop(F)` with `F` one relation: `loopOn` with `F` whatever pairs a round meets. -/
+def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
+  loopOn (fun _ => F) P
 
 /-- `tic ≜ cons inits tail : B × arr B ⟶ arr (arr B)` on the rows of `P` (`tic`, AOP/A9_3_Bracket.lean:1845;
     B&dM p.235): the non-empty prefixes of `a :: xs`. -/
