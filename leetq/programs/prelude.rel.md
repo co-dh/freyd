@@ -17,6 +17,7 @@ The list functions of B&dM written as their definitions (diagram order); `ran(ni
     head : [α] ⟶ α ≜ cons° π₁                                     -- B&dM p.267 head = outl cons°
     tail : [α] ⟶ [α] ≜ cons° π₂                                   -- B&dM p.149 tail = outr cons°
     init : [α] ⟶ [α] ≜ snoc° π₁                                   -- B&dM p.249 init = outl snoc°
+    last : [α] ⟶ α ≜ snoc° π₂                                     -- B&dM p.267 last = outr snoc°
     prefix : [α] ⟶ [α] ≜ ⦇ran(nil(1)), nil ∪ cons⦈                -- B&dM p.126 prefix = ⦇[nil, nil ∪ cons]⦈
     suffix : [α] ⟶ [α] ≜ cat° π₂                                  -- B&dM p.127 suffix, dual to prefix: x ⧺ y ↦ y
     concat : [[α]] ⟶ [α] ≜ ⦇ran(nil(1)), cat⦈                    -- B&dM p.129 concat = ⦇[nil, cat]⦈

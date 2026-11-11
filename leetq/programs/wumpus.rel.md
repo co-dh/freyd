@@ -38,4 +38,4 @@ The KB after each step, a family N ⟶ C×C: the route's cells up to step k wher
     S : N ⟶ C×C ≜ K(dom(adj w))                   -- stench beside the wumpus
     G : N ⟶ C×C ≜ K(g)                            -- glitter on the gold
 
-    print next(V,B,S)
+    check next(V,B,S) = {(0,(12,12)),(0,(21,21)),(1,(12,12)),(2,(12,12)),(3,(22,22)),(4,(23,23)),(4,(32,32)),(5,(32,32))}

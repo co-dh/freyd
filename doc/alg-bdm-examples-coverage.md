@@ -26,7 +26,7 @@ Since this audit, `head`, `init`, `prefix`, `concat`, `filter(p)`, `takewhile(p)
 | 6   | quicksort                | `quicksort` 06:350                         | `perm` `ordered` (the spec only)                          | trees (declined)             | no              |
 | 6   | closure                  | `star_eq_mu'` 06:486                       | `𝟙` `∪` `≫`                                               | `μ`                          | no              |
 | 7   | takewhile                | `takewhile_eq_cata` 07:428                 | `takewhile` `fold` `prefix` `est` `length` `leq`          | —                            | no              |
-| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `∋` `fold` `plus` `Λ` `est` `leq`         | — (written: `leetq/programs/mss.rel.md`; signed elements `N = -10…20`, inputs with negatives; set → array; `⟨wΛ(𝟙),π₂π₂⟩ cup` → Lean's `Λ(w ∪ π₂π₂∋)`; B&dM's `⊕` is written `⊞` (`⊕` is the prelude's sum of relations), `(𝟙×π₁)⊕` → `(𝟙×π₁)⊞`; `⊸ zero` → `⊤zero`; `sum` → `⦇ran(zero),plus⦈`; `k`'s `[seed,step]` → `⦇seed,step⦈`) | no              |
+| 7   | mss                      | `mss_eq_scan` 07:688                       | `inits` `tails` `∋` `fold` `plus` `Λ` `est` `leq`         | — (written: `leetq/programs/mss.rel.md`; signed elements `N = -10…20`, inputs with negatives; set → array; `⟨wΛ(𝟙),π₂π₂⟩ cup` → Lean's `Λ(w ∪ π₂π₂∋)`; B&dM's `⊕` is written `oplus` (`⊕` is the prelude's sum of relations), `(𝟙×π₁)⊕` → `(𝟙×π₁)oplus`; `⊸ zero` → `⊤zero`; `sum` → `⦇ran(zero),plus⦈`; `k`'s `[seed,step]` → `⦇seed,step⦈`) | no              |
 | 7   | filter                   | `filter_eq_cata` 07:886                    | `filter` `subseq` `fold` `est` `length` `leq`             | —                            | no              |
 | 7   | company party            | `party_laws` 07:1398                       | `Λ` `est` `Arr.sum` `leq` `map` `concat`                  | trees (declined)             | no              |
 | 7   | shortest paths, cylinder | `cyl_laws` 07:1616                         | `fold` `zip` `concat` `uncons` `snoc` `Λ` `est` `Arr.sum` | `cp` (a term)                | no              |
@@ -63,9 +63,11 @@ Notes on single rows:
   Written in the Rel language as `leetq/programs/edit.rel.md`, the specification only: `edit ≜ ⦇[base,step]⦈` on the
   sequences of length ≤ 4 (`Es`), `R ≜ length ≤(N,N) length°` run on the pairs `est` compares, and
   `spec ≜ Λ(edit°) est(R)` on the pairs of strings of length ≤ 2 (`TestEdit.lean` guards the least lengths). The
-  tabulation is not written: `nextcol`'s fold starts from `base(b,last(us))`, a seed that depends on the pair the
-  fold of `column` is at, and a fold's seed in the language is closed or a family of its own left's keys (§e); the
-  lifted attempt fails with "the index of a family: found (𝒫A×𝒫A)×(A×𝒫𝒫(A+(A+A))), expected 𝒫A×𝒫A". `est(R)`
+  tabulation is written too (`fstcol`, `base'`, `bmin`, `step'`, `xus`, `nextcol`, `nextcol'`, `column`, `mle`;
+  `doc/rel-edit-tabulation.md`): `nextcol`'s seed `base(b,last(us))` is a family of the keys of its fold's left, and
+  `nextcol'`, the uncurried `nextcol`, is what `column` composes, because a definition applied to families cannot be
+  applied again inside a lifted body to families of another index. `check D mle ⊑ spec` and `check D mle length 𝟙(N) =
+  (spec length 𝟙(N))` hold. `est(R)`
   builds `⊤` on all the candidates of all pairs, so the spec at length ≤ 3 (sequences ≤ 6) does not run.
 - Detab-entab: `entab_laws` is a `μ`, but the note's final program `entab_triple` is `triple ⦇…⦈` (`triple_fold`)
   then `assocl π₁ (𝟙×blanks) cat`: a fold. `fill` pads `n − col mod n` blanks (`AOP/A10_2_Detab.lean:64`).
