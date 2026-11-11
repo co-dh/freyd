@@ -81,7 +81,8 @@ inductive Tm : Obj → Obj → Bool → Type where
   | sort {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | thinL {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm (.prod B B) (.prod B B) true) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
-  | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true
+  /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
+  | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
   | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
   | arith {m : Nat} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
@@ -523,10 +524,29 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
-/-- A literal side's object: the nesting of `t`, its leaves from `os` in order from `k`; and the next leaf. -/
-def Tup.ty (os : Array OTy) : Tup → Nat → OTy × Nat
-  | .leaf _, k => (os.getD k default, k + 1)
-  | .pair a b, k => let (x, k) := a.ty os k; let (y, k) := b.ty os k; (.prod x y, k)
+/-- The object of a literal's position, `ts` the sides there, one per row or array element (§c): a word's is the
+    one declared object holding all the words (named elements, or numbers in its range), a pair's the product of
+    its parts', an array's `[O]`, `O` the object of the elements of all its arrays together. -/
+partial def litTy (objs : Objs) (p : Pos) (ts : List Tup) : M OTy := do
+  let t := ts.headD default
+  if let some r := ts.find? (!·.like t) then
+    throw ⟨p, s!"the rows of a literal nest alike: found {r.show}, expected the form of {t.show}"⟩
+  match t with
+  | .leaf _ =>
+    let ws := ts.filterMap fun | .leaf w => some w | _ => none
+    let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
+      match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
+    match objs.filter (fun (_, i) => ws.all (holds i)) with
+    | [(n, _)] => pure (.base n)
+    | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
+    | os => throw ⟨p, s!"the elements {ws} are in {os.map (·.1)}; write the literal after its object"⟩
+  | .pair .. =>
+    pure (.prod (← litTy objs p (ts.map fun | .pair a _ => a | r => r))
+      (← litTy objs p (ts.map fun | .pair _ b => b | r => r)))
+  | .arr _ =>
+    match ts.flatMap fun | .arr es => es | _ => [] with
+    | [] => throw ⟨p, s!"the object of {t.show} cannot be read off an empty array: write nil(A,[O])"⟩
+    | es => pure (.arr (← litTy objs p es))
 
 /-- A builtin applied to relations, every argument one relation. -/
 def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
@@ -551,7 +571,7 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .loop => do
       let x ← fresh; let y ← fresh
       unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
-      pure (.rel (.loop (.close p q s "loop( ) reads its argument whole")) (.prod x (.arr y)) x)
+      pure (.rel (.loop q) (.prod x (.arr y)) x)
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
   | [(q, a, c), (r, b, c')] => do
     match o with
@@ -727,22 +747,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     unify p "the target of the fold's step" w v
     pure (.rel (.fold (.close p q v "the fold's start is read whole") r) (.arr e) v)
   | .lit p ps => do
-    -- each leaf position of a side is the one declared object holding all its words: named elements, or
-    -- numbers in its range; the side is their product, nested as the rows nest
-    let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
-      match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
-    let leaf (ws : List String) : M OTy := do
-      match env.objs.filter (fun (_, i) => ws.all (holds i)) with
-      | [(n, _)] => pure (.base n)
-      | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
-      | os => throw ⟨p, s!"the elements {ws} are in {os.map (·.1)}; write the literal after its object"⟩
-    let side (rows : List Tup) : M OTy := do
-      let t := rows.headD default
-      if let some r := rows.find? (!·.same t) then
-        throw ⟨p, s!"the rows of a literal nest alike: found {r.show}, expected the form of {t.show}"⟩
-      let os ← (List.range t.leaves.length).mapM fun k => leaf (rows.map (·.leaves.getD k ""))
-      pure (t.ty os.toArray 0).1
-    let a ← side (ps.map (·.1)); let b ← side (ps.map (·.2))
+    let a ← litTy env.objs p (ps.map (·.1)); let b ← litTy env.objs p (ps.map (·.2))
     pure (.rel (.lit p a b ps) a b)
 
 def elabArgs (env : Env) (m : Option OTy) : List Expr → M (List Arg)
@@ -1037,13 +1042,25 @@ def code (p : Pos) (o : OTy) (w : String) : Except Err Int64 :=
   | o => throw ⟨p, s!"a literal relates elements of declared objects, found {o}"⟩
 
 /-- The column of a literal's side of object `o`, its `n` rows' sides `rows`: a long column of codes at a leaf,
-    the pair of the two parts' columns at a product. `o` is zonked. -/
+    the pair of the two parts' columns at a product, at an array the column of all its elements row after row
+    as the payload, row `i` the slice `[lo i, hi i)`. `o` is zonked. -/
 def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Obj) × Vals A n) :=
   match o with
   | .prod x y => do
     let ⟨A, u⟩ ← litCol p n x (rows.map fun | .pair r _ => r | r => r)
     let ⟨B, v⟩ ← litCol p n y (rows.map fun | .pair _ r => r | r => r)
     pure ⟨.prod A B, (u, v)⟩
+  | .arr x => do
+    let ts ← rows.mapM fun
+      | .arr es => pure es
+      | r => throw ⟨p, s!"a literal's element of {o} is an array, found {r.show}"⟩
+    let es := ts.flatten
+    let ⟨B, v⟩ ← litCol p es.length x es
+    let ends := (ts.foldl (fun (k, acc) t => (k + t.length, (k + t.length) :: acc)) (0, ([] : List Nat))).2.reverse
+    let hi := ends.map Int64.ofNat; let lo := (ends.zip ts).map fun (e, t) => Int64.ofNat (e - t.length)
+    if h : lo.length = n ∧ hi.length = n then
+      (let l : Arr .long n := h.1 ▸ col lo; let r : Arr .long n := h.2 ▸ col hi; pure ⟨.arr B, ⟨_, l, r, v⟩⟩)
+    else internal dp "literal array rows"
   | o => do
     let cs ← rows.mapM fun
       | .leaf w => code objs st p o w
@@ -1185,7 +1202,7 @@ def build : Pre → Except Err Res
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do
     match ← build p with
-    | r@⟨.prod X Y, _, _, _⟩ => pure ⟨_, _, _, .loop (← closed? dp (A := .prod X Y) (B := X) r)⟩
+    | r@⟨.prod X Y, _, _, _⟩ => do let ⟨_, F⟩ ← at? dp (A := .prod X Y) (B := X) r; pure ⟨_, _, true, .loop F⟩
     | _ => internal dp "loop's argument"
   | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
   | .arith p k n => do let ⟨_, U⟩ ← numU objs st p n (Op.arith k).sym; pure ⟨_, _, true, .arith k U⟩

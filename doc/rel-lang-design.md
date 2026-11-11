@@ -43,7 +43,10 @@ rows (§e) and of the program in §g.
   `n < m` is an error at `n` (`3…-3`). Every number word — a range's bound, a literal's word, its membership in a
   range — is read by `String.toInt?` alone, and `m`, `n` must fit a `long`.
 - A print lists its rows sorted by element: a number by its value (`-3` before `-1` before `2` before `10`), a
-  named element by its name, a pair and an array lexicographically (a prefix first), `inl` before `inr`.
+  named element by its name, a pair and an array lexicographically (a prefix first), `inl` before `inr`. A value
+  prints as a literal's side reads it (§c), so a printed row reads back: an array of two or more elements as
+  them juxtaposed (`3 1 2`), of fewer bracketed (`[1]`, `[]`), an array inside an array always bracketed
+  (`[1 2] [3]`).
 - The universe of every object with one is computed once, when the program is loaded. An object built from an
   `arr` (`𝒫A`, `𝒫A×B`, …) has none.
 - `𝟙`, `⊤`, `∼`, `∋`, `π₁`, `π₂`, `dom` on an object WITHOUT a universe run on DEMAND: in `Q e`, the term `e`
@@ -92,7 +95,7 @@ rows (§e) and of the program in §g.
   | "R/S reads its operands whole outside a meet with a term    | a division with no local side to test it     |
   | run on demand: `O` has no universe; …" (and `R\S`, `frac`)  | against                                      |
   | "`f( )` reads its argument whole: …" (`ran est thin filter  | an argument that must be closed (§b)         |
-  | takewhile ordered sort thinL merge loop`), "[R,S] reads its |                                              |
+  | takewhile ordered sort thinL merge`), "[R,S] reads its      |                                              |
   | parts whole", "R+S reads its operands whole", "the fold's   |                                              |
   | start is read whole", "∈", "α"                              |                                              |
   | "`what`: `O` has no universe; …" (`⊤'s target`, `R/S`, …)   | an operator's own universe                   |
@@ -156,17 +159,20 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 | `succ`, `≤`, `<`               | on a declared number universe             | `succ leq lt`                  |
 | `plus times minus div mod`,    | `N×N ⟶ N` on a declared number universe:  | `arith` with `Ew.add mul sub`  |
 | `max min`                      | `+ · − ⌊/⌋`, q's `mod`, the larger, less  | `idiv imod greater lesser`     |
-| `{(a,b),…}`, `{((a,b),c),…}`   | a literal relation, rows nested (§c)      | `col`, a pair of `Vals`        |
+| `{(a,b),…}`, `{((a,b),c),…}`,  | a literal relation, rows nested, a side   | `col`, a pair of `Vals`, an    |
+| `{(∗,3 1 2)}`, `{(a,[1] [])}`  | an array (§c)                             | array's `lo`, `hi`, payload    |
 | `R ⊑ S`                        | inclusion: in `check`, and as a test (§e) | `⊑`                            |
 
 - `Λ(G) est(Q)` runs as `est Q G` (B&dM's `Λ(S) min R`): both are the `Q`-least value of each key of `G`.
 - `−` replaces the earlier design's `\` for difference, because the note writes `\` for left division.
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
-  `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q`, `F` closed, as `filter(p)`'s `p`.
+  `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q` closed, as `filter(p)`'s `p`.
   A converse with a name runs as that op (`cat°`, `snoc°`).
-- `loop(F)` reads `F` whole on the universe of its source `X×Y`, because `Alg.loop` takes `F` as one relation:
-  a state with no universe (an array, `⟨nil,𝟙⟩loop(snoc)` on `[Ch]×Ch`) is refused. Running `F` on the pairs
-  each round meets, as `foldOn` runs `S`, needs `Alg.loop` to take `F` as a function of those pairs.
+- `loop(F)` runs `F` on the pairs `(c,y)` each round meets, as `⦇e,S⦈` runs `S`: `Alg.loopOn` takes `F` as a
+  function of the coreflexive on those pairs, and `Alg.loop F` is `loopOn (fun _ => F)`. So the state may have
+  no universe: an array (`⟨nil,𝟙⟩loop(snoc)` on `[Ch]×Ch`), or a pair with one. An `F` that runs neither on
+  demand nor closed is refused with its leaf's error (`loop(snoc ran(snoc))`: "ran( ) reads its argument whole:
+  [Ch]×Ch has no universe; …"). The states are `nub`bed each round, as the fold's.
 - The value verbs `plus times minus div mod max min : N×N ⟶ N` are one builtin, `arith k` with the qlean kernel's
   opcode `k`, run on the pairs in demand (§a) as `Alg.arith k` then the universe of `N`. Each is partial, never a
   default: no row where the result falls outside `N` (`minus` below the bottom, `plus`, `times` past the top, as
@@ -205,7 +211,8 @@ atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E
           | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ plus …, objects optional
           | '{' row (',' row)* '}' | '(' expr ')'
 row      := '(' tup ',' tup ')'                       -- a literal's row
-tup      := Word | row                                -- a side: a word, or a pair nested to any depth
+tup      := item | item item+                         -- a side: one item, or the array of two or more
+item     := Word | row | '[' item* ']'                -- '[…]' always an array: [] empty, [1] one element
 object   := Word | Var | object '×' object | object '+' object | '𝒫' object | '[' object ']'
 Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a parameter's type only: an object variable (§e)
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
@@ -233,6 +240,15 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   is the one declared object holding all its words (named elements, or numbers in its range); a side is the
   product of its leaf positions' objects, nested as the rows nest. Its value is built from one long column per
   leaf position, a product side the pair of its parts' columns.
+- A side may be an array, on either side and at any depth: two or more items juxtaposed, or bracketed
+  (`{(∗,3 1 2)} : 1 ⟶ [N]`, `{(∗,[1])}`, `{(∗,(1,2) (3,4))} : 1 ⟶ [N×N]`, `{(∗,[1 2] [3])} : 1 ⟶ [[N]]`,
+  `{((a,1 2),[3])}`, `{(3 1 2,a b)}`, signed `-1 2 -3`). A bare single item is that item, never a one-element
+  array; elements are separated by spaces, and `[1,2]` is an error saying so. `[` inside a row is an array, `[`
+  at a term the case term `[R,S]`. Rows may hold arrays of different lengths at one position, which is `[O]`,
+  `O` the object of the elements of all its rows' arrays together by the rule above; a position whose arrays
+  are all empty is an error ("the object of [] cannot be read off an empty array: write nil(A,[O])"). Its value
+  is the column of all those elements row after row as the payload, and `lo`, `hi` each row's slice of it (no
+  `cons` per element). `nil` and `cons` still build an array from relations.
 - A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.
 
 ## d. Iteration: a fold

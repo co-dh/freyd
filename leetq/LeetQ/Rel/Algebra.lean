@@ -1573,14 +1573,23 @@ def mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.p
 def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) := mergeOn (pairsIn Q) P
 
 /-- `loop(F) : X × arr Y ⟶ X` on the rows of `P` (`loop`, AOP/A9_3_Bracket.lean:1686; B&dM Appendix), `F`
-    folded along the array from the left: rounds of `iter` taking `(c, y :: ys)` to `(F(c, y), ys)`, a state
-    whose array is empty ending at its `c`. The cells of the arrays' payload plus one bound the rounds. -/
-def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
+    folded along the array from the left, in demand form as `foldOn`'s step: rounds of `iter` taking
+    `(c, y :: ys)` to `(c', ys)` with `(c, y) F(D) c'`, `D` the coreflexive on the pairs `(c, y)` the round
+    meets, so a state with no universe loops too; a state whose array is empty ends at its `c`. The states
+    are `nub`bed each round, as `foldBy`'s, or a value reached along two paths doubles its rows each round
+    after. The cells of the arrays' payload plus one bound the rounds. -/
+def loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) :
+    Rel K X :=
   let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
     let D := ran St
     let u := outr D ≫ uncons (outr D).val
-    (out ∪ St ≫ outl (antiJoin D (dom u)), St ≫ pair (pair (outl D) (outl u) ≫ F) (outr u))
+    let p := pair (outl D) (outl u)
+    (out ∪ St ≫ outl (antiJoin D (dom u)), (St ≫ pair (p ≫ F (ran p)) (outr u)).nub)
   (iter (P.val.2.1 + 1) (fun s => s.2.n == 0) round (zero, P)).1
+
+/-- `loop(F)` with `F` one relation: `loopOn` with `F` whatever pairs a round meets. -/
+def loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y))) : Rel K X :=
+  loopOn (fun _ => F) P
 
 /-- `tic ≜ cons inits tail : B × arr B ⟶ arr (arr B)` on the rows of `P` (`tic`, AOP/A9_3_Bracket.lean:1845;
     B&dM p.235): the non-empty prefixes of `a :: xs`. -/
@@ -2188,9 +2197,10 @@ private def Ysub := (subseq Xp).val
   let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (LE9° ≫ (mem S)°) S S
   seteq (thinL LE9 Xp).toList (idU Xp ≫ ((setify Y ≫ T ≫ (setify Y)°) ∩ subseq Y)).toList
 #guard thinL LE9 Xp ⊑ subseq Xp && seteq (dom (thinL LE9 Xp)).toList (idU Xp).toList
--- the one-pass thinning refines its specification and is a map: one thinned array of each source
-#guard let T := thinLOn (pairsIn LE9) Xp; T ⊑ thinL LE9 Xp && isMap T Xp
-#guard let T := thinLOn (pairsIn LE9) Ysub; T ⊑ thinL LE9 Ysub && isMap T Ysub
+-- the one-pass thinning refines its specification and is entire: a thinned array of each source, not
+-- always one, since an order may hold both ways between two elements
+#guard let T := thinLOn (pairsIn LE9) Xp; T ⊑ thinL LE9 Xp && seteq (dom T).toList (idU Xp).toList
+#guard let T := thinLOn (pairsIn LE9) Ysub; T ⊑ thinL LE9 Ysub && seteq (dom T).toList (idU Ysub).toList
 -- `merge(≤)` against `List.merge`, on ordered and on unordered arrays; `merge(⊤) = cat` (B&dM p.212)
 #guard seteq ((merge LE9 (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
   ((pairsOf W2).map fun (x, y) => ((x, y), List.merge x y fun a b => decide (a ≤ b))) && isMap (merge LE9 (idU W2)) W2

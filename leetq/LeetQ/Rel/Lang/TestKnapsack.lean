@@ -55,9 +55,10 @@ def agrees (o : Out) (n : String) : Bool := match packs o n with
 #guard ((packs (ok given) "knap").getD []).all ((packs (ok given) "s").getD []).contains
 -- the program's own `print`s
 #guard (ok given).prints == [
-  "s = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)}), (d, {(5, 4), (5, 6)})}",
-  "p = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)}), (d, {(5, 4), (5, 6)})}",
-  "knap = {(a, {(5, 4), (6, 5)}), (b, {(2, 2), (9, 8)}), (c, {(1, 9)}), (d, {(5, 4), (5, 5)})}"]-- a `check` that fails is an error: the guards above would not see a silently skipped one
+  "s = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
+  "p = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
+  "knap = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5))}"]
+-- a `check` that fails is an error: the guards above would not see a silently skipped one
 #guard !(runText (knapsack ++ "check p = X subseq\n")).isOk
 
 end LeetQ.Rel.Lang.TestKnapsack

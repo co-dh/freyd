@@ -13,46 +13,39 @@ tb ≜ {(TB,TB)}
 nl ≜ {(NL,NL)}
 z ≜ ⊤{(0,0)}                                  -- the constant 0
 
--- col ≜ ⦇[zero,count]⦈, count(c,a) = (a=NL → 0, c+1): a snoc-list fold, run as the left loop (detab_loop, 10:207)
-count ≜ ⟨π₁,π₂nl⟩z ∪ (⟨π₁,π₂(𝟙(Ch) − nl)⟩π₁ succ)
-col ≜ ⟨z,𝟙⟩loop(count)
-
 -- S(r,A): the strings over the characters A, one round of r per character (each round keeps or appends one)
 S(r,A) ≜ ran(r⦇ran(e), π₂ ∪ (⟨π₂,π₁⊤A⟩snoc)⦈)
--- blanks k = k blanks: the converse of length on the all-blank strings, which fill needs up to m of
+-- blanks k = k blanks: the converse of length on the all-blank strings, which step needs up to m of
 B ≜ S(Λ(⊤(1,N)dom(<m)),bl)
 blanks ≜ (B length)°
--- fill xs = xs⧺blanks(n − (col xs) mod n); expand(xs,a) = (a=TB → fill xs, xs⧺[a])   (entab-defn, 10:84-123)
-fill ≜ ⟨𝟙,⟨⊤m,⟨col,⊤m⟩mod⟩minus blanks⟩cat
-expand ≜ (𝟙×tb)π₁ fill ∪ ((𝟙×(𝟙(Ch) − tb))snoc)
--- detab ≜ ⦇[nil,expand]⦈ on snoc-lists. ⦇e,S⦈ folds an array from the right and loop(F) reads F whole (§b), which
--- has no universe on [Ch]×Ch, so the snoc-list fold of xs is the fold of reverse(xs) with expand's arguments swapped
-reverse ≜ ⦇ran(e), ⟨π₂,π₁⟩snoc⦈
-detab ≜ reverse ⦇ran(e), ⟨π₂,π₁⟩expand⦈
+-- detab tupled with col, run as the left loop from base = ([],0) (detab_tupled, detab_loop, 10:187-202):
+-- step((x,c),a) = (a=NL → (x⧺[NL],0), a=TB → (x⧺blanks(w),c+w), (x⧺[a],c+1)), w = n − c mod n
+step ≜ dom(π₂nl)⟨⟨π₁π₁,π₂⟩snoc,z⟩ ∪ (dom(π₂tb)⟨⟨π₁π₁,w blanks⟩cat,⟨π₁π₂,w⟩plus⟩) ∪ (dom(π₂(𝟙(Ch) − nl − tb))⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩) where w ≜ ⟨⊤m,⟨π₁π₂,⊤m⟩mod⟩minus
+detab ≜ ⟨⟨nil,z⟩,𝟙⟩loop(step)π₁
 
 -- the specification Λ(detab°)est(R), R ≜ length ≤ length° (entab_laws, 10:148), on the candidates C: every
 -- string of length ≤ 5 over {a,BL,TB}. detab never shortens, so C holds every preimage of a string of D.
--- H ≜ detab° and R are restricted to C: the converse of a fold does not run on demand
+-- H ≜ detab° is restricted to C: the converse of a fold does not run on demand; R runs on the pairs est compares
 C ≜ S(Λ(⊤(1,K)), {(a,a),(BL,BL),(TB,TB)})
 H ≜ (C detab)°
-R ≜ C length ≤(N,N) (C length)°
+R ≜ length ≤(N,N) length°
 D ≜ ran(C detab)C                             -- the outputs of detab that are candidates
 
--- the derived program (triple_fold 10:247, entab_triple 10:259): triple ≜ ⦇[base,op]⦈ on snoc-lists,
--- base = ([],(0,0)); h: the character a is a blank off a tab stop, on ((t,c),a); tc: ⟨tbc,col⟩'s step
+-- the derived program (triple_fold 10:247, entab_triple 10:259): triple ≜ ⦇[base,op]⦈ on snoc-lists, run as the
+-- left loop of op from base = ([],(0,0)); h: the character a is a blank off a tab stop, on ((t,c),a); tc: ⟨tbc,col⟩'s step
 h ≜ dom(π₂bl) ∩ dom(π₁π₂ succ⟨𝟙,⊤m⟩mod(𝟙(N) − {(0,0)}))
 tc ≜ h⟨π₁π₁ succ,k⟩ ∪ ((dom(π₂bl) − h)⟨z,k⟩) ∪ (dom(π₂nl)⟨z,z⟩) ∪ (dom(π₂(𝟙(Ch) − bl − nl))⟨z,k⟩) where k ≜ π₁π₂ succ
 -- op((x,(t,c)),a): hold the blank, or emit a tab on a tab stop, or cash the t held blanks in and append a
 op ≜ ⟨g π₁π₁ ∪ ((dom(π₂bl) − g)⟨π₁π₁,⊤tb⟩snoc) ∪ (dom(π₂(𝟙(Ch) − bl))⟨⟨π₁π₁,π₁π₂π₁ blanks⟩cat,π₂⟩snoc),⟨π₁π₂,π₂⟩tc⟩ where g ≜ dom(⟨π₁π₂,π₂⟩h)
-triple ≜ reverse ⦇ran(⟨e,⟨z,z⟩⟩), ⟨π₂,π₁⟩op⦈
+triple ≜ ⟨⟨nil,⟨z,z⟩⟩,𝟙⟩loop(op)
 assocl ≜ ⟨⟨π₁,π₂π₁⟩,π₂π₂⟩
 entab ≜ triple assocl π₁ (𝟙×blanks) cat
 
 -- the note's run (10:268): ab, a tab, c d; and three candidates' outputs, a tie among them (q)
-x ≜ ⟨{(∗,a)}, ⟨{(∗,b)}, ⟨{(∗,TB)}, ⟨{(∗,c)}, ⟨{(∗,BL)}, ⟨{(∗,d)}, e⟩cons⟩cons⟩cons⟩cons⟩cons⟩cons
-p ≜ ⟨{(∗,a)}, ⟨{(∗,BL)}, ⟨{(∗,BL)}, ⟨{(∗,BL)}, e⟩cons⟩cons⟩cons⟩cons
-q ≜ ⟨{(∗,a)}, ⟨{(∗,a)}, ⟨{(∗,a)}, ⟨{(∗,BL)}, ⟨{(∗,a)}, e⟩cons⟩cons⟩cons⟩cons⟩cons
-y ≜ ⟨{(∗,BL)}, ⟨{(∗,BL)}, ⟨{(∗,BL)}, ⟨{(∗,BL)}, ⟨{(∗,BL)}, e⟩cons⟩cons⟩cons⟩cons⟩cons
+x ≜ {(∗,a b TB c BL d)}
+p ≜ {(∗,a BL BL BL)}
+q ≜ {(∗,a a a BL a)}
+y ≜ {(∗,BL BL BL BL BL)}
 
 print x detab
 print x detab entab

@@ -208,13 +208,37 @@ partial def atom : P Expr := do
     | none, none => pure (.name p n)
   | none => expected "a term"
 
-/-- A literal's row `(a, b)`, each side a word or a nested pair. -/
+/-- A literal's row `(a, b)`, each side a word, a nested pair or an array. -/
 partial def litPair : P (Tup × Tup) := do
   tok '('; let a ← tup; tok ','; let b ← tup; tok ')'; pure (a, b)
 
+/-- A side: one item, or two or more juxtaposed, the array of them (`3 1 2`, `-1 2`, `[1 2] [3]`). -/
 partial def tup : P Tup := do
+  let a ← litItem
+  let mut ts := #[a]
+  repeat
+    ws
+    match ← peek with
+    | some c => if c == '(' || c == '[' || isIdCont c || isSym c || (← atSign) then ts := ts.push (← litItem) else break
+    | none => break
+  pure (if ts.size == 1 then a else .arr ts.toList)
+
+/-- An item: a word, a row, or `[` items `]`, always an array (`[]`, `[1]`). `[` here is never the case term
+    `[R,S]`, which is read only at a term. -/
+partial def litItem : P Tup := do
   ws
-  if (← peek) == some '(' then do let (a, b) ← litPair; pure (.pair a b) else pure (.leaf (← word))
+  match ← peek with
+  | some '(' => let (a, b) ← litPair; pure (.pair a b)
+  | some '[' => adv; pure (.arr (← bracket))
+  | _ => pure (.leaf (← word))
+
+/-- The items of a bracketed array up to its `]`, separated by spaces. -/
+partial def bracket : P (List Tup) := do
+  ws
+  match ← peek with
+  | some ']' => adv; pure []
+  | some ',' => throw ⟨← pos, "the elements of an array are separated by spaces, not ','"⟩
+  | _ => let a ← litItem; pure (a :: (← bracket))
 
 end
 
