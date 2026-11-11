@@ -37,16 +37,9 @@ variable {t : QAtomicType} {n : Nat}
 /-- The payload. The fallback is unreachable: `WFAt` holds only of a `vector`. -/
 def enc (x : Arr t n) : Enc := match x.1 with | .vector _ _ e _ => e | _ => .gen #[]
 
-/-- The attribute and index cell, `QValue.attrCell` of the vector. -/
-def attrCell (x : Arr t n) : Option (UInt8 × IndexCell) := match x.1 with | .vector _ _ _ a => a | _ => none
-
 /-- The payload agrees with the header. -/
 theorem wf (x : Arr t n) : Enc.WF t n x.enc := by
   obtain ⟨v, h⟩ := x; cases v <;> first | exact h.2.2 | exact h.elim
-
-/-- The vector is its header, its payload and its attribute: what a kernel matching `.vector t n e a` sees. -/
-theorem val_eq (x : Arr t n) : x.1 = .vector t n x.enc x.attrCell := by
-  obtain ⟨v, h⟩ := x; cases v <;> first | exact h.elim | (obtain ⟨rfl, rfl, -⟩ := h; rfl)
 
 /-- `e` under the header `t`, `n` and the attribute `a`. -/
 def mk (e : Enc) (h : Enc.WF t n e) (a : Option (UInt8 × IndexCell) := none) : Arr t n := ⟨.vector t n e a, rfl, rfl, h⟩
@@ -74,33 +67,9 @@ def toList (x : Arr t n) : List (El t) := List.ofFn x.get
 
 theorem length_toList (x : Arr t n) : x.toList.length = n := List.length_ofFn
 
-theorem getElem_toList (x : Arr t n) (i : Nat) (h : i < x.toList.length) :
-    x.toList[i] = x.get ⟨i, by rw [length_toList] at h; exact h⟩ := List.getElem_ofFn ..
-
-/-- The list as a relation from its positions: `x i y ↔ x[j] = y` at the `j` with `Int64.ofNat j = i`. -/
-def Holds (x : Arr t n) (i : Int64) (y : El t) : Prop := ∃ j : Fin n, Int64.ofNat j = i ∧ x.get j = y
-
-theorem holds_iff_mem_zipIdx (x : Arr t n) (i : Int64) (y : El t) :
-    x.Holds i y ↔ ∃ j, Int64.ofNat j = i ∧ (y, j) ∈ x.toList.zipIdx := by
-  simp only [Holds, List.mem_zipIdx_iff_getElem?, List.getElem?_eq_some_iff, length_toList]
-  constructor
-  · rintro ⟨j, rfl, rfl⟩; exact ⟨j, rfl, j.2, by rw [getElem_toList]⟩
-  · rintro ⟨j, rfl, h, rfl⟩; exact ⟨⟨j, h⟩, rfl, by rw [getElem_toList]⟩
-
-/-- `x` under q's attribute `a`, with the index q builds when it applies it (`QValue.mark` on a vector):
-    the payload and so `wf` untouched. -/
-def mark (a : UInt8) (x : Arr t n) : Arr t n := mk x.enc x.wf (some (a, QValue.IndexCell.new a x.1))
-
-/-- `mark a`, and `0`, no attribute, leaves `x` as it is: a producer's attribute (§2.4). -/
-def markIf (a : UInt8) (x : Arr t n) : Arr t n := if a == 0 then x else x.mark a
-
-/-- Marking touches the attribute only. -/
-theorem markIf_enc (a : UInt8) (x : Arr t n) : (x.markIf a).enc = x.enc := by
-  unfold markIf; split <;> rfl
-
 /-- A kernel's answer as an `Arr`, the one way in: `WFAt` is decided (the header's two fields and
     `Enc.WF`), never assumed; `what` names the producer in the error. The vector is the kernel's, mark
-    and all; a producer that knows an attribute applies it after (`markIf`). -/
+    and all; a producer that knows an attribute applies it after. -/
 def of (t : QAtomicType) (n : Nat) (v : QValue) (what : String) : Except String (Arr t n) :=
   match v with
   | .vector t' n' e a => if h : t' = t ∧ n' = n ∧ Enc.WF t n e then .ok ⟨.vector t' n' e a, h⟩
@@ -152,314 +121,9 @@ theorem Arr.get_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.e
   rw [Arr.get_ne x i (by decide)]
   simp only [Enc.get, if_pos i.2, hc, QAtomicType.width]; rfl
 
-/-- Under `wf`, a long `bytes` column lists its eight-byte words, each read as a long. -/
-theorem Arr.toList_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.enc = .bytes b) :
-    x.toList = ((List.range m).map fun i => Column.bitsAt b (i * 8) 8).map UInt64.toInt64 := by
-  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
-  intro i h1 h2
-  rw [Arr.getElem_toList, Arr.get_long_bytes x hc]; simp
-
-/-- `foRBits` with no hoisted table reads the start `blockStarts` holds (`blockStarts_get`), so
-    `Column.get`'s `#[]` and the kernels' table are one decode. -/
-theorem foRBits_starts (md pk : ByteArray) (i : Nat) :
-    Column.foRBits md pk #[] i = Column.foRBits md pk (Column.blockStarts md) i := by
-  have hs : (Column.blockStarts md).size = Column.nblk md + 1 := (Verify.blockStarts_fold md (Column.nblk md)).2.1
-  unfold Column.foRBits
-  by_cases h : i / Column.blk ≤ Column.nblk md
-  · simp [Verify.blockStarts_get md h]
-  · simp [Array.getElem?_eq_none (show (Column.blockStarts md).size ≤ i / Column.blk by omega)]
-
-/-- Under `wf`, a long `foR` column's element `i` is its `foRBits` decode, read as a long. -/
-theorem Arr.get_long_foR {m : Nat} (x : Arr .long m) {md pk : ByteArray} (hc : x.enc = .foR md pk)
-    (i : Fin m) : x.get i = (Column.foRBits md pk (Column.blockStarts md) i.1).toInt64 := by
-  rw [Arr.get_ne x i (by decide), ← foRBits_starts]
-  simp only [Enc.get, if_pos i.2, hc, QAtomicType.width]; rfl
-
-/-- A long payload's `n` words in position order: a `bytes` payload's eight-byte elements, a `foR` payload's
-    `foRBits` decode. `none` at `alp`, whose decode has no law yet, and at the non-long constructors. -/
-def longWords (n : Nat) (e : Enc) : Option (List UInt64) :=
-  match e with
-  | .bytes b => some (Verify.elemsW 8 b)
-  | .foR md pk => some ((List.range n).map (Column.foRBits md pk (Column.blockStarts md)))
-  | _ => none
-
-/-- Under `wf`, a long column lists its words, each read as a long: `toList_long_bytes` and the `foR` decode. -/
-theorem Arr.toList_long {m : Nat} (x : Arr .long m) {ws : List UInt64} (h : longWords m x.enc = some ws) :
-    x.toList = ws.map UInt64.toInt64 := by
-  unfold longWords at h
-  cases hc : x.enc with
-  | bytes b => rw [hc] at h; cases h; rw [Arr.toList_long_bytes x hc, Verify.elemsW, Arr.n_long_bytes x hc]
-  | foR md pk =>
-    rw [hc] at h; cases h
-    apply List.ext_getElem (by rw [Arr.length_toList]; simp)
-    intro i h1 h2; rw [Arr.getElem_toList, Arr.get_long_foR x hc]; simp
-  | _ => all_goals (rw [hc] at h; cases h)
-
-/-- Element `i` of a long column is word `i`, read as a long. -/
-theorem Arr.get_long {m : Nat} (x : Arr .long m) {ws : List UInt64} (h : longWords m x.enc = some ws)
-    (i : Nat) (hi : i < m) (hw : i < ws.length) : x.get ⟨i, hi⟩ = ws[i].toInt64 := by
-  rw [← Arr.getElem_toList x i (by rw [Arr.length_toList]; exact hi)]
-  simp [Arr.toList_long x h]
-
-/-- The dense payload a kernel reads off a long column that lists `longWords`: a `bytes` payload is
-    itself, a `foR` one is handed over or decoded (`decodeW`) to the same words. -/
-theorem Arr.dense_long {m : Nat} (x : Arr .long m) {ws : List UInt64} (h : longWords m x.enc = some ws)
-    (hm : m < USize.size) : ∃ B, (x.enc = .bytes B ∨ ∃ md pk, x.enc = .foR md pk ∧
-      B = Kernel.Coc.decode (8 : Nat).toUSize md pk m.toUSize) ∧ Enc.bytesOf .long m x.enc = some B ∧
-      Verify.elemsW 8 B = ws ∧ B.size / 8 = m := by
-  have h8 : (8 : Nat).toUSize.toNat = 8 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
-  unfold longWords at h
-  cases hc : x.enc with
-  | bytes b =>
-    rw [hc] at h; cases h
-    exact ⟨b, .inl rfl, by simp only [Enc.bytesOf], rfl, Arr.n_long_bytes x hc⟩
-  | foR md pk =>
-    rw [hc] at h; cases h
-    obtain ⟨hsz, hg⟩ := Verify.decodeW (8 : Nat).toUSize (by rw [h8]; decide) md pk m.toUSize
-    rw [h8, USize.toNat_ofNat_of_lt' hm] at hsz hg
-    refine ⟨_, .inr ⟨md, pk, rfl, rfl⟩, by simp only [Enc.bytesOf, QAtomicType.width]; rfl,
-      List.ext_getElem (by simp [Verify.elemsW, hsz]) fun i h1 _ => ?_, by rw [hsz]; omega⟩
-    simp only [Verify.elemsW, List.getElem_map, List.getElem_range]
-    rw [hg i (by simpa [Verify.elemsW, hsz] using h1), Verify.ofNat_toNat_mod64]
-  | _ => all_goals (rw [hc] at h; cases h)
-
-/-- A dense long answer lists its words whichever form `Enc.answer` leaves it in: dense, or encoded
-    (`foRBits_encode_bits`). -/
-theorem longWords_answer {m : Nat} (b : ByteArray) (hm : b.size / 8 = m) :
-    longWords m (Enc.answer .long m (.bytes b)) = some (Verify.elemsW 8 b) := by
-  subst hm
-  have ha : Enc.answer .long (b.size / 8) (.bytes b) = .bytes b ∨
-      Enc.answer .long (b.size / 8) (.bytes b) =
-      .foR (Kernel.Coc.encode (8 : Nat).toUSize b).1 (Kernel.Coc.encode (8 : Nat).toUSize b).2 := by
-    simp only [Enc.answer, QAtomicType.width, show Column.alpEncodes .long = false from rfl,
-      show Column.encodes .long = true from rfl, Kernel.Coc.encodeBelow]
-    repeat' split
-    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
-  unfold longWords
-  rcases ha with e | e
-  · rw [e]
-  · rw [e]; simp only [Verify.elemsW]
-    refine congrArg some (List.map_congr_left fun i hi => UInt64.toNat_inj.1 ?_)
-    rw [← Nat.mod_eq_of_lt (UInt64.toNat_lt _)]
-    exact Verify.foRBits_encode_bits 8 (by decide) (by decide) b i (List.mem_range.1 hi)
-
-/-- `alpBits` with no hoisted table reads the start `blockStarts` holds, as `foRBits_starts`. -/
-theorem alpBits_starts (md pk a : ByteArray) (i : Nat) :
-    Column.alpBits md pk a #[] i = Column.alpBits md pk a (Column.blockStarts md) i := by
-  unfold Column.alpBits; rw [foRBits_starts]
-
-/-- A float column's words in position order, the bits each `float` holds: a `bytes` payload's eight-byte
-    elements, an `alp` payload's `alpBits` decode. -/
-def floatWords (n : Nat) (e : Enc) : Option (List UInt64) :=
-  match e with
-  | .bytes b => some (Verify.elemsW 8 b)
-  | .alp md pk a => some ((List.range n).map (Column.alpBits md pk a (Column.blockStarts md)))
-  | _ => none
-
-/-- Under `wf`, a float column lists its words. -/
-theorem Arr.toList_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : floatWords m x.enc = some ws) :
-    x.toList = ws := by
-  unfold floatWords at h
-  cases hc : x.enc with
-  | bytes b =>
-    rw [hc] at h; cases h
-    have hb : b.size / 8 = m := by
-      have hw := x.wf; simp only [Enc.WF, hc, QAtomicType.width] at hw; omega
-    apply List.ext_getElem (by rw [Arr.length_toList, Verify.elemsW, List.length_map, List.length_range, hb])
-    intro i h1 h2
-    rw [Arr.length_toList] at h1
-    rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
-    simp only [Verify.elemsW, List.getElem_map, List.getElem_range, Enc.get, if_pos h1, hc, QAtomicType.width]
-    rfl
-  | alp md pk a =>
-    rw [hc] at h; cases h
-    apply List.ext_getElem (by rw [Arr.length_toList]; simp)
-    intro i h1 h2
-    rw [Arr.length_toList] at h1
-    rw [Arr.getElem_toList, Arr.get_ne x _ (by decide)]
-    simp only [List.getElem_map, List.getElem_range, Enc.get, if_pos h1, hc, QAtomicType.width, alpBits_starts]
-    rfl
-  | _ => all_goals (rw [hc] at h; cases h)
-
-/-- The dense payload a kernel reads off a float column that lists `floatWords`: a `bytes` payload is
-    itself, an `alp` one is decoded (`alpDecode64`) to the same words. -/
-theorem Arr.dense_float {m : Nat} (x : Arr .float m) {ws : List UInt64} (h : floatWords m x.enc = some ws)
-    (hm : m < USize.size) : ∃ B, (x.enc = .bytes B ∨ ∃ md pk a, x.enc = .alp md pk a ∧
-      B = Kernel.Coc.alpDecode64 md pk a m.toUSize) ∧ Verify.elemsW 8 B = ws ∧ B.size / 8 = m := by
-  unfold floatWords at h
-  cases hc : x.enc with
-  | bytes b =>
-    rw [hc] at h; cases h
-    have hw := x.wf
-    simp only [Enc.WF, hc, QAtomicType.width] at hw
-    exact ⟨b, .inl rfl, rfl, by omega⟩
-  | alp md pk a =>
-    rw [hc] at h; cases h
-    have e : Verify.elemsW 8 (Kernel.Coc.alpDecode64 md pk a m.toUSize) =
-        (Kernel.Coc.alpElems md pk a m.toUSize).map fun v => UInt64.ofNat (v.toNat % 2 ^ (8 * 8)) :=
-      Verify.elemsW_foldl_mod id 8 (by decide) (by decide) _
-    rw [Kernel.Coc.alpElems, USize.toNat_ofNat_of_lt' hm, List.map_map, show 8 * 8 = 64 from rfl] at e
-    refine ⟨_, .inr ⟨md, pk, a, rfl, rfl⟩, ?_, ?_⟩
-    · rw [e]; exact List.map_congr_left fun i _ => Verify.ofNat_toNat_mod64 _
-    · have := congrArg List.length e
-      simpa [Verify.elemsW] using this
-  | _ => all_goals (rw [hc] at h; cases h)
-
-/-- A dense float answer lists its words whichever form `Enc.answer` leaves it in: dense, or ALP
-    encoded (`alpBits_alpEncodeAt`, below `2³²` elements). -/
-theorem floatWords_answer {m : Nat} (b : ByteArray) (h32 : b.size / 8 < 2 ^ 32) (hm : b.size / 8 = m) :
-    floatWords m (Enc.answer .float m (.bytes b)) = some (Verify.elemsW 8 b) := by
-  subst hm
-  have ha : Enc.answer .float (b.size / 8) (.bytes b) = .bytes b ∨
-      Enc.answer .float (b.size / 8) (.bytes b) =
-      .alp (Kernel.Coc.alpEncode64 b).1 (Kernel.Coc.alpEncode64 b).2.1 (Kernel.Coc.alpEncode64 b).2.2 := by
-    simp only [Enc.answer, QAtomicType.width, show Column.alpEncodes .float = true from rfl,
-      Kernel.Coc.alpEncodeBelow64]
-    repeat' split
-    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
-  unfold floatWords
-  rcases ha with e | e
-  · rw [e]
-  · rw [e]; simp only [Verify.elemsW]
-    exact congrArg some (List.map_congr_left fun i hi => (Verify.alpBits_alpEncodeAt false 8 rfl b h32).2 i (List.mem_range.1 hi))
-
-/-- An `int` answer column, dense or encoded, lists its payload's four-byte words: `longWords_answer` at
-    width four, the `foR` form read back by `foRBits_encode_bits`. -/
-theorem toList_answer_int {m : Nat} (x : Arr .int m) {b : ByteArray} (hm : b.size / 4 = m)
-    (hc : x.enc = Enc.answer .int m (.bytes b)) :
-    x.toList = (List.range m).map fun i => (Column.bitsAt b (i * 4) 4).toUInt32.toInt32 := by
-  subst hm
-  have ha : Enc.answer .int (b.size / 4) (.bytes b) = .bytes b ∨
-      Enc.answer .int (b.size / 4) (.bytes b) =
-      .foR (Kernel.Coc.encode (4 : Nat).toUSize b).1 (Kernel.Coc.encode (4 : Nat).toUSize b).2 := by
-    simp only [Enc.answer, QAtomicType.width, show Column.alpEncodes .int = false from rfl,
-      show Column.encodes .int = true from rfl, Kernel.Coc.encodeBelow]
-    repeat' split
-    all_goals first | exact .inl rfl | exact .inr rfl | simp_all
-  apply List.ext_getElem (by rw [Arr.length_toList]; simp)
-  intro i h1 _
-  have hn : i < b.size / 4 := by rw [Arr.length_toList] at h1; omega
-  rw [Arr.getElem_toList, List.getElem_map, List.getElem_range, Arr.get_ne x _ (by decide)]
-  rw [← hc] at ha
-  rcases ha with e | e <;> simp only [Enc.get, if_pos hn, e, QAtomicType.width]
-  · rfl
-  · have hi : i < b.size / 4 := by omega
-    show (Column.foRBits _ _ #[] i).toUInt32.toInt32 = _
-    rw [foRBits_starts]
-    congr 1
-    apply UInt32.toNat_inj.1
-    rw [UInt64.toNat_toUInt32, UInt64.toNat_toUInt32, Verify.foRBits_encode_bits 4 (by decide) (by decide) b i hi,
-      Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ (by decide))]
-
 /-- Reading a word as a long loses nothing. -/
 theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
   simpa using congrArg Int64.toUInt64 h
-
-/-- Under `wf`, a boolean `bits` column's element `i` is its bit `i`. -/
-theorem Arr.get_bool_bits {m : Nat} (x : Arr .boolean m) {b : ByteArray} (hc : x.enc = .bits b)
-    (i : Fin m) : x.get i = Column.bitAt b i.1 := by
-  rw [Arr.get_ne x i (by decide)]
-  simp only [Enc.get, if_pos i.2, hc]; rfl
-
-/-- A string is its UTF-8 bytes: two strings with one byte list are one string. -/
-theorem toUTF8_inj {s t : String} (h : s.toUTF8.data.toList = t.toUTF8.data.toList) : s = t :=
-  String.toByteArray_inj.1 (ByteArray.ext (Array.ext' h))
-
-/-- The `str` bridge: bytes that are some string's UTF-8, read as a string the way `Column.get` reads a
-    symbol (`fromUTF8?`, `""` at invalid bytes), write back out as themselves. -/
-theorem str_bytes {B : ByteArray} (h : ∃ s : String, s.toUTF8.data.toList = B.data.toList) :
-    ((String.fromUTF8? B).getD "").toUTF8.data.toList = B.data.toList := by
-  obtain ⟨s, hs⟩ := h
-  obtain rfl : s.toByteArray = B := ByteArray.ext (Array.ext' hs)
-  simp only [String.fromUTF8?, s.isValidUTF8, dite_true, Option.getD_some]
-  rfl
-
-/-- A symbol payload's element `i`, read as `Enc.get` reads it, writes out as `symsOf`'s symbol `i`
-    wherever that symbol is UTF-8. -/
-theorem get_sym_bytes {n : Nat} {e : Enc} {i : Nat} (d : String) (hw : Enc.WF .symbol n e)
-    (hi : i < n) (h2 : i < (Verify.symsOf n e).length)
-    (hk : ∃ s : String, s.toUTF8.data.toList = (Verify.symsOf n e)[i]) :
-    (((Enc.get .symbol n e i).bind fun a => Carrier.of? .symbol (.atom a)).getD d).toUTF8.data.toList = (Verify.symsOf n e)[i] := by
-  cases e with
-  | syms b o =>
-    rw [show Enc.get .symbol n (.syms b o) i = some (.symbol ((String.fromUTF8? (Column.symKey b o i)).getD ""))
-      by simp only [Enc.get, if_pos hi]; rfl]
-    simp only [Option.bind_some, Carrier.of?, Option.getD_some, Verify.symsOf, List.getElem_map,
-      List.getElem_range, Verify.symAt] at hk ⊢
-    exact str_bytes hk
-  | enum d o ids =>
-    rw [show Enc.get .symbol n (.enum d o ids) i = some (.symbol ((String.fromUTF8?
-      (Column.symKey d o (Column.idAt ids (Column.idWidth o) i))).getD "")) by simp only [Enc.get, if_pos hi]; rfl]
-    simp only [Option.bind_some, Carrier.of?, Option.getD_some, Verify.symsOf, List.getElem_map,
-      List.getElem_range, Verify.symAt] at hk ⊢
-    exact str_bytes hk
-  | _ => all_goals first | exact (show False from hw).elim | exact absurd hw.1 (by decide)
-
-/-- Under `wf`, a symbol column whose symbols are UTF-8 lists them: each element's bytes are `symsOf`'s
-    symbol at its position, a blob's own or an interned column's dictionary entry. -/
-theorem Arr.toList_sym {m : Nat} (x : Arr .symbol m)
-    (hu : ∀ k ∈ Verify.symsOf m x.enc, ∃ s : String, s.toUTF8.data.toList = k) :
-    x.toList.map (·.toUTF8.data.toList) = Verify.symsOf m x.enc := by
-  have hw := x.wf
-  have hl : (Verify.symsOf m x.enc).length = m := by
-    revert hw; generalize x.enc = e; intro hw
-    cases e <;> simp_all [Enc.WF, QAtomicType.width, Verify.symsOf] <;> omega
-  refine List.ext_getElem (by rw [List.length_map, Arr.length_toList, hl]) fun i h1 h2 => ?_
-  rw [List.length_map, Arr.length_toList] at h1
-  rw [List.getElem_map, Arr.getElem_toList, Arr.get_ne x _ (by decide)]
-  exact get_sym_bytes _ hw h1 h2 (hu _ (List.getElem_mem h2))
-
-/-- A word whose natural value is `m` reads as the long `Int64.ofNat m`. -/
-theorem toInt64_of_toNat {x : UInt64} {m : Nat} (h : x.toNat = m) : x.toInt64 = Int64.ofNat m := by
-  subst h; cases x; simp [Int64.ofNat, UInt64.toInt64]
-
-/-- Below `2^i`, xor with `2^i` sets that bit: it adds `2^i`. -/
-theorem xor_two_pow_of_lt {r i : Nat} (h : r < 2 ^ i) : r ^^^ 2 ^ i = 2 ^ i + r := by
-  apply Nat.eq_of_testBit_eq; intro j
-  rw [Nat.testBit_xor, Nat.testBit_two_pow]
-  rcases Nat.lt_trichotomy j i with hj | rfl | hj
-  · rw [Nat.testBit_two_pow_add_gt hj]; simp [Nat.ne_of_gt hj]
-  · rw [Nat.testBit_two_pow_add_eq, Nat.testBit_lt_two_pow h]; simp
-  · have hp : 2 ^ (i + 1) ≤ 2 ^ j := Nat.pow_le_pow_right (by omega) hj
-    rw [Nat.pow_succ] at hp
-    rw [Nat.testBit_lt_two_pow (show 2 ^ i + r < 2 ^ j by omega), Nat.testBit_lt_two_pow (show r < 2 ^ j by omega)]
-    simp [Nat.ne_of_lt hj]
-
-/-- Flipping bit 63 of a 64-bit number moves it by `2^63`: up below `2^63`, down at or above. -/
-theorem xor_two_pow_63 (n : Nat) (h : n < 2 ^ 64) : n ^^^ 2 ^ 63 = if n < 2 ^ 63 then n + 2 ^ 63 else n - 2 ^ 63 := by
-  split
-  · rw [xor_two_pow_of_lt ‹_›]; omega
-  · have e : n = (n - 2 ^ 63) ^^^ 2 ^ 63 := by rw [xor_two_pow_of_lt (show n - 2 ^ 63 < 2 ^ 63 by omega)]; omega
-    conv => lhs; rw [e]
-    rw [Nat.xor_assoc, Nat.xor_self, Nat.xor_zero]
-
-/-- `Order.rank .i64` flips the sign bit: unsigned order on ranks is signed order on longs. Both sides are
-    read as naturals — the rank by `xor_two_pow_63`, the long by `toInt_eq_msb_cond` — and compared by `omega`. -/
-theorem rank_i64_le {x y : UInt64} (h : Kernel.Order.rank .i64 x ≤ Kernel.Order.rank .i64 y) : x.toInt64 ≤ y.toInt64 := by
-  simp only [Kernel.Order.rank] at h
-  rw [UInt64.le_iff_toNat_le, UInt64.toNat_xor, UInt64.toNat_xor, show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl,
-    xor_two_pow_63 _ x.toNat_lt, xor_two_pow_63 _ y.toNat_lt] at h
-  rw [Int64.le_iff_toInt_le, Int64.toInt, Int64.toInt, BitVec.toInt_eq_msb_cond, BitVec.toInt_eq_msb_cond,
-    BitVec.msb_eq_decide, BitVec.msb_eq_decide]
-  show (if decide (2 ^ 63 ≤ x.toNat) = true then (x.toNat : Int) - (2 ^ 64 : Nat) else x.toNat) ≤
-    (if decide (2 ^ 63 ≤ y.toNat) = true then (y.toNat : Int) - (2 ^ 64 : Nat) else y.toNat)
-  have := x.toNat_lt; have := y.toNat_lt
-  split <;> split <;> split at h <;> split at h <;> simp_all <;> omega
-
-/-- `rank_i64_le` both ways: `Order.rank .i64` is an order embedding of longs into words. -/
-theorem rank_i64_le_iff {x y : UInt64} :
-    Kernel.Order.rank .i64 x ≤ Kernel.Order.rank .i64 y ↔ x.toInt64 ≤ y.toInt64 :=
-  ⟨rank_i64_le, fun h => Classical.byContradiction fun hn => by
-    have hl := UInt64.not_le.1 hn
-    have e := toInt64_inj (Int64.le_antisymm h (rank_i64_le (UInt64.le_of_lt hl)))
-    rw [e] at hl; exact UInt64.lt_irrefl _ hl⟩
-
-/-- The signed key `bin` halves a long payload by is `Order.rank .i64`. -/
-theorem ordKey_long (v : UInt64) : Kernel.ordKey 8 false true v = Kernel.Order.rank .i64 v := by
-  simp [Kernel.ordKey, Kernel.Order.rank]
-  apply UInt64.toNat_inj.1
-  rw [UInt64.toNat_and, show (18446744073709551615 : UInt64).toNat = 2 ^ 64 - 1 from rfl,
-    Nat.and_two_pow_sub_one_eq_mod, Nat.mod_eq_of_lt v.toNat_lt]
 
 /-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
 def longBytes (n : Nat) (e : Enc) : Option ByteArray :=
@@ -481,9 +145,6 @@ instance : Coe QAtomicType Obj := ⟨.atom⟩
 
 /-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
 @[match_pattern, reducible] def Obj.long : Obj := .atom .long
-@[match_pattern, reducible] def Obj.boolean : Obj := .atom .boolean
-@[match_pattern, reducible] def Obj.float : Obj := .atom .float
-@[match_pattern, reducible] def Obj.symbol : Obj := .atom .symbol
 @[match_pattern, reducible] def Obj.general : Obj := .atom .general
 
 /-- An element of a side: a tuple of its atoms' elements. -/
@@ -530,9 +191,6 @@ def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
     if tag.get i then .inr (if h : 0 < r then Vals.row y (clampFin (idx.get i) r h) else b.dflt)
     else .inl (if h : 0 < l then Vals.row x (clampFin (idx.get i) l h) else a.dflt)
 
-@[simp] theorem Vals.row_atom {t : QAtomicType} {n : Nat} (x : Arr t n) (i : Fin n) :
-    Vals.row (A := .atom t) x i = x.get i := rfl
-
 /-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays at atoms,
     one column per atom of a product side, so `B×C` stored as two columns IS one side of pairs. -/
 structure Rel (k v : Obj) where
@@ -549,9 +207,6 @@ def Holds (R : Rel k v) (x : k.El) (y : v.El) : Prop := ∃ i, R.key.row i = x �
 
 /-- The pairs, in position order, for proofs only. -/
 def toList (R : Rel k v) : List (k.El × v.El) := List.ofFn fun i => (R.key.row i, R.val.row i)
-
-theorem holds_iff_mem_toList (R : Rel k v) (x : k.El) (y : v.El) : R.Holds x y ↔ (x, y) ∈ R.toList := by
-  simp [Holds, toList, List.mem_ofFn]
 
 end Rel
 
@@ -608,11 +263,9 @@ private def gs : Arr .general 2 := Arr.mk (.gen #[(.atom (.long 1) : QValue), (.
 #guard match id (α := QValue) (gs.get 0), id (α := QValue) (gs.get 1) with | .atom (.long 1), .general #[] _ => true | _, _ => false
 
 #guard ss.toList.zipIdx == [("bc", 0), ("a", 1), ("bc", 2)]
-example : ss.Holds 1 "a" := (ss.holds_iff_mem_zipIdx 1 "a").2 ⟨1, rfl, by decide⟩
 
 end Checks
 
 #print axioms Arr.get
-#print axioms Rel.holds_iff_mem_toList
 
 end LeetQ.Rel
