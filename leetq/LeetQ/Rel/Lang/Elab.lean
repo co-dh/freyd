@@ -61,6 +61,26 @@ inductive Tm : Obj → Obj → Bool → Type where
   | tail {B : Obj} : Tm (.arr B) (.arr B) true
   | pre {B : Obj} : Tm (.arr B) (.arr B) true
   | suf {B : Obj} : Tm (.arr B) (.arr B) true
+  | inits {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
+  | tails {B : Obj} : Tm (.arr B) (.arr (.arr B)) true
+  | cat {B : Obj} : Tm (.prod (.arr B) (.arr B)) (.arr B) true
+  | uncat {B : Obj} : Tm (.arr B) (.prod (.arr B) (.arr B)) true
+  | zip {A B : Obj} : Tm (.prod (.arr A) (.arr B)) (.arr (.prod A B)) true
+  | snoc {B : Obj} : Tm (.prod (.arr B) B) (.arr B) true
+  | unsnoc {B : Obj} : Tm (.arr B) (.prod (.arr B) B) true
+  | init {B : Obj} : Tm (.arr B) (.arr B) true
+  | concat {B : Obj} : Tm (.arr (.arr B)) (.arr B) true
+  | perm {B : Obj} : Tm (.arr B) (.arr B) true
+  | setify {B : Obj} : Tm (.arr B) (.arr B) true
+  | bagify {B : Obj} : Tm (.arr B) (.arr B) true
+  | subseq {B : Obj} : Tm (.arr B) (.arr B) true
+  | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
+  | ordered {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
+  | sort {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
+  /-- `thinL(Q)` on the arrays in demand, its targets among their subsequences (`thinL ⊑ subseq`). -/
+  | thinL {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
+  | merge {B : Obj} (Q : Tm B B false) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
+  | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, `plus`, `≤`, `<` on the declared number universe `U`. -/
   | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
   | plus {m : Nat} (U : Arr .long m) : Tm (.prod .long .long) .long true
@@ -170,6 +190,25 @@ inductive Pre
   | tail (b : OTy)
   | pre (b : OTy)
   | suf (b : OTy)
+  | inits (b : OTy)
+  | tails (b : OTy)
+  | cat (b : OTy)
+  | uncat (b : OTy)
+  | zip (a b : OTy)
+  | snoc (b : OTy)
+  | unsnoc (b : OTy)
+  | init (b : OTy)
+  | concat (b : OTy)
+  | perm (b : OTy)
+  | setify (b : OTy)
+  | bagify (b : OTy)
+  | subseq (b : OTy)
+  | tic (b : OTy)
+  | ordered (p : Pre)
+  | sort (p : Pre)
+  | thinL (p : Pre)
+  | merge (p : Pre)
+  | loop (p : Pre)
   | succ (pos : Pos) (n : OTy)
   | plus (pos : Pos) (n : OTy)
   | leq (pos : Pos) (n : OTy)
@@ -458,6 +497,18 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .tail => (.tail b, .arr b, .arr b)
     | .pre => (.pre b, .arr b, .arr b)
     | .suf => (.suf b, .arr b, .arr b)
+    | .inits => (.inits b, .arr b, .arr (.arr b))
+    | .tails => (.tails b, .arr b, .arr (.arr b))
+    | .cat => (.cat b, .prod (.arr b) (.arr b), .arr b)
+    | .zip => (.zip a b, .prod (.arr a) (.arr b), .arr (.prod a b))
+    | .snoc => (.snoc b, .prod (.arr b) b, .arr b)
+    | .init => (.init b, .arr b, .arr b)
+    | .concat => (.concat b, .arr (.arr b), .arr b)
+    | .perm => (.perm b, .arr b, .arr b)
+    | .setify => (.setify b, .arr b, .arr b)
+    | .bagify => (.bagify b, .arr b, .arr b)
+    | .subseq => (.subseq b, .arr b, .arr b)
+    | .tic => (.tic b, .prod b (.arr b), .arr (.arr b))
     | _ => (.id a, a, a)
   match objs with
   | [] => pure ()
@@ -481,12 +532,19 @@ def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
     | .E => pure (.rel (.E q) (.arr s) (.arr t))
     | .map => pure (.rel (.map q) (.arr s) (.arr t))
     | .P => throw ⟨p, s!"P(R) : 𝒫{s} ⟶ 𝒫{t} has no universe on its target and no demand there (§a)"⟩
-    | .est | .thin | .filter | .takewhile => do
+    | .est | .thin | .filter | .takewhile | .ordered | .sort | .thinL | .merge => do
       unify p s!"the target of {o.sym}'s argument" t s
       let c := Pre.close p q s
-      let r : Pre × OTy := match o with
-        | .est => (.est c, s) | .thin => (.thin c, .arr s) | .filter => (.filter c, .arr s) | _ => (.takewhile c, .arr s)
-      pure (.rel r.1 (.arr s) r.2)
+      let a := OTy.arr s
+      let (r, x, y) : Pre × OTy × OTy := match o with
+        | .est => (.est c, a, s) | .thin => (.thin c, a, a) | .filter => (.filter c, a, a)
+        | .takewhile => (.takewhile c, a, a) | .ordered => (.ordered c, a, a) | .sort => (.sort c, a, a)
+        | .thinL => (.thinL c, a, a) | _ => (.merge c, .prod a a, a)
+      pure (.rel r x y)
+    | .loop => do
+      let x ← fresh; let y ← fresh
+      unify p "the source of loop's argument" s (.prod x y); unify p "the target of loop's argument" t x
+      pure (.rel (.loop (.close p q s)) (.prod x (.arr y)) x)
     | _ => throw ⟨p, s!"{o.sym} takes {(Op.table.find? (·.2.1 == o)).map (·.2.2) |>.getD 0} arguments, found 1"⟩
   | [(q, a, c), (r, b, c')] => do
     match o with
@@ -617,7 +675,10 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     | _, _ => binary p o x.plain y.plain
   | .conv p a => do
     match a with
+    -- a converse with a name of its own runs as that op: `cons°`, `snoc°`, `cat°` on the arrays in demand
     | .op _ .cons [] [] => do let b ← fresh; pure (.rel (.uncons b) (.arr b) (.prod b (.arr b)))
+    | .op _ .snoc [] [] => do let b ← fresh; pure (.rel (.unsnoc b) (.arr b) (.prod (.arr b) b))
+    | .op _ .cat [] [] => do let b ← fresh; pure (.rel (.uncat b) (.arr b) (.prod (.arr b) (.arr b)))
     | _ =>
       match ← elabE env m a with
       | .fam q i s t => let r := lConv (q, s, t); pure (.fam r.1 i r.2.1 r.2.2)
@@ -944,6 +1005,28 @@ def build : Pre → Except Err Res
   | .tail b => return ⟨_, _, true, .tail (B := ← toObj st dp b)⟩
   | .pre b => return ⟨_, _, true, .pre (B := ← toObj st dp b)⟩
   | .suf b => return ⟨_, _, true, .suf (B := ← toObj st dp b)⟩
+  | .inits b => return ⟨_, _, true, .inits (B := ← toObj st dp b)⟩
+  | .tails b => return ⟨_, _, true, .tails (B := ← toObj st dp b)⟩
+  | .cat b => return ⟨_, _, true, .cat (B := ← toObj st dp b)⟩
+  | .uncat b => return ⟨_, _, true, .uncat (B := ← toObj st dp b)⟩
+  | .zip a b => return ⟨_, _, true, .zip (A := ← toObj st dp a) (B := ← toObj st dp b)⟩
+  | .snoc b => return ⟨_, _, true, .snoc (B := ← toObj st dp b)⟩
+  | .unsnoc b => return ⟨_, _, true, .unsnoc (B := ← toObj st dp b)⟩
+  | .init b => return ⟨_, _, true, .init (B := ← toObj st dp b)⟩
+  | .concat b => return ⟨_, _, true, .concat (B := ← toObj st dp b)⟩
+  | .perm b => return ⟨_, _, true, .perm (B := ← toObj st dp b)⟩
+  | .setify b => return ⟨_, _, true, .setify (B := ← toObj st dp b)⟩
+  | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
+  | .subseq b => return ⟨_, _, true, .subseq (B := ← toObj st dp b)⟩
+  | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
+  | .ordered p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .ordered (← closed? dp (A := B) (B := B) r)⟩
+  | .sort p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .sort (← closed? dp (A := B) (B := B) r)⟩
+  | .thinL p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .thinL (← closed? dp (A := B) (B := B) r)⟩
+  | .merge p => do let r ← build p; let ⟨B, _, _, _⟩ := r; pure ⟨_, _, _, .merge (← closed? dp (A := B) (B := B) r)⟩
+  | .loop p => do
+    match ← build p with
+    | r@⟨.prod X Y, _, _, _⟩ => pure ⟨_, _, _, .loop (← closed? dp (A := .prod X Y) (B := X) r)⟩
+    | _ => internal dp "loop's argument"
   | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
   | .plus p n => do let ⟨_, U⟩ ← numU objs st p n "plus"; pure ⟨_, _, true, .plus U⟩
   | .leq p n => do let ⟨_, U⟩ ← numU objs st p n "≤"; pure ⟨_, _, false, .leq U⟩

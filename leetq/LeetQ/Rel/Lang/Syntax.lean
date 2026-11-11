@@ -36,6 +36,8 @@ inductive Op
   | id | zero | top | mem | ni | outl | outr | inl | inr | leq | lt | succ | plus
   | union | tau | nil | alpha | cons | length | total | head | tail | pre | suf
   | dom | ran | lam | E | P | est | thin | filter | takewhile | map | frac
+  | inits | tails | cat | zip | snoc | init | concat | perm | setify | bagify | subseq | tic
+  | ordered | sort | thinL | merge | loop
   deriving Repr, BEq, Inhabited
 
 /-- The one table of builtins: symbol and arity. A program may not define or take as a parameter a name
@@ -47,7 +49,10 @@ def Op.table : List (String × Op × Nat) :=
    ("cons", .cons, 0), ("length", .length, 0), ("sum", .total, 0), ("head", .head, 0), ("tail", .tail, 0),
    ("prefix", .pre, 0), ("suffix", .suf, 0), ("dom", .dom, 1), ("ran", .ran, 1), ("Λ", .lam, 1), ("E", .E, 1),
    ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1), ("filter", .filter, 1), ("takewhile", .takewhile, 1),
-   ("F", .map, 1), ("frac", .frac, 2)]
+   ("F", .map, 1), ("frac", .frac, 2), ("inits", .inits, 0), ("tails", .tails, 0), ("cat", .cat, 0),
+   ("zip", .zip, 0), ("snoc", .snoc, 0), ("init", .init, 0), ("concat", .concat, 0), ("perm", .perm, 0),
+   ("setify", .setify, 0), ("bagify", .bagify, 0), ("subseq", .subseq, 0), ("tic", .tic, 0),
+   ("ordered", .ordered, 1), ("sort", .sort, 1), ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1)]
 
 def Op.sym (o : Op) : String := ((Op.table.find? (·.2.1 == o)).map (·.1)).getD "?"
 

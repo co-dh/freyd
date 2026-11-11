@@ -67,16 +67,28 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 | `filter(p)`, `takewhile(p)`    | the note's list functions                 | `filter`, `takewhile`          |
 | `length sum head tail`         | the note's list functions                 | `length Arr.sum head tail`     |
 | `prefix`, `suffix`             | the note's list functions                 | `«prefix»`, `suffix`           |
+| `inits`, `tails`, `init`       | prefixes, suffixes, all but the last      | `inits`, `tails`, `init`       |
+| `cat`, `cat°`, `concat`        | join two lists, every cut in two, flatten | `cat`, `uncat`, `concat`       |
+| `snoc`, `snoc°`, `zip`         | append one, split the last off, pair up   | `snoc`, `unsnoc`, `zip`        |
+| `perm`, `subseq`               | rearrangements, subsequences              | `perm`, `subseq`               |
+| `setify`, `bagify`             | the set, the bag of a list                | `setify`, `bagify`             |
+| `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | `ordered`, `sort`              |
+| `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL Q (ran(subseq))`        |
+| `merge(Q)`, `loop(F)`, `tic`   | merge two lists, `F` folded from the      | `merge`, `loop`, `tic`         |
+|                                | left, the non-empty prefixes of `a::xs`   |                                |
 | `succ`, `plus`, `≤`, `<`       | on a declared number universe             | `succ plus leq lt`             |
 | `{(a,b),…}`, `{((a,b),c),…}`   | a literal relation, rows nested (§c)      | `col`, a pair of `Vals`        |
 | `R ⊑ S`                        | inclusion: in `check`, and as a test (§e) | `⊑`                            |
 
 - `Λ(G) est(Q)` runs as `est Q G` (B&dM's `Λ(S) min R`): both are the `Q`-least value of each key of `G`.
 - `−` replaces the earlier design's `\` for difference, because the note writes `\` for left division.
+- The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
+  `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q`, `F` closed, as `filter(p)`'s `p`.
+  `thinL(Q)` ranges its targets over the subsequences of the arrays in demand, which hold every one
+  (`thinL ⊑ subseq`), so it too is exact at each key. A converse with a name runs as that op (`cat°`, `snoc°`).
 - Not in the language yet (`no` in the architecture table): `⦇R⦈`, `F(R)` on datatypes other than lists;
-  `perm`, `bagify`, `setify`, `ordered(≼)`, `sort(≼)`; `inits`, `tails`, `concat`, `zip`, `snoc`, `init`;
-  `merge`, sorting sets, binary thinning; tabulation (`array`, `row`, `col`, `tic`, `loop`); `μX : φ(X)` and
-  `R*` (§d).
+  sorting sets (`setify° ordered(Q)`: its target is lists, which have no demand (§a), and a set has unboundedly
+  many ordered listings with repeats); tabulation (`array`, `row`, `col`); `μX : φ(X)` and `R*` (§d).
 
 ## c. Grammar and precedence
 
@@ -249,6 +261,11 @@ row).
 |                                 | a family `Q`: `Λ(G − (G(Q − Q°)))` by the  | `thin Q G`, Algebra.lean:1035        |
 |                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
+| `inits tails init cat cat°`,    | closed                                     | the same at every key                |
+| `concat zip snoc snoc° perm`,   |                                            |                                      |
+| `subseq setify bagify tic`      |                                            |                                      |
+| `ordered(Q) sort(Q) thinL(Q)`,  | closed: closed; a family: not liftable     | one `Q`, `F` for every array or pair |
+| `merge(Q) loop(F)`              |                                            |                                      |
 | `succ plus ≤ <`, `{(a,b),…}`    | closed                                     | the same at every key                |
 | `R ⊑ S` ✓, a test               | `D − dom(R − S)`, a coreflexive on `I`     | `i` stays iff `R − S` is empty there |
 
@@ -256,7 +273,8 @@ Not liftable:
 
 - `P(R)`: its target `𝒫B` has no universe and, as a target, no demand (§a) — the same error as unlifted.
 - `F(R)`, `filter(p)`, `takewhile(p)` given a family: `map`, `filter`, `takewhile` run ONE relation on every
-  array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them.
+  array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them. The same
+  for `ordered(Q)`, `sort(Q)`, `thinL(Q)`, `merge(Q)`, `loop(F)` given a family (`Lang/Test.lean` guards the error).
 - `⦇e,S⦈` given a family with nothing on its left: the keyed fold needs the arrays of each key, `X`.
 
 Cost of the keyed fold: the lifted step runs on the pairs (key, (element, value)) a round meets, as the unlifted
