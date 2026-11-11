@@ -349,14 +349,15 @@ def cons {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) :=
     ⟨len perm, longsN r lo (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_left _ _)),
       longsN r hi (Nat.le_trans (Nat.min_le_right _ _) (Nat.min_le_right _ _)), Vals.pick B flat perm⟩⟩
 
-/-- The rounds of a fold over the arrays of `X`, from each array's last element to its first: the state
-    `pend : row ⟶ V` starts at every row with every value of `e`; round `k` pairs the rows longer than `k`
-    with their element `k` from the end (`el`) and hands both to `step`, and moves the rows not longer to
-    `out`. A row is never longer than the payload `X.1`, so `X.1 + 1` rounds end every row (`iter`).
-    `out` is read back at the arrays by `num`'s row ids. -/
-def foldBy {E V : Obj} {n m : Nat} (X : Vals (.arr E) n) (e : Vals V m)
-    (step : Rel .long E → Rel .long V → Rel .long V) : Rel (.arr E) V :=
-  let ids := num (idU X) 0
+/-- The rounds of a fold over the rows of `ids : row ⟶ [E]`, from each array's last element to its first:
+    the state `pend : row ⟶ V` starts as given, each row from its own values, so two rows of one array may
+    start apart; round `k` pairs the rows longer than `k` with their element `k` from the end (`el`) and hands
+    both to `step`, and moves the rows not longer to `out`. A row is never longer than the payload, so its
+    size plus one rounds end every row (`iter`). The result is keyed by the row ids. -/
+def foldRows {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V)
+    (step : Rel .long E → Rel .long V → Rel .long V) : Rel .long V :=
+  let X := ids.val
+  let n := ids.n
   let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
   let ends := add s.1 s.2
   let round : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat := fun (pend, out, k) =>
@@ -368,14 +369,26 @@ def foldBy {E V : Obj} {n m : Nat} (X : Vals (.arr E) n) (e : Vals V m)
     -- `≫` keeps row multiplicity, so a step reaching a value along two paths doubles its rows: `nub` each round,
     -- or the rows of `pend` grow as the paths do (`2^k` for `π₂ ∪ π₂ succ`), not as the pairs
     ((step el pend).nub, out ∪ (antiJoin pend° (idU el.key))°, k + 1)
-  ids° ≫ (iter (X.1 + 1) (fun st => st.1.n == 0) round (top (A := .long) (B := V) ids.key e, zero, 0)).2.1
+  (iter (X.1 + 1) (fun st => st.1.n == 0) round (pend, zero, 0)).2.1
 
-/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` in demand form: each round `S` runs on the pairs
-    (element, value) it meets, `S D` for the coreflexive `D` on them, so a carrier with no universe folds too.
-    `[]` to each value of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and `(x, v) S(D) w`. -/
+/-- `foldRows` on the arrays of `X`, every row starting from every value of `e`, read back at the arrays by
+    `num`'s row ids. -/
+def foldBy {E V : Obj} {n m : Nat} (X : Vals (.arr E) n) (e : Vals V m)
+    (step : Rel .long E → Rel .long V → Rel .long V) : Rel (.arr E) V :=
+  let ids := num (idU X) 0
+  ids° ≫ foldRows ids (top (A := .long) (B := V) ids.key e) step
+
+/-- A fold step in demand form: `S` runs on the pairs (element, value) the round meets, `S D` for the
+    coreflexive `D` on them, so a carrier with no universe folds too. -/
+def demandStep {E V : Obj} (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V) (el : Rel .long E)
+    (pend : Rel .long V) : Rel .long V :=
+  let p := pair el pend; p ≫ S (ran p)
+
+/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` in demand form (`demandStep`). `[]` to each value
+    of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and `(x, v) S(D) w`. -/
 def foldOn {E V : Obj} {m n : Nat} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldBy X e fun el pend => let p := pair el pend; p ≫ S (ran p)
+  foldBy X e (demandStep S)
 
 /-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOn` with `S` whatever pairs a round meets. An array
     may have several results or none. -/
@@ -651,7 +664,7 @@ def orderedOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.pro
     (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   let T := suffix X ≫ uncons (ran (suffix X)).val
   let D := ran T
-  let yz := pair (outl D) (outr D ≫ mem (outr D).val)
+  let yz := pair (outl D) (outr D ≫ mem (ran (outr D)).val)
   let bad := antiJoin yz (q (ran yz))
   antiJoin (idU X) (dom (T ≫ dom bad))
 
@@ -735,7 +748,9 @@ def loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X)
     Rel K X :=
   let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
     let D := ran St
-    let u := outr D ≫ uncons (outr D).val
+    -- `uncons` on the distinct arrays: on `(outr D).val`, an array held by `k` states gives each of them `k`
+    -- rows, and `pair` below `k²`, so a round's rows grow as the states sharing a suffix, not as the states
+    let u := outr D ≫ uncons (ran (outr D)).val
     let p := pair (outl D) (outl u)
     (out ∪ St ≫ outl (antiJoin D (dom u)), (St ≫ pair (p ≫ F (ran p)) (outr u)).nub)
   (iter (P.val.2.1 + 1) (fun s => s.2.n == 0) round (zero, P)).1

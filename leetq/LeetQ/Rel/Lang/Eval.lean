@@ -116,15 +116,14 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .fold (d := d) e S, D => do
     let v ← ev cnt e ()
     pure (foldOn v.val (onKeys fun A => Id.run ((ev cnt S (Dem.of d A)).run' {})) D.val)
-  -- the pairs (i, xs) in demand: each key's seed `(i,v)` from `e`, one fold of the arrays on `I×V`, then each
-  -- pair keeps the values its own key reached: `G : [E] ⟶ I×V` re-keyed by `(i,xs)`, a join, where pairing each
-  -- pair with every key's values of its array grows as the keys squared
+  -- the pairs (i, xs) in demand, one fold row each, starting from its own key's seeds `(i,v)` from `e`: no
+  -- array is folded from another key's seed, so the rows are the pairs, not the arrays times every key's seeds
   | _, _, _, .foldI (d := d) (d' := d') e S, D => do
     let es ← ev cnt e (Dem.of d (ran (outl D)))
     let iv := pair (dom es) (es ≫ outl (ran es))
-    let G := foldOn (ran iv).val (onKeys fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})) (ran (outr D)).val
-    let U := ran G
-    pure (D ≫ ((pair (outl U) G°)° ≫ outr U))
+    let r := num D 0
+    let G := foldRows (outr r) (outl r ≫ iv) (demandStep (onKeys fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})))
+    pure (r° ≫ (G ≫ outr (ran G)))
   -- `R` at the keys of the pairs, its rows `(i,(a,b))` re-keyed as `((i,a),b)`, a join with the pairs: no pair
   -- meets a row of another source
   | _, _, _, .flat (d := d) R, D => do

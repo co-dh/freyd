@@ -294,6 +294,15 @@ private def maxT := tab (upto 4) (upto 4) max
 -- `S` not a function: `(x, v)` to `v` and to `v + x`, every subset sum; two start values
 #guard foldOk (col [0, 100]) (tab (upto 4) (upto 110) (· + ·) ∪ tab (upto 4) (upto 110) fun _ v => v) Xs
 #guard foldOk zero1 (tab (upto 4) (upto 80) (· + ·) ∪ tab (upto 4) (upto 80) fun _ v => v) Xc
+-- `foldRows`, a seed per row: every row of `Xs` given the seeds `0, 100` is `fold` from `0, 100`; rows 0 and 3,
+-- both `[1 2]`, started from `0` and from `100` end apart
+private def subsums := tab (upto 4) (upto 110) (· + ·) ∪ tab (upto 4) (upto 110) fun _ v => v
+#guard seteq ((num (idU Xs) 0)° ≫ foldRows (num (idU Xs) 0)
+    (ofPairs [(0, 0), (0, 100), (1, 0), (1, 100), (2, 0), (2, 100), (3, 0), (3, 100)]) (demandStep fun _ => subsums)).toList
+  (fold (col [0, 100]) subsums Xs).toList
+#guard seteq (foldRows (num (idU Xs) 0) (ofPairs [(0, 0), (1, 0), (2, 0), (3, 100)])
+    (demandStep fun _ => tab (upto 4) (upto 110) (· + ·))).toList
+  [(0, 3), (1, 3), (2, 2), (3, 103)]
 -- `S` partial: no `2` in its domain, so an array holding a `2` has no result
 #guard foldOk zero1 (tab [0, 1, 3, 4] (upto 80) (· + ·)) Xl && foldOk zero1 (tab [0, 1, 3, 4] (upto 80) (· + ·)) Xs
 #guard ((fold zero1 (tab [0, 1, 3, 4] (upto 80) (· + ·)) Xs).toList : List (List Int64 × Int64)) == [([1, 1], 2)]
