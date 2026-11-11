@@ -61,6 +61,8 @@ inductive Tm : Obj → Obj → Bool → Type where
   | zip {A B : Obj} : Tm (.prod (.arr A) (.arr B)) (.arr (.prod A B)) true
   | snoc {B : Obj} : Tm (.prod (.arr B) B) (.arr B) true
   | unsnoc {B : Obj} : Tm (.arr B) (.prod (.arr B) B) true
+  /-- `at(k)`, the element at position `k` from `0`, on the arrays in demand. -/
+  | atPos {B : Obj} (k : Nat) : Tm (.arr B) B true
   /-- The prelude's `perm`, kept as its own converse (`convTm`): the one converse rule the language has for a
       definition, because `perm° = perm` is a theorem it cannot derive from the fold `perm` is. -/
   | own {A : Obj} {d : Bool} (R : Tm A A d) : Tm A A d
@@ -180,6 +182,7 @@ inductive Pre
   | zip (a b : OTy)
   | snoc (b : OTy)
   | unsnoc (b : OTy)
+  | atPos (k : Nat) (b : OTy)
   | own (p : Pre)
   | setify (b : OTy)
   | bagify (b : OTy)
@@ -236,7 +239,7 @@ def Pre.at (p : Pos) : Pre → Pre
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
   | x@(.inits _) | x@(.cat _) | x@(.uncat _) | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.setify _)
-  | x@(.bagify _) | x@(.tic _) => x
+  | x@(.bagify _) | x@(.tic _) | x@(.atPos ..) => x
 
 /-- The `why` of a top-level term's `close`. -/
 def noLeft : String := "the term here needs keys and has no left context"
@@ -509,6 +512,7 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .setify => (.setify b, .arr b, .arr b)
     | .bagify => (.bagify b, .arr b, .arr b)
     | .tic => (.tic b, .prod b (.arr b), .arr (.arr b))
+    | .index k => (.atPos k b, .arr b, b)
     | _ => (.id a, a, a)
   match objs with
   | [] => pure ()
@@ -1025,6 +1029,7 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .setify => throw "setify"
   | .bagify => throw "bagify"
   | .tic => throw "tic"
+  | .atPos k => throw s!"at({k})"
   | .thinL _ => throw "thinL( )"
   | .merge _ => throw "merge( )"
   | .loop _ => throw "loop( )"
@@ -1243,6 +1248,7 @@ def build : Pre → Except Err Res
   | .setify b => return ⟨_, _, true, .setify (B := ← toObj st dp b)⟩
   | .bagify b => return ⟨_, _, true, .bagify (B := ← toObj st dp b)⟩
   | .tic b => return ⟨_, _, true, .tic (B := ← toObj st dp b)⟩
+  | .atPos k b => return ⟨_, _, true, .atPos k (B := ← toObj st dp b)⟩
   | .thinL p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .thinL c⟩
   | .merge p => do let ⟨_, c⟩ ← param p; pure ⟨_, _, _, .merge c⟩
   | .loop p => do

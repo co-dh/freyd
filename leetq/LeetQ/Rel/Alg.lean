@@ -588,6 +588,15 @@ def unsnoc {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr
     (Vals.compact (.arr B) ⟨X.1, longsN r l (Nat.min_le_left _ _), longsN r e (Nat.min_le_right _ _), X.2.2.2⟩,
       Vals.pickN B X.2.2.2 e r (Nat.min_le_right _ _))⟩
 
+/-- `at(k) : arr B ⟶ B` on the arrays of `X`, positions from `0`: each row longer than `k` to the cell at
+    `lo + k` of the payload, read in place as `uncons` reads the head; a row of `k` or fewer cells has no pair. -/
+def atPos {B : Obj} {n : Nat} (k : Nat) (X : Vals (.arr B) n) : Rel (.arr B) B :=
+  let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
+  let i := whereBits n.toUSize (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one k.toUInt64) n.toUSize)
+  let e := addc (gather 8 s.1 i) k
+  let r := min (len i) (len e)
+  ⟨r, Vals.pickN (.arr B) X i r (Nat.min_le_left _ _), Vals.pickN B X.2.2.2 e r (Nat.min_le_right _ _)⟩
+
 /-- `snoc ≜ (𝟙 × τ) cat` on the rows of `P` (`snoc`, AOP/A9_3_Bracket.lean:933): `(xs, a)` to `xs` then `a`.
     `𝟙 × τ` is `⟨π₁, π₂ τ⟩` on the distinct pairs of `P`, one row each, so `P` keeps its rows. -/
 def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) :=

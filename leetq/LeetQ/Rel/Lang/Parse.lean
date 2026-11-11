@@ -212,6 +212,13 @@ partial def atom : P Expr := do
     match (← get).known.lookup n, builtin n with
     | some 0, _ => pure (.name p n)
     | some _, _ => do tok '('; pure (.app p n (← sepBy expr ')'))
+    | none, some (.index _, _) => do
+      -- `at(i)`: its argument is a position, a number word read by `String.toInt?` as every number word is
+      tok '('; ws; let q ← pos; let w ← word; tok ')'
+      match w.toInt? with
+      | some k => if 0 ≤ k ∧ k < 2^63 then pure (.op p (.index k.toNat) [] [])
+                  else throw ⟨q, s!"at( ) takes a position from 0 that fits a long, found {w}"⟩
+      | none => throw ⟨q, s!"at( ) takes a position, a number from 0, found '{w}'"⟩
     | none, some (o, 0) => pure (.op p o (← constObjs) [])
     | none, some (o, _) =>
       -- `ran⟨D,…⟩`: a pair is its own parentheses

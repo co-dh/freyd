@@ -46,6 +46,8 @@ inductive Op
   | dom | ran | lam | E | P | est | thin | map
   | inits | cat | zip | snoc | setify | bagify | tic
   | thinL | merge | loop
+  /-- `at(i)`, the element at position `i` from `0`; `i` a number literal, read by the parser (`Parse.atom`). -/
+  | index (i : Nat)
   deriving Repr, BEq, Inhabited
 
 /-- The one table of builtins: symbol and arity. A program may not define or take as a parameter a name
@@ -63,9 +65,13 @@ def Op.table : List (String × Op × Nat) :=
    ("F", .map, 1), ("inits", .inits, 0), ("cat", .cat, 0),
    ("zip", .zip, 0), ("snoc", .snoc, 0),
    ("setify", .setify, 0), ("bagify", .bagify, 0), ("tic", .tic, 0),
-   ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1)]
+   ("thinL", .thinL, 1), ("merge", .merge, 1), ("loop", .loop, 1),
+   ("at", .index 0, 0)]
 
-def Op.sym (o : Op) : String := ((Op.table.find? (·.2.1 == o)).map (·.1)).getD "?"
+-- `at(i)` prints with its position, which no table row holds
+def Op.sym : Op → String
+  | .index i => s!"at({i})"
+  | o => ((Op.table.find? (·.2.1 == o)).map (·.1)).getD "?"
 
 /-- The builtin infix operators: `∩ ∪ − / \ ×`, one level with composition and the declared ones (`_⇒_`),
     left to right (§c). -/

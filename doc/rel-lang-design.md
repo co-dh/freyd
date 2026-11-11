@@ -158,7 +158,7 @@ demand by the rewrites of §a; the divisions are testable on pairs (§a).
 The converse of each leaf on demand, as `convTm` pushes `°` to it: `𝟙`, `dom(R)` themselves;
 `cons° = uncons`, `snoc°`, `cat°` and back; `perm° = perm` (the prelude's one converse rule, below); `succ°` and the value
 verbs' converses read whole on their number universe; a closed term conversed whole. No converse on demand:
-`⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin union length sum inits zip setify bagify tic thinL merge loop ⦇e,S⦈` (and
+`⊤ ∋ π₁ π₂ inl inr τ nil Λ E F est thin union length sum at inits zip setify bagify tic thinL merge loop ⦇e,S⦈` (and
 so the prelude's folds `prefix concat subseq tails filter takewhile`).
 
 | symbol                         | meaning                                   | `Alg`                          |
@@ -192,6 +192,8 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 | `filter(p)`, `takewhile(p)`    | the note's list functions                 | prelude                        |
 | `length sum`                   | the note's list functions                 | `length Arr.sum`               |
 | `head tail init last`          | first, rest, all but the last, the last   | prelude                        |
+| `at(i)`, `i` a number          | the element at position `i`, from `0`;    | `atPos`: the cell `lo + i` of  |
+|                                | no pair where the array is not longer     | the payload, read in place     |
 | `prefix`, `suffix`             | the note's list functions                 | prelude                        |
 | `inits`                        | the prefixes, shortest first              | `inits`                        |
 | `tails`                        | the suffixes, longest first               | prelude                        |
@@ -214,6 +216,9 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 
 - `Λ(G) est(Q)` runs as `est Q G` (B&dM's `Λ(S) min R`): both are the `Q`-least value of each key of `G`.
 - `−` replaces the earlier design's `\` for difference, because the note writes `\` for left division.
+- `at(i)` is a builtin, not `tail`ⁱ `head`: its argument is a position, a number word read by `String.toInt?`,
+  `0 ≤ i` within `long` (`at(x)`, `at(-1)` are errors at the word). `at(0) = head`, `tail at(i) = at(i+1)`
+  (`AlgTest.lean`, `Lang/Test.lean` guard both).
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
   `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; the order `Q` (and `filter(p)`'s `p`) on
   the pairs the operator compares (§a), closed or not.
@@ -321,6 +326,7 @@ primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
           | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ plus …, objects optional
+          | 'at' '(' Num ')'                          -- a position from 0
           | '{' row (',' row)* '}' | '(' expr ')'
 row      := '(' tup ',' tup ')'                       -- a literal's row
 tup      := item | item item+                         -- a side: one item, or the array of two or more
@@ -513,6 +519,7 @@ row).
 |                                 | a family `Q`: `Λ(G − (G(Q − Q°)))` by the  | `thin Q G`, Algebra.lean:1035        |
 |                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
+| `at(i)`                         | closed                                     | the same at every key                |
 | `inits tails init cat cat°`,    | closed                                     | the same at every key                |
 | `concat zip snoc snoc°`,        |                                            |                                      |
 | `subseq setify bagify tic`      |                                            |                                      |

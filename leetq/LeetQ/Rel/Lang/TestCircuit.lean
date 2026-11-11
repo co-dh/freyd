@@ -11,24 +11,29 @@ def circuit : String := program_file "../../../programs/circuit.rel.md"
 
 def given : Except Err Out := runText circuit
 
--- row order is not part of a relation, so rows compare sorted
+-- row order is not part of a relation, so rows compare sorted; `Circuit.lean`'s input `(a, (b, c))` and the
+-- program's array `a b c` both read as the row `[a, b, c]`
+def sorted (xs : List (List Int64)) : List (List Int64) := xs.mergeSort fun a b => decide (a ≤ b)
 def rows {v : Obj} (f : v.El → List Int64) (R : Rel Bit3 v) : List (List Int64) :=
-  (R.toList.map fun ((a, b, c), y) => [a, b, c] ++ f y).mergeSort fun a b => decide (a ≤ b)
+  sorted (R.toList.map fun ((a, b, c), y) => [a, b, c] ++ f y)
+def rowsA {v : Obj} (f : v.El → List Int64) (R : Rel (.arr Bit) v) : List (List Int64) :=
+  sorted (R.toList.map fun (xs, y) => xs ++ f y)
 
 #guard given.isOk
 -- the file's own `check answer = …` holds and prints nothing; `answer` printed here is the same literal
 #guard (ok given).prints == []
 #guard (ok (runText (circuit ++ "print answer\n"))).prints ==
-  ["answer = {((0, (1, 1)), 0), ((1, (0, 1)), 0), ((1, (1, 0)), 0)}"]
+  ["answer = {(0 1 1, 0), (1 0 1, 0), (1 1 0, 0)}"]
 
 -- `Circuit.lean`'s first guard: query 6
-#guard get (ok given) "answer" Bit3 Bit == some answer
-#guard ((get (ok given) "answer" Bit3 Bit).map (rows fun _ => [])) ==
+#guard ((get (ok given) "answer" (.arr Bit) Bit).map (rowsA fun _ => [])) == some (rows (fun _ => []) answer)
+#guard ((get (ok given) "answer" (.arr Bit) Bit).map (rowsA fun _ => [])) ==
   some ([[0, 1, 1], [1, 0, 1], [1, 1, 0]] : List (List Int64))
 
 -- `Circuit.lean`'s second guard: the adder's truth table, (a, b, c, sum, carry)
-#guard get (ok given) "add" Bit3 Bit2 == some adder
-#guard ((get (ok given) "add" Bit3 Bit2).map (rows (v := Bit2) fun (s, c) => [s, c])) ==
+#guard ((get (ok given) "add" (.arr Bit) Bit2).map (rowsA (v := Bit2) fun (s, c) => [s, c])) ==
+  some (rows (v := Bit2) (fun (s, c) => [s, c]) adder)
+#guard ((get (ok given) "add" (.arr Bit) Bit2).map (rowsA (v := Bit2) fun (s, c) => [s, c])) ==
   some ([[0, 0, 0, 0, 0], [0, 0, 1, 1, 0], [0, 1, 0, 1, 0], [0, 1, 1, 0, 1], [1, 0, 0, 1, 0], [1, 0, 1, 0, 1],
     [1, 1, 0, 0, 1], [1, 1, 1, 1, 1]] : List (List Int64))
 
