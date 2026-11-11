@@ -312,9 +312,10 @@ structure Out where
   sigs : List String := []
   objs : Objs := []
 
-/-- A top-level term's value: on its source's universe when it needs keys. -/
-def topVal (sh : Share) (env : Env) (p : Pos) (e : Expr) : Except Err ((Val × OTy × OTy) × Share) := do
-  let (r, st) ← (elabE env none e).run {}
+/-- A top-level term's value, `r` its elaboration `e` with the objects `st`: on its source's universe when it
+    needs keys. -/
+def topVal (sh : Share) (env : Env) (st : St) (p : Pos) (e : Expr) (r : Arg) :
+    Except Err ((Val × OTy × OTy) × Share) := do
   let (q, s, t) := r.plain
   let ⟨A, B, d, tm⟩ ← build env.objs st p (.close p q s noLeft)
   match d, tm with
@@ -376,13 +377,22 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
       | ps, b, ty => env := { env with defs := (n, wrap n (mkDef env n p ps b ty)) :: env.defs }
     | .print p e =>
       if types then continue
-      let ((⟨_, _, R⟩, s, t), sh') ← topVal sh env p e
+      let (r, st) ← (elabE env none e).run {}
+      let ((⟨_, _, R⟩, s, t), sh') ← topVal sh env st p e r
       sh := sh'
       out := { out with prints := out.prints ++ [s!"{e.show} = {showRel env.objs s t R}"] }
     | .check p e f eq =>
       if types then continue
-      let ((⟨A, B, R⟩, s, t), sh₁) ← topVal sh env p e
-      let ((⟨A', B', S⟩, s', t'), sh₂) ← topVal sh₁ env p f
+      -- the two sides elaborated together, one type: an object one side leaves open is the other's (§c)
+      let ((r, r'), st) ← (do
+        let r ← elabE env none e; let r' ← elabE env none f
+        let (_, s, t) := r.plain; let (_, s', t') := r'.plain
+        let st ← get
+        try unify p "" s' s; unify p "" t' t
+        catch _ => throw ⟨p, s!"check: the sides have types {zonk st s} ⟶ {zonk st t} and {zonk st s'} ⟶ {zonk st t'}"⟩
+        pure (r, r') : M (Arg × Arg)).run {}
+      let ((⟨A, B, R⟩, s, t), sh₁) ← topVal sh env st p e r
+      let ((⟨A', B', S⟩, s', t'), sh₂) ← topVal sh₁ env st p f r'
       sh := sh₂
       if h : A' = A ∧ B' = B then
         let S : Rel A B := h.2 ▸ h.1 ▸ S

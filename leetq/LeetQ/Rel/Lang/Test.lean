@@ -401,8 +401,34 @@ def arrs : String :="obj N = -3…9\nobj K = {a,b}\n" ++
 #guard ["{(∗, 3 1 2)}", "{(∗, [1] [2 3])}", "{((a, 1 2), [3])}", "{(b, [])}", "{(∗, (1, 2) (3, 4))}"].all trip
 -- an element position whose arrays are all empty, a word in no object, rows nesting differently, a comma
 def arrE : String := "obj N = 0…9\n"
-#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "the object of [] cannot be read off an empty array: write nil(A,[O])"
-#guard errAt (arrE ++ "e ≜ {(∗,[[]] [])}\n") 2 "the object of [] cannot be read off an empty array: write nil(A,[O])"
+def emptyErr : String := "the object of [] cannot be read off an empty array: write nil(A,[O])"
+/-- `src` fails at `line`, `col` with `what` in the message. -/
+def errAtCol (src : String) (line col : Nat) (what : String) : Bool :=
+  match runText src with
+  | .error e => e.pos.line == line && e.pos.col == col && (e.msg.splitOn what).length > 1
+  | .ok _ => false
+-- nothing determines the object: the error at the literal
+#guard errAtCol (arrE ++ "print {(∗,[])}\n") 2 7 emptyErr
+#guard errAtCol (arrE ++ "print {(∗,[[]] [])}\n") 2 7 emptyErr
+#guard errAtCol (arrE ++ "print {(∗,[])} ∪ {(∗,[])}\n") 2 7 emptyErr
+-- an untyped definition names the type its body has, the object left open a variable
+#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "`e` has no type; it is e : 1 ⟶ [α]"
+-- the context determines it (§c): the other side of a check, the other operand, the declared type, the
+-- composition, the pair
+def arrCtx : String := arrE ++ "obj K = {a,b}\ne : 1 ⟶ [N] ≜ nil\nx : 1 ⟶ [N] ≜ {(∗,1 2)}\n" ++
+  "check e = {(∗,[])}\ncheck {(∗,[])} = e\ncheck e ⊑ {(∗,[])}\n" ++
+  "check x ∪ {(∗,[])} = {(∗,1 2),(∗,[])}\ncheck x ∩ {(∗,[])} = 𝟘(1,[N])\ncheck x − {(∗,[])} = x\n" ++
+  "d : 1 ⟶ [N] ≜ {(∗,[])}\ncheck d = e\nnn : 1 ⟶ [[N]] ≜ {(∗,[[]])}\ncheck nn = ⟨e,nil⟩cons\n" ++
+  "c : 1 ⟶ N ≜ {(∗,[])}{([],3),([1],4)}\ncheck c = {(∗,3)}\n" ++
+  "check ⟨{(∗,[])},{(∗,a)}⟩ = ⟨e,{(∗,a)}⟩\ncheck {(∗,[] [3])} = ⟨e,⟨{(∗,[3])},nil⟩cons⟩cons\n" ++
+  "print d\nprint nn\n"
+#guard printed arrCtx == ["{(∗, [])}", "{(∗, [[]])}"]
+-- words two objects hold: open too, fixed by the context, else the error at the literal
+def twoObjs : String := "obj A = {a,b}\nobj B = {a,c}\n"
+#guard printed (twoObjs ++ "x : A ⟶ B ≜ {(a,a)}\nprint x\n") == ["{(a, a)}"]
+#guard errAtCol (twoObjs ++ "print {(a,c)}\n") 3 7 "the elements [a] are in [B, A]; write the literal after its object"
+-- a wrong expectation is a failed check, not an object error
+#guard errAt (arrE ++ "x : 1 ⟶ [N] ≜ {(∗,1 2)}\ncheck x = {(∗,[])}\n") 3 "check failed"
 #guard errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 2 "no declared object has the elements [1, 12]"
 #guard errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 2
   "the rows of a literal nest alike: found 3, expected the form of 1 2"

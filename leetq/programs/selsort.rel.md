@@ -23,10 +23,10 @@ The converse of a fold needs the arrays it folds: `C`, every rearrangement of an
     check x perm ordered(≤) = {(∗,1 2 3)}
     check y perm ordered(≤) = {(∗,1 2 2)}
     check z perm ordered(≤) = {(∗,1 2 3 4 5)}
-    check e perm ordered(≤) = e
+    check e perm ordered(≤) = {(∗,[])}
     check x X = {(∗,1 2 3)}
     check y X = {(∗,1 2 2)}
     check z X = {(∗,1 2 3 4 5)}
-    check e X = e
+    check e X = {(∗,[])}
     check C X ⊑ C perm ordered(≤)                 -- selection_sort, 06:316
     check C X = C perm ordered(≤)

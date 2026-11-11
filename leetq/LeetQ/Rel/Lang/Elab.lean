@@ -517,29 +517,39 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
   | _ => throw ⟨p, s!"{o.sym} takes at most two objects, found {objs.length}"⟩
   pure (.rel q s t)
 
+/-- The declared objects holding all the words `ws` (named elements, or numbers in their range). -/
+def holders (objs : Objs) (ws : List String) : List String :=
+  let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
+    match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
+  (objs.filter fun (_, i) => ws.all (holds i)).map (·.1)
+
+/-- Why the rows `ts` of a literal's position do not determine its object: they are none (an empty array's
+    elements), or several declared objects hold their words. -/
+def litOpen (objs : Objs) (p : Pos) (ts : List Tup) : Err :=
+  let ws := ts.filterMap fun | .leaf w => some w | _ => none
+  if ts.isEmpty then ⟨p, s!"the object of {(Tup.arr []).show} cannot be read off an empty array: write nil(A,[O])"⟩
+  else ⟨p, s!"the elements {ws} are in {holders objs ws}; write the literal after its object"⟩
+
 /-- The object of a literal's position, `ts` the sides there, one per row or array element (§c): a word's is the
-    one declared object holding all the words (named elements, or numbers in its range), a pair's the product of
-    its parts', an array's `[O]`, `O` the object of the elements of all its arrays together. -/
+    one declared object holding all the words, a pair's the product of its parts', an array's `[O]`, `O` the
+    object of the elements of all its arrays together. Where the rows do not determine it (`litOpen`) it is an
+    open object, which the context fixes as it fixes `nil`'s; `litCol` reports one still open at `build`. -/
 partial def litTy (objs : Objs) (p : Pos) (ts : List Tup) : M OTy := do
   let t := ts.headD default
   if let some r := ts.find? (!·.like t) then
     throw ⟨p, s!"the rows of a literal nest alike: found {r.show}, expected the form of {t.show}"⟩
-  match t with
-  | .leaf _ =>
+  match ts, t with
+  | [], _ => fresh
+  | _, .leaf _ =>
     let ws := ts.filterMap fun | .leaf w => some w | _ => none
-    let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
-      match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
-    match objs.filter (fun (_, i) => ws.all (holds i)) with
-    | [(n, _)] => pure (.base n)
+    match holders objs ws with
+    | [n] => pure (.base n)
     | [] => throw ⟨p, s!"no declared object has the elements {ws}"⟩
-    | os => throw ⟨p, s!"the elements {ws} are in {os.map (·.1)}; write the literal after its object"⟩
-  | .pair .. =>
+    | _ => fresh
+  | _, .pair .. =>
     pure (.prod (← litTy objs p (ts.map fun | .pair a _ => a | r => r))
       (← litTy objs p (ts.map fun | .pair _ b => b | r => r)))
-  | .arr _ =>
-    match ts.flatMap fun | .arr es => es | _ => [] with
-    | [] => throw ⟨p, s!"the object of {t.show} cannot be read off an empty array: write nil(A,[O])"⟩
-    | es => pure (.arr (← litTy objs p es))
+  | _, .arr _ => pure (.arr (← litTy objs p (ts.flatMap fun | .arr es => es | _ => [])))
 
 /-- A builtin applied to relations, every argument one relation. -/
 def applied (p : Pos) (o : Op) : List (Pre × OTy × OTy) → M Arg
@@ -1106,6 +1116,13 @@ def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Ob
     if h : lo.length = n ∧ hi.length = n then
       (let l : Arr .long n := h.1 ▸ col lo; let r : Arr .long n := h.2 ▸ col hi; pure ⟨.arr B, ⟨_, l, r, v⟩⟩)
     else internal dp "literal array rows"
+  | .mv _ => throw (litOpen objs p rows)
+  -- a sum only the context gives, to an empty array's elements: no rows to read
+  | .sum x y =>
+    if h : n = 0 ∧ rows.isEmpty then h.1 ▸ (do
+      let ⟨A, u⟩ ← litCol p 0 x []; let ⟨B, v⟩ ← litCol p 0 y []
+      pure ⟨.sum A B, ⟨0, 0, emptyArr .boolean, emptyArr .long, u, v⟩⟩ : Except Err ((A : Obj) × Vals A 0))
+    else throw ⟨p, s!"a literal relates elements of declared objects, found {o}"⟩
   | o => do
     let cs ← rows.mapM fun
       | .leaf w => code objs st p o w
