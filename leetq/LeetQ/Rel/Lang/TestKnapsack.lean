@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestKnapsack
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def knapsack : String := include_str "../../../programs/knapsack.rel"
+def knapsack : String := program_file "../../../programs/knapsack.rel"
 
 def given : Except Err Out := runText knapsack
 

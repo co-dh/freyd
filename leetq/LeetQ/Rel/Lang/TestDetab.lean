@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestDetab
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 
-def detab : String := include_str "../../../programs/detab.rel"
+def detab : String := program_file "../../../programs/detab.rel"
 
 /-- The tab width, the program's `m`. -/
 def n : Nat := 4

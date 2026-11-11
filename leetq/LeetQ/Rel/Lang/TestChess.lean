@@ -9,7 +9,7 @@ namespace LeetQ.Rel.Lang.TestChess
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 
-def chess : String := include_str "../../../programs/chess.rel"
+def chess : String := program_file "../../../programs/chess.rel"
 
 abbrev SS : Obj := .prod .long .long
 abbrev Bd : Obj := .arr SS

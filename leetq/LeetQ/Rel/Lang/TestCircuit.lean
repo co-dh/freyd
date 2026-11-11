@@ -7,7 +7,7 @@ namespace LeetQ.Rel.Lang.TestCircuit
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg LeetQ.Rel.Lang.Test LeetQ.Rel.Circuit QLean
 
-def circuit : String := include_str "../../../programs/circuit.rel"
+def circuit : String := program_file "../../../programs/circuit.rel"
 
 def given : Except Err Out := runText circuit
 

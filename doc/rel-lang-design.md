@@ -7,7 +7,8 @@ family of states unchanged: the front end lifts it (§e). Every operator the B&d
 scope. The design is checked by `leetq/LeetQ/Rel/BlocksRel.lean`, a line-by-line Lean transcription of the lifting
 rows (§e) and of the program in §g.
 
-**Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`) prints each `print`; it exits
+**Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`), `FILE` a `.rel` or a
+literate `.rel.md` file (§ Literate files), prints each `print`; it exits
 0, 1 on a front-end error or a failed `check`, 2 on a bad command line. Every run is capped in resident memory:
 
 - the cap is `REL_MEM_MB` megabytes, 10240 when unset; nothing about it is printed on a normal run;
@@ -26,6 +27,31 @@ rows (§e) and of the program in §g.
 
 `rel --types FILE` checks every definition's declared type (§e) and prints each definition's head, one a line,
 as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --types` with no file prints the prelude's.
+
+`FILE` is a `.rel` file, all program, or a `.rel.md` file, a literate one (next section); any other name is the
+error "not a program file: its name must end in `.rel` … or `.rel.md` …" (exit 1). The `#guard` modules read their
+programs the same way, through `program_file` (`Lang/Test.lean`).
+
+## Literate files
+
+A `.rel.md` file is a Markdown document; its program is the text of its indented code blocks, in file order
+(`programs/selsort.rel.md`). One function, `Parse.programText`, chooses by the file name; `Parse.literate` empties
+every line that is not code and keeps each code line whole, so an error's line and column are the file's (the four
+spaces count in the column), and indentation beyond four is part of the program line. `--` comments work in code.
+
+| line kind                                                       | read as                                                     |
+|-----------------------------------------------------------------|-------------------------------------------------------------|
+| blank                                                           | blank: it separates blocks and runs on inside a code block  |
+| 4+ spaces in, at the start, after a blank line or a code line   | program                                                     |
+| a tab among the leading blanks                                  | error at the tab: indent with spaces                        |
+| 4+ spaces in, right after a prose line                          | error: Markdown continues the prose; put a blank line first |
+| 4+ spaces in, after blank lines while a list is open            | error: Markdown reads it as the item's; end the list first  |
+| a fence (under 4 spaces in, 3+ `` ` `` or `~`) up to its close  | prose, whatever its indentation: shown, not run             |
+| a fence never closed                                            | error at the opening line                                   |
+| anything else: headings, paragraphs, list items                 | prose                                                       |
+
+A list is open from a list item (`- `, `* `, `+ `, or 1–9 digits then `.` or `)`, under 4 spaces in) until a
+heading or fence at the margin, or a paragraph at the margin after a blank line.
 
 ## a. Objects and universes
 

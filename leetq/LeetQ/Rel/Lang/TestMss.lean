@@ -7,7 +7,7 @@ namespace LeetQ.Rel.Lang.TestMss
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def mss : String := include_str "../../../programs/mss.rel"
+def mss : String := program_file "../../../programs/mss.rel"
 
 /-- The program text of the derived fold, as `mss.rel` writes it. -/
 def prog : String := "⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)"

@@ -11,7 +11,7 @@ import LeetQ.Rel.Lang.Eval
 
 open LeetQ.Rel.Lang
 
-/-- The work: run the program `f`; `--types f` prints the declaration of each of its definitions, `--types` alone
+/-- The work: run the program `f`, a `.rel` or `.rel.md` file (`Parse.programText`); `--types f` prints the declaration of each of its definitions, `--types` alone
     the prelude's. -/
 def body : List String → IO UInt32
   | ["--types"] => do
@@ -19,14 +19,14 @@ def body : List String → IO UInt32
     | .ok ls => ls.forM IO.println; pure 0
     | .error e => IO.eprintln s!"prelude: {e}"; pure 1
   | ["--types", f] => do
-    match typesOf (some (← IO.FS.readFile f)) with
+    match Parse.programText f (← IO.FS.readFile f) >>= (typesOf ∘ some) with
     | .ok ls => ls.forM IO.println; pure 0
     | .error e => IO.eprintln s!"{f}: {e}"; pure 1
   | [f] => do
-    match runText (← IO.FS.readFile f) with
+    match Parse.programText f (← IO.FS.readFile f) >>= runText with
     | .ok o => o.prints.forM IO.println; pure 0
     | .error e => IO.eprintln s!"{f}: {e}"; pure 1
-  | _ => do IO.eprintln "usage: rel FILE | rel --types [FILE]"; pure 2
+  | _ => do IO.eprintln "usage: rel FILE | rel --types [FILE], FILE a `.rel` or `.rel.md` program"; pure 2
 
 /-- Set in the watched child: the child does the work, the parent only launches and watches it. -/
 def childVar : String := "REL_MEM_CHILD"
