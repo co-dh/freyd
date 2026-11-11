@@ -328,6 +328,8 @@ structure Out where
   vals : List (String × Val × OTy × OTy) := []
   /-- The text of each `print`. -/
   prints : List String := []
+  /-- Each definition's declaration, as `rel --types` prints it. -/
+  sigs : List String := []
   objs : Objs := []
 
 /-- A top-level term's value: on its source's universe when it needs keys. -/
@@ -345,11 +347,15 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
     pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
   | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
+/-- TEMPORARY: a definition missing its type is typed by inference instead of rejected. -/
+def lenient : Bool := true
+
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
-    through the program, so a sub-term met in several definitions has one identity. -/
-def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : String → Def → Def := fun _ d => d) :
-    Except Err (Env × Out × Share) := do
+    through the program, so a sub-term met in several definitions has one identity. `types`: only the
+    definitions are checked, nothing is evaluated (`rel --types`). -/
+def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : String → Def → Def := fun _ d => d)
+    (types : Bool := false) : Except Err (Env × Out × Share) := do
   let (env₀, out₀, sh₀) := start
   let mut env := env₀
   let mut out := out₀
@@ -357,31 +363,49 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
   for d in prog do
     match d with
     | .obj _ n od => env := { env with objs := (n, ← objInfo env n od) :: env.objs }
-    | .defn p n [] (.rel e) =>
-      let (r, st) ← (elabE env none e).run {}
-      let (q, s, t) := r.plain
-      let s := zonk st s; let t := zonk st t
-      -- objects its body leaves open (`≼` on any `A×B`) are fixed at each use, as a parameter's are
-      if s.poly || t.poly then env := { env with defs := (n, wrap n (mkDef env p [] (.rel e))) :: env.defs }; continue
-      let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
-      -- a body that runs only as a pair test (`length ≤ length°`) is an order: elaborated again at each use
-      let ⟨A, B, d, tm⟩ ← match build env.objs st p q, test env.objs st p q with
-        | .ok r, _ => pure r
-        | .error _, .ok _ => env := { env with defs := (n, wrap n (mkDef env p [] (.rel e))) :: env.defs }; continue
-        | .error e, .error _ => throw e
-      let ((tm, _), sh') := Id.run ((hoist tm).run sh)
-      sh := sh'
-      let res : Res := ⟨A, B, d, tm⟩
-      env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
-      match d, tm with
-      | false, tm => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt tm ()).run' {})⟩, s, t) :: out.vals }
-      | true, _ => pure ()
-    | .defn p n ps b => env := { env with defs := (n, wrap n (mkDef env p ps b)) :: env.defs }
+    | .defn p n ps b ty =>
+      -- a relation declares its type and every parameter its own (§e); a test has none of its own
+      let missing := ps.any (·.ty.isNone) || match b with | .rel _ => ty.isNone | .test .. => false
+      let sig ← if missing then (inferSig env n ps b).run' {} else pure (sigOf n ps ty)
+      if missing && !lenient then throw ⟨p, s!"`{n}` has no type; it is {sig}"⟩
+      let sig := if missing then dbgTrace s!"SIG {p.line}: {sig}" fun _ => sig else sig
+      out := { out with sigs := out.sigs ++ [sig] }
+      match ps, b, ty with
+      | [], .rel e, ty =>
+        -- the declared type checked with its variables held apart (`α` matches only itself), so the body has it
+        -- at every object a use gives them
+        let rigid := match ty with | some (a, b) => (a.vars ++ b.vars).map fun v => (v, OTy.base v) | none => []
+        let (r, st) ← (do
+          let r ← elabE env none e
+          if let some ty := ty then let (_, s, t) := r.plain; declared env p n rigid ty s t
+          pure r).run {}
+        let (q, s, t) := r.plain
+        let s := zonk st s; let t := zonk st t
+        let each := wrap n (mkDef env n p [] (.rel e) ty)
+        -- a declared object variable, or objects its body leaves open (`≼` on any `A×B`), are fixed at each use,
+        -- as a parameter's are
+        if !rigid.isEmpty || s.poly || t.poly then env := { env with defs := (n, each) :: env.defs }; continue
+        let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
+        -- a body that runs only as a pair test (`length ≤ length°`) is an order: elaborated again at each use
+        let ⟨A, B, d, tm⟩ ← match build env.objs st p q, test env.objs st p q with
+          | .ok r, _ => pure r
+          | .error _, .ok _ => env := { env with defs := (n, each) :: env.defs }; continue
+          | .error e, .error _ => throw e
+        let ((tm, _), sh') := Id.run ((hoist tm).run sh)
+        sh := sh'
+        let res : Res := ⟨A, B, d, tm⟩
+        env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
+        match d, tm, types with
+        | false, tm, false => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt tm ()).run' {})⟩, s, t) :: out.vals }
+        | _, _, _ => pure ()
+      | ps, b, ty => env := { env with defs := (n, wrap n (mkDef env n p ps b ty)) :: env.defs }
     | .print p e =>
+      if types then continue
       let ((⟨_, _, R⟩, s, t), sh') ← topVal sh env p e
       sh := sh'
       out := { out with prints := out.prints ++ [s!"{e.show} = {showRel env.objs s t R}"] }
     | .check p e f eq =>
+      if types then continue
       let ((⟨A, B, R⟩, s, t), sh₁) ← topVal sh env p e
       let ((⟨A', B', S⟩, s', t'), sh₂) ← topVal sh₁ env p f
       sh := sh₂
@@ -419,6 +443,17 @@ def runWith (pre src : String) : Except Err Out := runAfter pre (Parse.parseIn �
 
 /-- Parse and run a program's text, after the prelude. -/
 def runText (src : String) : Except Err Out := runWith Parse.prelude src
+
+/-- `rel --types`: the declaration of each definition of the program `src`, in order, nothing evaluated; with no
+    program, the prelude's. -/
+def typesOf (src : Option String) : Except Err (List String) := do
+  let (pp, scope) ← Parse.scope Parse.prelude
+  let (env, out, sh) ← (run pp ({}, {}, {}) preludeDef (types := src.isNone)).mapError Err.inPrelude
+  match src with
+  | none => pure out.sigs
+  | some s => do
+    let (_, o, _) ← run (← Parse.parseIn scope s) (env, { out with sigs := [] }, sh) (types := true)
+    pure o.sigs
 
 /-- Run a parsed program (`Parse.parse`), after the prelude. -/
 def runProgram (prog : Program) : Except Err Out := runAfter Parse.prelude fun _ => pure prog

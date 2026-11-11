@@ -269,18 +269,21 @@ def fresh (p : Pos) (w : String) (taken : List (String × String)) : P Unit := d
 
 def at_ (p : Pos) : String := s!"at line {p.line}"
 
-/-- A parameter: a name and, when it may be given a family, its type `A ⟶ B`. -/
+/-- A type `: A ⟶ B` at the cursor, its objects possibly object variables (§e); none when no `:` follows. -/
+def typeOpt : P (Option (OExp × OExp)) := do
+  ws
+  if (← peek) != some ':' then return none
+  adv; modify fun s => { s with vars := true }
+  let a ← object; tok '⟶'; let b ← object
+  modify fun s => { s with vars := false }; pure (some (a, b))
+
+/-- A parameter: a name and its type `A ⟶ B`. -/
 def param : P Param := do
   ws
   let p ← pos
   let n ← word
   if (builtin n).isSome then throw ⟨p, s!"`{n}` is a builtin; choose another name"⟩
-  ws
-  if (← peek) == some ':' then do
-    adv; modify fun s => { s with vars := true }
-    let a ← object; tok '⟶'; let b ← object
-    modify fun s => { s with vars := false }; pure ⟨n, some (a, b)⟩
-  else pure ⟨n, none⟩
+  pure ⟨n, ← typeOpt⟩
 
 /-- A number word read by `String.toInt?`, the one reader every number word goes through (a literal's in
     `Elab.code`); a `long`, the type its elements are coded in. -/
@@ -352,17 +355,20 @@ def decl (p : Pos) (w : String) : P Decl := do
       if seen.contains q.name then throw ⟨p, s!"`{q.name}` is already a parameter of `{w}`"⟩
       pure (q.name :: seen)) []
     modify fun s => { s with taken := (key, at_ p) :: s.taken }
+    let ty ← typeOpt
     let outer := (← get).known
     modify fun s => { s with known := ps.map (fun q => (q.name, 0)) ++ s.known }
     tok '≜'
     let e ← expr
     ws
     let b ← if (← peek) == some '⊑' then do adv; pure (Body.test e (← expr)) else pure (Body.rel e)
+    if let (.test .., some t) := (b, ty) then
+      throw ⟨p, s!"the test `{w}` has no type of its own: drop ': {OExp.arrow t}' (§e)"⟩
     ws
     let σ ← if ← atWhere then do let _ ← word; items w ps (← get).taken [] else pure []
     let b := match b with | .rel e => Body.rel (e.subst σ) | .test e f => .test (e.subst σ) (f.subst σ)
     modify fun s => { s with known := (key, ps.length) :: outer }
-    pure (.defn p key ps b)
+    pure (.defn p key ps b ty)
 
 partial def program : P Program := do
   ws

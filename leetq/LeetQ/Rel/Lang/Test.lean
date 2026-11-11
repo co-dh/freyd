@@ -31,8 +31,8 @@ def variant (s g : String) : Except Err Out := do
   let prog ← Parse.parse blocks
   let s ← Parse.parseExpr s; let g ← Parse.parseExpr g
   runProgram (prog.map fun
-    | .defn p "S₀" [] _ => .defn p "S₀" [] (.rel s)
-    | .defn p "G" [] _ => .defn p "G" [] (.rel g)
+    | .defn p "S₀" [] _ ty => .defn p "S₀" [] (.rel s) ty
+    | .defn p "G" [] _ ty => .defn p "G" [] (.rel g) ty
     | d => d)
 
 def given : Except Err Out := runText (blocks ++ "qR ≜ QR(∋)\nqM ≜ QM(∋)\nqF ≜ Qc⇝\nqh ≜ Qh(∋)\n")
@@ -391,8 +391,8 @@ def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) =>
     formula (§c), not as the parser happens to print it. -/
 
 def reading : Decl → Option (String × String)
-  | .defn _ n _ (.rel e) => some (n, e.render 0 true)
-  | .defn _ n _ (.test e f) => some (n, s!"{e.render 0 true} ⊑ {f.render 0 true}")
+  | .defn _ n _ (.rel e) _ => some (n, e.render 0 true)
+  | .defn _ n _ (.test e f) _ => some (n, s!"{e.render 0 true} ⊑ {f.render 0 true}")
   | .print _ e => some ("print", e.render 0 true)
   | _ => none
 

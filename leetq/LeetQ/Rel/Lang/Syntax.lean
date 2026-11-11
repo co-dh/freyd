@@ -159,7 +159,8 @@ inductive ObjDef
 
 inductive Decl
   | obj (p : Pos) (n : String) (d : ObjDef)
-  | defn (p : Pos) (n : String) (ps : List Param) (b : Body)
+  /-- `ty`: the declared type `A ⟶ B`, required on a relation and absent on a test (§e). -/
+  | defn (p : Pos) (n : String) (ps : List Param) (b : Body) (ty : Option (OExp × OExp))
   | print (p : Pos) (e : Expr)
   | check (p : Pos) (e f : Expr) (eq : Bool)
   deriving Repr, Inhabited
@@ -177,6 +178,26 @@ def OExp.render (inner : Bool) : OExp → String
   | .list a => s!"[{a.render false}]"
 
 def OExp.show (o : OExp) : String := o.render false
+
+/-- The object variables of `o`, in order, each once. -/
+def OExp.vars : OExp → List String
+  | .var _ n => [n]
+  | .name .. => []
+  | .prod a b | .sum a b => (a.vars ++ b.vars).eraseDups
+  | .pow a | .list a => a.vars
+
+/-- A definition's head and type as `rel --types` prints it and the parser reads it back:
+    `n(R : A ⟶ B, …) : C ⟶ D`, each type given as its text; a test has no type of its own (§e). -/
+def sigText (n : String) (ps : List (String × Option String)) (ty : Option String) : String :=
+  let h := if ps.isEmpty then n else
+    n ++ "(" ++ ", ".intercalate (ps.map fun (q, t) => match t with | some t => s!"{q} : {t}" | none => q) ++ ")"
+  match ty with | some t => s!"{h} : {t}" | none => h
+
+def OExp.arrow (ty : OExp × OExp) : String := s!"{ty.1.show} ⟶ {ty.2.show}"
+
+/-- A definition's declaration as written: `sigText` of its declared types. -/
+def sigOf (n : String) (ps : List Param) (ty : Option (OExp × OExp)) : String :=
+  sigText n (ps.map fun q => (q.name, q.ty.map OExp.arrow)) (ty.map OExp.arrow)
 
 /-- `e` printed at the level `l`, parenthesised as §c's one level needs: `0` anywhere or the left operand of a
     composite or infix term, `1` its right operand or the operand of `∼` (a composite or infix term in

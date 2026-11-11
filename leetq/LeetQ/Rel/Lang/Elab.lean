@@ -857,14 +857,86 @@ where
       else if m + 1 > k then .comp (.outl (pre m) (ix.toList.getD (m + 1) default)) (go m)
       else .id (pre (m + 1))
 
+/-! ### Declared types -/
+
+def OTy.mvs : OTy → List Nat
+  | .mv k => [k]
+  | .prod a b | .sum a b => a.mvs ++ b.mvs
+  | .arr a => a.mvs
+  | .base _ => []
+
+def OTy.bases : OTy → List String
+  | .base n => [n]
+  | .prod a b | .sum a b => a.bases ++ b.bases
+  | .arr a => a.bases
+  | .mv _ => []
+
+/-- The letters an inferred type names its open objects by: `α`…`ω` without `ο` and `π`, which read as `o`, `π₁`. -/
+def varNames : List String := ("αβγδεζηθικλμνξρστυφχψω".toList).map Char.toString
+
+/-- `o` with each unsolved variable of `os` named an object variable, `α β …` by first occurrence, skipping the
+    names `os` already holds: an inferred type as a declaration writes it. -/
+def gen (os : List OTy) (o : OTy) (avoid : List String := []) : OTy :=
+  let used := avoid ++ os.flatMap OTy.bases
+  let σ := (os.flatMap OTy.mvs).eraseDups.zip (varNames.filter (!used.contains ·))
+  let rec go : OTy → OTy
+    | .mv k => match σ.lookup k with | some n => .base n | none => .mv k
+    | .prod a b => .prod (go a) (go b)
+    | .sum a b => .sum (go a) (go b)
+    | .arr a => .arr (go a)
+    | o => o
+  go o
+
+/-- The body's type `s ⟶ t` against the declared `ty` of `n`, its variables the parameters' at this use (`vs`)
+    and fresh otherwise: the declared type determines the objects the body leaves open (§e). -/
+def declared (env : Env) (p : Pos) (n : String) (vs : List (String × OTy)) (ty : OExp × OExp) (s t : OTy) :
+    M Unit := do
+  let vs ← (ty.1.vars ++ ty.2.vars).foldlM (fun vs v => do
+    if (vs.lookup v).isSome then pure vs else pure ((v, ← fresh) :: vs)) vs
+  let a ← oty env vs ty.1; let b ← oty env vs ty.2
+  let st ← get
+  try
+    unify p "" s a
+    unify p "" t b
+  catch _ => do
+    let s := zonk st s; let t := zonk st t
+    throw ⟨p, s!"`{n}` is declared {OExp.arrow ty}, but its body is {gen [s, t] s} ⟶ {gen [s, t] t}"⟩
+
+/-- The type of `n`, as `rel --types` prints it: each parameter's (declared, its variables kept as written, or
+    inferred) and the body's, open objects named as variables; what a definition missing one should write. -/
+def inferSig (env : Env) (n : String) (ps : List Param) (b : Body) : M String := do
+  let bs ← ps.mapM fun P => do
+    match P.ty with
+    | some (x, y) =>
+      let vs := (x.vars ++ y.vars).map fun v => (v, OTy.base v)
+      pure (P.name, ← oty env vs x, ← oty env vs y)
+    | none => pure (P.name, ← fresh, ← fresh)
+  let env' := { env with params := bs.map fun (q, s, t) => (q, .rel (.zero s t) s t) }
+  let r ← match b with
+    | .rel e => do let (_, s, t) := (← elabE env' none e).plain; pure (some (s, t))
+    | .test e f => do let _ ← elabE env' none e; let _ ← elabE env' none f; pure none
+  let st ← get
+  let os := (bs.flatMap fun (_, s, t) => [s, t]) ++ (match r with | some (s, t) => [s, t] | none => [])
+  let os := os.map (zonk st)
+  -- a variable is not a name in scope (§e), nor the one being defined
+  let avoid := n :: env.defs.map (·.1)
+  let arr (s t : OTy) := s!"{gen os (zonk st s) avoid} ⟶ {gen os (zonk st t) avoid}"
+  pure (sigText n ((ps.zip bs).map fun (P, q, s, t) => (q, some ((P.ty.map OExp.arrow).getD (arr s t))))
+    (r.map fun (s, t) => arr s t))
+
 /-- A definition with parameters: its body elaborated at each use, lifted when a declared parameter is given
-    a family; a test `e ⊑ f` is the coreflexive `D − dom(R − S)` of the keys whose fibres pass. -/
-def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
+    a family, its result checked against the declared type `ty`; a test `e ⊑ f` is the coreflexive
+    `D − dom(R − S)` of the keys whose fibres pass. -/
+def mkDef (env : Env) (n : String) (dp : Pos) (ps : List Param) (body : Body) (ty : Option (OExp × OExp)) :
+    Def where
   arity := ps.length
   apply p args := do
     -- one instantiation of the object variables per use, shared by the parameters left to right (§e)
-    let (bs, _) ← (ps.zip args).foldlM (fun (bs, vs) (P, a) => do
+    let (bs, vs) ← (ps.zip args).foldlM (fun (bs, vs) (P, a) => do
       let (b, j, vs) ← bind env p P a vs; pure (bs ++ [(b, j)], vs)) ([], [])
+    let check (s t : OTy) : M Unit := match ty with
+      | some ty => declared env p n vs ty s t
+      | none => pure ()
     -- the distinct indices `I₀ … Iₙ` of the family arguments, and each family's place among them (§e, mixed terms)
     let mut ix : Array OTy := #[]
     let mut pl : List (Option Nat) := []
@@ -887,9 +959,12 @@ def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
       | _, _, _ => (n, a)
     let env' := { env with params := bound }
     match body, idx with
-    | .rel e, none => elabE env' none e
+    | .rel e, none => do
+      let r ← elabE env' none e
+      let (_, s, t) := r.plain; check s t; pure r
     | .rel e, some I => do
       let r ← famOf I p (← elabE env' (some I) e)
+      check r.2.1 r.2.2
       pure (.fam r.1 I r.2.1 r.2.2)
     | .test _ _, none => throw ⟨p, s!"the test defined at {dp} needs a family; write `check` for one relation"⟩
     | .test e f, some I => do
