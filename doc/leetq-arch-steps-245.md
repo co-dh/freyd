@@ -104,6 +104,8 @@ Each `if h : <count check> then kernel else reference` site in `Algebra.lean` (a
 
 ## Step 5: split `Algebra.lean` (2214 lines) into `Code`, `Alg`, and the guards
 
+DONE (branch `leetq-arch-step5`): `Code.lean` (codes, payload kernels, laws of codes), `Alg.lean` (operators, `conv_holds`), `AlgTest.lean` (guards); `Algebra.lean` is two imports; `le inter union conv comp diff lamOn nest` lost `private`.
+
 | part                                            | lines        | count | goes to         |
 |-------------------------------------------------|--------------|------:|-----------------|
 | header, long payloads, `Code`, payload kernels, `Part`, `pick`/`raze`/`codes`, the composite steps (`join`, `cross`, `anti`, `setIds`) | 1-812 | ~812 | `Code.lean` |
