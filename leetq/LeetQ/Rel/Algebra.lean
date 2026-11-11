@@ -1070,18 +1070,45 @@ def iter {α : Type} (n : Nat) (done : α → Bool) (f : α → α) (a : α) : �
   (hylo (·.1) (fun x => x.1 == 0 || done x.2) (fun x => (x.1 - 1, f x.2))
     (fun x h => by simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h; show x.1 - 1 < x.1; omega) (n, a)).2
 
+/-- The order `Q` as a test of pairs: the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
+    takes an order runs it as such a test, on the pairs it compares (`estOn`, …); `Q` closed is this test. -/
+def pairsIn {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
+  D ≫ idU (Q.key, Q.val)
+
+/-- The pairs `(b, c)` of the coreflexive `D` whose swap `(c, b)` passes the test `q`. -/
+def swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
+  let s := pair (outr D) (outl D)
+  dom (s ≫ q (ran s))
+
+/-- `thin(Q)` per key, `Q` the test `q` run on the pairs `⟨G,G⟩` of values of one key, never on every pair of
+    `ran G`: `(a, c)` dropped when some value `b` of `a` passes `(b, c)` and not `(c, b)`. `thin Q` is this at
+    `pairsIn Q`. -/
+def thinOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B)) (G : Rel A B) :
+    Rel A B :=
+  let P := pair G G
+  let D := ran P
+  G \ P ≫ outr (q D \ swapIn q D)
+
+/-- `est(Q)` per key, `Q` the test `q` run on the pairs `⟨G,G⟩` of values of one key: `(a, b)` dropped when
+    some other value `c` of `a` fails `(b, c)`. `est Q` is this at `pairsIn Q`. -/
+def estOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B)) (G : Rel A B) :
+    Rel A B :=
+  let P := pair G G
+  let D := ran P
+  let V := ran G
+  G \ P ≫ outl ((D \ q D) \ ran (pair V V))
+
+/-- `est(Q)` per key of the family `G : A ⟶ B`, the `Q`-least values, `∋ ∩ (∈ \ Q°)`: the rows `(a, b)` of
+    `G` with `b Q c` for every other value `c` of `a`. The pairs `(a, b)` it drops are those with a value `c`
+    of `a`, `c ≠ b`, and no `b Q c`, so `est`, as `thin`, reads `Q` up to its reflexive closure, and a strict
+    linear order answers as its reflexive one. -/
+def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := estOn (pairsIn Q) G
+
 /-- `thin(Q)` per key of the family `G : A ⟶ B`, the `Q`-minimal values: the rows `(a, b)` of `G` with no
     `(a, c)` of `G` where `c` is strictly `Q`-below `b`, the strict part being `Q \ Q°` (`Q` itself when
     strict). -/
-def thin {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := G \ G ≫ (Q \ Q°)
-
-/-- `est(Q)` per key of the family `G : A ⟶ B`, the `Q`-least values, `∋ ∩ (∈ \ Q°)`: the rows `(a, b)` of
-    `G` with `b Q c` for every other value `c` of `a`. The pairs `(a, b)` it drops are `G ≫ N°`, `N` the
-    pairs `(b, c)` of distinct values of `G` with no `b Q c` — `⊤` on `ran G` less `Q` less `𝟙`, so `est`, as
-    `thin`, reads `Q` up to its reflexive closure, and a strict linear order answers as its reflexive one. -/
-def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B :=
-  let d := (ran G).val
-  G \ G ≫ ((top (A := B) (B := B) d d \ Q) \ idU d)°
+def thin {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := thinOn (pairsIn Q) G
 
 /-- `cons° : arr B ⟶ B × arr B` on the arrays of `X`: each non-empty row to its first element and the rest.
     The rows with a clamped count above `0` (`whereBits`); the rest `lo + 1`, `hi` the clamped end, its payload
@@ -1266,18 +1293,38 @@ def length {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long
   let sc := succ (tilCol (X.1 + 1))
   foldOn (col [0]) (fun D => outr D ≫ sc) X
 
-/-- `filter(p)` on the arrays `X`, `p` a coreflexive. The note's `filter(p)≜frac(subseq p′,∋) est(R°)`
-    (diag/aop/07-optimisation.typ:1041; `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the
-    fold B&dM derive from it, `⦇[nil, (p×𝟙) cons ∪ (∼p×𝟙) π₂]⦈`: a head in `p` kept, any other dropped. -/
-def filter {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  foldBy X (nilVal E) fun el pend => cons (pair (el ≫ p) pend) ∪ dom (antiJoin el p) ≫ pend
+/-- The elements of `el` whose pair `(x, x)` passes the test `q`: a coreflexive `p` tested on the pairs. -/
+def keepOn {K E : Obj} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E)) (el : Rel K E) : Rel E E :=
+  let V := ran el
+  let d := pair V V
+  dom (d ≫ q (ran d))
 
-/-- `takewhile(p)` on the arrays `X`, `p` a coreflexive. The note's `takewhile(p)≜frac(prefix p′,∋) est(R°)`
-    (diag/aop/07-optimisation.typ:1052; `takewhile`, AOP/A7_7_TakeWhile.lean:283) is the specification; this is
-    the fold of its algebra `[nil, (p×𝟙) cons ∪ ⊸ nil]` (`Salg`, AOP/A7_7_TakeWhile.lean:277) with the
-    `⊸ nil` restricted to the heads outside `p`, which `est(R°)` picks. -/
+/-- `filter(p)` on the arrays `X`, `p` a coreflexive, run as the test `q` on the pairs `(x, x)` of the elements
+    each round meets (`keepOn`). The note's `filter(p)≜frac(subseq p′,∋) est(R°)` (diag/aop/07-optimisation.typ:1041;
+    `filter`, AOP/A7_7_Filter.lean:58) is the specification; this is the fold B&dM derive from it,
+    `⦇[nil, (p×𝟙) cons ∪ (∼p×𝟙) π₂]⦈`: a head in `p` kept, any other dropped. `filter p` is this at `pairsIn p`. -/
+def filterOn {E : Obj} {n : Nat} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E))
+    (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  foldBy X (nilVal E) fun el pend =>
+    let p := keepOn q el
+    cons (pair (el ≫ p) pend) ∪ dom (antiJoin el p) ≫ pend
+
+def filter {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  filterOn (pairsIn p) X
+
+/-- `takewhile(p)` on the arrays `X`, `p` a coreflexive run as the test `q` (`keepOn`). The note's
+    `takewhile(p)≜frac(prefix p′,∋) est(R°)` (diag/aop/07-optimisation.typ:1052; `takewhile`,
+    AOP/A7_7_TakeWhile.lean:283) is the specification; this is the fold of its algebra `[nil, (p×𝟙) cons ∪ ⊸ nil]`
+    (`Salg`, AOP/A7_7_TakeWhile.lean:277) with the `⊸ nil` restricted to the heads outside `p`, which `est(R°)`
+    picks. `takewhile p` is this at `pairsIn p`. -/
+def takewhileOn {E : Obj} {n : Nat} (q : Rel (.prod E E) (.prod E E) → Rel (.prod E E) (.prod E E))
+    (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
+  foldBy X (nilVal E) fun el pend =>
+    let p := keepOn q el
+    cons (pair (el ≫ p) pend) ∪ top (antiJoin el p).key (nilVal E)
+
 def takewhile {E : Obj} {n : Nat} (p : Rel E E) (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
-  foldBy X (nilVal E) fun el pend => cons (pair (el ≫ p) pend) ∪ top (antiJoin el p).key (nilVal E)
+  takewhileOn (pairsIn p) X
 
 /-- `prefix : arr E ⟶ arr E` on the arrays `X`, each array to each of its initial segments (`prefix`,
     AOP/A5_6_ListCombinators.lean:97): `⦇[nil, cons ∪ ⊸ nil]⦈`. -/
@@ -1438,17 +1485,25 @@ def bagify {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
 /-- `ordered(Q)`, the coreflexive on the arrays `X` that are `Q`-ordered, each element `Q`-below every later
     one (`orderedP`, AOP/A5_6_ListCombinators.lean:162): the arrays with no non-empty suffix `y :: ys` and `z`
     of `ys` outside `y Q z`. `cons°` of the suffixes, the pairs `(y, z)`, those no pair of `Q` (`antiJoin`). -/
-def ordered {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+def orderedOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   let T := suffix X ≫ uncons (ran (suffix X)).val
   let D := ran T
-  let bad := antiJoin (pair (outl D) (outr D ≫ mem (outr D).val)) (idU (Q.key, Q.val))
+  let yz := pair (outl D) (outr D ≫ mem (outr D).val)
+  let bad := antiJoin yz (q (ran yz))
   antiJoin (idU X) (dom (T ≫ dom bad))
 
+/-- `ordered(Q)`, `Q` closed: `orderedOn` at `pairsIn Q`, the test run on the pairs `(y, z)` it compares. -/
+def ordered {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := orderedOn (pairsIn Q) X
+
 /-- `sort(Q) ≜ perm ordered(Q)` on the arrays `X` (ch. 6, `selection_sort_correct`'s specification): each
-    array to its `Q`-ordered rearrangements. -/
-def sort {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+    array to its `Q`-ordered rearrangements, `Q` the test `q`. -/
+def sortOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   let Pm := perm X
-  Pm ≫ ordered Q (ran Pm).val
+  Pm ≫ orderedOn q (ran Pm).val
+
+def sort {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := sortOn (pairsIn Q) X
 
 /-- `sort(Q) ≜ setify° ordered(Q) : P B ⟶ arr B` (`sortRel`, AOP/A8_3.lean:77; B&dM p.201, "sorting sets"):
     a set to its `Q`-ordered listings among the arrays `Y`. A relation into lists has no finite image without
@@ -1471,12 +1526,32 @@ def thinL {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B)
   let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (Q° ≫ (mem S)°) S S
   (setify Y ≫ T ≫ (setify Y)°) ∩ U
 
+/-- Binary thinning in one pass, the note's implementation of `thinL(Q)` (`bumpFold_le_thinL`,
+    AOP/A8_3.lean:629, `⦇[τ, bump(Q)]⦈ ⊑ thinL(Q)`): each element `a` bumped into the thinned rest `ys` —
+    `[a]` when `ys` is empty, else with `b` its head `a` replaces `b` when `a Q b`, `b` stays alone when `b Q a`,
+    both stay when neither (`bumpRel_cons`, AOP/A8_3.lean:381). `Q` is the test `q` on the pairs `(a, b)` each
+    round meets, so `Q` needs no universe; `thinL Q` is the specification it refines. -/
+def thinLOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  foldBy X (nilVal B) fun el pend =>
+    let p := pair el pend
+    let D := ran p
+    let a := outl D
+    let ys := outr D
+    let u := ys ≫ uncons ys.val
+    let ab := pair a (outl u)
+    let up := dom (ab ≫ q (ran ab))
+    let down := dom (ab ≫ swapIn q (ran ab))
+    let lone := D \ dom u ∪ ((dom u \ up) \ down)
+    p ≫ (cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
+
 /-- `merge(Q) : arr B × arr B ⟶ arr B` on the rows of `P` (`merge`, AOP/A8_3.lean:1147; B&dM p.156): the
     book's equations as rounds of `iter` on the states `((x, y), acc)`, `acc` the output so far: with both
     non-empty the head `a` of `x` goes to `acc` when `a Q b`, `b` the head of `y`, else `b`; with either empty
     the state ends as `acc` then `x` then `y`. A round shortens `x` or `y`, so the cells of both payloads
     plus one bound the rounds. -/
-def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
+def mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
   let round : Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) →
       Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) := fun (out, St) =>
     let D := ran St
@@ -1486,12 +1561,16 @@ def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel 
     let ux := x ≫ uncons x.val
     let uy := y ≫ uncons y.val
     let both := dom (pair ux uy)
-    let l := dom (pair (outl ux) (outl uy) ≫ idU (Q.key, Q.val))
+    let h := pair (outl ux) (outl uy)
+    let l := dom (h ≫ q (ran h))
     let take := l ≫ pair (pair (outr ux) y) (snoc (pair acc (outl ux))) ∪
       antiJoin both l ≫ pair (pair x (outr uy)) (snoc (pair acc (outl uy)))
     (out ∪ St ≫ antiJoin D both ≫ cat (pair (cat (pair acc x)) y), St ≫ take)
   (iter (P.val.1.1 + P.val.2.1 + 1) (fun s => s.2.n == 0) round
     (zero, P ≫ pair (idU (ran P).val) (top (ran P).val (nilVal B)))).1
+
+/-- `merge(Q)`, `Q` closed: `mergeOn` at `pairsIn Q`, the test run on the pairs of heads it compares. -/
+def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) := mergeOn (pairsIn Q) P
 
 /-- `loop(F) : X × arr Y ⟶ X` on the rows of `P` (`loop`, AOP/A9_3_Bracket.lean:1686; B&dM Appendix), `F`
     folded along the array from the left: rounds of `iter` taking `(c, y :: ys)` to `(F(c, y), ys)`, a state
