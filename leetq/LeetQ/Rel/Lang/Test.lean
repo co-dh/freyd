@@ -112,16 +112,16 @@ def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj 
 
 -- `ζ(0) = S₀`; `ζ(1)` is `S₀` with `C` moved to the table
 #guard (ok twoIdx).prints.drop 1 == [
-  "s₀ × {(0, 0)} k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 0), (A, A)), (({(A, A), (B, B), (C, A)}, 0), (B, B)), " ++
-    "(({(A, A), (B, B), (C, A)}, 0), (C, A))}",
-  "s₀ × {(1, 1)} k(∋, ζ ∋) = {(({(A, A), (B, B), (C, A)}, 1), (A, A)), (({(A, A), (B, B), (C, A)}, 1), (B, B))}"]
+  "s₀ × {(0, 0)} k(∋, ζ ∋) = {(((A, A) (B, B) (C, A), 0), (A, A)), (((A, A) (B, B) (C, A), 0), (B, B)), " ++
+    "(((A, A) (B, B) (C, A), 0), (C, A))}",
+  "s₀ × {(1, 1)} k(∋, ζ ∋) = {(((A, A) (B, B) (C, A), 1), (A, A)), (((A, A) (B, B) (C, A), 1), (B, B))}"]
 
 -- at `S₀`, `∼S₀` gives `A` the values `B C`, `B` the values `A C`, `C` the values `B C`: the least of each
 #guard (ok orders).prints.drop 1 == [
-  "s₀ lf(Y(∋), Of) = {({(A, A), (B, B), (C, A)}, (A, B)), ({(A, A), (B, B), (C, A)}, (B, A)), " ++
-    "({(A, A), (B, B), (C, A)}, (C, B))}",
-  "s₀ tf(Y(∋), Of) = {({(A, A), (B, B), (C, A)}, (A, {B})), ({(A, A), (B, B), (C, A)}, (B, {A})), " ++
-    "({(A, A), (B, B), (C, A)}, (C, {B}))}"]
+  "s₀ lf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, B)), ((A, A) (B, B) (C, A), (B, A)), " ++
+    "((A, A) (B, B) (C, A), (C, B))}",
+  "s₀ tf(Y(∋), Of) = {((A, A) (B, B) (C, A), (A, [B])), ((A, A) (B, B) (C, A), (B, [A])), " ++
+    "((A, A) (B, B) (C, A), (C, [B]))}"]
 
 #guard given.isOk && table.isOk && cycle.isOk
 #guard (ok given).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
@@ -203,26 +203,26 @@ def lists : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
 
 -- `thinL(≤)` keeps a subsequence holding, for each element dropped, a lower one: here every one holding `1`
 #guard (ok lists).prints == [
-  "x inits = {(a, {{}, {3}, {3, 1}, {3, 1, 2}}), (b, {{}, {1}, {1, 5}})}",
-  "x tails = {(a, {{3, 1, 2}, {1, 2}, {2}, {}}), (b, {{1, 5}, {5}, {}})}",
-  "⟨x, y⟩ cat = {(a, {3, 1, 2, 7}), (b, {1, 5, 8, 9})}",
-  "x cat° = {(a, ({}, {3, 1, 2})), (a, ({3}, {1, 2})), (a, ({3, 1}, {2})), (a, ({3, 1, 2}, {})), " ++
-    "(b, ({}, {1, 5})), (b, ({1}, {5})), (b, ({1, 5}, {}))}",
-  "⟨x, y⟩ zip = {(a, {(3, 7)}), (b, {(1, 8), (5, 9)})}",
-  "⟨x, {(a, 4), (b, 6)}⟩ snoc = {(a, {3, 1, 2, 4}), (b, {1, 5, 6})}",
-  "x snoc° = {(a, ({3, 1}, 2)), (b, ({1}, 5))}",
-  "x init = {(a, {3, 1}), (b, {1})}",
-  "x inits concat = {(a, {3, 3, 1, 3, 1, 2}), (b, {1, 1, 5})}",
-  "y perm = {(a, {7}), (b, {8, 9}), (b, {9, 8})}",
-  "z setify = {(a, {1, 2, 3})}",
-  "z bagify = {(a, {1, 2, 3, 3})}",
-  "x ordered(≤) = {(b, {1, 5})}",
-  "x sort(≤) = {(a, {1, 2, 3}), (b, {1, 5})}",
-  "y subseq = {(a, {}), (a, {7}), (b, {}), (b, {8}), (b, {8, 9}), (b, {9})}",
-  "x thinL(≤) = {(a, {1}), (a, {1, 2}), (a, {3, 1}), (a, {3, 1, 2}), (b, {1}), (b, {1, 5})}",
-  "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, {1, 2, 3, 5})}",
+  "x inits = {(a, [] [3] [3 1] [3 1 2]), (b, [] [1] [1 5])}",
+  "x tails = {(a, [3 1 2] [1 2] [2] []), (b, [1 5] [5] [])}",
+  "⟨x, y⟩ cat = {(a, 3 1 2 7), (b, 1 5 8 9)}",
+  "x cat° = {(a, ([], 3 1 2)), (a, ([3], 1 2)), (a, (3 1, [2])), (a, (3 1 2, [])), " ++
+    "(b, ([], 1 5)), (b, ([1], [5])), (b, (1 5, []))}",
+  "⟨x, y⟩ zip = {(a, [(3, 7)]), (b, (1, 8) (5, 9))}",
+  "⟨x, {(a, 4), (b, 6)}⟩ snoc = {(a, 3 1 2 4), (b, 1 5 6)}",
+  "x snoc° = {(a, (3 1, 2)), (b, ([1], 5))}",
+  "x init = {(a, 3 1), (b, [1])}",
+  "x inits concat = {(a, 3 3 1 3 1 2), (b, 1 1 5)}",
+  "y perm = {(a, [7]), (b, 8 9), (b, 9 8)}",
+  "z setify = {(a, 1 2 3)}",
+  "z bagify = {(a, 1 2 3 3)}",
+  "x ordered(≤) = {(b, 1 5)}",
+  "x sort(≤) = {(a, 1 2 3), (b, 1 5)}",
+  "y subseq = {(a, []), (a, [7]), (b, []), (b, [8]), (b, 8 9), (b, [9])}",
+  "x thinL(≤) = {(a, [1]), (a, 1 2), (a, 3 1), (a, 3 1 2), (b, [1]), (b, 1 5)}",
+  "⟨Λ({(a, 1), (a, 5)}), Λ({(a, 2), (a, 3)})⟩ merge(≤) = {(a, 1 2 3 5)}",
   "⟨{(a, 0), (b, 1)}, x⟩ loop(plus) = {(a, 6), (b, 7)}",
-  "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, {{5}, {5, 1}, {5, 1, 2}})}"]
+  "⟨{(a, 5)}, Λ({(a, 1), (a, 2)})⟩ tic = {(a, [5] [5 1] [5 1 2])}"]
 
 /-- A list builtin in a lifted body takes the closed row (§e): at each key of a two-key family the fibre of the
     lifted body is the body on the fibre. -/
@@ -272,7 +272,7 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
   "step ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩\n" ++
   "ds ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂\nprint ds\n")
 
-#guard (ok digits).prints == ["ds = {(107, {1, 0, 7})}"]
+#guard (ok digits).prints == ["ds = {(107, 1 0 7)}"]
 
 -- a parameterised list builtin given a family
 #guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3 "not liftable"
@@ -283,6 +283,36 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
     (get o "L" (.prod .long .long) (.prod .long .long)).map (·.toList) == some [((0, 0), (1, 1)), ((1, 1), (0, 0))]
   | .error _ => false
 #guard errAt "obj X = {A,B}\nL ≜ {((A,B),A),(A,B)}\n" 2 "nest alike"
+
+/-! Array literals (§c): two or more items juxtaposed, or `[…]`; an element position is one object over the
+    elements of all rows' arrays there, at any depth and on either side; printed as it is read. -/
+
+/-- The value printed by each `print` of `src`, after its ` = `. -/
+def printed (src : String) : List String := (ok (runText src)).prints.map fun s => (s.splitOn " = ").getLastD ""
+
+def arrs : String :="obj 1 = {∗}\nobj N = -3…9\nobj K = {a,b}\n" ++
+  "x ≜ {(∗,3 1 2)}\nxc ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons\ncheck x = xc\ncheck {(∗,[3 1 2])} = xc\n" ++
+  "check {(∗,[1])} = ⟨{(∗,1)},nil⟩cons\ncheck {(∗,[1] [2 3])} = ⟨{(∗,[1])},⟨{(∗,2 3)},nil⟩cons⟩cons\n" ++
+  "check {(∗,(1,2) (3,4))} = ⟨{(∗,(1,2))},⟨{(∗,(3,4))},nil⟩cons⟩cons\n" ++
+  "print x\nprint {(a b,1)}\nprint {(∗,(1,2) (3,4))}\nprint {(∗,[1] [2 3])}\nprint {((a,1 2),[3])}\n" ++
+  "print {(a,-1 2),(b,[])}\nprint {(∗,[1 2] [])}\nprint {(3 1 2,a b)}\nprint {(∗,[[]] [[1]])}\n"
+
+#guard printed arrs == ["{(∗, 3 1 2)}", "{(a b, 1)}", "{(∗, (1, 2) (3, 4))}", "{(∗, [1] [2 3])}",
+  "{((a, 1 2), [3])}", "{(a, -1 2), (b, [])}", "{(∗, [1 2] [])}", "{(3 1 2, a b)}", "{(∗, [[]] [[1]])}"]
+#guard match runText arrs with
+  | .ok o => (get o "x" .long (.arr .long)).map (·.toList) == some [((0 : Int64), [(3 : Int64), 1, 2])]
+  | .error _ => false
+-- a printed literal reads back as itself
+#guard ["{(∗, 3 1 2)}", "{(∗, [1] [2 3])}", "{((a, 1 2), [3])}", "{(b, [])}", "{(∗, (1, 2) (3, 4))}"].all trip
+-- an element position whose arrays are all empty, a word in no object, rows nesting differently, a comma
+def arrE : String := "obj 1 = {∗}\nobj N = 0…9\n"
+#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 3 "the object of [] cannot be read off an empty array: write nil(A,[O])"
+#guard errAt (arrE ++ "e ≜ {(∗,[[]] [])}\n") 3 "the object of [] cannot be read off an empty array: write nil(A,[O])"
+#guard errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 3 "no declared object has the elements [1, 12]"
+#guard errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 3
+  "the rows of a literal nest alike: found 3, expected the form of 1 2"
+#guard errAt (arrE ++ "e ≜ {(∗,(1,2) 3)}\n") 3 "the rows of a literal nest alike: found 3, expected the form of (1, 2)"
+#guard errAt (arrE ++ "e ≜ {(∗,[1,2])}\n") 3 "the elements of an array are separated by spaces, not ','"
 
 /-! Signed numbers (§a, §c): a range `-3…3`, signed literal words, `succ ≤ <` and the value verbs on it, each
     against Lean's `Int` (`div` floors and `mod` takes the divisor's sign, as q's: `Int.fdiv`, `Int.fmod`); a print
@@ -298,7 +328,7 @@ def sameSet {α : Type} [BEq α] (a b : List α) : Bool := a.all b.contains && b
 def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) => (a.toInt, b.toInt)
 
 #guard signed.isOk
-#guard (ok signed).prints == ["x = {(a, -3), (a, -1), (b, 2)}", "Λ(x) = {(a, {-3, -1}), (b, {2})}",
+#guard (ok signed).prints == ["x = {(a, -3), (a, -1), (b, 2)}", "Λ(x) = {(a, -3 -1), (b, [2])}",
   "x − {(a, -3)} = {(a, -1), (b, 2)}", "{(-1, -1)} − {(2, 2)} = {(-1, -1)}"]
 -- `succ` at `-1` gives `0`, at the top `3` nothing; `≤`, `<` the numeric order
 #guard (get (ok signed) "s" .long .long).map ints == some ((zs.filter (· < 3)).map fun a => (a, a + 1))
@@ -349,8 +379,6 @@ def reading : Decl → Option (String × String)
 /-! Terms on an object with no universe (§a): a converse pushed to the leaves, a division tested on the pairs a
     meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
 
-/-- The value printed by each `print` of `src`, after its ` = `. -/
-def printed (src : String) : List String := (ok (runText src)).prints.map fun s => (s.splitOn " = ").getLastD ""
 
 def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[Ch])\nx ≜ ⟨{(∗,a)}, ⟨{(∗,b)}, e⟩cons⟩cons\n" ++
   "y ≜ ⟨{(∗,a)}, ⟨{(∗,a)}, ⟨{(∗,b)}, e⟩cons⟩cons⟩cons\nns ≜ ⟨{(∗,2)}, ⟨{(∗,3)}, nil⟩cons⟩cons\n" ++
@@ -360,8 +388,8 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[
 -- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
 #guard printed (chs ++ "print x cons° (perm cons°)°\nprint x (perm ∩ perm)° cons°\nprint x ⟨cons°π₁, perm⟩°° π₂\n" ++
   "print x (dom(π₁{(a,a)}) cons)°\nprint x (dom(π₁{(b,b)}) cons)°\n") ==
-  ["{(∗, {a, b}), (∗, {b, a})}", "{(∗, (a, {b})), (∗, (b, {a}))}", "{(∗, {a, b}), (∗, {b, a})}",
-   "{(∗, (a, {b}))}", "{}"]
+  ["{(∗, a b), (∗, b a)}", "{(∗, (a, [b])), (∗, (b, [a]))}", "{(∗, a b), (∗, b a)}",
+   "{(∗, (a, [b]))}", "{}"]
 -- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₂⟩°`, `∋` in `∈`
 #guard errAt (chs ++ "print x (cons° ⟨π₁,π₂⟩ cons)°\n") 11 "the converse of π₁ does not run on demand"
 #guard errAt (chs ++ "print {(∗,a)} ∈\n") 11 "the converse of ∋ does not run on demand"
@@ -369,15 +397,15 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[
 #guard printed (chs ++ "print ⟨{(∗,1)},ns⟩ok\nprint ⟨{(∗,3)},ns⟩ok\nprint ⟨{(∗,2)},ns⟩ok\n" ++
   "print ms (∋ ∩ (cons\\(π₁ ≤)))\nprint ks (subseq ∩ frac(∋,∋))\n" ++
   "print ⟨{(∗,3)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,1)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,3)},ns⟩(π₂ − (π₁(≤/∋)))\n") ==
-  ["{(∗, (1, {2, 3}))}", "{}", "{(∗, (2, {2, 3}))}", "{(∗, 3)}", "{(∗, {3, 1}), (∗, {3, 1, 1})}",
-   "{(∗, {2, 3})}", "{}", "{(∗, {2, 3})}"]
+  ["{(∗, (1, 2 3))}", "{}", "{(∗, (2, 2 3))}", "{(∗, 3)}", "{(∗, 3 1), (∗, 3 1 1)}",
+   "{(∗, 2 3)}", "{}", "{(∗, 2 3)}"]
 -- refused: a division with no term on demand to test it against, and a meet of two
 #guard errAt (chs ++ "print {(∗,1)}(≤/∋)\n") 11 "R/S reads its operands whole"
 #guard errAt (chs ++ "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n") 11 "R/S reads its operands whole"
 -- `R×S` on demand as `⟨π₁R,π₂S⟩`; closed, as before
 #guard printed (chs ++ "print ⟨{(1,1)},⟨{(1,2)},Λ({(1,1)})⟩⟩(𝟙×π₁)plus\nprint y cons°(𝟙×perm)\n" ++
   "print ⟨x,{(∗,b)}⟩(perm×𝟙)\nprint {(1,1)}×{(2,3)}\n") ==
-  ["{(1, 3)}", "{(∗, (a, {a, b})), (∗, (a, {b, a}))}", "{(∗, ({a, b}, b)), (∗, ({b, a}, b))}", "{((1, 2), (1, 3))}"]
+  ["{(1, 3)}", "{(∗, (a, a b)), (∗, (a, b a))}", "{(∗, (a b, b)), (∗, (b a, b))}", "{((1, 2), (1, 3))}"]
 -- refused: an operand that does not run, named; the object printed as the program writes it, `[Ch]`
 #guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 11 "the converse of ∋ does not run on demand"
 #guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 11 "[Ch] has no universe"

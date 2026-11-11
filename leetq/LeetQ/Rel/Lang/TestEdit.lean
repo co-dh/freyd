@@ -23,7 +23,7 @@ def cost : List Char → List Char → Nat
 /-- The strings of length ≤ 2 over `{a,b}`. -/
 def strs : List (List Char) := [[]] ++ [['a'], ['b']] ++ [['a','a'], ['a','b'], ['b','a'], ['b','b']]
 
-def word (s : List Char) : String := "{" ++ ", ".intercalate (s.map toString) ++ "}"
+def word (s : List Char) : String := arrText false (s.map toString)
 
 /-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order: by element (`Eval.cmpEl`),
     an array lexicographically with a prefix first, which on strings is the order of `String`. -/

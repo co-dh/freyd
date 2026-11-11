@@ -5,10 +5,10 @@ obj N = 0…9                                   -- the elements
 
 R ≜ ≤                                         -- the preorder, fixed for the whole of §6.6
 
--- the inputs, each an array 1 ⟶ [N] built by cons from nil
-x ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons
-y ≜ ⟨{(∗,2)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons                  -- a repeated element
-z ≜ ⟨{(∗,5)}, ⟨{(∗,4)}, ⟨{(∗,3)}, ⟨{(∗,2)}, ⟨{(∗,1)}, nil⟩cons⟩cons⟩cons⟩cons⟩cons
+-- the inputs, each an array 1 ⟶ [N] written as a literal
+x ≜ {(∗,3 1 2)}
+y ≜ {(∗,2 1 2)}                               -- a repeated element
+z ≜ {(∗,5 4 3 2 1)}
 e ≜ nil(1,[N])                                -- the empty array
 
 ok ≜ dom(π₁(R/∋) ∩ π₂)                        -- (a, xs) with a R-below every element of xs (Lean `ok`)
