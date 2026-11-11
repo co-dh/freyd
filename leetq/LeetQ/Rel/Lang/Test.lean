@@ -233,6 +233,31 @@ def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj 
 
 #guard listsLifted.isOk
 
+/-- Orders on demand (§a): each operator runs its order on the pairs it compares, here `R ≜ length ≤ length°` on
+    `[N]`, which has no universe; a closed order as before; and `∼R`, tested as the complement of `R`'s test. -/
+def onDemand : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\n" ++
+  "L ≜ {(a,[1 2] [3] [8]),(b,[5] [4 6 7] [9])}\nG ≜ Λ(L∋)\nR ≜ length ≤(N,N) length°\np ≜ dom(length{(1,1)})\n" ++
+  "print G est(R)\nprint G thin(R)\nprint L filter(p)\nprint L takewhile(p)\n" ++
+  "print {(a,[3] [1 2]),(b,[1 2] [3])} ordered(R)\nprint L sort(R)\nprint L thinL(R)\n" ++
+  "print ⟨L sort(R),{(a,[[1 2]]),(b,[[5]])}⟩merge(R)\nprint Λ({(a,3),(a,1),(b,5)})est(≤)\nprint G est(∼R)\n")
+
+#guard (ok onDemand).prints == [
+  "G est(R) = {(a, [3]), (a, [8]), (b, [5]), (b, [9])}",
+  "G thin(R) = {(a, [3] [8]), (b, [5] [9])}",
+  "L filter(p) = {(a, [3] [8]), (b, [5] [9])}",
+  "L takewhile(p) = {(a, []), (b, [[5]])}",
+  "{(a, [3] [1 2]), (b, [1 2] [3])} ordered(R) = {(a, [3] [1 2])}",
+  "L sort(R) = {(a, [3] [8] [1 2]), (a, [8] [3] [1 2]), (b, [5] [9] [4 6 7]), (b, [9] [5] [4 6 7])}",
+  "L thinL(R) = {(a, [[3]]), (a, [[8]]), (b, [[5]]), (b, [[9]])}",
+  "⟨L sort(R), {(a, [[1 2]]), (b, [[5]])}⟩ merge(R) = {(a, [3] [8] [1 2] [1 2]), (a, [8] [3] [1 2] [1 2]), " ++
+    "(b, [5] [9] [5] [4 6 7]), (b, [9] [5] [5] [4 6 7])}",
+  "Λ({(a, 3), (a, 1), (b, 5)}) est(≤) = {(a, 1), (b, 5)}",
+  "G est(∼R) = {(a, 1 2), (b, 4 6 7)}"]
+-- refused: an order with a leaf that reads its argument whole, so neither side of its composition is tested
+#guard errAt "obj N = 0…9\nobj K = {a,b}\nL ≜ {(a,[1 2] [3])}\nS ≜ ran(𝟙([N])) length ≤(N,N) length°\nprint L sort(S)\n" 4
+  ("sort( ) runs its order on the pairs it compares, and the order is not testable on pairs (§a): " ++
+   "ran( ) reads its argument whole: [N] has no universe")
+
 /-! The kernel's value verbs of §b on pairs of numbers, each `Alg.arith` with its opcode: a result outside the
     declared object has no row (`minus` below `0`, as `succ` at the top), nor a zero divisor. -/
 

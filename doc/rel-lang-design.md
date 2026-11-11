@@ -67,6 +67,17 @@ rows (§e) and of the program in §g.
   | `R×S`, an operand     | `⟨π₁R,π₂S⟩` on demand; with both operands       | both operands run                     |
   | whose source has no   | closed on their sources' universes, `prod` as   |                                       |
   | universe              | before                                          |                                       |
+  | the order `Q` of      | `τ(Q)` run on the pairs the operator compares   | `Q` testable on pairs (below); a      |
+  | `est thin filter      | (`estOn thinOn filterOn takewhileOn orderedOn   | closed `Q` is `pairsIn Q`, an order   |
+  | takewhile ordered     | sortOn mergeOn thinLOn`, `Alg`), so `Q` on an   | on demand runs on just those pairs    |
+  | sort thinL merge`     | object with no universe (`[N]`)                 |                                       |
+
+  So `R ≜ length ≤(N,N) length°` on `[N]` is a definition that is TESTED but not BUILT: `length°` does not run on
+  demand, so `R` has no value of its own, and it is read by the row `TQ` below as
+  `τ(R) = dom(⟨π₁,π₂length⟩τ(length ≤))`, which `est(R)` runs on the pairs of arrays it compares. An order that
+  neither builds nor tests is refused at its definition (`ran(𝟙([N])) length ≤(N,N) length°`: "sort( ) runs its
+  order on the pairs it compares, and the order is not testable on pairs (§a): ran( ) reads its argument whole:
+  [N] has no universe; …"). The annotation `(N,N)` is needed because `length`'s target is otherwise undetermined.
 
   `τ(R) : A×B ⟶ A×B`, for `R : A ⟶ B`, is the coreflexive on the pairs `(a,b)` in demand with `a R b`. A term
   is testable on pairs when it is one of these, its parts as stated:
@@ -94,10 +105,12 @@ rows (§e) and of the program in §g.
   | whole: `O` has no universe; …"                              |                                              |
   | "R/S reads its operands whole outside a meet with a term    | a division with no local side to test it     |
   | run on demand: `O` has no universe; …" (and `R\S`, `frac`)  | against                                      |
-  | "`f( )` reads its argument whole: …" (`ran est thin filter  | an argument that must be closed (§b)         |
-  | takewhile ordered sort thinL merge`), "[R,S] reads its      |                                              |
+  | "`ran( )` reads its argument whole: …", "[R,S] reads its    | an argument that must be closed (§b)         |
   | parts whole", "R+S reads its operands whole", "the fold's   |                                              |
   | start is read whole", "∈", "α"                              |                                              |
+  | "`f( )` runs its order on the pairs it compares, and the    | an order parameter not testable on pairs     |
+  | order is not testable on pairs (§a): …" (`est thin filter   | (above), the leaf's error after the colon    |
+  | takewhile ordered sort thinL merge`)                        |                                              |
   | "`what`: `O` has no universe; …" (`⊤'s target`, `R/S`, …)   | an operator's own universe                   |
 
   `O` is printed as the program writes an array, `[N]`: `𝒫A` and `[A]` are one object.
@@ -166,7 +179,8 @@ zip init concat setify bagify subseq tic thinL merge loop ⦇e,S⦈`.
 - `Λ(G) est(Q)` runs as `est Q G` (B&dM's `Λ(S) min R`): both are the `Q`-least value of each key of `G`.
 - `−` replaces the earlier design's `\` for difference, because the note writes `\` for left division.
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
-  `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q` closed, as `filter(p)`'s `p`.
+  `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; the order `Q` (and `filter(p)`'s `p`) on
+  the pairs the operator compares (§a), closed or not.
   A converse with a name runs as that op (`cat°`, `snoc°`).
 - `loop(F)` runs `F` on the pairs `(c,y)` each round meets, as `⦇e,S⦈` runs `S`: `Alg.loopOn` takes `F` as a
   function of the coreflexive on those pairs, and `Alg.loop F` is `loopOn (fun _ => F)`. So the state may have
@@ -361,24 +375,29 @@ row).
 | `∋ ∈ union τ nil α cons°`       | closed, on the arrays in demand            | the same at every key                |
 | `E(R)`                          | `Λ(∋R)` by the rows, `∋` closed            | `E(R) = Λ(∋R)`, Algebra.lean:1169    |
 | `P(R)`                          | not liftable                               | target `𝒫B`: no universe, no demand  |
-| `F(R) filter(p) takewhile(p)`   | closed: closed; a family: not liftable     | one `R` for every array              |
+| `F(R)`                          | closed: closed; a family: not liftable     | one `R` for every array              |
+| `filter(p) takewhile(p)`        | `p` closed or tested on pairs: closed; a   | one `p` for every array              |
+|                                 | family: not liftable                       |                                      |
 | `X⦇e,S⦈` ✓, `X : I ⟶ A×[E]`,    | `⟨𝟙,X⟩⟨π₂π₁,⟨π₁,π₂π₂⟩⦇e,S'⦈ᴵ⟩`;            | each array folded by the seed and    |
 | `e : I ⟶ V×V`,                  | `⦇e,S'⦈ᴵ : I×[E] ⟶ V` one `foldOn`,        | step of its own key: `S'` carries    |
 | `S : I ⟶ (E×V)×V`               | carrier `I×V`, seeded at each key by `e`,  | the key                              |
 |                                 | `S' ≜ ⟨π₂π₁,⟨π₁,π₂π₂⟩⟩⟨π₁,Sᴵ⟩`             |                                      |
 | `⦇e,S⦈` alone                   | closed: closed; a family: not liftable     | its arrays come from its left        |
-| `Xest(Q)`, `X : I ⟶ A×𝒫B`       | closed `Q`: `X⟨π₁,π₂est(Q)⟩`               | `est` on each value of `X`           |
+| `Xest(Q)`, `X : I ⟶ A×𝒫B`       | `Q` closed or tested on pairs:             | `est` on each value of `X`           |
+|                                 | `X⟨π₁,π₂est(Q)⟩`                           |                                      |
 |                                 | a family `Q`: `G ∩ (G°\Q°)` by the rows,   | `Q`-below each value of `a`          |
 |                                 | `G ≜ X⟨π₁,π₂∋⟩`                            |                                      |
-| `Xthin(Q)`, `X : I ⟶ A×𝒫B`      | closed `Q`: `X⟨π₁,π₂thin(Q)⟩`              | `thin` on each value of `X`          |
+| `Xthin(Q)`, `X : I ⟶ A×𝒫B`      | `Q` closed or tested on pairs:             | `thin` on each value of `X`          |
+|                                 | `X⟨π₁,π₂thin(Q)⟩`                          |                                      |
 |                                 | a family `Q`: `Λ(G − (G(Q − Q°)))` by the  | `thin Q G`, Algebra.lean:1035        |
 |                                 | rows, `G` as for `est`                     |                                      |
 | `length sum head tail prefix …` | closed                                     | the same at every key                |
 | `inits tails init cat cat°`,    | closed                                     | the same at every key                |
 | `concat zip snoc snoc° perm`,   |                                            |                                      |
 | `subseq setify bagify tic`      |                                            |                                      |
-| `ordered(Q) sort(Q) thinL(Q)`,  | closed: closed; a family: not liftable     | one `Q`, `F` for every array or pair |
-| `merge(Q) loop(F)`              |                                            |                                      |
+| `ordered(Q) sort(Q) thinL(Q)`,  | `Q` closed or tested on pairs: closed; a   | one `Q` for every array or pair      |
+| `merge(Q)`                      | family: not liftable                       |                                      |
+| `loop(F)`                       | closed: closed; a family: not liftable     | one `F` for every pair               |
 | `succ ≤ <`, `{(a,b),…}`,        | closed                                     | the same at every key                |
 | `plus times minus div mod`,     |                                            |                                      |
 | `max min`                       |                                            |                                      |

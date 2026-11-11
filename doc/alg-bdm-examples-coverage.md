@@ -33,7 +33,7 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no; written: `leetq/programs/edit.rel` (spec only) |
 | 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined)             | no              |
 | 9   | data compression         | `code_laws` 09:1060                        | `thin` `Λ` `P` `est` `prefix` `cat` `snoc` `Arr.sum`      | `μ`                          | no              |
-| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | — written: `leetq/programs/detab.rel`; differs from the note: the snoc-list folds `detab`, `triple` are `reverse ⦇…⦈` with the step's arguments swapped (`⦇e,S⦈` folds from the right, `loop(F)` refuses an array state); `𝟙×blanks` is `⟨π₁,π₂ blanks⟩` (`×` with `𝟙` on `[Ch]` is refused); `blanks` is `(B length)°` on the all-blank strings; `detab°` and `R` are restricted to `C`, the strings of length ≤ 5 over `{a,BL,TB}`; the `μ` of `entab_laws` is not written | no              |
+| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | — written: `leetq/programs/detab.rel`; differs from the note: the snoc-list folds `detab`, `triple` are `reverse ⦇…⦈` with the step's arguments swapped (`⦇e,S⦈` folds from the right, `loop(F)` refuses an array state); `𝟙×blanks` is `⟨π₁,π₂ blanks⟩` (`×` with `𝟙` on `[Ch]` is refused); `blanks` is `(B length)°` on the all-blank strings; `detab°` is restricted to `C`, the strings of length ≤ 5 over `{a,BL,TB}`; the `μ` of `entab_laws` is not written | no              |
 | 10  | minimum tardiness        | `tardy_laws` 10:463                        | `bagify` `Λ` `est` `snoc` `Arr.sum` `plus` `leq`          | `μ`                          | no              |
 | 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `μ`                          | no              |
 
@@ -41,12 +41,12 @@ Notes on single rows:
 
 - Knapsack, written: `leetq/programs/knapsack.rel`, guarded by `LeetQ/Rel/Lang/TestKnapsack.lean`. It has the
   specification `Λ(subseq within(w)) est(R)` and its fold `⦇[nil, cons within(w) ∪ π₂]⦈` (`knap_spec`), checked
-  equal. Differences from the note: `est(R)` with `R ≜ value ≥ value°` is written on the candidates `G` it chooses
-  among (`⟨𝟙,G⟩dom(π₁Λ(G value)est(≥) ∩ (π₂ value))π₂`), because `R` on `[N×N]` has no universe and `est`, `thinL`,
-  `merge` run their order closed. The derived program `knap_fold` is not written: `merge(R)`, `thinL(Q)`,
-  `minL(R)` need orders on `[N×N]`, `filter(within w)` a test on `[N×N]`, and `cpr` on lists in order a `loop(F)`
-  whose `F` reads an array — each a parameter the language runs closed, so `cp (a term)` above does not hold for
-  the list form. `thinL(Q)` is also the relational `setify thin(Q) setify° ∩ subseq`, exponential in the list.
+  equal. The orders `R ≜ value ≥ value°` and `Q ≜ R ∩ (weight ≤ weight°)` on `[N×N]`, which has no universe, run
+  on the pairs `est`, `merge`, `thinL` compare (rel-lang-design §a). The derived program `knap_fold` is written as
+  `knap ≜ X⦇ran(X nil τ), step⦈est(R)`, `step` the note's `cpr ⟨list(cons) filter(within w), list(π₂)⟩ merge(R)
+  thinL(Q)` with `cpr` a fold over the packings, and `minL(R)` as `est(R)` on the thinned array; `check knap ⊑ s`
+  holds. `thinL(Q)` runs the note's one-pass thinning, which refines the relational `setify thin(Q) setify° ∩
+  subseq`.
 
 - Fast exponentiation: the note's `μX : …` has the base functor of a list of bits, so it is
   `⦇[zero,shift]⦈° ⦇[one,op(a)]⦈` on bit arrays, a `fold` after the converse of a `fold`; no `μ` is needed.
@@ -56,7 +56,7 @@ Notes on single rows:
   `nextcol` a fold over `zip(xs, zip(init(us), tail(us)))`) is `fold`, `zip`, `tails`, `init`, `tail`, `est` on
   `length`; `nextcol(xs)(b, …)` depends on `b`, which a `loop` carries in its state.
   Written in the Rel language as `leetq/programs/edit.rel`, the specification only: `edit ≜ ⦇[base,step]⦈` on the
-  sequences of length ≤ 4 (`Es`), `R ≜ length ≤ length°` restricted to `Es` (`length°` has no universe), and
+  sequences of length ≤ 4 (`Es`), `R ≜ length ≤(N,N) length°` run on the pairs `est` compares, and
   `spec ≜ Λ(edit°) est(R)` on the pairs of strings of length ≤ 2 (`TestEdit.lean` guards the least lengths). The
   tabulation is not written: `nextcol`'s fold starts from `base(b,last(us))`, a seed that depends on the pair the
   fold of `column` is at, and a fold's seed in the language is closed or a family of its own left's keys (§e); the
