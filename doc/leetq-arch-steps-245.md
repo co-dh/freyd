@@ -71,6 +71,26 @@ Kept: `KernelWF/Gather` (197), `KernelWF/Raze` (812), `KernelWF/Reduce` (cut, se
 
 ## Step 4: kernel count theorems instead of reference implementations
 
+Attempted on branch `leetq-arch-step4`: no site closes; every reference branch stays, no Lean file changed. Each
+check needs a bound that nothing in Lean, nor any field of `Arr`/`Vals`/`Code`, carries:
+
+| site (now in)                    | the bound its check needs and nobody carries                                        |
+|----------------------------------|-------------------------------------------------------------------------------------|
+| `shiftArr`, `place`, `tilCol`, `Vals.compact` (`Code`) | `n < USize.size`: the kernels run at `n.toUSize` and answer `n % USize.size` longs (`Ew.val_size`, `tilLongs_wf`) |
+| `Vals.pick` arr and sum (`Code`) | `len i < USize.size`: `slices`, `sums`, `sub`, `Ew.widen` at `(len i).toUSize`      |
+| `raze` (`Code`, not in the list below) | each part's count and their sum `< USize.size` (`razeColumn_count`'s premise); else `Enc.ofAtoms` |
+| `Ops.rank` (`KernelWF/Reduce`)   | `n < USize.size` (`gradeColumn_isSome`)                                              |
+| `sliceIds` (`Code`)              | `rankSlices_size`: `vc.w ≤ 64` (`Code` has no width invariant); offsets ascending, but `sums` adds the clamped counts in wrapping `Int64`, and overlapping slices let `Σ counts ≥ 2⁶³` with `n`, `m` each `2³²`; last offset ≤ the codes `expand` wrote (`toUSize` again) |
+| `setIds` (`Code`)                | the same, and the starts `s` ascending inside `[0, vc.n]`, a precondition `setIds` does not take; the gathered offsets rise only by `groupIdsPair`'s ids rising by one, a qlean kernel fact |
+
+`ByteArray`'s `n < USize.size` is a runtime claim only (`ByteArray.forInUnsafe`'s comment), no theorem. Every other
+`if h :` in `Core`/`Code`/`Alg`/`KernelWF` is a type dispatch (`t = .general`), a decode (`Enc.WF` → `Except`), an
+empty-input default (`cat`, `clampFin`) or `hylo`'s stop, not a reference. `#guard` lines in `AlgTest.lean`: 228,
+unchanged. Closing the `USize` sites takes `Arr` carrying `n < USize.size` (approval); `sliceIds`/`setIds` take
+in addition a bound on the summed slice counts and a precondition on `setIds`'s starts.
+
+The audit as written before the attempt:
+
 Each `if h : <count check> then kernel else reference` site in `Algebra.lean` (all reached by the programs):
 
 | site                          | line  | reference          | needs                                                                 | ops behind it |
