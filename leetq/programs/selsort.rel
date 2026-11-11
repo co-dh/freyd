@@ -1,0 +1,33 @@
+-- B&dM §6.6 "Sorting by selection" (diag/aop/06-recursive.typ:286-344): the specification perm ordered(R) and the
+-- derived program X ≜ ⦇[nil, select°]⦈°, on arrays.
+obj 1 = {∗}                                   -- the type 1: its one value
+obj N = 0…9                                   -- the elements
+
+R ≜ ≤                                         -- the preorder, fixed for the whole of §6.6
+
+-- the inputs, each an array 1 ⟶ [N] built by cons from nil
+x ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons
+y ≜ ⟨{(∗,2)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons                  -- a repeated element
+z ≜ ⟨{(∗,5)}, ⟨{(∗,4)}, ⟨{(∗,3)}, ⟨{(∗,2)}, ⟨{(∗,1)}, nil⟩cons⟩cons⟩cons⟩cons⟩cons
+e ≜ nil(1,[N])                                -- the empty array
+
+-- ok: (a, xs) passes when a is R-below every element of xs, "no element b of xs with not a R b"
+ok ≜ 𝟙 − dom(⟨π₁,π₂∋⟩(π₁∼R ∩ π₂))
+
+-- the converse of a fold needs the arrays it folds: C, every rearrangement of an input
+C ≜ ran((x ∪ y ∪ z ∪ e)perm)
+-- replaces 06:316 ⦇[nil, select°]⦈: the seed nil is the coreflexive on the empty array, and select° is written
+-- ok cons perm, the largest select° the note's select° ⊑ ok cons perm allows (06:322): `select ≜ perm cons° ok`
+-- then `select°` is refused, a converse of a term run on demand having no universe on [N]
+X ≜ (C⦇ran(e), ok cons perm⦈)°
+
+print x perm ordered(R)
+print y perm ordered(R)
+print z perm ordered(R)
+print e perm ordered(R)
+print x X
+print y X
+print z X
+print e X
+check C X ⊑ C perm ordered(R)                 -- selection_sort, 06:316
+check C X = C perm ordered(R)
