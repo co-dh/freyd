@@ -467,23 +467,16 @@ def programText (file text : String) : Except Err String :=
   else throw ⟨default, "not a program file: its name must end in `.rel.md` (Markdown, whose indented code " ++
     "blocks are the program); the plain `.rel` format is no longer read"⟩
 
-open Lean Elab in
-/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and read by
-    `programText` while elaborating, so a malformed file fails the build at its line. -/
-elab "program_file " p:str : term => do
-  let src := (← readThe Core.Context).fileName
-  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
-  match programText p.getString (← IO.FS.readFile (dir / p.getString)) with
-  | .ok s => pure (mkStrLit s)
-  | .error e => throwError "{p.getString}: {e}"
+/-- The prelude (§c), as the Markdown of `prelude.rel.md`: definitions every program sees, each with its type,
+    read and run before it. Raw text, not `program_file`'s: that elab needs `Lean`, which `rel` must not link;
+    `scope` reads its code blocks, and `Test.lean` guards at build time that it reads and runs. -/
+def prelude : String := include_str "../../../programs/prelude.rel.md"
 
-/-- The prelude (§c): definitions every program sees, each with its type, read and run before it. -/
-def prelude : String := program_file "../../../programs/prelude.rel.md"
-
-/-- The prelude's text `pre` parsed, and the scope a program is read in after it: its names and objects, each
-    name taken "in the prelude". An error in it says it is in the prelude. -/
+/-- The prelude's literate text `pre` read (`literate`) and parsed, and the scope a program is read in after it:
+    its names and objects, each name taken "in the prelude". An error in it says it is in the prelude, at the
+    `.rel.md` file's line and column. -/
 def scope (pre : String) : Except Err (Program × S) := do
-  let (prog, s) ← (program.run { cs := pre.toList.toArray }).mapError Err.inPrelude
+  let (prog, s) ← (do program.run { cs := (← literate pre).toList.toArray }).mapError Err.inPrelude
   pure (prog, { s with taken := s.taken.map fun (n, _) => (n, "in the prelude") })
 
 /-- Parse a program's text in the scope `s`. -/
