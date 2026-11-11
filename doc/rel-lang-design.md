@@ -392,7 +392,9 @@ arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] ⦇,⦈`, the firs
 Cost: a result keeps only the payload its rows refer to (§h), so `L(s₀,𝟙)` over the 28 rounds of `N = 0…27`
 holds 28 rows on a payload of at most 3 pairs a row (`BlocksRel.lean` guards it). The interpreter evaluates
 every definition, and every sub-term that does not read the round's pairs, once before the fold runs; the
-step recomputes only what depends on the round (`Lang/Eval.lean`, `hoist`).
+step recomputes only what depends on the round (`Lang/Eval.lean`, `hoist`). A term on demand whose value is read
+only composed after the rows that make its demand — `S` in `RS`, a fold's or a loop's step — is not run when that
+demand is empty (`onKeys`): the round that ends a fold or a loop meets no pair and runs no step.
 
 Equal sub-terms are evaluated once (`Lang/Eval.lean`, `hoist`, `ev`):
 
