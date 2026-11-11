@@ -591,7 +591,7 @@ def binary (p : Pos) (o : Bin) : Pre × OTy × OTy → Pre × OTy × OTy → M A
       let w := "R\\S reads its operands whole outside a meet with a term run on demand"
       pure (.rel (.ldiv p (.close p q s w) (.close p r s w) t t') t t')
     -- `R×S = ⟨π₁R,π₂S⟩`: `build` runs it as that pair when an operand runs on demand
-    | .prod => pure (.rel (.prod q r) (.prod s s') (.prod t t'))
+    | .prod => pure (.rel (.prod (.close p q s "R×S") (.close p r s' "R×S")) (.prod s s') (.prod t t'))
     | .sum =>
       let w := "R+S reads its operands whole"
       pure (.rel (.sum (.close p q s w) (.close p r s' w)) (.sum s s') (.sum t t'))
@@ -877,6 +877,13 @@ def mkDef (env : Env) (dp : Pos) (ps : List Param) (body : Body) : Def where
 
 /-! ### Build: the solved objects, the core term -/
 
+/-- The swap `A×B ⟶ B×A`, `⟨π₂,π₁⟩`. -/
+def swapTm {A B : Obj} : Tm (.prod A B) (.prod B A) true := .pair .outr .outl
+
+/-- `τ(R) = dom(π₂ ∩ π₁R)` for `R` that runs: the pairs `(a,b)` in demand with `a R b`. -/
+def pairTest {A B : Obj} {d : Bool} (t : Tm A B d) : Tm (.prod A B) (.prod A B) true :=
+  .dom (.meet .outr (.comp .outl t))
+
 /-- `R°` for `R` run on demand (§a), itself run on demand: pushed to the leaves by `(RS)° = S°R°`,
     `(R∩S)° = R°∩S°` (and `∪`, `−`), `⟨R,S⟩° = π₁R° ∩ π₂S°`, a coreflexive is its own converse, and a builtin
     by its named converse (`cons° = uncons`, `perm° = perm`, `sort(Q)° = ordered(Q) perm`). A closed part is
@@ -904,7 +911,14 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   | .meet R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet r s⟩
   | .join R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .join r s⟩
   | .diff R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .diff r s⟩
-  | .pair R S => do let ⟨_, r⟩ ← convTm R; let ⟨_, s⟩ ← convTm S; pure ⟨_, .meet (.comp .outl r) (.comp .outr s)⟩
+  -- `⟨R,S⟩° = π₁R° ∩ π₂S°`; with one side's converse only, the other is tested on the pairs it gives:
+  -- `⟨π₁R°,π₂⟩τ(S)π₁`, `⟨π₁,π₂S°⟩τ(R°)π₂`
+  | .pair R S => match convTm R, convTm S with
+    | .ok ⟨_, r⟩, .ok ⟨_, s⟩ => pure ⟨_, .meet (.comp .outl r) (.comp .outr s)⟩
+    | .ok ⟨_, r⟩, .error _ => pure ⟨_, .comp (.pair (.comp .outl r) .outr) (.comp (pairTest S) .outl)⟩
+    | .error _, .ok ⟨_, s⟩ =>
+      pure ⟨_, .comp (.pair .outl (.comp .outr s)) (.comp swapTm (.comp (pairTest R) (.comp swapTm .outr)))⟩
+    | .error l, .error _ => throw l
   | .share _ R => convTm R
   | .cons => pure ⟨_, .uncons⟩
   | .uncons => pure ⟨_, .cons⟩
@@ -966,9 +980,6 @@ def onPairs {A B : Obj} {e : Bool} (s : Tm A B e) (c : Tm (.prod A B) (.prod A B
 def divTest {A B C : Obj} {e : Bool} (c : Tm (.prod A C) (.prod A C) true) (s : Tm B C e) :
     Tm (.prod A B) (.prod A B) true :=
   .diff .id (.dom (.comp (.pair .outl (.comp .outr s)) (.diff .id c)))
-
-/-- The swap `A×B ⟶ B×A`, `⟨π₂,π₁⟩`. -/
-def swapTm {A B : Obj} : Tm (.prod A B) (.prod B A) true := .pair .outr .outl
 
 section Build
 
@@ -1064,6 +1075,7 @@ def build : Pre → Except Err Res
     if h : B' = B then pure ⟨A, C, d, .comp t (h ▸ u)⟩ else internal dp "composition objects disagree"
   -- `R°`: closed, conversed whole; on demand, pushed to the leaves (`convTm`); a leaf whose converse does not
   -- run on demand reads `R` whole on its source's universe
+  | .conv (.close _ (.conv (.close _ q _ _)) _ _) => build q
   | .conv (.close pos q a _) => do
     let ⟨A, B, _, t⟩ ← build q
     match convTm t with
@@ -1106,12 +1118,17 @@ def build : Pre → Except Err Res
   | .pair p q => do
     let ⟨A, _, _, t⟩ ← build p; let s ← build q; let ⟨_, C, _, _⟩ := s
     let ⟨_, u⟩ ← at? dp (A := A) (B := C) s; pure ⟨A, _, _, .pair t u⟩
-  -- `R×S`: closed, `Alg.prod`; an operand on demand, the pair `⟨π₁R,π₂S⟩` on demand
+  -- `R×S`: both operands closed on their sources, `Alg.prod`; an operand whose source has no universe, the pair
+  -- `⟨π₁R,π₂S⟩` on demand
+  | .prod (.close pp p a w) (.close pq q b w') =>
+    match build (.close pp p a w), build (.close pq q b w') with
+    | .ok ⟨A, B, false, t⟩, .ok ⟨C, D, false, u⟩ => pure ⟨.prod A C, .prod B D, false, .prod t u⟩
+    | _, _ => do
+      let ⟨A, B, _, t⟩ ← build p; let ⟨C, D, _, u⟩ ← build q
+      pure ⟨.prod A C, .prod B D, true, .pair (.comp .outl t) (.comp .outr u)⟩
   | .prod p q => do
-    let ⟨A, B, d, t⟩ ← build p; let ⟨C, D, e, u⟩ ← build q
-    match d, t, e, u with
-    | false, t, false, u => pure ⟨_, _, false, .prod t u⟩
-    | _, t, _, u => pure ⟨.prod A C, .prod B D, true, .pair (.comp .outl t) (.comp .outr u)⟩
+    let ⟨A, B, _, t⟩ ← build p; let ⟨C, D, _, u⟩ ← build q
+    pure ⟨.prod A C, .prod B D, true, .pair (.comp .outl t) (.comp .outr u)⟩
   | .junc p q => do
     let r ← build p; let s ← build q; let ⟨A, C, _, _⟩ := r; let ⟨B, _, _, _⟩ := s
     pure ⟨_, _, false, .junc (← closed? dp (A := A) (B := C) r) (← closed? dp (A := B) (B := C) s)⟩
@@ -1203,7 +1220,7 @@ termination_by x => (sizeOf x, 0)
     and a composite with a side that runs. The error is `p`'s own build error. -/
 def test (p : Pre) : Except Err Cor :=
   match build p with
-  | .ok ⟨A, B, _, t⟩ => pure ⟨A, B, .dom (.meet .outr (.comp .outl t))⟩
+  | .ok ⟨A, B, _, t⟩ => pure ⟨A, B, pairTest t⟩
   | .error err => match p with
     | .close _ q _ _ => test q
     | .conv q => do let ⟨A, B, c⟩ ← test q; pure ⟨B, A, .comp swapTm (.comp c swapTm)⟩

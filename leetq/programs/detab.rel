@@ -24,15 +24,15 @@ B ≜ S(Λ(⊤(1,N)dom(<m)),bl)
 blanks ≜ (B length)°
 -- fill xs = xs⧺blanks(n − (col xs) mod n); expand(xs,a) = (a=TB → fill xs, xs⧺[a])   (entab-defn, 10:84-123)
 fill ≜ ⟨𝟙,⟨⊤m,⟨col,⊤m⟩mod⟩minus blanks⟩cat
-expand ≜ ⟨π₁,π₂tb⟩π₁ fill ∪ (⟨π₁,π₂(𝟙(Ch) − tb)⟩snoc)
--- detab ≜ ⦇[nil,expand]⦈ on snoc-lists. ⦇e,S⦈ folds an array from the right and loop(F) refuses an array state,
--- so the snoc-list fold of xs is the fold of reverse(xs) with expand's arguments swapped
+expand ≜ (𝟙×tb)π₁ fill ∪ ((𝟙×(𝟙(Ch) − tb))snoc)
+-- detab ≜ ⦇[nil,expand]⦈ on snoc-lists. ⦇e,S⦈ folds an array from the right and loop(F) reads F whole (§b), which
+-- has no universe on [Ch]×Ch, so the snoc-list fold of xs is the fold of reverse(xs) with expand's arguments swapped
 reverse ≜ ⦇ran(e), ⟨π₂,π₁⟩snoc⦈
 detab ≜ reverse ⦇ran(e), ⟨π₂,π₁⟩expand⦈
 
 -- the specification Λ(detab°)est(R), R ≜ length ≤ length° (entab_laws, 10:148), on the candidates C: every
 -- string of length ≤ 5 over {a,BL,TB}. detab never shortens, so C holds every preimage of a string of D.
--- H ≜ detab° and R are restricted to C: a converse of a term run on demand has no keys (as in selsort)
+-- H ≜ detab° and R are restricted to C: the converse of a fold does not run on demand
 C ≜ S(Λ(⊤(1,K)), {(a,a),(BL,BL),(TB,TB)})
 H ≜ (C detab)°
 R ≜ C length ≤(N,N) (C length)°
@@ -46,8 +46,7 @@ tc ≜ h⟨π₁π₁ succ,k⟩ ∪ ((dom(π₂bl) − h)⟨z,k⟩) ∪ (dom(π�
 op ≜ ⟨g π₁π₁ ∪ ((dom(π₂bl) − g)⟨π₁π₁,⊤tb⟩snoc) ∪ (dom(π₂(𝟙(Ch) − bl))⟨⟨π₁π₁,π₁π₂π₁ blanks⟩cat,π₂⟩snoc),⟨π₁π₂,π₂⟩tc⟩ where g ≜ dom(⟨π₁π₂,π₂⟩h)
 triple ≜ reverse ⦇ran(⟨e,⟨z,z⟩⟩), ⟨π₂,π₁⟩op⦈
 assocl ≜ ⟨⟨π₁,π₂π₁⟩,π₂π₂⟩
--- replaces 10:259's 𝟙×blanks by ⟨π₁,π₂ blanks⟩: × with 𝟙 on [Ch] is refused (no universe, × not local)
-entab ≜ triple assocl π₁ ⟨π₁,π₂ blanks⟩ cat
+entab ≜ triple assocl π₁ (𝟙×blanks) cat
 
 -- the note's run (10:268): ab, a tab, c d; and three candidates' outputs, a tie among them (q)
 x ≜ ⟨{(∗,a)}, ⟨{(∗,b)}, ⟨{(∗,TB)}, ⟨{(∗,c)}, ⟨{(∗,BL)}, ⟨{(∗,d)}, e⟩cons⟩cons⟩cons⟩cons⟩cons⟩cons

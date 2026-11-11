@@ -11,15 +11,12 @@ y ≜ ⟨{(∗,2)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons        
 z ≜ ⟨{(∗,5)}, ⟨{(∗,4)}, ⟨{(∗,3)}, ⟨{(∗,2)}, ⟨{(∗,1)}, nil⟩cons⟩cons⟩cons⟩cons⟩cons
 e ≜ nil(1,[N])                                -- the empty array
 
--- ok: (a, xs) passes when a is R-below every element of xs, "no element b of xs with not a R b"
-ok ≜ 𝟙 − dom(⟨π₁,π₂∋⟩(π₁∼R ∩ π₂))
+ok ≜ dom(π₁(R/∋) ∩ π₂)                        -- (a, xs) with a R-below every element of xs (Lean `ok`)
+select ≜ perm cons° ok                        -- Lean `selectC`: a::y a permutation of x, a R-below y
 
 -- the converse of a fold needs the arrays it folds: C, every rearrangement of an input
 C ≜ ran((x ∪ y ∪ z ∪ e)perm)
--- replaces 06:316 ⦇[nil, select°]⦈: the seed nil is the coreflexive on the empty array, and select° is written
--- ok cons perm, the largest select° the note's select° ⊑ ok cons perm allows (06:322): `select ≜ perm cons° ok`
--- then `select°` is refused, a converse of a term run on demand having no universe on [N]
-X ≜ (C⦇ran(e), ok cons perm⦈)°
+X ≜ (C⦇ran(e), select°⦈)°                     -- 06:316 ⦇[nil, select°]⦈°, the seed nil the empty array
 
 print x perm ordered(R)
 print y perm ordered(R)

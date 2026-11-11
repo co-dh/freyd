@@ -301,6 +301,44 @@ def reading : Decl → Option (String × String)
   | .ok p => p.filterMap reading == [("f", "(((π₁ π₂) S) ∪ S)")]
   | .error _ => false
 
+/-! Terms on an object with no universe (§a): a converse pushed to the leaves, a division tested on the pairs a
+    meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
+
+/-- The value printed by each `print` of `src`, after its ` = `. -/
+def printed (src : String) : List String := (ok (runText src)).prints.map fun s => (s.splitOn " = ").getLastD ""
+
+def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[Ch])\nx ≜ ⟨{(∗,a)}, ⟨{(∗,b)}, e⟩cons⟩cons\n" ++
+  "y ≜ ⟨{(∗,a)}, ⟨{(∗,a)}, ⟨{(∗,b)}, e⟩cons⟩cons⟩cons\nns ≜ ⟨{(∗,2)}, ⟨{(∗,3)}, nil⟩cons⟩cons\n" ++
+  "ms ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons\nks ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,1)}, nil⟩cons⟩cons⟩cons\n" ++
+  "ok ≜ dom(π₁(≤/∋) ∩ π₂)\n"
+
+-- the converse: `(RS)° = S°R°`, `∩`, a pair with one side's converse, `R°° = R`, a coreflexive, `cons° = uncons`
+#guard printed (chs ++ "print x cons° (perm cons°)°\nprint x (perm ∩ perm)° cons°\nprint x ⟨cons°π₁, perm⟩°° π₂\n" ++
+  "print x (dom(π₁{(a,a)}) cons)°\nprint x (dom(π₁{(b,b)}) cons)°\n") ==
+  ["{(∗, {a, b}), (∗, {b, a})}", "{(∗, (a, {b})), (∗, (b, {a}))}", "{(∗, {a, b}), (∗, {b, a})}",
+   "{(∗, (a, {b}))}", "{}"]
+-- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₂⟩°`, `∋` in `∈`
+#guard errAt (chs ++ "print x (cons° ⟨π₁,π₂⟩ cons)°\n") 11 "the converse of π₁ does not run on demand"
+#guard errAt (chs ++ "print {(∗,a)} ∈\n") 11 "the converse of ∋ does not run on demand"
+-- a division tested on the pairs: `R/S`, `R\S`, `frac`, `∼`, `−`, each beside a term run on demand
+#guard printed (chs ++ "print ⟨{(∗,1)},ns⟩ok\nprint ⟨{(∗,3)},ns⟩ok\nprint ⟨{(∗,2)},ns⟩ok\n" ++
+  "print ms (∋ ∩ (cons\\(π₁ ≤)))\nprint ks (subseq ∩ frac(∋,∋))\n" ++
+  "print ⟨{(∗,3)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,1)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,3)},ns⟩(π₂ − (π₁(≤/∋)))\n") ==
+  ["{(∗, (1, {2, 3}))}", "{}", "{(∗, (2, {2, 3}))}", "{(∗, 3)}", "{(∗, {3, 1, 1}), (∗, {3, 1})}",
+   "{(∗, {2, 3})}", "{}", "{(∗, {2, 3})}"]
+-- refused: a division with no term on demand to test it against, and a meet of two
+#guard errAt (chs ++ "print {(∗,1)}(≤/∋)\n") 11 "R/S reads its operands whole"
+#guard errAt (chs ++ "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n") 11 "R/S reads its operands whole"
+-- `R×S` on demand as `⟨π₁R,π₂S⟩`; closed, as before
+#guard printed (chs ++ "print ⟨{(1,1)},⟨{(1,2)},Λ({(1,1)})⟩⟩(𝟙×π₁)plus\nprint y cons°(𝟙×perm)\n" ++
+  "print ⟨x,{(∗,b)}⟩(perm×𝟙)\nprint {(1,1)}×{(2,3)}\n") ==
+  ["{(1, 3)}", "{(∗, (a, {a, b})), (∗, (a, {b, a}))}", "{(∗, ({a, b}, b)), (∗, ({b, a}, b))}", "{((1, 2), (1, 3))}"]
+-- refused: an operand that does not run, named; the object printed as the program writes it, `[Ch]`
+#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 11 "the converse of ∋ does not run on demand"
+#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 11 "[Ch] has no universe"
+-- `loop(F)` reads `F` whole: refused on an array state, and the message names `loop`, not a missing left context
+#guard errAt (chs ++ "print x ⟨nil,𝟙⟩loop(snoc)\n") 11 "loop( ) reads its argument whole: [Ch]×Ch has no universe"
+
 #guard match Parse.parse blocks with
   | .error _ => false
   | .ok p => p.filterMap reading == [
