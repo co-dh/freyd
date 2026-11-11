@@ -227,7 +227,8 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
   function of the coreflexive on those pairs, and `Alg.loop F` is `loopOn (fun _ => F)`. So the state may have
   no universe: an array (`⟨nil,𝟙⟩loop(snoc)` on `[Ch]×Ch`), or a pair with one. An `F` that runs neither on
   demand nor closed is refused with its leaf's error (`loop(snoc ran(snoc))`: "ran( ) reads its argument whole:
-  [Ch]×Ch has no universe; …"). The states are `nub`bed each round, as the fold's.
+  [Ch]×Ch has no universe; …"). The states are `nub`bed each round, as the fold's, and each round takes apart the distinct arrays they hold,
+  not one copy per state, or a round's rows grow as the square of the states sharing a suffix.
 - The value verbs `plus times minus div mod max min : N×N ⟶ N` are one builtin, `arith k` with the qlean kernel's
   opcode `k`, run on the pairs in demand (§a) as `Alg.arith k` then the universe of `N`. Each is partial, never a
   default: no row where the result falls outside `N` (`minus` below the bottom, `plus`, `times` past the top, as

@@ -664,7 +664,7 @@ def orderedOn {B : Obj} {n : Nat} (q : Rel (.prod B B) (.prod B B) → Rel (.pro
     (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   let T := suffix X ≫ uncons (ran (suffix X)).val
   let D := ran T
-  let yz := pair (outl D) (outr D ≫ mem (outr D).val)
+  let yz := pair (outl D) (outr D ≫ mem (ran (outr D)).val)
   let bad := antiJoin yz (q (ran yz))
   antiJoin (idU X) (dom (T ≫ dom bad))
 
@@ -748,7 +748,9 @@ def loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X)
     Rel K X :=
   let round : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)) := fun (out, St) =>
     let D := ran St
-    let u := outr D ≫ uncons (outr D).val
+    -- `uncons` on the distinct arrays: on `(outr D).val`, an array held by `k` states gives each of them `k`
+    -- rows, and `pair` below `k²`, so a round's rows grow as the states sharing a suffix, not as the states
+    let u := outr D ≫ uncons (ran (outr D)).val
     let p := pair (outl D) (outl u)
     (out ∪ St ≫ outl (antiJoin D (dom u)), (St ≫ pair (p ≫ F (ran p)) (outr u)).nub)
   (iter (P.val.2.1 + 1) (fun s => s.2.n == 0) round (zero, P)).1
