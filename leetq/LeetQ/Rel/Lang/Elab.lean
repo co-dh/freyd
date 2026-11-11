@@ -77,7 +77,6 @@ inductive Tm : Obj → Obj → Bool → Type where
   | tic {B : Obj} : Tm (.prod B (.arr B)) (.arr (.arr B)) true
   | ordered {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
   | sort {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
-  /-- `thinL(Q)` on the arrays in demand, its targets among their subsequences (`thinL ⊑ subseq`). -/
   | thinL {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm B B false) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true

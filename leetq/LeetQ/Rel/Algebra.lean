@@ -1461,13 +1461,15 @@ def sortSet {B : Obj} {n : Nat} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr 
 def subseq {B : Obj} {n : Nat} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
   foldBy X (nilVal B) fun el pend => cons (pair el pend) ∪ pend
 
-/-- `thinL(Q) ≜ setify thin(Q) setify° ∩ subseq` on the arrays `Y` (`thinL`, AOP/A8_3.lean:567; B&dM p.200,
-    binary thinning), `thin(Q) ≜ ⊇ ∩ (∈ \ Q°∈)` on the sets of `Y` (`thinRel`, AOP/A8_1.lean:71): the
-    subsequences in `Y` that keep, for every element dropped, a `Q`-lower one. `⊇` is `∋ / ∋`. -/
-def thinL {B : Obj} {n : Nat} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+/-- `thinL(Q) ≜ setify thin(Q) setify° ∩ subseq` on the arrays `X` (`thinL`, AOP/A8_3.lean:567; B&dM p.200,
+    binary thinning), `thin(Q) ≜ ⊇ ∩ (∈ \ Q°∈)` on the sets of `Y`, the subsequences of `X` (`thinRel`,
+    AOP/A8_1.lean:71); `thinL ⊑ subseq`, so `Y` holds every target. `⊇` is `∋ / ∋`. -/
+def thinL {B : Obj} {n : Nat} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
+  let U := subseq X
+  let Y := (ran U).val
   let S := (setify Y).val
   let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (Q° ≫ (mem S)°) S S
-  (setify Y ≫ T ≫ (setify Y)°) ∩ subseq Y
+  (setify Y ≫ T ≫ (setify Y)°) ∩ U
 
 /-- `merge(Q) : arr B × arr B ⟶ arr B` on the rows of `P` (`merge`, AOP/A8_3.lean:1147; B&dM p.156): the
     book's equations as rounds of `iter` on the states `((x, y), acc)`, `acc` the output so far: with both
@@ -2101,6 +2103,12 @@ private def Ysub := (subseq Xp).val
   ((arrs Ysub).flatMap fun xs => ((subs xs).filter fun ys => (arrs Ysub).contains ys &&
     xs.all fun a => ys.any (· ≤ a)).map (xs, ·))
 #guard thinL LE9 Ysub ⊑ subseq Ysub && (thinL LE9 Ysub).n > 0
+-- on the sources `Xp`, not closed under subsequence: the formula at `Y = ran(subseq Xp)` restricted to `Xp`,
+-- `⊑ subseq`, and a row for every source
+#guard let Y := (ran (subseq Xp)).val; let S := (setify Y).val
+  let T := rightDiv (mem S) (mem S) S S ∩ leftDiv (mem S)° (LE9° ≫ (mem S)°) S S
+  seteq (thinL LE9 Xp).toList (idU Xp ≫ ((setify Y ≫ T ≫ (setify Y)°) ∩ subseq Y)).toList
+#guard thinL LE9 Xp ⊑ subseq Xp && seteq (dom (thinL LE9 Xp)).toList (idU Xp).toList
 -- `merge(≤)` against `List.merge`, on ordered and on unordered arrays; `merge(⊤) = cat` (B&dM p.212)
 #guard seteq ((merge LE9 (idU W2)).toList : List ((List Int64 × List Int64) × List Int64))
   ((pairsOf W2).map fun (x, y) => ((x, y), List.merge x y fun a b => decide (a ≤ b))) && isMap (merge LE9 (idU W2)) W2
