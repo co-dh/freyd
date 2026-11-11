@@ -889,4 +889,88 @@ theorem razeColumn_isSome {t : QAtomicType} {cs : Array (USize × Enc)} (hne : c
          simp only [Array.getElem_zip, decide_eq_true_eq] at hc
          rw [hps' i (by omega) (by omega)] at hc; omega)
 
+/-- **`razeColumn` counts its answer as the sum of its parts' counts**, on well-formed parts whose
+    counts sum below `USize.size`: past it a symbol answer's count is `needSize`'s model. -/
+theorem razeColumn_count {t : QAtomicType} {cs : Array (USize × Enc)}
+    (h : ∀ c ∈ cs, Enc.WF t c.1 c.2) (hN : cs.foldl (fun s c => s + c.1.toNat) 0 < USize.size)
+    {n : USize} {e : Enc} (hv : razeColumn t cs = some (.vector t n e none)) :
+    n.toNat = cs.foldl (fun s c => s + c.1.toNat) 0 := by
+  unfold razeColumn at hv
+  split at hv
+  · cases hv
+  cases t
+  case boolean =>
+    dsimp only at hv
+    split at hv
+    · rename_i ps hps
+      obtain ⟨hc, hv⟩ := needSize_some hv
+      cases hv
+      have hk := mapM_key (key' := fun p : USize × ByteArray => p.1) (key := fun c : USize × Enc => c.1)
+        (fun c _ x hx => by rcases c with ⟨k, e'⟩; cases e' <;> simp at hx; subst hx; rfl) hps
+      rw [toUSize_toNat hc, foldl_toNat, foldl_toNat, hk]
+    · cases hv
+  case symbol =>
+    dsimp only at hv
+    split at hv
+    · rename_i ps hps
+      have hk := mapM_key (key' := fun p : ByteArray × Array Nat => p.2.size - 1)
+        (key := fun c : USize × Enc => c.1.toNat) (fun c hc x hx => by
+          rcases c with ⟨k, e⟩
+          have hw := h _ hc
+          cases e <;> first | (cases hx; done) | (cases hx; simp only [Enc.WF] at hw; simp only; omega)) hps
+      have hS : (ps.toList.map fun p => p.2.size - 1).sum = cs.foldl (fun s c => s + c.1.toNat) 0 := by
+        rw [← Array.toList_map, hk]; simp [foldl_toNat, Function.comp_def]
+      simp only [concatSyms] at hv; cases hv
+      rw [← hS, ← Array.foldl_toList, foldl_sum (fun p : ByteArray × Array Nat => p.2.size) _
+        (fun p => p.2.size - 1) (fun s a => by rcases s with ⟨blob, offs⟩; rcases a with ⟨b, o⟩; simp)]
+      generalize (ps.toList.map fun p => p.2.size - 1).sum = S at hS ⊢
+      have h1 : (#[(0 : Nat)] : Array Nat).size + S - 1 = S := by simp
+      have hS' : S < USize.size := by rw [hS]; exact hN
+      rw [h1, needSize_fits hS']; exact toUSize_toNat hS'
+    · split at hv
+      · rename_i ps hps
+        have hk := mapM_key (key' := fun p : USize × ByteArray × Array Nat × ByteArray => p.1)
+          (key := fun c : USize × Enc => c.1) (fun c _ x hx => by
+            rcases c with ⟨k, e⟩
+            try dsimp only at hx
+            split at hx <;> first | (cases hx; rfl) | cases hx) hps
+        simp only [concatEnum] at hv; cases hv
+        generalize hq : Array.mapIdx _ ps = qs
+        have hmap : qs.map (·.1) = ps.map (·.1) := by
+          rw [← hq]
+          apply Array.ext (by simp)
+          intro i h1 h2
+          simp only [Array.getElem_map, Array.getElem_mapIdx]
+          repeat' split
+          all_goals simp_all
+        have hS : qs.foldl (fun s p => s + p.1.toNat) 0 = cs.foldl (fun s c => s + c.1.toNat) 0 := by
+          rw [foldl_toNat, foldl_toNat, hmap, hk]
+        rw [hS, needSize_fits hN]; exact toUSize_toNat hN
+      · cases hv
+  case general =>
+    have hE : encodedParts .general cs = none := by
+      unfold encodedParts; simp [Column.alpEncodes, Column.encodes]
+    simp [hE, QAtomicType.width] at hv
+  all_goals
+    simp only [QAtomicType.width] at hv
+    split at hv
+    · obtain ⟨rfl, rfl, rfl, hms, hps, has, hen⟩ := encodedParts_spec ‹encodedParts _ _ = some _›
+      try (simp [Column.encodes, Column.alpEncodes] at hen; done)
+      all_goals
+        injections; subst_vars
+        rcases ite_some hv with hv | hv
+        · split at hv
+          · obtain ⟨hc, hv⟩ := needSize_some (ite_none_some hv)
+            cases hv; exact toUSize_toNat hc
+          · cases hv
+        · obtain ⟨hc, hv⟩ := needSize_some hv
+          obtain ⟨-, hv⟩ := need_some hv
+          simp only [Column.alpEncodes, Bool.false_eq_true, if_false, if_true] at hv
+          cases hv
+          rw [toUSize_toNat hc, foldl_toNat]
+    · split at hv
+      · obtain ⟨hc, hv⟩ := needSize_some (ite_none_some hv)
+        cases hv; exact toUSize_toNat hc
+      · cases hv
+
 end LeetQ.Rel.KernelWF
