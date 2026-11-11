@@ -1,6 +1,6 @@
 /-
   Well-formedness of the payloads qlean's kernels answer, read off their Lean bodies, in the form
-  `Arr.mk` takes (`Enc.WF t n e`), and the `isSome` facts that make `codes` total. Gathering kernels (`gatherColumn`, `sliceColumn`, `bytesOf`, `longBytes`, `gens`) are in
+  `Arr.mk` takes (`Enc.WF t n e`), and the `isSome` facts that make `codes` total. Gathering kernels (`gatherColumn`, `bytesOf`, `longBytes`, `gens`) are in
   `KernelWF/Gather`.
 -/
 import QLean.Kernel.Structural
@@ -40,8 +40,6 @@ theorem wf_bytes {t : QAtomicType} {w n : Nat} {b : ByteArray} (hb : t ≠ .bool
 theorem orderKind_eq_none {t : QAtomicType} :
     orderKind t = none ↔ t = .symbol ∨ t = .guid ∨ t = .general := by
   cases t <;> simp [orderKind]
-
-
 
 /-- `groupIdsColumn` codes every well-formed payload except a general list's. -/
 theorem groupIdsColumn_isSome {t : QAtomicType} {n : Nat} {e : Enc} (hg : t ≠ .general)
@@ -84,14 +82,6 @@ theorem tilLongs_wf (n : USize) : Enc.WF .long n.toNat (.bytes (tilLongs n)) :=
 theorem Ew.val_size (op cls shape : UInt8) (nul : Int64) (a b : ByteArray) (n : USize) :
     (Kernel.Ew.val op cls shape nul a b n).size = n.toNat * Kernel.Ew.width cls := by
   simp only [Kernel.Ew.val]; rw [foldl_size ByteArray.size _ _ (fun _ _ => Column.pushBits_size ..)]; simp
-
-
-
-
-
-
-
-
 
 /-- `rankSlices` answers one long per slice of `o` when `o` is non-decreasing offsets from at least `0`,
     its last within `v`'s ids at width `w ≤ 64`: the negation of the kernel's guard, term by term. -/

@@ -122,18 +122,4 @@ theorem gatherColumn_wf {t : QAtomicType} {n : Nat} {e : Enc} (hw : Enc.WF t n e
       simp_all [gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherIds_wf, toNat_small,
         small_mod]
 
-/-! ## The slice's answer: sizes and block counts -/
-
-
-
-
-
-
-
-
-
-
-
-
-
 end LeetQ.Rel.KernelWF

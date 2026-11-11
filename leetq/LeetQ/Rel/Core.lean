@@ -69,7 +69,7 @@ theorem length_toList (x : Arr t n) : x.toList.length = n := List.length_ofFn
 
 /-- A kernel's answer as an `Arr`, the one way in: `WFAt` is decided (the header's two fields and
     `Enc.WF`), never assumed; `what` names the producer in the error. The vector is the kernel's, mark
-    and all; a producer that knows an attribute applies it after (`markIf`). -/
+    and all; a producer that knows an attribute applies it after. -/
 def of (t : QAtomicType) (n : Nat) (v : QValue) (what : String) : Except String (Arr t n) :=
   match v with
   | .vector t' n' e a => if h : t' = t ∧ n' = n ∧ Enc.WF t n e then .ok ⟨.vector t' n' e a, h⟩
@@ -121,59 +121,9 @@ theorem Arr.get_long_bytes {m : Nat} (x : Arr .long m) {b : ByteArray} (hc : x.e
   rw [Arr.get_ne x i (by decide)]
   simp only [Enc.get, if_pos i.2, hc, QAtomicType.width]; rfl
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /-- Reading a word as a long loses nothing. -/
 theorem toInt64_inj {x y : UInt64} (h : x.toInt64 = y.toInt64) : x = y := by
   simpa using congrArg Int64.toUInt64 h
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /-- A long payload as dense bytes: `bytes` as it is, `foR` decoded once (`Coc.decode`). -/
 def longBytes (n : Nat) (e : Enc) : Option ByteArray :=
@@ -195,9 +145,6 @@ instance : Coe QAtomicType Obj := ⟨.atom⟩
 
 /-- The atoms the verbs name, so `.long` reads the same at `Obj` as at `QAtomicType`. -/
 @[match_pattern, reducible] def Obj.long : Obj := .atom .long
-
-
-
 @[match_pattern, reducible] def Obj.general : Obj := .atom .general
 
 /-- An element of a side: a tuple of its atoms' elements. -/
@@ -244,8 +191,6 @@ def Vals.row : {A : Obj} → {n : Nat} → Vals A n → Fin n → A.El
     if tag.get i then .inr (if h : 0 < r then Vals.row y (clampFin (idx.get i) r h) else b.dflt)
     else .inl (if h : 0 < l then Vals.row x (clampFin (idx.get i) l h) else a.dflt)
 
-
-
 /-- A relation from `k` to `v`: `n` positions, a key and a value at each — q's dict, two arrays at atoms,
     one column per atom of a product side, so `B×C` stored as two columns IS one side of pairs. -/
 structure Rel (k v : Obj) where
@@ -262,8 +207,6 @@ def Holds (R : Rel k v) (x : k.El) (y : v.El) : Prop := ∃ i, R.key.row i = x �
 
 /-- The pairs, in position order, for proofs only. -/
 def toList (R : Rel k v) : List (k.El × v.El) := List.ofFn fun i => (R.key.row i, R.val.row i)
-
-
 
 end Rel
 
