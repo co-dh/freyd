@@ -357,8 +357,11 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   `{((a,1 2),[3])}`, `{(3 1 2,a b)}`, signed `-1 2 -3`). A bare single item is that item, never a one-element
   array; elements are separated by spaces, and `[1,2]` is an error saying so. `[` inside a row is an array, `[`
   at a term the case term `[R,S]`. Rows may hold arrays of different lengths at one position, which is `[O]`,
-  `O` the object of the elements of all its rows' arrays together by the rule above; a position whose arrays
-  are all empty is an error ("the object of [] cannot be read off an empty array: write nil(A,[O])"). Its value
+  `O` the object of the elements of all its rows' arrays together by the rule above. An object the rows do not
+  determine — the elements' of arrays that are all empty, or one several declared objects hold the words of — is
+  open, and its context fixes it as it fixes `nil`'s (the other side of a `check`, an operand of `∩ ∪ −`, the
+  declared type, a composition): `check e = {(∗,[])}`. One still open is an error at the literal ("the object of
+  [] cannot be read off an empty array: write nil(A,[O])"). Its value
   is the column of all those elements row after row as the payload, and `lo`, `hi` each row's slice of it (no
   `cons` per element). `nil` and `cons` still build an array from relations.
 - A definition with no parameters whose type names object variables (`≼ : α×β ⟶ α×β`) is elaborated at each

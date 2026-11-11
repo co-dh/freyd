@@ -426,11 +426,11 @@ def errAtCol (src : String) (line col : Nat) (what : String) : Bool :=
 -- composition, the pair
 def arrCtx : String := arrE ++ "obj K = {a,b}\ne : 1 ⟶ [N] ≜ nil\nx : 1 ⟶ [N] ≜ {(∗,1 2)}\n" ++
   "check e = {(∗,[])}\ncheck {(∗,[])} = e\ncheck e ⊑ {(∗,[])}\n" ++
-  "check x ∪ {(∗,[])} = {(∗,[1 2] [])}\ncheck x ∩ {(∗,[])} = 𝟘(1,[N])\ncheck x − {(∗,[])} = x\n" ++
-  "d : 1 ⟶ [N] ≜ {(∗,[])}\ncheck d = e\nn : 1 ⟶ [[N]] ≜ {(∗,[[]])}\ncheck n = ⟨e,nil⟩cons\n" ++
+  "check x ∪ {(∗,[])} = {(∗,1 2),(∗,[])}\ncheck x ∩ {(∗,[])} = 𝟘(1,[N])\ncheck x − {(∗,[])} = x\n" ++
+  "d : 1 ⟶ [N] ≜ {(∗,[])}\ncheck d = e\nnn : 1 ⟶ [[N]] ≜ {(∗,[[]])}\ncheck nn = ⟨e,nil⟩cons\n" ++
   "c : 1 ⟶ N ≜ {(∗,[])}{([],3),([1],4)}\ncheck c = {(∗,3)}\n" ++
-  "check ⟨{(∗,[])},{(∗,a)}⟩ = ⟨e,{(∗,a)}⟩\ncheck {(∗,[] [3])} = ⟨e,⟨{(∗,3)},nil⟩cons⟩cons\n" ++
-  "print d\nprint n\n"
+  "check ⟨{(∗,[])},{(∗,a)}⟩ = ⟨e,{(∗,a)}⟩\ncheck {(∗,[] [3])} = ⟨e,⟨{(∗,[3])},nil⟩cons⟩cons\n" ++
+  "print d\nprint nn\n"
 #guard printed arrCtx == ["{(∗, [])}", "{(∗, [[]])}"]
 -- words two objects hold: open too, fixed by the context, else the error at the literal
 def twoObjs : String := "obj A = {a,b}\nobj B = {a,c}\n"
