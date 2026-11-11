@@ -2,14 +2,15 @@
 -- A program that defines one of these names again gets "already defined … in the prelude".
 obj 1 = {∗}                                   -- the terminal object: its one value
 
-∈ ≜ ∋°                                        -- membership, the converse of ∋
-_⇒_(R : α ⟶ β, S : α ⟶ β) ≜ ∼R ∪ S            -- implication
-_⊕_(R : α ⟶ β, S : γ ⟶ δ) ≜ [R inl, S inr]    -- the sum of relations, A+B ⟶ C+D
-_+_(R : α ⟶ β, S : α ⟶ β) ≜ ⟨R,S⟩plus         -- the sum of two values
-frac(R : α ⟶ γ, S : β ⟶ γ) ≜ R/S ∩ (S/R)°     -- the symmetric division
+∈ : α ⟶ [α] ≜ ∋°                              -- membership, the converse of ∋
+_⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S                  -- implication
+_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]      -- the sum of relations, A+B ⟶ C+D
+_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus               -- the sum of two values
+frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°           -- the symmetric division
 
 -- B&dM p.130 `perm ≜ ⦇[nil, add]⦈`: add puts the head anywhere in the tail. Its converse is itself, a rule the
--- language keeps for this one name (`Tm.own`), because `perm° = perm` cannot be derived from the fold.
-perm ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat
-ordered(Q) ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
-sort(Q) ≜ perm ordered(Q)
+-- language keeps for this one name (`Tm.own`), because `perm° = perm` cannot be derived from the fold. `nil(1)`
+-- keeps its object: `ran` drops nil's source, so the type cannot give it.
+perm : [α] ⟶ [α] ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat
+ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))   -- every element is Q-related to each later one
+sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)

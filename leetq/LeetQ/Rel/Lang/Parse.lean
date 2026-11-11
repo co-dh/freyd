@@ -384,7 +384,7 @@ partial def program : P Program := do
     | some '\n' => adv; pure (d :: (← program))
     | some _ => expected "the end of the line"
 
-/-- The prelude (§c): definitions every program sees, read and run before it. -/
+/-- The prelude (§c): definitions every program sees, each with its type, read and run before it. -/
 def prelude : String := include_str "../../../programs/prelude.rel"
 
 /-- The prelude's text `pre` parsed, and the scope a program is read in after it: its names and objects, each

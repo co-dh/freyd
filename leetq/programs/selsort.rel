@@ -2,20 +2,20 @@
 -- derived program X ≜ ⦇[nil, select°]⦈°, on arrays.
 obj N = 0…9                                   -- the elements
 
-R ≜ ≤                                         -- the preorder, fixed for the whole of §6.6
+R : α ⟶ α ≜ ≤                                 -- the preorder, fixed for the whole of §6.6
 
 -- the inputs, each an array 1 ⟶ [N] written as a literal
-x ≜ {(∗,3 1 2)}
-y ≜ {(∗,2 1 2)}                               -- a repeated element
-z ≜ {(∗,5 4 3 2 1)}
-e ≜ nil(1,[N])                                -- the empty array
+x : 1 ⟶ [N] ≜ {(∗,3 1 2)}
+y : 1 ⟶ [N] ≜ {(∗,2 1 2)}                     -- a repeated element
+z : 1 ⟶ [N] ≜ {(∗,5 4 3 2 1)}
+e : 1 ⟶ [N] ≜ nil                             -- the empty array
 
-ok ≜ dom(π₁(R/∋) ∩ π₂)                        -- (a, xs) with a R-below every element of xs (Lean `ok`)
-select ≜ perm cons° ok                        -- Lean `selectC`: a::y a permutation of x, a R-below y
+ok : α×[α] ⟶ α×[α] ≜ dom(π₁(R/∋) ∩ π₂)        -- (a, xs) with a R-below every element of xs (Lean `ok`)
+select : [α] ⟶ α×[α] ≜ perm cons° ok          -- Lean `selectC`: a::y a permutation of x, a R-below y
 
 -- the converse of a fold needs the arrays it folds: C, every rearrangement of an input
-C ≜ ran((x ∪ y ∪ z ∪ e)perm)
-X ≜ (C⦇ran(e), select°⦈)°                     -- 06:316 ⦇[nil, select°]⦈°, the seed nil the empty array
+C : [N] ⟶ [N] ≜ ran((x ∪ y ∪ z ∪ e)perm)
+X : [N] ⟶ [N] ≜ (C⦇ran(e), select°⦈)°         -- 06:316 ⦇[nil, select°]⦈°, the seed nil the empty array
 
 print x perm ordered(R)
 print y perm ordered(R)

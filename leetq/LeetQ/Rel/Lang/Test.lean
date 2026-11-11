@@ -35,7 +35,8 @@ def variant (s g : String) : Except Err Out := do
     | .defn p "G" [] _ ty => .defn p "G" [] (.rel g) ty
     | d => d)
 
-def given : Except Err Out := runText (blocks ++ "qR ≜ QR(∋)\nqM ≜ QM(∋)\nqF ≜ Qc⇝\nqh ≜ Qh(∋)\n")
+def given : Except Err Out := runText (blocks ++ "qR : [X×X] ⟶ X×X ≜ QR(∋)\nqM : [X×X] ⟶ X×X ≜ QM(∋)\n" ++
+  "qF : [X×X] ⟶ X×X ≜ Qc⇝\nqh : [X×X] ⟶ [X×X] ≜ Qh(∋)\n")
 def table : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,C)}"
 def cycle : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,A)}"
 
@@ -44,25 +45,26 @@ def ok (r : Except Err Out) : Out := match r with | .ok o => o | .error _ => {}
 /-- `Λ(S)est(P)`, `Λ(S)thin(P)` with the order `P` a family (the rows of §e on `S∋`) against the order closed
     (the closed row), on the reachable states — `est` of a map is the map — and on their complements, where a
     block has two values. -/
-def orders : Except Err Out := runText (blocks ++ "O ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
-  "Of ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) ≜ Λ(S)est(O)\nlf(S : X ⟶ X, V : X ⟶ X) ≜ Λ(S)est(V)\n" ++
-  "tc(S : X ⟶ X) ≜ Λ(S)thin(O)\ntf(S : X ⟶ X, V : X ⟶ X) ≜ Λ(S)thin(V)\nY(S : X ⟶ X) ≜ ∼S\n" ++
+def orders : Except Err Out := runText (blocks ++ "O : X ⟶ X ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
+  "Of : [X×X] ⟶ X×X ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) : X ⟶ X ≜ Λ(S)est(O)\n" ++
+  "lf(S : X ⟶ X, V : X ⟶ X) : X ⟶ X ≜ Λ(S)est(V)\ntc(S : X ⟶ X) : X ⟶ [X] ≜ Λ(S)thin(O)\n" ++
+  "tf(S : X ⟶ X, V : X ⟶ X) : X ⟶ [X] ≜ Λ(S)thin(V)\nY(S : X ⟶ X) : X ⟶ X ≜ ∼S\n" ++
   "check Qlc(∋) = Q∋\ncheck Qlf(∋,Of) = Qlc(∋)\ncheck Qlf(Y(∋),Of) = Qlc(Y(∋))\n" ++
   "check Qtf(∋,Of) = Qtc(∋)\ncheck Qtf(Y(∋),Of) = Qtc(Y(∋))\nprint s₀lf(Y(∋),Of)\nprint s₀tf(Y(∋),Of)\n")
 
 /-- A body given families of two indices, `∋` at `St` and `ζ∋` at `N` (the `k`-th state's pairs), runs at
     `St×N`: the fibre at `(s,k)` is `s ∩ ζ(k)`. Against the same meet written by hand, and at `(s₀,0)`, `(s₀,1)`. -/
-def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) ≜ S ∩ T\n" ++
+def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) : X ⟶ X ≜ S ∩ T\n" ++
   "check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩dom(π₁ ∩ π₂)π₁\n" ++
   "print (s₀×{(0,0)})k(∋,ζ∋)\nprint (s₀×{(1,1)})k(∋,ζ∋)\n")
 
 /-- `X⦇e,S⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
     the fibre. `p(R)` holds the pairs `(a,b)` with `b` at most two steps of `R` from `a`. -/
 def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\n" ++
-  "ℓ ≜ Λ(⊤(1,L))\np(R : X ⟶ X) ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))⦈)\n" ++
-  "R₀ ≜ {(A,B)}\nR₁ ≜ {(A,B),(B,C)}\nR₂ ≜ {(A,B),(B,C),(C,A)}\n" ++
-  "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
-  "pF ≜ p(Fm)\np₀ ≜ p(R₀)\np₁ ≜ p(R₁)\np₂ ≜ p(R₂)\n")
+  "ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))\np(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))⦈)\n" ++
+  "R₀ : X ⟶ X ≜ {(A,B)}\nR₁ : X ⟶ X ≜ {(A,B),(B,C)}\nR₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}\n" ++
+  "Fm : K ⟶ X×X ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
+  "pF : K ⟶ (X×X)×(X×X) ≜ p(Fm)\np₀ : X×X ⟶ X×X ≜ p(R₀)\np₁ : X×X ⟶ X×X ≜ p(R₁)\np₂ : X×X ⟶ X×X ≜ p(R₂)\n")
 
 #guard let o := ok foldLaw
   [((0 : Int64), "p₀"), (1, "p₁"), (2, "p₂")].all fun (k, n) =>
@@ -76,11 +78,11 @@ def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L 
     `⊤`), `dom(R)`, `π₂⟨π₁,π₁⟩`, each keyed on the pairs a round meets; at every key the fibre is the fold of
     the fibre. -/
 def foldClosed : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\n" ++
-  "ℓ ≜ Λ(⊤(1,L))\nG ≜ {(A,B),(C,C)}\n" ++
-  "p(R : X ⟶ X) ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)⦈)\n" ++
-  "R₀ ≜ {(A,B)}\nR₁ ≜ {(A,B),(B,C)}\nR₂ ≜ {(A,B),(B,C),(C,A)}\n" ++
-  "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
-  "pF ≜ p(Fm)\np₀ ≜ p(R₀)\np₁ ≜ p(R₁)\np₂ ≜ p(R₂)\n")
+  "ℓ : 1 ⟶ [L] ≜ Λ(⊤(1,L))\nG : X ⟶ X ≜ {(A,B),(C,C)}\n" ++
+  "p(R : X ⟶ X) : X×X ⟶ X×X ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)⦈)\n" ++
+  "R₀ : X ⟶ X ≜ {(A,B)}\nR₁ : X ⟶ X ≜ {(A,B),(B,C)}\nR₂ : X ⟶ X ≜ {(A,B),(B,C),(C,A)}\n" ++
+  "Fm : K ⟶ X×X ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
+  "pF : K ⟶ (X×X)×(X×X) ≜ p(Fm)\np₀ : X×X ⟶ X×X ≜ p(R₀)\np₁ : X×X ⟶ X×X ≜ p(R₁)\np₂ : X×X ⟶ X×X ≜ p(R₂)\n")
 
 #guard let o := ok foldClosed
   [((0 : Int64), "p₀"), (1, "p₁"), (2, "p₂")].all fun (k, n) =>
@@ -93,11 +95,13 @@ def foldClosed : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj
 /-- Object variables (§e): `uq : α ⟶ β` at `X ⟶ N` and at `N ⟶ X` against the ground copies `uX`, `uN`; and
     `d : α ⟶ α` given `Fm : K ⟶ X×X`, which `α ⟶ α` reads as a family, against `d` of each fibre. -/
 def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj K = 0…2\n" ++
-  "uq(R : α ⟶ β) ≜ R ∩ (R°\\𝟙)\nuX(R : X ⟶ N) ≜ R ∩ (R°\\𝟙)\nuN(R : N ⟶ X) ≜ R ∩ (R°\\𝟙)\n" ++
-  "R₁ ≜ {(A,x),(A,y),(B,z)}\nR₂ ≜ {(x,A),(y,B),(y,C),(z,C)}\na₁ ≜ uq(R₁)\nb₁ ≜ uX(R₁)\na₂ ≜ uq(R₂)\nb₂ ≜ uN(R₂)\n" ++
-  "d(R : α ⟶ α) ≜ R ∩ (R°\\𝟙)\nF₀ ≜ {(A,B),(A,C)}\nF₁ ≜ {(A,B),(B,C)}\nF₂ ≜ {(A,A),(B,A),(B,B),(C,A)}\n" ++
-  "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,F₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,F₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,F₂⟩)\n" ++
-  "dF ≜ d(Fm)\nd₀ ≜ d(F₀)\nd₁ ≜ d(F₁)\nd₂ ≜ d(F₂)\n")
+  "uq(R : α ⟶ β) : α ⟶ β ≜ R ∩ (R°\\𝟙)\nuX(R : X ⟶ N) : X ⟶ N ≜ R ∩ (R°\\𝟙)\n" ++
+  "uN(R : N ⟶ X) : N ⟶ X ≜ R ∩ (R°\\𝟙)\nR₁ : X ⟶ N ≜ {(A,x),(A,y),(B,z)}\nR₂ : N ⟶ X ≜ {(x,A),(y,B),(y,C),(z,C)}\n" ++
+  "a₁ : X ⟶ N ≜ uq(R₁)\nb₁ : X ⟶ N ≜ uX(R₁)\na₂ : N ⟶ X ≜ uq(R₂)\nb₂ : N ⟶ X ≜ uN(R₂)\n" ++
+  "d(R : α ⟶ α) : α ⟶ α ≜ R ∩ (R°\\𝟙)\nF₀ : X ⟶ X ≜ {(A,B),(A,C)}\nF₁ : X ⟶ X ≜ {(A,B),(B,C)}\n" ++
+  "F₂ : X ⟶ X ≜ {(A,A),(B,A),(B,B),(C,A)}\n" ++
+  "Fm : K ⟶ X×X ≜ {(0,0)}⊤(K,X)⟨𝟙,F₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,F₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,F₂⟩)\n" ++
+  "dF : K ⟶ X×X ≜ d(Fm)\nd₀ : X ⟶ X ≜ d(F₀)\nd₁ : X ⟶ X ≜ d(F₁)\nd₂ : X ⟶ X ≜ d(F₂)\n")
 
 #guard let o := ok objVars
   let g (n : String) := get o n .long .long
