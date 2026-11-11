@@ -78,8 +78,6 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .est Q, D => pure (estOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val))
   | _, _, _, .thin Q, D => do
     let T := thinOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
-  | _, _, _, .filter p, D => pure (filterOn (fun P => Id.run ((ev cnt p P).run' {})) D.val)
-  | _, _, _, .takewhile p, D => pure (takewhileOn (fun P => Id.run ((ev cnt p P).run' {})) D.val)
   | _, _, _, .union, D => pure (Arr.union D.val)
   | _, _, _, .tau, D => pure (τ D.val)
   | _, _, _, .nil, D => pure (top D.val (nilVal _))
@@ -87,23 +85,15 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .uncons, D => pure (uncons D.val)
   | _, _, _, .length, D => pure (length D.val)
   | _, _, _, .total, D => pure (Arr.sum D.val)
-  | _, _, _, .head, D => pure (head D.val)
-  | _, _, _, .tail, D => pure (tail D.val)
-  | _, _, _, .pre, D => pure («prefix» D.val)
-  | _, _, _, .suf, D => pure (suffix D.val)
   | _, _, _, .inits, D => pure (Alg.inits D.val)
-  | _, _, _, .tails, D => pure (Alg.tails D.val)
   | _, _, _, .cat, D => pure (Alg.cat D)
   | _, _, _, .uncat, D => pure (Alg.uncat D.val)
   | _, _, _, .zip, D => pure (Alg.zip D)
   | _, _, _, .snoc, D => pure (Alg.snoc D)
   | _, _, _, .unsnoc, D => pure (Alg.unsnoc D.val)
-  | _, _, _, .init, D => pure (Alg.init D.val)
-  | _, _, _, .concat, D => pure (Alg.concat D.val)
   | _, _, _, .own R, D => ev cnt R D
   | _, _, _, .setify, D => pure (Alg.setify D.val)
   | _, _, _, .bagify, D => pure (Alg.bagify D.val)
-  | _, _, _, .subseq, D => pure (Alg.subseq D.val)
   | _, _, _, .tic, D => pure (Alg.tic D)
   -- the note's one-pass thinning, which refines the specification `Alg.thinL`
   | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
@@ -227,8 +217,6 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .map R => do let (r, i) ← hoist R; node 26 (.map r) [i]
   | _, _, _, .est Q => do let (q, i) ← hoist Q; node 27 (.est q) [i]
   | _, _, _, .thin Q => do let (q, i) ← hoist Q; node 28 (.thin q) [i]
-  | _, _, _, .filter p => do let (q, i) ← hoist p; node 29 (.filter q) [i]
-  | _, _, _, .takewhile p => do let (q, i) ← hoist p; node 30 (.takewhile q) [i]
   | _, _, _, .union => node 31 .union []
   | _, _, _, .tau => node 32 .tau []
   | _, _, _, .nil => node 33 .nil []
@@ -236,10 +224,6 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .uncons => node 35 .uncons []
   | _, _, _, .length => node 36 .length []
   | _, _, _, .total => node 37 .total []
-  | _, _, _, .head => node 38 .head []
-  | _, _, _, .tail => node 39 .tail []
-  | _, _, _, .pre => node 40 .pre []
-  | _, _, _, .suf => node 41 .suf []
   | _, _, _, .succ U => do node 42 (.succ U) [← leaf (idU (t := .long) U)]
   -- the verb is a part, so `plus` and `times` on one universe are two identities
   | _, _, _, .arith k U => do node 43 (.arith k U) [← leaf (idU (t := .long) U), k.toNat]
@@ -249,18 +233,14 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .foldI e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 47 (.foldI x s) [i, j]
   | _, _, _, .flat R => do let (r, i) ← hoist R; node 48 (.flat r) [i]
   | _, _, _, .inits => node 49 .inits []
-  | _, _, _, .tails => node 50 .tails []
   | _, _, _, .cat => node 51 .cat []
   | _, _, _, .uncat => node 52 .uncat []
   | _, _, _, .zip => node 53 .zip []
   | _, _, _, .snoc => node 54 .snoc []
   | _, _, _, .unsnoc => node 55 .unsnoc []
-  | _, _, _, .init => node 56 .init []
-  | _, _, _, .concat => node 57 .concat []
   | _, _, _, .own R => do let (r, i) ← hoist R; node 58 (.own r) [i]
   | _, _, _, .setify => node 59 .setify []
   | _, _, _, .bagify => node 60 .bagify []
-  | _, _, _, .subseq => node 61 .subseq []
   | _, _, _, .tic => node 62 .tic []
   | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i]
   | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i]
