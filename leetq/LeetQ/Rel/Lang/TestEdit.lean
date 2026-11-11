@@ -25,10 +25,13 @@ def strs : List (List Char) := [[]] ++ [['a'], ['b']] ++ [['a','a'], ['a','b'], 
 
 def word (s : List Char) : String := "{" ++ ", ".intercalate (s.map toString) ++ "}"
 
-/-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order (sorted). -/
+/-- `spec length 𝟙(N)` as the printer writes it, its rows in the printer's order: by element (`Eval.cmpEl`),
+    an array lexicographically with a prefix first, which on strings is the order of `String`. -/
 def expected : String :=
-  let rows := (strs.flatMap fun x => strs.map fun y => s!"(({word x}, {word y}), {cost x y})")
-  "spec length 𝟙(N) = {" ++ ", ".intercalate (rows.mergeSort fun a b => decide (a ≤ b)) ++ "}"
+  let key (p : List Char × List Char) := (String.ofList p.1, String.ofList p.2)
+  let ps := (strs.flatMap fun x => strs.map (x, ·)).mergeSort fun p q =>
+    (key p).1 < (key q).1 || ((key p).1 == (key q).1 && (key p).2 ≤ (key q).2)
+  "spec length 𝟙(N) = {" ++ ", ".intercalate (ps.map fun (x, y) => s!"(({word x}, {word y}), {cost x y})") ++ "}"
 
 def given : Except Err Out := runText edit
 
