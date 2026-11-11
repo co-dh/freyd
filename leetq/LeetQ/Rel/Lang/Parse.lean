@@ -388,6 +388,85 @@ partial def program : P Program := do
     | some '\n' => adv; pure (d :: (← program))
     | some _ => expected "the end of the line"
 
+/-! A `.rel.md` file is Markdown whose program is the text of its indented code blocks (doc "Literate files").
+    `literate` keeps each code line whole and empties every other line, so the parser's line and column are the
+    file's: nothing is renumbered and no column is shifted. -/
+
+/-- The run of spaces `l` starts with. -/
+def lead (l : List Char) : Nat := (l.takeWhile (· == ' ')).length
+
+/-- What follows a list marker: a space, a tab, or the end of the line. -/
+def gap : List Char → Bool
+  | [] | '\r' :: _ | ' ' :: _ | '\t' :: _ => true
+  | _ => false
+
+/-- The fence `l` is, as its character and length (CommonMark): under 4 spaces, then 3 or more of one of `` ` ``
+    `~`; a backtick fence's info string holds no backtick. -/
+def fence (l : List Char) : Option (Char × Nat) :=
+  match l.drop (lead l) with
+  | [] => none
+  | r@(c :: _) =>
+    let k := (r.takeWhile (· == c)).length
+    if lead l < 4 && (c == '`' || c == '~') && 3 ≤ k && !(c == '`' && (r.drop k).contains '`') then some (c, k)
+    else none
+
+/-- `l` closes the fence of `c` of length `k`: a fence of `c` at least `k` long, nothing but blanks after it. -/
+def closes (c : Char) (k : Nat) (l : List Char) : Bool := match fence l with
+  | some (d, j) => d == c && k ≤ j && (l.drop (lead l + j)).all Char.isWhitespace
+  | none => false
+
+/-- `l` is a list item: under 4 spaces, then `-` `*` `+`, or 1 to 9 digits then `.` or `)`, then a gap. -/
+def listItem (l : List Char) : Bool :=
+  let r := l.drop (lead l)
+  let ds := (r.takeWhile Char.isDigit).length
+  let num := match r.drop ds with
+    | d :: t => 0 < ds && ds ≤ 9 && (d == '.' || d == ')') && gap t
+    | [] => false
+  lead l < 4 && match r with
+    | c :: t => ((c == '-' || c == '*' || c == '+') && gap t) || num
+    | [] => false
+
+/-- The program of a `.rel.md` text, one line for each of its lines: a code line as it is, every other line empty.
+    Each line is classified in order; the state is the open fence (its character, length and line), the line before
+    (`none` blank or the start, `some true` code, `some false` prose) and whether a list is open. A code line is 4
+    spaces in; a code block starts at the start or after a blank line, never right after prose or under a list
+    item, where Markdown would show it as prose. -/
+def literate (text : String) : Except Err String := do
+  let (fen, _, _, out) ← (text.splitOn "\n").zipIdx.foldlM (init := ((none : Option (Char × Nat × Nat)),
+      (none : Option Bool), false, (#[] : Array String))) fun (fen, prev, list, out) (s, i) => do
+    let l := s.toList
+    let n := i + 1
+    if let some (c, k, o) := fen then
+      return (if closes c k l then none else some (c, k, o), some false, list, out.push "")
+    if l.all Char.isWhitespace then return (none, none, list, out.push "")
+    if let some j := (l.takeWhile fun c => c == ' ' || c == '\t').findIdx? (· == '\t') then
+      throw ⟨⟨n, j + 1⟩, "a tab in the indentation: indent with spaces, 4 of them before a code line"⟩
+    if 4 ≤ lead l then
+      if prev == some false then
+        throw ⟨⟨n, 1⟩, "an indented line right after prose: Markdown continues the prose with it and shows it as " ++
+          "prose, so it is not code; put a blank line before it"⟩
+      if prev.isNone && list then
+        throw ⟨⟨n, 1⟩, "an indented line under a list item: Markdown reads it as part of the item, not as code; " ++
+          "end the list with a paragraph or a heading that is not a list item first"⟩
+      return (none, some true, list, out.push s)
+    -- a heading, a fence, or a paragraph after a blank line at the margin ends a list; a lazy line does not
+    let top := lead l == 0
+    match fence l with
+    | some (c, k) => return (some (c, k, n), some false, list && !top, out.push "")
+    | none => return (none, some false,
+        listItem l || (list && !(top && (prev != some false || l.head? == some '#'))), out.push "")
+  if let some (c, k, o) := fen then
+    throw ⟨⟨o, 1⟩, s!"the fence opened here is never closed: close it with a line of {k} or more '{c}'"⟩
+  pure ("\n".intercalate out.toList)
+
+/-- The program text of the file named `file`, by its name: a `.rel` file is all program, a `.rel.md` file is
+    `literate`; any other name is an error. -/
+def programText (file text : String) : Except Err String :=
+  if file.endsWith ".rel.md" then literate text
+  else if file.endsWith ".rel" then pure text
+  else throw ⟨default, "not a program file: its name must end in `.rel` (all program) or `.rel.md` " ++
+    "(Markdown, whose indented code blocks are the program)"⟩
+
 /-- The prelude (§c): definitions every program sees, each with its type, read and run before it. -/
 def prelude : String := include_str "../../../programs/prelude.rel"
 

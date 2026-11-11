@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestEdit
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
 
-def edit : String := include_str "../../../programs/edit.rel"
+def edit : String := program_file "../../../programs/edit.rel"
 
 /-- The least length of an edit sequence of `(xs, ys)`, each of `cpy`, `del`, `ins` costing one: every
     operation that applies at the heads, the cheapest rest taken. A copy is one choice among three, not

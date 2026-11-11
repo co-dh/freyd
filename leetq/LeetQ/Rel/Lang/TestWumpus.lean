@@ -8,7 +8,7 @@ namespace LeetQ.Rel.Lang.TestWumpus
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def wumpus : String := include_str "../../../programs/wumpus.rel"
+def wumpus : String := program_file "../../../programs/wumpus.rel"
 
 /-- Each table: its name, the program's term for it, and whether its key is `∗ : 1` rather than a cell. -/
 def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", false), ("S", "S", false),

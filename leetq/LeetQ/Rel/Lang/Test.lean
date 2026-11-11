@@ -1,5 +1,6 @@
 import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.BlocksRel
+import Lean
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, read from `programs/blocks.rel`; its
     front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
@@ -12,7 +13,17 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 /-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
 local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
-def blocks : String := include_str "../../../programs/blocks.rel"
+open Lean Elab in
+/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and split by its name
+    (`Parse.programText`) while elaborating, so a malformed literate file fails the build at its line. -/
+elab "program_file " p:str : term => do
+  let src := (← readThe Core.Context).fileName
+  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
+  match Parse.programText p.getString (← IO.FS.readFile (dir / p.getString)) with
+  | .ok s => pure (mkStrLit s)
+  | .error e => throwError "{p.getString}: {e}"
+
+def blocks : String := program_file "../../../programs/blocks.rel"
 
 /-- The definition `n` at the objects `A ⟶ B`. -/
 def get (o : Out) (n : String) (A B : Obj) : Option (Rel A B) := do
@@ -144,6 +155,40 @@ def Q₁ : Rel St St := BlocksRel.Q Blocks.S₀
 #guard get (ok given) "qM" St XX == some (BlocksRel.M Q₁ (Q₁ ≫ Alg.mem Q₁.val))
 #guard get (ok given) "qF" St XX == some (BlocksRel.c Q₁ ≫ BlocksRel.F (Alg.ran (BlocksRel.c Q₁)))
 #guard get (ok given) "qh" St St == some (BlocksRel.H Blocks.S₀ Blocks.G)
+
+/-! Literate files (`Parse.literate`): the program is the indented code blocks, at the file's lines and columns. -/
+
+def lit (src : String) : Option String := match Parse.literate src with | .ok t => some t | .error _ => none
+
+/-- The literate text `src` fails, read or run, at `line`, `col`, with `what` in the message. -/
+def litErr (src : String) (line col : Nat) (what : String) : Bool :=
+  match Parse.literate src >>= runText with
+  | .error e => e.pos.line == line && e.pos.col == col && (e.msg.splitOn what).length > 1
+  | .ok _ => false
+
+-- prose is an empty line, a code line stays whole, extra indentation included
+#guard lit "# T\n\nsome prose ≜ here\n\n    obj B = 0…1\n      print 𝟙(B)\n" ==
+  some "\n\n\n\n    obj B = 0…1\n      print 𝟙(B)\n"
+-- two code blocks are one program: the second uses the first's `B`
+#guard ((lit "Two.\n\n    obj B = 0…1\n\nMore.\n\n    f : B ⟶ B ≜ 𝟙(B)\n    print f\n").map runText).map
+  (·.isOk) == some true
+-- an error on a code line is at the file's line and column, extra indentation counted
+#guard litErr "Prose.\n\n    obj B = 0…1\n    f : B ⟶ B ≜ 𝟙(B)\n    print )\n" 5 11 "expected"
+#guard litErr "Prose.\n\n    obj B = 0…1\n      print )\n" 4 13 "expected"
+-- the four malformed forms
+#guard litErr "Prose.\n\n  \tobj B = 0…1\n" 3 3 "a tab in the indentation"
+#guard litErr "Prose.\n    obj B = 0…1\n" 2 1 "right after prose"
+#guard litErr "- item\n\n    obj B = 0…1\n" 3 1 "under a list item"
+#guard litErr "1) item\n   more of it\n\n    obj B = 0…1\n" 4 1 "under a list item"
+#guard litErr "Prose.\n\n```rel\n    obj B = 0…1\n" 3 1 "never closed"
+-- a paragraph or a heading at the margin ends the list
+#guard (lit "- item\n\nPara.\n\n    obj B = 0…1\n").isSome && (lit "* item\n# H\n\n    obj B = 0…1\n").isSome
+-- a fenced block is prose, its definitions not run; a shorter fence does not close a longer one
+#guard ((lit "````\n    obj B = 0…1\n```\nB ≜ x\n````\n\n    obj B = 0…1\n    print 𝟙(B)\n").map runText).map
+  (·.isOk) == some true
+-- the file name chooses: `.rel` is all program, any other name is an error
+#guard (match Parse.programText "a.rel" "x\n  y" with | .ok t => t == "x\n  y" | .error _ => false) &&
+  (match Parse.programText "a.txt" "" with | .ok _ => false | .error e => (e.msg.splitOn "`.rel.md`").length > 1)
 
 /-! One front-end error of each class, at its line. -/
 
