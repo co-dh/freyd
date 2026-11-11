@@ -200,7 +200,7 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 | `cat`, `cat°`                  | join two lists, every cut in two          | `cat`, `uncat`                 |
 | `concat`                       | flatten                                   | prelude                        |
 | `snoc`, `snoc°`, `zip`         | append one, split the last off, pair up   | `snoc`, `unsnoc`, `zip`        |
-| `perm`                         | rearrangements, `⦇ran(nil(1)), add⦈`      | prelude                        |
+| `perm`                         | rearrangements, `⦇ran(nil), add⦈`      | prelude                        |
 | `subseq`                       | subsequences                              | prelude                        |
 | `setify`, `bagify`             | the set, the bag of a list                | `setify`, `bagify`             |
 | `ordered(Q)`, `sort(Q)`        | the `Q`-ordered lists, `perm ordered(Q)`  | prelude                        |
@@ -264,14 +264,14 @@ they lift, run on demand and converse as their bodies do. The `LeetQ` library `n
 | `tail`       | `tail : [α] ⟶ [α] ≜ cons° π₂`                                  | all but the first (B&dM p.149)              |
 | `init`       | `init : [α] ⟶ [α] ≜ snoc° π₁`                                  | all but the last (B&dM p.249)               |
 | `last`       | `last : [α] ⟶ α ≜ snoc° π₂`                                    | the last element (B&dM p.267)               |
-| `prefix`     | `prefix : [α] ⟶ [α] ≜ ⦇ran(nil(1)), nil ∪ cons⦈`               | the prefixes (B&dM p.126)                   |
+| `prefix`     | `prefix : [α] ⟶ [α] ≜ ⦇ran(nil), nil ∪ cons⦈`               | the prefixes (B&dM p.126)                   |
 | `suffix`     | `suffix : [α] ⟶ [α] ≜ cat° π₂`                                 | the suffixes (B&dM p.127)                   |
-| `concat`     | `concat : [[α]] ⟶ [α] ≜ ⦇ran(nil(1)), cat⦈`                    | flatten (B&dM p.129)                        |
-| `subseq`     | `subseq : [α] ⟶ [α] ≜ ⦇ran(nil(1)), cons ∪ π₂⦈`                | the subsequences (B&dM p.123)               |
-| `tails`      | `tails : [α] ⟶ [[α]] ≜ ⦇ran(nil(1)τ), ⟨⟨π₁,π₂head⟩cons,π₂⟩cons⦈` | the suffixes, longest first (B&dM p.127)  |
-| `filter(p)`  | `⦇ran(nil(1)), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))π₂)⦈`             | the elements in `p` (B&dM p.66)             |
-| `takewhile(p)` | `⦇ran(nil(1)), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))nil)⦈`          | the longest prefix in `p` (B&dM p.174)      |
-| `perm`       | `perm : [α] ⟶ [α] ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
+| `concat`     | `concat : [[α]] ⟶ [α] ≜ ⦇ran(nil), cat⦈`                    | flatten (B&dM p.129)                        |
+| `subseq`     | `subseq : [α] ⟶ [α] ≜ ⦇ran(nil), cons ∪ π₂⦈`                | the subsequences (B&dM p.123)               |
+| `tails`      | `tails : [α] ⟶ [[α]] ≜ ⦇ran(nil τ), ⟨⟨π₁,π₂head⟩cons,π₂⟩cons⦈` | the suffixes, longest first (B&dM p.127)  |
+| `filter(p)`  | `⦇ran(nil), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))π₂)⦈`             | the elements in `p` (B&dM p.66)             |
+| `takewhile(p)` | `⦇ran(nil), dom(π₁p)cons ∪ ((𝟙 − dom(π₁p))nil)⦈`          | the longest prefix in `p` (B&dM p.174)      |
+| `perm`       | `perm : [α] ⟶ [α] ≜ ⦇ran(nil), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
 | `ordered(Q)` | `ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))` | every element `Q`-related to each later one |
 | `sort(Q)`    | `sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)`                | the `Q`-ordered rearrangements              |
 
@@ -451,8 +451,10 @@ relation on `X×X`, a different meaning from "per state".
   in one program (`≼` of §g on `St×(X×X)`, `sw : α×β ⟶ β×α` at `X×N` and `N×X`).
 - The type determines an object the body leaves open: `e : 1 ⟶ [N] ≜ nil` fixes `nil`'s source and element,
   `r : [X×X] ⟶ [N] ≜ Λ(s₀⊤)` the `⊤`'s target. It cannot reach an object the body erases: `ran` and `Λ` drop
-  their argument's source (`perm`'s seed keeps `nil(1)`), and the middle object of a composite `RS` is in
-  neither end of the type.
+  their argument's source, and the middle object of a composite `RS` is in neither end of the type.
+- A `nil` whose source no context fixes, once the whole term (a definition's body, a `print`, both sides of a
+  `check`) is elaborated, has the source `1`, B&dM's `nil : 1 ⟶ [A]`: a fold's seed is `ran(nil)`, its element
+  fixed by the step (`perm ≜ ⦇ran(nil), add⦈`). Its element is never defaulted: `check nil = nil` is an error.
 - `rel --types FILE` prints each head as declared (§ Running a program); `Lang/Test.lean` guards that the
   printed heads equal the declared ones.
 

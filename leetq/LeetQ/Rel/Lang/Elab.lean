@@ -295,6 +295,23 @@ def unify (p : Pos) (what : String) (x y : OTy) : M Unit := do
       | _, _ => throw ⟨p, s!"{what}: found {fx}, expected {fy}"⟩
   go (s.ms.size + fx.size + fy.size + 1) fx fy
 
+/-- The source of each `nil` in `x`, a definition's body at its use included. -/
+def Pre.nilSrcs : Pre → List OTy
+  | .nil a _ => [a]
+  | .top _ _ _ t => (t.attach.map fun ⟨x, _⟩ => x.nilSrcs).getD []
+  | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
+  | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
+  | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .est x | .thin x | .own x | .thinL x | .merge x
+  | .loop x | .flat x | .close _ x _ _ => x.nilSrcs
+  | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
+  | .uncons _ | .length .. | .total _ | .inits _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
+  | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+
+/-- A `nil` whose source no context fixed, once the whole term is elaborated, starts at `1`: B&dM's
+    `nil : 1 ⟶ [A]`. A fold's seed `ran(nil)` drops that source, so only this rule gives it (§e). -/
+def settleNil (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
+  if let .mv _ := zonk (← get) a then unify p "nil's source" a (.base "1")
+
 /-! ### Elaboration: environments and the lifted rows of §e -/
 
 /-- An elaborated argument or result: one relation `s ⟶ t`, or a family `i ⟶ a×b` read as its fibres `a ⟶ b`. -/
