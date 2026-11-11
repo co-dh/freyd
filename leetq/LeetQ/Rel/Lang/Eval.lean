@@ -361,12 +361,12 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) : Except 
       let (q, s, t) := r.plain
       let s := zonk st s; let t := zonk st t
       -- objects its body leaves open (`≼` on any `A×B`) are fixed at each use, as a parameter's are
-      if s.poly || t.poly then env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
+      if s.poly || t.poly then env := { env with defs := (n, wrap n (mkDef env p [] (.rel e))) :: env.defs }; continue
       let q := if (uniOf env.objs s).isSome then Pre.close p q s noLeft else q
       -- a body that runs only as a pair test (`length ≤ length°`) is an order: elaborated again at each use
       let ⟨A, B, d, tm⟩ ← match build env.objs st p q, test env.objs st p q with
         | .ok r, _ => pure r
-        | .error _, .ok _ => env := { env with defs := (n, mkDef env p [] (.rel e)) :: env.defs }; continue
+        | .error _, .ok _ => env := { env with defs := (n, wrap n (mkDef env p [] (.rel e))) :: env.defs }; continue
         | .error e, .error _ => throw e
       let ((tm, _), sh') := Id.run ((hoist tm).run sh)
       sh := sh'
@@ -399,20 +399,28 @@ def preludeDef (n : String) (d : Def) : Def :=
   { d with apply := fun p as => do
       let r ← tryCatch (d.apply p as) fun e =>
         throw (if e.pos == p then e else ⟨p, s!"in the prelude's `{n}` (its line {e.pos.line}): {e.msg}"⟩)
+      -- the body's positions are the prelude's: at the use, so what `build` raises later is at the use
       match n, r with
-      | "perm", .rel q s t => pure (.rel (.own q) s t)
-      | _, r => pure r }
+      | "perm", .rel q s t => pure (.rel (.own (q.at p)) s t)
+      | _, .rel q s t => pure (.rel (q.at p) s t)
+      | _, .fam q i a b => pure (.fam (q.at p) i a b) }
 
-/-- Run a program's text after the prelude `pre`: one environment and one sharing table through both. An error
-    of the prelude's own text says it is in the prelude. -/
-def runWith (pre src : String) : Except Err Out := do
+/-- Run the program `prog` reads in the prelude `pre`'s scope, after `pre`: one environment and one sharing table
+    through both. An error of the prelude's own text says it is in the prelude. -/
+def runAfter (pre : String) (prog : Parse.S → Except Err Program) : Except Err Out := do
   let (pp, scope) ← Parse.scope pre
   let (env, out, sh) ← (run pp).mapError Err.inPrelude
   let env := { env with defs := env.defs.map fun (n, d) => (n, preludeDef n d) }
-  let (_, out, _) ← run (← Parse.parseIn scope src) (env, out, sh)
+  let (_, out, _) ← run (← prog scope) (env, out, sh)
   pure out
+
+/-- Parse and run a program's text after the prelude `pre`. -/
+def runWith (pre src : String) : Except Err Out := runAfter pre (Parse.parseIn · src)
 
 /-- Parse and run a program's text, after the prelude. -/
 def runText (src : String) : Except Err Out := runWith Parse.prelude src
+
+/-- Run a parsed program (`Parse.parse`), after the prelude. -/
+def runProgram (prog : Program) : Except Err Out := runAfter Parse.prelude fun _ => pure prog
 
 end LeetQ.Rel.Lang

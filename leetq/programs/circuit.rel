@@ -1,7 +1,8 @@
 obj B = 0…1                                   -- a bit
 obj I = B×(B×B)                               -- the adder's three inputs
 
-⊕ ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),0)}   -- B×B ⟶ B, xor: 1 where the inputs differ
+-- the note writes ⊕; ⊕ is the sum of relations here
+⊻ ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),0)}   -- B×B ⟶ B, xor: 1 where the inputs differ
 ∧ ≜ {((0,0),0),((0,1),0),((1,0),0),((1,1),1)}   -- and: 1 where both are 1
 ∨ ≜ {((0,0),0),((0,1),1),((1,0),1),((1,1),1)}   -- or: 1 where one is 1
 
@@ -10,8 +11,8 @@ b ≜ π₂π₁                                      -- I ⟶ B: the second inp
 c ≜ π₂π₂                                      -- I ⟶ B: the third input
 
 q ≜ ⟨a,b⟩                                     -- I ⟶ B×B: the first two inputs
-x₂ ≜ ⟨q⊕,c⟩                                   -- I ⟶ B×B: their xor, and the third input
-add ≜ ⟨x₂⊕,⟨q∧,x₂∧⟩∨⟩                         -- I ⟶ B×B: (sum, carry)
+x₂ ≜ ⟨q⊻,c⟩                                   -- I ⟶ B×B: their xor, and the third input
+add ≜ ⟨x₂⊻,⟨q∧,x₂∧⟩∨⟩                        -- I ⟶ B×B: (sum, carry)
 p ≜ ⟨{(0,0)},{(0,1)}⟩                         -- 1 ⟶ B×B: the point (0,1), 1 the bit 0
 answer ≜ add p°                               -- I ⟶ 1: the inputs giving sum 0, carry 1
 

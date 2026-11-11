@@ -31,7 +31,7 @@ def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := d
       let b ← Parse.parseExpr (lit ps)
       pure (prog.map fun | .defn p "on" [] _ => .defn p "on" [] (.rel b) | d => d)
   let k := prog.findIdx fun | .defn _ "Ω" _ _ => true | _ => false
-  run (if one then prog.take (k + 1) else prog)
+  runProgram (if one then prog.take (k + 1) else prog)
 
 /-- `Ω` is the board when it is mate, else empty. -/
 def mated (ps : List (Nat × Int64)) : Option Bool :=

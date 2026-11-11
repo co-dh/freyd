@@ -398,6 +398,7 @@ def parse (src : String) : Except Err Program := do parseIn (← scope prelude).
 def parseExpr (src : String) (known : List (String × Nat) := []) (objs : List String := []) : Except Err Expr := do
   let s := (← scope prelude).2
   let p : P Expr := do let e ← expr; ws; if (← peek) == none then pure e else expected "the end of the term"
-  (p.run { s with cs := src.toList.toArray, known := known ++ s.known, objs := objs ++ s.objs }).map (·.1)
+  let s' := { s with cs := src.toList.toArray, i := 0, line := 1, col := 1 }
+  (p.run { s' with known := known ++ s.known, objs := objs ++ s.objs }).map (·.1)
 
 end LeetQ.Rel.Lang.Parse

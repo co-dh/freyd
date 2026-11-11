@@ -1,8 +1,7 @@
 -- B&dM Ex 7.40, the maximum segment sum: the note diag/aop/07-optimisation.typ §mss (line 688), Lean
 -- AOP/A7_7_MSS.lean `mss` (:106) and `mss_eq_scan` (:993). The numbers are signed, so a longer segment can sum
--- to less: `⊕` cuts a negative running sum back to 0, and an all-negative list has the empty segment's 0.
+-- to less: `⊞` cuts a negative running sum back to 0, and an all-negative list has the empty segment's 0.
 obj N = -10…20                                -- the elements and the sums
-obj 1 = {∗}                                   -- the type 1: its one value
 
 zero ≜ {(∗,0)}                                -- 1 ⟶ N: the note's `zero`
 ≥ ≜ ≤°                                        -- the order `est` maximises over
@@ -12,8 +11,9 @@ segment ≜ tails ∋ inits ∋                     -- a prefix of a suffix; the
 mss ≜ Λ(segment⦇ran(zero),plus⦈)est(≥)        -- `sum ≜ ⦇[zero,plus]⦈` written in place: `sum` is a builtin's name
 
 -- the derived program, Lean `mss_eq_scan : mss = ⦇k⦈ π₂ est(≥)`
-⊕ ≜ Λ(⊤zero ∪ plus)est(≥)                     -- N×N ⟶ N: the larger of 0 and a+b; `⊤zero` is the note's `⊸ zero`
-w ≜ (𝟙×π₁)⊕                                  -- N×(N×[N]) ⟶ N: the head ⊕ the value the tail carries
+-- the note writes ⊕; ⊕ is the sum of relations here
+⊞ ≜ Λ(⊤zero ∪ plus)est(≥)                     -- N×N ⟶ N: the larger of 0 and a+b; `⊤zero` is the note's `⊸ zero`
+w ≜ (𝟙×π₁)⊞                                  -- N×(N×[N]) ⟶ N: the head ⊞ the value the tail carries
 -- `k ≜ [zero⟨𝟙,Λ(𝟙)⟩, ⟨w,⟨wΛ(𝟙),π₂π₂⟩ cup⟩]` (note :844) is the fold's seed and step below; the step's set is
 -- Lean's own `Λ(w ∪ π₂π₂∋)` (`k`, :756), an array: the language has no `cup`
 

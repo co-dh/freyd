@@ -2,7 +2,6 @@
 -- items whose total weight is within the capacity, one of greatest total value.
 obj N = 0…60                                  -- values, weights and their totals
 obj K = {a,b,c,d}                             -- the instances, each its own items
-obj 1 = {∗}
 
 -- K ⟶ [N×N]: the items (value, weight); a is the note's run (08-thinning.typ:750), d has two best packings.
 -- Λ lists each instance's items ascending, so a holds them in the reverse of the note's order.

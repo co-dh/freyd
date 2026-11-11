@@ -30,7 +30,7 @@ def moves (o : Out) : Option (List (Int64 × Int64)) :=
 def variant (s g : String) : Except Err Out := do
   let prog ← Parse.parse blocks
   let s ← Parse.parseExpr s; let g ← Parse.parseExpr g
-  run (prog.map fun
+  runProgram (prog.map fun
     | .defn p "S₀" [] _ => .defn p "S₀" [] (.rel s)
     | .defn p "G" [] _ => .defn p "G" [] (.rel g)
     | d => d)
@@ -58,7 +58,7 @@ def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) �
 
 /-- `X⦇e,S⦈` given a family (§e): at each key of a three-key family, the fibre of the lifted fold is the fold of
     the fibre. `p(R)` holds the pairs `(a,b)` with `b` at most two steps of `R` from `a`. -/
-def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\nobj 1 = {∗}\n" ++
+def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\n" ++
   "ℓ ≜ Λ(⊤(1,L))\np(R : X ⟶ X) ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂ ∪ (π₂(𝟙×R))⦈)\n" ++
   "R₀ ≜ {(A,B)}\nR₁ ≜ {(A,B),(B,C)}\nR₂ ≜ {(A,B),(B,C),(C,A)}\n" ++
   "Fm ≜ {(0,0)}⊤(K,X)⟨𝟙,R₀⟩ ∪ ({(1,1)}⊤(K,X)⟨𝟙,R₁⟩) ∪ ({(2,2)}⊤(K,X)⟨𝟙,R₂⟩)\n" ++
@@ -75,7 +75,7 @@ def foldLaw : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L 
 /-- A lifted fold whose step has closed parts (§e, cost of the keyed fold): `G`, `∼R ∩ G` (a complement, so
     `⊤`), `dom(R)`, `π₂⟨π₁,π₁⟩`, each keyed on the pairs a round meets; at every key the fibre is the fold of
     the fibre. -/
-def foldClosed : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\nobj 1 = {∗}\n" ++
+def foldClosed : Except Err Out := runText ("obj X = {A,B,C}\nobj K = 0…2\nobj L = 5…6\n" ++
   "ℓ ≜ Λ(⊤(1,L))\nG ≜ {(A,B),(C,C)}\n" ++
   "p(R : X ⟶ X) ≜ ran(ℓ⦇ran⟨𝟙,𝟙⟩, π₂(𝟙×G) ∪ (π₂(𝟙×(∼R ∩ G))) ∪ (π₂(𝟙×dom(R))) ∪ (π₂⟨π₁,π₁⟩)⦈)\n" ++
   "R₀ ≜ {(A,B)}\nR₁ ≜ {(A,B),(B,C)}\nR₂ ≜ {(A,B),(B,C),(C,A)}\n" ++
@@ -315,7 +315,7 @@ def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" +
 /-- The value printed by each `print` of `src`, after its ` = `. -/
 def printed (src : String) : List String := (ok (runText src)).prints.map fun s => (s.splitOn " = ").getLastD ""
 
-def arrs : String :="obj 1 = {∗}\nobj N = -3…9\nobj K = {a,b}\n" ++
+def arrs : String :="obj N = -3…9\nobj K = {a,b}\n" ++
   "x ≜ {(∗,3 1 2)}\nxc ≜ ⟨{(∗,3)}, ⟨{(∗,1)}, ⟨{(∗,2)}, nil⟩cons⟩cons⟩cons\ncheck x = xc\ncheck {(∗,[3 1 2])} = xc\n" ++
   "check {(∗,[1])} = ⟨{(∗,1)},nil⟩cons\ncheck {(∗,[1] [2 3])} = ⟨{(∗,[1])},⟨{(∗,2 3)},nil⟩cons⟩cons\n" ++
   "check {(∗,(1,2) (3,4))} = ⟨{(∗,(1,2))},⟨{(∗,(3,4))},nil⟩cons⟩cons\n" ++
@@ -330,14 +330,14 @@ def arrs : String :="obj 1 = {∗}\nobj N = -3…9\nobj K = {a,b}\n" ++
 -- a printed literal reads back as itself
 #guard ["{(∗, 3 1 2)}", "{(∗, [1] [2 3])}", "{((a, 1 2), [3])}", "{(b, [])}", "{(∗, (1, 2) (3, 4))}"].all trip
 -- an element position whose arrays are all empty, a word in no object, rows nesting differently, a comma
-def arrE : String := "obj 1 = {∗}\nobj N = 0…9\n"
-#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 3 "the object of [] cannot be read off an empty array: write nil(A,[O])"
-#guard errAt (arrE ++ "e ≜ {(∗,[[]] [])}\n") 3 "the object of [] cannot be read off an empty array: write nil(A,[O])"
-#guard errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 3 "no declared object has the elements [1, 12]"
-#guard errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 3
+def arrE : String := "obj N = 0…9\n"
+#guard errAt (arrE ++ "e ≜ {(∗,[])}\n") 2 "the object of [] cannot be read off an empty array: write nil(A,[O])"
+#guard errAt (arrE ++ "e ≜ {(∗,[[]] [])}\n") 2 "the object of [] cannot be read off an empty array: write nil(A,[O])"
+#guard errAt (arrE ++ "e ≜ {(∗,1 12)}\n") 2 "no declared object has the elements [1, 12]"
+#guard errAt (arrE ++ "e ≜ {(∗,1 2),(∗,3)}\n") 2
   "the rows of a literal nest alike: found 3, expected the form of 1 2"
-#guard errAt (arrE ++ "e ≜ {(∗,(1,2) 3)}\n") 3 "the rows of a literal nest alike: found 3, expected the form of (1, 2)"
-#guard errAt (arrE ++ "e ≜ {(∗,[1,2])}\n") 3 "the elements of an array are separated by spaces, not ','"
+#guard errAt (arrE ++ "e ≜ {(∗,(1,2) 3)}\n") 2 "the rows of a literal nest alike: found 3, expected the form of (1, 2)"
+#guard errAt (arrE ++ "e ≜ {(∗,[1,2])}\n") 2 "the elements of an array are separated by spaces, not ','"
 
 /-! Signed numbers (§a, §c): a range `-3…3`, signed literal words, `succ ≤ <` and the value verbs on it, each
     against Lean's `Int` (`div` floors and `mod` takes the divisor's sign, as q's: `Int.fdiv`, `Int.fmod`); a print
@@ -405,7 +405,7 @@ def reading : Decl → Option (String × String)
     meet supplies, `R×S` as `⟨π₁R,π₂S⟩`; and what is still refused. Expected values by hand. -/
 
 
-def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a b)}\n" ++
+def chs : String := "obj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a b)}\n" ++
   "y ≜ {(∗,a a b)}\nns ≜ {(∗,2 3)}\n" ++
   "ms ≜ {(∗,3 1 2)}\nks ≜ {(∗,3 1 1)}\n" ++
   "ok ≜ dom(π₁(≤/∋) ∩ π₂)\n"
@@ -416,8 +416,8 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a
   ["{(∗, a b), (∗, b a)}", "{(∗, (a, [b])), (∗, (b, [a]))}", "{(∗, a b), (∗, b a)}",
    "{(∗, (a, [b]))}", "{}"]
 -- refused at a leaf whose converse does not run on demand: `π₁` in `⟨π₁,π₂⟩°`, `∋` in `∈`
-#guard errAt (chs ++ "print x (cons° ⟨π₁,π₂⟩ cons)°\n") 10 "the converse of π₁ does not run on demand"
-#guard errAt (chs ++ "print {(∗,a)} ∈\n") 10 "the converse of ∋ does not run on demand"
+#guard errAt (chs ++ "print x (cons° ⟨π₁,π₂⟩ cons)°\n") 9 "the converse of π₁ does not run on demand"
+#guard errAt (chs ++ "print {(∗,a)} ∈\n") 9 "the converse of ∋ does not run on demand"
 -- a division tested on the pairs: `R/S`, `R\S`, `frac`, `∼`, `−`, each beside a term run on demand
 #guard printed (chs ++ "print ⟨{(∗,1)},ns⟩ok\nprint ⟨{(∗,3)},ns⟩ok\nprint ⟨{(∗,2)},ns⟩ok\n" ++
   "print ms (∋ ∩ (cons\\(π₁ ≤)))\nprint ks (subseq ∩ frac(∋,∋))\n" ++
@@ -425,22 +425,79 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\nx ≜ {(∗,a
   ["{(∗, (1, 2 3))}", "{}", "{(∗, (2, 2 3))}", "{(∗, 3)}", "{(∗, 3 1), (∗, 3 1 1)}",
    "{(∗, 2 3)}", "{}", "{(∗, 2 3)}"]
 -- refused: a division with no term on demand to test it against, and a meet of two
-#guard errAt (chs ++ "print {(∗,1)}(≤/∋)\n") 10 "R/S reads its operands whole"
-#guard errAt (chs ++ "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n") 10 "R/S reads its operands whole"
+#guard errAt (chs ++ "print {(∗,1)}(≤/∋)\n") 9 "R/S reads its operands whole"
+#guard errAt (chs ++ "print {(∗,1)}((≤/∋) ∩ (≤/∋))\n") 9 "R/S reads its operands whole"
 -- `R×S` on demand as `⟨π₁R,π₂S⟩`; closed, as before
 #guard printed (chs ++ "print ⟨{(1,1)},⟨{(1,2)},Λ({(1,1)})⟩⟩(𝟙×π₁)plus\nprint y cons°(𝟙×perm)\n" ++
   "print ⟨x,{(∗,b)}⟩(perm×𝟙)\nprint {(1,1)}×{(2,3)}\n") ==
   ["{(1, 3)}", "{(∗, (a, a b)), (∗, (a, b a))}", "{(∗, (a b, b)), (∗, (b a, b))}", "{((1, 2), (1, 3))}"]
 -- refused: an operand that does not run, named; the object printed as the program writes it, `[Ch]`
-#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 10 "the converse of ∋ does not run on demand"
-#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 10 "[Ch] has no universe"
+#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 9 "the converse of ∋ does not run on demand"
+#guard errAt (chs ++ "print ⟨{(∗,a)},{(∗,b)}⟩(∈×𝟙)\n") 9 "[Ch] has no universe"
 -- `loop(F)` runs `F` on the pairs each round meets: a state that is an array (a copy, a reverse, the
 -- subsequences), and a pair with an array (the copy with its length)
 #guard printed (chs ++ "print x ⟨nil,𝟙⟩loop(snoc)\nprint y ⟨nil,𝟙⟩loop(⟨π₂,π₁⟩cons)\nprint x ⟨nil,𝟙⟩loop(snoc ∪ π₁)\n" ++
   "print x ⟨⟨nil,⊤{(0,0)}⟩,𝟙⟩loop(⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩)\n") ==
   ["{(∗, a b)}", "{(∗, b a a)}", "{(∗, []), (∗, [a]), (∗, a b), (∗, [b])}", "{(∗, (a b, 2))}"]
 -- refused: an `F` that runs neither way, the leaf named
-#guard errAt (chs ++ "print x ⟨nil,𝟙⟩loop(snoc ran(snoc))\n") 10 "ran( ) reads its argument whole: [Ch]×Ch has no universe"
+#guard errAt (chs ++ "print x ⟨nil,𝟙⟩loop(snoc ran(snoc))\n") 9 "ran( ) reads its argument whole: [Ch]×Ch has no universe"
+
+/-! The prelude (§c): each definition moved there against the builtin it replaced (`Alg.perm`, `Alg.ordered`, and
+    `sort(Q) = perm ordered(Q)`), on a repeated element, the empty array, two element objects and arrays of arrays;
+    the converses; the declared infix operators; the errors. -/
+
+def pre : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b,c,d}\nobj Ch = {p,q}\n" ++
+  "x ≜ {(a,3 1 2),(b,2 1 2),(c,[]),(d,[5])}\nle ≜ 𝟙(N) ≤\npm ≜ x perm\nod ≜ x ordered(≤)\nst ≜ x sort(≤)\n" ++
+  "y ≜ {(a,p q p),(b,[])}\npy ≜ y perm\nz ≜ {(a,[1 2] [3] []),(b,[] [])}\npz ≜ z perm\n")
+
+def same {A B : Obj} (R S : Rel A B) : Bool := R ⊑ S && S ⊑ R
+def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .long B).map (same · R)).getD false
+
+#guard let o := ok pre
+  match get o "x" .long (.arr .long), get o "le" .long .long with
+  | some X, some Le =>
+    let U := (Alg.ran X).val; let P := Alg.perm U
+    is o "pm" (X ≫ P) && is o "od" (X ≫ Alg.ordered Le U) && is o "st" (X ≫ P ≫ Alg.ordered Le (Alg.ran P).val)
+  | _, _ => false
+#guard let o := ok pre
+  match get o "y" .long (.arr .long), get o "z" .long (.arr (.arr .long)) with
+  | some Y, some Z => is o "py" (Y ≫ Alg.perm (Alg.ran Y).val) && is o "pz" (Z ≫ Alg.perm (Alg.ran Z).val)
+  | _, _ => false
+
+-- the converses: `perm° = perm` (the one rule kept for a definition), `ordered(Q)` a coreflexive, and
+-- `sort(Q)° = ordered(Q)° perm°` from them
+#guard printed ("obj N = 0…9\nx ≜ {(∗,1 2 3)}\nprint x perm°\nprint x ordered(≤)°\nprint x sort(≤)°\n" ++
+  "print {(∗,3 1 2)} sort(≤)°\n") ==
+  ["{(∗, 1 2 3), (∗, 1 3 2), (∗, 2 1 3), (∗, 2 3 1), (∗, 3 1 2), (∗, 3 2 1)}", "{(∗, 1 2 3)}",
+   "{(∗, 1 2 3), (∗, 1 3 2), (∗, 2 1 3), (∗, 2 3 1), (∗, 3 1 2), (∗, 3 2 1)}", "{}"]
+
+-- a declared infix operator: `R + S = ⟨R,S⟩plus`, the prelude's `⇒` and `⊕`, a program's own `_≼_`, each read at
+-- the one level with `∩`, left to right
+#guard printed ("obj N = 0…9\nw ≜ {((2,3),(2,3)),((4,1),(4,1))}\nprint w(π₁ + π₂)\ncheck w(π₁ + π₂) = w⟨π₁,π₂⟩plus\n" ++
+  "_≼_(R,S) ≜ R ∩ S°\nprint {(1,1),(2,2)}(≤ ≼ ≤)\nprint {(1,1)}(≤ ≼ ≤ ∪ <)\nprint {(1,1)}(< ∪ 𝟙(N) ≼ ≤)\n" ++
+  "print {(1,1)}(𝟙(N) ∩ {(1,2)} ⇒ <)\nprint {(1,1)}inl(N,N)(𝟙 ⊕ succ)\n") ==
+  ["{((2, 3), 5), ((4, 1), 5)}", "{(1, 1), (2, 2)}",
+   "{(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, 1)}",
+   "{(1, 0), (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9)}", "{(1, inl 1)}"]
+#guard ["R ⇒ S", "R ⊕ S", "R + S", "frac(R, S)", "∈", "perm", "ordered(R)", "sort(R)"].all trip
+#guard [("R ∩ S ⇒ R", "((R ∩ S) ⇒ R)"), ("R ⇒ S ∩ R", "((R ⇒ S) ∩ R)"), ("R S + R", "((R S) + R)"),
+  ("R + S R", "((R + S) R)")].all fun (s, r) => reads s r
+-- infix only: used before its arguments, alone, or declared with other than two parameters
+#guard errAt "obj B = 0…1\nf ≜ ⇒(π₁,π₂)\n" 2 "`⇒` is an infix operator: write `R ⇒ S`, not `⇒(R, S)`"
+#guard errAt "obj B = 0…1\nf ≜ π₁ ∪ ⇒\n" 2 "`⇒` is an infix operator: it stands between two terms, `R ⇒ S`"
+#guard errAt "obj B = 0…1\n_≼_(R) ≜ R\n" 2 "the infix operator `≼` takes two parameters, `_≼_(R, S)`, found 1"
+-- a prelude name taken again, as a definition, an infix operator's name or an object
+#guard errAt "obj N = 0…9\nperm ≜ 𝟙(N)\n" 2 "`perm` is already defined in the prelude"
+#guard errAt "obj N = 0…9\n⊕ ≜ 𝟙(N)\n" 2 "`⊕` is already defined in the prelude"
+#guard errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
+#guard errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
+-- an error of the prelude's own text, and one raised in a prelude body at a use: the prelude's line, the use's
+#guard match runWith "f ≜ g\n" "obj X = {A}\n" with
+  | .error e => toString e == "in the prelude, line 1, col 5: unknown name 'g'"
+  | .ok _ => false
+#guard match runWith "f(R) ≜ R g\n" "obj X = {A}\nx ≜ {(A,A)}\ny ≜ f(x)\n" with
+  | .error e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
+  | .ok _ => false
 
 #guard match Parse.parse blocks with
   | .error _ => false

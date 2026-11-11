@@ -219,6 +219,48 @@ inductive Pre
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
+/-- `x` with every position `p`: a prelude body at its use, so an error `build` raises in it is at the use (§c). -/
+def Pre.at (p : Pos) : Pre → Pre
+  | .top _ a b t => .top p a b (t.attach.map fun ⟨x, _⟩ => x.at p)
+  | .comp x y => .comp (x.at p) (y.at p)
+  | .conv x => .conv (x.at p)
+  | .meet x y => .meet (x.at p) (y.at p)
+  | .join x y => .join (x.at p) (y.at p)
+  | .diff x y => .diff (x.at p) (y.at p)
+  | .dom x => .dom (x.at p)
+  | .ran x => .ran (x.at p)
+  | .ldiv _ x y b c => .ldiv p (x.at p) (y.at p) b c
+  | .rdiv _ x y a b => .rdiv p (x.at p) (y.at p) a b
+  | .pair x y => .pair (x.at p) (y.at p)
+  | .prod x y => .prod (x.at p) (y.at p)
+  | .junc x y => .junc (x.at p) (y.at p)
+  | .lam x => .lam (x.at p)
+  | .E x => .E (x.at p)
+  | .map x => .map (x.at p)
+  | .est x => .est (x.at p)
+  | .thin x => .thin (x.at p)
+  | .filter x => .filter (x.at p)
+  | .takewhile x => .takewhile (x.at p)
+  | .own x => .own (x.at p)
+  | .thinL x => .thinL (x.at p)
+  | .merge x => .merge (x.at p)
+  | .loop x => .loop (x.at p)
+  | .succ _ n => .succ p n
+  | .arith _ k n => .arith p k n
+  | .leq _ n => .leq p n
+  | .lt _ n => .lt p n
+  | .fold e s => .fold (e.at p) (s.at p)
+  | .foldI e s => .foldI (e.at p) (s.at p)
+  | .flat x => .flat (x.at p)
+  | .lit _ a b ps => .lit p a b ps
+  | .close _ x a why => .close p (x.at p) a why
+  -- no position and no part
+  | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
+  | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
+  | x@(.head _) | x@(.tail _) | x@(.pre _) | x@(.suf _) | x@(.inits _) | x@(.tails _) | x@(.cat _) | x@(.uncat _)
+  | x@(.zip ..) | x@(.snoc _) | x@(.unsnoc _) | x@(.init _) | x@(.concat _) | x@(.setify _) | x@(.bagify _)
+  | x@(.subseq _) | x@(.tic _) => x
+
 /-- The `why` of a top-level term's `close`. -/
 def noLeft : String := "the term here needs keys and has no left context"
 

@@ -1,6 +1,5 @@
 -- B&dM §6.6 "Sorting by selection" (diag/aop/06-recursive.typ:286-344): the specification perm ordered(R) and the
 -- derived program X ≜ ⦇[nil, select°]⦈°, on arrays.
-obj 1 = {∗}                                   -- the type 1: its one value
 obj N = 0…9                                   -- the elements
 
 R ≜ ≤                                         -- the preorder, fixed for the whole of §6.6

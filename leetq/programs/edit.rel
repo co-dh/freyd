@@ -1,7 +1,6 @@
 obj A = {a,b}                                 -- the alphabet
 obj Op = A+(A+A)                              -- Op ::= cpy A ∣ del A ∣ ins A
 obj N = 0…6                                   -- lengths, and the fold rounds
-obj 1 = {∗}
 
 cpy ≜ inl(A,A+(A+A))                          -- A ⟶ Op
 del ≜ inl(A,A+A)inr(A+A,A+(A+A))              -- A ⟶ Op
