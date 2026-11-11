@@ -1,7 +1,7 @@
 import LeetQ.Rel.Lang.Test
 
 /-! The Rel language on B&dM §6.6 selection sort, read from `programs/selsort.rel`: the specification
-    `perm ordered(R)` and the derived program `X`, each printed on four arrays, against `List.mergeSort`. -/
+    `perm ordered(≤)` and the derived program `X`, each printed on four arrays, against `List.mergeSort`. -/
 
 namespace LeetQ.Rel.Lang.TestSelsort
 
@@ -24,7 +24,7 @@ def sorted (l : List Nat) : List Nat := l.mergeSort fun a b => decide (a ≤ b)
 -- both `check`s hold (a failed one is an error), and the specification and the program print the sorted input
 #guard (runText selsort).isOk
 #guard (ok (runText selsort)).prints ==
-  inputs.map (fun (n, l) => s!"{n} perm ordered(R) = {shown (sorted l)}") ++
+  inputs.map (fun (n, l) => s!"{n} perm ordered(≤) = {shown (sorted l)}") ++
   inputs.map (fun (n, l) => s!"{n} X = {shown (sorted l)}")
 
 end LeetQ.Rel.Lang.TestSelsort

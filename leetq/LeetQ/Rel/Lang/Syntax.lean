@@ -144,7 +144,9 @@ inductive Body
   | test (e f : Expr)
   deriving Repr, Inhabited
 
-/-- A parameter, with its declared type `S : A ⟶ B` when it may be given a family. -/
+/-- A parameter and its declared type `S : A ⟶ B`, its objects possibly object variables (§e). Every parameter of
+    a run program declares one (`none` is a parse that `run` refuses, naming the inferred type); a family given
+    to it is lifted (§e). -/
 structure Param where
   name : String
   ty : Option (OExp × OExp)

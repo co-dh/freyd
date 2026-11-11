@@ -13,7 +13,7 @@ def mss : String := include_str "../../../programs/mss.rel"
 def prog : String := "⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)"
 
 /-- The program with the specification and the fold on every array of `A`, named `s` and `p`. -/
-def given : Except Err Out := runText (mss ++ s!"s ≜ A mss\np ≜ A{prog}\n")
+def given : Except Err Out := runText (mss ++ s!"s : [N] ⟶ N ≜ A mss\np : [N] ⟶ N ≜ A{prog}\n")
 
 /-- The largest sum over the segments `drop i` then `take j`, the empty one included: no `Rel` operation. -/
 def mssL (xs : List Int64) : Int64 :=

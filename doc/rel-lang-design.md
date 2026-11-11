@@ -24,6 +24,9 @@ rows (§e) and of the program in §g.
 - the `#guard`s of `Lang/Test*.lean` call the evaluator inside `lean` and are not under this cap; wrap their build
   in `scripts/cap`.
 
+`rel --types FILE` checks every definition's declared type (§e) and prints each definition's head, one a line,
+as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --types` with no file prints the prelude's.
+
 ## a. Objects and universes
 
 | declaration / form    | `Core` object      | universe                                                            |
@@ -211,14 +214,14 @@ bodies do.
 | name         | definition                                                     | meaning                                     |
 |--------------|----------------------------------------------------------------|---------------------------------------------|
 | `1`          | `obj 1 = {∗}`                                                  | the terminal object: its one value          |
-| `∈`          | `∈ ≜ ∋°`                                                       | membership, the converse of `∋`             |
-| `R ⇒ S`      | `_⇒_(R : α ⟶ β, S : α ⟶ β) ≜ ∼R ∪ S`                           | implication                                 |
-| `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) ≜ [R inl, S inr]`                   | the sum of relations, `A+B ⟶ C+D`           |
-| `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) ≜ ⟨R,S⟩plus`                        | the sum of two values                       |
-| `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) ≜ R/S ∩ (S/R)°`                    | the symmetric division                      |
-| `perm`       | `perm ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
-| `ordered(Q)` | `ordered(Q) ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))`             | every element `Q`-related to each later one |
-| `sort(Q)`    | `sort(Q) ≜ perm ordered(Q)`                                    | the `Q`-ordered rearrangements              |
+| `∈`          | `∈ : α ⟶ [α] ≜ ∋°`                                             | membership, the converse of `∋`             |
+| `R ⇒ S`      | `_⇒_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ∼R ∪ S`                   | implication                                 |
+| `R ⊕ S`      | `_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ [R inl, S inr]`       | the sum of relations                        |
+| `R + S`      | `_+_(R : α ⟶ β, S : α ⟶ β) : α ⟶ β ≜ ⟨R,S⟩plus`                | the sum of two values                       |
+| `frac(R,S)`  | `frac(R : α ⟶ γ, S : β ⟶ γ) : α ⟶ β ≜ R/S ∩ (S/R)°`            | the symmetric division                      |
+| `perm`       | `perm : [α] ⟶ [α] ≜ ⦇ran(nil(1)), add⦈ where add ≜ (𝟙×cat°)⟨π₂π₁,⟨π₁,π₂π₂⟩cons⟩cat` | rearrangements: `add` puts the head anywhere in the tail |
+| `ordered(Q)` | `ordered(Q : α ⟶ α) : [α] ⟶ [α] ≜ 𝟙 − dom(tails ∋ cons°(π₁∼Q ∩ (π₂∋)))` | every element `Q`-related to each later one |
+| `sort(Q)`    | `sort(Q : α ⟶ α) : [α] ⟶ [α] ≜ perm ordered(Q)`                | the `Q`-ordered rearrangements              |
 
 - Kept builtin:
   - `est(R)`: as the definition `∋ ∩ (∈\R°)` it needs `∋°`, which does not run on demand, so `Λ(G) est(≤)` on
@@ -248,16 +251,19 @@ any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤
 - On one atom, not operators: postfix `°`, application `N(e,…)`, `dom(R)`, `⊤(A,B)`, the brackets `⟨ ⟩ ⦇ ⦈ { }`,
   and prefix `∼` on the next atom (`∼𝟙`, `∼(p⊤)`).
 - `e ⊑ f`, `e = f` is the whole of a test body (§e) or a `check`, not nested.
-- A parameter may declare its type (§e), with object variables: `uniq(R : α ⟶ β)`.
+- A definition and each of its parameters declare a type (§e), with object variables:
+  `uniq(R : α ⟶ β) : α ⟶ β ≜ …`; a test and a `where` item declare none.
 
 ```
 program  := line*
 line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )   -- Num ≤ Num
-          | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
-            ( 'where' Name '≜' expr (',' Name '≜' expr)* )?   -- local items (below)
-          | '_' Name '_' '(' param ',' param ')' '≜' expr       -- an infix operator: `R Name S`
+          | Name ('(' param (',' param)* ')')? type '≜' expr where?
+          | Name ('(' param (',' param)* ')')? '≜' expr '⊑' expr where?   -- a test: no type of its own
+          | '_' Name '_' '(' param ',' param ')' type '≜' expr where?     -- an infix operator: `R Name S`
           | 'print' expr | 'check' expr ('⊑' | '=') expr
-param    := Name ( ':' object '⟶' object )?             -- typed: lifted when given a family (§e)
+where    := 'where' Name '≜' expr (',' Name '≜' expr)*   -- local items (below), no type
+type     := ':' object '⟶' object                         -- required, checked (§e)
+param    := Name type                                -- lifted when given a family (§e)
 expr     := primary ( op? primary )*                 -- composition and infix, one level, left to right
 op       := '∩' | '∪' | '−' | '/' | '\' | '×' | Name    -- Name: a declared infix operator `_Name_`
 primary  := '∼' primary | atom '°'*
@@ -269,7 +275,7 @@ row      := '(' tup ',' tup ')'                       -- a literal's row
 tup      := item | item item+                         -- a side: one item, or the array of two or more
 item     := Word | row | '[' item* ']'                -- '[…]' always an array: [] empty, [1] one element
 object   := Word | Var | object '×' object | object '+' object | '𝒫' object | '[' object ']'
-Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a parameter's type only: an object variable (§e)
+Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a type only: an object variable (§e)
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
           | Symbol                                    -- one character outside the grammar: `≼`
 Word     := ( '-' Digit )? ( Letter | Digit | SubscriptDigit | '\'' )*   -- a name, an element, a number
@@ -289,8 +295,10 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   names its board `on` and its parameters `on`), never another parameter of its definition.
 - `where x ≜ e, y ≜ f` after a body: each item is in scope in the body and in the items after it, nowhere
   else; its name obeys the rule above and is not a parameter of its definition nor an earlier item. An item is
-  its term put in place (it lifts with the body, §e) and is evaluated once by the sharing of §d: `Pin(on) ≜
-  q(s,→,ε,κ) ∪ … where s ≜ dom(on{(R,R),(Q,Q)}), ε ≜ e(on), …`.
+  its term put in place (it lifts with the body, §e) and is evaluated once by the sharing of §d: `Pin(on : Sq ⟶
+  Pc) : Sq ⟶ Sq ≜ q(s,→,ε,κ) ∪ … where s ≜ dom(on{(R,R),(Q,Q)}), ε ≜ e(on), …`. An item takes no type: its type
+  is its place in the body. A type written on one is an error, "the `where` item `a` takes no type: make it a
+  top-level definition to give it one (§e)".
 - A one-argument builtin takes a pair as its parentheses: `ran⟨D,D⊤{(0,0)}⟩`.
 - A literal's rows nest alike on each side, to any depth: `{((0,1),1),((1,0),1)} : B×B ⟶ B`. Each leaf position
   is the one declared object holding all its words (named elements, or numbers in its range); a side is the
@@ -305,7 +313,8 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   are all empty is an error ("the object of [] cannot be read off an empty array: write nil(A,[O])"). Its value
   is the column of all those elements row after row as the payload, and `lo`, `hi` each row's slice of it (no
   `cons` per element). `nil` and `cons` still build an array from relations.
-- A definition with no parameters whose objects its body leaves open (`≼`) is elaborated at each use.
+- A definition with no parameters whose type names object variables (`≼ : α×β ⟶ α×β`) is elaborated at each
+  use.
 
 ## d. Iteration: a fold
 
@@ -361,11 +370,28 @@ under consideration, each state the fibre at itself.
 | `I ⟶ A×B`         | a family of index `I`: the body runs LIFTED, each operator by its row below         |
 | anything else     | front-end error: "`S : X ⟶ X` given `St ⟶ X`"                                       |
 
-The two readings never collide (`I ⟶ A×B` is never `A ⟶ B`: `B` is not `A×B`). The declaration is needed
-because the body's types alone do not decide: an undeclared `S` gets its type from the body, and a body like
-`∼(S°⊤ ∪ (⊤S))` types plainly with `S : St ⟶ X×X` — as a relation on `X×X`, a different meaning from "per state".
-The declaration is the smallest marker: no new operator, only the parameter's type, and an undeclared
-parameter keeps the plain reading.
+The two readings never collide (`I ⟶ A×B` is never `A ⟶ B`: `B` is not `A×B`). The declaration decides,
+because the body's types alone do not: a body like `∼(S°⊤ ∪ (⊤S))` also types with `S : St ⟶ X×X`, as a
+relation on `X×X`, a different meaning from "per state".
+
+**Definition types.**
+
+- Required on every top-level definition and on every parameter, between the head and `≜`:
+  `ok : α×[α] ⟶ α×[α] ≜ …`, `_⊕_(R : α ⟶ β, S : γ ⟶ δ) : α+γ ⟶ β+δ ≜ …`. A definition with none is an
+  error that names the type its body has: "`f` has no type; it is f : X ⟶ X".
+- None on a test `e ⊑ f` (its type is the coreflexive on the family's index: "the test `h` has no type of its
+  own") nor on a `where` item (§c).
+- Checked: the body is elaborated and its `s ⟶ t` unified with the declared type, the type's variables held
+  rigid, so a variable matches only itself; a mismatch is "`f` is declared X ⟶ N, but its body is X ⟶ X". A
+  definition with parameters is checked at each use, with the parameters' instantiation.
+- Object variables form a scheme: each use instantiates them afresh, so one definition runs at several objects
+  in one program (`≼` of §g on `St×(X×X)`, `sw : α×β ⟶ β×α` at `X×N` and `N×X`).
+- The type determines an object the body leaves open: `e : 1 ⟶ [N] ≜ nil` fixes `nil`'s source and element,
+  `r : [X×X] ⟶ [N] ≜ Λ(s₀⊤)` the `⊤`'s target. It cannot reach an object the body erases: `ran` and `Λ` drop
+  their argument's source (`perm`'s seed keeps `nil(1)`), and the middle object of a composite `RS` is in
+  neither end of the type.
+- `rel --types FILE` prints each head as declared (§ Running a program); `Lang/Test.lean` guards that the
+  printed heads equal the declared ones.
 
 **Object variables.** A parameter's type may name object variables: `uniq(R : α ⟶ β) ≜ R ∩ (R°\𝟙)`.
 
@@ -450,8 +476,8 @@ Not liftable:
 - `F(R)`, `filter(p)`, `takewhile(p)` given a family: `map`, `filter`, `takewhile` run ONE relation on every
   array and are not `foldOn` with a step of the language, so the keyed fold above does not reach them. The same
   for `thinL(Q)`, `merge(Q)`, `loop(F)` given a family (`Lang/Test.lean` guards the error). The prelude's
-  `ordered(Q)`, `sort(Q)` declare no type for `Q`, so a family given them is "parameter 'Q' is given a family but
-  declares no type; write 'Q : A ⟶ B'".
+  `sort(Q : α ⟶ α)` given a family lifts its body, which reaches `perm`, closed on `[N]`: "a closed term in a
+  lifted body: [N] has no universe".
 - `⦇e,S⦈` given a family with nothing on its left: the keyed fold needs the arrays of each key, `X`.
 
 Cost of the keyed fold: the lifted step runs on the pairs (key, (element, value)) a round meets, as the unlifted

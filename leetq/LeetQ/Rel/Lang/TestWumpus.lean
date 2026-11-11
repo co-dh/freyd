@@ -19,7 +19,8 @@ def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", f
 
 /-- The program with one family `fₖ ≜ …` per table: `fₖ : N ⟶ C×C`, or `N ⟶ 1×C`. -/
 def given : Except Err Out :=
-  runText (wumpus ++ String.join (tables.zipIdx.map fun ((_, e, _), k) => s!"f{k} ≜ {e}\n"))
+  runText (wumpus ++ String.join (tables.zipIdx.map fun ((_, e, one), k) =>
+    s!"f{k} : N ⟶ {if one then "1" else "C"}×C ≜ {e}\n"))
 
 /-- A cell's code in `Wumpus.lean`: the element at its position among `C`'s named elements. -/
 def cell (x : Int64) : Int64 := Wumpus.cellL.getD x.toInt.toNat 0
@@ -110,7 +111,7 @@ def entailed : List (List (String × List Int64)) := Id.run do
     ("pit", "ran(uniq(cand(V, B)))"),
     ("noS", "(V (𝟙 − S))"),
     ("noW", "(V ∪ ran((noS(V, S) adj)))"),
-    ("wmay", "((S ⊤(C, 1)) \\ adj)"),
+    ("wmay", "((S ⊤) \\ adj)"),
     ("wcand", "(wmay(S) (𝟙 − noW(V, S)))"),
     ("wumpus", "ran(uniq(wcand(V, S)))"),
     ("noWumpus", "(𝟙 − ran(wcand(V, S)))"),

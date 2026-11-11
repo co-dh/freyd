@@ -29,8 +29,8 @@ def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := d
     | none => pure prog
     | some ps => do
       let b ← Parse.parseExpr (lit ps)
-      pure (prog.map fun | .defn p "on" [] _ => .defn p "on" [] (.rel b) | d => d)
-  let k := prog.findIdx fun | .defn _ "Ω" _ _ => true | _ => false
+      pure (prog.map fun | .defn p "on" [] _ ty => .defn p "on" [] (.rel b) ty | d => d)
+  let k := prog.findIdx fun | .defn _ "Ω" _ _ _ => true | _ => false
   runProgram (if one then prog.take (k + 1) else prog)
 
 /-- `Ω` is the board when it is mate, else empty. -/
@@ -106,10 +106,10 @@ def mate (ps : List (Nat × Int64)) (v : Bool) : Bool := let m := mated ps; m ==
 /-! Each line rewritten with `where` (§c) reads as the line it replaced, its items put in place. -/
 
 def before : List String := [
-  "W(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K)",
-  "B(on : Sq ⟶ Pc) ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), e(on)) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,e(on),dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)})))",
-  "Pin(on : Sq ⟶ Pc) ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))",
-  "M(on : Sq ⟶ Pc) ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,e(on),dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)})))"]
+  "W(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on) ∪ k(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(P,P)})X₀) ∪ (dom(on{(K,K)})K)",
+  "B(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ ρ(dom(on{(r,r),(q,q)}), dom(on{(b,b),(q,q)}), e(on)) ∪ (dom(on{(n,n)})N) f(on) ∪ (dom(on{(p,p)})p(↓,S₁,X₁,e(on),dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K)})))",
+  "Pin(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ q(dom(on{(R,R),(Q,Q)}),→,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),←,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↑,e(on),k(on)) ∪ q(dom(on{(R,R),(Q,Q)}),↓,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↗,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↖,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↘,e(on),k(on)) ∪ q(dom(on{(B,B),(Q,Q)}),↙,e(on),k(on))",
+  "M(on : Sq ⟶ Pc) : Sq ⟶ Sq ≜ ρ(dom(on{(R,R),(Q,Q)}), dom(on{(B,B),(Q,Q)}), e(on)) ∪ (dom(on{(N,N)})N) ∪ (dom(on{(K,K)})K) (𝟙 − dom(on{(P,P),(N,N),(B,B),(R,R),(Q,Q),(K,K),(k,k)})) ∪ (dom(on{(P,P)})p(↑,S₀,X₀,e(on),dom(on{(p,p),(n,n),(b,b),(r,r),(q,q)})))"]
 
 def rewritten (p : Program) : List (String × String) :=
   (p.filterMap Test.reading).filter fun r => ["W", "B", "Pin", "M"].contains r.1
