@@ -1,0 +1,38 @@
+-- B&dM §8.4, the 0/1 knapsack (diag/aop/08-thinning.typ, "The knapsack problem"): among the subsequences of the
+-- items whose total weight is within the capacity, one of greatest total value.
+obj N = 0…60                                  -- values, weights and their totals
+obj K = {a,b,c,d}                             -- the instances, each its own items
+
+-- K ⟶ [N×N]: the items (value, weight); a is the note's run (08-thinning.typ:750), d has two best packings.
+-- Λ lists each instance's items ascending, so a holds them in the reverse of the note's order.
+X ≜ Λ({(a,(6,5)),(a,(5,4)),(a,(4,6)),(a,(3,3)),(b,(7,4)),(b,(2,2)),(b,(9,8)),(c,(1,9)),(d,(5,5)),(d,(5,6)),(d,(5,4))})
+w ≜ {(10,10)}                                 -- the capacity
+
+value ≜ F(π₁)sum                              -- value ≜ sum list(val): the total value of a packing
+weight ≜ F(π₂)sum                             -- weight ≜ sum list(wt): its total weight
+within(w) ≜ dom(weight ≤ w)                   -- the packing weighs at most w
+≥ ≜ ≤°
+-- R ≜ value ≥ value° (knap-defn) is not a relation of the language: its objects [N×N] have no universe, and est,
+-- thinL, merge run their order closed. So est(R) is written on the candidates G it chooses among: the ones whose
+-- value is the ≥-least of the values of G. Replaces Λ(−)est(R), 08-thinning.typ:702 (knap_laws, both sides).
+M(G) ≜ ⟨𝟙,G⟩dom(π₁Λ(G value)est(≥) ∩ (π₂ value))π₂   -- Λ(G)est(R): the most valuable values of G
+
+-- the specification, knap_laws' right side: Λ(subseq within(w)) est(R)
+s ≜ M(X subseq within(w))
+
+-- the specification as a fold, knap_spec: subseq within(w) = ⦇[nil, cons within(w) ∪ π₂]⦈; the seed nil of the
+-- base case is the fold's coreflexive ran(X nil), the item case its step S : (N×N)×[N×N] ⟶ [N×N]
+S ≜ cons within(w) ∪ π₂                       -- at each item, keep it if the packing still fits, or drop it
+p ≜ M(X⦇ran(X nil),S⦈)                       -- knap_laws_step2's left side: Λ⦇S⦈ est(R)
+
+-- The derived program, knap_fold (08-thinning.typ:727), is not written:
+--   ⦇[nil τ, cpr ⟨list(cons) filter(within w), list(π₂)⟩ merge(R) thinL(Q)]⦈ minL(R),  Q ≜ R ∩ (weight ≤ weight°)
+-- merge(R), thinL(Q), minL(R) need the orders R, Q on [N×N], filter(within(w)) a test on [N×N], and cpr on lists in
+-- order a loop(F) whose F reads an array; the language runs each of these parameters closed, where [N×N] has no
+-- universe.
+
+check X⦇ran(X nil),S⦈ = X subseq within(w)   -- knap_spec
+check p = s                                   -- knap_laws_step2
+
+print s
+print p
