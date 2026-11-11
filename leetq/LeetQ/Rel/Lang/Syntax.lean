@@ -1,3 +1,5 @@
+import QLean.Kernel.Elementwise
+
 /-! The Rel language's surface syntax (`doc/rel-lang-design.md` §c, §h): objects, terms, declarations, each node
     with its source line and column. The builtin operators are one table, `Op.table`, read by the parser (symbol,
     arity), the elaborator (typing, lifted row) and the evaluator (the `Alg` op), each by the `Op` constructor. -/
@@ -31,9 +33,11 @@ inductive OExp
   | list (a : OExp)
   deriving Repr, Inhabited
 
-/-- The builtin operators of §b. A constant (arity 0) may take its objects, `⊤(A,B)`; the others take relations. -/
+/-- The builtin operators of §b. A constant (arity 0) may take its objects, `⊤(A,B)`; the others take relations.
+    `arith k` is the qlean kernel's integral value verb `k` on pairs of numbers (`Alg.arith`): one constructor, so
+    every verb is typed, lifted and run by one path. -/
 inductive Op
-  | id | zero | top | mem | ni | outl | outr | inl | inr | leq | lt | succ | plus
+  | id | zero | top | mem | ni | outl | outr | inl | inr | leq | lt | succ | arith (k : UInt8)
   | union | tau | nil | alpha | cons | length | total | head | tail | pre | suf
   | dom | ran | lam | E | P | est | thin | filter | takewhile | map | frac
   | inits | tails | cat | zip | snoc | init | concat | perm | setify | bagify | subseq | tic
@@ -45,7 +49,10 @@ inductive Op
 def Op.table : List (String × Op × Nat) :=
   [("𝟙", .id, 0), ("𝟘", .zero, 0), ("⊤", .top, 0), ("∋", .mem, 0), ("∈", .ni, 0), ("π₁", .outl, 0),
    ("π₂", .outr, 0), ("inl", .inl, 0), ("inr", .inr, 0), ("≤", .leq, 0), ("<", .lt, 0), ("succ", .succ, 0),
-   ("plus", .plus, 0), ("union", .union, 0), ("τ", .tau, 0), ("nil", .nil, 0), ("α", .alpha, 0),
+   ("plus", .arith QLean.Kernel.Ew.add, 0), ("times", .arith QLean.Kernel.Ew.mul, 0),
+   ("minus", .arith QLean.Kernel.Ew.sub, 0), ("div", .arith QLean.Kernel.Ew.idiv, 0),
+   ("mod", .arith QLean.Kernel.Ew.imod, 0), ("max", .arith QLean.Kernel.Ew.greater, 0),
+   ("min", .arith QLean.Kernel.Ew.lesser, 0), ("union", .union, 0), ("τ", .tau, 0), ("nil", .nil, 0), ("α", .alpha, 0),
    ("cons", .cons, 0), ("length", .length, 0), ("sum", .total, 0), ("head", .head, 0), ("tail", .tail, 0),
    ("prefix", .pre, 0), ("suffix", .suf, 0), ("dom", .dom, 1), ("ran", .ran, 1), ("Λ", .lam, 1), ("E", .E, 1),
    ("P", .P, 1), ("est", .est, 1), ("thin", .thin, 1), ("filter", .filter, 1), ("takewhile", .takewhile, 1),

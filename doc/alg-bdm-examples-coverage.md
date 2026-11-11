@@ -120,6 +120,9 @@ calling it, and nothing is lost by deleting it.
 | `exp`                  | only the fast-exp spec `exp(a)(b) = a^b`; the program needs `times` only | `Ew.pow`                               | `Ew.val`: `Except`, no                                       |
 | prefix sums            | mss, van (`prefix sum`)                                                  | `Scan.scan .sums` (Algebra.lean:55)    | leetq `Scan.scan` (Scan.lean:38): `Option`, no               |
 
+- In the Rel language (`doc/rel-lang-design.md` §b) `plus times minus div mod max min : N×N ⟶ N` are builtins on a
+  declared number universe, one `Alg.arith` path with the kernel opcode. `Lang/Test.lean` runs digits there: `op°`
+  from `x` once a round of a fold, `op ≜ ⟨⟨π₁,π₁ ten⟩times,π₂ dg⟩plus`, giving `{(107, {1, 0, 7})}`.
 - Present, no new op: `≤`/`<` from a cost, constants, prefix sums (`prefix ≫ Arr.sum`), and `min`/`max` as
   `est (leq U) (outl ∪ outr)` and `est (leq U)° (outl ∪ outr)` (guarded against `min`/`max` on `-7 … 7`).
 - `minus`, `div`, `mod` were derivable as terms costing a universe (`°` of `plus`, of `⟨π₁ times(k), π₂⟩ plus`);

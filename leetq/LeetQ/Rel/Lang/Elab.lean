@@ -80,9 +80,9 @@ inductive Tm : Obj → Obj → Bool → Type where
   | thinL {B : Obj} (Q : Tm B B false) : Tm (.arr B) (.arr B) true
   | merge {B : Obj} (Q : Tm B B false) : Tm (.prod (.arr B) (.arr B)) (.arr B) true
   | loop {X Y : Obj} (F : Tm (.prod X Y) X false) : Tm (.prod X (.arr Y)) X true
-  /-- `succ`, `plus`, `≤`, `<` on the declared number universe `U`. -/
+  /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
   | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
-  | plus {m : Nat} (U : Arr .long m) : Tm (.prod .long .long) .long true
+  | arith {m : Nat} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
   | leq {m : Nat} (U : Arr .long m) : Tm .long .long false
   | lt {m : Nat} (U : Arr .long m) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
@@ -209,7 +209,7 @@ inductive Pre
   | merge (p : Pre)
   | loop (p : Pre)
   | succ (pos : Pos) (n : OTy)
-  | plus (pos : Pos) (n : OTy)
+  | arith (pos : Pos) (k : UInt8) (n : OTy)
   | leq (pos : Pos) (n : OTy)
   | lt (pos : Pos) (n : OTy)
   | fold (e s : Pre)
@@ -484,7 +484,7 @@ def constant (env : Env) (p : Pos) (o : Op) (objs : List OExp) : M Arg := do
     | .leq => (.leq p a, a, a)
     | .lt => (.lt p a, a, a)
     | .succ => (.succ p a, a, a)
-    | .plus => (.plus p a, .prod a a, a)
+    | .arith k => (.arith p k a, .prod a a, a)
     | .union => (.union a, .arr (.arr a), .arr a)
     | .tau => (.tau a, a, .arr a)
     | .nil => (.nil a b, a, .arr b)
@@ -898,7 +898,7 @@ def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A fal
   | some ⟨A', _, U⟩ => if h : A' = A then pure (.uni (h ▸ U)) else internal dp "universe objects disagree"
   | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
 
-/-- The universe of a declared base object, for `succ plus ≤ <`. -/
+/-- The universe of a declared base object, for `succ`, the value verbs (`plus`, …), `≤`, `<`. -/
 def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : Nat) × Arr .long m) :=
   match zonk st o with
   | .base n => match (objs.lookup n).bind (·.uni) with
@@ -1027,7 +1027,7 @@ def build : Pre → Except Err Res
     | r@⟨.prod X Y, _, _, _⟩ => pure ⟨_, _, _, .loop (← closed? dp (A := .prod X Y) (B := X) r)⟩
     | _ => internal dp "loop's argument"
   | .succ p n => do let ⟨_, U⟩ ← numU objs st p n "succ"; pure ⟨_, _, true, .succ U⟩
-  | .plus p n => do let ⟨_, U⟩ ← numU objs st p n "plus"; pure ⟨_, _, true, .plus U⟩
+  | .arith p k n => do let ⟨_, U⟩ ← numU objs st p n (Op.arith k).sym; pure ⟨_, _, true, .arith k U⟩
   | .leq p n => do let ⟨_, U⟩ ← numU objs st p n "≤"; pure ⟨_, _, false, .leq U⟩
   | .lt p n => do let ⟨_, U⟩ ← numU objs st p n "<"; pure ⟨_, _, false, .lt U⟩
   | .fold e s => do

@@ -233,6 +233,47 @@ def listsLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj 
 
 #guard listsLifted.isOk
 
+/-! The kernel's value verbs of §b on pairs of numbers, each `Alg.arith` with its opcode: a result outside the
+    declared object has no row (`minus` below `0`, as `succ` at the top), nor a zero divisor. -/
+
+def arith : Except Err Out := runText ("obj N = 0…20\n" ++
+  "w ≜ {((7,2),(7,2)),((2,7),(2,7)),((7,0),(7,0)),((3,5),(3,5))}\n" ++
+  "print w plus\nprint w times\nprint w minus\nprint w div\nprint w mod\nprint w max\nprint w min\n" ++
+  "D ≜ dom(𝟙(N×N) div)\ncheck D⟨⟨π₂,div⟩times,mod⟩plus = Dπ₁\ncheck D⟨mod,π₂⟩ = D⟨mod,π₂⟩(𝟙 ∩ (π₁ < π₂°))\n")
+
+-- `a = b·div + mod` and `mod < b` on every pair of `N` with a divisor other than `0`
+#guard arith.isOk
+#guard (ok arith).prints == [
+  "w plus = {((2, 7), 9), ((3, 5), 8), ((7, 0), 7), ((7, 2), 9)}",
+  "w times = {((2, 7), 14), ((3, 5), 15), ((7, 0), 0), ((7, 2), 14)}",
+  "w minus = {((7, 0), 7), ((7, 2), 5)}",
+  "w div = {((2, 7), 0), ((3, 5), 0), ((7, 2), 3)}",
+  "w mod = {((2, 7), 2), ((3, 5), 3), ((7, 2), 1)}",
+  "w max = {((2, 7), 7), ((3, 5), 5), ((7, 0), 7), ((7, 2), 7)}",
+  "w min = {((2, 7), 2), ((3, 5), 3), ((7, 0), 0), ((7, 2), 2)}"]
+
+#guard ["plus", "times", "minus", "div", "mod", "max", "min", "⟨R, S⟩ times", "R mod°"].all trip
+
+/-- A value verb in a lifted body takes the closed row (§e): at each key the fibre is the body on the fibre. -/
+def arithLifted : Except Err Out := runText ("obj N = 0…9\nobj K = {a,b}\nobj J = {i,j}\n" ++
+  "R₀ ≜ {(a,3),(b,1)}\nR₁ ≜ {(a,2),(b,5),(b,1)}\nFm ≜ {(i,i)}⊤(J,K)⟨𝟙,R₀⟩ ∪ ({(j,j)}⊤(J,K)⟨𝟙,R₁⟩)\n" ++
+  "f(S : K ⟶ N) ≜ ⟨S,S⟩times ∪ (⟨S succ,S⟩mod)\nfF ≜ f(Fm)\n" ++
+  "check {(i,i)}fF = {(i,i)}⊤(J,K)⟨𝟙,f(R₀)⟩\ncheck {(j,j)}fF = {(j,j)}⊤(J,K)⟨𝟙,f(R₁)⟩\nprint f(R₀)\n")
+
+#guard arithLifted.isOk
+#guard (ok arithLifted).prints == ["f(R₀) = {(a, 1), (a, 9), (b, 0), (b, 1)}"]
+
+/-- B&dM's digits of a number (`val_converse_eq`): `op°`, the converse of `op(n,d) = 10n+d` on a digit `d`,
+    taken from `x` once a round until it reaches `0`, each digit put on the front of the list. The rounds `K`
+    hold no number of `N`, so a literal's words name one object (§c). -/
+def digits : Except Err Out := runText ("obj N = 0…199\nobj K = 200…203\n" ++
+  "ten ≜ ⊤(N,N){(10,10)}\ndg ≜ dom(<{(10,10)})\nop ≜ ⟨⟨π₁,π₁ ten⟩times,π₂ dg⟩plus\n" ++
+  "x ≜ {(107,107)}\nr ≜ Λ(x⊤(N,K))\nnz ≜ 𝟙(N) − {(0,0)}\n" ++
+  "step ≜ ⟨π₁{(0,0)},π₂⟩ ∪ ⟨π₁ nz op° π₁,⟨π₁ nz op° π₂,π₂⟩cons⟩\n" ++
+  "ds ≜ r⦇ran(x⟨𝟙,nil⟩),π₂ step⦈π₂\nprint ds\n")
+
+#guard (ok digits).prints == ["ds = {(107, {1, 0, 7})}"]
+
 -- a parameterised list builtin given a family
 #guard errAt "obj N = 0…3\nobj St = 𝒫(N×N)\nf(S : N ⟶ N) ≜ sort(S)\ng ≜ f(∋)\n" 3 "not liftable"
 

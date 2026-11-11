@@ -31,7 +31,7 @@ rows (§e) and of the program in §g.
   front-end error: "`⊤ : 𝒫(X×X) ⟶ N` has no universe; compose a set of states before it".
 - An `arr` object as a TARGET has no demand: `⊤ : A ⟶ 𝒫B`, `∈`, `R/S` into `𝒫B`, `P(R)` are errors there; the
   program names the arrays it means (a coreflexive) and composes them.
-- Inference: each constant (`𝟙 ⊤ 𝟘 ∋ π₁ π₂ ≤ <`) gets fresh object variables, unified along the term.
+- Inference: each constant (`𝟙 ⊤ 𝟘 ∋ π₁ π₂ ≤ < succ`, the value verbs of §b) gets fresh object variables, unified along the term.
   An unresolved one is an error asking for the explicit form `⊤(A,B)`, `𝟙(A)`.
 
 ## b. Operators
@@ -76,7 +76,9 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 | `thinL(Q)`                     | binary thinning, among the subsequences   | `thinL`                        |
 | `merge(Q)`, `loop(F)`, `tic`   | merge two lists, `F` folded from the      | `merge`, `loop`, `tic`         |
 |                                | left, the non-empty prefixes of `a::xs`   |                                |
-| `succ`, `plus`, `≤`, `<`       | on a declared number universe             | `succ plus leq lt`             |
+| `succ`, `≤`, `<`               | on a declared number universe             | `succ leq lt`                  |
+| `plus times minus div mod`,    | `N×N ⟶ N` on a declared number universe:  | `arith` with `Ew.add mul sub`  |
+| `max min`                      | `+ · − ⌊/⌋`, q's `mod`, the larger, less  | `idiv imod greater lesser`     |
 | `{(a,b),…}`, `{((a,b),c),…}`   | a literal relation, rows nested (§c)      | `col`, a pair of `Vals`        |
 | `R ⊑ S`                        | inclusion: in `check`, and as a test (§e) | `⊑`                            |
 
@@ -85,6 +87,13 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
 - The list builtins run on the arrays in demand (§a), as `head` does: a constant on its source's arrays, `cat`,
   `zip`, `snoc`, `merge(Q)`, `loop(F)`, `tic` on the pairs in demand; `Q`, `F` closed, as `filter(p)`'s `p`.
   A converse with a name runs as that op (`cat°`, `snoc°`).
+- The value verbs `plus times minus div mod max min : N×N ⟶ N` are one builtin, `arith k` with the qlean kernel's
+  opcode `k`, run on the pairs in demand (§a) as `Alg.arith k` then the universe of `N`. Each is partial, never a
+  default: no row where the result falls outside `N` (`minus` below the bottom, `plus`, `times` past the top, as
+  `succ` at the top), where the kernel answers q's null (a divisor `0`; a declared number is never null), or
+  where `long` overflows. `div` floors and `mod` takes the divisor's sign, as q's do. `max`, `min` on numbers are not B&dM's
+  `max R`, `min R` on sets, which the language writes `est(R°)`, `est(R)`. Not exposed: the kernel's `%` (`Ew.div`)
+  and `xexp` (`Ew.pow`), whose results are float, and `^` (`Ew.fill`), which on numbers with no null is `π₂`.
 - Not in the language yet (`no` in the architecture table): `⦇R⦈`, `F(R)` on datatypes other than lists;
   sorting sets (`setify° ordered(Q)`: its target is lists, which have no demand (§a), and a set has unboundedly
   many ordered listings with repeats); tabulation (`array`, `row`, `col`); `μX : φ(X)` and `R*` (§d).
@@ -111,7 +120,7 @@ op       := '∩' | '∪' | '−' | '⇒' | '/' | '\' | '×' | '+'
 primary  := '∼' primary | atom '°'*
 atom     := Name | Name '(' expr (',' expr)* ')'     -- a defined operator, or E( ) P( ) Λ( ) est( ) …
           | '⟨' expr ',' expr '⟩' | '[' expr ',' expr ']' | '⦇' expr ',' expr '⦈'
-          | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ, objects optional
+          | const ( '(' object (',' object)? ')' )?   -- 𝟙 𝟘 ⊤ ∋ π₁ π₂ ≤ < succ plus …, objects optional
           | '{' row (',' row)* '}' | '(' expr ')'
 row      := '(' tup ',' tup ')'                       -- a literal's row
 tup      := Word | row                                -- a side: a word, or a pair nested to any depth
@@ -265,7 +274,9 @@ row).
 | `subseq setify bagify tic`      |                                            |                                      |
 | `ordered(Q) sort(Q) thinL(Q)`,  | closed: closed; a family: not liftable     | one `Q`, `F` for every array or pair |
 | `merge(Q) loop(F)`              |                                            |                                      |
-| `succ plus ≤ <`, `{(a,b),…}`    | closed                                     | the same at every key                |
+| `succ ≤ <`, `{(a,b),…}`,        | closed                                     | the same at every key                |
+| `plus times minus div mod`,     |                                            |                                      |
+| `max min`                       |                                            |                                      |
 | `R ⊑ S` ✓, a test               | `D − dom(R − S)`, a coreflexive on `I`     | `i` stays iff `R − S` is empty there |
 
 Not liftable:
@@ -320,7 +331,9 @@ each candidate to the state it leads to. A test needs no way back: `h(∋)` is a
 ## f. Not in the language
 
 Lean `let`, lambdas, tuples of relations, `iter`, `Except`, `do`, a loop, recursion, `μ`, `*`, first-class
-operators, arithmetic beyond `succ`/`plus`/`≤`/`<` on a declared number universe, row order (`num`, `enum`),
+operators, arithmetic beyond `succ`, `≤`, `<` and the value verbs of §b on a declared number universe (no
+negative numbers, since `obj N = m…n` takes naturals; no float `%`, `xexp`; no infix `+ · −` on numbers, which
+§c's `+ × −` already spell for relations), row order (`num`, `enum`),
 and every operator in the "not yet" list of §b, shadowing (§c). The only failures are the front end's: unknown
 name, a name defined twice or a builtin's name taken (§c), object mismatch, no universe for a term (§a), a lifting
 error (§e), each with its line.

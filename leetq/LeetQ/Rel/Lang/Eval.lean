@@ -112,7 +112,8 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .merge Q, D => return Alg.merge (← ev cnt Q ()) D
   | _, _, _, .loop F, D => return Alg.loop (← ev cnt F ()) D
   | _, _, _, .succ U, D => pure (D ≫ succ U)
-  | _, _, _, .plus U, D => pure (plus D.val ≫ idU U)
+  -- a result outside the declared object has no row, as `succ` at its top
+  | _, _, _, .arith k U, D => pure (arith k D.val ≫ idU U)
   | _, _, _, .leq U, _ => pure (leq U)
   | _, _, _, .lt U, _ => pure (lt U)
   -- one fold step is one evaluation: what it shares, it shares within the step
@@ -245,7 +246,8 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .pre => node 40 .pre []
   | _, _, _, .suf => node 41 .suf []
   | _, _, _, .succ U => do node 42 (.succ U) [← leaf (idU (t := .long) U)]
-  | _, _, _, .plus U => do node 43 (.plus U) [← leaf (idU (t := .long) U)]
+  -- the verb is a part, so `plus` and `times` on one universe are two identities
+  | _, _, _, .arith k U => do node 43 (.arith k U) [← leaf (idU (t := .long) U), k.toNat]
   | _, _, _, .leq U => do node 44 (.leq U) [← leaf (idU (t := .long) U)]
   | _, _, _, .lt U => do node 45 (.lt U) [← leaf (idU (t := .long) U)]
   | _, _, _, .fold e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 46 (.fold x s) [i, j]
