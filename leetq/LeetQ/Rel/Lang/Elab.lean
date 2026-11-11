@@ -642,12 +642,13 @@ def binaryL (I : OTy) (p : Pos) (o : Bin) (x y : Arg) : M Arg := do
     | .prod => pure (lProd R S)
   pure (.fam r.1 I r.2.1 r.2.2)
 
-/-- A defined operator's result where it is used: a family stays one inside a lifted body of the same index,
-    and is a relation `i ⟶ a×b` outside. -/
-def settle (m : Option OTy) (p : Pos) : Arg → M Arg
-  | .fam q i a b => match m with
-    | some I => do unify p "the index of a family" i I; pure (.fam q i a b)
-    | none => pure (.rel q i (.prod a b))
+/-- A defined operator's result where it is used, given the arguments `as`: a family stays one inside a lifted
+    body of the same index when an argument is a family of that body; applied to closed terms only, it is a
+    closed relation `i ⟶ a×b`, which enters the body by the closed row (§e, mixed terms), as it does outside. -/
+def settle (m : Option OTy) (p : Pos) (as : List Arg) : Arg → M Arg
+  | .fam q i a b => match m, as.any Arg.isFam with
+    | some I, true => do unify p "the index of a family" i I; pure (.fam q i a b)
+    | _, _ => pure (.rel q i (.prod a b))
   | r => pure r
 
 mutual
@@ -659,7 +660,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     | some a => pure a
     | none => match env.defs.lookup n with
       | some d =>
-        if d.arity == 0 then (do settle m p (← d.apply p []))
+        if d.arity == 0 then (do settle m p [] (← d.apply p []))
         else throw ⟨p, s!"'{n}' takes {d.arity} arguments, found none"⟩
       | none => throw ⟨p, s!"unknown name '{n}'"⟩
   | .op p o objs args => do
@@ -673,13 +674,13 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     match env.defs.lookup n with
     | some d =>
       if d.arity != as.length then throw ⟨p, s!"'{n}' takes {d.arity} arguments, found {as.length}"⟩
-      settle m p (← d.apply p as)
+      settle m p as (← d.apply p as)
     | none => throw ⟨p, s!"unknown name '{n}'"⟩
   -- `R n S`: the definition declared `_n_`, given `R` and `S` (§c)
   | .inf p n a b => do
     let x ← elabE env m a; let y ← elabE env m b
     match env.defs.lookup s!"_{n}_" with
-    | some d => settle m p (← d.apply p [x, y])
+    | some d => settle m p [x, y] (← d.apply p [x, y])
     | none => throw ⟨p, s!"unknown infix operator '{n}'"⟩
   | .comp a b => do
     let x ← elabE env m a

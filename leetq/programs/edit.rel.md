@@ -50,25 +50,17 @@ and `ins b` before `u` (p.229). Here `π₁π₁` is `a`, `π₁π₂π₁` is `
 
     step'(b : 1 ⟶ A) : (A×([Op]×[Op]))×[[Op]] ⟶ [[Op]] ≜ dom(π₁π₁ ∩ (⊤b))⟨⟨π₁π₁cpy,π₁π₂π₂⟩cons,π₂⟩cons ∪ (dom(⟨π₁π₁,⊤b⟩ne)⟨⟨⟨π₁π₁del,π₂head⟩cons,⟨⊤b ins,π₁π₂π₁⟩cons⟩bmin,π₂⟩cons)
 
-`xus` pairs each character of `x` with the entries of `us` for the string before it and after it (p.229,
-`xus = zip (x, zip (init us, tail us))`).
-
-    xus(x : 1 ⟶ [A], us : 1 ⟶ [[Op]]) : 1 ⟶ [A×([Op]×[Op])] ≜ ⟨x,⟨us init,us tail⟩zip⟩zip
-
 `nextcol(x,b,us)` is the next column, a fold over `xus` from `base'(b,last(us))` by `step'(b)` (p.228,
 `nextcol x (b, us) = ([base (b, last us), step b]) xus`); its seed depends on `(b,us)`, a family over the key of
-the fold's own left (§e).
+the fold's own left (§e). `xus` pairs each character of `x` with the entries of `us` for the string before it and
+after it (p.229, `xus = zip (x, zip (init us, tail us))`).
 
-    nextcol(x : 1 ⟶ [A], b : 1 ⟶ A, us : 1 ⟶ [[Op]]) : 1 ⟶ [[Op]] ≜ xus(x,us)⦇ran(base'(b,us last)), step'(b)⦈
+    nextcol(x : 1 ⟶ [A], b : 1 ⟶ A, us : 1 ⟶ [[Op]]) : 1 ⟶ [[Op]] ≜ xus⦇ran(base'(b,us last)), step'(b)⦈ where xus ≜ ⟨x,⟨us init,us tail⟩zip⟩zip
 
-`nextcol'` is `nextcol` on the pair `(x,(b,us))`: a definition applied to families cannot be applied inside a lifted
-body to families of another index (§e), so `column` composes this closed one.
+`column(x,y)` is the fold over `y` from `fstcol(x)` by `nextcol x` (p.228, `column x = ([fstcol x, nextcol x])`):
+the step takes `(b,us)` to `nextcol(x,b,us)`, applied to the closed families of `(x,(b,us))`.
 
-    nextcol' : [A]×(A×[[Op]]) ⟶ [[Op]] ≜ nextcol(⟨⊤,π₁⟩,⟨⊤,π₂π₁⟩,⟨⊤,π₂π₂⟩)π₂   -- not a book name: the uncurried nextcol
-
-`column(x,y)` is the fold over `y` from `fstcol(x)` by `nextcol x` (p.228, `column x = ([fstcol x, nextcol x])`).
-
-    column(x : 1 ⟶ [A], y : 1 ⟶ [A]) : 1 ⟶ [[Op]] ≜ y⦇ran(fstcol(x)), ⟨⊤x,⟨π₁,π₂⟩⟩nextcol'⦈
+    column(x : 1 ⟶ [A], y : 1 ⟶ [A]) : 1 ⟶ [[Op]] ≜ y⦇ran(fstcol(x)), ⟨⊤x,⟨π₁,π₂⟩⟩(nextcol(⟨⊤,π₁⟩,⟨⊤,π₂π₁⟩,⟨⊤,π₂π₂⟩)π₂)⦈
 
 `mle` is the first entry of the column, a minimal edit sequence (p.229, `mle (x,y) = outl (head (column x y))`).
 

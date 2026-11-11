@@ -578,7 +578,8 @@ every value it holds each round, where `RRR` composes only the last power. So Ch
   third `K` gives `(I×J)×K`, in the order the arguments first name them (`Lang/Test.lean` guards `St×N`).
 - A closed relation in the body (`G`, `𝟙`, `⊤`, a literal) or a plain argument takes the closed row.
 - A defined operator applied inside a lifted body to a lifted term runs lifted at the same index (`R(S)` in
-  `M`); applied to closed terms it runs plainly and enters by the closed row.
+  `M`); applied to closed terms it runs plainly and enters by the closed row, also when those terms are families
+  of another index `J`: `nextcol(⟨⊤,π₁⟩,⟨⊤,π₂π₁⟩,⟨⊤,π₂π₂⟩)π₂` in the step of `column` (`edit.rel.md`).
 - Front-end errors: an argument type neither the declared one nor `I ⟶ A×B`; a row marked "not liftable" with a
   family argument; a lifted `∼`, `⊤`, `𝟙` or division on a fibre object with no universe; an index with no
   universe and no left context (§a); a test `R ⊑ S` applied to no family ("a test needs a family; write
