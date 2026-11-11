@@ -7,8 +7,8 @@ family of states unchanged: the front end lifts it (§e). Every operator the B&d
 scope. The design is checked by `leetq/LeetQ/Rel/BlocksRel.lean`, a line-by-line Lean transcription of the lifting
 rows (§e) and of the program in §g.
 
-**Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`), `FILE` a `.rel` or a
-literate `.rel.md` file (§ Literate files), prints each `print`; it exits
+**Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`), `FILE` a literate
+`.rel.md` file (§ Literate files), prints each `print`; it exits
 0, 1 on a front-end error or a failed `check`, 2 on a bad command line. Every run is capped in resident memory:
 
 - the cap is `REL_MEM_MB` megabytes, 10240 when unset; nothing about it is printed on a normal run;
@@ -18,9 +18,9 @@ literate `.rel.md` file (§ Literate files), prints each `print`; it exits
   exits 3. A cap that cannot be watched (no `getconf`, no `/proc`, the child cannot start) also exits 3, naming
   what failed; `rel` never runs uncapped;
 - resident, not address space: `ulimit -v` counts address space, which runs 6–35× the resident set here
-  (`chess.rel`: 11.5 GB of address space, 1.7 GB resident; every program reserves 1.2 GB at start), so a 4 GB
+  (`chess.rel.md`: 11.5 GB of address space, 1.7 GB resident; every program reserves 1.2 GB at start), so a 4 GB
   `ulimit -v` kills programs that need 1.7 GB; `RLIMIT_RSS` is a no-op on Linux, and cgroups need a user bus the
-  sandbox denies (`scripts/cap`). The heaviest program in `leetq/programs/` (`edit.rel`, `chess.rel`) peaks at
+  sandbox denies (`scripts/cap`). The heaviest program in `leetq/programs/` (`edit.rel.md`, `chess.rel.md`) peaks at
   1.7 GB resident, under the default with room;
 - the `#guard`s of `Lang/Test*.lean` call the evaluator inside `lean` and are not under this cap; wrap their build
   in `scripts/cap`.
@@ -28,9 +28,10 @@ literate `.rel.md` file (§ Literate files), prints each `print`; it exits
 `rel --types FILE` checks every definition's declared type (§e) and prints each definition's head, one a line,
 as it is declared (`ok : α×[α] ⟶ α×[α]`), evaluating nothing; `rel --types` with no file prints the prelude's.
 
-`FILE` is a `.rel` file, all program, or a `.rel.md` file, a literate one (next section); any other name is the
-error "not a program file: its name must end in `.rel` … or `.rel.md` …" (exit 1). The `#guard` modules read their
-programs the same way, through `program_file` (`Lang/Test.lean`).
+`FILE` is a `.rel.md` file, a literate one (next section); any other name, a plain `.rel` included, is the error
+"not a program file: its name must end in `.rel.md` …; the plain `.rel` format is no longer read" (exit 1). The
+`#guard` modules read their programs the same way, through `program_file` (`Lang/Test.lean`); the prelude is
+embedded raw (`include_str`) and read through `literate` by `Parse.scope`, and `Test.lean` guards it at build.
 
 ## Literate files
 
@@ -237,11 +238,12 @@ so the prelude's folds `prefix concat subseq tails filter takewhile`).
 
 ### The prelude
 
-A program of the language that every program sees: `leetq/programs/prelude.rel`, embedded in the binary
-(`Parse.prelude`). `runText` parses and runs it first, then the program in its scope, with one environment and
-one sharing table through both. Its definitions are ordinary ones: they lift, run on demand and converse as their
-bodies do. The `LeetQ` library `needs` the `programs/` directory (`leetq/lakefile.lean`), so `lake build rel`
-after an edit of a `.rel` file rebuilds `Parse` and the binary.
+A program of the language that every program sees: `leetq/programs/prelude.rel.md`, embedded raw in the binary
+(`Parse.prelude`, `include_str`) and read through `literate` by `Parse.scope`; `Test.lean` guards at build that it
+reads and type-checks. `runText` parses and runs it first, then the
+program in its scope, with one environment and one sharing table through both. Its definitions are ordinary ones:
+they lift, run on demand and converse as their bodies do. The `LeetQ` library `needs` the `programs/` directory
+(`leetq/lakefile.lean`), so `lake build rel` after an edit of a `.rel.md` file rebuilds `Parse` and the binary.
 
 | name         | definition                                                     | meaning                                     |
 |--------------|----------------------------------------------------------------|---------------------------------------------|
@@ -401,7 +403,7 @@ Equal sub-terms are evaluated once (`Lang/Eval.lean`, `hoist`, `ev`):
 
 An identity is structural: the core constructor, its objects, the identities of its parts, and for a value its
 rows as a set; nothing printed. Chess's pinned squares repeat `L(De)` per direction and `dom(on{(R,R),(Q,Q)})`
-eight times: `rel chess.rel` 3.6 s → 0.7 s.
+eight times: `rel chess.rel.md` 3.6 s → 0.7 s.
 
 ## e. Definitions, and lifting a formula to a family
 
@@ -549,7 +551,7 @@ step runs on the pairs (element, value). `Sᴵ` is keyed through the rows that b
 
 A closed sub-term of `Sᴵ` is evaluated once per program (`hoist`), not once per key. The fold reads each pair
 (key, array) back by a join on both, never pairing a pair with every key's values of its array (keys squared).
-Chess's `L` written as this fold over `0…6`, lifted over the boards and moves, makes `rel chess.rel` 2.6 s, against
+Chess's `L` written as this fold over `0…6`, lifted over the boards and moves, makes `rel chess.rel.md` 2.6 s, against
 0.7 s for the eight-term union and over 3 min with the step read whole at each key; the rest is the fold stepping
 every value it holds each round, where `RRR` composes only the last power. So Chess keeps the union.
 

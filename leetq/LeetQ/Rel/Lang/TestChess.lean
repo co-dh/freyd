@@ -1,7 +1,7 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Chess
 
-/-! Mate in one in the Rel language, read from `programs/chess.rel`, against `Chess.lean`: each of its `#guard`s
+/-! Mate in one in the Rel language, read from `programs/chess.rel.md`, against `Chess.lean`: each of its `#guard`s
     on the same position, the program's board `on` replaced at the AST, each guard running the program once; and
     the program's tables and the relations `W`, `P` of its own board compared with `Chess`'s, as sets. -/
 
@@ -9,7 +9,7 @@ namespace LeetQ.Rel.Lang.TestChess
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 
-def chess : String := program_file "../../../programs/chess.rel"
+def chess : String := program_file "../../../programs/chess.rel.md"
 
 abbrev SS : Obj := .prod .long .long
 abbrev Bd : Obj := .arr SS
@@ -114,8 +114,9 @@ def before : List String := [
 def rewritten (p : Program) : List (String × String) :=
   (p.filterMap Test.reading).filter fun r => ["W", "B", "Pin", "M"].contains r.1
 
--- the program up to line 31, the lines `W B Pin M` refer to, is the same before and after
-#guard match Parse.parse chess, Parse.parse ("\n".intercalate ((chess.splitOn "\n").take 31 ++ before)) with
+-- the program up to the line of `W`, the lines `W B Pin M` refer to, is the same before and after
+#guard match Parse.parse chess,
+    Parse.parse ("\n".intercalate ((chess.splitOn "\n").takeWhile (!·.trimLeft.startsWith "W(") ++ before)) with
   | .ok p, .ok q => (rewritten p).length == 4 && rewritten p == rewritten q
   | _, _ => false
 

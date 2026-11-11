@@ -1,13 +1,13 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Circuit
 
-/-! The Rel language on AIMA §8.4.2's full adder, read from `programs/circuit.rel`, against `Circuit.lean`. -/
+/-! The Rel language on AIMA §8.4.2's full adder, read from `programs/circuit.rel.md`, against `Circuit.lean`. -/
 
 namespace LeetQ.Rel.Lang.TestCircuit
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg LeetQ.Rel.Lang.Test LeetQ.Rel.Circuit QLean
 
-def circuit : String := program_file "../../../programs/circuit.rel"
+def circuit : String := program_file "../../../programs/circuit.rel.md"
 
 def given : Except Err Out := runText circuit
 

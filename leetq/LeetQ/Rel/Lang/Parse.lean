@@ -459,21 +459,23 @@ def literate (text : String) : Except Err String := do
     throw ⟨⟨o, 1⟩, s!"the fence opened here is never closed: close it with a line of {k} or more '{c}'"⟩
   pure ("\n".intercalate out.toList)
 
-/-- The program text of the file named `file`, by its name: a `.rel` file is all program, a `.rel.md` file is
-    `literate`; any other name is an error. -/
+/-- The program text of the file named `file`: a `.rel.md` file is `literate`; any other name, a plain `.rel`
+    included, is an error. -/
 def programText (file text : String) : Except Err String :=
   if file.endsWith ".rel.md" then literate text
-  else if file.endsWith ".rel" then pure text
-  else throw ⟨default, "not a program file: its name must end in `.rel` (all program) or `.rel.md` " ++
-    "(Markdown, whose indented code blocks are the program)"⟩
+  else throw ⟨default, "not a program file: its name must end in `.rel.md` (Markdown, whose indented code " ++
+    "blocks are the program); the plain `.rel` format is no longer read"⟩
 
-/-- The prelude (§c): definitions every program sees, each with its type, read and run before it. -/
-def prelude : String := include_str "../../../programs/prelude.rel"
+/-- The prelude (§c), as the Markdown of `prelude.rel.md`: definitions every program sees, each with its type,
+    read and run before it. Raw text, not `program_file`'s: that elab needs `Lean`, which `rel` must not link;
+    `scope` reads its code blocks, and `Test.lean` guards at build time that it reads and runs. -/
+def prelude : String := include_str "../../../programs/prelude.rel.md"
 
-/-- The prelude's text `pre` parsed, and the scope a program is read in after it: its names and objects, each
-    name taken "in the prelude". An error in it says it is in the prelude. -/
+/-- The prelude's literate text `pre` read (`literate`) and parsed, and the scope a program is read in after it:
+    its names and objects, each name taken "in the prelude". An error in it says it is in the prelude, at the
+    `.rel.md` file's line and column. -/
 def scope (pre : String) : Except Err (Program × S) := do
-  let (prog, s) ← (program.run { cs := pre.toList.toArray }).mapError Err.inPrelude
+  let (prog, s) ← (do program.run { cs := (← literate pre).toList.toArray }).mapError Err.inPrelude
   pure (prog, { s with taken := s.taken.map fun (n, _) => (n, "in the prelude") })
 
 /-- Parse a program's text in the scope `s`. -/
