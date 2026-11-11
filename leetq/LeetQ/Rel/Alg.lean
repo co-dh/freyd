@@ -16,17 +16,17 @@ section Gen
 variable {A B C : Obj}
 
 /-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
-def le (R S : Rel A B) : Bool :=
+private def le (R S : Rel A B) : Bool :=
   let c := pairs #v[R, S]
   len (whereBits R.n.toUSize (c[0].member c[1])) == R.n
 
 /-- `R ∩ S`: the semi-join on pairs — `member`, `whereBits`, `gatherColumn`. -/
-def inter (R S : Rel A B) : Rel A B :=
+private def inter (R S : Rel A B) : Rel A B :=
   let c := pairs #v[R, S]
   R.rows (whereBits R.n.toUSize (c[0].member c[1]))
 
 /-- `R ∪ S`: `razeColumn` of keys and of vals, both at the summed count (`Obj.raze`), the first row of each pair. -/
-def union (R S : Rel A B) : Rel A B :=
+private def union (R S : Rel A B) : Rel A B :=
   Rel.nub ⟨_, A.raze #[⟨_, R.key⟩, ⟨_, S.key⟩], B.raze #[⟨_, R.val⟩, ⟨_, S.val⟩]⟩
 
 /-- `𝟘`: no pair. -/
@@ -54,10 +54,10 @@ theorem convArr_holds {k v : Obj} {n : Nat} (key : Vals k n) (val : Vals v n) (x
   exact ⟨fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩, fun ⟨i, h1, h2⟩ => ⟨i, h2, h1⟩⟩
 
 /-- `R°`: `convArr`. -/
-def conv (R : Rel A B) : Rel B A := convArr R.key R.val
+private def conv (R : Rel A B) : Rel B A := convArr R.key R.val
 
 /-- `R ≫ S`: `join` on `R.val = S.key`, the key picked from `R`, the val from `S`. -/
-def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
+private def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
   let c := B.codes #v[⟨_, R.val⟩, ⟨_, S.key⟩]
   let ij := join c[0] c[1]
   ⟨len ij.2, Vals.pickN A R.key ij.1 (len ij.2) (join_len c[0] c[1]), Vals.pick C S.val ij.2⟩
@@ -80,7 +80,7 @@ def antiJoin (R : Rel A B) (C : Rel B B) : Rel A B :=
   R.rows (anti vc[0] vc[1])
 
 /-- `R − S`: the rows of `R` whose pair is no pair of `S` — `inter`'s joint pair codes, `anti` in place of `member`. -/
-def diff (R S : Rel A B) : Rel A B :=
+private def diff (R S : Rel A B) : Rel A B :=
   let c := pairs #v[R, S]
   R.rows (anti c[0] c[1])
 
@@ -469,7 +469,7 @@ def alpha {K B : Obj} {n : Nat} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
 
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
     one row per key of `R`, has no row for. -/
-def lamOn {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
+private def lamOn {A B : Obj} {m : Nat} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
   Λ(R) ∪ top (idU U \ dom R).key (nilVal B)
 
 /-- `E(R) : arr A ⟶ arr B` on the arrays `X`, the existential image, the note's `E(R)≜frac(∋R,∋)`
@@ -504,7 +504,7 @@ def suffix {E : Obj} {n : Nat} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :=
 /-- Each array of `X` to the array of its `count + 1` slices `[l k, h k)`, `k = 0 … count`, every one a slice
     of `X`'s own payload, so no cell is copied before `Vals.compact`: `f` maps each row's clamped start and
     count (`slices`) and the `expand` of the `count + 1`s (row, `k`) to the slices' starts and ends. -/
-def nest{B : Obj} {n : Nat} (X : Vals (.arr B) n)
+private def nest{B : Obj} {n : Nat} (X : Vals (.arr B) n)
     (f : ByteArray × ByteArray → ByteArray × ByteArray → ByteArray × ByteArray) : Rel (.arr B) (.arr (.arr B)) :=
   let s := slices X.1 (longsOf X.2.1) (longsOf X.2.2.1)
   let c := addc s.2 1
@@ -779,5 +779,11 @@ theorem conv_holds {R : Rel A B} (x : El A) (y : El B) : (conv R).Holds y x ↔ 
   convArr_holds R.key R.val x y
 
 #print axioms conv_holds
+-- the private ops have no operator to name in `AlgTest`, so their axioms are printed where they are visible
+#print axioms le
+#print axioms inter
+#print axioms union
+#print axioms conv
+#print axioms comp
 
 end LeetQ.Rel.Alg
