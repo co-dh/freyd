@@ -44,6 +44,11 @@ abbrev Memo := Std.HashMap Nat (Array ((A : Obj) × Rel A A × Val))
 
 abbrev EvM := StateM Memo
 
+/-- A demand-run term `f` on the keys `P`, where its value is read only composed after rows into `P` (`RS`, a
+    fold's or a loop's step): with no key, nothing reads it, so it is not run — the last round of a fold or loop
+    meets no pair. -/
+def onKeys {A B : Obj} (f : Rel A A → Rel A B) (P : Rel A A) : Rel A B := if P.n == 0 then zero else f P
+
 /-- `t` on the keys `D`: exact at every key of `D`; a closed term ignores `D`. In `RS`, `S` runs on `ran(R)`.
     A sub-term `.share k` whose identity occurs more than once (`cnt`) runs once per demand. -/
 def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
@@ -57,7 +62,8 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .outr, D => pure (outr D)
   | _, _, _, .inl, D => pure (inl D.val)
   | _, _, _, .inr, D => pure (inr D.val)
-  | _, _, _, .comp (e := e) R S, D => do let r ← ev cnt R D; return r ≫ (← ev cnt S (Dem.of e (ran r)))
+  | _, _, _, .comp (e := e) R S, D => do
+    let r ← ev cnt R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt S (Dem.of e (ran r)))
   | _, _, _, .conv R, _ => return (← ev cnt R ())°
   | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt R (Dem.l d e D)) ∩ (← ev cnt S (Dem.r d e D))
   | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt R (Dem.l d e D)) ∪ (← ev cnt S (Dem.r d e D))
@@ -100,7 +106,7 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
   | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt Q P).run' {})) D)
   -- one loop round's `F` is one evaluation, as a fold step's
-  | _, _, _, .loop (d := d) F, D => pure (loopOn (fun A => Id.run ((ev cnt F (Dem.of d A)).run' {})) D)
+  | _, _, _, .loop (d := d) F, D => pure (loopOn (onKeys fun A => Id.run ((ev cnt F (Dem.of d A)).run' {})) D)
   | _, _, _, .succ U, D => pure (D ≫ succ U)
   -- a result outside the declared object has no row, as `succ` at its top
   | _, _, _, .arith k U, D => pure (arith k D.val ≫ idU U)
@@ -109,14 +115,14 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   -- one fold step is one evaluation: what it shares, it shares within the step
   | _, _, _, .fold (d := d) e S, D => do
     let v ← ev cnt e ()
-    pure (foldOn v.val (fun A => Id.run ((ev cnt S (Dem.of d A)).run' {})) D.val)
+    pure (foldOn v.val (onKeys fun A => Id.run ((ev cnt S (Dem.of d A)).run' {})) D.val)
   -- the pairs (i, xs) in demand: each key's seed `(i,v)` from `e`, one fold of the arrays on `I×V`, then each
   -- pair keeps the values its own key reached: `G : [E] ⟶ I×V` re-keyed by `(i,xs)`, a join, where pairing each
   -- pair with every key's values of its array grows as the keys squared
   | _, _, _, .foldI (d := d) (d' := d') e S, D => do
     let es ← ev cnt e (Dem.of d (ran (outl D)))
     let iv := pair (dom es) (es ≫ outl (ran es))
-    let G := foldOn (ran iv).val (fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})) (ran (outr D)).val
+    let G := foldOn (ran iv).val (onKeys fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})) (ran (outr D)).val
     let U := ran G
     pure (D ≫ ((pair (outl U) G°)° ≫ outr U))
   -- `R` at the keys of the pairs, its rows `(i,(a,b))` re-keyed as `((i,a),b)`, a join with the pairs: no pair
