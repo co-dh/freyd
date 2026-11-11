@@ -73,26 +73,26 @@ def Bin.table : List (Char × Bin) :=
 
 def Bin.sym (o : Bin) : String := ((Bin.table.find? (·.2 == o)).map (·.1.toString)).getD "?"
 
-/-- A side of a literal's row: a word, or a pair of sides, nested to any depth (§c). -/
+/-- A side of a literal's row: a word, a pair of sides, or an array of sides, nested to any depth (§c). -/
 inductive Tup
   | leaf (w : String)
   | pair (a b : Tup)
+  | arr (ts : List Tup)
   deriving Repr, Inhabited
 
-/-- The words at the leaves, left to right. -/
-def Tup.leaves : Tup → List String
-  | .leaf w => [w]
-  | .pair a b => a.leaves ++ b.leaves
-
-/-- The same nesting, whatever the words. -/
-def Tup.same : Tup → Tup → Bool
-  | .leaf _, .leaf _ => true
-  | .pair a b, .pair c d => a.same c && b.same d
+/-- The same kind of side, whatever is inside: the elaborator compares the parts position by position. -/
+def Tup.like : Tup → Tup → Bool
+  | .leaf _, .leaf _ | .pair .., .pair .. | .arr _, .arr _ => true
   | _, _ => false
 
-def Tup.show : Tup → String
+/-- `t` as the parser reads it back: an array of two or more items juxtaposed, else bracketed; `item`: `t` stands
+    next to others, so an array there is always bracketed. -/
+def Tup.render (item : Bool) : Tup → String
   | .leaf w => w
-  | .pair a b => s!"({a.show}, {b.show})"
+  | .pair a b => s!"({a.render false}, {b.render false})"
+  | .arr ts => let s := " ".intercalate (ts.map (Tup.render true)); if item || ts.length < 2 then s!"[{s}]" else s
+
+def Tup.show (t : Tup) : String := t.render false
 
 /-- A term of §c. `name` is a program's definition or parameter; `op` a builtin with its objects and arguments;
     `app` a program's operator applied. Composition is juxtaposition. -/

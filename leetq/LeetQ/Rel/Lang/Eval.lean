@@ -283,17 +283,23 @@ def value {A B : Obj} (sh : Share) (t : Tm A B false) : Rel A B × Share :=
 
 /-! ### Running a program -/
 
-/-- An element printed with the program's names: a named element by its name, a number as itself. -/
-def showEl (objs : Objs) : OTy → (A : Obj) → A.El → String
+/-- An array of the printed elements `xs`, as a literal's side reads it (§c): two or more juxtaposed, else
+    bracketed; `item`: it stands next to others (in an array, after `inl`), so it is always bracketed. -/
+def arrText (item : Bool) (xs : List String) : String :=
+  let s := " ".intercalate xs; if item || xs.length < 2 then s!"[{s}]" else s
+
+/-- An element printed with the program's names, as a literal's side reads it (§c): a named element by its name,
+    a number as itself, an array by `arrText`, its elements as items. -/
+def showEl (objs : Objs) (item : Bool) : OTy → (A : Obj) → A.El → String
   | .base n, .atom .long, x =>
     let v : Int64 := x
     match objs.lookup n with
     | some i => if i.range.isSome then toString v else (i.elems[v.toInt.toNat]?).getD (toString v)
     | none => toString v
-  | .prod a b, .prod A B, (x, y) => s!"({showEl objs a A x}, {showEl objs b B y})"
-  | .sum a _, .sum A _, .inl x => s!"inl {showEl objs a A x}"
-  | .sum _ b, .sum _ B, .inr y => s!"inr {showEl objs b B y}"
-  | .arr a, .arr A, xs => "{" ++ ", ".intercalate (xs.map (showEl objs a A)) ++ "}"
+  | .prod a b, .prod A B, (x, y) => s!"({showEl objs false a A x}, {showEl objs false b B y})"
+  | .sum a _, .sum A _, .inl x => s!"inl {showEl objs true a A x}"
+  | .sum _ b, .sum _ B, .inr y => s!"inr {showEl objs true b B y}"
+  | .arr a, .arr A, xs => arrText item (xs.map (showEl objs true a A))
   | _, _, _ => "?"
 
 /-- The order a print lists elements in: a number by its value (`-2` before `-1`, `2` before `10`), a named
@@ -302,7 +308,7 @@ def cmpEl (objs : Objs) : OTy → (A : Obj) → A.El → A.El → Ordering
   | .base n, .atom .long, x, y =>
     let (v, w) : Int64 × Int64 := (x, y)
     if ((objs.lookup n).bind (·.range)).isSome then compare v.toInt w.toInt
-    else compare (showEl objs (.base n) (.atom .long) x) (showEl objs (.base n) (.atom .long) y)
+    else compare (showEl objs false (.base n) (.atom .long) x) (showEl objs false (.base n) (.atom .long) y)
   | .prod a b, .prod A B, (x, y), (x', y') => (cmpEl objs a A x x').then (cmpEl objs b B y y')
   | .sum a _, .sum A _, .inl x, .inl y => cmpEl objs a A x y
   | .sum _ b, .sum _ B, .inr x, .inr y => cmpEl objs b B x y
@@ -311,12 +317,12 @@ def cmpEl (objs : Objs) : OTy → (A : Obj) → A.El → A.El → Ordering
   | .arr a, .arr A, xs, ys =>
     let (xs, ys) : List A.El × List A.El := (xs, ys)
     ((xs.zip ys).foldl (fun (o : Ordering) (x, y) => o.then (cmpEl objs a A x y)) Ordering.eq).then (compare xs.length ys.length)
-  | s, A, x, y => compare (showEl objs s A x) (showEl objs s A y)
+  | s, A, x, y => compare (showEl objs false s A x) (showEl objs false s A y)
 
 /-- A relation printed as its set of pairs, sorted by `cmpEl`. -/
 def showRel (objs : Objs) (s t : OTy) {A B : Obj} (R : Rel A B) : String :=
   let ps := R.nub.toList.mergeSort fun (x, y) (x', y') => ((cmpEl objs s A x x').then (cmpEl objs t B y y')) != .gt
-  "{" ++ ", ".intercalate (ps.map fun (x, y) => s!"({showEl objs s A x}, {showEl objs t B y})") ++ "}"
+  "{" ++ ", ".intercalate (ps.map fun (x, y) => s!"({showEl objs false s A x}, {showEl objs false t B y})") ++ "}"
 
 /-- An object with a variable left in it. -/
 def OTy.poly : OTy → Bool

@@ -13,7 +13,7 @@ def selsort : String := include_str "../../../programs/selsort.rel"
 def inputs : List (String × List Nat) := [("x", [3, 1, 2]), ("y", [2, 1, 2]), ("z", [5, 4, 3, 2, 1]), ("e", [])]
 
 /-- An array `1 ⟶ [N]` as the interpreter prints it. -/
-def shown (l : List Nat) : String := "{(∗, {" ++ ", ".intercalate (l.map toString) ++ "})}"
+def shown (l : List Nat) : String := "{(∗, " ++ arrText false (l.map toString) ++ ")}"
 
 def sorted (l : List Nat) : List Nat := l.mergeSort fun a b => decide (a ≤ b)
 

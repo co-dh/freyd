@@ -32,9 +32,11 @@ def shortest (y : List String) : List (List String) :=
   let k := (ps.map List.length).foldl min y.length
   ps.filter (·.length == k)
 
-/-- A relation `1 ⟶ [Ch]` holding the strings `ss`, as the interpreter prints it (rows sorted as text). -/
+/-- A relation `1 ⟶ [Ch]` holding the strings `ss`, as the interpreter prints it (rows in `cmpEl`'s order: an
+    array lexicographically by element name, a prefix first). -/
 def shown (ss : List (List String)) : String :=
-  "{" ++ ", ".intercalate ((ss.map fun s => "(∗, {" ++ ", ".intercalate s ++ "})").mergeSort (· ≤ ·)) ++ "}"
+  "{" ++ ", ".intercalate ((ss.mergeSort fun a b => decide (a ≤ b)).map fun s => "(∗, " ++ arrText false s ++ ")") ++
+    "}"
 
 def x : List String := ["a", "b", "TB", "c", "BL", "d"]
 def inputs : List (String × List String) :=
