@@ -369,7 +369,7 @@ def chs : String := "obj 1 = {∗}\nobj Ch = {a,b}\nobj N = 0…3\ne ≜ nil(1,[
 #guard printed (chs ++ "print ⟨{(∗,1)},ns⟩ok\nprint ⟨{(∗,3)},ns⟩ok\nprint ⟨{(∗,2)},ns⟩ok\n" ++
   "print ms (∋ ∩ (cons\\(π₁ ≤)))\nprint ks (subseq ∩ frac(∋,∋))\n" ++
   "print ⟨{(∗,3)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,1)},ns⟩(π₂ ∩ (π₁∼(≤/∋)))\nprint ⟨{(∗,3)},ns⟩(π₂ − (π₁(≤/∋)))\n") ==
-  ["{(∗, (1, {2, 3}))}", "{}", "{(∗, (2, {2, 3}))}", "{(∗, 3)}", "{(∗, {3, 1, 1}), (∗, {3, 1})}",
+  ["{(∗, (1, {2, 3}))}", "{}", "{(∗, (2, {2, 3}))}", "{(∗, 3)}", "{(∗, {3, 1}), (∗, {3, 1, 1})}",
    "{(∗, {2, 3})}", "{}", "{(∗, {2, 3})}"]
 -- refused: a division with no term on demand to test it against, and a meet of two
 #guard errAt (chs ++ "print {(∗,1)}(≤/∋)\n") 11 "R/S reads its operands whole"
