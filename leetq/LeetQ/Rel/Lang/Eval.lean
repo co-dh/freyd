@@ -244,7 +244,8 @@ def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
   | _, _, _, .zip => node 53 .zip []
   | _, _, _, .snoc => node 54 .snoc []
   | _, _, _, .unsnoc => node 55 .unsnoc []
-  | _, _, _, .own R => do let (r, i) ← hoist R; node 58 (.own r) [i]
+  -- `own` is its body's value (`ev`), so it is its body's identity: one memo entry per demand, not two
+  | _, _, _, .own R => do let (r, i) ← hoist R; pure (.own r, i)
   | _, _, _, .setify => node 59 .setify []
   | _, _, _, .bagify => node 60 .bagify []
   | _, _, _, .tic => node 62 .tic []
