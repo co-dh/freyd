@@ -77,9 +77,14 @@ partial def run : P (List Char) := do
   | some c => if isIdCont c then do adv; pure (c :: (← run)) else pure []
   | none => pure []
 
-/-- A word, whole: an object name, an element, a number, a defined name at its definition. -/
+/-- At the cursor an ASCII `-` with a digit right after it: the sign of a number word (§c). `--` is a comment and
+    `−` (U+2212) the difference, so neither reads as a sign. -/
+def atSign : P Bool := do pure ((← peek) == some '-' && ((← peekAt 1).map Char.isDigit).getD false)
+
+/-- A word, whole: an object name, an element, a number (signed: `-3`), a defined name at its definition. -/
 def word : P String := do
   ws
+  if ← atSign then do adv; return "-" ++ String.ofList (← run)
   match ← peek with
   | some c =>
     if isIdCont c then pure (String.ofList (← run))
@@ -236,10 +241,14 @@ def param : P Param := do
     modify fun s => { s with vars := false }; pure ⟨n, some (a, b)⟩
   else pure ⟨n, none⟩
 
-def num : P Nat := do
+/-- A number word read by `String.toInt?`, the one reader every number word goes through (a literal's in
+    `Elab.code`); a `long`, the type its elements are coded in. -/
+def num : P Int := do
   let p ← pos
   let w ← word
-  match w.toNat? with | some k => pure k | none => throw ⟨p, s!"expected a number, found '{w}'"⟩
+  match w.toInt? with
+  | some k => if -2^63 ≤ k ∧ k < 2^63 then pure k else throw ⟨p, s!"the number {w} does not fit a long"⟩
+  | none => throw ⟨p, s!"expected a number, found '{w}'"⟩
 
 /-- The items `x ≜ e, y ≜ f` of a `where`, each in scope in the items after it and, through `σ`, in the body;
     a name not yet defined, not a parameter of `w` and not an earlier item (§c). -/
@@ -269,7 +278,10 @@ def decl (p : Pos) (w : String) : P Decl := do
     let d ← match ← peek with
       | some '{' => do adv; pure (ObjDef.elems (← sepBy word '}'))
       | some c =>
-        if c.isDigit then (do let lo ← num; tok '…'; pure (ObjDef.range lo (← num)))
+        if c.isDigit || (← atSign) then (do
+          let lo ← num; tok '…'; ws; let r ← pos; let hi ← num
+          if hi < lo then throw ⟨r, s!"the range {lo}…{hi} is empty: {hi} is below {lo}"⟩
+          pure (ObjDef.range lo hi))
         else (do pure (ObjDef.alias (← object)))
       | none => expected "an object"
     modify fun s => { s with objs := n :: s.objs }

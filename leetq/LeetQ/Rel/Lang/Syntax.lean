@@ -142,10 +142,10 @@ structure Param where
   ty : Option (OExp × OExp)
   deriving Repr, Inhabited
 
-/-- An object declaration's right side: named elements, a number range, or a derived object. -/
+/-- An object declaration's right side: named elements, a signed number range `lo ≤ hi`, or a derived object. -/
 inductive ObjDef
   | elems (ws : List String)
-  | range (lo hi : Nat)
+  | range (lo hi : Int)
   | alias (o : OExp)
   deriving Repr, Inhabited
 

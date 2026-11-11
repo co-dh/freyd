@@ -295,10 +295,27 @@ def showEl (objs : Objs) : OTy → (A : Obj) → A.El → String
   | .arr a, .arr A, xs => "{" ++ ", ".intercalate (xs.map (showEl objs a A)) ++ "}"
   | _, _, _ => "?"
 
-/-- A relation printed as its set of pairs, sorted. -/
+/-- The order a print lists elements in: a number by its value (`-2` before `-1`, `2` before `10`), a named
+    element by its name, a pair and an array lexicographically, `inl` before `inr`. -/
+def cmpEl (objs : Objs) : OTy → (A : Obj) → A.El → A.El → Ordering
+  | .base n, .atom .long, x, y =>
+    let (v, w) : Int64 × Int64 := (x, y)
+    if ((objs.lookup n).bind (·.range)).isSome then compare v.toInt w.toInt
+    else compare (showEl objs (.base n) (.atom .long) x) (showEl objs (.base n) (.atom .long) y)
+  | .prod a b, .prod A B, (x, y), (x', y') => (cmpEl objs a A x x').then (cmpEl objs b B y y')
+  | .sum a _, .sum A _, .inl x, .inl y => cmpEl objs a A x y
+  | .sum _ b, .sum _ B, .inr x, .inr y => cmpEl objs b B x y
+  | .sum _ _, .sum _ _, .inl _, .inr _ => .lt
+  | .sum _ _, .sum _ _, .inr _, .inl _ => .gt
+  | .arr a, .arr A, xs, ys =>
+    let (xs, ys) : List A.El × List A.El := (xs, ys)
+    ((xs.zip ys).foldl (fun (o : Ordering) (x, y) => o.then (cmpEl objs a A x y)) Ordering.eq).then (compare xs.length ys.length)
+  | s, A, x, y => compare (showEl objs s A x) (showEl objs s A y)
+
+/-- A relation printed as its set of pairs, sorted by `cmpEl`. -/
 def showRel (objs : Objs) (s t : OTy) {A B : Obj} (R : Rel A B) : String :=
-  let ps := R.nub.toList.map fun (x, y) => s!"({showEl objs s A x}, {showEl objs t B y})"
-  "{" ++ ", ".intercalate (ps.mergeSort fun a b => decide (a ≤ b)) ++ "}"
+  let ps := R.nub.toList.mergeSort fun (x, y) (x', y') => ((cmpEl objs s A x x').then (cmpEl objs t B y y')) != .gt
+  "{" ++ ", ".intercalate (ps.map fun (x, y) => s!"({showEl objs s A x}, {showEl objs t B y})") ++ "}"
 
 /-- An object with a variable left in it. -/
 def OTy.poly : OTy → Bool
@@ -326,7 +343,7 @@ def topVal (sh : Share) (env : Env) (p : Pos) (e : Expr) : Except Err ((Val × O
 def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
   | .elems ws => pure { ty := .base n, elems := ws, uni := some ⟨_, col ((List.range ws.length).map Int64.ofNat)⟩ }
   | .range lo hi =>
-    pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo)).map fun k => Int64.ofNat (k + lo))⟩ }
+    pure { ty := .base n, range := some (lo, hi), uni := some ⟨_, col ((List.range (hi + 1 - lo).toNat).map fun k : Nat => Int64.ofInt (lo + k))⟩ }
   | .alias o => do let (t, _) ← (oty env [] o).run {}; pure { ty := t }
 
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is

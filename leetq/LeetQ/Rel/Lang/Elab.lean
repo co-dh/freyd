@@ -126,7 +126,7 @@ instance : ToString OTy := ⟨OTy.render false⟩
 structure ObjInfo where
   ty : OTy
   elems : List String := []
-  range : Option (Nat × Nat) := none
+  range : Option (Int × Int) := none
   uni : Option ((m : Nat) × Arr .long m) := none
 
 abbrev Objs := List (String × ObjInfo)
@@ -716,7 +716,7 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
     -- each leaf position of a side is the one declared object holding all its words: named elements, or
     -- numbers in its range; the side is their product, nested as the rows nest
     let holds (i : ObjInfo) (w : String) : Bool := i.elems.contains w ||
-      match i.range, w.toNat? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
+      match i.range, w.toInt? with | some (lo, hi), some k => lo ≤ k && k ≤ hi | _, _ => false
     let leaf (ws : List String) : M OTy := do
       match env.objs.filter (fun (_, i) => ws.all (holds i)) with
       | [(n, _)] => pure (.base n)
@@ -910,8 +910,8 @@ def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : Nat) × Arr .long 
 def code (p : Pos) (o : OTy) (w : String) : Except Err Int64 :=
   match zonk st o with
   | .base n => match objs.lookup n with
-    | some i => match i.range, i.elems.idxOf? w, w.toNat? with
-      | some (lo, hi), _, some k => if lo ≤ k ∧ k ≤ hi then pure (Int64.ofNat k)
+    | some i => match i.range, i.elems.idxOf? w, w.toInt? with
+      | some (lo, hi), _, some k => if lo ≤ k ∧ k ≤ hi then pure (Int64.ofInt k)
           else throw ⟨p, s!"{w} is not in {n} = {lo}…{hi}"⟩
       | none, some k, _ => pure (Int64.ofNat k)
       | _, _, _ => throw ⟨p, s!"'{w}' is not an element of {n}"⟩

@@ -12,7 +12,7 @@ rows (§e) and of the program in §g.
 | declaration / form    | `Core` object      | universe                                                            |
 |-----------------------|--------------------|---------------------------------------------------------------------|
 | `obj X = {A,B,C}`     | `atom long`        | the named elements, coded `0 … k-1`                                 |
-| `obj N = 0…n`         | `atom long`        | the numbers `0 … n`; `succ` is partial at `n`                       |
+| `obj N = m…n`         | `atom long`        | the integers `m … n`, signed (`-3…3`); `succ` is partial at `n`     |
 | `A×B`                 | `prod a b`         | `cross` of the two universes, when both have one                    |
 | `A+B`                 | `sum a b`          | `inl` of `A`'s, `inr` of `B`'s, when both have one                  |
 | `𝒫A`, `[A]`           | `arr a`            | none: `2^|A|` sets, unboundedly many lists                          |
@@ -21,7 +21,12 @@ rows (§e) and of the program in §g.
 - A universe belongs to the declared object NAME, not to the `Obj` type: `X` and `N` are both `atom long` and have
   different universes. The interpreter keeps a table name ↦ universe and passes it explicitly (`idU U`, `top U V`,
   `leq U`, `succ U`), which every `Alg` op already takes; `class Univ` (one universe per `Obj`) is not used.
-- `succ` is partial at the top of its universe: on `N = 0…n` it maps `n` to nothing, as `Alg.succ U` does.
+- `succ` is partial at the top of its universe: on `N = m…n` it maps `n` to nothing, as `Alg.succ U` does.
+- A number is a `long`, its code its value, so `m…n` may be signed: `obj Z = -3…3`, `obj Z = -5…-1`. A range with
+  `n < m` is an error at `n` (`3…-3`). Every number word — a range's bound, a literal's word, its membership in a
+  range — is read by `String.toInt?` alone, and `m`, `n` must fit a `long`.
+- A print lists its rows sorted by element: a number by its value (`-3` before `-1` before `2` before `10`), a
+  named element by its name, a pair and an array lexicographically (a prefix first), `inl` before `inr`.
 - The universe of every object with one is computed once, when the program is loaded. An object built from an
   `arr` (`𝒫A`, `𝒫A×B`, …) has none.
 - `𝟙`, `⊤`, `∼`, `∋`, `π₁`, `π₂`, `dom` on an object WITHOUT a universe run on DEMAND: in `Q e`, the term `e`
@@ -91,7 +96,9 @@ Every operator is LOCAL — its value at a key depends only on that key, so it m
   opcode `k`, run on the pairs in demand (§a) as `Alg.arith k` then the universe of `N`. Each is partial, never a
   default: no row where the result falls outside `N` (`minus` below the bottom, `plus`, `times` past the top, as
   `succ` at the top), where the kernel answers q's null (a divisor `0`; a declared number is never null), or
-  where `long` overflows. `div` floors and `mod` takes the divisor's sign, as q's do. `max`, `min` on numbers are not B&dM's
+  where `long` overflows. `div` floors and `mod` takes the divisor's sign, as q's do: on `Z = -3…3`,
+  `(-3,2) div` is `-2`, `(3,-2) mod` is `-1`. `succ`, `≤`, `<` on a signed range are the numeric ones: `-1 succ`
+  is `0`, `-3 < -1` (`Lang/Test.lean` guards each against Lean's `Int` on every pair of `-3…3`). `max`, `min` on numbers are not B&dM's
   `max R`, `min R` on sets, which the language writes `est(R°)`, `est(R)`. Not exposed: the kernel's `%` (`Ew.div`)
   and `xexp` (`Ew.pow`), whose results are float, and `^` (`Ew.fill`), which on numbers with no null is `π₂`.
 - Not in the language yet (`no` in the architecture table): `⦇R⦈`, `F(R)` on datatypes other than lists;
@@ -110,7 +117,7 @@ any other grouping is written with parentheses: `M(S) ≜ ∼(R(S)°⊤ ∪ (⊤
 
 ```
 program  := line*
-line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )
+line     := 'obj' Word '=' ( '{' Word (',' Word)* '}' | Num '…' Num | object )   -- Num ≤ Num
           | Name ('(' param (',' param)* ')')? '≜' ( expr | expr '⊑' expr )
             ( 'where' Name '≜' expr (',' Name '≜' expr)* )?   -- local items (below)
           | 'print' expr | 'check' expr ('⊑' | '=') expr
@@ -128,7 +135,14 @@ object   := Word | Var | object '×' object | object '+' object | '𝒫' object 
 Var      := 'α'…'ω' ( '\'' | SubscriptDigit )*            -- in a parameter's type only: an object variable (§e)
 Name     := Letter ( '\'' | Digit | SubscriptDigit )*   -- never U u n T o; a Greek letter is a letter
           | Symbol                                    -- one character outside the grammar: `≼`
+Word     := ( '-' Digit )? ( Letter | Digit | SubscriptDigit | '\'' )*   -- a name, an element, a number
+Num      := '-'? Digit+                               -- a Word that `String.toInt?` reads, within `long`
 ```
+
+- A sign is an ASCII `-` with a digit right after it, and only where a `Word` is read: a range's bound and a
+  literal's word (`{(a,-1)}`, `{((-1,B),-20)}`). `--` starts a comment (`{(a,-1)} -- …` is a literal then a
+  comment), and `−` (U+2212) is the difference `R − S`, never a sign. A term never starts with a number, so `R -3`
+  is an error at the `-` ("expected the end of the line, found '-'") and `R −3` one at the `3` ("expected a term").
 
 - A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`.
 - A name is defined once: a definition, an object or a parameter may not take a builtin of §b (an entry of the
@@ -331,9 +345,9 @@ each candidate to the state it leads to. A test needs no way back: `h(∋)` is a
 ## f. Not in the language
 
 Lean `let`, lambdas, tuples of relations, `iter`, `Except`, `do`, a loop, recursion, `μ`, `*`, first-class
-operators, arithmetic beyond `succ`, `≤`, `<` and the value verbs of §b on a declared number universe (no
-negative numbers, since `obj N = m…n` takes naturals; no float `%`, `xexp`; no infix `+ · −` on numbers, which
-§c's `+ × −` already spell for relations), row order (`num`, `enum`),
+operators, arithmetic beyond `succ`, `≤`, `<` and the value verbs of §b on a declared number universe (no float
+`%`, `xexp`; no infix `+ · −` on numbers, which §c's `+ × −` already spell for relations), row order (`num`,
+`enum`),
 and every operator in the "not yet" list of §b, shadowing (§c). The only failures are the front end's: unknown
 name, a name defined twice or a builtin's name taken (§c), object mismatch, no universe for a term (§a), a lifting
 error (§e), each with its line.
