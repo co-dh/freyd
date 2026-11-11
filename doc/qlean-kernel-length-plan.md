@@ -318,4 +318,10 @@ answer, with `lean_internal_panic_out_of_memory` on overflow, as core does for a
 - **The section 5 hardening is required, not optional**, and goes through the same `need`: a kernel whose answer is
   sized `n * w` bytes is called only under `n.toNat * w < USize.size` ("til should check n>2^61, or even smaller").
   The bound is one named constant for the byte size of an answer, not a number per op.
+- **No `Nat` count in executable qlean code** ("why do we need Nat in qlean? maybe get rid of it?"). Every count a
+  compiled definition takes, stores or returns is `USize`: `vector`, `slices`, `dyadCount`, every dispatcher's
+  binder. `Nat` stays only where Lean's library states things in it — `Array.size`, `ByteArray.size`,
+  `List.length`, and the statements and models built on them — and is reached by `n.toNat`, which is exact.
+  `Nat.toUSize` is never inserted: a count that starts as a Lean `Array`'s size enters through `need`. So Q1 does
+  not put `Nat.toUSize` at producers as a boundary for Q2 to delete; it changes the `Nat` binder at its source.
 - `setIds` on non-ascending starts stops the run after L3; say if it must keep answering.
