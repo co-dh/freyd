@@ -15,8 +15,8 @@ The table is wider than 120 columns because a table row cannot wrap.
 
 | ch. | example                  | note's formula (file:line)                 | `Alg` ops it uses                                         | missing from `Alg`           | deleted module? |
 |-----|--------------------------|--------------------------------------------|-----------------------------------------------------------|------------------------------|-----------------|
-| 6   | digits of a number       | `val_converse_eq` 06:23                    | `fold` `°` `∪` `junc` `snoc` `plus`                       | `times`                      | no              |
-| 6   | fast exponentiation      | `exp_program` 06:165, `mod_program` 06:177 | `fold` `°` `plus` `leq` const                             | `times`, `minus`             | no              |
+| 6   | digits of a number       | `val_converse_eq` 06:23                    | `fold` `°` `∪` `junc` `snoc` `plus` `times`               | —                            | no              |
+| 6   | fast exponentiation      | `exp_program` 06:165, `mod_program` 06:177 | `fold` `°` `plus` `times` `minus` `leq` const            | —                            | no              |
 | 6   | selection sort           | `selection_sort` 06:316                    | `fold` `°` `perm` `uncons` `leq` `est`                    | —                            | no              |
 | 6   | quicksort                | `quicksort` 06:350                         | `perm` `ordered` (the spec only)                          | trees (declined)             | no              |
 | 6   | closure                  | `star_eq_mu'` 06:486                       | `𝟙` `∪` `≫`                                               | `μ`                          | no              |
@@ -25,17 +25,17 @@ The table is wider than 120 columns because a table row cannot wrap.
 | 7   | filter                   | `filter_eq_cata` 07:886                    | `filter` `subseq` `fold` `est` `length` `leq`             | —                            | no              |
 | 7   | company party            | `party_laws` 07:1398                       | `Λ` `est` `Arr.sum` `leq` `map` `concat`                  | trees (declined)             | no              |
 | 7   | shortest paths, cylinder | `cyl_laws` 07:1616                         | `fold` `zip` `concat` `uncons` `snoc` `Λ` `est` `Arr.sum` | `cp` (a term)                | no              |
-| 7   | security van             | `van_laws` 07:2042                         | `fold` `cons` `prefix` `Arr.sum` `est` `leq` `Λ` const    | `minus`                      | no              |
+| 7   | security van             | `van_laws` 07:2042                         | `fold` `cons` `prefix` `Arr.sum` `est` `leq` `Λ` `minus`  | —                            | no              |
 | 8   | layered network          | `thinning_paths` 08:350                    | `fold` `Λ` `P` `est` `∋` `plus` `leq`                     | —                            | no              |
 | 8   | knapsack                 | `knap_laws` 08:702                         | `fold` `subseq` `merge` `thinL` `est` `Arr.sum` `leq`     | `cp` (a term)                | no              |
-| 8   | paragraph                | `para_laws` 08:873                         | `fold` `cat` `thinL` `est` `Arr.sum` `length` `leq`       | `times`, `minus`             | no              |
+| 8   | paragraph                | `para_laws` 08:873                         | `fold` `cat` `thinL` `est` `Arr.sum` `length` `leq`       | —                            | no              |
 | 8   | bitonic tours            | `tour_laws` 08:1067                        | `fold` `cat` `thinL` `est` `plus` `Arr.sum` `leq`         | `cp` (a term)                | no              |
 | 9   | string edit              | `edit_X` 09:485; `column_cons` 09:603      | `thin` `Λ` `P` `est` `length` `leq`; `fold` `zip` `tails` | `μ` (not in tabulation)      | no              |
-| 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined), `times`    | no              |
+| 9   | optimal bracketing       | `mct_laws` 09:749; `array_cons` 09:951     | `tic` `loop` `zip` `inits` `tails` `est`                  | trees (declined)             | no              |
 | 9   | data compression         | `code_laws` 09:1060                        | `thin` `Λ` `P` `est` `prefix` `cat` `snoc` `Arr.sum`      | `μ`                          | no              |
-| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU`                 | `mod`, `minus`               | no              |
-| 10  | minimum tardiness        | `tardy_laws` 10:463                        | `bagify` `Λ` `est` `snoc` `Arr.sum` `plus` `leq`          | `times`, `minus`, `μ`        | no              |
-| 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `times`, `minus`, `div`, `μ` | no              |
+| 10  | detab-entab              | `entab_laws` 10:148; `entab_triple` 10:259 | `fold` `loop` `snoc` `cat` `length` `idU` `mod` `minus`   | —                            | no              |
+| 10  | minimum tardiness        | `tardy_laws` 10:463                        | `bagify` `Λ` `est` `snoc` `Arr.sum` `plus` `leq`          | `μ`                          | no              |
+| 10  | TeX                      | `tex_laws` 10:607; `f_cons` (Lean)         | `Λ` `est` `cons` `length` `lt` const                      | `μ`                          | no              |
 
 Notes on single rows:
 
@@ -99,28 +99,31 @@ tex_laws         : interval ≫ mu (fun X => Λ ((junc cop arb step)°) ≫ est 
 
 ## Missing primitives
 
-Each numeric one is a single `QLean.Kernel.Ew.val <op> Ew.i64 Ew.vv nul a b n` call, total (it answers a
-`ByteArray`), the shape `plus` already has (`Algebra.lean:1195-1200`, `Ew.add`). So the general fix is one op over
-the opcode with `plus` as its `Ew.add` instance, not one copy per opcode. The deleted wrapper of all of them is
-leetq's `Ew.val` (`Ew.lean:45`), which answers `Except String (Arr rt n)`: not total, so the Rules forbid `Alg` from
+Done on branch `alg-arith`: `arith op W : Rel (long × long) long` (`Algebra.lean`, before `plus`) is one
+`QLean.Kernel.Ew.val op Ew.i64 Ew.vv` over the pairs `W`, and `plus`, `times`, `minus`, `div`, `mod` are its
+`Ew.add`, `mul`, `sub`, `idiv`, `imod` instances. It is partial, never a default: no row where the kernel answers
+q's null (a null operand, a zero divisor) and no row where the answer wrapped (a `+`/`-` whose order against `u`
+disagrees with `v`'s sign, a `*` that `idiv u` does not take back to `v`). `div`/`mod` floor as q's do: `mod` has
+the divisor's sign. Guards in `section Checks` hold all five against `Int` on `-7 … 7` squared and on the edges of
+`long`, `minus` against the converse reading of `plus`, and `u = v·div + mod` with its bounds. The deleted
+wrapper of all of them is leetq's `Ew.val` (`Ew.lean:45`), which answers `Except String (Arr rt n)`: not total, so the Rules forbid `Alg` from
 calling it, and nothing is lost by deleting it.
 
 | primitive              | examples                                                                 | qlean kernel                           | wrapper in a deleted module, total?                          |
 |------------------------|--------------------------------------------------------------------------|----------------------------------------|--------------------------------------------------------------|
-| `times`                | digits, fast exp, paragraph (`sqr`), bracketing (`cb`), tardiness, TeX   | `Ew.mul` (`mulc`, Algebra.lean:54)     | `Ew.val .mul` (Ew.lean:45): `Except`, no                     |
-| `minus`                | fast exp (`mod`), van, paragraph, detab, tardiness, TeX                  | `Ew.sub` (`sub`, Algebra.lean:51)      | `Ew.val .sub`: `Except`, no                                  |
-| `div`, `mod`           | detab (`col mod n`), TeX (`10q/w`)                                       | `Ew.idiv`, `Ew.imod` (used by `cross`) | `Ew.val`: `Except`, no                                       |
-| `max`/`min` on numbers | van (`bmax`), tardiness (`bmax`)                                         | `Ew.greater`, `Ew.lesser`              | `Ew.val`, `Scan.mwin` (Scan.lean:120): `Except`/`Option`, no |
+| `times` (done)         | digits, fast exp, paragraph (`sqr`), bracketing (`cb`), tardiness, TeX   | `Ew.mul`: `arith Ew.mul`               | `Ew.val .mul` (Ew.lean:45): `Except`, no                     |
+| `minus` (done)         | fast exp (`mod`), van, paragraph, detab, tardiness, TeX                  | `Ew.sub`: `arith Ew.sub`               | `Ew.val .sub`: `Except`, no                                  |
+| `div`, `mod` (done)    | detab (`col mod n`), TeX (`10q/w`)                                       | `Ew.idiv`, `Ew.imod`: `arith`          | `Ew.val`: `Except`, no                                       |
+| `max`/`min` (done)     | van (`bmax`), tardiness (`bmax`)                                         | none: the term, guarded                | `Ew.val`, `Scan.mwin` (Scan.lean:120): `Except`/`Option`, no |
 | `≤`/`<` from a cost    | every optimisation example: `cost ≫ leq U ≫ cost°`                       | `gradeColumn` via `Ops.rank`           | `Ops.rank` (Scan.lean:151): step 2 moves it to `Core`, kept  |
 | constants              | `0`, `N`, `w`, `n`, `c`, `p`, `10`, `2¹⁷`                                | none                                   | none                                                         |
 | `exp`                  | only the fast-exp spec `exp(a)(b) = a^b`; the program needs `times` only | `Ew.pow`                               | `Ew.val`: `Except`, no                                       |
 | prefix sums            | mss, van (`prefix sum`)                                                  | `Scan.scan .sums` (Algebra.lean:55)    | leetq `Scan.scan` (Scan.lean:38): `Option`, no               |
 
-- Present today, no new op: `≤`/`<` from a cost, constants, prefix sums (`prefix ≫ Arr.sum`), and `max`/`min` as
-  `est (leq U) (outl ∪ outr)`.
-- Derivable as a term but costing a universe: `minus` as the `°` of `plus` on pairs agreeing in the subtrahend;
-  `div`/`mod` as the `°` of `⟨π₁ times(k), π₂⟩ plus` (needs `times`). A kernel op is cheaper.
-- Not derivable: `times`.
+- Present, no new op: `≤`/`<` from a cost, constants, prefix sums (`prefix ≫ Arr.sum`), and `min`/`max` as
+  `est (leq U) (outl ∪ outr)` and `est (leq U)° (outl ∪ outr)` (guarded against `min`/`max` on `-7 … 7`).
+- `minus`, `div`, `mod` were derivable as terms costing a universe (`°` of `plus`, of `⟨π₁ times(k), π₂⟩ plus`);
+  `times` was not. All four are `arith` instances now.
 - Not numeric, and in no deleted module: `μX : φ(X)` as a term (closure, data compression, tardiness, TeX, and the
   recursive form of string edit); `Alg` has `iter`/`hylo` as Lean loops only, and `doc/rel-lang-design.md:144`
   lists `μ` and `R*` as not in the language yet. `cp` is a term (above). Trees are declined.
@@ -136,8 +139,7 @@ No. Step 2 deletes nothing the examples need that would be costly to rebuild. Ev
 `Parted`) answer `Except`/`Option` and could not be used under the Rules. The one thing kept that the examples
 need, `Ops.rank` behind `lt`/`leq`, is moved to `Core` by step 2, not deleted.
 
-Count: 9 of 21 examples are supported today (selection sort, takewhile, mss, filter, shortest paths on a cylinder,
-paths in a layered network, knapsack, bitonic tours, string edit through its tabulation). Five more need only
-numeric ops (digits, fast exponentiation, security van, paragraph, detab-entab); four need `μ` (closure, data
-compression, minimum tardiness, TeX, the last two also numeric ops); three need trees (quicksort, company party,
-optimal bracketing).
+Count: 14 of 21 examples are supported (selection sort, takewhile, mss, filter, shortest paths on a cylinder,
+paths in a layered network, knapsack, bitonic tours, string edit through its tabulation, and, with `arith`, digits,
+fast exponentiation, security van, paragraph, detab-entab); four need `μ` (closure, data compression, minimum
+tardiness, TeX, whose numeric ops are now met); three need trees (quicksort, company party, optimal bracketing).

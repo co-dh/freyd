@@ -1186,14 +1186,42 @@ def succ {n : Nat} (U : Vals (.atom .long) n) : Rel (.atom .long) (.atom .long) 
   let k := whereBits c[0].n.toUSize (c[0].member c[1])
   ⟨len k, Vals.pick _ U k, gather_len s k ▸ longCol (gather 8 s k)⟩
 
-/-- `plus : long × long ⟶ long` on the pairs `W` (`plus`, AOP/A5_6_ListCombinators.lean:339): each `(u, v)` to
-    `u + v`, `Ew.val` add of the two columns, keyed as `succ`. -/
-def plus {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) : Rel (.prod (.atom .long) (.atom .long)) (.atom .long) :=
+/-- The integral value verb `op` (`Ew.add`, `sub`, `mul`, `idiv`, `imod`) as a relation `long × long ⟶ long` on
+    the pairs `W`: each `(u, v)` to `u op v` where that is a `long` other than q's null, and to nothing elsewhere.
+    One `Ew.val` over the two columns, then the rows kept (`whereBits`, keyed as `succ`) where the answer is not
+    the null — which the kernel answers for a null operand and for `idiv`/`imod` by `0` — and is exact: a
+    wrapped `+`/`-` is the one whose order against `u` disagrees with `v`'s sign, a wrapped `*` the one that
+    `idiv u` does not take back to `v`. `idiv`/`imod` floor, as q's `div`/`mod`, and cannot wrap on non-null
+    operands. So the relation is partial at a zero divisor and at overflow, never a default value. -/
+def arith (op : UInt8) {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) :
+    Rel (.prod (.atom .long) (.atom .long)) (.atom .long) :=
   let m := n.toUSize
-  let i := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul (tilLongs m) (one 0) m
-  let s := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul (longsOf W.1) (longsOf W.2) m
-  have h : len s = len i := by simp only [len, s, i, KernelWF.Ew.val_size]
-  ⟨len i, Vals.pick _ W i, h ▸ longCol s⟩
+  let u := longsOf W.1; let v := longsOf W.2
+  let s := Kernel.Ew.val op Ew.i64 Ew.vv nul u v m
+  let cmp (c : UInt8) (x y : ByteArray) := Ew.cmp c Ew.i64 Ew.vv x y m
+  let same (x y : ByteArray) := Ew.bit (Ew.bitCmp + Ew.eq) Ew.vv x y m
+  let pos := Ew.cmp Ew.ge Ew.i64 Ew.va v (one 0) m
+  let ok := Ew.cmp Ew.ne Ew.i64 Ew.va s (one nul.toUInt64) m
+  let exact :=
+    if op == Ew.add then same pos (cmp Ew.ge s u)
+    else if op == Ew.sub then same pos (cmp Ew.le s u)
+    else if op == Ew.mul then
+      Ew.bit Ew.greater Ew.vv (cmp Ew.eq (Kernel.Ew.val Ew.idiv Ew.i64 Ew.vv nul s u m) v)
+        (Ew.cmp Ew.eq Ew.i64 Ew.va u (one 0) m) m
+    else ok
+  let k := whereBits m (Ew.bit Ew.lesser Ew.vv ok exact m)
+  ⟨len k, Vals.pick _ W k, gather_len s k ▸ longCol (gather 8 s k)⟩
+
+/-- `plus : long × long ⟶ long` on the pairs `W` (`plus`, AOP/A5_6_ListCombinators.lean:339): `u + v`. -/
+def plus {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew.add W
+/-- `times` on the pairs `W`: `u · v`. -/
+def times {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew.mul W
+/-- `minus` on the pairs `W`: `u - v`, the converse reading of `plus` (`(u, v) minus w ⟺ (w, v) plus u`). -/
+def minus {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew.sub W
+/-- `div` on the pairs `W`: `⌊u / v⌋`, q's `div`; no row where `v = 0`. -/
+def div {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew.idiv W
+/-- `mod` on the pairs `W`: `u - v · ⌊u / v⌋`, q's `mod`, the sign of `v`; no row where `v = 0`. -/
+def mod {n : Nat} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew.imod W
 
 /-- `τ : A ⟶ arr A` on `X`, each element to the array holding it alone: `Λ(𝟙)` (`Λ_id_eq_singletonMap`,
     AOP/A5_7_PowerBeads.lean:171, of `singletonMap`, Freyd/S2_40.lean:170; the note's
@@ -2111,6 +2139,50 @@ private def X31 : Vals (.arr L) 1 := ⟨3, col [0], col [3], col [3, 1, 3]⟩
 private def Xq : Vals (.arr (.prod L L)) 3 := ⟨5, col [0, 3, 5], col [3, 5, 5], (col [2, 1, 2, 9, 0], col [5, 7, 3, 1, 1])⟩
 #guard seteq ((bagify Xq).toList : List (List (Int64 × Int64) × List (Int64 × Int64)))
   [([(2, 5), (1, 7), (2, 3)], [(1, 7), (2, 3), (2, 5)]), ([(9, 1), (0, 1)], [(0, 1), (9, 1)]), ([], [])]
+
+-- `arith` against `Int`: each pair of `W` to `f(u, v)` where the operands are not q's null, `ok(v)`, and `f(u, v)`
+-- is a `long` above the null; nothing elsewhere (a zero divisor, an overflow)
+private def arithSpec {n : Nat} (W : Vals (.prod L L) n) (f : Int → Int → Int) (ok : Int64 → Bool := fun _ => true) :
+    List ((Int64 × Int64) × Int64) :=
+  (W.1.toList.zip W.2.toList).filterMap fun (a, b) =>
+    let r := f a.toInt b.toInt
+    if a == nul || b == nul || !ok b || r ≤ nul.toInt || r > Int64.maxValue.toInt then none else some ((a, b), Int64.ofInt r)
+private def square (xs : List Int64) : List (Int64 × Int64) := xs.flatMap fun a => xs.map (a, ·)
+private def Wof (ps : List (Int64 × Int64)) : Vals (.prod L L) ps.length :=
+  (List.length_map _ ▸ col (ps.map (·.1)), List.length_map _ ▸ col (ps.map (·.2)))
+-- `-7 … 7` both sides, so negative operands and a zero divisor
+private def Us : List Int64 := (List.range 15).map fun i => i.toInt64 - 7
+private def Wn := Wof (square Us)
+-- the edges of `long`: the null, its neighbour, the top, `±2³²`
+private def Wo := Wof (square [nul, nul + 1, Int64.maxValue, Int64.maxValue - 1, 4294967296, -4294967296, 3, -1, 0])
+private def arithOk {n : Nat} (W : Vals (.prod L L) n) : Bool :=
+  seteq ((plus W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· + ·)) &&
+  seteq ((times W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· * ·)) &&
+  seteq ((minus W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· - ·)) &&
+  seteq ((div W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W Int.fdiv (· != 0)) &&
+  seteq ((mod W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W Int.fmod (· != 0))
+#guard arithOk Wn && arithOk Wo
+-- q's convention on negative operands: `div` floors, `mod` takes the divisor's sign
+#guard ((div Wn).toList.lookup (-7, 2), (mod Wn).toList.lookup (-7, 2), (div Wn).toList.lookup (7, -2),
+  (mod Wn).toList.lookup (7, -2)) == (some (-4), some 1, some (-4), some (-1))
+-- no row at divisor `0`
+#guard (div Wn).toList.all (·.1.2 != 0) && (mod Wn).toList.all (·.1.2 != 0) &&
+  (div Wo).toList.all (·.1.2 != 0) && (mod Wo).toList.all (·.1.2 != 0)
+-- overflow is no row: `max + 3`, `max · 3`, `(null + 1) - 3`; nor is a result on the null, `(null + 1) + -1`
+#guard ((plus Wo).toList.lookup (Int64.maxValue, 3), (times Wo).toList.lookup (Int64.maxValue, 3),
+  (minus Wo).toList.lookup (nul + 1, 3), (plus Wo).toList.lookup (nul + 1, -1)) == (none, none, none, none)
+-- `u = v · div + mod`, `0 ≤ mod < v` for `v > 0` and `v < mod ≤ 0` for `v < 0`, every pair of `div` having its `mod`
+#guard (div Wn).toList.all fun ((a, b), d) => ((mod Wn).toList.lookup (a, b)).any fun r =>
+  a == b * d + r && (if b > 0 then 0 ≤ r && r < b else b < r && r ≤ 0)
+-- `minus` is the converse reading of `plus`: `(u, v) minus w ⟺ (w, v) plus u`, on the pairs whose `w` is in `Us`
+#guard seteq (((minus Wn).toList.filter fun (_, w) => Us.contains w) : List ((Int64 × Int64) × Int64))
+  (((plus Wn).toList.filter fun (_, u) => Us.contains u).map fun ((w, v), u) => ((u, v), w))
+-- `max`/`min` on numbers are the term `est (leq U) (outl ∪ outr)` and its converse order, no new op
+private def UsC : Vals L Us.length := col Us
+#guard seteq ((est (leq UsC) (outl (idU Wn) ∪ outr (idU Wn))).toList : List ((Int64 × Int64) × Int64))
+  ((square Us).map fun (a, b) => ((a, b), min a b))
+#guard seteq ((est (leq UsC)° (outl (idU Wn) ∪ outr (idU Wn))).toList : List ((Int64 × Int64) × Int64))
+  ((square Us).map fun (a, b) => ((a, b), max a b))
 
 end Checks
 

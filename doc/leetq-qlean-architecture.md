@@ -114,6 +114,7 @@ language (`doc/rel-lang-design.md`; decided: its back end is `Alg`, and `∼` is
 | 7   | `filter(p)`, `takewhile(p)`, `length`, `sum`, `head`, `tail`, `prefix`, `suffix`, `succ`, `+` | `filter takewhile length Arr.sum head tail «prefix» suffix succ plus` | yes |
 | 7   | `inits`, `tails`, `concat`, `zip`, `snoc`, `init`, `cat`, `cat°`, `snoc°` | `inits tails zip cat unsnoc` on positions; `concat ≜ ⦇[nil,cat]⦈`, `snoc ≜ (𝟙×τ) cat`, `init ≜ snoc° π₁`, `uncat ≜ ⟨inits,tails⟩ zip ∋` | yes |
 | 7   | orders from a cost: `R ≜ cost ≤ cost°`, `≤` on numbers | `leq U`, `lt U` from kernels (not `general`) | yes   |
+| 7   | numbers: `+`, `×`, `−`, `div`, `mod`, `min`, `max`     | `plus times minus div mod`, instances of `arith op` (one `Ew.val`; no row at a zero divisor, a null or an overflow); `min`/`max` the term `est (leq U) (outl ∪ outr)` and `est (leq U)°` | yes |
 | 8   | `thin(Q)`                                              | `thin` (minimal)                            | yes   |
 | 8   | `merge`, sorting sets, binary thinning                 | `merge` (rounds of `iter`), `sortSet ≜ setify° ordered`, `thinL ≜ setify thin(Q) setify° ∩ subseq`, `subseq` | yes |
 | 9   | tabulation: `tic`, `loop`                              | `tic ≜ cons inits tail`, `loop` (rounds of `iter`) | yes |
