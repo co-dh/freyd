@@ -346,7 +346,8 @@ Num      := '-'? Digit+                               -- a Word that `String.toI
   is an error at the `-` ("expected the end of the line, found '-'") and `R −3` one at the `3` ("expected a term").
 
 - The object `1` is declared by the language (the prelude), never by a program.
-- A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`.
+- A run of letters is split at its longest prefix in scope: `Qc` is `Q` then `c`, `π₁B` is `π₁` then `B`. A
+  `where` item is in scope in the body written before it, so `xus ≜ …` beside a parameter `x` is the one name `xus`.
 - A name is defined once: a definition, an object or a parameter may not take a builtin of §b (an entry of the
   operator table: `π₂ is a builtin`), and a definition or an object not a name already defined or declared (`K is
   already defined at line n`), each an error at the second. A parameter may shadow a top-level definition (Chess

@@ -316,6 +316,8 @@ partial def items (w : String) (ps : List Param) (taken : List (String × String
     throw ⟨q, s!"the `where` item `{n}` takes no type: make it a top-level definition to give it one (§e)"⟩
   tok '≜'
   let σ := σ ++ [(n, (← expr).subst σ)]
+  -- in scope in the items after it, so a run of letters there is split with its name known (§c)
+  modify fun s => { s with known := (n, 0) :: s.known }
   ws
   if (← peek) == some ',' then do adv; items w ps taken σ else pure σ
 
@@ -369,14 +371,25 @@ def decl (p : Pos) (w : String) : P Decl := do
     let ty ← typeOpt
     let outer := (← get).known
     modify fun s => { s with known := ps.map (fun q => (q.name, 0)) ++ s.known }
-    tok '≜'
-    let e ← expr
-    ws
-    let b ← if (← peek) == some '⊑' then do adv; pure (Body.test e (← expr)) else pure (Body.rel e)
-    if let (.test .., some t) := (b, ty) then
-      throw ⟨p, s!"the test `{w}` has no type of its own: drop ': {OExp.arrow t}' (§e)"⟩
-    ws
-    let σ ← if ← atWhere then do let _ ← word; items w ps (← get).taken [] else pure []
+    -- the body with the names `inBody` in scope as well, then its `where` items
+    let rest (inBody : List (String × Nat)) : P (Body × List (String × Expr)) := do
+      let k := (← get).known
+      modify fun s => { s with known := inBody ++ k }
+      tok '≜'
+      let e ← expr
+      ws
+      let b ← if (← peek) == some '⊑' then do adv; pure (Body.test e (← expr)) else pure (Body.rel e)
+      if let (.test .., some t) := (b, ty) then
+        throw ⟨p, s!"the test `{w}` has no type of its own: drop ': {OExp.arrow t}' (§e)"⟩
+      modify fun s => { s with known := k }
+      ws
+      let σ ← if ← atWhere then do let _ ← word; items w ps (← get).taken [] else pure []
+      pure (b, σ)
+    -- a `where` item is in scope in the body (§c), so a run of letters there is split with its name known: the
+    -- items' names are read after the body, which is then read again
+    let s₀ ← get
+    let (b, σ) ← rest []
+    let (b, σ) ← if σ.isEmpty then pure (b, σ) else do set s₀; rest (σ.map fun (n, _) => (n, 0))
     let b := match b with | .rel e => Body.rel (e.subst σ) | .test e f => .test (e.subst σ) (f.subst σ)
     modify fun s => { s with known := (key, ps.length) :: outer }
     pure (.defn p key ps b ty)
