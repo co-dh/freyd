@@ -716,6 +716,76 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
       rw [hraw i hi]
       exact ⟨h5 i hi, hbnd i hi⟩
 
+/-- Offsets from one `base`, the null at `card - 1` and every other value below `card - 1`, are equal
+    exactly where the values are. -/
+theorem offset_iff {base x y : Int64} {card : Nat}
+    (hx : x ≠ nul → base.toInt ≤ x.toInt ∧ x.toInt - base.toInt + 2 ≤ card)
+    (hy : y ≠ nul → base.toInt ≤ y.toInt ∧ y.toInt - base.toInt + 2 ≤ card) :
+    (if x = nul then card - 1 else (x.toInt - base.toInt).toNat) =
+        (if y = nul then card - 1 else (y.toInt - base.toInt).toNat) ↔ x = y := by
+  by_cases h1 : x = nul <;> by_cases h2 : y = nul
+  · rw [h1, h2]; simp
+  · rw [if_pos h1, if_neg h2]; obtain ⟨a, b⟩ := hy h2
+    exact ⟨fun _ => by omega, fun e => (h2 (by rw [← e]; exact h1)).elim⟩
+  · rw [if_neg h1, if_pos h2]; obtain ⟨a, b⟩ := hx h1
+    exact ⟨fun _ => by omega, fun e => (h1 (by rw [e]; exact h2)).elim⟩
+  · rw [if_neg h1, if_neg h2]; obtain ⟨a, b⟩ := hx h1; obtain ⟨c, d⟩ := hy h2
+    exact ⟨fun e => Int64.toInt_inj.1 (by omega), fun e => by rw [e]⟩
+
+/-- Where `rangeOffsets` answers, it is the code of an eight-byte integral column: no long payload is
+    `bits`. -/
+theorem codes_long_eq {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hp : 0 < p) {os : Vector Code p}
+    (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os) :
+    Obj.codes (.atom t) cs = os := by
+  obtain ⟨-, -, hg, -, -⟩ := long_facts ht
+  show Alg.codes t cs = os
+  unfold codes; rw [dif_neg hg]
+  split
+  · next bs hbs =>
+    have := vec_mapM_some hbs hp
+    rcases long_enc ht cs[0].2.wf with ⟨b, he, -⟩ | ⟨md, pk, he⟩ <;> simp [he] at this
+  · dsimp only; rw [hro]
+
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are
+    equal exactly where the values are, across parts.** Past `2^32` rows the plain statement is false: a
+    span `hi - lo = 2^63` wraps onto the null. -/
+theorem codes_long_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
+    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
+    (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
+    {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
+    Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
+        Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
+      Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
+  obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+  rw [codes_long_eq ht cs (by omega) hro, Vals.row_atom, Vals.row_atom, long_row_eq ht]
+  obtain ⟨-, -, -, -, hk'⟩ := hs k hk; obtain ⟨-, -, -, -, hl'⟩ := hs l hl
+  simp only [Vector.getElem_map, Arr.part] at hk' hl'
+  rw [(hk' i hi).1, (hl' j hj).1]
+  exact offset_iff (hk' i hi).2 (hl' j hj).2
+
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are well
+    formed**: a lane of one to eight bytes, so the id bound is vacuous. -/
+theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
+    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
+    (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
+    {k : Nat} (hk : k < p) :
+    let c := (Obj.codes (.atom t) cs)[k]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+  obtain ⟨h1, -, h3, h4, -⟩ := hs k hk
+  simp only [Vector.getElem_map, Arr.part] at h1 h4
+  simp only [codes_long_eq ht cs (by omega) hro]
+  refine ⟨by omega, h1, by rw [h1]; exact h4, fun h => absurd h (by omega)⟩
+
+#print axioms codes_long_faithful
+#print axioms codes_long_wf
 #print axioms codes_boolean_faithful
 #print axioms codes_boolean_wf
 #print axioms codes_small_int_faithful
