@@ -4,8 +4,7 @@ A program is a text file of object declarations and relation definitions, parsed
 leetq's `Alg` (`Rel k v` on qlean columns). Nothing of Lean is reachable from it: no `let`, lambda, tuple of
 relations, loop or host call. Iteration is a fold `⦇e,S⦈`. A relation formula written for one state runs on a
 family of states unchanged: the front end lifts it (§e). Every operator the B&dM companion note writes is in
-scope. The design is checked by `leetq/LeetQ/Rel/BlocksRel.lean`, a line-by-line Lean transcription of the lifting
-rows (§e) and of the program in §g.
+scope. The program in §g runs under `leetq/LeetQ/Rel/Lang/Test.lean`, which guards its plans and lifted rows.
 
 **Running a program.** `rel FILE` (`lean_exe rel`, `leetq/LeetQ/Rel/Lang/Main.lean`), `FILE` a literate
 `.rel.md` file (§ Literate files), prints each `print`; it exits
@@ -399,7 +398,7 @@ arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] ⦇,⦈`, the firs
 `iter` from `𝟘` until a round changes nothing reaches the least fixed point (AOP/A6_2.lean:53 `mu`).
 
 Cost: a result keeps only the payload its rows refer to (§h), so `L(s₀,𝟙)` over the 28 rounds of `N = 0…27`
-holds 28 rows on a payload of at most 3 pairs a row (`BlocksRel.lean` guards it). The interpreter evaluates
+holds 28 rows on a payload of at most 3 pairs a row. The interpreter evaluates
 every definition, and every sub-term that does not read the round's pairs, once before the fold runs; the
 step recomputes only what depends on the round (`Lang/Eval.lean`, `hoist`). A term on demand whose value is read
 only composed after the rows that make its demand — `S` in `RS`, a fold's or a loop's step — is not run when that
@@ -480,9 +479,8 @@ on demand, and the right column is plain, `⟨R,S⟩` there the plain pair of tw
 needing the key and the source together, `Rᴵ : I×A ⟶ B`, `(i,a) Rᴵ b ⟺ i R (a,b)`, on the pairs (key, source)
 in demand: `R` read at their keys, each row `(i,(a,b))` re-keyed as `((i,a),b)` and joined with the pairs
 (`Tm.flat`; no `ran` over all of `I`), or keyed through its rows (the cost paragraph below). The law of every row: at every key `i` in demand, the
-fibre of the lifted term is the operator applied to the fibres at `i` (`BlocksRel.lean` guards it for each row
-marked ✓ on three states and an empty key; `Lang/Test.lean` guards the `est` and `thin` rows against the closed
-row).
+fibre of the lifted term is the operator applied to the fibres at `i` (`Lang/Test.lean` guards it for the fold at
+every key of a three-key family, and the `est` and `thin` rows against the closed row).
 
 | operator                        | lifted, `I ⟶ …`                            | why the fibre at `i` is right        |
 |---------------------------------|--------------------------------------------|--------------------------------------|
@@ -659,12 +657,11 @@ Lines changed from the per-key version:
 where before the bodies were rewritten.
 
 `plan` is `{(0,(C,C)),(1,(B,C)),(2,(A,B))}`; from all blocks on the table it is `{(0,(B,C)),(1,(A,B))}`; for
-the goal `{(A,B),(B,A)}` no state is in `H`, `δ` is empty, so `σ` is, and `plan` is `𝟘`. `BlocksRel.lean`
-guards these (as sets of pairs: `≫`, `pair` and `est` keep row multiplicity), the 13 reachable states, the law of
-each lifted row marked ✓ in §e, the lifted `R`, `M`, `S'`, `h` against `Blocks.R`, `M`, `move` at every key of a
-three-state family and on one state, and agreement with `Blocks.plan` and `Blocks.solve`.
+the goal `{(A,B),(B,A)}` no state is in `H`, `δ` is empty, so `σ` is, and `plan` is `𝟘`. `Lang/Test.lean`
+guards these, the 13 reachable states and the lifted `R` and `h` on them (as sets of pairs: `≫`, `pair` and `est`
+keep row multiplicity).
 
-Transcription rules the Lean check follows (they are what the interpreter does):
+How the interpreter reads the language in `Alg`:
 
 | language                        | `Alg`                                                    |
 |---------------------------------|----------------------------------------------------------|

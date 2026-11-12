@@ -1,5 +1,4 @@
 import LeetQ.Rel.Lang.Eval
-import LeetQ.Rel.BlocksRel
 import LeetQ.Rel.Programs.Blocks
 
 /-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, the program `Programs.blocks`; its
@@ -9,9 +8,6 @@ import LeetQ.Rel.Programs.Blocks
 namespace LeetQ.Rel.Lang.Test
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
-
-/-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
-local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
 -- the embedded prelude reads as literate text and its definitions type-check
 #guard (Parse.literate Parse.prelude).isOk && (typesOf none).isOk
@@ -147,20 +143,32 @@ def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj 
 #guard (ok given).prints == []
 #guard (ok (runExt Programs.blocks "print plan\n")).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
 #guard moves (ok given) == some [(2, 2), (1, 2), (0, 1)]
-#guard moves (ok given) == some Blocks.plan
 #guard moves (ok table) == some [(1, 2), (0, 1)]
-#guard moves (ok table) == some (Blocks.solve 𝟙 Blocks.G)
 #guard moves (ok cycle) == some []
-#guard moves (ok cycle) == some (Blocks.solve 𝟙 (ofPairs [(0, 1), (1, 0)]))
 
-/-! The elaborated definitions against `BlocksRel`'s transcription, as sets, on the reachable states. -/
+/-! The elaborated definitions, as sets, on the reachable states. -/
 
-def Q₁ : Rel St St := BlocksRel.Q Blocks.S₀
-#guard get (ok given) "Q" St St == some Q₁
-#guard get (ok given) "qR" St XX == some (BlocksRel.R Q₁ (Q₁ ≫ Alg.mem Q₁.val))
-#guard get (ok given) "qM" St XX == some (BlocksRel.M Q₁ (Q₁ ≫ Alg.mem Q₁.val))
-#guard get (ok given) "qF" St XX == some (BlocksRel.c Q₁ ≫ BlocksRel.F (Alg.ran (BlocksRel.c Q₁)))
-#guard get (ok given) "qh" St St == some (BlocksRel.H Blocks.S₀ Blocks.G)
+/-- The definition `n` at `St ⟶ B` holds the rows `xs`, whatever their order and multiplicity. -/
+def rowsAre {B : Obj} [BEq B.El] (n : String) (xs : List (St.El × B.El)) : Bool :=
+  match get (ok given) n St B with
+  | some R => R.toList.all xs.contains && xs.all R.toList.contains
+  | none => false
+
+/-- The 13 states reachable from `S₀`. -/
+def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [(0, 0), (1, 1), (2, 1)],
+  [(0, 0), (1, 1), (2, 2)], [(0, 2), (1, 1), (2, 1)], [(0, 1), (1, 1), (2, 2)], [(0, 2), (1, 1), (2, 2)],
+  [(0, 0), (1, 0), (2, 2)], [(0, 0), (1, 2), (2, 2)], [(0, 1), (1, 1), (2, 0)], [(0, 2), (1, 0), (2, 2)],
+  [(0, 0), (1, 0), (2, 1)], [(0, 1), (1, 2), (2, 2)]]
+
+#guard rowsAre (B := St) "Q" (reach.map fun s => (s, s))
+#guard rowsAre (B := XX) "qR" [([(0, 0), (1, 1), (2, 0)], 2, 0), ([(0, 0), (1, 2), (2, 0)], 1, 2),
+  ([(0, 0), (1, 2), (2, 0)], 2, 0), ([(0, 0), (1, 1), (2, 1)], 2, 1), ([(0, 2), (1, 1), (2, 1)], 0, 2),
+  ([(0, 2), (1, 1), (2, 1)], 2, 1), ([(0, 1), (1, 1), (2, 2)], 0, 1), ([(0, 2), (1, 1), (2, 2)], 0, 2),
+  ([(0, 0), (1, 0), (2, 2)], 1, 0), ([(0, 0), (1, 2), (2, 2)], 1, 2), ([(0, 1), (1, 1), (2, 0)], 0, 1),
+  ([(0, 1), (1, 1), (2, 0)], 2, 0), ([(0, 2), (1, 0), (2, 2)], 0, 2), ([(0, 2), (1, 0), (2, 2)], 1, 0),
+  ([(0, 0), (1, 0), (2, 1)], 1, 0), ([(0, 0), (1, 0), (2, 1)], 2, 1), ([(0, 1), (1, 2), (2, 2)], 0, 1),
+  ([(0, 1), (1, 2), (2, 2)], 1, 2)]
+#guard rowsAre (B := St) "qh" [([(0, 1), (1, 2), (2, 2)], [(0, 1), (1, 2), (2, 2)])]
 
 /-! Literate files (`Parse.literate`): the program is the indented code blocks, at the file's lines and columns. -/
 

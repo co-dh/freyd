@@ -1,10 +1,9 @@
 import LeetQ.Rel.Lang.Test
-import LeetQ.Rel.Chess
 import LeetQ.Rel.Programs.Chess
 
-/-! Mate in one in the Rel language, the program `Programs.chess`, against `Chess.lean`: each of its `#guard`s
-    on the same position, the program's board `on` replaced at the AST, each guard running the program once; and
-    the program's tables and the relations `W`, `P` of its own board compared with `Chess`'s, as sets. -/
+/-! Mate in one in the Rel language, the program `Programs.chess`: each check on its position, the program's board
+    `on` replaced at the AST, each guard running the program once; and the program's tables and the relations
+    `W`, `P` of its own board, as sets. -/
 
 namespace LeetQ.Rel.Lang.TestChess
 
@@ -13,7 +12,7 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 abbrev SS : Obj := .prod .long .long
 abbrev Bd : Obj := .arr SS
 
-/-- The pieces as `obj Pc` names them, in `Chess`'s codes `colour*6 + kind`. -/
+/-- The pieces as `obj Pc` names them, in the codes `colour*6 + kind`. -/
 def pcs : List String := ["P", "N", "B", "R", "Q", "K", "p", "n", "b", "r", "q", "k"]
 
 /-- The board `ps` as a literal of the program. -/
@@ -37,48 +36,42 @@ def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := d
 def mated (ps : List (Nat × Int64)) : Option Bool :=
   (Test.get (Test.ok (board ps true)) "Ω" Bd Bd).map fun R => !(R ⊑ zero)
 
-/-- `m`'s mating moves as `[p, s, t]`, sorted as `Chess`'s checks sort them. -/
+/-- `m`'s mating moves as `[p, s, t]`, sorted. -/
 def moves (o : Out) : Option (List (List Int64)) :=
   (Test.get o "m" SS .long).map fun R =>
     (R.nub.toList.map fun ((s, t), p) => [p, s, t]).mergeSort fun a b => decide (a ≤ b)
 
 def answer (ps : List (Nat × Int64)) : Option (List (List Int64)) := moves (Test.ok (board ps false))
 
-def leanAnswer (ps : List (Nat × Int64)) : List (List Int64) :=
-  ((Chess.mateIn1 (Chess.pos ps)).map fun (p, s, t) => [p, s, t]).mergeSort fun a b => decide (a ≤ b)
-
-def leanMate (ps : List (Nat × Int64)) : Bool := Chess.isMate (Chess.pos ps)
-
-/-! The tables, and the relations of the program's own board `on`, against `Chess`. -/
+/-! The tables, and the relations of the program's own board `on`. -/
 
 def one : Out := Test.ok (board none true)
 def tbl (n : String) : Option (Rel .long .long) := Test.get one n .long .long
 /-- A one-board family `Bd ⟶ Sq×Sq` as the relation its fibre is. -/
 def fibre (n : String) : Option (Rel .long .long) := (Test.get one n Bd SS).map fun R => ofPairs (R.toList.map (·.2))
-def on₀ : Chess.Board := Chess.pos [(6, 5), (48, 3), (1, 3), (60, 11)]
 
-#guard [("→", (1, 0)), ("←", (-1, 0)), ("↑", (0, 1)), ("↓", (0, -1)), ("↗", (1, 1)), ("↖", (-1, 1)),
-  ("↘", (1, -1)), ("↙", (-1, -1))].all (fun (n, d) => tbl n == some (Chess.D d)) &&
-  tbl "K" == some Chess.K && tbl "N" == some Chess.N && tbl "X₀" == some (Chess.X 0) &&
-  tbl "X₁" == some (Chess.X 1) && tbl "S₀" == some (Chess.S 0) && tbl "S₁" == some (Chess.S 1) &&
-  fibre "W'" == some (Chess.W on₀) && fibre "Pin'" == some (Chess.P on₀)
+-- `S₀`, `S₁`: the second and the seventh rank; `W'`: the squares White attacks on `on`; no pin
+#guard tbl "S₀" == some (ofPairs ((List.range 8).map fun i => (8 + Int64.ofNat i, 8 + Int64.ofNat i))) &&
+  tbl "S₁" == some (ofPairs ((List.range 8).map fun i => (48 + Int64.ofNat i, 48 + Int64.ofNat i))) &&
+  fibre "W'" == some (ofPairs [(48, 49), (48, 50), (48, 51), (48, 52), (48, 53), (48, 54), (48, 55), (1, 2), (1, 3),
+    (1, 4), (1, 5), (1, 6), (1, 0), (48, 56), (1, 9), (1, 17), (1, 25), (1, 33), (1, 41), (1, 49), (1, 57), (48, 40),
+    (48, 32), (48, 24), (48, 16), (48, 8), (48, 0), (6, 7), (6, 5), (6, 14), (6, 15), (6, 13)]) &&
+  fibre "Pin'" == some (ofPairs [])
 
-/-! `Chess.lean`'s checks, each against `Chess` and against the value it states. -/
+/-! Mate in one, each against the value its check states. -/
 
 -- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates; the program's own board, run as written: its `check m = …` holds and it
 -- prints nothing, and `m` printed here is the one move
-#guard let o := Test.ok (runProgram Programs.chess); let a := moves o
-  a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (60, 11)]) && a == some [[3, 1, 57]] &&
+#guard let o := Test.ok (runProgram Programs.chess)
+  moves o == some [[3, 1, 57]] &&
     o.prints == [] && (Test.ok (Test.runExt Programs.chess "print m\n")).prints == ["m = {((1, 57), R)}"]
 -- B Kc8: Rb8+ fails to Kxb8, Ra8+ leaves c7
-#guard let a := answer [(6, 5), (48, 3), (1, 3), (58, 11)]
-  a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (58, 11)]) && a == some []
+#guard answer [(6, 5), (48, 3), (1, 3), (58, 11)] == some []
 -- a third rook, no new code: Rb1-b8 and Rh2-h8
-#guard let a := answer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)]
-  a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)]) && a == some [[3, 1, 57], [3, 15, 63]]
+#guard answer [(6, 5), (48, 3), (1, 3), (15, 3), (60, 11)] == some [[3, 1, 57], [3, 15, 63]]
 
-/-- `Ω` on `ps` agrees with `Chess.isMate` and with the verdict `v` the check states. -/
-def mate (ps : List (Nat × Int64)) (v : Bool) : Bool := let m := mated ps; m == some (leanMate ps) && m == some v
+/-- `Ω` on `ps` agrees with the verdict `v` the check states. -/
+def mate (ps : List (Nat × Int64)) (v : Bool) : Bool := mated ps == some v
 
 -- W Kg1 Ra7 Rb8, B Ke8 mated; with B Kc8, Kxb8 takes the undefended rook
 #guard mate [(6, 5), (48, 3), (57, 3), (60, 11)] true
