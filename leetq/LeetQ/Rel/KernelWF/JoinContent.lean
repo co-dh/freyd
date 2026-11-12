@@ -120,26 +120,60 @@ theorem classSizes_ids (n : USize) (g : ByteArray × ByteArray) (hg : len g.2 < 
   simp only [need, dif_pos hg]
   rw [groupSizes_spec, USize.toNat_ofNat_of_lt' hg, lane_toNat (idWidthOf_le _)]
 
-/-- **Position `p` of the runs `t` repeated `c t` times, `t < m`, is the `t` whose run covers it**: the
-    total of the earlier runs is at most `p` and `p` is short of that total plus `c t`. -/
-theorem flatMap_replicate_get (c : Nat → Nat) (m p : Nat) (hp : p < ((List.range m).map c).sum) :
-    ∃ t < m, ((List.range t).map c).sum ≤ p ∧ p < ((List.range t).map c).sum + c t ∧
-      ((List.range m).flatMap fun t => List.replicate (c t) t)[p]? = some t := by
+/-- A total over a prefix of `range` is at most the total over a longer one. -/
+theorem sum_range_le (c : Nat → Nat) {a b : Nat} (h : a ≤ b) :
+    ((List.range a).map c).sum ≤ ((List.range b).map c).sum := by
+  induction b with
+  | zero => simp [Nat.le_zero.1 h]
+  | succ b ih =>
+    rw [List.range_succ, List.map_append, List.sum_append_nat]
+    by_cases e : a = b + 1
+    · subst e; rw [List.range_succ, List.map_append, List.sum_append_nat]; exact Nat.le_refl _
+    · have := ih (by omega); simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+
+/-- **Position `p` of the lists `g t`, `t < m`, end to end** is entry `p - Σ_{s<t} |g s|` of the `g t` whose
+    span covers it. -/
+theorem flatMap_get {β : Type} (g : Nat → List β) (m p : Nat)
+    (hp : p < ((List.range m).map fun t => (g t).length).sum) :
+    ∃ t < m, ((List.range t).map fun s => (g s).length).sum ≤ p ∧
+      p < ((List.range t).map fun s => (g s).length).sum + (g t).length ∧
+      ((List.range m).flatMap g)[p]? = (g t)[p - ((List.range t).map fun s => (g s).length).sum]? := by
   induction m with
   | zero => simp at hp
   | succ m ih =>
-    have hlen : ((List.range m).flatMap fun t => List.replicate (c t) t).length = ((List.range m).map c).sum := by
+    have hlen : ((List.range m).flatMap g).length = ((List.range m).map fun s => (g s).length).sum := by
       simp [List.length_flatMap]
     rw [List.range_succ, List.map_append] at hp
     simp at hp
     rw [List.range_succ, List.flatMap_append]
-    by_cases h : p < ((List.range m).map c).sum
+    by_cases h : p < ((List.range m).map fun s => (g s).length).sum
     · obtain ⟨t, ht, h1, h2, h3⟩ := ih h
       exact ⟨t, by omega, h1, h2, by rw [List.getElem?_append_left (by rw [hlen]; exact h)]; exact h3⟩
     · refine ⟨m, by omega, by omega, by omega, ?_⟩
       rw [List.getElem?_append_right (by rw [hlen]; omega), hlen]
-      simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.getElem?_replicate]
-      rw [if_pos (by omega)]
+      simp
+
+/-- A total over `range (t+1)` is the total over `range t` plus term `t`. -/
+theorem sum_range_succ' (c : Nat → Nat) (t : Nat) :
+    ((List.range (t + 1)).map c).sum = ((List.range t).map c).sum + c t := by
+  simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
+    List.sum_nil, Nat.add_zero]
+
+/-- **Entry `q` of `g t`, `t < m`, sits at `Σ_{s<t} |g s| + q`** of the lists end to end: the span
+    `flatMap_get` finds there is `t`'s, the spans being disjoint. -/
+theorem flatMap_get_at {β : Type} (g : Nat → List β) {m t q : Nat} (ht : t < m) (hq : q < (g t).length) :
+    ((List.range m).flatMap g)[((List.range t).map fun s => (g s).length).sum + q]? = (g t)[q]? := by
+  have hm := sum_range_le (fun s => (g s).length) (show t + 1 ≤ m by omega)
+  rw [sum_range_succ'] at hm
+  obtain ⟨t', -, h1, h2, h3⟩ := flatMap_get g m (((List.range t).map fun s => (g s).length).sum + q) (by omega)
+  have e : t' = t := by
+    rcases Nat.lt_trichotomy t' t with h | h | h
+    · have := sum_range_le (fun s => (g s).length) (show t' + 1 ≤ t by omega)
+      rw [sum_range_succ'] at this; omega
+    · exact h
+    · have := sum_range_le (fun s => (g s).length) (show t + 1 ≤ t' by omega)
+      rw [sum_range_succ'] at this; omega
+  subst e; rw [h3, Nat.add_sub_cancel_left]
 
 /-- **`expand`'s index column, read back**: row `t` of the count column repeated its count's times, in row
     order — `expandBytes` of `til n`, each count below `2^63`, every row below `n`. -/
@@ -172,17 +206,6 @@ theorem expand_idx {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
       rw [toInt64_toInt (hc m (by omega)), htil m (by omega)]
       rfl
   exact key _ (Nat.le_refl _)
-
-/-- A total over a prefix of `range` is at most the total over a longer one. -/
-theorem sum_range_le (c : Nat → Nat) {a b : Nat} (h : a ≤ b) :
-    ((List.range a).map c).sum ≤ ((List.range b).map c).sum := by
-  induction b with
-  | zero => simp [Nat.le_zero.1 h]
-  | succ b ih =>
-    rw [List.range_succ, List.map_append, List.sum_append_nat]
-    by_cases e : a = b + 1
-    · subst e; rw [List.range_succ, List.map_append, List.sum_append_nat]; exact Nat.le_refl _
-    · have := ih (by omega); simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
 
 /-- **`gather 8 src idx`'s long `j`** is `src`'s long `idx[j]`, where that index is below `src`'s count. -/
 theorem gather8_get {src idx : ByteArray} {j : Nat} (hj : j < len idx)
@@ -220,17 +243,16 @@ theorem expand_rank {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
   generalize expandBytes 8 0 (tilLongs n) cnt = i at hI hm hp ⊢
   have hlen : len i = ((List.range (len cnt)).map fun t => (Column.bitsAt cnt (t * 8) 8).toNat).sum := by
     rw [len_eq_ids, hI, List.length_flatMap]; simp
-  obtain ⟨t, ht, h1, h2, h3⟩ := flatMap_replicate_get (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (len cnt) p
-    (hlen ▸ hp)
+  obtain ⟨t, ht, h1, h2, h3⟩ := flatMap_get (fun t => List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t)
+    (len cnt) p (by simp only [List.length_replicate]; exact hlen ▸ hp)
+  simp only [List.length_replicate] at h1 h2 h3
+  rw [List.getElem?_replicate, if_pos (by omega)] at h3
   have hpl : p < ((List.range (len cnt)).flatMap fun t =>
       List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t).length := by rw [← hI, ← len_eq_ids]; exact hp
   have hit : (Column.bitsAt i (p * 8) 8).toNat = t := by
     rw [ids_get hI hpl]; rw [List.getElem?_eq_getElem hpl] at h3; exact Option.some.inj h3
   have hpre := sum_range_le (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (show t + 1 ≤ len cnt by omega)
-  have hsum1 : ((List.range (t + 1)).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum =
-      ((List.range t).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum + (Column.bitsAt cnt (t * 8) 8).toNat := by
-    simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
-      List.sum_nil, Nat.add_zero]
+  have hsum1 := sum_range_succ' (fun s => (Column.bitsAt cnt (s * 8) 8).toNat) t
   have hsm := sums_get (n := n) (b := cnt) (j := t) (by omega) ht (by omega)
   have hrs := sub_get (n := n) (a := sums n cnt) (b := cnt) (i := t) (by omega) (by omega) (by omega)
   have hm' : (len i).toUSize.toNat = len i := USize.toNat_ofNat_of_lt' hm
@@ -364,7 +386,7 @@ theorem grade_ofIds (ng : Nat) (n : USize) (gid : ByteArray) (hng : ng ≤ 2 ^ 6
     rw [show (8 : Nat) = 8 * 1 from rfl, idAt_lane gid (by decide)]; rfl
   · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
     by_cases hc : 2 ^ 15 < ng
-    · simp only [hc, decide_true, Bool.and_true, Bool.or_false, ↓reduceIte]; exact hl (by decide) (by decide)
+    · simp only [hc, decide_true, Bool.and_true, ↓reduceIte]; exact hl (by decide) (by decide)
     · simp only [hc, decide_false, Bool.and_false, Bool.false_eq_true, ↓reduceIte]
       exact hk .i16 _ (2 ^ 15) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
         (hx 2 15 (by decide) rfl rfl (by omega))
@@ -379,7 +401,8 @@ theorem grade_ofIds (ng : Nat) (n : USize) (gid : ByteArray) (hng : ng ≤ 2 ^ 6
       (hx 8 63 (by decide) rfl rfl hng)
 
 #print axioms grade_ofIds
-#print axioms flatMap_replicate_get
+#print axioms flatMap_get
+#print axioms flatMap_get_at
 #print axioms expand_idx
 #print axioms expand_rank
 #print axioms gather_size
