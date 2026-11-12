@@ -329,4 +329,26 @@ theorem internSyms_card_le (b : ByteArray) (o : Array Nat) :
   rw [this, Verify.firstsOf]
   exact Nat.le_trans (List.length_filter_le _ _) (by simp)
 
+/-! ## The answer's rows, part by part -/
+
+/-- A symbol column whose row `j` has the bytes `G j` lists the parts' rows in turn, when `G` at part `k`'s
+    offset `O_k + i` gives the bytes of that part's row `i`. -/
+theorem symbol_toList_eq {N : USize} (X : Arr .symbol N) (G : Nat → List UInt8)
+    (hX : ∀ j (hj : j < N.toNat), (X.get ⟨j, hj⟩).toUTF8.data.toList = G j)
+    (l : List ((k : USize) × Arr .symbol k)) (hN : N.toNat = (l.map (·.1.toNat)).sum)
+    (h : ∀ k (hk : k < l.length) i (hi : i < (l[k]'hk).1.toNat),
+      G (((l.take k).map (·.1.toNat)).sum + i) = ((l[k]'hk).2.get ⟨i, hi⟩).toUTF8.data.toList) :
+    X.toList = l.flatMap (·.2.toList) := by
+  have hlen : (fun c : (k : USize) × Arr .symbol k => c.2.toList.length) = (·.1.toNat) :=
+    funext fun c => Arr.length_toList c.2
+  apply eq_flatMap_of_offset
+  · rw [hlen, Arr.length_toList, hN]
+  · intro k hk i hi
+    rw [hlen]; rw [Arr.length_toList] at hi
+    have hj : ((l.take k).map (·.1.toNat)).sum + i < N.toNat := by
+      have := take_sum_add_le (·.1.toNat) l k hk; omega
+    rw [List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hj),
+      List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hi), Arr.getElem_toList, Arr.getElem_toList]
+    congr 1; apply str_eq_of_bytes; rw [hX _ hj]; exact h k hk i hi
+
 end LeetQ.Rel.KernelWF
