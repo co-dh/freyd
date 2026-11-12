@@ -159,6 +159,21 @@ theorem filter_range_rank (P : Nat → Bool) {m q : Nat} (hq : q < m) (hP : P q 
     List.filter_nil, List.append_assoc, List.getElem?_append_right (Nat.le_refl _), Nat.sub_self]
   rfl
 
+/-- **A picked tag column's bitmap**, bit `q`: row `i[q]`'s tag at a hit, `false` (the boolean null) at a
+    miss — what `Vals.pick` at a sum widens and splits the rows by. -/
+theorem pickArr_tag_bit {n : USize} (tag : Arr .boolean n) (i : ByteArray) (m : USize) (h : len i = m.toNat)
+    (q : Fin m.toNat) :
+    Column.bitAt (tagBits (pickArr .boolean ⟨n, tag⟩ i m h)) q.1 =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then tag.get ⟨_, hin⟩ else false := by
+  rw [← Arr.get_bool_bits _ (KernelWF.enc_tagBits _) q]
+  split
+  · exact pickArr_get _ i m h q ‹_›
+  · refine (pickArr_get_miss ⟨n, tag⟩ i m h (fun d o ids he => ?_) q (Nat.le_of_not_lt ‹_›)).trans rfl
+    have hw := tag.wf; rw [he] at hw; simp [Enc.WF] at hw
+
+/-- The long null a picked long column reads at a miss is q's `0N`, `nul`. -/
+theorem long_default : (@default (El .long) Dep.instInhabitedCarrier) = nul := rfl
+
 /-- `Ew.val` on longs at `av`, element `i` below the count: `valStep` of `a`'s first long and `b`'s `i`. -/
 theorem val_av_get (op : UInt8) (a b : ByteArray) (n : USize) {i : Nat} (hi : i < n.toNat) :
     Column.bitsAt (Kernel.Ew.val op Ew.i64 Ew.av nul a b n) (i * 8) 8 =
