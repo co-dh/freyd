@@ -175,6 +175,102 @@ theorem rep_surjective_boolean (R : Rel A (.atom .boolean)) {m : USize} (U : Val
   (rep_entire_boolean (R°) U hN).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
     convArr_holds R.key R.val _ _)
 
+/-! ## `simple`, `injective`, `isMap`: `R.nub`'s keys counted against its rows -/
+
+-- the rows `nub` keeps, named as `NubSpec` names them
+set_option hygiene false in
+local notation "nubI(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+
+/-- `g` takes each value at most once below `m` exactly when every position below `m` is a first one. -/
+theorem firsts_length_iff {α : Type} [DecidableEq α] (g : Nat → α) (m : Nat) :
+    (firstsOf g m).length = m ↔ ∀ {i j : Nat}, i < m → j < m → g i = g j → i = j := by
+  have hall : (firstsOf g m).length = m ↔ ∀ p < m, p ∈ firstsOf g m := by
+    constructor
+    · intro h p hp
+      have e : firstsOf g m = List.range m :=
+        List.filter_sublist.eq_of_length (by rw [List.length_range]; exact h)
+      rw [e]; exact List.mem_range.2 hp
+    · intro h
+      have e : firstsOf g m = List.range m := by
+        unfold firstsOf; exact List.filter_eq_self.2 fun p hp => (List.mem_filter.1 (h p (List.mem_range.1 hp))).2
+      rw [e, List.length_range]
+  rw [hall]
+  constructor
+  · intro h i j hi hj e
+    rcases Nat.lt_trichotomy i j with hij | hij | hij
+    · exact absurd e ((mem_firstsOf_iff.1 (h j hj)).2 i hij)
+    · exact hij
+    · exact absurd e.symm ((mem_firstsOf_iff.1 (h i hi)).2 j hij)
+  · intro h p hp
+    exact mem_firstsOf_iff.2 ⟨hp, fun q hq e => absurd (h (Nat.lt_trans hq hp) hp e) (Nat.ne_of_lt hq)⟩
+
+/-- Two rows of `R.nub` holding one pair are one row: `nub` keeps the first occurrence of each pair (`nub_row`,
+    `nodup_firsts`). Hypotheses: `rep_nub`'s. -/
+theorem nub_rows_inj (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n, R.val))
+    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    {t t' : Fin R.nub.n.toNat} (h1 : R.nub.key.row t = R.nub.key.row t') (h2 : R.nub.val.row t = R.nub.val.row t') :
+    t = t' := by
+  obtain ⟨-, hrow⟩ := nub_row R hK hV hk hv
+  obtain ⟨hI, hp, e1, e2⟩ := hrow t.1 t.2
+  obtain ⟨hI', hp', e1', e2'⟩ := hrow t'.1 t'.2
+  have hg : (Column.idAt (c1(A, R.n, R.key)).b (c1(A, R.n, R.key)).w ((ids nubI(A, B, R))[t.1]'hI),
+        Column.idAt (c1(B, R.n, R.val)).b (c1(B, R.n, R.val)).w ((ids nubI(A, B, R))[t.1]'hI)) =
+      (Column.idAt (c1(A, R.n, R.key)).b (c1(A, R.n, R.key)).w ((ids nubI(A, B, R))[t'.1]'hI'),
+        Column.idAt (c1(B, R.n, R.val)).b (c1(B, R.n, R.val)).w ((ids nubI(A, B, R))[t'.1]'hI')) := by
+    rw [Prod.mk.injEq, hK.1 hp hp', hV.1 hp hp']
+    exact ⟨e1.symm.trans (h1.trans e1'), e2.symm.trans (h2.trans e2')⟩
+  have hnd := nodup_firsts (fun i => (Column.idAt (c1(A, R.n, R.key)).b (c1(A, R.n, R.key)).w i,
+    Column.idAt (c1(B, R.n, R.val)).b (c1(B, R.n, R.val)).w i)) R.n.toNat
+  rw [← nub_ids R hK hV] at hnd
+  have hpw := List.pairwise_iff_getElem.1 hnd
+  rcases Nat.lt_trichotomy t.1 t'.1 with h | h | h
+  · exact (hpw _ _ (by simpa using hI) (by simpa using hI') h (by simpa only [List.getElem_map] using hg)).elim
+  · exact Fin.ext h
+  · exact (hpw _ _ (by simpa using hI') (by simpa using hI) h (by simpa only [List.getElem_map] using hg.symm)).elim
+
+/-- **`simple R = true ↔ rep R° ≫ rep R ⊑ 𝟙`**, pointwise: `simple` counts `R.nub`'s distinct keys
+    (`groupIds_firsts`) against its rows, all distinct exactly when no key holds two values (`firsts_length_iff`,
+    `nub_rows_inj`, `rep_nub`). Hypotheses: `rep_nub`'s, and the key code of `R.nub` that `simple` groups. -/
+theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n, R.val))
+    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hS : oneOK(A, R.nub.n, R.nub.key)) :
+    simple R = true ↔ ∀ a b b', rep R a b → rep R a b' → b = b' := by
+  obtain ⟨hF, hw, hn, hs, hcard⟩ := hS
+  show (len (c1(A, R.nub.n, R.nub.key)).groupIds.2 == R.nub.n.toNat) = true ↔ _
+  rw [beq_iff_eq, len_eq_ids, groupIds_firsts _ hw hs hcard, hn, firsts_length_iff, ← rep_nub R hK hV hk hv]
+  simp only [rep_apply]
+  constructor
+  · rintro h a b b' ⟨t, hta, htb⟩ ⟨t', hta', htb'⟩
+    have e : t = t' := Fin.ext (h t.2 t'.2 ((hF t.2 t'.2).2 (hta.trans hta'.symm)))
+    subst e; exact htb.symm.trans htb'
+  · intro h i j hi hj e
+    have hkey := (hF hi hj).1 e
+    exact congrArg Fin.val (nub_rows_inj R hK hV hk hv hkey (h _ _ _ ⟨⟨i, hi⟩, rfl, rfl⟩ ⟨⟨j, hj⟩, hkey.symm, rfl⟩))
+
+/-- **`injective R = true ↔ rep R ≫ rep R° ⊑ 𝟙`**, pointwise: `simple R°` (`rep_simple`, `convArr_holds`).
+    Hypotheses: `rep_simple`'s at `R°`, whose keys are `R.val`. -/
+theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R.n, R.key))
+    (hk : Vals.PickFits B R.val (ids nubI(B, A, (R°)))) (hv : Vals.PickFits A R.key (ids nubI(B, A, (R°))))
+    (hS : oneOK(B, (Rel.nub (R°)).n, (Rel.nub (R°)).key)) :
+    injective R = true ↔ ∀ a a' b, rep R a b → rep R a' b → a = a' := by
+  refine (rep_simple (R°) hK hV hk hv hS).trans ⟨fun h a a' b h1 h2 => h b a a' ?_ ?_, fun h b a a' h1 h2 => h a a' b ?_ ?_⟩
+  · exact (convArr_holds R.key R.val a b).2 h1
+  · exact (convArr_holds R.key R.val a' b).2 h2
+  · exact (convArr_holds R.key R.val a b).1 h1
+  · exact (convArr_holds R.key R.val a' b).1 h2
+
+/-- **`isMap R U = true`**: `rep R` entire on `U` and simple — `rep_entire` and `rep_simple`, their hypotheses. -/
+theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
+    (hc : codesOK(pairs #v[idU U, dom R], pcs(A, A, idU U, dom R))) (hK : oneOK(A, R.n, R.key))
+    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) (hV : oneOK(B, R.n, R.val))
+    (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
+    (hS : oneOK(A, R.nub.n, R.nub.key)) :
+    isMap R U = true ↔
+      (∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b) ∧ ∀ a b b', rep R a b → rep R a b' → b = b' := by
+  show (entire R U && simple R) = true ↔ _
+  rw [Bool.and_eq_true, rep_entire R U hc hK hp, rep_simple R hK hV hk hv hS]
+
 end Entire
 
 #print axioms rep_antiJoin
@@ -183,5 +279,8 @@ end Entire
 #print axioms rep_surjective
 #print axioms rep_entire_boolean
 #print axioms rep_surjective_boolean
+#print axioms rep_simple
+#print axioms rep_injective
+#print axioms rep_isMap
 
 end LeetQ.Rel.Rep
