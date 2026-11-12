@@ -209,4 +209,31 @@ theorem ePack_idAt (s : ByteArray) {d₁ d₂ c₁ c₂ n k : Nat} (hk : k < n) 
   exact (idAt_packIds (w := Column.idWidthOf (d₁ * d₂)) (laneWidth_cases _) hk
     (by simp only [hs]; exact lt_two_pow_idWidthOf hd hlt)).trans hs
 
+/-- An element below `2⁶³` is not `long`'s null. -/
+theorem toInt64_ne_minValue {x : UInt64} (hx : x.toNat < 2 ^ 63) : x.toInt64 ≠ Int64.minValue := fun e => by
+  have h := congrArg (fun v : Int64 => v.toUInt64.toNat) e
+  simp only [UInt64.toUInt64_toInt64] at h
+  rw [h] at hx; exact absurd hx (by decide)
+
+/-- **`*` and `+` at `i64` with `long`'s null, below `2⁶³`, are the naturals' `*` and `+`**: no null is
+    read and nothing wraps — the two arithmetic stages of `composeKey`. -/
+theorem valStep_key (x y : UInt64) (hx : x.toNat < 2 ^ 63) (hy : y.toNat < 2 ^ 63) :
+    (x.toNat * y.toNat < 2 ^ 63 →
+      (Ew.valStep Ew.mul Ew.i64 Int64.minValue.toUInt64 x y).toNat = x.toNat * y.toNat) ∧
+    (x.toNat + y.toNat < 2 ^ 63 →
+      (Ew.valStep Ew.add Ew.i64 Int64.minValue.toUInt64 x y).toNat = x.toNat + y.toNat) := by
+  have hs : ∀ v : UInt64, Ew.signed Ew.i64 v = v.toInt64 := fun v => by simp [Ew.signed, Ew.i64, Ew.u8, Ew.i16, Ew.i32]
+  have hn : Ew.signed Ew.i64 Int64.minValue.toUInt64 = Int64.minValue := by rw [hs]; simp
+  have hx' := toInt64_ne_minValue hx
+  have hy' := toInt64_ne_minValue hy
+  simp only [Ew.valStep, show (Ew.i64 == Ew.f64) = false by decide, show (Ew.i64 == Ew.f32) = false by decide,
+    Bool.false_eq_true, ↓reduceIte, hs, hn, Ew.intStep, show (Ew.mul == Ew.add) = false by decide,
+    show (Ew.mul == Ew.sub) = false by decide, beq_self_eq_true, beq_eq_false_iff_ne.2 hx',
+    beq_eq_false_iff_ne.2 hy', Bool.or_false, Int64.toUInt64_mul, Int64.toUInt64_add, UInt64.toUInt64_toInt64]
+  simp only [Int64.toInt64_toUInt64, beq_eq_false_iff_ne.2 hx', beq_eq_false_iff_ne.2 hy', Bool.or_false,
+    Bool.false_eq_true, ↓reduceIte, Int64.toUInt64_mul, Int64.toUInt64_add, UInt64.toUInt64_toInt64]
+  refine ⟨fun h => ?_, fun h => ?_⟩
+  · rw [UInt64.toNat_mul, Nat.mod_eq_of_lt (by omega)]
+  · rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+
 end LeetQ.Rel.Alg
