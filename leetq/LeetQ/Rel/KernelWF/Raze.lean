@@ -494,13 +494,24 @@ private theorem hashConcat_error {qs : Array (USize × ByteArray × Array Nat ×
   repeat' split at h
   all_goals first | (injection h with h; exact h.symm) | simp at h
 
-/-- `internConcat` of parts holds their summed count. -/
+/-- `internConcat`'s dictionary is `internSyms`' of the joined dictionaries. -/
+private theorem internConcat_dict (qs : Array (USize × ByteArray × Array Nat × ByteArray)) :
+    ∃ b o, (internConcat qs).1 = (Order.internSyms b o).1 ∧ (internConcat qs).2.1 = (Order.internSyms b o).2.1 :=
+  ⟨_, _, rfl, rfl⟩
+
+/-- `internConcat` of parts holds their summed count, over a dictionary ending at its blob. -/
 theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}
     (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0) :
     Enc.WF .symbol c (.enum (internConcat qs).1 (internConcat qs).2.1 (internConcat qs).2.2) := by
+  obtain ⟨b, o, h1, h2⟩ := internConcat_dict qs
+  have hs := Verify.symsWF_internSyms b o
+  have hd : (internConcat qs).2.1[(internConcat qs).2.1.size - 1]! = (internConcat qs).1.size ∧
+      ∀ k < (internConcat qs).2.1.size, (internConcat qs).2.1[k]! ≤ (internConcat qs).1.size := by
+    rw [h1, h2]; exact ⟨hs.last, fun k _ => hs.le k⟩
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
-  rw [h]
-  simp only [Enc.WF, concatIds]
+  rw [h] at hd ⊢
+  refine ⟨?_, hd.1, hd.2⟩
+  simp only [concatIds]
   rw [hc, toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)
     fun k i => Column.idAt maps[k]! (Column.idWidth dbo) (Column.idAt (qs.map (·.2.2.2))[k]! ws[k]! i)
