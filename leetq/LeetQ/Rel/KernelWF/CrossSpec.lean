@@ -114,15 +114,6 @@ theorem bitsOf_bitAt (x : Bool) (c : USize) {r : Nat} (hr : r < c.toNat) (hc : c
     show compareOfLessAndEq _ _ ≠ _; unfold compareOfLessAndEq; rw [if_neg (by exact hlt)]; split <;> simp
   cases x <;> simp (config := {decide := true}) only [Ew.cmpStep, Ew.signed, ↓reduceIte] <;> simpa using hcmp
 
-/-- A `range`-indexed `flatMap` that reads the array `xs` at its index is the `flatMap` over `xs`. -/
-private theorem flatMap_range {α β : Type} (xs : Array α) (f : Nat → List β) (G : α → List β)
-    (h : ∀ k (hk : k < xs.size), f k = G xs[k]) : (List.range xs.size).flatMap f = xs.toList.flatMap G := by
-  have e : (List.range xs.size).map f = xs.toList.map G :=
-    List.ext_getElem (by simp) fun k h1 h2 => by
-      rw [List.getElem_map, List.getElem_map, List.getElem_range, Array.getElem_toList]
-      exact h k (by simpa using h1)
-  unfold List.flatMap; rw [e]
-
 /-- `tags ps m`'s bit `i` is the tag of the part holding position `i`: the parts' tags, each repeated its
     count, laid one after another. Each count is at most `2^63`, where `bitsOf` reads `til` as nonnegative. -/
 theorem tags_get (ps : Array (USize × Bool)) (m : USize) (h : ps.foldl (fun s p => s + p.1.toNat) 0 = m.toNat)

@@ -169,4 +169,144 @@ theorem razeTo_toList_bytes {t : QAtomicType} (cs : Array ((k : USize) × Arr t 
   apply List.map_congr_left; intro c hc
   rw [toList_bytes c.2 (hgb c hc) hg]
 
+/-- A general list's list is its `gen` payload's. -/
+theorem toList_gen {n : USize} (x : Arr .general n) {xs : Array QValue} (he : x.enc = .gen xs) :
+    x.toList = xs.toList := by
+  apply List.ext_getElem (by rw [Arr.length_toList, Array.length_toList, Arr.gen_size x he])
+  intro j h1 h2; rw [Arr.getElem_toList, get_general _ he]; simp
+
+/-- A general list's list is its boxed elements. -/
+theorem toList_general {n : USize} (x : Arr .general n) : x.toList = (gens x).toList := by
+  obtain ⟨xs, he, -⟩ := general_cases x.wf
+  have hgx : gens x = xs := Option.some_inj.1 ((Option.some_get _).trans (by simp [he]))
+  rw [toList_gen x he, hgx]
+
+/-- `genCol` of an array whose size fits a `USize` lists it. -/
+theorem genCol_toList {xs : Array QValue} (h : xs.size < USize.size) : (genCol xs).2.toList = xs.toList := by
+  unfold genCol need; rw [dif_pos h]; exact toList_gen _ rfl
+
+/-- **`razeTo` at `general`**: the razed list lists its parts' elements one part after another. -/
+theorem razeTo_toList_general (cs : Array ((k : USize) × Arr .general k)) {S : Nat}
+    (hs : (cs.toList.map (·.1.toNat)).sum = S) (hS : S < USize.size) :
+    (razeTo .general cs hs hS).toList = cs.toList.flatMap (·.2.toList) := by
+  unfold razeTo; rw [cast_toList]
+  rcases cs with ⟨l⟩
+  unfold raze
+  by_cases h0 : l = []
+  · subst h0
+    have e0 : ({ toList := [] } : Array ((k : USize) × Arr .general k)).size = 0 := rfl
+    rw [dif_pos e0]
+    exact (List.eq_nil_of_length_eq_zero (by rw [Arr.length_toList, empty_len]; rfl)).trans rfl
+  rw [dif_neg (by simpa using h0), dif_pos rfl]
+  have key : ∀ (acc : Array QValue) (l : List ((n : USize) × Arr .general n)),
+      (l.foldl (fun xs c => xs ++ gens c.2) acc).toList = acc.toList ++ l.flatMap fun c => (gens c.2).toList := by
+    intro acc l; induction l generalizing acc <;> simp_all [List.append_assoc]
+  have hf : ((List.toArray l).foldl (fun xs c => xs ++ gens c.2) #[]).size < USize.size := by
+    rw [← Array.length_toList]; simp only [List.foldl_toArray']; rw [key]
+    have h3 : ∀ c ∈ l, (gens c.2).toList.length = c.1.toNat := fun c _ => by
+      rw [← toList_general, Arr.length_toList]
+    have h2 : (l.map (·.1.toNat)).sum = S := by simpa using hs
+    simp only [List.length_append, List.length_flatMap, List.map_congr_left h3]
+    simpa [h2] using hS
+  refine (genCol_toList hf).trans ?_
+  simp only [List.foldl_toArray']; rw [key]
+  unfold List.flatMap; simp only [List.nil_append]; congr 1
+  apply List.map_congr_left; intro c _; rw [toList_general]
+
+/-- A `range`-indexed `flatMap` that reads the array `xs` at its index is the `flatMap` over `xs`. -/
+theorem flatMap_range {α β : Type} (xs : Array α) (f : Nat → List β) (G : α → List β)
+    (h : ∀ k (hk : k < xs.size), f k = G xs[k]) : (List.range xs.size).flatMap f = xs.toList.flatMap G := by
+  have e : (List.range xs.size).map f = xs.toList.map G :=
+    List.ext_getElem (by simp) fun k h1 h2 => by
+      rw [List.getElem_map, List.getElem_map, List.getElem_range, Array.getElem_toList]
+      exact h k (by simpa using h1)
+  unfold List.flatMap; rw [e]
+
+/-- A boolean column's payload is its bitmap `tagBits`. -/
+theorem enc_tagBits {n : USize} (x : Arr .boolean n) : x.enc = .bits (tagBits x) := by
+  have key : ∀ (e : Enc) (h : (match e with | .bits b => some b | _ => none : Option ByteArray).isSome),
+      Enc.WF .boolean n e → e = .bits ((match e with | .bits b => some b | _ => none : Option ByteArray).get h) := by
+    intro e h hw; cases e <;> simp_all [Enc.WF]
+  unfold tagBits; exact key _ _ x.wf
+
+/-- A boolean column's list is its bitmap's first `n` bits. -/
+theorem toList_bits {n : USize} (x : Arr .boolean n) {b : ByteArray} (hx : x.enc = .bits b) :
+    x.toList = (List.range n.toNat).map (Column.bitAt b) := by
+  apply List.ext_getElem (by rw [Arr.length_toList, List.length_map, List.length_range])
+  intro j h1 h2; rw [Arr.getElem_toList, Arr.get_bool_bits x hx]; simp
+
+/-- **`razeTo` at `boolean`**: the razed bitmap lists its parts' bits one part after another
+    (`concatBits`). -/
+theorem razeTo_toList_boolean (cs : Array ((k : USize) × Arr .boolean k)) {S : Nat}
+    (hs : (cs.toList.map (·.1.toNat)).sum = S) (hS : S < USize.size) :
+    (razeTo .boolean cs hs hS).toList = cs.toList.flatMap (·.2.toList) := by
+  unfold razeTo; rw [cast_toList]
+  rcases cs with ⟨l⟩
+  unfold raze
+  by_cases h0 : l = []
+  · subst h0
+    have e0 : ({ toList := [] } : Array ((k : USize) × Arr .boolean k)).size = 0 := rfl
+    rw [dif_pos e0]
+    exact (List.eq_nil_of_length_eq_zero (by rw [Arr.length_toList, empty_len]; rfl)).trans rfl
+  rw [dif_neg (by simpa using h0), dif_neg (by decide)]
+  by_cases h1 : l.length = 1
+  · obtain ⟨c, rfl⟩ := List.length_eq_one_iff.1 h1; simp
+  rw [dif_neg (by simpa using h1)]
+  dsimp only
+  have key : ∀ (a : Nat) (l : List ((n : USize) × Arr .boolean n)),
+      (l.map fun x => (x.1, x.2.enc)).foldl (fun s c => s + c.1.toNat) a = a + (l.map (·.1.toNat)).sum := by
+    intro a l; induction l generalizing a <;> simp_all [Nat.add_assoc]
+  have hk : ((List.toArray l).map (·.2.part)).foldl (fun s c => s + c.1.toNat) 0 = (l.map (·.1.toNat)).sum := by
+    simpa [Arr.part] using key 0 l
+  have hsum : (l.map (·.1.toNat)).sum = S := by simpa using hs
+  have hf : ((List.toArray l).map (·.2.part)).foldl (fun s c => s + c.1.toNat) 0 < USize.size := by
+    rw [hk, hsum]; exact hS
+  unfold need; rw [dif_pos hf]
+  let ps : Array (USize × ByteArray) := (List.toArray l).map fun c => (c.1, tagBits c.2)
+  have hm : ((List.toArray l).map (·.2.part)).mapM
+      (fun | ((n : USize), Enc.bits b) => some (n, b) | _ => none) = some ps := by
+    rw [Array.mapM_map]
+    exact mapM_some _ fun c _ => by simp only [Function.comp, Arr.part, enc_tagBits c.2]
+  have hps : ps.foldl (fun s (p : USize × ByteArray) => s + p.1.toNat) 0 = (l.map (·.1.toNat)).sum := by
+    have e : ∀ (a : Nat) (l : List ((n : USize) × Arr .boolean n)),
+        (l.map fun c => (c.1, tagBits c.2)).foldl (fun s (p : USize × ByteArray) => s + p.1.toNat) a =
+          a + (l.map (·.1.toNat)).sum := by
+      intro a l; induction l generalizing a <;> simp_all [Nat.add_assoc]
+    simpa [ps] using e 0 l
+  have hv : ∀ h, (razeColumn .boolean ((List.toArray l).map (·.2.part))).get h =
+      .vector .boolean (ps.foldl (fun s (p : USize × ByteArray) => s + p.1.toNat) 0).toUSize
+        (.bits (concatBits (countBytes (ps.map (·.1))) (ps.map (·.2)))) none := fun h => by
+    apply Option.some_inj.1; rw [Option.some_get]
+    unfold razeColumn
+    rw [if_neg (by simpa using h0)]
+    simp only [hm, needSize, need]
+    rw [dif_pos (by rw [hps, hsum]; exact hS)]
+  refine (toList_bits _ (b := concatBits (countBytes (ps.map (·.1))) (ps.map (·.2)))
+    (by simp only [Arr.enc, hv])).trans ?_
+  have hN : (((List.toArray l).map (·.2.part)).foldl (fun s (c : USize × Enc) => s + c.1.toNat) 0).toUSize.toNat =
+      (l.map (·.1.toNat)).sum := by rw [USize.toNat_ofNat_of_lt' hf, hk]
+  rw [hN]
+  simp only [concatBits]
+  have hK : min ((countBytes (ps.map (·.1))).size / 8) (ps.map (·.2)).size = ps.size := by
+    rw [countBytes_size]; simp
+  rw [hK]
+  generalize hb : Array.flatMap _ (Array.range ps.size) = bs
+  have hbs : bs.toList = l.flatMap (·.2.toList) := by
+    rw [← hb]
+    simp only [Array.toList_flatMap, Array.toList_range, Array.toList_map]
+    refine (flatMap_range ps _ (fun c => (List.range c.1.toNat).map (Column.bitAt c.2)) fun k hk => ?_).trans ?_
+    · have hk' : k < (ps.map (·.1)).size := by simpa using hk
+      rw [countBytes_get _ k hk', getElem!_pos _ k (by simpa using hk)]
+      simp [USize.toNat_toUInt64]
+    · simp only [ps, Array.toList_map, List.flatMap_map]
+      unfold List.flatMap; congr 1
+      apply List.map_congr_left; intro c _; rw [toList_bits c.2 (enc_tagBits c.2)]
+  have hlen : bs.size = (l.map (·.1.toNat)).sum := by
+    rw [← Array.length_toList, hbs, List.length_flatMap]; simp [Arr.length_toList]
+  rw [← hbs]
+  apply List.ext_getElem (by simp [hlen])
+  intro j h1 h2
+  rw [List.getElem_map, List.getElem_range, Verify.bitAt_packOf _ _ _ (by simpa [hlen] using h1),
+    Array.getElem_toList, Array.getElem?_eq_getElem (by simpa [hlen] using h1), Option.getD_some]
+
 end LeetQ.Rel.KernelWF
