@@ -104,6 +104,8 @@ syntax (name := rParen) "(" rel ")" : rel
 syntax (name := rPair) "⟨" rel "," rel "⟩" : rel
 syntax (name := rJunc) "[" rel "," rel "]" : rel
 syntax (name := rFold) "⦇" rel "," rel "⦈" : rel
+-- the book's fold of one algebra: `Calc` reads it, a program has no initial algebra to fold over
+syntax (name := rFold1) "⦇" rel "⦈" : rel
 syntax (name := rLit) "{" relLit,+ "}" : rel
 syntax:max (name := rCompl) "∼" rel:max : rel
 syntax:max (name := rConv) rel:max "°" : rel
@@ -227,6 +229,7 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
   | ``rPair => pure [.pair p (← expr s[1]) (← expr s[3])]
   | ``rJunc => pure [.junc p (← expr s[1]) (← expr s[3])]
   | ``rFold => pure [.fold p (← expr s[1]) (← expr s[3])]
+  | ``rFold1 => failAt s "one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈`"
   | ``rLit => pure [.lit p (← s[1].getSepArgs.toList.mapM fun r => do match ← litItem r with
       | .pair a b => pure (a, b)
       | _ => failAt r "expected '('")]

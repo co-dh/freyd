@@ -1,5 +1,6 @@
 import LeetQ.Rel.Lang.Calc
 import AOP.A4_1
+import AOP.A6_2
 
 /-! `rel(…)` (`Calc`): each construct against the AOP term written by hand, the closedness of the grammar, the
     errors of a construct outside the fragment, and B&dM derivations of ch. 4 and 5 as plain `calc`s over `rel(…)`
@@ -73,13 +74,16 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R {(a,b)})
 /-- error: `at(0)` has no AOP counterpart -/
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R at(0))
-/-- error: `⦇e,S⦈` differs in AOP: Rel folds lists from a start set `e : V ⟶ V`, AOP's `⦇R⦈` folds one algebra
-of an `InitialAlgebra F`, and AOP has the list functor only in `RelSet` -/
+/-- error: `⦇e,S⦈` is the program fold: its seed is a coreflexive `V ⟶ V`; write the book's `⦇[e,S]⦈` with
+`e : 1 ⟶ V` instead -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(⦇R,R⦈)
+/-- error: `⊤` needs an instance `LocallyCompleteDistributiveAllegory` (AOP's `topHom`) or
+`TabularUnitaryDivisionAllegory` (AOP's `topMor`): AOP's `⊤` is one of these -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
 /-- error: `Λ` differs in AOP: Rel reads a set `𝒫A` as an array `[α]`, AOP as the power object `P A` -/
 #guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(Λ(R))
-/-- error: `F(R)` differs in AOP: Rel's `F` is the list functor only, AOP's any relator -/
-#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(F(R))
+/-- error: `F(R)` needs a hypothesis `Relator 𝒜 ?_`: rel(…) never writes the relator -/
+#guard_msgs in example (R : A ⟶ A) := rel(F(R))
 /-- error: `Q` is not a local variable: a name in rel(…) is a variable or hypothesis of the statement -/
 #guard_msgs in example : A ⟶ B := rel(Q)
 
@@ -120,6 +124,17 @@ example [P : RelProd A B] [Q : RelProd A' B'] [M : RelProd A' B] (X : C ⟶ A) (
 
 /-- error: `π₁` needs an instance or hypothesis `RelProd A B`: rel(…) never writes the product -/
 #guard_msgs in example (R : C ⟶ A) (S : C ⟶ B) : C ⟶ A := rel(⟨R,S⟩ π₁)
+/-- error: `π₁` has several hypotheses `RelProd A B`, P, P': rel(…) never writes the product -/
+#guard_msgs in
+example [P : RelProd A B] [P' : RelProd A B] (R : C ⟶ A) (S : C ⟶ B) : C ⟶ A := rel(⟨R,S⟩ π₁)
+
+set_option linter.unusedVariables false in
+example (R : C ⟶ A) : True := by
+  guard_expr rel(R ∩ ⊤) =ₛ R ∩ topMor C A
+  trivial
+
+/-- B&dM (5.6) (`RelProd.eq_topMor`): `⊤` here is the tabular unitary division allegory's `topMor`. -/
+example [P : RelProd A B] : rel(π₁° π₂) = rel(⊤) := RelProd.eq_topMor P
 
 end Prod
 
@@ -189,6 +204,76 @@ in a Boolean allegory -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R − R)
 
 end Top
+
+section Fold
+
+-- an LCDA as well, for the fold's prefixed-point bound (`relCata_le_of_prefixed`)
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} [I : InitialAlgebra F]
+  {A B C U W : 𝒜}
+
+set_option linter.unusedVariables false in
+example (R : F.obj A ⟶ A) (S : A ⟶ B) (K : Coproduct (F.obj A) U W) (e : U ⟶ A) (V : W ⟶ A) : True := by
+  guard_expr rel(⦇R⦈) =ₛ relCata R
+  guard_expr rel(⦇R⦈ S) =ₛ relCata R ≫ S
+  guard_expr rel(α) =ₛ I.α
+  guard_expr rel(F(S)) =ₛ F.map S
+  guard_expr rel(α ⦇R⦈) =ₛ I.α ≫ relCata R
+  guard_expr rel(F(⦇R⦈) R) =ₛ F.map (relCata R) ≫ R
+  guard_expr rel(⦇[e,V]⦈) =ₛ relCata (junc K e V)
+  trivial
+
+/-- B&dM fold fusion (`relCata_fusion`): `⦇R⦈ S` satisfies the fold's equation at `Q`, then uniqueness. -/
+example (R : F.obj B ⟶ B) (Q : F.obj C ⟶ C) (S : B ⟶ C) (h : rel(R S) = rel(F(S) Q)) :
+    rel(⦇R⦈ S) = rel(⦇Q⦈) :=
+  (relCata_UP I Q _).1 <|
+  calc rel(α (⦇R⦈ S))
+      = rel(α ⦇R⦈ S) := by rw [Cat.assoc]
+    _ = rel(F(⦇R⦈) R S) := by rw [relCata_cancel I R]
+    _ = rel(F(⦇R⦈) (R S)) := by rw [Cat.assoc]
+    _ = rel(F(⦇R⦈) (F(S) Q)) := by rw [h]
+    _ = rel(F(⦇R⦈) F(S) Q) := by rw [Cat.assoc]
+    _ = rel(F(⦇R⦈ S) Q) := by rw [Freyd.Functor.map_comp]
+
+/-- B&dM, the fold is monotonic (`relCata_mono`): `⦇S⦈` is a prefixed point of the fold's equation at `R`. -/
+example (R S : F.obj C ⟶ C) (h : rel(R) ⊑ rel(S)) : rel(⦇R⦈) ⊑ rel(⦇S⦈) :=
+  relCata_le_of_prefixed I <|
+  calc rel(α° (F(⦇S⦈) R))
+      ⊑ rel(α° (F(⦇S⦈) S)) := comp_mono_left _ (comp_mono_left _ h)
+    _ = rel(α° (α ⦇S⦈)) := by rw [relCata_cancel I S]
+    _ = rel(α° α ⦇S⦈) := by rw [Cat.assoc]
+    _ = rel(𝟙 ⦇S⦈) := by rw [I.recip_alpha_alpha]
+    _ = rel(⦇S⦈) := by rw [Cat.id_comp]
+
+/-- B&dM, the fold of `α` is the identity (`relCata_alpha`): `𝟙` satisfies the fold's equation at `α`. -/
+example : rel(⦇α⦈) = rel(𝟙) :=
+  Eq.symm <| (relCata_UP I I.α (𝟙 _)).1 <|
+  calc rel(α 𝟙)
+      = rel(α) := by rw [Cat.comp_id]
+    _ = rel(𝟙 α) := by rw [Cat.id_comp]
+    _ = rel(F(𝟙) α) := by rw [Freyd.Functor.map_id]
+
+/-- error: `⦇R⦈` needs an instance or hypothesis `InitialAlgebra G`: rel(…) never writes the initial algebra, nor
+its relator -/
+#guard_msgs (whitespace := lax) in
+example (G : Relator 𝒜 𝒜) (R : G.obj A ⟶ A) := rel(⦇R⦈)
+/-- error: `F(R)` has several hypotheses `Relator 𝒜 ?_`, F, G: rel(…) never writes the relator -/
+#guard_msgs (whitespace := lax) in
+example (G : Relator 𝒜 𝒜) (S : A ⟶ B) := rel(F(S))
+/-- error: `⦇R⦈` has several hypotheses `InitialAlgebra ?_`, I, J: rel(…) never writes the initial algebra, nor
+its relator -/
+#guard_msgs (whitespace := lax) in
+example (G : Relator 𝒜 𝒜) [J : InitialAlgebra G] {T : 𝒜} (K : Coproduct T U W) (e : U ⟶ A) (V : W ⟶ A) :=
+  rel(⦇[e,V]⦈)
+/-- error: `⊤` is `topHom` (by `LocallyCompleteDistributiveAllegory`) and `topMor` (by
+`TabularUnitaryDivisionAllegory`) here, and no theorem identifies them -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
+
+end Fold
+
+/-- error: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+#guard_msgs (whitespace := lax) in
+rel_program oneFold where
+  r ≜ ⦇𝟙⦈
 
 /-! ### Closedness: a Lean term inside `rel(…)` is a parse error, never a term elaborated -/
 
