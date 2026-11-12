@@ -69,6 +69,56 @@ theorem gatherSyms_size (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) :
   unfold gatherSyms
   rw [foldl_snd_size _ (fun p j => by cases p; simp)]; simp; omega
 
+/-- A blob grown, its new size pushed as the last start, keeps the `syms` layout. -/
+theorem symsWF_push {b b' : ByteArray} {o : Array Nat} (h : SymsWF b o) (hb : b.size ≤ b'.size) :
+    SymsWF b' (o.push b'.size) := by
+  have hs : (o.push b'.size).size = o.size + 1 := Array.size_push ..
+  have hg : ∀ k, (o.push b'.size)[k]! = if k < o.size then o[k]! else if k = o.size then b'.size else 0 := by
+    intro k
+    by_cases h1 : k < o.size
+    · rw [if_pos h1, getElem!_pos _ k (by omega), Array.getElem_push_lt h1, getElem!_pos o k h1]
+    · rw [if_neg h1]
+      by_cases h2 : k = o.size
+      · subst h2; rw [if_pos rfl, getElem!_pos _ o.size (by omega), Array.getElem_push_eq]
+      · rw [if_neg h2, getElem!_neg _ k (by omega)]; rfl
+  have hp := h.pos
+  refine ⟨by omega, by rw [hg, if_pos hp, h.first], by rw [hg, if_neg (by omega), if_pos (by omega)],
+    fun k hk => ?_, fun k hk => ?_⟩
+  · rw [hg]; split
+    · exact Nat.le_trans (h.le k ‹_›) hb
+    · split <;> omega
+  · rw [hg, hg]
+    by_cases h1 : k + 1 < o.size
+    · rw [if_pos (by omega), if_pos h1]; exact h.mono k (by omega)
+    · have e : o[k]! = b.size := by rw [show k = o.size - 1 by omega]; exact h.last
+      rw [if_pos (by omega), if_neg h1, if_pos (by omega), e]; exact hb
+
+/-- One symbol and its NUL appended, its end pushed as the last start: `gatherSyms`' step. -/
+theorem symsWF_pushSym {b k : ByteArray} {o : Array Nat} (h : SymsWF b o) :
+    SymsWF ((b ++ k).push 0) (o.push (b.size + k.size + 1)) := by
+  have hs : ((b ++ k).push 0).size = b.size + k.size + 1 := by
+    rw [show ((b ++ k).push 0).size = (b ++ k).size + 1 by simp only [ByteArray.size, ByteArray.push, Array.size_push],
+      ByteArray.size_append]
+  have := symsWF_push (b' := (b ++ k).push 0) h (by omega)
+  rwa [hs] at this
+
+theorem symsWF_empty : SymsWF ByteArray.empty #[0] := by decide
+
+/-- A fold whose every step keeps the `syms` layout keeps it. -/
+theorem symsWF_foldl {γ : Type} (f : ByteArray × Array Nat → γ → ByteArray × Array Nat)
+    (hf : ∀ q j, SymsWF q.1 q.2 → SymsWF (f q j).1 (f q j).2) (l : List γ) :
+    ∀ p : ByteArray × Array Nat, SymsWF p.1 p.2 → SymsWF (l.foldl f p).1 (l.foldl f p).2 := by
+  induction l with
+  | nil => exact fun _ h => h
+  | cons j l ih => exact fun p h => ih _ (hf p j h)
+
+/-- `gatherSyms` lays its answer out as `SymsWF` says, whatever the source. -/
+theorem gatherSyms_wf (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) :
+    SymsWF (gatherSyms blob offs ix).1 (gatherSyms blob offs ix).2 := by
+  unfold gatherSyms
+  dsimp only
+  exact symsWF_foldl _ (fun q j hq => by obtain ⟨b, o⟩ := q; exact symsWF_pushSym hq) _ _ symsWF_empty
+
 /-- An interned gather's ids hold all `m` of its answer's elements at the answer dictionary's width. -/
 theorem gatherIds_wf {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool} {n : USize} {ids ix : ByteArray}
     {db : ByteArray} {dbo : Array Nat} {nids : ByteArray}
@@ -140,14 +190,14 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
       (g := fun w wo e => gatherPacked n w wo e ids i) hl hle
     simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn, Enc.bytesOf]
     split at h <;> cases h <;> simp only [Enc.WF] at *
-    · simp_all
+    · exact ⟨by simp_all, symsWF_empty⟩
     · exact ⟨gatherIds_wf (inRange := fun _ => allBelow n i) (n := n) (ids := ids)
         (db := (gatherIds d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i).1) rfl, key⟩
   | _ => cases t <;>
       simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, denseWidth, rowWidth, foRColumn, Enc.bytesOf,
-        Column.alpEncodes, gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherIds_wf,
-        toNat_small, small_mod] <;> (try subst h) <;>
-      simp_all [gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherIds_wf, toNat_small,
-        small_mod]
+        Column.alpEncodes, gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherSyms_wf,
+        gatherIds_wf, toNat_small, small_mod] <;> (try subst h) <;>
+      simp_all [gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherSyms_wf, gatherIds_wf,
+        toNat_small, small_mod]
 
 end LeetQ.Rel.KernelWF

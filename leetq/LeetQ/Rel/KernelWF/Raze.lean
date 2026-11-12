@@ -253,13 +253,15 @@ private theorem dense_parts {t : QAtomicType} {cs : Array (USize × Enc)} {w : N
   obtain ⟨b, hb', hs⟩ := bytesOf_size hb hw (h _ (Array.getElem_mem hi))
   simp [hb', hs]
 
-/-- `concatSyms` (the symbol branch on `syms` parts) answers a symbol vector whose offsets count it, where
-    the parts' symbols, summed, fit a `USize`. -/
-theorem concatSyms_wf (parts : Array (ByteArray × Array Nat))
+/-- `concatSyms` (the symbol branch on `syms` parts) answers a well-formed symbol vector, where every part
+    is laid out as `SymsWF` says and the parts' symbols, summed, fit a `USize`. -/
+theorem concatSyms_wf (parts : Array (ByteArray × Array Nat)) (hw : ∀ x ∈ parts, SymsWF x.1 x.2)
     (hN : (parts.map fun p => p.2.size - 1).toList.sum < USize.size) :
     ∃ n e, concatSyms parts = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
   refine ⟨_, _, rfl, ?_⟩
+  have hS := (Verify.symBytes_concatSyms hw rfl).1
   simp only [Enc.WF]
+  refine ⟨?_, hS⟩
   generalize hp : Array.foldl _ (ByteArray.empty, #[0]) parts = p
   have hs : p.2.size = 1 + (parts.map fun p => p.2.size - 1).toList.sum := by
     rw [← hp, ← Array.foldl_toList]
@@ -507,7 +509,7 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
   have hs := Verify.symsWF_internSyms b o
   have hd : (internConcat qs).2.1[(internConcat qs).2.1.size - 1]! = (internConcat qs).1.size ∧
       ∀ k < (internConcat qs).2.1.size, (internConcat qs).2.1[k]! ≤ (internConcat qs).1.size := by
-    rw [h1, h2]; exact ⟨hs.last, fun k _ => hs.le k⟩
+    rw [h1, h2]; exact ⟨hs.last, hs.le⟩
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
   rw [h] at hd ⊢
   refine ⟨?_, hd.1, hd.2⟩
@@ -799,7 +801,16 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (USize × Enc)}
     split at hv
     · rename_i ps hps
       cases hv
-      refine concatSyms_wf ps ?_
+      have hs := mapM_key (key' := fun p : ByteArray × Array Nat => decide (SymsWF p.1 p.2))
+        (key := fun _ : USize × Enc => true) (fun c hc x hx => by
+          rcases c with ⟨k, e⟩
+          have hw := h _ hc
+          cases e <;> first | (cases hx; done) | (cases hx; simp only [Enc.WF] at hw; exact decide_eq_true hw.2)) hps
+      refine concatSyms_wf ps (fun x hx => ?_) ?_
+      · have hm := Array.mem_map_of_mem (f := fun p : ByteArray × Array Nat => decide (SymsWF p.1 p.2)) hx
+        rw [hs] at hm
+        obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
+        exact of_decide_eq_true he.symm
       have hk := mapM_key (key' := fun p : ByteArray × Array Nat => p.2.size - 1)
         (key := fun c : USize × Enc => c.1.toNat) (fun c hc x hx => by
           rcases c with ⟨k, e⟩
