@@ -75,7 +75,7 @@ def liftDom (R : Rel I (.prod A B)) : Rel I (.prod A A) := R ≫ pair (outl (ran
 def liftRan (R : Rel I (.prod A B)) : Rel I (.prod B B) := R ≫ pair (outr (ran R)) (outr (ran R))
 
 /-- `∼R` lifted: `D⊤ − R`, `⊤ : I ⟶ A×B` on the keys in demand `D` and the universes `Ua`, `Ub`. -/
-def liftCompl {ma mb : Nat} (D : Rel I I) (Ua : Vals A ma) (Ub : Vals B mb) (R : Rel I (.prod A B)) :
+def liftCompl {ma mb : USize} (D : Rel I I) (Ua : Vals A ma) (Ub : Vals B mb) (R : Rel I (.prod A B)) :
     Rel I (.prod A B) :=
   liftConst D (top Ua Ub) \ R
 

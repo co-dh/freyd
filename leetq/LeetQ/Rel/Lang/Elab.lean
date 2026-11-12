@@ -10,6 +10,7 @@ import LeetQ.Rel.Lang.Syntax
 namespace LeetQ.Rel.Lang
 
 open LeetQ.Rel LeetQ.Rel.Alg
+open QLean.Kernel (need needSize)
 
 deriving instance DecidableEq for LeetQ.Rel.Obj
 
@@ -133,7 +134,10 @@ def uniOf (objs : Objs) : OTy → Option ((A : Obj) × (m : USize) × Vals A m)
     let ⟨_, _, Ua⟩ ← uniOf objs a; let ⟨_, _, Ub⟩ ← uniOf objs b
     let k := (Alg.prod (idU Ua) (idU Ub)).key
     pure ⟨_, _, k⟩
-  | .sum a b => do let ⟨_, _, Ua⟩ ← uniOf objs a; let ⟨_, _, Ub⟩ ← uniOf objs b; pure ⟨_, _, sumVals Ua Ub⟩
+  | .sum a b => do
+    let ⟨_, n, Ua⟩ ← uniOf objs a; let ⟨_, m, Ub⟩ ← uniOf objs b
+    need (n.toNat + m.toNat < USize.size) (fun _ => s!"the universe of {a} + {b}: {n} + {m} do not fit a USize")
+      (fun _ => none) fun hN => pure ⟨_, _, sumVals Ua Ub hN⟩
   | _ => none
 
 /-! ### The typed surface term -/
