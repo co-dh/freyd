@@ -557,4 +557,155 @@ theorem keySource_code (c : Code)
     simp only [e64, Nat.reduceMul] at hc
     exact ⟨hc.1, by have := hc.2; omega⟩
 
+/-! ## `composeKey`'s content -/
+
+/-- `c.column` keeps the code's count. -/
+theorem column_n {c : Code} {t : QAtomicType} {m : USize} {e : Enc} (h : c.column = some (t, (m, e))) : m = c.n := by
+  unfold Code.column at h
+  split at h <;> (try split at h) <;> simp only [Option.some.injEq, Prod.mk.injEq, reduceCtorEq] at h <;>
+    exact h.2.1.symm
+
+/-- **`composeKey`'s arithmetic**: element `i` of `s₁ · d₂ + s₂` at `i64`, codes below their bounds and the
+    product below `2⁶³`, is the naturals' `c₁ · d₂ + c₂`. -/
+theorem key_elem {S₁ S₂ : ByteArray} {d₁ d₂ : Nat} {n : USize} {i : Nat} (hi : i < n.toNat) (h63 : d₁ * d₂ < 2 ^ 63)
+    (hA : (Ew.elem Ew.i64 S₁ i).toNat < d₁) (hB : (Ew.elem Ew.i64 S₂ i).toNat < d₂) :
+    (Ew.elem Ew.i64 (Ew.val Ew.add Ew.i64 Ew.vv Int64.minValue
+      (Ew.val Ew.mul Ew.i64 Ew.va Int64.minValue S₁ (atomBytes Ew.i64 d₂.toUInt64) n) S₂ n) i).toNat =
+      (Ew.elem Ew.i64 S₁ i).toNat * d₂ + (Ew.elem Ew.i64 S₂ i).toNat := by
+  have h64 : ∀ v : UInt64, UInt64.ofNat (v.toNat % 2 ^ (8 * Ew.width Ew.i64)) = v := fun v => by
+    rw [show 8 * Ew.width Ew.i64 = 64 by decide, Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
+  have hva : Ew.shapeIdx Ew.va i = (i, 0) := by simp [Ew.shapeIdx, Ew.va, Ew.vv]
+  have hvv : Ew.shapeIdx Ew.vv i = (i, i) := by simp [Ew.shapeIdx]
+  have hd₁ : d₁ ≤ d₁ * d₂ := Nat.le_mul_of_pos_right _ (by omega)
+  have hd₂ : d₂ ≤ d₁ * d₂ := Nat.le_mul_of_pos_left _ (by omega)
+  have hK : (Ew.elem Ew.i64 (atomBytes Ew.i64 d₂.toUInt64) 0).toNat = d₂ := by
+    rw [elem_atomBytes_i64]; simp; omega
+  have hAB : (Ew.elem Ew.i64 S₁ i).toNat * d₂ + d₂ ≤ d₁ * d₂ := by
+    have := Nat.mul_le_mul_right d₂ (show (Ew.elem Ew.i64 S₁ i).toNat + 1 ≤ d₁ from hA)
+    rwa [Nat.add_one_mul] at this
+  have hM : (Ew.elem Ew.i64 (Ew.val Ew.mul Ew.i64 Ew.va Int64.minValue S₁ (atomBytes Ew.i64 d₂.toUInt64) n) i).toNat =
+      (Ew.elem Ew.i64 S₁ i).toNat * d₂ := by
+    rw [elem_val _ _ _ _ _ _ _ hi, h64, hva]
+    dsimp only
+    rw [(valStep_key _ _ (by omega) (by omega)).1 (by rw [hK]; omega), hK]
+  rw [elem_val _ _ _ _ _ _ _ hi, h64, hvv]
+  dsimp only
+  rw [(valStep_key _ _ (by rw [hM]; omega) (by omega)).2 (by rw [hM]; omega), hM]
+
+theorem srcOf_input' (B : Ew.Build) (n : USize) {i : Nat} (h : i < 128) :
+    srcOf B n (UInt8.ofNat i) = B.inputs[i]! := srcOf_input B n h
+
+theorem srcOf_slot' (B : Ew.Build) (n : USize) {m : Nat} (hm : m < B.stages.size) (h128 : m < 128) :
+    srcOf B n (Ew.slot0 + UInt8.ofNat m) =
+      stageRun B.stages[m]! (srcOf { B with stages := B.stages.extract 0 m } n) n := srcOf_slot B n hm h128
+
+/-- **`composeKey`'s two arithmetic stages read back**: a build whose stages are the first operand's, the `mul`
+    by the atom, the second operand's (`hS4`), the `add` stage over them reads, at element `i`, `c₁ · d₂ + c₂`. -/
+theorem key_chain (B1 B4 : Ew.Build) (st : Ew.Stage) (s₁ s₂ : UInt8) (xb : ByteArray) {d₁ d₂ : Nat} {n : USize}
+    (cA cB : Nat → Nat) (h63 : d₁ * d₂ < 2 ^ 63) (hs1 : B1.stages.size ≤ 1) (hi1 : B1.inputs.size = 1)
+    (hI4 : B4.inputs = (B1.inputs.push (atomBytes Ew.i64 d₂.toUInt64)).push xb)
+    (hS4z : B1.stages.size + 1 ≤ B4.stages.size) (hB4 : B4.stages.size < 128)
+    (hS4 : ∀ j < B1.stages.size + 1, B4.stages[j]! = (B1.stages.push
+      { engine := Ew.eVal, op := Ew.mul, cls := Ew.i64, shape := Ew.va, a := s₁, b := B1.inputs.size.toUInt8,
+        nul := Int64.minValue })[j]!)
+    (hB1 : ∀ B : Ew.Build, (∀ i < B1.inputs.size, B.inputs[i]! = B1.inputs[i]!) →
+      (∀ j < B1.stages.size, B.stages[j]! = B1.stages[j]!) → B1.stages.size ≤ B.stages.size →
+      ∀ j < n.toNat, (Ew.elem Ew.i64 (srcOf B n s₁) j).toNat = cA j ∧ cA j < d₁)
+    (hB2 : ∀ B : Ew.Build, (∀ i < B4.inputs.size, B.inputs[i]! = B4.inputs[i]!) →
+      (∀ j < B4.stages.size, B.stages[j]! = B4.stages[j]!) → B4.stages.size ≤ B.stages.size →
+      ∀ j < n.toNat, (Ew.elem Ew.i64 (srcOf B n s₂) j).toNat = cB j ∧ cB j < d₂)
+    {i : Nat} (hi : i < n.toNat) :
+    (Ew.elem Ew.i64 (Ew.val Ew.add Ew.i64 Ew.vv Int64.minValue
+      (srcOf { stages := (B4.stages.push st).extract 0 B4.stages.size, inputs := B4.inputs } n
+        (Ew.slot0 + UInt8.ofNat B1.stages.size))
+      (srcOf { stages := (B4.stages.push st).extract 0 B4.stages.size, inputs := B4.inputs } n s₂) n) i).toNat =
+      cA i * d₂ + cB i ∧ cA i < d₁ ∧ cB i < d₂ := by
+  have hx : ((B4.stages.push st).extract 0 B4.stages.size).size = B4.stages.size := by simp
+  have hget : ∀ j < B4.stages.size, ((B4.stages.push st).extract 0 B4.stages.size)[j]! = B4.stages[j]! :=
+    fun j hj => by rw [get_extract_lt _ hj (by simp), get_push_lt _ _ hj]
+  obtain ⟨hb, hbd⟩ := hB2 { stages := (B4.stages.push st).extract 0 B4.stages.size, inputs := B4.inputs }
+    (fun _ _ => rfl) hget (by simp) i hi
+  have hat : (B1.inputs.push (atomBytes Ew.i64 d₂.toUInt64))[1]! = atomBytes Ew.i64 d₂.toUInt64 := by
+    have := get_push_eq B1.inputs (atomBytes Ew.i64 d₂.toUInt64); rwa [hi1] at this
+  rw [srcOf_slot' _ _ (by rw [hx]; omega) (by omega)]
+  dsimp only
+  rw [hget _ (by omega), hS4 _ (by omega), get_push_eq, stageRun_val rfl]
+  dsimp only
+  rw [show B1.inputs.size.toUInt8 = UInt8.ofNat 1 by rw [hi1], srcOf_input' _ _ (by omega)]
+  dsimp only
+  rw [show B4.inputs[1]! = atomBytes Ew.i64 d₂.toUInt64 by rw [hI4, get_push_lt _ _ (by simp [hi1]), hat]]
+  obtain ⟨ha, had⟩ := hB1
+    { stages := ((B4.stages.push st).extract 0 B4.stages.size).extract 0 B1.stages.size, inputs := B4.inputs }
+    (fun i hi' => by dsimp only; rw [hI4, get_push_lt _ _ (by simp; omega), get_push_lt _ _ hi'])
+    (fun j hj => by
+      dsimp only
+      rw [get_extract_lt _ hj (by rw [hx]; omega), hget _ (by omega), hS4 _ (by omega), get_push_lt _ _ hj])
+    (by simp; omega) i hi
+  rw [key_elem hi h63 (by rw [ha]; exact had) (by rw [hb]; exact hbd), ha, hb]
+  exact ⟨rfl, had, hbd⟩
+
+/-- **`composeKey` of two codes' columns**: where it answers, the counts agree, the bound is below `2⁶³`, the key
+    has `⌈n·w/8⌉` bytes at the lane `w = idWidthOf (d₁ · d₂)`, and key `i` is `c₁ · d₂ + c₂`, `c₁ < d₁`,
+    `c₂ < d₂`. -/
+theorem composeKey_code (a b : Code)
+    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < a.card))
+    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < b.card))
+    {t₁ t₂ : QAtomicType} {m₁ m₂ : USize} {e₁ e₂ : Enc} (h₁ : a.column = some (t₁, (m₁, e₁)))
+    (h₂ : b.column = some (t₂, (m₂, e₂))) {d₁ d₂ : Nat} (hd : 2 ≤ d₁ * d₂) {k : ByteArray}
+    (hk : composeKey t₁ m₁ e₁ d₁ d₂ t₂ m₂ e₂ = some k) :
+    b.n = a.n ∧ d₁ * d₂ < 2 ^ 63 ∧ k.size = (a.n.toNat * Column.idWidthOf (d₁ * d₂) + 7) / 8 ∧
+      ∀ i < a.n.toNat, Column.idAt k (Column.idWidthOf (d₁ * d₂)) i =
+        Column.idAt a.b a.w i * d₂ + Column.idAt b.b b.w i ∧ Column.idAt a.b a.w i < d₁ ∧
+          Column.idAt b.b b.w i < d₂ := by
+  obtain rfl := column_n h₁
+  obtain rfl := column_n h₂
+  simp only [composeKey, bind, Option.bind_eq_some_iff] at hk
+  obtain ⟨⟨u₁, neg₁, hi₁⟩, hko₁, ⟨u₂, neg₂, hi₂⟩, hko₂, _, hg, ⟨B1, s₁⟩, hks₁, ⟨B4, s₂⟩, hks₂, hk⟩ := hk
+  simp only [guard, Bool.and_eq_true, Bool.or_eq_true, beq_iff_eq, decide_eq_true_eq, Bool.not_eq_true'] at hg
+  split at hg
+  case isFalse => exact absurd hg (by intro h; cases h)
+  rename_i hp
+  obtain ⟨⟨hn, h63⟩, hcond⟩ := hp
+  have hd₁ : a.n = 0 ∨ (neg₁ = false ∧ hi₁ < d₁) := by
+    rcases hcond with h | ⟨⟨⟨h1, h2⟩, -⟩, -⟩
+    · exact .inl h
+    · exact .inr ⟨h1, h2⟩
+  have hd₂ : b.n = 0 ∨ (neg₂ = false ∧ hi₂ < d₂) := by
+    rcases hcond with h | ⟨⟨-, h3⟩, h4⟩
+    · exact .inl (hn.trans h)
+    · exact .inr ⟨h3, h4⟩
+  simp only [Ew.Build.input, Ew.Build.add] at hks₂ hk
+  obtain ⟨hI1, -, hS1b, -, hB1⟩ := keySource_code a ha.1 ha.2.1 ha.2.2 h₁ hko₁ hd₁ hks₁ (by simp) (by simp)
+  rw [← hn] at hks₂
+  obtain ⟨hI2, hS2a, hS2b, hS2c, hB2⟩ := keySource_code b hb.1 hb.2.1 hb.2.2 h₂ hko₂ hd₂ hks₂
+    (by simp [hI1]) (by simp at hS1b ⊢; omega)
+  simp only [Option.some.injEq] at hk
+  subst hk
+  simp only [Array.size_push] at hS2a hS2b hS2c
+  have hs1 : B1.stages.size ≤ 1 := by simpa using hS1b
+  have hi1 : B1.inputs.size = 1 := by simp [hI1]
+  have hw0 : Column.idWidthOf (d₁ * d₂) ≠ 0 := fun h0 => by
+    have := lt_two_pow_idWidthOf (L := d₁ * d₂) (k := 1) (by omega) (by omega); rw [h0] at this; omega
+  have hlane : Column.idWidthOf (d₁ * d₂) = 1 ∨ Column.idWidthOf (d₁ * d₂) = 2 ∨ Column.idWidthOf (d₁ * d₂) = 4 ∨
+      Column.idWidthOf (d₁ * d₂) = 8 ∨ Column.idWidthOf (d₁ * d₂) = 16 ∨ Column.idWidthOf (d₁ * d₂) = 32 ∨
+      Column.idWidthOf (d₁ * d₂) = 64 := by
+    have := laneWidth_cases (Column.widthFor (d₁ * d₂ - 1)); unfold Column.idWidthOf at hw0 ⊢; omega
+  have hw8 : (UInt8.ofNat (Column.idWidthOf (d₁ * d₂))).toNat = Column.idWidthOf (d₁ * d₂) := u8_ofNat (by omega)
+  rw [run_last, stageRun_pack rfl]
+  dsimp only
+  simp only [Nat.toUInt8_eq, hw8]
+  refine ⟨hn, h63, packIds_size hlane _ _, fun i hi => ?_⟩
+  -- the add stage, then the mul stage, each read back by `srcOf_slot'`
+  have hB4 : B4.stages.size < 128 := by omega
+  rw [srcOf_slot' _ _ (by simp) hB4, get_push_eq, stageRun_val rfl]
+  dsimp only
+  obtain ⟨hk1, hA, hB⟩ := key_chain B1 B4
+    { engine := Ew.eVal, op := Ew.add, cls := Ew.i64, shape := Ew.vv, a := Ew.slot0 + UInt8.ofNat B1.stages.size,
+      b := s₂, nul := Int64.minValue } s₁ s₂ b.b (n := a.n)
+    (fun j => Column.idAt a.b a.w j) (fun j => Column.idAt b.b b.w j) h63 hs1 hi1 hI2 (by omega) hB4 hS2c hB1
+    (by rw [hn] at hB2; exact hB2) hi
+  exact ⟨ePack_idAt _ hi hA hB (by omega) hk1, hA, hB⟩
+
 end LeetQ.Rel.Alg
