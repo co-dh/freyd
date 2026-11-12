@@ -34,8 +34,7 @@ theorem enumIds_bad (n d nullId w : USize) (b : ByteArray) :
   rw [find_getD_toUSize]
   refine forall_congr' fun i => imp_congr_right fun _ => ?_
   by_cases h1 : (Column.bitsAt b (i * 8) 8).toInt64 = Int64.minValue <;>
-    by_cases h2 : (0 ≤ (Column.bitsAt b (i * 8) 8).toInt64) <;>
-    by_cases h3 : (Column.bitsAt b (i * 8) 8).toInt64.toInt.toNat < d.toNat <;> simp [h1, h2, h3]
+    by_cases h2 : (0 ≤ (Column.bitsAt b (i * 8) 8).toInt64) <;> simp [h1, h2]
 
 /-! ## A dense long part rebased: each word is a function of the word read -/
 
@@ -149,6 +148,9 @@ theorem raze_words {t : QAtomicType} (ht : orderKind t = some .i64) (cs : Array 
     rw [hgb c hc] at hb; cases hb; exact ⟨c, hc, i, hi, rfl⟩
 
 /-! ## `mapM` in `Option` that declines: some element declines -/
+
+theorem ite_none {β : Type} {c : Prop} [Decidable c] {x : β} : (if c then none else some x) = none ↔ c := by
+  by_cases h : c <;> simp [h]
 
 theorem list_mapM_none {α β : Type} {f : α → Option β} : ∀ {l : List α}, l.mapM f = none ↔ ∃ x ∈ l, f x = none
   | [] => by simp [pure]
@@ -340,7 +342,7 @@ theorem rangeOffsets_dense_none {a : QAtomicType} {p p' : Nat} (cs : Vector (USi
   have hL := extreme_unique (S := fun x => x ≠ nul ∧ ∃ v, Wp v ∧ v.toInt64 = x) Int64.toInt
     (fun a b e => Int64.toInt_inj.1 e) E'.1 E.1
   have hH := extreme_unique (S := fun x => x ≠ nul ∧ ∃ v, Wp v ∧ v.toInt64 = x) (fun x => -x.toInt)
-    (fun a b e => Int64.toInt_inj.1 (by omega)) E'.2 E.2
+    (fun a b e => Int64.toInt_inj.1 (Int.neg_inj.1 e)) E'.2 E.2
   rw [hL, hH]
   split
   · rfl
@@ -350,21 +352,80 @@ theorem rangeOffsets_dense_none {a : QAtomicType} {p p' : Nat} (cs : Vector (USi
   · rfl
   next g2 =>
   rw [if_neg g2] at h
-  split
-  · rfl
-  next g3 =>
-  rw [if_neg g3] at h
-  trace_state
-  sorry
+  -- `split` meets the base `0` or `lo` first, then the last guard
+  split <;> rename_i hb0
+  all_goals first | rw [if_pos hb0] at h | rw [if_neg hb0] at h
+  all_goals
+    split
+    · rfl
+    rename_i g3
+    rw [if_neg g3] at h
+    -- a part of `cs` declines: one of its words rebases outside the codes; that word is a word of `cs'`
+    obtain ⟨k, hk, hf⟩ := vec_mapM_none.1 h
+    obtain ⟨b, hb, -⟩ := hd k hk
+    simp only [hb, beq_self_eq_true, ite_true] at hf
+    obtain ⟨i, hi⟩ := Classical.not_forall.1 (mt (enumIds_bad _ _ _ _ _).2 ((bne_iff_ne).1 (ite_none.1 hf)))
+    obtain ⟨hi, hgi⟩ := Classical.not_imp.1 hi
+    try rw [elem_shift _ _ _ hi] at hgi
+    obtain ⟨k', hk', b', hb', i', hi', hv⟩ := (hW _).1 ⟨k, hk, b, hb, i, hi, rfl⟩
+    refine vec_mapM_none.2 ⟨k', hk', ?_⟩
+    simp only [hb', beq_self_eq_true, ite_true]
+    refine ite_none.2 ((bne_iff_ne).2 fun hok => hgi ?_)
+    have := (enumIds_bad _ _ _ _ _).1 hok i' hi'
+    try rw [elem_shift _ _ _ hi'] at this
+    rw [hv] at this
+    exact this
 
-/-- **A long side of several dense parts, `rangeOffsets` declining both the parts and their `raze`: its
-    codes are those of the `raze`, cut back.** -/
+/-- **`rangeOffsets` declines the `raze` of dense long parts where it declines the parts**: the razed column is
+    dense, holds exactly the parts' words, and counts their total. -/
+theorem rangeOffsets_raze_none {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) (hp : 0 < p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
+    rangeOffsets t (#v[raze t cs.toArray].map fun c => Arr.part c.2)
+      ((#v[raze t cs.toArray].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none := by
+  obtain ⟨B, hB, hWB⟩ := raze_words ht cs.toArray (fun c hc => by
+    obtain ⟨k, hk, rfl⟩ := Array.mem_iff_getElem.1 hc; simpa using hd k (by simpa using hk))
+    (by simpa using hN) (by simp; omega)
+  have hX := raze_len t cs.toArray (by simpa using hN)
+  have hBs : B.size = (raze t cs.toArray).1.toNat * 8 := by
+    rcases long_enc ht (raze t cs.toArray).2.wf with ⟨b, hb, hs⟩ | ⟨md, pk, hb⟩ <;> rw [hB] at hb <;> cases hb
+    exact hs
+  have hf : ∀ (l : List USize) (a : Nat), l.foldl (fun s n => s + n.toNat) a = a + (l.map (·.toNat)).sum := by
+    intro l; induction l <;> intro a <;> simp_all [Nat.add_assoc]
+  have htot : (#v[raze t cs.toArray].map (·.1)).foldl (fun s n => s + n.toNat) 0 =
+      (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 := by
+    show (#v[raze t cs.toArray].map (·.1)).toArray.foldl _ 0 = (cs.map (·.1)).toArray.foldl _ 0
+    rw [← Array.foldl_toList, ← Array.foldl_toList, hf, hf]
+    simp [hX, Function.comp_def]
+  rw [htot]
+  refine rangeOffsets_dense_none _ _ _ (fun k hk => ?_) (fun k hk => ?_) (fun v => ?_) hro
+  · obtain ⟨b, hb, hs⟩ := (long_enc ht (cs[k]'hk).2.wf).resolve_right (by
+      rintro ⟨md, pk, he⟩; obtain ⟨b, hb⟩ := hd k hk; rw [hb] at he; cases he)
+    exact ⟨b, by simp [Arr.part, hb], by simpa [Arr.part] using hs⟩
+  · obtain rfl : k = 0 := by omega
+    exact ⟨B, by simp [Arr.part, hB], by simpa [Arr.part] using hBs⟩
+  · simp only [Vector.getElem_map, Arr.part]
+    constructor
+    · rintro ⟨k, hk, b, hb, i, hi, rfl⟩
+      obtain ⟨i', hi', he⟩ := (hWB _).2 ⟨cs[k], by simp, b, hb, i, hi, rfl⟩
+      exact ⟨0, by omega, B, by simpa using hB, i', by simpa using hi', he⟩
+    · rintro ⟨k, hk, b, hb, i, hi, rfl⟩
+      obtain rfl : k = 0 := by omega
+      simp only [Vector.getElem_mk, List.getElem_toArray, List.getElem_cons_zero, hB, Enc.bytes.injEq] at hb hi
+      subst hb
+      obtain ⟨c, hc, b', hb', i', hi', he⟩ := (hWB _).1 ⟨i, hi, rfl⟩
+      obtain ⟨k', hk', rfl⟩ := Array.mem_iff_getElem.1 hc
+      exact ⟨k', by simpa using hk', b', by simpa using hb', i', by simpa using hi', he⟩
+
+/-- **A long side of several dense parts, `rangeOffsets` declining the parts: its codes are those of the
+    `raze`, cut back**, the parts' summed count a `USize`. -/
 theorem codes_long_cut {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat} (cs : Vector (Part (.atom t)) p)
     (hp : 0 < p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
-    (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
-    (hroR : rangeOffsets t (#v[raze t cs.toArray].map fun c => Arr.part c.2)
-      ((#v[raze t cs.toArray].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
     Obj.codes (.atom t) cs = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].cut (cs.map (·.1)) := by
+  have hroR := rangeOffsets_raze_none ht cs hp hd hN hro
   obtain ⟨-, -, hg, -, -⟩ := long_facts ht
   have hne : ∀ d o ids, Column.intern (raze t cs.toArray).2.enc ≠ .enum d o ids := fun d o ids he => by
     rcases long_enc ht (raze t cs.toArray).2.wf with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩ <;> simp [hb, Column.intern] at he
@@ -379,12 +440,11 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
     (cs : Vector (Part (.atom t)) p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
-    (hroR : rangeOffsets t (#v[raze t cs.toArray].map fun c => Arr.part c.2)
-      ((#v[raze t cs.toArray].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat) (hj : j < (cs[l]'hl).1.toNat) :
     Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
         Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
+  have hroR := rangeOffsets_raze_none ht cs (by omega) hd hN hro
   have hX := raze_len t cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_long_group_wf ht (raze t cs.toArray) hroR
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
@@ -396,7 +456,7 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
     have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
     simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this
     rw [hX]; exact Nat.lt_of_lt_of_le (by omega) this
-  rw [codes_long_cut ht cs (by omega) hd hro hroR]
+  rw [codes_long_cut ht cs (by omega) hd hN hro]
   obtain ⟨hwk, -, -, hck⟩ := cut_get _ (cs.map (·.1)) hw hs hk
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
@@ -409,14 +469,13 @@ theorem codes_long_parts_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
     (cs : Vector (Part (.atom t)) p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
-    (hroR : rangeOffsets t (#v[raze t cs.toArray].map fun c => Arr.part c.2)
-      ((#v[raze t cs.toArray].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
     {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]'hk
     (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c
+  have hroR := rangeOffsets_raze_none ht cs (by omega) hd hN hro
   have hX := raze_len t cs.toArray hN
   obtain ⟨hw, hn, hsz, hid⟩ := codes_long_group_wf ht (raze t cs.toArray) hroR
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
@@ -424,13 +483,14 @@ theorem codes_long_parts_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
   have hle := take_sum_le ((cs.map (·.1)).toList.map (·.toNat)) (k := k) (by simpa using hk)
   simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take, hs] at hle
   have hc : c = ((Obj.codes (.atom t) #v[raze t cs.toArray])[0].cut (cs.map (·.1)))[k]'hk := by
-    show (Obj.codes (.atom t) cs)[k] = _; rw [codes_long_cut ht cs (by omega) hd hro hroR]
+    show (Obj.codes (.atom t) cs)[k] = _; rw [codes_long_cut ht cs (by omega) hd hN hro]
   obtain ⟨hwk, hnk, hck, hik⟩ := cut_get _ (cs.map (·.1)) hw hs hk
   have hzk := cut_size _ (cs.map (·.1)) hw hs hsz hk
   rw [hc, hwk, hnk, hck, hzk]
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
+#print axioms rangeOffsets_raze_none
 #print axioms codes_long_parts_faithful
 #print axioms codes_long_parts_wf
 
