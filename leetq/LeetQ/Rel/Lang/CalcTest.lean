@@ -80,8 +80,11 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 /-- error: `⊤` needs an instance `LocallyCompleteDistributiveAllegory` (AOP's `topHom`) or
 `TabularUnitaryDivisionAllegory` (AOP's `topMor`): AOP's `⊤` is one of these -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
-/-- error: `Λ` differs in AOP: Rel reads a set `𝒫A` as an array `[α]`, AOP as the power object `P A` -/
-#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(Λ(R))
+/-- error: `Λ(R)` needs an instance `PowerAllegory 𝒜`: AOP defines `Freyd.Alg.Λ` over it -/
+#guard_msgs in example (R : A ⟶ B) : Prop := rel(Λ(R) ∋) = R
+/-- error: `setify` has no AOP counterpart: Rel's list and set are both an array `[α]`, AOP's power object `P A`
+is no list -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(R setify)
 /-- error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator
 ---
 error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator -/
@@ -280,7 +283,65 @@ example [J : InitialAlgebra F] (R : F.obj A ⟶ A) : Prop := rel(⦇R⦈) = rel(
 
 end Fold
 
-/-- error: line 286, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+section Power
+
+-- tabular as well, for `thin(Q)` (`AOP.A8_1`)
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B C : 𝒜}
+open PowerAllegory
+
+set_option linter.unusedVariables false in
+example (R : A ⟶ B) (S : C ⟶ A) (Q : A ⟶ A) (X : C ⟶ P (P A)) : True := by
+  guard_expr rel(∋ R) =ₛ ∋ A ≫ R
+  guard_expr rel(R ∈) =ₛ R ≫ (∋ B)°
+  guard_expr rel(Λ(R)) =ₛ Λ R
+  guard_expr rel(Λ(S) E(R)) =ₛ Λ S ≫ existsImage R
+  guard_expr rel(P(R)) =ₛ P(R)
+  guard_expr rel(est(Q)) =ₛ est(Q)
+  guard_expr rel(thin(Q)) =ₛ thin(Q)
+  guard_expr rel(X union) =ₛ X ≫ union
+  guard_expr rel(S τ) =ₛ S ≫ singletonMap
+  guard_expr rel(Λ(S) est(Q)) =ₛ Λ S ≫ est(Q)
+  guard_expr rel(∈ \ Q°) =ₛ (∋ A)° \ Q°
+  trivial
+
+/-- B&dM (7.4) (`singletonMap_comp_est`): the `est` of a singleton, (7.5) at `S ≜ 𝟙`. -/
+example (R : A ⟶ A) : rel(τ est(R)) = rel(𝟙 ∩ R°) :=
+  calc rel(τ est(R))
+      = rel(Λ(𝟙) est(R)) := rfl
+    _ = rel(𝟙 ∩ (𝟙° \ R°)) := Λ_comp_est _ _
+    _ = rel(𝟙 ∩ (𝟙 \ R°)) := by rw [recip_id]
+    _ = rel(𝟙 ∩ R°) := by rw [leftDiv_id]
+
+/-- B&dM (7.5) (`Λ_comp_est`): `Λ(S)` is a map, so it distributes over the meet that `est(R)` is. -/
+example (S : B ⟶ A) (R : A ⟶ A) : rel(Λ(S) est(R)) = rel(S ∩ (S° \ R°)) :=
+  calc rel(Λ(S) est(R))
+      = rel(Λ(S) (∋ ∩ (∈ \ R°))) := rfl
+    _ = rel(Λ(S) ∋ ∩ (Λ(S) (∈ \ R°))) := simple_dist_inter (Λ_is_map' S).2 _ _
+    _ = rel(S ∩ (Λ(S) (∈ \ R°))) := by rw [Λ_eps_eq']
+    _ = rel(S ∩ (S° \ R°)) := by rw [Λ_comp_lb]
+
+/-- B&dM §8.1 (`thinRel_comp_eps_le`): thinning only shrinks, `thin(Q)` being below `⊇ ≜ ∋/∋`. -/
+example (Q : A ⟶ A) : rel(thin(Q) ∋) ⊑ rel(∋) :=
+  calc rel(thin(Q) ∋)
+      = rel(((∋ / ∋) ∩ (∈ \ (Q° ∈))) ∋) := rfl
+    _ ⊑ rel((∋ / ∋) ∋) := comp_mono_right (inter_lb_left _ _) _
+    _ ⊑ rel(∋) := div_self_comp_le _
+
+-- no arrow in the context names the allegory: the instances are left to Lean, which finds them by unification
+example : rel(τ ∋) = 𝟙 A := singletonMap_comp_eps
+
+end Power
+
+section PowerOnly
+
+variable {𝒜 : Type u} [PowerAllegory 𝒜] {A B : 𝒜}
+
+/-- error: `est(R)` needs an instance `UnguardedPowerLCDA 𝒜`: AOP defines `Freyd.Alg.est` over it -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : Prop := rel(Λ(R) est(R)) = R
+
+end PowerOnly
+
+/-- error: line 347, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈
