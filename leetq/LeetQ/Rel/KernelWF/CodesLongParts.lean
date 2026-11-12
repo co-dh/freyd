@@ -490,8 +490,36 @@ theorem codes_long_parts_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
+/-! ## Dense long parts, whichever branch `rangeOffsets` takes -/
+
+/-- **A long side of several dense parts: its codes are faithful jointly across the parts**, `rangeOffsets`
+    answering (`codes_long_faithful`) or declining; the parts' summed count a `USize`. -/
+theorem codes_long_dense_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat) (hj : j < (cs[l]'hl).1.toNat) :
+    Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
+        Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
+      Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
+  cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
+  | none => exact codes_long_parts_faithful ht cs hd hN hro hk hl hi hj
+  | some os => exact codes_long_faithful ht cs hro hk hl hi hj
+
+/-- **A long side of several dense parts: each part's code is well formed**, whichever branch `rangeOffsets`
+    takes; the parts' summed count a `USize`. -/
+theorem codes_long_dense_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
+    let c := (Obj.codes (.atom t) cs)[k]'hk
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
+  | none => exact codes_long_parts_wf ht cs hd hN hro hk
+  | some os => exact codes_long_wf ht cs hro hk
+
 #print axioms rangeOffsets_raze_none
-#print axioms codes_long_parts_faithful
-#print axioms codes_long_parts_wf
+#print axioms codes_long_dense_faithful
+#print axioms codes_long_dense_wf
 
 end LeetQ.Rel.Alg
