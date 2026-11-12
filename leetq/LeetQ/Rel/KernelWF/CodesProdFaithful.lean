@@ -124,4 +124,49 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
 
 #print axioms codes_prod_faithful_wf
 
+/-- **A boolean × eight-byte integral side of one part: its codes are faithful and well formed**, on
+    either branch of the long column's `codes`. -/
+theorem codes_prod_boolean_long_one {t : QAtomicType} (ht : orderKind t = some .i64)
+    (x : Part (.prod (.atom .boolean) (.atom t))) :
+    ((∀ {k l : Nat} (hk : k < 1) (hl : l < 1) {i j : Nat} (hi : i < (#v[x][k]'hk).1.toNat)
+        (hj : j < (#v[x][l]'hl).1.toNat),
+        Column.idAt ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[k]'hk).b
+            ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[k]'hk).w i =
+          Column.idAt ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[l]'hl).b
+            ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[l]'hl).w j ↔
+        Vals.row (A := .prod (.atom .boolean) (.atom t)) (#v[x][k]'hk).2 ⟨i, hi⟩ =
+          Vals.row (A := .prod (.atom .boolean) (.atom t)) (#v[x][l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < 1),
+        let c := (Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[k]'hk
+        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (#v[x][k]'hk).1 ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ {k l : Nat} (hk : k < 1) (hl : l < 1),
+        ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[k]'hk).w =
+          ((Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[l]'hl).w := by
+  have hpa : #v[x].map (fun c => (⟨c.1, c.2.1⟩ : Part (.atom .boolean))) = #v[⟨x.1, x.2.1⟩] :=
+    Vector.ext fun k hk => by obtain rfl : k = 0 := by omega
+                              simp
+  have hpb : #v[x].map (fun c => (⟨c.1, c.2.2⟩ : Part (.atom t))) = #v[⟨x.1, x.2.2⟩] :=
+    Vector.ext fun k hk => by obtain rfl : k = 0 := by omega
+                              simp
+  have hwa := fun {k : Nat} (hk : k < 1) => codes_boolean_wf #v[⟨x.1, x.2.1⟩] hk
+  refine codes_prod_faithful_wf #v[x] hpa hpb rfl rfl
+    ⟨fun hk hl _ _ hi hj => codes_boolean_faithful _ hk hl hi hj,
+      fun hk => ⟨Or.inl (hwa hk).2.1, (hwa hk).1, (hwa hk).2.2.1, (hwa hk).2.2.2⟩⟩
+    (fun hk hl => by rw [(hwa hk).2.1, (hwa hl).2.1])
+    ⟨fun {k l} hk hl _ _ hi hj => by
+        obtain rfl : k = 0 := by omega
+        obtain rfl : l = 0 := by omega
+        exact codes_long_one_faithful ht _ hi hj,
+      fun {k} hk => by obtain rfl : k = 0 := by omega
+                       exact codes_long_one_wf ht _⟩
+    (fun {k l} hk hl => by
+      obtain rfl : k = 0 := by omega
+      obtain rfl : l = 0 := by omega
+      rfl)
+    (by simpa using USize.toNat_lt_size x.1)
+
+#print axioms codes_prod_boolean_long_one
+
 end LeetQ.Rel.Alg
