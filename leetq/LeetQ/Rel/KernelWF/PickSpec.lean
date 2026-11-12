@@ -115,4 +115,71 @@ theorem gatherColumn_get_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
   · exact h3 q (by omega)
   · rw [Array.getElem?_eq_none (by rw [ByteArray.size_data]; omega)]
 
+/-- Belongs in qlean. **`x@i` read back** at every atom type but `general`, `guid` and an interned
+    symbol column: element `k` of the answer is element `i[k]` of `x`, where that is below `x`'s count. -/
+theorem gatherColumn_get {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
+    (hgu : t ≠ .guid) (hen : ∀ d o ids, e ≠ .enum d o ids)
+    {m : USize} {i : ByteArray} (hm : m.toNat = i.size / 8) {e' : Enc}
+    (h : gatherColumn t n e m (.bytes i) = some e') {k : Nat} (hk : k < m.toNat)
+    (hin : (Column.bitsAt i (k * 8) 8).toNat < n.toNat) :
+    Enc.get t m e' k = Enc.get t n e (Column.bitsAt i (k * 8) 8).toNat := by
+  cases hd : denseWidth t with
+  | some w => exact gatherColumn_get_dense hd hw hm h hk hin
+  | none =>
+    by_cases hb : t = .boolean
+    · subst hb; exact gatherColumn_get_bits hw hm h hk hin
+    have hs : t = .symbol := by cases t <;> simp_all [denseWidth, QAtomicType.width]
+    subst hs
+    cases e with
+    | syms b o => exact gatherColumn_get_syms hw hm h hk hin
+    | enum d o ids => exact absurd rfl (hen d o ids)
+    | _ => all_goals (exfalso; simp [Enc.WF, QAtomicType.width] at hw)
+
 end LeetQ.Rel.KernelWF
+
+namespace LeetQ.Rel.Alg
+
+open QLean QLean.Kernel LeetQ.Rel
+
+/-- A general list's element `j` is its `gen` column's. -/
+theorem get_general {n : USize} (x : Arr .general n) {xs : Array QValue} (hc : x.enc = .gen xs)
+    (j : Fin n.toNat) : x.get j = xs[j.1]'(by rw [Arr.gen_size x hc]; exact j.2) := by
+  simp only [Arr.get]; split
+  · rename_i ys hc'; rw [hc] at hc'; cases hc'; rfl
+  · rename_i hn; exact (hn xs hc).elim
+
+/-- `pick` at `general` is `genCol` of the picked elements. -/
+theorem pick_general (c : (n : USize) × Arr .general n) (i : ByteArray) :
+    pick .general c i = genCol ((longRows i).map fun p => (gens c.2)[p]?.getD (QLean.Eval.fillOf (gens c.2))) := by
+  simp [pick]
+
+/-- **`pick` read back at `general`**: element `k` of `x@i` is element `i[k]` of `x`. -/
+theorem pick_get_general (c : (n : USize) × Arr .general n) (i : ByteArray) (hl : len i < USize.size)
+    (k : Nat) (hk : k < (pick .general c i).1.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < c.1.toNat) :
+    (pick .general c i).2.get ⟨k, hk⟩ = c.2.get ⟨_, hin⟩ := by
+  obtain ⟨xs, he, hs⟩ := KernelWF.general_cases c.2.wf
+  have hgx : gens c.2 = xs := Option.some_inj.1 ((Option.some_get _).trans (by simp [he]))
+  have hsz : ((longRows i).map fun p => (gens c.2)[p]?.getD (QLean.Eval.fillOf (gens c.2))).size < USize.size := by
+    simpa [longRows, len] using hl
+  revert hk; rw [pick_general, genCol, need, dif_pos hsz]; intro hk
+  rw [get_general _ rfl, get_general _ he]
+  simp only [Array.getElem_map, longRows, Array.getElem_range, hgx, Nat.mul_comm 8 k]
+  rw [Array.getElem?_eq_getElem (by omega), Option.getD_some]
+
+/-- **`pick` read back**: row `k` of `x@i` is row `i[k]` of `x`, the index read unsigned, where that is
+    below `x`'s count; every atom type but `guid`, every payload but an interned symbol column. -/
+theorem pick_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (hl : len i < USize.size)
+    (hgu : t ≠ .guid) (hen : ∀ d o ids, c.2.enc ≠ .enum d o ids)
+    (k : Nat) (hk : k < (pick t c i).1.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < c.1.toNat) :
+    (pick t c i).2.get ⟨k, hk⟩ = c.2.get ⟨_, hin⟩ := by
+  by_cases hg : t = .general
+  · subst hg; exact pick_get_general c i hl k hk hin
+  obtain ⟨e, he, hp⟩ := pick_eq_gather hg c i hl
+  have h1 : (pick t c i).1 = (len i).toUSize := by simpa [Arr.part] using congrArg Prod.fst hp
+  have h2 : (pick t c i).2.enc = e := by simpa [Arr.part] using congrArg Prod.snd hp
+  have hm : ((len i).toUSize).toNat = i.size / 8 := USize.toNat_ofNat_of_lt' hl
+  rw [Arr.get_ne _ _ hg, Arr.get_ne _ _ hg, h2]
+  simp only []
+  rw [h1, KernelWF.gatherColumn_get c.2.wf hg hgu hen hm he (h1 ▸ hk) hin]
+
+end LeetQ.Rel.Alg
