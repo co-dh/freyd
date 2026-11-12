@@ -233,4 +233,100 @@ theorem cat_get (cs : Array Code) {w : Nat}
     ByteArray.empty.size + ((cs.toList.take k).map (·.n.toNat)).sum * q + (i * q + j) by simp [Nat.add_mul]; omega]
   exact hg
 
+/-! ## Several parts of one atom type: one grouping pass over the `raze`, then `cut` -/
+
+/-- **Past the bitmap and `rangeOffsets` branches, a side's codes are the codes of its `raze` cut back
+    into its parts**: `codes` groups the razed column once (`groupIdsColumn`, `Code.ofIds`) and cuts that
+    code at the parts' counts, the razed column being neither a `syms` nor an `enum` payload. -/
+theorem codes_raze_cut {t : QAtomicType} (hg : t ≠ .general) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hp : 0 < p) (hb : ∀ k (hk : k < p), ∀ b, cs[k].2.enc ≠ .bits b)
+    (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
+    (hne : ∀ d o ids, Column.intern (raze t cs.toArray).2.enc ≠ .enum d o ids) :
+    ∃ q, groupIdsColumn t (raze t cs.toArray).1 (raze t cs.toArray).2.enc = some q ∧
+      Obj.codes (.atom t) cs = (Code.ofIds (len q.2) (raze t cs.toArray).1 q.1).cut (cs.map (·.1)) := by
+  have hsome := KernelWF.groupIdsColumn_isSome hg (raze t cs.toArray).2.wf fun d o ids he => (hne d o ids he).elim
+  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
+  show Alg.codes t cs = _
+  unfold Alg.codes
+  rw [dif_neg hg]
+  split
+  · next bs h =>
+    have h0 := vec_mapM_some h hp
+    exfalso
+    revert h0
+    cases he : cs[0].2.enc <;> simp
+    exact (hb 0 hp _ he).elim
+  simp only [hro]
+  split
+  · next he => exact absurd he (hne _ _ _)
+  all_goals rfl
+
+/-- A small integral part is not a bitmap, and `rangeOffsets` declines a small integral side. -/
+theorem small_int_branches {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) :
+    (∀ {n : USize} (x : Arr t n) b, x.enc ≠ .bits b) ∧
+      ∀ {p : Nat} (es : Vector (USize × Enc) p) total, rangeOffsets t es total = none := by
+  refine ⟨fun x b he => ?_, fun es total => ?_⟩
+  · rcases small_int_enc ht hk x with ⟨b', he'⟩ | ⟨md, pk, he'⟩ <;> rw [he'] at he <;> cases he
+  · unfold rangeOffsets
+    rw [if_pos (by rcases hk with rfl | rfl | rfl <;> simp [ht])]
+
+/-- **A small integral side of several dense parts: its codes are those of its `raze`, cut back.** -/
+theorem codes_small_int_cut {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p) (hp : 0 < p) :
+    Obj.codes (.atom t) cs = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].cut (cs.map (·.1)) := by
+  have hg := (small_int_width ht hk).2.2.1
+  have hne : ∀ d o ids, Column.intern (raze t cs.toArray).2.enc ≠ .enum d o ids := fun d o ids he => by
+    rcases small_int_enc ht hk (raze t cs.toArray).2 with ⟨b, hb⟩ | ⟨md, pk, hb⟩ <;> simp [hb, Column.intern] at he
+  obtain ⟨q, hq, hc⟩ := codes_raze_cut hg cs hp (fun k _ => (small_int_branches ht hk).1 _)
+    ((small_int_branches ht hk).2 _ _) hne
+  obtain ⟨q', hq', hc'⟩ := codes_small_int ht hk (raze t cs.toArray)
+  rw [hc, hc', show q' = q from Option.some_inj.1 (hq'.symm.trans hq)]
+
+/-- The razed column of dense parts reads part `k`'s element `i` past the counts before `k`. -/
+theorem raze_get_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    {k : Nat} (hk : k < p) {i : Nat} (hi : i < cs[k].1.toNat)
+    (hO : ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat) :
+    (raze t cs.toArray).2.get ⟨_, hO⟩ = cs[k].2.get ⟨i, hi⟩ := by
+  have hl := KernelWF.razeTo_toList_bytes cs.toArray rfl hN fun c hc => by
+    obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hc
+    exact hd j (by simpa using hj)
+  unfold razeTo at hl
+  rw [KernelWF.cast_toList] at hl
+  have ho := flatMap_offset (fun c : Part (.atom t) => c.2.toList) (·.1.toNat) (fun c => Arr.length_toList _)
+    cs.toList (k := k) (by simpa using hk) (i := i) (by simpa using hi)
+  simp only [Vector.toList_toArray] at hl
+  rw [← hl, List.getElem?_eq_getElem (by rw [Arr.length_toList]; exact hO), Arr.getElem_toList,
+    List.getElem?_eq_getElem (by rw [Arr.length_toList]; simpa using hi)] at ho
+  have := Option.some_inj.1 ho
+  rw [this, Arr.getElem_toList]; rfl
+
+/-- **A small integral side of dense parts: its codes are faithful jointly across the parts.** Part `k`'s
+    code at `i` and part `l`'s at `j` agree exactly when the rows do; the parts' summed count a `USize`. -/
+theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
+    Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
+        Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
+      Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
+  have hX := raze_len t cs.toArray hN
+  obtain ⟨hw, hn, -, -⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
+  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
+    rw [hn, hX, Vector.toList_map, List.map_map]; rfl
+  have hO : ∀ k, (((cs.map (·.1)).toList.take k).map (·.toNat)).sum = ((cs.toList.take k).map (·.1.toNat)).sum :=
+    fun k => by rw [Vector.toList_map, ← List.map_take, List.map_map]; rfl
+  have hlt : ∀ k (hk : k < p), ∀ i < cs[k].1.toNat, ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat :=
+    fun k hk i hi => by
+      have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
+      simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this
+      rw [hX]; exact Nat.lt_of_lt_of_le (by omega) this
+  rw [codes_small_int_cut ht hk₀ cs (by omega)]
+  obtain ⟨hwk, -, -, hck⟩ := cut_get _ (cs.map (·.1)) hw hs hk
+  obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
+  rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
+    codes_small_int_faithful ht hk₀ _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
+    Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+
 end LeetQ.Rel.Alg
