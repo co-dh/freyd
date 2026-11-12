@@ -90,4 +90,41 @@ theorem slices_get {p n : USize} (hp : p.toNat < 2 ^ 63) (lo hi : ByteArray) {k 
     hM, hc, hL, tn _ (by omega), tn _ (by omega), tn _ (by omega)]
   omega
 
+/-- **The window `Vals.row` reads at an array row**: the positions `j < m` with `a ≤ j < b` are the run
+    from `a` clamped into `[0, m]` to `b` clamped there, read in order; `d` answers no position of it. -/
+theorem filterMap_window {β : Type} (d : β) : ∀ {m : Nat} (f : Fin m → β) (a b : Int),
+    (List.finRange m).filterMap (fun j => if a ≤ (j.1 : Int) ∧ (j.1 : Int) < b then some (f j) else none) =
+      (List.range' (min (max a 0).toNat m) (min (max b 0).toNat m - min (max a 0).toNat m)).map
+        fun r => if h : r < m then f ⟨r, h⟩ else d
+  | 0, f, a, b => by simp
+  | m + 1, f, a, b => by
+    rw [List.finRange_succ_last, List.filterMap_append, List.filterMap_map]
+    have ih := filterMap_window d (fun j : Fin m => f j.castSucc) a b
+    simp only [Function.comp_def, Fin.coe_castSucc] at ih ⊢
+    rw [ih]
+    have hm : ∀ r ∈ List.range' (min (max a 0).toNat m) (min (max b 0).toNat m - min (max a 0).toNat m),
+        (if h : r < m then f (Fin.castSucc ⟨r, h⟩) else d) = (if h : r < m + 1 then f ⟨r, h⟩ else d) := by
+      intro r hr; rw [List.mem_range'_1] at hr
+      rw [dif_pos (by omega), dif_pos (by omega)]; rfl
+    rw [List.map_congr_left hm]
+    simp only [List.filterMap_cons, List.filterMap_nil, Fin.val_last]
+    by_cases hw : a ≤ (m : Int) ∧ (m : Int) < b
+    · rw [if_pos hw]; dsimp only
+      have e1 : min (max a 0).toNat (m + 1) = min (max a 0).toNat m := by omega
+      have e2 : min (max b 0).toNat (m + 1) - min (max a 0).toNat m =
+          (min (max b 0).toNat m - min (max a 0).toNat m) + 1 := by omega
+      rw [e1, e2, List.range'_concat, List.map_append]
+      simp only [List.map_cons, List.map_nil, Nat.one_mul]
+      rw [dif_pos (by omega)]
+      congr 3; ext; simp only [Fin.val_last]; omega
+    · rw [if_neg hw, List.append_nil]
+      have e : (min (max b 0).toNat m - min (max a 0).toNat m = 0 ∧
+            min (max b 0).toNat (m + 1) - min (max a 0).toNat (m + 1) = 0) ∨
+          (min (max a 0).toNat (m + 1) = min (max a 0).toNat m ∧
+            min (max b 0).toNat (m + 1) - min (max a 0).toNat m =
+              min (max b 0).toNat m - min (max a 0).toNat m) := by omega
+      rcases e with ⟨e1, e2⟩ | ⟨e1, e2⟩
+      · rw [e1, e2]; simp
+      · rw [e1, e2]
+
 end LeetQ.Rel.Alg
