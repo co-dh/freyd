@@ -173,8 +173,135 @@ theorem expand_idx {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
       rfl
   exact key _ (Nat.le_refl _)
 
+/-- A total over a prefix of `range` is at most the total over a longer one. -/
+theorem sum_range_le (c : Nat → Nat) {a b : Nat} (h : a ≤ b) :
+    ((List.range a).map c).sum ≤ ((List.range b).map c).sum := by
+  induction b with
+  | zero => simp [Nat.le_zero.1 h]
+  | succ b ih =>
+    rw [List.range_succ, List.map_append, List.sum_append_nat]
+    by_cases e : a = b + 1
+    · subst e; rw [List.range_succ, List.map_append, List.sum_append_nat]; exact Nat.le_refl _
+    · have := ih (by omega); simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+
+/-- **`gather 8 src idx`'s long `j`** is `src`'s long `idx[j]`, where that index is below `src`'s count. -/
+theorem gather8_get {src idx : ByteArray} {j : Nat} (hj : j < len idx)
+    (hs : (Column.bitsAt idx (j * 8) 8).toNat < len src) :
+    Column.bitsAt (gather 8 src idx) (j * 8) 8 = Column.bitsAt src ((Column.bitsAt idx (j * 8) 8).toNat * 8) 8 := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have h := (gatherBytes_spec (Nat.toUSize 8) (by rw [h8]; decide) 0 src idx).2 j (by simpa [len] using hj)
+  rw [h8] at h
+  unfold gather; rw [h, if_pos (by simpa [len] using hs)]
+
+/-- `tilLongs m`'s long `p` is `p`, below `m`. -/
+theorem tilLongs_get {m : USize} {p : Nat} (hp : p < m.toNat) : (Column.bitsAt (tilLongs m) (p * 8) 8).toNat = p := by
+  have hid : ids (tilLongs m) = List.range m.toNat := by
+    rw [← tilLongs_spec m]; simp only [ids, elemsW, List.map_map, Function.comp_def]
+  rw [ids_get hid (by simpa using hp), List.getElem_range]
+
+/-- **`expand`'s rank column, read back**: copy `p` of the run of count row `t = i[p]` is that run's
+    `p - Σ_{s<t} cnt[s]`-th copy, `i` the index column `expandBytes` answers — the count column at most
+    `n` longs, their total below `2^63`, the copies' count a `USize`. -/
+theorem expand_rank {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
+    (hS : ((List.range (len cnt)).map fun t => (Column.bitsAt cnt (t * 8) 8).toNat).sum < 2 ^ 63)
+    (hm : len (expandBytes 8 0 (tilLongs n) cnt) < USize.size) {p : Nat}
+    (hp : p < len (expandBytes 8 0 (tilLongs n) cnt)) :
+    (Column.bitsAt (sub (len (expandBytes 8 0 (tilLongs n) cnt)).toUSize
+        (tilLongs (len (expandBytes 8 0 (tilLongs n) cnt)).toUSize)
+        (gather 8 (sub n (sums n cnt) cnt) (expandBytes 8 0 (tilLongs n) cnt))) (p * 8) 8).toNat =
+      p - ((List.range (Column.bitsAt (expandBytes 8 0 (tilLongs n) cnt) (p * 8) 8).toNat).map fun s =>
+        (Column.bitsAt cnt (s * 8) 8).toNat).sum := by
+  have hc : ∀ t < len cnt, (Column.bitsAt cnt (t * 8) 8).toNat < 2 ^ 63 := fun t ht => by
+    have h1 := sum_range_le (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (show t + 1 ≤ len cnt by omega)
+    simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
+      List.sum_nil] at h1
+    omega
+  have hI := expand_idx hn hc
+  generalize expandBytes 8 0 (tilLongs n) cnt = i at hI hm hp ⊢
+  have hlen : len i = ((List.range (len cnt)).map fun t => (Column.bitsAt cnt (t * 8) 8).toNat).sum := by
+    rw [len_eq_ids, hI, List.length_flatMap]; simp
+  obtain ⟨t, ht, h1, h2, h3⟩ := flatMap_replicate_get (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (len cnt) p
+    (hlen ▸ hp)
+  have hpl : p < ((List.range (len cnt)).flatMap fun t =>
+      List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t).length := by rw [← hI, ← len_eq_ids]; exact hp
+  have hit : (Column.bitsAt i (p * 8) 8).toNat = t := by
+    rw [ids_get hI hpl]; rw [List.getElem?_eq_getElem hpl] at h3; exact Option.some.inj h3
+  have hpre := sum_range_le (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (show t + 1 ≤ len cnt by omega)
+  have hsum1 : ((List.range (t + 1)).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum =
+      ((List.range t).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum + (Column.bitsAt cnt (t * 8) 8).toNat := by
+    simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
+      List.sum_nil, Nat.add_zero]
+  have hsm := sums_get (n := n) (b := cnt) (j := t) (by omega) ht (by omega)
+  have hrs := sub_get (n := n) (a := sums n cnt) (b := cnt) (i := t) (by omega) (by omega) (by omega)
+  have hm' : (len i).toUSize.toNat = len i := USize.toNat_ofNat_of_lt' hm
+  have hg := gather8_get (src := sub n (sums n cnt) cnt) (idx := i) (j := p) hp
+    (by rw [hit, sub, len_val]; omega)
+  rw [hit] at hg ⊢
+  rw [sub_get (by rw [hm']; exact hp) (by rw [tilLongs_get (by rw [hm']; exact hp)]; omega)
+    (by rw [tilLongs_get (by rw [hm']; exact hp), hg, hrs]; omega),
+    tilLongs_get (by rw [hm']; exact hp), hg, hrs]
+  omega
+
+/-- **`Code.gather`'s payload holds exactly its codes**: `len i` of them at `c`'s lane, `⌈len i · w / 8⌉`
+    bytes — `gatherBits`, `gatherBytes` and `gatherPacked` (`packIds` at `2`/`4` bits) alike. -/
+theorem gather_size (c : Code) (i : ByteArray) (hl : len i < USize.size)
+    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) :
+    (Code.gather c i).b.size = (len i * c.w + 7) / 8 := by
+  unfold Code.gather longCount
+  simp only [need, dif_pos hl]
+  unfold Code.kind
+  split
+  next _ hk =>
+    rcases laneKind_some hk with ⟨-, h1⟩ | ⟨h, -⟩
+    · rw [KernelWF.gatherBits_size, h1, Nat.mul_one]; rfl
+    · exact absurd rfl h
+  next _ k hne hk =>
+    rcases laneKind_some hk with ⟨h, -⟩ | ⟨-, hw8, hq, -⟩
+    · exact absurd h hne
+    rw [KernelWF.gatherBytes_size, lane_toNat (by omega), hw8]; simp only [len]
+    rw [show i.size / 8 * (8 * k.width) + 7 = 8 * (i.size / 8 * k.width) + 7 by rw [Nat.mul_left_comm]]
+    omega
+  next _ hk =>
+    have h24 : c.w = 2 ∨ c.w = 4 := by
+      rcases hcw with h | h | h | h | h | h | h <;> simp [h, laneKind] at hk ⊢
+    unfold gatherPacked Column.packIds
+    rw [lane_toNat (by omega), if_neg (by omega), if_neg (by omega)]
+    dsimp only
+    rw [(fold_push_getElem? _ _ _).1]
+    simp only [len]
+    rcases h24 with h | h <;> rw [h] <;> simp [show ∀ k, (ByteArray.emptyWithCapacity k).size = 0 from fun _ => rfl] <;> omega
+
+/-- **A stable sort by a class `κ` below `K` is the classes in turn, each class's rows ascending**: a
+    permutation of `range n` sorted by `κ` with ties in row order is unique, so class `c` takes the positions
+    `[#(κ < c), #(κ ≤ c))` in ascending row order. -/
+theorem stable_sort_classes {L : List Nat} {n K : Nat} (κ : Nat → Nat) (hκ : ∀ i < n, κ i < K)
+    (hp : L.Perm (List.range n)) (hs : L.Pairwise fun i j => κ i ≤ κ j ∧ (κ j ≤ κ i → i < j)) :
+    L = (List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c := by
+  have hR : ((List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c).Pairwise
+      fun i j => κ i < κ j ∨ (κ i = κ j ∧ i < j) := by
+    rw [List.pairwise_flatMap]
+    refine ⟨fun c _ => ((List.pairwise_lt_range (n := n)).filter _).imp_of_mem fun hi hj h => ?_,
+      (List.pairwise_lt_range (n := K)).imp fun h x hx y hy => ?_⟩
+    · simp only [List.mem_filter, beq_iff_eq] at hi hj; exact Or.inr ⟨by rw [hi.2, hj.2], h⟩
+    · simp only [List.mem_filter, beq_iff_eq] at hx hy; exact Or.inl (by omega)
+  refine List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => by omega)
+    (hs.imp fun {a b} ⟨h1, h2⟩ => if e : κ b ≤ κ a then Or.inr ⟨by omega, h2 e⟩ else Or.inl (by omega)) hR
+    (hp.trans ?_)
+  have hd : ((List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c).Nodup :=
+    hR.imp fun h e => by subst e; omega
+  refine List.perm_iff_count.2 fun x => ?_
+  rw [List.Nodup.count List.nodup_range, List.Nodup.count hd]
+  by_cases hx : x < n
+  · rw [if_pos (List.mem_range.2 hx), if_pos (List.mem_flatMap.2 ⟨κ x, List.mem_range.2 (hκ x hx),
+      List.mem_filter.2 ⟨List.mem_range.2 hx, by simp⟩⟩)]
+  · rw [if_neg (fun h => hx (List.mem_range.1 h)), if_neg (fun h => by
+      obtain ⟨_, _, h⟩ := List.mem_flatMap.1 h; exact hx (List.mem_range.1 (List.mem_filter.1 h).1))]
+
 #print axioms flatMap_replicate_get
 #print axioms expand_idx
+#print axioms expand_rank
+#print axioms gather_size
+#print axioms stable_sort_classes
 #print axioms add_get
 #print axioms sub_get
 #print axioms sums_get
