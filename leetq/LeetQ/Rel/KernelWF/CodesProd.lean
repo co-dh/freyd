@@ -6,6 +6,7 @@
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.KernelWF.Lane
+import LeetQ.Rel.KernelWF.ComposeKey
 import QLean.Verify.Codes
 import QLean.Verify.SymFind
 
@@ -499,6 +500,48 @@ theorem idsOperand_lane {w : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ 
   rw [e8, lane_toNat (by omega), hcap]
   exact keyAt_packIds64 n.toNat (Column.idAt b w)
 
+/-- **Where `pairCode` groups the pair, its classes are `idsBy` of a key** that agrees exactly where both
+    columns' codes do, and its code is `Code.ofIds` of them; `a`, `b` lanes of `n` codes in `⌈n·w/8⌉` bytes. -/
+theorem pairCode_grouped_key (cl : Bool) (a b : Code) (hn : b.n = a.n)
+    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+      a.b.size = (a.n.toNat * a.w + 7) / 8)
+    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+      b.b.size = (b.n.toNat * b.w + 7) / 8)
+    {r : ByteArray × ByteArray} (hr : (pairCode cl a b).2 = some r) :
+    ∃ key : Nat → UInt64 × UInt64, (∀ i < a.n.toNat, ∀ j < a.n.toNat, (key i = key j ↔
+      Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j)) ∧
+      r = Order.idsBy a.n.toNat key ∧ (pairCode cl a b).1 = Code.ofIds (len r.2) a.n r.1 := by
+  rw [hn] at hb
+  revert hr
+  unfold pairCode
+  dsimp only
+  split
+  · intro h; simp at h
+  split
+  · next _ _ ka kb hka hkb =>
+    intro hr
+    simp only [Option.some.injEq] at hr
+    subst hr
+    have hm : min a.n.toNat (min (ka.avail a.b) (kb.avail b.b)) = a.n.toNat := by
+      have := avail_lane hka ha.2; have := avail_lane hkb hb.2; omega
+    refine ⟨fun i => (Order.keyAt ka a.b i, Order.keyAt kb b.b i), fun i _ j _ => ?_, ?_, rfl⟩
+    · rw [Prod.mk.injEq, keyAt_iff_idAt hka, keyAt_iff_idAt hkb]
+    · unfold Order.groupIdsPair; rw [hm]
+  · intro hr
+    simp only [Option.some.injEq] at hr
+    subst hr
+    obtain ⟨hav, hka⟩ := idsOperand_lane ha.1 ha.2
+    obtain ⟨hbv, hkb⟩ := idsOperand_lane hb.1 hb.2
+    refine ⟨fun i => (Order.keyAt .i64 (idsOperand 8 a.w.toUSize a.b a.n) i,
+      Order.keyAt .i64 (idsOperand 8 b.w.toUSize b.b a.n) i), fun i hi j hj => ?_, ?_, rfl⟩
+    · have haw : a.w ≤ 64 := by rcases ha.1 with h | h | h | h | h | h | h <;> omega
+      have hbw : b.w ≤ 64 := by rcases hb.1 with h | h | h | h | h | h | h <;> omega
+      have l64 : ∀ (x : ByteArray) w k, w ≤ 64 → Column.idAt x w k < 2 ^ 64 := fun x w k h =>
+        Nat.lt_of_lt_of_le (idAt_lt x w k h) (Nat.pow_le_pow_right (by decide) h)
+      rw [Prod.mk.injEq, hka i hi, hka j hj, hkb i hi, hkb j hj,
+        rank_ofNat_iff (l64 a.b a.w i haw) (l64 a.b a.w j haw), rank_ofNat_iff (l64 b.b b.w i hbw) (l64 b.b b.w j hbw)]
+    · unfold Order.groupIdsPairIds Order.groupIdsPair; rw [hav, hbv, Nat.min_self, Nat.min_self]
+
 /-- **`pairCode` where it groups the pair** — its classes answered, `groupIdsPair` at two layouts,
     `groupIdsPairIds` otherwise: the code is well formed, and two of its codes agree exactly when both
     columns' codes do; `a`, `b` lanes of `n` codes in `⌈n·w/8⌉` bytes. -/
@@ -514,40 +557,82 @@ theorem pairCode_grouped (cl : Bool) (a b : Code) (hn : b.n = a.n)
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ i < a.n.toNat, ∀ j < a.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
         Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j) := by
-  rw [hn] at hb
-  obtain ⟨key, hkey, hc⟩ : ∃ key : Nat → UInt64 × UInt64, (∀ i < a.n.toNat, ∀ j < a.n.toNat, (key i = key j ↔
-      Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j)) ∧
-      (pairCode cl a b).1 = Code.ofIds (len (Order.idsBy a.n.toNat key).2) a.n (Order.idsBy a.n.toNat key).1 := by
-    revert hr
-    unfold pairCode
-    dsimp only
-    split
-    · intro h; simp at h
-    intro _
-    split
-    · next _ _ ka kb hka hkb =>
-      have hm : min a.n.toNat (min (ka.avail a.b) (kb.avail b.b)) = a.n.toNat := by
-        have := avail_lane hka ha.2; have := avail_lane hkb hb.2; omega
-      refine ⟨fun i => (Order.keyAt ka a.b i, Order.keyAt kb b.b i), fun i _ j _ => ?_, ?_⟩
-      · rw [Prod.mk.injEq, keyAt_iff_idAt hka, keyAt_iff_idAt hkb]
-      · show Code.ofIds _ a.n (Order.groupIdsPair ka kb a.n a.b b.b).1 = _
-        unfold Order.groupIdsPair; rw [hm]
-    · obtain ⟨hav, hka⟩ := idsOperand_lane ha.1 ha.2
-      obtain ⟨hbv, hkb⟩ := idsOperand_lane hb.1 hb.2
-      refine ⟨fun i => (Order.keyAt .i64 (idsOperand 8 a.w.toUSize a.b a.n) i,
-        Order.keyAt .i64 (idsOperand 8 b.w.toUSize b.b a.n) i), fun i hi j hj => ?_, ?_⟩
-      · have haw : a.w ≤ 64 := by rcases ha.1 with h | h | h | h | h | h | h <;> omega
-        have hbw : b.w ≤ 64 := by rcases hb.1 with h | h | h | h | h | h | h <;> omega
-        have l64 : ∀ (x : ByteArray) w k, w ≤ 64 → Column.idAt x w k < 2 ^ 64 := fun x w k h =>
-          Nat.lt_of_lt_of_le (idAt_lt x w k h) (Nat.pow_le_pow_right (by decide) h)
-        rw [Prod.mk.injEq, hka i hi, hka j hj, hkb i hi, hkb j hj,
-          rank_ofNat_iff (l64 a.b a.w i haw) (l64 a.b a.w j haw), rank_ofNat_iff (l64 b.b b.w i hbw) (l64 b.b b.w j hbw)]
-      · show Code.ofIds _ a.n (Order.groupIdsPairIds a.w.toUSize b.w.toUSize a.n a.b b.b).1 = _
-        unfold Order.groupIdsPairIds Order.groupIdsPair; rw [hav, hbv, Nat.min_self, Nat.min_self]
+  obtain ⟨key, hkey, rfl, hc⟩ := pairCode_grouped_key cl a b hn ha hb hr
   intro c
   rw [show c = _ from hc]
   obtain ⟨hwf, hiff⟩ := ofIds_idsBy key a.n
   exact ⟨hwf, fun i hi j hj => (hiff i hi j hj).trans (hkey i hi j hj)⟩
+
+/-- `x · d + y` with `y < d` keeps `x` and `y` apart. -/
+theorem mul_add_inj {d x y x' y' : Nat} (hy : y < d) (hy' : y' < d) : x * d + y = x' * d + y' ↔ x = x' ∧ y = y' := by
+  have dm : ∀ x y, y < d → (x * d + y) / d = x ∧ (x * d + y) % d = y := fun x y hy => by
+    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.add_mul_mod_self_right, Nat.div_eq_of_lt hy,
+      Nat.mod_eq_of_lt hy]
+    exact ⟨by omega, rfl⟩
+  refine ⟨fun e => ⟨?_, ?_⟩, fun ⟨e1, e2⟩ => by rw [e1, e2]⟩
+  · calc x = (x * d + y) / d := (dm x y hy).1.symm
+      _ = (x' * d + y') / d := by rw [e]
+      _ = x' := (dm x' y' hy').1
+  · calc y = (x * d + y) % d := (dm x y hy).2.symm
+      _ = (x' * d + y') % d := by rw [e]
+      _ = y' := (dm x' y' hy').2
+
+/-- **`pairCode` of two well-formed codes of one count**, composed or grouped, whatever `cl`: the code is well
+    formed, and two of its codes agree exactly when both columns' codes do. -/
+theorem pairCode_spec (cl : Bool) (a b : Code) (hn : b.n = a.n)
+    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < a.card))
+    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < b.card)) :
+    let c := (pairCode cl a b).1
+    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = a.n ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ i < a.n.toNat, ∀ j < a.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
+        Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j) := by
+  rcases hp : (pairCode cl a b).2 with _ | r
+  case some => exact pairCode_grouped cl a b hn ⟨ha.1, ha.2.1⟩ ⟨hb.1, hb.2.1⟩ hp
+  obtain ⟨k, t₁, m₁, e₁, t₂, m₂, e₂, h₁, h₂, hk, hc⟩ : ∃ k t₁ m₁ e₁ t₂ m₂ e₂, a.column = some (t₁, (m₁, e₁)) ∧
+      b.column = some (t₂, (m₂, e₂)) ∧
+      composeKey t₁ m₁ e₁ (max a.card 2) (max b.card 2) t₂ m₂ e₂ = some k ∧
+      (pairCode cl a b).1 = ⟨Column.idWidthOf (max a.card 2 * max b.card 2), a.n, max a.card 2 * max b.card 2, k⟩ := by
+    revert hp
+    unfold pairCode
+    dsimp only
+    split
+    · next c hc =>
+      intro _
+      simp only [bind, Option.bind_eq_some_iff, Functor.map, Option.map_eq_some_iff] at hc
+      obtain ⟨_, -, _, -, ⟨t₁, m₁, e₁⟩, h₁, ⟨t₂, m₂, e₂⟩, h₂, k, hk, rfl⟩ := hc
+      exact ⟨k, t₁, m₁, e₁, t₂, m₂, e₂, h₁, h₂, hk, rfl⟩
+    · intro h; simp at h
+  have hd : 2 ≤ max a.card 2 * max b.card 2 :=
+    Nat.le_trans (by omega : 2 ≤ max a.card 2) (Nat.le_mul_of_pos_right _ (by omega))
+  obtain ⟨-, h63, hks, hkey⟩ := composeKey_code a b ha hb h₁ h₂ hd hk
+  have hw0 : Column.idWidthOf (max a.card 2 * max b.card 2) ≠ 0 := fun h0 => by
+    have := lt_two_pow_idWidthOf (L := max a.card 2 * max b.card 2) (k := 1) (by omega) (by omega)
+    rw [h0] at this; omega
+  have hlane : Column.idWidthOf (max a.card 2 * max b.card 2) = 1 ∨
+      Column.idWidthOf (max a.card 2 * max b.card 2) = 2 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 4 ∨
+      Column.idWidthOf (max a.card 2 * max b.card 2) = 8 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 16 ∨
+      Column.idWidthOf (max a.card 2 * max b.card 2) = 32 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 64 := by
+    have := laneWidth_cases (Column.widthFor (max a.card 2 * max b.card 2 - 1))
+    unfold Column.idWidthOf at hw0 ⊢; omega
+  intro c
+  rw [show c = _ from hc]
+  dsimp only
+  refine ⟨⟨hlane, rfl, hks, fun hw8 => ⟨?_, fun i hi => ?_⟩⟩, fun i hi j hj => ?_⟩
+  · have := lt_two_pow_idWidthOf (L := max a.card 2 * max b.card 2) (k := max a.card 2 * max b.card 2 - 1)
+      (by omega) (by omega)
+    refine Nat.lt_of_le_of_lt ?_ (Nat.lt_of_lt_of_le (by decide : 16 < 2 ^ 32) USize.le_size)
+    rcases hlane with h | h | h | h | h | h | h <;> rw [h] at this hw8 <;> simp only [Nat.reducePow] at this <;> omega
+  · obtain ⟨e, hA, hB⟩ := hkey i hi
+    rw [e]
+    have := Nat.mul_le_mul_right (max b.card 2) (show Column.idAt a.b a.w i + 1 ≤ max a.card 2 from hA)
+    rw [Nat.add_one_mul] at this; omega
+  · obtain ⟨ei, -, hBi⟩ := hkey i hi
+    obtain ⟨ej, -, hBj⟩ := hkey j hj
+    rw [ei, ej]; exact mul_add_inj hBi hBj
 
 /-! ## Products: `pairCode` of the two columns' codes laid end to end, cut back -/
 
