@@ -380,8 +380,9 @@ theorem raze_len (t : QAtomicType) (cs : Array ((n : USize) × Arr t n))
     joint range: `overFoR` reads a `foR` part's bounds off the block metadata, `overBytes` a dense
     part's in one pass; `foRShift`/`Ew.val add` rebase a part and `enumIdsFoR`/`enumIds` pack its
     offsets, a null to the last code — no hashing, no `foR` element decoded. Order-preserving. `none`
-    where a part is neither, the range is wider than a grouping pass's ids over `total` rows would be, or
-    a pass reports an offset outside `0 … card`: `codes` then takes its grouping branch, a faithful code too.
+    where a part is neither, the range is wider than a grouping pass's ids over `total` rows would be or
+    than an `Int64` offset, or a pass reports an offset outside `0 … card`: `codes` then takes its grouping
+    branch, a faithful code too.
     A dense part is here because its first-appearance ids (`groupIdsColumn`) cost a table probe a row
     (measured: `ej` of two million-wide dense key columns, 1e6 rows, the codes 16.7 ms). -/
 def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (USize × Enc) p) (total : Nat) : Option (Vector Code p) :=
@@ -405,6 +406,8 @@ def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (USize × Enc) p) (tot
   -- values already at `0` and up that fit the same width are their own offsets: no `foRShift` pass
   let base := if 0 ≤ lo && (codeKind (span 0)).width == k.width then 0 else lo
   let card := span base
+  -- an offset `2^63` or more wraps onto the null (`Ew.val add`), and the null's code `card - 1` is a `USize`
+  if 2 ^ 63 + 1 < card || USize.size < card then none else
   let w := 8 * k.width
   -- `bad` is the first row whose offset lies outside `0 … card`, `n` when none does
   let packed (n : USize) : ByteArray × USize → Option Code

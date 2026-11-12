@@ -447,8 +447,8 @@ theorem long_row_eq {t : QAtomicType} (ht : orderKind t = some .i64) {n m : USiz
   rw [Arr.get_ne x i hg, Arr.get_ne y j hg, KernelWF.get_eq_raw hd x.wf i.2, KernelWF.get_eq_raw hd y.wf j.2]
   cases t <;> simp [orderKind] at ht <;> simp [Column.atomOfBits, Carrier.of?]
 
-/-- A shift by `-base` of an element `x` with `base ≤ x ≤ base + 2^32`: the integer difference, not the null. -/
-theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.toInt) (h2 : x.toInt - base.toInt ≤ 2 ^ 32) :
+/-- A shift by `-base` of an element `x` with `base ≤ x < base + 2^63`: the integer difference, not the null. -/
+theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.toInt) (h2 : x.toInt - base.toInt < 2 ^ 63) :
     (x + -base).toInt = x.toInt - base.toInt ∧ x + -base ≠ nul := by
   have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
   have hxl := Int64.le_toInt x; have hxu := Int64.toInt_lt x
@@ -466,7 +466,7 @@ theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.
     when the kernel reports every row in range: `n` codes at the lane `w`, the offset `x i - base`, the null
     at `card - 1`. -/
 theorem enum_part {n : USize} {card w : Nat} {base : Int64} {b' : ByteArray} (x : Nat → Int64) {c : Code}
-    (hcard : card ≤ 2 ^ 32) (hc2 : 2 ≤ card) (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w)
+    (hcard : card ≤ 2 ^ 63 + 1) (hcU : card ≤ USize.size) (hc2 : 2 ≤ card) (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w)
     (hb : base ≠ nul)
     (hv : ∀ i < n.toNat, (Column.bitsAt b' (i * 8) 8).toInt64 = if x i = nul then nul else x i + -base)
     (hr : ∀ i < n.toNat, x i ≠ nul → base.toInt ≤ (x i).toInt ∧ (x i).toInt - base.toInt + 2 ≤ card)
@@ -578,10 +578,9 @@ theorem codeKind_facts (c : Nat) (hc : c ≤ 2 ^ 64) :
 
 /-- **`rangeOffsets`' codes, part by part**: one `base` and `card` for every part; part `k`'s code at row
     `i` is the offset of the row's element from `base`, the null at `card - 1`, every element that is not
-    the null in `[base, base + card - 2]`; the lane `8 … 64` bits wide, `⌈n·w/8⌉` bytes. Where the parts'
-    total count is at most `2^32` — past it the offsets can reach `2^63` and wrap to the null. -/
+    the null in `[base, base + card - 2]`; the lane `8 … 64` bits wide, `⌈n·w/8⌉` bytes. -/
 theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : Nat} {cs : Vector (USize × Enc) p}
-    {total : Nat} {os : Vector Code p} (hwf : ∀ k (hk : k < p), Enc.WF a cs[k].1 cs[k].2) (htot : total ≤ 2 ^ 32)
+    {total : Nat} {os : Vector Code p} (hwf : ∀ k (hk : k < p), Enc.WF a cs[k].1 cs[k].2)
     (h : rangeOffsets a cs total = some os) :
     ∃ base : Int64, ∃ card : Nat, ∀ k (hk : k < p),
       os[k].n = cs[k].1 ∧ os[k].card = card ∧ (os[k].w = 8 ∨ os[k].w = 16 ∨ os[k].w = 32 ∨ os[k].w = 64) ∧
@@ -613,6 +612,11 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
   obtain ⟨B, hB⟩ : ∃ B, B = (if (decide (0 ≤ lo) && (codeKind (hi.toInt - Int64.toInt 0 + 2).toNat).width ==
       (codeKind (hi.toInt - lo.toInt + 2).toNat).width) = true then (0 : Int64) else lo) := ⟨_, rfl⟩
   rw [← hB] at h
+  split at h
+  · exact absurd h (by simp)
+  rename_i hcB
+  simp only [Bool.or_eq_true, decide_eq_true_eq, not_or, Nat.not_lt] at hcB
+  obtain ⟨hcA, hcU⟩ := hcB
   have hlonul : lo ≠ nul := fun e => hc (by simp [e])
   have hhilo : lo.toInt ≤ hi.toInt := by
     have : ¬ hi < lo := fun e => hc (by simp [e])
@@ -623,14 +627,8 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
     have : lo.toInt ≠ nul.toInt := fun e => hlonul (Int64.toInt_inj.1 e)
     omega
   have hspan := codeKind_facts (hi.toInt - lo.toInt + 2).toNat (by omega)
-  have htotk : (codeKind total).width ≤ 4 := by
-    unfold codeKind; repeat' split
-    all_goals simp only [Scan.Kind.width, Nat.reducePow] at *
-    all_goals omega
-  have hkw' : (codeKind (hi.toInt - lo.toInt + 2).toNat).width ≤ 4 := by omega
-  have hspan32 := hspan.2.2 hkw'
   -- `B` is `lo`, or `0` below `lo` at the same lane
-  have hBc : B ≠ nul ∧ B.toInt ≤ lo.toInt ∧ (hi.toInt - B.toInt + 2).toNat ≤ 2 ^ 32 ∧
+  have hBc : B ≠ nul ∧ B.toInt ≤ lo.toInt ∧
       (hi.toInt - B.toInt + 2).toNat ≤ 2 ^ (8 * (codeKind (hi.toInt - lo.toInt + 2).toNat).width) := by
     rw [hB]; split
     · next h0 =>
@@ -641,9 +639,9 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
       try simp only [hz, Int.sub_zero] at h0w h0l ⊢
       have h0s := codeKind_facts (hi.toInt + 2).toNat (by omega)
       rw [h0w] at h0s
-      refine ⟨by decide, by omega, h0s.2.2 hkw', h0s.1⟩
-    · exact ⟨hlonul, Int.le_refl _, hspan32, hspan.1⟩
-  obtain ⟨hBn, hBlo, hc32, hcw⟩ := hBc
+      refine ⟨by decide, by omega, h0s.1⟩
+    · exact ⟨hlonul, Int.le_refl _, hspan.1⟩
+  obtain ⟨hBn, hBlo, hcw⟩ := hBc
   refine ⟨B, (hi.toInt - B.toInt + 2).toNat, fun k hk => ?_⟩
   have hp := vec_mapM_some h hk
   obtain ⟨hls, hlall⟩ := arr_mapM_some hlos
@@ -683,7 +681,7 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
       have hb := overBytes_bounds Ew.i64 nul b hib (by rw [hsig]; exact hx)
       rw [hsig, hlk, hhk] at hb
       exact hrng _ (Int64.le_iff_toInt_le.1 hb.1) (Int64.le_iff_toInt_le.1 hb.2)
-    obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.bitsAt b (i * 8) 8).toInt64) hc32 hc2 hw hcw hBn
+    obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.bitsAt b (i * 8) 8).toInt64) hcA hcU hc2 hw hcw hBn
       (fun i hi => shift_bytes hBn hi) hbnd hp
     refine ⟨h1, h2, by rw [h3]; exact hw, by rw [h4, h3], fun i hi => ?_⟩
     rw [hraw i hi]
@@ -711,7 +709,7 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
         rw [hlk] at hb; rw [hhk] at hb'
         exact hrng _ hb.1 hb'.2
       obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.foRBits md pk (Column.blockStarts md) i).toInt64)
-        hc32 hc2 hw hcw hBn (fun i hi => shift_foR hBn hs hi) hbnd hp
+        hcA hcU hc2 hw hcw hBn (fun i hi => shift_foR hBn hs hi) hbnd hp
       refine ⟨h1, h2, by rw [h3]; exact hw, by rw [h4, h3], fun i hi => ?_⟩
       rw [hraw i hi]
       exact ⟨h5 i hi, hbnd i hi⟩
@@ -747,30 +745,27 @@ theorem codes_long_eq {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     rcases long_enc ht cs[0].2.wf with ⟨b, he, -⟩ | ⟨md, pk, he⟩ <;> simp [he] at this
   · dsimp only; rw [hro]
 
-/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are
-    equal exactly where the values are, across parts.** Past `2^32` rows the plain statement is false: a
-    span `hi - lo = 2^63` wraps onto the null. -/
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers, are
+    equal exactly where the values are, across parts.** -/
 theorem codes_long_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
-    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
     (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
     Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
         Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
       Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
   obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
-    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) hro
   rw [codes_long_eq ht cs (by omega) hro, Vals.row_atom, Vals.row_atom, long_row_eq ht]
   obtain ⟨-, -, -, -, hk'⟩ := hs k hk; obtain ⟨-, -, -, -, hl'⟩ := hs l hl
   simp only [Vector.getElem_map, Arr.part] at hk' hl'
   rw [(hk' i hi).1, (hl' j hj).1]
   exact offset_iff (hk' i hi).2 (hl' j hj).2
 
-/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are well
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers, are well
     formed**: a lane of one to eight bytes, so the id bound is vacuous. -/
 theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
-    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
     (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]
@@ -778,11 +773,243 @@ theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
-    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) hro
   obtain ⟨h1, -, h3, h4, -⟩ := hs k hk
   simp only [Vector.getElem_map, Arr.part] at h1 h4
   simp only [codes_long_eq ht cs (by omega) hro]
   refine ⟨by omega, h1, by rw [h1]; exact h4, fun h => absurd h (by omega)⟩
+
+/-! ## Atoms: one part of an eight-byte integral type where `rangeOffsets` declines
+
+All null, a span wider than the total lane or than an `Int64` offset: `codes` groups, as for the small
+integral types — `groupIds .i64` over a dense payload, `groupIdsFoR .i64` over an encoded one. -/
+
+/-- `groupIdsColumn` of an eight-byte integral payload: a dense one by `groupIds`, an encoded one by
+    `groupIdsFoR`. -/
+theorem groupIdsColumn_long {t : QAtomicType} (ht : orderKind t = some .i64) (n : USize) :
+    (∀ b, groupIdsColumn t n (.bytes b) = some (Order.groupIds .i64 n b)) ∧
+      ∀ md pk, groupIdsColumn t n (.foR md pk) = some (Order.groupIdsFoR .i64 n md pk) := by
+  cases t <;> simp [orderKind] at ht <;>
+    exact ⟨fun b => by simp [groupIdsColumn, orderKind, Enc.bytesOf], fun md pk => by simp [groupIdsColumn, orderKind]⟩
+
+/-- **One part of an eight-byte integral side where `rangeOffsets` declines is coded by `groupIdsColumn`**,
+    read by `Code.ofIds`. -/
+theorem codes_long_group {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
+    ∃ p, groupIdsColumn t x.1 x.2.enc = some p ∧
+      (Obj.codes (.atom t) #v[x])[0] = Code.ofIds (len p.2) x.1 p.1 := by
+  obtain ⟨-, -, hg, -, -⟩ := long_facts ht
+  have hsome := KernelWF.groupIdsColumn_isSome hg x.2.wf fun d o ids he => by
+    exfalso; rcases long_enc ht x.2.wf with ⟨b, hb, -⟩ | ⟨md, pk, hb⟩ <;> simp [hb, Column.intern] at he
+  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
+  -- at a concrete type and payload constructor every branch test of `codes` but `rangeOffsets` reduces
+  obtain ⟨n, v, hv⟩ := x
+  cases v <;> try exact hv.elim
+  rename_i t' n' e a
+  obtain ⟨h1, h2, hwf⟩ := hv
+  subst h1 h2
+  cases t' <;> simp [orderKind] at ht <;> cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
+    simp [Arr.part, Arr.enc] at hro <;>
+    simp [Obj.codes, Alg.codes, hro, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes, Arr.enc,
+      Arr.part]
+
+/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its codes are faithful.** -/
+theorem codes_long_group_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
+    {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
+  have hn64 : x.1.toNat < 2 ^ 64 := Verify.usize_lt x.1
+  have hinj : ∀ a c : UInt64, a.toInt64 = c.toInt64 ↔ a = c := fun a c =>
+    ⟨fun h => by simpa using congrArg Int64.toUInt64 h, fun h => h ▸ rfl⟩
+  rw [hc, Vals.row_atom, Vals.row_atom, long_row_eq ht, hinj]
+  rcases long_enc ht x.2.wf with ⟨b, he, hbs⟩ | ⟨md, pk, he⟩
+  · rw [he, (groupIdsColumn_long ht x.1).1 b, Option.some_inj] at hp
+    subst hp
+    have hav : min x.1.toNat (Scan.Kind.i64.avail b) = x.1.toNat := by
+      simp [Scan.Kind.avail, Scan.Kind.width, hbs]
+    have hspec := Verify.groupIds_spec .i64 x.1 b
+    rw [hav] at hspec
+    rw [ofIds_groupOf (Order.keyAt .i64 b) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+      ofIds_groupOf (Order.keyAt .i64 b) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+      groupOf_eq_groupOf hi hj, Verify.keyAt_eq_iff (by simp) b i j, he,
+      (raw_long ht hi).1 b, (raw_long ht hj).1 b]
+    rfl
+  · rw [he, (groupIdsColumn_long ht x.1).2 md pk, Option.some_inj] at hp
+    subst hp
+    have hspec := Verify.groupIdsFoR_spec .i64 (by decide) x.1 md pk
+    rw [ofIds_groupOf (foRKey .i64 md pk) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+      ofIds_groupOf (foRKey .i64 md pk) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+      groupOf_eq_groupOf hi hj, he, (raw_long ht hi).2 md pk, (raw_long ht hj).2 md pk]
+    simp only [foRKey, Order.rank]
+    have hm : ∀ v : UInt64, UInt64.ofNat (v.toNat % 2 ^ (8 * Scan.Kind.i64.width)) = v := fun v => by
+      rw [show Scan.Kind.i64.width = 8 from rfl, Nat.mod_eq_of_lt (by simpa using v.toNat_lt)]
+      exact UInt64.ofNat_toNat
+    rw [hm, hm]; exact UInt64.xor_left_inj _
+
+/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its code is well formed.** -/
+theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
+    let c := (Obj.codes (.atom t) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
+  rw [hc]
+  rcases long_enc ht x.2.wf with ⟨b, he, hbs⟩ | ⟨md, pk, he⟩
+  · rw [he, (groupIdsColumn_long ht x.1).1 b, Option.some_inj] at hp
+    subst hp
+    have hav : min x.1.toNat (Scan.Kind.i64.avail b) = x.1.toNat := by
+      simp [Scan.Kind.avail, Scan.Kind.width, hbs]
+    have hspec := Verify.groupIds_spec .i64 x.1 b
+    rw [hav] at hspec
+    exact ofIds_groupOf_wf (Order.keyAt .i64 b) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+  · rw [he, (groupIdsColumn_long ht x.1).2 md pk, Option.some_inj] at hp
+    subst hp
+    have hspec := Verify.groupIdsFoR_spec .i64 (by decide) x.1 md pk
+    exact ofIds_groupOf_wf (foRKey .i64 md pk) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+
+/-- **One part of an eight-byte integral side: its codes are faithful**, on either branch of `codes`. -/
+theorem codes_long_one_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  cases hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) with
+  | none => exact codes_long_group_faithful ht x hro hi hj
+  | some os => exact codes_long_faithful ht #v[x] hro (k := 0) (l := 0) (by decide) (by decide) hi hj
+
+/-- **One part of an eight-byte integral side: its code is well formed**, on either branch of `codes`. -/
+theorem codes_long_one_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t)) :
+    let c := (Obj.codes (.atom t) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  cases hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) with
+  | none => exact codes_long_group_wf ht x hro
+  | some os => exact codes_long_wf ht #v[x] hro (k := 0) (by decide)
+
+/-! ## Atoms: one part of a `guid` column
+
+`codes` groups the first positions of each element, `groupIds .i64` over `findVec 16` of the payload
+against itself: two rows share a first position exactly when their sixteen bytes agree. -/
+
+/-- Two members of a list share their first position exactly when they are equal. -/
+theorem idxOf_eq_iff {α : Type} [BEq α] [LawfulBEq α] {l : List α} {a c : α} (ha : a ∈ l) (hc : c ∈ l) :
+    l.idxOf a = l.idxOf c ↔ a = c := by
+  refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
+  induction l with
+  | nil => simp at ha
+  | cons x l ih =>
+    simp only [List.idxOf_cons] at h
+    by_cases hx : x = a <;> by_cases hy : x = c
+    · exact hx.symm.trans hy
+    · subst hx; rw [beq_false_of_ne hy] at h; simp at h
+    · subst hy; rw [beq_false_of_ne hx] at h; simp at h
+    · simp only [beq_false_of_ne hx, beq_false_of_ne hy, cond_false, Nat.add_right_cancel_iff] at h
+      exact ih ((List.mem_cons.1 ha).resolve_left (Ne.symm hx)) ((List.mem_cons.1 hc).resolve_left (Ne.symm hy)) h
+
+/-- A `guid` payload is dense, sixteen bytes an element (`Enc.WF`). -/
+theorem guid_enc {n : USize} {e : Enc} (hwf : Enc.WF .guid n e) : ∃ b, e = .bytes b ∧ b.size = n.toNat * 16 := by
+  cases e <;> simp [Enc.WF, QAtomicType.width] at hwf ⊢ <;> first | exact hwf | omega
+
+/-- A `guid` element is its sixteen bytes. -/
+theorem guid_get {n : USize} (x : Arr .guid n) {b : ByteArray} (he : x.enc = .bytes b) (hs : b.size = n.toNat * 16)
+    (i : Fin n.toNat) : (x.get i).toArray = (b.extract (i.1 * 16) (i.1 * 16 + 16)).data := by
+  have hi := i.2
+  rw [Arr.get_ne x i (by decide), he]
+  simp only [Enc.get, hi, if_true, Option.bind_some, Carrier.of?, Option.getD_some]
+  apply Array.ext
+  · simp [hs]; omega
+  · intro k h1 h2
+    have hk : i.1 * 16 + k < b.size := by simp at h1; omega
+    simp only [Vector.toArray_ofFn, Array.getElem_ofFn, ByteArray.data_extract, Array.getElem_extract]
+    rw [getElem?_pos b _ hk, Option.getD_some]; rfl
+
+/-- `groupIdsColumn` of a `guid` payload: `groupIds .i64` of each element's first position. -/
+theorem groupIdsColumn_guid (n : USize) (b : ByteArray) :
+    groupIdsColumn .guid n (.bytes b) = some (Order.groupIds .i64 n (findVec 16 false b b)) := by
+  simp [groupIdsColumn, Enc.bytesOf]
+
+/-- **One part of a `guid` side is coded by `groupIdsColumn`**, read by `Code.ofIds`. -/
+theorem codes_guid (x : Part (.atom .guid)) :
+    ∃ p, groupIdsColumn .guid x.1 x.2.enc = some p ∧
+      (Obj.codes (.atom .guid) #v[x])[0] = Code.ofIds (len p.2) x.1 p.1 := by
+  have hsome := KernelWF.groupIdsColumn_isSome (by decide) x.2.wf fun d o ids he => by
+    exfalso; obtain ⟨b, hb, -⟩ := guid_enc x.2.wf; simp [hb, Column.intern] at he
+  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
+  obtain ⟨n, v, hv⟩ := x
+  cases v <;> try exact hv.elim
+  rename_i t' n' e a
+  obtain ⟨h1, h2, hwf⟩ := hv
+  subst h1 h2
+  cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
+    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes,
+      Arr.enc]
+
+/-- `findVec 16` of a `guid` payload against itself, read by `groupIds .i64`: the class ids at the width
+    of the class count, the first rows. -/
+theorem guid_groupIds {n : USize} {b : ByteArray} (hbs : b.size = n.toNat * 16) :
+    (∀ j < n.toNat, (Column.bitsAt (findVec 16 false b b) (j * 8) 8).toNat =
+      ((List.range n.toNat).map fun i => (b.extract (i * 16) (i * 16 + 16)).data).idxOf
+        (b.extract (j * 16) (j * 16 + 16)).data) ∧
+    (Order.groupIds .i64 n (findVec 16 false b b)).1 =
+      Column.packIds (Column.idWidthOf (Verify.firstsOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat).length)
+        n.toNat (Verify.groupOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat) ∧
+    ids (Order.groupIds .i64 n (findVec 16 false b b)).2 =
+      Verify.firstsOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat := by
+  have h16 : (16 : USize).toNat = 16 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hnb : b.size / 16 = n.toNat := by omega
+  obtain ⟨hFs, hF⟩ := Verify.findVec_idxOf 16 false b b (by rw [h16, hnb]; exact n.toNat_lt_size)
+  rw [h16, hnb] at hFs hF
+  have hav : min n.toNat (Scan.Kind.i64.avail (findVec 16 false b b)) = n.toNat := by
+    simp [Scan.Kind.avail, Scan.Kind.width, hFs]
+  have hspec := Verify.groupIds_spec .i64 n (findVec 16 false b b)
+  rw [hav] at hspec
+  exact ⟨fun j hj => by rw [hF j hj, if_neg (by decide)], hspec⟩
+
+/-- **One part of a `guid` side: its codes are faithful.** -/
+theorem codes_guid_faithful (x : Part (.atom .guid)) {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom .guid) #v[x])[0].b (Obj.codes (.atom .guid) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom .guid) #v[x])[0].b (Obj.codes (.atom .guid) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  obtain ⟨p, hp, hc⟩ := codes_guid x
+  obtain ⟨b, he, hbs⟩ := guid_enc x.2.wf
+  rw [he, groupIdsColumn_guid, Option.some_inj] at hp
+  subst hp
+  obtain ⟨hF, hspec⟩ := guid_groupIds hbs
+  have hn64 : x.1.toNat < 2 ^ 64 := Verify.usize_lt x.1
+  rw [hc, ofIds_groupOf _ x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+    ofIds_groupOf _ x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+    groupOf_eq_groupOf hi hj, Verify.keyAt_eq_iff (by simp) _ i j]
+  show Column.bitsAt _ (i * 8) 8 = Column.bitsAt _ (j * 8) 8 ↔ _
+  rw [← UInt64.toNat_inj, hF i hi, hF j hj,
+    idxOf_eq_iff (a := (b.extract (i * 16) (i * 16 + 16)).data) (c := (b.extract (j * 16) (j * 16 + 16)).data)
+      (List.mem_map.2 ⟨i, List.mem_range.2 hi, rfl⟩) (List.mem_map.2 ⟨j, List.mem_range.2 hj, rfl⟩),
+    Vals.row_atom, Vals.row_atom, ← Vector.toArray_inj, guid_get x.2 he hbs, guid_get x.2 he hbs]
+
+/-- **One part of a `guid` side: its code is well formed.** -/
+theorem codes_guid_wf (x : Part (.atom .guid)) :
+    let c := (Obj.codes (.atom .guid) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨p, hp, hc⟩ := codes_guid x
+  obtain ⟨b, he, hbs⟩ := guid_enc x.2.wf
+  rw [he, groupIdsColumn_guid, Option.some_inj] at hp
+  subst hp
+  obtain ⟨-, hspec⟩ := guid_groupIds hbs
+  rw [hc]
+  exact ofIds_groupOf_wf _ x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+
+-- -1, 0W, 0N past 2^32 rows: the span 0W - (-1) = 2^63 is no `Int64` offset (it would wrap onto 0N's
+-- code), so `rangeOffsets` declines and `codes` groups; -1, 5, 0N still answers
+#guard (rangeOffsets .long #v[((3 : USize), Enc.bytes (one (-1 : Int64).toUInt64 ++ one Int64.maxValue.toUInt64 ++
+  one Int64.minValue.toUInt64))] (2 ^ 33)).isNone
+#guard (rangeOffsets .long #v[((3 : USize), Enc.bytes (one (-1 : Int64).toUInt64 ++ one (5 : Int64).toUInt64 ++
+  one Int64.minValue.toUInt64))] (2 ^ 33)).isSome
 
 #print axioms codes_long_faithful
 #print axioms codes_long_wf
@@ -790,5 +1017,9 @@ theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
 #print axioms codes_boolean_wf
 #print axioms codes_small_int_faithful
 #print axioms codes_small_int_wf
+#print axioms codes_long_one_faithful
+#print axioms codes_long_one_wf
+#print axioms codes_guid_faithful
+#print axioms codes_guid_wf
 
 end LeetQ.Rel.Alg
