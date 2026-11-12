@@ -181,7 +181,7 @@ theorem sum_size_mul (q : Nat) :
 theorem cat_get (cs : Array Code) {w : Nat}
     (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
     (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
-    (hid : w = 2 ∨ w = 4 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < c.card)
+    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < c.card)
     (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
     (Code.cat cs).w = w ∧ (Code.cat cs).n.toNat = (cs.toList.map (·.n.toNat)).sum ∧
       ∀ k (hk : k < cs.size), ∀ i < cs[k].n.toNat,
@@ -241,7 +241,7 @@ theorem cat_get (cs : Array Code) {w : Nat}
     have hv : B[((cs.toList.take k).map (·.n.toNat)).sum + i]! =
         Column.idAt (Column.packIds w cs[k].card id) w (Column.idAt cs[k].b w i) := by
       rw [getElem!_pos B _ hlt]; exact Option.some_inj.1 ((Array.getElem?_eq_getElem hlt).symm.trans ho)
-    have hx := hid hi8 _ (hmem k hk) i hi
+    have hx := hid (by rcases hi8 with h | h <;> omega) _ (hmem k hk) i hi
     rw [idAt_packIds (f := fun j => B[j]!) (by omega) hlt (by show B[_]! < 2 ^ w; rw [hv]; exact idAt_lt _ _ _ hw64), hv,
       idAt_packIds (f := id) (by omega) hx (idAt_lt _ _ _ hw64)]; rfl
   obtain ⟨q, hq, hq8, hlk⟩ : ∃ q, w = 8 * q ∧ q ≤ 8 ∧ ∃ kd, laneKind w = some kd ∧ kd ≠ .bit := by
@@ -272,6 +272,85 @@ theorem cat_get (cs : Array Code) {w : Nat}
   rw [show (((cs.toList.take k).map (·.n.toNat)).sum + i) * q + j =
     ByteArray.empty.size + ((cs.toList.take k).map (·.n.toNat)).sum * q + (i * q + j) by simp [Nat.add_mul]; omega]
   exact hg
+
+/-- An index below a sum of counts falls in one count: past the counts before it. -/
+theorem sum_split : ∀ (l : List Nat) {j : Nat}, j < l.sum →
+    ∃ k, ∃ hk : k < l.length, ∃ x, x < l[k]'hk ∧ j = (l.take k).sum + x
+  | [], j, h => by simp at h
+  | m :: l, j, h => by
+    by_cases hj : j < m
+    · exact ⟨0, by simp, j, by simpa using hj, by simp⟩
+    · obtain ⟨k, hk, x, hx, e⟩ := sum_split l (j := j - m) (by simp at h; omega)
+      exact ⟨k + 1, by simpa using hk, x, by simpa using hx, by simp; omega⟩
+
+/-- A running `max` of cards bounds its start and every card it passed. -/
+theorem le_foldl_max : ∀ (l : List Code) (a : Nat),
+    a ≤ l.foldl (max · ·.card) a ∧ ∀ c ∈ l, c.card ≤ l.foldl (max · ·.card) a
+  | [], a => ⟨Nat.le_refl a, by simp⟩
+  | c :: l, a => by
+    obtain ⟨h1, h2⟩ := le_foldl_max l (max a c.card)
+    refine ⟨Nat.le_trans (Nat.le_max_left _ _) h1, fun d hd => ?_⟩
+    rcases List.mem_cons.1 hd with rfl | hd
+    · exact Nat.le_trans (Nat.le_max_right _ _) h1
+    · exact h2 d hd
+
+/-- A kernel that reads part `k`'s count off `countBytes` and lays down that many elements of each part
+    answers their sum (`Raze.lean`'s `flatMap_counts`, which is private there). -/
+theorem counts_flatMap_size {γ : Type} (xs : Array USize) (m : Nat) (hm : xs.size ≤ m) (g : Nat → Nat → γ) :
+    ((Array.range (min ((countBytes xs).size / 8) m)).flatMap fun k =>
+      (Array.range (Column.bitsAt (countBytes xs) (8 * k) 8).toNat).map (g k)).size =
+      (xs.toList.map USize.toNat).sum := by
+  rw [countBytes_size, Nat.mul_div_cancel_left _ (by decide), Nat.min_eq_left hm, Array.size_flatMap]
+  simp only [Array.size_map, Array.size_range]
+  have he : (Array.range xs.size).map (fun k => (Column.bitsAt (countBytes xs) (8 * k) 8).toNat) =
+      xs.map USize.toNat :=
+    Array.ext (by simp) fun i h1 _ => by
+      simp only [Array.size_map, Array.size_range] at h1
+      simp [KernelWF.countBytes_get xs i h1]
+  rw [he]
+  first | (rw [← Array.sum_toList, Array.toList_map]) | (rcases xs with ⟨l⟩; simp) | rfl
+
+/-- **`Code.cat` is well formed** under `cat_get`'s hypotheses: `⌈n·w/8⌉` bytes, and below a byte its codes
+    lie below its `card`, the parts' being below theirs. -/
+theorem cat_wf (cs : Array Code) {w : Nat}
+    (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
+    (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
+    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < c.card)
+    (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
+    (Code.cat cs).b.size = ((Code.cat cs).n.toNat * w + 7) / 8 ∧
+      (w < 8 → ∀ i < (Code.cat cs).n.toNat, Column.idAt (Code.cat cs).b w i < (Code.cat cs).card) := by
+  obtain ⟨-, hn, hg⟩ := cat_get cs hw h0 hcw hsz hid hN
+  have hS : cs.foldl (fun s c => s + c.n.toNat) 0 = (cs.toList.map (·.n.toNat)).sum := by
+    rw [← Array.foldl_toList, foldl_add_sum (fun c : Code => c.n.toNat), Nat.zero_add]
+  have hw0 : cs[0].w = w := hcw _ (Array.getElem_mem h0)
+  have hcard : (Code.cat cs).card = cs.foldl (max · ·.card) 0 := by
+    unfold Code.cat; simp only [dif_pos h0, hw0, need, hS, hN, ↓reduceDIte]
+  refine ⟨?_, fun h8 i hi => ?_⟩
+  · rw [hn]
+    have hT : ((cs.map (·.n)).toList.map USize.toNat).sum = (cs.toList.map (·.n.toNat)).sum := by
+      rw [Array.toList_map, List.map_map]; rfl
+    have hm : (cs.map (·.n)).size ≤ (cs.map (·.b)).size := by simp
+    unfold Code.cat
+    simp only [dif_pos h0, hw0, need, hS, hN, ↓reduceDIte]
+    rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · simp only [laneKind]; unfold concatBits
+      rw [KernelWF.packOf_size, counts_flatMap_size _ _ hm, hT, Nat.mul_one]
+    iterate 2
+      · simp only [laneKind]; unfold concatIds
+        rw [lane_toNat (by decide), packIds_size (by decide), counts_flatMap_size _ _ hm, hT]
+    -- a byte lane of `q` bytes: every part holds `q` bytes a code
+    all_goals simp only [laneKind, KernelWF.concatBytes_size, Array.toList_map, List.map_map, Function.comp_def]
+    · rw [sum_size_mul 1 cs.toList fun c hc => by rw [hsz c (by simpa using hc)]; omega]; omega
+    · rw [sum_size_mul 2 cs.toList fun c hc => by rw [hsz c (by simpa using hc)]; omega]; omega
+    · rw [sum_size_mul 4 cs.toList fun c hc => by rw [hsz c (by simpa using hc)]; omega]; omega
+    · rw [sum_size_mul 8 cs.toList fun c hc => by rw [hsz c (by simpa using hc)]; omega]; omega
+  · rw [hn] at hi
+    obtain ⟨k, hk, x, hx, rfl⟩ := sum_split _ hi
+    have hk' : k < cs.size := by simpa using hk
+    have hx' : x < (cs[k]'hk').n.toNat := by simpa using hx
+    rw [← List.map_take, hg k hk' x hx', hcard, ← Array.foldl_toList]
+    exact Nat.lt_of_lt_of_le (hid h8 _ (Array.getElem_mem hk') x hx')
+      ((le_foldl_max cs.toList 0).2 _ (by simp))
 
 /-! ## Several parts of one atom type: one grouping pass over the `raze`, then `cut` -/
 
@@ -657,20 +736,31 @@ theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
       cx[k].b.size = (cx[k].n.toNat * cx[k].w + 7) / 8 ∧
       (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < cx[k].card))
     (hN : (cx.toList.map (·.n.toNat)).sum < USize.size) :
+    (((Code.cat cx.toArray).w = 1 ∨ (Code.cat cx.toArray).w = 2 ∨ (Code.cat cx.toArray).w = 4 ∨
+        (Code.cat cx.toArray).w = 8 ∨ (Code.cat cx.toArray).w = 16 ∨ (Code.cat cx.toArray).w = 32 ∨
+        (Code.cat cx.toArray).w = 64) ∧
+      (Code.cat cx.toArray).b.size = ((Code.cat cx.toArray).n.toNat * (Code.cat cx.toArray).w + 7) / 8 ∧
+      ((Code.cat cx.toArray).w < 8 → ∀ i < (Code.cat cx.toArray).n.toNat,
+        Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w i < (Code.cat cx.toArray).card)) ∧
     (Code.cat cx.toArray).n.toNat = (cx.toList.map (·.n.toNat)).sum ∧
       ∀ k (hk : k < p), ∀ i < cx[k].n.toNat, Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w
         (((cx.toList.take k).map (·.n.toNat)).sum + i) = Column.idAt cx[k].b cx[k].w i := by
   have hmem : ∀ c ∈ cx.toArray, ∃ k, ∃ hk : k < p, c = cx[k] := fun c hc => by
     obtain ⟨k, hk, rfl⟩ := Array.mem_iff_getElem.1 hc
     exact ⟨k, by simpa using hk, by simp⟩
-  obtain ⟨hw, hn, hg⟩ := cat_get cx.toArray (w := cx[0].w) (hwf hp).1 (by simpa using hp)
-    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; exact hl hk hp)
-    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]; exact (hwf hk).2.1)
-    (fun h24 c hc i hi => by
+  have hcw : ∀ c ∈ cx.toArray, c.w = cx[0].w := fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; exact hl hk hp
+  have hsz : ∀ c ∈ cx.toArray, c.b.size = (c.n.toNat * cx[0].w + 7) / 8 := fun c hc => by
+    obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]; exact (hwf hk).2.1
+  have hid : cx[0].w < 8 → ∀ c ∈ cx.toArray, ∀ i < c.n.toNat, Column.idAt c.b cx[0].w i < c.card :=
+    fun h8 c hc i hi => by
       obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]
-      exact (hwf hk).2.2 (by rw [hl hk hp]; omega) i hi)
-    (by simpa using hN)
-  refine ⟨by simpa using hn, fun k hk i hi => ?_⟩
+      exact (hwf hk).2.2 (by rw [hl hk hp]; exact h8) i hi
+  have h0 : 0 < cx.toArray.size := by simpa using hp
+  have hN' : (cx.toArray.toList.map (·.n.toNat)).sum < USize.size := by simpa using hN
+  obtain ⟨hw, hn, hg⟩ := cat_get cx.toArray (hwf hp).1 h0 hcw hsz hid hN'
+  obtain ⟨hs, hb⟩ := cat_wf cx.toArray (hwf hp).1 h0 hcw hsz hid hN'
+  refine ⟨⟨by rw [hw]; exact (hwf hp).1, by rw [hw]; exact hs, by rw [hw]; exact hb⟩, by simpa using hn,
+    fun k hk i hi => ?_⟩
   have := hg k (by simpa using hk) i (by simpa using hi)
   simp only [Vector.getElem_toArray, Vector.toList_toArray] at this
   rw [hw, hl hk hp]; exact this
