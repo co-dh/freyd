@@ -58,30 +58,35 @@ theorem foldl_push_get_lt {α : Type} [Inhabited α] (g : Array α → Nat → �
     · rw [(foldl_push_get g init j).1 _ (by omega)]; exact foldl_push_get_lt g init h
     · exact (foldl_push_get g init k).2
 
+/-- **One stage's answer, its operands read by `src`**: the body of `Ew.chain`'s step, restated because
+    qlean writes it inline. -/
+def stageRun (st : Ew.Stage) (src : UInt8 → ByteArray) (n : USize) : ByteArray :=
+  if st.engine == Ew.eVal then Ew.val st.op st.cls st.shape st.nul (src st.a) (src st.b) n
+  else if st.engine == Ew.eCmp then Ew.cmp st.op st.cls st.shape (src st.a) (src st.b) n
+  else if st.engine == Ew.eMon then Ew.mon st.op st.cls st.nul (src st.a) n
+  else if st.engine == Ew.eWiden then Ew.widen st.cls st.shape st.nul st.nulOut (src st.a) n
+  else if st.engine == Ew.eBit then Ew.bit st.op st.shape (src st.a) (src st.b) n
+  else if st.engine == Ew.eFloor then Ew.floor st.cls (src st.a) n
+  else if st.engine == Ew.eCast then Ew.castTo st.cls st.shape st.nul (src st.a) n
+  else if st.engine == Ew.eTick then Ew.tick st.op st.cls st.shape st.nul st.nulOut (src st.a) n
+  else if st.engine == Ew.eIds then
+    Column.packIds (8 * Ew.width st.cls) n.toNat (Column.idAt (src st.a) st.shape.toNat)
+  else if st.engine == Ew.ePack then
+    Column.packIds st.shape.toNat n.toNat fun i => (Ew.elem st.cls (src st.a) i).toNat
+  else if st.engine == Ew.eDecode then Coc.decode (Ew.width st.cls).toUSize (src st.a) (src st.b) n
+  else if Column.alpF32 (src st.c) then Coc.alpDecode32 (src st.a) (src st.b) (src st.c) n
+  else Coc.alpDecode64 (src st.a) (src st.b) (src st.c) n
+
+/-- `Ew.chain`'s step at stage `j` of a build (the last one after its stages), the answers so far `outs`. -/
+def chainStep (b : Ew.Build) (last : Ew.Stage) (n : USize) (outs : Array ByteArray) (j : Nat) : ByteArray :=
+  stageRun (b.stages.push last)[j]!
+    (fun c => if c < Ew.slot0 then b.inputs[c.toNat]! else outs[(c - Ew.slot0).toNat]!) n
+
 /-- **A build's run, stage by stage**: `Ew.chain`'s fold over its `stages.size + 1` stages, stage `j` read
-    as the build's `j`-th (the last one after them) rather than decoded from the program. The step is
-    `Ew.chain`'s own, restated because qlean writes it inline; `rfl` up to `stageAt_prog` checks the copy. -/
+    as the build's `j`-th (the last one after them) rather than decoded from the program. -/
 theorem run_fold (b : Ew.Build) (last : Ew.Stage) (n : USize) :
-    b.run last n = ((List.range (b.stages.size + 1)).foldl (init := #[]) fun outs j =>
-      let st := (b.stages.push last)[j]!
-      let src (c : UInt8) : ByteArray :=
-        if c < Ew.slot0 then b.inputs[c.toNat]! else outs[(c - Ew.slot0).toNat]!
-      outs.push <|
-       if st.engine == Ew.eVal then Ew.val st.op st.cls st.shape st.nul (src st.a) (src st.b) n
-       else if st.engine == Ew.eCmp then Ew.cmp st.op st.cls st.shape (src st.a) (src st.b) n
-       else if st.engine == Ew.eMon then Ew.mon st.op st.cls st.nul (src st.a) n
-       else if st.engine == Ew.eWiden then Ew.widen st.cls st.shape st.nul st.nulOut (src st.a) n
-       else if st.engine == Ew.eBit then Ew.bit st.op st.shape (src st.a) (src st.b) n
-       else if st.engine == Ew.eFloor then Ew.floor st.cls (src st.a) n
-       else if st.engine == Ew.eCast then Ew.castTo st.cls st.shape st.nul (src st.a) n
-       else if st.engine == Ew.eTick then Ew.tick st.op st.cls st.shape st.nul st.nulOut (src st.a) n
-       else if st.engine == Ew.eIds then
-         Column.packIds (8 * Ew.width st.cls) n.toNat (Column.idAt (src st.a) st.shape.toNat)
-       else if st.engine == Ew.ePack then
-         Column.packIds st.shape.toNat n.toNat fun i => (Ew.elem st.cls (src st.a) i).toNat
-       else if st.engine == Ew.eDecode then Coc.decode (Ew.width st.cls).toUSize (src st.a) (src st.b) n
-       else if Column.alpF32 (src st.c) then Coc.alpDecode32 (src st.a) (src st.b) (src st.c) n
-       else Coc.alpDecode64 (src st.a) (src st.b) (src st.c) n)[b.stages.size]! := by
+    b.run last n =
+      ((List.range (b.stages.size + 1)).foldl (fun o i => o.push (chainStep b last n o i)) #[])[b.stages.size]! := by
   simp only [Ew.Build.run, Ew.chain, prog_count, Nat.add_sub_cancel]
   congr 1
   have hm : ∀ j ∈ List.range (b.stages.size + 1), j < b.stages.size + 1 := fun j hj => List.mem_range.1 hj
@@ -93,8 +98,95 @@ theorem run_fold (b : Ew.Build) (last : Ew.Stage) (n : USize) :
   | cons j l ih =>
     simp only [List.foldl_cons]
     rw [stageAt_prog b last j (hm j (by simp)),
-      getElem!_pos (b.stages.push last) j (by simpa using hm j (by simp))]
+      ← getElem!_pos (b.stages.push last) j (by simpa using hm j (by simp))]
     exact ih (fun k hk => hm k (by simp [hk])) _
+
+/-- Two push-folds over `range m` agree where their steps agree below `m`. -/
+theorem foldl_range_congr {α : Type} (g g' : Array α → Nat → α) (init : Array α) :
+    ∀ m, (∀ o, ∀ j < m, g o j = g' o j) →
+      (List.range m).foldl (fun o i => o.push (g o i)) init = (List.range m).foldl (fun o i => o.push (g' o i)) init
+  | 0, _ => by rw [List.range_zero, List.foldl_nil, List.foldl_nil]
+  | m + 1, h => by
+    rw [List.range_succ, List.foldl_append, List.foldl_append,
+      foldl_range_congr g g' init m (fun o j hj => h o j (by omega)), List.foldl_cons, List.foldl_cons,
+      List.foldl_nil, List.foldl_nil, h _ m (by omega)]
+
+/-- The run as its last stage over the fold of the stages before it. -/
+theorem run_eq (b : Ew.Build) (last : Ew.Stage) (n : USize) :
+    b.run last n = stageRun last (fun c => if c < Ew.slot0 then b.inputs[c.toNat]! else
+      ((List.range b.stages.size).foldl (fun o i => o.push (chainStep b last n o i)) #[])[(c - Ew.slot0).toNat]!) n := by
+  have h := (foldl_push_get (chainStep b last n) #[] b.stages.size).2
+  rw [Array.size_empty, Nat.zero_add] at h
+  rw [run_fold, h, chainStep, getElem!_pos (b.stages.push last) b.stages.size (by simp), Array.getElem_push_eq]
+
+theorem get_push_lt {α : Type} [Inhabited α] (xs : Array α) (x : α) {j : Nat} (h : j < xs.size) :
+    (xs.push x)[j]! = xs[j]! := by
+  rw [getElem!_pos _ j (by simp; omega), getElem!_pos xs j h, Array.getElem_push_lt]
+
+theorem get_extract_lt {α : Type} [Inhabited α] (xs : Array α) {j m : Nat} (h : j < m) (hm : m ≤ xs.size) :
+    (xs.extract 0 m)[j]! = xs[j]! := by
+  rw [getElem!_pos _ j (by simp; omega), getElem!_pos xs j (by omega), Array.getElem_extract]; simp
+
+/-- **What source `c` of a build reads**: input `c` below `slot0`; slot `m` is the run of the build's first `m`
+    stages with its stage `m` last; past the stages, nothing. -/
+def srcOf (b : Ew.Build) (n : USize) (c : UInt8) : ByteArray :=
+  if c < Ew.slot0 then b.inputs[c.toNat]!
+  else if (c - Ew.slot0).toNat < b.stages.size then
+    Ew.Build.run { b with stages := b.stages.extract 0 (c - Ew.slot0).toNat } b.stages[(c - Ew.slot0).toNat]! n
+  else default
+
+/-- **The run of a build is its last stage's body**, each source read by `srcOf`. -/
+theorem run_last (b : Ew.Build) (last : Ew.Stage) (n : USize) : b.run last n = stageRun last (srcOf b n) n := by
+  rw [run_eq]
+  congr 1
+  funext c
+  unfold srcOf
+  by_cases hc : c < Ew.slot0
+  · rw [if_pos hc, if_pos hc]
+  rw [if_neg hc, if_neg hc]
+  generalize (c - Ew.slot0).toNat = m
+  have hs := foldl_push_size (chainStep b last n) b.stages.size #[]
+  rw [Array.size_empty, Nat.zero_add] at hs
+  by_cases hm : m < b.stages.size
+  · rw [if_pos hm]
+    have h1 := foldl_push_get_lt (chainStep b last n) #[] hm
+    rw [Array.size_empty, Nat.zero_add] at h1
+    have hx : (b.stages.extract 0 m).size = m := by simp; omega
+    have hcg := foldl_range_congr (chainStep b last n) (chainStep { b with stages := b.stages.extract 0 m } b.stages[m]! n)
+      #[] m (fun o j hj => by
+        unfold chainStep
+        rw [get_push_lt _ _ (by omega), get_push_lt _ _ (by rw [hx]; exact hj), get_extract_lt _ hj (by omega)])
+    rw [h1, run_eq]
+    dsimp only
+    rw [hx, ← hcg]
+    unfold chainStep
+    rw [get_push_lt _ _ hm]
+  · rw [if_neg hm, getElem!_neg _ _ (by rw [hs]; exact hm)]
+
+theorem u8_ofNat {m : Nat} (hm : m < 256) : (UInt8.ofNat m).toNat = m := by
+  first | exact UInt8.toNat_ofNat_of_lt' hm | exact UInt8.toNat_ofNat_of_lt hm | (simp; omega)
+
+/-- A build's slot code `slot0 + m` names stage `m`. -/
+theorem slot_code {m : Nat} (hm : m < 128) :
+    ¬ (Ew.slot0 + m.toUInt8 < Ew.slot0) ∧ (Ew.slot0 + m.toUInt8 - Ew.slot0).toNat = m := by
+  have h := u8_ofNat (m := m) (by omega)
+  simp only [Ew.slot0, UInt8.lt_iff_toNat_lt, UInt8.toNat_add, UInt8.toNat_sub, Nat.toUInt8_eq, UInt8.toNat_ofNat, h]
+  omega
+
+/-- A build's input code `m` names input `m`. -/
+theorem input_code {m : Nat} (hm : m < 128) : m.toUInt8 < Ew.slot0 ∧ m.toUInt8.toNat = m := by
+  have h : m.toUInt8.toNat = m := u8_ofNat (by omega)
+  refine ⟨?_, h⟩
+  rw [UInt8.lt_iff_toNat_lt, h]; simp only [Ew.slot0, UInt8.toNat_ofNat]; omega
+
+theorem srcOf_input (B : Ew.Build) (n : USize) {i : Nat} (h : i < 128) : srcOf B n i.toUInt8 = B.inputs[i]! := by
+  obtain ⟨h1, h2⟩ := input_code h
+  rw [srcOf, if_pos h1, h2]
+
+theorem srcOf_slot (B : Ew.Build) (n : USize) {m : Nat} (hm : m < B.stages.size) (h128 : m < 128) :
+    srcOf B n (Ew.slot0 + m.toUInt8) = stageRun B.stages[m]! (srcOf { B with stages := B.stages.extract 0 m } n) n := by
+  obtain ⟨h1, h2⟩ := slot_code h128
+  rw [srcOf, if_neg h1, h2, if_pos hm, run_last]
 
 /-! ## The guard: `overBytes`' extremes bound every element it does not skip -/
 
