@@ -308,6 +308,75 @@ theorem gatherColumn_get {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t 
     | enum d o ids => exact gatherColumn_get_enum hw hm h hk hin
     | _ => all_goals (exfalso; simp [Enc.WF, QAtomicType.width] at hw)
 
+/-! ### Misses: an index at or past the count reads the type's null -/
+
+/-- A fixed-width type's fill, cut to its width, reads as its null. -/
+theorem atomOfBits_fill {t : QAtomicType} {w : Nat} (ht : denseWidth t = some w) (h : t ≠ .general) :
+    Column.atomOfBits t (UInt64.ofNat (((nullBits t).getD 0).toNat % 2 ^ (8 * w))) h = Eval.nullAtom t h := by
+  cases t <;> simp only [denseWidth, QAtomicType.width, Option.some.injEq, reduceCtorEq] at ht <;> (try subst ht) <;> first | rfl | decide
+
+/-- Belongs in qlean. **`x@i` at a fixed-width type, a miss**: element `k` of the answer is the null where
+    `i[k]`, read unsigned, is at or past `x`'s count. -/
+theorem gatherColumn_miss_dense {t : QAtomicType} {w : Nat} (ht : denseWidth t = some w) {n : USize} {e : Enc}
+    (hw : Enc.WF t n e) {m : USize} {i : ByteArray} (hm : m.toNat = i.size / 8) {e' : Enc}
+    (h : gatherColumn t n e m (.bytes i) = some e') {k : Nat} (hk : k < m.toNat)
+    (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get t m e' k = some (Eval.nullAtom t (QAtomicType.ne_general_of_width (denseWidth_facts ht).2.1)) := by
+  obtain ⟨-, hw', hb, hg, hs, hw0, hw8⟩ := denseWidth_facts ht
+  have hwf' := gatherColumn_wf hw i hm h
+  obtain ⟨src, ix, hsrc, hix, rfl⟩ := gatherColumn_fixed_shape ht n e m (.bytes i) _ hw h
+  simp only [Enc.bytesOf, Option.some.injEq] at hix; subst hix
+  have hwU : w.toUSize.toNat = w :=
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt hw8 (Nat.lt_of_lt_of_le (by decide) USize.le_size))
+  rw [get_eq_raw ht hwf' hk]
+  obtain ⟨-, hG⟩ := gatherBytes_spec w.toUSize (by omega) ((nullBits t).getD 0) src i
+  rw [hwU] at hG
+  have hS := elemsW_bytesOf hw' hb hg hw0 hw8 n e hw src hsrc
+  have hR := size_raw n e hw hb hg hs (QAtomicType.ne_general_of_width hw')
+  have hsz : src.size / w = n.toNat := by
+    have := congrArg List.length hS; simp only [elemsW, List.length_map, List.length_range,
+      Array.length_toList] at this; omega
+  rw [raw_bytes t w hw' hb hg]
+  simp only [Array.toList_map, Array.toList_range, List.getD_eq_getElem?_getD, List.getElem?_map,
+    List.getElem?_range hk, Option.map_some, Option.getD_some]
+  rw [hG k (by omega), if_neg (by rw [hsz]; omega)]
+  exact congrArg some (atomOfBits_fill ht _)
+
+/-- Belongs in qlean. **`x@i` at `boolean`, a miss**: bit `k` of the answer is `0b`. -/
+theorem gatherColumn_miss_bits {n : USize} {e : Enc} (hw : Enc.WF .boolean n e) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .boolean n e m (.bytes i) = some e') {k : Nat}
+    (hk : k < m.toNat) (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get .boolean m e' k = some (Eval.nullAtom .boolean) := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  cases e <;> try (exfalso; simp_all [Enc.WF, QAtomicType.width]; done)
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
+    Option.some.injEq] at h
+  subst h
+  simp only [Enc.get, if_pos hk, bitAt_gatherBits _ _ _ _ (hm ▸ hk), if_neg (Nat.not_lt.2 hout)]
+  rfl
+
+/-- Belongs in qlean. **`x@i` at a `symbol` blob, a miss**: symbol `k` of the answer is the empty one. -/
+theorem gatherColumn_miss_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
+    (hw : Enc.WF .symbol n (.syms blob offs)) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .symbol n (.syms blob offs) m (.bytes i) = some e')
+    {k : Nat} (hk : k < m.toNat) (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get .symbol m e' k = some (Eval.nullAtom .symbol) := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
+    Option.some.injEq] at h
+  subst h
+  obtain ⟨-, hJ⟩ := gatherSyms_spec blob offs i
+  obtain ⟨lo, h1, h2, -⟩ := hJ k (hm ▸ hk)
+  simp only [Enc.WF] at hw
+  have hg : gatherAt (offs.size - 1) i k = none := by
+    simp only [gatherAt]; rw [if_neg (by omega)]
+  simp only [hg, ByteArray.size_empty] at h2
+  have e1 : (gatherSyms blob offs i).2[k]! = lo := by simp [getElem!_def, h1]
+  have e2 : (gatherSyms blob offs i).2[k + 1]! = lo + 0 + 1 := by simp [getElem!_def, h2]
+  simp only [Enc.get, if_pos hk, Column.symBytes, extract_upto, e1, e2, Nat.add_zero, Nat.add_sub_cancel,
+    extract_self]
+  rfl
+
 end LeetQ.Rel.KernelWF
 
 namespace LeetQ.Rel.Alg
