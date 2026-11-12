@@ -68,6 +68,48 @@ theorem arr_row {b : Obj} {m : USize} (x : Vals (.arr b) m) (q : Fin m.toNat) :
   rfl
 
 set_option maxHeartbeats 1000000 in
+/-- **`Vals.pick` read back at an atom**, hit or miss: `pickArr_get`, and `pickArr_get_miss` at every
+    encoding but an interned symbol column. -/
+theorem pick_row_atom_dflt {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
+    (hne : ∀ d o ids, Arr.enc x ≠ .enum d o ids) (i : ByteArray) (m : USize) (h : len i = m.toNat)
+    (q : Fin m.toNat) :
+    (Vals.pick (.atom t) x i m h).row q =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.row ⟨_, hin⟩ else (Obj.atom t).dflt := by
+  split
+  · exact pickArr_get ⟨_, x⟩ i m h q ‹_›
+  · exact pickArr_get_miss ⟨_, x⟩ i m h hne q (Nat.le_of_not_lt ‹_›)
+
+/-- **`Vals.pick` read back at a product**, hit or miss, from its two components'. -/
+theorem pick_row_prod_dflt {a b : Obj} {n : USize} (x : Vals (.prod a b) n) (i : ByteArray) (m : USize)
+    (h : len i = m.toNat) (q : Fin m.toNat)
+    (h1 : (Vals.pick a x.1 i m h).row q =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.1.row ⟨_, hin⟩ else a.dflt)
+    (h2 : (Vals.pick b x.2 i m h).row q =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.2.row ⟨_, hin⟩ else b.dflt) :
+    (Vals.pick (.prod a b) x i m h).row q =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.row ⟨_, hin⟩ else (Obj.prod a b).dflt := by
+  show (Vals.row (Vals.pick a x.1 i m h) q, Vals.row (Vals.pick b x.2 i m h) q) = _
+  rw [h1, h2]; split <;> rfl
+
+/-- **`widen` of a bitmap to longs**, long `q`: `1` where bit `q` is set, else `0` — a sum's tags as `τ`. -/
+theorem widen_bits_get (tb : ByteArray) (m : USize) {q : Nat} (hq : q < m.toNat) :
+    Column.bitsAt (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) (q * 8) 8 =
+      if Column.bitAt tb q then 1 else 0 := by
+  let g : Nat → UInt64 := fun i => if Column.bitAt tb i then 1 else 0
+  have hf : Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m =
+      (List.range m.toNat).foldl (fun acc i => Column.pushBits acc (g i) 8) ByteArray.empty := by
+    unfold Kernel.Ew.widen
+    congr 1; funext acc i
+    rw [if_neg (by decide), if_neg (by decide)]
+    unfold Ew.widenRead; rw [if_pos (by decide)]
+    simp only [g]
+    cases Column.bitAt tb i <;> rfl
+  obtain ⟨-, -, hg⟩ := foldl_pushBits g 8 (by decide) (List.range m.toNat) ByteArray.empty
+  have := hg q (by simpa using hq)
+  rw [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at this
+  rw [hf, Nat.mul_comm, this]
+  simp only [g]; cases Column.bitAt tb q <;> rfl
+
 /-- **`Vals.pick` read back at an array side**, from its payload's: the picked rows' clamped slices are
     gathered one after another, so row `q`'s new slice is its old one, copied. -/
 theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
