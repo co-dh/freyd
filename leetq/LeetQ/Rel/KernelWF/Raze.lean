@@ -54,7 +54,7 @@ private theorem needSize_not {α : Type} {c : Nat} {what : String} {model : Unit
   simp [needSize, need, h, stop]
 
 /-- A `needSize` that answers `some` under a `none` model is its continuation at a count that fits. -/
-private theorem needSize_some {α : Type} {c : Nat} {what : String} {k : USize → Option α} {v : α}
+theorem needSize_some {α : Type} {c : Nat} {what : String} {k : USize → Option α} {v : α}
     (h : needSize c what (fun _ => none) k = some v) : ∃ hc : c < USize.size, k c.toUSize = some v := by
   by_cases hc : c < USize.size
   · exact ⟨hc, by rw [needSize_fits hc] at h; exact h⟩
@@ -145,7 +145,7 @@ private theorem flatMap_counts {γ : Type} (xs : Array USize) (m : Nat) (hm : xs
   first | (rw [← Array.sum_toList, Array.toList_map]) | (rcases xs with ⟨l⟩; simp) | rfl
 
 /-- An `if` that answers `some` with `none` on its true branch took its false branch. -/
-private theorem ite_none_some {α : Type} {c : Prop} [Decidable c] {x : Option α} {v : α}
+theorem ite_none_some {α : Type} {c : Prop} [Decidable c] {x : Option α} {v : α}
     (h : (if c then none else x) = some v) : x = some v := by
   by_cases hc : c <;> simp_all
 
@@ -199,7 +199,7 @@ theorem rankSlices_size (w : USize) (v o : ByteArray) (hw : w.toNat ≤ 64) (ho 
 /-! ## `razeColumn` -/
 
 /-- An `Option` pass that answers `some (g x)` at every element answers `some` of the mapped array. -/
-private theorem mapM_some {α β : Type} {f : α → Option β} (g : α → β) :
+theorem mapM_some {α β : Type} {f : α → Option β} (g : α → β) :
     ∀ {cs : Array α}, (∀ x ∈ cs, f x = some (g x)) → cs.mapM f = some (cs.map g) := by
   intro cs h
   rcases cs with ⟨l⟩
