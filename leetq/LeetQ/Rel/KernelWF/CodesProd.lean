@@ -83,6 +83,43 @@ theorem cut_get {p : Nat} (c : Code) (ns : Vector USize p)
   rw [lane_toNat hw64, idAt_packIds (f := fun j => Column.idAt c.b c.w ((o.toNat + j) % c.n.toNat)) (by omega) hi
     (idAt_lt _ _ _ hw64), Nat.mod_eq_of_lt (by omega)]
 
+/-- **Part `k` of `c.cut ns` is `⌈ns[k]·w/8⌉` bytes**, `c` itself `⌈c.n·w/8⌉`. -/
+theorem cut_size {p : Nat} (c : Code) (ns : Vector USize p)
+    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hs : (ns.toList.map (·.toNat)).sum = c.n.toNat) (hsz : c.b.size = (c.n.toNat * c.w + 7) / 8)
+    {k : Nat} (hk : k < p) : (c.cut ns)[k].b.size = (ns[k].toNat * c.w + 7) / 8 := by
+  have hle := take_sum_le (ns.toList.map (·.toNat)) (k := k) (by simpa using hk)
+  simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take, hs] at hle
+  obtain ⟨-, hn, -, -⟩ := cut_get c ns hw hs hk
+  unfold Code.cut at hn ⊢
+  by_cases hp : p = 1
+  · subst hp; rw [if_pos rfl] at hn ⊢; simp only [Vector.getElem_replicate] at hn ⊢; rw [← hn, hsz]
+  rw [if_neg hp]
+  simp only [Vector.getElem_mapIdx]
+  have ho : ((ns.toArray.extract 0 k).foldl (· + ·) 0).toNat ≤ ((ns.toList.take k).map (·.toNat)).sum := by
+    rw [← Array.foldl_toList, Array.toList_extract, List.extract_eq_drop_take, List.drop_zero, Nat.sub_zero,
+      usize_foldl_add _ _ (by simp only [USize.toNat_zero, Nat.zero_add]; exact Nat.lt_of_le_of_lt (Nat.le_trans (Nat.le_add_right _ ns[k].toNat) hle) c.n.toNat_lt_size)]
+    rw [USize.toNat_zero, Nat.zero_add]; exact Nat.le_refl _
+  generalize (ns.toArray.extract 0 k).foldl (· + ·) 0 = o at ho
+  by_cases h0 : ns[k] = 0
+  · rw [if_pos (by simpa using h0), h0]; simp only [USize.toNat_zero, Nat.zero_mul, Nat.zero_add]; rfl
+  rw [if_neg (by simpa using h0)]
+  by_cases h8 : c.w % 8 = 0
+  · rw [if_pos (by simpa using h8), ByteArray.size_extract, hsz]
+    obtain ⟨q, hq⟩ : ∃ q, c.w = 8 * q := ⟨c.w / 8, by omega⟩
+    rw [hq, show 8 * q / 8 = q by omega]
+    have h1 : q * (o.toNat + ns[k].toNat) ≤ c.n.toNat * q := by
+      rw [Nat.mul_comm c.n.toNat]; exact Nat.mul_le_mul_left q (by omega)
+    rw [show (c.n.toNat * (8 * q) + 7) / 8 = c.n.toNat * q by rw [Nat.mul_comm 8 q, ← Nat.mul_assoc]; omega,
+      show (ns[k].toNat * (8 * q) + 7) / 8 = ns[k].toNat * q by rw [Nat.mul_comm 8 q, ← Nat.mul_assoc]; omega,
+      Nat.min_eq_left h1, Nat.mul_add, Nat.mul_comm q ns[k].toNat]; omega
+  rw [if_neg (by simpa using h8)]
+  by_cases h1 : c.w = 1
+  · rw [if_pos (by simpa using h1), h1]; unfold cycleBits; rw [KernelWF.packOf_size]; simp
+  rw [if_neg (by simpa using h1)]
+  unfold cycleIds
+  rw [lane_toNat (by omega), packIds_size (by omega)]
+
 /-! ## `Code.cat` -/
 
 /-- A running sum is the list's sum. -/
@@ -328,5 +365,29 @@ theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht 
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     codes_small_int_faithful ht hk₀ _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
     Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+
+/-- **A small integral side of several parts: each part's code is well formed**, the parts' summed count a
+    `USize`. -/
+theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
+    let c := (Obj.codes (.atom t) cs)[k]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  intro c
+  have hX := raze_len t cs.toArray hN
+  obtain ⟨hw, hn, hsz, hid⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
+  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
+    rw [hn, hX, Vector.toList_map, List.map_map]; rfl
+  have hle := take_sum_le ((cs.map (·.1)).toList.map (·.toNat)) (k := k) (by simpa using hk)
+  simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take, hs] at hle
+  have hc : c = ((Obj.codes (.atom t) #v[raze t cs.toArray])[0].cut (cs.map (·.1)))[k] := by
+    show (Obj.codes (.atom t) cs)[k] = _; rw [codes_small_int_cut ht hk₀ cs (by omega)]
+  obtain ⟨hwk, hnk, hck, hik⟩ := cut_get _ (cs.map (·.1)) hw hs hk
+  have hzk := cut_size _ (cs.map (·.1)) hw hs hsz hk
+  rw [hc, hwk, hnk, hck, hzk]
+  refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
+  rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
 end LeetQ.Rel.Alg

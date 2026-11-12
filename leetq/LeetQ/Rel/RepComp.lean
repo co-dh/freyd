@@ -6,6 +6,7 @@
 import LeetQ.Rel.Rep
 import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.CodesSpec
+import LeetQ.Rel.KernelWF.CodesProd
 
 namespace LeetQ.Rel.Rep
 
@@ -185,5 +186,34 @@ end Comp
 #print axioms rep_comp
 #print axioms rep_comp_boolean
 #print axioms rep_comp_long
+
+section CompSmallInt
+
+open Freyd Freyd.Alg.RelSet
+
+/-- `rep_comp` through a small integral middle side (`byte`, `char`, `short`, the four-byte types) of dense
+    payloads, the two counts summing below a `USize` (`codes_small_int_parts_faithful`/`_wf`). -/
+theorem rep_comp_small_int {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
+    (hRv : ∃ b, R.val.enc = .bytes b) (hSk : ∃ b, S.key.enc = .bytes b) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hrn : S.n.toNat < 2 ^ 63)
+    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
+      Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
+      Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
+    (hA : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < R.n.toNat), (Vals.pick A R.key i m h).row q = R.key.row ⟨_, hin⟩)
+    (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
+    rep (R ≫ S) = rep R ≫ rep S :=
+  have hd : ∀ k (hk : k < 2), ∃ b, (jcs)[k].2.enc = .bytes b := fun k hk => by
+    match k, hk with | 0, _ => exact hRv | 1, _ => exact hSk
+  have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
+  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_small_int_parts_faithful ht hk₀ _ hd hN' hk hl hi hj,
+    fun hk => codes_small_int_parts_wf ht hk₀ _ hN' hk⟩ hrn hM hMU hA hC
+
+end CompSmallInt
+
+#print axioms rep_comp_small_int
 
 end LeetQ.Rel.Rep
