@@ -111,8 +111,7 @@ theorem bitsOf_bitAt (x : Bool) (c : USize) {r : Nat} (hr : r < c.toNat) (hc : c
   simp only [Ew.elem, hw, hs, Nat.zero_mul, bitsAt_one, tilLongs_bitsAt c hr, decide_eq_true hr, Bool.true_and]
   have hcmp : compare (UInt64.ofNat r).toInt64 (UInt64.toInt64 0) ≠ .lt := by
     show compareOfLessAndEq _ _ ≠ _; unfold compareOfLessAndEq; rw [if_neg (by exact hlt)]; split <;> simp
-  cases x <;> simp (config := {decide := true}) only [Ew.cmpStep, Ew.signed, Ew.ge, Ew.lt, Ew.eq, Ew.ne, Ew.le,
-    ↓reduceIte] <;> simpa using hcmp
+  cases x <;> simp (config := {decide := true}) only [Ew.cmpStep, Ew.signed, ↓reduceIte] <;> simpa using hcmp
 
 /-- A `range`-indexed `flatMap` that reads the array `xs` at its index is the `flatMap` over `xs`. -/
 private theorem flatMap_range {α β : Type} (xs : Array α) (f : Nat → List β) (G : α → List β)
@@ -155,5 +154,42 @@ theorem tags_get (ps : Array (USize × Bool)) (m : USize) (h : ps.foldl (fun s p
     | nil => simp
     | cons p l ih => intro a; simp only [List.map_cons, List.sum_cons, List.foldl_cons, ← ih]; simp; omega
   rw [Verify.bitAt_packOf _ _ _ (by rw [hlen]; exact i.2), ← Array.getElem?_toList, hbs, List.getD_eq_getElem?_getD]
+
+/-! ## `sumVals` -/
+
+/-- The position `j < m`, below `2^63`, read as a long and clamped into `[0, m)`, is `j`. -/
+private theorem clampFin_ofNat {j m : Nat} (hj : j < m) (h63 : j < 2 ^ 63) (h : 0 < m) :
+    clampFin (Int64.ofNat j) m h = ⟨j, hj⟩ :=
+  Fin.ext (by simp only [clampFin, Int64.toInt_ofNat_of_lt h63]; omega)
+
+/-- `sumVals X Y`'s row `k` is `inl` of `X`'s row `k` for `k < n`, else `inr` of `Y`'s row `k - n`. Its position
+    column is a `razeTo` of two `tilCol`s, so the statement takes `raze`'s content, `hraze`, as a hypothesis:
+    a razed long column lists its parts' elements one part after another. `n + m ≤ 2^63`, where the tags and
+    positions read `til` as nonnegative longs. -/
+theorem sumVals_row {A B : Obj} {n m : USize} (X : Vals A n) (Y : Vals B m) (hN : n.toNat + m.toNat < USize.size)
+    (hraze : ∀ (cs : Array ((k : USize) × Arr .long k)) {S : Nat} (hs : (cs.toList.map (·.1.toNat)).sum = S)
+      (hS : S < USize.size), (razeTo .long cs hs hS).toList = cs.toList.flatMap (·.2.toList))
+    (h63 : n.toNat + m.toNat ≤ 2 ^ 63) (k : Fin (n + m).toNat) :
+    Vals.row (A := .sum A B) (sumVals X Y hN) k =
+      if hk : k.1 < n.toNat then .inl (Vals.row X ⟨k.1, hk⟩)
+      else .inr (Vals.row Y ⟨k.1 - n.toNat, by have := Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN); omega⟩) := by
+  have hk2 := Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN)
+  have hc : ∀ p ∈ #[(n, false), (m, true)], p.1.toNat ≤ 2 ^ 63 := by
+    intro p hp; simp only [Array.mem_toList_iff.symm, List.mem_cons, List.not_mem_nil, or_false] at hp
+    rcases hp with rfl | rfl <;> simp <;> omega
+  simp only [sumVals, Vals.row, tags_get _ _ _ hc k]
+  have hl : ((tilCol n).toList ++ (tilCol m).toList).length = n.toNat + m.toNat := by
+    simp [tilCol_toList]
+  have hidx : ∀ (x : Arr .long (n + m)), x.toList = (tilCol n).toList ++ (tilCol m).toList →
+      x.get k = Int64.ofNat (if k.1 < n.toNat then k.1 else k.1 - n.toNat) := fun x hx => by
+    rw [← Arr.getElem_toList x k.1 (by rw [hx, hl]; exact hk2)]
+    simp only [hx, tilCol_toList, List.getElem_append, List.length_map, List.length_range]
+    split <;> simp
+  rw [hidx _ ((hraze _ _ _).trans (by simp))]
+  by_cases hk : k.1 < n.toNat
+  · have h0 : 0 < n.toNat := by omega
+    simp [hk, h0, List.getD_eq_getElem?_getD, List.getElem?_append, clampFin_ofNat hk (by omega) h0]
+  · have h0 : 0 < m.toNat := by omega
+    simp [hk, h0, List.getD_eq_getElem?_getD, List.getElem?_append, show k.1 - n.toNat < m.toNat by omega, clampFin_ofNat (show k.1 - n.toNat < m.toNat by omega) (by omega) h0]
 
 end LeetQ.Rel.KernelWF
