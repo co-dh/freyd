@@ -142,7 +142,8 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
       List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
         (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
       else []
-    p.toNat < 2 ^ 63 ∧ (ps.flatMap w).length < 2 ^ 63 ∧ Vals.PickFits b f (ps.flatMap w)
+    p.toNat < 2 ^ 63 ∧ (ps.flatMap w).length < 2 ^ 63 ∧ (ps.flatMap w).length < USize.size ∧
+      Vals.PickFits b f (ps.flatMap w)
   | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
     let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
       if h : k < n.toNat then
