@@ -604,6 +604,12 @@ theorem raze2_cnt {X : Obj} {n m : USize} (x : Vals X n) (y : Vals X m)
       n.toNat + m.toNat := by
   rw [USize.toNat_ofNat_of_lt' hN]; simp
 
+/-- Rows of heterogeneously equal sides, at one position, are equal: a side moved along a count equation, by
+    whatever cast, keeps its rows. -/
+theorem row_heq {X : Obj} {a b : USize} (v : Vals X a) (w : Vals X b) (i : Fin a.toNat) (j : Fin b.toNat)
+    (hab : a = b) (hvw : HEq v w) (hij : i.1 = j.1) : Vals.row v i = Vals.row w j := by
+  subst hab; cases hvw; obtain ⟨i, hi⟩ := i; obtain ⟨j, hj⟩ := j; simp only at hij; subst hij; rfl
+
 /-- A relation whose key and value columns read, row by row, `R`'s rows and then `S`'s holds exactly the pairs
     of `R` and of `S`. -/
 theorem holds_two {N : USize} (K : Vals A N) (V : Vals B N) (R S : Rel A B) (hn : N.toNat = R.n.toNat + S.n.toNat)
@@ -640,17 +646,22 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
   have hN' : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
       USize.size := by simpa using hN
   have e : LeetQ.Rel.Alg.junc R S = ⟨R.n + S.n, sumVals R.key S.key hN,
-      toUSize_eq (by rw [toNat_add_fits hN]; simp) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN'⟩ := by
+      toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN'⟩ := by
     unfold LeetQ.Rel.Alg.junc need; rw [dif_pos hN]
   rw [e]
   refine hom_ext fun s c => ?_
-  have hcast : ∀ {a b : USize} (e : a = b) (v : Vals C a) (i : Fin b.toNat),
-      Vals.row (e ▸ v) i = Vals.row v ⟨i.1, by rw [e]; exact i.2⟩ := fun e _ _ => by subst e; rfl
-  have hval : ∀ k : Fin (R.n + S.n).toNat, Vals.row (toUSize_eq (by rw [toNat_add_fits hN]; simp) ▸
+  have hval : ∀ k : Fin (R.n + S.n).toNat, Vals.row (toUSize_eq (by rw [toNat_add_fits hN]) ▸
       C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN' : Vals C (R.n + S.n)) k =
       if h : k.1 < R.n.toNat then Vals.row R.val ⟨k.1, h⟩
       else Vals.row S.val ⟨k.1 - R.n.toNat, by have := Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN); omega⟩ :=
-    fun k => (hcast _ _ k).trans (hC hN' k.1 _)
+    fun k => by
+      have hk' : k.1 < ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map
+          fun c : Part C => c.1.toNat).sum.toUSize.toNat := by
+        rw [raze2_cnt _ _ hN']; exact Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN)
+      refine Eq.trans ?_ (hC hN' k.1 hk')
+      apply row_heq
+      all_goals first | rfl | exact eqRec_heq _ _ | exact eq_mpr_heq _ _ | exact cast_heq _ _ |
+        exact (toUSize_eq (by rw [toNat_add_fits hN])).symm | simp
   show (∃ k, Vals.row (A := .sum A B) (sumVals R.key S.key hN) k = s ∧ Vals.row _ k = c) ↔
     (∃ a, s = Sum.inl a ∧ R.Holds a c) ∨ (∃ b, s = Sum.inr b ∧ S.Holds b c)
   constructor
@@ -670,64 +681,9 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
       · rw [sumVals_row _ _ hN h63, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
       · rw [hval, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
 
--- the relation `∪` razes before its `nub`, and that relation's codes and first rows, named as `rep_nub` names them
-set_option hygiene false in
-local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] (by simpa using hN),
-  B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] (by simpa using hN)⟩ : Rel A B)
-set_option hygiene false in
-local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
-set_option hygiene false in
-local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
-
-/-- **`rep (R ∪ S) = rep R ∪ rep S`**: `∪` razes the keys and the values, read back by `hA`, `hB` (`RazeRow`), so
-    the razed relation holds the pairs of `R` and of `S` (`holds_two`), and its `nub` holds the same
-    (`rep_nub`, whose code hypotheses `hK`, `hV`, `hP`, `hk`, `hv` are stated on the razed relation). `hN`: the row
-    count fits a `USize` (past it `∪` answers `𝟘`). -/
-theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hA : ∀ hN' k hk, Vals.row (A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hN') ⟨k, hk⟩ =
-      if h : k < R.n.toNat then Vals.row R.key ⟨k, h⟩
-      else Vals.row S.key ⟨k - R.n.toNat, by have := raze2_cnt R.key S.key hN'; omega⟩)
-    (hB : ∀ hN' k hk, Vals.row (B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hN') ⟨k, hk⟩ =
-      if h : k < R.n.toNat then Vals.row R.val ⟨k, h⟩
-      else Vals.row S.val ⟨k - R.n.toNat, by have := raze2_cnt R.val S.val hN'; omega⟩)
-    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
-          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
-      ((kcU).w = 1 ∨ (kcU).w = 2 ∨ (kcU).w = 4 ∨ (kcU).w = 8 ∨ (kcU).w = 16 ∨ (kcU).w = 32 ∨ (kcU).w = 64) ∧
-        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
-        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
-    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
-          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
-      ((vcU).w = 1 ∨ (vcU).w = 2 ∨ (vcU).w = 4 ∨ (vcU).w = 8 ∨ (vcU).w = 16 ∨ (vcU).w = 32 ∨ (vcU).w = 64) ∧
-        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
-        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hP : (pairCode true kcU vcU).2 = none →
-      let c := (pairCode true kcU vcU).1
-      ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (kcU).n ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-      ∀ i < (kcU).n.toNat, ∀ j < (kcU).n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ∧
-          Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j))
-    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
-    rep (R ∪ S) = rep R ∪ rep S := by
-  have e : R ∪ S = (Uc).nub := by
-    show need _ _ _ _ = _
-    unfold need; rw [dif_pos hN]
-  rw [e, rep_nub _ hK hV hP hk hv]
-  have hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size := by simpa using hN
-  have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key hNk
-  refine hom_ext fun a b => ?_
-  rw [union_apply]
-  exact holds_two (Uc).key (Uc).val R S hn (fun k hk => hA _ k hk) (fun k hk => hB _ k hk) a b
 
 end UnionJunc
 
 #print axioms rep_junc
-#print axioms rep_union
 
 end LeetQ.Rel.Rep
