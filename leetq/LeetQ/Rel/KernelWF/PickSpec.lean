@@ -355,6 +355,45 @@ theorem gatherColumn_miss_bits {n : USize} {e : Enc} (hw : Enc.WF .boolean n e) 
   simp only [Enc.get, if_pos hk, bitAt_gatherBits _ _ _ _ (hm ▸ hk), if_neg (Nat.not_lt.2 hout)]
   rfl
 
+/-- Belongs in qlean. **`x@i` at `guid`, a miss**: element `k` of the answer is sixteen zero bytes. -/
+theorem gatherColumn_miss_guid {n : USize} {e : Enc} (hw : Enc.WF .guid n e) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .guid n e m (.bytes i) = some e') {k : Nat}
+    (hk : k < m.toNat) (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get .guid m e' k = some (Eval.nullAtom .guid) := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  cases e <;> try (exfalso; simp_all [Enc.WF, QAtomicType.width]; done)
+  rename_i b
+  simp only [Enc.WF, QAtomicType.width] at hw
+  simp only [gatherColumn, denseWidth, rowWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
+    Option.some.injEq] at h
+  subst h
+  have h16 : (Nat.toUSize 16).toNat = 16 := toNat_small 16 (by decide)
+  let C : Nat → ByteArray := fun j => match gatherAt (b.size / 16) i j with
+    | some p => b.extract (p * 16) (p * 16 + 16)
+    | none => Column.pushBits .empty ((nullBits .guid).getD 0) 16
+  have hG : gatherBytes (Nat.toUSize 16) ((nullBits .guid).getD 0) b i =
+      (List.range (i.size / 8)).foldl (fun acc j => acc ++ C j) .empty := by
+    simp only [gatherBytes, h16]
+    congr 1; funext acc j
+    simp only [C]
+    rcases gatherAt (b.size / 16) i j with _ | p <;> simp [pushBits_append acc]
+  have hC : ∀ j, (C j).data.toList.length = 16 := fun j => by
+    simp only [C, Array.length_toList, ByteArray.size_data]
+    rcases hp : gatherAt (b.size / 16) i j with _ | p
+    · simp [size_pushBits]
+    · simp only [gatherAt] at hp
+      split at hp
+      · cases hp; simp only [ByteArray.size_extract]; omega
+      · cases hp
+  have hCk : C k = ⟨Array.replicate 16 0⟩ := by
+    simp only [C, gatherAt]; rw [if_neg (by omega)]; rfl
+  simp only [Enc.get, if_pos hk, Eval.nullAtom]
+  congr 2; apply Vector.ext; intro q hq
+  simp only [Vector.getElem_ofFn, ba_get?, ← Array.getElem?_toList, hG, foldl_append_toList]
+  rw [show (ByteArray.empty).data.toList = [] from rfl, List.nil_append,
+    flatMap_range_getElem? _ hC (hm ▸ hk) hq, hCk]
+  simp only [Array.toList_replicate, List.getElem?_replicate, hq, if_true, Option.getD_some, Vector.getElem_replicate]
+
 /-- Belongs in qlean. **`x@i` at a `symbol` blob, a miss**: symbol `k` of the answer is the empty one. -/
 theorem gatherColumn_miss_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
     (hw : Enc.WF .symbol n (.syms blob offs)) {m : USize} {i : ByteArray}
@@ -376,6 +415,28 @@ theorem gatherColumn_miss_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
   simp only [Enc.get, if_pos hk, Column.symBytes, extract_upto, e1, e2, Nat.add_zero, Nat.add_sub_cancel,
     extract_self]
   rfl
+
+/-- Belongs in qlean. **`x@i`, a miss**, at every atom type but `general` and every encoding but an
+    interned symbol column (whose miss reads the dictionary's empty entry, found by `findSymScalar`):
+    element `k` of the answer is the null where `i[k]` is at or past `x`'s count. -/
+theorem gatherColumn_miss {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
+    (hne : ∀ d o ids, e ≠ .enum d o ids) {m : USize} {i : ByteArray} (hm : m.toNat = i.size / 8) {e' : Enc}
+    (h : gatherColumn t n e m (.bytes i) = some e') {k : Nat} (hk : k < m.toNat)
+    (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get t m e' k = some (Eval.nullAtom t hg) := by
+  cases hd : denseWidth t with
+  | some w => exact gatherColumn_miss_dense hd hw hm h hk hout
+  | none =>
+    by_cases hb : t = .boolean
+    · subst hb; exact gatherColumn_miss_bits hw hm h hk hout
+    by_cases hgu : t = .guid
+    · subst hgu; exact gatherColumn_miss_guid hw hm h hk hout
+    have hs : t = .symbol := by cases t <;> simp_all [denseWidth, QAtomicType.width]
+    subst hs
+    cases e with
+    | syms b o => exact gatherColumn_miss_syms hw hm h hk hout
+    | enum d o ids => exact (hne d o ids rfl).elim
+    | _ => all_goals (exfalso; simp [Enc.WF, QAtomicType.width] at hw)
 
 end LeetQ.Rel.KernelWF
 
@@ -436,6 +497,53 @@ theorem pickArr_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArra
   have hl : len i < USize.size := h ▸ m.toBitVec.isLt
   unfold pickArr; rw [cast_get]
   exact pick_get c i hl k.1 _ hin
+
+/-- An atom type's `default` is the element its null reads as. -/
+theorem default_of_null {t : QAtomicType} (hg : t ≠ .general) :
+    ((Dep.Carrier.of? t (.atom (Eval.nullAtom t hg))).getD default : Dep.Carrier t) = default := by
+  have hd : (default : Dep.Carrier t) = Dep.Carrier.null t hg := by
+    show (if h : t = .general then _ else _ : Inhabited (Dep.Carrier t)).default = _
+    rw [dif_neg hg]; rfl
+  rw [hd]; unfold Dep.Carrier.null
+  have key : ∀ (o : Option (Dep.Carrier t)) (p : o.isSome), o.getD (o.get p) = o.get p := fun o p => by
+    cases o with | none => cases p | some v => rfl
+  exact key _ _
+
+/-- **`pick` at a miss**: row `k` of `x@i` reads `default` where `i[k]`, read unsigned, is at or past `x`'s
+    count — at a general list (`default`, not q's prototype fill) and at every encoding but an interned
+    symbol column. -/
+theorem pick_get_miss {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (hl : len i < USize.size)
+    (hne : ∀ d o ids, c.2.enc ≠ .enum d o ids)
+    (k : Nat) (hk : k < (pick t c i).1.toNat) (hout : c.1.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    (pick t c i).2.get ⟨k, hk⟩ = default := by
+  by_cases hg : t = .general
+  · subst hg
+    obtain ⟨xs, he, hs⟩ := KernelWF.general_cases c.2.wf
+    have hgx : gens c.2 = xs := Option.some_inj.1 ((Option.some_get _).trans (by simp [he]))
+    have hsz : ((longRows i).map fun p => (gens c.2)[p]?.getD default).size < USize.size := by
+      simpa [longRows, len] using hl
+    revert hk; rw [pick_general, genCol, need, dif_pos hsz]; intro hk
+    rw [get_general _ rfl]
+    simp only [Array.getElem_map, longRows, Array.getElem_range, hgx, Nat.mul_comm 8 k]
+    rw [Array.getElem?_eq_none (by omega), Option.getD_none]
+  obtain ⟨e, he, hp⟩ := pick_eq_gather hg c i hl
+  have h1 : (pick t c i).1 = (len i).toUSize := by simpa [Arr.part] using congrArg Prod.fst hp
+  have h2 : (pick t c i).2.enc = e := by simpa [Arr.part] using congrArg Prod.snd hp
+  have hm : ((len i).toUSize).toNat = i.size / 8 := USize.toNat_ofNat_of_lt' hl
+  rw [Arr.get_ne _ _ hg, h2]
+  simp only []
+  rw [h1, KernelWF.gatherColumn_miss c.2.wf hg hne hm he (h1 ▸ hk) hout, Option.bind_some]
+  exact default_of_null hg
+
+/-- **`pickArr` at a miss**: element `k` of the column picked at `i` reads `default` where `i[k]` is at or
+    past `x`'s count (`pick_get_miss`). -/
+theorem pickArr_get_miss {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (m : USize)
+    (h : len i = m.toNat) (hne : ∀ d o ids, c.2.enc ≠ .enum d o ids) (k : Fin m.toNat)
+    (hout : c.1.toNat ≤ (Column.bitsAt i (k.1 * 8) 8).toNat) :
+    (pickArr t c i m h).get k = default := by
+  have hl : len i < USize.size := h ▸ m.toBitVec.isLt
+  unfold pickArr; rw [cast_get]
+  exact pick_get_miss c i hl hne k.1 _ hout
 
 end LeetQ.Rel.Alg
 
