@@ -130,12 +130,12 @@ theorem filterMap_window {β : Type} (d : β) : ∀ {m : Nat} (f : Fin m → β)
 /-! ## `Vals.pick` read back -/
 
 /-- **The picked payloads fit**, for `Vals.pick A x` at the rows `ps` (a row at or past `n` a miss): at an
-    array, the payload count and the copies of the picked rows' windows (`filterMap_window`) below `2^63`,
+    atom, no interned symbol column where some row misses (its miss is not read back); at an array, the payload count and the copies of the picked rows' windows (`filterMap_window`) below `2^63`,
     the longs `slices`/`sums`/`expand` compute them in, and the payload again at those copies; at a sum,
-    both sides' counts below `2^63`, the longs `place` computes in, and each side again at the positions its
+    the row count (the tags' running count) and both sides' counts below `2^63`, the longs `place` computes in, and each side again at the positions its
     rows read (a miss reading the left side at its count `l`, a miss again). -/
 def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → List Nat → Prop
-  | .atom _, _, _, _ => True
+  | .atom _, n, x, ps => (∃ k ∈ ps, n.toNat ≤ k) → ∀ d o ids, Arr.enc x ≠ .enum d o ids
   | .prod a b, _, x, ps => Vals.PickFits a x.1 ps ∧ Vals.PickFits b x.2 ps
   | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
     let w (k : Nat) : List Nat := if h : k < n.toNat then
@@ -149,7 +149,7 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
       if h : k < n.toNat then
         (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
       else if s then none else some c
-    l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
+    ps.length < 2 ^ 63 ∧ l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
       Vals.PickFits b y (side true r.toNat)
 
 /-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
