@@ -6,6 +6,8 @@
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.RazeSpec
 import LeetQ.Rel.KernelWF.Lane
+import QLean.Verify.Codes
+import QLean.Verify.SymFind
 
 namespace LeetQ.Rel.Alg
 
@@ -389,5 +391,203 @@ theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orde
   rw [hc, hwk, hnk, hck, hzk]
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
+
+/-! ## `pairCode` where it groups: one numbering pass over the pair -/
+
+/-- **`Code.ofIds` over ids `G` below `L ≤ n`, packed at `L`'s width, reads `G` and is well formed**, the
+    lane of no bits included (`Code.ofLane`'s bitmap of zeros). -/
+theorem ofIds_packIds (n : USize) {L : Nat} (hL : L ≤ n.toNat) (G : Nat → Nat) (hG : ∀ i < n.toNat, G i < L)
+    {fs : ByteArray} (hfs : len fs = L) :
+    let c := Code.ofIds (len fs) n (Column.packIds (Column.idWidthOf L) n.toNat G)
+    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ i < n.toNat, Column.idAt c.b c.w i = G i := by
+  intro c
+  have hL64 : L ≤ 2 ^ 64 := Nat.le_trans hL (Nat.le_of_lt (Verify.usize_lt n))
+  have hcard : c.card = L := by
+    show (Code.ofIds (len fs) n _).card = _; unfold Code.ofIds Code.ofLane; rw [hfs]; split <;> rfl
+  have hn : c.n = n := by show (Code.ofIds (len fs) n _).n = _; unfold Code.ofIds Code.ofLane; split <;> rfl
+  have hread : ∀ i < n.toNat, Column.idAt c.b c.w i = G i := fun i hi => by
+    have hb := Verify.lt_idWidthOf (hG i hi) hL64
+    show Column.idAt (Code.ofIds (len fs) n _).b (Code.ofIds (len fs) n _).w i = _
+    unfold Code.ofIds Code.ofLane
+    rw [hfs]
+    split
+    · next h0 =>
+      rw [show Column.idWidthOf L = 0 by simpa using h0] at hb
+      rw [show G i = 0 by omega]
+      simp only [idAt_one]
+      simp [Column.bitAt, KernelWF.ba_get?, Array.getElem?_replicate] <;> split <;> simp
+    · exact Verify.idAt_packIds_idWidthOf hL64 hi (hG i hi)
+  have hsh : ∀ d : Code, d = Code.ofIds (len fs) n (Column.packIds (Column.idWidthOf L) n.toNat G) →
+      (d.w = 1 ∨ d.w = 2 ∨ d.w = 4 ∨ d.w = 8 ∨ d.w = 16 ∨ d.w = 32 ∨ d.w = 64) ∧
+      d.b.size = (d.n.toNat * d.w + 7) / 8 := by
+    intro d hd; subst hd
+    unfold Code.ofIds Code.ofLane
+    rw [hfs]
+    by_cases h0 : (Column.idWidthOf L == 0) = true
+    · rw [if_pos h0]; exact ⟨.inl rfl, by simp [ByteArray.size]⟩
+    · rw [if_neg h0]
+      have hw0 : Column.idWidthOf L ≠ 0 := by simpa using h0
+      have hlane := Verify.laneWidth_cases (Column.widthFor (L - 1))
+      have hw : Column.idWidthOf L = 1 ∨ Column.idWidthOf L = 2 ∨ Column.idWidthOf L = 4 ∨
+          Column.idWidthOf L = 8 ∨ Column.idWidthOf L = 16 ∨ Column.idWidthOf L = 32 ∨ Column.idWidthOf L = 64 := by
+        unfold Column.idWidthOf at hw0 ⊢; omega
+      exact ⟨hw, packIds_size hw _ _⟩
+  exact ⟨⟨(hsh c rfl).1, hn, (hsh c rfl).2, fun _ => ⟨by rw [hcard]; exact Nat.lt_of_le_of_lt hL n.toNat_lt_size,
+    fun i hi => by rw [hn] at hi; rw [hread i hi, hcard]; exact hG i hi⟩⟩, hread⟩
+
+/-- **`Code.ofIds` over `idsBy n key` is well formed, and two of its codes agree exactly when the keys do.** -/
+theorem ofIds_idsBy {α : Type} [BEq α] [LawfulBEq α] [DecidableEq α] (key : Nat → α) (n : USize) :
+    let c := Code.ofIds (len (Order.idsBy n.toNat key).2) n (Order.idsBy n.toNat key).1
+    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ i < n.toNat, ∀ j < n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ key i = key j) := by
+  obtain ⟨h1, h2⟩ := Verify.idsBy_spec n.toNat key
+  have hfs : len (Order.idsBy n.toNat key).2 = (Verify.firstsOf key n.toNat).length := by
+    unfold len; rw [h2]; omega
+  have hL : (Verify.firstsOf key n.toNat).length ≤ n.toNat := by
+    simpa [Verify.firstsOf] using List.length_filter_le _ (List.range n.toNat)
+  obtain ⟨hwf, hread⟩ := ofIds_packIds n hL (Verify.groupOf key n.toNat) (fun i hi => Verify.groupOf_lt hi) hfs
+  intro c
+  have hc : c = Code.ofIds (len (Order.idsBy n.toNat key).2) n
+      (Column.packIds (Column.idWidthOf (Verify.firstsOf key n.toNat).length) n.toNat (Verify.groupOf key n.toNat)) := by
+    show Code.ofIds _ n _ = _; rw [h1]
+  rw [hc]
+  exact ⟨hwf, fun i hi j hj => by rw [hread i hi, hread j hj]; exact Verify.groupOf_iff hi hj⟩
+
+/-- At a lane `laneKind` names, two keys agree exactly when the codes do. -/
+theorem keyAt_iff_idAt {w : Nat} {k : Scan.Kind} (h : laneKind w = some k) (b : ByteArray) (i j : Nat) :
+    Order.keyAt k b i = Order.keyAt k b j ↔ Column.idAt b w i = Column.idAt b w j := by
+  rcases laneKind_some h with ⟨rfl, rfl⟩ | ⟨-, rfl, hc, hk⟩
+  · rw [idAt_one, idAt_one]
+    unfold Order.keyAt Scan.Kind.bitsAt
+    cases Column.bitAt b i <;> cases Column.bitAt b j <;> first | decide | simp [Order.rank]
+  · rw [Verify.keyAt_eq_iff hk, idAt_lane _ (by omega), idAt_lane _ (by omega), UInt64.toNat_inj]
+
+/-- A payload of `⌈n·w/8⌉` bytes at a lane `laneKind` names holds all `n` elements. -/
+theorem avail_lane {w : Nat} {k : Scan.Kind} (h : laneKind w = some k) {b : ByteArray} {n : Nat}
+    (hs : b.size = (n * w + 7) / 8) : n ≤ k.avail b := by
+  rcases laneKind_some h with ⟨rfl, rfl⟩ | ⟨-, rfl, -, hk⟩
+  · simp only [Scan.Kind.avail]; omega
+  · rcases hk with rfl | rfl | rfl | rfl | rfl <;> simp only [Scan.Kind.avail, Scan.Kind.width] at hs ⊢ <;> omega
+
+/-- `rank .i64` of a `Nat` below `2⁶⁴` keeps it apart from every other. -/
+theorem rank_ofNat_iff {x y : Nat} (hx : x < 2 ^ 64) (hy : y < 2 ^ 64) :
+    Order.rank .i64 (UInt64.ofNat (x.toUInt64.toNat % 2 ^ 64)) = Order.rank .i64 (UInt64.ofNat (y.toUInt64.toNat % 2 ^ 64)) ↔
+      x = y := by
+  refine ⟨fun e => ?_, fun e => by rw [e]⟩
+  have t : ∀ a, (UInt64.ofNat a).toNat = a % 2 ^ 64 := fun a => BitVec.toNat_ofNat _ _
+  have e := congrArg UInt64.toNat (UInt64.xor_left_inj _ |>.1 e)
+  simp only [t, Nat.toUInt64_eq] at e
+  simp only [Nat.mod_eq_of_lt hx, Nat.mod_eq_of_lt hy] at e
+  exact e
+
+/-- An id payload at a lane `w` of `⌈n·w/8⌉` bytes, repacked as longs by `idsOperand`: `n` longs, long `i` a
+    bijection of id `i`. -/
+theorem idsOperand_lane {w : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+    {b : ByteArray} {n : USize} (hs : b.size = (n.toNat * w + 7) / 8) :
+    Scan.Kind.i64.avail (idsOperand 8 w.toUSize b n) = n.toNat ∧ ∀ i < n.toNat,
+      Order.keyAt .i64 (idsOperand 8 w.toUSize b n) i =
+        Order.rank .i64 (UInt64.ofNat ((Column.idAt b w i).toUInt64.toNat % 2 ^ 64)) := by
+  have e8 : 8 * (8 : USize).toNat = 64 := by
+    rw [show (8 : USize).toNat = 8 from USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)]
+  have hcap : Column.idsCap b w n.toNat = n.toNat := idsCap_full (by omega) (by rw [hs, Nat.mul_comm]; omega)
+  unfold idsOperand
+  rw [e8, lane_toNat (by omega), hcap]
+  exact keyAt_packIds64 n.toNat (Column.idAt b w)
+
+/-- **`pairCode` where it groups the pair** — its classes answered, `groupIdsPair` at two layouts,
+    `groupIdsPairIds` otherwise: the code is well formed, and two of its codes agree exactly when both
+    columns' codes do; `a`, `b` lanes of `n` codes in `⌈n·w/8⌉` bytes. -/
+theorem pairCode_grouped (cl : Bool) (a b : Code) (hn : b.n = a.n)
+    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+      a.b.size = (a.n.toNat * a.w + 7) / 8)
+    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+      b.b.size = (b.n.toNat * b.w + 7) / 8)
+    {r : ByteArray × ByteArray} (hr : (pairCode cl a b).2 = some r) :
+    let c := (pairCode cl a b).1
+    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = a.n ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ i < a.n.toNat, ∀ j < a.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
+        Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j) := by
+  rw [hn] at hb
+  obtain ⟨key, hkey, hc⟩ : ∃ key : Nat → UInt64 × UInt64, (∀ i < a.n.toNat, ∀ j < a.n.toNat, (key i = key j ↔
+      Column.idAt a.b a.w i = Column.idAt a.b a.w j ∧ Column.idAt b.b b.w i = Column.idAt b.b b.w j)) ∧
+      (pairCode cl a b).1 = Code.ofIds (len (Order.idsBy a.n.toNat key).2) a.n (Order.idsBy a.n.toNat key).1 := by
+    revert hr
+    unfold pairCode
+    dsimp only
+    split
+    · intro h; simp at h
+    intro _
+    split
+    · next _ _ ka kb hka hkb =>
+      have hm : min a.n.toNat (min (ka.avail a.b) (kb.avail b.b)) = a.n.toNat := by
+        have := avail_lane hka ha.2; have := avail_lane hkb hb.2; omega
+      refine ⟨fun i => (Order.keyAt ka a.b i, Order.keyAt kb b.b i), fun i _ j _ => ?_, ?_⟩
+      · rw [Prod.mk.injEq, keyAt_iff_idAt hka, keyAt_iff_idAt hkb]
+      · show Code.ofIds _ a.n (Order.groupIdsPair ka kb a.n a.b b.b).1 = _
+        unfold Order.groupIdsPair; rw [hm]
+    · obtain ⟨hav, hka⟩ := idsOperand_lane ha.1 ha.2
+      obtain ⟨hbv, hkb⟩ := idsOperand_lane hb.1 hb.2
+      refine ⟨fun i => (Order.keyAt .i64 (idsOperand 8 a.w.toUSize a.b a.n) i,
+        Order.keyAt .i64 (idsOperand 8 b.w.toUSize b.b a.n) i), fun i hi j hj => ?_, ?_⟩
+      · have haw : a.w ≤ 64 := by rcases ha.1 with h | h | h | h | h | h | h <;> omega
+        have hbw : b.w ≤ 64 := by rcases hb.1 with h | h | h | h | h | h | h <;> omega
+        have l64 : ∀ (x : ByteArray) w k, w ≤ 64 → Column.idAt x w k < 2 ^ 64 := fun x w k h =>
+          Nat.lt_of_lt_of_le (idAt_lt x w k h) (Nat.pow_le_pow_right (by decide) h)
+        rw [Prod.mk.injEq, hka i hi, hka j hj, hkb i hi, hkb j hj,
+          rank_ofNat_iff (l64 a.b a.w i haw) (l64 a.b a.w j haw), rank_ofNat_iff (l64 b.b b.w i hbw) (l64 b.b b.w j hbw)]
+      · show Code.ofIds _ a.n (Order.groupIdsPairIds a.w.toUSize b.w.toUSize a.n a.b b.b).1 = _
+        unfold Order.groupIdsPairIds Order.groupIdsPair; rw [hav, hbv, Nat.min_self, Nat.min_self]
+  intro c
+  rw [show c = _ from hc]
+  obtain ⟨hwf, hiff⟩ := ofIds_idsBy key a.n
+  exact ⟨hwf, fun i hi j hj => (hiff i hi j hj).trans (hkey i hi j hj)⟩
+
+/-! ## Products: `pairCode` of the two columns' codes laid end to end, cut back -/
+
+/-- A product side's codes are `pairCode` of its columns' codes laid end to end, cut at the parts' counts. -/
+theorem codes_prod_eq {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a b)) p) :
+    Obj.codes (.prod a b) cs =
+      (pairCode false (Code.cat (Obj.codes a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).toArray)
+        (Code.cat (Obj.codes b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))).toArray)).1.cut
+        ((Obj.codes a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).map (·.n)) := by
+  rw [Obj.codes]; simp [tuples, tuples.tupleCode]
+
+/-- Equal parts read equal rows. -/
+theorem row_part_congr {A : Obj} {x y : Part A} (h : x = y) {i : Nat} (hx : i < x.1.toNat) (hy : i < y.1.toNat) :
+    Vals.row x.2 ⟨i, hx⟩ = Vals.row y.2 ⟨i, hy⟩ := by subst h; rfl
+
+/-- Codes of parts on one lane, each `⌈n·w/8⌉` bytes with its codes below its `card` under a byte, laid
+    end to end by `Code.cat`: code `(counts before k) + i` is part `k`'s code `i`, at the parts' lane. -/
+theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
+    (hl : ∀ {k l : Nat} (hk : k < p) (hl : l < p), cx[k].w = cx[l].w)
+    (hwf : ∀ {k : Nat} (hk : k < p),
+      (cx[k].w = 1 ∨ cx[k].w = 2 ∨ cx[k].w = 4 ∨ cx[k].w = 8 ∨ cx[k].w = 16 ∨ cx[k].w = 32 ∨ cx[k].w = 64) ∧
+      cx[k].b.size = (cx[k].n.toNat * cx[k].w + 7) / 8 ∧
+      (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < cx[k].card))
+    (hN : (cx.toList.map (·.n.toNat)).sum < USize.size) :
+    (Code.cat cx.toArray).n.toNat = (cx.toList.map (·.n.toNat)).sum ∧
+      ∀ k (hk : k < p), ∀ i < cx[k].n.toNat, Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w
+        (((cx.toList.take k).map (·.n.toNat)).sum + i) = Column.idAt cx[k].b cx[k].w i := by
+  have hmem : ∀ c ∈ cx.toArray, ∃ k, ∃ hk : k < p, c = cx[k] := fun c hc => by
+    obtain ⟨k, hk, rfl⟩ := Array.mem_iff_getElem.1 hc
+    exact ⟨k, by simpa using hk, by simp⟩
+  obtain ⟨hw, hn, hg⟩ := cat_get cx.toArray (w := cx[0].w) (hwf hp).1 (by simpa using hp)
+    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; exact hl hk hp)
+    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]; exact (hwf hk).2.1)
+    (fun h24 c hc i hi => by
+      obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]
+      exact (hwf hk).2.2 (by rw [hl hk hp]; omega) i hi)
+    (by simpa using hN)
+  refine ⟨by simpa using hn, fun k hk i hi => ?_⟩
+  have := hg k (by simpa using hk) i (by simpa using hi)
+  simp only [Vector.getElem_toArray, Vector.toList_toArray] at this
+  rw [hw, hl hk hp]; exact this
 
 end LeetQ.Rel.Alg
