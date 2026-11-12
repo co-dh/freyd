@@ -109,10 +109,10 @@ theorem bitsOf_bitAt (x : Bool) (c : USize) {r : Nat} (hr : r < c.toNat) (hc : c
   unfold bitsOf
   rw [(Verify.cmp_bitAt _ _ _ _ _ c).2 r (by omega)]
   simp only [Ew.elem, hw, hs, Nat.zero_mul, bitsAt_one, tilLongs_bitsAt c hr, decide_eq_true hr, Bool.true_and]
+  have hcmp : compare (UInt64.ofNat r).toInt64 (UInt64.toInt64 0) ≠ .lt := by
+    show compareOfLessAndEq _ _ ≠ _; unfold compareOfLessAndEq; rw [if_neg (by exact hlt)]; split <;> simp
   cases x <;> simp (config := {decide := true}) only [Ew.cmpStep, Ew.signed, Ew.ge, Ew.lt, Ew.eq, Ew.ne, Ew.le,
-    Ew.gt, ↓reduceIte, Bool.false_eq_true]
-  trace_state
-  all_goals sorry
+    ↓reduceIte] <;> simpa using hcmp
 
 /-- A `range`-indexed `flatMap` that reads the array `xs` at its index is the `flatMap` over `xs`. -/
 private theorem flatMap_range {α β : Type} (xs : Array α) (f : Nat → List β) (G : α → List β)
@@ -130,7 +130,30 @@ theorem tags_get (ps : Array (USize × Bool)) (m : USize) (h : ps.foldl (fun s p
     (tags ps m h).get i = (ps.toList.flatMap fun p => List.replicate p.1.toNat p.2).getD i.1 false := by
   rw [Arr.get_bool_bits (tags ps m h) rfl i]
   simp only [concatBits]
-  trace_state
-  all_goals sorry
+  have hK : min ((countBytes ((ps.map fun p => (p.1, bitsOf p.2 p.1)).map (·.1))).size / 8)
+      ((ps.map fun p => (p.1, bitsOf p.2 p.1)).map (·.2)).size = ps.size := by
+    rw [countBytes_size]; simp
+  rw [hK]
+  generalize hb : Array.flatMap _ (Array.range ps.size) = bs
+  have hbs : bs.toList = ps.toList.flatMap fun p => List.replicate p.1.toNat p.2 := by
+    rw [← hb]
+    simp only [Array.toList_flatMap, Array.toList_range, Array.toList_map]
+    refine flatMap_range ps _ _ fun k hk => ?_
+    have hk' : k < ((ps.map fun p => (p.1, bitsOf p.2 p.1)).map (·.1)).size := by simpa using hk
+    rw [countBytes_get _ k hk', getElem!_pos _ k (by simpa using hk)]
+    simp only [Array.getElem_map, USize.toNat_toUInt64]
+    have hc' := hc ps[k] (Array.getElem_mem hk)
+    exact List.ext_getElem (by simp) fun r h1 _ => by
+      rw [List.getElem_map, List.getElem_range, List.getElem_replicate]
+      exact bitsOf_bitAt _ _ (by simpa using h1) hc'
+  have hlen : bs.size = m.toNat := by
+    rw [← Array.length_toList, hbs, ← h, ← Array.foldl_toList, List.length_flatMap]
+    suffices ∀ (l : List (USize × Bool)) (a : Nat),
+        a + (l.map fun p => (List.replicate p.1.toNat p.2).length).sum = l.foldl (fun s p => s + p.1.toNat) a by
+      simpa using this ps.toList 0
+    intro l; induction l with
+    | nil => simp
+    | cons p l ih => intro a; simp only [List.map_cons, List.sum_cons, List.foldl_cons, ← ih]; simp; omega
+  rw [Verify.bitAt_packOf _ _ _ (by rw [hlen]; exact i.2), ← Array.getElem?_toList, hbs, List.getD_eq_getElem?_getD]
 
 end LeetQ.Rel.KernelWF

@@ -68,7 +68,7 @@ private theorem need_some {α : Type} {p : Prop} [Decidable p] {msg : Unit → S
   · simp [need, hp, stop] at h
 
 /-- `countBytes`' count `k` reads back at byte `8k`. -/
-private theorem countBytes_get (xs : Array USize) (k : Nat) (h : k < xs.size) :
+theorem countBytes_get (xs : Array USize) (k : Nat) (h : k < xs.size) :
     Column.bitsAt (countBytes xs) (8 * k) 8 = xs[k].toUInt64 := by
   obtain ⟨-, -, hb⟩ := Verify.foldl_pushBits USize.toUInt64 8 (by decide) xs.toList ByteArray.empty
   have := hb k (by simpa using h)
