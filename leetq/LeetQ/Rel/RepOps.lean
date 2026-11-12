@@ -858,4 +858,97 @@ end Pairs
 #print axioms rep_inl
 #print axioms rep_inr
 
+/-! ### union and junc -/
+
+section UnionJunc
+
+/-- Two parts' summed count, at its `USize`, is the two counts added. -/
+theorem raze2_cnt {X : Obj} {n m : USize} (x : Vals X n) (y : Vals X m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part X)).toList.map fun c : Part X => c.1.toNat).sum < USize.size) :
+    ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part X)).toList.map fun c : Part X => c.1.toNat).sum.toUSize.toNat =
+      n.toNat + m.toNat := by
+  rw [USize.toNat_ofNat_of_lt' hN]; simp
+
+/-- Rows of heterogeneously equal sides, at one position, are equal: a side moved along a count equation, by
+    whatever cast, keeps its rows. -/
+theorem row_heq {X : Obj} {a b : USize} (v : Vals X a) (w : Vals X b) (i : Fin a.toNat) (j : Fin b.toNat)
+    (hab : a = b) (hvw : HEq v w) (hij : i.1 = j.1) : Vals.row v i = Vals.row w j := by
+  subst hab; cases hvw; obtain ⟨i, hi⟩ := i; obtain ⟨j, hj⟩ := j; simp only at hij; subst hij; rfl
+
+/-- A relation whose key and value columns read, row by row, `R`'s rows and then `S`'s holds exactly the pairs
+    of `R` and of `S`. -/
+theorem holds_two {N : USize} (K : Vals A N) (V : Vals B N) (R S : Rel A B) (hn : N.toNat = R.n.toNat + S.n.toNat)
+    (hK : ∀ k (hk : k < N.toNat), Vals.row K ⟨k, hk⟩ =
+      if h : k < R.n.toNat then Vals.row R.key ⟨k, h⟩ else Vals.row S.key ⟨k - R.n.toNat, by omega⟩)
+    (hV : ∀ k (hk : k < N.toNat), Vals.row V ⟨k, hk⟩ =
+      if h : k < R.n.toNat then Vals.row R.val ⟨k, h⟩ else Vals.row S.val ⟨k - R.n.toNat, by omega⟩)
+    (a : A.El) (b : B.El) : (⟨N, K, V⟩ : Rel A B).Holds a b ↔ R.Holds a b ∨ S.Holds a b := by
+  constructor
+  · rintro ⟨⟨k, hk⟩, ha, hb⟩
+    rw [hK k hk] at ha; rw [hV k hk] at hb
+    by_cases h : k < R.n.toNat
+    · rw [dif_pos h] at ha hb; exact Or.inl ⟨_, ha, hb⟩
+    · rw [dif_neg h] at ha hb; exact Or.inr ⟨_, ha, hb⟩
+  · rintro (⟨i, ha, hb⟩ | ⟨j, ha, hb⟩)
+    · refine ⟨⟨i.1, show i.1 < N.toNat by omega⟩, ?_, ?_⟩
+      · rw [hK, dif_pos i.2]; exact ha
+      · rw [hV, dif_pos i.2]; exact hb
+    · have hj : ¬ (R.n.toNat + j.1 < R.n.toNat) := by omega
+      refine ⟨⟨R.n.toNat + j.1, show R.n.toNat + j.1 < N.toNat by omega⟩, ?_, ?_⟩
+      · rw [hK, dif_neg hj]; simp only [Nat.add_sub_cancel_left]; exact ha
+      · rw [hV, dif_neg hj]; simp only [Nat.add_sub_cancel_left]; exact hb
+
+/-- **`rep [R, S] = [rep R, rep S]`**, the mediating relation of `Rel(Set)`'s coproduct (`sumCop`). The keys are
+    `sumVals R.key S.key` (`sumVals_row`), the values `C.raze` of `R.val` and `S.val`, read back by `hC`
+    (`RazeRow`). `hN`: the row count fits a `USize` (past it `[R, S]` answers `𝟘`); `h63`: it is at most `2^63`. -/
+theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63)
+    (hC : ∀ hN' k hk, Vals.row (C.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hN') ⟨k, hk⟩ =
+      if h : k < R.n.toNat then Vals.row R.val ⟨k, h⟩
+      else Vals.row S.val ⟨k - R.n.toNat, by have := raze2_cnt R.val S.val hN'; omega⟩) :
+    rep (LeetQ.Rel.Alg.junc R S) =
+      Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) := by
+  have hN' : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
+      USize.size := by simpa using hN
+  have e : LeetQ.Rel.Alg.junc R S = ⟨R.n + S.n, sumVals R.key S.key hN,
+      toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN'⟩ := by
+    unfold LeetQ.Rel.Alg.junc need; rw [dif_pos hN]
+  rw [e]
+  refine hom_ext fun s c => ?_
+  have hval : ∀ k : Fin (R.n + S.n).toNat, Vals.row (toUSize_eq (by rw [toNat_add_fits hN]) ▸
+      C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN' : Vals C (R.n + S.n)) k =
+      if h : k.1 < R.n.toNat then Vals.row R.val ⟨k.1, h⟩
+      else Vals.row S.val ⟨k.1 - R.n.toNat, by have := Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN); omega⟩ :=
+    fun k => by
+      have hk' : k.1 < ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map
+          fun c : Part C => c.1.toNat).sum.toUSize.toNat := by
+        rw [raze2_cnt _ _ hN']; exact Nat.lt_of_lt_of_eq k.2 (toNat_add_fits hN)
+      refine Eq.trans ?_ (hC hN' k.1 hk')
+      apply row_heq
+      all_goals first | rfl | exact eqRec_heq _ _ | exact eq_mpr_heq _ _ | exact cast_heq _ _ |
+        exact (toUSize_eq (by rw [toNat_add_fits hN])).symm | simp
+  show (∃ k, Vals.row (A := .sum A B) (sumVals R.key S.key hN) k = s ∧ Vals.row _ k = c) ↔
+    (∃ a, s = Sum.inl a ∧ R.Holds a c) ∨ (∃ b, s = Sum.inr b ∧ S.Holds b c)
+  constructor
+  · rintro ⟨k, hs, hc⟩
+    rw [sumVals_row _ _ hN h63] at hs; rw [hval] at hc
+    by_cases hk : k.1 < R.n.toNat
+    · rw [dif_pos hk] at hs hc; exact Or.inl ⟨_, hs.symm, ⟨k.1, hk⟩, rfl, hc⟩
+    · rw [dif_neg hk] at hs hc; exact Or.inr ⟨_, hs.symm, _, rfl, hc⟩
+  · have hk2 : ∀ k : Nat, k < R.n.toNat + S.n.toNat → k < (R.n + S.n).toNat := fun k h => by
+      rw [toNat_add_fits hN]; exact h
+    rintro (⟨a, rfl, i, rfl, rfl⟩ | ⟨b, rfl, j, rfl, rfl⟩)
+    · refine ⟨⟨i.1, hk2 _ (by omega)⟩, ?_, ?_⟩
+      · rw [sumVals_row _ _ hN h63, dif_pos i.2]
+      · rw [hval, dif_pos i.2]
+    · have hj : ¬ (R.n.toNat + j.1 < R.n.toNat) := by omega
+      refine ⟨⟨R.n.toNat + j.1, hk2 _ (by omega)⟩, ?_, ?_⟩
+      · rw [sumVals_row _ _ hN h63, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
+      · rw [hval, dif_neg hj]; simp only [Nat.add_sub_cancel_left]
+
+
+end UnionJunc
+
+#print axioms rep_junc
+
 end LeetQ.Rel.Rep
