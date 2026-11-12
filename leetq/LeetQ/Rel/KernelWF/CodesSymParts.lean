@@ -77,21 +77,16 @@ theorem codes_symbol_parts_faithful {p : Nat} (cs : Vector (Part (.atom .symbol)
     codes_symbol_faithful (raze .symbol cs.toArray) (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom,
     Vals.row_atom, Vals.row_atom, KernelWF.raze_get_symbol cs hN hD hk hi, KernelWF.raze_get_symbol cs hN hD hl hj]
 
-/-- **A symbol side of several parts: each part's code is well formed**, the parts' summed count a `USize`.
-    Where the razed column is interned its ids must be exactly `⌈n·w/8⌉` bytes (`hsz`), as `codes_symbol_wf`
-    asks of one part. -/
+/-- **A symbol side of several parts: each part's code is well formed**, the parts' summed count a `USize`. -/
 theorem codes_symbol_parts_wf {p : Nat} (cs : Vector (Part (.atom .symbol)) p)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
-    (hsz : ∀ d o ids, (raze .symbol cs.toArray).2.enc = .enum d o ids → Column.idWidth o ≠ 0 →
-      ids.size = ((raze .symbol cs.toArray).1.toNat * Column.idWidth o + 7) / 8)
-    {k : Nat} (hk : k < p) :
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom .symbol) cs)[k]
     (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c
   have hX := raze_len .symbol cs.toArray hN
-  obtain ⟨hw, hn, hbs, hid⟩ := codes_symbol_wf (raze .symbol cs.toArray) hsz
+  obtain ⟨hw, hn, hbs, hid⟩ := codes_symbol_wf (raze .symbol cs.toArray)
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum =
       (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].n.toNat := by
     rw [hn, hX, Vector.toList_map, List.map_map]; rfl
