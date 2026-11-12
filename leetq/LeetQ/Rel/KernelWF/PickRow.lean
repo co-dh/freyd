@@ -91,24 +91,94 @@ theorem pick_row_prod_dflt {a b : Obj} {n : USize} (x : Vals (.prod a b) n) (i :
   show (Vals.row (Vals.pick a x.1 i m h) q, Vals.row (Vals.pick b x.2 i m h) q) = _
   rw [h1, h2]; split <;> rfl
 
+/-- `widen` of a bitmap to longs is one push per bit: `1` where it is set, else `0`. -/
+theorem widen_bits_eq (tb : ByteArray) (m : USize) :
+    Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m = (List.range m.toNat).foldl
+      (fun acc i => Column.pushBits acc (if Column.bitAt tb i then 1 else 0) 8) ByteArray.empty := by
+  unfold Kernel.Ew.widen
+  congr 1; funext acc i
+  rw [if_neg (by decide), if_neg (by decide)]
+  unfold Ew.widenRead; rw [if_pos (by decide)]
+  cases Column.bitAt tb i <;> rfl
+
+/-- `widen` of a bitmap at `m` answers `m` longs. -/
+theorem len_widen_bits (tb : ByteArray) (m : USize) :
+    len (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) = m.toNat := by
+  obtain ⟨hs, -, -⟩ := foldl_pushBits (fun i => if Column.bitAt tb i then (1 : UInt64) else 0) 8 (by decide)
+    (List.range m.toNat) ByteArray.empty
+  rw [len, widen_bits_eq, hs]; simp
+
 /-- **`widen` of a bitmap to longs**, long `q`: `1` where bit `q` is set, else `0` — a sum's tags as `τ`. -/
 theorem widen_bits_get (tb : ByteArray) (m : USize) {q : Nat} (hq : q < m.toNat) :
     Column.bitsAt (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) (q * 8) 8 =
       if Column.bitAt tb q then 1 else 0 := by
   let g : Nat → UInt64 := fun i => if Column.bitAt tb i then 1 else 0
   have hf : Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m =
-      (List.range m.toNat).foldl (fun acc i => Column.pushBits acc (g i) 8) ByteArray.empty := by
-    unfold Kernel.Ew.widen
-    congr 1; funext acc i
-    rw [if_neg (by decide), if_neg (by decide)]
-    unfold Ew.widenRead; rw [if_pos (by decide)]
-    simp only [g]
-    cases Column.bitAt tb i <;> rfl
+      (List.range m.toNat).foldl (fun acc i => Column.pushBits acc (g i) 8) ByteArray.empty :=
+    widen_bits_eq tb m
   obtain ⟨-, -, hg⟩ := foldl_pushBits g 8 (by decide) (List.range m.toNat) ByteArray.empty
   have := hg q (by simpa using hq)
   rw [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at this
   rw [hf, Nat.mul_comm, this]
   simp only [g]; cases Column.bitAt tb q <;> rfl
+
+/-- **A row's rank among the set bits**: `sums τ - τ` at `q` counts the set bits before `q`, `τ` the
+    bitmap widened, the count below `2^63`. -/
+theorem rank_get (tb : ByteArray) (m : USize) (hm : m.toNat < 2 ^ 63) {q : Nat} (hq : q < m.toNat) :
+    (Column.bitsAt (sub m (sums m (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m))
+      (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m)) (q * 8) 8).toNat =
+      ((List.range q).filter (Column.bitAt tb)).length := by
+  have hτ : ∀ j < m.toNat, (Column.bitsAt (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) (j * 8) 8).toNat =
+      if Column.bitAt tb j then 1 else 0 := fun j hj => by
+    rw [widen_bits_get tb m hj]; split <;> rfl
+  have hsum : ∀ k ≤ m.toNat, ((List.range k).map fun j =>
+      (Column.bitsAt (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) (j * 8) 8).toNat).sum =
+      ((List.range k).filter (Column.bitAt tb)).length := by
+    intro k hk
+    induction k with
+    | zero => rfl
+    | succ k ih =>
+      rw [sum_range_succ', ih (by omega), hτ k (by omega), List.range_succ, List.filter_append, List.length_append]
+      cases h : Column.bitAt tb k <;> simp [h]
+  have hf : ∀ k, ((List.range k).filter (Column.bitAt tb)).length ≤ k := fun k =>
+    Nat.le_trans (List.length_filter_le _ _) (by simp)
+  have hl := len_widen_bits tb m
+  have hs := sums_get (n := m) (b := Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) hq (by omega)
+    (by rw [hsum (q + 1) hq]; have := hf (q + 1); omega)
+  rw [hsum (q + 1) hq] at hs
+  have hS := sum_range_succ' (fun j => (Column.bitsAt (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m) (j * 8) 8).toNat) q
+  rw [hsum (q + 1) hq, hsum q (by omega)] at hS
+  have hfq := hf (q + 1)
+  rw [sub_get hq (by rw [hs]; omega) (by rw [hs, hS]; omega), hs, hS]; omega
+
+/-- **The `k`-th set position is `q`**, where `k` counts the set positions before `q`. -/
+theorem filter_range_rank (P : Nat → Bool) {m q : Nat} (hq : q < m) (hP : P q = true) :
+    ((List.range m).filter P)[((List.range q).filter P).length]? = some q := by
+  obtain ⟨k, rfl⟩ : ∃ k, m = q + 1 + k := ⟨m - q - 1, by omega⟩
+  rw [List.range_add, List.range_succ, List.filter_append, List.filter_append, List.filter_cons_of_pos hP,
+    List.filter_nil, List.append_assoc, List.getElem?_append_right (Nat.le_refl _), Nat.sub_self]
+  rfl
+
+/-- `Ew.val` on longs at `av`, element `i` below the count: `valStep` of `a`'s first long and `b`'s `i`. -/
+theorem val_av_get (op : UInt8) (a b : ByteArray) (n : USize) {i : Nat} (hi : i < n.toNat) :
+    Column.bitsAt (Kernel.Ew.val op Ew.i64 Ew.av nul a b n) (i * 8) 8 =
+      Ew.valStep op Ew.i64 nul.toUInt64 (Column.bitsAt a 0 8) (Column.bitsAt b (i * 8) 8) := by
+  have hw : Ew.width Ew.i64 = 8 := by decide
+  have h := congrArg (·[i]?) (elemsW_val op Ew.i64 Ew.av nul a b n)
+  have hs : (Kernel.Ew.val op Ew.i64 Ew.av nul a b n).size / 8 = n.toNat := by
+    have := len_val op Ew.av a b n; simpa [len] using this
+  simp only [elemsW, hw, hs, List.getElem?_map, List.getElem?_range, hi, Option.map_some,
+    Option.some.injEq] at h
+  rw [h]
+  simp (config := {decide := true}) only [Ew.shapeIdx, Ew.elem, hw, ↓reduceIte, Nat.zero_mul]
+  generalize Ew.valStep op Ew.i64 nul.toUInt64 _ _ = v
+  rw [Nat.mod_eq_of_lt (show v.toNat < 2 ^ (8 * 8) from v.toNat_lt), UInt64.ofNat_toNat]
+
+/-- **`fill` on longs**: the right operand, or the left where the right is q's null `0N`. -/
+theorem valStep_fill (x y : UInt64) :
+    Ew.valStep Ew.fill Ew.i64 nul.toUInt64 x y = if y.toInt64 = nul then x else y := by
+  by_cases hy : y.toInt64 = nul <;>
+    simp (config := {decide := true}) [Ew.valStep, Ew.intStep, Ew.signed, hy] <;> rfl
 
 /-- **`Vals.pick` read back at an array side**, from its payload's: the picked rows' clamped slices are
     gathered one after another, so row `q`'s new slice is its old one, copied. -/
