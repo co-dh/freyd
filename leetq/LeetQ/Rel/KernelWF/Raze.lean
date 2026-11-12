@@ -508,9 +508,17 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
   obtain ⟨b, o, h1, h2⟩ := internConcat_dict qs
   have hs := Verify.symsWF_internSyms b o
   have hd : SymsWF (internConcat qs).1 (internConcat qs).2.1 := by rw [h1, h2]; exact hs
+  have hn : ((List.range ((internConcat qs).2.1.size - 1)).map
+      (Verify.symAt (internConcat qs).1 (internConcat qs).2.1)).Nodup := by
+    rw [h1, h2]
+    have hD := Verify.distinctSyms_eraseDups b o
+    simp only [Verify.symsOf, ← Verify.firstsOf_eraseDups] at hD
+    show ((List.range ((Order.distinctSyms b o).2.size - 1)).map
+      (Verify.symAt (Order.distinctSyms b o).1 (Order.distinctSyms b o).2)).Nodup
+    rw [hD]; exact Verify.nodup_firsts ..
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
-  rw [h] at hd ⊢
-  refine ⟨?_, hd⟩
+  rw [h] at hd hn ⊢
+  refine ⟨?_, hd, hn⟩
   simp only [concatIds]
   rw [hc, toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)

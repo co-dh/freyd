@@ -147,6 +147,52 @@ theorem gatherIds_dict {dict : ByteArray} {dof : Array Nat} {inRange : Unit → 
     have := symsWF_push (b' := dict.push 0) hd (by omega)
     rwa [hp] at this
 
+/-- An interned gather's dictionary holds no symbol twice where the source's does not: the empty symbol is
+    appended only where `findSymScalar` does not find it, and appending it leaves every entry as it was. -/
+theorem gatherIds_nodup {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool}
+    {g : USize → USize → UInt64 → ByteArray} (hd : SymsWF dict dof)
+    (hn : ((List.range (dof.size - 1)).map (Verify.symAt dict dof)).Nodup) :
+    ((List.range ((gatherIds dict dof inRange g).2.1.size - 1)).map
+      (Verify.symAt (gatherIds dict dof inRange g).1 (gatherIds dict dof inRange g).2.1)).Nodup := by
+  unfold gatherIds
+  dsimp only
+  split
+  · exact hn
+  · rename_i hc
+    have hlt : ¬ (findSymScalar dict dof ByteArray.empty).toNat < dof.size - 1 := fun h => hc (by simp [h])
+    have habs : ∀ j < dof.size - 1, Verify.symAt dict dof j ≠ [] := by
+      intro j hj he
+      apply hlt
+      unfold findSymScalar
+      dsimp only
+      cases hf : (List.range (dof.size - 1)).find? (fun i => (Column.symKey dict dof i).data == ByteArray.empty.data) with
+      | none =>
+        exfalso
+        refine List.find?_eq_none.1 hf j (List.mem_range.2 hj) ((Verify.arr_beq_iff _ _).2 ?_)
+        exact Array.toList_inj.1 he
+      | some j' =>
+        have := List.mem_range.1 (List.mem_of_find?_eq_some hf)
+        rw [Option.getD_some]
+        exact Nat.lt_of_le_of_lt (by rw [show j'.toUSize = USize.ofNat j' from rfl, USize.toNat_ofNat']; exact Nat.mod_le _ _) this
+    have hpz : (dict.push 0).size = dict.size + 1 := by simp only [ByteArray.size, ByteArray.push, Array.size_push]
+    have hpos := hd.pos
+    obtain ⟨g1, g2, g3, g4, g5⟩ := Verify.symBytes_push dict (dict.push 0) dof (dof.size - 1) [0] (by omega)
+      hd.last (fun t ht => hd.le t (by omega)) (Array.toList_push ..)
+    rw [hpz] at g1 g2 g3 g4 g5
+    have hold : ∀ t < dof.size - 1, Verify.symAt (dict.push 0) (dof.push (dict.size + 1)) t = Verify.symAt dict dof t :=
+      fun t ht => by
+        rw [Verify.symAt_eq_dropLast _ _ _ (by rw [hpz]; exact g3 (t + 1) (by omega)), g5 t ht,
+          ← Verify.symAt_eq_dropLast _ _ _ (hd.le (t + 1) (by omega))]
+    have hnew : Verify.symAt (dict.push 0) (dof.push (dict.size + 1)) (dof.size - 1) = [] := by
+      rw [Verify.symAt_eq_dropLast _ _ _ (by rw [hpz, g2]; exact Nat.le_refl _), g4]; rfl
+    have hs : (dof.push (dict.size + 1)).size - 1 = (dof.size - 1) + 1 := by simp only [Array.size_push]; omega
+    rw [hs, List.range_succ, List.map_append, List.map_singleton, hnew,
+      List.map_congr_left (fun t ht => hold t (List.mem_range.1 ht))]
+    refine List.pairwise_append.2 ⟨hn, List.pairwise_singleton _ _, fun a ha b hb => ?_⟩
+    obtain ⟨t, ht, rfl⟩ := List.mem_map.1 ha
+    rw [List.mem_singleton.1 hb]
+    exact habs t (List.mem_range.1 ht)
+
 theorem gatherAlp_size (fill : UInt64) (md pk a : ByteArray) (n : USize) (ix : ByteArray) :
     (gatherAlp fill md pk a n ix).size = ix.size / 8 * (if Column.alpF32 a then 4 else 8) := by
   unfold gatherAlp; rw [gatherBytes_size]; split <;> simp_all
@@ -172,14 +218,16 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
       simp [gatherBytes_size, toNat_small, small_mod, hm]
   | enum d o ids =>
     cases t <;> try (exfalso; simp [Enc.WF] at hw; done)
-    obtain ⟨-, hd⟩ := id hw
+    obtain ⟨-, hd, hn⟩ := id hw
     have key := gatherIds_dict (inRange := fun _ => allBelow n i)
       (g := fun w wo e => gatherPacked n w wo e ids i) hd
+    have key2 := gatherIds_nodup (inRange := fun _ => allBelow n i)
+      (g := fun w wo e => gatherPacked n w wo e ids i) hd hn
     simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn, Enc.bytesOf]
     split at h <;> cases h <;> simp only [Enc.WF] at *
     · exact ⟨by simp_all, symsWF_empty⟩
     · exact ⟨gatherIds_wf (inRange := fun _ => allBelow n i) (n := n) (ids := ids)
-        (db := (gatherIds d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i).1) rfl, key⟩
+        (db := (gatherIds d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i).1) rfl, key, key2⟩
   | _ => cases t <;>
       simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, denseWidth, rowWidth, foRColumn, Enc.bytesOf,
         Column.alpEncodes, gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherSyms_wf,
