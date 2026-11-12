@@ -6,6 +6,8 @@ import AOP.A5_2
 import AOP.A5_3
 import AOP.A5_5
 import AOP.A6_2
+import AOP.A5_4_PowerRel
+import AOP.A8_1
 
 /-! `rel(t)`: the Rel term `t` read as a term of the AOP allegory, so that an ordinary Lean statement, and the steps
     of a plain `calc`, can be written in Rel. `t` is the `rel` category of `Embed`, read to `Lang.Expr` by
@@ -17,10 +19,13 @@ import AOP.A6_2
     `R°`, `R ∩ S`, `R ∪ S`, `R / S`, `R \ S`, `𝟙`, `𝟘`, `⊤`, `dom(R)`, `ran(R)`; `⟨R,S⟩`, `R × S`, `π₁`, `π₂` over
     a `RelProd` instance; `[R,S]`, `inl`, `inr` over a `Coproduct` hypothesis; `∼R`, `R − S` in a
     `BooleanAllegory`; the book's fold `⦇R⦈` and `α` over an `InitialAlgebra` instance, `F(R)` over a `Relator`
-    hypothesis. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error naming it.
+    hypothesis; the power group `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `union`, `τ` as the book's
+    power-object operators (`powers`), each over the class AOP defines it in. `⊑` and `=` are Lean's, between
+    `rel(…)` terms. Every other construct is an error naming it.
 
-    A product, a coproduct, an initial algebra, a relator or the Boolean instance is never written in the term:
-    each is a metavariable that unification gives its objects, then `fill` takes from the statement's context. -/
+    A product, a coproduct, an initial algebra, a relator, a power allegory or the Boolean instance is never
+    written in the term: each is a metavariable that unification gives its objects, then `fill` takes from the
+    statement's context. -/
 
 namespace LeetQ.Rel.Lang.Calc
 
@@ -79,6 +84,45 @@ def coprod (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
 def initial (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
   hole hs p what "rel(…) never writes the initial algebra, nor its relator" (← `(Freyd.Alg.InitialAlgebra _))
 
+/-- The power group: each builtin and the AOP declaration it means on the proof side (Rel's arrays `[α]` are a
+    program's reading of `𝒫A`, untouched). -/
+def powers : List (Op × Name) :=
+  [(.mem, ``PowerAllegory.eps), (.lam, ``Freyd.Alg.Λ), (.E, ``existsImage), (.P, ``powerRel), (.est, ``est),
+   (.thin, ``thinRel), (.union, ``Freyd.Alg.union), (.tau, ``singletonMap)]
+
+/-- The prelude's names with a fixed AOP counterpart, each its prelude body in the fragment: `rel(…)` has no
+    prelude, and AOP writes `∈` as `∋°`. -/
+def prelude : List (String × (Lang.Pos → Lang.Expr)) := [("∈", fun p => .conv p (.op p .mem [] []))]
+
+/-- The one allegory the statement's arrows `A ⟶ B` live in, if they agree on one. -/
+def allegory : TermElabM (Option Lean.Expr) := do
+  let cs ← (← getLCtx).foldlM (init := #[]) fun cs d => do
+    let t ← instantiateMVars d.type
+    pure <| match d.isImplementationDetail, t.isAppOf ``Cat.Hom, t.getAppArgs[0]? with
+      | false, true, some c => if cs.contains c then cs else cs.push c
+      | _, _, _ => cs
+  pure (if cs.size == 1 then cs[0]? else none)
+
+/-- `f` applied by its declared binders: the explicit ones take `args` in order, every other one, and an explicit
+    one past `args` (an object), a metavariable unification fixes. An instance binder is found in the statement's
+    allegory before elaboration, since a class projection in an arrow type does not unify through an unknown
+    instance; with no one allegory it is `_`, which Lean synthesizes when unification reaches it. -/
+def power (p : Lang.Pos) (what : String) (f : Name) (args : List Term) : TermElabM Term := do
+  let (ms, bis, _) ← forallMetaTelescope (← inferType (← mkConstWithFreshMVarLevels f))
+  let c? ← allegory
+  let (_, xs) ← (ms.zip bis).foldlM (init := (args, #[])) fun (as, xs) (m, bi) => do
+    match bi.isExplicit, bi.isInstImplicit, as, c? with
+    | true, _, a :: as, _ => pure (as, xs.push a)
+    | _, true, _, some c => do
+      let ty ← inferType m
+      unless ← isDefEq ty.appArg! c do outside p what m!"is over `{ty}`, not the statement's allegory `{c}`"
+      let ty ← instantiateMVars ty
+      let some i ← synthInstance? ty | outside p what m!"needs an instance `{ty}`: AOP defines `{f}` over it"
+      pure (as, xs.push (← exprToSyntax i))
+    | _, true, _, none => pure (as, xs.push (← withRef (← refAt p) `(_)))
+    | _, _, _, _ => pure (as, xs.push (← exprToSyntax m))
+  `(@$(mkIdent f) $xs*)
+
 /-- The two `⊤` of AOP, each with the class it is defined in: the instance found decides. -/
 def tops : List (Name × Name) :=
   [(``LocallyCompleteDistributiveAllegory, ``topHom), (``TabularUnitaryDivisionAllegory, ``topMor)]
@@ -116,9 +160,10 @@ def top (w : Lean.Expr) (p : Lang.Pos) : TermElabM Unit := do
     one-argument folds, `hs` what the term does not write. -/
 partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs : Holes) :
     Lang.Expr → TermElabM Term
-  | .name p n => match folds.lookup n with
-    | some r => do let i ← initial hs p "`⦇R⦈`"; `(Freyd.Alg.relCata (I := $i) $(← toTerm vars folds hs r))
-    | none => if vars.contains n then pure (mkIdent (.mkSimple n)) else
+  | .name p n => match folds.lookup n, prelude.lookup n with
+    | some r, _ => do let i ← initial hs p "`⦇R⦈`"; `(Freyd.Alg.relCata (I := $i) $(← toTerm vars folds hs r))
+    | none, some e => toTerm vars folds hs (e p)
+    | none, none => if vars.contains n then pure (mkIdent (.mkSimple n)) else
       outside p s!"`{n}`" "is not a local variable: a name in rel(…) is a variable or hypothesis of the statement"
   | .comp a b => do `($(← toTerm vars folds hs a) ≫ $(← toTerm vars folds hs b))
   | .conv _ a => do `($(← toTerm vars folds hs a)°)
@@ -128,8 +173,9 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
     match o with
     | .meet => `($a ∩ $b)
     | .join => `($a ∪ $b)
-    | .rdiv => `($a / $b)
-    | .ldiv => `($a \ $b)
+    -- the constants, not `/` `\`: core's `HDiv`, `SDiff` notations are ambiguous with them while objects are unknown
+    | .rdiv => `(Freyd.Alg.DivisionAllegory.div $a $b)
+    | .ldiv => `(Freyd.Alg.leftDiv $a $b)
     | .diff => do let (c, i, a) ← boolean p "`R − S`" a; `(@Freyd.Alg.sub $c $i _ _ $a $b)
     | .prod => `(Freyd.Alg.prodMap $(← prod hs p "`R × S`") $(← prod hs p "`R × S`") $a $b)
   | .pair p a b => do
@@ -154,10 +200,11 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
     `(Freyd.Functor.map (Freyd.Alg.Relator.toFunctor $f) $(← toTerm vars folds hs a))
   | .op p o (_ :: _) _ => outside p s!"`{o.sym}(…)`" "names Rel objects: rel(…) takes its objects from the Lean types"
   | .op p (.index i) _ _ => outside p s!"`at({i})`" "has no AOP counterpart"
-  | .op p o@.mem _ _ | .op p o@.lam _ _ | .op p o@.E _ _ | .op p o@.P _ _ | .op p o@.est _ _ | .op p o@.thin _ _
-  | .op p o@.union _ _ | .op p o@.tau _ _ | .op p o@.setify _ _ => outside p s!"`{o.sym}`"
-      "differs in AOP: Rel reads a set `𝒫A` as an array `[α]`, AOP as the power object `P A`"
-  | .op p o _ _ => outside p s!"`{o.sym}`" "is outside the allegory fragment of rel(…)"
+  | .op p .setify _ _ => outside p "`setify`" ("has no AOP counterpart: Rel's list and set are both an array " ++
+      "`[α]`, AOP's power object `P A` is no list")
+  | .op p o [] as => match powers.lookup o with
+    | some f => do power p s!"`{o.sym}{if as.isEmpty then "" else "(R)"}`" f (← as.mapM (toTerm vars folds hs))
+    | none => outside p s!"`{o.sym}`" "is outside the allegory fragment of rel(…)"
   | .lit p _ => outside p "a literal `{…}`" "has no AOP counterpart"
   | .fold p .. => outside p "`⦇e,S⦈`" ("is the program fold: its seed is a coreflexive `V ⟶ V`; write the book's " ++
       "`⦇[e,S]⦈` with `e : 1 ⟶ V` instead")
@@ -178,10 +225,21 @@ where
       m!"`R ⇨ 𝟘`, the complement only in a Boolean allegory")
     pure (← exprToSyntax c, ← exprToSyntax i, ← exprToSyntax e)
 
-/-- `s` with each one-argument fold `⦇R⦈` replaced by a fresh name not in `taken`, and `R` under that name: `Lang`
+/-- AOP's delimited notations make `est(`, `thin(`, `P(` one Lean token where `rel` reads a name then `(`: each is
+    a production here, read back (`lift`) as the builtin it spells. -/
+syntax:max (name := rEst) "est(" rel ")" : rel
+syntax:max (name := rThin) "thin(" rel ")" : rel
+syntax:max (name := rPow) "P(" rel ")" : rel
+
+def delimited : List (SyntaxNodeKind × Op) := [(``rEst, .est), (``rThin, .thin), (``rPow, .P)]
+
+/-- `s` with each delimited notation read back and each one-argument fold `⦇R⦈` replaced by a fresh name not in `taken`, and `R` under that name: `Lang`
     has the program fold only, so the book's fold is read here, by syntax kind, before `Embed.expr` sees the term. -/
 partial def lift (taken : List String) (s : Syntax) : StateM (Array (String × Syntax)) Syntax := do
-  if s.getKind == ``Embed.rFold1 then
+  if let some o := delimited.lookup s.getKind then
+    let h := mkNode ``Embed.hId #[mkIdentFrom s[0] (.mkSimple o.sym)]
+    pure (mkNode ``Embed.rApp #[h, mkAtom "(", mkNullNode #[← lift taken s[1]], mkAtom ")"])
+  else if s.getKind == ``Embed.rFold1 then
     let r ← lift taken s[1]
     let used := taken ++ (← get).toList.map (·.1)
     let n := ((List.range (used.length + 1)).map (s!"fold{·}")).find? (!used.contains ·) |>.getD "fold"
@@ -197,7 +255,8 @@ syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
   -- a builtin's name is the builtin (§c), so a local `F` or `α` is no relation of the term
   let vars := (← getLCtx).foldl (init := []) fun ns d =>
     let n := d.userName.toString false
-    if d.isImplementationDetail || d.userName.hasMacroScopes || (Parse.builtin n).isSome then ns else n :: ns
+    if d.isImplementationDetail || d.userName.hasMacroScopes || (Parse.builtin n).isSome || (prelude.lookup n).isSome
+    then ns else n :: ns
   let (t, fs) := (lift vars stx[1]).run #[]
   let known := (vars ++ fs.toList.map (·.1)).map (·, 0)
   let read (s : Syntax) : TermElabM Lang.Expr := do
