@@ -95,6 +95,90 @@ theorem flatMap_get {β : Type} (g : Nat → List β) (m p : Nat)
       rw [List.getElem?_append_right (by rw [hlen]; omega), hlen]
       simp
 
+/-- A code payload of exactly `⌈n·w/8⌉` bytes at a lane holds its `n` codes, exactly at a byte lane: the size
+    hypotheses `find_spec` and `gather_spec` take. -/
+theorem code_size {w n s : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+    (hs : s = (n * w + 7) / 8) : w * n ≤ 8 * s ∧ (8 ≤ w → 8 * s = w * n) := by
+  subst hs; rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> omega
+
+/-- **`join`'s count column, read back**: row `i` of `l` is counted once for every row of `r` holding its
+    code — `classSizes` of the class `find` names in `r`'s first rows, `0` where `find` misses. Hypotheses:
+    both codes at a lane, payloads of exactly their codes, `r`'s codes below its `card` (a `USize`) at
+    `2`/`4` bits. -/
+theorem join_count (l r : Code)
+    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
+    (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
+    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hls : l.b.size = (l.n.toNat * l.w + 7) / 8) {i : Nat} (hi : i < l.n.toNat) :
+    (Column.bitsAt (gather 8 (classSizes r.n r.groupIds) ((r.gather r.groupIds.2).find l)) (i * 8) 8).toNat =
+      ((List.range r.n.toNat).filter fun j => Column.idAt r.b r.w j == Column.idAt l.b l.w i).length := by
+  have hF := groupIds_firsts r hrw hrs hrc
+  obtain ⟨hcap, hγ⟩ := groupIds_groupOf r hrw hrs hrc
+  have hK : len r.groupIds.2 = (firstsOf (Column.idAt r.b r.w) r.n.toNat).length := by rw [len_eq_ids, hF]
+  have hFn : (firstsOf (Column.idAt r.b r.w) r.n.toNat).length ≤ r.n.toNat := by
+    have := List.length_filter_le (fun i => (List.range i).all fun j =>
+      !decide (Column.idAt r.b r.w j = Column.idAt r.b r.w i)) (List.range r.n.toNat)
+    rw [List.length_range] at this; exact this
+  have hKU : len r.groupIds.2 < USize.size := by rw [hK]; exact Nat.lt_of_le_of_lt hFn r.n.toNat_lt_size
+  have hFi : ∀ j (hj : j < len r.groupIds.2), (Column.bitsAt r.groupIds.2 (j * 8) 8).toNat =
+      (firstsOf (Column.idAt r.b r.w) r.n.toNat)[j]'(by rw [← hK]; exact hj) := fun j hj => ids_get hF _
+  obtain ⟨hgw, hgn, -, hgc⟩ := gather_spec r r.groupIds.2 hKU hrw (code_size hrw hrs).2
+    fun j hj => by rw [hFi j hj]; exact firsts_lt _ _ (List.getElem_mem _)
+  have hGs := gather_size r r.groupIds.2 hKU hrw
+  obtain ⟨hfl, hfv⟩ := find_spec (r.gather r.groupIds.2) l (by rw [hgw]; exact hrw) hlw
+    (by rw [hgw, hgn]; exact (code_size hrw hGs).1) (code_size hlw hls).1
+    (by rw [hgw, hgn]; exact (code_size hrw hGs).2) (code_size hlw hls).2
+  have hlist : (List.range (r.gather r.groupIds.2).n.toNat).map
+      (Column.idAt (r.gather r.groupIds.2).b (r.gather r.groupIds.2).w) =
+      (firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w) := by
+    rw [hgn, hgw]
+    apply List.ext_getElem (by simp [hK])
+    intro j h1 _
+    simp only [List.getElem_map, List.getElem_range]
+    rw [List.length_map, List.length_range] at h1
+    rw [hgc j h1, hFi j h1]
+  have hv := hfv i hi
+  rw [hlist] at hv
+  generalize hc : ((firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w)).idxOf
+    (Column.idAt l.b l.w i) = c at hv
+  have hS := classSizes_ids r.n r.groupIds hKU
+  have hsz : len (classSizes r.n r.groupIds) = len r.groupIds.2 := by rw [len_eq_ids, hS]; simp
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have hgb := (gatherBytes_spec (Nat.toUSize 8) (by rw [h8]; decide) 0 (classSizes r.n r.groupIds)
+    ((r.gather r.groupIds.2).find l)).2 i (by have := hfl; simp only [len] at this; omega)
+  rw [h8] at hgb
+  unfold gather; rw [hgb, hv]
+  by_cases hcF : c < (firstsOf (Column.idAt r.b r.w) r.n.toNat).length
+  · -- a hit: the rows of class `c`, whose first row holds `l`'s code
+    rw [if_pos (show c < (classSizes r.n r.groupIds).size / 8 by rw [show (classSizes r.n r.groupIds).size / 8 = len (classSizes r.n r.groupIds) from rfl, hsz, hK]; exact hcF),
+      ids_get hS (by simp [hK, hcF])]
+    simp only [List.getElem_map, List.getElem_range, idsW, hcap, List.countP_eq_length_filter, List.filter_map,
+      List.length_map]
+    have hfc : Column.idAt r.b r.w ((firstsOf (Column.idAt r.b r.w) r.n.toNat)[c]) = Column.idAt l.b l.w i := by
+      have hlt : ((firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w)).idxOf
+          (Column.idAt l.b l.w i) < ((firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w)).length := by
+        rw [hc, List.length_map]; exact hcF
+      have e := beq_iff_eq.1 (List.findIdx_getElem (p := fun x => x == Column.idAt l.b l.w i) (w := hlt))
+      have hc' : List.findIdx (fun x => x == Column.idAt l.b l.w i)
+          ((firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w)) = c := hc
+      simp only [hc', List.getElem_map] at e; exact e
+    congr 1
+    refine List.filter_congr fun j hj => ?_
+    have hj' := List.mem_range.1 hj
+    simp only [Function.comp_def, hγ j hj']
+    rw [Bool.eq_iff_iff, beq_iff_eq, beq_iff_eq, groupOf_eq_iff hj' hcF, hfc]
+  · -- a miss: no row of `r` holds `l`'s code
+    rw [if_neg (show ¬ c < (classSizes r.n r.groupIds).size / 8 by rw [show (classSizes r.n r.groupIds).size / 8 = len (classSizes r.n r.groupIds) from rfl, hsz, hK]; exact hcF)]
+    have hnm : Column.idAt l.b l.w i ∉ (firstsOf (Column.idAt r.b r.w) r.n.toNat).map (Column.idAt r.b r.w) :=
+      fun hm => hcF (by rw [← hc, ← List.length_map (f := Column.idAt r.b r.w)]; exact List.idxOf_lt_length_iff.2 hm)
+    rw [List.length_eq_zero_iff.2 (List.filter_eq_nil_iff.2 fun j hj => by
+      have hj' := List.mem_range.1 hj
+      simp only [beq_iff_eq]
+      exact fun e => hnm (List.mem_map.2 ⟨_, List.getElem_mem (groupOf_lt hj'), by rw [groupOf_get (g := Column.idAt r.b r.w) hj', e]⟩))]
+    simp
+
+#print axioms join_count
 #print axioms groupIds_groupOf
 #print axioms flatMap_get
 
