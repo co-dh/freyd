@@ -499,17 +499,6 @@ def one (v : UInt64) : ByteArray := Column.pushBits .empty v 8
 theorem bitsAt_one (v : UInt64) : Column.bitsAt (one v) 0 8 = v := by
   simpa using Verify.bitsAt_pushBits8 ByteArray.empty v
 
-/-- q's `where` on a dense count column `cnt` (none negative): row `i` repeated `cnt[i]` times, and each
-    copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less its
-    run's start (`Scan.scan sums` less the count). One linear pass, where bisecting the outputs into the
-    run starts (`binBytes`) was `O(m log n)`. -/
-def expand (cnt : ByteArray) : ByteArray × ByteArray :=
-  needSize (cnt.size / 8) "expand: the counts" (fun _ => (.empty, .empty)) fun n =>
-  let rs := Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (Scan.scan .sums .i64 n cnt) cnt n
-  let i := expandBytes 8 0 (tilLongs n) cnt
-  needSize (i.size / 8) "expand: the copies" (fun _ => (.empty, .empty)) fun m =>
-  (i, Ew.val Ew.sub Ew.i64 Ew.vv Int64.minValue (tilLongs m) (gatherBytes 8 0 rs i) m)
-
 /-- `~` on `m` bits: `Ew.bit` xor a ones mask, the mask a one-bit atom in shape `av` (xor is `≠` on bits). -/
 def Ew.notBits (m : USize) (b : ByteArray) : ByteArray := Ew.bit (Ew.bitCmp + Ew.ne) Ew.av ⟨#[1]⟩ b m
 

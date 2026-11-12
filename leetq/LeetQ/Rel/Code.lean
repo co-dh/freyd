@@ -50,17 +50,41 @@ def ofPairs (ps : List (Int64 × Int64)) : Rel .long .long :=
 
 def nul : Int64 := Int64.minValue
 
-def add (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul a b (len a).toUSize
-def sub (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.sub Ew.i64 Ew.vv nul a b (len a).toUSize
+-- The long helpers run at the count `n` their caller holds in a type (a `Vals A n`, a `longCount`), never at
+-- a `len` read back off the payload, so each answers exactly `n` longs (`len_val`, `len_sums`).
+def add (n : USize) (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul a b n
+def sub (n : USize) (a b : ByteArray) : ByteArray := Kernel.Ew.val Ew.sub Ew.i64 Ew.vv nul a b n
 /-- `a + x` for the long `x`. -/
-def addc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
-def mulc (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.mul Ew.i64 Ew.va nul a (one x.toUInt64) (len a).toUSize
-def sums (b : ByteArray) : ByteArray := Scan.scan .sums .i64 (len b).toUSize b
+def addc (n : USize) (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.add Ew.i64 Ew.va nul a (one x.toUInt64) n
+def mulc (n : USize) (a : ByteArray) (x : Nat) : ByteArray := Kernel.Ew.val Ew.mul Ew.i64 Ew.va nul a (one x.toUInt64) n
+def sums (n : USize) (b : ByteArray) : ByteArray := Scan.scan .sums .i64 n b
 /-- `src@idx` at element width `w`; a miss reads `0`. -/
 def gather (w : Nat) (src idx : ByteArray) : ByteArray := gatherBytes w.toUSize 0 src idx
-/-- The positions where `a` equals `b` elementwise. -/
-def whereEqV (a b : ByteArray) : ByteArray :=
-  whereBits (len a).toUSize (Ew.cmp Ew.eq Ew.i64 Ew.vv a b (len a).toUSize)
+/-- The positions where `a` equals `b` elementwise, over their `n` longs. -/
+def whereEqV (n : USize) (a b : ByteArray) : ByteArray := whereBits n (Ew.cmp Ew.eq Ew.i64 Ew.vv a b n)
+
+/-- Any `Ew.val` on longs at the count `n` answers `n` longs (`Ew.val_size`). -/
+theorem len_val (op shape : UInt8) (a b : ByteArray) (n : USize) :
+    len (Kernel.Ew.val op Ew.i64 shape nul a b n) = n.toNat := by
+  have hw : Kernel.Ew.width Ew.i64 = 8 := by decide
+  simp [len, KernelWF.Ew.val_size, hw]
+
+/-- `sums` at `n` answers one long per element it reads, the shorter of `n` and the payload (`scanOf_size`). -/
+theorem len_sums (n : USize) (b : ByteArray) : len (sums n b) = min n.toNat (len b) := by
+  simp [len, sums, Scan.scan, Scan.intScan, Scan.scanOf_size, Scan.Kind.avail, Scan.outKind, Scan.Kind.width]
+
+/-- q's `where` on the dense count column `cnt` of `n` counts (none negative): row `i` repeated `cnt[i]` times,
+    and each copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less
+    its run's start (`sums` less the count). One linear pass, where bisecting the outputs into the run starts
+    (`binBytes`) was `O(m log n)`. The copies' count `m` is the one count no type holds: it is handed to `k`
+    with both columns' equations where it fits a `USize`, and the run stops on `model` where it does not. -/
+def expand {α : Type} (n : USize) (cnt : ByteArray) (model : Unit → α)
+    (k : (m : USize) → (i r : ByteArray) → len i = m.toNat → len r = m.toNat → α) : α :=
+  let rs := sub n (sums n cnt) cnt
+  let i := expandBytes 8 0 (tilLongs n) cnt
+  need (len i < USize.size) (fun _ => s!"expand: {len i} copies do not fit a USize") model fun h =>
+    k (len i).toUSize i (sub (len i).toUSize (tilLongs (len i).toUSize) (gather 8 rs i))
+      (USize.toNat_ofNat_of_lt' h).symm (len_val ..)
 /-- The first `n` longs and the rest. -/
 def split (b : ByteArray) (n : Nat) : ByteArray × ByteArray := (b.extract 0 (8 * n), b.extract (8 * n) b.size)
 
@@ -116,8 +140,8 @@ def Code.ofIds (ng : Nat) (n : USize) (gid : ByteArray) : Code := Code.ofLane (C
 
 /-- How many rows of `n` each class of a `groupIds` answer `(gid, firsts)` holds: `groupSizes` reading
     the ids at their width. -/
-def classSizes (n : USize) (r : ByteArray × ByteArray) : ByteArray :=
-  Order.groupSizes (len r.2).toUSize (Column.idWidthOf (len r.2)).toUSize n r.1
+def classSizes (n : USize) (r : ByteArray × ByteArray) : ByteArray := longCount "classSizes" r.2 fun g _ =>
+  Order.groupSizes g (Column.idWidthOf (len r.2)).toUSize n r.1
 
 namespace Code
 
@@ -435,12 +459,20 @@ def longCol (b : ByteArray) : Arr .long (len b).toUSize :=
 
 /-- The slices `[lo i, hi i)` of a flat payload of `m` values clamped to `[0, m]`, as `Vals.row` reads
     them: each clamped start and the slice's count, `Ew.val` lesser/greater. -/
-def slices (m : Nat) (lo hi : ByteArray) : ByteArray × ByteArray :=
-  let n := (len lo).toUSize
+def slices (m n : USize) (lo hi : ByteArray) : ByteArray × ByteArray :=
   let clamp (b : ByteArray) : ByteArray :=
     Kernel.Ew.val Ew.greater Ew.i64 Ew.va nul (Kernel.Ew.val Ew.lesser Ew.i64 Ew.va nul b (one m.toUInt64) n) (one 0) n
   let l := clamp lo
-  (l, sub (Kernel.Ew.val Ew.greater Ew.i64 Ew.vv nul (clamp hi) l n) l)
+  (l, sub n (Kernel.Ew.val Ew.greater Ew.i64 Ew.vv nul (clamp hi) l n) l)
+
+/-- `slices` at `n` answers `n` starts and `n` counts (`len_val`). -/
+theorem len_slices (m n : USize) (lo hi : ByteArray) :
+    len (slices m n lo hi).1 = n.toNat ∧ len (slices m n lo hi).2 = n.toNat := by
+  unfold slices sub; dsimp only; exact ⟨len_val .., len_val ..⟩
+
+/-- The slices of the array side `x` at its own row count. -/
+def slicesOf {B : Obj} {n : USize} (x : Vals (.arr B) n) : ByteArray × ByteArray :=
+  slices x.1 n (longsOf x.2.1) (longsOf x.2.2.1)
 
 /-! ## A side's payloads: one count per side, each step column by column -/
 
@@ -550,30 +582,28 @@ def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → {n : USize} → Vals A n → (i :
   | .atom t, _, x, i, m, h => pickArr t ⟨_, x⟩ i m h
   | .prod a b, _, x, i, m, h => (Vals.pick a x.1 i m h, Vals.pick b x.2 i m h)
   | .arr b, _, x, i, m, h =>
-    let s := slices x.1.toNat (longsOf (pickArr .long ⟨_, x.2.1⟩ i m h)) (longsOf (pickArr .long ⟨_, x.2.2.1⟩ i m h))
-    let e := expand s.2
-    let hi := sums s.2
-    let ix := add (gather 8 s.1 e.1) e.2
-    need (len hi = m.toNat ∧ len ix < USize.size)
-      (fun _ => s!"Vals.pick: {len hi} offsets for {m} rows, or {len ix} values past a USize")
+    let s := slices x.1 m (longsOf (pickArr .long ⟨_, x.2.1⟩ i m h)) (longsOf (pickArr .long ⟨_, x.2.2.1⟩ i m h))
+    let hi := sums m s.2
+    have hh : m.toNat ≤ len hi := by rw [len_sums, (len_slices ..).2, Nat.min_self]; exact Nat.le_refl _
+    expand m s.2
       (fun _ => ⟨0, Arr.mk (Enc.blank .long m) (Enc.blank_WF .long m), Arr.mk (Enc.blank .long m) (Enc.blank_WF .long m),
-        Vals.empty b⟩) fun hk =>
-    ⟨(len ix).toUSize, valCol Ew.sub Ew.vv hi s.2, toUSize_eq hk.1 ▸ longCol hi,
-      Vals.pick b x.2.2.2 ix _ (USize.toNat_ofNat_of_lt' hk.2).symm⟩
+        Vals.empty b⟩) fun k e r he _ =>
+    ⟨k, valCol Ew.sub Ew.vv hi s.2, longsN m hi hh,
+      Vals.pick b x.2.2.2 (add k (gather 8 s.1 e) r) k (len_val ..)⟩
   | .sum a b, _, x, i, m, h =>
     let y := Vals.pickShared (.sum a b) x i m h
     let tb := tagBits y.2.2.1
     let τ := Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m
     -- the rows of the other side before each row, then of its own: `inr` ones `sums τ - τ`, `inl` ones the rest
-    let rr := sub (sums τ) τ
-    let rl := sub (tilLongs m) rr
+    let rr := sub m (sums m τ) τ
+    let rl := sub m (tilLongs m) rr
     let p := longsOf (place y ((y.1.toNat : Int) - 1) ((y.2.1.toNat : Int) - y.1.toNat) 0 0)
     let il := gather 8 p (whereBits m (Ew.notBits m tb))
     let ir := gather 8 p (whereBits m tb)
     need (len il < USize.size ∧ len ir < USize.size)
       (fun _ => s!"Vals.pick: {len il} and {len ir} values past a USize")
       (fun _ => ⟨0, 0, y.2.2.1, Arr.mk (Enc.blank .long m) (Enc.blank_WF .long m), Vals.empty a, Vals.empty b⟩) fun hk =>
-    ⟨(len il).toUSize, (len ir).toUSize, y.2.2.1, valCol Ew.add Ew.vv rl (Kernel.Ew.val Ew.mul Ew.i64 Ew.vv nul τ (sub rr rl) m),
+    ⟨(len il).toUSize, (len ir).toUSize, y.2.2.1, valCol Ew.add Ew.vv rl (Kernel.Ew.val Ew.mul Ew.i64 Ew.vv nul τ (sub m rr rl) m),
       Vals.pick a y.2.2.2.2.1 il _ (USize.toNat_ofNat_of_lt' hk.1).symm,
       Vals.pick b y.2.2.2.2.2 ir _ (USize.toNat_ofNat_of_lt' hk.2).symm⟩
 
@@ -737,11 +767,13 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
     tuples (Obj.codes a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))) #[Obj.codes b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))]
   | .arr b, _, cs =>
     let ec := Obj.codes b (cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b))
-    let sl := cs.map fun c => slices c.2.1.toNat (longsOf c.2.2.1) (longsOf c.2.2.2.1)
-    let seq := Code.cat (Vector.zipWith (fun e s => let x := expand s.2; e.gather (add (gather 8 s.1 x.1) x.2)) ec sl).toArray
+    let sl := cs.map fun c => (c.1, slicesOf c.2)
+    let seq := Code.cat (Vector.zipWith (fun e s => expand s.1 s.2.2 (fun _ => default) fun k i r _ _ =>
+      e.gather (add k (gather 8 s.2.1 i) r)) ec sl).toArray
     let ns := cs.map (·.1)
-    let o := concatBytes #[one 0, sums (concatBytes (sl.map (·.2)).toArray)]
-    (pack (ns.foldl (fun s n => s + n.toNat) 0) (sliceIds seq o)).cut ns
+    let cnts := concatBytes (sl.map (·.2.2)).toArray
+    longCount "codes" cnts fun t _ =>
+    (pack (ns.foldl (fun s n => s + n.toNat) 0) (sliceIds seq (concatBytes #[one 0, sums t cnts]))).cut ns
   | .sum a b, _, cs₀ =>
     -- a row of a side of no values is given its value first (`held`), so no row reads a miss
     let cs := cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))
@@ -784,9 +816,12 @@ def join (l r : Code) : ByteArray × ByteArray :=
   let g := r.groupIds
   let sizes := classSizes r.n g
   let hit := (r.gather g.2).find l
-  let (li, w) := expand (gather 8 sizes hit)
-  let starts := sub (sums sizes) sizes
-  (li, gather 8 (Code.ofIds (len g.2) r.n g.1).grade (add (gather 8 starts (gather 8 hit li)) w))
+  -- `find` answers one long per code of `l`
+  expand l.n (gather 8 sizes hit) (fun _ => default) fun k li w _ _ =>
+  -- `sizes` is one long per class, `len g.2` of them, a count `classSizes` read off `g.2` in its own range
+  longCount "join" sizes fun ns _ =>
+  let starts := sub ns (sums ns sizes) sizes
+  (li, gather 8 (Code.ofIds (len g.2) r.n g.1).grade (add k (gather 8 starts (gather 8 hit li)) w))
 
 /-- `join`'s right index column is no longer than its left: equal wherever the count fits a `USize`, which
     `add` takes (`Ew.val_size`, `gatherBytes_size`). -/
@@ -794,22 +829,13 @@ theorem gather_len (s i : ByteArray) : len (gather 8 s i) = len i := by
   have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
   simp only [len, gather, KernelWF.gatherBytes_size, h8]; omega
 
-/-- `add` answers at most its left count: equal wherever the count fits a `USize` (`Ew.val_size`). -/
-theorem add_len_le (a b : ByteArray) : len (add a b) ≤ len a := by
-  have hw : Kernel.Ew.width Ew.i64 = 8 := by decide
-  have hu : (a.size / 8).toUSize.toNat ≤ a.size / 8 := by simp only [Nat.toUSize]; exact Nat.mod_le _ _
-  simp only [len, add, KernelWF.Ew.val_size, hw]; omega
-
-/-- Any `Ew.val` on longs at the left's count answers at most that count (`Ew.val_size`). -/
-theorem val_len_le (op mode : UInt8) (a b : ByteArray) :
-    len (Kernel.Ew.val op Ew.i64 mode nul a b (len a).toUSize) ≤ len a := by
-  have hw : Kernel.Ew.width Ew.i64 = 8 := by decide
-  have hu : (a.size / 8).toUSize.toNat ≤ a.size / 8 := by simp only [Nat.toUSize]; exact Nat.mod_le _ _
-  simp only [len, KernelWF.Ew.val_size, hw]; omega
-
 theorem join_len (l r : Code) : len (join l r).2 ≤ len (join l r).1 := by
-  unfold join; dsimp only
-  rw [gather_len]; exact Nat.le_trans (add_len_le _ _) (by rw [gather_len, gather_len]; exact Nat.le_refl _)
+  unfold join expand longCount; dsimp only; simp only [need]
+  split
+  · split
+    · dsimp only; rw [gather_len, add, len_val, USize.toNat_ofNat_of_lt' (by assumption)]; exact Nat.le_refl _
+    · exact Nat.le_refl _
+  · exact Nat.le_refl _
 
 /-- `cnt(c)`: count by `c` — its distinct codes and how many rows hold each. -/
 def cnt (c : Code) : Code × ByteArray :=
