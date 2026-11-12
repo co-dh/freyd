@@ -173,8 +173,217 @@ theorem expand_idx {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
       rfl
   exact key _ (Nat.le_refl _)
 
+/-- A total over a prefix of `range` is at most the total over a longer one. -/
+theorem sum_range_le (c : Nat → Nat) {a b : Nat} (h : a ≤ b) :
+    ((List.range a).map c).sum ≤ ((List.range b).map c).sum := by
+  induction b with
+  | zero => simp [Nat.le_zero.1 h]
+  | succ b ih =>
+    rw [List.range_succ, List.map_append, List.sum_append_nat]
+    by_cases e : a = b + 1
+    · subst e; rw [List.range_succ, List.map_append, List.sum_append_nat]; exact Nat.le_refl _
+    · have := ih (by omega); simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]; omega
+
+/-- **`gather 8 src idx`'s long `j`** is `src`'s long `idx[j]`, where that index is below `src`'s count. -/
+theorem gather8_get {src idx : ByteArray} {j : Nat} (hj : j < len idx)
+    (hs : (Column.bitsAt idx (j * 8) 8).toNat < len src) :
+    Column.bitsAt (gather 8 src idx) (j * 8) 8 = Column.bitsAt src ((Column.bitsAt idx (j * 8) 8).toNat * 8) 8 := by
+  have h8 : (Nat.toUSize 8).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have h := (gatherBytes_spec (Nat.toUSize 8) (by rw [h8]; decide) 0 src idx).2 j (by simpa [len] using hj)
+  rw [h8] at h
+  unfold gather; rw [h, if_pos (by simpa [len] using hs)]
+
+/-- `tilLongs m`'s long `p` is `p`, below `m`. -/
+theorem tilLongs_get {m : USize} {p : Nat} (hp : p < m.toNat) : (Column.bitsAt (tilLongs m) (p * 8) 8).toNat = p := by
+  have hid : ids (tilLongs m) = List.range m.toNat := by
+    rw [← tilLongs_spec m]; simp only [ids, elemsW, List.map_map, Function.comp_def]
+  rw [ids_get hid (by simpa using hp), List.getElem_range]
+
+/-- **`expand`'s rank column, read back**: copy `p` of the run of count row `t = i[p]` is that run's
+    `p - Σ_{s<t} cnt[s]`-th copy, `i` the index column `expandBytes` answers — the count column at most
+    `n` longs, their total below `2^63`, the copies' count a `USize`. -/
+theorem expand_rank {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
+    (hS : ((List.range (len cnt)).map fun t => (Column.bitsAt cnt (t * 8) 8).toNat).sum < 2 ^ 63)
+    (hm : len (expandBytes 8 0 (tilLongs n) cnt) < USize.size) {p : Nat}
+    (hp : p < len (expandBytes 8 0 (tilLongs n) cnt)) :
+    (Column.bitsAt (sub (len (expandBytes 8 0 (tilLongs n) cnt)).toUSize
+        (tilLongs (len (expandBytes 8 0 (tilLongs n) cnt)).toUSize)
+        (gather 8 (sub n (sums n cnt) cnt) (expandBytes 8 0 (tilLongs n) cnt))) (p * 8) 8).toNat =
+      p - ((List.range (Column.bitsAt (expandBytes 8 0 (tilLongs n) cnt) (p * 8) 8).toNat).map fun s =>
+        (Column.bitsAt cnt (s * 8) 8).toNat).sum := by
+  have hc : ∀ t < len cnt, (Column.bitsAt cnt (t * 8) 8).toNat < 2 ^ 63 := fun t ht => by
+    have h1 := sum_range_le (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (show t + 1 ≤ len cnt by omega)
+    simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
+      List.sum_nil] at h1
+    omega
+  have hI := expand_idx hn hc
+  generalize expandBytes 8 0 (tilLongs n) cnt = i at hI hm hp ⊢
+  have hlen : len i = ((List.range (len cnt)).map fun t => (Column.bitsAt cnt (t * 8) 8).toNat).sum := by
+    rw [len_eq_ids, hI, List.length_flatMap]; simp
+  obtain ⟨t, ht, h1, h2, h3⟩ := flatMap_replicate_get (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (len cnt) p
+    (hlen ▸ hp)
+  have hpl : p < ((List.range (len cnt)).flatMap fun t =>
+      List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t).length := by rw [← hI, ← len_eq_ids]; exact hp
+  have hit : (Column.bitsAt i (p * 8) 8).toNat = t := by
+    rw [ids_get hI hpl]; rw [List.getElem?_eq_getElem hpl] at h3; exact Option.some.inj h3
+  have hpre := sum_range_le (fun t => (Column.bitsAt cnt (t * 8) 8).toNat) (show t + 1 ≤ len cnt by omega)
+  have hsum1 : ((List.range (t + 1)).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum =
+      ((List.range t).map fun s => (Column.bitsAt cnt (s * 8) 8).toNat).sum + (Column.bitsAt cnt (t * 8) 8).toNat := by
+    simp only [List.range_succ, List.map_append, List.sum_append_nat, List.map_cons, List.map_nil, List.sum_cons,
+      List.sum_nil, Nat.add_zero]
+  have hsm := sums_get (n := n) (b := cnt) (j := t) (by omega) ht (by omega)
+  have hrs := sub_get (n := n) (a := sums n cnt) (b := cnt) (i := t) (by omega) (by omega) (by omega)
+  have hm' : (len i).toUSize.toNat = len i := USize.toNat_ofNat_of_lt' hm
+  have hg := gather8_get (src := sub n (sums n cnt) cnt) (idx := i) (j := p) hp
+    (by rw [hit, sub, len_val]; omega)
+  rw [hit] at hg ⊢
+  rw [sub_get (by rw [hm']; exact hp) (by rw [tilLongs_get (by rw [hm']; exact hp)]; omega)
+    (by rw [tilLongs_get (by rw [hm']; exact hp), hg, hrs]; omega),
+    tilLongs_get (by rw [hm']; exact hp), hg, hrs]
+  omega
+
+/-- **`Code.gather`'s payload holds exactly its codes**: `len i` of them at `c`'s lane, `⌈len i · w / 8⌉`
+    bytes — `gatherBits`, `gatherBytes` and `gatherPacked` (`packIds` at `2`/`4` bits) alike. -/
+theorem gather_size (c : Code) (i : ByteArray) (hl : len i < USize.size)
+    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) :
+    (Code.gather c i).b.size = (len i * c.w + 7) / 8 := by
+  unfold Code.gather longCount
+  simp only [need, dif_pos hl]
+  unfold Code.kind
+  split
+  next _ hk =>
+    rcases laneKind_some hk with ⟨-, h1⟩ | ⟨h, -⟩
+    · rw [KernelWF.gatherBits_size, h1, Nat.mul_one]; rfl
+    · exact absurd rfl h
+  next _ k hne hk =>
+    rcases laneKind_some hk with ⟨h, -⟩ | ⟨-, hw8, hq, -⟩
+    · exact absurd h hne
+    rw [KernelWF.gatherBytes_size, lane_toNat (by omega), hw8]; simp only [len]
+    rw [show i.size / 8 * (8 * k.width) + 7 = 8 * (i.size / 8 * k.width) + 7 by rw [Nat.mul_left_comm]]
+    omega
+  next _ hk =>
+    have h24 : c.w = 2 ∨ c.w = 4 := by
+      rcases hcw with h | h | h | h | h | h | h <;> simp [h, laneKind] at hk ⊢
+    unfold gatherPacked Column.packIds
+    rw [lane_toNat (by omega), if_neg (by omega), if_neg (by omega)]
+    dsimp only
+    rw [(fold_push_getElem? _ _ _).1]
+    simp only [len]
+    rcases h24 with h | h <;> rw [h] <;> simp [show ∀ k, (ByteArray.emptyWithCapacity k).size = 0 from fun _ => rfl] <;> omega
+
+/-- **A stable sort by a class `κ` below `K` is the classes in turn, each class's rows ascending**: a
+    permutation of `range n` sorted by `κ` with ties in row order is unique, so class `c` takes the positions
+    `[#(κ < c), #(κ ≤ c))` in ascending row order. -/
+theorem stable_sort_classes {L : List Nat} {n K : Nat} (κ : Nat → Nat) (hκ : ∀ i < n, κ i < K)
+    (hp : L.Perm (List.range n)) (hs : L.Pairwise fun i j => κ i ≤ κ j ∧ (κ j ≤ κ i → i < j)) :
+    L = (List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c := by
+  have hR : ((List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c).Pairwise
+      fun i j => κ i < κ j ∨ (κ i = κ j ∧ i < j) := by
+    rw [List.pairwise_flatMap]
+    refine ⟨fun c _ => ((List.pairwise_lt_range (n := n)).filter _).imp_of_mem fun hi hj h => ?_,
+      (List.pairwise_lt_range (n := K)).imp fun h x hx y hy => ?_⟩
+    · simp only [List.mem_filter, beq_iff_eq] at hi hj; exact Or.inr ⟨by rw [hi.2, hj.2], h⟩
+    · simp only [List.mem_filter, beq_iff_eq] at hx hy; exact Or.inl (by omega)
+  refine List.Perm.eq_of_pairwise (fun a b _ _ h1 h2 => by omega)
+    (hs.imp fun {a b} ⟨h1, h2⟩ => if e : κ b ≤ κ a then Or.inr ⟨by omega, h2 e⟩ else Or.inl (by omega)) hR
+    (hp.trans ?_)
+  have hd : ((List.range K).flatMap fun c => (List.range n).filter fun i => κ i == c).Nodup :=
+    hR.imp fun h e => by subst e; omega
+  refine List.perm_iff_count.2 fun x => ?_
+  rw [List.Nodup.count List.nodup_range, List.Nodup.count hd]
+  by_cases hx : x < n
+  · rw [if_pos (List.mem_range.2 hx), if_pos (List.mem_flatMap.2 ⟨κ x, List.mem_range.2 (hκ x hx),
+      List.mem_filter.2 ⟨List.mem_range.2 hx, by simp⟩⟩)]
+  · rw [if_neg (fun h => hx (List.mem_range.1 h)), if_neg (fun h => by
+      obtain ⟨_, _, h⟩ := List.mem_flatMap.1 h; exact hx (List.mem_range.1 (List.mem_filter.1 h).1))]
+
+/-- **The grade of `n` class ids below `ng`, packed at `W = idWidthOf ng`, is the classes in turn, each
+    class's rows ascending** (`stable_sort_classes`) — at every lane `Code.grade` dispatches on: the zero
+    bitmap at `W = 0`, `grade` at a bit or byte layout (an `i16`/`i32`/`i64` key is the id plus the flipped
+    sign bit, so `ng ≤ 2^63`), `gradeLane` at `2`/`4` bits and where an `i16`/`i32` id passes the sign bit.
+    Hypotheses: the payload holds the `n` ids, each below `ng`. -/
+theorem grade_ofIds (ng : Nat) (n : USize) (gid : ByteArray) (hng : ng ≤ 2 ^ 63)
+    (hs : Column.idWidthOf ng * n.toNat ≤ 8 * gid.size)
+    (hlt : ∀ i < n.toNat, Column.idAt gid (Column.idWidthOf ng) i < ng) :
+    ids (Code.ofIds ng n gid).grade = (List.range ng).flatMap fun c =>
+      (List.range n.toNat).filter fun i => Column.idAt gid (Column.idWidthOf ng) i == c := by
+  unfold Code.ofIds
+  have hWc := laneWidth_cases (Column.widthFor (ng - 1))
+  rw [← show Column.idWidthOf ng = Column.laneWidth (Column.widthFor (ng - 1)) from rfl] at hWc
+  generalize Column.idWidthOf ng = W at hs hlt hWc ⊢
+  -- `grade` at a layout whose key is the id plus a constant
+  have hk : ∀ (k : Scan.Kind) (b : ByteArray) (off : Nat), n.toNat ≤ k.avail b →
+      (∀ i < n.toNat, (Order.keyAt k b i).toNat = Column.idAt gid W i + off) →
+      ids (Order.grade k false n b) = (List.range ng).flatMap fun c =>
+        (List.range n.toNat).filter fun i => Column.idAt gid W i == c := by
+    intro k b off hav hkey
+    obtain ⟨hp, hsrt⟩ := grade_spec k false n b
+    rw [Nat.min_eq_left hav] at hp
+    refine stable_sort_classes _ hlt hp (hsrt.imp_of_mem fun hi hj ⟨h1, h2⟩ => ?_)
+    have hi' := List.mem_range.1 (hp.mem_iff.1 hi); have hj' := List.mem_range.1 (hp.mem_iff.1 hj)
+    simp only [keyOrd, Bool.false_eq_true, ↓reduceIte, UInt64.le_iff_toNat_le, hkey _ hi', hkey _ hj'] at h1 h2
+    exact ⟨by omega, fun h => h2 (by omega)⟩
+  -- `gradeLane` reads the ids themselves
+  have hl : W ≠ 0 → W ≤ 64 → ids (Order.gradeLane false n W.toUSize gid) = (List.range ng).flatMap fun c =>
+      (List.range n.toNat).filter fun i => Column.idAt gid W i == c := fun h0 h64 => by
+    obtain ⟨hp, hsrt⟩ := gradeLane_spec false n W.toUSize gid
+    rw [lane_toNat h64, idsCap_full (by omega) hs] at hp
+    rw [lane_toNat h64] at hsrt
+    exact stable_sort_classes _ hlt hp (hsrt.imp fun ⟨h1, h2⟩ => ⟨by simpa using h1, fun h => h2 (by simpa using h)⟩)
+  -- an `i16`/`i32`/`i64` key: the id with its top bit set
+  have hx : ∀ (c m : Nat), c ≤ 8 → W = 8 * c → 8 * c = m + 1 → ng ≤ 2 ^ m → ∀ i < n.toNat,
+      (Column.bitsAt gid (i * c) c ^^^ (2 ^ m : Nat).toUInt64).toNat = Column.idAt gid (8 * c) i + 2 ^ m := by
+    intro c m hc hW hm hngm i hi
+    have hv := hlt i hi; rw [hW, idAt_lane gid hc] at hv
+    rw [UInt64.toNat_xor, idAt_lane gid hc]
+    rw [show ((2 ^ m : Nat).toUInt64).toNat = 2 ^ m from UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt
+      (Nat.pow_le_pow_right (by decide) (by omega)) (by decide : 2 ^ 63 < 2 ^ 64)),
+      xor_top m _ (by rw [← hm]; exact bitsAt_lt gid _ c hc), if_pos (by omega)]
+  rcases hWc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · -- the zero bitmap
+    have hz : ∀ i, Column.bitAt (ByteArray.mk (Array.replicate ((n.toNat + 7) / 8) 0)) i = false := fun i => by
+      unfold Column.bitAt
+      rw [show (ByteArray.mk (Array.replicate ((n.toNat + 7) / 8) 0))[i / 8]?.getD 0 = 0 by
+        by_cases h : i / 8 < (n.toNat + 7) / 8
+        · rw [show ∀ (b : ByteArray) (j : Nat), b[j]? = b.data[j]? from fun _ _ => (Option.map_inj_right fun _ _ a => a).mp rfl]; simp [h]
+        · rw [show ∀ (b : ByteArray) (j : Nat), b[j]? = b.data[j]? from fun _ _ => (Option.map_inj_right fun _ _ a => a).mp rfl]; simp [h]]
+      simp
+    simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .bit _ 0 (by simp [Scan.Kind.avail, ByteArray.size]; omega) fun i _ => ?_
+    simp [Order.keyAt, Order.rank, Scan.Kind.bitsAt, hz, Column.idAt, Column.resAt]
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .bit _ 0 (by simp only [Scan.Kind.avail]; omega) fun i _ => ?_
+    simp only [Order.keyAt, Order.rank, Scan.Kind.bitsAt, idAt_one]
+    cases Column.bitAt gid i <;> rfl
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hl (by decide) (by decide)
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hl (by decide) (by decide)
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .u8 _ 0 (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega) fun i _ => ?_
+    rw [show (8 : Nat) = 8 * 1 from rfl, idAt_lane gid (by decide)]; rfl
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    by_cases hc : 2 ^ 15 < ng
+    · simp only [hc, decide_true, Bool.and_true, Bool.or_false, ↓reduceIte]; exact hl (by decide) (by decide)
+    · simp only [hc, decide_false, Bool.and_false, Bool.false_eq_true, ↓reduceIte]
+      exact hk .i16 _ (2 ^ 15) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+        (hx 2 15 (by decide) rfl rfl (by omega))
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    by_cases hc : 2 ^ 31 < ng
+    · simp only [hc, decide_true, Bool.and_true, Bool.or_true, ↓reduceIte]; exact hl (by decide) (by decide)
+    · simp only [hc, decide_false, Bool.and_false, Bool.false_eq_true, ↓reduceIte]
+      exact hk .i32 _ (2 ^ 31) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+        (hx 4 31 (by decide) rfl rfl (by omega))
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hk .i64 _ (2 ^ 63) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+      (hx 8 63 (by decide) rfl rfl hng)
+
+#print axioms grade_ofIds
 #print axioms flatMap_replicate_get
 #print axioms expand_idx
+#print axioms expand_rank
+#print axioms gather_size
+#print axioms stable_sort_classes
 #print axioms add_get
 #print axioms sub_get
 #print axioms sums_get
