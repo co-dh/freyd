@@ -49,4 +49,70 @@ theorem gatherColumn_get_dense {t : QAtomicType} {w : Nat} (ht : denseWidth t = 
     List.getElem?_eq_getElem (by simp only [Array.length_toList, hR]; exact hin)]
   exact congrArg some (atomOfBits_mod hw' hb hg _)
 
+/-- Belongs in qlean. **`x@i` at `boolean`, read back**: bit `k` of the answer is bit `i[k]` of `x`. -/
+theorem gatherColumn_get_bits {n : USize} {e : Enc} (hw : Enc.WF .boolean n e) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .boolean n e m (.bytes i) = some e') {k : Nat}
+    (hk : k < m.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < n.toNat) :
+    Enc.get .boolean m e' k = Enc.get .boolean n e (Column.bitsAt i (k * 8) 8).toNat := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  cases e <;> try (exfalso; simp_all [Enc.WF, QAtomicType.width]; done)
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
+    Option.some.injEq] at h
+  subst h
+  simp only [Enc.get, if_pos hk, bitAt_gatherBits _ _ _ _ (hm ▸ hk), if_pos hin]
+
+/-- `extract` of a range that ends where it starts, or before, is empty. -/
+theorem extract_empty (b : ByteArray) {lo hi : Nat} (h : hi ≤ lo) : b.extract lo hi = b.extract lo lo := by
+  apply ByteArray.ext; simp only [ByteArray.data_extract]
+  rw [Array.extract_eq_empty_of_le (by omega), Array.extract_eq_empty_of_le (by omega)]
+
+/-- A byte array's element is its data's. -/
+theorem ba_get? (b : ByteArray) (i : Nat) : b[i]? = b.data[i]? := (Option.map_inj_right fun _ _ a => a).mp rfl
+
+/-- Symbol `j`'s bytes as `symBytes` cuts them: its start to the NUL before the next start. -/
+theorem extract_upto (b : ByteArray) (lo hi : Nat) :
+    b.extract lo (lo + if hi > lo then hi - lo - 1 else 0) = b.extract lo (hi - 1) := by
+  split
+  · congr 1; omega
+  · rw [Nat.add_zero, extract_empty b (show hi - 1 ≤ lo by omega)]
+
+/-- Belongs in qlean. **`x@i` at a `symbol` blob, read back**: symbol `k` of the answer is symbol `i[k]`
+    of `x`. -/
+theorem gatherColumn_get_syms {n : USize} {blob : ByteArray} {offs : Array Nat}
+    (hw : Enc.WF .symbol n (.syms blob offs)) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .symbol n (.syms blob offs) m (.bytes i) = some e')
+    {k : Nat} (hk : k < m.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < n.toNat) :
+    Enc.get .symbol m e' k = Enc.get .symbol n (.syms blob offs) (Column.bitsAt i (k * 8) 8).toNat := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, Option.map_some,
+    Option.some.injEq] at h
+  subst h
+  obtain ⟨-, hJ⟩ := gatherSyms_spec blob offs i
+  obtain ⟨lo, h1, h2, h3⟩ := hJ k (hm ▸ hk)
+  simp only [Enc.WF] at hw
+  have hg : gatherAt (offs.size - 1) i k = some (Column.bitsAt i (k * 8) 8).toNat := by
+    simp only [gatherAt]; rw [if_pos (by omega)]
+  simp only [hg] at h2 h3
+  simp only [Enc.get, if_pos hk, if_pos hin, Column.symBytes, extract_upto]
+  generalize blob.extract _ _ = K at h2 h3 ⊢
+  have e1 : (gatherSyms blob offs i).2[k]! = lo := by simp [getElem!_def, h1]
+  have e2 : (gatherSyms blob offs i).2[k + 1]! = lo + K.size + 1 := by simp [getElem!_def, h2]
+  rw [e1, e2, Nat.add_sub_cancel]
+  generalize (gatherSyms blob offs i).fst = G at h3
+  simp only [ba_get?] at h3
+  have hsz : K.size = 0 ∨ lo + K.size ≤ G.size := by
+    rcases Nat.eq_zero_or_pos K.size with h | h
+    · exact .inl h
+    refine .inr (Nat.not_lt.1 fun hc => ?_)
+    have := h3 (K.size - 1) (by omega)
+    rw [Array.getElem?_eq_none (by rw [ByteArray.size_data]; omega),
+      Array.getElem?_eq_getElem (by rw [ByteArray.size_data]; omega)] at this
+    cases this
+  suffices hK : G.extract lo (lo + K.size) = K by rw [hK]
+  apply ByteArray.ext; apply Array.ext_getElem?; intro q
+  rw [ByteArray.data_extract, Array.getElem?_extract, ByteArray.size_data]
+  split
+  · exact h3 q (by omega)
+  · rw [Array.getElem?_eq_none (by rw [ByteArray.size_data]; omega)]
+
 end LeetQ.Rel.KernelWF
