@@ -224,10 +224,8 @@ theorem flatMap_range {α β : Type} (xs : Array α) (f : Nat → List β) (G : 
 
 /-- A boolean column's payload is its bitmap `tagBits`. -/
 theorem enc_tagBits {n : USize} (x : Arr .boolean n) : x.enc = .bits (tagBits x) := by
-  have key : ∀ (e : Enc) (h : (match e with | .bits b => some b | _ => none : Option ByteArray).isSome),
-      Enc.WF .boolean n e → e = .bits ((match e with | .bits b => some b | _ => none : Option ByteArray).get h) := by
-    intro e h hw; cases e <;> simp_all [Enc.WF]
-  unfold tagBits; exact key _ _ x.wf
+  obtain ⟨b, hb⟩ : ∃ b, x.enc = .bits b := by have hw := x.wf; revert hw; cases x.enc <;> simp [Enc.WF]
+  rw [hb]; simp [tagBits, hb]
 
 /-- A boolean column's list is its bitmap's first `n` bits. -/
 theorem toList_bits {n : USize} (x : Arr .boolean n) {b : ByteArray} (hx : x.enc = .bits b) :
@@ -279,8 +277,12 @@ theorem razeTo_toList_boolean (cs : Array ((k : USize) × Arr .boolean k)) {S : 
     apply Option.some_inj.1; rw [Option.some_get]
     unfold razeColumn
     rw [if_neg (by simpa using h0)]
-    simp only [hm, needSize, need]
-    rw [dif_pos (by rw [hps, hsum]; exact hS)]
+    dsimp only
+    split
+    next ps' heq =>
+      obtain rfl : ps' = ps := Option.some_inj.1 (heq.symm.trans hm)
+      simp only [needSize, need]; rw [dif_pos (by rw [hps, hsum]; exact hS)]
+    next heq => cases heq.symm.trans hm
   refine (toList_bits _ (b := concatBits (countBytes (ps.map (·.1))) (ps.map (·.2)))
     (by simp only [Arr.enc, hv])).trans ?_
   have hN : (((List.toArray l).map (·.2.part)).foldl (fun s (c : USize × Enc) => s + c.1.toNat) 0).toUSize.toNat =
@@ -302,7 +304,8 @@ theorem razeTo_toList_boolean (cs : Array ((k : USize) × Arr .boolean k)) {S : 
       unfold List.flatMap; congr 1
       apply List.map_congr_left; intro c _; rw [toList_bits c.2 (enc_tagBits c.2)]
   have hlen : bs.size = (l.map (·.1.toNat)).sum := by
-    rw [← Array.length_toList, hbs, List.length_flatMap]; simp [Arr.length_toList]
+    rw [← Array.length_toList, hbs, List.length_flatMap]; congr 1
+    apply List.map_congr_left; intro c _; exact Arr.length_toList c.2
   rw [← hbs]
   apply List.ext_getElem (by simp [hlen])
   intro j h1 h2
