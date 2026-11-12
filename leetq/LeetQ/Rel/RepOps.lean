@@ -451,6 +451,139 @@ theorem rep_top_atoms {t t' : QAtomicType} {ma mb : USize} (Ua : Vals (.atom t) 
 
 end Top
 
+/-! ## `∩`, `⊑`, `==`: `member` on the joint pair codes -/
+
+section Pairs
+
+open QLean.Verify
+
+-- the two relations as parts of a product side, and their joint codes `pairs #v[R, S]`
+set_option hygiene false in
+local notation "pcs" => (#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod A B)) 2)
+set_option hygiene false in
+local notation "pc" => pairs #v[R, S]
+-- the pair codes faithful and well formed, in `rep_comp`'s `hc` form (`codes_prod_faithful_wf` concludes it)
+set_option hygiene false in
+local notation "pairsOK" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < (pcs[k]'hk).1.toNat)
+    (hj : j < (pcs[l]'hl).1.toNat),
+    Column.idAt (pc[k]'hk).b (pc[k]'hk).w i = Column.idAt (pc[l]'hl).b (pc[l]'hl).w j ↔
+      Vals.row (A := .prod A B) (pcs[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .prod A B) (pcs[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((pc[k]'hk).w = 1 ∨ (pc[k]'hk).w = 2 ∨ (pc[k]'hk).w = 4 ∨ (pc[k]'hk).w = 8 ∨ (pc[k]'hk).w = 16 ∨
+      (pc[k]'hk).w = 32 ∨ (pc[k]'hk).w = 64) ∧
+    (pc[k]'hk).n = (pcs[k]'hk).1 ∧ (pc[k]'hk).b.size = ((pc[k]'hk).n.toNat * (pc[k]'hk).w + 7) / 8 ∧
+    ((pc[k]'hk).w < 8 → (pc[k]'hk).card < USize.size ∧
+      ∀ i < (pc[k]'hk).n.toNat, Column.idAt (pc[k]'hk).b (pc[k]'hk).w i < (pc[k]'hk).card))
+-- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them
+set_option hygiene false in
+local notation "hits" => whereBits R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))
+
+/-- Row `i` of `R` is marked by `member` exactly when its pair is a pair of `S` (`member_bit`, the codes faithful). -/
+theorem pairs_member (R S : Rel A B) (hc : pairsOK) {i : Nat} (hi : i < R.n.toNat) :
+    Column.bitAt (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide))) i = true ↔
+      ∃ j, S.key.row j = R.key.row ⟨i, hi⟩ ∧ S.val.row j = R.val.row ⟨i, hi⟩ := by
+  obtain ⟨hF, hW⟩ := hc
+  obtain ⟨hw0, hn0, hs0, -⟩ := hW (k := 0) (by decide)
+  obtain ⟨hw1, hn1, hs1, -⟩ := hW (k := 1) (by decide)
+  rw [member_bit _ _ hw0 hw1 hs0 hs1 (by rw [hn0]; exact hi)]
+  constructor
+  · rintro ⟨j, hj, he⟩
+    have hj' : j < S.n.toNat := by rw [hn1] at hj; exact hj
+    have e := (hF (k := 1) (l := 0) (by decide) (by decide) hj' hi).1 he
+    exact ⟨⟨j, hj'⟩, (Prod.mk.inj e).1, (Prod.mk.inj e).2⟩
+  · rintro ⟨j, h1, h2⟩
+    refine ⟨j.1, by rw [hn1]; exact j.2, (hF (k := 1) (l := 0) (by decide) (by decide) j.2 hi).2 ?_⟩
+    show (S.key.row j, S.val.row j) = (R.key.row ⟨i, hi⟩, R.val.row ⟨i, hi⟩)
+    rw [h1, h2]
+
+/-- **`rep (R ∩ S) = rep R ∩ rep S`**: `∩` keeps the rows of `R` whose pair `S` holds (`pairs_member`,
+    `whereBits_ids`), read back by `rows_spec`. Hypotheses: the joint pair codes faithful and well formed (`hc`),
+    and `R`'s two columns picking back at the kept rows. -/
+theorem rep_inter (R S : Rel A B) (hc : pairsOK) (hk : Vals.PickFits A R.key (ids (hits)))
+    (hv : Vals.PickFits B R.val (ids (hits))) : rep (R ∩ S) = rep R ∩ rep S := by
+  obtain ⟨hI, -, hmemI⟩ := whereBits_ids R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))
+  have hlen : len (hits) < USize.size := by
+    rw [len_eq_ids, hI]
+    exact Nat.lt_of_le_of_lt (Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..)))
+      R.n.toNat_lt_size
+  obtain ⟨hn, hrow⟩ := rows_spec R _ hlen hk hv
+  have hids : ∀ q (hq : q < (ids (hits)).length), (ids (hits))[q] = (Column.bitsAt (hits) (q * 8) 8).toNat :=
+    fun q hq => by simp [ids]
+  refine hom_ext fun a b => ?_
+  show (R.rows (hits)).Holds a b ↔ R.Holds a b ∧ S.Holds a b
+  constructor
+  · rintro ⟨⟨q, hq⟩, ha, hb⟩
+    have hq' : q < (ids (hits)).length := by rw [← len_eq_ids, ← hn]; exact hq
+    have hp : (Column.bitsAt (hits) (q * 8) 8).toNat ∈ ids (hits) := by
+      rw [← hids q hq']; exact List.getElem_mem hq'
+    rw [hI] at hp
+    obtain ⟨hpn, hbit⟩ := (hmemI _).1 hp
+    have e := hrow q hq
+    rw [dif_pos hpn] at e
+    obtain ⟨e1, e2⟩ := Prod.mk.inj e
+    obtain ⟨j, hj1, hj2⟩ := (pairs_member R S hc hpn).1 hbit
+    exact ⟨⟨⟨_, hpn⟩, e1.symm.trans ha, e2.symm.trans hb⟩, ⟨j, hj1.trans (e1.symm.trans ha), hj2.trans (e2.symm.trans hb)⟩⟩
+  · rintro ⟨⟨i, hia, hib⟩, ⟨j, hja, hjb⟩⟩
+    have hbit := (pairs_member R S hc i.2).2 ⟨j, hja.trans hia.symm, hjb.trans hib.symm⟩
+    have hmem : i.1 ∈ ids (hits) := by rw [hI]; exact (hmemI _).2 ⟨i.2, hbit⟩
+    obtain ⟨q, hq', hqe⟩ := List.getElem_of_mem hmem
+    have hq : q < (R.rows (hits)).n.toNat := by rw [hn, len_eq_ids]; exact hq'
+    have hv' : (Column.bitsAt (hits) (q * 8) 8).toNat = i.1 := by rw [← hids q hq', hqe]
+    have hpn : (Column.bitsAt (hits) (q * 8) 8).toNat < R.n.toNat := by rw [hv']; exact i.2
+    have e := hrow q hq
+    rw [dif_pos hpn] at e
+    obtain ⟨e1, e2⟩ := Prod.mk.inj e
+    exact ⟨⟨q, hq⟩, e1.trans ((congrArg R.key.row (Fin.ext hv')).trans hia),
+      e2.trans ((congrArg R.val.row (Fin.ext hv')).trans hib)⟩
+
+/-- `rep_inter` at atom sides: the kept rows are rows of `R` (`whereBits_ids`), so both columns fit outright. -/
+theorem rep_inter_atoms {t t' : QAtomicType} (R S : Rel (.atom t) (.atom t'))
+    (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+        (hi : i < ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).1.toNat)
+        (hj : j < ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[l]'hl).1.toNat),
+        Column.idAt ((pairs #v[R, S])[k]'hk).b
+            ((pairs #v[R, S])[k]'hk).w i =
+          Column.idAt ((pairs #v[R, S])[l]'hl).b
+            ((pairs #v[R, S])[l]'hl).w j ↔
+        Vals.row (A := .prod (.atom t) (.atom t'))
+            ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).2 ⟨i, hi⟩ =
+          Vals.row (A := .prod (.atom t) (.atom t'))
+            ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < 2),
+        let c := (pairs #v[R, S])[k]'hk
+        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧
+        c.n = ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).1 ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) :
+    rep (R ∩ S) = rep R ∩ rep S :=
+  have hlt : ∀ f ∈ ids (whereBits R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))),
+      f < R.n.toNat := fun f hf => by
+    obtain ⟨hI, -, hmemI⟩ := whereBits_ids R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))
+    rw [hI] at hf; exact ((hmemI _).1 hf).1
+  rep_inter R S hc (pickFits_atom _ hlt) (pickFits_atom _ hlt)
+
+/-- **`(R ⊑ S) = true ↔ rep R ⊑ rep S`**: `⊑` counts the rows of `R` whose pair `S` holds (`pairs_member`), all
+    `R.n` of them exactly when every pair of `R` is one of `S`. Hypothesis: the joint pair codes (`hc`); nothing is
+    picked. -/
+theorem rep_le (R S : Rel A B) (hc : pairsOK) : (R ⊑ S) = true ↔ rep R ⊑ rep S := by
+  obtain ⟨hI, -, -⟩ := whereBits_ids R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))
+  show (len (hits) == R.n.toNat) = true ↔ _
+  rw [beq_iff_eq, len_eq_ids, hI, le_iff]
+  constructor
+  · rintro h a b ⟨i, hia, hib⟩
+    have hall := List.filter_eq_self.1 (List.filter_sublist.eq_of_length (by simpa using h)) i.1
+      (List.mem_range.2 i.2)
+    obtain ⟨j, h1, h2⟩ := (pairs_member R S hc i.2).1 hall
+    exact ⟨j, h1.trans hia, h2.trans hib⟩
+  · intro h
+    rw [List.filter_eq_self.2 fun i hi => (pairs_member R S hc (List.mem_range.1 hi)).2
+      (h _ _ ⟨⟨i, List.mem_range.1 hi⟩, rfl, rfl⟩), List.length_range]
+
+end Pairs
+
+#print axioms rep_inter
+#print axioms rep_le
+
 #print axioms rep_top
 #print axioms rep_prod
 
