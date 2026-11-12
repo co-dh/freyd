@@ -125,7 +125,9 @@ theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
       ← hL t ht, ← hH t ht] at hsl
     have h1 := hLp t; have h2 := hHp t
     rw [hsl.1, hsl.2]
-    exact ⟨UInt64.toNat_ofNat_of_lt' (by omega), UInt64.toNat_ofNat_of_lt' (by omega)⟩
+    have h64 : p.toNat < UInt64.size := Nat.lt_trans hp (by decide)
+    exact ⟨UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt h1 h64),
+      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_trans (Nat.sub_le _ _) h2) h64)⟩
   have hlen1 : len s.1 = m.toNat := by rw [← hsd]; exact (len_slices ..).1
   have hlen2 : len s.2 = m.toNat := by rw [← hsd]; exact (len_slices ..).2
   -- the counts' prefix totals are the windows' (`S t` below)
@@ -140,10 +142,106 @@ theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
   have hlenE : len (expandBytes 8 0 (tilLongs m) s.2) = G.length := by
     rw [len_eq_ids, hE, List.length_flatMap, hGl]; simp only [List.length_replicate]; rw [hlen2]; exact hT
   have hEU : len (expandBytes 8 0 (tilLongs m) s.2) < USize.size := by omega
+  have hK : (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize.toNat = G.length := by
+    rw [USize.toNat_ofNat_of_lt' hEU, hlenE]
+  -- `S t`: the copies before row `t`'s
+  let S : Nat → Nat := fun t => ((List.range t).map fun t => H t - L t).sum
+  have hSdef : ∀ t, ((List.range t).map fun t => H t - L t).sum = S t := fun t => rfl
+  have hSm : ∀ t ≤ m.toNat, S t ≤ G.length := fun t ht => by rw [hGl]; exact sum_range_le _ ht
+  have hSs : ∀ t < m.toNat, S (t + 1) = S t + (H t - L t) := fun t _ => sum_range_succ' _ t
+  have hsums : ∀ t < m.toNat, (Column.bitsAt (sums m s.2) (t * 8) 8).toNat = S (t + 1) := fun t ht => by
+    have hS1 := hSm (t + 1) ht
+    rw [sums_get ht (by omega) (by rw [hcS (t + 1) ht]; exact Nat.lt_of_le_of_lt hS1 hl63), hcS (t + 1) ht]
+  have hlo' : ∀ q : Fin m.toNat,
+      ((valCol (n := m) Ew.sub Ew.vv (sums m s.2) s.2).get q).toInt = ((S q : Nat) : Int) := fun q => by
+    have hq := q.2; have e1 := hsums q hq; have e2 := (hs q hq).2; have e3 := hSs q hq
+    have e4 := hSm (q + 1) hq
+    have hsub := sub_get (n := m) (a := sums m s.2) (b := s.2) hq (by omega) (by omega)
+    rw [Arr.get_long_bytes _ rfl]
+    show (Column.bitsAt (sub m (sums m s.2) s.2) (q.1 * 8) 8).toInt64.toInt = _
+    rw [toInt64_toInt (by omega), hsub]; omega
+  have hhi' : ∀ (hh : m.toNat ≤ len (sums m s.2)) (q : Fin m.toNat),
+      ((longsN m (sums m s.2) hh).get q).toInt = ((S q + (H q - L q) : Nat) : Int) := fun hh q => by
+    have hq := q.2; have e1 := hsums q hq; have e3 := hSs q hq; have e4 := hSm (q + 1) hq
+    rw [longsN_get, toInt64_toInt (by omega)]; omega
+  have eS : ∀ q : Fin m.toNat, min (max ((S q : Nat) : Int) 0).toNat
+      (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize.toNat = S q := fun q => by
+    have := hSm q (Nat.le_of_lt q.2); rw [hK]; omega
+  have eH : ∀ q : Fin m.toNat, min (max ((S q + (H q - L q) : Nat) : Int) 0).toNat
+      (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize.toNat = S q + (H q - L q) := fun q => by
+    have := hSm (q + 1) q.2; have := hSs q q.2; rw [hK]; omega
+  -- copy `j` of row `t`'s slice reads payload position `L t + j`
+  have hrd : ∀ t < m.toNat, ∀ j < H t - L t,
+      (Column.bitsAt (add (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize
+        (gather 8 s.1 (expandBytes 8 0 (tilLongs m) s.2))
+        (sub (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize
+          (tilLongs (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize)
+          (gather 8 (sub m (sums m s.2) s.2) (expandBytes 8 0 (tilLongs m) s.2)))) ((S t + j) * 8) 8).toNat =
+        L t + j := fun t ht j hj => by
+    have hz : S t + j < len (expandBytes 8 0 (tilLongs m) s.2) := by
+      rw [hlenE]; have := hSm (t + 1) ht; rw [hSs t ht] at this; omega
+    have hEt : (Column.bitsAt (expandBytes 8 0 (tilLongs m) s.2) ((S t + j) * 8) 8).toNat = t := by
+      have hfl := flatMap_get_at (fun t => List.replicate (Column.bitsAt s.2 (t * 8) 8).toNat t)
+        (m := len s.2) (t := t) (q := j) (by omega)
+        (by simp only [List.length_replicate]; rw [(hs t ht).2]; exact hj)
+      simp only [List.length_replicate] at hfl
+      rw [hcS t (by omega), hSdef, List.getElem?_replicate, if_pos (by rw [(hs t ht).2]; exact hj)] at hfl
+      have hzl : S t + j < ((List.range (len s.2)).flatMap fun t =>
+          List.replicate (Column.bitsAt s.2 (t * 8) 8).toNat t).length := by
+        rw [← hE, ← len_eq_ids]; exact hz
+      rw [ids_get hE hzl]
+      exact Option.some.inj ((List.getElem?_eq_getElem hzl).symm.trans hfl)
+    have hg := gather8_get (src := s.1) (idx := (expandBytes 8 0 (tilLongs m) s.2)) (j := S t + j) hz
+      (by rw [hEt, hlen1]; exact ht)
+    rw [hEt] at hg
+    have hr := expand_rank (n := m) (cnt := s.2) (by omega) (by rw [hlen2, hT, ← hGl]; exact hl63) hEU hz
+    rw [hEt, hcS t (by omega), hSdef] at hr
+    have hK' : (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize.toNat = len (expandBytes 8 0 (tilLongs m) s.2) :=
+      USize.toNat_ofNat_of_lt' hEU
+    have hLt := (hs t ht).1
+    have hHt := hHp t
+    rw [add_get (by rw [hK']; exact hz) (by rw [hg, hr, hLt]; omega), hg, hr, hLt]; omega
+  -- so the payload is picked at the windows `PickFits` names
+  have hI : (List.range (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize.toNat).map (fun z =>
+      (Column.bitsAt (add (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize
+        (gather 8 s.1 (expandBytes 8 0 (tilLongs m) s.2))
+        (sub (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize
+          (tilLongs (len (expandBytes 8 0 (tilLongs m) s.2)).toUSize)
+          (gather 8 (sub m (sums m s.2) s.2) (expandBytes 8 0 (tilLongs m) s.2)))) (z * 8) 8).toNat) = G := by
+    apply List.ext_getElem (by rw [List.length_map, List.length_range, hK])
+    intro z h1 h2
+    rw [List.getElem_map, List.getElem_range]
+    obtain ⟨t, ht, ha, hb, hc⟩ := flatMap_get (fun t => List.range' (L t) (H t - L t)) m.toNat z
+      (by simp only [List.length_range']; rw [← hGl]; exact h2)
+    simp only [List.length_range', hSdef] at ha hb hc
+    rw [hG] at hc
+    have hz := hrd t ht (z - S t) (by omega)
+    rw [Nat.add_sub_cancel' ha] at hz
+    rw [hz]
+    have hc' := (List.getElem?_eq_getElem h2).symm.trans hc
+    rw [List.getElem?_eq_getElem (by simp only [List.length_range']; omega), List.getElem_range'] at hc'
+    rw [(Option.some.inj hc'), Nat.one_mul]
   subst hsd
   simp only [Vals.pick, expand, need]
-  rw [dif_pos hEU]
-  trace_state
-  sorry
+  rw [dif_pos hEU, arr_row]
+  simp only [hlo', hhi', eS, eH, Nat.add_sub_cancel_left]
+  by_cases hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat
+  · have eL : L q = min (max (lo.get ⟨_, hin⟩).toInt 0).toNat p.toNat := by
+      rw [hL q q.2, pickArr_long_get, dif_pos hin]
+    have eH' : H q = min (max (hi.get ⟨_, hin⟩).toInt 0).toNat p.toNat := by
+      rw [hH q q.2, pickArr_long_get, dif_pos hin]
+    rw [dif_pos hin, arr_row]
+    dsimp only
+    rw [← eL, ← eH']
+    apply List.map_congr_left; intro j hj; rw [List.mem_range] at hj
+    have hHq := hHp q; have := hSm (q + 1) q.2; have := hSs q q.2
+    rw [dif_pos (show S q + j < _ by rw [hK]; omega), dif_pos (show L q + j < p.toNat by omega)]
+    refine (ih _ _ _ (by rw [hI]; exact hfb) _).trans ?_
+    dsimp only
+    rw [dif_pos (by rw [hrd q q.2 j hj]; omega)]
+    exact congrArg f.row (Fin.ext (hrd q q.2 j hj))
+  · have e0 : H q - L q = 0 := by
+      rw [hL q q.2, hH q q.2, pickArr_long_get, pickArr_long_get, dif_neg hin, dif_neg hin, Nat.sub_self]
+    rw [dif_neg hin, e0]; rfl
 
 end LeetQ.Rel.Alg
