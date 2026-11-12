@@ -235,31 +235,11 @@ theorem codes_small_int_faithful {t : QAtomicType} {k : Scan.Kind} (ht : orderKi
 
 /-! ## Well-formedness of a grouping code -/
 
-/-- A `Nat.fold` that pushes one byte a step answers one byte per step. -/
-theorem fold_push_size' (g : Nat → UInt8) :
-    ∀ (k : Nat) (b : ByteArray), (Nat.fold k (fun i _ acc => acc.push (g i)) b).size = b.size + k
-  | 0, b => by simp
-  | k + 1, b => by
-    rw [Nat.fold_succ, ← Nat.add_assoc, ← fold_push_size' g k b]
-    simp only [ByteArray.size, ByteArray.push, Array.size_push]
-
-/-- **`packIds` at a lane of at least one bit is `⌈m·W/8⌉` bytes.** -/
+/-- **`packIds` at a lane of at least one bit is `⌈m·W/8⌉` bytes**: `KernelWF.packIds_size` at a nonzero lane,
+    the shape the code lemmas state their widths in. -/
 theorem packIds_size {W : Nat} (hW : W = 1 ∨ W = 2 ∨ W = 4 ∨ W = 8 ∨ W = 16 ∨ W = 32 ∨ W = 64)
-    (m : Nat) (f : Nat → Nat) : (Column.packIds W m f).size = (m * W + 7) / 8 := by
-  have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → (Column.packIds (8 * c) m f).size = (m * (8 * c) + 7) / 8 :=
-    fun c h1 h8 => by rw [(Verify.packIds_bytes c m f h1 h8).1, Nat.mul_comm m, Nat.mul_assoc]; omega
-  have hsub : ∀ W, 1 ≤ W → W < 8 → (Column.packIds W m f).size = (m + 8 / W - 1) / (8 / W) := fun W h1 h8 => by
-    unfold Column.packIds
-    rw [if_neg (by omega), if_neg (by omega)]
-    exact (fold_push_size' _ _ _).trans (Nat.zero_add _)
-  rcases hW with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · rw [hsub 1 (by decide) (by decide)]; omega
-  · rw [hsub 2 (by decide) (by decide)]; omega
-  · rw [hsub 4 (by decide) (by decide)]; omega
-  · exact hbytes 1 (by decide) (by decide)
-  · exact hbytes 2 (by decide) (by decide)
-  · exact hbytes 4 (by decide) (by decide)
-  · exact hbytes 8 (by decide) (by decide)
+    (m : Nat) (f : Nat → Nat) : (Column.packIds W m f).size = (m * W + 7) / 8 :=
+  KernelWF.packIds_size (Or.inr hW) m f
 
 /-- **A grouping code is well formed**: `Code.ofIds` over the ids `Verify.groupOf g n` packed at the width
     of its class count is a lane `1 … 64`, `n` codes in `⌈n·w/8⌉` bytes, every code below the class

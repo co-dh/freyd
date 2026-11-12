@@ -611,25 +611,24 @@ private theorem fold_push_size (g : Nat → UInt8) :
     rw [Nat.fold_succ, ← Nat.add_assoc, ← fold_push_size g k b]
     simp only [ByteArray.size, ByteArray.push, Array.size_push]
 
-/-- `packIds` at a lane width holds the `n` ids it was handed: `idsCap` reads all of them back. -/
-theorem packIds_cap {w : Nat} (hw : Lane w) (n : Nat) (f : Nat → Nat) :
-    Column.idsCap (Column.packIds w n f) w n = n := by
-  have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → Column.idsCap (Column.packIds (8 * c) n f) (8 * c) n = n := by
-    intro c h1 h8
-    rw [Column.idsCap, if_neg (by omega), (Verify.packIds_bytes c n f h1 h8).1]
-    rw [show c * n * 8 / (8 * c) = n by
-      rw [Nat.mul_comm c n, Nat.mul_assoc, Nat.mul_comm c 8]; exact Nat.mul_div_cancel _ (by omega)]
-    exact Nat.min_self n
+/-- **`packIds` at a lane is `⌈n·w/8⌉` bytes**, the size `Enc.WF` asks of an id pack. -/
+theorem packIds_size {w : Nat} (hw : w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+    (n : Nat) (f : Nat → Nat) : (Column.packIds w n f).size = (n * w + 7) / 8 := by
+  have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → (Column.packIds (8 * c) n f).size = (n * (8 * c) + 7) / 8 :=
+    fun c h1 h8 => by rw [(Verify.packIds_bytes c n f h1 h8).1, Nat.mul_comm n, Nat.mul_assoc]; omega
+  have hsub : ∀ w, 1 ≤ w → w < 8 → (Column.packIds w n f).size = (n + 8 / w - 1) / (8 / w) := fun w h1 h8 => by
+    unfold Column.packIds
+    rw [if_neg (by omega), if_neg (by omega)]
+    exact (fold_push_size _ _ _).trans (Nat.zero_add _)
   rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · simp [Column.idsCap]
-  all_goals first
-    | exact hbytes 1 (by decide) (by decide)
-    | exact hbytes 2 (by decide) (by decide)
-    | exact hbytes 4 (by decide) (by decide)
-    | exact hbytes 8 (by decide) (by decide)
-    | (unfold Column.idsCap Column.packIds
-       rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), fold_push_size]
-       simp only [ByteArray.emptyWithCapacity, ByteArray.size]; omega)
+  · simp [Column.packIds]
+  · rw [hsub 1 (by decide) (by decide)]; omega
+  · rw [hsub 2 (by decide) (by decide)]; omega
+  · rw [hsub 4 (by decide) (by decide)]; omega
+  · exact hbytes 1 (by decide) (by decide)
+  · exact hbytes 2 (by decide) (by decide)
+  · exact hbytes 4 (by decide) (by decide)
+  · exact hbytes 8 (by decide) (by decide)
 
 /-- An id below `n` that fits 64 bits fits the width `idWidthOf n` packs it at, whatever `n` is: past `2 ^ 64`
     the lane is 64 bits. -/
@@ -860,7 +859,7 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)
     fun k i => Column.idAt maps[k]! (Column.idWidth dbo) (Column.idAt (qs.map (·.2.2.2))[k]! ws[k]! i)
   rw [foldl_toNat, ← hsz]
-  exact packIds_cap (lane_idWidth dbo) _ _
+  exact packIds_size (lane_idWidth dbo) _ _
 
 /-- The interned join `concatEnum` answers after `hashConcat`, whichever way that goes. -/
 private theorem hashJoin_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}

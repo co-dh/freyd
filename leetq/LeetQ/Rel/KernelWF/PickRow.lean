@@ -40,7 +40,7 @@ theorem pickArr_long_get {n : USize} (x : Arr .long n) (i : ByteArray) (m : USiz
   split
   · exact pickArr_get _ i m h q ‹_›
   · refine pickArr_get_miss ⟨n, x⟩ i m h (fun d o ids he => ?_) q (Nat.le_of_not_lt ‹_›)
-    rcases KernelWF.long_cases x.wf with ⟨b, h'⟩ | ⟨M, P, h'⟩ <;> rw [h'] at he <;> cases he
+    exfalso; rcases KernelWF.long_cases x.wf with ⟨b, h'⟩ | ⟨M, P, h'⟩ <;> rw [h'] at he <;> cases he
 
 /-- `longsN` reads back its payload's first `m` longs. -/
 theorem longsN_get {m : USize} {b : ByteArray} (hh : m.toNat ≤ len b) (q : Fin m.toNat) :
@@ -68,16 +68,16 @@ theorem arr_row {b : Obj} {m : USize} (x : Vals (.arr b) m) (q : Fin m.toNat) :
   rfl
 
 set_option maxHeartbeats 1000000 in
-/-- **`Vals.pick` read back at an atom**, hit or miss: `pickArr_get`, and `pickArr_get_miss` at every
-    encoding but an interned symbol column. -/
+/-- **`Vals.pick` read back at an atom**, hit or miss: `pickArr_get`, and `pickArr_get_miss`, an interned
+    column's dictionary count fitting a `USize` (`hd`). -/
 theorem pick_row_atom_dflt {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
-    (hne : ∀ d o ids, Arr.enc x ≠ .enum d o ids) (i : ByteArray) (m : USize) (h : len i = m.toNat)
+    (hd : ∀ d o ids, Arr.enc x = .enum d o ids → o.size - 1 < USize.size) (i : ByteArray) (m : USize) (h : len i = m.toNat)
     (q : Fin m.toNat) :
     (Vals.pick (.atom t) x i m h).row q =
       if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.row ⟨_, hin⟩ else (Obj.atom t).dflt := by
   split
   · exact pickArr_get ⟨_, x⟩ i m h q ‹_›
-  · exact pickArr_get_miss ⟨_, x⟩ i m h hne q (Nat.le_of_not_lt ‹_›)
+  · exact pickArr_get_miss ⟨_, x⟩ i m h hd q (Nat.le_of_not_lt ‹_›)
 
 /-- **`Vals.pick` read back at a product**, hit or miss, from its two components'. -/
 theorem pick_row_prod_dflt {a b : Obj} {n : USize} (x : Vals (.prod a b) n) (i : ByteArray) (m : USize)
@@ -169,7 +169,7 @@ theorem pickArr_tag_bit {n : USize} (tag : Arr .boolean n) (i : ByteArray) (m : 
   split
   · exact pickArr_get _ i m h q ‹_›
   · refine (pickArr_get_miss ⟨n, tag⟩ i m h (fun d o ids he => ?_) q (Nat.le_of_not_lt ‹_›)).trans rfl
-    have hw := tag.wf; rw [he] at hw; simp [Enc.WF] at hw
+    exfalso; have hw := tag.wf; rw [he] at hw; simp [Enc.WF] at hw
 
 /-- The long null a picked long column reads at a miss is q's `0N`, `nul`. -/
 theorem long_default : (@default (El .long) Dep.instInhabitedCarrier) = nul := rfl
