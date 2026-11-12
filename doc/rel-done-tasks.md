@@ -48,3 +48,18 @@ turn it is deleted from the list.
 | 49 | lean-refactor `uncoerce` (drop a redundant conversion) and `rename --terms-only`/`--patterns-only`   |
 | 50 | lean-refactor `retype A B`: retype a binder at its source where an A variable meets expected B       |
 | 52 | lean-refactor `retype` on a 4983-line file: 27:26 → 2:43 (site search was quadratic; gate reuses elaborations) |
+| 47 | qlean: `Kernel.maxBytes = 2^48`, `needBytes`; til, slice, expand, spread, cross, mmu, guid draw checked       |
+| 55 | qlean: C-ABI count lists are `ByteArray` of 8-byte LE counts, single counts `USize`; no Nat count in an extern signature |
+| 56 | qlean: `ungroup`/`expandColumn` counts are `Array USize`; `countBytes_size` replaces run-time size checks; tests use `asCount` |
+| 57 | rel ↔ Lean mapping table written: doc/rel-lean-mapping.md (27 same / 33 differs / 15 none)                    |
+| 44 | qlean: every count is `USize`, no `Nat` count in executable code; `usize-count` merged into qlean master (553 jobs green) |
+| 45 | qlean: growing ops assert through `need`/`needSize`/`needBytes` that the result fits; no reference branch |
+| 46 | leetq: `Arr`'s index is `USize` (Core → Code → Alg → Lang, steps L1–L5); reference branches deleted; 591 jobs green, 36 checks pass |
+| 59 | `rel_program <name> where`: the Rel language as a closed Lean syntax category expanding to the existing AST; all 9 programs agree with the text parser, zero text changes |
+| 60 | `rel(…)`: a Rel term read as an AOP allegory term (pure fragment), so an equational proof is a plain Lean `calc`; three B&dM ch.4 derivations as tests |
+| 61 | `rel(…)` fragment: dom, ran, products, coproducts, Boolean complement, the book's one-argument fold `⦇R⦈`, `α`, `F(R)`; witnesses from the context, ambiguity is an error; B&dM ch.5–6 derivations as calc |
+| 62 | AOP: `topMor_eq_topHom` (A6_2, no axioms); `rel(⊤)` under both instances is `topHom` through a table of registered identifications |
+| 63 | `rel(…)` power group: `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `union`, `τ` as AOP's power-object operators; (7.5) as a calc; `setify` stays outside |
+| 64 | the nine Rel programs are `rel_program` modules under `leetq/LeetQ/Rel/Programs/`; their `.rel.md` files, the pasted copies and `#rel_agree` deleted; tests extend a program on the AST (`Test.extend`) |
+| 65 | hand-written `LeetQ/Rel/{Blocks,BlocksRel,Chess,Circuit,Wumpus}.lean` deleted; the four tests compare to literals (15 oracle-only table comparisons dropped: Blocks `qM`, `qF`; Chess `D d`, `K`, `N`, `X₀`, `X₁`) |
+| 53 | qlean: last Nat counts — `Enc.dense/raw/atoms/blobOf` take USize, sizes enter through `needSize`; audit in doc/qlean-usize-audit.md |
