@@ -604,9 +604,11 @@ def _root_.LeetQ.Rel.Vals.pick : (A : Obj) → {n : USize} → Vals A n → (i :
     -- the rows of the other side before each row, then of its own: `inr` ones `sums τ - τ`, `inl` ones the rest
     let rr := sub m (sums m τ) τ
     let rl := sub m (tilLongs m) rr
-    -- clamped before the pick, not after: a missed row reads the null `0N`, which misses again in its side,
-    -- so a miss reads `Obj.dflt` at every depth; clamping after would land `0N` on a live value of a nested sum
-    let p := longsOf (pickArr .long ⟨_, place x ((x.1.toNat : Int) - 1) ((x.2.1.toNat : Int) - x.1.toNat) 0 0⟩ i m h)
+    -- clamped before the pick, so only a missed row reads `0N`; it is filled with `l`, its (left) side's count,
+    -- which misses that side again, so a miss reads `Obj.dflt` at every depth (clamping after the pick put a
+    -- missed row on a live value of a nested sum; `l`, not `0N`, because a general column cannot gather at `0N`)
+    let p := Kernel.Ew.val Ew.fill Ew.i64 Ew.av nul (int x.1.toNat)
+      (longsOf (pickArr .long ⟨_, place x ((x.1.toNat : Int) - 1) ((x.2.1.toNat : Int) - x.1.toNat) 0 0⟩ i m h)) m
     let il := gather 8 p (whereBits m (Ew.notBits m tb))
     let ir := gather 8 p (whereBits m tb)
     need (len il < USize.size ∧ len ir < USize.size)
