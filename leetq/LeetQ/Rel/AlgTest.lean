@@ -734,6 +734,16 @@ private def T4 : Vals (.sum (.atom .symbol) .long) 1 := ⟨0, 1, bF, l0, emptyAr
 -- T5: an array row whose payload is T2
 private def T5 : Vals (.arr (.sum (.sum .long .long) .long)) 1 := ⟨1, l0, l1, T2⟩
 #guard r0 (Vals.pickPart _ T5 i0) == some (T5.row ⟨0, by simp⟩)
+-- a general cell compared by q's `~`
+private local instance : BEq QValue := ⟨QLean.Eval.identical⟩
+-- G1: the left side a general column of no values, the row tagged left
+private def G1 : Vals (.sum (.atom .general) .long) 1 := ⟨0, 1, bF, l0, emptyArr .general, l9⟩
+#guard r0 (Vals.pickPart _ G1 i0) == some (G1.row ⟨0, by simp⟩)
+-- G2: the left side (no rows) a sum holding a dead general value, the long 7
+private def g7 : Arr .general 1 := Arr.mk (.gen #[QValue.atom (.long 7)]) (by wf_lit)
+private def innerG : Vals (.sum (.atom .general) .long) 0 := ⟨1, 0, emptyArr .boolean, emptyArr .long, g7, emptyArr .long⟩
+private def G2 : Vals (.sum (.sum (.atom .general) .long) .long) 1 := ⟨0, 1, bF, l0, innerG, l9⟩
+#guard r0 (Vals.pickPart _ G2 i0) == some (G2.row ⟨0, by simp⟩)
 
 end PickMiss
 

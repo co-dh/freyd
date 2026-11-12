@@ -7,6 +7,7 @@ import LeetQ.Rel.Rep
 import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
+import LeetQ.Rel.KernelWF.RowsSpec
 
 namespace LeetQ.Rel.Rep
 
@@ -19,24 +20,6 @@ set_option hygiene false in
 local notation "jcs" => (#v[⟨R.n, R.val⟩, ⟨S.n, S.key⟩] : Vector (Part _) 2)
 set_option hygiene false in
 local notation "jc" => Obj.codes _ jcs
-
-/-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
-theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
-    (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-    (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat) :
-    (Vals.pick (.atom t) x i m h).row q = x.row ⟨_, hin⟩ :=
-  pickArr_get ⟨_, x⟩ i m h q hin
-
-/-- **`Vals.pick` read back at a product**, from its two components'. -/
-theorem pick_row_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n)
-    (h1 : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat), (Vals.pick a x.1 i m h).row q = x.1.row ⟨_, hin⟩)
-    (h2 : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat), (Vals.pick b x.2 i m h).row q = x.2.row ⟨_, hin⟩)
-    (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-    (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat) :
-    (Vals.pick (.prod a b) x i m h).row q = x.row ⟨_, hin⟩ :=
-  Prod.ext (h1 i m h q hin) (h2 i m h q hin)
 
 section Comp
 

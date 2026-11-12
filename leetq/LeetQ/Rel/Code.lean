@@ -253,10 +253,10 @@ def genCol (xs : Array QValue) : (n : USize) × Arr .general n :=
 
 /-- `x@i` for a long payload `i`: `gatherColumn`, which answers every column encoding (`gatherColumn_isSome`),
     where the index's count fits a `USize`. A general list is picked by position; a position past the end
-    reads the null, as q's `@`. -/
+    reads `default`, a general cell's `Obj.dflt`, not q's prototype fill, so a miss reads `Obj.dflt` at every shape. -/
 def pick (t : QAtomicType) (c : (n : USize) × Arr t n) (i : ByteArray) : (n : USize) × Arr t n :=
   if hg : t = .general then by
-    subst hg; exact let xs := gens c.2; genCol ((longRows i).map fun p => xs[p]?.getD (QLean.Eval.fillOf xs))
+    subst hg; exact let xs := gens c.2; genCol ((longRows i).map fun p => xs[p]?.getD default)
   else
     need (len i < USize.size) (fun _ => s!"pick: {len i} rows do not fit a USize") (fun _ => blankCol t)
       fun hl =>
@@ -283,7 +283,7 @@ theorem pick_len (t : QAtomicType) (c : (n : USize) × Arr t n) (i : ByteArray) 
     (pick t c i).1.toNat = len i := by
   by_cases hg : t = .general
   · subst hg
-    have hs : ((longRows i).map fun p => (gens c.2)[p]?.getD (QLean.Eval.fillOf (gens c.2))).size = len i := by
+    have hs : ((longRows i).map fun p => (gens c.2)[p]?.getD default).size = len i := by
       simp [longRows, len]
     simp only [pick, genCol, need, dif_pos (hs ▸ hl), dite_true]
     exact (USize.toNat_ofNat_of_lt' (hs ▸ hl)).trans hs

@@ -127,4 +127,46 @@ theorem filterMap_window {β : Type} (d : β) : ∀ {m : Nat} (f : Fin m → β)
       · rw [e1, e2]; simp
       · rw [e1, e2]
 
+/-! ## `Vals.pick` read back -/
+
+/-- **The picked payloads fit**, for `Vals.pick A x` at the rows `ps` (a row at or past `n` a miss): at an
+    array, the payload count and the copies of the picked rows' windows (`filterMap_window`) below `2^63`,
+    the longs `slices`/`sums`/`expand` compute them in, and the payload again at those copies; at a sum,
+    both sides' counts below `2^63`, the longs `place` computes in, and each side again at the positions its
+    rows read (a miss reading the left side at its count `l`, a miss again). -/
+def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → List Nat → Prop
+  | .atom _, _, _, _ => True
+  | .prod a b, _, x, ps => Vals.PickFits a x.1 ps ∧ Vals.PickFits b x.2 ps
+  | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
+    let w (k : Nat) : List Nat := if h : k < n.toNat then
+      List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []
+    p.toNat < 2 ^ 63 ∧ (ps.flatMap w).length < 2 ^ 63 ∧ Vals.PickFits b f (ps.flatMap w)
+  | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
+    let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
+      if h : k < n.toNat then
+        (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
+      else if s then none else some c
+    l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
+      Vals.PickFits b y (side true r.toNat)
+
+/-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
+theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+    (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat) :
+    (Vals.pick (.atom t) x i m h).row q = x.row ⟨_, hin⟩ :=
+  pickArr_get ⟨_, x⟩ i m h q hin
+
+/-- **`Vals.pick` read back at a product**, from its two components'. -/
+theorem pick_row_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n)
+    (h1 : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat), (Vals.pick a x.1 i m h).row q = x.1.row ⟨_, hin⟩)
+    (h2 : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat), (Vals.pick b x.2 i m h).row q = x.2.row ⟨_, hin⟩)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
+    (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat) :
+    (Vals.pick (.prod a b) x i m h).row q = x.row ⟨_, hin⟩ :=
+  Prod.ext (h1 i m h q hin) (h2 i m h q hin)
+
 end LeetQ.Rel.Alg
