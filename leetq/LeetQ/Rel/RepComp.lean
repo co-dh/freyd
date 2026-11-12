@@ -59,32 +59,10 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
   obtain ⟨hrw, hrn', hrs, hrc⟩ := hW (k := 1) (by decide)
   replace hln : jc[0].n = R.n := hln
   replace hrn' : jc[1].n = S.n := hrn'
-  have hZ := join_spec jc[0] jc[1] hlw hls hrw hrs hrc (hrn' ▸ hrn) (by rw [hln, hrn']; exact hM)
+  obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
     (by rw [hln, hrn']; exact hMU)
-  rw [hln, hrn'] at hZ
-  have hJ := join_len jc[0] jc[1]
-  rw [len_eq_ids, len_eq_ids] at hJ
-  -- the pairs `join` answers: `(i, j)` with equal codes, `i` a row of `R`, `j` of `S`
-  have hmem : ∀ i j, (i, j) ∈ (ids (join jc[0] jc[1]).1).zip (ids (join jc[0] jc[1]).2) ↔
-      i < R.n.toNat ∧ j < S.n.toNat ∧ Column.idAt jc[1].b jc[1].w j = Column.idAt jc[0].b jc[0].w i := by
-    intro i j; rw [hZ]; simp only [List.mem_flatMap, List.mem_map, List.mem_filter, List.mem_range, beq_iff_eq]
-    constructor
-    · rintro ⟨i', hi', j', ⟨hj', he⟩, hp⟩; cases hp; exact ⟨hi', hj', he⟩
-    · rintro ⟨hi, hj, he⟩; exact ⟨i, hi, j, ⟨hj, he⟩, rfl⟩
-  have hlt : len (join jc[0] jc[1]).2 < USize.size := by
-    have := congrArg List.length hZ
-    rw [List.length_zip, List.length_flatMap] at this
-    rw [len_eq_ids]; simp only [List.length_map] at this; omega
-  have hids : ∀ (b : ByteArray) q (hq : q < (ids b).length), (ids b)[q] = (Column.bitsAt b (q * 8) 8).toNat := by
-    intro b q hq; simp [ids]
-  -- row `q` of the join is its pair `q`
-  have hrow : ∀ q (hq : q < len (join jc[0] jc[1]).2),
-      ((Column.bitsAt (join jc[0] jc[1]).1 (q * 8) 8).toNat, (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) ∈
-        (ids (join jc[0] jc[1]).1).zip (ids (join jc[0] jc[1]).2) := by
-    intro q hq
-    rw [len_eq_ids] at hq
-    rw [← hids _ q (by omega), ← hids _ q hq, ← List.getElem_zip (h := by rw [List.length_zip]; omega)]
-    exact List.getElem_mem _
+  have hP := mem_joinPairs jc[0] jc[1]
+  rw [hln, hrn'] at hP
   refine hom_ext fun a c => ?_
   show (longCount "≫" (join jc[0] jc[1]).2 fun m h =>
       (⟨m, Vals.pickN A R.key (join jc[0] jc[1]).1 m (h ▸ join_len jc[0] jc[1]),
@@ -96,32 +74,16 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
       (⟨m, Vals.pickN A R.key (join jc[0] jc[1]).1 m (hmJ ▸ join_len jc[0] jc[1]),
         Vals.pick C S.val (join jc[0] jc[1]).2 m hmJ⟩ : Rel A C).Holds a c ↔ ∃ b, R.Holds a b ∧ S.Holds b c from H _ _
   intro m hmJ
-  have hfit : ∀ q, q < m.toNat →
-      Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8 = Column.bitsAt (join jc[0] jc[1]).1 (q * 8) 8 := by
-    intro q hq; unfold fit; split
-    · rfl
-    · rw [bitsAt_extract _ (by omega), Nat.zero_add]
-  -- `pickN` is `pick` at `fit`
-  -- the join's `m` pairs, row by row, are the rows each side is picked at
-  have hzm : (ids (join jc[0] jc[1]).1).zip (ids (join jc[0] jc[1]).2) = (List.range m.toNat).map fun q =>
-      ((Column.bitsAt (join jc[0] jc[1]).1 (q * 8) 8).toNat, (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) := by
-    apply List.ext_getElem
-    · simp only [List.length_zip, List.length_map, List.length_range]
-      rw [← hmJ, len_eq_ids]; exact Nat.min_eq_right hJ
-    · intro q h1 h2; rw [List.getElem_zip, List.getElem_map, List.getElem_range, hids, hids]
+  have e := hZ m hmJ
+  rw [hln, hrn'] at e
   have hfA : Vals.PickFits A R.key
       ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat) := by
-    have e : ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat) =
-        (jpairs).map Prod.fst := by
-      rw [← hZ, hzm, List.map_map]
-      exact List.map_congr_left fun q hq => by simp only [Function.comp_apply, hfit q (List.mem_range.1 hq)]
-    rw [e]; exact hA
+    rw [show ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat) =
+      (jpairs).map Prod.fst by rw [e, List.map_map]; rfl]; exact hA
   have hfC : Vals.PickFits C S.val
       ((List.range m.toNat).map fun q => (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) := by
-    have e : ((List.range m.toNat).map fun q => (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) =
-        (jpairs).map Prod.snd := by
-      rw [← hZ, hzm, List.map_map]; rfl
-    rw [e]; exact hC
+    rw [show ((List.range m.toNat).map fun q => (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) =
+      (jpairs).map Prod.snd by rw [e, List.map_map]; rfl]; exact hC
   have hA' : ∀ (h : m.toNat ≤ len (join jc[0] jc[1]).1) (q : Fin m.toNat)
       (hin : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q.1 * 8) 8).toNat < R.n.toNat),
       (Vals.pickN A R.key (join jc[0] jc[1]).1 m h).row q = R.key.row ⟨_, hin⟩ :=
@@ -129,28 +91,27 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
   simp only [Rel.Holds]
   constructor
   · rintro ⟨q, hqa, hqc⟩
-    have hq : q.1 < len (join jc[0] jc[1]).2 := by have := q.2; omega
-    obtain ⟨hi, hj, he⟩ := (hmem _ _).1 (hrow q.1 hq)
-    have hi' : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q.1 * 8) 8).toNat < R.n.toNat := by
-      rw [hfit q.1 q.2]; exact hi
-    rw [hA' _ q hi'] at hqa
+    have hq : ((Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q.1 * 8) 8).toNat,
+        (Column.bitsAt (join jc[0] jc[1]).2 (q.1 * 8) 8).toNat) ∈ jpairs := by
+      rw [e]; exact List.mem_map.2 ⟨q.1, List.mem_range.2 q.2, rfl⟩
+    obtain ⟨hi, hj, he⟩ := (hP _ _).1 hq
+    rw [hA' _ q hi] at hqa
     rw [pick_row C S.val _ m hmJ hfC q, dif_pos hj] at hqc
-    refine ⟨R.val.row ⟨_, hi⟩, ⟨⟨_, hi⟩, ?_, rfl⟩, ⟨_, hj⟩, ?_, hqc⟩
-    · rw [← hqa]; exact congrArg R.key.row (Fin.ext (by simp only [hfit q.1 q.2]))
-    · exact ((hF (k := 0) (l := 1) (by decide) (by decide) hi hj).1 he.symm).symm
+    exact ⟨R.val.row ⟨_, hi⟩, ⟨⟨_, hi⟩, hqa, rfl⟩, ⟨_, hj⟩,
+      ((hF (k := 0) (l := 1) (by decide) (by decide) hi hj).1 he.symm).symm, hqc⟩
   · rintro ⟨b, ⟨i, hia, hib⟩, ⟨j, hjb, hjc⟩⟩
     have he : Column.idAt jc[1].b jc[1].w j.1 = Column.idAt jc[0].b jc[0].w i.1 :=
       ((hF (k := 0) (l := 1) (by decide) (by decide) i.2 j.2).2 (hib.trans hjb.symm)).symm
-    obtain ⟨q, hq, hp⟩ := List.getElem_of_mem ((hmem i.1 j.1).2 ⟨i.2, j.2, he⟩)
-    rw [List.length_zip] at hq
-    have hq2 : q < m.toNat := by rw [← hmJ, len_eq_ids]; omega
-    rw [List.getElem_zip, hids _ q (by omega), hids _ q (by omega), Prod.mk.injEq] at hp
-    have hi' : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat < R.n.toNat := by
-      rw [hfit q hq2, hp.1]; exact i.2
-    have hj' : (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat < S.n.toNat := by rw [hp.2]; exact j.2
+    have hm := (hP i.1 j.1).2 ⟨i.2, j.2, he⟩
+    rw [e] at hm
+    obtain ⟨q, hq, hqe⟩ := List.mem_map.1 hm
+    obtain ⟨h1, h2⟩ := Prod.mk.inj hqe
+    have hq2 := List.mem_range.1 hq
+    have hi' : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat < R.n.toNat := by rw [h1]; exact i.2
+    have hj' : (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat < S.n.toNat := by rw [h2]; exact j.2
     refine ⟨⟨q, hq2⟩, ?_, ?_⟩
-    · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext (by simp only [hfit q hq2, hp.1]))
-    · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext hp.2)
+    · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext h1)
+    · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext h2)
 
 /-- `rep_comp` through a boolean middle side: its codes are its bits (`codes_boolean_faithful`/`_wf`). -/
 theorem rep_comp_boolean (R : Rel A (.atom .boolean)) (S : Rel (.atom .boolean) C)

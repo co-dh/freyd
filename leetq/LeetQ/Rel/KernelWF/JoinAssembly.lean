@@ -442,4 +442,58 @@ theorem join_pairs_lt {a b : Nat} {P : Nat → Nat → Bool} {p : Nat × Nat}
 
 #print axioms join_pairs_lt
 
+/-- The pairs `join l r` answers, as `join_spec` lists them, are the left row `i` and right row `j` of equal codes. -/
+theorem mem_joinPairs (l r : Code) (i j : Nat) :
+    (i, j) ∈ ((List.range l.n.toNat).flatMap fun i => ((List.range r.n.toNat).filter fun j =>
+        Column.idAt r.b r.w j == Column.idAt l.b l.w i).map (i, ·)) ↔
+      i < l.n.toNat ∧ j < r.n.toNat ∧ Column.idAt r.b r.w j = Column.idAt l.b l.w i := by
+  simp only [List.mem_flatMap, List.mem_map, List.mem_filter, List.mem_range, beq_iff_eq]
+  constructor
+  · rintro ⟨i', hi', j', ⟨hj', he⟩, hp⟩; cases hp; exact ⟨hi', hj', he⟩
+  · rintro ⟨hi, hj, he⟩; exact ⟨i, hi, j, ⟨hj, he⟩, rfl⟩
+
+/-- **`join l r` row by row**: its count fits a `USize`, and at whatever count `m` it enters as, row `q` of its left
+    column (read through `fit`, as `pickN` reads it) and of its right column is the pair `q` `join_spec` lists.
+    Hypotheses: `join_spec`'s. -/
+theorem join_rows (l r : Code)
+    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
+    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
+    (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
+    (hrn : r.n.toNat < 2 ^ 63)
+    (hM : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
+      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
+      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < USize.size) :
+    len (join l r).2 < USize.size ∧ ∀ m : USize, len (join l r).2 = m.toNat →
+      ((List.range l.n.toNat).flatMap fun i => ((List.range r.n.toNat).filter fun j =>
+        Column.idAt r.b r.w j == Column.idAt l.b l.w i).map (i, ·)) =
+      (List.range m.toNat).map fun q =>
+        ((Column.bitsAt (fit m.toNat (join l r).1) (q * 8) 8).toNat, (Column.bitsAt (join l r).2 (q * 8) 8).toNat) := by
+  have hZ := join_spec l r hlw hls hrw hrs hrc hrn hM hMU
+  have hJ := join_len l r
+  rw [len_eq_ids, len_eq_ids] at hJ
+  have hids : ∀ (b : ByteArray) q (hq : q < (ids b).length), (ids b)[q] = (Column.bitsAt b (q * 8) 8).toNat := by
+    intro b q hq; simp [ids]
+  have hlt : len (join l r).2 < USize.size := by
+    have := congrArg List.length hZ
+    rw [List.length_zip, List.length_flatMap] at this
+    rw [len_eq_ids]; simp only [List.length_map] at this; omega
+  refine ⟨hlt, fun m hmJ => ?_⟩
+  have hfit : ∀ q, q < m.toNat →
+      Column.bitsAt (fit m.toNat (join l r).1) (q * 8) 8 = Column.bitsAt (join l r).1 (q * 8) 8 := by
+    intro q hq; unfold fit; split
+    · rfl
+    · rw [bitsAt_extract _ (by omega), Nat.zero_add]
+  rw [← hZ]
+  apply List.ext_getElem
+  · simp only [List.length_zip, List.length_map, List.length_range]
+    rw [← hmJ, len_eq_ids]; exact Nat.min_eq_right hJ
+  · intro q h1 h2
+    have hq : q < m.toNat := by simpa using h2
+    rw [List.getElem_zip, List.getElem_map, List.getElem_range, hids, hids, hfit q hq]
+
+#print axioms join_rows
+
 end LeetQ.Rel.Alg
