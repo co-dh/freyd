@@ -4,6 +4,8 @@
 -/
 import QLean.Verify.Chain
 import QLean.Verify.Where
+import QLean.Verify.Group
+import QLean.Verify.Ids
 
 namespace LeetQ.Rel.Alg
 
@@ -153,5 +155,58 @@ theorem keyOperand_bytes {t u : QAtomicType} {b : ByteArray} {hi : Int}
       · have := (hx (-1) e).1; omega
     refine ⟨hnn, (hx Int64.minValue fun e => ?_).2⟩
     rw [e] at hnn; simp at hnn
+
+/-! ## The stages' element laws, at the classes `composeKey` runs them -/
+
+/-- **`Ew.val`'s element `i`** is `valStep` on the two elements the shape reads, on the payload's bits. -/
+theorem elem_val (op cls shape : UInt8) (nul : Int64) (a b : ByteArray) (n : USize) {i : Nat} (hi : i < n.toNat) :
+    Ew.elem cls (Ew.val op cls shape nul a b n) i =
+      UInt64.ofNat ((Ew.valStep op cls nul.toUInt64 (Ew.elem cls a (Ew.shapeIdx shape i).1)
+        (Ew.elem cls b (Ew.shapeIdx shape i).2)).toNat % 2 ^ (8 * Ew.width cls)) := by
+  obtain ⟨-, hw8⟩ := width_pos_le cls
+  let g : Nat → UInt64 := fun i =>
+    Ew.valStep op cls nul.toUInt64 (Ew.elem cls a (Ew.shapeIdx shape i).1) (Ew.elem cls b (Ew.shapeIdx shape i).2)
+  have hf : Ew.val op cls shape nul a b n =
+      (List.range n.toNat).foldl (fun acc i => Column.pushBits acc (g i) (Ew.width cls)) ByteArray.empty := rfl
+  have h := (foldl_pushBits g (Ew.width cls) hw8 (List.range n.toNat) ByteArray.empty).2.2 i (by simpa using hi)
+  rw [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
+  rw [Ew.elem, hf, Nat.mul_comm, h]
+
+/-- **`Ew.widen` to `i64` with one null in and out carries every integral element**: element `i` is the
+    source element `widenRead` reads, sign-extended (zero-extended at `u8`, a bit at `bits`). -/
+theorem elem_widen_i64 {src : UInt8} (hs : src ≠ Ew.f32 ∧ src ≠ Ew.f64) (nul : Int64) (x : ByteArray) (n : USize)
+    {i : Nat} (hi : i < n.toNat) :
+    Ew.elem Ew.i64 (Ew.widen src Ew.i64 nul nul x n) i = (Ew.widenRead src x i).toUInt64 := by
+  have hf : Ew.widen src Ew.i64 nul nul x n = (List.range n.toNat).foldl (fun acc i =>
+      Column.pushBits acc (Ew.widenStep Ew.i64 nul nul (Ew.widenRead src x i)) (Ew.width Ew.i64)) ByteArray.empty := by
+    simp [Ew.widen, hs.1, hs.2]
+  have h := (foldl_pushBits (fun i => Ew.widenStep Ew.i64 nul nul (Ew.widenRead src x i)) (Ew.width Ew.i64)
+    (by decide) (List.range n.toNat) ByteArray.empty).2.2 i (by simpa using hi)
+  rw [ByteArray.size_empty, Nat.zero_add, List.getElem_range] at h
+  rw [Ew.elem, hf, Nat.mul_comm, h, show 8 * Ew.width Ew.i64 = 64 by decide,
+    Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
+  simp only [Ew.widenStep, show (Ew.i64 == Ew.f64) = false by decide, show (Ew.i64 == Ew.f32) = false by decide,
+    Bool.false_eq_true, ↓reduceIte]
+  split
+  · rename_i e; rw [eq_of_beq e]
+  · rfl
+
+/-- The element law of `Ew.eIds` at `i64` (qlean's `StructuralTest.eIds_idAt`, a test module, so restated):
+    element `k` of the stage's answer is id `k` of the lane it read, whatever that lane's width. -/
+theorem eIds_idAt (a : ByteArray) {w n k : Nat} (hk : k < n) :
+    Column.idAt (Column.packIds (8 * Ew.width Ew.i64) n (Column.idAt a w)) 64 k = Column.idAt a w k := by
+  rw [show 8 * Ew.width Ew.i64 = 64 by decide]
+  exact idAt_packIds (by decide) hk (by unfold Column.idAt; exact UInt64.toNat_lt _)
+
+/-- **The element law of `Ew.ePack` as `composeKey` runs it** (qlean's `StructuralTest.ePack_idAt`): the
+    key `c₁·d₂ + c₂` an `i64` payload holds at `k` reads back from the lane `idWidthOf (d₁ * d₂)`. -/
+theorem ePack_idAt (s : ByteArray) {d₁ d₂ c₁ c₂ n k : Nat} (hk : k < n) (h₁ : c₁ < d₁) (h₂ : c₂ < d₂)
+    (hd : d₁ * d₂ ≤ 2 ^ 64) (hs : (Ew.elem Ew.i64 s k).toNat = c₁ * d₂ + c₂) :
+    Column.idAt (Column.packIds (Column.idWidthOf (d₁ * d₂)) n fun i => (Ew.elem Ew.i64 s i).toNat)
+      (Column.idWidthOf (d₁ * d₂)) k = c₁ * d₂ + c₂ := by
+  have hlt : c₁ * d₂ + c₂ < d₁ * d₂ :=
+    Nat.lt_of_lt_of_le (by rw [Nat.add_one_mul]; omega) (Nat.mul_le_mul_right d₂ (h₁ : c₁ + 1 ≤ d₁))
+  exact (idAt_packIds (w := Column.idWidthOf (d₁ * d₂)) (laneWidth_cases _) hk
+    (by simp only [hs]; exact lt_two_pow_idWidthOf hd hlt)).trans hs
 
 end LeetQ.Rel.Alg
