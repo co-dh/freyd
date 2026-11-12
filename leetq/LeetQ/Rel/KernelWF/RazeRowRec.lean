@@ -147,4 +147,135 @@ theorem raze_row_arr {b : Obj} {n m : USize} (x : Vals (.arr b) n) (y : Vals (.a
     rw [dif_pos (by omega), hrow, dif_neg (by omega), dif_pos hjy]
     exact congrArg _ (Fin.ext (by dsimp only; omega))
 
+/-- **`Vals.held` keeps every row**: where it compacts, `Vals.pick` at `til n` reads row `q` at `q` (`pick_row`). -/
+theorem held_row {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
+    (hfit : Vals.PickFits (.sum a b) x (List.range n.toNat)) (q : Fin n.toNat) :
+    Vals.row x.held q = Vals.row x q := by
+  have e : (List.range n.toNat).map (fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) = List.range n.toNat := by
+    apply List.ext_getElem (by simp)
+    intro i h1 h2
+    simp only [List.getElem_map, List.getElem_range]
+    exact tilLongs_get (by simpa using h2)
+  unfold Vals.held; dsimp only
+  split
+  · show Vals.row (Vals.pick _ x (tilLongs n) n (len_tilLongs n)) q = _
+    rw [pick_row _ x _ n _ (by rw [e]; exact hfit) q, dif_pos (by rw [tilLongs_get q.2]; exact q.2)]
+    exact congrArg _ (Fin.ext (tilLongs_get q.2))
+  · rfl
+
+/-- The set bits of `tb` below `n`: a set bit `k` makes `whereBits` nonempty, a clear one `whereBits` of the
+    complement. -/
+theorem whereBits_pos (tb : ByteArray) {n : USize} {k : Nat} (hk : k < n.toNat) :
+    (Column.bitAt tb k = true → 0 < len (whereBits n tb)) ∧
+      (Column.bitAt tb k = false → 0 < len (whereBits n (Ew.notBits n tb))) := by
+  obtain ⟨hs, -⟩ := Verify.whereBits_spec n tb
+  obtain ⟨hs', -⟩ := Verify.whereBits_spec n (Ew.notBits n tb)
+  constructor
+  · intro h
+    have := List.length_pos_of_mem (List.mem_filter.2 ⟨List.mem_range.2 hk, h⟩)
+    simp only [len, hs]; omega
+  · intro h
+    have h' : Column.bitAt (Ew.notBits n tb) k = true := by rw [notBits_bitAt n tb hk, h]; rfl
+    have := List.length_pos_of_mem (List.mem_filter.2 ⟨List.mem_range.2 hk, h'⟩)
+    simp only [len, hs']; omega
+
+/-- `whereBits` at `n` lists at most `n` positions. -/
+theorem len_whereBits_le (tb : ByteArray) (n : USize) : len (whereBits n tb) ≤ n.toNat := by
+  obtain ⟨hs, -⟩ := Verify.whereBits_spec n tb
+  have := List.length_filter_le (Column.bitAt tb) (List.range n.toNat)
+  simp only [List.length_range] at this
+  simp only [len, hs]; omega
+
+/-- **After `Vals.held` a row's side holds a value**: a row tagged `inr` has `0 < r`, one tagged `inl` `0 < l` —
+    `x` itself where that already holds, else the compacted side, whose sides count their rows. -/
+theorem held_side {a b : Obj} {n : USize} (x : Vals (.sum a b) n) (k : Fin n.toNat) :
+    (x.held.2.2.1.get k = true → 0 < x.held.2.1.toNat) ∧ (x.held.2.2.1.get k = false → 0 < x.held.1.toNat) := by
+  unfold Vals.held; dsimp only
+  split
+  · rename_i hC
+    rw [if_pos hC]
+    simp only [Vals.compact, Vals.pick, Vals.pickShared, need]
+    split
+    · rename_i hk
+      rw [dif_pos hk]
+      dsimp only
+      rw [USize.toNat_ofNat_of_lt' hk.1, USize.toNat_ofNat_of_lt' hk.2, gather_len, gather_len,
+        Arr.get_bool_bits _ (KernelWF.enc_tagBits _) k]
+      exact whereBits_pos _ k.2
+    · rename_i hk
+      exact absurd ⟨by rw [gather_len]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ n) n.toNat_lt_size,
+        by rw [gather_len]; exact Nat.lt_of_le_of_lt (len_whereBits_le _ n) n.toNat_lt_size⟩ hk
+  · rename_i hC
+    rw [if_neg hC, Arr.get_bool_bits _ (KernelWF.enc_tagBits _) k]
+    obtain ⟨h1, h2⟩ := whereBits_pos (tagBits x.2.2.1) k.2
+    obtain ⟨hs, -⟩ := Verify.whereBits_spec n (tagBits x.2.2.1)
+    have hR : len (whereBits n (tagBits x.2.2.1)) < n.toNat ∨ ∀ k', k' < n.toNat → Column.bitAt (tagBits x.2.2.1) k' = true := by
+      rcases Nat.lt_or_ge (len (whereBits n (tagBits x.2.2.1))) n.toNat with h | h
+      · exact Or.inl h
+      · right; intro k' hk'
+        have hl : ((List.range n.toNat).filter (Column.bitAt (tagBits x.2.2.1))).length = (List.range n.toNat).length := by
+          have := List.length_filter_le (Column.bitAt (tagBits x.2.2.1)) (List.range n.toNat)
+          simp only [len, hs] at h; simp only [List.length_range] at this ⊢; omega
+        exact List.length_filter_eq_length_iff.1 hl k' (List.mem_range.2 hk')
+    constructor
+    · intro ht
+      have := h1 ht
+      refine Nat.pos_of_ne_zero fun h0 => ?_
+      exact hC (Or.inr ⟨USize.toNat_inj.1 (by rw [USize.toNat_zero]; omega), this⟩)
+    · intro ht
+      refine Nat.pos_of_ne_zero fun h0 => ?_
+      rcases hR with hR | hR
+      · exact hC (Or.inl ⟨USize.toNat_inj.1 (by rw [USize.toNat_zero]; omega), hR⟩)
+      · rw [hR k k.2] at ht; cases ht
+
+/-- **`place` read back** with offsets: row `k`'s position clamped into its own side `[0, c - 1]`, plus `dr`
+    where it is tagged `inr`, `dl` where `inl` — all below `2^63`. -/
+theorem place_off_get {a b : Obj} {n : USize} (x : Vals (.sum a b) n) {dl dr : Nat}
+    (hl : x.1.toNat + dl < 2 ^ 63) (hr : x.2.1.toNat + dr < 2 ^ 63) (k : Fin n.toNat) :
+    ((place x ((x.1.toNat : Int) - 1) ((x.2.1.toNat : Int) - x.1.toNat) dl ((dr : Int) - dl)).get k).toInt =
+      ((min (max (x.2.2.2.1.get k).toInt 0).toNat ((if x.2.2.1.get k then x.2.1.toNat else x.1.toNat) - 1) +
+        (if x.2.2.1.get k then dr else dl) : Nat) : Int) := by
+  obtain ⟨l, r, tag, idx, xa, xb⟩ := x
+  dsimp only at hl hr ⊢
+  unfold place
+  rw [Arr.get_long_bytes _ rfl]
+  dsimp only
+  simp only [val_vv_get _ _ _ _ k.2, val_va_get _ _ _ _ k.2, widen_bits_get _ _ k.2, longsOf_get _ k.2,
+    ← Arr.get_bool_bits _ (KernelWF.enc_tagBits tag) k]
+  have e0 := int_bits_toInt ((l.toNat : Int) - 1) (by omega) (by omega)
+  have e1 := int_bits_toInt ((r.toNat : Int) - l.toNat) (by omega) (by omega)
+  have ez := int_bits_toInt 0 (by decide) (by decide)
+  have eo0 := int_bits_toInt (dl : Int) (by omega) (by omega)
+  have eo1 := int_bits_toInt ((dr : Int) - dl) (by omega) (by omega)
+  have eI := congrArg Int64.toInt (Int64.toInt64_toUInt64 (idx.get k))
+  generalize Column.bitsAt (int ((r.toNat : Int) - l.toNat)) 0 8 = K1 at e1 ⊢
+  generalize Column.bitsAt (int ((l.toNat : Int) - 1)) 0 8 = K0 at e0 ⊢
+  generalize Column.bitsAt (int ((dr : Int) - dl)) 0 8 = O1 at eo1 ⊢
+  generalize Column.bitsAt (int (dl : Int)) 0 8 = O0 at eo0 ⊢
+  generalize Column.bitsAt (int 0) 0 8 = Z at ez ⊢
+  generalize (idx.get k).toUInt64 = I at eI ⊢
+  generalize tag.get k = t
+  have hT : -2 ^ 63 < (if t then (1 : UInt64) else 0).toInt64.toInt := by cases t <;> decide
+  have m1 := (valStep_int (y := K1) hT (by omega)).2.2 t rfl
+  rw [e1] at m1
+  have l1 := (valStep_int (y := K0) (by rw [m1]; split <;> omega) (by omega)).1
+    (by rw [m1]; split <;> omega) (by rw [m1]; split <;> omega)
+  rw [m1, e0] at l1
+  have mo := (valStep_int (y := O1) hT (by omega)).2.2 t rfl
+  rw [eo1] at mo
+  have ao := (valStep_int (y := O0) (by rw [mo]; split <;> omega) (by omega)).1
+    (by rw [mo]; split <;> omega) (by rw [mo]; split <;> omega)
+  rw [mo, eo0] at ao
+  generalize Ew.valStep Ew.add Ew.i64 nul.toUInt64 (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) K1) K0
+    = LIN at l1 ⊢
+  generalize Ew.valStep Ew.add Ew.i64 nul.toUInt64 (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) O1) O0
+    = OFF at ao ⊢
+  have hles := (valStep_min_max I LIN).1
+  generalize Ew.valStep Ew.lesser Ew.i64 nul.toUInt64 I LIN = LES at hles ⊢
+  have hgre := (valStep_min_max LES Z).2
+  generalize Ew.valStep Ew.greater Ew.i64 nul.toUInt64 LES Z = G at hgre ⊢
+  rw [(valStep_int (x := G) (y := OFF) (by rw [hgre]; omega) (by rw [ao]; split <;> omega)).1
+    (by rw [hgre, ao]; split <;> omega) (by rw [hgre, hles, ao, ez, l1]; split <;> omega), hgre, hles, ao, ez, l1, eI]
+  cases t <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega
+
 end LeetQ.Rel.KernelWF
