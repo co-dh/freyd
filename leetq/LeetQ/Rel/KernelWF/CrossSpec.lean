@@ -6,6 +6,7 @@
   position as a signed long: past them `Int64.ofNat` wraps negative and the answers differ.
 -/
 import LeetQ.Rel.Alg
+import LeetQ.Rel.KernelWF.RazeSpec
 import QLean.Verify.Structural
 import QLean.Verify.Chain
 import QLean.Verify.Elementwise
@@ -163,12 +164,10 @@ private theorem clampFin_ofNat {j m : Nat} (hj : j < m) (h63 : j < 2 ^ 63) (h : 
   Fin.ext (by simp only [clampFin, Int64.toInt_ofNat_of_lt h63]; omega)
 
 /-- `sumVals X Y`'s row `k` is `inl` of `X`'s row `k` for `k < n`, else `inr` of `Y`'s row `k - n`. Its position
-    column is a `razeTo` of two `tilCol`s, so the statement takes `raze`'s content, `hraze`, as a hypothesis:
-    a razed long column lists its parts' elements one part after another. `n + m ≤ 2^63`, where the tags and
+    column is a `razeTo` of two `tilCol`s, dense columns, so it lists their elements one part after another
+    (`razeTo_toList_bytes`). `n + m ≤ 2^63`, where the tags and
     positions read `til` as nonnegative longs. -/
 theorem sumVals_row {A B : Obj} {n m : USize} (X : Vals A n) (Y : Vals B m) (hN : n.toNat + m.toNat < USize.size)
-    (hraze : ∀ (cs : Array ((k : USize) × Arr .long k)) {S : Nat} (hs : (cs.toList.map (·.1.toNat)).sum = S)
-      (hS : S < USize.size), (razeTo .long cs hs hS).toList = cs.toList.flatMap (·.2.toList))
     (h63 : n.toNat + m.toNat ≤ 2 ^ 63) (k : Fin (n + m).toNat) :
     Vals.row (A := .sum A B) (sumVals X Y hN) k =
       if hk : k.1 < n.toNat then .inl (Vals.row X ⟨k.1, hk⟩)
@@ -185,7 +184,8 @@ theorem sumVals_row {A B : Obj} {n m : USize} (X : Vals A n) (Y : Vals B m) (hN 
     rw [← Arr.getElem_toList x k.1 (by rw [hx, hl]; exact hk2)]
     simp only [hx, tilCol_toList, List.getElem_append, List.length_map, List.length_range]
     split <;> simp
-  rw [hidx _ ((hraze _ _ _).trans (by simp))]
+  rw [hidx _ ((razeTo_toList_bytes _ _ _ fun c hc => by
+    simp at hc; rcases hc with rfl | rfl <;> exact ⟨_, rfl⟩).trans (by simp))]
   by_cases hk : k.1 < n.toNat
   · have h0 : 0 < n.toNat := by omega
     simp [hk, h0, List.getD_eq_getElem?_getD, List.getElem?_append, clampFin_ofNat hk (by omega) h0]
