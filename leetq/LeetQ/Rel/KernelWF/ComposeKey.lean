@@ -6,6 +6,8 @@ import QLean.Verify.Chain
 import QLean.Verify.Where
 import QLean.Verify.Group
 import QLean.Verify.Ids
+import LeetQ.Rel.KernelWF.Lane
+import LeetQ.Rel.KernelWF.CodesSpec
 
 namespace LeetQ.Rel.Alg
 
@@ -335,5 +337,224 @@ theorem valStep_key (x y : UInt64) (hx : x.toNat < 2 ^ 63) (hy : y.toNat < 2 ^ 6
   refine ⟨fun h => ?_, fun h => ?_⟩
   · rw [UInt64.toNat_mul, Nat.mod_eq_of_lt (by omega)]
   · rw [UInt64.toNat_add, Nat.mod_eq_of_lt (by omega)]
+
+/-! ## Reading a code back at `i64` -/
+
+theorem toNat_toUInt64_of_nonneg (s : Int64) (h : 0 ≤ s.toInt) : s.toUInt64.toNat = s.toInt.toNat := by
+  have e1 : s.toUInt64.toNat = s.toBitVec.toNat := rfl
+  have e2 : s.toInt = s.toBitVec.toInt := rfl
+  have := s.toBitVec.isLt
+  rw [e1, e2, BitVec.toInt_eq_toNat_cond]; rw [e2, BitVec.toInt_eq_toNat_cond] at h
+  split <;> split at h <;> omega
+
+theorem bv_nonneg {w : Nat} (x : BitVec w) (h : 0 ≤ x.toInt) : x.toInt = x.toNat := by
+  have := x.isLt
+  rw [BitVec.toInt_eq_toNat_cond] at h ⊢
+  split <;> split at h <;> omega
+
+/-- **An integral element read signed and found non-negative is the element itself.** -/
+theorem signed_nonneg {cls : UInt8} (hc : cls = Ew.u8 ∨ cls = Ew.i16 ∨ cls = Ew.i32 ∨ cls = Ew.i64) (v : UInt64)
+    (hv : v.toNat < 2 ^ (8 * Ew.width cls)) (h : 0 ≤ (Ew.signed cls v).toInt) :
+    (Ew.signed cls v).toInt = v.toNat := by
+  rcases hc with rfl | rfl | rfl | rfl
+  · simp only [Ew.signed, Ew.width, Ew.u8, if_pos, beq_self_eq_true, ↓reduceIte] at hv h ⊢
+    have e : v.toUInt8.toUInt64.toInt64.toInt = v.toUInt8.toUInt64.toBitVec.toInt := rfl
+    rw [e] at h ⊢; rw [bv_nonneg _ h]; simp; omega
+  · simp only [Ew.signed, Ew.width, Ew.u8, Ew.i16, beq_self_eq_true, ↓reduceIte] at hv h ⊢
+    simp at hv h ⊢
+    have e : v.toUInt16.toInt16.toInt = v.toUInt16.toBitVec.toInt := rfl
+    rw [e] at h ⊢; rw [bv_nonneg _ h]; simp; omega
+  · simp only [Ew.signed, Ew.width, Ew.u8, Ew.i16, Ew.i32] at hv h ⊢
+    simp at hv h ⊢
+    have e : v.toUInt32.toInt32.toInt = v.toUInt32.toBitVec.toInt := rfl
+    rw [e] at h ⊢; rw [bv_nonneg _ h]; simp; omega
+  · simp only [Ew.signed, Ew.width, Ew.u8, Ew.i16, Ew.i32, Ew.i64] at hv h ⊢
+    simp at h ⊢
+    have e : v.toInt64.toInt = v.toBitVec.toInt := rfl
+    rw [e] at h ⊢; rw [bv_nonneg _ h]; simp
+
+/-- A dense element at `cls` is the code at the lane `8 · width cls`. -/
+theorem elem_idAt (cls : UInt8) (x : ByteArray) (j : Nat) :
+    (Ew.elem cls x j).toNat = Column.idAt x (8 * Ew.width cls) j := by
+  rw [idAt_lane x (width_pos_le cls).2 j, Ew.elem]
+
+/-- **A dense code read signed by `keyOperand`'s guard is the code**, at most `hi`. -/
+theorem bytes_code {cls : UInt8} (hc : cls = Ew.u8 ∨ cls = Ew.i16 ∨ cls = Ew.i32 ∨ cls = Ew.i64) {x : ByteArray}
+    {hi : Int} {j : Nat} (h : 0 ≤ (Ew.signed cls (Ew.elem cls x j)).toInt ∧ (Ew.signed cls (Ew.elem cls x j)).toInt ≤ hi) :
+    (Ew.signed cls (Ew.elem cls x j)).toUInt64.toNat = Column.idAt x (8 * Ew.width cls) j ∧
+      (Column.idAt x (8 * Ew.width cls) j : Int) ≤ hi := by
+  have hv : (Ew.elem cls x j).toNat < 2 ^ (8 * Ew.width cls) := by
+    rw [elem_idAt]; exact idAt_lt _ _ _ (by have := (width_pos_le cls).2; omega)
+  have e := signed_nonneg hc _ hv h.1
+  rw [toNat_toUInt64_of_nonneg _ h.1, e, ← elem_idAt]
+  exact ⟨by simp, by have := h.2; omega⟩
+
+/-- **A promoted dense code read at `i64` is the code**, at most `hi`. -/
+theorem widen_code {cls : UInt8} (hc : cls = Ew.u8 ∨ cls = Ew.i16 ∨ cls = Ew.i32) {x : ByteArray} {n : USize}
+    {hi : Int} {j : Nat} (hj : j < n.toNat)
+    (h : 0 ≤ (Ew.signed cls (Ew.elem cls x j)).toInt ∧ (Ew.signed cls (Ew.elem cls x j)).toInt ≤ hi) :
+    (Ew.elem Ew.i64 (Ew.widen cls Ew.i64 Int64.minValue Int64.minValue x n) j).toNat =
+      Column.idAt x (8 * Ew.width cls) j ∧ (Column.idAt x (8 * Ew.width cls) j : Int) ≤ hi := by
+  have hs : cls ≠ Ew.f32 ∧ cls ≠ Ew.f64 := by rcases hc with rfl | rfl | rfl <;> decide
+  have hb : (cls == Ew.bits) = false := by rcases hc with rfl | rfl | rfl <;> decide
+  rw [elem_widen_i64 hs _ _ _ hj, Ew.widenRead, hb]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  exact bytes_code (by rcases hc with h | h | h <;> simp [h]) h
+
+/-- `keyOperand` on a dense column keeps the column's type. -/
+theorem keyOperand_bytes_type {t u : QAtomicType} {b : ByteArray} {neg : Bool} {hi : Int}
+    (h : keyOperand t (.bytes b) = some (u, neg, hi)) : u = t := by
+  simp only [keyOperand, bind, Option.bind] at h
+  split at h
+  · simp at h
+  cases hc : clsOf t with
+  | none => simp [hc] at h
+  | some cls => simp only [hc, Option.some.injEq, Prod.mk.injEq] at h; exact h.1.symm
+
+theorem stageRun_widen {st : Ew.Stage} (h : st.engine = Ew.eWiden) (src : UInt8 → ByteArray) (n : USize) :
+    stageRun st src n = Ew.widen st.cls st.shape st.nul st.nulOut (src st.a) n := by
+  simp [stageRun, h, Ew.eVal, Ew.eCmp, Ew.eMon, Ew.eWiden]
+
+theorem stageRun_ids {st : Ew.Stage} (h : st.engine = Ew.eIds) (src : UInt8 → ByteArray) (n : USize) :
+    stageRun st src n = Column.packIds (8 * Ew.width st.cls) n.toNat (Column.idAt (src st.a) st.shape.toNat) := by
+  simp [stageRun, h, Ew.eVal, Ew.eCmp, Ew.eMon, Ew.eWiden, Ew.eBit, Ew.eFloor, Ew.eCast, Ew.eTick, Ew.eIds]
+
+theorem stageRun_pack {st : Ew.Stage} (h : st.engine = Ew.ePack) (src : UInt8 → ByteArray) (n : USize) :
+    stageRun st src n = Column.packIds st.shape.toNat n.toNat fun i => (Ew.elem st.cls (src st.a) i).toNat := by
+  simp [stageRun, h, Ew.eVal, Ew.eCmp, Ew.eMon, Ew.eWiden, Ew.eBit, Ew.eFloor, Ew.eCast, Ew.eTick, Ew.eIds, Ew.ePack]
+
+theorem stageRun_val {st : Ew.Stage} (h : st.engine = Ew.eVal) (src : UInt8 → ByteArray) (n : USize) :
+    stageRun st src n = Ew.val st.op st.cls st.shape st.nul (src st.a) (src st.b) n := by
+  simp [stageRun, h]
+
+theorem get_push_eq {α : Type} [Inhabited α] (xs : Array α) (x : α) : (xs.push x)[xs.size]! = x := by
+  rw [getElem!_pos _ _ (by simp), Array.getElem_push_eq]
+
+/-- **A one-stage operand**: slot `b.stages.size` of a build extending `b`'s with input `x` and stage `st`
+    reading it is `st`'s body over sources answering `x` at `st.a`. -/
+theorem srcOf_stage {b B : Ew.Build} {x : ByteArray} {st : Ew.Stage} (n : USize) (hb : b.inputs.size < 128)
+    (hbs : b.stages.size < 128) (hst : st.a = b.inputs.size.toUInt8)
+    (hBi : ∀ i < (b.inputs.push x).size, B.inputs[i]! = (b.inputs.push x)[i]!)
+    (hBs : ∀ j < (b.stages.push st).size, B.stages[j]! = (b.stages.push st)[j]!)
+    (hBz : (b.stages.push st).size ≤ B.stages.size) :
+    ∃ src : UInt8 → ByteArray, src st.a = x ∧ srcOf B n (Ew.slot0 + b.stages.size.toUInt8) = stageRun st src n := by
+  refine ⟨srcOf { B with stages := B.stages.extract 0 b.stages.size } n, ?_, ?_⟩
+  · rw [hst, srcOf_input _ _ hb]; dsimp only; rw [hBi _ (by simp), get_push_eq]
+  · rw [srcOf_slot B n (by simp at hBz; omega) hbs, hBs _ (by simp), get_push_eq]
+
+/-- **`keySource` on a code's column**: one input, the code's payload, and at most one stage after `b`'s.
+    Any build extending it reads, at `s`, element `j` as code `j` of `c`, below `d` where the guard passed. -/
+theorem keySource_code (c : Code)
+    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
+    (hc : c.w < 8 → ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)
+    {t : QAtomicType} {m : USize} {e : Enc} (hcol : c.column = some (t, (m, e)))
+    {u : QAtomicType} {neg : Bool} {hi : Int} (hko : keyOperand t e = some (u, neg, hi))
+    {d : Nat} (hd : c.n = 0 ∨ (neg = false ∧ hi < d))
+    {b b' : Ew.Build} {s : UInt8} (hks : keySource b u e c.n = some (b', s))
+    (hb : b.inputs.size < 128) (hbs : b.stages.size < 128) :
+    b'.inputs = b.inputs.push c.b ∧ b.stages.size ≤ b'.stages.size ∧ b'.stages.size ≤ b.stages.size + 1 ∧
+      (∀ j < b.stages.size, b'.stages[j]! = b.stages[j]!) ∧
+      ∀ B : Ew.Build, (∀ i < b'.inputs.size, B.inputs[i]! = b'.inputs[i]!) →
+        (∀ j < b'.stages.size, B.stages[j]! = b'.stages[j]!) → b'.stages.size ≤ B.stages.size →
+        ∀ j < c.n.toNat, (Ew.elem Ew.i64 (srcOf B c.n s) j).toNat = Column.idAt c.b c.w j ∧
+          Column.idAt c.b c.w j < d := by
+  obtain ⟨w, cn, card, cb⟩ := c
+  have e8 : Ew.width Ew.u8 = 1 := by decide
+  have e16 : Ew.width Ew.i16 = 2 := by decide
+  have e32 : Ew.width Ew.i32 = 4 := by decide
+  have e64 : Ew.width Ew.i64 = 8 := by decide
+  dsimp only at hw hs hc hd hks ⊢
+  have hstage : ∀ (st : Ew.Stage), st.a = b.inputs.size.toUInt8 →
+      b' = { stages := b.stages.push st, inputs := b.inputs.push cb } → s = Ew.slot0 + b.stages.size.toUInt8 →
+      (∀ j < cn.toNat, ∀ src : UInt8 → ByteArray, src st.a = cb → j < cn.toNat →
+        (Ew.elem Ew.i64 (stageRun st src cn) j).toNat = Column.idAt cb w j ∧ Column.idAt cb w j < d) →
+      b'.inputs = b.inputs.push cb ∧ b.stages.size ≤ b'.stages.size ∧ b'.stages.size ≤ b.stages.size + 1 ∧
+      (∀ j < b.stages.size, b'.stages[j]! = b.stages[j]!) ∧
+      ∀ B : Ew.Build, (∀ i < b'.inputs.size, B.inputs[i]! = b'.inputs[i]!) →
+        (∀ j < b'.stages.size, B.stages[j]! = b'.stages[j]!) → b'.stages.size ≤ B.stages.size →
+        ∀ j < cn.toNat, (Ew.elem Ew.i64 (srcOf B cn s) j).toNat = Column.idAt cb w j ∧ Column.idAt cb w j < d := by
+    intro st hst hb' hs' hel
+    subst hb' hs'
+    refine ⟨rfl, by simp, by simp, fun j hj => get_push_lt _ _ hj, fun B hBi hBs hBz j hj => ?_⟩
+    obtain ⟨src, hsrc, e⟩ := srcOf_stage (B := B) cn hb hbs hst hBi hBs hBz
+    rw [e]; exact hel j hj src hsrc hj
+  rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · -- a bitmap: input, then `eWiden` from `bits`
+    simp [Code.column, Code.kind, laneKind] at hcol
+    obtain ⟨rfl, rfl, rfl⟩ := hcol
+    simp [keyOperand] at hko
+    obtain ⟨rfl, rfl, rfl⟩ := hko
+    simp [keySource, operandSource, clsOf, promotable, Ew.Build.input, Ew.Build.add] at hks
+    obtain ⟨-, rfl, rfl⟩ := hks
+    refine hstage _ rfl rfl rfl fun j _ src hsrc hj => ?_
+    rw [stageRun_widen rfl]; dsimp only; rw [hsrc, elem_widen_i64 (by decide) _ _ _ hj]
+    simp only [Ew.widenRead, beq_self_eq_true, ↓reduceIte, idAt_one]
+    have hd' : (1 : Int) < d := by
+      rcases hd with h0 | ⟨-, h⟩
+      · subst h0; simp at hj
+      · exact h
+    split <;> exact ⟨by first | rfl | decide | simp, by omega⟩
+  -- an interned lane of `2` or `4` bits: input, then `eIds` reading it where it lies
+  iterate 2
+    · simp [Code.column, Code.kind, laneKind] at hcol
+      obtain ⟨hwc, rfl, rfl, rfl⟩ := hcol
+      simp [keyOperand] at hko
+      obtain ⟨rfl, rfl, rfl⟩ := hko
+      simp [keySource, Ew.Build.input, Ew.Build.add, Column.idWidth, hwc] at hks
+      obtain ⟨-, rfl, rfl⟩ := hks
+      refine hstage _ rfl rfl rfl fun j _ src hsrc hj => ?_
+      rw [stageRun_ids rfl]; dsimp only; rw [hsrc, elem_idAt]
+      have h := eIds_idAt cb (w := Column.idWidthOf card) hj
+      have hcj := hc (by omega) j hj
+      rw [hwc] at h
+      refine ⟨by simpa using h, ?_⟩
+      rcases hd with h0 | ⟨-, hh⟩
+      · subst h0; simp at hj
+      · omega
+  -- dense bytes at `u8`, `i16`, `i32`: input, then `eWiden` to `i64`
+  iterate 3
+    · simp [Code.column, Code.kind, laneKind] at hcol
+      obtain ⟨rfl, rfl, rfl⟩ := hcol
+      have hu := keyOperand_bytes_type hko
+      subst hu
+      simp [keySource, operandSource, clsOf, promotable, Ew.Build.input, Ew.Build.add, Ew.u8, Ew.i16, Ew.i32,
+        Ew.i64, Ew.bits, Ew.f64] at hks
+      obtain ⟨rfl, rfl⟩ := hks
+      refine hstage _ rfl rfl rfl fun j _ src hsrc hj => ?_
+      obtain ⟨rfl, hh⟩ : neg = false ∧ hi < d := by
+        rcases hd with h0 | h
+        · subst h0; simp at hj
+        · exact h
+      obtain ⟨-, cls, hcls, hall⟩ := keyOperand_bytes hko
+      simp only [clsOf, Option.some.injEq] at hcls
+      subst hcls
+      rw [stageRun_widen rfl]; dsimp only; rw [hsrc]
+      have hw := widen_code (by decide) (n := cn) hj (hall j (by rw [hs]; simp only [e8, e16, e32, e64]; omega))
+      simp only [e8, e16, e32, Nat.reduceMul] at hw
+      exact ⟨hw.1, by have := hw.2; omega⟩
+  -- dense `i64`: the input itself
+  · simp [Code.column, Code.kind, laneKind] at hcol
+    obtain ⟨rfl, rfl, rfl⟩ := hcol
+    have hu := keyOperand_bytes_type hko
+    subst hu
+    simp [keySource, operandSource, clsOf, Ew.Build.input] at hks
+    obtain ⟨rfl, rfl⟩ := hks
+    refine ⟨rfl, by simp, by simp, fun _ _ => rfl, fun B hBi _ _ j hj => ?_⟩
+    obtain ⟨rfl, hh⟩ : neg = false ∧ hi < d := by
+      rcases hd with h0 | h
+      · subst h0; simp at hj
+      · exact h
+    obtain ⟨-, cls, hcls, hall⟩ := keyOperand_bytes hko
+    simp only [clsOf, Option.some.injEq] at hcls
+    subst hcls
+    rw [show UInt8.ofNat b.inputs.size = b.inputs.size.toUInt8 from rfl, srcOf_input _ _ hb, hBi _ (by simp),
+      get_push_eq]
+    have hc := bytes_code (Or.inr (Or.inr (Or.inr rfl))) (hall j (by rw [hs]; simp only [e8, e16, e32, e64]; omega))
+    have he : (Ew.signed Ew.i64 (Ew.elem Ew.i64 cb j)).toUInt64 = Ew.elem Ew.i64 cb j := by
+      simp [Ew.signed, Ew.i64, Ew.u8, Ew.i16, Ew.i32]
+    rw [he] at hc
+    simp only [e64, Nat.reduceMul] at hc
+    exact ⟨hc.1, by have := hc.2; omega⟩
 
 end LeetQ.Rel.Alg
