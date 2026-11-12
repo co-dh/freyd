@@ -9,7 +9,8 @@ import QLean.Verify.AlpConcat
 
 namespace LeetQ.Rel.KernelWF
 
-open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg
+open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
+open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 /-- A type with a width other than `guid` is at most eight bytes wide. -/
 theorem width_le8 {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hg : t ≠ .guid) : w ≤ 8 := by
@@ -209,4 +210,127 @@ theorem razeTo2_dense {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : 
     (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList :=
   razeTo2_toList x y hN (razeTo_toList_dense hw hb _ rfl hN (by simpa using hD))
 
+/-- **Two parts' `razeTo` list at every type and encoding but the encoded join**: `razeTo2_fits` at `boolean`,
+    `general`, `symbol`, `guid`, `razeTo2_dense` wherever `razeColumn` answers dense. `hD`: the parts take the
+    dense branch — no part is encoded to meet, or the encoded join is the dearer (`denseCheaper`). -/
+theorem razeTo2_all {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size)
+    (hF : Vals.RazeFits (.atom t) x y)
+    (hD : ∀ w r, t.width = some w → encodedParts t #[x.part, y.part] = some r →
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) :
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
+  by_cases hs : t = .boolean ∨ t = .general ∨ t = .symbol ∨ t = .guid
+  · exact razeTo2_fits x y hN hF (by
+      rcases hs with h | h | h | h
+      · exact .inl h
+      · exact .inr (.inl h)
+      · exact .inr (.inr (.inl h))
+      · exact .inr (.inr (.inr (.inl h))))
+  · obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by cases t <;> simp_all [QAtomicType.width]
+    exact razeTo2_dense hw (fun h => hs (.inl h)) x y hN (fun r hr => hD w r hw hr)
+
+section
+-- The read-back left open: two atom parts on the encoded join, razeColumn's concatALP/concatFoR branch.
+variable (hJ : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size), Vals.RazeFits (.atom t) x y → ∀ w r, t.width = some w →
+    encodedParts t #[x.part, y.part] = some r →
+    denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+include hJ
+
+/-- `raze_row`'s `hat` from `razeTo2_all` and the encoded join `hJ`. -/
+theorem hat_of_join : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size), Vals.RazeFits (.atom t) x y →
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
+  intro t n m x y hN hF
+  cases hW : t.width with
+  | none => exact razeTo2_all x y hN hF fun w r hw _ => by rw [hW] at hw; cases hw
+  | some w =>
+    cases hE : encodedParts t #[x.part, y.part] with
+    | none => exact razeTo2_all x y hN hF fun w' r _ hr => by rw [hE] at hr; cases hr
+    | some r =>
+      cases hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat)))
+      · exact hJ t x y hN hF w r hW hE hC
+      · exact razeTo2_all x y hN hF fun w' r' hw' hr' => by
+          rw [hW, Option.some.injEq] at hw'; rw [hE, Option.some.injEq] at hr'; subst hw' hr'; exact hC
+
+/-- **Row read-back of `raze` at every side**, `raze_row` with `hat` narrowed to the encoded join `hJ`. -/
+theorem raze_row_all (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
+    (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
+      fun c : Part A => c.1.toNat).sum.toUSize.toNat) :
+    Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
+      if h : k < n.toNat then Vals.row x ⟨k, h⟩
+      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
+  raze_row (hat_of_join hJ) A x y hF hN k hk
+
+end
+
 end LeetQ.Rel.KernelWF
+
+namespace LeetQ.Rel.Rep
+
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+
+variable {A B C : Obj}
+
+-- dup of RazeRow's local notations `Uc`, `kcU`, `vcU`, `nubU` (local there, and in RazeRowAll)
+set_option hygiene false in
+local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
+set_option hygiene false in
+local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
+set_option hygiene false in
+local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
+set_option hygiene false in
+local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+
+section
+-- The read-back left open: two atom parts on the encoded join (`hat_of_join`).
+variable (hJ : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size), Vals.RazeFits (.atom t) x y → ∀ w r, t.width = some w →
+    encodedParts t #[x.part, y.part] = some r →
+    denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+include hJ
+
+/-- **`rep (R ∪ S) = rep R ∪ rep S`**, `rep_union_fits` with `hat` narrowed to the encoded join `hJ`. -/
+theorem rep_union_all (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
+      USize.size)
+    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
+      USize.size)
+    (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
+    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
+        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
+          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
+      ((kcU).w = 1 ∨ (kcU).w = 2 ∨ (kcU).w = 4 ∨ (kcU).w = 8 ∨ (kcU).w = 16 ∨ (kcU).w = 32 ∨ (kcU).w = 64) ∧
+        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
+        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
+    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
+        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
+          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
+      ((vcU).w = 1 ∨ (vcU).w = 2 ∨ (vcU).w = 4 ∨ (vcU).w = 8 ∨ (vcU).w = 16 ∨ (vcU).w = 32 ∨ (vcU).w = 64) ∧
+        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
+        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
+    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
+    rep (R ∪ S) = rep R ∪ rep S :=
+  rep_union_fits (hat_of_join hJ) R S hN hNk hNv hFk hFv hK hV hk hv
+
+/-- `rep_junc_fits` with `hat` narrowed to the encoded join `hJ`. -/
+theorem rep_junc_all (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
+    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
+  rep_junc_fits (hat_of_join hJ) R S hN h63 hF
+
+end
+
+#print axioms razeTo2_all
+#print axioms raze_row_all
+#print axioms rep_union_all
+#print axioms rep_junc_all
+
+end LeetQ.Rel.Rep
