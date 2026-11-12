@@ -4,7 +4,6 @@
 -/
 import LeetQ.Rel.KernelWF.RowsSpec
 import LeetQ.Rel.KernelWF.MemberSpec
-import Std.Tactic.BVDecide
 
 namespace LeetQ.Rel.Alg
 
@@ -377,56 +376,68 @@ theorem pick_row_arr {b : Obj} {n : USize} (x : Vals (.arr b) n)
 /-- A natural below `2^63` fits a long. -/
 theorem lt_size_of_lt63 {v : Nat} (h : v < 2 ^ 63) : v < UInt64.size := Nat.lt_trans h (by decide)
 
+/-- An integer of a long's range is its own residue `bmod 2^64`. -/
+theorem bmod_small {z : Int} (h1 : -2 ^ 63 ≤ z) (h2 : z < 2 ^ 63) : z.bmod (2 ^ 64) = z := by
+  simp only [Int.bmod]; split <;> omega
+
+/-- Two longs of one signed value are one long. -/
+theorem u64_ext {u v : UInt64} (h : u.toInt64.toInt = v.toInt64.toInt) : u = v := by
+  rw [← UInt64.toUInt64_toInt64 u, ← UInt64.toUInt64_toInt64 v, Int64.toInt_inj.1 h]
+
+/-- **`valStep` `+`, `-`, `*` on longs, as signed values**: where no operand is q's null `0N` and the
+    result is in range, `+` and `-` are the integer ones; `*` by a `1`/`0` is the operand or `0`. -/
+theorem valStep_int {x y : UInt64} (hx : -2 ^ 63 < x.toInt64.toInt) (hy : -2 ^ 63 < y.toInt64.toInt) :
+    (-2 ^ 63 ≤ x.toInt64.toInt + y.toInt64.toInt → x.toInt64.toInt + y.toInt64.toInt < 2 ^ 63 →
+      (Ew.valStep Ew.add Ew.i64 nul.toUInt64 x y).toInt64.toInt = x.toInt64.toInt + y.toInt64.toInt) ∧
+    (-2 ^ 63 ≤ x.toInt64.toInt - y.toInt64.toInt → x.toInt64.toInt - y.toInt64.toInt < 2 ^ 63 →
+      (Ew.valStep Ew.sub Ew.i64 nul.toUInt64 x y).toInt64.toInt = x.toInt64.toInt - y.toInt64.toInt) ∧
+    (∀ t : Bool, x = (if t then 1 else 0) →
+      (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 x y).toInt64.toInt = if t then y.toInt64.toInt else 0) := by
+  have hxn : x.toInt64 ≠ Int64.minValue := fun e => by rw [e] at hx; exact absurd hx (by decide)
+  have hyn : y.toInt64 ≠ Int64.minValue := fun e => by rw [e] at hy; exact absurd hy (by decide)
+  have hnul : (nul.toUInt64).toInt64 = Int64.minValue := rfl
+  have hyl := Int64.toInt_lt y.toInt64
+  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, Ew.add, Ew.sub, Ew.mul, hnul]
+  simp only [↓reduceIte]
+  refine ⟨fun h1 h2 => ?_, fun h1 h2 => ?_, fun t ht => ?_⟩ <;>
+    rw [if_neg (by simp; exact ⟨hxn, hyn⟩), Int64.toInt64_toUInt64]
+  · rw [Int64.toInt_add, bmod_small h1 h2]
+  · rw [Int64.toInt_sub, bmod_small h1 h2]
+  · subst ht; rw [Int64.toInt_mul]
+    cases t
+    · rw [show (if false = true then (1 : UInt64) else 0).toInt64.toInt = 0 by decide, Int.zero_mul]; rfl
+    · rw [show (if true = true then (1 : UInt64) else 0).toInt64.toInt = 1 by decide, Int.one_mul,
+        bmod_small (by omega) hyl]; rfl
+
+/-- `valStep` lesser and greater on longs are the signed minimum and maximum. -/
+theorem valStep_min_max (x y : UInt64) :
+    (Ew.valStep Ew.lesser Ew.i64 nul.toUInt64 x y).toInt64.toInt = min x.toInt64.toInt y.toInt64.toInt ∧
+    (Ew.valStep Ew.greater Ew.i64 nul.toUInt64 x y).toInt64.toInt = max x.toInt64.toInt y.toInt64.toInt := by
+  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, Ew.lesser, Ew.greater]
+  simp only [↓reduceIte, Int64.toInt64_toUInt64]
+  constructor <;> split <;> simp_all [Int64.lt_iff_toInt_lt] <;> omega
+
+/-- `int z`'s long, for `z` in a long's range, has the value `z`. -/
+theorem int_bits_toInt (z : Int) (h1 : -2 ^ 63 ≤ z) (h2 : z < 2 ^ 63) :
+    (Column.bitsAt (int z) 0 8).toInt64.toInt = z := by
+  rw [int, bitsAt_one, Int64.toInt64_toUInt64, Int64.toInt_ofInt, bmod_small h1 h2]
+
 /-- **A sum's new position**, `rl + τ·(rr - rl)` on longs below `2^63`, `τ` the tag as `1`/`0`: `rr` at a
     set tag, `rl` at a clear one — no step reads q's null `0N`. -/
 theorem valStep_tau_pick (t : Bool) {x y : UInt64} (hx : x.toNat < 2 ^ 63) (hy : y.toNat < 2 ^ 63) :
     Ew.valStep Ew.add Ew.i64 nul.toUInt64 x (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0)
       (Ew.valStep Ew.sub Ew.i64 nul.toUInt64 y x)) = if t then y else x := by
-  have hx' : x < 0x8000000000000000 := UInt64.lt_iff_toNat_lt.2 (by simpa using hx)
-  have hy' : y < 0x8000000000000000 := UInt64.lt_iff_toNat_lt.2 (by simpa using hy)
-  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, nul, ↓reduceIte]
-  cases t <;> (try simp only [↓reduceIte]) <;> bv_decide
-
-/-- **A sum's side bound** `(l - 1) + τ·(r - l)` on longs below `2^63`: the tagged side's count less one. -/
-theorem valStep_tau_bound (t : Bool) {L R : UInt64} (hL : L.toNat < 2 ^ 63) (hR : R.toNat < 2 ^ 63) :
-    Ew.valStep Ew.add Ew.i64 nul.toUInt64 (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) (R - L))
-      (L - 1) = (if t then R else L) - 1 := by
-  have hL' : L < 0x8000000000000000 := UInt64.lt_iff_toNat_lt.2 (by simpa using hL)
-  have hR' : R < 0x8000000000000000 := UInt64.lt_iff_toNat_lt.2 (by simpa using hR)
-  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, nul, ↓reduceIte]
-  cases t <;> (try simp only [↓reduceIte]) <;> bv_decide
-
-/-- A long clamped below `-1` and then above `0` is `0`: the position into a side of no values. -/
-theorem valStep_clamp_empty (x : UInt64) :
-    Ew.valStep Ew.greater Ew.i64 nul.toUInt64 (Ew.valStep Ew.lesser Ew.i64 nul.toUInt64 x (0 - 1)) 0 = 0 := by
-  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, nul, ↓reduceIte]
-  bv_decide
-
-/-- A long below `2^63` plus `0 + τ·0` is itself. -/
-theorem valStep_add_tau_zero (t : Bool) {c : UInt64} (hc : c.toNat < 2 ^ 63) :
-    Ew.valStep Ew.add Ew.i64 nul.toUInt64 c (Ew.valStep Ew.add Ew.i64 nul.toUInt64
-      (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) 0) 0) = c := by
-  have hc' : c < 0x8000000000000000 := UInt64.lt_iff_toNat_lt.2 (by simpa using hc)
-  simp (config := {decide := true}) only [Ew.valStep, Ew.intStep, Ew.signed, nul, ↓reduceIte]
-  cases t <;> (try simp only [↓reduceIte]) <;> bv_decide
-
-/-- `int` of a difference of two naturals is their difference as longs. -/
-theorem int_sub_bits (a b : Nat) : Column.bitsAt (int ((a : Int) - b)) 0 8 = UInt64.ofNat a - UInt64.ofNat b := by
-  rw [int, bitsAt_one]
-  apply UInt64.toBitVec_inj.1
-  apply BitVec.eq_of_toNat_eq
-  simp [BitVec.toNat_sub]
-
-/-- A long clamped into `[0, c - 1]` by `valStep` lesser then greater, `c < 2^63`: `0` at `c = 0`. -/
-theorem valStep_clamp_side (X : UInt64) {c : Nat} (hc : c < 2 ^ 63) :
-    Ew.valStep Ew.greater Ew.i64 nul.toUInt64 (Ew.valStep Ew.lesser Ew.i64 nul.toUInt64 X (UInt64.ofNat c - 1)) 0 =
-      UInt64.ofNat (min (max X.toInt64.toInt 0).toNat (c - 1)) := by
-  rcases Nat.eq_zero_or_pos c with rfl | hpos
-  · rw [show UInt64.ofNat 0 - 1 = 0 - 1 from rfl, valStep_clamp_empty]; simp
-  · have e : UInt64.ofNat c - 1 = UInt64.ofNat (c - 1) := by
-      apply UInt64.toBitVec_inj.1; apply BitVec.eq_of_toNat_eq
-      simp [BitVec.toNat_sub]; omega
-    rw [e]; exact valStep_clamp X (by omega)
+  have ex := toInt64_toInt hx; have ey := toInt64_toInt hy
+  have hs := (valStep_int (x := y) (y := x) (by omega) (by omega)).2.1 (by omega) (by omega)
+  have hm := (valStep_int (x := if t then 1 else 0) (y := Ew.valStep Ew.sub Ew.i64 nul.toUInt64 y x)
+    (by cases t <;> decide) (by rw [hs]; omega)).2.2 t rfl
+  rw [hs] at hm
+  have ha := (valStep_int (x := x) (y := Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0)
+    (Ew.valStep Ew.sub Ew.i64 nul.toUInt64 y x)) (by omega) (by rw [hm]; split <;> omega)).1
+    (by rw [hm]; split <;> omega) (by rw [hm]; split <;> omega)
+  apply u64_ext
+  rw [ha, hm]
+  cases t <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega
 
 /-- **`place` read back** at the sides' counts: row `k`'s position clamped into `[0, c - 1]`, `c` the count
     of the row's side — what `Vals.row` reads a sum row at, and never q's null `0N`. -/
@@ -437,23 +448,49 @@ theorem place_get {a b : Obj} {n : USize} (x : Vals (.sum a b) n) (hl : x.1.toNa
         ((if x.2.2.1.get k then x.2.1.toNat else x.1.toNat) - 1)) := by
   obtain ⟨l, r, tag, idx, xa, xb⟩ := x
   dsimp only at hl hr ⊢
-  have e0 : Column.bitsAt (int ((l.toNat : Int) - 1)) 0 8 = UInt64.ofNat l.toNat - 1 := by
-    simpa using int_sub_bits l.toNat 1
-  have ez : Column.bitsAt (int 0) 0 8 = 0 := by rw [int, bitsAt_one]; rfl
-  have eL : (UInt64.ofNat l.toNat).toNat < 2 ^ 63 := by rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hl)]; exact hl
-  have eR : (UInt64.ofNat r.toNat).toNat < 2 ^ 63 := by rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hr)]; exact hr
+  have hv : min (max (idx.get k).toInt 0).toNat ((if tag.get k then r.toNat else l.toNat) - 1) < 2 ^ 63 := by
+    split <;> omega
   unfold place
   rw [Arr.get_long_bytes _ rfl]
   dsimp only
   rw [UInt64.toUInt64_toInt64]
   simp only [val_vv_get _ _ _ _ k.2, val_va_get _ _ _ _ k.2, widen_bits_get _ _ k.2, longsOf_get _ k.2,
-    int_sub_bits, e0, ez, ← Arr.get_bool_bits _ (KernelWF.enc_tagBits tag) k]
-  rw [valStep_tau_bound _ eL eR,
-    show (if tag.get k then UInt64.ofNat r.toNat else UInt64.ofNat l.toNat) =
-      UInt64.ofNat (if tag.get k then r.toNat else l.toNat) by split <;> rfl,
-    valStep_clamp_side _ (by split <;> assumption), Int64.toInt64_toUInt64]
-  refine valStep_add_tau_zero _ ?_
-  rw [UInt64.toNat_ofNat_of_lt' (by split <;> omega)]; split <;> omega
+    ← Arr.get_bool_bits _ (KernelWF.enc_tagBits tag) k]
+  have e0 := int_bits_toInt ((l.toNat : Int) - 1) (by omega) (by omega)
+  have e1 := int_bits_toInt ((r.toNat : Int) - l.toNat) (by omega) (by omega)
+  have ez := int_bits_toInt 0 (by decide) (by decide)
+  have eI := congrArg Int64.toInt (Int64.toInt64_toUInt64 (idx.get k))
+  generalize Column.bitsAt (int ((r.toNat : Int) - l.toNat)) 0 8 = K1 at e1 ⊢
+  generalize Column.bitsAt (int ((l.toNat : Int) - 1)) 0 8 = K0 at e0 ⊢
+  generalize Column.bitsAt (int 0) 0 8 = Z at ez ⊢
+  generalize (idx.get k).toUInt64 = I at eI ⊢
+  generalize tag.get k = t at hv ⊢
+  have hT : -2 ^ 63 < (if t then (1 : UInt64) else 0).toInt64.toInt := by cases t <;> decide
+  have m1 := (valStep_int (y := K1) hT (by omega)).2.2 t rfl
+  rw [e1] at m1
+  have l1 := (valStep_int (y := K0) (by rw [m1]; split <;> omega) (by omega)).1
+    (by rw [m1]; split <;> omega) (by rw [m1]; split <;> omega)
+  rw [m1, e0] at l1
+  have mz := (valStep_int (y := Z) hT (by omega)).2.2 t rfl
+  rw [ez] at mz
+  have az := (valStep_int (y := Z) (by rw [mz]; split <;> decide) (by omega)).1
+    (by rw [mz]; split <;> omega) (by rw [mz]; split <;> omega)
+  rw [mz, ez] at az
+  generalize Ew.valStep Ew.add Ew.i64 nul.toUInt64 (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) K1) K0
+    = LIN at l1 ⊢
+  generalize Ew.valStep Ew.add Ew.i64 nul.toUInt64 (Ew.valStep Ew.mul Ew.i64 nul.toUInt64 (if t then 1 else 0) Z) Z
+    = Z2 at az ⊢
+  have hles := (valStep_min_max I LIN).1
+  generalize Ew.valStep Ew.lesser Ew.i64 nul.toUInt64 I LIN = LES at hles ⊢
+  have hgre := (valStep_min_max LES Z).2
+  generalize Ew.valStep Ew.greater Ew.i64 nul.toUInt64 LES Z = G at hgre ⊢
+  have hfin := (valStep_int (x := G) (y := Z2) (by rw [hgre]; omega) (by rw [az]; split <;> omega)).1
+    (by rw [hgre, az]; split <;> omega) (by rw [hgre, hles, az, ez, l1]; split <;> omega)
+  apply u64_ext
+  rw [hfin, toInt64_toInt (x := UInt64.ofNat _)
+      (by rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hv)]; exact hv),
+    UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hv), hgre, hles, az, ez, l1, eI]
+  cases t <;> simp only [Bool.false_eq_true, ↓reduceIte] <;> omega
 
 /-- `filterMap` of a two-way choice is the kept elements, mapped. -/
 theorem filterMap_ite {α β : Type} (P : α → Bool) (f : α → Option β) (g : α → β) :
@@ -497,9 +534,12 @@ theorem tau_pick_get (tb rr rl : ByteArray) (m : USize) (q : Fin m.toNat)
   rw [Arr.get_long_bytes _ rfl]
   show (Column.bitsAt (Kernel.Ew.val Ew.add Ew.i64 Ew.vv nul rl _ m) (q.1 * 8) 8).toInt64.toInt = _
   rw [val_vv_get _ _ _ _ q.2, val_vv_get _ _ _ _ q.2, widen_bits_get _ _ q.2]
-  unfold sub; rw [val_vv_get _ _ _ _ q.2, valStep_tau_pick _ hl hr]
-  cases Column.bitAt tb q.1 <;> simp only [Bool.false_eq_true, ↓reduceIte] <;>
-    first | exact toInt64_toInt hr | exact toInt64_toInt hl
+  rw [show sub m rr rl = Kernel.Ew.val Ew.sub Ew.i64 Ew.vv nul rr rl m from rfl, val_vv_get _ _ _ _ q.2]
+  have e := valStep_tau_pick (Column.bitAt tb q.1) hl hr
+  rw [e]
+  cases Column.bitAt tb q.1
+  · simp only [Bool.false_eq_true, ↓reduceIte]; exact toInt64_toInt hl
+  · simp only [↓reduceIte]; exact toInt64_toInt hr
 
 /-- A side of no values or of `k`, read at the position `I` clamped into it, is the side read at `I`
     clamped into `[0, k - 1]` where that is a row, else the side's `dflt`. -/
@@ -533,6 +573,7 @@ theorem pick_side_row {c : Obj} {k : USize} (xc : Vals c k) (il : ByteArray) (hi
     ih ⟨t, by omega⟩]
   simp only [e]
 
+set_option maxHeartbeats 2000000 in
 /-- **`Vals.pick` read back at a sum side**, from its two sides': each picked row keeps its tag (a miss
     reads `inl`), and reads its own side at its old position clamped, now at its rank among its side's rows. -/
 theorem pick_row_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
@@ -573,20 +614,22 @@ theorem pick_row_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
     split
     · rename_i hin
       rw [place_get _ hl hr]; dsimp only
+      have hv0 : min (max (idx.get ⟨_, hin⟩).toInt 0).toNat
+          ((if tag.get ⟨_, hin⟩ then r.toNat else l.toNat) - 1) < 2 ^ 63 := by split <;> omega
       have hv : (UInt64.ofNat (min (max (idx.get ⟨_, hin⟩).toInt 0).toNat
           ((if tag.get ⟨_, hin⟩ then r.toNat else l.toNat) - 1))).toNat < 2 ^ 63 := by
-        have hv : min (max (idx.get ⟨_, hin⟩).toInt 0).toNat
-            ((if tag.get ⟨_, hin⟩ then r.toNat else l.toNat) - 1) < 2 ^ 63 := by split <;> omega
-        rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hv)]; exact hv
+        rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hv0)]; exact hv0
       have hn : ¬ (UInt64.ofNat (min (max (idx.get ⟨_, hin⟩).toInt 0).toNat
           ((if tag.get ⟨_, hin⟩ then r.toNat else l.toNat) - 1))).toInt64 = nul := fun e => by
         have := toInt64_toInt hv; rw [e] at this
         have : nul.toInt = -9223372036854775808 := by decide
         omega
-      rw [if_neg hn, UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 (Nat.lt_of_lt_of_le hv (Nat.le_refl _)))]
-      exact UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 (by split <;> omega))
+      rw [if_neg hn]; exact UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hv0)
     · have eI : Column.bitsAt (int (l.toNat : Int)) 0 8 = UInt64.ofNat l.toNat := by
-        simpa using int_sub_bits l.toNat 0
+        apply u64_ext
+        rw [int_bits_toInt _ (by omega) (by omega),
+          toInt64_toInt (by rw [UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hl)]; exact hl),
+          UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hl)]
       rw [long_default, Int64.toInt64_toUInt64, if_pos rfl, eI, UInt64.toNat_ofNat_of_lt' (lt_size_of_lt63 hl)]
   have hrr : ∀ t (ht : t < m.toNat), (Column.bitsAt (sub m (sums m (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m))
       (Kernel.Ew.widen Ew.bits Ew.i64 nul nul tb m)) (t * 8) 8).toNat =
@@ -613,11 +656,13 @@ theorem pick_row_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
     · simp only [hin, ↓reduceDIte]; cases s <;> cases tag.get ⟨_, hin⟩ <;> simp
     · simp only [hin, ↓reduceDIte]; cases s <;> simp
   have hfa' : Vals.PickFits a xa (((List.range m.toNat).filter fun t => !Column.bitAt tb t).map P) := by
-    rw [List.filter_congr (q := fun t => Column.bitAt tb t == false) (fun t _ => by cases Column.bitAt tb t <;> rfl),
+    rw [List.filter_congr (q := fun t => Column.bitAt tb t == false) (fun t _ => by
+        show (!Column.bitAt tb t) = (Column.bitAt tb t == false); cases Column.bitAt tb t <;> rfl),
       ← hside false]
     exact hfa
-  have hfb' : Vals.PickFits b xb (((List.range m.toNat).filter Column.bitAt tb).map P) := by
-    rw [List.filter_congr (q := fun t => Column.bitAt tb t == true) (fun t _ => by cases Column.bitAt tb t <;> rfl),
+  have hfb' : Vals.PickFits b xb (((List.range m.toNat).filter (Column.bitAt tb)).map P) := by
+    rw [List.filter_congr (q := fun t => Column.bitAt tb t == true) (fun t _ => by
+        show Column.bitAt tb t = (Column.bitAt tb t == true); cases Column.bitAt tb t <;> rfl),
       ← hside true]
     exact hfb
   have hGL := gather_whereBits p (Ew.notBits m tb) m hpl
@@ -637,11 +682,63 @@ theorem pick_row_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
   have hidx := tau_pick_get tb _ _ m q (by rw [hrr q q.2]; have := List.length_filter_le (Column.bitAt tb) (List.range q.1); simp only [List.length_range] at this; omega)
     (by rw [hrl q q.2]; have := List.length_filter_le (fun s => !Column.bitAt tb s) (List.range q.1); simp only [List.length_range] at this; omega)
   rw [hrr q q.2, hrl q q.2] at hidx
+  have hq0 : (pickArr .boolean ⟨n, tag⟩ i m h).get q = Column.bitAt tb q.1 := by
+    rw [← htb]; exact Arr.get_bool_bits _ (KernelWF.enc_tagBits _) q
+  have hb := hF q q.2
+  subst hpd htb
   simp only [Vals.pick, Vals.pickShared, need]
-  simp only [hpd, htb]
   rw [dif_pos ⟨hilU, hirU⟩]
-  simp only [Vals.row]
-  rw [Arr.get_bool_bits _ (KernelWF.enc_tagBits _) q, htb]
-  sorry
+  simp only [Vals.row, hq0]
+  by_cases hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat
+  · rw [dif_pos hin] at hb ⊢
+    simp only [hb] at hidx ⊢
+    cases ht : tag.get ⟨_, hin⟩
+    · simp only [ht, Bool.false_eq_true, ↓reduceIte] at hidx ⊢
+      congr 1
+      rw [clamp_row xa]
+      refine (pick_side_row (q := q.1) xa _ hilU _ P hGL (fun z => iha _ _ _ ?_ z) hidx ?_).trans ?_
+      · rw [USize.toNat_ofNat_of_lt' hilU, hGL]; exact hfa'
+      · refine filter_range_rank _ q.2 ?_; simp [hb, ht]
+      · have hPq : P q = min (max (idx.get ⟨_, hin⟩).toInt 0).toNat (l.toNat - 1) := by
+          simp only [P, hin, ↓reduceDIte, ht, Bool.false_eq_true, ↓reduceIte]
+        simp only [hPq]
+    · simp only [ht, ↓reduceIte] at hidx ⊢
+      congr 1
+      rw [clamp_row xb]
+      refine (pick_side_row (q := q.1) xb _ hirU _ P hGR (fun z => ihb _ _ _ ?_ z) hidx ?_).trans ?_
+      · rw [USize.toNat_ofNat_of_lt' hirU, hGR]; exact hfb'
+      · refine filter_range_rank _ q.2 ?_; simp [hb, ht]
+      · have hPq : P q = min (max (idx.get ⟨_, hin⟩).toInt 0).toNat (r.toNat - 1) := by
+          simp only [P, hin, ↓reduceDIte, ht, ↓reduceIte]
+        simp only [hPq]
+  · rw [dif_neg hin] at hb ⊢
+    simp only [hb, Bool.false_eq_true, ↓reduceIte] at hidx ⊢
+    show Sum.inl _ = Sum.inl a.dflt
+    congr 1
+    refine (pick_side_row (q := q.1) xa _ hilU _ P hGL (fun z => iha _ _ _ ?_ z) hidx ?_).trans ?_
+    · rw [USize.toNat_ofNat_of_lt' hilU, hGL]; exact hfa'
+    · exact filter_range_rank _ q.2 (by simp [hb])
+    · have hPq : P q = l.toNat := by simp only [P, hin, ↓reduceDIte]
+      simp only [hPq, Nat.lt_irrefl, ↓reduceDIte]
+
+/-- **`Vals.pick` read back**, at every side: row `q` of `x` picked at `i` is `x`'s row `i[q]` where that is
+    below the count, else `Obj.dflt` — under `Vals.PickFits` at the rows `i` names. -/
+theorem pick_row : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) → (m : USize) →
+    (h : len i = m.toNat) →
+    Vals.PickFits A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) →
+    ∀ q : Fin m.toNat, (Vals.pick A x i m h).row q =
+      if hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat then x.row ⟨_, hin⟩ else A.dflt
+  | .atom _, n, x, i, m, h, hf, q => by
+    by_cases hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat
+    · rw [dif_pos hin]; exact pick_row_atom x i m h q hin
+    · exact pick_row_atom_dflt x (hf ⟨_, List.mem_map.2 ⟨q.1, List.mem_range.2 q.2, rfl⟩, Nat.le_of_not_lt hin⟩)
+        i m h q
+  | .prod a b, _, x, i, m, h, hf, q =>
+    pick_row_prod_dflt x i m h q (pick_row a x.1 i m h hf.1 q) (pick_row b x.2 i m h hf.2 q)
+  | .arr b, _, x, i, m, h, hf, q => pick_row_arr x (fun i m h hf q => pick_row b x.2.2.2 i m h hf q) i m h hf q
+  | .sum a b, _, x, i, m, h, hf, q =>
+    pick_row_sum x (fun i m h hf q => pick_row a _ i m h hf q) (fun i m h hf q => pick_row b _ i m h hf q) i m h hf q
+
+#print axioms pick_row
 
 end LeetQ.Rel.Alg
