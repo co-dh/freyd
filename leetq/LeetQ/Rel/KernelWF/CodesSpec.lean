@@ -170,7 +170,70 @@ theorem groupOf_eq_groupOf {g : Nat → UInt64} {m i j : Nat} (hi : i < m) (hj :
     Verify.groupOf g m i = Verify.groupOf g m j ↔ g i = g j := by
   rw [Verify.groupOf_eq_iff (g := g) hi (Verify.groupOf_lt (g := g) hj), Verify.groupOf_get (g := g) hj]
 
+/-- `groupIdsColumn` of a small integral payload: a dense one by `groupIds`, an encoded one by
+    `groupIdsFoR`. -/
+theorem groupIdsColumn_small_int {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (n : USize) :
+    (∀ b, groupIdsColumn t n (.bytes b) = some (Order.groupIds k n b)) ∧
+      ∀ md pk, groupIdsColumn t n (.foR md pk) = some (Order.groupIdsFoR k n md pk) := by
+  rcases hk with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;>
+    exact ⟨fun b => by simp [groupIdsColumn, orderKind, Enc.bytesOf], fun md pk => by simp [groupIdsColumn, orderKind]⟩
+
+/-- A small integral payload's raw word `i`: a dense one's `w` bytes at `i·w`, an encoded one's `foRBits`. -/
+theorem raw_small_int {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) {n : USize} {i : Nat} (hi : i < n.toNat) :
+    (∀ b, (Enc.raw t n (.bytes b)).toList.getD i 0 = Column.bitsAt b (i * k.width) k.width) ∧
+      ∀ md pk, (Enc.raw t n (.foR md pk)).toList.getD i 0 = Column.foRBits md pk (Column.blockStarts md) i := by
+  rcases hk with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;>
+    exact ⟨fun b => by simp [Enc.raw, QAtomicType.width, Scan.Kind.width, List.getD_eq_getElem?_getD, hi],
+      fun md pk => by simp [Enc.raw, QAtomicType.width, List.getD_eq_getElem?_getD, hi]⟩
+
+/-- **One part of a small integral side: its codes are faithful.** Part `0`'s codes at `i` and `j` agree
+    exactly when the rows do, the part dense or Frame-of-Reference encoded. -/
+theorem codes_small_int_faithful {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (x : Part (.atom t)) {i j : Nat} (hi : i < x.1.toNat)
+    (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  obtain ⟨p, hp, hc⟩ := codes_small_int ht hk x
+  have hn64 : x.1.toNat < 2 ^ 64 := Verify.usize_lt x.1
+  have hk0 : k ≠ .bit := by rcases hk with rfl | rfl | rfl <;> decide
+  have hkw : k.width ≤ 8 := by rcases hk with rfl | rfl | rfl <;> decide
+  have hM : 2 ^ (8 * k.width) ≤ 2 ^ 64 := Nat.pow_le_pow_right (by decide) (by omega)
+  rw [hc, Vals.row_atom, Vals.row_atom, small_int_get ht hk, small_int_get ht hk, small_int_read ht hk]
+  obtain ⟨b, he⟩ | ⟨md, pk, he⟩ := small_int_enc ht hk x.2
+  · rw [he, (groupIdsColumn_small_int ht hk x.1).1 b, Option.some_inj] at hp
+    subst hp
+    have hav : min x.1.toNat (k.avail b) = x.1.toNat := by
+      have hs := x.2.wf; rw [he] at hs
+      rcases hk with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;>
+        simp_all [Enc.WF, QAtomicType.width, Scan.Kind.avail, Scan.Kind.width]
+    have hspec := Verify.groupIds_spec k x.1 b
+    rw [hav] at hspec
+    rw [ofIds_groupOf (Order.keyAt k b) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+      ofIds_groupOf (Order.keyAt k b) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+      groupOf_eq_groupOf hi hj, Verify.keyAt_eq_iff (by rcases hk with rfl | rfl | rfl <;> simp) b i j, he,
+      (raw_small_int ht hk hi).1 b, (raw_small_int ht hk hj).1 b,
+      Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ hkw), Nat.mod_eq_of_lt (Verify.bitsAt_lt _ _ _ hkw)]
+    exact UInt64.toNat_inj.symm
+  · rw [he, (groupIdsColumn_small_int ht hk x.1).2 md pk, Option.some_inj] at hp
+    subst hp
+    have hspec := Verify.groupIdsFoR_spec k hk0 x.1 md pk
+    rw [ofIds_groupOf (foRKey k md pk) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+      ofIds_groupOf (foRKey k md pk) x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+      groupOf_eq_groupOf hi hj, he, (raw_small_int ht hk hi).2 md pk, (raw_small_int ht hk hj).2 md pk]
+    simp only [foRKey]
+    have hrank : ∀ a c : UInt64, Order.rank k a = Order.rank k c ↔ a = c := fun a c => by
+      rcases hk with rfl | rfl | rfl <;> simp only [Order.rank] <;> first | exact Iff.rfl | exact UInt64.xor_left_inj _
+    rw [hrank]
+    constructor
+    · intro h; have := congrArg UInt64.toNat h
+      simpa [Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le (Nat.mod_lt _ (Nat.two_pow_pos _)) hM)] using this
+    · intro h; rw [h]
+
 #print axioms codes_boolean_faithful
 #print axioms codes_boolean_wf
+#print axioms codes_small_int_faithful
 
 end LeetQ.Rel.Alg
