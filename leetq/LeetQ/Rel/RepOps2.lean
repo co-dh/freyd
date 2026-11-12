@@ -23,6 +23,12 @@ local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl :
     ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
       ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
 
+/-- Two boolean parts' codes are faithful and well formed: the codes are the bits (`codes_boolean_faithful`/`_wf`). -/
+theorem codesOK_boolean (ps : Vector (Part (.atom .boolean)) 2) : codesOK(Obj.codes (.atom .boolean) ps, ps) :=
+  ⟨fun hk hl _ _ hi hj => codes_boolean_faithful ps hk hl hi hj, fun hk =>
+    have h := codes_boolean_wf ps hk
+    ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
+
 /-! ## `antiJoin`: the rows of `R` whose value is no value of `T` -/
 
 section AntiJoin
@@ -95,13 +101,87 @@ theorem rep_antiJoin_boolean {t : QAtomicType} (R : Rel (.atom t) (.atom .boolea
     (T : Rel (.atom .boolean) (.atom .boolean)) :
     rep (antiJoin R T) =
       rep R ≫ corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b :=
-  rep_antiJoin_atoms R T ⟨fun hk hl _ _ hi hj => codes_boolean_faithful _ hk hl hi hj, fun hk =>
-    have h := codes_boolean_wf avp(.atom .boolean, R, T) hk
-    ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
+  rep_antiJoin_atoms R T (codesOK_boolean _)
 
 end AntiJoin
 
+/-! ## `entire`, `surjective`: `idU U ⊑ dom R` -/
+
+section Entire
+
+open QLean.Verify
+
+-- the two relations as parts of a product side, `RepOps`' `pcs` with the sides named
+set_option hygiene false in
+local notation "pcs(" X ", " Y ", " R ", " S ")" =>
+  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod X Y)) 2)
+-- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it
+set_option hygiene false in
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+set_option hygiene false in
+local notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
+    Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
+      Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+  (let c := c1(X, n, x)
+   (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+
+/-- `U? ⊑ dom S`, both coreflexives: every element `U` lists has an image under `S`. -/
+theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) :
+    corefl P ⊑ corefl (fun a => ∃ b, S a b) ↔ ∀ a, P a → ∃ b, S a b := by
+  rw [le_iff]
+  exact ⟨fun h a ha => (h a a ⟨rfl, ha⟩).2, fun h a b ⟨e, ha⟩ => ⟨e, h a ha⟩⟩
+
+/-- **`entire R U = true ↔ U? ⊑ dom (rep R)`**: every element `U` lists has an image under `rep R`. `entire` is
+    `idU U ⊑ dom R` (`rep_le`, `rep_idU`, `rep_dom`). Hypotheses: `rep_le`'s joint pair codes of `idU U` and
+    `dom R`, `rep_dom`'s on `R.key`. -/
+theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
+    (hc : codesOK(pairs #v[idU U, dom R], pcs(A, A, idU U, dom R))) (hK : oneOK(A, R.n, R.key))
+    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
+  show (idU U ⊑ dom R) = true ↔ _
+  rw [rep_le _ _ hc, rep_idU, rep_dom R hK hp]
+  exact corefl_le_dom _ _
+
+/-- **`surjective R U = true ↔ U? ⊑ ran (rep R)`**: `entire R° U` (`rep_entire`, `convArr_holds`). Hypotheses:
+    `rep_entire`'s at `R°`, whose keys are `R.val`. -/
+theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
+    (hc : codesOK(pairs #v[idU U, dom (R°)], pcs(B, B, idU U, dom (R°)))) (hK : oneOK(B, R.n, R.val))
+    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
+  (rep_entire (R°) U hc hK hp).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
+    convArr_holds R.key R.val _ _)
+
+/-- The joint pair codes of two boolean relations from the bits: `pairsOK_of_parts`, only the summed count left. -/
+theorem pairsOK_boolean (R S : Rel (.atom .boolean) (.atom .boolean)) (hN : R.n.toNat + S.n.toNat < USize.size) :
+    codesOK(pairs #v[R, S], pcs(.atom .boolean, .atom .boolean, R, S)) :=
+  pairsOK_of_parts R S ⟨codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
+    codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
+    by simpa using hN⟩
+
+/-- `rep_entire` with boolean keys: the universe and `dom R` together below `USize.size` rows is all that is left. -/
+theorem rep_entire_boolean (R : Rel (.atom .boolean) B) {m : USize} (U : Vals (.atom .boolean) m)
+    (hN : m.toNat + (dom R).n.toNat < USize.size) :
+    entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
+  show (idU U ⊑ dom R) = true ↔ _
+  rw [rep_le _ _ (pairsOK_boolean _ _ hN), rep_idU, rep_dom_boolean]
+  exact corefl_le_dom _ _
+
+/-- `rep_surjective` with boolean values: `rep_entire_boolean` at `R°`. -/
+theorem rep_surjective_boolean (R : Rel A (.atom .boolean)) {m : USize} (U : Vals (.atom .boolean) m)
+    (hN : m.toNat + (dom (R°)).n.toNat < USize.size) :
+    surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
+  (rep_entire_boolean (R°) U hN).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
+    convArr_holds R.key R.val _ _)
+
+end Entire
+
 #print axioms rep_antiJoin
 #print axioms rep_antiJoin_boolean
+#print axioms rep_entire
+#print axioms rep_surjective
+#print axioms rep_entire_boolean
+#print axioms rep_surjective_boolean
 
 end LeetQ.Rel.Rep
