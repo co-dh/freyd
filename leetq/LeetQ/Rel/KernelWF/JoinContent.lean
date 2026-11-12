@@ -6,6 +6,7 @@ import LeetQ.Rel.KernelWF.JoinSpec
 import QLean.Verify.Chain
 import QLean.Verify.ScanOver
 import QLean.Verify.BinWin
+import QLean.Verify.Structural
 
 namespace LeetQ.Rel.Alg
 
@@ -119,6 +120,61 @@ theorem classSizes_ids (n : USize) (g : ByteArray × ByteArray) (hg : len g.2 < 
   simp only [need, dif_pos hg]
   rw [groupSizes_spec, USize.toNat_ofNat_of_lt' hg, lane_toNat (idWidthOf_le _)]
 
+/-- **Position `p` of the runs `t` repeated `c t` times, `t < m`, is the `t` whose run covers it**: the
+    total of the earlier runs is at most `p` and `p` is short of that total plus `c t`. -/
+theorem flatMap_replicate_get (c : Nat → Nat) (m p : Nat) (hp : p < ((List.range m).map c).sum) :
+    ∃ t < m, ((List.range t).map c).sum ≤ p ∧ p < ((List.range t).map c).sum + c t ∧
+      ((List.range m).flatMap fun t => List.replicate (c t) t)[p]? = some t := by
+  induction m with
+  | zero => simp at hp
+  | succ m ih =>
+    have hlen : ((List.range m).flatMap fun t => List.replicate (c t) t).length = ((List.range m).map c).sum := by
+      simp [List.length_flatMap]
+    rw [List.range_succ, List.map_append] at hp
+    simp at hp
+    rw [List.range_succ, List.flatMap_append]
+    by_cases h : p < ((List.range m).map c).sum
+    · obtain ⟨t, ht, h1, h2, h3⟩ := ih h
+      exact ⟨t, by omega, h1, h2, by rw [List.getElem?_append_left (by rw [hlen]; exact h)]; exact h3⟩
+    · refine ⟨m, by omega, by omega, by omega, ?_⟩
+      rw [List.getElem?_append_right (by rw [hlen]; omega), hlen]
+      simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.getElem?_replicate]
+      rw [if_pos (by omega)]
+
+/-- **`expand`'s index column, read back**: row `t` of the count column repeated its count's times, in row
+    order — `expandBytes` of `til n`, each count below `2^63`, every row below `n`. -/
+theorem expand_idx {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
+    (hc : ∀ t < len cnt, (Column.bitsAt cnt (t * 8) 8).toNat < 2 ^ 63) :
+    ids (expandBytes 8 0 (tilLongs n) cnt) =
+      (List.range (len cnt)).flatMap fun t => List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t := by
+  have hid : ∀ d, ids d = (elemsW 8 d).map UInt64.toNat := fun d => by
+    simp only [ids, elemsW, List.map_map, Function.comp_def]
+  have h8 : (8 : USize).toNat = 8 := KernelWF.toNat_small 8 (by decide)
+  have hs := expandBytes_spec 8 (by rw [h8]; decide) (Nat.le_of_eq h8) 0 (by rw [h8]; decide) (tilLongs n) cnt
+  rw [h8] at hs
+  have htil : ∀ t < n.toNat, ((elemsW 8 (tilLongs n)).getD t 0).toNat = t := fun t ht => by
+    have h := congrArg (·[t]?) (tilLongs_spec n)
+    simp only [List.getElem?_map, List.getElem?_range, ht] at h
+    rw [List.getD_eq_getElem?_getD]
+    cases e : (elemsW 8 (tilLongs n))[t]? with
+    | none => simp [e] at h
+    | some v => simp only [e, Option.map_some, Option.some.injEq] at h; simpa using h
+  rw [hid, hs, List.map_flatMap]
+  have key : ∀ m ≤ len cnt, ((List.range m).flatMap fun i =>
+      (List.replicate (Column.bitsAt cnt (i * 8) 8).toInt64.toInt.toNat ((elemsW 8 (tilLongs n)).getD i 0)).map
+        UInt64.toNat) = (List.range m).flatMap fun t => List.replicate (Column.bitsAt cnt (t * 8) 8).toNat t := by
+    intro m hm
+    induction m with
+    | zero => rfl
+    | succ m ih =>
+      rw [List.range_succ, List.flatMap_append, List.flatMap_append, ih (by omega)]
+      simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.map_replicate]
+      rw [toInt64_toInt (hc m (by omega)), htil m (by omega)]
+      rfl
+  exact key _ (Nat.le_refl _)
+
+#print axioms flatMap_replicate_get
+#print axioms expand_idx
 #print axioms add_get
 #print axioms sub_get
 #print axioms sums_get
