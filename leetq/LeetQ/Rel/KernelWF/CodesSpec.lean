@@ -5,10 +5,11 @@
   `card`, `card` a `USize` below a byte).
 -/
 import LeetQ.Rel.KernelWF.JoinSpec
+import LeetQ.Rel.KernelWF.PickSpec
 
 namespace LeetQ.Rel.Alg
 
-open QLean QLean.Kernel QLean.Verify LeetQ.Rel
+open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
 /-! ## Atoms: a boolean side -/
 
@@ -58,6 +59,116 @@ theorem codes_boolean_wf {p : Nat} (cs : Vector (Part (.atom .boolean)) p) {k : 
   refine ⟨rfl, rfl, by simpa [Enc.WF] using hw,
     fun _ => ⟨Nat.lt_of_lt_of_le (by decide : (2 : Nat) < 2 ^ 32) USize.le_size, fun i _ => ?_⟩⟩
   rw [idAt_one]; split <;> simp
+
+/-! ## Atoms: one part of an integral type below eight bytes
+
+`byte`, `char`, `short` and the four-byte types: `rangeOffsets` declines them (it takes the eight-byte
+kinds only), so `codes` interns nothing and groups: `groupIdsColumn`, ids by first appearance. -/
+
+/-- The integral sort kinds below eight bytes. -/
+theorem small_int_width {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) :
+    t.width = some k.width ∧ denseWidth t = some k.width ∧ t ≠ .general ∧ t ≠ .boolean ∧ t ≠ .symbol ∧
+      t ≠ .guid := by
+  cases t <;> simp [orderKind] at ht <;> subst ht <;> simp_all [QAtomicType.width, denseWidth, Scan.Kind.width]
+
+/-- **The atom a small integral column reads is its low `8·w` bits**: two raw words read as one element
+    exactly when they agree below `2^(8w)`. -/
+theorem small_int_read {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (d : Carrier t) (v u : UInt64) :
+    (Carrier.of? t (.atom (Column.atomOfBits t v (small_int_width ht hk).2.2.1))).getD d =
+        (Carrier.of? t (.atom (Column.atomOfBits t u (small_int_width ht hk).2.2.1))).getD d ↔
+      v.toNat % 2 ^ (8 * k.width) = u.toNat % 2 ^ (8 * k.width) := by
+  have e8 : ∀ a b : UInt64, a.toUInt8 = b.toUInt8 ↔ a.toNat % 2 ^ 8 = b.toNat % 2 ^ 8 := fun a b =>
+    ⟨fun h => by simpa using congrArg UInt8.toNat h, fun h => UInt8.toNat_inj.1 (by simpa using h)⟩
+  have e16 : ∀ a b : UInt64, a.toUInt16.toInt16 = b.toUInt16.toInt16 ↔ a.toNat % 2 ^ 16 = b.toNat % 2 ^ 16 :=
+    fun a b => ⟨fun h => by simpa using congrArg (fun z : Int16 => z.toUInt16.toNat) h,
+      fun h => congrArg UInt16.toInt16 (UInt16.toNat_inj.1 (by simpa using h))⟩
+  have e32 : ∀ a b : UInt64, a.toUInt32.toInt32 = b.toUInt32.toInt32 ↔ a.toNat % 2 ^ 32 = b.toNat % 2 ^ 32 :=
+    fun a b => ⟨fun h => by simpa using congrArg (fun z : Int32 => z.toUInt32.toNat) h,
+      fun h => congrArg UInt32.toInt32 (UInt32.toNat_inj.1 (by simpa using h))⟩
+  cases t <;> simp [orderKind] at ht <;> subst ht <;>
+    simp only [Column.atomOfBits, Carrier.of?, Option.getD_some, Scan.Kind.width] <;>
+    first | exact e8 v u | exact e16 v u | exact e32 v u | simp at hk
+
+/-- A small integral column's element `i` is its raw word `i` read as an atom (`get_eq_raw`). -/
+theorem small_int_get {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) {n : USize} (x : Arr t n) (i : Fin n.toNat) :
+    x.get i = (Carrier.of? t (.atom (Column.atomOfBits t ((Enc.raw t n x.enc).toList.getD i 0)
+      (small_int_width ht hk).2.2.1))).getD default := by
+  rw [Arr.get_ne x i (small_int_width ht hk).2.2.1, KernelWF.get_eq_raw (small_int_width ht hk).2.1 x.wf i.2]; rfl
+
+/-- A small integral column is dense or Frame-of-Reference encoded (`Enc.WF`). -/
+theorem small_int_enc {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) {n : USize} (x : Arr t n) :
+    (∃ b, x.enc = .bytes b) ∨ ∃ md pk, x.enc = .foR md pk := by
+  have hwf := x.wf
+  revert hwf
+  cases x.enc with
+  | bytes b => exact fun _ => .inl ⟨b, rfl⟩
+  | foR md pk => exact fun _ => .inr ⟨md, pk, rfl⟩
+  | _ => intro hwf; exfalso; rcases hk with rfl | rfl | rfl <;> cases t <;> simp_all [Enc.WF, orderKind, QAtomicType.width]
+
+/-- **One part of a small integral side is coded by `groupIdsColumn`**, read by `Code.ofIds`. -/
+theorem codes_small_int {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (x : Part (.atom t)) :
+    ∃ p, groupIdsColumn t x.1 x.2.enc = some p ∧
+      (Obj.codes (.atom t) #v[x])[0] = Code.ofIds (len p.2) x.1 p.1 := by
+  obtain ⟨hw, -, hg, hb, hs, hgu⟩ := small_int_width ht hk
+  have hne : ∀ d o ids, x.2.enc ≠ .enum d o ids := fun d o ids he => by
+    have := x.2.wf; rw [he] at this; cases t <;> simp_all [Enc.WF]
+  have hnb : ∀ b, x.2.enc ≠ .bits b := fun b he => by
+    have := x.2.wf; rw [he] at this; cases t <;> simp_all [Enc.WF]
+  have hns : ∀ b o, x.2.enc ≠ .syms b o := fun b o he => by
+    have := x.2.wf; rw [he] at this; cases t <;> simp_all [Enc.WF]
+  have hr : raze t #[x] = x := by unfold raze; simp [hg]
+  have hsome := KernelWF.groupIdsColumn_isSome hg x.2.wf fun d o ids he => by
+    exfalso; cases hc : x.2.enc <;> simp_all [Column.intern]
+  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
+  -- at a concrete type and payload constructor every branch test of `codes` reduces
+  obtain ⟨n, v, hv⟩ := x
+  cases v <;> try exact hv.elim
+  rename_i t' n' e a
+  obtain ⟨h1, h2, hwf⟩ := hv
+  subst h1 h2
+  rcases hk with rfl | rfl | rfl <;> cases t' <;> simp [orderKind] at ht <;>
+    cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
+    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes, Arr.enc]
+
+/-- `Code.ofIds` over ids packed by `Verify.groupOf g m` at the width of its class count reads `Verify.groupOf g m`, the
+    lane of no bits included (`Code.ofLane`'s bitmap of zeros). -/
+theorem ofIds_groupOf (g : Nat → UInt64) {m : Nat} (n : USize) (hm : m < 2 ^ 64) {ids fs : ByteArray}
+    (hids : ids = Column.packIds (Column.idWidthOf (Verify.firstsOf g m).length) m (Verify.groupOf g m))
+    (hfs : len fs = (Verify.firstsOf g m).length) {l : Nat} (hl : l < m) :
+    Column.idAt (Code.ofIds (len fs) n ids).b (Code.ofIds (len fs) n ids).w l = Verify.groupOf g m l := by
+  have hL : (Verify.firstsOf g m).length ≤ m := by simpa [Verify.firstsOf] using List.length_filter_le _ (List.range m)
+  have hw : (Verify.firstsOf g m).length - 1 < 2 ^ Column.idWidthOf (Verify.firstsOf g m).length := by
+    have h2 := Verify.lt_widthFor ((Verify.firstsOf g m).length - 1)
+    have h3 := Verify.widthFor_le ((Verify.firstsOf g m).length - 1) (by omega)
+    unfold Column.idWidthOf
+    generalize Column.widthFor ((Verify.firstsOf g m).length - 1) = w at h2 h3 ⊢
+    refine Nat.lt_of_lt_of_le h2 (Nat.pow_le_pow_right (by decide) ?_)
+    unfold Column.laneWidth; repeat' split
+    all_goals omega
+  have hb : Verify.groupOf g m l < 2 ^ Column.idWidthOf (Verify.firstsOf g m).length := by
+    have := Verify.groupOf_lt (g := g) hl; omega
+  have hp := Verify.idAt_packIds (w := Column.idWidthOf (Verify.firstsOf g m).length) (Verify.laneWidth_cases _) hl hb
+  rw [← hids] at hp
+  unfold Code.ofIds Code.ofLane
+  rw [hfs]
+  split
+  · next h0 =>
+    have h0' : Column.idWidthOf (Verify.firstsOf g m).length = 0 := by simpa using h0
+    rw [h0'] at hb
+    simp only [idAt_one]
+    have : Verify.groupOf g m l = 0 := by omega
+    rw [this]; simp [Column.bitAt, KernelWF.ba_get?, Array.getElem?_replicate] <;> split <;> simp
+  · exact hp
+
+/-- Two classes of `Verify.groupOf g m` agree exactly when the keys do. -/
+theorem groupOf_eq_groupOf {g : Nat → UInt64} {m i j : Nat} (hi : i < m) (hj : j < m) :
+    Verify.groupOf g m i = Verify.groupOf g m j ↔ g i = g j := by
+  rw [Verify.groupOf_eq_iff (g := g) hi (Verify.groupOf_lt (g := g) hj), Verify.groupOf_get (g := g) hj]
 
 #print axioms codes_boolean_faithful
 #print axioms codes_boolean_wf
