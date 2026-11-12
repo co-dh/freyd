@@ -156,7 +156,7 @@ theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
 set_option maxHeartbeats 800000 in
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**: `∪` razes the keys and the values, read back by `hA`, `hB`, so the razed
     relation holds the pairs of `R` and of `S` (`holds_two`), and its `nub` holds the same (`rep_nub`, whose code
-    hypotheses `hK`, `hV`, `hP`, `hk`, `hv` are stated on the razed relation). `hN`: the row count fits a `USize`
+    hypotheses `hK`, `hV`, `hk`, `hv` are stated on the razed relation). `hN`: the row count fits a `USize`
     (past it `∪` answers `𝟘`); `hNk`, `hNv`: the same count, as the two `raze`s state it. -/
 theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
     (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
@@ -181,17 +181,9 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
       ((vcU).w = 1 ∨ (vcU).w = 2 ∨ (vcU).w = 4 ∨ (vcU).w = 8 ∨ (vcU).w = 16 ∨ (vcU).w = 32 ∨ (vcU).w = 64) ∧
         (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
         ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hP : (pairCode true kcU vcU).2 = none →
-      let c := (pairCode true kcU vcU).1
-      ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (kcU).n ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-      ∀ i < (kcU).n.toNat, ∀ j < (kcU).n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ∧
-          Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j))
     (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
     rep (R ∪ S) = rep R ∪ rep S := by
-  rw [union_eq_nub R S hN hNk hNv, rep_nub (Uc) hK hV hP hk hv]
+  rw [union_eq_nub R S hN hNk hNv, rep_nub (Uc) hK hV hk hv]
   have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key hNk
   refine hom_ext fun a b => ?_
   rw [union_apply]
