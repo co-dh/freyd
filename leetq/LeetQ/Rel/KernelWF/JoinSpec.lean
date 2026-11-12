@@ -4,8 +4,7 @@
   read at its lane, `Column.idAt c.b c.w i`, which is a bit at `1`, a packed id at `2`/`4` and a dense
   little-endian element at `8 … 64` (`idAt_one`, `resAt_lane`).
 -/
-import LeetQ.Rel.Code
-import QLean.Verify.Ids
+import LeetQ.Rel.KernelWF.Lane
 import QLean.Verify.FindMember
 import QLean.Verify.SymFind
 import QLean.Verify.Encoding
@@ -25,15 +24,6 @@ theorem idxOf_map_inj {α β : Type} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq
     · have h' : f x ≠ f a := fun e => h (hf _ _ e)
       simp only [List.map_cons, List.idxOf_cons, ih, beq_false_of_ne h, beq_false_of_ne h']
 
-/-- A lane width as a `USize` keeps its value. -/
-theorem lane_toNat {w : Nat} (hw : w ≤ 64) : w.toUSize.toNat = w := KernelWF.toNat_small w hw
-
-/-- A payload holding `n` codes at `w ≠ 0` bits holds all of them: `idsCap` clamps nothing. -/
-theorem idsCap_full {b : ByteArray} {w n : Nat} (hw : 0 < w) (hs : w * n ≤ 8 * b.size) :
-    Column.idsCap b w n = n := by
-  unfold Column.idsCap
-  rw [if_neg (by omega), Nat.min_eq_left ((Nat.le_div_iff_mul_le hw).2 (by rw [Nat.mul_comm]; omega))]
-
 /-- **`findIdsVec` is `idxOf`**: at any two lanes, the long answered for needle `j` is the first
     position in the haystack's `hn` codes holding needle `j`'s code, one long per needle. -/
 theorem findIdsVec_spec {hw nw : Nat} {hn nn : USize} {hay ndl : ByteArray}
@@ -48,11 +38,6 @@ theorem findIdsVec_spec {hw nw : Nat} {hn nn : USize} {hay ndl : ByteArray}
   obtain ⟨hz, hv⟩ := findIdsVec_idxOf hw.toUSize nw.toUSize hn nn hay ndl (by rw [h1]; omega) (by rw [h2]; omega)
   simp only [h1, h2, idsCap_full (by omega) ns, idsCap_full (by omega) hs] at hz hv
   exact ⟨by simp [len, hz], hv⟩
-
-/-- A code at a byte lane of `q` bytes is its dense little-endian element. -/
-theorem idAt_lane (b : ByteArray) (i : Nat) {q : Nat} (hq : q ≤ 8) :
-    Column.idAt b (8 * q) i = (Column.bitsAt b (i * q) q).toNat := by
-  rw [Column.idAt, resAt_lane b q i hq, Nat.mul_comm]
 
 /-- **`findVec` at one byte lane is `idxOf`**: `q`-byte codes on both sides, payloads exactly `q` bytes a
     code, not a float. -/
@@ -70,7 +55,7 @@ theorem findVec_spec {q : Nat} (hq : q = 1 ∨ q = 2 ∨ q = 4 ∨ q = 8) {hn nn
   refine ⟨by simp [len, hz], fun j hj => ?_⟩
   rw [hv j hj, if_pos (by omega)]
   have hnorm : normalise q false = id := funext fun v => by simp [normalise]
-  have hid (b : ByteArray) (i : Nat) := idAt_lane b i (q := q) (by omega)
+  have hid (b : ByteArray) (i : Nat) := idAt_lane b (c := q) (by omega) i
   have hl : (List.range hn.toNat).map (Column.idAt hay (8 * q)) =
       ((List.range hn.toNat).map fun i => Column.bitsAt hay (i * q) q).map UInt64.toNat := by
     simp [List.map_map, Function.comp_def, hid]
@@ -107,13 +92,6 @@ theorem findBitVec_spec (hn nn : USize) (hay ndl : ByteArray) :
   exact (idxOf_map_inj (f := fun c : Bool => if c then 1 else 0)
     (fun a b h => by cases a <;> cases b <;> simp_all) _ _).symm
 
-/-- A lane `laneKind` names is a bitmap at `1`, or `8 ×` the layout's bytes. -/
-theorem laneKind_some {w : Nat} {k : Scan.Kind} (h : laneKind w = some k) :
-    (k = .bit ∧ w = 1) ∨
-      (k ≠ .bit ∧ w = 8 * k.width ∧ (k.width = 1 ∨ k.width = 2 ∨ k.width = 4 ∨ k.width = 8)) := by
-  unfold laneKind at h
-  split at h <;> (try cases h) <;> simp [Scan.Kind.width]
-
 /-- **`Code.find` answers one long per code of `x`, the first position in `c` of that code**, `c.n` at a
     miss — every lane pair `Code.find` dispatches on. Hypotheses: each code is at a lane a `Code` takes,
     its payload holds its `n` codes, and a byte lane's payload holds exactly them. -/
@@ -138,7 +116,7 @@ theorem find_spec (c x : Code)
     next hk =>
       obtain rfl : k = k' := beq_iff_eq.1 hk
       have hkb : k ≠ .bit := fun h => hne h h
-      rcases laneKind_some hc with ⟨h, -⟩ | ⟨-, hcw8, hq⟩
+      rcases laneKind_some hc with ⟨h, -⟩ | ⟨-, hcw8, hq, -⟩
       · exact absurd h hkb
       rcases laneKind_some hx with ⟨h, -⟩ | ⟨-, hxw8, -⟩
       · exact absurd h hkb
@@ -166,7 +144,7 @@ theorem gather_spec (c : Code) (i : ByteArray) (hl : len i < USize.size)
     · rw [h1, idAt_one, idAt_one, bitAt_gatherBits c.n c.b i j hj, if_pos (hi j hj)]
     · exact absurd rfl h
   next _ k hne hk =>
-    rcases laneKind_some hk with ⟨h, -⟩ | ⟨-, hw8, hq⟩
+    rcases laneKind_some hk with ⟨h, -⟩ | ⟨-, hw8, hq, -⟩
     · exact absurd h hne
     have h1 : k.width.toUSize.toNat = k.width := lane_toNat (by omega)
     have hs := (gatherBytes_spec k.width.toUSize (by omega) 0 c.b i).2 j hj
@@ -174,19 +152,13 @@ theorem gather_spec (c : Code) (i : ByteArray) (hl : len i < USize.size)
       have := hcb (by omega); rw [hw8, Nat.mul_assoc] at this
       rw [show c.b.size = k.width * c.n.toNat by omega, Nat.mul_div_cancel_left _ (by omega)]
     rw [h1, hd, if_pos (hi j hj)] at hs
-    rw [hw8, idAt_lane _ _ (by omega), idAt_lane _ _ (by omega), hs]
+    rw [hw8, idAt_lane _ (by omega), idAt_lane _ (by omega), hs]
   next _ _ =>
     have h1 : c.w.toUSize.toNat = c.w := lane_toNat (by omega)
     have hg := idAt_gatherPacked c.n c.w.toUSize c.w.toUSize 0 c.b i (by rw [h1]; omega)
       (fun _ _ => by rw [h1]; exact idAt_lt _ _ _ (by omega)) (by rw [h1]; exact Nat.two_pow_pos _) j hj
     rw [h1, if_pos (hi j hj)] at hg
     exact hg
-
-/-- `laneKind` names an integral layout or the bitmap: never a float or `char`. -/
-theorem laneKind_int {w : Nat} {k : Scan.Kind} (h : laneKind w = some k) :
-    k = .bit ∨ k = .u8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64 := by
-  unfold laneKind at h
-  split at h <;> (try cases h) <;> simp
 
 /-- A long payload's count is its `ids`' length. -/
 theorem len_eq_ids (b : ByteArray) : len b = (ids b).length := by simp [len, ids]
@@ -207,7 +179,7 @@ theorem groupIds_code_faithful (c : Code)
   split
   next _ k hk =>
     rw [len_eq_ids, (Verify.groupIds_spec k c.n c.b).2]
-    rcases laneKind_some hk with ⟨rfl, h1⟩ | ⟨hkb, hw8, hq⟩
+    rcases laneKind_some hk with ⟨rfl, h1⟩ | ⟨hkb, hw8, hq, hk'⟩
     · have hm : c.n.toNat ≤ Scan.Kind.avail .bit c.b := by simp only [Scan.Kind.avail]; rw [h1, Nat.one_mul] at hcs; omega
       rw [groupIds_faithful .bit c.n c.b (by omega) (by omega), h1, idAt_one, idAt_one]
       simp only [Order.keyAt, Order.rank, Scan.Kind.bitsAt]
@@ -217,12 +189,8 @@ theorem groupIds_code_faithful (c : Code)
       have hd : c.b.size / k.width = c.n.toNat := by
         have := hcb (by omega); rw [hw8, Nat.mul_assoc] at this
         rw [show c.b.size = k.width * c.n.toNat by omega, Nat.mul_div_cancel_left _ (by omega)]
-      have hk' : k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64 := by
-        rcases laneKind_int hk with h | h | h | h | h
-        · exact absurd h hkb
-        all_goals simp [h]
       rw [groupIds_faithful k c.n c.b (by omega) (by omega), Verify.keyAt_eq_iff hk', hw8,
-        idAt_lane _ _ (by omega), idAt_lane _ _ (by omega)]
+        idAt_lane _ (by omega), idAt_lane _ (by omega)]
       exact ⟨fun h => by rw [h], UInt64.toNat_inj.1⟩
   next _ hk =>
     have hw : c.w = 2 ∨ c.w = 4 := by

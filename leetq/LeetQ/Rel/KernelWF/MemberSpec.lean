@@ -6,8 +6,7 @@
   (`idAt_one`), the packed id at `2`/`4`, the little-endian field at `8`…`64` (`resAt_lane`).
   A well-formed code is the hypothesis pair `w` a lane and `b` exactly `⌈n·w/8⌉` bytes.
 -/
-import LeetQ.Rel.Code
-import QLean.Verify.Ids
+import LeetQ.Rel.KernelWF.Lane
 import QLean.Verify.Where
 import QLean.Verify.FindMember
 import QLean.Verify.Elementwise
@@ -22,32 +21,10 @@ open QLean.Verify (firstsOf ids)
 
 /-! ## Lanes -/
 
-/-- A lane with a sort layout is the bit at `1`, or an integral byte layout at its own width. -/
-theorem laneKind_some {w : Nat} {k : Scan.Kind} (h : laneKind w = some k) :
-    (k = .bit ∧ w = 1) ∨ (w = 8 * k.width ∧ k.width ≤ 8 ∧ (k = .u8 ∨ k = .c8 ∨ k = .i16 ∨ k = .i32 ∨ k = .i64)) := by
-  unfold laneKind at h
-  split at h <;> cases h <;> simp [Scan.Kind.width]
-
 /-- A lane with no sort layout, among the lanes, is `2` or `4` bits. -/
 theorem laneKind_none {w : Nat} (h : laneKind w = none)
     (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) : w = 2 ∨ w = 4 := by
   rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp_all [laneKind]
-
-/-- At a whole-byte lane `8c` an id is the `c` bytes from `c·i` (`resAt_lane`). -/
-theorem idAt_lane (b : ByteArray) {c : Nat} (hc : c ≤ 8) (i : Nat) :
-    Column.idAt b (8 * c) i = (Column.bitsAt b (i * c) c).toNat := by
-  simp only [Column.idAt]; rw [Verify.resAt_lane b c i hc, Nat.mul_comm]
-
-/-- A lane's width as a `USize` is itself. -/
-theorem lane_toUSize {w : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) :
-    w.toUSize.toNat = w :=
-  KernelWF.toNat_small w (by omega)
-
-/-- A payload of exactly `⌈n·w/8⌉` bytes holds all `n` ids. -/
-theorem idsCap_full {b : ByteArray} {w n : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
-    (hs : b.size = (n * w + 7) / 8) : Column.idsCap b w n = n := by
-  simp only [Column.idsCap]
-  rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp <;> omega
 
 /-! ## `member` -/
 
@@ -59,9 +36,12 @@ theorem memberIds_bit (x c : Code)
     {i : Nat} (hi : i < x.n.toNat) :
     Column.bitAt (memberIdsVec x.w.toUSize x.b x.n c.w.toUSize c.b c.n) i = true ↔
       ∃ j < c.n.toNat, Column.idAt c.b c.w j = Column.idAt x.b x.w i := by
-  have ex := lane_toUSize hxw; have ec := lane_toUSize hcw
+  have ex : x.w.toUSize.toNat = x.w := lane_toNat (by omega)
+  have ec : c.w.toUSize.toNat = c.w := lane_toNat (by omega)
+  have fx : Column.idsCap x.b x.w x.n.toNat = x.n.toNat := idsCap_full (by omega) (by rw [Nat.mul_comm]; omega)
+  have fc : Column.idsCap c.b c.w c.n.toNat = c.n.toNat := idsCap_full (by omega) (by rw [Nat.mul_comm]; omega)
   obtain ⟨-, hg⟩ := Verify.memberIdsVec_mem x.w.toUSize c.w.toUSize x.n c.n x.b c.b (by omega) (by omega)
-  rw [ex, ec, idsCap_full hxw hxs, idsCap_full hcw hcs] at hg
+  rw [ex, ec, fx, fc] at hg
   rw [hg i (by omega)]
   simp [hi, List.mem_map, List.mem_range]
 
@@ -91,10 +71,11 @@ theorem member_bit (x c : Code)
     · rename_i hkk
       have hk : k = k' := by simpa using hkk
       subst hk
-      rcases laneKind_some hx with ⟨rfl, -⟩ | ⟨e1, hk8, hki⟩
+      rcases laneKind_some hx with ⟨rfl, -⟩ | ⟨-, e1, hq, hki⟩
       · exact (hn rfl rfl).elim
+      have hk8 : k.width ≤ 8 := by omega
       have e2 : c.w = 8 * k.width := by
-        rcases laneKind_some hc with ⟨rfl, -⟩ | ⟨e2, -⟩
+        rcases laneKind_some hc with ⟨rfl, -⟩ | ⟨-, e2, -⟩
         · exact (hn rfl rfl).elim
         · exact e2
       have hk0 : 0 < k.width := by rcases hki with rfl | rfl | rfl | rfl | rfl <;> decide
@@ -188,7 +169,7 @@ theorem groupIds_firsts (c : Code)
   split
   · rename_i k hk
     rw [(Verify.groupIds_spec k c.n c.b).2]
-    rcases laneKind_some hk with ⟨rfl, e⟩ | ⟨e, hk8, hki⟩
+    rcases laneKind_some hk with ⟨rfl, e⟩ | ⟨-, e, hq, hki⟩
     · have hm : min c.n.toNat (Scan.Kind.avail .bit c.b) = c.n.toNat := by
         simp only [Scan.Kind.avail, hs, e]; omega
       rw [hm, e]
@@ -196,6 +177,7 @@ theorem groupIds_firsts (c : Code)
       simp only [Order.keyAt, Order.rank, Scan.Kind.bitsAt, Verify.idAt_one]
       cases Column.bitAt c.b i <;> cases Column.bitAt c.b j <;> decide
     · have hk0 : 0 < k.width := by rcases hki with rfl | rfl | rfl | rfl | rfl <;> decide
+      have hk8 : k.width ≤ 8 := by omega
       have hav : Scan.Kind.avail k c.b = c.b.size / k.width := by
         rcases hki with rfl | rfl | rfl | rfl | rfl <;> rfl
       have hm : min c.n.toNat (Scan.Kind.avail k c.b) = c.n.toNat := by
@@ -210,7 +192,7 @@ theorem groupIds_firsts (c : Code)
     have h24 := laneKind_none hk hw
     obtain ⟨hcU, hlt⟩ := hcard (by omega)
     have hd : c.card.toUSize.toNat = c.card := USize.toNat_ofNat_of_lt' hcU
-    have hwn : c.w.toUSize.toNat = c.w := lane_toUSize hw
+    have hwn : c.w.toUSize.toNat = c.w := lane_toNat (by omega)
     simp only [Order.idGroups]
     rw [Verify.ids_indices _ fun i hi => by
       have : i < c.n.toNat := List.mem_range.1 (List.mem_filter.1 hi).1
