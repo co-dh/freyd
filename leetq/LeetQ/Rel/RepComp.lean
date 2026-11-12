@@ -19,12 +19,12 @@ local notation "jcs" => (#v[⟨R.n, R.val⟩, ⟨S.n, S.key⟩] : Vector (Part _
 set_option hygiene false in
 local notation "jc" => Obj.codes _ jcs
 
-/-- **`Vals.pick` read back at an atom**: `pickArr_get`, for every payload but an interned symbol column. -/
-theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) (hx : Vals.Plain x)
+/-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
+theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
     (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
     (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < n.toNat) :
     (Vals.pick (.atom t) x i m h).row q = x.row ⟨_, hin⟩ :=
-  pickArr_get ⟨_, x⟩ i m h hx q hin
+  pickArr_get ⟨_, x⟩ i m h q hin
 
 /-- **`Vals.pick` read back at a product**, from its two components'. -/
 theorem pick_row_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n)
@@ -160,11 +160,10 @@ theorem rep_comp_boolean (R : Rel A (.atom .boolean)) (S : Rel (.atom .boolean) 
   rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_boolean_faithful _ hk hl hi hj,
     fun hk => have h := codes_boolean_wf _ hk; ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩ hrn hM hMU hA hC
 
-/-- `rep_comp` through a long-ordered middle side whose joint range fits `2^32` codes
-    (`codes_long_faithful`/`_wf`, under their hypotheses `htot`, `hro`). -/
+/-- `rep_comp` through a long-ordered middle side where `rangeOffsets` answers
+    (`codes_long_faithful`/`_wf`, under their hypothesis `hro`). -/
 theorem rep_comp_long {t : QAtomicType} (ht : orderKind t = some .i64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
     {os : Vector Code 2}
-    (htot : ((jcs).map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
     (hro : rangeOffsets t ((jcs).map fun c => Arr.part c.2) (((jcs).map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     (hrn : S.n.toNat < 2 ^ 63)
     (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
@@ -176,8 +175,8 @@ theorem rep_comp_long {t : QAtomicType} (ht : orderKind t = some .i64) (R : Rel 
     (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
       (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
     rep (R ≫ S) = rep R ≫ rep S :=
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_long_faithful ht _ htot hro hk hl hi hj,
-    fun hk => codes_long_wf ht _ htot hro hk⟩ hrn hM hMU hA hC
+  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_long_faithful ht _ hro hk hl hi hj,
+    fun hk => codes_long_wf ht _ hro hk⟩ hrn hM hMU hA hC
 
 end Comp
 

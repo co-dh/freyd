@@ -62,4 +62,8 @@ turn it is deleted from the list.
 | 63 | `rel(…)` power group: `∋`, `∈`, `Λ(R)`, `E(R)`, `P(R)`, `est(R)`, `thin(Q)`, `union`, `τ` as AOP's power-object operators; (7.5) as a calc; `setify` stays outside |
 | 64 | the nine Rel programs are `rel_program` modules under `leetq/LeetQ/Rel/Programs/`; their `.rel.md` files, the pasted copies and `#rel_agree` deleted; tests extend a program on the AST (`Test.extend`) |
 | 65 | hand-written `LeetQ/Rel/{Blocks,BlocksRel,Chess,Circuit,Wumpus}.lean` deleted; the four tests compare to literals (15 oracle-only table comparisons dropped: Blocks `qM`, `qF`; Chess `D d`, `K`, `N`, `X₀`, `X₁`) |
+| 66 | `prelude.rel.md` → `Programs/Prelude.lean`; `rel_program n after p where`; `Parse.after` the one scope update; `leetq/programs/` gone; the `rel` exe now links Lean (18 → 149 MB) |
+| 67 | `rel` exe deleted with `Main.lean`, `Parse.literate`, `programText`, the `.rel.md` helpers and their 13 guards; the text parser stays for `Test.extend` and inline-string tests |
+| 69 | kernel content lemmas, first round: `KernelWF/{MemberSpec,CrossSpec,PickSpec,JoinSpec}.lean` (`member`, `whereBits`, `anti`, `groupIds`, `cross`, `til`, `tags`, `sumVals`, `pick` on a shared payload, `find`, `gather`); `join`, `Obj.codes`, `raze`, `rows`, `nub` continue as 70–72 |
+| 71 | `join_spec` (`KernelWF/JoinAssembly.lean`): the output pairs of `join l r` are exactly the `(i, j)` with equal codes, ordered by `i` then `j`; needs lane/size well-formedness, `r.n < 2^63`, match count `< 2^63` and `< USize.size`; shared lane lemmas in `KernelWF/Lane.lean` |
 | 53 | qlean: last Nat counts — `Enc.dense/raw/atoms/blobOf` take USize, sizes enter through `needSize`; audit in doc/qlean-usize-audit.md |
