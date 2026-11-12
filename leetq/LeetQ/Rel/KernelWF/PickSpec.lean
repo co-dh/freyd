@@ -262,7 +262,7 @@ theorem gatherColumn_get_enum {n : USize} {d : ByteArray} {o : Array Nat} {ids :
   simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, hm0, Bool.false_eq_true,
     ↓reduceIte, Option.map_some, Option.some.injEq] at h
   subst h
-  obtain ⟨-, hl, hle⟩ := hw
+  obtain ⟨-, hl, hle⟩ : _ ∧ _ ∧ _ := ⟨hw.1, hw.2.1.last, hw.2.1.le⟩
   have hg : gatherAt n.toNat i k = some (Column.bitsAt i (k * 8) 8).toNat := by
     simp only [gatherAt]; rw [if_pos (by omega)]
   generalize (Column.bitsAt i (k * 8) 8).toNat = j at hg hin
