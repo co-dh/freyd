@@ -262,6 +262,106 @@ theorem rep_ran_boolean (R : Rel A (.atom .boolean)) :
 
 end Distinct
 
+/-! ## `⊤` on two universes -/
+
+section Top
+
+open QLean.Verify
+
+/-- **`rep (top Ua Ub) = Ua? ⊤ Ub?`**: every pair of an element `Ua` lists with one `Ub` lists — `⊤` itself when the
+    two universes list every element. `cross` answers row `k` of the `ma · mb` pairs as `(k / mb, k % mb)`
+    (`cross_elems`), each side picked there (`pick_row`). Hypotheses: the pair count fits a `USize` and is below
+    `2^63` (`cross_elems`'s), and each side picks back at its rows (`Vals.PickFits`). -/
+theorem rep_top {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb) (hN : ma.toNat * mb.toNat < USize.size)
+    (h63 : ma.toNat * mb.toNat < 2 ^ 63)
+    (hA : Vals.PickFits A Ua ((List.range (ma.toNat * mb.toNat)).map (· / mb.toNat)))
+    (hB : Vals.PickFits B Ub ((List.range (ma.toNat * mb.toNat)).map (· % mb.toNat))) :
+    rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (A := (⟨A.El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
+      relTop ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) := by
+  obtain ⟨h1, h2⟩ := cross_elems hN h63
+  have hid : ∀ d, ids d = (elemsW 8 d).map UInt64.toNat := fun d => by
+    simp only [ids, elemsW, List.map_map, Function.comp_def]
+  have hi1 : ids (cross ma mb).1 = (List.range (ma.toNat * mb.toNat)).map (· / mb.toNat) := by
+    rw [hid, h1, List.map_map]; refine List.map_congr_left fun k hk => ?_
+    have := List.mem_range.1 hk; have := Nat.div_le_self k mb.toNat
+    exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show _ < 2 ^ 63 by omega) (by decide))
+  have hi2 : ids (cross ma mb).2 = (List.range (ma.toNat * mb.toNat)).map (· % mb.toNat) := by
+    rw [hid, h2, List.map_map]; refine List.map_congr_left fun k hk => ?_
+    have := List.mem_range.1 hk; have := Nat.mod_le k mb.toNat
+    exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show _ < 2 ^ 63 by omega) (by decide))
+  have hlen : len (cross ma mb).1 < USize.size := by rw [len_eq_ids, hi1]; simpa using hN
+  refine hom_ext fun a b => ?_
+  show (longCount "⊤" (cross ma mb).1 fun m h => (⟨m, Vals.pick A Ua (cross ma mb).1 m h,
+      Vals.pick B Ub (cross ma mb).2 m ((cross_len ma mb).trans h)⟩ : Rel A B)).Holds a b ↔
+    ∃ a', (a = a' ∧ ∃ i, Ua.row i = a) ∧ ∃ b', True ∧ (b' = b ∧ ∃ j, Ub.row j = b')
+  unfold longCount need
+  rw [dif_pos hlen]
+  suffices H : ∀ (m : USize) (hm : len (cross ma mb).1 = m.toNat),
+      (⟨m, Vals.pick A Ua (cross ma mb).1 m hm, Vals.pick B Ub (cross ma mb).2 m ((cross_len ma mb).trans hm)⟩ :
+        Rel A B).Holds a b ↔ ∃ a', (a = a' ∧ ∃ i, Ua.row i = a) ∧ ∃ b', True ∧ (b' = b ∧ ∃ j, Ub.row j = b')
+    from H _ _
+  intro m hm
+  have e1 : ((List.range m.toNat).map fun q => (Column.bitsAt (cross ma mb).1 (q * 8) 8).toNat) =
+      (List.range (ma.toNat * mb.toNat)).map (· / mb.toNat) := by rw [← hi1, ← hm]; rfl
+  have e2 : ((List.range m.toNat).map fun q => (Column.bitsAt (cross ma mb).2 (q * 8) 8).toNat) =
+      (List.range (ma.toNat * mb.toNat)).map (· % mb.toNat) := by rw [← hi2, ← (cross_len ma mb).trans hm]; rfl
+  have hmn : m.toNat = ma.toNat * mb.toNat := by simpa using congrArg List.length e1
+  have v1 : ∀ q (hq : q < m.toNat), (Column.bitsAt (cross ma mb).1 (q * 8) 8).toNat = q / mb.toNat := fun q hq => by
+    simpa [hq, hmn ▸ hq] using congrArg (fun l => l[q]?) e1
+  have v2 : ∀ q (hq : q < m.toNat), (Column.bitsAt (cross ma mb).2 (q * 8) 8).toNat = q % mb.toNat := fun q hq => by
+    simpa [hq, hmn ▸ hq] using congrArg (fun l => l[q]?) e2
+  have r1 : ∀ q (hq : q < m.toNat), ∃ hin : q / mb.toNat < ma.toNat,
+      (Vals.pick A Ua (cross ma mb).1 m hm).row ⟨q, hq⟩ = Ua.row ⟨_, hin⟩ := fun q hq => by
+    have hin : q / mb.toNat < ma.toNat := Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm, ← hmn]; exact hq)
+    have hin' : (Column.bitsAt (cross ma mb).1 (q * 8) 8).toNat < ma.toNat := by rw [v1 q hq]; exact hin
+    refine ⟨hin, ?_⟩
+    rw [pick_row A Ua _ m hm (e1 ▸ hA) ⟨q, hq⟩, dif_pos hin']; exact congrArg Ua.row (Fin.ext (v1 q hq))
+  have r2 : ∀ q (hq : q < m.toNat), ∃ hin : q % mb.toNat < mb.toNat,
+      (Vals.pick B Ub (cross ma mb).2 m ((cross_len ma mb).trans hm)).row ⟨q, hq⟩ = Ub.row ⟨_, hin⟩ := fun q hq => by
+    have hin : q % mb.toNat < mb.toNat :=
+      Nat.mod_lt _ (Nat.pos_of_ne_zero fun e => by rw [hmn, e, Nat.mul_zero] at hq; omega)
+    have hin' : (Column.bitsAt (cross ma mb).2 (q * 8) 8).toNat < mb.toNat := by rw [v2 q hq]; exact hin
+    refine ⟨hin, ?_⟩
+    rw [pick_row B Ub _ m _ (e2 ▸ hB) ⟨q, hq⟩, dif_pos hin']; exact congrArg Ub.row (Fin.ext (v2 q hq))
+  simp only [Rel.Holds]
+  constructor
+  · rintro ⟨⟨q, hq⟩, ha, hb⟩
+    obtain ⟨hi, hr1⟩ := r1 q hq
+    obtain ⟨hj, hr2⟩ := r2 q hq
+    exact ⟨a, ⟨rfl, _, hr1 ▸ ha⟩, b, trivial, rfl, _, hr2 ▸ hb⟩
+  · rintro ⟨_, ⟨rfl, i, rfl⟩, _, -, rfl, j, rfl⟩
+    have hq : i.1 * mb.toNat + j.1 < m.toNat := by
+      rw [hmn]; have := i.2; have := j.2
+      calc i.1 * mb.toNat + j.1 < i.1 * mb.toNat + mb.toNat := by omega
+        _ = (i.1 + 1) * mb.toNat := by rw [Nat.succ_mul]
+        _ ≤ ma.toNat * mb.toNat := Nat.mul_le_mul_right _ (by omega)
+    have hdiv : (i.1 * mb.toNat + j.1) / mb.toNat = i.1 := by
+      rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by have := j.2; omega), Nat.div_eq_of_lt j.2, Nat.zero_add]
+    have hmod : (i.1 * mb.toNat + j.1) % mb.toNat = j.1 := by
+      rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt j.2]
+    obtain ⟨_, hr1⟩ := r1 _ hq
+    obtain ⟨_, hr2⟩ := r2 _ hq
+    exact ⟨⟨_, hq⟩, hr1.trans (congrArg Ua.row (Fin.ext hdiv)), hr2.trans (congrArg Ub.row (Fin.ext hmod))⟩
+
+/-- `rep_top` on atom universes, whose pair count is below `2^31`: every pick is below its side's count, so both
+    sides fit outright (`pickFits_atom`). -/
+theorem rep_top_atoms {t t' : QAtomicType} {ma mb : USize} (Ua : Vals (.atom t) ma) (Ub : Vals (.atom t') mb)
+    (h : ma.toNat * mb.toNat < 2 ^ 31) :
+    rep (LeetQ.Rel.Alg.top Ua Ub) = corefl (A := (⟨(Obj.atom t).El⟩ : RelSet.{0})) (fun a => ∃ i, Ua.row i = a) ≫
+      relTop ≫ corefl (A := (⟨(Obj.atom t').El⟩ : RelSet.{0})) (fun b => ∃ j, Ub.row j = b) :=
+  rep_top Ua Ub (by rcases USize.size_eq with e | e <;> omega) (by omega)
+    (pickFits_atom Ua fun k hk => by
+      obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
+      exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact List.mem_range.1 hk'))
+    (pickFits_atom Ub fun k hk => by
+      obtain ⟨k', hk', rfl⟩ := List.mem_map.1 hk
+      exact Nat.mod_lt _ (Nat.pos_of_ne_zero fun e => by
+        have := List.mem_range.1 hk'; rw [e, Nat.mul_zero] at this; omega))
+
+end Top
+
+#print axioms rep_top
+
 #print axioms rep_dom
 #print axioms rep_ran
 #print axioms rep_sum
