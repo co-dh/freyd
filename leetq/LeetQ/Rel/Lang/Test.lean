@@ -165,41 +165,6 @@ def reach : List St.El := [[(0, 0), (1, 1), (2, 0)], [(0, 0), (1, 2), (2, 0)], [
   ([(0, 1), (1, 2), (2, 2)], 1, 2)]
 #guard rowsAre (B := St) "qh" [([(0, 1), (1, 2), (2, 2)], [(0, 1), (1, 2), (2, 2)])]
 
-/-! Literate files (`Parse.literate`): the program is the indented code blocks, at the file's lines and columns. -/
-
-def lit (src : String) : Option String := match Parse.literate src with | .ok t => some t | .error _ => none
-
-/-- The literate text `src` fails, read or run, at `line`, `col`, with `what` in the message. -/
-def litErr (src : String) (line col : Nat) (what : String) : Bool :=
-  match Parse.literate src >>= runText with
-  | .error e => e.pos.line == line && e.pos.col == col && (e.msg.splitOn what).length > 1
-  | .ok _ => false
-
--- prose is an empty line, a code line stays whole, extra indentation included
-#guard lit "# T\n\nsome prose ≜ here\n\n    obj B = 0…1\n      print 𝟙(B)\n" ==
-  some "\n\n\n\n    obj B = 0…1\n      print 𝟙(B)\n"
--- two code blocks are one program: the second uses the first's `B`
-#guard ((lit "Two.\n\n    obj B = 0…1\n\nMore.\n\n    f : B ⟶ B ≜ 𝟙(B)\n    print f\n").map runText).map
-  (·.isOk) == some true
--- an error on a code line is at the file's line and column, extra indentation counted
-#guard litErr "Prose.\n\n    obj B = 0…1\n    f : B ⟶ B ≜ 𝟙(B)\n    print )\n" 5 11 "expected"
-#guard litErr "Prose.\n\n    obj B = 0…1\n      print )\n" 4 13 "expected"
--- the four malformed forms
-#guard litErr "Prose.\n\n  \tobj B = 0…1\n" 3 3 "a tab in the indentation"
-#guard litErr "Prose.\n    obj B = 0…1\n" 2 1 "right after prose"
-#guard litErr "- item\n\n    obj B = 0…1\n" 3 1 "under a list item"
-#guard litErr "1) item\n   more of it\n\n    obj B = 0…1\n" 4 1 "under a list item"
-#guard litErr "Prose.\n\n```rel\n    obj B = 0…1\n" 3 1 "never closed"
--- a paragraph or a heading at the margin ends the list
-#guard (lit "- item\n\nPara.\n\n    obj B = 0…1\n").isSome && (lit "* item\n# H\n\n    obj B = 0…1\n").isSome
--- a fenced block is prose, its definitions not run; a shorter fence does not close a longer one
-#guard ((lit "````\n    obj B = 0…1\n```\nB ≜ x\n````\n\n    obj B = 0…1\n    print 𝟙(B)\n").map runText).map
-  (·.isOk) == some true
--- the file name chooses: only `.rel.md` is a program file; a plain `.rel` and any other name are the one error
-#guard ["a.rel", "a.txt", "a.md"].all fun f => match Parse.programText f "x\n  y" with
-  | .ok _ => false
-  | .error e => (e.msg.splitOn "`.rel.md`").length > 1 && (e.msg.splitOn "no longer read").length > 1
-
 /-! One front-end error of each class, at its line. -/
 
 def errAt (src : String) (line : Nat) (what : String) : Bool :=
@@ -407,7 +372,7 @@ def printed (src : String) : List String := (ok (runText src)).prints.map fun s 
   "print {((1,B),(1,B))}sw\n") == ["{((A, 0), (0, A))}", "{((1, B), (B, 1))}"]
 -- the declared type determines an object the body leaves open: `nil`'s source and element
 #guard printed "obj N = 0…3\ne : 1 ⟶ [N] ≜ nil\nprint e\n" == ["{(∗, [])}"]
--- `rel --types` prints each definition's head as it is declared
+-- `typesOf` prints each definition's head as it is declared
 def heads : List String := ["f : X ⟶ X", "g(R : α ⟶ β) : β ⟶ α", "_≼_(R : α ⟶ β, S : β ⟶ γ) : α ⟶ γ"]
 #guard match typesOf (some ("obj X = {A,B}\n" ++
     String.join ((heads.zip ["𝟙", "R°", "R S"]).map fun (h, b) => s!"{h} ≜ {b}\n"))) with

@@ -194,7 +194,7 @@ def OExp.vars : OExp → List String
   | .prod a b | .sum a b => (a.vars ++ b.vars).eraseDups
   | .pow a | .list a => a.vars
 
-/-- A definition's head and type as `rel --types` prints it and the parser reads it back:
+/-- A definition's head and type as `typesOf` prints it and the parser reads it back:
     `n(R : A ⟶ B, …) : C ⟶ D`, each type given as its text; a test has no type of its own (§e). -/
 def sigText (n : String) (ps : List (String × Option String)) (ty : Option String) : String :=
   let h := if ps.isEmpty then n else

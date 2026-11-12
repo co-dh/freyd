@@ -318,7 +318,7 @@ structure Out where
   vals : List (String × Val × OTy × OTy) := []
   /-- The text of each `print`. -/
   prints : List String := []
-  /-- Each definition's declaration, as `rel --types` prints it. -/
+  /-- Each definition's declaration, as `sigText` prints it. -/
   sigs : List String := []
   objs : Objs := []
 
@@ -341,7 +341,7 @@ def objInfo (env : Env) (n : String) : ObjDef → Except Err ObjInfo
 /-- Run a program: each declaration in order; a definition with no parameters is built once and, when it is
     closed or its source has a universe, evaluated once into a value its users share. One sharing table runs
     through the program, so a sub-term met in several definitions has one identity. `types`: only the
-    definitions are checked, nothing is evaluated (`rel --types`). -/
+    definitions are checked, nothing is evaluated (`typesOf`). -/
 def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : String → Def → Def := fun _ d => d)
     (types : Bool := false) : Except Err (Env × Out × Share) := do
   let (env₀, out₀, sh₀) := start
@@ -440,7 +440,7 @@ def runWith (pre : Program) (src : String) : Except Err Out := runAfter pre (Par
 /-- Parse and run a program's text, after the prelude. -/
 def runText (src : String) : Except Err Out := runWith Programs.prelude src
 
-/-- `rel --types`: the declaration of each definition of the program `src`, in order, nothing evaluated; with no
+/-- The declaration of each definition of the program `src`, in order, nothing evaluated; with no
     program, the prelude's. -/
 def typesOf (src : Option String) : Except Err (List String) := do
   let pp := Programs.prelude
