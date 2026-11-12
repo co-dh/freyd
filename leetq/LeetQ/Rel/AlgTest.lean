@@ -18,17 +18,17 @@ private abbrev LL := Rel .long .long
 private def seteq {α : Type} [BEq α] (xs ys : List α) : Bool := xs.all ys.contains && ys.all xs.contains
 
 -- R = {1↦10, 1↦20, 2↦10, 3↦30}, S = {1↦10, 2↦10, 2↦20, 4↦40}
-private def R : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 1, 2, 3]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 10, 30]) (by decide))⟩
-private def S : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 2, 2, 4]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 10, 20, 40]) (by decide))⟩
+private def R : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 1, 2, 3]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [10, 20, 10, 30]) (by wf_lit))⟩
+private def S : LL := ⟨4, (Arr.mk (.bytes <| packLongs [1, 2, 2, 4]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [10, 10, 20, 40]) (by wf_lit))⟩
 -- T : b ⟶ c, {10↦7, 20↦8, 20↦9}
-private def T : LL := ⟨3, (Arr.mk (.bytes <| packLongs [10, 20, 20]) (by decide)), (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))⟩
+private def T : LL := ⟨3, (Arr.mk (.bytes <| packLongs [10, 20, 20]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by wf_lit))⟩
 -- a list with a repeat, (5 3 5 9), and the same as a relation from its positions
-private def U4 : Vals L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by decide))
-private def LsV : Arr L 4 := (Arr.mk (.bytes <| packLongs [5, 3, 5, 9]) (by decide))
+private def U4 : Vals L 4 := (Arr.mk (.bytes <| packLongs [0, 1, 2, 3]) (by wf_lit))
+private def LsV : Arr L 4 := (Arr.mk (.bytes <| packLongs [5, 3, 5, 9]) (by wf_lit))
 private def Ls : LL := ⟨4, U4, LsV⟩
-private def Ua : Vals L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by decide))
-private def Ub : Vals L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by decide))
-private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by decide))
+private def Ua : Vals L 4 := (Arr.mk (.bytes <| packLongs [1, 2, 3, 4]) (by wf_lit))
+private def Ub : Vals L 4 := (Arr.mk (.bytes <| packLongs [10, 20, 30, 40]) (by wf_lit))
+private def Uc : Vals L 3 := (Arr.mk (.bytes <| packLongs [7, 8, 9]) (by wf_lit))
 
 #guard (R ⊑ S) == false
 #guard (R ∩ S ⊑ R) && (R ∩ S ⊑ S)
@@ -85,7 +85,7 @@ private def crossOk {A B : Obj} [BEq A.El] [BEq B.El] (R₁ R₂ : Rel A B) : Bo
   let sets := k₁.map (f R₁) ++ k₂.map (f R₂)
   let distinct := sets.foldl (fun acc s => if acc.any (seteq s) then acc else acc ++ [s]) ([] : List (List B.El))
   k₁.all (fun x => k₂.all fun y => rel.contains (x, y) == seteq (f R₁ x) (f R₂ y)) &&
-  (ran (Λ(R₁) ∪ Λ(R₂))).n == distinct.length
+  (ran (Λ(R₁) ∪ Λ(R₂))).n.toNat == distinct.length
 
 -- `Λ(R)`, `∋(R)`: R with a repeated pair, R ∪ S, a key with a repeat and its values out of order (D, below),
 -- a foR column, an empty relation, the family `G`, `G ≫ R`
@@ -94,7 +94,7 @@ private def crossOk {A B : Obj} [BEq A.El] [BEq B.El] (R₁ R₂ : Rel A B) : Bo
 #guard (Λ(R).toList : List (Int64 × List Int64)) == [(1, [10, 20]), (2, [10]), (3, [30])] && ∋(R).n == 4
 -- arrays of pairs: `B = X×X`
 #guard lamOk (pair R S) && lamOk (pair S R) && crossOk (pair R S) (pair S R) && crossOk (pair R R) (pair R S)
-private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9])
+private def LfV : Arr L 4 := Arr.mk (.foR (Coc.encode 8 (packLongs [5, 3, 5, 9])).1 (Coc.encode 8 (packLongs [5, 3, 5, 9])).2) (foRLongs_wf [5, 3, 5, 9] (by simp))
 private def Lf : LL := ⟨4, U4, LfV⟩
 #guard lamOk Lf && lamOk (Lf°) && Λ(Lf°).n == 3
 #guard Λ(R ∪ R).n == 3 && ∋(R ∪ R).n == 4
@@ -102,11 +102,11 @@ private def Lf : LL := ⟨4, U4, LfV⟩
 -- `anti`: the positions of `x` not in `y`
 #guard anti (Code.ofLongs (packLongs [3, 1, 4, 1])) (Code.ofLongs (packLongs [1, 5])) == packLongs [0, 2]
 -- `R ≫ corNeg(C)` at a `C` that is no coreflexive: `1` is a key of `C` and no value, so the row stays
-private def Ra : LL := ⟨1, (Arr.mk (.bytes <| packLongs [0]) (by decide)), (Arr.mk (.bytes <| packLongs [1]) (by decide))⟩
-private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by decide)), (Arr.mk (.bytes <| packLongs [2]) (by decide))⟩
+private def Ra : LL := ⟨1, (Arr.mk (.bytes <| packLongs [0]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [1]) (by wf_lit))⟩
+private def Ca : LL := ⟨1, (Arr.mk (.bytes <| packLongs [1]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [2]) (by wf_lit))⟩
 #guard (antiJoin Ra Ca).toList == [(0, 1)]
 -- `E(R)` of the family `G = {X₁ = {1, 2}, X₂ = {3}}`: `Λ(G ≫ R)`
-private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by decide))⟩
+private def G : LL := ⟨3, (Arr.mk (.bytes <| packLongs [1, 1, 2]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [1, 2, 3]) (by wf_lit))⟩
 #guard lamOk G && lamOk (G ≫ R) && seteq (Λ(G ≫ R) ≫ ∋(G ≫ R)).toList
   (G.toList.flatMap fun (s, x) => R.toList.filterMap fun (x', y) => if x == x' then some (s, y) else none)
 -- arrays across two relations: `[10 20]` and `[10]` are cells of both, `[30]` and `[40]` of one
@@ -185,14 +185,14 @@ private def Ps : Rel LS LS := sum R T
 #guard Ps == junc (R ≫ inl (B := L) (ran R).val) (T ≫ inr (A := L) (ran T).val)
 -- `inl ≫ [R, S] = R` on the universe of `inl`, `inr ≫ [R, S] = S`; `inl° inl ∪ inr° inr = 𝟙` on `A + B`
 #guard inl (B := L) Ua ≫ J == idU Ua ≫ R && inr (A := L) Ua ≫ J == idU Ua ≫ S
-#guard ((inl (B := L) Ua)° ≫ inl Ua) ∪ ((inr (A := L) Ub)° ≫ inr Ub) == idU (sumVals Ua Ub)
+#guard ((inl (B := L) Ua)° ≫ inl Ua) ∪ ((inr (A := L) Ub)° ≫ inr Ub) == idU (sumVals Ua Ub (by fits_lit))
 -- `∩ ∪ \ ≫ dom` with a sum key; `J2` holds `J`'s rows over other payloads (razed), so equal by value
 private def J2 : Rel LS L := junc R (zero (A := L) (B := L)) ∪ junc (zero (A := L) (B := L)) S
 #guard J2 == J && seteq J2.toList J.toList && (J2 ∩ J).n == J2.n && (J2 \ J).n == 0
 #guard seteq (J ∩ J').toList (J.toList.filter J'.toList.contains) &&
   seteq (J \ J').toList (J.toList.filter fun p => !J'.toList.contains p)
-#guard seteq (J ∪ J').toList (J.toList ++ J'.toList) && (J ∪ J').n == (J.toList ++ J'.toList).eraseDups.length
-#guard (dom J).n == (J.toList.map (·.1)).eraseDups.length && seteq (dom J).toList (J.toList.map fun (x, _) => (x, x))
+#guard seteq (J ∪ J').toList (J.toList ++ J'.toList) && (J ∪ J').n.toNat == (J.toList ++ J'.toList).eraseDups.length
+#guard (dom J).n.toNat == (J.toList.map (·.1)).eraseDups.length && seteq (dom J).toList (J.toList.map fun (x, _) => (x, x))
 #guard seteq (Ps ≫ Ps°).toList
   (Ps.toList.flatMap fun (x, y) => Ps.toList.filterMap fun (x', y') => if y == y' then some (x, x') else none)
 #guard seteq (J° ≫ J').toList
@@ -205,15 +205,15 @@ private def J2 : Rel LS L := junc R (zero (A := L) (B := L)) ∪ junc (zero (A :
 -- a sum of a product and an array, as key
 private def M : Rel (.sum (.prod L L) (.arr L)) LS := sum (pair R S)° K°
 #guard lamOk M && lamOk (M°) && crossOk M (M ∪ M) && M ∩ (M ∪ M) == M &&
-  (dom M).n == (M.toList.map (·.1)).eraseDups.length && (dom M).n == 6
+  (dom M).n.toNat == (M.toList.map (·.1)).eraseDups.length && (dom M).n == 6
 -- a sum column by hand: tags `0110`, positions `-5 7 0 9` into `[1 2]` and `[10 20 30]`, read clamped into
 -- each side, `inl 1, inr 30, inr 10, inl 2`; `Xi` the same values at in-range positions of other payloads
-private def tg4 : Arr .boolean 4 := Arr.mk (.bits (ByteArray.mk #[0b0110])) (by decide)
+private def tg4 : Arr .boolean 4 := Arr.mk (.bits (ByteArray.mk #[0b0110])) (by wf_lit)
 private def Xo : Vals LS 4 := ⟨2, 3, tg4, col [-5, 7, 0, 9], col [1, 2], col [10, 20, 30]⟩
 private def Xi : Vals LS 4 := ⟨3, 2, tg4, col [2, 1, 0, 1], col [7, 2, 1], col [10, 30]⟩
 #guard ((idU Xo).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl 1, .inr 30, .inr 10, .inl 2]
 #guard idU Xo == idU Xi && (idU Xo ∪ idU Xi).n == 4 && (idU Xo ≫ idU Xi).n == 4 && (ran (top Xo Xi)).n == 4
-#guard ((idU (Obj.raze LS #[⟨_, Xo⟩, ⟨_, Xi⟩])).toList.map (·.1) : List (Int64 ⊕ Int64)) ==
+#guard ((idU (Obj.raze LS #[⟨_, Xo⟩, ⟨_, Xi⟩] (by fits_lit))).toList.map (·.1) : List (Int64 ⊕ Int64)) ==
   [.inl 1, .inr 30, .inr 10, .inl 2, .inl 1, .inr 30, .inr 10, .inl 2]
 -- arrays of sums by hand, over `Xo` and over `Xi`: equal arrays by value across the two payloads
 private def Xa : Vals (.arr LS) 3 := ⟨4, col [0, 2, 2], col [2, 4, 3], Xo⟩
@@ -238,13 +238,13 @@ private def E0 : Vals L 0 := Vals.empty L
   junc R Z ∪ junc Z S == junc R S && junc Z Z ∪ junc Z Z == junc Z Z
 -- a sum column by hand with a row tagged to a side of no values: `Xel`'s `inl` row, `Xer`'s `inr` row. Each
 -- reads its own side's null, as a gather past a side reads it, and `∪` (razed), `∩` (coded) read it so too
-private def tg2 : Arr .boolean 2 := Arr.mk (.bits (ByteArray.mk #[0b10])) (by decide)
+private def tg2 : Arr .boolean 2 := Arr.mk (.bits (ByteArray.mk #[0b10])) (by wf_lit)
 private def Xel : Vals LS 2 := ⟨0, 1, tg2, col [0, 0], Vals.empty L, col [20]⟩
 private def Xer : Vals LS 2 := ⟨1, 0, tg2, col [0, 3], col [7], Vals.empty L⟩
 private def Yn : Vals LS 2 := ⟨2, 0, tags #[(2, false)] 2, col [0, 1], col [7, Int64.minValue], Vals.empty L⟩
 #guard ((idU Xel).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl Int64.minValue, .inr 20] &&
   ((idU Xer).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl 7, .inr Int64.minValue]
-#guard ((idU (Obj.raze LS #[⟨_, Xel⟩, ⟨_, Xer⟩])).toList.map (·.1) : List (Int64 ⊕ Int64)) ==
+#guard ((idU (Obj.raze LS #[⟨_, Xel⟩, ⟨_, Xer⟩] (by fits_lit))).toList.map (·.1) : List (Int64 ⊕ Int64)) ==
   [.inl Int64.minValue, .inr 20, .inl 7, .inr Int64.minValue]
 #guard idU Xel == idU (Vals.compact LS Xel) && idU Xer == idU (Vals.compact LS Xer) &&
   ((idU Yn ∩ idU Xel).toList.map (·.1) : List (Int64 ⊕ Int64)) == [.inl Int64.minValue]
@@ -255,24 +255,24 @@ private def XP : Vals (.prod L (.arr L)) 2 := (col [5, 6], ⟨2, col [0, 2], col
   [(.inl 0, []), (.inr (5, [1, 2]), [5, 1, 2]), (.inr (6, []), [6])]
 
 -- `uncons`, `fold`, `map` on arrays, against the List-level fold of cons-lists
-private def arrs {n : Nat} (X : Vals (.arr L) n) : List (List Int64) := (idU X).toList.map (·.1)
+private def arrs {n : USize} (X : Vals (.arr L) n) : List (List Int64) := (idU X).toList.map (·.1)
 private def unconsSpec (xss : List (List Int64)) : List (List Int64 × Int64 × List Int64) :=
   xss.filterMap fun | [] => none | y :: ys => some (y :: ys, y, ys)
 /-- `⦇e, S⦈` of one list, `S` read as its pairs. -/
 private def foldSpec (e : List Int64) (S : List ((Int64 × Int64) × Int64)) (xs : List Int64) : List Int64 :=
   xs.foldr (fun x acc => acc.flatMap fun v => S.filterMap fun ((x', v'), w) => if x' == x && v' == v then some w else none) e
-private def foldOk {n m : Nat} (e : Arr L m) (S : Rel (.prod L L) L) (X : Vals (.arr L) n) : Bool :=
+private def foldOk {n m : USize} (e : Arr L m) (S : Rel (.prod L L) L) (X : Vals (.arr L) n) : Bool :=
   seteq ((fold e S X).toList : List (List Int64 × Int64))
     ((arrs X).flatMap fun xs => (foldSpec e.toList S.toList xs).map (xs, ·))
 /-- `F(R)` of one list: every choice of an image at each position. -/
 private def mapSpec (R : List (Int64 × Int64)) (xs : List Int64) : List (List Int64) :=
   xs.foldr (fun x acc => (R.filterMap fun (x', y) => if x' == x then some y else none).flatMap fun y => acc.map (y :: ·)) [[]]
-private def mapOk {n : Nat} (R : LL) (X : Vals (.arr L) n) : Bool :=
+private def mapOk {n : USize} (R : LL) (X : Vals (.arr L) n) : Bool :=
   seteq ((map R X).toList : List (List Int64 × List Int64)) ((arrs X).flatMap fun xs => (mapSpec R.toList xs).map (xs, ·))
 /-- The table of `f` on `xs × vs`, as a relation `(x, v) ⟶ f x v`. -/
 private def tab (xs vs : List Int64) (f : Int64 → Int64 → Int64) : Rel (.prod L L) L :=
   let ps := xs.flatMap fun x => vs.map fun v => (x, v, f x v)
-  ⟨ps.length, (List.length_map _ ▸ col (ps.map (·.1)), List.length_map _ ▸ col (ps.map (·.2.1))),
+  ⟨ps.length.toUSize, (List.length_map _ ▸ col (ps.map (·.1)), List.length_map _ ▸ col (ps.map (·.2.1))),
     List.length_map _ ▸ col (ps.map (·.2.2))⟩
 private def upto (k : Nat) : List Int64 := (List.range (k + 1)).map Int64.ofNat
 -- long arrays over one payload of 33 digits: rows of 20, 0 and 13, and `[-3, 2)` read clamped as `[0, 2)`
@@ -322,14 +322,15 @@ private def X9 : Vals (.arr L) 3 := ⟨_, col [0, 2, 3], col [2, 3, 3], col [1, 
 -- Λ(R ∪ S): fibres {10 20} {10 20} {30} {40}
 #guard (ran Λ(R ∪ S)).n == 3
 -- Λ of {1↦10, 2↦20, 1↦20, 2↦10, 2↦10}: both fibres {10, 20}, in another order and with a repeat
-private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by decide)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by decide))⟩
+private def D : LL := ⟨5, (Arr.mk (.bytes <| packLongs [1, 2, 1, 2, 2]) (by wf_lit)), (Arr.mk (.bytes <| packLongs [10, 20, 20, 10, 10]) (by wf_lit))⟩
 #guard (Λ(D).toList.map (·.2) : List (List Int64)) == [[10, 20], [10, 20]] && ∋(D).n == 4 && lamOk D &&
   lamOk (D°) && lamOk (D ∪ R) && crossOk D R && crossOk D S
--- the reference `setIds` falls back on agrees with the kernel path, repeats and order inside a set ignored
+-- `setIds` on the kernel path, repeats and order inside a set ignored (the reference it was checked against,
+-- `setIdsRef`, is gone: `setIds` stops where `rankSlices` declines)
 #guard let c := Code.ofLongs (packLongs [1, 2, 2, 1, 1, 2, 5, 5, 3]); let s := packLongs [0, 2, 4, 6, 8, 8]
-  setIds c s == packLongs [0, 0, 0, 1, 2, 3] && setIdsRef c (packLongs [0, 2, 4, 6, 8, 8, 9]) == setIds c s
+  setIds c s == packLongs [0, 0, 0, 1, 2, 3]
 
-private def Ua3 : Vals L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by decide))
+private def Ua3 : Vals L 3 := (Arr.mk (.bytes <| packLongs [3, 1, 2]) (by wf_lit))
 #guard entire R Ua == false && entire R Ua3
 #guard simple R == false && simple (idU Ua) && simple Ls
 #guard isMap (idU Ua) Ua && isMap R Ua3 == false
@@ -347,7 +348,7 @@ private def pqpr : List (Int64 × Int64) := [(0, 0), (0, 2), (2, 0), (2, 2), (1,
 
 -- boolean, `bits`: `1010b`, whose positions pair `(0 2)` and `(1 3)`
 private abbrev Bo := QAtomicType.boolean
-private def bitsC : Arr Bo 4 := Arr.mk (.bits (ByteArray.mk #[0b0101])) (by decide)
+private def bitsC : Arr Bo 4 := Arr.mk (.bits (ByteArray.mk #[0b0101])) (by wf_lit)
 #guard let X := same (lst bitsC) (lst bitsC)
   seteq X.toList [(0, 0), (0, 2), (2, 0), (2, 2), (1, 1), (1, 3), (3, 1), (3, 3)] && X.n == 8
 #guard let X := ran (lst bitsC); seteq X.toList [(true, true), (false, false)] && X.n == 2
@@ -356,9 +357,9 @@ private def bitsC : Arr Bo 4 := Arr.mk (.bits (ByteArray.mk #[0b0101])) (by deci
 
 -- symbol,`syms` and `enum`: `` `bc`a`bc`d `` in both, compared across the two
 private abbrev Sy := QAtomicType.symbol
-private def symsC : Arr Sy 4 := Arr.mk (.syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10]) (by decide)
+private def symsC : Arr Sy 4 := Arr.mk (.syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0, 100, 0]) #[0, 3, 5, 8, 10]) (by wf_lit)
 private def enumC : Arr Sy 4 :=
-  Arr.mk (.enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!)) (by decide)
+  Arr.mk (.enum (ByteArray.mk #[97, 0, 98, 99, 0, 100, 0]) #[0, 2, 5, 7] (Column.packIds (Column.idWidth #[0, 2, 5, 7]) 4 fun i => [1, 0, 1, 2][i]!)) (by wf_lit)
 #guard (lst enumC).toList == [(0, "bc"), (1, "a"), (2, "bc"), (3, "d")]
 -- `Λ` of `{bc, a}` met in two orders, in two relations, and of syms against enum: one array, `[a bc]`, by
 -- the strings' order, not by first appearance
@@ -377,7 +378,7 @@ private def enumC : Arr Sy 4 :=
 
 -- the lane each encoding codes at: bits a bit; a three-symbol enum, or three distinct longs whose range
 -- outruns the rows (a grouping pass's ids), a 2-bit lane; foR and dense offsets a byte
-private def laneOf {t : QAtomicType} {n : Nat} (x : Arr t n) : Nat := (codes t #v[⟨_, x⟩])[0].w
+private def laneOf {t : QAtomicType} {n : USize} (x : Arr t n) : Nat := (codes t #v[⟨_, x⟩])[0].w
 #guard laneOf bitsC == 1 && laneOf enumC == 2 && laneOf symsC == 2
 #guard laneOf LfV == 8 && laneOf (col [5, 3, 5, 9]) == 8 && laneOf (col [5, 3, 5, 1099511627776]) == 2
 -- a byte code below 3 beside a bit: `composeKey`'s `a·2 + b` at domain `3·2`, no grouping pass
@@ -388,7 +389,7 @@ private def laneOf {t : QAtomicType} {n : Nat} (x : Arr t n) : Nat := (codes t #
   | (c, none) => c.w == 4 && c.b == ByteArray.mk #[0x21, 0x25] | _ => false
 -- a 2-bit code cut inside a byte, gathered, graded, grouped, run-started where it lies
 private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!)⟩
-#guard (c2.cut #v[3, 3]).toArray.map (fun p => (List.range p.n).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
+#guard (c2.cut #v[3, 3]).toArray.map (fun p => (List.range p.n.toNat).map (Column.idAt p.b 2)) == #[[2, 0, 1], [2, 0, 2]]
 #guard (Code.cat (c2.cut #v[1, 5]).toArray).b == c2.b
 #guard let g := c2.gather (packLongs [5, 1]); (List.range 2).map (Column.idAt g.b 2) == [2, 0]
 #guard c2.grade == packLongs [1, 4, 2, 0, 3, 5]
@@ -396,7 +397,7 @@ private def c2 : Code := ⟨2, 6, 3, Column.packIds 2 6 ([2, 0, 1, 2, 0, 2][·]!
 #guard c2.find ⟨2, 2, 3, Column.packIds 2 2 ([1, 2][·]!)⟩ == packLongs [2, 0]
 #guard c2.eqAt ⟨2, 6, 3, Column.packIds 2 6 ([2, 1, 1, 0, 0, 2][·]!)⟩ == packLongs [0, 2, 4, 5]
 -- two foR parts of different bases, one negative: rebased (`foRShift`), equal elements equal codes
-private def Lneg : LL := ⟨4, U4, Arr.mk (.foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2) (foRLongs_wf [9, -3, 5, 5])⟩
+private def Lneg : LL := ⟨4, U4, Arr.mk (.foR (Coc.encode 8 (packLongs [9, -3, 5, 5])).1 (Coc.encode 8 (packLongs [9, -3, 5, 5])).2) (foRLongs_wf [9, -3, 5, 5] (by simp))⟩
 #guard seteq (Lneg ≫ Lf°).toList
   (Lneg.toList.flatMap fun (i, x) => Lf.toList.filterMap fun (j, y) => if x == y then some (i, j) else none)
 
@@ -404,7 +405,7 @@ private def Lneg : LL := ⟨4, U4, Arr.mk (.foR (Coc.encode 8 (packLongs [9, -3,
 private abbrev Fl := QAtomicType.float
 private def fs : List Float := [1.5, 2.25, 1.5, 0.1]
 private def fb : ByteArray := packLongs (fs.map (·.toBits.toInt64))
-private def fd : Arr Fl 4 := Arr.mk (.bytes fb) (show fb.size = 4 * 8 by rw [fb, packLongs_size]; rfl)
+private def fd : Arr Fl 4 := Arr.mk (.bytes fb) (by unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; rw [fb, packLongs_size]; rfl)
 -- `alpOf` and not `Column.answer`, which keeps a column this short dense; no theorem yet says its payload is
 -- well formed, so `Arr.of` decides it and a refusal fails the check
 private def alpE : Enc := (Enc.alpOf Fl 4 fd.enc).getD fd.enc
@@ -417,7 +418,9 @@ private def alpE : Enc := (Enc.alpOf Fl 4 fd.enc).getD fd.enc
   | .error _ => false
 
 -- a general list, `(1; (); 1; ,2)`, elements matched by identity
-private def gs : Arr .general 4 := Arr.mk (.gen #[.atom (.long 1), QValue.general #[], .atom (.long 1), QValue.general #[.atom (.long 2)]]) rfl
+private def gs : Arr .general 4 :=
+  Arr.mk (.gen #[.atom (.long 1), QValue.general #[] 0, .atom (.long 1), QValue.general #[.atom (.long 2)] 1])
+    (by unfold Enc.WF; simp only [USize.reduceToNat]; rfl)
 #guard let X := same (lst gs) (lst gs); seteq X.toList pqpr && X.n == 6
 #guard (lst gs ∪ lst gs).n == 4 && (dom (lst gs)°).n == 3
 #guard seteq (symDiv (lst gs) (lst gs) U4 U4).toList pqpr
@@ -459,7 +462,7 @@ private def setOf (xs : List Int64) : List Int64 := xs.eraseDups.mergeSort fun a
 #guard seteq ((τ Ua).toList : List (Int64 × List Int64)) (Ua.toList.map fun x => (x, [x]))
 -- `E(R)`: every array of the universe, `[]` and arrays whose elements have no image included, to the set of
 -- images; a map (`two` is not), repeated arrays (`Xs`), clamped arrays (`Xc`), no array
-private def EOk {n : Nat} (R : LL) (X : Vals (.arr L) n) : Bool :=
+private def EOk {n : USize} (R : LL) (X : Vals (.arr L) n) : Bool :=
   seteq ((E R X).toList : List (List Int64 × List Int64)) ((arrs X).map fun xs => (xs, setOf (xs.flatMap (fib R)))) &&
     isMap (E R X) X
 #guard EOk two Xl && EOk two Xs && EOk two Xc && EOk neg Xl && EOk R Xc && EOk (zero (A := L) (B := L)) Xl
@@ -484,7 +487,7 @@ private def selfU {A : Obj} (R : Rel A A) : Nat → Rel A A | 0 => R | k + 1 => 
 #guard seteq ((τ Xs ≫ Arr.union (τ Xs).val).toList : List (List Int64 × List Int64)) ((arrs Xs).map fun xs => (xs, setOf xs))
 -- `P(R)`, Egli–Milner, `R` not a function, into the arrays `[10] [11 20] [] [10 20] [10 20 11 7]`
 private def Yp : Vals (.arr L) 5 := ⟨7, col [0, 1, 0, 3, 3], col [1, 3, 0, 5, 7], col [10, 11, 20, 10, 20, 11, 7]⟩
-private def pSpec {n m : Nat} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) m) : List (List Int64 × List Int64) :=
+private def pSpec {n m : USize} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) m) : List (List Int64 × List Int64) :=
   (arrs X).flatMap fun xs => ((arrs Y).filter fun ys => xs.all (fun x => ys.any fun y => R.toList.contains (x, y)) &&
     ys.all fun y => xs.any fun x => R.toList.contains (x, y)).map (xs, ·)
 #guard seteq ((P two Xc Yp).toList : List (List Int64 × List Int64)) (pSpec two Xc Yp) && (P two Xc Yp).n > 0
@@ -496,7 +499,7 @@ private def pSpec {n m : Nat} (R : LL) (X : Vals (.arr L) n) (Y : Vals (.arr L) 
 #guard alpha zero1 XP == junc nilR (cons (idU XP))
 -- `tail`, `length`, `Arr.sum`, `suffix` against `List`
 #guard seteq ((tail Xs).toList : List (List Int64 × List Int64)) ((unconsSpec (arrs Xs)).map fun (a, _, t) => (a, t))
-private def onArrs {n : Nat} {B : Obj} [BEq B.El] (X : Vals (.arr L) n) (R : Rel (.arr L) B) (f : List Int64 → List B.El) : Bool :=
+private def onArrs {n : USize} {B : Obj} [BEq B.El] (X : Vals (.arr L) n) (R : Rel (.arr L) B) (f : List Int64 → List B.El) : Bool :=
   let r : List (List Int64 × B.El) := R.toList
   seteq r ((arrs X).flatMap fun xs => (f xs).map (xs, ·))
 #guard onArrs Xl (length Xl) (fun xs => [Int64.ofNat xs.length]) && onArrs Xc (length Xc) (fun xs => [Int64.ofNat xs.length])
@@ -510,7 +513,7 @@ private def Xp : Vals (.arr L) 5 := ⟨_, col [0, 0, 3, 1, 2], col [3, 0, 5, 3, 
 private def Yz : Vals (.arr L) 5 := ⟨_, col [0, 1, 0, 2, 3], col [1, 3, 0, 4, 3], col [7, 8, 9, 6]⟩
 private def W2 : Vals (.prod (.arr L) (.arr L)) 5 := (Xp, Yz)
 private def Ws : Vals (.prod (.arr L) L) 5 := (Xp, col [4, 5, 6, 7, 8])
-private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (List Int64 × List Int64) := (idU W).toList.map (·.1)
+private def pairsOf {n : USize} (W : Vals (.prod (.arr L) (.arr L)) n) : List (List Int64 × List Int64) := (idU W).toList.map (·.1)
 #guard arrs Xp == [[3, 1, 2], [], [1, 5], [1, 2], [2, 1, 5]] && arrs Yz == [[7], [8, 9], [], [9, 6], []]
 -- `inits`, `tails` against `List`, each array once; `inits ∋` the prefixes, `tails ∋ = suffix`
 #guard onArrs Xl (inits Xl) (fun xs => [(List.range (xs.length + 1)).map xs.take]) &&
@@ -534,7 +537,7 @@ private def pairsOf {n : Nat} (W : Vals (.prod (.arr L) (.arr L)) n) : List (Lis
 #guard seteq (snoc (unsnoc Xl)).toList (dom (unsnoc Xl)).toList
 
 -- `at(k)` against `List`'s `[k]?`; `at(0) = head`, `tail at(k) = at(k+1)`; past every row's end, no pair
-private def atOk {n : Nat} (X : Vals (.arr L) n) : Bool :=
+private def atOk {n : USize} (X : Vals (.arr L) n) : Bool :=
   seteq (atPos 0 X).toList (outl (uncons X)).toList && (List.range 21).all fun k =>
     onArrs X (atPos k X) (fun xs => xs[k]?.toList) &&
       seteq (tail X ≫ atPos k (tail X).val).toList (atPos (k + 1) X).toList
@@ -626,20 +629,20 @@ private def Xq : Vals (.arr (.prod L L)) 3 := ⟨5, col [0, 3, 5], col [3, 5, 5]
 
 -- `arith` against `Int`: each pair of `W` to `f(u, v)` where the operands are not q's null, `ok(v)`, and `f(u, v)`
 -- is a `long` above the null; nothing elsewhere (a zero divisor, an overflow)
-private def arithSpec {n : Nat} (W : Vals (.prod L L) n) (f : Int → Int → Int) (ok : Int64 → Bool := fun _ => true) :
+private def arithSpec {n : USize} (W : Vals (.prod L L) n) (f : Int → Int → Int) (ok : Int64 → Bool := fun _ => true) :
     List ((Int64 × Int64) × Int64) :=
   (W.1.toList.zip W.2.toList).filterMap fun (a, b) =>
     let r := f a.toInt b.toInt
     if a == nul || b == nul || !ok b || r ≤ nul.toInt || r > Int64.maxValue.toInt then none else some ((a, b), Int64.ofInt r)
 private def square (xs : List Int64) : List (Int64 × Int64) := xs.flatMap fun a => xs.map (a, ·)
-private def Wof (ps : List (Int64 × Int64)) : Vals (.prod L L) ps.length :=
+private def Wof (ps : List (Int64 × Int64)) : Vals (.prod L L) ps.length.toUSize :=
   (List.length_map _ ▸ col (ps.map (·.1)), List.length_map _ ▸ col (ps.map (·.2)))
 -- `-7 … 7` both sides, so negative operands and a zero divisor
 private def Us : List Int64 := (List.range 15).map fun i => i.toInt64 - 7
 private def Wn := Wof (square Us)
 -- the edges of `long`: the null, its neighbour, the top, `±2³²`
 private def Wo := Wof (square [nul, nul + 1, Int64.maxValue, Int64.maxValue - 1, 4294967296, -4294967296, 3, -1, 0])
-private def arithOk {n : Nat} (W : Vals (.prod L L) n) : Bool :=
+private def arithOk {n : USize} (W : Vals (.prod L L) n) : Bool :=
   seteq ((plus W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· + ·)) &&
   seteq ((times W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· * ·)) &&
   seteq ((minus W).toList : List ((Int64 × Int64) × Int64)) (arithSpec W (· - ·)) &&
@@ -662,7 +665,7 @@ private def arithOk {n : Nat} (W : Vals (.prod L L) n) : Bool :=
 #guard seteq (((minus Wn).toList.filter fun (_, w) => Us.contains w) : List ((Int64 × Int64) × Int64))
   (((plus Wn).toList.filter fun (_, u) => Us.contains u).map fun ((w, v), u) => ((u, v), w))
 -- `max`/`min` on numbers are the term `est (leq U) (outl ∪ outr)` and its converse order, no new op
-private def UsC : Vals L Us.length := col Us
+private def UsC : Vals L Us.length.toUSize := col Us
 #guard seteq ((est (leq UsC) (outl (idU Wn) ∪ outr (idU Wn))).toList : List ((Int64 × Int64) × Int64))
   ((square Us).map fun (a, b) => ((a, b), min a b))
 #guard seteq ((est (leq UsC)° (outl (idU Wn) ∪ outr (idU Wn))).toList : List ((Int64 × Int64) × Int64))

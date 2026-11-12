@@ -510,18 +510,23 @@ section Checks
 
 open QLean.Column
 
+/-- `Enc.WF` of a literal payload at a literal `USize` count: `decide` cannot reduce `USize.toNat` of a
+    numeral, so the count is read as a `Nat` numeral first. -/
+macro "wf_lit" : tactic => `(tactic| (unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; decide))
+/-- A literal count below `2³²` fits a `USize` on every platform (`USize.le_size`). -/
+macro "fits_lit" : tactic => `(tactic| (refine Nat.lt_of_lt_of_le ?_ USize.le_size; simp))
 
-private def l3 : Arr .long 3 := Arr.mk (.bytes <| packLongs [7, -1, 42]) (by unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; decide)
+private def l3 : Arr .long 3 := Arr.mk (.bytes <| packLongs [7, -1, 42]) (by wf_lit)
 #guard l3.toList == [7, -1, 42]
 
-private def bs : Arr .boolean 3 := Arr.mk (.bits (ByteArray.mk #[0b101])) (by unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; decide)
+private def bs : Arr .boolean 3 := Arr.mk (.bits (ByteArray.mk #[0b101])) (by wf_lit)
 #guard bs.toList == [true, false, true]
 
 -- one symbol column, as `syms` and as `enum` over the dictionary `a, bc`
 private def blob : ByteArray := ByteArray.mk #[97, 0, 98, 99, 0]
-private def ss : Arr .symbol 3 := Arr.mk (.syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8]) (by unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; decide)
+private def ss : Arr .symbol 3 := Arr.mk (.syms (ByteArray.mk #[98, 99, 0, 97, 0, 98, 99, 0]) #[0, 3, 5, 8]) (by wf_lit)
 private def es : Arr .symbol 3 :=
-  Arr.mk (.enum blob #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!)) (by unfold Enc.WF; simp only [USize.reduceToNat, QAtomicType.width]; decide)
+  Arr.mk (.enum blob #[0, 2, 5] (packIds (idWidth #[0, 2, 5]) 3 fun i => [1, 0, 1][i]!)) (by wf_lit)
 #guard ss.toList == ["bc", "a", "bc"]
 #guard es.toList == ss.toList
 
