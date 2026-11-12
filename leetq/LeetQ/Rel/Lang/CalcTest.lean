@@ -2,7 +2,8 @@ import LeetQ.Rel.Lang.Calc
 import AOP.A4_1
 
 /-! `rel(…)` (`Calc`): each construct against the AOP term written by hand, the closedness of the grammar, the
-    errors of a construct outside the fragment, and three B&dM derivations as plain `calc`s over `rel(…)` terms. -/
+    errors of a construct outside the fragment, and B&dM derivations of ch. 4 and 5 as plain `calc`s over `rel(…)`
+    terms. -/
 
 namespace LeetQ.Rel.Lang.CalcTest
 
@@ -72,20 +73,104 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R {(a,b)})
 /-- error: `at(0)` has no AOP counterpart -/
 #guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R at(0))
-/-- error: `dom` is outside the allegory fragment of rel(…) -/
-#guard_msgs in example (R : A ⟶ B) : A ⟶ A := rel(dom(R))
-/-- error: `⟨R,S⟩` differs in AOP: `RelProd.pair` takes an explicit product witness -/
-#guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(⟨R,R⟩)
-/-- error: `⦇e,S⦈` differs in AOP: `⦇R⦈` folds an `InitialAlgebra`, not a list from a seed -/
-#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(⦇R,R⦈)
-/-- error: `∼R` differs in AOP: there `∼R` is the Heyting `R ⇨ 𝟘`, a complement only when Boolean -/
-#guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(∼R)
-/-- error: `R × S` differs in AOP: `prodMap` takes an explicit `RelProd` witness -/
-#guard_msgs in example (R : A ⟶ B) : A ⟶ B := rel(R × R)
+/-- error: `⦇e,S⦈` differs in AOP: Rel folds lists from a start set `e : V ⟶ V`, AOP's `⦇R⦈` folds one algebra
+of an `InitialAlgebra F`, and AOP has the list functor only in `RelSet` -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ A) : A ⟶ A := rel(⦇R,R⦈)
+/-- error: `Λ` differs in AOP: Rel reads a set `𝒫A` as an array `[α]`, AOP as the power object `P A` -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(Λ(R))
+/-- error: `F(R)` differs in AOP: Rel's `F` is the list functor only, AOP's any relator -/
+#guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(F(R))
 /-- error: `Q` is not a local variable: a name in rel(…) is a variable or hypothesis of the statement -/
 #guard_msgs in example : A ⟶ B := rel(Q)
 
 end Div
+
+section Prod
+
+variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A B C D A' B' : 𝒜}
+
+set_option linter.unusedVariables false in
+example [P : RelProd A B] [Q : RelProd A' B'] (R : C ⟶ A) (S : C ⟶ B) (U : A ⟶ A') (V : B ⟶ B') : True := by
+  guard_expr rel(dom(R)) =ₛ dom R
+  guard_expr rel(ran(R)) =ₛ ran R
+  guard_expr rel(⟨R,S⟩) =ₛ P.pair R S
+  guard_expr rel(⟨R,S⟩ π₁) =ₛ P.pair R S ≫ P.π₁
+  guard_expr rel(⟨R,S⟩ π₂) =ₛ P.pair R S ≫ P.π₂
+  guard_expr rel(U × V) =ₛ prodMap P Q U V
+  guard_expr rel(⟨R,S⟩(U × V) π₁) =ₛ (P.pair R S ≫ prodMap P Q U V) ≫ Q.π₁
+  trivial
+
+/-- B&dM Ex 5.9 (`RelProd.map_comp_pair`): a map distributes over pairing. -/
+example [P : RelProd A B] {f : D ⟶ C} (hf : Map f) (R : C ⟶ A) (S : C ⟶ B) : rel(f ⟨R,S⟩) = rel(⟨f R, f S⟩) :=
+  calc rel(f ⟨R,S⟩)
+      = rel(f ((R π₁°) ∩ (S π₂°))) := by rw [RelProd.pair]
+    _ = rel((f (R π₁°)) ∩ (f (S π₂°))) := simple_dist_inter hf.2 _ _
+    _ = rel((f R π₁°) ∩ (f (S π₂°))) := by rw [← Cat.assoc f R]
+    _ = rel((f R π₁°) ∩ (f S π₂°)) := by rw [← Cat.assoc f S]
+    _ = rel(⟨f R, f S⟩) := by rw [RelProd.pair]
+
+/-- B&dM (5.3), absorption (`RelProd.pair_prodMap`), by the book's chain through a product `M` of `A'` and `B`. -/
+example [P : RelProd A B] [Q : RelProd A' B'] [M : RelProd A' B] (X : C ⟶ A) (Y : C ⟶ B) (R : A ⟶ A')
+    (S : B ⟶ B') : rel(⟨X,Y⟩(R × S)) = rel(⟨X R, Y S⟩) :=
+  calc rel(⟨X,Y⟩(R × S))
+      = rel(⟨X,Y⟩((R × 𝟙)(𝟙 × S))) := by rw [prodMap_factor P M Q R S]
+    _ = rel(⟨X,Y⟩(R × 𝟙)(𝟙 × S)) := by rw [Cat.assoc]
+    _ = rel(⟨X R, Y⟩(𝟙 × S)) := by rw [RelProd.pair_prodMap_fst]
+    _ = rel(⟨X R, Y S⟩) := by rw [RelProd.pair_prodMap_snd]
+
+/-- error: `π₁` needs an instance or hypothesis `RelProd A B`: rel(…) never writes the product -/
+#guard_msgs in example (R : C ⟶ A) (S : C ⟶ B) : C ⟶ A := rel(⟨R,S⟩ π₁)
+
+end Prod
+
+section Sum
+
+variable {𝒜 : Type u} [DistributiveAllegory 𝒜] {T A B C D : 𝒜}
+
+set_option linter.unusedVariables false in
+example (K : Coproduct T A B) (R : A ⟶ C) (S : B ⟶ C) : True := by
+  guard_expr rel([R,S]) =ₛ junc K R S
+  guard_expr rel(inl [R,S]) =ₛ K.u₁ ≫ junc K R S
+  guard_expr rel(inr [R,S]) =ₛ K.u₂ ≫ junc K R S
+  guard_expr rel([inl, inr]) =ₛ junc K K.u₁ K.u₂
+  trivial
+
+-- the objects of `inl` come from the other side of `=`, the elaboration of `rel(inl)` waiting for them
+example (K : Coproduct T A B) : rel(inl) = K.u₁ := by guard_target =ₛ K.u₁ = K.u₁; rfl
+
+/-- B&dM §5.3 (`junc_recip_junc`): `[U,V]°[R,S] = U°R ∪ V°S`. -/
+example (K : Coproduct T A B) (U : A ⟶ D) (V : B ⟶ D) (R : A ⟶ C) (S : B ⟶ C) :
+    rel([U,V]° [R,S]) = rel((U° R) ∪ (V° S)) :=
+  calc rel([U,V]° [R,S])
+      = rel(((U° inl) ∪ (V° inr)) [R,S]) := by rw [junc_recip]
+    _ = rel((U° inl [R,S]) ∪ (V° inr [R,S])) := union_comp_distrib _ _ _
+    _ = rel((U° (inl [R,S])) ∪ (V° inr [R,S])) := by rw [Cat.assoc U°]
+    _ = rel((U° R) ∪ (V° inr [R,S])) := by rw [u₁_junc]
+    _ = rel((U° R) ∪ (V° (inr [R,S]))) := by rw [Cat.assoc V°]
+    _ = rel((U° R) ∪ (V° S)) := by rw [u₂_junc]
+
+/-- error: `[R,S]` needs a hypothesis `Coproduct T A B`: rel(…) never writes it, and a structure is found by no
+instance search -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ C) (S : B ⟶ C) : T ⟶ C := rel([R,S])
+/-- error: `[R,S]` has several hypotheses `Coproduct T A B`, K, L: rel(…) never writes it, and a structure is
+found by no instance search -/
+#guard_msgs (whitespace := lax) in
+example (K L : Coproduct T A B) (R : A ⟶ C) (S : B ⟶ C) : T ⟶ C := rel([R,S])
+
+end Sum
+
+section Bool
+
+variable {𝒜 : Type u} [BooleanAllegory 𝒜] {A B : 𝒜}
+
+set_option linter.unusedVariables false in
+example (R S : A ⟶ B) : True := by
+  guard_expr rel(∼R) =ₛ ∼R
+  guard_expr rel(R − S) =ₛ R − S
+  guard_expr rel(R ∩ ∼S) =ₛ R ∩ ∼S
+  trivial
+
+end Bool
 
 section Top
 
@@ -95,6 +180,13 @@ set_option linter.unusedVariables false in
 example (R : A ⟶ B) : True := by
   guard_expr rel(R ∩ ⊤) =ₛ R ∩ topHom A B
   trivial
+
+/-- error: `∼R` needs an instance `BooleanAllegory 𝒜`: AOP's `∼R` is the Heyting `R ⇨ 𝟘`, the complement only in
+a Boolean allegory -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(∼R)
+/-- error: `R − S` needs an instance `BooleanAllegory 𝒜`: AOP's `∼R` is the Heyting `R ⇨ 𝟘`, the complement only
+in a Boolean allegory -/
+#guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R − R)
 
 end Top
 

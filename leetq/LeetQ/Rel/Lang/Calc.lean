@@ -16,9 +16,8 @@ import AOP.A5_3
     a `RelProd` instance; `[R,S]`, `inl`, `inr` over a `Coproduct` hypothesis; `∼R`, `R − S` in a
     `BooleanAllegory`. `⊑` and `=` are Lean's, between `rel(…)` terms. Every other construct is an error naming it.
 
-    A product or coproduct is never written in the term: each one is a metavariable filled from the statement's
-    context once elaboration has fixed its objects. `RelProd` is a class, so instance search fills it; `Coproduct`
-    is a structure, so it is the one hypothesis of the statement whose type it unifies with. -/
+    A product, a coproduct or the Boolean instance is never written in the term: each is a metavariable that
+    unification gives its objects, then `fill` takes from the statement's context. -/
 
 namespace LeetQ.Rel.Lang.Calc
 
@@ -33,46 +32,67 @@ def refAt (p : Lang.Pos) : TermElabM Syntax := do
 def outside {α : Type} (p : Lang.Pos) (what : String) (why : MessageData) : TermElabM α := do
   throwErrorAt (← refAt p) "{what} {why}"
 
-/-- A `Coproduct` metavariable still to be filled: where its construct is, and how it is spelled. -/
-abbrev Holes := IO.Ref (Array (Lean.Expr × Lang.Pos × String))
+/-- The context a construct needs and the term does not write: a metavariable of a witness type (`RelProd a b`,
+    `Coproduct s a b`, `BooleanAllegory 𝒜`), the construct's place and spelling, and why it needs the witness. -/
+abbrev Holes := IO.Ref (Array (Lean.Expr × Lang.Pos × String × String))
 
-/-- A `RelProd` metavariable, filled by instance search; a failed search names `what`. -/
-def prod (p : Lang.Pos) (what : String) : TermElabM Term := do withRef (← refAt p) do
-  exprToSyntax (← mkInstMVar (← elabType (← `(Freyd.Alg.RelProd _ _)))
-    m!"{what} takes its product from an instance or hypothesis of the statement")
+/-- A natural metavariable of type `ty`, so that unification may fix its objects before `fill` finds it. -/
+def hole (hs : Holes) (p : Lang.Pos) (what why : String) (ty : Term) : TermElabM Term := do
+  let w ← mkFreshExprMVar (← elabType ty); hs.modify (·.push (w, p, what, why)); exprToSyntax w
 
-/-- A `Coproduct` metavariable, filled by `fill` after elaboration. -/
-def hole (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
-  let w ← mkFreshExprMVar (← elabType (← `(Freyd.Alg.Coproduct _ _ _)))
-  hs.modify (·.push (w, p, what)); exprToSyntax w
-
-/-- `w` the one hypothesis whose type is `w`'s; with objects still unknown, wait for the expected type first. -/
-def fill (w : Lean.Expr) (p : Lang.Pos) (what : String) : TermElabM Unit := do
+/-- `w` filled from the context: a class by instance search (local instances are the statement's hypotheses), a
+    structure by the one hypothesis of its type. Objects still unknown wait for the expected type. -/
+def fill (w : Lean.Expr) (p : Lang.Pos) (what why : String) : TermElabM Unit := do
   if (← w.mvarId!.isAssigned) then return
   let ty ← instantiateMVars (← inferType w)
   if ty.hasExprMVar then tryPostpone
-  let cs ← (← getLCtx).foldlM (init := #[]) fun cs d => do
-    if d.isImplementationDetail || !(← whnfR d.type).isAppOf ``Freyd.Alg.Coproduct then return cs
-    return if ← withoutModifyingState (isDefEq d.type ty) then cs.push d.toExpr else cs
-  match cs with
-  | #[c] => unless ← isDefEq w c do outside p what m!"cannot use the hypothesis `{c}` as `{ty}`"
-  | #[] => outside p what m!"needs a hypothesis `{ty}`: AOP's `Coproduct` is a structure, which no instance search finds"
-  | _ => outside p what m!"has several hypotheses `{ty}`, {cs.toList}: name one by giving the others other objects"
+  -- printed alone, so that the type never breaks across the message's line
+  let tys := toString (← ppExpr ty)
+  let set (c : Lean.Expr) := do unless ← isDefEq w c do outside p what m!"cannot use `{c}` as `{tys}`"
+  if (← isClass? ty).isSome then
+    if ty.hasExprMVar then outside p what m!"needs `{tys}` with objects the statement fixes: {why}"
+    match ← synthInstance? ty with
+    | some c => set c
+    | none => outside p what m!"needs an instance or hypothesis `{tys}`: {why}"
+  else
+    let cs ← (← getLCtx).foldlM (init := #[]) fun cs d => do
+      if d.isImplementationDetail || (← whnfR d.type).getAppFn.constName? != ty.getAppFn.constName? then return cs
+      return if ← withoutModifyingState (isDefEq d.type ty) then cs.push d.toExpr else cs
+    match cs with
+    | #[c] => set c
+    | #[] => outside p what m!"needs a hypothesis `{tys}`: {why}"
+    | _ => outside p what m!"has several hypotheses `{tys}`, {", ".intercalate (← cs.toList.mapM fun c =>
+        return toString (← ppExpr c))}: {why}"
 
-/-- A check that the allegory of the term is Boolean, where AOP's Heyting `∼R` is the complement Rel means. -/
-def boolean (p : Lang.Pos) (what : String) : TermElabM Term := do withRef (← refAt p) do
-  let c ← exprToSyntax (← mkFreshTypeMVar)
-  discard <| mkInstMVar (← elabType (← `(Freyd.Alg.BooleanAllegory $c)))
-    m!"{what} is the complement in Rel, and AOP's `∼R` is the Heyting `R ⇨ 𝟘`, a complement only when Boolean"
-  pure c
+def prod (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
+  hole hs p what "rel(…) never writes the product" (← `(Freyd.Alg.RelProd _ _))
 
-/-- `e` written as AOP notation; `vars` the local variables a name may be, `hs` the coproducts to fill. -/
+def coprod (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
+  hole hs p what "rel(…) never writes it, and a structure is found by no instance search"
+    (← `(Freyd.Alg.Coproduct _ _ _))
+
+/-- The operand `a` of a complement elaborated, its allegory `𝒜` (the type of its target) and the instance
+    `BooleanAllegory 𝒜`, found before the complement is: AOP's `∼R` is the Heyting `R ⇨ 𝟘`, which is the complement
+    Rel means only in a Boolean allegory. -/
+def boolean (p : Lang.Pos) (what : String) (a : Term) : TermElabM (Term × Term × Term) := do
+  let e ← elabTerm a none
+  let t ← instantiateMVars (← inferType e)
+  if !t.isApp then outside p what m!"has an operand of type `{t}`, not an arrow"
+  let c ← instantiateMVars (← inferType t.appArg!)
+  if c.hasExprMVar then tryPostpone; outside p what m!"has an operand `{t}` in no fixed allegory"
+  let ty ← elabType (← `(Freyd.Alg.BooleanAllegory $(← exprToSyntax c)))
+  let tys := toString (← ppExpr ty)
+  let some i ← synthInstance? ty | outside p what (m!"needs an instance `{tys}`: AOP's `∼R` is the Heyting " ++
+    m!"`R ⇨ 𝟘`, the complement only in a Boolean allegory")
+  pure (← exprToSyntax c, ← exprToSyntax i, ← exprToSyntax e)
+
+/-- `e` written as AOP notation; `vars` the local variables a name may be, `hs` the products and coproducts. -/
 partial def toTerm (vars : List String) (hs : Holes) : Lang.Expr → TermElabM Term
   | .name p n => if vars.contains n then pure (mkIdent (.mkSimple n)) else
       outside p s!"`{n}`" "is not a local variable: a name in rel(…) is a variable or hypothesis of the statement"
   | .comp a b => do `($(← toTerm vars hs a) ≫ $(← toTerm vars hs b))
   | .conv _ a => do `($(← toTerm vars hs a)°)
-  | .compl p a => do `(Freyd.Alg.neg (𝒜 := $(← boolean p "`∼R`")) $(← toTerm vars hs a))
+  | .compl p a => do let (c, _, a) ← boolean p "`∼R`" (← toTerm vars hs a); `(Freyd.Alg.neg (𝒜 := $c) $a)
   | .bin p o a b => do
     let (a, b) := (← toTerm vars hs a, ← toTerm vars hs b)
     match o with
@@ -80,20 +100,20 @@ partial def toTerm (vars : List String) (hs : Holes) : Lang.Expr → TermElabM T
     | .join => `($a ∪ $b)
     | .rdiv => `($a / $b)
     | .ldiv => `($a \ $b)
-    | .diff => `(Freyd.Alg.sub (𝒜 := $(← boolean p "`R − S`")) $a $b)
-    | .prod => `(Freyd.Alg.prodMap $(← prod p "`R × S`") $(← prod p "`R × S`") $a $b)
+    | .diff => do let (c, i, a) ← boolean p "`R − S`" a; `(@Freyd.Alg.sub $c $i _ _ $a $b)
+    | .prod => `(Freyd.Alg.prodMap $(← prod hs p "`R × S`") $(← prod hs p "`R × S`") $a $b)
   | .pair p a b => do
-    `(Freyd.Alg.RelProd.pair $(← prod p "`⟨R,S⟩`") $(← toTerm vars hs a) $(← toTerm vars hs b))
-  | .junc p a b => do `(Freyd.Alg.junc $(← hole hs p "`[R,S]`") $(← toTerm vars hs a) $(← toTerm vars hs b))
+    `(Freyd.Alg.RelProd.pair $(← prod hs p "`⟨R,S⟩`") $(← toTerm vars hs a) $(← toTerm vars hs b))
+  | .junc p a b => do `(Freyd.Alg.junc $(← coprod hs p "`[R,S]`") $(← toTerm vars hs a) $(← toTerm vars hs b))
   | .op _ .id [] [] => `(𝟙 _)
   | .op _ .zero [] [] => `(𝟘)
   | .op _ .top [] [] => `(topHom _ _)
   | .op _ .dom [] [a] => do `(Freyd.Alg.dom $(← toTerm vars hs a))
   | .op _ .ran [] [a] => do `(Freyd.Alg.ran $(← toTerm vars hs a))
-  | .op p .outl [] [] => do `(Freyd.Alg.RelProd.π₁ (self := $(← prod p "`π₁`")))
-  | .op p .outr [] [] => do `(Freyd.Alg.RelProd.π₂ (self := $(← prod p "`π₂`")))
-  | .op p .inl [] [] => do `(Freyd.Alg.Coproduct.u₁ $(← hole hs p "`inl`"))
-  | .op p .inr [] [] => do `(Freyd.Alg.Coproduct.u₂ $(← hole hs p "`inr`"))
+  | .op p .outl [] [] => do `(Freyd.Alg.RelProd.π₁ (self := $(← prod hs p "`π₁`")))
+  | .op p .outr [] [] => do `(Freyd.Alg.RelProd.π₂ (self := $(← prod hs p "`π₂`")))
+  | .op p .inl [] [] => do `(Freyd.Alg.Coproduct.u₁ $(← coprod hs p "`inl`"))
+  | .op p .inr [] [] => do `(Freyd.Alg.Coproduct.u₂ $(← coprod hs p "`inr`"))
   | .op p o (_ :: _) _ => outside p s!"`{o.sym}(…)`" "names Rel objects: rel(…) takes its objects from the Lean types"
   | .op p (.index i) _ _ => outside p s!"`at({i})`" "has no AOP counterpart"
   | .op p o@.mem _ _ | .op p o@.lam _ _ | .op p o@.E _ _ | .op p o@.P _ _ | .op p o@.est _ _ | .op p o@.thin _ _
@@ -102,8 +122,8 @@ partial def toTerm (vars : List String) (hs : Holes) : Lang.Expr → TermElabM T
   | .op p .map _ _ => outside p "`F(R)`" "differs in AOP: Rel's `F` is the list functor only, AOP's any relator"
   | .op p o _ _ => outside p s!"`{o.sym}`" "is outside the allegory fragment of rel(…)"
   | .lit p _ => outside p "a literal `{…}`" "has no AOP counterpart"
-  | .fold p .. => outside p "`⦇e,S⦈`" ("differs in AOP: Rel folds lists from a start set `e : V ⟶ V`, AOP's `⦇R⦈` folds " ++
-      "one algebra of an `InitialAlgebra F`, and AOP has the list functor only in `RelSet`")
+  | .fold p .. => outside p "`⦇e,S⦈`" ("differs in AOP: Rel folds lists from a start set `e : V ⟶ V`, AOP's " ++
+      "`⦇R⦈` folds one algebra of an `InitialAlgebra F`, and AOP has the list functor only in `RelSet`")
   | .app p n _ | .inf p n .. => outside p s!"`{n}`" "is a Rel definition, and rel(…) has none"
 
 -- `withoutPosition`: juxtaposition may cross a line here, the term ends at its `)`
@@ -118,7 +138,7 @@ syntax (name := relTerm) "rel(" withoutPosition(rel) ")" : term
     let hs ← IO.mkRef #[]
     let r ← elabTermEnsuringType (← toTerm vars hs e) ty?
     synthesizeSyntheticMVars (postpone := .yes)
-    for (w, p, what) in ← hs.get do fill w p what
+    for (w, p, what, why) in ← hs.get do fill w p what why
     pure r
 
 end LeetQ.Rel.Lang.Calc
