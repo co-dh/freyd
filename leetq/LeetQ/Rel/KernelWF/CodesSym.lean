@@ -183,9 +183,9 @@ theorem codes_symbol_enum_faithful (x : Part (.atom .symbol)) {d : ByteArray} {o
   rw [hc]
   exact lane_faithful x.2 hlt hD (enum_row x.2 he hu hlt) hi hj
 
-/-- **One `enum` part of a symbol side: its code is well formed**, its ids packed in exactly `⌈n·w/8⌉` bytes. -/
+/-- **One `enum` part of a symbol side: its code is well formed**, under the part's `Enc.WF` alone. -/
 theorem codes_symbol_enum_wf (x : Part (.atom .symbol)) {d : ByteArray} {o : Array Nat} {ids : ByteArray}
-    (he : x.2.enc = .enum d o ids) (hsz : Column.idWidth o ≠ 0 → ids.size = (x.1.toNat * Column.idWidth o + 7) / 8) :
+    (he : x.2.enc = .enum d o ids) :
     let c := (Obj.codes (.atom .symbol) #v[x])[0]
     (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
@@ -196,10 +196,10 @@ theorem codes_symbol_enum_wf (x : Part (.atom .symbol)) {d : ByteArray} {o : Arr
   obtain ⟨rfl, rfl, rfl⟩ := hi'
   have hwf := x.2.wf
   rw [he] at hwf
-  obtain ⟨-, -, hlt, -, -⟩ := hwf
+  obtain ⟨hsz, -, hlt, -, -⟩ := hwf
   dsimp only
   rw [hc]
-  exact ofLane_wf (idWidth_facts o).1 hsz (idWidth_facts o).2 hlt
+  exact ofLane_wf (idWidth_facts o).1 (fun _ => hsz) (idWidth_facts o).2 hlt
 
 /-! ### A `syms` part -/
 
@@ -280,19 +280,15 @@ theorem codes_symbol_faithful (x : Part (.atom .symbol)) {i j : Nat} (hi : i < x
   · exact codes_symbol_syms_faithful x he hi hj
   · exact codes_symbol_enum_faithful x he hi hj
 
-/-- **One part of a symbol side: its code is well formed**, blob or interned. An interned part's ids must be
-    exactly `⌈n·w/8⌉` bytes (`hsz`): `Enc.WF` asks only that they hold `n` ids (`idsCap`), and `codes` passes
-    them on as they are. -/
-theorem codes_symbol_wf (x : Part (.atom .symbol))
-    (hsz : ∀ d o ids, x.2.enc = .enum d o ids → Column.idWidth o ≠ 0 →
-      ids.size = (x.1.toNat * Column.idWidth o + 7) / 8) :
+/-- **One part of a symbol side: its code is well formed**, blob or interned, under its `Enc.WF` alone. -/
+theorem codes_symbol_wf (x : Part (.atom .symbol)) :
     let c := (Obj.codes (.atom .symbol) #v[x])[0]
     (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   rcases symbol_enc x.2.wf with ⟨b, o, he⟩ | ⟨d, o, ids, he⟩
   · exact codes_symbol_syms_wf x he
-  · exact codes_symbol_enum_wf x he (hsz d o ids he)
+  · exact codes_symbol_enum_wf x he
 
 #print axioms codes_symbol_enum_faithful
 #print axioms codes_symbol_enum_wf

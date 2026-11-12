@@ -155,20 +155,21 @@ theorem gatherIds_utf8 {dict : ByteArray} {dof : Array Nat} {inRange : Unit → 
     rw [hp] at H
     exact fun j hj => utf8_of_inv H.1 hj (H.2 j hj)
 
-/-- An interned gather's ids hold all `m` of its answer's elements at the answer dictionary's width. -/
+/-- An interned gather's ids are its answer's `m` elements packed at the answer dictionary's width, in exactly
+    `⌈m·w/8⌉` bytes. -/
 theorem gatherIds_wf {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool} {n : USize} {ids ix : ByteArray}
     {db : ByteArray} {dbo : Array Nat} {nids : ByteArray}
     (hG : (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix) = (db, dbo, nids)) :
-    Column.idsCap nids (Column.idWidth dbo) (ix.size / 8) = ix.size / 8 := by
-  suffices key : Column.idsCap (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.2
-      (Column.idWidth (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.1)
-      (ix.size / 8) = ix.size / 8 by rw [hG] at key; exact key
+    nids.size = (ix.size / 8 * Column.idWidth dbo + 7) / 8 := by
+  suffices key : (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.2.size =
+      (ix.size / 8 * Column.idWidth (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.1 + 7) / 8
+    by rw [hG] at key; exact key
   have hl := fun o : Array Nat => Verify.laneWidth_cases (Column.widthFor (o.size - 1 - 1))
   have hU : ∀ o : Array Nat, (Column.idWidth o).toUSize.toNat = Column.idWidth o := fun o =>
     USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by rcases hl o with h | h | h | h | h | h | h | h <;>
       simp only [Column.idWidth, Column.idWidthOf, h] <;> decide) USize.le_size)
   simp only [gatherIds, gatherPacked]
-  split <;> (rw [hU]; exact Verify.idsCap_packIds _ _ (hl _))
+  split <;> (rw [hU]; exact packIds_size (hl _) _ _)
 
 /-- An interned gather's dictionary is laid out as `SymsWF` says where the source's is: the empty symbol it
     may append is one NUL past the old end. -/
