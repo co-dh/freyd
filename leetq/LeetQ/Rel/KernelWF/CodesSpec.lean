@@ -326,6 +326,185 @@ theorem codes_small_int_wf {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t =
     have hspec := Verify.groupIdsFoR_spec k hk0 x.1 md pk
     exact ofIds_groupOf_wf (foRKey k md pk) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
 
+/-! ## Atoms: the eight-byte integral types, `rangeOffsets`
+
+`long`, `timestamp`, `timespan`, dense or Frame-of-Reference encoded: every part's elements as offsets from
+the joint least element `base`, the null at `card - 1`. -/
+
+/-- `mapM` in `Option` over a list that answers: one answer per element, in place. -/
+theorem list_mapM_some {α β : Type} {f : α → Option β} :
+    ∀ {l : List α} {ys : List β}, l.mapM f = some ys →
+      ∃ _ : ys.length = l.length, ∀ i (hi : i < l.length), f l[i] = some ys[i]
+  | [], ys, h => by
+    simp only [List.mapM_nil, pure, Option.some.injEq] at h; subst h
+    exact ⟨rfl, fun i hi => absurd hi (by simp)⟩
+  | a :: l, ys, h => by
+    simp only [List.mapM_cons, bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨b, hb, bs, hbs, rfl⟩ := h
+    obtain ⟨hl, hall⟩ := list_mapM_some hbs
+    refine ⟨by simp [hl], fun i hi => ?_⟩
+    cases i with
+    | zero => simpa using hb
+    | succ i => simpa using hall i (by simpa using hi)
+
+/-- `mapM` in `Option` over an array that answers: one answer per element, in place. -/
+theorem arr_mapM_some {α β : Type} {f : α → Option β} {xs : Array α} {ys : Array β} (h : xs.mapM f = some ys) :
+    ∃ _ : ys.size = xs.size, ∀ k (hk : k < xs.size), f xs[k] = some ys[k] := by
+  rw [Array.mapM_eq_mapM_toList] at h
+  cases hl : xs.toList.mapM f with
+  | none => rw [hl] at h; simp at h
+  | some l =>
+    rw [hl] at h
+    have hy : l.toArray = ys := by simpa using h
+    subst hy
+    obtain ⟨hlen, hall⟩ := list_mapM_some hl
+    exact ⟨by simpa using hlen, fun k hk => by simpa using hall k (by simpa using hk)⟩
+
+/-- `mapM` in `Option` over a vector that answers: one answer per element, in place. -/
+theorem vec_mapM_some {α β : Type} {p : Nat} {f : α → Option β} {xs : Vector α p} {ys : Vector β p}
+    (h : xs.mapM f = some ys) {k : Nat} (hk : k < p) : f xs[k] = some ys[k] := by
+  have e : xs.toArray.mapM f = some ys.toArray := by rw [← Vector.toArray_mapM, h]; rfl
+  simpa using (arr_mapM_some e).2 k (by simpa using hk)
+
+/-- A left fold whose step stays at or below both operands ends at or below its seed and every element. -/
+theorem foldl_le {g : Int64 → Int64 → Int64} (hg : ∀ a y, (g a y).toInt ≤ a.toInt ∧ (g a y).toInt ≤ y.toInt) :
+    ∀ (l : List Int64) (a : Int64), (l.foldl g a).toInt ≤ a.toInt ∧ ∀ x ∈ l, (l.foldl g a).toInt ≤ x.toInt
+  | [], a => by simp
+  | y :: l, a => by
+    rw [List.foldl_cons]
+    obtain ⟨h1, h2⟩ := foldl_le hg l (g a y)
+    have := hg a y
+    refine ⟨by omega, fun x hx => ?_⟩
+    rcases List.mem_cons.1 hx with rfl | hx
+    · omega
+    · exact h2 x hx
+
+/-- A left fold whose step stays at or above both operands ends at or above its seed and every element. -/
+theorem foldl_ge {g : Int64 → Int64 → Int64} (hg : ∀ a y, a.toInt ≤ (g a y).toInt ∧ y.toInt ≤ (g a y).toInt) :
+    ∀ (l : List Int64) (a : Int64), a.toInt ≤ (l.foldl g a).toInt ∧ ∀ x ∈ l, x.toInt ≤ (l.foldl g a).toInt
+  | [], a => by simp
+  | y :: l, a => by
+    rw [List.foldl_cons]
+    obtain ⟨h1, h2⟩ := foldl_ge hg l (g a y)
+    have := hg a y
+    refine ⟨by omega, fun x hx => ?_⟩
+    rcases List.mem_cons.1 hx with rfl | hx
+    · omega
+    · exact h2 x hx
+
+theorem min_toInt_le (a y : Int64) : (min a y).toInt ≤ a.toInt ∧ (min a y).toInt ≤ y.toInt := by
+  by_cases h : a ≤ y
+  · rw [show min a y = a from if_pos h]; exact ⟨Int.le_refl _, Int64.le_iff_toInt_le.1 h⟩
+  · rw [show min a y = y from if_neg h]; have := mt Int64.le_iff_toInt_le.2 h; exact ⟨by omega, Int.le_refl _⟩
+
+theorem max_toInt_ge (a y : Int64) : a.toInt ≤ (max a y).toInt ∧ y.toInt ≤ (max a y).toInt := by
+  by_cases h : a ≤ y
+  · rw [show max a y = y from if_pos h]; exact ⟨Int64.le_iff_toInt_le.1 h, Int.le_refl _⟩
+  · rw [show max a y = a from if_neg h]; have := mt Int64.le_iff_toInt_le.2 h; exact ⟨Int.le_refl _, by omega⟩
+
+/-- **`overList lesser` is at or below every element that is not the null**, and `greater` at or above. -/
+theorem overList_bounds {nul seed x : Int64} {xs : List Int64} (hx : x ∈ xs) (hn : x ≠ nul) :
+    (Verify.overList .lesser nul seed xs).toInt ≤ x.toInt ∧ x.toInt ≤ (Verify.overList .greater nul seed xs).toInt := by
+  have hm : x ∈ xs.filter fun y => Coc.Over.boolCast .lesser || y != nul := List.mem_filter.2 ⟨hx, by simp [hn, Coc.Over.boolCast]⟩
+  have hM : x ∈ xs.filter fun y => Coc.Over.boolCast .greater || y != nul := List.mem_filter.2 ⟨hx, by simp [hn, Coc.Over.boolCast]⟩
+  refine ⟨(foldl_le (fun a y => ?_) _ seed).2 x hm, (foldl_ge (fun a y => ?_) _ seed).2 x hM⟩
+  · simp only [Coc.Over.step]; split
+    · next h => exact ⟨Int.le_refl _, Int.le_of_lt (Int64.lt_iff_toInt_lt.1 h)⟩
+    · next h => have := mt Int64.lt_iff_toInt_lt.2 h; exact ⟨by omega, Int.le_refl _⟩
+  · simp only [Coc.Over.step]; split
+    · next h => exact ⟨Int.le_refl _, Int.le_of_lt (Int64.lt_iff_toInt_lt.1 h)⟩
+    · next h => have := mt Int64.lt_iff_toInt_lt.2 h; exact ⟨by omega, Int.le_refl _⟩
+
+/-- An eight-byte integral type's facts: its layout is eight bytes, its payload dense or encoded, its
+    encoded null `nul`. -/
+theorem long_facts {t : QAtomicType} (ht : orderKind t = some .i64) :
+    t.width = some 8 ∧ denseWidth t = some 8 ∧ t ≠ .general ∧ Coc.nullOf t = some nul ∧ Column.encodes t = true := by
+  cases t <;> simp [orderKind] at ht <;> exact ⟨rfl, rfl, by decide, rfl, rfl⟩
+
+/-- An eight-byte integral payload is dense or Frame-of-Reference encoded (`Enc.WF`). -/
+theorem long_enc {t : QAtomicType} (ht : orderKind t = some .i64) {n : USize} {e : Enc} (hwf : Enc.WF t n e) :
+    (∃ b, e = .bytes b ∧ b.size = n.toNat * 8) ∨ ∃ md pk, e = .foR md pk := by
+  cases e with
+  | bytes b => left; refine ⟨b, rfl, ?_⟩; cases t <;> simp [orderKind] at ht <;> simpa [Enc.WF, QAtomicType.width] using hwf
+  | foR md pk => exact .inr ⟨md, pk, rfl⟩
+  | _ => exfalso; cases t <;> simp [orderKind] at ht <;> simp [Enc.WF] at hwf
+
+/-- An eight-byte integral payload's raw word `i`: a dense one's eight bytes at `8i`, an encoded one's
+    `foRBits`. -/
+theorem raw_long {t : QAtomicType} (ht : orderKind t = some .i64) {n : USize} {i : Nat} (hi : i < n.toNat) :
+    (∀ b, (Enc.raw t n (.bytes b)).toList.getD i 0 = Column.bitsAt b (i * 8) 8) ∧
+      ∀ md pk, (Enc.raw t n (.foR md pk)).toList.getD i 0 = Column.foRBits md pk (Column.blockStarts md) i := by
+  cases t <;> simp [orderKind] at ht <;>
+    exact ⟨fun b => by simp [Enc.raw, QAtomicType.width, List.getD_eq_getElem?_getD, hi],
+      fun md pk => by simp [Enc.raw, QAtomicType.width, List.getD_eq_getElem?_getD, hi]⟩
+
+/-- **An eight-byte integral column's element is its raw word read as an `Int64`.** -/
+theorem long_row_eq {t : QAtomicType} (ht : orderKind t = some .i64) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (i : Fin n.toNat) (j : Fin m.toNat) :
+    x.get i = y.get j ↔ ((Enc.raw t n x.enc).toList.getD i 0).toInt64 = ((Enc.raw t m y.enc).toList.getD j 0).toInt64 := by
+  obtain ⟨-, hd, hg, -, -⟩ := long_facts ht
+  rw [Arr.get_ne x i hg, Arr.get_ne y j hg, KernelWF.get_eq_raw hd x.wf i.2, KernelWF.get_eq_raw hd y.wf j.2]
+  cases t <;> simp [orderKind] at ht <;> simp [Column.atomOfBits, Carrier.of?]
+
+/-- A shift by `-base` of an element `x` with `base ≤ x ≤ base + 2^32`: the integer difference, not the null. -/
+theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.toInt) (h2 : x.toInt - base.toInt ≤ 2 ^ 32) :
+    (x + -base).toInt = x.toInt - base.toInt ∧ x + -base ≠ nul := by
+  have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
+  have hxl := Int64.le_toInt x; have hxu := Int64.toInt_lt x
+  have hbn : base.toInt ≠ -2 ^ 63 := fun h => hb (Int64.toInt_inj.1 (by rw [h]; decide))
+  have hs : (x + -base).toInt = x.toInt - base.toInt := by
+    rw [Int64.toInt_add, Int64.toInt_neg]
+    simp only [Int.bmod]; split <;> split <;> omega
+  refine ⟨hs, fun h => ?_⟩
+  have := congrArg Int64.toInt h; rw [hs] at this
+  have : nul.toInt = -2 ^ 63 := by decide
+  omega
+
+/-- **One part's `rangeOffsets` code**: `enumIds` over a payload holding each element `x i` shifted by
+    `-base` (the null kept), every element that is not the null in `[base, base + card - 2]`, accepted
+    when the kernel reports every row in range: `n` codes at the lane `w`, the offset `x i - base`, the null
+    at `card - 1`. -/
+theorem enum_part {n : USize} {card w : Nat} {base : Int64} {b' : ByteArray} (x : Nat → Int64) {c : Code}
+    (hcard : card ≤ 2 ^ 32) (hc2 : 2 ≤ card) (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w)
+    (hb : base ≠ nul)
+    (hv : ∀ i < n.toNat, (Column.bitsAt b' (i * 8) 8).toInt64 = if x i = nul then nul else x i + -base)
+    (hr : ∀ i < n.toNat, x i ≠ nul → base.toInt ≤ (x i).toInt ∧ (x i).toInt - base.toInt + 2 ≤ card)
+    (h : (if (enumIds n card.toUSize (card - 1).toUSize w.toUSize b').2 != n then none
+      else some (⟨w, n, card, (enumIds n card.toUSize (card - 1).toUSize w.toUSize b').1⟩ : Code)) = some c) :
+    c.n = n ∧ c.card = card ∧ c.w = w ∧ c.b.size = (n.toNat * w + 7) / 8 ∧
+      ∀ i < n.toNat, Column.idAt c.b c.w i = if x i = nul then card - 1 else ((x i).toInt - base.toInt).toNat := by
+  have hS : 2 ^ 32 ≤ USize.size := USize.le_size
+  have hok : (enumIds n card.toUSize (card - 1).toUSize w.toUSize b').2 = n := by
+    cases hb2 : ((enumIds n card.toUSize (card - 1).toUSize w.toUSize b').2 != n) with
+    | true => rw [if_pos hb2] at h; cases h
+    | false => simpa using hb2
+  rw [if_neg (by simpa using hok), Option.some_inj] at h
+  subst h
+  have hwu : w.toUSize.toNat = w := USize.toNat_ofNat_of_lt'
+    (Nat.lt_of_lt_of_le (by rcases hw with rfl | rfl | rfl | rfl <;> decide : w < 2 ^ 32) hS)
+  have hcu : card.toUSize.toNat ≤ card := by
+    show (USize.ofNat card).toNat ≤ card
+    first
+      | (rw [USize.toNat_ofNat']; exact Nat.mod_le _ _)
+      | (simp only [USize.ofNat, USize.toNat, UInt64.ofNat, BitVec.toNat_ofNat]; exact Nat.mod_le _ _)
+      | (simp [USize.toNat_ofNat]; omega)
+      | (simp; exact Nat.mod_le _ _)
+  have hc1 : (card - 1).toUSize.toNat = card - 1 := USize.toNat_ofNat_of_lt' (by omega)
+  refine ⟨rfl, rfl, rfl, ?_, fun i hi => ?_⟩
+  · show (enumIds n card.toUSize (card - 1).toUSize w.toUSize b').1.size = _
+    simp only [enumIds]; rw [hwu]
+    exact packIds_size (by rcases hw with rfl | rfl | rfl | rfl <;> simp) _ _
+  · have e := Verify.enumIds_idAt n card.toUSize (card - 1).toUSize w.toUSize b'
+      (by rw [hwu]; rcases hw with rfl | rfl | rfl | rfl <;> simp) (by rw [hwu]; omega)
+      (by rw [hc1, hwu]; omega) hok hi
+    rw [hwu] at e; show Column.idAt _ w i = _; rw [e, hv i hi, hc1]
+    by_cases hx : x i = nul
+    · simp only [hx, if_true, nul]
+    · obtain ⟨r1, r2⟩ := hr i hi hx
+      obtain ⟨hs, hne⟩ := shift_toInt hb r1 (by omega)
+      simp only [hx, if_false]
+      rw [if_neg (by simpa [nul] using hne), hs]
+
 #print axioms codes_boolean_faithful
 #print axioms codes_boolean_wf
 #print axioms codes_small_int_faithful
