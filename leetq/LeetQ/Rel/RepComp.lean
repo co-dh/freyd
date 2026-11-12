@@ -8,6 +8,7 @@ import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
+import LeetQ.Rel.KernelWF.CodesSymParts
 
 namespace LeetQ.Rel.Rep
 
@@ -258,5 +259,31 @@ end CompGuid
 
 #print axioms codes_guid_cut
 #print axioms rep_comp_guid
+
+section CompSymbol
+
+open Freyd Freyd.Alg.RelSet
+
+/-- `rep_comp` through a `symbol` middle side, the two counts and the two parts' dictionary counts (an interned
+    part counting its dictionary, a blob its rows) each summing below a `USize`
+    (`codes_symbol_parts_faithful`/`_wf`). -/
+theorem rep_comp_symbol (R : Rel A (.atom .symbol)) (S : Rel (.atom .symbol) C)
+    (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hD : ((jcs).toList.map fun c => match c.2.enc with | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum <
+      USize.size)
+    (hrn : S.n.toNat < 2 ^ 63)
+    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
+      Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
+      Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
+    rep (R ≫ S) = rep R ≫ rep S :=
+  have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
+  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_symbol_parts_faithful _ hN' hD hk hl hi hj,
+    fun hk => codes_symbol_parts_wf _ hN' hk⟩ hrn hM hMU hA hC
+
+end CompSymbol
+
+#print axioms rep_comp_symbol
 
 end LeetQ.Rel.Rep
