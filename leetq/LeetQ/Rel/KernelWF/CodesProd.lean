@@ -549,4 +549,45 @@ theorem pairCode_grouped (cl : Bool) (a b : Code) (hn : b.n = a.n)
   obtain ⟨hwf, hiff⟩ := ofIds_idsBy key a.n
   exact ⟨hwf, fun i hi j hj => (hiff i hi j hj).trans (hkey i hi j hj)⟩
 
+/-! ## Products: `pairCode` of the two columns' codes laid end to end, cut back -/
+
+/-- A product side's codes are `pairCode` of its columns' codes laid end to end, cut at the parts' counts. -/
+theorem codes_prod_eq {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a b)) p) :
+    Obj.codes (.prod a b) cs =
+      (pairCode false (Code.cat (Obj.codes a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).toArray)
+        (Code.cat (Obj.codes b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))).toArray)).1.cut
+        ((Obj.codes a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).map (·.n)) := by
+  rw [Obj.codes]; simp [tuples, tuples.tupleCode]
+
+/-- Equal parts read equal rows. -/
+theorem row_part_congr {A : Obj} {x y : Part A} (h : x = y) {i : Nat} (hx : i < x.1.toNat) (hy : i < y.1.toNat) :
+    Vals.row x.2 ⟨i, hx⟩ = Vals.row y.2 ⟨i, hy⟩ := by subst h; rfl
+
+/-- Codes of parts on one lane, each `⌈n·w/8⌉` bytes with its codes below its `card` under a byte, laid
+    end to end by `Code.cat`: code `(counts before k) + i` is part `k`'s code `i`, at the parts' lane. -/
+theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
+    (hl : ∀ {k l : Nat} (hk : k < p) (hl : l < p), cx[k].w = cx[l].w)
+    (hwf : ∀ {k : Nat} (hk : k < p),
+      (cx[k].w = 1 ∨ cx[k].w = 2 ∨ cx[k].w = 4 ∨ cx[k].w = 8 ∨ cx[k].w = 16 ∨ cx[k].w = 32 ∨ cx[k].w = 64) ∧
+      cx[k].b.size = (cx[k].n.toNat * cx[k].w + 7) / 8 ∧
+      (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < cx[k].card))
+    (hN : (cx.toList.map (·.n.toNat)).sum < USize.size) :
+    (Code.cat cx.toArray).n.toNat = (cx.toList.map (·.n.toNat)).sum ∧
+      ∀ k (hk : k < p), ∀ i < cx[k].n.toNat, Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w
+        (((cx.toList.take k).map (·.n.toNat)).sum + i) = Column.idAt cx[k].b cx[k].w i := by
+  have hmem : ∀ c ∈ cx.toArray, ∃ k, ∃ hk : k < p, c = cx[k] := fun c hc => by
+    obtain ⟨k, hk, rfl⟩ := Array.mem_iff_getElem.1 hc
+    exact ⟨k, by simpa using hk, by simp⟩
+  obtain ⟨hw, hn, hg⟩ := cat_get cx.toArray (w := cx[0].w) (hwf hp).1 (by simpa using hp)
+    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; exact hl hk hp)
+    (fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]; exact (hwf hk).2.1)
+    (fun h24 c hc i hi => by
+      obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]
+      exact (hwf hk).2.2 (by rw [hl hk hp]; omega) i hi)
+    (by simpa using hN)
+  refine ⟨by simpa using hn, fun k hk i hi => ?_⟩
+  have := hg k (by simpa using hk) i (by simpa using hi)
+  simp only [Vector.getElem_toArray, Vector.toList_toArray] at this
+  rw [hw, hl hk hp]; exact this
+
 end LeetQ.Rel.Alg
