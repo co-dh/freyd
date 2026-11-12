@@ -232,8 +232,103 @@ theorem codes_small_int_faithful {t : QAtomicType} {k : Scan.Kind} (ht : orderKi
       simpa [Nat.mod_eq_of_lt (Nat.lt_of_lt_of_le (Nat.mod_lt _ (Nat.two_pow_pos _)) hM)] using this
     · intro h; rw [h]
 
+/-! ## Well-formedness of a grouping code -/
+
+/-- A `Nat.fold` that pushes one byte a step answers one byte per step. -/
+theorem fold_push_size' (g : Nat → UInt8) :
+    ∀ (k : Nat) (b : ByteArray), (Nat.fold k (fun i _ acc => acc.push (g i)) b).size = b.size + k
+  | 0, b => by simp
+  | k + 1, b => by
+    rw [Nat.fold_succ, ← Nat.add_assoc, ← fold_push_size' g k b]
+    simp only [ByteArray.size, ByteArray.push, Array.size_push]
+
+/-- **`packIds` at a lane of at least one bit is `⌈m·W/8⌉` bytes.** -/
+theorem packIds_size {W : Nat} (hW : W = 1 ∨ W = 2 ∨ W = 4 ∨ W = 8 ∨ W = 16 ∨ W = 32 ∨ W = 64)
+    (m : Nat) (f : Nat → Nat) : (Column.packIds W m f).size = (m * W + 7) / 8 := by
+  have hbytes : ∀ c, 1 ≤ c → c ≤ 8 → (Column.packIds (8 * c) m f).size = (m * (8 * c) + 7) / 8 :=
+    fun c h1 h8 => by rw [(Verify.packIds_bytes c m f h1 h8).1, Nat.mul_comm m, Nat.mul_assoc]; omega
+  have hsub : ∀ W, 1 ≤ W → W < 8 → (Column.packIds W m f).size = (m + 8 / W - 1) / (8 / W) := fun W h1 h8 => by
+    unfold Column.packIds
+    rw [if_neg (by omega), if_neg (by omega)]
+    exact (fold_push_size' _ _ _).trans (Nat.zero_add _)
+  rcases hW with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · rw [hsub 1 (by decide) (by decide)]; omega
+  · rw [hsub 2 (by decide) (by decide)]; omega
+  · rw [hsub 4 (by decide) (by decide)]; omega
+  · exact hbytes 1 (by decide) (by decide)
+  · exact hbytes 2 (by decide) (by decide)
+  · exact hbytes 4 (by decide) (by decide)
+  · exact hbytes 8 (by decide) (by decide)
+
+/-- **A grouping code is well formed**: `Code.ofIds` over the ids `Verify.groupOf g n` packed at the width
+    of its class count is a lane `1 … 64`, `n` codes in `⌈n·w/8⌉` bytes, every code below the class
+    count, which a `USize` holds. -/
+theorem ofIds_groupOf_wf (g : Nat → UInt64) (n : USize) {ids fs : ByteArray}
+    (hids : ids = Column.packIds (Column.idWidthOf (Verify.firstsOf g n.toNat).length) n.toNat
+      (Verify.groupOf g n.toNat))
+    (hfs : len fs = (Verify.firstsOf g n.toNat).length) :
+    let c := Code.ofIds (len fs) n ids
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  intro c
+  have hL : (Verify.firstsOf g n.toNat).length ≤ n.toNat := by
+    simpa [Verify.firstsOf] using List.length_filter_le _ (List.range n.toNat)
+  have hcard : c.card = (Verify.firstsOf g n.toNat).length := by
+    show (Code.ofIds (len fs) n ids).card = _; unfold Code.ofIds Code.ofLane; rw [hfs]; split <;> rfl
+  have hn : c.n = n := by show (Code.ofIds (len fs) n ids).n = _; unfold Code.ofIds Code.ofLane; split <;> rfl
+  have hid : ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card := fun i hi => by
+    rw [hn] at hi
+    rw [show Column.idAt c.b c.w i = _ from ofIds_groupOf g n (Verify.usize_lt n) hids hfs hi, hcard]
+    exact Verify.groupOf_lt hi
+  have hsh : ∀ d : Code, d = Code.ofIds (len fs) n ids →
+      (d.w = 1 ∨ d.w = 2 ∨ d.w = 4 ∨ d.w = 8 ∨ d.w = 16 ∨ d.w = 32 ∨ d.w = 64) ∧
+      d.b.size = (d.n.toNat * d.w + 7) / 8 := by
+    intro d hd; subst hd
+    unfold Code.ofIds Code.ofLane
+    by_cases h0 : (Column.idWidthOf (len fs) == 0) = true
+    · rw [if_pos h0]; exact ⟨.inl rfl, by simp [ByteArray.size]⟩
+    · rw [if_neg h0]
+      have hw0 : Column.idWidthOf (len fs) ≠ 0 := by simpa using h0
+      have hlane := Verify.laneWidth_cases (Column.widthFor (len fs - 1))
+      have hw : Column.idWidthOf (len fs) = 1 ∨ Column.idWidthOf (len fs) = 2 ∨ Column.idWidthOf (len fs) = 4 ∨
+          Column.idWidthOf (len fs) = 8 ∨ Column.idWidthOf (len fs) = 16 ∨ Column.idWidthOf (len fs) = 32 ∨
+          Column.idWidthOf (len fs) = 64 := by
+        unfold Column.idWidthOf at hw0 ⊢; omega
+      refine ⟨hw, ?_⟩
+      show ids.size = _
+      rw [hids, ← hfs]; exact packIds_size hw _ _
+  exact ⟨(hsh c rfl).1, hn, (hsh c rfl).2, fun _ => ⟨Nat.lt_of_le_of_lt (hcard ▸ hL) n.toNat_lt_size, hid⟩⟩
+
+/-- **One part of a small integral side: its code is well formed** — dense or Frame-of-Reference
+    encoded, `groupIdsColumn`'s ids read by `Code.ofIds`. -/
+theorem codes_small_int_wf {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
+    (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (x : Part (.atom t)) :
+    let c := (Obj.codes (.atom t) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨p, hp, hc⟩ := codes_small_int ht hk x
+  have hk0 : k ≠ .bit := by rcases hk with rfl | rfl | rfl <;> decide
+  rw [hc]
+  obtain ⟨b, he⟩ | ⟨md, pk, he⟩ := small_int_enc ht hk x.2
+  · rw [he, (groupIdsColumn_small_int ht hk x.1).1 b, Option.some_inj] at hp
+    subst hp
+    have hav : min x.1.toNat (k.avail b) = x.1.toNat := by
+      have hs := x.2.wf; rw [he] at hs
+      rcases hk with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;>
+        simp_all [Enc.WF, QAtomicType.width, Scan.Kind.avail, Scan.Kind.width]
+    have hspec := Verify.groupIds_spec k x.1 b
+    rw [hav] at hspec
+    exact ofIds_groupOf_wf (Order.keyAt k b) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+  · rw [he, (groupIdsColumn_small_int ht hk x.1).2 md pk, Option.some_inj] at hp
+    subst hp
+    have hspec := Verify.groupIdsFoR_spec k hk0 x.1 md pk
+    exact ofIds_groupOf_wf (foRKey k md pk) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+
 #print axioms codes_boolean_faithful
 #print axioms codes_boolean_wf
 #print axioms codes_small_int_faithful
+#print axioms codes_small_int_wf
 
 end LeetQ.Rel.Alg
