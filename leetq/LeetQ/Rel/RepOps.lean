@@ -6,6 +6,7 @@
 import LeetQ.Rel.RepComp
 import LeetQ.Rel.KernelWF.NubSpec
 import LeetQ.Rel.KernelWF.CrossSpec
+import LeetQ.Rel.KernelWF.MemberSpec
 
 namespace LeetQ.Rel.Rep
 
@@ -127,6 +128,142 @@ theorem rep_inr_long {n : USize} (Y : Vals (.atom .long) n) (hn : n.toNat < 2 ^ 
 
 end Sum
 
+/-! ## `dom`, `ran`: the coreflexive on the distinct elements of a side -/
+
+section Distinct
+
+open QLean.Verify
+
+-- the one-part code `distinctCorefl` groups, named as it names it
+set_option hygiene false in
+local notation "dc" => (Obj.codes _ (#v[⟨n, x⟩] : Vector (Part _) 1))[0]
+
+/-- `distinctCorefl`'s pairs at its first rows `I`, a plain byte array, so nothing can try to compute them: the
+    rows `I` names are rows of `x` (`hlt`) and reach every row of `x` up to `g`, along which `x` is constant
+    (`hex`, `hF`). -/
+theorem distinct_holds (t : Obj) {n : USize} (x : Vals t n) (I : ByteArray) (g : Nat → Nat)
+    (hlen : len I < USize.size) (hlt : ∀ f ∈ ids I, f < n.toNat) (hex : ∀ i < n.toNat, ∃ f ∈ ids I, g f = g i)
+    (hF : ∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat), g i = g j → x.row ⟨i, hi⟩ = x.row ⟨j, hj⟩)
+    (hp : Vals.PickFits t x (ids I)) (a b : t.El) :
+    (longCount "distinct" I fun m h => let d := Vals.pick t x I m h; (⟨m, d, d⟩ : Rel t t)).Holds a b ↔
+      a = b ∧ ∃ i, x.row i = a := by
+  unfold longCount need
+  rw [dif_pos hlen]
+  suffices H : ∀ (m : USize) (hm : len I = m.toNat),
+      (⟨m, Vals.pick t x I m hm, Vals.pick t x I m hm⟩ : Rel t t).Holds a b ↔ a = b ∧ ∃ i, x.row i = a from H _ _
+  intro m hm
+  have e : ((List.range m.toNat).map fun q => (Column.bitsAt I (q * 8) 8).toNat) = ids I := by rw [← hm]; rfl
+  have hrow : ∀ q : Fin m.toNat, ∃ hin : (Column.bitsAt I (q.1 * 8) 8).toNat < n.toNat,
+      (Vals.pick t x I m hm).row q = x.row ⟨_, hin⟩ := fun q => by
+    have hq : (Column.bitsAt I (q.1 * 8) 8).toNat ∈ ids I := by
+      rw [← e]; exact List.mem_map.2 ⟨q.1, List.mem_range.2 q.2, rfl⟩
+    have hin : (Column.bitsAt I (q.1 * 8) 8).toNat < n.toNat := hlt _ hq
+    exact ⟨hin, by rw [pick_row t x _ m hm (e ▸ hp) q, dif_pos hin]⟩
+  simp only [Rel.Holds]
+  constructor
+  · rintro ⟨q, ha, hb⟩
+    obtain ⟨hin, hr⟩ := hrow q
+    exact ⟨ha.symm.trans hb, ⟨_, hin⟩, hr ▸ ha⟩
+  · rintro ⟨rfl, i, rfl⟩
+    obtain ⟨f, hf, he⟩ := hex i.1 i.2
+    rw [← e] at hf
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hf
+    obtain ⟨hin, hr⟩ := hrow ⟨q, List.mem_range.1 hq⟩
+    have hx : x.row ⟨_, hin⟩ = x.row i := hF hin i.2 he
+    exact ⟨⟨q, List.mem_range.1 hq⟩, hr.trans hx, hr.trans hx⟩
+
+/-- **`rep (distinctCorefl t x) = x?`**, the coreflexive on the elements `x` lists. `groupIds` answers the first
+    row of each code (`groupIds_classes`), every one a row of `x`, and every row of `x` shares its code with
+    one of them, so with the code faithful (`hK`, in `rep_nub`'s form) each picked row is a row of `x` and each
+    row of `x` is picked. `hp`: `x` picks back at those first rows (`pick_row`). -/
+theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
+    (hK : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
+        Column.idAt (dc).b (dc).w i = Column.idAt (dc).b (dc).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+      ((dc).w = 1 ∨ (dc).w = 2 ∨ (dc).w = 4 ∨ (dc).w = 8 ∨ (dc).w = 16 ∨ (dc).w = 32 ∨ (dc).w = 64) ∧ (dc).n = n ∧
+        (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
+        ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card))
+    (hp : Vals.PickFits t x (ids (dc).groupIds.2)) :
+    rep (distinctCorefl t x) = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
+  obtain ⟨hF, hw, hn, hs, hcard⟩ := hK
+  obtain ⟨hlt, -, hex⟩ := groupIds_classes (dc) hw hs hcard
+  rw [hn] at hlt hex
+  have hle : (ids (dc).groupIds.2).length ≤ n.toNat := by
+    rw [groupIds_firsts (dc) hw hs hcard, hn]
+    exact Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..))
+  have hlen : len (dc).groupIds.2 < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hle n.toNat_lt_size
+  exact hom_ext fun a b => distinct_holds t x _ _ hlen hlt hex (fun hi hj h => (hF hi hj).1 h) hp a b
+
+/-- `rep_distinctCorefl` at an atom side, where every first row is below the count, so `x` fits outright. -/
+theorem rep_distinctCorefl_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
+    (hK : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
+        Column.idAt (dc).b (dc).w i = Column.idAt (dc).b (dc).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+      ((dc).w = 1 ∨ (dc).w = 2 ∨ (dc).w = 4 ∨ (dc).w = 8 ∨ (dc).w = 16 ∨ (dc).w = 32 ∨ (dc).w = 64) ∧ (dc).n = n ∧
+        (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
+        ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card)) :
+    rep (distinctCorefl (.atom t) x) = corefl (A := (⟨(Obj.atom t).El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
+  rep_distinctCorefl _ x hK (pickFits_atom x fun f hf =>
+    hK.2.2.1 ▸ (groupIds_classes (dc) hK.2.1 hK.2.2.2.1 hK.2.2.2.2).1 f hf)
+
+/-- `rep_distinctCorefl` at a boolean side: its code is its bits (`codes_boolean_faithful`/`_wf`). -/
+theorem rep_distinctCorefl_boolean {n : USize} (x : Vals (.atom .boolean) n) :
+    rep (distinctCorefl (.atom .boolean) x) =
+      corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
+  rep_distinctCorefl_atom x ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
+    by have h := codes_boolean_wf (#v[⟨n, x⟩] : Vector (Part _) 1) (k := 0) (by decide)
+       exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
+
+/-- **`rep (dom R) = dom (rep R)`**, `dom S = {(a, a) ∣ ∃ b, S(a, b)}` (`= 𝟙 ∩ S S°`): `dom R` is
+    `distinctCorefl` of the keys, whose elements are the `a` with a pair. Hypotheses: `rep_distinctCorefl`'s
+    at `R.key`. -/
+theorem rep_dom (R : Rel A B)
+    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
+        Column.idAt (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0].b
+            (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0].w i =
+          Column.idAt (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0].b
+            (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0].w j ↔
+        Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
+      (let c := (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
+       (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = R.n ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+    (hp : Vals.PickFits A R.key (ids (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0].groupIds.2)) :
+    rep (dom R) = corefl (A := (⟨A.El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b := by
+  rw [show dom R = distinctCorefl A R.key from rfl, rep_distinctCorefl A R.key hK hp]
+  exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
+
+/-- **`rep (ran R) = ran (rep R)`**, `ran S = {(b, b) ∣ ∃ a, S(a, b)}`: `distinctCorefl` of the values. -/
+theorem rep_ran (R : Rel A B)
+    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
+        Column.idAt (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0].b
+            (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0].w i =
+          Column.idAt (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0].b
+            (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0].w j ↔
+        Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
+      (let c := (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
+       (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = R.n ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+    (hp : Vals.PickFits B R.val (ids (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0].groupIds.2)) :
+    rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b := by
+  rw [show ran R = distinctCorefl B R.val from rfl, rep_distinctCorefl B R.val hK hp]
+  exact congrArg corefl (funext fun b => propext ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩)
+
+/-- `rep_dom` with boolean keys: no hypothesis left. -/
+theorem rep_dom_boolean (R : Rel (.atom .boolean) B) :
+    rep (dom R) = corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b := by
+  rw [show dom R = distinctCorefl _ R.key from rfl, rep_distinctCorefl_boolean]
+  exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
+
+/-- `rep_ran` with boolean values: no hypothesis left. -/
+theorem rep_ran_boolean (R : Rel A (.atom .boolean)) :
+    rep (ran R) = corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b := by
+  rw [show ran R = distinctCorefl _ R.val from rfl, rep_distinctCorefl_boolean]
+  exact congrArg corefl (funext fun b => propext ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩)
+
+end Distinct
+
+#print axioms rep_dom
+#print axioms rep_ran
 #print axioms rep_sum
 #print axioms rep_inl
 #print axioms rep_inr
