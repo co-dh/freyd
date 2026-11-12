@@ -5,6 +5,7 @@ import AOP.A4_5
 import AOP.A5_2
 import AOP.A5_3
 import AOP.A5_5
+import AOP.A6_2
 
 /-! `rel(t)`: the Rel term `t` read as a term of the AOP allegory, so that an ordinary Lean statement, and the steps
     of a plain `calc`, can be written in Rel. `t` is the `rel` category of `Embed`, read to `Lang.Expr` by
@@ -78,12 +79,20 @@ def coprod (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
 def initial (hs : Holes) (p : Lang.Pos) (what : String) : TermElabM Term := do
   hole hs p what "rel(…) never writes the initial algebra, nor its relator" (← `(Freyd.Alg.InitialAlgebra _))
 
-/-- The two `⊤` of AOP, each with the class it is defined in: no theorem identifies them, so the instance found
-    decides, and both found is an error. -/
+/-- The two `⊤` of AOP, each with the class it is defined in: the instance found decides. -/
 def tops : List (Name × Name) :=
   [(``LocallyCompleteDistributiveAllegory, ``topHom), (``TabularUnitaryDivisionAllegory, ``topMor)]
 
-/-- `⊤` at `w`, once its type `A ⟶ B` is known: the `tops` entry whose class has an instance. -/
+/-- Theorems `f A B = g A B` between `tops` entries: where both classes have instances, `⊤` is `g`. -/
+def sames : List Name := [``topMor_eq_topHom]
+
+/-- The heads `(f, g)` of the equation `f … = g …` that the theorem `t` concludes. -/
+def same (t : Name) : TermElabM (Option (Name × Name)) := do
+  forallTelescope (← getConstInfo t).type fun _ b => pure do
+    let (_, l, r) ← b.eq?; pure (← l.getAppFn.constName?, ← r.getAppFn.constName?)
+
+/-- `⊤` at `w`, once its type `A ⟶ B` is known: the `tops` entry whose class has an instance, and of several
+    the one that `sames` rewrites every other into; none such is an error. -/
 def top (w : Lean.Expr) (p : Lang.Pos) : TermElabM Unit := do
   if (← w.mvarId!.isAssigned) then return
   let ty ← instantiateMVars (← inferType w)
@@ -93,13 +102,15 @@ def top (w : Lean.Expr) (p : Lang.Pos) : TermElabM Unit := do
   let c ← exprToSyntax (← instantiateMVars (← inferType a))
   let found ← tops.filterM fun (k, _) => do return (← synthInstance? (← elabType (← `($(mkIdent k) $c)))).isSome
   let name (k : Name) := s!"`{k.getString!}`"
-  match found with
-  | [(_, f)] =>
+  let eqs ← sames.filterMapM same
+  match found.find? fun (_, f) => found.all fun (_, g) => g == f || eqs.contains (g, f) with
+  | some (_, f) =>
     let t ← elabTerm (← `($(mkIdent f) $(← exprToSyntax a) $(← exprToSyntax b))) ty
     unless ← isDefEq w t do outside p "`⊤`" m!"cannot use `{t}` as `{ty}`"
-  | [] => outside p "`⊤`" m!"needs an instance {" or ".intercalate (tops.map fun (k, f) =>
+  | none =>
+    if found.isEmpty then outside p "`⊤`" m!"needs an instance {" or ".intercalate (tops.map fun (k, f) =>
       s!"{name k} (AOP's {name f})")}: AOP's `⊤` is one of these"
-  | _ => outside p "`⊤`" m!"is {" and ".intercalate (found.map fun (k, f) => s!"{name f} (by {name k})")} here, and no theorem identifies them"
+    else outside p "`⊤`" m!"is {" and ".intercalate (found.map fun (k, f) => s!"{name f} (by {name k})")} here, and no theorem identifies them"
 
 /-- `e` written as AOP notation; `vars` the local variables a name may be, `folds` the names `lift` gave the
     one-argument folds, `hs` what the term does not write. -/

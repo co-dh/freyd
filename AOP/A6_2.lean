@@ -141,6 +141,12 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
     TabularUnitaryUnguardedPowerAllegory 𝒜 :=
   { inst with }
 
+-- Toward `topHom`: the chapters from here on state `⊤` generically as `topHom`, with its LCDA lemmas.
+/-- The division `⊤` (`𝟘/𝟘`) and the join of everything are one arrow: each is above every `R : A ⟶ B`. -/
+public theorem topMor_eq_topHom [TabularUnitaryUnguardedPowerLCDA 𝒜] (A B : 𝒜) :
+    topMor A B = topHom A B :=
+  le_antisymm (le_Sup trivial) (topMor_max _)
+
 /-! ## §6.2  Catamorphisms as least (and greatest) fixed points: (6.2) and (6.3)
 
   Because `α` is invertible, the catamorphism UP `α ≫ X = F.map X ≫ R ⟺ X = ⦇R⦈` (5.12)

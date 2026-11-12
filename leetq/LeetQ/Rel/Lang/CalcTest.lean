@@ -274,9 +274,9 @@ error: `⦇R⦈` has several hypotheses `InitialAlgebra F`, I, J: rel(…) never
 its relator -/
 #guard_msgs (whitespace := lax) in
 example [J : InitialAlgebra F] (R : F.obj A ⟶ A) : Prop := rel(⦇R⦈) = rel(⦇R⦈)
-/-- error: `⊤` is `topHom` (by `LocallyCompleteDistributiveAllegory`) and `topMor` (by
-`TabularUnitaryDivisionAllegory`) here, and no theorem identifies them -/
-#guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
+example (R : A ⟶ B) : True := by guard_expr rel(R ∩ ⊤) =ₛ R ∩ topHom A B; trivial -- both `⊤`: `topMor_eq_topHom`
+example (R : C ⟶ A) (S : C ⟶ B) : rel(R ∩ (S ⊤)) = rel(dom(S) R) := by -- (`inter_comp_topMor_eq_dom_comp`)
+  rw [← topMor_eq_topHom]; exact inter_comp_topMor_eq_dom_comp R S
 
 end Fold
 
