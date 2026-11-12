@@ -134,31 +134,18 @@ theorem gatherIds_wf {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bo
   simp only [gatherIds, gatherPacked]
   split <;> (rw [hU]; exact Verify.idsCap_packIds _ _ (hl _))
 
-/-- An interned gather's dictionary ends at its blob with no offset past it, where the source's does: the
-    empty symbol it may append is one NUL past the old end. -/
+/-- An interned gather's dictionary is laid out as `SymsWF` says where the source's is: the empty symbol it
+    may append is one NUL past the old end. -/
 theorem gatherIds_dict {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool}
-    {g : USize → USize → UInt64 → ByteArray}
-    (hl : dof[dof.size - 1]! = dict.size) (hle : ∀ k < dof.size, dof[k]! ≤ dict.size) :
-    (gatherIds dict dof inRange g).2.1[(gatherIds dict dof inRange g).2.1.size - 1]! =
-        (gatherIds dict dof inRange g).1.size ∧
-      ∀ k < (gatherIds dict dof inRange g).2.1.size,
-        (gatherIds dict dof inRange g).2.1[k]! ≤ (gatherIds dict dof inRange g).1.size := by
+    {g : USize → USize → UInt64 → ByteArray} (hd : SymsWF dict dof) :
+    SymsWF (gatherIds dict dof inRange g).1 (gatherIds dict dof inRange g).2.1 := by
   unfold gatherIds
   dsimp only
   split
-  · exact ⟨hl, hle⟩
-  · show (dof.push (dict.size + 1))[(dof.push (dict.size + 1)).size - 1]! = (dict.push 0).size ∧
-      ∀ k < (dof.push (dict.size + 1)).size, (dof.push (dict.size + 1))[k]! ≤ (dict.push 0).size
-    have hs : (dof.push (dict.size + 1)).size = dof.size + 1 := Array.size_push ..
-    have hp : (dict.push 0).size = dict.size + 1 := by simp only [ByteArray.size, ByteArray.push, Array.size_push]
-    have hlast : (dof.push (dict.size + 1))[dof.size]! = dict.size + 1 := by
-      rw [getElem!_pos _ dof.size (by omega), Array.getElem_push_eq]
-    refine ⟨by rw [hs, Nat.add_sub_cancel, hlast, hp], fun k hk => ?_⟩
-    rw [hp]
-    rcases Nat.lt_or_ge k dof.size with h | h
-    · rw [getElem!_pos _ k (by omega), Array.getElem_push_lt h, ← getElem!_pos dof k h]
-      exact Nat.le_succ_of_le (hle k h)
-    · rw [show k = dof.size by omega, hlast]; exact Nat.le_refl _
+  · exact hd
+  · have hp : (dict.push 0).size = dict.size + 1 := by simp only [ByteArray.size, ByteArray.push, Array.size_push]
+    have := symsWF_push (b' := dict.push 0) hd (by omega)
+    rwa [hp] at this
 
 theorem gatherAlp_size (fill : UInt64) (md pk a : ByteArray) (n : USize) (ix : ByteArray) :
     (gatherAlp fill md pk a n ix).size = ix.size / 8 * (if Column.alpF32 a then 4 else 8) := by
@@ -185,9 +172,9 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
       simp [gatherBytes_size, toNat_small, small_mod, hm]
   | enum d o ids =>
     cases t <;> try (exfalso; simp [Enc.WF] at hw; done)
-    obtain ⟨-, hl, hle⟩ := id hw
+    obtain ⟨-, hd⟩ := id hw
     have key := gatherIds_dict (inRange := fun _ => allBelow n i)
-      (g := fun w wo e => gatherPacked n w wo e ids i) hl hle
+      (g := fun w wo e => gatherPacked n w wo e ids i) hd
     simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn, Enc.bytesOf]
     split at h <;> cases h <;> simp only [Enc.WF] at *
     · exact ⟨by simp_all, symsWF_empty⟩

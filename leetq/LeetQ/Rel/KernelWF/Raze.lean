@@ -507,12 +507,10 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
     Enc.WF .symbol c (.enum (internConcat qs).1 (internConcat qs).2.1 (internConcat qs).2.2) := by
   obtain ⟨b, o, h1, h2⟩ := internConcat_dict qs
   have hs := Verify.symsWF_internSyms b o
-  have hd : (internConcat qs).2.1[(internConcat qs).2.1.size - 1]! = (internConcat qs).1.size ∧
-      ∀ k < (internConcat qs).2.1.size, (internConcat qs).2.1[k]! ≤ (internConcat qs).1.size := by
-    rw [h1, h2]; exact ⟨hs.last, hs.le⟩
+  have hd : SymsWF (internConcat qs).1 (internConcat qs).2.1 := by rw [h1, h2]; exact hs
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
   rw [h] at hd ⊢
-  refine ⟨?_, hd.1, hd.2⟩
+  refine ⟨?_, hd⟩
   simp only [concatIds]
   rw [hc, toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)
