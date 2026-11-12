@@ -209,6 +209,14 @@ theorem ePack_idAt (s : ByteArray) {d₁ d₂ c₁ c₂ n k : Nat} (hk : k < n) 
   exact (idAt_packIds (w := Column.idWidthOf (d₁ * d₂)) (laneWidth_cases _) hk
     (by simp only [hs]; exact lt_two_pow_idWidthOf hd hlt)).trans hs
 
+/-- **The atom `composeKey` multiplies by**: element `0` of `atomBytes i64 v` is `v`. -/
+theorem elem_atomBytes_i64 (v : UInt64) : Ew.elem Ew.i64 (atomBytes Ew.i64 v) 0 = v := by
+  have hf : atomBytes Ew.i64 v = [()].foldl (fun acc _ => Column.pushBits acc v (Ew.width Ew.i64)) ByteArray.empty := rfl
+  have h := (foldl_pushBits (fun _ : Unit => v) (Ew.width Ew.i64) (by decide) [()] ByteArray.empty).2.2 0 (by decide)
+  rw [ByteArray.size_empty, Nat.zero_add, Nat.mul_zero] at h
+  rw [Ew.elem, hf, Nat.zero_mul, h, show 8 * Ew.width Ew.i64 = 64 by decide,
+    Nat.mod_eq_of_lt (UInt64.toNat_lt _), UInt64.ofNat_toNat]
+
 /-- An element below `2⁶³` is not `long`'s null. -/
 theorem toInt64_ne_minValue {x : UInt64} (hx : x.toNat < 2 ^ 63) : x.toInt64 ≠ Int64.minValue := fun e => by
   have h := congrArg (fun v : Int64 => v.toUInt64.toNat) e
