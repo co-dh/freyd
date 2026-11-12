@@ -13,13 +13,17 @@ open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
 /-! ## Lanes -/
 
-/-- The largest id below `nd` fits `idWidthOf nd` bits: a lane of no bits leaves room for the id `0` only. -/
-theorem pred_lt_idWidthOf (nd : Nat) : nd - 1 < 2 ^ Column.idWidthOf nd := by
+/-- The largest id below `nd` fits a lane `idWidthOf nd` under a byte: a lane of no bits leaves room for the
+    id `0` only. (At `64` bits it need not: `nd` is not bounded.) -/
+theorem pred_lt_idWidthOf {nd : Nat} (h8 : Column.idWidthOf nd < 8) : nd - 1 < 2 ^ Column.idWidthOf nd := by
   have h := lt_widthFor (nd - 1)
-  unfold Column.idWidthOf
-  generalize Column.widthFor (nd - 1) = w at h ⊢
-  have hl : w ≤ Column.laneWidth w := by unfold Column.laneWidth; repeat' split
-                                         all_goals omega
+  unfold Column.idWidthOf at h8 ⊢
+  generalize Column.widthFor (nd - 1) = w at h h8 ⊢
+  have hl : w ≤ Column.laneWidth w := by
+    unfold Column.laneWidth at h8 ⊢
+    repeat' split
+    all_goals (repeat' split at h8)
+    all_goals omega
   exact Nat.lt_of_lt_of_le h (Nat.pow_le_pow_right (by decide) hl)
 
 /-- `Code.ofLane` reads back the ids it was given; at a lane of no bits, where every id is `0`, its bitmap of
@@ -39,7 +43,7 @@ theorem ofLane_idAt {w : Nat} {n : USize} {card : Nat} {ids : ByteArray} {i : Na
     in exactly `⌈n·w/8⌉` bytes where the lane has bits. -/
 theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
     (hw : w = 0 ∨ w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
-    (hsz : w ≠ 0 → ids.size = (n.toNat * w + 7) / 8) (hcard : card - 1 < 2 ^ w)
+    (hsz : w ≠ 0 → ids.size = (n.toNat * w + 7) / 8) (hcard : w < 8 → card - 1 < 2 ^ w)
     (hid : ∀ i < n.toNat, Column.idAt ids w i < card) :
     let c := Code.ofLane w n card ids
     (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
@@ -49,7 +53,7 @@ theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
   have hcd : (Code.ofLane w n card ids).card = card := by unfold Code.ofLane; split <;> rfl
   have hn : (Code.ofLane w n card ids).n = n := by unfold Code.ofLane; split <;> rfl
   have hz : w = 0 → ∀ i < n.toNat, Column.idAt ids w i = 0 := fun h i hi => by
-    have := hid i hi; subst h; rw [Nat.pow_zero] at hcard; omega
+    have := hid i hi; have hc := hcard (by omega); subst h; rw [Nat.pow_zero] at hc; omega
   have hsh : ((Code.ofLane w n card ids).w = 1 ∨ (Code.ofLane w n card ids).w = 2 ∨
       (Code.ofLane w n card ids).w = 4 ∨ (Code.ofLane w n card ids).w = 8 ∨ (Code.ofLane w n card ids).w = 16 ∨
       (Code.ofLane w n card ids).w = 32 ∨ (Code.ofLane w n card ids).w = 64) ∧
@@ -61,10 +65,11 @@ theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
       exact ⟨.inl rfl, by simp [ByteArray.size], fun _ => by omega⟩
     · next h =>
       have : w ≠ 0 := by simpa using h
-      exact ⟨by omega, hsz this, id⟩
+      exact ⟨hw.resolve_left this, hsz this, id⟩
   refine ⟨hsh.1, hn, by rw [hn]; exact hsh.2.1, fun h8 => ⟨?_, fun i hi => ?_⟩⟩
   · rw [hcd]
     have hw8 := hsh.2.2 h8
+    have hcard := hcard hw8
     have h7 : 2 ^ w ≤ 2 ^ 7 := Nat.pow_le_pow_right (by decide) (by omega)
     have := USize.le_size
     rw [show (2 : Nat) ^ 7 = 128 from rfl] at h7
@@ -122,7 +127,8 @@ theorem codes_symbol (x : Part (.atom .symbol)) :
   subst h1 h2
   cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
     simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, intern_syms, Column.intern, Code.cut, vmapM_one,
-      Column.encodes, Arr.enc]
+      Column.encodes, Arr.enc] <;>
+    exact ⟨_, _, _, ⟨rfl, rfl, rfl⟩, rfl⟩
 
 /-- A code read at `Code.ofLane` of ids below a dictionary of no entry twice: equal codes are equal rows,
     where each row's bytes are its entry. -/
@@ -139,7 +145,7 @@ theorem lane_faithful {n : USize} (x : Arr .symbol n) {d : ByteArray} {o : Array
       Vals.row (A := .atom .symbol) x ⟨i, hi⟩ = Vals.row (A := .atom .symbol) x ⟨j, hj⟩ := by
   have hz : ∀ k < n.toNat, Column.idWidth o = 0 → Column.idAt ids (Column.idWidth o) k = 0 := fun k hk h => by
     have h1 := hlt k hk
-    have h2 := pred_lt_idWidthOf (o.size - 1)
+    have h2 := pred_lt_idWidthOf (nd := o.size - 1) (by change Column.idWidth o < 8; omega)
     change o.size - 1 - 1 < 2 ^ Column.idWidth o at h2
     rw [h, Nat.pow_zero] at h2
     omega
@@ -156,8 +162,8 @@ theorem lane_faithful {n : USize} (x : Arr .symbol n) {d : ByteArray} {o : Array
 theorem idWidth_facts (o : Array Nat) :
     (Column.idWidth o = 0 ∨ Column.idWidth o = 1 ∨ Column.idWidth o = 2 ∨ Column.idWidth o = 4 ∨
       Column.idWidth o = 8 ∨ Column.idWidth o = 16 ∨ Column.idWidth o = 32 ∨ Column.idWidth o = 64) ∧
-    o.size - 1 - 1 < 2 ^ Column.idWidth o :=
-  ⟨laneWidth_cases _, pred_lt_idWidthOf _⟩
+    (Column.idWidth o < 8 → o.size - 1 - 1 < 2 ^ Column.idWidth o) :=
+  ⟨laneWidth_cases _, fun h => pred_lt_idWidthOf h⟩
 
 /-! ### An `enum` part -/
 
@@ -214,18 +220,21 @@ theorem internSyms_facts {n : USize} (x : Arr .symbol n) {b : ByteArray} {o : Ar
   rw [he] at hwf
   obtain ⟨hos, -, hu⟩ := hwf
   have hn : o.size - 1 = n.toNat := by omega
-  have hU : o.size - 1 < USize.size := hn ▸ n.toNat_lt_size
-  refine ⟨fun i hi => (internSyms_symAt b o hU (hn ▸ hi)).1, ?_, fun i => ?_, fun h0 => ?_⟩
+  have hU : o.size - 1 < USize.size := by have := n.toNat_lt_size; omega
+  have e : Order.internSyms b o = ((Order.distinctSyms b o).1, (Order.distinctSyms b o).2,
+      Column.packIds (Column.idWidth (Order.distinctSyms b o).2) (o.size - 1) fun j =>
+        (findSymScalar (Order.distinctSyms b o).1 (Order.distinctSyms b o).2
+          (Column.symKey b o j)).toNat) := rfl
+  refine ⟨fun i hi => (internSyms_symAt b o hU (by omega)).1, ?_, fun i => ?_, fun h0 => ?_⟩
   · have hD := distinctSyms_eraseDups b o
-    simp only [symsOf, ← firstsOf_eraseDups] at hD
-    show ((List.range ((Order.distinctSyms b o).2.size - 1)).map
-      (symAt (Order.distinctSyms b o).1 (Order.distinctSyms b o).2)).Nodup
-    rw [hD]; exact nodup_firsts
-  · rw [syms_row x he hu i, (internSyms_symAt b o hU (hn ▸ i.2)).2]
-  · show (Column.packIds (Column.idWidth (Order.distinctSyms b o).2) (o.size - 1) _).size = _
+    dsimp only [symsOf] at hD
+    simp only [← firstsOf_eraseDups] at hD
+    rw [e]; dsimp only
+    rw [hD]; exact nodup_firsts (symAt b o) (o.size - 1)
+  · rw [syms_row x he hu i, (internSyms_symAt b o hU (by omega)).2]
+  · rw [e] at h0 ⊢; dsimp only at h0 ⊢
     rw [hn]
-    have hl := laneWidth_cases (Column.widthFor ((Order.distinctSyms b o).2.size - 1 - 1))
-    exact packIds_size (by unfold Column.idWidth Column.idWidthOf at h0 ⊢; omega) _ _
+    exact packIds_size ((laneWidth_cases _).resolve_left h0) _ _
 
 /-- **One `syms` part of a symbol side: its codes are faithful**, under the part's `Enc.WF` alone. -/
 theorem codes_symbol_syms_faithful (x : Part (.atom .symbol)) {b : ByteArray} {o : Array Nat}
@@ -254,5 +263,42 @@ theorem codes_symbol_syms_wf (x : Part (.atom .symbol)) {b : ByteArray} {o : Arr
   dsimp only
   rw [hc]
   exact ofLane_wf (idWidth_facts _).1 hsz (idWidth_facts _).2 hlt
+
+/-! ### Either encoding -/
+
+/-- A symbol payload is a blob or interned (`Enc.WF`). -/
+theorem symbol_enc {n : USize} {e : Enc} (hwf : Enc.WF .symbol n e) :
+    (∃ b o, e = .syms b o) ∨ ∃ d o ids, e = .enum d o ids := by
+  cases e <;> simp [Enc.WF, QAtomicType.width] at hwf ⊢
+
+/-- **One part of a symbol side: its codes are faithful**, blob or interned, under its `Enc.WF` alone. -/
+theorem codes_symbol_faithful (x : Part (.atom .symbol)) {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom .symbol) #v[x])[0].b (Obj.codes (.atom .symbol) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom .symbol) #v[x])[0].b (Obj.codes (.atom .symbol) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  rcases symbol_enc x.2.wf with ⟨b, o, he⟩ | ⟨d, o, ids, he⟩
+  · exact codes_symbol_syms_faithful x he hi hj
+  · exact codes_symbol_enum_faithful x he hi hj
+
+/-- **One part of a symbol side: its code is well formed**, blob or interned. An interned part's ids must be
+    exactly `⌈n·w/8⌉` bytes (`hsz`): `Enc.WF` asks only that they hold `n` ids (`idsCap`), and `codes` passes
+    them on as they are. -/
+theorem codes_symbol_wf (x : Part (.atom .symbol))
+    (hsz : ∀ d o ids, x.2.enc = .enum d o ids → Column.idWidth o ≠ 0 →
+      ids.size = (x.1.toNat * Column.idWidth o + 7) / 8) :
+    let c := (Obj.codes (.atom .symbol) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  rcases symbol_enc x.2.wf with ⟨b, o, he⟩ | ⟨d, o, ids, he⟩
+  · exact codes_symbol_syms_wf x he
+  · exact codes_symbol_enum_wf x he (hsz d o ids he)
+
+#print axioms codes_symbol_enum_faithful
+#print axioms codes_symbol_enum_wf
+#print axioms codes_symbol_syms_faithful
+#print axioms codes_symbol_syms_wf
+#print axioms codes_symbol_faithful
+#print axioms codes_symbol_wf
 
 end LeetQ.Rel.Alg
