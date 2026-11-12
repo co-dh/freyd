@@ -69,30 +69,6 @@ theorem gatherSyms_size (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) :
   unfold gatherSyms
   rw [foldl_snd_size _ (fun p j => by cases p; simp)]; simp; omega
 
-/-- A blob grown, its new size pushed as the last start, keeps the `syms` layout. -/
-theorem symsWF_push {b b' : ByteArray} {o : Array Nat} (h : SymsWF b o) (hb : b.size ≤ b'.size) :
-    SymsWF b' (o.push b'.size) := by
-  have hs : (o.push b'.size).size = o.size + 1 := Array.size_push ..
-  have hg : ∀ k, (o.push b'.size)[k]! = if k < o.size then o[k]! else if k = o.size then b'.size else 0 := by
-    intro k
-    by_cases h1 : k < o.size
-    · rw [if_pos h1, getElem!_pos _ k (by omega), Array.getElem_push_lt h1, getElem!_pos o k h1]
-    · rw [if_neg h1]
-      by_cases h2 : k = o.size
-      · subst h2; rw [if_pos rfl, getElem!_pos _ o.size (by omega), Array.getElem_push_eq]
-      · rw [if_neg h2, getElem!_neg _ k (by omega)]; rfl
-  have hp := h.pos
-  refine ⟨by omega, by rw [hg, if_pos hp, h.first], by rw [hg, if_neg (by omega), if_pos (by omega)],
-    fun k hk => ?_, fun k hk => ?_⟩
-  · rw [hg]; split
-    · exact Nat.le_trans (h.le k ‹_›) hb
-    · split <;> omega
-  · rw [hg, hg]
-    by_cases h1 : k + 1 < o.size
-    · rw [if_pos (by omega), if_pos h1]; exact h.mono k (by omega)
-    · have e : o[k]! = b.size := by rw [show k = o.size - 1 by omega]; exact h.last
-      rw [if_pos (by omega), if_neg h1, if_pos (by omega), e]; exact hb
-
 /-- One symbol and its NUL appended, its end pushed as the last start: `gatherSyms`' step. -/
 theorem symsWF_pushSym {b k : ByteArray} {o : Array Nat} (h : SymsWF b o) :
     SymsWF ((b ++ k).push 0) (o.push (b.size + k.size + 1)) := by
@@ -118,6 +94,66 @@ theorem gatherSyms_wf (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) :
   unfold gatherSyms
   dsimp only
   exact symsWF_foldl _ (fun q j hq => by obtain ⟨b, o⟩ := q; exact symsWF_pushSym hq) _ _ symsWF_empty
+
+/-- One symbol `k` and its NUL appended, its end pushed as the last start, keeps every entry valid where `k` is. -/
+theorem pushSym_utf8 {b k : ByteArray} {o : Array Nat} (hw : SymsWF b o)
+    (hu : ∀ t < o.size - 1, ∃ c : ByteArray, c.IsValidUTF8 ∧ (Verify.symBytes b o t).dropLast = c.data.toList)
+    (hk : k.IsValidUTF8) :
+    SymsWF ((b ++ k).push 0) (o.push (b.size + k.size + 1)) ∧ ∀ t < (o.push (b.size + k.size + 1)).size - 1,
+      ∃ c : ByteArray, c.IsValidUTF8 ∧
+        (Verify.symBytes ((b ++ k).push 0) (o.push (b.size + k.size + 1)) t).dropLast = c.data.toList := by
+  have hs : ((b ++ k).push 0).size = b.size + k.size + 1 := by
+    rw [show ((b ++ k).push 0).size = (b ++ k).size + 1 by simp only [ByteArray.size, ByteArray.push, Array.size_push],
+      ByteArray.size_append]
+  rw [← hs]
+  exact utf8_push hw hu (Verify.append_push_toList b k) ⟨k, hk, List.dropLast_concat ..⟩
+
+/-- `gatherSyms` copies the source's entry `i` for a hit and writes the empty symbol for a miss, so its answer
+    holds only valid UTF-8 where the source does. -/
+theorem gatherSyms_utf8 (blob : ByteArray) (offs : Array Nat) (ix : ByteArray) (hw : SymsWF blob offs)
+    (hu : ∀ i < offs.size - 1, (Column.symKey blob offs i).IsValidUTF8) :
+    ∀ j < (gatherSyms blob offs ix).2.size - 1,
+      (Column.symKey (gatherSyms blob offs ix).1 (gatherSyms blob offs ix).2 j).IsValidUTF8 := by
+  -- a hit's bytes, up to the byte before the next start, are the entry without its NUL
+  have hkey : ∀ i, (blob.extract offs[i]! (offs[i + 1]! - 1)).data.toList = Verify.symAt blob offs i := fun i => by
+    unfold Verify.symAt Column.symKey Column.symBytes
+    simp only [Verify.extract_toList]
+    congr 1; split <;> omega
+  unfold gatherSyms
+  dsimp only
+  generalize hr : List.foldl _ (ByteArray.empty, #[0]) (List.range (ix.size / 8)) = r
+  have H : SymsWF r.1 r.2 ∧ ∀ t < r.2.size - 1,
+      ∃ c : ByteArray, c.IsValidUTF8 ∧ (Verify.symBytes r.1 r.2 t).dropLast = c.data.toList :=
+    hr ▸ foldl_inv (fun p : ByteArray × Array Nat => SymsWF p.1 p.2 ∧ ∀ t < p.2.size - 1,
+        ∃ c : ByteArray, c.IsValidUTF8 ∧ (Verify.symBytes p.1 p.2 t).dropLast = c.data.toList) _ (fun q j hq => by
+      obtain ⟨b, o⟩ := q
+      refine pushSym_utf8 hq.1 hq.2 ?_
+      split
+      · rename_i i hi
+        have hlt : i < offs.size - 1 := by
+          unfold gatherAt at hi; dsimp only at hi; split at hi
+          · cases hi; assumption
+          · cases hi
+        exact utf8_congr (hkey i) (hu i hlt)
+      · decide) _ _ ⟨by decide, fun t ht => by simp at ht⟩
+  exact fun j hj => utf8_of_inv H.1 hj (H.2 j hj)
+
+/-- An interned gather's dictionary holds only valid UTF-8 where the source's does: the empty symbol it may append
+    is valid. -/
+theorem gatherIds_utf8 {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool}
+    {g : USize → USize → UInt64 → ByteArray} (hd : SymsWF dict dof)
+    (hu : ∀ i < dof.size - 1, (Column.symKey dict dof i).IsValidUTF8) :
+    ∀ j < (gatherIds dict dof inRange g).2.1.size - 1,
+      (Column.symKey (gatherIds dict dof inRange g).1 (gatherIds dict dof inRange g).2.1 j).IsValidUTF8 := by
+  unfold gatherIds
+  dsimp only
+  split
+  · exact hu
+  · have hp : (dict.push 0).size = dict.size + 1 := by simp only [ByteArray.size, ByteArray.push, Array.size_push]
+    have H := utf8_push (b' := dict.push 0) (s := [0]) hd (fun t ht => inv_of_utf8 hd ht (hu t ht))
+      (Array.toList_push ..) ⟨ByteArray.empty, by decide, rfl⟩
+    rw [hp] at H
+    exact fun j hj => utf8_of_inv H.1 hj (H.2 j hj)
 
 /-- An interned gather's ids hold all `m` of its answer's elements at the answer dictionary's width. -/
 theorem gatherIds_wf {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool} {n : USize} {ids ix : ByteArray}
@@ -315,7 +351,9 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
       simp [gatherBytes_size, toNat_small, small_mod, hm]
   | enum d o ids =>
     cases t <;> try (exfalso; simp [Enc.WF] at hw; done)
-    obtain ⟨-, hd, hi, hn⟩ := id hw
+    obtain ⟨-, hd, hi, hn, hu⟩ := id hw
+    have key4 := gatherIds_utf8 (inRange := fun _ => allBelow n i)
+      (g := fun w wo e => gatherPacked n w wo e ids i) hd hu
     have key := gatherIds_dict (inRange := fun _ => allBelow n i)
       (g := fun w wo e => gatherPacked n w wo e ids i) hd
     have key2 := gatherIds_nodup (inRange := fun _ => allBelow n i)
@@ -331,10 +369,19 @@ theorem gatherColumn_wf {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n
     have key3' : ∀ k < m.toNat, _ := fun k hk => key3 k (by omega)
     simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, foRColumn, Enc.bytesOf]
     split at h <;> cases h <;> simp only [Enc.WF] at *
-    · exact ⟨by simp_all, symsWF_empty⟩
+    · exact ⟨by simp_all, symsWF_empty, fun j _ => utf8_congr (c := ByteArray.empty)
+        (by simp [Column.symKey, Verify.extract_toList]) (by decide)⟩
     · exact ⟨gatherIds_wf (inRange := fun _ => allBelow n i) (n := n) (ids := ids)
         (db := (gatherIds d o (fun _ => allBelow n i) fun w wo e => gatherPacked n w wo e ids i).1) rfl, key,
-        key3', key2⟩
+        key3', key2, key4⟩
+  | syms blob offs =>
+    cases t <;> try (exfalso; simp [Enc.WF] at hw; done)
+    obtain ⟨hs, hd, hu⟩ := id hw
+    have hU := gatherSyms_utf8 blob offs i hd fun k hk => hu k (by omega)
+    simp [-Nat.not_lt, hz, denseWidth, rowWidth, foRColumn, Enc.bytesOf, QAtomicType.width] at h
+    subst h
+    simp only [Enc.WF]
+    exact ⟨by rw [gatherSyms_size]; omega, gatherSyms_wf .., fun j hj => hU j (by rw [gatherSyms_size]; omega)⟩
   | _ => cases t <;>
       simp_all [-Nat.not_lt, Enc.WF, QAtomicType.width, denseWidth, rowWidth, foRColumn, Enc.bytesOf,
         Column.alpEncodes, gatherBits_size, gatherBytes_size, gatherAlp_size, gatherSyms_size, gatherSyms_wf,

@@ -155,7 +155,7 @@ private theorem ite_some {α : Type} {c : Prop} [Decidable c] {x y : Option α} 
   by_cases hc : c <;> simp_all
 
 /-- A property every step keeps holds of the fold. -/
-private theorem foldl_inv {α σ : Type} (P : σ → Prop) (g : σ → α → σ) (hg : ∀ s a, P s → P (g s a)) :
+theorem foldl_inv {α σ : Type} (P : σ → Prop) (g : σ → α → σ) (hg : ∀ s a, P s → P (g s a)) :
     ∀ (l : List α) (s : σ), P s → P (l.foldl g s)
   | [], _, h => h
   | a :: l, s, h => foldl_inv P g hg l (g s a) (hg s a h)
@@ -253,16 +253,169 @@ private theorem dense_parts {t : QAtomicType} {cs : Array (USize × Enc)} {w : N
   obtain ⟨b, hb', hs⟩ := bytesOf_size hb hw (h _ (Array.getElem_mem hi))
   simp [hb', hs]
 
+/-! ## Valid UTF-8: every symbol entry a kernel writes is one it copied, or the empty symbol -/
+
+/-- Validity is a property of the bytes. -/
+theorem utf8_congr {a c : ByteArray} (h : a.data.toList = c.data.toList) (hv : c.IsValidUTF8) : a.IsValidUTF8 := by
+  rw [show a = c from ByteArray.ext (Array.toList_inj.1 h)]; exact hv
+
+/-- A blob grown, its new size pushed as the last start, keeps the `syms` layout. -/
+theorem symsWF_push {b b' : ByteArray} {o : Array Nat} (h : SymsWF b o) (hb : b.size ≤ b'.size) :
+    SymsWF b' (o.push b'.size) := by
+  have hs : (o.push b'.size).size = o.size + 1 := Array.size_push ..
+  have hg : ∀ k, (o.push b'.size)[k]! = if k < o.size then o[k]! else if k = o.size then b'.size else 0 := by
+    intro k
+    by_cases h1 : k < o.size
+    · rw [if_pos h1, getElem!_pos _ k (by omega), Array.getElem_push_lt h1, getElem!_pos o k h1]
+    · rw [if_neg h1]
+      by_cases h2 : k = o.size
+      · subst h2; rw [if_pos rfl, getElem!_pos _ o.size (by omega), Array.getElem_push_eq]
+      · rw [if_neg h2, getElem!_neg _ k (by omega)]; rfl
+  have hp := h.pos
+  refine ⟨by omega, by rw [hg, if_pos hp, h.first], by rw [hg, if_neg (by omega), if_pos (by omega)],
+    fun k hk => ?_, fun k hk => ?_⟩
+  · rw [hg]; split
+    · exact Nat.le_trans (h.le k ‹_›) hb
+    · split <;> omega
+  · rw [hg, hg]
+    by_cases h1 : k + 1 < o.size
+    · rw [if_pos (by omega), if_pos h1]; exact h.mono k (by omega)
+    · have e : o[k]! = b.size := by rw [show k = o.size - 1 by omega]; exact h.last
+      rw [if_pos (by omega), if_neg h1, if_pos (by omega), e]; exact hb
+
+/-- Entry `t` of a well-formed blob is valid where its stored bytes, the NUL dropped, are some valid bytes. -/
+theorem utf8_of_inv {b : ByteArray} {o : Array Nat} (hw : SymsWF b o) {t : Nat} (ht : t < o.size - 1)
+    (h : ∃ k : ByteArray, k.IsValidUTF8 ∧ (Verify.symBytes b o t).dropLast = k.data.toList) :
+    (Column.symKey b o t).IsValidUTF8 := by
+  obtain ⟨k, hk, he⟩ := h
+  exact utf8_congr ((Verify.symAt_eq_dropLast b o t (hw.le (t + 1) (by omega))).trans he) hk
+
+theorem inv_of_utf8 {b : ByteArray} {o : Array Nat} (hw : SymsWF b o) {t : Nat} (ht : t < o.size - 1)
+    (hv : (Column.symKey b o t).IsValidUTF8) :
+    ∃ k : ByteArray, k.IsValidUTF8 ∧ (Verify.symBytes b o t).dropLast = k.data.toList :=
+  ⟨_, hv, (Verify.symAt_eq_dropLast b o t (hw.le (t + 1) (by omega))).symm⟩
+
+/-- One symbol appended — the bytes `s` after the blob, its end pushed as the last start — keeps the layout, and
+    every entry valid where `s` without its last byte, the NUL, is. -/
+theorem utf8_push {b b' : ByteArray} {o : Array Nat} {s : List UInt8} (hw : SymsWF b o)
+    (hu : ∀ t < o.size - 1, ∃ k : ByteArray, k.IsValidUTF8 ∧ (Verify.symBytes b o t).dropLast = k.data.toList)
+    (hob : b'.data.toList = b.data.toList ++ s) (hs : ∃ k : ByteArray, k.IsValidUTF8 ∧ s.dropLast = k.data.toList) :
+    SymsWF b' (o.push b'.size) ∧ ∀ t < (o.push b'.size).size - 1,
+      ∃ k : ByteArray, k.IsValidUTF8 ∧ (Verify.symBytes b' (o.push b'.size) t).dropLast = k.data.toList := by
+  have hl : b.size ≤ b'.size := by
+    have := congrArg List.length hob
+    simp only [Array.length_toList, List.length_append] at this
+    show b.data.size ≤ b'.data.size; omega
+  have hp := hw.pos
+  obtain ⟨-, -, -, g4, g5⟩ := Verify.symBytes_push b b' o (o.size - 1) s (by omega) hw.last
+    (fun t _ => hw.le t (by omega)) hob
+  refine ⟨symsWF_push hw hl, fun t ht => ?_⟩
+  rw [Array.size_push] at ht
+  rcases Nat.lt_or_ge t (o.size - 1) with h | h
+  · rw [g5 t h]; exact hu t h
+  · rw [show t = o.size - 1 by omega, g4]; exact hs
+
+/-- A `Nat.fold` whose every step keeps `P` keeps it. -/
+theorem fold_inv {α : Type} {N : Nat} (f : (i : Nat) → i < N → α → α) (P : α → Prop)
+    (hf : ∀ i h p, P p → P (f i h p)) (init : α) (h0 : P init) {q : α} (hq : Nat.fold N f init = q) : P q := by
+  subst hq
+  induction N with
+  | zero => simpa using h0
+  | succ N ih => rw [Nat.fold_succ]; exact hf _ _ _ (ih (fun i h => f i (by omega)) (fun i h p => hf i _ p))
+
+/-- `distinctSyms` keeps only entries of its source, so they are valid where the source's are. -/
+theorem utf8_distinctSyms (b : ByteArray) (o : Array Nat) (hu : ∀ i < o.size - 1, (Column.symKey b o i).IsValidUTF8) :
+    ∀ j < (Order.distinctSyms b o).2.size - 1,
+      (Column.symKey (Order.distinctSyms b o).1 (Order.distinctSyms b o).2 j).IsValidUTF8 := by
+  have hD := Verify.distinctSyms_eraseDups b o
+  simp only [Verify.symsOf, ← Verify.firstsOf_eraseDups] at hD
+  intro j hj
+  have hm : Verify.symAt (Order.distinctSyms b o).1 (Order.distinctSyms b o).2 j ∈
+      (Verify.firstsOf (Verify.symAt b o) (o.size - 1)).map (Verify.symAt b o) := by
+    rw [← hD]; exact List.mem_map.2 ⟨j, List.mem_range.2 hj, rfl⟩
+  obtain ⟨f, hf, he⟩ := List.mem_map.1 hm
+  exact utf8_congr he.symm (hu f (Verify.firsts_lt _ _ hf))
+
+/-- `concatSyms`' fold keeps every part's entries, so they are valid where the parts' are. -/
+theorem utf8_concatSyms_foldl (L : List (ByteArray × Array Nat))
+    (hL : ∀ x ∈ L, SymsWF x.1 x.2 ∧ ∀ i < x.2.size - 1, (Column.symKey x.1 x.2 i).IsValidUTF8)
+    (acc : ByteArray × Array Nat) (hacc : SymsWF acc.1 acc.2)
+    (hu : ∀ i < acc.2.size - 1, (Column.symKey acc.1 acc.2 i).IsValidUTF8) :
+    ∀ i < (L.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size))) acc).2.size - 1,
+      (Column.symKey (L.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size))) acc).1
+        (L.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size))) acc).2
+        i).IsValidUTF8 := by
+  induction L generalizing acc with
+  | nil => exact hu
+  | cons x L ih =>
+    obtain ⟨hx, hxu⟩ := hL x (List.mem_cons_self ..)
+    obtain ⟨s1, s2, s3, s4⟩ := Verify.concatSyms_step hacc hx
+    have hp := hacc.pos
+    simp only [List.foldl_cons]
+    refine ih (fun y hy => hL y (List.mem_cons_of_mem _ hy))
+      (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size)) s1 fun i hi => ?_
+    dsimp only at hi ⊢
+    rw [s2] at hi
+    apply utf8_of_inv s1 (by rw [s2]; omega)
+    rcases Nat.lt_or_ge i (acc.2.size - 1) with h | h
+    · rw [s3 i h]; exact inv_of_utf8 hacc h (hu i h)
+    · have := s4 (i - (acc.2.size - 1)) (by omega)
+      rw [show acc.2.size - 1 + (i - (acc.2.size - 1)) = i by omega] at this
+      rw [this]; exact inv_of_utf8 hx (by omega) (hxu _ (by omega))
+
+/-- **`concatSyms` writes only valid UTF-8** where every part is well formed and holds only valid UTF-8. -/
+theorem utf8_concatSyms {parts : Array (ByteArray × Array Nat)}
+    (hw : ∀ x ∈ parts, SymsWF x.1 x.2 ∧ ∀ i < x.2.size - 1, (Column.symKey x.1 x.2 i).IsValidUTF8)
+    {t n a} {b : ByteArray} {o : Array Nat} (h : Kernel.concatSyms parts = .vector t n (.syms b o) a) :
+    ∀ i < o.size - 1, (Column.symKey b o i).IsValidUTF8 := by
+  have hc : Kernel.concatSyms parts = .vector .symbol
+      ((parts.toList.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size)))
+        (ByteArray.empty, #[0])).2.size - 1 |> fun c => needSize c "concatSyms: symbols" (fun _ => 0) id) (.syms
+      (parts.toList.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size)))
+        (ByteArray.empty, #[0])).1
+      (parts.toList.foldl (fun acc x => (acc.1 ++ x.1, acc.2 ++ (x.2.extract 1 x.2.size).map (· + acc.1.size)))
+        (ByteArray.empty, #[0])).2) none := by
+    unfold Kernel.concatSyms; rw [Array.foldl_toList]
+  rw [hc] at h
+  injection h with _ _ he _
+  injection he with hb ho
+  subst hb ho
+  exact utf8_concatSyms_foldl parts.toList (fun x hx => hw x (Array.mem_def.2 hx)) _ (by decide)
+    (fun i hi => by simp at hi)
+
+/-- `fewSyms` copies, NUL included, the dictionary entry each element's id names: its answer is laid out as
+    `SymsWF` says and holds only valid UTF-8 where the dictionary does. -/
+theorem fewSyms_utf8 {n : USize} {d : ByteArray} {dof : Array Nat} {ids b : ByteArray} {bo : Array Nat}
+    (hd : SymsWF d dof) (hi : ∀ i < n.toNat, Column.idAt ids (Column.idWidth dof) i < dof.size - 1)
+    (hu : ∀ i < dof.size - 1, (Column.symKey d dof i).IsValidUTF8)
+    (h : fewSyms n (.enum d dof ids) = some (b, bo)) :
+    SymsWF b bo ∧ ∀ j < bo.size - 1, (Column.symKey b bo j).IsValidUTF8 := by
+  unfold fewSyms at h
+  dsimp only at h
+  split at h
+  · rw [Option.some.injEq] at h
+    have H := fold_inv _ (fun p : ByteArray × Array Nat => SymsWF p.1 p.2 ∧ ∀ t < p.2.size - 1,
+        ∃ k : ByteArray, k.IsValidUTF8 ∧ (Verify.symBytes p.1 p.2 t).dropLast = k.data.toList)
+      (fun i hi' p hp => by
+        obtain ⟨b, o⟩ := p
+        have he := hi i hi'
+        exact utf8_push hp.1 hp.2 (Verify.copySlice_end _ _ _ _)
+          ⟨_, hu _ he, (Verify.symAt_eq_dropLast d dof _ (hd.le _ (by omega))).symm⟩)
+      _ ⟨by decide, fun t ht => by simp at ht⟩ h
+    exact ⟨H.1, fun j hj => utf8_of_inv H.1 hj (H.2 j hj)⟩
+  · cases h
+
 /-- `concatSyms` (the symbol branch on `syms` parts) answers a well-formed symbol vector, where every part
-    is laid out as `SymsWF` says and the parts' symbols, summed, fit a `USize`. -/
+    is laid out as `SymsWF` says, holds only valid UTF-8, and the parts' symbols, summed, fit a `USize`. -/
 theorem concatSyms_wf (parts : Array (ByteArray × Array Nat)) (hw : ∀ x ∈ parts, SymsWF x.1 x.2)
+    (hu : ∀ x ∈ parts, ∀ i < x.2.size - 1, (Column.symKey x.1 x.2 i).IsValidUTF8)
     (hN : (parts.map fun p => p.2.size - 1).toList.sum < USize.size) :
     ∃ n e, concatSyms parts = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
   refine ⟨_, _, rfl, ?_⟩
   have hS := (Verify.symBytes_concatSyms hw rfl).1
+  have hU := utf8_concatSyms (fun x hx => ⟨hw x hx, hu x hx⟩) (parts := parts) rfl
   simp only [Enc.WF]
-  refine ⟨?_, hS⟩
-  generalize hp : Array.foldl _ (ByteArray.empty, #[0]) parts = p
+  generalize hp : Array.foldl _ (ByteArray.empty, #[0]) parts = p at hS hU ⊢
   have hs : p.2.size = 1 + (parts.map fun p => p.2.size - 1).toList.sum := by
     rw [← hp, ← Array.foldl_toList]
     refine Eq.trans (foldl_sum (fun q : ByteArray × Array Nat => q.2.size) _ (fun p => p.2.size - 1)
@@ -270,7 +423,7 @@ theorem concatSyms_wf (parts : Array (ByteArray × Array Nat)) (hw : ∀ x ∈ p
     · simp
     · simp [Nat.add_comm]
   rw [needSize_fits (c := p.2.size - 1) (by omega), id_eq, toUSize_toNat (k := p.2.size - 1) (by omega)]
-  omega
+  exact ⟨by omega, hS, fun i hi => hU i (by omega)⟩
 
 /-- The dense branch of `razeColumn`: parts of `cs.1 · w` bytes each, joined, hold the summed count. -/
 theorem concatBytes_wf {t : QAtomicType} {w : Nat} {cs : Array (USize × Enc)} {ps : Array ByteArray}
@@ -674,10 +827,20 @@ private theorem internConcat_dict (qs : Array (USize × ByteArray × Array Nat �
 theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}
     (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0)
     (hq : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
-      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1)
+    (hu : ∀ p ∈ qs, SymsWF p.2.1 p.2.2.1 ∧ ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8) :
     Enc.WF .symbol c (.enum (internConcat qs).1 (internConcat qs).2.1 (internConcat qs).2.2) := by
   have hi := internConcat_ids_lt qs hq
   rw [← hc] at hi
+  -- the dictionary is `distinctSyms` of the parts' dictionaries joined, so its entries are theirs
+  have hv : ∀ j < (internConcat qs).2.1.size - 1,
+      (Column.symKey (internConcat qs).1 (internConcat qs).2.1 j).IsValidUTF8 := by
+    obtain ⟨n', cb, co, hcs, e1, e2⟩ : ∃ n' cb co, concatSyms (qs.map fun p => (p.2.1, p.2.2.1)) =
+        .vector .symbol n' (.syms cb co) none ∧ (internConcat qs).1 = (Order.internSyms cb co).1 ∧
+        (internConcat qs).2.1 = (Order.internSyms cb co).2.1 := ⟨_, _, _, rfl, rfl, rfl⟩
+    rw [e1, e2]
+    exact utf8_distinctSyms cb co (utf8_concatSyms (fun x hx => by
+      obtain ⟨p, hp, rfl⟩ := Array.mem_map.1 hx; exact hu p hp) hcs)
   obtain ⟨b, o, h1, h2⟩ := internConcat_dict qs
   have hs := Verify.symsWF_internSyms b o
   have hd : SymsWF (internConcat qs).1 (internConcat qs).2.1 := by rw [h1, h2]; exact hs
@@ -690,8 +853,8 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
       (Verify.symAt (Order.distinctSyms b o).1 (Order.distinctSyms b o).2)).Nodup
     rw [hD]; exact Verify.nodup_firsts ..
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
-  rw [h] at hd hn hi ⊢
-  refine ⟨?_, hd, hi, hn⟩
+  rw [h] at hd hn hi hv ⊢
+  refine ⟨?_, hd, hi, hn, hv⟩
   simp only [concatIds]
   rw [hc, toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)
@@ -703,18 +866,19 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
 private theorem hashJoin_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}
     (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0)
     (hq : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
-      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1)
+    (hu : ∀ p ∈ qs, SymsWF p.2.1 p.2.2.1 ∧ ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8) :
     Enc.WF .symbol c (match hashConcat qs with
       | .ok (db, dbo, ids) => .enum db dbo ids
       | .error ps => match internConcat ps with | (db, dbo, ids) => .enum db dbo ids) := by
   split
   · rename_i db dbo ids heq
-    have := internConcat_wf qs hc hq
+    have := internConcat_wf qs hc hq hu
     rw [← hashConcat_ok heq] at this
     exact this
   · rename_i r heq
     obtain rfl := hashConcat_error heq
-    exact internConcat_wf r hc hq
+    exact internConcat_wf r hc hq hu
 
 /-- A `Nat.fold` that pushes one start a step pushes one per step. -/
 private theorem fold_snd_size {N : Nat} (f : (i : Nat) → i < N → ByteArray × Array Nat → ByteArray × Array Nat)
@@ -878,11 +1042,34 @@ theorem concatFoR_nblk {w : Nat} {ns : Array USize} {ms ps : Array ByteArray} {m
 theorem concatEnum_wf (ps : Array (USize × ByteArray × Array Nat × ByteArray))
     (hN : ps.foldl (fun s p => s + p.1.toNat) 0 < USize.size)
     (hw : ∀ p ∈ ps, 0 < p.2.2.1.size ∧
-      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1)
+    (hu : ∀ p ∈ ps, SymsWF p.2.1 p.2.2.1 ∧ ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8) :
     ∃ n e, concatEnum ps = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
   unfold concatEnum
   dsimp only
   generalize hq : Array.mapIdx _ ps = qs
+  -- a part `fewSyms` re-encodes copies the entries its ids name
+  have hU : ∀ p ∈ qs, SymsWF p.2.1 p.2.2.1 ∧
+      ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8 := by
+    intro q hmem
+    rw [← hq] at hmem
+    obtain ⟨i, hi, rfl⟩ := Array.mem_iff_getElem.1 hmem
+    have hi' : i < ps.size := by simpa using hi
+    have hp := hw ps[i] (Array.getElem_mem hi')
+    have hp' := hu ps[i] (Array.getElem_mem hi')
+    simp only [Array.getElem_mapIdx]
+    generalize ps[i] = p at hp hp' ⊢
+    obtain ⟨n, d, o, ids⟩ := p
+    dsimp only at hp hp' ⊢
+    by_cases h0 : (i == 0) = true
+    · simp only [h0, if_true]; exact hp'
+    · simp only [h0, if_false, Bool.false_eq_true]
+      cases hf : fewSyms n (.enum d o ids) with
+      | none => exact hp'
+      | some r =>
+        obtain ⟨b, bo⟩ := r
+        dsimp only
+        exact fewSyms_utf8 hp'.1 hp.2 hp'.2 hf
   have hP : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
       ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1 := by
     intro q hmem
@@ -919,7 +1106,7 @@ theorem concatEnum_wf (ps : Array (USize × ByteArray × Array Nat × ByteArray)
     rw [foldl_toNat, hmap, ← foldl_toNat]; exact hN
   refine ⟨_, _, rfl, ?_⟩
   rw [needSize_fits hk]
-  exact hashJoin_wf qs (toUSize_toNat hk) hP
+  exact hashJoin_wf qs (toUSize_toNat hk) hP hU
 
 /-- An `Option` pass whose every answer at a member carries that member's key keeps the keys. -/
 private theorem mapM_key {α β γ : Type} {f : α → Option β} {key : α → γ} {key' : β → γ} {cs : Array α}
@@ -1037,10 +1224,22 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (USize × Enc)}
         (key := fun _ : USize × Enc => true) (fun c hc x hx => by
           rcases c with ⟨k, e⟩
           have hw := h _ hc
-          cases e <;> first | (cases hx; done) | (cases hx; simp only [Enc.WF] at hw; exact decide_eq_true hw.2)) hps
-      refine concatSyms_wf ps (fun x hx => ?_) ?_
+          cases e <;> first | (cases hx; done) | (cases hx; simp only [Enc.WF] at hw; exact decide_eq_true hw.2.1)) hps
+      have hs' := mapM_key (key' := fun p : ByteArray × Array Nat =>
+          decide (∀ i < p.2.size - 1, (Column.symKey p.1 p.2 i).IsValidUTF8))
+        (key := fun _ : USize × Enc => true) (fun c hc x hx => by
+          rcases c with ⟨k, e⟩
+          have hw := h _ hc
+          cases e <;> first | (cases hx; done) |
+            (cases hx; simp only [Enc.WF] at hw; exact decide_eq_true fun i hi => hw.2.2 i (by simp only at hi; omega))) hps
+      refine concatSyms_wf ps (fun x hx => ?_) (fun x hx => ?_) ?_
       · have hm := Array.mem_map_of_mem (f := fun p : ByteArray × Array Nat => decide (SymsWF p.1 p.2)) hx
         rw [hs] at hm
+        obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
+        exact of_decide_eq_true he.symm
+      · have hm := Array.mem_map_of_mem (f := fun p : ByteArray × Array Nat =>
+          decide (∀ i < p.2.size - 1, (Column.symKey p.1 p.2 i).IsValidUTF8)) hx
+        rw [hs'] at hm
         obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
         exact of_decide_eq_true he.symm
       have hk := mapM_key (key' := fun p : ByteArray × Array Nat => p.2.size - 1)
@@ -1052,8 +1251,35 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (USize × Enc)}
     · split at hv
       · rename_i ps hps
         cases hv
-        refine concatEnum_wf ps ?_ ?_
+        refine concatEnum_wf ps ?_ ?_ ?_
         rotate_left
+        rotate_left
+        · have hP := mapM_key (key' := fun p : USize × ByteArray × Array Nat × ByteArray => decide (SymsWF p.2.1 p.2.2.1 ∧
+              ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8))
+            (key := fun _ : USize × Enc => true) (fun c hc x hx => by
+              rcases c with ⟨k, e⟩
+              have hw := h _ hc
+              cases e with
+              | syms b o =>
+                simp only [Column.intern] at hx
+                cases hx
+                simp only [Enc.WF] at hw
+                exact decide_eq_true ⟨Verify.symsWF_internSyms b o,
+                  utf8_distinctSyms b o fun i hi => hw.2.2 i (by omega)⟩
+              | enum d o ids =>
+                simp only [Column.intern] at hx
+                cases hx
+                simp only [Enc.WF] at hw
+                exact decide_eq_true ⟨hw.2.1, hw.2.2.2.2⟩
+              | _ => simp [Column.intern] at hx) hps
+          intro p hp
+          have hm := Array.mem_map_of_mem (f := fun p : USize × ByteArray × Array Nat × ByteArray =>
+            decide (SymsWF p.2.1 p.2.2.1 ∧
+              ∀ i < p.2.2.1.size - 1, (Column.symKey p.2.1 p.2.2.1 i).IsValidUTF8)) hp
+          rw [hP] at hm
+          obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
+          exact of_decide_eq_true he.symm
+        rotate_right
         · have hP := mapM_key (key' := fun p : USize × ByteArray × Array Nat × ByteArray => decide (0 < p.2.2.1.size ∧
               ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1))
             (key := fun _ : USize × Enc => true) (fun c hc x hx => by
