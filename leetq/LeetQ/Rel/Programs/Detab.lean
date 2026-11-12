@@ -1,0 +1,83 @@
+import LeetQ.Rel.Lang.Embed
+
+/-! # The detab-entab problem
+
+B&dM §10.2 "The detab-entab problem" (diag/aop/10-greedy.typ:79-266): detab, the specification
+entab ⊑ Λ(detab°)est(R) (entab_laws, 10:148) and the derived program entab = triple assocl π₁ (𝟙×blanks) cat
+(entab_triple, 10:259), on arrays of characters. The μ form of entab_laws is not written: no μ (§d). -/
+
+namespace LeetQ.Rel.Programs
+
+rel_program detab where
+    obj Ch = {a,b,c,d,BL,TB,NL}                   -- the characters: letters, the book's BL, TB, NL
+    obj N = 0…24                                  -- columns and counts: detab of 5 characters reaches column 20
+    obj K = 30…34                                 -- one round per character of a candidate: lengths ≤ 5
+
+    e : 1 ⟶ [Ch] ≜ nil                            -- the empty string
+    m : N ⟶ N ≜ {(4,4)}                           -- the tab width, the note's n (a name the language reserves)
+    bl : Ch ⟶ Ch ≜ {(BL,BL)}
+    tb : Ch ⟶ Ch ≜ {(TB,TB)}
+    nl : Ch ⟶ Ch ≜ {(NL,NL)}
+    z : α ⟶ N ≜ ⊤{(0,0)}                          -- the constant 0
+
+    /- S(r,A): the strings over the characters A, one round of r per character (each round keeps or appends one). -/
+
+    S(r : α ⟶ [β], A : γ ⟶ Ch) : [Ch] ⟶ [Ch] ≜ ran(r⦇ran(e), π₂ ∪ (⟨π₂,π₁⊤A⟩snoc)⦈)
+
+    /- blanks k = k blanks: the converse of length on the all-blank strings, which step needs up to m of. -/
+
+    B : [Ch] ⟶ [Ch] ≜ S(Λ(⊤(1,N)dom(<m)),bl)
+    blanks : α ⟶ [Ch] ≜ (B length)°
+
+    /- detab tupled with col, run as the left loop from base = ([],0) (detab_tupled, detab_loop, 10:187-202):
+
+       ```
+       step((x,c),a) = (a=NL → (x⧺[NL],0), a=TB → (x⧺blanks(w),c+w), (x⧺[a],c+1)), w = n − c mod n
+       ``` -/
+
+    step : ([Ch]×N)×Ch ⟶ [Ch]×N ≜ dom(π₂nl)⟨⟨π₁π₁,π₂⟩snoc,z⟩ ∪ (dom(π₂tb)⟨⟨π₁π₁,w blanks⟩cat,⟨π₁π₂,w⟩plus⟩) ∪ (dom(π₂(𝟙(Ch) − nl − tb))⟨⟨π₁π₁,π₂⟩snoc,π₁π₂ succ⟩) where w ≜ ⟨⊤m,⟨π₁π₂,⊤m⟩mod⟩minus
+    detab : [Ch] ⟶ [Ch] ≜ ⟨⟨nil,z⟩,𝟙⟩loop(step)π₁
+
+    /- The specification Λ(detab°)est(R), R ≜ length ≤ length° (entab_laws, 10:148), on the candidates C: every string of
+       length ≤ 5 over {a,BL,TB}. detab never shortens, so C holds every preimage of a string of D. H ≜ detab° is
+       restricted to C: the converse of a fold does not run on demand; R runs on the pairs est compares. -/
+
+    C : [Ch] ⟶ [Ch] ≜ S(Λ(⊤(1,K)), {(a,a),(BL,BL),(TB,TB)})
+    H : [Ch] ⟶ [Ch] ≜ (C detab)°
+    R : [α] ⟶ [β] ≜ length ≤(N,N) length°
+    D : [Ch] ⟶ [Ch] ≜ ran(C detab)C               -- the outputs of detab that are candidates
+
+    /- The derived program (triple_fold 10:247, entab_triple 10:259): triple ≜ ⦇[base,op]⦈ on snoc-lists, run as the left
+       loop of op from base = ([],(0,0)); h: the character a is a blank off a tab stop, on ((t,c),a); tc: ⟨tbc,col⟩'s step. -/
+
+    h : (α×N)×Ch ⟶ (α×N)×Ch ≜ dom(π₂bl) ∩ dom(π₁π₂ succ⟨𝟙,⊤m⟩mod(𝟙(N) − {(0,0)}))
+    tc : (N×N)×Ch ⟶ N×N ≜ h⟨π₁π₁ succ,k⟩ ∪ ((dom(π₂bl) − h)⟨z,k⟩) ∪ (dom(π₂nl)⟨z,z⟩) ∪ (dom(π₂(𝟙(Ch) − bl − nl))⟨z,k⟩) where k ≜ π₁π₂ succ
+
+    /- op((x,(t,c)),a): hold the blank, or emit a tab on a tab stop, or cash the t held blanks in and append a. -/
+
+    op : ([Ch]×(N×N))×Ch ⟶ [Ch]×(N×N) ≜ ⟨g π₁π₁ ∪ ((dom(π₂bl) − g)⟨π₁π₁,⊤tb⟩snoc) ∪ (dom(π₂(𝟙(Ch) − bl))⟨⟨π₁π₁,π₁π₂π₁ blanks⟩cat,π₂⟩snoc),⟨π₁π₂,π₂⟩tc⟩ where g ≜ dom(⟨π₁π₂,π₂⟩h)
+    triple : [Ch] ⟶ [Ch]×(N×N) ≜ ⟨⟨nil,⟨z,z⟩⟩,𝟙⟩loop(op)
+    assocl : α×(β×γ) ⟶ (α×β)×γ ≜ ⟨⟨π₁,π₂π₁⟩,π₂π₂⟩
+    entab : [Ch] ⟶ [Ch] ≜ triple assocl π₁ (𝟙×blanks) cat
+
+    /- The note's run (10:268): ab, a tab, c d; and three candidates' outputs, a tie among them (q). -/
+
+    x : 1 ⟶ [Ch] ≜ {(∗,a b TB c BL d)}
+    p : 1 ⟶ [Ch] ≜ {(∗,a BL BL BL)}
+    q : 1 ⟶ [Ch] ≜ {(∗,a a a BL a)}
+    y : 1 ⟶ [Ch] ≜ {(∗,BL BL BL BL BL)}
+
+    check x detab = {(∗,a b BL BL c BL d)}
+    check x detab entab = {(∗,a b TB c BL d)}
+    check p Λ(H)est(R) = {(∗,a TB)}
+    check q Λ(H)est(R) = {(∗,a a a BL a),(∗,a a a TB a)}
+    check y Λ(H)est(R) = {(∗,TB BL)}
+    check p entab = {(∗,a TB)}
+    check q entab = {(∗,a a a TB a)}
+    check y entab = {(∗,TB BL)}
+    check D entab ⊑ D Λ(H)est(R)                  -- entab_laws, 10:148: the program is a shortest preimage
+    check D entab detab = D                       -- detab entab = 𝟙 on detab's outputs
+
+#guard (Lang.runProgram detab).isOk
+
+end LeetQ.Rel.Programs
