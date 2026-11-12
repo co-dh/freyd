@@ -73,6 +73,10 @@ theorem len_val (op shape : UInt8) (a b : ByteArray) (n : USize) :
 theorem len_sums (n : USize) (b : ByteArray) : len (sums n b) = min n.toNat (len b) := by
   simp [len, sums, Scan.scan, Scan.intScan, Scan.scanOf_size, Scan.Kind.avail, Scan.outKind, Scan.Kind.width]
 
+/-- `sums` at the count of its `n` counts answers all `n` (`len_sums`). -/
+theorem sums_le {n : USize} {b : ByteArray} (h : len b = n.toNat) : n.toNat ≤ len (sums n b) := by
+  rw [len_sums, h, Nat.min_self]; exact Nat.le_refl _
+
 /-- q's `where` on the dense count column `cnt` of `n` counts (none negative): row `i` repeated `cnt[i]` times,
     and each copy's rank in its run — `expandBytes` of `til n` by the counts, then the output position less
     its run's start (`sums` less the count). One linear pass, where bisecting the outputs into the run starts
