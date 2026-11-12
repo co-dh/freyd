@@ -142,9 +142,9 @@ theorem rows_spec {k v : Obj} (R : Rel k v) (i : ByteArray) (hl : len i < USize.
 
 -- the key's and the value's codes, one part each, and the first rows `nub` picks, named as `nub` names them
 set_option hygiene false in
-local notation "kc" => (Obj.codes k (#v[⟨R.n, R.key⟩] : Vector (Part k) 1))[0]
+local notation "kc" => (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
-local notation "vc" => (Obj.codes v (#v[⟨R.n, R.val⟩] : Vector (Part v) 1))[0]
+local notation "vc" => (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
 local notation "nubI" => (tuples.tupleIds kc #[vc]).2
 
@@ -225,12 +225,12 @@ end LeetQ.Rel.Alg
 
 namespace LeetQ.Rel.Rep
 
-open QLean QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg.RelSet
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg.RelSet
 
 set_option hygiene false in
-local notation "kc" => (Obj.codes k (#v[⟨R.n, R.key⟩] : Vector (Part k) 1))[0]
+local notation "kc" => (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
-local notation "vc" => (Obj.codes v (#v[⟨R.n, R.val⟩] : Vector (Part v) 1))[0]
+local notation "vc" => (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
 local notation "nubI" => (tuples.tupleIds kc #[vc]).2
 
@@ -275,5 +275,65 @@ theorem rep_nub {k v : Obj} (R : Rel k v)
     · rw [e2, ← hqc]; exact (hV.1 hp q.2).1 hfq.2
 
 #print axioms rep_nub
+
+-- `rep_nub`'s `hP`: where `pairCode` composes the key's and the value's codes, its code is well formed and
+-- agrees exactly where both do
+set_option hygiene false in
+local notation "composedFaithful" => ((pairCode true kc vc).2 = none →
+  let c := (pairCode true kc vc).1
+  ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (kc).n ∧
+    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+  ∀ i < (kc).n.toNat, ∀ j < (kc).n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
+    Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ∧ Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j))
+
+/-- `rep_nub` at atom sides: `nub` picks rows of `R` only (`nub_mem`), so both sides fit (`pickFits_atom`). -/
+theorem rep_nub_atoms {t t' : QAtomicType} (R : Rel (.atom t) (.atom t'))
+    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
+        Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
+      ((kc).w = 1 ∨ (kc).w = 2 ∨ (kc).w = 4 ∨ (kc).w = 8 ∨ (kc).w = 16 ∨ (kc).w = 32 ∨ (kc).w = 64) ∧ (kc).n = R.n ∧
+        (kc).b.size = ((kc).n.toNat * (kc).w + 7) / 8 ∧
+        ((kc).w < 8 → (kc).card < USize.size ∧ ∀ i < (kc).n.toNat, Column.idAt (kc).b (kc).w i < (kc).card))
+    (hV : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
+        Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j ↔ Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
+      ((vc).w = 1 ∨ (vc).w = 2 ∨ (vc).w = 4 ∨ (vc).w = 8 ∨ (vc).w = 16 ∨ (vc).w = 32 ∨ (vc).w = 64) ∧ (vc).n = R.n ∧
+        (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
+        ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
+    (hP : composedFaithful) : rep R.nub = rep R :=
+  rep_nub R hK hV hP (pickFits_atom R.key fun _ hp => ((nub_mem R hK hV hP).1 hp).1)
+    (pickFits_atom R.val fun _ hp => ((nub_mem R hK hV hP).1 hp).1)
+
+/-- `rep_nub` at boolean sides (`codes_boolean_faithful`/`_wf`). -/
+theorem rep_nub_boolean (R : Rel (.atom .boolean) (.atom .boolean)) (hP : composedFaithful) : rep R.nub = rep R :=
+  rep_nub_atoms R ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
+      by have h := codes_boolean_wf (#v[⟨R.n, R.key⟩] : Vector (Part _) 1) (k := 0) (by decide)
+         exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
+    ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
+      by have h := codes_boolean_wf (#v[⟨R.n, R.val⟩] : Vector (Part _) 1) (k := 0) (by decide)
+         exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩ hP
+
+/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types;
+    `codes_small_int_faithful`/`_wf`). -/
+theorem rep_nub_small_int {t t' : QAtomicType} {k₀ k₁ : Scan.Kind} (ht : orderKind t = some k₀)
+    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) (ht' : orderKind t' = some k₁) (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32)
+    (R : Rel (.atom t) (.atom t')) (hP : composedFaithful) : rep R.nub = rep R :=
+  rep_nub_atoms R ⟨fun hi hj => codes_small_int_faithful ht hk₀ _ hi hj, codes_small_int_wf ht hk₀ _⟩
+    ⟨fun hi hj => codes_small_int_faithful ht' hk₁ _ hi hj, codes_small_int_wf ht' hk₁ _⟩ hP
+
+/-- `rep_nub` at eight-byte integral sides (`codes_long_one_faithful`/`_wf`). -/
+theorem rep_nub_long {t t' : QAtomicType} (ht : orderKind t = some .i64) (ht' : orderKind t' = some .i64)
+    (R : Rel (.atom t) (.atom t')) (hP : composedFaithful) : rep R.nub = rep R :=
+  rep_nub_atoms R ⟨fun hi hj => codes_long_one_faithful ht _ hi hj, codes_long_one_wf ht _⟩
+    ⟨fun hi hj => codes_long_one_faithful ht' _ hi hj, codes_long_one_wf ht' _⟩ hP
+
+/-- `rep_nub` at `guid` sides (`codes_guid_faithful`/`_wf`). -/
+theorem rep_nub_guid (R : Rel (.atom .guid) (.atom .guid)) (hP : composedFaithful) : rep R.nub = rep R :=
+  rep_nub_atoms R ⟨fun hi hj => codes_guid_faithful _ hi hj, codes_guid_wf _⟩
+    ⟨fun hi hj => codes_guid_faithful _ hi hj, codes_guid_wf _⟩ hP
+
+#print axioms rep_nub_boolean
+#print axioms rep_nub_small_int
+#print axioms rep_nub_long
+#print axioms rep_nub_guid
 
 end LeetQ.Rel.Rep
