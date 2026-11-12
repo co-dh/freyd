@@ -8,7 +8,7 @@ input are the elements at positions `0`, `1`, `2`. -/
 
 namespace LeetQ.Rel.Programs
 
-rel_program circuit where
+rel_program circuit after prelude where
     obj B = 0…1                                   -- a bit
 
     /- The note writes ⊕ for xor; ⊕ is the sum of relations here, so xor is an ordinary definition. -/

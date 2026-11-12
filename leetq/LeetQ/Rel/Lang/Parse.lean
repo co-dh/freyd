@@ -329,7 +329,6 @@ def decl (p : Pos) (w : String) : P Decl := do
     let q ← pos
     let n ← word
     if let some r := (← get).taken.lookup n then throw ⟨q, s!"`{n}` is already defined {r}"⟩
-    modify fun s => { s with taken := (n, at_ q) :: s.taken }
     tok '='
     ws
     let d ← match ← peek with
@@ -341,7 +340,6 @@ def decl (p : Pos) (w : String) : P Decl := do
           pure (ObjDef.range lo hi))
         else (do pure (ObjDef.alias (← object)))
       | none => expected "an object"
-    modify fun s => { s with objs := n :: s.objs }
     pure (.obj p n d)
   | "print" => pure (.print p (← expr))
   | "check" =>
@@ -367,7 +365,6 @@ def decl (p : Pos) (w : String) : P Decl := do
     let _ ← ps.foldlM (fun (seen : List String) q => do
       if seen.contains q.name then throw ⟨p, s!"`{q.name}` is already a parameter of `{w}`"⟩
       pure (q.name :: seen)) []
-    modify fun s => { s with taken := (key, at_ p) :: s.taken }
     let ty ← typeOpt
     let outer := (← get).known
     modify fun s => { s with known := ps.map (fun q => (q.name, 0)) ++ s.known }
@@ -383,7 +380,8 @@ def decl (p : Pos) (w : String) : P Decl := do
         throw ⟨p, s!"the test `{w}` has no type of its own: drop ': {OExp.arrow t}' (§e)"⟩
       modify fun s => { s with known := k }
       ws
-      let σ ← if ← atWhere then do let _ ← word; items w ps (← get).taken [] else pure []
+      -- an item takes no name the definition itself takes
+      let σ ← if ← atWhere then do let _ ← word; items w ps ((key, at_ p) :: (← get).taken) [] else pure []
       pure (b, σ)
     -- a `where` item is in scope in the body (§c), so a run of letters there is split with its name known: the
     -- items' names are read after the body, which is then read again
@@ -391,8 +389,15 @@ def decl (p : Pos) (w : String) : P Decl := do
     let (b, σ) ← rest []
     let (b, σ) ← if σ.isEmpty then pure (b, σ) else do set s₀; rest (σ.map fun (n, _) => (n, 0))
     let b := match b with | .rel e => Body.rel (e.subst σ) | .test e f => .test (e.subst σ) (f.subst σ)
-    modify fun s => { s with known := (key, ps.length) :: outer }
+    modify fun s => { s with known := outer }
     pure (.defn p key ps b ty)
+
+/-- The scope the program `prog` leaves when read in the scope `s`: each definition known with its arity, each
+    object declared, each name taken at its line. -/
+def after (s : S) (prog : Program) : S := prog.foldl (init := s) fun s d => match d with
+  | .defn p k ps _ _ => { s with known := (k, ps.length) :: s.known, taken := (k, at_ p) :: s.taken }
+  | .obj p n _ => { s with objs := n :: s.objs, taken := (n, at_ p) :: s.taken }
+  | _ => s
 
 partial def program : P Program := do
   ws
@@ -402,6 +407,7 @@ partial def program : P Program := do
   | some _ =>
     let p ← pos
     let d ← decl p (← word)
+    modify (after · [d])
     ws
     match ← peek with
     | none => pure [d]
@@ -486,28 +492,19 @@ def programText (file text : String) : Except Err String :=
   else throw ⟨default, "not a program file: its name must end in `.rel.md` (Markdown, whose indented code " ++
     "blocks are the program); the plain `.rel` format is no longer read"⟩
 
-/-- The prelude (§c), as the Markdown of `prelude.rel.md`: definitions every program sees, each with its type,
-    read and run before it. Raw text, not a `rel_program` module: that elab needs `Lean`, which `rel` must not link;
-    `scope` reads its code blocks, and `Test.lean` guards at build time that it reads and runs. -/
-def prelude : String := include_str "../../../programs/prelude.rel.md"
-
-/-- The prelude's literate text `pre` read (`literate`) and parsed, and the scope a program is read in after it:
-    its names and objects, each name taken "in the prelude". An error in it says it is in the prelude, at the
-    `.rel.md` file's line and column. -/
-def scope (pre : String) : Except Err (Program × S) := do
-  let (prog, s) ← (do program.run { cs := (← literate pre).toList.toArray }).mapError Err.inPrelude
-  pure (prog, { s with taken := s.taken.map fun (n, _) => (n, "in the prelude") })
+/-- The scope a program is read in after the prelude `pre` (§c, `Programs.prelude`), itself read in the empty
+    scope: its names and objects, each name taken "in the prelude". -/
+def scope (pre : Program) : S :=
+  let s := after { cs := #[] } pre
+  { s with taken := s.taken.map fun (n, _) => (n, "in the prelude") }
 
 /-- Parse a program's text in the scope `s`. -/
 def parseIn (s : S) (src : String) : Except Err Program :=
   (program.run { s with cs := src.toList.toArray, i := 0, line := 1, col := 1 }).map (·.1)
 
-/-- Parse a program's text, after the prelude. -/
-def parse (src : String) : Except Err Program := do parseIn (← scope prelude).2 src
-
-/-- Parse one term with the given names in scope, after the prelude's: the round-trip checks. -/
-def parseExpr (src : String) (known : List (String × Nat) := []) (objs : List String := []) : Except Err Expr := do
-  let s := (← scope prelude).2
+/-- Parse one term in the scope `s`, with the given names in scope as well: the round-trip checks. -/
+def parseExprIn (s : S) (src : String) (known : List (String × Nat) := []) (objs : List String := []) :
+    Except Err Expr :=
   let p : P Expr := do let e ← expr; ws; if (← peek) == none then pure e else expected "the end of the term"
   let s' := { s with cs := src.toList.toArray, i := 0, line := 1, col := 1 }
   (p.run { s' with known := known ++ s.known, objs := objs ++ s.objs }).map (·.1)
