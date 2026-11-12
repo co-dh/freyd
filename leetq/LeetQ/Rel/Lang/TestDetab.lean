@@ -1,14 +1,13 @@
 import LeetQ.Rel.Lang.Test
+import LeetQ.Rel.Programs.Detab
 
-/-! The Rel language on B&dM §10.2 detab-entab, read from `programs/detab.rel.md`: `detab`, the specification
+/-! The Rel language on B&dM §10.2 detab-entab, the program `Programs.detab`: `detab`, the specification
     `Λ(H)est(R)` (`H` = `detab°` on the candidates) and the derived program `entab`, against a direct `detab` on
     lists and a brute-force shortest preimage. -/
 
 namespace LeetQ.Rel.Lang.TestDetab
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test
-
-def detab : String := program_file "../../../programs/detab.rel.md"
 
 /-- The tab width, the program's `m`. -/
 def n : Nat := 4
@@ -42,16 +41,16 @@ def x : List String := ["a", "b", "TB", "c", "BL", "d"]
 def inputs : List (String × List String) :=
   [("p", ["a", "BL", "BL", "BL"]), ("q", ["a", "a", "a", "BL", "a"]), ("y", List.replicate 5 "BL")]
 
-/-- The file's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below. -/
+/-- The program's eight `check`s turned back into `print`s, one per line, so the values compared are Lean's below. -/
 def asPrints : List String := ["x detab", "x detab entab", "p Λ(H)est(R)", "q Λ(H)est(R)", "y Λ(H)est(R)", "p entab",
   "q entab", "y entab"]
 
-def out : Out := ok (runText (detab ++ String.join (asPrints.map fun e => s!"print {e}\n")))
+def out : Out := ok (runExt Programs.detab (String.join (asPrints.map fun e => s!"print {e}\n")))
 
 -- every `check` holds (a failed one is an error), including entab ⊑ the specification and detab entab = 𝟙, on D;
--- the file prints nothing itself
-#guard (runText detab).isOk
-#guard (ok (runText detab)).prints == []
+-- the program prints nothing itself
+#guard (runProgram Programs.detab).isOk
+#guard (ok (runProgram Programs.detab)).prints == []
 #guard out.prints.length == 8
 -- the note's run: detab of ab, a tab, c d
 #guard out.prints[0]! == s!"x detab = {shown [detabL x]}"

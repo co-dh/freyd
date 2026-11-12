@@ -1,19 +1,18 @@
 import LeetQ.Rel.Lang.Test
+import LeetQ.Rel.Programs.Mss
 
-/-! The Rel language on B&dM Ex 7.40, the maximum segment sum, read from `programs/mss.rel.md`: the
+/-! The Rel language on B&dM Ex 7.40, the maximum segment sum, the program `Programs.mss`: the
     specification `Λ(segment sum) est(≥)` and the derived fold `⦇k⦈ π₂ est(≥)`, each against a direct `List` computation. -/
 
 namespace LeetQ.Rel.Lang.TestMss
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def mss : String := program_file "../../../programs/mss.rel.md"
-
-/-- The program text of the derived fold, as `mss.rel.md` writes it. -/
+/-- The program text of the derived fold, as `Programs.mss` writes it. -/
 def prog : String := "⦇ran(zero⟨𝟙,Λ(𝟙)⟩), ⟨w,Λ(w ∪ (π₂π₂∋))⟩⦈π₂est(≥)"
 
 /-- The program with the specification and the fold on every array of `A`, named `s` and `p`. -/
-def given : Except Err Out := runText (mss ++ s!"s : [N] ⟶ N ≜ A mss\np : [N] ⟶ N ≜ A{prog}\n")
+def given : Except Err Out := runExt Programs.mss s!"s : [N] ⟶ N ≜ A mss\np : [N] ⟶ N ≜ A{prog}\n"
 
 /-- The largest sum over the segments `drop i` then `take j`, the empty one included: no `Rel` operation. -/
 def mssL (xs : List Int64) : Int64 :=
@@ -42,10 +41,10 @@ def rows : String := s!"\{(a, {mssL [3,1,4,1,5]}), (b, {mssL [2,0,7]}), (c, {mss
 #guard mssL [3,-4,2,-1,2] == 3 && mssL [-2,-1,-3] == 0
 #guard (arrays.filter fun xs => mssL xs < (xs.foldl (· + ·) 0)).isEmpty &&
   (arrays.any fun xs => mssL xs > (xs.foldl (· + ·) 0))
--- the file's two `check`s hold (a failed one is an error) and print nothing; printed here, `x mss` and `x` then the
+-- the program's two `check`s hold (a failed one is an error) and print nothing; printed here, `x mss` and `x` then the
 -- fold are the rows `mssL` computes
-#guard (runText mss).isOk && (ok (runText mss)).prints == []
-#guard (ok (runText (mss ++ s!"print x mss\nprint x{prog}\n"))).prints == [s!"x mss = {rows}",
+#guard (runProgram Programs.mss).isOk && (ok (runProgram Programs.mss)).prints == []
+#guard (ok (runExt Programs.mss s!"print x mss\nprint x{prog}\n")).prints == [s!"x mss = {rows}",
   s!"x ⦇ran(zero ⟨𝟙, Λ(𝟙)⟩), ⟨w, Λ(w ∪ (π₂ π₂ ∋))⟩⦈ π₂ est(≥) = {rows}"]
 
 end LeetQ.Rel.Lang.TestMss

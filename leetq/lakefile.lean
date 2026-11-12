@@ -16,9 +16,9 @@ package leetq where
 require freyd from ".."
 require qlean from (get_config? qlean |>.getD "../../qlean")
 
-/-- The programs (`.rel.md`) that `Parse` (the prelude) and the `Test*` modules read at elaboration time.
-Lake does not trace such a file, so the library `needs` this directory: its hash enters every module's trace.
-No filter: the directory holds programs only, and an extension filter missed `selsort.rel.md`. -/
+/-- The prelude (`prelude.rel.md`) that `Parse` reads at elaboration time (`include_str`); the programs are Lean
+modules, `LeetQ.Rel.Programs`. Lake does not trace such a file, so the library `needs` this directory: its hash
+enters every module's trace. -/
 input_dir programs where
   text := true
 

@@ -487,7 +487,7 @@ def programText (file text : String) : Except Err String :=
     "blocks are the program); the plain `.rel` format is no longer read"⟩
 
 /-- The prelude (§c), as the Markdown of `prelude.rel.md`: definitions every program sees, each with its type,
-    read and run before it. Raw text, not `program_file`'s: that elab needs `Lean`, which `rel` must not link;
+    read and run before it. Raw text, not a `rel_program` module: that elab needs `Lean`, which `rel` must not link;
     `scope` reads its code blocks, and `Test.lean` guards at build time that it reads and runs. -/
 def prelude : String := include_str "../../../programs/prelude.rel.md"
 

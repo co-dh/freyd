@@ -1,15 +1,14 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Circuit
+import LeetQ.Rel.Programs.Circuit
 
-/-! The Rel language on AIMA §8.4.2's full adder, read from `programs/circuit.rel.md`, against `Circuit.lean`. -/
+/-! The Rel language on AIMA §8.4.2's full adder, the program `Programs.circuit`, against `Circuit.lean`. -/
 
 namespace LeetQ.Rel.Lang.TestCircuit
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg LeetQ.Rel.Lang.Test LeetQ.Rel.Circuit QLean
 
-def circuit : String := program_file "../../../programs/circuit.rel.md"
-
-def given : Except Err Out := runText circuit
+def given : Except Err Out := runProgram Programs.circuit
 
 -- row order is not part of a relation, so rows compare sorted; `Circuit.lean`'s input `(a, (b, c))` and the
 -- program's array `a b c` both read as the row `[a, b, c]`
@@ -20,9 +19,9 @@ def rowsA {v : Obj} (f : v.El → List Int64) (R : Rel (.arr Bit) v) : List (Lis
   sorted (R.toList.map fun (xs, y) => xs ++ f y)
 
 #guard given.isOk
--- the file's own `check answer = …` holds and prints nothing; `answer` printed here is the same literal
+-- the program's own `check answer = …` holds and prints nothing; `answer` printed here is the same literal
 #guard (ok given).prints == []
-#guard (ok (runText (circuit ++ "print answer\n"))).prints ==
+#guard (ok (runExt Programs.circuit "print answer\n")).prints ==
   ["answer = {(0 1 1, 0), (1 0 1, 0), (1 1 0, 0)}"]
 
 -- `Circuit.lean`'s first guard: query 6

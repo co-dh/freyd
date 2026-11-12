@@ -1,4 +1,5 @@
 import LeetQ.Rel.Lang.Embed
+import LeetQ.Rel.Lang.Eval
 
 /-! # The detab-entab problem
 

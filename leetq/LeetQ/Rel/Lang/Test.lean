@@ -1,8 +1,8 @@
 import LeetQ.Rel.Lang.Eval
 import LeetQ.Rel.BlocksRel
-import Lean
+import LeetQ.Rel.Programs.Blocks
 
-/-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, read from `programs/blocks.rel.md`; its
+/-! The Rel language on the blocks world of `doc/rel-lang-design.md` §g, the program `Programs.blocks`; its
     front-end errors; the parser's round trip on every operator of §b. The module builds in 4.1 s (lake, three
     plans and every guard), each closed definition evaluated once (`run`, `hoist`). -/
 
@@ -13,20 +13,20 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 /-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
 local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
-open Lean Elab in
-/-- `program_file "p"`: the program text of the file `p`, found as `include_str` finds it and read by
-    `Parse.programText` while elaborating, so a malformed file fails the build at its line. -/
-elab "program_file " p:str : term => do
-  let src := (← readThe Core.Context).fileName
-  let some dir := (System.FilePath.mk src).parent | throwError "cannot compute the parent directory of `{src}`"
-  match Parse.programText p.getString (← IO.FS.readFile (dir / p.getString)) with
-  | .ok s => pure (mkStrLit s)
-  | .error e => throwError "{p.getString}: {e}"
-
 -- the embedded prelude reads as literate text and its definitions type-check
 #guard (Parse.literate Parse.prelude).isOk && (typesOf none).isOk
 
-def blocks : String := program_file "../../../programs/blocks.rel.md"
+/-- The program `prog` and the text `src` read after it, in the scope `prog` leaves: the prelude's, then each of its
+    definitions with its arity and each of its objects, taken at its line. -/
+def extend (prog : Program) (src : String) : Except Err Program := do
+  let s := prog.foldl (init := (← Parse.scope Parse.prelude).2) fun s d => match d with
+    | .defn p k ps _ _ => { s with known := (k, ps.length) :: s.known, taken := (k, Parse.at_ p) :: s.taken }
+    | .obj p n _ => { s with objs := n :: s.objs, taken := (n, Parse.at_ p) :: s.taken }
+    | _ => s
+  pure (prog ++ (← Parse.parseIn s src))
+
+/-- Run the program `prog` with the text `src` after it (`extend`). -/
+def runExt (prog : Program) (src : String) : Except Err Out := extend prog src >>= runProgram
 
 /-- The definition `n` at the objects `A ⟶ B`. -/
 def get (o : Out) (n : String) (A B : Obj) : Option (Rel A B) := do
@@ -43,14 +43,14 @@ def moves (o : Out) : Option (List (Int64 × Int64)) :=
 /-- The program with the start state and the goal replaced, at the AST: the lines `S₀ ≜ …`, `G ≜ …`. -/
 def variant (s g : String) : Except Err Out := do
   -- the file's `check plan = …` states the plan of its own S₀ and G, so it is dropped for a variant
-  let prog := (← Parse.parse blocks).filter fun | .check .. => false | _ => true
+  let prog := Programs.blocks.filter fun | .check .. => false | _ => true
   let s ← Parse.parseExpr s; let g ← Parse.parseExpr g
   runProgram (prog.map fun
     | .defn p "S₀" [] _ ty => .defn p "S₀" [] (.rel s) ty
     | .defn p "G" [] _ ty => .defn p "G" [] (.rel g) ty
     | d => d)
 
-def given : Except Err Out := runText (blocks ++ "qR : [X×X] ⟶ X×X ≜ QR(∋)\nqM : [X×X] ⟶ X×X ≜ QM(∋)\n" ++
+def given : Except Err Out := runExt Programs.blocks ("qR : [X×X] ⟶ X×X ≜ QR(∋)\nqM : [X×X] ⟶ X×X ≜ QM(∋)\n" ++
   "qF : [X×X] ⟶ X×X ≜ Qc⇝\nqh : [X×X] ⟶ [X×X] ≜ Qh(∋)\n")
 def table : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,C)}"
 def cycle : Except Err Out := variant "{(A,A),(B,B),(C,C)}" "{(A,B),(B,A)}"
@@ -60,7 +60,7 @@ def ok (r : Except Err Out) : Out := match r with | .ok o => o | .error _ => {}
 /-- `Λ(S)est(P)`, `Λ(S)thin(P)` with the order `P` a family (the rows of §e on `S∋`) against the order closed
     (the closed row), on the reachable states — `est` of a map is the map — and on their complements, where a
     block has two values. -/
-def orders : Except Err Out := runText (blocks ++ "O : X ⟶ X ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
+def orders : Except Err Out := runExt Programs.blocks ("O : X ⟶ X ≜ {(A,A),(A,B),(A,C),(B,B),(B,C),(C,C)}\n" ++
   "Of : [X×X] ⟶ X×X ≜ Q⊤(St,X)⟨𝟙,O⟩\nlc(S : X ⟶ X) : X ⟶ X ≜ Λ(S)est(O)\n" ++
   "lf(S : X ⟶ X, V : X ⟶ X) : X ⟶ X ≜ Λ(S)est(V)\ntc(S : X ⟶ X) : X ⟶ [X] ≜ Λ(S)thin(O)\n" ++
   "tf(S : X ⟶ X, V : X ⟶ X) : X ⟶ [X] ≜ Λ(S)thin(V)\nY(S : X ⟶ X) : X ⟶ X ≜ ∼S\n" ++
@@ -69,7 +69,7 @@ def orders : Except Err Out := runText (blocks ++ "O : X ⟶ X ≜ {(A,A),(A,B),
 
 /-- A body given families of two indices, `∋` at `St` and `ζ∋` at `N` (the `k`-th state's pairs), runs at
     `St×N`: the fibre at `(s,k)` is `s ∩ ζ(k)`. Against the same meet written by hand, and at `(s₀,0)`, `(s₀,1)`. -/
-def twoIdx : Except Err Out := runText (blocks ++ "k(S : X ⟶ X, T : X ⟶ X) : X ⟶ X ≜ S ∩ T\n" ++
+def twoIdx : Except Err Out := runExt Programs.blocks ("k(S : X ⟶ X, T : X ⟶ X) : X ⟶ X ≜ S ∩ T\n" ++
   "check (Q×𝟙(N))k(∋,ζ∋) = (Q×𝟙(N))⟨π₁∋,π₂ζ∋⟩cor(𝟙)π₁\n" ++
   "print (s₀×{(0,0)})k(∋,ζ∋)\nprint (s₀×{(1,1)})k(∋,ζ∋)\n")
 
@@ -145,7 +145,7 @@ def objVars : Except Err Out := runText ("obj X = {A,B,C}\nobj N = {x,y,z}\nobj 
 #guard given.isOk && table.isOk && cycle.isOk
 -- the file's own `check plan = …` holds and it prints nothing; `plan` printed here is the move list below
 #guard (ok given).prints == []
-#guard (ok (runText (blocks ++ "print plan\n"))).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
+#guard (ok (runExt Programs.blocks "print plan\n")).prints == ["plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}"]
 #guard moves (ok given) == some [(2, 2), (1, 2), (0, 1)]
 #guard moves (ok given) == some Blocks.plan
 #guard moves (ok table) == some [(1, 2), (0, 1)]
@@ -515,7 +515,7 @@ def ints (R : Rel .long .long) : List (Int × Int) := R.toList.map fun (a, b) =>
 #guard [("R ∪ S R", "((R ∪ S) R)"), ("R S ∪ R", "((R S) ∪ R)"), ("R ∩ S ∪ R", "((R ∩ S) ∪ R)"),
   ("R ∪ S ∩ R", "((R ∪ S) ∩ R)"), ("∼R S", "(∼R S)"), ("R ∪ (S R)", "(R ∪ (S R))")].all fun (s, r) => reads s r
 
-/-! The parser on each line of `blocks.rel.md`: every composite and infix term in parentheses, as the note reads the
+/-! The parser on each line of `Programs.blocks`: every composite and infix term in parentheses, as the note reads the
     formula (§c), not as the parser happens to print it. -/
 
 def reading : Decl → Option (String × String)
@@ -632,9 +632,7 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
   | .error e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
   | .ok _ => false
 
-#guard match Parse.parse blocks with
-  | .error _ => false
-  | .ok p => p.filterMap reading == [
+#guard Programs.blocks.filterMap reading == [
     ("S₀", "{(C, A), (A, A), (B, B)}"),
     ("G", "{(A, B), (B, C)}"),
     ("R", "(S ∩ ∼𝟙)"),

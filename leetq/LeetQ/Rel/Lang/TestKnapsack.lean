@@ -1,6 +1,7 @@
 import LeetQ.Rel.Lang.Test
+import LeetQ.Rel.Programs.Knapsack
 
-/-! The Rel language on B&dM's 0/1 knapsack (§8.4), read from `programs/knapsack.rel.md`: the specification `s`
+/-! The Rel language on B&dM's 0/1 knapsack (§8.4), the program `Programs.knapsack`: the specification `s`
     and its fold `p` against a brute force over `List.sublists` on the same items — the best value of each instance,
     and every printed packing within the capacity and of that value. -/
 
@@ -8,9 +9,7 @@ namespace LeetQ.Rel.Lang.TestKnapsack
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
 
-def knapsack : String := program_file "../../../programs/knapsack.rel.md"
-
-def given : Except Err Out := runText knapsack
+def given : Except Err Out := runProgram Programs.knapsack
 
 /-- The instances of `X`, `K = {a,b,c,d}` coded `0 … 3`, each its items `(value, weight)`. -/
 def items : List (Int64 × List (Int64 × Int64)) :=
@@ -55,11 +54,11 @@ def agrees (o : Out) (n : String) : Bool := match packs o n with
 #guard ((packs (ok given) "knap").getD []).all ((packs (ok given) "s").getD []).contains
 -- the program's three `check`s hold and print nothing; printed here, `s`, `p`, `knap` are the literals below
 #guard (ok given).prints == []
-#guard (ok (runText (knapsack ++ "print s\nprint p\nprint knap\n"))).prints == [
+#guard (ok (runExt Programs.knapsack "print s\nprint p\nprint knap\n")).prints == [
   "s = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "p = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5)), (d, (5, 4) (5, 6))}",
   "knap = {(a, (5, 4) (6, 5)), (b, (2, 2) (9, 8)), (c, [(1, 9)]), (d, (5, 4) (5, 5))}"]
 -- a `check` that fails is an error: the guards above would not see a silently skipped one
-#guard !(runText (knapsack ++ "check p = X subseq\n")).isOk
+#guard !(runExt Programs.knapsack "check p = X subseq\n").isOk
 
 end LeetQ.Rel.Lang.TestKnapsack

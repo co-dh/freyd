@@ -1,15 +1,14 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Chess
+import LeetQ.Rel.Programs.Chess
 
-/-! Mate in one in the Rel language, read from `programs/chess.rel.md`, against `Chess.lean`: each of its `#guard`s
+/-! Mate in one in the Rel language, the program `Programs.chess`, against `Chess.lean`: each of its `#guard`s
     on the same position, the program's board `on` replaced at the AST, each guard running the program once; and
     the program's tables and the relations `W`, `P` of its own board compared with `Chess`'s, as sets. -/
 
 namespace LeetQ.Rel.Lang.TestChess
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
-
-def chess : String := program_file "../../../programs/chess.rel.md"
 
 abbrev SS : Obj := .prod .long .long
 abbrev Bd : Obj := .arr SS
@@ -24,8 +23,8 @@ def lit (ps : List (Nat × Int64)) : String :=
 /-- The program, its board `on` replaced by `ps` when given; `one` keeps the declarations up to `Ω`, the mate
     test of one board. -/
 def board (ps : Option (List (Nat × Int64))) (one : Bool) : Except Err Out := do
-  -- the file's `check m = …` states the mate of its own board, so it is dropped for another one
-  let prog := (← Parse.parse chess).filter fun | .check .. => false | _ => true
+  -- the program's `check m = …` states the mate of its own board, so it is dropped for another one
+  let prog := Programs.chess.filter fun | .check .. => false | _ => true
   let prog ← match ps with
     | none => pure prog
     | some ps => do
@@ -68,9 +67,9 @@ def on₀ : Chess.Board := Chess.pos [(6, 5), (48, 3), (1, 3), (60, 11)]
 
 -- W Kg1 Ra7 Rb1, B Ke8: Rb1-b8 mates; the program's own board, run as written: its `check m = …` holds and it
 -- prints nothing, and `m` printed here is the one move
-#guard let o := Test.ok (runText chess); let a := moves o
+#guard let o := Test.ok (runProgram Programs.chess); let a := moves o
   a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (60, 11)]) && a == some [[3, 1, 57]] &&
-    o.prints == [] && (Test.ok (runText (chess ++ "print m\n"))).prints == ["m = {((1, 57), R)}"]
+    o.prints == [] && (Test.ok (Test.runExt Programs.chess "print m\n")).prints == ["m = {((1, 57), R)}"]
 -- B Kc8: Rb8+ fails to Kxb8, Ra8+ leaves c7
 #guard let a := answer [(6, 5), (48, 3), (1, 3), (58, 11)]
   a == some (leanAnswer [(6, 5), (48, 3), (1, 3), (58, 11)]) && a == some []
@@ -117,9 +116,9 @@ def rewritten (p : Program) : List (String × String) :=
   (p.filterMap Test.reading).filter fun r => ["W", "B", "Pin", "M"].contains r.1
 
 -- the program up to the line of `W`, the lines `W B Pin M` refer to, is the same before and after
-#guard match Parse.parse chess,
-    Parse.parse ("\n".intercalate ((chess.splitOn "\n").takeWhile (!·.trimLeft.startsWith "W(") ++ before)) with
-  | .ok p, .ok q => (rewritten p).length == 4 && rewritten p == rewritten q
-  | _, _ => false
+#guard match Test.extend (Programs.chess.takeWhile fun | .defn _ "W" _ _ _ => false | _ => true)
+    ("\n".intercalate before) with
+  | .ok q => (rewritten Programs.chess).length == 4 && rewritten Programs.chess == rewritten q
+  | .error _ => false
 
 end LeetQ.Rel.Lang.TestChess

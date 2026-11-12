@@ -5,7 +5,7 @@ import LeetQ.Rel.Lang.Eval
     Every run is capped in RESIDENT memory: `main` re-executes this binary once as a child that does the work, and
     stays to poll the child's resident set (`/proc/<pid>/statm`) every `pollMs`; past `REL_MEM_MB` (default 10240)
     it terminates the child and exits 3 naming the cap. Not an rlimit: `RLIMIT_RSS` is a no-op on Linux, and
-    `RLIMIT_AS`/`RLIMIT_DATA` count address space, which here runs 6–35× the resident set (chess.rel.md peaks at
+    `RLIMIT_AS`/`RLIMIT_DATA` count address space, which here runs 6–35× the resident set (the chess program peaks at
     11.5 GB of address space and 1.7 GB resident, an empty program at 1.2 GB and 0.02 GB), so a 4 GB `ulimit -v`
     kills a program that needs 1.7 GB; cgroups need a user bus the sandbox denies (`scripts/cap`). -/
 

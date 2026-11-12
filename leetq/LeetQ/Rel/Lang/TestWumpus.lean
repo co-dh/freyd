@@ -1,14 +1,13 @@
 import LeetQ.Rel.Lang.Test
 import LeetQ.Rel.Wumpus
+import LeetQ.Rel.Programs.Wumpus
 
-/-! The Rel language on the Wumpus world, read from `programs/wumpus.rel.md`: every view of the KB after each step
+/-! The Rel language on the Wumpus world, the program `Programs.wumpus`: every view of the KB after each step
     of the route, against `Wumpus.agent` and against the literal tables `Wumpus.lean` states. -/
 
 namespace LeetQ.Rel.Lang.TestWumpus
 
 open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Lang.Test LeetQ.Rel.Alg QLean
-
-def wumpus : String := program_file "../../../programs/wumpus.rel.md"
 
 /-- Each table: its name, the program's term for it, and whether its key is `∗ : 1` rather than a cell. -/
 def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", false), ("S", "S", false),
@@ -19,7 +18,7 @@ def tables : List (String × String × Bool) := [("V", "V", false), ("B", "B", f
 
 /-- The program with one family `fₖ ≜ …` per table: `fₖ : N ⟶ C×C`, or `N ⟶ 1×C`. -/
 def given : Except Err Out :=
-  runText (wumpus ++ String.join (tables.zipIdx.map fun ((_, e, one), k) =>
+  runExt Programs.wumpus (String.join (tables.zipIdx.map fun ((_, e, one), k) =>
     s!"f{k} : N ⟶ {if one then "1" else "C"}×C ≜ {e}\n"))
 
 /-- A cell's code in `Wumpus.lean`: the element at its position among `C`'s named elements. -/
@@ -97,14 +96,12 @@ def entailed : List (List (String × List Int64)) := Id.run do
 -- the program's own `check next(V,B,S) = …` holds (a failed one is an error) and it prints nothing; printed here,
 -- `next(V,B,S)` is the table `page` states
 #guard (ok given).prints == []
-#guard (ok (runText (wumpus ++ "print next(V,B,S)\n"))).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), " ++
+#guard (ok (runExt Programs.wumpus "print next(V,B,S)\n")).prints == ["next(V, B, S) = {(0, (12, 12)), (0, (21, 21)), " ++
   "(1, (12, 12)), (2, (12, 12)), (3, (22, 22)), (4, (23, 23)), (4, (32, 32)), (5, (32, 32))}"]
 
-/-! The parser on each line of `wumpus.rel.md`: every composite and infix term in parentheses (§c). -/
+/-! The parser on each line of `Programs.wumpus`: every composite and infix term in parentheses (§c). -/
 
-#guard match Parse.parse wumpus with
-  | .error _ => false
-  | .ok p => ((p.filterMap reading).drop 1).take 15 == [
+#guard ((Programs.wumpus.filterMap reading).drop 1).take 15 == [
     ("adj", "(a ∪ a°)"),
     ("uniq", "(R ∩ (R° \\ 𝟙))"),
     ("noB", "(V (𝟙 − B))"),
