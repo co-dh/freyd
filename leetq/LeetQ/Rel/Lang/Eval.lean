@@ -1,6 +1,7 @@
 import Std.Data.HashMap
 import LeetQ.Rel.Lang.Elab
 import LeetQ.Rel.Lang.Parse
+import LeetQ.Rel.Programs.Prelude
 
 /-! The evaluator of the Rel language: a core term to a relation by `Alg`'s ops, and the program run
     declaration by declaration. `ev` has no error path: the term's indices are its objects, and a term that
@@ -427,31 +428,37 @@ def preludeDef (n : String) (d : Def) : Def :=
       | _, .fam q i a b => pure (.fam (q.at p) i a b) }
 
 /-- Run the program `prog` reads in the prelude `pre`'s scope, after `pre`: one environment and one sharing table
-    through both. An error of the prelude's own text says it is in the prelude. -/
-def runAfter (pre : String) (prog : Parse.S → Except Err Program) : Except Err Out := do
-  let (pp, scope) ← Parse.scope pre
-  let (env, out, sh) ← (run pp ({}, {}, {}) preludeDef).mapError Err.inPrelude
-  let (_, out, _) ← run (← prog scope) (env, out, sh)
+    through both. An error of the prelude's own says it is in the prelude. -/
+def runAfter (pre : Program) (prog : Parse.S → Except Err Program) : Except Err Out := do
+  let (env, out, sh) ← (run pre ({}, {}, {}) preludeDef).mapError Err.inPrelude
+  let (_, out, _) ← run (← prog (Parse.scope pre)) (env, out, sh)
   pure out
 
 /-- Parse and run a program's text after the prelude `pre`. -/
-def runWith (pre src : String) : Except Err Out := runAfter pre (Parse.parseIn · src)
+def runWith (pre : Program) (src : String) : Except Err Out := runAfter pre (Parse.parseIn · src)
 
 /-- Parse and run a program's text, after the prelude. -/
-def runText (src : String) : Except Err Out := runWith Parse.prelude src
+def runText (src : String) : Except Err Out := runWith Programs.prelude src
 
 /-- `rel --types`: the declaration of each definition of the program `src`, in order, nothing evaluated; with no
     program, the prelude's. -/
 def typesOf (src : Option String) : Except Err (List String) := do
-  let (pp, scope) ← Parse.scope Parse.prelude
+  let pp := Programs.prelude
   let (env, out, sh) ← (run pp ({}, {}, {}) preludeDef (types := src.isNone)).mapError Err.inPrelude
   match src with
   | none => pure out.sigs
   | some s => do
-    let (_, o, _) ← run (← Parse.parseIn scope s) (env, { out with sigs := [] }, sh) (types := true)
+    let (_, o, _) ← run (← Parse.parseIn (Parse.scope pp) s) (env, { out with sigs := [] }, sh) (types := true)
     pure o.sigs
 
 /-- Run a parsed program (`Parse.parse`), after the prelude. -/
-def runProgram (prog : Program) : Except Err Out := runAfter Parse.prelude fun _ => pure prog
+def runProgram (prog : Program) : Except Err Out := runAfter Programs.prelude fun _ => pure prog
+
+/-- Parse a program's text, after the prelude. -/
+def Parse.parse (src : String) : Except Err Program := Parse.parseIn (Parse.scope Programs.prelude) src
+
+/-- Parse one term after the prelude, with the given names in scope as well: the round-trip checks. -/
+def Parse.parseExpr (src : String) (known : List (String × Nat) := []) (objs : List String := []) :
+    Except Err Expr := Parse.parseExprIn (Parse.scope Programs.prelude) src known objs
 
 end LeetQ.Rel.Lang

@@ -12,7 +12,7 @@ import LeetQ.Rel.Lang.Eval
 open LeetQ.Rel.Lang
 
 /-- The work: run the program `f`, a `.rel.md` file (`Parse.programText`); `--types f` prints the declaration of each of its definitions, `--types` alone
-    the prelude's. -/
+    the prelude's (`Programs.prelude`). -/
 def body : List String → IO UInt32
   | ["--types"] => do
     match typesOf none with

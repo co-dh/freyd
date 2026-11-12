@@ -1,5 +1,5 @@
 import LeetQ.Rel.Lang.Embed
-
+import LeetQ.Rel.Programs.Prelude
 /-! The Rel language written inside Lean (`Embed`): the grammar's closedness, a Lean term in a body is a parse
     error. The programs written with it are `LeetQ.Rel.Programs`, run by the `Test*` modules. -/
 
@@ -43,7 +43,7 @@ elab "#rel_parse " s:str : command => do
 #guard_msgs in #rel_parse "f : A ⟶ A ≜ $(fun x => x)"
 /-- error: line 47, col 19: `$` is no term of the Rel language: an antiquotation has no place in a program -/
 #guard_msgs in
-rel_program antiquot where
+rel_program antiquot after Programs.prelude where
     f : 1 ⟶ 1 ≜ 𝟙 $(fun x => x)
 
 end LeetQ.Rel.Lang.EmbedTest

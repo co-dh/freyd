@@ -16,18 +16,10 @@ package leetq where
 require freyd from ".."
 require qlean from (get_config? qlean |>.getD "../../qlean")
 
-/-- The prelude (`prelude.rel.md`) that `Parse` reads at elaboration time (`include_str`); the programs are Lean
-modules, `LeetQ.Rel.Programs`. Lake does not trace such a file, so the library `needs` this directory: its hash
-enters every module's trace. -/
-input_dir programs where
-  text := true
-
-/-- `needs` is per library; there is no per-module dependency, and a separate library for the readers would
-own the same modules as the `LeetQ` glob, so the whole library is rebuilt on a `.rel.md` edit. -/
+/-- The prelude and the programs are Lean modules, `LeetQ.Rel.Programs`. -/
 @[default_target]
 lean_lib LeetQ where
   globs := #[.submodules `LeetQ]
-  needs := #[programs]
 
 /-- `rel FILE`: run a Rel program, printing each `print`. -/
 lean_exe rel where

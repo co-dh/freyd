@@ -13,17 +13,12 @@ open LeetQ.Rel LeetQ.Rel.Lang LeetQ.Rel.Alg QLean
 /-- The blocks, as `Blocks` declares them: `𝟙` there is all blocks on the table. -/
 local instance : Univ Blocks.X := ⟨_, Blocks.xs⟩
 
--- the embedded prelude reads as literate text and its definitions type-check
-#guard (Parse.literate Parse.prelude).isOk && (typesOf none).isOk
+-- the prelude's definitions type-check
+#guard (typesOf none).isOk
 
-/-- The program `prog` and the text `src` read after it, in the scope `prog` leaves: the prelude's, then each of its
-    definitions with its arity and each of its objects, taken at its line. -/
+/-- The program `prog` and the text `src` read after it, in the scope `prog` leaves after the prelude. -/
 def extend (prog : Program) (src : String) : Except Err Program := do
-  let s := prog.foldl (init := (← Parse.scope Parse.prelude).2) fun s d => match d with
-    | .defn p k ps _ _ => { s with known := (k, ps.length) :: s.known, taken := (k, Parse.at_ p) :: s.taken }
-    | .obj p n _ => { s with objs := n :: s.objs, taken := (n, Parse.at_ p) :: s.taken }
-    | _ => s
-  pure (prog ++ (← Parse.parseIn s src))
+  pure (prog ++ (← Parse.parseIn (Parse.after (Parse.scope Programs.prelude) prog) src))
 
 /-- Run the program `prog` with the text `src` after it (`extend`). -/
 def runExt (prog : Program) (src : String) : Except Err Out := extend prog src >>= runProgram
@@ -625,10 +620,11 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
 #guard errAt "obj N = 0…9\n_sort_(R,S) ≜ R ∩ S\n" 2 "`sort` is already defined in the prelude"
 #guard errAt "obj 1 = {∗}\nobj N = 0…9\n" 1 "`1` is already defined in the prelude"
 -- an error of the prelude's own text, and one raised in a prelude body at a use: the prelude's line, the use's
-#guard match runWith "    f ≜ g\n" "obj X = {A}\n" with
+#guard match Parse.parseIn { cs := #[] } "    f ≜ g\n" >>= (runWith · "obj X = {A}\n") with
   | .error e => toString e == "in the prelude, line 1, col 9: unknown name 'g'"
   | .ok _ => false
-#guard match runWith "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n" "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n" with
+#guard match Parse.parseIn { cs := #[] } "    f(R : α ⟶ β) : α ⟶ β ≜ R g\n" >>=
+    (runWith · "obj X = {A}\nx : X ⟶ X ≜ {(A,A)}\ny : X ⟶ X ≜ f(x)\n") with
   | .error e => e.pos.line == 3 && e.msg == "in the prelude's `f` (its line 1): unknown name 'g'"
   | .ok _ => false
 

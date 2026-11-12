@@ -9,7 +9,7 @@ entab ⊑ Λ(detab°)est(R) (entab_laws, 10:148) and the derived program entab =
 
 namespace LeetQ.Rel.Programs
 
-rel_program detab where
+rel_program detab after prelude where
     obj Ch = {a,b,c,d,BL,TB,NL}                   -- the characters: letters, the book's BL, TB, NL
     obj N = 0…24                                  -- columns and counts: detab of 5 characters reaches column 20
     obj K = 30…34                                 -- one round per character of a candidate: lengths ≤ 5

@@ -8,7 +8,7 @@ derived program `X ≜ ⦇[nil, select°]⦈°`, on arrays; B&dM's preorder `R`,
 
 namespace LeetQ.Rel.Programs
 
-rel_program selsort where
+rel_program selsort after prelude where
     obj N = 0…9                                   -- the elements
 
     /- The inputs, each an array `1 ⟶ [N]` written as a literal. -/

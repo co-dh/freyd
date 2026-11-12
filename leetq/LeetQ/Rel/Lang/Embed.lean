@@ -125,7 +125,7 @@ syntax (name := sInfix) "_" relWord "_" "(" relParam,+ ")" (relType)? "≜" rel 
   relStmt
 
 -- one block, so the program's lines stay as they are (no per-line keyword) and its scope runs through them
-syntax (name := relProgram) "rel_program " ident " where" (withPosition(relStmt))* : command
+syntax (name := relProgram) "rel_program " ident (&" after " ident)? " where" (withPosition(relStmt))* : command
 
 /-! ### From syntax to the AST, in the text parser's state -/
 
@@ -144,9 +144,10 @@ def onText {α : Type} (s : Syntax) (t : String) (p : P α) : C α := do
   | .ok (a, _) => pure a
   | .error e => throw e
 
-/-- The source text of a token: an identifier as written, a number, a symbol. -/
+/-- The source text of a token: an identifier as Lean reads it, a number, a symbol. A name that is a Lean keyword
+    is written in Lean's escape, `«prefix»`, and is the name `prefix`. -/
 def tokText (s : Syntax) : String := match s with
-  | .ident _ raw _ _ => raw.toString
+  | .ident _ _ n _ => n.toString (escape := false)
   | .atom _ v => v
   | _ => if s.isOfKind numLitKind then s[0].getAtomVal else ""
 
@@ -307,7 +308,6 @@ def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Sy
   let _ ← ps.foldlM (fun (seen : List String) q => do
     if seen.contains q.name then failAt s s!"`{q.name}` is already a parameter of `{w}`"
     pure (q.name :: seen)) []
-  modify fun st => { st with taken := (key, Parse.at_ p) :: st.taken }
   let ty ← ty.getOptional?.mapM typeOf
   let outer := (← get).known
   modify fun st => { st with known := ps.map (fun q => (q.name, 0)) ++ st.known }
@@ -315,7 +315,7 @@ def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Sy
   let σ ← (if wh.getNumArgs == 0 then #[] else wh[1].getSepArgs).foldlM (init := []) fun σ i => do
     let q ← posOf i
     let n ← wordOf i[0]
-    Parse.fresh q n (← get).taken
+    Parse.fresh q n ((key, Parse.at_ p) :: (← get).taken)
     if ps.any (·.name == n) then failAt i s!"`{n}` is already a parameter of `{w}`"
     if σ.any (·.1 == n) then failAt i s!"`{n}` is already an item of this `where`"
     let σ := σ ++ [(n, (← expr i[2]).subst σ)]
@@ -325,7 +325,7 @@ def defn (s : Syntax) (w key : String) (ps : Array Syntax) (ty body test wh : Sy
   let b ← if test.getNumArgs == 0 then pure (Body.rel e) else do pure (Body.test e ((← expr test[1]).subst σ))
   if let (.test .., some t) := (b, ty) then
     failAt s s!"the test `{w}` has no type of its own: drop ': {OExp.arrow t}' (§e)"
-  modify fun st => { st with known := (key, ps.length) :: outer }
+  modify fun st => { st with known := outer }
   pure (.defn p key ps b ty)
 
 def stmt (s : Syntax) : C Decl := do
@@ -333,9 +333,8 @@ def stmt (s : Syntax) : C Decl := do
   let objName : C String := do
     let n ← wordOf s[1]
     if let some r := (← get).taken.lookup n then failAt s[1] s!"`{n}` is already defined {r}"
-    let q ← posOf s[1]; modify fun st => { st with taken := (n, Parse.at_ q) :: st.taken }; pure n
-  let objDecl (d : C ObjDef) : C Decl := do
-    let n ← objName; let d ← d; modify fun st => { st with objs := n :: st.objs }; pure (.obj p n d)
+    pure n
+  let objDecl (d : C ObjDef) : C Decl := do let n ← objName; pure (.obj p n (← d))
   let num (w : Syntax) : C Int := do onText w[0] (← wordOf w) Parse.num
   let opt (o : Syntax) := if o.getNumArgs == 0 then #[] else o[1].getSepArgs
   match s.getKind with
@@ -359,13 +358,25 @@ def stmt (s : Syntax) : C Decl := do
   | ``sInfix => do let n ← wordOf s[1]; defn s n (Parse.infixKey n) s[4].getSepArgs s[6] s[8] s[9] s[10]
   | _ => failAt s "expected a declaration"
 
-/-- The program of the statements `ss`, read after the prelude in the scope `Parse.scope` leaves. -/
-def program (fm : FileMap) (ss : Array Syntax) : Except Err Program := do
-  let (_, s₀) ← Parse.scope Parse.prelude
-  (ss.toList.mapM stmt |>.run fm).run' s₀
+/-- The program of the statements `ss`, read in the scope `s₀`, each statement in the scope those before it leave
+    (`Parse.after`). -/
+def program (fm : FileMap) (s₀ : Parse.S) (ss : Array Syntax) : Except Err Program :=
+  (ss.toList.mapM (fun x => do let d ← stmt x; modify (Parse.after · [d]); pure d) |>.run fm).run' s₀
 
+unsafe def programOfUnsafe (n : Name) : CommandElabM Program := do
+  match (← getEnv).evalConstCheck Program (← getOptions) ``Program n with
+  | .ok p => pure p
+  | .error e => throwError "cannot read the program `{n}`: {e}"
+
+/-- The value of the program `n`, a `rel_program` elaborated before. -/
+@[implemented_by programOfUnsafe] opaque programOf (n : Name) : CommandElabM Program
+
+/-- `rel_program n where …` is read in the empty scope, `rel_program n after pre where …` in the scope after the
+    prelude `pre` (`Parse.scope`). -/
 @[command_elab relProgram] def elabRelProgram : CommandElab := fun stx => do
-  match program (← getFileMap) stx[3].getArgs with
+  let s₀ ← if stx[2].getNumArgs == 0 then pure { cs := #[] } else
+    pure (Parse.scope (← programOf (← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[2][1]))))
+  match program (← getFileMap) s₀ stx[4].getArgs with
   | .error e => throwErrorAt stx "{e}"
   | .ok prog => liftTermElabM do
     let n := (← getCurrNamespace) ++ stx[1].getId

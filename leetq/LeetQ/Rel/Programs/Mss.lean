@@ -9,7 +9,7 @@ negative running sum back to 0, and an all-negative list has the empty segment's
 
 namespace LeetQ.Rel.Programs
 
-rel_program mss where
+rel_program mss after prelude where
     obj N = -10…20                                -- the elements and the sums
 
     zero : 1 ⟶ N ≜ {(∗,0)}                        -- the note's `zero`
