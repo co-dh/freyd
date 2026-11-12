@@ -438,6 +438,123 @@ theorem gatherColumn_miss {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t
     | enum d o ids => exact (hne d o ids rfl).elim
     | _ => all_goals (exfalso; simp [Enc.WF, QAtomicType.width] at hw)
 
+/-- `findSymScalar` of the empty symbol, where it answers below the count, names an empty entry; the count must
+    fit a `USize`, or the answer `j.toUSize` would wrap. -/
+theorem findSymScalar_empty {dict : ByteArray} {dof : Array Nat} (ho : dof.size - 1 < USize.size)
+    (hc : (findSymScalar dict dof ByteArray.empty).toNat < dof.size - 1) :
+    Column.symKey dict dof (findSymScalar dict dof ByteArray.empty).toNat = ByteArray.empty := by
+  unfold findSymScalar at hc ⊢
+  dsimp only at hc ⊢
+  cases hf : (List.range (dof.size - 1)).find? (fun i => (Column.symKey dict dof i).data == ByteArray.empty.data) with
+  | none =>
+    rw [hf, Option.getD_none, show (dof.size - 1).toUSize = USize.ofNat (dof.size - 1) from rfl,
+      USize.toNat_ofNat_of_lt' ho] at hc
+    omega
+  | some j =>
+    have hj := List.mem_range.1 (List.mem_of_find?_eq_some hf)
+    have hb := List.find?_some hf
+    rw [Option.getD_some, show j.toUSize = USize.ofNat j from rfl, USize.toNat_ofNat_of_lt' (by omega)]
+    exact ByteArray.ext ((Verify.arr_beq_iff _ _).1 hb)
+
+/-- **An interned gather at a miss reads the empty symbol**: element `k`'s id is `findSymScalar`'s empty entry,
+    found in the source dictionary or appended to it, where `inRange` does not claim that `k` hits. -/
+theorem gatherIds_miss {dict : ByteArray} {dof : Array Nat} {inRange : Unit → Bool} {n : USize} {ids ix : ByteArray}
+    (hd : SymsWF dict dof) (ho : dof.size - 1 < USize.size) {k : Nat} (hk : k < ix.size / 8)
+    (hmiss : gatherAt n.toNat ix k = none) (hin : inRange () = true → gatherAt n.toNat ix k ≠ none) :
+    Column.symKey (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).1
+      (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.1
+      (Column.idAt (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.2
+        (Column.idWidth (gatherIds dict dof inRange fun w wo e => gatherPacked n w wo e ids ix).2.1) k) =
+      ByteArray.empty := by
+  have hW : ∀ o : Array Nat, Column.idWidth o ≤ 64 := fun o => by
+    rcases Verify.laneWidth_cases (Column.widthFor (o.size - 1 - 1)) with h | h | h | h | h | h | h | h <;>
+      simp only [Column.idWidth, Column.idWidthOf, h] <;> omega
+  have hU : ∀ o : Array Nat, (Column.idWidth o).toUSize.toNat = Column.idWidth o := fun o =>
+    USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (Nat.lt_of_le_of_lt (hW o) (by decide)) USize.le_size)
+  have hfill : ∀ x : Nat, x < 2 ^ 64 → x.toUInt64.toNat = x := fun x hx => by
+    first
+      | exact UInt64.toNat_ofNat_of_lt' hx
+      | (simp only [Nat.toUInt64, UInt64.toNat_ofNat']; exact Nat.mod_eq_of_lt hx)
+      | (simp [Nat.toUInt64]; omega)
+  have he := findSymScalar_le dict dof ByteArray.empty
+  have he64 := Verify.usize_lt (findSymScalar dict dof ByteArray.empty)
+  -- element `k` of a packed gather at a miss is the fill, wherever the fill fits the answer's lane
+  have key : ∀ (o : Array Nat) (f : Nat → Nat), f k = (findSymScalar dict dof ByteArray.empty).toNat →
+      (findSymScalar dict dof ByteArray.empty).toNat < o.size - 1 →
+      Column.idAt (Column.packIds (Column.idWidth o) (ix.size / 8) f) (Column.idWidth o) k =
+        (findSymScalar dict dof ByteArray.empty).toNat := fun o f hf hlt => by
+    have hl := lt_idWidthOf_64 hlt he64
+    rw [← hf] at hl ⊢
+    rw [Column.idWidth] at ⊢
+    rw [Column.idWidthOf] at hl ⊢
+    rw [Verify.idAt_packIds (Verify.laneWidth_cases _) hk hl]
+  simp only [gatherIds, gatherPacked]
+  split
+  · rename_i hc
+    simp only [Bool.or_eq_true, decide_eq_true_eq] at hc
+    have hc : (findSymScalar dict dof ByteArray.empty).toNat < dof.size - 1 := hc.resolve_right fun h => hin h hmiss
+    simp only [hU]
+    rw [key dof _ (by simp only [hmiss, hfill _ he64]) hc]
+    exact findSymScalar_empty ho hc
+  · rename_i hc
+    simp only [Bool.or_eq_true, decide_eq_true_eq, not_or] at hc
+    have hnd : (findSymScalar dict dof ByteArray.empty).toNat = dof.size - 1 := by omega
+    have hpz : (dict.push 0).size = dict.size + 1 := by simp only [ByteArray.size, ByteArray.push, Array.size_push]
+    have hpos := hd.pos
+    obtain ⟨g1, g2, g3, g4, g5⟩ := Verify.symBytes_push dict (dict.push 0) dof (dof.size - 1) [0] (by omega)
+      hd.last (fun t ht => hd.le t (by omega)) (Array.toList_push ..)
+    rw [hpz] at g1 g2 g3 g4 g5
+    have hnew : Verify.symAt (dict.push 0) (dof.push (dict.size + 1)) (dof.size - 1) = [] := by
+      rw [Verify.symAt_eq_dropLast _ _ _ (by rw [hpz, g2]; exact Nat.le_refl _), g4]; rfl
+    simp only [hU]
+    rw [key _ _ (by simp only [hmiss, hfill _ he64]) (by simp only [Array.size_push]; omega), hnd]
+    exact ByteArray.ext (Array.toList_inj.1 hnew)
+
+/-- Belongs in qlean. **`x@i` at an interned symbol column, a miss**: symbol `k` of the answer is the empty
+    one, the dictionary's own empty entry or one appended; the dictionary's count fits a `USize` (`ho`). -/
+theorem gatherColumn_miss_enum {n : USize} {d : ByteArray} {o : Array Nat} {ids : ByteArray}
+    (hw : Enc.WF .symbol n (.enum d o ids)) (ho : o.size - 1 < USize.size) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn .symbol n (.enum d o ids) m (.bytes i) = some e')
+    {k : Nat} (hk : k < m.toNat) (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get .symbol m e' k = some (Eval.nullAtom .symbol) := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  have hm0 : (m == 0) = false := by
+    rw [beq_eq_false_iff_ne]; intro h0; rw [h0] at hk; simp at hk
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, hm0, Bool.false_eq_true, ↓reduceIte,
+    Option.map_some, Option.some.injEq] at h
+  subst h
+  simp only [Enc.WF] at hw
+  have hmiss : gatherAt n.toNat i k = none := by simp only [gatherAt]; rw [if_neg (by omega)]
+  have hin : allBelow n i = true → gatherAt n.toNat i k ≠ none := fun hb => by
+    have := nat_all_true hb k (by omega)
+    simp only [decide_eq_true_eq] at this
+    omega
+  have H := gatherIds_miss (inRange := fun _ => allBelow n i) (ids := ids) hw.2.1 ho (by omega) hmiss hin
+  have hg : ∀ (db : ByteArray) (dbo : Array Nat) (nids : ByteArray),
+      Column.symKey db dbo (Column.idAt nids (Column.idWidth dbo) k) = ByteArray.empty →
+      Enc.get .symbol m (.enum db dbo nids) k = some (Eval.nullAtom .symbol) := fun db dbo nids hE => by
+    rw [show Enc.get .symbol m (.enum db dbo nids) k = some (.symbol ((String.fromUTF8?
+      (Column.symKey db dbo (Column.idAt nids (Column.idWidth dbo) k))).getD "")) by
+        simp only [Enc.get, if_pos hk]; rfl, hE]
+    rfl
+  exact hg _ _ _ H
+
+/-- Belongs in qlean. **`x@i`, a miss**, at every atom type but `general` and every encoding, an interned
+    symbol column's dictionary count fitting a `USize` (`hd`): element `k` of the answer is the null where
+    `i[k]` is at or past `x`'s count. -/
+theorem gatherColumn_miss_sized {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
+    (hd : ∀ d o ids, e = .enum d o ids → o.size - 1 < USize.size) {m : USize} {i : ByteArray}
+    (hm : m.toNat = i.size / 8) {e' : Enc} (h : gatherColumn t n e m (.bytes i) = some e') {k : Nat}
+    (hk : k < m.toNat) (hout : n.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    Enc.get t m e' k = some (Eval.nullAtom t hg) := by
+  by_cases hs : t = .symbol
+  · subst hs
+    cases e with
+    | enum d o ids => exact gatherColumn_miss_enum hw (hd d o ids rfl) hm h hk hout
+    | _ => exact gatherColumn_miss hw hg (fun _ _ _ he => Enc.noConfusion he) hm h hk hout
+  · exact gatherColumn_miss hw hg (fun d o ids he => hs (by
+      subst he; cases t <;> simp_all [Enc.WF, QAtomicType.width])) hm h hk hout
+
 end LeetQ.Rel.KernelWF
 
 namespace LeetQ.Rel.Alg
@@ -544,6 +661,39 @@ theorem pickArr_get_miss {t : QAtomicType} (c : (n : USize) × Arr t n) (i : Byt
   have hl : len i < USize.size := h ▸ m.toBitVec.isLt
   unfold pickArr; rw [cast_get]
   exact pick_get_miss c i hl hne k.1 _ hout
+
+/-- **`pick` at a miss**, at every encoding: element `k` of the column picked at `i` is `default` where `i[k]`
+    is at or past `x`'s count, an interned column's dictionary count fitting a `USize` (`hd`). -/
+theorem pick_get_miss_sized {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (hl : len i < USize.size)
+    (hd : ∀ d o ids, c.2.enc = .enum d o ids → o.size - 1 < USize.size)
+    (k : Nat) (hk : k < (pick t c i).1.toNat) (hout : c.1.toNat ≤ (Column.bitsAt i (k * 8) 8).toNat) :
+    (pick t c i).2.get ⟨k, hk⟩ = default := by
+  by_cases hg : t = .general
+  · subst hg
+    exact pick_get_miss c i hl (fun d o ids he => by
+      have := c.2.wf; rw [he] at this; simp [Enc.WF] at this) k hk hout
+  obtain ⟨e, he, hp⟩ := pick_eq_gather hg c i hl
+  have h1 : (pick t c i).1 = (len i).toUSize := by simpa [Arr.part] using congrArg Prod.fst hp
+  have h2 : (pick t c i).2.enc = e := by simpa [Arr.part] using congrArg Prod.snd hp
+  have hm : ((len i).toUSize).toNat = i.size / 8 := USize.toNat_ofNat_of_lt' hl
+  rw [Arr.get_ne _ _ hg, h2]
+  simp only []
+  rw [h1, KernelWF.gatherColumn_miss_sized c.2.wf hg hd hm he (h1 ▸ hk) hout, Option.bind_some]
+  exact default_of_null hg
+
+/-- **`pickArr` at a miss**, at every encoding (`pick_get_miss_sized`). -/
+theorem pickArr_get_miss_sized {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (m : USize)
+    (h : len i = m.toNat) (hd : ∀ d o ids, c.2.enc = .enum d o ids → o.size - 1 < USize.size) (k : Fin m.toNat)
+    (hout : c.1.toNat ≤ (Column.bitsAt i (k.1 * 8) 8).toNat) :
+    (pickArr t c i m h).get k = default := by
+  have hl : len i < USize.size := h ▸ m.toBitVec.isLt
+  unfold pickArr; rw [cast_get]
+  exact pick_get_miss_sized c i hl hd k.1 _ hout
+
+#print axioms KernelWF.gatherColumn_miss_enum
+#print axioms KernelWF.gatherColumn_miss_sized
+#print axioms pick_get_miss_sized
+#print axioms pickArr_get_miss_sized
 
 end LeetQ.Rel.Alg
 
