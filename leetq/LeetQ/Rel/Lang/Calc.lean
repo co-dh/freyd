@@ -137,7 +137,9 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
   | .op p .inr [] [] => do `(Freyd.Alg.Coproduct.u₂ $(← coprod hs p "`inr`"))
   | .op p .alpha [] [] => do `(Freyd.Alg.InitialAlgebra.α (self := $(← initial hs p "`α`")))
   | .op p .map [] [a] => do
-    let f ← hole hs p "`F(R)`" "rel(…) never writes the relator" (← `(Freyd.Alg.Relator _ _))
+    -- an endorelator, as Rel's `F` and the one an `InitialAlgebra` folds: its target allegory is its source
+    let c ← exprToSyntax (← mkFreshTypeMVar)
+    let f ← hole hs p "`F(R)`" "rel(…) never writes the relator" (← `(Freyd.Alg.Relator $c $c))
     `(Freyd.Functor.map (Freyd.Alg.Relator.toFunctor $f) $(← toTerm vars folds hs a))
   | .op p o (_ :: _) _ => outside p s!"`{o.sym}(…)`" "names Rel objects: rel(…) takes its objects from the Lean types"
   | .op p (.index i) _ _ => outside p s!"`at({i})`" "has no AOP counterpart"

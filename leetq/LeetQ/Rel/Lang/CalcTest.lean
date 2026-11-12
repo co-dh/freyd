@@ -3,7 +3,7 @@ import AOP.A4_1
 import AOP.A6_2
 
 /-! `rel(…)` (`Calc`): each construct against the AOP term written by hand, the closedness of the grammar, the
-    errors of a construct outside the fragment, and B&dM derivations of ch. 4 and 5 as plain `calc`s over `rel(…)`
+    errors of a construct outside the fragment, and B&dM derivations of ch. 4–6 as plain `calc`s over `rel(…)`
     terms. -/
 
 namespace LeetQ.Rel.Lang.CalcTest
@@ -82,8 +82,10 @@ example {f : D ⟶ B} (hf : Map f) (R : A ⟶ C) (S : B ⟶ C) : rel(R / (f S)) 
 #guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
 /-- error: `Λ` differs in AOP: Rel reads a set `𝒫A` as an array `[α]`, AOP as the power object `P A` -/
 #guard_msgs in example (R : A ⟶ A) : A ⟶ A := rel(Λ(R))
-/-- error: `F(R)` needs a hypothesis `Relator 𝒜 ?_`: rel(…) never writes the relator -/
-#guard_msgs in example (R : A ⟶ A) := rel(F(R))
+/-- error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator
+---
+error: `F(R)` needs a hypothesis `Relator 𝒜 𝒜`: rel(…) never writes the relator -/
+#guard_msgs in example (R : A ⟶ A) : Prop := rel(F(R)) = rel(F(R))
 /-- error: `Q` is not a local variable: a name in rel(…) is a variable or hypothesis of the statement -/
 #guard_msgs in example : A ⟶ B := rel(Q)
 
@@ -218,7 +220,7 @@ example (R : F.obj A ⟶ A) (S : A ⟶ B) (K : Coproduct (F.obj A) U W) (e : U �
   guard_expr rel(α) =ₛ I.α
   guard_expr rel(F(S)) =ₛ F.map S
   guard_expr rel(α ⦇R⦈) =ₛ I.α ≫ relCata R
-  guard_expr rel(F(⦇R⦈) R) =ₛ F.map (relCata R) ≫ R
+  guard_expr rel(F(⦇R⦈) R) =~ F.map (relCata R) ≫ R
   guard_expr rel(⦇[e,V]⦈) =ₛ relCata (junc K e V)
   trivial
 
@@ -252,25 +254,33 @@ example : rel(⦇α⦈) = rel(𝟙) :=
     _ = rel(𝟙 α) := by rw [Cat.id_comp]
     _ = rel(F(𝟙) α) := by rw [Freyd.Functor.map_id]
 
+-- each side of `=` is its own `rel(…)`, so each reports
 /-- error: `⦇R⦈` needs an instance or hypothesis `InitialAlgebra G`: rel(…) never writes the initial algebra, nor
+its relator
+---
+error: `⦇R⦈` needs an instance or hypothesis `InitialAlgebra G`: rel(…) never writes the initial algebra, nor
 its relator -/
 #guard_msgs (whitespace := lax) in
-example (G : Relator 𝒜 𝒜) (R : G.obj A ⟶ A) := rel(⦇R⦈)
-/-- error: `F(R)` has several hypotheses `Relator 𝒜 ?_`, F, G: rel(…) never writes the relator -/
+example (G : Relator 𝒜 𝒜) (R : G.obj A ⟶ A) : Prop := rel(⦇R⦈) = rel(⦇R⦈)
+/-- error: `F(R)` has several hypotheses `Relator 𝒜 𝒜`, F, G: rel(…) never writes the relator
+---
+error: `F(R)` has several hypotheses `Relator 𝒜 𝒜`, F, G: rel(…) never writes the relator -/
 #guard_msgs (whitespace := lax) in
-example (G : Relator 𝒜 𝒜) (S : A ⟶ B) := rel(F(S))
-/-- error: `⦇R⦈` has several hypotheses `InitialAlgebra ?_`, I, J: rel(…) never writes the initial algebra, nor
+example (G : Relator 𝒜 𝒜) (S : A ⟶ B) : Prop := rel(F(S)) = rel(F(S))
+/-- error: `⦇R⦈` has several hypotheses `InitialAlgebra F`, I, J: rel(…) never writes the initial algebra, nor
+its relator
+---
+error: `⦇R⦈` has several hypotheses `InitialAlgebra F`, I, J: rel(…) never writes the initial algebra, nor
 its relator -/
 #guard_msgs (whitespace := lax) in
-example (G : Relator 𝒜 𝒜) [J : InitialAlgebra G] {T : 𝒜} (K : Coproduct T U W) (e : U ⟶ A) (V : W ⟶ A) :=
-  rel(⦇[e,V]⦈)
+example [J : InitialAlgebra F] (R : F.obj A ⟶ A) : Prop := rel(⦇R⦈) = rel(⦇R⦈)
 /-- error: `⊤` is `topHom` (by `LocallyCompleteDistributiveAllegory`) and `topMor` (by
 `TabularUnitaryDivisionAllegory`) here, and no theorem identifies them -/
 #guard_msgs (whitespace := lax) in example (R : A ⟶ B) : A ⟶ B := rel(R ∩ ⊤)
 
 end Fold
 
-/-- error: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
+/-- error: line 286, col 7: one-argument fold is for rel(…) proofs: a program folds a list with `⦇e,S⦈` -/
 #guard_msgs (whitespace := lax) in
 rel_program oneFold where
   r ≜ ⦇𝟙⦈
