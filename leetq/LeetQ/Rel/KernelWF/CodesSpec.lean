@@ -447,8 +447,8 @@ theorem long_row_eq {t : QAtomicType} (ht : orderKind t = some .i64) {n m : USiz
   rw [Arr.get_ne x i hg, Arr.get_ne y j hg, KernelWF.get_eq_raw hd x.wf i.2, KernelWF.get_eq_raw hd y.wf j.2]
   cases t <;> simp [orderKind] at ht <;> simp [Column.atomOfBits, Carrier.of?]
 
-/-- A shift by `-base` of an element `x` with `base ≤ x ≤ base + 2^32`: the integer difference, not the null. -/
-theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.toInt) (h2 : x.toInt - base.toInt ≤ 2 ^ 32) :
+/-- A shift by `-base` of an element `x` with `base ≤ x < base + 2^63`: the integer difference, not the null. -/
+theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.toInt) (h2 : x.toInt - base.toInt < 2 ^ 63) :
     (x + -base).toInt = x.toInt - base.toInt ∧ x + -base ≠ nul := by
   have hbl := Int64.le_toInt base; have hbu := Int64.toInt_lt base
   have hxl := Int64.le_toInt x; have hxu := Int64.toInt_lt x
@@ -466,7 +466,7 @@ theorem shift_toInt {x base : Int64} (hb : base ≠ nul) (h1 : base.toInt ≤ x.
     when the kernel reports every row in range: `n` codes at the lane `w`, the offset `x i - base`, the null
     at `card - 1`. -/
 theorem enum_part {n : USize} {card w : Nat} {base : Int64} {b' : ByteArray} (x : Nat → Int64) {c : Code}
-    (hcard : card ≤ 2 ^ 32) (hc2 : 2 ≤ card) (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w)
+    (hcard : card ≤ 2 ^ 63 + 1) (hcU : card ≤ USize.size) (hc2 : 2 ≤ card) (hw : w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (hd : card ≤ 2 ^ w)
     (hb : base ≠ nul)
     (hv : ∀ i < n.toNat, (Column.bitsAt b' (i * 8) 8).toInt64 = if x i = nul then nul else x i + -base)
     (hr : ∀ i < n.toNat, x i ≠ nul → base.toInt ≤ (x i).toInt ∧ (x i).toInt - base.toInt + 2 ≤ card)
@@ -578,10 +578,9 @@ theorem codeKind_facts (c : Nat) (hc : c ≤ 2 ^ 64) :
 
 /-- **`rangeOffsets`' codes, part by part**: one `base` and `card` for every part; part `k`'s code at row
     `i` is the offset of the row's element from `base`, the null at `card - 1`, every element that is not
-    the null in `[base, base + card - 2]`; the lane `8 … 64` bits wide, `⌈n·w/8⌉` bytes. Where the parts'
-    total count is at most `2^32` — past it the offsets can reach `2^63` and wrap to the null. -/
+    the null in `[base, base + card - 2]`; the lane `8 … 64` bits wide, `⌈n·w/8⌉` bytes. -/
 theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : Nat} {cs : Vector (USize × Enc) p}
-    {total : Nat} {os : Vector Code p} (hwf : ∀ k (hk : k < p), Enc.WF a cs[k].1 cs[k].2) (htot : total ≤ 2 ^ 32)
+    {total : Nat} {os : Vector Code p} (hwf : ∀ k (hk : k < p), Enc.WF a cs[k].1 cs[k].2)
     (h : rangeOffsets a cs total = some os) :
     ∃ base : Int64, ∃ card : Nat, ∀ k (hk : k < p),
       os[k].n = cs[k].1 ∧ os[k].card = card ∧ (os[k].w = 8 ∨ os[k].w = 16 ∨ os[k].w = 32 ∨ os[k].w = 64) ∧
@@ -613,6 +612,11 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
   obtain ⟨B, hB⟩ : ∃ B, B = (if (decide (0 ≤ lo) && (codeKind (hi.toInt - Int64.toInt 0 + 2).toNat).width ==
       (codeKind (hi.toInt - lo.toInt + 2).toNat).width) = true then (0 : Int64) else lo) := ⟨_, rfl⟩
   rw [← hB] at h
+  split at h
+  · exact absurd h (by simp)
+  rename_i hcB
+  simp only [Bool.or_eq_true, decide_eq_true_eq, not_or, Nat.not_lt] at hcB
+  obtain ⟨hcA, hcU⟩ := hcB
   have hlonul : lo ≠ nul := fun e => hc (by simp [e])
   have hhilo : lo.toInt ≤ hi.toInt := by
     have : ¬ hi < lo := fun e => hc (by simp [e])
@@ -623,14 +627,8 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
     have : lo.toInt ≠ nul.toInt := fun e => hlonul (Int64.toInt_inj.1 e)
     omega
   have hspan := codeKind_facts (hi.toInt - lo.toInt + 2).toNat (by omega)
-  have htotk : (codeKind total).width ≤ 4 := by
-    unfold codeKind; repeat' split
-    all_goals simp only [Scan.Kind.width, Nat.reducePow] at *
-    all_goals omega
-  have hkw' : (codeKind (hi.toInt - lo.toInt + 2).toNat).width ≤ 4 := by omega
-  have hspan32 := hspan.2.2 hkw'
   -- `B` is `lo`, or `0` below `lo` at the same lane
-  have hBc : B ≠ nul ∧ B.toInt ≤ lo.toInt ∧ (hi.toInt - B.toInt + 2).toNat ≤ 2 ^ 32 ∧
+  have hBc : B ≠ nul ∧ B.toInt ≤ lo.toInt ∧
       (hi.toInt - B.toInt + 2).toNat ≤ 2 ^ (8 * (codeKind (hi.toInt - lo.toInt + 2).toNat).width) := by
     rw [hB]; split
     · next h0 =>
@@ -641,9 +639,9 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
       try simp only [hz, Int.sub_zero] at h0w h0l ⊢
       have h0s := codeKind_facts (hi.toInt + 2).toNat (by omega)
       rw [h0w] at h0s
-      refine ⟨by decide, by omega, h0s.2.2 hkw', h0s.1⟩
-    · exact ⟨hlonul, Int.le_refl _, hspan32, hspan.1⟩
-  obtain ⟨hBn, hBlo, hc32, hcw⟩ := hBc
+      refine ⟨by decide, by omega, h0s.1⟩
+    · exact ⟨hlonul, Int.le_refl _, hspan.1⟩
+  obtain ⟨hBn, hBlo, hcw⟩ := hBc
   refine ⟨B, (hi.toInt - B.toInt + 2).toNat, fun k hk => ?_⟩
   have hp := vec_mapM_some h hk
   obtain ⟨hls, hlall⟩ := arr_mapM_some hlos
@@ -683,7 +681,7 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
       have hb := overBytes_bounds Ew.i64 nul b hib (by rw [hsig]; exact hx)
       rw [hsig, hlk, hhk] at hb
       exact hrng _ (Int64.le_iff_toInt_le.1 hb.1) (Int64.le_iff_toInt_le.1 hb.2)
-    obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.bitsAt b (i * 8) 8).toInt64) hc32 hc2 hw hcw hBn
+    obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.bitsAt b (i * 8) 8).toInt64) hcA hcU hc2 hw hcw hBn
       (fun i hi => shift_bytes hBn hi) hbnd hp
     refine ⟨h1, h2, by rw [h3]; exact hw, by rw [h4, h3], fun i hi => ?_⟩
     rw [hraw i hi]
@@ -711,7 +709,7 @@ theorem rangeOffsets_spec {a : QAtomicType} (ha : orderKind a = some .i64) {p : 
         rw [hlk] at hb; rw [hhk] at hb'
         exact hrng _ hb.1 hb'.2
       obtain ⟨h1, h2, h3, h4, h5⟩ := enum_part (fun i => (Column.foRBits md pk (Column.blockStarts md) i).toInt64)
-        hc32 hc2 hw hcw hBn (fun i hi => shift_foR hBn hs hi) hbnd hp
+        hcA hcU hc2 hw hcw hBn (fun i hi => shift_foR hBn hs hi) hbnd hp
       refine ⟨h1, h2, by rw [h3]; exact hw, by rw [h4, h3], fun i hi => ?_⟩
       rw [hraw i hi]
       exact ⟨h5 i hi, hbnd i hi⟩
@@ -747,30 +745,27 @@ theorem codes_long_eq {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     rcases long_enc ht cs[0].2.wf with ⟨b, he, -⟩ | ⟨md, pk, he⟩ <;> simp [he] at this
   · dsimp only; rw [hro]
 
-/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are
-    equal exactly where the values are, across parts.** Past `2^32` rows the plain statement is false: a
-    span `hi - lo = 2^63` wraps onto the null. -/
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers, are
+    equal exactly where the values are, across parts.** -/
 theorem codes_long_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
-    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
     (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
     Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
         Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
       Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
   obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
-    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) hro
   rw [codes_long_eq ht cs (by omega) hro, Vals.row_atom, Vals.row_atom, long_row_eq ht]
   obtain ⟨-, -, -, -, hk'⟩ := hs k hk; obtain ⟨-, -, -, -, hl'⟩ := hs l hl
   simp only [Vector.getElem_map, Arr.part] at hk' hl'
   rw [(hk' i hi).1, (hl' j hj).1]
   exact offset_iff (hk' i hi).2 (hl' j hj).2
 
-/-- **An eight-byte integral column's codes, where `rangeOffsets` answers on at most `2^32` rows, are well
+/-- **An eight-byte integral column's codes, where `rangeOffsets` answers, are well
     formed**: a lane of one to eight bytes, so the id bound is vacuous. -/
 theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p) {os : Vector Code p}
-    (htot : (cs.map (·.1)).foldl (fun s n => s + n.toNat) 0 ≤ 2 ^ 32)
     (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]
@@ -778,11 +773,18 @@ theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
-    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) htot hro
+    (fun k hk => by simp only [Vector.getElem_map, Arr.part]; exact cs[k].2.wf) hro
   obtain ⟨h1, -, h3, h4, -⟩ := hs k hk
   simp only [Vector.getElem_map, Arr.part] at h1 h4
   simp only [codes_long_eq ht cs (by omega) hro]
   refine ⟨by omega, h1, by rw [h1]; exact h4, fun h => absurd h (by omega)⟩
+
+-- -1, 0W, 0N past 2^32 rows: the span 0W - (-1) = 2^63 is no `Int64` offset (it would wrap onto 0N's
+-- code), so `rangeOffsets` declines and `codes` groups; -1, 5, 0N still answers
+#guard (rangeOffsets .long #v[((3 : USize), Enc.bytes (one (-1 : Int64).toUInt64 ++ one Int64.maxValue.toUInt64 ++
+  one Int64.minValue.toUInt64))] (2 ^ 33)).isNone
+#guard (rangeOffsets .long #v[((3 : USize), Enc.bytes (one (-1 : Int64).toUInt64 ++ one (5 : Int64).toUInt64 ++
+  one Int64.minValue.toUInt64))] (2 ^ 33)).isSome
 
 #print axioms codes_long_faithful
 #print axioms codes_long_wf
