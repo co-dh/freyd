@@ -194,10 +194,102 @@ theorem gatherColumn_get_guid {n : USize} {e : Enc} (hw : Enc.WF .guid n e) {m :
     flatMap_range_getElem? _ hC (hm ▸ hk) hq, hCk, Array.getElem?_toList, ByteArray.data_extract,
     Array.getElem?_extract, ByteArray.size_data, if_pos (by omega), Array.getElem?_toList]
 
-/-- Belongs in qlean. **`x@i` read back** at every atom type but `general`, every payload but an interned
-    symbol column: element `k` of the answer is element `i[k]` of `x`, where that is below `x`'s count. -/
+/-- A dictionary's id width grows with its size. -/
+theorem idWidthOf_mono {a b : Nat} (h : a ≤ b) : Column.idWidthOf a ≤ Column.idWidthOf b := by
+  have hw : Column.widthFor (a - 1) ≤ Column.widthFor (b - 1) := by
+    unfold Column.widthFor
+    split
+    · exact Nat.zero_le _
+    · rw [if_neg (by omega)]
+      have hb : b - 1 < 2 ^ ((b - 1).log2 + 1) := (Nat.log2_lt (by omega)).1 (Nat.lt_succ_self _)
+      have := (Nat.log2_lt (by omega : a - 1 ≠ 0)).2 (Nat.lt_of_le_of_lt (by omega) hb)
+      omega
+  unfold Column.idWidthOf Column.laneWidth
+  repeat' split
+  all_goals omega
+
+/-- A byte array cut where it starts is empty. -/
+theorem extract_self (b : ByteArray) (x : Nat) : b.extract x x = ByteArray.empty := by
+  apply ByteArray.ext; simp [ByteArray.data_extract]
+
+/-- The empty symbol appended to a dictionary ending at its blob leaves every entry reading as it did:
+    the old entries lie inside the old blob, and an id past them reads empty either way. -/
+theorem symKey_push {d : ByteArray} {o : Array Nat} (hl : o[o.size - 1]! = d.size)
+    (hle : ∀ k < o.size, o[k]! ≤ d.size) (q : Nat) :
+    Column.symKey (d.push 0) (o.push (d.size + 1)) q = Column.symKey d o q := by
+  have hP : ∀ t, (o.push (d.size + 1))[t]! =
+      if t < o.size then o[t]! else if t = o.size then d.size + 1 else 0 := by
+    intro t
+    split
+    · rename_i h; rw [getElem!_pos _ t (by simp; omega), Array.getElem_push_lt h, getElem!_pos o t h]
+    · split
+      · rename_i h; subst h; rw [getElem!_pos _ o.size (by simp), Array.getElem_push_eq]
+      · rw [getElem!_neg _ t (by simp; omega)]; rfl
+  have hX : ∀ lo hi, hi ≤ d.size → (d.push 0).extract lo hi = d.extract lo hi := by
+    intro lo hi hh
+    apply ByteArray.ext; apply Array.ext_getElem?; intro r
+    rw [ByteArray.data_extract, ByteArray.data_extract, Array.getElem?_extract, Array.getElem?_extract,
+      ByteArray.data_push, Array.size_push, ByteArray.size_data]
+    by_cases hr : r < min hi d.size - lo
+    · rw [if_pos (by omega), if_pos hr, Array.getElem?_push_lt (by rw [ByteArray.size_data]; omega),
+        Array.getElem?_eq_getElem (by rw [ByteArray.size_data]; omega)]
+    · rw [if_neg (by omega), if_neg hr]
+  unfold Column.symKey Column.symBytes
+  dsimp only
+  rw [extract_upto, extract_upto, hP q, hP (q + 1)]
+  by_cases h1 : q + 1 < o.size
+  · rw [if_pos (by omega : q < o.size), if_pos h1]
+    exact hX _ _ (by have := hle (q + 1) h1; omega)
+  · have hq : q < o.size → o[q]! = d.size := fun h => by rw [show q = o.size - 1 by omega]; exact hl
+    have hle' : (if q + 1 = o.size then d.size + 1 else 0) - 1 ≤
+        (if q < o.size then o[q]! else if q = o.size then d.size + 1 else 0) := by
+      by_cases h2 : q < o.size
+      · rw [if_pos (by omega), if_pos h2, hq h2]; omega
+      · rw [if_neg (by omega), if_neg h2]; omega
+    rw [if_neg h1, getElem!_neg o (q + 1) h1, extract_empty d (show (default : Nat) - 1 ≤ o[q]! from Nat.zero_le _),
+      extract_empty (d.push 0) hle', extract_self, extract_self]
+
+/-- Belongs in qlean. **`x@i` at an interned symbol column, read back**: symbol `k` of the answer is
+    symbol `i[k]` of `x`, the empty symbol a miss would point at appended past every entry. -/
+theorem gatherColumn_get_enum {n : USize} {d : ByteArray} {o : Array Nat} {ids : ByteArray}
+    (hw : Enc.WF .symbol n (.enum d o ids)) {m : USize} {i : ByteArray} (hm : m.toNat = i.size / 8)
+    {e' : Enc} (h : gatherColumn .symbol n (.enum d o ids) m (.bytes i) = some e') {k : Nat}
+    (hk : k < m.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < n.toNat) :
+    Enc.get .symbol m e' k = Enc.get .symbol n (.enum d o ids) (Column.bitsAt i (k * 8) 8).toNat := by
+  have hz : ¬ i.size < m.toNat * 8 := by omega
+  have hm0 : (m == 0) = false := by
+    rw [beq_eq_false_iff_ne]; rintro rfl; simp at hk
+  simp only [gatherColumn, denseWidth, foRColumn, Enc.bytesOf, hz, if_false, hm0, Bool.false_eq_true,
+    ↓reduceIte, Option.map_some, Option.some.injEq] at h
+  subst h
+  obtain ⟨-, hl, hle⟩ := hw
+  have hg : gatherAt n.toNat i k = some (Column.bitsAt i (k * 8) 8).toNat := by
+    simp only [gatherAt]; rw [if_pos (by omega)]
+  generalize (Column.bitsAt i (k * 8) 8).toNat = j at hg hin
+  have h64 : Column.idWidth o ≤ 64 := by
+    rcases Verify.laneWidth_cases (Column.widthFor (o.size - 1 - 1)) with h | h | h | h | h | h | h | h <;>
+      simp only [Column.idWidth, Column.idWidthOf, h] <;> decide
+  have hread : ∀ (w' : Nat) (f : Nat → Nat), (w' = 0 ∨ w' = 1 ∨ w' = 2 ∨ w' = 4 ∨ w' = 8 ∨ w' = 16 ∨
+      w' = 32 ∨ w' = 64) → 2 ^ Column.idWidth o ≤ 2 ^ w' → f k = Column.idAt ids (Column.idWidth o) j →
+      Column.idAt (Column.packIds w' (i.size / 8) f) w' k = Column.idAt ids (Column.idWidth o) j := by
+    intro w' f hw' h2 hf
+    have := Verify.idAt_lt ids (Column.idWidth o) j h64
+    rw [Verify.idAt_packIds hw' (by omega) (by rw [hf]; omega), hf]
+  simp only [Enc.get, if_pos hk, if_pos hin, gatherIds, gatherPacked, Verify.idWidth_toNat]
+  split
+  · dsimp only
+    rw [hread (Column.idWidth o) _ (Verify.laneWidth_cases _) (Nat.le_refl _) ?_]
+    simp only [hg]
+  · dsimp only
+    have hpow : 2 ^ Column.idWidth o ≤ 2 ^ Column.idWidth (o.push (d.size + 1)) :=
+      Nat.pow_le_pow_right (by decide) (idWidthOf_mono (by simp only [Array.size_push]; omega))
+    rw [hread (Column.idWidth (o.push (d.size + 1))) _ (Verify.laneWidth_cases _) hpow ?_]
+    · exact congrArg (fun b => some (QAtom.symbol ((String.fromUTF8? b).getD ""))) (symKey_push hl hle _)
+    · simp only [hg]
+
+/-- Belongs in qlean. **`x@i` read back** at every atom type but `general`: element `k` of the answer is
+    element `i[k]` of `x`, where that is below `x`'s count. -/
 theorem gatherColumn_get {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t n e) (hg : t ≠ .general)
-    (hen : ∀ d o ids, e ≠ .enum d o ids)
     {m : USize} {i : ByteArray} (hm : m.toNat = i.size / 8) {e' : Enc}
     (h : gatherColumn t n e m (.bytes i) = some e') {k : Nat} (hk : k < m.toNat)
     (hin : (Column.bitsAt i (k * 8) 8).toNat < n.toNat) :
@@ -213,7 +305,7 @@ theorem gatherColumn_get {t : QAtomicType} {n : USize} {e : Enc} (hw : Enc.WF t 
     subst hs
     cases e with
     | syms b o => exact gatherColumn_get_syms hw hm h hk hin
-    | enum d o ids => exact absurd rfl (hen d o ids)
+    | enum d o ids => exact gatherColumn_get_enum hw hm h hk hin
     | _ => all_goals (exfalso; simp [Enc.WF, QAtomicType.width] at hw)
 
 end LeetQ.Rel.KernelWF
@@ -248,9 +340,8 @@ theorem pick_get_general (c : (n : USize) × Arr .general n) (i : ByteArray) (hl
   rw [Array.getElem?_eq_getElem (by omega), Option.getD_some]
 
 /-- **`pick` read back**: row `k` of `x@i` is row `i[k]` of `x`, the index read unsigned, where that is
-    below `x`'s count; every payload but an interned symbol column. -/
+    below `x`'s count. -/
 theorem pick_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (hl : len i < USize.size)
-    (hen : ∀ d o ids, c.2.enc ≠ .enum d o ids)
     (k : Nat) (hk : k < (pick t c i).1.toNat) (hin : (Column.bitsAt i (k * 8) 8).toNat < c.1.toNat) :
     (pick t c i).2.get ⟨k, hk⟩ = c.2.get ⟨_, hin⟩ := by
   by_cases hg : t = .general
@@ -261,29 +352,21 @@ theorem pick_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) 
   have hm : ((len i).toUSize).toNat = i.size / 8 := USize.toNat_ofNat_of_lt' hl
   rw [Arr.get_ne _ _ hg, Arr.get_ne _ _ hg, h2]
   simp only []
-  rw [h1, KernelWF.gatherColumn_get c.2.wf hg hen hm he (h1 ▸ hk) hin]
+  rw [h1, KernelWF.gatherColumn_get c.2.wf hg hm he (h1 ▸ hk) hin]
 
 /-- An `Arr` moved along a count equation keeps its elements. -/
 theorem cast_get {t : QAtomicType} {a b : USize} (e : a = b) (x : Arr t a) (k : Fin b.toNat) :
     (e ▸ x : Arr t b).get k = x.get ⟨k, e ▸ k.2⟩ := by subst e; rfl
 
 /-- **`pickArr` read back**: element `k` of the column picked at `i` is element `i[k]` of `x`, where that
-    is below `x`'s count; every payload but an interned symbol column. -/
+    is below `x`'s count. -/
 theorem pickArr_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (m : USize)
-    (h : len i = m.toNat) (hen : ∀ d o ids, c.2.enc ≠ .enum d o ids) (k : Fin m.toNat)
+    (h : len i = m.toNat) (k : Fin m.toNat)
     (hin : (Column.bitsAt i (k.1 * 8) 8).toNat < c.1.toNat) :
     (pickArr t c i m h).get k = c.2.get ⟨_, hin⟩ := by
   have hl : len i < USize.size := h ▸ m.toBitVec.isLt
   unfold pickArr; rw [cast_get]
-  exact pick_get c i hl hen k.1 _ hin
-
-/-- A long column is never an interned symbol column. -/
-theorem long_not_enum {n : USize} (x : Arr .long n) : ∀ d o ids, x.enc ≠ .enum d o ids := by
-  intro d o ids he; have hw := x.wf; rw [he] at hw; simp [Enc.WF] at hw
-
-/-- A boolean column is never an interned symbol column. -/
-theorem boolean_not_enum {n : USize} (x : Arr .boolean n) : ∀ d o ids, x.enc ≠ .enum d o ids := by
-  intro d o ids he; have hw := x.wf; rw [he] at hw; simp [Enc.WF] at hw
+  exact pick_get c i hl k.1 _ hin
 
 end LeetQ.Rel.Alg
 
@@ -291,34 +374,24 @@ namespace LeetQ.Rel
 
 open QLean LeetQ.Rel.Alg
 
-/-- Every atom column of a side whose `pick` content is proved: no interned symbol column. An
-    array's or a sum's own columns are long and boolean, so its payload is not asked here. -/
-def Vals.Plain : {A : Obj} → {n : USize} → Vals A n → Prop
-  | .atom _, _, x => ∀ d o ids, Arr.enc x ≠ .enum d o ids
-  | .prod _ _, _, x => Vals.Plain x.1 ∧ Vals.Plain x.2
-  | .arr _, _, _ => True
-  | .sum _ _, _, _ => True
-
 /-- **`Vals.pickShared` read back**: row `k` of a side picked at `i` is row `i[k]` of the side, where that
     long is below its count — at every shape: an array's and a sum's payloads are shared whole and their
     `lo`/`hi`, tags and positions picked. -/
-theorem Vals.pickShared_row (A : Obj) {n : USize} (x : Vals A n) (hx : Vals.Plain x)
+theorem Vals.pickShared_row (A : Obj) {n : USize} (x : Vals A n)
     (i : ByteArray) (m : USize) (h : len i = m.toNat) (k : Fin m.toNat)
     (hin : (Column.bitsAt i (k.1 * 8) 8).toNat < n.toNat) :
     (Vals.pickShared A x i m h).row k = x.row ⟨_, hin⟩ := by
   induction A generalizing n with
-  | atom t => exact pickArr_get ⟨_, x⟩ i m h hx k hin
+  | atom t => exact pickArr_get ⟨_, x⟩ i m h k hin
   | prod a b iha ihb =>
-    exact Prod.ext (iha x.1 hx.1 hin) (ihb x.2 hx.2 hin)
+    exact Prod.ext (iha x.1 hin) (ihb x.2 hin)
   | arr _ _ =>
     obtain ⟨p, lo, hi, f⟩ := x
     show List.filterMap _ _ = List.filterMap _ _
-    rw [pickArr_get _ i m h (long_not_enum _) k hin,
-      pickArr_get _ i m h (long_not_enum _) k hin]
+    rw [pickArr_get _ i m h k hin, pickArr_get _ i m h k hin]
   | sum _ _ _ _ =>
     obtain ⟨l, r, tag, ix, y, z⟩ := x
     show (if _ then _ else _) = (if _ then _ else _)
-    rw [pickArr_get _ i m h (boolean_not_enum _) k hin,
-      pickArr_get _ i m h (long_not_enum _) k hin]
+    rw [pickArr_get _ i m h k hin, pickArr_get _ i m h k hin]
 
 end LeetQ.Rel
