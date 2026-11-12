@@ -44,4 +44,53 @@ theorem foldl_push_get {α : Type} [Inhabited α] (g : Array α → Nat → α) 
       Array.getElem_push, dif_pos (by rw [hs]; omega)]
   · rw [getElem!_pos _ _ (by rw [Array.size_push, hs]; omega), Array.getElem_push, dif_neg (by rw [hs]; omega)]
 
+/-- **Element `k` of the fold is `g` of the fold of the first `k`**, once `k` is pushed, whatever was pushed
+    after it. -/
+theorem foldl_push_get_lt {α : Type} [Inhabited α] (g : Array α → Nat → α) (init : Array α) {k : Nat} :
+    ∀ {j : Nat}, k < j → ((List.range j).foldl (fun o i => o.push (g o i)) init)[init.size + k]! =
+      g ((List.range k).foldl (fun o i => o.push (g o i)) init) k
+  | 0, h => absurd h (Nat.not_lt_zero _)
+  | j + 1, h => by
+    rcases Nat.lt_succ_iff_lt_or_eq.1 h with h | rfl
+    · rw [(foldl_push_get g init j).1 _ (by omega)]; exact foldl_push_get_lt g init h
+    · exact (foldl_push_get g init k).2
+
+/-- **A build's run, stage by stage**: `Ew.chain`'s fold over its `stages.size + 1` stages, stage `j` read
+    as the build's `j`-th (the last one after them) rather than decoded from the program. The step is
+    `Ew.chain`'s own, restated because qlean writes it inline; `rfl` up to `stageAt_prog` checks the copy. -/
+theorem run_fold (b : Ew.Build) (last : Ew.Stage) (n : USize) :
+    b.run last n = ((List.range (b.stages.size + 1)).foldl (init := #[]) fun outs j =>
+      let st := (b.stages.push last)[j]!
+      let src (c : UInt8) : ByteArray :=
+        if c < Ew.slot0 then b.inputs[c.toNat]! else outs[(c - Ew.slot0).toNat]!
+      outs.push <|
+       if st.engine == Ew.eVal then Ew.val st.op st.cls st.shape st.nul (src st.a) (src st.b) n
+       else if st.engine == Ew.eCmp then Ew.cmp st.op st.cls st.shape (src st.a) (src st.b) n
+       else if st.engine == Ew.eMon then Ew.mon st.op st.cls st.nul (src st.a) n
+       else if st.engine == Ew.eWiden then Ew.widen st.cls st.shape st.nul st.nulOut (src st.a) n
+       else if st.engine == Ew.eBit then Ew.bit st.op st.shape (src st.a) (src st.b) n
+       else if st.engine == Ew.eFloor then Ew.floor st.cls (src st.a) n
+       else if st.engine == Ew.eCast then Ew.castTo st.cls st.shape st.nul (src st.a) n
+       else if st.engine == Ew.eTick then Ew.tick st.op st.cls st.shape st.nul st.nulOut (src st.a) n
+       else if st.engine == Ew.eIds then
+         Column.packIds (8 * Ew.width st.cls) n.toNat (Column.idAt (src st.a) st.shape.toNat)
+       else if st.engine == Ew.ePack then
+         Column.packIds st.shape.toNat n.toNat fun i => (Ew.elem st.cls (src st.a) i).toNat
+       else if st.engine == Ew.eDecode then Coc.decode (Ew.width st.cls).toUSize (src st.a) (src st.b) n
+       else if Column.alpF32 (src st.c) then Coc.alpDecode32 (src st.a) (src st.b) (src st.c) n
+       else Coc.alpDecode64 (src st.a) (src st.b) (src st.c) n)[b.stages.size]! := by
+  simp only [Ew.Build.run, Ew.chain, prog_count, Nat.add_sub_cancel]
+  congr 1
+  have hm : ∀ j ∈ List.range (b.stages.size + 1), j < b.stages.size + 1 := fun j hj => List.mem_range.1 hj
+  generalize List.range (b.stages.size + 1) = l at hm ⊢
+  generalize (#[] : Array ByteArray) = init
+  induction l generalizing init with
+  -- not `rfl`: the kernel would compare the two steps before reducing the empty fold, and time out
+  | nil => rw [List.foldl_nil, List.foldl_nil]
+  | cons j l ih =>
+    simp only [List.foldl_cons]
+    rw [stageAt_prog b last j (hm j (by simp)),
+      getElem!_pos (b.stages.push last) j (by simpa using hm j (by simp))]
+    exact ih (fun k hk => hm k (by simp [hk])) _
+
 end LeetQ.Rel.Alg
