@@ -891,6 +891,119 @@ theorem codes_long_one_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : 
   | none => exact codes_long_group_wf ht x hro
   | some os => exact codes_long_wf ht #v[x] hro (k := 0) (by decide)
 
+/-! ## Atoms: one part of a `guid` column
+
+`codes` groups the first positions of each element, `groupIds .i64` over `findVec 16` of the payload
+against itself: two rows share a first position exactly when their sixteen bytes agree. -/
+
+/-- Two members of a list share their first position exactly when they are equal. -/
+theorem idxOf_eq_iff {α : Type} [BEq α] [LawfulBEq α] {l : List α} {a c : α} (ha : a ∈ l) (hc : c ∈ l) :
+    l.idxOf a = l.idxOf c ↔ a = c := by
+  refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
+  induction l with
+  | nil => simp at ha
+  | cons x l ih =>
+    simp only [List.idxOf_cons] at h
+    by_cases hx : x = a <;> by_cases hy : x = c
+    · exact hx.symm.trans hy
+    · subst hx; rw [beq_false_of_ne hy] at h; simp at h
+    · subst hy; rw [beq_false_of_ne hx] at h; simp at h
+    · simp only [beq_false_of_ne hx, beq_false_of_ne hy, cond_false, Nat.add_right_cancel_iff] at h
+      exact ih ((List.mem_cons.1 ha).resolve_left (Ne.symm hx)) ((List.mem_cons.1 hc).resolve_left (Ne.symm hy)) h
+
+/-- A `guid` payload is dense, sixteen bytes an element (`Enc.WF`). -/
+theorem guid_enc {n : USize} {e : Enc} (hwf : Enc.WF .guid n e) : ∃ b, e = .bytes b ∧ b.size = n.toNat * 16 := by
+  cases e <;> simp [Enc.WF, QAtomicType.width] at hwf ⊢ <;> first | exact hwf | omega
+
+/-- A `guid` element is its sixteen bytes. -/
+theorem guid_get {n : USize} (x : Arr .guid n) {b : ByteArray} (he : x.enc = .bytes b) (hs : b.size = n.toNat * 16)
+    (i : Fin n.toNat) : (x.get i).toArray = (b.extract (i.1 * 16) (i.1 * 16 + 16)).data := by
+  have hi := i.2
+  rw [Arr.get_ne x i (by decide), he]
+  simp only [Enc.get, hi, if_true, Option.bind_some, Carrier.of?, Option.getD_some]
+  apply Array.ext
+  · simp [hs]; omega
+  · intro k h1 h2
+    have hk : i.1 * 16 + k < b.size := by simp at h1; omega
+    simp only [Vector.toArray_ofFn, Array.getElem_ofFn, ByteArray.data_extract, Array.getElem_extract]
+    rw [getElem?_pos b _ hk, Option.getD_some]; rfl
+
+/-- `groupIdsColumn` of a `guid` payload: `groupIds .i64` of each element's first position. -/
+theorem groupIdsColumn_guid (n : USize) (b : ByteArray) :
+    groupIdsColumn .guid n (.bytes b) = some (Order.groupIds .i64 n (findVec 16 false b b)) := by
+  simp [groupIdsColumn, Enc.bytesOf]
+
+/-- **One part of a `guid` side is coded by `groupIdsColumn`**, read by `Code.ofIds`. -/
+theorem codes_guid (x : Part (.atom .guid)) :
+    ∃ p, groupIdsColumn .guid x.1 x.2.enc = some p ∧
+      (Obj.codes (.atom .guid) #v[x])[0] = Code.ofIds (len p.2) x.1 p.1 := by
+  have hsome := KernelWF.groupIdsColumn_isSome (by decide) x.2.wf fun d o ids he => by
+    exfalso; obtain ⟨b, hb, -⟩ := guid_enc x.2.wf; simp [hb, Column.intern] at he
+  refine ⟨_, (Option.some_get hsome).symm, ?_⟩
+  obtain ⟨n, v, hv⟩ := x
+  cases v <;> try exact hv.elim
+  rename_i t' n' e a
+  obtain ⟨h1, h2, hwf⟩ := hv
+  subst h1 h2
+  cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
+    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes,
+      Arr.enc]
+
+/-- `findVec 16` of a `guid` payload against itself, read by `groupIds .i64`: the class ids at the width
+    of the class count, the first rows. -/
+theorem guid_groupIds {n : USize} {b : ByteArray} (hbs : b.size = n.toNat * 16) :
+    (∀ j < n.toNat, (Column.bitsAt (findVec 16 false b b) (j * 8) 8).toNat =
+      ((List.range n.toNat).map fun i => (b.extract (i * 16) (i * 16 + 16)).data).idxOf
+        (b.extract (j * 16) (j * 16 + 16)).data) ∧
+    (Order.groupIds .i64 n (findVec 16 false b b)).1 =
+      Column.packIds (Column.idWidthOf (Verify.firstsOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat).length)
+        n.toNat (Verify.groupOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat) ∧
+    ids (Order.groupIds .i64 n (findVec 16 false b b)).2 =
+      Verify.firstsOf (Order.keyAt .i64 (findVec 16 false b b)) n.toNat := by
+  have h16 : (16 : USize).toNat = 16 := USize.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by decide) USize.le_size)
+  have hnb : b.size / 16 = n.toNat := by omega
+  obtain ⟨hFs, hF⟩ := Verify.findVec_idxOf 16 false b b (by rw [h16, hnb]; exact n.toNat_lt_size)
+  rw [h16, hnb] at hFs hF
+  have hav : min n.toNat (Scan.Kind.i64.avail (findVec 16 false b b)) = n.toNat := by
+    simp [Scan.Kind.avail, Scan.Kind.width, hFs]
+  have hspec := Verify.groupIds_spec .i64 n (findVec 16 false b b)
+  rw [hav] at hspec
+  exact ⟨fun j hj => by rw [hF j hj, if_neg (by decide)], hspec⟩
+
+/-- **One part of a `guid` side: its codes are faithful.** -/
+theorem codes_guid_faithful (x : Part (.atom .guid)) {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom .guid) #v[x])[0].b (Obj.codes (.atom .guid) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom .guid) #v[x])[0].b (Obj.codes (.atom .guid) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  obtain ⟨p, hp, hc⟩ := codes_guid x
+  obtain ⟨b, he, hbs⟩ := guid_enc x.2.wf
+  rw [he, groupIdsColumn_guid, Option.some_inj] at hp
+  subst hp
+  obtain ⟨hF, hspec⟩ := guid_groupIds hbs
+  have hn64 : x.1.toNat < 2 ^ 64 := Verify.usize_lt x.1
+  rw [hc, ofIds_groupOf _ x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hi,
+    ofIds_groupOf _ x.1 hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) hj,
+    groupOf_eq_groupOf hi hj, Verify.keyAt_eq_iff (by simp) _ i j]
+  show Column.bitsAt _ (i * 8) 8 = Column.bitsAt _ (j * 8) 8 ↔ _
+  rw [← UInt64.toNat_inj, hF i hi, hF j hj,
+    idxOf_eq_iff (a := (b.extract (i * 16) (i * 16 + 16)).data) (c := (b.extract (j * 16) (j * 16 + 16)).data)
+      (List.mem_map.2 ⟨i, List.mem_range.2 hi, rfl⟩) (List.mem_map.2 ⟨j, List.mem_range.2 hj, rfl⟩),
+    Vals.row_atom, Vals.row_atom, ← Vector.toArray_inj, guid_get x.2 he hbs, guid_get x.2 he hbs]
+
+/-- **One part of a `guid` side: its code is well formed.** -/
+theorem codes_guid_wf (x : Part (.atom .guid)) :
+    let c := (Obj.codes (.atom .guid) #v[x])[0]
+    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨p, hp, hc⟩ := codes_guid x
+  obtain ⟨b, he, hbs⟩ := guid_enc x.2.wf
+  rw [he, groupIdsColumn_guid, Option.some_inj] at hp
+  subst hp
+  obtain ⟨-, hspec⟩ := guid_groupIds hbs
+  rw [hc]
+  exact ofIds_groupOf_wf _ x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+
 -- -1, 0W, 0N past 2^32 rows: the span 0W - (-1) = 2^63 is no `Int64` offset (it would wrap onto 0N's
 -- code), so `rangeOffsets` declines and `codes` groups; -1, 5, 0N still answers
 #guard (rangeOffsets .long #v[((3 : USize), Enc.bytes (one (-1 : Int64).toUInt64 ++ one Int64.maxValue.toUInt64 ++
@@ -906,5 +1019,7 @@ theorem codes_long_one_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : 
 #print axioms codes_small_int_wf
 #print axioms codes_long_one_faithful
 #print axioms codes_long_one_wf
+#print axioms codes_guid_faithful
+#print axioms codes_guid_wf
 
 end LeetQ.Rel.Alg
