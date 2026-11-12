@@ -297,6 +297,88 @@ theorem stable_sort_classes {L : List Nat} {n K : Nat} (κ : Nat → Nat) (hκ :
   · rw [if_neg (fun h => hx (List.mem_range.1 h)), if_neg (fun h => by
       obtain ⟨_, _, h⟩ := List.mem_flatMap.1 h; exact hx (List.mem_range.1 (List.mem_filter.1 h).1))]
 
+/-- **The grade of `n` class ids below `ng`, packed at `W = idWidthOf ng`, is the classes in turn, each
+    class's rows ascending** (`stable_sort_classes`) — at every lane `Code.grade` dispatches on: the zero
+    bitmap at `W = 0`, `grade` at a bit or byte layout (an `i16`/`i32`/`i64` key is the id plus the flipped
+    sign bit, so `ng ≤ 2^63`), `gradeLane` at `2`/`4` bits and where an `i16`/`i32` id passes the sign bit.
+    Hypotheses: the payload holds the `n` ids, each below `ng`. -/
+theorem grade_ofIds (ng : Nat) (n : USize) (gid : ByteArray) (hng : ng ≤ 2 ^ 63)
+    (hs : Column.idWidthOf ng * n.toNat ≤ 8 * gid.size)
+    (hlt : ∀ i < n.toNat, Column.idAt gid (Column.idWidthOf ng) i < ng) :
+    ids (Code.ofIds ng n gid).grade = (List.range ng).flatMap fun c =>
+      (List.range n.toNat).filter fun i => Column.idAt gid (Column.idWidthOf ng) i == c := by
+  unfold Code.ofIds
+  have hWc := laneWidth_cases (Column.widthFor (ng - 1))
+  rw [← show Column.idWidthOf ng = Column.laneWidth (Column.widthFor (ng - 1)) from rfl] at hWc
+  generalize Column.idWidthOf ng = W at hs hlt hWc ⊢
+  -- `grade` at a layout whose key is the id plus a constant
+  have hk : ∀ (k : Scan.Kind) (b : ByteArray) (off : Nat), n.toNat ≤ k.avail b →
+      (∀ i < n.toNat, (Order.keyAt k b i).toNat = Column.idAt gid W i + off) →
+      ids (Order.grade k false n b) = (List.range ng).flatMap fun c =>
+        (List.range n.toNat).filter fun i => Column.idAt gid W i == c := by
+    intro k b off hav hkey
+    obtain ⟨hp, hsrt⟩ := grade_spec k false n b
+    rw [Nat.min_eq_left hav] at hp
+    refine stable_sort_classes _ hlt hp (hsrt.imp_of_mem fun hi hj ⟨h1, h2⟩ => ?_)
+    have hi' := List.mem_range.1 (hp.mem_iff.1 hi); have hj' := List.mem_range.1 (hp.mem_iff.1 hj)
+    simp only [keyOrd, Bool.false_eq_true, ↓reduceIte, UInt64.le_iff_toNat_le, hkey _ hi', hkey _ hj'] at h1 h2
+    exact ⟨by omega, fun h => h2 (by omega)⟩
+  -- `gradeLane` reads the ids themselves
+  have hl : W ≠ 0 → W ≤ 64 → ids (Order.gradeLane false n W.toUSize gid) = (List.range ng).flatMap fun c =>
+      (List.range n.toNat).filter fun i => Column.idAt gid W i == c := fun h0 h64 => by
+    obtain ⟨hp, hsrt⟩ := gradeLane_spec false n W.toUSize gid
+    rw [lane_toNat h64, idsCap_full (by omega) hs] at hp
+    rw [lane_toNat h64] at hsrt
+    exact stable_sort_classes _ hlt hp (hsrt.imp fun ⟨h1, h2⟩ => ⟨by simpa using h1, fun h => h2 (by simpa using h)⟩)
+  -- an `i16`/`i32`/`i64` key: the id with its top bit set
+  have hx : ∀ (c m : Nat), c ≤ 8 → W = 8 * c → 8 * c = m + 1 → ng ≤ 2 ^ m → ∀ i < n.toNat,
+      (Column.bitsAt gid (i * c) c ^^^ (2 ^ m : Nat).toUInt64).toNat = Column.idAt gid (8 * c) i + 2 ^ m := by
+    intro c m hc hW hm hngm i hi
+    have hv := hlt i hi; rw [hW, idAt_lane gid hc] at hv
+    rw [UInt64.toNat_xor, idAt_lane gid hc]
+    rw [show ((2 ^ m : Nat).toUInt64).toNat = 2 ^ m from UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt
+      (Nat.pow_le_pow_right (by decide) (by omega)) (by decide : 2 ^ 63 < 2 ^ 64)),
+      xor_top m _ (by rw [← hm]; exact bitsAt_lt gid _ c hc), if_pos (by omega)]
+  rcases hWc with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · -- the zero bitmap
+    have hz : ∀ i, Column.bitAt (ByteArray.mk (Array.replicate ((n.toNat + 7) / 8) 0)) i = false := fun i => by
+      unfold Column.bitAt
+      rw [show (ByteArray.mk (Array.replicate ((n.toNat + 7) / 8) 0))[i / 8]?.getD 0 = 0 by
+        by_cases h : i / 8 < (n.toNat + 7) / 8
+        · rw [show ∀ (b : ByteArray) (j : Nat), b[j]? = b.data[j]? from fun _ _ => (Option.map_inj_right fun _ _ a => a).mp rfl]; simp [h]
+        · rw [show ∀ (b : ByteArray) (j : Nat), b[j]? = b.data[j]? from fun _ _ => (Option.map_inj_right fun _ _ a => a).mp rfl]; simp [h]]
+      simp
+    simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .bit _ 0 (by simp [Scan.Kind.avail, ByteArray.size]; omega) fun i _ => ?_
+    simp [Order.keyAt, Order.rank, Scan.Kind.bitsAt, hz, Column.idAt, Column.resAt]
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .bit _ 0 (by simp only [Scan.Kind.avail]; omega) fun i _ => ?_
+    simp only [Order.keyAt, Order.rank, Scan.Kind.bitsAt, idAt_one]
+    cases Column.bitAt gid i <;> rfl
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hl (by decide) (by decide)
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hl (by decide) (by decide)
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    refine hk .u8 _ 0 (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega) fun i _ => ?_
+    rw [show (8 : Nat) = 8 * 1 from rfl, idAt_lane gid (by decide)]; rfl
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    by_cases hc : 2 ^ 15 < ng
+    · simp only [hc, decide_true, Bool.and_true, Bool.or_false, ↓reduceIte]; exact hl (by decide) (by decide)
+    · simp only [hc, decide_false, Bool.and_false, Bool.false_eq_true, ↓reduceIte]
+      exact hk .i16 _ (2 ^ 15) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+        (hx 2 15 (by decide) rfl rfl (by omega))
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    by_cases hc : 2 ^ 31 < ng
+    · simp only [hc, decide_true, Bool.and_true, Bool.or_true, ↓reduceIte]; exact hl (by decide) (by decide)
+    · simp only [hc, decide_false, Bool.and_false, Bool.false_eq_true, ↓reduceIte]
+      exact hk .i32 _ (2 ^ 31) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+        (hx 4 31 (by decide) rfl rfl (by omega))
+  · simp (config := {decide := true}) only [Code.ofLane, Code.grade, Code.kind, laneKind, ↓reduceIte]
+    exact hk .i64 _ (2 ^ 63) (by simp only [Scan.Kind.avail, Scan.Kind.width]; omega)
+      (hx 8 63 (by decide) rfl rfl hng)
+
+#print axioms grade_ofIds
 #print axioms flatMap_replicate_get
 #print axioms expand_idx
 #print axioms expand_rank
