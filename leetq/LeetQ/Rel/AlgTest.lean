@@ -705,5 +705,36 @@ end Checks
 #print axioms injective
 #print axioms surjective
 
+/-! ## A row tagged to a side of no values: the side picked at a miss reads `Obj.dflt` at every depth -/
+
+section PickMiss
+
+private def r0 {A : Obj} (p : Part A) : Option A.El := if h : 0 < p.1.toNat then some (p.2.row ⟨0, h⟩) else none
+private def i0 : ByteArray := packLongs [0]
+private def bF : Arr .boolean 1 := Arr.mk (.bits (ByteArray.mk #[0])) (by wf_lit)
+private def l0 : Arr .long 1 := Arr.mk (.bytes <| packLongs [0]) (by wf_lit)
+private def l1 : Arr .long 1 := Arr.mk (.bytes <| packLongs [1]) (by wf_lit)
+private def l5 : Arr .long 1 := Arr.mk (.bytes <| packLongs [5]) (by wf_lit)
+private def l7 : Arr .long 1 := Arr.mk (.bytes <| packLongs [7]) (by wf_lit)
+private def l9 : Arr .long 1 := Arr.mk (.bytes <| packLongs [9]) (by wf_lit)
+-- T1: the row tagged left, the left side of no values
+private def T1 : Vals (.sum .long .long) 1 := ⟨0, 1, bF, l5, emptyArr .long, l9⟩
+#guard r0 (Vals.pickPart _ T1 i0) == some (T1.row ⟨0, by simp⟩)
+-- T2: the left side (no rows) a sum holding a dead left value 7
+private def inner : Vals (.sum .long .long) 0 := ⟨1, 0, emptyArr .boolean, emptyArr .long, l7, emptyArr .long⟩
+private def T2 : Vals (.sum (.sum .long .long) .long) 1 := ⟨0, 1, bF, l0, inner, l9⟩
+#guard r0 (Vals.pickPart _ T2 i0) == some (T2.row ⟨0, by simp⟩)
+-- T3: the left side (no rows) an array whose payload holds a dead 7
+private def innerA : Vals (.arr .long) 0 := ⟨1, emptyArr .long, emptyArr .long, l7⟩
+private def T3 : Vals (.sum (.arr .long) .long) 1 := ⟨0, 1, bF, l0, innerA, l9⟩
+#guard r0 (Vals.pickPart _ T3 i0) == some (T3.row ⟨0, by simp⟩)
+-- T4: the left side a symbol of no values
+private def T4 : Vals (.sum (.atom .symbol) .long) 1 := ⟨0, 1, bF, l0, emptyArr .symbol, l9⟩
+#guard r0 (Vals.pickPart _ T4 i0) == some (T4.row ⟨0, by simp⟩)
+-- T5: an array row whose payload is T2
+private def T5 : Vals (.arr (.sum (.sum .long .long) .long)) 1 := ⟨1, l0, l1, T2⟩
+#guard r0 (Vals.pickPart _ T5 i0) == some (T5.row ⟨0, by simp⟩)
+
+end PickMiss
 
 end LeetQ.Rel.Alg
