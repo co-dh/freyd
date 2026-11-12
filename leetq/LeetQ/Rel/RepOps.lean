@@ -482,23 +482,15 @@ local notation "vp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, R
 -- the joint pair codes `pairs #v[R, S]` faithful and well formed
 set_option hygiene false in
 local notation "pairsOK(" R ", " S ")" => codesOK(pairs #v[R, S], pcs(R, S))
--- what `codes_prod_faithful_wf` takes to conclude `pairsOK`: the keys' and the values' codes, one lane each, the
--- summed count, and `pairCode` of the two laid end to end
+-- what `codes_prod_faithful_wf` takes to conclude `pairsOK`: the keys' and the values' codes, one lane each, and
+-- the summed count
 set_option hygiene false in
 local notation "partsOK(" R ", " S ")" =>
   codesOK(Obj.codes A kp(R, S), kp(R, S)) ∧
   (∀ {k l : Nat} (hk : k < 2) (hl : l < 2), ((Obj.codes A kp(R, S))[k]'hk).w = ((Obj.codes A kp(R, S))[l]'hl).w) ∧
   codesOK(Obj.codes B vp(R, S), vp(R, S)) ∧
   (∀ {k l : Nat} (hk : k < 2) (hl : l < 2), ((Obj.codes B vp(R, S))[k]'hk).w = ((Obj.codes B vp(R, S))[l]'hl).w) ∧
-  ((pcs(R, S)).toList.map (·.1.toNat)).sum < USize.size ∧
-  (let X := Code.cat (Obj.codes A kp(R, S)).toArray
-   let Y := Code.cat (Obj.codes B vp(R, S)).toArray
-   let c := (pairCode false X Y).1
-   ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = X.n ∧
-     c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-     (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-   ∀ i < X.n.toNat, ∀ j < X.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
-     Column.idAt X.b X.w i = Column.idAt X.b X.w j ∧ Column.idAt Y.b Y.w i = Column.idAt Y.b Y.w j))
+  ((pcs(R, S)).toList.map (·.1.toNat)).sum < USize.size
 -- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them, and the rest, as `−` does
 set_option hygiene false in
 local notation "hits" => whereBits R.n (((pairs #v[R, S])[0]'(by decide)).member ((pairs #v[R, S])[1]'(by decide)))
@@ -663,10 +655,10 @@ theorem vec2_ext {α : Type} {v w : Vector α 2} (h0 : v[0] = w[0]) (h1 : v[1] =
 
 /-- **The joint pair codes from the parts'**: `codes_prod_faithful_wf` at the two relations' pairs. -/
 theorem pairsOK_of_parts (R S : Rel A B) (h : partsOK(R, S)) : pairsOK(R, S) := by
-  obtain ⟨hfa, hla, hfb, hlb, hN, hP⟩ := h
+  obtain ⟨hfa, hla, hfb, hlb, hN⟩ := h
   have H := (codes_prod_faithful_wf pcs(R, S) (pa := kp(R, S)) (pb := vp(R, S))
     (vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl))
-    (vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl)) rfl rfl hfa hla hfb hlb hN hP).1
+    (vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl)) rfl rfl hfa hla hfb hlb hN).1
   rw [pairs_eq_codes, show (#v[R, S].map fun R => (⟨R.n, (R.key, R.val)⟩ : Part (.prod A B))) = pcs(R, S) from
     vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl)]
   exact H
