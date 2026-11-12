@@ -478,6 +478,175 @@ theorem packIds_cap {w : Nat} (hw : Lane w) (n : Nat) (f : Nat → Nat) :
        rw [if_neg (by decide), if_neg (by decide), if_neg (by decide), fold_push_size]
        simp only [ByteArray.emptyWithCapacity, ByteArray.size]; omega)
 
+/-- An id below `n` that fits 64 bits fits the width `idWidthOf n` packs it at, whatever `n` is: past `2 ^ 64`
+    the lane is 64 bits. -/
+theorem lt_idWidthOf_64 {x n : Nat} (hx : x < n) (h64 : x < 2 ^ 64) : x < 2 ^ Column.idWidthOf n := by
+  by_cases hn : n ≤ 2 ^ 64
+  · exact Verify.lt_idWidthOf hx hn
+  · have hl : 64 ≤ Nat.log2 (n - 1) := (Nat.le_log2 (by omega)).2 (by omega)
+    have h : Column.idWidthOf n = 64 := by
+      simp only [Column.idWidthOf, Column.widthFor, if_neg (show n - 1 ≠ 0 by omega), Column.laneWidth]
+      repeat' rw [if_neg (by omega)]
+    rw [h]; exact h64
+
+/-- **`internSyms` names an entry for every element**, with no bound on the count: the element's symbol is
+    among the distinct ones, so `findSymScalar` finds it below the dictionary's count. -/
+theorem internSyms_lt (blob : ByteArray) (offs : Array Nat) {y : Nat} (hy : y < offs.size - 1) :
+    Column.idAt (Order.internSyms blob offs).2.2 (Column.idWidth (Order.internSyms blob offs).2.1) y <
+      (Order.internSyms blob offs).2.1.size - 1 := by
+  have hD := Verify.distinctSyms_eraseDups blob offs
+  have e : Order.internSyms blob offs = ((Order.distinctSyms blob offs).1, (Order.distinctSyms blob offs).2,
+      Column.packIds (Column.idWidth (Order.distinctSyms blob offs).2) (offs.size - 1) fun j =>
+        (findSymScalar (Order.distinctSyms blob offs).1 (Order.distinctSyms blob offs).2
+          (Column.symKey blob offs j)).toNat) := rfl
+  rw [e]
+  generalize Order.distinctSyms blob offs = r at hD ⊢
+  obtain ⟨db, dof⟩ := r
+  dsimp only [Verify.symsOf] at hD ⊢
+  simp only [← Verify.firstsOf_eraseDups] at hD
+  have hmem : Verify.symAt blob offs y ∈ (List.range (dof.size - 1)).map (Verify.symAt db dof) := by
+    rw [hD]; exact Verify.mem_firstsOf _ hy
+  obtain ⟨j, hj, hje⟩ := List.mem_map.1 hmem
+  have hv : (findSymScalar db dof (Column.symKey blob offs y)).toNat < dof.size - 1 := by
+    unfold findSymScalar
+    dsimp only
+    cases hf : (List.range (dof.size - 1)).find?
+        (fun i => (Column.symKey db dof i).data == (Column.symKey blob offs y).data) with
+    | none =>
+      exfalso
+      exact List.find?_eq_none.1 hf j hj ((Verify.arr_beq_iff _ _).2 (Array.toList_inj.1 hje))
+    | some j' =>
+      have := List.mem_range.1 (List.mem_of_find?_eq_some hf)
+      rw [Option.getD_some]
+      refine Nat.lt_of_le_of_lt (show j'.toUSize.toNat ≤ j' from ?_) this
+      rw [show j'.toUSize = USize.ofNat j' from rfl, USize.toNat_ofNat']
+      exact Nat.mod_le _ _
+  have hl := lt_idWidthOf_64 hv (Verify.usize_lt _)
+  rw [Column.idWidth] at ⊢
+  rw [Column.idWidthOf] at hl ⊢
+  rw [Verify.idAt_packIds (Verify.laneWidth_cases _) hy hl]
+  exact hv
+
+/-- **`concatIds` writes ids below `D`** where every part's ids, read through its map, are. -/
+theorem concatIds_lt {w D : Nat} (hw : Lane w) (cs : Array USize) (ws : Array Nat) (maps parts : Array ByteArray)
+    (hm : cs.size ≤ parts.size)
+    (h : ∀ k (hk : k < cs.size), ∀ i < cs[k].toNat, Column.idAt maps[k]! w (Column.idAt parts[k]! ws[k]! i) < D) :
+    ∀ i < (cs.toList.map USize.toNat).sum,
+      Column.idAt (concatIds w.toUSize (countBytes cs) ws maps parts) w i < D := by
+  intro i hi
+  have hw64 : w ≤ 64 := by rcases hw with h | h | h | h | h | h | h | h <;> omega
+  simp only [concatIds]
+  rw [toUSize_toNat (lt_usize hw64)]
+  have hsz := flatMap_counts cs parts.size hm fun k i => Column.idAt maps[k]! w (Column.idAt parts[k]! ws[k]! i)
+  generalize hids : (Array.range (min ((countBytes cs).size / 8) parts.size)).flatMap (fun k =>
+    (Array.range (Column.bitsAt (countBytes cs) (8 * k) 8).toNat).map fun i =>
+      Column.idAt maps[k]! w (Column.idAt parts[k]! ws[k]! i)) = ids at hsz ⊢
+  have hil : i < ids.size := by rw [hsz]; exact hi
+  have hmem : ids[i]! ∈ ids := by rw [getElem!_pos ids i hil]; exact Array.getElem_mem hil
+  rw [← hids] at hmem
+  obtain ⟨k, hk, hx⟩ := Array.mem_flatMap.1 hmem
+  obtain ⟨x, hx, he⟩ := Array.mem_map.1 hx
+  rw [hids] at he
+  rw [Array.mem_range] at hk hx
+  have hk' : k < cs.size := by rw [countBytes_size, Nat.mul_div_cancel_left _ (by decide)] at hk; omega
+  rw [countBytes_get cs k hk', USize.toNat_toUInt64] at hx
+  have hb : ids[i]! < 2 ^ w := by rw [← he]; exact Verify.idAt_lt _ _ _ hw64
+  rw [Verify.idAt_packIds hw hil hb, ← he]
+  exact h k hk' x hx
+
+/-- A fold that pushes the last entry plus the next part's count keeps every entry it was handed. -/
+private theorem bases_keep (g : Array Nat → ByteArray × Array Nat → Array Nat)
+    (hg : ∀ acc x, g acc x = acc.push (acc[acc.size - 1]! + x.2.size - 1)) (l : List (ByteArray × Array Nat)) :
+    ∀ (acc : Array Nat) (i : Nat), i < acc.size → (l.foldl g acc)[i]! = acc[i]! := by
+  induction l with
+  | nil => intro acc i _; rfl
+  | cons a l ih =>
+    intro acc i hi
+    simp only [List.foldl]
+    rw [ih _ i (by rw [hg, Array.size_push]; omega), hg, getElem!_pos _ i (by rw [Array.size_push]; omega),
+      getElem!_pos acc i hi, Array.getElem_push_lt hi]
+
+/-- `internConcat`'s bases: part `k` starts where the parts before it end, so its entries end by the total. -/
+private theorem bases_bound (g : Array Nat → ByteArray × Array Nat → Array Nat)
+    (hg : ∀ acc x, g acc x = acc.push (acc[acc.size - 1]! + x.2.size - 1)) (l : List (ByteArray × Array Nat))
+    (hl : ∀ x ∈ l, 0 < x.2.size) :
+    ∀ (acc : Array Nat), 0 < acc.size → ∀ k (hk : k < l.length),
+      (l.foldl g acc)[acc.size - 1 + k]! + (l[k].2.size - 1) ≤ acc[acc.size - 1]! + (l.map (·.2.size - 1)).sum := by
+  induction l with
+  | nil => intro _ _ k hk; exact absurd hk (Nat.not_lt_zero _)
+  | cons a l ih =>
+    intro acc hacc k hk
+    have ha := hl a (List.mem_cons_self ..)
+    have hpush : (acc.push (acc[acc.size - 1]! + a.2.size - 1))[acc.size]! = acc[acc.size - 1]! + a.2.size - 1 := by
+      rw [getElem!_pos _ _ (by rw [Array.size_push]; omega), Array.getElem_push_eq]
+    simp only [List.foldl, List.map_cons, List.sum_cons]
+    cases k with
+    | zero =>
+      rw [Nat.add_zero, bases_keep g hg l _ _ (by rw [hg, Array.size_push]; omega), hg,
+        getElem!_pos _ _ (by rw [Array.size_push]; omega), Array.getElem_push_lt (by omega),
+        ← getElem!_pos acc _ (by omega), List.getElem_cons_zero]
+      omega
+    | succ k =>
+      have := ih (fun x hx => hl x (List.mem_cons_of_mem _ hx)) (g acc a) (by rw [hg, Array.size_push]; omega) k
+        (by simpa using hk)
+      rw [hg, Array.size_push, Nat.add_sub_cancel, hpush] at this
+      rw [show acc.size - 1 + (k + 1) = acc.size + k by omega, List.getElem_cons_succ, hg]
+      omega
+
+/-- `concatSyms`' fold grows its starts by each part's count. -/
+private theorem concat_size (g : ByteArray × Array Nat → ByteArray × Array Nat → ByteArray × Array Nat)
+    (hg : ∀ q x, (g q x).2.size = q.2.size + (x.2.size - 1)) (l : List (ByteArray × Array Nat))
+    (p : ByteArray × Array Nat) : (l.foldl g p).2.size = p.2.size + (l.map (·.2.size - 1)).sum :=
+  foldl_sum (fun q => q.2.size) g (fun x => x.2.size - 1) hg l p
+
+/-- `internConcat`'s part `k` starts at `bases[k]` and its entries end by the joined dictionary's count. -/
+private theorem bases_le (qs : Array (USize × ByteArray × Array Nat × ByteArray)) (hq : ∀ p ∈ qs, 0 < p.2.2.1.size)
+    (f : USize × ByteArray × Array Nat × ByteArray → ByteArray × Array Nat) (hf : ∀ p, f p = (p.2.1, p.2.2.1))
+    (g : Array Nat → ByteArray × Array Nat → Array Nat)
+    (hg : ∀ acc x, g acc x = acc.push (acc[acc.size - 1]! + x.2.size - 1))
+    (g' : ByteArray × Array Nat → ByteArray × Array Nat → ByteArray × Array Nat)
+    (hg' : ∀ q x, (g' q x).2.size = q.2.size + (x.2.size - 1)) (k : Nat) (hk : k < qs.size) :
+    ((qs.map f).foldl g #[0])[k]! + (qs[k].2.2.1.size - 1) ≤
+      ((qs.map f).foldl g' (ByteArray.empty, #[0])).2.size - 1 := by
+  have hl : ∀ y ∈ (qs.map f).toList, 0 < y.2.size := by
+    intro y hy
+    simp only [Array.toList_map, List.mem_map] at hy
+    obtain ⟨p, hp, rfl⟩ := hy
+    rw [hf]; exact hq p (Array.mem_def.2 hp)
+  have hb := bases_bound g hg _ hl #[0] (by decide) k (by simpa using hk)
+  have hc := concat_size g' hg' (qs.map f).toList (ByteArray.empty, #[0])
+  rw [Array.foldl_toList] at hb hc
+  have e : ((qs.map f).toList[k]'(by simpa using hk)).2.size = qs[k].2.2.1.size := by simp [hf]
+  have h0 : (#[0] : Array Nat)[(#[0] : Array Nat).size - 1]! = 0 := rfl
+  have h1 : (#[0] : Array Nat).size - 1 + k = k := by simp
+  have h2 : (ByteArray.empty, (#[0] : Array Nat)).2.size = 1 := rfl
+  rw [e, h1, h0] at hb
+  rw [h2] at hc
+  omega
+
+/-- **`internConcat` writes ids below its dictionary's count**, on parts whose ids are below theirs. -/
+theorem internConcat_ids_lt (qs : Array (USize × ByteArray × Array Nat × ByteArray))
+    (hq : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
+    ∀ i < qs.foldl (fun s p => s + p.1.toNat) 0,
+      Column.idAt (internConcat qs).2.2 (Column.idWidth (internConcat qs).2.1) i < (internConcat qs).2.1.size - 1 := by
+  intro i hi
+  unfold internConcat
+  simp only [concatSyms]
+  refine concatIds_lt (lane_idWidth _) _ _ _ _ (by simp) ?_ i (by rw [foldl_toNat] at hi; exact hi)
+  intro k hk x hx
+  simp only [Array.size_map] at hk
+  have hW : ∀ o : Array Nat, Column.idWidth o ≤ 64 := fun o => by
+    rcases lane_idWidth o with h | h | h | h | h | h | h | h <;> omega
+  simp (disch := simp [hk]) only [getElem!_pos, Array.getElem_map, Array.getElem_range]
+  obtain ⟨-, hid⟩ := hq qs[k] (Array.getElem_mem hk)
+  have hxo := hid x (by simpa using hx)
+  rw [Verify.idAt_packIds (lane_idWidth _) hxo]
+  rotate_left
+  · exact Verify.idAt_lt _ _ _ (hW _)
+  refine internSyms_lt _ _ (Nat.lt_of_lt_of_le (Nat.add_lt_add_left hxo _) ?_)
+  exact bases_le qs (fun p hp => (hq p hp).1) _ (fun _ => rfl) _ (fun _ _ => rfl) _ (fun q x => by simp) k hk
+
 /-- `internConcat` answers its joined dictionary and `concatIds` over every part's count and ids. -/
 private theorem internConcat_eq (qs : Array (USize × ByteArray × Array Nat × ByteArray)) :
     ∃ db dbo ws maps, internConcat qs =
@@ -503,8 +672,12 @@ private theorem internConcat_dict (qs : Array (USize × ByteArray × Array Nat �
 
 /-- `internConcat` of parts holds their summed count, over a dictionary ending at its blob. -/
 theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}
-    (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0) :
+    (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0)
+    (hq : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
     Enc.WF .symbol c (.enum (internConcat qs).1 (internConcat qs).2.1 (internConcat qs).2.2) := by
+  have hi := internConcat_ids_lt qs hq
+  rw [← hc] at hi
   obtain ⟨b, o, h1, h2⟩ := internConcat_dict qs
   have hs := Verify.symsWF_internSyms b o
   have hd : SymsWF (internConcat qs).1 (internConcat qs).2.1 := by rw [h1, h2]; exact hs
@@ -517,8 +690,8 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
       (Verify.symAt (Order.distinctSyms b o).1 (Order.distinctSyms b o).2)).Nodup
     rw [hD]; exact Verify.nodup_firsts ..
   obtain ⟨db, dbo, ws, maps, h⟩ := internConcat_eq qs
-  rw [h] at hd hn ⊢
-  refine ⟨?_, hd, hn⟩
+  rw [h] at hd hn hi ⊢
+  refine ⟨?_, hd, hi, hn⟩
   simp only [concatIds]
   rw [hc, toUSize_toNat (lt_usize (by rcases lane_idWidth dbo with h | h | h | h | h | h | h | h <;> omega))]
   have hsz := flatMap_counts (qs.map (·.1)) (qs.map (·.2.2.2)).size (by simp)
@@ -528,18 +701,44 @@ theorem internConcat_wf (qs : Array (USize × ByteArray × Array Nat × ByteArra
 
 /-- The interned join `concatEnum` answers after `hashConcat`, whichever way that goes. -/
 private theorem hashJoin_wf (qs : Array (USize × ByteArray × Array Nat × ByteArray)) {c : USize}
-    (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0) :
+    (hc : c.toNat = qs.foldl (fun s p => s + p.1.toNat) 0)
+    (hq : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
     Enc.WF .symbol c (match hashConcat qs with
       | .ok (db, dbo, ids) => .enum db dbo ids
       | .error ps => match internConcat ps with | (db, dbo, ids) => .enum db dbo ids) := by
   split
   · rename_i db dbo ids heq
-    have := internConcat_wf qs hc
+    have := internConcat_wf qs hc hq
     rw [← hashConcat_ok heq] at this
     exact this
   · rename_i r heq
     obtain rfl := hashConcat_error heq
-    exact internConcat_wf r hc
+    exact internConcat_wf r hc hq
+
+/-- A `Nat.fold` that pushes one start a step pushes one per step. -/
+private theorem fold_snd_size {N : Nat} (f : (i : Nat) → i < N → ByteArray × Array Nat → ByteArray × Array Nat)
+    (hf : ∀ i h p, (f i h p).2.size = p.2.size + 1) (init : ByteArray × Array Nat) :
+    (Nat.fold N f init).2.size = init.2.size + N := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    rw [Nat.fold_succ, hf, ih (fun i h => f i (by omega)) (fun i h p => hf i _ p)]
+    omega
+
+/-- `fewSyms` answers one entry per element. -/
+theorem fewSyms_size {n : USize} {d : ByteArray} {o : Array Nat} {ids b : ByteArray} {bo : Array Nat}
+    (h : fewSyms n (.enum d o ids) = some (b, bo)) : bo.size = n.toNat + 1 := by
+  unfold fewSyms at h
+  dsimp only at h
+  by_cases hc : 8 * n.toNat < o.size - 1
+  · rw [if_pos hc, Option.some.injEq] at h
+    have := congrArg (fun p : ByteArray × Array Nat => p.2.size) h
+    simp only at this
+    rw [← this, fold_snd_size _ (fun i _ p => by simp)]
+    show 1 + n.toNat = n.toNat + 1
+    omega
+  · rw [if_neg hc] at h; cases h
 
 /-! ## The `foR` branch: `concatFoR` -/
 
@@ -677,11 +876,38 @@ theorem concatFoR_nblk {w : Nat} {ns : Array USize} {ms ps : Array ByteArray} {m
 /-- `concatEnum` answers an interned symbol vector whose ids count it, where the parts' counts, summed,
     fit a `USize`. -/
 theorem concatEnum_wf (ps : Array (USize × ByteArray × Array Nat × ByteArray))
-    (hN : ps.foldl (fun s p => s + p.1.toNat) 0 < USize.size) :
+    (hN : ps.foldl (fun s p => s + p.1.toNat) 0 < USize.size)
+    (hw : ∀ p ∈ ps, 0 < p.2.2.1.size ∧
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1) :
     ∃ n e, concatEnum ps = .vector .symbol n e none ∧ Enc.WF .symbol n e := by
   unfold concatEnum
   dsimp only
   generalize hq : Array.mapIdx _ ps = qs
+  have hP : ∀ p ∈ qs, 0 < p.2.2.1.size ∧
+      ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1 := by
+    intro q hmem
+    rw [← hq] at hmem
+    obtain ⟨i, hi, rfl⟩ := Array.mem_iff_getElem.1 hmem
+    have hi' : i < ps.size := by simpa using hi
+    have hp := hw ps[i] (Array.getElem_mem hi')
+    simp only [Array.getElem_mapIdx]
+    generalize ps[i] = p at hp ⊢
+    obtain ⟨n, d, o, ids⟩ := p
+    dsimp only at hp ⊢
+    by_cases h0 : (i == 0) = true
+    · simp only [h0, if_true]; exact hp
+    · simp only [h0, if_false, Bool.false_eq_true]
+      cases hf : fewSyms n (.enum d o ids) with
+      | none => exact hp
+      | some r =>
+        obtain ⟨b, bo⟩ := r
+        have hs := fewSyms_size hf
+        dsimp only
+        refine ⟨by omega, fun j hj => ?_⟩
+        rw [Verify.idAt_packIds (lane_idWidth _) hj]
+        · show j < bo.size - 1
+          omega
+        · exact lt_idWidthOf_64 (n := bo.size - 1) (by omega) (Nat.lt_trans hj (Verify.usize_lt n))
   have hk : qs.foldl (fun s p => s + p.1.toNat) 0 < USize.size := by
     have hmap : qs.map (·.1) = ps.map (·.1) := by
       rw [← hq]
@@ -693,7 +919,7 @@ theorem concatEnum_wf (ps : Array (USize × ByteArray × Array Nat × ByteArray)
     rw [foldl_toNat, hmap, ← foldl_toNat]; exact hN
   refine ⟨_, _, rfl, ?_⟩
   rw [needSize_fits hk]
-  exact hashJoin_wf qs (toUSize_toNat hk)
+  exact hashJoin_wf qs (toUSize_toNat hk) hP
 
 /-- An `Option` pass whose every answer at a member carries that member's key keeps the keys. -/
 private theorem mapM_key {α β γ : Type} {f : α → Option β} {key : α → γ} {key' : β → γ} {cs : Array α}
@@ -826,7 +1052,32 @@ theorem razeColumn_wf {t : QAtomicType} {cs : Array (USize × Enc)}
     · split at hv
       · rename_i ps hps
         cases hv
-        refine concatEnum_wf ps ?_
+        refine concatEnum_wf ps ?_ ?_
+        rotate_left
+        · have hP := mapM_key (key' := fun p : USize × ByteArray × Array Nat × ByteArray => decide (0 < p.2.2.1.size ∧
+              ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1))
+            (key := fun _ : USize × Enc => true) (fun c hc x hx => by
+              rcases c with ⟨k, e⟩
+              have hw := h _ hc
+              cases e with
+              | syms b o =>
+                simp only [Column.intern] at hx
+                cases hx
+                simp only [Enc.WF] at hw
+                exact decide_eq_true ⟨(Verify.symsWF_internSyms b o).pos, fun i hi => internSyms_lt b o (by simp only at hi; omega)⟩
+              | enum d o ids =>
+                simp only [Column.intern] at hx
+                cases hx
+                simp only [Enc.WF] at hw
+                exact decide_eq_true ⟨hw.2.1.pos, hw.2.2.1⟩
+              | _ => simp [Column.intern] at hx) hps
+          intro p hp
+          have hm := Array.mem_map_of_mem (f := fun p : USize × ByteArray × Array Nat × ByteArray =>
+            decide (0 < p.2.2.1.size ∧
+              ∀ i < p.1.toNat, Column.idAt p.2.2.2 (Column.idWidth p.2.2.1) i < p.2.2.1.size - 1)) hp
+          rw [hP] at hm
+          obtain ⟨_, _, he⟩ := Array.mem_map.1 hm
+          exact of_decide_eq_true he.symm
         have hk := mapM_key (key' := fun p : USize × ByteArray × Array Nat × ByteArray => p.1)
           (key := fun c : USize × Enc => c.1) (fun c _ x hx => by
             rcases c with ⟨k, e⟩
