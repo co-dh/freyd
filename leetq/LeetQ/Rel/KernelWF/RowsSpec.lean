@@ -152,6 +152,20 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
     ps.length < 2 ^ 63 ∧ l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
       Vals.PickFits b y (side true r.toNat)
 
+/-- **An atom side fits outright** where every picked row is below the count: no row misses. -/
+theorem pickFits_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {ps : List Nat}
+    (h : ∀ k ∈ ps, k < n.toNat) : Vals.PickFits (.atom t) x ps := by
+  unfold Vals.PickFits
+  rintro ⟨k, hk, hle⟩
+  exact absurd (h k hk) (Nat.not_lt.2 hle)
+
+/-- **A product side fits** where both components do — with `pickFits_atom`, a side of atoms and products
+    fits outright at rows below its count. -/
+theorem pickFits_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n) {ps : List Nat}
+    (h1 : Vals.PickFits a x.1 ps) (h2 : Vals.PickFits b x.2 ps) : Vals.PickFits (.prod a b) x ps := by
+  unfold Vals.PickFits
+  exact ⟨h1, h2⟩
+
 /-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
 theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
     (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)

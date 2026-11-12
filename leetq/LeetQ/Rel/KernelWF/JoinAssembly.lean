@@ -432,4 +432,14 @@ theorem join_spec (l r : Code)
 #print axioms zip_runs
 #print axioms sum_filter_classes
 
+/-- **Every pair `join` answers is a row of each side**: a pair `(i, j)` of the list `join_spec` reads
+    `join l r` back as has `i < a`, `j < b`, whatever the matching test `P`. -/
+theorem join_pairs_lt {a b : Nat} {P : Nat → Nat → Bool} {p : Nat × Nat}
+    (hp : p ∈ (List.range a).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)) : p.1 < a ∧ p.2 < b := by
+  simp only [List.mem_flatMap, List.mem_map, List.mem_filter, List.mem_range] at hp
+  obtain ⟨i, hi, j, ⟨hj, -⟩, rfl⟩ := hp
+  exact ⟨hi, hj⟩
+
+#print axioms join_pairs_lt
+
 end LeetQ.Rel.Alg

@@ -7,7 +7,7 @@ import LeetQ.Rel.Rep
 import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
-import LeetQ.Rel.KernelWF.RowsSpec
+import LeetQ.Rel.KernelWF.PickRow
 
 namespace LeetQ.Rel.Rep
 
@@ -20,6 +20,10 @@ set_option hygiene false in
 local notation "jcs" => (#v[⟨R.n, R.val⟩, ⟨S.n, S.key⟩] : Vector (Part _) 2)
 set_option hygiene false in
 local notation "jc" => Obj.codes _ jcs
+-- the pairs `(i, j)` `join` answers, as `join_spec` reads them back: row `i` of `R`, row `j` of `S`, equal codes
+set_option hygiene false in
+local notation "jpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.range S.n.toNat).filter fun j =>
+  Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).map (i, ·))
 
 section Comp
 
@@ -31,7 +35,9 @@ set_option maxHeartbeats 800000 in
     - `hc`, the middle side's joint codes identify rows and are well formed — what `CodesSpec` concludes;
     - `hrn`, `hM`, `hMU`, the counts `join_spec` takes: `S`'s rows and the match count below `2^63`, the
       match count a `USize` (past it `≫` answers `𝟘`);
-    - `hA`, `hC`, `Vals.pick` read back on `R.key` and `S.val` (`pick_row_atom`, `pick_row_prod`). -/
+    - `hA`, `hC`, `Vals.PickFits` of `R.key` at the left rows of the join's pairs and of `S.val` at the
+      right ones, which `pick_row` reads back under; a side of atoms and products fits outright
+      (`pickFits_atom`, `pickFits_prod`, `join_pairs_lt`). -/
 theorem rep_comp (R : Rel A B) (S : Rel B C)
     (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < jcs[k].1.toNat)
         (hj : j < jcs[l].1.toNat),
@@ -46,10 +52,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
     (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
-    (hA : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < R.n.toNat), (Vals.pick A R.key i m h).row q = R.key.row ⟨_, hin⟩)
-    (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S := by
   obtain ⟨hF, hW⟩ := hc
   obtain ⟨hlw, hln, hls, -⟩ := hW (k := 0) (by decide)
@@ -99,10 +102,30 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     · rfl
     · rw [bitsAt_extract _ (by omega), Nat.zero_add]
   -- `pickN` is `pick` at `fit`
+  -- the join's `m` pairs, row by row, are the rows each side is picked at
+  have hzm : (ids (join jc[0] jc[1]).1).zip (ids (join jc[0] jc[1]).2) = (List.range m.toNat).map fun q =>
+      ((Column.bitsAt (join jc[0] jc[1]).1 (q * 8) 8).toNat, (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) := by
+    apply List.ext_getElem
+    · simp only [List.length_zip, List.length_map, List.length_range]
+      rw [← hmJ, len_eq_ids]; exact Nat.min_eq_right hJ
+    · intro q h1 h2; rw [List.getElem_zip, List.getElem_map, List.getElem_range, hids, hids]
+  have hfA : Vals.PickFits A R.key
+      ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat) := by
+    have e : ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q * 8) 8).toNat) =
+        (jpairs).map Prod.fst := by
+      rw [← hZ, hzm, List.map_map]
+      exact List.map_congr_left fun q hq => by simp only [Function.comp_apply, hfit q (List.mem_range.1 hq)]
+    rw [e]; exact hA
+  have hfC : Vals.PickFits C S.val
+      ((List.range m.toNat).map fun q => (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) := by
+    have e : ((List.range m.toNat).map fun q => (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat) =
+        (jpairs).map Prod.snd := by
+      rw [← hZ, hzm, List.map_map]; rfl
+    rw [e]; exact hC
   have hA' : ∀ (h : m.toNat ≤ len (join jc[0] jc[1]).1) (q : Fin m.toNat)
       (hin : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q.1 * 8) 8).toNat < R.n.toNat),
       (Vals.pickN A R.key (join jc[0] jc[1]).1 m h).row q = R.key.row ⟨_, hin⟩ :=
-    fun h q hin => by unfold Vals.pickN; exact hA _ m _ q hin
+    fun h q hin => by unfold Vals.pickN; rw [pick_row A R.key _ m _ hfA q, dif_pos hin]
   simp only [Rel.Holds]
   constructor
   · rintro ⟨q, hqa, hqc⟩
@@ -111,7 +134,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     have hi' : (Column.bitsAt (fit m.toNat (join jc[0] jc[1]).1) (q.1 * 8) 8).toNat < R.n.toNat := by
       rw [hfit q.1 q.2]; exact hi
     rw [hA' _ q hi'] at hqa
-    rw [hC _ _ _ q hj] at hqc
+    rw [pick_row C S.val _ m hmJ hfC q, dif_pos hj] at hqc
     refine ⟨R.val.row ⟨_, hi⟩, ⟨⟨_, hi⟩, ?_, rfl⟩, ⟨_, hj⟩, ?_, hqc⟩
     · rw [← hqa]; exact congrArg R.key.row (Fin.ext (by simp only [hfit q.1 q.2]))
     · exact ((hF (k := 0) (l := 1) (by decide) (by decide) hi hj).1 he.symm).symm
@@ -127,7 +150,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     have hj' : (Column.bitsAt (join jc[0] jc[1]).2 (q * 8) 8).toNat < S.n.toNat := by rw [hp.2]; exact j.2
     refine ⟨⟨q, hq2⟩, ?_, ?_⟩
     · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext (by simp only [hfit q hq2, hp.1]))
-    · rw [hC _ _ _ ⟨q, hq2⟩ hj', ← hjc]; exact congrArg S.val.row (Fin.ext hp.2)
+    · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext hp.2)
 
 /-- `rep_comp` through a boolean middle side: its codes are its bits (`codes_boolean_faithful`/`_wf`). -/
 theorem rep_comp_boolean (R : Rel A (.atom .boolean)) (S : Rel (.atom .boolean) C)
@@ -136,10 +159,7 @@ theorem rep_comp_boolean (R : Rel A (.atom .boolean)) (S : Rel (.atom .boolean) 
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
     (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
-    (hA : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < R.n.toNat), (Vals.pick A R.key i m h).row q = R.key.row ⟨_, hin⟩)
-    (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S :=
   rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_boolean_faithful _ hk hl hi hj,
     fun hk => have h := codes_boolean_wf _ hk; ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩ hrn hM hMU hA hC
@@ -154,10 +174,7 @@ theorem rep_comp_long {t : QAtomicType} (ht : orderKind t = some .i64) (R : Rel 
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
     (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
-    (hA : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < R.n.toNat), (Vals.pick A R.key i m h).row q = R.key.row ⟨_, hin⟩)
-    (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S :=
   rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_long_faithful ht _ hro hk hl hi hj,
     fun hk => codes_long_wf ht _ hro hk⟩ hrn hM hMU hA hC
@@ -184,10 +201,7 @@ theorem rep_comp_small_int {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind 
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < 2 ^ 63)
     (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt jc[1].b jc[1].w j == Column.idAt jc[0].b jc[0].w i).length).sum < USize.size)
-    (hA : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < R.n.toNat), (Vals.pick A R.key i m h).row q = R.key.row ⟨_, hin⟩)
-    (hC : ∀ (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
-      (hin : (Column.bitsAt i (q.1 * 8) 8).toNat < S.n.toNat), (Vals.pick C S.val i m h).row q = S.val.row ⟨_, hin⟩) :
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S :=
   have hd : ∀ k (hk : k < 2), ∃ b, (jcs)[k].2.enc = .bytes b := fun k hk => by
     match k, hk with | 0, _ => exact hRv | 1, _ => exact hSk
