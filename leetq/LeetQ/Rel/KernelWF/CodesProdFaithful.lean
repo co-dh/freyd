@@ -11,8 +11,8 @@ namespace LeetQ.Rel.Alg
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
 /-- **A product side's codes are faithful and well formed, on one lane**, given its two columns' are, one
-    lane each, and `pairCode` of the columns laid end to end is (`pairCode_grouped` where it groups); the
-    parts' summed count a `USize`. -/
+    lane each, the parts' summed count a `USize`: `pairCode_spec` of the columns laid end to end
+    (`cat_parts`), cut back. -/
 theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a b)) p)
     {pa : Vector (Part a) p} {pb : Vector (Part b) p} {ca cb : Vector Code p}
     (hpa : cs.map (fun c => (⟨c.1, c.2.1⟩ : Part a)) = pa) (hpb : cs.map (fun c => (⟨c.1, c.2.2⟩ : Part b)) = pb)
@@ -39,15 +39,7 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
         ((cb[k]'hk).w < 8 → (cb[k]'hk).card < USize.size ∧
           ∀ i < (cb[k]'hk).n.toNat, Column.idAt (cb[k]'hk).b (cb[k]'hk).w i < (cb[k]'hk).card))
     (hlb : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (cb[k]'hk).w = (cb[l]'hl).w)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
-    (hP : let A := Code.cat ca.toArray
-      let B := Code.cat cb.toArray
-      let c := (pairCode false A B).1
-      ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = A.n ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-      ∀ i < A.n.toNat, ∀ j < A.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
-        Column.idAt A.b A.w i = Column.idAt A.b A.w j ∧ Column.idAt B.b B.w i = Column.idAt B.b B.w j)) :
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) :
     ((∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat)
         (hj : j < (cs[l]'hl).1.toNat),
         Column.idAt ((Obj.codes (.prod a b) cs)[k]'hk).b ((Obj.codes (.prod a b) cs)[k]'hk).w i =
@@ -86,46 +78,49 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
       (cs.toList.map (·.1.toNat)).sum := fun k hk i hi => by
     have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
     simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this; omega
+  -- every claim names a part, so with none there is nothing to show
+  rcases Nat.eq_zero_or_pos p with rfl | hp
+  · exact ⟨⟨fun {_ _} hk => absurd hk (Nat.not_lt_zero _), fun {_} hk => absurd hk (Nat.not_lt_zero _)⟩,
+      fun {_ _} hk => absurd hk (Nat.not_lt_zero _)⟩
+  have catA := cat_parts ca hp hla
+    (fun hk => ⟨(hwa hk).1, (hwa hk).2.2.1, fun h => ((hwa hk).2.2.2 h).2⟩) (by rw [hLa]; exact hN)
+  have catB := cat_parts cb hp hlb
+    (fun hk => ⟨(hwb hk).1, (hwb hk).2.2.1, fun h => ((hwb hk).2.2.2 h).2⟩) (by rw [hLb]; exact hN)
+  have hBA : (Code.cat cb.toArray).n = (Code.cat ca.toArray).n :=
+    USize.toNat_inj.1 (by rw [catB.2.1, catA.2.1, hLb, hLa])
+  have hP := pairCode_spec false (Code.cat ca.toArray) (Code.cat cb.toArray) hBA catA.1 catB.1
   dsimp only at hP
   obtain ⟨⟨hRw, hRn, hRs, hRid⟩, hRiff⟩ := hP
-  -- every claim names a part, so there is one
-  have catA := fun hp : 0 < p => cat_parts ca hp hla
-    (fun hk => ⟨(hwa hk).1, (hwa hk).2.2.1, fun h => ((hwa hk).2.2.2 h).2⟩) (by rw [hLa]; exact hN)
-  have catB := fun hp : 0 < p => cat_parts cb hp hlb
-    (fun hk => ⟨(hwb hk).1, (hwb hk).2.2.1, fun h => ((hwb hk).2.2.2 h).2⟩) (by rw [hLb]; exact hN)
-  have hs : 0 < p → ((ca.map (·.n)).toList.map (·.toNat)).sum =
-      (pairCode false (Code.cat ca.toArray) (Code.cat cb.toArray)).1.n.toNat := fun hp => by
-    rw [hLn, hRn, (catA hp).1, hLa]
+  have hs : ((ca.map (·.n)).toList.map (·.toNat)).sum =
+      (pairCode false (Code.cat ca.toArray) (Code.cat cb.toArray)).1.n.toNat := by
+    rw [hLn, hRn, catA.2.1, hLa]
   have hab : ∀ k, ((cb.toList.take k).map (·.n.toNat)).sum = ((ca.toList.take k).map (·.n.toNat)).sum :=
     fun k => (hO _ k hLb).trans (hO _ k hLa).symm
   refine ⟨⟨fun {k l} hk hl i j hi hj => ?_, fun {k} hk => ?_⟩, fun {k l} hk hl => ?_⟩
-  · have hp : 0 < p := by omega
-    obtain ⟨hwk, -, -, hck⟩ := cut_get _ (ca.map (·.n)) hRw (hs hp) hk
-    obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (ca.map (·.n)) hRw (hs hp) hl
+  · obtain ⟨hwk, -, -, hck⟩ := cut_get _ (ca.map (·.n)) hRw hs hk
+    obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (ca.map (·.n)) hRw hs hl
     have hik : i < (ca[k]'hk).n.toNat := by rw [hna k hk]; exact hi
     have hjl : j < (ca[l]'hl).n.toNat := by rw [hna l hl]; exact hj
     rw [hwk, hwl, hck i (by rw [Vector.getElem_map]; exact hik), hcl j (by rw [Vector.getElem_map]; exact hjl),
       hOn, hOn,
-      hRiff _ (by rw [(catA hp).1, hLa]; exact hlt k hk i hi) _ (by rw [(catA hp).1, hLa]; exact hlt l hl j hj),
-      ← hO ca.toList k hLa, ← hO ca.toList l hLa, (catA hp).2 k hk i hik, (catA hp).2 l hl j hjl, ← hab k, ← hab l,
-      (catB hp).2 k hk i (by rw [hnb k hk]; exact hi), (catB hp).2 l hl j (by rw [hnb l hl]; exact hj),
+      hRiff _ (by rw [catA.2.1, hLa]; exact hlt k hk i hi) _ (by rw [catA.2.1, hLa]; exact hlt l hl j hj),
+      ← hO ca.toList k hLa, ← hO ca.toList l hLa, catA.2.2 k hk i hik, catA.2.2 l hl j hjl, ← hab k, ← hab l,
+      catB.2.2 k hk i (by rw [hnb k hk]; exact hi), catB.2.2 l hl j (by rw [hnb l hl]; exact hj),
       hfa hk hl (by rw [hpa' k hk]; exact hi) (by rw [hpa' l hl]; exact hj),
       hfb hk hl (by rw [hpb' k hk]; exact hi) (by rw [hpb' l hl]; exact hj),
       row_part_congr (hpa' k hk) _ hi, row_part_congr (hpa' l hl) _ hj,
       row_part_congr (hpb' k hk) _ hi, row_part_congr (hpb' l hl) _ hj]
     exact (iff_of_eq (Prod.mk.injEq _ _ _ _)).symm
-  · have hp : 0 < p := by omega
-    obtain ⟨hwk, hnk, hck, hik⟩ := cut_get _ (ca.map (·.n)) hRw (hs hp) hk
-    have hzk := cut_size _ (ca.map (·.n)) hRw (hs hp) hRs hk
+  · obtain ⟨hwk, hnk, hck, hik⟩ := cut_get _ (ca.map (·.n)) hRw hs hk
+    have hzk := cut_size _ (ca.map (·.n)) hRw hs hRs hk
     dsimp only
     rw [hzk, hwk, hnk, hck]
     refine ⟨hRw, by rw [Vector.getElem_map, hna k hk], rfl, fun h8 => ⟨(hRid h8).1, fun i hi => ?_⟩⟩
     rw [hik i hi]
     refine (hRid h8).2 _ ?_
-    rw [← hs hp, hLn, hOn]
+    rw [← hs, hLn, hOn]
     exact hlt k hk i (by rw [Vector.getElem_map, hna k hk] at hi; exact hi)
-  · have hp : 0 < p := by omega
-    rw [(cut_get _ (ca.map (·.n)) hRw (hs hp) hk).1, (cut_get _ (ca.map (·.n)) hRw (hs hp) hl).1]
+  · rw [(cut_get _ (ca.map (·.n)) hRw hs hk).1, (cut_get _ (ca.map (·.n)) hRw hs hl).1]
 
 #print axioms codes_prod_faithful_wf
 
