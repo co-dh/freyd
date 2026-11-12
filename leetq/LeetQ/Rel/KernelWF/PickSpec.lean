@@ -182,4 +182,62 @@ theorem pick_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) 
   simp only []
   rw [h1, KernelWF.gatherColumn_get c.2.wf hg hgu hen hm he (h1 ▸ hk) hin]
 
+/-- An `Arr` moved along a count equation keeps its elements. -/
+theorem cast_get {t : QAtomicType} {a b : USize} (e : a = b) (x : Arr t a) (k : Fin b.toNat) :
+    (e ▸ x : Arr t b).get k = x.get ⟨k, e ▸ k.2⟩ := by subst e; rfl
+
+/-- **`pickArr` read back**: element `k` of the column picked at `i` is element `i[k]` of `x`, where that
+    is below `x`'s count; every atom type but `guid`, every payload but an interned symbol column. -/
+theorem pickArr_get {t : QAtomicType} (c : (n : USize) × Arr t n) (i : ByteArray) (m : USize)
+    (h : len i = m.toNat) (hgu : t ≠ .guid) (hen : ∀ d o ids, c.2.enc ≠ .enum d o ids) (k : Fin m.toNat)
+    (hin : (Column.bitsAt i (k.1 * 8) 8).toNat < c.1.toNat) :
+    (pickArr t c i m h).get k = c.2.get ⟨_, hin⟩ := by
+  have hl : len i < USize.size := h ▸ m.toBitVec.isLt
+  unfold pickArr; rw [cast_get]
+  exact pick_get c i hl hgu hen k.1 _ hin
+
+/-- A long column is never an interned symbol column. -/
+theorem long_not_enum {n : USize} (x : Arr .long n) : ∀ d o ids, x.enc ≠ .enum d o ids := by
+  intro d o ids he; have hw := x.wf; rw [he] at hw; simp [Enc.WF] at hw
+
+/-- A boolean column is never an interned symbol column. -/
+theorem boolean_not_enum {n : USize} (x : Arr .boolean n) : ∀ d o ids, x.enc ≠ .enum d o ids := by
+  intro d o ids he; have hw := x.wf; rw [he] at hw; simp [Enc.WF] at hw
+
 end LeetQ.Rel.Alg
+
+namespace LeetQ.Rel
+
+open QLean LeetQ.Rel.Alg
+
+/-- Every atom column of a side whose `pick` content is proved: no `guid`, no interned symbol column. An
+    array's or a sum's own columns are long and boolean, so its payload is not asked here. -/
+def Vals.Plain : {A : Obj} → {n : USize} → Vals A n → Prop
+  | .atom t, _, x => t ≠ .guid ∧ ∀ d o ids, Arr.enc x ≠ .enum d o ids
+  | .prod _ _, _, x => Vals.Plain x.1 ∧ Vals.Plain x.2
+  | .arr _, _, _ => True
+  | .sum _ _, _, _ => True
+
+/-- **`Vals.pickShared` read back**: row `k` of a side picked at `i` is row `i[k]` of the side, where that
+    long is below its count — at every shape: an array's and a sum's payloads are shared whole and their
+    `lo`/`hi`, tags and positions picked. -/
+theorem Vals.pickShared_row (A : Obj) {n : USize} (x : Vals A n) (hx : Vals.Plain x)
+    (i : ByteArray) (m : USize) (h : len i = m.toNat) (k : Fin m.toNat)
+    (hin : (Column.bitsAt i (k.1 * 8) 8).toNat < n.toNat) :
+    (Vals.pickShared A x i m h).row k = x.row ⟨_, hin⟩ := by
+  induction A generalizing n with
+  | atom t => exact pickArr_get ⟨_, x⟩ i m h hx.1 hx.2 k hin
+  | prod a b iha ihb =>
+    exact Prod.ext (iha x.1 hx.1 hin) (ihb x.2 hx.2 hin)
+  | arr _ _ =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    show List.filterMap _ _ = List.filterMap _ _
+    rw [pickArr_get _ i m h (by decide) (long_not_enum _) k hin,
+      pickArr_get _ i m h (by decide) (long_not_enum _) k hin]
+  | sum _ _ _ _ =>
+    obtain ⟨l, r, tag, ix, y, z⟩ := x
+    show (if _ then _ else _) = (if _ then _ else _)
+    rw [pickArr_get _ i m h (by decide) (boolean_not_enum _) k hin,
+      pickArr_get _ i m h (by decide) (long_not_enum _) k hin]
+
+end LeetQ.Rel
