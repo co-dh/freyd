@@ -19,12 +19,12 @@ def near (a b : Int64) : Bool := [1, -1, 10, -10].contains (a - b)
 
 /-- `uniq(R) ≜ R ∩ (R° \ 𝟙)`, the rows whose key has one value. The left universe is `R`'s own keys, because a key
     outside `R` would satisfy the division vacuously. -/
-def uniq {m : Nat} (R : LL) (cells : Arr .long m) : LL :=
+def uniq {m : USize} (R : LL) (cells : Arr .long m) : LL :=
   R ∩ (leftDiv R° (idU cells) (dom R).key cells)
 
 /-- Every view, recomputed from the KB. `noWumpus` is the complement of `ran(wcand)`, not `noW`, because exactly one
     wumpus also clears each cell that `wmay` drops; `(S !) \ adj` ranges over all of `S`, unlike `S \ adj`. -/
-def views {m : Nat} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB) :
+def views {m : USize} (cells : Arr .long m) (one : Arr .long 1) (adj : LL) (k : KB) :
     List (String × LL) :=
   let (V, B, S, G) := k
   let noB := antiJoin V B

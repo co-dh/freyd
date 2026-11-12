@@ -208,7 +208,7 @@ def outr {k v w : Obj} (T : Rel k (.prod v w)) : Rel k w := ⟨T.n, T.key, T.val
 
 /-- The rows of `R` numbered from `k`: row `i` keyed by `k + i`, its value kept — `Ew.val` add on `til`
     at the count `m`, which the row index is too (`Ew.val_size`). Row order enters here, as in `enum`. -/
-def num {A B : Obj} (R : Rel A B) (k : Nat) : Rel .long B :=
+def num {A B : Obj} (R : Rel A B) (k : USize) : Rel .long B :=
   let m := R.n
   ⟨m, valCol Ew.add Ew.va (tilLongs m) (one k.toUInt64), Vals.pick B R.val (tilLongs m) m (len_tilLongs m)⟩
 

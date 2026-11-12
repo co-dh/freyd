@@ -66,7 +66,7 @@ def moveL (S p : Rel I XX) : Rel I XX := (S \ p ≫ π₁ ≫ π₁°) ∪ p
 def hit (G : V) (L : Rel I XX) : Rel I I := dom L \ dom (all L ≫ pts G \ L)
 
 /-- Three blocks have at most `3³` maps: the bound on the states, so on the ids and on the levels. -/
-def N : Nat := 27
+def N : USize := 27
 
 /-- One round of the breadth-first search on `(St, L, P, d)`: `St` every state seen, `L` the last level, both
     keyed by the state id; `P : id ⟶ (k, m)` the path, `m` its `k`-th move; `d` the round. Each state `i` of `L`
@@ -87,7 +87,7 @@ def round : Rel .long XX × Rel .long XX × Rel .long (.prod .long XX) × Nat �
 /-- `steps : k ⟶ m`, the `k`-th move of a shortest plan from `S` to `G`, empty when none: rounds from `S` until
     `St` holds `G` or a level is empty, the path of the least goal id. -/
 def steps (S G : V) : Rel .long XX :=
-  match iter N (fun (St, L, _) => L ⊑ zero || !(hit G St ⊑ zero)) round (lvl S, lvl S, zero, 0) with
+  match iter N.toNat (fun (St, L, _) => L ⊑ zero || !(hit G St ⊑ zero)) round (lvl S, lvl S, zero, 0) with
   | (St, _, P, _) =>
     -- the goal ids as one set, under the one key `0`, and its `est(<)`
     let h := hit G St; let p := ran (ran (est (lt (tilCol N)) (top (A := .long) (col [0]) h.key)) ≫ P)
@@ -115,7 +115,7 @@ private def after : V := plan.foldl (fun S p => move S (ofPairs [p])) S₀
 #guard ML (lvl S₀) == lvl (M S₀)
 #guard ML (lvl 𝟙) == lvl (M 𝟙)
 #guard moveL (lvl S₀) (lvl (ofPairs [(2, 2)])) == lvl (move S₀ (ofPairs [(2, 2)]))
-private def St : Rel .long XX := (iter N (fun _ => false) round (lvl S₀, lvl S₀, zero, 0)).1
+private def St : Rel .long XX := (iter N.toNat (fun _ => false) round (lvl S₀, lvl S₀, zero, 0)).1
 -- the whole search: the 13 states of three blocks, ids `0 … 12`, each state under one id
 #guard dom St == idU (col ((List.range 13).map Int64.ofNat))
 #guard symDiv St St (Vals.empty _) (Vals.empty _) == dom St

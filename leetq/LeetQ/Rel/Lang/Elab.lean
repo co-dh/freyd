@@ -19,7 +19,7 @@ deriving instance DecidableEq for LeetQ.Rel.Obj
     coreflexive its left context supplies. A term with `d = false` needs no keys: a closed term. -/
 inductive Tm : Obj → Obj → Bool → Type where
   | val {A B : Obj} (R : Rel A B) : Tm A B false
-  | uni {A : Obj} {m : Nat} (U : Vals A m) : Tm A A false
+  | uni {A : Obj} {m : USize} (U : Vals A m) : Tm A A false
   | zero {A B : Obj} : Tm A B false
   | id {A : Obj} : Tm A A true
   /-- `⊤` onto the values of the closed coreflexive `V`. -/
@@ -74,10 +74,10 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `loop(F)` on the pairs (state, array) in demand, `F` run on the pairs (state, element) each round meets. -/
   | loop {X Y : Obj} {d : Bool} (F : Tm (.prod X Y) X d) : Tm (.prod X (.arr Y)) X true
   /-- `succ`, the kernel's value verb `k` (`plus`, `times`, …), `≤`, `<` on the declared number universe `U`. -/
-  | succ {m : Nat} (U : Arr .long m) : Tm .long .long true
-  | arith {m : Nat} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
-  | leq {m : Nat} (U : Arr .long m) : Tm .long .long false
-  | lt {m : Nat} (U : Arr .long m) : Tm .long .long false
+  | succ {m : USize} (U : Arr .long m) : Tm .long .long true
+  | arith {m : USize} (k : UInt8) (U : Arr .long m) : Tm (.prod .long .long) .long true
+  | leq {m : USize} (U : Arr .long m) : Tm .long .long false
+  | lt {m : USize} (U : Arr .long m) : Tm .long .long false
   /-- `⦇e,S⦈` on the arrays in demand, `S` run on the pairs each round meets. -/
   | fold {E V : Obj} {d : Bool} (e : Tm V V false) (S : Tm (.prod E V) V d) : Tm (.arr E) V true
   /-- `R`, whose identity among the program's sub-terms is `k` (`Eval.hoist`): equal sub-terms have one
@@ -121,13 +121,13 @@ structure ObjInfo where
   ty : OTy
   elems : List String := []
   range : Option (Int × Int) := none
-  uni : Option ((m : Nat) × Arr .long m) := none
+  uni : Option ((m : USize) × Arr .long m) := none
 
 abbrev Objs := List (String × ObjInfo)
 
 /-- The universe of an object, when every base object in it has one (§a): `cross` of a product's, the two
     sides of a sum's; an `arr` has none. -/
-def uniOf (objs : Objs) : OTy → Option ((A : Obj) × (m : Nat) × Vals A m)
+def uniOf (objs : Objs) : OTy → Option ((A : Obj) × (m : USize) × Vals A m)
   | .base n => do let ⟨m, U⟩ ← (← objs.lookup n).uni; pure ⟨.long, m, U⟩
   | .prod a b => do
     let ⟨_, _, Ua⟩ ← uniOf objs a; let ⟨_, _, Ub⟩ ← uniOf objs b
@@ -1100,7 +1100,7 @@ def uniTm (p : Pos) (o : OTy) (A : Obj) (what : String) : Except Err (Tm A A fal
   | none => throw ⟨p, s!"{what}: {zonk st o} has no universe; compose a set of its elements before it (§a)"⟩
 
 /-- The universe of a declared base object, for `succ`, the value verbs (`plus`, …), `≤`, `<`. -/
-def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : Nat) × Arr .long m) :=
+def numU (p : Pos) (o : OTy) (op : String) : Except Err ((m : USize) × Arr .long m) :=
   match zonk st o with
   | .base n => match (objs.lookup n).bind (·.uni) with
     | some u => pure u
@@ -1122,7 +1122,7 @@ def code (p : Pos) (o : OTy) (w : String) : Except Err Int64 :=
 /-- The column of a literal's side of object `o`, its `n` rows' sides `rows`: a long column of codes at a leaf,
     the pair of the two parts' columns at a product, at an array the column of all its elements row after row
     as the payload, row `i` the slice `[lo i, hi i)`. `o` is zonked. -/
-def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Obj) × Vals A n) :=
+def litCol (p : Pos) (n : USize) (o : OTy) (rows : List Tup) : Except Err ((A : Obj) × Vals A n) :=
   match o with
   | .prod x y => do
     let ⟨A, u⟩ ← litCol p n x (rows.map fun | .pair r _ => r | r => r)
@@ -1133,10 +1133,11 @@ def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Ob
       | .arr es => pure es
       | r => throw ⟨p, s!"a literal's element of {o} is an array, found {r.show}"⟩
     let es := ts.flatten
-    let ⟨B, v⟩ ← litCol p es.length x es
+    needSize es.length "literal array cells" (fun _ => internal dp "literal array cells") fun m => do
+    let ⟨B, v⟩ ← litCol p m x es
     let ends := (ts.foldl (fun (k, acc) t => (k + t.length, (k + t.length) :: acc)) (0, ([] : List Nat))).2.reverse
     let hi := ends.map Int64.ofNat; let lo := (ends.zip ts).map fun (e, t) => Int64.ofNat (e - t.length)
-    if h : lo.length = n ∧ hi.length = n then
+    if h : lo.length.toUSize = n ∧ hi.length.toUSize = n then
       (let l : Arr .long n := h.1 ▸ col lo; let r : Arr .long n := h.2 ▸ col hi; pure ⟨.arr B, ⟨_, l, r, v⟩⟩)
     else internal dp "literal array rows"
   | .mv _ => throw (litOpen objs p rows)
@@ -1150,7 +1151,7 @@ def litCol (p : Pos) (n : Nat) (o : OTy) (rows : List Tup) : Except Err ((A : Ob
     let cs ← rows.mapM fun
       | .leaf w => code objs st p o w
       | r => throw ⟨p, s!"a literal's element of {o} is a word, found {r.show}"⟩
-    if h : cs.length = n then (let c : Arr .long n := h ▸ col cs; pure ⟨.long, c⟩) else internal dp "literal rows"
+    if h : cs.length.toUSize = n then (let c : Arr .long n := h ▸ col cs; pure ⟨.long, c⟩) else internal dp "literal rows"
 
 /-- A pair test at the objects `A×B`. -/
 def corAt (A B : Obj) : Cor → Except Err (Tm (.prod A B) (.prod A B) true)
@@ -1298,10 +1299,11 @@ def build : Pre → Except Err Res
     match ← build p with
     | ⟨I, .prod A B, _, t⟩ => pure ⟨.prod I A, B, true, .flat t⟩
     | _ => internal dp "a family's objects"
-  | .lit p a b ps => do
-    let ⟨A, k⟩ ← litCol objs st dp p ps.length (zonk st a) (ps.map (·.1))
-    let ⟨B, v⟩ ← litCol objs st dp p ps.length (zonk st b) (ps.map (·.2))
-    pure ⟨A, B, false, .val ⟨ps.length, k, v⟩⟩
+  | .lit p a b ps =>
+    needSize ps.length "literal rows" (fun _ => internal dp "literal rows") fun n => do
+    let ⟨A, k⟩ ← litCol objs st dp p n (zonk st a) (ps.map (·.1))
+    let ⟨B, v⟩ ← litCol objs st dp p n (zonk st b) (ps.map (·.2))
+    pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
   | .close p q a why => do
     let ⟨A, B, d, t⟩ ← build q
     match d with
