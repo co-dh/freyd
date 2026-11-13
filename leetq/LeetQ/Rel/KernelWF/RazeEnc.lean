@@ -211,26 +211,6 @@ theorem razeTo2_dense {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : 
     (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList :=
   razeTo2_toList x y hN (razeTo_toList_dense hw hb _ rfl hN (by simpa using hD))
 
-/-- **Two parts' `razeTo` list at every type and encoding but the encoded join**: `razeTo2_fits` at `boolean`,
-    `general`, `symbol`, `guid`, `razeTo2_dense` wherever `razeColumn` answers dense. `hD`: the parts take the
-    dense branch — no part is encoded to meet, or the encoded join is the dearer (`denseCheaper`). -/
-theorem razeTo2_all {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
-    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
-      USize.size)
-    (hF : Vals.RazeFits (.atom t) x y)
-    (hD : ∀ w r, t.width = some w → encodedParts t #[x.part, y.part] = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) :
-    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
-  by_cases hs : t = .boolean ∨ t = .general ∨ t = .symbol ∨ t = .guid
-  · exact razeTo2_fits x y hN hF (by
-      rcases hs with h | h | h | h
-      · exact .inl h
-      · exact .inr (.inl h)
-      · exact .inr (.inr (.inl h))
-      · exact .inr (.inr (.inr (.inl h))))
-  · obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by cases t <;> simp_all [QAtomicType.width]
-    exact razeTo2_dense hw (fun h => hs (.inl h)) x y hN (fun r hr => hD w r hw hr)
-
 -- dup of Raze.need_some (private there)
 private theorem need_some {α : Type} {p : Prop} [Decidable p] {msg : Unit → String} {k : p → Option α} {v : α}
     (h : need p msg (fun _ => none) k = some v) : ∃ hp : p, k hp = some v := by
@@ -483,6 +463,36 @@ theorem razeTo2_join_alp {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr 
       rw [get_answer hw hb hwfA (by intro _ h; cases h) hi, get_alp_eq hw hb hg8 _ _ _ hi, alpBits_starts]),
     hNU, hL, toList_get x hg, toList_get y hg, hl _ _ hx0, hl _ _ hx1, List.map_append]
 
+/-- **Two parts' `razeTo` list at every type and encoding but the Frame-of-Reference join**: `razeTo2_fits` at
+    `boolean`, `general`, `symbol`, `guid`, `razeTo2_join_alp` on the ALP join, `razeTo2_dense` wherever
+    `razeColumn` answers dense. `hD`, on the encoding only: where `encodedParts` joins Frame of Reference
+    (flag `false`), the join is the dearer (`denseCheaper`), so `razeColumn` answers dense. -/
+theorem razeTo2_all {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size)
+    (hF : Vals.RazeFits (.atom t) x y)
+    (hD : ∀ w r, t.width = some w → encodedParts t #[x.part, y.part] = some r → r.1 = false →
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) :
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
+  by_cases hs : t = .boolean ∨ t = .general ∨ t = .symbol ∨ t = .guid
+  · exact razeTo2_fits x y hN hF (by
+      rcases hs with h | h | h | h
+      · exact .inl h
+      · exact .inr (.inl h)
+      · exact .inr (.inr (.inl h))
+      · exact .inr (.inr (.inr (.inl h))))
+  · obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by cases t <;> simp_all [QAtomicType.width]
+    have hb : t ≠ .boolean := fun h => hs (.inl h)
+    cases hE : encodedParts t #[x.part, y.part] with
+    | none => exact razeTo2_dense hw hb x y hN fun r hr => by rw [hE] at hr; cases hr
+    | some r =>
+      cases hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat)))
+      · cases hr : r.1
+        · exact absurd (hC.symm.trans (hD w r hw hE hr)) (by decide)
+        · exact razeTo2_join_alp x y hN hF hw hE hr hC
+      · exact razeTo2_dense hw hb x y hN fun r' hr' => by
+          rw [hE, Option.some.injEq] at hr'; subst hr'; exact hC
+
 section
 -- The read-back left open: two atom parts on the Frame-of-Reference join (`encodedParts` flag `false`), concatFoR.
 variable (hJ : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
@@ -499,18 +509,13 @@ theorem hat_of_join : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr
       USize.size), Vals.RazeFits (.atom t) x y →
     (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
   intro t n m x y hN hF
-  cases hW : t.width with
-  | none => exact razeTo2_all x y hN hF fun w r hw _ => by rw [hW] at hw; cases hw
-  | some w =>
-    cases hE : encodedParts t #[x.part, y.part] with
-    | none => exact razeTo2_all x y hN hF fun w' r _ hr => by rw [hE] at hr; cases hr
-    | some r =>
+  by_cases hj : ∃ w r, t.width = some w ∧ encodedParts t #[x.part, y.part] = some r ∧ r.1 = false ∧
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false
+  · obtain ⟨w, r, hW, hE, hr, hC⟩ := hj; exact hJ t x y hN hF w r hW hE hr hC
+  · exact razeTo2_all x y hN hF fun w r hW hE hr => by
       cases hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat)))
-      · cases hr : r.1
-        · exact hJ t x y hN hF w r hW hE hr hC
-        · exact razeTo2_join_alp x y hN hF hW hE hr hC
-      · exact razeTo2_all x y hN hF fun w' r' hw' hr' => by
-          rw [hW, Option.some.injEq] at hw'; rw [hE, Option.some.injEq] at hr'; subst hw' hr'; exact hC
+      · exact absurd ⟨w, r, hW, hE, hr, hC⟩ hj
+      · rfl
 
 /-- **Row read-back of `raze` at every side**, `raze_row` with `hat` narrowed to the encoded join `hJ`. -/
 theorem raze_row_all (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
