@@ -22,7 +22,9 @@ theorem runs_fold {α β : Type} [BEq α] [LawfulBEq α] (f : Nat → α) (n : N
       (∀ j j', j < m → j' < m →
         key (Column.bitsAt B (j * 8) 8).toNat = key (Column.bitsAt B (j' * 8) 8).toNat → j = j') ∧
       (∀ s j, s < n → j < m → (key s = key (Column.bitsAt B (j * 8) 8).toNat ↔
-        (Column.bitsAt B (j * 8) 8).toNat ≤ s ∧ s < (Column.bitsAt B ((j + 1) * 8) 8).toNat)) := by
+        (Column.bitsAt B (j * 8) 8).toNat ≤ s ∧ s < (Column.bitsAt B ((j + 1) * 8) 8).toNat)) ∧
+      (∀ s, s < n → ∃ j, j < m ∧
+        (Column.bitsAt B (j * 8) 8).toNat ≤ s ∧ s < (Column.bitsAt B ((j + 1) * 8) 8).toNat) := by
   have hn64 : n < 2 ^ 64 := ht ▸ UInt64.toNat_lt t
   let p : Nat → Bool := fun i => i == 0 || f i != f (i - 1)
   have hp : ∀ r, p r = true ↔ (r = 0 ∨ f r ≠ f (r - 1)) := fun r => by
@@ -69,16 +71,37 @@ theorem runs_fold {α β : Type} [BEq α] [LawfulBEq α] (f : Nat → α) (n : N
     exact List.pairwise_iff_getElem.1 hL i j (by omega) (by omega) hij
   have hrj : ∀ j (h : j < F.length), (Column.bitsAt B (j * 8) 8).toNat = F[j] := fun j h => by
     rw [hv j (by omega), hleft j h]
+  have h00 : 0 < n → 0 < F.length ∧ (Column.bitsAt B (0 * 8) 8).toNat = 0 := fun h0 => by
+    have h0m : 0 ∈ F := (hmem 0).2 ⟨h0, rfl⟩
+    have hpos := List.length_pos_of_mem h0m
+    obtain ⟨k, hk', hk0⟩ := List.getElem_of_mem h0m
+    refine ⟨hpos, ?_⟩
+    rw [hrj 0 hpos]
+    rcases Nat.eq_zero_or_pos k with rfl | hk''
+    · exact hk0
+    · have := List.pairwise_iff_getElem.1 hF 0 k hpos hk' hk''; omega
+  -- every row below `n` lies in some run: the runs start at `0` and end at `n`
+  have hcov : ∀ s, s < n → ∃ j, j < F.length ∧
+      (Column.bitsAt B (j * 8) 8).toNat ≤ s ∧ s < (Column.bitsAt B ((j + 1) * 8) 8).toNat := by
+    intro s
+    induction s with
+    | zero =>
+      intro hn0
+      obtain ⟨hm, e⟩ := h00 hn0
+      exact ⟨0, hm, by omega, by have := hasc 0 (0 + 1) (by omega) hm; omega⟩
+    | succ s ih =>
+      intro hn'
+      obtain ⟨j, hj, h1, h2⟩ := ih (by omega)
+      rcases Nat.lt_or_eq_of_le (Nat.succ_le_of_lt h2) with h | h
+      · exact ⟨j, hj, by omega, h⟩
+      · have hj1 : j + 1 < F.length := by
+          rcases Nat.lt_or_ge (j + 1) F.length with h' | h'
+          · exact h'
+          · have : j + 1 = F.length := by omega
+            rw [this] at h; omega
+        exact ⟨j + 1, hj1, by omega, by have := hasc (j + 1) (j + 1 + 1) (by omega) hj1; omega⟩
   have G := runs_group key (fun j => (Column.bitsAt B (j * 8) 8).toNat) hlast hasc
-    (fun h0 => by
-      have h0m : 0 ∈ F := (hmem 0).2 ⟨h0, rfl⟩
-      have hpos := List.length_pos_of_mem h0m
-      obtain ⟨k, hk', hk0⟩ := List.getElem_of_mem h0m
-      show (Column.bitsAt B (0 * 8) 8).toNat = 0
-      rw [hrj 0 hpos]
-      rcases Nat.eq_zero_or_pos k with rfl | hk''
-      · exact hk0
-      · have := List.pairwise_iff_getElem.1 hF 0 k hpos hk' hk''; omega)
+    (fun h0 => (h00 h0).2)
     (fun j hj => by
       show (Column.bitsAt B (j * 8) 8).toNat = 0 ∨ key (Column.bitsAt B (j * 8) 8).toNat ≠
         key ((Column.bitsAt B (j * 8) 8).toNat - 1)
@@ -90,7 +113,7 @@ theorem runs_fold {α β : Type} [BEq α] [LawfulBEq α] (f : Nat → α) (n : N
       obtain ⟨j, hj, e⟩ := List.getElem_of_mem ((hmem s).2 ⟨hs', hps⟩)
       exact ⟨j, hj, by show (Column.bitsAt B (j * 8) 8).toNat = s; rw [hrj j hj, e]⟩)
     hcont
-  exact ⟨F.length, by rw [hs, hlen]; omega, hlast, hasc, G.1, G.2⟩
+  exact ⟨F.length, by rw [hs, hlen]; omega, hlast, hasc, G.1, G.2, hcov⟩
 
 /-- **`Code.runStarts` cuts a well-formed code whose equal codes stand together into its runs**, at every
     lane: `runStartsBits` at one bit, `runStarts` at a byte lane, `runStartsIds` at `2`/`4` bits (`runs_fold`).
@@ -107,7 +130,9 @@ theorem code_runs (c : Code) (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 �
       (∀ s j, s < c.n.toNat → j < m →
         (Column.idAt c.b c.w s = Column.idAt c.b c.w (Column.bitsAt c.runStarts (j * 8) 8).toNat ↔
           (Column.bitsAt c.runStarts (j * 8) 8).toNat ≤ s ∧
-            s < (Column.bitsAt c.runStarts ((j + 1) * 8) 8).toNat)) := by
+            s < (Column.bitsAt c.runStarts ((j + 1) * 8) 8).toNat)) ∧
+      (∀ s, s < c.n.toNat → ∃ j, j < m ∧ (Column.bitsAt c.runStarts (j * 8) 8).toNat ≤ s ∧
+        s < (Column.bitsAt c.runStarts ((j + 1) * 8) 8).toNat) := by
   have hN : c.n.toUInt64.toNat = c.n.toNat := USize.toNat_toUInt64 c.n
   have h64 : c.w ≤ 64 := by omega
   unfold Code.runStarts Code.kind
