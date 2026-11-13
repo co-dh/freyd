@@ -205,7 +205,35 @@ theorem pickFits_payload {B : Obj} {n : USize} (x : Vals (.arr B) n) {ps : List 
   simp only [Vals.PickFits] at hf
   exact ⟨hf.1, hf.2.2.2⟩
 
+/-- **An array side of atoms fits from its sizes alone**: the payload below `2^63`, the picked rows' elements
+    (their windows' total) below `2^63` and `USize.size`; every window lies in the payload (`pickFits_atom`). -/
+theorem pickFits_arr_atom {t : QAtomicType} {n : USize} (x : Vals (.arr (.atom t)) n) (ps : List Nat)
+    (hp : x.1.toNat < 2 ^ 63)
+    (hl : (ps.map fun r => if h : r < n.toNat then (x.row ⟨r, h⟩).length else 0).sum < 2 ^ 63)
+    (hU : (ps.map fun r => if h : r < n.toNat then (x.row ⟨r, h⟩).length else 0).sum < USize.size) :
+    Vals.PickFits (.arr (.atom t)) x ps := by
+  have hlen : (ps.flatMap fun r => if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h))
+      else []).length = (ps.map fun r => if h : r < n.toNat then (x.row ⟨r, h⟩).length else 0).sum := by
+    rw [List.length_flatMap]; congr 1; apply List.map_congr_left; intro r _
+    by_cases h : r < n.toNat
+    · rw [dif_pos h, dif_pos h, List.length_range', arr_row, List.length_map, List.length_range]
+    · rw [dif_neg h, dif_neg h]; rfl
+  have hin : ∀ k ∈ (ps.flatMap fun r => if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h))
+      else []), k < x.1.toNat := by
+    intro k hk
+    obtain ⟨r, -, hr⟩ := List.mem_flatMap.1 hk
+    by_cases h : r < n.toNat
+    · rw [dif_pos h, List.mem_range'_1] at hr
+      have : sH(x, r, h) ≤ x.1.toNat := Nat.min_le_right _ _
+      omega
+    · rw [dif_neg h] at hr; exact absurd hr (List.not_mem_nil)
+  obtain ⟨p, lo, hi, f⟩ := x
+  simp only [Vals.PickFits]
+  exact ⟨hp, Nat.lt_of_le_of_lt (Nat.le_of_eq hlen) hl, Nat.lt_of_le_of_lt (Nat.le_of_eq hlen) hU,
+    pickFits_atom _ hin⟩
+
 #print axioms slicesOf_copies
+#print axioms pickFits_arr_atom
 #print axioms copy_row
 #print axioms row_copy
 #print axioms copies_rows
