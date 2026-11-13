@@ -82,13 +82,15 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
   rcases Nat.eq_zero_or_pos p with rfl | hp
   · exact ⟨⟨fun {_ _} hk => absurd hk (Nat.not_lt_zero _), fun {_} hk => absurd hk (Nat.not_lt_zero _)⟩,
       fun {_ _} hk => absurd hk (Nat.not_lt_zero _)⟩
-  have catA := cat_parts ca hp hla
-    (fun hk => ⟨(hwa hk).1, (hwa hk).2.2.1, fun h => ((hwa hk).2.2.2 h).2⟩) (by rw [hLa]; exact hN)
-  have catB := cat_parts cb hp hlb
-    (fun hk => ⟨(hwb hk).1, (hwb hk).2.2.1, fun h => ((hwb hk).2.2.2 h).2⟩) (by rw [hLb]; exact hN)
+  have catA := cat_parts ca hp hla (fun hk => ⟨(hwa hk).1, (hwa hk).2.2.1,
+    fun h i hi => Nat.lt_of_lt_of_le (((hwa hk).2.2.2 h).2 i hi) (Nat.le_max_left _ _)⟩) (by rw [hLa]; exact hN)
+  have catB := cat_parts cb hp hlb (fun hk => ⟨(hwb hk).1, (hwb hk).2.2.1,
+    fun h i hi => Nat.lt_of_lt_of_le (((hwb hk).2.2.2 h).2 i hi) (Nat.le_max_left _ _)⟩) (by rw [hLb]; exact hN)
   have hBA : (Code.cat cb.toArray).n = (Code.cat ca.toArray).n :=
     USize.toNat_inj.1 (by rw [catB.2.1, catA.2.1, hLb, hLa])
-  have hP := pairCode_spec false (Code.cat ca.toArray) (Code.cat cb.toArray) hBA catA.1 catB.1
+  have hP := pairCode_spec false (Code.cat ca.toArray) (Code.cat cb.toArray) hBA
+    ⟨catA.1.1, catA.1.2.1, fun h i hi => by have := catA.1.2.2 h i hi; omega⟩
+    ⟨catB.1.1, catB.1.2.1, fun h i hi => by have := catB.1.2.2 h i hi; omega⟩
   dsimp only at hP
   obtain ⟨⟨hRw, hRn, hRs, hRid⟩, hRiff⟩ := hP
   have hs : ((ca.map (·.n)).toList.map (·.toNat)).sum =
