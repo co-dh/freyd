@@ -147,6 +147,56 @@ theorem sortBy_perm
     rw [hn, hpn] at this
     exact gather_perm this
 
+/-- **`transpose`'s row order groups the keys**: `kc`'s codes at `vp`, graded stably and read back through `vp`
+    (`p = vp@grade(kc@vp)`), hold every row once, and equal codes stand together along `p`. Hypotheses: `kc` well
+    formed, `vp` a permutation of its rows (`sortBy_perm` at `til n`). -/
+theorem grade_gather_group (kc : Code)
+    (hw : kc.w = 1 ∨ kc.w = 2 ∨ kc.w = 4 ∨ kc.w = 8 ∨ kc.w = 16 ∨ kc.w = 32 ∨ kc.w = 64)
+    (hs : kc.b.size = (kc.n.toNat * kc.w + 7) / 8) (vp : ByteArray) (hvp : (ids vp).Perm (List.range kc.n.toNat)) :
+    (ids (gather 8 vp (kc.gather vp).grade)).Perm (List.range kc.n.toNat) ∧
+      ∀ s t u, s ≤ t → t ≤ u → u < kc.n.toNat →
+        Column.idAt kc.b kc.w (Column.bitsAt (gather 8 vp (kc.gather vp).grade) (s * 8) 8).toNat =
+          Column.idAt kc.b kc.w (Column.bitsAt (gather 8 vp (kc.gather vp).grade) (u * 8) 8).toNat →
+        Column.idAt kc.b kc.w (Column.bitsAt (gather 8 vp (kc.gather vp).grade) (t * 8) 8).toNat =
+          Column.idAt kc.b kc.w (Column.bitsAt (gather 8 vp (kc.gather vp).grade) (s * 8) 8).toNat := by
+  have hN : len vp = kc.n.toNat := by rw [len_eq_ids, hvp.length_eq, List.length_range]
+  have hl : len vp < USize.size := by rw [hN]; exact kc.n.toNat_lt_size
+  have hvl : ∀ j < len vp, (Column.bitsAt vp (j * 8) 8).toNat < kc.n.toNat := fun j hj => by
+    have hj' : j < (ids vp).length := by rw [← len_eq_ids]; exact hj
+    rw [← ids_getElem hj']; exact List.mem_range.1 (hvp.mem_iff.1 (List.getElem_mem hj'))
+  have hcb : 8 ≤ kc.w → 8 * kc.b.size = kc.w * kc.n.toNat := fun h8 => by
+    rcases hw with h | h | h | h | h | h | h <;> rw [h] at hs ⊢ <;> omega
+  obtain ⟨hGw, hGn, -, hGid⟩ := gather_spec kc vp hl hw hcb hvl
+  have hGs := gather_size kc vp hl hw
+  generalize hG : kc.gather vp = G at hGw hGn hGid hGs
+  rw [← hGw] at hw
+  rw [← hGn, ← hGw] at hGs
+  obtain ⟨hgp, κ, hκ, hsrt⟩ := grade_code G hw hGs
+  rw [hGn, hN] at hgp hκ
+  rw [hGw] at hκ
+  have hgl : (ids G.grade).length = kc.n.toNat := by rw [hgp.length_eq, List.length_range]
+  -- `g[s]`, the grade's row `s`, below the count; `p`'s long `s` is `vp`'s long `g[s]`
+  have hg : ∀ s < kc.n.toNat, (Column.bitsAt G.grade (s * 8) 8).toNat < kc.n.toNat := fun s hs' => by
+    have h : s < (ids G.grade).length := by rw [hgl]; exact hs'
+    rw [← ids_getElem h]; exact List.mem_range.1 (hgp.mem_iff.1 (List.getElem_mem h))
+  have hp : ∀ s < kc.n.toNat, Column.idAt kc.b kc.w (Column.bitsAt (gather 8 vp G.grade) (s * 8) 8).toNat =
+      Column.idAt G.b kc.w (Column.bitsAt G.grade (s * 8) 8).toNat := fun s hs' => by
+    rw [gather8_get (by rw [len_eq_ids, hgl]; exact hs') (by rw [hN]; exact hg s hs'),
+      hGid _ (by rw [hN]; exact hg s hs')]
+  have hmono : ∀ s t, s ≤ t → t < kc.n.toNat →
+      κ (Column.bitsAt G.grade (s * 8) 8).toNat ≤ κ (Column.bitsAt G.grade (t * 8) 8).toNat := fun s t hst ht => by
+    rcases Nat.lt_or_eq_of_le hst with h | rfl
+    · have := List.pairwise_iff_getElem.1 hsrt s t (by rw [hgl]; omega) (by rw [hgl]; exact ht) h
+      rwa [ids_getElem, ids_getElem] at this
+    · exact Nat.le_refl _
+  refine ⟨(gather_perm (by rw [hN]; exact hgp)).trans hvp, fun s t u hst htu hu e => ?_⟩
+  rw [hp s (by omega), hp u hu] at e
+  rw [hp t (by omega), hp s (by omega)]
+  have e' := (hκ _ _ (hg s (by omega)) (hg u hu)).2 e
+  have a := hmono s t hst (by omega); have b := hmono t u htu hu
+  exact (hκ _ _ (hg t (by omega)) (hg s (by omega))).1 (by omega)
+
+#print axioms grade_gather_group
 #print axioms gather_perm
 #print axioms grade_code
 #print axioms sortBy_perm
