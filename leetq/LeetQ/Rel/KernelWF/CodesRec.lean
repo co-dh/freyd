@@ -140,8 +140,8 @@ theorem sum_part_codes {a b : Obj} {n : USize} (x : Vals (.sum a b) n) (cl cr : 
     (hlw : cl.w = 1 ∨ cl.w = 2 ∨ cl.w = 4 ∨ cl.w = 8 ∨ cl.w = 16 ∨ cl.w = 32 ∨ cl.w = 64)
     (hrw : cr.w = 1 ∨ cr.w = 2 ∨ cr.w = 4 ∨ cr.w = 8 ∨ cr.w = 16 ∨ cr.w = 32 ∨ cr.w = 64)
     (hls : cl.b.size = (cl.n.toNat * cl.w + 7) / 8) (hrs : cr.b.size = (cr.n.toNat * cr.w + 7) / 8)
-    (hsr : ∀ q (hq : q < n.toNat), Column.bitAt (tagBits x.2.2.1) q = true → 0 < x.2.1.toNat)
-    (hsl : ∀ q (hq : q < n.toNat), Column.bitAt (tagBits x.2.2.1) q = false → 0 < x.1.toNat) :
+    (hsr : ∀ q, q < n.toNat → Column.bitAt (tagBits x.2.2.1) q = true → 0 < x.2.1.toNat)
+    (hsl : ∀ q, q < n.toNat → Column.bitAt (tagBits x.2.2.1) q = false → 0 < x.1.toNat) :
     ((cl.gather (longsOf (place x ((x.1.toNat : Int) - 1) 0 0 x.1.toNat))).w = cl.w ∧
       (cl.gather (longsOf (place x ((x.1.toNat : Int) - 1) 0 0 x.1.toNat))).n = n ∧
       (cl.gather (longsOf (place x ((x.1.toNat : Int) - 1) 0 0 x.1.toNat))).card = cl.card ∧
@@ -233,5 +233,250 @@ theorem codes_sum_eq {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum a b)) p) 
   simp [tuples, tuples.tupleCode]
 
 #print axioms codes_sum_eq
+
+/-- **A sum side's codes are faithful and well formed, on one lane**, given its two sides' are, one lane each,
+    on the parts `Obj.codes` hands them (each part made `held` first): the tag, the left codes gathered at
+    each row's own left position (a miss, `0`, at an `inr` row), the right ones likewise, `pairCode`d in turn.
+    Bounds: the parts' summed count a `USize`, each side's payload below `2⁶¹` (`place`'s longs stay in
+    range), the rows read back through `held` (`Vals.PickFits`), and a side's code bound positive under a
+    byte — the miss's `0` must lie below it for `pairCode_spec`. -/
+theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum a b)) p)
+    {cs : Vector (Part (.sum a b)) p} {pa : Vector (Part a) p} {pb : Vector (Part b) p} {ca cb : Vector Code p}
+    (hcs : cs₀.map (fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))) = cs)
+    (hpa : cs.map (fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)) = pa)
+    (hpb : cs.map (fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)) = pb)
+    (hca : Obj.codes a pa = ca) (hcb : Obj.codes b pb = cb)
+    (hfa : (∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (pa[k]'hk).1.toNat)
+        (hj : j < (pa[l]'hl).1.toNat),
+        Column.idAt (ca[k]'hk).b (ca[k]'hk).w i = Column.idAt (ca[l]'hl).b (ca[l]'hl).w j ↔
+          Vals.row (pa[k]'hk).2 ⟨i, hi⟩ = Vals.row (pa[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < p),
+        ((ca[k]'hk).w = 1 ∨ (ca[k]'hk).w = 2 ∨ (ca[k]'hk).w = 4 ∨ (ca[k]'hk).w = 8 ∨ (ca[k]'hk).w = 16 ∨
+          (ca[k]'hk).w = 32 ∨ (ca[k]'hk).w = 64) ∧
+        (ca[k]'hk).n = (pa[k]'hk).1 ∧ (ca[k]'hk).b.size = ((ca[k]'hk).n.toNat * (ca[k]'hk).w + 7) / 8 ∧
+        ((ca[k]'hk).w < 8 → (ca[k]'hk).card < USize.size ∧
+          ∀ i < (ca[k]'hk).n.toNat, Column.idAt (ca[k]'hk).b (ca[k]'hk).w i < (ca[k]'hk).card))
+    (hla : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (ca[k]'hk).w = (ca[l]'hl).w)
+    (hfb : (∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (pb[k]'hk).1.toNat)
+        (hj : j < (pb[l]'hl).1.toNat),
+        Column.idAt (cb[k]'hk).b (cb[k]'hk).w i = Column.idAt (cb[l]'hl).b (cb[l]'hl).w j ↔
+          Vals.row (pb[k]'hk).2 ⟨i, hi⟩ = Vals.row (pb[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < p),
+        ((cb[k]'hk).w = 1 ∨ (cb[k]'hk).w = 2 ∨ (cb[k]'hk).w = 4 ∨ (cb[k]'hk).w = 8 ∨ (cb[k]'hk).w = 16 ∨
+          (cb[k]'hk).w = 32 ∨ (cb[k]'hk).w = 64) ∧
+        (cb[k]'hk).n = (pb[k]'hk).1 ∧ (cb[k]'hk).b.size = ((cb[k]'hk).n.toNat * (cb[k]'hk).w + 7) / 8 ∧
+        ((cb[k]'hk).w < 8 → (cb[k]'hk).card < USize.size ∧
+          ∀ i < (cb[k]'hk).n.toNat, Column.idAt (cb[k]'hk).b (cb[k]'hk).w i < (cb[k]'hk).card))
+    (hlb : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (cb[k]'hk).w = (cb[l]'hl).w)
+    (hca0 : ∀ {k : Nat} (hk : k < p), (ca[k]'hk).w < 8 → 0 < (ca[k]'hk).card)
+    (hcb0 : ∀ {k : Nat} (hk : k < p), (cb[k]'hk).w < 8 → 0 < (cb[k]'hk).card)
+    (hLa : ∀ {k : Nat} (hk : k < p), (pa[k]'hk).1.toNat < 2 ^ 61)
+    (hLb : ∀ {k : Nat} (hk : k < p), (pb[k]'hk).1.toNat < 2 ^ 61)
+    (hN : (cs₀.toList.map (·.1.toNat)).sum < USize.size)
+    (hfit : ∀ {k : Nat} (hk : k < p),
+      Vals.PickFits (.sum a b) (cs₀[k]'hk).2 (List.range (cs₀[k]'hk).1.toNat)) :
+    ((∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs₀[k]'hk).1.toNat)
+        (hj : j < (cs₀[l]'hl).1.toNat),
+        Column.idAt ((Obj.codes (.sum a b) cs₀)[k]'hk).b ((Obj.codes (.sum a b) cs₀)[k]'hk).w i =
+          Column.idAt ((Obj.codes (.sum a b) cs₀)[l]'hl).b ((Obj.codes (.sum a b) cs₀)[l]'hl).w j ↔
+        Vals.row (A := .sum a b) (cs₀[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .sum a b) (cs₀[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < p),
+        let c := (Obj.codes (.sum a b) cs₀)[k]'hk
+        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs₀[k]'hk).1 ∧
+        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+      ∀ {k l : Nat} (hk : k < p) (hl : l < p),
+        ((Obj.codes (.sum a b) cs₀)[k]'hk).w = ((Obj.codes (.sum a b) cs₀)[l]'hl).w := by
+  obtain ⟨T, hT⟩ : ∃ T, cs.map (fun c => (⟨1, c.1, 2, tagBits c.2.2.2.1⟩ : Code)) = T := ⟨_, rfl⟩
+  obtain ⟨GL, hGL⟩ : ∃ GL, Vector.zipWith (fun c k => k.gather
+      (longsOf (place c.2 ((c.2.1.toNat : Int) - 1) 0 0 c.2.1.toNat))) cs ca = GL := ⟨_, rfl⟩
+  obtain ⟨GR, hGR⟩ : ∃ GR, Vector.zipWith (fun c k => k.gather
+      (longsOf (place c.2 ((c.2.2.1.toNat : Int) - 1) 0 c.2.2.1.toNat (-(c.2.2.1.toNat : Int))))) cs cb = GR :=
+    ⟨_, rfl⟩
+  rw [codes_sum_eq cs₀ hcs hpa hpb hca hcb hT hGL hGR]
+  obtain ⟨hfa, hwa⟩ := hfa
+  obtain ⟨hfb, hwb⟩ := hfb
+  have hcsk : ∀ k (hk : k < p), cs[k]'hk = ⟨(cs₀[k]'hk).1, (cs₀[k]'hk).2.held⟩ := fun k hk => by
+    rw [← hcs, Vector.getElem_map]
+  have hpak : ∀ k (hk : k < p), pa[k]'hk = ⟨(cs[k]'hk).2.1, (cs[k]'hk).2.2.2.2.2.1⟩ := fun k hk => by
+    rw [← hpa, Vector.getElem_map]
+  have hpbk : ∀ k (hk : k < p), pb[k]'hk = ⟨(cs[k]'hk).2.2.1, (cs[k]'hk).2.2.2.2.2.2⟩ := fun k hk => by
+    rw [← hpb, Vector.getElem_map]
+  have hTk : ∀ k (hk : k < p), T[k]'hk = ⟨1, (cs[k]'hk).1, 2, tagBits (cs[k]'hk).2.2.2.1⟩ := fun k hk => by
+    rw [← hT, Vector.getElem_map]
+  have hGLk : ∀ k (hk : k < p), GL[k]'hk = (ca[k]'hk).gather (longsOf (place (cs[k]'hk).2
+      (((cs[k]'hk).2.1.toNat : Int) - 1) 0 0 (cs[k]'hk).2.1.toNat)) := fun k hk => by
+    rw [← hGL, Vector.getElem_zipWith]
+  have hGRk : ∀ k (hk : k < p), GR[k]'hk = (cb[k]'hk).gather (longsOf (place (cs[k]'hk).2
+      (((cs[k]'hk).2.2.1.toNat : Int) - 1) 0 (cs[k]'hk).2.2.1.toNat (-((cs[k]'hk).2.2.1.toNat : Int)))) :=
+    fun k hk => by rw [← hGR, Vector.getElem_zipWith]
+  have hnk : ∀ k (hk : k < p), (cs[k]'hk).1 = (cs₀[k]'hk).1 := fun k hk => by rw [hcsk k hk]
+  have hside : ∀ k (hk : k < p) q, q < (cs[k]'hk).1.toNat →
+      (Column.bitAt (tagBits (cs[k]'hk).2.2.2.1) q = true → 0 < (cs[k]'hk).2.2.1.toNat) ∧
+      (Column.bitAt (tagBits (cs[k]'hk).2.2.2.1) q = false → 0 < (cs[k]'hk).2.1.toNat) := fun k hk q hq => by
+    have h := KernelWF.held_side (cs₀[k]'hk).2 ⟨q, by rw [hnk k hk] at hq; exact hq⟩
+    rw [Arr.get_bool_bits _ (enc_tagBits _)] at h
+    rw [hcsk k hk]; exact h
+  have hP := fun k (hk : k < p) => sum_part_codes (cs[k]'hk).2 (ca[k]'hk) (cb[k]'hk)
+    (by have := hLa hk; rw [hpak k hk] at this; exact this) (by have := hLb hk; rw [hpbk k hk] at this; exact this)
+    (by rw [(hwa hk).2.1, hpak k hk]) (by rw [(hwb hk).2.1, hpbk k hk])
+    (hwa hk).1 (hwb hk).1 (hwa hk).2.2.1 (hwb hk).2.2.1
+    (fun q hq => (hside k hk q hq).1) (fun q hq => (hside k hk q hq).2)
+  have hlT : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (T[k]'hk).w = (T[l]'hl).w := fun {k l} hk hl => by
+    rw [hTk k hk, hTk l hl]
+  have hwT : ∀ {k : Nat} (hk : k < p), ((T[k]'hk).w = 1 ∨ (T[k]'hk).w = 2 ∨ (T[k]'hk).w = 4 ∨
+      (T[k]'hk).w = 8 ∨ (T[k]'hk).w = 16 ∨ (T[k]'hk).w = 32 ∨ (T[k]'hk).w = 64) ∧
+      (T[k]'hk).b.size = ((T[k]'hk).n.toNat * (T[k]'hk).w + 7) / 8 ∧
+      ((T[k]'hk).w < 8 → ∀ i < (T[k]'hk).n.toNat, Column.idAt (T[k]'hk).b (T[k]'hk).w i < (T[k]'hk).card) :=
+    fun {k} hk => by
+      rw [hTk k hk]
+      refine ⟨Or.inl rfl, ?_, fun _ i _ => ?_⟩
+      · have hw := (cs[k]'hk).2.2.2.1.wf
+        rw [enc_tagBits] at hw
+        simpa [Enc.WF] using hw
+      · show Column.idAt _ 1 i < 2
+        rw [idAt_one]; split <;> decide
+  have hlGL : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (GL[k]'hk).w = (GL[l]'hl).w := fun {k l} hk hl => by
+    rw [hGLk k hk, hGLk l hl, (hP k hk).1.1, (hP l hl).1.1]; exact hla hk hl
+  have hlGR : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (GR[k]'hk).w = (GR[l]'hl).w := fun {k l} hk hl => by
+    rw [hGRk k hk, hGRk l hl, (hP k hk).2.1.1, (hP l hl).2.1.1]; exact hlb hk hl
+  have hwGL : ∀ {k : Nat} (hk : k < p), ((GL[k]'hk).w = 1 ∨ (GL[k]'hk).w = 2 ∨ (GL[k]'hk).w = 4 ∨
+      (GL[k]'hk).w = 8 ∨ (GL[k]'hk).w = 16 ∨ (GL[k]'hk).w = 32 ∨ (GL[k]'hk).w = 64) ∧
+      (GL[k]'hk).b.size = ((GL[k]'hk).n.toNat * (GL[k]'hk).w + 7) / 8 ∧
+      ((GL[k]'hk).w < 8 → ∀ i < (GL[k]'hk).n.toNat,
+        Column.idAt (GL[k]'hk).b (GL[k]'hk).w i < (GL[k]'hk).card) := fun {k} hk => by
+    rw [hGLk k hk]
+    obtain ⟨⟨gw, gn, gc, gs⟩, -, gv⟩ := hP k hk
+    rw [gw, gn, gs, gc]
+    refine ⟨(hwa hk).1, rfl, fun h8 i hi => ?_⟩
+    rw [(gv i hi).1]
+    split
+    · exact hca0 hk h8
+    · next hb =>
+      have := (hside k hk i hi).2 (by simpa using hb)
+      exact ((hwa hk).2.2.2 h8).2 _ (by rw [(hwa hk).2.1, hpak k hk]; dsimp only; omega)
+  have hwGR : ∀ {k : Nat} (hk : k < p), ((GR[k]'hk).w = 1 ∨ (GR[k]'hk).w = 2 ∨ (GR[k]'hk).w = 4 ∨
+      (GR[k]'hk).w = 8 ∨ (GR[k]'hk).w = 16 ∨ (GR[k]'hk).w = 32 ∨ (GR[k]'hk).w = 64) ∧
+      (GR[k]'hk).b.size = ((GR[k]'hk).n.toNat * (GR[k]'hk).w + 7) / 8 ∧
+      ((GR[k]'hk).w < 8 → ∀ i < (GR[k]'hk).n.toNat,
+        Column.idAt (GR[k]'hk).b (GR[k]'hk).w i < (GR[k]'hk).card) := fun {k} hk => by
+    rw [hGRk k hk]
+    obtain ⟨-, ⟨gw, gn, gc, gs⟩, gv⟩ := hP k hk
+    rw [gw, gn, gs, gc]
+    refine ⟨(hwb hk).1, rfl, fun h8 i hi => ?_⟩
+    rw [(gv i hi).2]
+    split
+    · next hb =>
+      have := (hside k hk i hi).1 hb
+      exact ((hwb hk).2.2.2 h8).2 _ (by rw [(hwb hk).2.1, hpbk k hk]; dsimp only; omega)
+    · exact hcb0 hk h8
+  have hTn : ∀ k (hk : k < p), (T[k]'hk).n.toNat = (cs₀[k]'hk).1.toNat := fun k hk => by
+    rw [hTk k hk]; exact congrArg USize.toNat (hnk k hk)
+  have hGLn : ∀ k (hk : k < p), (GL[k]'hk).n.toNat = (cs₀[k]'hk).1.toNat := fun k hk => by
+    rw [hGLk k hk, (hP k hk).1.2.1]; exact congrArg USize.toNat (hnk k hk)
+  have hGRn : ∀ k (hk : k < p), (GR[k]'hk).n.toNat = (cs₀[k]'hk).1.toNat := fun k hk => by
+    rw [hGRk k hk, (hP k hk).2.1.2.1]; exact congrArg USize.toNat (hnk k hk)
+  have hLT : T.toList.map (·.n.toNat) = cs₀.toList.map (·.1.toNat) :=
+    List.ext_getElem (by simp) fun k h1 _ => by
+      simp only [List.getElem_map, Vector.getElem_toList]; exact hTn k (by simpa using h1)
+  have hLGL : GL.toList.map (·.n.toNat) = cs₀.toList.map (·.1.toNat) :=
+    List.ext_getElem (by simp) fun k h1 _ => by
+      simp only [List.getElem_map, Vector.getElem_toList]; exact hGLn k (by simpa using h1)
+  have hLGR : GR.toList.map (·.n.toNat) = cs₀.toList.map (·.1.toNat) :=
+    List.ext_getElem (by simp) fun k h1 _ => by
+      simp only [List.getElem_map, Vector.getElem_toList]; exact hGRn k (by simpa using h1)
+  have hLn : (T.map (·.n)).toList.map (·.toNat) = cs₀.toList.map (·.1.toNat) := by
+    rw [Vector.toList_map, List.map_map]; exact hLT
+  have hO : ∀ (L : List Code) k, L.map (·.n.toNat) = cs₀.toList.map (·.1.toNat) →
+      ((L.take k).map (·.n.toNat)).sum = ((cs₀.toList.take k).map (·.1.toNat)).sum := fun L k h => by
+    rw [List.map_take, h, ← List.map_take]
+  have hOn : ∀ k, (((T.map (·.n)).toList.take k).map (·.toNat)).sum =
+      ((cs₀.toList.take k).map (·.1.toNat)).sum := fun k => by rw [List.map_take, hLn, ← List.map_take]
+  have hlt : ∀ k (hk : k < p), ∀ i < (cs₀[k]'hk).1.toNat, ((cs₀.toList.take k).map (·.1.toNat)).sum + i <
+      (cs₀.toList.map (·.1.toNat)).sum := fun k hk i hi => by
+    have := take_sum_le (cs₀.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
+    simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this; omega
+  -- every claim names a part, so with none there is nothing to show
+  -- (no `subst` of `p`: rewriting `0` through every hypothesis times out)
+  rcases Nat.eq_zero_or_pos p with h0 | hp
+  · exact ⟨⟨fun {_ _} hk => absurd hk (by omega), fun {_} hk => absurd hk (by omega)⟩,
+      fun {_ _} hk => absurd hk (by omega)⟩
+  have catT := cat_parts T hp hlT hwT (by rw [hLT]; exact hN)
+  have catL := cat_parts GL hp hlGL hwGL (by rw [hLGL]; exact hN)
+  have catR := cat_parts GR hp hlGR hwGR (by rw [hLGR]; exact hN)
+  have hn1 : (Code.cat GL.toArray).n = (Code.cat T.toArray).n :=
+    USize.toNat_inj.1 (by rw [catL.2.1, catT.2.1, hLGL, hLT])
+  have hP1 := pairCode_spec false (Code.cat T.toArray) (Code.cat GL.toArray) hn1 catT.1 catL.1
+  dsimp only at hP1
+  obtain ⟨⟨h1w, h1n, h1s, h1id⟩, h1iff⟩ := hP1
+  have hn2 : (Code.cat GR.toArray).n = (pairCode false (Code.cat T.toArray) (Code.cat GL.toArray)).1.n :=
+    USize.toNat_inj.1 (by rw [catR.2.1, h1n, catT.2.1, hLGR, hLT])
+  have hP2 := pairCode_spec false _ (Code.cat GR.toArray) hn2 ⟨h1w, h1s, fun h => (h1id h).2⟩ catR.1
+  dsimp only at hP2
+  obtain ⟨⟨h2w, h2n, h2s, h2id⟩, h2iff⟩ := hP2
+  have hs : ((T.map (·.n)).toList.map (·.toNat)).sum = (pairCode false (pairCode false (Code.cat T.toArray)
+      (Code.cat GL.toArray)).1 (Code.cat GR.toArray)).1.n.toNat := by
+    rw [hLn, h2n, h1n, catT.2.1, hLT]
+  refine ⟨⟨fun {k l} hk hl i j hi hj => ?_, fun {k} hk => ?_⟩, fun {k l} hk hl => ?_⟩
+  · obtain ⟨hwk, -, -, hck⟩ := cut_get _ (T.map (·.n)) h2w hs hk
+    obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (T.map (·.n)) h2w hs hl
+    have hik : i < ((T.map (·.n : Code → USize))[k]'hk).toNat := by rw [Vector.getElem_map, hTn k hk]; exact hi
+    have hjl : j < ((T.map (·.n : Code → USize))[l]'hl).toNat := by rw [Vector.getElem_map, hTn l hl]; exact hj
+    have hoi := hlt k hk i hi
+    have hoj := hlt l hl j hj
+    rw [hwk, hwl, hck i hik, hcl j hjl, hOn, hOn,
+      h2iff _ (by rw [h1n, catT.2.1, hLT]; exact hoi) _ (by rw [h1n, catT.2.1, hLT]; exact hoj),
+      h1iff _ (by rw [catT.2.1, hLT]; exact hoi) _ (by rw [catT.2.1, hLT]; exact hoj),
+      ← hO T.toList k hLT, ← hO T.toList l hLT,
+      catT.2.2 k hk i (by rw [hTn k hk]; exact hi), catT.2.2 l hl j (by rw [hTn l hl]; exact hj),
+      hO T.toList k hLT, hO T.toList l hLT, ← hO GL.toList k hLGL, ← hO GL.toList l hLGL,
+      catL.2.2 k hk i (by rw [hGLn k hk]; exact hi), catL.2.2 l hl j (by rw [hGLn l hl]; exact hj),
+      hO GL.toList k hLGL, hO GL.toList l hLGL, ← hO GR.toList k hLGR, ← hO GR.toList l hLGR,
+      catR.2.2 k hk i (by rw [hGRn k hk]; exact hi), catR.2.2 l hl j (by rw [hGRn l hl]; exact hj)]
+    have hik' : i < (cs[k]'hk).1.toNat := by rw [hnk k hk]; exact hi
+    have hjl' : j < (cs[l]'hl).1.toNat := by rw [hnk l hl]; exact hj
+    obtain ⟨⟨gwk, -, -, -⟩, ⟨rwk, -, -, -⟩, gvk⟩ := hP k hk
+    obtain ⟨⟨gwl, -, -, -⟩, ⟨rwl, -, -, -⟩, gvl⟩ := hP l hl
+    rw [hTk k hk, hTk l hl, hGLk k hk, hGLk l hl, hGRk k hk, hGRk l hl, gwk, gwl, rwk, rwl,
+      (gvk i hik').1, (gvl j hjl').1, (gvk i hik').2, (gvl j hjl').2, idAt_one, idAt_one,
+      (KernelWF.held_row _ (hfit hk) ⟨i, hi⟩).symm.trans (row_part_congr (hcsk k hk).symm hi hik'),
+      (KernelWF.held_row _ (hfit hl) ⟨j, hj⟩).symm.trans (row_part_congr (hcsk l hl).symm hj hjl')]
+    have sk := hside k hk i hik'
+    have sl := hside l hl j hjl'
+    apply sum_iff
+    · exact fun h => ⟨_, row_sum_inl _ hik' h (sk.2 h)⟩
+    · exact fun h => ⟨_, row_sum_inr _ hik' h (sk.1 h)⟩
+    · exact fun h => ⟨_, row_sum_inl _ hjl' h (sl.2 h)⟩
+    · exact fun h => ⟨_, row_sum_inr _ hjl' h (sl.1 h)⟩
+    · intro h1 h2
+      have := sk.2 h1
+      have := sl.2 h2
+      have hiA : min (max ((cs[k]'hk).2.2.2.2.1.get ⟨i, hik'⟩).toInt 0).toNat ((cs[k]'hk).2.1.toNat - 1) <
+          (pa[k]'hk).1.toNat := by rw [hpak k hk]; dsimp only; omega
+      have hjA : min (max ((cs[l]'hl).2.2.2.2.1.get ⟨j, hjl'⟩).toInt 0).toNat ((cs[l]'hl).2.1.toNat - 1) <
+          (pa[l]'hl).1.toNat := by rw [hpak l hl]; dsimp only; omega
+      rw [row_sum_inl _ hik' h1 (sk.2 h1), row_sum_inl _ hjl' h2 (sl.2 h2), Sum.inl.injEq, hfa hk hl hiA hjA,
+        row_part_congr (hpak k hk) hiA _, row_part_congr (hpak l hl) hjA _]
+    · intro h1 h2
+      have := sk.1 h1
+      have := sl.1 h2
+      have hiB : min (max ((cs[k]'hk).2.2.2.2.1.get ⟨i, hik'⟩).toInt 0).toNat ((cs[k]'hk).2.2.1.toNat - 1) <
+          (pb[k]'hk).1.toNat := by rw [hpbk k hk]; dsimp only; omega
+      have hjB : min (max ((cs[l]'hl).2.2.2.2.1.get ⟨j, hjl'⟩).toInt 0).toNat ((cs[l]'hl).2.2.1.toNat - 1) <
+          (pb[l]'hl).1.toNat := by rw [hpbk l hl]; dsimp only; omega
+      rw [row_sum_inr _ hik' h1 (sk.1 h1), row_sum_inr _ hjl' h2 (sl.1 h2), Sum.inr.injEq, hfb hk hl hiB hjB,
+        row_part_congr (hpbk k hk) hiB _, row_part_congr (hpbk l hl) hjB _]
+  · obtain ⟨hwk, hnk', hck, hik⟩ := cut_get _ (T.map (·.n)) h2w hs hk
+    have hzk := cut_size _ (T.map (·.n)) h2w hs h2s hk
+    dsimp only
+    rw [hzk, hwk, hnk', hck]
+    refine ⟨h2w, by rw [Vector.getElem_map, hTk k hk]; exact hnk k hk, rfl, fun h8 => ⟨(h2id h8).1, fun i hi => ?_⟩⟩
+    rw [hik i hi]
+    refine (h2id h8).2 _ ?_
+    rw [← hs, hLn, hOn]
+    exact hlt k hk i (by rw [Vector.getElem_map, hTn k hk] at hi; exact hi)
+  · rw [(cut_get _ (T.map (·.n)) h2w hs hk).1, (cut_get _ (T.map (·.n)) h2w hs hl).1]
+
+#print axioms codes_sum_faithful_wf
 
 end LeetQ.Rel.Alg
