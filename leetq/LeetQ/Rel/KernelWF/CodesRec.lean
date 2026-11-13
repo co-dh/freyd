@@ -482,4 +482,141 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
 
 #print axioms codes_sum_faithful_wf
 
+/-! ## Arrays: `rankSlices` numbers each slice by its index among the distinct slices before it -/
+
+/-- **One step of the fold `rankSlices` runs** keeps its reading: the ids hold `m` longs, the slices kept are
+    distinct, and id `t` is the index of slice `t` among them, at most `t`; `m < 2⁶⁴` keeps an index its long. -/
+theorem rankFold_step (S : Nat → Array UInt64)
+    {f : ByteArray × Array (Array UInt64) → Nat → ByteArray × Array (Array UInt64)}
+    (hf : ∀ ids seen j, f (ids, seen) j = match seen.findIdx? (· == S j) with
+      | some k => (Column.pushBits ids (UInt64.ofNat k) 8, seen)
+      | none => (Column.pushBits ids (UInt64.ofNat seen.size) 8, seen.push (S j)))
+    (st : ByteArray × Array (Array UInt64)) (m : Nat) (hm : m + 1 ≤ 2 ^ 64)
+    (hs : st.1.size = 8 * m) (hnd : st.2.toList.Nodup) (hsz : st.2.size ≤ m)
+    (hid : ∀ t (ht : t < m), ∃ h : (Column.bitsAt st.1 (8 * t) 8).toNat < st.2.size,
+      st.2[(Column.bitsAt st.1 (8 * t) 8).toNat] = S t ∧ (Column.bitsAt st.1 (8 * t) 8).toNat ≤ t) :
+    (f st m).1.size = 8 * (m + 1) ∧ (f st m).2.toList.Nodup ∧ (f st m).2.size ≤ m + 1 ∧
+      ∀ t (ht : t < m + 1), ∃ h : (Column.bitsAt (f st m).1 (8 * t) 8).toNat < (f st m).2.size,
+        (f st m).2[(Column.bitsAt (f st m).1 (8 * t) 8).toNat] = S t ∧
+        (Column.bitsAt (f st m).1 (8 * t) 8).toNat ≤ t := by
+    obtain ⟨ids, seen⟩ := st
+    dsimp only at hs hnd hsz hid
+    -- an earlier id is not moved by the push
+    have keep : ∀ v t, t < m → Column.bitsAt (Column.pushBits ids v 8) (8 * t) 8 = Column.bitsAt ids (8 * t) 8 :=
+      fun v t ht => Column.bitsAt_congr _ _ _ _ fun k hk => Column.pushBits_getElem?_lt _ _ _ _ (by omega)
+    have last : ∀ v, Column.bitsAt (Column.pushBits ids v 8) (8 * m) 8 = v := fun v => by
+      rw [show 8 * m = ids.size by omega]; exact bitsAt_pushBits8 ids v
+    rw [hf]
+    split
+    · next k hk =>
+      obtain ⟨hkl, hb, -⟩ := Array.findIdx?_eq_some_iff_getElem.1 hk
+      have hkS : seen[k] = S m := beq_iff_eq.1 hb
+      dsimp only
+      refine ⟨by rw [Column.pushBits_size, hs]; omega, hnd, by omega, fun t ht => ?_⟩
+      by_cases htm : t < m
+      · rw [keep _ t htm]
+        obtain ⟨h1, e1, l1⟩ := hid t htm
+        exact ⟨h1, e1, by omega⟩
+      · obtain rfl : t = m := by omega
+        rw [last, UInt64.toNat_ofNat_of_lt' (by first | omega | (simp only [UInt64.size]; omega))]
+        exact ⟨hkl, hkS, by omega⟩
+    · next hk =>
+      have hn := Array.findIdx?_eq_none_iff.1 hk
+      have hnot : S m ∉ seen := fun h => by have := hn _ h; simp at this
+      dsimp only
+      refine ⟨by rw [Column.pushBits_size, hs]; omega, ?_, by simp; omega, fun t ht => ?_⟩
+      · rw [Array.toList_push, List.nodup_append]
+        refine ⟨hnd, by simp, fun a ha b hb => ?_⟩
+        rw [List.mem_singleton] at hb
+        subst hb
+        exact fun e => hnot (e ▸ Array.mem_def.2 ha)
+      by_cases htm : t < m
+      · rw [keep _ t htm]
+        obtain ⟨h1, e1, l1⟩ := hid t htm
+        exact ⟨by simp; omega, by simpa [Array.getElem_push, h1] using e1, l1⟩
+      · obtain rfl : t = m := by omega
+        rw [last, UInt64.toNat_ofNat_of_lt' (by first | omega | (simp only [UInt64.size]; omega))]
+        exact ⟨by simp, by simp, by omega⟩
+
+/-- **The fold `rankSlices` runs, read back** after `m` steps, `rankFold_step` by induction. -/
+theorem rankFold_spec (S : Nat → Array UInt64)
+    {f : ByteArray × Array (Array UInt64) → Nat → ByteArray × Array (Array UInt64)}
+    (hf : ∀ ids seen j, f (ids, seen) j = match seen.findIdx? (· == S j) with
+      | some k => (Column.pushBits ids (UInt64.ofNat k) 8, seen)
+      | none => (Column.pushBits ids (UInt64.ofNat seen.size) 8, seen.push (S j))) :
+    ∀ m, m ≤ 2 ^ 64 →
+      ((List.range m).foldl f (ByteArray.empty, #[])).1.size = 8 * m ∧
+      ((List.range m).foldl f (ByteArray.empty, #[])).2.toList.Nodup ∧
+      ((List.range m).foldl f (ByteArray.empty, #[])).2.size ≤ m ∧
+      ∀ t (ht : t < m), ∃ h : (Column.bitsAt ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t) 8).toNat <
+          ((List.range m).foldl f (ByteArray.empty, #[])).2.size,
+        ((List.range m).foldl f (ByteArray.empty, #[])).2[(Column.bitsAt
+          ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t) 8).toNat] = S t ∧
+        (Column.bitsAt ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t) 8).toNat ≤ t
+  | 0, _ => ⟨rfl, List.nodup_nil, Nat.le_refl _, fun _ ht => absurd ht (Nat.not_lt_zero _)⟩
+  | m + 1, hm => by
+    obtain ⟨hs, hnd, hsz, hid⟩ := rankFold_spec S hf m (by omega)
+    simp only [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    exact rankFold_step S hf _ m hm hs hnd hsz hid
+
+/-- **Two slices get one id exactly when they are equal**, and slice `t`'s id is at most `t`: the fold
+    `rankSlices` runs, `rankFold_spec` read through the distinctness of the slices kept. -/
+theorem rankFold_get (S : Nat → Array UInt64)
+    {f : ByteArray × Array (Array UInt64) → Nat → ByteArray × Array (Array UInt64)}
+    (hf : ∀ ids seen j, f (ids, seen) j = match seen.findIdx? (· == S j) with
+      | some k => (Column.pushBits ids (UInt64.ofNat k) 8, seen)
+      | none => (Column.pushBits ids (UInt64.ofNat seen.size) 8, seen.push (S j)))
+    {m : Nat} (hm : m ≤ 2 ^ 64) {t t' : Nat} (ht : t < m) (ht' : t' < m) :
+    (Column.bitsAt ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t) 8 =
+        Column.bitsAt ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t') 8 ↔ S t = S t') ∧
+      (Column.bitsAt ((List.range m).foldl f (ByteArray.empty, #[])).1 (8 * t) 8).toNat ≤ t := by
+  obtain ⟨-, hnd, -, hid⟩ := rankFold_spec S hf m hm
+  generalize (List.range m).foldl f (ByteArray.empty, #[]) = st at hnd hid ⊢
+  obtain ⟨h1, e1, l1⟩ := hid t ht
+  obtain ⟨h2, e2, -⟩ := hid t' ht'
+  refine ⟨⟨fun e => ?_, fun e => ?_⟩, l1⟩
+  · have hab : (Column.bitsAt st.1 (8 * t) 8).toNat = (Column.bitsAt st.1 (8 * t') 8).toNat := by rw [e]
+    rw [← e1, ← e2]; simp only [hab]
+  · have he : st.2.toList[(Column.bitsAt st.1 (8 * t) 8).toNat]'(by simpa using h1) =
+        st.2.toList[(Column.bitsAt st.1 (8 * t') 8).toNat]'(by simpa using h2) := by
+      simp only [Array.getElem_toList]; rw [e1, e2, e]
+    refine UInt64.toNat_inj.1 ?_
+    rcases Nat.lt_trichotomy (Column.bitsAt st.1 (8 * t) 8).toNat (Column.bitsAt st.1 (8 * t') 8).toNat with
+      h | h | h
+    · exact absurd he (List.pairwise_iff_getElem.1 hnd _ _ _ _ h)
+    · exact h
+    · exact absurd he.symm (List.pairwise_iff_getElem.1 hnd _ _ _ _ h)
+
+#print axioms rankFold_get
+
+/-- **`rankSlices`' content**: where it does not decline (`rankSlices_size`'s guards), slices `j`, `j'` of `o`
+    get one id exactly when they are equal as sequences, and slice `j`'s id is at most `j`. -/
+theorem rankSlices_get (w : USize) (v o : ByteArray) (hw : w.toNat ≤ 64) (ho : 8 ≤ o.size)
+    (h0 : 0 ≤ (Column.bitsAt o 0 8).toInt64.toInt)
+    (hcap : (Column.bitsAt o (8 * (o.size / 8 - 1)) 8).toInt64.toInt ≤
+      (Column.idsCap v w.toNat (Column.bitsAt o (8 * (o.size / 8 - 1)) 8).toInt64.toInt.toNat : Int))
+    (hasc : ∀ j, j < o.size / 8 - 1 →
+      (Column.bitsAt o (8 * j) 8).toInt64.toInt ≤ (Column.bitsAt o (8 * (j + 1)) 8).toInt64.toInt)
+    (hg : o.size / 8 - 1 ≤ 2 ^ 64) {j j' : Nat} (hj : j < o.size / 8 - 1) (hj' : j' < o.size / 8 - 1) :
+    (Column.bitsAt (Order.rankSlices w v o) (8 * j) 8 = Column.bitsAt (Order.rankSlices w v o) (8 * j') 8 ↔
+      (Array.range ((Column.bitsAt o (8 * (j + 1)) 8).toInt64.toInt.toNat -
+          (Column.bitsAt o (8 * j) 8).toInt64.toInt.toNat)).map (fun t =>
+        Column.resAt v 0 w.toNat ((Column.bitsAt o (8 * j) 8).toInt64.toInt.toNat + t)) =
+      (Array.range ((Column.bitsAt o (8 * (j' + 1)) 8).toInt64.toInt.toNat -
+          (Column.bitsAt o (8 * j') 8).toInt64.toInt.toNat)).map (fun t =>
+        Column.resAt v 0 w.toNat ((Column.bitsAt o (8 * j') 8).toInt64.toInt.toNat + t))) ∧
+      (Column.bitsAt (Order.rankSlices w v o) (8 * j) 8).toNat ≤ j := by
+  simp only [Order.rankSlices]
+  rw [if_neg]
+  · rw [← Array.foldl_toList, Array.toList_range]
+    refine rankFold_get (fun j => (Array.range ((Column.bitsAt o (8 * (j + 1)) 8).toInt64.toInt.toNat -
+        (Column.bitsAt o (8 * j) 8).toInt64.toInt.toNat)).map (fun t =>
+      Column.resAt v 0 w.toNat ((Column.bitsAt o (8 * j) 8).toInt64.toInt.toNat + t))) ?_ hg hj hj'
+    intro _ _ _; rfl
+  · simp only [Bool.or_eq_true, decide_eq_true_eq, List.any_eq_true, List.mem_range, not_or,
+      not_exists, not_and, Nat.mul_zero]
+    exact ⟨⟨⟨⟨Nat.not_lt.2 hw, Nat.not_lt.2 ho⟩, Int.not_lt.2 h0⟩, Int.not_lt.2 hcap⟩, fun j hj => Int.not_lt.2 (hasc j hj)⟩
+
+#print axioms rankSlices_get
+
 end LeetQ.Rel.Alg
