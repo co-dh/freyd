@@ -175,13 +175,41 @@ theorem sum_size_mul (q : Nat) :
     simp only [List.map_cons, List.sum_cons, Nat.add_mul]
     rw [h c (by simp), sum_size_mul q l fun d hd => h d (by simp [hd])]
 
+/-- **Past its `n` ids a sub-byte `packIds` payload reads `0`**: the last byte's tail fields are cleared,
+    and a byte past the payload is missing, which `resAt` reads as `0`. -/
+theorem idAt_packIds_past {w n i : Nat} {f : Nat → Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4) (hi : n ≤ i) :
+    Column.idAt (Column.packIds w n f) w i = 0 := by
+  have hs := packIds_size (W := w) (by omega) n f
+  obtain ⟨per, hper, hwp⟩ : ∃ per, 8 / w = per ∧ (w = 1 ∧ per = 8 ∨ w = 2 ∧ per = 4 ∨ w = 4 ∧ per = 2) := by
+    rcases hw with rfl | rfl | rfl <;> exact ⟨_, rfl, by decide⟩
+  have hp : 0 < per := by rcases hwp with ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, rfl⟩ <;> decide
+  obtain ⟨q, r, hr, rfl⟩ : ∃ q r, r < per ∧ i = q * per + r :=
+    ⟨i / per, i % per, Nat.mod_lt _ hp, (Nat.div_add_mod' _ _).symm⟩
+  by_cases hq : q < (n + per - 1) / per
+  · simp only [Column.idAt, Column.packIds, if_neg (show ¬ 8 ≤ w by omega), if_neg (show w ≠ 0 by omega), ite_shift]
+    rw [hper, resAt_sub _ _ w per q r hwp hr hq,
+      byte_field w per hwp _ (fun j _ => by
+        split <;> first | exact Nat.mod_lt _ (Nat.two_pow_pos _) | exact Nat.two_pow_pos _) hr,
+      if_neg (by omega)]
+  -- byte `q` lies past the payload
+  generalize Column.packIds w n f = P at hs
+  have h3 : (q * per + r) * w = 8 * q + r * w := by rcases hwp with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> omega
+  have hrw : r * w + w ≤ 8 := by rcases hwp with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> omega
+  have hPq : P.size ≤ q := by rw [hs]; rcases hwp with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> omega
+  have h1 : (q * per + r) * w / 8 = q := Nat.div_eq_of_lt_le (by rw [h3]; omega) (by rw [h3]; omega)
+  have h2 : ((q * per + r) * w + w + 7) / 8 = q + 1 := Nat.div_eq_of_lt_le (by rw [h3]; omega) (by rw [h3]; omega)
+  unfold Column.idAt Column.resAt
+  rw [h2, h1, Nat.add_sub_cancel_left, List.range'_one]
+  simp only [List.foldl_cons, List.foldl_nil, Nat.zero_add, getElem?_neg P q (by omega), Option.getD_none]
+  rfl
+
 /-- **Code `i` of part `k` is code `(counts before k) + i` of `Code.cat`**, every part on one lane `w`,
-    `⌈n·w/8⌉` bytes, its codes below its `card` at `2`/`4` bits, and the summed count a `USize`:
+    `⌈n·w/8⌉` bytes, its codes below its `card` (or `0`) at `2`/`4` bits, and the summed count a `USize`:
     `concatBits` at a bit, `concatBytes` at a byte lane, `concatIds` through each part's identity map. -/
 theorem cat_get (cs : Array Code) {w : Nat}
     (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
     (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
-    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < c.card)
+    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < max c.card 1)
     (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
     (Code.cat cs).w = w ∧ (Code.cat cs).n.toNat = (cs.toList.map (·.n.toNat)).sum ∧
       ∀ k (hk : k < cs.size), ∀ i < cs[k].n.toNat,
@@ -242,8 +270,13 @@ theorem cat_get (cs : Array Code) {w : Nat}
         Column.idAt (Column.packIds w cs[k].card id) w (Column.idAt cs[k].b w i) := by
       rw [getElem!_pos B _ hlt]; exact Option.some_inj.1 ((Array.getElem?_eq_getElem hlt).symm.trans ho)
     have hx := hid (by rcases hi8 with h | h <;> omega) _ (hmem k hk) i hi
+    -- an id at or past `card` is the `0` below `max card 1`, which the empty map also reads
+    have hpk : Column.idAt (Column.packIds w cs[k].card id) w (Column.idAt cs[k].b w i) = Column.idAt cs[k].b w i := by
+      by_cases hc : Column.idAt cs[k].b w i < cs[k].card
+      · exact idAt_packIds (f := id) (by omega) hc (idAt_lt _ _ _ hw64)
+      · rw [idAt_packIds_past (by omega) (by omega)]; omega
     rw [idAt_packIds (f := fun j => B[j]!) (by omega) hlt (by show B[_]! < 2 ^ w; rw [hv]; exact idAt_lt _ _ _ hw64), hv,
-      idAt_packIds (f := id) (by omega) hx (idAt_lt _ _ _ hw64)]; rfl
+      hpk]
   obtain ⟨q, hq, hq8, hlk⟩ : ∃ q, w = 8 * q ∧ q ≤ 8 ∧ ∃ kd, laneKind w = some kd ∧ kd ≠ .bit := by
     rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp_all <;> first
       | exact ⟨1, rfl, by decide, .u8, rfl, by decide⟩ | exact ⟨2, rfl, by decide, .i16, rfl, by decide⟩
@@ -311,14 +344,14 @@ theorem counts_flatMap_size {γ : Type} (xs : Array USize) (m : Nat) (hm : xs.si
   first | (rw [← Array.sum_toList, Array.toList_map]) | (rcases xs with ⟨l⟩; simp) | rfl
 
 /-- **`Code.cat` is well formed** under `cat_get`'s hypotheses: `⌈n·w/8⌉` bytes, and below a byte its codes
-    lie below its `card`, the parts' being below theirs. -/
+    lie below `max card 1`, the parts' being below theirs. -/
 theorem cat_wf (cs : Array Code) {w : Nat}
     (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
     (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
-    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < c.card)
+    (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < max c.card 1)
     (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
     (Code.cat cs).b.size = ((Code.cat cs).n.toNat * w + 7) / 8 ∧
-      (w < 8 → ∀ i < (Code.cat cs).n.toNat, Column.idAt (Code.cat cs).b w i < (Code.cat cs).card) := by
+      (w < 8 → ∀ i < (Code.cat cs).n.toNat, Column.idAt (Code.cat cs).b w i < max (Code.cat cs).card 1) := by
   obtain ⟨-, hn, hg⟩ := cat_get cs hw h0 hcw hsz hid hN
   have hS : cs.foldl (fun s c => s + c.n.toNat) 0 = (cs.toList.map (·.n.toNat)).sum := by
     rw [← Array.foldl_toList, foldl_add_sum (fun c : Code => c.n.toNat), Nat.zero_add]
@@ -349,8 +382,9 @@ theorem cat_wf (cs : Array Code) {w : Nat}
     have hk' : k < cs.size := by simpa using hk
     have hx' : x < (cs[k]'hk').n.toNat := by simpa using hx
     rw [← List.map_take, hg k hk' x hx', hcard, ← Array.foldl_toList]
-    exact Nat.lt_of_lt_of_le (hid h8 _ (Array.getElem_mem hk') x hx')
-      ((le_foldl_max cs.toList 0).2 _ (by simp))
+    have := hid h8 _ (Array.getElem_mem hk') x hx'
+    have := (le_foldl_max cs.toList 0).2 (cs[k]'hk') (by simp)
+    omega
 
 /-! ## Several parts of one atom type: one grouping pass over the `raze`, then `cut` -/
 
@@ -660,9 +694,9 @@ theorem mul_add_inj {d x y x' y' : Nat} (hy : y < d) (hy' : y' < d) : x * d + y 
     formed, and two of its codes agree exactly when both columns' codes do. -/
 theorem pairCode_spec (cl : Bool) (a b : Code) (hn : b.n = a.n)
     (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
-      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < a.card))
+      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
     (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
-      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < b.card)) :
+      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2)) :
     let c := (pairCode cl a b).1
     ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = a.n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
@@ -687,7 +721,7 @@ theorem pairCode_spec (cl : Bool) (a b : Code) (hn : b.n = a.n)
     · intro h; simp at h
   have hd : 2 ≤ max a.card 2 * max b.card 2 :=
     Nat.le_trans (by omega : 2 ≤ max a.card 2) (Nat.le_mul_of_pos_right _ (by omega))
-  obtain ⟨-, h63, hks, hkey⟩ := composeKey_code a b ha hb h₁ h₂ hd hk
+  obtain ⟨-, h63, hks, hkey⟩ := composeKey_code a b ha hb h₁ h₂ (Nat.le_max_right _ _) (Nat.le_max_right _ _) hk
   have hw0 : Column.idWidthOf (max a.card 2 * max b.card 2) ≠ 0 := fun h0 => by
     have := lt_two_pow_idWidthOf (L := max a.card 2 * max b.card 2) (k := 1) (by omega) (by omega)
     rw [h0] at this; omega
@@ -727,21 +761,21 @@ theorem codes_prod_eq {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a b)) p) :
 theorem row_part_congr {A : Obj} {x y : Part A} (h : x = y) {i : Nat} (hx : i < x.1.toNat) (hy : i < y.1.toNat) :
     Vals.row x.2 ⟨i, hx⟩ = Vals.row y.2 ⟨i, hy⟩ := by subst h; rfl
 
-/-- Codes of parts on one lane, each `⌈n·w/8⌉` bytes with its codes below its `card` under a byte, laid
+/-- Codes of parts on one lane, each `⌈n·w/8⌉` bytes with its codes below `max card 1` under a byte, laid
     end to end by `Code.cat`: code `(counts before k) + i` is part `k`'s code `i`, at the parts' lane. -/
 theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
     (hl : ∀ {k l : Nat} (hk : k < p) (hl : l < p), cx[k].w = cx[l].w)
     (hwf : ∀ {k : Nat} (hk : k < p),
       (cx[k].w = 1 ∨ cx[k].w = 2 ∨ cx[k].w = 4 ∨ cx[k].w = 8 ∨ cx[k].w = 16 ∨ cx[k].w = 32 ∨ cx[k].w = 64) ∧
       cx[k].b.size = (cx[k].n.toNat * cx[k].w + 7) / 8 ∧
-      (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < cx[k].card))
+      (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < max cx[k].card 1))
     (hN : (cx.toList.map (·.n.toNat)).sum < USize.size) :
     (((Code.cat cx.toArray).w = 1 ∨ (Code.cat cx.toArray).w = 2 ∨ (Code.cat cx.toArray).w = 4 ∨
         (Code.cat cx.toArray).w = 8 ∨ (Code.cat cx.toArray).w = 16 ∨ (Code.cat cx.toArray).w = 32 ∨
         (Code.cat cx.toArray).w = 64) ∧
       (Code.cat cx.toArray).b.size = ((Code.cat cx.toArray).n.toNat * (Code.cat cx.toArray).w + 7) / 8 ∧
       ((Code.cat cx.toArray).w < 8 → ∀ i < (Code.cat cx.toArray).n.toNat,
-        Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w i < (Code.cat cx.toArray).card)) ∧
+        Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w i < max (Code.cat cx.toArray).card 1)) ∧
     (Code.cat cx.toArray).n.toNat = (cx.toList.map (·.n.toNat)).sum ∧
       ∀ k (hk : k < p), ∀ i < cx[k].n.toNat, Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w
         (((cx.toList.take k).map (·.n.toNat)).sum + i) = Column.idAt cx[k].b cx[k].w i := by
@@ -751,7 +785,7 @@ theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
   have hcw : ∀ c ∈ cx.toArray, c.w = cx[0].w := fun c hc => by obtain ⟨k, hk, rfl⟩ := hmem c hc; exact hl hk hp
   have hsz : ∀ c ∈ cx.toArray, c.b.size = (c.n.toNat * cx[0].w + 7) / 8 := fun c hc => by
     obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]; exact (hwf hk).2.1
-  have hid : cx[0].w < 8 → ∀ c ∈ cx.toArray, ∀ i < c.n.toNat, Column.idAt c.b cx[0].w i < c.card :=
+  have hid : cx[0].w < 8 → ∀ c ∈ cx.toArray, ∀ i < c.n.toNat, Column.idAt c.b cx[0].w i < max c.card 1 :=
     fun h8 c hc i hi => by
       obtain ⟨k, hk, rfl⟩ := hmem c hc; rw [← hl hk hp]
       exact (hwf hk).2.2 (by rw [hl hk hp]; exact h8) i hi

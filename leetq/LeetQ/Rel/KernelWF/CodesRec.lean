@@ -238,8 +238,7 @@ theorem codes_sum_eq {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum a b)) p) 
     on the parts `Obj.codes` hands them (each part made `held` first): the tag, the left codes gathered at
     each row's own left position (a miss, `0`, at an `inr` row), the right ones likewise, `pairCode`d in turn.
     Bounds: the parts' summed count a `USize`, each side's payload below `2⁶¹` (`place`'s longs stay in
-    range), the rows read back through `held` (`Vals.PickFits`), and a side's code bound positive under a
-    byte — the miss's `0` must lie below it for `pairCode_spec`. -/
+    range), and the rows read back through `held` (`Vals.PickFits`). -/
 theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum a b)) p)
     {cs : Vector (Part (.sum a b)) p} {pa : Vector (Part a) p} {pb : Vector (Part b) p} {ca cb : Vector Code p}
     (hcs : cs₀.map (fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))) = cs)
@@ -268,8 +267,6 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
         ((cb[k]'hk).w < 8 → (cb[k]'hk).card < USize.size ∧
           ∀ i < (cb[k]'hk).n.toNat, Column.idAt (cb[k]'hk).b (cb[k]'hk).w i < (cb[k]'hk).card))
     (hlb : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (cb[k]'hk).w = (cb[l]'hl).w)
-    (hca0 : ∀ {k : Nat} (hk : k < p), (ca[k]'hk).w < 8 → 0 < (ca[k]'hk).card)
-    (hcb0 : ∀ {k : Nat} (hk : k < p), (cb[k]'hk).w < 8 → 0 < (cb[k]'hk).card)
     (hLa : ∀ {k : Nat} (hk : k < p), (pa[k]'hk).1.toNat < 2 ^ 61)
     (hLb : ∀ {k : Nat} (hk : k < p), (pb[k]'hk).1.toNat < 2 ^ 61)
     (hN : (cs₀.toList.map (·.1.toNat)).sum < USize.size)
@@ -327,14 +324,14 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
   have hwT : ∀ {k : Nat} (hk : k < p), ((T[k]'hk).w = 1 ∨ (T[k]'hk).w = 2 ∨ (T[k]'hk).w = 4 ∨
       (T[k]'hk).w = 8 ∨ (T[k]'hk).w = 16 ∨ (T[k]'hk).w = 32 ∨ (T[k]'hk).w = 64) ∧
       (T[k]'hk).b.size = ((T[k]'hk).n.toNat * (T[k]'hk).w + 7) / 8 ∧
-      ((T[k]'hk).w < 8 → ∀ i < (T[k]'hk).n.toNat, Column.idAt (T[k]'hk).b (T[k]'hk).w i < (T[k]'hk).card) :=
+      ((T[k]'hk).w < 8 → ∀ i < (T[k]'hk).n.toNat, Column.idAt (T[k]'hk).b (T[k]'hk).w i < max (T[k]'hk).card 1) :=
     fun {k} hk => by
       rw [hTk k hk]
       refine ⟨Or.inl rfl, ?_, fun _ i _ => ?_⟩
       · have hw := (cs[k]'hk).2.2.2.1.wf
         rw [enc_tagBits] at hw
         simpa [Enc.WF] using hw
-      · show Column.idAt _ 1 i < 2
+      · show Column.idAt _ 1 i < max 2 1
         rw [idAt_one]; split <;> decide
   have hlGL : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (GL[k]'hk).w = (GL[l]'hl).w := fun {k l} hk hl => by
     rw [hGLk k hk, hGLk l hl, (hP k hk).1.1, (hP l hl).1.1]; exact hla hk hl
@@ -344,22 +341,23 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
       (GL[k]'hk).w = 8 ∨ (GL[k]'hk).w = 16 ∨ (GL[k]'hk).w = 32 ∨ (GL[k]'hk).w = 64) ∧
       (GL[k]'hk).b.size = ((GL[k]'hk).n.toNat * (GL[k]'hk).w + 7) / 8 ∧
       ((GL[k]'hk).w < 8 → ∀ i < (GL[k]'hk).n.toNat,
-        Column.idAt (GL[k]'hk).b (GL[k]'hk).w i < (GL[k]'hk).card) := fun {k} hk => by
+        Column.idAt (GL[k]'hk).b (GL[k]'hk).w i < max (GL[k]'hk).card 1) := fun {k} hk => by
     rw [hGLk k hk]
     obtain ⟨⟨gw, gn, gc, gs⟩, -, gv⟩ := hP k hk
     rw [gw, gn, gs, gc]
     refine ⟨(hwa hk).1, rfl, fun h8 i hi => ?_⟩
     rw [(gv i hi).1]
     split
-    · exact hca0 hk h8
+    · exact Nat.lt_of_lt_of_le Nat.one_pos (Nat.le_max_right _ _)
     · next hb =>
       have := (hside k hk i hi).2 (by simpa using hb)
-      exact ((hwa hk).2.2.2 h8).2 _ (by rw [(hwa hk).2.1, hpak k hk]; dsimp only; omega)
+      exact Nat.lt_of_lt_of_le (((hwa hk).2.2.2 h8).2 _ (by rw [(hwa hk).2.1, hpak k hk]; dsimp only; omega))
+        (Nat.le_max_left _ _)
   have hwGR : ∀ {k : Nat} (hk : k < p), ((GR[k]'hk).w = 1 ∨ (GR[k]'hk).w = 2 ∨ (GR[k]'hk).w = 4 ∨
       (GR[k]'hk).w = 8 ∨ (GR[k]'hk).w = 16 ∨ (GR[k]'hk).w = 32 ∨ (GR[k]'hk).w = 64) ∧
       (GR[k]'hk).b.size = ((GR[k]'hk).n.toNat * (GR[k]'hk).w + 7) / 8 ∧
       ((GR[k]'hk).w < 8 → ∀ i < (GR[k]'hk).n.toNat,
-        Column.idAt (GR[k]'hk).b (GR[k]'hk).w i < (GR[k]'hk).card) := fun {k} hk => by
+        Column.idAt (GR[k]'hk).b (GR[k]'hk).w i < max (GR[k]'hk).card 1) := fun {k} hk => by
     rw [hGRk k hk]
     obtain ⟨-, ⟨gw, gn, gc, gs⟩, gv⟩ := hP k hk
     rw [gw, gn, gs, gc]
@@ -368,8 +366,9 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
     split
     · next hb =>
       have := (hside k hk i hi).1 hb
-      exact ((hwb hk).2.2.2 h8).2 _ (by rw [(hwb hk).2.1, hpbk k hk]; dsimp only; omega)
-    · exact hcb0 hk h8
+      exact Nat.lt_of_lt_of_le (((hwb hk).2.2.2 h8).2 _ (by rw [(hwb hk).2.1, hpbk k hk]; dsimp only; omega))
+        (Nat.le_max_left _ _)
+    · exact Nat.lt_of_lt_of_le Nat.one_pos (Nat.le_max_right _ _)
   have hTn : ∀ k (hk : k < p), (T[k]'hk).n.toNat = (cs₀[k]'hk).1.toNat := fun k hk => by
     rw [hTk k hk]; exact congrArg USize.toNat (hnk k hk)
   have hGLn : ∀ k (hk : k < p), (GL[k]'hk).n.toNat = (cs₀[k]'hk).1.toNat := fun k hk => by
@@ -406,12 +405,16 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
   have catR := cat_parts GR hp hlGR hwGR (by rw [hLGR]; exact hN)
   have hn1 : (Code.cat GL.toArray).n = (Code.cat T.toArray).n :=
     USize.toNat_inj.1 (by rw [catL.2.1, catT.2.1, hLGL, hLT])
-  have hP1 := pairCode_spec false (Code.cat T.toArray) (Code.cat GL.toArray) hn1 catT.1 catL.1
+  have hP1 := pairCode_spec false (Code.cat T.toArray) (Code.cat GL.toArray) hn1
+    ⟨catT.1.1, catT.1.2.1, fun h i hi => by have := catT.1.2.2 h i hi; omega⟩
+    ⟨catL.1.1, catL.1.2.1, fun h i hi => by have := catL.1.2.2 h i hi; omega⟩
   dsimp only at hP1
   obtain ⟨⟨h1w, h1n, h1s, h1id⟩, h1iff⟩ := hP1
   have hn2 : (Code.cat GR.toArray).n = (pairCode false (Code.cat T.toArray) (Code.cat GL.toArray)).1.n :=
     USize.toNat_inj.1 (by rw [catR.2.1, h1n, catT.2.1, hLGR, hLT])
-  have hP2 := pairCode_spec false _ (Code.cat GR.toArray) hn2 ⟨h1w, h1s, fun h => (h1id h).2⟩ catR.1
+  have hP2 := pairCode_spec false _ (Code.cat GR.toArray) hn2
+    ⟨h1w, h1s, fun h i hi => Nat.lt_of_lt_of_le ((h1id h).2 i hi) (Nat.le_max_left _ _)⟩
+    ⟨catR.1.1, catR.1.2.1, fun h i hi => by have := catR.1.2.2 h i hi; omega⟩
   dsimp only at hP2
   obtain ⟨⟨h2w, h2n, h2s, h2id⟩, h2iff⟩ := hP2
   have hs : ((T.map (·.n)).toList.map (·.toNat)).sum = (pairCode false (pairCode false (Code.cat T.toArray)

@@ -38,9 +38,9 @@ theorem mem_firstsOf_iff {α : Type} [DecidableEq α] {g : Nat → α} {m p : Na
     `a`, `b` well formed of one count, codes below a byte under their bound (`pairCode_spec`). -/
 theorem tupleIds_firsts (a b : Code) (hn : b.n = a.n)
     (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
-      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < a.card))
+      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
     (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
-      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < b.card)) :
+      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2)) :
     ids (tuples.tupleIds a #[b]).2 = firstsOf (fun i => (Column.idAt a.b a.w i, Column.idAt b.b b.w i)) a.n.toNat := by
   have e : tuples.tupleIds a #[b] = match pairCode true a b with | (_, some r) => r | (c, none) => c.groupIds := rfl
   rw [e]
@@ -117,8 +117,9 @@ include hK hV in
 /-- **`nub` picks the first occurrences**: its rows are the positions `p` of `R`, ascending, with no earlier
     row holding the same pair. -/
 theorem nub_ids : ids nubI = firstsOf (fun i => (Column.idAt (kc).b (kc).w i, Column.idAt (vc).b (vc).w i)) R.n.toNat := by
-  rw [tupleIds_firsts kc vc (hV.2.2.1.trans hK.2.2.1.symm) ⟨hK.2.1, hK.2.2.2.1, fun h => (hK.2.2.2.2 h).2⟩
-    ⟨hV.2.1, hV.2.2.2.1, fun h => (hV.2.2.2.2 h).2⟩, hK.2.2.1]
+  rw [tupleIds_firsts kc vc (hV.2.2.1.trans hK.2.2.1.symm) ⟨hK.2.1, hK.2.2.2.1,
+    fun h i hi => Nat.lt_of_lt_of_le ((hK.2.2.2.2 h).2 i hi) (Nat.le_max_left _ _)⟩
+    ⟨hV.2.1, hV.2.2.2.1, fun h i hi => Nat.lt_of_lt_of_le ((hV.2.2.2.2 h).2 i hi) (Nat.le_max_left _ _)⟩, hK.2.2.1]
 
 include hK hV in
 /-- **`nub` keeps the first occurrence of each pair and no other**: `p` is a row `nub` picks exactly when

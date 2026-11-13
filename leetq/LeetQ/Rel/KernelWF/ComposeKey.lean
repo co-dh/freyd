@@ -447,10 +447,10 @@ theorem srcOf_stage {b B : Ew.Build} {x : ByteArray} {st : Ew.Stage} (n : USize)
 theorem keySource_code (c : Code)
     (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
-    (hc : c.w < 8 → ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)
+    (hc : c.w < 8 → ∀ i < c.n.toNat, Column.idAt c.b c.w i < max c.card 2)
     {t : QAtomicType} {m : USize} {e : Enc} (hcol : c.column = some (t, (m, e)))
     {u : QAtomicType} {neg : Bool} {hi : Int} (hko : keyOperand t e = some (u, neg, hi))
-    {d : Nat} (hd : c.n = 0 ∨ (neg = false ∧ hi < d))
+    {d : Nat} (hd : c.n = 0 ∨ (neg = false ∧ hi < d)) (h2 : 2 ≤ d)
     {b b' : Ew.Build} {s : UInt8} (hks : keySource b u e c.n = some (b', s))
     (hb : b.inputs.size < 128) (hbs : b.stages.size < 128) :
     b'.inputs = b.inputs.push c.b ∧ b.stages.size ≤ b'.stages.size ∧ b'.stages.size ≤ b.stages.size + 1 ∧
@@ -649,16 +649,17 @@ theorem key_chain (B1 B4 : Ew.Build) (st : Ew.Stage) (s₁ s₂ : UInt8) (xb : B
     `c₂ < d₂`. -/
 theorem composeKey_code (a b : Code)
     (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
-      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < a.card))
+      a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
     (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
-      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < b.card))
+      b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2))
     {t₁ t₂ : QAtomicType} {m₁ m₂ : USize} {e₁ e₂ : Enc} (h₁ : a.column = some (t₁, (m₁, e₁)))
-    (h₂ : b.column = some (t₂, (m₂, e₂))) {d₁ d₂ : Nat} (hd : 2 ≤ d₁ * d₂) {k : ByteArray}
+    (h₂ : b.column = some (t₂, (m₂, e₂))) {d₁ d₂ : Nat} (h2₁ : 2 ≤ d₁) (h2₂ : 2 ≤ d₂) {k : ByteArray}
     (hk : composeKey t₁ m₁ e₁ d₁ d₂ t₂ m₂ e₂ = some k) :
     b.n = a.n ∧ d₁ * d₂ < 2 ^ 63 ∧ k.size = (a.n.toNat * Column.idWidthOf (d₁ * d₂) + 7) / 8 ∧
       ∀ i < a.n.toNat, Column.idAt k (Column.idWidthOf (d₁ * d₂)) i =
         Column.idAt a.b a.w i * d₂ + Column.idAt b.b b.w i ∧ Column.idAt a.b a.w i < d₁ ∧
           Column.idAt b.b b.w i < d₂ := by
+  have hd : 2 ≤ d₁ * d₂ := Nat.le_trans h2₁ (Nat.le_mul_of_pos_right _ (by omega))
   obtain rfl := column_n h₁
   obtain rfl := column_n h₂
   simp only [composeKey, bind, Option.bind_eq_some_iff] at hk
@@ -677,9 +678,9 @@ theorem composeKey_code (a b : Code)
     · exact .inl (hn.trans h)
     · exact .inr ⟨h3, h4⟩
   simp only [Ew.Build.input, Ew.Build.add] at hks₂ hk
-  obtain ⟨hI1, -, hS1b, -, hB1⟩ := keySource_code a ha.1 ha.2.1 ha.2.2 h₁ hko₁ hd₁ hks₁ (by simp) (by simp)
+  obtain ⟨hI1, -, hS1b, -, hB1⟩ := keySource_code a ha.1 ha.2.1 ha.2.2 h₁ hko₁ hd₁ h2₁ hks₁ (by simp) (by simp)
   rw [← hn] at hks₂
-  obtain ⟨hI2, hS2a, hS2b, hS2c, hB2⟩ := keySource_code b hb.1 hb.2.1 hb.2.2 h₂ hko₂ hd₂ hks₂
+  obtain ⟨hI2, hS2a, hS2b, hS2c, hB2⟩ := keySource_code b hb.1 hb.2.1 hb.2.2 h₂ hko₂ hd₂ h2₂ hks₂
     (by simp [hI1]) (by simp at hS1b ⊢; omega)
   simp only [Option.some.injEq] at hk
   subst hk
