@@ -144,6 +144,71 @@ theorem slicesOf_copies {B : Obj} {n : USize} (x : Vals (.arr B) n)
     rw [Nat.add_sub_cancel' ha] at e1 e2
     rw [e1, e2]
 
+/-- **Each copy is an element of a row**: copy `z` holds a row `r` and reads that row's element `j` at `L r + j`. -/
+theorem copy_row {B : Obj} {n : USize} (x : Vals (.arr B) n) (hf : Vals.PickFits (.arr B) x (List.range n.toNat))
+    {z : Nat} (hz : z < len sE(n, x)) :
+    ∃ r, ∃ hr : r < n.toNat, ∃ j < sH(x, r, hr) - sL(x, r, hr),
+      (Column.bitsAt sE(n, x) (z * 8) 8).toNat = r ∧ (Column.bitsAt sP(n, x) (z * 8) 8).toNat = sL(x, r, hr) + j := by
+  have hm := List.mem_map_of_mem (f := fun z =>
+    ((Column.bitsAt sE(n, x) (z * 8) 8).toNat, (Column.bitsAt sP(n, x) (z * 8) 8).toNat)) (List.mem_range.2 hz)
+  rw [(slicesOf_copies x hf).2] at hm
+  obtain ⟨r, hr, hmem⟩ := List.mem_flatMap.1 hm
+  rw [List.mem_range] at hr; rw [dif_pos hr] at hmem
+  obtain ⟨j, hj, hje⟩ := List.mem_map.1 hmem
+  rw [List.mem_range] at hj
+  exact ⟨r, hr, j, hj, (Prod.mk.inj hje).1.symm, (Prod.mk.inj hje).2.symm⟩
+
+/-- **Each element of a row is a copy**: row `r`'s element `j` is some copy `z`, read at `L r + j`. -/
+theorem row_copy {B : Obj} {n : USize} (x : Vals (.arr B) n) (hf : Vals.PickFits (.arr B) x (List.range n.toNat))
+    {r : Nat} (hr : r < n.toNat) {j : Nat} (hj : j < sH(x, r, hr) - sL(x, r, hr)) :
+    ∃ z < len sE(n, x),
+      (Column.bitsAt sE(n, x) (z * 8) 8).toNat = r ∧ (Column.bitsAt sP(n, x) (z * 8) 8).toNat = sL(x, r, hr) + j := by
+  have hm : (r, sL(x, r, hr) + j) ∈ (List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then (List.range (sH(x, r, h) - sL(x, r, h))).map fun j => (r, sL(x, r, h) + j) else [] :=
+    List.mem_flatMap.2 ⟨r, List.mem_range.2 hr, by rw [dif_pos hr]; exact List.mem_map.2 ⟨j, List.mem_range.2 hj, rfl⟩⟩
+  rw [← (slicesOf_copies x hf).2] at hm
+  obtain ⟨z, hz, hze⟩ := List.mem_map.1 hm
+  exact ⟨z, List.mem_range.1 hz, (Prod.mk.inj hze).1, (Prod.mk.inj hze).2⟩
+
+/-- **The index column lists each row once per element**, in row order: the rows `mem` picks its keys at. -/
+theorem copies_rows {B : Obj} {n : USize} (x : Vals (.arr B) n) (hf : Vals.PickFits (.arr B) x (List.range n.toNat)) :
+    (List.range (len sE(n, x)).toUSize.toNat).map (fun q => (Column.bitsAt sE(n, x) (q * 8) 8).toNat) =
+      (List.range n.toNat).flatMap fun r => if h : r < n.toNat then List.replicate (x.row ⟨r, h⟩).length r else [] := by
+  rw [USize.toNat_ofNat_of_lt' (slicesOf_copies x hf).1]
+  have h := congrArg (List.map Prod.fst) (slicesOf_copies x hf).2
+  rw [List.map_map, List.map_flatMap] at h
+  refine h.trans (flatMap_congr fun r hr => ?_)
+  rw [List.mem_range] at hr
+  rw [dif_pos hr, dif_pos hr, List.map_map, arr_row, List.length_map, List.length_range]
+  exact List.ext_getElem (by simp) (by simp)
+
+/-- **The position column lists each row's clamped window**, in row order: the payload positions `mem` picks its
+    values at, the windows `Vals.PickFits` names. -/
+theorem copies_pos {B : Obj} {n : USize} (x : Vals (.arr B) n) (hf : Vals.PickFits (.arr B) x (List.range n.toNat)) :
+    (List.range (len sE(n, x)).toUSize.toNat).map (fun q => (Column.bitsAt sP(n, x) (q * 8) 8).toNat) =
+      (List.range n.toNat).flatMap fun r =>
+        if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h)) else [] := by
+  rw [USize.toNat_ofNat_of_lt' (slicesOf_copies x hf).1]
+  have h := congrArg (List.map Prod.snd) (slicesOf_copies x hf).2
+  rw [List.map_map, List.map_flatMap] at h
+  refine h.trans (flatMap_congr fun r hr => ?_)
+  rw [List.mem_range] at hr
+  rw [dif_pos hr, dif_pos hr, List.map_map, List.range'_eq_map_range]
+  rfl
+
+/-- `Vals.PickFits` at an array side gives the payload's: below `2^63` and fitting at the rows' windows. -/
+theorem pickFits_payload {B : Obj} {n : USize} (x : Vals (.arr B) n) {ps : List Nat}
+    (hf : Vals.PickFits (.arr B) x ps) :
+    x.1.toNat < 2 ^ 63 ∧ Vals.PickFits B x.2.2.2 (ps.flatMap fun r =>
+      if h : r < n.toNat then List.range' sL(x, r, h) (sH(x, r, h) - sL(x, r, h)) else []) := by
+  obtain ⟨p, lo, hi, f⟩ := x
+  simp only [Vals.PickFits] at hf
+  exact ⟨hf.1, hf.2.2.2⟩
+
 #print axioms slicesOf_copies
+#print axioms copy_row
+#print axioms row_copy
+#print axioms copies_rows
+#print axioms copies_pos
 
 end LeetQ.Rel.Alg
