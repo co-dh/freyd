@@ -13,11 +13,18 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 variable {A B : Obj}
 
+/-- `longCount` where the count fits a `USize` runs its continuation at that count. -/
+theorem longCount_eq {α : Type} [Inhabited α] (what : String) (b : ByteArray)
+    (k : (n : USize) → len b = n.toNat → α) (h : len b < USize.size) :
+    longCount what b k = k (len b).toUSize (USize.toNat_ofNat_of_lt' h).symm := by
+  unfold longCount need; rw [dif_pos h]
+
 /-- A long column cast to the count `M` it holds reads back its payload's longs. -/
 theorem longCol_cast_get {b : ByteArray} {M : USize} (hb : len b < USize.size) (e : (len b).toUSize = M)
     (q : Fin M.toNat) : (e ▸ longCol b : Arr .long M).get q = (Column.bitsAt b (q.1 * 8) 8).toInt64 := by
   have hq : q.1 < len b := by
-    have := q.2; rw [← e, USize.toNat_ofNat_of_lt' hb] at this; exact this
+    have h1 := q.2; have h2 : M.toNat = len b := by rw [← e, USize.toNat_ofNat_of_lt' hb]
+    omega
   rw [cast_get]
   unfold longCol need
   split
@@ -49,8 +56,9 @@ local notation "pT" => gather 8 vpT (Code.gather kcT vpT).grade
 set_option hygiene false in
 local notation "oT" => Code.runStarts (Code.gather kcT pT)
 set_option hygiene false in
-local notation "loT" => oT.extract 0 (oT.size - 8)
+local notation "loT" => ByteArray.extract (oT) 0 (ByteArray.size (oT) - 8)
 
+set_option maxHeartbeats 8000000 in
 /-- **`Λ(R)`'s rows, read back against `R.nub`**: row `q` is keyed by a key `d.key.row i` of `d = R.nub`, and
     its array holds exactly the values `d` relates that key to; every key of `d` keys some row. Hypotheses: the
     key codes faithful and well formed (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s `hW`, `d`'s count below
@@ -69,12 +77,12 @@ theorem transpose_rows (R : Rel A B)
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
     (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
-    (∀ q : Fin (transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
-      Vals.row (transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∀ x, x ∈ Vals.row (transpose R).val q ↔
+    (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
+      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∀ x, x ∈ Vals.row (Alg.transpose R).val q ↔
         ∃ i' : Fin (Rel.nub R).n.toNat, Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i ∧
           Vals.row (Rel.nub R).val i' = x) ∧
-    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (transpose R).n.toNat,
-      Vals.row (transpose R).key q = Vals.row (Rel.nub R).key i := by
+    ∀ i : Fin (Rel.nub R).n.toNat, ∃ q : Fin (Alg.transpose R).n.toNat,
+      Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i := by
   have hN : (kcT).n.toNat = (Rel.nub R).n.toNat := by rw [hn]
   have hU : (Rel.nub R).n.toNat < USize.size := (Rel.nub R).n.toNat_lt_size
   -- `til n` read back, `vp` a permutation of the rows
@@ -93,6 +101,8 @@ theorem transpose_rows (R : Rel A B)
   have hpi : ∀ s < len pT, (Column.bitsAt pT (s * 8) 8).toNat < (kcT).n.toNat := fun s h => by
     have h' : s < (ids pT).length := by rw [← len_eq_ids]; exact h
     rw [← ids_getElem h']; exact List.mem_range.1 (hpp.mem_iff.1 (List.getElem_mem h'))
+  have hP : ∀ s < len pT, (Column.bitsAt pT (s * 8) 8).toNat < (Rel.nub R).n.toNat := fun s h => by
+    rw [← hN]; exact hpi s h
   have hsurj : ∀ i < (Rel.nub R).n.toNat, ∃ s, s < len pT ∧ (Column.bitsAt pT (s * 8) 8).toNat = i := fun i hi => by
     obtain ⟨s, hs', e⟩ := List.getElem_of_mem (hpp.mem_iff.2 (List.mem_range.2 (by rw [hN]; exact hi)))
     exact ⟨s, by rw [len_eq_ids]; exact hs', by rw [← ids_getElem hs']; exact e⟩
@@ -100,111 +110,163 @@ theorem transpose_rows (R : Rel A B)
     rcases hw with h | h | h | h | h | h | h <;> rw [h] at hs ⊢ <;> omega
   obtain ⟨hGw, hGn, -, hGid⟩ := gather_spec (kcT) pT hpl hw hcb hpi
   have hGs := gather_size (kcT) pT hpl hw
+  -- the key codes along `p` are the keys of `d`
+  have hcode : ∀ s t (hs' : s < len pT) (ht : t < len pT),
+      (Column.idAt (Code.gather (kcT) pT).b (kcT).w s = Column.idAt (Code.gather (kcT) pT).b (kcT).w t ↔
+        Vals.row (Rel.nub R).key ⟨_, hP s hs'⟩ = Vals.row (Rel.nub R).key ⟨_, hP t ht⟩) :=
+    fun s t hs' ht => by rw [hGid s hs', hGid t ht]; exact hF _ _
   -- the runs of `G = kc@p`: `r j`, each key one run
   obtain ⟨m, hosz, hlast, hasc, -, hrun, hcov⟩ := code_runs (Code.gather (kcT) pT) (by rw [hGw]; exact hw)
     (by rw [hGs, hGn, hGw])
     (fun s t u h1 h2 hu e => by
-      rw [hGn, hlp, ← hN] at hu
+      rw [hGn] at hu
       rw [hGw] at e ⊢
-      rw [hGid s (by rw [hlp, ← hN]; omega), hGid u (by rw [hlp, ← hN]; omega)] at e
-      rw [hGid t (by rw [hlp, ← hN]; omega), hGid s (by rw [hlp, ← hN]; omega)]
+      rw [hGid s (by omega), hGid u (by omega)] at e
+      rw [hGid t (by omega), hGid s (by omega)]
+      rw [hlp, ← hN] at hu
       exact hgrp s t u h1 h2 hu e)
-  rw [hGn, hlp] at hlast hrun hcov
+  rw [hGn] at hlast hrun hcov
   rw [hGw] at hrun
-  generalize hO : Code.runStarts (Code.gather (kcT) pT) = o at hosz hlast hasc hrun hcov hlo
-  -- `r j` below the count for `j < m`, and the starts read back through `lo` and `hi`
-  have hrlt : ∀ j, j < m → (Column.bitsAt o (j * 8) 8).toNat < (Rel.nub R).n.toNat := fun j hj => by
-    have := hasc j m hj (Nat.le_refl m); omega
-  have hlolen : len (o.extract 0 (o.size - 8)) = m := by simp only [len, ByteArray.size_extract]; omega
-  have hloU : len (o.extract 0 (o.size - 8)) < USize.size := by rw [hlolen]; have := hrlt; omega
-  have hlo_at : ∀ j, j < m → Column.bitsAt (o.extract 0 (o.size - 8)) (j * 8) 8 = Column.bitsAt o (j * 8) 8 :=
-    fun j hj => by rw [bitsAt_extract _ (by omega), Nat.zero_add]
-  have hhi_at : ∀ j, j < m → Column.bitsAt (o.extract 8 o.size) (j * 8) 8 = Column.bitsAt o ((j + 1) * 8) 8 :=
-    fun j hj => by rw [bitsAt_extract _ (by omega), show 8 + j * 8 = (j + 1) * 8 by omega]
-  have hhilen : len (o.extract 8 o.size) = len (o.extract 0 (o.size - 8)) := by
-    simp only [len, ByteArray.size_extract]; omega
-  -- `transpose R` itself, its `longCount` run
+  -- the picked columns read back at `P s`
   have hpkd : Vals.pickPart A (Rel.nub R).key pT =
       ⟨(len pT).toUSize, Vals.pick A (Rel.nub R).key pT _ (USize.toNat_ofNat_of_lt' hpl).symm⟩ := by
     unfold Vals.pickPart need; rw [dif_pos hpl]
   have hpvd : Vals.pickPart B (Rel.nub R).val pT =
       ⟨(len pT).toUSize, Vals.pick B (Rel.nub R).val pT _ (USize.toNat_ofNat_of_lt' hpl).symm⟩ := by
     unfold Vals.pickPart need; rw [dif_pos hpl]
-  have hT : transpose R = ⟨(len (o.extract 0 (o.size - 8))).toUSize,
-      Vals.pick A (Vals.pickPart A (Rel.nub R).key pT).2 (o.extract 0 (o.size - 8)) _
-        (USize.toNat_ofNat_of_lt' hloU).symm,
-      ⟨(Vals.pickPart B (Rel.nub R).val pT).1,
-        toUSize_eq (USize.toNat_ofNat_of_lt' hloU).symm ▸ longCol (o.extract 0 (o.size - 8)),
-        toUSize_eq (hhilen.trans (USize.toNat_ofNat_of_lt' hloU).symm) ▸ longCol (o.extract 8 o.size),
-        (Vals.pickPart B (Rel.nub R).val pT).2⟩⟩ := by
-    unfold transpose; dsimp only; rw [hO]; unfold longCount need; rw [dif_pos hloU]
-  rw [hpkd] at hlo
-  rw [hT, hpkd, hpvd]
+  have hLn : ((len pT).toUSize).toNat = len pT := USize.toNat_ofNat_of_lt' hpl
+  have hp1A : (Vals.pickPart A (Rel.nub R).key pT).1.toNat = len pT := by rw [hpkd]; exact hLn
+  have hp1B : (Vals.pickPart B (Rel.nub R).val pT).1.toNat = len pT := by rw [hpvd]; exact hLn
+  have hkey : ∀ s (h : s < (Vals.pickPart A (Rel.nub R).key pT).1.toNat) (h' : s < len pT),
+      Vals.row (Vals.pickPart A (Rel.nub R).key pT).2 ⟨s, h⟩ = Vals.row (Rel.nub R).key ⟨_, hP s h'⟩ := by
+    intro s h h'; revert h; rw [hpkd]; intro h; dsimp only at h ⊢
+    rw [pick_row A _ pT _ _ (by rw [hLn]; exact hpk) ⟨s, h⟩, dif_pos (hP s h')]
+  have hval : ∀ s (h : s < (Vals.pickPart B (Rel.nub R).val pT).1.toNat) (h' : s < len pT),
+      Vals.row (Vals.pickPart B (Rel.nub R).val pT).2 ⟨s, h⟩ = Vals.row (Rel.nub R).val ⟨_, hP s h'⟩ := by
+    intro s h h'; revert h; rw [hpvd]; intro h; dsimp only at h ⊢
+    rw [pick_row B _ pT _ _ (by rw [hLn]; exact hpv) ⟨s, h⟩, dif_pos (hP s h')]
+  -- the run starts `o`: `lo`, `hi` their extracts, each start below the count
+  generalize hO : Code.runStarts (Code.gather (kcT) pT) = o at hosz hlast hasc hrun hcov hlo
+  have hrlt : ∀ j, j < m → (Column.bitsAt o (j * 8) 8).toNat < len pT := fun j hj => by
+    have := hasc j m hj (Nat.le_refl m); omega
+  have hrle : ∀ j, j ≤ m → (Column.bitsAt o (j * 8) 8).toNat ≤ len pT := fun j hj => by
+    rcases Nat.lt_or_eq_of_le hj with h | rfl
+    · have := hasc j m h (Nat.le_refl m); omega
+    · omega
+  have hge : ∀ j, j ≤ m → j ≤ (Column.bitsAt o (j * 8) 8).toNat := by
+    intro j
+    induction j with
+    | zero => intro _; omega
+    | succ j ih => intro hj; have := hasc j (j + 1) (by omega) hj; have := ih (by omega); omega
+  have hlolen : len (o.extract 0 (o.size - 8)) = m := by simp only [len, ByteArray.size_extract]; omega
+  have hloU : len (o.extract 0 (o.size - 8)) < USize.size := by
+    rw [hlolen]; have := hge m (Nat.le_refl m); omega
+  have hhilen : len (o.extract 8 o.size) = len (o.extract 0 (o.size - 8)) := by
+    simp only [len, ByteArray.size_extract]; omega
+  have hhiU : len (o.extract 8 o.size) < USize.size := by rw [hhilen]; exact hloU
+  have hlo_at : ∀ j, j < m → Column.bitsAt (o.extract 0 (o.size - 8)) (j * 8) 8 = Column.bitsAt o (j * 8) 8 :=
+    fun j hj => by rw [bitsAt_extract _ (by omega), Nat.zero_add]
+  have hhi_at : ∀ j, j < m → Column.bitsAt (o.extract 8 o.size) (j * 8) 8 = Column.bitsAt o ((j + 1) * 8) 8 :=
+    fun j hj => by rw [bitsAt_extract _ (by omega), show 8 + j * 8 = (j + 1) * 8 by omega]
   have hMn : ((len (o.extract 0 (o.size - 8))).toUSize).toNat = m := by
     rw [USize.toNat_ofNat_of_lt' hloU, hlolen]
-  have hLn : ((len pT).toUSize).toNat = len pT := USize.toNat_ofNat_of_lt' hpl
-  -- `P s`, the row of `d` at position `s` of `p`; the picked columns read back there
-  have hkey : ∀ s (h : s < ((len pT).toUSize).toNat),
-      Vals.row (Vals.pick A (Rel.nub R).key pT _ (USize.toNat_ofNat_of_lt' hpl).symm) ⟨s, h⟩ =
-        Vals.row (Rel.nub R).key ⟨(Column.bitsAt pT (s * 8) 8).toNat, by rw [← hN]; exact hpi s (by omega)⟩ :=
-    fun s h => by
-      rw [pick_row A _ pT _ _ (by rw [hLn]; exact hpk) ⟨s, h⟩, dif_pos (by rw [← hN]; exact hpi s (by omega))]
-  have hval : ∀ s (h : s < ((len pT).toUSize).toNat),
-      Vals.row (Vals.pick B (Rel.nub R).val pT _ (USize.toNat_ofNat_of_lt' hpl).symm) ⟨s, h⟩ =
-        Vals.row (Rel.nub R).val ⟨(Column.bitsAt pT (s * 8) 8).toNat, by rw [← hN]; exact hpi s (by omega)⟩ :=
-    fun s h => by
-      rw [pick_row B _ pT _ _ (by rw [hLn]; exact hpv) ⟨s, h⟩, dif_pos (by rw [← hN]; exact hpi s (by omega))]
   -- row `j` of the answer is keyed by `P (r j)`
-  have hkrow : ∀ j (h : j < ((len (o.extract 0 (o.size - 8))).toUSize).toNat),
-      Vals.row (Vals.pick A (Vals.pick A (Rel.nub R).key pT _ (USize.toNat_ofNat_of_lt' hpl).symm)
+  have hkrow : ∀ j (h : j < ((len (o.extract 0 (o.size - 8))).toUSize).toNat) (hj : j < m),
+      Vals.row (Vals.pick A (Vals.pickPart A (Rel.nub R).key pT).2
         (o.extract 0 (o.size - 8)) _ (USize.toNat_ofNat_of_lt' hloU).symm) ⟨j, h⟩ =
-      Vals.row (Rel.nub R).key ⟨(Column.bitsAt pT ((Column.bitsAt o (j * 8) 8).toNat * 8) 8).toNat,
-        by rw [← hN]; exact hpi _ (by rw [hlp]; exact hrlt j (by omega))⟩ := fun j h => by
-    have hj : j < m := by omega
-    rw [pick_row A _ _ _ _ (by rw [hMn]; rw [hlolen] at hlo; exact hlo) ⟨j, h⟩,
-      dif_pos (by rw [hlo_at j hj, hLn, hlp]; exact hrlt j hj)]
-    simp only [hlo_at j hj]
-    exact hkey _ _
-  -- the key codes along `p` are the keys of `d`
-  have hcode : ∀ s t, s < len pT → t < len pT →
-      (Column.idAt (Code.gather (kcT) pT).b (kcT).w s = Column.idAt (Code.gather (kcT) pT).b (kcT).w t ↔
-        Vals.row (Rel.nub R).key ⟨(Column.bitsAt pT (s * 8) 8).toNat, by rw [← hN]; exact hpi s (by omega)⟩ =
-          Vals.row (Rel.nub R).key ⟨(Column.bitsAt pT (t * 8) 8).toNat, by rw [← hN]; exact hpi t (by omega)⟩) :=
-    fun s t hs' ht => by rw [hGid s hs', hGid t ht]; exact hF _ _
+      Vals.row (Rel.nub R).key ⟨_, hP _ (hrlt j hj)⟩ := fun j h hj => by
+    rw [pick_row A _ _ _ _ (by rw [USize.toNat_ofNat_of_lt' hloU]; exact hlo) ⟨j, h⟩,
+      dif_pos (by rw [hlo_at j hj, hp1A]; exact hrlt j hj)]
+    exact (hkey _ _ (by rw [hlo_at j hj]; exact hrlt j hj)).trans
+      (congrArg _ (Fin.ext (by dsimp only; rw [hlo_at j hj])))
+  -- `transpose R` itself: its `longCount` run at the run starts
+  subst hO
+  unfold Alg.transpose; dsimp only
+  rw [longCount_eq _ _ _ hloU]
+  dsimp only
   refine ⟨fun q => ?_, fun i => ?_⟩
   · have hq : q.1 < m := by have := q.2; omega
-    refine ⟨_, hkrow q.1 q.2, fun x => ?_⟩
-    rw [mem_arr_row]
-    have hlo' : ((toUSize_eq (USize.toNat_ofNat_of_lt' hloU).symm ▸ longCol (o.extract 0 (o.size - 8)) :
-        Arr .long _).get q).toInt = ((Column.bitsAt o (q.1 * 8) 8).toNat : Int) := by
-      rw [longCol_cast_get hloU, hlo_at q.1 hq, toInt_toInt64, if_pos (by have := hrlt q.1 hq; omega)]
-    have hhi' : ((toUSize_eq (hhilen.trans (USize.toNat_ofNat_of_lt' hloU).symm) ▸
-        longCol (o.extract 8 o.size) : Arr .long _).get q).toInt =
-          ((Column.bitsAt o ((q.1 + 1) * 8) 8).toNat : Int) := by
-      rw [longCol_cast_get (by rw [hhilen]; exact hloU), hhi_at q.1 hq, toInt_toInt64,
-        if_pos (by have := hasc (q.1 + 1) m (by omega) (by omega); omega)]
-      have := hasc q.1 (q.1 + 1) (by omega) (by omega); omega
-    rw [hlo', hhi']
+    refine ⟨_, hkrow q.1 q.2 hq, fun x => ?_⟩
+    have hq1 := hrle (q.1 + 1) (by omega)
+    rw [mem_arr_row, longCol_cast_get hloU rfl, longCol_cast_get hhiU (congrArg Nat.toUSize hhilen),
+      hlo_at q.1 hq, hhi_at q.1 hq, toInt_toInt64, toInt_toInt64, if_pos (by have := hrlt q.1 hq; omega),
+      if_pos (by omega)]
     constructor
     · rintro ⟨s, h1, h2, hs'⟩
-      have hsl : s.1 < len pT := by rw [hlp]; have := hasc (q.1 + 1) m (by omega) (by omega); omega
-      refine ⟨_, ?_, (hval s.1 s.2).symm.trans hs'⟩
-      exact ((hcode _ _ hsl (by rw [hlp]; exact hrlt q.1 hq)).1
-        ((hrun s.1 q.1 (by rw [← hlp]; exact hsl) hq).2 ⟨by omega, by omega⟩))
+      have hsl : s.1 < len pT := by omega
+      refine ⟨_, ?_, (hval s.1 s.2 hsl).symm.trans hs'⟩
+      exact (hcode _ _ hsl (hrlt q.1 hq)).1 ((hrun s.1 q.1 hsl hq).2 ⟨by omega, by omega⟩)
     · rintro ⟨i', e1, e2⟩
       obtain ⟨s, hs', hsi⟩ := hsurj i'.1 i'.2
-      have he : i' = ⟨(Column.bitsAt pT (s * 8) 8).toNat, by rw [← hN]; exact hpi s hs'⟩ := Fin.ext hsi.symm
+      have he : i' = ⟨_, hP s hs'⟩ := Fin.ext hsi.symm
       subst he
-      obtain ⟨h1, h2⟩ := (hrun s q.1 (by rw [← hlp]; exact hs') hq).1
-        ((hcode _ _ hs' (by rw [hlp]; exact hrlt q.1 hq)).2 e1)
-      exact ⟨⟨s, by rw [hLn]; exact hs'⟩, by omega, by omega, (hval s _).trans e2⟩
+      obtain ⟨h1, h2⟩ := (hrun s q.1 hs' hq).1 ((hcode _ _ hs' (hrlt q.1 hq)).2 e1)
+      exact ⟨⟨s, by rw [hp1B]; exact hs'⟩, Int.ofNat_le.2 h1, Int.ofNat_lt.2 h2, (hval s _ hs').trans e2⟩
   · obtain ⟨s, hs', hsi⟩ := hsurj i.1 i.2
-    obtain ⟨j, hj, h1, h2⟩ := hcov s (by rw [← hlp]; exact hs')
-    refine ⟨⟨j, by rw [hMn]; exact hj⟩, (hkrow j _).trans ?_⟩
-    have e := (hcode _ _ (by rw [hlp]; exact hrlt j hj) hs').1
-      ((hrun s j (by rw [← hlp]; exact hs') hj).2 ⟨h1, h2⟩).symm
-    exact e.trans (congrArg _ (Fin.ext hsi))
+    obtain ⟨j, hj, h1, h2⟩ := hcov s hs'
+    refine ⟨⟨j, by rw [hMn]; exact hj⟩, (hkrow j _ hj).trans ?_⟩
+    exact ((hcode _ _ (hrlt j hj) hs').1 ((hrun s j hs' hj).2 ⟨h1, h2⟩).symm).trans (congrArg _ (Fin.ext hsi))
 
 #print axioms transpose_rows
+
+-- `rep_nub`'s codes of `R` and the rows `nub` keeps (`NubSpec`'s local notations, restated)
+set_option hygiene false in
+local notation "kcR" => (Obj.codes A (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 1))[0]
+set_option hygiene false in
+local notation "vcR" => (Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part B) 1))[0]
+set_option hygiene false in
+local notation "nubR" => (tuples.tupleIds kcR #[vcR]).2
+
+/-- **`rep (Λ(R))` is the power transpose of `rep R`**: the array `Λ(R)` gives a key `a` holds exactly the
+    values `R` relates `a` to, and `Λ(R)` has a row at `a` exactly when `R` has a pair at `a`. Hypotheses:
+    `rep_nub`'s (`hK hV hk hv`), and `transpose_rows`' at `d = R.nub`. -/
+theorem rep_transpose (R : Rel A B)
+    (hK : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
+        Column.idAt (kcR).b (kcR).w i = Column.idAt (kcR).b (kcR).w j ↔
+          Vals.row (Rel.key R) ⟨i, hi⟩ = Vals.row (Rel.key R) ⟨j, hj⟩) ∧
+      ((kcR).w = 1 ∨ (kcR).w = 2 ∨ (kcR).w = 4 ∨ (kcR).w = 8 ∨ (kcR).w = 16 ∨ (kcR).w = 32 ∨ (kcR).w = 64) ∧
+        (kcR).n = Rel.n R ∧ (kcR).b.size = ((kcR).n.toNat * (kcR).w + 7) / 8 ∧
+        ((kcR).w < 8 → (kcR).card < USize.size ∧ ∀ i < (kcR).n.toNat, Column.idAt (kcR).b (kcR).w i < (kcR).card))
+    (hV : (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
+        Column.idAt (vcR).b (vcR).w i = Column.idAt (vcR).b (vcR).w j ↔
+          Vals.row (Rel.val R) ⟨i, hi⟩ = Vals.row (Rel.val R) ⟨j, hj⟩) ∧
+      ((vcR).w = 1 ∨ (vcR).w = 2 ∨ (vcR).w = 4 ∨ (vcR).w = 8 ∨ (vcR).w = 16 ∨ (vcR).w = 32 ∨ (vcR).w = 64) ∧
+        (vcR).n = Rel.n R ∧ (vcR).b.size = ((vcR).n.toNat * (vcR).w + 7) / 8 ∧
+        ((vcR).w < 8 → (vcR).card < USize.size ∧ ∀ i < (vcR).n.toNat, Column.idAt (vcR).b (vcR).w i < (vcR).card))
+    (hk : Vals.PickFits A (Rel.key R) (ids nubR)) (hv : Vals.PickFits B (Rel.val R) (ids nubR))
+    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
+      Column.idAt (kcT).b (kcT).w i = Column.idAt (kcT).b (kcT).w j ↔
+        Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
+    (hw : (kcT).w = 1 ∨ (kcT).w = 2 ∨ (kcT).w = 4 ∨ (kcT).w = 8 ∨ (kcT).w = 16 ∨ (kcT).w = 32 ∨ (kcT).w = 64)
+    (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]).w = 1 ∨ ((Obj.codes B #v[x])[0]).w = 2 ∨
+      ((Obj.codes B #v[x])[0]).w = 4 ∨ ((Obj.codes B #v[x])[0]).w = 8 ∨ ((Obj.codes B #v[x])[0]).w = 16 ∨
+      ((Obj.codes B #v[x])[0]).w = 32 ∨ ((Obj.codes B #v[x])[0]).w = 64) ∧
+      ((Obj.codes B #v[x])[0]).b.size = (((Obj.codes B #v[x])[0]).n.toNat * ((Obj.codes B #v[x])[0]).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]).n = x.1)
+    (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
+    (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT))
+    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids loT)) :
+    (∀ a X, rep (Alg.transpose R) a X → ∀ x, x ∈ X ↔ rep R a x) ∧
+      (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
+  have hd := rep_nub R hK hV hk hv
+  have hdh : ∀ a b, (Rel.nub R).Holds a b ↔ R.Holds a b := fun a b => by
+    show rep (Rel.nub R) a b ↔ rep R a b
+    rw [hd]
+  obtain ⟨hrow, hcov⟩ := transpose_rows R hF hw hn hs hW h63 hpk hpv hlo
+  refine ⟨fun a X h x => ?_, fun a => ⟨fun ⟨X, h⟩ => ?_, fun ⟨b, hb⟩ => ?_⟩⟩
+  · obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h
+    obtain ⟨i, hki, hmem⟩ := hrow q
+    subst hqa hqX
+    rw [hmem x, hki]
+    exact hdh _ _
+  · obtain ⟨q, hqa, -⟩ : (Alg.transpose R).Holds a X := h
+    obtain ⟨i, hki, -⟩ := hrow q
+    exact ⟨_, (hdh _ _).1 ⟨i, hki.symm.trans hqa, rfl⟩⟩
+  · obtain ⟨i, hia, -⟩ := (hdh a b).2 hb
+    obtain ⟨q, hq⟩ := hcov i
+    exact ⟨_, q, hq.trans hia, rfl⟩
+
+#print axioms rep_transpose
 
 end LeetQ.Rel.Rep
