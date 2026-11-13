@@ -201,7 +201,7 @@ theorem idAt_packIds_past {w n i : Nat} {f : Nat → Nat} (hw : w = 1 ∨ w = 2 
   unfold Column.idAt Column.resAt
   rw [h2, h1, Nat.add_sub_cancel_left, List.range'_one]
   simp only [List.foldl_cons, List.foldl_nil, Nat.zero_add, getElem?_neg P q (by omega), Option.getD_none]
-  rfl
+  rw [show UInt8.toNat 0 = 0 from rfl, Nat.zero_mul, Nat.zero_div, Nat.zero_mod]; rfl
 
 /-- **Code `i` of part `k` is code `(counts before k) + i` of `Code.cat`**, every part on one lane `w`,
     `⌈n·w/8⌉` bytes, its codes below its `card` (or `0`) at `2`/`4` bits, and the summed count a `USize`:
