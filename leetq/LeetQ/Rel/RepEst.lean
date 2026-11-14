@@ -16,6 +16,16 @@ section ArrUnion
 
 open Pow OpsN UnionN
 
+/-- Every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload. -/
+theorem row_mem_payload {A : Obj} {n : USize} (X : Vals (.arr A) n) :
+    ∀ xs x, (∃ i, Vals.row X i = xs) → x ∈ xs → ∃ i, Vals.row X.2.2.2 i = x := by
+  rintro xs x ⟨q, rfl⟩ hx
+  rw [arr_row] at hx
+  obtain ⟨j, hj, hjx⟩ := List.mem_map.1 hx
+  rw [List.mem_range] at hj
+  rw [dif_pos (by omega)] at hjx
+  exact ⟨_, hjx⟩
+
 /-- **`rep (Arr.union X)`: each array of arrays to the array of the elements of its members**: an array
     `Arr.union X` gives `xss` holds exactly the elements of the members of `xss`, and `Arr.union X` has a row at
     `xss` exactly when `X` lists `xss`. `Arr.union X` is `E(∋)` on `X` (`rep_E` at `R := Rm`, `∋` on the payload
@@ -68,14 +78,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
   obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv hWk hW h63
     pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
     huV huk huv hM hmv hmk hcc hcrn hcM hcA hcC
-  -- every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload
-  have hpay : ∀ xss xs, (∃ i, Vals.row X i = xss) → xs ∈ xss → ∃ i, Vals.row X.2.2.2 i = xs := by
-    rintro xss xs ⟨q, rfl⟩ hx
-    rw [arr_row] at hx
-    obtain ⟨j, hj, hjx⟩ := List.mem_map.1 hx
-    rw [List.mem_range] at hj
-    rw [dif_pos (by omega)] at hjx
-    exact ⟨_, hjx⟩
+  have hpay := row_mem_payload X
   refine ⟨fun xss Y h => ⟨(h1 xss Y h).1, fun y => ((h1 xss Y h).2 y).trans ?_⟩, h2⟩
   exact ⟨fun ⟨xs, hxs, hm⟩ => ⟨xs, hxs, ((rep_mem X.2.2.2 hv2 hk2 xs y).1 hm).2⟩,
     fun ⟨xs, hxs, hy⟩ => ⟨xs, hxs, (rep_mem X.2.2.2 hv2 hk2 xs y).2 ⟨hpay xss xs (h1 xss Y h).1 hxs, hy⟩⟩⟩

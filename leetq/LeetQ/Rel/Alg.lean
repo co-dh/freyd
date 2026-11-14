@@ -741,8 +741,12 @@ def mod {n : USize} (W : Vals (.prod (.atom .long) (.atom .long)) n) := arith Ew
 
 /-- `τ : A ⟶ arr A` on `X`, each element to the array holding it alone: `Λ(𝟙)` (`Λ_id_eq_singletonMap`,
     AOP/A5_7_PowerBeads.lean:171, of `singletonMap`, Freyd/S2_40.lean:170; the note's
-    `τ≜⟨𝟙,⊸ nil⟩ cons`, diag/aop/07-optimisation.typ:694). -/
-def τ {A : Obj} {n : USize} (X : Vals A n) : Rel A (.arr A) := Λ(idU X)
+    `τ≜⟨𝟙,⊸ nil⟩ cons`, diag/aop/07-optimisation.typ:694), and whether it ran within capacity: `transposeC`'s
+    bit at `idU X`. -/
+def τC {A : Obj} {n : USize} (X : Vals A n) : Rel A (.arr A) × Bool := transposeC (idU X)
+
+/-- `τ` on `X`: `τC`'s relation. -/
+def τ {A : Obj} {n : USize} (X : Vals A n) : Rel A (.arr A) := (τC X).1
 
 /-- `nil : K ⟶ arr B` on the one-row side `I`: its element to the empty array (`nil`,
     AOP/A1_7_Pointfree.lean:36; the note's `nil ≜ []`, diag/aop/07-optimisation.typ:443). -/
@@ -763,13 +767,27 @@ def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
   (alphaC I P).1
 
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
-    one row per key of `R`, has no row for. -/
-def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
-  Λ(R) ∪ top (idU U \ dom R).key (nilVal B)
+    one row per key of `R`, has no row for: `Λ(R) ∪ ⊤` from `(idU U − dom R)`'s keys to `nilVal B`. Whether it ran
+    within capacity: the `&&` of the bits of the twins it runs (`transposeC`, `domC`, `diffC`, `topC`, `unionC`). -/
+def lamOnC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) × Bool :=
+  let t := transposeC R; let d := domC R
+  let D := diffC (idU U) d.1
+  let N := topC D.1.key (nilVal B)
+  let u := unionC t.1 N.1
+  (u.1, t.2 && d.2 && D.2 && N.2 && u.2)
+
+/-- `Λ(R)` total on `U`: `lamOnC`'s relation. -/
+def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) := (lamOnC R U).1
 
 /-- `E(R) : arr A ⟶ arr B` on the arrays `X`, the existential image, the note's `E(R)≜frac(∋R,∋)`
-    (diag/aop/07-optimisation.typ:718), `existsImage R ≜ Λ(∋ ≫ R)` (AOP/A4_6.lean:95): `Λ(∋R)` total on `X`. -/
-def E {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := lamOn (mem X ≫ R) X
+    (diag/aop/07-optimisation.typ:718), `existsImage R ≜ Λ(∋ ≫ R)` (AOP/A4_6.lean:95): `Λ(∋R)` total on `X`, and
+    whether it ran within capacity: the bits of `memC`, `compC`, `lamOnC`. -/
+def EC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
+  let m := memC X; let c := compC m.1 R; let l := lamOnC c.1 X
+  (l.1, m.2 && c.2 && l.2)
+
+/-- `E(R)` on the arrays `X`: `EC`'s relation. -/
+def E {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := (EC R X).1
 
 /-- `P(R) : arr A ⟶ arr B` from the arrays `X` to the arrays `Y`, the power relator (`powerRel`,
     AOP/A5_4_PowerRel.lean:34): `((∋)° \ (R ≫ (∋)°)) ∩ ((∋ ≫ R) / ∋)`, every element of `xs` `R`-reaches into `ys`
@@ -969,8 +987,14 @@ def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
     q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))
 
 /-- `setify : arr B ⟶ P B` on the arrays `X`, each array to the set of its elements (`setify`,
-    AOP/A5_6_ListCombinators.lean:49, `Λ(inlist)`; B&dM §7.3 p.177): `Λ(∋)` total on `X`. -/
-def setify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := lamOn (mem X) X
+    AOP/A5_6_ListCombinators.lean:49, `Λ(inlist)`; B&dM §7.3 p.177): `Λ(∋)` total on `X`, and whether it ran
+    within capacity: the bits of `memC`, `lamOnC`. -/
+def setifyC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  let m := memC X; let l := lamOnC m.1 X
+  (l.1, m.2 && l.2)
+
+/-- `setify` on the arrays `X`: `setifyC`'s relation. -/
+def setify {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (setifyC X).1
 
 /-- `bagify : arr B ⟶ bag(B)` on the arrays `X` (`bagify`, AOP/A10_3_Tardy.lean:232, the quotient map of
     `perm`). A bag is the `arr` of its elements ascending in `Obj.sortBy`'s order, repeats kept: the one member
@@ -1108,9 +1132,14 @@ namespace Arr
 
 /-- `union : arr (arr A) ⟶ arr A` on the arrays of arrays `X`, the note's `union≜frac(∋∋,∋)`
     (diag/aop/07-optimisation.typ:718; `union ≜ Λ(∋∋)`, AOP/A5_4.lean:337): `Λ(∋∋)` total on `X`. Named
-    `Arr.union` because `union` is `∪`'s, which a program must not name. -/
-def union {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) :=
-  lamOn (mem X ≫ mem X.2.2.2) X
+    `Arr.union` because `union` is `∪`'s, which a program must not name. `E(∋)` on `X`, `∋` on the payload; whether
+    it ran within capacity: the bits of `memC` there and of `EC`. -/
+def unionC {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) × Bool :=
+  let m := memC X.2.2.2; let e := EC m.1 X
+  (e.1, m.2 && e.2)
+
+/-- `union` on the arrays of arrays `X`: `unionC`'s relation. -/
+def union {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A)) (.arr A) := (unionC X).1
 
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/

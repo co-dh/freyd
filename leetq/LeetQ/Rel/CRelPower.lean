@@ -1,0 +1,168 @@
+/-
+  Capacity checked at run time, correctness proved, for the power side's ops built on `Λ`: `τ`, `lamOn`, `setify`,
+  `E`, `Arr.union`. Each twin's bit is the `&&` of the bits of the twins it runs, and decides every capacity
+  premise of the op's read-back (`rep_tau`, `rep_lamOn`, …), so `rep_τC` … `rep_arrUnionC` hold under that bit alone.
+-/
+import LeetQ.Rel.CRelRel
+import LeetQ.Rel.RepEst
+
+namespace LeetQ.Rel
+
+namespace Rep
+
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+open Pow OpsN UnionN
+
+variable {A B K : Obj}
+
+/-- **`unionC`'s bit is `rep_union_full`'s premises**: `need`'s guard its `hN`, the razes' bits its `hFk`, `hFv`
+    (`razeC_fits`), the codes' bits its `hK`, `hV` (`oneOK_of_codesC`), the `fitsN` bits its `hk`, `hv`. -/
+theorem unionC_ok (R S : Rel A B) (hb : (unionC R S).2 = true) :
+    ∃ hN : R.n.toNat + S.n.toNat < USize.size, Vals.RazeFits A R.key S.key ∧ Vals.RazeFits B R.val S.val ∧
+      cOK(kcR(Uc(R, S, hN)), Rel.n (Uc(R, S, hN)), Rel.key (Uc(R, S, hN))) ∧
+      cOK(vcR(Uc(R, S, hN)), Rel.n (Uc(R, S, hN)), Rel.val (Uc(R, S, hN))) ∧
+      Vals.PickFits A (Rel.key (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat) ∧
+      Vals.PickFits B (Rel.val (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat) := by
+  unfold unionC need at hb
+  split at hb
+  · rename_i hN
+    simp only [Bool.and_eq_true] at hb
+    obtain ⟨⟨⟨⟨⟨hka, hvb⟩, hkc⟩, hvc⟩, hkf⟩, hvf⟩ := hb
+    have hFk := Obj.razeC_fits A R.key S.key _ rfl _ hka
+    have hFv := Obj.razeC_fits B R.val S.val _ rfl _ hvb
+    simp only [razeC_fst] at hkc hvc hkf hvf
+    exact ⟨hN, hFk, hFv, oneOK_of_codesC A _ hkc, oneOK_of_codesC B _ hvc,
+      pickFits_of_fitsN A _ _ hkf _ (by simp only [List.length_range]; exact Nat.le_refl _),
+      pickFits_of_fitsN B _ _ hvf _ (by simp only [List.length_range]; exact Nat.le_refl _)⟩
+  · exact absurd hb Bool.false_ne_true
+
+/-- **`rep (τ X)` under `τC`'s bit**: `rep_tau` at `transposeC_ok`'s premises at `idU X`, whose key and value are
+    both `X`. -/
+theorem rep_τC {n : USize} (X : Vals A n) (hb : (τC X).2 = true) :
+    (∀ a Y, rep (τC X).1 a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τC X).1 a Y) ↔ ∃ i, Vals.row X i = a) := by
+  obtain ⟨hX, -, hx, -, hWk, hW, h63⟩ := transposeC_ok (idU X) hb
+  exact rep_tau X hX hx hWk hW h63
+
+/-- **`rep (lamOn R U)` under `lamOnC`'s bit**: `rep_lamOn` at the intermediates `lamOnC` builds, each defining
+    equation `rfl`. `transposeC_ok` gives `hK`…`h63`, `diffC`'s bit `hc` (`codes_faithful_wf`, `pairs_eq_codes`) and
+    `hdU`, `topC`'s `ht63`, `unionC_ok` `hN`…`huv`. -/
+theorem rep_lamOnC {m : USize} (R : Rel A B) (U : Vals A m) (hb : (lamOnC R U).2 = true) :
+    (∀ a Y, rep (lamOnC R U).1 a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
+      (∀ a, (∃ Y, rep (lamOnC R U).1 a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
+  simp only [lamOnC, Bool.and_eq_true] at hb
+  obtain ⟨⟨⟨⟨ht, -⟩, hd⟩, hn⟩, hu⟩ := hb
+  obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R ht
+  simp only [diffC, Bool.and_eq_true] at hd
+  obtain ⟨⟨hcb, hdU⟩, -⟩ := hd
+  have hc := (codes_faithful_wf (.prod A A) _ (Obj.codesC_fits (.prod A A) _ hcb)).1
+  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  have hp : pairsOK(idU U, dom R) := by rw [pairs_eq_codes, e]; exact hc
+  simp only [topC, Bool.and_eq_true, decide_eq_true_eq] at hn
+  obtain ⟨⟨⟨-, ht63⟩, -⟩, -⟩ := hn
+  obtain ⟨hN, hFk, hFv, huK, huV, huk, huv⟩ := unionC_ok _ _ hu
+  exact rep_lamOn R U _ _ rfl rfl hK hV hk hv hWk hW h63 _ rfl hp
+    (pickFits_of_fitsN A (idU U).key _ hdU _ (by simp only [List.length_range]; exact Nat.le_refl _)) _ rfl ht63 _ _ rfl rfl hN hFk hFv _ rfl _ _ rfl rfl
+    huK huV huk huv
+
+/-- `lamOn M X` on rows of `X` when `M` relates only rows of `X`: an array it gives `xs` holds exactly the `y` with
+    `P xs y`, and it has a row at `xs` exactly when `X` lists `xs`. -/
+theorem rep_lamOnC_rows {n : USize} (M : Rel K B) (X : Vals K n) (P : K.El → B.El → Prop)
+    (hm : ∀ xs y, rep M xs y ↔ (∃ i, Vals.row X i = xs) ∧ P xs y) (hb : (lamOnC M X).2 = true) :
+    (∀ xs Y, rep (lamOnC M X).1 xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ P xs y) ∧
+      (∀ xs, (∃ Y, rep (lamOnC M X).1 xs Y) ↔ ∃ i, Vals.row X i = xs) := by
+  obtain ⟨h1, h2⟩ := rep_lamOnC M X hb
+  have h2' : ∀ xs, (∃ Y, rep (lamOnC M X).1 xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
+    (h2 xs).trans ⟨fun h => h.elim (fun ⟨_, hb⟩ => ((hm _ _).1 hb).1) id, Or.inr⟩
+  exact ⟨fun xs Y h => ⟨(h2' xs).1 ⟨Y, h⟩, fun y => (h1 xs Y h y).trans
+    ((hm xs y).trans ⟨And.right, fun hy => ⟨(h2' xs).1 ⟨Y, h⟩, hy⟩⟩)⟩, h2'⟩
+
+/-- **`rep (setify X)` under `setifyC`'s bit**: `rep_lamOnC_rows` at `∋` on `X` (`rep_memC`). -/
+theorem rep_setifyC {n : USize} (X : Vals (.arr B) n) (hb : (setifyC X).2 = true) :
+    (∀ xs Y, rep (setifyC X).1 xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
+      (∀ xs, (∃ Y, rep (setifyC X).1 xs Y) ↔ ∃ i, Vals.row X i = xs) := by
+  simp only [setifyC, Bool.and_eq_true] at hb
+  exact rep_lamOnC_rows _ X (fun xs y => y ∈ xs) (rep_memC X hb.1) hb.2
+
+/-- **`rep (E R X)` under `EC`'s bit**: `rep_lamOnC_rows` at `∋ ≫ R` on `X` (`rep_compC`, `rep_memC`). -/
+theorem rep_EC {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (hb : (EC R X).2 = true) :
+    (∀ xs Y, rep (EC R X).1 xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
+      (∀ xs, (∃ Y, rep (EC R X).1 xs Y) ↔ ∃ i, Vals.row X i = xs) := by
+  simp only [EC, Bool.and_eq_true] at hb
+  obtain ⟨⟨hm, hc⟩, hl⟩ := hb
+  refine rep_lamOnC_rows _ X (fun xs y => ∃ x ∈ xs, rep R x y) (fun xs y => ?_) hl
+  rw [rep_compC _ R hc]
+  show (∃ x, rep (memC X).1 xs x ∧ rep R x y) ↔ _
+  simp only [rep_memC X hm]
+  exact ⟨fun ⟨x, ⟨hi, hx⟩, hr⟩ => ⟨hi, x, hx, hr⟩, fun ⟨hi, x, hx, hr⟩ => ⟨x, ⟨hi, hx⟩, hr⟩⟩
+
+/-- **`rep (Arr.union X)` under `Arr.unionC`'s bit**: `rep_EC` at `∋` on the payload `X.2.2.2` (`rep_memC`), every
+    element of a cell of `X` a row of the payload (`row_mem_payload`). -/
+theorem rep_arrUnionC {n : USize} (X : Vals (.arr (.arr A)) n) (hb : (Arr.unionC X).2 = true) :
+    (∀ xss Y, rep (Arr.unionC X).1 xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
+      (∀ xss, (∃ Y, rep (Arr.unionC X).1 xss Y) ↔ ∃ i, Vals.row X i = xss) := by
+  simp only [Arr.unionC, Bool.and_eq_true] at hb
+  obtain ⟨h1, h2⟩ := rep_EC _ X hb.2
+  have hm := rep_memC X.2.2.2 hb.1
+  refine ⟨fun xss Y h => ⟨(h1 xss Y h).1, fun y => ((h1 xss Y h).2 y).trans ?_⟩, h2⟩
+  exact ⟨fun ⟨xs, hxs, hr⟩ => ⟨xs, hxs, ((hm xs y).1 hr).2⟩,
+    fun ⟨xs, hxs, hy⟩ => ⟨xs, hxs, (hm xs y).2 ⟨row_mem_payload X xss xs (h1 xss Y h).1 hxs, hy⟩⟩⟩
+
+#print axioms unionC_ok
+#print axioms rep_τC
+#print axioms rep_lamOnC
+#print axioms rep_setifyC
+#print axioms rep_EC
+#print axioms rep_arrUnionC
+
+end Rep
+
+namespace CRel
+
+open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep
+
+variable {A B : Obj}
+
+/-- `τ` on `X`, ok where `τC` ran within capacity. -/
+def τ {n : USize} (X : Vals A n) : CRel A (.arr A) := let r := τC X; ⟨r.1, r.2⟩
+
+/-- `Λ(R)` total on `U`, ok where `R` is and `lamOnC` ran within capacity. -/
+def lamOn {m : USize} (R : CRel A B) (U : Vals A m) : CRel A (.arr B) := let r := lamOnC R.rel U; ⟨r.1, R.ok && r.2⟩
+
+/-- `setify` on `X`, ok where `setifyC` ran within capacity. -/
+def setify {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) := let r := setifyC X; ⟨r.1, r.2⟩
+
+/-- `E(R)` on `X`, ok where `R` is and `EC` ran within capacity. -/
+def E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) : CRel (.arr A) (.arr B) :=
+  let r := EC R.rel X; ⟨r.1, R.ok && r.2⟩
+
+/-- `union` on the arrays of arrays `X`, ok where `Arr.unionC` ran within capacity. -/
+def Arr.union {n : USize} (X : Vals (.arr (.arr A)) n) : CRel (.arr (.arr A)) (.arr A) :=
+  let r := Alg.Arr.unionC X; ⟨r.1, r.2⟩
+
+theorem rep_τ {n : USize} (X : Vals A n) (hb : (τ X).ok = true) :
+    (∀ a Y, rep (τ X).rel a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X).rel a Y) ↔ ∃ i, Vals.row X i = a) :=
+  rep_τC X hb
+
+theorem rep_lamOn {m : USize} (R : CRel A B) (U : Vals A m) (hb : (R.lamOn U).ok = true) :
+    (∀ a Y, rep (R.lamOn U).rel a Y → ∀ y, y ∈ Y ↔ rep R.rel a y) ∧
+      (∀ a, (∃ Y, rep (R.lamOn U).rel a Y) ↔ (∃ b, rep R.rel a b) ∨ ∃ i, Vals.row U i = a) :=
+  rep_lamOnC R.rel U (by simp only [lamOn, Bool.and_eq_true] at hb; exact hb.2)
+
+theorem rep_setify {n : USize} (X : Vals (.arr B) n) (hb : (setify X).ok = true) :
+    (∀ xs Y, rep (setify X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
+      (∀ xs, (∃ Y, rep (setify X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) :=
+  rep_setifyC X hb
+
+theorem rep_E {n : USize} (R : CRel A B) (X : Vals (.arr A) n) (hb : (R.E X).ok = true) :
+    (∀ xs Y, rep (R.E X).rel xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R.rel x y) ∧
+      (∀ xs, (∃ Y, rep (R.E X).rel xs Y) ↔ ∃ i, Vals.row X i = xs) :=
+  rep_EC R.rel X (by simp only [E, Bool.and_eq_true] at hb; exact hb.2)
+
+theorem rep_arrUnion {n : USize} (X : Vals (.arr (.arr A)) n) (hb : (Arr.union X).ok = true) :
+    (∀ xss Y, rep (Arr.union X).rel xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
+      (∀ xss, (∃ Y, rep (Arr.union X).rel xss Y) ↔ ∃ i, Vals.row X i = xss) :=
+  rep_arrUnionC X hb
+
+end CRel
+
+end LeetQ.Rel
