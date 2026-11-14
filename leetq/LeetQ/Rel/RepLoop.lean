@@ -284,22 +284,18 @@ scoped notation "pairOK(" A ", " R ", " S ")" =>
 -- `rep_ran`'s (`x` the values) or `rep_dom`'s (`x` the keys) hypotheses on the one-part code of `x`
 set_option hygiene false in
 scoped notation "oneFit(" B ", " n ", " x ")" =>
-  (Obj.CodesFit B (#v[⟨n, x⟩] : Vector (Part B) 1) ∧
-    ∀ dc : Code, dc = (Obj.codes B (#v[⟨n, x⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one →
-      Vals.PickFits B x (ids dc.groupIds.2))
+  (Obj.CodesFit B (#v[⟨n, x⟩] : Vector (Part B) 1) ∧ Vals.PickFits B x (List.range (n).toNat))
 -- `rep_nub`'s hypotheses at `T`
 set_option hygiene false in
 scoped notation "nubOK(" K ", " V ", " T ")" =>
   (Obj.CodesFit K (#v[⟨Rel.n T, Rel.key T⟩] : Vector (Part K) 1) ∧
     Obj.CodesFit V (#v[⟨Rel.n T, Rel.val T⟩] : Vector (Part V) 1) ∧
-    Vals.PickFits K (Rel.key T) (ids nubI(K, V, T)) ∧ Vals.PickFits V (Rel.val T) (ids nubI(K, V, T)))
--- `rep_antiJoin`'s hypotheses at `antiJoin R C`, its codes `ac` and kept rows `I` bound by their equations
+    Vals.PickFits K (Rel.key T) (List.range (Rel.n T).toNat) ∧ Vals.PickFits V (Rel.val T) (List.range (Rel.n T).toNat))
+-- `rep_antiJoin`'s hypotheses at `antiJoin R C`
 set_option hygiene false in
 scoped notation "ajOK(" B ", " R ", " C ")" =>
   (Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n C, Rel.val C⟩] : Vector (Part B) 2) ∧
-    ∀ ac : Vector Code 2, ac = Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n C, Rel.val C⟩] : Vector (Part B) 2) →
-      ∀ I : ByteArray, I = anti (ac[0]'Nat.zero_lt_two) (ac[1]'Nat.one_lt_two) →
-        Vals.PickFits _ (Rel.key R) (ids I) ∧ Vals.PickFits B (Rel.val R) (ids I))
+    (Vals.PickFits _ (Rel.key R) (List.range (Rel.n R).toNat) ∧ Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat)))
 -- `rep_uncons`'s hypotheses at the arrays `Rel.val W`, its intermediates `ib`, `lb`, `Tv` bound by their equations
 set_option hygiene false in
 scoped notation "uncOK(" Y ", " W ")" =>
@@ -313,14 +309,13 @@ scoped notation "uncOK(" Y ", " W ")" =>
         Vals.PickFits Y (Rel.val W).2.2.2 ((List.range (len ib)).map fun q => (Column.bitsAt lb (q * 8) 8).toNat) ∧
         Vals.PickFits (.arr Y) Tv
           ((List.range (len ib)).map fun q => (Column.bitsAt (tilLongs (len ib).toUSize) (q * 8) 8).toNat))
--- `rep_diff`'s hypotheses at `R \ S`, `A`, `B` the key and value objects, its codes `pc` and kept rows `I` bound
+-- `rep_diff`'s hypotheses at `R \ S`, `A`, `B` the key and value objects, its codes `pc` bound
 set_option hygiene false in
 scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
   (∀ pc : Vector Code 2, pc = pairs #v[R, S] →
     codesOK(pc, (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] :
       Vector (Part (.prod A B)) 2)) ∧
-    ∀ I : ByteArray, I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two) →
-      Vals.PickFits A (Rel.key R) (ids I) ∧ Vals.PickFits B (Rel.val R) (ids I))
+    (Vals.PickFits A (Rel.key R) (List.range (Rel.n R).toNat) ∧ Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat)))
 
 -- `rep_union_full`'s razed union of `R ∪ S`, `K`, `X` the key and value objects, `hNk`, `hNv` its count proofs
 set_option hygiene false in
@@ -338,8 +333,8 @@ scoped notation "uniOK(" K ", " X ", " R ", " S ")" =>
       Vals.RazeFits K (Rel.key R) (Rel.key S) ∧ Vals.RazeFits X (Rel.val R) (Rel.val S) ∧
       Obj.CodesFit K (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).key⟩] : Vector (Part K) 1) ∧
       Obj.CodesFit X (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).val⟩] : Vector (Part X) 1) ∧
-      Vals.PickFits K (UO(K, X, R, S)).key (ids nubI(K, X, UO(K, X, R, S))) ∧
-      Vals.PickFits X (UO(K, X, R, S)).val (ids nubI(K, X, UO(K, X, R, S))))
+      Vals.PickFits K (UO(K, X, R, S)).key (List.range (UO(K, X, R, S)).n.toNat) ∧
+      Vals.PickFits X (UO(K, X, R, S)).val (List.range (UO(K, X, R, S)).n.toNat))
 
 end Prim
 
@@ -380,9 +375,9 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
   obtain ⟨r1, r2, r3, r4, r5, r6⟩ := hR' _ rfl
   obtain ⟨t1, t2, t3, t4, t5⟩ := hT' _ rfl
   obtain ⟨o1, o2, o3, o4, o5⟩ := hO' _ rfl
-  obtain ⟨a1, a2⟩ := hA' _ rfl _ rfl
-  refine loop_round_set out St D u p G Q R T A O (by rw [hD]; exact rep_ran_corefl St (one_ok _ hDf) (hDp _ rfl))
-    (rep_ran_corefl (outr D) (one_ok _ hWf) (hWp _ rfl))
+  obtain ⟨a1, a2⟩ := hA'
+  refine loop_round_set out St D u p G Q R T A O (by rw [hD]; exact rep_ran_corefl St (one_ok _ hDf) (hDp))
+    (rep_ran_corefl (outr D) (one_ok _ hWf) (hWp))
     (rep_uncons (Rel.val (ran (outr D))) h63 _ rfl _ rfl _ rfl hKf hHf hTf')
     (by rw [hu]; exact rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4 u5)
     (by rw [hp]; exact rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5 p6)
@@ -390,7 +385,7 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
     (by rw [hR]; exact rep_pair _ _ (codes_faithful_wf _ _ hRf).1 r1 r2 r3 r4 r5 r6)
     (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ hTf).1 t1 t2 t3 t4 t5)
     (rep_nub T (one_ok _ hNK) (one_ok _ hNV) hNk' hNv')
-    (rep_dom_corefl u (one_ok _ hdf) (hdp _ rfl))
+    (rep_dom_corefl u (one_ok _ hdf) (hdp))
     (by rw [hA]; exact rep_antiJoin D (dom u) (codes_faithful_wf _ _ hAf).1 a1 a2)
     (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4 o5)
     (rep_union_full out O hUN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)

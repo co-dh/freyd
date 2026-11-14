@@ -371,11 +371,11 @@ theorem perm_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B)) (
   obtain ⟨w1, w2, w3, w4, w5, w6⟩ := hw' _ rfl
   obtain ⟨v1, v2, v3, v4, v5, v6⟩ := hv' _ rfl
   obtain ⟨r1, r2, r3, r4, r5⟩ := hr' _ rfl
-  have eDp := rep_ran_corefl pend (one_ok _ hDf) (hDp _ rfl)
+  have eDp := rep_ran_corefl pend (one_ok _ hDf) (hDp)
   have eUn := rep_uncat_ok (Rel.val (ran pend)) hUn
   have eU := rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4 u5
   have eq := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 p1 p2 p3 p4 p5 p6
-  have eD := rep_ran_corefl _ (one_ok _ hdf) (hdp _ rfl)
+  have eD := rep_ran_corefl _ (one_ok _ hdf) (hdp)
   have eW := rep_pair _ _ (codes_faithful_wf _ _ hwf).1 w1 w2 w3 w4 w5 w6
   have eCn := rep_cons_ok _ hCn
   have eV := rep_pair _ _ (codes_faithful_wf _ _ hvf).1 v1 v2 v3 v4 v5 v6
@@ -502,8 +502,8 @@ scoped notation "sufOK" =>
       Vals.RazeFits (.arr B) P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
       Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).key⟩] : Vector (Part (.arr B)) 1) ∧
       Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))))
+      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (List.range (PQ(.arr B, .arr B)).n.toNat) ∧
+      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (List.range (PQ(.arr B, .arr B)).n.toNat))
 end ListN
 open ListN
 
@@ -517,7 +517,7 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
   have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl tK tH tT
   obtain ⟨c1, c2, c3, c4, c5⟩ := hc _ rfl
   have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
-  have eD := rep_ran_corefl F (one_ok _ hDf) (hDp _ rfl)
+  have eD := rep_ran_corefl F (one_ok _ hDf) (hDp)
   have e1 : ∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys) := by
     intro xs ys
     rw [eC, Freyd.Alg.RelSet.comp_apply]
@@ -642,7 +642,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
       (kcX(X)).n = cnt ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
       ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
         ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card)) ∧
-  Vals.PickFits A X (ids (nubX(X))) ∧
+  Vals.PickFits A X (List.range (cnt).toNat) ∧
   (∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
     Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
       Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩) ∧
@@ -687,7 +687,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   obtain ⟨q1, q2, q3, q4, q5, q6⟩ := hq' _ rfl
   obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
   obtain ⟨hX, hx, hF, hw, hn, hs, h63, hpk, hpv, hlo⟩ := ht
-  have eD := rep_ran_corefl P (one_ok _ hPf) (hPp _ rfl)
+  have eD := rep_ran_corefl P (one_ok _ hPf) (hPp)
   have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv hlo
   have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
   have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5 q6

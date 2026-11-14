@@ -139,7 +139,8 @@ theorem div_keep_holds (r : Rel A B) (s : Rel A C) (y : Rel B C) (l k yc zc rv :
         ((List.range rv.n.toNat).filter fun j =>
           Column.idAt rv.b rv.w j == Column.idAt yc.b yc.w ((firstsOf key2(yc, zc) yc.n.toNat).getD t 0)).length)).map
       fun t => (firstsOf key2(yc, zc) yc.n.toNat).getD t 0)
-    (hk : Vals.PickFits B y.key (ids I)) (hv : Vals.PickFits C y.val (ids I)) (b : B.El) (c : C.El) :
+    (hk : Vals.PickFits B y.key (List.range y.n.toNat)) (hv : Vals.PickFits C y.val (List.range y.n.toNat))
+    (b : B.El) (c : C.El) :
     (y.rows I).Holds b c ↔ (∀ a, r.Holds a b → s.Holds a c) ∧ ∃ a, r.Holds a b := by
   classical
   obtain ⟨hyl, hyr⟩ := hy
@@ -332,7 +333,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
         (whereEqV g (classSizes (ycs[0]'(Nat.zero_lt_succ 2)).n (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]))
           (atCnt (cnt (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
             ((ycs[0]'(Nat.zero_lt_succ 2)).gather (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2))))
-    (hk : Vals.PickFits B y.key (ids I)) (hv : Vals.PickFits C y.val (ids I))
+    (hk : Vals.PickFits B y.key (List.range y.n.toNat)) (hv : Vals.PickFits C y.val (List.range y.n.toNat))
     (hP : Vals.PickFits B Ub (List.range mb.toNat))
     (hN : (vacY(B, Ub, ycs)).1.toNat * mc.toNat < USize.size) (h63 : (vacY(B, Ub, ycs)).1.toNat * mc.toNat < 2 ^ 63)
     (hA : Vals.PickFits B (vacY(B, Ub, ycs)).2 ((List.range ((vacY(B, Ub, ycs)).1.toNat * mc.toNat)).map (· / mc.toNat)))
@@ -438,7 +439,7 @@ theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma
         (whereEqV g (classSizes (ycs[0]'(Nat.zero_lt_succ 2)).n (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]))
           (atCnt (cnt (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
             ((ycs[0]'(Nat.zero_lt_succ 2)).gather (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2))))
-    (hk : Vals.PickFits B yd.key (ids I)) (hv : Vals.PickFits C yd.val (ids I))
+    (hk : Vals.PickFits B yd.key (List.range yd.n.toNat)) (hv : Vals.PickFits C yd.val (List.range yd.n.toNat))
     (hP : Vals.PickFits B Ub (List.range mb.toNat))
     (hN : (vacY(B, Ub, ycs)).1.toNat * ma.toNat < USize.size) (h63 : (vacY(B, Ub, ycs)).1.toNat * ma.toNat < 2 ^ 63)
     (hA : Vals.PickFits B (vacY(B, Ub, ycs)).2 ((List.range ((vacY(B, Ub, ycs)).1.toNat * ma.toNat)).map (· / ma.toNat)))

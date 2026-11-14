@@ -369,7 +369,7 @@ local notation "ranOK(" R ")" =>
     (laneOK(c.w) ∧ c.n = Rel.n R ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
-    Vals.PickFits (.prod E V) (Rel.val R) (ids c.groupIds.2)
+    Vals.PickFits (.prod E V) (Rel.val R) (List.range (Rel.n R).toNat)
 
 /-- **`foldOn` of a family that only restricts to the pairs a round meets**: where `Sf (D k)` is `S'` on the pairs
     of `D k` (`hSf`), the array `xs` goes to `w` along a chain `ys` of `S'`-steps — the family's dependence on the

@@ -71,13 +71,13 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   obtain ⟨c1, c2, c3, c4, c5⟩ := hc' _ rfl
   obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
   obtain ⟨p1, p2, p3, p4, p5, p6⟩ := hp' _ rfl
-  obtain ⟨b1, b2⟩ := hb' _ rfl _ rfl
+  obtain ⟨b1, b2⟩ := hb'
   obtain ⟨k1, k2, k3, k4, k5⟩ := hC' _ rfl
-  obtain ⟨a1, a2⟩ := hA' _ rfl _ rfl
+  obtain ⟨a1, a2⟩ := hA'
   have eS : ∀ xs ys, rep Su xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
     rw [hSu]; exact rep_suffix X g hg hR
   have eW : ∀ a a', rep Wu a a' ↔ a = a' ∧ ∃ k, rep Su k a := fun a a' => by
-    rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp _ rfl)]; exact Iff.rfl
+    rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp)]; exact Iff.rfl
   have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1 u2 u3
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
@@ -90,7 +90,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
       obtain ⟨j, -, hj⟩ := (eW _ _).2 ⟨rfl, xs, hs⟩
       exact ⟨_, hs, (eU _ p.1 p.2).2 ⟨⟨j, hj⟩, rfl⟩⟩
   have eD : ∀ p p', rep D p p' ↔ p = p' ∧ ∃ xs, rep T xs p := fun p p' => by
-    rw [hD, rep_ran_corefl T (one_ok _ hTf) (hTp _ rfl)]; exact Iff.rfl
+    rw [hD, rep_ran_corefl T (one_ok _ hTf) (hTp)]; exact Iff.rfl
   have eO : ∀ p a, rep O p a ↔ (∃ xs, rep T xs p) ∧ a = p.2 := fun p a => by
     rw [hO, rep_apply, outr_holds]
     constructor
@@ -100,7 +100,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     · rintro ⟨hx, rfl⟩
       exact ⟨p.1, (eD _ _).2 ⟨rfl, hx⟩⟩
   have eV : ∀ a a', rep V a a' ↔ a = a' ∧ ∃ p, rep O p a := fun a a' => by
-    rw [hV, rep_ran_corefl O (one_ok _ hOf) (hOp _ rfl)]; exact Iff.rfl
+    rw [hV, rep_ran_corefl O (one_ok _ hOf) (hOp)]; exact Iff.rfl
   have eMem := rep_mem (Rel.val V) hVv hVk
   have eM : ∀ p z, rep M p z ↔ (∃ xs, rep T xs p) ∧ z ∈ p.2 := fun p z => by
     rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4 m5, Freyd.Alg.RelSet.comp_apply]
@@ -126,12 +126,12 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     refine (Iff.of_eq (congrFun (congrFun eP p) (y, z))).trans ((and_congr (eL p y) (eM p z)).trans ?_)
     exact ⟨fun ⟨⟨h1, h2⟩, _, h3⟩ => ⟨h1, h2, h3⟩, fun ⟨h1, h2, h3⟩ => ⟨⟨h1, h2⟩, h1, h3⟩⟩
   have eE : ∀ w w', rep E w w' ↔ w = w' ∧ ∃ p, rep yz p w := fun w w' => by
-    rw [hE, rep_ran_corefl yz (one_ok _ hyf) (hyp _ rfl)]; exact Iff.rfl
+    rw [hE, rep_ran_corefl yz (one_ok _ hyf) (hyp)]; exact Iff.rfl
   have ebad : ∀ p v, rep bad p v ↔ rep yz p v ∧ ¬ ∃ w, rep (q E) w v := fun p v => by
     rw [hbad, rep_antiJoin yz (q E) (codes_faithful_wf _ _ hbf).1 b1 b2, Freyd.Alg.RelSet.comp_apply]
     exact ⟨fun ⟨_, h1, rfl, h2⟩ => ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨v, h1, rfl, h2⟩⟩
   have edb : ∀ p p', rep (dom bad) p p' ↔ p = p' ∧ ∃ v, rep bad p v := fun p p' => by
-    rw [rep_dom_corefl bad (one_ok _ hdf) (hdp _ rfl)]; exact Iff.rfl
+    rw [rep_dom_corefl bad (one_ok _ hdf) (hdp)]; exact Iff.rfl
   have eC : ∀ xs p, rep C xs p ↔ rep T xs p ∧ ∃ v, rep bad p v := fun xs p => by
     rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4 k5, Freyd.Alg.RelSet.comp_apply]
     constructor
@@ -141,7 +141,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     · rintro ⟨ht, hv⟩
       exact ⟨p, ht, (edb _ _).2 ⟨rfl, hv⟩⟩
   have edC : ∀ xs xs', rep (dom C) xs xs' ↔ xs = xs' ∧ ∃ p, rep C xs p := fun xs xs' => by
-    rw [rep_dom_corefl C (one_ok _ hDf) (hDp _ rfl)]; exact Iff.rfl
+    rw [rep_dom_corefl C (one_ok _ hDf) (hDp)]; exact Iff.rfl
   have eA : ∀ xs ys, rep (antiJoin (idU X) (dom C)) xs ys ↔
       rep (idU X) xs ys ∧ ¬ ∃ w, rep (dom C) w ys := fun xs ys => by
     rw [rep_antiJoin (idU X) (dom C) (codes_faithful_wf _ _ hAf).1 a1 a2, Freyd.Alg.RelSet.comp_apply]
@@ -241,14 +241,13 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
 
 open DivN
 
--- `rep_inter`'s hypotheses at `L ∩ R` (`K` the keys' object, `V` the values'), its codes `pc` and hits `I` bound
+-- `rep_inter`'s hypotheses at `L ∩ R` (`K` the keys' object, `V` the values'), its codes `pc` bound
 set_option hygiene false in
 local notation "interOK(" K ", " V ", " L ", " R ")" =>
   (∀ pc : Vector Code 2, pc = pairs #v[L, R] →
     codesOK(pc, (#v[⟨Rel.n L, (Rel.key L, Rel.val L)⟩, ⟨Rel.n R, (Rel.key R, Rel.val R)⟩] :
       Vector (Part (.prod K V)) 2)) ∧
-    ∀ I : ByteArray, I = whereBits (Rel.n L) ((pc[0]'Nat.zero_lt_two).member (pc[1]'Nat.one_lt_two)) →
-      Vals.PickFits K (Rel.key L) (ids I) ∧ Vals.PickFits V (Rel.val L) (ids I))
+    (Vals.PickFits K (Rel.key L) (List.range (Rel.n L).toNat) ∧ Vals.PickFits V (Rel.val L) (List.range (Rel.n L).toNat)))
 
 /-- **`thinL(Q)`, read back over `subseq` and `setify`**: `xs` goes to `ys` exactly when `subseq` does and `setify`
     takes `xs` to `s` and `ys` to `t` with `t ⊆ s` and every element of `s` `Q`-above some element of `t`.
@@ -298,7 +297,7 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   obtain ⟨r22, r23, rP⟩ := rI _ rfl
   obtain ⟨r24, rN, rV, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
   obtain ⟨hic, hiI⟩ := hiT _ rfl
-  obtain ⟨hik, hiv⟩ := hiI _ rfl
+  obtain ⟨hik, hiv⟩ := hiI
   -- `Rd ∩ Ld` on two arrays of `St.val`: the second a subset of the first, each element of the first above one of it
   have eT : ∀ s t, (∃ i, (Rel.val St).row i = s) → (∃ j, (Rel.val St).row j = t) →
       (rep Tt s t ↔ (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a) := by
@@ -325,7 +324,7 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     rw [hG, rep_comp _ _ (codes_faithful_wf _ _ hf3).1 g1 g2 g3 g4 g5, Freyd.Alg.RelSet.comp_apply]
     exact exists_congr fun t => and_congr Iff.rfl (by rw [rep_conv]; exact Iff.rfl)
   obtain ⟨hjc, hjI⟩ := hiG _ rfl
-  obtain ⟨hjk, hjv⟩ := hjI _ rfl
+  obtain ⟨hjk, hjv⟩ := hjI
   have e : thinL Q X = G ∩ U := by subst hG hH hTt hLd hRd hQS hmS hSt hWy hU; rfl
   intro xs ys
   rw [e, rep_inter G U hjc hjk hjv]
@@ -416,8 +415,8 @@ local notation "subOK" =>
         Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
-        Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubI(.long, (.arr B), PQ(.long, (.arr B)))) ∧
-        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubI(.long, (.arr B), PQ(.long, (.arr B))))) ∧
+        Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
+        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat)) ∧
     F = foldRows T pend₀ step ∧ jc = Obj.codes .long ck2(T°, F) ∧ codesOK(jc, ck2(T°, F)) ∧
     (Rel.n F).toNat < 2 ^ 63 ∧ msum(jc, T°, F) < 2 ^ 63 ∧ msum(jc, T°, F) < USize.size ∧
     Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst) ∧
@@ -460,9 +459,8 @@ local notation "setOK" =>
       if h : r < (Rel.n Wy).toNat then List.replicate ((Rel.val Wy).row ⟨r, h⟩).length r else []) ∧
     ∀ kc vc : Code, kc = kcR(Ms) → vc = vcR(Ms) →
     cOK(kc, Rel.n Ms, Rel.key Ms) ∧ cOK(vc, Rel.n Ms, Rel.val Ms) ∧
-    Vals.PickFits (.arr B) (Rel.key Ms) (ids (tuples.tupleIds kc #[vc]).2) ∧
-    Vals.PickFits B (Rel.val Ms) (ids (tuples.tupleIds kc #[vc]).2) ∧
-    Vals.PickFits (.arr B) (Rel.key Ms) (ids kc.groupIds.2) ∧
+    Vals.PickFits (.arr B) (Rel.key Ms) (List.range (Rel.n Ms).toNat) ∧
+    Vals.PickFits B (Rel.val Ms) (List.range (Rel.n Ms).toNat) ∧
     ∀ kt : Code, kt = kcT(Ms) →
     (∀ {i j : Nat} (hi : i < (Rel.nub Ms).n.toNat) (hj : j < (Rel.nub Ms).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
@@ -477,8 +475,6 @@ local notation "setOK" =>
     ∀ pc : Vector Code 2, pc = pairs #v[idU (Rel.val Wy), dom Ms] →
     codesOK(pc, (#v[⟨Rel.n (idU (Rel.val Wy)), (Rel.key (idU (Rel.val Wy)), Rel.val (idU (Rel.val Wy)))⟩,
       ⟨Rel.n (dom Ms), (Rel.key (dom Ms), Rel.val (dom Ms))⟩] : Vector (Part (.prod (.arr B) (.arr B))) 2)) ∧
-    ∀ I : ByteArray, I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two) →
-    Vals.PickFits (.arr B) (Rel.val Wy) (ids I) ∧
     ∀ D : Rel (.arr B) (.arr B), D = lD(Ms, Rel.val Wy) →
     (Rel.n D).toNat * USize.toNat 1 < USize.size ∧ (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63 ∧
     Vals.PickFits (.arr B) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)) ∧
@@ -490,8 +486,8 @@ local notation "setOK" =>
     Vals.RazeFits (.arr B) (Rel.key T) (Rel.key N) ∧ Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N) ∧
     ∀ L : Rel (.arr B) (.arr B), L = Uc(T, N, hNk, hNv) → ∀ ku vu : Code, ku = kcR(L) → vu = vcR(L) →
     cOK(ku, Rel.n L, Rel.key L) ∧ cOK(vu, Rel.n L, Rel.val L) ∧
-    Vals.PickFits (.arr B) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2) ∧
-    Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2))
+    Vals.PickFits (.arr B) (Rel.key L) (List.range (Rel.n L).toNat) ∧
+    Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat))
 
 /-- **`thinL(Q)`, elementwise**: an array `xs` of `X` goes to `ys` exactly when `ys` is a sublist of `xs` and each
     element of `xs` is `Q`-above some element of `ys`. `rep_thinL_sublist`, with the `setify` images replaced by
@@ -523,19 +519,18 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     rw [hU]; exact rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
       hjc hjO hjn hjM hjU hjA hjC
   have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
-    rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) (hWf.2 _ rfl)]; exact Iff.rfl
+    rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) hWf.2]; exact Iff.rfl
   subst hMs
   obtain ⟨hmv, hmk, k1⟩ := hset
-  obtain ⟨hK, hV, hk, hv', hp', k2⟩ := k1 _ _ rfl rfl
+  obtain ⟨hK, hV, hk, hv', k2⟩ := k1 _ _ rfl rfl
   obtain ⟨hF', hw, hn', hs, hW, h63', k3⟩ := k2 _ rfl
   obtain ⟨hpk, hpv, hlo, k4⟩ := k3 _ _ rfl rfl
-  obtain ⟨hc, k5⟩ := k4 _ rfl
-  obtain ⟨hd, k6⟩ := k5 _ rfl
+  obtain ⟨hc, k6⟩ := k4 _ rfl
   obtain ⟨htN, ht63, htA, htB, k7⟩ := k6 _ rfl
   obtain ⟨hN', hNk, hNv, hFk, hFv, k8⟩ := k7 _ _ rfl rfl
   obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
   have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63' _ _ rfl rfl
-    hpk hpv hlo hp' _ rfl hc _ rfl hd hd _ rfl htN ht63 htA htB _ _ rfl rfl hN' hNk hNv hFk hFv _ rfl _ _ rfl rfl
+    hpk hpv hlo _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hNk hNv hFk hFv _ rfl _ _ rfl rfl
     huK huV huk huv
   rw [← hSt] at hS
   intro xs ys

@@ -42,7 +42,7 @@ set_option hygiene false in
 scoped notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
   (st).2.1 ∪ (antiJoin ((st).1°) (idU (Rel.key (elK (st).2.2))))°, (st).2.2 + 1)
 
--- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound values `jc`, `I`, `Q` quantified with their equations;
+-- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound value `Q` quantified with its equation;
 -- `roundAt(V)` names the value object, for a fold whose `V` is a composite such as `.arr B`
 set_option hygiene false in
 scoped notation "roundAt(" V ")" =>
@@ -50,8 +50,8 @@ scoped notation "roundAt(" V ")" =>
   Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
   Vals.PickFits .long S.key (List.range S.n.toNat) ∧ Vals.PickFits V S.val (List.range S.n.toNat) ∧
   Obj.CodesFit .long jparts ∧
-  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
-    Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
+  Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat) ∧
+  Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat) ∧
   ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
     P.n.toNat + Q.n.toNat < USize.size ∧
     ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
@@ -113,15 +113,14 @@ open FoldN
 
 /-- **One round of `foldRows`, read back**: the new state `S.nub` (`S` the step's result) is `S`, and the new
     `out`, `P ∪ (antiJoin pend° (idU el.key))°`, adds to `P` the pairs of `pend` whose row has no element this
-    round. `antiJoin`'s and `∪`'s intermediate values are bound by their defining equations (`hjc`, `hI`, `hQ`).
+    round. `antiJoin`'s and `∪`'s intermediate values are bound by their defining equations (`hQ`).
     Hypotheses: `Obj.CodesFit` of every coded part, `Vals.PickFits` where a part is picked, the counts fit. -/
 theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hSK : Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1))
     (hSV : V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1))
     (hSk : Vals.PickFits .long S.key (List.range S.n.toNat))
     (hSv : Vals.PickFits V S.val (List.range S.n.toNat))
-    (jc : Vector Code 2) (hjc : jc = Obj.codes .long jparts) (hjf : Obj.CodesFit .long jparts)
-    (I : ByteArray) (hI : I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two))
+    (hjf : Obj.CodesFit .long jparts)
     (hJk : Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat))
     (hJv : Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
@@ -140,7 +139,7 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
   refine ⟨rep_nub S (one_ok _ hSK) (one_ok _ hSV) hSk hSv, fun r v => ?_⟩
   rw [rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show rep P r v ∨ rep Q r v ↔ _
-  subst hjc hI hQ
+  subst hQ
   have hA := congrFun (congrFun (rep_antiJoin (pend°) (idU (Rel.key el))
     (codes_faithful_wf .long _ hjf).1 hJk hJv) v) r
   rw [rep_conv]
@@ -292,10 +291,9 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
       ∀ r v, rep (f^[j + 1] (pend₀, Alg.zero, 0)).2.1 r v ↔ rep (f^[j] (pend₀, Alg.zero, 0)).2.1 r v ∨
         (rep (f^[j] (pend₀, Alg.zero, 0)).1 r v ∧ ¬ ∃ e, rep (elK j) r e) := by
     intro j hk
-    obtain ⟨hSK, hSV, hSk, hSv, hjf, hJ, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
-    obtain ⟨hJk, hJv⟩ := hJ _ rfl _ rfl
+    obtain ⟨hSK, hSV, hSk, hSv, hjf, hJk, hJv, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
     obtain ⟨hU, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hQ _ rfl
-    have h := round_rep (elK j) _ _ _ hSK hSV hSk hSv _ rfl hjf _ rfl hJk hJv _ rfl hU hNk hNv hFk hFv hUK hUV
+    have h := round_rep (elK j) _ _ _ hSK hSV hSk hSv hjf hJk hJv _ rfl hU hNk hNv hFk hFv hUK hUV
       hUk hUv
     have e : f^[j + 1] (pend₀, Alg.zero, 0) = rnd(f^[j] (pend₀, Alg.zero, 0)) := hf _
     rw [e, hk]
