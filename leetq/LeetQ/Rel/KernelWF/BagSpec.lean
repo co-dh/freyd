@@ -195,6 +195,94 @@ theorem sorted_block {N : Nat} (g : List Nat) (key : Nat → Nat) (hp : g.Perm (
     rw [hsub, List.length_take] at this
     omega
 
+/-- Of `til N`, the elements below `M`: `min M N` of them. -/
+theorem filter_range_lt (M : Nat) : ∀ N, ((List.range N).filter fun c => decide (c < M)).length = min M N
+  | 0 => by simp
+  | N + 1 => by
+    rw [List.range_succ, List.filter_append, List.length_append, filter_range_lt M N]
+    by_cases hN : N < M <;> simp [hN] <;> omega
+
+/-- **A key-sorted permutation holds each key's elements in that key's block**: `g` lists `til N` non-decreasing
+    in `key`, the elements of key `r < n` being `[P r, P (r+1))` (`P` non-decreasing, `P n = N`); `g`'s block at
+    `[P r, P (r+1))` is a permutation of them. -/
+theorem sorted_block_perm {N n : Nat} (g : List Nat) (key P : Nat → Nat) (hp : g.Perm (List.range N))
+    (hs : g.Pairwise fun a b => key a ≤ key b) (hP : ∀ r < n, P r ≤ P (r + 1)) (hPn : P n = N)
+    (hkey : ∀ c < N, key c < n ∧ P (key c) ≤ c ∧ c < P (key c + 1)) (r : Nat) (hr : r < n) :
+    ((g.drop (P r)).take (P (r + 1) - P r)).Perm (List.range' (P r) (P (r + 1) - P r)) := by
+  have hle : ∀ a b, a ≤ b → b ≤ n → P a ≤ P b := by
+    intro a b
+    induction b with
+    | zero => intro hab _; rw [Nat.le_zero.1 hab]; exact Nat.le_refl _
+    | succ b ih =>
+      intro hab hb
+      by_cases h : a ≤ b
+      · exact Nat.le_trans (ih h (by omega)) (hP b (by omega))
+      · rw [show a = b + 1 by omega]; exact Nat.le_refl _
+  have hmem : ∀ e (he : e < g.length), g[e] < N := fun e he =>
+    List.mem_range.1 (hp.mem_iff.1 (List.getElem_mem he))
+  -- the elements of key below `k` are the first `P k`
+  have hcnt : ∀ k, k ≤ n → ((List.range N).filter fun c => decide (key c < k)).length = P k := fun k hk => by
+    rw [List.filter_congr (p := fun c => decide (key c < k)) (q := fun c => decide (c < P k)) fun c hc => by
+      obtain ⟨h1, h2, h3⟩ := hkey c (List.mem_range.1 hc)
+      rw [decide_eq_decide]
+      constructor
+      · intro h; have := hle (key c + 1) k (by omega) hk; omega
+      · intro h; refine Nat.lt_of_not_le fun h' => ?_; have := hle k (key c) h' (by omega); omega]
+    rw [filter_range_lt, Nat.min_eq_left (by rw [← hPn]; exact hle k n hk (Nat.le_refl _))]
+  -- position `d` holds an element of key `k` exactly where `P k ≤ d < P (k+1)`
+  have hpos : ∀ d (hd : d < g.length), P (key g[d]) ≤ d ∧ d < P (key g[d] + 1) := fun d hd => by
+    obtain ⟨h1, h2⟩ := sorted_block g key hp hs d hd
+    have hk := (hkey _ (hmem d hd)).1
+    rw [hcnt _ (by omega)] at h1
+    rw [List.filter_congr (p := fun c => decide (key c ≤ key g[d])) (q := fun c => decide (key c < key g[d] + 1))
+      fun c _ => by simp only [Nat.lt_succ_iff], hcnt _ (by omega)] at h2
+    exact ⟨h1, h2⟩
+  have hPs := hP r hr
+  -- an element between `P r` and `P (r+1)` is of key `r`
+  have hkr : ∀ x, x < N → P r ≤ x → x < P (r + 1) → key x = r := fun x hx h1 h2 => by
+    obtain ⟨hk, e1, e2⟩ := hkey x hx
+    rcases Nat.lt_trichotomy (key x) r with h | h | h
+    · have := hle (key x + 1) r h (by omega); omega
+    · exact h
+    · have := hle (r + 1) (key x) h (by omega); omega
+  have hnd : g.Nodup := hp.nodup_iff.2 List.nodup_range
+  have hbnd := hnd.sublist ((List.take_sublist (P (r + 1) - P r) _).trans (List.drop_sublist (P r) g))
+  have hnr : (List.range' (P r) (P (r + 1) - P r)).Nodup := List.nodup_range'
+  refine List.perm_iff_count.2 fun a => ?_
+  have hiff : a ∈ (g.drop (P r)).take (P (r + 1) - P r) ↔ a ∈ List.range' (P r) (P (r + 1) - P r) := by
+    rw [List.mem_range'_1]
+    constructor
+    · intro hx
+      obtain ⟨u, hu, rfl⟩ := List.getElem_of_mem hx
+      rw [List.getElem_take, List.getElem_drop]
+      simp only [List.length_take, List.length_drop] at hu
+      have hd : P r + u < g.length := by omega
+      obtain ⟨e1, e2⟩ := hpos (P r + u) hd
+      have hx := hmem _ hd
+      have hk := (hkey _ hx).1
+      have hke : key g[P r + u] = r := by
+        rcases Nat.lt_trichotomy (key g[P r + u]) r with h | h | h
+        · have := hle (key g[P r + u] + 1) r h (by omega); omega
+        · exact h
+        · have := hle (r + 1) (key g[P r + u]) h (by omega); omega
+      obtain ⟨-, f1, f2⟩ := hkey _ hx
+      rw [hke] at f1 f2
+      omega
+    · intro ⟨h1, h2⟩
+      have ha : a < N := by have := hle (r + 1) n (by omega) (Nat.le_refl _); omega
+      obtain ⟨e, he, rfl⟩ := List.mem_iff_getElem.1 (hp.mem_iff.2 (List.mem_range.2 ha))
+      obtain ⟨e1, e2⟩ := hpos e he
+      rw [hkr _ ha h1 (by omega)] at e1 e2
+      have hu : e - P r < ((g.drop (P r)).take (P (r + 1) - P r)).length := by
+        simp only [List.length_take, List.length_drop]; omega
+      have h' : ((g.drop (P r)).take (P (r + 1) - P r))[e - P r] = g[e] := by
+        rw [List.getElem_take, List.getElem_drop]; simp only [Nat.add_sub_cancel' (show P r ≤ e by omega)]
+      rw [← h']; exact List.getElem_mem hu
+  rw [List.Nodup.count hbnd, List.Nodup.count hnr]
+  simp only [hiff]
+
+#print axioms filter_range_lt
+#print axioms sorted_block_perm
 #print axioms ids_gather8
 #print axioms grade_group
 #print axioms sorted_block
