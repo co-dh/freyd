@@ -66,6 +66,37 @@ theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals 
   · rw [pick_row C z _ m hmJ hfC ⟨q, hq⟩, dif_pos hj]
     exact congrArg z.row (Fin.ext (congrArg Prod.snd hq').symm)
 
+-- `leftDiv`'s `y` over the key codes `l`, `k`: the joined rows `(r`'s value, `s`'s value`)`, as `leftDiv` builds it
+set_option hygiene false in
+local notation "yJ(" r ", " s ", " l ", " k ")" => (longCount "\\" (join l k).2 fun m h =>
+  (⟨m, Vals.pickN B (Rel.val r) (join l k).1 m (h ▸ join_len l k), Vals.pick C (Rel.val s) (join l k).2 m h⟩ :
+    Rel B C))
+
+set_option maxHeartbeats 800000 in
+/-- **`leftDiv`'s `y`, read back**: `div_y_rows` at the count `longCount` enters with, which `join_rows` bounds. -/
+theorem div_y_holds (r : Rel A B) (s : Rel A C) (l k : Code) (hln : l.n = r.n) (hkn : k.n = s.n)
+    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
+    (hrw : k.w = 1 ∨ k.w = 2 ∨ k.w = 4 ∨ k.w = 8 ∨ k.w = 16 ∨ k.w = 32 ∨ k.w = 64)
+    (hrs : k.b.size = (k.n.toNat * k.w + 7) / 8)
+    (hrc : k.w < 8 → k.card < USize.size ∧ ∀ i < k.n.toNat, Column.idAt k.b k.w i < k.card)
+    (hrn : k.n.toNat < 2 ^ 63)
+    (hM : ((List.range l.n.toNat).map fun i => ((List.range k.n.toNat).filter fun j =>
+      Column.idAt k.b k.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range l.n.toNat).map fun i => ((List.range k.n.toNat).filter fun j =>
+      Column.idAt k.b k.w j == Column.idAt l.b l.w i).length).sum < USize.size)
+    (hB : Vals.PickFits B r.val ((jp(l, k)).map Prod.fst)) (hC : Vals.PickFits C s.val ((jp(l, k)).map Prod.snd)) :
+    (yJ(r, s, l, k)).n.toNat = (jp(l, k)).length ∧
+      ∀ (q : Nat) (hq : q < (yJ(r, s, l, k)).n.toNat), ∃ (hJ : q < (jp(l, k)).length)
+        (hi : ((jp(l, k))[q]'hJ).1 < r.n.toNat) (hj : ((jp(l, k))[q]'hJ).2 < s.n.toNat),
+        (yJ(r, s, l, k)).key.row ⟨q, hq⟩ = r.val.row ⟨_, hi⟩ ∧ (yJ(r, s, l, k)).val.row ⟨q, hq⟩ = s.val.row ⟨_, hj⟩ := by
+  obtain ⟨hlt, -⟩ := join_rows l k hlw hls hrw hrs hrc hrn hM hMU
+  unfold longCount need
+  rw [dif_pos hlt]
+  dsimp only
+  have hm : len (join l k).2 = ((len (join l k).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
+  exact div_y_rows l k r.val s.val hln hkn hlw hls hrw hrs hrc hrn hM hMU hB hC _ hm (hm ▸ join_len l k)
+
 -- a pair of code columns read as one key per row, the key `tupleIds` groups by (as `DivSpec`'s)
 local notation "key2(" a ", " b ")" => fun i => (Column.idAt (Code.b a) (Code.w a) i, Column.idAt (Code.b b) (Code.w b) i)
 
@@ -253,6 +284,7 @@ theorem div_vac_holds (r : Rel A B) {mb mc : USize} (Ub : Vals B mb) (Uc : Vals 
     exact hno ⟨r.key.row ⟨j, hjn⟩, ⟨j, hjn⟩, rfl, ((hj hjn hp).1 hje).trans e⟩
 
 #print axioms div_y_rows
+#print axioms div_y_holds
 #print axioms div_keep_holds
 #print axioms pickPart_rows
 #print axioms div_vac_holds
