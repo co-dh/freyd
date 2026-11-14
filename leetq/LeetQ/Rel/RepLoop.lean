@@ -439,6 +439,64 @@ theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr
     (fun Q hQ R hR' T hT du hdu A hA O hO => ⟨fun _ _ => by rw [e], hR i hi out St ho hS D hD W hW u hu p hp G e
       Q hQ R hR' T hT du hdu A hA O hO⟩)
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet
+
+set_option hygiene false in
+/-- `P`'s rows are pairwise distinct: two rows holding one pair are one row (`nub_rows_inj`'s conclusion). -/
+scoped notation "rowsInj(" P ")" => ∀ {t t' : Fin (Rel.n P).toNat}, (Rel.key P).row t = (Rel.key P).row t' →
+  (Rel.val P).row t = (Rel.val P).row t' → t = t'
+
+/-- **Pigeonhole on `Nat`**: a list without repeats of numbers below `k` is at most `k` long, and when exactly `k`
+    long it holds every number below `k` (`List.erase` of `k` at each step). -/
+theorem nodup_below {k : Nat} : ∀ l : List Nat, l.Nodup → (∀ x ∈ l, x < k) →
+    l.length ≤ k ∧ (l.length = k → ∀ y < k, y ∈ l) := by
+  induction k with
+  | zero =>
+    intro l _ hl
+    cases l with
+    | nil => exact ⟨Nat.le_refl _, fun _ y hy => absurd hy (Nat.not_lt_zero _)⟩
+    | cons x _ => exact absurd (hl x (by simp)) (Nat.not_lt_zero _)
+  | succ k ih =>
+    intro l hn hl
+    obtain ⟨h1, h2⟩ := ih (l.erase k) (hn.erase k) fun x hx => by
+      obtain ⟨hne, hx⟩ := hn.mem_erase_iff.1 hx; have := hl x hx; omega
+    by_cases hk : k ∈ l
+    · have e := List.length_erase_of_mem hk; have := List.length_pos_of_mem hk
+      refine ⟨by omega, fun h y hy => ?_⟩
+      rcases Nat.lt_or_ge y k with hy' | hy'
+      · exact List.mem_of_mem_erase (h2 (by omega) y hy')
+      · rw [show y = k by omega]; exact hk
+    · rw [List.erase_of_not_mem hk] at h1; exact ⟨by omega, fun h => by omega⟩
+
+/-- **Distinct rows count the pairs**: a relation `P` with distinct rows below `Q` has at most `Q`'s rows, and at
+    least as many only when `Q` is below it too — each row of `P` sent to a row of `Q` holding its pair is a
+    pigeonhole map (`nodup_below`). -/
+theorem rows_le_of_inj (P Q : Rel A B) (hP : rowsInj(P)) (hle : rep P ⊑ rep Q) :
+    P.n.toNat ≤ Q.n.toNat ∧ (Q.n.toNat ≤ P.n.toNat → rep Q ⊑ rep P) := by
+  have hs : ∀ t : Fin P.n.toNat, ∃ s : Fin Q.n.toNat, Q.key.row s = P.key.row t ∧ Q.val.row s = P.val.row t :=
+    fun t => le_iff.1 hle _ _ ⟨t, rfl, rfl⟩
+  let σ : Nat → Nat := fun i => if h : i < P.n.toNat then (Classical.choose (hs ⟨i, h⟩)).1 else 0
+  have hσ : ∀ i (h : i < P.n.toNat), ∃ s : Fin Q.n.toNat,
+      σ i = s.1 ∧ Q.key.row s = P.key.row ⟨i, h⟩ ∧ Q.val.row s = P.val.row ⟨i, h⟩ :=
+    fun i h => ⟨_, dif_pos h, Classical.choose_spec (hs ⟨i, h⟩)⟩
+  have hn : ((List.range P.n.toNat).map σ).Nodup := by
+    refine List.pairwise_map.2 (List.nodup_range.imp_of_mem fun ha hb hab e => hab ?_)
+    obtain ⟨s, es, k1, v1⟩ := hσ _ (List.mem_range.1 ha)
+    obtain ⟨s', es', k2, v2⟩ := hσ _ (List.mem_range.1 hb)
+    have : s = s' := Fin.ext (es.symm.trans (e.trans es'))
+    subst this
+    exact congrArg Fin.val (hP (k1.symm.trans k2) (v1.symm.trans v2))
+  obtain ⟨h1, h2⟩ := nodup_below (k := Q.n.toNat) _ hn fun x hx => by
+    obtain ⟨i, hi, rfl⟩ := List.mem_map.1 hx
+    obtain ⟨s, e, -⟩ := hσ i (List.mem_range.1 hi); rw [e]; exact s.2
+  simp only [List.length_map, List.length_range] at h1 h2
+  refine ⟨h1, fun h => le_iff.2 fun a b ⟨s, ha, hb⟩ => ?_⟩
+  obtain ⟨i, hi, e⟩ := List.mem_map.1 (h2 (by omega) s.1 s.2)
+  obtain ⟨s', es', k1, v1⟩ := hσ i (List.mem_range.1 hi)
+  have : s' = s := Fin.ext (es'.symm.trans e)
+  subst this
+  exact ⟨_, k1.symm.trans ha, v1.symm.trans hb⟩
+
 /-- **`fixOn`'s state after round `i`**: the count of round `i - 1`'s relation, round `i`'s, and `i`. -/
 theorem fixOn_iterate {A B : Obj} (φ : Rel A B → Rel A B) (X₀ : Rel A B) : ∀ i,
     (fun s : Nat × Rel A B × Nat => (s.2.1.n.toNat, (φ s.2.1).nub, s.2.2 + 1))^[i + 1] (X₀.nub.n.toNat + 1, X₀.nub, 0) =
@@ -448,18 +506,25 @@ theorem fixOn_iterate {A B : Obj} (φ : Rel A B → Rel A B) (X₀ : Rel A B) : 
 
 /-- **`fixOn`, read back**: with `st i` the `i`-th round's state `nub(φ(…nub(X₀)))`, `fixOn n φ X₀` stops at a round
     `j ≤ n`, answers it, and denotes `Φ^[j](rep X₀)`, `Φ` what one round does to the denotation; below the fuel `j`
-    is a fixed point of `Φ` (on a monotonic `Φ` from below a fixed point, the least above `rep X₀`: Kleene's
-    iterates). Kept: `h₀`, `hφ`, the step's spec with `rep_nub`'s premises at each round the loop ran (their codes
-    grow with the rounds); `hc`, the chain property that an equal row count is an equal relation. -/
+    is a fixed point of `Φ`; the answer is below every pre-fixed point `Y` of `Φ` above `rep X₀` (Kleene's
+    iterates); and the loop stops below the fuel once `n` exceeds by two the rows of a relation `U` above every
+    iterate. The iterates are a chain (`Φ` monotonic, `rep X₀` below or above `Φ(rep X₀)`), so an equal row count of
+    two consecutive rounds, rows distinct (`hinj`), is an equal relation and a different one a strictly growing
+    (shrinking) count (`rows_le_of_inj`). Kept: `h₀`, `hφ`, the step's spec with `rep_nub`'s premises at each round
+    the loop ran (their codes grow with the rounds), and `hinj`, the distinct rows of each round's `nub`
+    (`nub_rows_inj` under the same premises). -/
 theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A B)
     (Φ : type_of% (rep X₀) → type_of% (rep X₀)) (h₀ : rep X₀.nub = rep X₀)
     (hφ : ∀ i < n, (∀ k < i, ((fun X => (φ X).nub)^[k] X₀.nub).n.toNat ≠
         ((fun X => (φ X).nub)^[k + 1] X₀.nub).n.toNat) →
       rep (φ ((fun X => (φ X).nub)^[i] X₀.nub)).nub = Φ (rep ((fun X => (φ X).nub)^[i] X₀.nub)))
-    (hc : ∀ i < n, ((fun X => (φ X).nub)^[i] X₀.nub).n.toNat = ((fun X => (φ X).nub)^[i + 1] X₀.nub).n.toNat →
-      rep ((fun X => (φ X).nub)^[i] X₀.nub) = rep ((fun X => (φ X).nub)^[i + 1] X₀.nub)) :
+    (hinj : ∀ i ≤ n, (∀ k, k + 1 < i → ((fun X => (φ X).nub)^[k] X₀.nub).n.toNat ≠
+        ((fun X => (φ X).nub)^[k + 1] X₀.nub).n.toNat) → rowsInj((fun X => (φ X).nub)^[i] X₀.nub))
+    (hm : ∀ x y : type_of% (rep X₀), x ⊑ y → Φ x ⊑ Φ y) (hch : rep X₀ ⊑ Φ (rep X₀) ∨ Φ (rep X₀) ⊑ rep X₀) :
     ∃ j ≤ n, (fixOn n φ X₀).2 = j ∧ rep (fixOn n φ X₀).1 = Φ^[j] (rep X₀) ∧
-      (j < n → Φ (rep (fixOn n φ X₀).1) = rep (fixOn n φ X₀).1) := by
+      (j < n → Φ (rep (fixOn n φ X₀).1) = rep (fixOn n φ X₀).1) ∧
+      (∀ Y, rep X₀ ⊑ Y → Φ Y ⊑ Y → rep (fixOn n φ X₀).1 ⊑ Y) ∧
+      (∀ U : Rel A B, (∀ i, Φ^[i] (rep X₀) ⊑ rep U) → U.n.toNat + 1 < n → j < n) := by
   let g : Rel A B → Rel A B := fun X => (φ X).nub
   let f : Nat × Rel A B × Nat → Nat × Rel A B × Nat := fun s => (s.2.1.n.toNat, (φ s.2.1).nub, s.2.2 + 1)
   let done : Nat × Rel A B × Nat → Bool := fun s => s.1 == s.2.1.n.toNat
@@ -469,36 +534,85 @@ theorem rep_fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A
     rw [hs k]
   have hfix : fixOn n φ X₀ = ((iter n done f s₀).2.1, (iter n done f s₀).2.2) := rfl
   obtain ⟨j, hjn, he, hstop, hlt⟩ := iter_stop done f n s₀
-  -- the rounds the loop ran, read back
+  -- the rounds the loop ran changed the count, and are read back
+  have hne : ∀ k, k + 1 < j → (g^[k] X₀.nub).n.toNat ≠ (g^[k + 1] X₀.nub).n.toNat := fun k hk h => by
+    have := hlt (k + 1) hk
+    rw [hd k] at this
+    exact (by simpa using this : (g^[k] X₀.nub).n.toNat ≠ (g^[k + 1] X₀.nub).n.toNat) h
   have hg : ∀ i < j, rep (g^[i + 1] X₀.nub) = Φ (rep (g^[i] X₀.nub)) := fun i hi =>
-    hφ i (by omega) fun k hk h => by
-      have := hlt (k + 1) (by omega)
-      rw [hd k] at this
-      exact (by simpa using this : (g^[k] X₀.nub).n.toNat ≠ (g^[k + 1] X₀.nub).n.toNat) h
+    hφ i (by omega) fun k hk => hne k (by omega)
   have hr : ∀ i ≤ j, rep (g^[i] X₀.nub) = Φ^[i] (rep X₀) := by
     intro i
     induction i with
     | zero => intro _; exact h₀
     | succ i ih => intro hi; rw [hg i (by omega), ih (by omega)]; rfl
-  rw [hfix, he]
-  cases j with
-  | zero =>
-    refine ⟨0, Nat.zero_le _, rfl, h₀, fun h => ?_⟩
-    rcases hstop with e | e
-    · omega
-    · exact absurd (show (X₀.nub.n.toNat + 1 == X₀.nub.n.toNat) = true from e) (by simp)
-  | succ i =>
-    rw [hs i]
-    refine ⟨i + 1, hjn, rfl, hr (i + 1) (Nat.le_refl _), fun h => ?_⟩
-    rcases hstop with e | e
-    · omega
-    rw [hd i] at e
-    have heq := hc i (by omega) (by simpa using e)
-    show Φ (rep (g^[i + 1] X₀.nub)) = rep (g^[i + 1] X₀.nub)
-    rw [← heq]; exact (hg i (by omega)).symm.trans heq.symm
+  have hu : ∀ i ≤ j, rowsInj(g^[i] X₀.nub) := fun i hi => hinj i (by omega) fun k hk => hne k (by omega)
+  -- the denotations form a chain, up or down
+  have hc : ∀ i, (rep X₀ ⊑ Φ (rep X₀) → Φ^[i] (rep X₀) ⊑ Φ^[i + 1] (rep X₀)) ∧
+      (Φ (rep X₀) ⊑ rep X₀ → Φ^[i + 1] (rep X₀) ⊑ Φ^[i] (rep X₀)) := fun i => by
+    induction i with
+    | zero => exact ⟨id, id⟩
+    | succ i ih => exact ⟨fun h => hm _ _ (ih.1 h), fun h => hm _ _ (ih.2 h)⟩
+  have hup : ∀ k, k + 1 ≤ j → rep X₀ ⊑ Φ (rep X₀) → rep (g^[k] X₀.nub) ⊑ rep (g^[k + 1] X₀.nub) :=
+    fun k hk h => by rw [hr k (by omega), hr (k + 1) hk]; exact (hc k).1 h
+  have hdn : ∀ k, k + 1 ≤ j → Φ (rep X₀) ⊑ rep X₀ → rep (g^[k + 1] X₀.nub) ⊑ rep (g^[k] X₀.nub) :=
+    fun k hk h => by rw [hr k (by omega), hr (k + 1) hk]; exact (hc k).2 h
+  have hX : ∀ i, (f^[i] s₀).2.1 = g^[i] X₀.nub ∧ (f^[i] s₀).2.2 = i := fun
+    | 0 => ⟨rfl, rfl⟩
+    | i + 1 => by rw [hs i]; exact ⟨rfl, rfl⟩
+  rw [hfix, he, (hX j).1, (hX j).2]
+  refine ⟨j, hjn, rfl, hr j (Nat.le_refl _), fun h => ?_, fun Y h0 hY => ?_, fun U hU hUn => ?_⟩
+  · cases j with
+    | zero =>
+      rcases hstop with e | e
+      · omega
+      · exact absurd (show (X₀.nub.n.toNat + 1 == X₀.nub.n.toNat) = true from e) (by simp)
+    | succ i =>
+      rcases hstop with e | e
+      · omega
+      rw [hd i] at e
+      have hci : (g^[i] X₀.nub).n.toNat = (g^[i + 1] X₀.nub).n.toNat := by simpa using e
+      -- an equal count of two comparable rounds with distinct rows is an equal relation
+      have heq : rep (g^[i] X₀.nub) = rep (g^[i + 1] X₀.nub) := by
+        rcases hch with hh | hh
+        · have hl := hup i (Nat.le_refl _) hh
+          exact Freyd.Alg.le_antisymm hl ((rows_le_of_inj _ _ (hu i (by omega)) hl).2 (by omega))
+        · have hl := hdn i (Nat.le_refl _) hh
+          exact (Freyd.Alg.le_antisymm hl ((rows_le_of_inj _ _ (hu (i + 1) (Nat.le_refl _)) hl).2 (by omega))).symm
+      show Φ (rep (g^[i + 1] X₀.nub)) = rep (g^[i + 1] X₀.nub)
+      rw [← heq]; exact (hg i (by omega)).symm.trans heq.symm
+  · -- every iterate from below a pre-fixed point stays below it
+    have hY' : ∀ i x, x ⊑ Y → Φ^[i] x ⊑ Y := fun i => by
+      induction i with
+      | zero => exact fun _ hx => hx
+      | succ i ih => exact fun x hx => Freyd.Alg.le_trans (hm _ _ (ih x hx)) hY
+    rw [hr j (Nat.le_refl _)]; exact hY' j _ h0
+  · -- run out of fuel, the count moved by one each round and stayed within `U`'s rows
+    refine Nat.lt_of_le_of_ne hjn fun hj => ?_
+    have hUk : ∀ k ≤ j, (g^[k] X₀.nub).n.toNat ≤ U.n.toNat := fun k hk =>
+      (rows_le_of_inj _ U (hu k hk) (by rw [hr k hk]; exact hU k)).1
+    rcases hch with hh | hh
+    · have hk : ∀ k, k + 1 ≤ j → k ≤ (g^[k] X₀.nub).n.toNat := fun k => by
+        induction k with
+        | zero => intro; exact Nat.zero_le _
+        | succ k ih =>
+          intro hk
+          have := (rows_le_of_inj _ _ (hu k (by omega)) (hup k (by omega) hh)).1
+          have := hne k (by omega); have := ih (by omega); omega
+      have := hk (n - 1) (by omega); have := hUk (n - 1) (by omega); omega
+    · have hk : ∀ k, k + 1 ≤ j → k + (g^[k] X₀.nub).n.toNat ≤ (g^[0] X₀.nub).n.toNat := fun k => by
+        induction k with
+        | zero => intro; exact Nat.le_of_eq (Nat.zero_add _)
+        | succ k ih =>
+          intro hk
+          have := (rows_le_of_inj _ _ (hu (k + 1) (by omega)) (hdn k (by omega) hh)).1
+          have := hne k (by omega); have := ih (by omega); omega
+      have := hk (n - 1) (by omega); have := hUk 0 (by omega); omega
 
 #print axioms rep_loopOn
 #print axioms rep_loop
+#print axioms nodup_below
+#print axioms rows_le_of_inj
 #print axioms rep_fixOn
 
 end LeetQ.Rel.Rep
