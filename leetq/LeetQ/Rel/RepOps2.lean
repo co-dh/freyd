@@ -215,6 +215,8 @@ theorem rep_simple (R : Rel A B) (hK : oneOK(A, R.n, R.key)) (hV : oneOK(B, R.n,
   obtain ⟨⟨hF0, hW0⟩, -⟩ := codes_faithful_wf A _ hS
   obtain ⟨hF, hw, hn, hs, hcard⟩ : oneOK(A, R.nub.n, R.nub.key) :=
     ⟨fun hi hj => hF0 (k := 0) (l := 0) (by decide) (by decide) hi hj, hW0 (k := 0) (by decide)⟩
+  show (len (A.codesC #v[⟨_, (nubC R).1.key⟩]).1[0].groupIds.2 == (nubC R).1.n.toNat) = true ↔ _
+  rw [nubC_fst, Obj.codesC_fst]
   show (len (c1(A, R.nub.n, R.nub.key)).groupIds.2 == R.nub.n.toNat) = true ↔ _
   rw [beq_iff_eq, len_eq_ids, groupIds_firsts _ hw hs hcard, hn, firsts_length_iff, ← rep_nub R hK hV hk hv]
   simp only [rep_apply]

@@ -633,7 +633,8 @@ theorem inter_fits (R S : Rel A B) (hk : Vals.PickFits A R.key (List.range R.n.t
     picked. -/
 theorem rep_le (R S : Rel A B) (hc : pairsOK(R, S)) : (R ⊑ S) = true ↔ rep R ⊑ rep S := by
   obtain ⟨hI, -, -⟩ := whereBits_ids R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))
-  show (len (hits) == R.n.toNat) = true ↔ _
+  rw [show (R ⊑ S) = (len (hits) == R.n.toNat) from congrArg
+    (fun c : Vector Code 2 => len (whereBits R.n (c[0].member c[1])) == R.n.toNat) (pairs_codesC R S)]
   rw [beq_iff_eq, len_eq_ids, hI, le_iff]
   constructor
   · rintro h a b ⟨i, hia, hib⟩

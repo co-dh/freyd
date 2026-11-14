@@ -15,11 +15,6 @@ section Gen
 
 variable {A B C : Obj}
 
-/-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
-private def le (R S : Rel A B) : Bool :=
-  let c := pairs #v[R, S]
-  len (whereBits R.n (c[0].member c[1])) == R.n.toNat
-
 /-- A relation's keys as a part. A function of the relation, not `⟨R.n, R.key⟩`: there `simp` cannot rewrite `R`,
     the `Vals`' count depending on it, so a twin's `_fst` would not reach a part a body codes. -/
 def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
@@ -29,6 +24,15 @@ def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
 
 /-- A relation's pairs as a part of the product side, as `keyPart`: what `pairs` codes. -/
 def pairPart {k v : Obj} (R : Rel k v) : Part (.prod k v) := ⟨R.n, (R.key, R.val)⟩
+
+/-- `R ⊑ S`, `member` of `|R|` in `|S|` on the joint pair codes (`codesC` of the product side), all set, and whether
+    it ran within capacity: the codes' bit. -/
+def leC (R S : Rel A B) : Bool × Bool :=
+  let c := (Obj.prod A B).codesC #v[pairPart R, pairPart S]
+  (len (whereBits R.n (c.1[0].member c.1[1])) == R.n.toNat, c.2)
+
+/-- `R ⊑ S`: `leC`'s answer. -/
+private def le (R S : Rel A B) : Bool := (leC R S).1
 
 /-- `R ∩ S`, the semi-join on pairs — `member` of the joint pair codes (`codesC` of the product side, which `pairs`
     is), `whereBits`, `gatherColumn` — and whether it ran within capacity: the codes' bit `&&` `R`'s two sides
@@ -1227,28 +1231,81 @@ def thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.pro
     book's equations as rounds of `iter` on the states `((x, y), acc)`, `acc` the output so far: with both
     non-empty the head `a` of `x` goes to `acc` when `a Q b`, `b` the head of `y`, else `b`; with either empty
     the state ends as `acc` then `x` then `y`. A round shortens `x` or `y`, so the cells of both payloads
-    plus one bound the rounds. -/
+    plus one bound the rounds. A round on `(out, St)` answers `(out ∪ St flushed, St stepped)` and its bit, the
+    `&&` of its twins' bits and the test's. -/
+def mergeRound {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (st : Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B))) :
+    (Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B))) × Bool :=
+  let D := ranC st.2
+  let x := outl (outl D.1)
+  let y := outr (outl D.1)
+  let acc := outr D.1
+  let cx := unconsC x.val
+  let ux := compC x cx.1
+  let cy := unconsC y.val
+  let uy := compC y cy.1
+  let pu := pairC ux.1 uy.1
+  let both := domC pu.1
+  let h := pairC (outl ux.1) (outl uy.1)
+  let rh := ranC h.1
+  let G := q rh.1
+  let hq := compC h.1 G.1
+  let l := domC hq.1
+  let A1 := pairC (outr ux.1) y
+  let S1 := pairC acc (outl ux.1)
+  let N1 := snocC S1.1
+  let P1 := pairC A1.1 N1.1
+  let L1 := compC l.1 P1.1
+  let nb := antiJoinC both.1 l.1
+  let A2 := pairC x (outr uy.1)
+  let S2 := pairC acc (outl uy.1)
+  let N2 := snocC S2.1
+  let P2 := pairC A2.1 N2.1
+  let L2 := compC nb.1 P2.1
+  let tk := unionC L1.1 L2.1
+  let T := compC st.2 tk.1
+  let fl := antiJoinC D.1 both.1
+  let Sf := compC st.2 fl.1
+  let c1 := pairC acc x
+  let C1 := catC c1.1
+  let c2 := pairC C1.1 y
+  let C2 := catC c2.1
+  let O := compC Sf.1 C2.1
+  let U := unionC st.1 O.1
+  ((U.1, T.1), D.2 && cx.2 && ux.2 && cy.2 && uy.2 && pu.2 && both.2 && h.2 && rh.2 && G.2 && hq.2 && l.2 &&
+    A1.2 && S1.2 && N1.2 && P1.2 && L1.2 && nb.2 && A2.2 && S2.2 && N2.2 && P2.2 && L2.2 && tk.2 && T.2 && fl.2 &&
+    Sf.2 && c1.2 && C1.2 && c2.2 && C2.2 && O.2 && U.2)
+
+/-- `mergeOn`'s first state, each pair of `P` beside the empty `acc`, and its bit: `ranC`'s, `topC`'s, `pairC`'s,
+    `compC`'s. -/
+def mergeInitC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) :
+    Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) × Bool :=
+  let R := ranC P
+  let T := topC R.1.val (nilVal B)
+  let Q := pairC (idU R.1.val) T.1
+  let I := compC P Q.1
+  (I.1, R.2 && T.2 && Q.2 && I.2)
+
+/-- `mergeOn` on a test answering a bit, and whether it ran within capacity: the first state's bit `&&` the bits
+    of the rounds it ran (`iterC`). -/
+def mergeOnC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × Bool :=
+  let I := mergeInitC P
+  let r := iterC (P.val.1.1.toNat + P.val.2.1.toNat + 1) (fun s => s.2.n == 0) (mergeRound q) (zero, I.1)
+  (r.1.1, I.2 && r.2)
+
+/-- `mergeOn`: `mergeOnC`'s relation, the test one with no bit of its own. -/
 def mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
-  let round : Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) →
-      Rel K (.arr B) × Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B)) := fun (out, St) =>
-    let D := ran St
-    let x := outl (outl D)
-    let y := outr (outl D)
-    let acc := outr D
-    let ux := x ≫ uncons x.val
-    let uy := y ≫ uncons y.val
-    let both := dom (pair ux uy)
-    let h := pair (outl ux) (outl uy)
-    let l := dom (h ≫ q (ran h))
-    let take := l ≫ pair (pair (outr ux) y) (snoc (pair acc (outl ux))) ∪
-      antiJoin both l ≫ pair (pair x (outr uy)) (snoc (pair acc (outl uy)))
-    (out ∪ St ≫ antiJoin D both ≫ cat (pair (cat (pair acc x)) y), St ≫ take)
-  (iter (P.val.1.1.toNat + P.val.2.1.toNat + 1) (fun s => s.2.n == 0) round
-    (zero, P ≫ pair (idU (ran P).val) (top (ran P).val (nilVal B)))).1
+  (mergeOnC (fun D => (q D, true)) P).1
 
-/-- `merge(Q)`, `Q` closed: `mergeOn` at `pairsIn Q`, the test run on the pairs of heads it compares. -/
-def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) := mergeOn (pairsIn Q) P
+/-- `merge(Q)`, `Q` closed, and whether it ran within capacity: `mergeOnC` at `pairsIn Q` run as `compC`, the
+    test run on the pairs of heads it compares. -/
+def mergeC {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × Bool :=
+  mergeOnC (fun D => compC D (idU (Q.key, Q.val))) P
+
+/-- `merge(Q)`: `mergeC`'s relation. -/
+def merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) := (mergeC Q P).1
 
 /-- `loop(F) : X × arr Y ⟶ X` on the rows of `P` (`loop`, AOP/A9_3_Bracket.lean:1686; B&dM Appendix), `F`
     folded along the array from the left, in demand form as `foldOn`'s step: rounds of `iter` taking
@@ -1331,22 +1388,45 @@ def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long))
 
 end Arr
 
-/-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`. -/
-def entire {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := idU U ⊑ dom R
+/-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`, and whether it ran
+    within capacity: `domC`'s bit `&&` `leC`'s. -/
+def entireC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool × Bool :=
+  let d := domC R; let l := leC (idU U) d.1; (l.1, d.2 && l.2)
+
+/-- `Entire R` on `U`: `entireC`'s answer. -/
+def entire {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := (entireC R U).1
 
 /-- `Simple R`, `R° R ⊑ 𝟙`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes),
-    linear where `R° ≫ R` is a join quadratic in a key's values. -/
-def simple {A B : Obj} (R : Rel A B) : Bool :=
-  let r := R.nub
-  len (A.codes #v[⟨_, r.key⟩])[0].groupIds.2 == r.n.toNat
+    linear where `R° ≫ R` is a join quadratic in a key's values; and whether it ran within capacity: `nubC`'s bit
+    `&&` the key codes'. -/
+def simpleC {A B : Obj} (R : Rel A B) : Bool × Bool :=
+  let r := nubC R
+  let c := A.codesC #v[⟨_, r.1.key⟩]
+  (len c.1[0].groupIds.2 == r.1.n.toNat, r.2 && c.2)
 
-def isMap {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := entire R U && simple R
+/-- `Simple R`: `simpleC`'s answer. -/
+def simple {A B : Obj} (R : Rel A B) : Bool := (simpleC R).1
 
-/-- `Injective R` = `Simple R°`. -/
-def injective {A B : Obj} (R : Rel A B) : Bool := simple R°
+/-- `R` a map on `U`, entire and simple, and whether it ran within capacity: the `&&` of `entireC`'s and `simpleC`'s
+    bits. -/
+def isMapC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool × Bool :=
+  let e := entireC R U; let s := simpleC R; (e.1 && s.1, e.2 && s.2)
 
-/-- `Surjective R` = `Entire R°` on the universe `U` of `b`. -/
-def surjective {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool := entire R° U
+/-- `R` a map on `U`: `isMapC`'s answer. -/
+def isMap {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := (isMapC R U).1
+
+/-- `Injective R` = `Simple R°`, and whether it ran within capacity: `simpleC`'s at `R°`. -/
+def injectiveC {A B : Obj} (R : Rel A B) : Bool × Bool := simpleC R°
+
+/-- `Injective R`: `injectiveC`'s answer. -/
+def injective {A B : Obj} (R : Rel A B) : Bool := (injectiveC R).1
+
+/-- `Surjective R` = `Entire R°` on the universe `U` of `b`, and whether it ran within capacity: `entireC`'s at
+    `R°`. -/
+def surjectiveC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool × Bool := entireC R° U
+
+/-- `Surjective R` on `U`: `surjectiveC`'s answer. -/
+def surjective {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool := (surjectiveC R U).1
 
 /-- **`R°` swaps the pairs**: the two fields swap (`convArr_holds`). -/
 theorem conv_holds {R : Rel A B} (x : El A) (y : El B) : (conv R).Holds y x ↔ R.Holds x y :=

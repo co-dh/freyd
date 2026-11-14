@@ -8,6 +8,7 @@
 import LeetQ.Rel.CRelFold
 import LeetQ.Rel.CRelList
 import LeetQ.Rel.RepLoop
+import LeetQ.Rel.RepMerge
 
 namespace LeetQ.Rel
 
@@ -111,10 +112,97 @@ theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.ar
       (∀ t (ht : t < xs.length), rep F (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
   rep_loopOnC (fun _ => (F, true)) P hat hb (fun _ => rep F) fun _ _ _ _ => Iff.rfl
 
+-- `merge`'s test `q` read back as `le`: on a coreflexive `D` of the pairs `S`, where its bit is set, a pair of `S`
+-- passes exactly when `le` holds; the spec of the test, not a size bound
+set_option hygiene false in
+local notation "testOK(" q ")" =>
+  ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+    rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q D).2 = true →
+    ∀ a b, S (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true)
+
+/-- **One round of `mergeOn` under its bit**: `merge_round_set` at its twins' read-backs — `ranC`'s and `domC`'s
+    codes and `fitsN` bits, `rep_unconsC`, `rep_compC`, `rep_pairC`, `rep_snocC`, `rep_antiJoinC`, `rep_unionC`,
+    `rep_catC` — and the test's spec `hq` at the pairs of heads the round meets. -/
+theorem rep_mergeRoundC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (le : B.El → B.El → Bool) (hat : hatOK) (hq : testOK(q)) (out : Rel K (.arr B))
+    (St : Rel K (.prod (.prod (.arr B) (.arr B)) (.arr B))) (hb : (mergeRound q (out, St)).2 = true) :
+    (∀ k s', rep (mergeRound q (out, St)).1.2 k s' ↔ ∃ a x b y acc, rep St k ((a :: x, b :: y), acc) ∧
+      (le a b = true ∧ s' = ((x, b :: y), acc ++ [a]) ∨ le a b = false ∧ s' = ((a :: x, y), acc ++ [b]))) ∧
+    ∀ k z, rep (mergeRound q (out, St)).1.1 k z ↔
+      rep out k z ∨ ∃ x y acc, rep St k ((x, y), acc) ∧ (x = [] ∨ y = []) ∧ z = acc ++ x ++ y := by
+  simp only [mergeRound, Bool.and_eq_true] at hb
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hD, hcx⟩, hux⟩, hcy⟩, huy⟩, hpu⟩, hbo⟩, hh⟩, hrh⟩, hG⟩, hhq⟩, hl⟩,
+    hA1⟩, hS1⟩, hN1⟩, hP1⟩, hL1⟩, hnb⟩, hA2⟩, hS2⟩, hN2⟩, hP2⟩, hL2⟩, htk⟩, hT⟩, hfl⟩, hSf⟩, hc1⟩, hC1⟩, hc2⟩,
+    hC2⟩, hO⟩, hU⟩ := hb
+  simp only [ranC, domC, distinctCoreflC, Bool.and_eq_true] at hD hbo hrh hl
+  have eRh := rep_ran_corefl _ (one_ok _ (Obj.codesC_fits _ _ hrh.1))
+    (pickFits_of_fitsN _ _ _ hrh.2 _ (by simp <;> exact Nat.le_refl _))
+  simp only [mergeRound]
+  exact merge_round_set le out St
+    (hD := rep_ran_corefl St (one_ok _ (Obj.codesC_fits _ _ hD.1)) (pickFits_of_fitsN _ _ _ hD.2 _ (by simp)))
+    (hx := rfl) (hy := rfl) (hacc := rfl)
+    (hUx := rep_unconsC _ hcx) (hux := rep_compC _ _ hux) (hUy := rep_unconsC _ hcy) (huy := rep_compC _ _ huy)
+    (hpu := rep_pairC _ _ hpu)
+    (hboth := rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hbo.1))
+      (pickFits_of_fitsN _ _ _ hbo.2 _ (by simp <;> exact Nat.le_refl _)))
+    (hh := rep_pairC _ _ hh) (hrh := eRh)
+    (htest := fun a b hab => hq _ _ eRh hG a b (by rw [eRh] at hab; exact hab.2))
+    (hhq := rep_compC _ _ hhq)
+    (hl := rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hl.1))
+      (pickFits_of_fitsN _ _ _ hl.2 _ (by simp <;> exact Nat.le_refl _)))
+    (hA1 := rep_pairC _ _ hA1) (hS1 := rep_pairC _ _ hS1) (hN1 := rep_snocC _ hN1) (hP1 := rep_pairC _ _ hP1)
+    (hL1 := rep_compC _ _ hL1) (hnb := rep_antiJoinC _ _ hnb)
+    (hA2 := rep_pairC _ _ hA2) (hS2 := rep_pairC _ _ hS2) (hN2 := rep_snocC _ hN2) (hP2 := rep_pairC _ _ hP2)
+    (hL2 := rep_compC _ _ hL2) (htk := rep_unionC hat _ _ htk) (hT := rep_compC _ _ hT)
+    (hfl := rep_antiJoinC _ _ hfl) (hSf := rep_compC _ _ hSf)
+    (hc1 := rep_pairC _ _ hc1) (hC1 := rep_catC _ hC1) (hc2 := rep_pairC _ _ hc2) (hC2 := rep_catC _ hC2)
+    (hO := rep_compC _ _ hO) (hU := rep_unionC hat _ _ hU)
+
+/-- **`mergeOn` under `mergeOnC`'s bit**: `mergeOn_rounds`, the first state read back by `merge_init` at its bit
+    (`ranC`'s codes and `fitsN` bits, `topC`'s count and fit, `pairC_ok`, `compC_cmpOK`), each round `iter` ran by
+    `rep_mergeRoundC` at its bit (`iterC_run`). What stays: the test's spec `hq` and `unionC`'s `hat`. -/
+theorem rep_mergeOnC {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool) (hat : hatOK) (hq : testOK(q))
+    (hb : (mergeOnC q P).2 = true) :
+    ∀ k zs, rep (mergeOnC q P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
+  simp only [mergeOnC, Bool.and_eq_true] at hb
+  obtain ⟨hI, hit⟩ := hb
+  simp only [mergeInitC, topC, Bool.and_eq_true, decide_eq_true_eq] at hI
+  obtain ⟨⟨⟨hR, ⟨⟨⟨-, h63⟩, hfa⟩, -⟩⟩, hQ⟩, hM⟩ := hI
+  simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hR
+  have h0 := merge_init P ⟨⟨Obj.codesC_fits _ _ hR.1, pickFits_of_fitsN _ _ _ hR.2 _ (by simp)⟩, h63,
+    pickFits_of_fitsN _ _ _ hfa _ (by simp <;> exact Nat.le_refl _), pairC_ok _ _ hQ, compC_cmpOK _ _ hM⟩
+  rw [mergeOnC_fst]
+  refine mergeOn_rounds (fun D => (q D).1) P le (fun s => (mergeRound q s).1) ?_ _ rfl h0
+    (fun i hi hne => (rep_mergeRoundC q le hat hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).1)
+    (fun i hi hne => (rep_mergeRoundC q le hat hq _ _ (iterC_run _ _ _ _ hit i (by omega) hne)).2)
+  intro out St D hD x hx y hy acc hacc ux hux uy huy both hboth h hh l hl
+  subst hD hx hy hacc hux huy hboth hh hl
+  rfl
+
+/-- **`merge` under `mergeC`'s bit**: `rep_mergeOnC`, the test `pairsIn Q` read back by `rep_pairsIn` at
+    `compC`'s bit; `le a b` any Boolean test with `le a b = true` exactly when `a Q b` (`hle`). -/
+theorem rep_mergeC {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
+    (hle : ∀ a b, le a b = true ↔ rep Q a b) (hat : hatOK) (hb : (mergeC Q P).2 = true) :
+    ∀ k zs, rep (mergeC Q P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
+  refine rep_mergeOnC _ P le hat (fun D S hD hc a b hS => ?_) hb
+  have eP := rep_pairsIn Q D (compC_cmpOK _ _ hc)
+  constructor
+  · rintro ⟨c, h⟩
+    obtain ⟨h1, h2⟩ := (eP _ _).1 h
+    rw [hD] at h1
+    obtain ⟨rfl, -⟩ := h1
+    exact (hle a b).2 h2
+  · intro h
+    exact ⟨(a, b), (eP _ _).2 ⟨by rw [hD]; exact ⟨rfl, hS⟩, (hle a b).1 h⟩⟩
+
 #print axioms rep_ticC
 #print axioms rep_suffixC
 #print axioms rep_loopOnC
 #print axioms rep_loopC
+#print axioms rep_mergeRoundC
+#print axioms rep_mergeOnC
+#print axioms rep_mergeC
 
 end Rep
 
@@ -163,6 +251,32 @@ theorem rep_loop (F : CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y))) (hat :
     ∀ k c, rep (loop F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), rep F.rel (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
   rep_loopC F.rel P.rel hat (by simp only [loop, Bool.and_eq_true] at hb; exact hb.2)
+
+/-- `mergeOn` on a test over `CRel`s, ok where `P` is, every round's test was and `mergeOnC` ran within capacity.
+    The test sees its input as ok: its bit is already in the merge's. -/
+def mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B)) (P : CRel K (.prod (.arr B) (.arr B))) :
+    CRel K (.arr B) :=
+  let r := mergeOnC (fun D => let s := q ⟨D, true⟩; (s.rel, s.ok)) P.rel; ⟨r.1, P.ok && r.2⟩
+
+/-- `merge(Q)`, ok where `Q` and `P` are and `mergeC` ran within capacity. -/
+def merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) : CRel K (.arr B) :=
+  let r := mergeC Q.rel P.rel; ⟨r.1, Q.ok && P.ok && r.2⟩
+
+/-- `hat`: `rep_unionC`'s; `hq` the test's spec on a coreflexive where the test was ok. -/
+theorem rep_mergeOn (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
+    (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool) (hat : hatOK)
+    (hq : ∀ (D : Rel (.prod B B) (.prod B B)) (S : (Obj.prod B B).El → Prop),
+      rep D = corefl (A := (⟨(Obj.prod B B).El⟩ : RelSet.{0})) S → (q ⟨D, true⟩).ok = true →
+      ∀ a b, S (a, b) → ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
+    (hb : (mergeOn q P).ok = true) :
+    ∀ k zs, rep (mergeOn q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le :=
+  rep_mergeOnC _ P.rel le hat hq (by simp only [mergeOn, Bool.and_eq_true] at hb; exact hb.2)
+
+/-- `hat`: `rep_unionC`'s; `hle`: `le` decides `Q`. -/
+theorem rep_merge (Q : CRel B B) (P : CRel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
+    (hle : ∀ a b, le a b = true ↔ rep Q.rel a b) (hat : hatOK) (hb : (merge Q P).ok = true) :
+    ∀ k zs, rep (merge Q P).rel k zs ↔ ∃ xs ys, rep P.rel k (xs, ys) ∧ zs = List.merge xs ys le :=
+  rep_mergeC Q.rel P.rel le hle hat (by simp only [merge, Bool.and_eq_true] at hb; exact hb.2)
 
 end CRel
 
