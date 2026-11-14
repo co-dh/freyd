@@ -268,7 +268,7 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
 
 section Uncat
 
-open FoldN
+open FoldN OpsN
 
 /-- **`uncat`, read back**: an array `xs` of `X` goes to every `(ys, zs)` with `xs = ys ++ zs`. `rep_comp` at
     `Z ≫ mem Z.val`, `rep_mem` at `Z.val`, `rep_zip` at `P`, `rep_pair` at `inits X`, `tails X`, and

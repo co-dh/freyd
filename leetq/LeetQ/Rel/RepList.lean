@@ -994,7 +994,7 @@ theorem rep_cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
     rw [hrow _ _ _ r hr, e, show xs = Vals.row (Rel.val P).1 ⟨r, hr⟩ from (congrArg Prod.fst hv).symm,
       show ys = Vals.row (Rel.val P).2 ⟨r, hr⟩ from (congrArg Prod.snd hv).symm]
 
-open FoldN
+open FoldN OpsN
 
 /-- **`map`'s step, read back**: `cons (pair (el ≫ R) pend)` takes row `r`'s element `e` and list `u` to
     `b :: u` for each `b` with `e R b`. `Q = el ≫ R`, `P = pair Q pend` and the codes `jc`, `kc` are bound by

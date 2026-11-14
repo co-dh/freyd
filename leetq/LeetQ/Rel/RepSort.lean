@@ -10,7 +10,7 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
-open FoldN Prim
+open FoldN Prim ListN
 
 /-- Every element `Q`-below every later one, said on the suffixes: `y` heads a suffix `y :: zs` of `xs` and `z` is
     in `zs` exactly when `y` comes before `z` in `xs`. -/
@@ -28,23 +28,6 @@ theorem suffix_pairwise {β : Type _} (R : β → β → Prop) (xs : List β) :
       · obtain ⟨rfl, rfl⟩ := List.cons.inj e
         exact h1
       · exact h2 y zs hs
-
--- `rep_suffix`'s round hypotheses at the union so far `S` and last arrays `F` (`RepPerm`'s local `sufOK`)
-set_option hygiene false in
-local notation "sufOK" =>
-  (∀ Dr : Rel (.arr B) (.arr B), Dr = ran F →
-    oneFit(.arr B, Rel.n F, Rel.val F) ∧ uncOK(B, Dr) ∧ cmpOK(.arr B, F, tail (Rel.val Dr)) ∧
-    ∀ P : Rel (.arr B) (.arr B), P = S → ∀ Q : Rel (.arr B) (.arr B), Q = F ≫ tail (Rel.val Dr) →
-    P.n.toNat + Q.n.toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part (.arr B))).toList.map
-        fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
-        fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
-      Vals.RazeFits (.arr B) P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
-      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).key⟩] : Vector (Part (.arr B)) 1) ∧
-      Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))) ∧
-      Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))))
 
 -- every primitive's hypotheses in `orderedOn q X` past `suffix`, at the pieces bound by their equations
 set_option hygiene false in

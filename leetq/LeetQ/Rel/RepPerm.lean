@@ -465,8 +465,9 @@ end PermFold
 
 -- every primitive's hypotheses at one round of `suffix`, at its union so far `S` and last arrays `F`: `rep_ran`'s
 -- at `F`, `rep_tail`'s at `Dr = ran F`, `rep_comp`'s at `F ≫ tail`, `rep_union_full`'s at `P = S`, `Q = F ≫ tail`
+namespace ListN
 set_option hygiene false in
-local notation "sufOK" =>
+scoped notation "sufOK" =>
   (∀ Dr : Rel (.arr B) (.arr B), Dr = ran F →
     oneFit(.arr B, Rel.n F, Rel.val F) ∧ uncOK(B, Dr) ∧ cmpOK(.arr B, F, tail (Rel.val Dr)) ∧
     ∀ P : Rel (.arr B) (.arr B), P = S → ∀ Q : Rel (.arr B) (.arr B), Q = F ≫ tail (Rel.val Dr) →
@@ -480,6 +481,8 @@ local notation "sufOK" =>
       Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
       Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).key (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))) ∧
       Vals.PickFits (.arr B) (PQ(.arr B, .arr B)).val (ids nubI(.arr B, .arr B, PQ(.arr B, .arr B))))
+end ListN
+open ListN
 
 /-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
     union adds those to `S`. Hypotheses: `sufOK`. -/
@@ -606,6 +609,16 @@ section Snoc
 open Pow
 
 namespace ListN
+-- `rep_tau_list`'s universal `hW`: every one-part code is well formed and counts its part
+set_option hygiene false in
+scoped notation "codesWF" =>
+  ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
 -- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`), all but the universal `hW`
 set_option hygiene false in
 scoped notation "tauOK(" A ", " cnt ", " X ")" =>
@@ -652,12 +665,7 @@ open ListN
     `P`, `rep_tau_list`'s at `(outr D).val`, `rep_comp`'s at `outr D ≫ τ` and at `P ≫ Q`, `rep_pair`'s at `Q`,
     `rep_cat`'s at the result. -/
 theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
-    (h : snocOK(K, B, P)) :
+    (hW : codesWF) (h : snocOK(K, B, P)) :
     ∀ k ys, rep (snoc P) k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
   obtain ⟨⟨hPf, hPp⟩, h1⟩ := h
   obtain ⟨ht, ⟨hcf, hc'⟩, h2⟩ := h1 _ rfl _ rfl

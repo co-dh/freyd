@@ -11,6 +11,8 @@ import LeetQ.Rel.RepMem
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
+-- `codesOK` is `RepOps`' (`OpsN`); the fold notations below use it
+open OpsN
 
 /-! The fold notations, one home: `open FoldN` in every file that states a fold read-back. Unhygienic: they
     capture `E`, `V`, `P`, `Q`, `S`, `el`, `pend`, `step`, `elK`, `Sf`, `hNk`, `hNv` at the use site. -/
@@ -74,18 +76,6 @@ scoped notation "roundAt(" V ")" =>
 set_option hygiene false in
 scoped notation "roundOK" => roundAt(V)
 
--- `RepOps`' `codesOK`: codes `cs` of two parts `ps` faithful, well formed
-set_option hygiene false in
-scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
-    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
-    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
-      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
-  ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
-    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
-    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
-      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
 -- the parts `pair R S` codes (both keys), and the parts `R ≫ S` codes (`R`'s values, `S`'s keys)
 set_option hygiene false in
 scoped notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)

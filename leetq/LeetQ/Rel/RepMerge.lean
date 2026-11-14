@@ -412,16 +412,6 @@ end Round
 
 /-! ## The primitives' hypotheses at one round -/
 
--- `rep_snoc`'s universal hypothesis: every one-part code is well formed and counts its part
-set_option hygiene false in
-local notation "codesWF" =>
-  ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-    ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
 
 -- every primitive's hypotheses at one round's values, named as `merge_round_set` names them
 set_option hygiene false in
