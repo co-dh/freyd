@@ -420,6 +420,67 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
 
 #print axioms rep_leftDiv
 
+set_option maxHeartbeats 1600000 in
+/-- **`rep (R / S)`**: `x` to `y` exactly when `R` takes `x` to every `c` that `S` takes `y` to, and either `S`
+    takes `y` somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `rightDiv R S Ua Ub` is
+    `(S° \ R°)°` on `Ub`, `Ua`, so this is `rep_leftDiv` there, its hypotheses at `S°`, `R°`, read through
+    `rep_conv`. The objects are named as `leftDiv`'s there: `R : Rel C A`, `S : Rel B A`. -/
+theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma) (Ub : Vals B mb)
+    (hRK : A.CodesFit (#v[⟨(S°).n, (S°).key⟩] : Vector (Part A) 1))
+    (hRV : B.CodesFit (#v[⟨(S°).n, (S°).val⟩] : Vector (Part B) 1))
+    (hRk : Vals.PickFits A (S°).key (ids nubI(A, B, S°))) (hRv : Vals.PickFits B (S°).val (ids nubI(A, B, S°)))
+    (hSK : A.CodesFit (#v[⟨(R°).n, (R°).key⟩] : Vector (Part A) 1))
+    (hSV : C.CodesFit (#v[⟨(R°).n, (R°).val⟩] : Vector (Part C) 1))
+    (hSk : Vals.PickFits A (R°).key (ids nubI(A, C, R°))) (hSv : Vals.PickFits C (R°).val (ids nubI(A, C, R°)))
+    (kc : Vector Code 2)
+    (hkc : kc = A.codes #v[⟨(Rel.nub (S°)).n, (Rel.nub (S°)).key⟩, ⟨(Rel.nub (R°)).n, (Rel.nub (R°)).key⟩])
+    (hfk : A.CodesFit #v[⟨(Rel.nub (S°)).n, (Rel.nub (S°)).key⟩, ⟨(Rel.nub (R°)).n, (Rel.nub (R°)).key⟩])
+    (hrn : (Rel.nub (R°)).n.toNat < 2 ^ 63)
+    (hM : ((List.range (kc[0]'(by decide)).n.toNat).map fun i => ((List.range (kc[1]'(by decide)).n.toNat).filter
+      fun j => Column.idAt (kc[1]'(by decide)).b (kc[1]'(by decide)).w j ==
+        Column.idAt (kc[0]'(by decide)).b (kc[0]'(by decide)).w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range (kc[0]'(by decide)).n.toNat).map fun i => ((List.range (kc[1]'(by decide)).n.toNat).filter
+      fun j => Column.idAt (kc[1]'(by decide)).b (kc[1]'(by decide)).w j ==
+        Column.idAt (kc[0]'(by decide)).b (kc[0]'(by decide)).w i).length).sum < USize.size)
+    (hB : Vals.PickFits B (Rel.nub (S°)).val ((jp(kc[0]'(by decide), kc[1]'(by decide))).map Prod.fst))
+    (hC : Vals.PickFits C (Rel.nub (R°)).val ((jp(kc[0]'(by decide), kc[1]'(by decide))).map Prod.snd))
+    (yd : Rel B C) (hy : yd = yJ(Rel.nub (S°), Rel.nub (R°), kc[0]'(by decide), kc[1]'(by decide)))
+    (ycs : Vector Code 3)
+    (hycs : ycs = B.codes #v[⟨yd.n, yd.key⟩, ⟨(Rel.nub (S°)).n, (Rel.nub (S°)).val⟩, ⟨mb, Ub⟩])
+    (hfy : B.CodesFit #v[⟨yd.n, yd.key⟩, ⟨(Rel.nub (S°)).n, (Rel.nub (S°)).val⟩, ⟨mb, Ub⟩])
+    (zc : Vector Code 1) (hzc : zc = C.codes #v[⟨yd.n, yd.val⟩]) (hfz : C.CodesFit #v[⟨yd.n, yd.val⟩])
+    (I : ByteArray)
+    (hI : I = longCount "\\" (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2 fun g _ =>
+      gather 8 (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2
+        (whereEqV g (classSizes (ycs[0]'(by decide)).n (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]))
+          (atCnt (cnt (ycs[1]'(by decide)))
+            ((ycs[0]'(by decide)).gather (tuples.tupleIds (ycs[0]'(by decide)) #[zc[0]'(by decide)]).2))))
+    (hk : Vals.PickFits B yd.key (ids I)) (hv : Vals.PickFits C yd.val (ids I))
+    (hP : Vals.PickFits B Ub (ids (anti (ycs[2]'(by decide)) (ycs[1]'(by decide)))))
+    (hN : (vacY).1.toNat * ma.toNat < USize.size) (h63 : (vacY).1.toNat * ma.toNat < 2 ^ 63)
+    (hA : Vals.PickFits B (vacY).2 ((List.range ((vacY).1.toNat * ma.toNat)).map (· / ma.toNat)))
+    (hBc : Vals.PickFits C Ua ((List.range ((vacY).1.toNat * ma.toNat)).map (· % ma.toNat)))
+    (P Q : Rel B C) (hPe : P = yd.rows I) (hQe : Q = top (vacY).2 Ua)
+    (hU : P.n.toNat + Q.n.toNat < USize.size)
+    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
+      USize.size)
+    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
+      USize.size)
+    (hFk : Vals.RazeFits B P.key Q.key) (hFv : Vals.RazeFits C P.val Q.val)
+    (hUK : B.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1))
+    (hUV : C.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1))
+    (hUk : Vals.PickFits B (PQ(B, C)).key (ids nubI(B, C, PQ(B, C))))
+    (hUv : Vals.PickFits C (PQ(B, C)).val (ids nubI(B, C, PQ(B, C)))) (x : C.El) (y : B.El) :
+    rep (rightDiv R S Ua Ub) x y ↔
+      (∀ c, rep S y c → rep R x c) ∧ ((∃ c, rep S y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  rw [show rightDiv R S Ua Ub = (leftDiv (S°) (R°) Ub Ua)° from rfl, rep_conv]
+  show rep (leftDiv (S°) (R°) Ub Ua) y x ↔ _
+  rw [rep_leftDiv (S°) (R°) Ub Ua hRK hRV hRk hRv hSK hSV hSk hSv kc hkc hfk hrn hM hMU hB hC yd hy ycs hycs hfy zc
+    hzc hfz I hI hk hv hP hN h63 hA hBc P Q hPe hQe hU hNk hNv hFk hFv hUK hUV hUk hUv y x, rep_conv, rep_conv]
+  exact and_congr Iff.rfl (or_congr Iff.rfl and_comm)
+
+#print axioms rep_rightDiv
+
 #print axioms div_y_rows
 #print axioms div_y_holds
 #print axioms div_keep_holds
