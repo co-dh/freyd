@@ -100,7 +100,7 @@ scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl 
     (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
     ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
       ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
--- `rep_nub`'s codes of a relation `R` and the rows `nub` keeps (`RepLambda`'s `kcR`, `vcR`, `nubR`, taking `R`)
+-- `rep_nub`'s codes of a relation `R` (`RepLambda`'s `kcR`, `vcR`, taking `R`)
 set_option hygiene false in
 scoped notation "kcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part _) 1))[0]'(by decide)
 set_option hygiene false in
