@@ -624,7 +624,7 @@ each candidate to the state it leads to. A test needs no way back: `h(∋)` is a
 
 ## f. Not in the language
 
-Lean `let`, lambdas, tuples of relations, `iter`, `Except`, `do`, a loop, recursion, `μ`, `*`, first-class
+Lean `let`, lambdas, tuples of relations, `iter`, `Except`, `do`, a loop, recursion, `*` (written `μX : 𝟙 ∪ (R X)`), first-class
 operators, arithmetic beyond `succ`, `≤`, `<` and the value verbs of §b on a declared number universe (no float
 `%`, `xexp`; no infix `+ · −` on numbers, which §c's `+ × −` already spell for relations), row order (`num`,
 `enum`),
