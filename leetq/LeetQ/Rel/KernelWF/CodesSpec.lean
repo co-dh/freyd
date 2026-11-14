@@ -927,7 +927,7 @@ theorem codes_guid (x : Part (.atom .guid)) :
   subst h1 h2
   cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
     simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes,
-      Arr.enc]
+      Arr.enc, KernelWF.bitsType]
 
 /-- `findVec 16` of a `guid` payload against itself, read by `groupIds .i64`: the class ids at the width
     of the class count, the first rows. -/

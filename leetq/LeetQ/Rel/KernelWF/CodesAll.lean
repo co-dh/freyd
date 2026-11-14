@@ -6,6 +6,7 @@
 import LeetQ.Rel.KernelWF.CodesArr
 import LeetQ.Rel.KernelWF.CodesSymParts
 import LeetQ.Rel.KernelWF.CodesLongParts
+import LeetQ.Rel.KernelWF.CodesFloatParts
 
 namespace LeetQ.Rel.Alg
 
@@ -13,11 +14,11 @@ open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
 /-- The bounds `Obj.codes` needs at every node of `A`, on the parts it hands that node: each node theorem's
     size bounds and `Vals.PickFits`; at an atom, the kinds a several-part theorem covers — boolean, a small
-    integral side of dense parts, a symbol side whose dictionaries summed fit a `USize`. -/
+    integral or a float side of dense parts, a symbol side whose dictionaries summed fit a `USize`. -/
 def _root_.LeetQ.Rel.Obj.CodesFit : (A : Obj) → {p : Nat} → Vector (Part A) p → Prop
   | .atom t, p, cs => (cs.toList.map (·.1.toNat)).sum < USize.size ∧
     (t = .boolean ∨
-      (∃ k₀, orderKind t = some k₀ ∧ (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) ∧
+      (∃ k₀, orderKind t = some k₀ ∧ (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) ∧
         ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∨
       (orderKind t = some .i64 ∧ ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∨
       (t = .symbol ∧
@@ -108,9 +109,17 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
       · obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf cs hk
         exact ⟨Or.inl h2, h1, h3, h4⟩
       · rw [(codes_boolean_wf cs hk).2.1, (codes_boolean_wf cs hl).2.1]
-    · refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hd hN hk hl hi hj,
-        fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
-      rw [codes_small_int_cut ht hk₀ cs (by omega)]; exact cut_lane _ _ hk hl
+    · rcases hk₀ with hk₀ | hk₀ | hk₀ | hk₀ | hk₀
+      -- a float side groups by its bits (`bitsType`)
+      all_goals try
+        have hf : t = .real ∨ t = .float ∨ t = .datetime := by cases t <;> simp [orderKind] at ht <;> simp_all
+        exact ⟨⟨fun hk hl _ _ hi hj => codes_float_parts_faithful hf cs hd hN hk hl hi hj,
+          fun hk => (codes_float_parts_wf hf cs hd hN hk).1⟩, fun hk hl => (codes_float_parts_wf hf cs hd hN hk).2 hl⟩
+      all_goals
+        have hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 := by simp_all
+        refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hd hN hk hl hi hj,
+          fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
+        rw [codes_small_int_cut ht hk₀ cs (by omega)]; exact cut_lane _ _ hk hl
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_long_dense_faithful ht cs hd hN hk hl hi hj,
         fun hk => codes_long_dense_wf ht cs hd hN hk⟩, fun hk hl => ?_⟩
       cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
