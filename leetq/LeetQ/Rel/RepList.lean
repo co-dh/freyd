@@ -1008,7 +1008,8 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     (hjA : Vals.PickFits .long (Rel.key el) ((mpairs(jc, el, R)).map Prod.fst))
     (hjC : Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd))
     (Q : Rel .long B) (hQ : Q = el ≫ R)
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(Q, pend)) (hkO : codesOK(kc, kp2(Q, pend)))
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(Q, pend))
+    (hkO : (Rel.n Q).toNat + (Rel.n pend).toNat < USize.size)
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst))
     (hkB : Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst))
@@ -1038,7 +1039,7 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
   subst hjc hkc
   have h2 := rep_comp el R hjO hjn hjM hjA hjC
   subst hQ
-  have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkA hkB hkC
+  have h1 := rep_pair (el ≫ R) pend (codesOK_long2 _ _ hkO) hkn hkM hkA hkB hkC
   subst hP
   intro r v
   rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
@@ -1096,7 +1097,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd) ∧
       ∀ Q : Rel .long B, Q = el ≫ R →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(Q, pend) →
-      codesOK(kc, kp2(Q, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n Q).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧

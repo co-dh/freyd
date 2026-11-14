@@ -15,7 +15,8 @@ open FoldN OpsN
     `kc`, the pair `W`, `cons`' pieces (as `rep_cons`'s), `P = cons W` and `Q = pend` are bound by their equations.
     Hypotheses: `rep_pair`'s at `el`, `pend` (`hk…`), `rep_cons`'s at `W`, `rep_union_full`'s at `P`, `Q`. -/
 theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend))
+    (hkO : (Rel.n el).toNat + (Rel.n pend).toNat < USize.size)
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
@@ -53,7 +54,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
-  have h1 := rep_pair el pend hkO hkn hkM hkA hkB hkC
+  have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM hkA hkB hkC
   subst hW
   have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf
@@ -153,7 +154,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧

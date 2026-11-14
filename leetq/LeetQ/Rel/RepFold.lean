@@ -46,16 +46,13 @@ scoped notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
 -- `roundAt(V)` names the value object, for a fold whose `V` is a composite such as `.arr B`
 set_option hygiene false in
 scoped notation "roundAt(" V ")" =>
-  Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
-  Vals.PickFits .long S.key (List.range S.n.toNat) ∧ Vals.PickFits V S.val (List.range S.n.toNat) ∧
+  Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧ Vals.PickFits V S.val (List.range S.n.toNat) ∧
   ((jparts).toList.map (·.1.toNat)).sum < USize.size ∧
   Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat) ∧
-  Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat) ∧
   ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
     ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
       Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
       Obj.CodesFit V (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
-      Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat) ∧
       Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)
 set_option hygiene false in
 scoped notation "roundOK" => roundAt(V)
@@ -77,11 +74,13 @@ scoped notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).
     Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
 
 -- `step_rep`'s hypotheses at `el`, `pend`, its bound values `kc`, `P` quantified with their equations; `J` the
--- rest (`stepJ`), at the step relation `S`: one relation (`stepOK`), or `Sf` at the round's pairs (`stepOn`)
+-- rest (`stepJ`), at the step relation `S`: one relation (`stepOK`), or `Sf` at the round's pairs (`stepOn`).
+-- `el.n + pend.n` stays a hypothesis: `pend` is the step's output, which no input count bounds
+-- (`codesOK_long2` derives the codes from it)
 set_option hygiene false in
 scoped notation "stepK(" J ")" =>
   ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+    (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
     (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
     Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
     Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
@@ -101,34 +100,40 @@ end FoldN
 
 open FoldN
 
+/-- **Two `.long` parts' codes are faithful and well formed on their summed count alone** (`codesFit_atom_count`):
+    `rep_pair` and `rep_comp` on `.long` keys need of their codes only that the two counts added fit a `USize`. -/
+theorem codesOK_long2 {n m : USize} (x : Vals .long n) (y : Vals .long m) (hN : n.toNat + m.toNat < USize.size) :
+    codesOK(Obj.codes .long (#v[⟨n, x⟩, ⟨m, y⟩] : Vector (Part .long) 2),
+      (#v[⟨n, x⟩, ⟨m, y⟩] : Vector (Part .long) 2)) :=
+  (codes_faithful_wf .long _ (codesFit_atom_count _ (by simpa using hN) (.inr (.inl rfl)))).1
+
 /-- **One round of `foldRows`, read back**: the new state `S.nub` (`S` the step's result) is `S`, and the new
     `out`, `P ∪ (antiJoin pend° (idU el.key))°`, adds to `P` the pairs of `pend` whose row has no element this
     round. `antiJoin`'s and `∪`'s intermediate values are bound by their defining equations (`hQ`).
     Hypotheses: `Obj.CodesFit` of every coded part, `Vals.PickFits` where a part is picked, the counts fit. -/
 theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hSV : V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1))
-    (hSk : Vals.PickFits .long S.key (List.range S.n.toNat))
     (hSv : Vals.PickFits V S.val (List.range S.n.toNat))
     (hjf : ((jparts).toList.map (·.1.toNat)).sum < USize.size)
     (hJk : Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat))
-    (hJv : Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
     (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits V P.val Q.val)
     (hUV : V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1))
-    (hUk : Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat))
     (hUv : Vals.PickFits V (PQ(.long, V)).val (List.range (PQ(.long, V)).n.toNat)) :
     rep (Rel.nub S) = rep S ∧
       ∀ r v, rep (P ∪ Q) r v ↔ rep P r v ∨ (rep pend r v ∧ ¬ ∃ e, rep el r e) := by
-  -- a one-part `.long` side fits outright (`codesFit_atom_one`)
-  refine ⟨rep_nub S (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hSV) hSk hSv,
+  -- a one-part `.long` side fits outright (`codesFit_atom_one`), and is picked outright at its rows (`pickFits_atom`)
+  have hr : ∀ {n : USize} (x : Vals .long n), Vals.PickFits .long x (List.range n.toNat) :=
+    fun x => pickFits_atom x fun _ h => List.mem_range.1 h
+  refine ⟨rep_nub S (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hSV) (hr _) hSv,
     fun r v => ?_⟩
   rw [rep_union_full P Q hU hFk hFv (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _))))
-    (one_ok _ hUV) hUk hUv]
+    (one_ok _ hUV) (hr _) hUv]
   show rep P r v ∨ rep Q r v ↔ _
   subst hQ
   have hA := congrFun (congrFun (rep_antiJoin (pend°) (idU (Rel.key el))
-    (codes_faithful_wf .long _ (codesFit_atom_count _ hjf (.inr (.inl rfl)))).1 hJk hJv) v) r
+    (codes_faithful_wf .long _ (codesFit_atom_count _ hjf (.inr (.inl rfl)))).1 hJk (hr _)) v) r
   rw [rep_conv]
   show _ ∨ rep (antiJoin (pend°) (idU (Rel.key el))) v r ↔ _
   rw [hA]
@@ -278,10 +283,9 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
       ∀ r v, rep (f^[j + 1] (pend₀, Alg.zero, 0)).2.1 r v ↔ rep (f^[j] (pend₀, Alg.zero, 0)).2.1 r v ∨
         (rep (f^[j] (pend₀, Alg.zero, 0)).1 r v ∧ ¬ ∃ e, rep (elK j) r e) := by
     intro j hk
-    obtain ⟨hSV, hSk, hSv, hjf, hJk, hJv, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
-    obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hQ _ rfl
-    have h := round_rep (elK j) _ _ _ hSV hSk hSv hjf hJk hJv _ rfl hU hFk hFv hUV
-      hUk hUv
+    obtain ⟨hSV, hSv, hjf, hJk, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
+    obtain ⟨hU, hFk, hFv, hUV, hUv⟩ := hQ _ rfl
+    have h := round_rep (elK j) _ _ _ hSV hSv hjf hJk _ rfl hU hFk hFv hUV hUv
     have e : f^[j + 1] (pend₀, Alg.zero, 0) = rnd(f^[j] (pend₀, Alg.zero, 0)) := hf _
     rw [e, hk]
     exact h
@@ -312,7 +316,8 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
     at `el`, `pend` (`hk…`) and `rep_comp`'s at `P`, `S` (`hj…`). -/
 theorem step_rep {E V : Obj} (el : Rel .long E) (pend : Rel .long V)
     (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend))
+    (hkO : (Rel.n el).toNat + (Rel.n pend).toNat < USize.size)
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkB : Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
@@ -324,7 +329,7 @@ theorem step_rep {E V : Obj} (el : Rel .long E) (pend : Rel .long V)
     (hjC : Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)) :
     ∀ r v, rep (demandStep Sf el pend) r v ↔ ∃ e u, rep el r e ∧ rep pend r u ∧ rep S (e, u) v := by
   subst hkc hjc
-  have h1 := rep_pair el pend hkO hkn hkM hkA hkB hkC
+  have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM hkA hkB hkC
   subst hP
   have h2 := rep_comp (pair el pend) S hjO hjn hjM hjA hjC
   subst hSP

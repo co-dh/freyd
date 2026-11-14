@@ -585,7 +585,7 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
       obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
       obtain ⟨hjO', hjn', hjM', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
       obtain ⟨eD, eB⟩ := thin_round_rep q le Sf hSf _ (Dr i) (hD i) (hR' i _ rfl)
-      have h1 := rep_pair (elK i) _ hkO hkn hkM hkA hkB hkC
+      have h1 := rep_pair (elK i) _ (codesOK_long2 _ _ hkO) hkn hkM hkA hkB hkC
       rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
         hjO' hjn' hjM' hjA' hjC' r v]
       refine exists_congr fun e => exists_congr fun u => ?_
