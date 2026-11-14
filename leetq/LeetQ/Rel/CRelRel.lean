@@ -41,15 +41,18 @@ variable {A B C D E : Obj}
     the `fitsN` bit `hp`. -/
 theorem rep_distinctCoreflC (t : Obj) {n : USize} (x : Vals t n) (hb : (distinctCoreflC t x).2 = true) :
     rep (distinctCoreflC t x).1 = corefl (A := (⟨t.El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a := by
-  simp only [distinctCoreflC, okbit] at hb; exact rep_distinctCorefl t x (oneOK_of_codesC t x hb.1) (pickFits_range _ _ hb.2)
+  simp only [distinctCoreflC, okbit] at hb
+  exact rep_distinctCorefl t x (oneOK_of_codesC t x hb.1) (pickFits_range _ _ hb.2)
 
 /-- **`rep (dom R) = 𝟙 ∩ rep R (rep R)°` under `domC`'s bit**: `rep_dom`'s premises as `rep_distinctCoreflC`'s. -/
 theorem rep_domC (R : Rel A B) (hb : (domC R).2 = true) : rep (domC R).1 = 𝟙 _ ∩ rep R ≫ (rep R)° := by
-  simp only [domC, distinctCoreflC, okbit] at hb; exact rep_dom R (oneOK_of_codesC A R.key hb.1) (pickFits_range _ _ hb.2)
+  simp only [domC, distinctCoreflC, okbit] at hb
+  exact rep_dom R (oneOK_of_codesC A R.key hb.1) (pickFits_range _ _ hb.2)
 
 /-- **`rep (ran R) = 𝟙 ∩ (rep R)° (rep R)°°` under `ranC`'s bit**: `rep_ran`'s premises as `rep_domC`'s. -/
 theorem rep_ranC (R : Rel A B) (hb : (ranC R).2 = true) : rep (ranC R).1 = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
-  simp only [ranC, distinctCoreflC, okbit] at hb; exact rep_ran R (oneOK_of_codesC B R.val hb.1) (pickFits_range _ _ hb.2)
+  simp only [ranC, distinctCoreflC, okbit] at hb
+  exact rep_ran R (oneOK_of_codesC B R.val hb.1) (pickFits_range _ _ hb.2)
 
 /-- **`rep (antiJoin R T) = rep R ≫ ¬ran(rep T)` under `antiJoinC`'s bit**: the joint codes' bit gives `hc`
     (`codesC_fits`, `codes_faithful_wf`), the `fitsN` bits `hk`, `hv`. -/
@@ -145,7 +148,8 @@ theorem transposeC_ok (R : Rel A B) (hb : (transposeC R).2 = true) :
       B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1) ∧ R.n.toNat < 2 ^ 63 := by
   simp only [transposeC, nubC_fst] at hb
   simp only [keyPart, valPart, nubC, okbit] at hb
-  exact ⟨oneOK_of_codesC A R.key (by simp only [hb]), oneOK_of_codesC B R.val (by simp only [hb]), by simp only [okbit, hb]⟩
+  exact ⟨oneOK_of_codesC A R.key (by simp only [hb]), oneOK_of_codesC B R.val (by simp only [hb]),
+    by simp only [okbit, hb]⟩
 
 /-- **`rep (Λ(R))` is the power transpose of `rep R` under `transposeC`'s bit**: `rep_transpose` at
     `transposeC_ok`. -/
