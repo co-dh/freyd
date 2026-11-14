@@ -553,15 +553,12 @@ local notation "mergeVals(" Gq ", " J ")" =>
   ∀ mSf, mSf = St ≫ mfl → ∀ mc1, mc1 = pair macc mx → ∀ mC1, mC1 = cat mc1 → ∀ mc2, mc2 = pair mC1 my →
   ∀ mC2, mC2 = cat mc2 → ∀ mO, mO = mSf ≫ mC2 → ∀ mU, mU = out ∪ mO → J
 -- the hypotheses of `mergeOn`'s first state: `rep_ran`'s at `P`, `rep_top`'s at `ran P` and `nilVal`, `rep_pair`'s
--- and `rep_comp`'s at `P ≫ ⟨idU, top⟩`
+-- and `rep_comp`'s at `P ≫ ⟨idU, top⟩`; `top`'s `USize` count and the `nilVal` fit hold outright (`rep_mergeOn`)
 set_option hygiene false in
 local notation "initOK" =>
-  (oneFit(.prod (.arr B) (.arr B), Rel.n P, Rel.val P) ∧
-    (Rel.n (ran P)).toNat * (1 : USize).toNat < USize.size ∧ (Rel.n (ran P)).toNat * (1 : USize).toNat < 2 ^ 63 ∧
+  (oneFit(.prod (.arr B) (.arr B), Rel.n P, Rel.val P) ∧ (Rel.n (ran P)).toNat * (1 : USize).toNat < 2 ^ 63 ∧
     Vals.PickFits (.prod (.arr B) (.arr B)) (Rel.val (ran P))
       ((List.range ((Rel.n (ran P)).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)) ∧
-    Vals.PickFits (.arr B) (nilVal B)
-      ((List.range ((Rel.n (ran P)).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)) ∧
     pairOK(.prod (.arr B) (.arr B), idU (Rel.val (ran P)), Alg.top (Rel.val (ran P)) (nilVal B)) ∧
     cmpOK(.prod (.arr B) (.arr B), P, pair (idU (Rel.val (ran P))) (Alg.top (Rel.val (ran P)) (nilVal B))))
 
@@ -617,15 +614,19 @@ theorem mergeOn_rounds {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.pr
     test read back on the pairs of heads `mrh` the round meets and every primitive's hypotheses (`mergeOK`). -/
 theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
+    -- h0 kept: fits of `ran P`'s values and the codes of `P ≫ ⟨idU, top⟩`, intermediates no input bounds
     (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(q)) (h0 : initOK)
+    -- kept: each round's state and pairs of heads are intermediates whose fits grow with the rounds
     (hR : ∀ i, i < fuelP → ∀ out St, out = (f^[i] initP).1 → St = (f^[i] initP).2 →
       mergeVals(q mrh, (∀ a b, rep mrh (a, b) (a, b) → ((∃ c, rep G (a, b) c) ↔ le a b = true)) ∧ mergeOK)) :
     ∀ k zs, rep (mergeOn q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
-  obtain ⟨⟨Pf, Pp⟩, t1, t2, t3, t4, ⟨qf, qp⟩, ⟨mf, mp⟩⟩ := h0
+  obtain ⟨⟨Pf, Pp⟩, t2, t3, ⟨qf, qp⟩, ⟨mf, mp⟩⟩ := h0
   obtain ⟨q1, q2, q3, q4, q5⟩ := qp _ rfl
   obtain ⟨m1, m2, m3, m4⟩ := mp _ rfl
   have eR := rep_ran_corefl P (one_ok _ Pf) (Pp)
-  have eT := rep_top (Rel.val (ran P)) (nilVal B) t1 t2 t3 t4
+  have t1 : (Rel.n (ran P)).toNat * (1 : USize).toNat < USize.size := by
+    simpa using (Rel.n (ran P)).toNat_lt_size
+  have eT := rep_top (Rel.val (ran P)) (nilVal B) t1 t2 t3 (pickFits_nilVal B _)
   have eQ := rep_pair _ _ (codes_faithful_wf _ _ qf).1 q1 q2 q3 q4 q5
   have eM := rep_comp _ _ (codes_faithful_wf _ _ mf).1 m1 m2 m3 m4
   -- a pair of `P` is a row of `ran P`'s values
@@ -685,7 +686,9 @@ theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod 
 theorem rep_merge {K B : Obj} (Q : Rel B B) (P : Rel K (.prod (.arr B) (.arr B))) (le : B.El → B.El → Bool)
     (hle : ∀ a b, le a b = true ↔ rep Q a b)
     (f : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO) (hf : mergeF(pairsIn Q))
+    -- kept: fits of `ran P`'s values and the codes of `P ≫ ⟨idU, top⟩`, intermediates no input bounds
     (h0 : initOK)
+    -- kept: each round's state and pairs of heads are intermediates whose fits grow with the rounds
     (hR : ∀ i, i < fuelP → ∀ out St, out = (f^[i] initP).1 → St = (f^[i] initP).2 →
       mergeVals(pairsIn Q mrh, cmpOK(.prod B B, mrh, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)) ∧
         mergeOK)) :

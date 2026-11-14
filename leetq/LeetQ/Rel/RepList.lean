@@ -1138,6 +1138,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     (elK : Nat → Rel .long A) (hE : ∀ k, elK k = elR(T, k))
     (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
     (hf : ∀ st, f st = rnd(st))
+    -- kept (hR, hC): each round's state, step output and `P ∪ Q` are intermediates; CodesFit/RazeFits no input bounds
     (hR : ∀ i (el : Rel .long A) (pend P S : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
       roundAt((.arr B)))
@@ -1173,6 +1174,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
+    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr A) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))

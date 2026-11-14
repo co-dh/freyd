@@ -381,21 +381,25 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
     (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
+    -- generic seed: an input fit, `pickFits_mod_of_reads` from a reads bound; `nilVal`, atoms fit outright
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
     (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
     (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
     (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
     (D : Nat → Rel (.prod E V) (.prod E V)) (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
     (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
     (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       stepOn)
     (F : Rel .long V) (hF : F = foldRows T pend₀ step)
+    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits V (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
-    (hran : ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E V),
+    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
+    (hran :∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E V),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
     (S' : E.El × V.El → V.El → Prop)
     (hSf : ∀ k, k < (Rel.val T).1.toNat → ∀ p w, rep (Sf (D k)) p w ↔ (∃ a, rep (D k) a p) ∧ S' p w) :
@@ -564,8 +568,6 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
-      (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
     (Sf : Rel (.prod .long .long) (.prod .long .long) → Rel (.prod .long .long) .long)
     (hSf : Sf = fun D => plus D.val)
     (step : Rel .long .long → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
@@ -574,15 +576,18 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (hf : ∀ st, f st = rnd(st))
     (D : Nat → Rel (.prod .long .long) (.prod .long .long))
     (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
     (hR : let V := Obj.long; ∀ i (el : Rel .long .long) (pend P S : Rel .long .long), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
     (hS : let E := Obj.long; let V := Obj.long; ∀ i (el : Rel .long .long) (pend : Rel .long .long), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
     (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
+    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr .long) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hran : let E := Obj.long; let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod .long .long),
+    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
+    (hran :let E := Obj.long; let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod .long .long),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P)) :
     ∀ (xs : List Int64) (w : Int64), rep (Alg.Arr.sum X) xs w ↔ (∃ i, X.row i = xs) ∧
       (∀ t, t ≤ xs.length → -2 ^ 63 < Sd(xs, t) ∧ Sd(xs, t) < 2 ^ 63) ∧ (∀ x ∈ xs, x ≠ nul) ∧
@@ -597,7 +602,7 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     rw [rep_plus]
     exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
   rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 (pickFits_atom_mod _ _) step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   refine and_congr Iff.rfl ?_
   have h1 : ([0] : List Int64).length < USize.size := by
@@ -700,8 +705,6 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
-      (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
     (Sf : Rel (.prod E .long) (.prod E .long) → Rel (.prod E .long) .long)
     (hSf : Sf = fun D => outr D ≫ sc)
     (step : Rel .long E → Rel .long .long → Rel .long .long) (hstep : step = demandStep Sf)
@@ -710,17 +713,21 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (hf : ∀ st, f st = rnd(st))
     (D : Nat → Rel (.prod E .long) (.prod E .long))
     (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    -- kept: CodesFit/RazeFits of each round's step output and `P ∪ Q`, intermediates no input bounds
     (hR : let V := Obj.long; ∀ i (el : Rel .long E) (pend P S : Rel .long .long), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
     (hS : let V := Obj.long; ∀ i (el : Rel .long E) (pend : Rel .long .long), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
     (F : Rel .long .long) (hF : F = foldRows T pend₀ step)
+    -- kept (hjO..hjA): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hran : let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
+    -- kept: `rep_ran`'s fits at each round's pairs, built from the round's state, an intermediate
+    (hran :let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
-    (hcomp : ∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
+    -- kept: `rep_comp`'s counts and fits at `outr (D rd)`, the pairs round `rd` meets, an intermediate
+    (hcomp :∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
       (Rel.n (outr (D rd))).toNat + (Rel.n sc).toNat < USize.size ∧ (Rel.n sc).toNat < 2 ^ 63 ∧
       (Rel.n (outr (D rd))).toNat * (Rel.n sc).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst)) :
@@ -750,7 +757,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
   rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
       foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 (pickFits_atom_mod _ _) step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   have h1 : ([0] : List Int64).length < USize.size := by
     show 1 < USize.size; rcases USize.size_eq with e | e <;> omega

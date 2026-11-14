@@ -434,12 +434,14 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
     (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
     (hf : ∀ st, f st = rnd(st))
+    -- kept (hR, hC): each round's state, step output and `P ∪ Q` are intermediates; CodesFit/RazeFits no input bounds
     (hR : ∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
       roundAt((.arr B)))
     (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → permOK)
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
+    -- kept (hjO..hjC): `F` is the fold output, its count and fits grow with the rounds; no input bounds them
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
@@ -511,6 +513,7 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
 theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
     (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK) :
     ∀ xs ys, rep (suffix X) xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
   have hd : ∀ (i : Nat) (xs : List B.El) ys, (∃ c, c :: ys = xs.drop i) ↔ i < xs.length ∧ ys = xs.drop (i + 1) := by

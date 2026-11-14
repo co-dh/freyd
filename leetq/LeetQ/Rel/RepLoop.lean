@@ -400,6 +400,7 @@ theorem rep_loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod
     (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
       f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F (ran p)) (outr u))))
     (Fr : Nat → X.El × Y.El → X.El → Prop)
+    -- kept: each round's state is an intermediate whose CodesFit/RazeFits grow with the rounds
     (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
       St = (f^[i] (Alg.zero, P)).2 → roundVals(F (ran p), (∀ cy c', Fr i cy c' ↔ rep G cy c') ∧ loopOK)) :
     ∀ k c, rep (loopOn F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
@@ -424,6 +425,7 @@ theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr
     (f : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)))
     (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
       f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F) (outr u))))
+    -- kept: each round's state is an intermediate whose CodesFit/RazeFits grow with the rounds
     (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
       St = (f^[i] (Alg.zero, P)).2 → roundVals(F, loopOK)) :
     ∀ k c, rep (loop F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧

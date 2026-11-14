@@ -51,6 +51,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     (X : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
     (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
@@ -61,6 +62,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     (E : Rel (.prod B B) (.prod B B)) (hE : E = ran yz)
     (bad : Rel (.prod B (.arr B)) (.prod B B)) (hbad : bad = antiJoin yz (q E))
     (C : Rel (.arr B) (.prod B (.arr B))) (hC : C = T ≫ dom bad)
+    -- kept: fits and codes of the suffix pieces `Su`, `Wu`, `V`, `O`, `bad`, `C`, kernel intermediates
     (h : ordOK) :
     (∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep E (y, z) (y, z)) ∧
     ∀ xs ys, rep (orderedOn q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧
@@ -180,6 +182,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
 theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
     (hR : ∀ i, i ≤ X.1.toNat → ∀ S F, S = (g^[i] (idU X, idU X)).1 → F = (g^[i] (idU X, idU X)).2 → sufOK)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix X) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
@@ -190,6 +193,7 @@ theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     (E : Rel (.prod B B) (.prod B B)) (hE : E = ran yz)
     (bad : Rel (.prod B (.arr B)) (.prod B B)) (hbad : bad = antiJoin yz (pairsIn Q E))
     (C : Rel (.arr B) (.prod B (.arr B))) (hC : C = T ≫ dom bad)
+    -- kept (h, hq): fits and codes of the suffix pieces and of the pairs `E` compared, kernel intermediates
     (h : ∀ q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B), q = pairsIn Q → ordOK)
     (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q))) :
     ∀ xs ys, rep (ordered Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
@@ -209,6 +213,7 @@ theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
 theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
     (g : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) → Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B))
     (hg : ∀ S F, g (S, F) = (S ∪ F ≫ tail (ran F).val, F ≫ tail (ran F).val))
+    -- kept: each round's suffixes `F` and their union `S` are intermediates; RazeFits/CodesFit no input bounds
     (hR : ∀ i, i ≤ Y.1.toNat → ∀ S F, S = (g^[i] (idU Y, idU Y)).1 → F = (g^[i] (idU Y, idU Y)).2 → sufOK)
     (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix Y) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
     (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
@@ -219,6 +224,7 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
     (E : Rel (.prod B B) (.prod B B)) (hE : E = ran yz)
     (bad : Rel (.prod B (.arr B)) (.prod B B)) (hbad : bad = antiJoin yz (pairsIn Q E))
     (C : Rel (.arr B) (.prod B (.arr B))) (hC : C = T ≫ dom bad)
+    -- kept (h, hq, hc): fits and codes of the suffix pieces, the pairs `E`, `setify Y`, all intermediates
     (h : ∀ q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B), q = pairsIn Q → ∀ X, X = Y → ordOK)
     (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)))
     (hc : cmpOK(.arr B, (setify Y)°, ordered Q Y)) :
