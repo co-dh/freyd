@@ -596,6 +596,113 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
   · have : xs.length < j := Nat.lt_of_not_le fun hc => h' xs _ ((hFj xs _).2 ⟨⟨r, hr⟩, hc, rfl⟩)
     omega
 
+/-! ## `snoc` -/
+
+section Snoc
+open Pow
+
+-- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`), all but the universal `hW`
+set_option hygiene false in
+local notation "tauOK(" A ", " cnt ", " X ")" =>
+  (((∀ {i j : Nat} (hi : i < (cnt).toNat) (hj : j < (cnt).toNat),
+      Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
+        Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
+    ((kcX(X)).w = 1 ∨ (kcX(X)).w = 2 ∨ (kcX(X)).w = 4 ∨ (kcX(X)).w = 8 ∨ (kcX(X)).w = 16 ∨
+      (kcX(X)).w = 32 ∨ (kcX(X)).w = 64) ∧
+      (kcX(X)).n = cnt ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
+      ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
+        ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card)) ∧
+  Vals.PickFits A X (ids (nubX(X))) ∧
+  (∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
+    Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
+      Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩) ∧
+  ((kcT(idU X)).w = 1 ∨ (kcT(idU X)).w = 2 ∨ (kcT(idU X)).w = 4 ∨ (kcT(idU X)).w = 8 ∨
+    (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64) ∧
+  (kcT(idU X)).n = (Rel.nub (idU X)).n ∧
+  (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8 ∧
+  (Rel.nub (idU X)).n.toNat < 2 ^ 63 ∧
+  Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))) ∧
+  Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))) ∧
+  Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X))))
+
+-- every primitive's hypotheses in `snoc P`, each piece bound by its equation as `snoc` builds it
+set_option hygiene false in
+local notation "snocOK" =>
+  (oneFit(.prod (.arr B) B, Rel.n P, Rel.val P) ∧
+    ∀ D : Rel (.prod (.arr B) B) (.prod (.arr B) B), D = ran P →
+    ∀ X : Vals B (Rel.n (outr D)), X = Rel.val (outr D) →
+    tauOK(B, Rel.n (outr D), X) ∧ cmpOK(B, outr D, τ X) ∧
+    ∀ T : Rel (.prod (.arr B) B) (.arr B), T = outr D ≫ τ X →
+    pairOK(.prod (.arr B) B, outl D, T) ∧
+    ∀ Q : Rel (.prod (.arr B) B) (.prod (.arr B) (.arr B)), Q = pair (outl D) T →
+    cmpOK(.prod (.arr B) B, P, Q) ∧
+    ∀ M : Rel K (.prod (.arr B) (.arr B)), M = P ≫ Q → catOK(K, B, M))
+
+/-- **`snoc`, read back**: a row `(bs, b)` of `P` goes to `bs ++ [b]` and nothing else. `snoc P` is
+    `cat (P ≫ ⟨outl D, outr D ≫ τ⟩)`, `D = ran P`; `τ` gives `b` the array `[b]` exactly (`rep_tau_list`).
+    Hypotheses: `rep_tau_list`'s universal `hW`, and every primitive's at the pieces (`snocOK`): `rep_ran`'s at
+    `P`, `rep_tau_list`'s at `(outr D).val`, `rep_comp`'s at `outr D ≫ τ` and at `P ≫ Q`, `rep_pair`'s at `Q`,
+    `rep_cat`'s at the result. -/
+theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (h : snocOK) :
+    ∀ k ys, rep (snoc P) k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
+  obtain ⟨⟨hPf, hPp⟩, h1⟩ := h
+  obtain ⟨ht, ⟨hcf, hc'⟩, h2⟩ := h1 _ rfl _ rfl
+  obtain ⟨⟨hqf, hq'⟩, h3⟩ := h2 _ rfl
+  obtain ⟨⟨hmf, hm'⟩, h4⟩ := h3 _ rfl
+  have hCt := h4 _ rfl
+  obtain ⟨c1, c2, c3, c4, c5⟩ := hc' _ rfl
+  obtain ⟨q1, q2, q3, q4, q5, q6⟩ := hq' _ rfl
+  obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
+  obtain ⟨hX, hx, hF, hw, hn, hs, h63, hpk, hpv, hlo⟩ := ht
+  have eD := rep_ran P (one_ok _ hPf) (hPp _ rfl)
+  have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv hlo
+  have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
+  have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5 q6
+  have eM := rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4 m5
+  have eC := rep_cat_ok _ hCt
+  -- `D = ran P`: the pairs `P` gives, each to itself
+  have hD : ∀ p p', rep (ran P) p p' ↔ p = p' ∧ ∃ k, rep P k p := fun p p' => by rw [eD]; exact Iff.rfl
+  -- `outr D ≫ τ`: a pair of `P` to the array of its second part alone
+  have hT : ∀ p Y, rep (outr (ran P) ≫ τ (outr (ran P)).val) p Y ↔ (∃ k, rep P k p) ∧ Y = [p.2] := by
+    intro p Y
+    rw [eT, Freyd.Alg.RelSet.comp_apply]
+    constructor
+    · rintro ⟨b, hb, hτ⟩
+      obtain ⟨y, hy⟩ := (outr_holds (ran P) p b).1 hb
+      obtain ⟨rfl, hk⟩ := (hD _ _).1 hy
+      exact ⟨hk, ((eτ b Y).1 hτ).2⟩
+    · rintro ⟨hk, rfl⟩
+      have hb : rep (outr (ran P)) p p.2 := (outr_holds (ran P) p p.2).2 ⟨p.1, (hD _ _).2 ⟨rfl, hk⟩⟩
+      obtain ⟨i, -, hi⟩ := id hb
+      exact ⟨p.2, hb, (eτ _ _).2 ⟨⟨i, hi⟩, rfl⟩⟩
+  intro k ys
+  rw [show snoc P = cat (P ≫ pair (outl (ran P)) (outr (ran P) ≫ τ (outr (ran P)).val)) from rfl, eC]
+  constructor
+  · rintro ⟨xs, Y, hM, rfl⟩
+    rw [eM, Freyd.Alg.RelSet.comp_apply] at hM
+    obtain ⟨p, hp, hq⟩ := hM
+    have hq' : rep (outl (ran P)) p xs ∧ rep (outr (ran P) ≫ τ (outr (ran P)).val) p Y :=
+      (Iff.of_eq (congrFun (congrFun eQ p) (xs, Y))).1 hq
+    obtain ⟨z, hz⟩ := (outl_holds (ran P) p xs).1 hq'.1
+    obtain ⟨rfl, -⟩ := (hD _ _).1 hz
+    obtain ⟨-, rfl⟩ := (hT _ _).1 hq'.2
+    exact ⟨xs, z, hp, rfl⟩
+  · rintro ⟨bs, b, hp, rfl⟩
+    refine ⟨bs, [b], ?_, rfl⟩
+    rw [eM, Freyd.Alg.RelSet.comp_apply]
+    refine ⟨(bs, b), hp, (Iff.of_eq (congrFun (congrFun eQ (bs, b)) (bs, [b]))).2 ⟨?_, (hT _ _).2 ⟨⟨k, hp⟩, rfl⟩⟩⟩
+    exact (outl_holds (ran P) (bs, b) bs).2 ⟨b, (hD _ _).2 ⟨rfl, k, hp⟩⟩
+
+#print axioms rep_snoc
+
+end Snoc
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.rep_cons_ok
