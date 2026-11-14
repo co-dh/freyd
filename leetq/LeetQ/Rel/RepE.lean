@@ -31,23 +31,13 @@ theorem rep_memComp {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
 
 #print axioms rep_memComp
 
-/- BISECT2
--- the statement, at `rep_lamOn`'s hypotheses, needs `rep_lamOn`'s budget
+-- the statement, at `rep_lamOn`'s hypotheses, passes the default budget
 set_option maxHeartbeats 1600000 in
 /-- **`rep (E R X)`: the existential image on the arrays of `X`**: an array `E R X` gives `xs` holds exactly the
     `y` some element of `xs` `R`-relates to, and `E R X` has a row at `xs` exactly when `X` lists `xs`.
     `rep_lamOn` at `M := ∋ ≫ R` (`hM`, `rep_memComp`), `U := X`. Hypotheses: `rep_memComp`'s, then `rep_lamOn`'s
     at `M`, `X`. -/
 theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel (.arr A) B)
-    (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
-    -- `rep_memComp` at `R`, `X`
-    (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
-    (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
-      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
-    (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
-    (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : jcount(mS(X), R) < 2 ^ 63) (hcMU : jcount(mS(X), R) < USize.size)
-    (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
-    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd))
     -- `rep_lamOn` at `M`, `X`
     (hK : cOK(kcR(M), Rel.n M, Rel.key M)) (hV : cOK(vcR(M), Rel.n M, Rel.val M))
     (hk : Vals.PickFits (.arr A) (Rel.key M) (ids (nubR(M)))) (hv : Vals.PickFits B (Rel.val M) (ids (nubR(M))))
@@ -85,7 +75,16 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (huK : cOK(kcU(lT(M), lN(M, X, B)), (Uc(lT(M), lN(M, X, B))).n, (Uc(lT(M), lN(M, X, B))).key))
     (huV : cOK(vcU(lT(M), lN(M, X, B)), (Uc(lT(M), lN(M, X, B))).n, (Uc(lT(M), lN(M, X, B))).val))
     (huk : Vals.PickFits (.arr A) (Uc(lT(M), lN(M, X, B))).key (ids (nubU(lT(M), lN(M, X, B)))))
-    (huv : Vals.PickFits (.arr B) (Uc(lT(M), lN(M, X, B))).val (ids (nubU(lT(M), lN(M, X, B))))) :
+    (huv : Vals.PickFits (.arr B) (Uc(lT(M), lN(M, X, B))).val (ids (nubU(lT(M), lN(M, X, B)))))
+    (hM : M = LeetQ.Rel.Alg.mem X ≫ R)
+    -- `rep_memComp` at `R`, `X`
+    (hmv : Vals.PickFits (.arr A) X (List.range n.toNat))
+    (hmk : Vals.PickFits (.arr A) X ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []))
+    (hcc : codesOK(jc(mS(X), R), jcs(mS(X), R)))
+    (hcrn : (Rel.n R).toNat < 2 ^ 63) (hcM : jcount(mS(X), R) < 2 ^ 63) (hcMU : jcount(mS(X), R) < USize.size)
+    (hcA : Vals.PickFits (.arr A) (Rel.key mS(X)) ((jpairs(mS(X), R)).map Prod.fst))
+    (hcC : Vals.PickFits B (Rel.val R) ((jpairs(mS(X), R)).map Prod.snd)) :
     (∀ xs Y, rep (LeetQ.Rel.Alg.E R X) xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ ∃ x ∈ xs, rep R x y) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.E R X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   have hm : ∀ xs y, rep M xs y ↔ (∃ i, Vals.row X i = xs) ∧ ∃ x ∈ xs, rep R x y := fun xs y => by
@@ -99,6 +98,5 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     ((hm xs y).trans ⟨And.right, fun hy => ⟨(h2' xs).1 ⟨Y, h⟩, hy⟩⟩)⟩, h2'⟩
 
 #print axioms rep_E
-BISECT2 -/
 
 end LeetQ.Rel.Rep
