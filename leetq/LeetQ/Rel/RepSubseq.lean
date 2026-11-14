@@ -32,7 +32,8 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n W) (sums (Rel.n W) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val W).2.2.2.2 j m hjl)
+    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val W).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n W) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n W) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n W) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -60,7 +61,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
   subst hkc
   have h1 := rep_pair el pend hkO hkn hkM hkU hkA hkB hkC
   subst hW
-  have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj hjl tl htl c1 hc1 hi hhi lo hlo
+  have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf
   subst P Q
   intro r v
@@ -173,7 +174,8 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       ∀ m : USize, m = (len xi).toUSize →
       ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n W) (sums (Rel.n W) s.2) s.2) xi) →
       ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
-      ∃ hjl : len j = m.toNat, ∀ tl : Vals B m, tl = Vals.pick B (Rel.val W).2.2.2.2 j m hjl →
+      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val W).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
       ∀ c1 : ByteArray, c1 = addc (Rel.n W) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n W) c1 →
       ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
@@ -214,10 +216,9 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
-    obtain ⟨hjl, ht⟩ := hx _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := ht _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl hjl
+    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
       _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hNk hNv hFk hFv hUK hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
