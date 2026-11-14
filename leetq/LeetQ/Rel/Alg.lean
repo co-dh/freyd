@@ -805,10 +805,15 @@ def tailC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) ×
 
 /-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
     AOP/A5_6_ListCombinators.lean:328): `succ` on `0 … X.1`, since no array is longer than the payload `X.1`. -/
-def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
-  needSize (X.1.toNat + 1) "length: the payload's count plus one" (fun _ => default) fun c =>
-  let sc := succ (tilCol c)
-  foldOn (col [0]) (fun D => outr D ≫ sc) X
+def lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) × Bool :=
+  needSize (X.1.toNat + 1) "length: the payload's count plus one" (fun _ => (default, false)) fun c =>
+  let sc := succC (tilCol c)
+  let r := foldOnC (col [0]) (fun D => compC (outr D) sc.1) X
+  (r.1, sc.2 && r.2 && decide (X.1.toNat + 1 < 2 ^ 63))
+
+/-- `length`: `lengthC`'s relation; the bit `succC`'s, `foldOnC`'s (each round's `compC`'s among them) and the
+    count's `+ 1` below `2^63`. -/
+def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) := (lengthC X).1
 
 
 /-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
@@ -1132,8 +1137,11 @@ def union {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A
 
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
-def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) :=
-  foldOn (col [0]) (fun D => plus D.val) X
+def sumC {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) × Bool :=
+  foldOnC (col [0]) (fun D => (plus D.val, true)) X
+
+/-- `sum`: `sumC`'s relation; `plus` has no capacity of its own, so the bit is `foldOnC`'s. -/
+def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) := (sumC X).1
 
 end Arr
 
