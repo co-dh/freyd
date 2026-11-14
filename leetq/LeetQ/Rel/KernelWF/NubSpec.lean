@@ -176,7 +176,7 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg Freyd Freyd.Alg.Rel
 open Alg.NubN
 
 /-- **`rep (nub R) = rep R`**: `rep` reads a relation as the set of its pairs, so dropping repeated rows
-    changes nothing. Hypotheses: `nub_row`'s. -/
+    changes nothing. Hypotheses: `nub_row`'s; under `CodesFit` at each side, `hK`, `hV` are `one_ok`'s. -/
 theorem rep_nub {k v : Obj} (R : Rel k v)
     (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
         Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
@@ -209,56 +209,5 @@ theorem rep_nub {k v : Obj} (R : Rel k v)
     · rw [e2, ← hqc]; exact (hV.1 hp q.2).1 hfq.2
 
 #print axioms rep_nub
-
-/-- `rep_nub` at atom sides: `nub` picks rows of `R` only (`nub_mem`), so both sides fit (`pickFits_atom`). -/
-theorem rep_nub_atoms {t t' : QAtomicType} (R : Rel (.atom t) (.atom t'))
-    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
-        Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
-      laneOK((kc).w) ∧ (kc).n = R.n ∧
-        (kc).b.size = ((kc).n.toNat * (kc).w + 7) / 8 ∧
-        ((kc).w < 8 → (kc).card < USize.size ∧ ∀ i < (kc).n.toNat, Column.idAt (kc).b (kc).w i < (kc).card))
-    (hV : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
-        Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j ↔ Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
-      laneOK((vc).w) ∧ (vc).n = R.n ∧
-        (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
-        ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
-    : rep R.nub = rep R :=
-  rep_nub R hK hV (pickFits_atom R.key fun _ hp => ((nub_mem R hK hV).1 hp).1)
-    (pickFits_atom R.val fun _ hp => ((nub_mem R hK hV).1 hp).1)
-
-/-- `rep_nub` at boolean sides (`codes_boolean_faithful`/`_wf`). -/
-theorem rep_nub_boolean (R : Rel (.atom .boolean) (.atom .boolean)) : rep R.nub = rep R :=
-  rep_nub_atoms R ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
-      by have h := codes_boolean_wf (#v[⟨R.n, R.key⟩] : Vector (Part _) 1) (k := 0) (by decide)
-         exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-    ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
-      by have h := codes_boolean_wf (#v[⟨R.n, R.val⟩] : Vector (Part _) 1) (k := 0) (by decide)
-         exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-
-/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types) or float sides (`real`,
-    `float`, `datetime`), in any encoding (`codes_num_one_faithful_wf`). -/
-theorem rep_nub_num {t t' : QAtomicType} {k₀ k₁ : Scan.Kind} (R : Rel (.atom t) (.atom t'))
-    (ht : orderKind t = some k₀) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64)
-    (ht' : orderKind t' = some k₁) (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32 ∨ k₁ = .f32 ∨ k₁ = .f64) :
-    rep R.nub = rep R :=
-  have hK := codes_num_one_faithful_wf ht ⟨R.n, R.key⟩ hk₀
-  have hV := codes_num_one_faithful_wf ht' ⟨R.n, R.val⟩ hk₁
-  rep_nub_atoms R ⟨fun hi hj => hK.1 hi hj, hK.2⟩ ⟨fun hi hj => hV.1 hi hj, hV.2⟩
-
-/-- `rep_nub` at eight-byte integral sides (`codes_long_one_faithful`/`_wf`). -/
-theorem rep_nub_long {t t' : QAtomicType} (ht : orderKind t = some .i64) (ht' : orderKind t' = some .i64)
-    (R : Rel (.atom t) (.atom t')) : rep R.nub = rep R :=
-  rep_nub_atoms R ⟨fun hi hj => codes_long_one_faithful ht _ hi hj, codes_long_one_wf ht _⟩
-    ⟨fun hi hj => codes_long_one_faithful ht' _ hi hj, codes_long_one_wf ht' _⟩
-
-/-- `rep_nub` at `guid` sides (`codes_guid_faithful`/`_wf`). -/
-theorem rep_nub_guid (R : Rel (.atom .guid) (.atom .guid)) : rep R.nub = rep R :=
-  rep_nub_atoms R ⟨fun hi hj => codes_guid_faithful _ hi hj, codes_guid_wf _⟩
-    ⟨fun hi hj => codes_guid_faithful _ hi hj, codes_guid_wf _⟩
-
-#print axioms rep_nub_boolean
-#print axioms rep_nub_num
-#print axioms rep_nub_long
-#print axioms rep_nub_guid
 
 end LeetQ.Rel.Rep

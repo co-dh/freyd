@@ -8,7 +8,6 @@ import LeetQ.Rel.KernelWF.JoinAssembly
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
-import LeetQ.Rel.KernelWF.CodesSymParts
 
 namespace LeetQ.Rel.Rep
 
@@ -41,7 +40,8 @@ open Freyd Freyd.Alg.RelSet
       match count a `USize` (past it `≫` answers `𝟘`);
     - `hA`, `hC`, `Vals.PickFits` of `R.key` at the left rows of the join's pairs and of `S.val` at the
       right ones, which `pick_row` reads back under; a side of atoms and products fits outright
-      (`pickFits_atom`, `pickFits_prod`, `join_pairs_lt`). -/
+      (`pickFits_atom`, `pickFits_prod`, `join_pairs_lt`).
+    At a middle side `B` with `B.CodesFit jcs`, `hc` is `(codes_faithful_wf B jcs _).1`. -/
 theorem rep_comp (R : Rel A B) (S : Rel B C)
     (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < (jcs[k]'hk).1.toNat)
         (hj : j < (jcs[l]'hl).1.toNat),
@@ -121,71 +121,10 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext h1)
     · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext h2)
 
-/-- `rep_comp` through a boolean middle side: its codes are its bits (`codes_boolean_faithful`/`_wf`). -/
-theorem rep_comp_boolean (R : Rel A (.atom .boolean)) (S : Rel (.atom .boolean) C)
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    rep (R ≫ S) = rep R ≫ rep S :=
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_boolean_faithful _ hk hl hi hj,
-    fun hk => have h := codes_boolean_wf _ hk; ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩ hrn hM hMU hA hC
-
-/-- `rep_comp` through a long-ordered middle side where `rangeOffsets` answers
-    (`codes_long_faithful`/`_wf`, under their hypothesis `hro`). -/
-theorem rep_comp_long {t : QAtomicType} (ht : orderKind t = some .i64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
-    {os : Vector Code 2}
-    (hro : rangeOffsets t ((jcs).map fun c => Arr.part c.2) (((jcs).map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    rep (R ≫ S) = rep R ≫ rep S :=
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_long_faithful ht _ hro hk hl hi hj,
-    fun hk => codes_long_wf ht _ hro hk⟩ hrn hM hMU hA hC
-
 end Comp
 
 #print axioms pick_row_atom
 #print axioms pick_row_prod
 #print axioms rep_comp
-#print axioms rep_comp_boolean
-#print axioms rep_comp_long
-
-section CompSymbol
-
-open Freyd Freyd.Alg.RelSet
-
-/-- `rep_comp` through a `symbol` middle side, the two counts and the two parts' dictionary counts (an interned
-    part counting its dictionary, a blob its rows) each summing below a `USize`
-    (`codes_symbol_parts_faithful`/`_wf`). -/
-theorem rep_comp_symbol (R : Rel A (.atom .symbol)) (S : Rel (.atom .symbol) C)
-    (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hD : ((jcs).toList.map fun c => match c.2.enc with | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum <
-      USize.size)
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    rep (R ≫ S) = rep R ≫ rep S :=
-  have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_symbol_parts_faithful _ hN' hD hk hl hi hj,
-    fun hk => codes_symbol_parts_wf _ hN' hk⟩ hrn hM hMU hA hC
-
-end CompSymbol
-
-#print axioms rep_comp_symbol
 
 end LeetQ.Rel.Rep

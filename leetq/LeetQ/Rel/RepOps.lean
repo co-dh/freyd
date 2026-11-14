@@ -194,25 +194,6 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
   have hlen : len (dc).groupIds.2 < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hle n.toNat_lt_size
   exact hom_ext fun a b => distinct_holds t x _ _ hlen hlt hex (fun hi hj h => (hF hi hj).1 h) hp a b
 
-/-- `rep_distinctCorefl` at an atom side, where every first row is below the count, so `x` fits outright. -/
-theorem rep_distinctCorefl_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
-    (hK : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
-        Column.idAt (dc).b (dc).w i = Column.idAt (dc).b (dc).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-      laneOK((dc).w) ∧ (dc).n = n ∧
-        (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
-        ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card)) :
-    rep (distinctCorefl (.atom t) x) = corefl (A := (⟨(Obj.atom t).El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
-  rep_distinctCorefl _ x hK (pickFits_atom x fun f hf =>
-    hK.2.2.1 ▸ (groupIds_classes (dc) hK.2.1 hK.2.2.2.1 hK.2.2.2.2).1 f hf)
-
-/-- `rep_distinctCorefl` at a boolean side: its code is its bits (`codes_boolean_faithful`/`_wf`). -/
-theorem rep_distinctCorefl_boolean {n : USize} (x : Vals (.atom .boolean) n) :
-    rep (distinctCorefl (.atom .boolean) x) =
-      corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
-  rep_distinctCorefl_atom x ⟨fun hi hj => codes_boolean_faithful _ (k := 0) (l := 0) (by decide) (by decide) hi hj,
-    by have h := codes_boolean_wf (#v[⟨n, x⟩] : Vector (Part _) 1) (k := 0) (by decide)
-       exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-
 namespace OpsN
 -- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it. The index proof is a term: a bare
 -- `[0]` postpones `get_elem_tactic` to the end of the header that uses it, where it runs against every hypothesis
@@ -259,15 +240,6 @@ theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
     (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
     rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
   (rep_ran R hK hp).trans (dom_corefl _)
-
-/-- `rep_dom` with boolean keys: no hypothesis left. -/
-theorem rep_dom_boolean (R : Rel (.atom .boolean) B) : rep (dom R) = 𝟙 _ ∩ rep R ≫ (rep R)° := by
-  rw [dom_corefl, show dom R = distinctCorefl _ R.key from rfl, rep_distinctCorefl_boolean]
-  exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
-
-/-- `rep_ran` with boolean values: `rep_dom_boolean` at `R°`. -/
-theorem rep_ran_boolean (R : Rel A (.atom .boolean)) : rep (ran R) = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
-  rw [← rep_conv]; exact rep_dom_boolean (R°)
 
 end Distinct
 
@@ -493,20 +465,6 @@ scoped notation "misses(" R ", " S ")" =>
 end OpsN
 open OpsN
 
--- the keys, the values, of the two relations as parts of one side each
-set_option hygiene false in
-local notation "kp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2)
-set_option hygiene false in
-local notation "vp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Vector (Part B) 2)
--- what `codes_prod_faithful_wf` takes to conclude `pairsOK`: the keys' and the values' codes, one lane each, and
--- the summed count
-set_option hygiene false in
-local notation "partsOK(" R ", " S ")" =>
-  codesOK(Obj.codes A kp(R, S), kp(R, S)) ∧
-  (∀ {k l : Nat} (hk : k < 2) (hl : l < 2), ((Obj.codes A kp(R, S))[k]'hk).w = ((Obj.codes A kp(R, S))[l]'hl).w) ∧
-  codesOK(Obj.codes B vp(R, S), vp(R, S)) ∧
-  (∀ {k l : Nat} (hk : k < 2) (hl : l < 2), ((Obj.codes B vp(R, S))[k]'hk).w = ((Obj.codes B vp(R, S))[l]'hl).w) ∧
-  ((pcs(R, S)).toList.map (·.1.toNat)).sum < USize.size
 -- the rows of `R` whose pair is a pair of `S`, as `∩` and `⊑` compute them
 set_option hygiene false in
 local notation "hits" => whereBits R.n (((pairs #v[R, S])[0]'Nat.zero_lt_two).member ((pairs #v[R, S])[1]'Nat.one_lt_two))
@@ -660,45 +618,11 @@ theorem pairs_eq_codes {p : Nat} (ds : Vector (Rel A B) p) :
     pairs ds = Obj.codes (.prod A B) (ds.map fun R => (⟨R.n, (R.key, R.val)⟩ : Part (.prod A B))) := by
   simp only [pairs, Obj.codes, Vector.map_map]; rfl
 
-/-- Two vectors of two elements are equal when their elements are. -/
-theorem vec2_ext {α : Type} {v w : Vector α 2} (h0 : v[0] = w[0]) (h1 : v[1] = w[1]) : v = w :=
-  Vector.ext fun k hk => match k, hk with
-    | 0, _ => h0
-    | 1, _ => h1
-    | _ + 2, h => absurd h (by omega)
-
-/-- **The joint pair codes from the parts'**: `codes_prod_faithful_wf` at the two relations' pairs. -/
-theorem pairsOK_of_parts (R S : Rel A B) (h : partsOK(R, S)) : pairsOK(R, S) := by
-  obtain ⟨hfa, hla, hfb, hlb, hN⟩ := h
-  have H := (codes_prod_faithful_wf pcs(R, S) (pa := kp(R, S)) (pb := vp(R, S))
-    (vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl))
-    (vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl)) rfl rfl hfa hla hfb hlb hN).1
-  rw [pairs_eq_codes, show (#v[R, S].map fun R => (⟨R.n, (R.key, R.val)⟩ : Part (.prod A B))) = pcs(R, S) from
-    vec2_ext (by rw [Vector.getElem_map]; rfl) (by rw [Vector.getElem_map]; rfl)]
-  exact H
-
-/-- `rep_inter`, its pair codes from the parts' (`pairsOK_of_parts`). -/
-theorem rep_inter_parts (R S : Rel A B) (h : partsOK(R, S)) (hk : Vals.PickFits A R.key (ids (hits)))
-    (hv : Vals.PickFits B R.val (ids (hits))) : rep (R ∩ S) = rep R ∩ rep S :=
-  rep_inter R S (pairsOK_of_parts R S h) hk hv
-
-/-- `rep_diff`, its pair codes from the parts'. -/
-theorem rep_diff_parts (R S : Rel A B) (h : partsOK(R, S)) (hk : Vals.PickFits A R.key (ids (misses(R, S))))
-    (hv : Vals.PickFits B R.val (ids (misses(R, S)))) (a : A.El) (b : B.El) :
-    rep (R \ S) a b ↔ rep R a b ∧ ¬ rep S a b :=
-  rep_diff R S (pairsOK_of_parts R S h) hk hv a b
-
-/-- `rep_le`, its pair codes from the parts'. -/
-theorem rep_le_parts (R S : Rel A B) (h : partsOK(R, S)) : (R ⊑ S) = true ↔ rep R ⊑ rep S :=
-  rep_le R S (pairsOK_of_parts R S h)
-
-/-- `rep_eq`, its pair codes in both orders from the parts'. -/
-theorem rep_eq_parts (R S : Rel A B) (h : partsOK(R, S)) (h' : partsOK(S, R)) : (R == S) = true ↔ rep R = rep S :=
-  rep_eq R S (pairsOK_of_parts R S h) (pairsOK_of_parts S R h')
-
 /-! ### `⟨R, S⟩`: the join on the keys -/
 
 -- the keys `⟨R, S⟩` joins on, their codes, and the pairs the join answers, named as `pair` names them
+set_option hygiene false in
+local notation "kp(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2)
 set_option hygiene false in
 local notation "kc" => Obj.codes A kp(R, S)
 set_option hygiene false in
@@ -804,8 +728,6 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
 end Pairs
 
 #print axioms rep_pair
-#print axioms rep_eq_parts
-#print axioms rep_diff_parts
 #print axioms rep_inter
 #print axioms rep_le
 
@@ -815,8 +737,6 @@ end Pairs
 #print axioms dom_corefl
 #print axioms rep_dom
 #print axioms rep_ran
-#print axioms rep_dom_boolean
-#print axioms rep_ran_boolean
 #print axioms rep_dom_corefl
 #print axioms rep_ran_corefl
 #print axioms rep_sum

@@ -12,12 +12,6 @@ variable {A B : Obj}
 
 open OpsN
 
-/-- Two boolean parts' codes are faithful and well formed: the codes are the bits (`codes_boolean_faithful`/`_wf`). -/
-theorem codesOK_boolean (ps : Vector (Part (.atom .boolean)) 2) : codesOK(Obj.codes (.atom .boolean) ps, ps) :=
-  ⟨fun hk hl _ _ hi hj => codes_boolean_faithful ps hk hl hi hj, fun hk =>
-    have h := codes_boolean_wf ps hk
-    ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
-
 /-! ## `antiJoin`: the rows of `R` whose value is no value of `T` -/
 
 section AntiJoin
@@ -74,24 +68,6 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
       obtain ⟨j, hj⟩ := (vals_member R T hc i.2).1 hbit
       exact ⟨T.key.row j, j, rfl, hj.trans hiy⟩
 
-/-- `rep_antiJoin` at atom sides: the kept rows are rows of `R` (`anti_ids`), so both columns fit outright. -/
-theorem rep_antiJoin_atoms {t t' : QAtomicType} (R : Rel (.atom t) (.atom t')) (T : Rel (.atom t') (.atom t'))
-    (hc : codesOK(avc(.atom t', R, T), avp(.atom t', R, T))) :
-    rep (antiJoin R T) = rep R ≫ corefl (A := (⟨(Obj.atom t').El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b := by
-  obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
-  obtain ⟨hw1, -, hs1, -⟩ := hc.2 (k := 1) (by decide)
-  have hlt : ∀ f ∈ ids (amiss(.atom t', R, T)), f < R.n.toNat := fun f hf =>
-    hn0 ▸ ((anti_ids _ _ hw0 hw1 hs0 hs1).2.2 f).1 hf |>.1
-  exact rep_antiJoin R T hc (pickFits_atom _ hlt) (pickFits_atom _ hlt)
-
-/-- `rep_antiJoin` with boolean values: the value codes are the bits (`codes_boolean_faithful`/`_wf`), no
-    hypothesis left. -/
-theorem rep_antiJoin_boolean {t : QAtomicType} (R : Rel (.atom t) (.atom .boolean))
-    (T : Rel (.atom .boolean) (.atom .boolean)) :
-    rep (antiJoin R T) =
-      rep R ≫ corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T y b :=
-  rep_antiJoin_atoms R T (codesOK_boolean _)
-
 end AntiJoin
 
 /-! ## `entire`, `surjective`: `idU U ⊑ dom R` -/
@@ -137,28 +113,6 @@ theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
     (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
     surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
   (rep_entire (R°) U hc hK hp).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
-    convArr_holds R.key R.val _ _)
-
-/-- The joint pair codes of two boolean relations from the bits: `pairsOK_of_parts`, only the summed count left. -/
-theorem pairsOK_boolean (R S : Rel (.atom .boolean) (.atom .boolean)) (hN : R.n.toNat + S.n.toNat < USize.size) :
-    codesOK(pairs #v[R, S], pcs(R, S)) :=
-  pairsOK_of_parts R S ⟨codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
-    codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
-    by simpa using hN⟩
-
-/-- `rep_entire` with boolean keys: the universe and `dom R` together below `USize.size` rows is all that is left. -/
-theorem rep_entire_boolean (R : Rel (.atom .boolean) B) {m : USize} (U : Vals (.atom .boolean) m)
-    (hN : m.toNat + (dom R).n.toNat < USize.size) :
-    entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
-  show (idU U ⊑ dom R) = true ↔ _
-  rw [rep_le _ _ (pairsOK_boolean _ _ hN), rep_idU, rep_dom_boolean, dom_corefl]
-  exact corefl_le_dom _ _
-
-/-- `rep_surjective` with boolean values: `rep_entire_boolean` at `R°`. -/
-theorem rep_surjective_boolean (R : Rel A (.atom .boolean)) {m : USize} (U : Vals (.atom .boolean) m)
-    (hN : m.toNat + (dom (R°)).n.toNat < USize.size) :
-    surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
-  (rep_entire_boolean (R°) U hN).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
     convArr_holds R.key R.val _ _)
 
 /-! ## `simple`, `injective`, `isMap`: `R.nub`'s keys counted against its rows -/
@@ -255,11 +209,8 @@ theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
 end Entire
 
 #print axioms rep_antiJoin
-#print axioms rep_antiJoin_boolean
 #print axioms rep_entire
 #print axioms rep_surjective
-#print axioms rep_entire_boolean
-#print axioms rep_surjective_boolean
 #print axioms rep_simple
 #print axioms rep_injective
 #print axioms rep_isMap
