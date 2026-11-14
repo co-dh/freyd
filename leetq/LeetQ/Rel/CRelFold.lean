@@ -23,35 +23,6 @@ theorem rep_nubC {k v : Obj} (R : Rel k v) (hb : (nubC R).2 = true) : rep (nubC 
   exact rep_nub R (oneOK_of_codesC k R.key hK) (oneOK_of_codesC v R.val hV) (pickFits_of_fitsN k R.key _ hk _ (by simp))
     (pickFits_of_fitsN v R.val _ hv _ (by simp))
 
-/-- **A round's new state depends on its step's relation only**, not on the step's bit. -/
-theorem foldRound_fst_congr {E V : Obj} (ids : Rel .long (.arr E)) (s s' : Rel .long E → Rel .long V → Rel .long V × Bool)
-    (h : ∀ el p, (s el p).1 = (s' el p).1) (st : Rel .long V × Rel .long V × Nat) :
-    (foldRound ids s st).1 = (foldRound ids s' st).1 := by
-  simp only [foldRound, h]
-
-/-- **`foldRowsC`'s relation is `foldRows` on the step's relation.** -/
-theorem foldRowsC_fst {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V)
-    (stepC : Rel .long E → Rel .long V → Rel .long V × Bool) :
-    (foldRowsC ids pend stepC).1 = foldRows ids pend (fun el p => (stepC el p).1) := by
-  have h1 := iter_map (fun st : Rel .long V × Rel .long V × Nat => st.1.n == 0) (fun st => (foldRound ids stepC st).1)
-    Prod.fst (fun st : (Rel .long V × Rel .long V × Nat) × Bool =>
-      let g := foldRound ids stepC st.1; (g.1, st.2 && g.2)) (fun _ => rfl)
-    ((Rel.val ids).1.toNat + 1) ((pend, Alg.zero, 0), true)
-  have h2 := iter_map (fun st : Rel .long V × Rel .long V × Nat => st.1.n == 0) (fun st => (foldRound ids stepC st).1)
-    Prod.fst (fun st : (Rel .long V × Rel .long V × Nat) × Bool =>
-      let g := foldRound ids (fun el p => ((stepC el p).1, true)) st.1; (g.1, st.2 && g.2))
-    (fun st => by dsimp only; exact foldRound_fst_congr ids _ stepC (fun _ _ => rfl) st.1)
-    ((Rel.val ids).1.toNat + 1) ((pend, Alg.zero, 0), true)
-  dsimp only at h1 h2
-  have h := h1.trans h2.symm
-  exact congrArg (fun st : Rel .long V × Rel .long V × Nat => st.2.1) h
-
-/-- **`foldByC`'s relation is `foldBy` on the step's relation.** -/
-theorem foldByC_fst {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
-    (stepC : Rel .long E → Rel .long V → Rel .long V × Bool) :
-    (foldByC X e stepC).1 = foldBy X e (fun el p => (stepC el p).1) := by
-  simp only [foldBy, foldByC, foldRowsC_fst]
-
 /-- **A round's bit**: its step's, `nubC`'s on the step's relation, `antiJoinC`'s on the pending rows, `unionC`'s on
     the leftovers, at the round's element `el`. -/
 theorem foldRound_snd {E V : Obj} (ids : Rel .long (.arr E)) (stepC : Rel .long E → Rel .long V → Rel .long V × Bool)
@@ -159,6 +130,64 @@ theorem rep_foldByC {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) 
 
 #print axioms rep_foldByC
 
+/-- **`foldOn` under `foldOnC`'s bit**: `rep_foldByC` at the step `demandStepC SC`, whose round `i` reads back,
+    where its bit is set, by `step_rep_of` at `rep_pairC`, `rep_compC` (the step bit's) as `(SC (D i)).1` on the
+    pairs (element, value) — `Sr i` there (`hSr`, at the rounds whose step bit is set, which holds `ranC`'s and
+    `SC`'s bits at `D i`). What stays: `hat`, and `hSr`, the family's own spec. `T`, `pend₀`, `step`, `elK`, `f`,
+    `D` are bound by their equations. -/
+theorem rep_foldOnC {E V : Obj} {m n : USize} (e : Vals V m)
+    (SC : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool) (X : Vals (.arr E) n)
+    -- not a size bound: `razeTo`'s read-back of two atom parts (`rep_unionC`)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (foldOnC e SC X).2 = true)
+    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0)
+    (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
+    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : ∀ el p, step el p = (demandStepC SC el p).1)
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
+    (D : Nat → Rel (.prod E V) (.prod E V)) (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (Sr : Nat → E.El × V.El → V.El → Prop)
+    (hSr : ∀ i, i ≤ (Rel.val T).1.toNat → ne(i + 1) →
+      (demandStepC SC (elK i) (f^[i] (pend₀, Alg.zero, 0)).1).2 = true → ∀ p w, rep (SC (D i)).1 p w ↔ Sr i p w) :
+    ∀ (xs : List E.El) w, rep (foldOnC e SC X).1 xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length), Sr (xs.length - 1 - t)
+          (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_foldByC e X (demandStepC SC) hat hb T hT pend₀ hpend step hstep Sr elK hE f hf False
+    (fun i hi hne hbi r v => by
+      have hbi' := hbi
+      simp only [demandStepC, Bool.and_eq_true] at hbi'
+      obtain ⟨⟨⟨hp, -⟩, -⟩, hc⟩ := hbi'
+      simp only [hstep, false_and, or_false]
+      refine (step_rep_of (elK i) _ (fun D => (SC D).1) (rep_pairC _ _ hp) (rep_compC _ _ hc) r v).trans ?_
+      exact exists_congr fun _ => exists_congr fun _ => and_congr Iff.rfl (and_congr Iff.rfl
+        (by rw [← hD i]; exact hSr i hi hne hbi _ _)))
+
+/-- **`fold` under `foldC`'s bit**: `rep_foldOnC` at the constant family `S`, read back as `rep S` outright. -/
+theorem rep_foldC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (foldC e S X).2 = true) :
+    ∀ (xs : List E.El) w, rep (foldC e S X).1 xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length), rep S (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_foldOnC e (fun _ => (S, true)) X hat hb _ rfl _ rfl _ (fun _ _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl) _
+    (fun _ => rfl) (fun _ => rep S) (fun _ _ _ _ _ _ => Iff.rfl)
+
+#print axioms rep_foldOnC
+#print axioms rep_foldC
+
 end Rep
 
 namespace CRel
@@ -200,6 +229,62 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
   rep_foldByC e X _ hat hb T hT pend₀ hpend step hstep Sr elK hE f hf keep hS
+
+/-- `foldOn` on a family over `CRel`s, ok where every round's family member was and `foldOnC` ran within
+    capacity. The family sees the round's pairs as ok: their bits are already in the fold's. -/
+def foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
+    (X : Vals (.arr E) n) : CRel (.arr E) V :=
+  let r := foldOnC e (fun D => ((S ⟨D, true⟩).rel, (S ⟨D, true⟩).ok)) X
+  ⟨r.1, r.2⟩
+
+/-- **`CRel.foldOn` read back under its bit**: `rep_foldOnC`. -/
+theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) (.prod E V) → CRel (.prod E V) V)
+    (X : Vals (.arr E) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (foldOn e S X).ok = true)
+    (T : Rel .long (.arr E)) (hT : T = Alg.num (idU X) 0)
+    (pend₀ : Rel .long V) (hpend : pend₀ = Alg.top (A := .long) (Rel.key T) e)
+    (step : Rel .long E → Rel .long V → Rel .long V)
+    (hstep : ∀ el p, step el p = (demandStepC (fun D => ((S ⟨D, true⟩).rel, (S ⟨D, true⟩).ok)) el p).1)
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
+    (D : Nat → Rel (.prod E V) (.prod E V))
+    (hD : ∀ k, D k = Alg.ran (Alg.pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (Sr : Nat → E.El × V.El → V.El → Prop)
+    (hSr : ∀ i, i ≤ (Rel.val T).1.toNat → ne(i + 1) →
+      (demandStepC (fun D => ((S ⟨D, true⟩).rel, (S ⟨D, true⟩).ok)) (elK i) (f^[i] (pend₀, Alg.zero, 0)).1).2 =
+        true → ∀ p w, rep (S ⟨D i, true⟩).rel p w ↔ Sr i p w) :
+    ∀ (xs : List E.El) w, rep (foldOn e S X).rel xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length), Sr (xs.length - 1 - t)
+          (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_foldOnC e _ X hat hb T hT pend₀ hpend step hstep elK hE f hf D hD Sr hSr
+
+/-- `fold` of one `CRel` step, ok where `S` is and `foldC` ran within capacity. -/
+def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n) : CRel (.arr E) V :=
+  let r := foldC e S.rel X
+  ⟨r.1, S.ok && r.2⟩
+
+/-- **`CRel.fold` read back under its bit**: `rep_foldC`. -/
+theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : CRel (.prod E V) V) (X : Vals (.arr E) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (fold e S X).ok = true) :
+    ∀ (xs : List E.El) w, rep (fold e S X).rel xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length), rep S.rel (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_foldC e S.rel X hat (by simp only [fold, Bool.and_eq_true] at hb; exact hb.2)
 
 end CRel
 

@@ -627,21 +627,39 @@ def foldBy {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
   (foldByC X e fun el p => (step el p, true)).1
 
 /-- A fold step in demand form: `S` runs on the pairs (element, value) the round meets, `S D` for the
-    coreflexive `D` on them, so a carrier with no universe folds too. -/
+    coreflexive `D` on them, so a carrier with no universe folds too. `S` a twin family; the bit the `&&` of
+    `pairC`'s, `ranC`'s, `S`'s and `compC`'s. -/
+def demandStepC {E V : Obj} (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool) (el : Rel .long E)
+    (pend : Rel .long V) : Rel .long V × Bool :=
+  let p := pairC el pend; let d := ranC p.1; let s := S d.1; let c := compC p.1 s.1
+  (c.1, p.2 && d.2 && s.2 && c.2)
+
+/-- `demandStep`: `demandStepC`'s relation, the family one with no bit of its own. -/
 def demandStep {E V : Obj} (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V) (el : Rel .long E)
     (pend : Rel .long V) : Rel .long V :=
-  let p := pair el pend; p ≫ S (ran p)
+  (demandStepC (fun D => (S D, true)) el pend).1
 
-/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` in demand form (`demandStep`). `[]` to each value
-    of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and `(x, v) S(D) w`. -/
+/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` a twin family in demand form (`demandStepC`), and
+    whether it ran within capacity. `[]` to each value of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and
+    `(x, v) S(D) w`. -/
+def foldOnC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool)
+    (X : Vals (.arr E) n) : Rel (.arr E) V × Bool :=
+  foldByC X e (demandStepC S)
+
+/-- `foldOn`: `foldOnC`'s relation, the family one with no bit of its own. -/
 def foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldBy X e (demandStep S)
+  (foldOnC e (fun D => (S D, true)) X).1
 
-/-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOn` with `S` whatever pairs a round meets. An array
-    may have several results or none. -/
+/-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOnC` with `S` whatever pairs a round meets, and whether
+    it ran within capacity. An array may have several results or none. -/
+def foldC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) :
+    Rel (.arr E) V × Bool :=
+  foldOnC e (fun _ => (S, true)) X
+
+/-- `fold`: `foldC`'s relation. -/
 def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldOn e (fun _ => S) X
+  (foldC e S X).1
 
 /-- The one-row side holding the empty array. -/
 def nilVal (B : Obj) : Vals (.arr B) 1 := ⟨0, col [0], col [0], Vals.empty B⟩

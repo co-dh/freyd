@@ -394,9 +394,11 @@ theorem thinLOn_foldOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) �
       cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys) :
     thinLOn q X = foldOn (nilVal B) Sf X := by
   -- `congrArg`, not `congr`: `congr` first tries the two steps up to `rfl`, unfolding the kernels until `whnf` times out
-  unfold thinLOn foldOn
+  unfold thinLOn
+  rw [show foldOn (nilVal B) Sf X = foldBy X (nilVal B) (demandStep Sf) from foldByC_fst X _ _]
   refine congrArg (foldBy X (nilVal B)) (funext fun el => funext fun pend => ?_)
-  simp only [demandStep, hSf]
+  show _ = pair el pend ≫ Sf (ran (pair el pend))
+  simp only [hSf]
 
 /-- **One round of `thinLOn`, read back**: at the round's pairs `P`, its coreflexive `D = ran P` holds exactly the
     pairs of `P`, and the body `Sf D` takes `(a, y)` of `D` to one bump of `a` into `y` at `le`. `h` is `rep_ran`'s
@@ -557,7 +559,8 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
                 ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: b :: bs))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   intro xs w
-  rw [thinLOn_foldOn q X Sf hSf]
+  rw [thinLOn_foldOn q X Sf hSf, show foldOn (nilVal B) Sf X = foldBy X (nilVal B) (demandStep Sf) from
+    foldByC_fst X _ _]
   subst hstep
   exact rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _) (demandStep Sf)
     (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧

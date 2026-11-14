@@ -884,6 +884,35 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
     (fun i hi _ r v => (hS i hi r v).trans (or_iff_left fun h : False ∧ _ => h.1).symm)
     F hF (by subst hjc; exact rep_comp (T°) F hjO hjn hjM hjA hjC)
 
+/-- **A round's new state depends on its step's relation only**, not on the step's bit. -/
+theorem foldRound_fst_congr {E V : Obj} (ids : Rel .long (.arr E)) (s s' : Rel .long E → Rel .long V → Rel .long V × Bool)
+    (h : ∀ el p, (s el p).1 = (s' el p).1) (st : Rel .long V × Rel .long V × Nat) :
+    (foldRound ids s st).1 = (foldRound ids s' st).1 := by
+  simp only [foldRound, h]
+
+/-- **`foldRowsC`'s relation is `foldRows` on the step's relation.** -/
+theorem foldRowsC_fst {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V)
+    (stepC : Rel .long E → Rel .long V → Rel .long V × Bool) :
+    (foldRowsC ids pend stepC).1 = foldRows ids pend (fun el p => (stepC el p).1) := by
+  have h1 := iter_map (fun st : Rel .long V × Rel .long V × Nat => st.1.n == 0) (fun st => (foldRound ids stepC st).1)
+    Prod.fst (fun st : (Rel .long V × Rel .long V × Nat) × Bool =>
+      let g := foldRound ids stepC st.1; (g.1, st.2 && g.2)) (fun _ => rfl)
+    ((Rel.val ids).1.toNat + 1) ((pend, Alg.zero, 0), true)
+  have h2 := iter_map (fun st : Rel .long V × Rel .long V × Nat => st.1.n == 0) (fun st => (foldRound ids stepC st).1)
+    Prod.fst (fun st : (Rel .long V × Rel .long V × Nat) × Bool =>
+      let g := foldRound ids (fun el p => ((stepC el p).1, true)) st.1; (g.1, st.2 && g.2))
+    (fun st => by dsimp only; exact foldRound_fst_congr ids _ stepC (fun _ _ => rfl) st.1)
+    ((Rel.val ids).1.toNat + 1) ((pend, Alg.zero, 0), true)
+  dsimp only at h1 h2
+  have h := h1.trans h2.symm
+  exact congrArg (fun st : Rel .long V × Rel .long V × Nat => st.2.1) h
+
+/-- **`foldByC`'s relation is `foldBy` on the step's relation.** -/
+theorem foldByC_fst {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
+    (stepC : Rel .long E → Rel .long V → Rel .long V × Bool) :
+    (foldByC X e stepC).1 = foldBy X e (fun el p => (stepC el p).1) := by
+  simp only [foldBy, foldByC, foldRowsC_fst]
+
 /-- **`foldOn`, read back**: `rep_foldBy` at `demandStep Sf`, whose round `k` is read back by `step_rep` as
     `Sf (D k)`, `D k` the coreflexive on the (element, value) pairs round `k` meets over ALL arrays of `X`.
     `D` is bound by its equation; `hS` is `step_rep`'s hypotheses at every round, the rest as `rep_foldBy`'s. -/
@@ -918,6 +947,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   subst hstep
+  rw [show foldOn e Sf X = foldBy X e (demandStep Sf) from foldByC_fst X e _]
   exact rep_foldBy e X T hT hn hv pend₀ hpend hN h63 hB _ (fun k p w => rep (Sf (D k)) p w) elK hE f hf
     hR (fun i _ r v => by
       obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
