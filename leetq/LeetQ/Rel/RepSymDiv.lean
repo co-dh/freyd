@@ -112,15 +112,15 @@ theorem sym_ids (rk sk v0 v1 : Code)
     (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
     (v1c : v1.w < 8 → v1.card < USize.size ∧ ∀ i < v1.n.toNat, Column.idAt v1.b v1.w i < v1.card)
     (hvw : v1.w = v0.w) (v0n : v0.n = rk.n) (v1n : v1.n = sk.n)
-    (hNU : rk.n.toNat + sk.n.toNat < USize.size) (hN63 : rk.n.toNat + sk.n.toNat < 2 ^ 63)
+    (hNU : rk.n.toNat + sk.n.toNat < USize.size) (hN63 : rk.n.toNat + sk.n.toNat + 1 < 2 ^ 63)
     (nR : Nat) (hnR : rk.n.toNat = nR)
     (pr orr fr ps os fs : ByteArray) (hR : segments rk = (pr, orr, fr)) (hS : segments sk = (ps, os, fs))
     (ss : ByteArray) (hss : ss = os.extract 0 (os.size - 8)) (sid : ByteArray)
     (hsid : sid = longCount "/ₛ" ss fun c _ => setIds (Code.cat #[v0.gather pr, v1.gather ps])
       (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss nR])) :
-    sid.size = 8 * (KR + KS) ∧ ∀ i < KR, ∀ j < KS,
-      (Column.bitsAt sid (8 * i) 8 = Column.bitsAt sid (8 * (KR + j)) 8 ↔
-        ∀ u, (∃ a ∈ cls(rk, i), Column.idAt v0.b v0.w a = u) ↔ ∃ b ∈ cls(sk, j), Column.idAt v1.b v1.w b = u) := by
+    sid.size = 8 * (KR + KS) ∧ ∀ k < KR, ∀ l < KS,
+      (Column.bitsAt sid (8 * k) 8 = Column.bitsAt sid (8 * (KR + l)) 8 ↔
+        ∀ u, (∃ a ∈ cls(rk, k), Column.idAt v0.b v0.w a = u) ↔ ∃ b ∈ cls(sk, l), Column.idAt v1.b v1.w b = u) := by
   classical
   have h8 : Kernel.Ew.width Ew.i64 = 8 := by decide
   obtain ⟨-, pR, oR, tR, sR, -⟩ := seg_facts rk rkw rks rkc (by omega) hR
@@ -146,10 +146,12 @@ theorem sym_ids (rk sk v0 v1 : Code)
   have had : ∀ t < KS, (Column.bitsAt (addc c ss nR) (t * 8) 8).toNat = nR + pre(sk, t) := fun t ht => by
     have hpt := mS t KS (by omega)
     have hx : (Column.bitsAt ss (t * 8) 8).toNat < 2 ^ 63 := by rw [hssb t ht]; omega
-    have hy : (nR.toUInt64).toNat = nR := UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by omega) (by decide))
+    have hy : (nR.toUInt64).toNat = nR :=
+      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show nR < 2 ^ 63 by omega) (by decide))
     unfold addc
     rw [val_va_get _ _ _ _ (by omega), bitsAt_one, (valStep_add_sub hx (by rw [hy]; omega)).1 (by rw [hy, hssb t ht]; omega),
-      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (by rw [hy, hssb t ht]; omega) (by decide)), hy, hssb t ht, Nat.add_comm]
+      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show (Column.bitsAt ss (t * 8) 8).toNat + (nR.toUInt64).toNat < 2 ^ 63
+        by rw [hy, hssb t ht]; omega) (by decide)), hy, hssb t ht, Nat.add_comm]
   have horr : (orr.extract 0 (orr.size - 8)).size = 8 * KR := by rw [ByteArray.size_extract]; omega
   have hadd : (addc c ss nR).size = 8 * KS := by unfold addc; rw [KernelWF.Ew.val_size, h8, hc]; omega
   obtain ⟨stsz, st0, st1⟩ := concat_two (orr.extract 0 (orr.size - 8)) (addc c ss nR) horr
@@ -202,22 +204,22 @@ theorem sym_ids (rk sk v0 v1 : Code)
     · rw [g1n] at hi; rw [← hvw, g1r i hi, g1c]; split
       · exact Nat.lt_of_lt_of_le ((v1c (by rw [hvw]; exact hw)).2 _ ‹_›) (Nat.le_max_left _ _)
       · exact Nat.lt_of_lt_of_le Nat.zero_lt_one (Nat.le_max_right _ _)
-  obtain ⟨ccw, ccn, ccr⟩ := cat_get #[g0, g1] v0w (by decide) hcw hcs hid hNc
-  obtain ⟨ccs, -⟩ := cat_wf #[g0, g1] v0w (by decide) hcw hcs hid hNc
+  obtain ⟨ccw, ccn, ccr⟩ := cat_get #[g0, g1] v0w (by simp) hcw hcs hid hNc
+  obtain ⟨ccs, -⟩ := cat_wf #[g0, g1] v0w (by simp) hcw hcs hid hNc
   have hr0 : ∀ x < rk.n.toNat, Column.idAt (Code.cat #[g0, g1]).b v0.w (0 + x) =
       Column.idAt v0.b v0.w (((ids pr)[x]?).getD 0) := fun x hx => by
     have e : Column.idAt (Code.cat #[g0, g1]).b v0.w (0 + x) = Column.idAt g0.b v0.w x :=
-      ccr 0 (by decide) x (by show x < g0.n.toNat; rw [g0n, hlpr]; exact hx)
+      ccr 0 (by simp) x (by show x < g0.n.toNat; rw [g0n, hlpr]; exact hx)
     have hxl : x < (ids pr).length := by rw [← len_eq_ids, hlpr]; exact hx
-    rw [e, ← g0w, g0r x (by rw [hlpr]; exact hx), g0w, ← ids_getElem hxl,
+    rw [e, g0r x (by rw [hlpr]; exact hx), ← ids_getElem hxl,
       if_pos (by rw [v0n]; exact hpv _ (List.getElem_mem hxl)), List.getElem?_eq_getElem hxl, Option.getD_some]
   have hr1 : ∀ x < sk.n.toNat, Column.idAt (Code.cat #[g0, g1]).b v0.w (rk.n.toNat + x) =
       Column.idAt v1.b v1.w (((ids ps)[x]?).getD 0) := fun x hx => by
     have e : Column.idAt (Code.cat #[g0, g1]).b v0.w (g0.n.toNat + x) = Column.idAt g1.b v0.w x :=
-      ccr 1 (by decide) x (by show x < g1.n.toNat; rw [g1n, hlps]; exact hx)
+      ccr 1 (by simp) x (by show x < g1.n.toNat; rw [g1n, hlps]; exact hx)
     have hxl : x < (ids ps).length := by rw [← len_eq_ids, hlps]; exact hx
     rw [g0n, hlpr] at e
-    rw [e, ← hvw, ← g1w, g1r x (by rw [hlps]; exact hx), g1w, ← ids_getElem hxl,
+    rw [e, ← hvw, g1r x (by rw [hlps]; exact hx), ← ids_getElem hxl,
       if_pos (by rw [v1n]; exact hsv _ (List.getElem_mem hxl)), List.getElem?_eq_getElem hxl, Option.getD_some]
   generalize Code.cat #[g0, g1] = cc at ccw ccn ccr ccs hr0 hr1 ⊢
   rw [hsum] at ccn
@@ -239,20 +241,20 @@ theorem sym_ids (rk sk v0 v1 : Code)
       rw [if_pos h] at hHi; rw [hHi]; exact h2
   have hKR0 : KR = 0 → rk.n.toNat = 0 := fun h => by rw [← sR, h]; rfl
   have hKS0 : KS = 0 → sk.n.toNat = 0 := fun h => by rw [← sS, h]; rfl
-  have hRside : ∀ i < KR, ∀ u,
-      ((∃ x < cc.n.toNat, T(i) ≤ x ∧ (i + 1 < KR + KS → x < T(i + 1)) ∧ Column.idAt cc.b cc.w x = u) ↔
-        ∃ a ∈ cls(rk, i), Column.idAt v0.b v0.w a = u) := by
-    intro i hi u
-    have hpi := mR (i + 1) KR (by omega)
-    refine (hP i (by omega) _ (pre(rk, i + 1)) ((hT i (by omega)).trans (if_pos hi)) ?_ (by omega) u).trans ?_
-    · by_cases h : i + 1 < KR + KS
-      · rw [if_pos h, hT (i + 1) h]
-        by_cases h' : i + 1 < KR
+  have hRside : ∀ k < KR, ∀ u,
+      ((∃ x < cc.n.toNat, T(k) ≤ x ∧ (k + 1 < KR + KS → x < T(k + 1)) ∧ Column.idAt cc.b cc.w x = u) ↔
+        ∃ a ∈ cls(rk, k), Column.idAt v0.b v0.w a = u) := by
+    intro k hk u
+    have hpk := mR (k + 1) KR (by omega)
+    refine (hP k (by omega) _ (pre(rk, k + 1)) ((hT k (by omega)).trans (if_pos hk)) ?_ (by omega) u).trans ?_
+    · by_cases h : k + 1 < KR + KS
+      · rw [if_pos h, hT (k + 1) h]
+        by_cases h' : k + 1 < KR
         · rw [if_pos h']
-        · rw [if_neg h', show i + 1 - KR = 0 by omega, zS, show i + 1 = KR by omega]; omega
-      · rw [if_neg h, ccn, hKS0 (by omega), show i + 1 = KR by omega]; omega
-    · have := block_slice (fun t => cls(rk, t)) hi (Column.idAt cc.b v0.w) (Column.idAt v0.b v0.w) 0
-        (fun x hx => by rw [hr0 x (by omega), pR]) u
+        · rw [if_neg h', show k + 1 - KR = 0 by omega, zS, show k + 1 = KR by omega]; omega
+      · rw [if_neg h, ccn, hKS0 (by omega), show k + 1 = KR by omega]; omega
+    · have := block_slice (fun t => cls(rk, t)) hk (Column.idAt cc.b v0.w) (Column.idAt v0.b v0.w) 0
+        (fun x hx => by rw [hr0 x (by rw [← sR]; exact hx), pR]) u
       simpa only [Nat.zero_add] using this
   have hSside : ∀ j < KS, ∀ u,
       ((∃ x < cc.n.toNat, T(KR + j) ≤ x ∧ (KR + j + 1 < KR + KS → x < T(KR + j + 1)) ∧
@@ -266,7 +268,7 @@ theorem sym_ids (rk sk v0 v1 : Code)
       · rw [if_neg h, ccn, show j + 1 = KS by omega]; omega
     · rw [← hnR]
       exact block_slice (fun t => cls(sk, t)) hj (Column.idAt cc.b v0.w) (Column.idAt v1.b v1.w) rk.n.toNat
-        (fun x hx => by rw [hr1 x (by omega), pS]) u
+        (fun x hx => by rw [hr1 x (by rw [← sS]; exact hx), pS]) u
   -- `setIds_spec` at a class of each side
   have hsz : s.size = 8 * (KR + KS) := by rw [stsz, horr, hadd]; omega
   have hw' : cc.w = 1 ∨ cc.w = 2 ∨ cc.w = 4 ∨ cc.w = 8 ∨ cc.w = 16 ∨ cc.w = 32 ∨ cc.w = 64 := by rw [ccw]; exact v0w
@@ -288,11 +290,11 @@ theorem sym_ids (rk sk v0 v1 : Code)
     by_cases h : 0 < KR
     · rw [if_pos h]; rfl
     · rw [if_neg h, Nat.zero_sub, zS]; have := hKR0 (by omega); omega
-  refine ⟨by rw [setIds_size]; unfold len; omega, fun i hi j hj => ?_⟩
-  have e := (setIds_spec cc s hw' hs' hsz (by rw [ccn]; exact hN63) (by omega) h0 hasc hle (j := i) (j' := KR + j)
+  refine ⟨by rw [setIds_size]; unfold len; omega, fun k hk l hl => ?_⟩
+  have e := (setIds_spec cc s hw' hs' hsz (by rw [ccn]; omega) (by omega) h0 hasc hle (j := k) (j' := KR + l)
     (by omega) (by omega)).1
   refine e.trans (forall_congr' fun u => ?_)
-  rw [hRside i hi u, hSside j hj u]
+  rw [hRside k hk u, hSside l hl u]
 
 #print axioms sym_ids
 #print axioms bitsAt_extract
