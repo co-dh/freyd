@@ -4,8 +4,7 @@
   the second part's residuals written into the first part's last block (`appendFoR`), the parts decoded,
   joined and encoded again — keeps element `i`'s low `8w` bits, which is all `atomOfBits` reads.
 -/
-import LeetQ.Rel.KernelWF.RazeEnc
-import QLean.Verify.Alp
+import LeetQ.Rel.KernelWF.AppendFoR
 
 namespace LeetQ.Rel.KernelWF
 
@@ -199,75 +198,6 @@ theorem reencode_reads {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) (n0 n1 : USize) (
     have h' : ¬ i < n0.toNat := hL0 ▸ h
     rw [if_neg h', hl, hL0, hd1 _ (by omega), ofNat_mod_toNat hw8]
 
-/-! ### Reading a pack without a patch list -/
-
-/-- `foRBits` with no hoisted table: the block's start is summed. -/
-theorem foRBits_nil (md pk : ByteArray) (i : Nat) : Column.foRBits md pk #[] i =
-    match Column.foRExc md pk i with
-    | some v => v
-    | none => Column.baseAt md (i / Column.blk) + Column.foRFrame md pk (i / Column.blk) +
-        Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
-  unfold Column.foRBits; cases Column.foRExc md pk i <;> simp
-
-/-- A pack that ends by its last block's residuals has no patch list. -/
-theorem foRExc_none {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (i : Nat) :
-    Column.foRExc md pk i = none := by unfold Column.foRExc; simp [h]
-
-/-- A pack that ends by its last block's residuals has no frames. -/
-theorem foRFrame_zero {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (b : Nat) :
-    Column.foRFrame md pk b = 0 := by unfold Column.foRFrame; simp [h]
-
-/-- With no patch list, element `i` is its block's base plus its residual. -/
-theorem foRBits_plain {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (i : Nat) :
-    Column.foRBits md pk (Column.blockStarts md) i = Column.baseAt md (i / Column.blk) +
-      Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
-  rw [← foRBits_starts, foRBits_nil, foRExc_none h, foRFrame_zero h]; simp
-
-theorem blockStart_succ (md : ByteArray) (b : Nat) :
-    Column.blockStart md (b + 1) = Column.blockStart md b + Column.blk * Column.widthAt md b / 8 := by
-  simp [Column.blockStart, Nat.fold_succ]
-
-theorem blockStart_mono (md : ByteArray) {a b : Nat} (h : a ≤ b) : Column.blockStart md a ≤ Column.blockStart md b := by
-  induction b with
-  | zero => rw [Nat.le_zero.1 h]; exact Nat.le_refl _
-  | succ b ih =>
-    rcases Nat.lt_or_eq_of_le h with h | rfl
-    · rw [blockStart_succ]; exact Nat.le_trans (ih (by omega)) (Nat.le_add_right _ _)
-    · exact Nat.le_refl _
-
-/-- Blocks `a, a+1, …` of `M` laid out as `m`'s: their starts are `m`'s, shifted by `M`'s start of block `a`. -/
-theorem blockStart_shift {M m : ByteArray} (a : Nat) : ∀ b, (∀ c < b, Column.widthAt M (a + c) = Column.widthAt m c) →
-    Column.blockStart M (a + b) = Column.blockStart M a + Column.blockStart m b
-  | 0, _ => by simp [Column.blockStart]
-  | b + 1, h => by
-    rw [← Nat.add_assoc, blockStart_succ, blockStart_succ, blockStart_shift a b (fun c hc => h c (by omega)),
-      h b (by omega), Nat.add_assoc]
-
-theorem blockStart_congr {M m : ByteArray} : ∀ b, (∀ c < b, Column.widthAt M c = Column.widthAt m c) →
-    Column.blockStart M b = Column.blockStart m b
-  | 0, _ => by simp [Column.blockStart]
-  | b + 1, h => by rw [blockStart_succ, blockStart_succ, blockStart_congr b (fun c hc => h c (by omega)), h b (by omega)]
-
-/-- `resAt` reads only the bytes its field overlaps. -/
-theorem resAt_congr {P Q : ByteArray} {s s' w j : Nat}
-    (h : ∀ k < (j * w + w + 7) / 8, P[s + k]? = Q[s' + k]?) : Column.resAt P s w j = Column.resAt Q s' w j := by
-  unfold Column.resAt
-  have key : ∀ {f g : UInt64 → Nat → UInt64} (l : List Nat) (a : UInt64), (∀ k ∈ l, ∀ acc, f acc k = g acc k) →
-      l.foldl f a = l.foldl g a := by
-    intro f g l; induction l with
-    | nil => intro a _; rfl
-    | cons k l ih =>
-      intro a hl; simp only [List.foldl_cons]; rw [hl k (by simp)]
-      exact ih _ (fun k' hk' => hl k' (by simp [hk']))
-  exact key _ _ fun k hk acc => by
-    simp [List.mem_range'] at hk; simp only [h k (by omega)]
-
-/-- A field of a residual `j < blk` lies inside its block's `blk * w / 8` bytes. -/
-theorem resAt_reach {w j : Nat} (hj : j < Column.blk) : (j * w + w + 7) / 8 ≤ Column.blk * w / 8 := by
-  have : j * w + w ≤ Column.blk * w := by
-    have := Nat.mul_le_mul_right w (show j + 1 ≤ Column.blk by omega); rwa [Nat.succ_mul] at this
-  unfold Column.blk at *; omega
-
 /-! ### The move -/
 
 /-- What `moveFoR` claims at two parts: the first fills its blocks, both are in the writer's form with no patch
@@ -367,16 +297,7 @@ theorem move_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
     apply resAt_congr; intro k hk
     rw [Nat.add_assoc]; exact hP1 _
 
-/-! ### The append -/
-
-section
--- The read-back left open: `appendFoR`'s join reads the first part's elements, then the second's.
-variable (hAp : ∀ {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray},
-    appendFoR n0 m0 p0 (concatBytes #[Coc.decode 8 m1 p1 n1]) = some (M, P) → ∀ {i : Nat}, i < n0.toNat + n1.toNat →
-    Column.foRBits M P (Column.blockStarts M) i =
-      if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
-      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat))
-include hAp
+/-! ### The join -/
 
 /-- **The Frame-of-Reference join keeps both parts' elements** to their low `8w` bits, on each of `concatFoR`'s
     three answers: the move, the append, the re-encode. -/
@@ -395,7 +316,7 @@ theorem concatFoR_reads {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) {n0 n1 : USize} 
   · split
     · rename_i out ha
       obtain ⟨M, P⟩ := out
-      rw [hAp ha hi]; split <;> rfl
+      rw [append_reads ha hi]; split <;> rfl
     · exact reencode_reads hw1 hw8 n0 n1 m0 p0 m1 p1 hi
 
 /-- **Two parts' `razeTo` list on the Frame-of-Reference join** (`encodedParts` flag `false`, `denseCheaper =
@@ -458,12 +379,12 @@ theorem razeTo2_join_foR {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr 
   congr 1
   · apply List.map_congr_left; intro i hi
     have hi' := List.mem_range.1 hi
-    have h := concatFoR_reads hAp hw1 hw8 hX2 (i := i) (by omega)
+    have h := concatFoR_reads hw1 hw8 hX2 (i := i) (by omega)
     rw [if_pos hi'] at h
     simp only [Function.comp_apply]; rw [hA _ _ h]
   · apply List.map_congr_left; intro i hi
     have hi' := List.mem_range.1 hi
-    have h := concatFoR_reads hAp hw1 hw8 hX2 (i := n.toNat + i) (by omega)
+    have h := concatFoR_reads hw1 hw8 hX2 (i := n.toNat + i) (by omega)
     rw [if_neg (by omega), Nat.add_sub_cancel_left] at h
     simp only [Function.comp_apply]; rw [hA _ _ h]
 
@@ -475,14 +396,14 @@ theorem join_foR_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Ar
     denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
     (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
   intro t n m x y hN _ w r hW hE hr hC
-  exact razeTo2_join_foR hAp x y hN hW hE hr hC
+  exact razeTo2_join_foR x y hN hW hE hr hC
 
 /-- **`raze_row`'s `hat` at every type and encoding.** -/
 theorem hat_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
     (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
       USize.size), Vals.RazeFits (.atom t) x y →
     (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList :=
-  hat_of_join (join_foR_all hAp)
+  hat_of_join join_foR_all
 
 /-- **Row read-back of `raze` at every side**, no hypothesis on the encoding. -/
 theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
@@ -492,9 +413,7 @@ theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF 
     Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
       if h : k < n.toNat then Vals.row x ⟨k, h⟩
       else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
-  raze_row (hat_all hAp) A x y hF hN k hk
-
-end
+  raze_row hat_all A x y hF hN k hk
 
 end LeetQ.Rel.KernelWF
 
@@ -513,15 +432,6 @@ set_option hygiene false in
 local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
 set_option hygiene false in
 local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
-
-section
--- The read-back left open: `appendFoR`'s join (`hat_all`).
-variable (hAp : ∀ {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray},
-    appendFoR n0 m0 p0 (concatBytes #[Coc.decode 8 m1 p1 n1]) = some (M, P) → ∀ {i : Nat}, i < n0.toNat + n1.toNat →
-    Column.foRBits M P (Column.blockStarts M) i =
-      if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
-      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat))
-include hAp
 
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**, no hypothesis on the encoding. -/
 theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
@@ -544,18 +454,19 @@ theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
         ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
     (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
     rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union_fits (hat_all hAp) R S hN hNk hNv hFk hFv hK hV hk hv
+  rep_union_fits hat_all R S hN hNk hNv hFk hFv hK hV hk hv
 
 /-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
 theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
     (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
     rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
-  rep_junc_fits (hat_all hAp) R S hN h63 hF
-
-end
+  rep_junc_fits hat_all R S hN h63 hF
 
 end LeetQ.Rel.Rep
 
+#print axioms LeetQ.Rel.KernelWF.append_reads
+#print axioms LeetQ.Rel.KernelWF.concatFoR_reads
+#print axioms LeetQ.Rel.KernelWF.join_foR_all
 #print axioms LeetQ.Rel.KernelWF.razeTo2_join_foR
 #print axioms LeetQ.Rel.KernelWF.hat_all
 #print axioms LeetQ.Rel.KernelWF.raze_row_full
