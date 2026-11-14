@@ -272,4 +272,55 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
 
 #print axioms rep_setify
 
+/-- **`rep (τ X)`, as lists**: `τ X` takes each element `a` of `X` to the array `[a]` and nothing else —
+    `rep_transpose_list` at `idU X`: the array holds `a` only, each value once. Hypotheses: `rep_tau`'s. -/
+theorem rep_tau_list {n : USize} (X : Vals A n)
+    (hX : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
+        Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
+          Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
+      ((kcX(X)).w = 1 ∨ (kcX(X)).w = 2 ∨ (kcX(X)).w = 4 ∨ (kcX(X)).w = 8 ∨ (kcX(X)).w = 16 ∨
+        (kcX(X)).w = 32 ∨ (kcX(X)).w = 64) ∧
+        (kcX(X)).n = n ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
+        ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
+          ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card))
+    (hx : Vals.PickFits A X (ids (nubX(X))))
+    (hF : ∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
+      Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
+        Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩)
+    (hw : (kcT(idU X)).w = 1 ∨ (kcT(idU X)).w = 2 ∨ (kcT(idU X)).w = 4 ∨ (kcT(idU X)).w = 8 ∨
+      (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64)
+    (hn : (kcT(idU X)).n = (Rel.nub (idU X)).n)
+    (hs : (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
+    (h63 : (Rel.nub (idU X)).n.toNat < 2 ^ 63)
+    (hpk : Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))))
+    (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
+    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X)))) :
+    ∀ a Y, rep (τ X) a Y ↔ (∃ i, Vals.row X i = a) ∧ Y = [a] := by
+  obtain ⟨h1, h2⟩ := rep_transpose_list (idU X) hX hX hx hx hF hw hn hs hW h63 hpk hpv hlo
+  have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
+  -- a row of `τ X`: `a` listed in `X`, the array `[a]`
+  have fwd : ∀ a Y, rep (τ X) a Y → (∃ i, Vals.row X i = a) ∧ Y = [a] := fun a Y h => by
+    obtain ⟨hnd, hm⟩ := h1 a Y h
+    obtain ⟨b, hb⟩ := (h2 a).1 ⟨Y, h⟩
+    have hi := ((hid a b).1 hb).2
+    have hY : ∀ x, x ∈ Y ↔ x = a := fun x =>
+      (hm x).trans ((hid a x).trans ⟨fun ⟨e, _⟩ => e.symm, fun e => ⟨e.symm, hi⟩⟩)
+    refine ⟨hi, ?_⟩
+    rcases Y with _ | ⟨y, _ | ⟨z, zs⟩⟩
+    · exact absurd ((hY a).2 rfl) (by simp)
+    · rw [(hY y).1 (by simp)]
+    · have e : y = z := ((hY y).1 (by simp)).trans ((hY z).1 (by simp)).symm
+      exact ((List.nodup_cons.1 hnd).1 (by rw [e]; simp)).elim
+  refine fun a Y => ⟨fwd a Y, fun ⟨hi, hY⟩ => ?_⟩
+  obtain ⟨Y', h⟩ := (h2 a).2 ⟨a, (hid a a).2 ⟨rfl, hi⟩⟩
+  rw [hY, ← (fwd a Y' h).2]
+  exact h
+
+#print axioms rep_tau_list
+
 end LeetQ.Rel.Rep
