@@ -4,6 +4,7 @@
   the grade is the inverse permutation — position `d` holds the cell whose destination is `d`.
 -/
 import LeetQ.Rel.KernelWF.SortSpec
+import LeetQ.Rel.KernelWF.SegSpec
 
 namespace LeetQ.Rel.Alg
 
@@ -91,8 +92,40 @@ theorem grade_ofLongs_inv (b : ByteArray) (hN : len b < USize.size) (h63 : len b
   · intro i j hi hj h
     exact hinj i j hi hj (UInt64.toNat_inj.1 h)
 
+/-- **Cells laid out in consecutive blocks never collide**: block `r` holds `[P r, P (r+1))`, `P` ascending, so
+    `P r + t = P r' + t'` with each inside its own block is one block at one place. -/
+theorem block_inj {n : Nat} {P : Nat → Nat} (hPs : ∀ r < n, P r < P (r + 1)) :
+    ∀ r t r' t', r < n → r' < n → P r + t < P (r + 1) → P r' + t' < P (r' + 1) → P r + t = P r' + t' →
+      r = r' ∧ t = t' := by
+  have hle : ∀ a b, a ≤ b → b ≤ n → P a ≤ P b := fun a b hab hb => by
+    rcases Nat.lt_or_eq_of_le hab with h | rfl
+    · exact Nat.le_of_lt (prefix_lt hPs a b h hb)
+    · exact Nat.le_refl _
+  intro r t r' t' hr hr' ht ht' e
+  rcases Nat.lt_trichotomy r r' with h | rfl | h
+  · have := hle (r + 1) r' (by omega) (by omega); omega
+  · exact ⟨rfl, by omega⟩
+  · have := hle (r' + 1) r (by omega) (by omega); omega
+
+/-- **Two long payloads end to end, read back**: long `d` is the first's below its count, the second's past
+    it, the first holding exactly its longs. -/
+theorem concat2_get {a c : ByteArray} (ha : a.size = len a * 8) (d : Nat) :
+    Column.bitsAt (concatBytes #[a, c]) (d * 8) 8 =
+      if d < len a then Column.bitsAt a (d * 8) 8 else Column.bitsAt c ((d - len a) * 8) 8 := by
+  have e : concatBytes #[a, c] = a ++ c := by simp [concatBytes]
+  rw [e]
+  split
+  · exact KernelWF.bitsAt_congr fun j hj => by
+      rw [ByteArray.data_append, Array.getElem?_append_left (by rw [ByteArray.size_data]; omega)]
+  · exact KernelWF.bitsAt_congr fun j hj => by
+      rw [ByteArray.data_append, Array.getElem?_append_right (by rw [ByteArray.size_data]; omega),
+        ByteArray.size_data]
+      exact congrArg (c.data[·]?) (by omega)
+
 end LeetQ.Rel.Alg
 
+#print axioms LeetQ.Rel.Alg.block_inj
+#print axioms LeetQ.Rel.Alg.concat2_get
 #print axioms LeetQ.Rel.Alg.sorted_perm_key
 #print axioms LeetQ.Rel.Alg.xor_pow63
 #print axioms LeetQ.Rel.Alg.grade_ofLongs_inv
