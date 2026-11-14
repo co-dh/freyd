@@ -148,4 +148,114 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
   exact loop_out Fr (fun i k s => rep (f^[i] (Alg.zero, P)).2 k s) ((Rel.val P).2.1.toNat + 1)
     (fun i hi => hS i (by omega)) (Rel.val P).2.1.toNat j hj hN hstop k c
 
+section Round
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet
+
+/-- **One round of `loopOn`, read back from its primitives' read-backs**: the new states `T.nub` are the states
+    `(c, y :: ys)` stepped to `(c', ys)` by `G = F(ran p)`, and the new `out ∪ O` adds the values of the states
+    whose array is empty. Each hypothesis is one primitive's read-back at this round's values (`rep_ran` at `St`
+    and at `outr D`, `rep_uncons`, `rep_comp`, `rep_pair`, `rep_nub`, `rep_dom`, `rep_antiJoin`,
+    `rep_union_full`); the values `D`, `u`, `p`, `Q`, `R`, `T`, `A`, `O` are whatever the hypotheses say. -/
+theorem loop_round_set {K X Y : Obj} (out : Rel K X) (St : Rel K (.prod X (.arr Y)))
+    (D : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (u : Rel (.prod X (.arr Y)) (.prod Y (.arr Y)))
+    (p : Rel (.prod X (.arr Y)) (.prod X Y)) (G : Rel (.prod X Y) X) (Q : Rel (.prod X (.arr Y)) X)
+    (R : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (T : Rel K (.prod X (.arr Y)))
+    (A : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (O : Rel K X)
+    (hD : rep D = corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ∃ k, rep St k s)
+    (hW : rep (ran (outr D)) = corefl (A := (⟨(Obj.arr Y).El⟩ : RelSet.{0})) fun ys => ∃ s, rep (outr D) s ys)
+    (hUn : ∀ (xs : List Y.El) b bs, rep (uncons (ran (outr D)).val) xs (b, bs) ↔
+      (∃ j, (ran (outr D)).val.row j = xs) ∧ xs = b :: bs)
+    (hu : rep u = rep (outr D) ≫ rep (uncons (ran (outr D)).val))
+    (hp : rep p = rpair (rep (outl D)) (rep (outl u))) (hQ : rep Q = rep p ≫ rep G)
+    (hR : rep R = rpair (rep Q) (rep (outr u))) (hT : rep T = rep St ≫ rep R) (hN : rep (Rel.nub T) = rep T)
+    (hdu : rep (dom u) = corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ∃ b, rep u s b)
+    (hA : rep A = rep D ≫ corefl (A := (⟨(Obj.prod X (.arr Y)).El⟩ : RelSet.{0})) fun s => ¬ ∃ y, rep (dom u) y s)
+    (hO : rep O = rep St ≫ rep (outl A)) (hU : rep (out ∪ O) = rep out ∪ rep O) :
+    (∀ k (c' : X.El) (ys : List Y.El), rep (Rel.nub T) k (c', ys) ↔
+      ∃ c y, rep St k (c, y :: ys) ∧ rep G (c, y) c') ∧
+    ∀ k (c : X.El), rep (out ∪ O) k c ↔ rep out k c ∨ rep St k (c, []) := by
+  have eD : ∀ s s' : X.El × List Y.El, rep D s s' ↔ s = s' ∧ ∃ k, rep St k s := by
+    intro s s'; rw [hD]; exact Iff.rfl
+  have eOD : ∀ (s : X.El × List Y.El) ys, rep (outr D) s ys ↔ (∃ k, rep St k s) ∧ ys = s.2 := by
+    intro s ys; rw [rep_outr, comp_apply]
+    constructor
+    · rintro ⟨s', h, e⟩; obtain ⟨rfl, hk⟩ := (eD s s').1 h; exact ⟨hk, e⟩
+    · rintro ⟨hk, e⟩; exact ⟨s, (eD s s).2 ⟨rfl, hk⟩, e⟩
+  have eu : ∀ (s : X.El × List Y.El) b bs, rep u s (b, bs) ↔ (∃ k, rep St k s) ∧ s.2 = b :: bs := by
+    intro s b bs; rw [hu, comp_apply]
+    constructor
+    · rintro ⟨ys, h1, h2⟩; obtain ⟨hk, rfl⟩ := (eOD s ys).1 h1; exact ⟨hk, ((hUn _ b bs).1 h2).2⟩
+    · rintro ⟨hk, e⟩
+      have hw : rep (ran (outr D)) s.2 s.2 := by rw [hW]; exact ⟨rfl, s, (eOD s s.2).2 ⟨hk, rfl⟩⟩
+      obtain ⟨j, -, hj⟩ := hw
+      exact ⟨s.2, (eOD s s.2).2 ⟨hk, rfl⟩, (hUn _ b bs).2 ⟨⟨j, hj⟩, e⟩⟩
+  have eLD : ∀ (s : X.El × List Y.El) c, rep (outl D) s c ↔ (∃ k, rep St k s) ∧ c = s.1 := by
+    intro s c; rw [rep_outl, comp_apply]
+    constructor
+    · rintro ⟨s', h, e⟩; obtain ⟨rfl, hk⟩ := (eD s s').1 h; exact ⟨hk, e⟩
+    · rintro ⟨hk, e⟩; exact ⟨s, (eD s s).2 ⟨rfl, hk⟩, e⟩
+  have eLu : ∀ (s : X.El × List Y.El) y, rep (outl u) s y ↔ (∃ k, rep St k s) ∧ ∃ bs, s.2 = y :: bs := by
+    intro s y; rw [rep_outl, comp_apply]
+    constructor
+    · rintro ⟨⟨b, bs⟩, h, e⟩; obtain ⟨hk, h2⟩ := (eu s b bs).1 h; exact ⟨hk, bs, (show y = b from e) ▸ h2⟩
+    · rintro ⟨hk, bs, e⟩; exact ⟨(y, bs), (eu s y bs).2 ⟨hk, e⟩, rfl⟩
+  have eRu : ∀ (s : X.El × List Y.El) bs, rep (outr u) s bs ↔ (∃ k, rep St k s) ∧ ∃ y, s.2 = y :: bs := by
+    intro s bs; rw [rep_outr, comp_apply]
+    constructor
+    · rintro ⟨⟨b, bs'⟩, h, e⟩; obtain ⟨hk, h2⟩ := (eu s b bs').1 h; exact ⟨hk, b, (show bs = bs' from e) ▸ h2⟩
+    · rintro ⟨hk, y, e⟩; exact ⟨(y, bs), (eu s y bs).2 ⟨hk, e⟩, rfl⟩
+  refine ⟨fun k c' ys => ?_, fun k c => ?_⟩
+  · rw [hN, hT, comp_apply]
+    constructor
+    · rintro ⟨s, hs, hr⟩
+      rw [hR] at hr
+      obtain ⟨hq, hru⟩ := hr
+      rw [hQ, comp_apply] at hq
+      obtain ⟨⟨c, y⟩, hpp, hg⟩ := hq
+      rw [hp] at hpp
+      obtain ⟨h1, h2⟩ := hpp
+      obtain ⟨-, rfl⟩ := (eLD s _).1 h1
+      obtain ⟨-, bs, e1⟩ := (eLu s _).1 h2
+      obtain ⟨-, y', e2⟩ := (eRu s _).1 hru
+      obtain ⟨rfl, rfl⟩ := List.cons.inj (e1.symm.trans e2)
+      refine ⟨s.1, y, ?_, hg⟩
+      rw [← e1]; exact hs
+    · rintro ⟨c, y, hs, hg⟩
+      have hk : ∃ k, rep St k (c, y :: ys) := ⟨k, hs⟩
+      refine ⟨(c, y :: ys), hs, ?_⟩
+      rw [hR]
+      refine ⟨?_, (eRu _ _).2 ⟨hk, y, rfl⟩⟩
+      rw [hQ, comp_apply]
+      refine ⟨(c, y), ?_, hg⟩
+      rw [hp]
+      exact ⟨(eLD _ _).2 ⟨hk, rfl⟩, (eLu _ _).2 ⟨hk, ys, rfl⟩⟩
+  · rw [hU, union_apply, hO, comp_apply]
+    refine or_congr Iff.rfl ⟨?_, ?_⟩
+    · rintro ⟨s, hs, ho⟩
+      rw [rep_outl, comp_apply] at ho
+      obtain ⟨s', ha, e⟩ := ho
+      rw [hA, comp_apply] at ha
+      obtain ⟨s'', hd, rfl, hn⟩ := ha
+      obtain ⟨rfl, hk⟩ := (eD s s'').1 hd
+      have h0 : s.2 = [] := by
+        cases h : s.2 with
+        | nil => rfl
+        | cons b bs => exact absurd ⟨s, by rw [hdu]; exact ⟨rfl, (b, bs), (eu s b bs).2 ⟨hk, h⟩⟩⟩ hn
+      have e' : c = s.1 := e
+      rw [e', ← h0]; exact hs
+    · intro hs
+      have hk : ∃ k, rep St k (c, []) := ⟨k, hs⟩
+      refine ⟨(c, []), hs, ?_⟩
+      rw [rep_outl, comp_apply]
+      refine ⟨(c, []), ?_, rfl⟩
+      rw [hA, comp_apply]
+      refine ⟨(c, []), (eD _ _).2 ⟨rfl, hk⟩, rfl, ?_⟩
+      rintro ⟨y, hy⟩
+      rw [hdu] at hy
+      obtain ⟨rfl, ⟨b, bs⟩, hb⟩ := hy
+      exact List.cons_ne_nil b bs ((eu _ b bs).1 hb).2.symm
+
+end Round
+
 end LeetQ.Rel.Rep
