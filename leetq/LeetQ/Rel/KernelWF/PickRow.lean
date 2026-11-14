@@ -67,7 +67,6 @@ theorem arr_row {b : Obj} {m : USize} (x : Vals (.arr b) m) (q : Fin m.toNat) :
   rw [filterMap_window b.dflt, List.range'_eq_map_range, List.map_map]
   rfl
 
-set_option maxHeartbeats 1000000 in
 /-- **`Vals.pick` read back at an atom**, hit or miss: `pickArr_get`, and `pickArr_get_miss`, an interned
     column's dictionary count fitting a `USize` (`hd`). -/
 theorem pick_row_atom_dflt {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
@@ -573,7 +572,6 @@ theorem pick_side_row {c : Obj} {k : USize} (xc : Vals c k) (il : ByteArray) (hi
     ih ⟨t, by omega⟩]
   simp only [e]
 
-set_option maxHeartbeats 2000000 in
 /-- **`Vals.pick` read back at a sum side**, from its two sides': each picked row keeps its tag (a miss
     reads `inl`), and reads its own side at its old position clamped, now at its rank among its side's rows. -/
 theorem pick_row_sum {a b : Obj} {n : USize} (x : Vals (.sum a b) n)

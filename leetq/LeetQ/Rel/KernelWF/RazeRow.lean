@@ -137,9 +137,9 @@ variable {A B : Obj}
 set_option hygiene false in
 local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
 set_option hygiene false in
-local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
+local notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
+local notation "vcU" => (Obj.codes B (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part B) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
 
@@ -153,7 +153,6 @@ theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
   show need _ _ _ _ = _
   unfold need; rw [dif_pos hN]
 
-set_option maxHeartbeats 800000 in
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**: `∪` razes the keys and the values, read back by `hA`, `hB`, so the razed
     relation holds the pairs of `R` and of `S` (`holds_two`), and its `nub` holds the same (`rep_nub`, whose code
     hypotheses `hK`, `hV`, `hk`, `hv` are stated on the razed relation). `hN`: the row count fits a `USize`

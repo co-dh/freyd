@@ -58,7 +58,10 @@ local notation "oT" => Code.runStarts (Code.gather kcT pT)
 set_option hygiene false in
 local notation "loT" => ByteArray.extract (oT) 0 (ByteArray.size (oT) - 8)
 
-set_option maxHeartbeats 8000000 in
+-- `transpose`'s two casts differ only in `lo` vs `hi`, both extracts of the run starts; telling them apart (dsimp's
+-- `Eq.rec` reduction, `rw`'s instance matching) otherwise evaluates `runStarts` and `gather` on the open codes
+section
+attribute [local irreducible] Code.runStarts Code.gather ByteArray.extract
 /-- **`Λ(R)`'s rows, read back against `R.nub`**: row `q` is keyed by a key `d.key.row i` of `d = R.nub`, and
     its array holds exactly the values `d` relates that key to; every key of `d` keys some row. Hypotheses: the
     key codes faithful and well formed (`rep_nub`'s `hK` at `d`), `sortBy_perm`'s `hW`, `d`'s count below
@@ -206,6 +209,7 @@ theorem transpose_rows (R : Rel A B)
     obtain ⟨j, hj, h1, h2⟩ := hcov s hs'
     refine ⟨⟨j, by rw [hMn]; exact hj⟩, (hkrow j _ hj).trans ?_⟩
     exact ((hcode _ _ (hrlt j hj) hs').1 ((hrun s j hs' hj).2 ⟨h1, h2⟩).symm).trans (congrArg _ (Fin.ext hsi))
+end
 
 #print axioms transpose_rows
 

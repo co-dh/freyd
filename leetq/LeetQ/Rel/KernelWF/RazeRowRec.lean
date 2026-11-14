@@ -328,7 +328,6 @@ theorem row_sum_eq {a b : Obj} {n : USize} (X : Vals (.sum a b) n) (i : Fin n.to
       else .inl (if h : 0 < X.1.toNat then Vals.row X.2.2.2.2.1 (clampFin (X.2.2.2.1.get i) X.1.toNat h) else a.dflt) := by
   obtain ⟨l, r, tag, idx, xa, xb⟩ := X; rfl
 
-set_option maxHeartbeats 2000000 in
 /-- **Row read-back of `raze` at a sum side**: row `k` of two razed sum parts is the first part's row below its
     count, the second's past it. Each part is `held` first (`held_row`, under `hfx`, `hfy`), so a row's side holds
     a value (`held_side`); the tags are razed, each side's payloads razed (`iha`, `ihb`), and each position moved
