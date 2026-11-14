@@ -15,7 +15,8 @@ open FoldN OpsN
     `kc`, the pair `W`, `cons`' pieces (as `rep_cons`'s), `P = cons W` and `Q = pend` are bound by their equations.
     Hypotheses: `rep_pair`'s at `el`, `pend` (`hk…`), `rep_cons`'s at `W`, `rep_union_full`'s at `P`, `Q`. -/
 theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
-    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend))
+    (hkO : (Rel.n el).toNat + (Rel.n pend).toNat < USize.size)
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
@@ -44,7 +45,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
     (P : Rel .long (.arr B)) (hP : P = cons W) (Q : Rel .long (.arr B)) (hQ : Q = pend)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits (.arr B) P.val Q.val)
+    (hFv : Vals.RazeFits (.arr B) P.val Q.val)
     (hUV : Obj.CodesFit (.arr B)
       (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1))
     (hUk : Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat))
@@ -52,13 +53,13 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
-  have h1 := rep_pair el pend hkO hkn hkM (pickFits_atom_fst _) hkB hkC
+  have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC
   subst hW
   have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf
   subst P Q
   intro r v
-  rw [rep_union_full (cons (pair el pend)) _ hU hFk hFv
+  rw [rep_union_full (cons (pair el pend)) _ hU (razeFits_atom_count _ _ hU (by decide) rfl) hFv
     (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hUV) hUk hUv]
   show rep (cons (pair el pend)) r v ∨ rep _ r v ↔ _
   rw [h2]
@@ -152,7 +153,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
@@ -181,7 +182,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
       ∀ P : Rel .long (.arr B), P = cons W → ∀ Q : Rel .long (.arr B), Q = pend →
       ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
-        Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
+        Vals.RazeFits (.arr B) P.val Q.val ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
         Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
@@ -205,9 +206,9 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
     obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
+    obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
     rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hFk hFv hUV hUk hUv r v]
+      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
       · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩

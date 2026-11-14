@@ -377,7 +377,7 @@ local notation "subOK" =>
     (∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
@@ -406,7 +406,7 @@ local notation "subOK" =>
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
       ∀ P : Rel .long (.arr B), P = cons W → ∀ Q : Rel .long (.arr B), Q = pend →
       ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
-        Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
+        Vals.RazeFits (.arr B) P.val Q.val ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
         Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
