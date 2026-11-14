@@ -362,10 +362,9 @@ scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc "
     Vals.PickFits K (Rel.key S) (List.range (Rel.n S).toNat) ∧ Vals.PickFits C (Rel.val S) (List.range (Rel.n S).toNat) ∧
     Obj.CodesFit K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩, ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] :
       Vector (Part K) 2) ∧
-    (Rel.n (Rel.nub S)).toNat < 2 ^ 63 ∧
+    (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n R).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
     ∀ kc : Vector Code 2, kc = Obj.codes K (#v[⟨Rel.n (Rel.nub R), Rel.key (Rel.nub R)⟩,
         ⟨Rel.n (Rel.nub S), Rel.key (Rel.nub S)⟩] : Vector (Part K) 2) →
-      (Rel.n (Rel.nub R)).toNat * (Rel.n (Rel.nub S)).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits B (Rel.val (Rel.nub R)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst) ∧
       Vals.PickFits C (Rel.val (Rel.nub S)) ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd) ∧
       ∀ y : Rel B C, y = yJ(B, C, Rel.nub R, Rel.nub S, kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two) →
@@ -376,8 +375,7 @@ scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc "
           ⟨mb, Ub⟩] : Vector (Part B) 3) →
       ∀ zc : Vector Code 1, zc = Obj.codes C (#v[⟨Rel.n y, Rel.val y⟩] : Vector (Part C) 1) →
       Vals.PickFits B Ub (List.range (USize.toNat mb)) ∧
-      (vacY(B, Ub, ycs)).1.toNat * USize.toNat mc < USize.size ∧
-      (vacY(B, Ub, ycs)).1.toNat * USize.toNat mc < 2 ^ 63 ∧
+      USize.toNat mb * USize.toNat mc < min (2 ^ 63) USize.size ∧
       Vals.PickFits B (vacY(B, Ub, ycs)).2
         ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· / USize.toNat mc)) ∧
       Vals.PickFits C Uc ((List.range ((vacY(B, Ub, ycs)).1.toNat * USize.toNat mc)).map (· % USize.toNat mc)) ∧
@@ -388,7 +386,6 @@ scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc "
               (atCnt (cnt (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))))
                 ((ycs[0]'(Nat.zero_lt_succ 2)).gather
                   (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2)))) →
-      Vals.PickFits B (Rel.key y) (List.range (Rel.n y).toNat) ∧ Vals.PickFits C (Rel.val y) (List.range (Rel.n y).toNat) ∧
       ∀ P : Rel B C, P = Rel.rows y I → ∀ Q : Rel B C, Q = top (vacY(B, Ub, ycs)).2 Uc →
         ∃ hU : (Rel.n P).toNat + (Rel.n Q).toNat < USize.size,
           Vals.RazeFits B (Rel.key P) (Rel.key Q) ∧ Vals.RazeFits C (Rel.val P) (Rel.val Q) ∧
@@ -443,27 +440,25 @@ theorem rep_P {A B : Obj} {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y :
   have eXR : ∀ xs b, rep XR xs b ↔ ∃ a, ((∃ i, X.row i = xs) ∧ a ∈ xs) ∧ rep R a b := fun xs b => by
     rw [hXR, rep_comp _ _ (codes_faithful_wf _ _ hf2).1 d1 d2 d3 d4, Freyd.Alg.RelSet.comp_apply]
     exact exists_congr fun a => and_congr (by rw [hmX]; exact rep_mem X hXv hXk xs a) Iff.rfl
-  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, lk⟩ := hdL
-  obtain ⟨l11, l12, l13, ly⟩ := lk _ rfl
+  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, lk⟩ := hdL
+  obtain ⟨l12, l13, ly⟩ := lk _ rfl
   obtain ⟨l15, l16, lc⟩ := ly _ rfl
-  obtain ⟨l17, l18, l19, l20, l21, lI⟩ := lc _ rfl _ rfl
-  obtain ⟨l22, l23, lP⟩ := lI _ rfl
-  obtain ⟨l24, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
-  obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, rk⟩ := hdD
-  obtain ⟨r11, r12, r13, ry⟩ := rk _ rfl
+  obtain ⟨l17, l18, l20, l21, lI⟩ := lc _ rfl _ rfl
+  obtain ⟨l24, l25, l26, l27, l28, l29, l30⟩ := lI _ rfl _ rfl _ rfl
+  obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, rk⟩ := hdD
+  obtain ⟨r12, r13, ry⟩ := rk _ rfl
   obtain ⟨r15, r16, rc⟩ := ry _ rfl
-  obtain ⟨r17, r18, r19, r20, r21, rI⟩ := rc _ rfl _ rfl
-  obtain ⟨r22, r23, rP⟩ := rI _ rfl
-  obtain ⟨r24, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
+  obtain ⟨r17, r18, r20, r21, rI⟩ := rc _ rfl _ rfl
+  obtain ⟨r24, r25, r26, r27, r28, r29, r30⟩ := rI _ rfl _ rfl _ rfl
   obtain ⟨hic, hiI⟩ := hi _ rfl
   obtain ⟨hik, hiv⟩ := hiI
   have e : Alg.P R X Y = L ∩ D := by subst hL hD hRY hXR hmX hmY; rfl
   rw [e, rep_inter L D hic hik hiv]
   show rep L xs ys ∧ rep D xs ys ↔ _
   rw [hL, rep_leftDiv (mX°) RY X Y l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13 _ rfl _ rfl l15 _ rfl l16
-      _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 l25 l26 l27 l28 l29 l30 xs ys,
+      _ rfl l17 l18 l20 l21 _ _ rfl rfl l24 l25 l26 l27 l28 l29 l30 xs ys,
     hD, rep_rightDiv XR mY X Y r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13 _ rfl _ rfl r15 _ rfl r16
-      _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 r25 r26 r27 r28 r29 r30 xs ys]
+      _ rfl r17 r18 r20 r21 _ _ rfl rfl r24 r25 r26 r27 r28 r29 r30 xs ys]
   simp only [eX, eRY, eY, eXR]
   constructor
   · rintro ⟨⟨hl, hl'⟩, ⟨hr, hr'⟩⟩

@@ -284,18 +284,16 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   have eQS : ∀ a t, rep QS a t ↔ ∃ y, rep Q y a ∧ (∃ j, (Rel.val St).row j = t) ∧ y ∈ t := fun a t => by
     rw [hQS, rep_comp _ _ (codes_faithful_wf _ _ hf1).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
     exact exists_congr fun y => and_congr (by rw [rep_conv]; exact Iff.rfl) (eX y t)
-  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, lk⟩ := hdL
-  obtain ⟨l11, l12, l13, ly⟩ := lk _ rfl
+  obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, lk⟩ := hdL
+  obtain ⟨l12, l13, ly⟩ := lk _ rfl
   obtain ⟨l15, l16, lc⟩ := ly _ rfl
-  obtain ⟨l17, l18, l19, l20, l21, lI⟩ := lc _ rfl _ rfl
-  obtain ⟨l22, l23, lP⟩ := lI _ rfl
-  obtain ⟨l24, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
-  obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, rk⟩ := hdR
-  obtain ⟨r11, r12, r13, ry⟩ := rk _ rfl
+  obtain ⟨l17, l18, l20, l21, lI⟩ := lc _ rfl _ rfl
+  obtain ⟨l24, l25, l26, l27, l28, l29, l30⟩ := lI _ rfl _ rfl _ rfl
+  obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, rk⟩ := hdR
+  obtain ⟨r12, r13, ry⟩ := rk _ rfl
   obtain ⟨r15, r16, rc⟩ := ry _ rfl
-  obtain ⟨r17, r18, r19, r20, r21, rI⟩ := rc _ rfl _ rfl
-  obtain ⟨r22, r23, rP⟩ := rI _ rfl
-  obtain ⟨r24, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
+  obtain ⟨r17, r18, r20, r21, rI⟩ := rc _ rfl _ rfl
+  obtain ⟨r24, r25, r26, r27, r28, r29, r30⟩ := rI _ rfl _ rfl _ rfl
   obtain ⟨hic, hiI⟩ := hiT _ rfl
   obtain ⟨hik, hiv⟩ := hiI
   -- `Rd ∩ Ld` on two arrays of `St.val`: the second a subset of the first, each element of the first above one of it
@@ -305,9 +303,9 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     rw [hTt, rep_inter Rd Ld hic hik hiv]
     show rep Rd s t ∧ rep Ld s t ↔ _
     rw [hRd, rep_rightDiv mS mS (Rel.val St) (Rel.val St) r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13
-        _ rfl _ rfl r15 _ rfl r16 _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 r25 r26 r27 r28 r29 r30 s t,
+        _ rfl _ rfl r15 _ rfl r16 _ rfl r17 r18 r20 r21 _ _ rfl rfl r24 r25 r26 r27 r28 r29 r30 s t,
       hLd, rep_leftDiv (mS°) QS (Rel.val St) (Rel.val St) l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13
-        _ rfl _ rfl l15 _ rfl l16 _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 l25 l26 l27 l28 l29 l30 s t]
+        _ rfl _ rfl l15 _ rfl l16 _ rfl l17 l18 l20 l21 _ _ rfl rfl l24 l25 l26 l27 l28 l29 l30 s t]
     simp only [eM, eX, eQS]
     constructor
     · rintro ⟨⟨hr, -⟩, ⟨hl, -⟩⟩
