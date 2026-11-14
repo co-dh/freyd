@@ -1,7 +1,7 @@
 import Std.Data.HashMap
 import LeetQ.Rel.AC3
 import LeetQ.Rel.Lang.Elab
-import LeetQ.Rel.Lang.Member
+import LeetQ.Rel.Lang.Bits
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude
 
@@ -98,21 +98,25 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
   | _, _, _, .outr, D => pure (outr D)
   | _, _, _, .inl, D => pure (inl D.val)
   | _, _, _, .inr, D => pure (inr D.val)
+  -- a closed `≫`/`∩`/`−`/`\` runs as bit matrices where its plan's objects are small (`Bits.run`), the
+  -- inner nodes never tables; the choice is by size, so any closed term of these takes it
+  | _, _, _, .comp (d := false) (e := false) R S, _ => return Bits.run (.comp
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
   | _, _, _, .comp (e := e) R S, D => do
     let r ← ev cnt ρ R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt ρ S (Dem.of e (ran r)))
   | _, _, _, .conv R, _ => return (← ev cnt ρ R ())°
-  -- a closed `∩`/`−` whose side has a test rule is never a table: it is tested on the other side's rows (`Member`)
-  | _, _, _, .meet (d := false) (e := false) R S, _ => do
-    Member.meetM (← evP cnt ρ R) (← evP cnt ρ S) (ev cnt ρ R ()) (ev cnt ρ S ())
-  | _, _, _, .diff (d := false) (e := false) R S, _ => do
-    Member.diffM (← evP cnt ρ R) (← evP cnt ρ S) (ev cnt ρ R ()) (ev cnt ρ S ())
+  | _, _, _, .meet (d := false) (e := false) R S, _ => return Bits.run (.meet
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .diff (d := false) (e := false) R S, _ => return Bits.run (.diff
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
   | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∩ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∪ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) \ (← ev cnt ρ S (Dem.r d e D))
   | _, _, _, .dom R, D => return dom (← ev cnt ρ R D)
   | _, _, _, .ran R, _ => return ran (← ev cnt ρ R ())
-  | _, _, _, .ldiv R S UB UC, _ =>
-    return leftDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UB ()).val (← ev cnt ρ UC ()).val
+  | _, _, _, .ldiv R S UB UC, _ => return Bits.run (.ldiv
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ()))
+      (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
   | _, _, _, .rdiv R S UA UB, _ =>
     return rightDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UA ()).val (← ev cnt ρ UB ()).val
   | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D))
@@ -195,25 +199,25 @@ def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} �
       modify fun m => m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩)
       pure V
 
-/-- `t` as a plan for membership tests (`Member.TP`): a closed node with a test rule kept, a child without one
+/-- `t` as a bit-matrix plan (`Bits.TP`): a closed node with a bit rule kept, a child without one
     evaluated as its table; `none` at any other node, which its parent then evaluates as a table. -/
-def evP (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → EvM (Option (Member.TP A B))
+def evB (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → EvM (Option (Bits.TP A B))
   | _, _, _, .val R => pure (some (.leaf R))
   | _, _, _, .uni U => pure (some (.leaf (idU U)))
   | A, B, _, .var k => pure (some (.leaf (varVal ρ k A B)))
-  | _, _, _, .share _ R => evP cnt ρ R
-  | _, _, _, .own R => evP cnt ρ R
+  | _, _, _, .share _ R => evB cnt ρ R
+  | _, _, _, .own R => evB cnt ρ R
   | _, _, _, .comp (d := false) (e := false) R S => return some (.comp
-      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
-  | _, _, _, .conv R => return some (.conv (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())))
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
+  | _, _, _, .conv R => return some (.conv (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())))
   | _, _, _, .meet (d := false) (e := false) R S => return some (.meet
-      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
   | _, _, _, .join (d := false) (e := false) R S => return some (.join
-      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
   | _, _, _, .diff (d := false) (e := false) R S => return some (.diff
-      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ())))
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ())))
   | _, _, _, .ldiv R S UB UC => return some (.ldiv
-      (← Member.orLeaf (evP cnt ρ R) (ev cnt ρ R ())) (← Member.orLeaf (evP cnt ρ S) (ev cnt ρ S ()))
+      (← Bits.orLeaf (evB cnt ρ R) (ev cnt ρ R ())) (← Bits.orLeaf (evB cnt ρ S) (ev cnt ρ S ()))
       (← ev cnt ρ UB ()) (← ev cnt ρ UC ()))
   | _, _, _, _ => pure none
 
