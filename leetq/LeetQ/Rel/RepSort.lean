@@ -77,7 +77,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   have eS : ∀ xs ys, rep Su xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
     rw [hSu]; exact rep_suffix X g hg hR
   have eW : ∀ a a', rep Wu a a' ↔ a = a' ∧ ∃ k, rep Su k a := fun a a' => by
-    rw [hWu, rep_ran Su (one_ok _ hSf) (hSp _ rfl)]; exact Iff.rfl
+    rw [hWu, rep_ran_corefl Su (one_ok _ hSf) (hSp _ rfl)]; exact Iff.rfl
   have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1 u2 u3
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
@@ -90,7 +90,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
       obtain ⟨j, -, hj⟩ := (eW _ _).2 ⟨rfl, xs, hs⟩
       exact ⟨_, hs, (eU _ p.1 p.2).2 ⟨⟨j, hj⟩, rfl⟩⟩
   have eD : ∀ p p', rep D p p' ↔ p = p' ∧ ∃ xs, rep T xs p := fun p p' => by
-    rw [hD, rep_ran T (one_ok _ hTf) (hTp _ rfl)]; exact Iff.rfl
+    rw [hD, rep_ran_corefl T (one_ok _ hTf) (hTp _ rfl)]; exact Iff.rfl
   have eO : ∀ p a, rep O p a ↔ (∃ xs, rep T xs p) ∧ a = p.2 := fun p a => by
     rw [hO, rep_apply, outr_holds]
     constructor
@@ -100,7 +100,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     · rintro ⟨hx, rfl⟩
       exact ⟨p.1, (eD _ _).2 ⟨rfl, hx⟩⟩
   have eV : ∀ a a', rep V a a' ↔ a = a' ∧ ∃ p, rep O p a := fun a a' => by
-    rw [hV, rep_ran O (one_ok _ hOf) (hOp _ rfl)]; exact Iff.rfl
+    rw [hV, rep_ran_corefl O (one_ok _ hOf) (hOp _ rfl)]; exact Iff.rfl
   have eMem := rep_mem (Rel.val V) hVv hVk
   have eM : ∀ p z, rep M p z ↔ (∃ xs, rep T xs p) ∧ z ∈ p.2 := fun p z => by
     rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4 m5, Freyd.Alg.RelSet.comp_apply]
@@ -126,12 +126,12 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     refine (Iff.of_eq (congrFun (congrFun eP p) (y, z))).trans ((and_congr (eL p y) (eM p z)).trans ?_)
     exact ⟨fun ⟨⟨h1, h2⟩, _, h3⟩ => ⟨h1, h2, h3⟩, fun ⟨h1, h2, h3⟩ => ⟨⟨h1, h2⟩, h1, h3⟩⟩
   have eE : ∀ w w', rep E w w' ↔ w = w' ∧ ∃ p, rep yz p w := fun w w' => by
-    rw [hE, rep_ran yz (one_ok _ hyf) (hyp _ rfl)]; exact Iff.rfl
+    rw [hE, rep_ran_corefl yz (one_ok _ hyf) (hyp _ rfl)]; exact Iff.rfl
   have ebad : ∀ p v, rep bad p v ↔ rep yz p v ∧ ¬ ∃ w, rep (q E) w v := fun p v => by
     rw [hbad, rep_antiJoin yz (q E) (codes_faithful_wf _ _ hbf).1 b1 b2, Freyd.Alg.RelSet.comp_apply]
     exact ⟨fun ⟨_, h1, rfl, h2⟩ => ⟨h1, h2⟩, fun ⟨h1, h2⟩ => ⟨v, h1, rfl, h2⟩⟩
   have edb : ∀ p p', rep (dom bad) p p' ↔ p = p' ∧ ∃ v, rep bad p v := fun p p' => by
-    rw [rep_dom bad (one_ok _ hdf) (hdp _ rfl)]; exact Iff.rfl
+    rw [rep_dom_corefl bad (one_ok _ hdf) (hdp _ rfl)]; exact Iff.rfl
   have eC : ∀ xs p, rep C xs p ↔ rep T xs p ∧ ∃ v, rep bad p v := fun xs p => by
     rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4 k5, Freyd.Alg.RelSet.comp_apply]
     constructor
@@ -141,7 +141,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     · rintro ⟨ht, hv⟩
       exact ⟨p, ht, (edb _ _).2 ⟨rfl, hv⟩⟩
   have edC : ∀ xs xs', rep (dom C) xs xs' ↔ xs = xs' ∧ ∃ p, rep C xs p := fun xs xs' => by
-    rw [rep_dom C (one_ok _ hDf) (hDp _ rfl)]; exact Iff.rfl
+    rw [rep_dom_corefl C (one_ok _ hDf) (hDp _ rfl)]; exact Iff.rfl
   have eA : ∀ xs ys, rep (antiJoin (idU X) (dom C)) xs ys ↔
       rep (idU X) xs ys ∧ ¬ ∃ w, rep (dom C) w ys := fun xs ys => by
     rw [rep_antiJoin (idU X) (dom C) (codes_faithful_wf _ _ hAf).1 a1 a2, Freyd.Alg.RelSet.comp_apply]
@@ -523,7 +523,7 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     rw [hU]; exact rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
       hjc hjO hjn hjM hjU hjA hjC
   have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
-    rw [hWy, rep_ran U (one_ok _ hWf.1) (hWf.2 _ rfl)]; exact Iff.rfl
+    rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) (hWf.2 _ rfl)]; exact Iff.rfl
   subst hMs
   obtain ⟨hmv, hmk, k1⟩ := hset
   obtain ⟨hK, hV, hk, hv', hp', k2⟩ := k1 _ _ rfl rfl

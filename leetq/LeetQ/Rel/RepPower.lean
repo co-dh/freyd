@@ -141,7 +141,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
   have hL : ∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y ↔ rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
     rw [show LeetQ.Rel.Alg.lamOn R U = lT(R) ∪ lN(R, U, B) from rfl, hu]; exact Iff.rfl
   have hd : ∀ a b, rep (LeetQ.Rel.Alg.dom R) a b ↔ a = b ∧ ∃ c, rep R a c := fun a b => by
-    rw [rep_dom R hK hp]; exact Iff.rfl
+    rw [rep_dom_corefl R hK hp]; exact Iff.rfl
   have hD : ∀ a, (∃ i, Vals.row (Rel.key (lD(R, U))) i = a) ↔ (∃ i, Vals.row U i = a) ∧ ¬ ∃ c, rep R a c := by
     intro a
     constructor

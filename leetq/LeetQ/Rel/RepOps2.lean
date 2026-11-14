@@ -101,18 +101,6 @@ section Entire
 open QLean.Verify
 
 namespace OpsN
--- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it. The index proof is a term: a bare
--- `[0]` postpones `get_elem_tactic` to the end of the header that uses it, where it runs against every hypothesis
-set_option hygiene false in
-scoped notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
-set_option hygiene false in
-scoped notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
-    Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
-      Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-  (let c := c1(X, n, x)
-   laneOK(c.w) ∧ c.n = n ∧
-    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
 -- the rows `nub` keeps, named as `NubSpec` names them
 set_option hygiene false in
 scoped notation "nubI(" X ", " Y ", " R ")" =>
@@ -139,7 +127,7 @@ theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
     (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
     entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
   show (idU U ⊑ dom R) = true ↔ _
-  rw [rep_le _ _ hc, rep_idU, rep_dom R hK hp]
+  rw [rep_le _ _ hc, rep_idU, rep_dom_corefl R hK hp]
   exact corefl_le_dom _ _
 
 /-- **`surjective R U = true ↔ U? ⊑ ran (rep R)`**: `entire R° U` (`rep_entire`, `convArr_holds`). Hypotheses:
@@ -163,7 +151,7 @@ theorem rep_entire_boolean (R : Rel (.atom .boolean) B) {m : USize} (U : Vals (.
     (hN : m.toNat + (dom R).n.toNat < USize.size) :
     entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
   show (idU U ⊑ dom R) = true ↔ _
-  rw [rep_le _ _ (pairsOK_boolean _ _ hN), rep_idU, rep_dom_boolean]
+  rw [rep_le _ _ (pairsOK_boolean _ _ hN), rep_idU, rep_dom_boolean, dom_corefl]
   exact corefl_le_dom _ _
 
 /-- `rep_surjective` with boolean values: `rep_entire_boolean` at `R°`. -/

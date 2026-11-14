@@ -160,7 +160,7 @@ theorem rep_swapIn {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B
   have eM : ∀ x w, rep M x w ↔ ∃ m, rep s x m ∧ rep (q E) m w := fun x w => by
     rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5, Freyd.Alg.RelSet.comp_apply]
   intro p p'
-  rw [show swapIn q D = dom M by rw [hM, hE, hs]; rfl, rep_dom M (one_ok _ hdf) (hdp _ rfl)]
+  rw [show swapIn q D = dom M by rw [hM, hE, hs]; rfl, rep_dom_corefl M (one_ok _ hdf) (hdp _ rfl)]
   show (p = p' ∧ ∃ w, rep M p w) ↔ _
   refine and_congr Iff.rfl ⟨fun ⟨w, hw⟩ => ?_, fun ⟨u, v, w, huv, hq⟩ => ⟨w, (eM p w).2 ⟨(u, v), (es p u v).2 huv, hq⟩⟩⟩
   obtain ⟨⟨u, v⟩, hm, hq⟩ := (eM p w).1 hw
@@ -192,13 +192,13 @@ theorem rep_estOn {A B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B 
   have eP : ∀ a b c, rep P a (b, c) ↔ rep G a b ∧ rep G a c := fun a b c => by
     rw [hP, rep_pair _ _ (codes_faithful_wf _ _ hPf).1 p1 p2 p3 p4 p5 p6]; exact Iff.rfl
   have eD : ∀ x x', rep D x x' ↔ x = x' ∧ ∃ a, rep P a x := fun x x' => by
-    rw [hD, rep_ran P (one_ok _ hDf) (hDp _ rfl)]; exact Iff.rfl
+    rw [hD, rep_ran_corefl P (one_ok _ hDf) (hDp _ rfl)]; exact Iff.rfl
   have eV : ∀ b b', rep V b b' ↔ b = b' ∧ ∃ a, rep G a b := fun b b' => by
-    rw [hV, rep_ran G (one_ok _ hVf) (hVp _ rfl)]; exact Iff.rfl
+    rw [hV, rep_ran_corefl G (one_ok _ hVf) (hVp _ rfl)]; exact Iff.rfl
   have eW : ∀ b u v, rep W b (u, v) ↔ rep V b u ∧ rep V b v := fun b u v => by
     rw [hW, rep_pair _ _ (codes_faithful_wf _ _ hWf).1 w1 w2 w3 w4 w5 w6]; exact Iff.rfl
   have eN : ∀ x x', rep N x x' ↔ x = x' ∧ ∃ b, rep W b x := fun x x' => by
-    rw [hN, rep_ran W (one_ok _ hNf) (hNp _ rfl)]; exact Iff.rfl
+    rw [hN, rep_ran_corefl W (one_ok _ hNf) (hNp _ rfl)]; exact Iff.rfl
   have eY : ∀ x x', rep Y x x' ↔ rep D x x' ∧ ¬ rep (q D) x x' := fun x x' => by
     rw [hY]; exact rep_diff D (q D) y1 y3 y4 x x'
   have eZ : ∀ x x', rep Z x x' ↔ rep Y x x' ∧ ¬ rep N x x' := fun x x' => by
@@ -247,7 +247,7 @@ theorem rep_est {A B : Obj} (Q : Rel B B) (G : Rel A B)
     ∀ a b, rep (est Q G) a b ↔ rep G a b ∧ ∀ c, rep G a c → c ≠ b → rep Q b c := by
   obtain ⟨p1, p2, p3, p4, p5, p6⟩ := h.1.2 _ rfl
   have hd : ∀ a b c, rep G a b → rep G a c → rep D (b, c) (b, c) := fun a b c hb hc => by
-    rw [hD, rep_ran P (one_ok _ h.2.1.1) (h.2.1.2 _ rfl)]
+    rw [hD, rep_ran_corefl P (one_ok _ h.2.1.1) (h.2.1.2 _ rfl)]
     refine ⟨rfl, a, ?_⟩
     rw [hP, rep_pair _ _ (codes_faithful_wf _ _ h.1.1).1 p1 p2 p3 p4 p5 p6]
     exact ⟨hb, hc⟩
@@ -320,12 +320,12 @@ theorem rep_thin {A B : Obj} (Q : Rel B B) (G : Rel A B)
   have eP : ∀ a b c, rep P a (b, c) ↔ rep G a b ∧ rep G a c := fun a b c => by
     rw [hP, rep_pair _ _ (codes_faithful_wf _ _ h.1.1).1 p1 p2 p3 p4 p5 p6]; exact Iff.rfl
   have eD : ∀ x x', rep D x x' ↔ x = x' ∧ ∃ a, rep P a x := fun x x' => by
-    rw [hD, rep_ran P (one_ok _ hDf.1) (hDf.2 _ rfl)]; exact Iff.rfl
+    rw [hD, rep_ran_corefl P (one_ok _ hDf.1) (hDf.2 _ rfl)]; exact Iff.rfl
   have es : ∀ x u v, rep s x (u, v) ↔ (∃ y, rep D x (y, u)) ∧ ∃ z, rep D x (v, z) := fun x u v => by
     rw [hs, rep_pair _ _ (codes_faithful_wf _ _ hsw.1.1).1 s1 s2 s3 s4 s5 s6]
     exact and_congr (outr_holds D x u) (outl_holds D x v)
   have eE : ∀ x x', rep E x x' ↔ x = x' ∧ ∃ y, rep s y x := fun x x' => by
-    rw [hE, rep_ran s (one_ok _ hEf.1) (hEf.2 _ rfl)]; exact Iff.rfl
+    rw [hE, rep_ran_corefl s (one_ok _ hEf.1) (hEf.2 _ rfl)]; exact Iff.rfl
   have eS : ∀ p p', rep S p p' ↔
       p = p' ∧ ∃ u v w, ((∃ y, rep D p (y, u)) ∧ ∃ z, rep D p (v, z)) ∧ rep (pairsIn Q E) (u, v) w := by
     rw [hS]; exact rep_swapIn (pairsIn Q) D s hs E hE Ms hMs hsw

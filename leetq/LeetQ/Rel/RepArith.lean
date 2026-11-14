@@ -471,7 +471,7 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
       obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, -⟩ := hS j _ _ rfl rfl _ rfl
       obtain ⟨hK1, hK2, hpk⟩ := hran j hj _ rfl _ rfl
       refine ⟨(a, u), ?_⟩
-      rw [hD j, rep_ran _ ⟨hK1, hK2⟩ hpk]
+      rw [hD j, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
       refine ⟨rfl, Int64.ofNat i.1, ?_⟩
       rw [rep_pair _ _ hkO hkn hkM hkU hkA hkB hkC]
       exact ⟨ha, hu⟩
@@ -769,7 +769,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     obtain ⟨hcO, hcn, hcM, hcU, hcA, hcC⟩ := hcomp k hk _ rfl
     subst hSf
     show rep (outr (D k) ≫ sc) p w ↔ _
-    rw [rep_comp _ _ hcO hcn hcM hcU hcA hcC, rep_outr, hD k, rep_ran _ ⟨hK1, hK2⟩ hpk]
+    rw [rep_comp _ _ hcO hcn hcM hcU hcA hcC, rep_outr, hD k, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
     constructor
     · rintro ⟨y, ⟨z, ⟨rfl, hz⟩, rfl⟩, hy⟩; exact ⟨⟨p, rfl, hz⟩, hy⟩
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩

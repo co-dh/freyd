@@ -213,55 +213,61 @@ theorem rep_distinctCorefl_boolean {n : USize} (x : Vals (.atom .boolean) n) :
     by have h := codes_boolean_wf (#v[⟨n, x⟩] : Vector (Part _) 1) (k := 0) (by decide)
        exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- **`rep (dom R) = dom (rep R)`**, `dom S = {(a, a) ∣ ∃ b, S(a, b)}` (`= 𝟙 ∩ S S°`): `dom R` is
-    `distinctCorefl` of the keys, whose elements are the `a` with a pair. Hypotheses: `rep_distinctCorefl`'s
-    at `R.key`. -/
-theorem rep_dom (R : Rel A B)
-    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
-        Column.idAt ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).b
-            ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w i =
-          Column.idAt ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).b
-            ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w j ↔
-        Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
-      (let c := (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-       laneOK(c.w) ∧ c.n = R.n ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
-    (hp : Vals.PickFits A R.key
-      (ids ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).groupIds.2)) :
-    rep (dom R) = corefl (A := (⟨A.El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b := by
-  rw [show dom R = distinctCorefl A R.key from rfl, rep_distinctCorefl A R.key hK hp]
+namespace OpsN
+-- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it. The index proof is a term: a bare
+-- `[0]` postpones `get_elem_tactic` to the end of the header that uses it, where it runs against every hypothesis
+set_option hygiene false in
+scoped notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
+set_option hygiene false in
+scoped notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
+    Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
+      Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+  (let c := c1(X, n, x)
+   laneOK(c.w) ∧ c.n = n ∧
+    c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+    (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
+end OpsN
+open OpsN
+
+/-- `dom S ≜ 𝟙 ∩ S S°` (§2.122) in `Rel(Set)` is the coreflexive on the `a` with a pair. -/
+theorem dom_corefl {X Y : RelSet.{0}} (S : X ⟶ Y) : 𝟙 X ∩ S ≫ S° = corefl fun a => ∃ b, S a b :=
+  hom_ext fun _ _ => ⟨fun ⟨e, b, h, _⟩ => ⟨e, b, h⟩, fun ⟨e, b, h⟩ => ⟨e, b, h, by subst e; exact h⟩⟩
+
+/-- **`rep (dom R) = 𝟙 ∩ rep R (rep R)°`**, the allegory's `dom` (§2.122): `dom R` is `distinctCorefl` of the
+    keys, whose elements are the `a` with a pair (`dom_corefl`). Hypotheses: `rep_distinctCorefl`'s at `R.key`. -/
+theorem rep_dom (R : Rel A B) (hK : oneOK(A, R.n, R.key))
+    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    rep (dom R) = 𝟙 _ ∩ rep R ≫ (rep R)° := by
+  rw [dom_corefl, show dom R = distinctCorefl A R.key from rfl, rep_distinctCorefl A R.key hK hp]
   exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
 
-/-- **`rep (ran R) = ran (rep R)`**, `ran S = {(b, b) ∣ ∃ a, S(a, b)}`: `distinctCorefl` of the values. -/
-theorem rep_ran (R : Rel A B)
-    (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
-        Column.idAt ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).b
-            ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w i =
-          Column.idAt ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).b
-            ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w j ↔
-        Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
-      (let c := (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-       laneOK(c.w) ∧ c.n = R.n ∧
-        c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
-        (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
-    (hp : Vals.PickFits B R.val
-      (ids ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).groupIds.2)) :
-    rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b := by
-  rw [show ran R = distinctCorefl B R.val from rfl, rep_distinctCorefl B R.val hK hp]
-  exact congrArg corefl (funext fun b => propext ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩)
+/-- **`rep (ran R) = 𝟙 ∩ (rep R)° (rep R)°°`**, the allegory's `ran S ≜ dom S°`: `ran R` is `dom R°`, so
+    `rep_dom` at `R°` read through `rep_conv`. Hypotheses: `rep_dom`'s at `R°`, whose keys are `R.val`. -/
+theorem rep_ran (R : Rel A B) (hK : oneOK(B, R.n, R.val))
+    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    rep (ran R) = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
+  rw [← rep_conv]; exact rep_dom (R°) hK hp
+
+/-- `rep_dom` read pointwise, `{(a, a) ∣ ∃ b, rep R(a, b)}` (`dom_corefl`). -/
+theorem rep_dom_corefl (R : Rel A B) (hK : oneOK(A, R.n, R.key))
+    (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
+    rep (dom R) = corefl (A := (⟨A.El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b :=
+  (rep_dom R hK hp).trans (dom_corefl _)
+
+/-- `rep_ran` read pointwise, `{(b, b) ∣ ∃ a, rep R(a, b)}` (`dom_corefl`). -/
+theorem rep_ran_corefl (R : Rel A B) (hK : oneOK(B, R.n, R.val))
+    (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
+    rep (ran R) = corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b :=
+  (rep_ran R hK hp).trans (dom_corefl _)
 
 /-- `rep_dom` with boolean keys: no hypothesis left. -/
-theorem rep_dom_boolean (R : Rel (.atom .boolean) B) :
-    rep (dom R) = corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun a => ∃ b, rep R a b := by
-  rw [show dom R = distinctCorefl _ R.key from rfl, rep_distinctCorefl_boolean]
+theorem rep_dom_boolean (R : Rel (.atom .boolean) B) : rep (dom R) = 𝟙 _ ∩ rep R ≫ (rep R)° := by
+  rw [dom_corefl, show dom R = distinctCorefl _ R.key from rfl, rep_distinctCorefl_boolean]
   exact congrArg corefl (funext fun a => propext ⟨fun ⟨i, h⟩ => ⟨_, i, h, rfl⟩, fun ⟨_, i, h, _⟩ => ⟨i, h⟩⟩)
 
-/-- `rep_ran` with boolean values: no hypothesis left. -/
-theorem rep_ran_boolean (R : Rel A (.atom .boolean)) :
-    rep (ran R) = corefl (A := (⟨(Obj.atom .boolean).El⟩ : RelSet.{0})) fun b => ∃ a, rep R a b := by
-  rw [show ran R = distinctCorefl _ R.val from rfl, rep_distinctCorefl_boolean]
-  exact congrArg corefl (funext fun b => propext ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩)
+/-- `rep_ran` with boolean values: `rep_dom_boolean` at `R°`. -/
+theorem rep_ran_boolean (R : Rel A (.atom .boolean)) : rep (ran R) = 𝟙 _ ∩ (rep R)° ≫ (rep R)°° := by
+  rw [← rep_conv]; exact rep_dom_boolean (R°)
 
 end Distinct
 
@@ -806,8 +812,13 @@ end Pairs
 #print axioms rep_top
 #print axioms rep_prod
 
+#print axioms dom_corefl
 #print axioms rep_dom
 #print axioms rep_ran
+#print axioms rep_dom_boolean
+#print axioms rep_ran_boolean
+#print axioms rep_dom_corefl
+#print axioms rep_ran_corefl
 #print axioms rep_sum
 #print axioms rep_inl
 #print axioms rep_inr

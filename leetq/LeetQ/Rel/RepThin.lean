@@ -339,16 +339,16 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk uh ut')
     (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4 u5)
     tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5 ab6)
-    rab (by rw [hrab]; exact rep_ran tab (one_ok _ rabf) (rabp _ rfl)) G1 ht1
+    rab (by rw [hrab]; exact rep_ran_corefl tab (one_ok _ rabf) (rabp _ rfl)) G1 ht1
     tq1 (by rw [htq1]; exact rep_comp _ _ (codes_faithful_wf _ _ q1f).1 g1 g2 g3 g4 g5)
-    tup (by rw [htup]; exact rep_dom tq1 (one_ok _ upf) (upp _ rfl))
+    tup (by rw [htup]; exact rep_dom_corefl tq1 (one_ok _ upf) (upp _ rfl))
     ss (by rw [hss]; exact rep_pair _ _ (codes_faithful_wf _ _ ssf).1 s1 s2 s3 s4 s5 s6)
-    rs (by rw [hrs]; exact rep_ran ss (one_ok _ rsf) (rsp _ rfl)) G2 ht2
+    rs (by rw [hrs]; exact rep_ran_corefl ss (one_ok _ rsf) (rsp _ rfl)) G2 ht2
     tq2 (by rw [htq2]; exact rep_comp _ _ (codes_faithful_wf _ _ q2f).1 h1 h2 h3 h4 h5)
-    sw (by rw [hsw]; exact rep_dom tq2 (one_ok _ swf) (swp _ rfl))
+    sw (by rw [hsw]; exact rep_dom_corefl tq2 (one_ok _ swf) (swp _ rfl))
     tq3 (by rw [htq3]; exact rep_comp _ _ (codes_faithful_wf _ _ q3f).1 k1 k2 k3 k4 k5)
-    tdn (by rw [htdn]; exact rep_dom tq3 (one_ok _ dnf) (dnp _ rfl))
-    du (by rw [hdu]; exact rep_dom tu (one_ok _ duf) (dup _ rfl))
+    tdn (by rw [htdn]; exact rep_dom_corefl tq3 (one_ok _ dnf) (dnp _ rfl))
+    du (by rw [hdu]; exact rep_dom_corefl tu (one_ok _ duf) (dup _ rfl))
     l1 (fun s s' => by rw [hl1]; exact rep_diff D du d11 d13 d14 s s')
     l2 (fun s s' => by rw [hl2]; exact rep_diff du tup d21 d23 d24 s s')
     l3 (fun s s' => by rw [hl3]; exact rep_diff l2 tdn d31 d33 d34 s s')
@@ -356,7 +356,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     c1 (by rw [hc1]; exact rep_cons_ok lone cs1)
     ua (by rw [hua]; exact rep_comp _ _ (codes_faithful_wf _ _ uaf).1 a1 a2 a3 a4 a5)
     uu (by rw [huu]; exact rep_comp _ _ (codes_faithful_wf _ _ uuf).1 w1 w2 w3 w4 w5)
-    ru (by rw [hru]; exact rep_ran tu (one_ok _ ruf) (rup _ rfl))
+    ru (by rw [hru]; exact rep_ran_corefl tu (one_ok _ ruf) (rup _ rfl))
     ut (by rw [hut]; exact rep_comp _ _ (codes_faithful_wf _ _ utf).1 t1 t2 t3 t4 t5)
     pu (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 p1 p2 p3 p4 p5 p6)
     c2 (by rw [hc2]; exact rep_cons_ok pu cs2)
@@ -422,7 +422,7 @@ theorem thin_round_rep {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod
       ∃ b bs, y = b :: bs ∧ ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = b :: bs) ∨
         (le a b = false ∧ le b a = false ∧ v = a :: b :: bs))) := by
   obtain ⟨⟨Pf, Pp⟩, hk⟩ := h
-  have eD := rep_ran _ (one_ok _ Pf) (Pp _ rfl)
+  have eD := rep_ran_corefl _ (one_ok _ Pf) (Pp _ rfl)
   rw [← hD] at eD
   obtain ⟨t1, t2, J⟩ := hk _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
