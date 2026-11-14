@@ -373,6 +373,276 @@ theorem sym_pairs (rk sk v0 v1 : Code)
     refine ⟨hk, hl, ?_⟩
     rw [i1 k hk, i2 l hl, (hid k hk l hl).2 he]
 
+/-- **`Vals.pickPart` read back row by row**: its count is `len I`, and its row `q` is `x`'s row at `I`'s `q`-th
+    position. Hypotheses: `pickPart_rows`'. -/
+theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < USize.size)
+    (hlt : ∀ t ∈ ids I, t < n.toNat) (hP : Vals.PickFits B x (ids I)) :
+    (Vals.pickPart B x I).1.toNat = len I ∧ ∀ q (hq : q < (Vals.pickPart B x I).1.toNat),
+      ∃ (hq' : q < (ids I).length) (ht : (ids I)[q] < n.toNat),
+        (Vals.pickPart B x I).2.row ⟨q, hq⟩ = x.row ⟨_, ht⟩ := by
+  have hpd : Vals.pickPart B x I = ⟨(len I).toUSize, Vals.pick B x I _ (USize.toNat_ofNat_of_lt' hL).symm⟩ := by
+    unfold Vals.pickPart need; rw [dif_pos hL]
+  have hLn : ((len I).toUSize).toNat = len I := USize.toNat_ofNat_of_lt' hL
+  rw [hpd]; dsimp only
+  have hfit : Vals.PickFits B x
+      ((List.range ((len I).toUSize).toNat).map fun q => (Column.bitsAt I (q * 8) 8).toNat) := by
+    rw [hLn]; exact hP
+  refine ⟨hLn, fun q hq => ?_⟩
+  have hq' : q < (ids I).length := by rw [← len_eq_ids, ← hLn]; exact hq
+  have ht := hlt _ (List.getElem_mem hq')
+  refine ⟨hq', ht, ?_⟩
+  rw [pick_row B x I _ _ hfit ⟨q, hq⟩, dif_pos (by rw [← ids_getElem hq']; exact ht)]
+  exact congrArg x.row (Fin.ext (ids_getElem hq').symm)
+
+set_option maxHeartbeats 1600000 in
+/-- **`symDiv`'s joined part, read back**: `hit`, the pairs of `join lc rc` (`sym_pairs`) read at the first rows
+    of the key classes, holds `(x, y)` exactly when `R` takes `x` somewhere and `R`'s fibre at `x` is `S`'s at
+    `y`. Hypotheses: `sym_pairs`'; `rk`, `sk` code `R.key`, `S.key` faithfully, `v0`, `v1` code `R.val`, `S.val`
+    jointly faithfully; `rf`, `sf`, `hit` by their defining equations, the sides pick back, the join's counts fit. -/
+theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
+    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
+    (rkc : rk.w < 8 → rk.card < USize.size ∧ ∀ i < rk.n.toNat, Column.idAt rk.b rk.w i < rk.card)
+    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
+    (skc : sk.w < 8 → sk.card < USize.size ∧ ∀ i < sk.n.toNat, Column.idAt sk.b sk.w i < sk.card)
+    (v0w : v0.w = 1 ∨ v0.w = 2 ∨ v0.w = 4 ∨ v0.w = 8 ∨ v0.w = 16 ∨ v0.w = 32 ∨ v0.w = 64)
+    (v0s : v0.b.size = (v0.n.toNat * v0.w + 7) / 8)
+    (v0c : v0.w < 8 → v0.card < USize.size ∧ ∀ i < v0.n.toNat, Column.idAt v0.b v0.w i < v0.card)
+    (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
+    (v1c : v1.w < 8 → v1.card < USize.size ∧ ∀ i < v1.n.toNat, Column.idAt v1.b v1.w i < v1.card)
+    (hvw : v1.w = v0.w) (v0n : v0.n = rk.n) (v1n : v1.n = sk.n)
+    (hNU : rk.n.toNat + sk.n.toNat < USize.size) (hN63 : rk.n.toNat + sk.n.toNat + 1 < 2 ^ 63)
+    (nR : Nat) (hnR : rk.n.toNat = nR)
+    (pr orr fr ps os fs : ByteArray) (hR : segments rk = (pr, orr, fr)) (hS : segments sk = (ps, os, fs))
+    (ss : ByteArray) (hss : ss = os.extract 0 (os.size - 8)) (sid : ByteArray)
+    (hsid : sid = longCount "/ₛ" ss fun c _ => setIds (Code.cat #[v0.gather pr, v1.gather ps])
+      (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss nR]))
+    (lc rc : Code) (hlc : lc = Code.ofLongs (sid.extract 0 (8 * len fr)))
+    (hrc : rc = Code.ofLongs (sid.extract (8 * len fr) sid.size))
+    (rkn : rk.n = R.n) (skn : sk.n = S.n)
+    (hrk : ∀ {a a' : Nat} (ha : a < R.n.toNat) (ha' : a' < R.n.toNat),
+      Column.idAt rk.b rk.w a = Column.idAt rk.b rk.w a' ↔ R.key.row ⟨a, ha⟩ = R.key.row ⟨a', ha'⟩)
+    (hsk : ∀ {b b' : Nat} (hb : b < S.n.toNat) (hb' : b' < S.n.toNat),
+      Column.idAt sk.b sk.w b = Column.idAt sk.b sk.w b' ↔ S.key.row ⟨b, hb⟩ = S.key.row ⟨b', hb'⟩)
+    (hv : ∀ {a b : Nat} (ha : a < R.n.toNat) (hb : b < S.n.toNat),
+      Column.idAt v0.b v0.w a = Column.idAt v1.b v1.w b ↔ R.val.row ⟨a, ha⟩ = S.val.row ⟨b, hb⟩)
+    (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
+    (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
+    (hM : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
+      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
+      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < USize.size)
+    (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
+    (hit : Rel A B)
+    (hhit : hit = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
+      (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B))
+    (x : A.El) (y : B.El) :
+    hit.Holds x y ↔ (∃ c, R.Holds x c) ∧ ∀ c, R.Holds x c ↔ S.Holds y c := by
+  classical
+  obtain ⟨lw, ln, ls, rw', rn, rs, hjp⟩ := sym_pairs rk sk v0 v1 rkw rks rkc skw sks skc v0w v0s v0c v1s v1c hvw
+    v0n v1n hNU hN63 nR hnR pr orr fr ps os fs hR hS ss hss sid hsid lc rc hlc hrc
+  obtain ⟨hfr, -, -, -, -, mR⟩ := seg_facts rk rkw rks rkc (by omega) hR
+  obtain ⟨hfs, -, -, -, -, mS⟩ := seg_facts sk skw sks skc (by omega) hS
+  have hKR : KR ≤ rk.n.toNat := firstsOf_length_le _ _
+  have hKS : KS ≤ sk.n.toNat := firstsOf_length_le _ _
+  have hlfr : len fr = KR := by rw [len_eq_ids, hfr]
+  have hlfs : len fs = KS := by rw [len_eq_ids, hfs]
+  -- the picked first rows
+  obtain ⟨rf1, rfr⟩ := pickPart_row R.key fr (by rw [hlfr]; exact Nat.lt_of_le_of_lt hKR rk.n.toNat_lt_size)
+    (fun t ht => by rw [hfr] at ht; rw [← rkn]; exact firsts_lt _ _ ht) hRf
+  obtain ⟨sf1, sfr⟩ := pickPart_row S.key fs (by rw [hlfs]; exact Nat.lt_of_le_of_lt hKS sk.n.toNat_lt_size)
+    (fun t ht => by rw [hfs] at ht; rw [← skn]; exact firsts_lt _ _ ht) hSf
+  rw [← hrf] at rf1 rfr
+  rw [← hsf] at sf1 sfr
+  have fRlt : ∀ k < KR, (F(rk)).getD k 0 < R.n.toNat := fun k hk => by
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk, Option.getD_some, ← rkn]
+    exact firsts_lt _ _ (List.getElem_mem hk)
+  have fSlt : ∀ l < KS, (F(sk)).getD l 0 < S.n.toNat := fun l hl => by
+    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hl, Option.getD_some, ← skn]
+    exact firsts_lt _ _ (List.getElem_mem hl)
+  have rowR : ∀ k (hk : k < rf.1.toNat), ∃ h : (F(rk)).getD k 0 < R.n.toNat,
+      rf.2.row ⟨k, hk⟩ = R.key.row ⟨_, h⟩ := fun k hk => by
+    obtain ⟨hq', ht, e⟩ := rfr k hk
+    have e2 : (ids fr)[k] = (F(rk)).getD k 0 := by
+      rw [List.getD_eq_getElem?_getD, ← hfr, List.getElem?_eq_getElem hq', Option.getD_some]
+    exact ⟨e2 ▸ ht, e.trans (congrArg R.key.row (Fin.ext e2))⟩
+  have rowS : ∀ l (hl : l < sf.1.toNat), ∃ h : (F(sk)).getD l 0 < S.n.toNat,
+      sf.2.row ⟨l, hl⟩ = S.key.row ⟨_, h⟩ := fun l hl => by
+    obtain ⟨hq', ht, e⟩ := sfr l hl
+    have e2 : (ids fs)[l] = (F(sk)).getD l 0 := by
+      rw [List.getD_eq_getElem?_getD, ← hfs, List.getElem?_eq_getElem hq', Option.getD_some]
+    exact ⟨e2 ▸ ht, e.trans (congrArg S.key.row (Fin.ext e2))⟩
+  -- a key class is the rows of one key
+  have cR : ∀ k < KR, ∀ a (ha : a < R.n.toNat) (hf : (F(rk)).getD k 0 < R.n.toNat),
+      a ∈ cls(rk, k) ↔ R.key.row ⟨a, ha⟩ = R.key.row ⟨_, hf⟩ := fun k hk a ha hf => by
+    rw [mR k hk a]
+    exact ⟨fun h => (hrk ha hf).1 h.2, fun h => ⟨by rw [rkn]; exact ha, (hrk ha hf).2 h⟩⟩
+  have cS : ∀ l < KS, ∀ b (hb : b < S.n.toNat) (hf : (F(sk)).getD l 0 < S.n.toNat),
+      b ∈ cls(sk, l) ↔ S.key.row ⟨b, hb⟩ = S.key.row ⟨_, hf⟩ := fun l hl b hb hf => by
+    rw [mS l hl b]
+    exact ⟨fun h => (hsk hb hf).1 h.2, fun h => ⟨by rw [skn]; exact hb, (hsk hb hf).2 h⟩⟩
+  have gR : ∀ a (ha : a < R.n.toNat), ∃ k < KR, a ∈ cls(rk, k) := fun a ha => by
+    have ha' : a < rk.n.toNat := by rw [rkn]; exact ha
+    exact ⟨_, Verify.groupOf_lt (g := Column.idAt rk.b rk.w) ha',
+      List.mem_filter.2 ⟨List.mem_range.2 ha', beq_self_eq_true _⟩⟩
+  have gS : ∀ b (hb : b < S.n.toNat), ∃ l < KS, b ∈ cls(sk, l) := fun b hb => by
+    have hb' : b < sk.n.toNat := by rw [skn]; exact hb
+    exact ⟨_, Verify.groupOf_lt (g := Column.idAt sk.b sk.w) hb',
+      List.mem_filter.2 ⟨List.mem_range.2 hb', beq_self_eq_true _⟩⟩
+  -- the rows of `hit`: `join lc rc`'s pairs, read at the first rows
+  have hln : lc.n = rf.1 := USize.toNat_inj.1 (by rw [ln, rf1, hlfr])
+  have hrn' : rc.n = sf.1 := USize.toNat_inj.1 (by rw [rn, sf1, hlfs])
+  have hlw : lc.w = 1 ∨ lc.w = 2 ∨ lc.w = 4 ∨ lc.w = 8 ∨ lc.w = 16 ∨ lc.w = 32 ∨ lc.w = 64 := by rw [lw]; decide
+  have hrw : rc.w = 1 ∨ rc.w = 2 ∨ rc.w = 4 ∨ rc.w = 8 ∨ rc.w = 16 ∨ rc.w = 32 ∨ rc.w = 64 := by rw [rw']; decide
+  have hrc' : rc.w < 8 → rc.card < USize.size ∧ ∀ i < rc.n.toNat, Column.idAt rc.b rc.w i < rc.card :=
+    fun h => absurd h (by rw [rw']; decide)
+  have hrn63 : rc.n.toNat < 2 ^ 63 := by rw [rn]; omega
+  obtain ⟨hlt, -⟩ := join_rows lc rc hlw ls hrw rs hrc' hrn63 hM hMU
+  have hH : hit.Holds x y ↔ ∃ k l, (k, l) ∈ jp(lc, rc) ∧ ∃ (hk : k < rf.1.toNat) (hl : l < sf.1.toNat),
+      rf.2.row ⟨k, hk⟩ = x ∧ sf.2.row ⟨l, hl⟩ = y := by
+    subst hhit
+    unfold longCount need
+    rw [dif_pos hlt]
+    dsimp only
+    have hm : len (join lc rc).2 = ((len (join lc rc).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
+    obtain ⟨hlen, hrow⟩ := div_y_rows lc rc rf.2 sf.2 hln hrn' hlw ls hrw rs hrc' hrn63 hM hMU hB hC _ hm
+      (Nat.le_trans (Nat.le_of_eq hm.symm) (join_len lc rc))
+    unfold Rel.Holds
+    dsimp only
+    constructor
+    · rintro ⟨⟨q, hq⟩, ex, ey⟩
+      obtain ⟨hJ, hi, hj, e1, e2⟩ := hrow q hq
+      exact ⟨_, _, List.getElem_mem hJ, hi, hj, e1.symm.trans ex, e2.symm.trans ey⟩
+    · rintro ⟨k, l, hkl, hk, hl, ex, ey⟩
+      obtain ⟨q, hJ, hq⟩ := List.getElem_of_mem hkl
+      have hq' : q < ((len (join lc rc).2).toUSize).toNat := by rw [hlen]; exact hJ
+      obtain ⟨hJ', hi, hj, e1, e2⟩ := hrow q hq'
+      refine ⟨⟨q, hq'⟩, ?_, ?_⟩
+      · rw [e1, ← ex]; congr 2; rw [hq]
+      · rw [e2, ← ey]; congr 2; rw [hq]
+  rw [hH]
+  constructor
+  · rintro ⟨k, l, hkl, hk, hl, ex, ey⟩
+    obtain ⟨hk', hl', hV⟩ := (hjp k l).1 hkl
+    obtain ⟨hfk, ek⟩ := rowR k hk
+    obtain ⟨hfl, el⟩ := rowS l hl
+    rw [ek] at ex; rw [el] at ey
+    subst ex ey
+    refine ⟨⟨_, ⟨_, hfk⟩, rfl, rfl⟩, fun c => ⟨?_, ?_⟩⟩
+    · rintro ⟨⟨a, ha⟩, hax, rfl⟩
+      obtain ⟨b, hb, e⟩ := (hV _).1 ⟨a, (cR k hk' a ha hfk).2 hax, rfl⟩
+      have hbS : b < S.n.toNat := by rw [← skn]; exact ((mS l hl' b).1 hb).1
+      exact ⟨⟨b, hbS⟩, (cS l hl' b hbS hfl).1 hb, ((hv ha hbS).1 e.symm).symm⟩
+    · rintro ⟨⟨b, hb⟩, hby, rfl⟩
+      obtain ⟨a, ha, e⟩ := (hV _).2 ⟨b, (cS l hl' b hb hfl).2 hby, rfl⟩
+      have haR : a < R.n.toNat := by rw [← rkn]; exact ((mR k hk' a).1 ha).1
+      exact ⟨⟨a, haR⟩, (cR k hk' a haR hfk).1 ha, (hv haR hb).1 e⟩
+  · rintro ⟨⟨_, ⟨a, ha⟩, hax, rfl⟩, hiff⟩
+    obtain ⟨k, hk, hak⟩ := gR a ha
+    obtain ⟨⟨b, hb⟩, hby, hbc⟩ := (hiff _).1 ⟨⟨a, ha⟩, hax, rfl⟩
+    obtain ⟨l, hl, hbl⟩ := gS b hb
+    have hfk := fRlt k hk
+    have hfl := fSlt l hl
+    have ka := (cR k hk a ha hfk).1 hak
+    have lb := (cS l hl b hb hfl).1 hbl
+    have hV : ∀ u, (∃ a ∈ cls(rk, k), Column.idAt v0.b v0.w a = u) ↔
+        ∃ b ∈ cls(sk, l), Column.idAt v1.b v1.w b = u := fun u => by
+      constructor
+      · rintro ⟨a', ha', rfl⟩
+        have h' : a' < R.n.toNat := by rw [← rkn]; exact ((mR k hk a').1 ha').1
+        obtain ⟨⟨b', hb'⟩, hb'y, hb'c⟩ :=
+          (hiff _).1 ⟨⟨a', h'⟩, ((cR k hk a' h' hfk).1 ha').trans (ka.symm.trans hax), rfl⟩
+        exact ⟨b', (cS l hl b' hb' hfl).2 (hb'y.trans (hby.symm.trans lb)), ((hv h' hb').2 hb'c.symm).symm⟩
+      · rintro ⟨b', hb', rfl⟩
+        have h' : b' < S.n.toNat := by rw [← skn]; exact ((mS l hl b').1 hb').1
+        obtain ⟨⟨a', ha'⟩, ha'x, ha'c⟩ :=
+          (hiff _).2 ⟨⟨b', h'⟩, ((cS l hl b' h' hfl).1 hb').trans (lb.symm.trans hby), rfl⟩
+        exact ⟨a', (cR k hk a' ha' hfk).2 (ha'x.trans (hax.symm.trans ka)), (hv ha' h').2 ha'c⟩
+    have hkr : k < rf.1.toNat := by rw [rf1, hlfr]; exact hk
+    have hls : l < sf.1.toNat := by rw [sf1, hlfs]; exact hl
+    obtain ⟨hfk', ek⟩ := rowR k hkr
+    obtain ⟨hfl', el⟩ := rowS l hls
+    exact ⟨k, l, (hjp k l).2 ⟨hk, hl, hV⟩, hkr, hls, ek.trans (ka.symm.trans hax), el.trans (lb.symm.trans hby)⟩
+
+/-- **The elements of `U` coded as no row of `V`, read back**: `U` picked at `anti uc vc` holds `u` exactly when
+    `u` is an element of `U` and no row of `V`. Hypotheses: `uc`, `vc` code `U`, `V` jointly and well formed
+    (`anti_ids`); `U` picks back at the kept positions. -/
+theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : Code)
+    (hxw : uc.w = 1 ∨ uc.w = 2 ∨ uc.w = 4 ∨ uc.w = 8 ∨ uc.w = 16 ∨ uc.w = 32 ∨ uc.w = 64)
+    (hyw : vc.w = 1 ∨ vc.w = 2 ∨ vc.w = 4 ∨ vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32 ∨ vc.w = 64)
+    (hxs : uc.b.size = (uc.n.toNat * uc.w + 7) / 8) (hys : vc.b.size = (vc.n.toNat * vc.w + 7) / 8)
+    (hun : uc.n = mu) (hvn : vc.n = mv)
+    (hj : ∀ {j p : Nat} (hj : j < mv.toNat) (hp : p < mu.toNat),
+      Column.idAt vc.b vc.w j = Column.idAt uc.b uc.w p ↔ V.row ⟨j, hj⟩ = U.row ⟨p, hp⟩)
+    (hP : Vals.PickFits B U (ids (anti uc vc))) (u : B.El) :
+    (∃ i, (Vals.pickPart B U (anti uc vc)).2.row i = u) ↔ (∃ p, U.row p = u) ∧ ¬∃ j, V.row j = u := by
+  have hm := anti_ids uc vc hxw hyw hxs hys
+  have hL : len (anti uc vc) < USize.size := by
+    rw [len_eq_ids, hm.1]
+    exact Nat.lt_of_le_of_lt (Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..)))
+      uc.n.toNat_lt_size
+  have hlt : ∀ t ∈ ids (anti uc vc), t < mu.toNat := fun t ht => by rw [← hun]; exact ((hm.2.2 t).1 ht).1
+  rw [pickPart_rows U _ hL hlt hP u]
+  constructor
+  · rintro ⟨t, hti, ht, e⟩
+    obtain ⟨-, hno⟩ := (hm.2.2 t).1 hti
+    refine ⟨⟨⟨t, ht⟩, e⟩, ?_⟩
+    rintro ⟨j, hju⟩
+    exact hno ⟨j.1, by rw [hvn]; exact j.2, (hj j.2 ht).2 (hju.trans e.symm)⟩
+  · rintro ⟨⟨⟨p, hp⟩, e⟩, hno⟩
+    refine ⟨p, (hm.2.2 p).2 ⟨by rw [hun]; exact hp, ?_⟩, hp, e⟩
+    rintro ⟨j, hjn, hje⟩
+    rw [hvn] at hjn
+    exact hno ⟨⟨j, hjn⟩, ((hj hjn hp).1 hje).trans e⟩
+
+-- `symDiv`'s vacuous sides: the elements of `Ua`, `Ub` coded as no key of `R`, `S`
+set_option hygiene false in
+local notation "vacA" => Vals.pickPart A Ua (anti uac rk)
+set_option hygiene false in
+local notation "vacB" => Vals.pickPart B Ub (anti ubc sk)
+
+/-- **`symDiv`'s vacuous part, read back**: `⊤` on the elements of `Ua` that are no key of `R` and the elements
+    of `Ub` that are no key of `S`. Hypotheses: `anti_pick_rows`' on each side, `rep_top`'s. -/
+theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb)
+    (uac rk ubc sk : Code)
+    (uaw : uac.w = 1 ∨ uac.w = 2 ∨ uac.w = 4 ∨ uac.w = 8 ∨ uac.w = 16 ∨ uac.w = 32 ∨ uac.w = 64)
+    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (uas : uac.b.size = (uac.n.toNat * uac.w + 7) / 8) (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
+    (ubw : ubc.w = 1 ∨ ubc.w = 2 ∨ ubc.w = 4 ∨ ubc.w = 8 ∨ ubc.w = 16 ∨ ubc.w = 32 ∨ ubc.w = 64)
+    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (ubs : ubc.b.size = (ubc.n.toNat * ubc.w + 7) / 8) (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
+    (uan : uac.n = ma) (rkn : rk.n = R.n) (ubn : ubc.n = mb) (skn : sk.n = S.n)
+    (ha : ∀ {j p : Nat} (hj : j < R.n.toNat) (hp : p < ma.toNat),
+      Column.idAt rk.b rk.w j = Column.idAt uac.b uac.w p ↔ R.key.row ⟨j, hj⟩ = Ua.row ⟨p, hp⟩)
+    (hb : ∀ {j p : Nat} (hj : j < S.n.toNat) (hp : p < mb.toNat),
+      Column.idAt sk.b sk.w j = Column.idAt ubc.b ubc.w p ↔ S.key.row ⟨j, hj⟩ = Ub.row ⟨p, hp⟩)
+    (hPa : Vals.PickFits A Ua (ids (anti uac rk))) (hPb : Vals.PickFits B Ub (ids (anti ubc sk)))
+    (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
+    (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
+    (hB : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
+    (x : A.El) (y : B.El) :
+    (top (vacA).2 (vacB).2).Holds x y ↔
+      ((∃ p, Ua.row p = x) ∧ ¬∃ c, R.Holds x c) ∧ ((∃ j, Ub.row j = y) ∧ ¬∃ c, S.Holds y c) := by
+  have nR : (¬∃ j, R.key.row j = x) ↔ ¬∃ c, R.Holds x c :=
+    not_congr ⟨fun ⟨j, e⟩ => ⟨_, j, e, rfl⟩, fun ⟨_, j, e, _⟩ => ⟨j, e⟩⟩
+  have nS : (¬∃ j, S.key.row j = y) ↔ ¬∃ c, S.Holds y c :=
+    not_congr ⟨fun ⟨j, e⟩ => ⟨_, j, e, rfl⟩, fun ⟨_, j, e, _⟩ => ⟨j, e⟩⟩
+  have eA := (anti_pick_rows Ua R.key uac rk uaw rkw uas rks uan rkn ha hPa x).trans (and_congr Iff.rfl nR)
+  have eB := (anti_pick_rows Ub S.key ubc sk ubw skw ubs sks ubn skn hb hPb y).trans (and_congr Iff.rfl nS)
+  have h := congrFun (congrFun (rep_top _ _ hN h63 hA hB) x) y
+  refine (Iff.of_eq h).trans ?_
+  show (∃ a', (x = a' ∧ ∃ i, (vacA).2.row i = x) ∧ ∃ b', True ∧ (b' = y ∧ ∃ j, (vacB).2.row j = b')) ↔ _
+  constructor
+  · rintro ⟨_, ⟨-, hx⟩, _, -, rfl, hy⟩
+    exact ⟨eA.1 hx, eB.1 hy⟩
+  · rintro ⟨hx, hy⟩
+    exact ⟨x, ⟨rfl, eA.2 hx⟩, y, trivial, rfl, eB.2 hy⟩
+
+#print axioms sym_vac_holds
+#print axioms anti_pick_rows
+#print axioms sym_hit_holds
+#print axioms pickPart_row
 #print axioms sym_pairs
 #print axioms sym_ids
 #print axioms bitsAt_extract
