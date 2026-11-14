@@ -172,6 +172,23 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     obtain ⟨y, zs, hs, z, hz, hq⟩ := (key ys hx).1 hw
     exact hq (hall y zs hs z hz)
 
+/-- **`orderedOn`'s read-back at `q := pairsIn Q` in `Pairwise` form**, for any relation `O` read back as it: the test
+    read back by `rep_pairsIn` (`hq`), the suffix form turned into `Pairwise` (`suffix_pairwise`). -/
+theorem pairwise_of_orderedOn {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) (O : Rel (.arr B) (.arr B))
+    (E : Rel (.prod B B) (.prod B B))
+    (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)))
+    (h1 : ∀ xs y zs z, (∃ i, X.row i = xs) → (y :: zs) <:+ xs → z ∈ zs → rep E (y, z) (y, z))
+    (h2 : ∀ xs ys, rep O xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧
+      ∀ y zs, (y :: zs) <:+ xs → ∀ z ∈ zs, ∃ w, rep (pairsIn Q E) w (y, z)) :
+    ∀ xs ys, rep O xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
+  intro xs ys
+  rw [h2]
+  refine and_congr_right fun hx => and_congr_right fun _ => Iff.trans ?_ (suffix_pairwise _ xs)
+  exact ⟨fun hall y zs hs z hz => by
+      obtain ⟨w, hw⟩ := hall y zs hs z hz
+      exact ((rep_pairsIn Q E hq w (y, z)).1 hw).2,
+    fun hall y zs hs z hz => ⟨(y, z), (rep_pairsIn Q E hq _ _).2 ⟨h1 xs y zs z hx hs hz, hall y zs hs z hz⟩⟩⟩
+
 /-- **`ordered(Q)`, read back**: an array `xs` of `X` goes to itself exactly when each element is `Q`-below every
     later one. `rep_orderedOn` at `q := pairsIn Q` (`rep_pairsIn`), the suffix form turned into `Pairwise`
     (`suffix_pairwise`). Hypotheses: `rep_orderedOn`'s, then `rep_pairsIn`'s at `E`. -/
@@ -192,38 +209,18 @@ theorem rep_ordered {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     ∀ xs ys, rep (ordered Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z) := by
   obtain ⟨h1, h2⟩ := rep_orderedOn (pairsIn Q) X hS Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad
     C hC (h _ rfl)
-  intro xs ys
-  rw [show ordered Q X = orderedOn (pairsIn Q) X from rfl, h2]
-  refine and_congr_right fun hx => and_congr_right fun _ => Iff.trans ?_ (suffix_pairwise _ xs)
-  exact ⟨fun hall y zs hs z hz => by
-      obtain ⟨w, hw⟩ := hall y zs hs z hz
-      exact ((rep_pairsIn Q E hq w (y, z)).1 hw).2,
-    fun hall y zs hs z hz => ⟨(y, z), (rep_pairsIn Q E hq _ _).2 ⟨h1 xs y zs z hx hs hz, hall y zs hs z hz⟩⟩⟩
+  exact pairwise_of_orderedOn Q X _ E hq h1 h2
 
 /-- **`sortSet(Q)`, read back**: `s` goes to `ys` exactly when `setify` takes the array `ys` of `Y` to `s` and `ys`
     is `Q`-ordered. `sortSet Q Y` is `(setify Y)° ≫ ordered Q Y` (`rep_comp`, `rep_conv`, `rep_ordered`).
-    Hypotheses: `rep_ordered`'s at `Y`, `rep_comp`'s at the composite. -/
+    Hypotheses: `ordered Q Y` read back (`eO`: `rep_ordered`, `rep_orderedC`), `rep_comp`'s at the composite. -/
 theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
-    (hS : ∀ xs ys, rep (suffix Y) xs ys ↔ (∃ j, Y.row j = xs) ∧ ys <:+ xs)
-    (Su : Rel (.arr B) (.arr B)) (hSu : Su = suffix Y) (Wu : Rel (.arr B) (.arr B)) (hWu : Wu = ran Su)
-    (T : Rel (.arr B) (.prod B (.arr B))) (hT : T = Su ≫ uncons (Rel.val Wu))
-    (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : D = ran T)
-    (O : Rel (.prod B (.arr B)) (.arr B)) (hO : O = outr D) (V : Rel (.arr B) (.arr B)) (hV : V = ran O)
-    (M : Rel (.prod B (.arr B)) B) (hM : M = O ≫ mem (Rel.val V))
-    (yz : Rel (.prod B (.arr B)) (.prod B B)) (hyz : yz = pair (outl D) M)
-    (E : Rel (.prod B B) (.prod B B)) (hE : E = ran yz)
-    (bad : Rel (.prod B (.arr B)) (.prod B B)) (hbad : bad = antiJoin yz (pairsIn Q E))
-    (C : Rel (.arr B) (.prod B (.arr B))) (hC : C = T ≫ dom bad)
-    -- kept (h, hq, hc): fits and codes of the suffix pieces, the pairs `E`, `setify Y`, all intermediates
-    (h : ∀ q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B), q = pairsIn Q → ∀ X, X = Y → ordOK)
-    (hq : cmpOK(.prod B B, E, idU (t := .prod B B) (m := Rel.n Q) (Rel.key Q, Rel.val Q)))
+    (eO : ∀ xs ys, rep (ordered Q Y) xs ys ↔ (∃ i, Y.row i = xs) ∧ ys = xs ∧ xs.Pairwise (fun y z => rep Q y z))
     (hc : cmpOK(.arr B, (setify Y)°, ordered Q Y)) :
     ∀ s ys, rep (sortSet Q Y) s ys ↔
       rep (setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q y z) := by
   obtain ⟨hf, h'⟩ := hc
   obtain ⟨c1, c2, c3, c4⟩ := h' _ rfl
-  have eO := rep_ordered Q Y hS Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad C hC
-    (fun q hq' => h q hq' Y rfl) hq
   intro s ys
   rw [show sortSet Q Y = (setify Y)° ≫ ordered Q Y from rfl,
     rep_comp _ _ (codes_faithful_wf _ _ hf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
