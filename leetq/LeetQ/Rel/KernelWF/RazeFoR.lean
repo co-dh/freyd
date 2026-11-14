@@ -464,6 +464,9 @@ theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < 
 
 end LeetQ.Rel.Rep
 
+#print axioms LeetQ.Rel.KernelWF.append_reads
+#print axioms LeetQ.Rel.KernelWF.concatFoR_reads
+#print axioms LeetQ.Rel.KernelWF.join_foR_all
 #print axioms LeetQ.Rel.KernelWF.razeTo2_join_foR
 #print axioms LeetQ.Rel.KernelWF.hat_all
 #print axioms LeetQ.Rel.KernelWF.raze_row_full
