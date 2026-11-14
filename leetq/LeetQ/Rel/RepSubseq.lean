@@ -205,8 +205,9 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       · exact Or.inr hu
       · exact Or.inr hu
   refine (rep_foldBy_keep (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
-    (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf hR True hS
-    F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
+    (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf
+    (fun i _ => roundRB_of_ok pend₀ _ elK f hR i) True (fun i hi _ => hS i hi)
+    F hF (by subst hjc; exact rep_comp (T°) F hjO hjn hjM hjA hjC) xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))

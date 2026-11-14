@@ -599,29 +599,52 @@ def cons {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) := (consC P
     the state `pend : row ⟶ V` starts as given, each row from its own values, so two rows of one array may
     start apart; round `k` pairs the rows longer than `k` with their element `k` from the end (`el`) and hands
     both to `step`, and moves the rows not longer to `out`. A row is never longer than the payload, so its
-    size plus one rounds end every row (`iter`). The result is keyed by the row ids. -/
+    size plus one rounds end every row (`iter`). The result is keyed by the row ids.
+    `foldRound` is round `k` on the state `(pend, out, k)`, and whether it ran within capacity: the step's own bit
+    `&&` the bits of the round's `nub`, `antiJoin` and `∪` (`nubC`, `antiJoinC`, `unionC`). -/
+def foldRound {E V : Obj} (ids : Rel .long (.arr E)) (step : Rel .long E → Rel .long V → Rel .long V × Bool)
+    (st : Rel .long V × Rel .long V × Nat) : (Rel .long V × Rel .long V × Nat) × Bool :=
+  let s := slicesOf ids.val
+  let ends := add ids.n s.1 s.2
+  let a := whereBits ids.n (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one st.2.2.toUInt64) ids.n)
+  let el : Rel .long E := longCount "foldRows" a fun r hr =>
+    let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one (st.2.2 + 1).toUInt64) r
+    ⟨r, Vals.pick .long ids.key a r hr, Vals.pick E ids.val.2.2.2 pos r (len_val ..)⟩
+  -- `≫` keeps row multiplicity, so a step reaching a value along two paths doubles its rows: `nub` each round,
+  -- or the rows of `pend` grow as the paths do (`2^k` for `π₂ ∪ π₂ succ`), not as the pairs
+  let S := step el st.1
+  let N := nubC S.1
+  let J := antiJoinC st.1° (idU el.key)
+  let U := unionC st.2.1 J.1°
+  ((N.1, U.1, st.2.2 + 1), S.2 && N.2 && J.2 && U.2)
+
+/-- `foldRows` and whether it ran within capacity: the `&&` of the bits of the rounds it ran, carried in the
+    loop state from `true`. -/
+def foldRowsC {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V)
+    (step : Rel .long E → Rel .long V → Rel .long V × Bool) : Rel .long V × Bool :=
+  let r := iter (ids.val.1.toNat + 1) (fun st : (Rel .long V × Rel .long V × Nat) × Bool => st.1.1.n == 0)
+    (fun st => let g := foldRound ids step st.1; (g.1, st.2 && g.2)) ((pend, zero, 0), true)
+  (r.1.2.1, r.2)
+
+/-- `foldRows`: `foldRowsC`'s relation, the step one with no bit of its own. -/
 def foldRows {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V)
     (step : Rel .long E → Rel .long V → Rel .long V) : Rel .long V :=
-  let X := ids.val
-  let n := ids.n
-  let s := slicesOf X
-  let ends := add n s.1 s.2
-  let round : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat := fun (pend, out, k) =>
-    let a := whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one k.toUInt64) n)
-    let el : Rel .long E := longCount "foldRows" a fun r hr =>
-      let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one (k + 1).toUInt64) r
-      ⟨r, Vals.pick .long ids.key a r hr, Vals.pick E X.2.2.2 pos r (len_val ..)⟩
-    -- `≫` keeps row multiplicity, so a step reaching a value along two paths doubles its rows: `nub` each round,
-    -- or the rows of `pend` grow as the paths do (`2^k` for `π₂ ∪ π₂ succ`), not as the pairs
-    ((step el pend).nub, out ∪ (antiJoin pend° (idU el.key))°, k + 1)
-  (iter (X.1.toNat + 1) (fun st => st.1.n == 0) round (pend, zero, 0)).2.1
+  (foldRowsC ids pend fun el p => (step el p, true)).1
 
 /-- `foldRows` on the arrays of `X`, every row starting from every value of `e`, read back at the arrays by
-    `num`'s row ids. -/
+    `num`'s row ids; and whether it ran within capacity: the bits of `num`, `⊤`, the rounds and `≫`. -/
+def foldByC {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
+    (step : Rel .long E → Rel .long V → Rel .long V × Bool) : Rel (.arr E) V × Bool :=
+  let ids := numC (idU X) 0
+  let p := topC (A := .long) (B := V) ids.1.key e
+  let F := foldRowsC ids.1 p.1 step
+  let c := compC ids.1° F.1
+  (c.1, ids.2 && p.2 && F.2 && c.2)
+
+/-- `foldBy`: `foldByC`'s relation, the step one with no bit of its own. -/
 def foldBy {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
     (step : Rel .long E → Rel .long V → Rel .long V) : Rel (.arr E) V :=
-  let ids := num (idU X) 0
-  ids° ≫ foldRows ids (top (A := .long) (B := V) ids.key e) step
+  (foldByC X e fun el p => (step el p, true)).1
 
 /-- A fold step in demand form: `S` runs on the pairs (element, value) the round meets, `S D` for the
     coreflexive `D` on them, so a carrier with no universe folds too. -/
