@@ -8,6 +8,7 @@ import LeetQ.Rel.CRel
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepOps2
+import LeetQ.Rel.RepDiv
 
 namespace LeetQ.Rel
 
@@ -153,6 +154,88 @@ theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
     (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp))
     (Obj.codesC_fits A _ hWk) (Obj.codesC_fits B _ hW) h63
 
+-- the keys `leftDiv` joins: `nub`'s, coded jointly
+set_option hygiene false in
+local notation "dks" => (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩] : Vector (Part A) 2)
+
+/-- **`rep (R \ S)` under `leftDivC`'s bit**: `rep_leftDiv` at the intermediates `leftDivC` builds (each twin's `.1`
+    read as its op by `simp`, the twins sitting as arguments of `divTailC`/`keyPart`: `nubC_fst`, `codesC_fst`, `divJoinC_fst`). `nubC`'s bits give `hRK`…`hSv`
+    (`codesC_fits`, `pickFits_of_fitsN`), the codes' bits `hfk`, `hfy`, `hfz`, the join picks' bits, read at the
+    join's rows (`join_rows`), `hB`, `hC`, `topC`'s `hA`, `hBc`, `unionC`'s `hU`…`hUv` (as `rep_unionC`). -/
+theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc)
+    (hb : (leftDivC R S Ub Uc).2 = true) (b : B.El) (c : C.El) :
+    rep (leftDivC R S Ub Uc).1 b c ↔
+      (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
+  simp only [leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst] at hb
+  simp only [keyPart, valPart, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hr, hs⟩, hk⟩, hSn⟩, hRS⟩, hy⟩, hycs⟩, hzc⟩, hP⟩, hUbc⟩, hu⟩ := hb
+  simp only [divTailC, Bool.and_eq_true] at hu
+  obtain ⟨hq, hu⟩ := hu
+  simp only [nubC, Bool.and_eq_true] at hr hs
+  obtain ⟨⟨⟨hRK, hRV⟩, hRk⟩, hRv⟩ := hr
+  obtain ⟨⟨⟨hSK, hSV⟩, hSk⟩, hSv⟩ := hs
+  have hRK' := Obj.codesC_fits A _ hRK; have hRV' := Obj.codesC_fits B _ hRV
+  have hSK' := Obj.codesC_fits A _ hSK; have hSV' := Obj.codesC_fits C _ hSV
+  have hRk' := pickFits_of_fitsN A R.key _ hRk (List.range R.n.toNat) (by simp)
+  have hRv' := pickFits_of_fitsN B R.val _ hRv (List.range R.n.toNat) (by simp)
+  have hSk' := pickFits_of_fitsN A S.key _ hSk (List.range S.n.toNat) (by simp)
+  have hSv' := pickFits_of_fitsN C S.val _ hSv (List.range S.n.toNat) (by simp)
+  have hfk := Obj.codesC_fits A _ hk
+  -- the join's rows, as `rep_compC`; `nub` keeps at most the input's rows
+  have nR := nub_count_le R (one_ok _ hRK') (one_ok _ hRV') hRk' hRv'
+  have nS := nub_count_le S (one_ok _ hSK') (one_ok _ hSV') hSk' hSv'
+  have hM : (Rel.nub R).n.toNat * (Rel.nub S).n.toNat < min (2 ^ 63) USize.size :=
+    Nat.lt_of_le_of_lt (Nat.mul_le_mul nR nS) hRS
+  have hc := (codes_faithful_wf A _ hfk).1
+  obtain ⟨hlw, hln, hls, -⟩ := hc.2 (k := 0) (by decide)
+  obtain ⟨hrw, hrn', hrs, hrc⟩ := hc.2 (k := 1) (by decide)
+  replace hln : ((A.codes dks)[0]'Nat.zero_lt_two).n = (Rel.nub R).n := hln
+  replace hrn' : ((A.codes dks)[1]'Nat.one_lt_two).n = (Rel.nub S).n := hrn'
+  obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact Nat.lt_of_le_of_lt nS hSn)
+    (by rw [hln, hrn']; exact hM)
+  unfold divJoinC longCount need at hy; dsimp only at hy
+  split at hy
+  · rename_i hlt
+    simp only [Bool.and_eq_true] at hy
+    have e := hZ _ (USize.toNat_ofNat_of_lt' hlt).symm
+    have hfB := Vals.pickC_fits B _ _ _ _ hy.1
+    have hfC := Vals.pickC_fits C _ _ _ _ hy.2
+    unfold unionC need at hu
+    split at hu
+    · rename_i hU
+      simp only [Bool.and_eq_true] at hu
+      obtain ⟨⟨⟨⟨⟨hka, hvb⟩, hkc⟩, hvc⟩, hkf⟩, hvf⟩ := hu
+      have hFk := Obj.razeC_fits B _ _ _ rfl _ hka
+      have hFv := Obj.razeC_fits C _ _ _ rfl _ hvb
+      simp only [razeC_fst] at hkc hvc hkf hvf
+      simp only [topC, Bool.and_eq_true, decide_eq_true_eq] at hq
+      obtain ⟨⟨-, ha⟩, hbc⟩ := hq
+      exact rep_leftDiv R S Ub Uc hRK' hRV' hRk' hRv' hSK' hSV' hSk' hSv' _ rfl hfk hSn hRS
+        (by rw [e, List.map_map]; exact hfB) (by rw [e, List.map_map]; exact hfC) _ rfl _ rfl
+        (Obj.codesC_fits B _ hycs) _ rfl (Obj.codesC_fits C _ hzc) _ rfl
+        (pickFits_of_fitsN B Ub _ hP _ (by simp)) hUbc
+        -- `⊤`'s rows count the vacuous part as `topC` read it, which equals `vacY`'s by unfolding only
+        (pickFits_of_fitsN B _ _ ha _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
+        (pickFits_of_fitsN C Uc _ hbc _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
+        _ _ rfl rfl hU hFk hFv (Obj.codesC_fits B _ hkc) (Obj.codesC_fits C _ hvc)
+        (pickFits_of_fitsN B _ _ hkf _ (by simp only [List.length_range]; exact Nat.le_refl _))
+        (pickFits_of_fitsN C _ _ hvf _ (by simp only [List.length_range]; exact Nat.le_refl _)) b c
+    · exact absurd hu Bool.false_ne_true
+  · exact absurd hy Bool.false_ne_true
+
+/-- **`rep (R / S)` under `rightDivC`'s bit**, which is `leftDivC`'s at `S°`, `R°`: `rep_leftDivC` there, read through
+    `rep_conv`. The objects are named as in `rep_rightDiv`. -/
+theorem rep_rightDivC {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma) (Ub : Vals B mb)
+    (hb : (rightDivC R S Ua Ub).2 = true) (x : C.El) (y : B.El) :
+    rep (rightDivC R S Ua Ub).1 x y ↔
+      (∀ c, rep S y c → rep R x c) ∧ ((∃ c, rep S y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  rw [show (rightDivC R S Ua Ub).1 = ((leftDivC (S°) (R°) Ub Ua).1)° from rfl, rep_conv]
+  show rep (leftDivC (S°) (R°) Ub Ua).1 y x ↔ _
+  rw [rep_leftDivC (S°) (R°) Ub Ua hb y x, rep_conv, rep_conv]
+  exact and_congr Iff.rfl (or_congr Iff.rfl and_comm)
+
+#print axioms rep_leftDivC
+#print axioms rep_rightDivC
 #print axioms rep_distinctCoreflC
 #print axioms rep_domC
 #print axioms rep_ranC
@@ -202,6 +285,26 @@ def num (R : CRel A B) (k : USize) : CRel .long B := let r := numC R.rel k; ⟨r
 /-- `R × S`, ok where both inputs are and `prodC` ran within capacity. -/
 def prod (R : CRel A B) (S : CRel D E) : CRel (.prod A D) (.prod B E) :=
   let r := prodC R.rel S.rel; ⟨r.1, R.ok && S.ok && r.2⟩
+
+/-- `R \ S` on the universes `Ub`, `Uc`, ok where both inputs are and `leftDivC` ran within capacity. -/
+def leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc : Vals C mc) : CRel B C :=
+  let r := leftDivC R.rel S.rel Ub Uc; ⟨r.1, R.ok && S.ok && r.2⟩
+
+/-- `R / S` on the universes `Ua`, `Ub`, ok where both inputs are and `rightDivC` ran within capacity. -/
+def rightDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B :=
+  let r := rightDivC R.rel S.rel Ua Ub; ⟨r.1, R.ok && S.ok && r.2⟩
+
+theorem rep_leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc : Vals C mc)
+    (hb : (R.leftDiv S Ub Uc).ok = true) (b : B.El) (c : C.El) :
+    rep (R.leftDiv S Ub Uc).rel b c ↔ (∀ a, rep R.rel a b → rep S.rel a c) ∧
+      ((∃ a, rep R.rel a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) :=
+  rep_leftDivC R.rel S.rel Ub Uc (by simp only [leftDiv, Bool.and_eq_true] at hb; exact hb.2) b c
+
+theorem rep_rightDiv {ma mb : USize} (R : CRel C A) (S : CRel B A) (Ua : Vals C ma) (Ub : Vals B mb)
+    (hb : (R.rightDiv S Ua Ub).ok = true) (x : C.El) (y : B.El) :
+    rep (R.rightDiv S Ua Ub).rel x y ↔ (∀ c, rep S.rel y c → rep R.rel x c) ∧
+      ((∃ c, rep S.rel y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) :=
+  rep_rightDivC R.rel S.rel Ua Ub (by simp only [rightDiv, Bool.and_eq_true] at hb; exact hb.2) x y
 
 theorem rep_antiJoin (R : CRel A B) (T : CRel B B) (hb : (R.antiJoin T).ok = true) :
     rep (R.antiJoin T).rel = rep R.rel ≫ corefl (A := (⟨B.El⟩ : RelSet.{0})) fun b => ¬ ∃ y, rep T.rel y b :=

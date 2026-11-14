@@ -204,28 +204,76 @@ scoped notation "⊤" => top Univ.xs Univ.xs
 /-- `∼R`: the complement of `R` in `⊤`. -/
 scoped notation:max "∼" R:max => ⊤ \ R
 
+/-- `R.nub` and whether it ran within capacity: the bits of its two one-part codes (`codesC`) `&&` `R`'s sides
+    fitting at all its rows (`fitsN`), `rep_nub`'s premises. -/
+def nubC {k v : Obj} (R : Rel k v) : Rel k v × Bool :=
+  let kc := k.codesC #v[⟨_, R.key⟩]; let vc := v.codesC #v[⟨_, R.val⟩]
+  (R.rows (tuples.tupleIds kc.1[0] #[vc.1[0]]).2,
+    kc.2 && vc.2 && Vals.fitsN k R.key R.n.toNat && Vals.fitsN v R.val R.n.toNat)
+
+/-- A relation's keys as a part. A function of the relation, not `⟨R.n, R.key⟩`: there `simp` cannot rewrite `R`,
+    the `Vals`' count depending on it, so a twin's `_fst` would not reach a part a body codes. -/
+def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
+
+/-- A relation's values as a part, as `keyPart`. -/
+def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
+
+theorem nubC_fst {k v : Obj} (R : Rel k v) : (nubC R).1 = R.nub := by
+  show R.rows (tuples.tupleIds (k.codesC _).1[0] #[(v.codesC _).1[0]]).2 = _
+  rw [Obj.codesC_fst, Obj.codesC_fst]; rfl
+
+/-- `\`'s joined rows over the key codes `l`, `k`: `join`, the left index column read at the right's count (`fit`,
+    `join_len`), `r`'s values beside `s`'s, as `compC`; the bit is the two picks' (`pickC`). -/
+def divJoinC (r : Rel A B) (s : Rel A C) (l k : Code) : Rel B C × Bool :=
+  let ij := join l k
+  longCount "\\" ij.2 fun m h =>
+    let x := Vals.pickC B r.val (fit m.toNat ij.1) m (fit_len (h ▸ join_len l k))
+    let z := Vals.pickC C s.val ij.2 m h
+    ((⟨m, x.1, z.1⟩ : Rel B C), x.2 && z.2)
+
+/-- `\`'s rows from the joined rows `y` on: those whose pair count equals `y`'s count among `R`'s values (`ycs`, the
+    codes of `y`'s keys, `R.nub`'s values and `Ub`; `zc`, of `y`'s values), `∪` the vacuous `⊤`; the bit is `⊤`'s and
+    `∪`'s. A def of its own, on the codes as arguments: the kept rows' `longCount` binds a proof about the codes, so
+    a twin's `.1` inside it is rewritten by neither `simp` (dependent binder) nor `rw` (whose defeq checks then
+    evaluate the kernels); as an argument here it is. -/
+def divTailC {mb mc : USize} (Ub : Vals B mb) (Uc : Vals C mc) (y : Rel B C) (ycs : Vector Code 3)
+    (zc : Vector Code 1) : Rel B C × Bool :=
+  -- projected, not matched: `.2` of a `match` would hide the bit from `Bool.and_eq_true`
+  let t := tuples.tupleIds ycs[0] #[zc[0]]
+  let keep := longCount "\\" t.2 fun g _ =>
+    gather 8 t.2 (whereEqV g (classSizes ycs[0].n t) (atCnt (cnt ycs[1]) (ycs[0].gather t.2)))
+  let q := topC (Vals.pickPart B Ub (anti ycs[2] ycs[1])).2 Uc
+  let u := unionC (y.rows keep) q.1
+  (u.1, q.2 && u.2)
+
 /-- `R \ S` (`R : a ⟶ b`, `S : a ⟶ c`), by counting: `join` on the shared key → rows `(y, z)`;
     `cnt(y, z)` against `cnt(R.val)` `at` `y`; the vacuous `y ∉ ran R` with every `z` from the
     universes `Ub`, `Uc`: `⊤` on `anti(Ub, ran R)` and `Uc`. The two parts are disjoint (a counted `y` is in
     `ran R`) and meet by `∪`, whose counts are proved where a `raze` of the parts would need its own. -/
-def leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Rel B C :=
-  let r := R.nub; let s := S.nub
-  let kc := A.codes #v[⟨_, r.key⟩, ⟨_, s.key⟩]
-  let ij := join kc[0] kc[1]
-  -- the left index column read at the right's count (`join_len`), as `comp`
-  let y : Rel B C := longCount "\\" ij.2 fun m h =>
-    ⟨m, Vals.pickN B r.val ij.1 m (h ▸ join_len kc[0] kc[1]), Vals.pick C s.val ij.2 m h⟩
-  let ycs := B.codes #v[⟨_, y.key⟩, ⟨_, r.val⟩, ⟨_, Ub⟩]
-  let yc := ycs[0]; let rvc := ycs[1]; let ubc := ycs[2]
-  let zc := (C.codes #v[⟨_, y.val⟩])[0]
-  let (gid, firsts) := tuples.tupleIds yc #[zc]
-  let got := classSizes yc.n (gid, firsts)
-  let keep := longCount "\\" firsts fun g _ => gather 8 firsts (whereEqV g got (atCnt (cnt rvc) (yc.gather firsts)))
-  union (y.rows keep) (top (Vals.pickPart B Ub (anti ubc rvc)).2 Uc)
+def leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Rel B C × Bool :=
+  let r := nubC R; let s := nubC S
+  let kc := A.codesC #v[keyPart r.1, keyPart s.1]
+  let y := divJoinC r.1 s.1 kc.1[0] kc.1[1]
+  let ycs := B.codesC #v[keyPart y.1, valPart r.1, ⟨_, Ub⟩]
+  let zc := C.codesC #v[valPart y.1]
+  let u := divTailC Ub Uc y.1 ycs.1 zc.1
+  (u.1, r.2 && s.2 && kc.2 && decide (S.n.toNat < 2 ^ 63) &&
+    decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && y.2 && ycs.2 && zc.2 && Vals.fitsN B Ub mb.toNat &&
+    decide (mb.toNat * mc.toNat < min (2 ^ 63) USize.size) && u.2)
 
-/-- `R / S = (S° \ R°)°` (`R : a ⟶ c`, `S : b ⟶ c`); its vacuous term is `⊤` on `Ua` and `anti(Ub, dom S)`. -/
+/-- `R \ S`: `leftDivC`'s relation. -/
+def leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb) (Uc : Vals C mc) : Rel B C :=
+  (leftDivC R S Ub Uc).1
+
+/-- `R / S = (S° \ R°)°` (`R : a ⟶ c`, `S : b ⟶ c`); its vacuous term is `⊤` on `Ua` and `anti(Ub, dom S)`. The bit
+    is `leftDivC`'s. -/
+def rightDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B × Bool :=
+  let r := leftDivC (conv S) (conv R) Ub Ua
+  (conv r.1, r.2)
+
+/-- `R / S`: `rightDivC`'s relation. -/
 def rightDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb) : Rel A B :=
-  conv (leftDiv (conv S) (conv R) Ub Ua)
+  (rightDivC R S Ua Ub).1
 
 /-- `R /ₛ S` (`R : a ⟶ c`, `S : b ⟶ c`), equal fibres: the fibres of `R` and of `S` as `segments`
     of one value code space, their `setIds` in one call, `join` on the ids → `(x, y)`, the keys read as
