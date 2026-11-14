@@ -652,8 +652,8 @@ def ltC {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general
   (d.1, d.2 && decide (n.toNat * n.toNat < USize.size) && decide (n.toNat * n.toNat < 2 ^ 63))
 
 /-- `<` on the elements of `U`: `ltC`'s relation. -/
-def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
-  (ltC U h).1
+def lt {t : QAtomicType} {n : USize} (U : Vals (.atom t) n) (_h : t ≠ .general := by decide) : Rel (.atom t) (.atom t) :=
+  (ltC U _h).1
 
 /-- `≤` on the elements of `U` (`leRel`, AOP/A7_2_RelSet.lean:160), `lt U ∪ 𝟙`, and whether it ran within
     capacity: `ltC`'s bit `&&` `unionC`'s. -/

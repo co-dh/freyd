@@ -56,7 +56,7 @@ theorem rep_ltC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long ≠
   obtain ⟨⟨⟨⟨hcb, hk⟩, hv⟩, hN⟩, h63⟩ := hb
   have hc := (codes_faithful_wf (.prod _ _) _ (Obj.codesC_fits (.prod _ _) _ hcb)).1
   have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
-  exact rep_lt U h hN h63 _ rfl (by rw [pairs_eq_codes, e]; exact hc)
+  exact rep_lt U h hN h63 (ltRows U h) rfl (by rw [pairs_eq_codes, e]; exact hc)
     (pickFits_of_fitsN _ _ _ hk _ (by simp)) (pickFits_of_fitsN _ _ _ hv _ (by simp)) a b
 
 /-- **`rep (leq U)` under `leqC`'s bit**: `ltC`'s bit gives `rep_leq`'s `rep_lt` hypotheses as in `rep_ltC`;
@@ -83,7 +83,7 @@ theorem rep_leqC {n : USize} (U : Vals (.atom .long) n) (h : QAtomicType.long �
     simp only [hr] at hkc hvc hkf hvf
     have hK := (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hkc)).1
     have hV := (codes_faithful_wf _ _ (Obj.codesC_fits _ _ hvc)).1
-    exact rep_leq U h hN h63 _ rfl (by rw [pairs_eq_codes, e]; exact hc)
+    exact rep_leq U h hN h63 (ltRows U h) rfl (by rw [pairs_eq_codes, e]; exact hc)
       (pickFits_of_fitsN _ _ _ hk _ (by simp)) (pickFits_of_fitsN _ _ _ hv _ (by simp)) hNU _ rfl
       ⟨fun hi hj => hK.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hK.2 (k := 0) Nat.zero_lt_one⟩
       ⟨fun hi hj => hV.1 (k := 0) (l := 0) Nat.zero_lt_one Nat.zero_lt_one hi hj, hV.2 (k := 0) Nat.zero_lt_one⟩
