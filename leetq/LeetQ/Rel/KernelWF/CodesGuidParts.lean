@@ -32,6 +32,7 @@ theorem codes_guid_parts_faithful {p : Nat} (cs : Vector (Part (.atom .guid)) p)
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
   have hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b := fun k _ =>
     let ⟨b, hb, _⟩ := guid_enc cs[k].2.wf; ⟨b, hb⟩
+  have hE := encodedParts_parts_bytes (t := .guid) cs hd
   have hX := raze_len .guid cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_guid_wf (raze .guid cs.toArray)
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom .guid) #v[raze .guid cs.toArray])[0].n.toNat := by
@@ -48,7 +49,8 @@ theorem codes_guid_parts_faithful {p : Nat} (cs : Vector (Part (.atom .guid)) p)
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     codes_guid_faithful _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+    Vals.row_atom, raze_get_bytes (w := 16) rfl (by decide) cs (fun r hr => by rw [hE] at hr; cases hr) hN hk hi,
+    raze_get_bytes (w := 16) rfl (by decide) cs (fun r hr => by rw [hE] at hr; cases hr) hN hl hj]
 
 /-- **A `guid` side of several parts: each part's code is well formed**, the parts' summed count a `USize`. -/
 theorem codes_guid_parts_wf {p : Nat} (cs : Vector (Part (.atom .guid)) p)

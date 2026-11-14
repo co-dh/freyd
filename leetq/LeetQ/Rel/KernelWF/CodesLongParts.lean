@@ -130,7 +130,9 @@ theorem raze_words {t : QAtomicType} (ht : orderKind t = some .i64) (cs : Array 
   have hv : ∀ h, ((razeColumn t ((List.toArray l).map (·.2.part))).get h) =
       .vector t (((List.toArray l).map (·.2.part)).foldl (fun s (c : USize × Enc) => s + c.1.toNat) 0).toUSize
         (.bytes (l.foldl (fun a c => a ++ gb c) .empty)) none := fun h => by
-    rw [← hB]; exact KernelWF.razeColumn_bytes hw hbo hps (Option.some_get h).symm
+    rw [← hB]; exact KernelWF.razeColumn_dense hw hbo (fun c hc => by
+      obtain ⟨d, -, rfl⟩ := Array.mem_map.1 hc; exact d.2.wf)
+      (fun r hr => by rw [KernelWF.encodedParts_bytes hps] at hr; cases hr) (Option.some_get h).symm
   have hgb : ∀ c ∈ l, c.2.enc = .bytes (gb c) := fun c hc => by
     obtain ⟨b, hb⟩ := hcs c hc; simp [gb, hb, Enc.bytesOf]
   have hsz : ∀ c ∈ l, (gb c).size = c.1.toNat * 8 := fun c hc => by
@@ -447,6 +449,9 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
         Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
   have hroR := rangeOffsets_raze_none ht cs (by omega) hd hN hro
+  have hW : t.width = some 8 := by cases t <;> simp [orderKind] at ht <;> rfl
+  have hB : t ≠ .boolean := by rintro rfl; simp [orderKind] at ht
+  have hE := encodedParts_parts_bytes (t := t) cs hd
   have hX := raze_len t cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_long_group_wf ht (raze t cs.toArray) hroR
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
@@ -463,7 +468,8 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     codes_long_group_faithful ht _ hroR (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+    Vals.row_atom, Vals.row_atom, raze_get_bytes hW hB cs (fun r hr => by rw [hE] at hr; cases hr) hN hk hi,
+    raze_get_bytes hW hB cs (fun r hr => by rw [hE] at hr; cases hr) hN hl hj]
 
 /-- **A long side of several dense parts where `rangeOffsets` declines: each part's code is well formed**,
     the parts' summed count a `USize`. -/

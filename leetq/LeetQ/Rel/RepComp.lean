@@ -167,7 +167,9 @@ open Freyd Freyd.Alg.RelSet
     (`codes_dense_faithful_wf`). -/
 theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
     (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
-    (hRv : ∃ b, R.val.enc = .bytes b) (hSk : ∃ b, S.key.enc = .bytes b) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hD : ∀ w r, t.width = some w → encodedParts t ((jcs).toArray.map (·.2.part)) = some r →
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
+    (hN : R.n.toNat + S.n.toNat < USize.size)
     (hrn : S.n.toNat < 2 ^ 63)
     (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
@@ -177,10 +179,8 @@ theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = 
         Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
     (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S :=
-  have hd : ∀ k (hk : k < 2), ∃ b, (jcs)[k].2.enc = .bytes b := fun k hk => by
-    match k, hk with | 0, _ => exact hRv | 1, _ => exact hSk
   have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  have hc := codes_dense_faithful_wf ht hk₀ _ hd hN'
+  have hc := codes_dense_faithful_wf ht hk₀ _ (fun h => absurd h (by decide)) hD hN'
   rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => hc.1.1 hk hl hi hj, fun hk => hc.1.2 hk⟩ hrn hM hMU hA hC
 
 end CompDense
