@@ -1,4 +1,5 @@
 import Std.Data.HashMap
+import LeetQ.Rel.AC3
 import LeetQ.Rel.Lang.Elab
 import LeetQ.Rel.Lang.Parse
 import LeetQ.Rel.Programs.Prelude
@@ -50,41 +51,65 @@ abbrev EvM := StateM Memo
     meets no pair. -/
 def onKeys {A B : Obj} (f : Rel A A → Rel A B) (P : Rel A A) : Rel A B := if P.n == 0 then zero else f P
 
+/-- A closed sub-term's value as `hoist` leaves it: a value, a universe, or one under its identity. -/
+def closedVal? : {A B : Obj} → {d : Bool} → Tm A B d → Option (Rel A B)
+  | _, _, _, .val R => some R
+  | _, _, _, .uni U => some (idU U)
+  | _, _, _, .share _ R => closedVal? R
+  | _, _, _, _ => none
+
+/-- `X C`, `X` the variable `k`: `C`, its source the variable's target. -/
+def varComp? (k : Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Option ((D : Obj) × Rel D B)
+  | _, _, _, .comp (B := D) (.var k') C => if k' == k then (closedVal? C).map (⟨D, ·⟩) else none
+  | _, _, _, .share _ R => varComp? k R
+  | _, _, _, _ => none
+
+/-- The arcs of a hoisted AC-3 body `S ∩ ⋂ₖ Aₖ\(X Cₖ)` over the variable `k`, its closed conjuncts skipped (they
+    are `S`); `none` for any other body. -/
+def acArcs (k : Nat) : {V D : Obj} → {d : Bool} → Tm V D d → Option (List (Revise V D))
+  | _, _, _, .share _ R => acArcs k R
+  | _, _, _, .val _ => some []
+  | _, _, _, .meet R S => return (← acArcs k R) ++ (← acArcs k S)
+  | V, D, _, .ldiv (A := V') R S UB UC => do
+    let A ← closedVal? R; let ⟨D', C⟩ ← varComp? k S; let UV ← closedVal? UB; let UD ← closedVal? UC
+    if h : V' = V ∧ D' = D then some [⟨h.1 ▸ A, h.2 ▸ C, UV, UD⟩] else none
+  | _, _, _, _ => none
+
 /-- `t` on the keys `D`: exact at every key of `D`; a closed term ignores `D`. In `RS`, `S` runs on `ran(R)`.
     A sub-term `.share k` whose identity occurs more than once (`cnt`) runs once per demand. -/
-def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
+def ev (cnt : Array Nat) (ρ : List (Nat × Val)) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A → EvM (Rel A B)
   | _, _, _, .val R, _ => pure R
   | _, _, _, .uni U, _ => pure (idU U)
   | _, _, _, .zero, _ => pure zero
   | _, _, _, .id, D => pure D
-  | _, _, _, .top V, D => return top D.val (← ev cnt V ()).val
+  | _, _, _, .top V, D => return top D.val (← ev cnt ρ V ()).val
   | _, _, _, .mem, D => pure (mem D.val)
   | _, _, _, .outl, D => pure (outl D)
   | _, _, _, .outr, D => pure (outr D)
   | _, _, _, .inl, D => pure (inl D.val)
   | _, _, _, .inr, D => pure (inr D.val)
   | _, _, _, .comp (e := e) R S, D => do
-    let r ← ev cnt R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt S (Dem.of e (ran r)))
-  | _, _, _, .conv R, _ => return (← ev cnt R ())°
-  | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt R (Dem.l d e D)) ∩ (← ev cnt S (Dem.r d e D))
-  | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt R (Dem.l d e D)) ∪ (← ev cnt S (Dem.r d e D))
-  | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt R (Dem.l d e D)) \ (← ev cnt S (Dem.r d e D))
-  | _, _, _, .dom R, D => return dom (← ev cnt R D)
-  | _, _, _, .ran R, _ => return ran (← ev cnt R ())
+    let r ← ev cnt ρ R D; if r.n == 0 then pure zero else return r ≫ (← ev cnt ρ S (Dem.of e (ran r)))
+  | _, _, _, .conv R, _ => return (← ev cnt ρ R ())°
+  | _, _, _, .meet (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∩ (← ev cnt ρ S (Dem.r d e D))
+  | _, _, _, .join (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) ∪ (← ev cnt ρ S (Dem.r d e D))
+  | _, _, _, .diff (d := d) (e := e) R S, D => return (← ev cnt ρ R (Dem.l d e D)) \ (← ev cnt ρ S (Dem.r d e D))
+  | _, _, _, .dom R, D => return dom (← ev cnt ρ R D)
+  | _, _, _, .ran R, _ => return ran (← ev cnt ρ R ())
   | _, _, _, .ldiv R S UB UC, _ =>
-    return leftDiv (← ev cnt R ()) (← ev cnt S ()) (← ev cnt UB ()).val (← ev cnt UC ()).val
+    return leftDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UB ()).val (← ev cnt ρ UC ()).val
   | _, _, _, .rdiv R S UA UB, _ =>
-    return rightDiv (← ev cnt R ()) (← ev cnt S ()) (← ev cnt UA ()).val (← ev cnt UB ()).val
-  | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt R (Dem.l d e D)) (← ev cnt S (Dem.r d e D))
-  | _, _, _, .prod R S, _ => return Alg.prod (← ev cnt R ()) (← ev cnt S ())
-  | _, _, _, .junc R S, _ => return junc (← ev cnt R ()) (← ev cnt S ())
-  | _, _, _, .lam R, D => do let r ← ev cnt R D; pure Λ(r)
-  | _, _, _, .E (d := d) R, D => return E (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
-  | _, _, _, .map (d := d) R, D => return map (← ev cnt R (Dem.of d (ran (mem D.val)))) D.val
+    return rightDiv (← ev cnt ρ R ()) (← ev cnt ρ S ()) (← ev cnt ρ UA ()).val (← ev cnt ρ UB ()).val
+  | _, _, _, .pair (d := d) (e := e) R S, D => return pair (← ev cnt ρ R (Dem.l d e D)) (← ev cnt ρ S (Dem.r d e D))
+  | _, _, _, .prod R S, _ => return Alg.prod (← ev cnt ρ R ()) (← ev cnt ρ S ())
+  | _, _, _, .junc R S, _ => return junc (← ev cnt ρ R ()) (← ev cnt ρ S ())
+  | _, _, _, .lam R, D => do let r ← ev cnt ρ R D; pure Λ(r)
+  | _, _, _, .E (d := d) R, D => return E (← ev cnt ρ R (Dem.of d (ran (mem D.val)))) D.val
+  | _, _, _, .map (d := d) R, D => return map (← ev cnt ρ R (Dem.of d (ran (mem D.val)))) D.val
   -- an order is its pair test, run on the pairs the operator compares: each call one evaluation, as a fold step
-  | _, _, _, .est Q, D => pure (estOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val))
+  | _, _, _, .est Q, D => pure (estOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) (mem D.val))
   | _, _, _, .thin Q, D => do
-    let T := thinOn (fun P => Id.run ((ev cnt Q P).run' {})) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
+    let T := thinOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) (mem D.val); pure (Λ(T) ∪ top (D \ dom T).key (nilVal _))
   | _, _, _, .union, D => pure (Arr.union D.val)
   | _, _, _, .tau, D => pure (τ D.val)
   | _, _, _, .nil, D => pure (top D.val (nilVal _))
@@ -98,16 +123,16 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .zip, D => pure (Alg.zip D)
   | _, _, _, .snoc, D => pure (Alg.snoc D)
   | _, _, _, .unsnoc, D => pure (Alg.unsnoc D.val)
-  | _, _, _, .own R, D => ev cnt R D
+  | _, _, _, .own R, D => ev cnt ρ R D
   | _, _, _, .setify, D => pure (Alg.setify D.val)
   | _, _, _, .bagify, D => pure (Alg.bagify D.val)
   | _, _, _, .tic, D => pure (Alg.tic D)
   | _, _, _, .atPos k, D => pure (Alg.atPos k D.val)
   -- the note's one-pass thinning, which refines the specification `Alg.thinL`
-  | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt Q P).run' {})) D.val)
-  | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt Q P).run' {})) D)
+  | _, _, _, .thinL Q, D => pure (thinLOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) D.val)
+  | _, _, _, .merge Q, D => pure (mergeOn (fun P => Id.run ((ev cnt ρ Q P).run' {})) D)
   -- one loop round's `F` is one evaluation, as a fold step's
-  | _, _, _, .loop (d := d) F, D => pure (loopOn (onKeys fun A => Id.run ((ev cnt F (Dem.of d A)).run' {})) D)
+  | _, _, _, .loop (d := d) F, D => pure (loopOn (onKeys fun A => Id.run ((ev cnt ρ F (Dem.of d A)).run' {})) D)
   | _, _, _, .succ U, D => pure (D ≫ succ U)
   -- a result outside the declared object has no row, as `succ` at its top
   | _, _, _, .arith k U, D => pure (arith k D.val ≫ idU U)
@@ -115,32 +140,46 @@ def ev (cnt : Array Nat) : {A B : Obj} → {d : Bool} → Tm A B d → Dem d A �
   | _, _, _, .lt U, _ => pure (lt U)
   -- one fold step is one evaluation: what it shares, it shares within the step
   | _, _, _, .fold (d := d) e S, D => do
-    let v ← ev cnt e ()
-    pure (foldOn v.val (onKeys fun A => Id.run ((ev cnt S (Dem.of d A)).run' {})) D.val)
+    let v ← ev cnt ρ e ()
+    pure (foldOn v.val (onKeys fun A => Id.run ((ev cnt ρ S (Dem.of d A)).run' {})) D.val)
   -- the pairs (i, xs) in demand, one fold row each, starting from its own key's seeds `(i,v)` from `e`: no
   -- array is folded from another key's seed, so the rows are the pairs, not the arrays times every key's seeds
   | _, _, _, .foldI (d := d) (d' := d') e S, D => do
-    let es ← ev cnt e (Dem.of d (ran (outl D)))
+    let es ← ev cnt ρ e (Dem.of d (ran (outl D)))
     let iv := pair (dom es) (es ≫ outl (ran es))
     let r := num D 0
-    let G := foldRows (outr r) (outl r ≫ iv) (demandStep (onKeys fun A => Id.run ((ev cnt S (Dem.of d' A)).run' {})))
+    let G := foldRows (outr r) (outl r ≫ iv) (demandStep (onKeys fun A => Id.run ((ev cnt ρ S (Dem.of d' A)).run' {})))
     pure (r° ≫ (G ≫ outr (ran G)))
   -- `R` at the keys of the pairs, its rows `(i,(a,b))` re-keyed as `((i,a),b)`, a join with the pairs: no pair
   -- meets a row of another source
   | _, _, _, .flat (d := d) R, D => do
-    let r ← ev cnt R (Dem.of d (ran (outl D)))
+    let r ← ev cnt ρ R (Dem.of d (ran (outl D)))
     let U := ran r
     pure (D ≫ ((pair r° (outl U))° ≫ outr U))
-  | _, _, false, .share _ R, D => ev cnt R D
+  -- `build` puts a variable only inside the fixed point binding it, so a missing one is its bug
+  | A, B, _, .var k, _ => match (ρ.lookup k).bind (Val.at? A B) with
+    | some R => pure R
+    | none => pure (@panic (Rel A B) ⟨zero⟩ s!"internal: the fixed-point variable {k} is not bound here")
+  -- each round one evaluation, as a fold step: what the body shares, it shares within the round
+  -- an AC-3 body runs by delta rounds (`acFix`), decided once before the rounds; any other body naively
+  | A, B, _, .nu k S body, _ => do
+    let s ← ev cnt ρ S ()
+    match acArcs k body with
+    | some as@(a :: _) => pure (acFix s as a.UV).1
+    | _ => pure (fixOn (s.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) s).1
+  | A, B, _, .mu k UA UB body, _ => do
+    let u ← ev cnt ρ UA (); let v ← ev cnt ρ UB ()
+    pure (fixOn (u.n.toNat * v.n.toNat + 1) (fun X => Id.run ((ev cnt ((k, ⟨A, B, X⟩) :: ρ) body ()).run' {})) zero).1
+  | _, _, false, .share _ R, D => ev cnt ρ R D
   | A, B, true, .share k R, D => do
-    if cnt.getD k 0 < 2 then ev cnt R D else
+    if cnt.getD k 0 < 2 then ev cnt ρ R D else
     let hit := ((← get).getD k #[]).findSome? fun ⟨A', D', v⟩ =>
       if h : A' = A then (let D'' : Rel A A := h ▸ D'; if D''.n == D.n && D'' == D then v.at? A B else none)
       else none
     match hit with
     | some V => pure V
     | none => do
-      let V ← ev cnt R D
+      let V ← ev cnt ρ R D
       modify fun m => m.insert k ((m.getD k #[]).push ⟨A, D, ⟨A, B, V⟩⟩)
       pure V
 
@@ -160,6 +199,8 @@ structure Share where
   cnt : Array Nat := #[]
   leaves : Array (Val × Nat) := #[]
   vals : Std.HashMap Nat Val := {}
+  /-- The fixed-point variables each identity reads unbound: a term with one has no value of its own. -/
+  free : Std.HashMap Nat (List Nat) := {}
 
 abbrev HM := StateM Share
 
@@ -176,92 +217,106 @@ def leaf {A B : Obj} (R : Rel A B) : HM Nat := do
   | none => modifyGet fun s => (s.leaves.size, { s with leaves := s.leaves.push (⟨A, B, R⟩, s.leaves.size) })
 
 /-- The node `t` of parts `ps`, interned: a closed one becomes its value, computed once per identity; a composite
-    one on demand is marked with its identity, so `ev` runs it once per demand. -/
-def node {A B : Obj} {d : Bool} (tag : Nat) (t : Tm A B d) (ps : List Nat) : HM (Tm A B d × Nat) := do
+    one on demand is marked with its identity, so `ev` runs it once per demand. `sub`: the parts that are
+    identities (not leaf values or numbers); the node reads unbound the variables they read, as `fv` changes
+    them (a variable adds its own, a fixed point removes its own), and one that reads any is kept as a term. -/
+def node {A B : Obj} {d : Bool} (tag : Nat) (t : Tm A B d) (ps sub : List Nat) (fv : List Nat → List Nat := id) :
+    HM (Tm A B d × Nat) := do
   let k ← intern ⟨tag, A, B, ps⟩
+  let s ← get
+  let f := fv (sub.flatMap fun i => s.free.getD i []) |>.eraseDups
+  if !f.isEmpty then set { s with free := s.free.insert k f }
   match d, t with
   | true, t => pure (if ps.isEmpty then t else .share k t, k)
   | false, .val R => pure (.val R, k)
-  | false, t =>
+  | false, t => if !f.isEmpty then pure (t, k) else
     match ((← get).vals[k]?).bind (Val.at? A B) with
     | some R => pure (.val R, k)
     | none => do
-      let R := Id.run ((ev (← get).cnt t ()).run' {})
+      let R := Id.run ((ev (← get).cnt [] t ()).run' {})
       modify fun s => { s with vals := s.vals.insert k ⟨A, B, R⟩ }
       pure (.val R, k)
 
 /-- Every sub-term interned bottom up: closed ones evaluated once per identity, so a fold's step recomputes only
     what reads the round's pairs, and equal sub-terms on demand marked to run once per demand. -/
 def hoist : {A B : Obj} → {d : Bool} → Tm A B d → HM (Tm A B d × Nat)
-  | _, _, _, .val R => do node 0 (.val R) [← leaf R]
-  | _, _, _, .uni U => do node 1 (.uni U) [← leaf (idU U)]
-  | _, _, _, .zero => node 2 .zero []
-  | _, _, _, .id => node 3 .id []
-  | _, _, _, .top V => do let (v, i) ← hoist V; node 4 (.top v) [i]
-  | _, _, _, .mem => node 5 .mem []
-  | _, _, _, .outl => node 6 .outl []
-  | _, _, _, .outr => node 7 .outr []
-  | _, _, _, .inl => node 8 .inl []
-  | _, _, _, .inr => node 9 .inr []
-  | _, _, _, .comp R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 10 (.comp r s) [i, j]
-  | _, _, _, .conv R => do let (r, i) ← hoist R; node 11 (.conv r) [i]
-  | _, _, _, .meet R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 12 (.meet r s) [i, j]
-  | _, _, _, .join R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 13 (.join r s) [i, j]
-  | _, _, _, .diff R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 14 (.diff r s) [i, j]
-  | _, _, _, .dom R => do let (r, i) ← hoist R; node 15 (.dom r) [i]
-  | _, _, _, .ran R => do let (r, i) ← hoist R; node 16 (.ran r) [i]
+  | _, _, _, .val R => do node 0 (.val R) [← leaf R] []
+  | _, _, _, .uni U => do node 1 (.uni U) [← leaf (idU U)] []
+  | _, _, _, .zero => node 2 .zero [] []
+  | _, _, _, .id => node 3 .id [] []
+  | _, _, _, .top V => do let (v, i) ← hoist V; node 4 (.top v) [i] [i]
+  | _, _, _, .mem => node 5 .mem [] []
+  | _, _, _, .outl => node 6 .outl [] []
+  | _, _, _, .outr => node 7 .outr [] []
+  | _, _, _, .inl => node 8 .inl [] []
+  | _, _, _, .inr => node 9 .inr [] []
+  | _, _, _, .comp R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 10 (.comp r s) [i, j] [i, j]
+  | _, _, _, .conv R => do let (r, i) ← hoist R; node 11 (.conv r) [i] [i]
+  | _, _, _, .meet R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 12 (.meet r s) [i, j] [i, j]
+  | _, _, _, .join R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 13 (.join r s) [i, j] [i, j]
+  | _, _, _, .diff R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 14 (.diff r s) [i, j] [i, j]
+  | _, _, _, .dom R => do let (r, i) ← hoist R; node 15 (.dom r) [i] [i]
+  | _, _, _, .ran R => do let (r, i) ← hoist R; node 16 (.ran r) [i] [i]
   | _, _, _, .ldiv R S U V => do
     let (r, i) ← hoist R; let (s, j) ← hoist S; let (u, k) ← hoist U; let (v, l) ← hoist V
-    node 17 (.ldiv r s u v) [i, j, k, l]
+    node 17 (.ldiv r s u v) [i, j, k, l] [i, j, k, l]
   | _, _, _, .rdiv R S U V => do
     let (r, i) ← hoist R; let (s, j) ← hoist S; let (u, k) ← hoist U; let (v, l) ← hoist V
-    node 18 (.rdiv r s u v) [i, j, k, l]
-  | _, _, _, .pair R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 20 (.pair r s) [i, j]
-  | _, _, _, .prod R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 21 (.prod r s) [i, j]
-  | _, _, _, .junc R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 22 (.junc r s) [i, j]
-  | _, _, _, .lam R => do let (r, i) ← hoist R; node 24 (.lam r) [i]
-  | _, _, _, .E R => do let (r, i) ← hoist R; node 25 (.E r) [i]
-  | _, _, _, .map R => do let (r, i) ← hoist R; node 26 (.map r) [i]
-  | _, _, _, .est Q => do let (q, i) ← hoist Q; node 27 (.est q) [i]
-  | _, _, _, .thin Q => do let (q, i) ← hoist Q; node 28 (.thin q) [i]
-  | _, _, _, .union => node 31 .union []
-  | _, _, _, .tau => node 32 .tau []
-  | _, _, _, .nil => node 33 .nil []
-  | _, _, _, .cons => node 34 .cons []
-  | _, _, _, .uncons => node 35 .uncons []
-  | _, _, _, .length => node 36 .length []
-  | _, _, _, .total => node 37 .total []
-  | _, _, _, .succ U => do node 42 (.succ U) [← leaf (idU (t := .long) U)]
+    node 18 (.rdiv r s u v) [i, j, k, l] [i, j, k, l]
+  | _, _, _, .pair R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 20 (.pair r s) [i, j] [i, j]
+  | _, _, _, .prod R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 21 (.prod r s) [i, j] [i, j]
+  | _, _, _, .junc R S => do let (r, i) ← hoist R; let (s, j) ← hoist S; node 22 (.junc r s) [i, j] [i, j]
+  | _, _, _, .lam R => do let (r, i) ← hoist R; node 24 (.lam r) [i] [i]
+  | _, _, _, .E R => do let (r, i) ← hoist R; node 25 (.E r) [i] [i]
+  | _, _, _, .map R => do let (r, i) ← hoist R; node 26 (.map r) [i] [i]
+  | _, _, _, .est Q => do let (q, i) ← hoist Q; node 27 (.est q) [i] [i]
+  | _, _, _, .thin Q => do let (q, i) ← hoist Q; node 28 (.thin q) [i] [i]
+  | _, _, _, .union => node 31 .union [] []
+  | _, _, _, .tau => node 32 .tau [] []
+  | _, _, _, .nil => node 33 .nil [] []
+  | _, _, _, .cons => node 34 .cons [] []
+  | _, _, _, .uncons => node 35 .uncons [] []
+  | _, _, _, .length => node 36 .length [] []
+  | _, _, _, .total => node 37 .total [] []
+  | _, _, _, .succ U => do node 42 (.succ U) [← leaf (idU (t := .long) U)] []
   -- the verb is a part, so `plus` and `times` on one universe are two identities
-  | _, _, _, .arith k U => do node 43 (.arith k U) [← leaf (idU (t := .long) U), k.toNat]
-  | _, _, _, .leq U => do node 44 (.leq U) [← leaf (idU (t := .long) U)]
-  | _, _, _, .lt U => do node 45 (.lt U) [← leaf (idU (t := .long) U)]
-  | _, _, _, .fold e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 46 (.fold x s) [i, j]
-  | _, _, _, .foldI e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 47 (.foldI x s) [i, j]
-  | _, _, _, .flat R => do let (r, i) ← hoist R; node 48 (.flat r) [i]
-  | _, _, _, .inits => node 49 .inits []
-  | _, _, _, .cat => node 51 .cat []
-  | _, _, _, .uncat => node 52 .uncat []
-  | _, _, _, .zip => node 53 .zip []
-  | _, _, _, .snoc => node 54 .snoc []
-  | _, _, _, .unsnoc => node 55 .unsnoc []
+  | _, _, _, .arith k U => do node 43 (.arith k U) [← leaf (idU (t := .long) U), k.toNat] []
+  | _, _, _, .leq U => do node 44 (.leq U) [← leaf (idU (t := .long) U)] []
+  | _, _, _, .lt U => do node 45 (.lt U) [← leaf (idU (t := .long) U)] []
+  | _, _, _, .fold e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 46 (.fold x s) [i, j] [i, j]
+  | _, _, _, .foldI e S => do let (x, i) ← hoist e; let (s, j) ← hoist S; node 47 (.foldI x s) [i, j] [i, j]
+  | _, _, _, .flat R => do let (r, i) ← hoist R; node 48 (.flat r) [i] [i]
+  | _, _, _, .inits => node 49 .inits [] []
+  | _, _, _, .cat => node 51 .cat [] []
+  | _, _, _, .uncat => node 52 .uncat [] []
+  | _, _, _, .zip => node 53 .zip [] []
+  | _, _, _, .snoc => node 54 .snoc [] []
+  | _, _, _, .unsnoc => node 55 .unsnoc [] []
   -- `own` is its body's value (`ev`), so it is its body's identity: one memo entry per demand, not two
   | _, _, _, .own R => do let (r, i) ← hoist R; pure (.own r, i)
-  | _, _, _, .setify => node 59 .setify []
-  | _, _, _, .bagify => node 60 .bagify []
-  | _, _, _, .tic => node 62 .tic []
+  | _, _, _, .setify => node 59 .setify [] []
+  | _, _, _, .bagify => node 60 .bagify [] []
+  | _, _, _, .tic => node 62 .tic [] []
   -- the position is a part, so `at(0)` and `at(1)` are two identities
-  | _, _, _, .atPos k => node 68 (.atPos k) [k]
-  | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i]
-  | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i]
-  | _, _, _, .loop F => do let (f, i) ← hoist F; node 67 (.loop f) [i]
+  | _, _, _, .atPos k => node 68 (.atPos k) [k] []
+  | _, _, _, .thinL Q => do let (q, i) ← hoist Q; node 65 (.thinL q) [i] [i]
+  | _, _, _, .merge Q => do let (q, i) ← hoist Q; node 66 (.merge q) [i] [i]
+  | _, _, _, .loop F => do let (f, i) ← hoist F; node 67 (.loop f) [i] [i]
+  -- the variable is a part, so two fixed points' variables are two identities; it reads itself unbound
+  | _, _, _, .var k => node 69 (.var k) [k] [] fun _ => [k]
+  -- the node reads unbound what its parts do, less the variable it binds; the body is run only in its rounds
+  | _, _, _, .nu k S b => do
+    let (s, i) ← hoist S; let (x, j) ← hoist b; node 70 (.nu k s x) [k, i, j] [i, j] (·.filter (· != k))
+  | _, _, _, .mu k U V b => do
+    let (u, i) ← hoist U; let (v, j) ← hoist V; let (x, l) ← hoist b
+    node 71 (.mu k u v x) [k, i, j, l] [i, j, l] (·.filter (· != k))
   -- a definition's term, interned when the definition was
   | _, _, _, .share k R => pure (.share k R, k)
 
 /-- A closed term's value: hoisted into the program's table, then evaluated. -/
 def value {A B : Obj} (sh : Share) (t : Tm A B false) : Rel A B × Share :=
   let ((t, _), sh) := Id.run ((hoist t).run sh)
-  (Id.run ((ev sh.cnt t ()).run' {}), sh)
+  (Id.run ((ev sh.cnt [] t ()).run' {}), sh)
 
 /-! ### Running a program -/
 
@@ -383,7 +438,7 @@ def run (prog : Program) (start : Env × Out × Share := ({}, {}, {})) (wrap : S
         let res : Res := ⟨A, B, d, tm⟩
         env := { env with defs := (n, wrap n { arity := 0, apply := fun _ _ => pure (.rel (.tm res) s t) }) :: env.defs }
         match d, tm, types with
-        | false, tm, false => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt tm ()).run' {})⟩, s, t) :: out.vals }
+        | false, tm, false => out := { out with vals := (n, ⟨A, B, Id.run ((ev sh.cnt [] tm ()).run' {})⟩, s, t) :: out.vals }
         | _, _, _ => pure ()
       | ps, b, ty => env := { env with defs := (n, wrap n (mkDef env n p ps b ty)) :: env.defs }
     | .print p e =>

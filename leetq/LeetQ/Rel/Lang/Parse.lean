@@ -164,6 +164,21 @@ def atWhere : P Bool := do
   let cs ← [0, 1, 2, 3, 4, 5].mapM peekAt
   pure (cs.take 5 == "where".toList.map some && !((cs.getD 5 none).any isIdCont))
 
+/-- The names a definition must not take: they read as `∪ ∩ ⊤ °`. -/
+def banned : List String := ["U", "u", "n", "T", "o"]
+
+/-- `μ` and `ν` open a fixed point `μX : φ`, `νX : φ`, read at a term before any name. -/
+def isFix (c : Char) : Bool := c == 'μ' || c == 'ν'
+
+/-- `w` may be defined at `p`: not a builtin of the operator table, not read as an operator or a fixed point,
+    and neither it nor its infix form `_w_` in `taken`, the names already defined or declared in its scope. -/
+def fresh (p : Pos) (w : String) (taken : List (String × String)) : P Unit := do
+  if banned.contains w then throw ⟨p, s!"the name '{w}' reads as an operator; choose another"⟩
+  if w.toList.head?.any isFix then throw ⟨p, s!"the name '{w}' reads as a fixed point μX or νX; choose another"⟩
+  if (builtin w).isSome then throw ⟨p, s!"`{w}` is a builtin; choose another name"⟩
+  for k in [w, infixKey w] do
+    if let some q := taken.lookup k then throw ⟨p, s!"`{w}` is already defined {q}"⟩
+
 def startsPrimary (c : Char) : Bool :=
   ['(', '⟨', '[', '⦇', '{', '∼'].contains c || isLetter c || isSym c
 
@@ -208,6 +223,16 @@ partial def atom : P Expr := do
   | some '{' => adv; pure (.lit p (← sepBy litPair '}'))
   | some c =>
     if !(isLetter c || isSym c) then expected "a term" else
+    -- `μX : φ`, `νX : φ`: `X` in scope in the body only, which reads to the closing parenthesis or the end
+    if isFix c then do
+      adv; ws; let q ← pos; let x ← word
+      fresh q x (← get).taken
+      tok ':'
+      let k := (← get).known
+      modify fun s => { s with known := (x, 0) :: k }
+      let b ← expr
+      modify fun s => { s with known := k }
+      return .fix p (c == 'μ') x b
     let n ← name
     match (← get).known.lookup n, builtin n with
     | some 0, _ => pure (.name p n)
@@ -262,17 +287,6 @@ partial def bracket : P (List Tup) := do
   | _ => let a ← litItem; pure (a :: (← bracket))
 
 end
-
-/-- The names a definition must not take: they read as `∪ ∩ ⊤ °`. -/
-def banned : List String := ["U", "u", "n", "T", "o"]
-
-/-- `w` may be defined at `p`: not a builtin of the operator table, not read as an operator, and neither it nor
-    its infix form `_w_` in `taken`, the names already defined or declared in its scope. -/
-def fresh (p : Pos) (w : String) (taken : List (String × String)) : P Unit := do
-  if banned.contains w then throw ⟨p, s!"the name '{w}' reads as an operator; choose another"⟩
-  if (builtin w).isSome then throw ⟨p, s!"`{w}` is a builtin; choose another name"⟩
-  for k in [w, infixKey w] do
-    if let some q := taken.lookup k then throw ⟨p, s!"`{w}` is already defined {q}"⟩
 
 def at_ (p : Pos) : String := s!"at line {p.line}"
 

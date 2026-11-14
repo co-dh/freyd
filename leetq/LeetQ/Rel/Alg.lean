@@ -290,7 +290,16 @@ def iter {α : Type} (n : Nat) (done : α → Bool) (f : α → α) (a : α) : �
   (hylo (·.1) (fun x => x.1 == 0 || done x.2) (fun x => (x.1 - 1, f x.2))
     (fun x h => by simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h; show x.1 - 1 < x.1; omega) (n, a)).2
 
-/-- The order `Q` as a test of pairs: the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
+/-- A fixed point of `φ` from `X₀`: rounds `X ↦ nub(φ(X))`, at most `n`, until a round leaves the row count as
+    it was, with the rounds run. On a chain (`φ` monotonic, `X₀ ⊑ φ(X₀)` or `φ(X₀) ⊑ X₀`) an equal count is an
+    equal relation, so the stop is the fixed point; `n` bounds the rounds, as the chain's length does. -/
+def fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A B) : Rel A B × Nat :=
+  let x := X₀.nub
+  let r := iter n (fun (p, x, _) => p == x.n.toNat) (fun (_, x, k) => (x.n.toNat, (φ x).nub, k + 1))
+    (x.n.toNat + 1, x, 0)
+  (r.2.1, r.2.2)
+
+/-- The order `Q` as a test of pairs:the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
     takes an order runs it as such a test, on the pairs it compares (`estOn`, …); `Q` closed is this test. -/
 def pairsIn {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
   D ≫ idU (Q.key, Q.val)

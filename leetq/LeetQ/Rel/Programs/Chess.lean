@@ -56,8 +56,8 @@ rel_program chess after prelude where
     j : [Sq×Pc]×(Sq×Sq) ⟶ [Sq×Pc]×(Sq×Sq) ≜ ran(bc)   -- the moves on b
     W₁ : [Sq×Pc]×(Sq×Sq) ⟶ Sq×Sq ≜ jW(⇝)
     Pin₁ : [Sq×Pc]×(Sq×Sq) ⟶ Sq×Sq ≜ jPin(⇝)
-    ν : [Sq×Pc]×(Sq×Sq) ⟶ [Sq×Pc]×(Sq×Sq) ≜ j a(k(⇝),f(⇝),W₁) i(B(⇝),Pin₁,W₁,k(⇝))   -- the moves that mate
-    m : Sq×Sq ⟶ Pc ≜ ran(νπ₂)π₁ on                -- each mating move, the piece it moves
+    mate : [Sq×Pc]×(Sq×Sq) ⟶ [Sq×Pc]×(Sq×Sq) ≜ j a(k(⇝),f(⇝),W₁) i(B(⇝),Pin₁,W₁,k(⇝))   -- the moves that mate
+    m : Sq×Sq ⟶ Pc ≜ ran(mate π₂)π₁ on           -- each mating move, the piece it moves
 
     check m = {((1,57),R)}                        -- Rb1-b8 mates
 
