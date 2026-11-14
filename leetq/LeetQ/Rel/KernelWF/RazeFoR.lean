@@ -199,4 +199,172 @@ theorem reencode_reads {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) (n0 n1 : USize) (
     have h' : ¬ i < n0.toNat := hL0 ▸ h
     rw [if_neg h', hl, hL0, hd1 _ (by omega), ofNat_mod_toNat hw8]
 
+/-! ### Reading a pack without a patch list -/
+
+/-- `foRBits` with no hoisted table: the block's start is summed. -/
+theorem foRBits_nil (md pk : ByteArray) (i : Nat) : Column.foRBits md pk #[] i =
+    match Column.foRExc md pk i with
+    | some v => v
+    | none => Column.baseAt md (i / Column.blk) + Column.foRFrame md pk (i / Column.blk) +
+        Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
+  unfold Column.foRBits; cases Column.foRExc md pk i <;> simp
+
+/-- A pack that ends by its last block's residuals has no patch list. -/
+theorem foRExc_none {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (i : Nat) :
+    Column.foRExc md pk i = none := by unfold Column.foRExc; simp [h]
+
+/-- A pack that ends by its last block's residuals has no frames. -/
+theorem foRFrame_zero {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (b : Nat) :
+    Column.foRFrame md pk b = 0 := by unfold Column.foRFrame; simp [h]
+
+/-- With no patch list, element `i` is its block's base plus its residual. -/
+theorem foRBits_plain {md pk : ByteArray} (h : pk.size ≤ Column.blockStart md (Column.nblk md)) (i : Nat) :
+    Column.foRBits md pk (Column.blockStarts md) i = Column.baseAt md (i / Column.blk) +
+      Column.resAt pk (Column.blockStart md (i / Column.blk)) (Column.widthAt md (i / Column.blk)) (i % Column.blk) := by
+  rw [← foRBits_starts, foRBits_nil, foRExc_none h, foRFrame_zero h]; simp
+
+theorem blockStart_succ (md : ByteArray) (b : Nat) :
+    Column.blockStart md (b + 1) = Column.blockStart md b + Column.blk * Column.widthAt md b / 8 := by
+  simp [Column.blockStart, Nat.fold_succ]
+
+theorem blockStart_mono (md : ByteArray) {a b : Nat} (h : a ≤ b) : Column.blockStart md a ≤ Column.blockStart md b := by
+  induction b with
+  | zero => rw [Nat.le_zero.1 h]; exact Nat.le_refl _
+  | succ b ih =>
+    rcases Nat.lt_or_eq_of_le h with h | rfl
+    · rw [blockStart_succ]; exact Nat.le_trans (ih (by omega)) (Nat.le_add_right _ _)
+    · exact Nat.le_refl _
+
+/-- Blocks `a, a+1, …` of `M` laid out as `m`'s: their starts are `m`'s, shifted by `M`'s start of block `a`. -/
+theorem blockStart_shift {M m : ByteArray} (a : Nat) : ∀ b, (∀ c < b, Column.widthAt M (a + c) = Column.widthAt m c) →
+    Column.blockStart M (a + b) = Column.blockStart M a + Column.blockStart m b
+  | 0, _ => by simp [Column.blockStart]
+  | b + 1, h => by
+    rw [← Nat.add_assoc, blockStart_succ, blockStart_succ, blockStart_shift a b (fun c hc => h c (by omega)),
+      h b (by omega), Nat.add_assoc]
+
+theorem blockStart_congr {M m : ByteArray} : ∀ b, (∀ c < b, Column.widthAt M c = Column.widthAt m c) →
+    Column.blockStart M b = Column.blockStart m b
+  | 0, _ => by simp [Column.blockStart]
+  | b + 1, h => by rw [blockStart_succ, blockStart_succ, blockStart_congr b (fun c hc => h c (by omega)), h b (by omega)]
+
+/-- `resAt` reads only the bytes its field overlaps. -/
+theorem resAt_congr {P Q : ByteArray} {s s' w j : Nat}
+    (h : ∀ k < (j * w + w + 7) / 8, P[s + k]? = Q[s' + k]?) : Column.resAt P s w j = Column.resAt Q s' w j := by
+  unfold Column.resAt
+  have key : ∀ {f g : UInt64 → Nat → UInt64} (l : List Nat) (a : UInt64), (∀ k ∈ l, ∀ acc, f acc k = g acc k) →
+      l.foldl f a = l.foldl g a := by
+    intro f g l; induction l with
+    | nil => intro a _; rfl
+    | cons k l ih =>
+      intro a hl; simp only [List.foldl_cons]; rw [hl k (by simp)]
+      exact ih _ (fun k' hk' => hl k' (by simp [hk']))
+  exact key _ _ fun k hk acc => by
+    simp [List.mem_range'] at hk; simp only [h k (by omega)]
+
+/-- A field of a residual `j < blk` lies inside its block's `blk * w / 8` bytes. -/
+theorem resAt_reach {w j : Nat} (hj : j < Column.blk) : (j * w + w + 7) / 8 ≤ Column.blk * w / 8 := by
+  have : j * w + w ≤ Column.blk * w := by
+    have := Nat.mul_le_mul_right w (show j + 1 ≤ Column.blk by omega); rwa [Nat.succ_mul] at this
+  unfold Column.blk at *; omega
+
+/-! ### The move -/
+
+/-- What `moveFoR` claims at two parts: the first fills its blocks, both are in the writer's form with no patch
+    list, the pack is the two packs end to end, and the metadata is `foRMeta` of the first part's blocks then the
+    second's. -/
+theorem moveFoR_two {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
+    (h : moveFoR #[((n0, m0), p0), ((n1, m1), p1)] = some (M, P)) :
+    n0.toNat % Column.blk = 0 ∧ Coc.foRStd n0 m0 p0 = true ∧ Coc.foRStd n1 m1 p1 = true ∧
+    p0.size ≤ Column.blockStart m0 (Column.nblk m0) ∧ p1.size ≤ Column.blockStart m1 (Column.nblk m1) ∧
+    P = ByteArray.empty ++ p0 ++ p1 ∧
+    ∃ nul sumn T, M = Coc.foRMeta nul sumn T ∧ T.size = Column.nblk m0 + Column.nblk m1 ∧
+      ∀ b (hb : b < T.size),
+        T[b].1 = (if b < Column.nblk m0 then Column.baseAt m0 b else Column.baseAt m1 (b - Column.nblk m0)) ∧
+        T[b].2.2.2 = (if b < Column.nblk m0 then Column.widthAt m0 b else Column.widthAt m1 (b - Column.nblk m0)) := by
+  unfold moveFoR at h
+  split at h
+  · cases h
+  rename_i hc
+  simp only [Option.some.injEq, Prod.mk.injEq] at h
+  obtain ⟨hM, hP⟩ := h
+  simp only [List.foldl_toArray', List.foldl_cons, List.foldl_nil, Array.empty_append] at hM
+  simp at hc
+  obtain ⟨hz, ⟨s0, z0⟩, s1, z1⟩ := hc
+  refine ⟨hz, s0, s1, z0, z1, ?_, _, _, _, hM.symm, by simp, fun b hb => ?_⟩
+  · rw [← hP]
+    simp only [concatBytes, List.map_toArray, List.map_cons, List.map_nil, List.foldl_toArray', List.foldl_cons,
+      List.foldl_nil]
+  · simp only [Array.getElem_append, Array.size_map, Array.size_range, Array.getElem_map, Array.getElem_range]
+    split <;> rename_i hh <;> simp [hh]
+
+/-- **The moved join** keeps every element: the first part's blocks then the second's, each block's base, width
+    and residuals carried over (`foRMeta_reads`). -/
+theorem move_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
+    (h : moveFoR #[((n0, m0), p0), ((n1, m1), p1)] = some (M, P)) {i : Nat} (hi : i < n0.toNat + n1.toNat) :
+    Column.foRBits M P (Column.blockStarts M) i = if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
+      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat) := by
+  obtain ⟨hz, s0, s1, z0, z1, rfl, nul, sumn, T, rfl, hTs, hTb⟩ := moveFoR_two h
+  have w0 := Verify.foRStd_iff.1 s0
+  have w1 := Verify.foRStd_iff.1 s1
+  have e0 : p0.size = Column.blockStart m0 (Column.nblk m0) := by
+    rcases w0.size with h | h
+    · exact h
+    · cases hT : Coc.foRTail (Column.nblk m0) p0 (Column.blockStart m0 (Column.nblk m0)) <;> simp [hT] at h; omega
+  have e1 : p1.size = Column.blockStart m1 (Column.nblk m1) := by
+    rcases w1.size with h | h
+    · exact h
+    · cases hT : Coc.foRTail (Column.nblk m1) p1 (Column.blockStart m1 (Column.nblk m1)) <;> simp [hT] at h; omega
+  obtain ⟨hnb, hRb⟩ := Verify.foRMeta_reads nul sumn T (fun b hb => by
+    rw [(hTb b hb).2]; split
+    · exact Nat.lt_of_le_of_lt (w0.width b (by omega)) (by decide)
+    · exact Nat.lt_of_le_of_lt (w1.width _ (by omega)) (by decide))
+  have hbase : ∀ b < Column.nblk m0 + Column.nblk m1, Column.baseAt (Coc.foRMeta nul sumn T) b =
+      if b < Column.nblk m0 then Column.baseAt m0 b else Column.baseAt m1 (b - Column.nblk m0) := fun b hb => by
+    rw [(hRb b (by omega)).1, (hTb b (by omega)).1]
+  have hwid : ∀ b < Column.nblk m0 + Column.nblk m1, Column.widthAt (Coc.foRMeta nul sumn T) b =
+      if b < Column.nblk m0 then Column.widthAt m0 b else Column.widthAt m1 (b - Column.nblk m0) := fun b hb => by
+    rw [(hRb b (by omega)).2, (hTb b (by omega)).2]
+  have hbs0 : ∀ b ≤ Column.nblk m0, Column.blockStart (Coc.foRMeta nul sumn T) b = Column.blockStart m0 b := by
+    intro b hb
+    exact blockStart_congr b (fun c hc => by rw [hwid c (by omega), if_pos (by omega)])
+  have hbs1 : ∀ b ≤ Column.nblk m1, Column.blockStart (Coc.foRMeta nul sumn T) (Column.nblk m0 + b) =
+      Column.blockStart m0 (Column.nblk m0) + Column.blockStart m1 b := by
+    intro b hb
+    rw [blockStart_shift (M := Coc.foRMeta nul sumn T) (m := m1) (Column.nblk m0) b (fun c hc => by
+      rw [hwid _ (by omega), if_neg (by omega), Nat.add_sub_cancel_left]), hbs0 _ (Nat.le_refl _)]
+  have hs0 : (ByteArray.empty ++ p0).size = p0.size := by simp [ByteArray.size_append]
+  have hP0 : ∀ k < p0.size, (ByteArray.empty ++ p0 ++ p1)[k]? = p0[k]? := fun k hk => by
+    rw [Verify.ba_append_left _ _ _ (by rw [hs0]; exact hk), Verify.ba_append_right' _ _ _ (Nat.zero_le _)]; rfl
+  have hP1 : ∀ k, (ByteArray.empty ++ p0 ++ p1)[p0.size + k]? = p1[k]? := fun k => by
+    rw [← hs0, Verify.ba_append_right]
+  have hPs : (ByteArray.empty ++ p0 ++ p1).size ≤
+      Column.blockStart (Coc.foRMeta nul sumn T) (Column.nblk (Coc.foRMeta nul sumn T)) := by
+    rw [hnb, hTs, hbs1 _ (Nat.le_refl _)]; simp [ByteArray.size_append]; omega
+  have hn0 : n0.toNat = Column.blk * Column.nblk m0 := by rw [w0.nblk]; unfold Column.blk at *; omega
+  have hn1 : n1.toNat ≤ Column.blk * Column.nblk m1 := by rw [w1.nblk]; unfold Column.blk; omega
+  rw [foRBits_plain hPs, foRBits_plain z0, foRBits_plain z1]
+  split
+  · rename_i h0
+    have hb : i / Column.blk < Column.nblk m0 := by unfold Column.blk at *; omega
+    have hb' : i / Column.blk < Column.nblk m0 + Column.nblk m1 := Nat.lt_of_lt_of_le hb (Nat.le_add_right _ _)
+    rw [hbase _ hb', if_pos hb, hwid _ hb', if_pos hb, hbs0 _ (Nat.le_of_lt hb)]
+    congr 1
+    apply resAt_congr; intro k hk
+    have hr := resAt_reach (w := Column.widthAt m0 (i / Column.blk)) (Nat.mod_lt i (by unfold Column.blk; decide))
+    have hle := blockStart_mono m0 (Nat.succ_le_of_lt hb)
+    rw [blockStart_succ] at hle
+    exact hP0 _ (by omega)
+  · rename_i h0
+    have hq : i / Column.blk = Column.nblk m0 + (i - n0.toNat) / Column.blk := by unfold Column.blk at *; omega
+    have hr' : i % Column.blk = (i - n0.toNat) % Column.blk := by unfold Column.blk at *; omega
+    have hb : (i - n0.toNat) / Column.blk < Column.nblk m1 := by unfold Column.blk at *; omega
+    have hb' := Nat.add_lt_add_left hb (Column.nblk m0)
+    have hn : ¬ Column.nblk m0 + (i - n0.toNat) / Column.blk < Column.nblk m0 := Nat.not_lt.2 (Nat.le_add_right _ _)
+    rw [hq, hr', hbase _ hb', if_neg hn, hwid _ hb', if_neg hn, Nat.add_sub_cancel_left,
+      hbs1 _ (Nat.le_of_lt hb), ← e0]
+    congr 1
+    apply resAt_congr; intro k hk
+    rw [Nat.add_assoc]; exact hP1 _
+
 end LeetQ.Rel.KernelWF
