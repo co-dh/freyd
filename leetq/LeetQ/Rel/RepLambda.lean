@@ -244,7 +244,7 @@ theorem transpose_row_list (R : Rel A B)
   have hrs : ((List.range m).map fun j => (Column.bitsAt o (j * 8) 8).toNat).Sublist (List.range (len pT)) := by
     refine sublist_range ?_ fun x hx => ?_
     · rw [List.pairwise_map]
-      exact List.pairwise_lt_range.imp_of_mem fun ha hb hab => hasc _ _ hab (List.mem_range.1 hb).le
+      exact List.pairwise_lt_range.imp_of_mem fun ha hb hab => hasc _ _ hab (Nat.le_of_lt (List.mem_range.1 hb))
     · obtain ⟨j, hj, rfl⟩ := List.mem_map.1 hx; exact hrlt j (List.mem_range.1 hj)
   have hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key pT).2 (ids (o.extract 0 (o.size - 8))) := by
     rw [hpkd]
