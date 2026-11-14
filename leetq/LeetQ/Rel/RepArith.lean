@@ -378,8 +378,7 @@ local notation "ranOK(" R ")" =>
 theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
@@ -407,8 +406,11 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   intro xs w
-  rw [rep_foldOn e Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc hjc
+  rw [rep_foldOn e Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc hjc
     hjO hjn hjM hjA hjC xs w]
+  have hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat) := by
+    subst hT; exact num_pickFits (idU X) 0 hv
+  have hp := (pickFits_payload _ hTv).1
   have hnum : ∀ r y, rep T r y ↔ ∃ i : Fin n.toNat, r = Int64.ofNat i.1 ∧ X.row i = y := by
     intro r y; subst hT
     rw [rep_num (idU X) 0 (by simpa using hn) hv r y]
@@ -558,8 +560,7 @@ local notation "Sd(" xs ", " t ")" => List.sum (List.map Int64.toInt (List.drop 
     bundles; `E`, `V` are `.long` there, bound by `let`). -/
 theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (T : Rel .long (.arr .long)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr .long) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr .long) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr .long) X (List.range n.toNat))
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
@@ -596,7 +597,7 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     rw [rep_plus]
     exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
   rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   refine and_congr Iff.rfl ?_
   have h1 : ([0] : List Int64).length < USize.size := by
@@ -695,8 +696,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
       ∀ cs : Vector Code 2, cs = codes .long #v[⟨c, s⟩, ⟨c, tilCol c⟩] →
         codesL(cs, (#v[⟨c, s⟩, ⟨c, tilCol c⟩] : Vector ((m : USize) × Arr .long m) 2)))
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
@@ -750,7 +750,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
   rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
       foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   have h1 : ([0] : List Int64).length < USize.size := by
     show 1 < USize.size; rcases USize.size_eq with e | e <;> omega

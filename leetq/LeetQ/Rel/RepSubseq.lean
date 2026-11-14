@@ -126,8 +126,7 @@ open QLean.Dep
     round (`hC`, a per-round bundle, each bound value with its equation). -/
 theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
@@ -207,7 +206,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       · exact Or.inl ⟨e, u, he, hu, rfl⟩
       · exact Or.inr hu
       · exact Or.inr hu
-  refine (rep_foldBy_keep (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _)
+  refine (rep_foldBy_keep (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf hR True hS
     F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`

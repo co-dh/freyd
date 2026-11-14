@@ -516,6 +516,19 @@ theorem rep_diff (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.ke
     obtain ⟨j, hj1, hj2⟩ := (pairs_member R S hc i.2).1 hbit
     exact ⟨j, hj1.trans hia, hj2.trans hib⟩
 
+/-- **`R \ S` fits at all its rows where `R` does**: `−` keeps a sublist of `R`'s rows (`anti_sublist`,
+    `rows_pickFits`). -/
+theorem diff_pickFits (R S : Rel A B) (hc : pairsOK(R, S)) (hk : Vals.PickFits A R.key (List.range R.n.toNat))
+    (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
+    Vals.PickFits A (R \ S).key (List.range (R \ S).n.toNat) ∧
+      Vals.PickFits B (R \ S).val (List.range (R \ S).n.toNat) := by
+  obtain ⟨-, hn0, -⟩ := hc.2 (k := 0) (by decide)
+  replace hn0 : ((pairs #v[R, S])[0]'Nat.zero_lt_two).n = R.n := hn0
+  show Vals.PickFits A (R.rows (misses(R, S))).key _ ∧ Vals.PickFits B (R.rows (misses(R, S))).val _
+  exact rows_pickFits R _ (by rw [← hn0]; exact anti_sublist _ _) hk hv
+
+#print axioms diff_pickFits
+
 /-- **`(R ⊑ S) = true ↔ rep R ⊑ rep S`**: `⊑` counts the rows of `R` whose pair `S` holds (`pairs_member`), all
     `R.n` of them exactly when every pair of `R` is one of `S`. Hypothesis: the joint pair codes (`hc`); nothing is
     picked. -/

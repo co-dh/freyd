@@ -39,12 +39,8 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))
     (D : Rel (.arr (.arr A)) (.arr (.arr A))) (hD : D = lD(M, X))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits (.arr (.arr A)) (Rel.key D)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr A) (LeetQ.Rel.Alg.nilVal A)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     (T N : Rel (.arr (.arr A)) (.arr A)) (hT : T = lT(M))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal A))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -71,7 +67,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
       (∀ xss, (∃ Y, rep (Arr.union X) xss Y) ↔ ∃ i, Vals.row X i = xss) := by
   subst hRm
   obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
+    pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
     huV huk huv hM hmv hmk hcc hcrn hcM hcA hcC
   -- every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload
   have hpay : ∀ xss xs, (∃ i, Vals.row X i = xss) → xs ∈ xss → ∃ i, Vals.row X.2.2.2 i = xs := by

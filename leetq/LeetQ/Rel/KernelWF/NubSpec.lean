@@ -88,6 +88,26 @@ theorem rows_spec {k v : Obj} (R : Rel k v) (i : ByteArray) (hl : len i < USize.
 
 #print axioms rows_spec
 
+/-- **`Rel.rows R i` fits at all its rows where `R` does**, when `i` names a sublist of `R`'s rows: each pick is
+    a hit (`pickFits_pick`), at rows where `R` fits (`pickFits_sublist`). -/
+theorem rows_pickFits {k v : Obj} (R : Rel k v) (i : ByteArray) (hsub : (ids i).Sublist (List.range R.n.toNat))
+    (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
+    Vals.PickFits k (R.rows i).key (List.range (R.rows i).n.toNat) ∧
+      Vals.PickFits v (R.rows i).val (List.range (R.rows i).n.toNat) := by
+  have hl : len i < USize.size := by
+    rw [len_eq_ids]
+    exact Nat.lt_of_le_of_lt (by simpa using hsub.length_le) R.n.toNat_lt_size
+  unfold Rel.rows need
+  rw [dif_pos hl]
+  have hm : (len i).toUSize.toNat = len i := USize.toNat_ofNat_of_lt' hl
+  have e : ((List.range (len i).toUSize.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat) = ids i := by
+    rw [hm]; rfl
+  have hq : ∀ q ∈ List.range (len i).toUSize.toNat, q < (len i).toUSize.toNat := fun _ h => List.mem_range.1 h
+  exact ⟨pickFits_pick k R.key i _ _ _ hq (e ▸ pickFits_sublist hsub hk) (e ▸ pickFits_sublist hsub hk),
+    pickFits_pick v R.val i _ _ _ hq (e ▸ pickFits_sublist hsub hv) (e ▸ pickFits_sublist hsub hv)⟩
+
+#print axioms rows_pickFits
+
 /-! ## `Rel.nub` -/
 
 -- the key's and the value's codes, one part each, and the first rows `nub` picks, named as `nub` names them
@@ -166,24 +186,11 @@ theorem nub_row (hk : Vals.PickFits k R.key (List.range R.n.toNat)) (hv : Vals.P
 
 include hK hV in
 /-- **`nub` fits at all its rows where `R` does**: `nub` picks `R` at its first occurrences, a sublist of `R`'s
-    rows, each a hit (`pickFits_pick`). -/
+    rows (`rows_pickFits`). -/
 theorem nub_pickFits (hk : Vals.PickFits k R.key (List.range R.n.toNat))
     (hv : Vals.PickFits v R.val (List.range R.n.toNat)) :
-    Vals.PickFits k R.nub.key (List.range R.nub.n.toNat) ∧ Vals.PickFits v R.nub.val (List.range R.nub.n.toNat) := by
-  have hlen : (ids nubI).length ≤ R.n.toNat := by
-    rw [nub_ids R hK hV]; simpa [firstsOf] using List.length_filter_le _ (List.range R.n.toNat)
-  have hl : len nubI < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hlen R.n.toNat_lt_size
-  have hsub : (ids nubI).Sublist (List.range R.n.toNat) := by rw [nub_ids R hK hV]; exact List.filter_sublist
-  have hnub : R.nub = R.rows nubI := rfl
-  rw [hnub]
-  unfold Rel.rows need
-  rw [dif_pos hl]
-  have hm : (len nubI).toUSize.toNat = len nubI := USize.toNat_ofNat_of_lt' hl
-  have e : ((List.range (len nubI).toUSize.toNat).map fun q => (Column.bitsAt nubI (q * 8) 8).toNat) = ids nubI := by
-    rw [hm]; rfl
-  have hq : ∀ q ∈ List.range (len nubI).toUSize.toNat, q < (len nubI).toUSize.toNat := fun _ h => List.mem_range.1 h
-  exact ⟨pickFits_pick k R.key nubI _ _ _ hq (e ▸ pickFits_sublist hsub hk) (e ▸ pickFits_sublist hsub hk),
-    pickFits_pick v R.val nubI _ _ _ hq (e ▸ pickFits_sublist hsub hv) (e ▸ pickFits_sublist hsub hv)⟩
+    Vals.PickFits k R.nub.key (List.range R.nub.n.toNat) ∧ Vals.PickFits v R.nub.val (List.range R.nub.n.toNat) :=
+  rows_pickFits R nubI (by rw [nub_ids R hK hV]; exact List.filter_sublist) hk hv
 
 end Nub
 

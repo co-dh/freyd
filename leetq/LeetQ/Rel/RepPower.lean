@@ -83,6 +83,24 @@ scoped notation "lN(" R ", " U ", " B ")" =>
 end Pow
 open Pow
 
+/-- **`rep_top`'s fits at `lamOn R U`'s empty-array part**: its keys are rows of `idU U \ dom R`, which fits where
+    `U` does (`diff_pickFits`); the empty array fits anywhere (`pickFits_nilVal`); one value per key. -/
+theorem lamOn_top_fits {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
+    (hc : pairsOK(LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R)) (hdU : Vals.PickFits A U (List.range m.toNat)) :
+    (Rel.n (lD(R, U))).toNat * USize.toNat 1 < USize.size ∧
+      Vals.PickFits A (Rel.key (lD(R, U)))
+        ((List.range ((Rel.n (lD(R, U))).toNat * USize.toNat 1)).map (· / USize.toNat 1)) ∧
+      Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
+        ((List.range ((Rel.n (lD(R, U))).toNat * USize.toNat 1)).map (· % USize.toNat 1)) := by
+  have e : ((List.range ((Rel.n (lD(R, U))).toNat * USize.toNat 1)).map (· / USize.toNat 1)) =
+      List.range (Rel.n (lD(R, U))).toNat := by
+    simp
+  refine ⟨by simpa using USize.toNat_lt_size (Rel.n (lD(R, U))), ?_, pickFits_nilVal B _⟩
+  rw [e]
+  exact (diff_pickFits _ _ hc hdU hdU).1
+
+#print axioms lamOn_top_fits
+
 /-- **`rep (lamOn R U)`: `Λ(R)` total on `U`**: an array `lamOn R U` gives `a` holds exactly the values `R`
     relates `a` to, and `lamOn R U` has a row at `a` exactly when `R` has a pair at `a` or `U` lists `a`.
     `rep_union_full` splits it into `Λ(R)` (`rep_transpose`) and `⊤` (`rep_top`) from the `U`-rows outside
@@ -108,11 +126,8 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hdU : Vals.PickFits A U (List.range m.toNat))
     -- `rep_top` at `D.key`, `nilVal B`
     (D : Rel A A) (hD : D = lD(R, U))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `U`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits A (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     -- `rep_union_full` at `T`, `N`; `L` their raze
     (T N : Rel A (.arr B)) (hT : T = lT(R)) (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -124,6 +139,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
       (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
   subst hku hvu hL hN0 hD hT hpc hkt hkc hvc
+  obtain ⟨htN, htA, htB⟩ := lamOn_top_fits R U hc hdU
   obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63
   have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
   have hL : ∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y ↔ rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
@@ -206,11 +222,8 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (h63 : (Rel.nub mS(X)).n.toNat < 2 ^ 63)
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X))))    (D : Rel (.arr B) (.arr B)) (hD : D = lD(mS(X), X))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits (.arr B) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     (T N : Rel (.arr B) (.arr B)) (hT : T = lT(mS(X)))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -222,7 +235,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (∀ xs Y, rep (LeetQ.Rel.Alg.setify X) xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   obtain ⟨h1, h2⟩ := rep_lamOn mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   have hm := rep_mem X hmv hmk
   have h2' : ∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
     (h2 xs).trans ⟨fun h => h.elim (fun ⟨_, hb⟩ => ((hm _ _).1 hb).1) id, Or.inr⟩
@@ -296,11 +309,8 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hdU : Vals.PickFits A U (List.range m.toNat))
     -- `rep_top` at `D.key`, `nilVal B`
     (D : Rel A A) (hD : D = lD(R, U))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `U`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits A (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     -- `rep_union_full` at `T`, `N`; `L` their raze
     (T N : Rel A (.arr B)) (hT : T = lT(R)) (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -312,8 +322,9 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → Y.Nodup ∧ ∀ y, y ∈ Y ↔ rep R a y) ∧
       (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
   obtain ⟨h1, h2⟩ := rep_lamOn R U kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc hdU D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+    pc hpc hc hdU D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   subst hku hvu hL hN0 hD hT hpc hkt hkc hvc
+  obtain ⟨htN, htA, htB⟩ := lamOn_top_fits R U hc hdU
   have hX := rep_transpose_list R hK hV hk hv hF hw hn hs hW h63
   have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
   refine ⟨fun a Y h => ⟨?_, h1 a Y h⟩, h2⟩
@@ -351,11 +362,8 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (h63 : (Rel.nub mS(X)).n.toNat < 2 ^ 63)
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X))))    (D : Rel (.arr B) (.arr B)) (hD : D = lD(mS(X), X))
-    (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
+    -- `D`'s count is bounded only by `X`'s, a `USize`; `top`'s `cross` needs it below `2^63`
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
-    (htA : Vals.PickFits (.arr B) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)))
-    (htB : Vals.PickFits (.arr B) (LeetQ.Rel.Alg.nilVal B)
-      ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)))
     (T N : Rel (.arr B) (.arr B)) (hT : T = lT(mS(X)))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal B))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
@@ -367,9 +375,9 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (∀ xs Y, rep (LeetQ.Rel.Alg.setify X) xs Y → (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   obtain ⟨h1, h2⟩ := rep_setify X hmv hmk kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+    pc hpc hc D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   have hl := (rep_lamOn_list mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
-    pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
+    pc hpc hc hmv D hD ht63 T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
   exact ⟨fun xs Y h => ⟨(h1 xs Y h).1, (hl xs Y h).1, (h1 xs Y h).2⟩, h2⟩
 
 #print axioms rep_setify_list
