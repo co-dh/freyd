@@ -163,21 +163,13 @@ theorem add_sub_u64 (a v : UInt64) : a + (v - a) = v := by rw [UInt64.add_comm, 
 
 /-- **The appended join** reads the first part's elements, then the second's: below `n0` the pack is the first
     part's but for residuals `lo ..` of its last block, which no element below `n0` reads; from `n0` on the element
-    is its block's base and frame plus `v - (base + frame)`, which is `v`, the second part's decoded element. -/
-theorem append_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
-    (h : appendFoR n0 m0 p0 (concatBytes #[Coc.decode 8 m1 p1 n1]) = some (M, P)) {i : Nat}
-    (hi : i < n0.toNat + n1.toNat) :
+    is its block's base and frame plus `v - (base + frame)`, which is `v`, the tail's eight-byte element. -/
+theorem append_reads {n0 : USize} {n1 : Nat} {m0 p0 D M P : ByteArray}
+    (h : appendFoR n0 m0 p0 D = some (M, P)) (hTm : D.size / 8 = n1) {i : Nat}
+    (hi : i < n0.toNat + n1) :
     Column.foRBits M P (Column.blockStarts M) i =
       if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
-      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat) := by
-  have h8 : (8 : USize).toNat = 8 := toUSize_toNat_le8 (w := 8) (Nat.le_refl _)
-  obtain ⟨hD, hDv⟩ := Verify.decodeW 8 (Nat.le_of_eq h8) m1 p1 n1
-  rw [h8] at hD hDv
-  generalize Coc.decode 8 m1 p1 n1 = D at h hD hDv
-  have hX : concatBytes #[D] = D := by
-    simp only [concatBytes, List.foldl_toArray', List.foldl_cons, List.foldl_nil, ByteArray.empty_append]
-  rw [hX] at h
-  have hTm : D.size / 8 = n1.toNat := by rw [hD]; omega
+      else Column.bitsAt D ((i - n0.toNat) * 8) 8 := by
   unfold appendFoR at h
   dsimp only at h
   simp only [hTm] at h
@@ -191,7 +183,7 @@ theorem append_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
   obtain ⟨hM, hP⟩ := h
   subst m0
   have hlo : n0.toNat % Column.blk ≠ 0 := fun h0 => hc1 (by simp [h0])
-  have hm : n0.toNat % Column.blk + n1.toNat ≤ Column.blk := Nat.not_lt.1 fun h0 => hc1 (by simp [h0])
+  have hm : n0.toNat % Column.blk + n1 ≤ Column.blk := Nat.not_lt.1 fun h0 => hc1 (by simp [h0])
   have hstd : Coc.foRStd n0 M p0 = true := by
     cases h0 : Coc.foRStd n0 M p0
     · exact (hc1 (by simp [h0])).elim
@@ -203,7 +195,7 @@ theorem append_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
     · exact (hc1 (by
         simp only [Bool.or_eq_true]
         exact Or.inr (List.any_eq_true.2 ⟨x, List.mem_range.2 hx, by simp [h0]⟩))).elim
-  have hres : ∀ x < n1.toNat, (Column.bitsAt D (x * 8) 8 -
+  have hres : ∀ x < n1, (Column.bitsAt D (x * 8) 8 -
       (Column.baseAt M (n0.toNat / Column.blk) + Column.foRFrame M p0 (n0.toNat / Column.blk))).toNat <
       2 ^ Column.widthAt M (n0.toNat / Column.blk) := fun x hx =>
     Nat.not_le.1 fun h0 => hc2 (List.any_eq_true.2 ⟨x, List.mem_range.2 hx, by simp [h0]⟩)
@@ -241,7 +233,7 @@ theorem append_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
           UInt64.ofNat_toNat]
     rw [hR]
   · rw [if_neg hlt]
-    have hi' : i - n0.toNat < n1.toNat := by omega
+    have hi' : i - n0.toNat < n1 := by omega
     have hcb : i / Column.blk = n0.toNat / Column.blk := by unfold Column.blk at hm ⊢; omega
     have hj : i % Column.blk = n0.toNat % Column.blk + (i - n0.toNat) := by unfold Column.blk at hm ⊢; omega
     have hx := hexc (i - n0.toNat) (by omega)
@@ -251,7 +243,6 @@ theorem append_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
     rw [Verify.resAt_packRes _ hw64 _ P _ hPB _ hb]
     try dsimp only
     rw [if_pos (by simp only [hj, Bool.and_eq_true, decide_eq_true_eq]; omega), hj, Nat.add_sub_cancel_left,
-      Nat.mod_eq_of_lt (hres _ hi'), Nat.toUInt64_eq, UInt64.ofNat_toNat, add_sub_u64,
-      hDv _ hi', Nat.mod_eq_of_lt (show _ < 2 ^ (8 * 8) from UInt64.toNat_lt_size _), UInt64.ofNat_toNat]
+      Nat.mod_eq_of_lt (hres _ hi'), Nat.toUInt64_eq, UInt64.ofNat_toNat, add_sub_u64]
 
 end LeetQ.Rel.KernelWF
