@@ -43,12 +43,12 @@ set_option hygiene false in
 local notation "avc(" B ", " R ", " T ")" => Obj.codes B avp(B, R, T)
 set_option hygiene false in
 local notation "amiss(" B ", " R ", " T ")" =>
-  anti ((avc(B, R, T))[0]'(by decide)) ((avc(B, R, T))[1]'(by decide))
+  anti ((avc(B, R, T))[0]'Nat.zero_lt_two) ((avc(B, R, T))[1]'Nat.one_lt_two)
 
 /-- Row `i` of `R` is marked by `member` on the joint value codes exactly when its value is a value of `T`. -/
 theorem vals_member (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(B, R, T))) {i : Nat}
     (hi : i < R.n.toNat) :
-    Column.bitAt (((avc(B, R, T))[0]'(by decide)).member ((avc(B, R, T))[1]'(by decide))) i = true ↔
+    Column.bitAt (((avc(B, R, T))[0]'Nat.zero_lt_two).member ((avc(B, R, T))[1]'Nat.one_lt_two)) i = true ↔
       ∃ j, T.val.row j = R.val.row ⟨i, hi⟩ := by
   obtain ⟨hF, hW⟩ := hc
   obtain ⟨hw0, hn0, hs0, -⟩ := hW (k := 0) (by decide)
@@ -71,7 +71,7 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
     obtain ⟨hw0, hn0, hs0, -⟩ := hc.2 (k := 0) (by decide)
     obtain ⟨hw1, -, hs1, -⟩ := hc.2 (k := 1) (by decide)
     have hI := (anti_ids _ _ hw0 hw1 hs0 hs1).1
-    replace hn0 : ((avc(B, R, T))[0]'(by decide)).n = R.n := hn0
+    replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
     rw [hn0] at hI
     show (R.rows (amiss(B, R, T))).Holds a b ↔ ∃ y, R.Holds a y ∧ y = b ∧ ¬ ∃ x, T.Holds x y
     rw [rows_keep R _ _ hI hk hv]
@@ -117,7 +117,7 @@ local notation "pcs(" X ", " Y ", " R ", " S ")" =>
   (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod X Y)) 2)
 -- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it
 set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 local notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat n) (hj : j < USize.toNat n),
     Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔

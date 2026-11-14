@@ -48,13 +48,13 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'(by decide)).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'(by decide)).w = 2 ∨ ((Obj.codes B #v[x])[0]'(by decide)).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'(by decide)).w = 8 ∨ ((Obj.codes B #v[x])[0]'(by decide)).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'(by decide)).w = 32 ∨ ((Obj.codes B #v[x])[0]'(by decide)).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'(by decide)).b.size =
-        (((Obj.codes B #v[x])[0]'(by decide)).n.toNat * ((Obj.codes B #v[x])[0]'(by decide)).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'(by decide)).n = x.1)
+    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size =
+        (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
     (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
     (hpk : Vals.PickFits (.arr A) (Rel.nub M).key (ids p))
@@ -63,7 +63,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hp : Vals.PickFits (.arr A) (Rel.key M) (ids kc.groupIds.2))
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))
-    (I : ByteArray) (hI : I = anti (pc[0]'(by decide)) (pc[1]'(by decide)))
+    (I : ByteArray) (hI : I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two))
     (hdk : Vals.PickFits (.arr A) X (ids I))
     (hdv : Vals.PickFits (.arr A) X (ids I))
     (D : Rel (.arr A) (.arr A)) (hD : D = lD(M, X))
