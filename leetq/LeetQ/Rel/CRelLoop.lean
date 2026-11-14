@@ -11,15 +11,16 @@ import LeetQ.Rel.RepLoop
 
 namespace LeetQ.Rel
 
-namespace Rep
-
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
-open FoldN OpsN Prim ListN
+open LeetQ.Rel.Rep LeetQ.Rel.Rep.FoldN LeetQ.Rel.Rep.OpsN LeetQ.Rel.Rep.Prim LeetQ.Rel.Rep.ListN
 
 -- `unionC`'s `hat`: `razeTo`'s read-back of two atom parts, not a size bound
+set_option quotPrecheck false in
 local notation "hatOK" => ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
   (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
     USize.size), Vals.RazeFits (.atom t) x y → (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList
+
+namespace Rep
 
 /-- **`tic` under `ticC`'s bit**: `tic_of` at its pieces' read-backs, `rep_consC`, `rep_compC`, `rep_initsC`,
     `rep_tailC`. -/
@@ -36,8 +37,10 @@ theorem rep_ticC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (ticC P).2 = t
 theorem rep_suffixC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (suffixC X).2 = true) :
     ∀ xs ys, rep (suffixC X).1 xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs :=
   suffix_rounds X (fun s => (suffixRound s).1) (fun _ _ => rfl) fun i hi hne => by
-    have h := iterC_run (X.1.toNat + 1) (fun s => s.2.n == 0) suffixRound (idU X, idU X) hb i (by omega) hne
-    rw [Function.iterate_succ_apply']
+    have h := iterC_run (X.1.toNat + 1) (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0)
+      suffixRound (idU X, idU X) hb i (by omega) hne
+    rw [show (fun s => (suffixRound s).1)^[i + 1] (idU X, idU X) =
+      (suffixRound ((fun s => (suffixRound s).1)^[i] (idU X, idU X))).1 from rfl]
     generalize (fun s => (suffixRound s).1)^[i] (idU X, idU X) = st at h ⊢
     obtain ⟨S, F⟩ := st
     simp only [suffixRound, Bool.and_eq_true] at h
@@ -64,7 +67,7 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
       (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
   have e : (loopOnC F P).1 = loopOn (fun D => (F D).1) P := by
     simp only [loopOnC, loopOn, iterC_fst]; rfl
-  have hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
+  have hf : ∀ (out : Rel K X) (St : Rel K (.prod X (.arr Y))) D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
       (loopRound F (out, St)).1 =
         (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ (F (ran p)).1) (outr u))) := by
     intro out St D u p hD hu hp; subst hD hu hp; rw [← nubC_fst]; rfl
@@ -76,10 +79,11 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
         rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).1 k c ∨
           rep ((fun s => (loopRound F s).1)^[i] (Alg.zero, P)).2 k (c, []) := by
     intro i hi hne
-    have h := iterC_run ((Rel.val P).2.1.toNat + 1) (fun s => s.2.n == 0) (loopRound F) (Alg.zero, P) hb i
-      (by omega) hne
+    have h := iterC_run ((Rel.val P).2.1.toNat + 1) (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0)
+      (loopRound F) (Alg.zero, P) hb i (by omega) hne
     have hSi := hS i
-    rw [Function.iterate_succ_apply']
+    rw [show (fun s => (loopRound F s).1)^[i + 1] (Alg.zero, P) =
+      (loopRound F ((fun s => (loopRound F s).1)^[i] (Alg.zero, P))).1 from rfl]
     generalize (fun s => (loopRound F s).1)^[i] (Alg.zero, P) = st at h hSi ⊢
     obtain ⟨out, St⟩ := st
     simp only [loopRound, Bool.and_eq_true] at h
@@ -87,10 +91,10 @@ theorem rep_loopOnC {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.pro
     simp only [ranC, domC, distinctCoreflC, Bool.and_eq_true] at hD hW hdu
     have hr := loop_round_set out St _ _ _ _ _ _ _ _ _
       (rep_ran_corefl St (one_ok _ (Obj.codesC_fits _ _ hD.1)) (pickFits_of_fitsN _ _ _ hD.2 _ (by simp)))
-      (rep_ran_corefl _ (one_ok _ (Obj.codesC_fits _ _ hW.1)) (pickFits_of_fitsN _ _ _ hW.2 _ (by simp)))
+      (rep_ran_corefl _ (one_ok _ (Obj.codesC_fits _ _ hW.1)) (pickFits_of_fitsN _ _ _ hW.2 _ (by simp <;> exact Nat.le_refl _)))
       (rep_unconsC _ hc) (rep_compC _ _ hu) (rep_pairC _ _ hp) (rep_compC _ _ hQ) (rep_pairC _ _ hR)
       (rep_compC _ _ hT) (by rw [← nubC_fst]; exact rep_nubC _ hN)
-      (rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hdu.1)) (pickFits_of_fitsN _ _ _ hdu.2 _ (by simp)))
+      (rep_dom_corefl _ (one_ok _ (Obj.codesC_fits _ _ hdu.1)) (pickFits_of_fitsN _ _ _ hdu.2 _ (by simp <;> exact Nat.le_refl _)))
       (rep_antiJoinC _ _ hA) (rep_compC _ _ hO) (rep_unionC hat _ _ hU)
     have hFr := hSi hG
     simp only [loopRound, nubC_fst]
@@ -115,8 +119,6 @@ theorem rep_loopC {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.ar
 end Rep
 
 namespace CRel
-
-open QLean QLean.Kernel LeetQ.Rel.Alg Freyd Freyd.Alg Freyd.Alg.RelSet LeetQ.Rel.Rep
 
 variable {K X Y B : Obj}
 
@@ -148,9 +150,9 @@ theorem rep_suffix {n : USize} (X : Vals (.arr B) n) (hat : hatOK) (hb : (suffix
 /-- `hat`: `rep_unionC`'s; `hS` the step's spec at each round whose step was ok. -/
 theorem rep_loopOn (F : CRel (.prod X Y) (.prod X Y) → CRel (.prod X Y) X) (P : CRel K (.prod X (.arr Y)))
     (hat : hatOK) (hb : (loopOn F P).ok = true) (Fr : Nat → X.El × Y.El → X.El → Prop)
-    (hS : ∀ i, (F ⟨ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) s).1)^[i]
+    (hS : ∀ i, (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩; (s.rel, s.ok)) s).1)^[i]
         (Alg.zero, P.rel)).2), true⟩).ok = true →
-      ∀ cy c', Fr i cy c' ↔ rep (F ⟨ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩;
+      ∀ cy c', Fr i cy c' ↔ rep (F ⟨Alg.ran (loopPairs ((fun s => (loopRound (fun D => let s := F ⟨D, true⟩;
         (s.rel, s.ok)) s).1)^[i] (Alg.zero, P.rel)).2), true⟩).rel cy c') :
     ∀ k c, rep (loopOn F P).rel k c ↔ ∃ c₀ xs, rep P.rel k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=

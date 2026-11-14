@@ -194,6 +194,7 @@ theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.ar
 
 /-! ## `tic` -/
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`tic`, read back**: a row `(b, bs)` of `P` goes to the non-empty prefixes of `b :: bs`, shortest first.
     `tic P` is `I ≫ tail I.val`, `I = C ≫ inits C.val`, `C = cons P` (bound by `hC`, `hI`). Hypotheses:
     `rep_cons`'s at `P` (`hc`), `rep_comp`'s at `I` (`h1`) and at the result (`h2`), `rep_inits`'s at `C.val`
@@ -489,6 +490,7 @@ scoped notation "sufOK" =>
 end ListN
 open ListN
 
+open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **One round of `suffix`, read back**: `F ≫ tail` takes an array to the tail of each array `F` gives it, and the
     union adds those to `S`. Hypotheses: `sufOK`. -/
 theorem suffix_round_of {B : Obj} (S F : Rel (.arr B) (.arr B))
