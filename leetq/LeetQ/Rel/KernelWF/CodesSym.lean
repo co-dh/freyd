@@ -7,6 +7,8 @@
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.Raze
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -46,7 +48,7 @@ theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
     (hsz : w ≠ 0 → ids.size = (n.toNat * w + 7) / 8) (hcard : w < 8 → card - 1 < 2 ^ w)
     (hid : ∀ i < n.toNat, Column.idAt ids w i < card) :
     let c := Code.ofLane w n card ids
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    laneOK(c.w) ∧ c.n = n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   dsimp only
@@ -54,9 +56,7 @@ theorem ofLane_wf {w : Nat} {n : USize} {card : Nat} {ids : ByteArray}
   have hn : (Code.ofLane w n card ids).n = n := by unfold Code.ofLane; split <;> rfl
   have hz : w = 0 → ∀ i < n.toNat, Column.idAt ids w i = 0 := fun h i hi => by
     have := hid i hi; have hc := hcard (by omega); subst h; rw [Nat.pow_zero] at hc; omega
-  have hsh : ((Code.ofLane w n card ids).w = 1 ∨ (Code.ofLane w n card ids).w = 2 ∨
-      (Code.ofLane w n card ids).w = 4 ∨ (Code.ofLane w n card ids).w = 8 ∨ (Code.ofLane w n card ids).w = 16 ∨
-      (Code.ofLane w n card ids).w = 32 ∨ (Code.ofLane w n card ids).w = 64) ∧
+  have hsh : laneOK((Code.ofLane w n card ids).w) ∧
       (Code.ofLane w n card ids).b.size = (n.toNat * (Code.ofLane w n card ids).w + 7) / 8 ∧
       ((Code.ofLane w n card ids).w < 8 → w < 8) := by
     unfold Code.ofLane; split
@@ -187,7 +187,7 @@ theorem codes_symbol_enum_faithful (x : Part (.atom .symbol)) {d : ByteArray} {o
 theorem codes_symbol_enum_wf (x : Part (.atom .symbol)) {d : ByteArray} {o : Array Nat} {ids : ByteArray}
     (he : x.2.enc = .enum d o ids) :
     let c := (Obj.codes (.atom .symbol) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨d', o', ids', hi', hc⟩ := codes_symbol x
@@ -253,7 +253,7 @@ theorem codes_symbol_syms_faithful (x : Part (.atom .symbol)) {b : ByteArray} {o
 theorem codes_symbol_syms_wf (x : Part (.atom .symbol)) {b : ByteArray} {o : Array Nat}
     (he : x.2.enc = .syms b o) :
     let c := (Obj.codes (.atom .symbol) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨d', o', ids', hi', hc⟩ := codes_symbol x
@@ -283,7 +283,7 @@ theorem codes_symbol_faithful (x : Part (.atom .symbol)) {i j : Nat} (hi : i < x
 /-- **One part of a symbol side: its code is well formed**, blob or interned, under its `Enc.WF` alone. -/
 theorem codes_symbol_wf (x : Part (.atom .symbol)) :
     let c := (Obj.codes (.atom .symbol) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   rcases symbol_enc x.2.wf with ⟨b, o, he⟩ | ⟨d, o, ids, he⟩

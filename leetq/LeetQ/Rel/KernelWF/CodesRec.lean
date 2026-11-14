@@ -8,6 +8,8 @@
 import LeetQ.Rel.KernelWF.CodesProdFaithful
 import LeetQ.Rel.KernelWF.RazeRowRec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -26,7 +28,7 @@ theorem len_longsOf {n : USize} (x : Arr .long n) : len (longsOf x) = n.toNat :=
 /-- **`Code.gather` at any index column**: code `j` of `c@i` is code `i[j]` of `c` where `i[j]` is below
     `c.n`, else `0` — `gather_spec` without its every-index-in-range hypothesis. -/
 theorem gather_get (c : Code) (i : ByteArray) (hl : len i < USize.size)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hcw : laneOK(c.w))
     (hcb : 8 ≤ c.w → 8 * c.b.size = c.w * c.n.toNat) :
     (Code.gather c i).w = c.w ∧ (Code.gather c i).n.toNat = len i ∧ (Code.gather c i).card = c.card ∧
     ∀ j < len i, Column.idAt (Code.gather c i).b c.w j =
@@ -137,8 +139,8 @@ theorem row_sum_inr {a b : Obj} {n : USize} (x : Vals (.sum a b) n) {q : Nat} (h
     their code's lane and bound, `n` codes in `⌈n·w/8⌉` bytes. -/
 theorem sum_part_codes {a b : Obj} {n : USize} (x : Vals (.sum a b) n) (cl cr : Code)
     (hl : x.1.toNat < 2 ^ 61) (hr : x.2.1.toNat < 2 ^ 61) (hcl : cl.n = x.1) (hcr : cr.n = x.2.1)
-    (hlw : cl.w = 1 ∨ cl.w = 2 ∨ cl.w = 4 ∨ cl.w = 8 ∨ cl.w = 16 ∨ cl.w = 32 ∨ cl.w = 64)
-    (hrw : cr.w = 1 ∨ cr.w = 2 ∨ cr.w = 4 ∨ cr.w = 8 ∨ cr.w = 16 ∨ cr.w = 32 ∨ cr.w = 64)
+    (hlw : laneOK(cl.w))
+    (hrw : laneOK(cr.w))
     (hls : cl.b.size = (cl.n.toNat * cl.w + 7) / 8) (hrs : cr.b.size = (cr.n.toNat * cr.w + 7) / 8)
     (hsr : ∀ q, q < n.toNat → Column.bitAt (tagBits x.2.2.1) q = true → 0 < x.2.1.toNat)
     (hsl : ∀ q, q < n.toNat → Column.bitAt (tagBits x.2.2.1) q = false → 0 < x.1.toNat) :
@@ -250,8 +252,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
         Column.idAt (ca[k]'hk).b (ca[k]'hk).w i = Column.idAt (ca[l]'hl).b (ca[l]'hl).w j ↔
           Vals.row (pa[k]'hk).2 ⟨i, hi⟩ = Vals.row (pa[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
-        ((ca[k]'hk).w = 1 ∨ (ca[k]'hk).w = 2 ∨ (ca[k]'hk).w = 4 ∨ (ca[k]'hk).w = 8 ∨ (ca[k]'hk).w = 16 ∨
-          (ca[k]'hk).w = 32 ∨ (ca[k]'hk).w = 64) ∧
+        laneOK((ca[k]'hk).w) ∧
         (ca[k]'hk).n = (pa[k]'hk).1 ∧ (ca[k]'hk).b.size = ((ca[k]'hk).n.toNat * (ca[k]'hk).w + 7) / 8 ∧
         ((ca[k]'hk).w < 8 → (ca[k]'hk).card < USize.size ∧
           ∀ i < (ca[k]'hk).n.toNat, Column.idAt (ca[k]'hk).b (ca[k]'hk).w i < (ca[k]'hk).card))
@@ -261,8 +262,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
         Column.idAt (cb[k]'hk).b (cb[k]'hk).w i = Column.idAt (cb[l]'hl).b (cb[l]'hl).w j ↔
           Vals.row (pb[k]'hk).2 ⟨i, hi⟩ = Vals.row (pb[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
-        ((cb[k]'hk).w = 1 ∨ (cb[k]'hk).w = 2 ∨ (cb[k]'hk).w = 4 ∨ (cb[k]'hk).w = 8 ∨ (cb[k]'hk).w = 16 ∨
-          (cb[k]'hk).w = 32 ∨ (cb[k]'hk).w = 64) ∧
+        laneOK((cb[k]'hk).w) ∧
         (cb[k]'hk).n = (pb[k]'hk).1 ∧ (cb[k]'hk).b.size = ((cb[k]'hk).n.toNat * (cb[k]'hk).w + 7) / 8 ∧
         ((cb[k]'hk).w < 8 → (cb[k]'hk).card < USize.size ∧
           ∀ i < (cb[k]'hk).n.toNat, Column.idAt (cb[k]'hk).b (cb[k]'hk).w i < (cb[k]'hk).card))
@@ -279,7 +279,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
         Vals.row (A := .sum a b) (cs₀[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .sum a b) (cs₀[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
         let c := (Obj.codes (.sum a b) cs₀)[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs₀[k]'hk).1 ∧
+        laneOK(c.w) ∧ c.n = (cs₀[k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ {k l : Nat} (hk : k < p) (hl : l < p),
@@ -321,8 +321,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
     (fun q hq => (hside k hk q hq).1) (fun q hq => (hside k hk q hq).2)
   have hlT : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (T[k]'hk).w = (T[l]'hl).w := fun {k l} hk hl => by
     rw [hTk k hk, hTk l hl]
-  have hwT : ∀ {k : Nat} (hk : k < p), ((T[k]'hk).w = 1 ∨ (T[k]'hk).w = 2 ∨ (T[k]'hk).w = 4 ∨
-      (T[k]'hk).w = 8 ∨ (T[k]'hk).w = 16 ∨ (T[k]'hk).w = 32 ∨ (T[k]'hk).w = 64) ∧
+  have hwT : ∀ {k : Nat} (hk : k < p), laneOK((T[k]'hk).w) ∧
       (T[k]'hk).b.size = ((T[k]'hk).n.toNat * (T[k]'hk).w + 7) / 8 ∧
       ((T[k]'hk).w < 8 → ∀ i < (T[k]'hk).n.toNat, Column.idAt (T[k]'hk).b (T[k]'hk).w i < max (T[k]'hk).card 1) :=
     fun {k} hk => by
@@ -337,8 +336,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
     rw [hGLk k hk, hGLk l hl, (hP k hk).1.1, (hP l hl).1.1]; exact hla hk hl
   have hlGR : ∀ {k l : Nat} (hk : k < p) (hl : l < p), (GR[k]'hk).w = (GR[l]'hl).w := fun {k l} hk hl => by
     rw [hGRk k hk, hGRk l hl, (hP k hk).2.1.1, (hP l hl).2.1.1]; exact hlb hk hl
-  have hwGL : ∀ {k : Nat} (hk : k < p), ((GL[k]'hk).w = 1 ∨ (GL[k]'hk).w = 2 ∨ (GL[k]'hk).w = 4 ∨
-      (GL[k]'hk).w = 8 ∨ (GL[k]'hk).w = 16 ∨ (GL[k]'hk).w = 32 ∨ (GL[k]'hk).w = 64) ∧
+  have hwGL : ∀ {k : Nat} (hk : k < p), laneOK((GL[k]'hk).w) ∧
       (GL[k]'hk).b.size = ((GL[k]'hk).n.toNat * (GL[k]'hk).w + 7) / 8 ∧
       ((GL[k]'hk).w < 8 → ∀ i < (GL[k]'hk).n.toNat,
         Column.idAt (GL[k]'hk).b (GL[k]'hk).w i < max (GL[k]'hk).card 1) := fun {k} hk => by
@@ -353,8 +351,7 @@ theorem codes_sum_faithful_wf {a b : Obj} {p : Nat} (cs₀ : Vector (Part (.sum 
       have := (hside k hk i hi).2 (by simpa using hb)
       exact Nat.lt_of_lt_of_le (((hwa hk).2.2.2 h8).2 _ (by rw [(hwa hk).2.1, hpak k hk]; dsimp only; omega))
         (Nat.le_max_left _ _)
-  have hwGR : ∀ {k : Nat} (hk : k < p), ((GR[k]'hk).w = 1 ∨ (GR[k]'hk).w = 2 ∨ (GR[k]'hk).w = 4 ∨
-      (GR[k]'hk).w = 8 ∨ (GR[k]'hk).w = 16 ∨ (GR[k]'hk).w = 32 ∨ (GR[k]'hk).w = 64) ∧
+  have hwGR : ∀ {k : Nat} (hk : k < p), laneOK((GR[k]'hk).w) ∧
       (GR[k]'hk).b.size = ((GR[k]'hk).n.toNat * (GR[k]'hk).w + 7) / 8 ∧
       ((GR[k]'hk).w < 8 → ∀ i < (GR[k]'hk).n.toNat,
         Column.idAt (GR[k]'hk).b (GR[k]'hk).w i < max (GR[k]'hk).card 1) := fun {k} hk => by

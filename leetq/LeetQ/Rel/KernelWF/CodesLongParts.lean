@@ -4,6 +4,8 @@
 -/
 import LeetQ.Rel.KernelWF.CodesProd
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -471,7 +473,7 @@ theorem codes_long_parts_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
     (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
     {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]'hk
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+    laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c
@@ -511,7 +513,7 @@ theorem codes_long_dense_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
     (cs : Vector (Part (.atom t)) p) (hd : ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]'hk
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+    laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with

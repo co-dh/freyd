@@ -7,6 +7,8 @@
 import LeetQ.Rel.RepDiv
 import LeetQ.Rel.KernelWF.SetIdsSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
@@ -60,7 +62,7 @@ open Alg.SegN
 
 /-- **`segments c` as `symDiv` reads it**: `segments_spec`, plus the classes cover the `n` rows, and class `t`
     is the rows whose code is that of its first row. Hypotheses: `segments_spec`'s. -/
-theorem seg_facts (c : Code) (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+theorem seg_facts (c : Code) (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)
     (h63 : c.n.toNat ≤ 2 ^ 63) {p o f : ByteArray} (he : segments c = (p, o, f)) :
@@ -91,13 +93,13 @@ local notation "KS" => List.length (F(sk))
     counting `rk`'s and `sk`'s rows; `nR` is `rk`'s count; the counts fit; `segments`, `ss`, `sid` by their
     defining equations. -/
 theorem sym_ids (rk sk v0 v1 : Code)
-    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (rkw : laneOK(rk.w))
     (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
     (rkc : rk.w < 8 → rk.card < USize.size ∧ ∀ i < rk.n.toNat, Column.idAt rk.b rk.w i < rk.card)
-    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (skw : laneOK(sk.w))
     (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
     (skc : sk.w < 8 → sk.card < USize.size ∧ ∀ i < sk.n.toNat, Column.idAt sk.b sk.w i < sk.card)
-    (v0w : v0.w = 1 ∨ v0.w = 2 ∨ v0.w = 4 ∨ v0.w = 8 ∨ v0.w = 16 ∨ v0.w = 32 ∨ v0.w = 64)
+    (v0w : laneOK(v0.w))
     (v0s : v0.b.size = (v0.n.toNat * v0.w + 7) / 8)
     (v0c : v0.w < 8 → v0.card < USize.size ∧ ∀ i < v0.n.toNat, Column.idAt v0.b v0.w i < v0.card)
     (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
@@ -161,7 +163,7 @@ theorem sym_ids (rk sk v0 v1 : Code)
     rw [pS] at hv; obtain ⟨t, -, ht⟩ := List.mem_flatMap.1 hv; exact List.mem_range.1 (List.mem_filter.1 ht).1
   have hlpr : len pr = rk.n.toNat := by rw [len_eq_ids, pR, List.length_flatMap]; exact sR
   have hlps : len ps = sk.n.toNat := by rw [len_eq_ids, pS, List.length_flatMap]; exact sS
-  have v1w : v1.w = 1 ∨ v1.w = 2 ∨ v1.w = 4 ∨ v1.w = 8 ∨ v1.w = 16 ∨ v1.w = 32 ∨ v1.w = 64 := by rw [hvw]; exact v0w
+  have v1w : laneOK(v1.w) := by rw [hvw]; exact v0w
   have hcb0 : 8 ≤ v0.w → 8 * v0.b.size = v0.w * v0.n.toNat := fun _ => by
     rcases v0w with h | h | h | h | h | h | h <;> rw [h] at v0s ⊢ <;> omega
   have hcb1 : 8 ≤ v1.w → 8 * v1.b.size = v1.w * v1.n.toNat := fun _ => by
@@ -262,7 +264,7 @@ theorem sym_ids (rk sk v0 v1 : Code)
         (fun x hx => by rw [hr1 x (by rw [← sS]; exact hx), pS]) u
   -- `setIds_spec` at a class of each side
   have hsz : s.size = 8 * (KR + KS) := by rw [stsz, horr, hadd]; omega
-  have hw' : cc.w = 1 ∨ cc.w = 2 ∨ cc.w = 4 ∨ cc.w = 8 ∨ cc.w = 16 ∨ cc.w = 32 ∨ cc.w = 64 := by rw [ccw]; exact v0w
+  have hw' : laneOK(cc.w) := by rw [ccw]; exact v0w
   have hs' : cc.b.size = (cc.n.toNat * cc.w + 7) / 8 := by rw [ccw]; exact ccs
   have hasc : ∀ j, j + 1 < KR + KS → T(j) ≤ T(j + 1) := fun j hj => by
     rw [hT j (by omega), hT (j + 1) hj]
@@ -295,13 +297,13 @@ open DivN
     exactly when they hold one set of value codes. Hypotheses: those of `sym_ids`, and `lc`, `rc` by their
     defining equations. -/
 theorem sym_pairs (rk sk v0 v1 : Code)
-    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (rkw : laneOK(rk.w))
     (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
     (rkc : rk.w < 8 → rk.card < USize.size ∧ ∀ i < rk.n.toNat, Column.idAt rk.b rk.w i < rk.card)
-    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (skw : laneOK(sk.w))
     (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
     (skc : sk.w < 8 → sk.card < USize.size ∧ ∀ i < sk.n.toNat, Column.idAt sk.b sk.w i < sk.card)
-    (v0w : v0.w = 1 ∨ v0.w = 2 ∨ v0.w = 4 ∨ v0.w = 8 ∨ v0.w = 16 ∨ v0.w = 32 ∨ v0.w = 64)
+    (v0w : laneOK(v0.w))
     (v0s : v0.b.size = (v0.n.toNat * v0.w + 7) / 8)
     (v0c : v0.w < 8 → v0.card < USize.size ∧ ∀ i < v0.n.toNat, Column.idAt v0.b v0.w i < v0.card)
     (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
@@ -387,13 +389,13 @@ theorem pickPart_row {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < US
     `y`. Hypotheses: `sym_pairs`'; `rk`, `sk` code `R.key`, `S.key` faithfully, `v0`, `v1` code `R.val`, `S.val`
     jointly faithfully; `rf`, `sf`, `hit` by their defining equations, the sides pick back, the join's counts fit. -/
 theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
-    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (rkw : laneOK(rk.w))
     (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
     (rkc : rk.w < 8 → rk.card < USize.size ∧ ∀ i < rk.n.toNat, Column.idAt rk.b rk.w i < rk.card)
-    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (skw : laneOK(sk.w))
     (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
     (skc : sk.w < 8 → sk.card < USize.size ∧ ∀ i < sk.n.toNat, Column.idAt sk.b sk.w i < sk.card)
-    (v0w : v0.w = 1 ∨ v0.w = 2 ∨ v0.w = 4 ∨ v0.w = 8 ∨ v0.w = 16 ∨ v0.w = 32 ∨ v0.w = 64)
+    (v0w : laneOK(v0.w))
     (v0s : v0.b.size = (v0.n.toNat * v0.w + 7) / 8)
     (v0c : v0.w < 8 → v0.card < USize.size ∧ ∀ i < v0.n.toNat, Column.idAt v0.b v0.w i < v0.card)
     (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
@@ -480,8 +482,8 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
   -- the rows of `hit`: `join lc rc`'s pairs, read at the first rows
   have hln : lc.n = rf.1 := USize.toNat_inj.1 (by rw [ln, rf1, hlfr])
   have hrn' : rc.n = sf.1 := USize.toNat_inj.1 (by rw [rn, sf1, hlfs])
-  have hlw : lc.w = 1 ∨ lc.w = 2 ∨ lc.w = 4 ∨ lc.w = 8 ∨ lc.w = 16 ∨ lc.w = 32 ∨ lc.w = 64 := by rw [lw]; decide
-  have hrw : rc.w = 1 ∨ rc.w = 2 ∨ rc.w = 4 ∨ rc.w = 8 ∨ rc.w = 16 ∨ rc.w = 32 ∨ rc.w = 64 := by rw [rw']; decide
+  have hlw : laneOK(lc.w) := by rw [lw]; decide
+  have hrw : laneOK(rc.w) := by rw [rw']; decide
   have hrc' : rc.w < 8 → rc.card < USize.size ∧ ∀ i < rc.n.toNat, Column.idAt rc.b rc.w i < rc.card :=
     fun h => absurd h (by rw [rw']; decide)
   have hrn63 : rc.n.toNat < 2 ^ 63 := by rw [rn]; omega
@@ -556,8 +558,8 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     `u` is an element of `U` and no row of `V`. Hypotheses: `uc`, `vc` code `U`, `V` jointly and well formed
     (`anti_ids`); `U` picks back at the kept positions. -/
 theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : Code)
-    (hxw : uc.w = 1 ∨ uc.w = 2 ∨ uc.w = 4 ∨ uc.w = 8 ∨ uc.w = 16 ∨ uc.w = 32 ∨ uc.w = 64)
-    (hyw : vc.w = 1 ∨ vc.w = 2 ∨ vc.w = 4 ∨ vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32 ∨ vc.w = 64)
+    (hxw : laneOK(uc.w))
+    (hyw : laneOK(vc.w))
     (hxs : uc.b.size = (uc.n.toNat * uc.w + 7) / 8) (hys : vc.b.size = (vc.n.toNat * vc.w + 7) / 8)
     (hun : uc.n = mu) (hvn : vc.n = mv)
     (hj : ∀ {j p : Nat} (hj : j < mv.toNat) (hp : p < mu.toNat),
@@ -593,11 +595,11 @@ local notation "vacB" => Vals.pickPart B Ub (anti ubc sk)
     of `Ub` that are no key of `S`. Hypotheses: `anti_pick_rows`' on each side, `rep_top`'s. -/
 theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A ma) (Ub : Vals B mb)
     (uac rk ubc sk : Code)
-    (uaw : uac.w = 1 ∨ uac.w = 2 ∨ uac.w = 4 ∨ uac.w = 8 ∨ uac.w = 16 ∨ uac.w = 32 ∨ uac.w = 64)
-    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (uaw : laneOK(uac.w))
+    (rkw : laneOK(rk.w))
     (uas : uac.b.size = (uac.n.toNat * uac.w + 7) / 8) (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
-    (ubw : ubc.w = 1 ∨ ubc.w = 2 ∨ ubc.w = 4 ∨ ubc.w = 8 ∨ ubc.w = 16 ∨ ubc.w = 32 ∨ ubc.w = 64)
-    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (ubw : laneOK(ubc.w))
+    (skw : laneOK(sk.w))
     (ubs : ubc.b.size = (ubc.n.toNat * ubc.w + 7) / 8) (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
     (uan : uac.n = ma) (rkn : rk.n = R.n) (ubn : ubc.n = mb) (skn : sk.n = S.n)
     (ha : ∀ {j p : Nat} (hj : j < R.n.toNat) (hp : p < ma.toNat),

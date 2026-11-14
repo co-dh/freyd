@@ -10,6 +10,8 @@ import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesSymParts
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
@@ -44,8 +46,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
         Column.idAt (jc[k]'hk).b (jc[k]'hk).w i = Column.idAt (jc[l]'hl).b (jc[l]'hl).w j ↔
           Vals.row (jcs[k]'hk).2 ⟨i, hi⟩ = Vals.row (jcs[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < 2),
-        ((jc[k]'hk).w = 1 ∨ (jc[k]'hk).w = 2 ∨ (jc[k]'hk).w = 4 ∨ (jc[k]'hk).w = 8 ∨ (jc[k]'hk).w = 16 ∨
-          (jc[k]'hk).w = 32 ∨ (jc[k]'hk).w = 64) ∧
+        laneOK((jc[k]'hk).w) ∧
         (jc[k]'hk).n = (jcs[k]'hk).1 ∧ (jc[k]'hk).b.size = ((jc[k]'hk).n.toNat * (jc[k]'hk).w + 7) / 8 ∧
         ((jc[k]'hk).w < 8 → (jc[k]'hk).card < USize.size ∧
           ∀ i < (jc[k]'hk).n.toNat, Column.idAt (jc[k]'hk).b (jc[k]'hk).w i < (jc[k]'hk).card))
@@ -234,7 +235,7 @@ theorem codes_guid_parts_faithful {p : Nat} (cs : Vector (Part (.atom .guid)) p)
 theorem codes_guid_parts_wf {p : Nat} (cs : Vector (Part (.atom .guid)) p)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom .guid) cs)[k]'hk
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+    laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c

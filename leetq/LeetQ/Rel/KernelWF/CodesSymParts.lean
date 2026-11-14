@@ -5,6 +5,8 @@
 -/
 import LeetQ.Rel.KernelWF.RazeSym
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -47,13 +49,7 @@ theorem codes_symbol_parts_faithful {p : Nat} (cs : Vector (Part (.atom .symbol)
       Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
   have hX := raze_len .symbol cs.toArray hN
   obtain ⟨d, o, ids, hI, hc⟩ := codes_symbol (raze .symbol cs.toArray)
-  have hw : (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 1 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 2 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 4 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 8 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 16 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 32 ∨
-      (Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w = 64 := by
+  have hw : laneOK((Obj.codes (.atom .symbol) #v[raze .symbol cs.toArray])[0].w) := by
     rw [hc]; unfold Code.ofLane; split
     · exact .inl rfl
     · next h => exact (idWidth_facts o).1.resolve_left (by simpa using h)
@@ -81,7 +77,7 @@ theorem codes_symbol_parts_faithful {p : Nat} (cs : Vector (Part (.atom .symbol)
 theorem codes_symbol_parts_wf {p : Nat} (cs : Vector (Part (.atom .symbol)) p)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom .symbol) cs)[k]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
+    laneOK(c.w) ∧ c.n = cs[k].1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c

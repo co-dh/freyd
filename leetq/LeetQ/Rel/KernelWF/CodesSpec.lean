@@ -8,6 +8,8 @@ import LeetQ.Rel.KernelWF.JoinSpec
 import LeetQ.Rel.KernelWF.PickSpec
 import QLean.Verify.ScanOver
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -237,7 +239,7 @@ theorem codes_small_int_faithful {t : QAtomicType} {k : Scan.Kind} (ht : orderKi
 
 /-- **`packIds` at a lane of at least one bit is `⌈m·W/8⌉` bytes**: `KernelWF.packIds_size` at a nonzero lane,
     the shape the code lemmas state their widths in. -/
-theorem packIds_size {W : Nat} (hW : W = 1 ∨ W = 2 ∨ W = 4 ∨ W = 8 ∨ W = 16 ∨ W = 32 ∨ W = 64)
+theorem packIds_size {W : Nat} (hW : laneOK(W))
     (m : Nat) (f : Nat → Nat) : (Column.packIds W m f).size = (m * W + 7) / 8 :=
   KernelWF.packIds_size (Or.inr hW) m f
 
@@ -249,7 +251,7 @@ theorem ofIds_groupOf_wf (g : Nat → UInt64) (n : USize) {ids fs : ByteArray}
       (Verify.groupOf g n.toNat))
     (hfs : len fs = (Verify.firstsOf g n.toNat).length) :
     let c := Code.ofIds (len fs) n ids
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    laneOK(c.w) ∧ c.n = n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c
@@ -263,7 +265,7 @@ theorem ofIds_groupOf_wf (g : Nat → UInt64) (n : USize) {ids fs : ByteArray}
     rw [show Column.idAt c.b c.w i = _ from ofIds_groupOf g n (Verify.usize_lt n) hids hfs hi, hcard]
     exact Verify.groupOf_lt hi
   have hsh : ∀ d : Code, d = Code.ofIds (len fs) n ids →
-      (d.w = 1 ∨ d.w = 2 ∨ d.w = 4 ∨ d.w = 8 ∨ d.w = 16 ∨ d.w = 32 ∨ d.w = 64) ∧
+      laneOK(d.w) ∧
       d.b.size = (d.n.toNat * d.w + 7) / 8 := by
     intro d hd; subst hd
     unfold Code.ofIds Code.ofLane
@@ -272,9 +274,7 @@ theorem ofIds_groupOf_wf (g : Nat → UInt64) (n : USize) {ids fs : ByteArray}
     · rw [if_neg h0]
       have hw0 : Column.idWidthOf (len fs) ≠ 0 := by simpa using h0
       have hlane := Verify.laneWidth_cases (Column.widthFor (len fs - 1))
-      have hw : Column.idWidthOf (len fs) = 1 ∨ Column.idWidthOf (len fs) = 2 ∨ Column.idWidthOf (len fs) = 4 ∨
-          Column.idWidthOf (len fs) = 8 ∨ Column.idWidthOf (len fs) = 16 ∨ Column.idWidthOf (len fs) = 32 ∨
-          Column.idWidthOf (len fs) = 64 := by
+      have hw : laneOK(Column.idWidthOf (len fs)) := by
         unfold Column.idWidthOf at hw0 ⊢; omega
       refine ⟨hw, ?_⟩
       show ids.size = _
@@ -286,7 +286,7 @@ theorem ofIds_groupOf_wf (g : Nat → UInt64) (n : USize) {ids fs : ByteArray}
 theorem codes_small_int_wf {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = some k)
     (hk : k = .u8 ∨ k = .i16 ∨ k = .i32) (x : Part (.atom t)) :
     let c := (Obj.codes (.atom t) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨p, hp, hc⟩ := codes_small_int ht hk x
@@ -749,7 +749,7 @@ theorem codes_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (hro : rangeOffsets t (cs.map fun c => Arr.part c.2) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = some os)
     {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
+    laneOK(c.w) ∧ c.n = cs[k].1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨base, card, hs⟩ := rangeOffsets_spec ht
@@ -833,7 +833,7 @@ theorem codes_long_group_faithful {t : QAtomicType} (ht : orderKind t = some .i6
 theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
     (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
     let c := (Obj.codes (.atom t) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
@@ -864,7 +864,7 @@ theorem codes_long_one_faithful {t : QAtomicType} (ht : orderKind t = some .i64)
 /-- **One part of an eight-byte integral side: its code is well formed**, on either branch of `codes`. -/
 theorem codes_long_one_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t)) :
     let c := (Obj.codes (.atom t) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   cases hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) with
@@ -973,7 +973,7 @@ theorem codes_guid_faithful (x : Part (.atom .guid)) {i j : Nat} (hi : i < x.1.t
 /-- **One part of a `guid` side: its code is well formed.** -/
 theorem codes_guid_wf (x : Part (.atom .guid)) :
     let c := (Obj.codes (.atom .guid) #v[x])[0]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = x.1 ∧
+    laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   obtain ⟨p, hp, hc⟩ := codes_guid x

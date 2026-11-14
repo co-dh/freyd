@@ -9,6 +9,8 @@ import LeetQ.Rel.KernelWF.CrossSpec
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.KernelWF.CodesProdFaithful
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -180,7 +182,7 @@ theorem distinct_holds (t : Obj) {n : USize} (x : Vals t n) (I : ByteArray) (g :
 theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
     (hK : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
         Column.idAt (dc).b (dc).w i = Column.idAt (dc).b (dc).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-      ((dc).w = 1 ∨ (dc).w = 2 ∨ (dc).w = 4 ∨ (dc).w = 8 ∨ (dc).w = 16 ∨ (dc).w = 32 ∨ (dc).w = 64) ∧ (dc).n = n ∧
+      laneOK((dc).w) ∧ (dc).n = n ∧
         (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
         ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card))
     (hp : Vals.PickFits t x (ids (dc).groupIds.2)) :
@@ -198,7 +200,7 @@ theorem rep_distinctCorefl (t : Obj) {n : USize} (x : Vals t n)
 theorem rep_distinctCorefl_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
     (hK : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
         Column.idAt (dc).b (dc).w i = Column.idAt (dc).b (dc).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-      ((dc).w = 1 ∨ (dc).w = 2 ∨ (dc).w = 4 ∨ (dc).w = 8 ∨ (dc).w = 16 ∨ (dc).w = 32 ∨ (dc).w = 64) ∧ (dc).n = n ∧
+      laneOK((dc).w) ∧ (dc).n = n ∧
         (dc).b.size = ((dc).n.toNat * (dc).w + 7) / 8 ∧
         ((dc).w < 8 → (dc).card < USize.size ∧ ∀ i < (dc).n.toNat, Column.idAt (dc).b (dc).w i < (dc).card)) :
     rep (distinctCorefl (.atom t) x) = corefl (A := (⟨(Obj.atom t).El⟩ : RelSet.{0})) fun a => ∃ i, x.row i = a :=
@@ -224,7 +226,7 @@ theorem rep_dom (R : Rel A B)
             ((Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w j ↔
         Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
       (let c := (Obj.codes _ (#v[⟨R.n, R.key⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-       (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = R.n ∧
+       laneOK(c.w) ∧ c.n = R.n ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
     (hp : Vals.PickFits A R.key
@@ -242,7 +244,7 @@ theorem rep_ran (R : Rel A B)
             ((Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one).w j ↔
         Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
       (let c := (Obj.codes _ (#v[⟨R.n, R.val⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
-       (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = R.n ∧
+       laneOK(c.w) ∧ c.n = R.n ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
     (hp : Vals.PickFits B R.val
@@ -468,8 +470,7 @@ scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl 
     Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
       Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
   ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    laneOK((cs[k]'hk).w) ∧
     (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
     ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
       ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
@@ -612,7 +613,7 @@ theorem rep_inter_atoms {t t' : QAtomicType} (R S : Rel (.atom t) (.atom t'))
             ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < 2),
         let c := (pairs #v[R, S])[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧
+        laneOK(c.w) ∧
         c.n = ((#v[⟨R.n, (R.key, R.val)⟩, ⟨S.n, (S.key, S.val)⟩] : Vector (Part (.prod (.atom t) (.atom t'))) 2)[k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) :

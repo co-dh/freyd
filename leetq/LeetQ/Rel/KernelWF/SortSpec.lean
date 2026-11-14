@@ -6,6 +6,8 @@ import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.Reduce
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF
@@ -46,7 +48,7 @@ theorem gather_perm {p g : ByteArray} (hg : (ids g).Perm (List.range (len p))) :
     a key `κ` that agrees exactly where the codes do, ties in row order — `grade` at the lane's layout,
     `gradeLane` at `2`/`4` bits and past an `i16`/`i32` sign bit. Hypotheses: the lane is one a `Code` takes and
     the payload holds exactly its `n` codes. -/
-theorem grade_code (c : Code) (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+theorem grade_code (c : Code) (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8) :
     (ids c.grade).Perm (List.range c.n.toNat) ∧ ∃ κ : Nat → Nat,
       (∀ i j, i < c.n.toNat → j < c.n.toNat → (κ i = κ j ↔ Column.idAt c.b c.w i = Column.idAt c.b c.w j)) ∧
@@ -104,11 +106,7 @@ theorem gradeColumn_sort {t : QAtomicType} {n : USize} {e v : Enc} (h : gradeCol
     side. Hypotheses: `len p` fits a `USize`; every one-part code is well formed and of its part's count (the
     codes `sortBy` grades where no kernel orders the values). -/
 theorem sortBy_perm
-    (hW : ∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]).w = 1 ∨ ((Obj.codes B #v[x])[0]).w = 2 ∨
-      ((Obj.codes B #v[x])[0]).w = 4 ∨ ((Obj.codes B #v[x])[0]).w = 8 ∨ ((Obj.codes B #v[x])[0]).w = 16 ∨
-      ((Obj.codes B #v[x])[0]).w = 32 ∨ ((Obj.codes B #v[x])[0]).w = 64) ∧
-      ((Obj.codes B #v[x])[0]).b.size = (((Obj.codes B #v[x])[0]).n.toNat * ((Obj.codes B #v[x])[0]).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]).n = x.1) :
+    (hW : codesWF) :
     (A : Obj) → {n : USize} → (c : Vals A n) → (p : ByteArray) → len p < USize.size →
       (ids (A.sortBy c p)).Perm (ids p)
   | .atom t, n, c, p, hl => by
@@ -154,7 +152,7 @@ theorem sortBy_perm
     `vp`'s positions, each once, two of one code in `vp`'s order. Hypotheses: `kc` well formed, `vp` a
     permutation of its rows (`sortBy_perm` at `til n`). -/
 theorem grade_gather_group (kc : Code)
-    (hw : kc.w = 1 ∨ kc.w = 2 ∨ kc.w = 4 ∨ kc.w = 8 ∨ kc.w = 16 ∨ kc.w = 32 ∨ kc.w = 64)
+    (hw : laneOK(kc.w))
     (hs : kc.b.size = (kc.n.toNat * kc.w + 7) / 8) (vp : ByteArray) (hvp : (ids vp).Perm (List.range kc.n.toNat)) :
     (ids (gather 8 vp (kc.gather vp).grade)).Perm (List.range kc.n.toNat) ∧
       (∀ s t u, s ≤ t → t ≤ u → u < kc.n.toNat →

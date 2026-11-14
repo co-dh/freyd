@@ -14,6 +14,8 @@ import QLean.Verify.Encoding
 import QLean.Verify.Search
 import QLean.Verify.Group
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel LeetQ.Rel
@@ -23,15 +25,15 @@ open QLean.Verify (firstsOf ids)
 
 /-- A lane with no sort layout, among the lanes, is `2` or `4` bits. -/
 theorem laneKind_none {w : Nat} (h : laneKind w = none)
-    (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) : w = 2 ∨ w = 4 := by
+    (hw : laneOK(w)) : w = 2 ∨ w = 4 := by
   rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp_all [laneKind]
 
 /-! ## `member` -/
 
 /-- `memberIdsVec` of two well-formed codes: bit `i` of the needle set exactly when some haystack id is its id. -/
 theorem memberIds_bit (x c : Code)
-    (hxw : x.w = 1 ∨ x.w = 2 ∨ x.w = 4 ∨ x.w = 8 ∨ x.w = 16 ∨ x.w = 32 ∨ x.w = 64)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hxw : laneOK(x.w))
+    (hcw : laneOK(c.w))
     (hxs : x.b.size = (x.n.toNat * x.w + 7) / 8) (hcs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     {i : Nat} (hi : i < x.n.toNat) :
     Column.bitAt (memberIdsVec x.w.toUSize x.b x.n c.w.toUSize c.b c.n) i = true ↔
@@ -48,8 +50,8 @@ theorem memberIds_bit (x c : Code)
 /-- **`Code.member`'s bit `i`** (`i` below the needle count): set exactly when the needle's code `i` is some
     code of the haystack, both codes well formed. Every branch: `memberBits`, `memberVec`, `memberIdsVec`. -/
 theorem member_bit (x c : Code)
-    (hxw : x.w = 1 ∨ x.w = 2 ∨ x.w = 4 ∨ x.w = 8 ∨ x.w = 16 ∨ x.w = 32 ∨ x.w = 64)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hxw : laneOK(x.w))
+    (hcw : laneOK(c.w))
     (hxs : x.b.size = (x.n.toNat * x.w + 7) / 8) (hcs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     {i : Nat} (hi : i < x.n.toNat) :
     Column.bitAt (x.member c) i = true ↔ ∃ j < c.n.toNat, Column.idAt c.b c.w j = Column.idAt x.b x.w i := by
@@ -130,8 +132,8 @@ theorem notBits_bitAt (m : USize) (b : ByteArray) {i : Nat} (hi : i < m.toNat) :
 
 /-- **`anti x y`, read back**: the ascending positions of `x` whose code is no code of `y`, both well formed. -/
 theorem anti_ids (x y : Code)
-    (hxw : x.w = 1 ∨ x.w = 2 ∨ x.w = 4 ∨ x.w = 8 ∨ x.w = 16 ∨ x.w = 32 ∨ x.w = 64)
-    (hyw : y.w = 1 ∨ y.w = 2 ∨ y.w = 4 ∨ y.w = 8 ∨ y.w = 16 ∨ y.w = 32 ∨ y.w = 64)
+    (hxw : laneOK(x.w))
+    (hyw : laneOK(y.w))
     (hxs : x.b.size = (x.n.toNat * x.w + 7) / 8) (hys : y.b.size = (y.n.toNat * y.w + 7) / 8) :
     ids (anti x y) = (List.range x.n.toNat).filter (fun i => !Column.bitAt (x.member y) i) ∧
       ((List.range x.n.toNat).filter (fun i => !Column.bitAt (x.member y) i)).Pairwise (· < ·) ∧
@@ -161,7 +163,7 @@ theorem anti_ids (x y : Code)
     code read at its lane. At `2`/`4` bits `idGroups` reads `card` as a table size, so there every code is
     below `card` and `card` fits a `USize`. -/
 theorem groupIds_firsts (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
     ids c.groupIds.2 = firstsOf (Column.idAt c.b c.w) c.n.toNat := by
@@ -208,7 +210,7 @@ theorem groupIds_firsts (c : Code)
 /-- **`Code.groupIds` names one row per class**: every first row is a row, no two first rows hold one code,
     and every row's code is held by a first row (`groupIds_firsts`). -/
 theorem groupIds_classes (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
     (∀ f ∈ ids c.groupIds.2, f < c.n.toNat) ∧ ((ids c.groupIds.2).map (Column.idAt c.b c.w)).Nodup ∧

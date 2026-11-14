@@ -4,6 +4,8 @@
 import LeetQ.Rel.RepFold
 import LeetQ.Rel.KernelWF.PlaceSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

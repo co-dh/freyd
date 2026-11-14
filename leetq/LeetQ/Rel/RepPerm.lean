@@ -5,6 +5,8 @@
 import LeetQ.Rel.RepEst
 import LeetQ.Rel.RepUncat
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -615,8 +617,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   (((∀ {i j : Nat} (hi : i < (cnt).toNat) (hj : j < (cnt).toNat),
       Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
         Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
-    ((kcX(X)).w = 1 ∨ (kcX(X)).w = 2 ∨ (kcX(X)).w = 4 ∨ (kcX(X)).w = 8 ∨ (kcX(X)).w = 16 ∨
-      (kcX(X)).w = 32 ∨ (kcX(X)).w = 64) ∧
+    laneOK((kcX(X)).w) ∧
       (kcX(X)).n = cnt ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
       ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
         ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card)) ∧
@@ -624,8 +625,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   (∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
     Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
       Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩) ∧
-  ((kcT(idU X)).w = 1 ∨ (kcT(idU X)).w = 2 ∨ (kcT(idU X)).w = 4 ∨ (kcT(idU X)).w = 8 ∨
-    (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64) ∧
+  laneOK((kcT(idU X)).w) ∧
   (kcT(idU X)).n = (Rel.nub (idU X)).n ∧
   (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8 ∧
   (Rel.nub (idU X)).n.toNat < 2 ^ 63 ∧

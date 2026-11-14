@@ -6,6 +6,8 @@
 import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.MemberSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
@@ -14,7 +16,7 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel
     `i`'s class is the position of its code's first row among the first rows (`groupIds_firsts`), and the
     payload holds all `n` of them. Hypotheses as `groupIds_firsts`. -/
 theorem groupIds_groupOf (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
     Column.idsCap c.groupIds.1 (Column.idWidthOf (len c.groupIds.2)) c.n.toNat = c.n.toNat ∧
@@ -76,7 +78,7 @@ theorem groupIds_groupOf (c : Code)
 /-- `Code.groupIds`' first-row count is the number of distinct codes, at most `n`. Hypotheses as
     `groupIds_firsts`. -/
 theorem groupIds_len (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
     len c.groupIds.2 = (firstsOf (Column.idAt c.b c.w) c.n.toNat).length ∧
@@ -106,7 +108,7 @@ theorem idxOf_class {α : Type} [DecidableEq α] (g : Nat → α) (n : Nat) (v :
 
 /-- A code payload of exactly `⌈n·w/8⌉` bytes at a lane holds its `n` codes, exactly at a byte lane: the size
     hypotheses `find_spec` and `gather_spec` take. -/
-theorem code_size {w n s : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+theorem code_size {w n s : Nat} (hw : laneOK(w))
     (hs : s = (n * w + 7) / 8) : w * n ≤ 8 * s ∧ (8 ≤ w → 8 * s = w * n) := by
   subst hs; rcases hw with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> omega
 
@@ -114,10 +116,10 @@ theorem code_size {w n s : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w 
     `r`'s first rows (`find` in `r`'s distinct codes), the count of those where it is none. Hypotheses as
     `join_count`. -/
 theorem join_hit (l r : Code)
-    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8) :
     len ((r.gather r.groupIds.2).find l) = l.n.toNat ∧ ∀ i < l.n.toNat,
       (Column.bitsAt ((r.gather r.groupIds.2).find l) (i * 8) 8).toNat =
@@ -149,10 +151,10 @@ theorem join_hit (l r : Code)
     both codes at a lane, payloads of exactly their codes, `r`'s codes below its `card` (a `USize`) at
     `2`/`4` bits. -/
 theorem join_count (l r : Code)
-    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8) {i : Nat} (hi : i < l.n.toNat) :
     (Column.bitsAt (gather 8 (classSizes r.n r.groupIds) ((r.gather r.groupIds.2).find l)) (i * 8) 8).toNat =
       ((List.range r.n.toNat).filter fun j => Column.idAt r.b r.w j == Column.idAt l.b l.w i).length := by
@@ -250,9 +252,9 @@ theorem zip_runs {β : Type} (f : Nat → List β) (m : Nat) {A : List Nat} {B :
     codes, `r`'s codes below its `card` (a `USize`) at `2`/`4` bits; `r`'s rows below `2^63` and the match
     count below `2^63` and a `USize`, so no long sum wraps and the pairs fit. -/
 theorem join_spec (l r : Code)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
-    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
     (hrn : r.n.toNat < 2 ^ 63)
@@ -456,9 +458,9 @@ theorem mem_joinPairs (l r : Code) (i j : Nat) :
     column (read through `fit`, as `pickN` reads it) and of its right column is the pair `q` `join_spec` lists.
     Hypotheses: `join_spec`'s. -/
 theorem join_rows (l r : Code)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
-    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
     (hrn : r.n.toNat < 2 ^ 63)

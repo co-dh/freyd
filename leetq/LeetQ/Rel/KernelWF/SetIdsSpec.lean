@@ -5,6 +5,8 @@ import LeetQ.Rel.KernelWF.SegSpec
 import LeetQ.Rel.KernelWF.DivSpec
 import LeetQ.Rel.KernelWF.CodesRec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF
@@ -34,7 +36,7 @@ theorem rank_i64_toNat {x : UInt64} (hx : x.toNat < 2 ^ 63) : (Order.rank .i64 x
     ascending in `seg`, and within one `seg` value ascending in a key `κ` that agrees exactly where `vc`'s codes
     do. Hypotheses: `vc` well formed (lane, exact payload size), `seg` exactly `vc.n` longs, each below `2⁶³`. -/
 theorem gradeBy_lex (seg : ByteArray) (vc : Code)
-    (hw : vc.w = 1 ∨ vc.w = 2 ∨ vc.w = 4 ∨ vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32 ∨ vc.w = 64)
+    (hw : laneOK(vc.w))
     (hs : vc.b.size = (vc.n.toNat * vc.w + 7) / 8) (hn : seg.size = 8 * vc.n.toNat)
     (h63 : ∀ i < vc.n.toNat, S(i) < 2 ^ 63) :
     (ids (gradeBy vc.n #[Code.ofLongs seg, vc])).Perm (List.range vc.n.toNat) ∧ ∃ κ : Nat → Nat,
@@ -76,9 +78,7 @@ theorem gradeBy_lex (seg : ByteArray) (vc : Code)
   have hsl' : len seg < USize.size := by rw [hsl]; exact vc.n.toNat_lt_size
   have hC : (Code.ofLongs seg).w = 64 ∧ (Code.ofLongs seg).n.toNat = len seg ∧ (Code.ofLongs seg).b = seg := by
     unfold Code.ofLongs longCount; simp only [need, dif_pos hsl']; exact ⟨trivial, USize.toNat_ofNat_of_lt' hsl', trivial⟩
-  have hCw : (Code.ofLongs seg).w = 1 ∨ (Code.ofLongs seg).w = 2 ∨ (Code.ofLongs seg).w = 4 ∨
-      (Code.ofLongs seg).w = 8 ∨ (Code.ofLongs seg).w = 16 ∨ (Code.ofLongs seg).w = 32 ∨
-      (Code.ofLongs seg).w = 64 := by rw [hC.1]; simp
+  have hCw : laneOK((Code.ofLongs seg).w) := by rw [hC.1]; simp
   have hlP' : len P < USize.size := by rw [hlP]; exact vc.n.toNat_lt_size
   obtain ⟨hHw, hHn, -, hHid⟩ := gather_spec (Code.ofLongs seg) P hlP' hCw
     (fun _ => by rw [hC.1, hC.2.1, hC.2.2]; show 8 * seg.size = 64 * (seg.size / 8); omega)
@@ -266,7 +266,7 @@ local notation "PK(" A ", " B ")" => fun t => (UInt64.toNat (Column.bitsAt A (t 
     number of its pair among them (`groupOf`). Hypotheses: `B` well formed (lane, exact payload size), `A` and `B`
     exactly `n` rows. -/
 theorem pairIds_read (A : ByteArray) (B : Code) (n : USize)
-    (hw : B.w = 1 ∨ B.w = 2 ∨ B.w = 4 ∨ B.w = 8 ∨ B.w = 16 ∨ B.w = 32 ∨ B.w = 64)
+    (hw : laneOK(B.w))
     (hs : B.b.size = (B.n.toNat * B.w + 7) / 8) (hBn : B.n.toNat = n.toNat) (hA : A.size = 8 * n.toNat)
     (r : ByteArray × ByteArray) (hr : r = match B.kind with
       | some k => Order.groupIdsPair .i64 k n A B.b
@@ -319,7 +319,7 @@ theorem pairIds_read (A : ByteArray) (B : Code) (n : USize)
 /-- **`groupLongs` of `setIds`' pair grouping** widens it to one long per row: row `t`'s pair number. Hypotheses
     as `pairIds_read`. -/
 theorem groupLongs_read (A : ByteArray) (B : Code) (n : USize)
-    (hw : B.w = 1 ∨ B.w = 2 ∨ B.w = 4 ∨ B.w = 8 ∨ B.w = 16 ∨ B.w = 32 ∨ B.w = 64)
+    (hw : laneOK(B.w))
     (hs : B.b.size = (B.n.toNat * B.w + 7) / 8) (hBn : B.n.toNat = n.toNat) (hA : A.size = 8 * n.toNat)
     (r : ByteArray × ByteArray) (hr : r = match B.kind with
       | some k => Order.groupIdsPair .i64 k n A B.b
@@ -518,7 +518,7 @@ local notation "KP" => fun t => (UInt64.toNat (Column.bitsAt seg (t * 8) 8), Col
     formed (lane, exact payload size), true size bounds, and the shape of the starts (`0` first, ascending,
     at most `n`). -/
 theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
-    (hw : vc.w = 1 ∨ vc.w = 2 ∨ vc.w = 4 ∨ vc.w = 8 ∨ vc.w = 16 ∨ vc.w = 32 ∨ vc.w = 64)
+    (hw : laneOK(vc.w))
     (hs : vc.b.size = (vc.n.toNat * vc.w + 7) / 8) (hsz : s.size = 8 * m) (hn : vc.n.toNat < 2 ^ 63)
     (hm : m + 1 < 2 ^ 63) (h0 : 0 < m → T(0) = 0) (hasc : ∀ j, j + 1 < m → T(j) ≤ T(j + 1))
     (hle : ∀ j < m, T(j) ≤ vc.n.toNat) {j j' : Nat} (hj : j < m) (hj' : j' < m) :
@@ -589,8 +589,7 @@ theorem setIds_spec (vc : Code) (s : ByteArray) {m : Nat}
   obtain ⟨hBw, hBn, -, hBid⟩ := gather_spec vc p hpl' hw hcb hpi
   have hBs := gather_size vc p hpl' hw
   have hkind : (vc.gather p).kind = vc.kind := by unfold Code.kind; rw [hBw]
-  have hBw' : (vc.gather p).w = 1 ∨ (vc.gather p).w = 2 ∨ (vc.gather p).w = 4 ∨ (vc.gather p).w = 8 ∨
-      (vc.gather p).w = 16 ∨ (vc.gather p).w = 32 ∨ (vc.gather p).w = 64 := by rw [hBw]; exact hw
+  have hBw' : laneOK((vc.gather p).w) := by rw [hBw]; exact hw
   have hBs' : (vc.gather p).b.size = ((vc.gather p).n.toNat * (vc.gather p).w + 7) / 8 := by rw [hBs, hBn, hBw]
   have hBn' : (vc.gather p).n.toNat = vc.n.toNat := by rw [hBn, hpl]
   have hA : (gather 8 seg p).size = 8 * vc.n.toNat := by rw [hg8, hpl]

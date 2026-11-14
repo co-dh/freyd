@@ -9,6 +9,8 @@ import QLean.Verify.FindMember
 import QLean.Verify.SymFind
 import QLean.Verify.Encoding
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
@@ -27,8 +29,8 @@ theorem idxOf_map_inj {α β : Type} [BEq α] [LawfulBEq α] [BEq β] [LawfulBEq
 /-- **`findIdsVec` is `idxOf`**: at any two lanes, the long answered for needle `j` is the first
     position in the haystack's `hn` codes holding needle `j`'s code, one long per needle. -/
 theorem findIdsVec_spec {hw nw : Nat} {hn nn : USize} {hay ndl : ByteArray}
-    (hhw : hw = 1 ∨ hw = 2 ∨ hw = 4 ∨ hw = 8 ∨ hw = 16 ∨ hw = 32 ∨ hw = 64)
-    (hnw : nw = 1 ∨ nw = 2 ∨ nw = 4 ∨ nw = 8 ∨ nw = 16 ∨ nw = 32 ∨ nw = 64)
+    (hhw : laneOK(hw))
+    (hnw : laneOK(nw))
     (hs : hw * hn.toNat ≤ 8 * hay.size) (ns : nw * nn.toNat ≤ 8 * ndl.size) :
     len (findIdsVec hw.toUSize hay hn nw.toUSize ndl nn) = nn.toNat ∧
     ∀ j < nn.toNat, (Column.bitsAt (findIdsVec hw.toUSize hay hn nw.toUSize ndl nn) (j * 8) 8).toNat =
@@ -96,8 +98,8 @@ theorem findBitVec_spec (hn nn : USize) (hay ndl : ByteArray) :
     miss — every lane pair `Code.find` dispatches on. Hypotheses: each code is at a lane a `Code` takes,
     its payload holds its `n` codes, and a byte lane's payload holds exactly them. -/
 theorem find_spec (c x : Code)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
-    (hxw : x.w = 1 ∨ x.w = 2 ∨ x.w = 4 ∨ x.w = 8 ∨ x.w = 16 ∨ x.w = 32 ∨ x.w = 64)
+    (hcw : laneOK(c.w))
+    (hxw : laneOK(x.w))
     (hcs : c.w * c.n.toNat ≤ 8 * c.b.size) (hxs : x.w * x.n.toNat ≤ 8 * x.b.size)
     (hcb : 8 ≤ c.w → 8 * c.b.size = c.w * c.n.toNat) (hxb : 8 ≤ x.w → 8 * x.b.size = x.w * x.n.toNat) :
     len (Code.find c x) = x.n.toNat ∧
@@ -129,7 +131,7 @@ theorem find_spec (c x : Code)
     Hypotheses: `len i` fits a `USize`, `c` is at a lane a `Code` takes, a byte lane's payload holds
     exactly its `n` codes, and every index is below `c.n`. -/
 theorem gather_spec (c : Code) (i : ByteArray) (hl : len i < USize.size)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hcw : laneOK(c.w))
     (hcb : 8 ≤ c.w → 8 * c.b.size = c.w * c.n.toNat)
     (hi : ∀ j < len i, (Column.bitsAt i (j * 8) 8).toNat < c.n.toNat) :
     (Code.gather c i).w = c.w ∧ (Code.gather c i).n.toNat = len i ∧ (Code.gather c i).card = c.card ∧
@@ -168,7 +170,7 @@ theorem len_eq_ids (b : ByteArray) : len b = (ids b).length := by simp [len, ids
     Hypotheses: `c` is at a lane a `Code` takes and its payload holds its `n` codes (exactly, at a byte
     lane); every code is below `card`, which fits a `USize` at `2`/`4` bits. -/
 theorem groupIds_code_faithful (c : Code)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hcw : laneOK(c.w))
     (hcs : c.w * c.n.toNat ≤ 8 * c.b.size) (hcb : 8 ≤ c.w → 8 * c.b.size = c.w * c.n.toNat)
     (hcard : ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) (hcu : c.w < 8 → c.card < USize.size)
     {i j : Nat} (hi : i < c.n.toNat) (hj : j < c.n.toNat) :

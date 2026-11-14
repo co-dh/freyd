@@ -10,6 +10,8 @@ import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.RazeFoR
 import LeetQ.Rel.RepOps2
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
@@ -44,9 +46,9 @@ open DivN OpsN
     beside `z`'s row `j`. Stated over any two codes, not `leftDiv`'s, so the statement holds no `Obj.codes`.
     Hypotheses: `join_rows`', and each side picks back at its rows of the pairs. -/
 theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals C n₂) (hln : l.n = n₁) (hrn' : r.n = n₂)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
-    (hrw : r.w = 1 ∨ r.w = 2 ∨ r.w = 4 ∨ r.w = 8 ∨ r.w = 16 ∨ r.w = 32 ∨ r.w = 64)
+    (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
     (hrn : r.n.toNat < 2 ^ 63)
@@ -89,9 +91,9 @@ theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals 
 
 /-- **`leftDiv`'s `y`, read back**: `div_y_rows` at the count `longCount` enters with, which `join_rows` bounds. -/
 theorem div_y_holds (r : Rel A B) (s : Rel A C) (l k : Code) (hln : l.n = r.n) (hkn : k.n = s.n)
-    (hlw : l.w = 1 ∨ l.w = 2 ∨ l.w = 4 ∨ l.w = 8 ∨ l.w = 16 ∨ l.w = 32 ∨ l.w = 64)
+    (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
-    (hrw : k.w = 1 ∨ k.w = 2 ∨ k.w = 4 ∨ k.w = 8 ∨ k.w = 16 ∨ k.w = 32 ∨ k.w = 64)
+    (hrw : laneOK(k.w))
     (hrs : k.b.size = (k.n.toNat * k.w + 7) / 8)
     (hrc : k.w < 8 → k.card < USize.size ∧ ∀ i < k.n.toNat, Column.idAt k.b k.w i < k.card)
     (hrn : k.n.toNat < 2 ^ 63)
@@ -263,8 +265,8 @@ local notation "vac" => Vals.pickPart B Ub (anti ubc rvc)
     Hypotheses: `ubc`, `rvc` code `Ub`, `r.val` jointly and well formed (`anti_ids`); `Ub` picks back at the kept
     positions; `rep_top`'s. -/
 theorem div_vac_holds (r : Rel A B) {mb mc : USize} (Ub : Vals B mb) (Uc : Vals C mc) (ubc rvc : Code)
-    (hxw : ubc.w = 1 ∨ ubc.w = 2 ∨ ubc.w = 4 ∨ ubc.w = 8 ∨ ubc.w = 16 ∨ ubc.w = 32 ∨ ubc.w = 64)
-    (hyw : rvc.w = 1 ∨ rvc.w = 2 ∨ rvc.w = 4 ∨ rvc.w = 8 ∨ rvc.w = 16 ∨ rvc.w = 32 ∨ rvc.w = 64)
+    (hxw : laneOK(ubc.w))
+    (hyw : laneOK(rvc.w))
     (hxs : ubc.b.size = (ubc.n.toNat * ubc.w + 7) / 8) (hys : rvc.b.size = (rvc.n.toNat * rvc.w + 7) / 8)
     (hun : ubc.n = mb) (hrn : rvc.n = r.n)
     (hj : ∀ {j p : Nat} (hj : j < r.n.toNat) (hp : p < mb.toNat),

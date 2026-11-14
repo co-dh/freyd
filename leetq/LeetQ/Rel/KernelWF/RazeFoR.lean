@@ -6,6 +6,8 @@
 -/
 import LeetQ.Rel.KernelWF.AppendFoR
 
+open LaneN
+
 namespace LeetQ.Rel.KernelWF
 
 open QLean QLean.Kernel QLean.Dep LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.Rep
@@ -430,7 +432,7 @@ namespace UnionN
 set_option hygiene false in
 scoped notation "cOK(" c ", " m ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat m) (hj : j < USize.toNat m),
     Column.idAt (c).b (c).w i = Column.idAt (c).b (c).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
-  ((c).w = 1 ∨ (c).w = 2 ∨ (c).w = 4 ∨ (c).w = 8 ∨ (c).w = 16 ∨ (c).w = 32 ∨ (c).w = 64) ∧ (c).n = m ∧
+  laneOK((c).w) ∧ (c).n = m ∧
     (c).b.size = ((c).n.toNat * (c).w + 7) / 8 ∧
     ((c).w < 8 → (c).card < USize.size ∧ ∀ i < (c).n.toNat, Column.idAt (c).b (c).w i < (c).card))
 -- `rep_nub`'s codes of a relation `R`, and the rows `nub` keeps

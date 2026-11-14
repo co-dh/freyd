@@ -10,6 +10,8 @@ import LeetQ.Rel.KernelWF.CodesLongParts
 import LeetQ.Rel.KernelWF.RazeRowRec
 import LeetQ.Rel.KernelWF.CrossSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -264,8 +266,7 @@ local notation "codesL(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : 
     Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
       Arr.get (ps[k]'hk).2 ⟨i, hi⟩ = Arr.get (ps[l]'hl).2 ⟨j, hj⟩) ∧
   ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    laneOK((cs[k]'hk).w) ∧
     (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8)
 
 /-- `valCol` of `Ew.add` against the long `1`, element `i`: `Ew.intStep` of `+ 1`. -/
@@ -367,7 +368,7 @@ local notation "ranOK(" R ")" =>
   ∀ c : Code, c = (Obj.codes (.prod E V) (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part (.prod E V)) 1))[0]'Nat.zero_lt_one →
     (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
       Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ Vals.row (Rel.val R) ⟨i, hi⟩ = Vals.row (Rel.val R) ⟨j, hj⟩) ∧
-    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = Rel.n R ∧
+    (laneOK(c.w) ∧ c.n = Rel.n R ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
     Vals.PickFits (.prod E V) (Rel.val R) (ids c.groupIds.2)

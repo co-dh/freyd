@@ -7,6 +7,8 @@ import LeetQ.Rel.KernelWF.CodesArr
 import LeetQ.Rel.KernelWF.CodesSymParts
 import LeetQ.Rel.KernelWF.CodesLongParts
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -96,7 +98,7 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
         Vals.row (A := A) (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := A) (cs[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
         let c := (Obj.codes A cs)[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+        laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ {k l : Nat} (hk : k < p) (hl : l < p), ((Obj.codes A cs)[k]'hk).w = ((Obj.codes A cs)[l]'hl).w := by

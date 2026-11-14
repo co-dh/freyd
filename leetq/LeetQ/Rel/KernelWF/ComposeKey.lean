@@ -9,6 +9,8 @@ import QLean.Verify.Ids
 import LeetQ.Rel.KernelWF.Lane
 import LeetQ.Rel.KernelWF.CodesSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify
@@ -445,7 +447,7 @@ theorem srcOf_stage {b B : Ew.Build} {x : ByteArray} {st : Ew.Stage} (n : USize)
 /-- **`keySource` on a code's column**: one input, the code's payload, and at most one stage after `b`'s.
     Any build extending it reads, at `s`, element `j` as code `j` of `c`, below `d` where the guard passed. -/
 theorem keySource_code (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hc : c.w < 8 → ∀ i < c.n.toNat, Column.idAt c.b c.w i < max c.card 2)
     {t : QAtomicType} {m : USize} {e : Enc} (hcol : c.column = some (t, (m, e)))
@@ -648,9 +650,9 @@ theorem key_chain (B1 B4 : Ew.Build) (st : Ew.Stage) (s₁ s₂ : UInt8) (xb : B
     has `⌈n·w/8⌉` bytes at the lane `w = idWidthOf (d₁ · d₂)`, and key `i` is `c₁ · d₂ + c₂`, `c₁ < d₁`,
     `c₂ < d₂`. -/
 theorem composeKey_code (a b : Code)
-    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+    (ha : laneOK(a.w) ∧
       a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
-    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+    (hb : laneOK(b.w) ∧
       b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2))
     {t₁ t₂ : QAtomicType} {m₁ m₂ : USize} {e₁ e₂ : Enc} (h₁ : a.column = some (t₁, (m₁, e₁)))
     (h₂ : b.column = some (t₂, (m₂, e₂))) {d₁ d₂ : Nat} (h2₁ : 2 ≤ d₁) (h2₂ : 2 ≤ d₂) {k : ByteArray}
@@ -689,9 +691,7 @@ theorem composeKey_code (a b : Code)
   have hi1 : B1.inputs.size = 1 := by simp [hI1]
   have hw0 : Column.idWidthOf (d₁ * d₂) ≠ 0 := fun h0 => by
     have := lt_two_pow_idWidthOf (L := d₁ * d₂) (k := 1) (by omega) (by omega); rw [h0] at this; omega
-  have hlane : Column.idWidthOf (d₁ * d₂) = 1 ∨ Column.idWidthOf (d₁ * d₂) = 2 ∨ Column.idWidthOf (d₁ * d₂) = 4 ∨
-      Column.idWidthOf (d₁ * d₂) = 8 ∨ Column.idWidthOf (d₁ * d₂) = 16 ∨ Column.idWidthOf (d₁ * d₂) = 32 ∨
-      Column.idWidthOf (d₁ * d₂) = 64 := by
+  have hlane : laneOK(Column.idWidthOf (d₁ * d₂)) := by
     have := laneWidth_cases (Column.widthFor (d₁ * d₂ - 1)); unfold Column.idWidthOf at hw0 ⊢; omega
   have hw8 : (UInt8.ofNat (Column.idWidthOf (d₁ * d₂))).toNat = Column.idWidthOf (d₁ * d₂) := u8_ofNat (by omega)
   rw [run_last, stageRun_pack rfl]

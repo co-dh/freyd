@@ -8,6 +8,8 @@
 import LeetQ.Rel.KernelWF.CodesRec
 import LeetQ.Rel.KernelWF.SliceSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -28,7 +30,7 @@ local notation "gX(" n ", " x ", " e ")" => expand n (slicesOf x).2 (fun _ => de
     end — code `cS r + j` is element code `L r + j`, `L r` row `r`'s clamped start (`slicesOf_copies`). -/
 theorem arr_gather_part {B : Obj} {n : USize} (x : Vals (.arr B) n)
     (hf : Vals.PickFits (.arr B) x (List.range n.toNat)) (e : Code)
-    (hw : e.w = 1 ∨ e.w = 2 ∨ e.w = 4 ∨ e.w = 8 ∨ e.w = 16 ∨ e.w = 32 ∨ e.w = 64) (hn : e.n = x.1)
+    (hw : laneOK(e.w)) (hn : e.n = x.1)
     (hs : e.b.size = (e.n.toNat * e.w + 7) / 8) :
     (gX(n, x, e)).w = e.w ∧ (gX(n, x, e)).n.toNat = cS(n, x, n.toNat) ∧ (gX(n, x, e)).card = e.card ∧
       (gX(n, x, e)).b.size = ((gX(n, x, e)).n.toNat * (gX(n, x, e)).w + 7) / 8 ∧
@@ -304,8 +306,7 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
         Column.idAt (ce[k]'hk).b (ce[k]'hk).w i = Column.idAt (ce[l]'hl).b (ce[l]'hl).w j ↔
           Vals.row (pe[k]'hk).2 ⟨i, hi⟩ = Vals.row (pe[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
-        ((ce[k]'hk).w = 1 ∨ (ce[k]'hk).w = 2 ∨ (ce[k]'hk).w = 4 ∨ (ce[k]'hk).w = 8 ∨ (ce[k]'hk).w = 16 ∨
-          (ce[k]'hk).w = 32 ∨ (ce[k]'hk).w = 64) ∧
+        laneOK((ce[k]'hk).w) ∧
         (ce[k]'hk).n = (pe[k]'hk).1 ∧ (ce[k]'hk).b.size = ((ce[k]'hk).n.toNat * (ce[k]'hk).w + 7) / 8 ∧
         ((ce[k]'hk).w < 8 → (ce[k]'hk).card < USize.size ∧
           ∀ i < (ce[k]'hk).n.toNat, Column.idAt (ce[k]'hk).b (ce[k]'hk).w i < (ce[k]'hk).card))
@@ -323,7 +324,7 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
         Vals.row (A := .arr b) (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .arr b) (cs[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
         let c := (Obj.codes (.arr b) cs)[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+        laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ {k l : Nat} (hk : k < p) (hl : l < p),
@@ -469,9 +470,7 @@ theorem codes_arr_faithful_wf {b : Obj} {p : Nat} (cs : Vector (Part (.arr b)) p
     hid ▸ rankSlices_get seq.w.toUSize seq.b o g1 g2 g3 g4 g5 hg (by rw [hlast']; exact hj) (by rw [hlast']; exact hj')
   have hP := pack_get (len cnts) ids (by rw [hidl]; exact hTU) (by rw [hidsz, hidl])
     (fun g hgl => by rw [hidl] at hgl; have := (hR hgl hgl).2; rw [Nat.mul_comm]; omega)
-  have hPw : (pack (len cnts) ids).w = 1 ∨ (pack (len cnts) ids).w = 2 ∨ (pack (len cnts) ids).w = 4 ∨
-      (pack (len cnts) ids).w = 8 ∨ (pack (len cnts) ids).w = 16 ∨ (pack (len cnts) ids).w = 32 ∨
-      (pack (len cnts) ids).w = 64 := by rcases hP.1 with h | h | h | h <;> simp [h]
+  have hPw : laneOK((pack (len cnts) ids).w) := by rcases hP.1 with h | h | h | h <;> simp [h]
   have hs : ((cs.map (·.1)).toList.map (·.toNat)).sum = (pack (len cnts) ids).n.toNat := by
     rw [hP.2.1, hidl, hT, Vector.toList_map, List.map_map]; rfl
   have hOk : ∀ k, (((cs.map (·.1)).toList.take k).map (·.toNat)).sum = ((cs.toList.map (·.1.toNat)).take k).sum :=

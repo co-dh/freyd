@@ -3,6 +3,8 @@
 -/
 import LeetQ.Rel.RepOps
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -110,7 +112,7 @@ scoped notation "oneOK(" X ", " n ", " x ")" => ((∀ {i j : Nat} (hi : i < USiz
     Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w i = Column.idAt (c1(X, n, x)).b (c1(X, n, x)).w j ↔
       Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
   (let c := c1(X, n, x)
-   (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+   laneOK(c.w) ∧ c.n = n ∧
     c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
     (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)))
 -- the rows `nub` keeps, named as `NubSpec` names them

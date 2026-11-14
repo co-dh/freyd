@@ -10,6 +10,8 @@ import LeetQ.Rel.KernelWF.ComposeKey
 import QLean.Verify.Codes
 import QLean.Verify.SymFind
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -38,7 +40,7 @@ theorem take_sum_le : ∀ (l : List Nat) {k : Nat} (hk : k < l.length), (l.take 
 /-- **Part `k` of `c.cut ns` reads `c` past the counts before it**, the counts summing to `c.n`: a byte
     extract at a byte lane, `cycleBits` at a bit, `cycleIds` at `2`/`4` bits. -/
 theorem cut_get {p : Nat} (c : Code) (ns : Vector USize p)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : (ns.toList.map (·.toNat)).sum = c.n.toNat) {k : Nat} (hk : k < p) :
     (c.cut ns)[k].w = c.w ∧ (c.cut ns)[k].n = ns[k] ∧ (c.cut ns)[k].card = c.card ∧
       ∀ i < ns[k].toNat, Column.idAt (c.cut ns)[k].b c.w i =
@@ -88,7 +90,7 @@ theorem cut_get {p : Nat} (c : Code) (ns : Vector USize p)
 
 /-- **Part `k` of `c.cut ns` is `⌈ns[k]·w/8⌉` bytes**, `c` itself `⌈c.n·w/8⌉`. -/
 theorem cut_size {p : Nat} (c : Code) (ns : Vector USize p)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : (ns.toList.map (·.toNat)).sum = c.n.toNat) (hsz : c.b.size = (c.n.toNat * c.w + 7) / 8)
     {k : Nat} (hk : k < p) : (c.cut ns)[k].b.size = (ns[k].toNat * c.w + 7) / 8 := by
   have hle := take_sum_le (ns.toList.map (·.toNat)) (k := k) (by simpa using hk)
@@ -207,7 +209,7 @@ theorem idAt_packIds_past {w n i : Nat} {f : Nat → Nat} (hw : w = 1 ∨ w = 2 
     `⌈n·w/8⌉` bytes, its codes below its `card` (or `0`) at `2`/`4` bits, and the summed count a `USize`:
     `concatBits` at a bit, `concatBytes` at a byte lane, `concatIds` through each part's identity map. -/
 theorem cat_get (cs : Array Code) {w : Nat}
-    (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
+    (hw : laneOK(w)) (h0 : 0 < cs.size)
     (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
     (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < max c.card 1)
     (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
@@ -346,7 +348,7 @@ theorem counts_flatMap_size {γ : Type} (xs : Array USize) (m : Nat) (hm : xs.si
 /-- **`Code.cat` is well formed** under `cat_get`'s hypotheses: `⌈n·w/8⌉` bytes, and below a byte its codes
     lie below `max card 1`, the parts' being below theirs. -/
 theorem cat_wf (cs : Array Code) {w : Nat}
-    (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64) (h0 : 0 < cs.size)
+    (hw : laneOK(w)) (h0 : 0 < cs.size)
     (hcw : ∀ c ∈ cs, c.w = w) (hsz : ∀ c ∈ cs, c.b.size = (c.n.toNat * w + 7) / 8)
     (hid : w < 8 → ∀ c ∈ cs, ∀ i < c.n.toNat, Column.idAt c.b w i < max c.card 1)
     (hN : (cs.toList.map (·.n.toNat)).sum < USize.size) :
@@ -488,7 +490,7 @@ theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orde
     (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     let c := (Obj.codes (.atom t) cs)[k]
-    (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = cs[k].1 ∧
+    laneOK(c.w) ∧ c.n = cs[k].1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
   intro c
@@ -513,7 +515,7 @@ theorem codes_small_int_parts_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orde
 theorem ofIds_packIds (n : USize) {L : Nat} (hL : L ≤ n.toNat) (G : Nat → Nat) (hG : ∀ i < n.toNat, G i < L)
     {fs : ByteArray} (hfs : len fs = L) :
     let c := Code.ofIds (len fs) n (Column.packIds (Column.idWidthOf L) n.toNat G)
-    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    (laneOK(c.w) ∧ c.n = n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ i < n.toNat, Column.idAt c.b c.w i = G i := by
@@ -535,7 +537,7 @@ theorem ofIds_packIds (n : USize) {L : Nat} (hL : L ≤ n.toNat) (G : Nat → Na
       simp [Column.bitAt, KernelWF.ba_get?, Array.getElem?_replicate] <;> split <;> simp
     · exact Verify.idAt_packIds_idWidthOf hL64 hi (hG i hi)
   have hsh : ∀ d : Code, d = Code.ofIds (len fs) n (Column.packIds (Column.idWidthOf L) n.toNat G) →
-      (d.w = 1 ∨ d.w = 2 ∨ d.w = 4 ∨ d.w = 8 ∨ d.w = 16 ∨ d.w = 32 ∨ d.w = 64) ∧
+      laneOK(d.w) ∧
       d.b.size = (d.n.toNat * d.w + 7) / 8 := by
     intro d hd; subst hd
     unfold Code.ofIds Code.ofLane
@@ -545,8 +547,7 @@ theorem ofIds_packIds (n : USize) {L : Nat} (hL : L ≤ n.toNat) (G : Nat → Na
     · rw [if_neg h0]
       have hw0 : Column.idWidthOf L ≠ 0 := by simpa using h0
       have hlane := Verify.laneWidth_cases (Column.widthFor (L - 1))
-      have hw : Column.idWidthOf L = 1 ∨ Column.idWidthOf L = 2 ∨ Column.idWidthOf L = 4 ∨
-          Column.idWidthOf L = 8 ∨ Column.idWidthOf L = 16 ∨ Column.idWidthOf L = 32 ∨ Column.idWidthOf L = 64 := by
+      have hw : laneOK(Column.idWidthOf L) := by
         unfold Column.idWidthOf at hw0 ⊢; omega
       exact ⟨hw, packIds_size hw _ _⟩
   exact ⟨⟨(hsh c rfl).1, hn, (hsh c rfl).2, fun _ => ⟨by rw [hcard]; exact Nat.lt_of_le_of_lt hL n.toNat_lt_size,
@@ -555,7 +556,7 @@ theorem ofIds_packIds (n : USize) {L : Nat} (hL : L ≤ n.toNat) (G : Nat → Na
 /-- **`Code.ofIds` over `idsBy n key` is well formed, and two of its codes agree exactly when the keys do.** -/
 theorem ofIds_idsBy {α : Type} [BEq α] [LawfulBEq α] [DecidableEq α] (key : Nat → α) (n : USize) :
     let c := Code.ofIds (len (Order.idsBy n.toNat key).2) n (Order.idsBy n.toNat key).1
-    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = n ∧
+    (laneOK(c.w) ∧ c.n = n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ i < n.toNat, ∀ j < n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ key i = key j) := by
@@ -601,7 +602,7 @@ theorem rank_ofNat_iff {x y : Nat} (hx : x < 2 ^ 64) (hy : y < 2 ^ 64) :
 
 /-- An id payload at a lane `w` of `⌈n·w/8⌉` bytes, repacked as longs by `idsOperand`: `n` longs, long `i` a
     bijection of id `i`. -/
-theorem idsOperand_lane {w : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+theorem idsOperand_lane {w : Nat} (hw : laneOK(w))
     {b : ByteArray} {n : USize} (hs : b.size = (n.toNat * w + 7) / 8) :
     Scan.Kind.i64.avail (idsOperand 8 w.toUSize b n) = n.toNat ∧ ∀ i < n.toNat,
       Order.keyAt .i64 (idsOperand 8 w.toUSize b n) i =
@@ -616,9 +617,9 @@ theorem idsOperand_lane {w : Nat} (hw : w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ 
 /-- **Where `pairCode` groups the pair, its classes are `idsBy` of a key** that agrees exactly where both
     columns' codes do, and its code is `Code.ofIds` of them; `a`, `b` lanes of `n` codes in `⌈n·w/8⌉` bytes. -/
 theorem pairCode_grouped_key (cl : Bool) (a b : Code) (hn : b.n = a.n)
-    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+    (ha : laneOK(a.w) ∧
       a.b.size = (a.n.toNat * a.w + 7) / 8)
-    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+    (hb : laneOK(b.w) ∧
       b.b.size = (b.n.toNat * b.w + 7) / 8)
     {r : ByteArray × ByteArray} (hr : (pairCode cl a b).2 = some r) :
     ∃ key : Nat → UInt64 × UInt64, (∀ i < a.n.toNat, ∀ j < a.n.toNat, (key i = key j ↔
@@ -659,13 +660,13 @@ theorem pairCode_grouped_key (cl : Bool) (a b : Code) (hn : b.n = a.n)
     `groupIdsPairIds` otherwise: the code is well formed, and two of its codes agree exactly when both
     columns' codes do; `a`, `b` lanes of `n` codes in `⌈n·w/8⌉` bytes. -/
 theorem pairCode_grouped (cl : Bool) (a b : Code) (hn : b.n = a.n)
-    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+    (ha : laneOK(a.w) ∧
       a.b.size = (a.n.toNat * a.w + 7) / 8)
-    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+    (hb : laneOK(b.w) ∧
       b.b.size = (b.n.toNat * b.w + 7) / 8)
     {r : ByteArray × ByteArray} (hr : (pairCode cl a b).2 = some r) :
     let c := (pairCode cl a b).1
-    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = a.n ∧
+    (laneOK(c.w) ∧ c.n = a.n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ i < a.n.toNat, ∀ j < a.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
@@ -693,12 +694,12 @@ theorem mul_add_inj {d x y x' y' : Nat} (hy : y < d) (hy' : y' < d) : x * d + y 
 /-- **`pairCode` of two well-formed codes of one count**, composed or grouped, whatever `cl`: the code is well
     formed, and two of its codes agree exactly when both columns' codes do. -/
 theorem pairCode_spec (cl : Bool) (a b : Code) (hn : b.n = a.n)
-    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+    (ha : laneOK(a.w) ∧
       a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
-    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+    (hb : laneOK(b.w) ∧
       b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2)) :
     let c := (pairCode cl a b).1
-    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = a.n ∧
+    (laneOK(c.w) ∧ c.n = a.n ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ i < a.n.toNat, ∀ j < a.n.toNat, (Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔
@@ -725,10 +726,7 @@ theorem pairCode_spec (cl : Bool) (a b : Code) (hn : b.n = a.n)
   have hw0 : Column.idWidthOf (max a.card 2 * max b.card 2) ≠ 0 := fun h0 => by
     have := lt_two_pow_idWidthOf (L := max a.card 2 * max b.card 2) (k := 1) (by omega) (by omega)
     rw [h0] at this; omega
-  have hlane : Column.idWidthOf (max a.card 2 * max b.card 2) = 1 ∨
-      Column.idWidthOf (max a.card 2 * max b.card 2) = 2 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 4 ∨
-      Column.idWidthOf (max a.card 2 * max b.card 2) = 8 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 16 ∨
-      Column.idWidthOf (max a.card 2 * max b.card 2) = 32 ∨ Column.idWidthOf (max a.card 2 * max b.card 2) = 64 := by
+  have hlane : laneOK(Column.idWidthOf (max a.card 2 * max b.card 2)) := by
     have := laneWidth_cases (Column.widthFor (max a.card 2 * max b.card 2 - 1))
     unfold Column.idWidthOf at hw0 ⊢; omega
   intro c
@@ -766,13 +764,11 @@ theorem row_part_congr {A : Obj} {x y : Part A} (h : x = y) {i : Nat} (hx : i < 
 theorem cat_parts {p : Nat} (cx : Vector Code p) (hp : 0 < p)
     (hl : ∀ {k l : Nat} (hk : k < p) (hl : l < p), cx[k].w = cx[l].w)
     (hwf : ∀ {k : Nat} (hk : k < p),
-      (cx[k].w = 1 ∨ cx[k].w = 2 ∨ cx[k].w = 4 ∨ cx[k].w = 8 ∨ cx[k].w = 16 ∨ cx[k].w = 32 ∨ cx[k].w = 64) ∧
+      laneOK(cx[k].w) ∧
       cx[k].b.size = (cx[k].n.toNat * cx[k].w + 7) / 8 ∧
       (cx[k].w < 8 → ∀ i < cx[k].n.toNat, Column.idAt cx[k].b cx[k].w i < max cx[k].card 1))
     (hN : (cx.toList.map (·.n.toNat)).sum < USize.size) :
-    (((Code.cat cx.toArray).w = 1 ∨ (Code.cat cx.toArray).w = 2 ∨ (Code.cat cx.toArray).w = 4 ∨
-        (Code.cat cx.toArray).w = 8 ∨ (Code.cat cx.toArray).w = 16 ∨ (Code.cat cx.toArray).w = 32 ∨
-        (Code.cat cx.toArray).w = 64) ∧
+    (laneOK((Code.cat cx.toArray).w) ∧
       (Code.cat cx.toArray).b.size = ((Code.cat cx.toArray).n.toNat * (Code.cat cx.toArray).w + 7) / 8 ∧
       ((Code.cat cx.toArray).w < 8 → ∀ i < (Code.cat cx.toArray).n.toNat,
         Column.idAt (Code.cat cx.toArray).b (Code.cat cx.toArray).w i < max (Code.cat cx.toArray).card 1)) ∧

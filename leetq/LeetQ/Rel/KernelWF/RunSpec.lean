@@ -5,6 +5,8 @@
 -/
 import LeetQ.Rel.KernelWF.SortSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF
@@ -118,7 +120,7 @@ theorem runs_fold {α β : Type} [BEq α] [LawfulBEq α] (f : Nat → α) (n : N
 /-- **`Code.runStarts` cuts a well-formed code whose equal codes stand together into its runs**, at every
     lane: `runStartsBits` at one bit, `runStarts` at a byte lane, `runStartsIds` at `2`/`4` bits (`runs_fold`).
     Hypotheses: the lane is one a `Code` takes, the payload holds exactly its `n` codes, equal codes contiguous. -/
-theorem code_runs (c : Code) (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+theorem code_runs (c : Code) (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcont : ∀ s t u, s ≤ t → t ≤ u → u < c.n.toNat → Column.idAt c.b c.w s = Column.idAt c.b c.w u →
       Column.idAt c.b c.w t = Column.idAt c.b c.w s) :

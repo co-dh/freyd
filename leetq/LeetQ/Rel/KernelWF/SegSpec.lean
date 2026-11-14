@@ -7,6 +7,8 @@
 import LeetQ.Rel.KernelWF.RunSpec
 import LeetQ.Rel.KernelWF.JoinAssembly
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.KernelWF
@@ -134,7 +136,7 @@ theorem runs_prefix {n K m : Nat} {P κ o : Nat → Nat} (hP0 : P 0 = 0) (hPs : 
     grouping pass at each layout (`groupIds_spec`) and `idGroups` at `2`/`4` bits. Hypotheses as
     `groupIds_firsts`. -/
 theorem groupIds_packed (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) :
     c.groupIds.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf (Column.idAt c.b c.w) c.n.toNat).length)
@@ -206,7 +208,7 @@ open SegN
     number of rows in the classes before `j` (so the last is `n`). Hypotheses: `c` well formed, as
     `groupIds_firsts`; `n ≤ 2^63` (`grade_ofIds`). -/
 theorem segments_spec (c : Code)
-    (hw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64)
+    (hw : laneOK(c.w))
     (hs : c.b.size = (c.n.toNat * c.w + 7) / 8)
     (hcard : c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)
     (h63 : c.n.toNat ≤ 2 ^ 63) :

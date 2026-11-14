@@ -6,6 +6,8 @@
 import LeetQ.Rel.RepLoop
 import LeetQ.Rel.RepE
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -14,7 +16,7 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
 section ArrUnion
 
-open Pow OpsN UnionN ListN
+open Pow OpsN UnionN
 
 /-- **`rep (Arr.union X)`: each array of arrays to the array of the elements of its members**: an array
     `Arr.union X` gives `xss` holds exactly the elements of the members of `xss`, and `Arr.union X` has a row at
@@ -31,7 +33,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub M).n.toNat) (hj : j < (Rel.nub M).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub M).key ⟨i, hi⟩ = Vals.row (Rel.nub M).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)

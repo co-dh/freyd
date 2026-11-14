@@ -6,6 +6,8 @@
 import LeetQ.Rel.RepPerm
 import LeetQ.Rel.RepSubseq
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
@@ -467,15 +469,9 @@ local notation "setOK" =>
     (∀ {i j : Nat} (hi : i < (Rel.nub Ms).n.toNat) (hj : j < (Rel.nub Ms).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub Ms).key ⟨i, hi⟩ = Vals.row (Rel.nub Ms).key ⟨j, hj⟩) ∧
-    (kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64) ∧
+    laneOK(kt.w) ∧
     kt.n = (Rel.nub Ms).n ∧ kt.b.size = (kt.n.toNat * kt.w + 7) / 8 ∧
-    (∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
-        ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
-      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1) ∧
+    codesWF ∧
     (Rel.nub Ms).n.toNat < 2 ^ 63 ∧
     ∀ p lo : ByteArray, p = pT(Ms) → lo = loT(Ms) →
     Vals.PickFits (.arr B) (Rel.nub Ms).key (ids p) ∧ Vals.PickFits B (Rel.nub Ms).val (ids p) ∧

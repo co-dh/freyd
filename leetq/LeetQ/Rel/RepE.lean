@@ -4,10 +4,12 @@
 -/
 import LeetQ.Rel.RepPower
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Pow OpsN UnionN ListN
+open Pow OpsN UnionN
 
 variable {A : Obj}
 
@@ -45,7 +47,7 @@ theorem rep_E {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M : Rel
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub M).n.toNat) (hj : j < (Rel.nub M).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub M).key ⟨i, hi⟩ = Vals.row (Rel.nub M).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)
@@ -113,7 +115,7 @@ theorem rep_E_list {B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) (M 
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub M).n.toNat) (hj : j < (Rel.nub M).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub M).key ⟨i, hi⟩ = Vals.row (Rel.nub M).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub M).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)

@@ -6,6 +6,8 @@
 -/
 import LeetQ.Rel.KernelWF.CodesProd
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
@@ -22,8 +24,7 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
         Column.idAt (ca[k]'hk).b (ca[k]'hk).w i = Column.idAt (ca[l]'hl).b (ca[l]'hl).w j ↔
           Vals.row (pa[k]'hk).2 ⟨i, hi⟩ = Vals.row (pa[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
-        ((ca[k]'hk).w = 1 ∨ (ca[k]'hk).w = 2 ∨ (ca[k]'hk).w = 4 ∨ (ca[k]'hk).w = 8 ∨ (ca[k]'hk).w = 16 ∨
-          (ca[k]'hk).w = 32 ∨ (ca[k]'hk).w = 64) ∧
+        laneOK((ca[k]'hk).w) ∧
         (ca[k]'hk).n = (pa[k]'hk).1 ∧ (ca[k]'hk).b.size = ((ca[k]'hk).n.toNat * (ca[k]'hk).w + 7) / 8 ∧
         ((ca[k]'hk).w < 8 → (ca[k]'hk).card < USize.size ∧
           ∀ i < (ca[k]'hk).n.toNat, Column.idAt (ca[k]'hk).b (ca[k]'hk).w i < (ca[k]'hk).card))
@@ -33,8 +34,7 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
         Column.idAt (cb[k]'hk).b (cb[k]'hk).w i = Column.idAt (cb[l]'hl).b (cb[l]'hl).w j ↔
           Vals.row (pb[k]'hk).2 ⟨i, hi⟩ = Vals.row (pb[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
-        ((cb[k]'hk).w = 1 ∨ (cb[k]'hk).w = 2 ∨ (cb[k]'hk).w = 4 ∨ (cb[k]'hk).w = 8 ∨ (cb[k]'hk).w = 16 ∨
-          (cb[k]'hk).w = 32 ∨ (cb[k]'hk).w = 64) ∧
+        laneOK((cb[k]'hk).w) ∧
         (cb[k]'hk).n = (pb[k]'hk).1 ∧ (cb[k]'hk).b.size = ((cb[k]'hk).n.toNat * (cb[k]'hk).w + 7) / 8 ∧
         ((cb[k]'hk).w < 8 → (cb[k]'hk).card < USize.size ∧
           ∀ i < (cb[k]'hk).n.toNat, Column.idAt (cb[k]'hk).b (cb[k]'hk).w i < (cb[k]'hk).card))
@@ -47,7 +47,7 @@ theorem codes_prod_faithful_wf {a b : Obj} {p : Nat} (cs : Vector (Part (.prod a
         Vals.row (A := .prod a b) (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (A := .prod a b) (cs[l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < p),
         let c := (Obj.codes (.prod a b) cs)[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (cs[k]'hk).1 ∧
+        laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ {k l : Nat} (hk : k < p) (hl : l < p),
@@ -140,7 +140,7 @@ theorem codes_prod_boolean_long_one {t : QAtomicType} (ht : orderKind t = some .
           Vals.row (A := .prod (.atom .boolean) (.atom t)) (#v[x][l]'hl).2 ⟨j, hj⟩) ∧
       ∀ {k : Nat} (hk : k < 1),
         let c := (Obj.codes (.prod (.atom .boolean) (.atom t)) #v[x])[k]'hk
-        (c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = (#v[x][k]'hk).1 ∧
+        laneOK(c.w) ∧ c.n = (#v[x][k]'hk).1 ∧
         c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
         (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
       ∀ {k l : Nat} (hk : k < 1) (hl : l < 1),

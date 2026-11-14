@@ -11,6 +11,8 @@ import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.CodesSpec
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
@@ -37,9 +39,9 @@ theorem mem_firstsOf_iff {α : Type} [DecidableEq α] {g : Nat → α} {m p : Na
 /-- **The first rows `tupleIds` answers for two columns are the first positions of their pairs of codes**:
     `a`, `b` well formed of one count, codes below a byte under their bound (`pairCode_spec`). -/
 theorem tupleIds_firsts (a b : Code) (hn : b.n = a.n)
-    (ha : (a.w = 1 ∨ a.w = 2 ∨ a.w = 4 ∨ a.w = 8 ∨ a.w = 16 ∨ a.w = 32 ∨ a.w = 64) ∧
+    (ha : laneOK(a.w) ∧
       a.b.size = (a.n.toNat * a.w + 7) / 8 ∧ (a.w < 8 → ∀ i < a.n.toNat, Column.idAt a.b a.w i < max a.card 2))
-    (hb : (b.w = 1 ∨ b.w = 2 ∨ b.w = 4 ∨ b.w = 8 ∨ b.w = 16 ∨ b.w = 32 ∨ b.w = 64) ∧
+    (hb : laneOK(b.w) ∧
       b.b.size = (b.n.toNat * b.w + 7) / 8 ∧ (b.w < 8 → ∀ i < b.n.toNat, Column.idAt b.b b.w i < max b.card 2)) :
     ids (tuples.tupleIds a #[b]).2 = firstsOf (fun i => (Column.idAt a.b a.w i, Column.idAt b.b b.w i)) a.n.toNat := by
   have e : tuples.tupleIds a #[b] = match pairCode true a b with | (_, some r) => r | (c, none) => c.groupIds := rfl
@@ -106,13 +108,13 @@ variable {k v : Obj} (R : Rel k v)
   -- the key's codes identify its rows and are well formed — what `CodesSpec` concludes of one part
   (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
       Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
-    ((kc).w = 1 ∨ (kc).w = 2 ∨ (kc).w = 4 ∨ (kc).w = 8 ∨ (kc).w = 16 ∨ (kc).w = 32 ∨ (kc).w = 64) ∧ (kc).n = R.n ∧
+    laneOK((kc).w) ∧ (kc).n = R.n ∧
       (kc).b.size = ((kc).n.toNat * (kc).w + 7) / 8 ∧
       ((kc).w < 8 → (kc).card < USize.size ∧ ∀ i < (kc).n.toNat, Column.idAt (kc).b (kc).w i < (kc).card))
   -- the value's, the same
   (hV : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
       Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j ↔ Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
-    ((vc).w = 1 ∨ (vc).w = 2 ∨ (vc).w = 4 ∨ (vc).w = 8 ∨ (vc).w = 16 ∨ (vc).w = 32 ∨ (vc).w = 64) ∧ (vc).n = R.n ∧
+    laneOK((vc).w) ∧ (vc).n = R.n ∧
       (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
       ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
 
@@ -179,12 +181,12 @@ open Alg.NubN
 theorem rep_nub {k v : Obj} (R : Rel k v)
     (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
         Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
-      ((kc).w = 1 ∨ (kc).w = 2 ∨ (kc).w = 4 ∨ (kc).w = 8 ∨ (kc).w = 16 ∨ (kc).w = 32 ∨ (kc).w = 64) ∧ (kc).n = R.n ∧
+      laneOK((kc).w) ∧ (kc).n = R.n ∧
         (kc).b.size = ((kc).n.toNat * (kc).w + 7) / 8 ∧
         ((kc).w < 8 → (kc).card < USize.size ∧ ∀ i < (kc).n.toNat, Column.idAt (kc).b (kc).w i < (kc).card))
     (hV : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
         Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j ↔ Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
-      ((vc).w = 1 ∨ (vc).w = 2 ∨ (vc).w = 4 ∨ (vc).w = 8 ∨ (vc).w = 16 ∨ (vc).w = 32 ∨ (vc).w = 64) ∧ (vc).n = R.n ∧
+      laneOK((vc).w) ∧ (vc).n = R.n ∧
         (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
         ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
     (hk : Vals.PickFits k R.key (ids nubI)) (hv : Vals.PickFits v R.val (ids nubI)) :
@@ -213,12 +215,12 @@ theorem rep_nub {k v : Obj} (R : Rel k v)
 theorem rep_nub_atoms {t t' : QAtomicType} (R : Rel (.atom t) (.atom t'))
     (hK : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
         Column.idAt (kc).b (kc).w i = Column.idAt (kc).b (kc).w j ↔ Vals.row R.key ⟨i, hi⟩ = Vals.row R.key ⟨j, hj⟩) ∧
-      ((kc).w = 1 ∨ (kc).w = 2 ∨ (kc).w = 4 ∨ (kc).w = 8 ∨ (kc).w = 16 ∨ (kc).w = 32 ∨ (kc).w = 64) ∧ (kc).n = R.n ∧
+      laneOK((kc).w) ∧ (kc).n = R.n ∧
         (kc).b.size = ((kc).n.toNat * (kc).w + 7) / 8 ∧
         ((kc).w < 8 → (kc).card < USize.size ∧ ∀ i < (kc).n.toNat, Column.idAt (kc).b (kc).w i < (kc).card))
     (hV : (∀ {i j : Nat} (hi : i < R.n.toNat) (hj : j < R.n.toNat),
         Column.idAt (vc).b (vc).w i = Column.idAt (vc).b (vc).w j ↔ Vals.row R.val ⟨i, hi⟩ = Vals.row R.val ⟨j, hj⟩) ∧
-      ((vc).w = 1 ∨ (vc).w = 2 ∨ (vc).w = 4 ∨ (vc).w = 8 ∨ (vc).w = 16 ∨ (vc).w = 32 ∨ (vc).w = 64) ∧ (vc).n = R.n ∧
+      laneOK((vc).w) ∧ (vc).n = R.n ∧
         (vc).b.size = ((vc).n.toNat * (vc).w + 7) / 8 ∧
         ((vc).w < 8 → (vc).card < USize.size ∧ ∀ i < (vc).n.toNat, Column.idAt (vc).b (vc).w i < (vc).card))
     : rep R.nub = rep R :=

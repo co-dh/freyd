@@ -6,10 +6,12 @@ import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.KernelWF.RazeFoR
 
+open LaneN
+
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
-open Freyd Freyd.Alg Freyd.Alg.RelSet ListN
+open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 variable {A : Obj}
 
@@ -44,8 +46,7 @@ theorem rep_tau {n : USize} (X : Vals A n)
     (hX : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
         Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
           Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
-      ((kcX(X)).w = 1 ∨ (kcX(X)).w = 2 ∨ (kcX(X)).w = 4 ∨ (kcX(X)).w = 8 ∨ (kcX(X)).w = 16 ∨
-        (kcX(X)).w = 32 ∨ (kcX(X)).w = 64) ∧
+      laneOK((kcX(X)).w) ∧
         (kcX(X)).n = n ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
         ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
           ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card))
@@ -53,8 +54,7 @@ theorem rep_tau {n : USize} (X : Vals A n)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
       Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
         Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩)
-    (hw : (kcT(idU X)).w = 1 ∨ (kcT(idU X)).w = 2 ∨ (kcT(idU X)).w = 4 ∨ (kcT(idU X)).w = 8 ∨
-      (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64)
+    (hw : laneOK((kcT(idU X)).w))
     (hn : (kcT(idU X)).n = (Rel.nub (idU X)).n)
     (hs : (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8)
     (hW : codesWF)
@@ -102,7 +102,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub R).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)
@@ -218,7 +218,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub mS(X)).n.toNat) (hj : j < (Rel.nub mS(X)).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub mS(X)).key ⟨i, hi⟩ = Vals.row (Rel.nub mS(X)).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub mS(X)).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)
@@ -266,8 +266,7 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
     (hX : (∀ {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat),
         Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
           Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
-      ((kcX(X)).w = 1 ∨ (kcX(X)).w = 2 ∨ (kcX(X)).w = 4 ∨ (kcX(X)).w = 8 ∨ (kcX(X)).w = 16 ∨
-        (kcX(X)).w = 32 ∨ (kcX(X)).w = 64) ∧
+      laneOK((kcX(X)).w) ∧
         (kcX(X)).n = n ∧ (kcX(X)).b.size = ((kcX(X)).n.toNat * (kcX(X)).w + 7) / 8 ∧
         ((kcX(X)).w < 8 → (kcX(X)).card < USize.size ∧
           ∀ i < (kcX(X)).n.toNat, Column.idAt (kcX(X)).b (kcX(X)).w i < (kcX(X)).card))
@@ -275,8 +274,7 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub (idU X)).n.toNat) (hj : j < (Rel.nub (idU X)).n.toNat),
       Column.idAt (kcT(idU X)).b (kcT(idU X)).w i = Column.idAt (kcT(idU X)).b (kcT(idU X)).w j ↔
         Vals.row (Rel.nub (idU X)).key ⟨i, hi⟩ = Vals.row (Rel.nub (idU X)).key ⟨j, hj⟩)
-    (hw : (kcT(idU X)).w = 1 ∨ (kcT(idU X)).w = 2 ∨ (kcT(idU X)).w = 4 ∨ (kcT(idU X)).w = 8 ∨
-      (kcT(idU X)).w = 16 ∨ (kcT(idU X)).w = 32 ∨ (kcT(idU X)).w = 64)
+    (hw : laneOK((kcT(idU X)).w))
     (hn : (kcT(idU X)).n = (Rel.nub (idU X)).n)
     (hs : (kcT(idU X)).b.size = ((kcT(idU X)).n.toNat * (kcT(idU X)).w + 7) / 8)
     (hW : codesWF)
@@ -319,7 +317,7 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub R).n.toNat) (hj : j < (Rel.nub R).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub R).key ⟨i, hi⟩ = Vals.row (Rel.nub R).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub R).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)
@@ -387,7 +385,7 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hF : ∀ {i j : Nat} (hi : i < (Rel.nub mS(X)).n.toNat) (hj : j < (Rel.nub mS(X)).n.toNat),
       Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
         Vals.row (Rel.nub mS(X)).key ⟨i, hi⟩ = Vals.row (Rel.nub mS(X)).key ⟨j, hj⟩)
-    (hw : kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64)
+    (hw : laneOK(kt.w))
     (hn : kt.n = (Rel.nub mS(X)).n)
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : codesWF)

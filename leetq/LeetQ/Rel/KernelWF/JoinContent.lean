@@ -8,6 +8,8 @@ import QLean.Verify.ScanOver
 import QLean.Verify.BinWin
 import QLean.Verify.Structural
 
+open LaneN
+
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel
@@ -267,7 +269,7 @@ theorem expand_rank {n : USize} {cnt : ByteArray} (hn : len cnt ≤ n.toNat)
 /-- **`Code.gather`'s payload holds exactly its codes**: `len i` of them at `c`'s lane, `⌈len i · w / 8⌉`
     bytes — `gatherBits`, `gatherBytes` and `gatherPacked` (`packIds` at `2`/`4` bits) alike. -/
 theorem gather_size (c : Code) (i : ByteArray) (hl : len i < USize.size)
-    (hcw : c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) :
+    (hcw : laneOK(c.w)) :
     (Code.gather c i).b.size = (len i * c.w + 7) / 8 := by
   unfold Code.gather longCount
   simp only [need, dif_pos hl]
