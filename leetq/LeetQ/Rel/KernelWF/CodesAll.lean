@@ -245,7 +245,7 @@ theorem codesC_arr_part {b : Obj} (c : Part (.arr b)) (W : Nat)
 theorem _root_.LeetQ.Rel.Obj.codesC_fits : (A : Obj) → {p : Nat} → (cs : Vector (Part A) p) →
     (Obj.codesC A cs).2 = true → A.CodesFit cs
   | .atom t, p, cs, hb => by
-    simp only [Obj.codesC, Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq] at hb
+    simp only [Obj.codesC, Obj.codesC.atomFit, Bool.and_eq_true, Bool.or_eq_true, decide_eq_true_eq] at hb
     obtain ⟨hN, hb⟩ := hb
     unfold Obj.CodesFit
     refine ⟨hN, ?_⟩

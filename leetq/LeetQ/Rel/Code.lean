@@ -865,18 +865,7 @@ def _root_.LeetQ.Rel.Obj.codes : (A : Obj) → {p : Nat} → Vector (Part A) p �
     array's payload count and the copies `expand` counts per part below `2^63`, their sum too, the payload
     fitting those copies (`Vals.fitsN`); a sum's parts picking in range and its held side counts below `2^61`. -/
 def _root_.LeetQ.Rel.Obj.codesC : (A : Obj) → {p : Nat} → Vector (Part A) p → Vector Code p × Bool
-  | .atom t, p, cs => (Obj.codes (.atom t) cs,
-    decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
-    (decide (t = .boolean) ||
-      (match orderKind t with
-        | some k₀ => decide (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) &&
-          (decide (p < 2) || !Column.alpEncodes t || decide ((cs.toList.map (·.1.toNat)).sum < 2 ^ 32))
-        | none => false) ||
-      decide (orderKind t = some .i64) ||
-      (decide (t = .symbol) && decide ((cs.toList.map fun c : Part (.atom t) => match c.2.enc with
-        | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size)) ||
-      decide (t = .guid) ||
-      (decide (t = .general) && cs.toArray.all fun c => match c.2.enc with | .gen xs => xs.all cellFree | _ => true)))
+  | .atom t, _, cs => (Obj.codes (.atom t) cs, atomFit t cs)
   | .prod a b, _, cs => (Obj.codes (.prod a b) cs, decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
     (Obj.codesC a (cs.map fun c => (⟨c.1, c.2.1⟩ : Part a))).2 && (Obj.codesC b (cs.map fun c => (⟨c.1, c.2.2⟩ : Part b))).2)
   -- each part's copies counted by `expand` itself, as `Obj.codes` expands them
@@ -894,21 +883,50 @@ def _root_.LeetQ.Rel.Obj.codesC : (A : Obj) → {p : Nat} → Vector (Part A) p 
       cs.toArray.all (fun c => decide (c.2.1.toNat < 2 ^ 61) && decide (c.2.2.1.toNat < 2 ^ 61)) &&
       (Obj.codesC a (cs.map fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a))).2 &&
       (Obj.codesC b (cs.map fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b))).2)
+where
+  /-- An atom's conjunct of the bit, read off the parts' counts and encodings alone: a twin that needs the bit
+      and not the codes (`sortByC` at an atom) decides it without coding. -/
+  atomFit (t : QAtomicType) {p : Nat} (cs : Vector (Part (.atom t)) p) : Bool :=
+    decide ((cs.toList.map (·.1.toNat)).sum < USize.size) &&
+    (decide (t = .boolean) ||
+      (match orderKind t with
+        | some k₀ => decide (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) &&
+          (decide (p < 2) || !Column.alpEncodes t || decide ((cs.toList.map (·.1.toNat)).sum < 2 ^ 32))
+        | none => false) ||
+      decide (orderKind t = some .i64) ||
+      (decide (t = .symbol) && decide ((cs.toList.map fun c : Part (.atom t) => match c.2.enc with
+        | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size)) ||
+      decide (t = .guid) ||
+      (decide (t = .general) && cs.toArray.all fun c => match c.2.enc with | .gen xs => xs.all cellFree | _ => true))
 
 /-- The permutation `p` refined stably by the values of `A` at its rows, ascending: `gradeColumn` of each
     atom (a symbol by its string, so the order is the value's, the same in every call), the last component
     first so a product sorts lexicographically. Where no kernel orders the values — a general list, an
-    array — by the codes of the whole column, read at `p`: an order of this call only. -/
-def _root_.LeetQ.Rel.Obj.sortBy : (A : Obj) → {n : USize} → Vals A n → ByteArray → ByteArray
+    array — by the codes of the whole column, read at `p`: an order of this call only. And whether it ran within
+    capacity: the codes' bit of `c` (`sortByC_snd`), taken from the one `codesC` pass whose codes it grades at
+    an `.arr` or `.sum` side, and at an atom from the counts alone (`atomFit`), so no side is coded twice. -/
+def _root_.LeetQ.Rel.Obj.sortByC : (A : Obj) → {n : USize} → Vals A n → ByteArray → ByteArray × Bool
   | .atom t, _, c, p =>
     let x := Alg.pick t ⟨_, c⟩ p
-    match gradeColumn t false x.1 x.2.enc with
-    | some (.bytes g) => gather 8 p g
-    | _ => gather 8 p (codes t #v[x])[0].grade
-  | .prod a b, _, c, p => Obj.sortBy a c.1 (Obj.sortBy b c.2 p)
+    (match gradeColumn t false x.1 x.2.enc with
+      | some (.bytes g) => gather 8 p g
+      | _ => gather 8 p (codes t #v[x])[0].grade, Obj.codesC.atomFit t #v[⟨_, c⟩])
+  | .prod a b, _, c, p => let r := Obj.sortByC b c.2 p; let l := Obj.sortByC a c.1 r.1; (l.1, l.2 && r.2)
   -- the input's codes gathered at `p`, not the codes of the picked part: a pick can outgrow the bounds the input fits
-  | .arr b, _, c, p => gather 8 p ((Obj.codes (.arr b) #v[⟨_, c⟩])[0].gather p).grade
-  | .sum a b, _, c, p => gather 8 p ((Obj.codes (.sum a b) #v[⟨_, c⟩])[0].gather p).grade
+  | .arr b, _, c, p => let k := Obj.codesC (.arr b) #v[⟨_, c⟩]; (gather 8 p (k.1[0].gather p).grade, k.2)
+  | .sum a b, _, c, p => let k := Obj.codesC (.sum a b) #v[⟨_, c⟩]; (gather 8 p (k.1[0].gather p).grade, k.2)
+
+/-- `p` refined stably by the values of `A`: `sortByC`'s permutation. -/
+def _root_.LeetQ.Rel.Obj.sortBy (A : Obj) {n : USize} (c : Vals A n) (p : ByteArray) : ByteArray := (A.sortByC c p).1
+
+/-- A sort twin's bit is the codes' bit of the column it sorts by, at each constructor of the side. -/
+theorem _root_.LeetQ.Rel.Obj.sortByC_snd : (A : Obj) → {n : USize} → (c : Vals A n) → (p : ByteArray) →
+    (A.sortByC c p).2 = (A.codesC #v[⟨n, c⟩]).2
+  | .atom _, _, _, _ => rfl
+  | .prod a b, n, c, p => by
+    simp [Obj.sortByC, Obj.sortByC_snd a, Obj.sortByC_snd b, Obj.codesC, USize.toNat_lt_size]
+  | .arr _, _, _, _ => rfl
+  | .sum _ _, _, _, _ => rfl
 
 /-- `|R|` of several relations of one type in one code space, one code per relation. -/
 def pairs {k v : Obj} {p : Nat} (ds : Vector (Rel k v) p) : Vector Code p :=

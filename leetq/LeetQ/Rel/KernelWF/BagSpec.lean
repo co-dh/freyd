@@ -281,7 +281,7 @@ theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
       (pick .long ⟨_, cells⟩ (tilLongs m)).2.get ⟨k, hk⟩ = cells.get ⟨k, hk'⟩ := fun k hk hk' => by
     rw [pick_get ⟨_, cells⟩ (tilLongs m) hl k hk (by rw [tilLongs_get hk']; exact hk')]
     exact congrArg cells.get (Fin.ext (tilLongs_get hk'))
-  simp only [Obj.sortBy]
+  simp only [Obj.sortBy, Obj.sortByC]
   rw [gradeColumn_long]
   simp only [Bool.false_eq_true, ↓reduceIte]
   obtain ⟨hp, hs⟩ := grade_long (pick .long ⟨_, cells⟩ (tilLongs m)).2

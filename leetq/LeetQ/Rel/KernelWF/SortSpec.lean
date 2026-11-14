@@ -135,7 +135,7 @@ theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (hf : A.CodesFit (#v[�
       have := (grade_code _ hw hs).1
       rw [show ((Obj.codes (.atom t) #v[pick t ⟨_, c⟩ p])[0]).n = _ from hn, hx] at this
       exact this
-    simp only [Obj.sortBy]
+    simp only [Obj.sortBy, Obj.sortByC]
     split
     next g hg =>
       obtain ⟨m, le, hv⟩ := gradeColumn_sort hg
@@ -167,6 +167,12 @@ theorem sortBy_perm (A : Obj) {n : USize} (c : Vals A n) (hf : A.CodesFit (#v[�
   | sum a b =>
     obtain ⟨hw, hn, hs, -⟩ := (codes_faithful_wf _ _ hf).1.2 (k := 0) Nat.zero_lt_one
     exact gather_perm (grade_gather_perm _ hw hs p hl fun t ht => by rw [hn]; exact hp t ht)
+
+/-- **`Obj.sortByC`'s permutation holds the rows it is handed under its bit**: `sortBy_perm`, the bit the codes'
+    (`sortByC_snd`), so a fit (`codesC_fits`). -/
+theorem sortByC_perm (A : Obj) {n : USize} (c : Vals A n) (p : ByteArray) (hb : (A.sortByC c p).2 = true)
+    (hl : len p < USize.size) (hp : ∀ t ∈ ids p, t < n.toNat) : (ids (A.sortByC c p).1).Perm (ids p) :=
+  sortBy_perm A c (Obj.codesC_fits A _ (Obj.sortByC_snd A c p ▸ hb)) p hl hp
 
 /-- **`transpose`'s row order groups the keys**: `kc`'s codes at `vp`, graded stably and read back through `vp`
     (`p = vp@grade(kc@vp)`), hold every row once, and equal codes stand together along `p`; the grade holds
