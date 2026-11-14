@@ -10,18 +10,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 variable {A B : Obj}
 
--- codes `cs` of two parts `ps` faithful and well formed, `RepOps`' `codesOK` (a local notation, so restated here)
-set_option hygiene false in
-local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
-    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
-    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
-      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
-  ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
-    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
-    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
-      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+open OpsN
 
 /-- Two boolean parts' codes are faithful and well formed: the codes are the bits (`codes_boolean_faithful`/`_wf`). -/
 theorem codesOK_boolean (ps : Vector (Part (.atom .boolean)) 2) : codesOK(Obj.codes (.atom .boolean) ps, ps) :=
@@ -111,10 +100,6 @@ section Entire
 
 open QLean.Verify
 
--- the two relations as parts of a product side, `RepOps`' `pcs` with the sides named
-set_option hygiene false in
-local notation "pcs(" X ", " Y ", " R ", " S ")" =>
-  (#v[⟨Rel.n R, (Rel.key R, Rel.val R)⟩, ⟨Rel.n S, (Rel.key S, Rel.val S)⟩] : Vector (Part (.prod X Y)) 2)
 -- the one-part code `distinctCorefl` groups, and `rep_dom`'s hypothesis on it
 set_option hygiene false in
 local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one
@@ -137,7 +122,7 @@ theorem corefl_le_dom {X Y : RelSet.{0}} (P : X.carrier → Prop) (S : X ⟶ Y) 
     `idU U ⊑ dom R` (`rep_le`, `rep_idU`, `rep_dom`). Hypotheses: `rep_le`'s joint pair codes of `idU U` and
     `dom R`, `rep_dom`'s on `R.key`. -/
 theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
-    (hc : codesOK(pairs #v[idU U, dom R], pcs(A, A, idU U, dom R))) (hK : oneOK(A, R.n, R.key))
+    (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
     (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) :
     entire R U = true ↔ ∀ a, (∃ i, U.row i = a) → ∃ b, rep R a b := by
   show (idU U ⊑ dom R) = true ↔ _
@@ -147,7 +132,7 @@ theorem rep_entire (R : Rel A B) {m : USize} (U : Vals A m)
 /-- **`surjective R U = true ↔ U? ⊑ ran (rep R)`**: `entire R° U` (`rep_entire`, `convArr_holds`). Hypotheses:
     `rep_entire`'s at `R°`, whose keys are `R.val`. -/
 theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
-    (hc : codesOK(pairs #v[idU U, dom (R°)], pcs(B, B, idU U, dom (R°)))) (hK : oneOK(B, R.n, R.val))
+    (hc : codesOK(pairs #v[idU U, dom (R°)], pcs(idU U, dom (R°)))) (hK : oneOK(B, R.n, R.val))
     (hp : Vals.PickFits B R.val (ids (c1(B, R.n, R.val)).groupIds.2)) :
     surjective R U = true ↔ ∀ b, (∃ i, U.row i = b) → ∃ a, rep R a b :=
   (rep_entire (R°) U hc hK hp).trans (forall_congr' fun _ => imp_congr_right fun _ => exists_congr fun _ =>
@@ -155,7 +140,7 @@ theorem rep_surjective (R : Rel A B) {m : USize} (U : Vals B m)
 
 /-- The joint pair codes of two boolean relations from the bits: `pairsOK_of_parts`, only the summed count left. -/
 theorem pairsOK_boolean (R S : Rel (.atom .boolean) (.atom .boolean)) (hN : R.n.toNat + S.n.toNat < USize.size) :
-    codesOK(pairs #v[R, S], pcs(.atom .boolean, .atom .boolean, R, S)) :=
+    codesOK(pairs #v[R, S], pcs(R, S)) :=
   pairsOK_of_parts R S ⟨codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
     codesOK_boolean _, fun hk hl => (codes_boolean_wf _ hk).2.1.trans (codes_boolean_wf _ hl).2.1.symm,
     by simpa using hN⟩
@@ -262,7 +247,7 @@ theorem rep_injective (R : Rel A B) (hK : oneOK(B, R.n, R.val)) (hV : oneOK(A, R
 
 /-- **`isMap R U = true`**: `rep R` entire on `U` and simple — `rep_entire` and `rep_simple`, their hypotheses. -/
 theorem rep_isMap (R : Rel A B) {m : USize} (U : Vals A m)
-    (hc : codesOK(pairs #v[idU U, dom R], pcs(A, A, idU U, dom R))) (hK : oneOK(A, R.n, R.key))
+    (hc : codesOK(pairs #v[idU U, dom R], pcs(idU U, dom R))) (hK : oneOK(A, R.n, R.key))
     (hp : Vals.PickFits A R.key (ids (c1(A, R.n, R.key)).groupIds.2)) (hV : oneOK(B, R.n, R.val))
     (hk : Vals.PickFits A R.key (ids nubI(A, B, R))) (hv : Vals.PickFits B R.val (ids nubI(A, B, R)))
     (hS : oneOK(A, R.nub.n, R.nub.key)) :

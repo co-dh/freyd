@@ -14,7 +14,7 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
 section ArrUnion
 
-open Pow
+open Pow OpsN UnionN
 
 /-- **`rep (Arr.union X)`: each array of arrays to the array of the elements of its members**: an array
     `Arr.union X` gives `xss` holds exactly the elements of the members of `xss`, and `Arr.union X` has a row at
@@ -66,7 +66,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hNv : ((pv(T, N)).toList.map fun c : Part (.arr A) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits (.arr (.arr A)) (Rel.key T) (Rel.key N))
     (hFv : Vals.RazeFits (.arr A) (Rel.val T) (Rel.val N))
-    (L : Rel (.arr (.arr A)) (.arr A)) (hL : L = Uc(T, N))
+    (L : Rel (.arr (.arr A)) (.arr A)) (hL : L = Uc(T, N, hNk, hNv))
     (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits (.arr (.arr A)) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2))

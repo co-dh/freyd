@@ -423,36 +423,43 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF 
 
 variable {A B C : Obj}
 
--- dup of RazeRow's local notations `Uc`, `kcU`, `vcU`, `nubU` (local there, in RazeRowAll and in RazeEnc)
+/-! `∪`'s notations, one home: `open UnionN` in every file that states a `∪` read-back. They take as arguments
+    what they read (the relations, the raze's count proofs), so a use site's names do not leak in. -/
+namespace UnionN
+-- a one-part code `c` of the `m` values `x` faithful and well formed, `rep_nub`'s `hK` form
 set_option hygiene false in
-local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
+scoped notation "cOK(" c ", " m ", " x ")" => ((∀ {i j : Nat} (hi : i < USize.toNat m) (hj : j < USize.toNat m),
+    Column.idAt (c).b (c).w i = Column.idAt (c).b (c).w j ↔ Vals.row x ⟨i, hi⟩ = Vals.row x ⟨j, hj⟩) ∧
+  ((c).w = 1 ∨ (c).w = 2 ∨ (c).w = 4 ∨ (c).w = 8 ∨ (c).w = 16 ∨ (c).w = 32 ∨ (c).w = 64) ∧ (c).n = m ∧
+    (c).b.size = ((c).n.toNat * (c).w + 7) / 8 ∧
+    ((c).w < 8 → (c).card < USize.size ∧ ∀ i < (c).n.toNat, Column.idAt (c).b (c).w i < (c).card))
+-- `rep_nub`'s codes of a relation `R`, and the rows `nub` keeps
 set_option hygiene false in
-local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
+scoped notation "kcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
+scoped notation "vcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
-local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+scoped notation "nubR(" R ")" => (tuples.tupleIds (kcR(R)) #[vcR(R)]).2
+-- `∪`'s two key parts and two value parts, and their raze, `hk`, `hv` the raze's count proofs
+set_option hygiene false in
+scoped notation "pk(" R ", " S ")" => (#[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Array (Part _))
+set_option hygiene false in
+scoped notation "pv(" R ", " S ")" => (#[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Array (Part _))
+set_option hygiene false in
+scoped notation "Uc(" R ", " S ", " hk ", " hv ")" =>
+  (⟨_, Obj.raze _ (pk(R, S)) hk, Obj.raze _ (pv(R, S)) hv⟩ : Rel _ _)
+end UnionN
+open UnionN
 
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**, no hypothesis on the encoding. -/
 theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
+    (hNk : ((pk(R, S)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
+    (hNv : ((pv(R, S)).toList.map fun c : Part B => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
-    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
-          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
-      ((kcU).w = 1 ∨ (kcU).w = 2 ∨ (kcU).w = 4 ∨ (kcU).w = 8 ∨ (kcU).w = 16 ∨ (kcU).w = 32 ∨ (kcU).w = 64) ∧
-        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
-        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
-    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
-        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
-          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
-      ((vcU).w = 1 ∨ (vcU).w = 2 ∨ (vcU).w = 4 ∨ (vcU).w = 8 ∨ (vcU).w = 16 ∨ (vcU).w = 32 ∨ (vcU).w = 64) ∧
-        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
-        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
-    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
+    (hK : cOK(kcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.key (Uc(R, S, hNk, hNv))))
+    (hV : cOK(vcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.val (Uc(R, S, hNk, hNv))))
+    (hk : Vals.PickFits A (Rel.key (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv))))
+    (hv : Vals.PickFits B (Rel.val (Uc(R, S, hNk, hNv))) (ids nubR(Uc(R, S, hNk, hNv)))) :
     rep (R ∪ S) = rep R ∪ rep S :=
   rep_union_fits hat_all R S hN hNk hNv hFk hFv hK hV hk hv
 
