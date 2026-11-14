@@ -318,35 +318,35 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     cs1, ⟨uaf, uac⟩, ⟨uuf, uuc⟩, ⟨ruf, rup⟩, ⟨utf, utc⟩, ⟨puf, pup⟩, cs2, ⟨dyf, dyc⟩,
     ⟨bN, bNk, bNv, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yNk, yNv, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
   obtain ⟨uk, uh, ut'⟩ := uU _ rfl _ rfl _ rfl
-  obtain ⟨u1, u2, u3, u4, u5⟩ := uc _ rfl
-  obtain ⟨ab1, ab2, ab3, ab4, ab5, ab6⟩ := abp _ rfl
-  obtain ⟨g1, g2, g3, g4, g5⟩ := q1c _ rfl
-  obtain ⟨s1, s2, s3, s4, s5, s6⟩ := ssp _ rfl
-  obtain ⟨h1, h2, h3, h4, h5⟩ := q2c _ rfl
-  obtain ⟨k1, k2, k3, k4, k5⟩ := q3c _ rfl
+  obtain ⟨u1, u2, u3, u4⟩ := uc _ rfl
+  obtain ⟨ab1, ab2, ab3, ab4, ab5⟩ := abp _ rfl
+  obtain ⟨g1, g2, g3, g4⟩ := q1c _ rfl
+  obtain ⟨s1, s2, s3, s4, s5⟩ := ssp _ rfl
+  obtain ⟨h1, h2, h3, h4⟩ := q2c _ rfl
+  obtain ⟨k1, k2, k3, k4⟩ := q3c _ rfl
   obtain ⟨d11, d12⟩ := d1 _ rfl
   obtain ⟨d13, d14⟩ := d12
   obtain ⟨d21, d22⟩ := d2 _ rfl
   obtain ⟨d23, d24⟩ := d22
   obtain ⟨d31, d32⟩ := d3 _ rfl
   obtain ⟨d33, d34⟩ := d32
-  obtain ⟨a1, a2, a3, a4, a5⟩ := uac _ rfl
-  obtain ⟨w1, w2, w3, w4, w5⟩ := uuc _ rfl
-  obtain ⟨t1, t2, t3, t4, t5⟩ := utc _ rfl
-  obtain ⟨p1, p2, p3, p4, p5, p6⟩ := pup _ rfl
-  obtain ⟨y1, y2, y3, y4, y5⟩ := dyc _ rfl
+  obtain ⟨a1, a2, a3, a4⟩ := uac _ rfl
+  obtain ⟨w1, w2, w3, w4⟩ := uuc _ rfl
+  obtain ⟨t1, t2, t3, t4⟩ := utc _ rfl
+  obtain ⟨p1, p2, p3, p4, p5⟩ := pup _ rfl
+  obtain ⟨y1, y2, y3, y4⟩ := dyc _ rfl
   refine thin_body_set le D Dm hD ta hta ty hty tu
     (rep_uncons (Rel.val ty) u63 _ rfl _ rfl _ rfl uk uh ut')
-    (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4 u5)
-    tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5 ab6)
+    (by rw [htu]; exact rep_comp _ _ (codes_faithful_wf _ _ uf).1 u1 u2 u3 u4)
+    tab (by rw [htab]; exact rep_pair _ _ (codes_faithful_wf _ _ abf).1 ab1 ab2 ab3 ab4 ab5)
     rab (by rw [hrab]; exact rep_ran_corefl tab (one_ok _ rabf) (rabp)) G1 ht1
-    tq1 (by rw [htq1]; exact rep_comp _ _ (codes_faithful_wf _ _ q1f).1 g1 g2 g3 g4 g5)
+    tq1 (by rw [htq1]; exact rep_comp _ _ (codes_faithful_wf _ _ q1f).1 g1 g2 g3 g4)
     tup (by rw [htup]; exact rep_dom_corefl tq1 (one_ok _ upf) (upp))
-    ss (by rw [hss]; exact rep_pair _ _ (codes_faithful_wf _ _ ssf).1 s1 s2 s3 s4 s5 s6)
+    ss (by rw [hss]; exact rep_pair _ _ (codes_faithful_wf _ _ ssf).1 s1 s2 s3 s4 s5)
     rs (by rw [hrs]; exact rep_ran_corefl ss (one_ok _ rsf) (rsp)) G2 ht2
-    tq2 (by rw [htq2]; exact rep_comp _ _ (codes_faithful_wf _ _ q2f).1 h1 h2 h3 h4 h5)
+    tq2 (by rw [htq2]; exact rep_comp _ _ (codes_faithful_wf _ _ q2f).1 h1 h2 h3 h4)
     sw (by rw [hsw]; exact rep_dom_corefl tq2 (one_ok _ swf) (swp))
-    tq3 (by rw [htq3]; exact rep_comp _ _ (codes_faithful_wf _ _ q3f).1 k1 k2 k3 k4 k5)
+    tq3 (by rw [htq3]; exact rep_comp _ _ (codes_faithful_wf _ _ q3f).1 k1 k2 k3 k4)
     tdn (by rw [htdn]; exact rep_dom_corefl tq3 (one_ok _ dnf) (dnp))
     du (by rw [hdu]; exact rep_dom_corefl tu (one_ok _ duf) (dup))
     l1 (fun s s' => by rw [hl1]; exact rep_diff D du d11 d13 d14 s s')
@@ -354,13 +354,13 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     l3 (fun s s' => by rw [hl3]; exact rep_diff l2 tdn d31 d33 d34 s s')
     lone (by rw [hlone]; exact rep_union_full l1 l3 oN oNk oNv oFk oFv (one_ok _ oK) (one_ok _ oV) ok ov)
     c1 (by rw [hc1]; exact rep_cons_ok lone cs1)
-    ua (by rw [hua]; exact rep_comp _ _ (codes_faithful_wf _ _ uaf).1 a1 a2 a3 a4 a5)
-    uu (by rw [huu]; exact rep_comp _ _ (codes_faithful_wf _ _ uuf).1 w1 w2 w3 w4 w5)
+    ua (by rw [hua]; exact rep_comp _ _ (codes_faithful_wf _ _ uaf).1 a1 a2 a3 a4)
+    uu (by rw [huu]; exact rep_comp _ _ (codes_faithful_wf _ _ uuf).1 w1 w2 w3 w4)
     ru (by rw [hru]; exact rep_ran_corefl tu (one_ok _ ruf) (rup))
-    ut (by rw [hut]; exact rep_comp _ _ (codes_faithful_wf _ _ utf).1 t1 t2 t3 t4 t5)
-    pu (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 p1 p2 p3 p4 p5 p6)
+    ut (by rw [hut]; exact rep_comp _ _ (codes_faithful_wf _ _ utf).1 t1 t2 t3 t4)
+    pu (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 p1 p2 p3 p4 p5)
     c2 (by rw [hc2]; exact rep_cons_ok pu cs2)
-    dy (by rw [hdy]; exact rep_comp _ _ (codes_faithful_wf _ _ dyf).1 y1 y2 y3 y4 y5)
+    dy (by rw [hdy]; exact rep_comp _ _ (codes_faithful_wf _ _ dyf).1 y1 y2 y3 y4)
     b1 (by rw [hb1]; exact rep_union_full c1 c2 bN bNk bNv bFk bFv (one_ok _ bK) (one_ok _ bV) bk bv)
     body (by rw [hbody]; exact rep_union_full b1 dy yN yNk yNv yFk yFv (one_ok _ yK) (one_ok _ yV) yk yv)
 
@@ -484,7 +484,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → R
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
     (hR' : ∀ k (D : Rel SP SP), D = Dr k →
@@ -508,7 +508,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → R
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   intro xs w
   rw [thinLOn_foldOn q X Sf hSf, rep_foldOn (nilVal B) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep
-    elK hE f hf Dr hD hR hS F hF jc hjc hjO hjn hjM hjU hjA hjC]
+    elK hE f hf Dr hD hR hS F hF jc hjc hjO hjn hjM hjA hjC]
   simp only [fun k => (thin_round_rep q le Sf hSf _ (Dr k) (hD k) (hR' k _ rfl)).2]
 
 /-- **`thinLOn`, read back as bumps**: `rep_thinLOn` with each link's pair of `Dr k` discharged — it is a pair of
@@ -554,7 +554,7 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
     (hR' : ∀ k (D : Rel SP SP), D = Dr k →
@@ -582,18 +582,18 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
       ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = b :: bs) ∨
         (le p.1 b = false ∧ le b p.1 = false ∧ v = p.1 :: b :: bs)))
     elK hE f hf hR (fun i _ r v => by
-      obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
-      obtain ⟨hjO', hjn', hjM', hjU', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
+      obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+      obtain ⟨hjO', hjn', hjM', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
       obtain ⟨eD, eB⟩ := thin_round_rep q le Sf hSf _ (Dr i) (hD i) (hR' i _ rfl)
-      have h1 := rep_pair (elK i) _ hkO hkn hkM hkU hkA hkB hkC
-      rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
-        hjO' hjn' hjM' hjU' hjA' hjC' r v]
+      have h1 := rep_pair (elK i) _ hkO hkn hkM hkA hkB hkC
+      rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
+        hjO' hjn' hjM' hjA' hjC' r v]
       refine exists_congr fun e => exists_congr fun u => ?_
       rw [eB, eD]
       have hP : rep (elK i) r e → rep (f^[i] (pend₀, Alg.zero, 0)).1 r u →
           rep (pair (elK i) (f^[i] (pend₀, Alg.zero, 0)).1) r (e, u) := fun he hu => by rw [h1]; exact ⟨he, hu⟩
       exact ⟨fun ⟨he, hu, _, hb⟩ => ⟨he, hu, hb⟩, fun ⟨he, hu, hb⟩ => ⟨he, hu, ⟨r, hP he hu⟩, hb⟩⟩)
-    F hF jc hjc hjO hjn hjM hjU hjA hjC xs w
+    F hF jc hjc hjO hjn hjM hjA hjC xs w
 
 end Headline
 

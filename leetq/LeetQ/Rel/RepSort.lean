@@ -68,11 +68,11 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   obtain ⟨⟨hSf, hSp⟩, ⟨h63, hUn⟩, ⟨hcf, hc'⟩, ⟨hTf, hTp⟩, ⟨hOf, hOp⟩, hVv, hVk, ⟨hmf, hm'⟩, ⟨hpf, hp'⟩,
     ⟨hyf, hyp⟩, ⟨hbf, hb'⟩, ⟨hdf, hdp⟩, ⟨hCf, hC'⟩, ⟨hDf, hDp⟩, ⟨hAf, hA'⟩⟩ := h
   obtain ⟨u1, u2, u3⟩ := hUn _ rfl _ rfl _ rfl
-  obtain ⟨c1, c2, c3, c4, c5⟩ := hc' _ rfl
-  obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
-  obtain ⟨p1, p2, p3, p4, p5, p6⟩ := hp' _ rfl
+  obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
+  obtain ⟨m1, m2, m3, m4⟩ := hm' _ rfl
+  obtain ⟨p1, p2, p3, p4, p5⟩ := hp' _ rfl
   obtain ⟨b1, b2⟩ := hb'
-  obtain ⟨k1, k2, k3, k4, k5⟩ := hC' _ rfl
+  obtain ⟨k1, k2, k3, k4⟩ := hC' _ rfl
   obtain ⟨a1, a2⟩ := hA'
   have eS : ∀ xs ys, rep Su xs ys ↔ (∃ j, X.row j = xs) ∧ ys <:+ xs := by
     rw [hSu]; exact rep_suffix X g hg hR
@@ -81,7 +81,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   have eU := rep_uncons (Rel.val Wu) h63 _ rfl _ rfl _ rfl u1 u2 u3
   -- `T`: an array to the head and tail of each of its non-empty suffixes
   have eT : ∀ xs (p : (Obj.prod B (.arr B)).El), rep T xs p ↔ rep Su xs (p.1 :: p.2) := fun xs p => by
-    rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5, Freyd.Alg.RelSet.comp_apply]
+    rw [hT, rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
     constructor
     · rintro ⟨a, ha, hu⟩
       obtain ⟨-, rfl⟩ := (eU a p.1 p.2).1 hu
@@ -103,7 +103,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
     rw [hV, rep_ran_corefl O (one_ok _ hOf) (hOp)]; exact Iff.rfl
   have eMem := rep_mem (Rel.val V) hVv hVk
   have eM : ∀ p z, rep M p z ↔ (∃ xs, rep T xs p) ∧ z ∈ p.2 := fun p z => by
-    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4 m5, Freyd.Alg.RelSet.comp_apply]
+    rw [hM, rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4, Freyd.Alg.RelSet.comp_apply]
     constructor
     · rintro ⟨a, ho, hm⟩
       obtain ⟨hx, rfl⟩ := (eO p a).1 ho
@@ -120,7 +120,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
       exact ⟨hx, rfl⟩
     · rintro ⟨hx, rfl⟩
       exact ⟨p.2, (eD _ _).2 ⟨rfl, hx⟩⟩
-  have eP := rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5 p6
+  have eP := rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5
   have eyz : ∀ p y z, rep yz p (y, z) ↔ (∃ xs, rep T xs p) ∧ y = p.1 ∧ z ∈ p.2 := fun p y z => by
     rw [hyz]
     refine (Iff.of_eq (congrFun (congrFun eP p) (y, z))).trans ((and_congr (eL p y) (eM p z)).trans ?_)
@@ -133,7 +133,7 @@ theorem rep_orderedOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) →
   have edb : ∀ p p', rep (dom bad) p p' ↔ p = p' ∧ ∃ v, rep bad p v := fun p p' => by
     rw [rep_dom_corefl bad (one_ok _ hdf) (hdp)]; exact Iff.rfl
   have eC : ∀ xs p, rep C xs p ↔ rep T xs p ∧ ∃ v, rep bad p v := fun xs p => by
-    rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4 k5, Freyd.Alg.RelSet.comp_apply]
+    rw [hC, rep_comp _ _ (codes_faithful_wf _ _ hCf).1 k1 k2 k3 k4, Freyd.Alg.RelSet.comp_apply]
     constructor
     · rintro ⟨p', ht, hd⟩
       obtain ⟨rfl, hv⟩ := (edb _ _).1 hd
@@ -225,12 +225,12 @@ theorem rep_sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n)
     ∀ s ys, rep (sortSet Q Y) s ys ↔
       rep (setify Y) ys s ∧ (∃ i, Y.row i = ys) ∧ ys.Pairwise (fun y z => rep Q y z) := by
   obtain ⟨hf, h'⟩ := hc
-  obtain ⟨c1, c2, c3, c4, c5⟩ := h' _ rfl
+  obtain ⟨c1, c2, c3, c4⟩ := h' _ rfl
   have eO := rep_ordered Q Y g hg hR Su hSu Wu hWu T hT D hD O hO V hV M hM yz hyz E hE bad hbad C hC
     (fun q hq' => h q hq' Y rfl) hq
   intro s ys
   rw [show sortSet Q Y = (setify Y)° ≫ ordered Q Y from rfl,
-    rep_comp _ _ (codes_faithful_wf _ _ hf).1 c1 c2 c3 c4 c5, Freyd.Alg.RelSet.comp_apply]
+    rep_comp _ _ (codes_faithful_wf _ _ hf).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
   constructor
   · rintro ⟨m, hm, ho⟩
     obtain ⟨hx, rfl, hp⟩ := (eO m ys).1 ho
@@ -276,22 +276,22 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   have eX : ∀ a s, rep (mS°) a s ↔ (∃ i, (Rel.val St).row i = s) ∧ a ∈ s := fun a s => by
     rw [rep_conv]; exact eM s a
   obtain ⟨hf1, h1'⟩ := hcQ
-  obtain ⟨c1, c2, c3, c4, c5⟩ := h1' _ rfl
+  obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
   obtain ⟨hf2, h2'⟩ := hcH
-  obtain ⟨d1, d2, d3, d4, d5⟩ := h2' _ rfl
+  obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
   obtain ⟨hf3, h3'⟩ := hcG
-  obtain ⟨g1, g2, g3, g4, g5⟩ := h3' _ rfl
+  obtain ⟨g1, g2, g3, g4⟩ := h3' _ rfl
   have eQS : ∀ a t, rep QS a t ↔ ∃ y, rep Q y a ∧ (∃ j, (Rel.val St).row j = t) ∧ y ∈ t := fun a t => by
-    rw [hQS, rep_comp _ _ (codes_faithful_wf _ _ hf1).1 c1 c2 c3 c4 c5, Freyd.Alg.RelSet.comp_apply]
+    rw [hQS, rep_comp _ _ (codes_faithful_wf _ _ hf1).1 c1 c2 c3 c4, Freyd.Alg.RelSet.comp_apply]
     exact exists_congr fun y => and_congr (by rw [rep_conv]; exact Iff.rfl) (eX y t)
   obtain ⟨l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, lk⟩ := hdL
-  obtain ⟨l11, l12, l13, l14, ly⟩ := lk _ rfl
+  obtain ⟨l11, l12, l13, ly⟩ := lk _ rfl
   obtain ⟨l15, l16, lc⟩ := ly _ rfl
   obtain ⟨l17, l18, l19, l20, l21, lI⟩ := lc _ rfl _ rfl
   obtain ⟨l22, l23, lP⟩ := lI _ rfl
   obtain ⟨l24, lN, lV, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
   obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, rk⟩ := hdR
-  obtain ⟨r11, r12, r13, r14, ry⟩ := rk _ rfl
+  obtain ⟨r11, r12, r13, ry⟩ := rk _ rfl
   obtain ⟨r15, r16, rc⟩ := ry _ rfl
   obtain ⟨r17, r18, r19, r20, r21, rI⟩ := rc _ rfl _ rfl
   obtain ⟨r22, r23, rP⟩ := rI _ rfl
@@ -304,9 +304,9 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     intro s t hs ht
     rw [hTt, rep_inter Rd Ld hic hik hiv]
     show rep Rd s t ∧ rep Ld s t ↔ _
-    rw [hRd, rep_rightDiv mS mS (Rel.val St) (Rel.val St) r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13 r14
+    rw [hRd, rep_rightDiv mS mS (Rel.val St) (Rel.val St) r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13
         _ rfl _ rfl r15 _ rfl r16 _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 rN rV r25 r26 r27 r28 r29 r30 s t,
-      hLd, rep_leftDiv (mS°) QS (Rel.val St) (Rel.val St) l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13 l14
+      hLd, rep_leftDiv (mS°) QS (Rel.val St) (Rel.val St) l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13
         _ rfl _ rfl l15 _ rfl l16 _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 lN lV l25 l26 l27 l28 l29 l30 s t]
     simp only [eM, eX, eQS]
     constructor
@@ -319,9 +319,9 @@ theorem rep_thinL_sets {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
       obtain ⟨y, hy, hq⟩ := h2 a ha
       exact ⟨y, hq, ht, hy⟩
   have eH : ∀ xs t, rep H xs t ↔ ∃ s, rep St xs s ∧ rep Tt s t := fun xs t => by
-    rw [hH, rep_comp _ _ (codes_faithful_wf _ _ hf2).1 d1 d2 d3 d4 d5, Freyd.Alg.RelSet.comp_apply]
+    rw [hH, rep_comp _ _ (codes_faithful_wf _ _ hf2).1 d1 d2 d3 d4, Freyd.Alg.RelSet.comp_apply]
   have eG : ∀ xs ys, rep G xs ys ↔ ∃ t, rep H xs t ∧ rep St ys t := fun xs ys => by
-    rw [hG, rep_comp _ _ (codes_faithful_wf _ _ hf3).1 g1 g2 g3 g4 g5, Freyd.Alg.RelSet.comp_apply]
+    rw [hG, rep_comp _ _ (codes_faithful_wf _ _ hf3).1 g1 g2 g3 g4, Freyd.Alg.RelSet.comp_apply]
     exact exists_congr fun t => and_congr Iff.rfl (by rw [rep_conv]; exact Iff.rfl)
   obtain ⟨hjc, hjI⟩ := hiG _ rfl
   obtain ⟨hjk, hjv⟩ := hjI
@@ -377,8 +377,8 @@ local notation "subOK" =>
     (∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
-      msum(kc, el, pend) < USize.size ∧
+      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
@@ -417,7 +417,7 @@ local notation "subOK" =>
         Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
         Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat)) ∧
     F = foldRows T pend₀ step ∧ jc = Obj.codes .long ck2(T°, F) ∧ codesOK(jc, ck2(T°, F)) ∧
-    (Rel.n F).toNat < 2 ^ 63 ∧ msum(jc, T°, F) < 2 ^ 63 ∧ msum(jc, T°, F) < USize.size ∧
+    (Rel.n F).toNat < 2 ^ 63 ∧ (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size ∧
     Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst) ∧
     Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
 
@@ -439,13 +439,13 @@ theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B)
     (G : Rel (.arr B) (.arr B)) (hG : G = H ≫ St°) (hth : thinOK) :
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧
       ∃ s t, rep St xs s ∧ rep St ys t ∧ (∀ c ∈ t, c ∈ s) ∧ ∀ a ∈ s, ∃ y ∈ t, rep Q y a := by
-  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjU, hjA,
+  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   obtain ⟨hSv, hSk, hcQ, hcH, hcG, hdR, hdL, hiT, hiG⟩ := hth
   intro xs ys
   rw [rep_thinL_sets Q X U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt hTt H hH G hG hSv hSk hcQ hcH hcG hdR hdL
     hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
-    hjc hjO hjn hjM hjU hjA hjC, and_assoc]
+    hjc hjO hjn hjM hjA hjC, and_assoc]
 
 section
 open Pow UnionN
@@ -512,11 +512,11 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
   have eL := rep_thinL_sublist Q X T pend₀ step elK f F jc hsub U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt
     hTt H hH G hG hth
-  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjU, hjA,
+  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjA,
     hjC⟩ := hsub
   have eU : ∀ xs ys, rep U xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
     rw [hU]; exact rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
-      hjc hjO hjn hjM hjU hjA hjC
+      hjc hjO hjn hjM hjA hjC
   have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
     rw [hWy, rep_ran_corefl U (one_ok _ hWf.1) hWf.2]; exact Iff.rfl
   subst hMs

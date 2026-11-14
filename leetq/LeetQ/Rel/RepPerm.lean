@@ -114,8 +114,8 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
       (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2) →
     codesOK(kc,
       (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2)) ∧
-    (Rel.n (tails X)).toNat < 2 ^ 63 ∧ msum(kc, inits X, tails X) < 2 ^ 63 ∧
-    msum(kc, inits X, tails X) < USize.size ∧
+    (Rel.n (tails X)).toNat < 2 ^ 63 ∧
+    (Rel.n (inits X)).toNat * (Rel.n (tails X)).toNat < min (2 ^ 63) USize.size ∧
     Vals.PickFits (.arr B) (Rel.key (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
     Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
     Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd) ∧
@@ -142,7 +142,7 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
         Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2) →
     codesOK(jc, (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
         Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2)) ∧
-    (Rel.n (mem Z.val)).toNat < 2 ^ 63 ∧ msum(jc, Z, mem Z.val) < 2 ^ 63 ∧ msum(jc, Z, mem Z.val) < USize.size ∧
+    (Rel.n (mem Z.val)).toNat < 2 ^ 63 ∧ (Rel.n Z).toNat * (Rel.n (mem Z.val)).toNat < min (2 ^ 63) USize.size ∧
     Vals.PickFits (.arr B) (Rel.key Z) ((mpairs(jc, Z, mem Z.val)).map Prod.fst) ∧
     Vals.PickFits (.prod (.arr B) (.arr B)) (Rel.val (mem Z.val)) ((mpairs(jc, Z, mem Z.val)).map Prod.snd) ∧
     Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val (List.range Z.n.toNat) ∧
@@ -173,13 +173,13 @@ theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B,
   obtain ⟨hp, h1⟩ := h
   obtain ⟨hS, hU, h2⟩ := h1 _ rfl
   obtain ⟨hK, hVi, hVt, h3⟩ := h2 _ rfl _ rfl _ rfl
-  obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, h4⟩ := h3 _ rfl
+  obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, h4⟩ := h3 _ rfl
   obtain ⟨hpa, hpb, h5⟩ := h4 _ rfl
   obtain ⟨hS', hU', h6⟩ := h5 _ rfl
   obtain ⟨hKf, hAf, hBf, h7⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl
-  obtain ⟨hjO, hjn, hjM, hjU, hjA, hjC, hv, hk⟩ := h7 _ rfl _ rfl
-  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hpa hpb
-    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf hAf hBf _ rfl _ rfl hjO hjn hjM hjU hjA hjC hv hk
+  obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h7 _ rfl _ rfl
+  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl hpa hpb
+    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf hAf hBf _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
@@ -218,15 +218,15 @@ theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) 
       zss = (List.range (bs.length + 1)).map fun j => (b :: bs).take (j + 1) := by
   have eC := rep_cons_ok P hc
   obtain ⟨h1f, h1'⟩ := h1
-  obtain ⟨c1, c2, c3, c4, c5⟩ := h1' _ rfl
-  have e1 := rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4 c5
+  obtain ⟨c1, c2, c3, c4⟩ := h1' _ rfl
+  have e1 := rep_comp _ _ (codes_faithful_wf _ _ h1f).1 c1 c2 c3 c4
   obtain ⟨i63, hi'⟩ := hi
   obtain ⟨iS, iU, hx⟩ := hi' _ rfl
   obtain ⟨iK, iV⟩ := hx _ rfl _ rfl _ rfl
   have eN := rep_inits (Rel.val C) i63 _ rfl iS iU _ rfl _ rfl _ rfl iK iV
   obtain ⟨h2f, h2'⟩ := h2
-  obtain ⟨d1, d2, d3, d4, d5⟩ := h2' _ rfl
-  have e2 := rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4 d5
+  obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
+  have e2 := rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4
   obtain ⟨t63, ht'⟩ := ht
   obtain ⟨tK, tH, tT⟩ := ht' _ rfl _ rfl _ rfl
   have eT := rep_tail (Rel.val I) t63 _ rfl _ rfl _ rfl tK tH tT
@@ -366,21 +366,21 @@ theorem perm_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B)) (
   obtain ⟨hCn, h6⟩ := h5 _ rfl
   obtain ⟨⟨hvf, hv'⟩, h7⟩ := h6 _ rfl
   obtain ⟨hCt, hrf, hr'⟩ := h7 _ rfl
-  obtain ⟨u1, u2, u3, u4, u5⟩ := hu' _ rfl
-  obtain ⟨p1, p2, p3, p4, p5, p6⟩ := hq' _ rfl
-  obtain ⟨w1, w2, w3, w4, w5, w6⟩ := hw' _ rfl
-  obtain ⟨v1, v2, v3, v4, v5, v6⟩ := hv' _ rfl
-  obtain ⟨r1, r2, r3, r4, r5⟩ := hr' _ rfl
+  obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
+  obtain ⟨p1, p2, p3, p4, p5⟩ := hq' _ rfl
+  obtain ⟨w1, w2, w3, w4, w5⟩ := hw' _ rfl
+  obtain ⟨v1, v2, v3, v4, v5⟩ := hv' _ rfl
+  obtain ⟨r1, r2, r3, r4⟩ := hr' _ rfl
   have eDp := rep_ran_corefl pend (one_ok _ hDf) (hDp)
   have eUn := rep_uncat_ok (Rel.val (ran pend)) hUn
-  have eU := rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4 u5
-  have eq := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 p1 p2 p3 p4 p5 p6
+  have eU := rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4
+  have eq := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 p1 p2 p3 p4 p5
   have eD := rep_ran_corefl _ (one_ok _ hdf) (hdp)
-  have eW := rep_pair _ _ (codes_faithful_wf _ _ hwf).1 w1 w2 w3 w4 w5 w6
+  have eW := rep_pair _ _ (codes_faithful_wf _ _ hwf).1 w1 w2 w3 w4 w5
   have eCn := rep_cons_ok _ hCn
-  have eV := rep_pair _ _ (codes_faithful_wf _ _ hvf).1 v1 v2 v3 v4 v5 v6
+  have eV := rep_pair _ _ (codes_faithful_wf _ _ hvf).1 v1 v2 v3 v4 v5
   have eCt := rep_cat_ok _ hCt
-  have eR := rep_comp _ _ (codes_faithful_wf _ _ hrf).1 r1 r2 r3 r4 r5
+  have eR := rep_comp _ _ (codes_faithful_wf _ _ hrf).1 r1 r2 r3 r4
   refine perm_step_set el pend (pend ≫ uncat (Rel.val (ran pend))) (pair el (pend ≫ uncat (Rel.val (ran pend))))
     (ran (pair el (pend ≫ uncat (Rel.val (ran pend))))) _ _ _ _ _ (fun r ys zs => ?_)
     (fun r e p => Iff.of_eq (congrFun (congrFun eq r) (e, p))) (fun t t' => Iff.of_eq (congrFun (congrFun eD t) t'))
@@ -467,7 +467,7 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → permOK)
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
     ∀ (xs : List B.El) ys, rep (Alg.perm X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
@@ -477,7 +477,7 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
       q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D))))))
     (fun _ eu v => ∃ ys zs, eu.2 = ys ++ zs ∧ v = ys ++ eu.1 :: zs) elK hE f hf hR
-    (fun i hi => perm_step_rep _ _ (hC i hi _ _ rfl rfl)) F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
+    (fun i hi => perm_step_rep _ _ (hC i hi _ _ rfl rfl)) F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (perm_chain xs ys))
@@ -515,8 +515,8 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
   obtain ⟨⟨hDf, hDp⟩, ⟨t63, ht⟩, ⟨hcf, hc⟩, hU⟩ := h _ rfl
   obtain ⟨tK, tH, tT⟩ := ht _ rfl _ rfl _ rfl
   have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl tK tH tT
-  obtain ⟨c1, c2, c3, c4, c5⟩ := hc _ rfl
-  have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
+  obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
+  have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
   have eD := rep_ran_corefl F (one_ok _ hDf) (hDp)
   have e1 : ∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys) := by
     intro xs ys
@@ -684,15 +684,15 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   obtain ⟨⟨hqf, hq'⟩, h3⟩ := h2 _ rfl
   obtain ⟨⟨hmf, hm'⟩, h4⟩ := h3 _ rfl
   have hCt := h4 _ rfl
-  obtain ⟨c1, c2, c3, c4, c5⟩ := hc' _ rfl
-  obtain ⟨q1, q2, q3, q4, q5, q6⟩ := hq' _ rfl
-  obtain ⟨m1, m2, m3, m4, m5⟩ := hm' _ rfl
+  obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
+  obtain ⟨q1, q2, q3, q4, q5⟩ := hq' _ rfl
+  obtain ⟨m1, m2, m3, m4⟩ := hm' _ rfl
   obtain ⟨hX, hx, hF, hw, hn, hs, hW, h63, hpk, hpv, hlo⟩ := ht
   have eD := rep_ran_corefl P (one_ok _ hPf) (hPp)
   have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv hlo
-  have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4 c5
-  have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5 q6
-  have eM := rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4 m5
+  have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
+  have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5
+  have eM := rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4
   have eC := rep_cat_ok _ hCt
   -- `D = ran P`: the pairs `P` gives, each to itself
   have hD : ∀ p p', rep (ran P) p p' ↔ p = p' ∧ ∃ k, rep P k p := fun p p' => by rw [eD]; exact Iff.rfl

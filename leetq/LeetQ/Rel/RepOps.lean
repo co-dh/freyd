@@ -564,12 +564,7 @@ local notation "kpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.range
     the left rows, `S.val` at the right ones. Hypotheses: `rep_comp`'s, at the keys' joint codes (`hc`) and the
     three picked columns. -/
 theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
+    (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
     (hA : Vals.PickFits A R.key ((kpairs).map Prod.fst)) (hB : Vals.PickFits B R.val ((kpairs).map Prod.fst))
     (hC : Vals.PickFits C S.val ((kpairs).map Prod.snd)) :
     rep (LeetQ.Rel.Alg.pair R S) = rpair (rep R) (rep S) := by
@@ -579,7 +574,6 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
   replace hln : (kc[0]'Nat.zero_lt_two).n = R.n := hln
   replace hrn' : (kc[1]'Nat.one_lt_two).n = S.n := hrn'
   obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-    (by rw [hln, hrn']; exact hMU)
   have hP := mem_joinPairs (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
   refine hom_ext fun a p => ?_

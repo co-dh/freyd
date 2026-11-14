@@ -1004,13 +1004,12 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     (jc : Vector Code 2)
     (hjc : jc = Obj.codes E (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2))
     (hjO : codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part E) 2)))
-    (hjn : (Rel.n R).toNat < 2 ^ 63) (hjM : msum(jc, el, R) < 2 ^ 63) (hjU : msum(jc, el, R) < USize.size)
+    (hjn : (Rel.n R).toNat < 2 ^ 63) (hjM : (Rel.n el).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits .long (Rel.key el) ((mpairs(jc, el, R)).map Prod.fst))
     (hjC : Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd))
     (Q : Rel .long B) (hQ : Q = el ≫ R)
     (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(Q, pend)) (hkO : codesOK(kc, kp2(Q, pend)))
-    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : msum(kc, Q, pend) < 2 ^ 63)
-    (hkU : msum(kc, Q, pend) < USize.size)
+    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst))
     (hkB : Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst))
     (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd))
@@ -1037,9 +1036,9 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     ∀ r v, rep (cons (pair (el ≫ R) pend)) r v ↔
       ∃ e u, rep el r e ∧ rep pend r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
   subst hjc hkc
-  have h2 := rep_comp el R hjO hjn hjM hjU hjA hjC
+  have h2 := rep_comp el R hjO hjn hjM hjA hjC
   subst hQ
-  have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkU hkA hkB hkC
+  have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkA hkB hkC
   subst hP
   intro r v
   rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
@@ -1092,13 +1091,13 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ jc : Vector Code 2, jc = Obj.codes A (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2) →
       codesOK(jc, (#v[⟨Rel.n el, Rel.val el⟩, ⟨Rel.n R, Rel.key R⟩] : Vector (Part A) 2)) ∧
-      (Rel.n R).toNat < 2 ^ 63 ∧ msum(jc, el, R) < 2 ^ 63 ∧ msum(jc, el, R) < USize.size ∧
+      (Rel.n R).toNat < 2 ^ 63 ∧ (Rel.n el).toNat * (Rel.n R).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key el) ((mpairs(jc, el, R)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val R) ((mpairs(jc, el, R)).map Prod.snd) ∧
       ∀ Q : Rel .long B, Q = el ≫ R →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(Q, pend) →
-      codesOK(kc, kp2(Q, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, Q, pend) < 2 ^ 63 ∧
-      msum(kc, Q, pend) < USize.size ∧
+      codesOK(kc, kp2(Q, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n Q).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val Q) ((mpairs(kc, Q, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, Q, pend)).map Prod.snd) ∧
@@ -1127,7 +1126,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr A) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
     ∀ (xs : List A.El) ys, rep (Alg.map R X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.length = xs.length ∧
@@ -1139,16 +1138,16 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       rep (cons (pair (elK i ≫ R) (f^[i] (pend₀, Alg.zero, 0)).1)) r v ↔
       ∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ ∃ b, rep R e b ∧ v = b :: u := by
     intro i hi r v
-    obtain ⟨hjO, hjn, hjM, hjU, hjA, hjC, hQ⟩ := hC i hi _ _ rfl rfl _ rfl
-    obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
+    obtain ⟨hjO, hjn, hjM, hjA, hjC, hQ⟩ := hC i hi _ _ rfl rfl _ rfl
+    obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
     obtain ⟨hp, hs⟩ := hP _ rfl
     obtain ⟨hS, hU, hx⟩ := hs _ rfl
     obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    exact map_step_rep _ R _ _ rfl hjO hjn hjM hjU hjA hjC _ rfl _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl
+    exact map_step_rep _ R _ _ rfl hjO hjn hjM hjA hjC _ rfl _ rfl hkO hkn hkM hkA hkB hkC _ rfl hp _ rfl
       hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
   refine (rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
     (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
-    F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
+    F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))

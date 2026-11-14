@@ -297,8 +297,7 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
       (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2))
     (hkO : codesOK(kc,
       (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2)))
-    (hkn : (Rel.n (tails X)).toNat < 2 ^ 63) (hkM : msum(kc, inits X, tails X) < 2 ^ 63)
-    (hkU : msum(kc, inits X, tails X) < USize.size)
+    (hkn : (Rel.n (tails X)).toNat < 2 ^ 63) (hkM : (Rel.n (inits X)).toNat * (Rel.n (tails X)).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits (.arr B) (Rel.key (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
     (hkB : Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
     (hkC : Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd))
@@ -326,8 +325,7 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
         Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2))
     (hjO : codesOK(jc, (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
         Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2)))
-    (hjn : (Rel.n (mem Z.val)).toNat < 2 ^ 63) (hjM : msum(jc, Z, mem Z.val) < 2 ^ 63)
-    (hjU : msum(jc, Z, mem Z.val) < USize.size)
+    (hjn : (Rel.n (mem Z.val)).toNat < 2 ^ 63) (hjM : (Rel.n Z).toNat * (Rel.n (mem Z.val)).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key Z) ((mpairs(jc, Z, mem Z.val)).map Prod.fst))
     (hjC : Vals.PickFits (.prod (.arr B) (.arr B)) (Rel.val (mem Z.val)) ((mpairs(jc, Z, mem Z.val)).map Prod.snd))
     (hv : Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val (List.range Z.n.toNat))
@@ -338,10 +336,10 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
   have hI := rep_inits X hp c hc hS hU xi hxi m hm xr hxr hK hVi
   have hT := rep_tails X hp c hc hS hU xi hxi m hm xr hxr hK hVt
   subst hkc
-  have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkU hkA hkB hkC
+  have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkA hkB hkC
   have h2 := rep_zip P hpa hpb c' hc' hS' hU' xi' hxi' m' hm' xr' hxr' ja hja jb hjb hKf hAf hBf
   subst hjc
-  have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjU hjA hjC
+  have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjA hjC
   have h4 := rep_mem Z.val hv hk
   subst hZ hP
   show rep (zip (pair (inits X) (tails X)) ≫ mem (zip (pair (inits X) (tails X))).val) xs (ys, zs) ↔ _

@@ -50,10 +50,7 @@ theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals 
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
     (hrn : r.n.toNat < 2 ^ 63)
-    (hM : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < USize.size)
+    (hM : l.n.toNat * r.n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits B x ((jp(l, r)).map Prod.fst)) (hC : Vals.PickFits C z ((jp(l, r)).map Prod.snd))
     (m : USize) (hmJ : len (join l r).2 = m.toNat) (hle : m.toNat ≤ len (join l r).1) :
     m.toNat = (jp(l, r)).length ∧
@@ -62,7 +59,7 @@ theorem div_y_rows {n₁ n₂ : USize} (l r : Code) (x : Vals B n₁) (z : Vals 
         (Vals.pickN B x (join l r).1 m hle).row ⟨q, hq⟩ = x.row ⟨_, hi⟩ ∧
         (Vals.pick C z (join l r).2 m hmJ).row ⟨q, hq⟩ = z.row ⟨_, hj⟩ := by
   subst hln hrn'
-  obtain ⟨-, hZ⟩ := join_rows l r hlw hls hrw hrs hrc hrn hM hMU
+  obtain ⟨-, hZ⟩ := join_rows l r hlw hls hrw hrs hrc hrn hM
   have e := hZ m hmJ
   have hfB : Vals.PickFits B x
       ((List.range m.toNat).map fun q => (Column.bitsAt (fit m.toNat (join l r).1) (q * 8) 8).toNat) := by
@@ -95,21 +92,18 @@ theorem div_y_holds (r : Rel A B) (s : Rel A C) (l k : Code) (hln : l.n = r.n) (
     (hrs : k.b.size = (k.n.toNat * k.w + 7) / 8)
     (hrc : k.w < 8 → k.card < USize.size ∧ ∀ i < k.n.toNat, Column.idAt k.b k.w i < k.card)
     (hrn : k.n.toNat < 2 ^ 63)
-    (hM : ((List.range l.n.toNat).map fun i => ((List.range k.n.toNat).filter fun j =>
-      Column.idAt k.b k.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range l.n.toNat).map fun i => ((List.range k.n.toNat).filter fun j =>
-      Column.idAt k.b k.w j == Column.idAt l.b l.w i).length).sum < USize.size)
+    (hM : l.n.toNat * k.n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits B r.val ((jp(l, k)).map Prod.fst)) (hC : Vals.PickFits C s.val ((jp(l, k)).map Prod.snd)) :
     (yJ(B, C, r, s, l, k)).n.toNat = (jp(l, k)).length ∧
       ∀ (q : Nat) (hq : q < (yJ(B, C, r, s, l, k)).n.toNat), ∃ (hJ : q < (jp(l, k)).length)
         (hi : ((jp(l, k))[q]'hJ).1 < r.n.toNat) (hj : ((jp(l, k))[q]'hJ).2 < s.n.toNat),
         (yJ(B, C, r, s, l, k)).key.row ⟨q, hq⟩ = r.val.row ⟨_, hi⟩ ∧ (yJ(B, C, r, s, l, k)).val.row ⟨q, hq⟩ = s.val.row ⟨_, hj⟩ := by
-  obtain ⟨hlt, -⟩ := join_rows l k hlw hls hrw hrs hrc hrn hM hMU
+  obtain ⟨hlt, -⟩ := join_rows l k hlw hls hrw hrs hrc hrn hM
   unfold longCount need
   rw [dif_pos hlt]
   dsimp only
   have hm : len (join l k).2 = ((len (join l k).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
-  exact div_y_rows l k r.val s.val hln hkn hlw hls hrw hrs hrc hrn hM hMU hB hC _ hm (hm ▸ join_len l k)
+  exact div_y_rows l k r.val s.val hln hkn hlw hls hrw hrs hrc hrn hM hB hC _ hm (hm ▸ join_len l k)
 
 open Alg.DivN
 
@@ -315,12 +309,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
     (hkc : kc = A.codes #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
     (hfk : A.CodesFit #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
     (hrn : (Rel.nub S).n.toNat < 2 ^ 63)
-    (hM : ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
-      fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
-      fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
+    (hM : (Rel.nub R).n.toNat * (Rel.nub S).n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits B (Rel.nub R).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst))
     (hC : Vals.PickFits C (Rel.nub S).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd))
     (y : Rel B C) (hy : y = yJ(B, C, Rel.nub R,Rel.nub S, kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two))
@@ -371,7 +360,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
   obtain ⟨z0w, z0n, z0s, z0c⟩ := zW (k := 0) (by decide)
   -- the counted part
   have hy' := div_y_holds (Rel.nub R) (Rel.nub S) (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two) hln hkn hlw hls hrw hrs
-    hrc (by rw [hkn]; exact hrn) hM hMU hB hC
+    hrc (by rw [hkn]; exact hrn) (by rw [hln, hkn]; exact hM) hB hC
   rw [← hy] at hy'
   have hI' := leftDiv_keep (ycs[0]'(Nat.zero_lt_succ 2)) (zc[0]'Nat.zero_lt_one) (ycs[1]'(Nat.succ_lt_succ (Nat.zero_lt_succ 1))) (z0n.trans y0n.symm)
     ⟨y0w, y0s, fun h i hi => Nat.lt_of_lt_of_le ((y0c h).2 i hi) (Nat.le_max_left _ _)⟩
@@ -420,12 +409,7 @@ theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma
     (hkc : kc = A.codes #v[⟨(Rel.nub (S°)).n, (Rel.nub (S°)).key⟩, ⟨(Rel.nub (R°)).n, (Rel.nub (R°)).key⟩])
     (hfk : A.CodesFit #v[⟨(Rel.nub (S°)).n, (Rel.nub (S°)).key⟩, ⟨(Rel.nub (R°)).n, (Rel.nub (R°)).key⟩])
     (hrn : (Rel.nub (R°)).n.toNat < 2 ^ 63)
-    (hM : ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
-      fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range (kc[0]'Nat.zero_lt_two).n.toNat).map fun i => ((List.range (kc[1]'Nat.one_lt_two).n.toNat).filter
-      fun j => Column.idAt (kc[1]'Nat.one_lt_two).b (kc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (kc[0]'Nat.zero_lt_two).b (kc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
+    (hM : (Rel.nub (S°)).n.toNat * (Rel.nub (R°)).n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits B (Rel.nub (S°)).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst))
     (hC : Vals.PickFits C (Rel.nub (R°)).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd))
     (yd : Rel B C) (hy : yd = yJ(B, C, Rel.nub (S°),Rel.nub (R°), kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two))
@@ -459,7 +443,7 @@ theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma
       (∀ c, rep S y c → rep R x c) ∧ ((∃ c, rep S y c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
   rw [show rightDiv R S Ua Ub = (leftDiv (S°) (R°) Ub Ua)° from rfl, rep_conv]
   show rep (leftDiv (S°) (R°) Ub Ua) y x ↔ _
-  rw [rep_leftDiv (S°) (R°) Ub Ua hRK hRV hRk hRv hSK hSV hSk hSv kc hkc hfk hrn hM hMU hB hC yd hy ycs hycs hfy zc
+  rw [rep_leftDiv (S°) (R°) Ub Ua hRK hRV hRk hRv hSK hSV hSk hSv kc hkc hfk hrn hM hB hC yd hy ycs hycs hfy zc
     hzc hfz I hI hk hv hP hN h63 hA hBc P Q hPe hQe hU hNk hNv hFk hFv hUK hUV hUk hUv y x, rep_conv, rep_conv]
   exact and_congr Iff.rfl (or_congr Iff.rfl and_comm)
 

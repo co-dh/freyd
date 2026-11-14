@@ -260,7 +260,7 @@ end Round
 
 /-! ## The primitives' hypotheses at one round -/
 
-/-! Each primitive's hypotheses as one bundle, over `FoldN`'s `mpairs`, `msum` and `OpsN`'s `nubI`: `open FoldN OpsN Prim` in every
+/-! Each primitive's hypotheses as one bundle, over `FoldN`'s `mpairs` and `OpsN`'s `nubI`: `open FoldN OpsN Prim` in every
     file that reads back a composite of these primitives. -/
 namespace Prim
 
@@ -269,7 +269,7 @@ set_option hygiene false in
 scoped notation "cmpOK(" B ", " R ", " S ")" =>
   (Obj.CodesFit B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part B) 2) ∧
     ∀ jc : Vector Code 2, jc = Obj.codes B (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part B) 2) →
-      (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, R, S) < 2 ^ 63 ∧ msum(jc, R, S) < USize.size ∧
+      (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n R).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits _ (Rel.key R) ((mpairs(jc, R, S)).map Prod.fst) ∧
       Vals.PickFits _ (Rel.val S) ((mpairs(jc, R, S)).map Prod.snd))
 -- `rep_pair`'s hypotheses at `⟨R, S⟩`, `A` the keys' object, the codes `kc` bound by their equation
@@ -277,7 +277,7 @@ set_option hygiene false in
 scoped notation "pairOK(" A ", " R ", " S ")" =>
   (Obj.CodesFit A (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2) ∧
     ∀ kc : Vector Code 2, kc = Obj.codes A (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part A) 2) →
-      (Rel.n S).toNat < 2 ^ 63 ∧ msum(kc, R, S) < 2 ^ 63 ∧ msum(kc, R, S) < USize.size ∧
+      (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n R).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits A (Rel.key R) ((mpairs(kc, R, S)).map Prod.fst) ∧
       Vals.PickFits _ (Rel.val R) ((mpairs(kc, R, S)).map Prod.fst) ∧
       Vals.PickFits _ (Rel.val S) ((mpairs(kc, R, S)).map Prod.snd))
@@ -369,25 +369,25 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
     ⟨hNK, hNV, hNk', hNv'⟩, ⟨hdf, hdp⟩, ⟨hAf, hA'⟩, ⟨hOf, hO'⟩, hUN, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := h
   subst hW hdu
   obtain ⟨hKf, hHf, hTf'⟩ := hUn _ rfl _ rfl _ rfl
-  obtain ⟨u1, u2, u3, u4, u5⟩ := hu' _ rfl
-  obtain ⟨p1, p2, p3, p4, p5, p6⟩ := hp' _ rfl
-  obtain ⟨q1, q2, q3, q4, q5⟩ := hQ' _ rfl
-  obtain ⟨r1, r2, r3, r4, r5, r6⟩ := hR' _ rfl
-  obtain ⟨t1, t2, t3, t4, t5⟩ := hT' _ rfl
-  obtain ⟨o1, o2, o3, o4, o5⟩ := hO' _ rfl
+  obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
+  obtain ⟨p1, p2, p3, p4, p5⟩ := hp' _ rfl
+  obtain ⟨q1, q2, q3, q4⟩ := hQ' _ rfl
+  obtain ⟨r1, r2, r3, r4, r5⟩ := hR' _ rfl
+  obtain ⟨t1, t2, t3, t4⟩ := hT' _ rfl
+  obtain ⟨o1, o2, o3, o4⟩ := hO' _ rfl
   obtain ⟨a1, a2⟩ := hA'
   refine loop_round_set out St D u p G Q R T A O (by rw [hD]; exact rep_ran_corefl St (one_ok _ hDf) (hDp))
     (rep_ran_corefl (outr D) (one_ok _ hWf) (hWp))
     (rep_uncons (Rel.val (ran (outr D))) h63 _ rfl _ rfl _ rfl hKf hHf hTf')
-    (by rw [hu]; exact rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4 u5)
-    (by rw [hp]; exact rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5 p6)
-    (by rw [hQ]; exact rep_comp _ _ (codes_faithful_wf _ _ hQf).1 q1 q2 q3 q4 q5)
-    (by rw [hR]; exact rep_pair _ _ (codes_faithful_wf _ _ hRf).1 r1 r2 r3 r4 r5 r6)
-    (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ hTf).1 t1 t2 t3 t4 t5)
+    (by rw [hu]; exact rep_comp _ _ (codes_faithful_wf _ _ huf).1 u1 u2 u3 u4)
+    (by rw [hp]; exact rep_pair _ _ (codes_faithful_wf _ _ hpf).1 p1 p2 p3 p4 p5)
+    (by rw [hQ]; exact rep_comp _ _ (codes_faithful_wf _ _ hQf).1 q1 q2 q3 q4)
+    (by rw [hR]; exact rep_pair _ _ (codes_faithful_wf _ _ hRf).1 r1 r2 r3 r4 r5)
+    (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ hTf).1 t1 t2 t3 t4)
     (rep_nub T (one_ok _ hNK) (one_ok _ hNV) hNk' hNv')
     (rep_dom_corefl u (one_ok _ hdf) (hdp))
     (by rw [hA]; exact rep_antiJoin D (dom u) (codes_faithful_wf _ _ hAf).1 a1 a2)
-    (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4 o5)
+    (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4)
     (rep_union_full out O hUN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
 
 -- a round's values from its state `St`, each bound by its equation, `G` the step relation `Fp`, then `J`

@@ -187,11 +187,6 @@ scoped notation "jpairs(" R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap 
   ((List.range (Rel.n S).toNat).filter fun j =>
     Column.idAt ((jc(R, S))[1]'Nat.one_lt_two).b ((jc(R, S))[1]'Nat.one_lt_two).w j ==
       Column.idAt ((jc(R, S))[0]'Nat.zero_lt_two).b ((jc(R, S))[0]'Nat.zero_lt_two).w i).map (i, ·))
-set_option hygiene false in
-scoped notation "jcount(" R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
-  ((List.range (Rel.n S).toNat).filter fun j =>
-    Column.idAt ((jc(R, S))[1]'Nat.one_lt_two).b ((jc(R, S))[1]'Nat.one_lt_two).w j ==
-      Column.idAt ((jc(R, S))[0]'Nat.zero_lt_two).b ((jc(R, S))[0]'Nat.zero_lt_two).w i).length).sum
 end Pow
 open Pow
 

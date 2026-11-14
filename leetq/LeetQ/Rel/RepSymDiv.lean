@@ -416,10 +416,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
       Column.idAt v0.b v0.w a = Column.idAt v1.b v1.w b ↔ R.val.row ⟨a, ha⟩ = S.val.row ⟨b, hb⟩)
     (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
     (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
-    (hM : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
-      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
-      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < USize.size)
+    (hM : lc.n.toNat * rc.n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
     (hit : Rel A B)
     (hhit : hit = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
@@ -485,7 +482,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
   have hrc' : rc.w < 8 → rc.card < USize.size ∧ ∀ i < rc.n.toNat, Column.idAt rc.b rc.w i < rc.card :=
     fun h => absurd h (by rw [rw']; decide)
   have hrn63 : rc.n.toNat < 2 ^ 63 := by rw [rn]; omega
-  obtain ⟨hlt, -⟩ := join_rows lc rc hlw ls hrw rs hrc' hrn63 hM hMU
+  obtain ⟨hlt, -⟩ := join_rows lc rc hlw ls hrw rs hrc' hrn63 hM
   have hH : hit.Holds x y ↔ ∃ k l, (k, l) ∈ jp(lc, rc) ∧ ∃ (hk : k < rf.1.toNat) (hl : l < sf.1.toNat),
       rf.2.row ⟨k, hk⟩ = x ∧ sf.2.row ⟨l, hl⟩ = y := by
     subst hhit
@@ -493,7 +490,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     rw [dif_pos hlt]
     dsimp only
     have hm : len (join lc rc).2 = ((len (join lc rc).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
-    obtain ⟨hlen, hrow⟩ := div_y_rows lc rc rf.2 sf.2 hln hrn' hlw ls hrw rs hrc' hrn63 hM hMU hB hC _ hm
+    obtain ⟨hlen, hrow⟩ := div_y_rows lc rc rf.2 sf.2 hln hrn' hlw ls hrw rs hrc' hrn63 hM hB hC _ hm
       (Nat.le_trans (Nat.le_of_eq hm.symm) (join_len lc rc))
     unfold Rel.Holds
     dsimp only
@@ -652,10 +649,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     (hrc : rc = Code.ofLongs (sid.extract (8 * len fr) sid.size))
     (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
     (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
-    (hM : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
-      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
-      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < USize.size)
+    (hM : lc.n.toNat * rc.n.toNat < min (2 ^ 63) USize.size)
     (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
     (hPa : Vals.PickFits A Ua (List.range ma.toNat)) (hPb : Vals.PickFits B Ub (List.range mb.toNat))
     (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
@@ -708,7 +702,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
     rkn' skn' (fun ha ha' => aF (k := 0) (l := 0) (by decide) (by decide) ha ha')
     (fun hb hb' => bF (k := 0) (l := 0) (by decide) (by decide) hb hb')
     (fun ha hb => vF (k := 0) (l := 1) (by decide) (by decide) ha hb)
-    rf hrf sf hsf hRf hSf hM hMU hB hC P hPe x y
+    rf hrf sf hsf hRf hSf hM hB hC P hPe x y
   have hQ := sym_vac_holds R S Ua Ub _ _ _ _ uaw rkw uas rks ubw skw ubs sks uan rkn' ubn skn'
     (fun hj hp => aF (k := 0) (l := 1) (by decide) (by decide) hj hp)
     (fun hj hp => bF (k := 0) (l := 1) (by decide) (by decide) hj hp) hPa hPb hN h63 hA hBv x y

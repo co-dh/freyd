@@ -245,21 +245,31 @@ theorem zip_runs {β : Type} (f : Nat → List β) (m : Nat) {A : List Nat} {B :
       (show ((f t).map (t, ·))[q]? = some (t, (f t)[q]) by simp [hq]))).2
     rw [List.getElem_zip, eA, eB, eR]
 
+/-- A match count is at most the product of the two sides: each of the `a` left rows matches at most `b`
+    right rows. -/
+theorem range_filter_sum_le (a b : Nat) (p : Nat → Nat → Bool) :
+    ((List.range a).map fun i => ((List.range b).filter (p i)).length).sum ≤ a * b := by
+  suffices H : ∀ l : List Nat, (l.map fun i => ((List.range b).filter (p i)).length).sum ≤ l.length * b by
+    have h := H (List.range a); rwa [List.length_range] at h
+  intro l; induction l with
+  | nil => simp
+  | cons i l ih =>
+    have h := List.length_filter_le (p i) (List.range b)
+    rw [List.length_range] at h
+    rw [List.map_cons, List.sum_cons, List.length_cons, Nat.succ_mul]; omega
+
 /-- **`join l r`, read back**: the two index columns, zipped, are every left row `i` with each right row
     `j` holding its code, by `i` then `j`. Hypotheses: both codes at a lane with payloads of exactly their
-    codes, `r`'s codes below its `card` (a `USize`) at `2`/`4` bits; `r`'s rows below `2^63` and the match
-    count below `2^63` and a `USize`, so no long sum wraps and the pairs fit. -/
+    codes, `r`'s codes below its `card` (a `USize`) at `2`/`4` bits; `r`'s rows below `2^63` and the product
+    of the two row counts below `2^63` and a `USize`, which bounds the match count (`range_filter_sum_le`), so
+    no long sum wraps and the pairs fit. -/
 theorem join_spec (l r : Code)
     (hlw : laneOK(l.w))
     (hls : l.b.size = (l.n.toNat * l.w + 7) / 8)
     (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
-    (hrn : r.n.toNat < 2 ^ 63)
-    (hM : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < USize.size) :
+    (hrn : r.n.toNat < 2 ^ 63) (hN : l.n.toNat * r.n.toNat < min (2 ^ 63) USize.size) :
     (ids (join l r).1).zip (ids (join l r).2) =
       (List.range l.n.toNat).flatMap fun i => ((List.range r.n.toNat).filter fun j =>
         Column.idAt r.b r.w j == Column.idAt l.b l.w i).map (i, ·) := by
@@ -268,8 +278,12 @@ theorem join_spec (l r : Code)
     Column.idAt r.b r.w j == Column.idAt l.b l.w i := ⟨_, rfl⟩
   obtain ⟨C, hC⟩ : ∃ C : Nat → List Nat, C = fun c => (List.range r.n.toNat).filter fun j =>
     Verify.groupOf (Column.idAt r.b r.w) r.n.toNat j == c := ⟨_, rfl⟩
-  have hM' : ((List.range l.n.toNat).map fun i => (f i).length).sum < 2 ^ 63 := by rw [hf]; exact hM
-  have hMU' : ((List.range l.n.toNat).map fun i => (f i).length).sum < USize.size := by rw [hf]; exact hMU
+  have hS : ((List.range l.n.toNat).map fun i => (f i).length).sum ≤ l.n.toNat * r.n.toNat := by
+    rw [hf]; exact range_filter_sum_le _ _ _
+  have hM' : ((List.range l.n.toNat).map fun i => (f i).length).sum < 2 ^ 63 :=
+    Nat.lt_of_le_of_lt hS (Nat.lt_of_lt_of_le hN (Nat.min_le_left _ _))
+  have hMU' : ((List.range l.n.toNat).map fun i => (f i).length).sum < USize.size :=
+    Nat.lt_of_le_of_lt hS (Nat.lt_of_lt_of_le hN (Nat.min_le_right _ _))
   have hMr : ∀ i, (f i).length ≤ r.n.toNat := fun i => by
     rw [hf]; dsimp only; exact Nat.le_trans (List.length_filter_le _ _) (by rw [List.length_range]; exact Nat.le_refl _)
   obtain ⟨hK, hFn⟩ := groupIds_len r hrw hrs hrc
@@ -461,22 +475,22 @@ theorem join_rows (l r : Code)
     (hrw : laneOK(r.w))
     (hrs : r.b.size = (r.n.toNat * r.w + 7) / 8)
     (hrc : r.w < 8 → r.card < USize.size ∧ ∀ i < r.n.toNat, Column.idAt r.b r.w i < r.card)
-    (hrn : r.n.toNat < 2 ^ 63)
-    (hM : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
-      Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum < USize.size) :
+    (hrn : r.n.toNat < 2 ^ 63) (hN : l.n.toNat * r.n.toNat < min (2 ^ 63) USize.size) :
     len (join l r).2 < USize.size ∧ ∀ m : USize, len (join l r).2 = m.toNat →
       ((List.range l.n.toNat).flatMap fun i => ((List.range r.n.toNat).filter fun j =>
         Column.idAt r.b r.w j == Column.idAt l.b l.w i).map (i, ·)) =
       (List.range m.toNat).map fun q =>
         ((Column.bitsAt (fit m.toNat (join l r).1) (q * 8) 8).toNat, (Column.bitsAt (join l r).2 (q * 8) 8).toNat) := by
-  have hZ := join_spec l r hlw hls hrw hrs hrc hrn hM hMU
+  have hZ := join_spec l r hlw hls hrw hrs hrc hrn hN
   have hJ := join_len l r
   rw [len_eq_ids, len_eq_ids] at hJ
   have hids : ∀ (b : ByteArray) q (hq : q < (ids b).length), (ids b)[q] = (Column.bitsAt b (q * 8) 8).toNat := by
     intro b q hq; simp [ids]
   have hlt : len (join l r).2 < USize.size := by
+    have hS : ((List.range l.n.toNat).map fun i => ((List.range r.n.toNat).filter fun j =>
+        Column.idAt r.b r.w j == Column.idAt l.b l.w i).length).sum ≤ l.n.toNat * r.n.toNat :=
+      range_filter_sum_le _ _ _
+    have := Nat.min_le_right (2 ^ 63) USize.size
     have := congrArg List.length hZ
     rw [List.length_zip, List.length_flatMap] at this
     rw [len_eq_ids]; simp only [List.length_map] at this; omega

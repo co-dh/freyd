@@ -16,8 +16,7 @@ open FoldN OpsN
     Hypotheses: `rep_pair`'s at `el`, `pend` (`hk…`), `rep_cons`'s at `W`, `rep_union_full`'s at `P`, `Q`. -/
 theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
-    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : msum(kc, el, pend) < 2 ^ 63)
-    (hkU : msum(kc, el, pend) < USize.size)
+    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
     (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
@@ -58,7 +57,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
-  have h1 := rep_pair el pend hkO hkn hkM hkU hkA hkB hkC
+  have h1 := rep_pair el pend hkO hkn hkM hkA hkB hkC
   subst hW
   have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf
@@ -158,8 +157,8 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (hC : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
-      msum(kc, el, pend) < USize.size ∧
+      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
@@ -199,7 +198,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
         Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (List.range (PQ(.long, (.arr B))).n.toNat))
     (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
-    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
     (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd)) :
     ∀ (xs : List B.El) ys, rep (Alg.subseq X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
@@ -212,12 +211,12 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       (∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ (v = e :: u ∨ v = u)) ∨
         (True ∧ (¬ ∃ e, rep (elK i) r e) ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) := by
     intro i hi r v
-    obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
+    obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
     obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hNk, hNv, hFk, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
+    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
       _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hNk hNv hFk hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
@@ -232,7 +231,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       · exact Or.inr hu
   refine (rep_foldBy_keep (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
     (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf hR True hS
-    F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
+    F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))

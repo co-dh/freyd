@@ -465,59 +465,59 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     ⟨sff, sfc⟩, ⟨c1f, c1p⟩, ct1, ⟨c2f, c2p⟩, ct2, ⟨Of, Oc⟩, ⟨uN, uNk, uNv, uFk, uFv, uK, uV, uk, uv⟩⟩ := h
   obtain ⟨xk, xh, xt⟩ := xU _ rfl _ rfl _ rfl
   obtain ⟨yk, yh, yt⟩ := yU _ rfl _ rfl _ rfl
-  obtain ⟨xc1, xc2, xc3, xc4, xc5⟩ := xc _ rfl
-  obtain ⟨yc1, yc2, yc3, yc4, yc5⟩ := yc _ rfl
-  obtain ⟨pu1, pu2, pu3, pu4, pu5, pu6⟩ := pup _ rfl
-  obtain ⟨hh1, hh2, hh3, hh4, hh5, hh6⟩ := hhp _ rfl
-  obtain ⟨q1, q2, q3, q4, q5⟩ := qc _ rfl
-  obtain ⟨a11, a12, a13, a14, a15, a16⟩ := a1p _ rfl
-  obtain ⟨s11, s12, s13, s14, s15, s16⟩ := s1p _ rfl
-  obtain ⟨p11, p12, p13, p14, p15, p16⟩ := p1p _ rfl
-  obtain ⟨l11, l12, l13, l14, l15⟩ := l1c _ rfl
+  obtain ⟨xc1, xc2, xc3, xc4⟩ := xc _ rfl
+  obtain ⟨yc1, yc2, yc3, yc4⟩ := yc _ rfl
+  obtain ⟨pu1, pu2, pu3, pu4, pu5⟩ := pup _ rfl
+  obtain ⟨hh1, hh2, hh3, hh4, hh5⟩ := hhp _ rfl
+  obtain ⟨q1, q2, q3, q4⟩ := qc _ rfl
+  obtain ⟨a11, a12, a13, a14, a15⟩ := a1p _ rfl
+  obtain ⟨s11, s12, s13, s14, s15⟩ := s1p _ rfl
+  obtain ⟨p11, p12, p13, p14, p15⟩ := p1p _ rfl
+  obtain ⟨l11, l12, l13, l14⟩ := l1c _ rfl
   obtain ⟨nb1, nb2⟩ := nbp
-  obtain ⟨a21, a22, a23, a24, a25, a26⟩ := a2p _ rfl
-  obtain ⟨s21, s22, s23, s24, s25, s26⟩ := s2p _ rfl
-  obtain ⟨p21, p22, p23, p24, p25, p26⟩ := p2p _ rfl
-  obtain ⟨l21, l22, l23, l24, l25⟩ := l2c _ rfl
-  obtain ⟨T1, T2, T3, T4, T5⟩ := Tc _ rfl
+  obtain ⟨a21, a22, a23, a24, a25⟩ := a2p _ rfl
+  obtain ⟨s21, s22, s23, s24, s25⟩ := s2p _ rfl
+  obtain ⟨p21, p22, p23, p24, p25⟩ := p2p _ rfl
+  obtain ⟨l21, l22, l23, l24⟩ := l2c _ rfl
+  obtain ⟨T1, T2, T3, T4⟩ := Tc _ rfl
   obtain ⟨fl1, fl2⟩ := flp
-  obtain ⟨sf1, sf2, sf3, sf4, sf5⟩ := sfc _ rfl
-  obtain ⟨c11, c12, c13, c14, c15, c16⟩ := c1p _ rfl
-  obtain ⟨c21, c22, c23, c24, c25, c26⟩ := c2p _ rfl
-  obtain ⟨O1, O2, O3, O4, O5⟩ := Oc _ rfl
+  obtain ⟨sf1, sf2, sf3, sf4⟩ := sfc _ rfl
+  obtain ⟨c11, c12, c13, c14, c15⟩ := c1p _ rfl
+  obtain ⟨c21, c22, c23, c24, c25⟩ := c2p _ rfl
+  obtain ⟨O1, O2, O3, O4⟩ := Oc _ rfl
   refine merge_round_set le out St mD mx my macc mux muy mpu mboth mh mrh G mhq ml mA1 mA2 mS1 mS2 mN1 mN2
     mP1 mP2 mL1 mL2 mnb mtk mfl mT mSf mc1 mc2 mC1 mC2 mO mU
     (by rw [hD]; exact rep_ran_corefl St (one_ok _ Df) (Dp)) hx hy hacc
     (rep_uncons (Rel.val mx) x63 _ rfl _ rfl _ rfl xk xh xt)
-    (by rw [hux]; exact rep_comp _ _ (codes_faithful_wf _ _ xcf).1 xc1 xc2 xc3 xc4 xc5)
+    (by rw [hux]; exact rep_comp _ _ (codes_faithful_wf _ _ xcf).1 xc1 xc2 xc3 xc4)
     (rep_uncons (Rel.val my) y63 _ rfl _ rfl _ rfl yk yh yt)
-    (by rw [huy]; exact rep_comp _ _ (codes_faithful_wf _ _ ycf).1 yc1 yc2 yc3 yc4 yc5)
-    (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 pu1 pu2 pu3 pu4 pu5 pu6)
+    (by rw [huy]; exact rep_comp _ _ (codes_faithful_wf _ _ ycf).1 yc1 yc2 yc3 yc4)
+    (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 pu1 pu2 pu3 pu4 pu5)
     (by rw [hboth]; exact rep_dom_corefl mpu (one_ok _ bf) (bp))
-    (by rw [hh]; exact rep_pair _ _ (codes_faithful_wf _ _ hhf).1 hh1 hh2 hh3 hh4 hh5 hh6)
+    (by rw [hh]; exact rep_pair _ _ (codes_faithful_wf _ _ hhf).1 hh1 hh2 hh3 hh4 hh5)
     (by rw [hrh]; exact rep_ran_corefl mh (one_ok _ rf) (rp)) htest
-    (by rw [hhq]; exact rep_comp _ _ (codes_faithful_wf _ _ qf).1 q1 q2 q3 q4 q5)
+    (by rw [hhq]; exact rep_comp _ _ (codes_faithful_wf _ _ qf).1 q1 q2 q3 q4)
     (by rw [hl]; exact rep_dom_corefl mhq (one_ok _ lf) (lp))
-    (by rw [hA1]; exact rep_pair _ _ (codes_faithful_wf _ _ a1f).1 a11 a12 a13 a14 a15 a16)
-    (by rw [hS1]; exact rep_pair _ _ (codes_faithful_wf _ _ s1f).1 s11 s12 s13 s14 s15 s16)
+    (by rw [hA1]; exact rep_pair _ _ (codes_faithful_wf _ _ a1f).1 a11 a12 a13 a14 a15)
+    (by rw [hS1]; exact rep_pair _ _ (codes_faithful_wf _ _ s1f).1 s11 s12 s13 s14 s15)
     (by rw [hN1]; exact rep_snoc mS1 sn1)
-    (by rw [hP1]; exact rep_pair _ _ (codes_faithful_wf _ _ p1f).1 p11 p12 p13 p14 p15 p16)
-    (by rw [hL1]; exact rep_comp _ _ (codes_faithful_wf _ _ l1f).1 l11 l12 l13 l14 l15)
+    (by rw [hP1]; exact rep_pair _ _ (codes_faithful_wf _ _ p1f).1 p11 p12 p13 p14 p15)
+    (by rw [hL1]; exact rep_comp _ _ (codes_faithful_wf _ _ l1f).1 l11 l12 l13 l14)
     (by rw [hnb]; exact rep_antiJoin mboth ml (codes_faithful_wf _ _ nbf).1 nb1 nb2)
-    (by rw [hA2]; exact rep_pair _ _ (codes_faithful_wf _ _ a2f).1 a21 a22 a23 a24 a25 a26)
-    (by rw [hS2]; exact rep_pair _ _ (codes_faithful_wf _ _ s2f).1 s21 s22 s23 s24 s25 s26)
+    (by rw [hA2]; exact rep_pair _ _ (codes_faithful_wf _ _ a2f).1 a21 a22 a23 a24 a25)
+    (by rw [hS2]; exact rep_pair _ _ (codes_faithful_wf _ _ s2f).1 s21 s22 s23 s24 s25)
     (by rw [hN2]; exact rep_snoc mS2 sn2)
-    (by rw [hP2]; exact rep_pair _ _ (codes_faithful_wf _ _ p2f).1 p21 p22 p23 p24 p25 p26)
-    (by rw [hL2]; exact rep_comp _ _ (codes_faithful_wf _ _ l2f).1 l21 l22 l23 l24 l25)
+    (by rw [hP2]; exact rep_pair _ _ (codes_faithful_wf _ _ p2f).1 p21 p22 p23 p24 p25)
+    (by rw [hL2]; exact rep_comp _ _ (codes_faithful_wf _ _ l2f).1 l21 l22 l23 l24)
     (by rw [htk]; exact rep_union_full mL1 mL2 tN tNk tNv tFk tFv (one_ok _ tK) (one_ok _ tV) tk tv)
-    (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ Tf).1 T1 T2 T3 T4 T5)
+    (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ Tf).1 T1 T2 T3 T4)
     (by rw [hfl]; exact rep_antiJoin mD mboth (codes_faithful_wf _ _ flf).1 fl1 fl2)
-    (by rw [hSf]; exact rep_comp _ _ (codes_faithful_wf _ _ sff).1 sf1 sf2 sf3 sf4 sf5)
-    (by rw [hc1]; exact rep_pair _ _ (codes_faithful_wf _ _ c1f).1 c11 c12 c13 c14 c15 c16)
+    (by rw [hSf]; exact rep_comp _ _ (codes_faithful_wf _ _ sff).1 sf1 sf2 sf3 sf4)
+    (by rw [hc1]; exact rep_pair _ _ (codes_faithful_wf _ _ c1f).1 c11 c12 c13 c14 c15)
     (by rw [hC1]; exact rep_cat_ok mc1 ct1)
-    (by rw [hc2]; exact rep_pair _ _ (codes_faithful_wf _ _ c2f).1 c21 c22 c23 c24 c25 c26)
+    (by rw [hc2]; exact rep_pair _ _ (codes_faithful_wf _ _ c2f).1 c21 c22 c23 c24 c25)
     (by rw [hC2]; exact rep_cat_ok mc2 ct2)
-    (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ Of).1 O1 O2 O3 O4 O5)
+    (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ Of).1 O1 O2 O3 O4)
     (by rw [hU]; exact rep_union_full out mO uN uNk uNv uFk uFv (one_ok _ uK) (one_ok _ uV) uk uv)
 
 #print axioms merge_round_rep
@@ -622,12 +622,12 @@ theorem rep_mergeOn {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod 
       mergeVals(q mrh, (∀ a b, rep mrh (a, b) (a, b) → ((∃ c, rep G (a, b) c) ↔ le a b = true)) ∧ mergeOK)) :
     ∀ k zs, rep (mergeOn q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
   obtain ⟨⟨Pf, Pp⟩, t1, t2, t3, t4, ⟨qf, qp⟩, ⟨mf, mp⟩⟩ := h0
-  obtain ⟨q1, q2, q3, q4, q5, q6⟩ := qp _ rfl
-  obtain ⟨m1, m2, m3, m4, m5⟩ := mp _ rfl
+  obtain ⟨q1, q2, q3, q4, q5⟩ := qp _ rfl
+  obtain ⟨m1, m2, m3, m4⟩ := mp _ rfl
   have eR := rep_ran_corefl P (one_ok _ Pf) (Pp)
   have eT := rep_top (Rel.val (ran P)) (nilVal B) t1 t2 t3 t4
-  have eQ := rep_pair _ _ (codes_faithful_wf _ _ qf).1 q1 q2 q3 q4 q5 q6
-  have eM := rep_comp _ _ (codes_faithful_wf _ _ mf).1 m1 m2 m3 m4 m5
+  have eQ := rep_pair _ _ (codes_faithful_wf _ _ qf).1 q1 q2 q3 q4 q5
+  have eM := rep_comp _ _ (codes_faithful_wf _ _ mf).1 m1 m2 m3 m4
   -- a pair of `P` is a row of `ran P`'s values
   have hrow : ∀ k p, rep P k p → ∃ i, (Rel.val (ran P)).row i = p := by
     intro k p hp

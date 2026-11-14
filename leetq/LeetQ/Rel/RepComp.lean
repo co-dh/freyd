@@ -36,8 +36,8 @@ open Freyd Freyd.Alg.RelSet
 
 /-- **`rep (R ≫ S) = rep R ≫ rep S`.** Hypotheses:
     - `hc`, the middle side's joint codes identify rows and are well formed — what `CodesSpec` concludes;
-    - `hrn`, `hM`, `hMU`, the counts `join_spec` takes: `S`'s rows and the match count below `2^63`, the
-      match count a `USize` (past it `≫` answers `𝟘`);
+    - `hrn`, `hM`, the counts `join_spec` takes: `S`'s rows below `2^63`, and `R`'s rows times `S`'s below
+      `2^63` and a `USize`, which bounds the match count (past a `USize` `≫` answers `𝟘`);
     - `hA`, `hC`, `Vals.PickFits` of `R.key` at the left rows of the join's pairs and of `S.val` at the
       right ones, which `pick_row` reads back under; a side of atoms and products fits outright
       (`pickFits_atom`, `pickFits_prod`, `join_pairs_lt`).
@@ -53,12 +53,7 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
         ((jc[k]'hk).w < 8 → (jc[k]'hk).card < USize.size ∧
           ∀ i < (jc[k]'hk).n.toNat, Column.idAt (jc[k]'hk).b (jc[k]'hk).w i < (jc[k]'hk).card))
     (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
+    (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
     (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S := by
   obtain ⟨hF, hW⟩ := hc
@@ -67,7 +62,6 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
   replace hln : (jc[0]'Nat.zero_lt_two).n = R.n := hln
   replace hrn' : (jc[1]'Nat.one_lt_two).n = S.n := hrn'
   obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-    (by rw [hln, hrn']; exact hMU)
   have hP := mem_joinPairs (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
   refine hom_ext fun a c => ?_
