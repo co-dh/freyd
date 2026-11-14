@@ -129,6 +129,14 @@ theorem filterMap_window {β : Type} (d : β) : ∀ {m : Nat} (f : Fin m → β)
 
 /-! ## `Vals.pick` read back -/
 
+/-- `flatMap` keeps a sublist a sublist (core has `Sublist.filterMap`, no `flatMap` form). -/
+theorem sublist_flatMap {α β : Type} (f : α → List β) {l₁ l₂ : List α} (h : l₁.Sublist l₂) :
+    (l₁.flatMap f).Sublist (l₂.flatMap f) := by
+  induction h with
+  | slnil => exact List.Sublist.refl _
+  | cons a _ ih => rw [List.flatMap_cons]; exact ih.trans (List.sublist_append_right _ _)
+  | cons₂ a _ ih => rw [List.flatMap_cons, List.flatMap_cons]; exact ih.append_left _
+
 /-- **The picked payloads fit**, for `Vals.pick A x` at the rows `ps` (a row at or past `n` a miss): at an
     atom, where some row misses, an interned column's dictionary count below `USize.size` (its miss reads the
     dictionary's empty entry, found at a `USize`); at an array, the payload count and the copies of the picked rows' windows (`filterMap_window`) below `2^63`,
@@ -153,6 +161,158 @@ def _root_.LeetQ.Rel.Vals.PickFits : (A : Obj) → {n : USize} → Vals A n → 
     ps.length < 2 ^ 63 ∧ l.toNat < 2 ^ 63 ∧ r.toNat < 2 ^ 63 ∧ Vals.PickFits a x (side false l.toNat) ∧
       Vals.PickFits b y (side true r.toNat)
 
+/-- **What reading `x` at the rows `ps` touches**, the one size measure every fit bound is arithmetic on: the
+    rows read at each level, an interned atom's dictionary, an array's payload count, a sum's two side counts —
+    each clause `Vals.PickFits`'s bounds summed, at the same windows (`w`) and side positions (`side`). -/
+def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → List Nat → Nat
+  | .atom t, n, x, ps =>
+    ps.length + (match Arr.enc (t := t) (n := n) x with | .enum _ o _ => o.size - 1 | _ => 0)
+  | .prod a b, _, x, ps => Vals.reads a x.1 ps + Vals.reads b x.2 ps
+  | .arr b, n, ⟨p, lo, hi, f⟩, ps =>
+    let w (k : Nat) : List Nat := if h : k < n.toNat then
+      List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []
+    ps.length + p.toNat + Vals.reads b f (ps.flatMap w)
+  | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
+    let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
+      if h : k < n.toNat then
+        (if tag.get ⟨k, h⟩ = s then some (min (max (idx.get ⟨k, h⟩).toInt 0).toNat (c - 1)) else none)
+      else if s then none else some c
+    ps.length + l.toNat + r.toNat + Vals.reads a x (side false l.toNat) + Vals.reads b y (side true r.toNat)
+
+/-- **Every row read is counted**: the rows themselves bound the measure from below. -/
+theorem length_le_reads {A : Obj} {n : USize} (x : Vals A n) (ps : List Nat) : ps.length ≤ Vals.reads A x ps := by
+  induction A generalizing n ps with
+  | atom t => unfold Vals.reads; omega
+  | prod a b iha ihb => unfold Vals.reads; have := iha x.1 ps; omega
+  | arr b ih => obtain ⟨p, lo, hi, f⟩ := x; unfold Vals.reads; dsimp only; omega
+  | sum a b iha ihb => obtain ⟨l, r, tag, idx, x, y⟩ := x; unfold Vals.reads; dsimp only; omega
+
+/-- **The measure below `2^63` and `USize.size` is a fit**: each bound of `Vals.PickFits` is a summand of
+    `Vals.reads` at the same rows, a window's or side's row count below its own measure (`length_le_reads`). -/
+theorem pickFits_of_reads {A : Obj} {n : USize} {x : Vals A n} {ps : List Nat}
+    (h63 : Vals.reads A x ps < 2 ^ 63) (hU : Vals.reads A x ps < USize.size) : Vals.PickFits A x ps := by
+  induction A generalizing n ps with
+  | atom t =>
+    unfold Vals.reads at hU; unfold Vals.PickFits
+    intro _ d o ids he; simp only [he] at hU; omega
+  | prod a b iha ihb =>
+    unfold Vals.reads at h63 hU; unfold Vals.PickFits
+    exact ⟨iha (by omega) (by omega), ihb (by omega) (by omega)⟩
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.reads at h63 hU; unfold Vals.PickFits; dsimp only at h63 hU ⊢
+    have e63 := Nat.lt_of_le_of_lt (Nat.le_add_left _ _) h63
+    have eU := Nat.lt_of_le_of_lt (Nat.le_add_left _ _) hU
+    exact ⟨by omega, Nat.lt_of_le_of_lt (length_le_reads ..) e63, Nat.lt_of_le_of_lt (length_le_reads ..) eU,
+      ih e63 eU⟩
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.reads at h63 hU; unfold Vals.PickFits; dsimp only at h63 hU ⊢
+    exact ⟨by omega, by omega, by omega, iha (by omega) (by omega), ihb (by omega) (by omega)⟩
+
+/-- **Reading two row lists together touches at most what each touches**: the rows add, the dictionaries,
+    payloads and side counts are paid once instead of twice. -/
+theorem reads_append {A : Obj} {n : USize} (x : Vals A n) (ps qs : List Nat) :
+    Vals.reads A x (ps ++ qs) ≤ Vals.reads A x ps + Vals.reads A x qs := by
+  induction A generalizing n ps qs with
+  | atom t => unfold Vals.reads; simp only [List.length_append]; omega
+  | prod a b iha ihb => unfold Vals.reads; have := iha x.1 ps qs; have := ihb x.2 ps qs; omega
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.reads; dsimp only
+    rw [List.flatMap_append, List.length_append]
+    refine Nat.le_trans (Nat.add_le_add_left (ih f _ _) _) ?_; omega
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.reads; dsimp only
+    rw [List.filterMap_append, List.filterMap_append, List.length_append]
+    refine Nat.le_trans (Nat.add_le_add (Nat.add_le_add_left (iha x _ _) _) (ihb y _ _)) ?_; omega
+
+/-- **Fewer rows touch less**: the windows and side positions of a sublist are a sublist (`pickFits_sublist`). -/
+theorem reads_sublist {A : Obj} {n : USize} (x : Vals A n) {ps ps' : List Nat} (h : ps'.Sublist ps) :
+    Vals.reads A x ps' ≤ Vals.reads A x ps := by
+  induction A generalizing n ps ps' with
+  | atom t => unfold Vals.reads; have := h.length_le; omega
+  | prod a b iha ihb => unfold Vals.reads; have := iha x.1 h; have := ihb x.2 h; omega
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.reads; dsimp only
+    exact Nat.add_le_add (Nat.add_le_add_right h.length_le _) (ih f (sublist_flatMap _ h))
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.reads; dsimp only
+    exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add_right
+      (Nat.add_le_add_right h.length_le _) _) (iha x (h.filterMap _))) (ihb y (h.filterMap _))
+
+/-- **Reordering the rows touches the same**: windows and side positions are permuted (`pickFits_perm`). -/
+theorem reads_perm {A : Obj} {n : USize} (x : Vals A n) {ps ps' : List Nat} (h : ps'.Perm ps) :
+    Vals.reads A x ps' = Vals.reads A x ps := by
+  induction A generalizing n ps ps' with
+  | atom t => unfold Vals.reads; rw [h.length_eq]
+  | prod a b iha ihb => unfold Vals.reads; rw [iha x.1 h, ihb x.2 h]
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.reads; dsimp only
+    rw [h.length_eq]; exact congrArg _ (ih f (h.flatMap_right _))
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.reads; dsimp only
+    rw [h.length_eq]
+    congr 1
+    · exact congrArg _ (iha x (h.filterMap _))
+    · exact ihb y (h.filterMap _)
+
+/-- **Counts below `L`'s make a permutation of a sublist of `L`** (core has no `Subperm`): `L`'s head taken
+    where `ps` holds it, skipped where not. -/
+theorem perm_sublist_of_count_le : (L ps : List Nat) → (∀ k, ps.count k ≤ L.count k) →
+    ∃ l : List Nat, l.Perm ps ∧ l.Sublist L
+  | [], ps, h => ⟨[], by
+      cases ps with
+      | nil => exact List.Perm.refl _
+      | cons k _ => have := h k; simp at this, List.Sublist.slnil⟩
+  | a :: L, ps, h => by
+    by_cases ha : a ∈ ps
+    · obtain ⟨l, hp, hs⟩ := perm_sublist_of_count_le L (ps.erase a) fun k => by
+        have h1 := h k
+        simp only [List.count_erase, List.count_cons, beq_iff_eq] at h1 ⊢
+        split at h1 <;> split <;> omega
+      exact ⟨a :: l, (hp.cons a).trans (List.perm_cons_erase ha).symm, hs.cons₂ a⟩
+    · obtain ⟨l, hp, hs⟩ := perm_sublist_of_count_le L ps fun k => by
+        have h1 := h k
+        by_cases hk : a = k
+        · subst hk; rw [List.count_eq_zero_of_not_mem ha]; exact Nat.zero_le _
+        · simp only [List.count_cons, beq_iff_eq, hk, if_false, Nat.add_zero] at h1; exact h1
+      exact ⟨l, hp, hs.cons a⟩
+
+/-- **Rows repeated at most `c` times, all below `N`, touch at most `c` readings of all `N` rows**: they are a
+    permutation of a sublist of `c` copies of `List.range N` (`reads_perm`, `reads_sublist`, `reads_append`). -/
+theorem reads_count_le {A : Obj} {n : USize} (x : Vals A n) {ps : List Nat} {c N : Nat} (hc : 0 < c)
+    (h : ∀ k ∈ ps, k < N ∧ ps.count k ≤ c) :
+    Vals.reads A x ps ≤ c * Vals.reads A x (List.range N) := by
+  have hcnt : ∀ k, ps.count k ≤ (List.replicate c (List.range N)).flatten.count k := fun k => by
+    have e : ∀ c, (List.replicate c (List.range N)).flatten.count k = c * (if k < N then 1 else 0) := fun c => by
+      induction c with
+      | zero => simp
+      | succ c ih => rw [List.replicate_succ, List.flatten_cons, List.count_append, ih, List.count_range,
+          Nat.succ_mul]; omega
+    rw [e]
+    by_cases hk : k ∈ ps
+    · rw [if_pos (h k hk).1, Nat.mul_one]; exact (h k hk).2
+    · rw [List.count_eq_zero_of_not_mem hk]; exact Nat.zero_le _
+  obtain ⟨l, hp, hs⟩ := perm_sublist_of_count_le _ ps hcnt
+  rw [← reads_perm x hp]
+  refine Nat.le_trans (reads_sublist x hs) ?_
+  obtain ⟨c, rfl⟩ : ∃ c', c = c' + 1 := ⟨c - 1, by omega⟩
+  clear hc h hcnt hp hs
+  induction c with
+  | zero => simp
+  | succ c ih =>
+    rw [List.replicate_succ, List.flatten_cons]
+    refine Nat.le_trans (reads_append x _ _) ?_
+    rw [Nat.succ_mul (c + 1)]; omega
+
 /-- **An atom side fits outright** where every picked row is below the count: no row misses. -/
 theorem pickFits_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {ps : List Nat}
     (h : ∀ k ∈ ps, k < n.toNat) : Vals.PickFits (.atom t) x ps := by
@@ -166,14 +326,6 @@ theorem pickFits_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n) {ps : Lis
     (h1 : Vals.PickFits a x.1 ps) (h2 : Vals.PickFits b x.2 ps) : Vals.PickFits (.prod a b) x ps := by
   unfold Vals.PickFits
   exact ⟨h1, h2⟩
-
-/-- `flatMap` keeps a sublist a sublist (core has `Sublist.filterMap`, no `flatMap` form). -/
-theorem sublist_flatMap {α β : Type} (f : α → List β) {l₁ l₂ : List α} (h : l₁.Sublist l₂) :
-    (l₁.flatMap f).Sublist (l₂.flatMap f) := by
-  induction h with
-  | slnil => exact List.Sublist.refl _
-  | cons a _ ih => rw [List.flatMap_cons]; exact ih.trans (List.sublist_append_right _ _)
-  | cons₂ a _ ih => rw [List.flatMap_cons, List.flatMap_cons]; exact ih.append_left _
 
 /-- **A fit at rows `ps` is a fit at every sublist of them**: each clause bounds or recurses at the windows or
     side positions of the picked rows, which shrink to a sublist (`flatMap`, `filterMap`), and a miss among
