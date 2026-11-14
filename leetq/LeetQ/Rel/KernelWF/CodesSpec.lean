@@ -793,18 +793,17 @@ theorem codes_long_group {t : QAtomicType} (ht : orderKind t = some .i64) (x : P
       KernelWF.bitsType,
       Arr.part]
 
-/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its codes are faithful.** -/
-theorem codes_long_group_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
-    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
-    {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
-    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
-        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+/-- **The grouping code of one eight-byte integral part, in either encoding, is faithful**: `Code.ofIds` of
+    the ids `groupIdsColumn` answers is equal exactly where the values are. -/
+theorem ofIds_long_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t)) {p}
+    (hp : groupIdsColumn t x.1 x.2.enc = some p) {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Code.ofIds (len p.2) x.1 p.1).b (Code.ofIds (len p.2) x.1 p.1).w i =
+        Column.idAt (Code.ofIds (len p.2) x.1 p.1).b (Code.ofIds (len p.2) x.1 p.1).w j ↔
       Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
-  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
   have hn64 : x.1.toNat < 2 ^ 64 := Verify.usize_lt x.1
   have hinj : ∀ a c : UInt64, a.toInt64 = c.toInt64 ↔ a = c := fun a c =>
     ⟨fun h => by simpa using congrArg Int64.toUInt64 h, fun h => h ▸ rfl⟩
-  rw [hc, Vals.row_atom, Vals.row_atom, long_row_eq ht, hinj]
+  rw [Vals.row_atom, Vals.row_atom, long_row_eq ht, hinj]
   rcases long_enc ht x.2.wf with ⟨b, he, hbs⟩ | ⟨md, pk, he⟩
   · rw [he, (groupIdsColumn_long ht x.1).1 b, Option.some_inj] at hp
     subst hp
@@ -829,15 +828,23 @@ theorem codes_long_group_faithful {t : QAtomicType} (ht : orderKind t = some .i6
       exact UInt64.ofNat_toNat
     rw [hm, hm]; exact UInt64.xor_left_inj _
 
-/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its code is well formed.** -/
-theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
-    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
-    let c := (Obj.codes (.atom t) #v[x])[0]
+/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its codes are faithful.** -/
+theorem codes_long_group_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
+    {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat) :
+    Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
+        Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
+      Vals.row x.2 ⟨i, hi⟩ = Vals.row x.2 ⟨j, hj⟩ := by
+  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
+  rw [hc]; exact ofIds_long_faithful ht x hp hi hj
+
+/-- **The grouping code of one eight-byte integral part, in either encoding, is well formed.** -/
+theorem ofIds_long_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t)) {p}
+    (hp : groupIdsColumn t x.1 x.2.enc = some p) :
+    let c := Code.ofIds (len p.2) x.1 p.1
     laneOK(c.w) ∧ c.n = x.1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
-  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
-  rw [hc]
   rcases long_enc ht x.2.wf with ⟨b, he, hbs⟩ | ⟨md, pk, he⟩
   · rw [he, (groupIdsColumn_long ht x.1).1 b, Option.some_inj] at hp
     subst hp
@@ -850,6 +857,16 @@ theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x 
     subst hp
     have hspec := Verify.groupIdsFoR_spec .i64 (by decide) x.1 md pk
     exact ofIds_groupOf_wf (foRKey .i64 md pk) x.1 hspec.1 (by rw [len_eq_ids, hspec.2])
+
+/-- **One part of an eight-byte integral side where `rangeOffsets` declines: its code is well formed.** -/
+theorem codes_long_group_wf {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
+    (hro : rangeOffsets t (#v[x].map fun c => Arr.part c.2) ((#v[x].map (·.1)).foldl (fun s n => s + n.toNat) 0) = none) :
+    let c := (Obj.codes (.atom t) #v[x])[0]
+    laneOK(c.w) ∧ c.n = x.1 ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card) := by
+  obtain ⟨p, hp, hc⟩ := codes_long_group ht x hro
+  rw [hc]; exact ofIds_long_wf ht x hp
 
 /-- **One part of an eight-byte integral side: its codes are faithful**, on either branch of `codes`. -/
 theorem codes_long_one_faithful {t : QAtomicType} (ht : orderKind t = some .i64) (x : Part (.atom t))
