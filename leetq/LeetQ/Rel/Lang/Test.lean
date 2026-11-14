@@ -622,10 +622,39 @@ def is {B : Obj} (o : Out) (n : String) (R : Rel .long B) : Bool := ((get o n .l
     ("K", "((Q c) dom((((Λ(⇝) δ) succ) ∩ (π₁ δ))))"),
     ("≼", "(((π₁ <) π₁°) ∪ ((π₁ π₁°) ∩ ((π₂ ≤) π₂°)))"),
     ("σ", "(Λ((K π₂)) est(≼))"),
-    ("ν", "(⟨dom(σ), σ⟩ Λ(⇝))"),
-    ("Z", "L(s₀, ν)"),
+    ("nx", "(⟨dom(σ), σ⟩ Λ(⇝))"),
+    ("Z", "L(s₀, nx)"),
     ("ζ", "((Z π₂)° (Z π₁))"),
     ("plan", "(ζ σ)"),
     ("check", "plan = {(0, (C, C)), (1, (B, C)), (2, (A, B))}")]
+
+/-! Fixed points `μX : φ`, `νX : φ`: printed as read, run against their rounds written out, and refused where the
+    body is not monotonic in `X` or the rounds have no bound. -/
+
+#guard ["νZ : R ∩ Z", "(μZ : 𝟙 ∪ (R Z)) S", "R° ∪ (νZ : R ∩ (S \\ (Z R)))", "⟨νZ : R ∩ Z, S⟩"].all trip
+-- `R*`, the least `X` with `𝟙 ∪ RX ⊑ X`, against the closure written out
+#guard (runText ("obj N = 0…4\nR : N ⟶ N ≜ {(0,1),(1,2),(2,3)}\nc : N ⟶ N ≜ μX : 𝟙 ∪ (R X)\n" ++
+  "check c = {(0,0),(1,1),(2,2),(3,3),(4,4),(0,1),(0,2),(0,3),(1,2),(1,3),(2,3)}\n")).isOk
+-- the points with an infinite `R`-path: the rounds from `𝟙` written out, which stop changing at the second
+#guard (runText ("obj N = 0…5\nR : N ⟶ N ≜ {(0,1),(1,2),(2,0),(3,4)}\nv : N ⟶ N ≜ νX : 𝟙(N) ∩ dom(R X)\n" ++
+  "x₁ : N ⟶ N ≜ 𝟙(N) ∩ dom(R 𝟙(N))\nx₂ : N ⟶ N ≜ 𝟙(N) ∩ dom(R x₁)\nx₃ : N ⟶ N ≜ 𝟙(N) ∩ dom(R x₂)\n" ++
+  "check v = x₂\ncheck x₃ = x₂\ncheck v = {(0,0),(1,1),(2,2)}\n")).isOk
+-- arc consistency on `y = x²` with both arcs, `x → y` by `sq` and `y → x` by `sq°`
+#guard (runText ("obj V = {x,y}\nobj D = 0…9\nA : V ⟶ V ≜ {(x,y)}\nsq : D ⟶ D ≜ {(0,0),(1,1),(2,4),(3,9)}\n" ++
+  "revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\\(X C)\ns : V ⟶ D ≜ ⊤(V,D)\n" ++
+  "z : V ⟶ D ≜ νZ : s ∩ revise(A,sq,Z) ∩ revise(A°,sq°,Z)\n" ++
+  "check z = {(x,0),(x,1),(x,2),(x,3),(y,0),(y,1),(y,4),(y,9)}\n")).isOk
+-- `X` under an operator not monotonic in its argument, or in an antitone place; `ν` with no bound; `μ` on an array
+#guard errAt "obj B = 0…1\nf : B ⟶ B ≜ νX : ⊤(B,B) ∩ (Λ(X)∋)\n" 2
+  "νX: X occurs under Λ at 2:30; Λ is not monotonic in its argument, so the fixed point need not exist"
+#guard errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ μX : r ∪ X\\r\n" 3
+  "μX: X occurs in the left operand of \\ at 3:22 (antitone); X must occur only in monotonic positions"
+#guard errAt "obj B = 0…1\nr : B ⟶ B ≜ {(0,1)}\nf : B ⟶ B ≜ νX : r X\n" 3
+  "νX needs a bound: write S ∩ φ with S not mentioning X (⊤(A,B) for the whole object)"
+#guard errAt "obj B = 0…1\nr : B ⟶ [B] ≜ {(0,[1])}\nf : B ⟶ [B] ≜ μX : r ∪ X\n" 3
+  "μX: [B] has no universe; an array object can grow every round"
+#guard errAt "obj X = {A,B,C}\nobj St = 𝒫(X×X)\nL(S : X ⟶ X) : X ⟶ X ≜ νZ : S ∩ Z\nf : St ⟶ X×X ≜ L(∋)\n" 3
+  "νZ given a family is not liftable"
+#guard errAt "obj B = 0…1\nνx : B ⟶ B ≜ 𝟙(B)\n" 2 "the name 'νx' reads as a fixed point"
 
 end LeetQ.Rel.Lang.Test

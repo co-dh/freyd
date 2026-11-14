@@ -111,6 +111,9 @@ syntax:max (name := rCompl) "∼" rel:max : rel
 syntax:max (name := rConv) rel:max "°" : rel
 syntax:60 (name := rComp) rel:60 sameLine rel:61 : rel
 syntax:60 (name := rBin) rel:60 ("∩" <|> "∪" <|> "−" <|> "/" <|> "\\" <|> "×") rel:61 : rel
+-- `μX : φ`, `νX : φ`, one identifier then the body to the end: below every operator, so an operand only in
+-- parentheses
+syntax:0 (name := rFix) ident ":" rel : rel
 
 syntax (name := pDecl) relWord (relType)? : relParam
 syntax (name := iDecl) relWord "≜" rel : relItem
@@ -227,6 +230,16 @@ partial def prim (s : Syntax) : C (List Lang.Expr) := do
   match s.getKind with
   | ``rId | ``rSym => do (← namesOf s[0]).flatMapM fun (p, n) => atomOf s p n none none none
   | ``rParen => pure [← expr s[1]]
+  -- `Parse.atom`'s fixed point: `X` in scope in the body only
+  | ``rFix => do
+    let (c, x) := match (tokText s[0]).toList with | c :: cs => (c, String.ofList cs) | [] => (' ', "")
+    unless Parse.isFix c do failAt s "expected a term"
+    Parse.fresh ⟨p.line, p.col + 1⟩ x (← get).taken
+    let k := (← get).known
+    modify fun st => { st with known := (x, 0) :: k }
+    let b ← expr s[2]
+    modify fun st => { st with known := k }
+    pure [.fix p (c == 'μ') x b]
   | ``rPair => pure [.pair p (← expr s[1]) (← expr s[3])]
   | ``rJunc => pure [.junc p (← expr s[1]) (← expr s[3])]
   | ``rFold => pure [.fold p (← expr s[1]) (← expr s[3])]
