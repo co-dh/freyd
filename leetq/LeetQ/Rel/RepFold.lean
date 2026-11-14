@@ -12,20 +12,120 @@ namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
 
--- `RepDiv`'s `c1`, `nubI`, `PQ` (local notations, so restated here)
+/-! The fold notations, one home: `open FoldN` in every file that states a fold read-back. Unhygienic: they
+    capture `E`, `V`, `P`, `Q`, `S`, `el`, `pend`, `step`, `elK`, `Sf`, `hNk`, `hNv` at the use site. -/
+namespace FoldN
+
+-- `RepDiv`'s `c1`, `nubI`, `PQ`
 set_option hygiene false in
-local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+scoped notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
 set_option hygiene false in
-local notation "nubI(" X ", " Y ", " R ")" =>
+scoped notation "nubI(" X ", " Y ", " R ")" =>
   (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
 set_option hygiene false in
-local notation "PQ(" Y ", " Z ")" =>
+scoped notation "PQ(" Y ", " Z ")" =>
   (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
     Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
 -- the parts `antiJoin pend° (idU el.key)` codes: the rows of `pend`, the rows of `el`
 set_option hygiene false in
-local notation "jparts" => (#v[⟨Rel.n (pend°), Rel.val (pend°)⟩,
+scoped notation "jparts" => (#v[⟨Rel.n (pend°), Rel.val (pend°)⟩,
   ⟨Rel.n (idU (Rel.key el)), Rel.val (idU (Rel.key el))⟩] : Vector (Part .long) 2)
+
+/-- `f^[j]`, `f` applied `j` times (core's `Nat.repeat`, outermost application last). -/
+scoped notation:max f "^[" n "]" => Nat.repeat f n
+
+-- `foldRows`' element of round `k`: each row longer than `k` to its element `k` from the end
+set_option hygiene false in
+scoped notation "elR(" ids ", " k ")" =>
+  (let s := slicesOf (Rel.val ids)
+   let ends := add (Rel.n ids) s.1 s.2
+   let a := whereBits (Rel.n ids) (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one (k).toUInt64) (Rel.n ids))
+   longCount "foldRows" a fun r hr =>
+     let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one ((k) + 1).toUInt64) r
+     (⟨r, Vals.pick .long (Rel.key ids) a r hr, Vals.pick _ (Rel.val ids).2.2.2 pos r (len_val ..)⟩ : Rel .long _))
+
+-- `foldRows`' round, its element bound to `elK`: `round_rep`'s `S.nub` and `P ∪ Q`
+set_option hygiene false in
+scoped notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
+  (st).2.1 ∪ (antiJoin ((st).1°) (idU (Rel.key (elK (st).2.2))))°, (st).2.2 + 1)
+
+-- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound values `jc`, `I`, `Q` quantified with their equations
+set_option hygiene false in
+scoped notation "roundOK" =>
+  Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
+  V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
+  Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
+  Obj.CodesFit .long jparts ∧
+  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
+    Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
+  ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
+    P.n.toNat + Q.n.toNat < USize.size ∧
+    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
+        fun c : Part .long => c.1.toNat).sum < USize.size)
+      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part V)).toList.map fun c : Part V => c.1.toNat).sum <
+        USize.size),
+      Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
+      Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1) ∧
+      V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
+      Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))) ∧
+      Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))
+
+-- `RepOps`' `codesOK`: codes `cs` of two parts `ps` faithful, well formed
+set_option hygiene false in
+scoped notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
+    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
+      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+-- the parts `pair R S` codes (both keys), and the parts `R ≫ S` codes (`R`'s values, `S`'s keys)
+set_option hygiene false in
+scoped notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+set_option hygiene false in
+scoped notation "vk2(" R ", " S ")" =>
+  (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part (.prod E V)) 2)
+-- the parts `≫` codes when a relation into `.long` meets one out of it (`R`'s values, `S`'s keys)
+set_option hygiene false in
+scoped notation "ck2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+-- the row pairs `join` matches on the codes `cs` of rows of `R` and of `S`, and their count. The index proofs
+-- are terms: a `by decide` here is elaborated against the whole context, so each hypothesis grew the next's cost
+set_option hygiene false in
+scoped notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
+set_option hygiene false in
+scoped notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
+
+-- `step_rep`'s hypotheses at `el`, `pend`, its bound values `kc`, `P` quantified with their equations; `J` the
+-- rest (`stepJ`), at the step relation `S`: one relation (`stepOK`), or `Sf` at the round's pairs (`stepOn`)
+set_option hygiene false in
+scoped notation "stepK(" J ")" =>
+  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
+    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
+    msum(kc, el, pend) < USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
+    ∀ P : Rel .long (.prod E V), P = pair el pend → J
+set_option hygiene false in
+scoped notation "stepJ(" S ")" =>
+  ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
+    codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, P, S) < 2 ^ 63 ∧ msum(jc, P, S) < USize.size ∧
+    Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
+set_option hygiene false in
+scoped notation "stepOK" => stepK(stepJ(S))
+set_option hygiene false in
+scoped notation "stepOn" => stepK(∀ S : Rel (.prod E V) V, S = Sf (ran P) → stepJ(S))
+
+end FoldN
+
+open FoldN
 
 /-- **One round of `foldRows`, read back**: the new state `S.nub` (`S` the step's result) is `S`, and the new
     `out`, `P ∪ (antiJoin pend° (idU el.key))°`, adds to `P` the pairs of `pend` whose row has no element this
@@ -73,9 +173,6 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
 
 open QLean.Dep
 
-/-- `f^[j]`, `f` applied `j` times (core's `Nat.repeat`, outermost application last). -/
-local notation:max f "^[" n "]" => Nat.repeat f n
-
 /-- **`iter` stops at an iterate**: `iter n done f a` is `f^[j] a` for some `j ≤ n` where the rounds ran out
     (`j = n`) or `done` holds. -/
 theorem iter_stop {α : Type} (done : α → Bool) (f : α → α) :
@@ -97,15 +194,6 @@ theorem iter_stop {α : Type} (done : α → Bool) (f : α → α) :
       exact hs.imp (by omega) id
     · exact ⟨0, Nat.zero_le _, by unfold iter; rw [hylo]; simp [hd, Nat.repeat], Or.inr hd⟩
 
--- `foldRows`' element of round `k`: each row longer than `k` to its element `k` from the end
-set_option hygiene false in
-local notation "elR(" ids ", " k ")" =>
-  (let s := slicesOf (Rel.val ids)
-   let ends := add (Rel.n ids) s.1 s.2
-   let a := whereBits (Rel.n ids) (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one (k).toUInt64) (Rel.n ids))
-   longCount "foldRows" a fun r hr =>
-     let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one ((k) + 1).toUInt64) r
-     (⟨r, Vals.pick .long (Rel.key ids) a r hr, Vals.pick _ (Rel.val ids).2.2.2 pos r (len_val ..)⟩ : Rel .long _))
 /-- **Round `k`'s element, read back**: row `r` of `ids` to its array's element `k` from the end, at the rows
     whose array is longer than `k`. The rows longer than `k` (`a`) and their elements' payload positions (`pos`)
     are bound by their equations. Hypotheses: the payload count and `k` below `2^63`, `Vals.PickFits` where the
@@ -184,11 +272,6 @@ theorem rep_elR {E : Obj} (ids : Rel .long (.arr E)) (k : Nat) (hk : k < 2 ^ 63)
     subst hqe
     exact ⟨⟨q, Nat.lt_of_lt_of_eq hq'' hm.symm⟩, hK.trans hr, (hV hl).trans hx.symm⟩
 
--- `foldRows`' round, its element bound to `elK`: `round_rep`'s `S.nub` and `P ∪ Q`
-set_option hygiene false in
-local notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
-  (st).2.1 ∪ (antiJoin ((st).1°) (idU (Rel.key (elK (st).2.2))))°, (st).2.2 + 1)
-
 /-- **`foldRows` is the rounds' `out` at a stop**: the iterate `f^[j]` of the round `f` from `(pend, 𝟘, 0)` at
     the `j` where `iter` stops, the rounds' bound `X.1 + 1` reached or no row pending. `elK`, `f` are bound by
     their defining equations. -/
@@ -204,27 +287,6 @@ theorem foldRows_iter {E V : Obj} (ids : Rel .long (.arr E)) (pend : Rel .long V
     (iter ((Rel.val ids).1.toNat + 1) (fun st => st.1.n == 0) g (pend, Alg.zero, 0)).2.1) (funext fun st => ?_)
   obtain ⟨p, o, k⟩ := st
   rw [hf, hE]
-
--- `round_rep`'s hypotheses at `el`, `pend`, `P`, `S`, its bound values `jc`, `I`, `Q` quantified with their equations
-set_option hygiene false in
-local notation "roundOK" =>
-  Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
-  V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
-  Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
-  Obj.CodesFit .long jparts ∧
-  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
-    Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
-  ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
-    P.n.toNat + Q.n.toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
-        fun c : Part .long => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part V)).toList.map fun c : Part V => c.1.toNat).sum <
-        USize.size),
-      Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
-      Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1) ∧
-      V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
-      Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))) ∧
-      Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))
 
 /-- **The rounds' invariant**: after `j` rounds from `(pend₀, 𝟘, 0)` the counter is `j`, `out` holds the pairs of
     the `i`-th state (`i < j`) whose row has no element in round `i`, and each state is the step on the one
@@ -273,34 +335,6 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
       · exact Or.inl ⟨i, hi, h⟩
       · exact Or.inr h
 
--- `RepOps`' `codesOK` (a local notation, so restated here): codes `cs` of two parts `ps` faithful, well formed
-set_option hygiene false in
-local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
-    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
-    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
-      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
-  ∀ {k : Nat} (hk : k < 2),
-    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
-      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
-    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
-    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
-      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
--- the parts `pair R S` codes (both keys), and the parts `R ≫ S` codes (`R`'s values, `S`'s keys)
-set_option hygiene false in
-local notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
-set_option hygiene false in
-local notation "vk2(" R ", " S ")" =>
-  (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part (.prod E V)) 2)
--- the row pairs `join` matches on the codes `cs` of rows of `R` and of `S`, and their count. The index proofs
--- are terms: a `by decide` here is elaborated against the whole context, so each hypothesis grew the next's cost
-set_option hygiene false in
-local notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
-  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
-    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
-set_option hygiene false in
-local notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
-  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
-    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
 
 /-- **A fold step, read back**: `demandStep Sf` takes row `r`'s element `e` and value `u` to each `v` with
     `(e, u) S v`, `S = Sf (ran P)` the family at the pairs `P` the round meets. The codes `kc` of `pair`, the pair
@@ -423,27 +457,6 @@ theorem rounds_closed {K E V : Type} (xs : K → List E) (S : Nat → E × V →
         exact hj u hu
     exact ⟨_, hLj, h, fun ⟨_, hl, _⟩ => Nat.lt_irrefl _ hl⟩
 
--- `step_rep`'s hypotheses at `el`, `pend`, its bound values `kc`, `P` quantified with their equations; `J` the
--- rest (`stepJ`), at the step relation `S`: one relation (`stepOK`), or `Sf` at the round's pairs (`stepOn`)
-set_option hygiene false in
-local notation "stepK(" J ")" =>
-  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
-    msum(kc, el, pend) < USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
-    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
-    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
-    ∀ P : Rel .long (.prod E V), P = pair el pend → J
-set_option hygiene false in
-local notation "stepJ(" S ")" =>
-  ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
-    codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, P, S) < 2 ^ 63 ∧ msum(jc, P, S) < USize.size ∧
-    Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
-    Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
-set_option hygiene false in
-local notation "stepOK" => stepK(stepJ(S))
-set_option hygiene false in
-local notation "stepOn" => stepK(∀ S : Rel (.prod E V) V, S = Sf (ran P) → stepJ(S))
-
 /-- **`foldRows` of any step, read back**: row `r` goes to `v` when a chain `ys` of steps runs along the
     array `xs r` from a value of `pend₀` at `r` to `v`, the step on `(xs r)[t]` taken by `Sr k`, `k` the round
     that meets that element (`|xs r| - 1 - t`, rounds run from the end). Internal: `hel` characterises the
@@ -503,10 +516,6 @@ theorem foldRows_rep {E V : Obj} (X : Rel .long (.arr E)) (pend₀ : Rel .long V
   refine exists_congr fun ys => exists_congr fun hy => and_congr ⟨And.right, fun h => ⟨Nat.zero_le _, h⟩⟩
     (and_congr (forall_congr' fun t => forall_congr' fun ht => ?_) Iff.rfl)
   simp only [Nat.sub_self, Nat.zero_add]
-
--- the parts `≫` codes when a relation into `.long` meets one out of it (`R`'s values, `S`'s keys)
-set_option hygiene false in
-local notation "ck2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
 
 /-- **`foldBy`, read back**: an array `xs` of `X` goes to `w` when a chain `ys` of steps runs along `xs` from
     a value of `e` (`ys[|xs|]`) to `w` (`ys[0]`), `ys[t+1]` to `ys[t]` on the element `xs[t]` by `Sr k`,
