@@ -61,8 +61,8 @@ theorem grade_ofLongs_inv (b : ByteArray) (hN : len b < USize.size) (h63 : len b
     (hlt : ∀ i, i < len b → (Column.bitsAt b (i * 8) 8).toNat < len b)
     (hinj : ∀ i j, i < len b → j < len b → Column.bitsAt b (i * 8) 8 = Column.bitsAt b (j * 8) 8 → i = j) :
     ∃ hg : (ids (Code.ofLongs b).grade).length = len b,
-      ∀ d (hd : d < len b), (Column.bitsAt b ((ids (Code.ofLongs b).grade)[d]'(Nat.lt_of_lt_of_eq hd hg.symm) * 8)
-        8).toNat = d := by
+      (∀ d (hd : d < len b), (Column.bitsAt b ((ids (Code.ofLongs b).grade)[d]'(Nat.lt_of_lt_of_eq hd hg.symm) * 8)
+        8).toNat = d) ∧ ∀ d (hd : d < len b), (ids (Code.ofLongs b).grade)[d]'(Nat.lt_of_lt_of_eq hd hg.symm) < len b := by
   have hm : ((len b).toUSize).toNat = len b := USize.toNat_ofNat_of_lt' hN
   have hc : Code.ofLongs b = ⟨64, (len b).toUSize, 2 ^ 64, b⟩ := by
     unfold Code.ofLongs longCount need; rw [dif_pos hN]
@@ -78,7 +78,7 @@ theorem grade_ofLongs_inv (b : ByteArray) (hN : len b < USize.size) (h63 : len b
     rw [UInt64.toNat_xor, show (0x8000000000000000 : UInt64).toNat = 2 ^ 63 from rfl]
     exact xor_pow63 (by have := hlt i hi; omega)
   have hlen : (ids (Code.ofLongs b).grade).length = len b := by rw [hp.length_eq, List.length_range]
-  refine ⟨hlen, fun d hd => ?_⟩
+  refine ⟨hlen, fun d hd => ?_, fun d hd => List.mem_range.1 (hp.mem_iff.1 (List.getElem_mem _))⟩
   refine sorted_perm_key (N := len b) _ (fun i => (Column.bitsAt b (i * 8) 8).toNat) hp ?_ ?_ hlt d _
   · refine hs.imp_of_mem fun {i j} hi hj h => ?_
     have hi' := List.mem_range.1 (hp.mem_iff.1 hi)
