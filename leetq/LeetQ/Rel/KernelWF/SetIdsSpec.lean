@@ -191,7 +191,54 @@ theorem groupOf_spec (o : ByteArray) (n : USize) {m : Nat} (ho : o.size = 8 * (m
   · have := UInt64.lt_iff_toNat_lt.1 (hhi (r - 1 + 1) (by omega) (by omega))
     rw [hkey, ordKey_long (hO _ (by omega))] at this; omega
 
+/-- **Below a first row `b`, the first rows are those numbered below `b`'s group**: the first rows ascend, and
+    `b`'s group is numbered by `b`'s own place among them. -/
+theorem firsts_lt_iff {α : Type} [DecidableEq α] {g : Nat → α} {m b : Nat} (hb : b ∈ firstsOf g m) {r : Nat}
+    (hr : r < (firstsOf g m).length) : (firstsOf g m)[r] < b ↔ r < Verify.groupOf g m b := by
+  have hbm := firsts_lt g m hb
+  obtain ⟨k', hk', e⟩ := List.getElem_of_mem hb
+  have hkk : Verify.groupOf g m b = k' :=
+    firsts_inj (groupOf_lt (g := g) hbm) hk' (by rw [groupOf_get (g := g) hbm, e])
+  have hF : (firstsOf g m).Pairwise (· < ·) := by unfold firstsOf; exact (pairwise_range m).filter _
+  rw [hkk, ← e]
+  constructor
+  · intro h
+    rcases Nat.lt_or_ge r k' with h' | h'
+    · exact h'
+    · rcases Nat.lt_or_eq_of_le h' with h'' | rfl
+      · exact absurd (List.pairwise_iff_getElem.1 hF k' r hk' hr h'') (by omega)
+      · exact absurd h (Nat.lt_irrefl _)
+  · exact List.pairwise_iff_getElem.1 hF r k' hr hk'
+
+/-- **Two ascending lists with one set of members are one list.** -/
+theorem eq_of_lt_mem : ∀ {l₁ l₂ : List Nat}, l₁.Pairwise (· < ·) → l₂.Pairwise (· < ·) →
+    (∀ x, x ∈ l₁ ↔ x ∈ l₂) → l₁ = l₂
+  | [], [], _, _, _ => rfl
+  | [], b :: _, _, _, h => absurd ((h b).2 (by simp)) (by simp)
+  | a :: _, [], _, _, h => absurd ((h a).1 (by simp)) (by simp)
+  | a :: l₁, b :: l₂, h₁, h₂, h => by
+    have hab : a = b := by
+      rcases List.mem_cons.1 ((h a).1 (by simp)) with e | ha
+      · exact e
+      · rcases List.mem_cons.1 ((h b).2 (by simp)) with e | hb
+        · exact e.symm
+        · have := List.rel_of_pairwise_cons h₂ ha; have := List.rel_of_pairwise_cons h₁ hb; omega
+    subst hab
+    have h₁' := List.pairwise_cons.1 h₁
+    have h₂' := List.pairwise_cons.1 h₂
+    rw [eq_of_lt_mem h₁'.2 h₂'.2 fun x => ⟨fun hx => ?_, fun hx => ?_⟩]
+    · have := h₁'.1 x hx
+      rcases List.mem_cons.1 ((h x).1 (List.mem_cons_of_mem _ hx)) with e | e
+      · omega
+      · exact e
+    · have := h₂'.1 x hx
+      rcases List.mem_cons.1 ((h x).2 (List.mem_cons_of_mem _ hx)) with e | e
+      · omega
+      · exact e
+
 #print axioms gradeBy_lex
 #print axioms groupOf_spec
+#print axioms firsts_lt_iff
+#print axioms eq_of_lt_mem
 
 end LeetQ.Rel.Alg
