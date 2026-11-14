@@ -6,7 +6,7 @@
 import LeetQ.Rel.KernelWF.CodesArr
 import LeetQ.Rel.KernelWF.CodesSymParts
 import LeetQ.Rel.KernelWF.CodesLongParts
-import LeetQ.Rel.KernelWF.CodesFloatParts
+import LeetQ.Rel.KernelWF.CodesNumParts
 import LeetQ.Rel.KernelWF.CodesGuidParts
 import LeetQ.Rel.KernelWF.CodesGeneral
 
@@ -16,19 +16,16 @@ open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel
 
 /-- The bounds `Obj.codes` needs at every node of `A`, on the parts it hands that node: each node theorem's
     size bounds and `Vals.PickFits`; at an atom, the kinds a several-part theorem covers — boolean, a small
-    integral or a float side whose raze answers dense (`bytesOf` of each part), an `.i64` side, its parts in any
-    encoding, whose raze answers dense (vacuous where every part is dense),
+    integral or a float side, its parts and their raze in any encoding, the parts' count 32 bits where an ALP
+    join offsets them, an `.i64` side, its parts and their raze in any encoding,
     a symbol side whose dictionaries summed fit a `USize`, a guid side, a general side whose elements hold no
     `IndexCell` (`cellFree`, where `valEq` is `=`). -/
 def _root_.LeetQ.Rel.Obj.CodesFit : (A : Obj) → {p : Nat} → Vector (Part A) p → Prop
   | .atom t, p, cs => (cs.toList.map (·.1.toNat)).sum < USize.size ∧
     (t = .boolean ∨
       (∃ k₀, orderKind t = some k₀ ∧ (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) ∧
-        (p = 1 → ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∧
-        ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-          denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) ∨
-      (orderKind t = some .i64 ∧ ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-        denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true) ∨
+        (2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32)) ∨
+      orderKind t = some .i64 ∨
       (t = .symbol ∧
         (cs.toList.map fun c => match c.2.enc with | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size) ∨
       t = .guid ∨
@@ -114,13 +111,13 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
   induction A with
   | atom t =>
     intro p cs ⟨hN, ht⟩
-    rcases ht with rfl | ⟨k₀, ht, hk₀, h1, hd⟩ | ⟨ht, hd⟩ | ⟨rfl, hD⟩ | rfl | ⟨rfl, hC⟩
+    rcases ht with rfl | ⟨k₀, ht, hk₀, hA⟩ | ht | ⟨rfl, hD⟩ | rfl | ⟨rfl, hC⟩
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_boolean_faithful cs hk hl hi hj, fun hk => ?_⟩, fun hk hl => ?_⟩
       · obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf cs hk
         exact ⟨Or.inl h2, h1, h3, h4⟩
       · rw [(codes_boolean_wf cs hk).2.1, (codes_boolean_wf cs hl).2.1]
-    · exact codes_dense_faithful_wf ht hk₀ cs h1 hd hN
-    · refine ⟨⟨fun hk hl _ _ hi hj => codes_long_dense_faithful ht cs hd hN hk hl hi hj,
+    · exact codes_dense_faithful_wf ht hk₀ cs hN hA
+    · refine ⟨⟨fun hk hl _ _ hi hj => codes_long_dense_faithful ht cs hN hk hl hi hj,
         fun hk => codes_long_dense_wf ht cs hN hk⟩, fun hk hl => ?_⟩
       cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
       | none => obtain ⟨q, -, hc⟩ := codes_long_cut ht cs (by omega) hro; rw [hc]; exact cut_lane _ _ hk hl

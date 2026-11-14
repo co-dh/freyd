@@ -9,8 +9,6 @@ import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesSymParts
-import LeetQ.Rel.KernelWF.CodesFloatParts
-import LeetQ.Rel.KernelWF.CodesGuidParts
 
 namespace LeetQ.Rel.Rep
 
@@ -18,16 +16,20 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg
 
 variable {A B C : Obj}
 
+/-! `≫`'s notations, one home: `open CompN` in every file that states a `≫` read-back. -/
+namespace CompN
 -- the two parts `≫` codes jointly, and their codes, named as `comp` names them
 set_option hygiene false in
-local notation "jcs" => (#v[⟨R.n, R.val⟩, ⟨S.n, S.key⟩] : Vector (Part _) 2)
+scoped notation "jcs" => (#v[⟨R.n, R.val⟩, ⟨S.n, S.key⟩] : Vector (Part _) 2)
 set_option hygiene false in
-local notation "jc" => Obj.codes _ jcs
+scoped notation "jc" => Obj.codes _ jcs
 -- the pairs `(i, j)` `join` answers, as `join_spec` reads them back: row `i` of `R`, row `j` of `S`, equal codes
 set_option hygiene false in
-local notation "jpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.range S.n.toNat).filter fun j =>
+scoped notation "jpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.range S.n.toNat).filter fun j =>
   Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
     Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).map (i, ·))
+end CompN
+open CompN
 
 section Comp
 
@@ -157,59 +159,6 @@ end Comp
 #print axioms rep_comp
 #print axioms rep_comp_boolean
 #print axioms rep_comp_long
-
-section CompDense
-
-open Freyd Freyd.Alg.RelSet
-
-/-- `rep_comp` through a small integral or float middle side (`byte`, `char`, `short`, the four-byte types,
-    `real`, `float`, `datetime`) of dense payloads, the two counts summing below a `USize`
-    (`codes_dense_faithful_wf`). -/
-theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
-    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
-    (hD : ∀ w r, t.width = some w → encodedParts t ((jcs).toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    rep (R ≫ S) = rep R ≫ rep S :=
-  have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  have hc := codes_dense_faithful_wf ht hk₀ _ (fun h => absurd h (by decide)) hD hN'
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => hc.1.1 hk hl hi hj, fun hk => hc.1.2 hk⟩ hrn hM hMU hA hC
-
-end CompDense
-
-#print axioms rep_comp_dense
-
-section CompGuid
-
-open Freyd Freyd.Alg.RelSet
-
-/-- `rep_comp` through a `guid` middle side, the two counts summing below a `USize`
-    (`codes_guid_parts_faithful`/`_wf`). -/
-theorem rep_comp_guid (R : Rel A (.atom .guid)) (S : Rel (.atom .guid) C) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hrn : S.n.toNat < 2 ^ 63)
-    (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < 2 ^ 63)
-    (hMU : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
-      Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
-        Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
-    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
-    rep (R ≫ S) = rep R ≫ rep S :=
-  have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => codes_guid_parts_faithful _ hN' hk hl hi hj,
-    fun hk => codes_guid_parts_wf _ hN' hk⟩ hrn hM hMU hA hC
-
-end CompGuid
-
-#print axioms rep_comp_guid
 
 section CompSymbol
 

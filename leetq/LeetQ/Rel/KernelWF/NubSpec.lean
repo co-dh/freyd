@@ -235,13 +235,11 @@ theorem rep_nub_boolean (R : Rel (.atom .boolean) (.atom .boolean)) : rep R.nub 
       by have h := codes_boolean_wf (#v[⟨R.n, R.val⟩] : Vector (Part _) 1) (k := 0) (by decide)
          exact ⟨Or.inl h.2.1, h.1, h.2.2.1, h.2.2.2⟩⟩
 
-/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types) in any encoding, or float
-    sides (`real`, `float`, `datetime`) of a dense payload (`codes_num_one_faithful_wf`). -/
+/-- `rep_nub` at small integral sides (`byte`, `char`, `short`, the four-byte types) or float sides (`real`,
+    `float`, `datetime`), in any encoding (`codes_num_one_faithful_wf`). -/
 theorem rep_nub_num {t t' : QAtomicType} {k₀ k₁ : Scan.Kind} (R : Rel (.atom t) (.atom t'))
-    (ht : orderKind t = some k₀)
-    (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ ((k₀ = .f32 ∨ k₀ = .f64) ∧ ∃ b, R.key.enc = .bytes b))
-    (ht' : orderKind t' = some k₁)
-    (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32 ∨ ((k₁ = .f32 ∨ k₁ = .f64) ∧ ∃ b, R.val.enc = .bytes b)) :
+    (ht : orderKind t = some k₀) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64)
+    (ht' : orderKind t' = some k₁) (hk₁ : k₁ = .u8 ∨ k₁ = .i16 ∨ k₁ = .i32 ∨ k₁ = .f32 ∨ k₁ = .f64) :
     rep R.nub = rep R :=
   have hK := codes_num_one_faithful_wf ht ⟨R.n, R.key⟩ hk₀
   have hV := codes_num_one_faithful_wf ht' ⟨R.n, R.val⟩ hk₁
