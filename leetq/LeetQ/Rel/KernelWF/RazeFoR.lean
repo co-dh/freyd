@@ -239,6 +239,149 @@ theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF 
       else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
   raze_row hat_all A x y hF hN k hk
 
+/-- **A held side reads at most `1 + 3 ^ sizeOf` times the sum at all its rows**: held as it is, the side at all
+    its rows is a summand of `Vals.reads`; compacted, it is the side picked at the positions all rows read
+    (`pick_sum_shape` at `tilLongs`), bounded by `reads_pick`. -/
+theorem reads_held {a b : Obj} {n : USize} (x : Vals (.sum a b) n)
+    (h63 : Vals.reads (.sum a b) x (List.range n.toNat) < 2 ^ 63)
+    (hU : Vals.reads (.sum a b) x (List.range n.toNat) < USize.size) :
+    Vals.reads a x.held.2.2.2.2.1 (List.range x.held.1.toNat) ≤
+        (1 + 3 ^ sizeOf a) * Vals.reads (.sum a b) x (List.range n.toNat) ∧
+      Vals.reads b x.held.2.2.2.2.2 (List.range x.held.2.1.toNat) ≤
+        (1 + 3 ^ sizeOf b) * Vals.reads (.sum a b) x (List.range n.toNat) := by
+  obtain ⟨l, r, tag, idx, xa, xb⟩ := x
+  have hf := pickFits_of_reads h63 hU
+  unfold Vals.PickFits at hf; dsimp only at hf
+  obtain ⟨hm, hl, hr, -, -⟩ := hf
+  rw [List.length_range] at hm
+  have ga : ∀ {P L : Nat} (s : List Nat) (K : Nat), P + L ≤ Vals.reads a xa s + K * Vals.reads a xa s →
+      P ≤ (1 + K) * Vals.reads a xa (s ++ List.range l.toNat) := fun s K hP => by
+    have h1 := reads_sublist xa (List.sublist_append_left s (List.range l.toNat))
+    have h2 := Nat.mul_le_mul_left K h1
+    rw [Nat.add_mul, Nat.one_mul]; omega
+  have gb : ∀ {P L : Nat} (s : List Nat) (K : Nat), P + L ≤ Vals.reads b xb s + K * Vals.reads b xb s →
+      P ≤ (1 + K) * Vals.reads b xb (s ++ List.range r.toNat) := fun s K hP => by
+    have h1 := reads_sublist xb (List.sublist_append_left s (List.range r.toNat))
+    have h2 := Nat.mul_le_mul_left K h1
+    rw [Nat.add_mul, Nat.one_mul]; omega
+  unfold Vals.held; split
+  · unfold Vals.compact
+    obtain ⟨il, ir, hil, hir, he, hL, hR, -⟩ := pick_sum_shape l r tag idx xa xb (tilLongs n) n (len_tilLongs n) hm hl hr
+    have hmap : (List.range n.toNat).map (fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) =
+        List.range n.toNat := (List.map_congr_left fun q hq => tilLongs_get (List.mem_range.1 hq)).trans (List.map_id _)
+    rw [hmap] at hL hR
+    rw [he]; dsimp only
+    unfold Vals.reads at h63 hU ⊢
+    dsimp only at h63 hU ⊢
+    have sa : ∀ {B : Nat} (s : List Nat), Vals.reads a xa (s ++ List.range l.toNat) < B → Vals.reads a xa s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist xa (List.sublist_append_left s _)) hs
+    have sb : ∀ {B : Nat} (s : List Nat), Vals.reads b xb (s ++ List.range r.toNat) < B → Vals.reads b xb s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist xb (List.sublist_append_left s _)) hs
+    have pa := reads_pick a xa il _ (USize.toNat_ofNat_of_lt' hil).symm _ (fun q hq => List.mem_range.1 hq)
+      (by rw [hL]; exact sa _ (by omega)) (by rw [hL]; exact sa _ (by omega))
+    have pb := reads_pick b xb ir _ (USize.toNat_ofNat_of_lt' hir).symm _ (fun q hq => List.mem_range.1 hq)
+      (by rw [hR]; exact sb _ (by omega)) (by rw [hR]; exact sb _ (by omega))
+    rw [hL] at pa; rw [hR] at pb
+    have fa := ga _ _ pa
+    have fb := gb _ _ pb
+    simp only [Bool.false_eq_true, ↓reduceIte, ↓reduceDIte] at fa fb ⊢
+    simp only [Nat.mul_add]
+    exact ⟨by omega, by omega⟩
+  · unfold Vals.reads; dsimp only
+    have K1 : ∀ K X : Nat, X ≤ (1 + K) * X := fun K X => Nat.le_mul_of_pos_left X (by omega)
+    exact ⟨Nat.le_trans (reads_sublist xa (List.sublist_append_right _ _)) (Nat.le_trans
+        (Nat.le_trans (Nat.le_add_left _ _) (Nat.le_add_right _ _)) (K1 _ _)),
+      Nat.le_trans (reads_sublist xb (List.sublist_append_right _ _)) (Nat.le_trans (Nat.le_add_left _ _) (K1 _ _))⟩
+
+/-- **Two parts' summed readings at all rows below `2^32`, times `3 ^ (sizeOf A)²`, make them fit a raze**: every
+    count and dictionary `Vals.RazeFits` bounds is a summand of `Vals.reads` at all rows — a payload or side read
+    at all its rows besides the rows reaching it — and a held side compacted reads at most `1 + 3 ^ sizeOf` times
+    its sum (`reads_held`), which the factor pays at each level. The bound is `2^32`, where an ALP atom's joined
+    count is stored; a side with no ALP leaf would need only `USize.size` and `2^63`, which no premise can say
+    without naming the leaves. -/
+theorem razeFits_of_reads : (A : Obj) → {n m : USize} → (x : Vals A n) → (y : Vals A m) →
+    3 ^ (sizeOf A * sizeOf A) * (Vals.reads A x (List.range n.toNat) + Vals.reads A y (List.range m.toNat)) <
+      2 ^ 32 → Vals.RazeFits A x y
+  | .atom t, n, m, x, y, h => by
+    have hle := Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ (Nat.pow_pos (by decide))) h
+    have hUS : 2 ^ 32 ≤ USize.size := by rcases USize.size_eq with e | e <;> rw [e] <;> decide
+    unfold Vals.reads at hle; simp only [List.length_range] at hle
+    unfold Vals.RazeFits
+    cases hx : Arr.enc (t := t) (n := n) x <;> cases hy : Arr.enc (t := t) (n := m) y <;>
+      simp only [hx, hy] at hle ⊢ <;> exact ⟨by omega, fun _ => by omega⟩
+  | .prod a b, n, m, x, y, h => by
+    have hs : ∀ c, sizeOf c ≤ sizeOf (Obj.prod a b) → 3 ^ (sizeOf c * sizeOf c) ≤
+        3 ^ (sizeOf (Obj.prod a b) * sizeOf (Obj.prod a b)) := fun c hc =>
+      Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul hc hc)
+    unfold Vals.reads at h
+    unfold Vals.RazeFits
+    exact ⟨razeFits_of_reads a x.1 y.1 (Nat.lt_of_le_of_lt (Nat.mul_le_mul
+        (hs a (by simp only [Obj.prod.sizeOf_spec]; omega)) (by omega)) h),
+      razeFits_of_reads b x.2 y.2 (Nat.lt_of_le_of_lt (Nat.mul_le_mul
+        (hs b (by simp only [Obj.prod.sizeOf_spec]; omega)) (by omega)) h)⟩
+  | .arr b, n, m, ⟨p, lo, hi, f⟩, ⟨q, lo', hi', g⟩, h => by
+    have hle := Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ (Nat.pow_pos (by decide))) h
+    have hUS : 2 ^ 32 ≤ USize.size := by rcases USize.size_eq with e | e <;> rw [e] <;> decide
+    have kb : 3 ^ (sizeOf b * sizeOf b) ≤ 3 ^ (sizeOf (Obj.arr b) * sizeOf (Obj.arr b)) :=
+      Nat.pow_le_pow_right (by decide) (Nat.mul_le_mul (by simp only [Obj.arr.sizeOf_spec]; omega)
+        (by simp only [Obj.arr.sizeOf_spec]; omega))
+    have fx : p.toNat + Vals.reads b f (List.range p.toNat) ≤ Vals.reads (.arr b) ⟨p, lo, hi, f⟩ (List.range n.toNat) := by
+      unfold Vals.reads; dsimp only
+      have := reads_sublist f (List.sublist_append_right (((List.range n.toNat).flatMap fun k =>
+        if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+          (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        else [])) (List.range p.toNat))
+      omega
+    have fy : q.toNat + Vals.reads b g (List.range q.toNat) ≤ Vals.reads (.arr b) ⟨q, lo', hi', g⟩ (List.range m.toNat) := by
+      unfold Vals.reads; dsimp only
+      have := reads_sublist g (List.sublist_append_right (((List.range m.toNat).flatMap fun k =>
+        if h : k < m.toNat then List.range' (min (max (lo'.get ⟨k, h⟩).toInt 0).toNat q.toNat)
+          (min (max (hi'.get ⟨k, h⟩).toInt 0).toNat q.toNat - min (max (lo'.get ⟨k, h⟩).toInt 0).toNat q.toNat)
+        else [])) (List.range q.toNat))
+      omega
+    unfold Vals.RazeFits
+    exact ⟨by dsimp only; omega, by dsimp only; omega,
+      razeFits_of_reads b f g (Nat.lt_of_le_of_lt (Nat.mul_le_mul kb (by omega)) h)⟩
+  | .sum a b, n, m, x, y, h => by
+    have hle := Nat.lt_of_le_of_lt (Nat.le_mul_of_pos_left _ (Nat.pow_pos (by decide))) h
+    have hUS : 2 ^ 32 ≤ USize.size := by rcases USize.size_eq with e | e <;> rw [e] <;> decide
+    have k : ∀ c, sizeOf c + 1 ≤ sizeOf (Obj.sum a b) → 3 ^ (sizeOf c * sizeOf c) * (1 + 3 ^ sizeOf c) ≤
+        3 ^ (sizeOf (Obj.sum a b) * sizeOf (Obj.sum a b)) := fun c hc => by
+      have s2 := Nat.mul_le_mul hc hc
+      have e : (sizeOf c + 1) * (sizeOf c + 1) = sizeOf c * sizeOf c + (sizeOf c + 1) + sizeOf c := by
+        rw [Nat.add_mul, Nat.mul_add, Nat.mul_one, Nat.one_mul]; omega
+      have p1 : 1 + 3 ^ sizeOf c ≤ 3 ^ (sizeOf c + 1) := by
+        rw [Nat.pow_succ]; have := Nat.pow_pos (n := sizeOf c) (by decide : 0 < 3); omega
+      calc 3 ^ (sizeOf c * sizeOf c) * (1 + 3 ^ sizeOf c) ≤ 3 ^ (sizeOf c * sizeOf c) * 3 ^ (sizeOf c + 1) :=
+            Nat.mul_le_mul_left _ p1
+        _ = 3 ^ (sizeOf c * sizeOf c + (sizeOf c + 1)) := (Nat.pow_add ..).symm
+        _ ≤ _ := Nat.pow_le_pow_right (by decide) (by omega)
+    have ka := k a (by simp only [Obj.sum.sizeOf_spec]; omega)
+    have kb := k b (by simp only [Obj.sum.sizeOf_spec]; omega)
+    obtain ⟨hxa, hxb⟩ := reads_held x (by omega) (by omega)
+    obtain ⟨hya, hyb⟩ := reads_held y (by omega) (by omega)
+    have lxa := length_le_reads x.held.2.2.2.2.1 (List.range x.held.1.toNat)
+    have lxb := length_le_reads x.held.2.2.2.2.2 (List.range x.held.2.1.toNat)
+    have lya := length_le_reads y.held.2.2.2.2.1 (List.range y.held.1.toNat)
+    have lyb := length_le_reads y.held.2.2.2.2.2 (List.range y.held.2.1.toNat)
+    simp only [List.length_range] at lxa lxb lya lyb
+    have ia : ∀ c (K : Nat) (X Y : Nat), X + Y ≤ (1 + K) * (Vals.reads (.sum a b) x (List.range n.toNat) +
+        Vals.reads (.sum a b) y (List.range m.toNat)) → 3 ^ (sizeOf c * sizeOf c) * (1 + K) ≤
+        3 ^ (sizeOf (Obj.sum a b) * sizeOf (Obj.sum a b)) → 3 ^ (sizeOf c * sizeOf c) * (X + Y) < 2 ^ 32 :=
+      fun c K X Y hXY hK => Nat.lt_of_le_of_lt (Nat.le_trans (Nat.mul_le_mul_left _ hXY)
+        (by rw [← Nat.mul_assoc]; exact Nat.mul_le_mul_right _ hK)) h
+    have pa := ia a _ _ _ (by rw [Nat.mul_add]; omega) ka
+    have pb := ia b _ _ _ (by rw [Nat.mul_add]; omega) kb
+    have pa1 := Nat.le_mul_of_pos_left (Vals.reads a x.held.2.2.2.2.1 (List.range x.held.1.toNat) +
+      Vals.reads a y.held.2.2.2.2.1 (List.range y.held.1.toNat))
+      (Nat.pow_pos (n := sizeOf a * sizeOf a) (by decide : 0 < 3))
+    have pb1 := Nat.le_mul_of_pos_left (Vals.reads b x.held.2.2.2.2.2 (List.range x.held.2.1.toNat) +
+      Vals.reads b y.held.2.2.2.2.2 (List.range y.held.2.1.toNat))
+      (Nat.pow_pos (n := sizeOf b * sizeOf b) (by decide : 0 < 3))
+    unfold Vals.RazeFits
+    exact ⟨by omega, by omega, by omega, by omega, pickFits_of_reads (by omega) (by omega),
+      pickFits_of_reads (by omega) (by omega), razeFits_of_reads a _ _ pa, razeFits_of_reads b _ _ pb⟩
+
 end LeetQ.Rel.KernelWF
 
 namespace LeetQ.Rel.Alg
