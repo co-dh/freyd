@@ -100,7 +100,7 @@ theorem rep_memC {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) (xs 
   rw [memC_fst]
   simp only [memC, Bool.and_eq_true] at hb
   obtain ⟨hk, hv⟩ := hb
-  have hv' := pickFits_of_fitsN (.arr B) X _ hv _ (by simp)
+  have hv' : Vals.PickFits (.arr B) X (List.range n.toNat) := pickFits_of_fitsN (.arr B) X _ hv _ (by simp)
   refine rep_mem X hv' ?_ xs x
   unfold expand need at hk
   dsimp only at hk
@@ -147,8 +147,7 @@ theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
 theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
     (∀ a X, rep (transposeC R).1 a X → ∀ x, x ∈ X ↔ rep R a x) ∧
       (∀ a, (∃ X, rep (transposeC R).1 a X) ↔ ∃ b, rep R a b) := by
-  rw [transposeC_fst]
-  simp only [transposeC, Obj.codesC_fst, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [transposeC, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨⟨⟨hK, hV⟩, hk⟩, hv⟩, hWk⟩, hW⟩, h63⟩ := hb
   exact rep_transpose R (oneOK_of_codesC A R.key hK) (oneOK_of_codesC B R.val hV)
     (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp))

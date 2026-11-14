@@ -263,26 +263,14 @@ def transpose (R : Rel A B) : Rel A (.arr B) :=
   longCount "Λ" lo fun m hm => ⟨m, Vals.pick A dk.2 lo m hm,
     ⟨dv.1, toUSize_eq hm ▸ longCol lo, toUSize_eq (h.trans hm) ▸ longCol (o.extract 8 o.size), dv.2⟩⟩
 
-/-- `Λ(R)` and whether it ran within capacity: `nub`'s two codes and the nub keys' code (`codesC`), `&&` `R` fitting
-    at all its rows (`fitsN`), `rep_transpose`'s count decided, and the nub values' code bit, which `sortBy` orders
-    by (`codesC` run for its bit alone). -/
+/-- `Λ(R)` and whether it ran within capacity: the bits of `nub`'s two codes and of the nub sides' codes
+    (`codesC`; the keys' `transpose` groups by, the values' `sortBy` orders by), `&&` `R` fitting at all its rows
+    (`fitsN`), `rep_transpose`'s count decided. `transpose` itself runs, the codes again for their bits: a body
+    with the twins in place equals `transpose` only through a defeq check that times out evaluating the kernels. -/
 def transposeC (R : Rel A B) : Rel A (.arr B) × Bool :=
-  let kc₀ := A.codesC #v[⟨_, R.key⟩]; let vc₀ := B.codesC #v[⟨_, R.val⟩]
-  let d := R.rows (tuples.tupleIds kc₀.1[0] #[vc₀.1[0]]).2
-  let kc := A.codesC #v[⟨_, d.key⟩]
-  let vp := B.sortBy d.val (tilLongs d.n)
-  let p := gather 8 vp (kc.1[0].gather vp).grade
-  let o := (kc.1[0].gather p).runStarts
-  let lo := o.extract 0 (o.size - 8)
-  have h : len (o.extract 8 o.size) = len lo := by simp only [len, lo, ByteArray.size_extract]; omega
-  let dk := Vals.pickPart A d.key p; let dv := Vals.pickPart B d.val p
-  (longCount "Λ" lo fun m hm => ⟨m, Vals.pick A dk.2 lo m hm,
-    ⟨dv.1, toUSize_eq hm ▸ longCol lo, toUSize_eq (h.trans hm) ▸ longCol (o.extract 8 o.size), dv.2⟩⟩,
-   kc₀.2 && vc₀.2 && Vals.fitsN A R.key R.n.toNat && Vals.fitsN B R.val R.n.toNat && kc.2 &&
-    (B.codesC #v[⟨_, d.val⟩]).2 && decide (R.n.toNat < 2 ^ 63))
-
-theorem transposeC_fst (R : Rel A B) : (transposeC R).1 = transpose R := by
-  unfold transposeC transpose Rel.nub; simp only [Obj.codesC_fst]
+  (transpose R, (A.codesC #v[⟨_, R.key⟩]).2 && (B.codesC #v[⟨_, R.val⟩]).2 && Vals.fitsN A R.key R.n.toNat &&
+    Vals.fitsN B R.val R.n.toNat && (A.codesC #v[⟨_, R.nub.key⟩]).2 && (B.codesC #v[⟨_, R.nub.val⟩]).2 &&
+    decide (R.n.toNat < 2 ^ 63))
 
 /-- `∋ : arr B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
     holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank
