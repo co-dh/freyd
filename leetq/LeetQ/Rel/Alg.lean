@@ -500,7 +500,7 @@ def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n)
 
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
     one row per key of `R`, has no row for. -/
-private def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
+def lamOn {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Rel A (.arr B) :=
   Λ(R) ∪ top (idU U \ dom R).key (nilVal B)
 
 /-- `E(R) : arr A ⟶ arr B` on the arrays `X`, the existential image, the note's `E(R)≜frac(∋R,∋)`
