@@ -91,6 +91,13 @@ inductive Tm : Obj → Obj → Bool → Type where
   /-- `Rᴵ`, the family `R : I ⟶ A×B` as one relation of the key and the source, on the pairs (key, source) in
       demand: `R` at their keys, each row `(i,(a,b))` re-keyed as `((i,a),b)`, then joined with the pairs. -/
   | flat {I A B : Obj} {d : Bool} (R : Tm I (.prod A B) d) : Tm (.prod I A) B true
+  /-- The variable `k` of the fixed point that binds it: its value in the round being run. -/
+  | var {A B : Obj} (k : Nat) : Tm A B false
+  /-- `νX : φ`, `X` the variable `k`: rounds of `body` from `S`, the conjuncts of `φ` without `X`, down to the
+      greatest fixed point. -/
+  | nu {A B : Obj} (k : Nat) (S body : Tm A B false) : Tm A B false
+  /-- `μX : φ`: rounds of `body` from `𝟘` up to the least fixed point, at most `|UA|·|UB|+1`. -/
+  | mu {A B : Obj} (k : Nat) (UA : Tm A A false) (UB : Tm B B false) (body : Tm A B false) : Tm A B false
 
 /-- A built term with its objects. -/
 abbrev Res := (A : Obj) × (B : Obj) × (d : Bool) × Tm A B d
@@ -203,6 +210,11 @@ inductive Pre
   | flat (p : Pre)
   | lit (pos : Pos) (a b : OTy) (ps : List (Tup × Tup))
   | close (pos : Pos) (p : Pre) (a : OTy) (why : String)
+  /-- The variable `k` of a fixed point `X : a ⟶ b`, at the place `pos` it is used. -/
+  | var (pos : Pos) (k : Nat) (a b : OTy)
+  /-- `μX : body` (`least`) or `νX : body`, `X` the variable `k`; `S` the meet of `body`'s conjuncts that do not
+      mention `X`, a `ν`'s start. -/
+  | fix (pos : Pos) (least : Bool) (k : Nat) (S : Option Pre) (body : Pre) (a b : OTy)
 
 instance : Inhabited Pre := ⟨.id (.base "")⟩
 
@@ -239,6 +251,8 @@ def Pre.at (p : Pos) : Pre → Pre
   | .flat x => .flat (x.at p)
   | .lit _ a b ps => .lit p a b ps
   | .close _ x a why => .close p (x.at p) a why
+  | .var _ k a b => .var p k a b
+  | .fix _ l k S x a b => .fix p l k (S.attach.map fun ⟨y, _⟩ => y.at p) (x.at p) a b
   -- no position and no part
   | x@(.tm _) | x@(.zero ..) | x@(.id _) | x@(.mem _) | x@(.outl ..) | x@(.outr ..) | x@(.inl ..) | x@(.inr ..)
   | x@(.union _) | x@(.tau _) | x@(.nil ..) | x@(.cons _) | x@(.uncons _) | x@(.length ..) | x@(.total _)
@@ -252,6 +266,8 @@ def noLeft : String := "the term here needs keys and has no left context"
 
 structure St where
   ms : Array (Option OTy) := #[]
+  /-- The fixed points so far: the next one's variable. -/
+  fixes : Nat := 0
 
 abbrev M := StateT St (Except Err)
 
@@ -306,8 +322,8 @@ def Pre.nilSrcs : Pre → List OTy
   | .comp x y | .meet x y | .join x y | .diff x y | .ldiv _ x y _ _ | .rdiv _ x y _ _ | .pair x y | .prod x y
   | .junc x y | .fold x y | .foldI x y => x.nilSrcs ++ y.nilSrcs
   | .conv x | .dom x | .ran x | .lam x | .E x | .map x | .est x | .thin x | .own x | .thinL x | .merge x
-  | .loop x | .flat x | .close _ x _ _ => x.nilSrcs
-  | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
+  | .loop x | .flat x | .close _ x _ _ | .fix _ _ _ _ x _ _ => x.nilSrcs
+  | .var .. | .tm _| .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _ | .cons _
   | .uncons _ | .length .. | .total _ | .inits _ | .cat _ | .uncat _ | .zip .. | .snoc _ | .unsnoc _ | .setify _
   | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
 
@@ -315,6 +331,64 @@ def Pre.nilSrcs : Pre → List OTy
     `nil : 1 ⟶ [A]`. A fold's seed `ran(nil)` drops that source, so only this rule gives it (§e). -/
 def settleNil (p : Pos) (x : Pre) : M Unit := x.nilSrcs.forM fun a => do
   if let .mv _ := zonk (← get) a then unify p "nil's source" a (.base "1")
+
+/-! ### Fixed points: where the variable occurs -/
+
+/-- How a term reads one of its parts: monotonically, antitonically (`what` names the place), or neither (`op`,
+    an operator not monotonic in its argument). -/
+inductive Pol
+  | mono
+  | anti (what : String)
+  | not (op : String)
+
+/-- The parts of `x`, each with how `x` reads it. A definition's body is expanded at its use, so the prelude's
+    and the program's definitions need no rule of their own. -/
+def Pre.parts : Pre → List (Pre × Pol)
+  | .top _ _ _ t => (t.map fun y => [(y, .mono)]).getD []
+  | .ldiv _ x y _ _ => [(x, .anti "the left operand of \\"), (y, .mono)]
+  | .rdiv _ x y _ _ => [(x, .mono), (y, .anti "the right operand of /")]
+  | .diff x y => [(x, .mono), (y, .anti "the right operand of −")]
+  | .comp x y | .meet x y | .join x y | .pair x y | .prod x y | .junc x y | .fold x y | .foldI x y =>
+    [(x, .mono), (y, .mono)]
+  | .conv x | .dom x | .ran x | .map x | .est x | .own x | .loop x | .flat x | .close _ x _ _
+  | .fix _ _ _ _ x _ _ => [(x, .mono)]
+  | .lam x => [(x, .not "Λ")]
+  | .E x => [(x, .not "E")]
+  | .thin x => [(x, .not "thin")]
+  | .thinL x => [(x, .not "thinL")]
+  | .merge x => [(x, .not "merge")]
+  | .var .. | .tm _ | .zero .. | .id _ | .mem _ | .outl .. | .outr .. | .inl .. | .inr .. | .union _ | .tau _
+  | .nil .. | .cons _ | .uncons _ | .length .. | .total _ | .inits _ | .cat _ | .uncat _ | .zip .. | .snoc _
+  | .unsnoc _ | .setify _ | .bagify _ | .tic _ | .atPos .. | .succ .. | .arith .. | .leq .. | .lt .. | .lit .. => []
+
+/-- Where the variable `k` first occurs in `x`. -/
+partial def Pre.occ (k : Nat) : Pre → Option Pos
+  | .var p j _ _ => if j == k then some p else none
+  | x => x.parts.findSome? (·.1.occ k)
+
+/-- The first occurrence of `X`, the variable `k` of `fx` (`μX`, `νX`), where the body is not monotonic in it:
+    under an operator that is not, or under an odd number of antitone places, `why` the last of them. -/
+partial def Pre.polarity (k : Nat) (fx x : String) (pos : Bool) (why : String) : Pre → Option Err
+  | .var p j _ _ =>
+    if j == k && !pos then
+      some ⟨p, s!"{fx}: {x} occurs in {why} at {p.line}:{p.col} (antitone); {x} must occur only in monotonic positions"⟩
+    else none
+  | y => y.parts.findSome? fun (z, pol) => match pol with
+    | .mono => z.polarity k fx x pos why
+    | .anti w => z.polarity k fx x (!pos) w
+    | .not op => (z.occ k).map fun p => ⟨p,
+      s!"{fx}: {x} occurs under {op} at {p.line}:{p.col}; {op} is not monotonic in its argument, so the fixed point need not exist"⟩
+
+def Pre.conjuncts : Pre → List Pre
+  | .meet x y => x.conjuncts ++ y.conjuncts
+  | x => [x]
+
+/-- The meet of the top-level conjuncts of `x` that do not mention the variable `k`: `X ⊑ φ(X) ⊑ S`, so the
+    greatest fixed point lies below `S`, and `ν`'s rounds start there. -/
+def Pre.bound (k : Nat) (x : Pre) : Option Pre :=
+  match x.conjuncts.filter (·.occ k |>.isNone) with
+  | [] => none
+  | c :: cs => some (cs.foldl .meet c)
 
 /-! ### Elaboration: environments and the lifted rows of §e -/
 
@@ -661,6 +735,8 @@ mutual
 def elabE (env : Env) (m : Option OTy) : Expr → M Arg
   | .name p n => do
     match env.params.lookup n with
+    -- a fixed point's variable at the place it is used, which its errors name
+    | some (.rel (.var _ k a b) s t) => pure (.rel (.var p k a b) s t)
     | some a => pure a
     | none => match env.defs.lookup n with
       | some d =>
@@ -769,6 +845,24 @@ def elabE (env : Env) (m : Option OTy) : Expr → M Arg
   | .lit p ps => do
     let a ← litTy env.objs p (ps.map (·.1)); let b ← litTy env.objs p (ps.map (·.2))
     pure (.rel (.lit p a b ps) a b)
+  -- `X : a ⟶ b` in scope in the body, which has that type and is monotonic in `X`; `ν` from the conjuncts
+  -- without `X`, `μ` from `𝟘` on objects with a universe, which bound the rounds
+  | .fix p least x b => do
+    let fx := s!"{if least then "μ" else "ν"}{x}"
+    if m.isSome then notLiftable p fx
+    let a ← fresh; let c ← fresh
+    let k ← modifyGet fun s => (s.fixes, { s with fixes := s.fixes + 1 })
+    let (q, s, t) := (← elabE { env with params := (x, .rel (.var p k a c) a c) :: env.params } none b).plain
+    unify p s!"the source of {fx}'s body" s a; unify p s!"the target of {fx}'s body" t c
+    if let some e := q.polarity k fx x true "" then throw e
+    let S := q.bound k
+    if least then
+      for o in [a, c] do
+        let o := zonk (← get) o
+        if (uniOf env.objs o).isNone then throw ⟨p, s!"{fx}: {o} has no universe; an array object can grow every round"⟩
+    else if S.isNone then
+      throw ⟨p, s!"{fx} needs a bound: write S ∩ φ with S not mentioning {x} (⊤(A,B) for the whole object)"⟩
+    pure (.rel (.fix p least k S q a c) a c)
 
 def elabArgs (env : Env) (m : Option OTy) : List Expr → M (List Arg)
   | [] => pure []
@@ -995,6 +1089,9 @@ def convTm {A B : Obj} {d : Bool} (t : Tm A B d) : Except String ((e : Bool) × 
   if h : d = false then pure ⟨false, .conv (h ▸ t)⟩ else
   match t with
   | .val R => pure ⟨false, .conv (.val R)⟩
+  | .var k => pure ⟨false, .conv (.var k)⟩
+  | .nu k S b => pure ⟨false, .conv (.nu k S b)⟩
+  | .mu k U V b => pure ⟨false, .conv (.mu k U V b)⟩
   | .uni U => pure ⟨false, .uni U⟩
   | .zero => pure ⟨false, .zero⟩
   | .conv R => pure ⟨false, R⟩
@@ -1161,7 +1258,12 @@ def litCol (p : Pos) (n : USize) (o : OTy) (rows : List Tup) : Except Err ((A : 
 def corAt (A B : Obj) : Cor → Except Err (Tm (.prod A B) (.prod A B) true)
   | ⟨A', B', c⟩ => if h : A' = A ∧ B' = B then pure (h.1 ▸ h.2 ▸ c) else internal dp "pair-test objects disagree"
 
-/-- The pair test of an order parameter at its object `B`, or the error naming the leaf that is not testable. -/
+/-- A built term read whole: closed as it is, or on demand run on the universe of its source `a`. -/
+def closeRes (p : Pos) (a : OTy) (why : String) : Res → Except Err Res
+  | ⟨A, B, false, t⟩ => pure ⟨A, B, false, t⟩
+  | ⟨A, B, true, t⟩ => return ⟨A, B, false, .comp (← uniTm objs st dp p a A why) t⟩
+
+/-- The pair test of an order parameter at its object `B`,or the error naming the leaf that is not testable. -/
 def paramOf (why : String) : Except Err Cor → Except Err ((B : Obj) × Tm (.prod B B) (.prod B B) true)
   | .ok ⟨A, B, c⟩ => if h : B = A then pure ⟨A, h ▸ c⟩ else internal dp s!"{why}'s order is not on one object"
   | .error e => throw ⟨e.pos,
@@ -1308,11 +1410,20 @@ def build : Pre → Except Err Res
     let ⟨A, k⟩ ← litCol objs st dp p n (zonk st a) (ps.map (·.1))
     let ⟨B, v⟩ ← litCol objs st dp p n (zonk st b) (ps.map (·.2))
     pure ⟨A, B, false, .val ⟨n, k, v⟩⟩
-  | .close p q a why => do
-    let ⟨A, B, d, t⟩ ← build q
-    match d with
-    | false => pure ⟨A, B, false, t⟩
-    | true => pure ⟨A, B, false, .comp (← uniTm objs st dp p a A why) t⟩
+  | .close p q a why => do closeRes objs st dp p a why (← build q)
+  | .var _ k a b => return ⟨← toObj st dp a, ← toObj st dp b, false, .var k⟩
+  -- the body read whole each round, on its source's universe when it needs keys
+  | .fix p least k S q a b => do
+    let A ← toObj st dp a; let B ← toObj st dp b
+    let why := s!"{if least then "μ" else "ν"}'s body is read whole each round"
+    let body ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build q))
+    if least then
+      pure ⟨A, B, false, .mu k (← uniTm objs st dp p a A "μ") (← uniTm objs st dp p b B "μ") body⟩
+    else match S with
+      | some s => do
+        let s ← closed? dp (A := A) (B := B) (← closeRes objs st dp p a why (← build s))
+        pure ⟨A, B, false, .nu k s body⟩
+      | none => internal dp "ν without its bound"
 termination_by x => (sizeOf x, 0)
 
 /-- `τ(R)`, the pair test of `R : A ⟶ B` (`Cor`), for `R` that cannot enumerate its targets: a term that

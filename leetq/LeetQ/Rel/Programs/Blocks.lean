@@ -31,8 +31,8 @@ rel_program blocks after prelude where
     K : [X×X] ⟶ [X×X]×(X×X) ≜ Qc dom(Λ(⇝)δ succ ∩ (π₁δ))   -- the moves that take the distance down by one
     ≼ : α×β ⟶ α×β ≜ π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))   -- moves in lexicographic order
     σ : [X×X] ⟶ X×X ≜ Λ(Kπ₂)est(≼)                -- the move chosen in each state
-    ν : [X×X] ⟶ [X×X] ≜ ⟨dom(σ),σ⟩Λ(⇝)            -- the state it leads to
-    Z : [X×X]×N ⟶ [X×X]×N ≜ L(s₀,ν)               -- the chosen path, with each state's step
+    nx : [X×X] ⟶ [X×X] ≜ ⟨dom(σ),σ⟩Λ(⇝)           -- the state it leads to
+    Z : [X×X]×N ⟶ [X×X]×N ≜ L(s₀,nx)              -- the chosen path, with each state's step
     ζ : N ⟶ [X×X] ≜ (Zπ₂)°(Zπ₁)                   -- the k-th state
     plan : N ⟶ X×X ≜ ζσ                           -- the k-th move
 

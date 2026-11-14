@@ -290,7 +290,48 @@ def iter {α : Type} (n : Nat) (done : α → Bool) (f : α → α) (a : α) : �
   (hylo (·.1) (fun x => x.1 == 0 || done x.2) (fun x => (x.1 - 1, f x.2))
     (fun x h => by simp only [Bool.or_eq_false_iff, beq_eq_false_iff_ne] at h; show x.1 - 1 < x.1; omega) (n, a)).2
 
-/-- The order `Q` as a test of pairs: the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
+/-- A fixed point of `φ` from `X₀`: rounds `X ↦ nub(φ(X))`, at most `n`, until a round leaves the row count as
+    it was, with the rounds run. On a chain (`φ` monotonic, `X₀ ⊑ φ(X₀)` or `φ(X₀) ⊑ X₀`) an equal count is an
+    equal relation, so the stop is the fixed point; `n` bounds the rounds, as the chain's length does. -/
+def fixOn {A B : Obj} (n : Nat) (φ : Rel A B → Rel A B) (X₀ : Rel A B) : Rel A B × Nat :=
+  let x := X₀.nub
+  let r := iter n (fun (p, x, _) => p == x.n.toNat) (fun (_, x, k) => (x.n.toNat, (φ x).nub, k + 1))
+    (x.n.toNat + 1, x, 0)
+  (r.2.1, r.2.2)
+
+/-- One arc `A\(X C)` of an AC-3 body (`A : V ⟶ V`, `C : D ⟶ D`), with `𝟙(D)` for its division. -/
+structure Revise (V D : Obj) where
+  A : Rel V V
+  C : Rel D D
+  UV : Rel V V
+  UD : Rel D D
+
+/-- The AC-3 body `s ∩ ⋂ₖ Aₖ\(X Cₖ)`, one naive round: `fixOn` on it is `νX` the naive way. -/
+def acRound {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : Rel V D :=
+  as.foldl (fun Y a => Y ∩ leftDiv a.A (X ≫ a.C) a.UV.key a.UD.key) s
+
+/-- One delta round of the AC-3 body, from `(X, Δ)`, `Δ ⊑ 𝟙(V)` the variables whose domain shrank last round:
+    `X′ = X ∩ ⋂ₖ (Δ Aₖ)\(X Cₖ)` and `Δ′ = dom(X − X′)`. `(Δ A)\…` is `⊤` at every `x ∉ ran(Δ A)`, so each
+    division runs only on the rows `ran(Δ A)` (its universe there, so no vacuous row is made) and keeps `X`'s
+    other rows; `X − X′` is the anti-join of the pairs. The tie to the naive round is `AcFix.acDelta_round`: from
+    a state satisfying `AcInv`, one delta round denotes one `acRound`, and `Δ′` keeps `AcInv`; `k` rounds of each
+    agree by `AcFix.acDelta_iterate`. -/
+def acDelta {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : Rel V D × Rel V V :=
+  let (X, Δ) := p
+  let X' := as.foldl (fun Y a =>
+    let R := Δ ≫ a.A; let T := ran R
+    (antiJoin Y° T)° ∪ (Y ∩ leftDiv R (Δ ≫ X ≫ a.C) T.key a.UD.key)) X
+  (X', ran (outl (antiJoin (idU (X.key, X.val)) (idU (X'.key, X'.val)))))
+
+/-- `νX : s ∩ ⋂ₖ Aₖ\(X Cₖ)` by delta rounds from `(s, 𝟙(V))` — the first the naive round — until `Δ′ = 𝟘`,
+    at most `|s| + 1`, with the rounds run. -/
+def acFix {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (U : Rel V V) : Rel V D × Nat :=
+  let x := s.nub
+  let r := iter (x.n.toNat + 1) (fun (_, Δ, _) => Δ.n == 0)
+    (fun (X, Δ, k) => let (X', Δ') := acDelta as (X, Δ); (X', Δ', k + 1)) (x, U, 0)
+  (r.1, r.2.2)
+
+/-- The order `Q` as a test of pairs:the pairs of the coreflexive `D` that are pairs of `Q`. Every op that
     takes an order runs it as such a test, on the pairs it compares (`estOn`, …); `Q` closed is this test. -/
 def pairsIn {B : Obj} (Q : Rel B B) (D : Rel (.prod B B) (.prod B B)) : Rel (.prod B B) (.prod B B) :=
   D ≫ idU (Q.key, Q.val)

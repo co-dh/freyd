@@ -121,12 +121,15 @@ inductive Expr
   | junc (p : Pos) (a b : Expr)
   | fold (p : Pos) (e s : Expr)
   | lit (p : Pos) (ps : List (Tup × Tup))
+  /-- `μX : φ` (`least`) or `νX : φ`: the least or the greatest `X` with `X = φ(X)`; the body reaches to the
+      closing parenthesis or the end of the declaration. -/
+  | fix (p : Pos) (least : Bool) (x : String) (body : Expr)
   deriving Repr, Inhabited
 
 /-- The position a term starts at. -/
 def Expr.pos : Expr → Pos
   | .name p _ | .op p .. | .app p .. | .bin p .. | .inf p .. | .conv p _ | .compl p _ | .pair p .. | .junc p .. | .fold p ..
-  | .lit p _ => p
+  | .lit p _ | .fix p .. => p
   | .comp a _ => a.pos
 
 /-- Each name of `σ` replaced by its term: a `where` item put in place in its body (§c). -/
@@ -143,6 +146,8 @@ partial def Expr.subst (σ : List (String × Expr)) : Expr → Expr
   | .junc p a b => .junc p (a.subst σ) (b.subst σ)
   | .fold p a b => .fold p (a.subst σ) (b.subst σ)
   | .lit p ps => .lit p ps
+  -- `x` is bound in the body, so an outer `x` is not replaced there
+  | .fix p l x b => .fix p l x (b.subst (σ.filter (·.1 != x)))
 
 /-- A body: a relation, or a test `e ⊑ f` (§e). -/
 inductive Body
@@ -207,7 +212,12 @@ def OExp.arrow (ty : OExp × OExp) : String := s!"{ty.1.show} ⟶ {ty.2.show}"
 def sigOf (n : String) (ps : List Param) (ty : Option (OExp × OExp)) : String :=
   sigText n (ps.map fun q => (q.name, q.ty.map OExp.arrow)) (ty.map OExp.arrow)
 
-/-- `e` printed at the level `l`, parenthesised as §c's one level needs: `0` anywhere or the left operand of a
+/-- The level a left operand prints at: `1` for a fixed point, whose body would read on past the operator. -/
+def Expr.lhs : Expr → Nat
+  | .fix .. => 1
+  | _ => 0
+
+/-- `e` printed at the level `l`,parenthesised as §c's one level needs: `0` anywhere or the left operand of a
     composite or infix term, `1` its right operand or the operand of `∼` (a composite or infix term in
     parentheses), `2` under `°` (a complement too). `full` puts every composite and infix term in parentheses:
     the parser guards compare it with the reading written out. -/
@@ -218,15 +228,17 @@ def Expr.render (l : Nat) (full : Bool := false) : Expr → String
     let as := if args.isEmpty then "" else "(" ++ ", ".intercalate (args.map (Expr.render 0 full)) ++ ")"
     o.sym ++ os ++ as
   | .app _ n args => n ++ "(" ++ ", ".intercalate (args.map (Expr.render 0 full)) ++ ")"
-  | .comp a b => let s := s!"{a.render 0 full} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
-  | .bin _ o a b => let s := s!"{a.render 0 full} {o.sym} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
-  | .inf _ n a b => let s := s!"{a.render 0 full} {n} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
+  | .comp a b => let s := s!"{a.render a.lhs full} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
+  | .bin _ o a b => let s := s!"{a.render a.lhs full} {o.sym} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
+  | .inf _ n a b => let s := s!"{a.render a.lhs full} {n} {b.render 1 full}"; if full || l ≥ 1 then s!"({s})" else s
   | .conv _ a => s!"{a.render 2 full}°"
   | .compl _ a => let s := s!"∼{a.render 1 full}"; if l ≥ 2 then s!"({s})" else s
   | .pair _ a b => s!"⟨{a.render 0 full}, {b.render 0 full}⟩"
   | .junc _ a b => s!"[{a.render 0 full}, {b.render 0 full}]"
   | .fold _ a b => s!"⦇{a.render 0 full}, {b.render 0 full}⦈"
   | .lit _ ps => "{" ++ ", ".intercalate (ps.map fun (a, b) => (Tup.pair a b).show) ++ "}"
+  | .fix _ least x b =>
+    let s := s!"{if least then "μ" else "ν"}{x} : {b.render 0 full}"; if full || l ≥ 1 then s!"({s})" else s
 
 def Expr.show (e : Expr) : String := e.render 0
 
