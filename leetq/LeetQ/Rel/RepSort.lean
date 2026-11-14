@@ -377,7 +377,7 @@ local notation "subOK" =>
     (∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
-      codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
+      (Rel.n el).toNat + (Rel.n pend).toNat < USize.size ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧

@@ -473,7 +473,7 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
       refine ⟨(a, u), ?_⟩
       rw [hD j, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
       refine ⟨rfl, Int64.ofNat i.1, ?_⟩
-      rw [rep_pair _ _ hkO hkn hkM hkA hkB hkC]
+      rw [rep_pair _ _ (codesOK_long2 _ _ hkO) hkn hkM hkA hkB hkC]
       exact ⟨ha, hu⟩
     have hstepAt : ∀ j (hj : j < xs.length),
         rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) →
@@ -746,7 +746,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (hran : let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
     (hcomp : ∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
-      codesOK(kc, ck2(outr (D rd), sc)) ∧ (Rel.n sc).toNat < 2 ^ 63 ∧
+      (Rel.n (outr (D rd))).toNat + (Rel.n sc).toNat < USize.size ∧ (Rel.n sc).toNat < 2 ^ 63 ∧
       (Rel.n (outr (D rd))).toNat * (Rel.n sc).toNat < min (2 ^ 63) USize.size ∧
       Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst) ∧
       Vals.PickFits .long (Rel.val sc) ((mpairs(kc, outr (D rd), sc)).map Prod.snd)) :
@@ -769,7 +769,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     obtain ⟨hcO, hcn, hcM, hcA, hcC⟩ := hcomp k hk _ rfl
     subst hSf
     show rep (outr (D k) ≫ sc) p w ↔ _
-    rw [rep_comp _ _ hcO hcn hcM hcA hcC, rep_outr, hD k, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
+    rw [rep_comp _ _ (codesOK_long2 _ _ hcO) hcn hcM hcA hcC, rep_outr, hD k, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
     constructor
     · rintro ⟨y, ⟨z, ⟨rfl, hz⟩, rfl⟩, hy⟩; exact ⟨⟨p, rfl, hz⟩, hy⟩
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
