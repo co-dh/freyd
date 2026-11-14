@@ -10,8 +10,6 @@ import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.PickRow
 import LeetQ.Rel.KernelWF.CodesSymParts
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg

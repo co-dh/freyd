@@ -8,8 +8,6 @@
 import LeetQ.Rel.KernelWF.CodesProdFaithful
 import LeetQ.Rel.KernelWF.RazeRowRec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

@@ -6,8 +6,6 @@ import LeetQ.Rel.KernelWF.JoinContent
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.Reduce
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF

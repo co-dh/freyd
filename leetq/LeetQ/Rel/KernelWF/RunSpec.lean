@@ -5,8 +5,6 @@
 -/
 import LeetQ.Rel.KernelWF.SortSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF

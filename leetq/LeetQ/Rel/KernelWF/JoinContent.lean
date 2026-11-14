@@ -8,8 +8,6 @@ import QLean.Verify.ScanOver
 import QLean.Verify.BinWin
 import QLean.Verify.Structural
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel

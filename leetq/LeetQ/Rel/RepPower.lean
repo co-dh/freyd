@@ -6,8 +6,6 @@ import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.KernelWF.RazeFoR
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

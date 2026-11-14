@@ -3,8 +3,6 @@
 -/
 import LeetQ.Rel.RepOps
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

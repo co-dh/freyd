@@ -5,8 +5,6 @@
 -/
 import LeetQ.Rel.KernelWF.RazeSym
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

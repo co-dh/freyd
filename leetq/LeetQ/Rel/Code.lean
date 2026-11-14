@@ -1288,15 +1288,13 @@ end Laws
 
 end LeetQ.Rel.Alg
 
-namespace LaneN
 -- the lane widths a `Code` may have: one home for the disjunction every `Code.w` hypothesis states
-scoped notation "laneOK(" w ")" => (w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
+notation "laneOK(" w ")" => (w = 1 ∨ w = 2 ∨ w = 4 ∨ w = 8 ∨ w = 16 ∨ w = 32 ∨ w = 64)
 
 -- the universal `hW` of `sortBy_perm`, `rep_tau_list`, `rep_snoc`: every one-part code is well formed and counts its part
 set_option hygiene false in
-scoped notation "codesWF" =>
+notation "codesWF" =>
   ∀ (B : Obj) (x : Part B), laneOK(((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w) ∧
     ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
       ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
     ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1
-end LaneN

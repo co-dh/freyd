@@ -9,8 +9,6 @@ import QLean.Verify.Ids
 import LeetQ.Rel.KernelWF.Lane
 import LeetQ.Rel.KernelWF.CodesSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify

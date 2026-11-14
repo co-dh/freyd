@@ -7,8 +7,6 @@
 import LeetQ.Rel.KernelWF.RunSpec
 import LeetQ.Rel.KernelWF.JoinAssembly
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.KernelWF

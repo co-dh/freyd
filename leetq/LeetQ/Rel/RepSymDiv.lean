@@ -7,8 +7,6 @@
 import LeetQ.Rel.RepDiv
 import LeetQ.Rel.KernelWF.SetIdsSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg

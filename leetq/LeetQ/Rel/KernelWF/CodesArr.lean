@@ -8,8 +8,6 @@
 import LeetQ.Rel.KernelWF.CodesRec
 import LeetQ.Rel.KernelWF.SliceSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

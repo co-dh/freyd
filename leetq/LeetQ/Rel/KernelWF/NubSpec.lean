@@ -11,8 +11,6 @@ import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.KernelWF.CodesProd
 import LeetQ.Rel.KernelWF.CodesSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel

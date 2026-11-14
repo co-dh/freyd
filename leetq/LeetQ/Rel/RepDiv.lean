@@ -10,8 +10,6 @@ import LeetQ.Rel.KernelWF.CodesAll
 import LeetQ.Rel.KernelWF.RazeFoR
 import LeetQ.Rel.RepOps2
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg

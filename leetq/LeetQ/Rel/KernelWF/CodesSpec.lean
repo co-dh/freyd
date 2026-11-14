@@ -8,8 +8,6 @@ import LeetQ.Rel.KernelWF.JoinSpec
 import LeetQ.Rel.KernelWF.PickSpec
 import QLean.Verify.ScanOver
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

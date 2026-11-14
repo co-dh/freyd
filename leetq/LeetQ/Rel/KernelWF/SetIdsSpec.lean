@@ -5,8 +5,6 @@ import LeetQ.Rel.KernelWF.SegSpec
 import LeetQ.Rel.KernelWF.DivSpec
 import LeetQ.Rel.KernelWF.CodesRec
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.KernelWF

@@ -14,8 +14,6 @@ import QLean.Verify.Encoding
 import QLean.Verify.Search
 import QLean.Verify.Group
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel LeetQ.Rel

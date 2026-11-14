@@ -7,8 +7,6 @@ import LeetQ.Rel.KernelWF.CodesArr
 import LeetQ.Rel.KernelWF.CodesSymParts
 import LeetQ.Rel.KernelWF.CodesLongParts
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

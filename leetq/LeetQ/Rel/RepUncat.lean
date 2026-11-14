@@ -6,8 +6,6 @@ import LeetQ.Rel.RepPrim
 import LeetQ.Rel.RepMem
 import LeetQ.Rel.KernelWF.NestSpec
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

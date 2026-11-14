@@ -8,8 +8,6 @@ import LeetQ.Rel.KernelWF.FoldSpec
 import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepMem
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

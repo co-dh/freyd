@@ -10,8 +10,6 @@ import LeetQ.Rel.KernelWF.ComposeKey
 import QLean.Verify.Codes
 import QLean.Verify.SymFind
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

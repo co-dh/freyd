@@ -7,8 +7,6 @@
 import LeetQ.Rel.KernelWF.CodesSpec
 import LeetQ.Rel.KernelWF.Raze
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Dep QLean.Kernel QLean.Verify LeetQ.Rel

@@ -9,8 +9,6 @@ import QLean.Verify.FindMember
 import QLean.Verify.SymFind
 import QLean.Verify.Encoding
 
-open LaneN
-
 namespace LeetQ.Rel.Alg
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel

@@ -9,8 +9,6 @@ import LeetQ.Rel.KernelWF.CrossSpec
 import LeetQ.Rel.KernelWF.MemberSpec
 import LeetQ.Rel.KernelWF.CodesProdFaithful
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF

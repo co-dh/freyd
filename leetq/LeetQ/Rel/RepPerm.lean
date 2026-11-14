@@ -5,8 +5,6 @@
 import LeetQ.Rel.RepEst
 import LeetQ.Rel.RepUncat
 
-open LaneN
-
 namespace LeetQ.Rel.Rep
 
 open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF
