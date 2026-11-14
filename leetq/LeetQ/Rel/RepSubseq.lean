@@ -21,7 +21,6 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
     (W : Rel .long (.prod B (.arr B))) (hW : W = pair el pend)
-    (hp : (Rel.val W).2.1.toNat < 2 ^ 63)
     (s : ByteArray × ByteArray) (hs : s = slicesOf (Rel.val W).2)
     (hcS : ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
       2 ^ 63)
@@ -37,7 +36,6 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (lo : ByteArray) (hlo : lo = sub (Rel.n W) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
     (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[dst, lo])).grade)
-    (hTf : Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat))
     (hRf : Vals.RazeFits B tl (Rel.val W).1)
     -- stays: at a generic `B` the razed cells' fit bounds the two parts' summed `.arr` windows and `.sum` counts
     (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
@@ -53,9 +51,10 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
   have h1 := rep_pair el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC
+  have hV := (pair_pickFits el pend (codesOK_long2 _ _ hkO) hkn hkM (pickFits_atom_fst _) hkB hkC).2.2
   subst hW
-  have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
-    dst hdst g hg (pickFits_tilLongs _) hTf hRf hFf
+  have h2 := rep_cons (pair el pend) hV s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
+    dst hdst g hg (pickFits_tilLongs _) hRf hFf
   subst P Q
   intro r v
   rw [rep_union_full (cons (pair el pend)) _ hU (razeFits_atom_count _ _ hU (by decide) rfl) hFv
@@ -189,12 +188,11 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
         (True ∧ (¬ ∃ e, rep (elK i) r e) ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) := by
     intro i hi r v
     obtain ⟨hkO, hkn, hkM, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
-    obtain ⟨hp, hs⟩ := hW _ rfl
-    obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
-    obtain ⟨hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hcS, hcU, hx⟩ := hW _ rfl _ rfl
+    obtain ⟨hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hTf hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
+    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
+      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
       · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩
