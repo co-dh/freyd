@@ -73,12 +73,16 @@ theorem _root_.LeetQ.Rel.Obj.razeC_fits : (A : Obj) → {n m : USize} → (x : V
       have er : ((cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
           fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList =
           [⟨x.held.2.1, x.held.2.2.2.2.2⟩, ⟨y.held.2.1, y.held.2.2.2.2.2⟩] := by simp [hcs]
-      rw [el] at h1; rw [er] at h2; rw [el, er] at hf
-      simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, Nat.add_zero] at h1 h2 hf
+      have sl : (((cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList.map (·.1.toNat)).sum =
+          x.held.1.toNat + y.held.1.toNat := by rw [el]; simp
+      have sr : (((cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList.map (·.1.toNat)).sum =
+          x.held.2.1.toNat + y.held.2.1.toNat := by rw [er]; simp
       have hpk : ∀ c ∈ cs₀.toList, Vals.fitsN (.sum a b) c.2 c.1.toNat = true := fun c hc =>
         Array.all_eq_true_iff_forall_mem.1 hp c (Array.mem_def.2 hc)
       unfold Vals.RazeFits
-      exact ⟨hf.1, hf.2, h1, h2,
+      exact ⟨by rw [← sl]; exact hf.1, by rw [← sr]; exact hf.2, by rw [← sl]; exact h1, by rw [← sr]; exact h2,
         pickFits_of_fitsN (.sum a b) x _ (hpk ⟨n, x⟩ (by rw [hcs]; simp)) _ (by simp),
         pickFits_of_fitsN (.sum a b) y _ (hpk ⟨m, y⟩ (by rw [hcs]; simp)) _ (by simp),
         Obj.razeC_fits a _ _ _ el _ ha, Obj.razeC_fits b _ _ _ er _ hb⟩
