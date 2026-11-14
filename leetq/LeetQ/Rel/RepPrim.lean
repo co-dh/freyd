@@ -3,6 +3,8 @@
 -/
 import LeetQ.Rel.RepList
 import LeetQ.Rel.KernelWF.PrimSpec
+import LeetQ.Rel.KernelWF.SliceSpec
+import LeetQ.Rel.KernelWF.MemberSpec
 
 namespace LeetQ.Rel.Rep
 
@@ -32,8 +34,7 @@ theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hp : X.
     (hk : k < 2 ^ 63)
     (i : ByteArray) (hi : i = whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf X).2 (one k.toUInt64) n))
     (e : ByteArray) (he : e = addc (len i).toUSize (gather 8 (slicesOf X).1 i) k)
-    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hEf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt e (q * 8) 8).toNat)) :
+    (hX : Vals.PickFits (.arr B) X (List.range n.toNat)) :
     ∀ (xs : List B.El) x, rep (atPos k X) xs x ↔ (∃ j, X.row j = xs) ∧ ∃ h : k < xs.length, x = xs[k]'h := by
   intro xs x
   have hlen : len i < USize.size := by
@@ -47,6 +48,37 @@ theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hp : X.
     rw [hA, List.mem_filter, List.mem_range, decide_eq_true_iff]
   have hs1 : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   have hk64 : (k.toUInt64).toNat = k := UInt64.toNat_ofNat_of_lt' (Nat.lt_trans hk (by decide))
+  -- picked row `q`: a row of `X` longer than `k`, and the payload place of its cell `k`
+  have hE : ∀ q, q < len i → ∃ hj : (Column.bitsAt i (q * 8) 8).toNat < n.toNat,
+      k < (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat ∧
+      (Column.bitsAt e (q * 8) 8).toNat =
+        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat + k := by
+    intro q hq
+    have qb : q < ((len i).toUSize).toNat := by omega
+    have hin : (Column.bitsAt i (q * 8) 8).toNat ∈ QLean.Verify.ids i := by
+      have hq' : q < (QLean.Verify.ids i).length := by rw [← len_eq_ids]; exact hq
+      rw [← ids_getElem hq']; exact List.getElem_mem hq'
+    obtain ⟨hj, hc⟩ := (hmem _).1 hin
+    obtain ⟨hLC, -, -⟩ := hR _ hj
+    have hlq : Column.bitsAt (gather 8 (slicesOf X).1 i) (q * 8) 8 =
+        Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 :=
+      gather8_get hq (by rw [hs1]; exact hj)
+    refine ⟨hj, hc, ?_⟩
+    rw [he]; unfold addc
+    rw [val_va_get _ _ _ _ qb, bitsAt_one, hlq, (valStep_add_sub (by omega) (by omega)).1 (by omega), hk64]
+    exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show _ < 2 ^ 63 by omega) (by decide))
+  -- the picks are rows of `X` (`whereBits`), and the cells one place inside each picked row's window
+  have hKf : Vals.PickFits (.arr B) X (QLean.Verify.ids i) :=
+    pickFits_sublist (by rw [hi]; exact whereBits_sublist n _) hX
+  have hEf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt e (q * 8) 8).toNat) := by
+    refine pickFits_sublist ?_ (pickFits_payload X hKf).2
+    rw [List.map_eq_flatMap]
+    refine flatMap_sublist_map_flatMap (fun q => (Column.bitsAt i (q * 8) 8).toNat) _ _ fun q hq => ?_
+    obtain ⟨hj, hc, heq⟩ := hE q (List.mem_range.1 hq)
+    have hS := slicesOf_get X hp hj
+    dsimp only
+    rw [dif_pos hj, List.singleton_sublist, List.mem_range'_1]
+    omega
   -- row `q` of the result: the array `X.row i[q]` and its cell `k`
   have hq : ∀ (q : Nat) (hq : q < len i) (h1 : len i = ((len i).toUSize).toNat)
       (h2 : len e = ((len i).toUSize).toNat),
@@ -55,20 +87,8 @@ theorem rep_atPos {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hp : X.
         ∃ hk' : k < (X.row ⟨_, hj⟩).length,
           Vals.row (Vals.pick B X.2.2.2 e _ h2) ⟨q, by omega⟩ = (X.row ⟨_, hj⟩)[k]'hk' := by
     intro q hq h1 h2
-    have qb : q < ((len i).toUSize).toNat := by omega
-    have hin : (Column.bitsAt i (q * 8) 8).toNat ∈ QLean.Verify.ids i := by
-      have hq' : q < (QLean.Verify.ids i).length := by rw [← len_eq_ids]; exact hq
-      rw [← ids_getElem hq']; exact List.getElem_mem hq'
-    obtain ⟨hj, hc⟩ := (hmem _).1 hin
+    obtain ⟨hj, hc, heq⟩ := hE q hq
     obtain ⟨hLC, hln, hget⟩ := hR _ hj
-    have hlq : Column.bitsAt (gather 8 (slicesOf X).1 i) (q * 8) 8 =
-        Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 :=
-      gather8_get hq (by rw [hs1]; exact hj)
-    have heq : (Column.bitsAt e (q * 8) 8).toNat =
-        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat + k := by
-      rw [he]; unfold addc
-      rw [val_va_get _ _ _ _ qb, bitsAt_one, hlq, (valStep_add_sub (by omega) (by omega)).1 (by omega), hk64]
-      exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_lt_of_le (show _ < 2 ^ 63 by omega) (by decide))
     have hkl : k < (X.row ⟨_, hj⟩).length := by rw [hln]; exact hc
     refine ⟨hj, by rw [pick_row (.arr B) X i _ h1 (by rw [← h1]; exact hKf), dif_pos hj], hkl, ?_⟩
     have hlt : (Column.bitsAt e (q * 8) 8).toNat < X.1.toNat := by rw [heq]; omega
@@ -108,12 +128,7 @@ theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
     (l : ByteArray) (hl : l = gather 8 (slicesOf X).1 i)
     (e : ByteArray) (he : e = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
       (add (len i).toUSize l (gather 8 (slicesOf X).2 i)) (one 1) (len i).toUSize)
-    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hEf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt e (q * 8) 8).toNat))
-    (hTf : ∀ (h₁ : ((len i).toUSize).toNat ≤ len l) (h₂ : ((len i).toUSize).toNat ≤ len e),
-      Vals.PickFits (.arr B)
-        (⟨X.1, longsN (len i).toUSize l h₁, longsN (len i).toUSize e h₂, X.2.2.2⟩ : Vals (.arr B) (len i).toUSize)
-        ((List.range (len i)).map fun q => (Column.bitsAt (tilLongs (len i).toUSize) (q * 8) 8).toNat)) :
+    (hX : Vals.PickFits (.arr B) X (List.range n.toNat)) :
     ∀ (xs : List B.El) bs b, rep (unsnoc X) xs (bs, b) ↔ (∃ j, X.row j = xs) ∧ xs = bs ++ [b] := by
   intro xs bs b
   have hlen : len i < USize.size := by
@@ -130,6 +145,75 @@ theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
   have h1n : (1 : UInt64).toNat = 1 := rfl
   have hcT : ∀ T : Vals (.arr B) (len i).toUSize,
       Vals.compact (.arr B) T = Vals.pick (.arr B) T (tilLongs _) _ (len_tilLongs _) := fun _ => rfl
+  -- picked row `q`: a non-empty row of `X`, its start and the payload place of its last cell
+  have hE : ∀ q, q < len i → ∃ hj : (Column.bitsAt i (q * 8) 8).toNat < n.toNat,
+      0 < (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat ∧
+      Column.bitsAt l (q * 8) 8 = Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 ∧
+      (Column.bitsAt e (q * 8) 8).toNat =
+        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat +
+          (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat - 1 := by
+    intro q hq
+    have qb : q < ((len i).toUSize).toNat := by omega
+    have hin : (Column.bitsAt i (q * 8) 8).toNat ∈ QLean.Verify.ids i := by
+      have hq' : q < (QLean.Verify.ids i).length := by rw [← len_eq_ids]; exact hq
+      rw [← ids_getElem hq']; exact List.getElem_mem hq'
+    obtain ⟨hj, hc⟩ := (hmem _).1 hin
+    obtain ⟨hLC, -, -⟩ := hR _ hj
+    have hlq : Column.bitsAt l (q * 8) 8 =
+        Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 := by
+      rw [hl]; exact gather8_get hq (by rw [hs1]; exact hj)
+    have hcq : Column.bitsAt (gather 8 (slicesOf X).2 i) (q * 8) 8 =
+        Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 :=
+      gather8_get hq (by rw [hs2]; exact hj)
+    have ha : (Column.bitsAt (add (len i).toUSize l (gather 8 (slicesOf X).2 i)) (q * 8) 8).toNat =
+        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat +
+          (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat := by
+      rw [add_get qb (by rw [hlq, hcq]; omega), hlq, hcq]
+    refine ⟨hj, hc, hlq, ?_⟩
+    rw [he, val_va_get _ _ _ _ qb, bitsAt_one, (valStep_add_sub (by omega) (by omega)).2 (by omega),
+      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.sub_le _ _)
+        (Nat.lt_trans (show _ < 2 ^ 63 by omega) (by decide))), ha, h1n]
+  -- the picks are rows of `X` (`whereBits`); each last cell, and each front's window, inside its row's window
+  have hKf : Vals.PickFits (.arr B) X (QLean.Verify.ids i) :=
+    pickFits_sublist (by rw [hi]; exact whereBits_sublist n _) hX
+  have hEf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt e (q * 8) 8).toNat) := by
+    refine pickFits_sublist ?_ (pickFits_payload X hKf).2
+    rw [List.map_eq_flatMap]
+    refine flatMap_sublist_map_flatMap (fun q => (Column.bitsAt i (q * 8) 8).toNat) _ _ fun q hq => ?_
+    obtain ⟨hj, hc, -, heq⟩ := hE q (List.mem_range.1 hq)
+    have hS := slicesOf_get X hp hj
+    dsimp only
+    rw [dif_pos hj, List.singleton_sublist, List.mem_range'_1]
+    omega
+  have hTf : ∀ (h₁ : ((len i).toUSize).toNat ≤ len l) (h₂ : ((len i).toUSize).toNat ≤ len e),
+      Vals.PickFits (.arr B)
+        (⟨X.1, longsN (len i).toUSize l h₁, longsN (len i).toUSize e h₂, X.2.2.2⟩ : Vals (.arr B) (len i).toUSize)
+        ((List.range (len i)).map fun q => (Column.bitsAt (tilLongs (len i).toUSize) (q * 8) 8).toNat) := by
+    intro h₁ h₂
+    refine pickFits_windows X _ _ ?_ hKf
+    rw [List.map_congr_left (g := fun q => q) fun q hq => tilLongs_get (by rw [hm]; exact List.mem_range.1 hq),
+      List.map_id']
+    refine flatMap_sublist_map_flatMap (fun q => (Column.bitsAt i (q * 8) 8).toNat) _ _ fun q hq => ?_
+    have hq' := List.mem_range.1 hq
+    have qb : q < ((len i).toUSize).toNat := by omega
+    obtain ⟨hj, hc, hlq, heq⟩ := hE q hq'
+    obtain ⟨hLC, -, -⟩ := hR _ hj
+    have hS := slicesOf_get X hp hj
+    have hlo : ((longsN (len i).toUSize l h₁).get ⟨q, qb⟩).toInt =
+        ((Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat : Int) := by
+      rw [longsN_get, hlq]; exact toInt64_toInt (by omega)
+    have hhi : ((longsN (len i).toUSize e h₂).get ⟨q, qb⟩).toInt =
+        (((Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat +
+          (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat - 1 : Nat) : Int) := by
+      rw [longsN_get, toInt64_toInt (x := Column.bitsAt e (q * 8) 8) (by omega), heq]
+    dsimp only
+    rw [dif_pos qb, dif_pos hj, hlo, hhi]
+    generalize (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat = L at hS hLC ⊢
+    generalize (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat = C at hS hLC hc ⊢
+    have e1 : min (max ((L : Nat) : Int) 0).toNat X.1.toNat = L := by omega
+    have e2 : min (max ((L + C - 1 : Nat) : Int) 0).toNat X.1.toNat = L + C - 1 := by omega
+    rw [e1, e2, ← hS.1]
+    exact List.range'_sublist_right.2 (by omega)
   -- row `q` of the result: the array `X.row i[q]`, its front and its last cell
   have hq : ∀ (q : Nat) (hq : q < len i) (h1 : len i = ((len i).toUSize).toNat)
       (h2 : len e = ((len i).toUSize).toNat) (h₁ : ((len i).toUSize).toNat ≤ len l)
@@ -141,27 +225,8 @@ theorem rep_unsnoc {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
           [Vals.row (Vals.pick B X.2.2.2 e _ h2) ⟨q, by omega⟩] := by
     intro q hq h1 h2 h₁ h₂ T hT
     have qb : q < ((len i).toUSize).toNat := by omega
-    have hin : (Column.bitsAt i (q * 8) 8).toNat ∈ QLean.Verify.ids i := by
-      have hq' : q < (QLean.Verify.ids i).length := by rw [← len_eq_ids]; exact hq
-      rw [← ids_getElem hq']; exact List.getElem_mem hq'
-    obtain ⟨hj, hc⟩ := (hmem _).1 hin
+    obtain ⟨hj, hc, hlq, heq⟩ := hE q hq
     obtain ⟨hLC, hln, hget⟩ := hR _ hj
-    have hlq : Column.bitsAt l (q * 8) 8 =
-        Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 := by
-      rw [hl]; exact gather8_get hq (by rw [hs1]; exact hj)
-    have hcq : Column.bitsAt (gather 8 (slicesOf X).2 i) (q * 8) 8 =
-        Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 :=
-      gather8_get hq (by rw [hs2]; exact hj)
-    have ha : (Column.bitsAt (add (len i).toUSize l (gather 8 (slicesOf X).2 i)) (q * 8) 8).toNat =
-        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat +
-          (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat := by
-      rw [add_get qb (by rw [hlq, hcq]; omega), hlq, hcq]
-    have heq : (Column.bitsAt e (q * 8) 8).toNat =
-        (Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat +
-          (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8).toNat - 1 := by
-      rw [he, val_va_get _ _ _ _ qb, bitsAt_one, (valStep_add_sub (by omega) (by omega)).2 (by omega),
-        UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.sub_le _ _)
-          (Nat.lt_trans (show _ < 2 ^ 63 by omega) (by decide))), ha, h1n]
     have hlt : (Column.bitsAt e (q * 8) 8).toNat < X.1.toNat := by rw [heq]; omega
     refine ⟨hj, by rw [pick_row (.arr B) X i _ h1 (by rw [← h1]; exact hKf), dif_pos hj], ?_⟩
     have eT : ∀ (a : Nat) (ha : a < ((len i).toUSize).toNat), a = q → T.row ⟨a, ha⟩ = T.row ⟨q, qb⟩ := by

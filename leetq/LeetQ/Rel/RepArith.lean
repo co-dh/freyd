@@ -379,16 +379,9 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
     (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits E (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat * m.toNat)).map (· / m.toNat)))
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
     (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
     (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
@@ -414,7 +407,7 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   intro xs w
-  rw [rep_foldOn e Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc hjc
+  rw [rep_foldOn e Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc hjc
     hjO hjn hjM hjA hjC xs w]
   have hnum : ∀ r y, rep T r y ↔ ∃ i : Fin n.toNat, r = Int64.ofNat i.1 ∧ X.row i = y := by
     intro r y; subst hT
@@ -445,12 +438,12 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
     have hel1 : ∀ k (hk : k < xs.length),
         rep (elK k) (Int64.ofNat i.1) (xs[xs.length - 1 - k]'(by omega)) := by
       intro k hk
-      obtain ⟨hKf, hVf⟩ := hel k (by omega) _ rfl _ rfl
+      obtain ⟨hKf, hVf⟩ := pickFits_round (Rel.key T) (Rel.val T) hTv (k := k) (by omega) _ rfl _ rfl
       rw [hE, rep_elR T k (by omega) hp _ rfl _ rfl hKf hVf]
       subst hv'
       exact ⟨⟨i', hi'⟩, hk', hk, rfl⟩
     have hst0 : rep pend₀ (Int64.ofNat i.1) (ys[xs.length]'(by omega)) := by
-      subst hpend; rw [rep_top _ _ hN h63 hA hB]
+      subst hpend; rw [rep_top _ _ hN h63 (pickFits_div _ _) hB]
       exact ⟨_, ⟨rfl, ⟨i', hi'⟩, hk'⟩, _, trivial, rfl, h0⟩
     have hrr := rounds_rep pend₀ step elK f hf hR
     -- round `j` read back at the row `i`
@@ -561,23 +554,15 @@ local notation "Sd(" xs ", " t ")" => List.sum (List.map Int64.toInt (List.drop 
 /-- **`sum`, read back**: an array `xs` of `X` goes to its `Int64` sum `xs.foldr (· + ·) 0` exactly where no element
     is q's null and every suffix sum `Σ_{s ≥ t} xs[s]`, taken in `Int`, lies strictly between the null `-2^63` and
     `2^63` — `plus` drops a row whose sum wraps or is the null, and the fold adds from the end. Bound values and
-    hypotheses as `foldOn_on`'s at `Sf = fun D => plus D.val`, `e = col [0]` (`hR`, `hS`, `hran`, `hel` per-round
+    hypotheses as `foldOn_on`'s at `Sf = fun D => plus D.val`, `e = col [0]` (`hR`, `hS`, `hran` per-round
     bundles; `E`, `V` are `.long` there, bound by `let`). -/
 theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (T : Rel .long (.arr .long)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr .long) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits .long (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr .long) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat *
-      (([0] : List Int64).length.toUSize).toNat)).map (· / (([0] : List Int64).length.toUSize).toNat)))
     (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
       (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
     (Sf : Rel (.prod .long .long) (.prod .long .long) → Rel (.prod .long .long) .long)
@@ -611,7 +596,7 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     rw [rep_plus]
     exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
   rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   refine and_congr Iff.rfl ?_
   have h1 : ([0] : List Int64).length < USize.size := by
@@ -701,7 +686,7 @@ theorem intStep_ofNat_succ (m : Nat) (hm : m + 1 < 2 ^ 63) :
     top, since an array of `X` is no longer than the payload (`slicesOf_row`). Bound values (`c`, `sc`, `Sf`, and
     `foldOn_on`'s) by their equations. Hypotheses: the payload's count plus one fits a `USize` and is below
     `2^63` (`hX`, `h63X`), `rep_succ`'s at `tilCol c` (`hsucc`), and `foldOn_on`'s, with `rep_comp`'s at
-    `outr (D k)`, `sc` in each round (`hcomp`) — `hel`, `hR`, `hS`, `hran`, `hcomp` per-round bundles (`V` is `.long`
+    `outr (D k)`, `sc` in each round (`hcomp`) — `hR`, `hS`, `hran`, `hcomp` per-round bundles (`V` is `.long`
     there, bound by `let`). -/
 theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (hX : X.1.toNat + 1 < USize.size) (h63X : X.1.toNat + 1 < 2 ^ 63)
@@ -711,18 +696,10 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
         codesL(cs, (#v[⟨c, s⟩, ⟨c, tilCol c⟩] : Vector ((m : USize) × Arr .long m) 2)))
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits E (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long .long) (hpend : pend₀ = top (A := .long) (Rel.key T) (col [0]))
     (hN : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (([0] : List Int64).length.toUSize).toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat *
-      (([0] : List Int64).length.toUSize).toNat)).map (· / (([0] : List Int64).length.toUSize).toNat)))
     (hB : Vals.PickFits .long (col [0]) ((List.range ((Rel.n T).toNat *
       (([0] : List Int64).length.toUSize).toNat)).map (· % (([0] : List Int64).length.toUSize).toNat)))
     (Sf : Rel (.prod E .long) (.prod E .long) → Rel (.prod E .long) .long)
@@ -773,7 +750,7 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
   rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
       foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
-    foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
+    foldOn_on (col [0]) Sf X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf D hD hR hS F hF jc
       hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   have h1 : ([0] : List Int64).length < USize.size := by
     show 1 < USize.size; rcases USize.size_eq with e | e <;> omega

@@ -128,20 +128,10 @@ open QLean.Dep
 theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
-    (hB : Vals.PickFits (.arr B) (nilVal B)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
     (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B))
     (hstep : step = fun el pend => cons (pair el pend) ∪ pend)
     (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
@@ -220,7 +210,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       · exact Or.inl ⟨e, u, he, hu, rfl⟩
       · exact Or.inr hu
       · exact Or.inr hu
-  refine (rep_foldBy_keep (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
+  refine (rep_foldBy_keep (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf hR True hS
     F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`

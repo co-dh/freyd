@@ -459,19 +459,9 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → R
       cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
     (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size) (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
-    (hB : Vals.PickFits (.arr B) (nilVal B)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
     (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (hstep : step = demandStep Sf)
     (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
     (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
@@ -507,7 +497,7 @@ theorem rep_thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → R
                 ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: b :: bs)))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   intro xs w
-  rw [thinLOn_foldOn q X Sf hSf, rep_foldOn (nilVal B) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep
+  rw [thinLOn_foldOn q X Sf hSf, rep_foldOn (nilVal B) Sf X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _) step hstep
     elK hE f hf Dr hD hR hS F hF jc hjc hjO hjn hjM hjA hjC]
   simp only [fun k => (thin_round_rep q le Sf hSf _ (Dr k) (hD k) (hR' k _ rfl)).2]
 
@@ -529,19 +519,9 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
       cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
     (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
     (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
-        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
-      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
-        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
-        (one (k + 1).toUInt64) (len a).toUSize →
-      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
-      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (hTv : Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size) (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
-    (hA : Vals.PickFits .long (Rel.key T)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
-    (hB : Vals.PickFits (.arr B) (nilVal B)
-      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
     (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (hstep : step = demandStep Sf)
     (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
     (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
@@ -577,7 +557,7 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
   intro xs w
   rw [thinLOn_foldOn q X Sf hSf]
   subst hstep
-  exact rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB (demandStep Sf)
+  exact rep_foldBy (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _) (demandStep Sf)
     (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧
       ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = b :: bs) ∨
         (le p.1 b = false ∧ le b p.1 = false ∧ v = p.1 :: b :: bs)))

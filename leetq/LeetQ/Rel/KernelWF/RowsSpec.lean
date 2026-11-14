@@ -202,6 +202,82 @@ theorem pickFits_sublist {A : Obj} {n : USize} {x : Vals A n} {ps ps' : List Nat
     intro ⟨h1, h2, h3, h4, h5⟩
     exact ⟨Nat.lt_of_le_of_lt h.length_le h1, h2, h3, iha (h.filterMap _) h4, ihb (h.filterMap _) h5⟩
 
+/-- **A fit is a fit at every reordering of the rows**: each clause bounds a length or a membership, which a
+    permutation keeps, and recurses at the windows or side positions, which it permutes. -/
+theorem pickFits_perm {A : Obj} {n : USize} {x : Vals A n} {ps ps' : List Nat} (h : ps'.Perm ps) :
+    Vals.PickFits A x ps → Vals.PickFits A x ps' := by
+  induction A generalizing n ps ps' with
+  | atom t =>
+    unfold Vals.PickFits
+    exact fun hf ⟨k, hk, hle⟩ => hf ⟨k, h.subset hk, hle⟩
+  | prod a b iha ihb =>
+    unfold Vals.PickFits
+    exact fun ⟨h1, h2⟩ => ⟨iha h h1, ihb h h2⟩
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4⟩
+    have hw := h.flatMap_right fun k => if h : k < n.toNat then
+      List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+      else []
+    exact ⟨h1, hw.length_eq ▸ h2, hw.length_eq ▸ h3, ih hw h4⟩
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4, h5⟩
+    exact ⟨h.length_eq ▸ h1, h2, h3, iha (h.filterMap _) h4, ihb (h.filterMap _) h5⟩
+
+/-- **An atom side fits at each row repeated `m` times** (`· / m`, the rows `⊤` keys): all below the count. -/
+theorem pickFits_div {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) (m : Nat) :
+    Vals.PickFits (.atom t) x ((List.range (n.toNat * m)).map (· / m)) :=
+  pickFits_atom x fun r hr => by
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.1 hr
+    exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; exact List.mem_range.1 hq)
+
+/-- **The empty side fits at no rows**: every count it holds is `0`. -/
+theorem pickFits_empty : (A : Obj) → Vals.PickFits A (Vals.empty A) []
+  | .atom _ => by unfold Vals.PickFits; rintro ⟨k, hk, -⟩; cases hk
+  | .prod a b => by unfold Vals.PickFits; exact ⟨pickFits_empty a, pickFits_empty b⟩
+  | .arr b => by
+    simp only [Vals.empty, Vals.PickFits, List.flatMap_nil, List.length_nil]
+    exact ⟨by simp, by decide, USize.size_pos, pickFits_empty b⟩
+  | .sum a b => by
+    simp only [Vals.empty, Vals.PickFits, List.filterMap_nil, List.length_nil]
+    exact ⟨by decide, by simp, by simp, pickFits_empty a, pickFits_empty b⟩
+
+/-- **Each piece `g a` a sublist of `f (p a)` makes the pieces' concatenation a sublist of `f`'s at the
+    `p`-images**: one element (or a sub-window) taken from each picked row's window, in row order. -/
+theorem flatMap_sublist_map_flatMap {α β γ : Type} (p : α → γ) (g : α → List β) (f : γ → List β)
+    {l : List α} (h : ∀ a ∈ l, (g a).Sublist (f (p a))) : (l.flatMap g).Sublist ((l.map p).flatMap f) := by
+  induction l with
+  | nil => exact List.Sublist.slnil
+  | cons a l ih =>
+    rw [List.flatMap_cons, List.map_cons, List.flatMap_cons]
+    exact (h a (by simp)).append (ih fun b hb => h b (List.mem_cons_of_mem _ hb))
+
+/-- **An array side with the payload of `x` and windows inside `x`'s fits where `x` does**: the windows of
+    `lo'`/`hi'` at `qs`, concatenated, a sublist of `x`'s at `ps` — the bounds and the payload's fit shrink. -/
+theorem pickFits_windows {B : Obj} {n m : USize} (x : Vals (.arr B) n) (lo' hi' : Arr .long m)
+    {ps qs : List Nat}
+    (h : (qs.flatMap fun k => if h : k < m.toNat then
+        List.range' (min (max (lo'.get ⟨k, h⟩).toInt 0).toNat x.1.toNat)
+          (min (max (hi'.get ⟨k, h⟩).toInt 0).toNat x.1.toNat - min (max (lo'.get ⟨k, h⟩).toInt 0).toNat x.1.toNat)
+        else []).Sublist
+      (ps.flatMap fun k => if h : k < n.toNat then
+        List.range' (min (max (x.2.1.get ⟨k, h⟩).toInt 0).toNat x.1.toNat)
+          (min (max (x.2.2.1.get ⟨k, h⟩).toInt 0).toNat x.1.toNat -
+            min (max (x.2.1.get ⟨k, h⟩).toInt 0).toNat x.1.toNat)
+        else []))
+    (hf : Vals.PickFits (.arr B) x ps) : Vals.PickFits (.arr B) (⟨x.1, lo', hi', x.2.2.2⟩ : Vals (.arr B) m) qs := by
+  obtain ⟨p, lo, hi, f⟩ := x
+  unfold Vals.PickFits at hf ⊢
+  dsimp only at hf h ⊢
+  obtain ⟨h1, h2, h3, h4⟩ := hf
+  exact ⟨h1, Nat.lt_of_le_of_lt h.length_le h2, Nat.lt_of_le_of_lt h.length_le h3, pickFits_sublist h h4⟩
+
 /-- **`Vals.pick` read back at an atom**: `pickArr_get`. -/
 theorem pick_row_atom {t : QAtomicType} {n : USize} (x : Vals (.atom t) n)
     (i : ByteArray) (m : USize) (h : len i = m.toNat) (q : Fin m.toNat)
