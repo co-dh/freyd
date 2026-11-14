@@ -101,7 +101,7 @@ theorem grade_ofLongs (b : ByteArray) (hN : len b < USize.size)
   omega
 
 /-- `gather 8 p g` read back as a list: long `j` is `p`'s long at `g`'s long `j`, `g`'s longs below `len p`. -/
-theorem ids_gather8 {p g : ByteArray} (hlt : ∀ j < len g, (Column.bitsAt g (j * 8) 8).toNat < len p) :
+theorem ids_gather8_bits {p g : ByteArray} (hlt : ∀ j < len g, (Column.bitsAt g (j * 8) 8).toNat < len p) :
     ids (gather 8 p g) = (ids g).map fun j => (ids p)[j]! := by
   apply List.ext_getElem
   · simp only [List.length_map, ← len_eq_ids, gather_len]
@@ -138,7 +138,7 @@ theorem grade_group (i v : ByteArray) (hv : (ids v).Perm (List.range (len i))) (
     have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
     rw [← ids_getElem hj', hvl]; exact List.mem_range.1 (hgp.mem_iff.1 (List.getElem_mem hj'))
   refine ⟨(gather_perm (by rw [hvl]; exact hgp)).trans hv, ?_⟩
-  rw [ids_gather8 hGlt, List.pairwise_map]
+  rw [ids_gather8_bits hGlt, List.pairwise_map]
   refine hgs.imp_of_mem fun {a b} ha hb h => ?_
   have ha' := List.mem_range.1 (hgp.mem_iff.1 ha); have hb' := List.mem_range.1 (hgp.mem_iff.1 hb)
   have hva : a < (ids v).length := by rw [hv.length_eq, List.length_range]; exact ha'
@@ -305,7 +305,7 @@ theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
     have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
     rw [← ids_getElem hj', len_tilLongs]; exact List.mem_range.1 (hp.mem_iff.1 (List.getElem_mem hj'))
   have e : ids (gather 8 (tilLongs m) G) = ids G := by
-    rw [ids_gather8 hlt]
+    rw [ids_gather8_bits hlt]
     refine (List.map_congr_left fun j hj => ?_).trans (List.map_id _)
     have hjm := List.mem_range.1 (hp.mem_iff.1 hj)
     have hj' : j < (ids (tilLongs m)).length := by rw [← len_eq_ids, len_tilLongs]; exact hjm
@@ -319,7 +319,7 @@ theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
 #print axioms sortBy_long
 #print axioms filter_range_lt
 #print axioms sorted_block_perm
-#print axioms ids_gather8
+#print axioms ids_gather8_bits
 #print axioms grade_group
 #print axioms sorted_block
 #print axioms key_i64
