@@ -412,6 +412,69 @@ theorem rounds_closed {K E V : Type} (xs : K → List E) (S : E × V → V → P
         exact hj u hu
     exact ⟨_, hLj, h, fun ⟨_, hl, _⟩ => Nat.lt_irrefl _ hl⟩
 
+-- `step_rep`'s hypotheses at `el`, `pend`, `S`, its bound values `kc`, `P`, `jc` quantified with their equations
+set_option hygiene false in
+local notation "stepOK" =>
+  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
+    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
+    msum(kc, el, pend) < USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
+    ∀ P : Rel .long (.prod E V), P = pair el pend → ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
+      codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, P, S) < 2 ^ 63 ∧ msum(jc, P, S) < USize.size ∧
+      Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
+      Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
+
+/-- **`foldRows` of `fold`'s step, read back**: row `r` goes to `v` when a chain `ys` of `S`-steps runs along
+    the array `xs r` from a value of `pend₀` at `r` to `v`. Internal: `hel` characterises the rounds' elements
+    by `xs`, `hlen` bounds every `xs r` by the payload. `step`, `elK`, `f` are bound by their equations;
+    `hR`, `hS` are `round_rep`'s and `step_rep`'s hypotheses at every round. -/
+theorem foldRows_rep {E V : Obj} (X : Rel .long (.arr E)) (pend₀ : Rel .long V) (S : Rel (.prod E V) V)
+    (xs : Obj.El .long → List E.El)
+    (hel : ∀ k r x, rep elR(X, k) r x ↔
+      ∃ hl : k < (xs r).length, x = (xs r)[(xs r).length - 1 - k]'(by omega))
+    (hlen : ∀ r, (xs r).length ≤ (Rel.val X).1.toNat)
+    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep (fun _ => S))
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(X, k))
+    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
+    (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
+    (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      stepOK) :
+    ∀ r v, rep (foldRows X pend₀ step) r v ↔ ∃ ys : List V.El, ∃ hy : ys.length = (xs r).length + 1,
+      rep pend₀ r (ys[(xs r).length]'(by omega)) ∧
+      (∀ t (ht : t < (xs r).length), rep S ((xs r)[t], ys[t + 1]'(by omega)) (ys[t]'(by omega))) ∧
+      v = ys[0]'(by omega) := by
+  intro r v
+  obtain ⟨j, -, hfo, hstop⟩ := foldRows_iter X pend₀ step elK hE f hf
+  have hrr := rounds_rep pend₀ step elK f hf hR
+  have hst : ∀ i r v, rep (f^[i + 1] (pend₀, Alg.zero, 0)).1 r v ↔ ∃ e u,
+      (∃ hl : i < (xs r).length, e = (xs r)[(xs r).length - 1 - i]'(by omega)) ∧
+      rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ rep S (e, u) v := by
+    intro i r v
+    rw [(hrr i).2.1]
+    obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+    obtain ⟨hjO, hjn, hjM, hjU, hjA, hjC⟩ := hJ _ rfl _ rfl
+    subst hstep
+    refine ((step_rep (elK i) _ S _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl _ rfl hjO hjn hjM hjU hjA hjC) r v).trans
+      (exists_congr fun e => exists_congr fun u => and_congr ?_ Iff.rfl)
+    rw [hE]; exact hel i r e
+  obtain ⟨closed, -, outc⟩ := rounds_closed xs (fun p w => rep S p w)
+    (fun i r v => rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) hst
+  have hj : (xs r).length < j ∨ ∀ u, ¬ rep (f^[j] (pend₀, Alg.zero, 0)).1 r u := by
+    rcases hstop with h | h
+    · have := hlen r; omega
+    · refine Or.inr fun u ⟨i, _, _⟩ => ?_
+      have h0 : (Rel.n (f^[j] (pend₀, Alg.zero, 0)).1).toNat = 0 := by simp [eq_of_beq h]
+      exact absurd i.2 (by omega)
+  rw [hfo, (hrr j).2.2 r v]
+  refine (exists_congr fun i => and_congr Iff.rfl (and_congr Iff.rfl (not_congr (exists_congr fun e => ?_)))).trans
+    (((outc j r v hj).trans (closed _ r v (Nat.le_refl _))).trans ?_)
+  · rw [hE]; exact hel i r e
+  refine exists_congr fun ys => exists_congr fun hy => and_congr Iff.rfl
+    (and_congr (forall_congr' fun t => forall_congr' fun ht => ?_) Iff.rfl)
+  simp only [Nat.sub_self, Nat.zero_add]
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.round_rep
@@ -421,3 +484,4 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rounds_rep
 #print axioms LeetQ.Rel.Rep.rounds_closed
 #print axioms LeetQ.Rel.Rep.step_rep
+#print axioms LeetQ.Rel.Rep.foldRows_rep
