@@ -116,11 +116,11 @@ def compC (R : Rel A B) (S : Rel B C) : Rel A C × Bool :=
     ((⟨m, k.1, v.1⟩ : Rel A C), k.2 && v.2)
   (r.1, c.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
 
-/-- A twin's `.1` through `longCount`, its default `(default, false)`: a `split` of the count's test at a twin
-    would decide it by evaluating the kernels that produce the count. -/
-theorem longCount_fst {α : Type} [Inhabited α] (s : String) (b : ByteArray)
-    (k : (n : USize) → len b = n.toNat → α × Bool) : (longCount s b k).1 = longCount s b fun n h => (k n h).1 := by
-  unfold longCount need; split <;> rfl
+/-- A twin's `.1` through `need` (so through `longCount`, `expand`): each branch's `.1`; a `split` of the test at a
+    twin would decide it by evaluating the kernels that produce the count. -/
+theorem need_fst {α β : Type} {p : Prop} [Decidable p] (msg : Unit → String) (m : Unit → α × β) (k : p → α × β) :
+    (need p msg m k).1 = need p msg (fun u => (m u).1) fun h => (k h).1 := by
+  unfold need stop; split <;> rfl
 
 /-- A codes twin's `.1` is `Obj.codes`, at each constructor of the side. -/
 theorem _root_.LeetQ.Rel.Obj.codesC_fst (X : Obj) {p : Nat} (cs : Vector (Part X) p) : (X.codesC cs).1 = X.codes cs := by
@@ -128,7 +128,7 @@ theorem _root_.LeetQ.Rel.Obj.codesC_fst (X : Obj) {p : Nat} (cs : Vector (Part X
 
 -- the old op kept beside its twin: its read-back proofs `show` its body, which `(compC ..).1` is not by `rfl`
 theorem compC_fst (R : Rel A B) (S : Rel B C) : (compC R S).1 = comp R S := by
-  unfold compC comp; dsimp only; refine (longCount_fst ..).trans ?_
+  unfold compC comp longCount; dsimp only; rw [need_fst]
   -- a twin's `.1` is its helper at each constructor of the side
   cases A <;> cases B <;> cases C <;> rfl
 
@@ -324,7 +324,7 @@ def pairC {A B C : Obj} (R : Rel A B) (S : Rel A C) : Rel A (.prod B C) × Bool 
   (r.1, kc.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
 
 theorem pairC_fst {A B C : Obj} (R : Rel A B) (S : Rel A C) : (pairC R S).1 = pair R S := by
-  unfold pairC pair; dsimp only; refine (longCount_fst ..).trans ?_
+  unfold pairC pair longCount; dsimp only; rw [need_fst]
   cases A <;> cases B <;> cases C <;> rfl
 
 /-- `outl`: the first component's columns, nothing runs. -/
@@ -506,11 +506,6 @@ def uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (
     (Vals.pick B X.2.2.2 l r ((gather_len _ _).trans hr),
       Vals.compact (.arr B) ⟨X.1, valCol Ew.add Ew.va l (one 1), valCol Ew.add Ew.vv l (gather 8 s.2 i), X.2.2.2⟩)⟩
 
-/-- A twin's `.1` through `need` (so through `longCount`, `expand`): each branch's `.1`. -/
-theorem need_fst {α β : Type} {p : Prop} [Decidable p] (msg : Unit → String) (m : Unit → α × β) (k : p → α × β) :
-    (need p msg m k).1 = need p msg (fun u => (m u).1) fun h => (k h).1 := by
-  unfold need stop; split <;> rfl
-
 /-- A pick twin's `.1` is the pick, at each constructor of the side. -/
 theorem pickC_fst (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USize) (h : len i = m.toNat) :
     (Vals.pickC A x i m h).1 = Vals.pick A x i m h := by
@@ -557,9 +552,10 @@ def cons {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) :=
   longCount "cons" perm fun p hp =>
   ⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c1, longsN n hi (sums_le (len_val ..)), Vals.pick B flat perm p hp⟩⟩
 
-/-- `cons` and whether it ran within capacity: `rep_cons`'s count bounds decided (the tails' counts plus the
-    rows), `P`'s tails and keys fitting at all their rows (`fitsN`), `&&` the bits of the raze and of the last
-    pick (`razeC`, `pickC`), carried out of `expand` in the pair. -/
+/-- `cons` and whether it ran within capacity: `P`'s tails and keys fitting at all their rows (`fitsN`), `&&`, out
+    of `expand` in the pair, `rep_cons`'s count bound decided on the copies' count `k` plus the rows (`k` is the
+    tails' counts summed, `len_expand_slicesOf`; `need` already bounds it by a `USize`) and the bits of the raze
+    and of the last pick (`razeC`, `pickC`). -/
 def consC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) × Bool :=
   let n := P.n
   let T := P.val.2
@@ -567,7 +563,6 @@ def consC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) × Bool :=
   let c1 := addc n s.2 1
   let hi := sums n c1
   let lo := sub n hi c1
-  let S := ((List.range n.toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + n.toNat
   let r := expand n s.2 (fun _ => default) fun k xi xr _ _ =>
     need (k.toNat + n.toNat < USize.size) (fun _ => s!"cons: {k} + {n} cells do not fit a USize") (fun _ => default)
       fun hN =>
@@ -578,9 +573,8 @@ def consC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) × Bool :=
     longCount "cons" perm fun p hp =>
     let v := Vals.pickC B flat.1 perm p hp
     ((⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c1, longsN n hi (sums_le (len_val ..)), v.1⟩⟩ :
-      Rel K (.arr B)), flat.2 && v.2)
-  (r.1, Vals.fitsN (.arr B) T n.toNat && decide (S < 2 ^ 63) && decide (S < USize.size) &&
-    Vals.fitsN K P.key n.toNat && r.2)
+      Rel K (.arr B)), decide (k.toNat + n.toNat < 2 ^ 63) && flat.2 && v.2)
+  (r.1, Vals.fitsN (.arr B) T n.toNat && Vals.fitsN K P.key n.toNat && r.2)
 
 theorem consC_fst {K B : Obj} (P : Rel K (.prod B (.arr B))) : (consC P).1 = cons P := by
   unfold consC cons expand longCount; simp only [need_fst, pickC_fst, razeC_fst]; rfl
@@ -833,22 +827,23 @@ private def nest {B : Obj} {n : USize} (X : Vals (.arr B) n)
   ⟨n, Vals.compact (.arr B) X,
     ⟨m, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), Vals.compact (.arr B) ⟨X.1, b.1, b.2, X.2.2.2⟩⟩⟩
 
-/-- `nest` and whether it ran within capacity: the counts plus one summed below `2^63` and a `USize` (`rep_inits`'s
-    `hS`, `hU`), `X` fitting at all its rows, `&&` the bit of the pick that compacts the slices (`pickC`): the
-    slices of one row overlap in `X`'s payload, so their total is known only once they are laid out. -/
+/-- `nest` and whether it ran within capacity: `X` fitting at all its rows, its payload count plus one below `2^63`
+    (so is every count plus one, which `expand` reads signed), `&&`, out of `expand` in the pair, the copies'
+    count `m` below `2^63` (`rep_inits`'s `hS`: `m` is the counts plus one summed; `need` gives `hU`) and the bit of
+    the pick that compacts the slices (`pickC`): the slices of one row overlap in `X`'s payload, so their total
+    is known only once they are laid out. -/
 def nestC {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m) :
     Rel (.arr B) (.arr (.arr B)) × Bool :=
   let s := slicesOf X
   let c := addc n s.2 1
   let hi := sums n c
-  let S := ((List.range n.toNat).map fun u => (Column.bitsAt s.2 (u * 8) 8).toNat).sum + n.toNat
   let r := expand n c (fun _ => default) fun m i r hi' _ =>
     let b := f m s i r hi'
     let v := Vals.pickC (.arr B) ⟨X.1, b.1, b.2, X.2.2.2⟩ (tilLongs m) m (len_tilLongs m)
     ((⟨n, Vals.compact (.arr B) X, ⟨m, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), v.1⟩⟩ :
-      Rel (.arr B) (.arr (.arr B))), v.2)
-  (r.1, decide (S < 2 ^ 63) && decide (S < USize.size) && Vals.fitsN (.arr B) X n.toNat && r.2)
+      Rel (.arr B) (.arr (.arr B))), decide (m.toNat < 2 ^ 63) && v.2)
+  (r.1, decide (X.1.toNat + 1 < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat && r.2)
 
 private theorem nestC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m) :
@@ -905,9 +900,10 @@ def cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
   longCount "cat" perm fun p hp =>
   ⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), Vals.pick B flat perm p hp⟩⟩
 
-/-- `cat` and whether it ran within capacity: `rep_cat`'s count bound decided (the two sides' counts summed),
-    both sides and the keys fitting at all their rows (`fitsN`), `&&` the bits of the raze and of the last pick
-    (`razeC`, `pickC`), carried out of the two `expand`s in the pair. -/
+/-- `cat` and whether it ran within capacity: both sides and the keys fitting at all their rows (`fitsN`), `&&`,
+    out of the two `expand`s in the pair, `rep_cat`'s count bound decided on the two copies' counts `ka + kb` (each
+    a side's counts summed, `len_expand_slicesOf`; `need` already bounds it by a `USize`) and the bits of the raze
+    and of the last pick (`razeC`, `pickC`). -/
 def catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × Bool :=
   let n := P.n
   let x := P.val.1
@@ -917,8 +913,6 @@ def catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × B
   let c := add n a.2 b.2
   let hi := sums n c
   let lo := sub n hi c
-  let S := ((List.range n.toNat).map fun r => (Column.bitsAt a.2 (r * 8) 8).toNat).sum +
-    ((List.range n.toNat).map fun r => (Column.bitsAt b.2 (r * 8) 8).toNat).sum
   let r := expand n a.2 (fun _ => default) fun ka ia ra _ _ =>
     expand n b.2 (fun _ => default) fun kb ib rb _ _ =>
     need (ka.toNat + kb.toNat < USize.size) (fun _ => s!"cat: {ka} + {kb} cells do not fit a USize") (fun _ => default)
@@ -930,9 +924,8 @@ def catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × B
     longCount "cat" perm fun p hp =>
     let v := Vals.pickC B flat.1 perm p hp
     ((⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), v.1⟩⟩ :
-      Rel K (.arr B)), flat.2 && v.2)
-  (r.1, Vals.fitsN (.arr B) x n.toNat && Vals.fitsN (.arr B) y n.toNat && decide (S < 2 ^ 63) &&
-    decide (S < USize.size) && Vals.fitsN K P.key n.toNat && r.2)
+      Rel K (.arr B)), decide (ka.toNat + kb.toNat < 2 ^ 63) && flat.2 && v.2)
+  (r.1, Vals.fitsN (.arr B) x n.toNat && Vals.fitsN (.arr B) y n.toNat && Vals.fitsN K P.key n.toNat && r.2)
 
 theorem catC_fst {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : (catC P).1 = cat P := by
   unfold catC cat expand longCount; simp only [need_fst, pickC_fst, razeC_fst]; rfl
@@ -954,14 +947,27 @@ def zip {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod
       (Vals.pick A x.2.2.2 (add m (gather 8 a.1 i) r) m (len_val ..),
         Vals.pick B y.2.2.2 (add m (gather 8 b.1 i) r) m (len_val ..))⟩⟩
 
-/-- `zip` and whether it ran within capacity: `rep_zip`'s count bound decided (the lesser counts summed), both
-    sides and the keys fitting at all their rows (`fitsN`); no pick of `zip` needs a bit of its own. -/
+/-- `zip` and whether it ran within capacity: both sides and the keys fitting at all their rows (`fitsN`), `&&`, out
+    of `expand` in the pair, `rep_zip`'s count bound decided on the copies' count `m` (the lesser counts summed,
+    `len_expand_sum`; `need` already bounds it by a `USize`); no pick of `zip` needs a bit of its own. -/
 def zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod A B)) × Bool :=
+  let x := P.val.1
+  let y := P.val.2
   let n := P.n
-  let c := Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf P.val.1).2 (slicesOf P.val.2).2 n
-  let S := ((List.range n.toNat).map fun r => (Column.bitsAt c (r * 8) 8).toNat).sum
-  (zip P, Vals.fitsN (.arr A) P.val.1 n.toNat && Vals.fitsN (.arr B) P.val.2 n.toNat && decide (S < 2 ^ 63) &&
-    decide (S < USize.size) && Vals.fitsN K P.key n.toNat)
+  let a := slicesOf x
+  let b := slicesOf y
+  let c := Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul a.2 b.2 n
+  let hi := sums n c
+  let r := expand n c (fun _ => default) fun m i r _ _ =>
+    ((⟨n, Vals.compact K P.key,
+      ⟨m, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)),
+        (Vals.pick A x.2.2.2 (add m (gather 8 a.1 i) r) m (len_val ..),
+          Vals.pick B y.2.2.2 (add m (gather 8 b.1 i) r) m (len_val ..))⟩⟩ : Rel K (.arr (.prod A B))),
+      decide (m.toNat < 2 ^ 63))
+  (r.1, Vals.fitsN (.arr A) x n.toNat && Vals.fitsN (.arr B) y n.toNat && Vals.fitsN K P.key n.toNat && r.2)
+
+theorem zipC_fst {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : (zipC P).1 = zip P := by
+  unfold zipC zip expand; simp only [need_fst]; rfl
 
 /-- `snoc° : arr B ⟶ arr B × B` on the arrays of `X`, `uncons` from the other end: each non-empty row to
     all but its last element (`[lo, hi - 1)`, a slice of the same payload) and its last element. -/
@@ -999,11 +1005,43 @@ def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) :=
   let D := ran P
   cat (P ≫ pair (outl D) (outr D ≫ τ (outr D).val))
 
+/-- `snoc` and whether it ran within capacity: `snoc`'s body on the twins of its pieces (`τ` is `Λ(idU ·)`), the
+    bit the `&&` of theirs. -/
+def snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) × Bool :=
+  let D := ranC P
+  let t := transposeC (idU (outr D.1).val)
+  let T := compC (outr D.1) t.1
+  let Q := pairC (outl D.1) T.1
+  let M := compC P Q.1
+  let r := catC M.1
+  (r.1, D.2 && t.2 && T.2 && Q.2 && M.2 && r.2)
+
+theorem snocC_fst {K B : Obj} (P : Rel K (.prod (.arr B) B)) : (snocC P).1 = snoc P := by
+  -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
+  have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
+  unfold snocC snoc ranC ran τ; dsimp only
+  rw [catC_fst, compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst, ht]
+
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
     `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
 def uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) :=
   let Z := zip (pair (inits X) (tails X))
   Z ≫ mem Z.val
+
+/-- `cat°` and whether it ran within capacity: `uncat`'s body on the twins of its pieces, the bit the `&&` of
+    theirs. -/
+def uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) × Bool :=
+  let i := initsC X
+  let t := tailsC X
+  let p := pairC i.1 t.1
+  let z := zipC p.1
+  let v := memC z.1.val
+  let r := compC z.1 v.1
+  (r.1, i.2 && t.2 && p.2 && z.2 && v.2 && r.2)
+
+theorem uncatC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (uncatC X).1 = uncat X := by
+  unfold uncatC; dsimp only
+  rw [compC_fst, memC_fst, zipC_fst, pairC_fst, initsC_fst, tailsC_fst] <;> rfl
 
 /-! ## Permutations, sets and order (ch. 6, 8) -/
 
