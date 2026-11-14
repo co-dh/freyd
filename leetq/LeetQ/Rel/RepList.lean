@@ -175,7 +175,8 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
+    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -187,6 +188,9 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
     ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
+  -- the tails' rows `j` are `m` longs: `tl` picks at `j` itself
+  have hjl : len j = m.toNat := by rw [hj]; exact len_val ..
+  replace htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl := by subst hj; exact htl
   subst hs
   have hs1 : len (slicesOf (Rel.val P).2).1 = nN := (len_slices _ _ _ _).1
   have hs2 : len (slicesOf (Rel.val P).2).2 = nN := (len_slices _ _ _ _).2
@@ -292,7 +296,7 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     · have hl := hlog (d - len xi) (by omega)
       exact ⟨d - len xi, 0, by omega, by omega, by rw [hbg, if_neg h, hl]; omega, iff_of_false h (by omega),
         fun h' => absurd h' h, fun _ => by omega⟩
-  have hblk : ∀ r, r < nN → pre(r) + r < pre(r + 1) + (r + 1) := fun r _ => by rw [hpre_succ]; omega
+  have hblk : ∀ r, r < nN → pre(r) + r ≤ pre(r + 1) + (r + 1) := fun r _ => by rw [hpre_succ]; omega
   have hinj : ∀ a b, a < len (concatBytes #[dst, lo]) → b < len (concatBytes #[dst, lo]) →
       Column.bitsAt (concatBytes #[dst, lo]) (a * 8) 8 = Column.bitsAt (concatBytes #[dst, lo]) (b * 8) 8 →
       a = b := by
@@ -495,6 +499,501 @@ theorem map_chain {α β : Type _} (R : α → β → Prop) (xs : List α) (w : 
       exact List.drop_eq_getElem_cons _
     · simp
 
+-- the counts `cn` an `expand` reads: count `r` and the counts before row `r`
+set_option hygiene false in
+local notation "cc(" r ")" => (Column.bitsAt cn (r * 8) 8).toNat
+set_option hygiene false in
+local notation "pc(" r ")" => ((List.range r).map fun u => (Column.bitsAt cn (u * 8) 8).toNat).sum
+
+/-- **`expand`, read back by place**: of the counts `cn`, copy `pc(r) + t` (`t < cc(r)`) is row `r` (`xi`) at rank
+    `t` (`xr`), and every copy is one of these. Hypotheses: the counts' sum below `2^63` and a `USize`. -/
+theorem expand_at {n : USize} (cn : ByteArray) (hl : len cn = n.toNat) (hS : pc(n.toNat) < 2 ^ 63)
+    (hU : pc(n.toNat) < USize.size) (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) cn)
+    (xr : ByteArray)
+    (hxr : xr = sub (len xi).toUSize (tilLongs (len xi).toUSize) (gather 8 (sub n (sums n cn) cn) xi)) :
+    len xi = pc(n.toNat) ∧
+      (∀ r t, r < n.toNat → t < cc(r) → (Column.bitsAt xi ((pc(r) + t) * 8) 8).toNat = r ∧
+        (Column.bitsAt xr ((pc(r) + t) * 8) 8).toNat = t) ∧
+      ∀ d, d < len xi → ∃ r t, r < n.toNat ∧ t < cc(r) ∧ d = pc(r) + t := by
+  have hpre_le : ∀ a b, a ≤ b → pc(a) ≤ pc(b) := fun a b h => sum_range_le _ h
+  have hpre_succ : ∀ r, pc(r + 1) = pc(r) + cc(r) := fun r => sum_range_succ' _ r
+  have hI := expand_idx (n := n) (cnt := cn) (by omega)
+    (fun t ht => by have := hpre_le (t + 1) n.toNat (by omega); rw [hpre_succ] at this; omega)
+  rw [← hxi, hl] at hI
+  have hxl : len xi = pc(n.toNat) := by
+    rw [len_eq_ids, hI, List.length_flatMap]; simp only [List.length_replicate]
+  have hxU : len xi < USize.size := by omega
+  have hxi_in : ∀ r t, r < n.toNat → t < cc(r) → (Column.bitsAt xi ((pc(r) + t) * 8) 8).toNat = r := by
+    intro r t hr ht
+    have h := flatMap_get_at (fun t => List.replicate cc(t) t) hr (q := t)
+      (by simp only [List.length_replicate]; exact ht)
+    simp only [List.length_replicate, List.getElem?_replicate, ht, ↓reduceIte] at h
+    have hpl : pc(r) + t < ((List.range n.toNat).flatMap fun t => List.replicate cc(t) t).length := by
+      rw [← hI, ← len_eq_ids, hxl]; have := hpre_le (r + 1) n.toNat (by omega); rw [hpre_succ] at this; omega
+    rw [ids_get hI hpl]; rw [List.getElem?_eq_getElem hpl] at h; exact Option.some.inj h
+  have hxrg : ∀ d, d < len xi → (Column.bitsAt xr (d * 8) 8).toNat = d - pc((Column.bitsAt xi (d * 8) 8).toNat) := by
+    intro d hd
+    have := expand_rank (n := n) (cnt := cn) (by omega) (by rw [hl]; exact hS)
+      (by rw [← hxi]; exact hxU) (p := d) (by rw [← hxi]; exact hd)
+    rw [← hxi, ← hxr] at this
+    exact this
+  refine ⟨hxl, fun r t hr ht => ⟨hxi_in r t hr ht, ?_⟩, fun d hd => ?_⟩
+  · have hpl : pc(r) + t < len xi := by
+      rw [hxl]; have := hpre_le (r + 1) n.toNat (by omega); rw [hpre_succ] at this; omega
+    rw [hxrg _ hpl, hxi_in r t hr ht]; omega
+  · obtain ⟨t, ht, h1, h2, -⟩ := flatMap_get (fun t => List.replicate cc(t) t) n.toNat d
+      (by simp only [List.length_replicate]; omega)
+    simp only [List.length_replicate] at h1 h2
+    exact ⟨t, d - pc(t), ht, by omega, by omega⟩
+
+-- `P`'s two sides: row `r`'s count and start, and the counts before row `r`
+set_option hygiene false in
+local notation "ca(" r ")" => (Column.bitsAt (slicesOf (Rel.val P).1).2 (r * 8) 8).toNat
+set_option hygiene false in
+local notation "cb(" r ")" => (Column.bitsAt (slicesOf (Rel.val P).2).2 (r * 8) 8).toNat
+set_option hygiene false in
+local notation "sa(" r ")" => (Column.bitsAt (slicesOf (Rel.val P).1).1 (r * 8) 8).toNat
+set_option hygiene false in
+local notation "sb(" r ")" => (Column.bitsAt (slicesOf (Rel.val P).2).1 (r * 8) 8).toNat
+set_option hygiene false in
+local notation "pa(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slicesOf (Rel.val P).1).2 (u * 8) 8).toNat).sum
+set_option hygiene false in
+local notation "pb(" r ")" => ((List.range r).map fun u => (Column.bitsAt (slicesOf (Rel.val P).2).2 (u * 8) 8).toNat).sum
+
+/-- **`cat`'s places, read back**: under `rep_cat`'s bound pieces and size bounds, each side's copies fit a `USize`,
+    and of row `r` the first side's copy `pa(r) + t` is its cell `sa(r) + t` (`ja`), graded to place
+    `pa(r) + pb(r) + t`; the second side's copy `pb(r) + t` is its cell `sb(r) + t` (`jb`), graded to place
+    `pa(r) + pb(r) + ca(r) + t`. -/
+theorem cat_places {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
+    (hpa : (Rel.val P).1.1.toNat < 2 ^ 63) (hpb : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (sa : ByteArray × ByteArray) (hsa : sa = slicesOf (Rel.val P).1)
+    (sb : ByteArray × ByteArray) (hsb : sb = slicesOf (Rel.val P).2)
+    (hS : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < 2 ^ 63)
+    (hU : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < USize.size)
+    (xa : ByteArray) (hxa : xa = expandBytes 8 0 (tilLongs (Rel.n P)) sa.2)
+    (ma : USize) (hma : ma = (len xa).toUSize)
+    (ra : ByteArray) (hra : ra = sub ma (tilLongs ma) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sa.2) sa.2) xa))
+    (xb : ByteArray) (hxb : xb = expandBytes 8 0 (tilLongs (Rel.n P)) sb.2)
+    (mb : USize) (hmb : mb = (len xb).toUSize)
+    (rb : ByteArray) (hrb : rb = sub mb (tilLongs mb) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sb.2) sb.2) xb))
+    (ja : ByteArray) (hja : ja = add ma (gather 8 sa.1 xa) ra)
+    (jb : ByteArray) (hjb : jb = add mb (gather 8 sb.1 xb) rb)
+    (c : ByteArray) (hcs : c = add (Rel.n P) sa.2 sb.2) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c)
+    (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c)
+    (da : ByteArray) (hda : da = add ma (gather 8 lo xa) ra)
+    (db : ByteArray) (hdb : db = add mb (add mb (gather 8 lo xb) (gather 8 sa.2 xb)) rb)
+    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[da, db])).grade) :
+    len xa < USize.size ∧ len xb < USize.size ∧ ma.toNat = len xa ∧ mb.toNat = len xb ∧
+      len xa = pa((Rel.n P).toNat) ∧ len xb = pb((Rel.n P).toNat) ∧ len g = len xa + len xb ∧
+      (∀ r, r < (Rel.n P).toNat → (Column.bitsAt hi (r * 8) 8).toNat = pa(r + 1) + pb(r + 1) ∧
+        (Column.bitsAt c (r * 8) 8).toNat = ca(r) + cb(r)) ∧
+      (∀ r t, r < (Rel.n P).toNat → t < ca(r) → (Column.bitsAt ja ((pa(r) + t) * 8) 8).toNat = sa(r) + t ∧
+        (ids g)[pa(r) + pb(r) + t]? = some (pa(r) + t)) ∧
+      ∀ r t, r < (Rel.n P).toNat → t < cb(r) → (Column.bitsAt jb ((pb(r) + t) * 8) 8).toNat = sb(r) + t ∧
+        (ids g)[pa(r) + pb(r) + ca(r) + t]? = some (len xa + (pb(r) + t)) := by
+  subst hsa hsb
+  have hsa1 : len (slicesOf (Rel.val P).1).1 = nN := (len_slices _ _ _ _).1
+  have hsa2 : len (slicesOf (Rel.val P).1).2 = nN := (len_slices _ _ _ _).2
+  have hsb1 : len (slicesOf (Rel.val P).2).1 = nN := (len_slices _ _ _ _).1
+  have hsb2 : len (slicesOf (Rel.val P).2).2 = nN := (len_slices _ _ _ _).2
+  have hRa := fun r (hr : r < nN) => slicesOf_row (Rel.val P).1 hpa hr
+  have hRb := fun r (hr : r < nN) => slicesOf_row (Rel.val P).2 hpb hr
+  have hpa_le : ∀ a b, a ≤ b → pa(a) ≤ pa(b) := fun a b h => sum_range_le _ h
+  have hpb_le : ∀ a b, a ≤ b → pb(a) ≤ pb(b) := fun a b h => sum_range_le _ h
+  have hpa_succ : ∀ r, pa(r + 1) = pa(r) + ca(r) := fun r => sum_range_succ' _ r
+  have hpb_succ : ∀ r, pb(r + 1) = pb(r) + cb(r) := fun r => sum_range_succ' _ r
+  have hcl : ∀ r, r < nN → pa(r) + ca(r) ≤ pa(nN) ∧ pb(r) + cb(r) ≤ pb(nN) := fun r hr => by
+    have h1 := hpa_le (r + 1) nN (by omega); have h2 := hpb_le (r + 1) nN (by omega)
+    rw [hpa_succ] at h1; rw [hpb_succ] at h2; exact ⟨h1, h2⟩
+  -- the summed counts, their running ends and starts: row `r`'s new array is `[pa(r) + pb(r), pa(r+1) + pb(r+1))`
+  have hcg : ∀ r, r < nN → (Column.bitsAt c (r * 8) 8).toNat = ca(r) + cb(r) := fun r hr => by
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    rw [hcs, add_get (a := (slicesOf (Rel.val P).1).2) (b := (slicesOf (Rel.val P).2).2) hr (by omega)]
+  have hcl' : len c = nN := by rw [hcs, add, len_val]
+  have hcsum : ∀ r, r ≤ nN →
+      ((List.range r).map fun u => (Column.bitsAt c (u * 8) 8).toNat).sum = pa(r) + pb(r) := by
+    intro r
+    induction r with
+    | zero => intro _; simp
+    | succ r ih => intro hr; simp only [sum_range_succ']; rw [ih (by omega), hcg r (by omega)]; omega
+  have hhig : ∀ r, r < nN → (Column.bitsAt hi (r * 8) 8).toNat = pa(r + 1) + pb(r + 1) := fun r hr => by
+    have e := hcsum (r + 1) (by omega)
+    have h1 := hpa_le (r + 1) nN (by omega); have h2 := hpb_le (r + 1) nN (by omega)
+    rw [hhi, sums_get (b := c) hr (by rw [hcl']; exact hr) (by rw [e]; omega), e]
+  have hlog : ∀ r, r < nN → (Column.bitsAt lo (r * 8) 8).toNat = pa(r) + pb(r) := fun r hr => by
+    have := hhig r hr; have := hcg r hr; have := hpa_succ r; have := hpb_succ r
+    have := hpa_le (r + 1) nN (by omega); have := hpb_le (r + 1) nN (by omega)
+    rw [hlo, sub_get (a := hi) (b := c) hr (by omega) (by omega)]; omega
+  have hlol : len lo = nN := by rw [hlo, sub, len_val]
+  -- each side's `expand`: copy `pa(r) + t` (`pb(r) + t`) is row `r` at rank `t`
+  obtain ⟨hxal, hxa_in, hxa_at⟩ := expand_at (n := Rel.n P) (slicesOf (Rel.val P).1).2 hsa2 (by omega) (by omega)
+    xa hxa ra (by rw [hra, hma])
+  obtain ⟨hxbl, hxb_in, hxb_at⟩ := expand_at (n := Rel.n P) (slicesOf (Rel.val P).2).2 hsb2 (by omega) (by omega)
+    xb hxb rb (by rw [hrb, hmb])
+  have hxaU : len xa < USize.size := by omega
+  have hxbU : len xb < USize.size := by omega
+  have hmaN : ma.toNat = len xa := by rw [hma]; exact USize.toNat_ofNat_of_lt' hxaU
+  have hmbN : mb.toNat = len xb := by rw [hmb]; exact USize.toNat_ofNat_of_lt' hxbU
+  -- copy `pa(r) + t` of the first side: its cell in that payload (`ja`) and its place `pa(r) + pb(r) + t` (`da`)
+  have hA : ∀ r t, r < nN → t < ca(r) →
+      (Column.bitsAt ja ((pa(r) + t) * 8) 8).toNat = sa(r) + t ∧
+      (Column.bitsAt da ((pa(r) + t) * 8) 8).toNat = pa(r) + pb(r) + t := by
+    intro r t hr ht
+    obtain ⟨hx, hrk⟩ := hxa_in r t hr ht
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    have hd : pa(r) + t < len xa := by rw [hxal]; omega
+    have hdm : pa(r) + t < ma.toNat := by omega
+    obtain ⟨hLC, -, -⟩ := hRa r hr
+    have hgs : Column.bitsAt (gather 8 (slicesOf (Rel.val P).1).1 xa) ((pa(r) + t) * 8) 8 =
+        Column.bitsAt (slicesOf (Rel.val P).1).1 (r * 8) 8 := by
+      rw [gather8_get (src := (slicesOf (Rel.val P).1).1) hd (by rw [hx, hsa1]; exact hr), hx]
+    have hgl : Column.bitsAt (gather 8 lo xa) ((pa(r) + t) * 8) 8 = Column.bitsAt lo (r * 8) 8 := by
+      rw [gather8_get (src := lo) hd (by rw [hx, hlol]; exact hr), hx]
+    have hl := hlog r hr
+    constructor
+    · rw [hja, add_get (a := gather 8 (slicesOf (Rel.val P).1).1 xa) (b := ra) hdm (by rw [hgs, hrk]; omega), hgs, hrk]
+    · rw [hda, add_get (a := gather 8 lo xa) (b := ra) hdm (by rw [hgl, hrk, hl]; omega), hgl, hrk, hl]
+  -- copy `pb(r) + t` of the second side: its cell (`jb`) and its place `pa(r) + pb(r) + ca(r) + t` (`db`)
+  have hB : ∀ r t, r < nN → t < cb(r) →
+      (Column.bitsAt jb ((pb(r) + t) * 8) 8).toNat = sb(r) + t ∧
+      (Column.bitsAt db ((pb(r) + t) * 8) 8).toNat = pa(r) + pb(r) + ca(r) + t := by
+    intro r t hr ht
+    obtain ⟨hx, hrk⟩ := hxb_in r t hr ht
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    have hd : pb(r) + t < len xb := by rw [hxbl]; omega
+    have hdm : pb(r) + t < mb.toNat := by omega
+    obtain ⟨hLC, -, -⟩ := hRb r hr
+    have hgs : Column.bitsAt (gather 8 (slicesOf (Rel.val P).2).1 xb) ((pb(r) + t) * 8) 8 =
+        Column.bitsAt (slicesOf (Rel.val P).2).1 (r * 8) 8 := by
+      rw [gather8_get (src := (slicesOf (Rel.val P).2).1) hd (by rw [hx, hsb1]; exact hr), hx]
+    have hgl : Column.bitsAt (gather 8 lo xb) ((pb(r) + t) * 8) 8 = Column.bitsAt lo (r * 8) 8 := by
+      rw [gather8_get (src := lo) hd (by rw [hx, hlol]; exact hr), hx]
+    have hga : Column.bitsAt (gather 8 (slicesOf (Rel.val P).1).2 xb) ((pb(r) + t) * 8) 8 =
+        Column.bitsAt (slicesOf (Rel.val P).1).2 (r * 8) 8 := by
+      rw [gather8_get (src := (slicesOf (Rel.val P).1).2) hd (by rw [hx, hsa2]; exact hr), hx]
+    have hl := hlog r hr
+    have hs1 := add_get (n := mb) (a := gather 8 lo xb) (b := gather 8 (slicesOf (Rel.val P).1).2 xb) hdm
+      (by rw [hgl, hga, hl]; omega)
+    rw [hgl, hga, hl] at hs1
+    constructor
+    · rw [hjb, add_get (a := gather 8 (slicesOf (Rel.val P).2).1 xb) (b := rb) hdm (by rw [hgs, hrk]; omega), hgs, hrk]
+    · rw [hdb, add_get (a := add mb (gather 8 lo xb) (gather 8 (slicesOf (Rel.val P).1).2 xb)) (b := rb) hdm
+        (by rw [hs1, hrk]; omega), hs1, hrk]
+  -- the first side's places then the second's: `cat`'s grade lays the cells out by them
+  have hdal : len da = len xa := by rw [hda, add, len_val, hmaN]
+  have hda8 : da.size = len da * 8 := by rw [hda, add]; exact val_size_len ..
+  have hdbl : len db = len xb := by rw [hdb, add, len_val, hmbN]
+  have hdb8 : db.size = len db * 8 := by rw [hdb, add]; exact val_size_len ..
+  have hbl : len (concatBytes #[da, db]) = len xa + len xb := by
+    have e : concatBytes #[da, db] = da ++ db := by simp [concatBytes]
+    rw [e]; simp only [len, ByteArray.size_append] at hda8 hdb8 hdal hdbl ⊢; omega
+  have hbg : ∀ d, (Column.bitsAt (concatBytes #[da, db]) (d * 8) 8).toNat =
+      if d < len xa then (Column.bitsAt da (d * 8) 8).toNat else (Column.bitsAt db ((d - len xa) * 8) 8).toNat := by
+    intro d; rw [concat2_get hda8, hdal]; split <;> rfl
+  -- every place: `pa(r) + pb(r) + u`, `u < ca(r)` from the first side, `ca(r) ≤ u < ca(r) + cb(r)` from the second
+  have hval : ∀ d, d < len xa + len xb → ∃ r u, r < nN ∧ u < ca(r) + cb(r) ∧
+      (Column.bitsAt (concatBytes #[da, db]) (d * 8) 8).toNat = pa(r) + pb(r) + u ∧
+      (d < len xa ↔ u < ca(r)) ∧ (d < len xa → d = pa(r) + u) ∧
+      (len xa ≤ d → d = len xa + pb(r) + (u - ca(r))) := by
+    intro d hd
+    by_cases h : d < len xa
+    · obtain ⟨r, t, hr, ht, e⟩ := hxa_at d h
+      have hp := (hA r t hr ht).2
+      rw [← e] at hp
+      exact ⟨r, t, hr, by omega, by rw [hbg, if_pos h, hp], iff_of_true h ht, fun _ => e,
+        fun h' => absurd h (by omega)⟩
+    · obtain ⟨r, t, hr, ht, e⟩ := hxb_at (d - len xa) (by omega)
+      have hp := (hB r t hr ht).2
+      refine ⟨r, ca(r) + t, hr, by omega, ?_, iff_of_false h (by omega), fun h' => absurd h' h, fun _ => by omega⟩
+      rw [hbg, if_neg h, e, hp]; omega
+  have hblk : ∀ r, r < nN → pa(r) + pb(r) ≤ pa(r + 1) + pb(r + 1) := fun r _ => by
+    rw [hpa_succ, hpb_succ]; omega
+  have hinj : ∀ a b, a < len (concatBytes #[da, db]) → b < len (concatBytes #[da, db]) →
+      Column.bitsAt (concatBytes #[da, db]) (a * 8) 8 = Column.bitsAt (concatBytes #[da, db]) (b * 8) 8 →
+      a = b := by
+    intro a b ha hb e
+    rw [hbl] at ha hb
+    obtain ⟨r, t, hr, ht, ea, ia1, ta1, la1⟩ := hval a ha
+    obtain ⟨r', t', hr', ht', eb, ib1, tb1, lb1⟩ := hval b hb
+    have e' := congrArg UInt64.toNat e
+    rw [ea, eb] at e'
+    obtain ⟨rfl, rfl⟩ := block_inj (P := fun r => pa(r) + pb(r)) hblk r t r' t' hr hr'
+      (by have := hpa_succ r; have := hpb_succ r; dsimp only; omega)
+      (by have := hpa_succ r'; have := hpb_succ r'; dsimp only; omega) e'
+    by_cases h : a < len xa
+    · have h' := ia1.1 h; rw [ta1 h, tb1 (ib1.2 h')]
+    · have h' : ¬ b < len xa := fun hb' => h (ia1.2 (ib1.1 hb'))
+      rw [la1 (by omega), lb1 (by omega)]
+  have hpN : pa(nN) + pb(nN) = len (concatBytes #[da, db]) := by rw [hbl, hxal, hxbl]
+  obtain ⟨hgl, hgk, hglt⟩ : ∃ hgl : (ids g).length = len (concatBytes #[da, db]),
+      (∀ d (hd : d < len (concatBytes #[da, db])), (Column.bitsAt (concatBytes #[da, db])
+        ((ids g)[d]'(Nat.lt_of_lt_of_eq hd hgl.symm) * 8) 8).toNat = d) ∧
+      ∀ d (hd : d < len (concatBytes #[da, db])),
+        (ids g)[d]'(Nat.lt_of_lt_of_eq hd hgl.symm) < len (concatBytes #[da, db]) := by
+    subst hg
+    exact grade_ofLongs_inv (concatBytes #[da, db]) (by omega) (by omega)
+      (fun d hd => by
+        rw [hbl] at hd
+        obtain ⟨r, t, hr, ht, ea, -, -, -⟩ := hval d hd
+        obtain ⟨cl1, cl2⟩ := hcl r hr
+        rw [ea, ← hpN]; omega) hinj
+  -- the grade at row `r`'s place `u`: the first side's copy below `ca(r)`, the second's past it
+  have hgx : ∀ x d (hx : x < len (concatBytes #[da, db])), d < len (concatBytes #[da, db]) →
+      (Column.bitsAt (concatBytes #[da, db]) (d * 8) 8).toNat = x →
+      (ids g)[x]'(Nat.lt_of_lt_of_eq hx hgl.symm) = d := by
+    intro x d hx hd e
+    refine hinj _ _ (hglt x hx) hd (UInt64.toNat_inj.1 ?_)
+    rw [hgk x hx, e]
+  have hga : ∀ r t (hr : r < nN) (ht : t < ca(r)), (ids g)[pa(r) + pb(r) + t]'(by
+      obtain ⟨cl1, cl2⟩ := hcl r hr; rw [hgl, ← hpN]; omega) = pa(r) + t := by
+    intro r t hr ht
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    refine hgx _ _ (by rw [← hpN]; omega) (by rw [hbl, hxal]; omega) ?_
+    rw [hbg, if_pos (show pa(r) + t < len xa by rw [hxal]; omega), (hA r t hr ht).2]
+  have hgb : ∀ r t (hr : r < nN) (ht : t < cb(r)), (ids g)[pa(r) + pb(r) + ca(r) + t]'(by
+      obtain ⟨cl1, cl2⟩ := hcl r hr; rw [hgl, ← hpN]; omega) = len xa + (pb(r) + t) := by
+    intro r t hr ht
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    refine hgx _ _ (by rw [← hpN]; omega) (by rw [hbl, hxbl]; omega) ?_
+    rw [hbg, if_neg (show ¬ len xa + (pb(r) + t) < len xa by omega), Nat.add_sub_cancel_left, (hB r t hr ht).2]
+  refine ⟨hxaU, hxbU, hmaN, hmbN, hxal, hxbl, by rw [len_eq_ids, hgl, hbl], fun r hr => ⟨hhig r hr, hcg r hr⟩,
+    fun r t hr ht => ⟨(hA r t hr ht).1, ?_⟩, fun r t hr ht => ⟨(hB r t hr ht).1, ?_⟩⟩
+  · obtain ⟨cl1, cl2⟩ := hcl r hr
+    rw [List.getElem?_eq_getElem (by rw [hgl, ← hpN]; omega), hga r t hr ht]
+  · obtain ⟨cl1, cl2⟩ := hcl r hr
+    rw [List.getElem?_eq_getElem (by rw [hgl, ← hpN]; omega), hgb r t hr ht]
+
+/-- **`cat`'s row `r`, read back**: under `rep_cat`'s bound pieces and hypotheses, the result's row `r` is row `r`
+    of the first side then row `r` of the second; the copies fit a `USize` (from `cat_places`). -/
+theorem cat_row {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
+    (hpa : (Rel.val P).1.1.toNat < 2 ^ 63) (hpb : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (sa : ByteArray × ByteArray) (hsa : sa = slicesOf (Rel.val P).1)
+    (sb : ByteArray × ByteArray) (hsb : sb = slicesOf (Rel.val P).2)
+    (hS : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < 2 ^ 63)
+    (hU : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < USize.size)
+    (xa : ByteArray) (hxa : xa = expandBytes 8 0 (tilLongs (Rel.n P)) sa.2)
+    (ma : USize) (hma : ma = (len xa).toUSize)
+    (ra : ByteArray) (hra : ra = sub ma (tilLongs ma) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sa.2) sa.2) xa))
+    (xb : ByteArray) (hxb : xb = expandBytes 8 0 (tilLongs (Rel.n P)) sb.2)
+    (mb : USize) (hmb : mb = (len xb).toUSize)
+    (rb : ByteArray) (hrb : rb = sub mb (tilLongs mb) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sb.2) sb.2) xb))
+    (ja : ByteArray) (hja : ja = add ma (gather 8 sa.1 xa) ra)
+    (jb : ByteArray) (hjb : jb = add mb (gather 8 sb.1 xb) rb)
+    (ta : Vals B ma) (hta : ta = Vals.pick B (Rel.val P).1.2.2.2 (add ma (gather 8 sa.1 xa) ra) ma
+      (len_val Ew.add Ew.vv (gather 8 sa.1 xa) ra ma))
+    (tb : Vals B mb) (htb : tb = Vals.pick B (Rel.val P).2.2.2.2 (add mb (gather 8 sb.1 xb) rb) mb
+      (len_val Ew.add Ew.vv (gather 8 sb.1 xb) rb mb))
+    (c : ByteArray) (hcs : c = add (Rel.n P) sa.2 sb.2) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c)
+    (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c)
+    (da : ByteArray) (hda : da = add ma (gather 8 lo xa) ra)
+    (db : ByteArray) (hdb : db = add mb (add mb (gather 8 lo xb) (gather 8 sa.2 xb)) rb)
+    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[da, db])).grade)
+    (hTa : Vals.PickFits B (Rel.val P).1.2.2.2 ((List.range ma.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat))
+    (hTb : Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range mb.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat))
+    (hRf : Vals.RazeFits B ta tb)
+    (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN)
+      ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
+    len xa < USize.size ∧ len xb < USize.size ∧ ma.toNat + mb.toNat < USize.size ∧ len g < USize.size ∧
+      ∀ (hpg : len g = ((len g).toUSize).toNat) hN (hh : (Rel.n P).toNat ≤ len hi) (r : Nat)
+        (hr : r < (Rel.n P).toNat),
+        Vals.row (A := .arr B) (⟨(len g).toUSize, valCol Ew.sub Ew.vv hi c, longsN (Rel.n P) hi hh,
+          Vals.pick B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN) g (len g).toUSize hpg⟩ :
+            Vals (.arr B) (Rel.n P)) ⟨r, hr⟩ =
+          Vals.row (Rel.val P).1 ⟨r, hr⟩ ++ Vals.row (Rel.val P).2 ⟨r, hr⟩ := by
+  -- each side's payload rows are `ma`/`mb` longs: `ta`, `tb` pick at `ja`, `jb` themselves
+  have hjal : len ja = ma.toNat := by rw [hja]; exact len_val ..
+  replace hta : ta = Vals.pick B (Rel.val P).1.2.2.2 ja ma hjal := by subst hja; exact hta
+  have hjbl : len jb = mb.toNat := by rw [hjb]; exact len_val ..
+  replace htb : tb = Vals.pick B (Rel.val P).2.2.2.2 jb mb hjbl := by subst hjb; exact htb
+  obtain ⟨hxaU, hxbU, hmaN, hmbN, hxal, hxbl, hglen, hHC, hA, hB⟩ := cat_places P hpa hpb sa hsa sb hsb hS hU
+    xa hxa ma hma ra hra xb hxb mb hmb rb hrb ja hja jb hjb c hcs hi hhi lo hlo da hda db hdb g hg
+  subst hsa hsb
+  have hRa := fun r (hr : r < nN) => slicesOf_row (Rel.val P).1 hpa hr
+  have hRb := fun r (hr : r < nN) => slicesOf_row (Rel.val P).2 hpb hr
+  have hpa_le : ∀ a b, a ≤ b → pa(a) ≤ pa(b) := fun a b h => sum_range_le _ h
+  have hpb_le : ∀ a b, a ≤ b → pb(a) ≤ pb(b) := fun a b h => sum_range_le _ h
+  have hpa_succ : ∀ r, pa(r + 1) = pa(r) + ca(r) := fun r => sum_range_succ' _ r
+  have hpb_succ : ∀ r, pb(r + 1) = pb(r) + cb(r) := fun r => sum_range_succ' _ r
+  have hcl : ∀ r, r < nN → pa(r) + ca(r) ≤ pa(nN) ∧ pb(r) + cb(r) ≤ pb(nN) := fun r hr => by
+    have h1 := hpa_le (r + 1) nN (by omega); have h2 := hpb_le (r + 1) nN (by omega)
+    rw [hpa_succ] at h1; rw [hpb_succ] at h2; exact ⟨h1, h2⟩
+  have hhig := fun r (hr : r < nN) => (hHC r hr).1
+  have hcg := fun r (hr : r < nN) => (hHC r hr).2
+  -- each side's cells read back: copy `pa(r) + t` is cell `t` of row `r`'s first array, likewise the second
+  have hta_row : ∀ r t (hr : r < nN) (ht : t < (Vals.row (Rel.val P).1 ⟨r, hr⟩).length) a (ha : a < ma.toNat),
+      a = pa(r) + t → ta.row ⟨a, ha⟩ = (Vals.row (Rel.val P).1 ⟨r, hr⟩)[t] := by
+    intro r t hr ht a ha e
+    subst e
+    obtain ⟨hLa, hlna, hgeta⟩ := hRa r hr
+    have hj := (hA r t hr (by omega)).1
+    rw [hta, pick_row B _ ja ma hjal hTa, dif_pos (show (Column.bitsAt ja ((pa(r) + t) * 8) 8).toNat <
+      (Rel.val P).1.1.toNat by rw [hj]; omega), hgeta t ht (by omega)]
+    exact congrArg _ (Fin.ext hj)
+  have htb_row : ∀ r t (hr : r < nN) (ht : t < (Vals.row (Rel.val P).2 ⟨r, hr⟩).length) a (ha : a < mb.toNat),
+      a = pb(r) + t → tb.row ⟨a, ha⟩ = (Vals.row (Rel.val P).2 ⟨r, hr⟩)[t] := by
+    intro r t hr ht a ha e
+    subst e
+    obtain ⟨hLb, hlnb, hgetb⟩ := hRb r hr
+    have hj := (hB r t hr (by omega)).1
+    rw [htb, pick_row B _ jb mb hjbl hTb, dif_pos (show (Column.bitsAt jb ((pb(r) + t) * 8) 8).toNat <
+      (Rel.val P).2.1.toNat by rw [hj]; omega), hgetb t ht (by omega)]
+    exact congrArg _ (Fin.ext hj)
+  have hgU : len g < USize.size := by rw [hglen]; omega
+  have hgN : ((len g).toUSize).toNat = pa(nN) + pb(nN) := by
+    rw [USize.toNat_ofNat_of_lt' hgU, hglen, hxal, hxbl]
+  -- row `r` of the result: the first array's cells, then the second's
+  have hrow : ∀ (hpg : len g = ((len g).toUSize).toNat) hN (hh : (Rel.n P).toNat ≤ len hi) (r : Nat) (hr : r < nN),
+      Vals.row (A := .arr B) (⟨(len g).toUSize, valCol Ew.sub Ew.vv hi c, longsN (Rel.n P) hi hh,
+        Vals.pick B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN) g (len g).toUSize hpg⟩ :
+          Vals (.arr B) (Rel.n P)) ⟨r, hr⟩ =
+        Vals.row (Rel.val P).1 ⟨r, hr⟩ ++ Vals.row (Rel.val P).2 ⟨r, hr⟩ := by
+    intro hpg hN hh r hr
+    have hFf' := hFf hN
+    rw [hpg] at hFf'
+    have hpk : ∀ {N : USize} (F : Vals B N)
+        (hF : Vals.PickFits B F ((List.range ((len g).toUSize).toNat).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
+        (q : Fin ((len g).toUSize).toNat) (d : Fin N.toNat), (Column.bitsAt g (q.1 * 8) 8).toNat = d.1 →
+        (Vals.pick B F g _ hpg).row q = F.row d := by
+      intro N F hF q d e
+      rw [pick_row B F g _ hpg hF q, dif_pos (show (Column.bitsAt g (q.1 * 8) 8).toNat < N.toNat by
+        rw [e]; exact d.2)]
+      exact congrArg _ (Fin.ext e)
+    have hcN := raze2_cnt ta tb hN
+    obtain ⟨cl1, cl2⟩ := hcl r hr
+    have e1 := hhig r hr; have e2 := hcg r hr; have e3 := hpa_succ r; have e4 := hpb_succ r
+    have hsub : (Column.bitsAt (sub (Rel.n P) hi c) (r * 8) 8).toNat = pa(r) + pb(r) := by
+      rw [sub_get (a := hi) (b := c) hr (by omega) (by omega)]; omega
+    have hlo' : ((valCol (n := Rel.n P) Ew.sub Ew.vv hi c).get ⟨r, hr⟩).toInt = ((pa(r) + pb(r) : Nat) : Int) := by
+      rw [valCol_get]; dsimp only
+      rw [show Kernel.Ew.val Ew.sub Ew.i64 Ew.vv nul hi c (Rel.n P) = sub (Rel.n P) hi c from rfl,
+        toInt64_toInt (x := Column.bitsAt (sub (Rel.n P) hi c) (r * 8) 8) (by omega), hsub]
+    have hhi' : ((longsN (Rel.n P) hi hh).get ⟨r, hr⟩).toInt = ((pa(r + 1) + pb(r + 1) : Nat) : Int) := by
+      rw [longsN_get]; dsimp only
+      rw [toInt64_toInt (x := Column.bitsAt hi (r * 8) 8) (by omega), e1]
+    have hrow := arr_row (b := B) (⟨(len g).toUSize, valCol (n := Rel.n P) Ew.sub Ew.vv hi c,
+      longsN (Rel.n P) hi hh, Vals.pick B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN) g (len g).toUSize hpg⟩ :
+        Vals (.arr B) (Rel.n P)) ⟨r, hr⟩
+    dsimp only at hrow
+    rw [hlo', hhi'] at hrow
+    have f1 : min (max ((pa(r) + pb(r) : Nat) : Int) 0).toNat ((len g).toUSize).toNat = pa(r) + pb(r) := by omega
+    have f2 : min (max ((pa(r + 1) + pb(r + 1) : Nat) : Int) 0).toNat ((len g).toUSize).toNat =
+        pa(r + 1) + pb(r + 1) := by omega
+    rw [f1, f2] at hrow
+    rw [hrow]
+    obtain ⟨hLa, hlna, -⟩ := hRa r hr
+    obtain ⟨hLb, hlnb, -⟩ := hRb r hr
+    apply List.ext_getElem
+    · rw [List.length_append, hlna, hlnb, List.length_map, List.length_range]; omega
+    · intro u h1 h2
+      have hb : pa(r) + pb(r) + u < ((len g).toUSize).toNat := by
+        simp only [List.length_map, List.length_range] at h1; omega
+      have hu2 : u < ca(r) + cb(r) := by simp only [List.length_map, List.length_range] at h1; omega
+      rw [List.getElem_map, List.getElem_range, dif_pos hb]
+      by_cases hu : u < ca(r)
+      · rw [List.getElem_append_left (by omega), hpk _ hFf' ⟨_, hb⟩ ⟨pa(r) + u, by rw [hcN, hmaN]; omega⟩ (by
+            dsimp only
+            have hJ : pa(r) + pb(r) + u < (ids g).length := by rw [← len_eq_ids, hglen]; omega
+            rw [← ids_getElem (b := g) (j := pa(r) + pb(r) + u) hJ]
+            exact Option.some.inj ((List.getElem?_eq_getElem hJ).symm.trans (hA r u hr hu).2)),
+          raze_row_full B ta tb hRf hN, dif_pos (show pa(r) + u < ma.toNat by omega)]
+        exact hta_row r u hr (by omega) _ _ rfl
+      · rw [List.getElem_append_right (by omega), hpk _ hFf' ⟨_, hb⟩
+            ⟨len xa + (pb(r) + (u - ca(r))), by rw [hcN, hmaN, hmbN]; omega⟩ (by
+            dsimp only
+            have hJ : pa(r) + pb(r) + ca(r) + (u - ca(r)) < (ids g).length := by rw [← len_eq_ids, hglen]; omega
+            rw [show pa(r) + pb(r) + u = pa(r) + pb(r) + ca(r) + (u - ca(r)) by omega,
+              ← ids_getElem (b := g) (j := pa(r) + pb(r) + ca(r) + (u - ca(r))) hJ]
+            exact Option.some.inj ((List.getElem?_eq_getElem hJ).symm.trans (hB r (u - ca(r)) hr (by omega)).2)),
+          raze_row_full B ta tb hRf hN, dif_neg (show ¬ len xa + (pb(r) + (u - ca(r))) < ma.toNat by omega)]
+        have hl1 : (Vals.row (Rel.val P).1 ⟨r, hr⟩).length = ca(r) := hlna
+        have ht2 : u - (Vals.row (Rel.val P).1 ⟨r, hr⟩).length < (Vals.row (Rel.val P).2 ⟨r, hr⟩).length := by
+          omega
+        have ha2 : len xa + (pb(r) + (u - ca(r))) - ma.toNat < mb.toNat := by
+          rw [hmaN, hmbN, hxbl, Nat.add_sub_cancel_left]; omega
+        have ea2 : len xa + (pb(r) + (u - ca(r))) - ma.toNat = pb(r) + (u - (Vals.row (Rel.val P).1 ⟨r, hr⟩).length) := by
+          rw [hmaN, Nat.add_sub_cancel_left, hl1]
+        exact htb_row r _ hr ht2 _ ha2 ea2
+  exact ⟨hxaU, hxbU, by omega, hgU, hrow⟩
+
+/-- **`cat`, read back**: a row `(xs, ys)` of `P` goes to the array `xs ++ ys`, under its key. The pieces `cat`
+    computes are bound by their equations: the slices `sa`, `sb` of `P`'s two sides, each side's `expand` index and
+    rank columns (`xa`, `ra` at `ma` copies; `xb`, `rb` at `mb`), its payload rows `ja`, `jb` and cells `ta`, `tb`,
+    the summed counts `c`, their running ends `hi` and starts `lo`, each side's places `da`, `db` and the grade `g`.
+    Hypotheses: both payload counts below `2^63`; both sides' counts summed below `2^63` and a `USize`;
+    `Vals.PickFits` where the key, the two payloads and the razed cells are picked, `Vals.RazeFits` of the cells.
+    The rows are `cat_row`'s; this unfolds `cat` at its pieces. -/
+theorem rep_cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
+    (hpa : (Rel.val P).1.1.toNat < 2 ^ 63) (hpb : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (sa : ByteArray × ByteArray) (hsa : sa = slicesOf (Rel.val P).1)
+    (sb : ByteArray × ByteArray) (hsb : sb = slicesOf (Rel.val P).2)
+    (hS : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < 2 ^ 63)
+    (hU : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
+      ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sb.2 (r * 8) 8).toNat).sum < USize.size)
+    (xa : ByteArray) (hxa : xa = expandBytes 8 0 (tilLongs (Rel.n P)) sa.2)
+    (ma : USize) (hma : ma = (len xa).toUSize)
+    (ra : ByteArray) (hra : ra = sub ma (tilLongs ma) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sa.2) sa.2) xa))
+    (xb : ByteArray) (hxb : xb = expandBytes 8 0 (tilLongs (Rel.n P)) sb.2)
+    (mb : USize) (hmb : mb = (len xb).toUSize)
+    (rb : ByteArray) (hrb : rb = sub mb (tilLongs mb) (gather 8 (sub (Rel.n P) (sums (Rel.n P) sb.2) sb.2) xb))
+    (ja : ByteArray) (hja : ja = add ma (gather 8 sa.1 xa) ra)
+    (jb : ByteArray) (hjb : jb = add mb (gather 8 sb.1 xb) rb)
+    (ta : Vals B ma) (hta : ta = Vals.pick B (Rel.val P).1.2.2.2 (add ma (gather 8 sa.1 xa) ra) ma
+      (len_val Ew.add Ew.vv (gather 8 sa.1 xa) ra ma))
+    (tb : Vals B mb) (htb : tb = Vals.pick B (Rel.val P).2.2.2.2 (add mb (gather 8 sb.1 xb) rb) mb
+      (len_val Ew.add Ew.vv (gather 8 sb.1 xb) rb mb))
+    (c : ByteArray) (hcs : c = add (Rel.n P) sa.2 sb.2) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c)
+    (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c)
+    (da : ByteArray) (hda : da = add ma (gather 8 lo xa) ra)
+    (db : ByteArray) (hdb : db = add mb (add mb (gather 8 lo xb) (gather 8 sa.2 xb)) rb)
+    (g : ByteArray) (hg : g = (Code.ofLongs (concatBytes #[da, db])).grade)
+    (hKf : Vals.PickFits K (Rel.key P)
+      ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
+    (hTa : Vals.PickFits B (Rel.val P).1.2.2.2 ((List.range ma.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat))
+    (hTb : Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range mb.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat))
+    (hRf : Vals.RazeFits B ta tb)
+    (hFf : ∀ hN, Vals.PickFits B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN)
+      ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) :
+    ∀ k zs, rep (cat P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = xs ++ ys := by
+  obtain ⟨hxaU, hxbU, hkN, hgU, hrow⟩ := cat_row P hpa hpb sa hsa sb hsb hS hU xa hxa ma hma ra hra xb hxb mb hmb
+    rb hrb ja hja jb hjb ta hta tb htb c hcs hi hhi lo hlo da hda db hdb g hg hTa hTb hRf hFf
+  -- the key: `Vals.compact` reads back every row
+  have hkey : ∀ q : Fin nN, (Vals.compact K (Rel.key P)).row q = (Rel.key P).row q := fun q => by
+    rw [show Vals.compact K (Rel.key P) = Vals.pick K (Rel.key P) (tilLongs _) _ (len_tilLongs _) from rfl,
+      pick_row K (Rel.key P) (tilLongs (Rel.n P)) (Rel.n P) (len_tilLongs _) hKf,
+      dif_pos (show (Column.bitsAt (tilLongs (Rel.n P)) (q.1 * 8) 8).toNat < (Rel.n P).toNat by
+        rw [tilLongs_get q.2]; exact q.2)]
+    exact congrArg (Vals.row (Rel.key P)) (Fin.ext (tilLongs_get q.2))
+  -- `cat` unfolded at its pieces
+  intro k zs
+  subst hma hmb
+  subst hta htb hja hjb hg hda hdb hlo hhi hcs hra hrb hxa hxb hsa hsb
+  unfold cat expand need
+  dsimp only
+  rw [dif_pos hxaU]
+  try dsimp only
+  rw [dif_pos hxbU]
+  try dsimp only
+  rw [dif_pos hkN]
+  try dsimp only
+  rw [longCount_eq _ _ _ hgU]
+  show (∃ q, _ ∧ _) ↔ _
+  constructor
+  · rintro ⟨⟨r, hr⟩, hk, hv⟩
+    refine ⟨Vals.row (Rel.val P).1 ⟨r, hr⟩, Vals.row (Rel.val P).2 ⟨r, hr⟩, ?_, ?_⟩
+    · show ∃ q, _ ∧ _
+      exact ⟨⟨r, hr⟩, (hkey _).symm.trans hk, rfl⟩
+    · rw [← hv]
+      exact hrow _ _ _ r hr
+  · rintro ⟨xs, ys, ⟨⟨r, hr⟩, hk, hv⟩, e⟩
+    refine ⟨⟨r, hr⟩, (hkey _).trans hk, ?_⟩
+    rw [hrow _ _ _ r hr, e, show xs = Vals.row (Rel.val P).1 ⟨r, hr⟩ from (congrArg Prod.fst hv).symm,
+      show ys = Vals.row (Rel.val P).2 ⟨r, hr⟩ from (congrArg Prod.snd hv).symm]
+
 open FoldN
 
 /-- **`map`'s step, read back**: `cons (pair (el ≫ R) pend)` takes row `r`'s element `e` and list `u` to
@@ -524,7 +1023,8 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
+    (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+      (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m))
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -542,7 +1042,7 @@ theorem map_step_rep {E B : Obj} (el : Rel .long E) (R : Rel E B) (pend : Rel .l
   have h1 := rep_pair (el ≫ R) pend hkO hkn hkM hkU hkA hkB hkC
   subst hP
   intro r v
-  rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj hjl tl htl c1 hc1 hi hhi lo hlo
+  rw [rep_cons (pair (el ≫ R) pend) hp s hs hS hU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf, h1]
   constructor
   · rintro ⟨b, bs, hb, rfl⟩
@@ -613,7 +1113,8 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       ∀ m : USize, m = (len xi).toUSize →
       ∀ xr : ByteArray, xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi) →
       ∀ j : ByteArray, j = add m (gather 8 s.1 xi) xr →
-      ∃ hjl : len j = m.toNat, ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl →
+      ∀ tl : Vals B m, tl = Vals.pick B (Rel.val P).2.2.2.2 (add m (gather 8 s.1 xi) xr) m
+        (len_val Ew.add Ew.vv (gather 8 s.1 xi) xr m) →
       ∀ c1 : ByteArray, c1 = addc (Rel.n P) s.2 1 → ∀ hi : ByteArray, hi = sums (Rel.n P) c1 →
       ∀ lo : ByteArray, lo = sub (Rel.n P) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
@@ -642,10 +1143,9 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hP⟩ := hQ _ rfl _ rfl
     obtain ⟨hp, hs⟩ := hP _ rfl
     obtain ⟨hS, hU, hx⟩ := hs _ rfl
-    obtain ⟨hjl, ht⟩ := hx _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hKf, hTf, hRf, hFf⟩ := ht _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     exact map_step_rep _ R _ _ rfl hjO hjn hjM hjU hjA hjC _ rfl _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl hp _ rfl
-      hS hU _ rfl _ rfl _ rfl _ rfl hjl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
+      hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
   refine (rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB
     (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
     F hF jc hjc hjO hjn hjM hjU hjA hjC xs ys).trans ?_
@@ -660,5 +1160,9 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_uncons
 #print axioms LeetQ.Rel.Rep.rep_cons
 #print axioms LeetQ.Rel.Rep.map_chain
+#print axioms LeetQ.Rel.Rep.expand_at
+#print axioms LeetQ.Rel.Rep.cat_places
+#print axioms LeetQ.Rel.Rep.cat_row
+#print axioms LeetQ.Rel.Rep.rep_cat
 #print axioms LeetQ.Rel.Rep.map_step_rep
 #print axioms LeetQ.Rel.Rep.rep_map
