@@ -115,6 +115,25 @@ theorem subseq_chain {β : Type _} (xs w : List β) :
         | zero => exact Or.inl (congrArg (x :: ·) hw)
         | succ t => exact hstep t (by simp at ht; omega)
 
+/-- **`subseq`'s step in `rep_foldBy_keep`'s form**: a step that takes row `r`'s element `e` and list `u` to
+    `e :: u` and keeps every list `U` holds splits into the rows with an element (`e :: u` or `u`) and the kept
+    rows with none. -/
+theorem subseq_keep {β : Type _} (E : β → Prop) (U : List β → Prop) (v : List β) (A : Prop)
+    (hA : A ↔ (∃ e u, E e ∧ U u ∧ v = e :: u) ∨ U v) :
+    A ↔ (∃ e u, E e ∧ U u ∧ (v = e :: u ∨ v = u)) ∨ (True ∧ (¬ ∃ e, E e) ∧ U v) := by
+  rw [hA]
+  constructor
+  · rintro (⟨e, u, he, hu, rfl⟩ | hu)
+    · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩
+    · by_cases hx : ∃ e, E e
+      · obtain ⟨e, he⟩ := hx
+        exact Or.inl ⟨e, v, he, hu, Or.inr rfl⟩
+      · exact Or.inr ⟨trivial, hx, hu⟩
+  · rintro (⟨e, u, he, hu, rfl | rfl⟩ | ⟨-, -, hu⟩)
+    · exact Or.inl ⟨e, u, he, hu, rfl⟩
+    · exact Or.inr hu
+    · exact Or.inr hu
+
 section SubseqFold
 
 open QLean.Dep
@@ -180,6 +199,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     ∀ (xs : List B.El) ys, rep (Alg.subseq X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
   subst hstep
   intro xs ys
+  rw [show Alg.subseq X = foldBy X (nilVal B) (fun el pend => cons (pair el pend) ∪ pend) from foldByC_fst X _ _]
   -- round `i`'s step read back: `subseq_step_rep` at the round's element and state, its kept branch split by
   -- whether the row has an element this round
   have hS : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ r v,
@@ -191,19 +211,8 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     obtain ⟨hcS, hcU, hx⟩ := hW _ rfl _ rfl
     obtain ⟨hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v]
-    constructor
-    · rintro (⟨e, u, he, hu, rfl⟩ | hu)
-      · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩
-      · by_cases hx : ∃ e, rep (elK i) r e
-        · obtain ⟨e, he⟩ := hx
-          exact Or.inl ⟨e, v, he, hu, Or.inr rfl⟩
-        · exact Or.inr ⟨trivial, hx, hu⟩
-    · rintro (⟨e, u, he, hu, rfl | rfl⟩ | ⟨-, -, hu⟩)
-      · exact Or.inl ⟨e, u, he, hu, rfl⟩
-      · exact Or.inr hu
-      · exact Or.inr hu
+    exact subseq_keep _ _ v _ (subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl _ rfl hcS hcU _ rfl _ rfl _ rfl
+      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hRf hFf _ rfl _ rfl hU hFv hUV hUk hUv r v)
   refine (rep_foldBy_keep (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => cons (pair el pend) ∪ pend) (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) elK hE f hf
     (fun i _ _ => roundRB_of_ok pend₀ _ elK f hR i) True (fun i hi _ => hS i hi)

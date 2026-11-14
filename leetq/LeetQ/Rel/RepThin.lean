@@ -394,11 +394,12 @@ theorem thinLOn_foldOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) �
       cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys) :
     thinLOn q X = foldOn (nilVal B) Sf X := by
   -- `congrArg`, not `congr`: `congr` first tries the two steps up to `rfl`, unfolding the kernels until `whnf` times out
-  unfold thinLOn
-  rw [show foldOn (nilVal B) Sf X = foldBy X (nilVal B) (demandStep Sf) from foldByC_fst X _ _]
+  unfold thinLOn thinLOnC foldOnC
+  rw [foldByC_fst, show foldOn (nilVal B) Sf X = foldBy X (nilVal B) (demandStep Sf) from foldByC_fst X _ _]
   refine congrArg (foldBy X (nilVal B)) (funext fun el => funext fun pend => ?_)
-  show _ = pair el pend ≫ Sf (ran (pair el pend))
+  show pair el pend ≫ (thinBodyC _ (ran (pair el pend))).1 = pair el pend ≫ Sf (ran (pair el pend))
   simp only [hSf]
+  rfl
 
 /-- **One round of `thinLOn`, read back**: at the round's pairs `P`, its coreflexive `D = ran P` holds exactly the
     pairs of `P`, and the body `Sf D` takes `(a, y)` of `D` to one bump of `a` into `y` at `le`. `h` is `rep_ran`'s

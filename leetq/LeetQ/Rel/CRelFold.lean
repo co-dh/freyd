@@ -9,6 +9,8 @@ import LeetQ.Rel.RepFold
 import LeetQ.Rel.RepArith
 import LeetQ.Rel.CRelArith
 import LeetQ.Rel.CRelList
+import LeetQ.Rel.RepSubseq
+import LeetQ.Rel.RepThin
 
 namespace LeetQ.Rel
 
@@ -297,6 +299,150 @@ theorem rep_mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
   exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
     ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (map_chain (rep R) xs ys))
 
+/-- **`perm` under `permC`'s bit**: `rep_foldByC` at `permC`'s step, each round's ten bits reading its pieces back
+    (`rep_ranC`, `rep_uncatC`, `rep_compC`, `rep_pairC`, `rep_consC`, `rep_catC`) into `perm_step_set`, then
+    `perm_chain`. What stays: `hat`. -/
+theorem rep_permC {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (permC X).2 = true) :
+    ∀ (xs : List B.El) ys, rep (permC X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
+  intro xs ys; unfold permC at hb ⊢
+  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+    (fun _ eu v => ∃ ys zs, eu.2 = ys ++ zs ∧ v = ys ++ eu.1 :: zs) _ (fun _ => rfl) _ (fun _ => rfl) False
+    (fun i _ _ hbi r v => ?_) xs ys).trans ?_
+  · simp only [Bool.and_eq_true] at hbi
+    obtain ⟨hDp, hun, hU, hq, hD, hW, hCn, hV, hCt, hR⟩ := hbi
+    simp only [false_and, or_false]
+    have eDp := (rep_ranC _ hDp).trans (dom_corefl _)
+    refine perm_step_set _ _ _ _ _ _ _ _ _ _ (fun r ys zs => ?_)
+      (fun r e p => Iff.of_eq (congrFun (congrFun (rep_pairC _ _ hq) r) (e, p)))
+      (fun t t' => Iff.of_eq (congrFun (congrFun ((rep_ranC _ hD).trans (dom_corefl _)) t) t'))
+      (fun t a b => Iff.of_eq (congrFun (congrFun (rep_pairC _ _ hW) t) (a, b))) (rep_consC _ hCn)
+      (fun t xs ys => Iff.of_eq (congrFun (congrFun (rep_pairC _ _ hV) t) (xs, ys))) (rep_catC _ hCt)
+      (fun r v => Iff.of_eq (congrFun (congrFun (rep_compC _ _ hR) r) v)) r v
+    rw [rep_compC _ _ hU, Freyd.Alg.RelSet.comp_apply]
+    refine ⟨fun ⟨u, hu, hx⟩ => ⟨u, hu, ((rep_uncatC _ hun u ys zs).1 hx).2⟩,
+      fun ⟨u, hu, e⟩ => ⟨u, hu, (rep_uncatC _ hun u ys zs).2 ⟨?_, e⟩⟩⟩
+    -- `u` is a list `pend` holds, so a row of `ran pend`
+    obtain ⟨j, -, hj⟩ := (Iff.of_eq (congrFun (congrFun eDp u) u)).2 ⟨rfl, r, hu⟩
+    exact ⟨j, hj⟩
+  -- `nilVal B`'s one row is `[]`
+  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
+    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (perm_chain xs ys))
+
+/-- **`subseq` under `subseqC`'s bit**: `rep_foldByC` at `keep := True`, each round's step read back by
+    `rep_unionC`, `rep_consC`, `rep_pairC` and split by `subseq_keep`, then `subseq_chain`. What stays: `hat`. -/
+theorem rep_subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (subseqC X).2 = true) :
+    ∀ (xs : List B.El) ys, rep (subseqC X).1 xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
+  intro xs ys; unfold subseqC at hb ⊢
+  refine (rep_foldByC (nilVal B) X _ hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+    (fun _ eu v => v = eu.1 :: eu.2 ∨ v = eu.2) _ (fun _ => rfl) _ (fun _ => rfl) True
+    (fun i _ _ hbi r v => ?_) xs ys).trans ?_
+  · simp only [Bool.and_eq_true] at hbi
+    obtain ⟨⟨hp, hc⟩, hu⟩ := hbi
+    refine subseq_keep _ _ v _ ?_
+    show rep (unionC _ _).1 r v ↔ _
+    rw [rep_unionC hat _ _ hu]
+    show _ ∨ _ ↔ _
+    rw [rep_consC _ hc, rep_pairC _ _ hp]
+    exact or_congr ⟨fun ⟨b, bs, ⟨he, hu⟩, e⟩ => ⟨b, bs, he, hu, e⟩, fun ⟨b, bs, he, hu, e⟩ => ⟨b, bs, ⟨he, hu⟩, e⟩⟩
+      Iff.rfl
+  -- `nilVal B`'s one row is `[]`
+  exact and_congr Iff.rfl ((exists_congr fun zs => exists_congr fun _ => and_congr
+    ⟨fun ⟨_, h⟩ => h.symm, fun h => ⟨⟨0, by simp⟩, h.symm⟩⟩ Iff.rfl).trans (subseq_chain xs ys))
+
+open CompN in
+/-- **`rep (R \ S)` under `diffC`'s bit**: `rep_diff` at the joint pair codes' bit (as `rep_interC`) and the
+    `fitsN` bits. -/
+theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
+    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b := by
+  simp only [diffC, Bool.and_eq_true] at hb
+  obtain ⟨⟨hcb, hk⟩, hv⟩ := hb
+  have hc := (codes_faithful_wf (.prod A B) _ (Obj.codesC_fits (.prod A B) _ hcb)).1
+  have e : ∀ {α β : Type} (f : α → β) (a b : α), #v[a, b].map f = #v[f a, f b] := fun _ _ _ => by simp
+  have hp : pairsOK(R, S) := by rw [pairs_eq_codes, e]; exact hc
+  exact rep_diff R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp)) a b
+
+/-- **`thinBodyC`'s body on a coreflexive `D`, read back under its bit**: `thin_body_set` with each piece read
+    back by its twin's lemma. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
+    pairs `le` holds of. -/
+theorem thinBodyC_rep {B : Obj}
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool) (le : B.El → B.El → Bool)
+    (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
+    (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) (hD : ∀ s s', rep D s s' → s = s')
+    (hb : (thinBodyC q D).2 = true) :
+    ∀ a (y v : List B.El), rep (thinBodyC q D).1 (a, y) v ↔ rep D (a, y) (a, y) ∧ ((y = [] ∧ v = [a]) ∨
+      ∃ b bs, y = b :: bs ∧ ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = y) ∨
+        (le a b = false ∧ le b a = false ∧ v = a :: y))) := by
+  simp only [thinBodyC, Bool.and_eq_true] at hb
+  obtain ⟨hun, hu, hab, hrab, hG1, hq1, hup, hss, hrs, hG2, hq2, hsw, hq3, hdown, hdu, hl1, hl2, hl3, hlone, hc1,
+    hua, huu, hru, hut, hpu, hc2, hdy, hb1, hbody⟩ := hb
+  have eD : rep D = corefl (A := (⟨(Obj.prod B (.arr B)).El⟩ : RelSet.{0})) fun s => rep D s s :=
+    hom_ext fun s s' => ⟨fun h => ⟨hD s s' h, by obtain rfl := hD s s' h; exact h⟩, fun ⟨e, h⟩ => e ▸ h⟩
+  exact thin_body_set le D _ eD _ rfl _ rfl _ (rep_unconsC _ hun) (rep_compC _ _ hu) _ (rep_pairC _ _ hab)
+    _ ((rep_ranC _ hrab).trans (dom_corefl _)) _ (hq _ hG1) _ (rep_compC _ _ hq1)
+    _ ((rep_domC _ hup).trans (dom_corefl _)) _ (rep_pairC _ _ hss) _ ((rep_ranC _ hrs).trans (dom_corefl _))
+    _ (fun a b => hq _ hG2 b a) _ (rep_compC _ _ hq2) _ ((rep_domC _ hsw).trans (dom_corefl _))
+    _ (rep_compC _ _ hq3) _ ((rep_domC _ hdown).trans (dom_corefl _)) _ ((rep_domC _ hdu).trans (dom_corefl _))
+    _ (rep_diffC _ _ hl1) _ (rep_diffC _ _ hl2) _ (rep_diffC _ _ hl3) _ (rep_unionC hat _ _ hlone)
+    _ (rep_consC _ hc1) _ (rep_compC _ _ hua) _ (rep_compC _ _ huu) _ ((rep_ranC _ hru).trans (dom_corefl _))
+    _ (rep_compC _ _ hut) _ (rep_pairC _ _ hpu) _ (rep_consC _ hc2) _ (rep_compC _ _ hdy)
+    _ (rep_unionC hat _ _ hb1) _ (rep_unionC hat _ _ hbody)
+
+/-- **`thinLOn` under `thinLOnC`'s bit**: `rep_foldOnC` at `thinBodyC q`, each round's body read back on its pairs
+    by `thinBodyC_rep`. What stays: `hat`, and `hq`, the test's own spec. -/
+theorem rep_thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hq : ∀ D, (q D).2 = true → ∀ a b, rep D (a, b) (a, b) → ((∃ c, rep (q D).1 (a, b) c) ↔ le a b = true))
+    (hb : (thinLOnC q X).2 = true) :
+    ∀ (xs : List B.El) w, rep (thinLOnC q X).1 xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length),
+          (ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = [] ∧
+              ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = [xs[t]'ht]) ∨
+            ∃ b bs, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = b :: bs ∧
+              ((le (xs[t]'ht) b = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: bs) ∨
+               (le b (xs[t]'ht) = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
+                 ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)) ∨
+               (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
+                ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
+                  xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_foldOnC (E := B) (V := .arr B) (m := 1) (nilVal B) (thinBodyC q) X hat hb _ rfl _ rfl _ (fun _ _ => rfl)
+    _ (fun _ => rfl) _ (fun _ => rfl) _ (fun _ => rfl)
+    (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧
+      ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = p.2) ∨
+        (le p.1 b = false ∧ le b p.1 = false ∧ v = p.1 :: p.2)))
+    (fun _ _ _ hbi p w hp hcor => by
+      obtain ⟨a, y⟩ := p
+      simp only [demandStepC, Bool.and_eq_true] at hbi
+      refine (thinBodyC_rep hat q le hq _ hcor hbi.1.2 a y w).trans (and_iff_right ?_)
+      obtain ⟨s, hs⟩ := hp
+      obtain rfl := hcor _ _ hs
+      exact hs)
+
+#print axioms rep_permC
+#print axioms rep_subseqC
+#print axioms rep_diffC
+#print axioms thinBodyC_rep
+#print axioms rep_thinLOnC
 #print axioms rep_foldOnC
 #print axioms rep_foldC
 #print axioms rep_mapC
@@ -451,9 +597,75 @@ theorem rep_map {A B : Obj} {n : USize} (R : CRel A B) (X : Vals (.arr A) n)
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R.rel (xs[t]'ht) (ys[t]'ht') :=
   rep_mapC R.rel X hat (by simp only [map, Bool.and_eq_true] at hb; exact hb.2)
 
+/-- `perm` as a `CRel`, ok where `permC` ran within capacity. -/
+def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
+  let r := permC X
+  ⟨r.1, r.2⟩
+
+/-- **`CRel.perm` read back under its bit**: `rep_permC`. -/
+theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (perm X).ok = true) :
+    ∀ (xs : List B.El) ys, rep (perm X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs :=
+  rep_permC X hat hb
+
+/-- `subseq` as a `CRel`, ok where `subseqC` ran within capacity. -/
+def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
+  let r := subseqC X
+  ⟨r.1, r.2⟩
+
+/-- **`CRel.subseq` read back under its bit**: `rep_subseqC`. -/
+theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hb : (subseq X).ok = true) :
+    ∀ (xs : List B.El) ys, rep (subseq X).rel xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs :=
+  rep_subseqC X hat hb
+
+/-- `thinLOn` on a test over `CRel`s, ok where every call of the test was and `thinLOnC` ran within capacity. The
+    test sees the round's pairs as ok: their bits are already in the fold's. -/
+def thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
+    (X : Vals (.arr B) n) : CRel (.arr B) (.arr B) :=
+  let r := thinLOnC (fun D => ((q ⟨D, true⟩).rel, (q ⟨D, true⟩).ok)) X
+  ⟨r.1, r.2⟩
+
+/-- **`CRel.thinLOn` read back under its bit**: `rep_thinLOnC`. -/
+theorem rep_thinLOn {B : Obj} {n : USize} (q : CRel (.prod B B) (.prod B B) → CRel (.prod B B) (.prod B B))
+    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
+    (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+      (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+        USize.size), Vals.RazeFits (.atom t) x y →
+      (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList)
+    (hq : ∀ D, (q ⟨D, true⟩).ok = true → ∀ a b, rep D (a, b) (a, b) →
+      ((∃ c, rep (q ⟨D, true⟩).rel (a, b) c) ↔ le a b = true))
+    (hb : (thinLOn q X).ok = true) :
+    ∀ (xs : List B.El) w, rep (thinLOn q X).rel xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length),
+          (ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = [] ∧
+              ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = [xs[t]'ht]) ∨
+            ∃ b bs, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = b :: bs ∧
+              ((le (xs[t]'ht) b = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: bs) ∨
+               (le b (xs[t]'ht) = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
+                 ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)) ∨
+               (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
+                ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) =
+                  xs[t]'ht :: ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
+  rep_thinLOnC _ le X hat hq hb
+
 #print axioms Arr.rep_sum
 #print axioms rep_length
 #print axioms rep_map
+#print axioms rep_perm
+#print axioms rep_subseq
+#print axioms rep_thinLOn
 
 end CRel
 
