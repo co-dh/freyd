@@ -499,7 +499,7 @@ theorem sym_hit_holds (R : Rel A C) (S : Rel B C) (rk sk v0 v1 : Code)
     rw [dif_pos hlt]
     dsimp only
     have hm : len (join lc rc).2 = ((len (join lc rc).2).toUSize).toNat := (USize.toNat_ofNat_of_lt' hlt).symm
-    obtain ⟨hlen, hrow⟩ := div_y_rows lc rc rf.2 sf.2 hln hrn' hlw ls hrw rs hrc' hrn63 hM hB hC _ hm
+    obtain ⟨hlen, hrow, -⟩ := div_y_rows lc rc rf.2 sf.2 hln hrn' hlw ls hrw rs hrc' hrn63 hM hB hC _ hm
       (Nat.le_trans (Nat.le_of_eq hm.symm) (join_len lc rc))
     unfold Rel.Holds
     dsimp only
@@ -588,17 +588,6 @@ theorem anti_pick_rows {mu mv : USize} (U : Vals B mu) (V : Vals B mv) (uc vc : 
     rintro ⟨j, hjn, hje⟩
     rw [hvn] at hjn
     exact hno ⟨⟨j, hjn⟩, ((hj hjn hp).1 hje).trans e⟩
-
-/-- **`U` picked at `anti uc vc` counts at most `uc`'s rows**: `anti` keeps a sublist of them. -/
-theorem pickPart_anti_count {X : Obj} {m : USize} (U : Vals X m) (uc vc : Code) :
-    (Vals.pickPart X U (anti uc vc)).1.toNat ≤ uc.n.toNat := by
-  have hl : (ids (anti uc vc)).length ≤ uc.n.toNat := by simpa using (anti_sublist uc vc).length_le
-  have hL : len (anti uc vc) < USize.size := by rw [len_eq_ids]; exact Nat.lt_of_le_of_lt hl uc.n.toNat_lt_size
-  have hpd : Vals.pickPart X U (anti uc vc) =
-      ⟨(len (anti uc vc)).toUSize, Vals.pick X U _ _ (USize.toNat_ofNat_of_lt' hL).symm⟩ := by
-    unfold Vals.pickPart need; rw [dif_pos hL]
-  rw [hpd]; show ((len (anti uc vc)).toUSize).toNat ≤ _
-  rw [USize.toNat_ofNat_of_lt' hL, len_eq_ids]; exact hl
 
 -- `symDiv`'s vacuous sides: the elements of `Ua`, `Ub` coded as no key of `R`, `S`
 set_option hygiene false in
