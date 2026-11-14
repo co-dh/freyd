@@ -155,6 +155,18 @@ theorem codesFit_atom_one {t : QAtomicType} (x : Part (.atom t)) (ht : orderKind
   · cases t <;> simp [orderKind] at h ⊢
   · exact .inr (.inr (.inr (.inr (.inl rfl))))
 
+/-- **A several-part atom side fits on its summed count alone** at a kind whose clause bounds nothing else: a
+    boolean, an `.i64` or a guid side. -/
+theorem codesFit_atom_count {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) (ht : t = .boolean ∨ orderKind t = some .i64 ∨ t = .guid) :
+    Obj.CodesFit (.atom t) cs := by
+  unfold Obj.CodesFit
+  refine ⟨hN, ?_⟩
+  rcases ht with h | h | h
+  · exact .inl h
+  · exact .inr (.inr (.inl h))
+  · exact .inr (.inr (.inr (.inr (.inl h))))
+
 /-- **An atom side's one-part code is well formed and counts its part, with no premise**: a lane of `1 … 64`
     bits, `⌈n·w/8⌉` bytes, ids below `card` under a byte. One part's count is a `USize`, so the several-part
     theorems' summed-count bound holds by itself; `.arr` and `.sum` are not here, their codes need bounds. -/

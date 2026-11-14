@@ -314,9 +314,9 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     ∀ a (y v : List B.El), rep body (a, y) v ↔ Dm (a, y) ∧ ((y = [] ∧ v = [a]) ∨ ∃ b bs, y = b :: bs ∧
       ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = y) ∨ (le a b = false ∧ le b a = false ∧ v = a :: y))) := by
   obtain ⟨⟨u63, uU⟩, ⟨uf, uc⟩, ⟨abf, abp⟩, ⟨rabf, rabp⟩, ⟨q1f, q1c⟩, ⟨upf, upp⟩, ⟨ssf, ssp⟩, ⟨rsf, rsp⟩,
-    ⟨q2f, q2c⟩, ⟨swf, swp⟩, ⟨q3f, q3c⟩, ⟨dnf, dnp⟩, ⟨duf, dup⟩, d1, d2, d3, ⟨oN, oNk, oNv, oFk, oFv, oK, oV, ok, ov⟩,
+    ⟨q2f, q2c⟩, ⟨swf, swp⟩, ⟨q3f, q3c⟩, ⟨dnf, dnp⟩, ⟨duf, dup⟩, d1, d2, d3, ⟨oN, oFk, oFv, oK, oV, ok, ov⟩,
     cs1, ⟨uaf, uac⟩, ⟨uuf, uuc⟩, ⟨ruf, rup⟩, ⟨utf, utc⟩, ⟨puf, pup⟩, cs2, ⟨dyf, dyc⟩,
-    ⟨bN, bNk, bNv, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yNk, yNv, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
+    ⟨bN, bFk, bFv, bK, bV, bk, bv⟩, ⟨yN, yFk, yFv, yK, yV, yk, yv⟩⟩ := h
   obtain ⟨uk, uh, ut'⟩ := uU _ rfl _ rfl _ rfl
   obtain ⟨u1, u2, u3, u4⟩ := uc _ rfl
   obtain ⟨ab1, ab2, ab3, ab4, ab5⟩ := abp _ rfl
@@ -352,7 +352,7 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     l1 (fun s s' => by rw [hl1]; exact rep_diff D du d11 d13 d14 s s')
     l2 (fun s s' => by rw [hl2]; exact rep_diff du tup d21 d23 d24 s s')
     l3 (fun s s' => by rw [hl3]; exact rep_diff l2 tdn d31 d33 d34 s s')
-    lone (by rw [hlone]; exact rep_union_full l1 l3 oN oNk oNv oFk oFv (one_ok _ oK) (one_ok _ oV) ok ov)
+    lone (by rw [hlone]; exact rep_union_full l1 l3 oN oFk oFv (one_ok _ oK) (one_ok _ oV) ok ov)
     c1 (by rw [hc1]; exact rep_cons_ok lone cs1)
     ua (by rw [hua]; exact rep_comp _ _ (codes_faithful_wf _ _ uaf).1 a1 a2 a3 a4)
     uu (by rw [huu]; exact rep_comp _ _ (codes_faithful_wf _ _ uuf).1 w1 w2 w3 w4)
@@ -361,8 +361,8 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
     pu (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 p1 p2 p3 p4 p5)
     c2 (by rw [hc2]; exact rep_cons_ok pu cs2)
     dy (by rw [hdy]; exact rep_comp _ _ (codes_faithful_wf _ _ dyf).1 y1 y2 y3 y4)
-    b1 (by rw [hb1]; exact rep_union_full c1 c2 bN bNk bNv bFk bFv (one_ok _ bK) (one_ok _ bV) bk bv)
-    body (by rw [hbody]; exact rep_union_full b1 dy yN yNk yNv yFk yFv (one_ok _ yK) (one_ok _ yV) yk yv)
+    b1 (by rw [hb1]; exact rep_union_full c1 c2 bN bFk bFv (one_ok _ bK) (one_ok _ bV) bk bv)
+    body (by rw [hbody]; exact rep_union_full b1 dy yN yFk yFv (one_ok _ yK) (one_ok _ yV) yk yv)
 
 end Discharge
 

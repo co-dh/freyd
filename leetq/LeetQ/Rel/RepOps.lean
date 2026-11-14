@@ -678,6 +678,12 @@ theorem raze2_cnt {X : Obj} {n m : USize} (x : Vals X n) (y : Vals X m)
       n.toNat + m.toNat := by
   rw [USize.toNat_ofNat_of_lt' hN]; simp
 
+/-- Two parts' summed count is below `USize.size` when the two counts added are: the raze bound of `∪` and
+    `[R, S]` is their row-count bound, so no theorem takes it apart. -/
+theorem raze2_lt {X : Obj} {n m : USize} {x : Vals X n} {y : Vals X m} (hN : n.toNat + m.toNat < USize.size) :
+    ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part X)).toList.map fun c : Part X => c.1.toNat).sum < USize.size := by
+  simpa using hN
+
 /-- Rows of heterogeneously equal sides, at one position, are equal: a side moved along a count equation, by
     whatever cast, keeps its rows. -/
 theorem row_heq {X : Obj} {a b : USize} (v : Vals X a) (w : Vals X b) (i : Fin a.toNat) (j : Fin b.toNat)
@@ -718,7 +724,7 @@ theorem rep_junc (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize
     rep (LeetQ.Rel.Alg.junc R S) =
       Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) := by
   have hN' : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
-      USize.size := by simpa using hN
+      USize.size := raze2_lt hN
   have e : LeetQ.Rel.Alg.junc R S = ⟨R.n + S.n, sumVals R.key S.key hN,
       toUSize_eq (by rw [toNat_add_fits hN]) ▸ C.raze #[⟨_, R.val⟩, ⟨_, S.val⟩] hN'⟩ := by
     unfold LeetQ.Rel.Alg.junc need; rw [dif_pos hN]

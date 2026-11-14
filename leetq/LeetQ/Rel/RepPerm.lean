@@ -494,11 +494,7 @@ scoped notation "sufOK" =>
   (∀ Dr : Rel (.arr B) (.arr B), Dr = ran F →
     oneFit(.arr B, Rel.n F, Rel.val F) ∧ uncOK(B, Dr) ∧ cmpOK(.arr B, F, tail (Rel.val Dr)) ∧
     ∀ P : Rel (.arr B) (.arr B), P = S → ∀ Q : Rel (.arr B) (.arr B), Q = F ≫ tail (Rel.val Dr) →
-    P.n.toNat + Q.n.toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part (.arr B))).toList.map
-        fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
-        fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+    ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
       Vals.RazeFits (.arr B) P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
       Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).key⟩] : Vector (Part (.arr B)) 1) ∧
       Obj.CodesFit (.arr B) (#v[⟨(PQ(.arr B, .arr B)).n, (PQ(.arr B, .arr B)).val⟩] : Vector (Part (.arr B)) 1) ∧
@@ -529,9 +525,9 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
       have hr : rep (ran F) (c :: ys) (c :: ys) := by rw [eD]; exact ⟨rfl, xs, hc⟩
       obtain ⟨j, -, hj⟩ := hr
       exact ⟨c :: ys, hc, (eT _ _).2 ⟨⟨j, hj⟩, c, rfl⟩⟩
-  obtain ⟨hN, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
+  obtain ⟨hN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := hU _ rfl _ rfl
   refine ⟨e1, fun xs ys => ?_⟩
-  rw [rep_union_full S _ hN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  rw [rep_union_full S _ hN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show rep S xs ys ∨ rep _ xs ys ↔ _
   exact or_congr Iff.rfl (e1 xs ys)
 

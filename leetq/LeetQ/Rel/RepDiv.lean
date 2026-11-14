@@ -329,10 +329,6 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
     (hBc : Vals.PickFits C Uc ((List.range ((vacY(B, Ub, ycs)).1.toNat * mc.toNat)).map (· % mc.toNat)))
     (P Q : Rel B C) (hPe : P = y.rows I) (hQe : Q = top (vacY(B, Ub, ycs)).2 Uc)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
-      USize.size)
     (hFk : Vals.RazeFits B P.key Q.key) (hFv : Vals.RazeFits C P.val Q.val)
     (hUK : B.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1))
     (hUV : C.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1))
@@ -342,7 +338,7 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
       (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
   classical
   have e : leftDiv R S Ub Uc = P ∪ Q := by subst hPe hQe hI hzc hycs hy hkc; rfl
-  rw [e, rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds b c ∨ Q.Holds b c ↔ _
   subst hPe hQe
   -- the joint codes, faithful and well formed
@@ -430,10 +426,6 @@ theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma
     (hBc : Vals.PickFits C Ua ((List.range ((vacY(B, Ub, ycs)).1.toNat * ma.toNat)).map (· % ma.toNat)))
     (P Q : Rel B C) (hPe : P = yd.rows I) (hQe : Q = top (vacY(B, Ub, ycs)).2 Ua)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part C)).toList.map fun c : Part C => c.1.toNat).sum <
-      USize.size)
     (hFk : Vals.RazeFits B P.key Q.key) (hFv : Vals.RazeFits C P.val Q.val)
     (hUK : B.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1))
     (hUV : C.CodesFit (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1))
@@ -444,7 +436,7 @@ theorem rep_rightDiv {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C ma
   rw [show rightDiv R S Ua Ub = (leftDiv (S°) (R°) Ub Ua)° from rfl, rep_conv]
   show rep (leftDiv (S°) (R°) Ub Ua) y x ↔ _
   rw [rep_leftDiv (S°) (R°) Ub Ua hRK hRV hRk hRv hSK hSV hSk hSv kc hkc hfk hrn hM hB hC yd hy ycs hycs hfy zc
-    hzc hfz I hI hk hv hP hN h63 hA hBc P Q hPe hQe hU hNk hNv hFk hFv hUK hUV hUk hUv y x, rep_conv, rep_conv]
+    hzc hfz I hI hk hv hP hN h63 hA hBc P Q hPe hQe hU hFk hFv hUK hUV hUk hUv y x, rep_conv, rep_conv]
   exact and_congr Iff.rfl (or_congr Iff.rfl and_comm)
 
 #print axioms rep_rightDiv

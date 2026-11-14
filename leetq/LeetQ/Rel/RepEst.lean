@@ -52,11 +52,9 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (T N : Rel (.arr (.arr A)) (.arr A)) (hT : T = lT(M))
     (hN0 : N = LeetQ.Rel.Alg.top (Rel.key D) (LeetQ.Rel.Alg.nilVal A))
     (hN : (Rel.n T).toNat + (Rel.n N).toNat < USize.size)
-    (hNk : ((pk(T, N)).toList.map fun c : Part (.arr (.arr A)) => c.1.toNat).sum < USize.size)
-    (hNv : ((pv(T, N)).toList.map fun c : Part (.arr A) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits (.arr (.arr A)) (Rel.key T) (Rel.key N))
     (hFv : Vals.RazeFits (.arr A) (Rel.val T) (Rel.val N))
-    (L : Rel (.arr (.arr A)) (.arr A)) (hL : L = Uc(T, N, hNk, hNv))
+    (L : Rel (.arr (.arr A)) (.arr A)) (hL : L = Uc(T, N, hN))
     (ku vu : Code) (hku : ku = kcR(L)) (hvu : vu = vcR(L))
     (huK : cOK(ku, Rel.n L, Rel.key L)) (huV : cOK(vu, Rel.n L, Rel.val L))
     (huk : Vals.PickFits (.arr (.arr A)) (Rel.key L) (List.range (Rel.n L).toNat))
@@ -77,7 +75,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
       (∀ xss, (∃ Y, rep (Arr.union X) xss Y) ↔ ∃ i, Vals.row X i = xss) := by
   subst hRm
   obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk
-    hpv hlo pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hNk hNv hFk hFv L hL ku vu hku hvu huK
+    hpv hlo pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
     huV huk huv hM hmv hmk hcc hcrn hcM hcA hcC
   -- every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload
   have hpay : ∀ xss xs, (∃ i, Vals.row X i = xss) → xs ∈ xss → ∃ i, Vals.row X.2.2.2 i = xs := by
@@ -403,11 +401,7 @@ scoped notation "divOK(" K ", " B ", " C ", " R ", " S ", " mb ", " Ub ", " mc "
                   (tuples.tupleIds (ycs[0]'(Nat.zero_lt_succ 2)) #[zc[0]'Nat.zero_lt_one]).2)))) →
       Vals.PickFits B (Rel.key y) (List.range (Rel.n y).toNat) ∧ Vals.PickFits C (Rel.val y) (List.range (Rel.n y).toNat) ∧
       ∀ P : Rel B C, P = Rel.rows y I → ∀ Q : Rel B C, Q = top (vacY(B, Ub, ycs)).2 Uc →
-        (Rel.n P).toNat + (Rel.n Q).toNat < USize.size ∧
-        ∃ (hNk : ((#[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] : Array (Part B)).toList.map
-            fun c : Part B => c.1.toNat).sum < USize.size)
-          (hNv : ((#[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] : Array (Part C)).toList.map
-            fun c : Part C => c.1.toNat).sum < USize.size),
+        ∃ hU : (Rel.n P).toNat + (Rel.n Q).toNat < USize.size,
           Vals.RazeFits B (Rel.key P) (Rel.key Q) ∧ Vals.RazeFits C (Rel.val P) (Rel.val Q) ∧
           Obj.CodesFit B (#v[⟨(PQ(B, C)).n, (PQ(B, C)).key⟩] : Vector (Part B) 1) ∧
           Obj.CodesFit C (#v[⟨(PQ(B, C)).n, (PQ(B, C)).val⟩] : Vector (Part C) 1) ∧
@@ -465,22 +459,22 @@ theorem rep_P {A B : Obj} {n m : USize} (R : Rel A B) (X : Vals (.arr A) n) (Y :
   obtain ⟨l15, l16, lc⟩ := ly _ rfl
   obtain ⟨l17, l18, l19, l20, l21, lI⟩ := lc _ rfl _ rfl
   obtain ⟨l22, l23, lP⟩ := lI _ rfl
-  obtain ⟨l24, lN, lV, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
+  obtain ⟨l24, l25, l26, l27, l28, l29, l30⟩ := lP _ rfl _ rfl
   obtain ⟨r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, rk⟩ := hdD
   obtain ⟨r11, r12, r13, ry⟩ := rk _ rfl
   obtain ⟨r15, r16, rc⟩ := ry _ rfl
   obtain ⟨r17, r18, r19, r20, r21, rI⟩ := rc _ rfl _ rfl
   obtain ⟨r22, r23, rP⟩ := rI _ rfl
-  obtain ⟨r24, rN, rV, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
+  obtain ⟨r24, r25, r26, r27, r28, r29, r30⟩ := rP _ rfl _ rfl
   obtain ⟨hic, hiI⟩ := hi _ rfl
   obtain ⟨hik, hiv⟩ := hiI
   have e : Alg.P R X Y = L ∩ D := by subst hL hD hRY hXR hmX hmY; rfl
   rw [e, rep_inter L D hic hik hiv]
   show rep L xs ys ∧ rep D xs ys ↔ _
   rw [hL, rep_leftDiv (mX°) RY X Y l1 l2 l3 l4 l5 l6 l7 l8 _ rfl l9 l10 l11 l12 l13 _ rfl _ rfl l15 _ rfl l16
-      _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 lN lV l25 l26 l27 l28 l29 l30 xs ys,
+      _ rfl l22 l23 l17 l18 l19 l20 l21 _ _ rfl rfl l24 l25 l26 l27 l28 l29 l30 xs ys,
     hD, rep_rightDiv XR mY X Y r1 r2 r3 r4 r5 r6 r7 r8 _ rfl r9 r10 r11 r12 r13 _ rfl _ rfl r15 _ rfl r16
-      _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 rN rV r25 r26 r27 r28 r29 r30 xs ys]
+      _ rfl r22 r23 r17 r18 r19 r20 r21 _ _ rfl rfl r24 r25 r26 r27 r28 r29 r30 xs ys]
   simp only [eX, eRY, eY, eXR]
   constructor
   · rintro ⟨⟨hl, hl'⟩, ⟨hr, hr'⟩⟩

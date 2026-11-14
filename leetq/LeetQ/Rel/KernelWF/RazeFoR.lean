@@ -319,28 +319,26 @@ set_option hygiene false in
 scoped notation "vcR(" R ")" => (Obj.codes _ (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part _) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
 scoped notation "nubR(" R ")" => (tuples.tupleIds (kcR(R)) #[vcR(R)]).2
--- `∪`'s two key parts and two value parts, and their raze, `hk`, `hv` the raze's count proofs
+-- `∪`'s two key parts and two value parts, and their raze, `hN` the row-count bound (`raze2_lt`)
 set_option hygiene false in
 scoped notation "pk(" R ", " S ")" => (#[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Array (Part _))
 set_option hygiene false in
 scoped notation "pv(" R ", " S ")" => (#[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Array (Part _))
 set_option hygiene false in
-scoped notation "Uc(" R ", " S ", " hk ", " hv ")" =>
-  (⟨_, Obj.raze _ (pk(R, S)) hk, Obj.raze _ (pv(R, S)) hv⟩ : Rel _ _)
+scoped notation "Uc(" R ", " S ", " hN ")" =>
+  (⟨_, Obj.raze _ (pk(R, S)) (raze2_lt hN), Obj.raze _ (pv(R, S)) (raze2_lt hN)⟩ : Rel _ _)
 end UnionN
 open UnionN
 
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**, no hypothesis on the encoding. -/
 theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((pk(R, S)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
-    (hNv : ((pv(R, S)).toList.map fun c : Part B => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
-    (hK : cOK(kcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.key (Uc(R, S, hNk, hNv))))
-    (hV : cOK(vcR(Uc(R, S, hNk, hNv)), Rel.n (Uc(R, S, hNk, hNv)), Rel.val (Uc(R, S, hNk, hNv))))
-    (hk : Vals.PickFits A (Rel.key (Uc(R, S, hNk, hNv))) (List.range (Rel.n (Uc(R, S, hNk, hNv))).toNat))
-    (hv : Vals.PickFits B (Rel.val (Uc(R, S, hNk, hNv))) (List.range (Rel.n (Uc(R, S, hNk, hNv))).toNat)) :
+    (hK : cOK(kcR(Uc(R, S, hN)), Rel.n (Uc(R, S, hN)), Rel.key (Uc(R, S, hN))))
+    (hV : cOK(vcR(Uc(R, S, hN)), Rel.n (Uc(R, S, hN)), Rel.val (Uc(R, S, hN))))
+    (hk : Vals.PickFits A (Rel.key (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat))
+    (hv : Vals.PickFits B (Rel.val (Uc(R, S, hN))) (List.range (Rel.n (Uc(R, S, hN))).toNat)) :
     rep (R ∪ S) = rep R ∪ rep S :=
-  rep_union R S hN hNk hNv (raze_row_full A R.key S.key hFk hNk) (raze_row_full B R.val S.val hFv hNv) hK hV hk hv
+  rep_union R S hN (raze_row_full A R.key S.key hFk _) (raze_row_full B R.val S.val hFv _) hK hV hk hv
 
 /-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
 theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)

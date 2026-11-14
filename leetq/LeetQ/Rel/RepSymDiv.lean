@@ -660,10 +660,6 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
       (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B))
     (hQe : Q = top (vacA).2 (vacB).2)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
     (hFk : Vals.RazeFits A P.key Q.key) (hFv : Vals.RazeFits B P.val Q.val)
     (hUK : A.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).key⟩] : Vector (Part A) 1))
     (hUV : B.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).val⟩] : Vector (Part B) 1))
@@ -674,7 +670,7 @@ theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) 
   classical
   have e : symDiv R S Ua Ub = P ∪ Q := by
     subst hPe hQe hrf hsf hlc hrc hsid hss epr eorr efr eps eos efs ev0 ev1 erk euac esk eubc hvc hac hbc; rfl
-  rw [e, rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds x y ∨ Q.Holds x y ↔
     (∀ c, R.Holds x c ↔ S.Holds y c) ∧ ((∃ c, R.Holds x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y))
   -- the codes, faithful and well formed

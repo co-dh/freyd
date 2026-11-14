@@ -461,8 +461,8 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
       rep out k z ∨ ∃ x y acc, rep St k ((x, y), acc) ∧ (x = [] ∨ y = []) ∧ z = acc ++ x ++ y := by
   obtain ⟨⟨Df, Dp⟩, ⟨x63, xU⟩, ⟨xcf, xc⟩, ⟨y63, yU⟩, ⟨ycf, yc⟩, ⟨puf, pup⟩, ⟨bf, bp⟩, ⟨hhf, hhp⟩, ⟨rf, rp⟩,
     ⟨qf, qc⟩, ⟨lf, lp⟩, ⟨a1f, a1p⟩, ⟨s1f, s1p⟩, sn1, ⟨p1f, p1p⟩, ⟨l1f, l1c⟩, ⟨nbf, nbp⟩, ⟨a2f, a2p⟩,
-    ⟨s2f, s2p⟩, sn2, ⟨p2f, p2p⟩, ⟨l2f, l2c⟩, ⟨tN, tNk, tNv, tFk, tFv, tK, tV, tk, tv⟩, ⟨Tf, Tc⟩, ⟨flf, flp⟩,
-    ⟨sff, sfc⟩, ⟨c1f, c1p⟩, ct1, ⟨c2f, c2p⟩, ct2, ⟨Of, Oc⟩, ⟨uN, uNk, uNv, uFk, uFv, uK, uV, uk, uv⟩⟩ := h
+    ⟨s2f, s2p⟩, sn2, ⟨p2f, p2p⟩, ⟨l2f, l2c⟩, ⟨tN, tFk, tFv, tK, tV, tk, tv⟩, ⟨Tf, Tc⟩, ⟨flf, flp⟩,
+    ⟨sff, sfc⟩, ⟨c1f, c1p⟩, ct1, ⟨c2f, c2p⟩, ct2, ⟨Of, Oc⟩, ⟨uN, uFk, uFv, uK, uV, uk, uv⟩⟩ := h
   obtain ⟨xk, xh, xt⟩ := xU _ rfl _ rfl _ rfl
   obtain ⟨yk, yh, yt⟩ := yU _ rfl _ rfl _ rfl
   obtain ⟨xc1, xc2, xc3, xc4⟩ := xc _ rfl
@@ -509,7 +509,7 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     (by rw [hN2]; exact rep_snoc mS2 sn2)
     (by rw [hP2]; exact rep_pair _ _ (codes_faithful_wf _ _ p2f).1 p21 p22 p23 p24 p25)
     (by rw [hL2]; exact rep_comp _ _ (codes_faithful_wf _ _ l2f).1 l21 l22 l23 l24)
-    (by rw [htk]; exact rep_union_full mL1 mL2 tN tNk tNv tFk tFv (one_ok _ tK) (one_ok _ tV) tk tv)
+    (by rw [htk]; exact rep_union_full mL1 mL2 tN tFk tFv (one_ok _ tK) (one_ok _ tV) tk tv)
     (by rw [hT]; exact rep_comp _ _ (codes_faithful_wf _ _ Tf).1 T1 T2 T3 T4)
     (by rw [hfl]; exact rep_antiJoin mD mboth (codes_faithful_wf _ _ flf).1 fl1 fl2)
     (by rw [hSf]; exact rep_comp _ _ (codes_faithful_wf _ _ sff).1 sf1 sf2 sf3 sf4)
@@ -518,7 +518,7 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     (by rw [hc2]; exact rep_pair _ _ (codes_faithful_wf _ _ c2f).1 c21 c22 c23 c24 c25)
     (by rw [hC2]; exact rep_cat_ok mc2 ct2)
     (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ Of).1 O1 O2 O3 O4)
-    (by rw [hU]; exact rep_union_full out mO uN uNk uNv uFk uFv (one_ok _ uK) (one_ok _ uV) uk uv)
+    (by rw [hU]; exact rep_union_full out mO uN uFk uFv (one_ok _ uK) (one_ok _ uV) uk uv)
 
 #print axioms merge_round_rep
 

@@ -45,10 +45,6 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
     (P : Rel .long (.arr B)) (hP : P = cons W) (Q : Rel .long (.arr B)) (hQ : Q = pend)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map fun c : Part .long => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
-      fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
     (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits (.arr B) P.val Q.val)
     (hUV : Obj.CodesFit (.arr B)
       (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1))
@@ -63,7 +59,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     dst hdst g hg hKf hTf hRf hFf
   subst P Q
   intro r v
-  rw [rep_union_full (cons (pair el pend)) _ hU hNk hNv hFk hFv
+  rw [rep_union_full (cons (pair el pend)) _ hU hFk hFv
     (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hUV) hUk hUv]
   show rep (cons (pair el pend)) r v ∨ rep _ r v ↔ _
   rw [h2]
@@ -186,11 +182,7 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
       ∀ P : Rel .long (.arr B), P = cons W → ∀ Q : Rel .long (.arr B), Q = pend →
-      P.n.toNat + Q.n.toNat < USize.size ∧
-      ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
-          fun c : Part .long => c.1.toNat).sum < USize.size)
-        (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
-          fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+      ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
         Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
@@ -215,9 +207,9 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
     obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    obtain ⟨hU, hNk, hNv, hFk, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
+    obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
     rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
-      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hNk hNv hFk hFv hUV hUk hUv r v]
+      _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hFk hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)
       · exact Or.inl ⟨e, u, he, hu, Or.inl rfl⟩

@@ -81,11 +81,12 @@ namespace OpsN
 set_option hygiene false in
 scoped notation "nubI(" X ", " Y ", " R ")" =>
   (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
--- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`); unhygienic: captures `P`, `Q`, `hNk`, `hNv`
+-- `∪`'s razed relation of `P` and `Q` (`rep_union_full`'s `Uc`); unhygienic: captures `P`, `Q` and `hU`, the
+-- row-count bound `P.n + Q.n < USize.size`
 set_option hygiene false in
 scoped notation "PQ(" Y ", " Z ")" =>
-  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
-    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] (raze2_lt hU),
+    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] (raze2_lt hU)⟩ : Rel Y Z)
 end OpsN
 open OpsN
 

@@ -317,19 +317,15 @@ scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
       Vector (Part (.prod A B)) 2)) ∧
     (Vals.PickFits A (Rel.key R) (List.range (Rel.n R).toNat) ∧ Vals.PickFits B (Rel.val R) (List.range (Rel.n R).toNat)))
 
--- `rep_union_full`'s razed union of `R ∪ S`, `K`, `X` the key and value objects, `hNk`, `hNv` its count proofs
+-- `rep_union_full`'s razed union of `R ∪ S`, `K`, `X` the key and value objects, `hUN` its row-count bound
 set_option hygiene false in
 scoped notation "UO(" K ", " X ", " R ", " S ")" =>
-  (⟨_, Obj.raze K #[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] hNk,
-    Obj.raze X #[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] hNv⟩ : Rel K X)
+  (⟨_, Obj.raze K #[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] (raze2_lt hUN),
+    Obj.raze X #[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] (raze2_lt hUN)⟩ : Rel K X)
 -- `rep_union_full`'s hypotheses at `R ∪ S`, `K`, `X` the key and value objects
 set_option hygiene false in
 scoped notation "uniOK(" K ", " X ", " R ", " S ")" =>
-  ((Rel.n R).toNat + (Rel.n S).toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Array (Part K)).toList.map
-        fun c : Part K => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Array (Part X)).toList.map
-        fun c : Part X => c.1.toNat).sum < USize.size),
+  (∃ hUN : (Rel.n R).toNat + (Rel.n S).toNat < USize.size,
       Vals.RazeFits K (Rel.key R) (Rel.key S) ∧ Vals.RazeFits X (Rel.val R) (Rel.val S) ∧
       Obj.CodesFit K (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).key⟩] : Vector (Part K) 1) ∧
       Obj.CodesFit X (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).val⟩] : Vector (Part X) 1) ∧
@@ -366,7 +362,7 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
       ∃ c y, rep St k (c, y :: ys) ∧ rep G (c, y) c') ∧
     ∀ k (c : X.El), rep (out ∪ O) k c ↔ rep out k c ∨ rep St k (c, []) := by
   obtain ⟨⟨hDf, hDp⟩, ⟨hWf, hWp⟩, ⟨h63, hUn⟩, ⟨huf, hu'⟩, ⟨hpf, hp'⟩, ⟨hQf, hQ'⟩, ⟨hRf, hR'⟩, ⟨hTf, hT'⟩,
-    ⟨hNK, hNV, hNk', hNv'⟩, ⟨hdf, hdp⟩, ⟨hAf, hA'⟩, ⟨hOf, hO'⟩, hUN, hNk, hNv, hFk, hFv, hUK, hUV, hUk, hUv⟩ := h
+    ⟨hNK, hNV, hNk', hNv'⟩, ⟨hdf, hdp⟩, ⟨hAf, hA'⟩, ⟨hOf, hO'⟩, hUN, hFk, hFv, hUK, hUV, hUk, hUv⟩ := h
   subst hW hdu
   obtain ⟨hKf, hHf, hTf'⟩ := hUn _ rfl _ rfl _ rfl
   obtain ⟨u1, u2, u3, u4⟩ := hu' _ rfl
@@ -388,7 +384,7 @@ theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
     (rep_dom_corefl u (one_ok _ hdf) (hdp))
     (by rw [hA]; exact rep_antiJoin D (dom u) (codes_faithful_wf _ _ hAf).1 a1 a2)
     (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4)
-    (rep_union_full out O hUN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
+    (rep_union_full out O hUN hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
 
 -- a round's values from its state `St`, each bound by its equation, `G` the step relation `Fp`, then `J`
 set_option hygiene false in

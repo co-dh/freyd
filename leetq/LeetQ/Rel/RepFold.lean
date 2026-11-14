@@ -16,7 +16,7 @@ open OpsN
 
 /-! The fold notations, one home: `open FoldN OpsN` in every file that states a fold read-back (they expand to
     `OpsN`'s `codesOK`, `c1`, `nubI`, `PQ`). Unhygienic: they
-    capture `E`, `V`, `P`, `Q`, `S`, `el`, `pend`, `step`, `elK`, `Sf`, `hNk`, `hNv` at the use site. -/
+    capture `E`, `V`, `P`, `Q`, `S`, `el`, `pend`, `step`, `elK`, `Sf`, `hU` at the use site. -/
 namespace FoldN
 
 -- the parts `antiJoin pend° (idU el.key)` codes: the rows of `pend`, the rows of `el`
@@ -48,15 +48,11 @@ set_option hygiene false in
 scoped notation "roundAt(" V ")" =>
   Obj.CodesFit V (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
   Vals.PickFits .long S.key (List.range S.n.toNat) ∧ Vals.PickFits V S.val (List.range S.n.toNat) ∧
-  Obj.CodesFit .long jparts ∧
+  ((jparts).toList.map (·.1.toNat)).sum < USize.size ∧
   Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat) ∧
   Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat) ∧
   ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
-    P.n.toNat + Q.n.toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
-        fun c : Part .long => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part V)).toList.map fun c : Part V => c.1.toNat).sum <
-        USize.size),
+    ∃ hU : P.n.toNat + Q.n.toNat < USize.size,
       Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
       Obj.CodesFit V (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
       Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat) ∧
@@ -113,15 +109,11 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hSV : V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1))
     (hSk : Vals.PickFits .long S.key (List.range S.n.toNat))
     (hSv : Vals.PickFits V S.val (List.range S.n.toNat))
-    (hjf : Obj.CodesFit .long jparts)
+    (hjf : ((jparts).toList.map (·.1.toNat)).sum < USize.size)
     (hJk : Vals.PickFits V (Rel.key (pend°)) (List.range pend.n.toNat))
     (hJv : Vals.PickFits .long (Rel.val (pend°)) (List.range pend.n.toNat))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
-    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map fun c : Part .long => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part V)).toList.map fun c : Part V => c.1.toNat).sum <
-      USize.size)
     (hFk : Vals.RazeFits .long P.key Q.key) (hFv : Vals.RazeFits V P.val Q.val)
     (hUV : V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1))
     (hUk : Vals.PickFits .long (PQ(.long, V)).key (List.range (PQ(.long, V)).n.toNat))
@@ -131,12 +123,12 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
   -- a one-part `.long` side fits outright (`codesFit_atom_one`)
   refine ⟨rep_nub S (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _)))) (one_ok _ hSV) hSk hSv,
     fun r v => ?_⟩
-  rw [rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _))))
+  rw [rep_union_full P Q hU hFk hFv (one_ok _ (codesFit_atom_one _ (.inl (Option.some_ne_none _))))
     (one_ok _ hUV) hUk hUv]
   show rep P r v ∨ rep Q r v ↔ _
   subst hQ
   have hA := congrFun (congrFun (rep_antiJoin (pend°) (idU (Rel.key el))
-    (codes_faithful_wf .long _ hjf).1 hJk hJv) v) r
+    (codes_faithful_wf .long _ (codesFit_atom_count _ hjf (.inr (.inl rfl)))).1 hJk hJv) v) r
   rw [rep_conv]
   show _ ∨ rep (antiJoin (pend°) (idU (Rel.key el))) v r ↔ _
   rw [hA]
@@ -287,8 +279,8 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
         (rep (f^[j] (pend₀, Alg.zero, 0)).1 r v ∧ ¬ ∃ e, rep (elK j) r e) := by
     intro j hk
     obtain ⟨hSV, hSk, hSv, hjf, hJk, hJv, hQ⟩ := hR j _ _ _ _ rfl rfl rfl rfl
-    obtain ⟨hU, hNk, hNv, hFk, hFv, hUV, hUk, hUv⟩ := hQ _ rfl
-    have h := round_rep (elK j) _ _ _ hSV hSk hSv hjf hJk hJv _ rfl hU hNk hNv hFk hFv hUV
+    obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hQ _ rfl
+    have h := round_rep (elK j) _ _ _ hSV hSk hSv hjf hJk hJv _ rfl hU hFk hFv hUV
       hUk hUv
     have e : f^[j + 1] (pend₀, Alg.zero, 0) = rnd(f^[j] (pend₀, Alg.zero, 0)) := hf _
     rw [e, hk]

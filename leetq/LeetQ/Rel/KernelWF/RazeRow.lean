@@ -134,11 +134,13 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF 
 variable {A B : Obj}
 
 /-! The relation `∪` razes before its `nub`, and that relation's codes and first rows, named as `rep_nub` names
-    them; one home: `open RazeN` in every file that reads them. Unhygienic: they capture `A`, `B`, `R`, `S`, `hNk`,
-    `hNv`. Not in `UnionN`, whose users keep `Uc` free as a name. -/
+    them; one home: `open RazeN` in every file that reads them. Unhygienic: they capture `A`, `B`, `R`, `S`, `hN`.
+    Not in `UnionN`, whose users keep `Uc` free as a name. -/
 namespace RazeN
 set_option hygiene false in
-scoped notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
+scoped notation "Uc" =>
+  (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] (raze2_lt hN), B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] (raze2_lt hN)⟩ :
+    Rel A B)
 set_option hygiene false in
 scoped notation "kcU" => (Obj.codes A (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part A) 1))[0]'Nat.zero_lt_one
 set_option hygiene false in
@@ -149,11 +151,7 @@ end RazeN
 open RazeN
 
 /-- `∪` within the fits bound: the `nub` of the razed relation. -/
-theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size) :
+theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size) :
     R ∪ S = (Uc).nub := by
   show need _ _ _ _ = _
   unfold need; rw [dif_pos hN]
@@ -161,18 +159,14 @@ theorem union_eq_nub (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
 /-- **`rep (R ∪ S) = rep R ∪ rep S`**: `∪` razes the keys and the values, read back by `hA`, `hB`, so the razed
     relation holds the pairs of `R` and of `S` (`holds_two`), and its `nub` holds the same (`rep_nub`, whose code
     hypotheses `hK`, `hV`, `hk`, `hv` are stated on the razed relation). `hN`: the row count fits a `USize`
-    (past it `∪` answers `𝟘`); `hNk`, `hNv`: the same count, as the two `raze`s state it. -/
+    (past it `∪` answers `𝟘`), and so the two `raze`s' (`raze2_lt`). -/
 theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
-    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
-      USize.size)
-    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
-      USize.size)
-    (hA : ∀ k hk, Vals.row (A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk) ⟨k, hk⟩ =
+    (hA : ∀ k hk, Vals.row (A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] (raze2_lt hN)) ⟨k, hk⟩ =
       if h : k < R.n.toNat then Vals.row R.key ⟨k, h⟩
-      else Vals.row S.key ⟨k - R.n.toNat, by have := raze2_cnt R.key S.key hNk; omega⟩)
-    (hB : ∀ k hk, Vals.row (B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv) ⟨k, hk⟩ =
+      else Vals.row S.key ⟨k - R.n.toNat, by have := raze2_cnt R.key S.key (raze2_lt hN); omega⟩)
+    (hB : ∀ k hk, Vals.row (B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] (raze2_lt hN)) ⟨k, hk⟩ =
       if h : k < R.n.toNat then Vals.row R.val ⟨k, h⟩
-      else Vals.row S.val ⟨k - R.n.toNat, by have := raze2_cnt R.val S.val hNv; omega⟩)
+      else Vals.row S.val ⟨k - R.n.toNat, by have := raze2_cnt R.val S.val (raze2_lt hN); omega⟩)
     (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
         Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
           Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
@@ -187,8 +181,8 @@ theorem rep_union (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
         ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
     (hk : Vals.PickFits A (Uc).key (List.range (Uc).n.toNat)) (hv : Vals.PickFits B (Uc).val (List.range (Uc).n.toNat)) :
     rep (R ∪ S) = rep R ∪ rep S := by
-  rw [union_eq_nub R S hN hNk hNv, rep_nub (Uc) hK hV hk hv]
-  have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key hNk
+  rw [union_eq_nub R S hN, rep_nub (Uc) hK hV hk hv]
+  have hn : (Uc).n.toNat = R.n.toNat + S.n.toNat := raze2_cnt R.key S.key (raze2_lt hN)
   refine hom_ext fun a b => ?_
   rw [union_apply]
   exact holds_two (Uc).key (Uc).val R S hn (fun k hk => hA k hk) (fun k hk => hB k hk) a b
