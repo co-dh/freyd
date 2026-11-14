@@ -82,7 +82,7 @@ set_option hygiene false in
 scoped notation "stepK(" J ")" =>
   ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
     codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
-    (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
     Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
     Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
     ∀ P : Rel .long (.prod E V), P = pair el pend → J
@@ -90,7 +90,6 @@ set_option hygiene false in
 scoped notation "stepJ(" S ")" =>
   ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
     codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ (Rel.n P).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size ∧
-    Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
     Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
 set_option hygiene false in
 scoped notation "stepOK" => stepK(stepJ(S))
@@ -314,19 +313,17 @@ theorem step_rep {E V : Obj} (el : Rel .long E) (pend : Rel .long V)
     (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
-    (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkB : Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkC : Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
     (P : Rel .long (.prod E V)) (hP : P = pair el pend) (S : Rel (.prod E V) V) (hSP : S = Sf (ran P))
     (jc : Vector Code 2) (hjc : jc = Obj.codes (.prod E V) vk2(P, S)) (hjO : codesOK(jc, vk2(P, S)))
     (hjn : (Rel.n S).toNat < 2 ^ 63) (hjM : (Rel.n P).toNat * (Rel.n S).toNat < min (2 ^ 63) USize.size)
-    (hjA : Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst))
     (hjC : Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)) :
     ∀ r v, rep (demandStep Sf el pend) r v ↔ ∃ e u, rep el r e ∧ rep pend r u ∧ rep S (e, u) v := by
   subst hkc hjc
-  have h1 := rep_pair el pend hkO hkn hkM hkA hkB hkC
+  have h1 := rep_pair el pend hkO hkn hkM (pickFits_atom_fst _) hkB hkC
   subst hP
-  have h2 := rep_comp (pair el pend) S hjO hjn hjM hjA hjC
+  have h2 := rep_comp (pair el pend) S hjO hjn hjM (pickFits_atom_fst _) hjC
   subst hSP
   intro r v
   show rep (pair el pend ≫ Sf (ran (pair el pend))) r v ↔ _
@@ -776,10 +773,10 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V
   subst hstep
   exact rep_foldBy e X T hT hn hv hp hel pend₀ hpend hN h63 hA hB _ (fun k p w => rep (Sf (D k)) p w) elK hE f hf
     hR (fun i _ r v => by
-      obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
-      obtain ⟨hjO, hjn, hjM, hjA, hjC⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
-      exact step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
-        hjO hjn hjM hjA hjC r v)
+      obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+      obtain ⟨hjO, hjn, hjM, hjC⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
+      exact step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
+        hjO hjn hjM hjC r v)
     F hF jc hjc hjO hjn hjM hjA hjC
 
 /-- **`fold`, read back**: `rep_foldOn` at the family `fun _ => S`. An array `xs` of `X` goes to `w` when a chain
@@ -819,8 +816,8 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
   rep_foldOn e (fun _ => S) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf _ (fun _ => rfl) hR
     (fun i el pend he hq kc hkc => by
-      obtain ⟨h1, h2, h3, h4, h5, h6, hJ⟩ := hS i el pend he hq kc hkc
-      exact ⟨h1, h2, h3, h4, h5, h6, fun P hP S' hS' => by subst hS'; exact hJ P hP⟩)
+      obtain ⟨h1, h2, h3, h5, h6, hJ⟩ := hS i el pend he hq kc hkc
+      exact ⟨h1, h2, h3, h5, h6, fun P hP S' hS' => by subst hS'; exact hJ P hP⟩)
     F hF jc hjc hjO hjn hjM hjA hjC
 
 end LeetQ.Rel.Rep

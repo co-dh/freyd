@@ -582,12 +582,12 @@ theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) 
       ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = b :: bs) ∨
         (le p.1 b = false ∧ le b p.1 = false ∧ v = p.1 :: b :: bs)))
     elK hE f hf hR (fun i _ r v => by
-      obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
-      obtain ⟨hjO', hjn', hjM', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
+      obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+      obtain ⟨hjO', hjn', hjM', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
       obtain ⟨eD, eB⟩ := thin_round_rep q le Sf hSf _ (Dr i) (hD i) (hR' i _ rfl)
-      have h1 := rep_pair (elK i) _ hkO hkn hkM hkA hkB hkC
-      rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
-        hjO' hjn' hjM' hjA' hjC' r v]
+      have h1 := rep_pair (elK i) _ hkO hkn hkM (pickFits_atom_fst _) hkB hkC
+      rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
+        hjO' hjn' hjM' hjC' r v]
       refine exists_congr fun e => exists_congr fun u => ?_
       rw [eB, eD]
       have hP : rep (elK i) r e → rep (f^[i] (pend₀, Alg.zero, 0)).1 r u →

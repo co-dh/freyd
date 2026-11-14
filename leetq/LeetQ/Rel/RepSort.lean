@@ -379,7 +379,6 @@ local notation "subOK" =>
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
       codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
       ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →

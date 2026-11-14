@@ -30,6 +30,26 @@ scoped notation "jpairs" => ((List.range R.n.toNat).flatMap fun i => ((List.rang
 end CompN
 open CompN
 
+/-- **An atom side fits at the left rows of a join's pairs**: each is a row of that side (`join_pairs_lt`),
+    so no pick misses. At an array or a sum side the pairs repeat rows and the copied windows can outgrow the
+    input, so there the fit stays a hypothesis. -/
+theorem pickFits_atom_fst {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {b : Nat}
+    {P : Nat → Nat → Bool} :
+    Vals.PickFits (.atom t) x (((List.range n.toNat).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map
+      Prod.fst) :=
+  pickFits_atom x fun _ hk => by
+    obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
+    exact (join_pairs_lt hp).1
+
+/-- **An atom side fits at the right rows of a join's pairs**, as `pickFits_atom_fst`. -/
+theorem pickFits_atom_snd {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {a : Nat}
+    {P : Nat → Nat → Bool} :
+    Vals.PickFits (.atom t) x (((List.range a).flatMap fun i => ((List.range n.toNat).filter (P i)).map (i, ·)).map
+      Prod.snd) :=
+  pickFits_atom x fun _ hk => by
+    obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
+    exact (join_pairs_lt hp).2
+
 section Comp
 
 open Freyd Freyd.Alg.RelSet
@@ -40,7 +60,7 @@ open Freyd Freyd.Alg.RelSet
       `2^63` and a `USize`, which bounds the match count (past a `USize` `≫` answers `𝟘`);
     - `hA`, `hC`, `Vals.PickFits` of `R.key` at the left rows of the join's pairs and of `S.val` at the
       right ones, which `pick_row` reads back under; a side of atoms and products fits outright
-      (`pickFits_atom`, `pickFits_prod`, `join_pairs_lt`).
+      (`pickFits_atom_fst`, `pickFits_atom_snd`, `pickFits_prod`).
     At a middle side `B` with `B.CodesFit jcs`, `hc` is `(codes_faithful_wf B jcs _).1`. -/
 theorem rep_comp (R : Rel A B) (S : Rel B C)
     (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < (jcs[k]'hk).1.toNat)

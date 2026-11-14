@@ -17,7 +17,6 @@ open FoldN OpsN
 theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
     (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size)
-    (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkB : Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
     (hkC : Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
     (W : Rel .long (.prod B (.arr B))) (hW : W = pair el pend)
@@ -53,7 +52,7 @@ theorem subseq_step_rep {B : Obj} (el : Rel .long B) (pend : Rel .long (.arr B))
     ∀ r v, rep (cons (pair el pend) ∪ pend) r v ↔
       (∃ e u, rep el r e ∧ rep pend r u ∧ v = e :: u) ∨ rep pend r v := by
   subst hkc
-  have h1 := rep_pair el pend hkO hkn hkM hkA hkB hkC
+  have h1 := rep_pair el pend hkO hkn hkM (pickFits_atom_fst _) hkB hkC
   subst hW
   have h2 := rep_cons (pair el pend) hp s hs hcS hcU xi hxi m hm xr hxr j hj tl htl c1 hc1 hi hhi lo hlo
     dst hdst g hg hKf hTf hRf hFf
@@ -155,7 +154,6 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
       codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧
       (Rel.n el).toNat * (Rel.n pend).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
       ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →
@@ -203,12 +201,12 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       (∃ e u, rep (elK i) r e ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ (v = e :: u ∨ v = u)) ∨
         (True ∧ (¬ ∃ e, rep (elK i) r e) ∧ rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) := by
     intro i hi r v
-    obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
+    obtain ⟨hkO, hkn, hkM, hkB, hkC, hW⟩ := hC i hi _ _ rfl rfl _ rfl
     obtain ⟨hp, hs⟩ := hW _ rfl
     obtain ⟨hcS, hcU, hx⟩ := hs _ rfl
     obtain ⟨hKf, hTf, hRf, hFf, hPQ⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     obtain ⟨hU, hFk, hFv, hUV, hUk, hUv⟩ := hPQ _ rfl _ rfl
-    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkA hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
+    rw [subseq_step_rep _ _ _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl hcS hcU _ rfl _ rfl _ rfl _ rfl
       _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf _ rfl _ rfl hU hFk hFv hUV hUk hUv r v]
     constructor
     · rintro (⟨e, u, he, hu, rfl⟩ | hu)

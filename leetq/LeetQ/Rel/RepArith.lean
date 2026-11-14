@@ -459,21 +459,21 @@ theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V)
           rep (Sf (D j)) (a, u) v := by
       intro j v
       rw [(hrr j).2.1]
-      obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, hJ⟩ := hS j _ _ rfl rfl _ rfl
-      obtain ⟨hjO', hjn', hjM', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD j)) _ rfl
+      obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS j _ _ rfl rfl _ rfl
+      obtain ⟨hjO', hjn', hjM', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD j)) _ rfl
       subst hstep
-      exact step_rep (elK j) _ Sf _ rfl hkO hkn hkM hkA hkB hkC _ rfl _ (congrArg Sf (hD j)) _ rfl
-        hjO' hjn' hjM' hjA' hjC' _ v
+      exact step_rep (elK j) _ Sf _ rfl hkO hkn hkM hkB hkC _ rfl _ (congrArg Sf (hD j)) _ rfl
+        hjO' hjn' hjM' hjC' _ v
     -- the pair round `j` meets at the row `i` is in `D j`
     have hmem : ∀ j, j < (Rel.val T).1.toNat → ∀ a u, rep (elK j) (Int64.ofNat i.1) a →
         rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) u → ∃ q, rep (D j) q (a, u) := by
       intro j hj a u ha hu
-      obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, -⟩ := hS j _ _ rfl rfl _ rfl
+      obtain ⟨hkO, hkn, hkM, hkB, hkC, -⟩ := hS j _ _ rfl rfl _ rfl
       obtain ⟨hK1, hK2, hpk⟩ := hran j hj _ rfl _ rfl
       refine ⟨(a, u), ?_⟩
       rw [hD j, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
       refine ⟨rfl, Int64.ofNat i.1, ?_⟩
-      rw [rep_pair _ _ hkO hkn hkM hkA hkB hkC]
+      rw [rep_pair _ _ hkO hkn hkM (pickFits_atom_fst _) hkB hkC]
       exact ⟨ha, hu⟩
     have hstepAt : ∀ j (hj : j < xs.length),
         rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) →
@@ -596,7 +596,6 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr .long) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits .long (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
     (hran : let E := Obj.long; let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod .long .long),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P)) :
     ∀ (xs : List Int64) (w : Int64), rep (Alg.Arr.sum X) xs w ↔ (∃ i, X.row i = xs) ∧
@@ -613,7 +612,7 @@ theorem Arr.rep_sum {n : USize} (X : Vals (.arr .long) n)
     exact and_congr ⟨fun ⟨i, h⟩ => ⟨_, i, rfl, h⟩, fun ⟨_, i, _, h⟩ => ⟨i, h⟩⟩ Iff.rfl
   rw [show Alg.Arr.sum X = foldOn (col [0]) Sf X by subst hSf; rfl,
     foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
-      hjc hjO hjn hjM hjA hjC hran _ hSf' xs w]
+      hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   refine and_congr Iff.rfl ?_
   have h1 : ([0] : List Int64).length < USize.size := by
     show 1 < USize.size; rcases USize.size_eq with e | e <;> omega
@@ -742,14 +741,12 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
     (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : (Rel.n (T°)).toNat * (Rel.n F).toNat < min (2 ^ 63) USize.size)
     (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
-    (hjC : Vals.PickFits .long (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
     (hran : let V := Obj.long; ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E .long),
       P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
     (hcomp : ∀ rd, rd < (Rel.val T).1.toNat → ∀ kc : Vector Code 2, kc = Obj.codes .long ck2(outr (D rd), sc) →
       codesOK(kc, ck2(outr (D rd), sc)) ∧ (Rel.n sc).toNat < 2 ^ 63 ∧
       (Rel.n (outr (D rd))).toNat * (Rel.n sc).toNat < min (2 ^ 63) USize.size ∧
-      Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst) ∧
-      Vals.PickFits .long (Rel.val sc) ((mpairs(kc, outr (D rd), sc)).map Prod.snd)) :
+      Vals.PickFits (.prod E .long) (Rel.key (outr (D rd))) ((mpairs(kc, outr (D rd), sc)).map Prod.fst)) :
     ∀ (xs : List E.El) (w : Int64), rep (length X) xs w ↔ (∃ i, X.row i = xs) ∧ w = Int64.ofNat xs.length := by
   intro xs w
   have hcN : c.toNat = X.1.toNat + 1 := by rw [hc]; exact USize.toNat_ofNat_of_lt' hX
@@ -766,17 +763,17 @@ theorem rep_length {E : Obj} {n : USize} (X : Vals (.arr E) n)
       (∃ a, rep (D k) a p) ∧ rep sc p.2 w := by
     intro k hk p w
     obtain ⟨hK1, hK2, hpk⟩ := hran k hk _ rfl _ rfl
-    obtain ⟨hcO, hcn, hcM, hcA, hcC⟩ := hcomp k hk _ rfl
+    obtain ⟨hcO, hcn, hcM, hcA⟩ := hcomp k hk _ rfl
     subst hSf
     show rep (outr (D k) ≫ sc) p w ↔ _
-    rw [rep_comp _ _ hcO hcn hcM hcA hcC, rep_outr, hD k, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
+    rw [rep_comp _ _ hcO hcn hcM hcA (pickFits_atom_snd _), rep_outr, hD k, rep_ran_corefl _ ⟨hK1, hK2⟩ hpk]
     constructor
     · rintro ⟨y, ⟨z, ⟨rfl, hz⟩, rfl⟩, hy⟩; exact ⟨⟨p, rfl, hz⟩, hy⟩
     · rintro ⟨⟨a, rfl, hz⟩, hy⟩; exact ⟨a.2, ⟨a, ⟨rfl, hz⟩, rfl⟩, hy⟩
   rw [length_eq X hX, show foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X =
       foldOn (col [0]) Sf X by subst hSf hsc hc; rfl,
     foldOn_on (col [0]) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc
-      hjc hjO hjn hjM hjA hjC hran _ hSf' xs w]
+      hjc hjO hjn hjM hjA (pickFits_atom_snd _) hran _ hSf' xs w]
   have h1 : ([0] : List Int64).length < USize.size := by
     show 1 < USize.size; rcases USize.size_eq with e | e <;> omega
   have hL : (∃ i, X.row i = xs) → xs.length ≤ X.1.toNat := by
