@@ -1063,8 +1063,7 @@ open QLean.Dep
     every round (`hC`, a per-round bundle, each bound value with its equation). -/
 theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     (T : Rel .long (.arr A)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr A) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr A) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr A) X (List.range n.toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
@@ -1132,7 +1131,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
     obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
     exact map_step_rep _ R _ _ rfl hjO hjn hjM hjC _ rfl _ rfl hkO hkn hkM hkB hkC _ rfl hp _ rfl
       hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf r v
-  refine (rep_foldBy (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _)
+  refine (rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => cons (pair (el ≫ R) pend)) (fun _ eu v => ∃ b, rep R eu.1 b ∧ v = b :: eu.2) elK hE f hf hR hS
     F hF jc hjc hjO hjn hjM hjA hjC xs ys).trans ?_
   -- `nilVal B`'s one row is `[]`

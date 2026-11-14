@@ -590,19 +590,32 @@ theorem pickFits_nilVal (B : Obj) (ps : List Nat) : Vals.PickFits (.arr B) (nilV
   rw [hw _ fun k => by split <;> simp]
   exact ⟨by simp, by decide, USize.size_pos, pickFits_empty B⟩
 
+/-- **`num R k` fits at all its rows where `R`'s values do**: its values pick `R`'s at `til`, each row once
+    (`pickFits_pick`, `tilLongs_get`). -/
+theorem num_pickFits {A B : Obj} (R : Rel A B) (k : USize) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
+    Vals.PickFits B (num R k).val (List.range (num R k).n.toNat) := by
+  have hl : (List.range R.n.toNat).map (fun q => (Column.bitsAt (tilLongs R.n) (q * 8) 8).toNat) =
+      List.range R.n.toNat := by
+    conv => rhs; rw [← List.map_id (List.range R.n.toNat)]
+    exact List.map_congr_left fun q hq => tilLongs_get (List.mem_range.1 hq)
+  have hf : Vals.PickFits B R.val
+      ((List.range R.n.toNat).map fun q => (Column.bitsAt (tilLongs R.n) (q * 8) 8).toNat) := by rw [hl]; exact hv
+  exact pickFits_pick B R.val (tilLongs R.n) R.n (len_tilLongs R.n) _ (fun _ hq => List.mem_range.1 hq) hf hf
+
+#print axioms num_pickFits
+
 /-- **`foldBy`, read back**: an array `xs` of `X` goes to `w` when a chain `ys` of steps runs along `xs` from
     a value of `e` (`ys[|xs|]`) to `w` (`ys[0]`), `ys[t+1]` to `ys[t]` on the element `xs[t]` by `Sr k`,
     `k = |xs| - 1 - t` the round that meets `xs[t]` (rounds run from the end). `foldBy` is `T° ≫ F`: `T`
     numbers the arrays of `X`, `F` the rounds from the seed `pend₀ = top T.key e`; `T`, `pend₀`, `elK`, `f`,
-    `F`, `jc` are bound by their equations. Hypotheses: `rep_num`'s at `X` (`hn`, `hv`), the payload below
-    `2^63` (`hp`), `T`'s values fit at every row (`hTv`, giving `rep_elR`'s at every round), `rep_top`'s (`hN`,
+    `F`, `jc` are bound by their equations. Hypotheses: `rep_num`'s at `X` (`hn`, `hv`, from which `T`'s values fit at
+    every row, `num_pickFits`, giving `rep_elR`'s at every round and the payload below `2^63`), `rep_top`'s (`hN`,
     `h63`, `hB`), `round_rep`'s at
     every round (`hR`), round `i`'s step read back as `Sr i` (`hS`, discharged by each fold's own step lemma),
     `rep_comp`'s at `T°`, `F` (`hj…`). `keep` and `hS`'s second branch as `foldRows_rep_keep`'s. -/
 theorem rep_foldBy_keep {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
@@ -626,6 +639,10 @@ theorem rep_foldBy_keep {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
+  -- `T` fits at every row, so its payload is below `2^63`
+  have hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat) := by
+    subst hT; exact num_pickFits (idU X) 0 hv
+  have hp := (pickFits_payload _ hTv).1
   -- `T` keys row `i` of `X` by `i`, so it is a function on its keys
   have hnum : ∀ r y, rep T r y ↔ ∃ i : Fin n.toNat, r = Int64.ofNat i.1 ∧ X.row i = y := by
     intro r y; subst hT
@@ -704,8 +721,7 @@ theorem rep_foldBy_keep {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr
     rows that have an element. -/
 theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
@@ -728,7 +744,7 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
           (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldBy_keep e X T hT hn hv hp hTv pend₀ hpend hN h63 hB step Sr elK hE f hf hR False
+  rep_foldBy_keep e X T hT hn hv pend₀ hpend hN h63 hB step Sr elK hE f hf hR False
     (fun i hi r v => (hS i hi r v).trans (or_iff_left fun h : False ∧ _ => h.1).symm)
     F hF jc hjc hjO hjn hjM hjA hjC
 
@@ -738,8 +754,7 @@ theorem rep_foldBy {E V : Obj} {m n : USize} (e : Vals V m) (X : Vals (.arr E) n
 theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
@@ -764,7 +779,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
   subst hstep
-  exact rep_foldBy e X T hT hn hv hp hTv pend₀ hpend hN h63 hB _ (fun k p w => rep (Sf (D k)) p w) elK hE f hf
+  exact rep_foldBy e X T hT hn hv pend₀ hpend hN h63 hB _ (fun k p w => rep (Sf (D k)) p w) elK hE f hf
     hR (fun i _ r v => by
       obtain ⟨hkO, hkn, hkM, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
       obtain ⟨hjO, hjn, hjM, hjC⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
@@ -777,8 +792,7 @@ theorem rep_foldOn {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V
     the element `xs[t]`. Bound values and hypotheses as `rep_foldOn`'s. -/
 theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n)
     (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr E) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat))
     (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
     (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
     (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
@@ -800,7 +814,7 @@ theorem rep_fold {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V
         (∀ t (ht : t < xs.length), rep S (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
           (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
         w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) :=
-  rep_foldOn e (fun _ => S) X T hT hn hv hp hTv pend₀ hpend hN h63 hB step hstep elK hE f hf _ (fun _ => rfl) hR
+  rep_foldOn e (fun _ => S) X T hT hn hv pend₀ hpend hN h63 hB step hstep elK hE f hf _ (fun _ => rfl) hR
     (fun i el pend he hq kc hkc => by
       obtain ⟨h1, h2, h3, h5, h6, hJ⟩ := hS i el pend he hq kc hkc
       exact ⟨h1, h2, h3, h5, h6, fun P hP S' hS' => by subst hS'; exact hJ P hP⟩)

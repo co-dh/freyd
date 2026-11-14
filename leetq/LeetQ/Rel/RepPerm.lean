@@ -439,8 +439,7 @@ open QLean.Dep
     value with its equation). -/
 theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
-    (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
-    (hTv : Vals.PickFits (.arr B) (Rel.val T) (List.range (Rel.n T).toNat))
+    (hv : Vals.PickFits (.arr B) X (List.range n.toNat))
     (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
     (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size)
     (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
@@ -463,7 +462,7 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     ∀ (xs : List B.El) ys, rep (Alg.perm X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
   subst hstep
   intro xs ys
-  refine (rep_foldBy (nilVal B) X T hT hn hv hp hTv pend₀ hpend hN h63 (pickFits_nilVal B _)
+  refine (rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
       q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D))))))
     (fun _ eu v => ∃ ys zs, eu.2 = ys ++ zs ∧ v = ys ++ eu.1 :: zs) elK hE f hf hR
