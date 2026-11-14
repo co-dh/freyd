@@ -120,7 +120,8 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
     Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
     Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd) ∧
     ∀ P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B))), P = pair (inits X) (tails X) →
-    (Rel.val P).1.1.toNat < 2 ^ 63 ∧ (Rel.val P).2.1.toNat < 2 ^ 63 ∧
+    Vals.PickFits (.arr (.arr B)) (Rel.val P).1 (List.range (Rel.n P).toNat) ∧
+    Vals.PickFits (.arr (.arr B)) (Rel.val P).2 (List.range (Rel.n P).toNat) ∧
     ∀ c' : ByteArray, c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
       (slicesOf (Rel.val P).2).2 (Rel.n P) →
     ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63 ∧
@@ -132,10 +133,6 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
     ∀ jb : ByteArray, jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr' →
     Vals.PickFits (.arr B) (Rel.key P)
       ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
-    Vals.PickFits (.arr B) (Rel.val P).1.2.2.2
-      ((List.range m'.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat) ∧
-    Vals.PickFits (.arr B) (Rel.val P).2.2.2.2
-      ((List.range m'.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat) ∧
     ∀ Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B))), Z = zip P →
     ∀ jc : Vector Code 2, jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
       (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
@@ -174,12 +171,12 @@ theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B,
   obtain ⟨hS, hU, h2⟩ := h1 _ rfl
   obtain ⟨hK, hVi, hVt, h3⟩ := h2 _ rfl _ rfl _ rfl
   obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, h4⟩ := h3 _ rfl
-  obtain ⟨hpa, hpb, h5⟩ := h4 _ rfl
+  obtain ⟨hPa, hPb, h5⟩ := h4 _ rfl
   obtain ⟨hS', hU', h6⟩ := h5 _ rfl
-  obtain ⟨hKf, hAf, hBf, h7⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl
+  obtain ⟨hKf, h7⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl
   obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h7 _ rfl _ rfl
-  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl hpa hpb
-    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf hAf hBf _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
+  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl hPa hPb
+    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to
