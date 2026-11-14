@@ -522,7 +522,7 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   obtain ⟨hN', hFk, hFv, k8⟩ := k7 _ _ rfl rfl
   obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
   have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63' _ _ rfl rfl
-    hpk hpv hlo _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
+    hpk hpv _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
     huK huV huk huv
   rw [← hSt] at hS
   intro xs ys

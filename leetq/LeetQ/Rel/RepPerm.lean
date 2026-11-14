@@ -648,8 +648,7 @@ scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   Obj.CodesFit A (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1) ∧
   (Rel.nub (idU X)).n.toNat < 2 ^ 63 ∧
   Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))) ∧
-  Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))) ∧
-  Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X))))
+  Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
 
 -- every primitive's hypotheses in `snoc P`, `P : Rel K (B* × B)`, each piece bound by its equation as `snoc`
 -- builds it
@@ -683,9 +682,9 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
   obtain ⟨c1, c2, c3, c4⟩ := hc' _ rfl
   obtain ⟨q1, q2, q3, q4, q5⟩ := hq' _ rfl
   obtain ⟨m1, m2, m3, m4⟩ := hm' _ rfl
-  obtain ⟨hX, hx, hF, hw, hn, hs, hW, h63, hpk, hpv, hlo⟩ := ht
+  obtain ⟨hX, hx, hF, hw, hn, hs, hW, h63, hpk, hpv⟩ := ht
   have eD := rep_ran_corefl P (one_ok _ hPf) (hPp)
-  have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv hlo
+  have eτ := rep_tau_list _ hX hx hF hw hn hs hW h63 hpk hpv
   have eT := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
   have eQ := rep_pair _ _ (codes_faithful_wf _ _ hqf).1 q1 q2 q3 q4 q5
   have eM := rep_comp _ _ (codes_faithful_wf _ _ hmf).1 m1 m2 m3 m4
