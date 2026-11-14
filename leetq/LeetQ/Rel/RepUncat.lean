@@ -266,8 +266,112 @@ theorem rep_tails {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 
   · rintro ⟨⟨⟨r, hr⟩, hx⟩, rfl⟩
     exact ⟨r, hr, hx, by rw [hsuf r hr, hx]⟩
 
+section Uncat
+
+open FoldN
+
+/-- **`uncat`, read back**: an array `xs` of `X` goes to every `(ys, zs)` with `xs = ys ++ zs`. `rep_comp` at
+    `Z ≫ mem Z.val`, `rep_mem` at `Z.val`, `rep_zip` at `P`, `rep_pair` at `inits X`, `tails X`, and
+    `rep_inits`, `rep_tails`; `P = pair (inits X) (tails X)` and `Z = zip P` are bound by their equations, and
+    each theorem's pieces (`kc`, `c'`, `xi'`, `m'`, `xr'`, `ja`, `jb`, `jc`) by theirs. Hypotheses: each theorem's,
+    at its relation — size bounds, the codes faithful and well formed (`hkO`, `hjO`), `Vals.PickFits`. -/
+theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
+    (c : ByteArray) (hc : c = addc n (slicesOf X).2 1)
+    (hS : pn(n.toNat) + n.toNat < 2 ^ 63) (hU : pn(n.toNat) + n.toNat < USize.size)
+    (xi : ByteArray) (hxi : xi = expandBytes 8 0 (tilLongs n) c)
+    (m : USize) (hm : m = (len xi).toUSize)
+    (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub n (sums n c) c) xi))
+    (hK : Vals.PickFits (.arr B) X
+      ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat))
+    (hVi : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
+      (⟨X.1, longsN m (gather 8 (slicesOf X).1 xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
+        valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr, X.2.2.2⟩ : Vals (.arr B) m)
+      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
+    (hVt : ∀ h : len xi = m.toNat, Vals.PickFits (.arr B)
+      (⟨X.1, valCol Ew.add Ew.vv (gather 8 (slicesOf X).1 xi) xr,
+        longsN m (gather 8 (add n (slicesOf X).1 (slicesOf X).2) xi) (Nat.le_of_eq ((gather_len _ _).trans h).symm),
+        X.2.2.2⟩ : Vals (.arr B) m)
+      ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
+    (kc : Vector Code 2)
+    (hkc : kc = Obj.codes (.arr B)
+      (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2))
+    (hkO : codesOK(kc,
+      (#v[⟨Rel.n (inits X), Rel.key (inits X)⟩, ⟨Rel.n (tails X), Rel.key (tails X)⟩] : Vector (Part (.arr B)) 2)))
+    (hkn : (Rel.n (tails X)).toNat < 2 ^ 63) (hkM : msum(kc, inits X, tails X) < 2 ^ 63)
+    (hkU : msum(kc, inits X, tails X) < USize.size)
+    (hkA : Vals.PickFits (.arr B) (Rel.key (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
+    (hkB : Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst))
+    (hkC : Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd))
+    (P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B)))) (hP : P = pair (inits X) (tails X))
+    (hpa : (Rel.val P).1.1.toNat < 2 ^ 63) (hpb : (Rel.val P).2.1.toNat < 2 ^ 63)
+    (c' : ByteArray) (hc' : c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
+      (slicesOf (Rel.val P).2).2 (Rel.n P))
+    (hS' : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63)
+    (hU' : ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < USize.size)
+    (xi' : ByteArray) (hxi' : xi' = expandBytes 8 0 (tilLongs (Rel.n P)) c')
+    (m' : USize) (hm' : m' = (len xi').toUSize)
+    (xr' : ByteArray) (hxr' : xr' = sub m' (tilLongs m') (gather 8 (sub (Rel.n P) (sums (Rel.n P) c') c') xi'))
+    (ja : ByteArray) (hja : ja = add m' (gather 8 (slicesOf (Rel.val P).1).1 xi') xr')
+    (jb : ByteArray) (hjb : jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr')
+    (hKf : Vals.PickFits (.arr B) (Rel.key P)
+      ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat))
+    (hAf : Vals.PickFits (.arr B) (Rel.val P).1.2.2.2
+      ((List.range m'.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat))
+    (hBf : Vals.PickFits (.arr B) (Rel.val P).2.2.2.2
+      ((List.range m'.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat))
+    (Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B)))) (hZ : Z = zip P)
+    (jc : Vector Code 2)
+    (hjc : jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
+      (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
+        Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2))
+    (hjO : codesOK(jc, (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
+        Vector (Part (.arr (.prod (.arr B) (.arr B)))) 2)))
+    (hjn : (Rel.n (mem Z.val)).toNat < 2 ^ 63) (hjM : msum(jc, Z, mem Z.val) < 2 ^ 63)
+    (hjU : msum(jc, Z, mem Z.val) < USize.size)
+    (hjA : Vals.PickFits (.arr B) (Rel.key Z) ((mpairs(jc, Z, mem Z.val)).map Prod.fst))
+    (hjC : Vals.PickFits (.prod (.arr B) (.arr B)) (Rel.val (mem Z.val)) ((mpairs(jc, Z, mem Z.val)).map Prod.snd))
+    (hv : Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val (List.range Z.n.toNat))
+    (hk : Vals.PickFits (.arr (.prod (.arr B) (.arr B))) Z.val ((List.range Z.n.toNat).flatMap fun r =>
+      if h : r < Z.n.toNat then List.replicate (Z.val.row ⟨r, h⟩).length r else [])) :
+    ∀ xs ys zs, rep (uncat X) xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
+  intro xs ys zs
+  have hI := rep_inits X hp c hc hS hU xi hxi m hm xr hxr hK hVi
+  have hT := rep_tails X hp c hc hS hU xi hxi m hm xr hxr hK hVt
+  subst hkc
+  have h1 := rep_pair (inits X) (tails X) hkO hkn hkM hkU hkA hkB hkC
+  have h2 := rep_zip P hpa hpb c' hc' hS' hU' xi' hxi' m' hm' xr' hxr' ja hja jb hjb hKf hAf hBf
+  subst hjc
+  have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjU hjA hjC
+  have h4 := rep_mem Z.val hv hk
+  subst hZ hP
+  show rep (zip (pair (inits X) (tails X)) ≫ mem (zip (pair (inits X) (tails X))).val) xs (ys, zs) ↔ _
+  rw [h3]
+  constructor
+  · rintro ⟨ps, hz, hm⟩
+    obtain ⟨-, hmem⟩ := (h4 ps (ys, zs)).1 hm
+    obtain ⟨a, b, hab, rfl⟩ := (h2 xs ps).1 hz
+    rw [h1] at hab
+    obtain ⟨hx, rfl⟩ := (hI xs a).1 hab.1
+    obtain ⟨-, rfl⟩ := (hT xs b).1 hab.2
+    refine ⟨hx, ?_⟩
+    rw [List.zip_map'] at hmem
+    obtain ⟨k, -, he⟩ := List.mem_map.1 hmem
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
+    exact (List.take_append_drop k xs).symm
+  · rintro ⟨hx, hxs⟩
+    have hz := (h2 xs _).2 ⟨_, _, by rw [h1]; exact ⟨(hI xs _).2 ⟨hx, rfl⟩, (hT xs _).2 ⟨hx, rfl⟩⟩, rfl⟩
+    refine ⟨_, hz, (h4 _ _).2 ⟨?_, ?_⟩⟩
+    · obtain ⟨q, -, hq⟩ := hz
+      exact ⟨q, hq⟩
+    · rw [List.zip_map']
+      exact List.mem_map.2 ⟨ys.length, List.mem_range.2 (by rw [hxs, List.length_append]; omega),
+        by rw [hxs]; simp⟩
+
+end Uncat
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.nest_rep
 #print axioms LeetQ.Rel.Rep.rep_inits
 #print axioms LeetQ.Rel.Rep.rep_tails
+#print axioms LeetQ.Rel.Rep.rep_uncat
