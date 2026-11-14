@@ -22,6 +22,9 @@ def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
 /-- A relation's values as a part, as `keyPart`. -/
 def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
 
+/-- A relation's rows sorted by value, and the bit: `sortByC` at `til`, a function of the relation as `keyPart`. -/
+def valSortC {k v : Obj} (R : Rel k v) : ByteArray × Bool := v.sortByC R.val (tilLongs R.n)
+
 /-- A relation's pairs as a part of the product side, as `keyPart`: what `pairs` codes. -/
 def pairPart {k v : Obj} (R : Rel k v) : Part (.prod k v) := ⟨R.n, (R.key, R.val)⟩
 
@@ -310,7 +313,7 @@ def transposeRuns (d : Rel A B) (kc : Code) (vp : ByteArray) : Rel A (.arr B) :=
 def transposeC (R : Rel A B) : Rel A (.arr B) × Bool :=
   let d := nubC R
   let kc := A.codesC #v[keyPart d.1]
-  let vp := B.sortByC d.1.val (tilLongs d.1.n)
+  let vp := valSortC d.1
   (transposeRuns d.1 kc.1[0] vp.1, d.2 && kc.2 && vp.2 && decide (R.n.toNat < 2 ^ 63))
 
 /-- `Λ(R)`: `transposeC`'s relation. -/
@@ -320,7 +323,7 @@ def transpose (R : Rel A B) : Rel A (.arr B) := (transposeC R).1
     read as their ops. -/
 theorem transpose_eq (R : Rel A B) :
     transpose R = transposeRuns R.nub (A.codes #v[⟨_, R.nub.key⟩])[0] (B.sortBy R.nub.val (tilLongs R.nub.n)) := by
-  unfold transpose transposeC; dsimp only; rw [nubC_fst]; simp only [Obj.codesC_fst, keyPart, Obj.sortBy]
+  simp only [transpose, transposeC, nubC_fst, Obj.codesC_fst]; simp only [keyPart, valSortC, Obj.sortBy]
 
 /-- `∋ : arr B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
     holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank
