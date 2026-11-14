@@ -50,6 +50,64 @@ theorem pickFits_atom_snd {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) {
     obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hk
     exact (join_pairs_lt hp).2
 
+/-- The left rows of a join's pairs: row `k` at most `b` times, and only below `a`. -/
+theorem join_fst_count {b : Nat} {P : Nat → Nat → Bool} : ∀ (a k : Nat),
+    (((List.range a).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map Prod.fst).count k ≤
+      if k < a then b else 0
+  | 0, k => by simp
+  | a + 1, k => by
+    have ih := join_fst_count (b := b) (P := P) a k
+    rw [List.range_succ, List.flatMap_append, List.map_append, List.count_append]
+    have e : ((([a].flatMap fun i => ((List.range b).filter (P i)).map (i, ·))).map Prod.fst) =
+        List.replicate ((List.range b).filter (P a)).length a := by
+      rw [List.eq_replicate_iff]; simp <;> intros <;> omega
+    have hb : ((List.range b).filter (P a)).length ≤ b := by simpa using List.length_filter_le (P a) (List.range b)
+    rw [e, List.count_replicate]
+    split at ih <;> split <;> (try split) <;> simp_all <;> omega
+
+/-- The right rows of a join's pairs: row `k` at most `a` times, and only below `b`. -/
+theorem join_snd_count {b : Nat} {P : Nat → Nat → Bool} : ∀ (a k : Nat),
+    (((List.range a).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map Prod.snd).count k ≤
+      if k < b then a else 0
+  | 0, k => by simp
+  | a + 1, k => by
+    have ih := join_snd_count (b := b) (P := P) a k
+    rw [List.range_succ, List.flatMap_append, List.map_append, List.count_append]
+    have e : ((([a].flatMap fun i => ((List.range b).filter (P i)).map (i, ·))).map Prod.snd) =
+        (List.range b).filter (P a) := by simp [Function.comp_def]
+    have hc := (List.filter_sublist (p := P a) (l := List.range b)).count_le k
+    rw [e]; rw [List.count_range] at hc
+    split at ih <;> split at hc <;> split <;> omega
+
+/-- **A side fits at the left rows of a join's pairs when its reading at all rows, `b + 1` times, is below `2^63`
+    and `USize.size`**: each row repeats at most `b` times (`join_fst_count`, `reads_count_le`,
+    `pickFits_of_reads`). The `+ 1` pays the side's dictionary when no pair matches. -/
+theorem pickFits_join_fst {X : Obj} {n : USize} (x : Vals X n) {b : Nat} {P : Nat → Nat → Bool}
+    (h63 : (b + 1) * Vals.reads X x (List.range n.toNat) < 2 ^ 63)
+    (hU : (b + 1) * Vals.reads X x (List.range n.toNat) < USize.size) :
+    Vals.PickFits X x (((List.range n.toNat).flatMap fun i => ((List.range b).filter (P i)).map (i, ·)).map
+      Prod.fst) := by
+  suffices hle : Vals.reads X x _ ≤ (b + 1) * Vals.reads X x (List.range n.toNat) from
+    pickFits_of_reads (Nat.lt_of_le_of_lt hle h63) (Nat.lt_of_le_of_lt hle hU)
+  exact reads_count_le x (Nat.succ_pos _) fun k hk => by
+    have h := join_fst_count (b := b) (P := P) n.toNat k
+    have hp := List.count_pos_iff.2 hk
+    split at h <;> constructor <;> omega
+
+/-- **A side fits at the right rows of a join's pairs**, as `pickFits_join_fst` with `a + 1` readings
+    (`join_snd_count`). -/
+theorem pickFits_join_snd {X : Obj} {n : USize} (x : Vals X n) {a : Nat} {P : Nat → Nat → Bool}
+    (h63 : (a + 1) * Vals.reads X x (List.range n.toNat) < 2 ^ 63)
+    (hU : (a + 1) * Vals.reads X x (List.range n.toNat) < USize.size) :
+    Vals.PickFits X x (((List.range a).flatMap fun i => ((List.range n.toNat).filter (P i)).map (i, ·)).map
+      Prod.snd) := by
+  suffices hle : Vals.reads X x _ ≤ (a + 1) * Vals.reads X x (List.range n.toNat) from
+    pickFits_of_reads (Nat.lt_of_le_of_lt hle h63) (Nat.lt_of_le_of_lt hle hU)
+  exact reads_count_le x (Nat.succ_pos _) fun k hk => by
+    have h := join_snd_count (b := n.toNat) (P := P) a k
+    have hp := List.count_pos_iff.2 hk
+    split at h <;> constructor <;> omega
+
 section Comp
 
 open Freyd Freyd.Alg.RelSet
@@ -134,6 +192,62 @@ theorem rep_comp (R : Rel A B) (S : Rel B C)
     refine ⟨⟨q, hq2⟩, ?_, ?_⟩
     · rw [hA' _ ⟨q, hq2⟩ hi', ← hia]; exact congrArg R.key.row (Fin.ext h1)
     · rw [pick_row C S.val _ m hmJ hfC ⟨q, hq2⟩, dif_pos hj', ← hjc]; exact congrArg S.val.row (Fin.ext h2)
+
+/-- **`R ≫ S` fits at all its rows, and counts at most `R`'s rows times `S`'s**, under `rep_comp`'s hypotheses: each
+    side is an input column picked at the join's pairs (`pickFits_pick`), as many as the pairs (`join_rows`,
+    `range_filter_sum_le`). `hA`, `hC` follow from the inputs' readings (`pickFits_join_fst`, `pickFits_join_snd`). -/
+theorem comp_fits (R : Rel A B) (S : Rel B C)
+    (hc : (∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat} (hi : i < (jcs[k]'hk).1.toNat)
+        (hj : j < (jcs[l]'hl).1.toNat),
+        Column.idAt (jc[k]'hk).b (jc[k]'hk).w i = Column.idAt (jc[l]'hl).b (jc[l]'hl).w j ↔
+          Vals.row (jcs[k]'hk).2 ⟨i, hi⟩ = Vals.row (jcs[l]'hl).2 ⟨j, hj⟩) ∧
+      ∀ {k : Nat} (hk : k < 2),
+        laneOK((jc[k]'hk).w) ∧
+        (jc[k]'hk).n = (jcs[k]'hk).1 ∧ (jc[k]'hk).b.size = ((jc[k]'hk).n.toNat * (jc[k]'hk).w + 7) / 8 ∧
+        ((jc[k]'hk).w < 8 → (jc[k]'hk).card < USize.size ∧
+          ∀ i < (jc[k]'hk).n.toNat, Column.idAt (jc[k]'hk).b (jc[k]'hk).w i < (jc[k]'hk).card))
+    (hrn : S.n.toNat < 2 ^ 63)
+    (hM : R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size)
+    (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
+    Vals.PickFits A (R ≫ S).key (List.range (R ≫ S).n.toNat) ∧ Vals.PickFits C (R ≫ S).val (List.range (R ≫ S).n.toNat) ∧
+      (R ≫ S).n.toNat ≤ R.n.toNat * S.n.toNat := by
+  obtain ⟨-, hW⟩ := hc
+  obtain ⟨hlw, hln, hls, -⟩ := hW (k := 0) (by decide)
+  obtain ⟨hrw, hrn', hrs, hrc⟩ := hW (k := 1) (by decide)
+  replace hln : (jc[0]'Nat.zero_lt_two).n = R.n := hln
+  replace hrn' : (jc[1]'Nat.one_lt_two).n = S.n := hrn'
+  obtain ⟨hlt, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
+  have hlen : (jpairs).length ≤ R.n.toNat * S.n.toNat := by
+    rw [List.length_flatMap]; simp only [List.length_map]; exact range_filter_sum_le _ _ _
+  have H : ∀ (m : USize) (hmJ : len (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 = m.toNat),
+      Vals.PickFits A (Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m
+        (hmJ ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two))) (List.range m.toNat) ∧
+      Vals.PickFits C (Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m hmJ)
+        (List.range m.toNat) ∧ m.toNat ≤ R.n.toNat * S.n.toNat := by
+    intro m hmJ
+    have e := hZ m hmJ
+    rw [hln, hrn'] at e
+    have hl : ((List.range m.toNat).map fun q =>
+        (Column.bitsAt (fit m.toNat (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1) (q * 8) 8).toNat) =
+          (jpairs).map Prod.fst := by rw [e, List.map_map]; rfl
+    have hr : ((List.range m.toNat).map fun q =>
+        (Column.bitsAt (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (q * 8) 8).toNat) =
+          (jpairs).map Prod.snd := by rw [e, List.map_map]; rfl
+    have hq : ∀ q ∈ List.range m.toNat, q < m.toNat := fun q hq => List.mem_range.1 hq
+    have hm := congrArg List.length e
+    simp only [List.length_map, List.length_range] at hm
+    unfold Vals.pickN
+    exact ⟨pickFits_pick A R.key _ m _ _ hq (hl ▸ hA) (hl ▸ hA), pickFits_pick C S.val _ m hmJ _ hq (hr ▸ hC) (hr ▸ hC),
+      by omega⟩
+  rw [show R ≫ S = longCount "≫" (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 (fun m h =>
+      (⟨m, Vals.pickN A R.key (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).1 m (h ▸ join_len (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)),
+        Vals.pick C S.val (join (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two)).2 m h⟩ : Rel A C)) from rfl]
+  unfold longCount need
+  rw [dif_pos hlt]
+  dsimp only
+  exact H _ _
+
+#print axioms comp_fits
 
 end Comp
 

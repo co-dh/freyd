@@ -69,6 +69,36 @@ theorem rep_antiJoin (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp
       obtain ⟨j, hj⟩ := (vals_member R T hc i.2).1 hbit
       exact ⟨T.key.row j, j, rfl, hj.trans hiy⟩
 
+/-- **`antiJoin R T` keeps a sublist of `R`'s rows** (`anti_sublist`, the joint code's count `R`'s by `hc`), so
+    `rows_fits`: it fits where `R` does, counts at most `R`'s rows, and reads at most `1 + 3 ^ sizeOf` readings of
+    `R`'s. Hypotheses: `rep_antiJoin`'s. -/
+theorem antiJoin_fits (R : Rel A B) (T : Rel B B) (hc : codesOK(avc(B, R, T), avp(B, R, T)))
+    (hk : Vals.PickFits A R.key (List.range R.n.toNat)) (hv : Vals.PickFits B R.val (List.range R.n.toNat)) :
+    Vals.PickFits A (antiJoin R T).key (List.range (antiJoin R T).n.toNat) ∧
+      Vals.PickFits B (antiJoin R T).val (List.range (antiJoin R T).n.toNat) ∧ (antiJoin R T).n.toNat ≤ R.n.toNat ∧
+      (Vals.reads A R.key (List.range R.n.toNat) < 2 ^ 63 → Vals.reads A R.key (List.range R.n.toNat) < USize.size →
+        Vals.reads A (antiJoin R T).key (List.range (antiJoin R T).n.toNat) ≤
+          (1 + 3 ^ sizeOf A) * Vals.reads A R.key (List.range R.n.toNat)) ∧
+      (Vals.reads B R.val (List.range R.n.toNat) < 2 ^ 63 → Vals.reads B R.val (List.range R.n.toNat) < USize.size →
+        Vals.reads B (antiJoin R T).val (List.range (antiJoin R T).n.toNat) ≤
+          (1 + 3 ^ sizeOf B) * Vals.reads B R.val (List.range R.n.toNat)) := by
+  obtain ⟨-, hn0, -⟩ := hc.2 (k := 0) (by decide)
+  replace hn0 : ((avc(B, R, T))[0]'Nat.zero_lt_two).n = R.n := hn0
+  exact rows_fits R _ (by rw [← hn0]; exact anti_sublist _ _) hk hv
+
+/-- **`outl T` is `T` with the value's left half**: it fits where `T` does, counts `T`'s rows, and its value reads at
+    most `T`'s (`Vals.reads` of a product is the sum of its halves'). -/
+theorem outl_fits {k v w : Obj} (T : Rel k (.prod v w)) (hk : Vals.PickFits k T.key (List.range T.n.toNat))
+    (hv : Vals.PickFits (.prod v w) T.val (List.range T.n.toNat)) :
+    Vals.PickFits k (outl T).key (List.range (outl T).n.toNat) ∧
+      Vals.PickFits v (outl T).val (List.range (outl T).n.toNat) ∧ (outl T).n = T.n ∧
+      Vals.reads v (outl T).val (List.range (outl T).n.toNat) ≤ Vals.reads (.prod v w) T.val (List.range T.n.toNat) := by
+  unfold Vals.PickFits at hv
+  exact ⟨hk, hv.1, rfl, Nat.le_add_right _ _⟩
+
+#print axioms antiJoin_fits
+#print axioms outl_fits
+
 end AntiJoin
 
 /-! ## `entire`, `surjective`: `idU U ⊑ dom R` -/
