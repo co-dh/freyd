@@ -184,7 +184,77 @@ theorem div_keep_holds (r : Rel A B) (s : Rel A C) (y : Rel B C) (l k yc zc rv :
     rw [Bool.and_eq_true, decide_eq_true_iff, decide_eq_true_iff]
     exact ⟨hpf, (hcount p hp hpb hpc).2 h⟩
 
+/-- **`Vals.pickPart` read back**: an element is a row of `x` picked at `I` exactly when it is `x`'s row at a
+    position `I` lists. Hypotheses: `I`'s count fits a `USize`, its positions are rows of `x`, `x` picks back there. -/
+theorem pickPart_rows {n : USize} (x : Vals B n) (I : ByteArray) (hL : len I < USize.size)
+    (hlt : ∀ t ∈ ids I, t < n.toNat) (hP : Vals.PickFits B x (ids I)) (u : B.El) :
+    (∃ i, (Vals.pickPart B x I).2.row i = u) ↔ ∃ t ∈ ids I, ∃ ht : t < n.toNat, x.row ⟨t, ht⟩ = u := by
+  have hpd : Vals.pickPart B x I = ⟨(len I).toUSize, Vals.pick B x I _ (USize.toNat_ofNat_of_lt' hL).symm⟩ := by
+    unfold Vals.pickPart need; rw [dif_pos hL]
+  have hLn : ((len I).toUSize).toNat = len I := USize.toNat_ofNat_of_lt' hL
+  rw [hpd]; dsimp only
+  have hfit : Vals.PickFits B x
+      ((List.range ((len I).toUSize).toNat).map fun q => (Column.bitsAt I (q * 8) 8).toNat) := by
+    rw [hLn]; exact hP
+  constructor
+  · rintro ⟨⟨q, hq⟩, e⟩
+    have hq' : q < (ids I).length := by rw [← len_eq_ids, ← hLn]; exact hq
+    have ht := hlt _ (List.getElem_mem hq')
+    rw [ids_getElem hq'] at ht
+    rw [pick_row B x I _ _ hfit ⟨q, hq⟩, dif_pos ht] at e
+    exact ⟨_, by rw [← ids_getElem hq']; exact List.getElem_mem hq', ht, e⟩
+  · rintro ⟨t, hti, ht, e⟩
+    obtain ⟨q, hq, hqt⟩ := List.getElem_of_mem hti
+    have hq' : q < ((len I).toUSize).toNat := by rw [hLn, len_eq_ids]; exact hq
+    have ht' : (Column.bitsAt I (q * 8) 8).toNat < n.toNat := by rw [← ids_getElem hq, hqt]; exact ht
+    refine ⟨⟨q, hq'⟩, ?_⟩
+    rw [pick_row B x I _ _ hfit ⟨q, hq'⟩, dif_pos ht', ← e]
+    exact congrArg x.row (Fin.ext ((ids_getElem hq).symm.trans hqt))
+
+-- `leftDiv`'s vacuous side: the values of `Ub` coded as no value of `r`
+set_option hygiene false in
+local notation "vac" => Vals.pickPart B Ub (anti ubc rvc)
+
+/-- **`leftDiv`'s vacuous part, read back**: `⊤` on the values of `Ub` that are no value of `r`, and `Uc`.
+    Hypotheses: `ubc`, `rvc` code `Ub`, `r.val` jointly and well formed (`anti_ids`); `Ub` picks back at the kept
+    positions; `rep_top`'s. -/
+theorem div_vac_holds (r : Rel A B) {mb mc : USize} (Ub : Vals B mb) (Uc : Vals C mc) (ubc rvc : Code)
+    (hxw : ubc.w = 1 ∨ ubc.w = 2 ∨ ubc.w = 4 ∨ ubc.w = 8 ∨ ubc.w = 16 ∨ ubc.w = 32 ∨ ubc.w = 64)
+    (hyw : rvc.w = 1 ∨ rvc.w = 2 ∨ rvc.w = 4 ∨ rvc.w = 8 ∨ rvc.w = 16 ∨ rvc.w = 32 ∨ rvc.w = 64)
+    (hxs : ubc.b.size = (ubc.n.toNat * ubc.w + 7) / 8) (hys : rvc.b.size = (rvc.n.toNat * rvc.w + 7) / 8)
+    (hun : ubc.n = mb) (hrn : rvc.n = r.n)
+    (hj : ∀ {j p : Nat} (hj : j < r.n.toNat) (hp : p < mb.toNat),
+      Column.idAt rvc.b rvc.w j = Column.idAt ubc.b ubc.w p ↔ r.val.row ⟨j, hj⟩ = Ub.row ⟨p, hp⟩)
+    (hP : Vals.PickFits B Ub (ids (anti ubc rvc)))
+    (hN : (vac).1.toNat * mc.toNat < USize.size) (h63 : (vac).1.toNat * mc.toNat < 2 ^ 63)
+    (hA : Vals.PickFits B (vac).2 ((List.range ((vac).1.toNat * mc.toNat)).map (· / mc.toNat)))
+    (hB : Vals.PickFits C Uc ((List.range ((vac).1.toNat * mc.toNat)).map (· % mc.toNat))) (b : B.El) (c : C.El) :
+    (top (vac).2 Uc).Holds b c ↔ ((∃ p, Ub.row p = b) ∧ ¬∃ a, r.Holds a b) ∧ ∃ j, Uc.row j = c := by
+  have h := congrFun (congrFun (rep_top _ Uc hN h63 hA hB) b) c
+  refine (Iff.of_eq h).trans ?_
+  have hm := anti_ids ubc rvc hxw hyw hxs hys
+  have hL : len (anti ubc rvc) < USize.size := by
+    rw [len_eq_ids, hm.1]
+    exact Nat.lt_of_le_of_lt (Nat.le_trans (List.length_filter_le _ _) (Nat.le_of_eq (List.length_range ..)))
+      ubc.n.toNat_lt_size
+  have hlt : ∀ t ∈ ids (anti ubc rvc), t < mb.toNat := fun t ht => by rw [← hun]; exact ((hm.2.2 t).1 ht).1
+  show (∃ a', (b = a' ∧ ∃ i, (vac).2.row i = b) ∧ ∃ b', True ∧ (b' = c ∧ ∃ j, Uc.row j = b')) ↔ _
+  rw [pickPart_rows Ub _ hL hlt hP b]
+  constructor
+  · rintro ⟨_, ⟨rfl, t, hti, ht, e⟩, _, -, rfl, hc⟩
+    obtain ⟨-, hno⟩ := (hm.2.2 t).1 hti
+    refine ⟨⟨⟨⟨t, ht⟩, e⟩, ?_⟩, hc⟩
+    rintro ⟨a, ⟨j, -, hjb⟩⟩
+    exact hno ⟨j.1, by rw [hrn]; exact j.2, (hj j.2 ht).2 (hjb.trans e.symm)⟩
+  · rintro ⟨⟨⟨⟨p, hp⟩, e⟩, hno⟩, hc⟩
+    refine ⟨b, ⟨rfl, p, (hm.2.2 p).2 ⟨by rw [hun]; exact hp, ?_⟩, hp, e⟩, c, trivial, rfl, hc⟩
+    rintro ⟨j, hjn, hje⟩
+    rw [hrn] at hjn
+    exact hno ⟨r.key.row ⟨j, hjn⟩, ⟨j, hjn⟩, rfl, ((hj hjn hp).1 hje).trans e⟩
+
 #print axioms div_y_rows
 #print axioms div_keep_holds
+#print axioms pickPart_rows
+#print axioms div_vac_holds
 
 end LeetQ.Rel.Rep
