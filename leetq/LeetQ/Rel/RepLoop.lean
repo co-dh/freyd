@@ -352,13 +352,14 @@ local notation "loopOK" =>
     ajOK(.prod X (.arr Y), D, du) ∧ cmpOK(.prod X (.arr Y), St, outl A) ∧ uniOK)
 
 /-- **One round of `loopOn`, read back**: `loop_round_set` with each primitive's read-back discharged by its
-    lemma. The round's values are bound by their equations; `h` is every primitive's hypotheses at them. -/
-theorem loop_round_rep {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X) (out : Rel K X)
+    lemma. The round's values are bound by their equations, the step `G` any relation (`loopOn`'s is
+    `F(ran p)`); `h` is every primitive's hypotheses at them. -/
+theorem loop_round_rep {K X Y : Obj} (out : Rel K X)
     (St : Rel K (.prod X (.arr Y))) (D : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hD : D = ran St)
     (W : Rel (.arr Y) (.arr Y)) (hW : W = ran (outr D))
     (u : Rel (.prod X (.arr Y)) (.prod Y (.arr Y))) (hu : u = outr D ≫ uncons (Rel.val W))
     (p : Rel (.prod X (.arr Y)) (.prod X Y)) (hp : p = pair (outl D) (outl u))
-    (G : Rel (.prod X Y) X) (hG : G = F (ran p)) (Q : Rel (.prod X (.arr Y)) X) (hQ : Q = p ≫ G)
+    (G : Rel (.prod X Y) X) (Q : Rel (.prod X (.arr Y)) X) (hQ : Q = p ≫ G)
     (R : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hR : R = pair Q (outr u))
     (T : Rel K (.prod X (.arr Y))) (hT : T = St ≫ R)
     (du : Rel (.prod X (.arr Y)) (.prod X (.arr Y))) (hdu : du = dom u)
@@ -391,5 +392,59 @@ theorem loop_round_rep {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.
     (by rw [hA]; exact rep_antiJoin D (dom u) (codes_faithful_wf _ _ hAf).1 a1 a2)
     (by rw [hO]; exact rep_comp _ _ (codes_faithful_wf _ _ hOf).1 o1 o2 o3 o4 o5)
     (rep_union_full out O hUN hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv)
+
+-- a round's values from its state `St`, each bound by its equation, `G` the step relation `Fp`, then `J`
+set_option hygiene false in
+local notation "roundVals(" Fp ", " J ")" =>
+  ∀ D, D = ran St → ∀ W, W = ran (outr D) → ∀ u, u = outr D ≫ uncons (Rel.val W) →
+    ∀ p, p = pair (outl D) (outl u) → ∀ G, G = Fp → ∀ Q, Q = p ≫ G → ∀ R, R = pair Q (outr u) →
+    ∀ T, T = St ≫ R → ∀ du, du = dom u → ∀ A, A = antiJoin D du → ∀ O, O = St ≫ outl A → J
+
+/-- **`loopOn`, read back**: key `k` goes to `c` when one of its seeds `(c₀, xs)` in `P` folds to `c` along `xs`:
+    a chain `g` from `g 0 = c₀` to `g |xs| = c`, step `t` taking `(g t, xs[t])` to `g (t+1)` by `Fr t`, the
+    relation `F(ran p)` of round `t` (`p` its pairs `(c, y)`). The fuel always suffices, so the stop is not in
+    the conclusion. The round `f` is bound by its defining equation (`hf`); `hR` is, at every round up to the
+    fuel, `Fr`'s defining equation and every primitive's hypotheses (`loopOK`) at the round's values. -/
+theorem rep_loopOn {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.prod X Y) X)
+    (P : Rel K (.prod X (.arr Y)))
+    (f : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)))
+    (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
+      f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F (ran p)) (outr u))))
+    (Fr : Nat → X.El × Y.El → X.El → Prop)
+    (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
+      St = (f^[i] (Alg.zero, P)).2 → roundVals(F (ran p), (∀ cy c', Fr i cy c' ↔ rep G cy c') ∧ loopOK)) :
+    ∀ k c, rep (loopOn F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
+      (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
+  have one : ∀ i, i ≤ (Rel.val P).2.1.toNat →
+      (∀ k (c' : X.El) (ys : List Y.El), rep (f^[i + 1] (Alg.zero, P)).2 k (c', ys) ↔
+        ∃ c y, rep (f^[i] (Alg.zero, P)).2 k (c, y :: ys) ∧ Fr i (c, y) c') ∧
+      ∀ k (c : X.El), rep (f^[i + 1] (Alg.zero, P)).1 k c ↔
+        rep (f^[i] (Alg.zero, P)).1 k c ∨ rep (f^[i] (Alg.zero, P)).2 k (c, []) := by
+    intro i hi
+    obtain ⟨hFr, hok⟩ := hR i hi _ _ rfl rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    have hr := loop_round_rep _ _ _ rfl _ rfl _ rfl _ rfl _ _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hok
+    have e : f^[i + 1] (Alg.zero, P) = _ :=
+      hf (f^[i] (Alg.zero, P)).1 (f^[i] (Alg.zero, P)).2 _ _ _ rfl rfl rfl
+    rw [e]
+    exact ⟨fun k c' ys => (hr.1 k c' ys).trans
+      (exists_congr fun c => exists_congr fun y => and_congr Iff.rfl (hFr _ _).symm), hr.2⟩
+  exact loopOn_rounds F P f hf Fr (fun i hi => (one i hi).1) (fun i hi => (one i hi).2)
+
+/-- **`loop`, read back**: `rep_loopOn` at the family `fun _ => F`, every step `F` itself. -/
+theorem rep_loop {K X Y : Obj} (F : Rel (.prod X Y) X) (P : Rel K (.prod X (.arr Y)))
+    (f : Rel K X × Rel K (.prod X (.arr Y)) → Rel K X × Rel K (.prod X (.arr Y)))
+    (hf : ∀ out St D u p, D = ran St → u = outr D ≫ uncons (ran (outr D)).val → p = pair (outl D) (outl u) →
+      f (out, St) = (out ∪ St ≫ outl (antiJoin D (dom u)), Rel.nub (St ≫ pair (p ≫ F) (outr u))))
+    (hR : ∀ i, i ≤ (Rel.val P).2.1.toNat → ∀ out St, out = (f^[i] (Alg.zero, P)).1 →
+      St = (f^[i] (Alg.zero, P)).2 → roundVals(F, loopOK)) :
+    ∀ k c, rep (loop F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
+      (∀ t (ht : t < xs.length), rep F (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length :=
+  rep_loopOn (fun _ => F) P f hf (fun _ => rep F) fun i hi out St ho hS D hD W hW u hu p hp G hG =>
+    have e : G = F := hG
+    (fun Q hQ R hR' T hT du hdu A hA O hO => ⟨fun _ _ => by rw [e], hR i hi out St ho hS D hD W hW u hu p hp G e
+      Q hQ R hR' T hT du hdu A hA O hO⟩)
+
+#print axioms rep_loopOn
+#print axioms rep_loop
 
 end LeetQ.Rel.Rep
