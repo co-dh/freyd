@@ -21,15 +21,16 @@ open CompN OpsN
 
 variable {A B C : Obj}
 
-/-- **`rep (R ≫ S) = rep R ≫ rep S` under `compC`'s bit**: the codes' bit gives `rep_comp`'s `hc`
-    (`codesC_fits`, `codes_faithful_wf`), the decided bounds its `hrn`, `hM`, and the picks' bits, read at the
-    join's rows (`join_rows`), its `hA`, `hC` (`pickC_fits`). -/
-theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
-    rep (compC R S).1 = rep R ≫ rep S := by
-  rw [compC_fst]
+/-- **`compC`'s bit is `rep_comp`'s premises**: the codes' bit gives the middle side's codes fitting (`codesC_fits`,
+    whence `rep_comp`'s `hc` by `codes_faithful_wf`), the decided bounds its `hrn`, `hM`, and the picks' bits, read
+    at the join's rows (`join_rows`), its `hA`, `hC` (`pickC_fits`). -/
+theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
+    Obj.CodesFit B jcs ∧ S.n.toNat < 2 ^ 63 ∧ R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size ∧
+      Vals.PickFits A R.key ((jpairs).map Prod.fst) ∧ Vals.PickFits C S.val ((jpairs).map Prod.snd) := by
   simp only [compC, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨hcb, hrn⟩, hM⟩, hp⟩ := hb
-  have hc := (codes_faithful_wf B _ (Obj.codesC_fits B _ hcb)).1
+  have hcf' := Obj.codesC_fits B _ hcb
+  have hc := (codes_faithful_wf B _ hcf').1
   obtain ⟨hlw, hln, hls, -⟩ := hc.2 (k := 0) (by decide)
   obtain ⟨hrw, hrn', hrs, hrc⟩ := hc.2 (k := 1) (by decide)
   replace hln : (jc[0]'Nat.zero_lt_two).n = R.n := hln
@@ -49,8 +50,15 @@ theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
     rw [hcf] at e hfA hfC
     have hA : Vals.PickFits A R.key ((jpairs).map Prod.fst) := by rw [e, List.map_map]; exact hfA
     have hC : Vals.PickFits C S.val ((jpairs).map Prod.snd) := by rw [e, List.map_map]; exact hfC
-    exact rep_comp R S hc hrn hM hA hC
+    exact ⟨hcf', hrn, hM, hA, hC⟩
   · exact absurd hp Bool.false_ne_true
+
+/-- **`rep (R ≫ S) = rep R ≫ rep S` under `compC`'s bit**: `rep_comp` at `compC_ok`'s premises. -/
+theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
+    rep (compC R S).1 = rep R ≫ rep S := by
+  rw [compC_fst]
+  obtain ⟨hcf, hrn, hM, hA, hC⟩ := compC_ok R S hb
+  exact rep_comp R S (codes_faithful_wf B _ hcf).1 hrn hM hA hC
 
 #print axioms rep_compC
 

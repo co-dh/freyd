@@ -1017,8 +1017,10 @@ def snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) × Bool :=
   (r.1, D.2 && t.2 && T.2 && Q.2 && M.2 && r.2)
 
 theorem snocC_fst {K B : Obj} (P : Rel K (.prod (.arr B) B)) : (snocC P).1 = snoc P := by
-  unfold snocC ranC; dsimp only
-  rw [catC_fst, compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst] <;> rfl
+  -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
+  have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
+  unfold snocC snoc ranC ran τ; dsimp only
+  rw [catC_fst, compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst, ht]
 
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
     `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
