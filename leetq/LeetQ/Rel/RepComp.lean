@@ -166,7 +166,9 @@ open Freyd Freyd.Alg.RelSet
     (`codes_dense_faithful_wf`). -/
 theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
     (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) (R : Rel A (.atom t)) (S : Rel (.atom t) C)
-    (hRv : ∃ b, R.val.enc = .bytes b) (hSk : ∃ b, S.key.enc = .bytes b) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hD : ∀ w r, t.width = some w → encodedParts t ((jcs).toArray.map (·.2.part)) = some r →
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
+    (hN : R.n.toNat + S.n.toNat < USize.size)
     (hrn : S.n.toNat < 2 ^ 63)
     (hM : ((List.range R.n.toNat).map fun i => ((List.range S.n.toNat).filter fun j =>
       Column.idAt (jc[1]'Nat.one_lt_two).b (jc[1]'Nat.one_lt_two).w j ==
@@ -176,10 +178,8 @@ theorem rep_comp_dense {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = 
         Column.idAt (jc[0]'Nat.zero_lt_two).b (jc[0]'Nat.zero_lt_two).w i).length).sum < USize.size)
     (hA : Vals.PickFits A R.key ((jpairs).map Prod.fst)) (hC : Vals.PickFits C S.val ((jpairs).map Prod.snd)) :
     rep (R ≫ S) = rep R ≫ rep S :=
-  have hd : ∀ k (hk : k < 2), ∃ b, (jcs)[k].2.enc = .bytes b := fun k hk => by
-    match k, hk with | 0, _ => exact hRv | 1, _ => exact hSk
   have hN' : ((jcs).toList.map (·.1.toNat)).sum < USize.size := by simpa using hN
-  have hc := codes_dense_faithful_wf ht hk₀ _ hd hN'
+  have hc := codes_dense_faithful_wf ht hk₀ _ (fun h => absurd h (by decide)) hD hN'
   rep_comp R S ⟨fun {_ _} hk hl {_ _} hi hj => hc.1.1 hk hl hi hj, fun hk => hc.1.2 hk⟩ hrn hM hMU hA hC
 
 end CompDense
@@ -213,6 +213,7 @@ theorem codes_guid_parts_faithful {p : Nat} (cs : Vector (Part (.atom .guid)) p)
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
   have hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b := fun k _ =>
     let ⟨b, hb, _⟩ := guid_enc cs[k].2.wf; ⟨b, hb⟩
+  have hE := encodedParts_parts_bytes (t := .guid) cs hd
   have hX := raze_len .guid cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_guid_wf (raze .guid cs.toArray)
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom .guid) #v[raze .guid cs.toArray])[0].n.toNat := by
@@ -229,7 +230,8 @@ theorem codes_guid_parts_faithful {p : Nat} (cs : Vector (Part (.atom .guid)) p)
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     codes_guid_faithful _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+    Vals.row_atom, raze_get_bytes (w := 16) rfl (by decide) cs (fun r hr => by rw [hE] at hr; cases hr) hN hk hi,
+    raze_get_bytes (w := 16) rfl (by decide) cs (fun r hr => by rw [hE] at hr; cases hr) hN hl hj]
 
 /-- **A `guid` side of several parts: each part's code is well formed**, the parts' summed count a `USize`. -/
 theorem codes_guid_parts_wf {p : Nat} (cs : Vector (Part (.atom .guid)) p)

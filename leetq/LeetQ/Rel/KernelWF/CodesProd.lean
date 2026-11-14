@@ -440,15 +440,25 @@ theorem codes_small_int_cut {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t 
   rw [hbt] at hq
   rw [hc, hc', show q' = q from Option.some_inj.1 (hq'.symm.trans hq)]
 
-/-- The razed column of dense parts reads part `k`'s element `i` past the counts before `k`. -/
-theorem raze_get_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t)) p)
-    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+/-- Dense parts give `encodedParts` nothing to join, so `razeColumn` answers dense. -/
+theorem encodedParts_parts_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t)) p)
+    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) : encodedParts t (cs.toArray.map (·.2.part)) = none :=
+  KernelWF.encodedParts_bytes fun c hc => by
+    obtain ⟨d, hd', rfl⟩ := Array.mem_map.1 hc
+    obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hd'
+    exact hd j (by simpa using hj)
+
+/-- The razed column, where `razeColumn` answers it dense (`hD`, the parts in any encoding), reads part `k`'s
+    element `i` past the counts before `k`. -/
+theorem raze_get_bytes {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) {p : Nat}
+    (cs : Vector (Part (.atom t)) p)
+    (hD : ∀ r, encodedParts t (cs.toArray.map (·.2.part)) = some r → denseCheaper (if r.1 then 8 else 5) r.2.1
+      (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     {k : Nat} (hk : k < p) {i : Nat} (hi : i < cs[k].1.toNat)
     (hO : ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat) :
     (raze t cs.toArray).2.get ⟨_, hO⟩ = cs[k].2.get ⟨i, hi⟩ := by
-  have hl := KernelWF.razeTo_toList_bytes cs.toArray rfl hN fun c hc => by
-    obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hc
-    exact hd j (by simpa using hj)
+  have hl := KernelWF.razeTo_toList_dense hw hb cs.toArray rfl hN hD
   unfold razeTo at hl
   rw [KernelWF.cast_toList] at hl
   have ho := flatMap_offset (fun c : Part (.atom t) => c.2.toList) (·.1.toNat) (fun c => Arr.length_toList _)
@@ -459,15 +469,19 @@ theorem raze_get_bytes {t : QAtomicType} {p : Nat} (cs : Vector (Part (.atom t))
   have := Option.some_inj.1 ho
   rw [this, Arr.getElem_toList]; rfl
 
-/-- **A small integral side of dense parts: its codes are faithful jointly across the parts.** Part `k`'s
-    code at `i` and part `l`'s at `j` agree exactly when the rows do; the parts' summed count a `USize`. -/
+/-- **A small integral side whose `raze` is dense: its codes are faithful jointly across the parts.** Part
+    `k`'s code at `i` and part `l`'s at `j` agree exactly when the rows do; the parts in any encoding, `razeColumn`
+    joining them dense (`hD`), their summed count a `USize`. -/
 theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
     (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) {p : Nat} (cs : Vector (Part (.atom t)) p)
-    (hd : ∀ k (hk : k < p), ∃ b, cs[k].2.enc = .bytes b) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
+      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < cs[k].1.toNat) (hj : j < cs[l].1.toNat) :
     Column.idAt (Obj.codes (.atom t) cs)[k].b (Obj.codes (.atom t) cs)[k].w i =
         Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
       Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
+  obtain ⟨hW, -, -, hB, -⟩ := small_int_width ht hk₀
   have hX := raze_len t cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
   have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Obj.codes (.atom t) #v[raze t cs.toArray])[0].n.toNat := by
@@ -484,7 +498,7 @@ theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht 
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     codes_small_int_faithful ht hk₀ _ (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, raze_get_bytes cs hd hN hk hi, raze_get_bytes cs hd hN hl hj]
+    Vals.row_atom, raze_get_bytes hW hB cs (fun r => hD _ r hW) hN hk hi, raze_get_bytes hW hB cs (fun r => hD _ r hW) hN hl hj]
 
 /-- **A small integral side of several parts: each part's code is well formed**, the parts' summed count a
     `USize`. -/
