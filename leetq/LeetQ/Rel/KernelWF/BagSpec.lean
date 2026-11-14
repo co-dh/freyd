@@ -100,6 +100,104 @@ theorem grade_ofLongs (b : ByteArray) (hN : len b < USize.size)
   rw [hkey i (List.mem_range.1 (hp.mem_iff.1 hi)), hkey j (List.mem_range.1 (hp.mem_iff.1 hj))] at h
   omega
 
+/-- `gather 8 p g` read back as a list: long `j` is `p`'s long at `g`'s long `j`, `g`'s longs below `len p`. -/
+theorem ids_gather8 {p g : ByteArray} (hlt : ∀ j < len g, (Column.bitsAt g (j * 8) 8).toNat < len p) :
+    ids (gather 8 p g) = (ids g).map fun j => (ids p)[j]! := by
+  apply List.ext_getElem
+  · simp only [List.length_map, ← len_eq_ids, gather_len]
+  · intro j h1 h2
+    have hj : j < len g := by rw [len_eq_ids]; simpa using h2
+    have hk : (Column.bitsAt g (j * 8) 8).toNat < (ids p).length := by rw [← len_eq_ids]; exact hlt j hj
+    rw [ids_getElem h1, gather8_get hj (hlt j hj), List.getElem_map,
+      ids_getElem (show j < (ids g).length by rw [← len_eq_ids]; exact hj), getElem!_pos (ids p) _ hk,
+      ids_getElem hk]
+
+/-- **A sort `v` regrouped stably by row**: `v` lists `til (len i)` in `R` order, `i` gives each position its
+    row (below `2^63`); `v@grade(i@v)` lists every position once, by row ascending and, inside a row, in `v`'s
+    `R` order — `bagify`'s `p`, each row's cells one block, sorted by value. -/
+theorem grade_group (i v : ByteArray) (hv : (ids v).Perm (List.range (len i))) (R : Nat → Nat → Prop)
+    (hsv : (ids v).Pairwise R) (hN : len i < USize.size)
+    (h63 : ∀ c, c < len i → (Column.bitsAt i (c * 8) 8).toNat < 2 ^ 63) :
+    (ids (gather 8 v (Code.ofLongs (gather 8 i v)).grade)).Perm (List.range (len i)) ∧
+      (ids (gather 8 v (Code.ofLongs (gather 8 i v)).grade)).Pairwise fun c c' =>
+        (Column.bitsAt i (c * 8) 8).toNat < (Column.bitsAt i (c' * 8) 8).toNat ∨
+          ((Column.bitsAt i (c * 8) 8).toNat = (Column.bitsAt i (c' * 8) 8).toNat ∧ R c c') := by
+  have hvl : len v = len i := by rw [len_eq_ids, hv.length_eq, List.length_range]
+  have hwl : len (gather 8 i v) = len i := by rw [gather_len, hvl]
+  have hvlt : ∀ a, a < len i → (Column.bitsAt v (a * 8) 8).toNat < len i := fun a ha => by
+    have ha' : a < (ids v).length := by rw [← len_eq_ids, hvl]; exact ha
+    rw [← ids_getElem ha']; exact List.mem_range.1 (hv.mem_iff.1 (List.getElem_mem ha'))
+  have hw : ∀ a, a < len i → Column.bitsAt (gather 8 i v) (a * 8) 8 =
+      Column.bitsAt i ((Column.bitsAt v (a * 8) 8).toNat * 8) 8 :=
+    fun a ha => gather8_get (by rw [hvl]; exact ha) (hvlt a ha)
+  obtain ⟨hgp, hgs⟩ := grade_ofLongs (gather 8 i v) (by rw [hwl]; exact hN)
+    (fun a ha => by rw [hwl] at ha; rw [hw a ha]; exact h63 _ (hvlt a ha))
+  rw [hwl] at hgp
+  generalize hG : (Code.ofLongs (gather 8 i v)).grade = G at hgp hgs
+  have hGlt : ∀ j < len G, (Column.bitsAt G (j * 8) 8).toNat < len v := fun j hj => by
+    have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
+    rw [← ids_getElem hj', hvl]; exact List.mem_range.1 (hgp.mem_iff.1 (List.getElem_mem hj'))
+  refine ⟨(gather_perm (by rw [hvl]; exact hgp)).trans hv, ?_⟩
+  rw [ids_gather8 hGlt, List.pairwise_map]
+  refine hgs.imp_of_mem fun {a b} ha hb h => ?_
+  have ha' := List.mem_range.1 (hgp.mem_iff.1 ha); have hb' := List.mem_range.1 (hgp.mem_iff.1 hb)
+  have hva : a < (ids v).length := by rw [hv.length_eq, List.length_range]; exact ha'
+  have hvb : b < (ids v).length := by rw [hv.length_eq, List.length_range]; exact hb'
+  rw [getElem!_pos (ids v) a hva, getElem!_pos (ids v) b hvb, ids_getElem hva, ids_getElem hvb]
+  rw [hw a ha', hw b hb'] at h
+  rcases h with h | ⟨h1, h2⟩
+  · exact .inl h
+  · refine .inr ⟨h1, ?_⟩
+    have := List.pairwise_iff_getElem.1 hsv a b hva hvb h2
+    rwa [ids_getElem hva, ids_getElem hvb] at this
+
+/-- **A list sorted by a key puts each key in one block**: `g` a permutation of `til N` non-decreasing in `key`;
+    position `d` stands at or past the elements of smaller key and before the end of those of key at most its
+    own. -/
+theorem sorted_block {N : Nat} (g : List Nat) (key : Nat → Nat) (hp : g.Perm (List.range N))
+    (hs : g.Pairwise fun a b => key a ≤ key b) (d : Nat) (hd : d < g.length) :
+    ((List.range N).filter fun c => key c < key g[d]).length ≤ d ∧
+      d < ((List.range N).filter fun c => key c ≤ key g[d]).length := by
+  have hle : ∀ e (he : e < g.length), d ≤ e → key g[d] ≤ key g[e] := fun e he hde => by
+    rcases Nat.lt_or_eq_of_le hde with h | rfl
+    · exact List.pairwise_iff_getElem.1 hs d e hd he h
+    · exact Nat.le_refl _
+  have hge : ∀ e (he : e < g.length), e ≤ d → key g[e] ≤ key g[d] := fun e he hed => by
+    rcases Nat.lt_or_eq_of_le hed with h | rfl
+    · exact List.pairwise_iff_getElem.1 hs e d he hd h
+    · exact Nat.le_refl _
+  constructor
+  · rw [← (hp.filter _).length_eq]
+    have hsplit : (g.filter fun c => decide (key c < key g[d])).length =
+        ((g.take d).filter fun c => decide (key c < key g[d])).length +
+          ((g.drop d).filter fun c => decide (key c < key g[d])).length := by
+      rw [← List.length_append, ← List.filter_append, List.take_append_drop]
+    have h0 : ((g.drop d).filter fun c => decide (key c < key g[d])).length = 0 := by
+      rw [List.length_eq_zero_iff, List.filter_eq_nil_iff]
+      intro c hc
+      obtain ⟨e, he, rfl⟩ := List.getElem_of_mem hc
+      rw [List.getElem_drop]
+      simp only [List.length_drop] at he
+      have := hle (d + e) (by omega) (by omega)
+      simp only [decide_eq_true_eq]; omega
+    have := List.length_filter_le (fun c => decide (key c < key g[d])) (g.take d)
+    simp only [List.length_take] at this
+    omega
+  · rw [← (hp.filter _).length_eq]
+    have hsub : ((g.take (d + 1)).filter fun c => decide (key c ≤ key g[d])) = g.take (d + 1) := by
+      rw [List.filter_eq_self]
+      intro c hc
+      obtain ⟨e, he, rfl⟩ := List.getElem_of_mem hc
+      rw [List.getElem_take]
+      simp only [List.length_take] at he
+      simp only [decide_eq_true_eq]; exact hge e (by omega) (by omega)
+    have := ((List.take_sublist (d + 1) g).filter (fun c => decide (key c ≤ key g[d]))).length_le
+    rw [hsub, List.length_take] at this
+    omega
+
+#print axioms ids_gather8
+#print axioms grade_group
+#print axioms sorted_block
 #print axioms key_i64
 #print axioms grade_i64
 #print axioms gradeColumn_long
