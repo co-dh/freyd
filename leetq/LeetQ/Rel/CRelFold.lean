@@ -372,7 +372,7 @@ theorem rep_diffC {A B : Obj} (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A
   exact rep_diff R S hp (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp)) a b
 
 /-- **`thinBodyC`'s body on a coreflexive `D`, read back under its bit**: `thin_body_set` with each piece read
-    back by its twin's lemma. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
+    back by its twin's lemma, `swapInC`'s pieces by theirs. `hq` is the test's own spec: where `q`'s bit is set, `q` on any coreflexive keeps the
     pairs `le` holds of. -/
 theorem thinBodyC_rep {B : Obj}
     (hat : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
@@ -387,8 +387,11 @@ theorem thinBodyC_rep {B : Obj}
       ∃ b bs, y = b :: bs ∧ ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = y) ∨
         (le a b = false ∧ le b a = false ∧ v = a :: y))) := by
   simp only [thinBodyC, Bool.and_eq_true] at hb
-  obtain ⟨hun, hu, hab, hrab, hG1, hq1, hup, hss, hrs, hG2, hq2, hsw, hq3, hdown, hdu, hl1, hl2, hl3, hlone, hc1,
+  obtain ⟨hun, hu, hab, hrab, hG1, hq1, hup, hsw, hq3, hdown, hdu, hl1, hl2, hl3, hlone, hc1,
     hua, huu, hru, hut, hpu, hc2, hdy, hb1, hbody⟩ := hb
+  -- `swapInC`'s bit, its pieces' bits
+  simp only [swapInC, okbit] at hsw
+  obtain ⟨⟨⟨⟨hss, hrs⟩, hG2⟩, hq2⟩, hsw⟩ := hsw
   have eD : rep D = corefl (A := (⟨(Obj.prod B (.arr B)).El⟩ : RelSet.{0})) fun s => rep D s s :=
     hom_ext fun s s' => ⟨fun h => ⟨hD s s' h, by obtain rfl := hD s s' h; exact h⟩, fun ⟨e, h⟩ => e ▸ h⟩
   exact thin_body_set le D _ eD _ rfl _ rfl _ (rep_unconsC _ hun) (rep_compC _ _ hu) _ (rep_pairC _ _ hab)
