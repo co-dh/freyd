@@ -281,6 +281,42 @@ theorem sorted_block_perm {N n : Nat} (g : List Nat) (key P : Nat → Nat) (hp :
   rw [List.Nodup.count hbnd, List.Nodup.count hnr]
   simp only [hiff]
 
+/-- **`Obj.sortBy` at `long` of `til m`, read back**: every cell once, by value ascending, ties in cell order. -/
+theorem sortBy_long {m : USize} (cells : Vals (.atom .long) m) :
+    (ids (Obj.sortBy (.atom .long) cells (tilLongs m))).Perm (List.range m.toNat) ∧
+      (ids (Obj.sortBy (.atom .long) cells (tilLongs m))).Pairwise fun c c' =>
+        ∀ (hc : c < m.toNat) (hc' : c' < m.toNat),
+          cells.get ⟨c, hc⟩ < cells.get ⟨c', hc'⟩ ∨ (cells.get ⟨c, hc⟩ = cells.get ⟨c', hc'⟩ ∧ c < c') := by
+  have hl : len (tilLongs m) < USize.size := by rw [len_tilLongs]; exact m.toNat_lt_size
+  have hx := pick_len .long ⟨_, cells⟩ (tilLongs m) hl
+  rw [len_tilLongs] at hx
+  have hget : ∀ k (hk : k < (pick .long ⟨_, cells⟩ (tilLongs m)).1.toNat) (hk' : k < m.toNat),
+      (pick .long ⟨_, cells⟩ (tilLongs m)).2.get ⟨k, hk⟩ = cells.get ⟨k, hk'⟩ := fun k hk hk' => by
+    rw [pick_get ⟨_, cells⟩ (tilLongs m) hl k hk (by rw [tilLongs_get hk']; exact hk')]
+    exact congrArg cells.get (Fin.ext (tilLongs_get hk'))
+  simp only [Obj.sortBy]
+  rw [gradeColumn_long]
+  simp only [Bool.false_eq_true, ↓reduceIte]
+  obtain ⟨hp, hs⟩ := grade_long (pick .long ⟨_, cells⟩ (tilLongs m)).2
+  rw [hx] at hp
+  generalize Order.grade .i64 false (pick .long ⟨_, cells⟩ (tilLongs m)).1
+    (longsOf (pick .long ⟨_, cells⟩ (tilLongs m)).2) = G at hp hs
+  have hlt : ∀ j < len G, (Column.bitsAt G (j * 8) 8).toNat < len (tilLongs m) := fun j hj => by
+    have hj' : j < (ids G).length := by rw [← len_eq_ids]; exact hj
+    rw [← ids_getElem hj', len_tilLongs]; exact List.mem_range.1 (hp.mem_iff.1 (List.getElem_mem hj'))
+  have e : ids (gather 8 (tilLongs m) G) = ids G := by
+    rw [ids_gather8 hlt]
+    refine (List.map_congr_left fun j hj => ?_).trans (List.map_id _)
+    have hjm := List.mem_range.1 (hp.mem_iff.1 hj)
+    have hj' : j < (ids (tilLongs m)).length := by rw [← len_eq_ids, len_tilLongs]; exact hjm
+    rw [getElem!_pos (ids (tilLongs m)) j hj', ids_getElem hj', tilLongs_get hjm]; rfl
+  rw [e]
+  refine ⟨hp, hs.imp_of_mem fun {c c'} hc hc' h hm hm' => ?_⟩
+  have hk := List.mem_range.1 (hp.mem_iff.1 hc); have hk' := List.mem_range.1 (hp.mem_iff.1 hc')
+  have h1 := h (by rw [hx]; exact hk) (by rw [hx]; exact hk')
+  rwa [hget c _ hm, hget c' _ hm'] at h1
+
+#print axioms sortBy_long
 #print axioms filter_range_lt
 #print axioms sorted_block_perm
 #print axioms ids_gather8
