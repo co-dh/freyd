@@ -37,9 +37,12 @@ local notation "consOK(" K ", " B ", " P ")" =>
     ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
 
+/-! `cat`'s and `snoc`'s bundles, one home: `open ListN` in every file that reads back a composite of them
+    (`snocOK` also needs `Pow`, `FoldN` and `Prim` open). -/
+namespace ListN
 -- `rep_cat`'s hypotheses at `P`, its pieces bound by their equations
 set_option hygiene false in
-local notation "catOK(" K ", " B ", " P ")" =>
+scoped notation "catOK(" K ", " B ", " P ")" =>
   ((Rel.val P).1.1.toNat < 2 ^ 63 ∧ (Rel.val P).2.1.toNat < 2 ^ 63 ∧
     ∀ sa : ByteArray × ByteArray, sa = slicesOf (Rel.val P).1 →
     ∀ sb : ByteArray × ByteArray, sb = slicesOf (Rel.val P).2 →
@@ -71,6 +74,8 @@ local notation "catOK(" K ", " B ", " P ")" =>
     Vals.RazeFits B ta tb ∧
     ∀ hN, Vals.PickFits B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
+end ListN
+open ListN
 
 -- `rep_inits`'s hypotheses at the arrays `X` (`n` rows), its pieces bound by their equations
 set_option hygiene false in
@@ -601,9 +606,10 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
 section Snoc
 open Pow
 
+namespace ListN
 -- `rep_tau_list`'s hypotheses at the side `X` (`n` rows of `A`), all but the universal `hW`
 set_option hygiene false in
-local notation "tauOK(" A ", " cnt ", " X ")" =>
+scoped notation "tauOK(" A ", " cnt ", " X ")" =>
   (((∀ {i j : Nat} (hi : i < (cnt).toNat) (hj : j < (cnt).toNat),
       Column.idAt (kcX(X)).b (kcX(X)).w i = Column.idAt (kcX(X)).b (kcX(X)).w j ↔
         Vals.row X ⟨i, hi⟩ = Vals.row X ⟨j, hj⟩) ∧
@@ -625,9 +631,10 @@ local notation "tauOK(" A ", " cnt ", " X ")" =>
   Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))) ∧
   Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X))))
 
--- every primitive's hypotheses in `snoc P`, each piece bound by its equation as `snoc` builds it
+-- every primitive's hypotheses in `snoc P`, `P : Rel K (B* × B)`, each piece bound by its equation as `snoc`
+-- builds it
 set_option hygiene false in
-local notation "snocOK" =>
+scoped notation "snocOK(" K ", " B ", " P ")" =>
   (oneFit(.prod (.arr B) B, Rel.n P, Rel.val P) ∧
     ∀ D : Rel (.prod (.arr B) B) (.prod (.arr B) B), D = ran P →
     ∀ X : Vals B (Rel.n (outr D)), X = Rel.val (outr D) →
@@ -637,6 +644,8 @@ local notation "snocOK" =>
     ∀ Q : Rel (.prod (.arr B) B) (.prod (.arr B) (.arr B)), Q = pair (outl D) T →
     cmpOK(.prod (.arr B) B, P, Q) ∧
     ∀ M : Rel K (.prod (.arr B) (.arr B)), M = P ≫ Q → catOK(K, B, M))
+end ListN
+open ListN
 
 /-- **`snoc`, read back**: a row `(bs, b)` of `P` goes to `bs ++ [b]` and nothing else. `snoc P` is
     `cat (P ≫ ⟨outl D, outr D ≫ τ⟩)`, `D = ran P`; `τ` gives `b` the array `[b]` exactly (`rep_tau_list`).
@@ -649,7 +658,7 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
       ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
       ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat * ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
       ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1)
-    (h : snocOK) :
+    (h : snocOK(K, B, P)) :
     ∀ k ys, rep (snoc P) k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
   obtain ⟨⟨hPf, hPp⟩, h1⟩ := h
   obtain ⟨ht, ⟨hcf, hc'⟩, h2⟩ := h1 _ rfl _ rfl

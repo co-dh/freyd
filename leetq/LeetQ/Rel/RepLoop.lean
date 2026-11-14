@@ -322,25 +322,28 @@ scoped notation "diffOK(" A ", " B ", " R ", " S ")" =>
     ∀ I : ByteArray, I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two) →
       Vals.PickFits A (Rel.key R) (ids I) ∧ Vals.PickFits B (Rel.val R) (ids I))
 
+-- `rep_union_full`'s razed union of `R ∪ S`, `K`, `X` the key and value objects, `hNk`, `hNv` its count proofs
+set_option hygiene false in
+scoped notation "UO(" K ", " X ", " R ", " S ")" =>
+  (⟨_, Obj.raze K #[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] hNk,
+    Obj.raze X #[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] hNv⟩ : Rel K X)
+-- `rep_union_full`'s hypotheses at `R ∪ S`, `K`, `X` the key and value objects
+set_option hygiene false in
+scoped notation "uniOK(" K ", " X ", " R ", " S ")" =>
+  ((Rel.n R).toNat + (Rel.n S).toNat < USize.size ∧
+    ∃ (hNk : ((#[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Array (Part K)).toList.map
+        fun c : Part K => c.1.toNat).sum < USize.size)
+      (hNv : ((#[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.val S⟩] : Array (Part X)).toList.map
+        fun c : Part X => c.1.toNat).sum < USize.size),
+      Vals.RazeFits K (Rel.key R) (Rel.key S) ∧ Vals.RazeFits X (Rel.val R) (Rel.val S) ∧
+      Obj.CodesFit K (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).key⟩] : Vector (Part K) 1) ∧
+      Obj.CodesFit X (#v[⟨(UO(K, X, R, S)).n, (UO(K, X, R, S)).val⟩] : Vector (Part X) 1) ∧
+      Vals.PickFits K (UO(K, X, R, S)).key (ids nubI(K, X, UO(K, X, R, S))) ∧
+      Vals.PickFits X (UO(K, X, R, S)).val (ids nubI(K, X, UO(K, X, R, S))))
+
 end Prim
 
 open Prim
--- `rep_union_full`'s hypotheses at `out ∪ O`, the razed union `UO`
-set_option hygiene false in
-local notation "UO" =>
-  (⟨_, Obj.raze K #[⟨Rel.n out, Rel.key out⟩, ⟨Rel.n O, Rel.key O⟩] hNk,
-    Obj.raze X #[⟨Rel.n out, Rel.val out⟩, ⟨Rel.n O, Rel.val O⟩] hNv⟩ : Rel K X)
-set_option hygiene false in
-local notation "uniOK" =>
-  ((Rel.n out).toNat + (Rel.n O).toNat < USize.size ∧
-    ∃ (hNk : ((#[⟨Rel.n out, Rel.key out⟩, ⟨Rel.n O, Rel.key O⟩] : Array (Part K)).toList.map
-        fun c : Part K => c.1.toNat).sum < USize.size)
-      (hNv : ((#[⟨Rel.n out, Rel.val out⟩, ⟨Rel.n O, Rel.val O⟩] : Array (Part X)).toList.map
-        fun c : Part X => c.1.toNat).sum < USize.size),
-      Vals.RazeFits K (Rel.key out) (Rel.key O) ∧ Vals.RazeFits X (Rel.val out) (Rel.val O) ∧
-      Obj.CodesFit K (#v[⟨(UO).n, (UO).key⟩] : Vector (Part K) 1) ∧
-      X.CodesFit (#v[⟨(UO).n, (UO).val⟩] : Vector (Part X) 1) ∧
-      Vals.PickFits K (UO).key (ids nubI(K, X, UO)) ∧ Vals.PickFits X (UO).val (ids nubI(K, X, UO)))
 -- every primitive's hypotheses at one round's values
 set_option hygiene false in
 local notation "loopOK" =>
@@ -348,7 +351,7 @@ local notation "loopOK" =>
     uncOK(Y, W) ∧ cmpOK(.arr Y, outr D, uncons (Rel.val W)) ∧ pairOK(.prod X (.arr Y), outl D, outl u) ∧
     cmpOK(.prod X Y, p, G) ∧ pairOK(.prod X (.arr Y), Q, outr u) ∧ cmpOK(.prod X (.arr Y), St, R) ∧
     nubOK(K, .prod X (.arr Y), T) ∧ oneFit(.prod X (.arr Y), Rel.n u, Rel.key u) ∧
-    ajOK(.prod X (.arr Y), D, du) ∧ cmpOK(.prod X (.arr Y), St, outl A) ∧ uniOK)
+    ajOK(.prod X (.arr Y), D, du) ∧ cmpOK(.prod X (.arr Y), St, outl A) ∧ uniOK(K, X, out, O))
 
 /-- **One round of `loopOn`, read back**: `loop_round_set` with each primitive's read-back discharged by its
     lemma. The round's values are bound by their equations, the step `G` any relation (`loopOn`'s is
