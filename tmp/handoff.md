@@ -1,9 +1,17 @@
-rel-74d handoff (checkpoint at call 40)
+rel-74h handoff (checkpoint at call 40)
 
-Done: AppendFoR.append_reads generalised to any tail D (`hTm : D.size / 8 = n1`, else-branch `bitsAt D ((i-n0)*8) 8`).
-RazeFoR.concatFoR_reads still uses the old form (broken until the 2-part FoR section is replaced).
+Done (uncommitted-then-WIP-committed, NOT built):
+- merged rel-74d (clean). RazeFoR builds at merge.
+- RazeFoR: `hA` weakened to `2 ≤ cs.size → alpEncodes t → S < 2^32` in razeTo_toList_all, hat_all caller,
+  raze_get (`2 ≤ p → …`), codes_small_int_parts_faithful.
+- CodesGuidParts/CodesLongParts: raze_get_bytes → raze_get, hD dropped; import RazeFoR.
+- CodesFloatParts rewritten: float_groups (any encoding: bytes/alp via bytesOf, foR via decode_keyAt),
+  ofIds_float_faithful, codes_float_cut/_parts_faithful/_parts_wf without h1/hD, codes_dense_faithful_wf
+  (hN, hA), codes_num_one_faithful_wf (f32/f64 without the bytes requirement).
 
-Plan: new module KernelWF/RazeParts.lean (imports AppendFoR): range_map_flatten, foldl_arr_*, moveFoR_list,
-move_list, append_list, reencode_list, concatFoR_list; then RazeFoR: razeTo_toList_all (n parts, any encoding,
-hyp `2 ≤ cs.size → alpEncodes t → S < 2^32`), hat_all from it, delete 2-part FoR chain; then CodesFloatParts:
-raze_get (general), float codes via bytesOf, CodesFit numeric clause drops h1/hD.
+Blocker: import cycle. RazeRow imports RepOps → RepComp (imports CodesFloatParts, CodesGuidParts) and
+NubSpec (imports CodesFloatParts); RazeFoR is above RazeRow. So anything using raze_get must sit above.
+Plan: CodesFloatParts stays low (import CodesProd; one-part codes_float_one + codes_num_one without
+raze_get); new module CodesNumParts (imports RazeFoR) gets codes_float_parts_faithful,
+codes_dense_faithful_wf; rep_comp_dense and RepComp's guid theorem move to a new module above
+(RepCompParts) so RepComp drops CodesFloatParts/CodesGuidParts imports. Then CodesAll (step 6).

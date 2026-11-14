@@ -2,7 +2,7 @@
   An eight-byte integral side of several parts, dense or `foR`, where `rangeOffsets` declines: its codes are
   the grouping code of its `raze`, cut back, so faithful jointly across the parts and well formed.
 -/
-import LeetQ.Rel.KernelWF.CodesProd
+import LeetQ.Rel.KernelWF.RazeFoR
 
 namespace LeetQ.Rel.Alg
 
@@ -28,11 +28,9 @@ theorem codes_long_cut {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat
   exact ⟨q, hq, hc⟩
 
 /-- **A long side of several parts where `rangeOffsets` declines: its codes are faithful jointly across the
-    parts**, the parts in any encoding, `razeColumn` joining them dense (`hD`), their summed count a `USize`. -/
+    parts**, the parts in any encoding, `razeColumn` joining them in any encoding, their summed count a `USize`. -/
 theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat) (hj : j < (cs[l]'hl).1.toNat) :
@@ -41,6 +39,8 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
   have hW : t.width = some 8 := by cases t <;> simp [orderKind] at ht <;> rfl
   have hB : t ≠ .boolean := by rintro rfl; simp [orderKind] at ht
+  have hA : 2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32 := fun _ h => by
+    cases t <;> simp [orderKind] at ht <;> simp [Column.alpEncodes] at h
   have hX := raze_len t cs.toArray hN
   obtain ⟨q, hq, hc⟩ := codes_long_cut ht cs (by omega) hro
   obtain ⟨hw, hn, -, -⟩ := ofIds_long_wf ht (raze t cs.toArray) hq
@@ -58,8 +58,7 @@ theorem codes_long_parts_faithful {t : QAtomicType} (ht : orderKind t = some .i6
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
     ofIds_long_faithful ht _ hq (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom,
-    Vals.row_atom, Vals.row_atom, raze_get_bytes hW hB cs (fun r hr => hD 8 r hW hr) hN hk hi,
-    raze_get_bytes hW hB cs (fun r hr => hD 8 r hW hr) hN hl hj]
+    Vals.row_atom, Vals.row_atom, raze_get hW hB cs hN hA hk hi, raze_get hW hB cs hN hA hl hj]
 
 /-- **A long side of several parts, in any encoding, where `rangeOffsets` declines: each part's code is well
     formed**, the parts' summed count a `USize`. -/
@@ -90,19 +89,17 @@ theorem codes_long_parts_wf {t : QAtomicType} (ht : orderKind t = some .i64) {p 
 /-! ## Long parts, whichever branch `rangeOffsets` takes -/
 
 /-- **A long side of several parts: its codes are faithful jointly across the parts**, `rangeOffsets`
-    answering (`codes_long_faithful`) or declining; the parts in any encoding, `razeColumn` joining them dense
-    (`hD`, vacuous where every part is dense), their summed count a `USize`. -/
+    answering (`codes_long_faithful`) or declining; the parts and their raze in any encoding, their summed count
+    a `USize`. -/
 theorem codes_long_dense_faithful {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat}
     (cs : Vector (Part (.atom t)) p)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
     (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat) (hj : j < (cs[l]'hl).1.toNat) :
     Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
         Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
   cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
-  | none => exact codes_long_parts_faithful ht cs hD hN hro hk hl hi hj
+  | none => exact codes_long_parts_faithful ht cs hN hro hk hl hi hj
   | some os => exact codes_long_faithful ht cs hro hk hl hi hj
 
 /-- **A long side of several parts, in any encoding: each part's code is well formed**, whichever branch

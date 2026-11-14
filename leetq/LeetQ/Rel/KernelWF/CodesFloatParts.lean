@@ -1,9 +1,10 @@
 /-
-  `Obj.codes` at a float atom (`real`, `float`, `datetime`) over parts whose raze answers dense (each part's `bytesOf`, any encoding): `codes` groups the `raze` at
-  `bitsType`, the integral type of the float's width, so a code is one cell's bits — two NaNs of different
-  payloads, and `-0.0` against `0.0`, get different codes, as `Vals.row` tells them apart.
+  `Obj.codes` at a float atom (`real`, `float`, `datetime`) over parts in any encoding, their `raze` in any
+  encoding (dense, FoR, ALP): `codes` groups the `raze` at `bitsType`, the integral type of the float's width,
+  so a code is one cell's bits — two NaNs of different payloads, and `-0.0` against `0.0`, get different codes,
+  as `Vals.row` tells them apart.
 -/
-import LeetQ.Rel.KernelWF.CodesProd
+import LeetQ.Rel.KernelWF.RazeFoR
 
 namespace LeetQ.Rel.Alg
 
@@ -20,14 +21,15 @@ theorem float_facts {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .da
     exact ⟨by decide, rfl, by decide, by decide, fun n b h => by simpa [Enc.WF, QAtomicType.width] using h,
       fun n b => by simp [KernelWF.bitsType, groupIdsColumn, orderKind, Enc.bytesOf]⟩
 
-/-- **A dense float column's two rows are one cell exactly when their bits agree** — the cell is its bits
-    (`Carrier`), no NaN or zero folded. -/
+/-- **A float column's two rows are one cell exactly when the bits of its dense decode agree** — the cell is
+    its bits (`Carrier`), no NaN or zero folded; the column in any encoding (`get_bytesOf`). -/
 theorem float_row_eq {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {k : Scan.Kind}
     (hk : orderKind (KernelWF.bitsType t) = some k) {n : USize} (x : Arr t n) {b : ByteArray}
-    (he : x.enc = .bytes b) {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat) :
+    (he : Enc.bytesOf t n x.enc = some b) {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat) :
     x.get ⟨i, hi⟩ = x.get ⟨j, hj⟩ ↔ Column.bitsAt b (i * k.width) k.width = Column.bitsAt b (j * k.width) k.width := by
-  have hg := (float_facts ht hk).2.2.1
-  rw [Arr.get_ne x _ hg, Arr.get_ne x _ hg, he]
+  obtain ⟨-, hw, hg, hbo, -, -⟩ := float_facts ht hk
+  rw [Arr.get_ne x _ hg, Arr.get_ne x _ hg, ← KernelWF.get_bytesOf hw hbo x.wf he hi,
+    ← KernelWF.get_bytesOf hw hbo x.wf he hj]
   have h32 : ∀ a c : UInt64, a.toNat < 2 ^ 32 → c.toNat < 2 ^ 32 → (a.toUInt32 = c.toUInt32 ↔ a = c) :=
     fun a c ha hc => ⟨fun h => UInt64.toNat_inj.1 (by have := congrArg UInt32.toNat h; simp at this; omega),
       fun h => h ▸ rfl⟩
@@ -35,92 +37,95 @@ theorem float_row_eq {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .d
     simp [Enc.get, hi, hj, QAtomicType.width, Column.atomOfBits, Carrier.of?, Scan.Kind.width]
   exact h32 _ _ (Verify.bitsAt_lt _ _ _ (by decide)) (Verify.bitsAt_lt _ _ _ (by decide))
 
-/-- **The `raze` of a fixed-width type is dense** where its one part is, or where `razeColumn` joins its
-    parts dense (`hD`), the parts in any encoding. -/
-theorem raze_dense {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hg : t ≠ .general) (hbo : t ≠ .boolean)
-    (cs : Array ((n : USize) × Arr t n)) (h1 : cs.size = 1 → ∀ c ∈ cs, ∃ b, c.2.enc = .bytes b)
-    (hD : ∀ r, encodedParts t (cs.map (·.2.part)) = some r → denseCheaper (if r.1 then 8 else 5) r.2.1
-      (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) (h0 : cs.size ≠ 0) :
-    ∃ B, (raze t cs).2.enc = .bytes B := by
-  rcases cs with ⟨l⟩
-  have hl0 : l ≠ [] := by rintro rfl; exact h0 rfl
-  by_cases h1' : l.length = 1
-  · obtain ⟨c, rfl⟩ := List.length_eq_one_iff.1 h1'
-    obtain ⟨b, hb⟩ := h1 rfl c (by simp)
-    have hr : raze t #[c] = c := by unfold raze; simp [hg]
-    exact ⟨b, by rw [hr, hb]⟩
-  unfold raze
-  rw [dif_neg (by simpa using hl0), dif_neg hg, dif_neg (by simpa using h1')]
-  dsimp only
-  have key : ∀ (a : Nat) (l : List ((n : USize) × Arr t n)),
-      (l.map fun x => (x.1, x.2.enc)).foldl (fun s c => s + c.1.toNat) a = a + (l.map (·.1.toNat)).sum := by
-    intro a l; induction l generalizing a <;> simp_all [Nat.add_assoc]
-  have hk : ((List.toArray l).map (·.2.part)).foldl (fun s c => s + c.1.toNat) 0 = (l.map (·.1.toNat)).sum := by
-    simpa [Arr.part] using key 0 l
-  have hf : ((List.toArray l).map (·.2.part)).foldl (fun s c => s + c.1.toNat) 0 < USize.size := by
-    rw [hk]; simpa using hN
-  unfold need; rw [dif_pos hf]
-  have hpw : ∀ c ∈ (List.toArray l).map (·.2.part), Enc.WF t c.1 c.2 := by
-    intro c hc; obtain ⟨d, -, rfl⟩ := Array.mem_map.1 hc; exact d.2.wf
-  have hv : ∀ h, (razeColumn t ((List.toArray l).map (·.2.part))).get h =
-      .vector t (((List.toArray l).map (·.2.part)).foldl (fun s (c : USize × Enc) => s + c.1.toNat) 0).toUSize
-        (.bytes (concatBytes (((List.toArray l).map (·.2.part)).map
-          fun c => (Enc.bytesOf t c.1 c.2).getD .empty))) none :=
-    fun h => KernelWF.razeColumn_dense hw hbo hpw hD (Option.some_get h).symm
-  exact ⟨concatBytes (((List.toArray l).map (·.2.part)).map fun c => (Enc.bytesOf t c.1 c.2).getD .empty),
-    by simp only [Arr.enc, hv]⟩
-
-/-- **A float side whose `raze` is dense (`raze_dense`): its codes are its `raze` grouped by bits
-    (`bitsType`'s kind `k`), cut back into the parts**, the parts' summed count a `USize`. -/
-theorem codes_float_cut {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {p : Nat}
-    (cs : Vector (Part (.atom t)) p) (hp : 0 < p) (h1 : p = 1 → ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) :
-    ∃ k B, orderKind (KernelWF.bitsType t) = some k ∧ (raze t cs.toArray).2.enc = .bytes B ∧
-      Obj.codes (.atom t) cs = (Code.ofIds (len (Order.groupIds k (raze t cs.toArray).1 B).2) (raze t cs.toArray).1
-        (Order.groupIds k (raze t cs.toArray).1 B).1).cut (cs.map (·.1)) := by
+/-- **A float column in any encoding is grouped by the keys of its dense decode `B`**: `groupIdsColumn` at
+    `bitsType` packs `Verify.groupOf g` for a `g` that is `keyAt k B` below the count — a dense or ALP payload
+    grouped over `B` itself, a FoR one over its encoded form, whose keys are the decode's (`decode_keyAt`). -/
+theorem float_groups {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {n : USize} (x : Arr t n)
+    {q : ByteArray × ByteArray} (hq : groupIdsColumn (KernelWF.bitsType t) n x.enc = some q) :
+    ∃ k B, ∃ g : Nat → UInt64, orderKind (KernelWF.bitsType t) = some k ∧ Enc.bytesOf t n x.enc = some B ∧
+      q.1 = Column.packIds (Column.idWidthOf (Verify.firstsOf g n.toNat).length) n.toNat (Verify.groupOf g n.toNat) ∧
+      len q.2 = (Verify.firstsOf g n.toNat).length ∧ ∀ i < n.toNat, g i = Order.keyAt k B i := by
   obtain ⟨k, hk⟩ : ∃ k, orderKind (KernelWF.bitsType t) = some k := by
     rcases ht with rfl | rfl | rfl <;> exact ⟨_, rfl⟩
-  obtain ⟨-, hw, hg, hbo, -, hgc⟩ := float_facts ht hk
-  obtain ⟨B, hB⟩ := raze_dense hw hg hbo cs.toArray (fun hs c hc => by
-    obtain ⟨j, hj, rfl⟩ := Array.mem_iff_getElem.1 hc
-    simpa using h1 (by simpa using hs) j (by simpa using hj))
-    (fun r => hD _ r hw) (by simpa using hN) (by simp; omega)
-  obtain ⟨q, hq, hc⟩ := codes_raze_cut hg cs hp
+  obtain ⟨hk2, hw, -, hbo, -, hgc⟩ := float_facts ht hk
+  obtain ⟨B, hB, hBs⟩ := KernelWF.bytesOf_size hbo hw x.wf
+  have hav : min n.toNat (k.avail B) = n.toNat := by
+    rcases hk2 with rfl | rfl <;> simp [Scan.Kind.avail, Scan.Kind.width, hBs]
+  have hk0 : k ≠ .bit := by rcases hk2 with rfl | rfl <;> decide
+  have hspec := Verify.groupIds_spec k n B
+  rw [hav] at hspec
+  refine ⟨k, B, ?_⟩
+  have hwf := x.wf
+  generalize x.enc = e at hq hB hwf ⊢
+  cases e
+  case bytes b =>
+    have hb : b = B := by simpa [Enc.bytesOf] using hB
+    subst hb
+    rw [hgc, Option.some_inj] at hq; subst hq
+    exact ⟨_, hk, hB, hspec.1, by rw [len_eq_ids, hspec.2], fun _ _ => rfl⟩
+  case alp md pk a =>
+    have hf : groupIdsColumn (KernelWF.bitsType t) n (.alp md pk a) = some (Order.groupIds k n B) := by
+      rcases ht with rfl | rfl | rfl <;> simp [KernelWF.bitsType, orderKind] at hk <;> subst hk <;>
+        simp [Enc.bytesOf, QAtomicType.width] at hB <;>
+        simp [KernelWF.bitsType, groupIdsColumn, orderKind, Enc.bytesOf, QAtomicType.width, hB]
+    rw [hf, Option.some_inj] at hq; subst hq
+    exact ⟨_, hk, hB, hspec.1, by rw [len_eq_ids, hspec.2], fun _ _ => rfl⟩
+  case foR md pk =>
+    have hf : groupIdsColumn (KernelWF.bitsType t) n (.foR md pk) = some (Order.groupIdsFoR k n md pk) := by
+      rcases ht with rfl | rfl | rfl <;> simp [KernelWF.bitsType, orderKind] at hk <;> subst hk <;>
+        simp [KernelWF.bitsType, groupIdsColumn, orderKind]
+    rw [hf, Option.some_inj] at hq; subst hq
+    have hdec : Coc.decode k.width.toUSize md pk n = B := by simpa [Enc.bytesOf, hw] using hB
+    have hs := Verify.groupIdsFoR_spec k hk0 n md pk
+    exact ⟨foRKey k md pk, hk, hB, hs.1, by rw [len_eq_ids, hs.2],
+      fun i hi => by rw [← (Verify.decode_keyAt k hk0 n md pk).2 i hi, hdec]⟩
+  all_goals rcases ht with rfl | rfl | rfl <;> simp [Enc.WF] at hwf
+
+/-- **The grouping code of one float column, in any encoding, is faithful**: `Code.ofIds` of the ids
+    `groupIdsColumn` answers at `bitsType` is equal exactly where the cells are. -/
+theorem ofIds_float_faithful {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {n : USize}
+    (x : Arr t n) {q : ByteArray × ByteArray} (hq : groupIdsColumn (KernelWF.bitsType t) n x.enc = some q)
+    {i j : Nat} (hi : i < n.toNat) (hj : j < n.toNat) :
+    Column.idAt (Code.ofIds (len q.2) n q.1).b (Code.ofIds (len q.2) n q.1).w i =
+        Column.idAt (Code.ofIds (len q.2) n q.1).b (Code.ofIds (len q.2) n q.1).w j ↔
+      x.get ⟨i, hi⟩ = x.get ⟨j, hj⟩ := by
+  obtain ⟨k, B, g, hk, hB, hq1, hq2, hg⟩ := float_groups ht x hq
+  have hk2 := (float_facts ht hk).1
+  have hn64 := Verify.usize_lt n
+  rw [ofIds_groupOf g n hn64 hq1 hq2 hi, ofIds_groupOf g n hn64 hq1 hq2 hj, groupOf_eq_groupOf hi hj, hg i hi,
+    hg j hj, Verify.keyAt_eq_iff (by rcases hk2 with rfl | rfl <;> simp) B, float_row_eq ht hk x hB hi hj]
+
+/-- **A float side's codes are its `raze` grouped at `bitsType`, cut back into the parts** — the parts and the
+    `raze` in any encoding. -/
+theorem codes_float_cut {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {p : Nat}
+    (cs : Vector (Part (.atom t)) p) (hp : 0 < p) :
+    ∃ q, groupIdsColumn (KernelWF.bitsType t) (raze t cs.toArray).1 (raze t cs.toArray).2.enc = some q ∧
+      Obj.codes (.atom t) cs = (Code.ofIds (len q.2) (raze t cs.toArray).1 q.1).cut (cs.map (·.1)) :=
+  codes_raze_cut (by rcases ht with rfl | rfl | rfl <;> decide) cs hp
     (fun j hj b he => by
       have hwf := (cs[j]'hj).2.wf; rw [he] at hwf; rcases ht with rfl | rfl | rfl <;> simp [Enc.WF] at hwf)
     (by unfold rangeOffsets; rcases ht with rfl | rfl | rfl <;> simp [orderKind])
-    (fun d o ids he => by rw [hB] at he; simp [Column.intern] at he)
-  rw [hB, hgc, Option.some_inj] at hq
-  subst hq
-  exact ⟨k, B, hk, hB, hc⟩
+    (fun d o ids he => by
+      have hwf := (raze t cs.toArray).2.wf
+      generalize (raze t cs.toArray).2.enc = e at hwf he
+      cases e <;> rcases ht with rfl | rfl | rfl <;> simp_all [Column.intern, Enc.WF])
 
-/-- **A float side of dense parts: its codes are faithful jointly across the parts** — equal codes exactly at
-    rows of equal bits; the parts' summed count a `USize`. -/
+/-- **A float side: its codes are faithful jointly across the parts** — equal codes exactly at rows of equal
+    bits; the parts and their `raze` in any encoding, the parts' summed count a `USize`, 32 bits where an ALP
+    join offsets it (`hA`). -/
 theorem codes_float_parts_faithful {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {p : Nat}
-    (cs : Vector (Part (.atom t)) p) (h1 : p = 1 → ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (cs : Vector (Part (.atom t)) p) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hA : 2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32)
     {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat) (hj : j < (cs[l]'hl).1.toNat) :
     Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
         Column.idAt ((Obj.codes (.atom t) cs)[l]'hl).b ((Obj.codes (.atom t) cs)[l]'hl).w j ↔
       Vals.row (cs[k]'hk).2 ⟨i, hi⟩ = Vals.row (cs[l]'hl).2 ⟨j, hj⟩ := by
-  obtain ⟨κ, B, hκ, hB, hc⟩ := codes_float_cut ht cs (by omega) h1 hD hN
-  obtain ⟨hκ2, hW, -, hBo, hsz, -⟩ := float_facts ht hκ
+  obtain ⟨q, hq, hc⟩ := codes_float_cut ht cs (by omega)
+  obtain ⟨κ, -, g, hκ, -, hq1, hq2, -⟩ := float_groups ht (raze t cs.toArray).2 hq
+  obtain ⟨-, hW, -, hBo, -, -⟩ := float_facts ht hκ
   have hX := raze_len t cs.toArray hN
-  have hBs := hsz _ _ (hB ▸ (raze t cs.toArray).2.wf)
-  have hav : min (raze t cs.toArray).1.toNat (κ.avail B) = (raze t cs.toArray).1.toNat := by
-    rcases hκ2 with rfl | rfl <;> simp [Scan.Kind.avail, Scan.Kind.width, hBs]
-  have hspec := Verify.groupIds_spec κ (raze t cs.toArray).1 B
-  rw [hav] at hspec
-  obtain ⟨hw, hn, -, -⟩ := ofIds_groupOf_wf (Order.keyAt κ B) (raze t cs.toArray).1 hspec.1
-    (by rw [len_eq_ids, hspec.2])
-  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum =
-      (Code.ofIds (len (Order.groupIds κ (raze t cs.toArray).1 B).2) (raze t cs.toArray).1
-        (Order.groupIds κ (raze t cs.toArray).1 B).1).n.toNat := by
+  obtain ⟨hw, hn, -, -⟩ := ofIds_groupOf_wf g (raze t cs.toArray).1 hq1 hq2
+  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Code.ofIds (len q.2) (raze t cs.toArray).1 q.1).n.toNat := by
     rw [hn, hX, Vector.toList_map, List.map_map]; rfl
   have hO : ∀ k, (((cs.map (·.1)).toList.take k).map (·.toNat)).sum = ((cs.toList.take k).map (·.1.toNat)).sum :=
     fun k => by rw [Vector.toList_map, ← List.map_take, List.map_map]; rfl
@@ -129,43 +134,27 @@ theorem codes_float_parts_faithful {t : QAtomicType} (ht : t = .real ∨ t = .fl
     have := take_sum_le (cs.toList.map (·.1.toNat)) (k := k) (by simpa using hk)
     simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take] at this
     rw [hX]; exact Nat.lt_of_lt_of_le (by omega) this
-  have hn64 := Verify.usize_lt (raze t cs.toArray).1
   rw [hc]
   obtain ⟨hwk, -, -, hck⟩ := cut_get _ (cs.map (·.1)) hw hs hk
   obtain ⟨hwl, -, -, hcl⟩ := cut_get _ (cs.map (·.1)) hw hs hl
   rw [hwk, hwl, hck i (by simpa using hi), hcl j (by simpa using hj), hO, hO,
-    ofIds_groupOf (Order.keyAt κ B) _ hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) (hlt k hk i hi),
-    ofIds_groupOf (Order.keyAt κ B) _ hn64 hspec.1 (by rw [len_eq_ids, hspec.2]) (hlt l hl j hj),
-    groupOf_eq_groupOf (hlt k hk i hi) (hlt l hl j hj),
-    Verify.keyAt_eq_iff (by rcases hκ2 with rfl | rfl <;> simp) B,
-    ← float_row_eq ht hκ (raze t cs.toArray).2 hB (hlt k hk i hi) (hlt l hl j hj),
-    Vals.row_atom, Vals.row_atom, raze_get_bytes hW hBo cs (fun r => hD _ r hW) hN hk hi, raze_get_bytes hW hBo cs (fun r => hD _ r hW) hN hl hj]
+    ofIds_float_faithful ht _ hq (hlt k hk i hi) (hlt l hl j hj), Vals.row_atom, Vals.row_atom,
+    raze_get hW hBo cs hN hA hk hi, raze_get hW hBo cs hN hA hl hj]
 
-/-- **A float side of dense parts: each part's code is well formed, and all on one lane**, the parts' summed
-    count a `USize`. -/
+/-- **A float side: each part's code is well formed, and all on one lane** — the parts and their `raze` in any
+    encoding, the parts' summed count a `USize`. -/
 theorem codes_float_parts_wf {t : QAtomicType} (ht : t = .real ∨ t = .float ∨ t = .datetime) {p : Nat}
-    (cs : Vector (Part (.atom t)) p) (h1 : p = 1 → ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
+    (cs : Vector (Part (.atom t)) p) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) {k : Nat} (hk : k < p) :
     (let c := (Obj.codes (.atom t) cs)[k]'hk
     laneOK(c.w) ∧ c.n = (cs[k]'hk).1 ∧
       c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
     ∀ {l : Nat} (hl : l < p), ((Obj.codes (.atom t) cs)[k]'hk).w = ((Obj.codes (.atom t) cs)[l]'hl).w := by
-  obtain ⟨κ, B, hκ, hB, hc⟩ := codes_float_cut ht cs (by omega) h1 hD hN
-  obtain ⟨hκ2, -, -, -, hsz, -⟩ := float_facts ht hκ
+  obtain ⟨q, hq, hc⟩ := codes_float_cut ht cs (by omega)
+  obtain ⟨-, -, g, -, -, hq1, hq2, -⟩ := float_groups ht (raze t cs.toArray).2 hq
   have hX := raze_len t cs.toArray hN
-  have hBs := hsz _ _ (hB ▸ (raze t cs.toArray).2.wf)
-  have hav : min (raze t cs.toArray).1.toNat (κ.avail B) = (raze t cs.toArray).1.toNat := by
-    rcases hκ2 with rfl | rfl <;> simp [Scan.Kind.avail, Scan.Kind.width, hBs]
-  have hspec := Verify.groupIds_spec κ (raze t cs.toArray).1 B
-  rw [hav] at hspec
-  obtain ⟨hw, hn, hsz', hid⟩ := ofIds_groupOf_wf (Order.keyAt κ B) (raze t cs.toArray).1 hspec.1
-    (by rw [len_eq_ids, hspec.2])
-  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum =
-      (Code.ofIds (len (Order.groupIds κ (raze t cs.toArray).1 B).2) (raze t cs.toArray).1
-        (Order.groupIds κ (raze t cs.toArray).1 B).1).n.toNat := by
+  obtain ⟨hw, hn, hsz', hid⟩ := ofIds_groupOf_wf g (raze t cs.toArray).1 hq1 hq2
+  have hs : (((cs.map (·.1)).toList).map (·.toNat)).sum = (Code.ofIds (len q.2) (raze t cs.toArray).1 q.1).n.toNat := by
     rw [hn, hX, Vector.toList_map, List.map_map]; rfl
   have hle := take_sum_le ((cs.map (·.1)).toList.map (·.toNat)) (k := k) (by simpa using hk)
   simp only [List.getElem_map, Vector.getElem_toList, ← List.map_take, hs] at hle
@@ -179,16 +168,15 @@ theorem codes_float_parts_wf {t : QAtomicType} (ht : t = .real ∨ t = .float �
   refine ⟨hw, by simp, rfl, fun h8 => ⟨(hid h8).1, fun i hi => ?_⟩⟩
   rw [hik i hi]; exact (hid h8).2 _ (by omega)
 
-/-- **A side at a small integral or float kind whose `raze` is dense: its codes are faithful jointly across the
-    parts, each well formed, all on one lane** — the parts in any encoding, one part dense (`h1`) and several
-    joined dense by `razeColumn` (`hD`); the int sides through `codes_small_int_parts_faithful`/`_wf`, the float
-    sides grouped by their bits (`codes_float_parts_faithful`/`_wf`); the parts' summed count a `USize`. -/
+/-- **A side at a small integral or float kind: its codes are faithful jointly across the parts, each well
+    formed, all on one lane** — the parts and their `raze` in any encoding; the int sides through
+    `codes_small_int_parts_faithful`/`_wf`, the float sides grouped by their bits
+    (`codes_float_parts_faithful`/`_wf`); the parts' summed count a `USize`, 32 bits where an ALP join offsets
+    it (`hA`). -/
 theorem codes_dense_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
     (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) {p : Nat} (cs : Vector (Part (.atom t)) p)
-    (h1 : p = 1 → ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b)
-    (hD : ∀ w r, t.width = some w → encodedParts t (cs.toArray.map (·.2.part)) = some r →
-      denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = true)
-    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size) :
+    (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
+    (hA : 2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32) :
     ((∀ {k l : Nat} (hk : k < p) (hl : l < p) {i j : Nat} (hi : i < (cs[k]'hk).1.toNat)
         (hj : j < (cs[l]'hl).1.toNat),
         Column.idAt ((Obj.codes (.atom t) cs)[k]'hk).b ((Obj.codes (.atom t) cs)[k]'hk).w i =
@@ -205,19 +193,19 @@ theorem codes_dense_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : order
   -- a float side groups by its bits (`bitsType`)
   all_goals try
     have hf : t = .real ∨ t = .float ∨ t = .datetime := by
-      clear h1 hD hN; cases t <;> simp [orderKind] at ht <;> simp_all
-    exact ⟨⟨fun hk hl _ _ hi hj => codes_float_parts_faithful hf cs h1 hD hN hk hl hi hj,
-      fun hk => (codes_float_parts_wf hf cs h1 hD hN hk).1⟩, fun hk hl => (codes_float_parts_wf hf cs h1 hD hN hk).2 hl⟩
+      clear hA hN; cases t <;> simp [orderKind] at ht <;> simp_all
+    exact ⟨⟨fun hk hl _ _ hi hj => codes_float_parts_faithful hf cs hN hA hk hl hi hj,
+      fun hk => (codes_float_parts_wf hf cs hN hk).1⟩, fun hk hl => (codes_float_parts_wf hf cs hN hk).2 hl⟩
   all_goals
-    have hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 := by clear h1 hD hN; simp_all
-    refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hD hN hk hl hi hj,
+    have hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 := by clear hA hN; simp_all
+    refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hN hk hl hi hj,
       fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
     rw [codes_small_int_cut ht hk₀ cs (by omega)]; unfold Code.cut; split <;> simp
 
-/-- **One part of a small integral side, in any encoding, or of a dense float side: its codes are faithful and
-    well formed** (`codes_small_int_faithful`/`_wf`; a float through `codes_dense_faithful_wf` at one part). -/
+/-- **One part of a small integral or float side, in any encoding: its codes are faithful and well formed**
+    (`codes_small_int_faithful`/`_wf`; a float through `codes_dense_faithful_wf` at one part, no join to bound). -/
 theorem codes_num_one_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : orderKind t = some k₀)
-    (x : Part (.atom t)) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ ((k₀ = .f32 ∨ k₀ = .f64) ∧ ∃ b, x.2.enc = .bytes b)) :
+    (x : Part (.atom t)) (hk₀ : k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32 ∨ k₀ = .f32 ∨ k₀ = .f64) :
     (∀ {i j : Nat} (hi : i < x.1.toNat) (hj : j < x.1.toNat),
       Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w i =
           Column.idAt (Obj.codes (.atom t) #v[x])[0].b (Obj.codes (.atom t) #v[x])[0].w j ↔
@@ -225,15 +213,10 @@ theorem codes_num_one_faithful_wf {t : QAtomicType} {k₀ : Scan.Kind} (ht : ord
     (let c := (Obj.codes (.atom t) #v[x])[0]
     laneOK(c.w) ∧ c.n = x.1 ∧ c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
       (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) := by
-  rcases hk₀ with hk | hk | hk | ⟨hf, hd⟩
-  all_goals try exact ⟨fun hi hj => codes_small_int_faithful ht (by simp [hk]) x hi hj,
-    codes_small_int_wf ht (by simp [hk]) x⟩
-  have hd1 : ∀ k (hk : k < 1), ∃ b, (#v[x][k]'hk).2.enc = .bytes b := fun k hk => by
-    match k, hk with | 0, _ => exact hd
-  have h := codes_dense_faithful_wf ht (by rcases hf with h | h <;> simp [h]) #v[x] (fun _ => hd1)
-    (fun _ r _ hr => by rw [encodedParts_parts_bytes _ hd1] at hr; cases hr) (by simpa using x.1.toNat_lt_size)
+  have h := codes_dense_faithful_wf ht hk₀ #v[x] (by simpa using x.1.toNat_lt_size) (fun h => absurd h (by decide))
   exact ⟨fun hi hj => h.1.1 (k := 0) (l := 0) (by decide) (by decide) hi hj, h.1.2 (k := 0) (by decide)⟩
 
+#print axioms float_groups
 #print axioms codes_float_parts_faithful
 #print axioms codes_float_parts_wf
 #print axioms codes_dense_faithful_wf

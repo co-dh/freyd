@@ -180,7 +180,7 @@ theorem razeTo_join_foR {t : QAtomicType} {w : Nat} (hw : t.width = some w) (cs 
     encodes, the joined count is below `2 ^ 32`, where `concatALP` stores its exception offsets. -/
 theorem razeTo_toList_all {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean)
     (cs : Array ((k : USize) × Arr t k)) {S : Nat} (hs : (cs.toList.map (·.1.toNat)).sum = S)
-    (hS : S < USize.size) (hA : Column.alpEncodes t = true → S < 2 ^ 32) :
+    (hS : S < USize.size) (hA : 2 ≤ cs.size → Column.alpEncodes t = true → S < 2 ^ 32) :
     (razeTo t cs hs hS).toList = cs.toList.flatMap (·.2.toList) := by
   by_cases h2 : 2 ≤ cs.size
   · cases hE : encodedParts t (cs.map (·.2.part)) with
@@ -191,7 +191,7 @@ theorem razeTo_toList_all {t : QAtomicType} {w : Nat} (hw : t.width = some w) (h
       · have hal := (encodedParts_spec hE).1
         cases alp
         · exact razeTo_join_foR hw cs hs hS h2 hE hC
-        · exact razeTo_join_alp hw cs hs hS h2 hE hC (hA hal.symm)
+        · exact razeTo_join_alp hw cs hs hS h2 hE hC (hA h2 hal.symm)
       · exact razeTo_toList_dense hw hb cs hs hS fun r' hr' => by
           rw [hE, Option.some.injEq] at hr'; subst hr'; exact hC
   · have hg : t ≠ .general := QAtomicType.ne_general_of_width hw
@@ -226,7 +226,7 @@ theorem hat_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m
       · exact .inr (.inr (.inr (.inl h))))
   · obtain ⟨w, hw⟩ : ∃ w, t.width = some w := by cases t <;> simp_all [QAtomicType.width]
     have := razeTo_toList_all hw (fun h => hs (.inl h)) #[⟨n, x⟩, ⟨m, y⟩] rfl hN
-      (fun ht => by simpa using hF.2 ht)
+      (fun _ ht => by simpa using hF.2 ht)
     simpa using this
 
 /-- **Row read-back of `raze` at every side**, no hypothesis on the encoding. -/
@@ -246,10 +246,10 @@ namespace LeetQ.Rel.Alg
 open QLean QLean.Kernel QLean.Dep QLean.Verify LeetQ.Rel
 
 /-- **The razed column reads part `k`'s element `i` past the counts before `k`**, on every answer of
-    `razeColumn` (dense, FoR, ALP; `razeTo_toList_all`), the ALP join's offsets 32 bits (`hA`). -/
+    `razeColumn` (dense, FoR, ALP; `razeTo_toList_all`), the ALP join's offsets 32 bits where parts join (`hA`). -/
 theorem raze_get {t : QAtomicType} {w : Nat} (hw : t.width = some w) (hb : t ≠ .boolean) {p : Nat}
     (cs : Vector (Part (.atom t)) p) (hN : (cs.toList.map (·.1.toNat)).sum < USize.size)
-    (hA : Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32)
+    (hA : 2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32)
     {k : Nat} (hk : k < p) {i : Nat} (hi : i < cs[k].1.toNat)
     (hO : ((cs.toList.take k).map (·.1.toNat)).sum + i < (raze t cs.toArray).1.toNat) :
     (raze t cs.toArray).2.get ⟨_, hO⟩ = cs[k].2.get ⟨i, hi⟩ := by
@@ -274,7 +274,7 @@ theorem codes_small_int_parts_faithful {t : QAtomicType} {k₀ : Scan.Kind} (ht 
         Column.idAt (Obj.codes (.atom t) cs)[l].b (Obj.codes (.atom t) cs)[l].w j ↔
       Vals.row cs[k].2 ⟨i, hi⟩ = Vals.row cs[l].2 ⟨j, hj⟩ := by
   obtain ⟨hW, -, -, hB, -⟩ := small_int_width ht hk₀
-  have hA : Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32 := fun h => by
+  have hA : 2 ≤ p → Column.alpEncodes t = true → (cs.toList.map (·.1.toNat)).sum < 2 ^ 32 := fun _ h => by
     rcases hk₀ with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;> simp [Column.alpEncodes] at h
   have hX := raze_len t cs.toArray hN
   obtain ⟨hw, hn, -, -⟩ := codes_small_int_wf ht hk₀ (raze t cs.toArray)
