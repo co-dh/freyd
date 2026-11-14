@@ -432,6 +432,29 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
       · exact Or.inl ⟨h, hx⟩
       · exact Or.inr ⟨⟨hb, hx⟩, hc⟩
 
+/-- **`leftDiv`'s join fits from the `nub`s' readings** (`rep_leftDiv`'s `hB`, `hC`): the join's pairs repeat a row
+    of `nub R` at most `(nub S).n` times and one of `nub S` at most `(nub R).n` times (`pickFits_join_fst`,
+    `pickFits_join_snd`), the key codes counting the `nub`s' rows (`hfk`). The `nub`s' readings are `R`'s and `S`'s
+    within `1 + 3 ^ sizeOf` (`rows_fits` at `nub_ids`), their counts `R`'s and `S`'s at most (`nub_count_le`). -/
+theorem leftDiv_join_fits (R : Rel A B) (S : Rel A C) (kc : Vector Code 2)
+    (hkc : kc = A.codes #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
+    (hfk : A.CodesFit #v[⟨(Rel.nub R).n, (Rel.nub R).key⟩, ⟨(Rel.nub S).n, (Rel.nub S).key⟩])
+    (hB63 : ((Rel.nub S).n.toNat + 1) * Vals.reads B (Rel.nub R).val (List.range (Rel.nub R).n.toNat) < 2 ^ 63)
+    (hBU : ((Rel.nub S).n.toNat + 1) * Vals.reads B (Rel.nub R).val (List.range (Rel.nub R).n.toNat) < USize.size)
+    (hC63 : ((Rel.nub R).n.toNat + 1) * Vals.reads C (Rel.nub S).val (List.range (Rel.nub S).n.toNat) < 2 ^ 63)
+    (hCU : ((Rel.nub R).n.toNat + 1) * Vals.reads C (Rel.nub S).val (List.range (Rel.nub S).n.toNat) < USize.size) :
+    Vals.PickFits B (Rel.nub R).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.fst) ∧
+      Vals.PickFits C (Rel.nub S).val ((jp(kc[0]'Nat.zero_lt_two, kc[1]'Nat.one_lt_two)).map Prod.snd) := by
+  have hK' := codes_faithful_wf A _ hfk; rw [← hkc] at hK'
+  obtain ⟨⟨-, kW⟩, -⟩ := hK'
+  obtain ⟨-, hln, -⟩ := kW (k := 0) (by decide)
+  obtain ⟨-, hkn, -⟩ := kW (k := 1) (by decide)
+  replace hln : (kc[0]'Nat.zero_lt_two).n = (Rel.nub R).n := hln
+  replace hkn : (kc[1]'Nat.one_lt_two).n = (Rel.nub S).n := hkn
+  rw [hln, hkn]
+  exact ⟨pickFits_join_fst _ (Nat.lt_min.2 ⟨hB63, hBU⟩), pickFits_join_snd _ (Nat.lt_min.2 ⟨hC63, hCU⟩)⟩
+
+#print axioms leftDiv_join_fits
 #print axioms rep_leftDiv
 
 /-- **`rep (R / S)`**: `x` to `y` exactly when `R` takes `x` to every `c` that `S` takes `y` to, and either `S`
