@@ -90,6 +90,25 @@ theorem slices_get {p n : USize} (hp : p.toNat < 2 ^ 63) (lo hi : ByteArray) {k 
     hM, hc, hL, tn _ (by omega), tn _ (by omega), tn _ (by omega)]
   omega
 
+/-- **`expand` of `slices`' counts copies the clamped windows' total**, where the payload count is below
+    `2^63`: each count is below it then (`slices_get`, `expand_idx`). -/
+theorem len_expand_slices {p n : USize} (hp : p.toNat < 2 ^ 63) (lo hi : ByteArray) :
+    len (expandBytes 8 0 (tilLongs n) (slices p n lo hi).2) = ((List.range n.toNat).map fun k =>
+      min (max (Column.bitsAt hi (k * 8) 8).toInt64.toInt 0).toNat p.toNat -
+        min (max (Column.bitsAt lo (k * 8) 8).toInt64.toInt 0).toNat p.toNat).sum := by
+  have h2 := (len_slices p n lo hi).2
+  have hk : ∀ k < n.toNat, (Column.bitsAt (slices p n lo hi).2 (k * 8) 8).toNat =
+      min (max (Column.bitsAt hi (k * 8) 8).toInt64.toInt 0).toNat p.toNat -
+        min (max (Column.bitsAt lo (k * 8) 8).toInt64.toInt 0).toNat p.toNat := fun k hk => by
+    rw [(slices_get hp lo hi hk).2]
+    exact UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_trans (Nat.sub_le _ _) (Nat.min_le_right _ _))
+      (Nat.lt_trans hp (by decide)))
+  rw [len_eq_ids, expand_idx (by rw [h2]; exact Nat.le_refl _)
+    (fun t ht => by rw [hk t (h2 ▸ ht)]; have := Nat.min_le_right (max (Column.bitsAt hi (t * 8) 8).toInt64.toInt 0).toNat p.toNat; omega),
+    List.length_flatMap, h2]
+  simp only [List.length_replicate]
+  congr 1; apply List.map_congr_left; intro k hk'; exact hk k (List.mem_range.1 hk')
+
 /-- **The window `Vals.row` reads at an array row**: the positions `j < m` with `a ≤ j < b` are the run
     from `a` clamped into `[0, m]` to `b` clamped there, read in order; `d` answers no position of it. -/
 theorem filterMap_window {β : Type} (d : β) : ∀ {m : Nat} (f : Fin m → β) (a b : Int),
@@ -435,6 +454,36 @@ theorem pickFits_empty : (A : Obj) → Vals.PickFits A (Vals.empty A) []
   | .sum a b => by
     simp only [Vals.empty, Vals.PickFits, List.filterMap_nil, List.length_nil]
     exact ⟨by decide, by simp, by simp, pickFits_empty a, pickFits_empty b⟩
+
+/-- **`Vals.fitsN` decides a fit at any `N` rows**: an array's windows are clamped into its payload, so `N` rows
+    copy at most `N·p` positions; a sum's side lists are no longer than its rows. -/
+theorem pickFits_of_fitsN : (A : Obj) → {n : USize} → (x : Vals A n) → (N : Nat) → Vals.fitsN A x N = true →
+    ∀ ps : List Nat, ps.length ≤ N → Vals.PickFits A x ps
+  | .atom _, _, x, _, hb, _, _ => by
+    unfold Vals.PickFits; intro _ d o ids he
+    unfold Vals.fitsN at hb; rw [he] at hb; exact of_decide_eq_true hb
+  | .prod a b, _, x, N, hb, ps, hl => by
+    simp only [Vals.fitsN, Bool.and_eq_true] at hb
+    exact pickFits_prod x (pickFits_of_fitsN a x.1 N hb.1 ps hl) (pickFits_of_fitsN b x.2 N hb.2 ps hl)
+  | .arr b, _, ⟨p, lo, hi, f⟩, N, hb, ps, hl => by
+    simp only [Vals.fitsN, Bool.and_eq_true, decide_eq_true_eq] at hb
+    obtain ⟨⟨⟨hp, h63⟩, hU⟩, hf⟩ := hb
+    have hfl : ∀ (g : Nat → List Nat) (c : Nat), (∀ k, (g k).length ≤ c) → ∀ qs : List Nat,
+        (qs.flatMap g).length ≤ qs.length * c := fun g c hg qs => by
+      induction qs with
+      | nil => simp
+      | cons k qs ih => simp only [List.flatMap_cons, List.length_append, List.length_cons, Nat.succ_mul]; have := hg k; omega
+    unfold Vals.PickFits; dsimp only
+    refine ⟨hp, Nat.lt_of_le_of_lt ?h h63, Nat.lt_of_le_of_lt ?h hU, pickFits_of_fitsN b f _ hf _ ?h⟩
+    case h =>
+      refine Nat.le_trans (hfl _ p.toNat (fun k => ?_) ps) (Nat.mul_le_mul_right _ hl)
+      split <;> simp only [List.length_range', List.length_nil] <;> omega
+  | .sum a b, _, ⟨l, r, tag, idx, x, y⟩, N, hb, ps, hl => by
+    simp only [Vals.fitsN, Bool.and_eq_true, decide_eq_true_eq] at hb
+    obtain ⟨⟨⟨⟨hN, hl63⟩, hr63⟩, ha⟩, hb⟩ := hb
+    unfold Vals.PickFits; dsimp only
+    exact ⟨by omega, hl63, hr63, pickFits_of_fitsN a x N ha _ (Nat.le_trans (List.length_filterMap_le _ _) hl),
+      pickFits_of_fitsN b y N hb _ (Nat.le_trans (List.length_filterMap_le _ _) hl)⟩
 
 /-- **Each piece `g a` a sublist of `f (p a)` makes the pieces' concatenation a sublist of `f`'s at the
     `p`-images**: one element (or a sub-window) taken from each picked row's window, in row order. -/

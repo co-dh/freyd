@@ -739,6 +739,42 @@ theorem pick_row : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArr
 
 #print axioms pick_row
 
+/-- **`Vals.pickC`'s bit is a fit** at the rows `i` names: at an array the copies `expand` counts are the
+    windows' total (`len_expand_slices`), which the payload fits (`pickFits_of_fitsN`); elsewhere `Vals.fitsN`
+    at the `m` rows. -/
+theorem Vals.pickC_fits : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteArray) → (m : USize) →
+    (h : len i = m.toNat) → (Vals.pickC A x i m h).2 = true →
+    Vals.PickFits A x ((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat)
+  | .atom t, _, x, _, m, _, hb => pickFits_of_fitsN (.atom t) x m.toNat hb _ (by simp)
+  | .prod a b, _, x, i, m, h, hb => by
+    simp only [Vals.pickC, Bool.and_eq_true] at hb
+    exact pickFits_prod x (Vals.pickC_fits a x.1 i m h hb.1) (Vals.pickC_fits b x.2 i m h hb.2)
+  | .sum a b, _, x, _, m, _, hb => pickFits_of_fitsN (.sum a b) x m.toNat hb _ (by simp)
+  | .arr b, n, ⟨p, lo, hi, f⟩, i, m, h, hb => by
+    simp only [Vals.pickC, expand, need] at hb
+    split at hb
+    · rename_i hE
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+      obtain ⟨⟨hp, hk⟩, hf⟩ := hb
+      rw [USize.toNat_ofNat_of_lt' hE] at hk hf
+      have hL := len_expand_slices (n := m) hp (longsOf (pickArr .long ⟨n, lo⟩ i m h))
+        (longsOf (pickArr .long ⟨n, hi⟩ i m h))
+      have hG : (((List.range m.toNat).map fun q => (Column.bitsAt i (q * 8) 8).toNat).flatMap fun k =>
+          if h : k < n.toNat then List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+            (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
+          else []).length = ((List.range m.toNat).map fun k =>
+            min (max (Column.bitsAt (longsOf (pickArr .long ⟨n, hi⟩ i m h)) (k * 8) 8).toInt64.toInt 0).toNat p.toNat -
+              min (max (Column.bitsAt (longsOf (pickArr .long ⟨n, lo⟩ i m h)) (k * 8) 8).toInt64.toInt 0).toNat
+                p.toNat).sum := by
+        rw [List.flatMap_map, List.length_flatMap]; congr 1; apply List.map_congr_left; intro t ht
+        rw [List.mem_range] at ht
+        rw [longsOf_get _ ht, longsOf_get _ ht, Int64.toInt64_toUInt64, Int64.toInt64_toUInt64,
+          pickArr_long_get, pickArr_long_get]
+        by_cases hin : (Column.bitsAt i (t * 8) 8).toNat < n.toNat <;> simp [hin]
+      unfold Vals.PickFits; dsimp only
+      exact ⟨hp, by omega, by omega, pickFits_of_fitsN b f _ hf _ (by omega)⟩
+    · simp [stop] at hb
+
 /-! ## Picking twice is picking once at the composed rows -/
 
 /-- **The shape of a picked array side**: the payload `f` picked at an index `i'` of `k` rows, which reads back

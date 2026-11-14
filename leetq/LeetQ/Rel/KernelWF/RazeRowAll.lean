@@ -30,6 +30,60 @@ def _root_.LeetQ.Rel.Vals.RazeFits : (A : Obj) → {n m : USize} → Vals A n �
       Vals.PickFits (.sum a b) x (List.range n.toNat) ∧ Vals.PickFits (.sum a b) y (List.range m.toNat) ∧
       Vals.RazeFits a x.held.2.2.2.2.1 y.held.2.2.2.2.1 ∧ Vals.RazeFits b x.held.2.2.2.2.2 y.held.2.2.2.2.2
 
+/-- **`Obj.razeC`'s bit is a fit** for two parts: each clause of `Vals.RazeFits` is a conjunct of the bit, a
+    sum's picks by `pickFits_of_fitsN` at all its rows. -/
+theorem _root_.LeetQ.Rel.Obj.razeC_fits : (A : Obj) → {n m : USize} → (x : Vals A n) → (y : Vals A m) →
+    (cs : Array (Part A)) → cs.toList = [⟨n, x⟩, ⟨m, y⟩] →
+    (hN : (cs.toList.map fun c : Part A => c.1.toNat).sum < USize.size) →
+    (Obj.razeC A cs hN).2 = true → Vals.RazeFits A x y
+  | .atom t, n, m, x, y, cs, hcs, hN, hb => by
+    simp only [Obj.razeC, Bool.and_eq_true, decide_eq_true_eq, Bool.or_eq_true, Bool.not_eq_true'] at hb
+    rw [hcs] at hb
+    simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, Nat.add_zero] at hb
+    unfold Vals.RazeFits
+    refine ⟨hb.1, fun ha => ?_⟩
+    rcases hb.2 with h | h
+    · rw [ha] at h; cases h
+    · exact h
+  | .prod a b, n, m, x, y, cs, hcs, hN, hb => by
+    simp only [Obj.razeC, Bool.and_eq_true] at hb
+    unfold Vals.RazeFits
+    exact ⟨Obj.razeC_fits a x.1 y.1 _ (by simp [hcs]) _ hb.1, Obj.razeC_fits b x.2 y.2 _ (by simp [hcs]) _ hb.2⟩
+  | .arr b, n, m, x, y, cs, hcs, hN, hb => by
+    simp only [Obj.razeC, need] at hb
+    split at hb
+    · rename_i hf
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+      have e : (cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b)).toList = [⟨x.1, x.2.2.2⟩, ⟨y.1, y.2.2.2⟩] := by
+        simp [hcs]
+      have hs : ((cs.map fun c => (⟨c.2.1, c.2.2.2.2⟩ : Part b)).toList.map (·.1.toNat)).sum =
+          x.1.toNat + y.1.toNat := by rw [e]; simp
+      unfold Vals.RazeFits
+      exact ⟨by omega, by omega, Obj.razeC_fits b _ _ _ e _ hb.2⟩
+    · simp [stop] at hb
+  | .sum a b, n, m, x, y, cs₀, hcs, hN, hb => by
+    simp only [Obj.razeC, need] at hb
+    split at hb
+    · rename_i hf
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+      obtain ⟨⟨⟨⟨h1, h2⟩, hp⟩, ha⟩, hb⟩ := hb
+      have el : ((cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.1, c.2.2.2.2.2.1⟩ : Part a)).toList =
+          [⟨x.held.1, x.held.2.2.2.2.1⟩, ⟨y.held.1, y.held.2.2.2.2.1⟩] := by simp [hcs]
+      have er : ((cs₀.map fun c => (⟨c.1, c.2.held⟩ : Part (.sum a b))).map
+          fun c => (⟨c.2.2.1, c.2.2.2.2.2.2⟩ : Part b)).toList =
+          [⟨x.held.2.1, x.held.2.2.2.2.2⟩, ⟨y.held.2.1, y.held.2.2.2.2.2⟩] := by simp [hcs]
+      rw [el] at h1; rw [er] at h2; rw [el, er] at hf
+      simp only [List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, Nat.add_zero] at h1 h2 hf
+      have hpk : ∀ c ∈ cs₀.toList, Vals.fitsN (.sum a b) c.2 c.1.toNat = true := fun c hc =>
+        Array.all_eq_true_iff_forall_mem.1 hp c (Array.mem_def.2 hc)
+      unfold Vals.RazeFits
+      exact ⟨hf.1, hf.2, h1, h2,
+        pickFits_of_fitsN (.sum a b) x _ (hpk ⟨n, x⟩ (by rw [hcs]; simp)) _ (by simp),
+        pickFits_of_fitsN (.sum a b) y _ (hpk ⟨m, y⟩ (by rw [hcs]; simp)) _ (by simp),
+        Obj.razeC_fits a _ _ _ el _ ha, Obj.razeC_fits b _ _ _ er _ hb⟩
+    · simp [stop] at hb
+
 /-- **Two atom parts fit on their summed row count alone** at a type that has no dictionary (`Enc.WF` admits
     `enum` only at `symbol`) and no ALP layout: the clause's other bounds are then about the counts themselves.
     At `symbol` the dictionaries, at `.arr`/`.sum` the payloads, are not bounded by the row counts. -/
