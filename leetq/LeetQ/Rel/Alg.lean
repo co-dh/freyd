@@ -282,7 +282,7 @@ def rightDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : 
 /-- `/ₛ`'s fibre ids over the value codes `v0`, `v1` and the segments `pr`, `orr` of `R`, `ps`, `os` of `S` (`nR`
     `R`'s count): `setIds` of both fibre families in one call. A def on plain values: its `longCount` binds a proof
     about `os`, under which a twin's `.1` is rewritten by neither `simp` nor `rw`. -/
-def symIds (v0 v1 : Code) (pr orr ps os : ByteArray) (nR : Nat) : ByteArray :=
+def symDivIds (v0 v1 : Code) (pr orr ps os : ByteArray) (nR : Nat) : ByteArray :=
   -- each `segments` offsets end at its code count, so `S`'s starts shifted by `|R|` follow `R`'s
   let ss := os.extract 0 (os.size - 8)
   longCount "/ₛ" ss fun c _ =>
@@ -312,7 +312,7 @@ def symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : V
   let vc := C.codesC #v[valPart R, valPart S]
   let ac := A.codesC #v[keyPart R, ⟨_, Ua⟩]; let bc := B.codesC #v[keyPart S, ⟨_, Ub⟩]
   let sr := segments ac.1[0]; let sq := segments bc.1[0]
-  let ids := symIds vc.1[0] vc.1[1] sr.1 sr.2.1 sq.1 sq.2.1 R.n.toNat
+  let ids := symDivIds vc.1[0] vc.1[1] sr.1 sr.2.1 sq.1 sq.2.1 R.n.toNat
   let lc := Code.ofLongs (ids.extract 0 (8 * len sr.2.2)); let rc := Code.ofLongs (ids.extract (8 * len sr.2.2) ids.size)
   let h := symHitC (Vals.pickPart A R.key sr.2.2) (Vals.pickPart B S.key sq.2.2) lc rc
   let u := symDivTailC Ua Ub ac.1[0] ac.1[1] bc.1[0] bc.1[1] h.1

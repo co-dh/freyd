@@ -168,7 +168,7 @@ theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
   exact rep_transpose R hK hV hk hv hWk hW h63
 
 /-- **`rep (R /ₛ S)` under `symDivC`'s bit**: `rep_symDiv` at the intermediates `symDivC` builds (the codes twins'
-    `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symIds`/`symDivTailC`; then `symHitC`'s
+    `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symDivIds`/`symDivTailC`; then `symHitC`'s
     and `⊤`'s). The codes' bits give `hfv`, `hfa`, `hfb` (`codesC_fits`), the decided counts `hNU`, `hN63`, `hRS`,
     `hUab`, the `fitsN` bits `hRk`, `hSk`, `hPa`, `hPb`, `topC`'s `hA`, `hBv`, `unionC`'s `hU`…`hUv` (as
     `rep_leftDivC`); the join picks' bit is `rep_symDiv`'s own. -/
@@ -177,7 +177,7 @@ theorem rep_symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma)
     rep (symDivC R S Ua Ub).1 x y ↔
       (∀ c, rep R x c ↔ rep S y c) ∧ ((∃ c, rep R x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
   simp only [symDivC, Obj.codesC_fst] at hb
-  simp only [keyPart, valPart, symIds, Bool.and_eq_true, decide_eq_true_eq] at hb
+  simp only [keyPart, valPart, symDivIds, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hfv, hfa⟩, hfb⟩, hNU⟩, hN63⟩, hRk⟩, hSk⟩, hRS⟩, hh⟩, hPa⟩, hPb⟩, hUab⟩, hu⟩ := hb
   simp only [symDivTailC, topC, symHitC_fst, Bool.and_eq_true] at hu
   obtain ⟨⟨⟨⟨-, -⟩, ha⟩, hbc⟩, hu⟩ := hu
