@@ -239,19 +239,22 @@ theorem eq_of_lt_mem : ∀ {l₁ l₂ : List Nat}, l₁.Pairwise (· < ·) → l
 /-- **`idsBy` read back by position**: its first rows are `firstsOf`, and row `i`'s id, read at the width the
     first-row count gives, is `groupOf`. -/
 theorem idsBy_read {α : Type} [BEq α] [LawfulBEq α] [DecidableEq α] {m : Nat} (hm : m < 2 ^ 64) (key : Nat → α) :
-    ids (Order.idsBy m key).2 = firstsOf key m ∧ ∀ i < m,
+    ids (Order.idsBy m key).2 = firstsOf key m ∧ (∀ i < m,
       Column.idAt (Order.idsBy m key).1 (Column.idWidthOf ((Order.idsBy m key).2.size / 8)) i =
-        Verify.groupOf key m i := by
+        Verify.groupOf key m i) ∧
+      Column.idsCap (Order.idsBy m key).1 (Column.idWidthOf ((Order.idsBy m key).2.size / 8)) m = m := by
   obtain ⟨h1, h2⟩ := idsBy_spec m key
   have hb : ∀ a b : α, (a == b) = decide (a = b) := fun a b => Bool.eq_iff_iff.2 (by
     rw [beq_iff_eq, decide_eq_true_iff])
   have hf : Order.firstsBy m key = firstsOf key m := by unfold Order.firstsBy firstsOf; simp only [bne, hb]
-  refine ⟨?_, fun i hi => ?_⟩
+  refine ⟨?_, fun i hi => ?_, ?_⟩
   · show ids (Order.indices (Order.firstsBy m key)) = _
     rw [hf, ids_indices _ fun i hi => Nat.lt_trans (firsts_lt key m hi) hm]
   · rw [h1, h2, Nat.mul_div_cancel_left _ (by decide)]
     exact idAt_packIds (by unfold Column.idWidthOf; exact laneWidth_cases _) hi
       (lt_idWidthOf (groupOf_lt hi) (Nat.le_of_lt (Nat.lt_of_le_of_lt (firstsOf_length_le key m) hm)))
+  · rw [h1, h2, Nat.mul_div_cancel_left _ (by decide)]
+    exact idsCap_packIds m _ (by unfold Column.idWidthOf; exact laneWidth_cases _)
 
 -- the (slice, code) key of row `t`: the long `t` of `A`, the code `t` of `B`
 set_option hygiene false in
@@ -267,16 +270,17 @@ theorem pairIds_read (A : ByteArray) (B : Code) (n : USize)
     (r : ByteArray × ByteArray) (hr : r = match B.kind with
       | some k => Order.groupIdsPair .i64 k n A B.b
       | none => Order.groupIdsPairIds 64 B.w.toUSize n A B.b) :
-    ids r.2 = firstsOf PK(A, B) n.toNat ∧ ∀ t < n.toNat,
-      Column.idAt r.1 (Column.idWidthOf (r.2.size / 8)) t = Verify.groupOf PK(A, B) n.toNat t := by
+    ids r.2 = firstsOf PK(A, B) n.toNat ∧ (∀ t < n.toNat,
+      Column.idAt r.1 (Column.idWidthOf (r.2.size / 8)) t = Verify.groupOf PK(A, B) n.toNat t) ∧
+      Column.idsCap r.1 (Column.idWidthOf (r.2.size / 8)) n.toNat = n.toNat := by
   have lane : ∀ (b : ByteArray) a, Column.idAt b 64 a = (Column.bitsAt b (a * 8) 8).toNat :=
     fun b a => idAt_lane b (c := 8) (by decide) a
   suffices h : ∃ key : Nat → UInt64 × UInt64, r = Order.idsBy n.toNat key ∧
       ∀ i < n.toNat, ∀ j < n.toNat, (key i = key j ↔ PK(A, B) i = PK(A, B) j) by
     obtain ⟨key, rfl, hk⟩ := h
     obtain ⟨hf, -, hg⟩ := groups_congr key n.toNat hk
-    obtain ⟨h1, h2⟩ := idsBy_read (usize_lt n) key
-    exact ⟨h1.trans hf, fun t ht => (h2 t ht).trans (hg t ht)⟩
+    obtain ⟨h1, h2, h3⟩ := idsBy_read (usize_lt n) key
+    exact ⟨h1.trans hf, fun t ht => (h2 t ht).trans (hg t ht), h3⟩
   have hAv : Scan.Kind.i64.avail A = n.toNat := by show A.size / 8 = _; omega
   rcases hk : B.kind with _ | k
   · rw [hk] at hr
@@ -298,7 +302,7 @@ theorem pairIds_read (A : ByteArray) (B : Code) (n : USize)
           (Column.idsCap B.b B.w.toUSize.toNat n.toNat)) := fun x hx => by rw [h64, hwB, capA, capB]; simpa using hx
       have e := groupIdsPairIds_iff 64 B.w.toUSize n A B.b (hc i hi) (hc j hj)
       unfold Order.groupIdsPairIds Order.groupIdsPair at e
-      rw [hM, (idsBy_read (usize_lt n) _).2 i hi, (idsBy_read (usize_lt n) _).2 j hj, groupOf_iff hi hj, h64, hwB,
+      rw [hM, (idsBy_read (usize_lt n) _).2.1 i hi, (idsBy_read (usize_lt n) _).2.1 j hj, groupOf_iff hi hj, h64, hwB,
         lane A i, lane A j] at e
       refine e.trans ?_
       simp only [Prod.mk.injEq]
@@ -311,8 +315,26 @@ theorem pairIds_read (A : ByteArray) (B : Code) (n : USize)
       exact and_congr ((keyAt_eq_iff (k := .i64) (by simp) A i j).trans UInt64.toNat_inj.symm)
         (keyAt_iff_idAt hk B.b i j)
 
+/-- **`groupLongs` of `setIds`' pair grouping** widens it to one long per row: row `t`'s pair number. Hypotheses
+    as `pairIds_read`. -/
+theorem groupLongs_read (A : ByteArray) (B : Code) (n : USize)
+    (hw : B.w = 1 ∨ B.w = 2 ∨ B.w = 4 ∨ B.w = 8 ∨ B.w = 16 ∨ B.w = 32 ∨ B.w = 64)
+    (hs : B.b.size = (B.n.toNat * B.w + 7) / 8) (hBn : B.n.toNat = n.toNat) (hA : A.size = 8 * n.toNat)
+    (r : ByteArray × ByteArray) (hr : r = match B.kind with
+      | some k => Order.groupIdsPair .i64 k n A B.b
+      | none => Order.groupIdsPairIds 64 B.w.toUSize n A B.b) :
+    ids (groupLongs n r) = (List.range n.toNat).map (Verify.groupOf PK(A, B) n.toNat) := by
+  obtain ⟨-, hg, hcap⟩ := pairIds_read A B n hw hs hBn hA r hr
+  have hW : Column.idWidthOf (r.2.size / 8) ≤ 64 := by
+    unfold Column.idWidthOf
+    rcases laneWidth_cases (Column.widthFor (r.2.size / 8 - 1)) with h | h | h | h | h | h | h | h <;> rw [h] <;> decide
+  show ids (Order.idLongs n (Column.idWidthOf (r.2.size / 8)).toUSize r.1) = _
+  rw [ids_idLongs, lane_toNat hW, hcap]
+  exact List.map_congr_left fun t ht => hg t (List.mem_range.1 ht)
+
 #print axioms gradeBy_lex
 #print axioms groupOf_spec
+#print axioms groupLongs_read
 #print axioms idsBy_read
 #print axioms pairIds_read
 #print axioms firsts_lt_iff
