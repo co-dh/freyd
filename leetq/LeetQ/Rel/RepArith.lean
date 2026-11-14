@@ -318,6 +318,32 @@ theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (s : Arr .long n)
       · rw [valCol_succ_get]; exact hj.trans (hw.trans (by rw [← hi]; rfl))
       · rw [dif_pos i.2, valCol_succ_get]; exact (hw.trans (by rw [← hi]; rfl)).symm
 
+/-! ## The columns the folds seed and count with -/
+
+/-- **`col xs`, read back**: where `xs` fits a `USize` (else `col` stops, its model the blank column), element `i`
+    is `xs[i]`. (`tilCol`'s is `tilCol_get`, `KernelWF/CrossSpec.lean`: element `i` is `Int64.ofNat i`.) -/
+theorem col_get (xs : List Int64) (h : xs.length < USize.size) (i : Fin xs.length.toUSize.toNat) :
+    (col xs).get i = xs[i.1]'(Nat.lt_of_lt_of_eq i.2 (USize.toNat_ofNat_of_lt' h)) := by
+  have hi : i.1 < xs.length := Nat.lt_of_lt_of_eq i.2 (USize.toNat_ofNat_of_lt' h)
+  have e := elemsW_foldl (fun x : Int64 => x.toUInt64) 8 (by decide) (by decide) xs
+    fun x _ => Nat.lt_of_lt_of_eq (UInt64.toNat_lt_size x.toUInt64) (by decide)
+  have hl : i.1 < (elemsW 8 (packLongs xs)).length := by
+    simp only [elemsW, List.length_map, List.length_range, packLongs_size]; omega
+  have e' := List.getElem_of_eq e hl
+  simp only [elemsW, List.getElem_map, List.getElem_range] at e'
+  unfold col need
+  rw [dif_pos h, Arr.get_long_bytes _ rfl]
+  exact (congrArg UInt64.toInt64 e').trans (Int64.toInt64_toUInt64 _)
+
+/-- **`length X` where its `needSize` fits**: the fold of `col [0]` and `outr D ≫ succ (tilCol c)`, `c` the payload's
+    count plus one — `needSize`'s continuation at that count; past it `length` stops (its model `default`). -/
+theorem length_eq {E : Obj} {n : USize} (X : Vals (.arr E) n) (hX : X.1.toNat + 1 < USize.size) :
+    length X = foldOn (col [0]) (fun D => outr D ≫ succ (tilCol (X.1.toNat + 1).toUSize)) X := by
+  unfold length needSize need
+  rw [dif_pos hX]
+
+#print axioms col_get
+#print axioms length_eq
 #print axioms rep_succ
 #print axioms holds_where
 #print axioms rep_arith
