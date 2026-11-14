@@ -36,7 +36,7 @@ theorem round_rep {E V : Obj} (el : Rel .long E) (pend P S : Rel .long V)
     (hSk : Vals.PickFits .long S.key (ids nubI(.long, V, S)))
     (hSv : Vals.PickFits V S.val (ids nubI(.long, V, S)))
     (jc : Vector Code 2) (hjc : jc = Obj.codes .long jparts) (hjf : Obj.CodesFit .long jparts)
-    (I : ByteArray) (hI : I = anti (jc[0]'(by decide)) (jc[1]'(by decide)))
+    (I : ByteArray) (hI : I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two))
     (hJk : Vals.PickFits V (Rel.key (pend°)) (ids I)) (hJv : Vals.PickFits .long (Rel.val (pend°)) (ids I))
     (Q : Rel .long V) (hQ : Q = (antiJoin (pend°) (idU (Rel.key el)))°)
     (hU : P.n.toNat + Q.n.toNat < USize.size)
@@ -211,7 +211,7 @@ local notation "roundOK" =>
   V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
   Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
   Obj.CodesFit .long jparts ∧
-  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'(by decide)) (jc[1]'(by decide)) →
+  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
     Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
   ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
     P.n.toNat + Q.n.toNat < USize.size ∧
@@ -271,6 +271,66 @@ theorem rounds_rep {E V : Obj} (pend₀ : Rel .long V) (step : Rel .long E → R
       rcases Nat.lt_succ_iff_lt_or_eq.1 hi with hi | rfl
       · exact Or.inl ⟨i, hi, h⟩
       · exact Or.inr h
+
+-- `RepOps`' `codesOK` (a local notation, so restated here): codes `cs` of two parts `ps` faithful, well formed
+set_option hygiene false in
+local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
+    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
+      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+-- the parts `pair R S` codes (both keys), and the parts `R ≫ S` codes (`R`'s values, `S`'s keys)
+set_option hygiene false in
+local notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+set_option hygiene false in
+local notation "vk2(" R ", " S ")" =>
+  (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part (.prod E V)) 2)
+-- the row pairs `join` matches on the codes `cs` of rows of `R` and of `S`, and their count. The index proofs
+-- are terms: a `by decide` here is elaborated against the whole context, so each hypothesis grew the next's cost
+set_option hygiene false in
+local notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
+set_option hygiene false in
+local notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
+
+/-- **`fold`'s step, read back**: `demandStep` of the one relation `S` takes row `r`'s element `e` and value `u`
+    to each `v` with `(e, u) S v`. The codes `kc` of `pair`, the pair `P` and the codes `jc` of `P ≫ S` are bound
+    by their equations. Hypotheses: `rep_pair`'s at `el`, `pend` (`hk…`) and `rep_comp`'s at `P`, `S` (`hj…`). -/
+theorem step_rep {E V : Obj} (el : Rel .long E) (pend : Rel .long V) (S : Rel (.prod E V) V)
+    (kc : Vector Code 2) (hkc : kc = Obj.codes .long kp2(el, pend)) (hkO : codesOK(kc, kp2(el, pend)))
+    (hkn : (Rel.n pend).toNat < 2 ^ 63) (hkM : msum(kc, el, pend) < 2 ^ 63)
+    (hkU : msum(kc, el, pend) < USize.size)
+    (hkA : Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst))
+    (hkB : Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst))
+    (hkC : Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd))
+    (P : Rel .long (.prod E V)) (hP : P = pair el pend)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes (.prod E V) vk2(P, S)) (hjO : codesOK(jc, vk2(P, S)))
+    (hjn : (Rel.n S).toNat < 2 ^ 63) (hjM : msum(jc, P, S) < 2 ^ 63) (hjU : msum(jc, P, S) < USize.size)
+    (hjA : Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst))
+    (hjC : Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)) :
+    ∀ r v, rep (demandStep (fun _ => S) el pend) r v ↔ ∃ e u, rep el r e ∧ rep pend r u ∧ rep S (e, u) v := by
+  subst hkc hjc
+  have h1 := rep_pair el pend hkO hkn hkM hkU hkA hkB hkC
+  subst hP
+  have h2 := rep_comp (pair el pend) S hjO hjn hjM hjU hjA hjC
+  intro r v
+  show rep (pair el pend ≫ S) r v ↔ _
+  rw [h2]
+  constructor
+  · rintro ⟨⟨e, u⟩, hp, hs⟩
+    rw [h1] at hp
+    exact ⟨e, u, hp.1, hp.2, hs⟩
+  · rintro ⟨e, u, he, hu, hs⟩
+    refine ⟨(e, u), ?_, hs⟩
+    rw [h1]; exact ⟨he, hu⟩
 
 /-- **The rounds' states and `out`, in `Set`**: `st i r` holds the values row `r` reaches after `i` rounds, each
     round taking `S` on the row's element `i` from the end of `xs r` (`hst`, the states' defining recurrence).
@@ -352,6 +412,69 @@ theorem rounds_closed {K E V : Type} (xs : K → List E) (S : E × V → V → P
         exact hj u hu
     exact ⟨_, hLj, h, fun ⟨_, hl, _⟩ => Nat.lt_irrefl _ hl⟩
 
+-- `step_rep`'s hypotheses at `el`, `pend`, `S`, its bound values `kc`, `P`, `jc` quantified with their equations
+set_option hygiene false in
+local notation "stepOK" =>
+  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
+    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
+    msum(kc, el, pend) < USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
+    ∀ P : Rel .long (.prod E V), P = pair el pend → ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
+      codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, P, S) < 2 ^ 63 ∧ msum(jc, P, S) < USize.size ∧
+      Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
+      Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
+
+/-- **`foldRows` of `fold`'s step, read back**: row `r` goes to `v` when a chain `ys` of `S`-steps runs along
+    the array `xs r` from a value of `pend₀` at `r` to `v`. Internal: `hel` characterises the rounds' elements
+    by `xs`, `hlen` bounds every `xs r` by the payload. `step`, `elK`, `f` are bound by their equations;
+    `hR`, `hS` are `round_rep`'s and `step_rep`'s hypotheses at every round. -/
+theorem foldRows_rep {E V : Obj} (X : Rel .long (.arr E)) (pend₀ : Rel .long V) (S : Rel (.prod E V) V)
+    (xs : Obj.El .long → List E.El)
+    (hel : ∀ k r x, rep elR(X, k) r x ↔
+      ∃ hl : k < (xs r).length, x = (xs r)[(xs r).length - 1 - k]'(by omega))
+    (hlen : ∀ r, (xs r).length ≤ (Rel.val X).1.toNat)
+    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep (fun _ => S))
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(X, k))
+    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
+    (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
+    (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      stepOK) :
+    ∀ r v, rep (foldRows X pend₀ step) r v ↔ ∃ ys : List V.El, ∃ hy : ys.length = (xs r).length + 1,
+      rep pend₀ r (ys[(xs r).length]'(by omega)) ∧
+      (∀ t (ht : t < (xs r).length), rep S ((xs r)[t], ys[t + 1]'(by omega)) (ys[t]'(by omega))) ∧
+      v = ys[0]'(by omega) := by
+  intro r v
+  obtain ⟨j, -, hfo, hstop⟩ := foldRows_iter X pend₀ step elK hE f hf
+  have hrr := rounds_rep pend₀ step elK f hf hR
+  have hst : ∀ i r v, rep (f^[i + 1] (pend₀, Alg.zero, 0)).1 r v ↔ ∃ e u,
+      (∃ hl : i < (xs r).length, e = (xs r)[(xs r).length - 1 - i]'(by omega)) ∧
+      rep (f^[i] (pend₀, Alg.zero, 0)).1 r u ∧ rep S (e, u) v := by
+    intro i r v
+    rw [(hrr i).2.1]
+    obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+    obtain ⟨hjO, hjn, hjM, hjU, hjA, hjC⟩ := hJ _ rfl _ rfl
+    subst hstep
+    refine ((step_rep (elK i) _ S _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl _ rfl hjO hjn hjM hjU hjA hjC) r v).trans
+      (exists_congr fun e => exists_congr fun u => and_congr ?_ Iff.rfl)
+    rw [hE]; exact hel i r e
+  obtain ⟨closed, -, outc⟩ := rounds_closed xs (fun p w => rep S p w)
+    (fun i r v => rep (f^[i] (pend₀, Alg.zero, 0)).1 r v) hst
+  have hj : (xs r).length < j ∨ ∀ u, ¬ rep (f^[j] (pend₀, Alg.zero, 0)).1 r u := by
+    rcases hstop with h | h
+    · have := hlen r; omega
+    · refine Or.inr fun u ⟨i, _, _⟩ => ?_
+      have h0 : (Rel.n (f^[j] (pend₀, Alg.zero, 0)).1).toNat = 0 := by simp [eq_of_beq h]
+      exact absurd i.2 (by omega)
+  rw [hfo, (hrr j).2.2 r v]
+  refine (exists_congr fun i => and_congr Iff.rfl (and_congr Iff.rfl (not_congr (exists_congr fun e => ?_)))).trans
+    (((outc j r v hj).trans (closed _ r v (Nat.le_refl _))).trans ?_)
+  · rw [hE]; exact hel i r e
+  refine exists_congr fun ys => exists_congr fun hy => and_congr Iff.rfl
+    (and_congr (forall_congr' fun t => forall_congr' fun ht => ?_) Iff.rfl)
+  simp only [Nat.sub_self, Nat.zero_add]
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.round_rep
@@ -360,3 +483,5 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.foldRows_iter
 #print axioms LeetQ.Rel.Rep.rounds_rep
 #print axioms LeetQ.Rel.Rep.rounds_closed
+#print axioms LeetQ.Rel.Rep.step_rep
+#print axioms LeetQ.Rel.Rep.foldRows_rep
