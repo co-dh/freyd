@@ -379,15 +379,12 @@ theorem rep_leftDiv {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb)
     rep (leftDiv R S Ub Uc) b c ↔
       (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
   classical
-  -- `rw`, not `simp`: the kept rows' `longCount` binds a proof about the codes, which `simp` cannot rewrite under
+  -- each twin's `.1` its op; inside `divTailC` only `∪`'s, the codes being its arguments
   have e : leftDiv R S Ub Uc = P ∪ Q := by
     subst hPe hQe hI hzc hycs hy hkc
-    unfold leftDiv leftDivC; dsimp only
-    set_option diagnostics true in
-    set_option maxHeartbeats 20000 in
-    rw [nubC_fst R]
-    rw [nubC_fst]; repeat rw [Obj.codesC_fst]
-    rw [divJoinC_fst, unionC_fst]; rfl
+    -- the arguments first: `divTailC` unfolded before them would put them under its dependent binder
+    simp only [leftDiv, leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst]
+    simp only [divTailC, topC, unionC_fst, keyPart, valPart]; rfl
   rw [e, rep_union_full P Q hU hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
   show P.Holds b c ∨ Q.Holds b c ↔ _
   subst hPe hQe

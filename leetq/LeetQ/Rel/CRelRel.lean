@@ -166,19 +166,20 @@ theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb
     (hb : (leftDivC R S Ub Uc).2 = true) (b : B.El) (c : C.El) :
     rep (leftDivC R S Ub Uc).1 b c ↔
       (∀ a, rep R a b → rep S a c) ∧ ((∃ a, rep R a b) ∨ ((∃ p, Ub.row p = b) ∧ ∃ j, Uc.row j = c)) := by
-  -- `rw`, not `simp`: the kept rows' `longCount` binds a proof about the codes, which `simp` cannot rewrite under
-  unfold leftDivC at hb; dsimp only at hb
-  rw [nubC_fst, nubC_fst] at hb; repeat rw [Obj.codesC_fst] at hb
-  rw [divJoinC_fst] at hb
-  simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hr, hs⟩, hk⟩, hSn⟩, hRS⟩, hy⟩, hycs⟩, hzc⟩, hP⟩, hUbc⟩, hq⟩, hu⟩ := hb
+  simp only [leftDivC, nubC_fst, Obj.codesC_fst, divJoinC_fst] at hb
+  simp only [keyPart, valPart, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hr, hs⟩, hk⟩, hSn⟩, hRS⟩, hy⟩, hycs⟩, hzc⟩, hP⟩, hUbc⟩, hu⟩ := hb
+  simp only [divTailC, Bool.and_eq_true] at hu
+  obtain ⟨hq, hu⟩ := hu
   simp only [nubC, Bool.and_eq_true] at hr hs
   obtain ⟨⟨⟨hRK, hRV⟩, hRk⟩, hRv⟩ := hr
   obtain ⟨⟨⟨hSK, hSV⟩, hSk⟩, hSv⟩ := hs
   have hRK' := Obj.codesC_fits A _ hRK; have hRV' := Obj.codesC_fits B _ hRV
   have hSK' := Obj.codesC_fits A _ hSK; have hSV' := Obj.codesC_fits C _ hSV
-  have hRk' := pickFits_of_fitsN A R.key _ hRk _ (by simp); have hRv' := pickFits_of_fitsN B R.val _ hRv _ (by simp)
-  have hSk' := pickFits_of_fitsN A S.key _ hSk _ (by simp); have hSv' := pickFits_of_fitsN C S.val _ hSv _ (by simp)
+  have hRk' := pickFits_of_fitsN A R.key _ hRk (List.range R.n.toNat) (by simp)
+  have hRv' := pickFits_of_fitsN B R.val _ hRv (List.range R.n.toNat) (by simp)
+  have hSk' := pickFits_of_fitsN A S.key _ hSk (List.range S.n.toNat) (by simp)
+  have hSv' := pickFits_of_fitsN C S.val _ hSv (List.range S.n.toNat) (by simp)
   have hfk := Obj.codesC_fits A _ hk
   -- the join's rows, as `rep_compC`; `nub` keeps at most the input's rows
   have nR := nub_count_le R (one_ok _ hRK') (one_ok _ hRV') hRk' hRv'
@@ -199,7 +200,6 @@ theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb
     have e := hZ _ (USize.toNat_ofNat_of_lt' hlt).symm
     have hfB := Vals.pickC_fits B _ _ _ _ hy.1
     have hfC := Vals.pickC_fits C _ _ _ _ hy.2
-    rw [hln, hrn'] at e
     unfold unionC need at hu
     split at hu
     · rename_i hU
@@ -214,9 +214,12 @@ theorem rep_leftDivC {mb mc : USize} (R : Rel A B) (S : Rel A C) (Ub : Vals B mb
         (by rw [e, List.map_map]; exact hfB) (by rw [e, List.map_map]; exact hfC) _ rfl _ rfl
         (Obj.codesC_fits B _ hycs) _ rfl (Obj.codesC_fits C _ hzc) _ rfl
         (pickFits_of_fitsN B Ub _ hP _ (by simp)) hUbc
-        (pickFits_of_fitsN B _ _ ha _ (by simp)) (pickFits_of_fitsN C Uc _ hbc _ (by simp))
+        -- `⊤`'s rows count the vacuous part as `topC` read it, which equals `vacY`'s by unfolding only
+        (pickFits_of_fitsN B _ _ ha _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
+        (pickFits_of_fitsN C Uc _ hbc _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
         _ _ rfl rfl hU hFk hFv (Obj.codesC_fits B _ hkc) (Obj.codesC_fits C _ hvc)
-        (pickFits_of_fitsN B _ _ hkf _ (by simp)) (pickFits_of_fitsN C _ _ hvf _ (by simp)) b c
+        (pickFits_of_fitsN B _ _ hkf _ (by simp only [List.length_range]; exact Nat.le_refl _))
+        (pickFits_of_fitsN C _ _ hvf _ (by simp only [List.length_range]; exact Nat.le_refl _)) b c
     · exact absurd hu Bool.false_ne_true
   · exact absurd hy Bool.false_ne_true
 
