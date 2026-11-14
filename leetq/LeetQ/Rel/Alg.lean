@@ -1033,12 +1033,17 @@ def uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.ar
 
 /-- `perm ≜ ⦇[nil, add]⦈` on the arrays `X` (`perm`, AOP/A5_6_ListCombinators.lean:81; B&dM p.130), `add` putting
     the head anywhere: `(a, xs)` to `ys` then `a` then `zs` for every `(ys, zs)` of `cat°(xs)`. The tuples
-    `(a, (ys, zs))` a round meets are distinct keys (`ran`), so `⟨…⟩` on them keeps one row each. -/
-def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  foldBy X (nilVal B) fun el pend =>
-    let q := pair el (pend ≫ uncat (ran pend).val)
-    let D := ran q
-    q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))
+    `(a, (ys, zs))` a round meets are distinct keys (`ran`), so `⟨…⟩` on them keeps one row each. Whether it ran
+    within capacity: `foldByC`'s, each round's the `&&` of its twins' bits. -/
+def permC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  foldByC X (nilVal B) fun el pend =>
+    let Dp := ranC pend; let un := uncatC Dp.1.val; let U := compC pend un.1; let q := pairC el U.1
+    let D := ranC q.1; let W := pairC (outl D.1) (outr (outr D.1)); let Cn := consC W.1
+    let V := pairC (outl (outr D.1)) Cn.1; let Ct := catC V.1; let R := compC q.1 Ct.1
+    (R.1, Dp.2 && (un.2 && (U.2 && (q.2 && (D.2 && (W.2 && (Cn.2 && (V.2 && (Ct.2 && R.2)))))))))
+
+/-- `perm`: `permC`'s relation. -/
+def perm {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (permC X).1
 
 /-- `setify : arr B ⟶ P B` on the arrays `X`, each array to the set of its elements (`setify`,
     AOP/A5_6_ListCombinators.lean:49, `Λ(inlist)`; B&dM §7.3 p.177): `Λ(∋)` total on `X`, and whether it ran
@@ -1094,9 +1099,15 @@ def sortSet {B : Obj} {n : USize} (Q : Rel B B) (Y : Vals (.arr B) n) : Rel (.ar
   (setify Y)° ≫ ordered Q Y
 
 /-- `subseq ≜ ⦇[nil, cons ∪ π₂]⦈` on the arrays `X`, each array to each of its subsequences (`subseq`,
-    AOP/A5_6_ListCombinators.lean:127): a head kept or dropped. -/
-def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  foldBy X (nilVal B) fun el pend => cons (pair el pend) ∪ pend
+    AOP/A5_6_ListCombinators.lean:127): a head kept or dropped. Whether it ran within capacity: `foldByC`'s, each
+    round's the `&&` of `pairC`'s, `consC`'s and `unionC`'s. -/
+def subseqC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  foldByC X (nilVal B) fun el pend =>
+    let p := pairC el pend; let c := consC p.1; let u := unionC c.1 pend
+    (u.1, p.2 && c.2 && u.2)
+
+/-- `subseq`: `subseqC`'s relation. -/
+def subseq {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := (subseqC X).1
 
 /-- `thinL(Q) ≜ setify thin(Q) setify° ∩ subseq` on the arrays `X` (`thinL`, AOP/A8_3.lean:567; B&dM p.200,
     binary thinning), `thin(Q) ≜ ⊇ ∩ (∈ \ Q°∈)` on the sets of `Y`, the subsequences of `X` (`thinRel`,
@@ -1113,19 +1124,33 @@ def thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n) : Rel (.arr 
     `[a]` when `ys` is empty, else with `b` its head `a` replaces `b` when `a Q b`, `b` stays alone when `b Q a`,
     both stay when neither (`bumpRel_cons`, AOP/A8_3.lean:381). `Q` is the test `q` on the pairs `(a, b)` each
     round meets, so `Q` needs no universe; `thinL Q` is the specification it refines. -/
+-- `thinLOnC`'s round body on the coreflexive `D` of the round's pairs `(a, ys)`, `q` a twin family: every op by its
+-- twin, `swapIn q (ran ab)` written out (`ss`, `rs`, `sw`); the bit the `&&` of every twin's and of `q`'s two calls
+def thinBodyC {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (D : Rel (.prod B (.arr B)) (.prod B (.arr B))) : Rel (.prod B (.arr B)) (.arr B) × Bool :=
+  let a := outl D; let ys := outr D
+  let un := unconsC ys.val; let u := compC ys un.1; let ab := pairC a (outl u.1); let rab := ranC ab.1
+  let G1 := q rab.1; let q1 := compC ab.1 G1.1; let up := domC q1.1
+  let ss := pairC (outr rab.1) (outl rab.1); let rs := ranC ss.1; let G2 := q rs.1; let q2 := compC ss.1 G2.1
+  let sw := domC q2.1; let q3 := compC ab.1 sw.1; let down := domC q3.1
+  let du := domC u.1; let l1 := diffC D du.1; let l2 := diffC du.1 up.1; let l3 := diffC l2.1 down.1
+  let lone := unionC l1.1 l3.1; let c1 := consC lone.1
+  let ua := compC up.1 a; let uu := compC up.1 u.1; let ru := ranC u.1; let ut := compC uu.1 (outr ru.1)
+  let pu := pairC ua.1 ut.1; let c2 := consC pu.1; let dy := compC down.1 ys
+  let b1 := unionC c1.1 c2.1; let body := unionC b1.1 dy.1
+  (body.1, un.2 && (u.2 && (ab.2 && (rab.2 && (G1.2 && (q1.2 && (up.2 && (ss.2 && (rs.2 && (G2.2 && (q2.2 &&
+    (sw.2 && (q3.2 && (down.2 && (du.2 && (l1.2 && (l2.2 && (l3.2 && (lone.2 && (c1.2 && (ua.2 && (uu.2 &&
+    (ru.2 && (ut.2 && (pu.2 && (c2.2 && (dy.2 && (b1.2 && body.2))))))))))))))))))))))))))))
+
+/-- `thinLOn` and whether it ran within capacity: `foldOnC` at `thinBodyC q`, `q` a twin family. -/
+def thinLOnC {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B) × Bool)
+    (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
+  foldOnC (nilVal B) (thinBodyC q) X
+
+/-- `thinLOn`: `thinLOnC`'s relation, the test one with no bit of its own. -/
 def thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
     (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) :=
-  foldBy X (nilVal B) fun el pend =>
-    let p := pair el pend
-    let D := ran p
-    let a := outl D
-    let ys := outr D
-    let u := ys ≫ uncons ys.val
-    let ab := pair a (outl u)
-    let up := dom (ab ≫ q (ran ab))
-    let down := dom (ab ≫ swapIn q (ran ab))
-    let lone := D \ dom u ∪ ((dom u \ up) \ down)
-    p ≫ (cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
+  (thinLOnC (fun D => (q D, true)) X).1
 
 /-- `merge(Q) : arr B × arr B ⟶ arr B` on the rows of `P` (`merge`, AOP/A8_3.lean:1147; B&dM p.156): the
     book's equations as rounds of `iter` on the states `((x, y), acc)`, `acc` the output so far: with both

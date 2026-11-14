@@ -460,6 +460,8 @@ theorem rep_perm {B : Obj} {n : USize} (X : Vals (.arr B) n)
     ∀ (xs : List B.El) ys, rep (Alg.perm X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Perm xs := by
   subst hstep
   intro xs ys
+  rw [show Alg.perm X = foldBy X (nilVal B) (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val);
+    let D := ran q; q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D)))))) from foldByC_fst X _ _]
   refine (rep_foldBy (nilVal B) X T hT hn hv pend₀ hpend hN h63 (pickFits_nilVal B _)
     (fun el pend => let q := pair el (pend ≫ uncat (ran pend).val); let D := ran q;
       q ≫ cat (pair (outl (outr D)) (cons (pair (outl D) (outr (outr D))))))
