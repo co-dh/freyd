@@ -256,9 +256,10 @@ theorem intStep_add (a b : Int64) : Ew.intStep Ew.add nul a b = if a = nul ∨ b
 
 /-! ## `succ` -/
 
--- codes `cs` of two long columns `ps` faithful and well formed: `RepOps`' `codesOK`, rows read by `Arr.get`
+-- codes `cs` of two long columns `ps` faithful and well formed: `RepOps`' `codesOK`, rows read by `Arr.get`, without
+-- its `w < 8` clause
 set_option hygiene false in
-local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+local notation "codesL(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
     (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
     Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
       Arr.get (ps[k]'hk).2 ⟨i, hi⟩ = Arr.get (ps[l]'hl).2 ⟨j, hj⟩) ∧
@@ -276,10 +277,10 @@ theorem valCol_succ_get {n : USize} (U : Arr .long n) (i : Fin n.toNat) :
 /-- **`rep (succ U)`**: `u` in `U` to `u + 1` (`Ew.intStep`, wrapping), where that is an element of `U` again — so
     the top of `U` goes nowhere, and so does `Int64.maxValue`, whose wrapped successor is q's null unless `U` holds
     the null. Hypotheses: the defining equations of the successor column `s` and the codes `cs`, and `cs` faithful
-    and well formed (`codesOK`). -/
+    and well formed (`codesL`). -/
 theorem rep_succ {n : USize} (U : Vals (.atom .long) n) (s : Arr .long n)
     (hs : s = valCol Ew.add Ew.va (longsOf U) (one 1)) (cs : Vector Code 2)
-    (hcs : cs = codes .long #v[⟨n, s⟩, ⟨n, U⟩]) (hc : codesOK(cs, (#v[⟨n, s⟩, ⟨n, U⟩] : Vector ((m : USize) × Arr .long m) 2)))
+    (hcs : cs = codes .long #v[⟨n, s⟩, ⟨n, U⟩]) (hc : codesL(cs, (#v[⟨n, s⟩, ⟨n, U⟩] : Vector ((m : USize) × Arr .long m) 2)))
     (u w : Int64) :
     rep (succ U) u w ↔ (∃ i, U.row i = u) ∧ w = Ew.intStep Ew.add nul u 1 ∧ ∃ j, U.row j = w := by
   subst hs
@@ -352,5 +353,240 @@ theorem length_eq {E : Obj} {n : USize} (X : Vals (.arr E) n) (hX : X.1.toNat + 
 #print axioms rep_times
 #print axioms rep_div
 #print axioms rep_mod
+
+/-! ## Folds whose family only restricts to the pairs a round meets -/
+
+section FoldOn
+
+open QLean.Dep
+
+-- `RepFold`'s local notations, restated (they are local there)
+local notation:max f "^[" n "]" => Nat.repeat f n
+set_option hygiene false in
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+set_option hygiene false in
+local notation "nubI(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+set_option hygiene false in
+local notation "PQ(" Y ", " Z ")" =>
+  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
+    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+set_option hygiene false in
+local notation "jparts" => (#v[⟨Rel.n (pend°), Rel.val (pend°)⟩,
+  ⟨Rel.n (idU (Rel.key el)), Rel.val (idU (Rel.key el))⟩] : Vector (Part .long) 2)
+set_option hygiene false in
+local notation "elR(" ids ", " k ")" =>
+  (let s := slicesOf (Rel.val ids)
+   let ends := add (Rel.n ids) s.1 s.2
+   let a := whereBits (Rel.n ids) (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one (k).toUInt64) (Rel.n ids))
+   longCount "foldRows" a fun r hr =>
+     let pos := Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul (gather 8 ends a) (one ((k) + 1).toUInt64) r
+     (⟨r, Vals.pick .long (Rel.key ids) a r hr, Vals.pick _ (Rel.val ids).2.2.2 pos r (len_val ..)⟩ : Rel .long _))
+set_option hygiene false in
+local notation "rnd(" st ")" => ((step (elK (st).2.2) (st).1).nub,
+  (st).2.1 ∪ (antiJoin ((st).1°) (idU (Rel.key (elK (st).2.2))))°, (st).2.2 + 1)
+set_option hygiene false in
+local notation "roundOK" =>
+  Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
+  V.CodesFit (#v[⟨S.n, S.val⟩] : Vector (Part V) 1) ∧
+  Vals.PickFits .long S.key (ids nubI(.long, V, S)) ∧ Vals.PickFits V S.val (ids nubI(.long, V, S)) ∧
+  Obj.CodesFit .long jparts ∧
+  (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray, I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
+    Vals.PickFits V (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
+  ∀ Q : Rel .long V, Q = (antiJoin (pend°) (idU (Rel.key el)))° →
+    P.n.toNat + Q.n.toNat < USize.size ∧
+    ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
+        fun c : Part .long => c.1.toNat).sum < USize.size)
+      (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part V)).toList.map fun c : Part V => c.1.toNat).sum <
+        USize.size),
+      Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits V P.val Q.val ∧
+      Obj.CodesFit .long (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).key⟩] : Vector (Part .long) 1) ∧
+      V.CodesFit (#v[⟨(PQ(.long, V)).n, (PQ(.long, V)).val⟩] : Vector (Part V) 1) ∧
+      Vals.PickFits .long (PQ(.long, V)).key (ids nubI(.long, V, PQ(.long, V))) ∧
+      Vals.PickFits V (PQ(.long, V)).val (ids nubI(.long, V, PQ(.long, V)))
+set_option hygiene false in
+local notation "codesOK(" cs ", " ps ")" => ((∀ {k l : Nat} (hk : k < 2) (hl : l < 2) {i j : Nat}
+    (hi : i < (ps[k]'hk).1.toNat) (hj : j < (ps[l]'hl).1.toNat),
+    Column.idAt (cs[k]'hk).b (cs[k]'hk).w i = Column.idAt (cs[l]'hl).b (cs[l]'hl).w j ↔
+      Vals.row (ps[k]'hk).2 ⟨i, hi⟩ = Vals.row (ps[l]'hl).2 ⟨j, hj⟩) ∧
+  ∀ {k : Nat} (hk : k < 2),
+    ((cs[k]'hk).w = 1 ∨ (cs[k]'hk).w = 2 ∨ (cs[k]'hk).w = 4 ∨ (cs[k]'hk).w = 8 ∨ (cs[k]'hk).w = 16 ∨
+      (cs[k]'hk).w = 32 ∨ (cs[k]'hk).w = 64) ∧
+    (cs[k]'hk).n = (ps[k]'hk).1 ∧ (cs[k]'hk).b.size = ((cs[k]'hk).n.toNat * (cs[k]'hk).w + 7) / 8 ∧
+    ((cs[k]'hk).w < 8 → (cs[k]'hk).card < USize.size ∧
+      ∀ i < (cs[k]'hk).n.toNat, Column.idAt (cs[k]'hk).b (cs[k]'hk).w i < (cs[k]'hk).card))
+set_option hygiene false in
+local notation "kp2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.key R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+set_option hygiene false in
+local notation "vk2(" R ", " S ")" =>
+  (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part (.prod E V)) 2)
+set_option hygiene false in
+local notation "mpairs(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).flatMap fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).map (i, ·))
+set_option hygiene false in
+local notation "msum(" cs ", " R ", " S ")" => ((List.range (Rel.n R).toNat).map fun i =>
+  ((List.range (Rel.n S).toNat).filter fun j => Column.idAt (cs[1]'Nat.one_lt_two).b (cs[1]'Nat.one_lt_two).w j ==
+    Column.idAt (cs[0]'Nat.zero_lt_two).b (cs[0]'Nat.zero_lt_two).w i).length).sum
+set_option hygiene false in
+local notation "stepK(" J ")" =>
+  ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
+    codesOK(kc, kp2(el, pend)) ∧ (Rel.n pend).toNat < 2 ^ 63 ∧ msum(kc, el, pend) < 2 ^ 63 ∧
+    msum(kc, el, pend) < USize.size ∧ Vals.PickFits .long (Rel.key el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits E (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
+    ∀ P : Rel .long (.prod E V), P = pair el pend → J
+set_option hygiene false in
+local notation "stepJ(" S ")" =>
+  ∀ jc : Vector Code 2, jc = Obj.codes (.prod E V) vk2(P, S) →
+    codesOK(jc, vk2(P, S)) ∧ (Rel.n S).toNat < 2 ^ 63 ∧ msum(jc, P, S) < 2 ^ 63 ∧ msum(jc, P, S) < USize.size ∧
+    Vals.PickFits .long (Rel.key P) ((mpairs(jc, P, S)).map Prod.fst) ∧
+    Vals.PickFits V (Rel.val S) ((mpairs(jc, P, S)).map Prod.snd)
+set_option hygiene false in
+local notation "stepOn" => stepK(∀ S : Rel (.prod E V) V, S = Sf (ran P) → stepJ(S))
+set_option hygiene false in
+local notation "ck2(" R ", " S ")" => (#v[⟨Rel.n R, Rel.val R⟩, ⟨Rel.n S, Rel.key S⟩] : Vector (Part .long) 2)
+-- `rep_ran`'s hypotheses at `R`, its value codes `c` bound by their equation
+set_option hygiene false in
+local notation "ranOK(" R ")" =>
+  ∀ c : Code, c = (Obj.codes (.prod E V) (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part (.prod E V)) 1))[0]'Nat.zero_lt_one →
+    (∀ {i j : Nat} (hi : i < (Rel.n R).toNat) (hj : j < (Rel.n R).toNat),
+      Column.idAt c.b c.w i = Column.idAt c.b c.w j ↔ Vals.row (Rel.val R) ⟨i, hi⟩ = Vals.row (Rel.val R) ⟨j, hj⟩) ∧
+    ((c.w = 1 ∨ c.w = 2 ∨ c.w = 4 ∨ c.w = 8 ∨ c.w = 16 ∨ c.w = 32 ∨ c.w = 64) ∧ c.n = Rel.n R ∧
+      c.b.size = (c.n.toNat * c.w + 7) / 8 ∧
+      (c.w < 8 → c.card < USize.size ∧ ∀ i < c.n.toNat, Column.idAt c.b c.w i < c.card)) ∧
+    Vals.PickFits (.prod E V) (Rel.val R) (ids c.groupIds.2)
+
+/-- **`foldOn` of a family that only restricts to the pairs a round meets**: where `Sf (D k)` is `S'` on the pairs
+    of `D k` (`hSf`), the array `xs` goes to `w` along a chain `ys` of `S'`-steps — the family's dependence on the
+    other arrays drops out, because the pair `(xs[t], ys[t+1])` a round meets is itself in `D k`. Bound values and
+    hypotheses as `rep_foldOn`'s, and `rep_ran`'s at each round's pairs (`hran`, a per-round bundle). -/
+theorem foldOn_on {E V : Obj} {m n : USize} (e : Vals V m) (Sf : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
+    (X : Vals (.arr E) n)
+    (T : Rel .long (.arr E)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr E) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits E (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long V) (hpend : pend₀ = top (A := .long) (Rel.key T) e)
+    (hN : (Rel.n T).toNat * m.toNat < USize.size) (h63 : (Rel.n T).toNat * m.toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T) ((List.range ((Rel.n T).toNat * m.toNat)).map (· / m.toNat)))
+    (hB : Vals.PickFits V e ((List.range ((Rel.n T).toNat * m.toNat)).map (· % m.toNat)))
+    (step : Rel .long E → Rel .long V → Rel .long V) (hstep : step = demandStep Sf)
+    (elK : Nat → Rel .long E) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long V × Rel .long V × Nat → Rel .long V × Rel .long V × Nat) (hf : ∀ st, f st = rnd(st))
+    (D : Nat → Rel (.prod E V) (.prod E V)) (hD : ∀ k, D k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (hR : ∀ i (el : Rel .long E) (pend P S : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend → roundOK)
+    (hS : ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i → pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
+      stepOn)
+    (F : Rel .long V) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr E) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits V (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+    (hran : ∀ k, k < (Rel.val T).1.toNat → ∀ P : Rel .long (.prod E V),
+      P = pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1 → ranOK(P))
+    (S' : E.El × V.El → V.El → Prop)
+    (hSf : ∀ k, k < (Rel.val T).1.toNat → ∀ p w, rep (Sf (D k)) p w ↔ (∃ a, rep (D k) a p) ∧ S' p w) :
+    ∀ (xs : List E.El) w, rep (foldOn e Sf X) xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List V.El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, e.row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length), S' (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+          (ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
+  intro xs w
+  rw [rep_foldOn e Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf D hD hR hS F hF jc hjc
+    hjO hjn hjM hjU hjA hjC xs w]
+  have hnum : ∀ r y, rep T r y ↔ ∃ i : Fin n.toNat, r = Int64.ofNat i.1 ∧ X.row i = y := by
+    intro r y; subst hT
+    rw [rep_num (idU X) 0 (by simpa using hn) hv r y]
+    simp only [USize.toNat_zero, Nat.zero_add]; exact Iff.rfl
+  -- array `i` of `X` is a row of `T`, keyed `i`, so no longer than the payload
+  have hrow : ∀ i : Fin n.toNat, ∃ i' : Nat, ∃ hi' : i' < (Rel.n T).toNat,
+      Vals.row (Rel.key T) ⟨i', hi'⟩ = Int64.ofNat i.1 ∧ Vals.row (Rel.val T) ⟨i', hi'⟩ = X.row i ∧
+      (X.row i).length ≤ (Rel.val T).1.toNat := by
+    intro i
+    obtain ⟨⟨i', hi'⟩, hk, hv'⟩ := (hnum _ _).2 ⟨i, rfl, rfl⟩
+    obtain ⟨h1, h2, -⟩ := slicesOf_row (Rel.val T) hp hi'
+    exact ⟨i', hi', hk, hv', by rw [← hv']; omega⟩
+  constructor
+  · rintro ⟨⟨i, hi⟩, ys, hy, h0, hst, hw⟩
+    obtain ⟨-, -, -, -, hL⟩ := hrow i
+    rw [hi] at hL
+    exact ⟨⟨i, hi⟩, ys, hy, h0, fun t ht => ((hSf _ (by omega) _ _).1 (hst t ht)).2, hw⟩
+  · rintro ⟨⟨i, hi⟩, ys, hy, h0, hst, hw⟩
+    refine ⟨⟨i, hi⟩, ys, hy, h0, ?_, hw⟩
+    obtain ⟨i', hi', hk', hv', hL⟩ := hrow i
+    rw [hi] at hv' hL
+    have gi : ∀ a b (ha : a < ys.length) (hb : b < ys.length), a = b → ys[a] = ys[b] := by
+      intro a b ha hb h; subst h; rfl
+    have gx : ∀ a b (ha : a < xs.length) (hb : b < xs.length), a = b → xs[a] = xs[b] := by
+      intro a b ha hb h; subst h; rfl
+    -- round `k` meets `xs[|xs| - 1 - k]` at the row `i`
+    have hel1 : ∀ k (hk : k < xs.length),
+        rep (elK k) (Int64.ofNat i.1) (xs[xs.length - 1 - k]'(by omega)) := by
+      intro k hk
+      obtain ⟨hKf, hVf⟩ := hel k (by omega) _ rfl _ rfl
+      rw [hE, rep_elR T k (by omega) hp _ rfl _ rfl hKf hVf]
+      subst hv'
+      exact ⟨⟨i', hi'⟩, hk', hk, rfl⟩
+    have hst0 : rep pend₀ (Int64.ofNat i.1) (ys[xs.length]'(by omega)) := by
+      subst hpend; rw [rep_top _ _ hN h63 hA hB]
+      exact ⟨_, ⟨rfl, ⟨i', hi'⟩, hk'⟩, _, trivial, rfl, h0⟩
+    have hrr := rounds_rep pend₀ step elK f hf hR
+    -- round `j` read back at the row `i`
+    have hstep1 : ∀ j v, rep (f^[j + 1] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) v ↔
+        ∃ a u, rep (elK j) (Int64.ofNat i.1) a ∧ rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) u ∧
+          rep (Sf (D j)) (a, u) v := by
+      intro j v
+      rw [(hrr j).2.1]
+      obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hJ⟩ := hS j _ _ rfl rfl _ rfl
+      obtain ⟨hjO', hjn', hjM', hjU', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD j)) _ rfl
+      subst hstep
+      exact step_rep (elK j) _ Sf _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl _ (congrArg Sf (hD j)) _ rfl
+        hjO' hjn' hjM' hjU' hjA' hjC' _ v
+    -- the pair round `j` meets at the row `i` is in `D j`
+    have hmem : ∀ j, j < (Rel.val T).1.toNat → ∀ a u, rep (elK j) (Int64.ofNat i.1) a →
+        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) u → ∃ q, rep (D j) q (a, u) := by
+      intro j hj a u ha hu
+      obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, -⟩ := hS j _ _ rfl rfl _ rfl
+      obtain ⟨hK1, hK2, hpk⟩ := hran j hj _ rfl _ rfl
+      refine ⟨(a, u), ?_⟩
+      rw [hD j, rep_ran _ ⟨hK1, hK2⟩ hpk]
+      refine ⟨rfl, Int64.ofNat i.1, ?_⟩
+      rw [rep_pair _ _ hkO hkn hkM hkU hkA hkB hkC]
+      exact ⟨ha, hu⟩
+    have hstepAt : ∀ j (hj : j < xs.length),
+        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) →
+        rep (Sf (D j)) (xs[xs.length - 1 - j]'(by omega), ys[xs.length - j]'(by omega))
+          (ys[xs.length - 1 - j]'(by omega)) := by
+      intro j hj hu
+      have h := hst (xs.length - 1 - j) (by omega)
+      rw [gi (xs.length - 1 - j + 1) (xs.length - j) (by omega) (by omega) (by omega)] at h
+      exact (hSf j (by omega) _ _).2 ⟨hmem j (by omega) _ _ (hel1 j hj) hu, h⟩
+    have hchain : ∀ j (hj : j ≤ xs.length),
+        rep (f^[j] (pend₀, Alg.zero, 0)).1 (Int64.ofNat i.1) (ys[xs.length - j]'(by omega)) := by
+      intro j
+      induction j with
+      | zero => intro _; rw [gi (xs.length - 0) xs.length (by omega) (by omega) (Nat.sub_zero _)]; exact hst0
+      | succ j ih =>
+        intro hj
+        rw [hstep1, gi (xs.length - (j + 1)) (xs.length - 1 - j) (by omega) (by omega) (by omega)]
+        exact ⟨_, _, hel1 j (by omega), ih (by omega), hstepAt j (by omega) (ih (by omega))⟩
+    intro t ht
+    have h := hstepAt (xs.length - 1 - t) (by omega) (hchain _ (by omega))
+    rw [gx (xs.length - 1 - (xs.length - 1 - t)) t (by omega) ht (by omega),
+      gi (xs.length - (xs.length - 1 - t)) (t + 1) (by omega) (by omega) (by omega),
+      gi (xs.length - 1 - (xs.length - 1 - t)) t (by omega) (by omega) (by omega)] at h
+    exact h
+
+#print axioms foldOn_on
+
+end FoldOn
 
 end LeetQ.Rel.Rep
