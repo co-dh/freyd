@@ -208,7 +208,7 @@ theorem segments_spec (c : Code)
     (h63 : c.n.toNat ≤ 2 ^ 63) :
     ids (segments c).2.2 = F(c) ∧
       ids (segments c).1 = (List.range (F(c)).length).flatMap (fun t => cls(c, t)) ∧
-      len (segments c).2.1 = (F(c)).length + 1 ∧
+      (segments c).2.1.size = 8 * ((F(c)).length + 1) ∧
       ∀ j ≤ (F(c)).length, (Column.bitsAt (segments c).2.1 (j * 8) 8).toNat = pre(c, j) := by
   obtain ⟨hK, hKn⟩ := groupIds_len c hw hs hcard
   obtain ⟨hcap, hγ⟩ := groupIds_groupOf c hw hs hcard
@@ -279,7 +279,7 @@ theorem segments_spec (c : Code)
   obtain ⟨hmK, ho⟩ := runs_prefix (P := fun j => pre(c, j)) (κ := fun s => Column.idAt G.b G.w s)
     (o := fun j => (Column.bitsAt G.runStarts (j * 8) 8).toNat) (by simp) hPs hsum hloc hlast hasc hrun hcov
   refine ⟨hF, hP, ?_, ho⟩
-  unfold len; rw [hsz, hmK]; omega
+  rw [hsz, hmK]
 
 #print axioms prefix_lt
 #print axioms prefix_cont
