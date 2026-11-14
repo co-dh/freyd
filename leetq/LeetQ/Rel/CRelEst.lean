@@ -48,11 +48,6 @@ theorem diffC_ok (R S : Rel A B) (hb : (diffC R S).2 = true) : diffOK(A, B, R, S
   exact fun _ e' => by
     subst e'; exact ⟨hp, pickFits_of_fitsN A R.key _ hk _ (by simp), pickFits_of_fitsN B R.val _ hv _ (by simp)⟩
 
-/-- **`rep (R − S)` under `diffC`'s bit**: `rep_diff` at `diffC_ok`'s premises. -/
-theorem rep_diffC (R S : Rel A B) (hb : (diffC R S).2 = true) (a : A.El) (b : B.El) :
-    rep (diffC R S).1 a b ↔ rep R a b ∧ ¬ rep S a b := by
-  obtain ⟨hc, hk, hv⟩ := diffC_ok R S hb _ rfl
-  exact rep_diff R S hc hk hv a b
 
 /-- `antiJoinC`'s bit is `rep_antiJoin`'s premises (`ajOK`), as `rep_antiJoinC`'s. -/
 theorem antiJoinC_ok (R : Rel A B) (T : Rel B B) (hb : (antiJoinC R T).2 = true) : ajOK(B, R, T) := by
