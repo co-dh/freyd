@@ -9,6 +9,7 @@ import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepOps2
 import LeetQ.Rel.RepDiv
+import LeetQ.Rel.RepSymDiv
 
 namespace LeetQ.Rel
 
@@ -142,17 +143,64 @@ theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
       (by rw [e, List.map_map]; exact hfC)
   · exact absurd hp Bool.false_ne_true
 
-/-- **`rep (Λ(R))` is the power transpose of `rep R` under `transposeC`'s bit**: `nub`'s codes' bits give `hK`, `hV`
-    (`oneOK_of_codesC`), the `fitsN` bits `hk`, `hv`, the nub sides' codes bits `hWk`, `hW` (`codesC_fits`), the
-    decided count `h63`. -/
+/-- **`transposeC`'s bit gives `rep_transpose`'s premises**: `nubC`'s bits give `hK`, `hV` (`oneOK_of_codesC`), the
+    `fitsN` bits `hk`, `hv`; the nub sides' codes bits `hWk`, `hW` (`codesC_fits`, `nubC`'s `.1` read as `nub` by
+    `simp`, the twin sitting as an argument of `keyPart`/`valPart`); the decided count `h63`. -/
+theorem transposeC_ok (R : Rel A B) (hb : (transposeC R).2 = true) :
+    oneOK(A, R.n, R.key) ∧ oneOK(B, R.n, R.val) ∧ Vals.PickFits A R.key (List.range R.n.toNat) ∧
+      Vals.PickFits B R.val (List.range R.n.toNat) ∧
+      A.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).key⟩] : Vector (Part A) 1) ∧
+      B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1) ∧ R.n.toNat < 2 ^ 63 := by
+  simp only [transposeC, nubC_fst] at hb
+  simp only [keyPart, valPart, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨⟨⟨hd, hWk⟩, hW⟩, h63⟩ := hb
+  simp only [nubC, Bool.and_eq_true] at hd
+  obtain ⟨⟨⟨hK, hV⟩, hk⟩, hv⟩ := hd
+  exact ⟨oneOK_of_codesC A R.key hK, oneOK_of_codesC B R.val hV, pickFits_of_fitsN A R.key _ hk _ (by simp),
+    pickFits_of_fitsN B R.val _ hv _ (by simp), Obj.codesC_fits A _ hWk, Obj.codesC_fits B _ hW, h63⟩
+
+/-- **`rep (Λ(R))` is the power transpose of `rep R` under `transposeC`'s bit**: `rep_transpose` at
+    `transposeC_ok`. -/
 theorem rep_transposeC (R : Rel A B) (hb : (transposeC R).2 = true) :
     (∀ a X, rep (transposeC R).1 a X → ∀ x, x ∈ X ↔ rep R a x) ∧
       (∀ a, (∃ X, rep (transposeC R).1 a X) ↔ ∃ b, rep R a b) := by
-  simp only [transposeC, Bool.and_eq_true, decide_eq_true_eq] at hb
-  obtain ⟨⟨⟨⟨⟨⟨hK, hV⟩, hk⟩, hv⟩, hWk⟩, hW⟩, h63⟩ := hb
-  exact rep_transpose R (oneOK_of_codesC A R.key hK) (oneOK_of_codesC B R.val hV)
-    (pickFits_of_fitsN A R.key _ hk _ (by simp)) (pickFits_of_fitsN B R.val _ hv _ (by simp))
-    (Obj.codesC_fits A _ hWk) (Obj.codesC_fits B _ hW) h63
+  obtain ⟨hK, hV, hk, hv, hWk, hW, h63⟩ := transposeC_ok R hb
+  exact rep_transpose R hK hV hk hv hWk hW h63
+
+/-- **`rep (R /ₛ S)` under `symDivC`'s bit**: `rep_symDiv` at the intermediates `symDivC` builds (the codes twins'
+    `.1` read as `Obj.codes` by `simp`, sitting as arguments of `segments`/`symIds`/`symDivTailC`; then `symHitC`'s
+    and `⊤`'s). The codes' bits give `hfv`, `hfa`, `hfb` (`codesC_fits`), the decided counts `hNU`, `hN63`, `hRS`,
+    `hUab`, the `fitsN` bits `hRk`, `hSk`, `hPa`, `hPb`, `topC`'s `hA`, `hBv`, `unionC`'s `hU`…`hUv` (as
+    `rep_leftDivC`); the join picks' bit is `rep_symDiv`'s own. -/
+theorem rep_symDivC {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb)
+    (hb : (symDivC R S Ua Ub).2 = true) (x : A.El) (y : B.El) :
+    rep (symDivC R S Ua Ub).1 x y ↔
+      (∀ c, rep R x c ↔ rep S y c) ∧ ((∃ c, rep R x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  simp only [symDivC, Obj.codesC_fst] at hb
+  simp only [keyPart, valPart, symIds, Bool.and_eq_true, decide_eq_true_eq] at hb
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨hfv, hfa⟩, hfb⟩, hNU⟩, hN63⟩, hRk⟩, hSk⟩, hRS⟩, hh⟩, hPa⟩, hPb⟩, hUab⟩, hu⟩ := hb
+  simp only [symDivTailC, topC, symHitC_fst, Bool.and_eq_true] at hu
+  obtain ⟨⟨⟨⟨-, -⟩, ha⟩, hbc⟩, hu⟩ := hu
+  unfold unionC need at hu
+  split at hu
+  · rename_i hU
+    simp only [Bool.and_eq_true] at hu
+    obtain ⟨⟨⟨⟨⟨hka, hvb⟩, hkc⟩, hvc⟩, hkf⟩, hvf⟩ := hu
+    have hFk := Obj.razeC_fits A _ _ _ rfl _ hka
+    have hFv := Obj.razeC_fits B _ _ _ rfl _ hvb
+    simp only [razeC_fst] at hkc hvc hkf hvf
+    exact rep_symDiv R S Ua Ub _ rfl (Obj.codesC_fits C _ hfv) _ rfl (Obj.codesC_fits A _ hfa) _ rfl
+      (Obj.codesC_fits B _ hfb) _ _ _ _ _ _ rfl rfl rfl rfl rfl rfl hNU hN63 _ _ _ _ _ _ rfl rfl rfl rfl rfl rfl
+      _ rfl _ rfl _ _ rfl rfl _ rfl _ rfl (pickFits_of_fitsN A R.key _ hRk _ (by simp))
+      (pickFits_of_fitsN B S.key _ hSk _ (by simp)) hRS hh (pickFits_of_fitsN A Ua _ hPa _ (by simp))
+      (pickFits_of_fitsN B Ub _ hPb _ (by simp)) hUab
+      -- `⊤`'s rows count the vacuous parts as `topC` read them, which equal `vacA`'s, `vacB`'s by unfolding only
+      (pickFits_of_fitsN A _ _ ha _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
+      (pickFits_of_fitsN B _ _ hbc _ (by simp only [List.length_map, List.length_range]; exact Nat.le_refl _))
+      _ _ rfl rfl hU hFk hFv (Obj.codesC_fits A _ hkc) (Obj.codesC_fits B _ hvc)
+      (pickFits_of_fitsN A _ _ hkf _ (by simp only [List.length_range]; exact Nat.le_refl _))
+      (pickFits_of_fitsN B _ _ hvf _ (by simp only [List.length_range]; exact Nat.le_refl _)) x y
+  · exact absurd hu Bool.false_ne_true
 
 -- the keys `leftDiv` joins: `nub`'s, coded jointly
 set_option hygiene false in
@@ -246,6 +294,8 @@ theorem rep_rightDivC {ma mb : USize} (R : Rel C A) (S : Rel B A) (Ua : Vals C m
 #print axioms rep_memC
 #print axioms rep_pairC
 #print axioms rep_transposeC
+#print axioms transposeC_ok
+#print axioms rep_symDivC
 
 end Rep
 
@@ -293,6 +343,16 @@ def leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc :
 /-- `R / S` on the universes `Ua`, `Ub`, ok where both inputs are and `rightDivC` ran within capacity. -/
 def rightDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B :=
   let r := rightDivC R.rel S.rel Ua Ub; ⟨r.1, R.ok && S.ok && r.2⟩
+
+/-- `R /ₛ S` on the universes `Ua`, `Ub`, ok where both inputs are and `symDivC` ran within capacity. -/
+def symDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb) : CRel A B :=
+  let r := symDivC R.rel S.rel Ua Ub; ⟨r.1, R.ok && S.ok && r.2⟩
+
+theorem rep_symDiv {ma mb : USize} (R : CRel A C) (S : CRel B C) (Ua : Vals A ma) (Ub : Vals B mb)
+    (hb : (R.symDiv S Ua Ub).ok = true) (x : A.El) (y : B.El) :
+    rep (R.symDiv S Ua Ub).rel x y ↔ (∀ c, rep R.rel x c ↔ rep S.rel y c) ∧
+      ((∃ c, rep R.rel x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) :=
+  rep_symDivC R.rel S.rel Ua Ub (by simp only [symDiv, Bool.and_eq_true] at hb; exact hb.2) x y
 
 theorem rep_leftDiv {mb mc : USize} (R : CRel A B) (S : CRel A C) (Ub : Vals B mb) (Uc : Vals C mc)
     (hb : (R.leftDiv S Ub Uc).ok = true) (b : B.El) (c : C.El) :

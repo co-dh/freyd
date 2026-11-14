@@ -339,14 +339,11 @@ theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 =
   have eD : (ranC P).1 = ran P := distinctCoreflC_fst _ _
   rw [eD] at ht hT hQ hM hr
   simp only [ranC, distinctCoreflC, Bool.and_eq_true] at hD
-  simp only [transposeC, Bool.and_eq_true, decide_eq_true_eq] at ht
-  obtain ⟨⟨⟨⟨⟨⟨hK1, -⟩, hk1⟩, -⟩, hWk⟩, hW⟩, h63⟩ := ht
+  obtain ⟨hK1, -, hk1, -, hWk, hW, h63⟩ := transposeC_ok _ ht
   apply rep_snoc P
   refine ⟨⟨Obj.codesC_fits _ _ hD.1, pickFits_of_fitsN _ _ _ hD.2 _ (by simp)⟩, ?_⟩
   rintro D rfl X rfl
-  -- `idU X` has `X`'s row count by its definition, which `simp` leaves unfolded
-  refine ⟨⟨oneOK_of_codesC B _ hK1, pickFits_of_fitsN _ _ _ hk1 _ (by simp; exact Nat.le_of_eq rfl), Obj.codesC_fits _ _ hWk,
-    Obj.codesC_fits _ _ hW, h63⟩, compC_cmpOK _ _ hT, ?_⟩
+  refine ⟨⟨hK1, hk1, hWk, hW, h63⟩, compC_cmpOK _ _ hT, ?_⟩
   rintro T rfl
   rw [compC_fst] at hQ
   refine ⟨pairC_ok _ _ hQ, ?_⟩
