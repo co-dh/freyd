@@ -50,7 +50,7 @@ theorem _root_.LeetQ.Rel.Obj.razeC_fits : (A : Obj) → {n m : USize} → (x : V
     unfold Vals.RazeFits
     exact ⟨Obj.razeC_fits a x.1 y.1 _ (by simp [hcs]) _ hb.1, Obj.razeC_fits b x.2 y.2 _ (by simp [hcs]) _ hb.2⟩
   | .arr b, n, m, x, y, cs, hcs, hN, hb => by
-    simp only [Obj.razeC, need] at hb
+    simp only [Obj.razeC] at hb
     split at hb
     · rename_i hf
       simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
@@ -60,9 +60,9 @@ theorem _root_.LeetQ.Rel.Obj.razeC_fits : (A : Obj) → {n m : USize} → (x : V
           x.1.toNat + y.1.toNat := by rw [e]; simp
       unfold Vals.RazeFits
       exact ⟨by omega, by omega, Obj.razeC_fits b _ _ _ e _ hb.2⟩
-    · simp [stop] at hb
+    · simp at hb
   | .sum a b, n, m, x, y, cs₀, hcs, hN, hb => by
-    simp only [Obj.razeC, need] at hb
+    simp only [Obj.razeC] at hb
     split at hb
     · rename_i hf
       simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
@@ -86,7 +86,7 @@ theorem _root_.LeetQ.Rel.Obj.razeC_fits : (A : Obj) → {n m : USize} → (x : V
         pickFits_of_fitsN (.sum a b) x _ (hpk ⟨n, x⟩ (by rw [hcs]; simp)) _ (by simp),
         pickFits_of_fitsN (.sum a b) y _ (hpk ⟨m, y⟩ (by rw [hcs]; simp)) _ (by simp),
         Obj.razeC_fits a _ _ _ el _ ha, Obj.razeC_fits b _ _ _ er _ hb⟩
-    · simp [stop] at hb
+    · simp at hb
 
 /-- **Two atom parts fit on their summed row count alone** at a type that has no dictionary (`Enc.WF` admits
     `enum` only at `symbol`) and no ALP layout: the clause's other bounds are then about the counts themselves.
