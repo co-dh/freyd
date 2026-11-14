@@ -1,6 +1,6 @@
 /-
-  `inits`, `tails` and `uncat` read back. `inits` and `tails` are the private `nest` at two slice kernels:
-  `nest_rep` reads `nest`'s body back at any slice kernel whose starts and ends are known per copy.
+  `inits`, `tails` and `uncat` read back. `inits` and `tails` are `nestC`'s relation at two slice kernels:
+  `nest_rep` reads it back at any slice kernel whose starts and ends are known per copy.
 -/
 import LeetQ.Rel.RepPrim
 import LeetQ.Rel.RepMem
@@ -48,11 +48,7 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
       (⟨X.1, (f m (slicesOf X) xi xr h).1, (f m (slicesOf X) xi xr h).2, X.2.2.2⟩ : Vals (.arr B) m)
       ((List.range m.toNat).map fun q => (Column.bitsAt (tilLongs m) (q * 8) 8).toNat))
     (R : Rel (.arr B) (.arr (.arr B)))
-    (hR : R = expand n (addc n (slicesOf X).2 1) (fun _ => default) fun m i r hi' _ =>
-      ⟨n, Vals.compact (.arr B) X,
-        ⟨m, valCol Ew.sub Ew.vv (sums n (addc n (slicesOf X).2 1)) (addc n (slicesOf X).2 1),
-          longsN n (sums n (addc n (slicesOf X).2 1)) (sums_le (len_val ..)),
-          Vals.compact (.arr B) ⟨X.1, (f m (slicesOf X) i r hi').1, (f m (slicesOf X) i r hi').2, X.2.2.2⟩⟩⟩) :
+    (hR : R = (nestC X f).1) :
     ∀ xs yss, rep R xs yss ↔ ∃ r, ∃ hr : r < n.toNat, Vals.row X ⟨r, hr⟩ = xs ∧
       yss = (List.range (cn(r) + 1)).map fun t => (List.range (H r t - L r t)).map fun j =>
         if h : L r t + j < X.1.toNat then Vals.row X.2.2.2 ⟨_, h⟩ else B.dflt := by
@@ -147,7 +143,7 @@ theorem nest_rep {B : Obj} {n : USize} (X : Vals (.arr B) n)
   -- `nest`'s body unfolded at its pieces
   subst hxr hxi hc
   subst hR
-  unfold expand need
+  unfold nestC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only
@@ -344,7 +340,8 @@ theorem rep_uncat {B : Obj} {n : USize} (X : Vals (.arr B) n)
   have h3 := rep_comp Z (mem Z.val) hjO hjn hjM hjA hjC
   have h4 := rep_mem Z.val hv hk
   subst hZ hP
-  show rep (zip (pair (inits X) (tails X)) ≫ mem (zip (pair (inits X) (tails X))).val) xs (ys, zs) ↔ _
+  rw [show uncat X = zip (pair (inits X) (tails X)) ≫ mem (zip (pair (inits X) (tails X))).val by
+    unfold uncat uncatC; dsimp only; rw [compC_fst, memC_fst, pairC_fst]; rfl]
   rw [h3]
   constructor
   · rintro ⟨ps, hz, hm⟩

@@ -515,7 +515,7 @@ theorem rep_zip {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B)))
   -- `zip` unfolded at its pieces
   subst hm
   subst hja hjb hxr hxi hc
-  unfold zip expand need
+  unfold zip zipC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only

@@ -53,11 +53,11 @@ theorem unconsC_fits {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (unconsC 
 
 theorem rep_unconsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (unconsC X).2 = true) :
     ∀ (xs : List B.El) b bs, rep (unconsC X).1 xs (b, bs) ↔ (∃ j, X.row j = xs) ∧ xs = b :: bs := by
-  rw [unconsC_fst]; exact rep_uncons X _ rfl _ rfl _ rfl (unconsC_fits X hb)
+  exact rep_uncons X _ rfl _ rfl _ rfl (unconsC_fits X hb)
 
 theorem rep_tailC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (tailC X).2 = true) :
     ∀ (xs bs : List B.El), rep (tailC X).1 xs bs ↔ (∃ j, X.row j = xs) ∧ ∃ b, xs = b :: bs := by
-  rw [tailC_fst]; exact rep_tail X _ rfl _ rfl _ rfl (unconsC_fits X hb)
+  exact rep_tail X _ rfl _ rfl _ rfl (unconsC_fits X hb)
 
 theorem rep_atPosC {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) (hb : (atPosC k X).2 = true) :
     ∀ (xs : List B.El) x, rep (atPosC k X).1 xs x ↔ (∃ j, X.row j = xs) ∧ ∃ h : k < xs.length, x = xs[k]'h := by
@@ -99,7 +99,6 @@ theorem zipC_ok {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC 
 
 theorem rep_zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) (hb : (zipC P).2 = true) :
     ∀ k zs, rep (zipC P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.zip xs ys := by
-  rw [zipC_fst]
   obtain ⟨hPa, hPb, hS, hU, hk⟩ := zipC_ok P hb
   exact rep_zip P hPa hPb _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl hk
 
@@ -132,7 +131,7 @@ theorem consC_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = 
 
 theorem rep_consC {K B : Obj} (P : Rel K (.prod B (.arr B))) (hb : (consC P).2 = true) :
     ∀ k ys, rep (consC P).1 k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
-  rw [consC_fst]; exact rep_cons_ok P (consC_ok P hb)
+  exact rep_cons_ok P (consC_ok P hb)
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`rep (α)` under `alphaC`'s bit**: `need`'s guard is `rep_alpha`'s `hN`, the decided bound its `h63`, the
@@ -144,19 +143,14 @@ theorem rep_alphaC {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.a
         (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
       (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
         (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
-  rw [alphaC_fst]
-  unfold alphaC at hb
-  generalize hc : consC (idU P) = c at hb
-  obtain ⟨S, cb⟩ := c
-  have hS : S = cons (idU P) := (congrArg Prod.fst hc).symm.trans (consC_fst _)
-  subst hS
-  simp only [need] at hb
-  split at hb
+  simp only [alphaC, Bool.and_eq_true] at hb
+  obtain ⟨hj, hcb⟩ := hb
+  simp only [juncC, need] at hj
+  split at hj
   · rename_i hN
-    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
-    obtain ⟨⟨h63, hv⟩, hcb⟩ := hb
-    exact rep_alpha I P hN h63 (Obj.razeC_fits (.arr B) _ _ _ (by rfl) _ hv) (consC_ok _ (by rw [hc]; exact hcb))
-  · exact absurd hb Bool.false_ne_true
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hj
+    exact rep_alpha I P hN hj.1 (Obj.razeC_fits (.arr B) _ _ _ (by rfl) _ hj.2) (consC_ok _ hcb)
+  · exact absurd hj Bool.false_ne_true
 
 /-- **`catC`'s bit is `rep_cat`'s premises** (`catOK`), as `consC_ok`: the two copies' counts `ka + kb` decided its
     `hS`, `need`'s guard its `hU`, each a side's counts summed (`len_expand_slicesOf`). -/
@@ -194,7 +188,7 @@ theorem catC_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (hb : (catC P)
 /-- **`rep (cat P)` under `catC`'s bit**: `rep_cat` at `catC_ok`'s premises. -/
 theorem rep_catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (hb : (catC P).2 = true) :
     ∀ k zs, rep (catC P).1 k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = xs ++ ys := by
-  rw [catC_fst]; exact rep_cat_ok P (catC_ok P hb)
+  exact rep_cat_ok P (catC_ok P hb)
 
 /-- **`nestC`'s bit, read as `rep_inits`'s and `rep_tails`'s premises**: `X` fitting at all its rows; inside
     `expand`, the copies' count decided below `2^63` and `need`'s guard, each the counts plus one summed
@@ -247,13 +241,13 @@ theorem rep_initsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (initsC X).
     ∀ xs yss, rep (initsC X).1 xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.take k := by
   obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hb
-  rw [initsC_fst]; exact rep_inits X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
+  exact rep_inits X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
 
 theorem rep_tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (tailsC X).2 = true) :
     ∀ xs yss, rep (tailsC X).1 xs yss ↔ (∃ j, X.row j = xs) ∧
       yss = (List.range (xs.length + 1)).map fun k => xs.drop k := by
   obtain ⟨hS, hU, hK, hV⟩ := nestC_bits X _ hb
-  rw [tailsC_fst]; exact rep_tails X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
+  exact rep_tails X _ rfl hS hU _ rfl _ rfl _ rfl hK hV
 
 /-- **`memC`'s bit is `rep_mem`'s premises**: the `fitsN` bit its `hv`, and with it `expand`'s guard
     (`slicesOf_copies`); the keys' pick bit, at the copies `expand` makes, its `hk` (`pickC_fits`, `copies_rows`). -/
@@ -310,17 +304,14 @@ theorem compC_cmpOK {A B C : Obj} (R : Rel A B) (S : Rel B C) (hb : (compC R S).
     `nestC_bits` at `inits`, `tails`, `pairC_ok`, `zipC_ok`, `memC_ok`, `compC_ok`. -/
 theorem rep_uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (uncatC X).2 = true) :
     ∀ xs ys zs, rep (uncatC X).1 xs (ys, zs) ↔ (∃ j, X.row j = xs) ∧ xs = ys ++ zs := by
-  rw [uncatC_fst]
   simp only [uncatC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨⟨hi, ht⟩, hp⟩, hz⟩, hv⟩, hc⟩ := hb
   obtain ⟨hS, hU, hK, hVi⟩ := nestC_bits X _ hi
   obtain ⟨-, -, -, hVt⟩ := nestC_bits X _ ht
-  rw [initsC_fst, tailsC_fst] at hp hz hv hc
   obtain ⟨hkf, hk1⟩ := pairC_ok _ _ hp
   obtain ⟨hkn, hkM, hkA, hkB, hkC⟩ := hk1 _ rfl
   rw [pairC_fst] at hz hv hc
   obtain ⟨-, -, hS', hU', -⟩ := zipC_ok _ hz
-  rw [zipC_fst] at hv hc
   obtain ⟨hmv, hmk⟩ := memC_ok _ hv
   rw [memC_fst] at hc
   obtain ⟨hjf, hjn, hjM, hjA, hjC⟩ := compC_ok _ _ hc
@@ -333,7 +324,6 @@ theorem rep_uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (uncatC X).
     `catC_ok`. -/
 theorem rep_snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) (hb : (snocC P).2 = true) :
     ∀ k ys, rep (snocC P).1 k ys ↔ ∃ bs b, rep P k (bs, b) ∧ ys = bs ++ [b] := by
-  rw [snocC_fst]
   simp only [snocC, Bool.and_eq_true] at hb
   obtain ⟨⟨⟨⟨⟨hD, ht⟩, hT⟩, hQ⟩, hM⟩, hr⟩ := hb
   have eD : (ranC P).1 = ran P := distinctCoreflC_fst _ _

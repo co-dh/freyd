@@ -183,7 +183,7 @@ theorem rep_alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.ar
         (graph (fun _ => []) :(⟨K.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩))
       (corefl (A := (⟨B.El × List B.El⟩ : RelSet.{0})) (fun p => ∃ i, P.row i = p) ≫
         (graph (fun p => p.1 :: p.2) :(⟨B.El × List B.El⟩ : RelSet.{0}) ⟶ ⟨List B.El⟩)) := by
-  rw [alpha, rep_junc_full _ _ hN h63 hF, ← rep_idU P]
+  rw [show alpha I P = junc (nil I) (cons (idU P)) from juncC_fst (nil I) (cons (idU P)), rep_junc_full _ _ hN h63 hF, ← rep_idU P]
   congr 1
   · refine hom_ext fun u xs => (rep_nil I u xs).trans ⟨?_, ?_⟩
     · rintro ⟨h, rfl⟩; exact ⟨u, ⟨rfl, h⟩, rfl⟩
@@ -675,7 +675,10 @@ theorem rep_snoc {K B : Obj} (P : Rel K (.prod (.arr B) B))
       obtain ⟨i, -, hi⟩ := id hb
       exact ⟨p.2, hb, (eτ _ _).2 ⟨⟨i, hi⟩, rfl⟩⟩
   intro k ys
-  rw [show snoc P = cat (P ≫ pair (outl (ran P)) (outr (ran P) ≫ τ (outr (ran P)).val)) from rfl, eC]
+  -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
+  have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
+  rw [show snoc P = cat (P ≫ pair (outl (ran P)) (outr (ran P) ≫ τ (outr (ran P)).val)) by
+    unfold snoc snocC ranC ran τ cat; dsimp only; rw [compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst, ht], eC]
   constructor
   · rintro ⟨xs, Y, hM, rfl⟩
     rw [eM, Freyd.Alg.RelSet.comp_apply] at hM

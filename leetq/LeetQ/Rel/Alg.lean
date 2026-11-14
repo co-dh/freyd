@@ -542,18 +542,6 @@ def est {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := estOn (pairsIn Q) G
     strict). -/
 def thin {A B : Obj} (Q : Rel B B) (G : Rel A B) : Rel A B := thinOn (pairsIn Q) G
 
-/-- `cons° : arr B ⟶ B × arr B` on the arrays of `X`: each non-empty row to its first element and the rest.
-    The rows with a clamped count above `0` (`whereBits`); the rest `lo + 1`, `hi` the clamped end, its payload
-    then cut to the cells it refers to (`Vals.compact`), every column at the count of the rows kept. -/
-def uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (.arr B)) :=
-  let s := slicesOf X
-  let i := whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one 0) n)
-  longCount "cons°" i fun r hr =>
-  let l := gather 8 s.1 i
-  ⟨r, Vals.pick (.arr B) X i r hr,
-    (Vals.pick B X.2.2.2 l r ((gather_len _ _).trans hr),
-      Vals.compact (.arr B) ⟨X.1, valCol Ew.add Ew.va l (one 1), valCol Ew.add Ew.vv l (gather 8 s.2 i), X.2.2.2⟩)⟩
-
 /-- A pick twin's `.1` is the pick, at each constructor of the side. -/
 theorem pickC_fst (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USize) (h : len i = m.toNat) :
     (Vals.pickC A x i m h).1 = Vals.pick A x i m h := by
@@ -563,8 +551,10 @@ theorem pickC_fst (A : Obj) {n : USize} (x : Vals A n) (i : ByteArray) (m : USiz
 theorem razeC_fst (A : Obj) (cs : Array (Part A)) (h) : (Obj.razeC A cs h).1 = Obj.raze A cs h := by
   cases A <;> rfl
 
-/-- `cons°` and whether it ran within capacity: the bit of the pick of `X` at the non-empty rows (`pickC`),
-    `rep_uncons`'s one fit. -/
+/-- `cons° : arr B ⟶ B × arr B` on the arrays of `X`: each non-empty row to its first element and the rest.
+    The rows with a clamped count above `0` (`whereBits`); the rest `lo + 1`, `hi` the clamped end, its payload
+    then cut to the cells it refers to (`Vals.compact`), every column at the count of the rows kept. The bit is
+    the pick of `X` at the non-empty rows (`pickC`), `rep_uncons`'s one fit. -/
 def unconsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (.arr B)) × Bool :=
   let s := slicesOf X
   let i := whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va s.2 (one 0) n)
@@ -575,33 +565,15 @@ def unconsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B 
       Vals.compact (.arr B) ⟨X.1, valCol Ew.add Ew.va l (one 1), valCol Ew.add Ew.vv l (gather 8 s.2 i), X.2.2.2⟩)⟩,
     x.2)
 
-theorem unconsC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (unconsC X).1 = uncons X := by
-  unfold unconsC uncons longCount; rw [need_fst]; rfl
+/-- `cons°`: `unconsC`'s relation. -/
+def uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod B (.arr B)) := (unconsC X).1
 
 /-- `cons : B × arr B ⟶ arr B` on the rows of `P`: each `(y, ys)` to the array `y` then `ys`, under its key.
     The new arrays are laid out one after another (`sums` of the counts plus one); the tails gathered from
     the old payload (`expand` of the clamped counts) and the heads razed after them, then put in place by
     the `grade` of their places. Every row of `P` is kept, at its count; the payload holds the tails' cells
-    and one head per row, a count that must fit a `USize`. -/
-def cons {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) :=
-  let n := P.n
-  let T := P.val.2
-  let s := slicesOf T
-  let c1 := addc n s.2 1
-  let hi := sums n c1
-  let lo := sub n hi c1
-  expand n s.2 (fun _ => default) fun k xi xr _ _ =>
-  need (k.toNat + n.toNat < USize.size) (fun _ => s!"cons: {k} + {n} cells do not fit a USize") (fun _ => default)
-    fun hN =>
-  let flat := Obj.raze B #[⟨k, Vals.pick B T.2.2.2 (add k (gather 8 s.1 xi) xr) k (len_val ..)⟩, ⟨n, P.val.1⟩]
-    (by simpa using hN)
-  let dst := addc k (add k (gather 8 lo xi) xr) 1
-  let perm := (Code.ofLongs (concatBytes #[dst, lo])).grade
-  longCount "cons" perm fun p hp =>
-  ⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c1, longsN n hi (sums_le (len_val ..)), Vals.pick B flat perm p hp⟩⟩
-
-/-- `cons` and whether it ran within capacity: `P`'s tails and keys fitting at all their rows (`fitsN`), `&&`, out
-    of `expand` in the pair, `rep_cons`'s count bound decided on the copies' count `k` plus the rows (`k` is the
+    and one head per row, a count that must fit a `USize`. The bit: `P`'s tails and keys fitting at all their
+    rows (`fitsN`), `&&`, out of `expand` in the pair, `rep_cons`'s count bound decided on the copies' count `k` plus the rows (`k` is the
     tails' counts summed, `len_expand_slicesOf`; `need` already bounds it by a `USize`) and the bits of the raze
     and of the last pick (`razeC`, `pickC`). -/
 def consC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) × Bool :=
@@ -624,8 +596,8 @@ def consC {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) × Bool :=
       Rel K (.arr B)), decide (k.toNat + n.toNat < 2 ^ 63) && flat.2 && v.2)
   (r.1, Vals.fitsN (.arr B) T n.toNat && Vals.fitsN K P.key n.toNat && r.2)
 
-theorem consC_fst {K B : Obj} (P : Rel K (.prod B (.arr B))) : (consC P).1 = cons P := by
-  unfold consC cons expand longCount; simp only [need_fst, pickC_fst, razeC_fst]; rfl
+/-- `cons`: `consC`'s relation. -/
+def cons {K B : Obj} (P : Rel K (.prod B (.arr B))) : Rel K (.arr B) := (consC P).1
 
 /-- The rounds of a fold over the rows of `ids : row ⟶ [E]`, from each array's last element to its first:
     the state `pend : row ⟶ V` starts as given, each row from its own values, so two rows of one array may
@@ -793,30 +765,18 @@ def τ {A : Obj} {n : USize} (X : Vals A n) : Rel A (.arr A) := Λ(idU X)
 def nil {K B : Obj} (I : Vals K 1) : Rel K (.arr B) := ⟨1, I, nilVal B⟩
 
 /-- `α ≜ [nil, cons] : K + B × arr B ⟶ arr B`, `nil` on the one-row `I`, `cons` on the pairs `P` (the note's
-    `α ≜ [nil,cons]`, diag/aop/07-optimisation.typ:449; `alphaR_eq_junc`, AOP/A5_6_ListCombinators.lean:727). -/
-def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
-    Rel (.sum K (.prod B (.arr B))) (.arr B) :=
-  junc (nil I) (cons (idU P))
-
-/-- `α` and whether it ran within capacity: `junc`'s body at `nil I` and `consC (idU P)`, its raze of the values
-    twinned (`razeC`); `rep_alpha`'s second count bound decided, `&&` the raze's and `consC`'s bits. -/
+    `α ≜ [nil,cons]`, diag/aop/07-optimisation.typ:449; `alphaR_eq_junc`, AOP/A5_6_ListCombinators.lean:727),
+    on the twins `juncC`, `consC`; the bit the `&&` of theirs. -/
 def alphaC {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
     Rel (.sum K (.prod B (.arr B))) (.arr B) × Bool :=
-  let R := nil (B := B) I
-  -- matched, not projected: the body is then generic in `S`, which `alphaC_fst` cases on
-  match consC (idU P) with
-  | (S, cb) =>
-  need (R.n.toNat + S.n.toNat < USize.size) (fun _ => s!"[R,S]: {R.n} + {S.n} rows do not fit a USize")
-    (fun _ => default) fun hN =>
-  let v := Obj.razeC (.arr B) #[⟨_, R.val⟩, ⟨_, S.val⟩] (by simpa using hN)
-  (⟨R.n + S.n, sumVals R.key S.key hN, toUSize_eq (by rw [toNat_add_fits hN]) ▸ v.1⟩,
-    decide (R.n.toNat + S.n.toNat ≤ 2 ^ 63) && v.2 && cb)
+  let c := consC (idU P)
+  let j := juncC (nil I) c.1
+  (j.1, j.2 && c.2)
 
-theorem alphaC_fst {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
-    (alphaC I P).1 = alpha I P := by
-  unfold alphaC alpha; rw [← consC_fst]
-  cases consC (idU P)
-  unfold junc; rw [need_fst]; simp only [razeC_fst]; rfl
+/-- `α`: `alphaC`'s relation, `junc (nil I) (cons (idU P))` once `juncC`'s `.1` is `junc` (`juncC_fst`). -/
+def alpha {K B : Obj} {n : USize} (I : Vals K 1) (P : Vals (.prod B (.arr B)) n) :
+    Rel (.sum K (.prod B (.arr B))) (.arr B) :=
+  (alphaC I P).1
 
 /-- `Λ(R)` total on `U`: each element of `U` that `R` relates to nothing goes to the empty array, which `Λ(R)`,
     one row per key of `R`, has no row for. -/
@@ -841,9 +801,6 @@ def tail {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) := 
 def tailC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) × Bool :=
   let u := unconsC X; (outr u.1, u.2)
 
-theorem tailC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (tailC X).1 = tail X := by
-  show outr (unconsC X).1 = outr (uncons X); rw [unconsC_fst]
-
 /-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
     AOP/A5_6_ListCombinators.lean:328): `succ` on `0 … X.1`, since no array is longer than the payload `X.1`. -/
 def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
@@ -863,19 +820,7 @@ def suffix {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.arr E) :
 /-- Each array of `X` to the array of its `count + 1` slices `[l k, h k)`, `k = 0 … count`, every one a slice
     of `X`'s own payload, so no cell is copied before `Vals.compact`: `f` maps each row's clamped start and
     count (`slices`) and the `expand` of the `count + 1`s (row, `k`), at the `m` copies, to the slices' starts
-    and ends as two columns of `m` rows. -/
-private def nest {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m) :
-    Rel (.arr B) (.arr (.arr B)) :=
-  let s := slicesOf X
-  let c := addc n s.2 1
-  let hi := sums n c
-  expand n c (fun _ => default) fun m i r hi' _ =>
-  let b := f m s i r hi'
-  ⟨n, Vals.compact (.arr B) X,
-    ⟨m, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), Vals.compact (.arr B) ⟨X.1, b.1, b.2, X.2.2.2⟩⟩⟩
-
-/-- `nest` and whether it ran within capacity: `X` fitting at all its rows, its payload count plus one below `2^63`
+    and ends as two columns of `m` rows. The bit: `X` fitting at all its rows, its payload count plus one below `2^63`
     (so is every count plus one, which `expand` reads signed), `&&`, out of `expand` in the pair, the copies'
     count `m` below `2^63` (`rep_inits`'s `hS`: `m` is the counts plus one summed; `need` gives `hU`) and the bit of
     the pick that compacts the slices (`pickC`): the slices of one row overlap in `X`'s payload, so their total
@@ -893,63 +838,29 @@ def nestC {B : Obj} {n : USize} (X : Vals (.arr B) n)
       Rel (.arr B) (.arr (.arr B))), decide (m.toNat < 2 ^ 63) && v.2)
   (r.1, decide (X.1.toNat + 1 < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat && r.2)
 
-private theorem nestC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n)
-    (f : (m : USize) → ByteArray × ByteArray → (i r : ByteArray) → len i = m.toNat → Arr .long m × Arr .long m) :
-    (nestC X f).1 = nest X f := by
-  unfold nestC nest expand; simp only [need_fst]; rfl
-
 /-- `inits : arr B ⟶ arr (arr B)` on the arrays `X`, the prefixes by increasing length, `[]` first (`initsFn`,
-    AOP/A5_6_ListCombinators.lean:847; B&dM §5.6 p.130): the `k`-th is `[lo, lo + k)`. -/
-def inits {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) :=
-  nest X fun m s i r h => let l := gather 8 s.1 i
-    (longsN m l (Nat.le_of_eq ((gather_len _ _).trans h).symm), valCol Ew.add Ew.vv l r)
-
-/-- `inits` and `nestC`'s bit. -/
+    AOP/A5_6_ListCombinators.lean:847; B&dM §5.6 p.130): the `k`-th is `[lo, lo + k)`; the bit `nestC`'s. -/
 def initsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) × Bool :=
   nestC X fun m s i r h => let l := gather 8 s.1 i
     (longsN m l (Nat.le_of_eq ((gather_len _ _).trans h).symm), valCol Ew.add Ew.vv l r)
 
-theorem initsC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (initsC X).1 = inits X := nestC_fst X _
+/-- `inits`: `initsC`'s relation. -/
+def inits {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) := (initsC X).1
 
 /-- `tails : arr B ⟶ arr (arr B)` on the arrays `X`, the suffixes by decreasing length, `[]` last (`tailsFn`,
-    AOP/A5_6_ListCombinators.lean:857; B&dM §5.6 p.130): the `k`-th is `[lo + k, hi)`. -/
-def tails {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) :=
-  nest X fun m s i r h => (valCol Ew.add Ew.vv (gather 8 s.1 i) r,
-    longsN m (gather 8 (add n s.1 s.2) i) (Nat.le_of_eq ((gather_len _ _).trans h).symm))
-
-/-- `tails` and `nestC`'s bit. -/
+    AOP/A5_6_ListCombinators.lean:857; B&dM §5.6 p.130): the `k`-th is `[lo + k, hi)`; the bit `nestC`'s. -/
 def tailsC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) × Bool :=
   nestC X fun m s i r h => (valCol Ew.add Ew.vv (gather 8 s.1 i) r,
     longsN m (gather 8 (add n s.1 s.2) i) (Nat.le_of_eq ((gather_len _ _).trans h).symm))
 
-theorem tailsC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (tailsC X).1 = tails X := nestC_fst X _
+/-- `tails`: `tailsC`'s relation. -/
+def tails {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr (.arr B)) := (tailsC X).1
 
 /-- `cat : arr B × arr B ⟶ arr B` on the rows of `P`, each `(xs, ys)` to `xs` then `ys` under its key (`cat`,
     AOP/A5_6_ListCombinators.lean:224, the graph of `cappend`). `cons` with an array for a head: the new arrays
     laid out one after another (`sums` of the two counts), each side's cells gathered by the `expand` of its
-    counts and razed, then put in place by the `grade` of their places. -/
-def cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) :=
-  let n := P.n
-  let x := P.val.1
-  let y := P.val.2
-  let a := slicesOf x
-  let b := slicesOf y
-  let c := add n a.2 b.2
-  let hi := sums n c
-  let lo := sub n hi c
-  expand n a.2 (fun _ => default) fun ka ia ra _ _ =>
-  expand n b.2 (fun _ => default) fun kb ib rb _ _ =>
-  need (ka.toNat + kb.toNat < USize.size) (fun _ => s!"cat: {ka} + {kb} cells do not fit a USize") (fun _ => default)
-    fun hN =>
-  let flat := Obj.raze B #[⟨ka, Vals.pick B x.2.2.2 (add ka (gather 8 a.1 ia) ra) ka (len_val ..)⟩,
-    ⟨kb, Vals.pick B y.2.2.2 (add kb (gather 8 b.1 ib) rb) kb (len_val ..)⟩] (by simpa using hN)
-  let dst := concatBytes #[add ka (gather 8 lo ia) ra, add kb (add kb (gather 8 lo ib) (gather 8 a.2 ib)) rb]
-  let perm := (Code.ofLongs dst).grade
-  longCount "cat" perm fun p hp =>
-  ⟨n, Vals.compact K P.key, ⟨p, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)), Vals.pick B flat perm p hp⟩⟩
-
-/-- `cat` and whether it ran within capacity: both sides and the keys fitting at all their rows (`fitsN`), `&&`,
-    out of the two `expand`s in the pair, `rep_cat`'s count bound decided on the two copies' counts `ka + kb` (each
+    counts and razed, then put in place by the `grade` of their places. The bit: both sides and the keys fitting
+    at all their rows (`fitsN`), `&&`, out of the two `expand`s in the pair, `rep_cat`'s count bound decided on the two copies' counts `ka + kb` (each
     a side's counts summed, `len_expand_slicesOf`; `need` already bounds it by a `USize`) and the bits of the raze
     and of the last pick (`razeC`, `pickC`). -/
 def catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × Bool :=
@@ -975,28 +886,13 @@ def catC {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) × B
       Rel K (.arr B)), decide (ka.toNat + kb.toNat < 2 ^ 63) && flat.2 && v.2)
   (r.1, Vals.fitsN (.arr B) x n.toNat && Vals.fitsN (.arr B) y n.toNat && Vals.fitsN K P.key n.toNat && r.2)
 
-theorem catC_fst {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : (catC P).1 = cat P := by
-  unfold catC cat expand longCount; simp only [need_fst, pickC_fst, razeC_fst]; rfl
+/-- `cat`: `catC`'s relation. -/
+def cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) : Rel K (.arr B) := (catC P).1
 
 /-- `zip : arr A × arr B ⟶ arr (A × B)` on the rows of `P`, the two arrays position by position up to the
     shorter (`czip`, AOP/A1_7_Pointfree.lean:27; B&dM p.20): the counts' `Ew.val` lesser, laid out by `sums`,
-    each side's cell `k` gathered at its own start plus `k`. -/
-def zip {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod A B)) :=
-  let x := P.val.1
-  let y := P.val.2
-  let n := P.n
-  let a := slicesOf x
-  let b := slicesOf y
-  let c := Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul a.2 b.2 n
-  let hi := sums n c
-  expand n c (fun _ => default) fun m i r _ _ =>
-  ⟨n, Vals.compact K P.key,
-    ⟨m, valCol Ew.sub Ew.vv hi c, longsN n hi (sums_le (len_val ..)),
-      (Vals.pick A x.2.2.2 (add m (gather 8 a.1 i) r) m (len_val ..),
-        Vals.pick B y.2.2.2 (add m (gather 8 b.1 i) r) m (len_val ..))⟩⟩
-
-/-- `zip` and whether it ran within capacity: both sides and the keys fitting at all their rows (`fitsN`), `&&`, out
-    of `expand` in the pair, `rep_zip`'s count bound decided on the copies' count `m` (the lesser counts summed,
+    each side's cell `k` gathered at its own start plus `k`. The bit: both sides and the keys fitting at all
+    their rows (`fitsN`), `&&`, out of `expand` in the pair, `rep_zip`'s count bound decided on the copies' count `m` (the lesser counts summed,
     `len_expand_sum`; `need` already bounds it by a `USize`); no pick of `zip` needs a bit of its own. -/
 def zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod A B)) × Bool :=
   let x := P.val.1
@@ -1014,8 +910,8 @@ def zipC {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.pro
       decide (m.toNat < 2 ^ 63))
   (r.1, Vals.fitsN (.arr A) x n.toNat && Vals.fitsN (.arr B) y n.toNat && Vals.fitsN K P.key n.toNat && r.2)
 
-theorem zipC_fst {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : (zipC P).1 = zip P := by
-  unfold zipC zip expand; simp only [need_fst]; rfl
+/-- `zip`: `zipC`'s relation. -/
+def zip {K A B : Obj} (P : Rel K (.prod (.arr A) (.arr B))) : Rel K (.arr (.prod A B)) := (zipC P).1
 
 /-- `snoc° : arr B ⟶ arr B × B` on the arrays of `X`, `uncons` from the other end: each non-empty row to
     all but its last element (`[lo, hi - 1)`, a slice of the same payload) and its last element. -/
@@ -1048,13 +944,8 @@ def atPosC {B : Obj} {n : USize} (k : Nat) (X : Vals (.arr B) n) : Rel (.arr B) 
   (atPos k X, decide (k < 2 ^ 63) && Vals.fitsN (.arr B) X n.toNat)
 
 /-- `snoc ≜ (𝟙 × τ) cat` on the rows of `P` (`snoc`, AOP/A9_3_Bracket.lean:933): `(xs, a)` to `xs` then `a`.
-    `𝟙 × τ` is `⟨π₁, π₂ τ⟩` on the distinct pairs of `P`, one row each, so `P` keeps its rows. -/
-def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) :=
-  let D := ran P
-  cat (P ≫ pair (outl D) (outr D ≫ τ (outr D).val))
-
-/-- `snoc` and whether it ran within capacity: `snoc`'s body on the twins of its pieces (`τ` is `Λ(idU ·)`), the
-    bit the `&&` of theirs. -/
+    `𝟙 × τ` is `⟨π₁, π₂ τ⟩` on the distinct pairs of `P`, one row each, so `P` keeps its rows. Written on the twins
+    of its pieces (`τ` is `Λ(idU ·)`), the bit the `&&` of theirs. -/
 def snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) × Bool :=
   let D := ranC P
   let t := transposeC (idU (outr D.1).val)
@@ -1064,20 +955,12 @@ def snocC {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) × Bool :=
   let r := catC M.1
   (r.1, D.2 && t.2 && T.2 && Q.2 && M.2 && r.2)
 
-theorem snocC_fst {K B : Obj} (P : Rel K (.prod (.arr B) B)) : (snocC P).1 = snoc P := by
-  -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
-  have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
-  unfold snocC snoc ranC ran τ; dsimp only
-  rw [catC_fst, compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst, ht]
+/-- `snoc`: `snocC`'s relation. -/
+def snoc {K B : Obj} (P : Rel K (.prod (.arr B) B)) : Rel K (.arr B) := (snocC P).1
 
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
-    `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
-def uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) :=
-  let Z := zip (pair (inits X) (tails X))
-  Z ≫ mem Z.val
-
-/-- `cat°` and whether it ran within capacity: `uncat`'s body on the twins of its pieces, the bit the `&&` of
-    theirs. -/
+    `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`, on the twins of its pieces, the bit the `&&`
+    of theirs. -/
 def uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) × Bool :=
   let i := initsC X
   let t := tailsC X
@@ -1087,9 +970,8 @@ def uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.a
   let r := compC z.1 v.1
   (r.1, i.2 && t.2 && p.2 && z.2 && v.2 && r.2)
 
-theorem uncatC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (uncatC X).1 = uncat X := by
-  unfold uncatC; dsimp only
-  rw [compC_fst, memC_fst, zipC_fst, pairC_fst, initsC_fst, tailsC_fst] <;> rfl
+/-- `cat°`: `uncatC`'s relation. -/
+def uncat {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.arr B) (.arr B)) := (uncatC X).1
 
 /-! ## Permutations, sets and order (ch. 6, 8) -/
 

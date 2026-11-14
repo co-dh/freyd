@@ -155,9 +155,11 @@ theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n)
           dif_pos (show Lq + 1 + t < X.1.toNat by omega)]
         exact congrArg (Vals.row X.2.2.2) (Fin.ext (show Lq + (t + 1) = Lq + 1 + t by omega))
   subst hi hl
-  unfold uncons
+  unfold uncons unconsC
   dsimp only
   rw [longCount_eq _ _ _ hlen]
+  -- the twin's `.1` second, once `longCount` no longer binds the pick's proof
+  dsimp only; rw [pickC_fst]
   show (∃ q, _ ∧ _) ↔ _
   constructor
   · rintro ⟨⟨q, hq'⟩, hr, hv⟩
@@ -491,13 +493,15 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B)))
   have hkN : m.toNat + nN < USize.size := by omega
   subst hm
   subst htl hj hg hdst hlo hhi hc1 hxr hxi
-  unfold cons expand need
+  unfold cons consC expand need
   dsimp only
   rw [dif_pos hxU]
   try dsimp only
   rw [dif_pos hkN]
   try dsimp only
   rw [longCount_eq _ _ _ hgU]
+  -- the twins' `.1` second, once `longCount` no longer binds the pick's proof
+  dsimp only; simp only [pickC_fst, razeC_fst]
   show (∃ q, _ ∧ _) ↔ _
   constructor
   · rintro ⟨⟨r, hr⟩, hk, hv⟩
@@ -1040,7 +1044,7 @@ theorem rep_cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
   intro k zs
   subst hma hmb
   subst hta htb hja hjb hg hda hdb hlo hhi hcs hra hrb hxa hxb hsa hsb
-  unfold cat expand need
+  unfold cat catC expand need
   dsimp only
   rw [dif_pos hxaU]
   try dsimp only
@@ -1049,6 +1053,8 @@ theorem rep_cat {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B)))
   rw [dif_pos hkN]
   try dsimp only
   rw [longCount_eq _ _ _ hgU]
+  -- the twins' `.1` second, once `longCount` no longer binds the pick's proof
+  dsimp only; simp only [pickC_fst, razeC_fst]
   show (∃ q, _ ∧ _) ↔ _
   constructor
   · rintro ⟨⟨r, hr⟩, hk, hv⟩
