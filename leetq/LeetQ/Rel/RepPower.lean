@@ -58,10 +58,9 @@ theorem rep_tau {n : USize} (X : Vals A n)
     (hW : A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1))
     (h63 : (Rel.nub (idU X)).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))))
-    (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
-    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X)))) :
+    (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X)))) :
     (∀ a Y, rep (τ X) a Y → ∀ x, x ∈ Y ↔ x = a) ∧ (∀ a, (∃ Y, rep (τ X) a Y) ↔ ∃ i, Vals.row X i = a) := by
-  obtain ⟨h1, h2⟩ := rep_transpose (idU X) hX hX hx hx hF hw hn hs hW h63 hpk hpv hlo
+  obtain ⟨h1, h2⟩ := rep_transpose (idU X) hX hX hx hx hF hw hn hs hW h63 hpk hpv
   have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
   refine ⟨fun a Y h x => ?_, fun a => (h2 a).trans
     ⟨fun ⟨b, hb⟩ => ((hid a b).1 hb).2, fun hi => ⟨a, (hid a a).2 ⟨rfl, hi⟩⟩⟩⟩
@@ -108,7 +107,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (p lo : ByteArray) (hpT : p = pT(R)) (hloT : lo = loT(R))
     (hpk : Vals.PickFits A (Rel.nub R).key (ids p))
     (hpv : Vals.PickFits B (Rel.nub R).val (ids p))
-    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key p).2 (ids lo))    -- `rep_diff` at `idU U`, `dom R`
+    -- `rep_diff` at `idU U`, `dom R`
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R)))
     (hdU : Vals.PickFits A U (List.range m.toNat))
@@ -130,7 +129,7 @@ theorem rep_lamOn {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → ∀ y, y ∈ Y ↔ rep R a y) ∧
       (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
   subst hku hvu hL hN0 hD hT hpc hloT hpT hkt hkc hvc
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63 hpk hpv hlo
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63 hpk hpv
   have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
   have hL : ∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y ↔ rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := fun a Y => by
     rw [show LeetQ.Rel.Alg.lamOn R U = lT(R) ∪ lN(R, U, B) from rfl, hu]; exact Iff.rfl
@@ -213,7 +212,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (p lo : ByteArray) (hpT : p = pT(mS(X))) (hloT : lo = loT(mS(X)))
     (hpk : Vals.PickFits (.arr B) (Rel.nub mS(X)).key (ids p))
     (hpv : Vals.PickFits B (Rel.nub mS(X)).val (ids p))
-    (hlo : Vals.PickFits (.arr B) (Vals.pickPart (.arr B) (Rel.nub mS(X)).key p).2 (ids lo))    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
+    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X))))    (D : Rel (.arr B) (.arr B)) (hD : D = lD(mS(X), X))
     (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
@@ -230,7 +229,7 @@ theorem rep_setify {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (huv : Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat)) :
     (∀ xs Y, rep (LeetQ.Rel.Alg.setify X) xs Y → (∃ i, Vals.row X i = xs) ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
-  obtain ⟨h1, h2⟩ := rep_lamOn mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+  obtain ⟨h1, h2⟩ := rep_lamOn mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv
     pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   have hm := rep_mem X hmv hmk
   have h2' : ∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs := fun xs =>
@@ -260,10 +259,9 @@ theorem rep_tau_list {n : USize} (X : Vals A n)
     (hW : A.CodesFit (#v[⟨(Rel.nub (idU X)).n, (Rel.nub (idU X)).val⟩] : Vector (Part A) 1))
     (h63 : (Rel.nub (idU X)).n.toNat < 2 ^ 63)
     (hpk : Vals.PickFits A (Rel.nub (idU X)).key (ids (pT(idU X))))
-    (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X))))
-    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub (idU X)).key (pT(idU X))).2 (ids (loT(idU X)))) :
+    (hpv : Vals.PickFits A (Rel.nub (idU X)).val (ids (pT(idU X)))) :
     ∀ a Y, rep (τ X) a Y ↔ (∃ i, Vals.row X i = a) ∧ Y = [a] := by
-  obtain ⟨h1, h2⟩ := rep_transpose_list (idU X) hX hX hx hx hF hw hn hs hW h63 hpk hpv hlo
+  obtain ⟨h1, h2⟩ := rep_transpose_list (idU X) hX hX hx hx hF hw hn hs hW h63 hpk hpv
   have hid : ∀ a b, rep (idU X) a b ↔ a = b ∧ ∃ i, X.row i = a := idU_holds X
   -- a row of `τ X`: `a` listed in `X`, the array `[a]`
   have fwd : ∀ a Y, rep (τ X) a Y → (∃ i, Vals.row X i = a) ∧ Y = [a] := fun a Y h => by
@@ -305,7 +303,7 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (p lo : ByteArray) (hpT : p = pT(R)) (hloT : lo = loT(R))
     (hpk : Vals.PickFits A (Rel.nub R).key (ids p))
     (hpv : Vals.PickFits B (Rel.nub R).val (ids p))
-    (hlo : Vals.PickFits A (Vals.pickPart A (Rel.nub R).key p).2 (ids lo))    -- `rep_diff` at `idU U`, `dom R`
+    -- `rep_diff` at `idU U`, `dom R`
     (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU U, LeetQ.Rel.Alg.dom R)))
     (hdU : Vals.PickFits A U (List.range m.toNat))
@@ -326,10 +324,10 @@ theorem rep_lamOn_list {B : Obj} {m : USize} (R : Rel A B) (U : Vals A m)
     (huv : Vals.PickFits (.arr B) (Rel.val L) (List.range (Rel.n L).toNat)) :
     (∀ a Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y → Y.Nodup ∧ ∀ y, y ∈ Y ↔ rep R a y) ∧
       (∀ a, (∃ Y, rep (LeetQ.Rel.Alg.lamOn R U) a Y) ↔ (∃ b, rep R a b) ∨ ∃ i, Vals.row U i = a) := by
-  obtain ⟨h1, h2⟩ := rep_lamOn R U kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+  obtain ⟨h1, h2⟩ := rep_lamOn R U kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv
     pc hpc hc hdU D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
   subst hku hvu hL hN0 hD hT hpc hloT hpT hkt hkc hvc
-  have hX := rep_transpose_list R hK hV hk hv hF hw hn hs hW h63 hpk hpv hlo
+  have hX := rep_transpose_list R hK hV hk hv hF hw hn hs hW h63 hpk hpv
   have hu := rep_union_full (lT(R)) (lN(R, U, B)) hN hFk hFv huK huV huk huv
   refine ⟨fun a Y h => ⟨?_, h1 a Y h⟩, h2⟩
   have h' : rep (lT(R)) a Y ∨ rep (lN(R, U, B)) a Y := by
@@ -367,7 +365,7 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (p lo : ByteArray) (hpT : p = pT(mS(X))) (hloT : lo = loT(mS(X)))
     (hpk : Vals.PickFits (.arr B) (Rel.nub mS(X)).key (ids p))
     (hpv : Vals.PickFits B (Rel.nub mS(X)).val (ids p))
-    (hlo : Vals.PickFits (.arr B) (Vals.pickPart (.arr B) (Rel.nub mS(X)).key p).2 (ids lo))    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
+    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X)])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom mS(X))))    (D : Rel (.arr B) (.arr B)) (hD : D = lD(mS(X), X))
     (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
     (ht63 : (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63)
@@ -385,8 +383,8 @@ theorem rep_setify_list {B : Obj} {n : USize} (X : Vals (.arr B) n)
     (∀ xs Y, rep (LeetQ.Rel.Alg.setify X) xs Y → (∃ i, Vals.row X i = xs) ∧ Y.Nodup ∧ ∀ y, y ∈ Y ↔ y ∈ xs) ∧
       (∀ xs, (∃ Y, rep (LeetQ.Rel.Alg.setify X) xs Y) ↔ ∃ i, Vals.row X i = xs) := by
   obtain ⟨h1, h2⟩ := rep_setify X hmv hmk kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv
-    hlo pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
-  have hl := (rep_lamOn_list mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv hlo
+    pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv
+  have hl := (rep_lamOn_list mS(X) X kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk hpv
     pc hpc hc hmv D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK huV huk huv).1
   exact ⟨fun xs Y h => ⟨(h1 xs Y h).1, (hl xs Y h).1, (h1 xs Y h).2⟩, h2⟩
 

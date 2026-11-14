@@ -296,4 +296,35 @@ theorem pick_row_prod {a b : Obj} {n : USize} (x : Vals (.prod a b) n)
     (Vals.pick (.prod a b) x i m h).row q = x.row ⟨_, hin⟩ :=
   Prod.ext (h1 i m h q hin) (h2 i m h q hin)
 
+/-! ## A fit at a reordering of its rows -/
+
+/-- **A fit at rows `ps` is a fit at every reordering of them**: each clause bounds a count or recurses at the
+    windows or side positions of the picked rows, which a permutation of the rows permutes (`flatMap`,
+    `filterMap`). -/
+theorem pickFits_of_perm {A : Obj} {n : USize} {x : Vals A n} {ps ps' : List Nat} (h : ps.Perm ps') :
+    Vals.PickFits A x ps → Vals.PickFits A x ps' := by
+  induction A generalizing n ps ps' with
+  | atom t =>
+    unfold Vals.PickFits
+    exact fun hf ⟨k, hk, hle⟩ => hf ⟨k, h.mem_iff.2 hk, hle⟩
+  | prod a b iha ihb =>
+    unfold Vals.PickFits
+    exact fun ⟨h1, h2⟩ => ⟨iha h h1, ihb h h2⟩
+  | arr b ih =>
+    obtain ⟨p, lo, hi, f⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4⟩
+    have hp := h.flatMap_right (fun k => if hk : k < n.toNat then
+      List.range' (min (max (lo.get ⟨k, hk⟩).toInt 0).toNat p.toNat)
+        (min (max (hi.get ⟨k, hk⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, hk⟩).toInt 0).toNat p.toNat)
+      else [])
+    exact ⟨h1, hp.length_eq ▸ h2, hp.length_eq ▸ h3, ih hp h4⟩
+  | sum a b iha ihb =>
+    obtain ⟨l, r, tag, idx, x, y⟩ := x
+    unfold Vals.PickFits
+    dsimp only
+    intro ⟨h1, h2, h3, h4, h5⟩
+    exact ⟨h.length_eq ▸ h1, h2, h3, iha (h.filterMap _) h4, ihb (h.filterMap _) h5⟩
+
 end LeetQ.Rel.Alg
