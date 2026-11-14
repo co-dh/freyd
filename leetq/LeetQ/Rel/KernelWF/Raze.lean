@@ -105,6 +105,24 @@ theorem groupIdsColumn_isSome {t : QAtomicType} {n : USize} {e : Enc} (hg : t �
     all_goals simp_all [Enc.WF, QAtomicType.width]
   all_goals cases e <;> simp_all [Enc.WF, groupIdsColumn, orderKind, Enc.bytesOf, QAtomicType.width]
 
+/-- The type whose grouping key is a cell's bits: a float type's integral type of its width, every other
+    type itself. q's float key (`Order.rank32`/`rank64`) folds the NaNs and the two zeros together, where a
+    float cell (`Carrier`) is its bits; the integral key of the same width is the bits. -/
+def bitsType : QAtomicType → QAtomicType
+  | .real => .int
+  | .float | .datetime => .long
+  | t => t
+
+/-- `groupIdsColumn` at `bitsType t` codes every well-formed payload of `t` but a general list's: a float
+    payload, dense, Frame-of-Reference or ALP, is read at its width (`Enc.bytesOf`). -/
+theorem groupIdsColumn_bitsType_isSome {t : QAtomicType} {n : USize} {e : Enc} (hg : t ≠ .general)
+    (h : Enc.WF t n e) (hd : ∀ d o ids, Column.intern e = .enum d o ids → o.size - 1 < USize.size) :
+    (groupIdsColumn (bitsType t) n e).isSome := by
+  cases t
+  case real | float | datetime =>
+    cases e <;> simp_all [Enc.WF, groupIdsColumn, orderKind, Enc.bytesOf, QAtomicType.width, bitsType]
+  all_goals exact groupIdsColumn_isSome hg h hd
+
 /-! ## Results of the producing kernels -/
 
 /-- `packOf n f` holds `n` bits. -/

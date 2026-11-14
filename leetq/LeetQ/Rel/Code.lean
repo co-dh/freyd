@@ -426,8 +426,8 @@ def rangeOffsets {p : Nat} (a : QAtomicType) (cs : Vector (USize × Enc) p) (tot
     - `bits`: each part is its own code, a bit wide, order-preserving;
     - `foR` or dense of a long type: the offsets from the joint least element (`rangeOffsets`), order-preserving;
     - `enum`, and `syms` interned by `razeColumn`/`Column.intern`: the joint dictionary's ids at their lane;
-    - anything else: one coding pass over the `raze` (`groupIdsColumn`: ids by first appearance, at any
-      encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
+    - anything else: one coding pass over the `raze` (`groupIdsColumn` at `bitsType`: ids by first
+      appearance of the bits, at any encoding), read at the width they are packed at (`Code.ofIds`). A general list is `findList` of
       the join against itself, its positions packed. -/
 def codes {p : Nat} (t : QAtomicType) (cs : Vector ((n : USize) × Arr t n) p) : Vector Code p :=
   if hg : t = .general then by
@@ -448,8 +448,9 @@ def codes {p : Nat} (t : QAtomicType) (cs : Vector ((n : USize) × Arr t n) p) :
   | .enum _ dof ids => (Code.ofLane (Column.idWidth dof) x.1 (dof.size - 1) ids).cut ns
   -- every other constructor by name, so `hi` refutes `groupIdsColumn`'s interned-dictionary premise
   | .bytes _ | .bits _ | .syms .. | .foR .. | .alp .. | .gen _ =>
-    let (gid, fs) := (groupIdsColumn t x.1 x.2.enc).get
-      (KernelWF.groupIdsColumn_isSome hg x.2.wf fun _ _ _ he => Enc.noConfusion (hi.symm.trans he))
+    -- at `bitsType t`: a float groups by its bits, not by q's key, which folds the NaNs and the zeros
+    let (gid, fs) := (groupIdsColumn (KernelWF.bitsType t) x.1 x.2.enc).get
+      (KernelWF.groupIdsColumn_bitsType_isSome hg x.2.wf fun _ _ _ he => Enc.noConfusion (hi.symm.trans he))
     (Code.ofIds (len fs) x.1 gid).cut ns
 
 /-- A long column's dense payload, which always answers (`longBytes_isSome`). -/

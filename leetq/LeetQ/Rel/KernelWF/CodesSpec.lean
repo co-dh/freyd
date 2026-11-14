@@ -134,7 +134,8 @@ theorem codes_small_int {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t = so
   subst h1 h2
   rcases hk with rfl | rfl | rfl <;> cases t' <;> simp [orderKind] at ht <;>
     cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
-    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes, Arr.enc]
+    simp [Obj.codes, Alg.codes, rangeOffsets, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes, Arr.enc,
+      KernelWF.bitsType]
 
 /-- `Code.ofIds` over ids packed by `Verify.groupOf g m` at the width of its class count reads `Verify.groupOf g m`, the
     lane of no bits included (`Code.ofLane`'s bitmap of zeros). -/
@@ -789,6 +790,7 @@ theorem codes_long_group {t : QAtomicType} (ht : orderKind t = some .i64) (x : P
   cases t' <;> simp [orderKind] at ht <;> cases e <;> simp [Enc.WF, QAtomicType.width] at hwf <;>
     simp [Arr.part, Arr.enc] at hro <;>
     simp [Obj.codes, Alg.codes, hro, orderKind, raze, Column.intern, Code.cut, vmapM_one, Column.encodes, Arr.enc,
+      KernelWF.bitsType,
       Arr.part]
 
 /-- **One part of an eight-byte integral side where `rangeOffsets` declines: its codes are faithful.** -/

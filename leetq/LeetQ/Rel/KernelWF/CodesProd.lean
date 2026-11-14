@@ -395,9 +395,10 @@ theorem codes_raze_cut {t : QAtomicType} (hg : t ≠ .general) {p : Nat} (cs : V
     (hp : 0 < p) (hb : ∀ k (hk : k < p), ∀ b, cs[k].2.enc ≠ .bits b)
     (hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) = none)
     (hne : ∀ d o ids, Column.intern (raze t cs.toArray).2.enc ≠ .enum d o ids) :
-    ∃ q, groupIdsColumn t (raze t cs.toArray).1 (raze t cs.toArray).2.enc = some q ∧
+    ∃ q, groupIdsColumn (KernelWF.bitsType t) (raze t cs.toArray).1 (raze t cs.toArray).2.enc = some q ∧
       Obj.codes (.atom t) cs = (Code.ofIds (len q.2) (raze t cs.toArray).1 q.1).cut (cs.map (·.1)) := by
-  have hsome := KernelWF.groupIdsColumn_isSome hg (raze t cs.toArray).2.wf fun d o ids he => (hne d o ids he).elim
+  have hsome := KernelWF.groupIdsColumn_bitsType_isSome hg (raze t cs.toArray).2.wf
+    fun d o ids he => (hne d o ids he).elim
   refine ⟨_, (Option.some_get hsome).symm, ?_⟩
   show Alg.codes t cs = _
   unfold Alg.codes
@@ -434,6 +435,9 @@ theorem codes_small_int_cut {t : QAtomicType} {k : Scan.Kind} (ht : orderKind t 
   obtain ⟨q, hq, hc⟩ := codes_raze_cut hg cs hp (fun k _ => (small_int_branches ht hk).1 _)
     ((small_int_branches ht hk).2 _ _) hne
   obtain ⟨q', hq', hc'⟩ := codes_small_int ht hk (raze t cs.toArray)
+  have hbt : KernelWF.bitsType t = t := by
+    rcases hk with rfl | rfl | rfl <;> cases t <;> simp [orderKind] at ht <;> rfl
+  rw [hbt] at hq
   rw [hc, hc', show q' = q from Option.some_inj.1 (hq'.symm.trans hq)]
 
 /-- The razed column of dense parts reads part `k`'s element `i` past the counts before `k`. -/

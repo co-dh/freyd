@@ -432,6 +432,8 @@ theorem codes_long_cut {t : QAtomicType} (ht : orderKind t = some .i64) {p : Nat
   obtain ⟨q, hq, hc⟩ := codes_raze_cut hg cs hp (fun k hk b he => by
     obtain ⟨b', hb'⟩ := hd k hk; rw [hb'] at he; cases he) hro hne
   obtain ⟨q', hq', hc'⟩ := codes_long_group ht (raze t cs.toArray) hroR
+  have hbt : KernelWF.bitsType t = t := by cases t <;> simp [orderKind] at ht <;> rfl
+  rw [hbt] at hq
   rw [hc, hc', show q' = q from Option.some_inj.1 (hq'.symm.trans hq)]
 
 /-- **A long side of several dense parts where `rangeOffsets` declines: its codes are faithful jointly
