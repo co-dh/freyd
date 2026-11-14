@@ -15,11 +15,6 @@ section Gen
 
 variable {A B C : Obj}
 
-/-- `R ⊑ S`: `member` of `|R|` in `|S|`, all set. -/
-private def le (R S : Rel A B) : Bool :=
-  let c := pairs #v[R, S]
-  len (whereBits R.n (c[0].member c[1])) == R.n.toNat
-
 /-- A relation's keys as a part. A function of the relation, not `⟨R.n, R.key⟩`: there `simp` cannot rewrite `R`,
     the `Vals`' count depending on it, so a twin's `_fst` would not reach a part a body codes. -/
 def keyPart {k v : Obj} (R : Rel k v) : Part k := ⟨R.n, R.key⟩
@@ -29,6 +24,15 @@ def valPart {k v : Obj} (R : Rel k v) : Part v := ⟨R.n, R.val⟩
 
 /-- A relation's pairs as a part of the product side, as `keyPart`: what `pairs` codes. -/
 def pairPart {k v : Obj} (R : Rel k v) : Part (.prod k v) := ⟨R.n, (R.key, R.val)⟩
+
+/-- `R ⊑ S`, `member` of `|R|` in `|S|` on the joint pair codes (`codesC` of the product side), all set, and whether
+    it ran within capacity: the codes' bit. -/
+def leC (R S : Rel A B) : Bool × Bool :=
+  let c := (Obj.prod A B).codesC #v[pairPart R, pairPart S]
+  (len (whereBits R.n (c.1[0].member c.1[1])) == R.n.toNat, c.2)
+
+/-- `R ⊑ S`: `leC`'s answer. -/
+private def le (R S : Rel A B) : Bool := (leC R S).1
 
 /-- `R ∩ S`, the semi-join on pairs — `member` of the joint pair codes (`codesC` of the product side, which `pairs`
     is), `whereBits`, `gatherColumn` — and whether it ran within capacity: the codes' bit `&&` `R`'s two sides
@@ -1259,22 +1263,45 @@ def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long))
 
 end Arr
 
-/-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`. -/
-def entire {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := idU U ⊑ dom R
+/-- `Entire R` on the universe `U`: `𝟙 ⊑ R R°`, written `𝟙 ⊑ dom R` since `dom R = 𝟙 ∩ R R°`, and whether it ran
+    within capacity: `domC`'s bit `&&` `leC`'s. -/
+def entireC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool × Bool :=
+  let d := domC R; let l := leC (idU U) d.1; (l.1, d.2 && l.2)
+
+/-- `Entire R` on `U`: `entireC`'s answer. -/
+def entire {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := (entireC R U).1
 
 /-- `Simple R`, `R° R ⊑ 𝟙`: in `R` with each pair once, every key distinct (`groupIds` count of the key codes),
-    linear where `R° ≫ R` is a join quadratic in a key's values. -/
-def simple {A B : Obj} (R : Rel A B) : Bool :=
-  let r := R.nub
-  len (A.codes #v[⟨_, r.key⟩])[0].groupIds.2 == r.n.toNat
+    linear where `R° ≫ R` is a join quadratic in a key's values; and whether it ran within capacity: `nubC`'s bit
+    `&&` the key codes'. -/
+def simpleC {A B : Obj} (R : Rel A B) : Bool × Bool :=
+  let r := nubC R
+  let c := A.codesC #v[⟨_, r.1.key⟩]
+  (len c.1[0].groupIds.2 == r.1.n.toNat, r.2 && c.2)
 
-def isMap {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := entire R U && simple R
+/-- `Simple R`: `simpleC`'s answer. -/
+def simple {A B : Obj} (R : Rel A B) : Bool := (simpleC R).1
 
-/-- `Injective R` = `Simple R°`. -/
-def injective {A B : Obj} (R : Rel A B) : Bool := simple R°
+/-- `R` a map on `U`, entire and simple, and whether it ran within capacity: the `&&` of `entireC`'s and `simpleC`'s
+    bits. -/
+def isMapC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool × Bool :=
+  let e := entireC R U; let s := simpleC R; (e.1 && s.1, e.2 && s.2)
 
-/-- `Surjective R` = `Entire R°` on the universe `U` of `b`. -/
-def surjective {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool := entire R° U
+/-- `R` a map on `U`: `isMapC`'s answer. -/
+def isMap {A B : Obj} {m : USize} (R : Rel A B) (U : Vals A m) : Bool := (isMapC R U).1
+
+/-- `Injective R` = `Simple R°`, and whether it ran within capacity: `simpleC`'s at `R°`. -/
+def injectiveC {A B : Obj} (R : Rel A B) : Bool × Bool := simpleC R°
+
+/-- `Injective R`: `injectiveC`'s answer. -/
+def injective {A B : Obj} (R : Rel A B) : Bool := (injectiveC R).1
+
+/-- `Surjective R` = `Entire R°` on the universe `U` of `b`, and whether it ran within capacity: `entireC`'s at
+    `R°`. -/
+def surjectiveC {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool × Bool := entireC R° U
+
+/-- `Surjective R` on `U`: `surjectiveC`'s answer. -/
+def surjective {A B : Obj} {m : USize} (R : Rel A B) (U : Vals B m) : Bool := (surjectiveC R U).1
 
 /-- **`R°` swaps the pairs**: the two fields swap (`convArr_holds`). -/
 theorem conv_holds {R : Rel A B} (x : El A) (y : El B) : (conv R).Holds y x ↔ R.Holds x y :=
