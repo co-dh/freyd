@@ -166,6 +166,11 @@ theorem pickFits_tilLongs {t : QAtomicType} {n : USize} (x : Vals (.atom t) n) :
     rw [tilLongs_get (List.mem_range.1 hq)]
     exact List.mem_range.1 hq
 
+/-- **`tilLongs n` reads the rows `0, …, n-1`**. -/
+theorem tilLongs_range (n : USize) :
+    ((List.range n.toNat).map fun q => (Column.bitsAt (tilLongs n) (q * 8) 8).toNat) = List.range n.toNat :=
+  (List.map_congr_left fun _ hq => tilLongs_get (List.mem_range.1 hq)).trans (List.map_id' _)
+
 /-- **`cons`, read back**: a row `(b, bs)` of `P` goes to the array `b :: bs`, under its key. The pieces `cons`
     computes are bound by their equations: the slices `s` of `P`'s arrays, `expand`'s index and rank columns
     `xi`, `xr` (at `m` copies), the tails' payload rows `j` and the tails `tl`, the counts plus one `c1`, their

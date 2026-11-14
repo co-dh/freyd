@@ -17,7 +17,7 @@ namespace ListN
 -- `rep_cons`'s hypotheses at `P`, its pieces bound by their equations
 set_option hygiene false in
 scoped notation "consOK(" K ", " B ", " P ")" =>
-  ((Rel.val P).2.1.toNat < 2 ^ 63 ∧
+  (Vals.PickFits (.arr B) (Rel.val P).2 (List.range (Rel.n P).toNat) ∧
     ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val P).2 →
     ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n P).toNat <
       2 ^ 63 ∧
@@ -35,14 +35,14 @@ scoped notation "consOK(" K ", " B ", " P ")" =>
     ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
     Vals.PickFits K (Rel.key P)
       ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
-    Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
     Vals.RazeFits B tl (Rel.val P).1 ∧
     ∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n P, (Rel.val P).1⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
 -- `rep_cat`'s hypotheses at `P`, its pieces bound by their equations
 set_option hygiene false in
 scoped notation "catOK(" K ", " B ", " P ")" =>
-  ((Rel.val P).1.1.toNat < 2 ^ 63 ∧ (Rel.val P).2.1.toNat < 2 ^ 63 ∧
+  (Vals.PickFits (.arr B) (Rel.val P).1 (List.range (Rel.n P).toNat) ∧
+    Vals.PickFits (.arr B) (Rel.val P).2 (List.range (Rel.n P).toNat) ∧
     ∀ sa : ByteArray × ByteArray, sa = slicesOf (Rel.val P).1 →
     ∀ sb : ByteArray × ByteArray, sb = slicesOf (Rel.val P).2 →
     ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt sa.2 (r * 8) 8).toNat).sum +
@@ -68,8 +68,6 @@ scoped notation "catOK(" K ", " B ", " P ")" =>
     ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[da, db])).grade →
     Vals.PickFits K (Rel.key P)
       ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
-    Vals.PickFits B (Rel.val P).1.2.2.2 ((List.range ma.toNat).map fun q => (Column.bitsAt ja (q * 8) 8).toNat) ∧
-    Vals.PickFits B (Rel.val P).2.2.2.2 ((List.range mb.toNat).map fun q => (Column.bitsAt jb (q * 8) 8).toNat) ∧
     Vals.RazeFits B ta tb ∧
     ∀ hN, Vals.PickFits B (Obj.raze B #[⟨ma, ta⟩, ⟨mb, tb⟩] hN)
       ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat))
@@ -120,8 +118,6 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
     Vals.PickFits (.arr (.arr B)) (Rel.val (inits X)) ((mpairs(kc, inits X, tails X)).map Prod.fst) ∧
     Vals.PickFits (.arr (.arr B)) (Rel.val (tails X)) ((mpairs(kc, inits X, tails X)).map Prod.snd) ∧
     ∀ P : Rel (.arr B) (.prod (.arr (.arr B)) (.arr (.arr B))), P = pair (inits X) (tails X) →
-    Vals.PickFits (.arr (.arr B)) (Rel.val P).1 (List.range (Rel.n P).toNat) ∧
-    Vals.PickFits (.arr (.arr B)) (Rel.val P).2 (List.range (Rel.n P).toNat) ∧
     ∀ c' : ByteArray, c' = Kernel.Ew.val Ew.lesser Ew.i64 Ew.vv nul (slicesOf (Rel.val P).1).2
       (slicesOf (Rel.val P).2).2 (Rel.n P) →
     ((List.range (Rel.n P).toNat).map fun r => (Column.bitsAt c' (r * 8) 8).toNat).sum < 2 ^ 63 ∧
@@ -131,8 +127,6 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
     ∀ xr' : ByteArray, xr' = sub m' (tilLongs m') (gather 8 (sub (Rel.n P) (sums (Rel.n P) c') c') xi') →
     ∀ ja : ByteArray, ja = add m' (gather 8 (slicesOf (Rel.val P).1).1 xi') xr' →
     ∀ jb : ByteArray, jb = add m' (gather 8 (slicesOf (Rel.val P).2).1 xi') xr' →
-    Vals.PickFits (.arr B) (Rel.key P)
-      ((List.range (Rel.n P).toNat).map fun q => (Column.bitsAt (tilLongs (Rel.n P)) (q * 8) 8).toNat) ∧
     ∀ Z : Rel (.arr B) (.arr (.prod (.arr B) (.arr B))), Z = zip P →
     ∀ jc : Vector Code 2, jc = Obj.codes (.arr (.prod (.arr B) (.arr B)))
       (#v[⟨Rel.n Z, Rel.val Z⟩, ⟨Rel.n (mem Z.val), Rel.key (mem Z.val)⟩] :
@@ -149,20 +143,20 @@ local notation "uncatOK(" B ", " n ", " X ")" =>
 /-- `rep_cons` with its hypotheses as the bundle `consOK`. -/
 theorem rep_cons_ok {K B : Obj} (P : Rel K (.prod B (.arr B))) (h : consOK(K, B, P)) :
     ∀ k ys, rep (cons P) k ys ↔ ∃ b bs, rep P k (b, bs) ∧ ys = b :: bs := by
-  obtain ⟨hp, hs⟩ := h
+  obtain ⟨hV, hs⟩ := h
   obtain ⟨hS, hU, hx⟩ := hs _ rfl
-  obtain ⟨hKf, hTf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-  exact rep_cons P hp _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hTf hRf hFf
+  obtain ⟨hKf, hRf, hFf⟩ := hx _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+  exact rep_cons P hV _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hKf hRf hFf
 
 /-- `rep_cat` with its hypotheses as the bundle `catOK`. -/
 theorem rep_cat_ok {K B : Obj} (P : Rel K (.prod (.arr B) (.arr B))) (h : catOK(K, B, P)) :
     ∀ k zs, rep (cat P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = xs ++ ys := by
-  obtain ⟨hpa, hpb, h1⟩ := h
+  obtain ⟨hVa, hVb, h1⟩ := h
   obtain ⟨hS, hU, h2⟩ := h1 _ rfl _ rfl
-  obtain ⟨hKf, hTa, hTb, hRf, hFf⟩ :=
+  obtain ⟨hKf, hRf, hFf⟩ :=
     h2 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-  exact rep_cat P hpa hpb _ rfl _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
-    _ rfl _ rfl _ rfl _ rfl hKf hTa hTb hRf hFf
+  exact rep_cat P hVa hVb _ rfl _ rfl hS hU _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    _ rfl _ rfl _ rfl _ rfl hKf hRf hFf
 
 /-- `rep_uncat` with its hypotheses as the bundle `uncatOK`. -/
 theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B, n, X)) :
@@ -171,12 +165,10 @@ theorem rep_uncat_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (h : uncatOK(B,
   obtain ⟨hS, hU, h2⟩ := h1 _ rfl
   obtain ⟨hK, hVi, hVt, h3⟩ := h2 _ rfl _ rfl _ rfl
   obtain ⟨hkO, hkn, hkM, hkA, hkB, hkC, h4⟩ := h3 _ rfl
-  obtain ⟨hPa, hPb, h5⟩ := h4 _ rfl
-  obtain ⟨hS', hU', h6⟩ := h5 _ rfl
-  obtain ⟨hKf, h7⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl
-  obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h7 _ rfl _ rfl
-  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl hPa hPb
-    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl hKf _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
+  obtain ⟨hS', hU', h6⟩ := h4 _ rfl _ rfl
+  obtain ⟨hjO, hjn, hjM, hjA, hjC, hv, hk⟩ := h6 _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+  exact rep_uncat X hp _ rfl hS hU _ rfl _ rfl _ rfl hK hVi hVt _ rfl hkO hkn hkM hkA hkB hkC _ rfl
+    _ rfl hS' hU' _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl hjO hjn hjM hjA hjC hv hk
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet in
 /-- **`α ≜ [nil, cons]`, read back**: the copairing, out of the sum, of `nil` on the elements `I` lists (each to

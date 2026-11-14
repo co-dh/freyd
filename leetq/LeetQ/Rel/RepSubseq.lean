@@ -145,7 +145,6 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       Vals.PickFits B (Rel.val el) ((mpairs(kc, el, pend)).map Prod.fst) ∧
       Vals.PickFits (.arr B) (Rel.val pend) ((mpairs(kc, el, pend)).map Prod.snd) ∧
       ∀ W : Rel .long (.prod B (.arr B)), W = pair el pend →
-      (Rel.val W).2.1.toNat < 2 ^ 63 ∧
       ∀ s : ByteArray × ByteArray, s = slicesOf (Rel.val W).2 →
       ((List.range (Rel.n W).toNat).map fun r => (Column.bitsAt s.2 (r * 8) 8).toNat).sum + (Rel.n W).toNat <
         2 ^ 63 ∧
@@ -161,7 +160,6 @@ theorem rep_subseq {B : Obj} {n : USize} (X : Vals (.arr B) n)
       ∀ lo : ByteArray, lo = sub (Rel.n W) hi c1 →
       ∀ dst : ByteArray, dst = addc m (add m (gather 8 lo xi) xr) 1 →
       ∀ g : ByteArray, g = (Code.ofLongs (concatBytes #[dst, lo])).grade →
-      Vals.PickFits B (Rel.val W).2.2.2.2 ((List.range m.toNat).map fun q => (Column.bitsAt j (q * 8) 8).toNat) ∧
       Vals.RazeFits B tl (Rel.val W).1 ∧
       (∀ hN, Vals.PickFits B (Obj.raze B #[⟨m, tl⟩, ⟨Rel.n W, (Rel.val W).1⟩] hN)
         ((List.range (len g)).map fun q => (Column.bitsAt g (q * 8) 8).toNat)) ∧
