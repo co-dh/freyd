@@ -453,8 +453,6 @@ local notation "setOK" =>
     kt.n = (Rel.nub Ms).n ∧ kt.b.size = (kt.n.toNat * kt.w + 7) / 8 ∧
     B.CodesFit (#v[⟨(Rel.nub Ms).n, (Rel.nub Ms).val⟩] : Vector (Part B) 1) ∧
     (Rel.nub Ms).n.toNat < 2 ^ 63 ∧
-    ∀ p lo : ByteArray, p = pT(Ms) → lo = loT(Ms) →
-    Vals.PickFits (.arr B) (Rel.nub Ms).key (ids p) ∧ Vals.PickFits B (Rel.nub Ms).val (ids p) ∧
     ∀ pc : Vector Code 2, pc = pairs #v[idU (Rel.val Wy), dom Ms] →
     codesOK(pc, (#v[⟨Rel.n (idU (Rel.val Wy)), (Rel.key (idU (Rel.val Wy)), Rel.val (idU (Rel.val Wy)))⟩,
       ⟨Rel.n (dom Ms), (Rel.key (dom Ms), Rel.val (dom Ms))⟩] : Vector (Part (.prod (.arr B) (.arr B))) 2)) ∧
@@ -504,14 +502,13 @@ theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
   subst hMs
   obtain ⟨hmv, hmk, k1⟩ := hset
   obtain ⟨hK, hV, hk, hv', k2⟩ := k1 _ _ rfl rfl
-  obtain ⟨hF', hw, hn', hs, hW, h63', k3⟩ := k2 _ rfl
-  obtain ⟨hpk, hpv, k4⟩ := k3 _ _ rfl rfl
+  obtain ⟨hF', hw, hn', hs, hW, h63', k4⟩ := k2 _ rfl
   obtain ⟨hc, k6⟩ := k4 _ rfl
   obtain ⟨htN, ht63, htA, htB, k7⟩ := k6 _ rfl
   obtain ⟨hN', hFk, hFv, k8⟩ := k7 _ _ rfl rfl
   obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
-  have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63' _ _ rfl rfl
-    hpk hpv _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
+  have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63'
+    _ rfl hc _ rfl htN ht63 htA htB _ _ rfl rfl hN' hFk hFv _ rfl _ _ rfl rfl
     huK huV huk huv
   rw [← hSt] at hS
   intro xs ys

@@ -136,7 +136,8 @@ theorem transpose_row_list (R : Rel A B)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
-    (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT)) :
+    (hpk : Vals.PickFits A (Rel.nub R).key (List.range (Rel.nub R).n.toNat))
+    (hpv : Vals.PickFits B (Rel.nub R).val (List.range (Rel.nub R).n.toNat)) :
     (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
       Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∃ L : List (Fin (Rel.nub R).n.toNat),
         L.Nodup ∧ (∀ i', i' ∈ L ↔ Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i) ∧
@@ -156,6 +157,10 @@ theorem transpose_row_list (R : Rel A B)
     rw [hN]; exact (sortBy_perm B _ hW _ (by rw [len_tilLongs]; exact hU)
       fun t ht => List.mem_range.1 (htil.mem_iff.1 ht)).trans htil
   obtain ⟨hpp, hgrp, hgp, hstab⟩ := grade_gather_group (kcT) hw hs vpT hvp
+  -- `p` reorders `d`'s rows, so `d` fits at `p` as at its rows
+  have hpr : (ids pT).Perm (List.range (Rel.nub R).n.toNat) := by rw [← hN]; exact hpp
+  replace hpk := pickFits_perm hpr hpk
+  replace hpv := pickFits_perm hpr hpv
   -- the row order `p`: its long `s` is `P s`, every row once
   have hlp : len pT = (Rel.nub R).n.toNat := by rw [len_eq_ids, hpp.length_eq, List.length_range, hN]
   have hpl : len pT < USize.size := by rw [hlp]; exact hU
@@ -365,7 +370,8 @@ theorem transpose_rows (R : Rel A B)
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
     (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
-    (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT)) :
+    (hpk : Vals.PickFits A (Rel.nub R).key (List.range (Rel.nub R).n.toNat))
+    (hpv : Vals.PickFits B (Rel.nub R).val (List.range (Rel.nub R).n.toNat)) :
     (∀ q : Fin (Alg.transpose R).n.toNat, ∃ i : Fin (Rel.nub R).n.toNat,
       Vals.row (Alg.transpose R).key q = Vals.row (Rel.nub R).key i ∧ ∀ x, x ∈ Vals.row (Alg.transpose R).val q ↔
         ∃ i' : Fin (Rel.nub R).n.toNat, Vals.row (Rel.nub R).key i' = Vals.row (Rel.nub R).key i ∧
@@ -412,11 +418,11 @@ theorem rep_transpose (R : Rel A B)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
-    (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT)) :
+    (h63 : (Rel.nub R).n.toNat < 2 ^ 63) :
     (∀ a X, rep (Alg.transpose R) a X → ∀ x, x ∈ X ↔ rep R a x) ∧
       (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
   have hd := rep_nub R hK hV hk hv
+  obtain ⟨hpk, hpv⟩ := nub_pickFits R hK hV hk hv
   have hdh : ∀ a b, (Rel.nub R).Holds a b ↔ R.Holds a b := fun a b => by
     show rep (Rel.nub R) a b ↔ rep R a b
     rw [hd]
@@ -493,13 +499,13 @@ theorem rep_transpose_list (R : Rel A B)
     (hw : laneOK((kcT).w))
     (hn : (kcT).n = (Rel.nub R).n) (hs : (kcT).b.size = ((kcT).n.toNat * (kcT).w + 7) / 8)
     (hW : B.CodesFit (#v[⟨(Rel.nub R).n, (Rel.nub R).val⟩] : Vector (Part B) 1))
-    (h63 : (Rel.nub R).n.toNat < 2 ^ 63)
-    (hpk : Vals.PickFits A (Rel.nub R).key (ids pT)) (hpv : Vals.PickFits B (Rel.nub R).val (ids pT)) :
+    (h63 : (Rel.nub R).n.toNat < 2 ^ 63) :
     (∀ a X, rep (Alg.transpose R) a X → X.Nodup ∧ (∀ x, x ∈ X ↔ rep R a x) ∧
       ∃ L : List (Fin (Rel.nub R).n.toNat), (L.map Fin.val).Sublist (ids vpT) ∧
         (∀ i, i ∈ L ↔ Vals.row (Rel.nub R).key i = a) ∧ X = L.map (Vals.row (Rel.nub R).val)) ∧
       (∀ a, (∃ X, rep (Alg.transpose R) a X) ↔ ∃ b, rep R a b) := by
-  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63 hpk hpv
+  obtain ⟨h1, h2⟩ := rep_transpose R hK hV hk hv hF hw hn hs hW h63
+  obtain ⟨hpk, hpv⟩ := nub_pickFits R hK hV hk hv
   refine ⟨fun a X h => ?_, h2⟩
   have hm := h1 a X h
   obtain ⟨q, hqa, hqX⟩ : (Alg.transpose R).Holds a X := h

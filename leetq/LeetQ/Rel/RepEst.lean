@@ -36,9 +36,7 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (hs : kt.b.size = (kt.n.toNat * kt.w + 7) / 8)
     (hW : A.CodesFit (#v[⟨(Rel.nub M).n, (Rel.nub M).val⟩] : Vector (Part A) 1))
     (h63 : (Rel.nub M).n.toNat < 2 ^ 63)
-    (p lo : ByteArray) (hpT : p = pT(M)) (hloT : lo = loT(M))
-    (hpk : Vals.PickFits (.arr (.arr A)) (Rel.nub M).key (ids p))
-    (hpv : Vals.PickFits A (Rel.nub M).val (ids p))    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
+    (pc : Vector Code 2) (hpc : pc = pairs #v[LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M])
     (hc : codesOK(pc, pcs(LeetQ.Rel.Alg.idU X, LeetQ.Rel.Alg.dom M)))
     (D : Rel (.arr (.arr A)) (.arr (.arr A))) (hD : D = lD(M, X))
     (htN : (Rel.n D).toNat * USize.toNat 1 < USize.size)
@@ -72,8 +70,8 @@ theorem rep_arrUnion {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) (Rm : Re
     (∀ xss Y, rep (Arr.union X) xss Y → (∃ i, Vals.row X i = xss) ∧ ∀ y, y ∈ Y ↔ ∃ xs ∈ xss, y ∈ xs) ∧
       (∀ xss, (∃ Y, rep (Arr.union X) xss Y) ↔ ∃ i, Vals.row X i = xss) := by
   subst hRm
-  obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63 p lo hpT hloT hpk
-    hpv pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
+  obtain ⟨h1, h2⟩ := rep_E (mem X.2.2.2) X M kc vc hkc hvc hK hV hk hv kt hkt hF hw hn hs hW h63
+    pc hpc hc D hD htN ht63 htA htB T N hT hN0 hN hFk hFv L hL ku vu hku hvu huK
     huV huk huv hM hmv hmk hcc hcrn hcM hcA hcC
   -- every element of a cell of `X` is a row of its payload: a cell's window ends inside the payload
   have hpay : ∀ xss xs, (∃ i, Vals.row X i = xss) → xs ∈ xss → ∃ i, Vals.row X.2.2.2 i = xs := by
