@@ -173,7 +173,7 @@ def _root_.LeetQ.Rel.Vals.reads : (A : Obj) → {n : USize} → Vals A n → Lis
       List.range' (min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
         (min (max (hi.get ⟨k, h⟩).toInt 0).toNat p.toNat - min (max (lo.get ⟨k, h⟩).toInt 0).toNat p.toNat)
       else []
-    ps.length + p.toNat + Vals.reads b f (ps.flatMap w)
+    ps.length + p.toNat + Vals.reads b f (ps.flatMap w ++ List.range p.toNat)
   | .sum a b, n, ⟨l, r, tag, idx, x, y⟩, ps =>
     let side (s : Bool) (c : Nat) : List Nat := ps.filterMap fun k =>
       if h : k < n.toNat then
@@ -217,7 +217,8 @@ theorem reads_sublist {A : Obj} {n : USize} (x : Vals A n) {ps ps' : List Nat} (
   | arr b ih =>
     obtain ⟨p, lo, hi, f⟩ := x
     unfold Vals.reads; dsimp only
-    exact Nat.add_le_add (Nat.add_le_add_right h.length_le _) (ih f (sublist_flatMap _ h))
+    exact Nat.add_le_add (Nat.add_le_add_right h.length_le _)
+      (ih f ((sublist_flatMap _ h).append (List.Sublist.refl _)))
   | sum a b iha ihb =>
     obtain ⟨l, r, tag, idx, x, y⟩ := x
     unfold Vals.reads; dsimp only
@@ -240,8 +241,10 @@ theorem pickFits_of_reads {A : Obj} {n : USize} {x : Vals A n} {ps : List Nat}
   | arr b ih =>
     obtain ⟨p, lo, hi, f⟩ := x
     unfold Vals.reads at h63 hU; unfold Vals.PickFits; dsimp only at h63 hU ⊢
-    have e63 := Nat.lt_of_le_of_lt (Nat.le_add_left _ _) h63
-    have eU := Nat.lt_of_le_of_lt (Nat.le_add_left _ _) hU
+    have sf : ∀ {B : Nat} (s : List Nat), Vals.reads b f (s ++ List.range p.toNat) < B → Vals.reads b f s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist f (List.sublist_append_left s _)) hs
+    have e63 := sf _ (Nat.lt_of_le_of_lt (Nat.le_add_left _ _) h63)
+    have eU := sf _ (Nat.lt_of_le_of_lt (Nat.le_add_left _ _) hU)
     exact ⟨by omega, Nat.lt_of_le_of_lt (length_le_reads ..) e63, Nat.lt_of_le_of_lt (length_le_reads ..) eU,
       ih e63 eU⟩
   | sum a b iha ihb =>
@@ -263,8 +266,9 @@ theorem reads_append {A : Obj} {n : USize} (x : Vals A n) (ps qs : List Nat) :
   | arr b ih =>
     obtain ⟨p, lo, hi, f⟩ := x
     unfold Vals.reads; dsimp only
-    rw [List.flatMap_append, List.length_append]
-    refine Nat.le_trans (Nat.add_le_add_left (ih f _ _) _) ?_; omega
+    rw [List.flatMap_append, List.length_append, List.append_assoc]
+    refine Nat.le_trans (Nat.add_le_add_left (Nat.le_trans (ih f _ _) (Nat.add_le_add_right (reads_sublist f
+      (List.sublist_append_left _ (List.range p.toNat))) _)) _) ?_; omega
   | sum a b iha ihb =>
     obtain ⟨l, r, tag, idx, x, y⟩ := x
     unfold Vals.reads; dsimp only
@@ -285,7 +289,7 @@ theorem reads_perm {A : Obj} {n : USize} (x : Vals A n) {ps ps' : List Nat} (h :
   | arr b ih =>
     obtain ⟨p, lo, hi, f⟩ := x
     unfold Vals.reads; dsimp only
-    rw [h.length_eq]; exact congrArg _ (ih f (h.flatMap_right _))
+    rw [h.length_eq]; exact congrArg _ (ih f ((h.flatMap_right _).append_right _))
   | sum a b iha ihb =>
     obtain ⟨l, r, tag, idx, x, y⟩ := x
     unfold Vals.reads; dsimp only

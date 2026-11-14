@@ -1289,8 +1289,10 @@ theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteA
     rw [Nat.mul_add]
     omega
   | .arr b, n, ⟨p, lo, hi, f⟩, i, m, h, qs, hq, h63, hU => by
-    have kb : 3 ^ sizeOf b ≤ 3 ^ sizeOf (Obj.arr b) :=
+    have hpos : 0 < 3 ^ sizeOf b := Nat.pow_pos (by decide)
+    have kb : 3 ^ (sizeOf b + 1) ≤ 3 ^ sizeOf (Obj.arr b) :=
       Nat.pow_le_pow_right (by decide) (by simp only [Obj.arr.sizeOf_spec]; omega)
+    rw [Nat.pow_succ] at kb
     have km := Nat.le_mul_of_pos_left m.toNat (Nat.pow_pos (n := sizeOf (Obj.arr b)) (by decide : 0 < 3))
     have hf := pickFits_of_reads h63 hU
     unfold Vals.PickFits at hf; dsimp only at hf
@@ -1300,9 +1302,11 @@ theorem reads_pick : (A : Obj) → {n : USize} → (x : Vals A n) → (i : ByteA
     rw [he]
     unfold Vals.reads at h63 hU ⊢
     dsimp only at h63 hU ⊢
-    have ih := Nat.le_trans (reads_pick b f i' k h' _ hlt (by rw [hall]; omega) (by rw [hall]; omega))
-      (Nat.add_le_add_left (Nat.mul_le_mul_right _ kb) _)
-    rw [hall, hmap] at ih
+    have sf : ∀ {B : Nat} (s : List Nat), Vals.reads b f (s ++ List.range p.toNat) < B → Vals.reads b f s < B :=
+      fun s hs => Nat.lt_of_le_of_lt (reads_sublist f (List.sublist_append_left s _)) hs
+    have ih := reads_pick_side (K := 3 ^ sizeOf (Obj.arr b)) (Ka := 3 ^ sizeOf b) f _ _ (by omega)
+      (fun qs hq => reads_pick b f i' k h' qs hq
+        (by rw [hall]; exact sf _ (by omega)) (by rw [hall]; exact sf _ (by omega))) hlt hmap hall
     simp only [List.length_map, List.length_range, Nat.mul_add] at h63 hU ⊢
     omega
   | .sum a b, n, ⟨l, r, tag, idx, xa, xb⟩, i, m, h, qs, hq, h63, hU => by
