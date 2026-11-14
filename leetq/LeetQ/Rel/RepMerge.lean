@@ -463,8 +463,8 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
     ⟨qf, qc⟩, ⟨lf, lp⟩, ⟨a1f, a1p⟩, ⟨s1f, s1p⟩, sn1, ⟨p1f, p1p⟩, ⟨l1f, l1c⟩, ⟨nbf, nbp⟩, ⟨a2f, a2p⟩,
     ⟨s2f, s2p⟩, sn2, ⟨p2f, p2p⟩, ⟨l2f, l2c⟩, ⟨tN, tFk, tFv, tK, tV, tk, tv⟩, ⟨Tf, Tc⟩, ⟨flf, flp⟩,
     ⟨sff, sfc⟩, ⟨c1f, c1p⟩, ct1, ⟨c2f, c2p⟩, ct2, ⟨Of, Oc⟩, ⟨uN, uFk, uFv, uK, uV, uk, uv⟩⟩ := h
-  obtain ⟨xk, xh, xt⟩ := xU _ rfl _ rfl _ rfl
-  obtain ⟨yk, yh, yt⟩ := yU _ rfl _ rfl _ rfl
+  have xk := xU _ rfl _ rfl _ rfl
+  have yk := yU _ rfl _ rfl _ rfl
   obtain ⟨xc1, xc2, xc3, xc4⟩ := xc _ rfl
   obtain ⟨yc1, yc2, yc3, yc4⟩ := yc _ rfl
   obtain ⟨pu1, pu2, pu3, pu4, pu5⟩ := pup _ rfl
@@ -488,9 +488,9 @@ theorem merge_round_rep {K B : Obj} (le : B.El → B.El → Bool) (out : Rel K (
   refine merge_round_set le out St mD mx my macc mux muy mpu mboth mh mrh G mhq ml mA1 mA2 mS1 mS2 mN1 mN2
     mP1 mP2 mL1 mL2 mnb mtk mfl mT mSf mc1 mc2 mC1 mC2 mO mU
     (by rw [hD]; exact rep_ran_corefl St (one_ok _ Df) (Dp)) hx hy hacc
-    (rep_uncons (Rel.val mx) x63 _ rfl _ rfl _ rfl xk xh xt)
+    (rep_uncons (Rel.val mx) x63 _ rfl _ rfl _ rfl xk)
     (by rw [hux]; exact rep_comp _ _ (codes_faithful_wf _ _ xcf).1 xc1 xc2 xc3 xc4)
-    (rep_uncons (Rel.val my) y63 _ rfl _ rfl _ rfl yk yh yt)
+    (rep_uncons (Rel.val my) y63 _ rfl _ rfl _ rfl yk)
     (by rw [huy]; exact rep_comp _ _ (codes_faithful_wf _ _ ycf).1 yc1 yc2 yc3 yc4)
     (by rw [hpu]; exact rep_pair _ _ (codes_faithful_wf _ _ puf).1 pu1 pu2 pu3 pu4 pu5)
     (by rw [hboth]; exact rep_dom_corefl mpu (one_ok _ bf) (bp))

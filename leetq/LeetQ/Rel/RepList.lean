@@ -26,16 +26,14 @@ local notation "Cq" => (Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8
 
 /-- **`cons°`, read back**: an array of `X` goes to `(b, bs)` exactly when it is `b :: bs`. The non-empty rows
     (`i`), their starts (`l`) and the tails before `Vals.compact` (`T`) are bound by their equations.
-    Hypotheses: the payload count below `2^63`, `Vals.PickFits` where `X`, its payload and `T` are picked. -/
+    Hypotheses: the payload count below `2^63`, `Vals.PickFits` of `X` at the non-empty rows (the heads and the
+    tails are inside their windows). -/
 theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2 ^ 63)
     (i : ByteArray) (hi : i = whereBits n (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf X).2 (one 0) n))
     (l : ByteArray) (hl : l = gather 8 (slicesOf X).1 i)
     (T : Vals (.arr B) (len i).toUSize)
     (hT : T = ⟨X.1, valCol Ew.add Ew.va l (one 1), valCol Ew.add Ew.vv l (gather 8 (slicesOf X).2 i), X.2.2.2⟩)
-    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hHf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt l (q * 8) 8).toNat))
-    (hTf : Vals.PickFits (.arr B) T
-      ((List.range (len i)).map fun q => (Column.bitsAt (tilLongs (len i).toUSize) (q * 8) 8).toNat)) :
+    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
     ∀ (xs : List B.El) b bs, rep (uncons X) xs (b, bs) ↔ (∃ j, X.row j = xs) ∧ xs = b :: bs := by
   intro xs b bs
   have hlen : len i < USize.size := by
@@ -49,6 +47,52 @@ theorem rep_uncons {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat <
     rw [hA, List.mem_filter, List.mem_range, decide_eq_true_iff]
   have hs1 : len (slicesOf X).1 = n.toNat := (len_slices _ _ _ _).1
   have hs2 : len (slicesOf X).2 = n.toNat := (len_slices _ _ _ _).2
+  -- row `q` reads row `i[q]` of `X`, non-empty, its start at `l[q]`
+  have hrq : ∀ q, q < len i → ∃ hj : (Column.bitsAt i (q * 8) 8).toNat < n.toNat, 0 < Cq ∧
+      Column.bitsAt l (q * 8) 8 = Column.bitsAt (slicesOf X).1 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 := by
+    intro q hq
+    have hin : (Column.bitsAt i (q * 8) 8).toNat ∈ QLean.Verify.ids i := by
+      have hq' : q < (QLean.Verify.ids i).length := by rw [← len_eq_ids]; exact hq
+      rw [← ids_getElem hq']; exact List.getElem_mem hq'
+    obtain ⟨hj, hc⟩ := (hmem _).1 hin
+    exact ⟨hj, hc, by rw [hl]; exact gather8_get hq (by rw [hs1]; exact hj)⟩
+  -- the heads: each row's first cell, inside its window
+  have hHf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt l (q * 8) 8).toNat) := by
+    refine pickFits_sublist ?_ (pickFits_payload _ hKf).2
+    rw [List.map_eq_flatMap (l := List.range (len i)) (f := fun q => (Column.bitsAt l (q * 8) 8).toNat)]
+    refine flatMap_sublist_map_flatMap _ _ _ fun q hq => ?_
+    obtain ⟨hj, hc, hlq⟩ := hrq q (List.mem_range.1 hq)
+    obtain ⟨e1, e2⟩ := slicesOf_get X hp hj
+    rw [dif_pos hj, hlq, e1]
+    exact List.singleton_sublist.2 (List.mem_range'_1.2 ⟨Nat.le_refl _, by omega⟩)
+  -- the tails: each row's window less its first cell
+  have hTf : Vals.PickFits (.arr B) T
+      ((List.range (len i)).map fun q => (Column.bitsAt (tilLongs (len i).toUSize) (q * 8) 8).toNat) := by
+    rw [(List.map_congr_left fun q hq => tilLongs_get (by rw [hm]; exact List.mem_range.1 hq)).trans
+      (List.map_id' _), hT]
+    refine pickFits_windows X _ _ (flatMap_sublist_map_flatMap _ _ _ fun q hq => ?_) hKf
+    have hq' := List.mem_range.1 hq
+    have qb : q < ((len i).toUSize).toNat := by omega
+    obtain ⟨hj, hc, hlq⟩ := hrq q hq'
+    obtain ⟨hLC, -, -⟩ := hR _ hj
+    obtain ⟨e1, e2⟩ := slicesOf_get X hp hj
+    have hcq : Column.bitsAt (gather 8 (slicesOf X).2 i) (q * 8) 8 =
+        Column.bitsAt (slicesOf X).2 ((Column.bitsAt i (q * 8) 8).toNat * 8) 8 :=
+      gather8_get hq' (by rw [hs2]; exact hj)
+    have hlqN := congrArg UInt64.toNat hlq
+    have hlo : ((valCol (n := (len i).toUSize) Ew.add Ew.va l (one 1)).get ⟨q, qb⟩).toInt = ((Lq + 1 : Nat) : Int) := by
+      rw [valCol_get, val_va_get _ _ _ _ qb, bitsAt_one, hlq]
+      exact addStep_toInt (by omega) (by decide) (by rw [show (1 : UInt64).toNat = 1 from rfl]; omega)
+    have hhi : ((valCol (n := (len i).toUSize) Ew.add Ew.vv l (gather 8 (slicesOf X).2 i)).get ⟨q, qb⟩).toInt =
+        ((Lq + Cq : Nat) : Int) := by
+      rw [valCol_get, val_vv_get _ _ _ _ qb, hlq, hcq]
+      exact addStep_toInt (by omega) (by omega) (by omega)
+    rw [dif_pos qb, dif_pos hj, hlo, hhi, ← e2, ← e1]
+    have f1 : min (max ((Lq + 1 : Nat) : Int) 0).toNat X.1.toNat = Lq + 1 := by omega
+    have f2 : min (max ((Lq + Cq : Nat) : Int) 0).toNat X.1.toNat = Lq + Cq := by omega
+    obtain ⟨c, hc1⟩ : ∃ c, Cq = c + 1 := ⟨Cq - 1, by omega⟩
+    rw [f1, f2, hc1, List.range'_succ, show Lq + (c + 1) - (Lq + 1) = c by omega]
+    exact (List.Sublist.refl _).cons _
   -- row `q` of the result: the array `X.row i[q]`, its head and its compacted tail
   have hq : ∀ (q : Nat) (hq : q < len i) (h1 : len i = ((len i).toUSize).toNat)
       (h2 : len l = ((len i).toUSize).toNat),

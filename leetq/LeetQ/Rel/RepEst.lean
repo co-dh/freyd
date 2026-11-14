@@ -98,13 +98,10 @@ theorem rep_tail {B : Obj} {n : USize} (X : Vals (.arr B) n) (hp : X.1.toNat < 2
     (l : ByteArray) (hl : l = gather 8 (slicesOf X).1 i)
     (T : Vals (.arr B) (len i).toUSize)
     (hT : T = ⟨X.1, valCol Ew.add Ew.va l (one 1), valCol Ew.add Ew.vv l (gather 8 (slicesOf X).2 i), X.2.2.2⟩)
-    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat))
-    (hHf : Vals.PickFits B X.2.2.2 ((List.range (len i)).map fun q => (Column.bitsAt l (q * 8) 8).toNat))
-    (hTf : Vals.PickFits (.arr B) T
-      ((List.range (len i)).map fun q => (Column.bitsAt (tilLongs (len i).toUSize) (q * 8) 8).toNat)) :
+    (hKf : Vals.PickFits (.arr B) X ((List.range (len i)).map fun q => (Column.bitsAt i (q * 8) 8).toNat)) :
     ∀ (xs bs : List B.El), rep (tail X) xs bs ↔ (∃ j, X.row j = xs) ∧ ∃ b, xs = b :: bs := by
   intro xs bs
-  have hu := rep_uncons X hp i hi l hl T hT hKf hHf hTf xs
+  have hu := rep_uncons X hp i hi l hl T hT hKf xs
   rw [rep_apply, show tail X = outr (uncons X) from rfl, outr_holds]
   exact ⟨fun ⟨b, h⟩ => ((hu b bs).1 h).imp_right fun e => ⟨b, e⟩,
     fun ⟨hj, b, e⟩ => ⟨b, (hu b bs).2 ⟨hj, e⟩⟩⟩

@@ -217,8 +217,7 @@ theorem rep_tic {K B : Obj} (P : Rel K (.prod B (.arr B))) (C : Rel K (.arr B)) 
   obtain ⟨d1, d2, d3, d4⟩ := h2' _ rfl
   have e2 := rep_comp _ _ (codes_faithful_wf _ _ h2f).1 d1 d2 d3 d4
   obtain ⟨t63, ht'⟩ := ht
-  obtain ⟨tK, tH, tT⟩ := ht' _ rfl _ rfl _ rfl
-  have eT := rep_tail (Rel.val I) t63 _ rfl _ rfl _ rfl tK tH tT
+  have eT := rep_tail (Rel.val I) t63 _ rfl _ rfl _ rfl (ht' _ rfl _ rfl _ rfl)
   -- `I`: a row `(b, bs)` to every prefix of `b :: bs`
   have eI : ∀ k yss, rep I k yss ↔ ∃ b bs, rep P k (b, bs) ∧
       yss = (List.range ((b :: bs).length + 1)).map fun j => (b :: bs).take j := by
@@ -487,8 +486,7 @@ theorem suffix_round {B : Obj} (S F : Rel (.arr B) (.arr B)) (h : sufOK) :
     (∀ xs ys, rep (F ≫ tail (ran F).val) xs ys ↔ ∃ c, rep F xs (c :: ys)) ∧
     ∀ xs ys, rep (S ∪ F ≫ tail (ran F).val) xs ys ↔ rep S xs ys ∨ ∃ c, rep F xs (c :: ys) := by
   obtain ⟨⟨hDf, hDp⟩, ⟨t63, ht⟩, ⟨hcf, hc⟩, hU⟩ := h _ rfl
-  obtain ⟨tK, tH, tT⟩ := ht _ rfl _ rfl _ rfl
-  have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl tK tH tT
+  have eT := rep_tail (Rel.val (ran F)) t63 _ rfl _ rfl _ rfl (ht _ rfl _ rfl _ rfl)
   obtain ⟨c1, c2, c3, c4⟩ := hc _ rfl
   have eC := rep_comp _ _ (codes_faithful_wf _ _ hcf).1 c1 c2 c3 c4
   have eD := rep_ran_corefl F (one_ok _ hDf) (hDp)
