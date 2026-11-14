@@ -366,7 +366,241 @@ theorem thin_body_rep {B : Obj} (le : B.El → B.El → Bool) (D : Rel SP SP) (D
 
 end Discharge
 
+-- the body's values at the round's coreflexive `D`, each bound by its equation as `thinLOn` binds them, then `J`
+set_option hygiene false in
+local notation "thinVals(" J ")" =>
+  ∀ ta, ta = outl D → ∀ ty, ty = outr D → ∀ tu, tu = ty ≫ uncons (Rel.val ty) → ∀ tab, tab = pair ta (outl tu) →
+  ∀ rab, rab = ran tab → ∀ G1, G1 = q rab → ∀ tq1, tq1 = tab ≫ G1 → ∀ tup, tup = dom tq1 →
+  ∀ ss, ss = pair (outr rab) (outl rab) → ∀ rs, rs = ran ss → ∀ G2, G2 = q rs → ∀ tq2, tq2 = ss ≫ G2 →
+  ∀ sw, sw = dom tq2 → ∀ tq3, tq3 = tab ≫ sw → ∀ tdn, tdn = dom tq3 → ∀ du, du = dom tu → ∀ l1, l1 = D \ du →
+  ∀ l2, l2 = du \ tup → ∀ l3, l3 = l2 \ tdn → ∀ lone, lone = l1 ∪ l3 → ∀ c1, c1 = cons lone →
+  ∀ ua, ua = tup ≫ ta → ∀ uu, uu = tup ≫ tu → ∀ ru, ru = ran tu → ∀ ut, ut = uu ≫ outr ru →
+  ∀ pu, pu = pair ua ut → ∀ c2, c2 = cons pu → ∀ dy, dy = tdn ≫ ty → ∀ b1, b1 = c1 ∪ c2 →
+  ∀ body, body = b1 ∪ dy → J
+
+section Headline
+
+/-- **`thinLOn` is `foldOn` at its body**: the step's body `Sf` bound by its defining equation (`hSf`). -/
+theorem thinLOn_foldOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (X : Vals (.arr B) n) (Sf : Rel SP SP → Rel SP (.arr B))
+    (hSf : ∀ D : Rel SP SP, Sf D =
+      let a := outl D
+      let ys := outr D
+      let u := ys ≫ uncons ys.val
+      let ab := pair a (outl u)
+      let up := dom (ab ≫ q (ran ab))
+      let down := dom (ab ≫ swapIn q (ran ab))
+      let lone := D \ dom u ∪ ((dom u \ up) \ down)
+      cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys) :
+    thinLOn q X = foldOn (nilVal B) Sf X := by
+  -- `congrArg`, not `congr`: `congr` first tries the two steps up to `rfl`, unfolding the kernels until `whnf` times out
+  unfold thinLOn foldOn
+  refine congrArg (foldBy X (nilVal B)) (funext fun el => funext fun pend => ?_)
+  simp only [demandStep, hSf]
+
+/-- **One round of `thinLOn`, read back**: at the round's pairs `P`, its coreflexive `D = ran P` holds exactly the
+    pairs of `P`, and the body `Sf D` takes `(a, y)` of `D` to one bump of `a` into `y` at `le`. `h` is `rep_ran`'s
+    hypotheses at `P`, the test read back on the pairs of heads `rab` and on their swaps `rs`, and every
+    primitive's hypotheses (`thinOK`), the body's values bound by their equations (`thinVals`). -/
+theorem thin_round_rep {B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (le : B.El → B.El → Bool) (Sf : Rel SP SP → Rel SP (.arr B))
+    (hSf : ∀ D : Rel SP SP, Sf D =
+      let a := outl D
+      let ys := outr D
+      let u := ys ≫ uncons ys.val
+      let ab := pair a (outl u)
+      let up := dom (ab ≫ q (ran ab))
+      let down := dom (ab ≫ swapIn q (ran ab))
+      let lone := D \ dom u ∪ ((dom u \ up) \ down)
+      cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
+    (P : Rel .long SP) (D : Rel SP SP) (hD : D = ran P)
+    (h : oneFit(SP, Rel.n P, Rel.val P) ∧ thinVals(
+      (∀ a b, rep rab (a, b) (a, b) → ((∃ c, rep G1 (a, b) c) ↔ le a b = true)) ∧
+      (∀ a b, rep rs (b, a) (b, a) → ((∃ c, rep G2 (b, a) c) ↔ le b a = true)) ∧ thinOK)) :
+    (∀ s, rep D s s ↔ ∃ r, rep P r s) ∧
+    ∀ a (y v : List B.El), rep (Sf D) (a, y) v ↔ rep D (a, y) (a, y) ∧ ((y = [] ∧ v = [a]) ∨
+      ∃ b bs, y = b :: bs ∧ ((le a b = true ∧ v = a :: bs) ∨ (le b a = true ∧ v = b :: bs) ∨
+        (le a b = false ∧ le b a = false ∧ v = a :: b :: bs))) := by
+  obtain ⟨⟨Pf, Pp⟩, hk⟩ := h
+  have eD := rep_ran _ (one_ok _ Pf) (Pp _ rfl)
+  rw [← hD] at eD
+  obtain ⟨t1, t2, J⟩ := hk _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+    _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl
+  refine ⟨fun s => by rw [eD]; exact ⟨fun h => h.2, fun h => ⟨rfl, h⟩⟩, fun a y v => ?_⟩
+  simp only [hSf, swapIn]
+  rw [thin_body_rep le D _ eD _ rfl _ rfl _ rfl _ rfl _ rfl _ t1 _ rfl _ rfl _ rfl _ rfl _ t2 _ rfl _ rfl
+    _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl _ rfl J, eD]
+  constructor
+  · rintro ⟨hm, h | ⟨b, bs, e, h⟩⟩
+    · exact ⟨⟨rfl, hm⟩, Or.inl h⟩
+    · subst e; exact ⟨⟨rfl, hm⟩, Or.inr ⟨b, bs, rfl, h⟩⟩
+  · rintro ⟨⟨-, hm⟩, h | ⟨b, bs, e, h⟩⟩
+    · exact ⟨hm, Or.inl h⟩
+    · subst e; exact ⟨hm, Or.inr ⟨b, bs, rfl, h⟩⟩
+
+/-- **`thinLOn`, read back**: `xs` goes to `w` exactly when `xs` is a row of `X` and a chain `ys` runs from the
+    empty list `ys[xs.length]` to `w = ys[0]`, each link `(xs[t], ys[t+1]) ↦ ys[t]` a pair of round `k`'s `Dr k`
+    and one bump of `xs[t]` into `ys[t+1]` at `le` (`[a]` on `[]`; on `b :: bs`, `a :: bs` when `le a b`, `b :: bs`
+    when `le b a`, `a :: b :: bs` when neither). The step's body `Sf` is bound by its defining equation (`hSf`);
+    the fold's hypotheses are `rep_foldOn`'s (`hS` at `E = B`, `V = .arr B`); `hR'` is, at every round's
+    coreflexive `D = Dr k`, `rep_ran`'s at it, the test read back on the pairs of heads `rab` and on their swaps
+    `rs`, and every primitive's hypotheses (`thinOK`). -/
+theorem rep_thinLOn {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
+    (Sf : Rel SP SP → Rel SP (.arr B))
+    (hSf : ∀ D : Rel SP SP, Sf D =
+      let a := outl D
+      let ys := outr D
+      let u := ys ≫ uncons ys.val
+      let ab := pair a (outl u)
+      let up := dom (ab ≫ q (ran ab))
+      let down := dom (ab ≫ swapIn q (ran ab))
+      let lone := D \ dom u ∪ ((dom u \ up) \ down)
+      cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
+    (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
+    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size) (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
+    (hB : Vals.PickFits (.arr B) (nilVal B)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
+    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (hstep : step = demandStep Sf)
+    (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
+    (hf : ∀ st, f st = rnd(st))
+    (Dr : Nat → Rel SP SP) (hD : ∀ k, Dr k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (hR : ∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
+      roundAt((.arr B)))
+    (hS : let E := B; let V : Obj := .arr B; ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
+    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+    (hR' : ∀ k (D : Rel SP SP), D = Dr k →
+      oneFit(SP, Rel.n (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1),
+        Rel.val (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1)) ∧ thinVals(
+      (∀ a b, rep rab (a, b) (a, b) → ((∃ c, rep G1 (a, b) c) ↔ le a b = true)) ∧
+      (∀ a b, rep rs (b, a) (b, a) → ((∃ c, rep G2 (b, a) c) ↔ le b a = true)) ∧ thinOK)) :
+    ∀ (xs : List B.El) w, rep (thinLOn q X) xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length),
+          rep (Dr (xs.length - 1 - t)) (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm))
+            (xs[t]'ht, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm)) ∧
+          ((ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = [] ∧
+              ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = [xs[t]'ht]) ∨
+            ∃ b bs, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = b :: bs ∧
+              ((le (xs[t]'ht) b = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: bs) ∨
+               (le b (xs[t]'ht) = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = b :: bs) ∨
+               (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
+                ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: b :: bs)))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
+  intro xs w
+  rw [thinLOn_foldOn q X Sf hSf, rep_foldOn (nilVal B) Sf X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep
+    elK hE f hf Dr hD hR hS F hF jc hjc hjO hjn hjM hjU hjA hjC]
+  simp only [fun k => (thin_round_rep q le Sf hSf _ (Dr k) (hD k) (hR' k _ rfl)).2]
+
+/-- **`thinLOn`, read back as bumps**: `rep_thinLOn` with each link's pair of `Dr k` discharged — it is a pair of
+    the round, the row's element and value, so `xs` goes to `w` exactly when `xs` is a row of `X` and `w` is the
+    end of a chain of bumps of the elements of `xs`, from the right, starting from `[]`. `rep_foldBy` at the bump
+    itself, each round's step read back by `step_rep` and `thin_round_rep`. Hypotheses as `rep_thinLOn`'s. -/
+theorem rep_thinLOn_bump {B : Obj} {n : USize} (q : Rel (.prod B B) (.prod B B) → Rel (.prod B B) (.prod B B))
+    (le : B.El → B.El → Bool) (X : Vals (.arr B) n)
+    (Sf : Rel SP SP → Rel SP (.arr B))
+    (hSf : ∀ D : Rel SP SP, Sf D =
+      let a := outl D
+      let ys := outr D
+      let u := ys ≫ uncons ys.val
+      let ab := pair a (outl u)
+      let up := dom (ab ≫ q (ran ab))
+      let down := dom (ab ≫ swapIn q (ran ab))
+      let lone := D \ dom u ∪ ((dom u \ up) \ down)
+      cons lone ∪ cons (pair (up ≫ a) (up ≫ u ≫ outr (ran u))) ∪ down ≫ ys)
+    (T : Rel .long (.arr B)) (hT : T = num (idU X) 0) (hn : n.toNat < 2 ^ 63)
+    (hv : Vals.PickFits (.arr B) X (List.range n.toNat)) (hp : (Rel.val T).1.toNat < 2 ^ 63)
+    (hel : ∀ k, k ≤ (Rel.val T).1.toNat → ∀ a : ByteArray, a = whereBits (Rel.n T)
+        (Ew.cmp Ew.gt Ew.i64 Ew.va (slicesOf (Rel.val T)).2 (one k.toUInt64) (Rel.n T)) →
+      ∀ pos : ByteArray, pos = Kernel.Ew.val Ew.sub Ew.i64 Ew.va nul
+        (gather 8 (add (Rel.n T) (slicesOf (Rel.val T)).1 (slicesOf (Rel.val T)).2) a)
+        (one (k + 1).toUInt64) (len a).toUSize →
+      Vals.PickFits .long (Rel.key T) ((List.range (len a)).map fun q => (Column.bitsAt a (q * 8) 8).toNat) ∧
+      Vals.PickFits B (Rel.val T).2.2.2 ((List.range (len a)).map fun q => (Column.bitsAt pos (q * 8) 8).toNat))
+    (pend₀ : Rel .long (.arr B)) (hpend : pend₀ = top (A := .long) (Rel.key T) (nilVal B))
+    (hN : (Rel.n T).toNat * (1 : USize).toNat < USize.size) (h63 : (Rel.n T).toNat * (1 : USize).toNat < 2 ^ 63)
+    (hA : Vals.PickFits .long (Rel.key T)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· / (1 : USize).toNat)))
+    (hB : Vals.PickFits (.arr B) (nilVal B)
+      ((List.range ((Rel.n T).toNat * (1 : USize).toNat)).map (· % (1 : USize).toNat)))
+    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (hstep : step = demandStep Sf)
+    (elK : Nat → Rel .long B) (hE : ∀ k, elK k = elR(T, k))
+    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
+    (hf : ∀ st, f st = rnd(st))
+    (Dr : Nat → Rel SP SP) (hD : ∀ k, Dr k = ran (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1))
+    (hR : ∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
+      roundAt((.arr B)))
+    (hS : let E := B; let V : Obj := .arr B; ∀ i (el : Rel .long E) (pend : Rel .long V), el = elK i →
+      pend = (f^[i] (pend₀, Alg.zero, 0)).1 → stepOn)
+    (F : Rel .long (.arr B)) (hF : F = foldRows T pend₀ step)
+    (jc : Vector Code 2) (hjc : jc = Obj.codes .long ck2(T°, F)) (hjO : codesOK(jc, ck2(T°, F)))
+    (hjn : (Rel.n F).toNat < 2 ^ 63) (hjM : msum(jc, T°, F) < 2 ^ 63) (hjU : msum(jc, T°, F) < USize.size)
+    (hjA : Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst))
+    (hjC : Vals.PickFits (.arr B) (Rel.val F) ((mpairs(jc, T°, F)).map Prod.snd))
+    (hR' : ∀ k (D : Rel SP SP), D = Dr k →
+      oneFit(SP, Rel.n (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1),
+        Rel.val (pair (elK k) (f^[k] (pend₀, Alg.zero, 0)).1)) ∧ thinVals(
+      (∀ a b, rep rab (a, b) (a, b) → ((∃ c, rep G1 (a, b) c) ↔ le a b = true)) ∧
+      (∀ a b, rep rs (b, a) (b, a) → ((∃ c, rep G2 (b, a) c) ↔ le b a = true)) ∧ thinOK)) :
+    ∀ (xs : List B.El) w, rep (thinLOn q X) xs w ↔ (∃ i, X.row i = xs) ∧
+      ∃ ys : List (Obj.arr B).El, ∃ hy : ys.length = xs.length + 1,
+        (∃ p, (nilVal B).row p = ys[xs.length]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_self _) hy.symm)) ∧
+        (∀ t (ht : t < xs.length),
+          (ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = [] ∧
+              ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = [xs[t]'ht]) ∨
+            ∃ b bs, ys[t + 1]'(Nat.lt_of_lt_of_eq (Nat.succ_lt_succ ht) hy.symm) = b :: bs ∧
+              ((le (xs[t]'ht) b = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: bs) ∨
+               (le b (xs[t]'ht) = true ∧ ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = b :: bs) ∨
+               (le (xs[t]'ht) b = false ∧ le b (xs[t]'ht) = false ∧
+                ys[t]'(Nat.lt_of_lt_of_eq (Nat.lt_succ_of_lt ht) hy.symm) = xs[t]'ht :: b :: bs))) ∧
+        w = ys[0]'(Nat.lt_of_lt_of_eq (Nat.zero_lt_succ _) hy.symm) := by
+  intro xs w
+  rw [thinLOn_foldOn q X Sf hSf]
+  subst hstep
+  exact rep_foldBy (nilVal B) X T hT hn hv hp hel pend₀ hpend hN h63 hA hB (demandStep Sf)
+    (fun _ (p : B.El × List B.El) v => (p.2 = [] ∧ v = [p.1]) ∨ ∃ b bs, p.2 = b :: bs ∧
+      ((le p.1 b = true ∧ v = p.1 :: bs) ∨ (le b p.1 = true ∧ v = b :: bs) ∨
+        (le p.1 b = false ∧ le b p.1 = false ∧ v = p.1 :: b :: bs)))
+    elK hE f hf hR (fun i _ r v => by
+      obtain ⟨hkO, hkn, hkM, hkU, hkA, hkB, hkC, hJ⟩ := hS i _ _ rfl rfl _ rfl
+      obtain ⟨hjO', hjn', hjM', hjU', hjA', hjC'⟩ := hJ _ rfl _ (congrArg Sf (hD i)) _ rfl
+      obtain ⟨eD, eB⟩ := thin_round_rep q le Sf hSf _ (Dr i) (hD i) (hR' i _ rfl)
+      have h1 := rep_pair (elK i) _ hkO hkn hkM hkU hkA hkB hkC
+      rw [step_rep (elK i) _ Sf _ rfl hkO hkn hkM hkU hkA hkB hkC _ rfl _ (congrArg Sf (hD i)) _ rfl
+        hjO' hjn' hjM' hjU' hjA' hjC' r v]
+      refine exists_congr fun e => exists_congr fun u => ?_
+      rw [eB, eD]
+      have hP : rep (elK i) r e → rep (f^[i] (pend₀, Alg.zero, 0)).1 r u →
+          rep (pair (elK i) (f^[i] (pend₀, Alg.zero, 0)).1) r (e, u) := fun he hu => by rw [h1]; exact ⟨he, hu⟩
+      exact ⟨fun ⟨he, hu, _, hb⟩ => ⟨he, hu, hb⟩, fun ⟨he, hu, hb⟩ => ⟨he, hu, ⟨r, hP he hu⟩, hb⟩⟩)
+    F hF jc hjc hjO hjn hjM hjU hjA hjC xs w
+
+end Headline
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.thin_body_set
 #print axioms LeetQ.Rel.Rep.thin_body_rep
+#print axioms LeetQ.Rel.Rep.thin_round_rep
+#print axioms LeetQ.Rel.Rep.rep_thinLOn
+#print axioms LeetQ.Rel.Rep.rep_thinLOn_bump
