@@ -357,9 +357,6 @@ directly.
   )],
 )]<mon-thm71>
 
-// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
-// would sit alone at the foot of §13.3.1's last page.
-#pagebreak(weak: true)
 === #leanf("Freyd.Alg.greedy") — taking the best at each step gives a best overall result <sec-greedy-thm72>
 
 // `inner` conversed, `after` above, `⊑ rhs` if given: rows 5–7 draw a TERM of one chain rather than an inequation,
@@ -422,9 +419,6 @@ directly.
   [#gr-R],
 )]<greedy-thm72>
 
-// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
-// would sit alone at the foot of §13.3's last page.
-#pagebreak(weak: true)
 === #leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata") — `takewhile(p)` keeps items while `p` holds, as one fold <sec-takewhile>
 
 // B&dM Ex 7.39, p. 174.  The derivation runs on `est(R°)` (@est-defn) and the greedy theorem
@@ -880,9 +874,6 @@ directly.
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
 ]<mss-deriv>
 
-// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
-// would sit alone at the foot of @mss-deriv's page.
-#pagebreak(weak: true)
 === #leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") — `filter(p)` keeps the items satisfying `p`, as one fold <sec-filter>
 
 // B&dM Ex 7.41, p. 174.  @sec-takewhile with `subseq` for `prefix`: same `F`, `α`, `p`, `R`, same

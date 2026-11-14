@@ -65,7 +65,7 @@ NOTETITLE := $(shell ./scripts/note-files --title)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels links cite binders panels cd-check cover books v exe ref-ids
+.PHONY: p c w labels links cite binders panels cd-check cover books v exe ref-ids section-fit
 
 # ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
 # their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
@@ -93,6 +93,7 @@ p: $(STAMP) .WAIT panels cite
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
 # nothing draws from can be broken with all of them green.
 	./scripts/cap lake build
+	for n in $(NOTENAMES); do $(MAKE) section-fit NOTE=$$n CH= || exit 1; done
 	for t in $(TYP); do $(LOCK) ./scripts/typst-run .lake/build/typst-run/$$(basename $$t .typ).log compile $$t $${t%.typ}.pdf || exit 1; done
 	for n in $(NOTENAMES); do NOTE=$$n ./scripts/labelfit && NOTE=$$n ./scripts/dispfit || exit 1; done
 	./scripts/inkfit
@@ -121,7 +122,7 @@ links: $(NOTEPDF)
 # FORCE, and `typst-compile` decides: `panels` rewrites files under diag/generated that no rule can
 # name, so an mtime test left a chapter pdf showing the old pictures after an exporter change; the
 # script compares the CONTENT of every file the last compile read.
-$(NOTEPDF): FORCE | panels ref-ids
+$(NOTEPDF): FORCE | panels ref-ids section-fit
 	$(LOCK) ./scripts/typst-compile $(NOTESRC) $@ --input title="$(NOTETITLE)" --input refs=/$(REFIDS)
 FORCE:
 
@@ -194,6 +195,18 @@ ref-ids: | exe
 	$(LOCK) ./scripts/typst-run .lake/build/ref-ids-$(NOTE).log query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) '<ref-id>' --field value > $(REFIDS).new
 	if cmp -s $(REFIDS).new $(REFIDS); then rm $(REFIDS).new; else mv $(REFIDS).new $(REFIDS); fi
 
+# A SECTION STAYS ON THE CURRENT PAGE WHEN IT FITS (`section-breaks`, diag/note-style.typ), and whether it
+# fits is decided HERE, before the compile: deciding it inside the layout left the companion unconverged.
+# The query lays the note out with every section opening a page and records the page of each section's
+# start and end; equal pages mean the section is at most a page tall.  `CH` narrows it to one chapter
+# (same page size, so the same verdict); entries are merged, keyed by the section's source, under a lock
+# of their own so parallel chapter gates do not lose each other's.  One file for every note: a compile
+# reads it by a path inside diag/, which every root reaches.
+SECFIT := diag/generated/section-fit.json
+section-fit: | ref-ids
+	$(LOCK) ./scripts/typst-run .lake/build/section-fit-$(NOTE)-$(CH).log query --root . --input section-fit=list --input title="$(NOTETITLE)" --input refs=/$(REFIDS) $(NOTESRC) '<section-fit>' --field value > .lake/build/section-fit-$(NOTE)-$(CH).json
+	flock -x .lake/build/section-fit.lock sh -c 'test -f $(SECFIT) || echo "{}" > $(SECFIT); jq -e --slurpfile q .lake/build/section-fit-$(NOTE)-$(CH).json ". + (\$$q[0] | group_by(.[0]) | if any(length != 2) then error(\"section-fit: a section key without exactly one start and one end marker\") else map({key: .[0][0], value: (.[0][1] == .[1][1])}) | from_entries end)" $(SECFIT) > $(SECFIT).new && if cmp -s $(SECFIT).new $(SECFIT); then rm $(SECFIT).new; else mv $(SECFIT).new $(SECFIT); fi'
+
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book ingest`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
 c: panels labels cite cd-check ref-ids
@@ -215,7 +228,7 @@ v:
 # is the number its displays already carry (`13.4.3c` is in chapter 13); `CH ?= $(N)` at the top of
 # this file makes it the same variable every gate takes, and `./scripts/note-files --ch` the one
 # thing that turns it into a file, so a renamed heading needs no edit here.
-ch: ref-ids
+ch: ref-ids section-fit
 	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the number the chapter's header declares"; exit 1; }
 	$(LOCK) ./scripts/typst-run .lake/build/typst-run/ch-$(NOTE)-$(CH).log compile --root . --input title="$(NOTETITLE)" --input refs=/$(REFIDS) $(NOTESRC) $(NOTEPDF)
 

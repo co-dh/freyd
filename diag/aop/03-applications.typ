@@ -68,8 +68,6 @@
   // lean:AOP.A5_5_Leaf.pair_relCata_eq_relCata_pair@5121bebd
 )]<banana-split>
 
-// Its own page: the heading was left orphaned at the foot of the page before it.
-#pagebreak(weak: true)
 === Fokkinga's mutual recursion theorem
 
 // Algebras lettered `h`, `k` as in @cata-examples; the display below reuses the letters for the
@@ -139,9 +137,6 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 @horner is Horner's rule, generalised from cons-lists to any initial type. Fusion reduces it to
 `F(𝟙,T(f))α⦇g⦈=F(𝟙,⦇g⦈)F(𝟙,f)g`.
 
-// Its own page: the section is one table long and the heading was left orphaned at the foot of the
-// page before it once the F-Alg bullets above pushed the table over the break.
-#pagebreak(weak: true)
 === Depth of a tree
 
 // B&dM p. 60, mirrored to diagram order: the book writes `depths = tri succ · tree zero` and

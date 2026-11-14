@@ -425,7 +425,8 @@
       label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
     // THE NUMBER GOES IN THE DISPLAY'S FIRST `Thm` HEADER, at its right end (see `Thm`); a display
     // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
-    // stood a page gutter away from the table it names.
+    // stood a page gutter away from the table it names.  `sticky`: alone at a page foot the number line
+    // was the display's first fragment, so the heading above stayed behind with it instead of moving on.
     context {
       // its label, so a row inside can name itself `<label:row>`
       [#metadata(if it.at("label", default: none) == none { none } else { str(it.label) })<disp-start>]
@@ -433,7 +434,7 @@
         let s = query(selector(<disp-start>).before(here())).last()
         let e = query(selector(<disp-end>).after(here())).at(0, default: none)
         if e == none or disp-thms(s, e.location()).len() == 0 {
-          block(width: 100%, below: 2pt, align(right, numtext(dispid(here()))))
+          block(width: 100%, below: 2pt, sticky: true, align(right, numtext(dispid(here()))))
         }
       }
     }
@@ -497,30 +498,66 @@
 // Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
 // initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
 // a layout pass, so the note's position-dependent blocks ran out of passes ("did not converge").
-/// EVERY SECTION OPENS A PAGE, except one that follows its chapter heading with nothing drawn between, which
-/// shares the chapter's opening page.  Read off the chapter body's own children, never by a query: a
-/// break that depends on the heading before it, queried, ran the companion out of layout passes.
+/// A SECTION STAYS ON THE CURRENT PAGE WHEN IT FITS IN WHAT IS LEFT OF IT, else it opens a page; one that
+/// follows a heading with nothing drawn between goes with that heading (an empty section is a heading kept
+/// only for the book's numbering).  A section runs from its level-2 heading to the next level ≤ 2 heading.
 #let has-section(c) = type(c) == content and ((c.func() == heading and c.depth == 2)
   or (c.has("children") and c.children.any(has-section)) or (c.has("child") and has-section(c.child)))
 // What draws nothing: a `#let` or a comment line leaves an empty sequence, which is not "something between".
 #let blank(c) = c.func() in ([ ].func(), parbreak, metadata, counter("x").update(0).func(),
   state("x").update(0).func()) or (c.func() == [].func() and c.children.all(blank))
-#let section-breaks(doc) = if type(doc) != content or not doc.has("children") { doc } else {
+#let flat(c) = if type(c) == content and c.func() == [].func() { c.children.map(flat).flatten() } else { (c,) }
+// WHETHER A SECTION FITS ON ONE PAGE is read from `SECFIT`, which `make section-fit` writes from a
+// `typst query` under `--input section-fit=list`: there every section opens a page, so one whose start and
+// end markers share a page is at most a page tall.  Decided before layout, because measured in the same
+// layout (`query`/`measure` of the section) the whole companion did not converge.
+#let SECFIT = "generated/section-fit.json"
+// The key holds the section's source length, so an edited section has no entry and stops the compile
+// instead of reusing the verdict on its old text.
+#let section-key(title, N, h, i, body) = (title, str(N), h, str(i), str(repr(body).len())).join(" § ")
+#let section-breaks(doc, N, title) = if type(doc) != content or not doc.has("children") { doc } else {
+  // `list`/`cdscan` queries read no page, so they take the every-section-opens-a-page layout.
+  let mode = if sys.inputs.at("section-fit", default: none) == "list" { "list" }
+    else if "list" in sys.inputs or "cdscan" in sys.inputs { "open" } else { "read" }
+  let fit = if mode == "read" { json(SECFIT) } else { none }
+  let gs = ((cut: false, cs: ()),)
   let prev = none
-  for c in doc.children {
+  for c in flat(doc) {
     // A `set`/`show` wraps what follows it in one styled element, which cannot be rebuilt around a break.
     assert(not (c.has("child") and c.has("styles") and has-section(c.child)), message: "section-breaks: a "
       + "set/show rule wraps a section heading, so it gets no page break; scope the rule to a block")
-    if c.func() == heading and c.depth == 2 and not (prev != none and prev.func() == heading and prev.depth == 1) {
-      pagebreak(weak: true)
+    if c.func() == heading and c.depth <= 2 and not (c.depth == 2 and prev != none and prev.func() == heading) {
+      gs.push((cut: c.depth == 2, cs: ()))
     }
-    if c.func() == doc.func() { section-breaks(c) } else { c }
+    gs.at(-1).cs.push(c)
     if not blank(c) { prev = c }
+  }
+  let seen = (:)
+  for g in gs {
+    let b = g.cs.join()
+    if not g.cut { b; continue }
+    let h = repr(g.cs.first().body)
+    let k = section-key(title, N, h, seen.at(h, default: 0), b)
+    seen.insert(h, seen.at(h, default: 0) + 1)
+    // A section holding a `pagebreak` cannot sit in a block; it opens a page as it always did.
+    if g.cs.any(c => c.func() == pagebreak) or mode == "open" { pagebreak(weak: true); b }
+    else if mode == "list" {
+      pagebreak(weak: true)
+      context [#metadata((k, here().page()))<section-fit>]
+      b
+      context [#metadata((k, here().page()))<section-fit>]
+    } else {
+      let f = fit.at(k, default: none)
+      if f == none { panic("section-fit: no entry for section " + h + " of chapter " + str(N) + " of '" + title
+        + "' in diag/" + SECFIT + " (new or edited since): run `make section-fit NOTE=<note> CH=" + str(N)
+        + "`, which `make ch` and `make p` run first") }
+      if f { block(breakable: false, above: 16pt, width: 100%, b) } else { pagebreak(weak: true); b }
+    }
   }
 }
 #let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
   show heading.where(level: 1): it => level1(N, it)
-  section-breaks(doc)
+  section-breaks(doc, N, plain(document.title))
 } else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
   if title == none {
@@ -549,7 +586,7 @@
         }
       }
     }
-    section-breaks(doc)
+    section-breaks(doc, N, title)
   })
 }
 

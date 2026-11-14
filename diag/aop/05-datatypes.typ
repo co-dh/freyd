@@ -844,9 +844,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
    // lean:AOP.A5_7.comp_slides@480a3dc9
 )]<lax-closure>
 
-// `sticky` binds a heading to the next BLOCK, and `conf` wraps every display in a breakable one, so
-// the heading stays behind while the picture moves on: the break has to be placed by hand.
-#pagebreak(weak: true)
 === meet is not closed in LaT
 
 // diag/natsq.typ's idiom for a square that FAILS: ONE COLOUR PER ROUTE — here `GIVEN1`/`GIVEN2` mark
@@ -926,5 +923,3 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
    `π₂ : (A×−)⇒Id` #h(4pt) #src[@subseq-outr-square] #h(4pt) `◁ : Id⇒Δ` #h(4pt) #src[@rel-monoid]],
   // lean:AOP.A5_7.laxNatural_const_iff@4af68018
 )]<lat-const>
-
-// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
