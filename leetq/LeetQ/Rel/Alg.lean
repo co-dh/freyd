@@ -313,9 +313,9 @@ def acRound {V D : Obj} (s : Rel V D) (as : List (Revise V D)) (X : Rel V D) : R
 /-- One delta round of the AC-3 body, from `(X, Δ)`, `Δ ⊑ 𝟙(V)` the variables whose domain shrank last round:
     `X′ = X ∩ ⋂ₖ (Δ Aₖ)\(X Cₖ)` and `Δ′ = dom(X − X′)`. `(Δ A)\…` is `⊤` at every `x ∉ ran(Δ A)`, so each
     division runs only on the rows `ran(Δ A)` (its universe there, so no vacuous row is made) and keeps `X`'s
-    other rows; `X − X′` is the anti-join of the pairs. The tie to the naive round, stated, not proved here:
-    `Δ`, `Δ′` coreflexive, `Δ ∪ Δ′ = 𝟙`, `Δ′X′ = Δ′X`, `X′ = s ∩ A\(X C)` ⟹ `s ∩ A\(X′ C) = X′ ∩ (Δ A)\(X′ C)`,
-    by `(R∪S)\T = R\T ∩ S\T` and `Δ′A\(X′C) = Δ′A\(XC) ⊒ A\(XC) ⊒ X′`. -/
+    other rows; `X − X′` is the anti-join of the pairs. The tie to the naive round is `AcFix.acDelta_round`: from
+    a state satisfying `AcInv`, one delta round denotes one `acRound`, and `Δ′` keeps `AcInv`; `k` rounds of each
+    agree by `AcFix.acDelta_iterate`. -/
 def acDelta {V D : Obj} (as : List (Revise V D)) (p : Rel V D × Rel V V) : Rel V D × Rel V V :=
   let (X, Δ) := p
   let X' := as.foldl (fun Y a =>
