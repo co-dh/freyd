@@ -627,29 +627,50 @@ def foldBy {E V : Obj} {n m : USize} (X : Vals (.arr E) n) (e : Vals V m)
   (foldByC X e fun el p => (step el p, true)).1
 
 /-- A fold step in demand form: `S` runs on the pairs (element, value) the round meets, `S D` for the
-    coreflexive `D` on them, so a carrier with no universe folds too. -/
+    coreflexive `D` on them, so a carrier with no universe folds too. `S` a twin family; the bit the `&&` of
+    `pairC`'s, `ranC`'s, `S`'s and `compC`'s. -/
+def demandStepC {E V : Obj} (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool) (el : Rel .long E)
+    (pend : Rel .long V) : Rel .long V × Bool :=
+  let p := pairC el pend; let d := ranC p.1; let s := S d.1; let c := compC p.1 s.1
+  (c.1, p.2 && d.2 && s.2 && c.2)
+
+/-- `demandStep`: `demandStepC`'s relation, the family one with no bit of its own. -/
 def demandStep {E V : Obj} (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V) (el : Rel .long E)
     (pend : Rel .long V) : Rel .long V :=
-  let p := pair el pend; p ≫ S (ran p)
+  (demandStepC (fun D => (S D, true)) el pend).1
 
-/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` in demand form (`demandStep`). `[]` to each value
-    of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and `(x, v) S(D) w`. -/
+/-- `⦇e, S⦈` on the arrays `X`, the fold of cons-lists, `S` a twin family in demand form (`demandStepC`), and
+    whether it ran within capacity. `[]` to each value of `e`, `cons(x, xs)` to `w` when `xs` goes to `v` and
+    `(x, v) S(D) w`. -/
+def foldOnC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V × Bool)
+    (X : Vals (.arr E) n) : Rel (.arr E) V × Bool :=
+  foldByC X e (demandStepC S)
+
+/-- `foldOn`: `foldOnC`'s relation, the family one with no bit of its own. -/
 def foldOn {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) (.prod E V) → Rel (.prod E V) V)
     (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldBy X e (demandStep S)
+  (foldOnC e (fun D => (S D, true)) X).1
 
-/-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOn` with `S` whatever pairs a round meets. An array
-    may have several results or none. -/
+/-- `⦇e, S⦈` on the arrays of `X`, `S` one relation: `foldOnC` with `S` whatever pairs a round meets, and whether
+    it ran within capacity. An array may have several results or none. -/
+def foldC {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) :
+    Rel (.arr E) V × Bool :=
+  foldOnC e (fun _ => (S, true)) X
+
+/-- `fold`: `foldC`'s relation. -/
 def fold {E V : Obj} {m n : USize} (e : Vals V m) (S : Rel (.prod E V) V) (X : Vals (.arr E) n) : Rel (.arr E) V :=
-  foldOn e (fun _ => S) X
+  (foldC e S X).1
 
 /-- The one-row side holding the empty array. -/
 def nilVal (B : Obj) : Vals (.arr B) 1 := ⟨0, col [0], col [0], Vals.empty B⟩
 
 /-- `F(R)`, the list functor on the arrays of `X`: `xs` to every `ys` of its length with `xs[i] R ys[i]` at
     each `i` — `⦇[], (R × 𝟙) ≫ cons⦈`, each round pairing every image of the element with every array so far. -/
-def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) :=
-  foldBy X (nilVal B) fun el pend => cons (pair (el ≫ R) pend)
+def mapC {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) × Bool :=
+  foldByC X (nilVal B) fun el pend =>
+    let q := compC el R; let p := pairC q.1 pend; let c := consC p.1
+    (c.1, q.2 && p.2 && c.2)
+def map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n) : Rel (.arr A) (.arr B) := (mapC R X).1
 
 /-! ## Order on numbers, the power side, and the note's list functions -/
 
@@ -815,10 +836,15 @@ def tailC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.arr B) ×
 
 /-- `length ≜ ⦇[zero,π₂ succ]⦈` on the arrays `X` (diag/aop/09-dynamic.typ:506; `length`,
     AOP/A5_6_ListCombinators.lean:328): `succ` on `0 … X.1`, since no array is longer than the payload `X.1`. -/
-def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) :=
-  needSize (X.1.toNat + 1) "length: the payload's count plus one" (fun _ => default) fun c =>
-  let sc := succ (tilCol c)
-  foldOn (col [0]) (fun D => outr D ≫ sc) X
+def lengthC {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) × Bool :=
+  needSize (X.1.toNat + 1) "length: the payload's count plus one" (fun _ => (default, false)) fun c =>
+  let sc := succC (tilCol c)
+  let r := foldOnC (col [0]) (fun D => compC (outr D) sc.1) X
+  (r.1, sc.2 && r.2 && decide (X.1.toNat + 1 < 2 ^ 63))
+
+/-- `length`: `lengthC`'s relation; the bit `succC`'s, `foldOnC`'s (each round's `compC`'s among them) and the
+    count's `+ 1` below `2^63`. -/
+def length {E : Obj} {n : USize} (X : Vals (.arr E) n) : Rel (.arr E) (.atom .long) := (lengthC X).1
 
 
 /-- `suffix : arr E ⟶ arr E` on the arrays `X`, each array to each of its final segments (`suffix`,
@@ -1201,8 +1227,11 @@ def union {A : Obj} {n : USize} (X : Vals (.arr (.arr A)) n) : Rel (.arr (.arr A
 
 /-- `sum ≜ ⦇[zero, plus]⦈` on the arrays of longs `X` (`sum`, AOP/A5_6_ListCombinators.lean:323), each round's
     `plus` on the pairs it meets. Named `Arr.sum` because `sum` is `R + S`'s. -/
-def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) :=
-  foldOn (col [0]) (fun D => plus D.val) X
+def sumC {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) × Bool :=
+  foldOnC (col [0]) (fun D => (plus D.val, true)) X
+
+/-- `sum`: `sumC`'s relation; `plus` has no capacity of its own, so the bit is `foldOnC`'s. -/
+def sum {n : USize} (X : Vals (.arr (.atom .long)) n) : Rel (.arr (.atom .long)) (.atom .long) := (sumC X).1
 
 end Arr
 

@@ -1189,6 +1189,7 @@ theorem rep_map {A B : Obj} {n : USize} (R : Rel A B) (X : Vals (.arr A) n)
       ∀ t (ht : t < xs.length) (ht' : t < ys.length), rep R (xs[t]'ht) (ys[t]'ht') := by
   subst hstep
   intro xs ys
+  rw [show Alg.map R X = foldBy X (nilVal B) (fun el pend => cons (pair (el ≫ R) pend)) from foldByC_fst X _ _]
   -- round `i`'s step read back: `map_step_rep` at the round's element and state
   have hS : ∀ i, i ≤ (Rel.val T).1.toNat → ∀ r v,
       rep (cons (pair (elK i ≫ R) (f^[i] (pend₀, Alg.zero, 0)).1)) r v ↔
