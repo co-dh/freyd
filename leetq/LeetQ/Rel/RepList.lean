@@ -175,7 +175,7 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
     (m : USize) (hm : m = (len xi).toUSize)
     (xr : ByteArray) (hxr : xr = sub m (tilLongs m) (gather 8 (sub (Rel.n P) (sums (Rel.n P) s.2) s.2) xi))
     (j : ByteArray) (hj : j = add m (gather 8 s.1 xi) xr)
-    (tl : Vals B m) (htl : ∀ h, tl = Vals.pick B (Rel.val P).2.2.2.2 j m h)
+    (hjl : len j = m.toNat) (tl : Vals B m) (htl : tl = Vals.pick B (Rel.val P).2.2.2.2 j m hjl)
     (c1 : ByteArray) (hc1 : c1 = addc (Rel.n P) s.2 1) (hi : ByteArray) (hhi : hi = sums (Rel.n P) c1)
     (lo : ByteArray) (hlo : lo = sub (Rel.n P) hi c1)
     (dst : ByteArray) (hdst : dst = addc m (add m (gather 8 lo xi) xr) 1)
@@ -417,17 +417,14 @@ theorem rep_cons {K B : Obj} (P : Rel K (.prod B (.arr B))) (hp : (Rel.val P).2.
         have hdl' : pre(r) + t < len xi := by rw [hxl]; omega
         obtain ⟨r', hr', -, -, hx, hjd, -⟩ := hD (pre(r) + t) hdl'
         rw [hxi_in r t hr ht] at hx; rw [← hx] at hjd
-        have hjm : len j = m.toNat := by rw [hj]; exact len_val ..
-        rw [htl hjm, pick_row B _ j m hjm hTf, dif_pos (show (Column.bitsAt j ((pre(r) + t) * 8) 8).toNat <
+        rw [htl, pick_row B _ j m hjl hTf, dif_pos (show (Column.bitsAt j ((pre(r) + t) * 8) 8).toNat <
           (Rel.val P).2.1.toNat by rw [hjd]; omega), hget t (by rw [hln]; exact ht) (by omega)]
         exact congrArg _ (Fin.ext (show (Column.bitsAt j ((pre(r) + t) * 8) 8).toNat = st(r) + t by rw [hjd]; omega))
   -- `cons` unfolded at its pieces
   intro k ys
   have hkN : m.toNat + nN < USize.size := by omega
   subst hm
-  have hjm : len j = ((len xi).toUSize).toNat := by rw [hj]; exact len_val ..
-  have etl := htl hjm
-  subst etl hj hg hdst hlo hhi hc1 hxr hxi
+  subst htl hj hg hdst hlo hhi hc1 hxr hxi
   unfold cons expand need
   dsimp only
   rw [dif_pos hxU]
