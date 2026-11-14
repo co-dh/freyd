@@ -5,8 +5,8 @@ import LeetQ.Rel.Lang.Eval
 
 `SudokuPC`'s program on the 9×9 board of `SudokuAC`, the puzzle
 `4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......`. `pc(X)` is never a table:
-`K₀ ∩ pc(X)` tests each row of `K₀` (`Member`), which on this board is the difference between some 10⁸ rows of
-`sup(K) K` and one test per row. -/
+each round runs as bit matrices (`Bits`), `sup(X) X` one `bitRowsOver` call where its table has some 10⁸ rows,
+and `π₁\` another. -/
 
 namespace LeetQ.Rel.Programs
 

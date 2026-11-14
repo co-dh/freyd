@@ -56,13 +56,19 @@ def TP.cols : {A B : Obj} → TP A B → Array Col → Array Col
   | _, _, .conv R, cs => R.cols cs
   | _, _, .ldiv R S UB UC, cs => relCols UC (relCols UB (S.cols (R.cols cs)))
 
-/-- Every node's matrix at most `2²⁷` bits (16 MB), `sz` each object's code count. -/
+mutual
+/-- Every matrix the plan builds at most `2²⁷` bits (16 MB), `sz` each object's code count. -/
 def TP.fits (sz : Obj → Nat) : {A B : Obj} → TP A B → Bool
   | A, B, .leaf _ => sz A * sz B ≤ 2 ^ 27
-  | A, B, .comp R S | A, B, .meet R S | A, B, .join R S | A, B, .diff R S =>
-    sz A * sz B ≤ 2 ^ 27 && R.fits sz && S.fits sz
+  | A, B, .meet R S | A, B, .join R S | A, B, .diff R S => sz A * sz B ≤ 2 ^ 27 && R.fits sz && S.fits sz
+  | A, B, .comp R S | A, B, .ldiv R S _ _ => sz A * sz B ≤ 2 ^ 27 && R.fitsP sz && S.fits sz
   | A, B, .conv R => sz A * sz B ≤ 2 ^ 27 && R.fits sz
-  | A, B, .ldiv R S _ _ => sz A * sz B ≤ 2 ^ 27 && R.fits sz && S.fits sz
+
+/-- The left side of `≫` and `\` is read as its pairs (`TP.pairs`): a table's from its codes, with no matrix. -/
+def TP.fitsP (sz : Obj → Nat) : {A B : Obj} → TP A B → Bool
+  | _, _, .leaf _ => true
+  | _, _, p => p.fits sz
+end
 
 /-! ### Codes -/
 
@@ -131,29 +137,30 @@ def Bits.conv (x : Bits) : Bits := let (i, j) := x.pairs; Bits.ofCodes x.w x.na 
 def offsOf (ng : Nat) (g : ByteArray) : ByteArray :=
   concatBytes #[one 0, sums ng.toUSize (Order.groupSizes ng.toUSize 64 (len g).toUSize g)]
 
-/-- `R S`: row `x` the `∨` of the rows of `S` at `x`'s `R`-successors, `R`'s pairs grouped by key. -/
-def Bits.comp (r s : Bits) : Bits :=
-  let (i, j) := r.pairs
-  ⟨r.na, s.w, bitRowsOver false s.w.toUSize (offsOf r.na i) j s.b⟩
+/-- `R S` from `R`'s pairs `i`, `j` (`i` ascending, below `na`): row `x` the `∨` of the rows of `S` at `x`'s
+    `R`-successors. -/
+def Bits.comp (na : Nat) (i j : ByteArray) (s : Bits) : Bits :=
+  ⟨na, s.w, bitRowsOver false s.w.toUSize (offsOf na i) j s.b⟩
+
+/-- The code pairs `(g, o)` with `g` ascending: `grade` of `g`, both gathered. -/
+def sortBy (g o : ByteArray) : ByteArray × ByteArray :=
+  let p := (Code.ofLongs g).grade
+  (gather 8 g p, gather 8 o p)
 
 /-- `∩`, `∪` and `−` of two matrices of one shape: `Ew.bit` lesser, greater, and lesser with `~`. -/
 def Bits.meet (x y : Bits) : Bits := ⟨x.na, x.w, Ew.bit Ew.lesser Ew.vv x.b y.b (x.na * x.w).toUSize⟩
 def Bits.join (x y : Bits) : Bits := ⟨x.na, x.w, Ew.bit Ew.greater Ew.vv x.b y.b (x.na * x.w).toUSize⟩
 def Bits.diff (x y : Bits) : Bits := x.meet ⟨y.na, y.w, Ew.notBits (y.na * y.w).toUSize y.b⟩
 
-/-- The code column `c` related to the one point of a one-element object: `c ⊗ •`. -/
-def Bits.point (na : Nat) (c : ByteArray) : Bits := Bits.ofCodes na 1 c (zeros (len c))
-
-/-- `R \ S` over the universes' codes `ub`, `uc`: row `y` the `∧` of the rows of `S` at `y`'s
-    `R`-predecessors, `R°`'s pairs grouped by key. An empty segment answers ones; `leftDiv`'s vacuous clause
-    keeps them only at `y ∈ Ub` and `c ∈ Uc`, so the rows are masked by `ran R ⊗ ⊤ ∪ Ub ⊗ Uc`, each a
+/-- `R \ S` from `R°`'s pairs `y`, `a` (`y` ascending, below `nb`) and the universes' codes `ub`, `uc`: row `y`
+    the `∧` of the rows of `S` at `y`'s `R`-predecessors. An empty segment answers ones; `leftDiv`'s vacuous
+    clause keeps them only at `y ∈ Ub` and `c ∈ Uc`, so the rows are masked by `ran R ⊗ ⊤ ∪ Ub ⊗ Uc`, each a
     composition through the one point. -/
-def Bits.ldiv (r s : Bits) (ub uc : ByteArray) : Bits :=
-  let rc := r.conv
-  let (y, a) := rc.pairs
-  let d : Bits := ⟨rc.na, s.w, bitRowsOver true s.w.toUSize (offsOf rc.na y) a s.b⟩
-  let ran := (Bits.point rc.na y).comp (Bits.const true 1 s.w)
-  let vac := (Bits.point rc.na ub).comp (Bits.ofCodes 1 s.w (zeros (len uc)) uc)
+def Bits.ldiv (nb : Nat) (y a : ByteArray) (s : Bits) (ub uc : ByteArray) : Bits :=
+  let d : Bits := ⟨nb, s.w, bitRowsOver true s.w.toUSize (offsOf nb y) a s.b⟩
+  let ran := Bits.comp nb y (zeros (len y)) (Bits.const true 1 s.w)
+  let (ub', _) := sortBy ub ub
+  let vac := Bits.comp nb ub' (zeros (len ub)) (Bits.ofCodes 1 s.w (zeros (len uc)) uc)
   d.meet (ran.join vac)
 
 /-- A relation from its matrix and its objects' elements at the codes: the pairs' codes picked. -/
@@ -166,17 +173,26 @@ def Bits.table {A B : Obj} (x : Bits) (ua : Part A) (ub : Part B) : Rel A B :=
 def take (ids : Array ByteArray) : StateM Nat (ByteArray × ByteArray) :=
   modifyGet fun i => ((ids.getD i .empty, ids.getD (i + 1) .empty), i + 2)
 
+mutual
 /-- The plan's matrix, one kernel call per node, the tables' code columns read in `TP.cols`' order. -/
 def TP.bits (ids : Array ByteArray) (sz : Obj → Nat) : {A B : Obj} → TP A B → StateM Nat Bits
   | A, B, .leaf _ => do let (k, v) ← take ids; pure (Bits.ofCodes (sz A) (sz B) k v)
-  | _, _, .comp R S => return (← R.bits ids sz).comp (← S.bits ids sz)
+  | A, _, .comp R S => do let (i, j) ← R.pairs ids sz false; return Bits.comp (sz A) i j (← S.bits ids sz)
   | _, _, .conv R => return (← R.bits ids sz).conv
   | _, _, .meet R S => return (← R.bits ids sz).meet (← S.bits ids sz)
   | _, _, .join R S => return (← R.bits ids sz).join (← S.bits ids sz)
   | _, _, .diff R S => return (← R.bits ids sz).diff (← S.bits ids sz)
-  | _, _, .ldiv R S _ _ => do
-    let r ← R.bits ids sz; let s ← S.bits ids sz; let ub ← take ids; let uc ← take ids
-    pure (r.ldiv s ub.1 uc.1)
+  | A, _, .ldiv R S _ _ => do
+    let (y, a) ← R.pairs ids sz true; let s ← S.bits ids sz; let ub ← take ids; let uc ← take ids
+    pure (Bits.ldiv (sz A) y a s ub.1 uc.1)
+
+/-- The plan's pairs of codes, the key ascending, of the converse under `flip`: a table's from its codes, sorted,
+    with no matrix (so a large table on the left of `≫` or `\` builds none); any other node's from its matrix. -/
+def TP.pairs (ids : Array ByteArray) (sz : Obj → Nat) (flip : Bool) : {A B : Obj} → TP A B →
+    StateM Nat (ByteArray × ByteArray)
+  | _, _, .leaf _ => do let (k, v) ← take ids; pure (if flip then sortBy v k else sortBy k v)
+  | _, _, p => do let x ← p.bits ids sz; pure (if flip then x.conv.pairs else x.pairs)
+end
 
 /-- The plan run as bit matrices and turned into a table at the root; `none` where a coding did not run within
     capacity or a node's matrix is over `2²⁷` bits. -/
@@ -191,9 +207,11 @@ def run? {A B : Obj} (p : TP A B) : Option (Rel A B) := do
 
 /-- The plan's relation: `run?`, or its tables where it does not run as bits. -/
 def run {A B : Obj} (p : TP A B) : Rel A B :=
-  match run? p with
-  | some R => R
-  | none => p.table
+  match p with
+  | .leaf R => R
+  | _ => match run? p with
+    | some R => R
+    | none => p.table
 
 /-- The plan `p`, or the table `t` as a leaf where there is none. -/
 def orLeaf {m : Type → Type} [Monad m] {A B : Obj} (p : m (Option (TP A B))) (t : m (Rel A B)) : m (TP A B) := do
