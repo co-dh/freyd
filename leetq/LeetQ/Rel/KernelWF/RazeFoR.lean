@@ -367,4 +367,197 @@ theorem move_reads {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
     apply resAt_congr; intro k hk
     rw [Nat.add_assoc]; exact hP1 _
 
+/-! ### The append -/
+
+section
+-- The read-back left open: `appendFoR`'s join reads the first part's elements, then the second's.
+variable (hAp : ∀ {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray},
+    appendFoR n0 m0 p0 (concatBytes #[Coc.decode 8 m1 p1 n1]) = some (M, P) → ∀ {i : Nat}, i < n0.toNat + n1.toNat →
+    Column.foRBits M P (Column.blockStarts M) i =
+      if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
+      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat))
+include hAp
+
+/-- **The Frame-of-Reference join keeps both parts' elements** to their low `8w` bits, on each of `concatFoR`'s
+    three answers: the move, the append, the re-encode. -/
+theorem concatFoR_reads {w : Nat} (hw1 : 1 < w) (hw8 : w ≤ 8) {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray}
+    (hX : concatFoR w.toUSize (countBytes #[n0, n1]) #[m0, m1] #[p0, p1] = (M, P)) {i : Nat}
+    (hi : i < n0.toNat + n1.toNat) :
+    (Column.foRBits M P (Column.blockStarts M) i).toNat % 2 ^ (8 * w) =
+      if i < n0.toNat then (Column.foRBits m0 p0 (Column.blockStarts m0) i).toNat % 2 ^ (8 * w)
+      else (Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat)).toNat % 2 ^ (8 * w) := by
+  obtain ⟨rfl, rfl⟩ : M = _ ∧ P = _ := ⟨congrArg Prod.fst hX.symm, congrArg Prod.snd hX.symm⟩
+  rw [concatFoR_two]
+  split
+  · rename_i out hm
+    obtain ⟨M, P⟩ := out
+    rw [move_reads hm hi]; split <;> rfl
+  · split
+    · rename_i out ha
+      obtain ⟨M, P⟩ := out
+      rw [hAp ha hi]; split <;> rfl
+    · exact reencode_reads hw1 hw8 n0 n1 m0 p0 m1 p1 hi
+
+/-- **Two parts' `razeTo` list on the Frame-of-Reference join** (`encodedParts` flag `false`, `denseCheaper =
+    false`): the join's elements are the parts' elements to their low `8w` bits (`concatFoR_reads`), which is all
+    `atomOfBits` reads (`atomOfBits_mod`). -/
+theorem razeTo2_join_foR {t : QAtomicType} {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size)
+    {w : Nat} {r} (hw : t.width = some w)
+    (hE : encodedParts t #[x.part, y.part] = some r) (hr : r.1 = false)
+    (hC : denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false) :
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
+  obtain ⟨alp, N, ns, ms, ps, as⟩ := r
+  dsimp only at hr; subst hr
+  have hC' : denseCheaper 5 N w (straddles (ns.map (·.toNat))) = false := hC
+  obtain ⟨hal, hns, hNv, hms, hps, -, hor⟩ := encodedParts_spec hE
+  have ht : Column.alpEncodes t = false := hal.symm
+  have hen : Column.encodes t = true := by simpa [ht] using hor
+  obtain ⟨hw1, hw8, hb, hg8⟩ := foR_width hen hw
+  have hg : t ≠ .general := QAtomicType.ne_general_of_width hw
+  have hns' : ns = #[n, m] := by rw [hns]; simp [Arr.part]
+  subst hns'
+  have hNv' : N = n.toNat + m.toNat := by rw [hNv]; simp
+  have hNlt : N < USize.size := by rw [hNv']; simpa using hN
+  have hNU : N.toUSize.toNat = N := USize.toNat_ofNat_of_lt' hNlt
+  obtain ⟨hk0, hp0, he0⟩ := encodedParts_foR ht hE 0 (by simp)
+  obtain ⟨hk1, hp1, he1⟩ := encodedParts_foR ht hE 1 (by simp)
+  have he0' : x.enc = .foR ms[0] ps[0] ∨ Enc.encode t n x.enc = .foR ms[0] ps[0] := he0
+  have he1' : y.enc = .foR ms[1] ps[1] ∨ Enc.encode t m y.enc = .foR ms[1] ps[1] := he1
+  have hx0 := foR_part hen hw x.wf he0'
+  have hx1 := foR_part hen hw y.wf he1'
+  have hms2 : ms = #[ms[0], ms[1]] := Array.ext (by simp [hms]) fun k h1 _ => by
+    rcases (by simp [hms] at h1; omega : k = 0 ∨ k = 1) with rfl | rfl <;> rfl
+  have hps2 : ps = #[ps[0], ps[1]] := Array.ext (by simp [hps]) fun k h1 _ => by
+    rcases (by simp [hps] at h1; omega : k = 0 ∨ k = 1) with rfl | rfl <;> rfl
+  rcases hX : concatFoR w.toUSize (countBytes #[n, m]) ms ps with ⟨M, P⟩
+  have hX2 := hX
+  rw [hms2, hps2] at hX2
+  have hl : ∀ {k : USize} (e : Enc) (f : Nat → UInt64), (∀ i < k.toNat, Enc.get t k e i =
+      some (Column.atomOfBits t (f i) (QAtomicType.ne_general_of_width hw))) →
+      (List.range k.toNat).map (fun i => ((Enc.get t k e i).bind fun a => Carrier.of? t (.atom a)).getD default) =
+        ((List.range k.toNat).map f).map fun b =>
+          ((some (Column.atomOfBits t b (QAtomicType.ne_general_of_width hw))).bind
+            fun a => Carrier.of? t (.atom a)).getD default := by
+    intro k e f h; rw [List.map_map]; apply List.map_congr_left; intro i hi; rw [h i (List.mem_range.1 hi)]; rfl
+  have hA : ∀ u v : UInt64, u.toNat % 2 ^ (8 * w) = v.toNat % 2 ^ (8 * w) →
+      Column.atomOfBits t u (QAtomicType.ne_general_of_width hw) =
+        Column.atomOfBits t v (QAtomicType.ne_general_of_width hw) := by
+    intro u v huv
+    rw [← Verify.atomOfBits_mod hw hb hg8 u, huv, Verify.atomOfBits_mod hw hb hg8]
+  refine razeTo_toList_of hg _ rfl hN (by simp) ?_
+  intro c E a hv hc
+  rw [show ((#[⟨n, x⟩, ⟨m, y⟩] : Array ((k : USize) × Arr t k)).map (·.2.part)) = #[x.part, y.part] by simp] at hv
+  obtain ⟨-, hv⟩ := razeColumn_foR hw hen hE hC' hX hv
+  simp only [QValue.vector.injEq] at hv
+  obtain ⟨-, rfl, rfl, rfl⟩ := hv
+  rw [← hc, hl _ (fun i => Column.foRBits M P (Column.blockStarts M) i) (fun i hi => get_answer_foR hw hb hg8 M P hi),
+    hNU, toList_get x hg, toList_get y hg, hl _ _ hx0, hl _ _ hx1, hNv', List.range_add]
+  simp only [List.map_append, List.map_map]
+  congr 1
+  · apply List.map_congr_left; intro i hi
+    have hi' := List.mem_range.1 hi
+    have h := concatFoR_reads hAp hw1 hw8 hX2 (i := i) (by omega)
+    rw [if_pos hi'] at h
+    simp only [Function.comp_apply]; rw [hA _ _ h]
+  · apply List.map_congr_left; intro i hi
+    have hi' := List.mem_range.1 hi
+    have h := concatFoR_reads hAp hw1 hw8 hX2 (i := n.toNat + i) (by omega)
+    rw [if_neg (by omega), Nat.add_sub_cancel_left] at h
+    simp only [Function.comp_apply]; rw [hA _ _ h]
+
+/-- The encoded join `hJ` of `hat_of_join`, at every input. -/
+theorem join_foR_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size), Vals.RazeFits (.atom t) x y → ∀ w r, t.width = some w →
+    encodedParts t #[x.part, y.part] = some r → r.1 = false →
+    denseCheaper (if r.1 then 8 else 5) r.2.1 (if r.1 then 8 else w) (straddles (r.2.2.1.map (·.toNat))) = false →
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList := by
+  intro t n m x y hN _ w r hW hE hr hC
+  exact razeTo2_join_foR hAp x y hN hW hE hr hC
+
+/-- **`raze_row`'s `hat` at every type and encoding.** -/
+theorem hat_all : ∀ (t : QAtomicType) {n m : USize} (x : Arr t n) (y : Arr t m)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part (.atom t))).toList.map fun c : Part (.atom t) => c.1.toNat).sum <
+      USize.size), Vals.RazeFits (.atom t) x y →
+    (razeTo t #[⟨n, x⟩, ⟨m, y⟩] rfl hN).toList = x.toList ++ y.toList :=
+  hat_of_join (join_foR_all hAp)
+
+/-- **Row read-back of `raze` at every side**, no hypothesis on the encoding. -/
+theorem raze_row_full (A : Obj) {n m : USize} (x : Vals A n) (y : Vals A m) (hF : Vals.RazeFits A x y)
+    (hN : ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum < USize.size)
+    (k : Nat) (hk : k < ((#[⟨n, x⟩, ⟨m, y⟩] : Array (Part A)).toList.map
+      fun c : Part A => c.1.toNat).sum.toUSize.toNat) :
+    Vals.row (A.raze #[⟨n, x⟩, ⟨m, y⟩] hN) ⟨k, hk⟩ =
+      if h : k < n.toNat then Vals.row x ⟨k, h⟩
+      else Vals.row y ⟨k - n.toNat, by have := raze2_cnt x y hN; omega⟩ :=
+  raze_row (hat_all hAp) A x y hF hN k hk
+
+end
+
 end LeetQ.Rel.KernelWF
+
+namespace LeetQ.Rel.Rep
+
+open QLean QLean.Kernel QLean.Verify LeetQ.Rel LeetQ.Rel.Alg LeetQ.Rel.KernelWF Freyd Freyd.Alg Freyd.Alg.RelSet
+
+variable {A B C : Obj}
+
+-- dup of RazeRow's local notations `Uc`, `kcU`, `vcU`, `nubU` (local there, in RazeRowAll and in RazeEnc)
+set_option hygiene false in
+local notation "Uc" => (⟨_, A.raze #[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] hNk, B.raze #[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] hNv⟩ : Rel A B)
+set_option hygiene false in
+local notation "kcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).key⟩] : Vector (Part _) 1))[0]
+set_option hygiene false in
+local notation "vcU" => (Obj.codes _ (#v[⟨(Uc).n, (Uc).val⟩] : Vector (Part _) 1))[0]
+set_option hygiene false in
+local notation "nubU" => (tuples.tupleIds kcU #[vcU]).2
+
+section
+-- The read-back left open: `appendFoR`'s join (`hat_all`).
+variable (hAp : ∀ {n0 n1 : USize} {m0 p0 m1 p1 M P : ByteArray},
+    appendFoR n0 m0 p0 (concatBytes #[Coc.decode 8 m1 p1 n1]) = some (M, P) → ∀ {i : Nat}, i < n0.toNat + n1.toNat →
+    Column.foRBits M P (Column.blockStarts M) i =
+      if i < n0.toNat then Column.foRBits m0 p0 (Column.blockStarts m0) i
+      else Column.foRBits m1 p1 (Column.blockStarts m1) (i - n0.toNat))
+include hAp
+
+/-- **`rep (R ∪ S) = rep R ∪ rep S`**, no hypothesis on the encoding. -/
+theorem rep_union_full (R S : Rel A B) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (hNk : ((#[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
+      USize.size)
+    (hNv : ((#[⟨R.n, R.val⟩, ⟨S.n, S.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
+      USize.size)
+    (hFk : Vals.RazeFits A R.key S.key) (hFv : Vals.RazeFits B R.val S.val)
+    (hK : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
+        Column.idAt (kcU).b (kcU).w i = Column.idAt (kcU).b (kcU).w j ↔
+          Vals.row (Uc).key ⟨i, hi⟩ = Vals.row (Uc).key ⟨j, hj⟩) ∧
+      ((kcU).w = 1 ∨ (kcU).w = 2 ∨ (kcU).w = 4 ∨ (kcU).w = 8 ∨ (kcU).w = 16 ∨ (kcU).w = 32 ∨ (kcU).w = 64) ∧
+        (kcU).n = (Uc).n ∧ (kcU).b.size = ((kcU).n.toNat * (kcU).w + 7) / 8 ∧
+        ((kcU).w < 8 → (kcU).card < USize.size ∧ ∀ i < (kcU).n.toNat, Column.idAt (kcU).b (kcU).w i < (kcU).card))
+    (hV : (∀ {i j : Nat} (hi : i < (Uc).n.toNat) (hj : j < (Uc).n.toNat),
+        Column.idAt (vcU).b (vcU).w i = Column.idAt (vcU).b (vcU).w j ↔
+          Vals.row (Uc).val ⟨i, hi⟩ = Vals.row (Uc).val ⟨j, hj⟩) ∧
+      ((vcU).w = 1 ∨ (vcU).w = 2 ∨ (vcU).w = 4 ∨ (vcU).w = 8 ∨ (vcU).w = 16 ∨ (vcU).w = 32 ∨ (vcU).w = 64) ∧
+        (vcU).n = (Uc).n ∧ (vcU).b.size = ((vcU).n.toNat * (vcU).w + 7) / 8 ∧
+        ((vcU).w < 8 → (vcU).card < USize.size ∧ ∀ i < (vcU).n.toNat, Column.idAt (vcU).b (vcU).w i < (vcU).card))
+    (hk : Vals.PickFits A (Uc).key (ids nubU)) (hv : Vals.PickFits B (Uc).val (ids nubU)) :
+    rep (R ∪ S) = rep R ∪ rep S :=
+  rep_union_fits (hat_all hAp) R S hN hNk hNv hFk hFv hK hV hk hv
+
+/-- **`rep (junc R S)`**, no hypothesis on the encoding. -/
+theorem rep_junc_full (R : Rel A C) (S : Rel B C) (hN : R.n.toNat + S.n.toNat < USize.size)
+    (h63 : R.n.toNat + S.n.toNat ≤ 2 ^ 63) (hF : Vals.RazeFits C R.val S.val) :
+    rep (LeetQ.Rel.Alg.junc R S) = Freyd.Alg.junc (sumCop (⟨A.El⟩ : RelSet.{0}) ⟨B.El⟩) (rep R) (rep S) :=
+  rep_junc_fits (hat_all hAp) R S hN h63 hF
+
+end
+
+end LeetQ.Rel.Rep
+
+#print axioms LeetQ.Rel.KernelWF.razeTo2_join_foR
+#print axioms LeetQ.Rel.KernelWF.hat_all
+#print axioms LeetQ.Rel.KernelWF.raze_row_full
+#print axioms LeetQ.Rel.Rep.rep_union_full
+#print axioms LeetQ.Rel.Rep.rep_junc_full
