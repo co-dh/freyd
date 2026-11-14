@@ -209,6 +209,7 @@ partial def toTerm (vars : List String) (folds : List (String × Lang.Expr)) (hs
   | .fold p .. => outside p "`⦇e,S⦈`" ("is the program fold: its seed is a coreflexive `V ⟶ V`; write the book's " ++
       "`⦇[e,S]⦈` with `e : 1 ⟶ V` instead")
   | .app p n _ | .inf p n .. => outside p s!"`{n}`" "is a Rel definition, and rel(…) has none"
+  | .fix p l x _ => outside p s!"`{if l then "μ" else "ν"}{x} : …`" "is outside the allegory fragment of rel(…)"
 where
   /-- The operand `a` of a complement elaborated, its allegory `𝒜` (the type of its target) and the instance
       `BooleanAllegory 𝒜`, found before the complement is: AOP's `∼R` is the Heyting `R ⇨ 𝟘`, which is the

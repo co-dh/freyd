@@ -17,15 +17,16 @@ other cells in its row, column and box.
 Cell 2 is given nothing, so no path starts with `{g°} 2` and `s₀` holds all of 1…9 there, with no complement
 needed to name the empty cells.
 
-## One round of AC-3: `rev(s) ≜ s ∩ (peer\(s ≠))`
+## AC-3: `s ≜ νX : s₀ ∩ revise(peer, ≠, X)`
 
-`peer\(s ≠)` is the largest `X` with `peer X ⊑ s ≠`. Take cell 2 and its peer cell 0 under `s₀`:
+`revise(A,C,X) ≜ A\(X C)` is the largest `Y` with `A Y ⊑ X C`. Take cell 2 and its peer cell 0, given 5:
 
 ```
-0 {peer} 2 {X} d     must imply     0 {s₀} 5 {≠} d,  i.e.  d ∈ {1,2,3,4,6,7,8,9}
+0 {peer} 2 {X} d     must imply     0 {X} 5 {≠} d,  i.e.  d ≠ 5
 ```
 
-so `X` may not hold 5 at cell 2. Each peer of cell 2 adds such a bound:
+In general `c {A} c′ {X} d` must imply `c {X} d′ {C} d` for some `d′`: every arc of `A` into `(c′, d)` is
+supported. `s` is the largest `X ⊑ s₀` with every arc supported. Each peer of cell 2 adds a bound:
 
 | peer c′ | `s₀` at c′ | bound on `X` at cell 2 |
 |---------|------------|------------------------|
@@ -37,8 +38,8 @@ so `X` may not hold 5 at cell 2. Each peer of cell 2 adds such a bound:
 | 20      | {8}        | ≠ 8                    |
 | empty   | 1…9        | none                   |
 
-The largest `X` holds {1,2,4} at cell 2, and `s₁ = rev(s₀)` keeps those digits of `s₀`. A second round
-`s₂ = rev(s₁)` sees cells newly forced by `s₁`: cell 62 is forced to 4, so its column peer cell 8 loses 4. -/
+The first round of `ν` keeps {1,2,4} at cell 2. A later round sees cells forced by the one before: cell 62 is
+forced to 4, so its column peer cell 8 loses 4. The rounds stop when one removes nothing. -/
 
 namespace LeetQ.Rel.Programs
 
@@ -55,26 +56,16 @@ rel_program sudokuac after prelude where
     /- The constraint: peers take different digits. -/
 
     peer : Cell ⟶ Cell ≜ (unit unit°) ∩ ≠     -- 1701 pairs sharing a unit, less the 81 (c,c): 1620; ≠ itself is 81·80 = 6480
-    rev(s : Cell ⟶ D) : Cell ⟶ D ≜ s ∩ (peer\(s ≠))   -- one round of AC-3; see the module doc
+    revise(A : α ⟶ α, C : β ⟶ β, X : α ⟶ β) : α ⟶ β ≜ A\(X C)   -- AIMA REVISE on every arc of A at once
+    AC3(A : α ⟶ α, C : β ⟶ β, s : α ⟶ β) : α ⟶ β ≜ νX : s ∩ revise(A,C,X)   -- AC-3 (arc consistency, Mackworth's algorithm 3): the largest X ⊑ s with every arc of A supported
 
     s₀ : Cell ⟶ D ≜ g°\𝟙(D)                       -- the givens, 1…9 elsewhere; see the module doc
-    s₁ : Cell ⟶ D ≜ rev(s₀)
-    s₂ : Cell ⟶ D ≜ rev(s₁)
+    s : Cell ⟶ D ≜ AC3(peer, ≠, s₀)
 
-    c2 : Cell ⟶ Cell ≜ {(2,2)}
-    c8 : Cell ⟶ Cell ≜ {(8,8)}
-    c40 : Cell ⟶ Cell ≜ {(40,40)}
-    c62 : Cell ⟶ Cell ≜ {(62,62)}
-    e2 : Cell ⟶ D ≜ {(2,1),(2,2),(2,4)}
-    e40 : Cell ⟶ D ≜ {(40,5)}
-    e62 : Cell ⟶ D ≜ {(62,4)}
-    e8₁ : Cell ⟶ D ≜ {(8,2),(8,4),(8,8)}
-    e8₂ : Cell ⟶ D ≜ {(8,2),(8,8)}
-    check c2 s₁ = e2                              -- row 0, column 2 and box 0 rule out all but 1, 2, 4
-    check c40 s₁ = e40                            -- the centre is forced to 5
-    check c62 s₁ = e62
-    check c8 s₁ = e8₁
-    check c8 s₂ = e8₂                             -- round 2: cell 62 is now 4, so its column peer 8 loses 4
+    e₂ : Cell ⟶ D ≜ {(8,2),(8,8)}
+    check g ⊑ s                                   -- the givens survive
+    check s = s₀ ∩ revise(peer, ≠, s)             -- a fixed point
+    check dom(e₂) s ⊑ e₂                          -- cell 62 is forced to 4, so its column peer 8 loses 4
 
 #guard (Lang.runProgram sudokuac).isOk
 

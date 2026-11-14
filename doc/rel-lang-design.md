@@ -391,15 +391,32 @@ number universe: `n+1` rounds, each `S` once.
 |-------------------------------------|-------------------------------|
 | `Q`, the reachable states           | fold over `0…27`, step `t`     |
 | `C`, walk lengths to a goal state   | fold over `0…27`, step `(Qt)°` |
-| `Z`, the chosen path                | fold over `0…27`, step `ν`     |
+| `Z`, the chosen path                | fold over `0…27`, step `nx`    |
 
 The bound is the declared `N`: a shortest plan moves each block at most twice (to the table, then to its
 place), so every distance is at most `2|X| = 6`.
 
-Not in the language yet: `μX : φ(X)` and `R* ≜ μX : 𝟙 ∪ (RX)`. They would need a polarity check — `X` only under
-arguments of polarity `+` (both of `RS ∩ ∪ ⟨,⟩ × [,] ⦇,⦈`, the first of `− /`, the second of `\`, the one of
-`° dom ran P F est`; a prelude definition as its body), never under `Λ E thin filter takewhile` — and no array growing inside the body; then
-`iter` from `𝟘` until a round changes nothing reaches the least fixed point (AOP/A6_2.lean:53 `mu`).
+Unbounded iteration is a fixed point: `μX : φ` the least, `νX : φ` the greatest `X` with `X = φ(X)`. `X` is in
+scope in the body only, which reads to the closing parenthesis or the end of the declaration, so inside a term it
+is written `(νX : φ)`; `μ` and `ν` start no name. `X` has the body's type, and the body must be monotonic in `X`,
+checked on the term with every definition expanded, so a prelude or program definition needs no rule of its own:
+
+| `X` in                                                   | sign    |
+|----------------------------------------------------------|---------|
+| either side of `RS`, `∩`, `∪`, `⟨,⟩`, `×`, `[,]`, `⦇,⦈`  | kept    |
+| the argument of `° dom ran P F est loop`                 | kept    |
+| the first operand of `−` and `/`, the second of `\`      | kept    |
+| `∼`, the second operand of `−` and `/`, the first of `\` | flipped |
+| the argument of `Λ E thin filter takewhile thinL merge`  | refused |
+
+`X` must end with sign `+`. Each round's value is deduplicated, and the rounds stop when one leaves the row count
+unchanged, which on the chain they form means the relation is unchanged (`Alg.fixOn`):
+
+- `μX : φ` starts from `𝟘` and adds at least one row a round, so both objects of `X` need a universe (an array
+  object can grow every round): at most `|A|·|B|+1` rounds. `R* ≜ μX : 𝟙 ∪ (R X)`.
+- `νX : φ` starts from `S`, the meet of the top-level `∩` conjuncts of `φ` that do not mention `X`: `X = φ(X) ⊑ S`,
+  so the greatest fixed point lies below `S`, and each round but the last deletes a row of `S`: at most `|S|+1`
+  rounds. A body with no such conjunct is refused; `⊤(A,B) ∩ φ` bounds by the whole object.
 
 Cost: a result keeps only the payload its rows refer to (§h), so `L(s₀,𝟙)` over the 28 rounds of `N = 0…27`
 holds 28 rows on a payload of at most 3 pairs a row. The interpreter evaluates
@@ -640,8 +657,8 @@ W ≜ (Cπ₁)°(Cπ₂)                               -- St ⟶ N
 K ≜ Qc dom(Λ(⇝)δ succ ∩ (π₁δ))                -- the moves that take the distance down by one
 ≼ ≜ π₁ < π₁° ∪ (π₁π₁° ∩ (π₂ ≤ π₂°))           -- moves in lexicographic order
 σ ≜ Λ(Kπ₂)est(≼)                              -- the move chosen in each state
-ν ≜ ⟨dom(σ),σ⟩Λ(⇝)                            -- the state it leads to
-Z ≜ L(s₀,ν)                                   -- the chosen path, with each state's step
+nx ≜ ⟨dom(σ),σ⟩Λ(⇝)                           -- the state it leads to
+Z ≜ L(s₀,nx)                                  -- the chosen path, with each state's step
 ζ ≜ (Zπ₂)°(Zπ₁)                               -- N ⟶ St: the k-th state
 plan ≜ ζσ                                     -- N ⟶ X×X: the k-th move
 ```
