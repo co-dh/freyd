@@ -92,15 +92,20 @@ theorem grade_ofLongs_inv (b : ByteArray) (hN : len b < USize.size) (h63 : len b
   · intro i j hi hj h
     exact hinj i j hi hj (UInt64.toNat_inj.1 h)
 
-/-- **Cells laid out in consecutive blocks never collide**: block `r` holds `[P r, P (r+1))`, `P` ascending, so
-    `P r + t = P r' + t'` with each inside its own block is one block at one place. -/
-theorem block_inj {n : Nat} {P : Nat → Nat} (hPs : ∀ r < n, P r < P (r + 1)) :
+/-- **Cells laid out in consecutive blocks never collide**: block `r` holds `[P r, P (r+1))`, `P` non-decreasing
+    (a block may be empty), so `P r + t = P r' + t'` with each inside its own block is one block at one place. -/
+theorem block_inj {n : Nat} {P : Nat → Nat} (hPs : ∀ r < n, P r ≤ P (r + 1)) :
     ∀ r t r' t', r < n → r' < n → P r + t < P (r + 1) → P r' + t' < P (r' + 1) → P r + t = P r' + t' →
       r = r' ∧ t = t' := by
-  have hle : ∀ a b, a ≤ b → b ≤ n → P a ≤ P b := fun a b hab hb => by
-    rcases Nat.lt_or_eq_of_le hab with h | rfl
-    · exact Nat.le_of_lt (prefix_lt hPs a b h hb)
-    · exact Nat.le_refl _
+  have hle : ∀ a b, a ≤ b → b ≤ n → P a ≤ P b := by
+    intro a b
+    induction b with
+    | zero => intro hab _; rw [Nat.le_zero.1 hab]; exact Nat.le_refl _
+    | succ b ih =>
+      intro hab hb
+      by_cases h : a ≤ b
+      · exact Nat.le_trans (ih h (by omega)) (hPs b (by omega))
+      · rw [show a = b + 1 by omega]; exact Nat.le_refl _
   intro r t r' t' hr hr' ht ht' e
   rcases Nat.lt_trichotomy r r' with h | rfl | h
   · have := hle (r + 1) r' (by omega) (by omega); omega
