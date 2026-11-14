@@ -32,7 +32,8 @@ theorem rep_mem {n : USize} (X : Vals (.arr B) n) (hv : Vals.PickFits (.arr B) X
   have hvf := (copies_pos X hv).symm ▸ (pickFits_payload X hv).2
   have hle : ∀ r (hr : r < n.toNat), sH(X, r, hr) ≤ X.1.toNat := fun _ _ => Nat.min_le_right _ _
   rw [rep_apply]
-  simp only [Alg.mem, expand, need]
+  simp only [Alg.mem, memC, expand, need_fst, pickC_fst]
+  simp only [need]
   rw [dif_pos hEU]
   simp only [Rel.Holds]
   constructor

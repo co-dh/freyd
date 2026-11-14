@@ -9,6 +9,7 @@ import LeetQ.Rel.RepMem
 import LeetQ.Rel.RepLambda
 import LeetQ.Rel.RepOps2
 import LeetQ.Rel.RepDiv
+import LeetQ.Rel.RepLoop
 
 namespace LeetQ.Rel
 
@@ -93,42 +94,45 @@ theorem rep_prodC (R : Rel A B) (S : Rel D E) (hb : (prodC R S).2 = true) :
   obtain ⟨⟨⟨⟨⟨hN, h63⟩, hA⟩, hB⟩, hC⟩, hD⟩ := hb
   exact rep_prod R S hN h63 hA hB hC hD
 
-/-- **`rep (mem X) xs x ↔ xs is a cell of X ∧ x ∈ xs` under `memC`'s bit**: the `fitsN` bit gives `hv`, and with it
-    `expand`'s guard (`slicesOf_copies`); the keys' pick bit, at the copies `expand` makes, `hk` (`pickC_fits`,
-    `copies_rows`). -/
-theorem rep_memC {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) (xs : (Obj.arr B).El) (x : B.El) :
-    rep (memC X).1 xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs := by
-  rw [memC_fst]
+/-- **`memC`'s bit is `rep_mem`'s premises**: the `fitsN` bit its `hv`, and with it `expand`'s guard
+    (`slicesOf_copies`); the keys' pick bit, at the copies `expand` makes, its `hk` (`pickC_fits`, `copies_rows`). -/
+theorem memC_ok {B : Obj} {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) :
+    Vals.PickFits (.arr B) X (List.range n.toNat) ∧
+    Vals.PickFits (.arr B) X ((List.range n.toNat).flatMap fun r =>
+      if h : r < n.toNat then List.replicate (X.row ⟨r, h⟩).length r else []) := by
   simp only [memC, Bool.and_eq_true] at hb
   obtain ⟨hk, hv⟩ := hb
   have hv' : Vals.PickFits (.arr B) X (List.range n.toNat) := pickFits_of_fitsN (.arr B) X _ hv _ (by simp)
-  refine rep_mem X hv' ?_ xs x
+  refine ⟨hv', ?_⟩
   unfold expand need at hk
   dsimp only at hk
   rw [dif_pos (slicesOf_copies X hv').1] at hk
   rw [← copies_rows X hv']
   exact Vals.pickC_fits (.arr B) X _ _ _ hk
 
--- the keys `pair` codes jointly, named as `pairC` names them
-set_option hygiene false in
-local notation "pcs" => (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2)
+/-- **`rep (mem X) xs x ↔ xs is a cell of X ∧ x ∈ xs` under `memC`'s bit**: `rep_mem` at `memC_ok`'s premises. -/
+theorem rep_memC {n : USize} (X : Vals (.arr B) n) (hb : (memC X).2 = true) (xs : (Obj.arr B).El) (x : B.El) :
+    rep (memC X).1 xs x ↔ (∃ i, X.row i = xs) ∧ x ∈ xs :=
+  rep_mem X (memC_ok X hb).1 (memC_ok X hb).2 xs x
 
-/-- **`rep ⟨R, S⟩ = ⟨rep R, rep S⟩` under `pairC`'s bit**, as `rep_compC`: the codes' bit gives `hc`, the decided
-    bounds `hrn`, `hM`, and the picks' bits, read at the join's rows (`join_rows`), `hA`, `hB`, `hC`. -/
-theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
-    rep (pairC R S).1 = rpair (rep R) (rep S) := by
-  rw [pairC_fst]
+open Prim in
+/-- **`pairC`'s bit is `rep_pair`'s premises** (`pairOK`), as `compC_ok`: the keys' codes fitting, the decided
+    bounds, and the three picks' bits read at the join's rows (`join_rows`, `pickC_fits`). -/
+theorem pairC_ok {A B C : Obj} (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) : pairOK(A, R, S) := by
   simp only [pairC, Bool.and_eq_true, decide_eq_true_eq] at hb
   obtain ⟨⟨⟨hcb, hrn⟩, hM⟩, hp⟩ := hb
-  have hc := (codes_faithful_wf A _ (Obj.codesC_fits A _ hcb)).1
+  have hcf := Obj.codesC_fits A _ hcb
+  refine ⟨hcf, ?_⟩
+  rintro kc rfl
+  have hc := (codes_faithful_wf A _ hcf).1
   obtain ⟨hlw, hln, hls, -⟩ := hc.2 (k := 0) (by decide)
   obtain ⟨hrw, hrn', hrs, hrc⟩ := hc.2 (k := 1) (by decide)
-  replace hln : ((A.codes pcs)[0]'Nat.zero_lt_two).n = R.n := hln
-  replace hrn' : ((A.codes pcs)[1]'Nat.one_lt_two).n = S.n := hrn'
-  have hcf := Obj.codesC_fst A pcs
-  rw [← hcf] at hlw hls hrw hrs hrc hln hrn'
+  replace hln : ((A.codes (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2))[0]'Nat.zero_lt_two).n = R.n := hln
+  replace hrn' : ((A.codes (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2))[1]'Nat.one_lt_two).n = S.n := hrn'
+  have hcf' := Obj.codesC_fst A (#v[⟨R.n, R.key⟩, ⟨S.n, S.key⟩] : Vector (Part A) 2)
+  rw [← hcf'] at hlw hls hrw hrs hrc hln hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-  unfold longCount need at hp
+  unfold pairJoinC longCount need at hp
   split at hp
   · rename_i hlt
     simp only [Bool.and_eq_true] at hp
@@ -137,10 +141,17 @@ theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
     have hfB := Vals.pickC_fits B R.val _ _ _ hp.1.2
     have hfC := Vals.pickC_fits C S.val _ _ _ hp.2
     rw [hln, hrn'] at e
-    rw [hcf] at e hfA hfB hfC
-    exact rep_pair R S hc hrn hM (by rw [e, List.map_map]; exact hfA) (by rw [e, List.map_map]; exact hfB)
-      (by rw [e, List.map_map]; exact hfC)
+    rw [hcf'] at e hfA hfB hfC
+    exact ⟨hrn, hM, by rw [e, List.map_map]; exact hfA, by rw [e, List.map_map]; exact hfB,
+      by rw [e, List.map_map]; exact hfC⟩
   · exact absurd hp Bool.false_ne_true
+
+/-- **`rep ⟨R, S⟩ = ⟨rep R, rep S⟩` under `pairC`'s bit**: `rep_pair` at `pairC_ok`'s premises. -/
+theorem rep_pairC (R : Rel A B) (S : Rel A C) (hb : (pairC R S).2 = true) :
+    rep (pairC R S).1 = rpair (rep R) (rep S) := by
+  obtain ⟨hcf, h⟩ := pairC_ok R S hb
+  obtain ⟨hrn, hM, hA, hB, hC⟩ := h _ rfl
+  exact rep_pair R S (codes_faithful_wf A _ hcf).1 hrn hM hA hB hC
 
 /-- **`rep (Λ(R))` is the power transpose of `rep R` under `transposeC`'s bit**: `nub`'s codes' bits give `hK`, `hV`
     (`oneOK_of_codesC`), the `fitsN` bits `hk`, `hv`, the nub sides' codes bits `hWk`, `hW` (`codesC_fits`), the

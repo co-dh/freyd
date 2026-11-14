@@ -98,23 +98,26 @@ theorem convArr_holds {k v : Obj} {n : USize} (key : Vals k n) (val : Vals v n) 
 /-- `R°`: `convArr`. -/
 private def conv (R : Rel A B) : Rel B A := convArr R.key R.val
 
-/-- `R ≫ S`: `join` on `R.val = S.key`, the key picked from `R`, the val from `S`. -/
-private def comp (R : Rel A B) (S : Rel B C) : Rel A C :=
-  let c := B.codes #v[⟨_, R.val⟩, ⟨_, S.key⟩]
-  let ij := join c[0] c[1]
+/-- `≫`'s joined rows over the codes `l` of `R`'s values and `k` of `S`'s keys: `join`, the left index column read
+    at the right's count (`fit`, `join_len`), `R`'s keys beside `S`'s values; the bit is the two picks' (`pickC`).
+    On the codes as arguments, as `divJoinC`: inside the picks' proofs a twin's `.1` is rewritten by neither `simp`
+    nor `rw`. -/
+def compJoinC (R : Rel A B) (S : Rel B C) (l k : Code) : Rel A C × Bool :=
+  let ij := join l k
   longCount "≫" ij.2 fun m h =>
-    ⟨m, Vals.pickN A R.key ij.1 m (h ▸ join_len c[0] c[1]), Vals.pick C S.val ij.2 m h⟩
+    let x := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (h ▸ join_len l k))
+    let z := Vals.pickC C S.val ij.2 m h
+    ((⟨m, x.1, z.1⟩ : Rel A C), x.2 && z.2)
 
-/-- `≫` and whether it ran within capacity: `rep_comp`'s count bounds decided, `&&` the bits of the codes and of
-    the two picks it calls (`codesC`, `pickC`). -/
+/-- `R ≫ S`, `join` on `R.val = S.key` (`compJoinC`), and whether it ran within capacity: `rep_comp`'s count bounds
+    decided, `&&` the bits of the codes and of the two picks (`codesC`, `compJoinC`). -/
 def compC (R : Rel A B) (S : Rel B C) : Rel A C × Bool :=
   let c := B.codesC #v[⟨_, R.val⟩, ⟨_, S.key⟩]
-  let ij := join c.1[0] c.1[1]
-  let r := longCount "≫" ij.2 fun m h =>
-    let k := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (h ▸ join_len c.1[0] c.1[1]))
-    let v := Vals.pickC C S.val ij.2 m h
-    ((⟨m, k.1, v.1⟩ : Rel A C), k.2 && v.2)
+  let r := compJoinC R S c.1[0] c.1[1]
   (r.1, c.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
+
+/-- `R ≫ S`: `compC`'s relation. -/
+private def comp (R : Rel A B) (S : Rel B C) : Rel A C := (compC R S).1
 
 /-- A twin's `.1` through `need` (so through `longCount`, `expand`): each branch's `.1`; a `split` of the test at a
     twin would decide it by evaluating the kernels that produce the count. -/
@@ -125,12 +128,6 @@ theorem need_fst {α β : Type} {p : Prop} [Decidable p] (msg : Unit → String)
 /-- A codes twin's `.1` is `Obj.codes`, at each constructor of the side. -/
 theorem _root_.LeetQ.Rel.Obj.codesC_fst (X : Obj) {p : Nat} (cs : Vector (Part X) p) : (X.codesC cs).1 = X.codes cs := by
   cases X <;> rfl
-
--- the old op kept beside its twin: its read-back proofs `show` its body, which `(compC ..).1` is not by `rfl`
-theorem compC_fst (R : Rel A B) (S : Rel B C) : (compC R S).1 = comp R S := by
-  unfold compC comp longCount; dsimp only; rw [need_fst]
-  -- a twin's `.1` is its helper at each constructor of the side
-  cases A <;> cases B <;> cases C <;> rfl
 
 /-- The coreflexive on the distinct elements of `x`: the first row of each code. -/
 def distinctCorefl (t : Obj) {n : USize} (x : Vals t n) : Rel t t :=
@@ -322,14 +319,9 @@ def transposeC (R : Rel A B) : Rel A (.arr B) × Bool :=
 
 /-- `∋ : arr B ⟶ B` on the arrays `X`: each array to each of its elements, one row per element (an array
     holding a value twice relates to it twice). `expand` of the clamped slice counts, each copy's rank
-    added to its slice's start; both read at the copies' count `expand` hands on. -/
-def mem {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) B :=
-  let s := slicesOf X
-  expand n s.2 (fun _ => default) fun m i r hi _ =>
-    ⟨m, Vals.pick (.arr B) X i m hi, Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)⟩
-
-/-- `∋` and whether it ran within capacity: the keys' pick bit (`pickC`), at the copies `expand` makes, `&&` `X`
-    fitting at all its rows (`fitsN`), which the values' windows are read through. -/
+    added to its slice's start; both read at the copies' count `expand` hands on. Whether it ran within capacity:
+    the keys' pick bit (`pickC`), at the copies `expand` makes, `&&` `X` fitting at all its rows (`fitsN`), which
+    the values' windows are read through. -/
 def memC {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) B × Bool :=
   let s := slicesOf X
   let r := expand n s.2 (fun _ => default) fun m i r hi _ =>
@@ -337,8 +329,8 @@ def memC {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) B × Bool :=
     ((⟨m, k.1, Vals.pick B X.2.2.2 (add m (gather 8 s.1 i) r) m (len_val ..)⟩ : Rel (.arr B) B), k.2)
   (r.1, r.2 && Vals.fitsN (.arr B) X n.toNat)
 
-theorem memC_fst {n : USize} (X : Vals (.arr B) n) : (memC X).1 = mem X := by
-  unfold memC mem expand need; dsimp only; split <;> rfl
+/-- `∋` on the arrays `X`: `memC`'s relation. -/
+def mem {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) B := (memC X).1
 
 /-- `Λ(R) : A ⟶ arr B`, each key of `R` to the array of its values. -/
 scoped notation:max "Λ(" R ")" => transpose R
@@ -349,31 +341,26 @@ end Gen
 
 variable {A B C : QAtomicType}
 
-/-- `⟨R, S⟩`: `join` on the keys → rows `(x, (y, z))`, both value sides kept under one `n` as the
-    columns of one product side; the left index column read at the right's count (`join_len`), as `comp`. -/
-def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Rel A (.prod B C) :=
-  let kc := A.codes #v[⟨_, R.key⟩, ⟨_, S.key⟩]
-  let ij := join kc[0] kc[1]
-  let h := join_len kc[0] kc[1]
+/-- `⟨R, S⟩`'s joined rows over the key codes `l`, `k`, as `compJoinC`: rows `(x, (y, z))`, `R`'s keys and values
+    picked at the left rows, `S`'s values at the right ones; the bit is the three picks' (`pickC`). -/
+def pairJoinC {A B C : Obj} (R : Rel A B) (S : Rel A C) (l k : Code) : Rel A (.prod B C) × Bool :=
+  let ij := join l k
   longCount "⟨R,S⟩" ij.2 fun m hm =>
-    ⟨m, Vals.pickN A R.key ij.1 m (hm ▸ h), (Vals.pickN B R.val ij.1 m (hm ▸ h), Vals.pick C S.val ij.2 m hm)⟩
+    let x := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (hm ▸ join_len l k))
+    let y := Vals.pickC B R.val (fit m.toNat ij.1) m (fit_len (hm ▸ join_len l k))
+    let z := Vals.pickC C S.val ij.2 m hm
+    ((⟨m, x.1, (y.1, z.1)⟩ : Rel A (.prod B C)), x.2 && y.2 && z.2)
 
-/-- `⟨R, S⟩` and whether it ran within capacity: `rep_pair`'s count bounds decided, `&&` the bits of the keys' codes
-    and of the three picks (`codesC`, `pickC`), as `compC`. -/
+/-- `⟨R, S⟩`, `join` on the keys (`pairJoinC`), both value sides kept under one `n` as the columns of one product
+    side, and whether it ran within capacity: `rep_pair`'s count bounds decided, `&&` the bits of the keys' codes and
+    of the three picks (`codesC`, `pairJoinC`), as `compC`. -/
 def pairC {A B C : Obj} (R : Rel A B) (S : Rel A C) : Rel A (.prod B C) × Bool :=
   let kc := A.codesC #v[⟨_, R.key⟩, ⟨_, S.key⟩]
-  let ij := join kc.1[0] kc.1[1]
-  let h := join_len kc.1[0] kc.1[1]
-  let r := longCount "⟨R,S⟩" ij.2 fun m hm =>
-    let k := Vals.pickC A R.key (fit m.toNat ij.1) m (fit_len (hm ▸ h))
-    let v := Vals.pickC B R.val (fit m.toNat ij.1) m (fit_len (hm ▸ h))
-    let w := Vals.pickC C S.val ij.2 m hm
-    ((⟨m, k.1, (v.1, w.1)⟩ : Rel A (.prod B C)), k.2 && v.2 && w.2)
+  let r := pairJoinC R S kc.1[0] kc.1[1]
   (r.1, kc.2 && decide (S.n.toNat < 2 ^ 63) && decide (R.n.toNat * S.n.toNat < min (2 ^ 63) USize.size) && r.2)
 
-theorem pairC_fst {A B C : Obj} (R : Rel A B) (S : Rel A C) : (pairC R S).1 = pair R S := by
-  unfold pairC pair longCount; dsimp only; rw [need_fst]
-  cases A <;> cases B <;> cases C <;> rfl
+/-- `⟨R, S⟩`: `pairC`'s relation. -/
+def pair {A B C : Obj} (R : Rel A B) (S : Rel A C) : Rel A (.prod B C) := (pairC R S).1
 
 /-- `outl`: the first component's columns, nothing runs. -/
 def outl {k v w : Obj} (T : Rel k (.prod v w)) : Rel k v := ⟨T.n, T.key, T.val.1⟩
@@ -1068,7 +1055,7 @@ theorem snocC_fst {K B : Obj} (P : Rel K (.prod (.arr B) B)) : (snocC P).1 = sno
   -- `transposeC`'s `.1` named, so the goal closes syntactically: a defeq check through it evaluates `cat`
   have ht : ∀ R : Rel B B, (transposeC R).1 = transpose R := fun _ => rfl
   unfold snocC snoc ranC ran τ; dsimp only
-  rw [catC_fst, compC_fst, pairC_fst, compC_fst, distinctCoreflC_fst, ht]
+  rw [catC_fst, distinctCoreflC_fst, ht]
 
 /-- `cat° : arr B ⟶ arr B × arr B` on the arrays `X`, each array to every way of cutting it in two: the
     `k`-th prefix beside the `k`-th suffix, `⟨inits, tails⟩ zip ∋`. -/
@@ -1089,7 +1076,7 @@ def uncatC {B : Obj} {n : USize} (X : Vals (.arr B) n) : Rel (.arr B) (.prod (.a
 
 theorem uncatC_fst {B : Obj} {n : USize} (X : Vals (.arr B) n) : (uncatC X).1 = uncat X := by
   unfold uncatC; dsimp only
-  rw [compC_fst, memC_fst, zipC_fst, pairC_fst, initsC_fst, tailsC_fst] <;> rfl
+  rw [zipC_fst, initsC_fst, tailsC_fst] <;> rfl
 
 /-! ## Permutations, sets and order (ch. 6, 8) -/
 

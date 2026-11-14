@@ -39,7 +39,7 @@ theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
   -- `join_rows` on the codes `compC` joins, named as `compC` names them: a defeq check through them evaluates `join`
   rw [← hcf] at hlw hls hrw hrs hrc hln hrn'
   obtain ⟨-, hZ⟩ := join_rows _ _ hlw hls hrw hrs hrc (by rw [hrn']; exact hrn) (by rw [hln, hrn']; exact hM)
-  unfold longCount need at hp
+  unfold compJoinC longCount need at hp
   split at hp
   · rename_i hlt
     simp only [Bool.and_eq_true] at hp
@@ -56,7 +56,6 @@ theorem compC_ok (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
 /-- **`rep (R ≫ S) = rep R ≫ rep S` under `compC`'s bit**: `rep_comp` at `compC_ok`'s premises. -/
 theorem rep_compC (R : Rel A B) (S : Rel B C) (hb : (compC R S).2 = true) :
     rep (compC R S).1 = rep R ≫ rep S := by
-  rw [compC_fst]
   obtain ⟨hcf, hrn, hM, hA, hC⟩ := compC_ok R S hb
   exact rep_comp R S (codes_faithful_wf B _ hcf).1 hrn hM hA hC
 

@@ -674,14 +674,11 @@ theorem rep_pair (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (hrn :
   have hP := mem_joinPairs (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)
   rw [hln, hrn'] at hP
   refine hom_ext fun a p => ?_
-  show (longCount "⟨R,S⟩" (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 fun m hm =>
-      (⟨m, Vals.pickN A R.key (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
-          (hm ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)),
-        (Vals.pickN B R.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
-          (hm ▸ join_len (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)),
-         Vals.pick C S.val (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 m hm)⟩ :
-        Rel A (.prod B C))).Holds a p ↔ R.Holds a p.1 ∧ S.Holds a p.2
-  unfold longCount need
+  -- the codes twin's `.1` read as `kc` while an argument of `pairJoinC`, then the picks' twins
+  show ((pairJoinC R S ((A.codesC kp(R, S)).1[0]) ((A.codesC kp(R, S)).1[1])).1).Holds a p ↔
+    R.Holds a p.1 ∧ S.Holds a p.2
+  rw [Obj.codesC_fst]; unfold pairJoinC longCount; rw [need_fst]; simp only [pickC_fst]
+  unfold need
   rw [dif_pos hlt]
   suffices H : ∀ (m : USize) (hmJ : len (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).2 = m.toNat),
       (⟨m, Vals.pickN A R.key (join (kc[0]'Nat.zero_lt_two) (kc[1]'Nat.one_lt_two)).1 m
@@ -782,7 +779,9 @@ theorem pair_pickFits (R : Rel A B) (S : Rel A C) (hc : codesOK(kc, kp(R, S))) (
     unfold Vals.pickN
     exact ⟨pickFits_pick A R.key _ m _ _ hq (hl ▸ hA) (hl ▸ hA), pickFits_pick B R.val _ m _ _ hq (hl ▸ hB) (hl ▸ hB),
       pickFits_pick C S.val _ m hmJ _ hq (hr ▸ hC) (hr ▸ hC)⟩
-  unfold LeetQ.Rel.Alg.pair longCount need
+  unfold LeetQ.Rel.Alg.pair pairC; dsimp only
+  rw [Obj.codesC_fst]; unfold pairJoinC longCount; rw [need_fst]; simp only [pickC_fst]
+  unfold need
   rw [dif_pos hlt]
   exact H _ _
 
