@@ -25,6 +25,24 @@ local notation "sP(" n ", " x ")" => add (len sE(n, x)).toUSize (gather 8 (slice
   (sub (len sE(n, x)).toUSize (tilLongs (len sE(n, x)).toUSize)
     (gather 8 (sub n (sums n (slicesOf x).2) (slicesOf x).2) sE(n, x)))
 
+/-- **`slicesOf` read back at a row**: row `t`'s start is its clamped start, its count the clamped window's
+    length. Hypothesis: the payload count below `2^63`. -/
+theorem slicesOf_get {B : Obj} {n : USize} (x : Vals (.arr B) n) (hp : x.1.toNat < 2 ^ 63) {t : Nat}
+    (ht : t < n.toNat) :
+    (Column.bitsAt (slicesOf x).1 (t * 8) 8).toNat = sL(x, t, ht) ∧
+      (Column.bitsAt (slicesOf x).2 (t * 8) 8).toNat = sH(x, t, ht) - sL(x, t, ht) := by
+  obtain ⟨p, lo, hi, f⟩ := x
+  have hsl := slices_get (n := n) hp (longsOf lo) (longsOf hi) ht
+  rw [longsOf_get _ ht, longsOf_get _ ht, Int64.toInt64_toUInt64, Int64.toInt64_toUInt64] at hsl
+  show (Column.bitsAt (slices p n (longsOf lo) (longsOf hi)).1 (t * 8) 8).toNat = _ ∧
+    (Column.bitsAt (slices p n (longsOf lo) (longsOf hi)).2 (t * 8) 8).toNat = _
+  rw [hsl.1, hsl.2]
+  have h1 : min (max (lo.get ⟨t, ht⟩).toInt 0).toNat p.toNat ≤ p.toNat := Nat.min_le_right _ _
+  have h2 : min (max (hi.get ⟨t, ht⟩).toInt 0).toNat p.toNat ≤ p.toNat := Nat.min_le_right _ _
+  have h64 : p.toNat < UInt64.size := Nat.lt_trans hp (by decide)
+  exact ⟨UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt h1 h64),
+    UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_trans (Nat.sub_le _ _) h2) h64)⟩
+
 /-- **`slicesOf` with `expand` read back**: copy `z` is row `r`'s element `j`, the copies of row `r` in order
     after those of the rows before it — the index column holds `r`, the position column `L r + j`, `L r` the
     row's clamped start. The copies' count fits a `USize`. Hypothesis: `Vals.PickFits` at every row, the
@@ -63,15 +81,7 @@ theorem slicesOf_copies {B : Obj} {n : USize} (x : Vals (.arr B) n)
   generalize hs0 : slices p n (longsOf lo) (longsOf hi) = s
   have hs : ∀ t (ht : t < n.toNat), (Column.bitsAt s.1 (t * 8) 8).toNat = L t ∧
       (Column.bitsAt s.2 (t * 8) 8).toNat = H t - L t := fun t ht => by
-    have hsl := slices_get (n := n) hp (longsOf lo) (longsOf hi) ht
-    rw [longsOf_get _ ht, longsOf_get _ ht, Int64.toInt64_toUInt64, Int64.toInt64_toUInt64, hs0,
-      ← hL t ht, ← hH t ht] at hsl
-    have h1 : L t ≤ p.toNat := by rw [hL t ht]; exact Nat.min_le_right _ _
-    have h2 := hHp t
-    rw [hsl.1, hsl.2]
-    have h64 : p.toNat < UInt64.size := Nat.lt_trans hp (by decide)
-    exact ⟨UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt h1 h64),
-      UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_trans (Nat.sub_le _ _) h2) h64)⟩
+    rw [← hs0, ← hsd, hL t ht, hH t ht]; exact slicesOf_get _ hp ht
   have hlen1 : len s.1 = n.toNat := by rw [← hs0]; exact (len_slices ..).1
   have hlen2 : len s.2 = n.toNat := by rw [← hs0]; exact (len_slices ..).2
   have hcS : ∀ t ≤ n.toNat, ((List.range t).map fun s' => (Column.bitsAt s.2 (s' * 8) 8).toNat).sum =

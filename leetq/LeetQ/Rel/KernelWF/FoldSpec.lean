@@ -14,24 +14,6 @@ open QLean QLean.Kernel QLean.Verify LeetQ.Rel
 
 open SliceN
 
-/-- **`slicesOf` read back at row `i`**: its clamped start, and its clamped end less that start, the payload
-    count below `2^63`. -/
-theorem slicesOf_get {B : Obj} {n : USize} (x : Vals (.arr B) n) (hp : x.1.toNat < 2 ^ 63) {i : Nat}
-    (hi : i < n.toNat) :
-    (Column.bitsAt (slicesOf x).1 (i * 8) 8).toNat = sL(x, i, hi) ∧
-      (Column.bitsAt (slicesOf x).2 (i * 8) 8).toNat = sH(x, i, hi) - sL(x, i, hi) := by
-  obtain ⟨p, lo, up, f⟩ := x
-  have hsl := slices_get (n := n) hp (longsOf lo) (longsOf up) hi
-  rw [longsOf_get _ hi, longsOf_get _ hi, Int64.toInt64_toUInt64, Int64.toInt64_toUInt64] at hsl
-  have h64 : p.toNat < UInt64.size := Nat.lt_trans hp (by decide)
-  have h1 : min (max (lo.get ⟨i, hi⟩).toInt 0).toNat p.toNat ≤ p.toNat := Nat.min_le_right _ _
-  have h2 : min (max (up.get ⟨i, hi⟩).toInt 0).toNat p.toNat ≤ p.toNat := Nat.min_le_right _ _
-  show (Column.bitsAt (slices p n (longsOf lo) (longsOf up)).1 (i * 8) 8).toNat = _ ∧
-    (Column.bitsAt (slices p n (longsOf lo) (longsOf up)).2 (i * 8) 8).toNat = _
-  rw [hsl.1, hsl.2]
-  exact ⟨UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt h1 h64),
-    UInt64.toNat_ofNat_of_lt' (Nat.lt_of_le_of_lt (Nat.le_trans (Nat.sub_le _ _) h2) h64)⟩
-
 /-- **Row `i` of an array side, read at its slice**: start plus count within the payload, the row as long as
     the count, its element `j` the payload's at the start plus `j`. -/
 theorem slicesOf_row {B : Obj} {n : USize} (x : Vals (.arr B) n) (hp : x.1.toNat < 2 ^ 63) {i : Nat}
