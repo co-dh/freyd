@@ -639,6 +639,114 @@ theorem sym_vac_holds (R : Rel A C) (S : Rel B C) {ma mb : USize} (Ua : Vals A m
   · rintro ⟨hx, hy⟩
     exact ⟨x, ⟨rfl, eA.2 hx⟩, y, trivial, rfl, eB.2 hy⟩
 
+-- the one-part code and `nub`'s first rows, and `∪`'s razed relation of `P` and `Q` (`RepDiv`'s, restated)
+set_option hygiene false in
+local notation "c1(" X ", " n ", " x ")" => (Obj.codes X (#v[⟨n, x⟩] : Vector (Part X) 1))[0]
+set_option hygiene false in
+local notation "nubI(" X ", " Y ", " R ")" =>
+  (tuples.tupleIds (c1(X, Rel.n R, Rel.key R)) #[c1(Y, Rel.n R, Rel.val R)]).2
+set_option hygiene false in
+local notation "PQ(" Y ", " Z ")" =>
+  (⟨_, Obj.raze Y #[⟨Rel.n P, Rel.key P⟩, ⟨Rel.n Q, Rel.key Q⟩] hNk,
+    Obj.raze Z #[⟨Rel.n P, Rel.val P⟩, ⟨Rel.n Q, Rel.val Q⟩] hNv⟩ : Rel Y Z)
+
+set_option maxHeartbeats 1600000 in
+/-- **`rep (R /ₛ S)`**: `x` to `y` exactly when `R`'s fibre at `x` is `S`'s at `y`, and either `R` takes `x`
+    somewhere, or `x` and `y` are elements of the universes `Ua`, `Ub`. `symDiv`'s intermediate values are bound
+    to variables by their defining equations. Hypotheses: `Obj.CodesFit` of every coded part; the counts fit;
+    `Vals.PickFits` where a part is picked; `Vals.RazeFits` of `∪`'s raze. -/
+theorem rep_symDiv {ma mb : USize} (R : Rel A C) (S : Rel B C) (Ua : Vals A ma) (Ub : Vals B mb)
+    (vc : Vector Code 2) (hvc : vc = C.codes #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
+    (hfv : C.CodesFit #v[⟨R.n, R.val⟩, ⟨S.n, S.val⟩])
+    (ac : Vector Code 2) (hac : ac = A.codes #v[⟨R.n, R.key⟩, ⟨ma, Ua⟩]) (hfa : A.CodesFit #v[⟨R.n, R.key⟩, ⟨ma, Ua⟩])
+    (bc : Vector Code 2) (hbc : bc = B.codes #v[⟨S.n, S.key⟩, ⟨mb, Ub⟩]) (hfb : B.CodesFit #v[⟨S.n, S.key⟩, ⟨mb, Ub⟩])
+    (v0 v1 rk uac sk ubc : Code) (ev0 : v0 = vc[0]'(by decide)) (ev1 : v1 = vc[1]'(by decide))
+    (erk : rk = ac[0]'(by decide)) (euac : uac = ac[1]'(by decide))
+    (esk : sk = bc[0]'(by decide)) (eubc : ubc = bc[1]'(by decide))
+    (hNU : R.n.toNat + S.n.toNat < USize.size) (hN63 : R.n.toNat + S.n.toNat + 1 < 2 ^ 63)
+    (pr orr fr ps os fs : ByteArray) (epr : pr = (segments rk).1) (eorr : orr = (segments rk).2.1)
+    (efr : fr = (segments rk).2.2) (eps : ps = (segments sk).1) (eos : os = (segments sk).2.1)
+    (efs : fs = (segments sk).2.2)
+    (ss : ByteArray) (hss : ss = os.extract 0 (os.size - 8)) (sid : ByteArray)
+    (hsid : sid = longCount "/ₛ" ss fun c _ => setIds (Code.cat #[v0.gather pr, v1.gather ps])
+      (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss R.n.toNat]))
+    (lc rc : Code) (hlc : lc = Code.ofLongs (sid.extract 0 (8 * len fr)))
+    (hrc : rc = Code.ofLongs (sid.extract (8 * len fr) sid.size))
+    (rf : Part A) (hrf : rf = Vals.pickPart A R.key fr) (sf : Part B) (hsf : sf = Vals.pickPart B S.key fs)
+    (hRf : Vals.PickFits A R.key (ids fr)) (hSf : Vals.PickFits B S.key (ids fs))
+    (hM : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
+      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < 2 ^ 63)
+    (hMU : ((List.range lc.n.toNat).map fun i => ((List.range rc.n.toNat).filter fun j =>
+      Column.idAt rc.b rc.w j == Column.idAt lc.b lc.w i).length).sum < USize.size)
+    (hB : Vals.PickFits A rf.2 ((jp(lc, rc)).map Prod.fst)) (hC : Vals.PickFits B sf.2 ((jp(lc, rc)).map Prod.snd))
+    (hPa : Vals.PickFits A Ua (ids (anti uac rk))) (hPb : Vals.PickFits B Ub (ids (anti ubc sk)))
+    (hN : (vacA).1.toNat * (vacB).1.toNat < USize.size) (h63 : (vacA).1.toNat * (vacB).1.toNat < 2 ^ 63)
+    (hA : Vals.PickFits A (vacA).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· / (vacB).1.toNat)))
+    (hBv : Vals.PickFits B (vacB).2 ((List.range ((vacA).1.toNat * (vacB).1.toNat)).map (· % (vacB).1.toNat)))
+    (P Q : Rel A B)
+    (hPe : P = longCount "/ₛ" (join lc rc).2 fun m h => (⟨m, Vals.pickN A rf.2 (join lc rc).1 m
+      (Nat.le_trans (Nat.le_of_eq h.symm) (join_len lc rc)), Vals.pick B sf.2 (join lc rc).2 m h⟩ : Rel A B))
+    (hQe : Q = top (vacA).2 (vacB).2)
+    (hU : P.n.toNat + Q.n.toNat < USize.size)
+    (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part A)).toList.map fun c : Part A => c.1.toNat).sum <
+      USize.size)
+    (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part B)).toList.map fun c : Part B => c.1.toNat).sum <
+      USize.size)
+    (hFk : Vals.RazeFits A P.key Q.key) (hFv : Vals.RazeFits B P.val Q.val)
+    (hUK : A.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).key⟩] : Vector (Part A) 1))
+    (hUV : B.CodesFit (#v[⟨(PQ(A, B)).n, (PQ(A, B)).val⟩] : Vector (Part B) 1))
+    (hUk : Vals.PickFits A (PQ(A, B)).key (ids nubI(A, B, PQ(A, B))))
+    (hUv : Vals.PickFits B (PQ(A, B)).val (ids nubI(A, B, PQ(A, B)))) (x : A.El) (y : B.El) :
+    rep (symDiv R S Ua Ub) x y ↔
+      (∀ c, rep R x c ↔ rep S y c) ∧ ((∃ c, rep R x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y)) := by
+  classical
+  have e : symDiv R S Ua Ub = P ∪ Q := by
+    subst hPe hQe hrf hsf hlc hrc hsid hss epr eorr efr eps eos efs ev0 ev1 erk euac esk eubc hvc hac hbc; rfl
+  rw [e, rep_union_full P Q hU hNk hNv hFk hFv (one_ok _ hUK) (one_ok _ hUV) hUk hUv]
+  show P.Holds x y ∨ Q.Holds x y ↔
+    (∀ c, R.Holds x c ↔ S.Holds y c) ∧ ((∃ c, R.Holds x c) ∨ ((∃ p, Ua.row p = x) ∧ ∃ j, Ub.row j = y))
+  -- the codes, faithful and well formed
+  have hV' := codes_faithful_wf C _ hfv; rw [← hvc] at hV'
+  obtain ⟨⟨vF, vW⟩, vL⟩ := hV'
+  have hA' := codes_faithful_wf A _ hfa; rw [← hac] at hA'
+  obtain ⟨⟨aF, aW⟩, -⟩ := hA'
+  have hB' := codes_faithful_wf B _ hfb; rw [← hbc] at hB'
+  obtain ⟨⟨bF, bW⟩, -⟩ := hB'
+  subst ev0 ev1 erk euac esk eubc
+  obtain ⟨v0w, v0n, v0s, v0c⟩ := vW (k := 0) (by decide)
+  obtain ⟨v1w, v1n, v1s, v1c⟩ := vW (k := 1) (by decide)
+  obtain ⟨rkw, rkn, rks, rkc⟩ := aW (k := 0) (by decide)
+  obtain ⟨uaw, uan, uas, -⟩ := aW (k := 1) (by decide)
+  obtain ⟨skw, skn, sks, skc⟩ := bW (k := 0) (by decide)
+  obtain ⟨ubw, ubn, ubs, -⟩ := bW (k := 1) (by decide)
+  have v0n' : (vc[0]'(by decide)).n = R.n := v0n
+  have v1n' : (vc[1]'(by decide)).n = S.n := v1n
+  have rkn' : (ac[0]'(by decide)).n = R.n := rkn
+  have skn' : (bc[0]'(by decide)).n = S.n := skn
+  have hP := sym_hit_holds R S _ _ _ _ rkw rks rkc skw sks skc v0w v0s v0c v1s v1c
+    (vL (k := 1) (l := 0) (by decide) (by decide)) (v0n'.trans rkn'.symm) (v1n'.trans skn'.symm)
+    (by rw [rkn', skn']; exact hNU) (by rw [rkn', skn']; exact hN63) R.n.toNat (by rw [rkn'])
+    pr orr fr ps os fs (by subst epr eorr efr; rfl) (by subst eps eos efs; rfl) ss hss sid hsid lc rc hlc hrc
+    rkn' skn' (fun ha ha' => aF (k := 0) (l := 0) (by decide) (by decide) ha ha')
+    (fun hb hb' => bF (k := 0) (l := 0) (by decide) (by decide) hb hb')
+    (fun ha hb => vF (k := 0) (l := 1) (by decide) (by decide) ha hb)
+    rf hrf sf hsf hRf hSf hM hMU hB hC P hPe x y
+  have hQ := sym_vac_holds R S Ua Ub _ _ _ _ uaw rkw uas rks ubw skw ubs sks uan rkn' ubn skn'
+    (fun hj hp => aF (k := 0) (l := 1) (by decide) (by decide) hj hp)
+    (fun hj hp => bF (k := 0) (l := 1) (by decide) (by decide) hj hp) hPa hPb hN h63 hA hBv x y
+  subst hQe
+  refine (or_congr hP hQ).trans ?_
+  constructor
+  · rintro (⟨hx, h⟩ | ⟨⟨hx, hnx⟩, hy, hny⟩)
+    · exact ⟨h, Or.inl hx⟩
+    · exact ⟨fun c => ⟨fun h => absurd ⟨c, h⟩ hnx, fun h => absurd ⟨c, h⟩ hny⟩, Or.inr ⟨hx, hy⟩⟩
+  · rintro ⟨h, hx | ⟨hx, hy⟩⟩
+    · exact Or.inl ⟨hx, h⟩
+    · by_cases hc : ∃ c, R.Holds x c
+      · exact Or.inl ⟨hc, h⟩
+      · exact Or.inr ⟨⟨hx, hc⟩, hy, fun ⟨c, hs⟩ => hc ⟨c, (h c).2 hs⟩⟩
+
+#print axioms rep_symDiv
 #print axioms sym_vac_holds
 #print axioms anti_pick_rows
 #print axioms sym_hit_holds
