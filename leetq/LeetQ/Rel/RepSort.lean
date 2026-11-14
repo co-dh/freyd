@@ -370,14 +370,7 @@ local notation "thinOK" =>
 
 open QLean.Dep
 
--- `FoldN`'s `nubI` with its index proofs as terms: its `[0]` runs `get_elem_tactic` against the whole header,
--- which in a header this size runs past the heartbeats
-set_option hygiene false in
-local notation "nubT(" X ", " Y ", " R ")" =>
-  (tuples.tupleIds ((Obj.codes X (#v[⟨Rel.n R, Rel.key R⟩] : Vector (Part X) 1))[0]'Nat.zero_lt_one)
-    #[(Obj.codes Y (#v[⟨Rel.n R, Rel.val R⟩] : Vector (Part Y) 1))[0]'Nat.zero_lt_one]).2
-
--- `rep_subseq`'s hypotheses at `X`, as one bundle (`roundAt` inlined with `nubT`)
+-- `rep_subseq`'s hypotheses at `X`, as one bundle
 set_option hygiene false in
 local notation "subOK" =>
   (T = num (idU X) 0 ∧ n.toNat < 2 ^ 63 ∧ Vals.PickFits (.arr B) X (List.range n.toNat) ∧
@@ -398,26 +391,7 @@ local notation "subOK" =>
     step = (fun el pend => cons (pair el pend) ∪ pend) ∧ (∀ k, elK k = elR(T, k)) ∧ (∀ st, f st = rnd(st)) ∧
     (∀ i (el : Rel .long B) (pend P S : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 → P = (f^[i] (pend₀, Alg.zero, 0)).2.1 → S = step el pend →
-      Obj.CodesFit .long (#v[⟨S.n, S.key⟩] : Vector (Part .long) 1) ∧
-      Obj.CodesFit (.arr B) (#v[⟨S.n, S.val⟩] : Vector (Part (.arr B)) 1) ∧
-      Vals.PickFits .long S.key (ids nubT(.long, (.arr B), S)) ∧
-      Vals.PickFits (.arr B) S.val (ids nubT(.long, (.arr B), S)) ∧
-      Obj.CodesFit .long jparts ∧
-      (∀ jc : Vector Code 2, jc = Obj.codes .long jparts → ∀ I : ByteArray,
-        I = anti (jc[0]'Nat.zero_lt_two) (jc[1]'Nat.one_lt_two) →
-        Vals.PickFits (.arr B) (Rel.key (pend°)) (ids I) ∧ Vals.PickFits .long (Rel.val (pend°)) (ids I)) ∧
-      ∀ Q : Rel .long (.arr B), Q = (antiJoin (pend°) (idU (Rel.key el)))° →
-        P.n.toNat + Q.n.toNat < USize.size ∧
-        ∃ (hNk : ((#[⟨P.n, P.key⟩, ⟨Q.n, Q.key⟩] : Array (Part .long)).toList.map
-            fun c : Part .long => c.1.toNat).sum < USize.size)
-          (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
-            fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
-          Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
-          Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
-          Obj.CodesFit (.arr B)
-            (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
-          Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubT(.long, (.arr B), PQ(.long, (.arr B)))) ∧
-          Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubT(.long, (.arr B), PQ(.long, (.arr B))))) ∧
+      roundAt(.arr B)) ∧
     (∀ i, i ≤ (Rel.val T).1.toNat → ∀ (el : Rel .long B) (pend : Rel .long (.arr B)), el = elK i →
       pend = (f^[i] (pend₀, Alg.zero, 0)).1 →
       ∀ kc : Vector Code 2, kc = Obj.codes .long kp2(el, pend) →
@@ -459,8 +433,8 @@ local notation "subOK" =>
         Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
-        Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubT(.long, (.arr B), PQ(.long, (.arr B)))) ∧
-        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubT(.long, (.arr B), PQ(.long, (.arr B))))) ∧
+        Vals.PickFits .long (PQ(.long, (.arr B))).key (ids nubI(.long, (.arr B), PQ(.long, (.arr B)))) ∧
+        Vals.PickFits (.arr B) (PQ(.long, (.arr B))).val (ids nubI(.long, (.arr B), PQ(.long, (.arr B))))) ∧
     F = foldRows T pend₀ step ∧ jc = Obj.codes .long ck2(T°, F) ∧ codesOK(jc, ck2(T°, F)) ∧
     (Rel.n F).toNat < 2 ^ 63 ∧ msum(jc, T°, F) < 2 ^ 63 ∧ msum(jc, T°, F) < USize.size ∧
     Vals.PickFits (.arr B) (Rel.key (T°)) ((mpairs(jc, T°, F)).map Prod.fst) ∧
@@ -468,8 +442,7 @@ local notation "subOK" =>
 
 /-- **`thinL(Q)`, `subseq` read back**: an array `xs` of `X` goes to `ys` exactly when `ys` is a sublist of `xs`
     and the `setify` images `s` of `xs` and `t` of `ys` satisfy the thin condition. `rep_thinL_sets` with
-    `rep_subseq`. The elementwise form (`s`, `t` replaced by `xs`, `ys` through `rep_setify_list`) does not fit:
-    `rep_setify_list`'s hypotheses added to this header run it past the default heartbeats. -/
+    `rep_subseq`. The elementwise form is `rep_thinL`. -/
 theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
     -- `rep_subseq` at `X`
     (T : Rel .long (.arr B)) (pend₀ : Rel .long (.arr B))
@@ -493,6 +466,118 @@ theorem rep_thinL_sublist {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B)
     hiT hiG xs ys, hU, rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
     hjc hjO hjn hjM hjU hjA hjC, and_assoc]
 
+section
+open Pow UnionN
+
+-- `rep_setify_list`'s hypotheses at `Rel.val Wy`, `Ms` its `∋`, each bound value quantified with its equation
+set_option hygiene false in
+local notation "setOK" =>
+  (Vals.PickFits (.arr B) (Rel.val Wy) (List.range (Rel.n Wy).toNat) ∧
+    Vals.PickFits (.arr B) (Rel.val Wy) ((List.range (Rel.n Wy).toNat).flatMap fun r =>
+      if h : r < (Rel.n Wy).toNat then List.replicate ((Rel.val Wy).row ⟨r, h⟩).length r else []) ∧
+    ∀ kc vc : Code, kc = kcR(Ms) → vc = vcR(Ms) →
+    cOK(kc, Rel.n Ms, Rel.key Ms) ∧ cOK(vc, Rel.n Ms, Rel.val Ms) ∧
+    Vals.PickFits (.arr B) (Rel.key Ms) (ids (tuples.tupleIds kc #[vc]).2) ∧
+    Vals.PickFits B (Rel.val Ms) (ids (tuples.tupleIds kc #[vc]).2) ∧
+    Vals.PickFits (.arr B) (Rel.key Ms) (ids kc.groupIds.2) ∧
+    ∀ kt : Code, kt = kcT(Ms) →
+    (∀ {i j : Nat} (hi : i < (Rel.nub Ms).n.toNat) (hj : j < (Rel.nub Ms).n.toNat),
+      Column.idAt kt.b kt.w i = Column.idAt kt.b kt.w j ↔
+        Vals.row (Rel.nub Ms).key ⟨i, hi⟩ = Vals.row (Rel.nub Ms).key ⟨j, hj⟩) ∧
+    (kt.w = 1 ∨ kt.w = 2 ∨ kt.w = 4 ∨ kt.w = 8 ∨ kt.w = 16 ∨ kt.w = 32 ∨ kt.w = 64) ∧
+    kt.n = (Rel.nub Ms).n ∧ kt.b.size = (kt.n.toNat * kt.w + 7) / 8 ∧
+    (∀ (B : Obj) (x : Part B), (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 1 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 2 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 4 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 8 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 16 ∨
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 32 ∨ ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w = 64) ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).b.size = (((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n.toNat *
+        ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).w + 7) / 8 ∧
+      ((Obj.codes B #v[x])[0]'Nat.zero_lt_one).n = x.1) ∧
+    (Rel.nub Ms).n.toNat < 2 ^ 63 ∧
+    ∀ p lo : ByteArray, p = pT(Ms) → lo = loT(Ms) →
+    Vals.PickFits (.arr B) (Rel.nub Ms).key (ids p) ∧ Vals.PickFits B (Rel.nub Ms).val (ids p) ∧
+    Vals.PickFits (.arr B) (Vals.pickPart (.arr B) (Rel.nub Ms).key p).2 (ids lo) ∧
+    ∀ pc : Vector Code 2, pc = pairs #v[idU (Rel.val Wy), dom Ms] →
+    codesOK(pc, (#v[⟨Rel.n (idU (Rel.val Wy)), (Rel.key (idU (Rel.val Wy)), Rel.val (idU (Rel.val Wy)))⟩,
+      ⟨Rel.n (dom Ms), (Rel.key (dom Ms), Rel.val (dom Ms))⟩] : Vector (Part (.prod (.arr B) (.arr B))) 2)) ∧
+    ∀ I : ByteArray, I = anti (pc[0]'Nat.zero_lt_two) (pc[1]'Nat.one_lt_two) →
+    Vals.PickFits (.arr B) (Rel.val Wy) (ids I) ∧
+    ∀ D : Rel (.arr B) (.arr B), D = lD(Ms, Rel.val Wy) →
+    (Rel.n D).toNat * USize.toNat 1 < USize.size ∧ (Rel.n D).toNat * USize.toNat 1 < 2 ^ 63 ∧
+    Vals.PickFits (.arr B) (Rel.key D) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· / USize.toNat 1)) ∧
+    Vals.PickFits (.arr B) (nilVal B) ((List.range ((Rel.n D).toNat * USize.toNat 1)).map (· % USize.toNat 1)) ∧
+    ∀ T N : Rel (.arr B) (.arr B), T = lT(Ms) → N = top (Rel.key D) (nilVal B) →
+    (Rel.n T).toNat + (Rel.n N).toNat < USize.size ∧
+    ∃ (hNk : ((pk(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size)
+      (hNv : ((pv(T, N)).toList.map fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
+    Vals.RazeFits (.arr B) (Rel.key T) (Rel.key N) ∧ Vals.RazeFits (.arr B) (Rel.val T) (Rel.val N) ∧
+    ∀ L : Rel (.arr B) (.arr B), L = Uc(T, N, hNk, hNv) → ∀ ku vu : Code, ku = kcR(L) → vu = vcR(L) →
+    cOK(ku, Rel.n L, Rel.key L) ∧ cOK(vu, Rel.n L, Rel.val L) ∧
+    Vals.PickFits (.arr B) (Rel.key L) (ids (tuples.tupleIds ku #[vu]).2) ∧
+    Vals.PickFits (.arr B) (Rel.val L) (ids (tuples.tupleIds ku #[vu]).2))
+
+/-- **`thinL(Q)`, elementwise**: an array `xs` of `X` goes to `ys` exactly when `ys` is a sublist of `xs` and each
+    element of `xs` is `Q`-above some element of `ys`. `rep_thinL_sublist`, with the `setify` images replaced by
+    `xs`, `ys` through `rep_setify_list` (they hold the same elements), and the images found through `rep_ran`
+    at `U` (every sublist of `xs` is in the range of `subseq X`). -/
+theorem rep_thinL {B : Obj} {n : USize} (Q : Rel B B) (X : Vals (.arr B) n)
+    -- `rep_subseq` at `X`
+    (T : Rel .long (.arr B)) (pend₀ : Rel .long (.arr B))
+    (step : Rel .long B → Rel .long (.arr B) → Rel .long (.arr B)) (elK : Nat → Rel .long B)
+    (f : Rel .long (.arr B) × Rel .long (.arr B) × Nat → Rel .long (.arr B) × Rel .long (.arr B) × Nat)
+    (F : Rel .long (.arr B)) (jc : Vector Code 2) (hsub : subOK)
+    (U : Rel (.arr B) (.arr B)) (hU : U = subseq X) (Wy : Rel (.arr B) (.arr B)) (hWy : Wy = ran U)
+    (St : Rel (.arr B) (.arr B)) (hSt : St = setify (Rel.val Wy))
+    (mS : Rel (.arr B) B) (hmS : mS = mem (Rel.val St)) (QS : Rel B (.arr B)) (hQS : QS = Q° ≫ mS°)
+    (Rd : Rel (.arr B) (.arr B)) (hRd : Rd = rightDiv mS mS (Rel.val St) (Rel.val St))
+    (Ld : Rel (.arr B) (.arr B)) (hLd : Ld = leftDiv (mS°) QS (Rel.val St) (Rel.val St))
+    (Tt : Rel (.arr B) (.arr B)) (hTt : Tt = Rd ∩ Ld) (H : Rel (.arr B) (.arr B)) (hH : H = St ≫ Tt)
+    (G : Rel (.arr B) (.arr B)) (hG : G = H ≫ St°) (hth : thinOK)
+    -- `rep_ran` at `U`
+    (hWf : oneFit(.arr B, Rel.n U, Rel.val U))
+    -- `rep_setify_list` at `Rel.val Wy`
+    (Ms : Rel (.arr B) B) (hMs : Ms = mem (Rel.val Wy)) (hset : setOK) :
+    ∀ xs ys, rep (thinL Q X) xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs ∧ ∀ a ∈ xs, ∃ y ∈ ys, rep Q y a := by
+  have eL := rep_thinL_sublist Q X T pend₀ step elK f F jc hsub U hU Wy hWy St hSt mS hmS QS hQS Rd hRd Ld hLd Tt
+    hTt H hH G hG hth
+  obtain ⟨hT, hn, hv, hp, hel, hpend, hN, h63, hA, hB, hstep, hE, hf, hR, hC, hF, hjc, hjO, hjn, hjM, hjU, hjA,
+    hjC⟩ := hsub
+  have eU : ∀ xs ys, rep U xs ys ↔ (∃ i, X.row i = xs) ∧ ys.Sublist xs := by
+    rw [hU]; exact rep_subseq X T hT hn hv hp hel pend₀ hpend hN h63 hA hB step hstep elK hE f hf hR hC F hF jc
+      hjc hjO hjn hjM hjU hjA hjC
+  have eW : ∀ a b, rep Wy a b ↔ a = b ∧ ∃ x, rep U x a := fun a b => by
+    rw [hWy, rep_ran U (one_ok _ hWf.1) (hWf.2 _ rfl)]; exact Iff.rfl
+  subst hMs
+  obtain ⟨hmv, hmk, k1⟩ := hset
+  obtain ⟨hK, hV, hk, hv', hp', k2⟩ := k1 _ _ rfl rfl
+  obtain ⟨hF', hw, hn', hs, hW, h63', k3⟩ := k2 _ rfl
+  obtain ⟨hpk, hpv, hlo, k4⟩ := k3 _ _ rfl rfl
+  obtain ⟨hc, k5⟩ := k4 _ rfl
+  obtain ⟨hd, k6⟩ := k5 _ rfl
+  obtain ⟨htN, ht63, htA, htB, k7⟩ := k6 _ rfl
+  obtain ⟨hN', hNk, hNv, hFk, hFv, k8⟩ := k7 _ _ rfl rfl
+  obtain ⟨huK, huV, huk, huv⟩ := k8 _ rfl _ _ rfl rfl
+  have hS := rep_setify_list (Rel.val Wy) hmv hmk _ _ rfl rfl hK hV hk hv' _ rfl hF' hw hn' hs hW h63' _ _ rfl rfl
+    hpk hpv hlo hp' _ rfl hc _ rfl hd hd _ rfl htN ht63 htA htB _ _ rfl rfl hN' hNk hNv hFk hFv _ rfl _ _ rfl rfl
+    huK huV huk huv
+  rw [← hSt] at hS
+  intro xs ys
+  rw [eL xs ys]
+  refine and_congr_right fun hx => and_congr_right fun hsl => ⟨?_, fun hq => ?_⟩
+  · rintro ⟨s, t, hs, ht, -, hq⟩ a ha
+    obtain ⟨y, hy, hQ⟩ := hq a (((hS.1 xs s hs).2.2 a).2 ha)
+    exact ⟨y, ((hS.1 ys t ht).2.2 y).1 hy, hQ⟩
+  · obtain ⟨i, -, hi⟩ := id ((eW ys ys).2 ⟨rfl, xs, (eU xs ys).2 ⟨hx, hsl⟩⟩)
+    obtain ⟨j, -, hj⟩ := id ((eW xs xs).2 ⟨rfl, xs, (eU xs xs).2 ⟨hx, List.Sublist.refl xs⟩⟩)
+    obtain ⟨s, hs⟩ := (hS.2 xs).2 ⟨j, hj⟩
+    obtain ⟨t, ht⟩ := (hS.2 ys).2 ⟨i, hi⟩
+    refine ⟨s, t, hs, ht, fun c hc => ((hS.1 xs s hs).2.2 c).2 (hsl.subset (((hS.1 ys t ht).2.2 c).1 hc)),
+      fun a ha => ?_⟩
+    obtain ⟨y, hy, hQ⟩ := hq a (((hS.1 xs s hs).2.2 a).1 ha)
+    exact ⟨y, ((hS.1 ys t ht).2.2 y).2 hy, hQ⟩
+
+end
+
 end LeetQ.Rel.Rep
 
 #print axioms LeetQ.Rel.Rep.suffix_pairwise
@@ -501,3 +586,4 @@ end LeetQ.Rel.Rep
 #print axioms LeetQ.Rel.Rep.rep_sortSet
 #print axioms LeetQ.Rel.Rep.rep_thinL_sets
 #print axioms LeetQ.Rel.Rep.rep_thinL_sublist
+#print axioms LeetQ.Rel.Rep.rep_thinL
