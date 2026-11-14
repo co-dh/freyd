@@ -296,6 +296,84 @@ theorem sym_ids (rk sk v0 v1 : Code)
   refine e.trans (forall_congr' fun u => ?_)
   rw [hRside k hk u, hSside l hl u]
 
+-- the pairs `(i, j)` `join l r` answers, as `join_rows` lists them: row `i` of `l`, row `j` of `r`, equal codes
+set_option quotPrecheck false in
+local notation "jp(" l ", " r ")" => ((List.range (Code.n l).toNat).flatMap fun i =>
+  ((List.range (Code.n r).toNat).filter fun j =>
+    Column.idAt (Code.b r) (Code.w r) j == Column.idAt (Code.b l) (Code.w l) i).map (i, ·))
+
+/-- **`symDiv`'s joined classes**: `lc`, `rc`, the two halves of `sym_ids`'s `sid` as long codes, are well formed
+    with one row per key class of `rk`, `sk`; `join lc rc` pairs a class `k` of `rk` with a class `l` of `sk`
+    exactly when they hold one set of value codes. Hypotheses: those of `sym_ids`, and `lc`, `rc` by their
+    defining equations. -/
+theorem sym_pairs (rk sk v0 v1 : Code)
+    (rkw : rk.w = 1 ∨ rk.w = 2 ∨ rk.w = 4 ∨ rk.w = 8 ∨ rk.w = 16 ∨ rk.w = 32 ∨ rk.w = 64)
+    (rks : rk.b.size = (rk.n.toNat * rk.w + 7) / 8)
+    (rkc : rk.w < 8 → rk.card < USize.size ∧ ∀ i < rk.n.toNat, Column.idAt rk.b rk.w i < rk.card)
+    (skw : sk.w = 1 ∨ sk.w = 2 ∨ sk.w = 4 ∨ sk.w = 8 ∨ sk.w = 16 ∨ sk.w = 32 ∨ sk.w = 64)
+    (sks : sk.b.size = (sk.n.toNat * sk.w + 7) / 8)
+    (skc : sk.w < 8 → sk.card < USize.size ∧ ∀ i < sk.n.toNat, Column.idAt sk.b sk.w i < sk.card)
+    (v0w : v0.w = 1 ∨ v0.w = 2 ∨ v0.w = 4 ∨ v0.w = 8 ∨ v0.w = 16 ∨ v0.w = 32 ∨ v0.w = 64)
+    (v0s : v0.b.size = (v0.n.toNat * v0.w + 7) / 8)
+    (v0c : v0.w < 8 → v0.card < USize.size ∧ ∀ i < v0.n.toNat, Column.idAt v0.b v0.w i < v0.card)
+    (v1s : v1.b.size = (v1.n.toNat * v1.w + 7) / 8)
+    (v1c : v1.w < 8 → v1.card < USize.size ∧ ∀ i < v1.n.toNat, Column.idAt v1.b v1.w i < v1.card)
+    (hvw : v1.w = v0.w) (v0n : v0.n = rk.n) (v1n : v1.n = sk.n)
+    (hNU : rk.n.toNat + sk.n.toNat < USize.size) (hN63 : rk.n.toNat + sk.n.toNat + 1 < 2 ^ 63)
+    (nR : Nat) (hnR : rk.n.toNat = nR)
+    (pr orr fr ps os fs : ByteArray) (hR : segments rk = (pr, orr, fr)) (hS : segments sk = (ps, os, fs))
+    (ss : ByteArray) (hss : ss = os.extract 0 (os.size - 8)) (sid : ByteArray)
+    (hsid : sid = longCount "/ₛ" ss fun c _ => setIds (Code.cat #[v0.gather pr, v1.gather ps])
+      (concatBytes #[orr.extract 0 (orr.size - 8), addc c ss nR]))
+    (lc rc : Code) (hlc : lc = Code.ofLongs (sid.extract 0 (8 * len fr)))
+    (hrc : rc = Code.ofLongs (sid.extract (8 * len fr) sid.size)) :
+    lc.w = 64 ∧ lc.n.toNat = KR ∧ lc.b.size = (lc.n.toNat * lc.w + 7) / 8 ∧
+    rc.w = 64 ∧ rc.n.toNat = KS ∧ rc.b.size = (rc.n.toNat * rc.w + 7) / 8 ∧
+    ∀ k l, (k, l) ∈ jp(lc, rc) ↔ k < KR ∧ l < KS ∧
+      ∀ u, (∃ a ∈ cls(rk, k), Column.idAt v0.b v0.w a = u) ↔ ∃ b ∈ cls(sk, l), Column.idAt v1.b v1.w b = u := by
+  obtain ⟨hsz, hid⟩ := sym_ids rk sk v0 v1 rkw rks rkc skw sks skc v0w v0s v0c v1s v1c hvw v0n v1n hNU hN63 nR hnR
+    pr orr fr ps os fs hR hS ss hss sid hsid
+  obtain ⟨hfr, -⟩ := seg_facts rk rkw rks rkc (by omega) hR
+  have hlfr : len fr = KR := by rw [len_eq_ids, hfr]
+  have hKR : KR ≤ rk.n.toNat := firstsOf_length_le _ _
+  have hKS : KS ≤ sk.n.toNat := firstsOf_length_le _ _
+  have e1 : (sid.extract 0 (8 * len fr)).size = 8 * KR := by rw [ByteArray.size_extract, hlfr]; omega
+  have e2 : (sid.extract (8 * len fr) sid.size).size = 8 * KS := by rw [ByteArray.size_extract, hlfr]; omega
+  have j1 : len (sid.extract 0 (8 * len fr)) = KR := by
+    show (sid.extract 0 (8 * len fr)).size / 8 = _; rw [e1]; omega
+  have j2 : len (sid.extract (8 * len fr) sid.size) = KS := by
+    show (sid.extract (8 * len fr) sid.size).size / 8 = _; rw [e2]; omega
+  have l1 : len (sid.extract 0 (8 * len fr)) < USize.size := by rw [j1]; omega
+  have l2 : len (sid.extract (8 * len fr) sid.size) < USize.size := by rw [j2]; omega
+  have hL : lc.w = 64 ∧ lc.n.toNat = len (sid.extract 0 (8 * len fr)) ∧ lc.b = sid.extract 0 (8 * len fr) := by
+    subst hlc; unfold Code.ofLongs longCount; simp only [need, dif_pos l1]
+    exact ⟨trivial, USize.toNat_ofNat_of_lt' l1, trivial⟩
+  have hM : rc.w = 64 ∧ rc.n.toNat = len (sid.extract (8 * len fr) sid.size) ∧
+      rc.b = sid.extract (8 * len fr) sid.size := by
+    subst hrc; unfold Code.ofLongs longCount; simp only [need, dif_pos l2]
+    exact ⟨trivial, USize.toNat_ofNat_of_lt' l2, trivial⟩
+  have n1 : lc.n.toNat = KR := by rw [hL.2.1, j1]
+  have n2 : rc.n.toNat = KS := by rw [hM.2.1, j2]
+  have i1 : ∀ k < KR, Column.idAt lc.b lc.w k = (Column.bitsAt sid (8 * k) 8).toNat := fun k hk => by
+    rw [hL.1, hL.2.2]
+    refine (idAt_lane _ (c := 8) (by decide) k).trans ?_
+    rw [bitsAt_extract sid (by omega) (by omega), Nat.zero_add, Nat.mul_comm]
+  have i2 : ∀ l < KS, Column.idAt rc.b rc.w l = (Column.bitsAt sid (8 * (KR + l)) 8).toNat := fun l hl => by
+    rw [hM.1, hM.2.2]
+    refine (idAt_lane _ (c := 8) (by decide) l).trans ?_
+    rw [bitsAt_extract sid (by omega) (by omega), hlfr, show 8 * KR + l * 8 = 8 * (KR + l) by omega]
+  refine ⟨hL.1, n1, by rw [hL.2.2, e1, n1, hL.1]; omega, hM.1, n2, by rw [hM.2.2, e2, n2, hM.1]; omega,
+    fun k l => ?_⟩
+  rw [mem_joinPairs, n1, n2]
+  constructor
+  · rintro ⟨hk, hl, he⟩
+    refine ⟨hk, hl, (hid k hk l hl).1 ?_⟩
+    rw [i1 k hk, i2 l hl] at he; exact (UInt64.toNat_inj.1 he).symm
+  · rintro ⟨hk, hl, he⟩
+    refine ⟨hk, hl, ?_⟩
+    rw [i1 k hk, i2 l hl, (hid k hk l hl).2 he]
+
+#print axioms sym_pairs
 #print axioms sym_ids
 #print axioms bitsAt_extract
 #print axioms concat_two
