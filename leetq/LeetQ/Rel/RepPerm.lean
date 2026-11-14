@@ -570,7 +570,7 @@ theorem rep_suffix {B : Obj} {n : USize} (X : Vals (.arr B) n)
         · exact Or.inl ⟨hj, t, by omega, hl, e⟩
         · obtain rfl : t = i + 1 := by omega
           exact Or.inr ⟨hj, hl, e⟩
-  obtain ⟨j, hj, he, hs⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
+  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : Rel (.arr B) (.arr B) × Rel (.arr B) (.arr B) => s.2.n == 0) g
     (X.1.toNat + 1) (idU X, idU X)
   have hl : suffix X = (g^[j] (idU X, idU X)).1 := by
     rw [← he]

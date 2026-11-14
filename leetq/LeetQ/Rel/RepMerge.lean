@@ -580,7 +580,7 @@ theorem mergeOn_rounds {K B : Obj} (q : Rel (.prod B B) (.prod B B) → Rel (.pr
     (hO : ∀ i, i < fuelP → ∀ k z, rep (f^[i + 1] (Alg.zero, I)).1 k z ↔ rep (f^[i] (Alg.zero, I)).1 k z ∨
       ∃ x y acc, rep (f^[i] (Alg.zero, I)).2 k ((x, y), acc) ∧ (x = [] ∨ y = []) ∧ z = acc ++ x ++ y) :
     ∀ k zs, rep (mergeOn q P) k zs ↔ ∃ xs ys, rep P k (xs, ys) ∧ zs = List.merge xs ys le := by
-  obtain ⟨j, hj, he, hs⟩ := iter_stop (fun s : Rel K (.arr B) × Rel K SO => s.2.n == 0) f fuelP (Alg.zero, I)
+  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : Rel K (.arr B) × Rel K SO => s.2.n == 0) f fuelP (Alg.zero, I)
   have hl : mergeOn q P = (f^[j] (Alg.zero, I)).1 := by
     rw [← he, hI]
     refine congrArg (fun g : Rel K (.arr B) × Rel K SO → Rel K (.arr B) × Rel K SO =>

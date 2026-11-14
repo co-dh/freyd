@@ -105,7 +105,7 @@ theorem loopOn_rounds {K X Y : Obj} (F : Rel (.prod X Y) (.prod X Y) → Rel (.p
       rep (f^[i] (Alg.zero, P)).1 k c ∨ rep (f^[i] (Alg.zero, P)).2 k (c, [])) :
     ∀ k c, rep (loopOn F P) k c ↔ ∃ c₀ xs, rep P k (c₀, xs) ∧ ∃ g : Nat → X.El, g 0 = c₀ ∧
       (∀ t (ht : t < xs.length), Fr t (g t, xs[t]'ht) (g (t + 1))) ∧ c = g xs.length := by
-  obtain ⟨j, hj, he, hs⟩ := iter_stop (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0) f
+  obtain ⟨j, hj, he, hs, -⟩ := iter_stop (fun s : Rel K X × Rel K (.prod X (.arr Y)) => s.2.n == 0) f
     ((Rel.val P).2.1.toNat + 1) (Alg.zero, P)
   have hl : loopOn F P = (f^[j] (Alg.zero, P)).1 := by
     rw [← he]
