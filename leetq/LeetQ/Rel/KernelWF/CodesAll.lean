@@ -144,6 +144,17 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
 
 #print axioms codes_faithful_wf
 
+/-- **A one-part atom side fits outright** at every kind whose clause bounds only what one part already
+    bounds: a kind with an order layout (boolean, the dense kinds, whose ALP clause reads two parts or more, the
+    64-bit kinds) or a guid. A symbol's dictionaries and a general column's cells are not bounded by a count. -/
+theorem codesFit_atom_one {t : QAtomicType} (x : Part (.atom t)) (ht : orderKind t ≠ none ∨ t = .guid) :
+    Obj.CodesFit (.atom t) #v[x] := by
+  unfold Obj.CodesFit
+  refine ⟨by simp [x.1.toNat_lt_size], ?_⟩
+  rcases ht with h | rfl
+  · cases t <;> simp [orderKind] at h ⊢
+  · exact .inr (.inr (.inr (.inr (.inl rfl))))
+
 /-- **An atom side's one-part code is well formed and counts its part, with no premise**: a lane of `1 … 64`
     bits, `⌈n·w/8⌉` bytes, ids below `card` under a byte. One part's count is a `USize`, so the several-part
     theorems' summed-count bound holds by itself; `.arr` and `.sum` are not here, their codes need bounds. -/

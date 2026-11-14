@@ -412,7 +412,6 @@ local notation "subOK" =>
         (hNv : ((#[⟨P.n, P.val⟩, ⟨Q.n, Q.val⟩] : Array (Part (.arr B))).toList.map
           fun c : Part (.arr B) => c.1.toNat).sum < USize.size),
         Vals.RazeFits .long P.key Q.key ∧ Vals.RazeFits (.arr B) P.val Q.val ∧
-        Obj.CodesFit .long (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).key⟩] : Vector (Part .long) 1) ∧
         Obj.CodesFit (.arr B)
           (#v[⟨(PQ(.long, (.arr B))).n, (PQ(.long, (.arr B))).val⟩] : Vector (Part (.arr B)) 1) ∧
         Vals.PickFits .long (PQ(.long, (.arr B))).key (List.range (PQ(.long, (.arr B))).n.toNat) ∧
