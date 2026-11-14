@@ -5,6 +5,7 @@
 -/
 import LeetQ.Rel.KernelWF.CodesArr
 import LeetQ.Rel.KernelWF.CodesSymParts
+import LeetQ.Rel.KernelWF.CodesLongParts
 
 namespace LeetQ.Rel.Alg
 
@@ -18,6 +19,7 @@ def _root_.LeetQ.Rel.Obj.CodesFit : (A : Obj) → {p : Nat} → Vector (Part A) 
     (t = .boolean ∨
       (∃ k₀, orderKind t = some k₀ ∧ (k₀ = .u8 ∨ k₀ = .i16 ∨ k₀ = .i32) ∧
         ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∨
+      (orderKind t = some .i64 ∧ ∀ k (hk : k < p), ∃ b, (cs[k]'hk).2.enc = .bytes b) ∨
       (t = .symbol ∧
         (cs.toList.map fun c => match c.2.enc with | .enum _ o _ => o.size - 1 | _ => c.1.toNat).sum < USize.size))
   | .prod a b, _, cs => (cs.toList.map (·.1.toNat)).sum < USize.size ∧
@@ -43,6 +45,46 @@ theorem cut_lane {p : Nat} (c : Code) (ns : Vector USize p) {k l : Nat} (hk : k 
     ((c.cut ns)[k]'hk).w = ((c.cut ns)[l]'hl).w := by
   unfold Code.cut; split <;> simp
 
+/-- **`rangeOffsets`' codes share one lane**: every part is `packed` at the one `w` of the joint span. -/
+theorem rangeOffsets_lane {a : QAtomicType} {p : Nat} {cs : Vector (USize × Enc) p} {total : Nat}
+    {os : Vector Code p} (h : rangeOffsets a cs total = some os) {k l : Nat} (hk : k < p) (hl : l < p) :
+    (os[k]'hk).w = (os[l]'hl).w := by
+  unfold rangeOffsets at h
+  split at h
+  · exact absurd h (by simp)
+  dsimp only at h
+  split at h
+  · exact absurd h (by simp)
+  split at h
+  · exact absurd h (by simp)
+  split at h
+  · exact absurd h (by simp)
+  split at h
+  · exact absurd h (by simp)
+  -- `base` (`0` or the least element) is split first; the lane `w` does not read it
+  split at h
+  all_goals
+    split at h
+    · exact absurd h (by simp)
+    have hk' := vec_mapM_some h hk
+    have hl' := vec_mapM_some h hl
+    generalize os[k]'hk = ok at hk' ⊢
+    generalize os[l]'hl = ol at hl' ⊢
+    generalize cs[k]'hk = ck at hk'
+    generalize cs[l]'hl = cl at hl'
+    obtain ⟨n, e⟩ := ck
+    obtain ⟨n', e'⟩ := cl
+    -- each part's code is `packed`, the struct literal at the joint `w`
+    cases e <;> simp at hk'
+    all_goals first
+      | obtain ⟨-, rfl⟩ := hk'
+      | (obtain ⟨_, -, hk'⟩ := Option.bind_eq_some_iff.1 hk'; split at hk' <;> cases hk')
+    all_goals (cases e' <;> simp at hl')
+    all_goals first
+      | obtain ⟨-, rfl⟩ := hl'
+      | (obtain ⟨_, -, hl'⟩ := Option.bind_eq_some_iff.1 hl'; split at hl' <;> cases hl')
+    all_goals rfl
+
 /-- **`Obj.codes` is faithful and well formed, on one lane, at every side the recursion covers**: equal codes
     exactly at equal rows, jointly across the parts; each code a lane of `1 … 64` bits, `⌈n·w/8⌉` bytes, ids below
     `card` under a byte; one lane across the parts. `Obj.CodesFit` holds the bounds node by node. -/
@@ -61,7 +103,7 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
   induction A with
   | atom t =>
     intro p cs ⟨hN, ht⟩
-    rcases ht with rfl | ⟨k₀, ht, hk₀, hd⟩ | ⟨rfl, hD⟩
+    rcases ht with rfl | ⟨k₀, ht, hk₀, hd⟩ | ⟨ht, hd⟩ | ⟨rfl, hD⟩
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_boolean_faithful cs hk hl hi hj, fun hk => ?_⟩, fun hk hl => ?_⟩
       · obtain ⟨h1, h2, h3, h4⟩ := codes_boolean_wf cs hk
         exact ⟨Or.inl h2, h1, h3, h4⟩
@@ -69,6 +111,11 @@ theorem codes_faithful_wf (A : Obj) : ∀ {p : Nat} (cs : Vector (Part A) p), A.
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_small_int_parts_faithful ht hk₀ cs hd hN hk hl hi hj,
         fun hk => codes_small_int_parts_wf ht hk₀ cs hN hk⟩, fun hk hl => ?_⟩
       rw [codes_small_int_cut ht hk₀ cs (by omega)]; exact cut_lane _ _ hk hl
+    · refine ⟨⟨fun hk hl _ _ hi hj => codes_long_dense_faithful ht cs hd hN hk hl hi hj,
+        fun hk => codes_long_dense_wf ht cs hd hN hk⟩, fun hk hl => ?_⟩
+      cases hro : rangeOffsets t (cs.map (·.2.part)) ((cs.map (·.1)).foldl (fun s n => s + n.toNat) 0) with
+      | none => rw [codes_long_cut ht cs (by omega) hd hN hro]; exact cut_lane _ _ hk hl
+      | some os => rw [codes_long_eq ht cs (by omega) hro]; exact rangeOffsets_lane hro hk hl
     · refine ⟨⟨fun hk hl _ _ hi hj => codes_symbol_parts_faithful cs hN hD hk hl hi hj,
         fun hk => codes_symbol_parts_wf cs hN hk⟩, fun hk hl => ?_⟩
       rw [codes_symbol_cut cs (by omega)]; exact cut_lane _ _ hk hl
